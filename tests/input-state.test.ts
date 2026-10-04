@@ -17,12 +17,14 @@ describe('applyDeadZone', () => {
 describe('InputState', () => {
   it('初期値とリセット', () => {
     const s = createInputState();
-    expect(s).toEqual({ rudder: 0, throttle: 0, stickActive: false });
+    expect(s).toEqual({ rudder: 0, throttle: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN });
     s.rudder = 1;
     s.throttle = -1;
     s.stickActive = true;
+    s.fireTap = true;
+    s.fireSalvoSpreadDeg = 8;
     resetInput(s);
-    expect(s).toEqual({ rudder: 0, throttle: 0, stickActive: false });
+    expect(s).toEqual({ rudder: 0, throttle: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN });
   });
 });
 
