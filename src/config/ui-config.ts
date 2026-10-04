@@ -34,6 +34,56 @@ export const STICK_KNOB_ALPHA = 0.7;
 /** 画面端で円が切れて親指が届かなくならないよう、原点を内側へ寄せる余白（論理 px） */
 export const STICK_EDGE_MARGIN = 16;
 
+/** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
+export const HUD_FONT_MISSION_PX = 22;
+
+/** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉 */
+export const TORPEDO_BUTTON_RADIUS = 64;
+/** これより短い押下はタップ扱い（秒） */
+export const TORPEDO_BUTTON_TAP_MAX_S = 0.3;
+export const TORPEDO_BUTTON_ALPHA = 0.55;
+export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
+export const HUD_FONT_BUTTON_PX = 22;
+
+/** 雷跡の点（見た目）。間隔 m、プール数、消えるまでの実時間秒、濃さ */
+export const WAKE_DOT_SPACING_M = 25;
+export const WAKE_DOT_POOL_SIZE = 240;
+export const WAKE_DOT_LIFETIME_S = 25;
+export const WAKE_DOT_ALPHA = 0.55;
+
+/** カメラの先読み（m）。進行方向にこの分だけ視点をずらし、前方の視界を広げる（ズーム 0.75 では前方 ≈ 480+320 = 800 m、典型的な発射距離 800yd が見える） */
+export const CAMERA_LOOK_AHEAD_M = 320;
+
+/** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
+export const TARGET_MARKER_MARGIN = 56;
+export const TARGET_MARKER_SIZE = 18;
+export const TARGET_MARKER_DISTANCE_STEP_M = 10;
+export const TARGET_MARKER_COLOR = 0xe08a8a;
+export const HUD_FONT_MARKER_PX = 18;
+
+/** Result で誤タップを拾わないよう入力を受け付けるまでの待ち（ms）とレイアウト */
+export const RESULT_INPUT_DELAY_MS = 400;
+export const RESULT_TOP_Y = 90;
+export const RESULT_LINE_GAP = 14;
+export const RESULT_SECTION_GAP = 10;
+export const RESULT_FOOTER_Y = 70;
+export const RESULT_SEED_Y = 36;
+
+/** 爆発リングの拡大率（命中 / 不発）と不発の色 */
+export const EXPLOSION_SCALE_FROM = 0.2;
+export const EXPLOSION_SCALE_HIT = 1.6;
+export const EXPLOSION_SCALE_DUD = 0.6;
+export const EXPLOSION_TINT_HIT = 0xffa040;
+export const EXPLOSION_TINT_DUD = 0x9a9a9a;
+
+/** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
+export const EXPLOSION_DURATION_MS = 600;
+export const SINK_DURATION_MS = 2000;
+export const MISSION_END_DELAY_MS = 1500;
+/** 命中時のカメラ揺れ（ms, 強さ） */
+export const HIT_SHAKE_MS = 200;
+export const HIT_SHAKE_INTENSITY = 0.004;
+
 /** 舵インジケータ（右下）。バーの半幅と高さ */
 export const RUDDER_BAR_HALF_WIDTH = 120;
 export const RUDDER_BAR_HEIGHT = 6;

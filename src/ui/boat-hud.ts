@@ -3,7 +3,9 @@ import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
   HUD_COLOR_STRONG,
+  HUD_DEBUG_LINE_HEIGHT,
   HUD_FONT_HEADING_PX,
+  HUD_FONT_MISSION_PX,
   HUD_FONT_SPEED_PX,
   HUD_FONT_STEP_PX,
   HUD_HEADING_OFFSET_Y,
@@ -12,6 +14,7 @@ import {
   HUD_TEXT_GAP,
   RUDDER_BAR_HALF_WIDTH,
   RUDDER_MARKER_HEIGHT,
+  TORPEDO_BUTTON_RADIUS,
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
@@ -30,14 +33,18 @@ export class BoatHud {
   private readonly headingText: Phaser.GameObjects.Text;
   private readonly rudderBar: Phaser.GameObjects.Image;
   private readonly rudderMarker: Phaser.GameObjects.Image;
+  private readonly missionText: Phaser.GameObjects.Text;
   private readonly barCenterX: number;
+  private lastTimeLeft = -1;
+  private lastHits = -1;
   private lastSpeedKt = -1;
   private lastStep: SpeedStep | '' = '';
   private lastHeading = -1;
   private lastRudderX = NaN;
 
   constructor(scene: Phaser.Scene) {
-    const right = GAME_WIDTH - HUD_MARGIN;
+    // 右下の角は魚雷ボタンが使うので、その左に置く
+    const right = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2 - HUD_MARGIN;
     const bottom = GAME_HEIGHT - HUD_MARGIN;
 
     this.rudderBar = scene.add
@@ -63,6 +70,12 @@ export class BoatHud {
       .text(right, textBottom - HUD_HEADING_OFFSET_Y, '', hudTextStyle(HUD_FONT_HEADING_PX))
       .setOrigin(1, 1)
       .setDepth(DEPTH.hud);
+
+    // 上中央 2 行目: 残り時間と命中
+    this.missionText = scene.add
+      .text(GAME_WIDTH / 2, HUD_MARGIN + HUD_DEBUG_LINE_HEIGHT, '', hudTextStyle(HUD_FONT_MISSION_PX, HUD_COLOR_STRONG))
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.hud);
   }
 
   /** 毎フレーム呼ぶ。表示値が変わったときだけ setText / setX する */
@@ -86,6 +99,12 @@ export class BoatHud {
       this.lastRudderX = x;
       this.rudderMarker.setX(x);
     }
+    const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
+    if (timeLeft !== this.lastTimeLeft || t.hits !== this.lastHits) {
+      this.lastTimeLeft = timeLeft;
+      this.lastHits = t.hits;
+      this.missionText.setText(`残り ${timeLeft} 秒   命中 ${t.hits}`);
+    }
   }
 
   destroy(): void {
@@ -94,5 +113,6 @@ export class BoatHud {
     this.headingText.destroy();
     this.rudderBar.destroy();
     this.rudderMarker.destroy();
+    this.missionText.destroy();
   }
 }
