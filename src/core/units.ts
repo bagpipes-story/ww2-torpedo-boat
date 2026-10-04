@@ -40,8 +40,9 @@ export function radToDeg(rad: number): number {
   return (rad * 180) / Math.PI;
 }
 
-/** 角度を (-180, 180] に正規化する。針路差の計算で使う */
+/** 角度を (-180, 180] に正規化する。針路差の計算で使う。範囲内の値は丸め誤差を避けてそのまま返す */
 export function wrapDeg180(deg: number): number {
+  if (deg > -180 && deg <= 180) return deg;
   let d = ((deg + 180) % 360 + 360) % 360 - 180;
   if (d === -180) d = 180;
   return d;

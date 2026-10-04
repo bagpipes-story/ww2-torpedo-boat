@@ -1,8 +1,8 @@
 {
-  "// 用途": "ブラウザで動くゲーム本体（src/）。Node の型は入れない。vite.config.ts と tests/ は tsconfig.node.json",
+  "// 用途": "Node で動くもの（vite.config.ts、tests/）。tests は src/core を import するので src/core もここで型検査される",
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["vite.config.ts", "tests"]
 }

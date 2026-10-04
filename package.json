@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "lint": "npm run typecheck",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "lint": "tsc --noEmit -p tsconfig.json"
+    "test": "vitest run"
   },
   "dependencies": {
     "phaser": "^3.90.0"

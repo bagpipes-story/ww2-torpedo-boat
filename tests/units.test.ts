@@ -73,5 +73,16 @@ describe('units: 角度', () => {
     expect(wrapDeg180(-180)).toBe(180);
     expect(wrapDeg180(180)).toBe(180);
     expect(wrapDeg180(359)).toBe(-1);
+    expect(wrapDeg180(-540)).toBe(180);
+    expect(wrapDeg180(360 * 1e6 + 90)).toBeCloseTo(90, 6);
+    expect(wrapDeg180(-(360 * 1e6) - 90)).toBeCloseTo(-90, 6);
+  });
+
+  it('wrapDeg180 は範囲内の値（小数含む）をビット単位でそのまま返す', () => {
+    for (const d of [0.1, -0.1, 179.99, -179.99, 180, 12.345678901234]) {
+      expect(wrapDeg180(d)).toBe(d);
+    }
+    expect(wrapDeg180(180.5)).toBeCloseTo(-179.5, 9);
+    expect(wrapDeg180(-179.5)).toBe(-179.5);
   });
 });
