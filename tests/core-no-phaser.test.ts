@@ -8,8 +8,8 @@ const CORE_DIR = join(__dirname, '..', 'src', 'core');
 
 // from 'phaser' / import 'phaser' / import('phaser') / require('phaser') / 'phaser/…' サブパス、型のみ import、export * from も含めて検出する
 const PHASER_IMPORT = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"]phaser(?:\/[^'"]*)?['"]/;
-// グローバル名前空間の参照（Phaser.Math など）
-const PHASER_GLOBAL = /\bPhaser\s*\./;
+// グローバル名前空間の参照（Phaser.Math など）。phaser.d.ts が同梱する MatterJS 名前空間も対象
+const PHASER_GLOBAL = /\b(?:Phaser|MatterJS)\s*\./;
 
 /** コメントを除いたソース。コメント内の「Phaser」という単語で誤検出しないため */
 function stripComments(src: string): string {
@@ -41,6 +41,7 @@ describe('src/core は Phaser 非依存', () => {
       'import Phaser from\n  "phaser";',
       'function f(v: Phaser.Types.Math.Vector2Like) {}',
       'const z = Phaser.Math.Clamp(1, 0, 2);',
+      'let body: MatterJS.BodyType;',
     ];
     const shouldNotMatch = [
       "import { ktToMps } from './units';",

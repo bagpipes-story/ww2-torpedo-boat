@@ -8,7 +8,7 @@
 - 版番号の注記: 下の「vX.Y.Z（docs）」は引き継ぎ資料の版で、コードの版とは別系統。コードは docs/03 の表の番号を使い、`package.json` の version（0.1.1）はこのエントリを指す。
 - 目的: Vite + Phaser 3 + TypeScript のひな形が GitHub Pages で動き、iPhone Safari で黒画面＋FPS＋ビルド番号が出る状態にする（docs/03 v0.1.1）。
 - 変更点:
-  - `package.json`（version 0.1.1）、`tsconfig.json`（strict）、`vite.config.ts`（`docs/snippets/vite.config.ts` 準拠: `VITE_BASE`・`VITE_BUILD_LABEL`）、`index.html`（viewport-fit=cover、touch-action none、100dvh、背景 `#0b1020`）、`.gitignore`。
+  - `package.json`（version 0.1.1）、`tsconfig.json`（strict）、`vite.config.ts`（`docs/snippets/vite.config.ts` 準拠: `VITE_BASE`・`VITE_BUILD_LABEL`）、`index.html`（viewport-fit=cover、touch-action none、100dvh、余白 `#000`。海の色 `#0b1020` は Phaser の backgroundColor 側）、`.gitignore`。
   - `src/main.ts`: Phaser.Game 生成のみ。1280×720、`Scale.FIT`＋`CENTER_BOTH`、Arcade は `fixedStep`。
   - `src/config/game-config.ts`（画面定数・Registry キー・シーンキー）、`src/config/game-data.ts`（`data/*.json` 6本を Vite の JSON import でバンドルし、型付きの `gameData` として提供）。
   - `src/scenes/boot-scene.ts`: `gameData` を Registry に置いて Mission へ。`src/scenes/mission-scene.ts`: 黒い海＋デバッグHUD。
