@@ -86,6 +86,7 @@ Codeセッションにファイルを添付できる場合は、#3の代わり�
 | `npm ci` が lockfile 不一致で失敗 | 「package-lock.json を作り直して」と頼む |
 | リポジトリが一覧に出ない | Privateなら Claude GitHub App のインストール対象に入っているか確認（§2の#6） |
 | 2つのセッションを同時に走らせたら表示が入れ替わる | Pagesは「最後にpushされたブランチ」を公開する。ゲームの作業は1セッションずつ |
+| 「タグを打って」と頼んだのに `git push origin vX.Y.Z` が 403 / unexpected disconnect で失敗する | クラウドセッションの GitHub 経路は `refs/tags` への書き込みを許可していない（ブランチの push は通る。API のタグ作成も不可）。iPhone の Safari で **リポジトリ → Releases → Draft a new release → Choose a tag に `vX.Y.Z` を入力 → Target: main → Publish release** でタグを作る。PC があれば `git tag vX.Y.Z && git push origin vX.Y.Z` でもよい |
 | PrivateリポジトリでPagesが使えない | GitHub Proにするか、Cloudflare Pages（無料、GitHub連携でブランチごとのプレビューURL `https://<branch>.<project>.pages.dev`）に切り替える。切替時は `deploy-pages.yml` を外す |
 
 ## 6. 使わないもの（混同しやすい）
