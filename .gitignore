@@ -1,0 +1,8 @@
+# 依存とビルド成果物（Actions が毎回作る）
+node_modules/
+dist/
+# ローカルの一時ファイル
+*.log
+.DS_Store
+.vite/
+coverage/
