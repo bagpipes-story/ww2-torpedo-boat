@@ -3,6 +3,27 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.1.2 — 2026-10-04（艇の運動）
+
+- 目的: バーチャルスティックで艇が動き、カメラが追従し、速力段と舵が HUD に出る（docs/03 v0.1.2）。前回の既知の制約「描画解像度が論理解像度のまま」を解消する。
+- 変更点:
+  - 描画解像度: ゲームサイズを `1280×720 × RENDER_SCALE`（`min(devicePixelRatio, 2)`、CLAUDE.md §7）で作り、各シーンのカメラを RENDER_SCALE 倍ズームして論理座標を保つ。`Text` は `style.resolution = RENDER_SCALE`、生成テクスチャも RENDER_SCALE 倍で作って `setScale(1/RENDER_SCALE)`。
+  - シーン分割: `MissionScene`（ワールド、ズーム 0.75×RENDER_SCALE、艇に追従）と `HudScene`（HUD・操作、ズーム RENDER_SCALE）。Mission が `scene.launch` で HUD を手前に起動し、shutdown で止める。
+  - `src/core/boat-motion.ts`: 運動モデル（docs/02 §6.1）。目標速度へ加速度/減速度で近づく、旋回 = 舵×`turn_rate_deg_s`、速度ベクトルは船首方向（横滑りなし）、方位は [0,360)（0=北=画面上、時計回り）。`throttleToTargetSpeed`（+1 全速 / 0 巡航 / -0.5 静音 / -1 停止の区分線形）、`nearestSpeedStep`、`clampToBounds`、`boatParamsFromData`（kt→m/s）。
+  - `src/core/fixed-stepper.ts`: 固定ステップ累積器（1/60 s × time_scale、最大 4 回/フレーム、巨大 delta は切り捨て）。`src/core/input-state.ts`: 共有入力状態と `applyDeadZone`（境界で連続）。`units.ts` に `wrapDeg360`・`clamp`。
+  - `src/entities/player-boat.ts`: 自艇（白い船形ポリゴン、`sprite_scale` 倍）。`src/assets/placeholders.ts`: 艇・海のグリッド（100m 格子）・スティック・舵バーを起動時に 1 回だけテクスチャ化。
+  - `src/systems/virtual-stick.ts`: 画面左半分のタッチ開始点に出るフローティング・スティック（半径 110、デッドゾーン 0.12）。X=舵、Y=スロットル（上=全速）。マルチタッチ対応（`addPointer(2)`）。`src/systems/keyboard-input.ts`: PC デバッグ用 矢印/WASD。
+  - `src/ui/boat-hud.ts`: 右下に 速力(kt)・速力段（停止/静音/巡航/全速）・針路・舵バー（静的バー＋マーカー位置のみ更新）。`debug-hud.ts` はビルド番号を上中央へ移動。
+  - 海: 100m 格子のテクスチャを `TileSprite` 1 個で海域全体（6,000×4,000 m）に敷く。境界は `Graphics` で 1 回だけ描く。艇は境界から 20 m 内側に押し戻す。
+  - `data/missions_seed.json`: `us_02.v0_1_prototype` に `bounds_m`（6,000×4,000 m）と `player_start`（3,000, 3,200 m、北向き）を design 値として追加。理由: docs/02 §6.1 の「ミッションごとに海域境界 bounds_m を持つ」に対応する値が無かった。広さは zoom 0.75 の画面幅 ≈1,700 m と、全速 39 kt × time_scale 5 ≈ 100 m/s で 60 秒走ると端に届く長さから決めた。
+  - テスト: `tests/boat-motion.test.ts`（Elco の kt→m/s、スロットル区分点と単調性、加減速の頭打ち、旋回と方位の正規化、方位 0=北/90=東、横滑りなし、dt 分割の整合、海域 data の存在と広さ、境界押し戻し）、`tests/fixed-stepper.test.ts`、`tests/input-state.test.ts`。
+- 既知の制約:
+  - 旋回率 24°/s（design）は time_scale 5 で 120°/s 相当になり速く感じる可能性がある。実機で「意図通り曲がる」かを見て `boats.json` の `turn_rate_deg_s` を調整する（速度に応じた旋回率の減衰は未実装。docs/02 §6.1 どおり舵×旋回率のみ）。
+  - 海域境界では位置を押し戻すだけ（docs/02 §6.1 の「帰投ポイントへ戻る導線」は v0.3 の帰投で扱う）。
+  - HUD の safe-area 補正は未実装（横持ちの黒帯がノッチを吸収する想定）。縦持ちは未対応。
+  - 右半分のタッチは何も起きない（魚雷ボタンは v0.1.3）。
+- 実機テスト結果: （マージ時に追記）
+
 ## v0.1.1 — 2026-10-04（ひな形）
 
 - 版番号の注記: 下の「vX.Y.Z（docs）」は引き継ぎ資料の版で、コードの版とは別系統。コードは docs/03 の表の番号を使い、`package.json` の version（0.1.1）はこのエントリを指す。
