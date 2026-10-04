@@ -1,0 +1,70 @@
+{
+  "$schema_note": "命中率と時間圧縮のモデル。kpi は『測って合わせる目標帯』で、ダイスには使わない（命中は幾何判定）。敵の回避パラメータ（enemies.json の detection/evasion）を調整して結果をこの帯に入れる。",
+  "version": "0.1.0",
+  "world": {
+    "unit": "m",
+    "time_scale": 5,
+    "sprite_scale": 2,
+    "camera_zoom_default": 0.75,
+    "camera_zoom_min": 0.5,
+    "camera_zoom_max": 1.0,
+    "source": "design"
+  },
+  "torpedo_launch": {
+    "arming_distance_m": 100,
+    "spread_angle_deg_min": 2,
+    "spread_angle_deg_max": 12,
+    "spread_hold_seconds_for_max": 1.5,
+    "salvo_interval_s": 0.4,
+    "source": "design"
+  },
+  "kpi_by_range": [
+    { "band": "<=400yd", "range_m_min": 0, "range_m_max": 366, "target_hit_min": 0.60, "target_hit_max": 0.70, "historical_note": "PTの典型発射距離の下限。最も危険" },
+    { "band": "400-800yd", "range_m_min": 366, "range_m_max": 732, "target_hit_min": 0.45, "target_hit_max": 0.55, "historical_note": "PTの典型発射距離" },
+    { "band": "800-1200yd", "range_m_min": 732, "range_m_max": 1097, "target_hit_min": 0.30, "target_hit_max": 0.35, "historical_note": "2,000ydの手前" },
+    { "band": "1200-2000yd", "range_m_min": 1097, "range_m_max": 1829, "target_hit_min": 0.10, "target_hit_max": 0.15, "historical_note": "Bulkleyが『成果が乏しい』とした距離" },
+    { "band": ">=2000yd", "range_m_min": 1829, "range_m_max": 99999, "target_hit_min": 0.0, "target_hit_max": 0.05, "historical_note": "Channel Dashの4,000ydは全弾外れ" }
+  ],
+  "kpi_measurement": {
+    "min_shots_per_band_before_tuning": 20,
+    "record_fields": [ "mission_id", "range_m", "lead_error_deg", "target_speed_kt", "hit", "dud", "erratic" ],
+    "source": "design"
+  },
+  "reliability_by_era": {
+    "early_1942": { "dud": 0.07, "erratic": 0.05 },
+    "late_1943": { "dud": 0.03, "erratic": 0.02 },
+    "source": "design (史実の航空投下統計36%コールドラン等は参考値に留める)"
+  },
+  "historical_mode": {
+    "enabled_default": false,
+    "reliability": { "dud": 0.10, "erratic": 0.08 },
+    "enemy_detection_multiplier": 1.3,
+    "enemy_evasion_multiplier": 1.5,
+    "aim_assist": "none",
+    "title_ja": "史実モード",
+    "source": "design"
+  },
+  "aim_assist": {
+    "levels": [
+      { "id": "none", "name_ja": "なし", "unlock": "default" },
+      { "id": "lead_marker", "name_ja": "見越し点マーカー", "unlock": "radar_or_3_missions" },
+      { "id": "lead_marker_time", "name_ja": "見越し点＋到達秒数", "unlock": "6_missions" }
+    ],
+    "source": "design"
+  },
+  "reference_travel_time_s": {
+    "note": "実時間（圧縮前）。1kt=0.5144m/s",
+    "27kt": { "1000yd": 66, "1500m": 108, "2000m": 144 },
+    "33.5kt": { "1000yd": 53, "1500m": 87, "2000m": 116 },
+    "40kt": { "1000yd": 44, "1500m": 73, "2000m": 97 },
+    "44kt": { "1000yd": 40, "1500m": 66, "2000m": 88 }
+  },
+  "feel": {
+    "hit_slowmo_factor": 0.3,
+    "hit_slowmo_seconds": 1.2,
+    "near_miss_distance_m": 30,
+    "near_miss_effect": "enemy_formation_breaks_for_s",
+    "near_miss_effect_seconds": 20,
+    "source": "design"
+  }
+}

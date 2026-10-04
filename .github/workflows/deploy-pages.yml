@@ -1,0 +1,69 @@
+name: Deploy to GitHub Pages
+
+# どのブランチへのpushでも、最新のビルドを GitHub Pages に公開する。
+# iPhone だけで開発を回すための要。マージ前のブランチも遊べる。
+# 前提（一度だけ手動）: Settings → Pages → Source: GitHub Actions、
+#                      Settings → Environments → github-pages → Deployment branches: No restriction
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build (or publish a placeholder until the app exists)
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_BUILD_REF: ${{ github.ref_name }}
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            npm run test --if-present
+            npm run build
+          else
+            mkdir -p dist
+            cat > dist/index.html <<EOF
+          <!doctype html>
+          <html lang="ja"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>WWII魚雷艇ゲーム（準備中）</title></head>
+          <body style="font-family:sans-serif;background:#0b1020;color:#eee;padding:24px">
+          <h1>パイプラインは動いています</h1>
+          <p>まだゲームはビルドされていません。</p>
+          <p>ブランチ: ${VITE_BUILD_REF} / コミット: ${VITE_BUILD_SHA}</p>
+          </body></html>
+          EOF
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
