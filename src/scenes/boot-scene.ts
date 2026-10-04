@@ -1,8 +1,10 @@
-// Boot: data/*.json を Registry に置き、Mission へ進む（docs/02 §4）。
-// プレースホルダーテクスチャ生成と音のアンロックは v0.1.2 以降でここに足す。
+// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Mission へ（docs/02 §4）。
+// 音のアンロックは v0.7 でここに足す。
 import Phaser from 'phaser';
-import { REGISTRY_KEY_DATA, SCENE_KEYS } from '../config/game-config';
-import { gameData } from '../config/game-data';
+import { PROTOTYPE_MISSION_ID, REGISTRY_KEY_DATA, REGISTRY_KEY_INPUT, SCENE_KEYS } from '../config/game-config';
+import { gameData, getBoatRecord, getPrototypeMission } from '../config/game-data';
+import { createInputState } from '../core/input-state';
+import { generatePlayerBoatTexture, generateUiTextures } from '../assets/placeholders';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +13,15 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.registry.set(REGISTRY_KEY_DATA, gameData);
+    this.registry.set(REGISTRY_KEY_INPUT, createInputState());
+
+    // プレースホルダー生成は 1 回だけ（CLAUDE.md §7）
+    const mission = getPrototypeMission(gameData, PROTOTYPE_MISSION_ID);
+    const boat = getBoatRecord(gameData, mission.playerBoatId);
+    const spriteScale = gameData.hitRateModel.world.sprite_scale;
+    generatePlayerBoatTexture(this, { lengthUnits: boat.length_m * spriteScale, beamUnits: boat.beam_m * spriteScale });
+    generateUiTextures(this);
+
     this.scene.start(SCENE_KEYS.mission);
   }
 }

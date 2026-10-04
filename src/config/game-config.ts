@@ -3,16 +3,68 @@ export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 /** 夜の海の背景色（docs/02 §7） */
 export const SEA_COLOR = '#0b1020';
-/** HUD の余白（ゲーム座標 px）。横持ちの黒帯がノッチを吸収するので safe-area 補正は v0.1.2 で検討 */
+/** HUD の余白（ゲーム座標 px）。safe-area 補正は未実装（横持ちの 16:9 黒帯がノッチを吸収する想定。CHANGELOG 既知の制約。対応版は docs/03 に未記載） */
 export const HUD_MARGIN = 24;
 /** HUD の FPS 更新間隔（ms）。毎フレーム setText しない（CLAUDE.md §7） */
 export const HUD_FPS_INTERVAL_MS = 250;
-/** HUD の描画順。ゲーム内オブジェクトより常に手前 */
-export const HUD_DEPTH = 1000;
 /** Registry に置くゲームデータのキー */
 export const REGISTRY_KEY_DATA = 'gameData';
+
+/** Registry に置く共有オブジェクトのキー */
+export const REGISTRY_KEY_INPUT = 'inputState';
+export const REGISTRY_KEY_TELEMETRY = 'boatTelemetry';
+
+/** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
+export const DPR_CAP = 2;
+/**
+ * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, 2)。
+ * Phaser 3 には resolution 設定が無いので、ゲームサイズをこの倍率で作り、各シーンのカメラを同じ倍率でズームして論理座標 1280×720 を保つ。
+ * 論理 px に DPR を掛けると、FIT で縮む分だけ画面の物理画素より大きな canvas を塗ることになる（§7「フル解像度のCanvas」）ので、
+ * 表示サイズ基準にする。横持ち前提なので起動時の向きに関わらず長辺を幅として計算する。下限 1（生成テクスチャの線幅を 1px 以上に保つ）。
+ * Text は style.resolution に同じ値を渡す。
+ */
+function computeRenderScale(): number {
+  if (typeof window === 'undefined') return 1;
+  const w = Math.max(window.innerWidth, window.innerHeight);
+  const h = Math.min(window.innerWidth, window.innerHeight);
+  const fit = Math.min(w / GAME_WIDTH, h / GAME_HEIGHT);
+  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+  return Math.max(1, fit * dpr);
+}
+export const RENDER_SCALE = computeRenderScale();
+
+/** 同時に扱うタッチ数（マウス 1 ＋ タッチ 3: スティック＋右側ボタン）。Phaser の input.activePointers に渡す */
+export const ACTIVE_TOUCH_POINTERS = 3;
+
+/** カメラ追従の補間係数（1 フレームあたりの割合。dt では割らない。「カメラが追従」の手触りは実機で調整） */
+export const CAMERA_FOLLOW_LERP = 0.1;
+
+/** 描画順。数値が大きいほど手前 */
+export const DEPTH = {
+  sea: 0,
+  playerBoat: 10,
+  hud: 1000,
+  stickBase: 990,
+  stickKnob: 991,
+} as const;
+
+/** 固定ステップ積分（CLAUDE.md §7）。実時間 1/60 秒 × time_scale を 1 ステップにする */
+export const FIXED_STEP_S = 1 / 60;
+export const MAX_STEPS_PER_FRAME = 4;
+
+/** v0.1 で使うミッション（data/missions_seed.json の注記どおり us_02 の簡略版） */
+export const PROTOTYPE_MISSION_ID = 'us_02';
 
 export const SCENE_KEYS = {
   boot: 'Boot',
   mission: 'Mission',
+  hud: 'Hud',
+} as const;
+
+export const TEXTURE_KEYS = {
+  playerBoat: 'tex-player-boat',
+  stickBase: 'tex-stick-base',
+  stickKnob: 'tex-stick-knob',
+  rudderBar: 'tex-rudder-bar',
+  rudderMarker: 'tex-rudder-marker',
 } as const;

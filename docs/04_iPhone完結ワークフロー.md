@@ -72,7 +72,7 @@ Codeセッションにファイルを添付できる場合は、#3の代わり�
 | `.claude/settings.json` | セッション開始時に `scripts/install_pkgs.sh` を実行（クラウドでのみ `npm ci`）。`npm`/`git`/`gh` を許可してプロンプトの承認待ちを減らす |
 | `scripts/install_pkgs.sh` | `CLAUDE_CODE_REMOTE=true` のときだけ依存をインストール |
 | `docs/snippets/vite.config.ts` | `base` を `VITE_BASE`（Actionsが `/ww2-torpedo-boat/` を渡す）から取り、ビルド番号を `import.meta.env` に注入する雛形 |
-| ビルド番号表示 | タイトル画面（v0.1はMissionのHUD隅）に `VITE_BUILD_REF@VITE_BUILD_SHA(先頭7桁)` を表示。v0.5のPWA化以降はService Workerを `autoUpdate` にし、古いキャッシュで迷わないようにする |
+| ビルド番号表示 | タイトル画面（v0.1はMissionのHUD上部中央）に `VITE_BUILD_REF@VITE_BUILD_SHA(先頭7桁)` を表示。v0.5のPWA化以降はService Workerを `autoUpdate` にし、古いキャッシュで迷わないようにする |
 
 セッションの終わり方（CLAUDE.md §6 に同じ）: 変更をcommitしてpush → `gh pr create`（既にPRがあればpushのみ）→ Pages URL・ビルド番号・実機テスト項目を報告。**ローカルで動かす前提の指示（`npm run dev -- --host` など）は使わない。**
 

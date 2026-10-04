@@ -33,7 +33,7 @@ Phaser 3 + TypeScript + Vite で作り、PWAとしてiPhone Safariで遊べる�
   - `npm run lint`
 - **動作確認はGitHub Pages**。どのブランチでもpushすると `.github/workflows/deploy-pages.yml` がビルドして `https://<user>.github.io/ww2-torpedo-boat/` に公開する（1〜2分）。ユーザーはこのURLをiPhone Safariで開いて実機テストする。
 - `npm run dev -- --host` などローカルサーバー前提の案内はしない。ユーザーのiPhone実機テストが各バージョンの完了条件に含まれる。
-- ビルド番号: `vite.config.ts` が `import.meta.env.VITE_BUILD_LABEL`（ブランチ@コミット7桁）を注入する。画面の隅に常に表示し、ユーザーがどのビルドを見ているか分かるようにする（雛形: `docs/snippets/vite.config.ts`）。
+- ビルド番号: `vite.config.ts` が `import.meta.env.VITE_BUILD_LABEL`（ブランチ@コミット7桁）を注入する。画面上部中央に常に表示し（左下はスティック、右下は速力HUD、右上は煙幕ボタンが使うため）、ユーザーがどのビルドを見ているか分かるようにする（雛形: `docs/snippets/vite.config.ts`）。
 
 ## 4. ディレクトリ構成
 
@@ -152,3 +152,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
 
 - 2026-10-02 v0.1.0 初版（引き継ぎ資料として作成）
 - 2026-10-02 v0.1.1 iPhone完結（クラウドセッション＋GitHub Pages）前提に §3・§5・§6 を改訂、§12 追加
+- 2026-10-04 v0.1.2 §3 ビルド番号の表示位置を「画面の隅」から「画面上部中央」に（隅は操作系と HUD が使う）
