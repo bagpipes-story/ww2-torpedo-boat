@@ -7,6 +7,8 @@ export const SEA_COLOR = '#0b1020';
 export const HUD_MARGIN = 24;
 /** HUD の FPS 更新間隔（ms）。毎フレーム setText しない（CLAUDE.md §7） */
 export const HUD_FPS_INTERVAL_MS = 250;
+/** HUD の描画順。ゲーム内オブジェクトより常に手前 */
+export const HUD_DEPTH = 1000;
 /** Registry に置くゲームデータのキー */
 export const REGISTRY_KEY_DATA = 'gameData';
 

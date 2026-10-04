@@ -5,6 +5,7 @@
 
 ## v0.1.1 — 2026-10-04（ひな形）
 
+- 版番号の注記: 下の「vX.Y.Z（docs）」は引き継ぎ資料の版で、コードの版とは別系統。コードは docs/03 の表の番号を使い、`package.json` の version（0.1.1）はこのエントリを指す。
 - 目的: Vite + Phaser 3 + TypeScript のひな形が GitHub Pages で動き、iPhone Safari で黒画面＋FPS＋ビルド番号が出る状態にする（docs/03 v0.1.1）。
 - 変更点:
   - `package.json`（version 0.1.1）、`tsconfig.json`（strict）、`vite.config.ts`（`docs/snippets/vite.config.ts` 準拠: `VITE_BASE`・`VITE_BUILD_LABEL`）、`index.html`（viewport-fit=cover、touch-action none、100dvh、背景 `#0b1020`）、`.gitignore`。
@@ -23,7 +24,7 @@
   - Vite が Phaser のチャンクサイズ（約 1.2MB、gzip 約 330KB）に警告を出すが、ビルドは成功する。
 - 実機テスト結果: （マージ時に追記）
 
-## v0.1.2 — 2026-10-02（docsのみ）
+## v0.1.2（docs） — 2026-10-02 引き継ぎ資料のみ
 
 - 目的: 初回設定もPC不要にする（iPhoneだけで開始できる手順に差し替え）。
 - 変更点:
@@ -33,7 +34,7 @@
 - 既知の制約: Codeセッションへのファイル添付が使えるかは環境により異なるため、確実な経路（GitHub Webへのzipアップロード）を主手順にした。
 - 実機テスト結果: なし（docsのみ）
 
-## v0.1.1 — 2026-10-02（docsのみ）
+## v0.1.1（docs） — 2026-10-02 引き継ぎ資料のみ
 
 - 目的: 開発をiPhoneだけで回せるように、Claude Codeクラウドセッション＋GitHub Pages自動デプロイ前提に組み替える。
 - 変更点:
@@ -50,7 +51,7 @@
   - 2つのセッションを同時に走らせると、Pagesは最後にpushされた方を公開する。
 - 実機テスト結果: なし（docsのみ）
 
-## v0.1.0 — 2026-10-02（docsのみ）
+## v0.1.0（docs） — 2026-10-02 引き継ぎ資料のみ
 
 - 目的: Claude Codeで開発を始められる引き継ぎ一式を作る。
 - 変更点:
