@@ -8,7 +8,8 @@
     "camera_zoom_default": 0.75,
     "camera_zoom_min": 0.5,
     "camera_zoom_max": 1.0,
-    "source": "design"
+    "hit_scale": 1.0,
+    "source": "design (hit_scale: 当たり判定に使う船体寸法の倍率。1=実寸（docs/02 §6.10）。表示は sprite_scale 倍なので、見た目どおりに当てたいなら sprite_scale と同じ値にする)"
   },
   "torpedo_launch": {
     "arming_distance_m": 100,
@@ -16,7 +17,8 @@
     "spread_angle_deg_max": 12,
     "spread_hold_seconds_for_max": 1.5,
     "salvo_interval_s": 0.4,
-    "source": "design"
+    "erratic_period_s": 6,
+    "source": "design (erratic_period_s: 蛇行魚雷の進路が ±jitter_deg を往復する周期。実時間秒)"
   },
   "kpi_by_range": [
     { "band": "<=400yd", "range_m_min": 0, "range_m_max": 366, "target_hit_min": 0.60, "target_hit_max": 0.70, "historical_note": "PTの典型発射距離の下限。最も危険" },

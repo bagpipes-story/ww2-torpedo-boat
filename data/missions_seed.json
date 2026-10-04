@@ -46,7 +46,8 @@
       "v0_1_prototype": {
         "enemies": [ "ijn_destroyer" ], "enemy_behavior": "straight", "duration_s": 60, "hazards": [],
         "bounds_m": { "width": 6000, "height": 4000, "source": "design (zoom0.75で画面幅≈1,700m。全速39kt×time_scale5≈100m/sで60秒走って端に届く広さ)" },
-        "player_start": { "x_m": 3000, "y_m": 3200, "heading_deg": 0, "source": "design (海域の下寄り中央から北向きに出発)" }
+        "player_start": { "x_m": 3000, "y_m": 3200, "heading_deg": 0, "source": "design (海域の下寄り中央から北向きに出発)" },
+        "enemy_start": { "x_m": 1200, "y_m": 1700, "heading_deg": 90, "source": "design (西から東へ直進。25kt×time_scale5≈64m/sで約28秒後に自艇の正面1,500m先を横切る。60秒の任務中は海域内に留まる)" }
       }
     },
     {
