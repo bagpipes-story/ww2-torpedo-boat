@@ -6,7 +6,9 @@ import {
   HUD_COLOR_STRONG,
   HUD_FONT_BUTTON_PX,
   TORPEDO_BUTTON_ALPHA,
+  TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR,
   TORPEDO_BUTTON_PRESSED_SCALE,
+  TORPEDO_SPREAD_LABEL_GAP,
   TORPEDO_BUTTON_RADIUS,
   TORPEDO_BUTTON_TAP_MAX_S,
   hudTextStyle,
@@ -39,7 +41,7 @@ export class TorpedoButton {
       .setInteractive();
     this.label = scene.add.text(cx, cy, '', hudTextStyle(HUD_FONT_BUTTON_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
     this.spreadText = scene.add
-      .text(cx, cy - TORPEDO_BUTTON_RADIUS - 8, '', hudTextStyle(HUD_FONT_BUTTON_PX))
+      .text(cx, cy - TORPEDO_BUTTON_RADIUS - TORPEDO_SPREAD_LABEL_GAP, '', hudTextStyle(HUD_FONT_BUTTON_PX))
       .setOrigin(0.5, 1)
       .setDepth(DEPTH.hud + 1);
 
@@ -82,7 +84,7 @@ export class TorpedoButton {
     if (n === this.lastRemaining) return;
     this.lastRemaining = n;
     this.label.setText(`魚雷\n${n}`);
-    this.button.setAlpha(n > 0 ? TORPEDO_BUTTON_ALPHA : TORPEDO_BUTTON_ALPHA * 0.4);
+    this.button.setAlpha(n > 0 ? TORPEDO_BUTTON_ALPHA : TORPEDO_BUTTON_ALPHA * TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR);
   }
 
   /** 毎フレーム: 長押し中は開き角の予告を出す（整数が変わったときだけ） */

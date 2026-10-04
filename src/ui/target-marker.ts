@@ -2,9 +2,9 @@
 // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { HUD_FONT_MARKER_PX, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_MARGIN, hudTextStyle } from '../config/ui-config';
+import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_MARGIN, hudTextStyle } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
-import { radToDeg } from '../core/units';
+import { degToRad, radToDeg } from '../core/units';
 
 export class TargetMarker {
   private readonly arrow: Phaser.GameObjects.Image;
@@ -29,9 +29,10 @@ export class TargetMarker {
     }
     const cx = GAME_WIDTH / 2;
     const cy = GAME_HEIGHT / 2;
-    // ワールド→論理画面: 自艇が中央（カメラの先読みは無視して近似）
-    const sx = t.enemyDx * this.worldZoom;
-    const sy = t.enemyDy * this.worldZoom;
+    // ワールド→論理画面: カメラ中心は自艇から進行方向に CAMERA_LOOK_AHEAD_M 先
+    const h = degToRad(t.headingDeg);
+    const sx = (t.enemyDx - Math.sin(h) * CAMERA_LOOK_AHEAD_M) * this.worldZoom;
+    const sy = (t.enemyDy + Math.cos(h) * CAMERA_LOOK_AHEAD_M) * this.worldZoom;
     const halfW = cx - TARGET_MARKER_MARGIN;
     const halfH = cy - TARGET_MARKER_MARGIN;
     if (Math.abs(sx) < halfW && Math.abs(sy) < halfH) {

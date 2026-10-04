@@ -1,7 +1,7 @@
 // 駆逐艦（v0.1: 一定針路・一定速力で直進。docs/02 §6.4）。運動は core、船体円は事前確保して座標だけ更新する（§7）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { SINK_DURATION_MS } from '../config/ui-config';
+import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import { stepStraight, type BoatState } from '../core/boat-motion';
 import { createCircles, fillHullCircles, type Circle } from '../core/torpedo-solver';
 
@@ -66,10 +66,10 @@ export class Destroyer {
     this.state.speedMps = 0;
     this.scene.tweens.add({
       targets: this.sprite,
-      scaleX: this.sprite.scaleX * 0.6,
-      scaleY: this.sprite.scaleY * 0.6,
+      scaleX: this.sprite.scaleX * SINK_SCALE_TO,
+      scaleY: this.sprite.scaleY * SINK_SCALE_TO,
       alpha: 0,
-      angle: this.sprite.angle + 18,
+      angle: this.sprite.angle + SINK_TILT_DEG,
       duration: SINK_DURATION_MS,
       ease: 'Sine.easeIn',
       onComplete: onDone,

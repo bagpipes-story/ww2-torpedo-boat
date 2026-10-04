@@ -3,7 +3,6 @@
 import Phaser from 'phaser';
 import {
   CAMERA_FOLLOW_LERP,
-  DEPTH,
   FIXED_STEP_S,
   MAX_STEPS_PER_FRAME,
   PROTOTYPE_MISSION_ID,
@@ -12,7 +11,6 @@ import {
   REGISTRY_KEY_TELEMETRY,
   RENDER_SCALE,
   SCENE_KEYS,
-  TEXTURE_KEYS,
 } from '../config/game-config';
 import {
   getBoatRecord,
@@ -22,18 +20,7 @@ import {
   getPrototypeMission,
   getTorpedoRecord,
 } from '../config/game-data';
-import {
-  CAMERA_LOOK_AHEAD_M,
-  EXPLOSION_DURATION_MS,
-  EXPLOSION_SCALE_DUD,
-  EXPLOSION_SCALE_FROM,
-  EXPLOSION_SCALE_HIT,
-  EXPLOSION_TINT_DUD,
-  EXPLOSION_TINT_HIT,
-  HIT_SHAKE_INTENSITY,
-  HIT_SHAKE_MS,
-  MISSION_END_DELAY_MS,
-} from '../config/ui-config';
+import { CAMERA_LOOK_AHEAD_M, HIT_SHAKE_INTENSITY, HIT_SHAKE_MS, MISSION_END_DELAY_MS } from '../config/ui-config';
 import {
   boatParamsFromData,
   clampToBounds,
@@ -48,11 +35,12 @@ import { FixedStepper } from '../core/fixed-stepper';
 import { countHits, summarizeShots, type ShotRecord } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
 import { SeededRng } from '../core/rng';
-import { torpedoParamsFromData, torpedoReliabilityFromData } from '../core/torpedo';
+import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams } from '../core/torpedo';
 import { degToRad, ktToMps } from '../core/units';
 import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
 import { drawSea } from '../entities/sea';
+import { LeadMarker, playExplosion } from '../systems/mission-effects';
 import { TorpedoLauncher } from '../systems/torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from '../systems/torpedo-pool';
 import type { MissionEndReason, MissionResult } from './result-scene';
@@ -69,6 +57,11 @@ export class MissionScene extends Phaser.Scene {
   private telemetry!: BoatTelemetry;
   private timeScale = 1;
   private launcher!: TorpedoLauncher;
+  private torpedoParams!: TorpedoParams;
+  /** 外れ確定の半径二乗: 目標中心からこれより離れて遠ざかれば通過したとみなす */
+  private passRadius2 = 0;
+  /** デバッグ時（?debug）だけの見越し点マーカー */
+  private leadMarker?: LeadMarker;
   private seed = 0;
   private readonly shots: ShotRecord[] = [];
   private hits = 0;
@@ -94,7 +87,8 @@ export class MissionScene extends Phaser.Scene {
     stepBoat(this.boat.state, this.inputState, this.params, dt);
     clampToBounds(this.boat.state, this.bounds, this.boundsMarginM);
     this.destroyer.step(dt);
-    this.torpedoes.step(dt, realDt * factor, this.destroyer.sinking ? null : this.destroyer.circles, this.torpedoEvents);
+    const d = this.destroyer;
+    this.torpedoes.step(dt, realDt * factor, d.sinking ? null : d.circles, d.state.x, d.state.y, this.passRadius2, this.torpedoEvents);
   };
 
   constructor() {
@@ -134,11 +128,15 @@ export class MissionScene extends Phaser.Scene {
       lengthM: enemyRecord.length_m,
       beamM: enemyRecord.beam_m,
       hullCircles: enemyRecord.hull_circles,
-      hitsToSink: enemyRecord.torpedo_hits_to_sink,
+      hitsToSink: mission.enemyHitsToSink ?? enemyRecord.torpedo_hits_to_sink,
       hitScale: world.hit_scale,
     });
+    const hitLen = enemyRecord.length_m * world.hit_scale;
+    const hitBeam = enemyRecord.beam_m * world.hit_scale;
+    this.passRadius2 = (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam);
     const capacity = getBoatTorpedoCount(data, mission.playerBoatId);
-    this.torpedoes = new TorpedoPool(this, torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s), capacity, this.bounds);
+    this.torpedoParams = torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s);
+    this.torpedoes = new TorpedoPool(this, this.torpedoParams, capacity, this.bounds);
     // 乱数: シードは起動時刻。Result に表示するので再現したいときに使える
     this.seed = Date.now() >>> 0;
     this.launcher = new TorpedoLauncher(
@@ -169,6 +167,11 @@ export class MissionScene extends Phaser.Scene {
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
 
+    // 見越し点マーカー（docs/02 §6.3: v0.1 はデバッグ切替で常時表示可）。URL に ?debug があるときだけ
+    if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
+      this.leadMarker = new LeadMarker(this);
+    }
+
     this.scene.launch(SCENE_KEYS.hud);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -178,6 +181,8 @@ export class MissionScene extends Phaser.Scene {
       this.torpedoes.destroy();
       this.destroyer.destroy();
       this.boat.destroy();
+      this.leadMarker?.destroy();
+      this.leadMarker = undefined;
     });
   }
 
@@ -192,6 +197,7 @@ export class MissionScene extends Phaser.Scene {
     this.destroyer.syncSprite();
     this.torpedoes.updateVisuals(realDt);
     this.updateLookAhead();
+    this.leadMarker?.refresh(this.boat.state, this.destroyer.sinking ? null : this.destroyer.state, this.torpedoParams.speedMps);
 
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
     this.elapsedS += realDt;
@@ -217,7 +223,7 @@ export class MissionScene extends Phaser.Scene {
     if (this.timeLeftS <= 0 && !this.destroyer.sinking) {
       // 沈没演出中は演出の完了（'sunk'）に任せる
       this.endMission('timeout');
-    } else if (this.torpedoes.remaining === 0 && this.launcher.queued === 0 && this.torpedoes.activeCount === 0 && !this.destroyer.sinking && !this.endTimer) {
+    } else if (this.torpedoes.remaining === 0 && this.launcher.queued === 0 && this.torpedoes.unresolvedCount === 0 && !this.destroyer.sinking && !this.endTimer) {
       this.endTimer = this.time.delayedCall(MISSION_END_DELAY_MS, () => this.endMission('expended'));
     }
   }
@@ -244,7 +250,7 @@ export class MissionScene extends Phaser.Scene {
 
   private handleHit(x: number, y: number, dud: boolean, erratic: boolean, rangeAtLaunchM: number): void {
     this.shots.push({ rangeM: rangeAtLaunchM, hit: true, dud, erratic });
-    this.playExplosion(x, y, dud);
+    playExplosion(this, x, y, dud);
     if (dud) return;
     this.hits++;
     this.slowMoLeftS = this.slowMoSeconds;
@@ -254,25 +260,6 @@ export class MissionScene extends Phaser.Scene {
     if (this.destroyer.takeHit()) {
       this.destroyer.playSinking(() => this.endMission('sunk'));
     }
-  }
-
-  /** 爆発リング（命中時に 1 回だけ tween を作る）。不発は小さく灰色 */
-  private playExplosion(x: number, y: number, dud: boolean): void {
-    const ring = this.add
-      .image(x, y, TEXTURE_KEYS.explosionRing)
-      .setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE)
-      .setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT)
-      .setDepth(DEPTH.effects);
-    const to = (dud ? EXPLOSION_SCALE_DUD : EXPLOSION_SCALE_HIT) / RENDER_SCALE;
-    this.tweens.add({
-      targets: ring,
-      scaleX: to,
-      scaleY: to,
-      alpha: 0,
-      duration: EXPLOSION_DURATION_MS,
-      ease: 'Cubic.easeOut',
-      onComplete: () => ring.destroy(),
-    });
   }
 
   private endMission(reason: MissionEndReason): void {

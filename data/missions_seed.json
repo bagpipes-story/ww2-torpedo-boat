@@ -47,7 +47,9 @@
         "enemies": [ "ijn_destroyer" ], "enemy_behavior": "straight", "duration_s": 60, "hazards": [],
         "bounds_m": { "width": 6000, "height": 4000, "source": "design (zoom0.75で画面幅≈1,700m。全速39kt×time_scale5≈100m/sで60秒走って端に届く広さ)" },
         "player_start": { "x_m": 3000, "y_m": 3200, "heading_deg": 0, "source": "design (海域の下寄り中央から北向きに出発)" },
-        "enemy_start": { "x_m": 1200, "y_m": 1700, "heading_deg": 90, "source": "design (西から東へ直進。25kt×time_scale5≈64m/sで約28秒後に自艇の正面1,500m先を横切る。60秒の任務中は海域内に留まる)" }
+        "enemy_start": { "x_m": 1500, "y_m": 300, "heading_deg": 135, "source": "design (北西から南東へ直進し、自艇の進路へ斜めに近づく。約20秒後に前方約1,000mで視界に入り、見越し角は8°前後なので扇状一斉で当たる。最接近は約220m、60秒間は海域内)" },
+        "enemy_hits_to_sink": 1,
+        "enemy_hits_to_sink_source": "design (プロトタイプでは1本で沈没演出を見せる。enemies.json の torpedo_hits_to_sink=2 は後の任務用)"
       }
     },
     {

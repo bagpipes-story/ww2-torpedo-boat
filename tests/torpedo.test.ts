@@ -7,6 +7,7 @@ import {
   isArmed,
   isTorpedoDataRecord,
   launchTorpedo,
+  markMissIfPassed,
   stepTorpedo,
   torpedoParamsFromData,
   torpedoReliabilityFromData,
@@ -107,5 +108,42 @@ describe('stepTorpedo', () => {
     expect(consumeWakeMark(s, 25)).toBe(true); // 25
     expect(consumeWakeMark(s, 25)).toBe(true); // 50
     expect(consumeWakeMark(s, 25)).toBe(false); // 75 はまだ
+  });
+});
+
+describe('markMissIfPassed（外れの早期確定）', () => {
+  const passR2 = 70 * 70;
+  it('目標へ向かって近づいている間は確定しない', () => {
+    const s = createTorpedoState();
+    launchTorpedo(s, 0, 0, 0, false, false, 0, 1000, 25); // 北へ。目標は (0, -1000)
+    for (let i = 0; i < 50; i++) {
+      stepTorpedo(s, P, 1, 1);
+      expect(markMissIfPassed(s, P, 0, -1000, passR2)).toBe(false);
+    }
+    expect(s.resolved).toBe(false);
+  });
+  it('非武装の間は判定しない', () => {
+    const s = createTorpedoState();
+    launchTorpedo(s, 0, 0, 180, false, false, 0, 1000, 25); // 南へ（目標から遠ざかる）
+    stepTorpedo(s, P, 1, 1); // 14 m < arming 100 m
+    expect(markMissIfPassed(s, P, 0, -1000, passR2)).toBe(false);
+  });
+  it('目標の脇を通り過ぎて遠ざかり始めたら 1 回だけ true、以後 false', () => {
+    const s = createTorpedoState();
+    launchTorpedo(s, 100, 0, 0, false, false, 0, 1000, 25); // 目標 (0,-1000) の 100 m 東を北へ通過
+    let resolvedAt = -1;
+    for (let i = 0; i < 200; i++) {
+      stepTorpedo(s, P, 1, 1);
+      if (markMissIfPassed(s, P, 0, -1000, passR2)) {
+        expect(resolvedAt).toBe(-1);
+        resolvedAt = i;
+      }
+    }
+    expect(resolvedAt).toBeGreaterThan(0);
+    expect(s.resolved).toBe(true);
+    // 通過点（y=-1000）を越えた直後に確定している（1 ステップ = 13.9 m）
+    const yAtResolve = -(resolvedAt + 1) * P.speedMps;
+    expect(yAtResolve).toBeLessThan(-1000);
+    expect(yAtResolve).toBeGreaterThan(-1000 - 3 * P.speedMps);
   });
 });

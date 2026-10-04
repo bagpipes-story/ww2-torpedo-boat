@@ -4,7 +4,16 @@ import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { WAKE_DOT_ALPHA, WAKE_DOT_LIFETIME_S, WAKE_DOT_POOL_SIZE, WAKE_DOT_SPACING_M } from '../config/ui-config';
 import type { SeaBounds } from '../core/boat-motion';
-import { consumeWakeMark, createTorpedoState, isArmed, launchTorpedo, stepTorpedo, type TorpedoParams, type TorpedoState } from '../core/torpedo';
+import {
+  consumeWakeMark,
+  createTorpedoState,
+  isArmed,
+  launchTorpedo,
+  markMissIfPassed,
+  stepTorpedo,
+  type TorpedoParams,
+  type TorpedoState,
+} from '../core/torpedo';
 import { pointHitsHull, type Circle } from '../core/torpedo-solver';
 
 /** 魚雷の結果通知。引数はプリミティブのみ（確保しない） */
@@ -48,6 +57,16 @@ export class TorpedoPool {
     return n;
   }
 
+  /** 結果が未確定の魚雷の数。0 になれば任務を終えてよい（表示上はまだ走っていてもよい） */
+  get unresolvedCount(): number {
+    let n = 0;
+    for (let i = 0; i < this.states.length; i++) {
+      const s = this.states[i]!;
+      if (s.active && !s.resolved) n++;
+    }
+    return n;
+  }
+
   /** 1 本発射。残弾が無ければ false。引数はプリミティブ（確保しない） */
   fire(x: number, y: number, headingDeg: number, dud: boolean, erratic: boolean, erraticBiasDeg: number, rangeAtLaunchM: number): boolean {
     if (this.remaining <= 0) return false;
@@ -61,9 +80,9 @@ export class TorpedoPool {
 
   /**
    * 固定ステップ。dt は time_scale 込み、realDt は実時間。
-   * hull が null でなければ武装済みの魚雷と船体円の命中を判定する。
+   * hull が null でなければ武装済みの魚雷と船体の命中を判定し、目標（中心 targetX/Y）を通り過ぎた魚雷は外れとして確定する。
    */
-  step(dt: number, realDt: number, hull: Circle[] | null, events: TorpedoEvents): void {
+  step(dt: number, realDt: number, hull: Circle[] | null, targetX: number, targetY: number, passRadius2: number, events: TorpedoEvents): void {
     for (let i = 0; i < this.states.length; i++) {
       const s = this.states[i]!;
       if (!s.active) continue;
@@ -71,22 +90,28 @@ export class TorpedoPool {
       while (consumeWakeMark(s, WAKE_DOT_SPACING_M)) this.placeWakeDot(s.x, s.y);
       if (expired || s.x < 0 || s.y < 0 || s.x > this.bounds.width || s.y > this.bounds.height) {
         s.active = false;
-        events.onMiss(s.erratic, s.rangeAtLaunchM);
+        if (!s.resolved) events.onMiss(s.erratic, s.rangeAtLaunchM);
         continue;
       }
-      if (hull && isArmed(s, this.params) && pointHitsHull(s.x, s.y, hull)) {
+      if (!hull || s.resolved) continue;
+      if (isArmed(s, this.params) && pointHitsHull(s.x, s.y, hull)) {
         s.active = false;
+        s.resolved = true;
         events.onHit(s.x, s.y, s.dud, s.erratic, s.rangeAtLaunchM);
+        continue;
+      }
+      if (markMissIfPassed(s, this.params, targetX, targetY, passRadius2)) {
+        events.onMiss(s.erratic, s.rangeAtLaunchM);
       }
     }
   }
 
-  /** 任務終了時: まだ走っている魚雷をすべて外れとして確定する（記録漏れを防ぐ。CLAUDE.md §9） */
+  /** 任務終了時: まだ結果が確定していない魚雷をすべて外れとして確定する（記録漏れを防ぐ。CLAUDE.md §9） */
   resolveRemainingAsMisses(events: TorpedoEvents): void {
     for (let i = 0; i < this.states.length; i++) {
       const s = this.states[i]!;
-      if (!s.active) continue;
-      s.active = false;
+      if (!s.active || s.resolved) continue;
+      s.resolved = true;
       events.onMiss(s.erratic, s.rangeAtLaunchM);
     }
   }

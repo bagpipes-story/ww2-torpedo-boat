@@ -39,6 +39,8 @@ export interface PrototypeMission {
   playerStart: { x: number; y: number; headingDeg: number };
   enemyStart: { x: number; y: number; headingDeg: number };
   durationS: number;
+  /** プロトタイプ用の沈没本数の上書き。無ければ enemies.json の torpedo_hits_to_sink */
+  enemyHitsToSink: number | null;
 }
 
 function isNum(v: unknown): v is number {
@@ -79,6 +81,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     playerStart: readStart(proto['player_start'], `${missionId}.v0_1_prototype.player_start`),
     enemyStart: readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`),
     durationS: proto['duration_s'],
+    enemyHitsToSink: isNum(proto['enemy_hits_to_sink']) ? proto['enemy_hits_to_sink'] : null,
   };
 }
 

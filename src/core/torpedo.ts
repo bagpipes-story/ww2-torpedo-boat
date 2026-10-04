@@ -37,6 +37,10 @@ export interface TorpedoState {
   rangeAtLaunchM: number;
   /** 次に雷跡の点を置く走行距離 m */
   nextWakeAtM: number;
+  /** 結果（命中/外れ）が確定済み。確定後も表示のために走り続けることがある */
+  resolved: boolean;
+  /** 前ステップでの目標中心までの距離二乗（遠ざかり判定用）。負なら未計測 */
+  lastTargetDist2: number;
 }
 
 export function createTorpedoState(): TorpedoState {
@@ -53,6 +57,8 @@ export function createTorpedoState(): TorpedoState {
     erraticBiasDeg: 0,
     rangeAtLaunchM: 0,
     nextWakeAtM: 0,
+    resolved: false,
+    lastTargetDist2: -1,
   };
 }
 
@@ -123,6 +129,26 @@ export function launchTorpedo(
   s.erraticBiasDeg = erratic ? erraticBiasDeg : 0;
   s.rangeAtLaunchM = rangeAtLaunchM;
   s.nextWakeAtM = wakeSpacingM;
+  s.resolved = false;
+  s.lastTargetDist2 = -1;
+}
+
+/**
+ * 外れの早期確定: 武装済みで、目標中心から passRadius より外にいて、距離が増え始めたら「通り過ぎた」とみなす。
+ * 直進同士なら距離は時間の凸関数なので、最接近を過ぎれば増える一方。戻り値は今回確定したか。
+ */
+export function markMissIfPassed(s: TorpedoState, p: TorpedoParams, targetX: number, targetY: number, passRadius2: number): boolean {
+  if (!s.active || s.resolved || s.runM < p.armingM) return false;
+  const dx = s.x - targetX;
+  const dy = s.y - targetY;
+  const d2 = dx * dx + dy * dy;
+  const receding = s.lastTargetDist2 >= 0 && d2 > s.lastTargetDist2;
+  s.lastTargetDist2 = d2;
+  if (receding && d2 > passRadius2) {
+    s.resolved = true;
+    return true;
+  }
+  return false;
 }
 
 /**

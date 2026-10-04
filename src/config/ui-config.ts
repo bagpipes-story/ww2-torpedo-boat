@@ -39,7 +39,7 @@ export const HUD_FONT_MISSION_PX = 22;
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉 */
 export const TORPEDO_BUTTON_RADIUS = 64;
-/** これより短い押下はタップ扱い（秒） */
+/** これより短い押下はタップ扱い（秒）。長押しの開き角は、この閾値を超えてからの時間で spread_hold_seconds_for_max に達する */
 export const TORPEDO_BUTTON_TAP_MAX_S = 0.3;
 export const TORPEDO_BUTTON_ALPHA = 0.55;
 export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
@@ -57,7 +57,7 @@ export const CAMERA_LOOK_AHEAD_M = 320;
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
 export const TARGET_MARKER_SIZE = 18;
-export const TARGET_MARKER_DISTANCE_STEP_M = 10;
+export const TARGET_MARKER_DISTANCE_STEP_M = 50;
 export const TARGET_MARKER_COLOR = 0xe08a8a;
 export const HUD_FONT_MARKER_PX = 18;
 
@@ -75,6 +75,17 @@ export const EXPLOSION_SCALE_HIT = 1.6;
 export const EXPLOSION_SCALE_DUD = 0.6;
 export const EXPLOSION_TINT_HIT = 0xffa040;
 export const EXPLOSION_TINT_DUD = 0x9a9a9a;
+
+/** 沈没演出: 縮小率と傾き（度） */
+export const SINK_SCALE_TO = 0.6;
+export const SINK_TILT_DEG = 18;
+/** 魚雷ボタン: 開き角予告の位置（ボタン上端からの隙間）と残弾 0 のときの濃さ */
+export const TORPEDO_SPREAD_LABEL_GAP = 8;
+export const TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR = 0.4;
+/** デバッグ時（?debug）だけ出す見越し点マーカー（docs/02 §6.3「v0.1 はデバッグ切替で常時表示可」） */
+export const LEAD_MARKER_SCALE = 0.35;
+export const LEAD_MARKER_TINT = 0xffe066;
+export const LEAD_MARKER_ALPHA = 0.8;
 
 /** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
 export const EXPLOSION_DURATION_MS = 600;
