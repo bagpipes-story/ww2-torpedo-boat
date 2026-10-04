@@ -3,6 +3,35 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.1.3 — 2026-10-04（魚雷と命中）
+
+- 目的: 魚雷 4 本を撃ち、雷跡が見え、直進する駆逐艦 1 隻に幾何判定で当たる・外れるが分かり、命中で沈没演出、終了後に Result を出す（docs/03 v0.1.3）。
+- 変更点:
+  - `src/core/rng.ts`: シード付き乱数（mulberry32）。不発・蛇行の抽選に使う（CLAUDE.md §7: Math.random は使わない）。乱数列はテストで固定し、Result に表示する seed で再現できる。
+  - `src/core/torpedo.ts`: 魚雷の状態と運動（直進、走行距離、安全距離 `arming_distance_m` までは非武装、射程で消滅）、信頼性（dud=命中しても不発、erratic=発射方位に ±`jitter_deg` の一定偏差＋周期 `erratic_period_s` の小さな蛇行）、雷跡の点を置く間隔の管理。
+  - `src/core/torpedo-solver.ts`: 船体円の列（`fillHullCircles`、事前確保した配列に書く）、命中判定 `pointHitsHull`（円の中心を結ぶ線分の周り半径 r のカプセル。円だけだと 118 m の艦に半径 5.4 m の円 5 個で隙間ができ、すり抜ける。レビューで判明）、見越し角 `interceptHeadingDeg`（2 次方程式、先に会う根）。
+  - `src/core/salvo.ts`: 長押し時間→開き角（2°〜12°）、扇状の方位列。`src/core/hit-rate.ts`: 発射記録 `{rangeM, hit, dud, erratic}` と距離帯別の集計。`boat-motion.ts` に直進 `stepStraight`。
+  - `src/entities/destroyer.ts`: 駆逐艦（薄い赤の船形、`length_m` 118 m × sprite_scale）。一定針路・速力で直進、`torpedo_hits_to_sink` 本で沈没演出（縮小・傾き・フェードの tween を 1 回。演出中は位置同期を止めて傾きが上書きされないようにする）。`src/entities/sea.ts`: 海の格子と境界（Mission から分離）。
+  - `src/systems/torpedo-pool.ts`: 魚雷 4 本と雷跡の点 240 個を起動時にプール。固定ステップで運動・海域外の消滅・武装後の命中判定、毎フレームはスプライト位置と雷跡のフェードのみ。目標の脇を通り過ぎて遠ざかり始めた魚雷は「外れ」を早期確定する（`markMissIfPassed`。射程 12 km の Mk 8 が海域の端まで走るのを待たずに任務を終えられる。表示は走り続ける）。任務終了時に未確定の魚雷も外れとして確定し、Result の集計から漏れないようにする。
+  - `src/systems/torpedo-launcher.ts`: 発射管制。タップで 1 本、長押し→離すで残弾を扇状に、`salvo_interval_s`（0.4 秒）間隔で 1 本ずつ。発射位置は両舷交互、信頼性ロールは発射時に 1 回。
+  - `src/systems/torpedo-button.ts`: 右下の魚雷ボタン。0.3 秒未満のタップで 1 本、長押し中は開き角を予告表示。離しは押した指の pointer id をシーン全体の pointerup で拾う（指が滑って外れても確実に発射）。PC は Space で 1 本。
+  - `MissionScene`: カメラを進行方向に 320 m 先読み（ズーム 0.75 の前方視界 480 m では 800yd の目標が画面に入らない）。命中で爆発リング＋カメラ揺れ（ズームの 2 乗で補正）＋スロー（`feel.hit_slowmo_*`）、不発は灰色の小さなリング。終了条件は 撃沈 / 4 本すべて消化 / `duration_s` 経過（沈没演出中は演出完了を優先）。HUD 上中央に「残り時間・命中」。`src/ui/target-marker.ts`: 画面外の駆逐艦の方向と距離を画面端に表示（v0.2 の視界モデルが入るまで常時）。
+  - `ResultScene`: 命中 / 発射（不発・外れ・未発射）、距離帯別の発射/命中、駆逐艦の撃沈/健在、生還、乱数シード。任務中から押しっぱなしの指の離しでは再開せず、新しく押した指の離しで Mission を再開。
+  - `main.ts`: URL に `?debug` を付けたときだけ `window.__game` を公開（ヘッドレス Chromium の自動テストと実機デバッグ用。通常の Pages URL では何もしない）。同じく `?debug` のときだけ見越し点マーカー（`src/systems/mission-effects.ts` の `LeadMarker`、docs/02 §6.3「v0.1 はデバッグ切替で常時表示可」）を出す。
+  - docs/02 §6.2 の信頼性の出典を `torpedoes.json` に修正（下の「信頼性の出典」参照）。
+  - data: `missions_seed.json` の `us_02.v0_1_prototype` に `enemy_start`（北西から南東へ、自艇の進路へ斜めに近づく。レビューで、東西に横切る当初案だと見越し角が 26〜43° 必要でガイド無しではほぼ当たらないと判明。斜め接近なら 8° 前後）と `enemy_hits_to_sink: 1`（プロトタイプで沈没演出を確実に見せる。`enemies.json` の 2 は後の任務用）、`hit_rate_model.json` の `torpedo_launch` に `erratic_period_s: 6`、`world` に `hit_scale: 1.0` を design 値として追加。理由: 敵の初期配置と蛇行の周期がコードに必要で data に無かった。`hit_scale` は当たり判定に使う船体寸法の倍率で、docs/02 §6.10「当たり判定は実寸のまま」に従い既定 1。表示は sprite_scale 2 倍なので、見た目の船体を横切る魚雷の多くが当たらない。見た目どおりに当てたいなら 2 にする（ユーザー判断事項）。
+  - 信頼性の出典: docs/02 §6.2 は `hit_rate_model.reliability` と書いているが、data には魚雷ごとの `torpedoes.json.reliability`（`jitter_deg` 付き）があり、こちらを使った。史実モード（v0.5）で `hit_rate_model.historical_mode.reliability` に差し替える。
+  - テスト 65 件: `tests/rng.test.ts`（乱数列の固定含む）、`tests/torpedo.test.ts`（安全距離・射程・蛇行の振れ幅と位相・一定偏差・雷跡間隔）、`tests/torpedo-solver.test.ts`（船体円の配置、カプセル判定が円の隙間を埋めること、全方位の符号、見越し角の根の選択と a≈0 分岐、見越し角で撃った魚雷が 800yd で直進艦の中央に当たる／3,000yd で 2° 外すと外れる）、`tests/salvo-hit-rate.test.ts`。
+  - 検証: ヘッドレス Chromium（iPhone 15 相当）で `?debug` フックから入力を操作し、停止→見越しタイミングで 3 本発射→2 本命中→沈没→Result「駆逐艦を撃沈」→タップで再開、を再現。
+- 既知の制約:
+  - 当たり判定は実寸（`hit_scale` 1）。表示は 2 倍なので、見た目の船体の外側半分を横切る魚雷は当たらない。実機で納得感を見て `hit_scale` を決める。
+  - 駆逐艦は反撃も回避もしない（v0.2）。艇は常に生還する。スコアの数値化は v0.3。
+  - 見越し角ガイドは `?debug` 付き URL でのみ表示。製品での解放は v0.5（レーダー・経験）。
+  - 雷跡は 240 点で約 6,000 m 分。4 本同時に長距離を走ると古い点から消える。
+  - Mk 8 の射程 12,344 m は海域 6,000×4,000 m より長いので、外れた魚雷は海域の端で消える。
+  - 敵マーカーは常時表示。v0.2 の視界モデル（`vis_player_m`）で見える距離に制限する。
+- 実機テスト結果: （マージ時に追記）
+
 ## v0.1.2 — 2026-10-04（艇の運動）
 
 - 目的: バーチャルスティックで艇が動き、カメラが追従し、速力段と舵が HUD に出る（docs/03 v0.1.2）。前回の既知の制約「描画解像度が論理解像度のまま」を解消する。

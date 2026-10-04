@@ -44,6 +44,15 @@ export interface BoatTelemetry {
   rudder: number;
   targetStep: SpeedStep;
   headingDeg: number;
+  /** 残弾 */
+  torpedoesLeft: number;
+  /** 有効弾の命中数（不発を除く） */
+  hits: number;
+  /** 任務の残り時間（実時間秒） */
+  timeLeftS: number;
+  /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */
+  enemyDx: number;
+  enemyDy: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */
@@ -122,6 +131,13 @@ export function stepBoat(s: BoatState, input: BoatInput, p: BoatParams, dt: numb
   const rudder = clamp(input.rudder, -1, 1);
   s.headingDeg = wrapDeg360(s.headingDeg + rudder * p.turnRateDegS * dt);
 
+  const h = degToRad(s.headingDeg);
+  s.x += Math.sin(h) * s.speedMps * dt;
+  s.y -= Math.cos(h) * s.speedMps * dt;
+}
+
+/** 一定針路・一定速力で直進する（v0.1 の駆逐艦。docs/02 §6.4）。dt は time_scale 込みの秒 */
+export function stepStraight(s: BoatState, dt: number): void {
   const h = degToRad(s.headingDeg);
   s.x += Math.sin(h) * s.speedMps * dt;
   s.y -= Math.cos(h) * s.speedMps * dt;

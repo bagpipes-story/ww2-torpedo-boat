@@ -11,6 +11,7 @@ interface Keys {
   a: Phaser.Input.Keyboard.Key;
   s: Phaser.Input.Keyboard.Key;
   d: Phaser.Input.Keyboard.Key;
+  space: Phaser.Input.Keyboard.Key;
 }
 
 export class KeyboardInput {
@@ -31,14 +32,17 @@ export class KeyboardInput {
           a: Phaser.Input.Keyboard.KeyCodes.A,
           s: Phaser.Input.Keyboard.KeyCodes.S,
           d: Phaser.Input.Keyboard.KeyCodes.D,
+          space: Phaser.Input.Keyboard.KeyCodes.SPACE,
         }) as Keys)
       : null;
   }
 
-  /** 毎フレーム呼ぶ。キーが押されていなければ入力は巡航（0,0）に戻す */
+  /** 毎フレーム呼ぶ。Space は魚雷 1 本。舵・スロットルはキーが押されていなければ巡航（0,0）に戻す */
   update(): void {
-    if (!this.keys || this.input.stickActive) return;
+    if (!this.keys) return;
     const k = this.keys;
+    if (Phaser.Input.Keyboard.JustDown(k.space)) this.input.fireTap = true;
+    if (this.input.stickActive) return;
     const right = k.right.isDown || k.d.isDown ? 1 : 0;
     const left = k.left.isDown || k.a.isDown ? 1 : 0;
     const up = k.up.isDown || k.w.isDown ? 1 : 0;

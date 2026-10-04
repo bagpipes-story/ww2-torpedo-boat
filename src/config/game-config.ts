@@ -42,7 +42,11 @@ export const CAMERA_FOLLOW_LERP = 0.1;
 /** 描画順。数値が大きいほど手前 */
 export const DEPTH = {
   sea: 0,
+  wake: 4,
+  torpedo: 8,
+  destroyer: 9,
   playerBoat: 10,
+  effects: 20,
   hud: 1000,
   stickBase: 990,
   stickKnob: 991,
@@ -59,10 +63,17 @@ export const SCENE_KEYS = {
   boot: 'Boot',
   mission: 'Mission',
   hud: 'Hud',
+  result: 'Result',
 } as const;
 
 export const TEXTURE_KEYS = {
   playerBoat: 'tex-player-boat',
+  destroyer: 'tex-destroyer',
+  torpedo: 'tex-torpedo',
+  wakeDot: 'tex-wake-dot',
+  torpedoButton: 'tex-torpedo-button',
+  explosionRing: 'tex-explosion-ring',
+  targetMarker: 'tex-target-marker',
   stickBase: 'tex-stick-base',
   stickKnob: 'tex-stick-knob',
   rudderBar: 'tex-rudder-bar',

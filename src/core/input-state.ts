@@ -8,16 +8,22 @@ export interface InputState {
   throttle: number;
   /** スティックに触れている間 true。キーボード入力はこの間は無視する */
   stickActive: boolean;
+  /** 魚雷ボタンのタップ（1 本）。Mission が消費して false に戻す */
+  fireTap: boolean;
+  /** 長押し→離す の一斉発射。開き角（度）。NaN なら要求なし。Mission が消費して NaN に戻す */
+  fireSalvoSpreadDeg: number;
 }
 
 export function createInputState(): InputState {
-  return { rudder: 0, throttle: 0, stickActive: false };
+  return { rudder: 0, throttle: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN };
 }
 
 export function resetInput(s: InputState): void {
   s.rudder = 0;
   s.throttle = 0;
   s.stickActive = false;
+  s.fireTap = false;
+  s.fireSalvoSpreadDeg = NaN;
 }
 
 /**

@@ -2,4 +2,9 @@
 import Phaser from 'phaser';
 import { phaserConfig } from './config/phaser-config';
 
-new Phaser.Game(phaserConfig);
+const game = new Phaser.Game(phaserConfig);
+
+// URL に ?debug を付けたときだけ、自動テスト（ヘッドレス Chromium）や実機デバッグのためにゲームを公開する。通常の Pages URL では何もしない
+if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
+  (window as unknown as { __game?: Phaser.Game }).__game = game;
+}
