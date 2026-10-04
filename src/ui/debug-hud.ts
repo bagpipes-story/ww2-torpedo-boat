@@ -1,18 +1,13 @@
-// デバッグHUD: FPS とビルド番号を画面隅に常時表示する（CLAUDE.md §3）。
+// デバッグHUD: FPS とビルド番号を画面に常時表示する（CLAUDE.md §3）。
 // §7: 毎フレーム setText しない。FPS は一定間隔で整数化して前回値と違うときだけ、表示サイズは RESIZE イベント時だけ更新する。
 import Phaser from 'phaser';
-import { HUD_DEPTH, HUD_FPS_INTERVAL_MS, HUD_MARGIN } from '../config/game-config';
+import { GAME_WIDTH, HUD_DEPTH, HUD_FPS_INTERVAL_MS, HUD_MARGIN } from '../config/game-config';
+import { hudTextStyle } from '../config/ui-config';
 
 export interface DebugHudOptions {
   buildLabel: string;
   dataSummary: string;
 }
-
-const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
-  fontFamily: 'Menlo, Consolas, monospace',
-  fontSize: '20px',
-  color: '#9fb3c8',
-};
 
 export class DebugHud {
   private readonly fpsText: Phaser.GameObjects.Text;
@@ -23,27 +18,19 @@ export class DebugHud {
   private lastSize = '';
 
   constructor(private readonly scene: Phaser.Scene, options: DebugHudOptions) {
-    const { width, height } = scene.scale;
+    const style = hudTextStyle(18);
 
     // 左上: FPS（値が変わったときだけ更新）
-    this.fpsText = scene.add
-      .text(HUD_MARGIN, HUD_MARGIN, 'FPS --', TEXT_STYLE)
-      .setScrollFactor(0)
-      .setDepth(HUD_DEPTH);
+    this.fpsText = scene.add.text(HUD_MARGIN, HUD_MARGIN, 'FPS --', style).setDepth(HUD_DEPTH);
 
-    // 左下: ビルド番号とデータ版（固定文字列。1回だけ描く）
+    // 上中央: ビルド番号とデータ版（固定文字列。1回だけ描く）。左下はスティック、右下は速力 HUD が使う
     this.infoText = scene.add
-      .text(HUD_MARGIN, height - HUD_MARGIN, `${options.buildLabel}\n${options.dataSummary}`, TEXT_STYLE)
-      .setOrigin(0, 1)
-      .setScrollFactor(0)
+      .text(GAME_WIDTH / 2, HUD_MARGIN, `${options.buildLabel}  |  ${options.dataSummary}`, style)
+      .setOrigin(0.5, 0)
       .setDepth(HUD_DEPTH);
 
-    // 右上: 論理解像度 -> 実表示サイズ(CSS px) @DPR。FIT が効いているか・どの端末かを見るため
-    this.sizeText = scene.add
-      .text(width - HUD_MARGIN, HUD_MARGIN, '', TEXT_STYLE)
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(HUD_DEPTH);
+    // 左上2行目: 描画解像度 -> 実表示サイズ(CSS px) @DPR。FIT が効いているか・どの端末かを見るため（上中央のビルド番号と重ならない位置）
+    this.sizeText = scene.add.text(HUD_MARGIN, HUD_MARGIN + 26, '', style).setDepth(HUD_DEPTH);
 
     this.timer = scene.time.addEvent({
       delay: HUD_FPS_INTERVAL_MS,
