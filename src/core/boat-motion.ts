@@ -22,7 +22,10 @@ export interface BoatState {
   speedMps: number;
 }
 
-/** 操作入力。rudder: -1(左)〜+1(右)。throttle: +1=全速、0=巡航、-0.5=静音低速、-1=停止 */
+/** スロットルの折れ点: この値で目標速度が静音低速になる（docs/02 §5 の手触りの設計値）。-1 < THROTTLE_SILENT < 0 */
+export const THROTTLE_SILENT = -0.5;
+
+/** 操作入力。rudder: -1(左)〜+1(右)。throttle: +1=全速、0=巡航、THROTTLE_SILENT=静音低速、-1=停止 */
 export interface BoatInput {
   rudder: number;
   throttle: number;
@@ -34,6 +37,14 @@ export interface SeaBounds {
 }
 
 export type SpeedStep = 'stop' | 'silent' | 'cruise' | 'full';
+
+/** HUD に渡す自艇の状態。Mission が毎フレーム書き、HUD が読む（1 個だけ作る） */
+export interface BoatTelemetry {
+  speedMps: number;
+  rudder: number;
+  targetStep: SpeedStep;
+  headingDeg: number;
+}
 
 /** data/boats.json の1レコードのうち運動に使う部分 */
 export interface BoatDataRecord {
@@ -71,32 +82,31 @@ export function boatParamsFromData(r: BoatDataRecord): BoatParams {
 
 /**
  * スロットル(-1〜+1)を目標速度(m/s)に写す（docs/02 §5: 上で全速、中立で巡航、下で静音低速→停止）。
- * 区分線形: +1→全速、0→巡航、-0.5→静音、-1→0。
+ * 区分線形: +1→全速、0→巡航、THROTTLE_SILENT→静音、-1→0。
  */
 export function throttleToTargetSpeed(throttle: number, p: BoatParams): number {
   const t = clamp(throttle, -1, 1);
   if (t >= 0) return p.speedCruiseMps + (p.speedMaxMps - p.speedCruiseMps) * t;
-  if (t >= -0.5) return p.speedCruiseMps + (p.speedCruiseMps - p.speedSilentMps) * (t / 0.5);
-  return p.speedSilentMps * (1 + (t + 0.5) / 0.5);
+  if (t >= THROTTLE_SILENT) return p.speedCruiseMps + (p.speedCruiseMps - p.speedSilentMps) * (t / -THROTTLE_SILENT);
+  return (p.speedSilentMps * (t + 1)) / (1 + THROTTLE_SILENT);
 }
 
-/** 目標速度に最も近い速力段（HUD 表示用） */
+/** 目標速度に最も近い速力段（HUD 表示用）。毎フレーム呼ばれるので配列を作らない。同距離なら 停止>静音>巡航>全速 の順で先勝ち */
 export function nearestSpeedStep(speedMps: number, p: BoatParams): SpeedStep {
-  const candidates: Array<[SpeedStep, number]> = [
-    ['stop', 0],
-    ['silent', p.speedSilentMps],
-    ['cruise', p.speedCruiseMps],
-    ['full', p.speedMaxMps],
-  ];
   let best: SpeedStep = 'stop';
-  let bestDist = Infinity;
-  for (const [step, v] of candidates) {
-    const d = Math.abs(speedMps - v);
-    if (d < bestDist) {
-      bestDist = d;
-      best = step;
-    }
+  let bestDist = Math.abs(speedMps);
+  let d = Math.abs(speedMps - p.speedSilentMps);
+  if (d < bestDist) {
+    bestDist = d;
+    best = 'silent';
   }
+  d = Math.abs(speedMps - p.speedCruiseMps);
+  if (d < bestDist) {
+    bestDist = d;
+    best = 'cruise';
+  }
+  d = Math.abs(speedMps - p.speedMaxMps);
+  if (d < bestDist) best = 'full';
   return best;
 }
 

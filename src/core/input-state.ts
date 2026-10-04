@@ -4,7 +4,7 @@ import { clamp } from './units';
 export interface InputState {
   /** -1(左)〜+1(右) */
   rudder: number;
-  /** +1=全速、0=巡航、-0.5=静音、-1=停止 */
+  /** +1=全速、0=巡航、THROTTLE_SILENT（boat-motion.ts）=静音、-1=停止 */
   throttle: number;
   /** スティックに触れている間 true。キーボード入力はこの間は無視する */
   stickActive: boolean;

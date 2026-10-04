@@ -2,8 +2,9 @@
 // 運動は src/core/boat-motion.ts を固定ステップで積分する（CLAUDE.md §7）。
 import Phaser from 'phaser';
 import {
+  CAMERA_FOLLOW_LERP,
+  DEPTH,
   FIXED_STEP_S,
-  MAX_FRAME_DELTA_MS,
   MAX_STEPS_PER_FRAME,
   PROTOTYPE_MISSION_ID,
   REGISTRY_KEY_DATA,
@@ -11,10 +12,9 @@ import {
   REGISTRY_KEY_TELEMETRY,
   RENDER_SCALE,
   SCENE_KEYS,
-  SEA_BOUNDS_MARGIN_M,
-  TEXTURE_KEYS,
 } from '../config/game-config';
 import { getBoatRecord, getGameData, getPrototypeMission } from '../config/game-data';
+import { SEA_BORDER_COLOR, SEA_BORDER_WIDTH, SEA_GRID_CELL_M, SEA_GRID_COLOR, SEA_GRID_LINE_WIDTH } from '../config/ui-config';
 import {
   boatParamsFromData,
   clampToBounds,
@@ -22,32 +22,26 @@ import {
   stepBoat,
   throttleToTargetSpeed,
   type BoatParams,
+  type BoatTelemetry,
   type SeaBounds,
-  type SpeedStep,
 } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
 import type { InputState } from '../core/input-state';
 import { PlayerBoat } from '../entities/player-boat';
 
-/** HUD に渡す自艇の状態。Mission が毎フレーム書き、HudScene が読む（1個だけ作る） */
-export interface BoatTelemetry {
-  speedMps: number;
-  rudder: number;
-  targetStep: SpeedStep;
-  headingDeg: number;
-}
-
 export class MissionScene extends Phaser.Scene {
   private boat!: PlayerBoat;
   private params!: BoatParams;
   private bounds!: SeaBounds;
+  /** 境界から押し戻す余白（m）。表示上の船体半分（length_m × sprite_scale / 2）で、船首が境界線をはみ出さない */
+  private boundsMarginM = 0;
   private inputState!: InputState;
   private telemetry!: BoatTelemetry;
   private timeScale = 1;
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
   private readonly stepFn = (dt: number): void => {
     stepBoat(this.boat.state, this.inputState, this.params, dt * this.timeScale);
-    clampToBounds(this.boat.state, this.bounds, SEA_BOUNDS_MARGIN_M);
+    clampToBounds(this.boat.state, this.bounds, this.boundsMarginM);
   };
 
   constructor() {
@@ -58,15 +52,14 @@ export class MissionScene extends Phaser.Scene {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const world = data.hitRateModel.world;
     const mission = getPrototypeMission(data, PROTOTYPE_MISSION_ID);
-    this.params = boatParamsFromData(getBoatRecord(data, mission.playerBoatId));
+    const boatRecord = getBoatRecord(data, mission.playerBoatId);
+    this.params = boatParamsFromData(boatRecord);
     this.bounds = mission.bounds;
+    this.boundsMarginM = (boatRecord.length_m * world.sprite_scale) / 2;
     this.timeScale = world.time_scale;
     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
 
-    // 海: 1 セル分のテクスチャを TileSprite 1 個で海域全体に敷く（描画 1 回、毎フレームの更新なし）
-    this.add.tileSprite(0, 0, this.bounds.width, this.bounds.height, TEXTURE_KEYS.seaGrid).setOrigin(0, 0).setTileScale(1 / RENDER_SCALE).setDepth(0);
-    // 海域境界（静的に 1 回描く）
-    this.add.graphics().lineStyle(6, 0x3a4a6a, 1).strokeRect(0, 0, this.bounds.width, this.bounds.height).setDepth(1);
+    this.drawSea();
 
     // 自艇。巡航速度で出発する（動いていることがすぐ分かるように）
     this.boat = new PlayerBoat(
@@ -78,7 +71,7 @@ export class MissionScene extends Phaser.Scene {
     // カメラ: 既定ズーム（docs/02 §6.10）× 描画スケール。追従は少し遅らせる
     const cam = this.cameras.main;
     cam.setZoom(world.camera_zoom_default * RENDER_SCALE);
-    cam.startFollow(this.boat.sprite, false, 0.1, 0.1);
+    cam.startFollow(this.boat.sprite, false, CAMERA_FOLLOW_LERP, CAMERA_FOLLOW_LERP);
 
     this.telemetry = { speedMps: this.boat.state.speedMps, rudder: 0, targetStep: 'cruise', headingDeg: this.boat.state.headingDeg };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
@@ -92,9 +85,31 @@ export class MissionScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 海の格子と境界線を 1 つの Graphics に 1 回だけ記録する（毎フレーム clear/再描画しない）。
+   * TileSprite は表示サイズ分の canvas を内部に作るため、海域全体（6,000×4,000 m = 24M px）に使うと iOS Safari の canvas 上限を超える。
+   * 線は 100 本程度なので Graphics の毎フレーム描画コストは無視できる。
+   */
+  private drawSea(): void {
+    const { width, height } = this.bounds;
+    const g = this.add.graphics().setDepth(DEPTH.sea);
+    g.lineStyle(SEA_GRID_LINE_WIDTH, SEA_GRID_COLOR, 1);
+    g.beginPath();
+    for (let x = SEA_GRID_CELL_M; x < width; x += SEA_GRID_CELL_M) {
+      g.moveTo(x, 0);
+      g.lineTo(x, height);
+    }
+    for (let y = SEA_GRID_CELL_M; y < height; y += SEA_GRID_CELL_M) {
+      g.moveTo(0, y);
+      g.lineTo(width, y);
+    }
+    g.strokePath();
+    g.lineStyle(SEA_BORDER_WIDTH, SEA_BORDER_COLOR, 1);
+    g.strokeRect(0, 0, width, height);
+  }
+
   override update(_time: number, delta: number): void {
-    const deltaS = Math.min(delta, MAX_FRAME_DELTA_MS) / 1000;
-    this.stepper.advance(deltaS, this.stepFn);
+    this.stepper.advance(delta / 1000, this.stepFn);
     this.boat.syncSprite();
 
     const t = this.telemetry;

@@ -16,7 +16,7 @@ import { KeyboardInput } from '../systems/keyboard-input';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
-import type { BoatTelemetry } from './mission-scene';
+import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
   private debugHud?: DebugHud;
@@ -32,8 +32,6 @@ export class HudScene extends Phaser.Scene {
   create(): void {
     // 論理座標 1280×720 を canvas（1280×RENDER_SCALE）に合わせる
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
-    // マルチタッチ（スティック＋右側ボタン）
-    this.input.addPointer(2);
 
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;

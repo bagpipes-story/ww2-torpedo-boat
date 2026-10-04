@@ -1,10 +1,21 @@
 // 速力・速力段・舵の HUD（右下）。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH, HUD_DEPTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { HUD_COLOR_STRONG, RUDDER_BAR_HALF_WIDTH, RUDDER_MARKER_HEIGHT, hudTextStyle } from '../config/ui-config';
-import type { SpeedStep } from '../core/boat-motion';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import {
+  HUD_COLOR_STRONG,
+  HUD_FONT_HEADING_PX,
+  HUD_FONT_SPEED_PX,
+  HUD_FONT_STEP_PX,
+  HUD_HEADING_OFFSET_Y,
+  HUD_STEP_BASELINE_NUDGE,
+  HUD_STEP_OFFSET_X,
+  HUD_TEXT_GAP,
+  RUDDER_BAR_HALF_WIDTH,
+  RUDDER_MARKER_HEIGHT,
+  hudTextStyle,
+} from '../config/ui-config';
+import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { mpsToKt } from '../core/units';
-import type { BoatTelemetry } from '../scenes/mission-scene';
 
 const STEP_LABEL: Record<SpeedStep, string> = {
   stop: '停止',
@@ -32,26 +43,26 @@ export class BoatHud {
     this.rudderBar = scene.add
       .image(right - RUDDER_BAR_HALF_WIDTH, bottom - RUDDER_MARKER_HEIGHT / 2, TEXTURE_KEYS.rudderBar)
       .setScale(1 / RENDER_SCALE)
-      .setDepth(HUD_DEPTH);
+      .setDepth(DEPTH.hud);
     this.barCenterX = this.rudderBar.x;
     this.rudderMarker = scene.add
       .image(this.barCenterX, this.rudderBar.y, TEXTURE_KEYS.rudderMarker)
       .setScale(1 / RENDER_SCALE)
-      .setDepth(HUD_DEPTH + 1);
+      .setDepth(DEPTH.hud + 1);
 
-    const textBottom = this.rudderBar.y - RUDDER_MARKER_HEIGHT / 2 - 8;
+    const textBottom = this.rudderBar.y - RUDDER_MARKER_HEIGHT / 2 - HUD_TEXT_GAP;
     this.speedText = scene.add
-      .text(right, textBottom, '', hudTextStyle(44, HUD_COLOR_STRONG))
+      .text(right, textBottom, '', hudTextStyle(HUD_FONT_SPEED_PX, HUD_COLOR_STRONG))
       .setOrigin(1, 1)
-      .setDepth(HUD_DEPTH);
+      .setDepth(DEPTH.hud);
     this.stepText = scene.add
-      .text(right - 150, textBottom - 6, '', hudTextStyle(24))
+      .text(right - HUD_STEP_OFFSET_X, textBottom - HUD_STEP_BASELINE_NUDGE, '', hudTextStyle(HUD_FONT_STEP_PX))
       .setOrigin(1, 1)
-      .setDepth(HUD_DEPTH);
+      .setDepth(DEPTH.hud);
     this.headingText = scene.add
-      .text(right, textBottom - 54, '', hudTextStyle(20))
+      .text(right, textBottom - HUD_HEADING_OFFSET_Y, '', hudTextStyle(HUD_FONT_HEADING_PX))
       .setOrigin(1, 1)
-      .setDepth(HUD_DEPTH);
+      .setDepth(DEPTH.hud);
   }
 
   /** 毎フレーム呼ぶ。表示値が変わったときだけ setText / setX する */

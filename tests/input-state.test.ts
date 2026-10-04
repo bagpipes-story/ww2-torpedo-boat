@@ -33,5 +33,8 @@ describe('wrapDeg360', () => {
     expect(wrapDeg360(-10)).toBe(350);
     expect(wrapDeg360(725)).toBe(5);
     expect(wrapDeg360(359.5)).toBe(359.5);
+    expect(wrapDeg360(-1e-15)).toBe(0);
+    expect(wrapDeg360(-1e-14)).toBeLessThan(360);
+    expect(Object.is(wrapDeg360(-0), 0)).toBe(true);
   });
 });

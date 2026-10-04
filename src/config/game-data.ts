@@ -34,7 +34,6 @@ export interface PrototypeMission {
   playerBoatId: string;
   bounds: { width: number; height: number };
   playerStart: { x: number; y: number; headingDeg: number };
-  durationS: number;
 }
 
 function isNum(v: unknown): v is number {
@@ -57,7 +56,6 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     playerBoatId,
     bounds: { width: bounds['width'], height: bounds['height'] },
     playerStart: { x: start['x_m'], y: start['y_m'], headingDeg: start['heading_deg'] },
-    durationS: isNum(proto['duration_s']) ? proto['duration_s'] : 60,
   };
 }
 

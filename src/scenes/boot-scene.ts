@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { PROTOTYPE_MISSION_ID, REGISTRY_KEY_DATA, REGISTRY_KEY_INPUT, SCENE_KEYS } from '../config/game-config';
 import { gameData, getBoatRecord, getPrototypeMission } from '../config/game-data';
 import { createInputState } from '../core/input-state';
-import { generatePlayerBoatTexture, generateSeaGridTexture, generateUiTextures } from '../assets/placeholders';
+import { generatePlayerBoatTexture, generateUiTextures } from '../assets/placeholders';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -20,7 +20,6 @@ export class BootScene extends Phaser.Scene {
     const boat = getBoatRecord(gameData, mission.playerBoatId);
     const spriteScale = gameData.hitRateModel.world.sprite_scale;
     generatePlayerBoatTexture(this, { lengthUnits: boat.length_m * spriteScale, beamUnits: boat.beam_m * spriteScale });
-    generateSeaGridTexture(this);
     generateUiTextures(this);
 
     this.scene.start(SCENE_KEYS.mission);

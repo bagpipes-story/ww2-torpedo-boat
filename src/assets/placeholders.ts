@@ -7,14 +7,12 @@ import {
   RUDDER_BAR_HEIGHT,
   RUDDER_MARKER_HEIGHT,
   RUDDER_MARKER_WIDTH,
-  SEA_GRID_CELL_M,
   STICK_KNOB_RADIUS,
   STICK_RADIUS,
 } from '../config/ui-config';
 
 /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
 const COLOR_PLAYER = 0xf2f5f8;
-const COLOR_GRID = 0x1a2540;
 const COLOR_UI = 0x9fb3c8;
 
 export interface BoatTextureSpec {
@@ -45,22 +43,6 @@ export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTexture
   g.lineTo(B / 2, L * 0.45);
   g.strokePath();
   g.generateTexture(TEXTURE_KEYS.playerBoat, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
-
-/** 海のグリッド 1 セル分（SEA_GRID_CELL_M × SEA_GRID_CELL_M 世界単位）。TileSprite で繰り返す */
-export function generateSeaGridTexture(scene: Phaser.Scene): void {
-  const k = RENDER_SCALE;
-  const size = Math.ceil(SEA_GRID_CELL_M * k);
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.lineStyle(Math.max(1, k), COLOR_GRID, 1);
-  g.beginPath();
-  g.moveTo(0.5, 0);
-  g.lineTo(0.5, size);
-  g.moveTo(0, 0.5);
-  g.lineTo(size, 0.5);
-  g.strokePath();
-  g.generateTexture(TEXTURE_KEYS.seaGrid, size, size);
   g.destroy();
 }
 

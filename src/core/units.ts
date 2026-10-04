@@ -51,7 +51,9 @@ export function wrapDeg180(deg: number): number {
 /** 角度を [0, 360) に正規化する。針路（方位）の保持に使う */
 export function wrapDeg360(deg: number): number {
   const d = deg % 360;
-  return d < 0 ? d + 360 : d;
+  const r = d < 0 ? d + 360 : d;
+  // ごく小さい負数は d + 360 が丸めで 360 になるので 0 に戻す（-0 も +0 に）
+  return r >= 360 ? 0 : r + 0;
 }
 
 export function clamp(v: number, min: number, max: number): number {

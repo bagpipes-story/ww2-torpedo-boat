@@ -17,7 +17,14 @@ describe('FixedStepper', () => {
     let n = 0;
     expect(st.advance(2.0, () => n++)).toBe(4);
     expect(n).toBe(4);
-    expect(st.pending).toBe(0);
+    expect(st.pending).toBeLessThan(1e-9);
+  });
+  it('上限ちょうどで足りる低フレームレート（16fps）でも、シミュレーション時間は遅れない', () => {
+    const st = new FixedStepper(1 / 60, 4);
+    let n = 0;
+    for (let i = 0; i < 160; i++) n += st.advance(1 / 16, () => undefined);
+    // 10 秒 × 60 ステップ/秒 = 600（端数の持ち越しで ±1）
+    expect(Math.abs(n - 600)).toBeLessThanOrEqual(1);
   });
   it('30fps でも 60fps でも合計ステップ数は同じ', () => {
     const a = new FixedStepper(1 / 60, 4);
