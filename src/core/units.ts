@@ -47,3 +47,13 @@ export function wrapDeg180(deg: number): number {
   if (d === -180) d = 180;
   return d;
 }
+
+/** 角度を [0, 360) に正規化する。針路（方位）の保持に使う */
+export function wrapDeg360(deg: number): number {
+  const d = deg % 360;
+  return d < 0 ? d + 360 : d;
+}
+
+export function clamp(v: number, min: number, max: number): number {
+  return v < min ? min : v > max ? max : v;
+}
