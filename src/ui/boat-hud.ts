@@ -1,0 +1,87 @@
+// 速力・速力段・舵の HUD（右下）。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
+import Phaser from 'phaser';
+import { GAME_HEIGHT, GAME_WIDTH, HUD_DEPTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { HUD_COLOR_STRONG, RUDDER_BAR_HALF_WIDTH, RUDDER_MARKER_HEIGHT, hudTextStyle } from '../config/ui-config';
+import type { SpeedStep } from '../core/boat-motion';
+import { mpsToKt } from '../core/units';
+import type { BoatTelemetry } from '../scenes/mission-scene';
+
+const STEP_LABEL: Record<SpeedStep, string> = {
+  stop: '停止',
+  silent: '静音',
+  cruise: '巡航',
+  full: '全速',
+};
+
+export class BoatHud {
+  private readonly speedText: Phaser.GameObjects.Text;
+  private readonly stepText: Phaser.GameObjects.Text;
+  private readonly headingText: Phaser.GameObjects.Text;
+  private readonly rudderBar: Phaser.GameObjects.Image;
+  private readonly rudderMarker: Phaser.GameObjects.Image;
+  private readonly barCenterX: number;
+  private lastSpeedKt = -1;
+  private lastStep: SpeedStep | '' = '';
+  private lastHeading = -1;
+  private lastRudderX = NaN;
+
+  constructor(scene: Phaser.Scene) {
+    const right = GAME_WIDTH - HUD_MARGIN;
+    const bottom = GAME_HEIGHT - HUD_MARGIN;
+
+    this.rudderBar = scene.add
+      .image(right - RUDDER_BAR_HALF_WIDTH, bottom - RUDDER_MARKER_HEIGHT / 2, TEXTURE_KEYS.rudderBar)
+      .setScale(1 / RENDER_SCALE)
+      .setDepth(HUD_DEPTH);
+    this.barCenterX = this.rudderBar.x;
+    this.rudderMarker = scene.add
+      .image(this.barCenterX, this.rudderBar.y, TEXTURE_KEYS.rudderMarker)
+      .setScale(1 / RENDER_SCALE)
+      .setDepth(HUD_DEPTH + 1);
+
+    const textBottom = this.rudderBar.y - RUDDER_MARKER_HEIGHT / 2 - 8;
+    this.speedText = scene.add
+      .text(right, textBottom, '', hudTextStyle(44, HUD_COLOR_STRONG))
+      .setOrigin(1, 1)
+      .setDepth(HUD_DEPTH);
+    this.stepText = scene.add
+      .text(right - 150, textBottom - 6, '', hudTextStyle(24))
+      .setOrigin(1, 1)
+      .setDepth(HUD_DEPTH);
+    this.headingText = scene.add
+      .text(right, textBottom - 54, '', hudTextStyle(20))
+      .setOrigin(1, 1)
+      .setDepth(HUD_DEPTH);
+  }
+
+  /** 毎フレーム呼ぶ。表示値が変わったときだけ setText / setX する */
+  refresh(t: BoatTelemetry): void {
+    const kt = Math.round(mpsToKt(t.speedMps));
+    if (kt !== this.lastSpeedKt) {
+      this.lastSpeedKt = kt;
+      this.speedText.setText(`${kt} kt`);
+    }
+    if (t.targetStep !== this.lastStep) {
+      this.lastStep = t.targetStep;
+      this.stepText.setText(STEP_LABEL[t.targetStep]);
+    }
+    const hdg = Math.round(t.headingDeg) % 360;
+    if (hdg !== this.lastHeading) {
+      this.lastHeading = hdg;
+      this.headingText.setText(`針路 ${String(hdg).padStart(3, '0')}°`);
+    }
+    const x = this.barCenterX + t.rudder * RUDDER_BAR_HALF_WIDTH;
+    if (x !== this.lastRudderX) {
+      this.lastRudderX = x;
+      this.rudderMarker.setX(x);
+    }
+  }
+
+  destroy(): void {
+    this.speedText.destroy();
+    this.stepText.destroy();
+    this.headingText.destroy();
+    this.rudderBar.destroy();
+    this.rudderMarker.destroy();
+  }
+}
