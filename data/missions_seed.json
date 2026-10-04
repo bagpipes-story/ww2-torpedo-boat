@@ -43,7 +43,11 @@
       "success": "帰投。命中はボーナス",
       "historical_note": "PT-37・40（諸説）が駆逐艦照月に命中し爆沈。PT-44喪失。照月の残骸は2025年7月に発見。",
       "source_url": "https://en.wikipedia.org/wiki/Japanese_destroyer_Teruzuki_(1941)",
-      "v0_1_prototype": { "enemies": [ "ijn_destroyer" ], "enemy_behavior": "straight", "duration_s": 60, "hazards": [] }
+      "v0_1_prototype": {
+        "enemies": [ "ijn_destroyer" ], "enemy_behavior": "straight", "duration_s": 60, "hazards": [],
+        "bounds_m": { "width": 6000, "height": 4000, "source": "design (zoom0.75で画面幅≈1,700m。全速39kt×time_scale5≈100m/sで60秒走って端に届く広さ)" },
+        "player_start": { "x_m": 3000, "y_m": 3200, "heading_deg": 0, "source": "design (海域の下寄り中央から北向きに出発)" }
+      }
     },
     {
       "id": "us_03",
