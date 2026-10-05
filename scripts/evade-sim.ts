@@ -21,6 +21,8 @@ const DT = (1 / 60) * TIME_SCALE;
 
 function run(rangeM: number, bearingFromShipDeg: number, reactionRealS: number, wakeDetectM: number, spreadDeg: number, count: number, detectM: number): boolean {
   const p = shipAiParamsFromData(REC);
+  if (process.env['TURN']) p.turnRateDegS = Number(process.env['TURN']);
+  if (process.env['EVADE_TURN']) p.evadeTurnRateDegS = Number(process.env['EVADE_TURN']);
   p.reactionDelayS = reactionRealS;
   p.torpedoWakeDetectM = wakeDetectM;
   // 艦: 原点、東へ 25kt。艇: 艦から見て bearing 方向に rangeM
@@ -57,16 +59,19 @@ function run(rangeM: number, bearingFromShipDeg: number, reactionRealS: number, 
 }
 
 const rows: string[] = [];
+// 既定は data の値。環境変数 REACT / WAKE / TURN / EVADE_TURN で上書きして感度を見る
+const REACT = Number(process.env['REACT'] ?? REC.detection.reaction_delay_s);
+const WAKE = Number(process.env['WAKE'] ?? REC.detection.torpedo_wake_detect_m);
 // 艇は艦の前方半円〜正横（0=左正横, 90=艦首正面, 180=右正横）。15° 刻み 13 方位
 const BEARINGS = Array.from({ length: 13 }, (_, i) => i * 15);
 for (const detect of [0, 1000]) {
   const cells: string[] = [];
   for (const range of [350, 450, 730, 1000, 1400]) {
     let hit = 0, fan = 0;
-    for (const bg of BEARINGS) if (run(range, bg, 6, 700, 0, 1, detect)) hit++;
-    for (const bg of BEARINGS) if (run(range, bg, 6, 700, 8, 4, detect)) fan++;
+    for (const bg of BEARINGS) if (run(range, bg, REACT, WAKE, 0, 1, detect)) hit++;
+    for (const bg of BEARINGS) if (run(range, bg, REACT, WAKE, 8, 4, detect)) fan++;
     cells.push(`${range}m 単発 ${Math.round((hit / BEARINGS.length) * 100)}% 扇4(8°) ${Math.round((fan / BEARINGS.length) * 100)}%`);
   }
-  rows.push(`${detect > 0 ? '発見あり（停止 1,000m）＋体当たり' : '発見なし（回避のみ）'}: ` + cells.join(' | '));
+  rows.push(`[wake ${WAKE}m, react ${REACT}s, turn ${process.env['TURN'] ?? REC.turn_rate_deg_s}/${process.env['EVADE_TURN'] ?? REC.evasion.evade_turn_rate_deg_s}] ${detect > 0 ? '発見あり（停止 1,000m）＋体当たり' : '発見なし（回避のみ）'}: ` + cells.join(' | '));
 }
 console.log(rows.join('\n'));

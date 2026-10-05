@@ -33,14 +33,15 @@ describe('visibility data', () => {
 });
 
 describe('speedFactorFor', () => {
-  it('速力段の点ではその値、間は線形、範囲外はクランプ', () => {
+  it('速力段の点ではその値。間は補間せず、実速度に最も近い段（HUD の表示）の値になる', () => {
     expect(speedFactorFor(0, P, V.speed_factor)).toBeCloseTo(V.speed_factor.stop, 9);
     expect(speedFactorFor(P.speedSilentMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
     expect(speedFactorFor(P.speedCruiseMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
     expect(speedFactorFor(P.speedMaxMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.full, 9);
     expect(speedFactorFor(P.speedMaxMps * 2, P, V.speed_factor)).toBeCloseTo(V.speed_factor.full, 9);
-    const mid = (P.speedSilentMps + P.speedCruiseMps) / 2;
-    expect(speedFactorFor(mid, P, V.speed_factor)).toBeCloseTo((V.speed_factor.silent + V.speed_factor.cruise) / 2, 9);
+    // 巡航の少し手前は巡航のまま、静音寄りまで落とせば静音
+    expect(speedFactorFor(P.speedCruiseMps - 1, P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
+    expect(speedFactorFor(P.speedSilentMps + 1, P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
   });
   it('単調非減少', () => {
     let prev = -1;
@@ -53,14 +54,14 @@ describe('speedFactorFor', () => {
 });
 
 describe('発見距離と視程', () => {
-  it('静音 8kt なら巡航の半分、全速なら 1.6 倍（半月、煙幕なし）', () => {
-    const base = 2500;
+  it('静音 8kt なら巡航の半分、全速なら 1.6 倍（半月、煙幕なし）。基準 2,000 m で 1,000 / 2,000 / 3,200', () => {
+    const base = 2000;
     const silent = enemyDetectRangeM(base, speedFactorFor(ktToMps(8), P, V.speed_factor), vis, false);
     const cruise = enemyDetectRangeM(base, speedFactorFor(ktToMps(23), P, V.speed_factor), vis, false);
     const full = enemyDetectRangeM(base, speedFactorFor(ktToMps(39), P, V.speed_factor), vis, false);
-    expect(cruise).toBeCloseTo(2500, 6);
-    expect(silent).toBeCloseTo(1250, 6);
-    expect(full).toBeCloseTo(4000, 6);
+    expect(cruise).toBeCloseTo(2000, 6);
+    expect(silent).toBeCloseTo(1000, 6);
+    expect(full).toBeCloseTo(3200, 6);
   });
   it('煙幕と史実モード倍率が掛かる', () => {
     const f = speedFactorFor(P.speedCruiseMps, P, V.speed_factor);

@@ -57,6 +57,8 @@ export interface BoatTelemetry {
   enemySighted: boolean;
   /** 敵が自艇を発見している */
   playerDetected: boolean;
+  /** 敵が自艇を見つける距離 m（速力段・月明で決まる。HUD に出して速力を落とす価値を見せる） */
+  detectRangeM: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

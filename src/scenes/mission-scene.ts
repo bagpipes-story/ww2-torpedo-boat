@@ -198,6 +198,7 @@ export class MissionScene extends Phaser.Scene {
       enemyDy: this.destroyer.state.y - this.boat.state.y,
       enemySighted: false,
       playerDetected: false,
+      detectRangeM: 0,
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshSighting();
@@ -280,6 +281,7 @@ export class MissionScene extends Phaser.Scene {
       d.setSighted(t.enemySighted);
     }
     t.playerDetected = d.ai.playerDetected && !d.sinking;
+    t.detectRangeM = this.detectRangeM;
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */

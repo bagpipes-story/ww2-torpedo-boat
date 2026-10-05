@@ -1,7 +1,6 @@
 // 視界と発見（docs/02 §6.5）。Phaser 非依存。
 // 敵の発見距離 = base × 速力係数 × 月明係数 × 煙幕係数 × 史実モード倍率。プレイヤーの視程 = vis_player_base × 月明係数。
-import type { BoatParams } from './boat-motion';
-import { clamp } from './units';
+import { nearestSpeedStep, type BoatParams } from './boat-motion';
 
 export interface SpeedFactorTable {
   stop: number;
@@ -32,16 +31,12 @@ export function isMoonPhase(v: unknown): v is MoonPhase {
   return v === 'dark' || v === 'half' || v === 'full';
 }
 
-/** 速力係数: 速度 0〜静音〜巡航〜全速 の各点の値を線形補間する（docs/02 §6.5「全速は航跡で遠くから見つかる」） */
+/**
+ * 速力係数: HUD に出る速力段（停止/静音/巡航/全速。実速度に最も近い段）の値をそのまま使う（docs/02 §6.5「全速は航跡で遠くから見つかる」）。
+ * v0.2.0 当初は段の間を線形補間していたが、実機で「少し落としただけでは効かない・HUD の段と結果が合わない」と分かりにくかったので段階値にした。
+ */
 export function speedFactorFor(speedMps: number, p: BoatParams, t: SpeedFactorTable): number {
-  const v = clamp(speedMps, 0, p.speedMaxMps);
-  if (v <= p.speedSilentMps) return lerp(t.stop, t.silent, p.speedSilentMps > 0 ? v / p.speedSilentMps : 1);
-  if (v <= p.speedCruiseMps) return lerp(t.silent, t.cruise, (v - p.speedSilentMps) / (p.speedCruiseMps - p.speedSilentMps));
-  return lerp(t.cruise, t.full, (v - p.speedCruiseMps) / (p.speedMaxMps - p.speedCruiseMps));
-}
-
-function lerp(a: number, b: number, k: number): number {
-  return a + (b - a) * clamp(k, 0, 1);
+  return t[nearestSpeedStep(speedMps, p)];
 }
 
 /** 敵がプレイヤーを発見する距離（m） */

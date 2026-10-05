@@ -33,6 +33,8 @@ const STEP_LABEL: Record<SpeedStep, string> = {
 
 /** 敵影×発見の 4 状態。index = (敵影あり ? 1 : 0) | (発見された ? 2 : 0) */
 const STATUS_LABEL = ['敵影なし ・ 未発見', '敵影あり ・ 未発見', '敵影なし ・ 発見された！', '敵影あり ・ 発見された！'] as const;
+/** 発見距離の表示刻み m（速力段ごとの段階値なので、変わるのは段が変わったときだけ） */
+const DETECT_RANGE_STEP_M = 50;
 
 export class BoatHud {
   private readonly speedText: Phaser.GameObjects.Text;
@@ -44,6 +46,7 @@ export class BoatHud {
   private readonly statusText: Phaser.GameObjects.Text;
   private readonly barCenterX: number;
   private lastStatus = -1;
+  private lastDetectStep = -1;
   private lastTimeLeft = -1;
   private lastHits = -1;
   private lastSpeedKt = -1;
@@ -120,9 +123,13 @@ export class BoatHud {
       this.missionText.setText(`残り ${timeLeft} 秒   命中 ${t.hits}`);
     }
     const status = (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0);
-    if (status !== this.lastStatus) {
+    const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
+    if (status !== this.lastStatus || detectStep !== this.lastDetectStep) {
       this.lastStatus = status;
-      this.statusText.setText(STATUS_LABEL[status]!).setColor(t.playerDetected ? HUD_COLOR_WARN : HUD_COLOR);
+      this.lastDetectStep = detectStep;
+      this.statusText
+        .setText(`${STATUS_LABEL[status]!} ・ 見つかる距離 ${detectStep * DETECT_RANGE_STEP_M} m`)
+        .setColor(t.playerDetected ? HUD_COLOR_WARN : HUD_COLOR);
     }
   }
 
