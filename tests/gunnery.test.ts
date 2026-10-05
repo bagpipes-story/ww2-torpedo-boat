@@ -90,6 +90,8 @@ describe('星弾', () => {
     const s = ship();
     const player: BoatState = { x: 4000, y: 0, headingDeg: 0, speedMps: 0 }; // 4,000 m: 探照灯 3,000 外、星弾 6,000 内
     updateIllumination(g, s, player, true, GP, REAL);
+    expect(g.star.leftS).toBe(0); // 点灯遅れの間は撃たない
+    for (let i = 0; i < Math.round(GP.searchlight.onDelayS / REAL) + 2; i++) updateIllumination(g, s, player, true, GP, REAL);
     expect(g.star.leftS).toBeGreaterThan(0);
     expect(g.star.x).toBe(4000);
     expect(g.illuminated).toBe(true);
@@ -109,7 +111,7 @@ describe('星弾', () => {
   it('探照灯の射程内では撃たない', () => {
     const g = createGunneryState(GP, 8, 0);
     const player: BoatState = { x: 2000, y: 0, headingDeg: 0, speedMps: 0 };
-    for (let i = 0; i < 60; i++) updateIllumination(g, ship(), player, true, GP, REAL);
+    for (let i = 0; i < 60 * 5; i++) updateIllumination(g, ship(), player, true, GP, REAL);
     expect(g.star.leftS).toBe(0);
   });
 });
@@ -186,6 +188,37 @@ describe('砲撃', () => {
     updateGuns(g2, s, moving, true, 12.2, 3.15, p, new SeededRng(4), REAL, GAME, ev);
     const sh = g2.shells.find((x) => x.active)!;
     expect(sh.impactY).toBeLessThan(-50);
+  });
+});
+
+describe('ばらつきの模型', () => {
+  it('着弾は半径 dispersion×(距離/有効射程) の円盤に一様に落ち、静止艇への命中率は 面積比 の見積もりに近い（127mm、1,000 m）', () => {
+    const p: GunneryParams = { ...GP, guns: [GP.guns[0]!] };
+    const s = ship();
+    const player: BoatState = { x: 1000, y: 0, headingDeg: 0, speedMps: 0 };
+    const rng = new SeededRng(42);
+    let shots = 0;
+    let hits = 0;
+    let maxR = 0;
+    const ev: ShellEvents = {
+      onFire: () => shots++,
+      onImpact: (_g, x, y, hit) => {
+        if (hit) hits++;
+        maxR = Math.max(maxR, Math.hypot(x - 1000, y));
+      },
+    };
+    const g = createGunneryState(p, 48, 0);
+    for (let i = 0; i < 60 * 4000; i++) {
+      g.illuminated = true;
+      updateGuns(g, s, player, true, 12.2, 3.15, p, rng, REAL, GAME, ev);
+    }
+    const spread = (p.guns[0]!.dispersionM * 1000) / p.guns[0]!.effectiveM; // 40 m
+    expect(maxR).toBeLessThanOrEqual(spread + 1e-6);
+    // 面積比: 艇の線分（24.4 m）を半径 (3.15 + 8) で太らせたカプセル ≈ 24.4×22.3 + π×11.15² ≈ 935 m² / 円盤 π×40² ≈ 5027 m² ≈ 0.19
+    const pHit = hits / shots;
+    expect(shots).toBeGreaterThan(1500);
+    expect(pHit).toBeGreaterThan(0.13);
+    expect(pHit).toBeLessThan(0.25);
   });
 });
 

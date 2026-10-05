@@ -147,7 +147,8 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
   } else {
     star.illuminating = false;
   }
-  if (playerDetected && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
+  // 星弾は探照灯と同じ点灯遅れ（light.on）の後。発見した瞬間に砲撃が始まらないようにする
+  if (playerDetected && light.on && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
     star.leftS = p.starshell.durationS;
     star.cooldownLeftS = p.starshell.cooldownS;
     star.x = player.x;
@@ -201,10 +202,13 @@ export function updateGuns(
       ax += pvx * t;
       ay += pvy * t;
     }
-    // ばらつき: 有効射程で ±dispersion 程度、距離に比例（2 つの一様乱数の平均で中央寄りに）
+    // ばらつき: 半径 dispersion × (距離/有効射程) の円盤に一様に落ちる（r = R√u）。命中率 ≈ 艇の面積 / 円盤の面積 で見積もれる。
+    // 当初の「軸ごとに 2 つの一様乱数の平均」は中央に寄りすぎて見積もりの約 2 倍の命中率になった（レビューで判明）
     const spread = (gun.dispersionM * Math.sqrt(d2)) / gun.effectiveM;
-    ax += (rng.nextRange(-1, 1) + rng.nextRange(-1, 1)) * 0.5 * spread;
-    ay += (rng.nextRange(-1, 1) + rng.nextRange(-1, 1)) * 0.5 * spread;
+    const r = spread * Math.sqrt(rng.next());
+    const th = rng.next() * Math.PI * 2;
+    ax += Math.cos(th) * r;
+    ay += Math.sin(th) * r;
     const fx = ax - ship.x;
     const fy = ay - ship.y;
     const dist = Math.sqrt(fx * fx + fy * fy);
@@ -348,7 +352,7 @@ export function isEnemyGunneryDataRecord(v: unknown): v is EnemyGunneryDataRecor
   const guns = r['guns'];
   if (!Array.isArray(guns) || guns.length === 0) return false;
   for (const g of guns) {
-    if (typeof (g as Record<string, unknown>)['id'] !== 'string') return false;
+    if (!g || typeof g !== 'object' || typeof (g as Record<string, unknown>)['id'] !== 'string') return false;
     if (!hasNums(g, ['count', 'effective_night_m', 'rof_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m', 'fire_chance', 'engine_damage_chance'])) return false;
   }
   return hasNums(r['searchlight'], ['range_m', 'cone_deg', 'sweep_deg_s', 'on_delay_s']) && hasNums(r['starshell'], ['range_m', 'illum_radius_m', 'duration_s', 'cooldown_s']);

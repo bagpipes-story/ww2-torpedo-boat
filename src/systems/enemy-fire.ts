@@ -29,6 +29,8 @@ export type ShellHitHandler = (gunIndex: number, x: number, y: number) => void;
 export class EnemyFire {
   readonly state: GunneryState;
   private readonly shellSprites: Phaser.GameObjects.Image[] = [];
+  /** 各スプライトが今どの砲のテクスチャか（-1 = 未設定）。同じフレーム内でスロットが別の砲に使い回されても正しく描く */
+  private readonly shellTexGun: Int8Array;
   private readonly splashes: Phaser.GameObjects.Image[] = [];
   private readonly splashAges: Float32Array;
   private splashNext = 0;
@@ -56,6 +58,7 @@ export class EnemyFire {
     shipHeadingDeg: number,
   ) {
     this.state = createGunneryState(params, SHELL_POOL_SIZE, shipHeadingDeg);
+    this.shellTexGun = new Int8Array(SHELL_POOL_SIZE).fill(-1);
     for (let i = 0; i < SHELL_POOL_SIZE; i++) {
       this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.tracer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
     }
@@ -125,10 +128,12 @@ export class EnemyFire {
         if (img.visible) img.setVisible(false);
         continue;
       }
-      if (!img.visible) {
-        // 主砲（index 0）は点、ほかは曳光弾。発射時に 1 回だけ切り替える
-        img.setTexture(s.gunIndex === 0 ? TEXTURE_KEYS.shell : TEXTURE_KEYS.tracer).setVisible(true);
+      if (this.shellTexGun[i] !== s.gunIndex) {
+        // 主砲（index 0）は点、ほかは曳光弾。砲が変わったときだけ切り替える
+        this.shellTexGun[i] = s.gunIndex;
+        img.setTexture(s.gunIndex === 0 ? TEXTURE_KEYS.shell : TEXTURE_KEYS.tracer);
       }
+      if (!img.visible) img.setVisible(true);
       img.setPosition(s.x, s.y).setAngle(radToDeg(Math.atan2(s.vx, -s.vy)));
     }
     for (let i = 0; i < SPLASH_POOL_SIZE; i++) {

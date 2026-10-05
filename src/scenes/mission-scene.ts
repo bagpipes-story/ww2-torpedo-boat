@@ -24,7 +24,7 @@ import {
   getTorpedoRecord,
   getVisibilityParams,
 } from '../config/game-data';
-import { BOAT_HIT_SHAKE_INTENSITY, CAMERA_LOOK_AHEAD_M, HIT_SHAKE_INTENSITY, HIT_SHAKE_MS, MISSION_END_DELAY_MS } from '../config/ui-config';
+import { BOAT_HIT_SHAKE_INTENSITY, CAMERA_LOOK_AHEAD_M, HIT_SHAKE_INTENSITY, HIT_SHAKE_MS, MISSION_END_DELAY_MS, SMALL_HIT_DAMAGE_RATIO } from '../config/ui-config';
 import {
   boatParamsFromData,
   clampToBounds,
@@ -365,9 +365,12 @@ export class MissionScene extends Phaser.Scene {
     if (this.boat.sinking || this.ended) return;
     const gun = this.gunneryParams.guns[gunIndex]!;
     const o = applyShellHit(this.damage, gun, this.damageParams, this.gunRng, this.hitOutcome);
-    playExplosion(this, x, y, gun.damage < this.damageParams.maxHp * 0.1);
-    const z = this.cameras.main.zoom;
-    this.cameras.main.shake(HIT_SHAKE_MS, BOAT_HIT_SHAKE_INTENSITY / (z * z));
+    playExplosion(this, x, y, gun.damage < this.damageParams.maxHp * SMALL_HIT_DAMAGE_RATIO);
+    if (!o.destroyed) {
+      // 弱い揺れ。撃沈なら sinkBoat の強い揺れだけにする（Phaser は揺れている間の新しい揺れを無視するため）
+      const z = this.cameras.main.zoom;
+      this.cameras.main.shake(HIT_SHAKE_MS, BOAT_HIT_SHAKE_INTENSITY / (z * z));
+    }
     if (o.engineHit) {
       this.params.speedMaxMps = this.speedMaxBaseMps * this.damageParams.engineSpeedFactor;
       if (this.params.speedCruiseMps > this.params.speedMaxMps) this.params.speedCruiseMps = this.params.speedMaxMps;
@@ -383,6 +386,9 @@ export class MissionScene extends Phaser.Scene {
   /** 自艇の沈没（体当たり・砲撃）。保留中の '撃ち尽くし' 終了は取り消し、演出の完了で Result へ */
   private sinkBoat(reason: MissionEndReason): void {
     if (this.boat.sinking || this.ended) return;
+    // 沈んだ艇の HP は 0、火災も消す（体当たりでも HUD と Result が 100 のままにならないように）
+    this.damage.hp = 0;
+    this.damage.fireLeftS = 0;
     const s = this.boat.state;
     playExplosion(this, s.x, s.y, false);
     this.slowMoLeftS = this.slowMoSeconds;
@@ -392,10 +398,10 @@ export class MissionScene extends Phaser.Scene {
     this.boat.playSinking(() => this.endMission(reason));
   }
 
-  /** Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する */
+  /** Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する。進行中の弱い揺れがあっても上書きする（force） */
   private shakeCamera(): void {
     const z = this.cameras.main.zoom;
-    this.cameras.main.shake(HIT_SHAKE_MS, HIT_SHAKE_INTENSITY / (z * z));
+    this.cameras.main.shake(HIT_SHAKE_MS, HIT_SHAKE_INTENSITY / (z * z), true);
   }
 
   private endMission(reason: MissionEndReason): void {

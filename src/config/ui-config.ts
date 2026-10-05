@@ -58,14 +58,24 @@ export const WAKE_DOT_ALPHA = 0.55;
 /** カメラの先読み（m）。進行方向にこの分だけ視点をずらし、前方の視界を広げる（ズーム 0.75 では前方 ≈ 480+320 = 800 m、典型的な発射距離 800yd が見える） */
 export const CAMERA_LOOK_AHEAD_M = 320;
 
+/** HP バー（左上、FPS と表示サイズの下）。幅・高さ・ラベル */
+export const HP_BAR_WIDTH = 200;
+export const HP_BAR_HEIGHT = 10;
+export const HP_BAR_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT * 2 + 6;
+export const HP_FONT_PX = 18;
+export const HP_COLOR_OK = 0x7fd38a;
+export const HP_COLOR_LOW = 0xff8a7a;
+/** これ未満の HP 比率で色を警告に */
+export const HP_LOW_RATIO = 0.3;
+
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
-/** 上端だけは上中央の HUD 3 行（ビルド番号・残り時間・敵影/発見）に重ならないよう広く取る */
-export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + HUD_STATUS_OFFSET_Y + HUD_FONT_STATUS_PX + 12;
 export const TARGET_MARKER_SIZE = 18;
 export const TARGET_MARKER_DISTANCE_STEP_M = 50;
 export const TARGET_MARKER_COLOR = 0xe08a8a;
 export const HUD_FONT_MARKER_PX = 18;
+/** 上端だけは上中央の HUD 3 行（ビルド番号・残り時間・敵影/発見）と左上の HP バーに重ならないよう広く取る（HP バーの下端＋三角の半分＋余白） */
+export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + TARGET_MARKER_SIZE / 2 + 8;
 
 /** Result で誤タップを拾わないよう入力を受け付けるまでの待ち（ms）とレイアウト */
 export const RESULT_INPUT_DELAY_MS = 400;
@@ -124,17 +134,9 @@ export const SPLASH_TINT_HIT = 0xffa040;
 export const MUZZLE_FLASH_LIFETIME_S = 0.15;
 export const MUZZLE_FLASH_SCALE = 0.6;
 export const MUZZLE_FLASH_TINT = 0xfff0a0;
-/** 被弾時のカメラ揺れ（命中演出より弱く） */
+/** 被弾時のカメラ揺れ（命中演出より弱く）。最大 HP に対してこの比率未満のダメージは小さな（灰色の）爆発で描く */
 export const BOAT_HIT_SHAKE_INTENSITY = 0.002;
-/** HP バー（左上、FPS と表示サイズの下）。幅・高さ・ラベル */
-export const HP_BAR_WIDTH = 200;
-export const HP_BAR_HEIGHT = 10;
-export const HP_BAR_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT * 2 + 6;
-export const HP_FONT_PX = 18;
-export const HP_COLOR_OK = 0x7fd38a;
-export const HP_COLOR_LOW = 0xff8a7a;
-/** これ未満の HP 比率で色を警告に */
-export const HP_LOW_RATIO = 0.3;
+export const SMALL_HIT_DAMAGE_RATIO = 0.1;
 
 /** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
 export const EXPLOSION_DURATION_MS = 600;
