@@ -160,7 +160,7 @@ export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits:
   g.destroy();
 }
 
-/** 反撃（v0.2.1）: 砲弾の点、曳光弾、探照灯の扇（先端を上・原点は先端）、星弾の照明円、HP バー */
+/** 反撃（v0.2.1）: 砲弾の点、曳光弾、探照灯の扇（光源を下端に・光は上へ。原点は光源）、星弾の照明円、HP バー */
 export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg: number): void {
   const k = RENDER_SCALE;
   let d = Math.ceil(SHELL_DOT_UNITS * k) + 2;
@@ -178,16 +178,16 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
   g.generateTexture(TEXTURE_KEYS.tracer, tw, tl);
   g.destroy();
 
-  // 探照灯: 長さ L の二等辺三角形。幅は cone_deg から。表示時に射程/L 倍に拡大する
+  // 探照灯: 長さ L の二等辺三角形。先端（光源）は下端、光は上（北 = 方位 0）へ伸びる。幅は cone_deg から。表示時に射程/L 倍に拡大する
   const L = SEARCHLIGHT_TEX_LENGTH_UNITS * k;
   const halfW = Math.tan(((searchlightConeDeg / 2) * Math.PI) / 180) * L;
   const W = Math.ceil(halfW * 2) + 2;
   g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(SEARCHLIGHT_COLOR, 1);
   g.beginPath();
-  g.moveTo(W / 2, 0);
-  g.lineTo(W, L);
-  g.lineTo(0, L);
+  g.moveTo(W / 2, L);
+  g.lineTo(W, 0);
+  g.lineTo(0, 0);
   g.closePath();
   g.fillPath();
   g.generateTexture(TEXTURE_KEYS.searchlight, W, Math.ceil(L));

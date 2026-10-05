@@ -65,7 +65,7 @@ export class EnemyFire {
     }
     this.light = scene.add
       .image(0, 0, TEXTURE_KEYS.searchlight)
-      .setOrigin(0.5, 0)
+      .setOrigin(0.5, 1) // 光源（テクスチャ下端）を艦の位置に。角度 0 で北へ伸びる
       .setAlpha(SEARCHLIGHT_ALPHA)
       .setDepth(DEPTH.light)
       .setScale(params.searchlight.rangeM / SEARCHLIGHT_TEX_LENGTH_UNITS / RENDER_SCALE)
