@@ -16,7 +16,7 @@ import {
 } from '../config/ui-config';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 
-export type MissionEndReason = 'sunk' | 'expended' | 'timeout' | 'rammed';
+export type MissionEndReason = 'sunk' | 'expended' | 'timeout' | 'rammed' | 'destroyed';
 
 export interface MissionResult {
   reason: MissionEndReason;
@@ -30,6 +30,9 @@ export interface MissionResult {
   survived: boolean;
   elapsedS: number;
   seed: number;
+  /** 艇の残り HP と最大 HP（docs/02 §6.6） */
+  hpLeft: number;
+  hpMax: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -37,6 +40,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   expended: '魚雷を撃ち尽くした',
   timeout: '時間切れ',
   rammed: '駆逐艦に体当たりされた',
+  destroyed: '砲撃で沈没',
 };
 
 export class ResultScene extends Phaser.Scene {
@@ -77,7 +81,7 @@ export class ResultScene extends Phaser.Scene {
       }
     }
     y += RESULT_SECTION_GAP;
-    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   生還: ${r.survived ? 'あり' : 'なし'}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   生還: ${r.survived ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     this.add
       .text(cx, GAME_HEIGHT - RESULT_FOOTER_Y, 'タップでもう一度', hudTextStyle(HUD_FONT_STEP_PX, HUD_COLOR_STRONG))
       .setOrigin(0.5, 1)

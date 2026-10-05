@@ -27,9 +27,10 @@
       "radar": { "available_from": "1943-01", "range_m": 31000 },
       "smoke_generator": true,
       "hull_hp": 100,
+      "damage": { "engine_damage_speed_factor": 0.7, "fire_dps": 2, "fire_duration_s": 20 },
       "hull_circles": 3,
       "sea_state_limit": 5,
-      "source": { "length_m": "historical", "speed_max_kt": "design (設計40kt超・実用30kt台後半の中間)", "speed_cruise_kt": "historical (23kt巡航で200gal/h)", "fuel_hours_*": "historical (3,000gal; 巡航15h・全速6hの算出値)", "turn_rate_deg_s": "design", "accel_mps2": "design", "hull_hp": "design", "crew": "historical (12〜17)" },
+      "source": { "length_m": "historical", "speed_max_kt": "design (設計40kt超・実用30kt台後半の中間)", "speed_cruise_kt": "historical (23kt巡航で200gal/h)", "fuel_hours_*": "historical (3,000gal; 巡航15h・全速6hの算出値)", "turn_rate_deg_s": "design", "accel_mps2": "design", "hull_hp": "design", "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.2.2 の煙幕長押し)", "crew": "historical (12〜17)" },
       "notes": "最も資料が多い主軸艇。Mk 8→Mk 13への換装は1943年半ば。"
     },
     {

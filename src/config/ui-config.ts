@@ -100,6 +100,42 @@ export const DEBUG_RING_TINT_DETECT = 0xff8a7a;
 export const DEBUG_RING_TINT_VIS = 0x9fd0ff;
 export const DEBUG_RING_ALPHA = 0.5;
 
+/** 反撃の見た目（v0.2.1）。探照灯は長さ 1 単位のテクスチャを射程へ拡大、星弾は半径 1 単位の円を照明半径へ拡大 */
+export const SEARCHLIGHT_TEX_LENGTH_UNITS = 256;
+export const SEARCHLIGHT_COLOR = 0xfff2c0;
+export const SEARCHLIGHT_ALPHA = 0.2;
+export const STARSHELL_TEX_RADIUS_UNITS = 128;
+export const STARSHELL_COLOR = 0xfff0b0;
+export const STARSHELL_ALPHA = 0.14;
+/** 砲弾（主砲: 点、機銃: 曳光弾の短い線）の寸法（世界単位）と色 */
+export const SHELL_DOT_UNITS = 5;
+export const TRACER_WIDTH_UNITS = 2.5;
+export const TRACER_LENGTH_UNITS = 18;
+export const SHELL_COLOR = 0xfff6d0;
+export const TRACER_COLOR = 0xffb060;
+/** 砲弾プール、着弾の水柱（リング）のプールと寿命・大きさ、砲口の閃光 */
+export const SHELL_POOL_SIZE = 48;
+export const SPLASH_POOL_SIZE = 32;
+export const SPLASH_LIFETIME_S = 0.7;
+export const SPLASH_SCALE_MISS = 0.45;
+export const SPLASH_SCALE_HIT = 0.9;
+export const SPLASH_TINT_MISS = 0xa8c8ff;
+export const SPLASH_TINT_HIT = 0xffa040;
+export const MUZZLE_FLASH_LIFETIME_S = 0.15;
+export const MUZZLE_FLASH_SCALE = 0.6;
+export const MUZZLE_FLASH_TINT = 0xfff0a0;
+/** 被弾時のカメラ揺れ（命中演出より弱く） */
+export const BOAT_HIT_SHAKE_INTENSITY = 0.002;
+/** HP バー（左上、FPS と表示サイズの下）。幅・高さ・ラベル */
+export const HP_BAR_WIDTH = 200;
+export const HP_BAR_HEIGHT = 10;
+export const HP_BAR_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT * 2 + 6;
+export const HP_FONT_PX = 18;
+export const HP_COLOR_OK = 0x7fd38a;
+export const HP_COLOR_LOW = 0xff8a7a;
+/** これ未満の HP 比率で色を警告に */
+export const HP_LOW_RATIO = 0.3;
+
 /** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
 export const EXPLOSION_DURATION_MS = 600;
 export const SINK_DURATION_MS = 2000;

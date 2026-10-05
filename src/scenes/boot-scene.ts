@@ -7,6 +7,7 @@ import { createInputState } from '../core/input-state';
 import {
   generateDebugRingTexture,
   generateDestroyerTexture,
+  generateGunneryTextures,
   generatePlayerBoatTexture,
   generateTargetMarkerTexture,
   generateTorpedoButtonTexture,
@@ -34,6 +35,7 @@ export class BootScene extends Phaser.Scene {
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
     generateUiTextures(this);
+    generateGunneryTextures(this, enemy.searchlight.cone_deg);
     generateTorpedoButtonTexture(this);
     generateTargetMarkerTexture(this, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);

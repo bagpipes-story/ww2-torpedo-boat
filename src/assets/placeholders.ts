@@ -5,6 +5,17 @@ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
   DEBUG_RING_LINE_WIDTH,
   DEBUG_RING_RADIUS_UNITS,
+  HP_BAR_HEIGHT,
+  HP_BAR_WIDTH,
+  SEARCHLIGHT_COLOR,
+  SEARCHLIGHT_TEX_LENGTH_UNITS,
+  SHELL_COLOR,
+  SHELL_DOT_UNITS,
+  STARSHELL_COLOR,
+  STARSHELL_TEX_RADIUS_UNITS,
+  TRACER_COLOR,
+  TRACER_LENGTH_UNITS,
+  TRACER_WIDTH_UNITS,
   RUDDER_BAR_HALF_WIDTH,
   RUDDER_BAR_HEIGHT,
   RUDDER_MARKER_HEIGHT,
@@ -146,6 +157,60 @@ export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits:
   g.fillStyle(0xffffff, 0.35);
   g.fillCircle(rd / 2, rd / 2, EXPLOSION_RING_RADIUS_UNITS * k * 0.6);
   g.generateTexture(TEXTURE_KEYS.explosionRing, rd, rd);
+  g.destroy();
+}
+
+/** 反撃（v0.2.1）: 砲弾の点、曳光弾、探照灯の扇（先端を上・原点は先端）、星弾の照明円、HP バー */
+export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg: number): void {
+  const k = RENDER_SCALE;
+  let d = Math.ceil(SHELL_DOT_UNITS * k) + 2;
+  let g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(SHELL_COLOR, 1);
+  g.fillCircle(d / 2, d / 2, (SHELL_DOT_UNITS * k) / 2);
+  g.generateTexture(TEXTURE_KEYS.shell, d, d);
+  g.destroy();
+
+  const tw = Math.ceil(TRACER_WIDTH_UNITS * k) + 1;
+  const tl = Math.ceil(TRACER_LENGTH_UNITS * k);
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(TRACER_COLOR, 1);
+  g.fillRect(0, 0, tw, tl);
+  g.generateTexture(TEXTURE_KEYS.tracer, tw, tl);
+  g.destroy();
+
+  // 探照灯: 長さ L の二等辺三角形。幅は cone_deg から。表示時に射程/L 倍に拡大する
+  const L = SEARCHLIGHT_TEX_LENGTH_UNITS * k;
+  const halfW = Math.tan(((searchlightConeDeg / 2) * Math.PI) / 180) * L;
+  const W = Math.ceil(halfW * 2) + 2;
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(SEARCHLIGHT_COLOR, 1);
+  g.beginPath();
+  g.moveTo(W / 2, 0);
+  g.lineTo(W, L);
+  g.lineTo(0, L);
+  g.closePath();
+  g.fillPath();
+  g.generateTexture(TEXTURE_KEYS.searchlight, W, Math.ceil(L));
+  g.destroy();
+
+  d = Math.ceil(STARSHELL_TEX_RADIUS_UNITS * 2 * k) + 2;
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(STARSHELL_COLOR, 1);
+  g.fillCircle(d / 2, d / 2, STARSHELL_TEX_RADIUS_UNITS * k);
+  g.generateTexture(TEXTURE_KEYS.starshell, d, d);
+  g.destroy();
+
+  const bw = Math.ceil(HP_BAR_WIDTH * k);
+  const bh = Math.ceil(HP_BAR_HEIGHT * k);
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(COLOR_UI, 0.3);
+  g.fillRect(0, 0, bw, bh);
+  g.generateTexture(TEXTURE_KEYS.hpBarBg, bw, bh);
+  g.destroy();
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(0xffffff, 1); // 表示時に tint で色を付ける
+  g.fillRect(0, 0, bw, bh);
+  g.generateTexture(TEXTURE_KEYS.hpBarFill, bw, bh);
   g.destroy();
 }
 

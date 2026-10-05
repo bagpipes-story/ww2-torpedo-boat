@@ -59,6 +59,13 @@ export interface BoatTelemetry {
   playerDetected: boolean;
   /** 敵が自艇を見つける距離 m（速力段・月明で決まる。HUD に出して速力を落とす価値を見せる） */
   detectRangeM: number;
+  /** 探照灯か星弾に照らされている（砲撃が来る） */
+  illuminated: boolean;
+  /** 艇の HP と被害（docs/02 §6.6） */
+  hp: number;
+  hpMax: number;
+  onFire: boolean;
+  engineDamaged: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

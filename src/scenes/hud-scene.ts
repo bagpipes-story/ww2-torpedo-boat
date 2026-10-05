@@ -18,12 +18,14 @@ import { TorpedoButton } from '../systems/torpedo-button';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
+import { HpBar } from '../ui/hp-bar';
 import { TargetMarker } from '../ui/target-marker';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
   private debugHud?: DebugHud;
   private boatHud?: BoatHud;
+  private hpBar?: HpBar;
   private targetMarker?: TargetMarker;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
@@ -47,6 +49,7 @@ export class HudScene extends Phaser.Scene {
       dataSummary: `data v${data.hitRateModel.version} / time_scale x${data.hitRateModel.world.time_scale}`,
     });
     this.boatHud = new BoatHud(this);
+    this.hpBar = new HpBar(this);
     this.targetMarker = new TargetMarker(this, data.hitRateModel.world.camera_zoom_default);
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
@@ -64,11 +67,13 @@ export class HudScene extends Phaser.Scene {
       this.torpedoButton?.destroy();
       this.targetMarker?.destroy();
       this.boatHud?.destroy();
+      this.hpBar?.destroy();
       this.debugHud?.destroy();
       this.stick = undefined;
       this.torpedoButton = undefined;
       this.targetMarker = undefined;
       this.boatHud = undefined;
+      this.hpBar = undefined;
       this.debugHud = undefined;
       this.keyboard = undefined;
     });
@@ -77,6 +82,7 @@ export class HudScene extends Phaser.Scene {
   override update(): void {
     this.keyboard?.update();
     this.boatHud?.refresh(this.telemetry);
+    this.hpBar?.refresh(this.telemetry);
     this.targetMarker?.refresh(this.telemetry);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();

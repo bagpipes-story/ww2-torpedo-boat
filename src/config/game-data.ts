@@ -7,6 +7,7 @@ import hitRateModel from '../../data/hit_rate_model.json';
 import riskEvents from '../../data/risk_events.json';
 import missionsSeed from '../../data/missions_seed.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
+import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
@@ -114,8 +115,8 @@ export function getTorpedoRecord(data: GameData, torpedoId: string): TorpedoData
   return t;
 }
 
-/** enemies.json の 1 レコードのうち v0.2 で使う部分（船体＋AI） */
-export interface EnemyDataRecord extends EnemyAiDataRecord {
+/** enemies.json の 1 レコードのうち v0.2 で使う部分（船体＋AI＋反撃） */
+export interface EnemyDataRecord extends EnemyAiDataRecord, EnemyGunneryDataRecord {
   length_m: number;
   beam_m: number;
   hull_circles: number;
@@ -130,6 +131,9 @@ export function getEnemyRecord(data: GameData, enemyId: string): EnemyDataRecord
   if (!isEnemyAiDataRecord(e)) {
     throw new Error(`enemies.json の ${enemyId} に speed/turn_rate/accel/detection/evasion/ram/patrol のどれかが欠けている（docs/02 §6.4）`);
   }
+  if (!isEnemyGunneryDataRecord(e)) {
+    throw new Error(`enemies.json の ${enemyId} に guns/searchlight/starshell のフィールドが欠けている（docs/02 §6.5）`);
+  }
   return {
     length_m: e['length_m'] as number,
     beam_m: e['beam_m'] as number,
@@ -143,7 +147,17 @@ export function getEnemyRecord(data: GameData, enemyId: string): EnemyDataRecord
     evasion: e.evasion,
     ram: e.ram,
     patrol: e.patrol,
+    guns: e.guns,
+    searchlight: e.searchlight,
+    starshell: e.starshell,
   };
+}
+
+/** boats.json の被害パラメータ（hull_hp と damage.*） */
+export function getBoatDamageParams(data: GameData, boatId: string): DamageParams {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatDamageDataRecord(b)) throw new Error(`boats.json の ${boatId} に hull_hp / damage.* が無い（docs/02 §6.6）`);
+  return damageParamsFromData(b);
 }
 
 /**

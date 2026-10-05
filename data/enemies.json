@@ -16,16 +16,18 @@
       "hull_circles": 5,
       "torpedo_hits_to_sink": 2,
       "guns": [
-        { "id": "main_127mm", "count": 3, "range_m": 10000, "effective_night_m": 4000, "rof_per_min": 10, "damage": 40 },
-        { "id": "aa_25mm", "count": 4, "range_m": 2000, "effective_night_m": 1200, "rof_per_min": 120, "damage": 4 }
+        { "id": "main_127mm", "count": 3, "range_m": 10000, "effective_night_m": 4000, "rof_per_min": 10, "damage": 40, "shell_speed_mps": 400, "dispersion_m": 160, "splash_radius_m": 8, "fire_chance": 0.35, "engine_damage_chance": 0.3 },
+        { "id": "aa_25mm", "count": 4, "range_m": 2000, "effective_night_m": 1200, "rof_per_min": 120, "damage": 4, "shell_speed_mps": 500, "dispersion_m": 70, "splash_radius_m": 3, "fire_chance": 0.05, "engine_damage_chance": 0.05 }
       ],
-      "searchlight": { "range_m": 3000, "cone_deg": 12, "sweep_deg_s": 20 },
+      "searchlight": { "range_m": 3000, "cone_deg": 12, "sweep_deg_s": 20, "on_delay_s": 1.5 },
       "starshell": { "range_m": 6000, "illum_radius_m": 1500, "duration_s": 25, "cooldown_s": 60 },
       "detection": { "base_detect_m": 2000, "wake_detect_m": 800, "reaction_delay_s": 4, "torpedo_wake_detect_m": 700, "note": "reaction_delay_s は実時間秒（魚雷の位置が torpedo_wake_detect_m 以内に入ってから転舵を始めるまで）。base_detect_m は半月・巡航での発見距離で、hit_rate_model.visibility の係数を掛ける。v0.2.0 実機: 2500 だと巡航で自艇の視程 1,500m よりずっと先に見つかり厳しすぎたので 2000 に（静音 1,000m・停止 800m・全速 3,200m）" },
       "evasion": { "mode": "comb_tracks", "turn_toward_wakes": true, "evade_turn_rate_deg_s": 2.0, "speed_boost_kt": 5 },
       "ram": { "enabled": true, "trigger_m": 400, "give_up_m": 800, "stall_s": 6, "cooldown_s": 12, "turn_rate_bonus_deg_s": 0.5 },
       "patrol": { "edge_turn_margin_m": 700 },
-      "source": { "length_m": "historical (陽炎型118.5m)", "speed_max_kt": "historical", "turn_rate_deg_s": "design (v0.2.0 実機で 3.0 は「転舵が速すぎる」と感じたので 1.5 に。回避時は面舵いっぱいで 2.0、体当たり時は +0.5)", "guns.*": "design (実射程を夜間有効射程に縮小)", "detection.*": "design (reaction_delay_s は転舵率を 3.0→2.0 に下げた分 6→4 秒に短縮。scripts/evade-sim.ts で 730m 以上の単発が約半分避けられる水準)", "evasion.*": "design", "ram.*": "design (trigger_m で体当たりを始め give_up_m まで続ける。最接近距離が stall_s（実時間秒）更新されなければ諦め、cooldown_s は再開しない。向かってくる魚雷を見ている間は回避が優先)", "patrol.*": "design (海域の端からこの距離で中央へ向き直す。端に張り付かないため。旋回半径（25kt・1.5°/s で約 490m）＋境界余白 118m より大きくする。v0.2.0 で転舵を 3.0→1.5 にした際に 500→700)" },
+      "source": { "length_m": "historical (陽炎型118.5m)", "speed_max_kt": "historical", "turn_rate_deg_s": "design (v0.2.0 実機で 3.0 は「転舵が速すぎる」と感じたので 1.5 に。回避時は面舵いっぱいで 2.0、体当たり時は +0.5)", "guns.*": "design (実射程を夜間有効射程に縮小。rof_per_min は 1 門あたり・実時間分で、砲台の発射間隔 = 60/(rof×count) 実秒。shell_speed_mps は見てかわせるよう実弾より遅い game 時間の速さ。dispersion_m は有効射程での着弾のばらつき ± の目安で距離に比例して縮む。splash_radius_m 以内に艇の船体があれば命中。目安: 127mm は 2,000 m で ±80 m・約 1 HP/秒、1,000 m で約 3.4 HP/秒。25mm は 1,200 m で約 1.5 HP/秒、1,000 m で約 2.2 HP/秒、600 m で約 6 HP/秒。照らされたまま 1,000 m に留まると 15〜20 秒で沈む。当初案（127mm ±120 / 25mm ±40）はヘッドレス検証で 1,000 m 以内に入ってから約 6 秒で沈み厳しすぎた)",
+        "searchlight.*": "design (発見から on_delay_s 実秒で点灯し艦首方向から sweep_deg_s（deg/実秒）で艇へ振る。cone_deg の中にいれば照射)",
+        "starshell.*": "design (発見中で探照灯の射程外なら艇の位置へ撃ち illum_radius_m を duration_s 実秒照らす。cooldown_s 実秒)", "detection.*": "design (reaction_delay_s は転舵率を 3.0→2.0 に下げた分 6→4 秒に短縮。scripts/evade-sim.ts で 730m 以上の単発が約半分避けられる水準)", "evasion.*": "design", "ram.*": "design (trigger_m で体当たりを始め give_up_m まで続ける。最接近距離が stall_s（実時間秒）更新されなければ諦め、cooldown_s は再開しない。向かってくる魚雷を見ている間は回避が優先)", "patrol.*": "design (海域の端からこの距離で中央へ向き直す。端に張り付かないため。旋回半径（25kt・1.5°/s で約 490m）＋境界余白 118m より大きくする。v0.2.0 で転舵を 3.0→1.5 にした際に 500→700)" },
       "notes": "v0.1は直進のみ。v0.2.0で発見・雷跡回避（櫛で梳く）・体当たり・端での向き直しを有効化。探照灯・星弾・砲撃は v0.2.1。"
     },
     {
