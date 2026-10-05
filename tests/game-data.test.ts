@@ -17,7 +17,7 @@ describe('game-data（data/*.json の読み出し）', () => {
     expect(e.detection.torpedo_wake_detect_m).toBe(700);
     expect(e.evasion.turn_toward_wakes).toBe(true);
     expect(e.ram.trigger_m).toBe(400);
-    expect(e.patrol.edge_turn_margin_m).toBe(500);
+    expect(e.patrol.edge_turn_margin_m).toBe(700);
     expect(() => getEnemyRecord(gameData, 'nope')).toThrow();
   });
   it('視界: 半月なら敵の発見距離は巡航で 2,000 m、自艇の視程は 1,500 m。史実モードは既定で無効なので倍率 1', () => {

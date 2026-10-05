@@ -136,6 +136,8 @@ export class MissionScene extends Phaser.Scene {
     this.baseDetectM = enemyRecord.detection.base_detect_m;
     const visRange = playerVisRangeM(this.vis);
     this.visRange2 = visRange * visRange;
+    // 最初の固定ステップが回る前のフレームでも HUD に正しい発見距離が出るよう、出発時の速力で先に計算する
+    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(this.params.speedCruiseMps, this.params, this.vis.speedFactor), this.vis, false);
 
     this.slowMoFactor = feel.hit_slowmo_factor;
     this.slowMoSeconds = feel.hit_slowmo_seconds;
@@ -198,7 +200,7 @@ export class MissionScene extends Phaser.Scene {
       enemyDy: this.destroyer.state.y - this.boat.state.y,
       enemySighted: false,
       playerDetected: false,
-      detectRangeM: 0,
+      detectRangeM: this.detectRangeM,
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshSighting();

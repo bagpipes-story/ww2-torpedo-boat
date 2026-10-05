@@ -29,7 +29,7 @@ export interface ShipAiParams {
   ramCooldownS: number;
   /** 体当たり時の旋回率ボーナス deg/s */
   ramTurnRateBonusDegS: number;
-  /** 巡航中、海域の端からこの距離に入ったら中央へ向き直す m */
+  /** 巡航中、海域の端からこの距離に入ったら中央へ向き直す m（旋回半径 + 境界余白より大きくする） */
   edgeTurnMarginM: number;
   /** 通常の旋回率 deg/s と加減速 m/s² */
   turnRateDegS: number;
@@ -165,8 +165,32 @@ export function updateShipAi(
   // 海域の端が近ければ中央へ向き直す（端に張り付かない。往復の哨戒になる）
   const m = p.edgeTurnMarginM;
   if (ship.x < m || ship.y < m || ship.x > bounds.width - m || ship.y > bounds.height - m) {
-    ai.desiredHeadingDeg = bearingDeg(ship.x, ship.y, bounds.width / 2, bounds.height / 2);
+    ai.desiredHeadingDeg = edgeTurnHeadingDeg(ship, bounds, m);
   }
+}
+
+/**
+ * 端での向き直しの目標方位。中央への方位を返すが、最短側で回ると「端の外向き」の方位を通過してしまう場合は、
+ * 逆回りで 90° ずつ回る中間方位を返す（最短側だと旋回円の分だけ端へ膨らみ、旋回半径 ≈ 余白のときは境界に張り付いて横滑りした。レビューで判明）。
+ * 角では 2 辺の内向き法線の合計（斜め）を使う。
+ */
+export function edgeTurnHeadingDeg(ship: BoatState, bounds: SeaBounds, marginM: number): number {
+  const bearing = bearingDeg(ship.x, ship.y, bounds.width / 2, bounds.height / 2);
+  let ix = 0;
+  let iy = 0;
+  if (ship.x < marginM) ix += 1;
+  if (ship.x > bounds.width - marginM) ix -= 1;
+  if (ship.y < marginM) iy += 1;
+  if (ship.y > bounds.height - marginM) iy -= 1;
+  if (ix === 0 && iy === 0) return bearing;
+  const diff = wrapDeg180(bearing - ship.headingDeg);
+  if (diff === 0) return bearing;
+  const sign = diff > 0 ? 1 : -1;
+  // 端の外向きの方位（内向き法線の反対。bearingDeg の規約で (dx, dy) = (-ix, -iy)）
+  const outward = wrapDeg360((Math.atan2(-ix, iy) * 180) / Math.PI);
+  const toOutward = wrapDeg360((outward - ship.headingDeg) * sign);
+  if (toOutward < Math.abs(diff)) return wrapDeg360(ship.headingDeg - sign * 90);
+  return bearing;
 }
 
 /** 点 (x, y) から (tx, ty) への方位（0=北、時計回り） */

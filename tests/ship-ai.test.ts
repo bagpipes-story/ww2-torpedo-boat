@@ -4,6 +4,7 @@ import type { BoatState, SeaBounds } from '../src/core/boat-motion';
 import {
   combHeadingDeg,
   createShipAiState,
+  edgeTurnHeadingDeg,
   isEnemyAiDataRecord,
   shipAiParamsFromData,
   steerShip,
@@ -39,6 +40,8 @@ const P: ShipAiParams = {
 };
 const far = (): BoatState => ({ x: 5000, y: 5000, headingDeg: 0, speedMps: 0 });
 const DETECT = 2500;
+/** 艦から海域中央への方位（0=北、時計回り） */
+const bearingOf = (b: BoatState, sea: SeaBounds): number => ((Math.atan2(sea.width / 2 - b.x, -(sea.height / 2 - b.y)) * 180) / Math.PI + 360) % 360;
 /** 端の処理が邪魔しないよう広い海域。原点 (0,0) の艦は端にいるので中央寄りへずらす */
 const SEA: SeaBounds = { width: 20000, height: 20000 };
 const ship = (): BoatState => ({ x: 10000, y: 10000, headingDeg: 90, speedMps: P.cruiseSpeedMps });
@@ -216,17 +219,33 @@ describe('updateShipAi: 体当たりの継続と海域の端', () => {
     updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
     expect(ai.mode).toBe('cruise'); // trigger の外では再開しない
   });
-  it('巡航中に海域の端へ近づくと中央へ向き直す。回避中は雷跡の方位を優先', () => {
-    const ai = createShipAiState(90, P.cruiseSpeedMps);
+  it('巡航中に海域の端へ近づくと中央へ向き直す。最短側で回っても端の方を向かなければ中央の方位そのもの', () => {
+    const ai = createShipAiState(135, P.cruiseSpeedMps);
     const sea: SeaBounds = { width: 6000, height: 4000 };
-    const s: BoatState = { x: 5700, y: 2000, headingDeg: 90, speedMps: P.cruiseSpeedMps }; // 右端から 300m（margin 500 内）
+    // 右端から 300m（margin 700 内）、南東向き。中央 (3000,2000) は方位 ≈ 282.5°。最短側（右回り）は 180→225 と南〜南西を通るが右端（90°）は通らない
+    const s: BoatState = { x: 5700, y: 2600, headingDeg: 135, speedMps: P.cruiseSpeedMps };
     updateShipAi(ai, s, far(), DETECT, 8, [], P, sea, 0.1);
     expect(ai.mode).toBe('cruise');
-    expect(ai.desiredHeadingDeg).toBeCloseTo(270, 9); // 中央 (3000,2000) は真西
+    expect(ai.desiredHeadingDeg).toBeCloseTo(282.5, 0);
     const inside: BoatState = { x: 3000, y: 2000, headingDeg: 90, speedMps: P.cruiseSpeedMps };
     const ai2 = createShipAiState(90, P.cruiseSpeedMps);
     updateShipAi(ai2, inside, far(), DETECT, 8, [], P, sea, 0.1);
     expect(ai2.desiredHeadingDeg).toBe(90);
+  });
+  it('最短側で回ると端の外向き（南端なら 180°）を通る場合は逆回りで 90° ずつ', () => {
+    const sea: SeaBounds = { width: 6000, height: 4000 };
+    // 南端近く、南東向き、中央は右斜め後ろ（313°、差 +174°）。右回りだと 180° を通って端へ膨らむ → 左へ 90° = 49°
+    const se: BoatState = { x: 5000, y: 3880, headingDeg: 139, speedMps: P.cruiseSpeedMps };
+    expect(edgeTurnHeadingDeg(se, sea, 700)).toBeCloseTo(49, 9);
+    // 左へ回り終えた後（北東向き）: 中央 313° へは左回り（差 −96°）で 180° を通らない → 中央の方位
+    const ne: BoatState = { x: 4900, y: 3700, headingDeg: 49, speedMps: P.cruiseSpeedMps };
+    expect(edgeTurnHeadingDeg(ne, sea, 700)).toBeCloseTo(bearingOf(ne, sea), 9);
+    // 南西向き（221°）で中央が左斜め後ろ（36.7°、差 +176°）: 右回りは 270→360 と西・北を通り 180° は通らない → 中央の方位
+    const sw: BoatState = { x: 1600, y: 3880, headingDeg: 221, speedMps: P.cruiseSpeedMps };
+    expect(edgeTurnHeadingDeg(sw, sea, 700)).toBeCloseTo(bearingOf(sw, sea), 9);
+    // 余白の外なら常に中央の方位
+    const mid: BoatState = { x: 3000, y: 2000, headingDeg: 0, speedMps: P.cruiseSpeedMps };
+    expect(edgeTurnHeadingDeg(mid, sea, 700)).toBeCloseTo(bearingOf(mid, sea), 9);
   });
 });
 
@@ -241,7 +260,7 @@ describe('shipAiParamsFromData', () => {
     expect(p.ramGiveUpM).toBeGreaterThan(p.ramTriggerM);
     expect(p.ramStallS).toBe(6);
     expect(p.ramCooldownS).toBe(12);
-    expect(p.edgeTurnMarginM).toBe(500);
+    expect(p.edgeTurnMarginM).toBe(700);
     const h = shipAiParamsFromData(raw, 1.5);
     expect(h.reactionDelayS).toBeCloseTo(p.reactionDelayS / 1.5, 9);
     expect(h.evadeTurnRateDegS).toBeCloseTo(p.evadeTurnRateDegS * 1.5, 9);

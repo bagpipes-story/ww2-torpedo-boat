@@ -4,6 +4,7 @@
 // 実行: npx esbuild scripts/evade-sim.ts --bundle --platform=node --format=esm --outfile=/tmp/evade-sim.mjs && node /tmp/evade-sim.mjs
 import enemies from '../data/enemies.json';
 import torpedoes from '../data/torpedoes.json';
+import hitRateModel from '../data/hit_rate_model.json';
 import { createShipAiState, shipAiParamsFromData, steerShip, turnRateFor, updateShipAi, isEnemyAiDataRecord } from '../src/core/ship-ai';
 import { createTorpedoState, launchTorpedo, stepTorpedo, torpedoParamsFromData, isArmed, isTorpedoDataRecord } from '../src/core/torpedo';
 import { createCircles, fillHullCircles, pointHitsHull, interceptHeadingDeg, velocityFromHeading } from '../src/core/torpedo-solver';
@@ -64,7 +65,9 @@ const REACT = Number(process.env['REACT'] ?? REC.detection.reaction_delay_s);
 const WAKE = Number(process.env['WAKE'] ?? REC.detection.torpedo_wake_detect_m);
 // 艇は艦の前方半円〜正横（0=左正横, 90=艦首正面, 180=右正横）。15° 刻み 13 方位
 const BEARINGS = Array.from({ length: 13 }, (_, i) => i * 15);
-for (const detect of [0, 1000]) {
+// 発見距離（停止・半月）は data から: base_detect_m × speed_factor.stop × moon_factor.half
+const DETECT_STOP = REC.detection.base_detect_m * hitRateModel.visibility.speed_factor.stop * hitRateModel.visibility.moon_factor.half;
+for (const detect of [0, DETECT_STOP]) {
   const cells: string[] = [];
   for (const range of [350, 450, 730, 1000, 1400]) {
     let hit = 0, fan = 0;
@@ -72,6 +75,6 @@ for (const detect of [0, 1000]) {
     for (const bg of BEARINGS) if (run(range, bg, REACT, WAKE, 8, 4, detect)) fan++;
     cells.push(`${range}m 単発 ${Math.round((hit / BEARINGS.length) * 100)}% 扇4(8°) ${Math.round((fan / BEARINGS.length) * 100)}%`);
   }
-  rows.push(`[wake ${WAKE}m, react ${REACT}s, turn ${process.env['TURN'] ?? REC.turn_rate_deg_s}/${process.env['EVADE_TURN'] ?? REC.evasion.evade_turn_rate_deg_s}] ${detect > 0 ? '発見あり（停止 1,000m）＋体当たり' : '発見なし（回避のみ）'}: ` + cells.join(' | '));
+  rows.push(`[wake ${WAKE}m, react ${REACT}s, turn ${process.env['TURN'] ?? REC.turn_rate_deg_s}/${process.env['EVADE_TURN'] ?? REC.evasion.evade_turn_rate_deg_s}] ${detect > 0 ? `発見あり（停止 ${detect}m）＋体当たり` : '発見なし（回避のみ）'}: ` + cells.join(' | '));
 }
 console.log(rows.join('\n'));
