@@ -1,6 +1,6 @@
 // HUD・操作系の見た目の寸法（論理座標 1280×720 の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
-import { RENDER_SCALE } from './game-config';
+import { HUD_MARGIN, RENDER_SCALE } from './game-config';
 
 export const HUD_FONT = 'Menlo, Consolas, monospace';
 export const HUD_COLOR = '#9fb3c8';
@@ -60,6 +60,8 @@ export const CAMERA_LOOK_AHEAD_M = 320;
 
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
+/** 上端だけは上中央の HUD 3 行（ビルド番号・残り時間・敵影/発見）に重ならないよう広く取る */
+export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + HUD_STATUS_OFFSET_Y + HUD_FONT_STATUS_PX + 12;
 export const TARGET_MARKER_SIZE = 18;
 export const TARGET_MARKER_DISTANCE_STEP_M = 50;
 export const TARGET_MARKER_COLOR = 0xe08a8a;

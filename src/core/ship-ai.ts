@@ -23,6 +23,10 @@ export interface ShipAiParams {
   ramEnabled: boolean;
   /** 体当たりを諦める距離 m（trigger_m より大きくして境界でモードが揺れないようにする） */
   ramGiveUpM: number;
+  /** 体当たり中、最接近距離が更新されないままこの実時間秒が経てば諦める（旋回円の内側・海域の端に押し付け・振り切られた） */
+  ramStallS: number;
+  /** 諦めてから体当たりを再開しない実時間秒 */
+  ramCooldownS: number;
   /** 体当たり時の旋回率ボーナス deg/s */
   ramTurnRateBonusDegS: number;
   /** 巡航中、海域の端からこの距離に入ったら中央へ向き直す m */
@@ -50,6 +54,11 @@ export interface ShipAiState {
   playerDetected: boolean;
   /** 見失ってから警戒を解くまでの残り秒 */
   detectHoldLeftS: number;
+  /** 体当たり中の最接近距離の二乗と、それが更新されていない実時間秒 */
+  ramClosestD2: number;
+  ramStalledS: number;
+  /** 体当たりを諦めてからの再開禁止の残り秒 */
+  ramCooldownLeftS: number;
 }
 
 export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): ShipAiState {
@@ -63,6 +72,9 @@ export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): S
     seenTorpedoDy: 0,
     playerDetected: false,
     detectHoldLeftS: 0,
+    ramClosestD2: Infinity,
+    ramStalledS: 0,
+    ramCooldownLeftS: 0,
   };
 }
 
@@ -93,7 +105,7 @@ export function updateShipAi(
     if (ai.detectHoldLeftS <= 0) ai.playerDetected = false;
   }
 
-  // --- 雷跡の発見（走っている魚雷の位置を見る。雷跡の点は見ない） ---
+  // --- 雷跡の発見（走っている魚雷の位置を見る。雷跡の点は見ない）。近づいてくる魚雷だけが脅威: 通り過ぎた・並走中の魚雷では回避を続けない ---
   const wakeR2 = p.torpedoWakeDetectM * p.torpedoWakeDetectM;
   let nearest2 = Infinity;
   for (let i = 0; i < torpedoes.length; i++) {
@@ -102,7 +114,10 @@ export function updateShipAi(
     const dx = t.x - ship.x;
     const dy = t.y - ship.y;
     const d2 = dx * dx + dy * dy;
-    if (d2 <= wakeR2 && d2 < nearest2) {
+    if (d2 > wakeR2 || d2 >= nearest2) continue;
+    const th = degToRad(t.headingDeg);
+    // 魚雷の進行方向と「魚雷→艦」ベクトルの内積が正なら艦へ向かっている
+    if (Math.sin(th) * -dx + -Math.cos(th) * -dy > 0) {
       nearest2 = d2;
       ai.seenTorpedoHeadingDeg = t.headingDeg;
       ai.seenTorpedoDx = dx;
@@ -112,23 +127,35 @@ export function updateShipAi(
   if (nearest2 !== Infinity) {
     ai.wakeSeenForS = (ai.wakeSeenForS < 0 ? 0 : ai.wakeSeenForS) + realDt;
   } else if (ai.wakeSeenForS >= 0) {
-    // 魚雷が消えたら回避を解き、巡航へ戻る
+    // 向かってくる魚雷が無くなれば（消えた・通り過ぎた）回避を解き、巡航へ戻る
     ai.wakeSeenForS = -1;
   }
+  if (ai.ramCooldownLeftS > 0) ai.ramCooldownLeftS -= realDt;
 
-  // --- モード決定（体当たり > 回避 > 巡航）。体当たりは trigger_m で始め、give_up_m を超えるまで続ける ---
-  const ramRange = ai.mode === 'ram' ? p.ramGiveUpM : p.ramTriggerM;
-  if (p.ramEnabled && ai.playerDetected && pd2 <= ramRange * ramRange) {
-    ai.mode = 'ram';
-    ai.desiredHeadingDeg = bearingDeg(ship.x, ship.y, player.x, player.y);
-    ai.desiredSpeedMps = p.maxSpeedMps;
-    return;
-  }
+  // --- モード決定（回避 > 体当たり > 巡航）。向かってくる魚雷を見ている間は避けるのが先（体当たりは始めない） ---
   if (ai.wakeSeenForS >= p.reactionDelayS) {
     ai.mode = 'evade';
     ai.desiredHeadingDeg = combHeadingDeg(ai.seenTorpedoHeadingDeg, ai.seenTorpedoDx, ai.seenTorpedoDy, p.turnTowardWakes);
     ai.desiredSpeedMps = clamp(p.cruiseSpeedMps + p.speedBoostMps, 0, p.maxSpeedMps);
     return;
+  }
+  // 体当たりは trigger_m で始め、give_up_m を超えるまで続ける。近づけないまま stall_s 経てば諦め、cooldown_s は再開しない。
+  // 向かってくる魚雷が見えている間（反応遅れの最中も）は突っ込まず針路を保つ: 至近距離の魚雷が「体当たりの転舵」で外れないように
+  const ramRange = ai.mode === 'ram' ? p.ramGiveUpM : p.ramTriggerM;
+  if (p.ramEnabled && ai.playerDetected && ai.wakeSeenForS < 0 && ai.ramCooldownLeftS <= 0 && pd2 <= ramRange * ramRange) {
+    if (ai.mode !== 'ram' || pd2 < ai.ramClosestD2) {
+      ai.ramClosestD2 = pd2;
+      ai.ramStalledS = 0;
+    } else {
+      ai.ramStalledS += realDt;
+    }
+    if (ai.ramStalledS < p.ramStallS) {
+      ai.mode = 'ram';
+      ai.desiredHeadingDeg = bearingDeg(ship.x, ship.y, player.x, player.y);
+      ai.desiredSpeedMps = p.maxSpeedMps;
+      return;
+    }
+    ai.ramCooldownLeftS = p.ramCooldownS;
   }
   if (ai.mode !== 'cruise') {
     ai.mode = 'cruise';
@@ -192,7 +219,7 @@ export interface EnemyAiDataRecord {
   accel_mps2: number;
   detection: { base_detect_m: number; reaction_delay_s: number; torpedo_wake_detect_m: number };
   evasion: { turn_toward_wakes: boolean; evade_turn_rate_deg_s: number; speed_boost_kt: number };
-  ram: { enabled: boolean; trigger_m: number; give_up_m: number; turn_rate_bonus_deg_s: number };
+  ram: { enabled: boolean; trigger_m: number; give_up_m: number; stall_s: number; cooldown_s: number; turn_rate_bonus_deg_s: number };
   patrol: { edge_turn_margin_m: number };
 }
 
@@ -211,7 +238,7 @@ export function isEnemyAiDataRecord(v: unknown): v is EnemyAiDataRecord {
     hasNums(r['detection'], ['base_detect_m', 'reaction_delay_s', 'torpedo_wake_detect_m']) &&
     hasNums(eva, ['evade_turn_rate_deg_s', 'speed_boost_kt']) &&
     typeof eva?.['turn_toward_wakes'] === 'boolean' &&
-    hasNums(ram, ['trigger_m', 'give_up_m', 'turn_rate_bonus_deg_s']) &&
+    hasNums(ram, ['trigger_m', 'give_up_m', 'stall_s', 'cooldown_s', 'turn_rate_bonus_deg_s']) &&
     typeof ram?.['enabled'] === 'boolean' &&
     hasNums(r['patrol'], ['edge_turn_margin_m'])
   );
@@ -228,6 +255,8 @@ export function shipAiParamsFromData(r: EnemyAiDataRecord, evasionMultiplier: nu
     ramTriggerM: r.ram.trigger_m,
     ramEnabled: r.ram.enabled,
     ramGiveUpM: Math.max(r.ram.give_up_m, r.ram.trigger_m),
+    ramStallS: r.ram.stall_s,
+    ramCooldownS: r.ram.cooldown_s,
     ramTurnRateBonusDegS: r.ram.turn_rate_bonus_deg_s,
     edgeTurnMarginM: r.patrol.edge_turn_margin_m,
     turnRateDegS: r.turn_rate_deg_s,

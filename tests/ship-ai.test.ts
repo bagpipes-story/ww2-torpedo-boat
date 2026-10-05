@@ -28,6 +28,8 @@ const P: ShipAiParams = {
   ramTriggerM: ram['trigger_m'] as number,
   ramEnabled: ram['enabled'] as boolean,
   ramGiveUpM: ram['give_up_m'] as number,
+  ramStallS: ram['stall_s'] as number,
+  ramCooldownS: ram['cooldown_s'] as number,
   ramTurnRateBonusDegS: ram['turn_rate_bonus_deg_s'] as number,
   edgeTurnMarginM: patrol['edge_turn_margin_m']!,
   turnRateDegS: raw['turn_rate_deg_s'] as number,
@@ -94,12 +96,13 @@ describe('updateShipAi', () => {
     const ai = createShipAiState(90, P.cruiseSpeedMps);
     const s = ship();
     const torps = [torpedoAt(10000, 10600, 0)]; // 南 600m から北上してくる（範囲 700m 内）
-    let elapsed = 0;
-    while (elapsed < P.reactionDelayS - 0.05) {
+    // 0.1 秒刻みで遅れの手前までは巡航。回数で数える（0.1 の累積は浮動小数で僅かにずれるので時刻では比べない）
+    const n = Math.round(P.reactionDelayS / 0.1);
+    for (let i = 0; i < n - 1; i++) {
       updateShipAi(ai, s, far(), DETECT, 8, torps, P, SEA, 0.1);
-      elapsed += 0.1;
       expect(ai.mode).toBe('cruise');
     }
+    updateShipAi(ai, s, far(), DETECT, 8, torps, P, SEA, 0.1);
     updateShipAi(ai, s, far(), DETECT, 8, torps, P, SEA, 0.1);
     expect(ai.mode).toBe('evade');
     expect(ai.desiredHeadingDeg).toBe(180); // 南（魚雷の方）へ艦首
@@ -142,13 +145,58 @@ describe('updateShipAi', () => {
     expect(ai.desiredSpeedMps).toBeCloseTo(P.maxSpeedMps, 9);
     expect(turnRateFor('ram', P)).toBe(P.turnRateDegS + P.ramTurnRateBonusDegS);
   });
-  it('体当たりは回避より優先', () => {
+  it('向かってくる魚雷を見ている間は回避が体当たりより優先。魚雷が去れば体当たりへ', () => {
     const ai = createShipAiState(90, P.cruiseSpeedMps);
     const s = ship();
     const player: BoatState = { x: 10300, y: 10000, headingDeg: 0, speedMps: 0 };
     const torps = [torpedoAt(10000, 10600, 0)];
+    updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    expect(ai.mode).toBe('ram'); // 魚雷が無ければ体当たり
+    updateShipAi(ai, s, player, 2500, 8, torps, P, SEA, 0.1);
+    expect(ai.mode).toBe('cruise'); // 魚雷が見えたら反応遅れの間も突っ込まず針路を保つ
+    expect(ai.desiredSpeedMps).toBeCloseTo(P.cruiseSpeedMps, 9);
     for (let i = 0; i < 70; i++) updateShipAi(ai, s, player, 2500, 8, torps, P, SEA, 0.1);
+    expect(ai.mode).toBe('evade');
+    torps[0]!.active = false;
+    updateShipAi(ai, s, player, 2500, 8, torps, P, SEA, 0.1);
     expect(ai.mode).toBe('ram');
+  });
+  it('近づけないまま stall_s 経てば体当たりを諦め、cooldown_s は再開しない', () => {
+    const ai = createShipAiState(90, P.cruiseSpeedMps);
+    const s = ship();
+    const player: BoatState = { x: 10000, y: 9800, headingDeg: 0, speedMps: 0 }; // 艦は動かさない → 距離が縮まらない
+    updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    expect(ai.mode).toBe('ram');
+    const nStall = Math.round(P.ramStallS / 0.1);
+    for (let i = 0; i < nStall - 1; i++) updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    expect(ai.mode).toBe('ram');
+    updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    expect(ai.mode).toBe('cruise');
+    expect(ai.desiredSpeedMps).toBeCloseTo(P.cruiseSpeedMps, 9);
+    const nCool = Math.round(P.ramCooldownS / 0.1);
+    for (let i = 0; i < nCool - 2; i++) updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    expect(ai.mode).toBe('cruise');
+    for (let i = 0; i < 3; i++) updateShipAi(ai, s, player, 2500, 8, [], P, SEA, 0.1);
+    expect(ai.mode).toBe('ram'); // 再開（距離がまた最接近として記録され、stall を数え直す）
+  });
+});
+
+describe('updateShipAi: 通り過ぎた魚雷', () => {
+  it('艦から遠ざかる（通り過ぎた）魚雷は脅威と見なさず、回避を解いて巡航へ戻る', () => {
+    const ai = createShipAiState(90, P.cruiseSpeedMps);
+    const s = ship();
+    const t = createTorpedoState();
+    launchTorpedo(t, 10000, 9700, 0, false, false, 0, 800, 25); // 艦の北 300m を北へ走る（遠ざかる）
+    for (let i = 0; i < 100; i++) updateShipAi(ai, s, far(), DETECT, 8, [t], P, SEA, 0.1);
+    expect(ai.mode).toBe('cruise');
+    expect(ai.wakeSeenForS).toBe(-1);
+    // 同じ位置で南向き（艦へ向かう）なら脅威
+    const u = createTorpedoState();
+    launchTorpedo(u, 10000, 9700, 180, false, false, 0, 800, 25);
+    for (let i = 0; i < 70; i++) updateShipAi(ai, s, far(), DETECT, 8, [u], P, SEA, 0.1);
+    expect(ai.mode).toBe('evade');
+    expect(ai.desiredHeadingDeg).toBe(0); // 北（魚雷の方）へ艦首
   });
 });
 
@@ -191,6 +239,8 @@ describe('shipAiParamsFromData', () => {
     expect(p.maxSpeedMps).toBeCloseTo(ktToMps(35), 9);
     expect(p.speedBoostMps).toBeCloseTo(ktToMps(5), 9);
     expect(p.ramGiveUpM).toBeGreaterThan(p.ramTriggerM);
+    expect(p.ramStallS).toBe(6);
+    expect(p.ramCooldownS).toBe(12);
     expect(p.edgeTurnMarginM).toBe(500);
     const h = shipAiParamsFromData(raw, 1.5);
     expect(h.reactionDelayS).toBeCloseTo(p.reactionDelayS / 1.5, 9);

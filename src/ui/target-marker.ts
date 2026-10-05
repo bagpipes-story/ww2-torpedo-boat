@@ -2,7 +2,14 @@
 // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_MARGIN, hudTextStyle } from '../config/ui-config';
+import {
+  CAMERA_LOOK_AHEAD_M,
+  HUD_FONT_MARKER_PX,
+  TARGET_MARKER_DISTANCE_STEP_M,
+  TARGET_MARKER_MARGIN,
+  TARGET_MARKER_TOP_MARGIN,
+  hudTextStyle,
+} from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { degToRad, radToDeg } from '../core/units';
 
@@ -33,14 +40,16 @@ export class TargetMarker {
     const h = degToRad(t.headingDeg);
     const sx = (t.enemyDx - Math.sin(h) * CAMERA_LOOK_AHEAD_M) * this.worldZoom;
     const sy = (t.enemyDy + Math.cos(h) * CAMERA_LOOK_AHEAD_M) * this.worldZoom;
+    // 表示できる矩形: 左右・下は MARGIN、上は HUD 3 行分広く（中心からの距離で持つ）
     const halfW = cx - TARGET_MARKER_MARGIN;
-    const halfH = cy - TARGET_MARKER_MARGIN;
-    if (Math.abs(sx) < halfW && Math.abs(sy) < halfH) {
+    const downH = cy - TARGET_MARKER_MARGIN;
+    const upH = cy - TARGET_MARKER_TOP_MARGIN;
+    if (Math.abs(sx) < halfW && sy < downH && -sy < upH) {
       this.setShown(false);
       return;
     }
     // 画面の矩形の縁へクランプ（中心からの方向を保つ）
-    const k = Math.min(halfW / Math.max(Math.abs(sx), 1e-6), halfH / Math.max(Math.abs(sy), 1e-6));
+    const k = Math.min(halfW / Math.max(Math.abs(sx), 1e-6), (sy >= 0 ? downH : upH) / Math.max(Math.abs(sy), 1e-6));
     const mx = cx + sx * k;
     const my = cy + sy * k;
     this.arrow.setPosition(mx, my).setAngle(radToDeg(Math.atan2(sx, -sy)));
