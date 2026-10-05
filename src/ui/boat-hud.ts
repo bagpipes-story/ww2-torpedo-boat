@@ -2,13 +2,17 @@
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
+  HUD_COLOR,
   HUD_COLOR_STRONG,
+  HUD_COLOR_WARN,
   HUD_DEBUG_LINE_HEIGHT,
   HUD_FONT_HEADING_PX,
   HUD_FONT_MISSION_PX,
   HUD_FONT_SPEED_PX,
+  HUD_FONT_STATUS_PX,
   HUD_FONT_STEP_PX,
   HUD_HEADING_OFFSET_Y,
+  HUD_STATUS_OFFSET_Y,
   HUD_STEP_BASELINE_NUDGE,
   HUD_STEP_OFFSET_X,
   HUD_TEXT_GAP,
@@ -27,6 +31,9 @@ const STEP_LABEL: Record<SpeedStep, string> = {
   full: '全速',
 };
 
+/** 敵影×発見の 4 状態。index = (敵影あり ? 1 : 0) | (発見された ? 2 : 0) */
+const STATUS_LABEL = ['敵影なし ・ 未発見', '敵影あり ・ 未発見', '敵影なし ・ 発見された！', '敵影あり ・ 発見された！'] as const;
+
 export class BoatHud {
   private readonly speedText: Phaser.GameObjects.Text;
   private readonly stepText: Phaser.GameObjects.Text;
@@ -34,7 +41,9 @@ export class BoatHud {
   private readonly rudderBar: Phaser.GameObjects.Image;
   private readonly rudderMarker: Phaser.GameObjects.Image;
   private readonly missionText: Phaser.GameObjects.Text;
+  private readonly statusText: Phaser.GameObjects.Text;
   private readonly barCenterX: number;
+  private lastStatus = -1;
   private lastTimeLeft = -1;
   private lastHits = -1;
   private lastSpeedKt = -1;
@@ -76,6 +85,11 @@ export class BoatHud {
       .text(GAME_WIDTH / 2, HUD_MARGIN + HUD_DEBUG_LINE_HEIGHT, '', hudTextStyle(HUD_FONT_MISSION_PX, HUD_COLOR_STRONG))
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.hud);
+    // 上中央 3 行目: 敵影と発見状態（docs/02 §6.5）
+    this.statusText = scene.add
+      .text(GAME_WIDTH / 2, HUD_MARGIN + HUD_STATUS_OFFSET_Y, '', hudTextStyle(HUD_FONT_STATUS_PX))
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.hud);
   }
 
   /** 毎フレーム呼ぶ。表示値が変わったときだけ setText / setX する */
@@ -105,6 +119,11 @@ export class BoatHud {
       this.lastHits = t.hits;
       this.missionText.setText(`残り ${timeLeft} 秒   命中 ${t.hits}`);
     }
+    const status = (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0);
+    if (status !== this.lastStatus) {
+      this.lastStatus = status;
+      this.statusText.setText(STATUS_LABEL[status]!).setColor(t.playerDetected ? HUD_COLOR_WARN : HUD_COLOR);
+    }
   }
 
   destroy(): void {
@@ -114,5 +133,6 @@ export class BoatHud {
     this.rudderBar.destroy();
     this.rudderMarker.destroy();
     this.missionText.destroy();
+    this.statusText.destroy();
   }
 }

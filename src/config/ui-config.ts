@@ -36,6 +36,10 @@ export const STICK_EDGE_MARGIN = 16;
 
 /** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
 export const HUD_FONT_MISSION_PX = 22;
+/** 3 行目: 敵影（見えているか）と発見状態（docs/02 §6.5）。発見されたら警告色 */
+export const HUD_FONT_STATUS_PX = 20;
+export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX + 8;
+export const HUD_COLOR_WARN = '#ff8a7a';
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉 */
 export const TORPEDO_BUTTON_RADIUS = 64;
@@ -86,6 +90,13 @@ export const TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR = 0.4;
 export const LEAD_MARKER_SCALE = 0.35;
 export const LEAD_MARKER_TINT = 0xffe066;
 export const LEAD_MARKER_ALPHA = 0.8;
+
+/** デバッグ時（?debug）だけ出す距離の円: テクスチャの半径（世界単位。表示時に必要な半径へ拡縮する）、線幅、色、濃さ */
+export const DEBUG_RING_RADIUS_UNITS = 500;
+export const DEBUG_RING_LINE_WIDTH = 3;
+export const DEBUG_RING_TINT_DETECT = 0xff8a7a;
+export const DEBUG_RING_TINT_VIS = 0x9fd0ff;
+export const DEBUG_RING_ALPHA = 0.5;
 
 /** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
 export const EXPLOSION_DURATION_MS = 600;

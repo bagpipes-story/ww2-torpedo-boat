@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import enemies from '../data/enemies.json';
-import { createCircles, fillHullCircles, interceptHeadingDeg, pointHitsCircles, pointHitsHull, velocityFromHeading } from '../src/core/torpedo-solver';
+import { boatTouchesHull, createCircles, fillHullCircles, interceptHeadingDeg, pointHitsCircles, pointHitsHull, velocityFromHeading } from '../src/core/torpedo-solver';
 import { createTorpedoState, launchTorpedo, stepTorpedo, type TorpedoParams } from '../src/core/torpedo';
 import { stepStraight, type BoatState } from '../src/core/boat-motion';
 import { ktToMps, ydToM } from '../src/core/units';
@@ -148,5 +148,21 @@ describe('interceptHeadingDeg（見越し角）', () => {
       hit = pointHitsHull(s.x, s.y, circles);
     }
     expect(hit).toBe(false);
+  });
+});
+
+describe('boatTouchesHull（体当たり）', () => {
+  it('艇の中心が離れていても船首が船体に触れれば接触。離れていれば接触しない', () => {
+    const hull = createCircles(5);
+    fillHullCircles(hull, 0, 0, 90, 118, 10.8); // 東西に 118 m、半幅 5.4 m
+    // 艇（全長 24.4 m、半長 12.2）が北から船体へ向いて、中心が 15 m 北: 船首は 2.8 m 北 → 半幅 5.4 内
+    expect(boatTouchesHull(0, -15, 180, 12.2, hull)).toBe(true);
+    // 同じ位置で横向き（船首が東西）なら 15 m 離れたまま → 接触しない
+    expect(boatTouchesHull(0, -15, 90, 12.2, hull)).toBe(false);
+    // 船尾側でも触れる
+    expect(boatTouchesHull(0, 15, 180, 12.2, hull)).toBe(true);
+    // 艦の端（x=59）の少し外側: 船首が触れる
+    expect(boatTouchesHull(70, 0, 270, 12.2, hull)).toBe(true);
+    expect(boatTouchesHull(75, 0, 270, 12.2, hull)).toBe(false);
   });
 });

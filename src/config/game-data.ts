@@ -7,7 +7,9 @@ import hitRateModel from '../../data/hit_rate_model.json';
 import riskEvents from '../../data/risk_events.json';
 import missionsSeed from '../../data/missions_seed.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
+import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
+import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
 
 export const gameData = {
   boats,
@@ -41,6 +43,8 @@ export interface PrototypeMission {
   durationS: number;
   /** プロトタイプ用の沈没本数の上書き。無ければ enemies.json の torpedo_hits_to_sink */
   enemyHitsToSink: number | null;
+  /** 月齢（ミッション本体の moon。視界係数に使う。docs/02 §6.5） */
+  moon: MoonPhase;
 }
 
 function isNum(v: unknown): v is number {
@@ -72,6 +76,8 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   if (typeof playerBoatId !== 'string') throw new Error(`${missionId}.player_boat が無い`);
   const torpedoId = m['torpedo_type'];
   if (typeof torpedoId !== 'string') throw new Error(`${missionId}.torpedo_type が無い`);
+  const moon = m['moon'];
+  if (!isMoonPhase(moon)) throw new Error(`${missionId}.moon が dark/half/full のどれでもない（${String(moon)}。昼は v0.6 で扱う）`);
   return {
     id: missionId,
     playerBoatId,
@@ -82,6 +88,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     enemyStart: readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`),
     durationS: proto['duration_s'],
     enemyHitsToSink: isNum(proto['enemy_hits_to_sink']) ? proto['enemy_hits_to_sink'] : null,
+    moon,
   };
 }
 
@@ -107,11 +114,10 @@ export function getTorpedoRecord(data: GameData, torpedoId: string): TorpedoData
   return t;
 }
 
-/** enemies.json の 1 レコードのうち v0.1 で使う部分 */
-export interface EnemyDataRecord {
+/** enemies.json の 1 レコードのうち v0.2 で使う部分（船体＋AI） */
+export interface EnemyDataRecord extends EnemyAiDataRecord {
   length_m: number;
   beam_m: number;
-  speed_typical_kt: number;
   hull_circles: number;
   torpedo_hits_to_sink: number;
 }
@@ -119,13 +125,46 @@ export interface EnemyDataRecord {
 export function getEnemyRecord(data: GameData, enemyId: string): EnemyDataRecord {
   const e = data.enemies.enemies.find((x) => x.id === enemyId) as Record<string, unknown> | undefined;
   if (!e) throw new Error(`enemies.json に ${enemyId} が無い`);
-  const keys = ['length_m', 'beam_m', 'speed_typical_kt', 'hull_circles', 'torpedo_hits_to_sink'] as const;
+  const keys = ['length_m', 'beam_m', 'hull_circles', 'torpedo_hits_to_sink'] as const;
   for (const k of keys) if (!isNum(e[k])) throw new Error(`enemies.json の ${enemyId}.${k} が無い`);
+  if (!isEnemyAiDataRecord(e)) {
+    throw new Error(`enemies.json の ${enemyId} に speed/turn_rate/accel/detection/evasion/ram/patrol のどれかが欠けている（docs/02 §6.4）`);
+  }
   return {
     length_m: e['length_m'] as number,
     beam_m: e['beam_m'] as number,
-    speed_typical_kt: e['speed_typical_kt'] as number,
     hull_circles: e['hull_circles'] as number,
     torpedo_hits_to_sink: e['torpedo_hits_to_sink'] as number,
+    speed_typical_kt: e.speed_typical_kt,
+    speed_max_kt: e.speed_max_kt,
+    turn_rate_deg_s: e.turn_rate_deg_s,
+    accel_mps2: e.accel_mps2,
+    detection: e.detection,
+    evasion: e.evasion,
+    ram: e.ram,
+    patrol: e.patrol,
   };
+}
+
+/**
+ * 視界パラメータ（docs/02 §6.5）: hit_rate_model.visibility に月齢を当て、史実モードが既定で有効なら発見距離の倍率を掛ける。
+ * 起動時に 1 回作り、以後は数値だけ読む（§7）。
+ */
+export function getVisibilityParams(data: GameData, moon: MoonPhase): VisibilityParams {
+  const v = data.hitRateModel.visibility;
+  const hm = data.hitRateModel.historical_mode;
+  return {
+    visPlayerBaseM: v.vis_player_base_m,
+    moonFactor: v.moon_factor[moon],
+    speedFactor: v.speed_factor,
+    smokeFactor: v.smoke_factor,
+    detectHoldS: v.detect_hold_s,
+    detectionMultiplier: hm.enabled_default ? hm.enemy_detection_multiplier : 1,
+  };
+}
+
+/** 史実モードが既定で有効なら回避の倍率、そうでなければ 1 */
+export function getEvasionMultiplier(data: GameData): number {
+  const hm = data.hitRateModel.historical_mode;
+  return hm.enabled_default ? hm.enemy_evasion_multiplier : 1;
 }

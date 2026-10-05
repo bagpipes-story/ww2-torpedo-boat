@@ -3,6 +3,31 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.2.0 — 2026-10-05（夜戦①：発見と回避）
+
+- 目的: 夜戦の「見つかる・見つける」を入れる。静音で近づく価値が生まれ、駆逐艦が雷跡を見て回避し、近づきすぎると体当たりされる（docs/03 v0.2.0。v0.2 は 3 つに分割: v0.2.0 発見と回避 → v0.2.1 探照灯・星弾・砲撃・艇 HP → v0.2.2 煙幕・見張りズーム）。前回の既知の制約「敵マーカーは常時表示」を解消する。
+- 変更点:
+  - `src/core/visibility.ts`: 視界モデル（docs/02 §6.5）。敵の発見距離 = `base_detect_m` × 速力係数 × 月明係数 × 煙幕係数 × 史実モード倍率。速力係数は 停止/静音/巡航/全速 の値を速度で線形補間（`speedFactorFor`）。自艇の視程 = `vis_player_base_m` × 月明係数。
+  - `src/core/ship-ai.ts`: 駆逐艦の判断と操舵。巡航 → 魚雷の位置が `torpedo_wake_detect_m` 以内に入って `reaction_delay_s` 経つと回避（`combHeadingDeg`: 魚雷の進路と平行な 2 方位のうち雷跡の方へ艦首を向ける「櫛で梳く」。`evade_turn_rate_deg_s`、`speed_boost_kt`）→ プレイヤーを発見済みで `ram.trigger_m` 以内なら体当たり（最大速力、旋回率ボーナス。`give_up_m` まで続けて境界でモードが揺れない）。巡航中に海域の端から `patrol.edge_turn_margin_m` に入ると中央へ向き直す（端に張り付かない）。`steerShip` は目標方位へ旋回率上限で向き、加速度で目標速度へ。`shipAiParamsFromData` で enemies.json から読む（kt→m/s、史実モードの `enemy_evasion_multiplier` は反応遅れを短く・転舵を速くする）。
+  - 時間の単位: `reaction_delay_s` と `detect_hold_s` は **実時間秒**（プレイヤーの体感に合わせる。雷跡が艦に届いてから約 6 秒後に転舵が見える）。速度・旋回率・加速度は time_scale 込みの dt で積分する。enemies.json の `detection.note` に明記。
+  - 回避の強さの検証（core だけのオフライン模擬: 静止した艇から見越し角どおりに撃ち、艦の前方半円〜正横 6 方位で命中率）: 現行値（wake 700 m、反応 6 秒）で 450 m は単発 100%、730〜1,400 m は単発 67%・扇 4 本 67%。不発・蛇行（約 12%）と狙いの誤差を足すと `kpi_by_range` の 35〜45% 帯に収まる見込みなので設計値は変えない。参考: 反応 3 秒だと 730 m 以上の単発は 0%、wake 400 m だとほぼ回避しない。調整は v0.5 の KPI 集計で。
+  - `src/core/torpedo-solver.ts`: `boatTouchesHull`（艇の船首・中央・船尾の 3 点が艦の船体カプセルに入るか。体当たり判定。sqrt 無し）。
+  - `src/entities/destroyer.ts`: 直進（`stepStraight`）を AI 操舵に置き換え。固定ステップで `updateShipAi` → `steerShip` → 境界クランプ → 船体円更新。視程外ではスプライトを隠す（変わったときだけ `setVisible`）。`src/entities/player-boat.ts`: 沈没演出（駆逐艦と同じ tween）。
+  - `MissionScene`: 毎ステップの発見距離を速力から計算して駆逐艦へ渡す（確保しない）。体当たり → 自艇位置で爆発・スロー・揺れ → 沈没演出 → Result「駆逐艦に体当たりされた」（生還: なし）。どちらかの沈没演出中は他の終了条件を止める。`refreshSighting` が敵の相対位置・`enemySighted`（視程内）・`playerDetected` を telemetry に書く。`?debug` のときだけ発見距離（赤）と視程（青）の円（`DebugRanges`。専用テクスチャは debug 時だけ生成）。`DEBUG_ENABLED` を game-config に集約。
+  - HUD: 上中央 3 行目に「敵影なし/あり ・ 未発見/発見された！」（4 状態の index が変わったときだけ setText、発見で警告色）。`TargetMarker` は `enemySighted` のときだけ出す。`ResultScene` に理由 `rammed`。
+  - data: `hit_rate_model.json` に `visibility`（`vis_player_base_m` 1500、`moon_factor` dark 0.6 / half 1.0 / full 1.3、`speed_factor` stop 0.4 / silent 0.5 / cruise 1.0 / full 1.6、`smoke_factor` 0.3（v0.2.2 で使う）、`detect_hold_s` 8。すべて design。静音 8 kt で 1,250 m、巡航で 2,500 m、全速で 4,000 m から見つかる。自艇の視程は半月で 1,500 m なので、静音なら「先に見つける」）。`enemies.json` の駆逐艦に `ram.give_up_m` 800 と `patrol.edge_turn_margin_m` 500（design）。`missions_seed.json` の `us_02.v0_1_prototype.duration_s` を 60 → 90（静音接近に時間がかかり、回避された後の 2 回目の接近も入るように）。ミッション本体の `moon` を読むようにした（`half`。`day` は v0.6 まで受け付けない）。
+  - `getEnemyRecord` が AI フィールドの有無を起動時に検査（欠けていれば例外。データ駆動なので壊れていればすぐ分かる）。`getVisibilityParams` / `getEvasionMultiplier` は史実モードが `enabled_default` のときだけ倍率を掛ける（現状 1）。
+  - テスト 93 件（+28）: `tests/visibility.test.ts`（係数の補間・端の値・煙幕）、`tests/ship-ai.test.ts`（操舵の上限と最短側、櫛の方位、反応遅れ、見失い hold、体当たりの開始/継続/諦め、端での向き直し、data からの読み出しと欠落検出）、`tests/torpedo-solver.test.ts` に体当たり判定、`tests/game-data.test.ts`（us_02 の月齢・90 秒、駆逐艦レコード、視界の数値）。
+  - 検証: ヘッドレス Chromium（iPhone 15 相当、`?debug`）で (A) 静音接近 → 1,500 m で敵影 → 1,250 m で発見される → 遅らせた 1 本で駆逐艦が回避に入る、(B) 全速で突っ込む → 4,000 m で発見 → 370 m で体当たりモード → 衝突 → Result「体当たりされた」生還なし、を再現。
+- 既知の制約:
+  - 当たり判定は実寸（`hit_scale` 1）。前回からの持ち越し。
+  - 発見されても v0.2.0 では「体当たり」以外の反撃が無い（砲撃・探照灯は v0.2.1）。発見距離の円は `?debug` 付き URL でだけ見える。
+  - 回避は決定論的（見れば必ず避け始める）。見張りの見落としなどの揺らぎは KPI を見てから。
+  - 駆逐艦は回避・体当たりの後、元の針路へ戻らない（端で中央へ向き直すだけ）。航路は v0.4。
+  - `mission-scene.ts` が 357 行（CLAUDE.md §4 の 300 行目安を超過）。v0.2.1 で砲撃を足すときに「世界（エンティティと固定ステップ）」と「シーン（カメラ・終了・Result）」に分ける。
+  - 自艇の煙幕と見張りズームは未実装（v0.2.2）。`smoke_factor` は data にあるが常に不使用。
+- 実機テスト結果: （未）
+
 ## v0.1.3 — 2026-10-04（魚雷と命中）
 
 - 目的: 魚雷 4 本を撃ち、雷跡が見え、直進する駆逐艦 1 隻に幾何判定で当たる・外れるが分かり、命中で沈没演出、終了後に Result を出す（docs/03 v0.1.3）。

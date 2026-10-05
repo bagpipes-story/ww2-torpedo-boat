@@ -33,6 +33,9 @@ function computeRenderScale(): number {
 }
 export const RENDER_SCALE = computeRenderScale();
 
+/** URL に ?debug があるときだけ true。window.__game の公開、見越し点マーカー、発見距離・視程の円を出す（通常の Pages URL では何もしない） */
+export const DEBUG_ENABLED = typeof window !== 'undefined' && window.location.search.includes('debug');
+
 /** 同時に扱うタッチ数（マウス 1 ＋ タッチ 3: スティック＋右側ボタン）。Phaser の input.activePointers に渡す */
 export const ACTIVE_TOUCH_POINTERS = 3;
 
@@ -74,6 +77,7 @@ export const TEXTURE_KEYS = {
   torpedoButton: 'tex-torpedo-button',
   explosionRing: 'tex-explosion-ring',
   targetMarker: 'tex-target-marker',
+  debugRing: 'tex-debug-ring',
   stickBase: 'tex-stick-base',
   stickKnob: 'tex-stick-knob',
   rudderBar: 'tex-rudder-bar',

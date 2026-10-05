@@ -23,7 +23,8 @@ export interface TorpedoEvents {
 }
 
 export class TorpedoPool {
-  private readonly states: TorpedoState[] = [];
+  /** 魚雷の状態（敵 AI が雷跡の発見に読む。書き換えない） */
+  readonly states: TorpedoState[] = [];
   private readonly sprites: Phaser.GameObjects.Image[] = [];
   private readonly wakeDots: Phaser.GameObjects.Image[] = [];
   private readonly wakeAges: Float32Array;

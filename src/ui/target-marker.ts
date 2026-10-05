@@ -1,4 +1,4 @@
-// 画面外の敵（駆逐艦）の方向と距離を画面端に出すマーカー。v0.2 の視界モデルが入るまでは常時表示。
+// 画面外の敵（駆逐艦）の方向と距離を画面端に出すマーカー。自艇の視程内（telemetry.enemySighted）にいるときだけ出す（docs/02 §6.5）。
 // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -21,9 +21,9 @@ export class TargetMarker {
     this.label = scene.add.text(0, 0, '', hudTextStyle(HUD_FONT_MARKER_PX)).setOrigin(0.5, 0).setDepth(DEPTH.hud).setVisible(false);
   }
 
-  /** 毎フレーム。敵の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する */
+  /** 毎フレーム。敵の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する。視程外・沈没後は隠す */
   refresh(t: BoatTelemetry): void {
-    if (Number.isNaN(t.enemyDx)) {
+    if (!t.enemySighted || Number.isNaN(t.enemyDx)) {
       this.setShown(false);
       return;
     }
