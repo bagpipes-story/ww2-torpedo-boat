@@ -1,6 +1,7 @@
 // フローティング・バーチャルスティック（docs/02 §5、v0.2.1 で見直し）。画面左半分のタッチ開始点に出て、
 // 倒した方向が目標方位（画面上=北）、倒した量が目標速度（中立=停止、いっぱいで全速）。カメラは回転しないので画面の向き＝世界の方位。
-// 触れた点がそのまま中立（端に近くても原点をずらさない。ずらすと「置いただけで動き出す」）。指が半径を越えたら台座が指についてくる。
+// 触れた点がそのまま中立（端に近くても原点をずらさない。ずらすと「置いただけで動き出す」）。台座は触れた点に固定し、指が半径を越えてもノブは縁で止まる
+// （v0.2.1 実機: 台座が指についてくる方式は「強く倒すとスティック自体が動く」と不評だった）。
 // HUD シーン（論理座標 1280×720）で動かす。結果は共有 InputState に書く（確保しない）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -59,20 +60,13 @@ export class VirtualStick {
     this.input.headingDeg = NaN;
   }
 
-  /** 指の論理座標から、ノブ位置と目標方位・目標速度を更新する。半径を越えた分は原点を指の方へ引きずる（台座が追従） */
+  /** 指の論理座標から、ノブ位置と目標方位・目標速度を更新する。台座は動かさず、ノブは縁（半径）で止める */
   private applyFinger(x: number, y: number): void {
-    let dx = x - this.originX;
-    let dy = y - this.originY;
+    const dx = x - this.originX;
+    const dy = y - this.originY;
     const len = Math.hypot(dx, dy);
-    if (len > STICK_RADIUS) {
-      const k = (len - STICK_RADIUS) / len;
-      this.originX += dx * k;
-      this.originY += dy * k;
-      dx = x - this.originX;
-      dy = y - this.originY;
-      this.base.setPosition(this.originX, this.originY);
-    }
-    this.knob.setPosition(x, y);
+    const k = len > STICK_RADIUS ? STICK_RADIUS / len : 1;
+    this.knob.setPosition(this.originX + dx * k, this.originY + dy * k);
     stickToCommand(dx, dy, STICK_RADIUS, STICK_DEAD_ZONE, this.cmd);
     this.input.speed01 = this.cmd.speed01;
     this.input.headingDeg = this.cmd.headingDeg;
