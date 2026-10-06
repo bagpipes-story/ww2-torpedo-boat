@@ -110,7 +110,8 @@ export function createGunneryState(p: GunneryParams, shellPoolSize: number, ship
 
 /**
  * 探照灯と星弾（実時間）。発見中は遅れの後に点灯し、艇の方位へ掃引して追う。見失えば消す。
- * 星弾は、発見中で探照灯の射程外（または掃引が届いていない）なら冷却が明けている限り艇の位置へ撃ち、一定時間その周りを照らす。
+ * 星弾は「発見中・探照灯の点灯遅れが明けている・探照灯の射程外かつ星弾の射程内・艇が艦の方へ進んでいる・冷却が明けている」のとき
+ * 艇の位置へ撃ち、一定時間その周りを照らす。遠ざかる艇には撃たない（逃げる艇への追い打ちにしない設計上の譲歩）。
  */
 export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number): void {
   const dx = player.x - ship.x;
@@ -148,7 +149,7 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     star.illuminating = false;
   }
   // 星弾は探照灯と同じ点灯遅れ（light.on）の後。発見した瞬間に砲撃が始まらないようにする。
-  // 遠ざかる艇（距離が開いている）には撃たない: 探照灯の射程を抜けて逃げる艇への追い打ちにならないように（v0.2.1 実機: 「範囲外でも砲撃が続く」）
+  // 艇が艦の方へ進んでいるときだけ撃つ（艇自身の速度ベクトルで判定。艦の動きは見ない）: 探照灯の射程を抜けて逃げる艇への追い打ちにならないように（v0.2.1 実機: 「範囲外でも砲撃が続く」）
   const ph = degToRad(player.headingDeg);
   const closing = (Math.sin(ph) * -dx + -Math.cos(ph) * -dy) * player.speedMps > 0;
   if (playerDetected && light.on && closing && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
