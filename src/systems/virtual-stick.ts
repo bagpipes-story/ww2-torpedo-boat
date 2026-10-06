@@ -1,9 +1,11 @@
-// フローティング・バーチャルスティック（docs/02 §5）。画面左半分のタッチ開始点に出て、X=舵、Y=スロットル。
+// フローティング・バーチャルスティック（docs/02 §5、v0.2.1 で見直し）。画面左半分のタッチ開始点に出て、
+// 倒した方向が目標方位（画面上=北）、倒した量が目標速度（中立=停止、いっぱいで全速）。カメラは回転しないので画面の向き＝世界の方位。
 // HUD シーン（論理座標 1280×720）で動かす。結果は共有 InputState に書く（確保しない）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { STICK_BASE_ALPHA, STICK_DEAD_ZONE, STICK_EDGE_MARGIN, STICK_KNOB_ALPHA, STICK_RADIUS } from '../config/ui-config';
 import { applyDeadZone, type InputState } from '../core/input-state';
+import { radToDeg, wrapDeg360 } from '../core/units';
 
 export class VirtualStick {
   private pointerId = -1;
@@ -55,7 +57,7 @@ export class VirtualStick {
     this.applyFinger(v.x, v.y);
   }
 
-  /** 指の論理座標から、ノブ位置と舵・スロットルを更新する */
+  /** 指の論理座標から、ノブ位置と目標方位・目標速度を更新する */
   private applyFinger(x: number, y: number): void {
     let dx = x - this.originX;
     let dy = y - this.originY;
@@ -66,9 +68,10 @@ export class VirtualStick {
       dy *= k;
     }
     this.knob.setPosition(this.originX + dx, this.originY + dy).setVisible(true);
-    this.input.rudder = applyDeadZone(dx / STICK_RADIUS, STICK_DEAD_ZONE);
-    // 画面上（dy<0）が全速なので符号を反転
-    this.input.throttle = -applyDeadZone(dy / STICK_RADIUS, STICK_DEAD_ZONE);
+    const mag = applyDeadZone(Math.min(len, STICK_RADIUS) / STICK_RADIUS, STICK_DEAD_ZONE);
+    this.input.speed01 = mag;
+    // デッドゾーン内は針路を保つ。方位は画面上を 0 として時計回り（atan2(dx, -dy)）
+    this.input.headingDeg = mag > 0 ? wrapDeg360(radToDeg(Math.atan2(dx, -dy))) : NaN;
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
@@ -83,8 +86,8 @@ export class VirtualStick {
     this.base.setVisible(false);
     this.knob.setVisible(false);
     this.input.stickActive = false;
-    this.input.rudder = 0;
-    this.input.throttle = 0;
+    this.input.headingDeg = NaN;
+    this.input.speed01 = 0;
   }
 
   destroy(): void {

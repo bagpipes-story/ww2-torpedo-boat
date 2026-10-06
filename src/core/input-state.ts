@@ -2,10 +2,10 @@
 import { clamp } from './units';
 
 export interface InputState {
-  /** -1(左)〜+1(右) */
-  rudder: number;
-  /** +1=全速、0=巡航、0 未満=静音、THROTTLE_STOP（boat-motion.ts）以下=停止 */
-  throttle: number;
+  /** 目標方位（0=北=画面上、時計回り）。NaN なら針路を保つ（スティック中立） */
+  headingDeg: number;
+  /** 目標速度（全速に対する比率 0〜1）。中立=0=停止、倒すほど速い */
+  speed01: number;
   /** スティックに触れている間 true。キーボード入力はこの間は無視する */
   stickActive: boolean;
   /** 魚雷ボタンのタップ（1 本）。Mission が消費して false に戻す */
@@ -15,12 +15,12 @@ export interface InputState {
 }
 
 export function createInputState(): InputState {
-  return { rudder: 0, throttle: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN };
 }
 
 export function resetInput(s: InputState): void {
-  s.rudder = 0;
-  s.throttle = 0;
+  s.headingDeg = NaN;
+  s.speed01 = 0;
   s.stickActive = false;
   s.fireTap = false;
   s.fireSalvoSpreadDeg = NaN;

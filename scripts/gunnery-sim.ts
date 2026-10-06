@@ -1,11 +1,11 @@
 // 砲撃の強さを測るオフライン模擬（Phaser 非依存。src/core と data だけ）。docs/02 §6.5・§6.6、v0.2.1。
 // (1) 距離ごとの HP/秒（静止した艇、照らされっぱなし）、(2) 照らされたまま留まったときの沈没までの秒数（火災込み、200 回の中央値）、
-// (3) 攻撃行動: 静音で 1,000 m まで寄り（発見 1,000 m）、発射して全速で反転離脱したときの残り HP。
+// (3) 攻撃行動: 静音帯の上限 18 kt で 1,000 m まで寄り（発見 1,000 m）、発射して全速で反転離脱したときの残り HP。
 // 実行: npx esbuild scripts/gunnery-sim.ts --bundle --platform=node --format=esm --outfile=/tmp/gunnery-sim.mjs && node /tmp/gunnery-sim.mjs
 import boats from '../data/boats.json';
 import enemies from '../data/enemies.json';
 import hitRateModel from '../data/hit_rate_model.json';
-import { boatParamsFromData, isBoatDataRecord, stepBoat, type BoatState } from '../src/core/boat-motion';
+import { boatParamsFromData, isBoatDataRecord, speedBandFor, stepBoat, type BoatState } from '../src/core/boat-motion';
 import {
   applyShellHit,
   createDamageState,
@@ -76,22 +76,23 @@ function attackRun(seed: number): { hpLeft: number; litS: number; sankAtS: numbe
   const g = createGunneryState(GP, 48, 90);
   const d = createDamageState(DP);
   const out: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
-  const player: BoatState = { x: 0, y: 1800, headingDeg: 0, speedMps: ktToMps(8) };
+  const player: BoatState = { x: 0, y: 1800, headingDeg: 0, speedMps: ktToMps(18) };
   const shipMoving: BoatState = { x: 0, y: 0, headingDeg: 90, speedMps: 0 };
   const rng = new SeededRng(seed);
   let dead = false;
   const ev: ShellEvents = { onFire: () => {}, onImpact: (i, _x, _y, hit) => { if (hit && !dead) dead = applyShellHit(d, GP.guns[i]!, DP, rng, out).destroyed; } };
-  const input = { rudder: 0, throttle: -0.5 };
-  let phase: 'approach' | 'turn' | 'escape' = 'approach';
+  // 静音帯の上限（18 kt）で北へ寄り、1,000 m で南へ全速（目標方位 180、全速比 1）
+  const input = { headingDeg: 0, speed01: BP.silentMaxMps / BP.speedMaxMps };
+  let phase: 'approach' | 'escape' = 'approach';
   let litS = 0;
   for (let i = 0; i < 120 * 60; i++) {
     const dx = player.x - shipMoving.x;
     const dy = player.y - shipMoving.y;
     const dist = Math.hypot(dx, dy);
-    if (phase === 'approach' && dist <= 1000) { phase = 'turn'; input.throttle = 1; input.rudder = 1; }
-    if (phase === 'turn' && Math.abs(((player.headingDeg - 180 + 540) % 360) - 180) < 5) { phase = 'escape'; input.rudder = 0; }
+    if (phase === 'approach' && dist <= 1000) { phase = 'escape'; input.headingDeg = 180; input.speed01 = 1; }
     stepBoat(player, input, BP, GAME);
-    const stepFactor = player.speedMps > ktToMps(31) ? 1.6 : player.speedMps > ktToMps(15.5) ? 1 : player.speedMps > ktToMps(4) ? 0.5 : 0.4; // 最も近い速力段の係数
+    const band = speedBandFor(player.speedMps, BP);
+    const stepFactor = band === 'full' ? 1.6 : band === 'cruise' ? 1 : band === 'silent' ? 0.5 : 0.4; // 速力帯の係数（半月）
     const detected = dist <= 2000 * stepFactor;
     updateIllumination(g, shipMoving, player, detected, GP, REAL);
     if (g.illuminated) litS += REAL;

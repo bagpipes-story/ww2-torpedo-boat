@@ -146,8 +146,9 @@ export const MISSION_END_DELAY_MS = 1500;
 export const HIT_SHAKE_MS = 200;
 export const HIT_SHAKE_INTENSITY = 0.004;
 
-/** 舵インジケータ（右下）。バーの半幅と高さ */
+/** 舵インジケータ（右下）。バーの半幅と高さ。マーカーは目標方位への残り角を RUDDER_BAR_FULL_DEG で正規化して置く */
 export const RUDDER_BAR_HALF_WIDTH = 120;
+export const RUDDER_BAR_FULL_DEG = 45;
 export const RUDDER_BAR_HEIGHT = 6;
 export const RUDDER_MARKER_WIDTH = 10;
 export const RUDDER_MARKER_HEIGHT = 26;

@@ -24,13 +24,21 @@ import {
   getTorpedoRecord,
   getVisibilityParams,
 } from '../config/game-data';
-import { BOAT_HIT_SHAKE_INTENSITY, CAMERA_LOOK_AHEAD_M, HIT_SHAKE_INTENSITY, HIT_SHAKE_MS, MISSION_END_DELAY_MS, SMALL_HIT_DAMAGE_RATIO } from '../config/ui-config';
+import {
+  BOAT_HIT_SHAKE_INTENSITY,
+  CAMERA_LOOK_AHEAD_M,
+  HIT_SHAKE_INTENSITY,
+  HIT_SHAKE_MS,
+  MISSION_END_DELAY_MS,
+  RUDDER_BAR_FULL_DEG,
+  SMALL_HIT_DAMAGE_RATIO,
+} from '../config/ui-config';
 import {
   boatParamsFromData,
   clampToBounds,
-  nearestSpeedStep,
+  speedBandFor,
   stepBoat,
-  throttleToTargetSpeed,
+  turnCommand,
   type BoatParams,
   type BoatTelemetry,
   type SeaBounds,
@@ -160,7 +168,7 @@ export class MissionScene extends Phaser.Scene {
     const visRange = playerVisRangeM(this.vis);
     this.visRange2 = visRange * visRange;
     // 最初の固定ステップが回る前のフレームでも HUD に正しい発見距離が出るよう、出発時の速力で先に計算する
-    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(this.params.speedCruiseMps, this.params, this.vis.speedFactor), this.vis, false);
+    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(0, this.params, this.vis.speedFactor), this.vis, false);
 
     this.slowMoFactor = feel.hit_slowmo_factor;
     this.slowMoSeconds = feel.hit_slowmo_seconds;
@@ -173,7 +181,8 @@ export class MissionScene extends Phaser.Scene {
 
     drawSea(this, this.bounds);
 
-    this.boat = new PlayerBoat(this, mission.playerStart, this.params.speedCruiseMps);
+    // スティック中立=停止なので、出発時は停止している（docs/02 §5、v0.2.1）
+    this.boat = new PlayerBoat(this, mission.playerStart, 0);
     this.destroyer = new Destroyer(
       this,
       mission.enemyStart,
@@ -217,7 +226,7 @@ export class MissionScene extends Phaser.Scene {
     this.telemetry = {
       speedMps: this.boat.state.speedMps,
       rudder: 0,
-      targetStep: 'cruise',
+      targetStep: 'stop',
       headingDeg: this.boat.state.headingDeg,
       torpedoesLeft: capacity,
       hits: 0,
@@ -285,9 +294,9 @@ export class MissionScene extends Phaser.Scene {
     const t = this.telemetry;
     const s = this.boat.state;
     t.speedMps = s.speedMps;
-    t.rudder = this.inputState.rudder;
+    t.rudder = turnCommand(this.inputState, s, RUDDER_BAR_FULL_DEG);
     t.headingDeg = s.headingDeg;
-    t.targetStep = nearestSpeedStep(throttleToTargetSpeed(this.inputState.throttle, this.params), this.params);
+    t.targetStep = speedBandFor(s.speedMps, this.params);
     t.torpedoesLeft = this.torpedoes.remaining;
     t.hits = this.hits;
     t.timeLeftS = this.timeLeftS;

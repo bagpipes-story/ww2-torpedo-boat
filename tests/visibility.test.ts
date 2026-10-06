@@ -33,15 +33,16 @@ describe('visibility data', () => {
 });
 
 describe('speedFactorFor', () => {
-  it('速力段の点ではその値。間は補間せず、実速度に最も近い段（HUD の表示）の値になる', () => {
+  it('速力帯の値。18 kt までは静音、30 kt までは巡航、それ以上は全速（境界は data の speed_bands_kt）', () => {
     expect(speedFactorFor(0, P, V.speed_factor)).toBeCloseTo(V.speed_factor.stop, 9);
     expect(speedFactorFor(P.speedSilentMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
+    expect(speedFactorFor(ktToMps(18), P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
+    expect(speedFactorFor(ktToMps(18.5), P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
     expect(speedFactorFor(P.speedCruiseMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
+    expect(speedFactorFor(ktToMps(30), P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
+    expect(speedFactorFor(ktToMps(31), P, V.speed_factor)).toBeCloseTo(V.speed_factor.full, 9);
     expect(speedFactorFor(P.speedMaxMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.full, 9);
     expect(speedFactorFor(P.speedMaxMps * 2, P, V.speed_factor)).toBeCloseTo(V.speed_factor.full, 9);
-    // 巡航の少し手前は巡航のまま、静音寄りまで落とせば静音
-    expect(speedFactorFor(P.speedCruiseMps - 1, P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
-    expect(speedFactorFor(P.speedSilentMps + 1, P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
   });
   it('単調非減少', () => {
     let prev = -1;
