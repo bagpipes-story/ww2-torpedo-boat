@@ -14,7 +14,7 @@ import {
   generateTorpedoTextures,
   generateUiTextures,
 } from '../assets/placeholders';
-import { TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
+import { STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -34,7 +34,9 @@ export class BootScene extends Phaser.Scene {
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
-    generateUiTextures(this);
+    // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける
+    const silentRatio = boat.speed_bands_kt.silent_max / boat.speed_max_kt;
+    generateUiTextures(this, STICK_DEAD_ZONE + (1 - STICK_DEAD_ZONE) * silentRatio);
     generateGunneryTextures(this, enemy.searchlight.cone_deg);
     generateTorpedoButtonTexture(this);
     generateTargetMarkerTexture(this, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);

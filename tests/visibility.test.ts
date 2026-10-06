@@ -37,7 +37,7 @@ describe('speedFactorFor', () => {
     expect(speedFactorFor(0, P, V.speed_factor)).toBeCloseTo(V.speed_factor.stop, 9);
     expect(speedFactorFor(P.speedSilentMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
     expect(speedFactorFor(ktToMps(18), P, V.speed_factor)).toBeCloseTo(V.speed_factor.silent, 9);
-    expect(speedFactorFor(ktToMps(18.5), P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
+    expect(speedFactorFor(ktToMps(18.6), P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9); // 表示 19 kt
     expect(speedFactorFor(P.speedCruiseMps, P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
     expect(speedFactorFor(ktToMps(30), P, V.speed_factor)).toBeCloseTo(V.speed_factor.cruise, 9);
     expect(speedFactorFor(ktToMps(31), P, V.speed_factor)).toBeCloseTo(V.speed_factor.full, 9);

@@ -27,6 +27,18 @@ export function resetInput(s: InputState): void {
 }
 
 /**
+ * スティックの指位置（原点からの差 dx, dy。画面座標で y は下向き）を目標方位と速度に写す。
+ * 倒した量（半径で正規化、デッドゾーン適用）が speed01、方向が headingDeg（画面上=0、時計回り）。デッドゾーン内は NaN（針路を保つ）。
+ * 戻り値は out に書く（確保しない）。
+ */
+export function stickToCommand(dx: number, dy: number, radius: number, deadZone: number, out: { speed01: number; headingDeg: number }): void {
+  const len = Math.hypot(dx, dy);
+  const mag = applyDeadZone(Math.min(len, radius) / radius, deadZone);
+  out.speed01 = mag;
+  out.headingDeg = mag > 0 ? ((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360 : NaN;
+}
+
+/**
  * デッドゾーンを適用し、境界で連続になるよう再スケールする。
  * |v| <= dz → 0、|v| = 1 → ±1。
  */

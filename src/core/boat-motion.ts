@@ -2,7 +2,7 @@
 // 単位は実寸: 位置 m、速度 m/s、針路は方位角（0=北=画面上、時計回り、[0,360)）。
 // 時間圧縮（time_scale）は呼び出し側が dt に掛けて渡す（docs/02 §6.10）。
 // §7: 毎フレーム呼ばれる関数はオブジェクトを確保しない。state を書き換える。
-import { clamp, degToRad, ktToMps, wrapDeg180, wrapDeg360 } from './units';
+import { clamp, degToRad, ktToMps, mpsToKt, wrapDeg180, wrapDeg360 } from './units';
 
 export interface BoatParams {
   speedMaxMps: number;
@@ -12,6 +12,8 @@ export interface BoatParams {
   stopMaxMps: number;
   silentMaxMps: number;
   cruiseMaxMps: number;
+  /** 上の帯へ移るのに境界をこれだけ超える必要がある（m/s。境界付近の揺れで帯が点滅しない） */
+  bandHysteresisMps: number;
   accelMps2: number;
   decelMps2: number;
   turnRateDegS: number;
@@ -81,7 +83,7 @@ export interface BoatDataRecord {
   speed_max_kt: number;
   speed_cruise_kt: number;
   speed_silent_kt: number;
-  speed_bands_kt: { stop_max: number; silent_max: number; cruise_max: number };
+  speed_bands_kt: { stop_max: number; silent_max: number; cruise_max: number; hysteresis: number };
   accel_mps2: number;
   decel_mps2: number;
   turn_rate_deg_s: number;
@@ -97,7 +99,7 @@ export function isBoatDataRecord(v: unknown): v is BoatDataRecord {
     ['speed_max_kt', 'speed_cruise_kt', 'speed_silent_kt', 'accel_mps2', 'decel_mps2', 'turn_rate_deg_s', 'length_m', 'beam_m']
       .every((k) => typeof r[k] === 'number' && Number.isFinite(r[k] as number)) &&
     !!bands &&
-    ['stop_max', 'silent_max', 'cruise_max'].every((k) => typeof bands[k] === 'number' && Number.isFinite(bands[k] as number))
+    ['stop_max', 'silent_max', 'cruise_max', 'hysteresis'].every((k) => typeof bands[k] === 'number' && Number.isFinite(bands[k] as number))
   );
 }
 
@@ -109,6 +111,7 @@ export function boatParamsFromData(r: BoatDataRecord): BoatParams {
     stopMaxMps: ktToMps(r.speed_bands_kt.stop_max),
     silentMaxMps: ktToMps(r.speed_bands_kt.silent_max),
     cruiseMaxMps: ktToMps(r.speed_bands_kt.cruise_max),
+    bandHysteresisMps: ktToMps(r.speed_bands_kt.hysteresis),
     accelMps2: r.accel_mps2,
     decelMps2: r.decel_mps2,
     turnRateDegS: r.turn_rate_deg_s,
@@ -117,12 +120,36 @@ export function boatParamsFromData(r: BoatDataRecord): BoatParams {
   };
 }
 
-/** 速度がどの速力帯にあるか（HUD 表示と発見距離の係数。docs/02 §6.5）。帯の上限は data（speed_bands_kt） */
+/** HUD が速度を kt の整数で出すので、帯の判定も同じ丸めで行う（「18 kt」と表示されているのに巡航、を防ぐ） */
+function roundedKtMps(speedMps: number): number {
+  return ktToMps(Math.round(mpsToKt(speedMps)));
+}
+
+/** 速度がどの速力帯にあるか（状態なし。表示用に丸めた kt で判定）。帯の上限は data（speed_bands_kt） */
 export function speedBandFor(speedMps: number, p: BoatParams): SpeedStep {
-  if (speedMps <= p.stopMaxMps) return 'stop';
-  if (speedMps <= p.silentMaxMps) return 'silent';
-  if (speedMps <= p.cruiseMaxMps) return 'cruise';
+  const v = roundedKtMps(speedMps);
+  if (v <= p.stopMaxMps) return 'stop';
+  if (v <= p.silentMaxMps) return 'silent';
+  if (v <= p.cruiseMaxMps) return 'cruise';
   return 'full';
+}
+
+const BAND_ORDER: readonly SpeedStep[] = ['stop', 'silent', 'cruise', 'full'];
+
+/**
+ * ヒステリシス付きの速力帯（HUD 表示と発見距離の係数。docs/02 §6.5）。
+ * 下の帯へは境界を下回ればすぐ移り、上の帯へは境界＋hysteresis を超えて初めて移る。境界ぎりぎりで走っても帯が点滅しない。
+ */
+export function nextSpeedBand(prev: SpeedStep, speedMps: number, p: BoatParams): SpeedStep {
+  const v = roundedKtMps(speedMps);
+  const h = p.bandHysteresisMps;
+  // 上限（これ以下ならその帯）。上へ移るときだけ h を足す
+  const upper = (band: SpeedStep): number => (band === 'stop' ? p.stopMaxMps : band === 'silent' ? p.silentMaxMps : band === 'cruise' ? p.cruiseMaxMps : Infinity);
+  let i = BAND_ORDER.indexOf(prev);
+  if (i < 0) i = 0;
+  while (i > 0 && v <= upper(BAND_ORDER[i - 1]!)) i--;
+  while (i < BAND_ORDER.length - 1 && v > upper(BAND_ORDER[i]!) + h) i++;
+  return BAND_ORDER[i]!;
 }
 
 /**

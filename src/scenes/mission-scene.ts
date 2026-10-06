@@ -36,9 +36,10 @@ import {
 import {
   boatParamsFromData,
   clampToBounds,
-  speedBandFor,
+  nextSpeedBand,
   stepBoat,
   turnCommand,
+  type SpeedStep,
   type BoatParams,
   type BoatTelemetry,
   type SeaBounds,
@@ -51,7 +52,7 @@ import { SeededRng } from '../core/rng';
 import { shipAiParamsFromData } from '../core/ship-ai';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams } from '../core/torpedo';
 import { degToRad } from '../core/units';
-import { enemyDetectRangeM, playerVisRangeM, speedFactorFor, type VisibilityParams } from '../core/visibility';
+import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
 import { drawSea } from '../entities/sea';
@@ -94,6 +95,8 @@ export class MissionScene extends Phaser.Scene {
   private baseDetectM = 0;
   private visRange2 = 0;
   private detectRangeM = 0;
+  /** 現在の速力帯（ヒステリシス付き）。HUD の表示と発見距離の係数を同じ帯で決める */
+  private band: SpeedStep = 'stop';
   /** デバッグ時（?debug）だけの見越し点マーカーと距離の円 */
   private leadMarker?: LeadMarker;
   private debugRanges?: DebugRanges;
@@ -124,8 +127,9 @@ export class MissionScene extends Phaser.Scene {
       stepBoat(boat, this.inputState, this.params, dt);
       clampToBounds(boat, this.bounds, this.boundsMarginM);
     }
-    // 敵がこのステップで自艇を見つける距離 = 基準 × 速力係数 × 月明 ×（煙幕は v0.2.2）
-    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(boat.speedMps, this.params, this.vis.speedFactor), this.vis, false);
+    // 敵がこのステップで自艇を見つける距離 = 基準 × 速力帯の係数 × 月明 ×（煙幕は v0.2.2）
+    this.band = nextSpeedBand(this.band, boat.speedMps, this.params);
+    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, false);
     const d = this.destroyer;
     d.step(dt, realDt * factor, boat, this.detectRangeM, this.vis.detectHoldS, this.torpedoes.states);
     this.torpedoes.step(dt, realDt * factor, d.sinking ? null : d.circles, d.state.x, d.state.y, this.passRadius2, this.torpedoEvents);
@@ -168,7 +172,8 @@ export class MissionScene extends Phaser.Scene {
     const visRange = playerVisRangeM(this.vis);
     this.visRange2 = visRange * visRange;
     // 最初の固定ステップが回る前のフレームでも HUD に正しい発見距離が出るよう、出発時の速力で先に計算する
-    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(0, this.params, this.vis.speedFactor), this.vis, false);
+    this.band = 'stop';
+    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, false);
 
     this.slowMoFactor = feel.hit_slowmo_factor;
     this.slowMoSeconds = feel.hit_slowmo_seconds;
@@ -296,7 +301,7 @@ export class MissionScene extends Phaser.Scene {
     t.speedMps = s.speedMps;
     t.rudder = turnCommand(this.inputState, s, RUDDER_BAR_FULL_DEG);
     t.headingDeg = s.headingDeg;
-    t.targetStep = speedBandFor(s.speedMps, this.params);
+    t.targetStep = this.band;
     t.torpedoesLeft = this.torpedoes.remaining;
     t.hits = this.hits;
     t.timeLeftS = this.timeLeftS;

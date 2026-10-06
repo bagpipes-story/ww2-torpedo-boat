@@ -6,6 +6,7 @@ import {
   boatParamsFromData,
   clampToBounds,
   isBoatDataRecord,
+  nextSpeedBand,
   speedBandFor,
   stepBoat,
   turnCommand,
@@ -48,17 +49,44 @@ describe('boatParamsFromData（Elco 80ft）', () => {
 });
 
 describe('speedBandFor（速力帯。境界は data の speed_bands_kt）', () => {
-  it('停止 ≤0.5kt、静音 ≤18kt、巡航 ≤30kt、それ以上は全速（us_elco80）', () => {
+  it('停止 ≤0.5kt、静音 ≤18kt、巡航 ≤30kt、それ以上は全速（us_elco80）。HUD と同じく kt を丸めて判定', () => {
     expect(speedBandFor(0, P)).toBe('stop');
-    expect(speedBandFor(ktToMps(0.5), P)).toBe('stop');
-    expect(speedBandFor(ktToMps(0.6), P)).toBe('silent');
+    expect(speedBandFor(ktToMps(0.4), P)).toBe('stop'); // 丸めて 0 kt
+    expect(speedBandFor(ktToMps(0.6), P)).toBe('silent'); // 丸めて 1 kt
     expect(speedBandFor(ktToMps(8), P)).toBe('silent');
     expect(speedBandFor(ktToMps(18), P)).toBe('silent');
-    expect(speedBandFor(ktToMps(18.1), P)).toBe('cruise');
+    expect(speedBandFor(ktToMps(18.4), P)).toBe('silent'); // 表示は 18 kt → 静音
+    expect(speedBandFor(ktToMps(18.6), P)).toBe('cruise'); // 表示は 19 kt
     expect(speedBandFor(ktToMps(23), P)).toBe('cruise');
-    expect(speedBandFor(ktToMps(30), P)).toBe('cruise');
-    expect(speedBandFor(ktToMps(30.1), P)).toBe('full');
+    expect(speedBandFor(ktToMps(30.4), P)).toBe('cruise');
+    expect(speedBandFor(ktToMps(30.6), P)).toBe('full');
     expect(speedBandFor(P.speedMaxMps, P)).toBe('full');
+  });
+  it('nextSpeedBand: 上の帯へは境界＋hysteresis を超えて初めて移り、下へはすぐ戻る。境界付近の揺れで点滅しない', () => {
+    expect(P.bandHysteresisMps).toBeCloseTo(ktToMps(1), 9);
+    let b = nextSpeedBand('stop', ktToMps(10), P);
+    expect(b).toBe('silent');
+    b = nextSpeedBand(b, ktToMps(18.6), P); // 19 kt: 境界 18 + 1 を超えていない → 静音のまま
+    expect(b).toBe('silent');
+    b = nextSpeedBand(b, ktToMps(19.6), P); // 20 kt → 巡航
+    expect(b).toBe('cruise');
+    b = nextSpeedBand(b, ktToMps(18.6), P); // 19 kt: 巡航の下限 18 より上 → 巡航のまま
+    expect(b).toBe('cruise');
+    b = nextSpeedBand(b, ktToMps(18), P); // 18 kt → 静音へ戻る
+    expect(b).toBe('silent');
+    // 一気に全速、一気に停止
+    expect(nextSpeedBand('stop', P.speedMaxMps, P)).toBe('full');
+    expect(nextSpeedBand('full', 0, P)).toBe('stop');
+    // 境界で往復しても帯は 1 回しか変わらない
+    let band: typeof b = 'silent';
+    let changes = 0;
+    for (let i = 0; i < 200; i++) {
+      const v = ktToMps(18 + (i % 2) * 0.9); // 18.0 ↔ 18.9 kt（表示 18 ↔ 19）
+      const n = nextSpeedBand(band, v, P);
+      if (n !== band) changes++;
+      band = n;
+    }
+    expect(changes).toBe(0);
   });
   it('帯の境界は単調（stop < silent < cruise < max）', () => {
     expect(P.stopMaxMps).toBeLessThan(P.silentMaxMps);

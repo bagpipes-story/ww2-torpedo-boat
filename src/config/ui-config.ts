@@ -31,8 +31,6 @@ export const STICK_KNOB_RADIUS = 38;
 export const STICK_DEAD_ZONE = 0.12;
 export const STICK_BASE_ALPHA = 0.35;
 export const STICK_KNOB_ALPHA = 0.7;
-/** 画面端で円が切れて親指が届かなくならないよう、原点を内側へ寄せる余白（論理 px） */
-export const STICK_EDGE_MARGIN = 16;
 
 /** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
 export const HUD_FONT_MISSION_PX = 22;

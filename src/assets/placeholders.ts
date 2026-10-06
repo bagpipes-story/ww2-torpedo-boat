@@ -69,16 +69,19 @@ export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTexture
   g.destroy();
 }
 
-/** スティックの台座（輪）とノブ（円）、舵バーとマーカー。HUD 座標（論理 px）× RENDER_SCALE で作る */
-export function generateUiTextures(scene: Phaser.Scene): void {
+/**
+ * スティックの台座（輪）とノブ（円）、舵バーとマーカー。HUD 座標（論理 px）× RENDER_SCALE で作る。
+ * silentRingRatio: 静音帯の上限に当たる倒し量（0〜1。デッドゾーン込みで Boot が計算）。台座にその半径の輪を描き「ここまでが静音」を見せる
+ */
+export function generateUiTextures(scene: Phaser.Scene, silentRingRatio: number): void {
   const k = RENDER_SCALE;
 
   const baseD = Math.ceil(STICK_RADIUS * 2 * k) + 4;
   let g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.lineStyle(Math.max(2, 3 * k), COLOR_UI, 1);
   g.strokeCircle(baseD / 2, baseD / 2, STICK_RADIUS * k);
-  g.lineStyle(Math.max(1, k), COLOR_UI, 0.6);
-  g.strokeCircle(baseD / 2, baseD / 2, STICK_RADIUS * k * 0.5);
+  g.lineStyle(Math.max(1, k), COLOR_UI, 0.7);
+  g.strokeCircle(baseD / 2, baseD / 2, STICK_RADIUS * k * silentRingRatio);
   g.generateTexture(TEXTURE_KEYS.stickBase, baseD, baseD);
   g.destroy();
 

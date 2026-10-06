@@ -1,6 +1,6 @@
 // 視界と発見（docs/02 §6.5）。Phaser 非依存。
 // 敵の発見距離 = base × 速力係数 × 月明係数 × 煙幕係数 × 史実モード倍率。プレイヤーの視程 = vis_player_base × 月明係数。
-import { speedBandFor, type BoatParams } from './boat-motion';
+import { speedBandFor, type BoatParams, type SpeedStep } from './boat-motion';
 
 export interface SpeedFactorTable {
   stop: number;
@@ -37,6 +37,11 @@ export function isMoonPhase(v: unknown): v is MoonPhase {
  */
 export function speedFactorFor(speedMps: number, p: BoatParams, t: SpeedFactorTable): number {
   return t[speedBandFor(speedMps, p)];
+}
+
+/** 速力帯（ヒステリシス付きの現在の帯）から係数。Mission は帯を状態として持ち、HUD と同じ帯で発見距離を決める */
+export function speedFactorForBand(band: SpeedStep, t: SpeedFactorTable): number {
+  return t[band];
 }
 
 /** 敵がプレイヤーを発見する距離（m） */
