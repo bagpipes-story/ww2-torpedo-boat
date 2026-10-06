@@ -8,7 +8,7 @@ import {
   isBoatDataRecord,
   nearestSpeedStep,
   stepBoat,
-  THROTTLE_SILENT,
+  THROTTLE_STOP,
   throttleToTargetSpeed,
   type BoatInput,
   type BoatParams,
@@ -46,19 +46,19 @@ describe('boatParamsFromData（Elco 80ft）', () => {
   });
 });
 
-describe('throttleToTargetSpeed（docs/02 §5: 上=全速、中立=巡航、下=静音→停止）', () => {
+describe('throttleToTargetSpeed（docs/02 §5: 上=全速、中立=巡航、少しでも下げれば静音、いちばん下で停止）', () => {
   it('区分点', () => {
-    expect(THROTTLE_SILENT).toBeGreaterThan(-1);
-    expect(THROTTLE_SILENT).toBeLessThan(0);
+    expect(THROTTLE_STOP).toBeGreaterThan(-1);
+    expect(THROTTLE_STOP).toBeLessThan(0);
     expect(throttleToTargetSpeed(1, P)).toBeCloseTo(P.speedMaxMps, 9);
     expect(throttleToTargetSpeed(0, P)).toBeCloseTo(P.speedCruiseMps, 9);
-    expect(throttleToTargetSpeed(THROTTLE_SILENT, P)).toBeCloseTo(P.speedSilentMps, 9);
+    expect(throttleToTargetSpeed(-0.01, P)).toBeCloseTo(P.speedSilentMps, 9); // 少し下げただけで静音
+    expect(throttleToTargetSpeed(THROTTLE_STOP + 0.01, P)).toBeCloseTo(P.speedSilentMps, 9);
+    expect(throttleToTargetSpeed(THROTTLE_STOP, P)).toBeCloseTo(0, 9);
     expect(throttleToTargetSpeed(-1, P)).toBeCloseTo(0, 9);
   });
-  it('区分の間は線形、範囲外はクランプ', () => {
+  it('上側は線形、範囲外はクランプ', () => {
     expect(throttleToTargetSpeed(0.5, P)).toBeCloseTo((P.speedCruiseMps + P.speedMaxMps) / 2, 9);
-    expect(throttleToTargetSpeed(THROTTLE_SILENT / 2, P)).toBeCloseTo((P.speedSilentMps + P.speedCruiseMps) / 2, 9);
-    expect(throttleToTargetSpeed((THROTTLE_SILENT - 1) / 2, P)).toBeCloseTo(P.speedSilentMps / 2, 9);
     expect(throttleToTargetSpeed(5, P)).toBeCloseTo(P.speedMaxMps, 9);
     expect(throttleToTargetSpeed(-5, P)).toBeCloseTo(0, 9);
   });

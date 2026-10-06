@@ -228,6 +228,7 @@ export class MissionScene extends Phaser.Scene {
       playerDetected: false,
       detectRangeM: this.detectRangeM,
       illuminated: false,
+      starLit: false,
       hp: this.damage.hp,
       hpMax: this.damageParams.maxHp,
       onFire: false,
@@ -318,6 +319,7 @@ export class MissionScene extends Phaser.Scene {
     t.playerDetected = d.ai.playerDetected && !d.sinking;
     t.detectRangeM = this.detectRangeM;
     t.illuminated = this.enemyFire.illuminated && !d.sinking;
+    t.starLit = this.enemyFire.state.star.illuminating && !d.sinking;
     t.hp = this.damage.hp;
     t.onFire = this.damage.fireLeftS > 0 && this.damage.hp > 0;
     t.engineDamaged = this.damage.engineDamaged;

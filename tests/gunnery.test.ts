@@ -88,7 +88,7 @@ describe('星弾', () => {
   it('発見中で探照灯の射程外なら艇の位置へ撃ち、照明半径の中にいる間は照射。持続後に消え、冷却中は撃たない', () => {
     const g = createGunneryState(GP, 8, 0);
     const s = ship();
-    const player: BoatState = { x: 4000, y: 0, headingDeg: 0, speedMps: 0 }; // 4,000 m: 探照灯 3,000 外、星弾 6,000 内
+    const player: BoatState = { x: 4000, y: 0, headingDeg: 270, speedMps: 5 }; // 4,000 m: 探照灯 3,000 外、星弾 6,000 内。西向き＝艦へ近づく
     updateIllumination(g, s, player, true, GP, REAL);
     expect(g.star.leftS).toBe(0); // 点灯遅れの間は撃たない
     for (let i = 0; i < Math.round(GP.searchlight.onDelayS / REAL) + 2; i++) updateIllumination(g, s, player, true, GP, REAL);
@@ -107,6 +107,17 @@ describe('星弾', () => {
     updateIllumination(g, s, player, true, GP, REAL);
     expect(g.star.leftS).toBeLessThanOrEqual(0);
     expect(g.star.cooldownLeftS).toBeLessThan(before);
+  });
+  it('遠ざかる艇には撃たない（逃げる艇への追い打ちにしない）', () => {
+    const g = createGunneryState(GP, 8, 0);
+    const fleeing: BoatState = { x: 4000, y: 0, headingDeg: 90, speedMps: 20 }; // 東向き＝艦から離れる
+    for (let i = 0; i < 60 * 5; i++) updateIllumination(g, ship(), fleeing, true, GP, REAL);
+    expect(g.light.on).toBe(true);
+    expect(g.star.leftS).toBe(0);
+    const stopped: BoatState = { x: 4000, y: 0, headingDeg: 90, speedMps: 0 }; // 止まっている艇にも撃たない（距離が開いていないが閉じてもいない）
+    const g2 = createGunneryState(GP, 8, 0);
+    for (let i = 0; i < 60 * 5; i++) updateIllumination(g2, ship(), stopped, true, GP, REAL);
+    expect(g2.star.leftS).toBe(0);
   });
   it('探照灯の射程内では撃たない', () => {
     const g = createGunneryState(GP, 8, 0);

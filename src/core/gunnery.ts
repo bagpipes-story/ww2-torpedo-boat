@@ -147,8 +147,11 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
   } else {
     star.illuminating = false;
   }
-  // 星弾は探照灯と同じ点灯遅れ（light.on）の後。発見した瞬間に砲撃が始まらないようにする
-  if (playerDetected && light.on && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
+  // 星弾は探照灯と同じ点灯遅れ（light.on）の後。発見した瞬間に砲撃が始まらないようにする。
+  // 遠ざかる艇（距離が開いている）には撃たない: 探照灯の射程を抜けて逃げる艇への追い打ちにならないように（v0.2.1 実機: 「範囲外でも砲撃が続く」）
+  const ph = degToRad(player.headingDeg);
+  const closing = (Math.sin(ph) * -dx + -Math.cos(ph) * -dy) * player.speedMps > 0;
+  if (playerDetected && light.on && closing && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
     star.leftS = p.starshell.durationS;
     star.cooldownLeftS = p.starshell.cooldownS;
     star.x = player.x;

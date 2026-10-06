@@ -22,10 +22,13 @@ export interface BoatState {
   speedMps: number;
 }
 
-/** スロットルの折れ点: この値で目標速度が静音低速になる（docs/02 §5 の手触りの設計値）。-1 < THROTTLE_SILENT < 0 */
-export const THROTTLE_SILENT = -0.5;
+/**
+ * スロットルの折れ点: 中立（0）より下はこの値まで静音低速、これ以下で停止（docs/02 §5 の手触りの設計値）。-1 < THROTTLE_STOP < 0。
+ * v0.2.1 実機: 「巡航より下はすぐ静音になる方がサクサク操作できる」ので、静音〜巡航の間の補間をやめた。
+ */
+export const THROTTLE_STOP = -0.8;
 
-/** 操作入力。rudder: -1(左)〜+1(右)。throttle: +1=全速、0=巡航、THROTTLE_SILENT=静音低速、-1=停止 */
+/** 操作入力。rudder: -1(左)〜+1(右)。throttle: +1=全速、0=巡航、0 未満=静音低速、THROTTLE_STOP 以下=停止 */
 export interface BoatInput {
   rudder: number;
   throttle: number;
@@ -59,8 +62,9 @@ export interface BoatTelemetry {
   playerDetected: boolean;
   /** 敵が自艇を見つける距離 m（速力段・月明で決まる。HUD に出して速力を落とす価値を見せる） */
   detectRangeM: number;
-  /** 探照灯か星弾に照らされている（砲撃が来る） */
+  /** 探照灯か星弾に照らされている（砲撃が来る）。starLit は星弾によるもの（HUD で区別する） */
   illuminated: boolean;
+  starLit: boolean;
   /** 艇の HP と被害（docs/02 §6.6） */
   hp: number;
   hpMax: number;
@@ -103,14 +107,14 @@ export function boatParamsFromData(r: BoatDataRecord): BoatParams {
 }
 
 /**
- * スロットル(-1〜+1)を目標速度(m/s)に写す（docs/02 §5: 上で全速、中立で巡航、下で静音低速→停止）。
- * 区分線形: +1→全速、0→巡航、THROTTLE_SILENT→静音、-1→0。
+ * スロットル(-1〜+1)を目標速度(m/s)に写す（docs/02 §5: 上で全速、中立で巡航、少しでも下げれば静音低速、いちばん下で停止）。
+ * +1→全速、0→巡航 は線形。0 未満は静音低速の一定値、THROTTLE_STOP 以下で 0。
  */
 export function throttleToTargetSpeed(throttle: number, p: BoatParams): number {
   const t = clamp(throttle, -1, 1);
   if (t >= 0) return p.speedCruiseMps + (p.speedMaxMps - p.speedCruiseMps) * t;
-  if (t >= THROTTLE_SILENT) return p.speedCruiseMps + (p.speedCruiseMps - p.speedSilentMps) * (t / -THROTTLE_SILENT);
-  return (p.speedSilentMps * (t + 1)) / (1 + THROTTLE_SILENT);
+  if (t > THROTTLE_STOP) return p.speedSilentMps;
+  return 0;
 }
 
 /** 目標速度に最も近い速力段（HUD 表示用）。毎フレーム呼ばれるので配列を作らない。同距離なら 停止>静音>巡航>全速 の順で先勝ち */
