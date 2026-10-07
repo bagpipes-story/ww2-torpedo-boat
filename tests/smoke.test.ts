@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import boats from '../data/boats.json';
 import enemies from '../data/enemies.json';
 import type { BoatState } from '../src/core/boat-motion';
-import { createGunneryState, gunneryParamsFromData, isEnemyGunneryDataRecord, updateIllumination } from '../src/core/gunnery';
+import { createGunneryState, gunneryParamsFromData, isEnemyGunneryDataRecord, updateGuns, updateIllumination, type ShellEvents } from '../src/core/gunnery';
+import { SeededRng } from '../src/core/rng';
 import { activePuffCount, createSmokeState, isBoatSmokeDataRecord, losBlocked, smokeParamsFromData, startSmoke, updateSmoke, type SmokeParams } from '../src/core/smoke';
 
 const raw: unknown = boats.boats.find((b) => b.id === 'us_elco80');
@@ -18,6 +19,14 @@ describe('煙幕', () => {
     expect(smokeParamsFromData({ smoke_generator: false })).toBeNull();
     expect(isBoatSmokeDataRecord({ smoke_generator: true })).toBe(false); // 発生器ありなら smoke.* が必要
     for (const b of boats.boats) expect(isBoatSmokeDataRecord(b), b.id).toBe(true);
+    // 0 以下の間隔は updateSmoke の while が止まらないので data の段階で弾く。冷却と長押しは 0 でもよい
+    const base = { duration_s: 5, cooldown_s: 20, puff_interval_s: 0.5, puff_radius_m: 60, puff_lifetime_s: 25, extinguish_hold_s: 1 };
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: base })).toBe(true);
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, puff_interval_s: 0 } })).toBe(false);
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, puff_radius_m: -1 } })).toBe(false);
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, puff_lifetime_s: 0 } })).toBe(false);
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, duration_s: 0 } })).toBe(false);
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, cooldown_s: 0, extinguish_hold_s: 0 } })).toBe(true);
   });
   it('タップで展開、duration の間 interval ごとに艇尾へ煙、冷却中は再展開できない。煙は寿命で消える', () => {
     const s = createSmokeState(32);
@@ -70,6 +79,33 @@ describe('煙幕', () => {
     expect(g.illuminated).toBe(false);
     expect(g.light.on).toBe(true); // 光は点いたまま追い続ける
     updateIllumination(g, ship, player, true, GP, REAL, false);
+    expect(g.illuminated).toBe(true);
+  });
+  it('煙に遮られている艇には星弾を撃たない（撃つと発射のステップだけ照らした扱いになり砲が出る）', () => {
+    const rawEnemy: unknown = enemies.enemies.find((e) => e.id === 'ijn_destroyer');
+    if (!isEnemyGunneryDataRecord(rawEnemy)) throw new Error('enemy');
+    const GP = gunneryParamsFromData(rawEnemy);
+    const g = createGunneryState(GP, 8, 0);
+    const ship: BoatState = { x: 0, y: 0, headingDeg: 0, speedMps: 0 };
+    // 探照灯の射程（3,000 m）の外・星弾の射程内で、艦の方へ向かう艇。探照灯が点くまで（on_delay）は遮られていない
+    const player: BoatState = { x: 0, y: -3150, headingDeg: 90, speedMps: 20 };
+    for (let i = 0; i < 60 * 3; i++) updateIllumination(g, ship, player, true, GP, REAL, false);
+    expect(g.light.on).toBe(true);
+    expect(g.star.leftS).toBe(0);
+    player.headingDeg = 180; // 艦へ向く（closing）
+    let fired = 0;
+    const events: ShellEvents = { onFire: () => fired++, onImpact: () => {} };
+    const rng = new SeededRng(1);
+    for (let i = 0; i < 60; i++) {
+      updateIllumination(g, ship, player, true, GP, REAL, true);
+      updateGuns(g, ship, player, true, 12, 3, GP, rng, REAL, REAL * 5, events);
+      expect(g.illuminated).toBe(false);
+    }
+    expect(g.star.leftS).toBe(0); // 星弾も冷却も消費しない
+    expect(fired).toBe(0);
+    // 煙が晴れれば撃つ
+    updateIllumination(g, ship, player, true, GP, REAL, false);
+    expect(g.star.leftS).toBeGreaterThan(0);
     expect(g.illuminated).toBe(true);
   });
 });

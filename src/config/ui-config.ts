@@ -143,6 +143,8 @@ export const ROUND_BUTTON_RADIUS = 48;
 export const ROUND_BUTTON_ALPHA = 0.55;
 export const ROUND_BUTTON_DISABLED_ALPHA_FACTOR = 0.4;
 export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
+/** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
+export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
 /** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */
 export const SMOKE_PUFF_TEX_RADIUS_UNITS = 64;
 export const SMOKE_PUFF_COLOR = 0x9aa4b0;

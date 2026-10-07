@@ -106,8 +106,10 @@ export class MissionWorld {
   private readonly passRadius2: number;
   /** 無傷時の最大速力（機関損傷で params.speedMaxMps を下げる） */
   private readonly speedMaxBaseMps: number;
-  /** 煙幕ボタンを押し続けている実秒（extinguish_hold_s 以上で消火） */
+  /** 煙幕ボタンを押し続けている実秒（火災中だけ数える。extinguish_hold_s 以上で消火） */
   private smokeHoldS = 0;
+  /** この押下で消火した（離しても煙幕は展開しない） */
+  private extinguishedThisPress = false;
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
 
   private readonly torpedoEvents: TorpedoEvents = {
@@ -274,18 +276,28 @@ export class MissionWorld {
     }
   }
 
-  /** 煙幕ボタン: タップで展開（冷却中は無視）、extinguish_hold_s 以上の長押しで消火（docs/02 §5・§6.6） */
+  /**
+   * 煙幕ボタン（docs/02 §5・§6.6）: 火災中に extinguish_hold_s 以上押し続けると消火。離したとき（smokeTap）、その押下で消火していなければ展開（冷却中は無視）。
+   * 押している時間は燃えている間だけ数える（火災が無いときから押し続けていても、後で起きた火災が即座に消えないように。レビューで判明）。
+   * 消火したら数え直す。押下の長さで展開を捨てる判定は HUD/キーボードではなくここで行う（0.3 秒以上の押下が何もしない空白を作らない）。
+   */
   private consumeSmokeInput(realDt: number): void {
     const input = this.input;
-    if (input.smokeTap) {
-      input.smokeTap = false;
-      if (this.smoke && this.smokeParams) startSmoke(this.smoke, this.smokeParams);
-    }
-    if (input.smokeHeld && this.smokeParams) {
+    const p = this.smokeParams;
+    if (input.smokeHeld && p && this.damage.fireLeftS > 0) {
       this.smokeHoldS += realDt;
-      if (this.smokeHoldS >= this.smokeParams.extinguishHoldS) this.damage.fireLeftS = 0;
+      if (this.smokeHoldS >= p.extinguishHoldS) {
+        this.damage.fireLeftS = 0;
+        this.smokeHoldS = 0;
+        this.extinguishedThisPress = true;
+      }
     } else {
       this.smokeHoldS = 0;
+    }
+    if (input.smokeTap) {
+      input.smokeTap = false;
+      if (!this.extinguishedThisPress && this.smoke && p) startSmoke(this.smoke, p);
+      this.extinguishedThisPress = false;
     }
   }
 

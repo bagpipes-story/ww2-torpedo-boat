@@ -153,7 +153,18 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
   // 艇が艦の方へ進んでいるときだけ撃つ（艇自身の速度ベクトルで判定。艦の動きは見ない）: 探照灯の射程を抜けて逃げる艇への追い打ちにならないように（v0.2.1 実機: 「範囲外でも砲撃が続く」）
   const ph = degToRad(player.headingDeg);
   const closing = (Math.sin(ph) * -dx + -Math.cos(ph) * -dy) * player.speedMps > 0;
-  if (playerDetected && light.on && closing && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
+  // 煙幕に遮られて見えない艇には撃たない（撃つと発射のステップだけ照らした扱いになり砲が 1 発出る。星弾と冷却も無駄になる。レビューで判明）
+  if (
+    playerDetected &&
+    light.on &&
+    closing &&
+    !losBlocked &&
+    star.leftS <= 0 &&
+    star.cooldownLeftS <= 0 &&
+    !light.illuminating &&
+    d2 <= p.starshell.rangeM * p.starshell.rangeM &&
+    d2 > p.searchlight.rangeM * p.searchlight.rangeM
+  ) {
     star.leftS = p.starshell.durationS;
     star.cooldownLeftS = p.starshell.cooldownS;
     star.x = player.x;

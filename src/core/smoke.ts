@@ -118,7 +118,12 @@ export function isBoatSmokeDataRecord(v: unknown): v is BoatSmokeDataRecord {
   if (typeof r['smoke_generator'] !== 'boolean') return false;
   if (!r['smoke_generator']) return true;
   const s = r['smoke'] as Record<string, unknown> | undefined;
-  return !!s && ['duration_s', 'cooldown_s', 'puff_interval_s', 'puff_radius_m', 'puff_lifetime_s', 'extinguish_hold_s'].every((k) => typeof s[k] === 'number' && Number.isFinite(s[k] as number));
+  if (!s) return false;
+  const finite = (k: string): number | null => (typeof s[k] === 'number' && Number.isFinite(s[k] as number) ? (s[k] as number) : null);
+  const positive = (k: string): boolean => (finite(k) ?? 0) > 0;
+  const nonNegative = (k: string): boolean => (finite(k) ?? -1) >= 0;
+  // puff_interval_s が 0 以下だと updateSmoke の while が止まらない。半径・寿命・時間は正、冷却と長押しは 0 でもよい
+  return positive('duration_s') && positive('puff_interval_s') && positive('puff_radius_m') && positive('puff_lifetime_s') && nonNegative('cooldown_s') && nonNegative('extinguish_hold_s');
 }
 
 /** 煙幕発生器が無い艇なら null */

@@ -14,7 +14,7 @@ import {
 import { getGameData } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
-import { ROUND_BUTTON_RADIUS, TORPEDO_BUTTON_TAP_MAX_S } from '../config/ui-config';
+import { ROUND_BUTTON_RADIUS } from '../config/ui-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { TorpedoButton } from '../systems/torpedo-button';
@@ -65,15 +65,15 @@ export class HudScene extends Phaser.Scene {
     };
     this.torpedoButton = new TorpedoButton(this, input, spread);
     this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
-    // 右上「煙幕」: タップで展開、押し続けで消火（Mission が押している時間を数える）。右中「見張り」: 押している間ズームアウト
+    // 右上「煙幕」: 離すと展開、火災中に押し続けると消火（押している時間を数え、消火した押下では展開しない判定は Mission 側）。右中「見張り」: 押している間ズームアウト
     const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
     this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
       onDown: () => {
         input.smokeHeld = true;
       },
-      onUp: (holdS) => {
+      onUp: () => {
         input.smokeHeld = false;
-        if (holdS < TORPEDO_BUTTON_TAP_MAX_S) input.smokeTap = true;
+        input.smokeTap = true;
       },
     });
     this.lookoutButton = new HoldButton(this, bx, GAME_HEIGHT / 2, '見張り', {

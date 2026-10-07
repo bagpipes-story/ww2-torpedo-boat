@@ -7,6 +7,7 @@ import {
   HUD_FONT_MARKER_PX,
   TARGET_MARKER_DISTANCE_STEP_M,
   TARGET_MARKER_MARGIN,
+  TARGET_MARKER_RIGHT_MARGIN,
   TARGET_MARKER_TOP_MARGIN,
   hudTextStyle,
 } from '../config/ui-config';
@@ -37,16 +38,18 @@ export class TargetMarker {
     // ワールドカメラの論理ズーム（見張りで下がる）は telemetry で受け取る
     const sx = (t.enemyDx - Math.sin(h) * CAMERA_LOOK_AHEAD_M) * t.cameraZoom;
     const sy = (t.enemyDy + Math.cos(h) * CAMERA_LOOK_AHEAD_M) * t.cameraZoom;
-    // 表示できる矩形: 左右・下は MARGIN、上は HUD 3 行分広く（中心からの距離で持つ）
+    // 表示できる矩形: 左・下は MARGIN、上は HUD 3 行分広く、右は丸ボタンの列を避けて広く（中心からの距離で持つ）
     const halfW = cx - TARGET_MARKER_MARGIN;
     const downH = cy - TARGET_MARKER_MARGIN;
     const upH = cy - TARGET_MARKER_TOP_MARGIN;
+    // 「画面内なら隠す」は画面全体で判定する（ボタンの列の下に見えている敵にマーカーを出さない）
     if (Math.abs(sx) < halfW && sy < downH && -sy < upH) {
       this.setShown(false);
       return;
     }
-    // 画面の矩形の縁へクランプ（中心からの方向を保つ）
-    const k = Math.min(halfW / Math.max(Math.abs(sx), 1e-6), (sy >= 0 ? downH : upH) / Math.max(Math.abs(sy), 1e-6));
+    // 画面の矩形の縁へクランプ（中心からの方向を保つ）。右へ出るときは「煙幕」「見張り」ボタンの左に置く（レビューで判明: 真東のマーカーがボタンの下に隠れていた）
+    const sideW = sx > 0 ? cx - TARGET_MARKER_RIGHT_MARGIN : halfW;
+    const k = Math.min(sideW / Math.max(Math.abs(sx), 1e-6), (sy >= 0 ? downH : upH) / Math.max(Math.abs(sy), 1e-6));
     const mx = cx + sx * k;
     const my = cy + sy * k;
     this.arrow.setPosition(mx, my).setAngle(radToDeg(Math.atan2(sx, -sy)));
