@@ -19,11 +19,7 @@ export class TargetMarker {
   private lastDistanceStep = -1;
   private visible = false;
 
-  constructor(
-    scene: Phaser.Scene,
-    /** ワールドカメラのズーム（RENDER_SCALE 込みではない論理ズーム）。画面に入っているかの判定に使う */
-    private readonly worldZoom: number,
-  ) {
+  constructor(scene: Phaser.Scene) {
     this.arrow = scene.add.image(0, 0, TEXTURE_KEYS.targetMarker).setScale(1 / RENDER_SCALE).setDepth(DEPTH.hud).setVisible(false);
     this.label = scene.add.text(0, 0, '', hudTextStyle(HUD_FONT_MARKER_PX)).setOrigin(0.5, 0).setDepth(DEPTH.hud).setVisible(false);
   }
@@ -38,8 +34,9 @@ export class TargetMarker {
     const cy = GAME_HEIGHT / 2;
     // ワールド→論理画面: カメラ中心は自艇から進行方向に CAMERA_LOOK_AHEAD_M 先
     const h = degToRad(t.headingDeg);
-    const sx = (t.enemyDx - Math.sin(h) * CAMERA_LOOK_AHEAD_M) * this.worldZoom;
-    const sy = (t.enemyDy + Math.cos(h) * CAMERA_LOOK_AHEAD_M) * this.worldZoom;
+    // ワールドカメラの論理ズーム（見張りで下がる）は telemetry で受け取る
+    const sx = (t.enemyDx - Math.sin(h) * CAMERA_LOOK_AHEAD_M) * t.cameraZoom;
+    const sy = (t.enemyDy + Math.cos(h) * CAMERA_LOOK_AHEAD_M) * t.cameraZoom;
     // 表示できる矩形: 左右・下は MARGIN、上は HUD 3 行分広く（中心からの距離で持つ）
     const halfW = cx - TARGET_MARKER_MARGIN;
     const downH = cy - TARGET_MARKER_MARGIN;

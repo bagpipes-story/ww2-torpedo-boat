@@ -68,7 +68,7 @@
     "speed_factor": { "stop": 0.4, "silent": 0.5, "cruise": 1.0, "full": 1.6 },
     "smoke_factor": 0.3,
     "detect_hold_s": 8,
-    "source": "design (半月・base_detect_m 2000 で: 停止 800m、静音（18 kt まで）1,000m、巡航 2,000m、全速 3,200m から見つかる。vis_player は半月で 1,500m なので、巡航だと先に見つかり、静音以下なら先に見つける。detect_hold_s は見失ってから警戒を解くまでの実時間秒。smoke_factor は v0.2.2 の煙幕で使う)"
+    "source": "design (半月・base_detect_m 2000 で: 停止 800m、静音（18 kt まで）1,000m、巡航 2,000m、全速 3,200m から見つかる。vis_player は半月で 1,500m なので、巡航だと先に見つかり、静音以下なら先に見つける。detect_hold_s は見失ってから警戒を解くまでの実時間秒。smoke_factor は、艦と艇を結ぶ線が煙幕の煙に遮られている間、発見距離に掛ける（v0.2.2）)"
   },
   "feel": {
     "hit_slowmo_factor": 0.3,

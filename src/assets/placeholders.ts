@@ -7,6 +7,9 @@ import {
   DEBUG_RING_RADIUS_UNITS,
   HP_BAR_HEIGHT,
   HP_BAR_WIDTH,
+  ROUND_BUTTON_RADIUS,
+  SMOKE_PUFF_COLOR,
+  SMOKE_PUFF_TEX_RADIUS_UNITS,
   SEARCHLIGHT_COLOR,
   SEARCHLIGHT_TEX_LENGTH_UNITS,
   SHELL_COLOR,
@@ -214,6 +217,31 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
   g.fillStyle(0xffffff, 1); // 表示時に tint で色を付ける
   g.fillRect(0, 0, bw, bh);
   g.generateTexture(TEXTURE_KEYS.hpBarFill, bw, bh);
+  g.destroy();
+}
+
+/** 右上・右中の丸ボタン（煙幕・見張り）と、煙幕の煙（世界単位 × RENDER_SCALE。表示時に半径へ拡縮） */
+export function generateSmokeTextures(scene: Phaser.Scene): void {
+  const k = RENDER_SCALE;
+  let d = Math.ceil(ROUND_BUTTON_RADIUS * 2 * k) + 4;
+  let g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(COLOR_UI, 0.25);
+  g.fillCircle(d / 2, d / 2, ROUND_BUTTON_RADIUS * k);
+  g.lineStyle(Math.max(2, 3 * k), COLOR_UI, 1);
+  g.strokeCircle(d / 2, d / 2, ROUND_BUTTON_RADIUS * k);
+  g.generateTexture(TEXTURE_KEYS.roundButton, d, d);
+  g.destroy();
+
+  d = Math.ceil(SMOKE_PUFF_TEX_RADIUS_UNITS * 2 * k) + 2;
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  // 中心ほど濃い 3 重の円（柔らかい煙に見せる。表示時の alpha で全体の濃さを決める）
+  g.fillStyle(SMOKE_PUFF_COLOR, 0.35);
+  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k);
+  g.fillStyle(SMOKE_PUFF_COLOR, 0.35);
+  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k * 0.7);
+  g.fillStyle(SMOKE_PUFF_COLOR, 0.3);
+  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k * 0.4);
+  g.generateTexture(TEXTURE_KEYS.smokePuff, d, d);
   g.destroy();
 }
 

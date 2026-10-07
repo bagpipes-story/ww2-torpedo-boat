@@ -7,6 +7,7 @@ import {
   MUZZLE_FLASH_SCALE,
   MUZZLE_FLASH_TINT,
   SEARCHLIGHT_ALPHA,
+  SEARCHLIGHT_BLOCKED_ALPHA_FACTOR,
   SEARCHLIGHT_TEX_LENGTH_UNITS,
   SHELL_POOL_SIZE,
   SPLASH_LIFETIME_S,
@@ -38,6 +39,9 @@ export class EnemyFire {
   private readonly star: Phaser.GameObjects.Image;
   private readonly flash: Phaser.GameObjects.Image;
   private flashAge = Infinity;
+  /** 煙幕に遮られている（探照灯を薄く描く）。変わったときだけ alpha を触る */
+  private blocked = false;
+  private blockedDrawn = false;
   private onHit: ShellHitHandler = () => {};
 
   private readonly events: ShellEvents = {
@@ -98,9 +102,21 @@ export class EnemyFire {
   /**
    * 固定ステップ。dt は time_scale 込み、realDt は実時間。
    * canFire=false（艦か艇が沈没中）でも飛んでいる弾は着弾まで進める。detected=false なら探照灯は消え、星弾は撃たない。
+   * losBlocked=true（煙幕が艦と艇の間にある）なら探照灯は向くが照らせず、星弾も照らせない → 砲撃が止まる（v0.2.2）。
    */
-  step(dt: number, realDt: number, ship: BoatState, player: BoatState, detected: boolean, canFire: boolean, playerHalfLengthM: number, playerHalfBeamM: number): void {
-    updateIllumination(this.state, ship, player, detected, this.params, realDt);
+  step(
+    dt: number,
+    realDt: number,
+    ship: BoatState,
+    player: BoatState,
+    detected: boolean,
+    canFire: boolean,
+    playerHalfLengthM: number,
+    playerHalfBeamM: number,
+    losBlocked: boolean,
+  ): void {
+    this.blocked = losBlocked;
+    updateIllumination(this.state, ship, player, detected, this.params, realDt, losBlocked);
     updateGuns(this.state, ship, player, canFire, playerHalfLengthM, playerHalfBeamM, this.params, this.rng, realDt, dt, this.events);
   }
 
@@ -110,6 +126,10 @@ export class EnemyFire {
     if (light.on) {
       this.light.setPosition(ship.x, ship.y).setAngle(light.bearingDeg);
       if (!this.light.visible) this.light.setVisible(true);
+      if (this.blocked !== this.blockedDrawn) {
+        this.blockedDrawn = this.blocked;
+        this.light.setAlpha(this.blocked ? SEARCHLIGHT_ALPHA * SEARCHLIGHT_BLOCKED_ALPHA_FACTOR : SEARCHLIGHT_ALPHA);
+      }
     } else if (this.light.visible) {
       this.light.setVisible(false);
     }

@@ -49,6 +49,8 @@ export const DEPTH = {
   torpedo: 8,
   destroyer: 9,
   playerBoat: 10,
+  /** 煙幕は艦艇の上に薄く重ねる（艇が煙に隠れて見える） */
+  smoke: 11,
   /** 探照灯・星弾は海の上、艦艇の下 */
   light: 2,
   shell: 12,
@@ -87,6 +89,8 @@ export const TEXTURE_KEYS = {
   starshell: 'tex-starshell',
   hpBarBg: 'tex-hp-bar-bg',
   hpBarFill: 'tex-hp-bar-fill',
+  roundButton: 'tex-round-button',
+  smokePuff: 'tex-smoke-puff',
   stickBase: 'tex-stick-base',
   stickKnob: 'tex-stick-knob',
   rudderBar: 'tex-rudder-bar',

@@ -8,6 +8,7 @@ import {
   generateDebugRingTexture,
   generateDestroyerTexture,
   generateGunneryTextures,
+  generateSmokeTextures,
   generatePlayerBoatTexture,
   generateTargetMarkerTexture,
   generateTorpedoButtonTexture,
@@ -38,6 +39,7 @@ export class BootScene extends Phaser.Scene {
     const silentRatio = boat.speed_bands_kt.silent_max / boat.speed_max_kt;
     generateUiTextures(this, STICK_DEAD_ZONE + (1 - STICK_DEAD_ZONE) * silentRatio);
     generateGunneryTextures(this, enemy.searchlight.cone_deg);
+    generateSmokeTextures(this);
     generateTorpedoButtonTexture(this);
     generateTargetMarkerTexture(this, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);

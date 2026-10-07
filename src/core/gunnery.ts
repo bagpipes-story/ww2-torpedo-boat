@@ -113,7 +113,7 @@ export function createGunneryState(p: GunneryParams, shellPoolSize: number, ship
  * 星弾は「発見中・探照灯の点灯遅れが明けている・探照灯の射程外かつ星弾の射程内・艇が艦の方へ進んでいる・冷却が明けている」のとき
  * 艇の位置へ撃ち、一定時間その周りを照らす。遠ざかる艇には撃たない（逃げる艇への追い打ちにしない設計上の譲歩）。
  */
-export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number): void {
+export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number, losBlocked: boolean = false): void {
   const dx = player.x - ship.x;
   const dy = player.y - ship.y;
   const d2 = dx * dx + dy * dy;
@@ -135,7 +135,8 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     const maxTurn = p.searchlight.sweepDegS * realDt;
     light.bearingDeg = wrapDeg360(light.bearingDeg + (diff > maxTurn ? maxTurn : diff < -maxTurn ? -maxTurn : diff));
     const half = p.searchlight.coneDeg / 2;
-    light.illuminating = Math.abs(wrapDeg180(bearingToPlayer - light.bearingDeg)) <= half && d2 <= p.searchlight.rangeM * p.searchlight.rangeM;
+    // 煙幕に遮られていれば光は届かない（光軸は艇の方位を追い続ける）
+    light.illuminating = !losBlocked && Math.abs(wrapDeg180(bearingToPlayer - light.bearingDeg)) <= half && d2 <= p.searchlight.rangeM * p.searchlight.rangeM;
   }
 
   const star = g.star;
@@ -144,7 +145,7 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     star.leftS -= realDt;
     const sx = player.x - star.x;
     const sy = player.y - star.y;
-    star.illuminating = star.leftS > 0 && sx * sx + sy * sy <= p.starshell.illumRadiusM * p.starshell.illumRadiusM;
+    star.illuminating = !losBlocked && star.leftS > 0 && sx * sx + sy * sy <= p.starshell.illumRadiusM * p.starshell.illumRadiusM;
   } else {
     star.illuminating = false;
   }

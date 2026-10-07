@@ -76,6 +76,12 @@ export interface BoatTelemetry {
   hpMax: number;
   onFire: boolean;
   engineDamaged: boolean;
+  /** 煙幕: 展開の残り実秒、次に使えるまでの実秒、艦との視線が煙に遮られている */
+  smokeLeftS: number;
+  smokeCooldownS: number;
+  hiddenBySmoke: boolean;
+  /** ワールドカメラの論理ズーム（見張りで下がる。画面外マーカーの計算用） */
+  cameraZoom: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */
