@@ -90,12 +90,13 @@ export interface EndParams {
 
 /**
  * 終了理由を決める。null なら続行。
- * 1 自艇が沈没中 → null、2 輪の中で魚雷が無い（または待ち切った・夜明け）→ returned、3 撃沈演出中 → null、
- * 4 夜明け → 燃料 0 なら adrift、あれば dawn、5 燃料 0 で止まって adriftDelayS → adrift
+ * 1 自艇が沈没中 → null、2 輪の中で魚雷が無い（または待ち切った・夜明け）→ returned、2' 輪の中なら他の理由では終わらない（魚雷待ちの間に燃料が尽きても漂流にしない。レビューで判明）、
+ * 3 撃沈演出中 → null、4 夜明け → 燃料 0 なら adrift、あれば dawn、5 燃料 0 で止まって adriftDelayS → adrift
  */
 export function decideMissionEnd(c: EndCheck, p: EndParams): MissionEndReason | null {
   if (c.boatSinking) return null;
   if (c.atHome && (!c.torpedoesRunning || c.waitS >= p.torpedoSettleMaxS || c.timeLeftS <= 0)) return 'returned';
+  if (c.atHome) return null;
   if (c.destroyerSinkPlaying) return null;
   if (c.timeLeftS <= 0) return c.fuelEmpty ? 'adrift' : 'dawn';
   if (c.fuelEmpty && c.stopped && c.waitS >= p.adriftDelayS) return 'adrift';

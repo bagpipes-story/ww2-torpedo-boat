@@ -150,7 +150,8 @@ export class BoatHud {
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
     const call = topCall(t.callFlags);
     const mode = t.homeWaiting ? MISSION_WAITING : t.fuelEmpty ? MISSION_ADRIFT : call !== 0 ? MISSION_CALL : MISSION_NORMAL;
-    const homeStep = Math.round(t.homeDistM / HOME_MARKER_DISTANCE_STEP_M);
+    // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない
+    const homeStep = Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M);
     if (mode !== this.lastMissionMode || call !== this.lastCall || timeLeft !== this.lastTimeLeft || t.hits !== this.lastHits || (mode === MISSION_CALL && homeStep !== this.lastHomeStep)) {
       this.lastMissionMode = mode;
       this.lastCall = call;

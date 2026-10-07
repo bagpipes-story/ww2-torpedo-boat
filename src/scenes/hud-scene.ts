@@ -62,7 +62,7 @@ export class HudScene extends Phaser.Scene {
     this.fuelGauge = new FuelGauge(this);
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
     this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, topMargin: TARGET_MARKER_TOP_MARGIN });
-    this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+    this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
@@ -124,7 +124,7 @@ export class HudScene extends Phaser.Scene {
     this.hpBar?.refresh(this.telemetry);
     this.fuelGauge?.refresh(this.telemetry);
     this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
-    this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry);
+    this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;

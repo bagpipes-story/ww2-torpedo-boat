@@ -86,10 +86,11 @@ export interface BoatTelemetry {
   fuel01: number;
   fuelNeed01: number;
   fuelEmpty: boolean;
-  /** 帰投地点: 自艇からの相対位置 m、中心までの距離 m、「帰投せよ」のビット（core/mission-flow）、輪の中、輪の中で魚雷の決着待ち */
+  /** 帰投地点: 自艇からの相対位置 m、中心までの距離 m、輪の縁までの距離 m（HUD の表示・目盛り・呼びかけ・Result はすべてこれ）、「帰投せよ」のビット（core/mission-flow）、輪の中、輪の中で魚雷の決着待ち */
   homeDx: number;
   homeDy: number;
   homeDistM: number;
+  homeEdgeM: number;
   callFlags: number;
   atHome: boolean;
   homeWaiting: boolean;

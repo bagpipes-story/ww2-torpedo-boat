@@ -153,6 +153,7 @@ export class MissionScene extends Phaser.Scene {
       homeDx: w.returnPoint.x - w.boat.state.x,
       homeDy: w.returnPoint.y - w.boat.state.y,
       homeDistM: 0,
+      homeEdgeM: 0,
       callFlags: 0,
       atHome: false,
       homeWaiting: false,
@@ -224,6 +225,7 @@ export class MissionScene extends Phaser.Scene {
     t.homeDistM = Math.hypot(t.homeDx, t.homeDy);
     const edge = t.homeDistM - rp.radiusM;
     this.ringEdgeM = edge > 0 ? edge : 0;
+    t.homeEdgeM = this.ringEdgeM;
     // 巡航で輪の縁まで直線で帰るのに要る燃料・実秒（迂回と敵は余裕 call_margin で吸収する）
     const needGal = this.ringEdgeM * w.fuelCurve.galPerMCruise;
     const needS = this.ringEdgeM / (w.fuelCurve.cruiseMps * this.timeScale);
@@ -263,8 +265,8 @@ export class MissionScene extends Phaser.Scene {
     t.rudder = w.fuel.empty ? 0 : turnCommand(this.inputState, s, RUDDER_BAR_FULL_DEG);
     t.headingDeg = s.headingDeg;
     t.targetStep = w.band;
-    // 沈み始めた後は撃てないので残弾 0 を見せる（魚雷ボタンが暗くなる）
-    t.torpedoesLeft = d.sinking ? 0 : w.torpedoes.remaining;
+    // 沈み始めた後と帰投地点の輪の中では撃てないので残弾 0 を見せる（魚雷ボタンが暗くなる）
+    t.torpedoesLeft = d.sinking || w.atHome ? 0 : w.torpedoes.remaining;
     t.hits = w.hits;
     t.timeLeftS = this.timeLeftS;
     if (d.sinking) {

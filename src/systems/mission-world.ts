@@ -254,8 +254,8 @@ export class MissionWorld {
   /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
   updateFrame(realDt: number): void {
     if (!this.boat.sinking) {
-      // 駆逐艦が沈み始めたら新しい発射はしない（フラグは消す）。煙幕は漂流中でも使える
-      if (this.destroyer.sinking) this.discardFireInput();
+      // 駆逐艦が沈み始めた後と帰投地点の輪の中では新しい発射はしない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
+      if (this.destroyer.sinking || this.atHome) this.discardFireInput();
       else this.consumeFireInput();
       this.consumeSmokeInput(realDt);
       this.launcher.update(realDt, this.boat.state, this.destroyer.state);
@@ -297,7 +297,7 @@ export class MissionWorld {
     this.boat.destroy();
   }
 
-  /** 発射要求を捨てる（駆逐艦が沈み始めた後） */
+  /** 発射要求を捨てる（駆逐艦が沈み始めた後・帰投地点の輪の中） */
   private discardFireInput(): void {
     this.input.fireTap = false;
     this.input.fireSalvoSpreadDeg = NaN;

@@ -70,6 +70,10 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, waitS: 9.9 }), P)).toBeNull();
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, waitS: 10 }), P)).toBe('returned');
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, timeLeftS: 0 }), P)).toBe('returned');
+    // 輪の中で魚雷を待つ間に燃料が尽きて止まっても漂流にしない（待ち切れば帰投）。レビューで判明
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, waitS: 5 }), P)).toBeNull();
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, waitS: 10 }), P)).toBe('returned');
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, timeLeftS: 0 }), P)).toBe('returned');
     // 撃沈演出中で夜明けなら null、演出が終われば dawn（撃沈後に夜明けが来なくなる罠の回帰）
     expect(decideMissionEnd(check({ destroyerSinkPlaying: true, timeLeftS: 0 }), P)).toBeNull();
     expect(decideMissionEnd(check({ destroyerSinkPlaying: false, timeLeftS: 0 }), P)).toBe('dawn');

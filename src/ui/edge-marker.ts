@@ -15,6 +15,8 @@ export interface EdgeMarkerOptions {
   stepM: number;
   /** ラベルを矢印の上に置く（下に置く敵マーカーと重ならないように） */
   labelAbove: boolean;
+  /** 距離の刻みを切り上げる（帰投地点: 輪の縁までの距離なので、輪の外で 0 m と出さない）。既定は四捨五入 */
+  roundUp?: boolean;
   /** 上端の余白（中心からの距離ではなく、画面上端から） */
   topMargin: number;
   color?: string;
@@ -40,9 +42,9 @@ export class EdgeMarker {
 
   /**
    * 毎フレーム。目標の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する。
-   * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から
+   * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）
    */
-  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry): void {
+  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number): void {
     if (!show || Number.isNaN(dx)) {
       this.setShown(false);
       return;
@@ -70,8 +72,8 @@ export class EdgeMarker {
     this.arrow.setPosition(mx, my).setAngle(radToDeg(Math.atan2(sx, -sy)));
     const gap = TARGET_MARKER_MARGIN * 0.35;
     this.label.setPosition(mx, this.opts.labelAbove ? my - gap : my + gap);
-    const dist = Math.hypot(dx, dy);
-    const step = Math.round(dist / this.opts.stepM);
+    const dist = distM ?? Math.hypot(dx, dy);
+    const step = this.opts.roundUp ? Math.ceil(dist / this.opts.stepM) : Math.round(dist / this.opts.stepM);
     if (step !== this.lastDistanceStep) {
       this.lastDistanceStep = step;
       this.label.setText(`${this.opts.labelPrefix} ${step * this.opts.stepM} m`);
