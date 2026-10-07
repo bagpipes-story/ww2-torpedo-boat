@@ -15,7 +15,7 @@ import {
   SCENE_KEYS,
   TEXTURE_KEYS,
 } from '../config/game-config';
-import { getGameData, getPrototypeMission } from '../config/game-data';
+import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
@@ -57,12 +57,13 @@ export class HudScene extends Phaser.Scene {
     this.telemetry = this.registry.get(REGISTRY_KEY_TELEMETRY) as BoatTelemetry;
     // 1 行目に割当と夜明けを出す（?debug&fuel=…&dawn=… の上書きが効いているかを実機で確かめられる）
     const mission = getPrototypeMission(data, PROTOTYPE_MISSION_ID);
-    const fuelGal = Number.isFinite(DEBUG_FUEL_ALLOTMENT_GAL) ? DEBUG_FUEL_ALLOTMENT_GAL : mission.fuelAllotmentGal;
+    const fuelGal = effectiveFuelAllotmentGal(data, mission, DEBUG_FUEL_ALLOTMENT_GAL);
     const dawnS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
 
     this.debugHud = new DebugHud(this, {
       buildLabel: import.meta.env.VITE_BUILD_LABEL,
-      dataSummary: `data v${data.hitRateModel.version} / time_scale x${data.hitRateModel.world.time_scale} / fuel ${fuelGal} gal / dawn ${dawnS} s`,
+      // 短く保つ（長いブランチ名でも右上の煙幕ボタンに掛からないよう、1 行目は約 80 文字以内）
+      dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s`,
     });
     this.boatHud = new BoatHud(this);
     this.hpBar = new HpBar(this);

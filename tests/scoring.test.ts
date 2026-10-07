@@ -12,8 +12,9 @@ function input(over: Partial<ScoreInput>): ScoreInput {
 }
 
 describe('スコア（docs/02 §6.9）', () => {
-  it('data: 帰投 500・撃沈 300・命中 100 × 倍率（≤400yd 1.0 … ≥2000yd 3.0）・燃料 最大 100', () => {
-    expect(P.returnedPoints).toBe(500);
+  it('data: 帰投 700・撃沈 300・命中 100 × 倍率（≤400yd 1.0 … ≥2000yd 3.0）・燃料 最大 100。帰投は撃沈＋最遠の命中（600）より大きい', () => {
+    expect(P.returnedPoints).toBe(700);
+    expect(P.returnedPoints).toBeGreaterThan(P.objectiveByType['intercept_destroyer']! + Math.round(P.hitBase * Math.max(...Object.values(P.hitRangeMultiplier))));
     expect(P.objectiveByType['intercept_destroyer']).toBe(300);
     expect(P.hitBase).toBe(100);
     expect(P.hitRangeMultiplier['<=400yd']).toBe(1.0);
@@ -23,10 +24,10 @@ describe('スコア（docs/02 §6.9）', () => {
     // "source" のような文字列の値は達成点に入らない
     expect(Object.values(P.objectiveByType).every((v) => typeof v === 'number')).toBe(true);
   });
-  it('計算例: 慎重に撃沈して帰投（800-1200yd 命中、燃料 37%）= 987、全速で撃沈して帰投（400-800yd、8%）= 928、外して帰投 = 500、撃沈して漂流 = 420、撃沈して沈没（≤400yd）= 400', () => {
-    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 37 }), P).total).toBe(987);
-    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 8 }), P).total).toBe(928);
-    expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 500, objective: 0, hits: 0, fuel: 0, total: 500 });
+  it('計算例（36 gal の模擬値）: 慎重に撃沈して帰投（800-1200yd、37%）= 1187、全速で撃沈して帰投（400-800yd、0%）= 1120、外して帰投 = 700、撃沈して漂流 = 420、撃沈して沈没（≤400yd）= 400', () => {
+    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 37 }), P).total).toBe(1187);
+    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 0 }), P).total).toBe(1120);
+    expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 700, objective: 0, hits: 0, fuel: 0, total: 700 });
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 0 }), P).total).toBe(420);
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }], fuelLeftPct: 50 }), P).total).toBe(400);
   });
@@ -43,12 +44,15 @@ describe('スコア（docs/02 §6.9）', () => {
     const loose = { ...P, fuelRequiresReturnedAndObjective: false };
     expect(computeScore(input({ returned: true, objectiveDone: false, fuelLeftPct: 80 }), loose).fuel).toBe(80);
   });
-  it('順序: 慎重な撃沈 > 捨て身の撃沈 > 外して帰投 = 直帰 > 沈めて死ぬ', () => {
+  it('順序: 慎重な撃沈 > 捨て身の撃沈 > 外して帰投 = 直帰 > 沈めて死ぬ（最も遠い帯で当てて死んでも）', () => {
     const careful = computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 37 }), P).total;
     const reckless = computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }], fuelLeftPct: 8 }), P).total;
     const missed = computeScore(input({ returned: true, fuelLeftPct: 40 }), P).total;
     const direct = computeScore(input({ returned: true, fuelLeftPct: 63 }), P).total;
     const died = computeScore(input({ objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }] }), P).total;
+    const diedLong = computeScore(input({ objectiveDone: true, bands: [{ band: '>=2000yd', hits: 1, duds: 0 }] }), P).total;
+    expect(diedLong).toBe(600);
+    expect(direct).toBeGreaterThan(diedLong);
     expect(careful).toBeGreaterThan(reckless);
     expect(reckless).toBeGreaterThan(missed);
     expect(missed).toBe(direct);

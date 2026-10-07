@@ -187,6 +187,12 @@ export function getBoatSmokeParams(data: GameData, boatId: string): SmokeParams 
   return smokeParamsFromData(b);
 }
 
+/** 任務に積む燃料 gal。?debug&fuel= の上書きがあれば艇の容量で頭打ちにして使う（MissionWorld と HUD の表示で同じ値になるようここで決める） */
+export function effectiveFuelAllotmentGal(data: GameData, mission: PrototypeMission, debugOverrideGal: number): number {
+  if (!Number.isFinite(debugOverrideGal)) return mission.fuelAllotmentGal;
+  return Math.min(debugOverrideGal, getBoatFuelCurve(data, mission.playerBoatId).capacityGal);
+}
+
 /** scoring.json の配点（docs/02 §6.9）。距離帯の名前が hit_rate_model.kpi_by_range と一致しなければ例外 */
 export function getScoringParams(data: GameData): ScoringParams {
   if (!isScoringDataRecord(data.scoring)) throw new Error('scoring.json に survival / objective_by_type / hit / fuel が無い（docs/02 §6.9）');

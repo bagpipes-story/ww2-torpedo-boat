@@ -27,7 +27,7 @@ describe('game-data（data/*.json の読み出し）', () => {
   });
   it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
     const p = getScoringParams(gameData);
-    expect(p.returnedPoints).toBe(500);
+    expect(p.returnedPoints).toBe(700);
     expect(p.objectiveByType['intercept_destroyer']).toBe(300);
     expect(p.hitBase).toBe(100);
     for (const b of gameData.hitRateModel.kpi_by_range) expect(p.hitRangeMultiplier[b.band]).toBeGreaterThan(0);

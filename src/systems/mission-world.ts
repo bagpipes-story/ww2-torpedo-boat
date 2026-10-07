@@ -4,6 +4,7 @@
 import type Phaser from 'phaser';
 import { DEBUG_DAWN_S, DEBUG_FUEL_ALLOTMENT_GAL, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
 import {
+  effectiveFuelAllotmentGal,
   getBoatDamageParams,
   getBoatFuelCurve,
   getBoatRecord,
@@ -195,7 +196,7 @@ export class MissionWorld {
     this.durationS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
     this.returnPoint = mission.returnPoint;
     this.fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
-    const allotment = Number.isFinite(DEBUG_FUEL_ALLOTMENT_GAL) ? Math.min(DEBUG_FUEL_ALLOTMENT_GAL, this.fuelCurve.capacityGal) : mission.fuelAllotmentGal;
+    const allotment = effectiveFuelAllotmentGal(data, mission, DEBUG_FUEL_ALLOTMENT_GAL);
     if (allotment > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
     this.fuelAllotmentGal = allotment;
     this.fuel = createFuelState(allotment);
