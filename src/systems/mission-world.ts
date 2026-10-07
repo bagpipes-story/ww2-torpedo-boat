@@ -2,7 +2,7 @@
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。世界で起きたことは WorldEvents で Scene に伝える（引数はプリミティブ）。
 // §7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
-import { FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
+import { DEBUG_DAWN_S, DEBUG_FUEL_ALLOTMENT_GAL, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
 import {
   getBoatDamageParams,
   getBoatFuelCurve,
@@ -71,8 +71,10 @@ export class MissionWorld {
   readonly enemyFire: EnemyFire;
   readonly params: BoatParams;
   readonly bounds: SeaBounds;
-  /** 夜明けまでの実時間秒（任務の制限時間） */
+  /** 夜明けまでの実時間秒（任務の制限時間。?debug&dawn= で上書き可） */
   readonly durationS: number;
+  /** 任務の種類（スコアの達成点に使う） */
+  readonly missionType: string;
   /** 帰投地点の輪と燃料（docs/02 §6.7） */
   readonly returnPoint: ReturnPoint;
   readonly fuelCurve: FuelCurve;
@@ -188,12 +190,15 @@ export class MissionWorld {
 
     this.params = boatParamsFromData(boatRecord);
     this.bounds = mission.bounds;
-    this.durationS = mission.durationS;
+    this.missionType = mission.type;
+    // ?debug&fuel=…&dawn=… のときだけ data の値を上書き（実機で割当と夜明けを比べるため）
+    this.durationS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
     this.returnPoint = mission.returnPoint;
     this.fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
-    if (mission.fuelAllotmentGal > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
-    this.fuelAllotmentGal = mission.fuelAllotmentGal;
-    this.fuel = createFuelState(mission.fuelAllotmentGal);
+    const allotment = Number.isFinite(DEBUG_FUEL_ALLOTMENT_GAL) ? Math.min(DEBUG_FUEL_ALLOTMENT_GAL, this.fuelCurve.capacityGal) : mission.fuelAllotmentGal;
+    if (allotment > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
+    this.fuelAllotmentGal = allotment;
+    this.fuel = createFuelState(allotment);
     this.boundsMarginM = (boatRecord.length_m * world.sprite_scale) / 2;
     this.boatHalfLengthM = (boatRecord.length_m * world.hit_scale) / 2;
     this.boatHalfBeamM = (boatRecord.beam_m * world.hit_scale) / 2;

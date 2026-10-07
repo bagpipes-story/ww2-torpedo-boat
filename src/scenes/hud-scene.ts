@@ -2,9 +2,12 @@
 // デバッグHUD（FPS・ビルド番号）、速力・舵、バーチャルスティック、PC デバッグキーをここに置く。
 import Phaser from 'phaser';
 import {
+  DEBUG_DAWN_S,
+  DEBUG_FUEL_ALLOTMENT_GAL,
   GAME_HEIGHT,
   GAME_WIDTH,
   HUD_MARGIN,
+  PROTOTYPE_MISSION_ID,
   REGISTRY_KEY_DATA,
   REGISTRY_KEY_INPUT,
   REGISTRY_KEY_TELEMETRY,
@@ -12,7 +15,7 @@ import {
   SCENE_KEYS,
   TEXTURE_KEYS,
 } from '../config/game-config';
-import { getGameData } from '../config/game-data';
+import { getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
@@ -52,10 +55,14 @@ export class HudScene extends Phaser.Scene {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     this.telemetry = this.registry.get(REGISTRY_KEY_TELEMETRY) as BoatTelemetry;
+    // 1 行目に割当と夜明けを出す（?debug&fuel=…&dawn=… の上書きが効いているかを実機で確かめられる）
+    const mission = getPrototypeMission(data, PROTOTYPE_MISSION_ID);
+    const fuelGal = Number.isFinite(DEBUG_FUEL_ALLOTMENT_GAL) ? DEBUG_FUEL_ALLOTMENT_GAL : mission.fuelAllotmentGal;
+    const dawnS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
 
     this.debugHud = new DebugHud(this, {
       buildLabel: import.meta.env.VITE_BUILD_LABEL,
-      dataSummary: `data v${data.hitRateModel.version} / time_scale x${data.hitRateModel.world.time_scale}`,
+      dataSummary: `data v${data.hitRateModel.version} / time_scale x${data.hitRateModel.world.time_scale} / fuel ${fuelGal} gal / dawn ${dawnS} s`,
     });
     this.boatHud = new BoatHud(this);
     this.hpBar = new HpBar(this);

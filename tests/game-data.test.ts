@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getPrototypeMission, getVisibilityParams } from '../src/config/game-data';
+import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getPrototypeMission, getScoringParams, getVisibilityParams } from '../src/config/game-data';
 import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
 
 describe('game-data（data/*.json の読み出し）', () => {
-  it('us_02 のプロトタイプは半月・夜明けまで 150 秒・駆逐艦 1 隻・燃料の割当 50 gal・北東の帰投地点', () => {
+  it('us_02 のプロトタイプは半月・夜明けまで 150 秒・駆逐艦 1 隻・燃料の割当 36 gal・北東の帰投地点', () => {
     const m = getPrototypeMission(gameData, 'us_02');
     expect(m.moon).toBe('half');
+    expect(m.type).toBe('intercept_destroyer');
     expect(m.durationS).toBe(150);
     expect(m.enemyId).toBe('ijn_destroyer');
     expect(m.enemyHitsToSink).toBe(1);
-    expect(m.fuelAllotmentGal).toBe(50);
+    expect(m.fuelAllotmentGal).toBe(36);
     expect(m.returnPoint).toEqual({ x: 5400, y: 600, radiusM: 250, callMargin: 1.5, torpedoSettleMaxS: 10 });
     // 輪は海域の中、出発点は輪の外（約 3,538 m）
     const rp = m.returnPoint;
@@ -23,6 +24,17 @@ describe('game-data（data/*.json の読み出し）', () => {
     const boat = getBoatRecord(gameData, m.playerBoatId);
     expect(rp.callMargin).toBeGreaterThanOrEqual(curve.galPerMFull / curve.galPerMCruise);
     expect(rp.callMargin).toBeGreaterThanOrEqual(ktToMps(boat.speed_cruise_kt) / ktToMps(boat.speed_bands_kt.silent_max));
+  });
+  it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
+    const p = getScoringParams(gameData);
+    expect(p.returnedPoints).toBe(500);
+    expect(p.objectiveByType['intercept_destroyer']).toBe(300);
+    expect(p.hitBase).toBe(100);
+    for (const b of gameData.hitRateModel.kpi_by_range) expect(p.hitRangeMultiplier[b.band]).toBeGreaterThan(0);
+    expect(p.fuelMax).toBe(100);
+    const broken = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    delete (broken.scoring.hit.range_multiplier as Record<string, unknown>)['400-800yd'];
+    expect(() => getScoringParams(broken)).toThrow();
   });
   it('壊れた帰投地点・割当は起動時に例外', () => {
     type Proto = { v0_1_prototype: Record<string, unknown> };
