@@ -33,11 +33,16 @@ const STEP_LABEL: Record<SpeedStep, string> = {
 
 /** 敵影×発見×照射×星弾の 16 状態。index = (敵影あり ? 1 : 0) | (発見された ? 2 : 0) | (照らされている ? 4 : 0) | (星弾 ? 8 : 0) */
 const STATUS_BASE = ['敵影なし ・ 未発見', '敵影あり ・ 未発見', '敵影なし ・ 発見された！', '敵影あり ・ 発見された！'] as const;
-const STATUS_LABEL: readonly string[] = [
+const STATUS_LIT: readonly string[] = [
   ...STATUS_BASE,
   ...STATUS_BASE.map((s) => `${s} ・ 探照灯に照射中！`),
   ...STATUS_BASE.map((s) => `${s} ・ 星弾！`),
   ...STATUS_BASE.map((s) => `${s} ・ 星弾！`),
+];
+/** bit0 敵影, bit1 発見, bit2 探照灯, bit3 星弾, bit4 煙幕に隠れている（隠れている間は照らされないので照射の文は出ない） */
+const STATUS_LABEL: readonly string[] = [
+  ...STATUS_LIT,
+  ...STATUS_LIT.map((_, i) => `${STATUS_BASE[i & 3]!} ・ 煙幕に隠れている`),
 ];
 /** 発見距離の表示刻み m（速力段ごとの段階値なので、変わるのは段が変わったときだけ） */
 const DETECT_RANGE_STEP_M = 50;
@@ -128,7 +133,7 @@ export class BoatHud {
       this.lastHits = t.hits;
       this.missionText.setText(`残り ${timeLeft} 秒   命中 ${t.hits}`);
     }
-    const status = (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0);
+    const status = (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
     if (status !== this.lastStatus || detectStep !== this.lastDetectStep) {
       this.lastStatus = status;

@@ -9,6 +9,7 @@ import missionsSeed from '../../data/missions_seed.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
+import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
 
@@ -151,6 +152,13 @@ export function getEnemyRecord(data: GameData, enemyId: string): EnemyDataRecord
     searchlight: e.searchlight,
     starshell: e.starshell,
   };
+}
+
+/** boats.json の煙幕パラメータ。発生器が無い艇なら null */
+export function getBoatSmokeParams(data: GameData, boatId: string): SmokeParams | null {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatSmokeDataRecord(b)) throw new Error(`boats.json の ${boatId} に smoke_generator / smoke.* が無い（docs/02 §5）`);
+  return smokeParamsFromData(b);
 }
 
 /** boats.json の被害パラメータ（hull_hp と damage.*） */

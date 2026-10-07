@@ -12,10 +12,16 @@ export interface InputState {
   fireTap: boolean;
   /** 長押し→離す の一斉発射。開き角（度）。NaN なら要求なし。Mission が消費して NaN に戻す */
   fireSalvoSpreadDeg: number;
+  /** 煙幕ボタンのタップ（展開）。Mission が消費して false に戻す */
+  smokeTap: boolean;
+  /** 煙幕ボタンを押している間 true（長押しで消火。Mission が押し続けた時間を数える） */
+  smokeHeld: boolean;
+  /** 見張りボタンを押している間 true（カメラをズームアウト） */
+  lookout: boolean;
 }
 
 export function createInputState(): InputState {
-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, smokeHeld: false, lookout: false };
 }
 
 export function resetInput(s: InputState): void {
@@ -24,6 +30,9 @@ export function resetInput(s: InputState): void {
   s.stickActive = false;
   s.fireTap = false;
   s.fireSalvoSpreadDeg = NaN;
+  s.smokeTap = false;
+  s.smokeHeld = false;
+  s.lookout = false;
 }
 
 /**

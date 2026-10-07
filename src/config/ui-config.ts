@@ -112,6 +112,8 @@ export const DEBUG_RING_ALPHA = 0.5;
 export const SEARCHLIGHT_TEX_LENGTH_UNITS = 256;
 export const SEARCHLIGHT_COLOR = 0xfff2c0;
 export const SEARCHLIGHT_ALPHA = 0.2;
+/** 煙幕に遮られている間の探照灯の濃さ（SEARCHLIGHT_ALPHA に掛ける。向いてはいるが届いていないことを見せる） */
+export const SEARCHLIGHT_BLOCKED_ALPHA_FACTOR = 0.4;
 export const STARSHELL_TEX_RADIUS_UNITS = 128;
 export const STARSHELL_COLOR = 0xfff0b0;
 export const STARSHELL_ALPHA = 0.14;
@@ -135,6 +137,21 @@ export const MUZZLE_FLASH_TINT = 0xfff0a0;
 /** 被弾時のカメラ揺れ（命中演出より弱く）。最大 HP に対してこの比率未満のダメージは小さな（灰色の）爆発で描く */
 export const BOAT_HIT_SHAKE_INTENSITY = 0.002;
 export const SMALL_HIT_DAMAGE_RATIO = 0.1;
+
+/** 右上「煙幕」・右中「見張り」の丸ボタン（docs/02 §5）。魚雷ボタンより小さい。タップ判定は魚雷ボタンと同じ閾値 */
+export const ROUND_BUTTON_RADIUS = 48;
+export const ROUND_BUTTON_ALPHA = 0.55;
+export const ROUND_BUTTON_DISABLED_ALPHA_FACTOR = 0.4;
+export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
+/** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
+export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
+/** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */
+export const SMOKE_PUFF_TEX_RADIUS_UNITS = 64;
+export const SMOKE_PUFF_COLOR = 0x9aa4b0;
+export const SMOKE_PUFF_ALPHA = 0.55;
+export const SMOKE_POOL_SIZE = 32;
+/** 見張りズーム: 1 フレームあたりの補間係数（dt では割らない。カメラ追従と同じ扱い） */
+export const ZOOM_LERP = 0.12;
 
 /** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
 export const EXPLOSION_DURATION_MS = 600;

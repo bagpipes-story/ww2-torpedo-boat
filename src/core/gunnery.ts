@@ -113,7 +113,7 @@ export function createGunneryState(p: GunneryParams, shellPoolSize: number, ship
  * 星弾は「発見中・探照灯の点灯遅れが明けている・探照灯の射程外かつ星弾の射程内・艇が艦の方へ進んでいる・冷却が明けている」のとき
  * 艇の位置へ撃ち、一定時間その周りを照らす。遠ざかる艇には撃たない（逃げる艇への追い打ちにしない設計上の譲歩）。
  */
-export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number): void {
+export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number, losBlocked: boolean = false): void {
   const dx = player.x - ship.x;
   const dy = player.y - ship.y;
   const d2 = dx * dx + dy * dy;
@@ -135,7 +135,8 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     const maxTurn = p.searchlight.sweepDegS * realDt;
     light.bearingDeg = wrapDeg360(light.bearingDeg + (diff > maxTurn ? maxTurn : diff < -maxTurn ? -maxTurn : diff));
     const half = p.searchlight.coneDeg / 2;
-    light.illuminating = Math.abs(wrapDeg180(bearingToPlayer - light.bearingDeg)) <= half && d2 <= p.searchlight.rangeM * p.searchlight.rangeM;
+    // 煙幕に遮られていれば光は届かない（光軸は艇の方位を追い続ける）
+    light.illuminating = !losBlocked && Math.abs(wrapDeg180(bearingToPlayer - light.bearingDeg)) <= half && d2 <= p.searchlight.rangeM * p.searchlight.rangeM;
   }
 
   const star = g.star;
@@ -144,7 +145,7 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     star.leftS -= realDt;
     const sx = player.x - star.x;
     const sy = player.y - star.y;
-    star.illuminating = star.leftS > 0 && sx * sx + sy * sy <= p.starshell.illumRadiusM * p.starshell.illumRadiusM;
+    star.illuminating = !losBlocked && star.leftS > 0 && sx * sx + sy * sy <= p.starshell.illumRadiusM * p.starshell.illumRadiusM;
   } else {
     star.illuminating = false;
   }
@@ -152,7 +153,18 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
   // 艇が艦の方へ進んでいるときだけ撃つ（艇自身の速度ベクトルで判定。艦の動きは見ない）: 探照灯の射程を抜けて逃げる艇への追い打ちにならないように（v0.2.1 実機: 「範囲外でも砲撃が続く」）
   const ph = degToRad(player.headingDeg);
   const closing = (Math.sin(ph) * -dx + -Math.cos(ph) * -dy) * player.speedMps > 0;
-  if (playerDetected && light.on && closing && star.leftS <= 0 && star.cooldownLeftS <= 0 && !light.illuminating && d2 <= p.starshell.rangeM * p.starshell.rangeM && d2 > p.searchlight.rangeM * p.searchlight.rangeM) {
+  // 煙幕に遮られて見えない艇には撃たない（撃つと発射のステップだけ照らした扱いになり砲が 1 発出る。星弾と冷却も無駄になる。レビューで判明）
+  if (
+    playerDetected &&
+    light.on &&
+    closing &&
+    !losBlocked &&
+    star.leftS <= 0 &&
+    star.cooldownLeftS <= 0 &&
+    !light.illuminating &&
+    d2 <= p.starshell.rangeM * p.starshell.rangeM &&
+    d2 > p.searchlight.rangeM * p.searchlight.rangeM
+  ) {
     star.leftS = p.starshell.durationS;
     star.cooldownLeftS = p.starshell.cooldownS;
     star.x = player.x;
