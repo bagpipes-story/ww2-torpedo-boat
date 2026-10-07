@@ -53,6 +53,12 @@ export interface BoatTelemetry {
   /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */
   enemyDx: number;
   enemyDy: number;
+  /** 敵が自艇の視程内にいる（見える・マーカーを出す）。docs/02 §6.5 */
+  enemySighted: boolean;
+  /** 敵が自艇を発見している */
+  playerDetected: boolean;
+  /** 敵が自艇を見つける距離 m（速力段・月明で決まる。HUD に出して速力を落とす価値を見せる） */
+  detectRangeM: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

@@ -1,8 +1,9 @@
-// Mission: 海・自艇・駆逐艦・魚雷・カメラ追従（v0.1.3）。HUD と操作は HudScene に分離。
+// Mission: 海・自艇・駆逐艦・魚雷・カメラ追従（v0.2.0: 視界と発見、雷跡回避、体当たり）。HUD と操作は HudScene に分離。
 // 運動は src/core を固定ステップで積分する（CLAUDE.md §7）。発射・命中・終了はイベント時だけ確保する。
 import Phaser from 'phaser';
 import {
   CAMERA_FOLLOW_LERP,
+  DEBUG_ENABLED,
   FIXED_STEP_S,
   MAX_STEPS_PER_FRAME,
   PROTOTYPE_MISSION_ID,
@@ -16,9 +17,11 @@ import {
   getBoatRecord,
   getBoatTorpedoCount,
   getEnemyRecord,
+  getEvasionMultiplier,
   getGameData,
   getPrototypeMission,
   getTorpedoRecord,
+  getVisibilityParams,
 } from '../config/game-data';
 import { CAMERA_LOOK_AHEAD_M, HIT_SHAKE_INTENSITY, HIT_SHAKE_MS, MISSION_END_DELAY_MS } from '../config/ui-config';
 import {
@@ -35,12 +38,14 @@ import { FixedStepper } from '../core/fixed-stepper';
 import { countHits, summarizeShots, type ShotRecord } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
 import { SeededRng } from '../core/rng';
+import { shipAiParamsFromData } from '../core/ship-ai';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams } from '../core/torpedo';
-import { degToRad, ktToMps } from '../core/units';
+import { degToRad } from '../core/units';
+import { enemyDetectRangeM, playerVisRangeM, speedFactorFor, type VisibilityParams } from '../core/visibility';
 import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
 import { drawSea } from '../entities/sea';
-import { LeadMarker, playExplosion } from '../systems/mission-effects';
+import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
 import { TorpedoLauncher } from '../systems/torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from '../systems/torpedo-pool';
 import type { MissionEndReason, MissionResult } from './result-scene';
@@ -53,6 +58,8 @@ export class MissionScene extends Phaser.Scene {
   private bounds!: SeaBounds;
   /** 境界から押し戻す余白（m）。表示上の船体半分で、船首が境界線をはみ出さない */
   private boundsMarginM = 0;
+  /** 体当たり判定に使う自艇の半長 m（hit_scale 込み） */
+  private boatHalfLengthM = 0;
   private inputState!: InputState;
   private telemetry!: BoatTelemetry;
   private timeScale = 1;
@@ -60,8 +67,14 @@ export class MissionScene extends Phaser.Scene {
   private torpedoParams!: TorpedoParams;
   /** 外れ確定の半径二乗: 目標中心からこれより離れて遠ざかれば通過したとみなす */
   private passRadius2 = 0;
-  /** デバッグ時（?debug）だけの見越し点マーカー */
+  /** 視界（docs/02 §6.5）: 敵の基準発見距離、自艇の視程の二乗、このステップの発見距離 */
+  private vis!: VisibilityParams;
+  private baseDetectM = 0;
+  private visRange2 = 0;
+  private detectRangeM = 0;
+  /** デバッグ時（?debug）だけの見越し点マーカーと距離の円 */
   private leadMarker?: LeadMarker;
+  private debugRanges?: DebugRanges;
   private seed = 0;
   private readonly shots: ShotRecord[] = [];
   private hits = 0;
@@ -84,11 +97,17 @@ export class MissionScene extends Phaser.Scene {
   private readonly stepFn = (realDt: number): void => {
     const factor = this.slowMoLeftS > 0 ? this.slowMoFactor : 1;
     const dt = realDt * this.timeScale * factor;
-    stepBoat(this.boat.state, this.inputState, this.params, dt);
-    clampToBounds(this.boat.state, this.bounds, this.boundsMarginM);
-    this.destroyer.step(dt);
+    const boat = this.boat.state;
+    if (!this.boat.sinking) {
+      stepBoat(boat, this.inputState, this.params, dt);
+      clampToBounds(boat, this.bounds, this.boundsMarginM);
+    }
+    // 敵がこのステップで自艇を見つける距離 = 基準 × 速力係数 × 月明 ×（煙幕は v0.2.2）
+    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(boat.speedMps, this.params, this.vis.speedFactor), this.vis, false);
     const d = this.destroyer;
+    d.step(dt, realDt * factor, boat, this.detectRangeM, this.vis.detectHoldS, this.torpedoes.states);
     this.torpedoes.step(dt, realDt * factor, d.sinking ? null : d.circles, d.state.x, d.state.y, this.passRadius2, this.torpedoEvents);
+    if (!this.boat.sinking && d.touchesBoat(boat, this.boatHalfLengthM)) this.handleRammed();
   };
 
   constructor() {
@@ -108,9 +127,17 @@ export class MissionScene extends Phaser.Scene {
     this.params = boatParamsFromData(boatRecord);
     this.bounds = mission.bounds;
     this.boundsMarginM = (boatRecord.length_m * world.sprite_scale) / 2;
+    this.boatHalfLengthM = (boatRecord.length_m * world.hit_scale) / 2;
     this.timeScale = world.time_scale;
     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     resetInput(this.inputState);
+
+    this.vis = getVisibilityParams(data, mission.moon);
+    this.baseDetectM = enemyRecord.detection.base_detect_m;
+    const visRange = playerVisRangeM(this.vis);
+    this.visRange2 = visRange * visRange;
+    // 最初の固定ステップが回る前のフレームでも HUD に正しい発見距離が出るよう、出発時の速力で先に計算する
+    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorFor(this.params.speedCruiseMps, this.params, this.vis.speedFactor), this.vis, false);
 
     this.slowMoFactor = feel.hit_slowmo_factor;
     this.slowMoSeconds = feel.hit_slowmo_seconds;
@@ -124,13 +151,20 @@ export class MissionScene extends Phaser.Scene {
     drawSea(this, this.bounds);
 
     this.boat = new PlayerBoat(this, mission.playerStart, this.params.speedCruiseMps);
-    this.destroyer = new Destroyer(this, mission.enemyStart, ktToMps(enemyRecord.speed_typical_kt), {
-      lengthM: enemyRecord.length_m,
-      beamM: enemyRecord.beam_m,
-      hullCircles: enemyRecord.hull_circles,
-      hitsToSink: mission.enemyHitsToSink ?? enemyRecord.torpedo_hits_to_sink,
-      hitScale: world.hit_scale,
-    });
+    this.destroyer = new Destroyer(
+      this,
+      mission.enemyStart,
+      {
+        lengthM: enemyRecord.length_m,
+        beamM: enemyRecord.beam_m,
+        hullCircles: enemyRecord.hull_circles,
+        hitsToSink: mission.enemyHitsToSink ?? enemyRecord.torpedo_hits_to_sink,
+        hitScale: world.hit_scale,
+        boundsMarginM: (enemyRecord.length_m * world.sprite_scale) / 2,
+      },
+      shipAiParamsFromData(enemyRecord, getEvasionMultiplier(data)),
+      this.bounds,
+    );
     const hitLen = enemyRecord.length_m * world.hit_scale;
     const hitBeam = enemyRecord.beam_m * world.hit_scale;
     this.passRadius2 = (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam);
@@ -164,12 +198,17 @@ export class MissionScene extends Phaser.Scene {
       timeLeftS: this.timeLeftS,
       enemyDx: this.destroyer.state.x - this.boat.state.x,
       enemyDy: this.destroyer.state.y - this.boat.state.y,
+      enemySighted: false,
+      playerDetected: false,
+      detectRangeM: this.detectRangeM,
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
+    this.refreshSighting();
 
-    // 見越し点マーカー（docs/02 §6.3: v0.1 はデバッグ切替で常時表示可）。URL に ?debug があるときだけ
-    if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
+    // 見越し点マーカー（docs/02 §6.3: v0.1 はデバッグ切替で常時表示可）と距離の円。URL に ?debug があるときだけ
+    if (DEBUG_ENABLED) {
       this.leadMarker = new LeadMarker(this);
+      this.debugRanges = new DebugRanges(this);
     }
 
     this.scene.launch(SCENE_KEYS.hud);
@@ -183,6 +222,8 @@ export class MissionScene extends Phaser.Scene {
       this.boat.destroy();
       this.leadMarker?.destroy();
       this.leadMarker = undefined;
+      this.debugRanges?.destroy();
+      this.debugRanges = undefined;
     });
   }
 
@@ -190,14 +231,18 @@ export class MissionScene extends Phaser.Scene {
     if (this.ended) return;
     const realDt = delta / 1000;
 
-    this.consumeFireInput();
-    this.launcher.update(realDt, this.boat.state, this.destroyer.state);
+    if (!this.boat.sinking) {
+      this.consumeFireInput();
+      this.launcher.update(realDt, this.boat.state, this.destroyer.state);
+    }
     this.stepper.advance(realDt, this.stepFn);
     this.boat.syncSprite();
     this.destroyer.syncSprite();
     this.torpedoes.updateVisuals(realDt);
     this.updateLookAhead();
-    this.leadMarker?.refresh(this.boat.state, this.destroyer.sinking ? null : this.destroyer.state, this.torpedoParams.speedMps);
+    const enemyAlive = this.destroyer.sinking ? null : this.destroyer.state;
+    this.leadMarker?.refresh(this.boat.state, enemyAlive, this.torpedoParams.speedMps);
+    this.debugRanges?.refresh(enemyAlive, this.detectRangeM, this.boat.state, playerVisRangeM(this.vis));
 
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
     this.elapsedS += realDt;
@@ -212,20 +257,33 @@ export class MissionScene extends Phaser.Scene {
     t.torpedoesLeft = this.torpedoes.remaining;
     t.hits = this.hits;
     t.timeLeftS = this.timeLeftS;
-    if (this.destroyer.sinking) {
-      t.enemyDx = NaN;
-      t.enemyDy = NaN;
-    } else {
-      t.enemyDx = this.destroyer.state.x - s.x;
-      t.enemyDy = this.destroyer.state.y - s.y;
-    }
+    this.refreshSighting();
 
-    if (this.timeLeftS <= 0 && !this.destroyer.sinking) {
-      // 沈没演出中は演出の完了（'sunk'）に任せる
+    // 沈没演出中（どちらの側でも）は演出の完了（'sunk' / 'rammed'）に任せる
+    if (this.destroyer.sinking || this.boat.sinking) return;
+    if (this.timeLeftS <= 0) {
       this.endMission('timeout');
-    } else if (this.torpedoes.remaining === 0 && this.launcher.queued === 0 && this.torpedoes.unresolvedCount === 0 && !this.destroyer.sinking && !this.endTimer) {
+    } else if (this.torpedoes.remaining === 0 && this.launcher.queued === 0 && this.torpedoes.unresolvedCount === 0 && !this.endTimer) {
       this.endTimer = this.time.delayedCall(MISSION_END_DELAY_MS, () => this.endMission('expended'));
     }
+  }
+
+  /** 敵の相対位置と「見えるか・見つかったか」を telemetry へ。敵スプライトは視程内だけ表示（docs/02 §6.5） */
+  private refreshSighting(): void {
+    const t = this.telemetry;
+    const d = this.destroyer;
+    if (d.sinking) {
+      t.enemyDx = NaN;
+      t.enemyDy = NaN;
+      t.enemySighted = false;
+    } else {
+      t.enemyDx = d.state.x - this.boat.state.x;
+      t.enemyDy = d.state.y - this.boat.state.y;
+      t.enemySighted = t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy <= this.visRange2;
+      d.setSighted(t.enemySighted);
+    }
+    t.playerDetected = d.ai.playerDetected && !d.sinking;
+    t.detectRangeM = this.detectRangeM;
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
@@ -254,12 +312,28 @@ export class MissionScene extends Phaser.Scene {
     if (dud) return;
     this.hits++;
     this.slowMoLeftS = this.slowMoSeconds;
-    // Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する
-    const z = this.cameras.main.zoom;
-    this.cameras.main.shake(HIT_SHAKE_MS, HIT_SHAKE_INTENSITY / (z * z));
+    this.shakeCamera();
     if (this.destroyer.takeHit()) {
       this.destroyer.playSinking(() => this.endMission('sunk'));
     }
+  }
+
+  /** 体当たりされた: 自艇の位置で爆発、スロー、沈没演出の後に Result（生還なし）。保留中の '撃ち尽くし' 終了は取り消す */
+  private handleRammed(): void {
+    if (this.boat.sinking || this.ended) return;
+    const s = this.boat.state;
+    playExplosion(this, s.x, s.y, false);
+    this.slowMoLeftS = this.slowMoSeconds;
+    this.shakeCamera();
+    this.endTimer?.remove(false);
+    this.endTimer = undefined;
+    this.boat.playSinking(() => this.endMission('rammed'));
+  }
+
+  /** Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する */
+  private shakeCamera(): void {
+    const z = this.cameras.main.zoom;
+    this.cameras.main.shake(HIT_SHAKE_MS, HIT_SHAKE_INTENSITY / (z * z));
   }
 
   private endMission(reason: MissionEndReason): void {
@@ -278,7 +352,7 @@ export class MissionScene extends Phaser.Scene {
       misses: counts.misses,
       capacity: this.torpedoes.capacity,
       destroyerSunk: this.destroyer.sinking,
-      survived: true,
+      survived: !this.boat.sinking,
       elapsedS: this.elapsedS,
       seed: this.seed,
     };

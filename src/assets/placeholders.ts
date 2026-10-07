@@ -3,6 +3,8 @@
 import Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
+  DEBUG_RING_LINE_WIDTH,
+  DEBUG_RING_RADIUS_UNITS,
   RUDDER_BAR_HALF_WIDTH,
   RUDDER_BAR_HEIGHT,
   RUDDER_MARKER_HEIGHT,
@@ -144,6 +146,17 @@ export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits:
   g.fillStyle(0xffffff, 0.35);
   g.fillCircle(rd / 2, rd / 2, EXPLOSION_RING_RADIUS_UNITS * k * 0.6);
   g.generateTexture(TEXTURE_KEYS.explosionRing, rd, rd);
+  g.destroy();
+}
+
+/** デバッグ用の距離の円（世界単位 × RENDER_SCALE）。?debug のときだけ作る。白で作って tint で色を付ける */
+export function generateDebugRingTexture(scene: Phaser.Scene): void {
+  const k = RENDER_SCALE;
+  const d = Math.ceil(DEBUG_RING_RADIUS_UNITS * 2 * k) + 8;
+  const g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.lineStyle(Math.max(1, DEBUG_RING_LINE_WIDTH * k), 0xffffff, 1);
+  g.strokeCircle(d / 2, d / 2, DEBUG_RING_RADIUS_UNITS * k);
+  g.generateTexture(TEXTURE_KEYS.debugRing, d, d);
   g.destroy();
 }
 

@@ -61,6 +61,15 @@
     "40kt": { "1000yd": 44, "1500m": 73, "2000m": 97 },
     "44kt": { "1000yd": 40, "1500m": 66, "2000m": 88 }
   },
+  "visibility": {
+    "note": "視界と発見（docs/02 §6.5）。敵がプレイヤーを発見する距離 = base_detect_m（enemies.json）× 速力係数 × 月明係数 × 煙幕係数。プレイヤーが敵を見る距離 = vis_player_base_m × 月明係数。速力係数は艇の速力段（停止/静音/巡航/全速。HUD に出る、実速度に最も近い段）の値をそのまま使う（段の間の補間はしない）",
+    "vis_player_base_m": 1500,
+    "moon_factor": { "dark": 0.6, "half": 1.0, "full": 1.3 },
+    "speed_factor": { "stop": 0.4, "silent": 0.5, "cruise": 1.0, "full": 1.6 },
+    "smoke_factor": 0.3,
+    "detect_hold_s": 8,
+    "source": "design (半月・base_detect_m 2000 で: 停止 800m、静音 8kt 1,000m、巡航 2,000m、全速 3,200m から見つかる。vis_player は半月で 1,500m なので、巡航だと先に見つかり、静音以下なら先に見つける。detect_hold_s は見失ってから警戒を解くまでの実時間秒。smoke_factor は v0.2.2 の煙幕で使う)"
+  },
   "feel": {
     "hit_slowmo_factor": 0.3,
     "hit_slowmo_seconds": 1.2,

@@ -72,6 +72,18 @@ export function pointHitsHull(x: number, y: number, circles: Circle[]): boolean 
 }
 
 /**
+ * 艇が艦の船体に触れているか（体当たり判定。docs/02 §6.4）。
+ * 艇の 船首・中央・船尾 の 3 点のどれかが艦の船体カプセルに入れば接触。艇の幅は艦の幅に比べて小さいので省く。
+ */
+export function boatTouchesHull(x: number, y: number, headingDeg: number, halfLengthM: number, hull: Circle[]): boolean {
+  if (pointHitsHull(x, y, hull)) return true;
+  const h = degToRad(headingDeg);
+  const ux = Math.sin(h) * halfLengthM;
+  const uy = -Math.cos(h) * halfLengthM;
+  return pointHitsHull(x + ux, y + uy, hull) || pointHitsHull(x - ux, y - uy, hull);
+}
+
+/**
  * 見越し角: 速度 torpedoSpeed の直進魚雷が、速度ベクトル (tvx, tvy) で直進する目標に当たる発射方位（度）。
  * 解が無ければ null。shooter から target への相対位置と目標速度から 2 次方程式を解く。
  */

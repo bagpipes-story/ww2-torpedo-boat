@@ -16,7 +16,7 @@ import {
 } from '../config/ui-config';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 
-export type MissionEndReason = 'sunk' | 'expended' | 'timeout';
+export type MissionEndReason = 'sunk' | 'expended' | 'timeout' | 'rammed';
 
 export interface MissionResult {
   reason: MissionEndReason;
@@ -36,6 +36,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   sunk: '駆逐艦を撃沈',
   expended: '魚雷を撃ち尽くした',
   timeout: '時間切れ',
+  rammed: '駆逐艦に体当たりされた',
 };
 
 export class ResultScene extends Phaser.Scene {

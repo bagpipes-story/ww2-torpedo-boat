@@ -1,7 +1,11 @@
-// 任務中の演出とデバッグ表示: 爆発リング（発生時に 1 回だけ tween）、見越し点マーカー（?debug のときだけ）。
+// 任務中の演出とデバッグ表示: 爆発リング（発生時に 1 回だけ tween）、見越し点マーカーと距離の円（?debug のときだけ）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
+  DEBUG_RING_ALPHA,
+  DEBUG_RING_RADIUS_UNITS,
+  DEBUG_RING_TINT_DETECT,
+  DEBUG_RING_TINT_VIS,
   EXPLOSION_DURATION_MS,
   EXPLOSION_SCALE_DUD,
   EXPLOSION_SCALE_FROM,
@@ -69,5 +73,31 @@ export class LeadMarker {
 
   destroy(): void {
     this.image.destroy();
+  }
+}
+
+/** 発見距離（敵の周り、赤）と視程（自艇の周り、青）の円。?debug のときだけ。拡縮だけ動かす（再描画しない） */
+export class DebugRanges {
+  private readonly detect: Phaser.GameObjects.Image;
+  private readonly vis: Phaser.GameObjects.Image;
+
+  constructor(scene: Phaser.Scene) {
+    this.detect = scene.add.image(0, 0, TEXTURE_KEYS.debugRing).setTint(DEBUG_RING_TINT_DETECT).setAlpha(DEBUG_RING_ALPHA).setDepth(DEPTH.effects);
+    this.vis = scene.add.image(0, 0, TEXTURE_KEYS.debugRing).setTint(DEBUG_RING_TINT_VIS).setAlpha(DEBUG_RING_ALPHA).setDepth(DEPTH.effects);
+  }
+
+  refresh(enemy: BoatState | null, detectRangeM: number, boat: BoatState, visRangeM: number): void {
+    if (enemy) {
+      const k = detectRangeM / DEBUG_RING_RADIUS_UNITS / RENDER_SCALE;
+      this.detect.setPosition(enemy.x, enemy.y).setScale(k).setVisible(true);
+    } else if (this.detect.visible) {
+      this.detect.setVisible(false);
+    }
+    this.vis.setPosition(boat.x, boat.y).setScale(visRangeM / DEBUG_RING_RADIUS_UNITS / RENDER_SCALE);
+  }
+
+  destroy(): void {
+    this.detect.destroy();
+    this.vis.destroy();
   }
 }
