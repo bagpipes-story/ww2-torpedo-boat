@@ -125,6 +125,7 @@ describe('updateShipAi', () => {
     updateShipAi(ai, s, far(), DETECT, 8, near, P, SEA, 0.1);
     expect(ai.mode).toBe('cruise');
     expect(ai.desiredSpeedMps).toBeCloseTo(P.cruiseSpeedMps, 9);
+    expect(ai.desiredHeadingDeg).toBe(90); // 元の哨戒針路へ戻る
   });
   it('プレイヤーの発見は距離で決まり、見失っても hold 秒は警戒が続く', () => {
     const ai = createShipAiState(90, P.cruiseSpeedMps);

@@ -1,9 +1,12 @@
-// フローティング・バーチャルスティック（docs/02 §5）。画面左半分のタッチ開始点に出て、X=舵、Y=スロットル。
+// フローティング・バーチャルスティック（docs/02 §5、v0.2.1 で見直し）。画面左半分のタッチ開始点に出て、
+// 倒した方向が目標方位（画面上=北）、倒した量が目標速度（中立=停止、いっぱいで全速）。カメラは回転しないので画面の向き＝世界の方位。
+// 触れた点がそのまま中立（端に近くても原点をずらさない。ずらすと「置いただけで動き出す」）。台座は触れた点に固定し、指が半径を越えてもノブは縁で止まる
+// （v0.2.1 実機: 台座が指についてくる方式は「強く倒すとスティック自体が動く」と不評だった）。
 // HUD シーン（論理座標 1280×720）で動かす。結果は共有 InputState に書く（確保しない）。
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { STICK_BASE_ALPHA, STICK_DEAD_ZONE, STICK_EDGE_MARGIN, STICK_KNOB_ALPHA, STICK_RADIUS } from '../config/ui-config';
-import { applyDeadZone, type InputState } from '../core/input-state';
+import { DEPTH, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { STICK_BASE_ALPHA, STICK_DEAD_ZONE, STICK_KNOB_ALPHA, STICK_RADIUS } from '../config/ui-config';
+import { stickToCommand, type InputState } from '../core/input-state';
 
 export class VirtualStick {
   private pointerId = -1;
@@ -12,6 +15,7 @@ export class VirtualStick {
   private readonly base: Phaser.GameObjects.Image;
   private readonly knob: Phaser.GameObjects.Image;
   private readonly tmp = new Phaser.Math.Vector2();
+  private readonly cmd = { speed01: 0, headingDeg: NaN };
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -46,29 +50,26 @@ export class VirtualStick {
     const v = this.toLogical(p);
     if (v.x >= GAME_WIDTH / 2) return; // 右半分はボタン領域（v0.1.3〜）
     this.pointerId = p.id;
-    // 円全体が画面に収まるよう原点を内側へ寄せる（端で押しても全方向に倒せる）。x は左半分なので上限不要
-    const m = STICK_RADIUS + STICK_EDGE_MARGIN;
-    this.originX = Math.max(v.x, m);
-    this.originY = Math.min(Math.max(v.y, m), GAME_HEIGHT - m);
+    // 触れた点が中立。台座が画面からはみ出しても原点はずらさない（ずらすと置いただけで艇が動く）
+    this.originX = v.x;
+    this.originY = v.y;
     this.base.setPosition(this.originX, this.originY).setVisible(true);
+    this.knob.setPosition(this.originX, this.originY).setVisible(true);
     this.input.stickActive = true;
-    this.applyFinger(v.x, v.y);
+    this.input.speed01 = 0;
+    this.input.headingDeg = NaN;
   }
 
-  /** 指の論理座標から、ノブ位置と舵・スロットルを更新する */
+  /** 指の論理座標から、ノブ位置と目標方位・目標速度を更新する。台座は動かさず、ノブは縁（半径）で止める */
   private applyFinger(x: number, y: number): void {
-    let dx = x - this.originX;
-    let dy = y - this.originY;
+    const dx = x - this.originX;
+    const dy = y - this.originY;
     const len = Math.hypot(dx, dy);
-    if (len > STICK_RADIUS) {
-      const k = STICK_RADIUS / len;
-      dx *= k;
-      dy *= k;
-    }
-    this.knob.setPosition(this.originX + dx, this.originY + dy).setVisible(true);
-    this.input.rudder = applyDeadZone(dx / STICK_RADIUS, STICK_DEAD_ZONE);
-    // 画面上（dy<0）が全速なので符号を反転
-    this.input.throttle = -applyDeadZone(dy / STICK_RADIUS, STICK_DEAD_ZONE);
+    const k = len > STICK_RADIUS ? STICK_RADIUS / len : 1;
+    this.knob.setPosition(this.originX + dx * k, this.originY + dy * k);
+    stickToCommand(dx, dy, STICK_RADIUS, STICK_DEAD_ZONE, this.cmd);
+    this.input.speed01 = this.cmd.speed01;
+    this.input.headingDeg = this.cmd.headingDeg;
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
@@ -83,8 +84,8 @@ export class VirtualStick {
     this.base.setVisible(false);
     this.knob.setVisible(false);
     this.input.stickActive = false;
-    this.input.rudder = 0;
-    this.input.throttle = 0;
+    this.input.headingDeg = NaN;
+    this.input.speed01 = 0;
   }
 
   destroy(): void {

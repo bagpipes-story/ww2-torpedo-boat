@@ -42,6 +42,8 @@ export interface ShipAiParams {
 export interface ShipAiState {
   mode: ShipAiMode;
   desiredHeadingDeg: number;
+  /** 哨戒の針路。回避・体当たりが終わればここへ戻る（端での向き直しで更新される） */
+  patrolHeadingDeg: number;
   desiredSpeedMps: number;
   /** 雷跡を見つけてからの経過（実時間秒）。-1 は未発見 */
   wakeSeenForS: number;
@@ -65,6 +67,7 @@ export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): S
   return {
     mode: 'cruise',
     desiredHeadingDeg: headingDeg,
+    patrolHeadingDeg: headingDeg,
     desiredSpeedMps: cruiseSpeedMps,
     wakeSeenForS: -1,
     seenTorpedoHeadingDeg: 0,
@@ -160,12 +163,14 @@ export function updateShipAi(
   if (ai.mode !== 'cruise') {
     ai.mode = 'cruise';
     ai.desiredSpeedMps = p.cruiseSpeedMps;
-    // 針路は回避後の向きのまま（元の針路へ戻す知能は v0.4 の航路で扱う）
   }
-  // 海域の端が近ければ中央へ向き直す（端に張り付かない。往復の哨戒になる）
+  // 回避・体当たりの後は哨戒の針路へ戻る（v0.2.1 実機: 回避後の向きのままだと艇の方へ「追ってくる」ように見えた）
+  ai.desiredHeadingDeg = ai.patrolHeadingDeg;
+  // 海域の端が近ければ中央へ向き直す（端に張り付かない。往復の哨戒になる）。新しい向きが哨戒針路になる
   const m = p.edgeTurnMarginM;
   if (ship.x < m || ship.y < m || ship.x > bounds.width - m || ship.y > bounds.height - m) {
     ai.desiredHeadingDeg = edgeTurnHeadingDeg(ship, bounds, m);
+    ai.patrolHeadingDeg = ai.desiredHeadingDeg;
   }
 }
 

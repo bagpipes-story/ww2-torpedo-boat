@@ -6,10 +6,10 @@ import {
   boatParamsFromData,
   clampToBounds,
   isBoatDataRecord,
-  nearestSpeedStep,
+  nextSpeedBand,
+  speedBandFor,
   stepBoat,
-  THROTTLE_SILENT,
-  throttleToTargetSpeed,
+  turnCommand,
   type BoatInput,
   type BoatParams,
   type BoatState,
@@ -23,7 +23,9 @@ const P: BoatParams = boatParamsFromData(elcoRecord);
 function state(partial: Partial<BoatState> = {}): BoatState {
   return { x: 0, y: 0, headingDeg: 0, speedMps: 0, ...partial };
 }
-const input = (rudder: number, throttle: number): BoatInput => ({ rudder, throttle });
+/** 入力: 目標方位（NaN=保つ）と目標速度（全速比） */
+const input = (headingDeg: number, speed01: number): BoatInput => ({ headingDeg, speed01 });
+const HOLD = NaN;
 
 describe('boatParamsFromData（Elco 80ft）', () => {
   it('kt を m/s に変換し、加速・旋回はそのまま持つ（design 値はレコードと比較、historical 値は固定値）', () => {
@@ -46,72 +48,114 @@ describe('boatParamsFromData（Elco 80ft）', () => {
   });
 });
 
-describe('throttleToTargetSpeed（docs/02 §5: 上=全速、中立=巡航、下=静音→停止）', () => {
-  it('区分点', () => {
-    expect(THROTTLE_SILENT).toBeGreaterThan(-1);
-    expect(THROTTLE_SILENT).toBeLessThan(0);
-    expect(throttleToTargetSpeed(1, P)).toBeCloseTo(P.speedMaxMps, 9);
-    expect(throttleToTargetSpeed(0, P)).toBeCloseTo(P.speedCruiseMps, 9);
-    expect(throttleToTargetSpeed(THROTTLE_SILENT, P)).toBeCloseTo(P.speedSilentMps, 9);
-    expect(throttleToTargetSpeed(-1, P)).toBeCloseTo(0, 9);
+describe('speedBandFor（速力帯。境界は data の speed_bands_kt）', () => {
+  it('停止 ≤0.5kt、静音 ≤18kt、巡航 ≤30kt、それ以上は全速（us_elco80）。HUD と同じく kt を丸めて判定', () => {
+    expect(speedBandFor(0, P)).toBe('stop');
+    expect(speedBandFor(ktToMps(0.4), P)).toBe('stop'); // 丸めて 0 kt
+    expect(speedBandFor(ktToMps(0.6), P)).toBe('silent'); // 丸めて 1 kt
+    expect(speedBandFor(ktToMps(8), P)).toBe('silent');
+    expect(speedBandFor(ktToMps(18), P)).toBe('silent');
+    expect(speedBandFor(ktToMps(18.4), P)).toBe('silent'); // 表示は 18 kt → 静音
+    expect(speedBandFor(ktToMps(18.6), P)).toBe('cruise'); // 表示は 19 kt
+    expect(speedBandFor(ktToMps(23), P)).toBe('cruise');
+    expect(speedBandFor(ktToMps(30.4), P)).toBe('cruise');
+    expect(speedBandFor(ktToMps(30.6), P)).toBe('full');
+    expect(speedBandFor(P.speedMaxMps, P)).toBe('full');
   });
-  it('区分の間は線形、範囲外はクランプ', () => {
-    expect(throttleToTargetSpeed(0.5, P)).toBeCloseTo((P.speedCruiseMps + P.speedMaxMps) / 2, 9);
-    expect(throttleToTargetSpeed(THROTTLE_SILENT / 2, P)).toBeCloseTo((P.speedSilentMps + P.speedCruiseMps) / 2, 9);
-    expect(throttleToTargetSpeed((THROTTLE_SILENT - 1) / 2, P)).toBeCloseTo(P.speedSilentMps / 2, 9);
-    expect(throttleToTargetSpeed(5, P)).toBeCloseTo(P.speedMaxMps, 9);
-    expect(throttleToTargetSpeed(-5, P)).toBeCloseTo(0, 9);
-  });
-  it('単調非減少', () => {
-    let prev = -1;
-    for (let t = -1; t <= 1.0001; t += 0.05) {
-      const v = throttleToTargetSpeed(t, P);
-      expect(v).toBeGreaterThanOrEqual(prev - 1e-12);
-      prev = v;
+  it('nextSpeedBand: 上の帯へは境界＋hysteresis を超えて初めて移り、下へはすぐ戻る。境界付近の揺れで点滅しない', () => {
+    expect(P.bandHysteresisMps).toBeCloseTo(ktToMps(1), 9);
+    let b = nextSpeedBand('stop', ktToMps(10), P);
+    expect(b).toBe('silent');
+    b = nextSpeedBand(b, ktToMps(18.6), P); // 19 kt: 境界 18 + 1 を超えていない → 静音のまま
+    expect(b).toBe('silent');
+    b = nextSpeedBand(b, ktToMps(19.6), P); // 20 kt → 巡航
+    expect(b).toBe('cruise');
+    b = nextSpeedBand(b, ktToMps(18.6), P); // 19 kt: 巡航の下限 18 より上 → 巡航のまま
+    expect(b).toBe('cruise');
+    b = nextSpeedBand(b, ktToMps(18), P); // 18 kt → 静音へ戻る
+    expect(b).toBe('silent');
+    // 一気に全速、一気に停止
+    expect(nextSpeedBand('stop', P.speedMaxMps, P)).toBe('full');
+    expect(nextSpeedBand('full', 0, P)).toBe('stop');
+    // 境界で往復しても帯は 1 回しか変わらない
+    let band: typeof b = 'silent';
+    let changes = 0;
+    for (let i = 0; i < 200; i++) {
+      const v = ktToMps(18 + (i % 2) * 0.9); // 18.0 ↔ 18.9 kt（表示 18 ↔ 19）
+      const n = nextSpeedBand(band, v, P);
+      if (n !== band) changes++;
+      band = n;
     }
+    expect(changes).toBe(0);
+  });
+  it('帯の境界は単調（stop < silent < cruise < max）', () => {
+    expect(P.stopMaxMps).toBeLessThan(P.silentMaxMps);
+    expect(P.silentMaxMps).toBeLessThan(P.cruiseMaxMps);
+    expect(P.cruiseMaxMps).toBeLessThan(P.speedMaxMps);
+  });
+});
+
+describe('turnCommand（舵バー表示用）', () => {
+  it('目標が無ければ 0。残り角を fullDeg で正規化し ±1 に収める。右回りが正', () => {
+    const s = state({ headingDeg: 0 });
+    expect(turnCommand(input(HOLD, 0), s, 45)).toBe(0);
+    expect(turnCommand(input(22.5, 1), s, 45)).toBeCloseTo(0.5, 9);
+    expect(turnCommand(input(315, 1), s, 45)).toBeCloseTo(-1, 9);
+    expect(turnCommand(input(180, 1), s, 45)).toBe(1);
   });
 });
 
 describe('stepBoat', () => {
-  it('停止から巡航目標: 加速度で頭打ち、途中も目標を超えない', () => {
+  it('停止から半分倒す: 目標 = 0.5 × 全速 に加速度で頭打ち、途中も目標を超えない', () => {
     const s = state();
-    stepBoat(s, input(0, 0), P, 1);
+    stepBoat(s, input(0, 0.5), P, 1);
     expect(s.speedMps).toBeCloseTo(P.accelMps2 * 1, 9);
     for (let i = 0; i < 100; i++) {
-      stepBoat(s, input(0, 0), P, 1);
-      expect(s.speedMps).toBeLessThanOrEqual(P.speedCruiseMps + 1e-12);
+      stepBoat(s, input(0, 0.5), P, 1);
+      expect(s.speedMps).toBeLessThanOrEqual(P.speedMaxMps * 0.5 + 1e-12);
     }
-    expect(s.speedMps).toBeCloseTo(P.speedCruiseMps, 9);
+    expect(s.speedMps).toBeCloseTo(P.speedMaxMps * 0.5, 9);
+    // いっぱいに倒せば全速、中立（0）なら停止へ
+    const f = state();
+    for (let i = 0; i < 200; i++) stepBoat(f, input(0, 1), P, 1);
+    expect(f.speedMps).toBeCloseTo(P.speedMaxMps, 9);
   });
-  it('全速から停止目標: 減速度で下がり、負にならず 0 で止まる', () => {
-    const s = state({ speedMps: P.speedMaxMps });
-    stepBoat(s, input(0, -1), P, 1);
+  it('全速から中立: 減速度で下がり、負にならず 0 で止まる。針路は保つ', () => {
+    const s = state({ headingDeg: 123, speedMps: P.speedMaxMps });
+    stepBoat(s, input(HOLD, 0), P, 1);
     expect(s.speedMps).toBeCloseTo(P.speedMaxMps - P.decelMps2, 9);
     for (let i = 0; i < 100; i++) {
-      stepBoat(s, input(0, -1), P, 1);
+      stepBoat(s, input(HOLD, 0), P, 1);
       expect(s.speedMps).toBeGreaterThanOrEqual(0);
     }
     expect(s.speedMps).toBe(0);
+    expect(s.headingDeg).toBe(123);
   });
-  it('旋回: 舵×旋回率×dt（dt≠1 でも）、方位は [0,360) に収まる', () => {
+  it('旋回: 目標方位へ旋回率×dt を上限に最短側で回り、方位は [0,360) に収まる。達したら止まる', () => {
     const s = state({ headingDeg: 350 });
-    stepBoat(s, input(1, -1), P, 0.25);
+    stepBoat(s, input(90, 0), P, 0.25); // 右回り（+100° が最短）
     expect(s.headingDeg).toBeCloseTo((350 + 0.25 * P.turnRateDegS) % 360, 9);
     const w = state({ headingDeg: 350 });
-    stepBoat(w, input(1, -1), P, 1);
+    stepBoat(w, input(90, 0), P, 1);
     expect(w.headingDeg).toBeCloseTo((350 + P.turnRateDegS) % 360, 9);
     const l = state({ headingDeg: 10 });
-    stepBoat(l, input(-0.5, -1), P, 0.5);
-    expect(l.headingDeg).toBeCloseTo((360 + 10 - 0.5 * 0.5 * P.turnRateDegS) % 360, 9);
+    stepBoat(l, input(300, 0), P, 0.5); // 左回り（-70° が最短）
+    expect(l.headingDeg).toBeCloseTo((360 + 10 - 0.5 * P.turnRateDegS) % 360, 9);
+    const near = state({ headingDeg: 10 });
+    stepBoat(near, input(13, 0), P, 1); // 残り 3° < 旋回率 → ぴったり止まる
+    expect(near.headingDeg).toBeCloseTo(13, 9);
+    const held = state({ headingDeg: 77 });
+    stepBoat(held, input(HOLD, 0.5), P, 1);
+    expect(held.headingDeg).toBe(77);
   });
   it('方位 0 は北（画面上 = -y）、90 は東（+x）。変位 = 更新後の速度 × dt', () => {
     const n = state({ speedMps: 10 });
-    stepBoat(n, input(0, -1), P, 0.1);
+    stepBoat(n, input(HOLD, 0), P, 0.1);
     const v = 10 - P.decelMps2 * 0.1;
     expect(n.x).toBeCloseTo(0, 9);
     expect(n.y).toBeCloseTo(-v * 0.1, 9);
     const e = state({ headingDeg: 90, speedMps: 10 });
-    stepBoat(e, input(0, -1), P, 0.1);
+    stepBoat(e, input(HOLD, 0), P, 0.1);
     expect(e.x).toBeCloseTo(v * 0.1, 9);
     expect(e.y).toBeCloseTo(0, 9);
   });
@@ -119,35 +163,26 @@ describe('stepBoat', () => {
     const s = state({ headingDeg: 37, speedMps: 12 });
     const x0 = s.x;
     const y0 = s.y;
-    stepBoat(s, input(0.3, 0), P, 0.05);
+    stepBoat(s, input(60, 0.3), P, 0.05);
     const dx = s.x - x0;
     const dy = s.y - y0;
     const h = (s.headingDeg * Math.PI) / 180;
     // 変位と (sin h, -cos h) の外積が 0
     expect(dx * -Math.cos(h) - dy * Math.sin(h)).toBeCloseTo(0, 9);
   });
-  it('dt を半分にして 2 回進めても速度と方位は 1 回と同じ（舵あり、線形区間）', () => {
+  it('dt を半分にして 2 回進めても速度と方位は 1 回と同じ（旋回中、線形区間）', () => {
     const a = state({ headingDeg: 10, speedMps: 5 });
     const b = state({ headingDeg: 10, speedMps: 5 });
-    stepBoat(a, input(0.5, 1), P, 0.2);
-    stepBoat(b, input(0.5, 1), P, 0.1);
-    stepBoat(b, input(0.5, 1), P, 0.1);
+    stepBoat(a, input(120, 1), P, 0.2);
+    stepBoat(b, input(120, 1), P, 0.1);
+    stepBoat(b, input(120, 1), P, 0.1);
     expect(a.speedMps).toBeCloseTo(b.speedMps, 9);
     expect(a.headingDeg).toBeCloseTo(b.headingDeg, 9);
   });
   it('dt=0 は何も変えない', () => {
     const s = state({ x: 5, y: 6, headingDeg: 77, speedMps: 3 });
-    stepBoat(s, input(1, 1), P, 0);
+    stepBoat(s, input(200, 1), P, 0);
     expect(s).toEqual({ x: 5, y: 6, headingDeg: 77, speedMps: 3 });
-  });
-});
-
-describe('nearestSpeedStep', () => {
-  it('最も近い速力段を返す', () => {
-    expect(nearestSpeedStep(0, P)).toBe('stop');
-    expect(nearestSpeedStep(P.speedSilentMps + 0.1, P)).toBe('silent');
-    expect(nearestSpeedStep(P.speedCruiseMps - 0.5, P)).toBe('cruise');
-    expect(nearestSpeedStep(P.speedMaxMps, P)).toBe('full');
   });
 });
 

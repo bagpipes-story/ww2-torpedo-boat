@@ -84,6 +84,33 @@ export function boatTouchesHull(x: number, y: number, headingDeg: number, halfLe
 }
 
 /**
+ * 会合までの時間（秒）: 速度 speed の直進する弾（魚雷・砲弾）が、速度ベクトル (tvx, tvy) で直進する目標に届く時刻。
+ * 解が無ければ null。shooter から target への相対位置と目標速度から 2 次方程式を解き、先に会う正の根を返す。
+ */
+export function interceptTimeS(sx: number, sy: number, speed: number, tx: number, ty: number, tvx: number, tvy: number): number | null {
+  const rx = tx - sx;
+  const ry = ty - sy;
+  const a = tvx * tvx + tvy * tvy - speed * speed;
+  const b = 2 * (rx * tvx + ry * tvy);
+  const c = rx * rx + ry * ry;
+  if (Math.abs(a) < 1e-9) {
+    if (Math.abs(b) < 1e-9) return null;
+    const t = -c / b;
+    return t > 0 ? t : null;
+  }
+  const disc = b * b - 4 * a * c;
+  if (disc < 0) return null;
+  const sq = Math.sqrt(disc);
+  const t1 = (-b - sq) / (2 * a);
+  const t2 = (-b + sq) / (2 * a);
+  const lo = Math.min(t1, t2);
+  const hi = Math.max(t1, t2);
+  if (lo > 0) return lo;
+  if (hi > 0) return hi;
+  return null;
+}
+
+/**
  * 見越し角: 速度 torpedoSpeed の直進魚雷が、速度ベクトル (tvx, tvy) で直進する目標に当たる発射方位（度）。
  * 解が無ければ null。shooter から target への相対位置と目標速度から 2 次方程式を解く。
  */

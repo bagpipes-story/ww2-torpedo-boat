@@ -31,8 +31,6 @@ export const STICK_KNOB_RADIUS = 38;
 export const STICK_DEAD_ZONE = 0.12;
 export const STICK_BASE_ALPHA = 0.35;
 export const STICK_KNOB_ALPHA = 0.7;
-/** 画面端で円が切れて親指が届かなくならないよう、原点を内側へ寄せる余白（論理 px） */
-export const STICK_EDGE_MARGIN = 16;
 
 /** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
 export const HUD_FONT_MISSION_PX = 22;
@@ -58,14 +56,24 @@ export const WAKE_DOT_ALPHA = 0.55;
 /** カメラの先読み（m）。進行方向にこの分だけ視点をずらし、前方の視界を広げる（ズーム 0.75 では前方 ≈ 480+320 = 800 m、典型的な発射距離 800yd が見える） */
 export const CAMERA_LOOK_AHEAD_M = 320;
 
+/** HP バー（左上、FPS と表示サイズの下）。幅・高さ・ラベル */
+export const HP_BAR_WIDTH = 200;
+export const HP_BAR_HEIGHT = 10;
+export const HP_BAR_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT * 2 + 6;
+export const HP_FONT_PX = 18;
+export const HP_COLOR_OK = 0x7fd38a;
+export const HP_COLOR_LOW = 0xff8a7a;
+/** これ未満の HP 比率で色を警告に */
+export const HP_LOW_RATIO = 0.3;
+
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
-/** 上端だけは上中央の HUD 3 行（ビルド番号・残り時間・敵影/発見）に重ならないよう広く取る */
-export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + HUD_STATUS_OFFSET_Y + HUD_FONT_STATUS_PX + 12;
 export const TARGET_MARKER_SIZE = 18;
 export const TARGET_MARKER_DISTANCE_STEP_M = 50;
 export const TARGET_MARKER_COLOR = 0xe08a8a;
 export const HUD_FONT_MARKER_PX = 18;
+/** 上端だけは上中央の HUD 3 行（ビルド番号・残り時間・敵影/発見）と左上の HP バーに重ならないよう広く取る（HP バーの下端＋三角の半分＋余白） */
+export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + TARGET_MARKER_SIZE / 2 + 8;
 
 /** Result で誤タップを拾わないよう入力を受け付けるまでの待ち（ms）とレイアウト */
 export const RESULT_INPUT_DELAY_MS = 400;
@@ -100,6 +108,34 @@ export const DEBUG_RING_TINT_DETECT = 0xff8a7a;
 export const DEBUG_RING_TINT_VIS = 0x9fd0ff;
 export const DEBUG_RING_ALPHA = 0.5;
 
+/** 反撃の見た目（v0.2.1）。探照灯は長さ 1 単位のテクスチャを射程へ拡大、星弾は半径 1 単位の円を照明半径へ拡大 */
+export const SEARCHLIGHT_TEX_LENGTH_UNITS = 256;
+export const SEARCHLIGHT_COLOR = 0xfff2c0;
+export const SEARCHLIGHT_ALPHA = 0.2;
+export const STARSHELL_TEX_RADIUS_UNITS = 128;
+export const STARSHELL_COLOR = 0xfff0b0;
+export const STARSHELL_ALPHA = 0.14;
+/** 砲弾（主砲: 点、機銃: 曳光弾の短い線）の寸法（世界単位）と色 */
+export const SHELL_DOT_UNITS = 5;
+export const TRACER_WIDTH_UNITS = 2.5;
+export const TRACER_LENGTH_UNITS = 18;
+export const SHELL_COLOR = 0xfff6d0;
+export const TRACER_COLOR = 0xffb060;
+/** 砲弾プール、着弾の水柱（リング）のプールと寿命・大きさ、砲口の閃光 */
+export const SHELL_POOL_SIZE = 48;
+export const SPLASH_POOL_SIZE = 32;
+export const SPLASH_LIFETIME_S = 0.7;
+export const SPLASH_SCALE_MISS = 0.45;
+export const SPLASH_SCALE_HIT = 0.9;
+export const SPLASH_TINT_MISS = 0xa8c8ff;
+export const SPLASH_TINT_HIT = 0xffa040;
+export const MUZZLE_FLASH_LIFETIME_S = 0.15;
+export const MUZZLE_FLASH_SCALE = 0.6;
+export const MUZZLE_FLASH_TINT = 0xfff0a0;
+/** 被弾時のカメラ揺れ（命中演出より弱く）。最大 HP に対してこの比率未満のダメージは小さな（灰色の）爆発で描く */
+export const BOAT_HIT_SHAKE_INTENSITY = 0.002;
+export const SMALL_HIT_DAMAGE_RATIO = 0.1;
+
 /** 演出の時間（ms）。爆発リング、沈没、任務終了から Result までの間 */
 export const EXPLOSION_DURATION_MS = 600;
 export const SINK_DURATION_MS = 2000;
@@ -108,8 +144,9 @@ export const MISSION_END_DELAY_MS = 1500;
 export const HIT_SHAKE_MS = 200;
 export const HIT_SHAKE_INTENSITY = 0.004;
 
-/** 舵インジケータ（右下）。バーの半幅と高さ */
+/** 舵インジケータ（右下）。バーの半幅と高さ。マーカーは目標方位への残り角を RUDDER_BAR_FULL_DEG で正規化して置く */
 export const RUDDER_BAR_HALF_WIDTH = 120;
+export const RUDDER_BAR_FULL_DEG = 45;
 export const RUDDER_BAR_HEIGHT = 6;
 export const RUDDER_MARKER_WIDTH = 10;
 export const RUDDER_MARKER_HEIGHT = 26;

@@ -1,6 +1,6 @@
 // 視界と発見（docs/02 §6.5）。Phaser 非依存。
 // 敵の発見距離 = base × 速力係数 × 月明係数 × 煙幕係数 × 史実モード倍率。プレイヤーの視程 = vis_player_base × 月明係数。
-import { nearestSpeedStep, type BoatParams } from './boat-motion';
+import { speedBandFor, type BoatParams, type SpeedStep } from './boat-motion';
 
 export interface SpeedFactorTable {
   stop: number;
@@ -32,11 +32,16 @@ export function isMoonPhase(v: unknown): v is MoonPhase {
 }
 
 /**
- * 速力係数: HUD に出る速力段（停止/静音/巡航/全速。実速度に最も近い段）の値をそのまま使う（docs/02 §6.5「全速は航跡で遠くから見つかる」）。
- * v0.2.0 当初は段の間を線形補間していたが、実機で「少し落としただけでは効かない・HUD の段と結果が合わない」と分かりにくかったので段階値にした。
+ * 速力係数: 速力帯（停止/静音/巡航/全速。帯の境界は data の speed_bands_kt。HUD の表示と同じ）の値をそのまま使う（docs/02 §6.5「全速は航跡で遠くから見つかる」）。
+ * v0.2.0 当初は段の間を線形補間していたが、実機で「少し落としただけでは効かない・HUD の段と結果が合わない」と分かりにくかったので帯の値にした。
  */
 export function speedFactorFor(speedMps: number, p: BoatParams, t: SpeedFactorTable): number {
-  return t[nearestSpeedStep(speedMps, p)];
+  return t[speedBandFor(speedMps, p)];
+}
+
+/** 速力帯（ヒステリシス付きの現在の帯）から係数。Mission は帯を状態として持ち、HUD と同じ帯で発見距離を決める */
+export function speedFactorForBand(band: SpeedStep, t: SpeedFactorTable): number {
+  return t[band];
 }
 
 /** 敵がプレイヤーを発見する距離（m） */

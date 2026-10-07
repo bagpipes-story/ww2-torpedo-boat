@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyDeadZone, createInputState, resetInput } from '../src/core/input-state';
+import { applyDeadZone, createInputState, resetInput, stickToCommand } from '../src/core/input-state';
 import { wrapDeg360 } from '../src/core/units';
 
 describe('applyDeadZone', () => {
@@ -14,17 +14,48 @@ describe('applyDeadZone', () => {
   });
 });
 
+describe('stickToCommand（スティック → 目標方位・速度）', () => {
+  const R = 110;
+  const DZ = 0.12;
+  const out = { speed01: 0, headingDeg: NaN };
+  it('触れた点（差 0）は中立: 速度 0、方位 NaN', () => {
+    stickToCommand(0, 0, R, DZ, out);
+    expect(out.speed01).toBe(0);
+    expect(Number.isNaN(out.headingDeg)).toBe(true);
+  });
+  it('画面上へ倒すと方位 0、右で 90、下で 180、左で 270。倒し量は半径で正規化しデッドゾーンを再スケール', () => {
+    stickToCommand(0, -R, R, DZ, out);
+    expect(out.headingDeg).toBeCloseTo(0, 9);
+    expect(out.speed01).toBe(1);
+    stickToCommand(R, 0, R, DZ, out);
+    expect(out.headingDeg).toBeCloseTo(90, 9);
+    stickToCommand(0, R, R, DZ, out);
+    expect(out.headingDeg).toBeCloseTo(180, 9);
+    stickToCommand(-R, 0, R, DZ, out);
+    expect(out.headingDeg).toBeCloseTo(270, 9);
+    stickToCommand(0, -R * 0.56, R, DZ, out);
+    expect(out.speed01).toBeCloseTo(0.5, 9);
+    stickToCommand(0, -R * 2, R, DZ, out); // 半径を越えても 1
+    expect(out.speed01).toBe(1);
+  });
+  it('デッドゾーン内は中立', () => {
+    stickToCommand(5, 5, R, DZ, out);
+    expect(out.speed01).toBe(0);
+    expect(Number.isNaN(out.headingDeg)).toBe(true);
+  });
+});
+
 describe('InputState', () => {
   it('初期値とリセット', () => {
     const s = createInputState();
-    expect(s).toEqual({ rudder: 0, throttle: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN });
-    s.rudder = 1;
-    s.throttle = -1;
+    expect(s).toEqual({ headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN });
+    s.headingDeg = 90;
+    s.speed01 = 1;
     s.stickActive = true;
     s.fireTap = true;
     s.fireSalvoSpreadDeg = 8;
     resetInput(s);
-    expect(s).toEqual({ rudder: 0, throttle: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN });
+    expect(s).toEqual({ headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN });
   });
 });
 
