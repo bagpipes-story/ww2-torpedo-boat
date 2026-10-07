@@ -1,4 +1,4 @@
-// 速力・速力段・舵の HUD（右下）。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
+// 速力・速力段・舵の HUD（右下）と上中央の 2〜3 行目（夜明けまで・帰投せよ／敵影と発見）。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -16,12 +16,14 @@ import {
   HUD_STEP_BASELINE_NUDGE,
   HUD_STEP_OFFSET_X,
   HUD_TEXT_GAP,
+  HOME_MARKER_DISTANCE_STEP_M,
   RUDDER_BAR_HALF_WIDTH,
   RUDDER_MARKER_HEIGHT,
   TORPEDO_BUTTON_RADIUS,
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
+import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK, topCall } from '../core/mission-flow';
 import { mpsToKt } from '../core/units';
 
 const STEP_LABEL: Record<SpeedStep, string> = {
@@ -44,8 +46,22 @@ const STATUS_LABEL: readonly string[] = [
   ...STATUS_LIT,
   ...STATUS_LIT.map((_, i) => `${STATUS_BASE[i & 3]!} ・ 煙幕に隠れている`),
 ];
+/** 撃沈後の 3 行目（見つかる距離は付けない） */
+const STATUS_SUNK = 32;
 /** 発見距離の表示刻み m（速力段ごとの段階値なので、変わるのは段が変わったときだけ） */
 const DETECT_RANGE_STEP_M = 50;
+/** 2 行目「帰投せよ」の理由（core/mission-flow のビット → 文言） */
+const CALL_LABEL: Record<number, string> = {
+  [CALL_FUEL]: '燃料少 ',
+  [CALL_DAWN]: '夜明け近し ',
+  [CALL_SUNK]: '撃沈！',
+  [CALL_EXPENDED]: '魚雷なし ',
+};
+/** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち */
+const MISSION_NORMAL = 0;
+const MISSION_CALL = 1;
+const MISSION_ADRIFT = 2;
+const MISSION_WAITING = 3;
 
 export class BoatHud {
   private readonly speedText: Phaser.GameObjects.Text;
@@ -58,6 +74,9 @@ export class BoatHud {
   private readonly barCenterX: number;
   private lastStatus = -1;
   private lastDetectStep = -1;
+  private lastMissionMode = -1;
+  private lastCall = -1;
+  private lastHomeStep = -1;
   private lastTimeLeft = -1;
   private lastHits = -1;
   private lastSpeedKt = -1;
@@ -127,20 +146,42 @@ export class BoatHud {
       this.lastRudderX = x;
       this.rudderMarker.setX(x);
     }
+    // 2 行目: 夜明けまで・命中。帰投の呼びかけ・燃料切れ・魚雷の決着待ちが優先（docs/02 §6.7）。表示する値のどれかが変わったときだけ組み立てる
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
-    if (timeLeft !== this.lastTimeLeft || t.hits !== this.lastHits) {
+    const call = topCall(t.callFlags);
+    const mode = t.homeWaiting ? MISSION_WAITING : t.fuelEmpty ? MISSION_ADRIFT : call !== 0 ? MISSION_CALL : MISSION_NORMAL;
+    // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない
+    const homeStep = Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M);
+    if (mode !== this.lastMissionMode || call !== this.lastCall || timeLeft !== this.lastTimeLeft || t.hits !== this.lastHits || (mode === MISSION_CALL && homeStep !== this.lastHomeStep)) {
+      this.lastMissionMode = mode;
+      this.lastCall = call;
       this.lastTimeLeft = timeLeft;
       this.lastHits = t.hits;
-      this.missionText.setText(`残り ${timeLeft} 秒   命中 ${t.hits}`);
+      this.lastHomeStep = homeStep;
+      if (mode === MISSION_WAITING) {
+        this.missionText.setText('帰投 — 魚雷の決着待ち').setColor(HUD_COLOR_STRONG);
+      } else if (mode === MISSION_ADRIFT) {
+        this.missionText.setText(`燃料切れ — 漂流 ・ 夜明けまで ${timeLeft} 秒`).setColor(HUD_COLOR_WARN);
+      } else if (mode === MISSION_CALL) {
+        const warn = (call & (CALL_FUEL | CALL_DAWN)) !== 0;
+        this.missionText.setText(`${CALL_LABEL[call] ?? ''}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m  夜明けまで ${timeLeft} 秒`).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
+      } else {
+        this.missionText.setText(`夜明けまで ${timeLeft} 秒 ・ 命中 ${t.hits}`).setColor(HUD_COLOR_STRONG);
+      }
     }
-    const status = (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
+    // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」に固定
+    const status = t.destroyerSunk ? STATUS_SUNK : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
     if (status !== this.lastStatus || detectStep !== this.lastDetectStep) {
       this.lastStatus = status;
       this.lastDetectStep = detectStep;
-      this.statusText
-        .setText(`${STATUS_LABEL[status]!} ・ 見つかる距離 ${detectStep * DETECT_RANGE_STEP_M} m`)
-        .setColor(t.playerDetected ? HUD_COLOR_WARN : HUD_COLOR);
+      if (status === STATUS_SUNK) {
+        this.statusText.setText('駆逐艦を撃沈').setColor(HUD_COLOR_STRONG);
+      } else {
+        this.statusText
+          .setText(`${STATUS_LABEL[status]!} ・ 見つかる距離 ${detectStep * DETECT_RANGE_STEP_M} m`)
+          .setColor(t.playerDetected ? HUD_COLOR_WARN : HUD_COLOR);
+      }
     }
   }
 

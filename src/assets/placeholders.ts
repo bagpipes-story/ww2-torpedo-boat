@@ -26,6 +26,11 @@ import {
   STICK_KNOB_RADIUS,
   STICK_RADIUS,
   TORPEDO_BUTTON_RADIUS,
+  FUEL_TICK_HEIGHT,
+  FUEL_TICK_WIDTH,
+  RETURN_RING_FILL_ALPHA,
+  RETURN_RING_LINE_WIDTH,
+  RETURN_RING_TEX_RADIUS_UNITS,
 } from '../config/ui-config';
 
 /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
@@ -257,7 +262,7 @@ export function generateDebugRingTexture(scene: Phaser.Scene): void {
 }
 
 /** 画面外の敵を指す三角（HUD 座標 × RENDER_SCALE、先端を上） */
-export function generateTargetMarkerTexture(scene: Phaser.Scene, sizePx: number, color: number): void {
+export function generateTargetMarkerTexture(scene: Phaser.Scene, key: string, sizePx: number, color: number): void {
   const k = RENDER_SCALE;
   const w = Math.ceil(sizePx * k) + 2;
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -268,7 +273,27 @@ export function generateTargetMarkerTexture(scene: Phaser.Scene, sizePx: number,
   g.lineTo(1, w - 1);
   g.closePath();
   g.fillPath();
-  g.generateTexture(TEXTURE_KEYS.targetMarker, w, w);
+  g.generateTexture(key, w, w);
+  g.destroy();
+}
+
+/** 帰投地点の輪（白。表示時に tint）と燃料計の目盛り（白。表示時に tint）。v0.3.0 */
+export function generateReturnTextures(scene: Phaser.Scene): void {
+  const k = RENDER_SCALE;
+  const r = RETURN_RING_TEX_RADIUS_UNITS * k;
+  const lw = RETURN_RING_LINE_WIDTH * k;
+  const size = Math.ceil((r + lw) * 2);
+  let g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(0xffffff, RETURN_RING_FILL_ALPHA);
+  g.fillCircle(size / 2, size / 2, r);
+  g.lineStyle(lw, 0xffffff, 1);
+  g.strokeCircle(size / 2, size / 2, r);
+  g.generateTexture(TEXTURE_KEYS.returnRing, size, size);
+  g.destroy();
+  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(0, 0, Math.ceil(FUEL_TICK_WIDTH * k), Math.ceil(FUEL_TICK_HEIGHT * k));
+  g.generateTexture(TEXTURE_KEYS.fuelTick, Math.ceil(FUEL_TICK_WIDTH * k), Math.ceil(FUEL_TICK_HEIGHT * k));
   g.destroy();
 }
 
