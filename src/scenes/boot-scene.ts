@@ -1,7 +1,7 @@
 // Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Mission へ（docs/02 §4）。
 // 音のアンロックは v0.7 でここに足す。
 import Phaser from 'phaser';
-import { DEBUG_ENABLED, PROTOTYPE_MISSION_ID, REGISTRY_KEY_DATA, REGISTRY_KEY_INPUT, SCENE_KEYS } from '../config/game-config';
+import { DEBUG_ENABLED, PROTOTYPE_MISSION_ID, REGISTRY_KEY_DATA, REGISTRY_KEY_INPUT, SCENE_KEYS, TEXTURE_KEYS } from '../config/game-config';
 import { gameData, getBoatRecord, getEnemyRecord, getPrototypeMission, getTorpedoRecord } from '../config/game-data';
 import { createInputState } from '../core/input-state';
 import {
@@ -10,12 +10,13 @@ import {
   generateGunneryTextures,
   generateSmokeTextures,
   generatePlayerBoatTexture,
+  generateReturnTextures,
   generateTargetMarkerTexture,
   generateTorpedoButtonTexture,
   generateTorpedoTextures,
   generateUiTextures,
 } from '../assets/placeholders';
-import { STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
+import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -41,7 +42,9 @@ export class BootScene extends Phaser.Scene {
     generateGunneryTextures(this, enemy.searchlight.cone_deg);
     generateSmokeTextures(this);
     generateTorpedoButtonTexture(this);
-    generateTargetMarkerTexture(this, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
+    generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
+    generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
+    generateReturnTextures(this);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     this.scene.start(SCENE_KEYS.mission);

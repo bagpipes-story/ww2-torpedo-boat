@@ -57,7 +57,7 @@ export interface BoatTelemetry {
   torpedoesLeft: number;
   /** 有効弾の命中数（不発を除く） */
   hits: number;
-  /** 任務の残り時間（実時間秒） */
+  /** 夜明けまでの実時間秒（0 で任務終了。帰投地点の外なら「帰投できず」） */
   timeLeftS: number;
   /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */
   enemyDx: number;
@@ -82,6 +82,19 @@ export interface BoatTelemetry {
   hiddenBySmoke: boolean;
   /** ワールドカメラの論理ズーム（見張りで下がる。画面外マーカーの計算用） */
   cameraZoom: number;
+  /** 燃料（v0.3.0）: 残り ÷ 割当、巡航で帰投地点の輪の縁まで戻るのに要る分 ÷ 割当（輪の中は 0）、空（漂流） */
+  fuel01: number;
+  fuelNeed01: number;
+  fuelEmpty: boolean;
+  /** 帰投地点: 自艇からの相対位置 m、中心までの距離 m、「帰投せよ」のビット（core/mission-flow）、輪の中、輪の中で魚雷の決着待ち */
+  homeDx: number;
+  homeDy: number;
+  homeDistM: number;
+  callFlags: number;
+  atHome: boolean;
+  homeWaiting: boolean;
+  /** 駆逐艦が沈み始めた（以後は魚雷を撃てない。3 行目は「駆逐艦を撃沈」） */
+  destroyerSunk: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

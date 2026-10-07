@@ -27,6 +27,8 @@ export class Destroyer {
   hitsTaken = 0;
   /** 沈没演出中または沈没済み。運動と当たり判定を止める */
   sinking = false;
+  /** 沈没演出が終わった（sinking は演出中も true のまま。終了判定は「演出中」をこれで区別する） */
+  sunk = false;
   private sighted = true;
 
   constructor(
@@ -103,7 +105,10 @@ export class Destroyer {
       angle: this.sprite.angle + SINK_TILT_DEG,
       duration: SINK_DURATION_MS,
       ease: 'Sine.easeIn',
-      onComplete: onDone,
+      onComplete: () => {
+        this.sunk = true;
+        onDone();
+      },
     });
   }
 

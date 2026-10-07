@@ -20,6 +20,8 @@
       "turn_rate_deg_s": 24,
       "fuel_hours_cruise": 15,
       "fuel_hours_full": 6,
+      "fuel_capacity_gal": 3000,
+      "fuel_idle_ratio": 0.1,
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 14,
@@ -32,7 +34,7 @@
       "damage": { "engine_damage_speed_factor": 0.7, "fire_dps": 2, "fire_duration_s": 20 },
       "hull_circles": 3,
       "sea_state_limit": 5,
-      "source": { "length_m": "historical", "speed_max_kt": "design (設計40kt超・実用30kt台後半の中間)", "speed_cruise_kt": "historical (23kt巡航で200gal/h)", "fuel_hours_*": "historical (3,000gal; 巡航15h・全速6hの算出値)", "turn_rate_deg_s": "design", "accel_mps2": "design", "hull_hp": "design", "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.2.2 の煙幕長押し)", "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。長押し extinguish_hold_s 実秒で消火)", "speed_bands_kt": "design (速力帯。表示用に丸めた kt で判定し、stop_max 以下=停止、silent_max 以下=静音（見つかりにくい）、cruise_max 以下=巡航、それ以上=全速。上の帯へ移るには境界＋hysteresis kt を超える必要（境界付近の揺れで帯が点滅しない）。v0.2.1 実機の要望で静音帯を 18 kt まで広げた。同じ速力段の Elco 77ft・Higgins も同じ帯。他艇は暫定で速力段の値)", "crew": "historical (12〜17)" },
+      "source": { "length_m": "historical", "speed_max_kt": "design (設計40kt超・実用30kt台後半の中間)", "speed_cruise_kt": "historical (23kt巡航で200gal/h)", "fuel_hours_*": "historical (3,000gal; 巡航15h・全速6hの算出値)", "fuel_capacity_gal": "historical (100 オクタン・ガソリン 3,000 gal。docs/01 §3。fuel_hours_* の算出元)", "fuel_idle_ratio": "design (停止中（機関アイドル）の消費＝巡航の 1 割＝20 gal/h、史料なし。消費率 gal/h = アイドル + (巡航 − アイドル) × (v / 巡航速力)^n。n は史実の 2 点（23 kt 200・39 kt 500 gal/h）を通るよう起動時に計算する（1.857）。8 kt 45・18 kt 134・30 kt 315 gal/h。距離あたりでは 7.7 kt が最少（3.06 gal/km、静音速力 8 kt とほぼ同じ）。全速は巡航の 2.5 倍（時間あたり）、1.47 倍（距離あたり）)", "turn_rate_deg_s": "design", "accel_mps2": "design", "hull_hp": "design", "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.2.2 の煙幕長押し)", "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。長押し extinguish_hold_s 実秒で消火)", "speed_bands_kt": "design (速力帯。表示用に丸めた kt で判定し、stop_max 以下=停止、silent_max 以下=静音（見つかりにくい）、cruise_max 以下=巡航、それ以上=全速。上の帯へ移るには境界＋hysteresis kt を超える必要（境界付近の揺れで帯が点滅しない）。v0.2.1 実機の要望で静音帯を 18 kt まで広げた。同じ速力段の Elco 77ft・Higgins も同じ帯。他艇は暫定で速力段の値)", "crew": "historical (12〜17)" },
       "notes": "最も資料が多い主軸艇。Mk 8→Mk 13への換装は1943年半ば。"
     },
     {
