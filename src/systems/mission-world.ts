@@ -2,8 +2,9 @@
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。世界で起きたことは WorldEvents で Scene に伝える（引数はプリミティブ）。
 // §7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
-import { FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
+import { DEBUG_DAWN_S, DEBUG_FUEL_ALLOTMENT_GAL, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
 import {
+  effectiveFuelAllotmentGal,
   getBoatDamageParams,
   getBoatFuelCurve,
   getBoatRecord,
@@ -71,8 +72,10 @@ export class MissionWorld {
   readonly enemyFire: EnemyFire;
   readonly params: BoatParams;
   readonly bounds: SeaBounds;
-  /** 夜明けまでの実時間秒（任務の制限時間） */
+  /** 夜明けまでの実時間秒（任務の制限時間。?debug&dawn= で上書き可） */
   readonly durationS: number;
+  /** 任務の種類（スコアの達成点に使う） */
+  readonly missionType: string;
   /** 帰投地点の輪と燃料（docs/02 §6.7） */
   readonly returnPoint: ReturnPoint;
   readonly fuelCurve: FuelCurve;
@@ -124,10 +127,8 @@ export class MissionWorld {
   private readonly passRadius2: number;
   /** 無傷時の最大速力（機関損傷で params.speedMaxMps を下げる） */
   private readonly speedMaxBaseMps: number;
-  /** 煙幕ボタンを押し続けている実秒（火災中だけ数える。extinguish_hold_s 以上で消火） */
-  private smokeHoldS = 0;
-  /** この押下で消火した（離しても煙幕は展開しない） */
-  private extinguishedThisPress = false;
+  /** 消火ボタンを押し続けている実秒（火災中だけ数える。extinguish_hold_s 以上で消火） */
+  private extinguishHeldS = 0;
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
 
   private readonly torpedoEvents: TorpedoEvents = {
@@ -188,12 +189,15 @@ export class MissionWorld {
 
     this.params = boatParamsFromData(boatRecord);
     this.bounds = mission.bounds;
-    this.durationS = mission.durationS;
+    this.missionType = mission.type;
+    // ?debug&fuel=…&dawn=… のときだけ data の値を上書き（実機で割当と夜明けを比べるため）
+    this.durationS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
     this.returnPoint = mission.returnPoint;
     this.fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
-    if (mission.fuelAllotmentGal > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
-    this.fuelAllotmentGal = mission.fuelAllotmentGal;
-    this.fuel = createFuelState(mission.fuelAllotmentGal);
+    const allotment = effectiveFuelAllotmentGal(data, mission, DEBUG_FUEL_ALLOTMENT_GAL);
+    if (allotment > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
+    this.fuelAllotmentGal = allotment;
+    this.fuel = createFuelState(allotment);
     this.boundsMarginM = (boatRecord.length_m * world.sprite_scale) / 2;
     this.boatHalfLengthM = (boatRecord.length_m * world.hit_scale) / 2;
     this.boatHalfBeamM = (boatRecord.beam_m * world.hit_scale) / 2;
@@ -318,27 +322,24 @@ export class MissionWorld {
   }
 
   /**
-   * 煙幕ボタン（docs/02 §5・§6.6）: 火災中に extinguish_hold_s 以上押し続けると消火。離したとき（smokeTap）、その押下で消火していなければ展開（冷却中は無視）。
-   * 押している時間は燃えている間だけ数える（火災が無いときから押し続けていても、後で起きた火災が即座に消えないように。レビューで判明）。
-   * 消火したら数え直す。押下の長さで展開を捨てる判定は HUD/キーボードではなくここで行う（0.3 秒以上の押下が何もしない空白を作らない）。
+   * 煙幕ボタンと消火ボタン（docs/02 §5・§6.6。v0.3.1 で別ボタンに）: 煙幕は離したとき（smokeTap）に展開（冷却中は無視）。
+   * 消火は火災中に extinguish_hold_s 以上押し続けると消える。押している時間は燃えている間だけ数える（火災が無いときから押し続けていても、後で起きた火災が即座に消えないように）。消火したら数え直す。
    */
   private consumeSmokeInput(realDt: number): void {
     const input = this.input;
     const p = this.smokeParams;
-    if (input.smokeHeld && p && this.damage.fireLeftS > 0) {
-      this.smokeHoldS += realDt;
-      if (this.smokeHoldS >= p.extinguishHoldS) {
-        this.damage.fireLeftS = 0;
-        this.smokeHoldS = 0;
-        this.extinguishedThisPress = true;
-      }
-    } else {
-      this.smokeHoldS = 0;
-    }
     if (input.smokeTap) {
       input.smokeTap = false;
-      if (!this.extinguishedThisPress && this.smoke && p) startSmoke(this.smoke, p);
-      this.extinguishedThisPress = false;
+      if (this.smoke && p) startSmoke(this.smoke, p);
+    }
+    if (input.extinguishHeld && p && this.damage.fireLeftS > 0) {
+      this.extinguishHeldS += realDt;
+      if (this.extinguishHeldS >= p.extinguishHoldS) {
+        this.damage.fireLeftS = 0;
+        this.extinguishHeldS = 0;
+      }
+    } else {
+      this.extinguishHeldS = 0;
     }
   }
 

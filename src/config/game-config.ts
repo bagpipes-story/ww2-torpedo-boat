@@ -36,6 +36,17 @@ export const RENDER_SCALE = computeRenderScale();
 /** URL に ?debug があるときだけ true。window.__game の公開、見越し点マーカー、発見距離・視程の円を出す（通常の Pages URL では何もしない） */
 export const DEBUG_ENABLED = typeof window !== 'undefined' && window.location.search.includes('debug');
 
+/** ?debug のときだけ有効な数値の上書き（実機で割当と夜明けを比べるため。docs/03 v0.3.1）: `?debug&fuel=36&dawn=150`。無ければ NaN（data の値を使う） */
+function debugNumber(key: string): number {
+  if (!DEBUG_ENABLED) return NaN;
+  const v = new URLSearchParams(window.location.search).get(key);
+  if (v === null) return NaN;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : NaN;
+}
+export const DEBUG_FUEL_ALLOTMENT_GAL = debugNumber('fuel');
+export const DEBUG_DAWN_S = debugNumber('dawn');
+
 /** 同時に扱うタッチ数（マウス 1 ＋ タッチ 3: スティック＋右側ボタン）。Phaser の input.activePointers に渡す */
 export const ACTIVE_TOUCH_POINTERS = 3;
 
