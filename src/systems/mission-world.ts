@@ -127,10 +127,8 @@ export class MissionWorld {
   private readonly passRadius2: number;
   /** 無傷時の最大速力（機関損傷で params.speedMaxMps を下げる） */
   private readonly speedMaxBaseMps: number;
-  /** 煙幕ボタンを押し続けている実秒（火災中だけ数える。extinguish_hold_s 以上で消火） */
-  private smokeHoldS = 0;
-  /** この押下で消火した（離しても煙幕は展開しない） */
-  private extinguishedThisPress = false;
+  /** 消火ボタンを押し続けている実秒（火災中だけ数える。extinguish_hold_s 以上で消火） */
+  private extinguishHeldS = 0;
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
 
   private readonly torpedoEvents: TorpedoEvents = {
@@ -324,27 +322,24 @@ export class MissionWorld {
   }
 
   /**
-   * 煙幕ボタン（docs/02 §5・§6.6）: 火災中に extinguish_hold_s 以上押し続けると消火。離したとき（smokeTap）、その押下で消火していなければ展開（冷却中は無視）。
-   * 押している時間は燃えている間だけ数える（火災が無いときから押し続けていても、後で起きた火災が即座に消えないように。レビューで判明）。
-   * 消火したら数え直す。押下の長さで展開を捨てる判定は HUD/キーボードではなくここで行う（0.3 秒以上の押下が何もしない空白を作らない）。
+   * 煙幕ボタンと消火ボタン（docs/02 §5・§6.6。v0.3.1 で別ボタンに）: 煙幕は離したとき（smokeTap）に展開（冷却中は無視）。
+   * 消火は火災中に extinguish_hold_s 以上押し続けると消える。押している時間は燃えている間だけ数える（火災が無いときから押し続けていても、後で起きた火災が即座に消えないように）。消火したら数え直す。
    */
   private consumeSmokeInput(realDt: number): void {
     const input = this.input;
     const p = this.smokeParams;
-    if (input.smokeHeld && p && this.damage.fireLeftS > 0) {
-      this.smokeHoldS += realDt;
-      if (this.smokeHoldS >= p.extinguishHoldS) {
-        this.damage.fireLeftS = 0;
-        this.smokeHoldS = 0;
-        this.extinguishedThisPress = true;
-      }
-    } else {
-      this.smokeHoldS = 0;
-    }
     if (input.smokeTap) {
       input.smokeTap = false;
-      if (!this.extinguishedThisPress && this.smoke && p) startSmoke(this.smoke, p);
-      this.extinguishedThisPress = false;
+      if (this.smoke && p) startSmoke(this.smoke, p);
+    }
+    if (input.extinguishHeld && p && this.damage.fireLeftS > 0) {
+      this.extinguishHeldS += realDt;
+      if (this.extinguishHeldS >= p.extinguishHoldS) {
+        this.damage.fireLeftS = 0;
+        this.extinguishHeldS = 0;
+      }
+    } else {
+      this.extinguishHeldS = 0;
     }
   }
 

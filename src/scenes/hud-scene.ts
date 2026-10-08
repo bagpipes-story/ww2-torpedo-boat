@@ -18,7 +18,7 @@ import {
 import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
-import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
+import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_GAP, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { TorpedoButton } from '../systems/torpedo-button';
@@ -40,6 +40,7 @@ export class HudScene extends Phaser.Scene {
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
   private smokeButton?: HoldButton;
+  private extinguishButton?: HoldButton;
   private lookoutButton?: HoldButton;
   private keyboard?: KeyboardInput;
   private telemetry!: BoatTelemetry;
@@ -80,15 +81,19 @@ export class HudScene extends Phaser.Scene {
     };
     this.torpedoButton = new TorpedoButton(this, input, spread);
     this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
-    // 右上「煙幕」: 離すと展開、火災中に押し続けると消火（押している時間を数え、消火した押下では展開しない判定は Mission 側）。右中「見張り」: 押している間ズームアウト
+    // 右上「煙幕」: 離すと展開。その下「消火」: 火災中に押し続けると消火（押している時間は Mission が数える。v0.3.1 実機の要望で煙幕と別ボタンに）。右中「見張り」: 押している間ズームアウト
     const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
     this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
+      onUp: () => {
+        input.smokeTap = true;
+      },
+    });
+    this.extinguishButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS * 3 + ROUND_BUTTON_GAP, '消火', {
       onDown: () => {
-        input.smokeHeld = true;
+        input.extinguishHeld = true;
       },
       onUp: () => {
-        input.smokeHeld = false;
-        input.smokeTap = true;
+        input.extinguishHeld = false;
       },
     });
     this.lookoutButton = new HoldButton(this, bx, GAME_HEIGHT / 2, '見張り', {
@@ -105,6 +110,7 @@ export class HudScene extends Phaser.Scene {
       this.stick?.destroy();
       this.torpedoButton?.destroy();
       this.smokeButton?.destroy();
+      this.extinguishButton?.destroy();
       this.lookoutButton?.destroy();
       this.targetMarker?.destroy();
       this.homeMarker?.destroy();
@@ -115,6 +121,7 @@ export class HudScene extends Phaser.Scene {
       this.stick = undefined;
       this.torpedoButton = undefined;
       this.smokeButton = undefined;
+      this.extinguishButton = undefined;
       this.lookoutButton = undefined;
       this.targetMarker = undefined;
       this.homeMarker = undefined;
@@ -137,11 +144,11 @@ export class HudScene extends Phaser.Scene {
     this.torpedoButton?.update();
     const t = this.telemetry;
     if (this.smokeButton) {
-      // 火災中は「長押しで消火」を案内（冷却中でも押せる）。それ以外は 展開中 / 冷却の残り秒 / 使える。整数が変わったときだけ文字が変わる
-      this.smokeButton.setLabel(
-        t.onFire ? '消火\n長押し' : t.smokeLeftS > 0 ? '煙幕\n展開中' : t.smokeCooldownS > 0 ? `煙幕\n${Math.ceil(t.smokeCooldownS)}` : '煙幕',
-      );
-      this.smokeButton.setEnabled(t.onFire || (t.smokeLeftS <= 0 && t.smokeCooldownS <= 0));
+      // 展開中 / 冷却の残り秒 / 使える。整数が変わったときだけ文字が変わる
+      this.smokeButton.setLabel(t.smokeLeftS > 0 ? '煙幕\n展開中' : t.smokeCooldownS > 0 ? `煙幕\n${Math.ceil(t.smokeCooldownS)}` : '煙幕');
+      this.smokeButton.setEnabled(t.smokeLeftS <= 0 && t.smokeCooldownS <= 0);
     }
+    // 消火は火災中だけ使える（押せるが Mission が無視する。薄く表示）
+    this.extinguishButton?.setEnabled(t.onFire);
   }
 }

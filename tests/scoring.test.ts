@@ -24,9 +24,9 @@ describe('スコア（docs/02 §6.9）', () => {
     // "source" のような文字列の値は達成点に入らない
     expect(Object.values(P.objectiveByType).every((v) => typeof v === 'number')).toBe(true);
   });
-  it('計算例（36 gal の模擬値）: 慎重に撃沈して帰投（800-1200yd、37%）= 1187、全速で撃沈して帰投（400-800yd、0%）= 1120、外して帰投 = 700、撃沈して漂流 = 420、撃沈して沈没（≤400yd）= 400', () => {
-    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 37 }), P).total).toBe(1187);
-    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 0 }), P).total).toBe(1120);
+  it('計算例（38 gal の模擬値）: 慎重に撃沈して帰投（800-1200yd、40%）= 1190、全速で撃沈して帰投（400-800yd、3%）= 1123、外して帰投 = 700、撃沈して漂流 = 420、撃沈して沈没（≤400yd）= 400', () => {
+    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 40 }), P).total).toBe(1190);
+    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 3 }), P).total).toBe(1123);
     expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 700, objective: 0, hits: 0, fuel: 0, total: 700 });
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 0 }), P).total).toBe(420);
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }], fuelLeftPct: 50 }), P).total).toBe(400);

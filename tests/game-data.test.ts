@@ -4,14 +4,14 @@ import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
 
 describe('game-data（data/*.json の読み出し）', () => {
-  it('us_02 のプロトタイプは半月・夜明けまで 150 秒・駆逐艦 1 隻・燃料の割当 36 gal・北東の帰投地点', () => {
+  it('us_02 のプロトタイプは半月・夜明けまで 150 秒・駆逐艦 1 隻・燃料の割当 38 gal・北東の帰投地点', () => {
     const m = getPrototypeMission(gameData, 'us_02');
     expect(m.moon).toBe('half');
     expect(m.type).toBe('intercept_destroyer');
     expect(m.durationS).toBe(150);
     expect(m.enemyId).toBe('ijn_destroyer');
     expect(m.enemyHitsToSink).toBe(1);
-    expect(m.fuelAllotmentGal).toBe(36);
+    expect(m.fuelAllotmentGal).toBe(38);
     expect(m.returnPoint).toEqual({ x: 5400, y: 600, radiusM: 250, callMargin: 1.5, torpedoSettleMaxS: 10 });
     // 輪は海域の中、出発点は輪の外（約 3,538 m）
     const rp = m.returnPoint;

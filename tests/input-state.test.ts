@@ -48,7 +48,7 @@ describe('stickToCommand（スティック → 目標方位・速度）', () => 
 describe('InputState', () => {
   it('初期値とリセット', () => {
     const s = createInputState();
-    const initial = { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, smokeHeld: false, lookout: false };
+    const initial = { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, extinguishHeld: false, lookout: false };
     expect(s).toEqual(initial);
     s.headingDeg = 90;
     s.speed01 = 1;
@@ -56,7 +56,7 @@ describe('InputState', () => {
     s.fireTap = true;
     s.fireSalvoSpreadDeg = 8;
     s.smokeTap = true;
-    s.smokeHeld = true;
+    s.extinguishHeld = true;
     s.lookout = true;
     resetInput(s);
     expect(s).toEqual(initial);
