@@ -1,6 +1,6 @@
 {
   "name": "ww2-torpedo-boat",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "WWII魚雷艇ゲーム（仮称: Night Hunters）— Phaser 3 + TypeScript + Vite",
   "type": "module",
