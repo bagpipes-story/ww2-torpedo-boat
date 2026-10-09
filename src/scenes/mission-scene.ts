@@ -25,9 +25,11 @@ import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
-import { degToRad } from '../core/units';
+import { updateShallowStatus, type ShallowStatus } from '../core/shallows';
+import { clamp, degToRad, mpsToKt } from '../core/units';
 import { playerVisRangeM } from '../core/visibility';
 import { ReturnPointView } from '../entities/return-point';
+import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
 import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
@@ -38,9 +40,14 @@ export class MissionScene extends Phaser.Scene {
   private inputState!: InputState;
   private telemetry!: BoatTelemetry;
   private returnView?: ReturnPointView;
+  private shallowsView?: ShallowsView;
+  private readonly shallowStatus: ShallowStatus = { state: 0, aheadM: 0 };
   /** カメラの論理ズーム（RENDER_SCALE を掛ける前）。見張り中は zoomMin へ、離すと zoomDefault へ寄せる */
   private zoomDefault = 1;
   private zoomMin = 1;
+  private zoomMax = 1;
+  /** ピンチで決めたズーム（見張りを離すとここへ戻る） */
+  private zoomUser = 1;
   private zoom = 1;
   private timeScale = 1;
   /** デバッグ時（?debug）だけの見越し点マーカーと距離の円 */
@@ -65,6 +72,7 @@ export class MissionScene extends Phaser.Scene {
     destroyerSinkPlaying: false,
     fuelEmpty: false,
     stopped: true,
+    grounded: false,
   };
   private endParams: EndParams = { torpedoSettleMaxS: 0, adriftDelayS: MISSION_END_DELAY_MS / 1000 };
 
@@ -88,6 +96,12 @@ export class MissionScene extends Phaser.Scene {
       this.shakeCamera();
     },
     onBoatSunk: (reason) => this.endMission(reason),
+    onGrounded: (x, y) => {
+      // 座礁: 小さな衝撃の輪と弱い揺れ。終了は decideMissionEnd（adriftDelayS 後）
+      playExplosion(this, x, y, true);
+      const z = this.cameras.main.zoom;
+      this.cameras.main.shake(HIT_SHAKE_MS, BOAT_HIT_SHAKE_INTENSITY / (z * z));
+    },
   };
 
   constructor() {
@@ -105,6 +119,7 @@ export class MissionScene extends Phaser.Scene {
     this.world = new MissionWorld(this, data, PROTOTYPE_MISSION_ID, this.inputState, seed, this.worldEvents);
     const w = this.world;
     drawSea(this, w.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
+    this.shallowsView = new ShallowsView(this, w.shallows);
     this.returnView = new ReturnPointView(this, w.returnPoint);
 
     this.timeScale = world.time_scale;
@@ -118,6 +133,8 @@ export class MissionScene extends Phaser.Scene {
     // カメラ: 既定ズーム（docs/02 §6.10）× 描画スケール。追従は少し遅らせ、進行方向に先読みする。見張り（右中ボタン）で zoom_min まで引く
     this.zoomDefault = world.camera_zoom_default;
     this.zoomMin = world.camera_zoom_min;
+    this.zoomMax = world.camera_zoom_max;
+    this.zoomUser = this.zoomDefault;
     this.zoom = this.zoomDefault;
     const cam = this.cameras.main;
     cam.setZoom(this.zoom * RENDER_SCALE);
@@ -158,6 +175,9 @@ export class MissionScene extends Phaser.Scene {
       atHome: false,
       homeWaiting: false,
       destroyerSunk: false,
+      shallowState: 0,
+      shallowAheadM: 0,
+      shallowSafeKt: Math.round(mpsToKt(w.grounding.safeSpeedMps)),
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshReturnState(0);
@@ -176,6 +196,8 @@ export class MissionScene extends Phaser.Scene {
       this.world.destroy();
       this.returnView?.destroy();
       this.returnView = undefined;
+      this.shallowsView?.destroy();
+      this.shallowsView = undefined;
       this.leadMarker?.destroy();
       this.leadMarker = undefined;
       this.debugRanges?.destroy();
@@ -210,6 +232,7 @@ export class MissionScene extends Phaser.Scene {
     c.destroyerSinkPlaying = w.destroyer.sinking && !w.destroyer.sunk;
     c.fuelEmpty = w.fuel.empty;
     c.stopped = w.band === 'stop';
+    c.grounded = w.grounded;
     const reason = decideMissionEnd(c, this.endParams);
     if (reason) this.endMission(reason);
   }
@@ -235,13 +258,18 @@ export class MissionScene extends Phaser.Scene {
     if (before === 0 && this.callFlags !== 0) this.returnView?.pulse();
     t.fuelNeed01 = w.fuelAllotmentGal > 0 ? needGal / w.fuelAllotmentGal : 0;
     // 待ち: 輪の中にいる間、または燃料 0 で止まっている間だけ数える
-    if (w.atHome || (w.fuel.empty && w.band === 'stop')) this.waitS += realDt;
+    if (w.atHome || w.grounded || (w.fuel.empty && w.band === 'stop')) this.waitS += realDt;
     else this.waitS = 0;
   }
 
   /** 見張り: 押している間 zoomMin へ、離すと既定へ、毎フレーム一定割合ずつ寄せる（setZoom は値が動いている間だけ） */
   private updateZoom(): void {
-    const target = this.inputState.lookout ? this.zoomMin : this.zoomDefault;
+    // ピンチの要求があれば data の min〜max に収めて保つ。見張りを押している間は zoomMin、離すとピンチで決めた倍率へ
+    if (Number.isFinite(this.inputState.zoomRequest)) {
+      this.zoomUser = clamp(this.inputState.zoomRequest, this.zoomMin, this.zoomMax);
+      this.inputState.zoomRequest = NaN;
+    }
+    const target = this.inputState.lookout ? this.zoomMin : this.zoomUser;
     const diff = target - this.zoom;
     if (Math.abs(diff) < 1e-4) {
       if (this.zoom !== target) {
@@ -296,6 +324,10 @@ export class MissionScene extends Phaser.Scene {
     t.atHome = w.atHome;
     t.homeWaiting = w.atHome && w.torpedoesRunning;
     t.destroyerSunk = d.sinking;
+    // 浅瀬の警告（接近中は縁までの距離）。平方根は使わない
+    updateShallowStatus(this.shallowStatus, w.shallows, s.x, s.y, s.headingDeg, s.speedMps, w.grounding, this.timeScale, w.grounded);
+    t.shallowState = this.shallowStatus.state;
+    t.shallowAheadM = this.shallowStatus.aheadM;
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */

@@ -51,6 +51,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   returned: '帰投した',
   dawn: '夜明け — 帰投できず',
   adrift: '燃料切れで漂流',
+  grounded: '浅瀬に座礁',
   rammed: '駆逐艦に体当たりされた',
   destroyed: '砲撃で沈没',
 };
