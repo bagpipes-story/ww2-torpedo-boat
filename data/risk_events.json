@@ -5,7 +5,7 @@
   "enemy_direct_losses": 24,
   "enemy_direct_share": 0.35,
   "events": [
-    { "id": "grounding", "label_ja": "座礁（敵地での処分18を含む）", "count": 20, "share": 0.29, "enemy_direct": false, "game_event": "shallow_water", "trigger": "浅瀬帯に高速で進入", "counterplay": "減速、見張りズーム、航路選択", "penalty": "速力0・座礁判定。敵地なら艇喪失", "version": "v0.3" },
+    { "id": "grounding", "label_ja": "座礁（敵地での処分18を含む）", "count": 20, "share": 0.29, "enemy_direct": false, "game_event": "shallow_water", "trigger": "浅瀬帯に高速で進入", "counterplay": "減速、見張りズーム、航路選択", "penalty": "速力0・座礁判定。敵地なら艇喪失", "version": "v0.3", "params": { "safe_speed_kt": 10, "warn_lookahead_s": 6, "source": "design (v0.3.2。安全速力 10 kt 以下なら浅瀬を通れる（静音帯 18 kt のさらに下。スティックの倒し約 4 割）。それより速く中に入ると座礁＝速力 0 で動けず、1.5 秒後に艇喪失（us_02 は敵地扱い）。warn_lookahead_s は現在の速力で浅瀬の縁に届くまでの実秒がこれ以下なら HUD 2 行目に『浅瀬まで N m 減速』。全速（画面上 100 m/s）で 600 m 手前、巡航で 350 m 手前)" } },
     { "id": "enemy_ship_gunfire_or_ram", "label_ja": "敵艦の砲撃・衝突", "count": 8, "share": 0.12, "enemy_direct": true, "game_event": "destroyer_engagement", "trigger": "発見される", "counterplay": "煙幕、急転舵、距離をとる", "penalty": "HP減、衝突は撃沈", "version": "v0.2" },
     { "id": "enemy_aircraft", "label_ja": "敵航空機（特攻2を含む）", "count": 7, "share": 0.10, "enemy_direct": true, "game_event": "seaplane_harassment", "trigger": "全速の航跡が発見される", "counterplay": "静音低速、照明弾の外へ出る", "penalty": "爆弾ダメージ", "version": "v0.3" },
     { "id": "friendly_fire", "label_ja": "友軍誤射", "count": 7, "share": 0.10, "enemy_direct": false, "game_event": "friendly_identification", "trigger": "味方機・味方艦が接近中に識別信号を出さない", "counterplay": "識別ボタンを時間内に押す", "penalty": "HP減、最悪撃沈", "version": "v0.3" },
