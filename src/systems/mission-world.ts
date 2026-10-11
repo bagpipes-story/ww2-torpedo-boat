@@ -1,53 +1,29 @@
-// 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・駆逐艦・魚雷・反撃・煙幕・被害・燃料（v0.3.0）を持ち、固定ステップで進める。
+// 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・駆逐艦・魚雷・反撃・煙幕・被害・燃料（v0.3.0）を持ち、固定ステップで進める。data からの数値の組み立ては world-setup.ts（v0.3.3 で切り出し）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。世界で起きたことは WorldEvents で Scene に伝える（引数はプリミティブ）。
 // §7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { DEBUG_DAWN_S, DEBUG_FUEL_ALLOTMENT_GAL, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
-import {
-  effectiveFuelAllotmentGal,
-  getBoatDamageParams,
-  getGroundingParams,
-  getBoatFuelCurve,
-  getBoatRecord,
-  getBoatSmokeParams,
-  getBoatTorpedoCount,
-  getEnemyRecord,
-  getEvasionMultiplier,
-  getPrototypeMission,
-  getTorpedoRecord,
-  getVisibilityParams,
-  type GameData,
-} from '../config/game-data';
+import type { GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE } from '../config/ui-config';
-import {
-  boatParamsFromData,
-  clampToBounds,
-  nextSpeedBand,
-  stepBoat,
-  type BoatInput,
-  type BoatParams,
-  type SeaBounds,
-  type SpeedStep,
-} from '../core/boat-motion';
+import { clampToBounds, nextSpeedBand, stepBoat, type BoatInput, type BoatParams, type SeaBounds, type SpeedStep } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
 import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
-import { insideRing, type ReturnPoint } from '../core/mission-flow';
+import { insideRing, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 import { shallowIndexAt, type GroundingParams, type ShallowRect } from '../core/shallows';
-import { applyShellHit, createDamageState, gunneryParamsFromData, stepDamage, type DamageParams, type DamageState, type GunneryParams, type HitOutcome } from '../core/gunnery';
+import { applyShellHit, createDamageState, stepDamage, type DamageParams, type DamageState, type GunneryParams, type HitOutcome } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import { SeededRng } from '../core/rng';
-import { shipAiParamsFromData } from '../core/ship-ai';
 import { createSmokeState, losBlocked, startSmoke, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
-import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams } from '../core/torpedo';
-import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
+import type { TorpedoParams } from '../core/torpedo';
+import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
-import type { MissionEndReason } from '../core/mission-flow';
 import { EnemyFire } from './enemy-fire';
 import { SmokeScreen } from './smoke-screen';
 import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
+import { buildWorldSetup } from './world-setup';
 
 /** 燃料切れの漂流: 舵は効かず、目標速度 0 で惰性のまま止まる（params.speedMaxMps は機関損傷が書くので触らない） */
 const DRIFT_INPUT: BoatInput = { headingDeg: NaN, speed01: 0 };
@@ -197,80 +173,46 @@ export class MissionWorld {
   ) {
     this.events = events;
     this.seed = seed;
-    const world = data.hitRateModel.world;
-    const launch = data.hitRateModel.torpedo_launch;
-    const feel = data.hitRateModel.feel;
-    const mission = getPrototypeMission(data, missionId);
-    const boatRecord = getBoatRecord(data, mission.playerBoatId);
-    const enemyRecord = getEnemyRecord(data, mission.enemyId);
-    const torpedoRecord = getTorpedoRecord(data, mission.torpedoId);
-
-    this.params = boatParamsFromData(boatRecord);
+    // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
+    const s = buildWorldSetup(data, missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S);
+    const mission = s.mission;
+    this.params = s.boatParams;
     this.bounds = mission.bounds;
     this.missionType = mission.type;
     this.shallows = mission.shallows;
-    this.grounding = getGroundingParams(data);
-    // ?debug&fuel=…&dawn=… のときだけ data の値を上書き（実機で割当と夜明けを比べるため）
-    this.durationS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
+    this.grounding = s.grounding;
+    this.durationS = s.durationS;
     this.returnPoint = mission.returnPoint;
-    this.fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
-    const allotment = effectiveFuelAllotmentGal(data, mission, DEBUG_FUEL_ALLOTMENT_GAL);
-    if (allotment > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
-    this.fuelAllotmentGal = allotment;
-    this.fuel = createFuelState(allotment);
-    this.boundsMarginM = (boatRecord.length_m * world.sprite_scale) / 2;
-    this.boatHalfLengthM = (boatRecord.length_m * world.hit_scale) / 2;
-    this.boatHalfBeamM = (boatRecord.beam_m * world.hit_scale) / 2;
+    this.fuelCurve = s.fuelCurve;
+    this.fuelAllotmentGal = s.fuelAllotmentGal;
+    this.fuel = createFuelState(s.fuelAllotmentGal);
+    this.boundsMarginM = s.boundsMarginM;
+    this.boatHalfLengthM = s.boatHalfLengthM;
+    this.boatHalfBeamM = s.boatHalfBeamM;
     this.speedMaxBaseMps = this.params.speedMaxMps;
-    this.gunneryParams = gunneryParamsFromData(enemyRecord);
-    this.damageParams = getBoatDamageParams(data, mission.playerBoatId);
+    this.gunneryParams = s.gunneryParams;
+    this.damageParams = s.damageParams;
     this.damage = createDamageState(this.damageParams);
-    this.timeScale = world.time_scale;
-    this.slowMoFactor = feel.hit_slowmo_factor;
-    this.slowMoSeconds = feel.hit_slowmo_seconds;
-
-    this.vis = getVisibilityParams(data, mission.moon);
-    this.baseDetectM = enemyRecord.detection.base_detect_m;
-    const visRange = playerVisRangeM(this.vis);
-    this.visRange2 = visRange * visRange;
-    // 最初の固定ステップが回る前のフレームでも HUD に正しい発見距離が出るよう、出発時の速力帯（停止）で先に計算する
-    this.detectRangeM = enemyDetectRangeM(this.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, false);
+    this.timeScale = s.timeScale;
+    this.slowMoFactor = s.slowMoFactor;
+    this.slowMoSeconds = s.slowMoSeconds;
+    this.vis = s.vis;
+    this.baseDetectM = s.baseDetectM;
+    this.visRange2 = s.visRange2;
+    this.detectRangeM = s.detectRangeAtStartM;
+    this.passRadius2 = s.passRadius2;
+    this.torpedoParams = s.torpedoParams;
 
     // スティック中立=停止なので、出発時は停止している（docs/02 §5、v0.2.1）
     this.boat = new PlayerBoat(scene, mission.playerStart, 0);
-    this.destroyer = new Destroyer(
-      scene,
-      mission.enemyStart,
-      {
-        lengthM: enemyRecord.length_m,
-        beamM: enemyRecord.beam_m,
-        hullCircles: enemyRecord.hull_circles,
-        hitsToSink: mission.enemyHitsToSink ?? enemyRecord.torpedo_hits_to_sink,
-        hitScale: world.hit_scale,
-        boundsMarginM: (enemyRecord.length_m * world.sprite_scale) / 2,
-      },
-      shipAiParamsFromData(enemyRecord, getEvasionMultiplier(data)),
-      this.bounds,
-    );
-    const hitLen = enemyRecord.length_m * world.hit_scale;
-    const hitBeam = enemyRecord.beam_m * world.hit_scale;
-    this.passRadius2 = (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam);
-    const capacity = getBoatTorpedoCount(data, mission.playerBoatId);
-    this.torpedoParams = torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s);
-    this.torpedoes = new TorpedoPool(scene, this.torpedoParams, capacity, this.bounds);
+    this.destroyer = new Destroyer(scene, mission.enemyStart, s.destroyerSpec, s.shipAi, this.bounds);
+    this.torpedoes = new TorpedoPool(scene, this.torpedoParams, s.torpedoCapacity, this.bounds);
     // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない
     this.gunRng = new SeededRng((seed + 1) >>> 0);
     this.enemyFire = new EnemyFire(scene, this.gunneryParams, this.gunRng, mission.enemyStart.headingDeg);
     this.enemyFire.setHitHandler((gunIndex, x, y) => this.handleShellHit(gunIndex, x, y));
-    this.launcher = new TorpedoLauncher(
-      this.torpedoes,
-      new SeededRng(seed),
-      torpedoReliabilityFromData(torpedoRecord),
-      torpedoRecord.reliability.jitter_deg,
-      boatRecord.beam_m / 2,
-      launch.salvo_interval_s,
-    );
-    this.smokeParams = getBoatSmokeParams(data, mission.playerBoatId);
+    this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS);
+    this.smokeParams = s.smokeParams;
     this.smoke = this.smokeParams ? createSmokeState(SMOKE_POOL_SIZE) : null;
     this.smokeScreen = this.smokeParams ? new SmokeScreen(scene, this.smokeParams) : null;
   }
