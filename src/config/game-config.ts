@@ -98,7 +98,6 @@ export const TEXTURE_KEYS = {
   targetMarker: 'tex-target-marker',
   homeMarker: 'tex-home-marker',
   returnRing: 'tex-return-ring',
-  fuelTick: 'tex-fuel-tick',
   debugRing: 'tex-debug-ring',
   shell: 'tex-shell',
   tracer: 'tex-tracer',

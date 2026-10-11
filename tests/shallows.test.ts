@@ -24,8 +24,8 @@ const G = groundingParamsFromData(rawG);
 const TS = 5;
 
 describe('浅瀬と座礁（docs/02 §6.8）', () => {
-  it('data: 安全速力 10 kt、警告 6 秒', () => {
-    expect(G.safeSpeedMps).toBeCloseTo(ktToMps(10), 9);
+  it('data: 安全速力 15 kt、警告 6 秒', () => {
+    expect(G.safeSpeedMps).toBeCloseTo(ktToMps(15), 9);
     expect(G.warnLookaheadS).toBe(6);
     expect(isGroundingDataRecord({ params: { safe_speed_kt: 0, warn_lookahead_s: 6 } })).toBe(false);
   });
@@ -59,7 +59,7 @@ describe('浅瀬と座礁（docs/02 §6.8）', () => {
     updateShallowStatus(out, R, 3500, 1300, 90, full, G, TS, false); // 800 m 先 > 602 m
     expect(out.state).toBe(SHALLOW_NONE);
     expect(out.aheadM).toBe(0);
-    updateShallowStatus(out, R, 4000, 1300, 90, ktToMps(10), G, TS, false); // 安全速力ちょうどは警告なし
+    updateShallowStatus(out, R, 4000, 1300, 90, ktToMps(15), G, TS, false); // 安全速力ちょうどは警告なし
     expect(out.state).toBe(SHALLOW_NONE);
     updateShallowStatus(out, R, 4500, 1300, 90, ktToMps(8), G, TS, false);
     expect(out.state).toBe(SHALLOW_INSIDE);

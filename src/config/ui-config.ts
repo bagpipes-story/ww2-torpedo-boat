@@ -72,11 +72,9 @@ export const HP_COLOR_LOW = 0xff8a7a;
 /** これ未満の HP 比率で色を警告に */
 export const HP_LOW_RATIO = 0.3;
 
-/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。青い目盛り＝巡航で帰投地点まで戻るのに要る燃料 */
+/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。バー＝残り（v0.3.2 で「要る燃料」の青い目盛りをやめた） */
 export const FUEL_GAUGE_OFFSET_Y = HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + HUD_TEXT_GAP;
 export const FUEL_COLOR_OK = 0xe0c060;
-export const FUEL_TICK_WIDTH = 3;
-export const FUEL_TICK_HEIGHT = 18;
 export const FUEL_FLAGS_OFFSET_X = 120;
 /** 味方＝薄い青（docs/02 §7）。帰投地点の輪・帰投マーカー・燃料の目盛り */
 export const HOME_COLOR = 0x8fc8ff;

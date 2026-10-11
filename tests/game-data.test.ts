@@ -26,13 +26,13 @@ describe('game-data（data/*.json の読み出し）', () => {
     expect(rp.callMargin).toBeGreaterThanOrEqual(curve.galPerMFull / curve.galPerMCruise);
     expect(rp.callMargin).toBeGreaterThanOrEqual(ktToMps(boat.speed_cruise_kt) / ktToMps(boat.speed_bands_kt.silent_max));
   });
-  it('浅瀬: us_02 に 1 つ（4300,900 700×800）。帰投地点への直線が横切る。grounding.params は 10 kt・6 秒', () => {
+  it('浅瀬: us_02 に 1 つ（4300,900 700×800）。帰投地点への直線が横切る。grounding.params は 15 kt・6 秒', () => {
     const m = getPrototypeMission(gameData, 'us_02');
     expect(m.shallows).toEqual([{ x: 4300, y: 900, w: 700, h: 800, label: '浅瀬' }]);
     const hdg = (Math.atan2(m.returnPoint.x - 3000, -(m.returnPoint.y - 2100)) * 180) / Math.PI;
     expect(distanceToShallowsM(m.shallows, 3000, 2100, hdg)).toBeLessThan(Infinity);
     const g = getGroundingParams(gameData);
-    expect(g.safeSpeedMps).toBeCloseTo(10 * 0.5144, 9);
+    expect(g.safeSpeedMps).toBeCloseTo(15 * 0.5144, 9);
     expect(g.warnLookaheadS).toBe(6);
   });
   it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
