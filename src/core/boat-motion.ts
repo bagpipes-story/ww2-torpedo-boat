@@ -96,6 +96,10 @@ export interface BoatTelemetry {
   homeWaiting: boolean;
   /** 駆逐艦が沈み始めた（以後は魚雷を撃てない。3 行目は「駆逐艦を撃沈」） */
   destroyerSunk: boolean;
+  /** 浅瀬（core/shallows の SHALLOW_*）: 状態、縁までの距離 m（接近中のみ）、安全速力 kt（HUD の文言用） */
+  shallowState: number;
+  shallowAheadM: number;
+  shallowSafeKt: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

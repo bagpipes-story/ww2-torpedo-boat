@@ -18,10 +18,12 @@ export interface InputState {
   extinguishHeld: boolean;
   /** 見張りボタンを押している間 true（カメラをズームアウト） */
   lookout: boolean;
+  /** ピンチズームの要求（カメラの論理ズーム。NaN なら要求なし。Mission が clamp して消費し NaN に戻す） */
+  zoomRequest: number;
 }
 
 export function createInputState(): InputState {
-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, extinguishHeld: false, lookout: false };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN };
 }
 
 export function resetInput(s: InputState): void {
@@ -33,6 +35,7 @@ export function resetInput(s: InputState): void {
   s.smokeTap = false;
   s.extinguishHeld = false;
   s.lookout = false;
+  s.zoomRequest = NaN;
 }
 
 /**

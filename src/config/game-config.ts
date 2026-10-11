@@ -56,8 +56,9 @@ export const CAMERA_FOLLOW_LERP = 0.1;
 /** 描画順。数値が大きいほど手前 */
 export const DEPTH = {
   sea: 0,
-  /** 帰投地点の輪: 海の上、光と艦艇の下 */
+  /** 帰投地点の輪・浅瀬: 海の上、光と艦艇の下 */
   returnRing: 1,
+  shallows: 1,
   wake: 4,
   torpedo: 8,
   destroyer: 9,
@@ -97,7 +98,6 @@ export const TEXTURE_KEYS = {
   targetMarker: 'tex-target-marker',
   homeMarker: 'tex-home-marker',
   returnRing: 'tex-return-ring',
-  fuelTick: 'tex-fuel-tick',
   debugRing: 'tex-debug-ring',
   shell: 'tex-shell',
   tracer: 'tex-tracer',

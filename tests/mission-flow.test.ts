@@ -28,6 +28,7 @@ function check(over: Partial<EndCheck>): EndCheck {
     destroyerSinkPlaying: false,
     fuelEmpty: false,
     stopped: false,
+    grounded: false,
     ...over,
   };
 }
@@ -74,6 +75,12 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, waitS: 5 }), P)).toBeNull();
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, waitS: 10 }), P)).toBe('returned');
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, timeLeftS: 0 }), P)).toBe('returned');
+    // 座礁: 1.4 秒は null、1.5 秒で grounded。夜明けや撃沈演出より先。自艇の沈没中は null（砲撃で沈めば destroyed）
+    expect(decideMissionEnd(check({ grounded: true, waitS: 1.4 }), P)).toBeNull();
+    expect(decideMissionEnd(check({ grounded: true, waitS: 1.5 }), P)).toBe('grounded');
+    expect(decideMissionEnd(check({ grounded: true, waitS: 1.5, timeLeftS: 0 }), P)).toBe('grounded');
+    expect(decideMissionEnd(check({ grounded: true, waitS: 1.5, destroyerSinkPlaying: true }), P)).toBe('grounded');
+    expect(decideMissionEnd(check({ grounded: true, waitS: 5, boatSinking: true }), P)).toBeNull();
     // 撃沈演出中で夜明けなら null、演出が終われば dawn（撃沈後に夜明けが来なくなる罠の回帰）
     expect(decideMissionEnd(check({ destroyerSinkPlaying: true, timeLeftS: 0 }), P)).toBeNull();
     expect(decideMissionEnd(check({ destroyerSinkPlaying: false, timeLeftS: 0 }), P)).toBe('dawn');

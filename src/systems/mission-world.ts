@@ -6,6 +6,7 @@ import { DEBUG_DAWN_S, DEBUG_FUEL_ALLOTMENT_GAL, FIXED_STEP_S, MAX_STEPS_PER_FRA
 import {
   effectiveFuelAllotmentGal,
   getBoatDamageParams,
+  getGroundingParams,
   getBoatFuelCurve,
   getBoatRecord,
   getBoatSmokeParams,
@@ -31,6 +32,7 @@ import {
 import { FixedStepper } from '../core/fixed-stepper';
 import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
 import { insideRing, type ReturnPoint } from '../core/mission-flow';
+import { shallowIndexAt, type GroundingParams, type ShallowRect } from '../core/shallows';
 import { applyShellHit, createDamageState, gunneryParamsFromData, stepDamage, type DamageParams, type DamageState, type GunneryParams, type HitOutcome } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
@@ -62,6 +64,8 @@ export interface WorldEvents {
   onBoatSinking(x: number, y: number): void;
   /** 自艇の沈没演出が終わった */
   onBoatSunk(reason: MissionEndReason): void;
+  /** 浅瀬に座礁した（速力 0 で動けない。adriftDelayS 後に終了） */
+  onGrounded(x: number, y: number): void;
 }
 
 export class MissionWorld {
@@ -83,6 +87,10 @@ export class MissionWorld {
   readonly fuelAllotmentGal: number;
   /** 自艇が帰投地点の輪の中にいる（固定ステップで距離の二乗で判定） */
   atHome = false;
+  /** 浅瀬（docs/02 §6.8）と座礁の判定。座礁すると速力 0 で動けない */
+  readonly shallows: ShallowRect[];
+  readonly grounding: GroundingParams;
+  grounded = false;
   /** 固定ステップで実際に進んだ実秒（夜明けの時計。低フレームレートで捨てた時間は数えない＝移動・燃料と揃う） */
   stepTimeS = 0;
   /** 初めて魚雷を撃ったときの燃料 gal（未発射なら NaN。Result に出す） */
@@ -145,9 +153,19 @@ export class MissionWorld {
     this.stepTimeS += realDt;
     const boat = this.boat.state;
     if (!this.boat.sinking) {
-      // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分するので、距離あたりの消費はステップ幅・スローに依らない
-      stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
-      clampToBounds(boat, this.bounds, this.boundsMarginM);
+      if (this.grounded) {
+        boat.speedMps = 0;
+      } else {
+        // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分するので、距離あたりの消費はステップ幅・スローに依らない
+        stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
+        clampToBounds(boat, this.bounds, this.boundsMarginM);
+        // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
+        if (boat.speedMps > this.grounding.safeSpeedMps && shallowIndexAt(this.shallows, boat.x, boat.y) >= 0) {
+          this.grounded = true;
+          boat.speedMps = 0;
+          this.events.onGrounded(boat.x, boat.y);
+        }
+      }
       stepFuel(this.fuel, this.fuelCurve, boat.speedMps, dt);
       this.atHome = insideRing(this.returnPoint, boat.x, boat.y);
     }
@@ -190,6 +208,8 @@ export class MissionWorld {
     this.params = boatParamsFromData(boatRecord);
     this.bounds = mission.bounds;
     this.missionType = mission.type;
+    this.shallows = mission.shallows;
+    this.grounding = getGroundingParams(data);
     // ?debug&fuel=…&dawn=… のときだけ data の値を上書き（実機で割当と夜明けを比べるため）
     this.durationS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
     this.returnPoint = mission.returnPoint;

@@ -21,6 +21,7 @@ import type { SpreadConfig } from '../core/salvo';
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_GAP, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
+import { PinchZoom } from '../systems/pinch-zoom';
 import { TorpedoButton } from '../systems/torpedo-button';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
@@ -43,6 +44,7 @@ export class HudScene extends Phaser.Scene {
   private extinguishButton?: HoldButton;
   private lookoutButton?: HoldButton;
   private keyboard?: KeyboardInput;
+  private pinch?: PinchZoom;
   private telemetry!: BoatTelemetry;
 
   constructor() {
@@ -105,6 +107,8 @@ export class HudScene extends Phaser.Scene {
       },
     });
     this.keyboard = new KeyboardInput(this, input);
+    // ピンチズーム（右半分、ボタンの列を除く）。見張りを離した後もその倍率を保つ
+    this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stick?.destroy();
@@ -130,6 +134,8 @@ export class HudScene extends Phaser.Scene {
       this.hpBar = undefined;
       this.debugHud = undefined;
       this.keyboard = undefined;
+      this.pinch?.destroy();
+      this.pinch = undefined;
     });
   }
 

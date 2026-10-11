@@ -18,12 +18,14 @@ import {
   HUD_TEXT_GAP,
   HOME_MARKER_DISTANCE_STEP_M,
   RUDDER_BAR_HALF_WIDTH,
+  SHALLOW_WARN_STEP_M,
   RUDDER_MARKER_HEIGHT,
   TORPEDO_BUTTON_RADIUS,
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK, topCall } from '../core/mission-flow';
+import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { mpsToKt } from '../core/units';
 
 const STEP_LABEL: Record<SpeedStep, string> = {
@@ -57,11 +59,12 @@ const CALL_LABEL: Record<number, string> = {
   [CALL_SUNK]: '撃沈！',
   [CALL_EXPENDED]: '魚雷なし ',
 };
-/** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち */
+/** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁） */
 const MISSION_NORMAL = 0;
 const MISSION_CALL = 1;
 const MISSION_ADRIFT = 2;
 const MISSION_WAITING = 3;
+const MISSION_SHALLOWS = 4;
 
 export class BoatHud {
   private readonly speedText: Phaser.GameObjects.Text;
@@ -77,6 +80,8 @@ export class BoatHud {
   private lastMissionMode = -1;
   private lastCall = -1;
   private lastHomeStep = -1;
+  private lastShallowState = -1;
+  private lastShallowStep = -1;
   private lastTimeLeft = -1;
   private lastHits = -1;
   private lastSpeedKt = -1;
@@ -149,16 +154,31 @@ export class BoatHud {
     // 2 行目: 夜明けまで・命中。帰投の呼びかけ・燃料切れ・魚雷の決着待ちが優先（docs/02 §6.7）。表示する値のどれかが変わったときだけ組み立てる
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
     const call = topCall(t.callFlags);
-    const mode = t.homeWaiting ? MISSION_WAITING : t.fuelEmpty ? MISSION_ADRIFT : call !== 0 ? MISSION_CALL : MISSION_NORMAL;
+    const mode = t.homeWaiting ? MISSION_WAITING : t.fuelEmpty ? MISSION_ADRIFT : t.shallowState !== 0 ? MISSION_SHALLOWS : call !== 0 ? MISSION_CALL : MISSION_NORMAL;
+    const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);
     // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない
     const homeStep = Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M);
-    if (mode !== this.lastMissionMode || call !== this.lastCall || timeLeft !== this.lastTimeLeft || t.hits !== this.lastHits || (mode === MISSION_CALL && homeStep !== this.lastHomeStep)) {
+    if (
+      mode !== this.lastMissionMode ||
+      call !== this.lastCall ||
+      timeLeft !== this.lastTimeLeft ||
+      t.hits !== this.lastHits ||
+      (mode === MISSION_CALL && homeStep !== this.lastHomeStep) ||
+      (mode === MISSION_SHALLOWS && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep))
+    ) {
       this.lastMissionMode = mode;
       this.lastCall = call;
       this.lastTimeLeft = timeLeft;
       this.lastHits = t.hits;
       this.lastHomeStep = homeStep;
-      if (mode === MISSION_WAITING) {
+      this.lastShallowState = t.shallowState;
+      this.lastShallowStep = shallowStep;
+      if (mode === MISSION_SHALLOWS) {
+        // 接近: 縁までの距離と安全速力。中: 安全速力で進めば通れる。座礁: 終わるまでの短い表示
+        if (t.shallowState === SHALLOW_APPROACHING) this.missionText.setText(`浅瀬まで ${shallowStep * SHALLOW_WARN_STEP_M} m ・ ${t.shallowSafeKt} kt 以下に減速！`).setColor(HUD_COLOR_WARN);
+        else if (t.shallowState === SHALLOW_INSIDE) this.missionText.setText(`浅瀬 ・ ${t.shallowSafeKt} kt 以下で進め`).setColor(HUD_COLOR_STRONG);
+        else if (t.shallowState === SHALLOW_GROUNDED) this.missionText.setText('座礁！').setColor(HUD_COLOR_WARN);
+      } else if (mode === MISSION_WAITING) {
         this.missionText.setText('帰投 — 魚雷の決着待ち').setColor(HUD_COLOR_STRONG);
       } else if (mode === MISSION_ADRIFT) {
         this.missionText.setText(`燃料切れ — 漂流 ・ 夜明けまで ${timeLeft} 秒`).setColor(HUD_COLOR_WARN);

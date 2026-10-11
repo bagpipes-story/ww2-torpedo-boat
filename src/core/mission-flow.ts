@@ -2,7 +2,7 @@
 // 任務は撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入ったときに「帰投」で終わる。夜明け（duration_s）で輪の外なら「帰投できず」、燃料 0 で止まれば「漂流」。
 
 /** 終了理由。Result の見出しは result-scene の表で付ける */
-export type MissionEndReason = 'returned' | 'dawn' | 'adrift' | 'rammed' | 'destroyed';
+export type MissionEndReason = 'returned' | 'dawn' | 'adrift' | 'grounded' | 'rammed' | 'destroyed';
 
 export interface ReturnPoint {
   x: number;
@@ -80,23 +80,26 @@ export interface EndCheck {
   fuelEmpty: boolean;
   /** 速力帯が停止 */
   stopped: boolean;
+  /** 浅瀬に座礁して止まっている（v0.3.2） */
+  grounded: boolean;
 }
 
 export interface EndParams {
   torpedoSettleMaxS: number;
-  /** 燃料 0 で止まってから漂流で終わるまでの実秒 */
+  /** 燃料 0 で止まってから漂流で終わるまで、座礁してから終わるまでの実秒 */
   adriftDelayS: number;
 }
 
 /**
  * 終了理由を決める。null なら続行。
  * 1 自艇が沈没中 → null、2 輪の中で魚雷が無い（または待ち切った・夜明け）→ returned、2' 輪の中なら他の理由では終わらない（魚雷待ちの間に燃料が尽きても漂流にしない。レビューで判明）、
- * 3 撃沈演出中 → null、4 夜明け → 燃料 0 なら adrift、あれば dawn、5 燃料 0 で止まって adriftDelayS → adrift
+ * 2'' 座礁していれば adriftDelayS 後に grounded、3 撃沈演出中 → null、4 夜明け → 燃料 0 なら adrift、あれば dawn、5 燃料 0 で止まって adriftDelayS → adrift
  */
 export function decideMissionEnd(c: EndCheck, p: EndParams): MissionEndReason | null {
   if (c.boatSinking) return null;
   if (c.atHome && (!c.torpedoesRunning || c.waitS >= p.torpedoSettleMaxS || c.timeLeftS <= 0)) return 'returned';
   if (c.atHome) return null;
+  if (c.grounded) return c.waitS >= p.adriftDelayS ? 'grounded' : null;
   if (c.destroyerSinkPlaying) return null;
   if (c.timeLeftS <= 0) return c.fuelEmpty ? 'adrift' : 'dawn';
   if (c.fuelEmpty && c.stopped && c.waitS >= p.adriftDelayS) return 'adrift';

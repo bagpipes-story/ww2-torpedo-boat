@@ -26,8 +26,6 @@ import {
   STICK_KNOB_RADIUS,
   STICK_RADIUS,
   TORPEDO_BUTTON_RADIUS,
-  FUEL_TICK_HEIGHT,
-  FUEL_TICK_WIDTH,
   RETURN_RING_FILL_ALPHA,
   RETURN_RING_LINE_WIDTH,
   RETURN_RING_TEX_RADIUS_UNITS,
@@ -277,23 +275,18 @@ export function generateTargetMarkerTexture(scene: Phaser.Scene, key: string, si
   g.destroy();
 }
 
-/** 帰投地点の輪（白。表示時に tint）と燃料計の目盛り（白。表示時に tint）。v0.3.0 */
+/** 帰投地点の輪（白。表示時に tint）。v0.3.0 */
 export function generateReturnTextures(scene: Phaser.Scene): void {
   const k = RENDER_SCALE;
   const r = RETURN_RING_TEX_RADIUS_UNITS * k;
   const lw = RETURN_RING_LINE_WIDTH * k;
   const size = Math.ceil((r + lw) * 2);
-  let g = scene.make.graphics({ x: 0, y: 0 }, false);
+  const g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(0xffffff, RETURN_RING_FILL_ALPHA);
   g.fillCircle(size / 2, size / 2, r);
   g.lineStyle(lw, 0xffffff, 1);
   g.strokeCircle(size / 2, size / 2, r);
   g.generateTexture(TEXTURE_KEYS.returnRing, size, size);
-  g.destroy();
-  g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(0xffffff, 1);
-  g.fillRect(0, 0, Math.ceil(FUEL_TICK_WIDTH * k), Math.ceil(FUEL_TICK_HEIGHT * k));
-  g.generateTexture(TEXTURE_KEYS.fuelTick, Math.ceil(FUEL_TICK_WIDTH * k), Math.ceil(FUEL_TICK_HEIGHT * k));
   g.destroy();
 }
 

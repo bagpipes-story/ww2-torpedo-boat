@@ -1,6 +1,6 @@
 // HUD・操作系の見た目の寸法（論理座標 1280×720 の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
-import { GAME_HEIGHT, HUD_MARGIN, RENDER_SCALE } from './game-config';
+import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE } from './game-config';
 
 export const HUD_FONT = 'Menlo, Consolas, monospace';
 export const HUD_COLOR = '#9fb3c8';
@@ -72,11 +72,9 @@ export const HP_COLOR_LOW = 0xff8a7a;
 /** これ未満の HP 比率で色を警告に */
 export const HP_LOW_RATIO = 0.3;
 
-/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。青い目盛り＝巡航で帰投地点まで戻るのに要る燃料 */
+/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。バー＝残り（v0.3.2 で「要る燃料」の青い目盛りをやめた） */
 export const FUEL_GAUGE_OFFSET_Y = HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + HUD_TEXT_GAP;
 export const FUEL_COLOR_OK = 0xe0c060;
-export const FUEL_TICK_WIDTH = 3;
-export const FUEL_TICK_HEIGHT = 18;
 export const FUEL_FLAGS_OFFSET_X = 120;
 /** 味方＝薄い青（docs/02 §7）。帰投地点の輪・帰投マーカー・燃料の目盛り */
 export const HOME_COLOR = 0x8fc8ff;
@@ -90,6 +88,15 @@ export const RETURN_RING_PULSE_ALPHA = 0.3;
 export const RETURN_RING_PULSE_MS = 600;
 export const HOME_LABEL_FONT_PX = 28;
 export const HOME_MARKER_DISTANCE_STEP_M = 100;
+/** 浅瀬（docs/02 §6.8）: 砂色の暗い帯。塗り・縁・ラベル。警告の距離の刻み m */
+export const SHALLOW_FILL_COLOR = 0x6b5d3a;
+export const SHALLOW_FILL_ALPHA = 0.35;
+export const SHALLOW_LINE_COLOR = 0xa08a50;
+export const SHALLOW_LINE_ALPHA = 0.7;
+export const SHALLOW_LINE_WIDTH = 3;
+export const SHALLOW_LABEL_FONT_PX = 26;
+export const SHALLOW_TEXT_COLOR = '#c8b078';
+export const SHALLOW_WARN_STEP_M = 50;
 
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
@@ -172,6 +179,10 @@ export const ROUND_BUTTON_DISABLED_ALPHA_FACTOR = 0.4;
 export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
 /** 右側の丸ボタンの列（煙幕・消火）の縦の間隔（縁と縁の間） */
 export const ROUND_BUTTON_GAP = 48;
+/** ピンチズームが数える指の右端（これより右は丸ボタンと魚雷ボタンの列。そこで始まった指はズームに使わない） */
+export const PINCH_BUTTON_COLUMN_X = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2 - 16;
+/** ピンチの基準距離の下限（論理 px）。指が重なって距離がほぼ 0 になったときに倍率が跳ねないように */
+export const PINCH_MIN_DIST_PX = 40;
 /** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
 export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
 /** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */

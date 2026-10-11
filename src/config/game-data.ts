@@ -13,6 +13,7 @@ import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
+import { groundingParamsFromData, isGroundingDataRecord, isShallowRectDataRecord, shallowsFromData, type GroundingParams, type ShallowRect } from '../core/shallows';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
@@ -58,6 +59,8 @@ export interface PrototypeMission {
   returnPoint: ReturnPoint;
   /** 戦闘に使える燃料の割当 gal（満タンではない。docs/02 §6.7） */
   fuelAllotmentGal: number;
+  /** 浅瀬の矩形（docs/02 §6.8、v0.3.2）。無ければ空 */
+  shallows: ShallowRect[];
 }
 
 function isNum(v: unknown): v is number {
@@ -103,6 +106,9 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   if (sdx * sdx + sdy * sdy <= returnPoint.radiusM * returnPoint.radiusM) throw new Error(`${missionId}: 出発点が帰投地点の輪の中にある`);
   const fuelAllotmentGal = proto['fuel_allotment_gal'];
   if (!isNum(fuelAllotmentGal) || !(fuelAllotmentGal > 0)) throw new Error(`${missionId}.v0_1_prototype.fuel_allotment_gal は正の数（docs/02 §6.7）`);
+  const shallowsRaw = proto['shallows'];
+  if (!Array.isArray(shallowsRaw) || !shallowsRaw.every(isShallowRectDataRecord)) throw new Error(`${missionId}.v0_1_prototype.shallows（x_m/y_m/width_m/height_m の配列。無ければ []）が無い（docs/02 §6.8）`);
+  const shallows = shallowsFromData(shallowsRaw, b);
   return {
     id: missionId,
     type,
@@ -117,6 +123,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     moon,
     returnPoint,
     fuelAllotmentGal,
+    shallows,
   };
 }
 
@@ -185,6 +192,13 @@ export function getBoatSmokeParams(data: GameData, boatId: string): SmokeParams 
   const b = data.boats.boats.find((x) => x.id === boatId);
   if (!b || !isBoatSmokeDataRecord(b)) throw new Error(`boats.json の ${boatId} に smoke_generator / smoke.* が無い（docs/02 §5）`);
   return smokeParamsFromData(b);
+}
+
+/** risk_events.json の grounding.params（安全速力・警告の先読み秒。docs/02 §6.8）。無ければ例外 */
+export function getGroundingParams(data: GameData): GroundingParams {
+  const g = data.riskEvents.events.find((e) => e.id === 'grounding');
+  if (!g || !isGroundingDataRecord(g)) throw new Error('risk_events.json の grounding に params.safe_speed_kt / warn_lookahead_s が無い（docs/02 §6.8）');
+  return groundingParamsFromData(g);
 }
 
 /** 任務に積む燃料 gal。?debug&fuel= の上書きがあれば艇の容量で頭打ちにして使う（MissionWorld と HUD の表示で同じ値になるようここで決める） */
