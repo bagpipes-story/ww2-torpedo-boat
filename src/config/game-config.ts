@@ -48,6 +48,9 @@ export const DEBUG_FUEL_ALLOTMENT_GAL = debugNumber('fuel');
 export const DEBUG_DAWN_S = debugNumber('dawn');
 /** ?debug&ff: 味方機の開始条件のうち「魚雷を撃った」を満たした扱いにする（撃たずに帰って識別を試すため。docs/02 §6.8） */
 export const DEBUG_FRIENDLY_FORCE = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('ff');
+/** ?debug&storm=Y: 暴風の帯の南の縁の初期 y を固定。?debug&nostorm: 帯なし（v0.3.3 と同じ世界。比較用） */
+export const DEBUG_STORM_START_Y = debugNumber('storm');
+export const DEBUG_STORM_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostorm');
 
 /** 同時に扱うタッチ数（マウス 1 ＋ タッチ 3: スティック＋右側ボタン）。Phaser の input.activePointers に渡す */
 export const ACTIVE_TOUCH_POINTERS = 3;
@@ -67,10 +70,12 @@ export const DEPTH = {
   playerBoat: 10,
   /** 煙幕は艦艇の上に薄く重ねる（艇が煙に隠れて見える） */
   smoke: 11,
-  /** 探照灯・星弾は海の上、艦艇の下 */
+  /** 探照灯・星弾は海の上、艦艇の下。暴風の帯はその上・航跡の下 */
   light: 2,
+  storm: 3,
   shell: 12,
-  /** 味方機は煙と砲弾の上、演出の下 */
+  /** 雨筋は砲弾の上、味方機は煙と砲弾の上、演出の下 */
+  rain: 13,
   aircraft: 14,
   effects: 20,
   hud: 1000,
@@ -112,6 +117,7 @@ export const TEXTURE_KEYS = {
   roundButton: 'tex-round-button',
   smokePuff: 'tex-smoke-puff',
   aircraft: 'tex-aircraft',
+  rainStreak: 'tex-rain-streak',
   stickBase: 'tex-stick-base',
   stickKnob: 'tex-stick-knob',
   rudderBar: 'tex-rudder-bar',

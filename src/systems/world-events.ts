@@ -19,4 +19,6 @@ export interface WorldEvents {
   onBoatSunk(reason: MissionEndReason): void;
   /** 浅瀬に座礁した（速力 0 で動けない。adriftDelayS 後に終了） */
   onGrounded(x: number, y: number): void;
+  /** 暴風の波に叩きつけられた（演出だけ。HP は世界が減らしている。v0.3.4） */
+  onSlam(x: number, y: number): void;
 }

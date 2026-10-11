@@ -53,6 +53,17 @@ export interface MissionResult {
   friendlyPasses: number;
   friendlyReactS: number;
   friendlyPeriodS: number;
+  /** 乗員（v0.3.4）: 生存と定員（HP から決まる） */
+  crewAlive: number;
+  crewTotal: number;
+  /** 暴風（v0.3.4）: 任務にあるか、安全速力 kt、帯の中にいた秒、安全速力を超えていた秒、中の平均 kt（NaN なら入らず）、叩きつけの回数と被害 */
+  stormEnabled: boolean;
+  stormSafeKt: number;
+  stormInsideS: number;
+  stormOverS: number;
+  stormMeanKt: number;
+  stormSlams: number;
+  stormSlamDamage: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -63,6 +74,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   rammed: '駆逐艦に体当たりされた',
   destroyed: '砲撃で沈没',
   friendly_fire: '味方機の誤射で沈没',
+  storm: '荒波で船体破損・沈没',
 };
 
 export class ResultScene extends Phaser.Scene {
@@ -105,14 +117,14 @@ export class ResultScene extends Phaser.Scene {
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
     const score = computeScore(
-      { returned: r.returned, objectiveDone: r.destroyerSunk, missionType: r.missionType, bands: r.bands, fuelLeftPct: r.fuelLeftPct },
+      { returned: r.returned, objectiveDone: r.destroyerSunk, missionType: r.missionType, bands: r.bands, fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal },
       getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA)),
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
-    line(`帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel}`, HUD_FONT_HEADING_PX);
+    line(`帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
-    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     if (r.friendlyEnabled) {
       // 味方機: 来たか、識別までの秒（猶予の調整の根拠）、撃たれた回数
       const n = r.friendlyPasses;
@@ -123,6 +135,14 @@ export class ResultScene extends Phaser.Scene {
       else if (r.friendlyOutcome === FF_OUT_GAVE_UP) text = `味方機: 誤射 ${n} 回（識別なし）`;
       else text = `味方機: 識別の途中で終了（誤射 ${n} 回）`;
       line(text, HUD_FONT_HEADING_PX);
+    }
+    if (r.stormEnabled) {
+      // 暴風: 帯の中にいた秒と安全速力を超えていた秒（叩きつけの重さを調整する根拠）
+      if (r.stormInsideS <= 0) line('暴風: 帯に入らず', HUD_FONT_HEADING_PX);
+      else {
+        const dmg = r.stormSlams > 0 ? `（HP −${Math.round(r.stormSlamDamage)}）` : '';
+        line(`暴風: 帯の中 ${r.stormInsideS.toFixed(1)} 秒（${r.stormSafeKt} kt 超 ${r.stormOverS.toFixed(1)} 秒）・ 平均 ${Math.round(r.stormMeanKt)} kt ・ 叩きつけ ${r.stormSlams} 回${dmg}`, HUD_FONT_HEADING_PX);
+      }
     }
     if (!r.returned) {
       // 輪の縁までの距離を切り上げ（輪の外で「あと 0 m」と出さない）。輪の中で沈んだ（魚雷の決着待ちの間に体当たり・砲撃）ときだけ別の文

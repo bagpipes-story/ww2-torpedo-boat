@@ -14,7 +14,12 @@
       "speed_max_kt": 39,
       "speed_cruise_kt": 23,
       "speed_silent_kt": 8,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 18, "cruise_max": 30, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 18,
+        "cruise_max": 30,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.2,
       "decel_mps2": 1.6,
       "turn_rate_deg_s": 24,
@@ -25,16 +30,58 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 14,
-      "torpedoes": { "count": 4, "reloads": 0, "type_early": "us_mk8", "type_late": "us_mk13", "launch_early": "tube", "launch_late": "rack" },
-      "guns": [ "twin_12.7mm_x2", "20mm_oerlikon", "37mm_m4", "40mm_bofors_late" ],
-      "radar": { "available_from": "1943-01", "range_m": 31000 },
+      "torpedoes": {
+        "count": 4,
+        "reloads": 0,
+        "type_early": "us_mk8",
+        "type_late": "us_mk13",
+        "launch_early": "tube",
+        "launch_late": "rack"
+      },
+      "guns": [
+        "twin_12.7mm_x2",
+        "20mm_oerlikon",
+        "37mm_m4",
+        "40mm_bofors_late"
+      ],
+      "radar": {
+        "available_from": "1943-01",
+        "range_m": 31000
+      },
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 100,
-      "damage": { "engine_damage_speed_factor": 0.7, "fire_dps": 2, "fire_duration_s": 20 },
+      "damage": {
+        "engine_damage_speed_factor": 0.7,
+        "fire_dps": 2,
+        "fire_duration_s": 20,
+        "casualties_per_hp": 0.1
+      },
       "hull_circles": 3,
       "sea_state_limit": 5,
-      "source": { "length_m": "historical", "speed_max_kt": "design (設計40kt超・実用30kt台後半の中間)", "speed_cruise_kt": "historical (23kt巡航で200gal/h)", "fuel_hours_*": "historical (3,000gal; 巡航15h・全速6hの算出値)", "fuel_capacity_gal": "historical (100 オクタン・ガソリン 3,000 gal。docs/01 §3。fuel_hours_* の算出元)", "fuel_idle_ratio": "design (停止中（機関アイドル）の消費＝巡航の 1 割＝20 gal/h、史料なし。消費率 gal/h = アイドル + (巡航 − アイドル) × (v / 巡航速力)^n。n は史実の 2 点（23 kt 200・39 kt 500 gal/h）を通るよう起動時に計算する（1.857）。8 kt 45・18 kt 134・30 kt 315 gal/h。距離あたりでは 7.7 kt が最少（3.06 gal/km、静音速力 8 kt とほぼ同じ）。全速は巡航の 2.5 倍（時間あたり）、1.47 倍（距離あたり）)", "turn_rate_deg_s": "design", "accel_mps2": "design", "hull_hp": "design", "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.2.2 の煙幕長押し)", "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。長押し extinguish_hold_s 実秒で消火)", "speed_bands_kt": "design (速力帯。表示用に丸めた kt で判定し、stop_max 以下=停止、silent_max 以下=静音（見つかりにくい）、cruise_max 以下=巡航、それ以上=全速。上の帯へ移るには境界＋hysteresis kt を超える必要（境界付近の揺れで帯が点滅しない）。v0.2.1 実機の要望で静音帯を 18 kt まで広げた。同じ速力段の Elco 77ft・Higgins も同じ帯。他艇は暫定で速力段の値)", "crew": "historical (12〜17)" },
+      "source": {
+        "length_m": "historical",
+        "speed_max_kt": "design (設計40kt超・実用30kt台後半の中間)",
+        "speed_cruise_kt": "historical (23kt巡航で200gal/h)",
+        "fuel_hours_*": "historical (3,000gal; 巡航15h・全速6hの算出値)",
+        "fuel_capacity_gal": "historical (100 オクタン・ガソリン 3,000 gal。docs/01 §3。fuel_hours_* の算出元)",
+        "fuel_idle_ratio": "design (停止中（機関アイドル）の消費＝巡航の 1 割＝20 gal/h、史料なし。消費率 gal/h = アイドル + (巡航 − アイドル) × (v / 巡航速力)^n。n は史実の 2 点（23 kt 200・39 kt 500 gal/h）を通るよう起動時に計算する（1.857）。8 kt 45・18 kt 134・30 kt 315 gal/h。距離あたりでは 7.7 kt が最少（3.06 gal/km、静音速力 8 kt とほぼ同じ）。全速は巡航の 2.5 倍（時間あたり）、1.47 倍（距離あたり）)",
+        "turn_rate_deg_s": "design",
+        "accel_mps2": "design",
+        "hull_hp": "design",
+        "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.3.1 の消火ボタン長押し。casualties_per_hp 0.1（v0.3.4）: HP が 10 減るごとに乗員 1 名が死傷する（砲弾・掃射・火災・暴風の波の叩きつけのどれでも。乗員は HP から決まり、別の状態は持たない）。127mm 1 発（40）で 4 名、掃射 1 回（25）で 2 名、全速で暴風の帯を抜けて（24）2 名。hull_hp × 率 = 10 ≤ 14 なので、浮いている限り 5 名以上が残る（HP 0 の沈没で 4 名）。乗員が減っても性能は変わらない（v0.5 以降の候補）)",
+        "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。長押し extinguish_hold_s 実秒で消火)",
+        "speed_bands_kt": "design (速力帯。表示用に丸めた kt で判定し、stop_max 以下=停止、silent_max 以下=静音（見つかりにくい）、cruise_max 以下=巡航、それ以上=全速。上の帯へ移るには境界＋hysteresis kt を超える必要（境界付近の揺れで帯が点滅しない）。v0.2.1 実機の要望で静音帯を 18 kt まで広げた。同じ速力段の Elco 77ft・Higgins も同じ帯。他艇は暫定で速力段の値)",
+        "crew": "historical (12〜17。v0.3.4 から Result の乗員とスコア（scoring.json の crew）の母数に使う)",
+        "sea_state_limit": "design (WMO の海況階級。任務の海況（missions_seed の storm.sea_state）がこれを超えると、暴風の帯の中で安全速力（risk_events の storm.params.safe_speed_kt）を超えている間、波に叩きつけられて傷む。docs/01: Elco 70ft は 2.4〜3 m の波（階級 4 と 5 の境）で船底フレーム破損・外板亀裂の試験記録がある → 一回り大きい Elco 80ft は 5（2.5〜4 m）まで。v0.3.4 から使う。他艇の値は艇の大きさからの暫定で、まだ読まない)"
+      },
       "notes": "最も資料が多い主軸艇。Mk 8→Mk 13への換装は1943年半ば。"
     },
     {
@@ -49,7 +96,12 @@
       "speed_max_kt": 39,
       "speed_cruise_kt": 23,
       "speed_silent_kt": 8,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 18, "cruise_max": 30, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 18,
+        "cruise_max": 30,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.2,
       "decel_mps2": 1.6,
       "turn_rate_deg_s": 24,
@@ -58,15 +110,37 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 12,
-      "torpedoes": { "count": 4, "reloads": 0, "type_early": "us_mk8", "type_late": "us_mk8", "launch_early": "tube", "launch_late": "tube" },
-      "guns": [ "twin_12.7mm_x2" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 4,
+        "reloads": 0,
+        "type_early": "us_mk8",
+        "type_late": "us_mk8",
+        "launch_early": "tube",
+        "launch_late": "tube"
+      },
+      "guns": [
+        "twin_12.7mm_x2"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 90,
       "hull_circles": 3,
       "sea_state_limit": 4,
-      "source": { "speed_max_kt": "historical (1941年比較試験 39.7kt持続)", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (1941年比較試験 39.7kt持続)",
+        "others": "design"
+      },
       "notes": "PT-41（マッカーサー脱出）など MTB Sqn 3 の艇。"
     },
     {
@@ -81,7 +155,12 @@
       "speed_max_kt": 39,
       "speed_cruise_kt": 23,
       "speed_silent_kt": 8,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 18, "cruise_max": 30, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 18,
+        "cruise_max": 30,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.2,
       "decel_mps2": 1.6,
       "turn_rate_deg_s": 28,
@@ -90,15 +169,39 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 14,
-      "torpedoes": { "count": 4, "reloads": 0, "type_early": "us_mk8", "type_late": "us_mk13", "launch_early": "tube", "launch_late": "rack" },
-      "guns": [ "twin_12.7mm_x2", "20mm_oerlikon", "40mm_bofors_late" ],
-      "radar": { "available_from": "1943-01", "range_m": 31000 },
+      "torpedoes": {
+        "count": 4,
+        "reloads": 0,
+        "type_early": "us_mk8",
+        "type_late": "us_mk13",
+        "launch_early": "tube",
+        "launch_late": "rack"
+      },
+      "guns": [
+        "twin_12.7mm_x2",
+        "20mm_oerlikon",
+        "40mm_bofors_late"
+      ],
+      "radar": {
+        "available_from": "1943-01",
+        "range_m": 31000
+      },
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 100,
       "hull_circles": 3,
       "sea_state_limit": 5,
-      "source": { "turn_rate_deg_s": "design (Elcoより旋回性良との記述を反映)", "others": "design/historical as elco80" },
+      "source": {
+        "turn_rate_deg_s": "design (Elcoより旋回性良との記述を反映)",
+        "others": "design/historical as elco80"
+      },
       "notes": "Elcoより旋回性が良いが波に突っ込んで乗員が濡れる。"
     },
     {
@@ -113,7 +216,12 @@
       "speed_max_kt": 40,
       "speed_cruise_kt": 20,
       "speed_silent_kt": 8,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 8, "cruise_max": 20, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 8,
+        "cruise_max": 20,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.2,
       "decel_mps2": 1.6,
       "turn_rate_deg_s": 24,
@@ -122,15 +230,40 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 13,
-      "torpedoes": { "count": 4, "reloads": 0, "type_early": "uk_18in_mkxv", "type_late": "uk_18in_mkxv", "launch_early": "tube", "launch_late": "tube" },
-      "guns": [ "20mm_x2", "6pdr" ],
-      "radar": { "available_from": "1943-01", "range_m": 0 },
+      "torpedoes": {
+        "count": 4,
+        "reloads": 0,
+        "type_early": "uk_18in_mkxv",
+        "type_late": "uk_18in_mkxv",
+        "launch_early": "tube",
+        "launch_late": "tube"
+      },
+      "guns": [
+        "20mm_x2",
+        "6pdr"
+      ],
+      "radar": {
+        "available_from": "1943-01",
+        "range_m": 0
+      },
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 95,
       "hull_circles": 3,
       "sea_state_limit": 4,
-      "source": { "speed_max_kt": "historical", "fuel_hours_cruise": "historical (470nm@20kt)", "fuel_hours_full": "design", "radar.range_m": "unverified (Type 291の探知距離未確認)" },
+      "source": {
+        "speed_max_kt": "historical",
+        "fuel_hours_cruise": "historical (470nm@20kt)",
+        "fuel_hours_full": "design",
+        "radar.range_m": "unverified (Type 291の探知距離未確認)"
+      },
       "notes": "18インチ魚雷は射程が短い（40ktで2,500yd）。"
     },
     {
@@ -145,7 +278,12 @@
       "speed_max_kt": 29,
       "speed_cruise_kt": 20,
       "speed_silent_kt": 8,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 8, "cruise_max": 20, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 8,
+        "cruise_max": 20,
+        "hysteresis": 1
+      },
       "accel_mps2": 0.8,
       "decel_mps2": 1.2,
       "turn_rate_deg_s": 16,
@@ -154,15 +292,41 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 21,
-      "torpedoes": { "count": 4, "reloads": 0, "type_early": "uk_18in_mkxv", "type_late": "uk_21in_mkviii", "launch_early": "tube", "launch_late": "tube" },
-      "guns": [ "6pdr_x2", "2pdr", "20mm_x4" ],
-      "radar": { "available_from": "1943-01", "range_m": 0 },
+      "torpedoes": {
+        "count": 4,
+        "reloads": 0,
+        "type_early": "uk_18in_mkxv",
+        "type_late": "uk_21in_mkviii",
+        "launch_early": "tube",
+        "launch_late": "tube"
+      },
+      "guns": [
+        "6pdr_x2",
+        "2pdr",
+        "20mm_x4"
+      ],
+      "radar": {
+        "available_from": "1943-01",
+        "range_m": 0
+      },
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 180,
       "hull_circles": 5,
       "sea_state_limit": 5,
-      "source": { "speed_max_kt": "historical", "fuel_hours_full": "historical (506nm全速)", "fuel_hours_cruise": "design (2,000nm@11ktは巡航より遅い)", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical",
+        "fuel_hours_full": "historical (506nm全速)",
+        "fuel_hours_cruise": "design (2,000nm@11ktは巡航より遅い)",
+        "others": "design"
+      },
       "notes": "遅いが重武装・長航続。砲戦向き。"
     },
     {
@@ -177,7 +341,12 @@
       "speed_max_kt": 41,
       "speed_cruise_kt": 30,
       "speed_silent_kt": 10,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 10, "cruise_max": 30, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 10,
+        "cruise_max": 30,
+        "hysteresis": 1
+      },
       "accel_mps2": 0.9,
       "decel_mps2": 1.3,
       "turn_rate_deg_s": 16,
@@ -186,17 +355,44 @@
       "fuel_type": "diesel",
       "fire_risk": "low",
       "crew": 23,
-      "torpedoes": { "count": 2, "reloads": 2, "type_early": "de_g7a", "type_late": "de_g7e", "launch_early": "tube", "launch_late": "tube", "reload_time_s": 120 },
-      "guns": [ "20mm_bow", "20mm_twin_mid", "37mm_or_40mm_aft" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 2,
+        "type_early": "de_g7a",
+        "type_late": "de_g7e",
+        "launch_early": "tube",
+        "launch_late": "tube",
+        "reload_time_s": 120
+      },
+      "guns": [
+        "20mm_bow",
+        "20mm_twin_mid",
+        "37mm_or_40mm_aft"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "armored_bridge": true,
       "low_wake": true,
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 150,
       "hull_circles": 5,
       "sea_state_limit": 6,
-      "source": { "speed_max_kt": "historical (39〜42kt)", "fuel_hours_cruise": "historical (700〜750nm@30kt)", "reload_time_s": "design", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (39〜42kt)",
+        "fuel_hours_cruise": "historical (700〜750nm@30kt)",
+        "reload_time_s": "design",
+        "others": "design"
+      },
       "notes": "レーダー無し。ディーゼルで火災リスクが低い。艇尾波が小さく夜間に見つかりにくい（リュールセン効果）。"
     },
     {
@@ -211,7 +407,12 @@
       "speed_max_kt": 27.5,
       "speed_cruise_kt": 20,
       "speed_silent_kt": 7,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 7, "cruise_max": 20, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 7,
+        "cruise_max": 20,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.0,
       "decel_mps2": 1.4,
       "turn_rate_deg_s": 26,
@@ -220,15 +421,32 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 7,
-      "torpedoes": { "count": 2, "reloads": 0, "type_early": "jp_45cm", "type_late": "jp_45cm", "launch_early": "side_drop", "launch_late": "side_drop" },
-      "guns": [ "25mm_x1" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 0,
+        "type_early": "jp_45cm",
+        "type_late": "jp_45cm",
+        "launch_early": "side_drop",
+        "launch_late": "side_drop"
+      },
+      "guns": [
+        "25mm_x1"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": false,
       "engine_reliability": 0.85,
       "hull_hp": 60,
       "hull_circles": 2,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical", "fuel_hours_cruise": "historical (220nm@26ktの算出値)", "engine_reliability": "design (金星エンジンは比較的安定)", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical",
+        "fuel_hours_cruise": "historical (220nm@26ktの算出値)",
+        "engine_reliability": "design (金星エンジンは比較的安定)",
+        "others": "design"
+      },
       "notes": "最多生産の乙型。日本ハードモードの基準艇。"
     },
     {
@@ -243,7 +461,12 @@
       "speed_max_kt": 31,
       "speed_cruise_kt": 20,
       "speed_silent_kt": 7,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 7, "cruise_max": 20, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 7,
+        "cruise_max": 20,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.1,
       "decel_mps2": 1.5,
       "turn_rate_deg_s": 30,
@@ -252,15 +475,31 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 7,
-      "torpedoes": { "count": 2, "reloads": 0, "type_early": "jp_45cm", "type_late": "jp_45cm", "launch_early": "side_drop", "launch_late": "side_drop" },
-      "guns": [ "13mm_or_25mm_x1" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 0,
+        "type_early": "jp_45cm",
+        "type_late": "jp_45cm",
+        "launch_early": "side_drop",
+        "launch_late": "side_drop"
+      },
+      "guns": [
+        "13mm_or_25mm_x1"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": false,
       "engine_reliability": 0.7,
       "hull_hp": 50,
       "hull_circles": 2,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical (30〜33kt)", "engine_reliability": "design (71号6型の組立不良を反映)", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (30〜33kt)",
+        "engine_reliability": "design (71号6型の組立不良を反映)",
+        "others": "design"
+      },
       "notes": "71号6型1基。小型で乗員7名。"
     },
     {
@@ -275,7 +514,12 @@
       "speed_max_kt": 38,
       "speed_cruise_kt": 24,
       "speed_silent_kt": 7,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 7, "cruise_max": 24, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 7,
+        "cruise_max": 24,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.3,
       "decel_mps2": 1.6,
       "turn_rate_deg_s": 26,
@@ -284,15 +528,30 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 7,
-      "torpedoes": { "count": 2, "reloads": 0, "type_early": "jp_45cm", "type_late": "jp_45cm", "launch_early": "side_drop", "launch_late": "side_drop" },
-      "guns": [ "25mm_x1" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 0,
+        "type_early": "jp_45cm",
+        "type_late": "jp_45cm",
+        "launch_early": "side_drop",
+        "launch_late": "side_drop"
+      },
+      "guns": [
+        "25mm_x1"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": false,
       "engine_reliability": 0.6,
       "hull_hp": 60,
       "hull_circles": 2,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical (38kt、資料差あり)", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (38kt、資料差あり)",
+        "others": "design"
+      },
       "notes": "「71号6型が量産できていたら」のクリア報酬艇。"
     },
     {
@@ -307,7 +566,12 @@
       "speed_max_kt": 27,
       "speed_cruise_kt": 20,
       "speed_silent_kt": 8,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 8, "cruise_max": 20, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 8,
+        "cruise_max": 20,
+        "hysteresis": 1
+      },
       "accel_mps2": 0.7,
       "decel_mps2": 1.1,
       "turn_rate_deg_s": 14,
@@ -316,15 +580,31 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 18,
-      "torpedoes": { "count": 2, "reloads": 0, "type_early": "jp_45cm", "type_late": "jp_45cm", "launch_early": "side_drop", "launch_late": "side_drop" },
-      "guns": [ "25mm_x2" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 0,
+        "type_early": "jp_45cm",
+        "type_late": "jp_45cm",
+        "launch_early": "side_drop",
+        "launch_late": "side_drop"
+      },
+      "guns": [
+        "25mm_x2"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": false,
       "engine_reliability": 0.7,
       "hull_hp": 120,
       "hull_circles": 4,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical (実際24〜29kt)", "fuel_hours_*": "unverified", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (実際24〜29kt)",
+        "fuel_hours_*": "unverified",
+        "others": "design"
+      },
       "notes": "鉄骨木皮で重量超過、振動で速力低下、ローリング激しい。"
     },
     {
@@ -339,7 +619,12 @@
       "speed_max_kt": 33.5,
       "speed_cruise_kt": 22,
       "speed_silent_kt": 7,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 7, "cruise_max": 22, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 7,
+        "cruise_max": 22,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.1,
       "decel_mps2": 1.5,
       "turn_rate_deg_s": 26,
@@ -348,15 +633,31 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 8,
-      "torpedoes": { "count": 0, "reloads": 0, "type_early": null, "type_late": null, "launch_early": null, "launch_late": null },
-      "guns": [ "20mm_x2", "7.7mm_x2" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 0,
+        "reloads": 0,
+        "type_early": null,
+        "type_late": null,
+        "launch_early": null,
+        "launch_late": null
+      },
+      "guns": [
+        "20mm_x2",
+        "7.7mm_x2"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": false,
       "engine_reliability": 0.85,
       "hull_hp": 60,
       "hull_circles": 2,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical",
+        "others": "design"
+      },
       "notes": "米PT対抗のため魚雷を外して機銃を増備した艇。日本ハードモードでは護衛の相棒。"
     },
     {
@@ -371,7 +672,12 @@
       "speed_max_kt": 45,
       "speed_cruise_kt": 25,
       "speed_silent_kt": 6,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 6, "cruise_max": 25, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 6,
+        "cruise_max": 25,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.4,
       "decel_mps2": 1.7,
       "turn_rate_deg_s": 28,
@@ -380,15 +686,39 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 10,
-      "torpedoes": { "count": 2, "reloads": 0, "type_early": "it_w200", "type_late": "it_w200", "launch_early": "side_drop", "launch_late": "side_drop" },
-      "guns": [ "13.2mm_x1" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 0,
+        "type_early": "it_w200",
+        "type_late": "it_w200",
+        "launch_early": "side_drop",
+        "launch_late": "side_drop"
+      },
+      "guns": [
+        "13.2mm_x1"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": true,
-      "smoke": { "duration_s": 5, "cooldown_s": 20, "puff_interval_s": 0.5, "puff_radius_m": 60, "puff_lifetime_s": 25, "extinguish_hold_s": 1.0 },
+      "smoke": {
+        "duration_s": 5,
+        "cooldown_s": 20,
+        "puff_interval_s": 0.5,
+        "puff_radius_m": 60,
+        "puff_lifetime_s": 25,
+        "extinguish_hold_s": 1.0
+      },
       "hull_hp": 50,
       "hull_circles": 2,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical (最大45kt)", "length_m": "unverified", "crew": "unverified", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (最大45kt)",
+        "length_m": "unverified",
+        "crew": "unverified",
+        "others": "design"
+      },
       "notes": "静音用の電動補助モーターを持つ艇もあった（未確認）。"
     },
     {
@@ -403,7 +733,12 @@
       "speed_max_kt": 50,
       "speed_cruise_kt": 30,
       "speed_silent_kt": 18,
-      "speed_bands_kt": { "stop_max": 0.5, "silent_max": 18, "cruise_max": 30, "hysteresis": 1 },
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 18,
+        "cruise_max": 30,
+        "hysteresis": 1
+      },
       "accel_mps2": 1.6,
       "decel_mps2": 1.8,
       "turn_rate_deg_s": 30,
@@ -412,14 +747,31 @@
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 7,
-      "torpedoes": { "count": 2, "reloads": 0, "type_early": "su_53_38", "type_late": "su_53_38", "launch_early": "stern_drop", "launch_late": "stern_drop" },
-      "guns": [ "12.7mm_x1" ],
-      "radar": { "available_from": null, "range_m": 0 },
+      "torpedoes": {
+        "count": 2,
+        "reloads": 0,
+        "type_early": "su_53_38",
+        "type_late": "su_53_38",
+        "launch_early": "stern_drop",
+        "launch_late": "stern_drop"
+      },
+      "guns": [
+        "12.7mm_x1"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
       "smoke_generator": false,
       "hull_hp": 40,
       "hull_circles": 2,
       "sea_state_limit": 3,
-      "source": { "speed_max_kt": "historical (45〜56kt)", "speed_silent_kt": "historical (最低速18kt)", "fuel_hours_*": "unverified", "others": "design" },
+      "source": {
+        "speed_max_kt": "historical (45〜56kt)",
+        "speed_silent_kt": "historical (最低速18kt)",
+        "fuel_hours_*": "unverified",
+        "others": "design"
+      },
       "notes": "艇尾の溝から後方投下するため、発射後に魚雷の進路から急転舵して逃げる必要がある（ゲーム的に特殊操作）。"
     }
   ]

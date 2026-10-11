@@ -209,6 +209,36 @@ export const FLARE_LIFETIME_S = 1.2;
 export const STRAFE_SPLASH_INTERVAL_S = 0.06;
 export const STRAFE_SPLASH_LEAD_M = 50;
 export const STRAFE_SPLASH_TAIL_S = 0.15;
+/** 暴風の帯（docs/02 §6.8、v0.3.4）: 帯と前線（南の縁）は HP バーの塗りを伸ばして tint、ラベル、雨筋（世界単位。画面内を流れる）、艇の横揺れ、叩きつけの水しぶきの位置と揺れ、HUD の距離の刻み */
+export const STORM_BAND_COLOR = 0x5a6a88;
+export const STORM_BAND_ALPHA = 0.32;
+export const STORM_FRONT_COLOR = 0xa8b8d0;
+export const STORM_FRONT_ALPHA = 0.7;
+export const STORM_FRONT_WIDTH_M = 8;
+export const STORM_LABEL_FONT_PX = 32;
+export const STORM_TEXT_COLOR = '#b8c8e0';
+export const STORM_LABEL_OFFSET_M = 40;
+export const STORM_RAIN_POOL_SIZE = 40;
+export const STORM_RAIN_LENGTH_UNITS = 28;
+export const STORM_RAIN_WIDTH_UNITS = 2;
+export const STORM_RAIN_ALPHA = 0.35;
+export const STORM_RAIN_VX_MPS = 180;
+export const STORM_RAIN_VY_MPS = 520;
+export const STORM_ROLL_DEG = 5;
+export const STORM_ROLL_HZ = 0.7;
+/** 横揺れの振幅を寄せる割合（1 フレームあたり。帯の出入りで ±5° に跳ねず約 0.3 秒でなめらかに） */
+export const STORM_ROLL_LERP = 0.12;
+export const STORM_SLAM_BOW_M = 20;
+export const STORM_SLAM_SIDE_M = 8;
+export const STORM_SLAM_SHAKE_MS = 120;
+export const STORM_SLAM_SHAKE_INTENSITY = 0.0012;
+export const STORM_WARN_STEP_M = 50;
+export const STORM_AHEAD_STEP_M = 100;
+/** 乗員の表示（HP バーの右）: 減ったときの「-N」を出す時間 ms、x オフセット */
+export const CREW_LOSS_FLASH_MS = 1500;
+export const CREW_TEXT_OFFSET_X = HP_BAR_WIDTH + HUD_TEXT_GAP;
+/** 乗員の文字を少し下げる（照射中で最長の 3 行目の下端 104 px と触れないように。燃料の注意の行 126 px とは 1 px 以内） */
+export const CREW_TEXT_NUDGE_Y = 3;
 /** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */
 export const SMOKE_PUFF_TEX_RADIUS_UNITS = 64;
 export const SMOKE_PUFF_COLOR = 0x9aa4b0;

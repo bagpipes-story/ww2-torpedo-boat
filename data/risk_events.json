@@ -130,7 +130,17 @@
       "trigger": "ミッション条件",
       "counterplay": "低速",
       "penalty": "旋回率低下、視界悪化、海況制限超過でダメージ",
-      "version": "v0.3"
+      "version": "v0.3",
+      "params": {
+        "safe_speed_kt": 18,
+        "turn_rate_factor": 0.5,
+        "vis_factor": 0.5,
+        "detect_factor": 0.5,
+        "slam_rate_full_hz": 1.5,
+        "slam_damage": 3,
+        "warn_lookahead_s": 6,
+        "source": "design (v0.3.4。任務に暴風（missions_seed の v0_1_prototype.storm）があると、海域の幅いっぱいの暴風の帯（スコールライン）が北から南へ 1 本通る。帯の中では艇の旋回率 × turn_rate_factor（Elco 24 → 12°/game 秒＝実秒で 120 → 60°。90° 回すのに 0.75 → 1.5 秒）。艇と駆逐艦を結ぶ線が帯にかかる間（どちらかが中、または帯をはさむ。駆逐艦が沈没中は除く）、自艇の視程 × vis_factor（半月 1,500 → 750 m）、駆逐艦の発見距離 × detect_factor（半月で停止 800 → 400、静音 1,000 → 500、巡航 2,000 → 1,000、全速 3,200 → 1,600 m。煙幕と掛け算）。探照灯・星弾・砲撃・雷跡回避には効かない。任務の海況（storm.sea_state）が艇の sea_state_limit を超えていると、帯の中で安全速力 safe_speed_kt（表示の kt で判定）を超えている間、波に叩きつけられて slam_damage ずつ HP が減る（頻度は安全速力で 0、無傷の全速で slam_rate_full_hz 回/体感秒、間は線形。火災・機関損傷・乱数なし）。safe_speed_kt 18 は静音帯の上限＝スティック台座の内側の輪と同じで、新しい数字を覚えなくてよい（浅瀬の 15 kt とは別）。1.5 回/秒 × 3 HP: 全速で帯（800 m）を横切ると約 5.8 秒で 8 回 −24（乗員 −2）、30 kt で 5 回 −15、巡航 23 kt で 2 回 −6、18 kt 以下で 0。無傷なら 1 回抜けても沈まないが、127mm を受けた後（60）は重い。warn_lookahead_s 6: 現在の接近速度（艇の北向きの速さ＋帯の 38.6 m/秒）で 6 秒以内に縁に届くなら 2 行目に『暴風まで N m ・ 18 kt 以下に減速！』。全速なら 833 m 手前で出て、全速 → 18 kt の減速は 1.35 実秒・約 100 m なので間に合う)"
+      }
     },
     {
       "id": "scuttled_to_avoid_capture",

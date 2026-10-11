@@ -1,5 +1,5 @@
 // スコア（docs/02 §6.9、v0.3.1）。Phaser 非依存。配点は data/scoring.json。
-// 合計 = 帰投 + 任務達成（駆逐艦撃沈）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）。
+// 合計 = 帰投 + 任務達成（駆逐艦撃沈）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -10,6 +10,8 @@ export interface ScoringParams {
   hitRangeMultiplier: Record<string, number>;
   fuelMax: number;
   fuelRequiresReturnedAndObjective: boolean;
+  crewMax: number;
+  crewRequiresReturnedAndObjective: boolean;
 }
 
 export interface ScoreInput {
@@ -20,6 +22,9 @@ export interface ScoreInput {
   bands: readonly { band: string; hits: number; duds: number }[];
   /** 燃料の残り %（0〜100、HUD と同じ ceil） */
   fuelLeftPct: number;
+  /** 乗員の生存と定員（定員 0 なら乗員点は無い） */
+  crewAlive: number;
+  crewTotal: number;
 }
 
 export interface ScoreBreakdown {
@@ -27,10 +32,11 @@ export interface ScoreBreakdown {
   objective: number;
   hits: number;
   fuel: number;
+  crew: number;
   total: number;
 }
 
-export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, total: 0 }): ScoreBreakdown {
+export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, crew: 0, total: 0 }): ScoreBreakdown {
   out.survival = inp.returned ? p.returnedPoints : 0;
   out.objective = inp.objectiveDone ? (p.objectiveByType[inp.missionType] ?? 0) : 0;
   let hits = 0;
@@ -46,7 +52,9 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   const fuelAllowed = p.fuelRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   const pct = Math.max(0, Math.min(100, inp.fuelLeftPct));
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
-  out.total = out.survival + out.objective + out.hits + out.fuel;
+  const crewAllowed = p.crewRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
+  out.crew = crewAllowed && inp.crewTotal > 0 ? Math.round((p.crewMax * Math.max(0, Math.min(inp.crewTotal, inp.crewAlive))) / inp.crewTotal) : 0;
+  out.total = out.survival + out.objective + out.hits + out.fuel + out.crew;
   return out;
 }
 
@@ -57,6 +65,7 @@ export interface ScoringDataRecord {
   objective_by_type: Record<string, number | string>;
   hit: { base: number; range_multiplier: Record<string, number> };
   fuel: { max: number; requires_returned_and_objective: boolean };
+  crew: { max: number; requires_returned_and_objective: boolean };
 }
 
 function isFiniteNum(v: unknown): v is number {
@@ -76,6 +85,8 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   const rm = h['range_multiplier'] as Record<string, unknown>;
   if (!Object.values(rm).every((x) => isFiniteNum(x) && x >= 0)) return false;
   if (!f || !isFiniteNum(f['max']) || typeof f['requires_returned_and_objective'] !== 'boolean') return false;
+  const c = r['crew'] as Record<string, unknown> | undefined;
+  if (!c || !isFiniteNum(c['max']) || (c['max'] as number) < 0 || typeof c['requires_returned_and_objective'] !== 'boolean') return false;
   return true;
 }
 
@@ -96,5 +107,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     hitRangeMultiplier: { ...r.hit.range_multiplier },
     fuelMax: r.fuel.max,
     fuelRequiresReturnedAndObjective: r.fuel.requires_returned_and_objective,
+    crewMax: r.crew.max,
+    crewRequiresReturnedAndObjective: r.crew.requires_returned_and_objective,
   };
 }

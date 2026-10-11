@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getVisibilityParams } from '../src/config/game-data';
+import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getBoatCrewParams, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getStormParams, getVisibilityParams } from '../src/config/game-data';
 import { distanceToShallowsM } from '../src/core/shallows';
 import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
@@ -58,6 +58,31 @@ describe('game-data（data/*.json の読み出し）', () => {
     const noParams = clone();
     delete (noParams.riskEvents.events.find((e) => e.id === 'friendly_fire') as Record<string, unknown>)['params'];
     expect(() => getFriendlyParams(noParams, m, 5)).toThrow();
+  });
+  it('暴風と乗員（v0.3.4）: us_02 の storm（6/800/15/1200/2200）、block の無い複製では getStormParams が null、max 2500 の複製は例外、sea_state_limit 欠けは例外、乗員は 14/0.1', () => {
+    const m = getPrototypeMission(gameData, 'us_02');
+    expect(m.storm).toMatchObject({ sea_state: 6, depth_m: 800, drift_kt: 15, start_south_y_min_m: 1200, start_south_y_max_m: 2200 });
+    const p = getStormParams(gameData, m, 5)!;
+    expect(p.safeSpeedKt).toBe(18);
+    expect(p.slamEnabled).toBe(true);
+    type Proto = { v0_1_prototype: Record<string, unknown> };
+    const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
+    const none = clone();
+    delete protoOf(none)['storm'];
+    const mNone = getPrototypeMission(none, 'us_02');
+    expect(mNone.storm).toBeNull();
+    expect(getStormParams(none, mNone, 5)).toBeNull();
+    const near = clone();
+    (protoOf(near)['storm'] as Record<string, unknown>)['start_south_y_max_m'] = 2500;
+    expect(() => getStormParams(near, getPrototypeMission(near, 'us_02'), 5)).toThrow();
+    const broken = clone();
+    (protoOf(broken)['storm'] as Record<string, unknown>)['depth_m'] = 'x';
+    expect(() => getPrototypeMission(broken, 'us_02')).toThrow();
+    const noLimit = clone();
+    delete (noLimit.boats.boats.find((b) => b.id === 'us_elco80') as Record<string, unknown>)['sea_state_limit'];
+    expect(() => getStormParams(noLimit, m, 5)).toThrow();
+    expect(getBoatCrewParams(gameData, 'us_elco80')).toEqual({ total: 14, casualtiesPerHp: 0.1 });
   });
   it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
     const p = getScoringParams(gameData);

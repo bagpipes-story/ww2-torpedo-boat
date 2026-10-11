@@ -17,6 +17,7 @@ import {
   generateUiTextures,
 } from '../assets/placeholders';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
+import { generateRainTexture } from '../assets/storm-placeholder';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
 export class BootScene extends Phaser.Scene {
@@ -47,6 +48,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateReturnTextures(this);
     generateAircraftTexture(this);
+    generateRainTexture(this);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     this.scene.start(SCENE_KEYS.mission);

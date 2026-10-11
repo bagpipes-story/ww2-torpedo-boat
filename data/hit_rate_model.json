@@ -21,25 +21,77 @@
     "source": "design (erratic_period_s: 蛇行魚雷の進路が ±jitter_deg を往復する周期。実時間秒)"
   },
   "kpi_by_range": [
-    { "band": "<=400yd", "range_m_min": 0, "range_m_max": 366, "target_hit_min": 0.60, "target_hit_max": 0.70, "historical_note": "PTの典型発射距離の下限。最も危険" },
-    { "band": "400-800yd", "range_m_min": 366, "range_m_max": 732, "target_hit_min": 0.45, "target_hit_max": 0.55, "historical_note": "PTの典型発射距離" },
-    { "band": "800-1200yd", "range_m_min": 732, "range_m_max": 1097, "target_hit_min": 0.30, "target_hit_max": 0.35, "historical_note": "2,000ydの手前" },
-    { "band": "1200-2000yd", "range_m_min": 1097, "range_m_max": 1829, "target_hit_min": 0.10, "target_hit_max": 0.15, "historical_note": "Bulkleyが『成果が乏しい』とした距離" },
-    { "band": ">=2000yd", "range_m_min": 1829, "range_m_max": 99999, "target_hit_min": 0.0, "target_hit_max": 0.05, "historical_note": "Channel Dashの4,000ydは全弾外れ" }
+    {
+      "band": "<=400yd",
+      "range_m_min": 0,
+      "range_m_max": 366,
+      "target_hit_min": 0.6,
+      "target_hit_max": 0.7,
+      "historical_note": "PTの典型発射距離の下限。最も危険"
+    },
+    {
+      "band": "400-800yd",
+      "range_m_min": 366,
+      "range_m_max": 732,
+      "target_hit_min": 0.45,
+      "target_hit_max": 0.55,
+      "historical_note": "PTの典型発射距離"
+    },
+    {
+      "band": "800-1200yd",
+      "range_m_min": 732,
+      "range_m_max": 1097,
+      "target_hit_min": 0.3,
+      "target_hit_max": 0.35,
+      "historical_note": "2,000ydの手前"
+    },
+    {
+      "band": "1200-2000yd",
+      "range_m_min": 1097,
+      "range_m_max": 1829,
+      "target_hit_min": 0.1,
+      "target_hit_max": 0.15,
+      "historical_note": "Bulkleyが『成果が乏しい』とした距離"
+    },
+    {
+      "band": ">=2000yd",
+      "range_m_min": 1829,
+      "range_m_max": 99999,
+      "target_hit_min": 0.0,
+      "target_hit_max": 0.05,
+      "historical_note": "Channel Dashの4,000ydは全弾外れ"
+    }
   ],
   "kpi_measurement": {
     "min_shots_per_band_before_tuning": 20,
-    "record_fields": [ "mission_id", "range_m", "lead_error_deg", "target_speed_kt", "hit", "dud", "erratic" ],
+    "record_fields": [
+      "mission_id",
+      "range_m",
+      "lead_error_deg",
+      "target_speed_kt",
+      "hit",
+      "dud",
+      "erratic"
+    ],
     "source": "design"
   },
   "reliability_by_era": {
-    "early_1942": { "dud": 0.07, "erratic": 0.05 },
-    "late_1943": { "dud": 0.03, "erratic": 0.02 },
+    "early_1942": {
+      "dud": 0.07,
+      "erratic": 0.05
+    },
+    "late_1943": {
+      "dud": 0.03,
+      "erratic": 0.02
+    },
     "source": "design (史実の航空投下統計36%コールドラン等は参考値に留める)"
   },
   "historical_mode": {
     "enabled_default": false,
-    "reliability": { "dud": 0.10, "erratic": 0.08 },
+    "reliability": {
+      "dud": 0.1,
+      "erratic": 0.08
+    },
     "enemy_detection_multiplier": 1.3,
     "enemy_evasion_multiplier": 1.5,
     "aim_assist": "none",
@@ -48,24 +100,61 @@
   },
   "aim_assist": {
     "levels": [
-      { "id": "none", "name_ja": "なし", "unlock": "default" },
-      { "id": "lead_marker", "name_ja": "見越し点マーカー", "unlock": "radar_or_3_missions" },
-      { "id": "lead_marker_time", "name_ja": "見越し点＋到達秒数", "unlock": "6_missions" }
+      {
+        "id": "none",
+        "name_ja": "なし",
+        "unlock": "default"
+      },
+      {
+        "id": "lead_marker",
+        "name_ja": "見越し点マーカー",
+        "unlock": "radar_or_3_missions"
+      },
+      {
+        "id": "lead_marker_time",
+        "name_ja": "見越し点＋到達秒数",
+        "unlock": "6_missions"
+      }
     ],
     "source": "design"
   },
   "reference_travel_time_s": {
     "note": "実時間（圧縮前）。1kt=0.5144m/s",
-    "27kt": { "1000yd": 66, "1500m": 108, "2000m": 144 },
-    "33.5kt": { "1000yd": 53, "1500m": 87, "2000m": 116 },
-    "40kt": { "1000yd": 44, "1500m": 73, "2000m": 97 },
-    "44kt": { "1000yd": 40, "1500m": 66, "2000m": 88 }
+    "27kt": {
+      "1000yd": 66,
+      "1500m": 108,
+      "2000m": 144
+    },
+    "33.5kt": {
+      "1000yd": 53,
+      "1500m": 87,
+      "2000m": 116
+    },
+    "40kt": {
+      "1000yd": 44,
+      "1500m": 73,
+      "2000m": 97
+    },
+    "44kt": {
+      "1000yd": 40,
+      "1500m": 66,
+      "2000m": 88
+    }
   },
   "visibility": {
-    "note": "視界と発見（docs/02 §6.5）。敵がプレイヤーを発見する距離 = base_detect_m（enemies.json）× 速力係数 × 月明係数 × 煙幕係数。プレイヤーが敵を見る距離 = vis_player_base_m × 月明係数。速力係数は艇の速力帯（停止/静音/巡航/全速。帯の境界は boats.json の speed_bands_kt。HUD に出る帯と同じ）の値をそのまま使う（帯の間の補間はしない）",
+    "note": "視界と発見（docs/02 §6.5）。敵がプレイヤーを発見する距離 = base_detect_m（enemies.json）× 速力係数 × 月明係数 × 煙幕係数 × 雨の係数（暴風の帯が艦と艇の間にあるとき risk_events の storm.params.detect_factor。v0.3.4）。プレイヤーが敵を見る距離 = vis_player_base_m × 月明係数。速力係数は艇の速力帯（停止/静音/巡航/全速。帯の境界は boats.json の speed_bands_kt。HUD に出る帯と同じ）の値をそのまま使う（帯の間の補間はしない）",
     "vis_player_base_m": 1500,
-    "moon_factor": { "dark": 0.6, "half": 1.0, "full": 1.3 },
-    "speed_factor": { "stop": 0.4, "silent": 0.5, "cruise": 1.0, "full": 1.6 },
+    "moon_factor": {
+      "dark": 0.6,
+      "half": 1.0,
+      "full": 1.3
+    },
+    "speed_factor": {
+      "stop": 0.4,
+      "silent": 0.5,
+      "cruise": 1.0,
+      "full": 1.6
+    },
     "smoke_factor": 0.3,
     "detect_hold_s": 8,
     "source": "design (半月・base_detect_m 2000 で: 停止 800m、静音（18 kt まで）1,000m、巡航 2,000m、全速 3,200m から見つかる。vis_player は半月で 1,500m なので、巡航だと先に見つかり、静音以下なら先に見つける。detect_hold_s は見失ってから警戒を解くまでの実時間秒。smoke_factor は、艦と艇を結ぶ線が煙幕の煙に遮られている間、発見距離に掛ける（v0.2.2）)"

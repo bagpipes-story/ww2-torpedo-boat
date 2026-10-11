@@ -5,6 +5,7 @@ import {
   getBoatDamageParams,
   getBoatFuelCurve,
   getBoatRecord,
+  getBoatCrewParams,
   getBoatSmokeParams,
   getBoatTorpedoCount,
   getEnemyRecord,
@@ -12,6 +13,7 @@ import {
   getFriendlyParams,
   getGroundingParams,
   getPrototypeMission,
+  getStormParams,
   getTorpedoRecord,
   getVisibilityParams,
   type GameData,
@@ -21,9 +23,11 @@ import { boatParamsFromData, type BoatParams } from '../core/boat-motion';
 import { type FuelCurve } from '../core/fuel';
 import { gunneryParamsFromData, type DamageParams, type GunneryParams } from '../core/gunnery';
 import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
+import { type CrewParams } from '../core/crew';
 import { type FriendlyParams } from '../core/friendly';
 import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
+import { type StormParams } from '../core/storm';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 
@@ -66,6 +70,10 @@ export interface WorldSetup {
   grounding: GroundingParams;
   /** 味方機（友軍誤射）。任務に friendly_aircraft が無ければ null */
   friendly: FriendlyParams | null;
+  /** 暴風の帯。任務に storm が無いか ?debug&nostorm なら null */
+  storm: StormParams | null;
+  /** 乗員（定員と HP あたりの死傷率） */
+  crew: CrewParams;
   destroyerSpec: DestroyerSpec;
   shipAi: ShipAiParams;
   /** 外れ確定の半径二乗: 目標中心からこれより離れて遠ざかれば通過したとみなす */
@@ -82,7 +90,7 @@ export interface WorldSetup {
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false): WorldSetup {
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
   const feel = data.hitRateModel.feel;
@@ -121,6 +129,8 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     fuelAllotmentGal,
     grounding: getGroundingParams(data),
     friendly: getFriendlyParams(data, mission, world.time_scale),
+    storm: debugStormOff ? null : getStormParams(data, mission, world.time_scale),
+    crew: getBoatCrewParams(data, mission.playerBoatId),
     destroyerSpec: {
       lengthM: enemyRecord.length_m,
       beamM: enemyRecord.beam_m,

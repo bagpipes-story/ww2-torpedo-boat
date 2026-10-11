@@ -1,5 +1,5 @@
 // 視界と発見（docs/02 §6.5）。Phaser 非依存。
-// 敵の発見距離 = base × 速力係数 × 月明係数 × 煙幕係数 × 史実モード倍率。プレイヤーの視程 = vis_player_base × 月明係数。
+// 敵の発見距離 = base × 速力係数 × 月明係数 × 煙幕係数 × 史実モード倍率 × 雨の係数（暴風の帯が艦と艇の間にあるとき。v0.3.4）。プレイヤーの視程 = vis_player_base × 月明係数（雨で × vis_factor）。
 import { speedBandFor, type BoatParams, type SpeedStep } from './boat-motion';
 
 export interface SpeedFactorTable {
@@ -44,9 +44,9 @@ export function speedFactorForBand(band: SpeedStep, t: SpeedFactorTable): number
   return t[band];
 }
 
-/** 敵がプレイヤーを発見する距離（m） */
-export function enemyDetectRangeM(baseDetectM: number, speedFactor: number, vis: VisibilityParams, smokeActive: boolean): number {
-  return baseDetectM * speedFactor * vis.moonFactor * (smokeActive ? vis.smokeFactor : 1) * vis.detectionMultiplier;
+/** 敵がプレイヤーを発見する距離（m）。stormFactor は雨の係数（帯が間に無ければ 1。煙幕と掛け算） */
+export function enemyDetectRangeM(baseDetectM: number, speedFactor: number, vis: VisibilityParams, smokeActive: boolean, stormFactor: number = 1): number {
+  return baseDetectM * speedFactor * vis.moonFactor * (smokeActive ? vis.smokeFactor : 1) * vis.detectionMultiplier * stormFactor;
 }
 
 /** プレイヤーが敵を視認できる距離（m） */

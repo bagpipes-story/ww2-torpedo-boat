@@ -2,7 +2,7 @@
 // data からの数値の組み立ては world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts（v0.3.3 で切り出し）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
-import { DEBUG_DAWN_S, DEBUG_FRIENDLY_FORCE, DEBUG_FUEL_ALLOTMENT_GAL, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
+import { DEBUG_DAWN_S, DEBUG_FRIENDLY_FORCE, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_STORM_OFF, DEBUG_STORM_START_Y, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
 import type { GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE } from '../config/ui-config';
 import { clampToBounds, nextSpeedBand, stepBoat, type BoatParams, type SeaBounds, type SpeedStep } from '../core/boat-motion';
@@ -22,6 +22,7 @@ import { PlayerBoat } from '../entities/player-boat';
 import { EnemyFire } from './enemy-fire';
 import { FriendlyFire } from './friendly-fire';
 import { SmokeScreen } from './smoke-screen';
+import { StormFront } from './storm-front';
 import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
 import { DRIFT_INPUT, type WorldEvents } from './world-events';
@@ -38,6 +39,8 @@ export class MissionWorld {
   readonly enemyFire: EnemyFire;
   /** 味方機（友軍誤射。docs/02 §6.8）。任務に friendly_aircraft が無ければ null */
   readonly friendly: FriendlyFire | null;
+  /** 暴風の帯（docs/02 §6.8、v0.3.4）。任務に storm が無いか ?debug&nostorm なら null */
+  readonly storm: StormFront | null;
   readonly params: BoatParams;
   readonly bounds: SeaBounds;
   /** 夜明けまでの実時間秒（任務の制限時間。?debug&dawn= で上書き可） */
@@ -76,12 +79,13 @@ export class MissionWorld {
   detectRangeM = 0;
   /** 艦と艇を結ぶ線分が煙に遮られている（発見距離 × smoke_factor、探照灯・星弾は照らせない） */
   hiddenBySmoke = false;
-  readonly visRange2: number;
+  /** 自艇の視程の二乗（敵の表示判定。暴風の雨で毎ステップ更新） */
+  visRange2: number;
   /** 命中スローの残り実秒。0 より大きい間は dt に slowMoFactor を掛ける */
   slowMoLeftS = 0;
 
-  /** data から組み立てた数値（world-setup.ts）。固定ステップはここから読む */
-  private readonly setup: WorldSetup;
+  /** data から組み立てた数値（world-setup.ts）。固定ステップはここから読み、Scene は crew / storm を読む */
+  readonly setup: WorldSetup;
   private readonly events: WorldEvents;
   private readonly smokeScreen: SmokeScreen | null;
   private readonly gunRng: SeededRng;
@@ -108,6 +112,8 @@ export class MissionWorld {
     const dt = feelDt * c.timeScale;
     this.stepTimeS += realDt;
     const boat = this.boat.state;
+    // 暴風（v0.3.4）: 帯を進め、中なら旋回率を下げ、速すぎれば波の叩きつけ（HP 0 で沈没）。判定は艇を動かす前の位置
+    if (this.storm?.step(feelDt, boat, this.destroyer.state, !this.destroyer.sinking, this.params, this.damage, this.boat.sinking)) this.sinkBoat('storm');
     if (!this.boat.sinking) {
       if (this.grounded) {
         boat.speedMps = 0;
@@ -133,7 +139,8 @@ export class MissionWorld {
     }
     // 敵がこのステップで自艇を見つける距離 = 基準 × 速力帯の係数 × 月明 × 煙幕
     this.band = nextSpeedBand(this.band, boat.speedMps, this.params);
-    this.detectRangeM = enemyDetectRangeM(c.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, this.hiddenBySmoke);
+    this.detectRangeM = enemyDetectRangeM(c.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, this.hiddenBySmoke, this.storm ? this.storm.detectFactor : 1);
+    this.visRange2 = this.storm ? c.visRange2 * this.storm.visFactor2 : c.visRange2;
     d.step(dt, feelDt, boat, this.detectRangeM, this.vis.detectHoldS, this.torpedoes.states);
     this.torpedoes.step(dt, feelDt, d.sinking ? null : d.circles, d.state.x, d.state.y, c.passRadius2, this.torpedoEvents);
     if (!this.boat.sinking && d.touchesBoat(boat, c.boatHalfLengthM)) this.sinkBoat('rammed');
@@ -156,7 +163,7 @@ export class MissionWorld {
     this.events = events;
     this.seed = seed;
     // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
-    const s = buildWorldSetup(data, missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S);
+    const s = buildWorldSetup(data, missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF);
     this.setup = s;
     const mission = s.mission;
     this.params = s.boatParams;
@@ -194,6 +201,7 @@ export class MissionWorld {
     const friendlyRng = new SeededRng((seed + 2) >>> 0);
     const splash = (x: number, y: number, hit: boolean): void => this.enemyFire.splash(x, y, hit);
     this.friendly = fp ? new FriendlyFire(scene, fp, DEBUG_FRIENDLY_FORCE, splash, (x, y) => this.applyHit(fp.hit, friendlyRng, x, y, 'friendly_fire')) : null;
+    this.storm = s.storm ? new StormFront(scene, s.storm, seed, DEBUG_STORM_START_Y, this.params.turnRateDegS, this.boat.state, splash, (x, y) => this.events.onSlam(x, y)) : null;
     this.refreshShallowStatus();
   }
 
@@ -212,7 +220,8 @@ export class MissionWorld {
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
     this.refreshShallowStatus();
-    this.boat.syncSprite();
+    this.storm?.updateVisuals(realDt, this.boat.state);
+    this.boat.syncSprite(this.storm ? this.storm.rollDeg : 0);
     this.destroyer.syncSprite();
     this.torpedoes.updateVisuals(realDt);
     this.enemyFire.updateVisuals(realDt, this.destroyer.state);
@@ -225,21 +234,13 @@ export class MissionWorld {
     return this.torpedoes.unresolvedCount > 0 || this.launcher.queued > 0;
   }
 
-  /** 煙幕の残り実秒（無い艇は 0） */
-  get smokeLeftS(): number {
-    return this.smoke ? Math.max(0, this.smoke.activeLeftS) : 0;
-  }
-
-  get smokeCooldownS(): number {
-    return this.smoke ? Math.max(0, this.smoke.cooldownLeftS) : 0;
-  }
-
   /** 走っている魚雷を外れとして確定する（終了時。Result の集計から漏れないようにする） */
   resolveRemainingAsMisses(): void {
     this.torpedoes.resolveRemainingAsMisses(this.torpedoEvents);
   }
 
   destroy(): void {
+    this.storm?.destroy();
     this.friendly?.destroy();
     this.torpedoes.destroy();
     this.enemyFire.destroy();
@@ -284,7 +285,7 @@ export class MissionWorld {
     if (o.destroyed) this.sinkBoat(reason);
   }
 
-  /** 自艇の沈没（体当たり・砲撃・掃射・火災）。HP 0・火災なしにして演出、完了で onBoatSunk */
+  /** 自艇の沈没（体当たり・砲撃・掃射・火災・荒波）。HP 0・火災なしにして演出、完了で onBoatSunk */
   private sinkBoat(reason: MissionEndReason): void {
     if (this.boat.sinking) return;
     // 沈んだ艇の HP は 0、火災も消す（体当たりでも HUD と Result が 100 のままにならないように）
