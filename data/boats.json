@@ -62,7 +62,13 @@
         "engine_damage_speed_factor": 0.7,
         "fire_dps": 2,
         "fire_duration_s": 20,
-        "casualties_per_hp": 0.1
+        "casualties_per_hp": 0.1,
+        "crew_effects": {
+          "extinguish_exponent": 1,
+          "turn_rate_per_loss": 0.04,
+          "accel_per_loss": 0.04,
+          "min_factor": 0.5
+        }
       },
       "hull_circles": 3,
       "sea_state_limit": 5,
@@ -80,7 +86,8 @@
         "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。長押し extinguish_hold_s 実秒で消火)",
         "speed_bands_kt": "design (速力帯。表示用に丸めた kt で判定し、stop_max 以下=停止、silent_max 以下=静音（見つかりにくい）、cruise_max 以下=巡航、それ以上=全速。上の帯へ移るには境界＋hysteresis kt を超える必要（境界付近の揺れで帯が点滅しない）。v0.2.1 実機の要望で静音帯を 18 kt まで広げた。同じ速力段の Elco 77ft・Higgins も同じ帯。他艇は暫定で速力段の値)",
         "crew": "historical (12〜17。v0.3.4 から Result の乗員とスコア（scoring.json の crew）の母数に使う)",
-        "sea_state_limit": "design (WMO の海況階級。任務の海況（missions_seed の storm.sea_state）がこれを超えると、暴風の帯の中で安全速力（risk_events の storm.params.safe_speed_kt）を超えている間、波に叩きつけられて傷む。docs/01: Elco 70ft は 2.4〜3 m の波（階級 4 と 5 の境）で船底フレーム破損・外板亀裂の試験記録がある → 一回り大きい Elco 80ft は 5（2.5〜4 m）まで。v0.3.4 から使う。他艇の値は艇の大きさからの暫定で、まだ読まない)"
+        "sea_state_limit": "design (WMO の海況階級。任務の海況（missions_seed の storm.sea_state）がこれを超えると、暴風の帯の中で安全速力（risk_events の storm.params.safe_speed_kt）を超えている間、波に叩きつけられて傷む。docs/01: Elco 70ft は 2.4〜3 m の波（階級 4 と 5 の境）で船底フレーム破損・外板亀裂の試験記録がある → 一回り大きい Elco 80ft は 5（2.5〜4 m）まで。v0.3.4 から使う。他艇の値は艇の大きさからの暫定で、まだ読まない)",
+        "damage.crew_effects": "design (v0.3.5。実機で『乗員が減ってもゲーム上の影響が無い』と言われ、操作に効かせる。消火の長押し秒 × (定員/生存)^extinguish_exponent（1 なら 11/14 で 1.3 秒、7/14 で 2.0 秒、4/14 で 3.5 秒。消し手が減ると遅い）。旋回率・加速 × max(min_factor, 1 − per_loss × 減り)（0.04: 3 名減で 0.88、7 名減で 0.72、10 名減（HP 0）で 0.6。操舵・機関の手が減る）。min_factor 0.5 で下限。砲撃 1 発（40 HP、4 名）で −16% なので、舵の重さが体感で分かる大きさ。暴風の旋回 0.5 とは掛け算)"
       },
       "notes": "最も資料が多い主軸艇。Mk 8→Mk 13への換装は1943年半ば。"
     },

@@ -5,6 +5,7 @@ import {
   getBoatDamageParams,
   getBoatFuelCurve,
   getBoatRecord,
+  getBoatCrewEffects,
   getBoatCrewParams,
   getBoatSmokeParams,
   getBoatTorpedoCount,
@@ -23,7 +24,7 @@ import { boatParamsFromData, type BoatParams } from '../core/boat-motion';
 import { type FuelCurve } from '../core/fuel';
 import { gunneryParamsFromData, type DamageParams, type GunneryParams } from '../core/gunnery';
 import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
-import { type CrewParams } from '../core/crew';
+import { type CrewEffects, type CrewParams } from '../core/crew';
 import { type FriendlyParams } from '../core/friendly';
 import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
@@ -72,8 +73,9 @@ export interface WorldSetup {
   friendly: FriendlyParams | null;
   /** 暴風の帯。任務に storm が無いか ?debug&nostorm なら null */
   storm: StormParams | null;
-  /** 乗員（定員と HP あたりの死傷率） */
+  /** 乗員（定員と HP あたりの死傷率）と、減りが操作に効く度合い（v0.3.5） */
   crew: CrewParams;
+  crewEffects: CrewEffects;
   destroyerSpec: DestroyerSpec;
   shipAi: ShipAiParams;
   /** 外れ確定の半径二乗: 目標中心からこれより離れて遠ざかれば通過したとみなす */
@@ -131,6 +133,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     friendly: getFriendlyParams(data, mission, world.time_scale),
     storm: debugStormOff ? null : getStormParams(data, mission, world.time_scale),
     crew: getBoatCrewParams(data, mission.playerBoatId),
+    crewEffects: getBoatCrewEffects(data, mission.playerBoatId),
     destroyerSpec: {
       lengthM: enemyRecord.length_m,
       beamM: enemyRecord.beam_m,

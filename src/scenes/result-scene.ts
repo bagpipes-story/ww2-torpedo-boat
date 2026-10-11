@@ -56,6 +56,9 @@ export interface MissionResult {
   /** 乗員（v0.3.4）: 生存と定員（HP から決まる） */
   crewAlive: number;
   crewTotal: number;
+  /** v0.3.5: 乗員の減りによる旋回率の倍率と消火の長押し秒（Result の説明用） */
+  crewTurnFactor: number;
+  extinguishHoldS: number;
   /** 暴風（v0.3.4）: 任務にあるか、安全速力 kt、帯の中にいた秒、安全速力を超えていた秒、中の平均 kt（NaN なら入らず）、叩きつけの回数と被害 */
   stormEnabled: boolean;
   stormSafeKt: number;
@@ -135,6 +138,11 @@ export class ResultScene extends Phaser.Scene {
       else if (r.friendlyOutcome === FF_OUT_GAVE_UP) text = `味方機: 誤射 ${n} 回（識別なし）`;
       else text = `味方機: 識別の途中で終了（誤射 ${n} 回）`;
       line(text, HUD_FONT_HEADING_PX);
+    }
+    if (r.crewAlive < r.crewTotal) {
+      // 乗員が減ったときの影響（v0.3.5）: 旋回・加速の倍率、消火に要する長押し、帰投点（半分以下なら減る）
+      const pct = Math.round((1 - r.crewTurnFactor) * 100);
+      line(`乗員 ${r.crewTotal - r.crewAlive} 名死傷: 旋回・加速 −${pct}% ・ 消火 ${r.extinguishHoldS.toFixed(1)} 秒${score.survival > 0 && score.survival < 700 ? ' ・ 帰投点 半減（半数以下）' : ''}`, HUD_FONT_HEADING_PX);
     }
     if (r.stormEnabled) {
       // 暴風: 帯の中にいた秒と安全速力を超えていた秒（叩きつけの重さを調整する根拠）

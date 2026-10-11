@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getBoatCrewParams, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getStormParams, getVisibilityParams } from '../src/config/game-data';
+import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getBoatCrewEffects, getBoatCrewParams, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getStormParams, getVisibilityParams } from '../src/config/game-data';
 import { distanceToShallowsM } from '../src/core/shallows';
 import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
@@ -83,6 +83,7 @@ describe('game-data（data/*.json の読み出し）', () => {
     delete (noLimit.boats.boats.find((b) => b.id === 'us_elco80') as Record<string, unknown>)['sea_state_limit'];
     expect(() => getStormParams(noLimit, m, 5)).toThrow();
     expect(getBoatCrewParams(gameData, 'us_elco80')).toEqual({ total: 14, casualtiesPerHp: 0.1 });
+    expect(getBoatCrewEffects(gameData, 'us_elco80').minFactor).toBe(0.5);
   });
   it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
     const p = getScoringParams(gameData);

@@ -60,6 +60,7 @@ export class HudScene extends Phaser.Scene {
   /** 「識別」（v0.3.3）。任務に味方機がいるときだけ作る。残り秒の整数が変わったときだけ文字を組む */
   private identifyButton?: HoldButton;
   private lastIdentifyN = -1;
+  private lastHoldTenths = -1;
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
   private telemetry!: BoatTelemetry;
@@ -182,8 +183,15 @@ export class HudScene extends Phaser.Scene {
       this.smokeButton.setLabel(t.smokeLeftS > 0 ? '煙幕\n展開中' : t.smokeCooldownS > 0 ? `煙幕\n${Math.ceil(t.smokeCooldownS)}` : '煙幕');
       this.smokeButton.setEnabled(t.smokeLeftS <= 0 && t.smokeCooldownS <= 0);
     }
-    // 消火は火災中だけ使える（押せるが Mission が無視する。薄く表示）
-    this.extinguishButton?.setEnabled(t.onFire);
+    // 消火は火災中だけ使える（押せるが Mission が無視する。薄く表示）。火災中は要する長押し秒を出す（乗員が減ると伸びる。v0.3.5）
+    if (this.extinguishButton) {
+      this.extinguishButton.setEnabled(t.onFire);
+      const tenths = t.onFire ? Math.round(t.extinguishHoldS * 10) : 0;
+      if (tenths !== this.lastHoldTenths) {
+        this.lastHoldTenths = tenths;
+        this.extinguishButton.setLabel(tenths > 0 ? `消火\n${(tenths / 10).toFixed(1)}s` : '消火');
+      }
+    }
     if (this.identifyButton) {
       // 識別を求めている間（航過中でも真上を過ぎてから押した後は除く）だけ有効。残り秒は 5,4,3,2,1 で 0 は出さない
       const live = t.friendlyPhase === FF_CHALLENGE || (t.friendlyPhase === FF_STRAFE && !t.friendlyPending);

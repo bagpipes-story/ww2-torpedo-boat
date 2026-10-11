@@ -14,6 +14,8 @@ function input(over: Partial<ScoreInput>): ScoreInput {
 describe('スコア（docs/02 §6.9）', () => {
   it('data: 帰投 700・撃沈 300・命中 100 × 倍率（≤400yd 1.0 … ≥2000yd 3.0）・燃料 最大 100。帰投は撃沈＋最遠の命中（600）より大きい', () => {
     expect(P.returnedPoints).toBe(700);
+    expect(P.crewHalfRatio).toBe(0.5);
+    expect(P.crewHalfFactor).toBe(0.5);
     expect(P.returnedPoints).toBeGreaterThan(P.objectiveByType['intercept_destroyer']! + Math.round(P.hitBase * Math.max(...Object.values(P.hitRangeMultiplier))));
     expect(P.objectiveByType['intercept_destroyer']).toBe(300);
     expect(P.hitBase).toBe(100);
@@ -55,13 +57,21 @@ describe('スコア（docs/02 §6.9）', () => {
     const loose = { ...P, crewRequiresReturnedAndObjective: false };
     expect(computeScore(input({ returned: true, objectiveDone: false, crewAlive: 7, crewTotal: 14 }), loose).crew).toBe(50);
   });
+  it('v0.3.5 乗員が半分以下（14 名中 7 名以下）で帰投すると帰投点 350。8 名なら 700。定員 0 なら影響なし', () => {
+    expect(computeScore(input({ returned: true, crewAlive: 7, crewTotal: 14 }), P).survival).toBe(350);
+    expect(computeScore(input({ returned: true, crewAlive: 8, crewTotal: 14 }), P).survival).toBe(700);
+    expect(computeScore(input({ returned: true, crewAlive: 0, crewTotal: 0 }), P).survival).toBe(700);
+    expect(computeScore(input({ returned: false, crewAlive: 3, crewTotal: 14 }), P).survival).toBe(0);
+    // 撃沈して 5/14 で帰投: 350 + 300 + 100 + 0 + 36 = 786 は『外して帰投（無傷）』700 より上
+    expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }], crewAlive: 5, crewTotal: 14 }), P).total).toBe(786);
+  });
   it('順序はすべての距離帯で成り立つ: 帰投＋撃沈の最低点（燃料 0・5/14）> 外して帰投（11/14）= 直帰（14/14）= 700 > 沈めて死ぬ（最大 600）、慎重 > 捨て身', () => {
     for (const band of Object.keys(P.hitRangeMultiplier)) {
       const worstSunk = computeScore(input({ returned: true, objectiveDone: true, bands: [{ band, hits: 1, duds: 0 }], fuelLeftPct: 0, crewAlive: 5, crewTotal: 14 }), P).total;
       const missed = computeScore(input({ returned: true, fuelLeftPct: 40, crewAlive: 11, crewTotal: 14 }), P).total;
       const direct = computeScore(input({ returned: true, fuelLeftPct: 63, crewAlive: 14, crewTotal: 14 }), P).total;
       const died = computeScore(input({ objectiveDone: true, bands: [{ band, hits: 1, duds: 0 }], crewAlive: 14, crewTotal: 14 }), P).total;
-      expect(worstSunk).toBeGreaterThanOrEqual(1136);
+      expect(worstSunk).toBeGreaterThanOrEqual(786);
       expect(worstSunk).toBeGreaterThan(missed);
       expect(missed).toBe(700);
       expect(missed).toBe(direct);
