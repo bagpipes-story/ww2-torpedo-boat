@@ -72,9 +72,12 @@ export const HP_COLOR_LOW = 0xff8a7a;
 /** これ未満の HP 比率で色を警告に */
 export const HP_LOW_RATIO = 0.3;
 
-/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。バー＝残り（v0.3.2 で「要る燃料」の青い目盛りをやめた） */
+/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。バー＝残り、青い目盛り＝全速で帰投地点の輪まで戻るのに要る燃料（v0.3.3。v0.3.0〜v0.3.2 は巡航基準） */
 export const FUEL_GAUGE_OFFSET_Y = HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + HUD_TEXT_GAP;
 export const FUEL_COLOR_OK = 0xe0c060;
+/** 青い目盛りの幅・高さ（論理 px。HP バーの塗りのテクスチャをこの大きさに縮めて使う） */
+export const FUEL_TICK_WIDTH = 3;
+export const FUEL_TICK_HEIGHT = 18;
 export const FUEL_FLAGS_OFFSET_X = 120;
 /** 味方＝薄い青（docs/02 §7）。帰投地点の輪・帰投マーカー・燃料の目盛り */
 export const HOME_COLOR = 0x8fc8ff;
@@ -185,6 +188,27 @@ export const PINCH_BUTTON_COLUMN_X = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RA
 export const PINCH_MIN_DIST_PX = 40;
 /** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
 export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
+/**
+ * 「識別」ボタン（v0.3.3）: 右の見張り（中央）と魚雷（右下）の間。見張りの下端 408 と魚雷の上端 568 の中点（488）で、上下に 32 px ずつ隙間。
+ * 味方機が識別を求めている間だけ青く点滅し、残り秒を出す
+ */
+export const IDENTIFY_BUTTON_Y = (GAME_HEIGHT / 2 + ROUND_BUTTON_RADIUS + (GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2)) / 2;
+export const IDENTIFY_PULSE_HZ = 2.5;
+export const IDENTIFY_PULSE_ALPHA_MAX = 0.95;
+/** 味方機のプレースホルダー（上から見た十字。世界単位。味方＝薄い青）: 全長・翼幅・胴の幅・尾翼の幅 */
+export const AIRCRAFT_LENGTH_UNITS = 48;
+export const AIRCRAFT_SPAN_UNITS = 60;
+export const AIRCRAFT_BODY_UNITS = 7;
+export const AIRCRAFT_TAIL_SPAN_UNITS = 22;
+/** 識別の信号弾（星弾のテクスチャを流用）: 色、半径 m の始まり→終わり、寿命 実秒 */
+export const FLARE_TINT = 0x8cff8c;
+export const FLARE_RADIUS_FROM_M = 10;
+export const FLARE_RADIUS_TO_M = 40;
+export const FLARE_LIFETIME_S = 1.2;
+/** 掃射の着弾（水柱のプールを流用）: 間隔 実秒、機首のこの先に置く m、真上を過ぎてから続ける秒 */
+export const STRAFE_SPLASH_INTERVAL_S = 0.06;
+export const STRAFE_SPLASH_LEAD_M = 50;
+export const STRAFE_SPLASH_TAIL_S = 0.15;
 /** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */
 export const SMOKE_PUFF_TEX_RADIUS_UNITS = 64;
 export const SMOKE_PUFF_COLOR = 0x9aa4b0;

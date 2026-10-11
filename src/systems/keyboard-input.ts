@@ -1,4 +1,4 @@
-// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り）。
+// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
 // 方向キーはスティックに触れている間は無視する。
 import Phaser from 'phaser';
 import type { InputState } from '../core/input-state';
@@ -21,6 +21,7 @@ interface Keys {
   shift: Phaser.Input.Keyboard.Key;
   x: Phaser.Input.Keyboard.Key;
   z: Phaser.Input.Keyboard.Key;
+  f: Phaser.Input.Keyboard.Key;
 }
 
 export class KeyboardInput {
@@ -49,6 +50,7 @@ export class KeyboardInput {
           shift: Phaser.Input.Keyboard.KeyCodes.SHIFT,
           x: Phaser.Input.Keyboard.KeyCodes.X,
           z: Phaser.Input.Keyboard.KeyCodes.Z,
+          f: Phaser.Input.Keyboard.KeyCodes.F,
         }) as Keys)
       : null;
   }
@@ -64,6 +66,7 @@ export class KeyboardInput {
     const k = this.keys;
     if (Phaser.Input.Keyboard.JustDown(k.space)) this.input.fireTap = true;
     if (Phaser.Input.Keyboard.JustUp(k.shift)) this.input.smokeTap = true;
+    if (Phaser.Input.Keyboard.JustDown(k.f)) this.input.identifyTap = true;
     if (Phaser.Input.Keyboard.JustDown(k.x)) {
       this.input.extinguishHeld = true;
       this.kbExtinguish = true;

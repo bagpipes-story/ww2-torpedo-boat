@@ -82,7 +82,7 @@ export interface BoatTelemetry {
   hiddenBySmoke: boolean;
   /** ワールドカメラの論理ズーム（見張りで下がる。画面外マーカーの計算用） */
   cameraZoom: number;
-  /** 燃料（v0.3.0）: 残り ÷ 割当、巡航で帰投地点の輪の縁まで戻るのに要る分 ÷ 割当（輪の中は 0）、空（漂流） */
+  /** 燃料（v0.3.0）: 残り ÷ 割当、全速で帰投地点の輪の縁まで戻るのに要る分 ÷ 割当（輪の中は 0。v0.3.3 で巡航基準から全速基準に。燃料計の青い目盛り）、空（漂流） */
   fuel01: number;
   fuelNeed01: number;
   fuelEmpty: boolean;
@@ -100,6 +100,12 @@ export interface BoatTelemetry {
   shallowState: number;
   shallowAheadM: number;
   shallowSafeKt: number;
+  /** 味方機（core/friendly の FF_*、v0.3.3）: 段階、識別の残り秒（要求中以外は NaN）、撃たれた回数、結果、真上を過ぎてから押した */
+  friendlyPhase: number;
+  friendlyLeftS: number;
+  friendlyPasses: number;
+  friendlyOutcome: number;
+  friendlyPending: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

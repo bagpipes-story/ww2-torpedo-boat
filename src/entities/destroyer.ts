@@ -6,17 +6,9 @@ import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-moti
 import { createShipAiState, steerShip, turnRateFor, updateShipAi, type ShipAiMode, type ShipAiParams, type ShipAiState } from '../core/ship-ai';
 import type { TorpedoState } from '../core/torpedo';
 import { boatTouchesHull, createCircles, fillHullCircles, type Circle } from '../core/torpedo-solver';
+import type { DestroyerSpec } from '../systems/world-setup';
 
-export interface DestroyerSpec {
-  lengthM: number;
-  beamM: number;
-  hullCircles: number;
-  hitsToSink: number;
-  /** 当たり判定に使う寸法の倍率（data: world.hit_scale。1=実寸） */
-  hitScale: number;
-  /** 海域境界から押し戻す余白 m（表示上の船体半分） */
-  boundsMarginM: number;
-}
+export type { DestroyerSpec };
 
 export class Destroyer {
   readonly sprite: Phaser.GameObjects.Image;
