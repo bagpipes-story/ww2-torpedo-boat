@@ -22,10 +22,11 @@ export class PlayerBoat {
   }
 
   /** 物理ステップ後に 1 回呼ぶ。方位角 0=北=上、時計回り。テクスチャは船首が上なので angle にそのまま渡せる。沈没演出中は tween に任せる */
-  syncSprite(): void {
+  syncSprite(rollDeg: number = 0): void {
     if (this.sinking) return;
     this.sprite.setPosition(this.state.x, this.state.y);
-    this.sprite.setAngle(this.state.headingDeg);
+    // rollDeg は暴風の横揺れ（見た目だけ。針路は変えない。v0.3.4）
+    this.sprite.setAngle(this.state.headingDeg + rollDeg);
   }
 
   /** 沈没演出（駆逐艦と同じ: 縮みながら傾いて消える）。終わったら onDone。1 回だけ tween を作る */

@@ -19,15 +19,18 @@ import {
   HIT_SHAKE_MS,
   MISSION_END_DELAY_MS,
   RUDDER_BAR_FULL_DEG,
+  STORM_SLAM_SHAKE_INTENSITY,
+  STORM_SLAM_SHAKE_MS,
   ZOOM_LERP,
 } from '../config/ui-config';
 import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
+import { crewAlive } from '../core/crew';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
+import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
 import { clamp, degToRad, mpsToKt } from '../core/units';
-import { playerVisRangeM } from '../core/visibility';
 import { ReturnPointView } from '../entities/return-point';
 import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
@@ -95,6 +98,11 @@ export class MissionScene extends Phaser.Scene {
       this.shakeCamera();
     },
     onBoatSunk: (reason) => this.endMission(reason),
+    onSlam: () => {
+      // 波の叩きつけ: 水しぶきは世界が出す。ここは弱い揺れだけ（進行中の揺れは上書きしない）
+      const z = this.cameras.main.zoom;
+      this.cameras.main.shake(STORM_SLAM_SHAKE_MS, STORM_SLAM_SHAKE_INTENSITY / (z * z));
+    },
     onGrounded: (x, y) => {
       // 座礁: 小さな衝撃の輪と弱い揺れ。終了は decideMissionEnd（adriftDelayS 後）
       playExplosion(this, x, y, true);
@@ -182,6 +190,14 @@ export class MissionScene extends Phaser.Scene {
       friendlyPasses: 0,
       friendlyOutcome: FF_OUT_NONE,
       friendlyPending: false,
+      stormState: w.storm ? w.storm.status.state : STORM_NONE,
+      stormGapM: w.storm ? w.storm.status.gapM : 0,
+      stormNorth: w.storm ? w.storm.status.north : true,
+      stormFast: w.storm ? w.storm.status.fast : false,
+      stormLos: false,
+      stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
+      crewAlive: w.setup.crew.total,
+      crewTotal: w.setup.crew.total,
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshReturnState(0);
@@ -219,7 +235,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateLookAhead();
     const enemyAlive = w.destroyer.sinking ? null : w.destroyer.state;
     this.leadMarker?.refresh(w.boat.state, enemyAlive, w.torpedoParams.speedMps);
-    this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, playerVisRangeM(w.vis));
+    this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, Math.sqrt(w.visRange2));
 
     this.elapsedS += realDt;
     // 夜明けの時計は固定ステップで実際に進んだ時間（低フレームレートで捨てた時間は数えない。移動と燃料に揃える）
@@ -319,8 +335,8 @@ export class MissionScene extends Phaser.Scene {
     t.hp = w.damage.hp;
     t.onFire = w.damage.fireLeftS > 0 && w.damage.hp > 0;
     t.engineDamaged = w.damage.engineDamaged;
-    t.smokeLeftS = w.smokeLeftS;
-    t.smokeCooldownS = w.smokeCooldownS;
+    t.smokeLeftS = w.smoke ? Math.max(0, w.smoke.activeLeftS) : 0;
+    t.smokeCooldownS = w.smoke ? Math.max(0, w.smoke.cooldownLeftS) : 0;
     t.hiddenBySmoke = w.hiddenBySmoke;
     t.cameraZoom = this.zoom;
     t.fuel01 = w.fuelAllotmentGal > 0 ? w.fuel.gal / w.fuelAllotmentGal : 0;
@@ -339,6 +355,16 @@ export class MissionScene extends Phaser.Scene {
     t.friendlyPasses = f ? f.passes : 0;
     t.friendlyOutcome = f ? f.outcome : FF_OUT_NONE;
     t.friendlyPending = f ? f.pending : false;
+    // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
+    const st = w.storm;
+    if (st) {
+      t.stormState = st.status.state;
+      t.stormGapM = st.status.gapM;
+      t.stormNorth = st.status.north;
+      t.stormFast = st.status.fast;
+      t.stormLos = st.state.los;
+    }
+    t.crewAlive = crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp);
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
@@ -386,6 +412,15 @@ export class MissionScene extends Phaser.Scene {
       friendlyPasses: w.friendly ? w.friendly.state.passes : 0,
       friendlyReactS: w.friendly ? w.friendly.state.reactS : NaN,
       friendlyPeriodS: w.friendly ? w.friendly.state.reactPeriodS : NaN,
+      crewAlive: crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp),
+      crewTotal: w.setup.crew.total,
+      stormEnabled: w.storm !== null,
+      stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
+      stormInsideS: w.storm ? w.storm.state.insideS : 0,
+      stormOverS: w.storm ? w.storm.state.overS : 0,
+      stormMeanKt: w.storm ? meanInsideKt(w.storm.state) : NaN,
+      stormSlams: w.storm ? w.storm.state.slams : 0,
+      stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
     };
     this.scene.start(SCENE_KEYS.result, result);
   }

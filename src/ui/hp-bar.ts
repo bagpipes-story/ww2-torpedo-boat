@@ -1,7 +1,7 @@
-// 艇の HP バー（左上、FPS と表示サイズの下。docs/02 §6.6）。§7: バーは拡縮だけ、文字は値が変わったときだけ setText。
+// 艇の HP バー（左上、FPS と表示サイズの下。docs/02 §6.6）と乗員（バーの右。v0.3.4。減ると 1.5 秒「-N」）。§7: バーは拡縮だけ、文字は値が変わったときだけ setText。
 import Phaser from 'phaser';
 import { DEPTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { HP_BAR_OFFSET_Y, HP_COLOR_LOW, HP_COLOR_OK, HP_FONT_PX, HP_LOW_RATIO, HUD_COLOR_WARN, HUD_TEXT_GAP, hudTextStyle } from '../config/ui-config';
+import { CREW_LOSS_FLASH_MS, CREW_TEXT_OFFSET_X, HP_BAR_HEIGHT, HP_BAR_OFFSET_Y, HP_COLOR_LOW, HP_COLOR_OK, HP_FONT_PX, HP_LOW_RATIO, HUD_COLOR, HUD_COLOR_WARN, HUD_TEXT_GAP, hudTextStyle } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 /** ラベル「艇 HP 100」の右に出す被害表示の x オフセット（論理 px） */
@@ -12,6 +12,12 @@ export class HpBar {
   private readonly fill: Phaser.GameObjects.Image;
   private readonly label: Phaser.GameObjects.Text;
   private readonly flags: Phaser.GameObjects.Text;
+  private readonly crew: Phaser.GameObjects.Text;
+  private lastCrewText = '';
+  private lastCrewWarn = false;
+  private lastCrewAlive = -1;
+  private flashLost = 0;
+  private flashUntil = 0;
   private lastHp = -1;
   private lastLow = false;
   private lastFlags = -1;
@@ -24,9 +30,11 @@ export class HpBar {
     const barY = y + HP_FONT_PX + HUD_TEXT_GAP;
     this.bg = scene.add.image(x, barY, TEXTURE_KEYS.hpBarBg).setOrigin(0, 0).setScale(1 / RENDER_SCALE).setDepth(DEPTH.hud);
     this.fill = scene.add.image(x, barY, TEXTURE_KEYS.hpBarFill).setOrigin(0, 0).setScale(1 / RENDER_SCALE).setDepth(DEPTH.hud + 1).setTint(HP_COLOR_OK);
+    this.crew = scene.add.text(x + CREW_TEXT_OFFSET_X, barY + HP_BAR_HEIGHT / 2, '', hudTextStyle(HP_FONT_PX)).setOrigin(0, 0.5).setDepth(DEPTH.hud);
   }
 
-  refresh(t: BoatTelemetry): void {
+  /** nowMs は scene.time.now（減ったときの「-N」の表示時間に使う） */
+  refresh(t: BoatTelemetry, nowMs: number): void {
     const hp = Math.ceil(t.hp);
     if (hp !== this.lastHp) {
       this.lastHp = hp;
@@ -44,6 +52,23 @@ export class HpBar {
       this.lastFlags = flags;
       this.flags.setText(flags === 0 ? '' : flags === 1 ? '火災！' : flags === 2 ? '機関損傷' : '火災！ 機関損傷');
     }
+    // 乗員: 減った瞬間から CREW_LOSS_FLASH_MS は「-N」を付ける（表示中にさらに減れば足す）
+    if (this.lastCrewAlive >= 0 && t.crewAlive < this.lastCrewAlive) {
+      this.flashLost = (nowMs < this.flashUntil ? this.flashLost : 0) + (this.lastCrewAlive - t.crewAlive);
+      this.flashUntil = nowMs + CREW_LOSS_FLASH_MS;
+    }
+    this.lastCrewAlive = t.crewAlive;
+    const flashing = nowMs < this.flashUntil;
+    const crewText = `乗員 ${t.crewAlive}/${t.crewTotal}${flashing ? ` -${this.flashLost}` : ''}`;
+    if (crewText !== this.lastCrewText) {
+      this.lastCrewText = crewText;
+      this.crew.setText(crewText);
+    }
+    const crewWarn = t.crewAlive < t.crewTotal;
+    if (crewWarn !== this.lastCrewWarn) {
+      this.lastCrewWarn = crewWarn;
+      this.crew.setColor(crewWarn ? HUD_COLOR_WARN : HUD_COLOR);
+    }
   }
 
   destroy(): void {
@@ -51,5 +76,6 @@ export class HpBar {
     this.fill.destroy();
     this.label.destroy();
     this.flags.destroy();
+    this.crew.destroy();
   }
 }

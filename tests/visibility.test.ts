@@ -64,6 +64,12 @@ describe('発見距離と視程', () => {
     expect(silent).toBeCloseTo(1000, 6);
     expect(full).toBeCloseTo(3200, 6);
   });
+  it('雨の係数（暴風、v0.3.4）: 第 5 引数で発見距離が掛かる。煙と雨で積。既定引数なら従来どおり', () => {
+    const vis: VisibilityParams = { visPlayerBaseM: 1500, moonFactor: 1, speedFactor: V.speed_factor, smokeFactor: V.smoke_factor, detectHoldS: 8, detectionMultiplier: 1 };
+    expect(enemyDetectRangeM(2000, 1, vis, false, 0.5)).toBeCloseTo(1000, 6);
+    expect(enemyDetectRangeM(2000, 1, vis, true, 0.5)).toBeCloseTo(2000 * V.smoke_factor * 0.5, 6);
+    expect(enemyDetectRangeM(2000, 1, vis, false)).toBeCloseTo(2000, 6);
+  });
   it('煙幕と史実モード倍率が掛かる', () => {
     const f = speedFactorFor(P.speedCruiseMps, P, V.speed_factor);
     expect(enemyDetectRangeM(2500, f, vis, true)).toBeCloseTo(2500 * V.smoke_factor, 6);

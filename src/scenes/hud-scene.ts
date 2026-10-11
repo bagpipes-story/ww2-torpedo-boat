@@ -170,7 +170,7 @@ export class HudScene extends Phaser.Scene {
   override update(): void {
     this.keyboard?.update();
     this.boatHud?.refresh(this.telemetry);
-    this.hpBar?.refresh(this.telemetry);
+    this.hpBar?.refresh(this.telemetry, this.time.now);
     this.fuelGauge?.refresh(this.telemetry);
     this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
     this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);

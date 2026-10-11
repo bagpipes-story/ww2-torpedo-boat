@@ -106,6 +106,16 @@ export interface BoatTelemetry {
   friendlyPasses: number;
   friendlyOutcome: number;
   friendlyPending: boolean;
+  /** 暴風（core/storm の STORM_*、v0.3.4）: 状態、縁までの距離 m、帯が北にある、安全速力を超えている、艦との線が帯にかかる（雨）、安全速力 kt */
+  stormState: number;
+  stormGapM: number;
+  stormNorth: boolean;
+  stormFast: boolean;
+  stormLos: boolean;
+  stormSafeKt: number;
+  /** 乗員（v0.3.4）: 生存と定員 */
+  crewAlive: number;
+  crewTotal: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

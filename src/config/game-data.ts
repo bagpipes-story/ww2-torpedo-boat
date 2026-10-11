@@ -16,6 +16,8 @@ import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
 import { groundingParamsFromData, isGroundingDataRecord, isShallowRectDataRecord, shallowsFromData, type GroundingParams, type ShallowRect } from '../core/shallows';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
+import { isStormDataRecord, isStormMissionBlock, stormParamsFromData, type StormMissionBlock, type StormParams } from '../core/storm';
+import { crewParamsFromData, isBoatCrewDataRecord, type CrewParams } from '../core/crew';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
 
@@ -64,6 +66,8 @@ export interface PrototypeMission {
   shallows: ShallowRect[];
   /** 味方機（友軍誤射。docs/02 §6.8、v0.3.3）: 輪の縁からこの距離以内で開始条件を数える。無ければ来ない */
   friendlyAircraft: { triggerEdgeM: number } | null;
+  /** 暴風の帯（docs/02 §6.8、v0.3.4）: 海況・帯の幅・速さ・始まりの範囲。無ければ帯は無い */
+  storm: StormMissionBlock | null;
 }
 
 function isNum(v: unknown): v is number {
@@ -122,6 +126,12 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     if (sdx * sdx + sdy * sdy <= zone * zone) throw new Error(`${missionId}: 出発点が味方機の開始距離（friendly_aircraft.trigger_edge_m）の内側にある`);
     friendlyAircraft = { triggerEdgeM: t };
   }
+  const stormRaw = proto['storm'];
+  let storm: StormMissionBlock | null = null;
+  if (stormRaw !== undefined) {
+    if (!isStormMissionBlock(stormRaw)) throw new Error(`${missionId}.v0_1_prototype.storm（sea_state/depth_m/drift_kt/start_south_y_min_m/start_south_y_max_m）が欠けている（docs/02 §6.8）`);
+    storm = stormRaw;
+  }
   return {
     id: missionId,
     type,
@@ -138,6 +148,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     fuelAllotmentGal,
     shallows,
     friendlyAircraft,
+    storm,
   };
 }
 
@@ -221,6 +232,24 @@ export function getFriendlyParams(data: GameData, mission: PrototypeMission, tim
   const f = data.riskEvents.events.find((e) => e.id === 'friendly_fire');
   if (!f || !isFriendlyFireDataRecord(f)) throw new Error('risk_events.json の friendly_fire に params（window_s ほか）が無い（docs/02 §6.8）');
   return friendlyParamsFromData(f, mission.friendlyAircraft.triggerEdgeM, mission.returnPoint.radiusM, timeScale);
+}
+
+/** risk_events.json の storm.params と任務の storm（docs/02 §6.8、v0.3.4）。任務に storm が無ければ null。艇の sea_state_limit が無ければ例外 */
+export function getStormParams(data: GameData, mission: PrototypeMission, timeScale: number): StormParams | null {
+  if (!mission.storm) return null;
+  const rec = data.riskEvents.events.find((e) => e.id === 'storm');
+  if (!rec || !isStormDataRecord(rec)) throw new Error('risk_events.json の storm に params（safe_speed_kt ほか）が無い（docs/02 §6.8）');
+  const boat = getBoatRecord(data, mission.playerBoatId) as unknown as Record<string, unknown>;
+  const limit = boat['sea_state_limit'];
+  if (!isNum(limit)) throw new Error(`boats.json の ${mission.playerBoatId}.sea_state_limit が無い（docs/02 §6.8）`);
+  return stormParamsFromData(rec, mission.storm, { speedMaxKt: boat['speed_max_kt'] as number, seaStateLimit: limit }, timeScale, mission.bounds, mission.playerStart.y);
+}
+
+/** boats.json の乗員（定員と HP あたりの死傷率。docs/02 §6.6、v0.3.4） */
+export function getBoatCrewParams(data: GameData, boatId: string): CrewParams {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json の ${boatId} に crew / hull_hp / damage.casualties_per_hp が無い（docs/02 §6.6）`);
+  return crewParamsFromData(b);
 }
 
 /** 任務に積む燃料 gal。?debug&fuel= の上書きがあれば艇の容量で頭打ちにして使う（MissionWorld と HUD の表示で同じ値になるようここで決める） */

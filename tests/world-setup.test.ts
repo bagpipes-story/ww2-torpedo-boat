@@ -26,6 +26,15 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.friendly!.windowS).toBe(5);
     expect(s.friendly!.triggerEdgeM).toBe(2600);
   });
+  it('暴風と乗員: s.storm は 18 kt・800 m・発見 0.5、s.crew は 14 名。第 5 引数 true（?debug&nostorm）なら storm は null', () => {
+    const s = buildWorldSetup(gameData, 'us_02', NaN, NaN);
+    expect(s.storm).not.toBeNull();
+    expect(s.storm!.safeSpeedKt).toBe(18);
+    expect(s.storm!.depthM).toBe(800);
+    expect(s.storm!.detectFactor).toBe(0.5);
+    expect(s.crew.total).toBe(14);
+    expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, true).storm).toBeNull();
+  });
   it('friendly_aircraft が無い任務なら friendly は null', () => {
     const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
     const proto = (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as { v0_1_prototype: Record<string, unknown> }).v0_1_prototype;
