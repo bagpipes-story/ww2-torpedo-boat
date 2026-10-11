@@ -10,11 +10,12 @@ import {
   REGISTRY_KEY_TELEMETRY,
   RENDER_SCALE,
   SCENE_KEYS,
+  TEXTURE_KEYS,
 } from '../config/game-config';
 import { getGameData } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
-import { ROUND_BUTTON_RADIUS } from '../config/ui-config';
+import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { TorpedoButton } from '../systems/torpedo-button';
@@ -22,14 +23,17 @@ import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
 import { HpBar } from '../ui/hp-bar';
-import { TargetMarker } from '../ui/target-marker';
+import { EdgeMarker } from '../ui/edge-marker';
+import { FuelGauge } from '../ui/fuel-gauge';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
   private debugHud?: DebugHud;
   private boatHud?: BoatHud;
   private hpBar?: HpBar;
-  private targetMarker?: TargetMarker;
+  private targetMarker?: EdgeMarker;
+  private homeMarker?: EdgeMarker;
+  private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
   private smokeButton?: HoldButton;
@@ -55,7 +59,10 @@ export class HudScene extends Phaser.Scene {
     });
     this.boatHud = new BoatHud(this);
     this.hpBar = new HpBar(this);
-    this.targetMarker = new TargetMarker(this);
+    this.fuelGauge = new FuelGauge(this);
+    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
+    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, topMargin: TARGET_MARKER_TOP_MARGIN });
+    this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
@@ -92,6 +99,8 @@ export class HudScene extends Phaser.Scene {
       this.smokeButton?.destroy();
       this.lookoutButton?.destroy();
       this.targetMarker?.destroy();
+      this.homeMarker?.destroy();
+      this.fuelGauge?.destroy();
       this.boatHud?.destroy();
       this.hpBar?.destroy();
       this.debugHud?.destroy();
@@ -100,6 +109,8 @@ export class HudScene extends Phaser.Scene {
       this.smokeButton = undefined;
       this.lookoutButton = undefined;
       this.targetMarker = undefined;
+      this.homeMarker = undefined;
+      this.fuelGauge = undefined;
       this.boatHud = undefined;
       this.hpBar = undefined;
       this.debugHud = undefined;
@@ -111,7 +122,9 @@ export class HudScene extends Phaser.Scene {
     this.keyboard?.update();
     this.boatHud?.refresh(this.telemetry);
     this.hpBar?.refresh(this.telemetry);
-    this.targetMarker?.refresh(this.telemetry);
+    this.fuelGauge?.refresh(this.telemetry);
+    this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
+    this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;

@@ -66,14 +66,35 @@ export const HP_COLOR_LOW = 0xff8a7a;
 /** これ未満の HP 比率で色を警告に */
 export const HP_LOW_RATIO = 0.3;
 
+/** 燃料計（左上、HP バーの下。docs/02 §6.7）。HP バーのテクスチャを流用。青い目盛り＝巡航で帰投地点まで戻るのに要る燃料 */
+export const FUEL_GAUGE_OFFSET_Y = HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + HUD_TEXT_GAP;
+export const FUEL_COLOR_OK = 0xe0c060;
+export const FUEL_TICK_WIDTH = 3;
+export const FUEL_TICK_HEIGHT = 18;
+export const FUEL_FLAGS_OFFSET_X = 120;
+/** 味方＝薄い青（docs/02 §7）。帰投地点の輪・帰投マーカー・燃料の目盛り */
+export const HOME_COLOR = 0x8fc8ff;
+export const HOME_COLOR_TEXT = '#8fc8ff';
+/** 帰投地点の輪（世界単位 × RENDER_SCALE のテクスチャを半径へ拡縮）。線幅・内側の塗り・濃さ・点滅 */
+export const RETURN_RING_TEX_RADIUS_UNITS = 128;
+export const RETURN_RING_LINE_WIDTH = 4;
+export const RETURN_RING_FILL_ALPHA = 0.08;
+export const RETURN_RING_ALPHA = 0.7;
+export const RETURN_RING_PULSE_ALPHA = 0.3;
+export const RETURN_RING_PULSE_MS = 600;
+export const HOME_LABEL_FONT_PX = 28;
+export const HOME_MARKER_DISTANCE_STEP_M = 100;
+
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
 export const TARGET_MARKER_SIZE = 18;
 export const TARGET_MARKER_DISTANCE_STEP_M = 50;
 export const TARGET_MARKER_COLOR = 0xe08a8a;
 export const HUD_FONT_MARKER_PX = 18;
-/** 上端だけは上中央の HUD 3 行（ビルド番号・残り時間・敵影/発見）と左上の HP バーに重ならないよう広く取る（HP バーの下端＋三角の半分＋余白） */
-export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + HP_BAR_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + TARGET_MARKER_SIZE / 2 + 8;
+/** 上端だけは上中央の HUD 3 行（ビルド番号・夜明けまで・敵影/発見）と左上の HP バー・燃料計に重ならないよう広く取る（燃料計の下端＋三角の半分＋余白） */
+export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + FUEL_GAUGE_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT + TARGET_MARKER_SIZE / 2 + 8;
+/** 帰投マーカーはラベルを矢印の上に置くので、その分さらに下げる */
+export const HOME_MARKER_TOP_MARGIN = TARGET_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
 
 /** Result で誤タップを拾わないよう入力を受け付けるまでの待ち（ms）とレイアウト */
 export const RESULT_INPUT_DELAY_MS = 400;

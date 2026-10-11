@@ -7,6 +7,8 @@ import hitRateModel from '../../data/hit_rate_model.json';
 import riskEvents from '../../data/risk_events.json';
 import missionsSeed from '../../data/missions_seed.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
+import { fuelCurveFromData, isBoatFuelDataRecord, type FuelCurve } from '../core/fuel';
+import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '../core/mission-flow';
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
@@ -47,6 +49,10 @@ export interface PrototypeMission {
   enemyHitsToSink: number | null;
   /** 月齢（ミッション本体の moon。視界係数に使う。docs/02 §6.5） */
   moon: MoonPhase;
+  /** 帰投地点の輪（docs/02 §6.7、v0.3.0）。出発点は輪の外 */
+  returnPoint: ReturnPoint;
+  /** 戦闘に使える燃料の割当 gal（満タンではない。docs/02 §6.7） */
+  fuelAllotmentGal: number;
 }
 
 function isNum(v: unknown): v is number {
@@ -80,17 +86,29 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   if (typeof torpedoId !== 'string') throw new Error(`${missionId}.torpedo_type が無い`);
   const moon = m['moon'];
   if (!isMoonPhase(moon)) throw new Error(`${missionId}.moon が dark/half/full のどれでもない（${String(moon)}。昼は v0.6 で扱う）`);
+  const b = { width: bounds['width'], height: bounds['height'] };
+  const playerStart = readStart(proto['player_start'], `${missionId}.v0_1_prototype.player_start`);
+  const rp = proto['return_point'];
+  if (!isReturnPointDataRecord(rp)) throw new Error(`${missionId}.v0_1_prototype.return_point（x_m/y_m/radius_m/call_margin/torpedo_settle_max_s）が無い（docs/02 §6.7）`);
+  const returnPoint = returnPointFromData(rp, b);
+  const sdx = playerStart.x - returnPoint.x;
+  const sdy = playerStart.y - returnPoint.y;
+  if (sdx * sdx + sdy * sdy <= returnPoint.radiusM * returnPoint.radiusM) throw new Error(`${missionId}: 出発点が帰投地点の輪の中にある`);
+  const fuelAllotmentGal = proto['fuel_allotment_gal'];
+  if (!isNum(fuelAllotmentGal) || !(fuelAllotmentGal > 0)) throw new Error(`${missionId}.v0_1_prototype.fuel_allotment_gal は正の数（docs/02 §6.7）`);
   return {
     id: missionId,
     playerBoatId,
     torpedoId,
     enemyId,
-    bounds: { width: bounds['width'], height: bounds['height'] },
-    playerStart: readStart(proto['player_start'], `${missionId}.v0_1_prototype.player_start`),
+    bounds: b,
+    playerStart,
     enemyStart: readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`),
     durationS: proto['duration_s'],
     enemyHitsToSink: isNum(proto['enemy_hits_to_sink']) ? proto['enemy_hits_to_sink'] : null,
     moon,
+    returnPoint,
+    fuelAllotmentGal,
   };
 }
 
@@ -159,6 +177,13 @@ export function getBoatSmokeParams(data: GameData, boatId: string): SmokeParams 
   const b = data.boats.boats.find((x) => x.id === boatId);
   if (!b || !isBoatSmokeDataRecord(b)) throw new Error(`boats.json の ${boatId} に smoke_generator / smoke.* が無い（docs/02 §5）`);
   return smokeParamsFromData(b);
+}
+
+/** boats.json の燃料曲線（fuel_capacity_gal・fuel_hours_*・fuel_idle_ratio・速力。docs/02 §6.7）。欠けていれば例外 */
+export function getBoatFuelCurve(data: GameData, boatId: string): FuelCurve {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatFuelDataRecord(b)) throw new Error(`boats.json の ${boatId} に fuel_capacity_gal / fuel_hours_* / fuel_idle_ratio が無い（docs/02 §6.7）`);
+  return fuelCurveFromData(b);
 }
 
 /** boats.json の被害パラメータ（hull_hp と damage.*） */

@@ -1,10 +1,11 @@
-// 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・駆逐艦・魚雷・反撃・煙幕・被害を持ち、固定ステップで進める。
+// 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・駆逐艦・魚雷・反撃・煙幕・被害・燃料（v0.3.0）を持ち、固定ステップで進める。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。世界で起きたことは WorldEvents で Scene に伝える（引数はプリミティブ）。
 // §7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
 import {
   getBoatDamageParams,
+  getBoatFuelCurve,
   getBoatRecord,
   getBoatSmokeParams,
   getBoatTorpedoCount,
@@ -21,11 +22,14 @@ import {
   clampToBounds,
   nextSpeedBand,
   stepBoat,
+  type BoatInput,
   type BoatParams,
   type SeaBounds,
   type SpeedStep,
 } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
+import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
+import { insideRing, type ReturnPoint } from '../core/mission-flow';
 import { applyShellHit, createDamageState, gunneryParamsFromData, stepDamage, type DamageParams, type DamageState, type GunneryParams, type HitOutcome } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
@@ -36,17 +40,20 @@ import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams }
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
-import type { MissionEndReason } from '../scenes/result-scene';
+import type { MissionEndReason } from '../core/mission-flow';
 import { EnemyFire } from './enemy-fire';
 import { SmokeScreen } from './smoke-screen';
 import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
 
+/** 燃料切れの漂流: 舵は効かず、目標速度 0 で惰性のまま止まる（params.speedMaxMps は機関損傷が書くので触らない） */
+const DRIFT_INPUT: BoatInput = { headingDeg: NaN, speed01: 0 };
+
 /** 世界で起きたことの通知。演出（爆発・揺れ・スロー）と終了は Scene が決める */
 export interface WorldEvents {
   /** 魚雷が命中（不発含む）。不発でなければ hits は増えている */
   onTorpedoHit(x: number, y: number, dud: boolean): void;
-  /** 駆逐艦の沈没演出が終わった */
+  /** 駆逐艦の沈没演出が終わった（任務は続く。走っていた魚雷は外れとして確定済み） */
   onDestroyerSunk(): void;
   /** 砲弾が命中。small は演出を弱くする目安、destroyed なら続けて onBoatSinking が来る */
   onShellHit(x: number, y: number, small: boolean, destroyed: boolean): void;
@@ -64,8 +71,19 @@ export class MissionWorld {
   readonly enemyFire: EnemyFire;
   readonly params: BoatParams;
   readonly bounds: SeaBounds;
-  /** 任務の制限時間（実時間秒） */
+  /** 夜明けまでの実時間秒（任務の制限時間） */
   readonly durationS: number;
+  /** 帰投地点の輪と燃料（docs/02 §6.7） */
+  readonly returnPoint: ReturnPoint;
+  readonly fuelCurve: FuelCurve;
+  readonly fuel: FuelState;
+  readonly fuelAllotmentGal: number;
+  /** 自艇が帰投地点の輪の中にいる（固定ステップで距離の二乗で判定） */
+  atHome = false;
+  /** 固定ステップで実際に進んだ実秒（夜明けの時計。低フレームレートで捨てた時間は数えない＝移動・燃料と揃う） */
+  stepTimeS = 0;
+  /** 初めて魚雷を撃ったときの燃料 gal（未発射なら NaN。Result に出す） */
+  fuelAtFirstLaunchGal = NaN;
   readonly vis: VisibilityParams;
   readonly torpedoParams: TorpedoParams;
   readonly damage: DamageState;
@@ -123,10 +141,14 @@ export class MissionWorld {
     const factor = this.slowMoLeftS > 0 ? this.slowMoFactor : 1;
     const feelDt = realDt * factor;
     const dt = feelDt * this.timeScale;
+    this.stepTimeS += realDt;
     const boat = this.boat.state;
     if (!this.boat.sinking) {
-      stepBoat(boat, this.input, this.params, dt);
+      // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分するので、距離あたりの消費はステップ幅・スローに依らない
+      stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
       clampToBounds(boat, this.bounds, this.boundsMarginM);
+      stepFuel(this.fuel, this.fuelCurve, boat.speedMps, dt);
+      this.atHome = insideRing(this.returnPoint, boat.x, boat.y);
     }
     const d = this.destroyer;
     // 煙幕: 展開中は艇尾に煙を置き、艦→艇の視線が遮られていれば隠れている（docs/02 §6.5）
@@ -167,6 +189,11 @@ export class MissionWorld {
     this.params = boatParamsFromData(boatRecord);
     this.bounds = mission.bounds;
     this.durationS = mission.durationS;
+    this.returnPoint = mission.returnPoint;
+    this.fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
+    if (mission.fuelAllotmentGal > this.fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
+    this.fuelAllotmentGal = mission.fuelAllotmentGal;
+    this.fuel = createFuelState(mission.fuelAllotmentGal);
     this.boundsMarginM = (boatRecord.length_m * world.sprite_scale) / 2;
     this.boatHalfLengthM = (boatRecord.length_m * world.hit_scale) / 2;
     this.boatHalfBeamM = (boatRecord.beam_m * world.hit_scale) / 2;
@@ -227,9 +254,12 @@ export class MissionWorld {
   /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
   updateFrame(realDt: number): void {
     if (!this.boat.sinking) {
-      this.consumeFireInput();
+      // 駆逐艦が沈み始めた後と帰投地点の輪の中では新しい発射はしない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
+      if (this.destroyer.sinking || this.atHome) this.discardFireInput();
+      else this.consumeFireInput();
       this.consumeSmokeInput(realDt);
       this.launcher.update(realDt, this.boat.state, this.destroyer.state);
+      if (Number.isNaN(this.fuelAtFirstLaunchGal) && this.torpedoes.remaining < this.torpedoes.capacity) this.fuelAtFirstLaunchGal = this.fuel.gal;
     }
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
@@ -238,6 +268,11 @@ export class MissionWorld {
     this.torpedoes.updateVisuals(realDt);
     this.enemyFire.updateVisuals(realDt, this.destroyer.state);
     if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
+  }
+
+  /** 走っている魚雷か発射待ちがある（帰投の輪の中で決着を待つ判定に使う） */
+  get torpedoesRunning(): boolean {
+    return this.torpedoes.unresolvedCount > 0 || this.launcher.queued > 0;
   }
 
   /** 煙幕の残り実秒（無い艇は 0） */
@@ -260,6 +295,12 @@ export class MissionWorld {
     this.smokeScreen?.destroy();
     this.destroyer.destroy();
     this.boat.destroy();
+  }
+
+  /** 発射要求を捨てる（駆逐艦が沈み始めた後・帰投地点の輪の中） */
+  private discardFireInput(): void {
+    this.input.fireTap = false;
+    this.input.fireSalvoSpreadDeg = NaN;
   }
 
   /** HUD からの発射要求を消費する。タップは 1 本、一斉は残弾すべてを扇状に（間隔は launcher が持つ） */
@@ -306,7 +347,14 @@ export class MissionWorld {
     if (!dud) {
       this.hits++;
       this.slowMoLeftS = this.slowMoSeconds;
-      if (this.destroyer.takeHit()) this.destroyer.playSinking(() => this.events.onDestroyerSunk());
+      if (this.destroyer.takeHit()) {
+        // 沈み始めたら残りの一斉発射は撃たない。演出が終わったら走っている魚雷を外れとして確定する（v0.2 の「撃沈で終了」と同じ記録。艦が無いと通過判定が無く、海域を出るまで決着しないため）
+        this.launcher.clearQueue();
+        this.destroyer.playSinking(() => {
+          this.resolveRemainingAsMisses();
+          this.events.onDestroyerSunk();
+        });
+      }
     }
     this.events.onTorpedoHit(x, y, dud);
   }

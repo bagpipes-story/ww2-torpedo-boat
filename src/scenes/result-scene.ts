@@ -1,4 +1,4 @@
-// Result: 命中数・距離帯別の命中・駆逐艦の状態・生還を表示し、タップで Mission を再開する（docs/02 §4）。
+// Result: 命中数・距離帯別の命中・駆逐艦の状態・帰投・燃料を表示し、タップで Mission を再開する（docs/02 §4）。終了理由の型は core/mission-flow。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
 import {
@@ -15,8 +15,10 @@ import {
   hudTextStyle,
 } from '../config/ui-config';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
+import type { MissionEndReason } from '../core/mission-flow';
+import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
 
-export type MissionEndReason = 'sunk' | 'expended' | 'timeout' | 'rammed' | 'destroyed';
+export type { MissionEndReason } from '../core/mission-flow';
 
 export interface MissionResult {
   reason: MissionEndReason;
@@ -27,18 +29,24 @@ export interface MissionResult {
   misses: number;
   capacity: number;
   destroyerSunk: boolean;
-  survived: boolean;
+  /** 帰投地点の輪に入って終わった（生還）。夜明け・漂流・沈没は false */
+  returned: boolean;
   elapsedS: number;
   seed: number;
   /** 艇の残り HP と最大 HP（docs/02 §6.6） */
   hpLeft: number;
   hpMax: number;
+  /** 燃料の残り %（ceil）と、初めて発射したときの残り %（未発射なら NaN）。割当を調整するための実機の記録（docs/02 §6.7） */
+  fuelLeftPct: number;
+  fuelAtFirstLaunchPct: number;
+  /** 帰投地点の輪の縁までの距離 m（帰投していれば 0。帰投していないのに 0 なら、輪の中で魚雷の決着を待つ間に沈んだ） */
+  ringDistM: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
-  sunk: '駆逐艦を撃沈',
-  expended: '魚雷を撃ち尽くした',
-  timeout: '時間切れ',
+  returned: '帰投した',
+  dawn: '夜明け — 帰投できず',
+  adrift: '燃料切れで漂流',
   rammed: '駆逐艦に体当たりされた',
   destroyed: '砲撃で沈没',
 };
@@ -81,7 +89,13 @@ export class ResultScene extends Phaser.Scene {
       }
     }
     y += RESULT_SECTION_GAP;
-    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   生還: ${r.survived ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
+    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    if (!r.returned) {
+      // 輪の縁までの距離を切り上げ（輪の外で「あと 0 m」と出さない）。輪の中で沈んだ（魚雷の決着待ちの間に体当たり・砲撃）ときだけ別の文
+      if (r.ringDistM > 0) line(`帰投地点まで あと ${Math.max(1, Math.ceil(r.ringDistM / HOME_MARKER_DISTANCE_STEP_M)) * HOME_MARKER_DISTANCE_STEP_M} m`, HUD_FONT_HEADING_PX);
+      else line('帰投地点の輪の中で沈没（魚雷の決着待ち）', HUD_FONT_HEADING_PX);
+    }
     this.add
       .text(cx, GAME_HEIGHT - RESULT_FOOTER_Y, 'タップでもう一度', hudTextStyle(HUD_FONT_STEP_PX, HUD_COLOR_STRONG))
       .setOrigin(0.5, 1)

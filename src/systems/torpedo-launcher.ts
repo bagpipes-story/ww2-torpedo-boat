@@ -33,6 +33,11 @@ export class TorpedoLauncher {
     return this.pending;
   }
 
+  /** 待ち行列を捨てる（駆逐艦が沈み始めたら、残りの一斉発射は撃たない。v0.3.0） */
+  clearQueue(): void {
+    this.pending = 0;
+  }
+
   /** count 本を開き角 spreadDeg の扇で予約する。発射中は無視 */
   queueFan(boat: BoatState, count: number, spreadDeg: number): void {
     if (this.pending > 0) return;
