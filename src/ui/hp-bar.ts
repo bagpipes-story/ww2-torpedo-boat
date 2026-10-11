@@ -1,7 +1,7 @@
 // 艇の HP バー（左上、FPS と表示サイズの下。docs/02 §6.6）と乗員（バーの右。v0.3.4。減ると 1.5 秒「-N」）。§7: バーは拡縮だけ、文字は値が変わったときだけ setText。
 import Phaser from 'phaser';
 import { DEPTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { CREW_LOSS_FLASH_MS, CREW_TEXT_OFFSET_X, HP_BAR_HEIGHT, HP_BAR_OFFSET_Y, HP_COLOR_LOW, HP_COLOR_OK, HP_FONT_PX, HP_LOW_RATIO, HUD_COLOR, HUD_COLOR_WARN, HUD_TEXT_GAP, hudTextStyle } from '../config/ui-config';
+import { CREW_LOSS_FLASH_MS, CREW_TEXT_NUDGE_Y, CREW_TEXT_OFFSET_X, HP_BAR_HEIGHT, HP_BAR_OFFSET_Y, HP_COLOR_LOW, HP_COLOR_OK, HP_FONT_PX, HP_LOW_RATIO, HUD_COLOR, HUD_COLOR_WARN, HUD_TEXT_GAP, hudTextStyle } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 /** ラベル「艇 HP 100」の右に出す被害表示の x オフセット（論理 px） */
@@ -30,7 +30,7 @@ export class HpBar {
     const barY = y + HP_FONT_PX + HUD_TEXT_GAP;
     this.bg = scene.add.image(x, barY, TEXTURE_KEYS.hpBarBg).setOrigin(0, 0).setScale(1 / RENDER_SCALE).setDepth(DEPTH.hud);
     this.fill = scene.add.image(x, barY, TEXTURE_KEYS.hpBarFill).setOrigin(0, 0).setScale(1 / RENDER_SCALE).setDepth(DEPTH.hud + 1).setTint(HP_COLOR_OK);
-    this.crew = scene.add.text(x + CREW_TEXT_OFFSET_X, barY + HP_BAR_HEIGHT / 2, '', hudTextStyle(HP_FONT_PX)).setOrigin(0, 0.5).setDepth(DEPTH.hud);
+    this.crew = scene.add.text(x + CREW_TEXT_OFFSET_X, barY + HP_BAR_HEIGHT / 2 + CREW_TEXT_NUDGE_Y, '', hudTextStyle(HP_FONT_PX)).setOrigin(0, 0.5).setDepth(DEPTH.hud);
   }
 
   /** nowMs は scene.time.now（減ったときの「-N」の表示時間に使う） */

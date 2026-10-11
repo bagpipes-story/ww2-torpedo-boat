@@ -235,6 +235,8 @@ export const STORM_AHEAD_STEP_M = 100;
 /** 乗員の表示（HP バーの右）: 減ったときの「-N」を出す時間 ms、x オフセット */
 export const CREW_LOSS_FLASH_MS = 1500;
 export const CREW_TEXT_OFFSET_X = HP_BAR_WIDTH + HUD_TEXT_GAP;
+/** 乗員の文字を少し下げる（照射中で最長の 3 行目の下端 104 px と触れないように。燃料の注意の行 126 px とは 1 px 以内） */
+export const CREW_TEXT_NUDGE_Y = 3;
 /** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */
 export const SMOKE_PUFF_TEX_RADIUS_UNITS = 64;
 export const SMOKE_PUFF_COLOR = 0x9aa4b0;
