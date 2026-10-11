@@ -224,6 +224,31 @@ describe('暴風（docs/02 §6.8、v0.3.4）', () => {
     gone.southY = 4000 + 800 + 1;
     updateStormStatus(o, gone, P, 3200, 0, 0);
     expect(o.state).toBe(STORM_NONE);
+    // 海域を抜けた帯は、南へ全速で追いかけても出ない（抜けた判定の分岐）
+    updateStormStatus(o, gone, P, 3200, 180, ktToMps(39));
+    expect(o.state).toBe(STORM_NONE);
+  });
+  it('NEAR は近づいている限り保つ: 全速で 800 m で NEAR → 18 kt に落として閾値が 509 m に縮んでも NEAR（白の「進め」）。向きを変えて遠ざかれば NONE', () => {
+    const s = createStormState(P, 0.5);
+    const o = status();
+    updateStormStatus(o, s, P, 2500, 0, ktToMps(39));
+    expect(o.state).toBe(STORM_NEAR);
+    expect(o.fast).toBe(true);
+    updateStormStatus(o, s, P, 2400, 0, ktToMps(18));
+    expect(o.state).toBe(STORM_NEAR);
+    expect(o.fast).toBe(false);
+    updateStormStatus(o, s, P, 2400, 180, ktToMps(39));
+    expect(o.state).toBe(STORM_NONE);
+    updateStormStatus(o, s, P, 2400, 0, ktToMps(18)); // 700 > 509 なので AHEAD から数え直し
+    expect(o.state).toBe(STORM_AHEAD);
+  });
+  it('海況が限界以下の任務では fast が立たない（警告・赤い速力を出さない）', () => {
+    const calm = build({}, { sea_state: 5 });
+    const s = createStormState(calm, 0.5);
+    const o = status();
+    updateStormStatus(o, s, calm, 1300, 0, ktToMps(39));
+    expect(o.state).toBe(STORM_INSIDE);
+    expect(o.fast).toBe(false);
   });
   it('設計値の不変条件（data から）', () => {
     expect(P.safeSpeedKt).toBe(BOAT.speed_bands_kt.silent_max);

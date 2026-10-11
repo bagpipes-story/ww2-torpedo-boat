@@ -38,6 +38,7 @@ export function crewParamsFromData(r: BoatCrewDataRecord): CrewParams {
   if (!Number.isInteger(r.crew) || r.crew < 1) throw new Error('boats.json の crew は 1 以上の整数（docs/02 §6.6）');
   const rate = r.damage.casualties_per_hp;
   if (!(rate >= 0)) throw new Error('boats.json の damage.casualties_per_hp は 0 以上（docs/02 §6.6）');
-  if (r.hull_hp * rate > r.crew) throw new Error('boats.json の damage.casualties_per_hp が大きすぎる（浮いている艇の乗員が全滅し得る。hull_hp × 率 ≤ crew）');
+  // 浮動小数の端数（100 × 0.14 = 14.000000000000002）で境界の設計値を弾かないよう少しだけ許す（crewLost の 1e-9 と同じ）
+  if (r.hull_hp * rate > r.crew + 1e-9) throw new Error('boats.json の damage.casualties_per_hp が大きすぎる（浮いている艇の乗員が全滅し得る。hull_hp × 率 ≤ crew）');
   return { total: r.crew, casualtiesPerHp: rate };
 }

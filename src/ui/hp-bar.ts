@@ -13,7 +13,9 @@ export class HpBar {
   private readonly label: Phaser.GameObjects.Text;
   private readonly flags: Phaser.GameObjects.Text;
   private readonly crew: Phaser.GameObjects.Text;
-  private lastCrewText = '';
+  private lastCrewShown = -1;
+  private lastCrewTotal = -1;
+  private lastFlashShown = -1;
   private lastCrewWarn = false;
   private lastCrewAlive = -1;
   private flashLost = 0;
@@ -58,11 +60,13 @@ export class HpBar {
       this.flashUntil = nowMs + CREW_LOSS_FLASH_MS;
     }
     this.lastCrewAlive = t.crewAlive;
-    const flashing = nowMs < this.flashUntil;
-    const crewText = `乗員 ${t.crewAlive}/${t.crewTotal}${flashing ? ` -${this.flashLost}` : ''}`;
-    if (crewText !== this.lastCrewText) {
-      this.lastCrewText = crewText;
-      this.crew.setText(crewText);
+    // 文字列は数値のキー（生存・定員・点滅中の減り）が変わったときだけ組み立てる（§7: 毎フレーム確保しない）
+    const flashLost = nowMs < this.flashUntil ? this.flashLost : 0;
+    if (t.crewAlive !== this.lastCrewShown || t.crewTotal !== this.lastCrewTotal || flashLost !== this.lastFlashShown) {
+      this.lastCrewShown = t.crewAlive;
+      this.lastCrewTotal = t.crewTotal;
+      this.lastFlashShown = flashLost;
+      this.crew.setText(`乗員 ${t.crewAlive}/${t.crewTotal}${flashLost > 0 ? ` -${flashLost}` : ''}`);
     }
     const crewWarn = t.crewAlive < t.crewTotal;
     if (crewWarn !== this.lastCrewWarn) {

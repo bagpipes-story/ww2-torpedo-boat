@@ -226,6 +226,8 @@ export const STORM_RAIN_VX_MPS = 180;
 export const STORM_RAIN_VY_MPS = 520;
 export const STORM_ROLL_DEG = 5;
 export const STORM_ROLL_HZ = 0.7;
+/** 横揺れの振幅を寄せる割合（1 フレームあたり。帯の出入りで ±5° に跳ねず約 0.3 秒でなめらかに） */
+export const STORM_ROLL_LERP = 0.12;
 export const STORM_SLAM_BOW_M = 20;
 export const STORM_SLAM_SIDE_M = 8;
 export const STORM_SLAM_SHAKE_MS = 120;

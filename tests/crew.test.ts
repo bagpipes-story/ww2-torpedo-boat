@@ -35,5 +35,7 @@ describe('乗員（docs/02 §6.6、v0.3.4）', () => {
     expect(() => crewParamsFromData({ ...base, crew: 1.5 })).toThrow();
     expect(() => crewParamsFromData({ ...base, damage: { casualties_per_hp: -0.1 } })).toThrow();
     expect(() => crewParamsFromData({ ...base, damage: { casualties_per_hp: 0.2 } })).toThrow();
+    // 境界（100 × 0.14 = 14.000000000000002）は許す
+    expect(crewParamsFromData({ ...base, damage: { casualties_per_hp: 0.14 } }).casualtiesPerHp).toBe(0.14);
   });
 });

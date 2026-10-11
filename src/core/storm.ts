@@ -128,10 +128,14 @@ export function stepStorm(s: StormState, p: StormParams, boatY: number, speedMps
   return n;
 }
 
-/** HUD の状態（毎フレーム、確保なし）: 中 / 現在の速さで warn_lookahead_s 以内に縁に届く（NEAR） / 近づいている（AHEAD） / 遠ざかるか帯が海域を抜けた（NONE） */
+/**
+ * HUD の状態（毎フレーム、確保なし）: 中 / 現在の速さで warn_lookahead_s 以内に縁に届く（NEAR） / 近づいている（AHEAD） / 遠ざかるか帯が海域を抜けた（NONE）。
+ * fast は「叩きつけが有効で安全速力を超えている」（海況が限界以下の任務では警告を出さない）。
+ * NEAR は近づいている限り保つ（減速すると接近速度が落ちて閾値が縮むが、警告に従った瞬間に文が消えないように）
+ */
 export function updateStormStatus(out: StormStatus, s: StormState, p: StormParams, boatY: number, headingDeg: number, speedMps: number): void {
   const n = s.southY - p.depthM;
-  out.fast = overSafeSpeed(p, speedMps);
+  out.fast = p.slamEnabled && overSafeSpeed(p, speedMps);
   if (n > p.boundsHeight) {
     out.state = STORM_NONE;
     out.gapM = 0;
@@ -154,7 +158,7 @@ export function updateStormStatus(out: StormStatus, s: StormState, p: StormParam
     return;
   }
   out.gapM = gap;
-  out.state = gap <= closing * p.warnLookaheadS ? STORM_NEAR : STORM_AHEAD;
+  out.state = gap <= closing * p.warnLookaheadS || out.state === STORM_NEAR ? STORM_NEAR : STORM_AHEAD;
 }
 
 /** 帯の中の平均速力 kt（Result 用）。中にいなければ NaN */

@@ -16,6 +16,7 @@ import {
   STORM_RAIN_VY_MPS,
   STORM_ROLL_DEG,
   STORM_ROLL_HZ,
+  STORM_ROLL_LERP,
   STORM_SLAM_BOW_M,
   STORM_SLAM_SIDE_M,
   STORM_TEXT_COLOR,
@@ -37,11 +38,15 @@ export class StormFront {
   private readonly front: Phaser.GameObjects.Image;
   private readonly label: Phaser.GameObjects.Text;
   private readonly rain: Phaser.GameObjects.Image[] = [];
-  private readonly rainOx = new Float32Array(STORM_RAIN_POOL_SIZE);
-  private readonly rainOy = new Float32Array(STORM_RAIN_POOL_SIZE);
+  /** 雨筋の位置（世界座標。毎フレーム進めて画面内に折り返す。ズームで画面の大きさが変わっても跳ねない） */
+  private readonly rainX = new Float32Array(STORM_RAIN_POOL_SIZE);
+  private readonly rainY = new Float32Array(STORM_RAIN_POOL_SIZE);
   private readonly rainShown = new Uint8Array(STORM_RAIN_POOL_SIZE);
+  private rainPlaced = false;
   private readonly turnBaseDegS: number;
   private t = 0;
+  /** 横揺れの振幅（0〜1）。帯の出入りで角度が跳ねないよう毎フレーム一定割合で寄せる */
+  private rollAmp = 0;
   private gone = false;
 
   constructor(
@@ -64,9 +69,9 @@ export class StormFront {
     this.label = scene.add.text(0, this.state.southY - STORM_LABEL_OFFSET_M, '暴風', hudTextStyle(STORM_LABEL_FONT_PX, STORM_TEXT_COLOR)).setOrigin(0.5, 1).setAlpha(STORM_FRONT_ALPHA).setDepth(DEPTH.storm);
     const angle = radToDeg(Math.atan2(-STORM_RAIN_VX_MPS, STORM_RAIN_VY_MPS));
     for (let i = 0; i < STORM_RAIN_POOL_SIZE; i++) {
-      // 決定的な初期位置（黄金比の小数部）。乱数は使わない
-      this.rainOx[i] = (i * 0.618034) % 1;
-      this.rainOy[i] = (i * 0.7548777) % 1;
+      // 決定的な初期位置（黄金比の小数部を画面の比率として最初のフレームで置く）。乱数は使わない
+      this.rainX[i] = (i * 0.618034) % 1;
+      this.rainY[i] = (i * 0.7548777) % 1;
       this.rain.push(scene.add.image(0, 0, TEXTURE_KEYS.rainStreak).setScale(1 / RENDER_SCALE).setAngle(angle).setAlpha(STORM_RAIN_ALPHA).setDepth(DEPTH.rain).setVisible(false));
     }
   }
@@ -107,7 +112,9 @@ export class StormFront {
     const p = this.p;
     updateStormStatus(this.status, s, p, boat.y, boat.headingDeg, boat.speedMps);
     this.t += realDt;
-    this.rollDeg = s.inside ? STORM_ROLL_DEG * Math.sin(2 * Math.PI * STORM_ROLL_HZ * this.t) : 0;
+    this.rollAmp += ((s.inside ? 1 : 0) - this.rollAmp) * STORM_ROLL_LERP;
+    if (this.rollAmp < 1e-3) this.rollAmp = 0;
+    this.rollDeg = this.rollAmp * STORM_ROLL_DEG * Math.sin(2 * Math.PI * STORM_ROLL_HZ * this.t);
     const north = s.southY - p.depthM;
     if (north > p.boundsHeight) {
       if (!this.gone) {
@@ -125,9 +132,21 @@ export class StormFront {
     this.label.setPosition(view.centerX, s.southY - STORM_LABEL_OFFSET_M);
     const vw = view.width;
     const vh = view.height;
+    if (!this.rainPlaced) {
+      this.rainPlaced = true;
+      for (let i = 0; i < STORM_RAIN_POOL_SIZE; i++) {
+        this.rainX[i] = view.x + this.rainX[i]! * vw;
+        this.rainY[i] = view.y + this.rainY[i]! * vh;
+      }
+    }
+    const dx = STORM_RAIN_VX_MPS * realDt;
+    const dy = STORM_RAIN_VY_MPS * realDt;
     for (let i = 0; i < STORM_RAIN_POOL_SIZE; i++) {
-      const x = view.x + (((this.rainOx[i]! * vw + STORM_RAIN_VX_MPS * this.t) % vw) + vw) % vw;
-      const y = view.y + (((this.rainOy[i]! * vh + STORM_RAIN_VY_MPS * this.t) % vh) + vh) % vh;
+      // 進めてから画面内に折り返す（差は画面 1 つ分以下なので、ズームで画面の大きさが変わっても跳ねない）
+      const x = view.x + ((((this.rainX[i]! + dx - view.x) % vw) + vw) % vw);
+      const y = view.y + ((((this.rainY[i]! + dy - view.y) % vh) + vh) % vh);
+      this.rainX[i] = x;
+      this.rainY[i] = y;
       const show = y >= north && y <= s.southY;
       const img = this.rain[i]!;
       if (show !== (this.rainShown[i] === 1)) {

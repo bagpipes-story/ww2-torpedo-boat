@@ -220,8 +220,10 @@ export class BoatHud {
       (mode === MISSION_FRIENDLY &&
         (t.friendlyPhase !== this.lastFriendlyPhase || ffLeft !== this.lastFriendlyLeft || t.friendlyPasses !== this.lastFriendlyPasses || t.friendlyPending !== this.lastFriendlyPending)) ||
       (mode === MISSION_FRIENDLY_RESULT && (t.friendlyOutcome !== this.lastFriendlyOutcome || t.friendlyPasses !== this.lastFriendlyPasses)) ||
+      // 暴風のキー: 警告・情報・味方機の行は fast も文に効く。平常の予報は state・向き・距離だけ（fast は文に出ないので見ない）
+      ((mode === MISSION_STORM_WARN || mode === MISSION_STORM || mode === MISSION_FRIENDLY) && t.stormFast !== this.lastStormFast) ||
       ((mode === MISSION_STORM_WARN || mode === MISSION_STORM || mode === MISSION_NORMAL || mode === MISSION_FRIENDLY) &&
-        (t.stormState !== this.lastStormState || t.stormFast !== this.lastStormFast || t.stormNorth !== this.lastStormNorth || stormStep !== this.lastStormStep))
+        (t.stormState !== this.lastStormState || t.stormNorth !== this.lastStormNorth || stormStep !== this.lastStormStep))
     ) {
       this.lastMissionMode = mode;
       this.lastCall = call;
