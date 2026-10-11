@@ -1,6 +1,8 @@
 // Result: 命中数・距離帯別の命中・駆逐艦の状態・帰投・燃料を表示し、タップで Mission を再開する（docs/02 §4）。終了理由の型は core/mission-flow。
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+import { getGameData, getScoringParams } from '../config/game-data';
+import { computeScore } from '../core/scoring';
 import {
   HUD_COLOR_STRONG,
   HUD_FONT_HEADING_PX,
@@ -22,6 +24,8 @@ export type { MissionEndReason } from '../core/mission-flow';
 
 export interface MissionResult {
   reason: MissionEndReason;
+  /** 任務の種類（scoring.json の達成点） */
+  missionType: string;
   shots: ShotRecord[];
   bands: BandSummary[];
   hits: number;
@@ -88,6 +92,14 @@ export class ResultScene extends Phaser.Scene {
         line(`${b.band}: ${b.hits} / ${b.shots}${b.duds > 0 ? `（不発 ${b.duds}）` : ''}`, HUD_FONT_HEADING_PX);
       }
     }
+    y += RESULT_SECTION_GAP;
+    // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
+    const score = computeScore(
+      { returned: r.returned, objectiveDone: r.destroyerSunk, missionType: r.missionType, bands: r.bands, fuelLeftPct: r.fuelLeftPct },
+      getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA)),
+    );
+    line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(`帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);

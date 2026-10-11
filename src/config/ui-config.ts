@@ -1,6 +1,6 @@
 // HUD・操作系の見た目の寸法（論理座標 1280×720 の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
-import { HUD_MARGIN, RENDER_SCALE } from './game-config';
+import { GAME_HEIGHT, HUD_MARGIN, RENDER_SCALE } from './game-config';
 
 export const HUD_FONT = 'Menlo, Consolas, monospace';
 export const HUD_COLOR = '#9fb3c8';
@@ -31,6 +31,12 @@ export const STICK_KNOB_RADIUS = 38;
 export const STICK_DEAD_ZONE = 0.12;
 export const STICK_BASE_ALPHA = 0.35;
 export const STICK_KNOB_ALPHA = 0.7;
+/** スティックの固定位置（左下。v0.3.1 実機の要望）。画面端から HUD_MARGIN＋この余白だけ内側に台座の中心を置く（親指が届く・端に触れても倒し切れる） */
+export const STICK_FIXED_MARGIN = 40;
+export const STICK_FIXED_CENTER_X = HUD_MARGIN + STICK_FIXED_MARGIN + STICK_RADIUS;
+export const STICK_FIXED_CENTER_Y = GAME_HEIGHT - HUD_MARGIN - STICK_FIXED_MARGIN - STICK_RADIUS;
+/** 台座のこの倍率の半径内に触れたら台座の中心が原点（固定スティックの直感）。外なら触れた点が原点 */
+export const STICK_GRAB_RATIO = 1.3;
 
 /** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
 export const HUD_FONT_MISSION_PX = 22;
@@ -164,6 +170,8 @@ export const ROUND_BUTTON_RADIUS = 48;
 export const ROUND_BUTTON_ALPHA = 0.55;
 export const ROUND_BUTTON_DISABLED_ALPHA_FACTOR = 0.4;
 export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
+/** 右側の丸ボタンの列（煙幕・消火）の縦の間隔（縁と縁の間） */
+export const ROUND_BUTTON_GAP = 48;
 /** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
 export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
 /** 煙幕の煙（見た目）: テクスチャ半径（世界単位。表示時に puff_radius_m へ拡縮）、色、濃さ、プール数（core と同じ） */

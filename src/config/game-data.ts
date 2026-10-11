@@ -6,11 +6,13 @@ import enemies from '../../data/enemies.json';
 import hitRateModel from '../../data/hit_rate_model.json';
 import riskEvents from '../../data/risk_events.json';
 import missionsSeed from '../../data/missions_seed.json';
+import scoring from '../../data/scoring.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
 import { fuelCurveFromData, isBoatFuelDataRecord, type FuelCurve } from '../core/fuel';
 import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '../core/mission-flow';
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
+import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
@@ -22,6 +24,7 @@ export const gameData = {
   hitRateModel,
   riskEvents,
   missionsSeed,
+  scoring,
 } as const;
 
 export type GameData = typeof gameData;
@@ -38,6 +41,8 @@ export function getGameData(registry: { get(key: string): unknown }, key: string
 /** ミッションの種から v0.1 プロトタイプ用の設定を取り出す（型は実行時に検査する: data 駆動なので壊れていれば起動時に分かる） */
 export interface PrototypeMission {
   id: string;
+  /** 任務の種類（scoring.json の objective_by_type のキー） */
+  type: string;
   playerBoatId: string;
   torpedoId: string;
   enemyId: string;
@@ -82,6 +87,8 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   if (typeof enemyId !== 'string') throw new Error(`${missionId}.v0_1_prototype.enemies が空`);
   const playerBoatId = m['player_boat'];
   if (typeof playerBoatId !== 'string') throw new Error(`${missionId}.player_boat が無い`);
+  const type = m['type'];
+  if (typeof type !== 'string') throw new Error(`${missionId}.type が無い`);
   const torpedoId = m['torpedo_type'];
   if (typeof torpedoId !== 'string') throw new Error(`${missionId}.torpedo_type が無い`);
   const moon = m['moon'];
@@ -98,6 +105,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   if (!isNum(fuelAllotmentGal) || !(fuelAllotmentGal > 0)) throw new Error(`${missionId}.v0_1_prototype.fuel_allotment_gal は正の数（docs/02 §6.7）`);
   return {
     id: missionId,
+    type,
     playerBoatId,
     torpedoId,
     enemyId,
@@ -177,6 +185,21 @@ export function getBoatSmokeParams(data: GameData, boatId: string): SmokeParams 
   const b = data.boats.boats.find((x) => x.id === boatId);
   if (!b || !isBoatSmokeDataRecord(b)) throw new Error(`boats.json の ${boatId} に smoke_generator / smoke.* が無い（docs/02 §5）`);
   return smokeParamsFromData(b);
+}
+
+/** 任務に積む燃料 gal。?debug&fuel= の上書きがあれば艇の容量で頭打ちにして使う（MissionWorld と HUD の表示で同じ値になるようここで決める） */
+export function effectiveFuelAllotmentGal(data: GameData, mission: PrototypeMission, debugOverrideGal: number): number {
+  if (!Number.isFinite(debugOverrideGal)) return mission.fuelAllotmentGal;
+  return Math.min(debugOverrideGal, getBoatFuelCurve(data, mission.playerBoatId).capacityGal);
+}
+
+/** scoring.json の配点（docs/02 §6.9）。距離帯の名前が hit_rate_model.kpi_by_range と一致しなければ例外 */
+export function getScoringParams(data: GameData): ScoringParams {
+  if (!isScoringDataRecord(data.scoring)) throw new Error('scoring.json に survival / objective_by_type / hit / fuel が無い（docs/02 §6.9）');
+  return scoringParamsFromData(
+    data.scoring,
+    data.hitRateModel.kpi_by_range.map((b) => b.band),
+  );
 }
 
 /** boats.json の燃料曲線（fuel_capacity_gal・fuel_hours_*・fuel_idle_ratio・速力。docs/02 §6.7）。欠けていれば例外 */

@@ -321,6 +321,7 @@ export class MissionScene extends Phaser.Scene {
     const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
     const result: MissionResult = {
       reason,
+      missionType: w.missionType,
       shots: w.shots.slice(),
       bands: summarizeShots(w.shots, data.hitRateModel.kpi_by_range),
       hits: counts.hits - counts.duds,
