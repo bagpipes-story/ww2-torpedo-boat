@@ -32,7 +32,7 @@ describe('スコア（docs/02 §6.9）', () => {
   it('計算例（38 gal の模擬値）: 慎重に撃沈して帰投（800-1200yd、40%）= 1190、全速で撃沈して帰投（400-800yd、3%）= 1123、外して帰投 = 700、撃沈して漂流 = 420、撃沈して沈没（≤400yd）= 400', () => {
     expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 40 }), P).total).toBe(1190);
     expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 3 }), P).total).toBe(1123);
-    expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 700, objective: 0, hits: 0, fuel: 0, crew: 0, total: 700 });
+    expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 700, objective: 0, hits: 0, fuel: 0, crew: 0, crewHalf: false, total: 700 });
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 0 }), P).total).toBe(420);
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }], fuelLeftPct: 50 }), P).total).toBe(400);
   });
@@ -59,6 +59,8 @@ describe('スコア（docs/02 §6.9）', () => {
   });
   it('v0.3.5 乗員が半分以下（14 名中 7 名以下）で帰投すると帰投点 350。8 名なら 700。定員 0 なら影響なし', () => {
     expect(computeScore(input({ returned: true, crewAlive: 7, crewTotal: 14 }), P).survival).toBe(350);
+    expect(computeScore(input({ returned: true, crewAlive: 7, crewTotal: 14 }), P).crewHalf).toBe(true);
+    expect(computeScore(input({ returned: false, crewAlive: 7, crewTotal: 14 }), P).crewHalf).toBe(false);
     expect(computeScore(input({ returned: true, crewAlive: 8, crewTotal: 14 }), P).survival).toBe(700);
     expect(computeScore(input({ returned: true, crewAlive: 0, crewTotal: 0 }), P).survival).toBe(700);
     expect(computeScore(input({ returned: false, crewAlive: 3, crewTotal: 14 }), P).survival).toBe(0);
@@ -118,5 +120,8 @@ describe('スコア（docs/02 §6.9）', () => {
     const noCrew = JSON.parse(JSON.stringify(scoring)) as Record<string, unknown>;
     delete noCrew['crew'];
     expect(isScoringDataRecord(noCrew)).toBe(false);
+    const badHalf = JSON.parse(JSON.stringify(scoring)) as Record<string, unknown>;
+    (badHalf['survival'] as Record<string, unknown>)['crew_half_factor'] = 1.5;
+    expect(isScoringDataRecord(badHalf)).toBe(false);
   });
 });

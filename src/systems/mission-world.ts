@@ -106,7 +106,7 @@ export class MissionWorld {
     const dt = feelDt * c.timeScale;
     this.stepTimeS += realDt;
     const boat = this.boat.state;
-    // 暴風（v0.3.4）: 帯を進め、中なら旋回率を下げ、速すぎれば波の叩きつけ（HP 0 で沈没）。判定は艇を動かす前の位置
+    // 暴風（v0.3.4）: 帯を進め、速すぎれば波の叩きつけ（HP 0 で沈没）。判定は艇を動かす前の位置。旋回率の倍率は次の行で乗員と合成
     if (this.storm?.step(feelDt, boat, this.destroyer.state, !this.destroyer.sinking, this.damage, this.boat.sinking)) this.sinkBoat('storm');
     // 旋回率・加速 = 基準 × 暴風の帯の中 × 乗員の減り（v0.3.5。書く場所はここだけ）
     this.crewLostNow = crewLost(c.crew, this.damageParams.maxHp, this.damage.hp);
@@ -115,7 +115,8 @@ export class MissionWorld {
       if (this.grounded) {
         boat.speedMps = 0;
       } else {
-            stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
+        // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分する
+        stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
         clampToBounds(boat, this.bounds, c.boundsMarginM);
         // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
         if (boat.speedMps > this.grounding.safeSpeedMps && shallowIndexAt(this.shallows, boat.x, boat.y) >= 0) {
@@ -142,7 +143,7 @@ export class MissionWorld {
     const alive = !d.sinking && !this.boat.sinking;
     this.enemyFire.step(dt, feelDt, d.state, boat, d.ai.playerDetected && !d.sinking, alive, c.boatHalfLengthM, c.boatHalfBeamM, this.hiddenBySmoke);
     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.fireReason);
-    this.friendly?.step(feelDt, this);
+    this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
   };
 
   constructor(

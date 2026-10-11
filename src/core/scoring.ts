@@ -36,11 +36,14 @@ export interface ScoreBreakdown {
   hits: number;
   fuel: number;
   crew: number;
+  /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
+  crewHalf: boolean;
   total: number;
 }
 
-export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, crew: 0, total: 0 }): ScoreBreakdown {
-  const crewHalf = inp.crewTotal > 0 && inp.crewAlive <= Math.floor(inp.crewTotal * p.crewHalfRatio);
+export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
+  const crewHalf = inp.returned && inp.crewTotal > 0 && inp.crewAlive <= Math.floor(inp.crewTotal * p.crewHalfRatio);
+  out.crewHalf = crewHalf;
   out.survival = inp.returned ? (crewHalf ? Math.round(p.returnedPoints * p.crewHalfFactor) : p.returnedPoints) : 0;
   out.objective = inp.objectiveDone ? (p.objectiveByType[inp.missionType] ?? 0) : 0;
   let hits = 0;
@@ -84,6 +87,7 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   const h = r['hit'] as Record<string, unknown> | undefined;
   const f = r['fuel'] as Record<string, unknown> | undefined;
   if (!s || !isFiniteNum(s['returned']) || !isFiniteNum(s['crew_half_ratio']) || !isFiniteNum(s['crew_half_factor'])) return false;
+  if ((s['crew_half_ratio'] as number) < 0 || (s['crew_half_ratio'] as number) > 1 || (s['crew_half_factor'] as number) < 0 || (s['crew_half_factor'] as number) > 1) return false;
   if (!o || typeof o !== 'object') return false;
   if (!h || !isFiniteNum(h['base']) || !h['range_multiplier'] || typeof h['range_multiplier'] !== 'object') return false;
   const rm = h['range_multiplier'] as Record<string, unknown>;

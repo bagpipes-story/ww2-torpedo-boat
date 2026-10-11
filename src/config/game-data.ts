@@ -248,7 +248,7 @@ export function getStormParams(data: GameData, mission: PrototypeMission, timeSc
 /** boats.json の乗員（定員と HP あたりの死傷率。docs/02 §6.6、v0.3.4） */
 export function getBoatCrewParams(data: GameData, boatId: string): CrewParams {
   const b = data.boats.boats.find((x) => x.id === boatId);
-  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json の ${boatId} に crew / hull_hp / damage.casualties_per_hp が無い（docs/02 §6.6）`);
+  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json の ${boatId} に crew / hull_hp / damage.casualties_per_hp / damage.crew_effects が無い（docs/02 §6.6。v0.3.5 から crew_effects も必須）`);
   return crewParamsFromData(b);
 }
 

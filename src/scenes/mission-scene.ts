@@ -26,7 +26,7 @@ import {
 import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
-import { crewAlive, crewTurnFactor } from '../core/crew';
+import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
@@ -419,6 +419,7 @@ export class MissionScene extends Phaser.Scene {
       crewAlive: crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp),
       crewTotal: w.setup.crew.total,
       crewTurnFactor: crewTurnFactor(w.setup.crewEffects, w.crewLostNow),
+      crewAccelFactor: crewAccelFactor(w.setup.crewEffects, w.crewLostNow),
       extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0,
       stormEnabled: w.storm !== null,
       stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
