@@ -176,7 +176,8 @@ describe('押さなかったとき（1/60 秒刻み）', () => {
         passEndChecked = true;
         const q = pose(s);
         expect(dist(q)).toBeCloseTo(250, 0);
-        expect(bearing(q)).toBeCloseTo((strafeDegAtFirst + 180) % 360, 0);
+        // 航過の終点から、持ち越した時間（1 ステップ未満）だけ旋回が進んでいる
+        expect(bearing(q)).toBeCloseTo((strafeDegAtFirst + 180 + P.orbitDegPerS * (P.rechallengeS - s.timerS)) % 360, 3);
         expect(s.periodS).toBe(P.rechallengeS);
       }
     }
@@ -278,6 +279,14 @@ describe('識別', () => {
     cancelFriendly(idle, P);
     expect(idle.phase).toBe(FF_IDLE);
     expect(idle.outcome).toBe(FF_OUT_NONE);
+    // 真上を過ぎてから押した直後に輪に入っても、識別は無かったことにならない
+    const late = started();
+    run(late, 5.7);
+    identifyFriendly(late, P);
+    cancelFriendly(late, P);
+    expect(late.phase).toBe(FF_LEAVING);
+    expect(late.outcome).toBe(FF_OUT_IDENTIFIED);
+    expect(late.reactS).toBeCloseTo(5.7, 1);
   });
 });
 

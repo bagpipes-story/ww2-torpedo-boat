@@ -38,7 +38,7 @@ import { degToRad } from '../core/units';
 /** 開始条件と中断の材料として世界から読む部分（MissionWorld がそのまま満たす） */
 export interface FriendlyWorldView {
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
-  readonly destroyer: { readonly sinking: boolean; readonly sunk: boolean };
+  readonly destroyer: { readonly sinking: boolean; readonly sunk: boolean; readonly ai: { readonly playerDetected: boolean } };
   readonly enemyFire: { readonly illuminated: boolean };
   readonly torpedoes: { readonly remaining: number; readonly capacity: number };
   readonly fuel: { readonly empty: boolean };
@@ -89,7 +89,7 @@ export class FriendlyFire {
       c.homeDy = w.returnPoint.y - b.y;
       c.headingDeg = b.headingDeg;
       c.speedMps = b.speedMps;
-      c.underFire = w.enemyFire.illuminated && !w.destroyer.sinking;
+      c.underFire = (w.enemyFire.illuminated || w.destroyer.ai.playerDetected) && !w.destroyer.sinking;
       c.busy = w.slowMoLeftS > 0 || (w.destroyer.sinking && !w.destroyer.sunk);
       c.shallow = w.shallowStatus.state !== SHALLOW_NONE;
       c.blocked = w.boat.sinking || w.grounded || w.fuel.empty || w.atHome;

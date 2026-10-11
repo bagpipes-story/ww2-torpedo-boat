@@ -78,7 +78,7 @@ export interface FriendlyCheck {
   homeDy: number;
   headingDeg: number;
   speedMps: number;
-  /** 探照灯・星弾に照らされている（駆逐艦が沈んでいなければ） */
+  /** 駆逐艦に発見されているか、探照灯・星弾に照らされている（駆逐艦が沈んでいなければ）。発見の直後は探照灯が来るので識別と重ねない */
   underFire: boolean;
   /** 命中スロー中・撃沈演出中 */
   busy: boolean;
@@ -114,7 +114,7 @@ export function createFriendlyState(): FriendlyState {
   };
 }
 
-/** 開始条件（docs/02 §6.8）: 撃った・輪の縁から近い・帰る向きに進んでいる・照らされていない・演出中でない・浅瀬でない・止められていない */
+/** 開始条件（docs/02 §6.8）: 撃った・輪の縁から近い・帰る向きに進んでいる・発見も照射もされていない・演出中でない・浅瀬でない・止められていない */
 export function friendlyConditionsMet(c: FriendlyCheck, p: FriendlyParams): boolean {
   if (!c.fired || c.underFire || c.busy || c.shallow || c.blocked || !(c.speedMps > 0)) return false;
   if (c.homeDx * c.homeDx + c.homeDy * c.homeDy > p.zoneRadius2) return false;
@@ -180,9 +180,10 @@ export function identifyFriendly(s: FriendlyState, p: FriendlyParams): boolean {
   return false;
 }
 
-/** 中断（輪の中・沈没・座礁・燃料切れ）: 要求中・航過中なら撃たずに去る。それ以外は何もしない */
+/** 中断（輪の中・沈没・座礁・燃料切れ）: 要求中・航過中なら撃たずに去る。真上を過ぎてから押した後（pending）なら識別として去る（押下を無かったことにしない）。それ以外は何もしない */
 export function cancelFriendly(s: FriendlyState, p: FriendlyParams): void {
-  if (s.phase === FF_CHALLENGE || s.phase === FF_STRAFE) leave(s, p, FF_OUT_CANCELLED);
+  if (s.phase === FF_STRAFE && s.pending) leave(s, p, FF_OUT_IDENTIFIED);
+  else if (s.phase === FF_CHALLENGE || s.phase === FF_STRAFE) leave(s, p, FF_OUT_CANCELLED);
 }
 
 /** 旋回の今の方位（自艇→味方機）。最初の要求は飛来の秒を引く */
