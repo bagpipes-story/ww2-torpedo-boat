@@ -10,6 +10,7 @@ import scoring from '../../data/scoring.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
 import { fuelCurveFromData, isBoatFuelDataRecord, type FuelCurve } from '../core/fuel';
 import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '../core/mission-flow';
+import { friendlyParamsFromData, isFriendlyFireDataRecord, type FriendlyParams } from '../core/friendly';
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
@@ -61,6 +62,8 @@ export interface PrototypeMission {
   fuelAllotmentGal: number;
   /** 浅瀬の矩形（docs/02 §6.8、v0.3.2）。無ければ空 */
   shallows: ShallowRect[];
+  /** 味方機（友軍誤射。docs/02 §6.8、v0.3.3）: 輪の縁からこの距離以内で開始条件を数える。無ければ来ない */
+  friendlyAircraft: { triggerEdgeM: number } | null;
 }
 
 function isNum(v: unknown): v is number {
@@ -109,6 +112,16 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   const shallowsRaw = proto['shallows'];
   if (!Array.isArray(shallowsRaw) || !shallowsRaw.every(isShallowRectDataRecord)) throw new Error(`${missionId}.v0_1_prototype.shallows（x_m/y_m/width_m/height_m の配列。無ければ []）が無い（docs/02 §6.8）`);
   const shallows = shallowsFromData(shallowsRaw, b);
+  const faRaw = proto['friendly_aircraft'] as Record<string, unknown> | undefined;
+  let friendlyAircraft: { triggerEdgeM: number } | null = null;
+  if (faRaw !== undefined) {
+    const t = faRaw?.['trigger_edge_m'];
+    if (!isNum(t) || !(t > 0)) throw new Error(`${missionId}.v0_1_prototype.friendly_aircraft.trigger_edge_m は正の数（docs/02 §6.8）`);
+    // 出発点は開始の範囲（輪の中心から trigger_edge_m + 半径）の外（出発直後に味方機が来ないように）
+    const zone = t + returnPoint.radiusM;
+    if (sdx * sdx + sdy * sdy <= zone * zone) throw new Error(`${missionId}: 出発点が味方機の開始距離（friendly_aircraft.trigger_edge_m）の内側にある`);
+    friendlyAircraft = { triggerEdgeM: t };
+  }
   return {
     id: missionId,
     type,
@@ -124,6 +137,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     returnPoint,
     fuelAllotmentGal,
     shallows,
+    friendlyAircraft,
   };
 }
 
@@ -199,6 +213,14 @@ export function getGroundingParams(data: GameData): GroundingParams {
   const g = data.riskEvents.events.find((e) => e.id === 'grounding');
   if (!g || !isGroundingDataRecord(g)) throw new Error('risk_events.json の grounding に params.safe_speed_kt / warn_lookahead_s が無い（docs/02 §6.8）');
   return groundingParamsFromData(g);
+}
+
+/** risk_events.json の friendly_fire.params（味方機。docs/02 §6.8）。任務に friendly_aircraft が無ければ null、params が無ければ例外 */
+export function getFriendlyParams(data: GameData, mission: PrototypeMission, timeScale: number): FriendlyParams | null {
+  if (!mission.friendlyAircraft) return null;
+  const f = data.riskEvents.events.find((e) => e.id === 'friendly_fire');
+  if (!f || !isFriendlyFireDataRecord(f)) throw new Error('risk_events.json の friendly_fire に params（window_s ほか）が無い（docs/02 §6.8）');
+  return friendlyParamsFromData(f, mission.friendlyAircraft.triggerEdgeM, mission.returnPoint.radiusM, timeScale);
 }
 
 /** 任務に積む燃料 gal。?debug&fuel= の上書きがあれば艇の容量で頭打ちにして使う（MissionWorld と HUD の表示で同じ値になるようここで決める） */

@@ -50,7 +50,7 @@ export class EnemyFire {
       this.flashAge = 0;
     },
     onImpact: (gunIndex, x, y, hit) => {
-      this.placeSplash(x, y, hit);
+      this.splash(x, y, hit);
       if (hit) this.onHit(gunIndex, x, y);
     },
   };
@@ -179,7 +179,8 @@ export class EnemyFire {
     }
   }
 
-  private placeSplash(x: number, y: number, hit: boolean): void {
+  /** 水柱を置く（砲弾の着弾。味方機の掃射も借りる。v0.3.3 で公開） */
+  splash(x: number, y: number, hit: boolean): void {
     const i = this.splashNext;
     this.splashNext = (this.splashNext + 1) % SPLASH_POOL_SIZE;
     this.splashAges[i] = 0;

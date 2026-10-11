@@ -24,6 +24,9 @@ export interface GunParams {
   engineDamageChance: number;
 }
 
+/** 命中の適用に要る部分だけ（味方機の掃射（v0.3.3）も砲弾と同じ経路で被害を適用する） */
+export type HitSpec = Pick<GunParams, 'damage' | 'fireChance' | 'engineDamageChance'>;
+
 export interface SearchlightParams {
   rangeM: number;
   coneDeg: number;
@@ -310,7 +313,7 @@ export interface HitOutcome {
 }
 
 /** 命中の適用。戻り値は再利用する out に書く（確保しない） */
-export function applyShellHit(d: DamageState, gun: GunParams, p: DamageParams, rng: SeededRng, out: HitOutcome): HitOutcome {
+export function applyShellHit(d: DamageState, gun: HitSpec, p: DamageParams, rng: SeededRng, out: HitOutcome): HitOutcome {
   d.hp = Math.max(0, d.hp - gun.damage);
   out.startedFire = false;
   out.engineHit = false;

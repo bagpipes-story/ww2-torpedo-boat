@@ -18,7 +18,21 @@ import {
 import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
-import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, ROUND_BUTTON_GAP, ROUND_BUTTON_RADIUS, TARGET_MARKER_DISTANCE_STEP_M, TARGET_MARKER_TOP_MARGIN } from '../config/ui-config';
+import {
+  HOME_COLOR,
+  HOME_COLOR_TEXT,
+  HOME_MARKER_DISTANCE_STEP_M,
+  HOME_MARKER_TOP_MARGIN,
+  IDENTIFY_BUTTON_Y,
+  IDENTIFY_PULSE_ALPHA_MAX,
+  IDENTIFY_PULSE_HZ,
+  ROUND_BUTTON_ALPHA,
+  ROUND_BUTTON_GAP,
+  ROUND_BUTTON_RADIUS,
+  TARGET_MARKER_DISTANCE_STEP_M,
+  TARGET_MARKER_TOP_MARGIN,
+} from '../config/ui-config';
+import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PinchZoom } from '../systems/pinch-zoom';
@@ -43,6 +57,9 @@ export class HudScene extends Phaser.Scene {
   private smokeButton?: HoldButton;
   private extinguishButton?: HoldButton;
   private lookoutButton?: HoldButton;
+  /** 「識別」（v0.3.3）。任務に味方機がいるときだけ作る。残り秒の整数が変わったときだけ文字を組む */
+  private identifyButton?: HoldButton;
+  private lastIdentifyN = -1;
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
   private telemetry!: BoatTelemetry;
@@ -106,6 +123,15 @@ export class HudScene extends Phaser.Scene {
         input.lookout = false;
       },
     });
+    // 「識別」: 見張りと魚雷の間。常に薄く出し、味方機が識別を求めている間だけ青く点滅して残り秒を出す（押下＝識別信号。離しは見ない）
+    if (mission.friendlyAircraft) {
+      this.identifyButton = new HoldButton(this, bx, IDENTIFY_BUTTON_Y, '識別', {
+        onDown: () => {
+          input.identifyTap = true;
+        },
+      });
+      this.identifyButton.setEnabled(false);
+    }
     this.keyboard = new KeyboardInput(this, input);
     // ピンチズーム（右半分、ボタンの列を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
@@ -116,6 +142,7 @@ export class HudScene extends Phaser.Scene {
       this.smokeButton?.destroy();
       this.extinguishButton?.destroy();
       this.lookoutButton?.destroy();
+      this.identifyButton?.destroy();
       this.targetMarker?.destroy();
       this.homeMarker?.destroy();
       this.fuelGauge?.destroy();
@@ -127,6 +154,7 @@ export class HudScene extends Phaser.Scene {
       this.smokeButton = undefined;
       this.extinguishButton = undefined;
       this.lookoutButton = undefined;
+      this.identifyButton = undefined;
       this.targetMarker = undefined;
       this.homeMarker = undefined;
       this.fuelGauge = undefined;
@@ -156,5 +184,19 @@ export class HudScene extends Phaser.Scene {
     }
     // 消火は火災中だけ使える（押せるが Mission が無視する。薄く表示）
     this.extinguishButton?.setEnabled(t.onFire);
+    if (this.identifyButton) {
+      // 識別を求めている間（航過中でも真上を過ぎてから押した後は除く）だけ有効。残り秒は 5,4,3,2,1 で 0 は出さない
+      const live = t.friendlyPhase === FF_CHALLENGE || (t.friendlyPhase === FF_STRAFE && !t.friendlyPending);
+      const n = t.friendlyPhase === FF_CHALLENGE ? Math.max(1, Math.ceil(t.friendlyLeftS)) : 0;
+      if (n !== this.lastIdentifyN) {
+        this.lastIdentifyN = n;
+        this.identifyButton.setLabel(n > 0 ? `識別\n${n}` : '識別');
+      }
+      this.identifyButton.setEnabled(live);
+      this.identifyButton.setTint(live ? HOME_COLOR : null);
+      this.identifyButton.setAlphaOverride(
+        live ? ROUND_BUTTON_ALPHA + (IDENTIFY_PULSE_ALPHA_MAX - ROUND_BUTTON_ALPHA) * (0.5 + 0.5 * Math.sin((2 * Math.PI * IDENTIFY_PULSE_HZ * this.time.now) / 1000)) : NaN,
+      );
+    }
   }
 }

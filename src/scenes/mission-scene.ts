@@ -24,8 +24,8 @@ import {
 import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
+import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
-import { updateShallowStatus, type ShallowStatus } from '../core/shallows';
 import { clamp, degToRad, mpsToKt } from '../core/units';
 import { playerVisRangeM } from '../core/visibility';
 import { ReturnPointView } from '../entities/return-point';
@@ -41,7 +41,6 @@ export class MissionScene extends Phaser.Scene {
   private telemetry!: BoatTelemetry;
   private returnView?: ReturnPointView;
   private shallowsView?: ShallowsView;
-  private readonly shallowStatus: ShallowStatus = { state: 0, aheadM: 0 };
   /** カメラの論理ズーム（RENDER_SCALE を掛ける前）。見張り中は zoomMin へ、離すと zoomDefault へ寄せる */
   private zoomDefault = 1;
   private zoomMin = 1;
@@ -178,6 +177,11 @@ export class MissionScene extends Phaser.Scene {
       shallowState: 0,
       shallowAheadM: 0,
       shallowSafeKt: Math.round(mpsToKt(w.grounding.safeSpeedMps)),
+      friendlyPhase: FF_IDLE,
+      friendlyLeftS: NaN,
+      friendlyPasses: 0,
+      friendlyOutcome: FF_OUT_NONE,
+      friendlyPending: false,
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshReturnState(0);
@@ -324,10 +328,16 @@ export class MissionScene extends Phaser.Scene {
     t.atHome = w.atHome;
     t.homeWaiting = w.atHome && w.torpedoesRunning;
     t.destroyerSunk = d.sinking;
-    // 浅瀬の警告（接近中は縁までの距離）。平方根は使わない
-    updateShallowStatus(this.shallowStatus, w.shallows, s.x, s.y, s.headingDeg, s.speedMps, w.grounding, this.timeScale, w.grounded);
-    t.shallowState = this.shallowStatus.state;
-    t.shallowAheadM = this.shallowStatus.aheadM;
+    // 浅瀬の警告は世界が毎フレーム更新している（味方機の開始条件も同じ値を読む）
+    t.shallowState = w.shallowStatus.state;
+    t.shallowAheadM = w.shallowStatus.aheadM;
+    // 味方機（docs/02 §6.8）: 識別の残り秒は要求中だけ
+    const f = w.friendly ? w.friendly.state : null;
+    t.friendlyPhase = f ? f.phase : FF_IDLE;
+    t.friendlyLeftS = f && f.phase === FF_CHALLENGE ? f.timerS : NaN;
+    t.friendlyPasses = f ? f.passes : 0;
+    t.friendlyOutcome = f ? f.outcome : FF_OUT_NONE;
+    t.friendlyPending = f ? f.pending : false;
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
@@ -369,6 +379,12 @@ export class MissionScene extends Phaser.Scene {
       fuelLeftPct: pct(w.fuel.gal),
       fuelAtFirstLaunchPct: Number.isNaN(w.fuelAtFirstLaunchGal) ? NaN : pct(w.fuelAtFirstLaunchGal),
       ringDistM: reason === 'returned' ? 0 : this.ringEdgeM,
+      friendlyEnabled: w.friendly !== null,
+      friendlyPhase: w.friendly ? w.friendly.state.phase : FF_IDLE,
+      friendlyOutcome: w.friendly ? w.friendly.state.outcome : FF_OUT_NONE,
+      friendlyPasses: w.friendly ? w.friendly.state.passes : 0,
+      friendlyReactS: w.friendly ? w.friendly.state.reactS : NaN,
+      friendlyPeriodS: w.friendly ? w.friendly.state.reactPeriodS : NaN,
     };
     this.scene.start(SCENE_KEYS.result, result);
   }

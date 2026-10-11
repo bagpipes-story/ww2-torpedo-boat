@@ -1,10 +1,11 @@
-// 速力・速力段・舵の HUD（右下）と上中央の 2〜3 行目（夜明けまで・帰投せよ／敵影と発見）。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
+// 速力・速力段・舵の HUD（右下）と上中央の 2〜3 行目（夜明けまで・帰投せよ・味方機／敵影と発見）。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
   HUD_COLOR,
   HUD_COLOR_STRONG,
   HUD_COLOR_WARN,
+  HOME_COLOR_TEXT,
   HUD_DEBUG_LINE_HEIGHT,
   HUD_FONT_HEADING_PX,
   HUD_FONT_MISSION_PX,
@@ -24,6 +25,7 @@ import {
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
+import { FF_CHALLENGE, FF_LEAVING, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK, topCall } from '../core/mission-flow';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { mpsToKt } from '../core/units';
@@ -59,12 +61,14 @@ const CALL_LABEL: Record<number, string> = {
   [CALL_SUNK]: '撃沈！',
   [CALL_EXPENDED]: '魚雷なし ',
 };
-/** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁） */
+/** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 const MISSION_NORMAL = 0;
 const MISSION_CALL = 1;
 const MISSION_ADRIFT = 2;
 const MISSION_WAITING = 3;
 const MISSION_SHALLOWS = 4;
+const MISSION_FRIENDLY = 5;
+const MISSION_FRIENDLY_RESULT = 6;
 
 export class BoatHud {
   private readonly speedText: Phaser.GameObjects.Text;
@@ -82,6 +86,11 @@ export class BoatHud {
   private lastHomeStep = -1;
   private lastShallowState = -1;
   private lastShallowStep = -1;
+  private lastFriendlyPhase = -1;
+  private lastFriendlyLeft = -1;
+  private lastFriendlyPasses = -1;
+  private lastFriendlyOutcome = -1;
+  private lastFriendlyPending = false;
   private lastTimeLeft = -1;
   private lastHits = -1;
   private lastSpeedKt = -1;
@@ -151,11 +160,27 @@ export class BoatHud {
       this.lastRudderX = x;
       this.rudderMarker.setX(x);
     }
-    // 2 行目: 夜明けまで・命中。帰投の呼びかけ・燃料切れ・魚雷の決着待ちが優先（docs/02 §6.7）。表示する値のどれかが変わったときだけ組み立てる
+    // 2 行目: 夜明けまで・命中。優先順: 魚雷待ち > 燃料切れ > 味方機（要求・航過）> 浅瀬 > 味方機の結果 > 帰投せよ > 平常（docs/02 §6.7・§6.8）。表示する値のどれかが変わったときだけ組み立てる
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
     const call = topCall(t.callFlags);
-    const mode = t.homeWaiting ? MISSION_WAITING : t.fuelEmpty ? MISSION_ADRIFT : t.shallowState !== 0 ? MISSION_SHALLOWS : call !== 0 ? MISSION_CALL : MISSION_NORMAL;
+    const ffLive = t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE;
+    const ffResult = t.friendlyPhase === FF_LEAVING && (t.friendlyOutcome === FF_OUT_IDENTIFIED || t.friendlyOutcome === FF_OUT_GAVE_UP);
+    const mode = t.homeWaiting
+      ? MISSION_WAITING
+      : t.fuelEmpty
+        ? MISSION_ADRIFT
+        : ffLive
+          ? MISSION_FRIENDLY
+          : t.shallowState !== 0
+            ? MISSION_SHALLOWS
+            : ffResult
+              ? MISSION_FRIENDLY_RESULT
+              : call !== 0
+                ? MISSION_CALL
+                : MISSION_NORMAL;
     const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);
+    // 識別の残り秒は 5,4,3,2,1（0 は出さない）
+    const ffLeft = t.friendlyPhase === FF_CHALLENGE ? Math.max(1, Math.ceil(t.friendlyLeftS)) : 0;
     // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない
     const homeStep = Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M);
     if (
@@ -164,7 +189,10 @@ export class BoatHud {
       timeLeft !== this.lastTimeLeft ||
       t.hits !== this.lastHits ||
       (mode === MISSION_CALL && homeStep !== this.lastHomeStep) ||
-      (mode === MISSION_SHALLOWS && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep))
+      ((mode === MISSION_SHALLOWS || mode === MISSION_FRIENDLY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
+      (mode === MISSION_FRIENDLY &&
+        (t.friendlyPhase !== this.lastFriendlyPhase || ffLeft !== this.lastFriendlyLeft || t.friendlyPasses !== this.lastFriendlyPasses || t.friendlyPending !== this.lastFriendlyPending)) ||
+      (mode === MISSION_FRIENDLY_RESULT && (t.friendlyOutcome !== this.lastFriendlyOutcome || t.friendlyPasses !== this.lastFriendlyPasses))
     ) {
       this.lastMissionMode = mode;
       this.lastCall = call;
@@ -173,7 +201,28 @@ export class BoatHud {
       this.lastHomeStep = homeStep;
       this.lastShallowState = t.shallowState;
       this.lastShallowStep = shallowStep;
-      if (mode === MISSION_SHALLOWS) {
+      this.lastFriendlyPhase = t.friendlyPhase;
+      this.lastFriendlyLeft = ffLeft;
+      this.lastFriendlyPasses = t.friendlyPasses;
+      this.lastFriendlyOutcome = t.friendlyOutcome;
+      this.lastFriendlyPending = t.friendlyPending;
+      if (mode === MISSION_FRIENDLY) {
+        // 識別を求めている / 航過中（真上を過ぎてから押した後は「識別完了」）。浅瀬の警告・中と重なれば後ろに付ける
+        let text: string;
+        let color = HUD_COLOR_WARN;
+        if (t.friendlyPhase === FF_STRAFE && t.friendlyPending) {
+          text = '識別完了 ・ 味方機が離れる';
+          color = HOME_COLOR_TEXT;
+        } else if (t.friendlyPhase === FF_STRAFE) text = '味方機の誤射！ ・ 識別せよ';
+        else if (t.friendlyPasses > 0) text = `味方機 再接近 ・ 識別せよ ${ffLeft}`;
+        else text = `味方機接近 ・ 識別せよ ${ffLeft}`;
+        if (t.shallowState === SHALLOW_APPROACHING) text += ` ・ 浅瀬 ${shallowStep * SHALLOW_WARN_STEP_M} m 減速`;
+        else if (t.shallowState === SHALLOW_INSIDE) text += ` ・ 浅瀬 ${t.shallowSafeKt} kt 以下`;
+        this.missionText.setText(text).setColor(color);
+      } else if (mode === MISSION_FRIENDLY_RESULT) {
+        if (t.friendlyOutcome === FF_OUT_IDENTIFIED) this.missionText.setText('識別完了 ・ 味方機が離れる').setColor(HOME_COLOR_TEXT);
+        else this.missionText.setText(`味方機が離れた ・ 誤射 ${t.friendlyPasses} 回`).setColor(HUD_COLOR_STRONG);
+      } else if (mode === MISSION_SHALLOWS) {
         // 接近: 縁までの距離と安全速力。中: 安全速力で進めば通れる。座礁: 終わるまでの短い表示
         if (t.shallowState === SHALLOW_APPROACHING) this.missionText.setText(`浅瀬まで ${shallowStep * SHALLOW_WARN_STEP_M} m ・ ${t.shallowSafeKt} kt 以下に減速！`).setColor(HUD_COLOR_WARN);
         else if (t.shallowState === SHALLOW_INSIDE) this.missionText.setText(`浅瀬 ・ ${t.shallowSafeKt} kt 以下で進め`).setColor(HUD_COLOR_STRONG);

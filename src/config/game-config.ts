@@ -46,6 +46,8 @@ function debugNumber(key: string): number {
 }
 export const DEBUG_FUEL_ALLOTMENT_GAL = debugNumber('fuel');
 export const DEBUG_DAWN_S = debugNumber('dawn');
+/** ?debug&ff: 味方機の開始条件のうち「魚雷を撃った」を満たした扱いにする（撃たずに帰って識別を試すため。docs/02 §6.8） */
+export const DEBUG_FRIENDLY_FORCE = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('ff');
 
 /** 同時に扱うタッチ数（マウス 1 ＋ タッチ 3: スティック＋右側ボタン）。Phaser の input.activePointers に渡す */
 export const ACTIVE_TOUCH_POINTERS = 3;
@@ -68,6 +70,8 @@ export const DEPTH = {
   /** 探照灯・星弾は海の上、艦艇の下 */
   light: 2,
   shell: 12,
+  /** 味方機は煙と砲弾の上、演出の下 */
+  aircraft: 14,
   effects: 20,
   hud: 1000,
   stickBase: 990,
@@ -107,6 +111,7 @@ export const TEXTURE_KEYS = {
   hpBarFill: 'tex-hp-bar-fill',
   roundButton: 'tex-round-button',
   smokePuff: 'tex-smoke-puff',
+  aircraft: 'tex-aircraft',
   stickBase: 'tex-stick-base',
   stickKnob: 'tex-stick-knob',
   rudderBar: 'tex-rudder-bar',

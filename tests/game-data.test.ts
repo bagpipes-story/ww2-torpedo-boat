@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getGroundingParams, getPrototypeMission, getScoringParams, getVisibilityParams } from '../src/config/game-data';
+import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getVisibilityParams } from '../src/config/game-data';
 import { distanceToShallowsM } from '../src/core/shallows';
 import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
@@ -34,6 +34,30 @@ describe('game-data（data/*.json の読み出し）', () => {
     const g = getGroundingParams(gameData);
     expect(g.safeSpeedMps).toBeCloseTo(15 * 0.5144, 9);
     expect(g.warnLookaheadS).toBe(6);
+  });
+  it('味方機: us_02 は輪の縁から 2,600 m 以内で開始。0 以下、出発点が内側（4,000）は例外。block が無い任務は null', () => {
+    const m = getPrototypeMission(gameData, 'us_02');
+    expect(m.friendlyAircraft).toEqual({ triggerEdgeM: 2600 });
+    const p = getFriendlyParams(gameData, m, 5)!;
+    expect(p.windowS).toBe(5);
+    expect(p.zoneRadius2).toBe((2600 + 250) ** 2);
+    type Proto = { v0_1_prototype: Record<string, unknown> };
+    const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
+    const zero = clone();
+    protoOf(zero)['friendly_aircraft'] = { trigger_edge_m: 0 };
+    expect(() => getPrototypeMission(zero, 'us_02')).toThrow();
+    const inside = clone();
+    protoOf(inside)['friendly_aircraft'] = { trigger_edge_m: 4000 };
+    expect(() => getPrototypeMission(inside, 'us_02')).toThrow();
+    const none = clone();
+    delete protoOf(none)['friendly_aircraft'];
+    const mNone = getPrototypeMission(none, 'us_02');
+    expect(mNone.friendlyAircraft).toBeNull();
+    expect(getFriendlyParams(none, mNone, 5)).toBeNull();
+    const noParams = clone();
+    delete (noParams.riskEvents.events.find((e) => e.id === 'friendly_fire') as Record<string, unknown>)['params'];
+    expect(() => getFriendlyParams(noParams, m, 5)).toThrow();
   });
   it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
     const p = getScoringParams(gameData);

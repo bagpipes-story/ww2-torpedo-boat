@@ -17,6 +17,10 @@ export class HoldButton {
   private pressedAt = -1;
   private enabled = true;
   private lastLabel = '';
+  /** 色（null なら無色）と、濃さの上書き（NaN なら有効/無効の濃さ）。v0.3.3 の「識別」の点滅用。適用した濃さは覚えて同じ値は触らない */
+  private tint: number | null = null;
+  private alphaOverride = NaN;
+  private lastAlpha = ROUND_BUTTON_ALPHA;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -48,7 +52,28 @@ export class HoldButton {
   setEnabled(v: boolean): void {
     if (v === this.enabled) return;
     this.enabled = v;
-    this.button.setAlpha(v ? ROUND_BUTTON_ALPHA : ROUND_BUTTON_ALPHA * ROUND_BUTTON_DISABLED_ALPHA_FACTOR);
+    this.applyAlpha();
+  }
+
+  setTint(color: number | null): void {
+    if (color === this.tint) return;
+    this.tint = color;
+    if (color === null) this.button.clearTint();
+    else this.button.setTint(color);
+  }
+
+  /** 濃さを直接決める（点滅など）。NaN で有効/無効の濃さに戻す */
+  setAlphaOverride(a: number): void {
+    if (Object.is(a, this.alphaOverride)) return;
+    this.alphaOverride = a;
+    this.applyAlpha();
+  }
+
+  private applyAlpha(): void {
+    const a = Number.isNaN(this.alphaOverride) ? (this.enabled ? ROUND_BUTTON_ALPHA : ROUND_BUTTON_ALPHA * ROUND_BUTTON_DISABLED_ALPHA_FACTOR) : this.alphaOverride;
+    if (a === this.lastAlpha) return;
+    this.lastAlpha = a;
+    this.button.setAlpha(a);
   }
 
   private onDown(p: Phaser.Input.Pointer): void {

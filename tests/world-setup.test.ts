@@ -22,6 +22,15 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.smokeParams).not.toBeNull();
     expect(s.grounding.safeSpeedMps).toBeCloseTo(ktToMps(15), 9);
     expect(s.passRadius2).toBeCloseTo((118 / 2 + 10.8) ** 2, 6);
+    expect(s.friendly).not.toBeNull();
+    expect(s.friendly!.windowS).toBe(5);
+    expect(s.friendly!.triggerEdgeM).toBe(2600);
+  });
+  it('friendly_aircraft が無い任務なら friendly は null', () => {
+    const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    const proto = (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as { v0_1_prototype: Record<string, unknown> }).v0_1_prototype;
+    delete proto['friendly_aircraft'];
+    expect(buildWorldSetup(d, 'us_02', NaN, NaN).friendly).toBeNull();
   });
   it('?debug の上書き: 割当は艇の容量で頭打ち、夜明けはそのまま。無ければ data の値', () => {
     expect(buildWorldSetup(gameData, 'us_02', 20, 60).fuelAllotmentGal).toBe(20);

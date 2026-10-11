@@ -16,6 +16,7 @@ import {
   RESULT_TOP_Y,
   hudTextStyle,
 } from '../config/ui-config';
+import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
 import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
@@ -45,6 +46,13 @@ export interface MissionResult {
   fuelAtFirstLaunchPct: number;
   /** 帰投地点の輪の縁までの距離 m（帰投していれば 0。帰投していないのに 0 なら、輪の中で魚雷の決着を待つ間に沈んだ） */
   ringDistM: number;
+  /** 味方機（docs/02 §6.8、v0.3.3）: 任務にいるか、段階・結果・撃たれた回数（core/friendly の FF_*）、識別までの秒とそのときの猶予（押していなければ NaN）。猶予を調整するための実機の記録 */
+  friendlyEnabled: boolean;
+  friendlyPhase: number;
+  friendlyOutcome: number;
+  friendlyPasses: number;
+  friendlyReactS: number;
+  friendlyPeriodS: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -54,6 +62,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   grounded: '浅瀬に座礁',
   rammed: '駆逐艦に体当たりされた',
   destroyed: '砲撃で沈没',
+  friendly_fire: '味方機の誤射で沈没',
 };
 
 export class ResultScene extends Phaser.Scene {
@@ -104,6 +113,17 @@ export class ResultScene extends Phaser.Scene {
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    if (r.friendlyEnabled) {
+      // 味方機: 来たか、識別までの秒（猶予の調整の根拠）、撃たれた回数
+      const n = r.friendlyPasses;
+      const react = `識別 ${r.friendlyReactS.toFixed(1)} 秒（猶予 ${r.friendlyPeriodS} 秒）`;
+      let text: string;
+      if (r.friendlyPhase === FF_IDLE) text = '味方機: 来ず';
+      else if (r.friendlyOutcome === FF_OUT_IDENTIFIED) text = n > 0 ? `味方機: 誤射 ${n} 回 → ${react}` : `味方機: ${react}`;
+      else if (r.friendlyOutcome === FF_OUT_GAVE_UP) text = `味方機: 誤射 ${n} 回（識別なし）`;
+      else text = `味方機: 識別の途中で終了（誤射 ${n} 回）`;
+      line(text, HUD_FONT_HEADING_PX);
+    }
     if (!r.returned) {
       // 輪の縁までの距離を切り上げ（輪の外で「あと 0 m」と出さない）。輪の中で沈んだ（魚雷の決着待ちの間に体当たり・砲撃）ときだけ別の文
       if (r.ringDistM > 0) line(`帰投地点まで あと ${Math.max(1, Math.ceil(r.ringDistM / HOME_MARKER_DISTANCE_STEP_M)) * HOME_MARKER_DISTANCE_STEP_M} m`, HUD_FONT_HEADING_PX);

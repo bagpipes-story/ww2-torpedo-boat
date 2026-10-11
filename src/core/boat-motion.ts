@@ -100,6 +100,12 @@ export interface BoatTelemetry {
   shallowState: number;
   shallowAheadM: number;
   shallowSafeKt: number;
+  /** 味方機（core/friendly の FF_*、v0.3.3）: 段階、識別の残り秒（要求中以外は NaN）、撃たれた回数、結果、真上を過ぎてから押した */
+  friendlyPhase: number;
+  friendlyLeftS: number;
+  friendlyPasses: number;
+  friendlyOutcome: number;
+  friendlyPending: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

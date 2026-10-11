@@ -9,6 +9,7 @@ import {
   getBoatTorpedoCount,
   getEnemyRecord,
   getEvasionMultiplier,
+  getFriendlyParams,
   getGroundingParams,
   getPrototypeMission,
   getTorpedoRecord,
@@ -17,9 +18,10 @@ import {
   type PrototypeMission,
 } from '../config/game-data';
 import { boatParamsFromData, type BoatParams } from '../core/boat-motion';
-import { fuelCurveFromData, type FuelCurve } from '../core/fuel';
+import { type FuelCurve } from '../core/fuel';
 import { gunneryParamsFromData, type DamageParams, type GunneryParams } from '../core/gunnery';
 import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
+import { type FriendlyParams } from '../core/friendly';
 import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
@@ -62,6 +64,8 @@ export interface WorldSetup {
   /** 任務に積む燃料 gal（?debug&fuel= で上書き可、艇の容量で頭打ち） */
   fuelAllotmentGal: number;
   grounding: GroundingParams;
+  /** 味方機（友軍誤射）。任務に friendly_aircraft が無ければ null */
+  friendly: FriendlyParams | null;
   destroyerSpec: DestroyerSpec;
   shipAi: ShipAiParams;
   /** 外れ確定の半径二乗: 目標中心からこれより離れて遠ざかれば通過したとみなす */
@@ -116,6 +120,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     fuelCurve,
     fuelAllotmentGal,
     grounding: getGroundingParams(data),
+    friendly: getFriendlyParams(data, mission, world.time_scale),
     destroyerSpec: {
       lengthM: enemyRecord.length_m,
       beamM: enemyRecord.beam_m,
@@ -136,4 +141,3 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   };
 }
 
-export { fuelCurveFromData };

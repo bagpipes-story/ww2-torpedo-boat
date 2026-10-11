@@ -266,6 +266,18 @@ describe('被害', () => {
     expect(out.destroyed).toBe(true);
     expect(d.hp).toBe(0);
   });
+  it('HitSpec（damage / fireChance / engineDamageChance だけ）でも同じ経路で適用できる: 25 で HP 75、同じシードなら砲と同じ抽選', () => {
+    const d = createDamageState(DP);
+    const out: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
+    applyShellHit(d, { damage: 25, fireChance: 0.25, engineDamageChance: 0 }, DP, new SeededRng(7), out);
+    expect(d.hp).toBe(75);
+    expect(out.engineHit).toBe(false);
+    const d2 = createDamageState(DP);
+    const out2: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
+    applyShellHit(d2, { ...GP.guns[0]!, damage: 25, fireChance: 0.25, engineDamageChance: 0 }, DP, new SeededRng(7), out2);
+    expect(out2.startedFire).toBe(out.startedFire);
+    expect(d2.fireLeftS).toBe(d.fireLeftS);
+  });
   it('data から読める: 127mm と 25mm、探照灯・星弾、艇の damage', () => {
     expect(GP.guns.length).toBe(2);
     expect(GP.guns[0]!.id).toBe('main_127mm');
