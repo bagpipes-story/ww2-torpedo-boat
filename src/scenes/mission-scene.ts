@@ -260,7 +260,8 @@ export class MissionScene extends Phaser.Scene {
     const before = this.callFlags;
     this.callFlags = updateReturnCalls(before, w.destroyer.sinking, expended, w.fuel.gal, needGal, this.timeLeftS, needS, rp.callMargin);
     if (before === 0 && this.callFlags !== 0) this.returnView?.pulse();
-    t.fuelNeed01 = w.fuelAllotmentGal > 0 ? needGal / w.fuelAllotmentGal : 0;
+    // 燃料計の青い目盛り: 全速で輪の縁まで戻るのに要る燃料（全速は巡航の 1.47 倍食うので、巡航基準だと全速で走る人には甘すぎた。v0.3.3 実機）
+    t.fuelNeed01 = w.fuelAllotmentGal > 0 ? (this.ringEdgeM * w.fuelCurve.galPerMFull) / w.fuelAllotmentGal : 0;
     // 待ち: 輪の中にいる間、または燃料 0 で止まっている間だけ数える
     if (w.atHome || w.grounded || (w.fuel.empty && w.band === 'stop')) this.waitS += realDt;
     else this.waitS = 0;

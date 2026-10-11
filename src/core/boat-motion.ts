@@ -82,7 +82,7 @@ export interface BoatTelemetry {
   hiddenBySmoke: boolean;
   /** ワールドカメラの論理ズーム（見張りで下がる。画面外マーカーの計算用） */
   cameraZoom: number;
-  /** 燃料（v0.3.0）: 残り ÷ 割当、巡航で帰投地点の輪の縁まで戻るのに要る分 ÷ 割当（輪の中は 0）、空（漂流） */
+  /** 燃料（v0.3.0）: 残り ÷ 割当、全速で帰投地点の輪の縁まで戻るのに要る分 ÷ 割当（輪の中は 0。v0.3.3 で巡航基準から全速基準に。燃料計の青い目盛り）、空（漂流） */
   fuel01: number;
   fuelNeed01: number;
   fuelEmpty: boolean;
