@@ -1,4 +1,4 @@
-// 任務の種（data/missions_seed.json）の読み出し（v0.4.0 で game-data.ts から切り出し。中身は v0.3.5 のまま）。
+// 任務の種（data/missions_seed.json）の読み出し（v0.4.0 で game-data.ts から切り出し。切り出した中身は v0.3.5 のまま、v0.4.0 で hazards を足した）。
 // 型は実行時に検査する（data 駆動なので壊れていれば起動時に分かる）。v0.4.0 の任務一覧・Briefing の読み出しもここに置く。
 import type { GameData } from './game-data';
 import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '../core/mission-flow';

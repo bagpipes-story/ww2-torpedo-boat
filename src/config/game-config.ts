@@ -56,11 +56,11 @@ export const DEBUG_STORM_START_Y = debugNumber('storm');
 export const DEBUG_STORM_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostorm');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
-/** 港内空襲の上書き（docs/02 §6.8）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝直行ではその結果で出撃（通しでは起こすだけ。hit は至近弾、stay は無傷に固定） */
+/** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
 export const DEBUG_RAID_OVERRIDE: RaidOverride = DEBUG_ENABLED
   ? parseRaidOverride(new URLSearchParams(window.location.search).get('raid'), new URLSearchParams(window.location.search).has('noraid'))
   : 'none';
-/** ?debug&seed=N: 出撃の seed を固定（Result の seed と同じ値で、空襲と任務の乱数を再現する。0 と負は無視） */
+/** ?debug&seed=N: 出撃の seed を固定（Result の seed と同じ値で任務の乱数を再現する。空襲を振るのは通しだけなので、空襲の夜まで再現するのは ?debug&title&seed=N。0 と負は無視） */
 export const DEBUG_SEED = debugNumber('seed');
 /** 出撃の seed。Title の行・Result の「もう一度」（直行では Boot・Result）が Briefing・Mission の前に決める（Math.random は使わない。§7） */
 export function sortieSeed(): number {

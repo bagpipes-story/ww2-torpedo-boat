@@ -1,4 +1,4 @@
-// Mission の HUD 向けテレメトリと Result の組み立て（v0.4.0 で mission-scene から切り出し。中身は v0.3.5 のまま）。
+// Mission の HUD 向けテレメトリと Result の組み立て（v0.4.0 で mission-scene から切り出し。切り出した中身は v0.3.5 のまま、v0.4.0 で Result に出撃と「出撃前」の行を足した）。
 // テレメトリは 1 個だけ作って Registry に置き、毎フレーム中身だけ書き換える（§7: 確保しない）。Result は終了時に 1 回だけ作る。
 import type { GameData } from '../config/game-data';
 import { RUDDER_BAR_FULL_DEG } from '../config/ui-config';

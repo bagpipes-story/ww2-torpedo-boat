@@ -51,6 +51,8 @@ export const TORPEDO_BUTTON_RADIUS = 64;
 export const TORPEDO_BUTTON_TAP_MAX_S = 0.3;
 export const TORPEDO_BUTTON_ALPHA = 0.55;
 export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
+/** Mission が始まってから魚雷ボタンが押下を受けない ms（v0.4.0）。Briefing の「出撃」（?debug 直行では Result の「もう一度」）の右側が魚雷ボタンと重なるので、2 度押しの 2 回目で出だしに 1 本撃たない。出だしの 0.6 秒に撃つ場面は無い */
+export const TORPEDO_BUTTON_ARM_MS = 600;
 export const HUD_FONT_BUTTON_PX = 22;
 
 /** 雷跡の点（見た目）。間隔 m、プール数、消えるまでの実時間秒、濃さ */

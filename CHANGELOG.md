@@ -7,10 +7,10 @@
 
 - 目的: 起動するとすぐ Mission だった流れを、Title（任務一覧）→ Briefing（任務の説明と出撃前の港内空襲の 2 択）→ Mission → Result（「もう一度」「任務一覧」）にする。v0.4.1〜v0.4.4（大発・沿岸砲・要人脱出・任務の生成）の土台。docs/02 §4・§5・§6.8・§9、docs/03 v0.4.0。
 - 変更点:
-  - 分割（挙動の変更なし）: `src/systems/mission-telemetry.ts`（テレメトリと Result の組み立て。mission-scene 434 → 277 行、32db2ea）、`src/config/mission-data.ts`（任務の読み出し。game-data 312 → 204 行、7585382）。v0.3.3 から持ち越した mission-scene の分割はこれで解消。300 行を超えるのは前からの boat-hud.ts（315）と placeholders.ts（304）だけ。
+  - 分割（挙動の変更なし）: `src/systems/mission-telemetry.ts`（テレメトリと Result の組み立て。mission-scene 434 → 277 行、32db2ea）、`src/config/mission-data.ts`（任務の読み出し。game-data 312 → 204 行、7585382）。v0.3.3 から持ち越した mission-scene の分割はこれで解消。今回触ったファイルはすべて 300 行以下（mission-world.ts はちょうど 300）。300 行を超えるのは前からの gunnery.ts（410）・friendly.ts（368）・boat-hud.ts（315）・placeholders.ts（304）とテストの friendly.test.ts（326）。
   - `src/core/sortie.ts`（新規）: 出撃（Sortie: 任務・seed・空襲・2 択・至近弾）と港内空襲。seed+4 の系列から必ず 2 回引く（1 回目 < chance で空襲、2 回目 < stay_hit_chance なら「残る」で至近弾）。乱数の系列は魚雷 seed・砲撃 +1・掃射 +2・暴風 +3・空襲 +4 で、どちらを選んでも任務中の乱数は変わらない。出撃時の状態（積む燃料の割合・HP 減・火災）、Result の「出撃前」の行、?debug の上書き、Scene 間の受け渡しの検査（`isSortie`・`isBriefingInit`）。
   - `src/core/briefing.ts`（新規）: 任務一覧（playable_from を持つ任務を order 順、出撃できない任務は「準備中 ・ 版」）、日付、注記の短縮、月、敵の数、危険、帰投地点の 8 方位、Briefing の 6 行（目的・成功・月・敵・危険・条件）。
-  - シーン: `title-scene.ts`・`briefing-scene.ts`（新規）、`src/ui/menu-ui.ts`（MenuButton: ボタンの上で押してその上で離すと決定、外で離せば取り消し、画面ができてから 0.3 秒は受けない。上中央のビルド番号）、`src/config/menu-config.ts`（寸法と UI の語）。Boot は Title へ（`?debug` は Mission へ直行）。Mission・Hud は Sortie を受け取る（seed は Title・Result が決める。Mission はもう Date.now を使わない）。world-setup が Sortie から積む燃料と出撃時の HP・火災を作り、mission-world は生成時に乗員の減りも決める（最初のフレームから「乗員 12/14」「消火 1.2s」。300 行のまま）。Hud は再開時に識別・消火の表示キャッシュを戻す。中央寄せのボタンは 2 行目が空なら題を中央に置く（選んだ後の「出撃」）。
+  - シーン: `title-scene.ts`・`briefing-scene.ts`（新規）、`src/ui/menu-ui.ts`（MenuButton: ボタンの上で押してその上で離すと決定、外で離せば取り消し、画面ができてから 0.3 秒は受けない。上中央のビルド番号）、`src/config/menu-config.ts`（寸法と UI の語）。Boot は Title へ（`?debug` は Mission へ直行）。Mission・Hud は Sortie を受け取る（seed は Title・Result が決める。Mission はもう Date.now を使わない）。world-setup が Sortie から積む燃料と出撃時の HP・火災を作り、mission-world は生成時に乗員の減りも決める（最初のフレームから「乗員 12/14」「消火 1.2s」。300 行のまま）。Hud は再開時に識別・消火の表示キャッシュを戻す。中央寄せのボタンは 2 行目が空なら題を中央に置く（選んだ後の「出撃」）。魚雷ボタンは Mission が始まってから 0.6 秒は押下を受けない（`TORPEDO_BUTTON_ARM_MS`。「出撃」の右側が魚雷ボタンと重なるため。レビューの指摘）。
   - Result: 上に詰めた（上端 90 → 56、行間 14 → 12、seed 36 → 24）、要約の次に「出撃前: …」の行。「タップでもう一度」をやめ、左下「任務一覧」（Title へ）・右下「もう一度」（同じ任務の Briefing へ新しい seed。?debug 直行では Mission へ）。主ボタン（Briefing の「出撃」と Result の「もう一度」）は右下の同じ位置。任務中から押しっぱなしの指を離しても反応しない。
   - data（design、根拠は source）: `risk_events.json` harbor_fire_explosion に `params`（chance 0.5、disperse_fuel_factor 0.9、stay_hit_chance 0.5、stay_hit_damage 20、stay_hit_fire true）と penalty の書き直し。理由: chance 0.5 は実機で 2 択を試せる頻度（3 回続けて出ない確率 12.5%。v0.4.4 で risk_events の重みに置き換える）。0.9 は割当 38 → 34.2 gal で、標準的な遊び方の帰投時の残りが 22 → 12%、全速だけの 1 回攻撃は帰り道を巡航に落とさないと届かない（0.85＝32.3 gal は v0.3.1 で「標準でも 7%」として退けた 32 gal と同じなので採らない）。20＋火災は、至近弾で HP 80・乗員 12/14 から始まり、すぐ消せば取り返せて、空襲だけでは沈まない（80 > 40 を起動時に検査）。点の期待値は分散 1,262、残る 1,265 でほぼ同じ（違いは遊び方への効き）。`missions_seed.json`: us_01〜03 に playable_from（v0.4.3 / v0.4.0 / v0.4.1）と briefing_note_ja（historical_note から人物名を除いた画面用。us_01 は「要人」。CLAUDE.md §11）、us_02 の v0_1_prototype に hazards（暴風・敵艦の砲撃・衝突・座礁・友軍誤射・港内空襲）、version 0.4.0。
   - テスト 223 件（+27）: `tests/sortie.test.ts`（13: 抽選の頻度、seed の再現、上書き、2 択の効果、受け渡しの検査、文、data の検査）、`tests/briefing.test.ts`（12: 任務一覧、6 行の文、人物名の denylist と src が historical_note を読まないこと、hazards と世界の一致）、world-setup・game-data に追加。
@@ -20,7 +20,8 @@
     - C（seed 4）: 分散で燃料 34.2（「燃料 90%」、注意なし）、残るで無傷・燃料 38。どちらを選んでも暴風の始まりは同じ（別系列）。
     - D〜K: 選ぶ前に任務一覧へ戻ると同じ夜、出撃した後は新しい夜（D）。Result は 0.4 秒より前のタップを捨て、「もう一度」は新しい seed の Briefing へ（E）。任務中から押しっぱなしの指を Result のボタンの上で離しても進まない（F）。`?debug` 直行・`&raid=hit`（HP 80・火災）・`&raid=disperse`（34.2 gal）、「もう一度」も直行（G）。seed 3 の 2 回で HP・暴風が同じ（H）。文字はすべて画面内、ボタンの高さ 52〜61 pt、Result の最悪の 15 行で文字の下端 578（ボタンの上端 600）（I）。3 周しても各シーンの物体数・listener・registry が同じ（J）。通常 URL に `window.__game` が無い（K）。ページエラー無し。
     - 中立性: 7585382 のビルド（seed を 7 に固定）と今回の `?debug&seed=7` で、同じ入力（全速・転舵・発射・減速・煙幕）の 1,500 固定ステップが一致（艇・駆逐艦の位置、HP、燃料、暴風、魚雷）。v0.3.5 の確認（乗員の倍率・消火・Result）も同じ値。
-  - デバッグ URL: `?debug` は Title・Briefing を飛ばして Mission へ直行（v0.3.5 までと同じ。Result の「もう一度」も直行）。`?debug&title` で通し。`&raid`（必ず空襲）・`&noraid`（空襲なし）・`&raid=disperse|stay|hit`（直行ではその結果で出撃）・`&seed=N`（出撃の seed を固定。Result の seed と同じ値で再現）。
+  - デバッグ URL: `?debug` は Title・Briefing を飛ばして Mission へ直行（v0.3.5 までと同じ。Result の「もう一度」も直行）。直行は空襲を振らず、`&raid=disperse|stay|hit` のときだけその結果で出撃する。`?debug&title` で通し（Briefing で空襲を振る）。通しでは `&raid`＝必ず空襲、`&noraid`＝空襲なし、`&raid=hit|stay`＝空襲を起こして至近弾の有無を固定。`&seed=N` は出撃の seed を固定（Result の seed と同じ値で任務の乱数を再現。空襲の夜まで再現するのは `?debug&title&seed=N`）。
+  - レビュー（Workflow: 4 視点 → 1 件ごとに 3 人で反証。18 件中 7 件を確認、重複を除いて 4 件）を反映: 「出撃」の 2 度押しで出だしに魚雷が 1 本出る（上の 0.6 秒）／iOS のタッチの取り消し（コントロールセンター・着信）で MenuButton が決定になる（`pointer.wasCanceled` なら決定しない）／デバッグ URL の説明が直行では成り立たない（上の行と game-config の注記を直した）／300 行超えのファイルの列挙が欠けていた（上の分割の行）。
 - 既知の制約:
   - 出撃できるのは「東京急行を迎え撃て」だけ（コレヒドール脱出は v0.4.3、大発を狩れは v0.4.1）。設定・セーブ・キャンペーンの解放・Title/Briefing/Result のキー操作は無い。任務一覧は 3 件まで（4 件目は操作の一言と重なる）。
   - 港内空襲は us_02 の出撃前に 50%。単艇なので「出撃艇数減」は無い（僚艇は v0.4.3）。結果は seed+4 で決まる。選んだ後は任務一覧に戻れず、選ぶ前に戻っても同じ夜（ページを読み込み直すと別の夜）。
@@ -28,6 +29,7 @@
   - 出撃時の火災は既存の火災と同じ（消さないと 20 秒で HP 40・乗員 8/14）。空襲だけでは沈まないが、他の被害と重なって沈むと「砲撃で沈没」と出る。燃えている間は 127mm の新しい火災は起きない（既存の規則）。
   - Briefing の数値は ?debug の上書き込みで Mission と同じ値。空襲の効果は「条件」の行には出さない（2 択の欄に出す）。日本語の折り返しは Phaser の advanced wrap（禁則なし）。幅はヘッドレスの代替フォントで測った。
   - `?debug&seed=N` では「もう一度」も同じ夜。`?debug` 直行の Result にも「出撃前: 空襲なし」の行が出る（us_02 は空襲のある任務）。
+  - 魚雷ボタンは Mission が始まってから 0.6 秒は押せない（「出撃」の 2 度押し対策）。iOS がタッチを取り消したときに魚雷ボタンが撃つのは v0.1 からのまま（離した扱い）。
   - Boot のテクスチャは us_02 の艇・敵・魚雷だけ（任務ごとにするのは v0.4.1）。`scripts/return-sim.ts` は空襲を模擬しない（0.9 の根拠は模擬の中央値からの引き算）。音は無い（v0.7）。
 - 実機テスト結果: 未実施。
 

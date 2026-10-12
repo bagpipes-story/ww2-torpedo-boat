@@ -1,5 +1,5 @@
 // Title・Briefing・Result の矩形ボタンとビルド番号（v0.4.0）。静的な画面なので作るのは 1 回だけ。見た目が変わるのは押下・有効・選択・2 行目のときだけ（§7）。
-// 押下はボタンの上で、同じ指をボタンの上で離すと決定（外で離せば取り消し）。画面ができてから delayMs は押下を受けない（前の画面から押しっぱなしの指・2 度押しで進まない）。
+// 押下はボタンの上で、同じ指をボタンの上で離すと決定（外で離す・iOS がタッチを取り消せば取り消し）。画面ができてから delayMs は押下を受けない（前の画面から押しっぱなしの指・2 度押しで進まない）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import {
@@ -141,7 +141,8 @@ export class MenuButton {
   private onUp(p: Phaser.Input.Pointer): void {
     if (p.id !== this.pointerId) return;
     this.release();
-    if (this.enabled) this.onTap();
+    // touchcancel（コントロールセンター・着信など）も Phaser は離した扱いで GO の up を出すので、決定にしない
+    if (this.enabled && !p.wasCanceled) this.onTap();
   }
 
   private onRelease(p: Phaser.Input.Pointer): void {
