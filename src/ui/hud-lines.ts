@@ -90,7 +90,7 @@ export function seaplaneLine(t: BoatTelemetry, distStep: number, shallowStep: nu
   }
   let text: string;
   if (t.planeBombAir) text = '爆弾投下！ 転舵！';
-  else if (t.planePhase === SP_RUN) text = '爆撃進路！ 転舵でかわせ';
+  else if (t.planePhase === SP_RUN) text = '爆撃進路！ 転舵か減速でかわせ';
   else if (t.planePhase === SP_ORBIT && t.planeBombsDropped > 0) text = '敵機 旋回 ・ 次の爆撃進路で転舵';
   else if (t.planeFlareOn) text = t.destroyerSunk ? '照明弾！ ・ 爆撃が来る ・ 転舵の用意' : '照明弾！ 駆逐艦に見えている ・ 光の外へ／煙幕';
   else text = t.planePhase === SP_APPROACH ? `敵機に発見された！ ${d} m ・ 照明弾と爆弾に備えよ` : '敵機に発見された！ ・ 照明弾と爆弾に備えよ';

@@ -31,6 +31,8 @@ export interface SeaplaneParams {
   bombHit: HitSpec;
   bombFallFeelS: number;
   bombFallGameS: number;
+  /** 狙いを決める時点（爆撃進路に入った瞬間）から着弾までの game 秒（= 真上までの秒 × time_scale ＋ 落下の game 秒）。見越しはこの秒で取る */
+  bombLeadGameS: number;
   bombScatterM: number;
   boatHalfLengthM: number;
   bombHitRadiusM: number;
@@ -137,6 +139,7 @@ export function seaplaneParamsFromData(plane: SeaplaneDataRecord, event: EnemyAi
     },
     bombFallFeelS: bombFallGameS / timeScale,
     bombFallGameS,
+    bombLeadGameS: overpassS * timeScale + bombFallGameS,
     bombScatterM: plane.bomb.accuracy_cep_m * Math.SQRT2,
     boatHalfLengthM: boat.halfLengthM,
     bombHitRadiusM: boat.halfBeamM + plane.bomb.blast_radius_m,

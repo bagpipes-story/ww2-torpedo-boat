@@ -1,5 +1,6 @@
 // 敵の水上機の照明弾と落下中の爆弾（v0.4.1。seaplane.ts から分けた）。段階と独立に毎ステップ進む（機が去った後も着弾・照明は続く）。
-// 狙点は艇の現在速度の見越し点（落下の game 秒）＋ 一様円盤の散布（gunnery の dispersion と同じ模型。乱数は seed+5 の系列）。確保しない。
+// 狙いは爆撃進路に入った瞬間の艇の速度で決める（進入から着弾までの見越し点 ＋ 一様円盤の散布。gunnery の dispersion と同じ模型。乱数は seed+5 の系列）。
+// 進入の後に転舵か減速をすれば外れる（「爆撃進路！ 転舵でかわせ」）。投下の後でも 1 秒以内の転舵なら外れる。確保しない。
 import type { BoatState } from './boat-motion';
 import { pointNearBoat } from './gunnery';
 import type { SeededRng } from './rng';
@@ -78,17 +79,22 @@ export function dropFlare(o: Ordnance, p: SeaplaneParams, boat: BoatState): void
   o.flare.leftS = p.flareDurationS;
 }
 
-/** 爆弾の投下（bombsLeft > 0 のとき）。散布は rng から 2 回 */
-export function releaseBomb(o: Ordnance, p: SeaplaneParams, boat: BoatState, rng: SeededRng): void {
+/** 爆撃進路に入った: 次の爆弾の狙点を決める（艇の今の速度 × bombLeadGameS の見越し点 ＋ 散布。rng から 2 回） */
+export function aimBomb(o: Ordnance, p: SeaplaneParams, boat: BoatState, rng: SeededRng): void {
   const b = o.bombs[o.bombsDropped]!;
   const h = degToRad(boat.headingDeg);
   const r = p.bombScatterM * Math.sqrt(rng.next());
   const th = 2 * Math.PI * rng.next();
+  b.aimX = boat.x + Math.sin(h) * boat.speedMps * p.bombLeadGameS + r * Math.cos(th);
+  b.aimY = boat.y - Math.cos(h) * boat.speedMps * p.bombLeadGameS + r * Math.sin(th);
+}
+
+/** 爆弾の投下（真上。bombsLeft > 0 のとき。狙点は aimBomb で決めてある） */
+export function releaseBomb(o: Ordnance, p: SeaplaneParams, boat: BoatState): void {
+  const b = o.bombs[o.bombsDropped]!;
   b.active = true;
   b.fromX = boat.x;
   b.fromY = boat.y;
-  b.aimX = boat.x + Math.sin(h) * boat.speedMps * p.bombFallGameS + r * Math.cos(th);
-  b.aimY = boat.y - Math.cos(h) * boat.speedMps * p.bombFallGameS + r * Math.sin(th);
   b.leftS = p.bombFallFeelS;
   b.hit = false;
   b.releaseHeadingDeg = boat.headingDeg;

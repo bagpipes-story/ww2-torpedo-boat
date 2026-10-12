@@ -32,7 +32,7 @@ import {
   type SeaplaneState,
 } from '../src/core/seaplane';
 import { isEnemyAircraftEventRecord, isSeaplaneDataRecord, seaplaneParamsFromData, type EnemyAircraftEventRecord, type SeaplaneDataRecord } from '../src/core/seaplane-data';
-import { releaseBomb } from '../src/core/seaplane-ordnance';
+import { aimBomb, releaseBomb } from '../src/core/seaplane-ordnance';
 import { ktToMps } from '../src/core/units';
 import { buildWorldSetup } from '../src/systems/world-setup';
 
@@ -94,6 +94,7 @@ describe('敵の水上機（docs/02 §6.8、v0.4.1）: data と params', () => {
     expect(P.leaveS).toBe(2.5);
     expect(P.bombFallGameS).toBeCloseTo(11.06, 2);
     expect(P.bombFallFeelS).toBeCloseTo(2.212, 3);
+    expect(P.bombLeadGameS).toBeCloseTo(1.944 * 5 + 11.06, 2);
     expect(P.bombScatterM).toBeCloseTo(56.569, 3);
     expect(P.bombCount).toBe(2);
     expect(P.bombHit).toEqual({ damage: 35, fireChance: 0.3, engineDamageChance: 0.2 });
@@ -275,15 +276,16 @@ describe('照明弾と爆撃', () => {
     for (let i = 0; i < 160; i++) stepSeaplane(coarse, P, c, new SeededRng(3), 0.25);
     expect(coarse.ordnance.bombsDropped).toBe(2);
   });
-  it('見越し（散布なし）: 北向き全速の艇 → 狙点 (0, −221.9)。直進なら命中（35）。投下の瞬間から東へ転舵すれば 270 m ずれて外れ（転舵 0.17 秒）。投下 1 秒後からでも外れる', () => {
-    const scenario = (turnAfterS: number | null): SeaplaneState => {
+  it('見越し（散布なし）: 狙いは爆撃進路に入った瞬間の速度で決める。北向き全速の直進なら狙点は投下点の 221.9 m 先で命中（35）。進路に入ってから転舵すれば外れ、投下の瞬間から東へ転舵しても 270 m ずれて外れ（転舵 0.17 秒）、投下 1 秒後からでも外れる。進路に入ってから 18 kt に減速しても外れる', () => {
+    const scenario = (turnAfterS: number | null, atRunStart = false, slow = false): SeaplaneState => {
       const s = started();
       const boat: BoatState = { x: 0, y: 0, headingDeg: 0, speedMps: FULL };
       const c = { ...check(), boat, forceSeen: true };
       let releasedAt = NaN;
       run(s, c, 31, ZERO_RNG, (t) => {
-        const turn = turnAfterS !== null && !Number.isNaN(releasedAt) && t - releasedAt >= turnAfterS;
-        stepBoat(boat, { headingDeg: turn ? 90 : 0, speed01: 1 }, BP, DT * TS);
+        const inRun = s.phase === SP_RUN || s.ordnance.bombsDropped > 0;
+        const turn = atRunStart ? inRun : turnAfterS !== null && !Number.isNaN(releasedAt) && t - releasedAt >= turnAfterS;
+        stepBoat(boat, { headingDeg: turn ? 90 : 0, speed01: slow && inRun ? 0.46 : 1 }, BP, DT * TS);
         if (Number.isNaN(releasedAt) && s.ordnance.bombsDropped > 0) releasedAt = t;
       });
       return s;
@@ -291,7 +293,7 @@ describe('照明弾と爆撃', () => {
     const straight = scenario(null);
     const b = straight.ordnance.bombs[0]!;
     expect(b.aimX).toBeCloseTo(b.fromX, 3);
-    expect(b.aimY - b.fromY).toBeCloseTo(-FULL * P.bombFallGameS, 3);
+    expect(b.aimY - b.fromY).toBeCloseTo(-FULL * P.bombFallGameS, -0.5); // 進路に入った刻みのずれ（1 ステップ ≈ 1.7 m）
     expect(FULL * P.bombFallGameS).toBeCloseTo(221.9, 0);
     expect(b.hit).toBe(true);
     expect(Number.isNaN(b.dodgeReactS)).toBe(true);
@@ -302,6 +304,8 @@ describe('照明弾と爆撃', () => {
     expect(dodged.ordnance.bombs[0]!.hit).toBe(false);
     expect(dodged.ordnance.bombs[0]!.dodgeReactS).toBeCloseTo(0.17, 1);
     expect(scenario(1.0).ordnance.bombs[0]!.hit).toBe(false);
+    expect(scenario(null, true).ordnance.bombs[0]!.hit).toBe(false);
+    expect(scenario(null, false, true).ordnance.bombs[0]!.hit).toBe(false);
   });
   it('散布の統計（SeededRng(7)、停止した艇、4,000 発）: 命中 0.38 ± 0.03、着弾半径の中央値 40 ± 2 m、最大 56.6 m 以下', () => {
     const rng = new SeededRng(7);
@@ -310,7 +314,8 @@ describe('照明弾と爆撃', () => {
     const radii: number[] = [];
     for (let i = 0; i < 4000; i++) {
       const s = createSeaplaneState(P);
-      releaseBomb(s.ordnance, P, boat, rng);
+      aimBomb(s.ordnance, P, boat, rng);
+      releaseBomb(s.ordnance, P, boat);
       const b = s.ordnance.bombs[0]!;
       radii.push(Math.hypot(b.aimX, b.aimY));
       let ev = 0;

@@ -6,7 +6,7 @@ import type { BoatState } from './boat-motion';
 import type { AircraftPose } from './friendly';
 import type { SeededRng } from './rng';
 import type { SeaplaneParams } from './seaplane-data';
-import { createOrdnance, dropFlare, releaseBomb, stepBombs, stepFlare, type Ordnance } from './seaplane-ordnance';
+import { aimBomb, createOrdnance, dropFlare, releaseBomb, stepBombs, stepFlare, type Ordnance } from './seaplane-ordnance';
 import { degToRad, radToDeg, wrapDeg360 } from './units';
 
 export type { SeaplaneParams } from './seaplane-data';
@@ -207,7 +207,7 @@ export function stepSeaplane(s: SeaplaneState, p: SeaplaneParams, c: SeaplaneChe
         dropFlare(s.ordnance, p, c.boat);
         ev |= SP_EV_FLARE;
       } else if (s.ordnance.bombsLeft > 0) {
-        releaseBomb(s.ordnance, p, c.boat, rng);
+        releaseBomb(s.ordnance, p, c.boat);
         ev |= SP_EV_RELEASE;
       }
     }
@@ -216,10 +216,11 @@ export function stepSeaplane(s: SeaplaneState, p: SeaplaneParams, c: SeaplaneChe
     s.timerS -= dt;
     if (s.timerS <= 0) {
       if (s.ordnance.bombsLeft > 0) {
-        // 爆撃進路: 今の旋回の方位の 600 m 先から真上へ
+        // 爆撃進路: 今の旋回の方位の 600 m 先から真上へ。狙いはここで決める（この後に転舵か減速をすれば外れる）
         s.runDeg = wrapDeg360(s.orbitStartDeg + p.orbitDegPerS * p.orbitS);
         s.phase = SP_RUN;
         s.timerS = -s.timerS;
+        aimBomb(s.ordnance, p, c.boat, rng);
       } else {
         leave(s, p, SP_OUT_BOMBED);
       }
