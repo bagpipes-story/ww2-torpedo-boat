@@ -28,24 +28,29 @@ import {
   type Sortie,
 } from '../src/core/sortie';
 
-const MISSION = getPrototypeMission(gameData, 'us_02');
-const P: RaidParams = getRaidParams(gameData, MISSION)!;
+type Proto = { v0_1_prototype: Record<string, unknown> };
+const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
+/** us_02 の hazards に harbor_fire_explosion を足した複製（実機の感想で us_02 から外したが、仕組みはこの複製で検査し続ける） */
+const withRaid = (): typeof gameData => {
+  const d = clone();
+  protoOf(d)['hazards'] = [...(protoOf(d)['hazards'] as string[]), 'harbor_fire_explosion'];
+  return d;
+};
+const RAID_DATA = withRaid();
+const MISSION = getPrototypeMission(RAID_DATA, 'us_02');
+const P: RaidParams = getRaidParams(RAID_DATA, MISSION)!;
 const DP = getBoatDamageParams(gameData, MISSION.playerBoatId);
 const rawRec: unknown = gameData.riskEvents.events.find((e) => e.id === 'harbor_fire_explosion');
 if (!isRaidDataRecord(rawRec)) throw new Error('raid params');
 const REC: RaidDataRecord = rawRec;
-type Proto = { v0_1_prototype: Record<string, unknown> };
-const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
-const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
 const sortie = (over: Partial<Sortie>): Sortie => ({ missionId: 'us_02', seed: 1, raid: true, choice: RAID_NONE, stayHit: false, ...over });
 
 describe('出撃と港内空襲（docs/02 §6.8、v0.4.0）', () => {
-  it('data: us_02 は空襲あり（0.5・分散 0.9・至近弾 0.5・HP −20・火災）。hazards から harbor_fire_explosion を消した複製は null、params を消した複製は例外', () => {
+  it('data: us_02 本体は空襲なし（null。実機で外した）。hazards に足した複製は 0.5・分散 0.9・至近弾 0.5・HP −20・火災。params を消した複製は例外', () => {
+    expect(getRaidParams(gameData, getPrototypeMission(gameData, 'us_02'))).toBeNull();
     expect(P).toEqual({ chance: 0.5, disperseFuelFactor: 0.9, stayHitChance: 0.5, stayHitDamage: 20, stayHitFire: true });
-    const noHazard = clone();
-    protoOf(noHazard)['hazards'] = ['storm'];
-    expect(getRaidParams(noHazard, getPrototypeMission(noHazard, 'us_02'))).toBeNull();
-    const noParams = clone();
+    const noParams = withRaid();
     delete (noParams.riskEvents.events.find((e) => e.id === 'harbor_fire_explosion') as Record<string, unknown>)['params'];
     expect(() => getRaidParams(noParams, MISSION)).toThrow();
   });

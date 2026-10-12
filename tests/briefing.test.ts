@@ -102,7 +102,10 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(briefingRows(rec, { ...briefingNumbers(buildWorldSetup(gameData, 'us_02', NaN, NaN)), fuelGal: 34.25 }, nameOf, labelOf)[5]!.text).toBe('夜明けまで 150 秒 ・ 燃料 34.3 gal ・ 魚雷 4 本');
   });
   it('人物名を出さない（CLAUDE.md §11）: 一覧の 3 任務の画面に出す文と空襲の文に人物名が無い。src は historical_note を読まない', () => {
-    const p = getRaidParams(gameData, getPrototypeMission(gameData, 'us_02'))!;
+    const raidData = clone();
+    const proto = byId(raidData, 'us_02')['v0_1_prototype'] as Record<string, unknown>;
+    proto['hazards'] = [...(proto['hazards'] as string[]), 'harbor_fire_explosion'];
+    const p = getRaidParams(raidData, getPrototypeMission(raidData, 'us_02'))!;
     const s = { missionId: 'us_02', seed: 3, raid: true, choice: RAID_STAY, stayHit: true };
     const texts: string[] = [RAID_ALERT_JA, RAID_CALM_JA, raidChoiceText(p, RAID_DISPERSE).detail, raidChoiceText(p, RAID_STAY).detail, raidOutcomeText(s, p), raidResultLine(s, p, 1)];
     for (const e of getMenuEntries(gameData).entries) {
@@ -122,7 +125,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it('data の整合: us_02 の hazards は世界の block と港内空襲に一致し、id はすべて risk_events に、敵は enemies にある', () => {
+  it('data の整合: us_02 の hazards は世界の block に一致し（港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', () => {
     const m = getPrototypeMission(gameData, 'us_02');
     const proto = (byId(gameData, 'us_02')['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];
@@ -130,7 +133,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       const e = gameData.enemies.enemies.find((x) => x.id === id) as unknown as Record<string, unknown>;
       return Array.isArray(e['guns']) && (e['guns'] as unknown[]).length > 0;
     });
-    const expected = new Set<string>(['harbor_fire_explosion']);
+    const expected = new Set<string>();
     if (m.storm) expected.add('storm');
     if (m.shallows.length > 0) expected.add('grounding');
     if (m.friendlyAircraft) expected.add('friendly_fire');

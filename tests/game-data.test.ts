@@ -85,8 +85,8 @@ describe('game-data（data/*.json の読み出し）', () => {
     expect(getBoatCrewParams(gameData, 'us_elco80')).toEqual({ total: 14, casualtiesPerHp: 0.1 });
     expect(getBoatCrewEffects(gameData, 'us_elco80').minFactor).toBe(0.5);
   });
-  it('hazards（v0.4.0）: us_02 は storm・enemy_ship_gunfire_or_ram・grounding・friendly_fire・harbor_fire_explosion。消した複製は []、数値を入れた複製は例外', () => {
-    expect(getPrototypeMission(gameData, 'us_02').hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire', 'harbor_fire_explosion']);
+  it('hazards（v0.4.0）: us_02 は storm・enemy_ship_gunfire_or_ram・grounding・friendly_fire（港内空襲は実機で外した）。消した複製は []、数値を入れた複製は例外', () => {
+    expect(getPrototypeMission(gameData, 'us_02').hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire']);
     type Proto = { v0_1_prototype: Record<string, unknown> };
     const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
     const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
