@@ -5,6 +5,7 @@ import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '
 import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../core/shallows';
 import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
+import { menuEntries, shortLabelJa, type BriefingText, type MenuEntry } from '../core/briefing';
 
 /** ミッションの種から v0.1 プロトタイプ用の設定を取り出す（型は実行時に検査する: data 駆動なので壊れていれば起動時に分かる） */
 export interface PrototypeMission {
@@ -32,6 +33,8 @@ export interface PrototypeMission {
   friendlyAircraft: { triggerEdgeM: number } | null;
   /** 暴風の帯（docs/02 §6.8、v0.3.4）: 海況・帯の幅・速さ・始まりの範囲。無ければ帯は無い */
   storm: StormMissionBlock | null;
+  /** 遊べる世界で実際に起きる危険（risk_events の id、出会う順。docs/02 §6.8、v0.4.0）。Briefing の「危険」と出撃前の港内空襲の有無を決める。無ければ [] */
+  hazards: string[];
 }
 
 export function isNum(v: unknown): v is number {
@@ -96,6 +99,9 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     if (!isStormMissionBlock(stormRaw)) throw new Error(`${missionId}.v0_1_prototype.storm（sea_state/depth_m/drift_kt/start_south_y_min_m/start_south_y_max_m）が欠けている（docs/02 §6.8）`);
     storm = stormRaw;
   }
+  const hazardsRaw = proto['hazards'];
+  if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
+  const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
   return {
     id: missionId,
     type,
@@ -113,5 +119,67 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     shallows,
     friendlyAircraft,
     storm,
+    hazards,
   };
+}
+
+// ---------- 任務一覧と Briefing（v0.4.0）。data を直接読み、game-data の関数は呼ばない（値の循環を作らない） ----------
+
+/** Title の任務一覧: unlock が default の最初のキャンペーンの、playable_from を持つ任務を order 順に */
+export function getMenuEntries(data: GameData): { campaignName: string; entries: MenuEntry[] } {
+  const c = (data.missionsSeed.campaigns as readonly Record<string, unknown>[]).find((x) => x['unlock'] === 'default');
+  if (!c || typeof c['id'] !== 'string' || typeof c['name_ja'] !== 'string') throw new Error('missions_seed.json に unlock が default のキャンペーン（id / name_ja）が無い');
+  return { campaignName: c['name_ja'], entries: menuEntries(data.missionsSeed.missions, c['id']) };
+}
+
+export interface BriefingRecord extends BriefingText {
+  id: string;
+  titleJa: string;
+  date: string;
+  place: string;
+  /** 表示用の史実メモ（人物名なし。CLAUDE.md §11） */
+  noteJa: string;
+}
+
+/** Briefing に出す文（missions_seed）と遊べる世界の敵・危険・月。文が無ければ例外 */
+export function getBriefingRecord(data: GameData, missionId: string): BriefingRecord {
+  const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
+  if (!m) throw new Error(`missions_seed.json に ${missionId} が無い`);
+  const text = (key: string): string => {
+    const v = m[key];
+    if (typeof v !== 'string' || v.length === 0) throw new Error(`${missionId}.${key} が無い（Briefing、docs/02 §4）`);
+    return v;
+  };
+  const proto = m['v0_1_prototype'] as Record<string, unknown> | undefined;
+  const enemies = proto?.['enemies'];
+  if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === 'string')) throw new Error(`${missionId}.v0_1_prototype.enemies が文字列の配列でない（Briefing）`);
+  const mission = getPrototypeMission(data, missionId);
+  return {
+    id: missionId,
+    titleJa: text('title_ja'),
+    date: text('date'),
+    place: text('place'),
+    objective: text('objective'),
+    success: text('success'),
+    noteJa: text('briefing_note_ja'),
+    moon: mission.moon,
+    enemyIds: enemies as string[],
+    hazardIds: mission.hazards,
+  };
+}
+
+/** 敵の名前（enemies.json の name_ja から資料の注記「（…）」を落とす） */
+export function enemyNameJa(data: GameData, id: string): string {
+  const e = (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === id);
+  const name = e?.['name_ja'];
+  if (typeof name !== 'string') throw new Error(`enemies.json の ${id}.name_ja が無い`);
+  return shortLabelJa(name);
+}
+
+/** 危険の名前（risk_events.json の label_ja から資料の注記を落とす） */
+export function riskLabelJa(data: GameData, id: string): string {
+  const e = (data.riskEvents.events as readonly Record<string, unknown>[]).find((x) => x['id'] === id);
+  const label = e?.['label_ja'];
+  if (typeof label !== 'string') throw new Error(`risk_events.json に ${id}（label_ja）が無い`);
+  return shortLabelJa(label);
 }

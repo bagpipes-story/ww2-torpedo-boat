@@ -17,6 +17,7 @@ import { groundingParamsFromData, isGroundingDataRecord, type GroundingParams } 
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
 import { isStormDataRecord, stormParamsFromData, type StormParams } from '../core/storm';
 import { crewEffectsFromData, crewParamsFromData, isBoatCrewDataRecord, type CrewEffects, type CrewParams } from '../core/crew';
+import { RAID_EVENT_ID, isRaidDataRecord, raidParamsFromData, type RaidParams } from '../core/sortie';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { type MoonPhase, type VisibilityParams } from '../core/visibility';
 import { isNum, type PrototypeMission } from './mission-data';
@@ -135,6 +136,14 @@ export function getStormParams(data: GameData, mission: PrototypeMission, timeSc
   const limit = boat['sea_state_limit'];
   if (!isNum(limit)) throw new Error(`boats.json の ${mission.playerBoatId}.sea_state_limit が無い（docs/02 §6.8）`);
   return stormParamsFromData(rec, mission.storm, { speedMaxKt: boat['speed_max_kt'] as number, seaStateLimit: limit }, timeScale, mission.bounds, mission.playerStart.y);
+}
+
+/** risk_events.json の harbor_fire_explosion.params（出撃前の港内空襲。docs/02 §6.8、v0.4.0）。任務の hazards に無ければ null。params が無い・壊れていれば例外 */
+export function getRaidParams(data: GameData, mission: PrototypeMission): RaidParams | null {
+  if (!mission.hazards.includes(RAID_EVENT_ID)) return null;
+  const r = data.riskEvents.events.find((e) => e.id === RAID_EVENT_ID);
+  if (!r || !isRaidDataRecord(r)) throw new Error('risk_events.json の harbor_fire_explosion に params（chance / disperse_fuel_factor / stay_hit_chance / stay_hit_damage / stay_hit_fire）が無い（docs/02 §6.8）');
+  return raidParamsFromData(r, getBoatDamageParams(data, mission.playerBoatId));
 }
 
 /** boats.json の乗員（定員と HP あたりの死傷率。docs/02 §6.6、v0.3.4） */

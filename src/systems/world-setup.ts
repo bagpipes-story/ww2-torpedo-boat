@@ -1,5 +1,5 @@
 // 世界の初期化パラメータを data から組み立てる（v0.3.3 で mission-world から切り出し）。Phaser 非依存で、起動時に 1 回だけ呼ぶ。
-// MissionWorld はここで作った数値だけを持ち、エンティティの生成と固定ステップに専念する。?debug の上書き（割当・夜明け）もここで決める。
+// MissionWorld はここで作った数値だけを持ち、エンティティの生成と固定ステップに専念する。?debug の上書き（割当・夜明け）と出撃時の状態（港内空襲。v0.4.0）もここで決める。
 import {
   effectiveFuelAllotmentGal,
   getBoatDamageParams,
@@ -14,6 +14,7 @@ import {
   getFriendlyParams,
   getGroundingParams,
   getPrototypeMission,
+  getRaidParams,
   getStormParams,
   getTorpedoRecord,
   getVisibilityParams,
@@ -29,6 +30,8 @@ import { type FriendlyParams } from '../core/friendly';
 import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
 import { type StormParams } from '../core/storm';
+import { NO_SORTIE_EFFECT, sortieConditions, type RaidParams, type Sortie, type SortieConditions } from '../core/sortie';
+import type { BriefingNumbers } from '../core/briefing';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 
@@ -68,6 +71,11 @@ export interface WorldSetup {
   fuelCurve: FuelCurve;
   /** 任務に積む燃料 gal（?debug&fuel= で上書き可、艇の容量で頭打ち） */
   fuelAllotmentGal: number;
+  /** 実際に積んで出る燃料 gal（港内空襲で分散すると割当 × disperse_fuel_factor。燃料計・燃料点の 100% は fuelAllotmentGal。v0.4.0） */
+  fuelStartGal: number;
+  /** 出撃前の港内空襲（任務の hazards に無ければ null）と、この出撃の出撃時の状態 */
+  raid: RaidParams | null;
+  start: SortieConditions;
   grounding: GroundingParams;
   /** 味方機（友軍誤射）。任務に friendly_aircraft が無ければ null */
   friendly: FriendlyParams | null;
@@ -92,7 +100,8 @@ export interface WorldSetup {
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null): WorldSetup {
+  if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
   const feel = data.hitRateModel.feel;
@@ -111,6 +120,8 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   const hitLen = enemyRecord.length_m * world.hit_scale;
   const hitBeam = enemyRecord.beam_m * world.hit_scale;
 
+  const raid = getRaidParams(data, mission);
+  const start = sortie ? sortieConditions(sortie, raid) : NO_SORTIE_EFFECT;
   return {
     mission,
     boatParams,
@@ -129,6 +140,9 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     durationS: Number.isFinite(debugDawnS) ? debugDawnS : mission.durationS,
     fuelCurve,
     fuelAllotmentGal,
+    fuelStartGal: fuelAllotmentGal * start.fuelFactor,
+    raid,
+    start,
     grounding: getGroundingParams(data),
     friendly: getFriendlyParams(data, mission, world.time_scale),
     storm: debugStormOff ? null : getStormParams(data, mission, world.time_scale),
@@ -154,3 +168,19 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   };
 }
 
+/** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */
+export function briefingNumbers(s: WorldSetup): BriefingNumbers {
+  const f = s.vis.speedFactor;
+  return {
+    visM: playerVisRangeM(s.vis),
+    detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
+    detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
+    durationS: s.durationS,
+    fuelGal: s.fuelAllotmentGal,
+    torpedoes: s.torpedoCapacity,
+    homeX: s.mission.returnPoint.x,
+    homeY: s.mission.returnPoint.y,
+    boundsW: s.mission.bounds.width,
+    boundsH: s.mission.bounds.height,
+  };
+}
