@@ -5,8 +5,9 @@ import type Phaser from 'phaser';
 import { DEBUG_DAWN_S, DEBUG_FRIENDLY_FORCE, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_STORM_OFF, DEBUG_STORM_START_Y, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
 import type { GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE } from '../config/ui-config';
-import { clampToBounds, nextSpeedBand, stepBoat, type BoatParams, type SeaBounds, type SpeedStep } from '../core/boat-motion';
+import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatParams, type SeaBounds, type SpeedStep } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
+import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor } from '../core/crew';
 import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
 import { applyShellHit, createDamageState, stepDamage, type DamageParams, type DamageState, type HitOutcome, type HitSpec } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
@@ -43,17 +44,13 @@ export class MissionWorld {
   readonly storm: StormFront | null;
   readonly params: BoatParams;
   readonly bounds: SeaBounds;
-  /** 夜明けまでの実時間秒（任務の制限時間。?debug&dawn= で上書き可） */
   readonly durationS: number;
   readonly missionType: string;
-  /** 帰投地点の輪と燃料（docs/02 §6.7） */
   readonly returnPoint: ReturnPoint;
   readonly fuelCurve: FuelCurve;
   readonly fuel: FuelState;
   readonly fuelAllotmentGal: number;
-  /** 自艇が帰投地点の輪の中にいる（固定ステップで距離の二乗で判定） */
   atHome = false;
-  /** 浅瀬（docs/02 §6.8）と座礁の判定。座礁すると速力 0 で動けない */
   readonly shallows: ShallowRect[];
   readonly grounding: GroundingParams;
   grounded = false;
@@ -61,27 +58,21 @@ export class MissionWorld {
   readonly shallowStatus: ShallowStatus = { state: SHALLOW_NONE, aheadM: 0 };
   /** 固定ステップで実際に進んだ実秒（夜明けの時計。低フレームレートで捨てた時間は数えない＝移動・燃料と揃う） */
   stepTimeS = 0;
-  /** 初めて魚雷を撃ったときの燃料 gal（未発射なら NaN。Result に出す） */
   fuelAtFirstLaunchGal = NaN;
   readonly vis: VisibilityParams;
   readonly torpedoParams: TorpedoParams;
   readonly damage: DamageState;
   readonly damageParams: DamageParams;
-  /** 煙幕発生器が無い艇なら null（docs/02 §5） */
   readonly smoke: SmokeState | null;
   readonly smokeParams: SmokeParams | null;
   readonly shots: ShotRecord[] = [];
   readonly seed: number;
   hits = 0;
-  /** 現在の速力帯（ヒステリシス付き）。HUD の表示と発見距離の係数を同じ帯で決める */
   band: SpeedStep = 'stop';
-  /** 敵がこのステップで自艇を見つける距離 m */
   detectRangeM = 0;
-  /** 艦と艇を結ぶ線分が煙に遮られている（発見距離 × smoke_factor、探照灯・星弾は照らせない） */
   hiddenBySmoke = false;
   /** 自艇の視程の二乗（敵の表示判定。暴風の雨で毎ステップ更新） */
   visRange2: number;
-  /** 命中スローの残り実秒。0 より大きい間は dt に slowMoFactor を掛ける */
   slowMoLeftS = 0;
 
   /** data から組み立てた数値（world-setup.ts）。固定ステップはここから読み、Scene は crew / storm を読む */
@@ -90,9 +81,12 @@ export class MissionWorld {
   private readonly smokeScreen: SmokeScreen | null;
   private readonly gunRng: SeededRng;
   private readonly hitOutcome: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
-  /** 無傷時の最大速力（機関損傷で params.speedMaxMps を下げる） */
+  /** 無傷時の最大速力（機関損傷で params.speedMaxMps を下げる）、旋回率・加速の基準（暴風 × 乗員の倍率を掛けて毎ステップ書く） */
   private readonly speedMaxBaseMps: number;
-  /** 消火ボタンを押し続けている実秒（火災中だけ数える。extinguish_hold_s 以上で消火） */
+  private readonly turnBaseDegS: number;
+  private readonly accelBaseMps2: number;
+  /** 失った乗員（HP から。毎ステップ更新） */
+  crewLostNow = 0;
   private extinguishHeldS = 0;
   /** 火災で沈んだときの終了理由＝火災を起こした原因（砲撃か味方機の掃射か） */
   private fireReason: MissionEndReason = 'destroyed';
@@ -112,13 +106,16 @@ export class MissionWorld {
     const dt = feelDt * c.timeScale;
     this.stepTimeS += realDt;
     const boat = this.boat.state;
-    // 暴風（v0.3.4）: 帯を進め、中なら旋回率を下げ、速すぎれば波の叩きつけ（HP 0 で沈没）。判定は艇を動かす前の位置
-    if (this.storm?.step(feelDt, boat, this.destroyer.state, !this.destroyer.sinking, this.params, this.damage, this.boat.sinking)) this.sinkBoat('storm');
+    // 暴風（v0.3.4）: 帯を進め、速すぎれば波の叩きつけ（HP 0 で沈没）。判定は艇を動かす前の位置。旋回率の倍率は次の行で乗員と合成
+    if (this.storm?.step(feelDt, boat, this.destroyer.state, !this.destroyer.sinking, this.damage, this.boat.sinking)) this.sinkBoat('storm');
+    // 旋回率・加速 = 基準 × 暴風の帯の中 × 乗員の減り（v0.3.5。書く場所はここだけ）
+    this.crewLostNow = crewLost(c.crew, this.damageParams.maxHp, this.damage.hp);
+    setPerformance(this.params, this.turnBaseDegS, this.accelBaseMps2, (this.storm ? this.storm.turnFactor : 1) * crewTurnFactor(c.crewEffects, this.crewLostNow), crewAccelFactor(c.crewEffects, this.crewLostNow));
     if (!this.boat.sinking) {
       if (this.grounded) {
         boat.speedMps = 0;
       } else {
-        // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分するので、距離あたりの消費はステップ幅・スローに依らない
+        // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分する
         stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
         clampToBounds(boat, this.bounds, c.boundsMarginM);
         // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
@@ -132,12 +129,10 @@ export class MissionWorld {
       this.atHome = insideRing(this.returnPoint, boat.x, boat.y);
     }
     const d = this.destroyer;
-    // 煙幕: 展開中は艇尾に煙を置き、艦→艇の視線が遮られていれば隠れている（docs/02 §6.5）
     if (this.smoke && this.smokeParams) {
       updateSmoke(this.smoke, this.smokeParams, boat, c.boundsMarginM, feelDt);
       this.hiddenBySmoke = !d.sinking && losBlocked(this.smoke, this.smokeParams, d.state.x, d.state.y, boat.x, boat.y);
     }
-    // 敵がこのステップで自艇を見つける距離 = 基準 × 速力帯の係数 × 月明 × 煙幕
     this.band = nextSpeedBand(this.band, boat.speedMps, this.params);
     this.detectRangeM = enemyDetectRangeM(c.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, this.hiddenBySmoke, this.storm ? this.storm.detectFactor : 1);
     this.visRange2 = this.storm ? c.visRange2 * this.storm.visFactor2 : c.visRange2;
@@ -148,8 +143,7 @@ export class MissionWorld {
     const alive = !d.sinking && !this.boat.sinking;
     this.enemyFire.step(dt, feelDt, d.state, boat, d.ai.playerDetected && !d.sinking, alive, c.boatHalfLengthM, c.boatHalfBeamM, this.hiddenBySmoke);
     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.fireReason);
-    // 味方機は敵の処理の後（v0.3.2 までの順序を変えない）
-    this.friendly?.step(feelDt, this);
+    this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
   };
 
   constructor(
@@ -177,6 +171,8 @@ export class MissionWorld {
     this.fuelAllotmentGal = s.fuelAllotmentGal;
     this.fuel = createFuelState(s.fuelAllotmentGal);
     this.speedMaxBaseMps = this.params.speedMaxMps;
+    this.turnBaseDegS = this.params.turnRateDegS;
+    this.accelBaseMps2 = this.params.accelMps2;
     this.damageParams = s.damageParams;
     this.damage = createDamageState(this.damageParams);
     this.vis = s.vis;
@@ -201,7 +197,7 @@ export class MissionWorld {
     const friendlyRng = new SeededRng((seed + 2) >>> 0);
     const splash = (x: number, y: number, hit: boolean): void => this.enemyFire.splash(x, y, hit);
     this.friendly = fp ? new FriendlyFire(scene, fp, DEBUG_FRIENDLY_FORCE, splash, (x, y) => this.applyHit(fp.hit, friendlyRng, x, y, 'friendly_fire')) : null;
-    this.storm = s.storm ? new StormFront(scene, s.storm, seed, DEBUG_STORM_START_Y, this.params.turnRateDegS, this.boat.state, splash, (x, y) => this.events.onSlam(x, y)) : null;
+    this.storm = s.storm ? new StormFront(scene, s.storm, seed, DEBUG_STORM_START_Y, this.boat.state, splash, (x, y) => this.events.onSlam(x, y)) : null;
     this.refreshShallowStatus();
   }
 
@@ -213,7 +209,7 @@ export class MissionWorld {
       // 駆逐艦が沈み始めた後と帰投地点の輪の中では新しい発射はしない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
       if (this.destroyer.sinking || this.atHome) discardFireInput(this.input);
       else consumeFireInput(this.input, this.launcher, this.boat.state, this.torpedoes.remaining);
-      this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.extinguishHeldS, realDt);
+      this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.extinguishHeldS, realDt, this.extinguishHoldScale);
       this.launcher.update(realDt, this.boat.state, this.destroyer.state);
       if (Number.isNaN(this.fuelAtFirstLaunchGal) && this.torpedoes.remaining < this.torpedoes.capacity) this.fuelAtFirstLaunchGal = this.fuel.gal;
     }
@@ -227,6 +223,11 @@ export class MissionWorld {
     this.enemyFire.updateVisuals(realDt, this.destroyer.state);
     if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
     this.friendly?.updateVisuals(realDt, this);
+  }
+
+  /** 消火の長押し秒に掛ける倍率（定員/生存。v0.3.5） */
+  get extinguishHoldScale(): number {
+    return crewExtinguishFactor(this.setup.crewEffects, this.setup.crew.total - this.crewLostNow, this.setup.crew.total);
   }
 
   /** 走っている魚雷か発射待ちがある（帰投の輪の中で決着を待つ判定に使う） */

@@ -113,9 +113,11 @@ export interface BoatTelemetry {
   stormFast: boolean;
   stormLos: boolean;
   stormSafeKt: number;
-  /** 乗員（v0.3.4）: 生存と定員 */
+  /** 乗員（v0.3.4）: 生存と定員。v0.3.5: 旋回率に掛かる倍率と、消火に要する長押し秒（乗員で伸びる） */
   crewAlive: number;
   crewTotal: number;
+  crewTurnFactor: number;
+  extinguishHoldS: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */
@@ -210,6 +212,12 @@ export function stepBoat(s: BoatState, input: BoatInput, p: BoatParams, dt: numb
   const h = degToRad(s.headingDeg);
   s.x += Math.sin(h) * s.speedMps * dt;
   s.y -= Math.cos(h) * s.speedMps * dt;
+}
+
+/** 旋回率と加速を基準値 × 倍率で決める（暴風 × 乗員。v0.3.5。書く場所を 1 つにして上書きし合わない） */
+export function setPerformance(p: BoatParams, baseTurnDegS: number, baseAccelMps2: number, turnFactor: number, accelFactor: number): void {
+  p.turnRateDegS = baseTurnDegS * turnFactor;
+  p.accelMps2 = baseAccelMps2 * accelFactor;
 }
 
 /** HUD の舵表示用: 目標方位への残り角を fullDeg で正規化した -1(左)〜+1(右)。目標が無ければ 0 */

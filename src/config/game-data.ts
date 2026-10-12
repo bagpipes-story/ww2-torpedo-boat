@@ -17,7 +17,7 @@ import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '
 import { groundingParamsFromData, isGroundingDataRecord, isShallowRectDataRecord, shallowsFromData, type GroundingParams, type ShallowRect } from '../core/shallows';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
 import { isStormDataRecord, isStormMissionBlock, stormParamsFromData, type StormMissionBlock, type StormParams } from '../core/storm';
-import { crewParamsFromData, isBoatCrewDataRecord, type CrewParams } from '../core/crew';
+import { crewEffectsFromData, crewParamsFromData, isBoatCrewDataRecord, type CrewEffects, type CrewParams } from '../core/crew';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { isMoonPhase, type MoonPhase, type VisibilityParams } from '../core/visibility';
 
@@ -248,8 +248,15 @@ export function getStormParams(data: GameData, mission: PrototypeMission, timeSc
 /** boats.json の乗員（定員と HP あたりの死傷率。docs/02 §6.6、v0.3.4） */
 export function getBoatCrewParams(data: GameData, boatId: string): CrewParams {
   const b = data.boats.boats.find((x) => x.id === boatId);
-  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json の ${boatId} に crew / hull_hp / damage.casualties_per_hp が無い（docs/02 §6.6）`);
+  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json の ${boatId} に crew / hull_hp / damage.casualties_per_hp / damage.crew_effects が無い（docs/02 §6.6。v0.3.5 から crew_effects も必須）`);
   return crewParamsFromData(b);
+}
+
+/** boats.json の damage.crew_effects（乗員の減りが消火・旋回・加速に効く度合い。docs/02 §6.6、v0.3.5） */
+export function getBoatCrewEffects(data: GameData, boatId: string): CrewEffects {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json の ${boatId} に damage.crew_effects（extinguish_exponent / turn_rate_per_loss / accel_per_loss / min_factor）が無い（docs/02 §6.6）`);
+  return crewEffectsFromData(b);
 }
 
 /** 任務に積む燃料 gal。?debug&fuel= の上書きがあれば艇の容量で頭打ちにして使う（MissionWorld と HUD の表示で同じ値になるようここで決める） */

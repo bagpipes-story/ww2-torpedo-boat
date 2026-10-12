@@ -26,7 +26,7 @@ import {
 import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import { resetInput, type InputState } from '../core/input-state';
-import { crewAlive } from '../core/crew';
+import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
@@ -198,6 +198,8 @@ export class MissionScene extends Phaser.Scene {
       stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
       crewAlive: w.setup.crew.total,
       crewTotal: w.setup.crew.total,
+      crewTurnFactor: 1,
+      extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS : 0,
     };
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshReturnState(0);
@@ -365,6 +367,8 @@ export class MissionScene extends Phaser.Scene {
       t.stormLos = st.state.los;
     }
     t.crewAlive = crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp);
+    t.crewTurnFactor = crewTurnFactor(w.setup.crewEffects, w.crewLostNow);
+    t.extinguishHoldS = w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0;
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
@@ -414,6 +418,9 @@ export class MissionScene extends Phaser.Scene {
       friendlyPeriodS: w.friendly ? w.friendly.state.reactPeriodS : NaN,
       crewAlive: crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp),
       crewTotal: w.setup.crew.total,
+      crewTurnFactor: crewTurnFactor(w.setup.crewEffects, w.crewLostNow),
+      crewAccelFactor: crewAccelFactor(w.setup.crewEffects, w.crewLostNow),
+      extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0,
       stormEnabled: w.storm !== null,
       stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
       stormInsideS: w.storm ? w.storm.state.insideS : 0,

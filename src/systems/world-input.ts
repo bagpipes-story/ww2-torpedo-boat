@@ -27,16 +27,16 @@ export function consumeFireInput(input: InputState, launcher: TorpedoLauncher, b
 /**
  * 煙幕ボタンと消火ボタン（docs/02 §5・§6.6。v0.3.1 で別ボタンに）: 煙幕は離したとき（smokeTap）に展開（冷却中は無視）。
  * 消火は火災中に extinguish_hold_s 以上押し続けると消える。押している時間は燃えている間だけ数える（火災が無いときから押し続けていても、後で起きた火災が即座に消えないように）。消火したら数え直す。
- * 戻り値は押し続けている実秒（呼び出し側が持ち回す）
+ * holdScale は乗員で伸びる倍率（v0.3.5）。戻り値は押し続けている実秒（呼び出し側が持ち回す）
  */
-export function consumeSmokeInput(input: InputState, smoke: SmokeState | null, p: SmokeParams | null, damage: DamageState, heldS: number, realDt: number): number {
+export function consumeSmokeInput(input: InputState, smoke: SmokeState | null, p: SmokeParams | null, damage: DamageState, heldS: number, realDt: number, holdScale: number = 1): number {
   if (input.smokeTap) {
     input.smokeTap = false;
     if (smoke && p) startSmoke(smoke, p);
   }
   if (input.extinguishHeld && p && damage.fireLeftS > 0) {
     const next = heldS + realDt;
-    if (next < p.extinguishHoldS) return next;
+    if (next < p.extinguishHoldS * holdScale) return next;
     damage.fireLeftS = 0;
   }
   return 0;

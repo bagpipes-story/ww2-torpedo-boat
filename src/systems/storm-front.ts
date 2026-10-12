@@ -22,7 +22,7 @@ import {
   STORM_TEXT_COLOR,
   hudTextStyle,
 } from '../config/ui-config';
-import type { BoatParams, BoatState } from '../core/boat-motion';
+import type { BoatState } from '../core/boat-motion';
 import type { DamageState } from '../core/gunnery';
 import { SeededRng } from '../core/rng';
 import { STORM_NONE, createStormState, stepStorm, stormTurnRate, updateStormStatus, type StormParams, type StormState, type StormStatus } from '../core/storm';
@@ -43,7 +43,6 @@ export class StormFront {
   private readonly rainY = new Float32Array(STORM_RAIN_POOL_SIZE);
   private readonly rainShown = new Uint8Array(STORM_RAIN_POOL_SIZE);
   private rainPlaced = false;
-  private readonly turnBaseDegS: number;
   private t = 0;
   /** 横揺れの振幅（0〜1）。帯の出入りで角度が跳ねないよう毎フレーム一定割合で寄せる */
   private rollAmp = 0;
@@ -54,12 +53,10 @@ export class StormFront {
     private readonly p: StormParams,
     seed: number,
     debugStartY: number,
-    turnBaseDegS: number,
     boat: BoatState,
     private readonly splash: (x: number, y: number, hit: boolean) => void,
     private readonly onSlam: (x: number, y: number) => void,
   ) {
-    this.turnBaseDegS = turnBaseDegS;
     // 始まりの位置は別系列の乱数（seed+3）を 1 回だけ引く。?debug&storm=Y なら固定
     this.state = createStormState(p, new SeededRng((seed + 3) >>> 0).next());
     if (Number.isFinite(debugStartY)) this.state.southY = debugStartY;
@@ -77,12 +74,11 @@ export class StormFront {
   }
 
   /**
-   * 固定ステップ（feelDt は体感の実秒）。帯を進め、中なら旋回率を下げ、叩きつけがあれば HP を減らして水しぶきと揺れ。HP 0 なら true（世界が沈没にする）。
+   * 固定ステップ（feelDt は体感の実秒）。帯を進め、叩きつけがあれば HP を減らして水しぶきと揺れ。HP 0 なら true（世界が沈没にする）。旋回率の倍率は turnFactor（世界が乗員と合成して書く）。
    * 判定は艇を動かす前の位置（切り替わりは 1 ステップ遅れる）
    */
-  step(feelDt: number, boat: BoatState, ship: BoatState, shipAlive: boolean, params: BoatParams, damage: DamageState, sinking: boolean): boolean {
+  step(feelDt: number, boat: BoatState, ship: BoatState, shipAlive: boolean, damage: DamageState, sinking: boolean): boolean {
     const n = stepStorm(this.state, this.p, boat.y, boat.speedMps, ship.y, shipAlive, feelDt, !sinking);
-    params.turnRateDegS = stormTurnRate(this.p, this.turnBaseDegS, this.state.inside);
     if (n <= 0) return false;
     damage.hp = Math.max(0, damage.hp - n * this.p.slamDamage);
     // 艇首の左右に水しぶき（叩かれたときだけ sin/cos を計算する）
@@ -95,6 +91,11 @@ export class StormFront {
     this.splash(bx - sx, by - sy, false);
     this.onSlam(boat.x, boat.y);
     return damage.hp <= 0;
+  }
+
+  /** 旋回率に掛ける倍率（中なら turn_rate_factor） */
+  get turnFactor(): number {
+    return stormTurnRate(this.p, 1, this.state.inside);
   }
 
   /** 雨の係数（艦と艇を結ぶ線が帯にかかる間だけ） */

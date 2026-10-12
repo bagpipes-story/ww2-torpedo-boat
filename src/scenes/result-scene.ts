@@ -56,6 +56,10 @@ export interface MissionResult {
   /** 乗員（v0.3.4）: 生存と定員（HP から決まる） */
   crewAlive: number;
   crewTotal: number;
+  /** v0.3.5: 乗員の減りによる旋回率・加速の倍率と消火の長押し秒（Result の説明用） */
+  crewTurnFactor: number;
+  crewAccelFactor: number;
+  extinguishHoldS: number;
   /** 暴風（v0.3.4）: 任務にあるか、安全速力 kt、帯の中にいた秒、安全速力を超えていた秒、中の平均 kt（NaN なら入らず）、叩きつけの回数と被害 */
   stormEnabled: boolean;
   stormSafeKt: number;
@@ -116,9 +120,10 @@ export class ResultScene extends Phaser.Scene {
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
+    const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     const score = computeScore(
       { returned: r.returned, objectiveDone: r.destroyerSunk, missionType: r.missionType, bands: r.bands, fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal },
-      getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA)),
+      scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     line(`帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
@@ -135,6 +140,14 @@ export class ResultScene extends Phaser.Scene {
       else if (r.friendlyOutcome === FF_OUT_GAVE_UP) text = `味方機: 誤射 ${n} 回（識別なし）`;
       else text = `味方機: 識別の途中で終了（誤射 ${n} 回）`;
       line(text, HUD_FONT_HEADING_PX);
+    }
+    if (r.crewAlive < r.crewTotal && r.hpLeft > 0) {
+      // 乗員が減ったときの影響（v0.3.5）: 旋回・加速の倍率、消火に要する長押し、帰投点（半数以下なら × crew_half_factor）。沈んだ艇には出さない（最後の HP 0 の人数は操作には効いていない）
+      const turnPct = Math.round((1 - r.crewTurnFactor) * 100);
+      const accelPct = Math.round((1 - r.crewAccelFactor) * 100);
+      const perf = turnPct === accelPct ? `旋回・加速 −${turnPct}%` : `旋回 −${turnPct}% ・ 加速 −${accelPct}%`;
+      const half = score.crewHalf ? ` ・ 帰投点 ×${scoringParams.crewHalfFactor}（半数以下）` : '';
+      line(`乗員 ${r.crewTotal - r.crewAlive} 名死傷: ${perf} ・ 消火 ${r.extinguishHoldS.toFixed(1)} 秒${half}`, HUD_FONT_HEADING_PX);
     }
     if (r.stormEnabled) {
       // 暴風: 帯の中にいた秒と安全速力を超えていた秒（叩きつけの重さを調整する根拠）

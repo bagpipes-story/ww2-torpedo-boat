@@ -33,6 +33,7 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.storm!.depthM).toBe(800);
     expect(s.storm!.detectFactor).toBe(0.5);
     expect(s.crew.total).toBe(14);
+    expect(s.crewEffects.turnRatePerLoss).toBe(0.04);
     expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, true).storm).toBeNull();
   });
   it('friendly_aircraft が無い任務なら friendly は null', () => {

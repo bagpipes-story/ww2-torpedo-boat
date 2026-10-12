@@ -1,8 +1,11 @@
 // スコア（docs/02 §6.9、v0.3.1）。Phaser 非依存。配点は data/scoring.json。
-// 合計 = 帰投 + 任務達成（駆逐艦撃沈）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。
+// 合計 = 帰投 + 任務達成（駆逐艦撃沈）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
 
 export interface ScoringParams {
   returnedPoints: number;
+  /** 乗員が定員 × ratio 以下なら帰投点 × factor（v0.3.5。負傷者を抱えて任務継続不能） */
+  crewHalfRatio: number;
+  crewHalfFactor: number;
   /** 任務の type → 達成点 */
   objectiveByType: Record<string, number>;
   hitBase: number;
@@ -33,11 +36,15 @@ export interface ScoreBreakdown {
   hits: number;
   fuel: number;
   crew: number;
+  /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
+  crewHalf: boolean;
   total: number;
 }
 
-export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, crew: 0, total: 0 }): ScoreBreakdown {
-  out.survival = inp.returned ? p.returnedPoints : 0;
+export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
+  const crewHalf = inp.returned && inp.crewTotal > 0 && inp.crewAlive <= Math.floor(inp.crewTotal * p.crewHalfRatio);
+  out.crewHalf = crewHalf;
+  out.survival = inp.returned ? (crewHalf ? Math.round(p.returnedPoints * p.crewHalfFactor) : p.returnedPoints) : 0;
   out.objective = inp.objectiveDone ? (p.objectiveByType[inp.missionType] ?? 0) : 0;
   let hits = 0;
   for (let i = 0; i < inp.bands.length; i++) {
@@ -61,7 +68,7 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
 // ---------- data の読み出し ----------
 
 export interface ScoringDataRecord {
-  survival: { returned: number };
+  survival: { returned: number; crew_half_ratio: number; crew_half_factor: number };
   objective_by_type: Record<string, number | string>;
   hit: { base: number; range_multiplier: Record<string, number> };
   fuel: { max: number; requires_returned_and_objective: boolean };
@@ -79,7 +86,8 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   const o = r['objective_by_type'] as Record<string, unknown> | undefined;
   const h = r['hit'] as Record<string, unknown> | undefined;
   const f = r['fuel'] as Record<string, unknown> | undefined;
-  if (!s || !isFiniteNum(s['returned'])) return false;
+  if (!s || !isFiniteNum(s['returned']) || !isFiniteNum(s['crew_half_ratio']) || !isFiniteNum(s['crew_half_factor'])) return false;
+  if ((s['crew_half_ratio'] as number) < 0 || (s['crew_half_ratio'] as number) > 1 || (s['crew_half_factor'] as number) < 0 || (s['crew_half_factor'] as number) > 1) return false;
   if (!o || typeof o !== 'object') return false;
   if (!h || !isFiniteNum(h['base']) || !h['range_multiplier'] || typeof h['range_multiplier'] !== 'object') return false;
   const rm = h['range_multiplier'] as Record<string, unknown>;
@@ -102,6 +110,8 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
   }
   return {
     returnedPoints: r.survival.returned,
+    crewHalfRatio: r.survival.crew_half_ratio,
+    crewHalfFactor: r.survival.crew_half_factor,
     objectiveByType: objective,
     hitBase: r.hit.base,
     hitRangeMultiplier: { ...r.hit.range_multiplier },
