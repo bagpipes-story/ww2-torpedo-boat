@@ -42,10 +42,11 @@ export interface SeaplaneState {
   wakeS: number;
   sorties: number;
   lost: number;
-  /** 接近: 飛来の方位（自艇→機）、残りの距離、発見確定、見えていない秒 */
+  /** 接近: 飛来の方位（自艇→機）、残りの距離、発見確定（attacked はこの任務で一度でも確定した）、見えていない秒 */
   approachDeg: number;
   approachR: number;
   locked: boolean;
+  attacked: boolean;
   unseenS: number;
   passDeg: number;
   orbitStartDeg: number;
@@ -85,7 +86,7 @@ export interface SeaplaneCheck {
 export function createSeaplaneState(p: SeaplaneParams): SeaplaneState {
   return {
     phase: SP_IDLE, outcome: SP_OUT_NONE, timerS: 0, wakeS: 0, sorties: 0, lost: 0,
-    approachDeg: 0, approachR: 0, locked: false, unseenS: 0, passDeg: 0, orbitStartDeg: 0, runDeg: 0,
+    approachDeg: 0, approachR: 0, locked: false, attacked: false, unseenS: 0, passDeg: 0, orbitStartDeg: 0, runDeg: 0,
     leaveFromDx: 0, leaveFromDy: 0, leaveDeg: 0, ordnance: createOrdnance(p), triggerAtS: NaN, slowReactS: NaN, clockS: 0,
   };
 }
@@ -179,12 +180,13 @@ export function stepSeaplane(s: SeaplaneState, p: SeaplaneParams, c: SeaplaneChe
     if (!s.locked) {
       if (s.approachR <= p.baseDetectM) {
         s.locked = true;
+        s.attacked = true;
         s.unseenS = 0;
         ev |= SP_EV_FOUND;
       } else if (seaplaneSees(s, p, c)) {
         s.unseenS = 0;
       } else {
-        if (s.unseenS === 0 && Number.isNaN(s.slowReactS)) s.slowReactS = s.timerS;
+        if (s.unseenS === 0 && Number.isNaN(s.slowReactS) && !c.wake) s.slowReactS = s.timerS; // 減速で航跡が消えた（帯に隠れただけなら数えない）
         s.unseenS += dt;
         if (s.unseenS >= p.loseS) {
           s.lost++;
@@ -228,7 +230,8 @@ export function stepSeaplane(s: SeaplaneState, p: SeaplaneParams, c: SeaplaneChe
   } else if (s.phase === SP_LEAVING) {
     s.timerS += dt;
     if (s.timerS >= p.leaveS) {
-      if (s.outcome === SP_OUT_BOMBED) {
+      if (s.outcome === SP_OUT_BOMBED || s.attacked) {
+        // 弾切れ、または発見確定の後の中断（沈没・輪の中・座礁）: 1 任務に照明弾 1 発なので二度と来ない
         s.phase = SP_DONE;
       } else {
         s.phase = SP_PATROL;

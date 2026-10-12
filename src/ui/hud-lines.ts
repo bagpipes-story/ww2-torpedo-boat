@@ -1,10 +1,10 @@
 // HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機と敵の水上機の 2 行目、Result の「敵機:」の行。
 // Phaser は使わない（文を組むだけ）。2 行目の文は値が変わったときだけ組む（呼ぶ側がキャッシュする）。
-import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN, SHALLOW_WARN_STEP_M } from '../config/ui-config';
+import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK } from '../core/mission-flow';
-import { SP_APPROACH, SP_DONE, SP_FLARE_PASS, SP_LEAVING, SP_ORBIT, SP_OUT_BOMBED, SP_OUT_LOST, SP_RUN } from '../core/seaplane';
+import { SP_APPROACH, SP_FLARE_PASS, SP_LEAVING, SP_ORBIT, SP_OUT_BOMBED, SP_OUT_LOST, SP_RUN } from '../core/seaplane';
 import { SHALLOW_APPROACHING, SHALLOW_INSIDE } from '../core/shallows';
 
 export const STEP_LABEL: Record<SpeedStep, string> = {
@@ -77,9 +77,9 @@ export function planeLeaving(t: BoatTelemetry): boolean {
   return t.planePhase === SP_LEAVING && (t.planeOutcome === SP_OUT_LOST || t.planeOutcome === SP_OUT_BOMBED);
 }
 
-/** 水上機の 2 行目（docs/02 §6.8、v0.4.1）。distStep は 100 m 刻みの切り上げ */
+/** 水上機の 2 行目（docs/02 §6.8、v0.4.1）。distStep は PLANE_DISTANCE_STEP_M 刻みの切り上げ */
 export function seaplaneLine(t: BoatTelemetry, distStep: number, shallowStep: number, stormWarn: boolean): HudLine {
-  const d = distStep * 100;
+  const d = distStep * PLANE_DISTANCE_STEP_M;
   if (t.planePhase === SP_APPROACH && !t.planeLocked) {
     if (t.planeWake) return { text: `敵機 ${d} m ・ 航跡を見られた ・ ${t.planeWakeKt} kt 以下に減速！`, color: HUD_COLOR_WARN };
     return { text: `敵機 ${d} m ・ 航跡なし ・ 静音を保て`, color: HUD_COLOR_STRONG };
@@ -97,16 +97,14 @@ export function seaplaneLine(t: BoatTelemetry, distStep: number, shallowStep: nu
   return { text: withWarnings(text, t, shallowStep, stormWarn), color: HUD_COLOR_WARN };
 }
 
-/** Result の「敵機:」の行（任務に水上機がいるときだけ） */
-export function seaplaneResultLine(r: { seaplanePhase: number; seaplaneOutcome: number; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[] }): string {
+/** Result の「敵機:」の行（任務に水上機がいるときだけ）: 来ず / 見失わせただけ / 攻撃を受けた（弾切れで去った）/ 発見確定の後に途中で終了 */
+export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[] }): string {
   if (r.seaplaneSorties === 0) return '敵機: 来ず';
   const lostPart = r.seaplaneLost > 0 ? `見失わせた ${r.seaplaneLost} 回（減速まで ${Number.isNaN(r.seaplaneSlowReactS) ? '帯に隠れた' : `${r.seaplaneSlowReactS.toFixed(1)} 秒`}）` : '';
-  if (r.seaplaneBombs > 0 && r.seaplanePhase === SP_DONE && r.seaplaneOutcome === SP_OUT_BOMBED) {
+  if (r.seaplaneOutcome === SP_OUT_BOMBED) {
     const dodge = r.seaplaneDodgeS.slice(0, r.seaplaneBombs).map((s) => (Number.isNaN(s) ? '—' : s.toFixed(1))).join('/');
     return `敵機: ${lostPart ? `${lostPart} → ` : ''}照明弾の下 ${r.seaplaneFlareLitS.toFixed(1)} 秒 ・ 砲撃 ${r.seaplaneShellsUnderFlare} 発 ・ 爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits} ・ 転舵 ${dodge} 秒`;
   }
-  if (r.seaplaneBombs > 0 || r.seaplaneFlareLitS > 0 || planeAttacking({ planePhase: r.seaplanePhase, planeLocked: true } as BoatTelemetry)) {
-    return `敵機: 攻撃の途中で終了（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
-  }
+  if (r.seaplaneAttacked) return `敵機: ${lostPart ? `${lostPart} → ` : ''}攻撃の途中で終了（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
   return `敵機: 接近 ${r.seaplaneSorties} 回 ・ ${lostPart || '見失わせた 0 回'}`;
 }

@@ -107,7 +107,7 @@ export class HudScene extends Phaser.Scene {
     this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, topMargin: TARGET_MARKER_TOP_MARGIN });
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     if (mission.enemyAircraft) {
-      this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+      this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
     }
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;

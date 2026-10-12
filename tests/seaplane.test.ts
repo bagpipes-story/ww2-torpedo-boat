@@ -219,6 +219,7 @@ describe('開始条件と接近', () => {
     const s = started();
     run(s, { ...check(), stormInside: true }, 2);
     expect(s.outcome).toBe(SP_OUT_LOST);
+    expect(Number.isNaN(s.slowReactS)).toBe(true); // 帯に隠れただけ（減速ではない）
     const f = started();
     run(f, { ...check(), wake: false, forceSeen: true }, 3);
     expect(f.phase).toBe(SP_APPROACH);
@@ -302,9 +303,11 @@ describe('照明弾と爆撃', () => {
     expect(straight.ordnance.lastImpact).toBe(0);
     const dodged = scenario(0);
     expect(dodged.ordnance.bombs[0]!.hit).toBe(false);
-    expect(dodged.ordnance.bombs[0]!.dodgeReactS).toBeCloseTo(0.17, 1);
+    expect(dodged.ordnance.bombs[0]!.dodgeReactS).toBeCloseTo(P.overpassS + 0.17, 1); // 狙いを決めてから（進路に入ってから）の秒
     expect(scenario(1.0).ordnance.bombs[0]!.hit).toBe(false);
-    expect(scenario(null, true).ordnance.bombs[0]!.hit).toBe(false);
+    const early = scenario(null, true);
+    expect(early.ordnance.bombs[0]!.hit).toBe(false);
+    expect(early.ordnance.bombs[0]!.dodgeReactS).toBeCloseTo(0.17, 1);
     expect(scenario(null, false, true).ordnance.bombs[0]!.hit).toBe(false);
   });
   it('散布の統計（SeededRng(7)、停止した艇、4,000 発）: 命中 0.38 ± 0.03、着弾半径の中央値 40 ± 2 m、最大 56.6 m 以下', () => {
@@ -330,7 +333,7 @@ describe('照明弾と爆撃', () => {
     expect(radii[2000]!).toBeLessThan(42);
     expect(radii[3999]!).toBeLessThanOrEqual(56.6);
   });
-  it('中断: 接近中・旋回中に沈没なら去って哨戒へ。落下中の爆弾は着弾まで進み、沈没中の艇には当たらない', () => {
+  it('中断: 発見確定の前なら去って哨戒へ、確定の後なら去って終了（照明弾は 1 任務 1 発）。落下中の爆弾は着弾まで進み、沈没中の艇には当たらない', () => {
     const s = started();
     run(s, check(), 2);
     cancelSeaplane(s, P);
@@ -348,6 +351,9 @@ describe('照明弾と爆撃', () => {
     const r = run(b, { ...c, boatSinking: true, blocked: true }, 3);
     expect(r.ev & SP_EV_IMPACT).toBe(SP_EV_IMPACT);
     expect(b.ordnance.bombs[0]!.hit).toBe(false);
+    expect(b.phase).toBe(SP_DONE);
+    expect(b.attacked).toBe(true);
+    expect(stepSeaplaneTrigger(b, check(), P, DT)).toBe(false);
   });
   it('pose: 旋回は 600 m を 29.47°/s、航過は 600 m 先から真上を通って反対側へ、去る間は薄くなりながら離れる。哨戒・終了は alpha 0', () => {
     const s = started();

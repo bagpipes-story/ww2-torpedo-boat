@@ -218,6 +218,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     seaplaneEnabled: w.seaplane !== null,
     seaplanePhase: sp ? sp.phase : SP_IDLE,
     seaplaneOutcome: sp ? sp.outcome : SP_OUT_NONE,
+    seaplaneAttacked: sp ? sp.attacked : false,
     seaplaneSorties: sp ? sp.sorties : 0,
     seaplaneLost: sp ? sp.lost : 0,
     seaplaneSlowReactS: sp ? sp.slowReactS : NaN,

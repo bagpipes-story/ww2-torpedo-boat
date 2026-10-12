@@ -18,8 +18,10 @@ export interface BombState {
   aimY: number;
   leftS: number;
   hit: boolean;
-  /** 投下時の艇の針路と、転舵（DODGE_TURN_DEG）までの秒（しなければ NaN） */
-  releaseHeadingDeg: number;
+  /** 狙いを決めた（爆撃進路に入った）ときの艇の針路、それからの秒、転舵（DODGE_TURN_DEG）までの秒（しなければ NaN）。KPI */
+  aimed: boolean;
+  aimHeadingDeg: number;
+  aimedS: number;
   dodgeReactS: number;
 }
 
@@ -57,7 +59,9 @@ export function createOrdnance(p: SeaplaneParams): Ordnance {
       aimY: 0,
       leftS: 0,
       hit: false,
-      releaseHeadingDeg: 0,
+      aimed: false,
+      aimHeadingDeg: 0,
+      aimedS: 0,
       dodgeReactS: NaN,
     });
   return {
@@ -87,6 +91,10 @@ export function aimBomb(o: Ordnance, p: SeaplaneParams, boat: BoatState, rng: Se
   const th = 2 * Math.PI * rng.next();
   b.aimX = boat.x + Math.sin(h) * boat.speedMps * p.bombLeadGameS + r * Math.cos(th);
   b.aimY = boat.y - Math.cos(h) * boat.speedMps * p.bombLeadGameS + r * Math.sin(th);
+  b.aimed = true;
+  b.aimHeadingDeg = boat.headingDeg;
+  b.aimedS = 0;
+  b.dodgeReactS = NaN;
 }
 
 /** 爆弾の投下（真上。bombsLeft > 0 のとき。狙点は aimBomb で決めてある） */
@@ -97,8 +105,6 @@ export function releaseBomb(o: Ordnance, p: SeaplaneParams, boat: BoatState): vo
   b.fromY = boat.y;
   b.leftS = p.bombFallFeelS;
   b.hit = false;
-  b.releaseHeadingDeg = boat.headingDeg;
-  b.dodgeReactS = NaN;
   o.bombsDropped++;
   o.bombsLeft--;
 }
@@ -121,16 +127,20 @@ export function stepFlare(o: Ordnance, p: SeaplaneParams, boat: BoatState, shell
   o.lastShellsFired = shellsFired;
 }
 
-/** 落下中の爆弾: 転舵の KPI、着弾（艇が沈没中なら当てない）。着弾があれば true（lastImpact にその index） */
+/** 狙いを決めてから着弾までの転舵の KPI と、落下中の爆弾の着弾（艇が沈没中なら当てない）。着弾があれば true（lastImpact にその index） */
 export function stepBombs(o: Ordnance, p: SeaplaneParams, boat: BoatState, boatSinking: boolean, dt: number): boolean {
   let impact = false;
   for (let i = 0; i < o.bombs.length; i++) {
     const b = o.bombs[i]!;
+    if (b.aimed) {
+      b.aimedS += dt;
+      if (Number.isNaN(b.dodgeReactS) && Math.abs(wrapDeg180(boat.headingDeg - b.aimHeadingDeg)) >= DODGE_TURN_DEG) b.dodgeReactS = b.aimedS;
+    }
     if (!b.active) continue;
     b.leftS -= dt;
-    if (Number.isNaN(b.dodgeReactS) && Math.abs(wrapDeg180(boat.headingDeg - b.releaseHeadingDeg)) >= DODGE_TURN_DEG) b.dodgeReactS = p.bombFallFeelS - b.leftS;
     if (b.leftS > 0) continue;
     b.active = false;
+    b.aimed = false;
     b.hit = !boatSinking && pointNearBoat(b.aimX, b.aimY, boat, p.boatHalfLengthM, p.bombHitRadiusM);
     if (b.hit) {
       o.bombsHit++;

@@ -87,6 +87,7 @@ export interface MissionResult {
   seaplaneEnabled: boolean;
   seaplanePhase: number;
   seaplaneOutcome: number;
+  seaplaneAttacked: boolean;
   seaplaneSorties: number;
   seaplaneLost: number;
   seaplaneSlowReactS: number;
