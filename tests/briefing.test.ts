@@ -25,7 +25,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(menu.entries).toEqual([
       { id: 'us_01', title: 'コレヒドール脱出', sub: '1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）', playable: false, status: '準備中 ・ v0.4.3' },
       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
-      { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: false, status: '準備中 ・ v0.4.1' },
+      { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: false, status: '準備中 ・ v0.4.2' },
     ]);
   });
   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
@@ -92,7 +92,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       { label: '成功', text: '帰投。命中はボーナス（帰投地点は北東の青い輪）' },
       { label: '月', text: '半月 ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m' },
       { label: '敵', text: '駆逐艦 ×1' },
-      { label: '危険', text: '暴風、敵艦の砲撃・衝突、座礁、友軍誤射' },
+      { label: '危険', text: '暴風、敵艦の砲撃・衝突、敵航空機、座礁、友軍誤射' },
       { label: '条件', text: '夜明けまで 150 秒 ・ 燃料 38 gal ・ 魚雷 4 本' },
     ]);
   });
@@ -137,6 +137,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     if (m.storm) expected.add('storm');
     if (m.shallows.length > 0) expected.add('grounding');
     if (m.friendlyAircraft) expected.add('friendly_fire');
+    if (m.enemyAircraft) expected.add('enemy_aircraft');
     if (armed) expected.add('enemy_ship_gunfire_or_ram');
     expect(new Set(m.hazards)).toEqual(expected);
     for (const h of m.hazards) expect(gameData.riskEvents.events.some((e) => e.id === h)).toBe(true);

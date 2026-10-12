@@ -8,11 +8,15 @@ import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import type { MissionEndReason } from '../core/mission-flow';
+import { SP_APPROACH, SP_IDLE, SP_OUT_NONE, bombInAir, seaplaneActive, seaplanePose } from '../core/seaplane';
+import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
 import type { MissionWorld } from './mission-world';
+
+const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
 
 /** 出発時のテレメトリ（帰投・燃料の値は直後の refreshReturnState と refreshTelemetry で埋まる） */
 export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number): BoatTelemetry {
@@ -58,6 +62,18 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     friendlyPasses: 0,
     friendlyOutcome: FF_OUT_NONE,
     friendlyPending: false,
+    planePhase: SP_IDLE,
+    planeDistM: 0,
+    planeLocked: false,
+    planeWake: false,
+    planeWakeKt: w.setup.seaplane ? w.setup.seaplane.wakeThresholdKt : 0,
+    planeFlareOn: false,
+    planeBombsDropped: 0,
+    planeBombAir: false,
+    planeBombsHit: 0,
+    planeOutcome: SP_OUT_NONE,
+    planeDx: NaN,
+    planeDy: NaN,
     stormState: w.storm ? w.storm.status.state : STORM_NONE,
     stormGapM: w.storm ? w.storm.status.gapM : 0,
     stormNorth: w.storm ? w.storm.status.north : true,
@@ -100,7 +116,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.playerDetected = d.ai.playerDetected && !d.sinking;
   t.detectRangeM = w.detectRangeM;
   t.illuminated = w.enemyFire.illuminated && !d.sinking;
-  t.starLit = w.enemyFire.state.star.illuminating && !d.sinking;
+  t.starLit = (w.enemyFire.state.star.illuminating || w.flareLit) && !d.sinking; // 照明弾（艦の星弾か水上機の照明弾）
   t.hp = w.damage.hp;
   t.onFire = w.damage.fireLeftS > 0 && w.damage.hp > 0;
   t.engineDamaged = w.damage.engineDamaged;
@@ -124,6 +140,25 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.friendlyPasses = f ? f.passes : 0;
   t.friendlyOutcome = f ? f.outcome : FF_OUT_NONE;
   t.friendlyPending = f ? f.pending : false;
+  // 敵の水上機（docs/02 §6.8、v0.4.1）: 距離は接近中だけ（相対の半径。sqrt 無し）。マーカーの相対位置は来ている間だけ
+  const sp = w.seaplane ? w.seaplane.state : null;
+  t.planePhase = sp ? sp.phase : SP_IDLE;
+  t.planeDistM = sp && sp.phase === SP_APPROACH ? sp.approachR : 0;
+  t.planeLocked = sp ? sp.locked : false;
+  t.planeWake = w.band === 'cruise' || w.band === 'full';
+  t.planeFlareOn = sp ? sp.ordnance.flare.leftS > 0 : false;
+  t.planeBombsDropped = sp ? sp.ordnance.bombsDropped : 0;
+  t.planeBombAir = sp ? bombInAir(sp.ordnance) : false;
+  t.planeBombsHit = sp ? sp.ordnance.bombsHit : 0;
+  t.planeOutcome = sp ? sp.outcome : SP_OUT_NONE;
+  if (sp && w.seaplane && seaplaneActive(sp)) {
+    const q = seaplanePose(sp, w.seaplane.p, scratchPose);
+    t.planeDx = q.dx;
+    t.planeDy = q.dy;
+  } else {
+    t.planeDx = NaN;
+    t.planeDy = NaN;
+  }
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
   const st = w.storm;
   if (st) {
@@ -142,6 +177,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
 /** 終了時に 1 回だけ。startFireS は出撃時の火災が消えた実秒（燃えたまま終われば -1、火災なしで出撃なら NaN。Result の「出撃前」の行） */
 export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, data: GameData, elapsedS: number, ringEdgeM: number, startFireS: number): MissionResult {
   const counts = countHits(w.shots);
+  const sp = w.seaplane ? w.seaplane.state : null;
   const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
   return {
     reason,
@@ -179,6 +215,17 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     stormMeanKt: w.storm ? meanInsideKt(w.storm.state) : NaN,
     stormSlams: w.storm ? w.storm.state.slams : 0,
     stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
+    seaplaneEnabled: w.seaplane !== null,
+    seaplanePhase: sp ? sp.phase : SP_IDLE,
+    seaplaneOutcome: sp ? sp.outcome : SP_OUT_NONE,
+    seaplaneSorties: sp ? sp.sorties : 0,
+    seaplaneLost: sp ? sp.lost : 0,
+    seaplaneSlowReactS: sp ? sp.slowReactS : NaN,
+    seaplaneFlareLitS: sp ? sp.ordnance.flare.litS : 0,
+    seaplaneShellsUnderFlare: sp ? sp.ordnance.flare.shellsUnderFlare : 0,
+    seaplaneBombs: sp ? sp.ordnance.bombsDropped : 0,
+    seaplaneBombHits: sp ? sp.ordnance.bombsHit : 0,
+    seaplaneDodgeS: sp ? sp.ordnance.bombs.map((b) => b.dodgeReactS) : [],
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
   };

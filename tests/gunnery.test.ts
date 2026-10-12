@@ -84,6 +84,27 @@ describe('探照灯', () => {
   });
 });
 
+describe('水上機の照明弾（externalLit。v0.4.1）', () => {
+  it('探照灯が点く前でも照らされた扱い。煙幕に遮られていれば照らされない。照らされている間は星弾を撃たない。第 8 引数を省けば v0.4.0 と同じ', () => {
+    const g = createGunneryState(GP, 8, 90);
+    const s = ship();
+    const player: BoatState = { x: 0, y: -4000, headingDeg: 180, speedMps: 10 }; // 探照灯の射程外・星弾の射程内で艦へ向かう
+    updateIllumination(g, s, player, true, GP, REAL, false, true);
+    expect(g.illuminated).toBe(true);
+    expect(g.light.on).toBe(false);
+    updateIllumination(g, s, player, true, GP, REAL, true, true);
+    expect(g.illuminated).toBe(false);
+    // 点灯遅れが明けても externalLit の間は星弾が出ない
+    for (let i = 0; i < Math.round(GP.searchlight.onDelayS / REAL) + 2; i++) updateIllumination(g, s, player, true, GP, REAL, false, true);
+    expect(g.light.on).toBe(true);
+    expect(g.star.leftS).toBe(0);
+    expect(g.illuminated).toBe(true);
+    // 消えた瞬間に星弾が撃てる（v0.4.0 の条件）
+    updateIllumination(g, s, player, true, GP, REAL);
+    expect(g.star.leftS).toBeGreaterThan(0);
+  });
+});
+
 describe('星弾', () => {
   it('発見中で探照灯の射程外なら艇の位置へ撃ち、照明半径の中にいる間は照射。持続後に消え、冷却中は撃たない', () => {
     const g = createGunneryState(GP, 8, 0);

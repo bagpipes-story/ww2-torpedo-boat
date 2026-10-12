@@ -59,6 +59,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateReturnTextures(this);
     generateAircraftTexture(this);
+    generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 

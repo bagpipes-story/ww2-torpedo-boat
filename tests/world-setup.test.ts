@@ -59,6 +59,17 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(() => buildWorldSetup(gameData, 'us_02', NaN, NaN, false, directSortie('us_03', 1, 'none'))).toThrow();
     expect(briefingNumbers(base)).toEqual({ visM: 1500, detectCruiseM: 2000, detectSilentM: 1000, durationS: 150, fuelGal: 38, torpedoes: 4, homeX: 5400, homeY: 600, boundsW: 6000, boundsH: 4000 });
   });
+  it('敵の水上機（v0.4.1）: us_02 は 308.64 m/s。?debug&noplane（第 7 引数）は null、enemy_aircraft を消した複製は null、enemy_id が無い機体なら例外', () => {
+    const base = buildWorldSetup(gameData, 'us_02', NaN, NaN);
+    expect(base.seaplane!.flightMps).toBeCloseTo(308.64, 2);
+    expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, false, null, true).seaplane).toBeNull();
+    const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    const proto = (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as { v0_1_prototype: Record<string, unknown> }).v0_1_prototype;
+    delete proto['enemy_aircraft'];
+    expect(buildWorldSetup(d, 'us_02', NaN, NaN).seaplane).toBeNull();
+    proto['enemy_aircraft'] = { enemy_id: 'nope' };
+    expect(() => buildWorldSetup(d, 'us_02', NaN, NaN)).toThrow();
+  });
   it('friendly_aircraft が無い任務なら friendly は null', () => {
     const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
     const proto = (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as { v0_1_prototype: Record<string, unknown> }).v0_1_prototype;

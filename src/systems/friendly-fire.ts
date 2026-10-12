@@ -47,6 +47,8 @@ export interface FriendlyWorldView {
   readonly grounded: boolean;
   readonly slowMoLeftS: number;
   readonly shallowStatus: ShallowStatus;
+  /** 敵の水上機が来ている（接近〜去る途中）。同時に来させない（v0.4.1） */
+  readonly seaplaneActive: boolean;
 }
 
 export class FriendlyFire {
@@ -90,7 +92,7 @@ export class FriendlyFire {
       c.headingDeg = b.headingDeg;
       c.speedMps = b.speedMps;
       c.underFire = (w.enemyFire.illuminated || w.destroyer.ai.playerDetected) && !w.destroyer.sinking;
-      c.busy = w.slowMoLeftS > 0 || (w.destroyer.sinking && !w.destroyer.sunk);
+      c.busy = w.slowMoLeftS > 0 || (w.destroyer.sinking && !w.destroyer.sunk) || w.seaplaneActive;
       c.shallow = w.shallowStatus.state !== SHALLOW_NONE;
       c.blocked = w.boat.sinking || w.grounded || w.fuel.empty || w.atHome;
       stepFriendlyTrigger(s, c, this.p, feelDt);

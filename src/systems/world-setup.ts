@@ -12,6 +12,7 @@ import {
   getEnemyRecord,
   getEvasionMultiplier,
   getFriendlyParams,
+  getSeaplaneParams,
   getGroundingParams,
   getPrototypeMission,
   getRaidParams,
@@ -27,6 +28,7 @@ import { gunneryParamsFromData, type DamageParams, type GunneryParams } from '..
 import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
 import { type CrewEffects, type CrewParams } from '../core/crew';
 import { type FriendlyParams } from '../core/friendly';
+import type { SeaplaneParams } from '../core/seaplane-data';
 import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
 import { type StormParams } from '../core/storm';
@@ -81,6 +83,8 @@ export interface WorldSetup {
   friendly: FriendlyParams | null;
   /** 暴風の帯。任務に storm が無いか ?debug&nostorm なら null */
   storm: StormParams | null;
+  /** 敵の水上機（docs/02 §6.8、v0.4.1）。任務に enemy_aircraft が無いか ?debug&noplane なら null */
+  seaplane: SeaplaneParams | null;
   /** 乗員（定員と HP あたりの死傷率）と、減りが操作に効く度合い（v0.3.5） */
   crew: CrewParams;
   crewEffects: CrewEffects;
@@ -100,7 +104,7 @@ export interface WorldSetup {
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false): WorldSetup {
   if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
@@ -146,6 +150,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     grounding: getGroundingParams(data),
     friendly: getFriendlyParams(data, mission, world.time_scale),
     storm: debugStormOff ? null : getStormParams(data, mission, world.time_scale),
+    seaplane: debugPlaneOff ? null : getSeaplaneParams(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 }),
     crew: getBoatCrewParams(data, mission.playerBoatId),
     crewEffects: getBoatCrewEffects(data, mission.playerBoatId),
     destroyerSpec: {

@@ -11,6 +11,7 @@ import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
 import { fuelCurveFromData, isBoatFuelDataRecord, type FuelCurve } from '../core/fuel';
 import { friendlyParamsFromData, isFriendlyFireDataRecord, type FriendlyParams } from '../core/friendly';
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
+import { isEnemyAircraftEventRecord, isSeaplaneDataRecord, seaplaneParamsFromData, type SeaplaneParams } from '../core/seaplane-data';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
 import { groundingParamsFromData, isGroundingDataRecord, type GroundingParams } from '../core/shallows';
@@ -125,6 +126,16 @@ export function getFriendlyParams(data: GameData, mission: PrototypeMission, tim
   const f = data.riskEvents.events.find((e) => e.id === 'friendly_fire');
   if (!f || !isFriendlyFireDataRecord(f)) throw new Error('risk_events.json の friendly_fire に params（window_s ほか）が無い（docs/02 §6.8）');
   return friendlyParamsFromData(f, mission.friendlyAircraft.triggerEdgeM, mission.returnPoint.radiusM, timeScale);
+}
+
+/** enemies.json の水上機と risk_events.json の enemy_aircraft.params（docs/02 §6.8、v0.4.1）。任務に enemy_aircraft が無ければ null。機体・params が無ければ例外。boat は航跡の速力の検査と命中半径に使う */
+export function getSeaplaneParams(data: GameData, mission: PrototypeMission, timeScale: number, boat: { silentMaxKt: number; halfLengthM: number; halfBeamM: number }): SeaplaneParams | null {
+  if (!mission.enemyAircraft) return null;
+  const plane = data.enemies.enemies.find((e) => e.id === mission.enemyAircraft!.enemyId);
+  if (!plane || !isSeaplaneDataRecord(plane)) throw new Error(`enemies.json に ${mission.enemyAircraft.enemyId}（speed_kt / altitude_m / flare / bomb / detection）が無い（docs/02 §6.8）`);
+  const ev = data.riskEvents.events.find((e) => e.id === 'enemy_aircraft');
+  if (!ev || !isEnemyAircraftEventRecord(ev)) throw new Error('risk_events.json の enemy_aircraft に params（patrol_from_s ほか）が無い（docs/02 §6.8）');
+  return seaplaneParamsFromData(plane, ev, timeScale, boat);
 }
 
 /** risk_events.json の storm.params と任務の storm（docs/02 §6.8、v0.3.4）。任務に storm が無ければ null。艇の sea_state_limit が無ければ例外 */

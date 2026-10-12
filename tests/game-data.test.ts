@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getBoatCrewEffects, getBoatCrewParams, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getStormParams, getVisibilityParams } from '../src/config/game-data';
+import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getBoatCrewEffects, getBoatCrewParams, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getSeaplaneParams, getStormParams, getVisibilityParams } from '../src/config/game-data';
 import { distanceToShallowsM } from '../src/core/shallows';
 import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
@@ -85,8 +85,8 @@ describe('game-data（data/*.json の読み出し）', () => {
     expect(getBoatCrewParams(gameData, 'us_elco80')).toEqual({ total: 14, casualtiesPerHp: 0.1 });
     expect(getBoatCrewEffects(gameData, 'us_elco80').minFactor).toBe(0.5);
   });
-  it('hazards（v0.4.0）: us_02 は storm・enemy_ship_gunfire_or_ram・grounding・friendly_fire（港内空襲は実機で外した）。消した複製は []、数値を入れた複製は例外', () => {
-    expect(getPrototypeMission(gameData, 'us_02').hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire']);
+  it('hazards（v0.4.0）: us_02 は storm・enemy_ship_gunfire_or_ram・enemy_aircraft（v0.4.1）・grounding・friendly_fire（港内空襲は実機で外した）。消した複製は []、数値を入れた複製は例外', () => {
+    expect(getPrototypeMission(gameData, 'us_02').hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'enemy_aircraft', 'grounding', 'friendly_fire']);
     type Proto = { v0_1_prototype: Record<string, unknown> };
     const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
     const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
@@ -125,6 +125,19 @@ describe('game-data（data/*.json の読み出し）', () => {
     const noFuel = clone();
     protoOf(noFuel)['fuel_allotment_gal'] = 0;
     expect(() => getPrototypeMission(noFuel, 'us_02')).toThrow();
+  });
+  it('水上機（v0.4.1）: enemies.json の ijn_seaplane_jake と risk_events の enemy_aircraft.params が読める。enemy_aircraft の無い複製は null、params を消した複製は例外', () => {
+    const m = getPrototypeMission(gameData, 'us_02');
+    expect(m.enemyAircraft).toEqual({ enemyId: 'ijn_seaplane_jake' });
+    const boat = { silentMaxKt: 18, halfLengthM: 12.2, halfBeamM: 3.15 };
+    expect(getSeaplaneParams(gameData, m, 5, boat)!.flightMps).toBeCloseTo(308.64, 2);
+    expect(getSeaplaneParams(gameData, m, 5, boat)!.bombHitRadiusM).toBeCloseTo(28.15, 6);
+    const none = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    delete ((none.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as { v0_1_prototype: Record<string, unknown> }).v0_1_prototype)['enemy_aircraft'];
+    expect(getSeaplaneParams(none, getPrototypeMission(none, 'us_02'), 5, boat)).toBeNull();
+    const noParams = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    delete (noParams.riskEvents.events.find((e) => e.id === 'enemy_aircraft') as Record<string, unknown>)['params'];
+    expect(() => getSeaplaneParams(noParams, m, 5, boat)).toThrow();
   });
   it('駆逐艦レコードに船体と AI の両方がある', () => {
     const e = getEnemyRecord(gameData, 'ijn_destroyer');

@@ -1,6 +1,6 @@
 {
   "$schema_note": "ミッションの種。史実アンカー（date/place/historical_note/source_url）は historical、構成（objective/enemies/hazards/moon/duration）は design。v0.1 は us_02 を簡略化した1本だけ使う。v0.4.0: playable_from（design）は Title の任務一覧に出す任務と、出撃できるようになる版（docs/03 のロードマップ。v0_1_prototype が無い任務は『準備中 ・ 版』）。briefing_note_ja（historical）は Briefing に出す史実メモで、実在の人物名を出さない（CLAUDE.md §11。historical_note は調査の記録として残し、画面には出さない）。v0_1_prototype.hazards（design）は遊べる世界で実際に起きる危険（risk_events の id）で、Briefing の『危険』と出撃前の港内空襲の有無を決める。",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "campaigns": [
     {
       "id": "us_pt",
@@ -106,13 +106,18 @@
           "torpedo_settle_max_s": 10,
           "source": "design (帰投地点＝味方の集合点（ツラギ方面の北東の角）。出発点から 3,538 m、典型的な交戦点 (3000,2100) から 2,830 m。邪魔されないときの駆逐艦の哨戒航路からは最も近くて 1,966 m。最初から有効で、出発点は輪の外。半径 250 m はズーム 0.75 で直径 375 px。全速でも 1 ステップ 1.7 m なので飛び越えない。call_margin: 燃料の残りが『巡航で輪の縁まで直線で帰る燃料 × 1.5』以下、または夜明けまでが『巡航で帰る実秒 × 1.5』以下になったら『帰投せよ』。1.5 は全速/巡航の距離あたり消費比 1.47 と巡航/静音上限の速力比 1.28 を上回るので、呼ばれた時点で全速でも静音でも帰れる。torpedo_settle_max_s: 輪の中で走っている魚雷の決着を待つ最大実秒)"
         },
+        "enemy_aircraft": {
+          "enemy_id": "ijn_seaplane_jake",
+          "source": "design (v0.4.1。この block がある任務に水上機が来る。数値は enemies.json の機体と risk_events の enemy_aircraft.params。出発から 20 秒は来ない。帯を抜けて全速で 3 秒走ると敵艦の方角 6,000 m から来る。発見線 1,500 m（約 12 秒）までに 18 kt 以下で見失わせられる。離脱の全速でも来る。照明弾の下で駆逐艦から 1,500〜2,000 m にいると 40 秒で HP −28〜−60（煙幕で砲撃は止まる、光の外へは全速 12 秒）。?debug&noplane で無し)"
+        },
         "hazards": [
           "storm",
           "enemy_ship_gunfire_or_ram",
+          "enemy_aircraft",
           "grounding",
           "friendly_fire"
         ],
-        "hazards_source": "design (v0.4.0。この遊べる世界で実際に起きる危険（risk_events.json の id）を出会う順に並べる。Briefing の『危険』は label_ja の『（』より前を並べて『暴風、敵艦の砲撃・衝突、座礁、友軍誤射』。harbor_fire_explosion（出撃前の港内空襲の 2 択）は v0.4.0 の実機で『ユーザーからするとピンと来ない。操縦中に敵機が来る方がリアル』だったので us_02 から外した（仕組みと params は残り、この id を足せば Briefing の 2 択が戻る。代わりに敵の水上機を任務中に出す: v0.4.1）。storm・shallows・friendly_aircraft・砲を持つ敵の block と一致させる（tests/briefing.test.ts が検査）。上位の hazards（任務本体の設計）は変えない)",
+        "hazards_source": "design (v0.4.0。この遊べる世界で実際に起きる危険（risk_events.json の id）を出会う順に並べる。Briefing の『危険』は label_ja の『（』より前を並べて『暴風、敵艦の砲撃・衝突、敵航空機、座礁、友軍誤射』。v0.4.1 で enemy_aircraft（任務中の水上機。港内空襲の代わり。block は enemy_aircraft）。harbor_fire_explosion（出撃前の港内空襲の 2 択）は v0.4.0 の実機で『ユーザーからするとピンと来ない。操縦中に敵機が来る方がリアル』だったので us_02 から外した（仕組みと params は残り、この id を足せば Briefing の 2 択が戻る。代わりに敵の水上機を任務中に出す: v0.4.1）。storm・shallows・friendly_aircraft・砲を持つ敵の block と一致させる（tests/briefing.test.ts が検査）。上位の hazards（任務本体の設計）は変えない)",
         "bounds_m": {
           "width": 6000,
           "height": 4000,
@@ -138,7 +143,7 @@
       "id": "us_03",
       "campaign": "us_pt",
       "order": 3,
-      "playable_from": "v0.4.1",
+      "playable_from": "v0.4.2",
       "title_ja": "大発を狩れ",
       "date": "1943-07-15",
       "place": "ニューギニア北岸（フォン半島）",
