@@ -9,7 +9,7 @@ import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatParams
 import { FixedStepper } from '../core/fixed-stepper';
 import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor } from '../core/crew';
 import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
-import { applyShellHit, stepDamage, type DamageParams, type DamageState, type HitOutcome, type HitSpec } from '../core/gunnery';
+import { stepDamage, type DamageParams, type DamageState, type HitSpec } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import { insideRing, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
@@ -21,6 +21,7 @@ import type { TorpedoParams } from '../core/torpedo';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
+import { BoatDamage } from './boat-damage';
 import { EnemyFire } from './enemy-fire';
 import { FriendlyFire } from './friendly-fire';
 import { SmokeScreen } from './smoke-screen';
@@ -81,15 +82,13 @@ export class MissionWorld {
   private readonly events: WorldEvents;
   private readonly smokeScreen: SmokeScreen | null;
   private readonly gunRng: SeededRng;
-  private readonly hitOutcome: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
-  /** 無傷時の最大速力（機関損傷で params.speedMaxMps を下げる）、旋回率・加速の基準（暴風 × 乗員の倍率を掛けて毎ステップ書く） */
-  private readonly speedMaxBaseMps: number;
+  /** 命中の適用と沈没の開始（砲弾・掃射・爆弾はすべてここを通る。v0.4.1 で切り出し） */
+  private readonly boatDamage: BoatDamage;
+  /** 旋回率・加速の基準（暴風 × 乗員の倍率を掛けて毎ステップ書く） */
   private readonly turnBaseDegS: number;
   private readonly accelBaseMps2: number;
   crewLostNow = 0; // 失った乗員（HP から。毎ステップ更新し、生成時は出撃時の HP から決める）
   private extinguishHeldS = 0;
-  /** 火災で沈んだときの終了理由＝火災を起こした原因（砲撃か味方機の掃射か） */
-  private fireReason: MissionEndReason = 'destroyed';
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
 
   private readonly torpedoEvents: TorpedoEvents = {
@@ -142,7 +141,7 @@ export class MissionWorld {
     // 反撃: 発見中なら探照灯・星弾（煙に遮られていれば照らせない）、照らされていれば砲撃。どちらかが沈没中なら撃たない（飛んでいる弾は着弾まで進む）
     const alive = !d.sinking && !this.boat.sinking;
     this.enemyFire.step(dt, feelDt, d.state, boat, d.ai.playerDetected && !d.sinking, alive, c.boatHalfLengthM, c.boatHalfBeamM, this.hiddenBySmoke);
-    if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.fireReason);
+    if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.boatDamage.fireReason);
     this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
   };
 
@@ -169,7 +168,6 @@ export class MissionWorld {
     this.fuelCurve = s.fuelCurve;
     this.fuelAllotmentGal = s.fuelAllotmentGal;
     this.fuel = createFuelState(s.fuelStartGal);
-    this.speedMaxBaseMps = this.params.speedMaxMps;
     this.turnBaseDegS = this.params.turnRateDegS;
     this.accelBaseMps2 = this.params.accelMps2;
     this.damageParams = s.damageParams;
@@ -182,21 +180,22 @@ export class MissionWorld {
 
     // スティック中立=停止なので、出発時は停止している（docs/02 §5、v0.2.1）
     this.boat = new PlayerBoat(scene, mission.playerStart, 0);
+    this.boatDamage = new BoatDamage(this.boat, this.damage, this.damageParams, this.params, events, SMALL_HIT_DAMAGE_RATIO);
     this.destroyer = new Destroyer(scene, mission.enemyStart, s.destroyerSpec, s.shipAi, this.bounds);
     this.torpedoes = new TorpedoPool(scene, this.torpedoParams, s.torpedoCapacity, this.bounds);
     // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない
     this.gunRng = new SeededRng((seed + 1) >>> 0);
     this.enemyFire = new EnemyFire(scene, s.gunneryParams, this.gunRng, mission.enemyStart.headingDeg);
-    this.enemyFire.setHitHandler((gunIndex, x, y) => this.applyHit(s.gunneryParams.guns[gunIndex]!, this.gunRng, x, y, 'destroyed'));
+    this.enemyFire.setHitHandler((gunIndex, x, y) => this.hitBoat(s.gunneryParams.guns[gunIndex]!, this.gunRng, x, y, 'destroyed'));
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS);
     this.smokeParams = s.smokeParams;
     this.smoke = this.smokeParams ? createSmokeState(SMOKE_POOL_SIZE) : null;
     this.smokeScreen = this.smokeParams ? new SmokeScreen(scene, this.smokeParams) : null;
-    // 味方機の掃射の抽選も別系列（seed+2）。掃射の被害は砲弾と同じ経路（applyHit）
+    // 味方機の掃射の抽選も別系列（seed+2）。掃射の被害は砲弾と同じ経路（boatDamage.applyHit）
     const fp = s.friendly;
     const friendlyRng = new SeededRng((seed + 2) >>> 0);
     const splash = (x: number, y: number, hit: boolean): void => this.enemyFire.splash(x, y, hit);
-    this.friendly = fp ? new FriendlyFire(scene, fp, DEBUG_FRIENDLY_FORCE, splash, (x, y) => this.applyHit(fp.hit, friendlyRng, x, y, 'friendly_fire')) : null;
+    this.friendly = fp ? new FriendlyFire(scene, fp, DEBUG_FRIENDLY_FORCE, splash, (x, y) => this.hitBoat(fp.hit, friendlyRng, x, y, 'friendly_fire')) : null;
     this.storm = s.storm ? new StormFront(scene, s.storm, seed, DEBUG_STORM_START_Y, this.boat.state, splash, (x, y) => this.events.onSlam(x, y)) : null;
     this.refreshShallowStatus();
   }
@@ -273,28 +272,13 @@ export class MissionWorld {
     this.events.onTorpedoHit(x, y, dud);
   }
 
-  /** 砲弾か掃射が命中: HP を減らし、火災・機関損傷を抽選。機関損傷は最大速力を下げる（data: damage.engine_damage_speed_factor）。HP 0 で沈没（理由は命中の種類） */
-  private applyHit(spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void {
-    if (this.boat.sinking) return;
-    const o = applyShellHit(this.damage, spec, this.damageParams, rng, this.hitOutcome);
-    if (o.engineHit) {
-      this.params.speedMaxMps = this.speedMaxBaseMps * this.damageParams.engineSpeedFactor;
-      if (this.params.speedCruiseMps > this.params.speedMaxMps) this.params.speedCruiseMps = this.params.speedMaxMps;
-    }
-    if (o.startedFire) this.fireReason = reason;
-    this.events.onShellHit(x, y, spec.damage < this.damageParams.maxHp * SMALL_HIT_DAMAGE_RATIO, o.destroyed);
-    if (o.destroyed) this.sinkBoat(reason);
+  /** 砲弾・掃射・爆弾の命中（中身は boat-damage）。沈み始めたら命中スローを掛ける */
+  private hitBoat(spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void {
+    if (this.boatDamage.applyHit(spec, rng, x, y, reason)) this.slowMoLeftS = this.setup.slowMoSeconds;
   }
 
-  /** 自艇の沈没（体当たり・砲撃・掃射・火災・荒波）。HP 0・火災なしにして演出、完了で onBoatSunk */
+  /** 自艇の沈没（体当たり・火災・荒波。中身は boat-damage）。始まったら命中スローを掛ける */
   private sinkBoat(reason: MissionEndReason): void {
-    if (this.boat.sinking) return;
-    // 沈んだ艇の HP は 0、火災も消す（体当たりでも HUD と Result が 100 のままにならないように）
-    this.damage.hp = 0;
-    this.damage.fireLeftS = 0;
-    this.slowMoLeftS = this.setup.slowMoSeconds;
-    const s = this.boat.state;
-    this.events.onBoatSinking(s.x, s.y);
-    this.boat.playSinking(() => this.events.onBoatSunk(reason));
+    if (this.boatDamage.sink(reason)) this.slowMoLeftS = this.setup.slowMoSeconds;
   }
 }
