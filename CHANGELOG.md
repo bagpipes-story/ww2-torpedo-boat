@@ -31,7 +31,7 @@
   - `?debug&seed=N` では「もう一度」も同じ夜。`?debug` 直行の Result にも「出撃前: 空襲なし」の行が出る（us_02 は空襲のある任務）。
   - 魚雷ボタンは Mission が始まってから 0.6 秒は押せない（「出撃」の 2 度押し対策）。iOS がタッチを取り消したときに魚雷ボタンが撃つのは v0.1 からのまま（離した扱い）。
   - Boot のテクスチャは us_02 の艇・敵・魚雷だけ（任務ごとにするのは v0.4.1）。`scripts/return-sim.ts` は空襲を模擬しない（0.9 の根拠は模擬の中央値からの引き算）。音は無い（v0.7）。
-- 実機テスト結果: 1 回目（claude/v0.4.0-title-briefing@a3066dc）: 「乗員が減ると舵の動きが悪くなるのはいい感じ」（v0.3.5 の D）。「任務選択後の空襲はユーザーからするとピンと来ない。空襲というより魚雷艇を操縦しているときに敵機が襲来する方がリアル」→ us_02 の hazards から harbor_fire_explosion を外し、Briefing は 6 行＋史実＋「出撃」だけに（仕組み・params・テストは残し、テストは hazards に足した複製で検査）。代わりに敵の水上機を任務中に出す（v0.4.1。enemies.json の ijn_seaplane_jake、risk_events の seaplane_harassment）。Title・Briefing・Result の流れと「もう一度」のテンポについての感想は無し。
+- 実機テスト結果: 1 回目（claude/v0.4.0-title-briefing@a3066dc）: 「乗員が減ると舵の動きが悪くなるのはいい感じ」（v0.3.5 の D）。「任務選択後の空襲はユーザーからするとピンと来ない。空襲というより魚雷艇を操縦しているときに敵機が襲来する方がリアル」→ us_02 の hazards から harbor_fire_explosion を外し、Briefing は 6 行＋史実＋「出撃」だけに（仕組み・params・テストは残し、テストは hazards に足した複製で検査）。代わりに敵の水上機を任務中に出す（v0.4.1。enemies.json の ijn_seaplane_jake、risk_events の seaplane_harassment）。Title・Briefing・Result の流れと「もう一度」のテンポは「問題ありません」。マージ（305cd31）。
 
 ## v0.3.5 — 2026-10-11（帰投とリスク⑥：乗員が効く）
 
