@@ -1,9 +1,11 @@
 // Phaser の GameConfig（CLAUDE.md §4: Phaser設定は src/config、main.ts は Phaser.Game 生成のみ）。
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/boot-scene';
+import { BriefingScene } from '../scenes/briefing-scene';
 import { HudScene } from '../scenes/hud-scene';
 import { MissionScene } from '../scenes/mission-scene';
 import { ResultScene } from '../scenes/result-scene';
+import { TitleScene } from '../scenes/title-scene';
 import { ACTIVE_TOUCH_POINTERS, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SEA_COLOR } from './game-config';
 
 export const phaserConfig: Phaser.Types.Core.GameConfig = {
@@ -30,5 +32,5 @@ export const phaserConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, MissionScene, HudScene, ResultScene],
+  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene],
 };

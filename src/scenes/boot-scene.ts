@@ -1,9 +1,20 @@
-// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Mission へ（docs/02 §4）。
+// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0）。
 // 音のアンロックは v0.7 でここに足す。
 import Phaser from 'phaser';
-import { DEBUG_ENABLED, PROTOTYPE_MISSION_ID, REGISTRY_KEY_DATA, REGISTRY_KEY_INPUT, SCENE_KEYS, TEXTURE_KEYS } from '../config/game-config';
+import {
+  DEBUG_DIRECT_MISSION,
+  DEBUG_ENABLED,
+  DEBUG_RAID_OVERRIDE,
+  PROTOTYPE_MISSION_ID,
+  REGISTRY_KEY_DATA,
+  REGISTRY_KEY_INPUT,
+  SCENE_KEYS,
+  TEXTURE_KEYS,
+  sortieSeed,
+} from '../config/game-config';
 import { gameData, getBoatRecord, getEnemyRecord, getPrototypeMission, getTorpedoRecord } from '../config/game-data';
 import { createInputState } from '../core/input-state';
+import { directSortie } from '../core/sortie';
 import {
   generateDebugRingTexture,
   generateDestroyerTexture,
@@ -51,6 +62,7 @@ export class BootScene extends Phaser.Scene {
     generateRainTexture(this);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
-    this.scene.start(SCENE_KEYS.mission);
+    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), DEBUG_RAID_OVERRIDE));
+    else this.scene.start(SCENE_KEYS.title);
   }
 }

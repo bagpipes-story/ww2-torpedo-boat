@@ -59,7 +59,7 @@ ww2-torpedo-boat/
       fuel.ts                 燃料モデル
       rng.ts                  シード付き乱数
       hit-rate.ts             距離別KPIの評価（テレメトリ用）
-    scenes/                   Boot / Title / Mission / Result
+    scenes/                   Boot / Title / Briefing / Mission / Hud / Result
     entities/                 PlayerBoat / Torpedo / Destroyer / Barge / Seaplane
     systems/                  Input / Camera / Visibility / RiskEvents / Scoring / Pools
     ui/                       HUD（Phaser内描画。DOMは最小限）
@@ -153,3 +153,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
 - 2026-10-02 v0.1.0 初版（引き継ぎ資料として作成）
 - 2026-10-02 v0.1.1 iPhone完結（クラウドセッション＋GitHub Pages）前提に §3・§5・§6 を改訂、§12 追加
 - 2026-10-04 v0.1.2 §3 ビルド番号の表示位置を「画面の隅」から「画面上部中央」に（隅は操作系と HUD が使う）
+- 2026-10-12 v0.4.0 §4 scenes に Briefing・Hud を追記（Title → Briefing → Mission（＋Hud）→ Result の流れ）

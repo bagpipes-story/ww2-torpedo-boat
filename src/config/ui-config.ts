@@ -112,13 +112,12 @@ export const TARGET_MARKER_TOP_MARGIN = HUD_MARGIN + FUEL_GAUGE_OFFSET_Y + HP_FO
 /** 帰投マーカーはラベルを矢印の上に置くので、その分さらに下げる */
 export const HOME_MARKER_TOP_MARGIN = TARGET_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
 
-/** Result で誤タップを拾わないよう入力を受け付けるまでの待ち（ms）とレイアウト */
+/** Result で誤タップを拾わないよう入力を受け付けるまでの待ち（ms）とレイアウト（v0.4.0 で下端のボタンの分だけ詰めた。ボタンは menu-config） */
 export const RESULT_INPUT_DELAY_MS = 400;
-export const RESULT_TOP_Y = 90;
-export const RESULT_LINE_GAP = 14;
+export const RESULT_TOP_Y = 56;
+export const RESULT_LINE_GAP = 12;
 export const RESULT_SECTION_GAP = 10;
-export const RESULT_FOOTER_Y = 70;
-export const RESULT_SEED_Y = 36;
+export const RESULT_SEED_Y = 24;
 
 /** 爆発リングの拡大率（命中 / 不発）と不発の色 */
 export const EXPLOSION_SCALE_FROM = 0.2;

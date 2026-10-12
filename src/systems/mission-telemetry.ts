@@ -8,6 +8,7 @@ import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import type { MissionEndReason } from '../core/mission-flow';
+import { raidResultLine } from '../core/sortie';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
@@ -138,7 +139,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
 }
 
 /** 終了時に 1 回だけ Result の材料を作る（走っている魚雷は呼び出し側が先に外れとして確定しておく） */
-export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, data: GameData, elapsedS: number, ringEdgeM: number): MissionResult {
+/** 終了時に 1 回だけ。startFireS は出撃時の火災が消えた実秒（燃えたまま終われば -1、火災なしで出撃なら NaN。Result の「出撃前」の行） */
+export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, data: GameData, elapsedS: number, ringEdgeM: number, startFireS: number): MissionResult {
   const counts = countHits(w.shots);
   const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
   return {
@@ -177,5 +179,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     stormMeanKt: w.storm ? meanInsideKt(w.storm.state) : NaN,
     stormSlams: w.storm ? w.storm.state.slams : 0,
     stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
+    sortie: w.sortie,
+    raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
   };
 }

@@ -10,6 +10,7 @@ import {
   REGISTRY_KEY_TELEMETRY,
   RENDER_SCALE,
   SCENE_KEYS,
+  sortieSeed,
 } from '../config/game-config';
 import { getGameData } from '../config/game-data';
 import {
@@ -25,6 +26,7 @@ import {
 import type { BoatTelemetry } from '../core/boat-motion';
 import { resetInput, type InputState } from '../core/input-state';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
+import { directSortie, isSortie, type Sortie } from '../core/sortie';
 import { clamp, degToRad } from '../core/units';
 import { ReturnPointView } from '../entities/return-point';
 import { ShallowsView } from '../entities/shallows';
@@ -35,6 +37,10 @@ import { MissionWorld, type WorldEvents } from '../systems/mission-world';
 
 export class MissionScene extends Phaser.Scene {
   private world!: MissionWorld;
+  /** この出撃（Briefing か ?debug 直行の Boot・Result が渡す。v0.4.0） */
+  private sortie!: Sortie;
+  /** 出撃時の火災（港内空襲の至近弾）が消えた実秒（Result の「出撃前」の行）。燃えている間 -1、火災なしで出撃なら NaN */
+  private startFireS = NaN;
   private inputState!: InputState;
   private telemetry!: BoatTelemetry;
   private returnView?: ReturnPointView;
@@ -110,15 +116,19 @@ export class MissionScene extends Phaser.Scene {
     super(SCENE_KEYS.mission);
   }
 
+  init(data: unknown): void {
+    // 呼ぶ側は必ず Sortie を渡す（Phaser は data を省くと前回の data を使い回す）。無ければ us_02・空襲なし
+    this.sortie = isSortie(data) ? data : directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), 'none');
+  }
+
   create(): void {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const world = data.hitRateModel.world;
     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     resetInput(this.inputState);
 
-    // 乱数: シードは起動時刻。Result に表示するので再現したいときに使える
-    const seed = Date.now() >>> 0;
-    this.world = new MissionWorld(this, data, PROTOTYPE_MISSION_ID, this.inputState, seed, this.worldEvents);
+    // 乱数: seed は出撃ごとに Title・Result（?debug 直行では Boot）が決めたもの。Result に出す（?debug&title&seed=N で再現）
+    this.world = new MissionWorld(this, data, this.sortie, this.inputState, this.worldEvents);
     const w = this.world;
     drawSea(this, w.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
     this.shallowsView = new ShallowsView(this, w.shallows);
@@ -130,6 +140,7 @@ export class MissionScene extends Phaser.Scene {
     this.ended = false;
     this.callFlags = 0;
     this.waitS = 0;
+    this.startFireS = w.setup.start.fireAtStart ? -1 : NaN;
     this.endParams = { torpedoSettleMaxS: w.returnPoint.torpedoSettleMaxS, adriftDelayS: MISSION_END_DELAY_MS / 1000 };
 
     // カメラ: 既定ズーム（docs/02 §6.10）× 描画スケール。追従は少し遅らせ、進行方向に先読みする。見張り（右中ボタン）で zoom_min まで引く
@@ -154,7 +165,7 @@ export class MissionScene extends Phaser.Scene {
       this.debugRanges = new DebugRanges(this);
     }
 
-    this.scene.launch(SCENE_KEYS.hud);
+    this.scene.launch(SCENE_KEYS.hud, this.sortie);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scene.stop(SCENE_KEYS.hud);
@@ -176,6 +187,7 @@ export class MissionScene extends Phaser.Scene {
     const w = this.world;
 
     w.updateFrame(realDt);
+    if (this.startFireS < 0 && w.damage.fireLeftS <= 0) this.startFireS = w.stepTimeS; // NaN < 0 は false
     this.updateZoom();
     this.updateLookAhead();
     const enemyAlive = w.destroyer.sinking ? null : w.destroyer.state;
@@ -271,7 +283,7 @@ export class MissionScene extends Phaser.Scene {
     const w = this.world;
     // まだ走っている魚雷は外れとして記録し、Result の集計から漏れないようにする（帰投は最大 torpedo_settle_max_s 待った後）
     w.resolveRemainingAsMisses();
-    const result = buildMissionResult(reason, w, getGameData(this.registry, REGISTRY_KEY_DATA), this.elapsedS, this.ringEdgeM);
+    const result = buildMissionResult(reason, w, getGameData(this.registry, REGISTRY_KEY_DATA), this.elapsedS, this.ringEdgeM, this.startFireS);
     this.scene.start(SCENE_KEYS.result, result);
   }
 }
