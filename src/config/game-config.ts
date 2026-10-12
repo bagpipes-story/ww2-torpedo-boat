@@ -1,4 +1,5 @@
 // Phaser 設定と画面定数（docs/02 §2）。数値はここだけに置く。
+import { parseRaidOverride, type RaidOverride } from '../core/sortie';
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 /** 夜の海の背景色（docs/02 §7） */
@@ -13,6 +14,8 @@ export const REGISTRY_KEY_DATA = 'gameData';
 /** Registry に置く共有オブジェクトのキー */
 export const REGISTRY_KEY_INPUT = 'inputState';
 export const REGISTRY_KEY_TELEMETRY = 'boatTelemetry';
+/** Registry に置く「Briefing まで進んでまだ出撃していない夜」（BriefingInit。出撃で null）。任務一覧へ戻って同じ任務を選び直しても同じ夜にする（v0.4.0） */
+export const REGISTRY_KEY_PENDING_SORTIE = 'pendingSortie';
 
 /** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
 export const DPR_CAP = 2;
@@ -51,6 +54,18 @@ export const DEBUG_FRIENDLY_FORCE = DEBUG_ENABLED && new URLSearchParams(window.
 /** ?debug&storm=Y: 暴風の帯の南の縁の初期 y を固定。?debug&nostorm: 帯なし（v0.3.3 と同じ世界。比較用） */
 export const DEBUG_STORM_START_Y = debugNumber('storm');
 export const DEBUG_STORM_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostorm');
+/** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
+export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
+/** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
+export const DEBUG_RAID_OVERRIDE: RaidOverride = DEBUG_ENABLED
+  ? parseRaidOverride(new URLSearchParams(window.location.search).get('raid'), new URLSearchParams(window.location.search).has('noraid'))
+  : 'none';
+/** ?debug&seed=N: 出撃の seed を固定（Result の seed と同じ値で任務の乱数を再現する。空襲を振るのは通しだけなので、空襲の夜まで再現するのは ?debug&title&seed=N。0 と負は無視） */
+export const DEBUG_SEED = debugNumber('seed');
+/** 出撃の seed。Title の行・Result の「もう一度」（直行では Boot・Result）が Briefing・Mission の前に決める（Math.random は使わない。§7） */
+export function sortieSeed(): number {
+  return Number.isFinite(DEBUG_SEED) ? DEBUG_SEED >>> 0 : Date.now() >>> 0;
+}
 
 /** 同時に扱うタッチ数（マウス 1 ＋ タッチ 3: スティック＋右側ボタン）。Phaser の input.activePointers に渡す */
 export const ACTIVE_TOUCH_POINTERS = 3;
@@ -87,11 +102,13 @@ export const DEPTH = {
 export const FIXED_STEP_S = 1 / 60;
 export const MAX_STEPS_PER_FRAME = 4;
 
-/** v0.1 で使うミッション（data/missions_seed.json の注記どおり us_02 の簡略版） */
+/** ?debug 直行で出る任務と、Boot のテクスチャの任務（data/missions_seed.json の us_02 の簡略版。v0.4.0 で出撃できるのはこれだけ） */
 export const PROTOTYPE_MISSION_ID = 'us_02';
 
 export const SCENE_KEYS = {
   boot: 'Boot',
+  title: 'Title',
+  briefing: 'Briefing',
   mission: 'Mission',
   hud: 'Hud',
   result: 'Result',

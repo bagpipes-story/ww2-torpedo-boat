@@ -18,6 +18,7 @@ import {
 import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
+import { isSortie } from '../core/sortie';
 import {
   HOME_COLOR,
   HOME_COLOR_TEXT,
@@ -64,20 +65,28 @@ export class HudScene extends Phaser.Scene {
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
   private telemetry!: BoatTelemetry;
+  /** Mission が launch で渡す Sortie の任務（v0.4.0） */
+  private missionId: string = PROTOTYPE_MISSION_ID;
 
   constructor() {
     super(SCENE_KEYS.hud);
   }
 
+  init(data: unknown): void {
+    this.missionId = isSortie(data) ? data.missionId : PROTOTYPE_MISSION_ID;
+  }
+
   create(): void {
     // 論理座標 1280×720 を canvas（1280×RENDER_SCALE）に合わせる
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    this.lastIdentifyN = -1; // 再開で前回の値を引きずらない
+    this.lastHoldTenths = -1;
 
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     this.telemetry = this.registry.get(REGISTRY_KEY_TELEMETRY) as BoatTelemetry;
     // 1 行目に割当と夜明けを出す（?debug&fuel=…&dawn=… の上書きが効いているかを実機で確かめられる）
-    const mission = getPrototypeMission(data, PROTOTYPE_MISSION_ID);
+    const mission = getPrototypeMission(data, this.missionId);
     const fuelGal = effectiveFuelAllotmentGal(data, mission, DEBUG_FUEL_ALLOTMENT_GAL);
     const dawnS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
 

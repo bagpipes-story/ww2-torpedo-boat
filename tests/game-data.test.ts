@@ -85,6 +85,18 @@ describe('game-data（data/*.json の読み出し）', () => {
     expect(getBoatCrewParams(gameData, 'us_elco80')).toEqual({ total: 14, casualtiesPerHp: 0.1 });
     expect(getBoatCrewEffects(gameData, 'us_elco80').minFactor).toBe(0.5);
   });
+  it('hazards（v0.4.0）: us_02 は storm・enemy_ship_gunfire_or_ram・grounding・friendly_fire（港内空襲は実機で外した）。消した複製は []、数値を入れた複製は例外', () => {
+    expect(getPrototypeMission(gameData, 'us_02').hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire']);
+    type Proto = { v0_1_prototype: Record<string, unknown> };
+    const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
+    const none = clone();
+    delete protoOf(none)['hazards'];
+    expect(getPrototypeMission(none, 'us_02').hazards).toEqual([]);
+    const bad = clone();
+    protoOf(bad)['hazards'] = ['storm', 3];
+    expect(() => getPrototypeMission(bad, 'us_02')).toThrow();
+  });
   it('scoring.json: 配点が読め、距離帯の名前が kpi_by_range と一致する。us_02 の type に達成点がある', () => {
     const p = getScoringParams(gameData);
     expect(p.returnedPoints).toBe(700);

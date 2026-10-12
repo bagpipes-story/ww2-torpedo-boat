@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { ktToMps } from '../src/core/units';
-import { buildWorldSetup } from '../src/systems/world-setup';
+import { directSortie } from '../src/core/sortie';
+import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 
 describe('world-setup（data から世界の数値を組み立てる。Phaser 非依存）', () => {
   it('us_02: 夜明け 150 秒・割当 38 gal・魚雷 4 本・駆逐艦 1 本で沈没・半月の視程 1,500 m・停止の発見距離 800 m', () => {
@@ -35,6 +36,28 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.crew.total).toBe(14);
     expect(s.crewEffects.turnRatePerLoss).toBe(0.04);
     expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, true).storm).toBeNull();
+  });
+  it('出撃前の空襲（v0.4.0）: us_02 本体は空襲なし（raid null、hit の Sortie でも効果なし）。hazards に足した複製では、第 6 引数なしは燃料 38・効果なし、分散は 34.2、至近弾は HP −20・火災、無傷は効果なし。違う任務の出撃は例外。Briefing の数値', () => {
+    const plain = buildWorldSetup(gameData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'hit'));
+    expect(plain.raid).toBeNull();
+    expect(plain.start).toEqual({ fuelFactor: 1, hpLoss: 0, fireAtStart: false });
+    expect(plain.fuelStartGal).toBe(38);
+    const raidData = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    const proto = (raidData.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as { v0_1_prototype: Record<string, unknown> }).v0_1_prototype;
+    proto['hazards'] = [...(proto['hazards'] as string[]), 'harbor_fire_explosion'];
+    const base = buildWorldSetup(raidData, 'us_02', NaN, NaN);
+    expect(base.fuelStartGal).toBe(38);
+    expect(base.start).toEqual({ fuelFactor: 1, hpLoss: 0, fireAtStart: false });
+    expect(base.raid!.chance).toBe(0.5);
+    const dis = buildWorldSetup(raidData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'disperse'));
+    expect(dis.fuelStartGal).toBeCloseTo(34.2, 9);
+    expect(dis.fuelAllotmentGal).toBe(38);
+    const hit = buildWorldSetup(raidData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'hit'));
+    expect(hit.start).toEqual({ fuelFactor: 1, hpLoss: 20, fireAtStart: true });
+    expect(hit.fuelStartGal).toBe(38);
+    expect(buildWorldSetup(raidData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'stay')).start).toEqual({ fuelFactor: 1, hpLoss: 0, fireAtStart: false });
+    expect(() => buildWorldSetup(gameData, 'us_02', NaN, NaN, false, directSortie('us_03', 1, 'none'))).toThrow();
+    expect(briefingNumbers(base)).toEqual({ visM: 1500, detectCruiseM: 2000, detectSilentM: 1000, durationS: 150, fuelGal: 38, torpedoes: 4, homeX: 5400, homeY: 600, boundsW: 6000, boundsH: 4000 });
   });
   it('friendly_aircraft が無い任務なら friendly は null', () => {
     const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;

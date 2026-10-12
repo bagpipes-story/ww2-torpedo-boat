@@ -6,6 +6,7 @@ import {
   HUD_COLOR_STRONG,
   HUD_FONT_BUTTON_PX,
   TORPEDO_BUTTON_ALPHA,
+  TORPEDO_BUTTON_ARM_MS,
   TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR,
   TORPEDO_BUTTON_PRESSED_SCALE,
   TORPEDO_SPREAD_LABEL_GAP,
@@ -25,6 +26,9 @@ export class TorpedoButton {
   private pointerId = -1;
   private lastRemaining = -1;
   private lastSpreadShown = -1;
+  /** 作ってから TORPEDO_BUTTON_ARM_MS は押下を受けない（前の画面の「出撃」の 2 度押し。v0.4.0）。scene.time.now は作った時点では前回の値なのでタイマーで待つ */
+  private armed = false;
+  private readonly armTimer: Phaser.Time.TimerEvent;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -45,6 +49,9 @@ export class TorpedoButton {
       .setOrigin(0.5, 1)
       .setDepth(DEPTH.hud + 1);
 
+    this.armTimer = scene.time.delayedCall(TORPEDO_BUTTON_ARM_MS, () => {
+      this.armed = true;
+    });
     // 押下はボタン上で、解放は同じ指ならどこで離しても拾う（指が滑って外れた・画面外で離した場合も確実に発射する）
     this.button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.onDown, this);
     scene.input.on(Phaser.Input.Events.POINTER_UP, this.onUp, this);
@@ -52,7 +59,7 @@ export class TorpedoButton {
   }
 
   private onDown(p: Phaser.Input.Pointer): void {
-    if (this.lastRemaining <= 0 || this.pointerId !== -1) return;
+    if (!this.armed || this.lastRemaining <= 0 || this.pointerId !== -1) return;
     this.pointerId = p.id;
     this.pressedAt = this.scene.time.now;
     this.button.setScale(TORPEDO_BUTTON_PRESSED_SCALE / RENDER_SCALE);
@@ -102,6 +109,7 @@ export class TorpedoButton {
     this.button.off(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.onDown, this);
     this.scene.input.off(Phaser.Input.Events.POINTER_UP, this.onUp, this);
     this.scene.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onUp, this);
+    this.armTimer.remove(false);
     this.button.destroy();
     this.label.destroy();
     this.spreadText.destroy();

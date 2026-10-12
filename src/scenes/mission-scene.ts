@@ -1,4 +1,4 @@
-// Mission: カメラ（追従・先読み・見張りズーム）、テレメトリ、演出（爆発・揺れ）、帰投の呼びかけ、終了判定と Result への遷移。
+// Mission: カメラ（追従・先読み・見張りズーム）、演出（爆発・揺れ）、帰投の呼びかけ、終了判定と Result への遷移。テレメトリと Result の組み立ては systems/mission-telemetry.ts（v0.4.0 で切り出し）。
 // 運動・魚雷・反撃・煙幕・被害・燃料は systems/mission-world.ts。終了理由の判定は core/mission-flow.ts（v0.3.0: 撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入って終わる）。
 import Phaser from 'phaser';
 import {
@@ -10,6 +10,7 @@ import {
   REGISTRY_KEY_TELEMETRY,
   RENDER_SCALE,
   SCENE_KEYS,
+  sortieSeed,
 } from '../config/game-config';
 import { getGameData } from '../config/game-data';
 import {
@@ -18,28 +19,28 @@ import {
   HIT_SHAKE_INTENSITY,
   HIT_SHAKE_MS,
   MISSION_END_DELAY_MS,
-  RUDDER_BAR_FULL_DEG,
   STORM_SLAM_SHAKE_INTENSITY,
   STORM_SLAM_SHAKE_MS,
   ZOOM_LERP,
 } from '../config/ui-config';
-import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
-import { countHits, summarizeShots } from '../core/hit-rate';
+import type { BoatTelemetry } from '../core/boat-motion';
 import { resetInput, type InputState } from '../core/input-state';
-import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
-import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
-import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
-import { clamp, degToRad, mpsToKt } from '../core/units';
+import { directSortie, isSortie, type Sortie } from '../core/sortie';
+import { clamp, degToRad } from '../core/units';
 import { ReturnPointView } from '../entities/return-point';
 import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
 import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
+import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
-import type { MissionResult } from './result-scene';
 
 export class MissionScene extends Phaser.Scene {
   private world!: MissionWorld;
+  /** この出撃（Briefing か ?debug 直行の Boot・Result が渡す。v0.4.0） */
+  private sortie!: Sortie;
+  /** 出撃時の火災（港内空襲の至近弾）が消えた実秒（Result の「出撃前」の行）。燃えている間 -1、火災なしで出撃なら NaN */
+  private startFireS = NaN;
   private inputState!: InputState;
   private telemetry!: BoatTelemetry;
   private returnView?: ReturnPointView;
@@ -115,15 +116,19 @@ export class MissionScene extends Phaser.Scene {
     super(SCENE_KEYS.mission);
   }
 
+  init(data: unknown): void {
+    // 呼ぶ側は必ず Sortie を渡す（Phaser は data を省くと前回の data を使い回す）。無ければ us_02・空襲なし
+    this.sortie = isSortie(data) ? data : directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), 'none');
+  }
+
   create(): void {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const world = data.hitRateModel.world;
     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     resetInput(this.inputState);
 
-    // 乱数: シードは起動時刻。Result に表示するので再現したいときに使える
-    const seed = Date.now() >>> 0;
-    this.world = new MissionWorld(this, data, PROTOTYPE_MISSION_ID, this.inputState, seed, this.worldEvents);
+    // 乱数: seed は出撃ごとに Title・Result（?debug 直行では Boot）が決めたもの。Result に出す（?debug&title&seed=N で再現）
+    this.world = new MissionWorld(this, data, this.sortie, this.inputState, this.worldEvents);
     const w = this.world;
     drawSea(this, w.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
     this.shallowsView = new ShallowsView(this, w.shallows);
@@ -135,6 +140,7 @@ export class MissionScene extends Phaser.Scene {
     this.ended = false;
     this.callFlags = 0;
     this.waitS = 0;
+    this.startFireS = w.setup.start.fireAtStart ? -1 : NaN;
     this.endParams = { torpedoSettleMaxS: w.returnPoint.torpedoSettleMaxS, adriftDelayS: MISSION_END_DELAY_MS / 1000 };
 
     // カメラ: 既定ズーム（docs/02 §6.10）× 描画スケール。追従は少し遅らせ、進行方向に先読みする。見張り（右中ボタン）で zoom_min まで引く
@@ -148,59 +154,7 @@ export class MissionScene extends Phaser.Scene {
     cam.startFollow(w.boat.sprite, false, CAMERA_FOLLOW_LERP, CAMERA_FOLLOW_LERP);
     this.updateLookAhead();
 
-    this.telemetry = {
-      speedMps: w.boat.state.speedMps,
-      rudder: 0,
-      targetStep: 'stop',
-      headingDeg: w.boat.state.headingDeg,
-      torpedoesLeft: w.torpedoes.capacity,
-      hits: 0,
-      timeLeftS: this.timeLeftS,
-      enemyDx: w.destroyer.state.x - w.boat.state.x,
-      enemyDy: w.destroyer.state.y - w.boat.state.y,
-      enemySighted: false,
-      playerDetected: false,
-      detectRangeM: w.detectRangeM,
-      illuminated: false,
-      starLit: false,
-      hp: w.damage.hp,
-      hpMax: w.damageParams.maxHp,
-      onFire: false,
-      engineDamaged: false,
-      smokeLeftS: 0,
-      smokeCooldownS: 0,
-      hiddenBySmoke: false,
-      cameraZoom: this.zoom,
-      fuel01: 1,
-      fuelNeed01: 0,
-      fuelEmpty: false,
-      homeDx: w.returnPoint.x - w.boat.state.x,
-      homeDy: w.returnPoint.y - w.boat.state.y,
-      homeDistM: 0,
-      homeEdgeM: 0,
-      callFlags: 0,
-      atHome: false,
-      homeWaiting: false,
-      destroyerSunk: false,
-      shallowState: 0,
-      shallowAheadM: 0,
-      shallowSafeKt: Math.round(mpsToKt(w.grounding.safeSpeedMps)),
-      friendlyPhase: FF_IDLE,
-      friendlyLeftS: NaN,
-      friendlyPasses: 0,
-      friendlyOutcome: FF_OUT_NONE,
-      friendlyPending: false,
-      stormState: w.storm ? w.storm.status.state : STORM_NONE,
-      stormGapM: w.storm ? w.storm.status.gapM : 0,
-      stormNorth: w.storm ? w.storm.status.north : true,
-      stormFast: w.storm ? w.storm.status.fast : false,
-      stormLos: false,
-      stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
-      crewAlive: w.setup.crew.total,
-      crewTotal: w.setup.crew.total,
-      crewTurnFactor: 1,
-      extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS : 0,
-    };
+    this.telemetry = createTelemetry(w, this.zoom, this.timeLeftS);
     this.registry.set(REGISTRY_KEY_TELEMETRY, this.telemetry);
     this.refreshReturnState(0);
     this.refreshTelemetry();
@@ -211,7 +165,7 @@ export class MissionScene extends Phaser.Scene {
       this.debugRanges = new DebugRanges(this);
     }
 
-    this.scene.launch(SCENE_KEYS.hud);
+    this.scene.launch(SCENE_KEYS.hud, this.sortie);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scene.stop(SCENE_KEYS.hud);
@@ -233,6 +187,7 @@ export class MissionScene extends Phaser.Scene {
     const w = this.world;
 
     w.updateFrame(realDt);
+    if (this.startFireS < 0 && w.damage.fireLeftS <= 0) this.startFireS = w.stepTimeS; // NaN < 0 は false
     this.updateZoom();
     this.updateLookAhead();
     const enemyAlive = w.destroyer.sinking ? null : w.destroyer.state;
@@ -305,70 +260,9 @@ export class MissionScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.zoom * RENDER_SCALE);
   }
 
-  /** 敵の相対位置、見える・見つかった、反撃、被害、煙幕、燃料、帰投、ズームを telemetry へ。敵スプライトは視程内だけ表示（docs/02 §6.5） */
+  /** テレメトリを毎フレーム更新（中身は systems/mission-telemetry） */
   private refreshTelemetry(): void {
-    const t = this.telemetry;
-    const w = this.world;
-    const s = w.boat.state;
-    const d = w.destroyer;
-    t.speedMps = s.speedMps;
-    // 漂流中は舵が効かないので舵バーも 0
-    t.rudder = w.fuel.empty ? 0 : turnCommand(this.inputState, s, RUDDER_BAR_FULL_DEG);
-    t.headingDeg = s.headingDeg;
-    t.targetStep = w.band;
-    // 沈み始めた後と帰投地点の輪の中では撃てないので残弾 0 を見せる（魚雷ボタンが暗くなる）
-    t.torpedoesLeft = d.sinking || w.atHome ? 0 : w.torpedoes.remaining;
-    t.hits = w.hits;
-    t.timeLeftS = this.timeLeftS;
-    if (d.sinking) {
-      t.enemyDx = NaN;
-      t.enemyDy = NaN;
-      t.enemySighted = false;
-    } else {
-      t.enemyDx = d.state.x - s.x;
-      t.enemyDy = d.state.y - s.y;
-      t.enemySighted = t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy <= w.visRange2;
-      d.setSighted(t.enemySighted);
-    }
-    t.playerDetected = d.ai.playerDetected && !d.sinking;
-    t.detectRangeM = w.detectRangeM;
-    t.illuminated = w.enemyFire.illuminated && !d.sinking;
-    t.starLit = w.enemyFire.state.star.illuminating && !d.sinking;
-    t.hp = w.damage.hp;
-    t.onFire = w.damage.fireLeftS > 0 && w.damage.hp > 0;
-    t.engineDamaged = w.damage.engineDamaged;
-    t.smokeLeftS = w.smoke ? Math.max(0, w.smoke.activeLeftS) : 0;
-    t.smokeCooldownS = w.smoke ? Math.max(0, w.smoke.cooldownLeftS) : 0;
-    t.hiddenBySmoke = w.hiddenBySmoke;
-    t.cameraZoom = this.zoom;
-    t.fuel01 = w.fuelAllotmentGal > 0 ? w.fuel.gal / w.fuelAllotmentGal : 0;
-    t.fuelEmpty = w.fuel.empty;
-    t.callFlags = this.callFlags;
-    t.atHome = w.atHome;
-    t.homeWaiting = w.atHome && w.torpedoesRunning;
-    t.destroyerSunk = d.sinking;
-    // 浅瀬の警告は世界が毎フレーム更新している（味方機の開始条件も同じ値を読む）
-    t.shallowState = w.shallowStatus.state;
-    t.shallowAheadM = w.shallowStatus.aheadM;
-    // 味方機（docs/02 §6.8）: 識別の残り秒は要求中だけ
-    const f = w.friendly ? w.friendly.state : null;
-    t.friendlyPhase = f ? f.phase : FF_IDLE;
-    t.friendlyLeftS = f && f.phase === FF_CHALLENGE ? f.timerS : NaN;
-    t.friendlyPasses = f ? f.passes : 0;
-    t.friendlyOutcome = f ? f.outcome : FF_OUT_NONE;
-    t.friendlyPending = f ? f.pending : false;
-    // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
-    const st = w.storm;
-    if (st) {
-      t.stormState = st.status.state;
-      t.stormGapM = st.status.gapM;
-      t.stormNorth = st.status.north;
-      t.stormFast = st.status.fast;
-      t.stormLos = st.state.los;
-    }
-    t.crewAlive = crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp);
-    t.crewTurnFactor = crewTurnFactor(w.setup.crewEffects, w.crewLostNow);
-    t.extinguishHoldS = w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0;
+    refreshTelemetry(this.telemetry, this.world, this.inputState, this.zoom, this.timeLeftS, this.callFlags);
   }
 
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
@@ -389,46 +283,7 @@ export class MissionScene extends Phaser.Scene {
     const w = this.world;
     // まだ走っている魚雷は外れとして記録し、Result の集計から漏れないようにする（帰投は最大 torpedo_settle_max_s 待った後）
     w.resolveRemainingAsMisses();
-    const data = getGameData(this.registry, REGISTRY_KEY_DATA);
-    const counts = countHits(w.shots);
-    const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
-    const result: MissionResult = {
-      reason,
-      missionType: w.missionType,
-      shots: w.shots.slice(),
-      bands: summarizeShots(w.shots, data.hitRateModel.kpi_by_range),
-      hits: counts.hits - counts.duds,
-      duds: counts.duds,
-      misses: counts.misses,
-      capacity: w.torpedoes.capacity,
-      destroyerSunk: w.destroyer.sinking,
-      returned: reason === 'returned',
-      elapsedS: this.elapsedS,
-      seed: w.seed,
-      hpLeft: w.damage.hp,
-      hpMax: w.damageParams.maxHp,
-      fuelLeftPct: pct(w.fuel.gal),
-      fuelAtFirstLaunchPct: Number.isNaN(w.fuelAtFirstLaunchGal) ? NaN : pct(w.fuelAtFirstLaunchGal),
-      ringDistM: reason === 'returned' ? 0 : this.ringEdgeM,
-      friendlyEnabled: w.friendly !== null,
-      friendlyPhase: w.friendly ? w.friendly.state.phase : FF_IDLE,
-      friendlyOutcome: w.friendly ? w.friendly.state.outcome : FF_OUT_NONE,
-      friendlyPasses: w.friendly ? w.friendly.state.passes : 0,
-      friendlyReactS: w.friendly ? w.friendly.state.reactS : NaN,
-      friendlyPeriodS: w.friendly ? w.friendly.state.reactPeriodS : NaN,
-      crewAlive: crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp),
-      crewTotal: w.setup.crew.total,
-      crewTurnFactor: crewTurnFactor(w.setup.crewEffects, w.crewLostNow),
-      crewAccelFactor: crewAccelFactor(w.setup.crewEffects, w.crewLostNow),
-      extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0,
-      stormEnabled: w.storm !== null,
-      stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
-      stormInsideS: w.storm ? w.storm.state.insideS : 0,
-      stormOverS: w.storm ? w.storm.state.overS : 0,
-      stormMeanKt: w.storm ? meanInsideKt(w.storm.state) : NaN,
-      stormSlams: w.storm ? w.storm.state.slams : 0,
-      stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
-    };
+    const result = buildMissionResult(reason, w, getGameData(this.registry, REGISTRY_KEY_DATA), this.elapsedS, this.ringEdgeM, this.startFireS);
     this.scene.start(SCENE_KEYS.result, result);
   }
 }

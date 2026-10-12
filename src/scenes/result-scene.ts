@@ -1,14 +1,26 @@
-// Result: 命中数・距離帯別の命中・駆逐艦の状態・帰投・燃料を表示し、タップで Mission を再開する（docs/02 §4）。終了理由の型は core/mission-flow。
+// Result: 命中数・距離帯別の命中・駆逐艦の状態・帰投・燃料・出撃前の空襲を表示する（docs/02 §4）。終了理由の型は core/mission-flow。
+// 「もう一度」は同じ任務の Briefing へ新しい seed で（?debug 直行では Mission へ）、「任務一覧」は Title へ（v0.4.0）。
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+import {
+  DEBUG_DIRECT_MISSION,
+  DEBUG_RAID_OVERRIDE,
+  DEPTH,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+  REGISTRY_KEY_DATA,
+  REGISTRY_KEY_PENDING_SORTIE,
+  RENDER_SCALE,
+  SCENE_KEYS,
+  sortieSeed,
+} from '../config/game-config';
 import { getGameData, getScoringParams } from '../config/game-data';
+import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import {
   HUD_COLOR_STRONG,
   HUD_FONT_HEADING_PX,
   HUD_FONT_SPEED_PX,
   HUD_FONT_STEP_PX,
-  RESULT_FOOTER_Y,
   RESULT_INPUT_DELAY_MS,
   RESULT_LINE_GAP,
   RESULT_SECTION_GAP,
@@ -19,7 +31,9 @@ import {
 import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
+import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
+import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export type { MissionEndReason } from '../core/mission-flow';
 
@@ -68,6 +82,10 @@ export interface MissionResult {
   stormMeanKt: number;
   stormSlams: number;
   stormSlamDamage: number;
+  /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
+  sortie: Sortie;
+  /** 「出撃前」の行（空襲の無い任務は空。空なら出さない） */
+  raidLine: string;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -83,6 +101,9 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
 
 export class ResultScene extends Phaser.Scene {
   private result?: MissionResult;
+  private buttons: MenuButton[] = [];
+  /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
+  private leaving = false;
 
   constructor() {
     super(SCENE_KEYS.result);
@@ -95,10 +116,13 @@ export class ResultScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
     const r = this.result;
-    if (!r) {
-      this.scene.start(SCENE_KEYS.mission);
+    if (!r || !isSortie(r.sortie)) {
+      this.scene.start(SCENE_KEYS.title);
       return;
     }
+    this.leaving = false;
+    this.buttons = [];
+    addBuildLabel(this);
     const cx = GAME_WIDTH / 2;
     let y = RESULT_TOP_Y;
     const line = (text: string, size: number, color?: string): void => {
@@ -130,6 +154,7 @@ export class ResultScene extends Phaser.Scene {
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    if (r.raidLine) line(r.raidLine, HUD_FONT_HEADING_PX);
     if (r.friendlyEnabled) {
       // 味方機: 来たか、識別までの秒（猶予の調整の根拠）、撃たれた回数
       const n = r.friendlyPasses;
@@ -163,25 +188,35 @@ export class ResultScene extends Phaser.Scene {
       else line('帰投地点の輪の中で沈没（魚雷の決着待ち）', HUD_FONT_HEADING_PX);
     }
     this.add
-      .text(cx, GAME_HEIGHT - RESULT_FOOTER_Y, 'タップでもう一度', hudTextStyle(HUD_FONT_STEP_PX, HUD_COLOR_STRONG))
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.hud);
-    this.add
       .text(cx, GAME_HEIGHT - RESULT_SEED_Y, `seed ${r.seed}`, hudTextStyle(HUD_FONT_HEADING_PX))
       .setOrigin(0.5, 1)
       .setDepth(DEPTH.hud);
 
-    // 任務中から押しっぱなしの指（スティック）の離しでは再開しない: 少し待ってから、新しく押された指の離しだけを受け付ける
-    this.time.delayedCall(RESULT_INPUT_DELAY_MS, () => {
-      this.input.once(Phaser.Input.Events.POINTER_DOWN, (p: Phaser.Input.Pointer) => {
-        const id = p.id;
-        const onUp = (q: Phaser.Input.Pointer): void => {
-          if (q.id !== id) return;
-          this.input.off(Phaser.Input.Events.POINTER_UP, onUp);
-          this.scene.start(SCENE_KEYS.mission);
-        };
-        this.input.on(Phaser.Input.Events.POINTER_UP, onUp);
-      });
+    // ボタンは任務中から押しっぱなしの指（スティック）の離しでは反応しない（ボタンの上で新しく押した指だけ。少し待ってから受け付ける）
+    const listSpec = { x: RESULT_LIST_X, y: RESULT_BUTTON_Y, w: MENU_PRIMARY_W, h: RESULT_BUTTON_H, title: RESULT_LIST_JA, titlePx: RESULT_BUTTON_PX, align: 'center' as const };
+    const retrySpec = { x: MENU_PRIMARY_X, y: RESULT_BUTTON_Y, w: MENU_PRIMARY_W, h: RESULT_BUTTON_H, title: RESULT_RETRY_JA, titlePx: RESULT_BUTTON_PX, sub: RESULT_RETRY_SUB_JA, align: 'center' as const };
+    this.buttons.push(new MenuButton(this, listSpec, () => this.leave(null), RESULT_INPUT_DELAY_MS));
+    this.buttons.push(new MenuButton(this, retrySpec, () => this.leave(r.sortie.missionId), RESULT_INPUT_DELAY_MS));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      for (const b of this.buttons) b.destroy();
+      this.buttons = [];
     });
+  }
+
+  /** missionId が null なら任務一覧（Title）へ。あれば同じ任務を新しい seed で: 通しは Briefing、?debug 直行は Mission */
+  private leave(missionId: string | null): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    if (missionId === null) {
+      this.scene.start(SCENE_KEYS.title);
+      return;
+    }
+    if (DEBUG_DIRECT_MISSION) {
+      this.scene.start(SCENE_KEYS.mission, directSortie(missionId, sortieSeed(), DEBUG_RAID_OVERRIDE));
+      return;
+    }
+    const init: BriefingInit = { missionId, seed: sortieSeed() };
+    this.registry.set(REGISTRY_KEY_PENDING_SORTIE, init);
+    this.scene.start(SCENE_KEYS.briefing, init);
   }
 }

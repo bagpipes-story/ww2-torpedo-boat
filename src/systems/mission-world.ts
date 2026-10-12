@@ -1,4 +1,4 @@
-// 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・駆逐艦・魚雷・反撃・煙幕・被害・燃料（v0.3.0）・味方機（v0.3.3）を持ち、固定ステップで進める。
+// 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・駆逐艦・魚雷・反撃・煙幕・被害・燃料（v0.3.0）・味方機（v0.3.3）・出撃（Sortie。v0.4.0）を持ち、固定ステップで進める。
 // data からの数値の組み立ては world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts（v0.3.3 で切り出し）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
@@ -9,13 +9,14 @@ import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatParams
 import { FixedStepper } from '../core/fixed-stepper';
 import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor } from '../core/crew';
 import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
-import { applyShellHit, createDamageState, stepDamage, type DamageParams, type DamageState, type HitOutcome, type HitSpec } from '../core/gunnery';
+import { applyShellHit, stepDamage, type DamageParams, type DamageState, type HitOutcome, type HitSpec } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import { insideRing, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
 import { SHALLOW_NONE, shallowIndexAt, updateShallowStatus, type GroundingParams, type ShallowRect, type ShallowStatus } from '../core/shallows';
 import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
+import { startDamageState, type Sortie } from '../core/sortie';
 import type { TorpedoParams } from '../core/torpedo';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 import { Destroyer } from '../entities/destroyer';
@@ -85,8 +86,7 @@ export class MissionWorld {
   private readonly speedMaxBaseMps: number;
   private readonly turnBaseDegS: number;
   private readonly accelBaseMps2: number;
-  /** 失った乗員（HP から。毎ステップ更新） */
-  crewLostNow = 0;
+  crewLostNow = 0; // 失った乗員（HP から。毎ステップ更新し、生成時は出撃時の HP から決める）
   private extinguishHeldS = 0;
   /** 火災で沈んだときの終了理由＝火災を起こした原因（砲撃か味方機の掃射か） */
   private fireReason: MissionEndReason = 'destroyed';
@@ -149,15 +149,14 @@ export class MissionWorld {
   constructor(
     scene: Phaser.Scene,
     data: GameData,
-    missionId: string,
+    readonly sortie: Sortie,
     private readonly input: InputState,
-    seed: number,
     events: WorldEvents,
   ) {
     this.events = events;
-    this.seed = seed;
+    const seed = (this.seed = sortie.seed);
     // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
-    const s = buildWorldSetup(data, missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF);
+    const s = buildWorldSetup(data, sortie.missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF, sortie);
     this.setup = s;
     const mission = s.mission;
     this.params = s.boatParams;
@@ -169,12 +168,13 @@ export class MissionWorld {
     this.returnPoint = mission.returnPoint;
     this.fuelCurve = s.fuelCurve;
     this.fuelAllotmentGal = s.fuelAllotmentGal;
-    this.fuel = createFuelState(s.fuelAllotmentGal);
+    this.fuel = createFuelState(s.fuelStartGal);
     this.speedMaxBaseMps = this.params.speedMaxMps;
     this.turnBaseDegS = this.params.turnRateDegS;
     this.accelBaseMps2 = this.params.accelMps2;
     this.damageParams = s.damageParams;
-    this.damage = createDamageState(this.damageParams);
+    this.damage = startDamageState(this.damageParams, s.start);
+    this.crewLostNow = crewLost(s.crew, this.damageParams.maxHp, this.damage.hp);
     this.vis = s.vis;
     this.visRange2 = s.visRange2;
     this.detectRangeM = s.detectRangeAtStartM;
