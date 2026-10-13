@@ -145,6 +145,12 @@ export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, sha
   return { text: withWarnings(text, t, shallowStep, false), color: warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
 }
 
+/** 撃つ前の手引き（押していない・大発が見えている・逃げている大発がいない）。distM は最寄りの浮いている大発まで（50 m 刻み）。気づかれたら（逃げ出すまでの 5 秒）警告色 */
+export function bargeSightedLine(t: BoatTelemetry, distM: number, shallowStep: number): HudLine {
+  if (t.playerDetected) return { text: withWarnings(`大発 ${distM} m ・ 気づかれた！ ・ 舷側を向けて撃て`, t, shallowStep, false), color: HUD_COLOR_WARN };
+  return { text: withWarnings(`大発 ${distM} m ・ 気づかれていない ・ 舷側を向け ${t.gunEffectiveM} m で撃て`, t, shallowStep, false), color: HUD_COLOR_STRONG };
+}
+
 /** 大発が岸へ逃げている間（上陸まで N 秒） */
 export function bargeRunLine(t: BoatTelemetry, escapeS: number, shallowStep: number): HudLine {
   return { text: withWarnings(`大発が岸へ逃げる ・ 上陸まで ${escapeS} 秒 ・ ${kills(t)}`, t, shallowStep, false), color: HUD_COLOR_WARN };

@@ -133,7 +133,7 @@ export interface BoatTelemetry {
   extinguishHoldS: number;
   /**
    * 大発掃討（v0.4.2。core/gun-battery の GUN_*）: 主兵装が砲、射撃の状態、速力帯で散っている、撃っている大発までの m（撃っていなければ 0）、射程と「遠い」の m、散らない速力の上限 kt（静音帯）。
-   * 撃破・上陸・ノルマ・隻数、逃げている大発が岸に着くまでの最短の体感秒（逃げていなければ NaN）
+   * 撃破・上陸・ノルマ・隻数、逃げている大発が岸に着くまでの最短の体感秒（逃げていなければ NaN）、大発の来る方角（航路の向き + 180° の 8 方位。大発の任務でなければ ''。作るときに 1 回だけ）
    */
   gunMission: boolean;
   gunStatus: number;
@@ -147,6 +147,7 @@ export interface BoatTelemetry {
   bargesQuota: number;
   bargesTotal: number;
   bargeEscapeS: number;
+  bargeFrom: string;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

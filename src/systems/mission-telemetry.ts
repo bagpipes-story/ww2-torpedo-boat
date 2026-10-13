@@ -6,6 +6,7 @@ import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { countHits, summarizeShots } from '../core/hit-rate';
+import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, GUN_SAFE } from '../core/gun-battery';
 import type { InputState } from '../core/input-state';
 import type { MissionEndReason } from '../core/mission-flow';
@@ -97,6 +98,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     bargesQuota: w.setup.barges ? w.setup.barges.quota : 0,
     bargesTotal: w.setup.barges ? w.setup.barges.count : 0,
     bargeEscapeS: NaN,
+    bargeFrom: w.setup.barges ? bearingJa(w.setup.barges.headingDeg + 180) : '',
   };
 }
 

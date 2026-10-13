@@ -34,3 +34,7 @@ export const BARGE_EVENT_SHOW_MS = 2500;
 export const DEBUG_BARGES_NEAR_OFFSET = { dxM: -450, dyM: -230, headingDeg: 90 } as const;
 /** 右下の主ボタン（主兵装が砲の任務）。押している間撃つ */
 export const GUN_BUTTON_LABEL = '射撃\n押し続け';
+/** 画面外の矢印のラベル（主兵装が砲の任務。駆逐艦の任務は「敵」） */
+export const BARGE_MARKER_LABEL = '大発';
+/** 浅瀬の中で、安全速力のこの kt 手前から速力の数字を赤にする（見た目だけ。座礁の前に気づけるように） */
+export const SHALLOW_SPEED_WARN_MARGIN_KT = 1;

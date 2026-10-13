@@ -82,8 +82,8 @@ export function createFlotilla(p: BargeParams, shellPoolSize: number): FlotillaS
   const h = degToRad(p.headingDeg);
   for (let i = 0; i < p.count; i++) {
     barges.push({
-      x: p.leadX - Math.sin(h) * p.spacingM * i,
-      y: p.leadY + Math.cos(h) * p.spacingM * i,
+      x: p.leadX - Math.sin(h) * p.offsetsM[i]!,
+      y: p.leadY + Math.cos(h) * p.offsetsM[i]!,
       headingDeg: p.headingDeg,
       speedMps: p.cruiseSpeedMps,
       phase: BARGE_CRUISE,
@@ -155,7 +155,7 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
     }
     if (b.phase === BARGE_RUN) steerShip(b, b.runHeadingDeg, p.runSpeedMps, p.turnRateDegS, p.accelMps2, dt);
     else steerShip(b, p.headingDeg, p.cruiseSpeedMps, p.turnRateDegS, p.accelMps2, dt);
-    if (b.x < p.boundsMarginM) b.x = p.boundsMarginM; // 西の端（v0.4.2 の 180 秒では届かない）
+    if (b.x < p.boundsMarginM) b.x = p.boundsMarginM; // 西の端（v0.4.2 の 200 秒では届かない）
     if (b.phase === BARGE_RUN && b.y >= p.beachY) {
       b.phase = BARGE_BEACHED;
       b.speedMps = 0;

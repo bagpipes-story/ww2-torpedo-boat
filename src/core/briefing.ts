@@ -1,6 +1,7 @@
 // 任務一覧（Title）と Briefing の文（docs/02 §4、v0.4.0）。Phaser 非依存。data の文と数値から組む（確保は画面を作るときだけ）。
 // 史実メモは表示専用の briefing_note_ja だけを使い、調査の記録 historical_note は画面に出さない（CLAUDE.md §11: 実在の人物を出さない）。
 import { RAID_EVENT_ID } from './sortie';
+import { wrapDeg360 } from './units';
 import type { MoonPhase } from './visibility';
 
 export const MENU_STATUS_PLAYABLE = '出撃準備 →';
@@ -99,6 +100,11 @@ export function compassJa(x: number, y: number, w: number, h: number): string {
   if (Math.abs(dx) <= w * COMPASS_CENTER_FRACTION && Math.abs(dy) <= h * COMPASS_CENTER_FRACTION) return '中央';
   const deg = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
   return COMPASS_JA[Math.round(deg / 45) % 8]!;
+}
+
+/** 方位 deg（北 0・時計回り）の 8 方位。2 行目の「大発は東から」（航路の向き + 180°、v0.4.2） */
+export function bearingJa(deg: number): string {
+  return COMPASS_JA[Math.round(wrapDeg360(deg) / 45) % 8]!;
 }
 
 export interface BriefingText {

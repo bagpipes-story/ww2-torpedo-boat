@@ -128,7 +128,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   }
   // 駆逐艦（enemy_start）か大発の隊（barges）のどちらか一方。大発には魚雷が当たらない（torpedo_immune）ので主兵装は砲（v0.4.2）
   const bargesRaw = proto['barges'];
-  if (bargesRaw !== undefined && !isBargeMissionBlock(bargesRaw)) throw new Error(`${missionId}.v0_1_prototype.barges（lead_start / spacing_m / beach_margin_m / kill_quota）が欠けている（docs/02 §6.4）`);
+  if (bargesRaw !== undefined && !isBargeMissionBlock(bargesRaw)) throw new Error(`${missionId}.v0_1_prototype.barges（lead_start / offsets_m / beach_margin_m / kill_quota）が欠けている（docs/02 §6.4）`);
   const barges = bargesRaw === undefined ? null : bargesRaw;
   if ((proto['enemy_start'] === undefined) === (barges === null)) throw new Error(`${missionId}.v0_1_prototype は enemy_start（駆逐艦）か barges（大発の隊）のどちらか一方を持つ`);
   const mainWeapon = proto['main_weapon'] ?? 'torpedo';

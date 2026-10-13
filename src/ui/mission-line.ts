@@ -1,4 +1,4 @@
-// 上中央の 2 行目（v0.4.2 で boat-hud.ts から切り出し。中身は v0.4.1 のまま、大発掃討の 3 つのモードを足した）: 夜明けまで・帰投せよ・味方機・敵機・暴風・浅瀬・射撃・大発の逃走と結果。
+// 上中央の 2 行目（v0.4.2 で boat-hud.ts から切り出し。中身は v0.4.1 のまま、大発掃討の 4 つのモードを足した）: 夜明けまで・帰投せよ・味方機・敵機・暴風・浅瀬・射撃・大発の逃走・撃つ前の手引き・撃破と上陸。
 // §7: 表示する値のどれかが変わったときだけ文字を組んで setText する。文と表は ui/hud-lines.ts。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
@@ -12,6 +12,7 @@ import {
   PLANE_DISTANCE_STEP_M,
   SHALLOW_WARN_STEP_M,
   STORM_AHEAD_STEP_M,
+  TARGET_MARKER_DISTANCE_STEP_M,
   STORM_WARN_STEP_M,
   hudTextStyle,
 } from '../config/ui-config';
@@ -22,7 +23,7 @@ import { CALL_DAWN, CALL_FUEL, topCall } from '../core/mission-flow';
 import { SP_APPROACH } from '../core/seaplane';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { STORM_AHEAD, STORM_INSIDE, STORM_NEAR } from '../core/storm';
-import { GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, callLabel, friendlyLine, friendlyResultLine, gunLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine } from './hud-lines';
+import { GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, callLabel, friendlyLine, friendlyResultLine, gunLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine } from './hud-lines';
 
 /** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 const MISSION_NORMAL = 0;
@@ -43,6 +44,8 @@ const MISSION_PLANE_RESULT = 11;
 const MISSION_GUN = 12;
 const MISSION_BARGE_RUN = 13;
 const MISSION_BARGE_EVENT = 14;
+/** 15 撃つ前の手引き（押していない・大発が見えている・逃げている大発がいない）。v0.4.2 */
+const MISSION_BARGE_SIGHTED = 15;
 
 export class MissionLine {
   private readonly missionText: Phaser.GameObjects.Text;
@@ -64,6 +67,8 @@ export class MissionLine {
   private lastPlaneKey = -1;
   /** 大発掃討の 2 行目のキー（射撃の状態・速すぎ・遠い・撃破・上陸・直後の出来事・上陸までの秒・距離の刻み。v0.4.2） */
   private lastBargeKey = -1;
+  /** 撃つ前の手引きのキー（気づかれた・最寄りの大発までの 50 m 刻み） */
+  private lastSightKey = -1;
   private lastTimeLeft = -1;
   private lastHits = -1;
   /** 撃破・上陸の直後の表示（1 撃破 / 2 上陸）と、その終わりの時刻 ms */
@@ -88,7 +93,7 @@ export class MissionLine {
       this.seenBeached = t.bargesBeached;
     }
     const event = nowMs < this.eventUntil ? this.eventKind : 0;
-    // 優先順: 魚雷待ち > 燃料切れ > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 射撃 > 大発の逃走 > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 帰投せよ > 平常（docs/02 §6.7・§6.8）
+    // 優先順: 魚雷待ち > 燃料切れ > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 射撃 > 大発の逃走 > 撃つ前の手引き > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 帰投せよ > 平常（docs/02 §6.7・§6.8）
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
     const call = topCall(t.callFlags);
     const ffLive = t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE;
@@ -99,6 +104,7 @@ export class MissionLine {
     // 射撃（押している間）と大発の逃走は浅瀬の警告を後ろに付けて浅瀬より上（v0.4.2。浅瀬が狩り場）。座礁だけはその上
     const gunLive = t.gunMission && t.gunStatus !== GUN_SAFE && t.bargesSunk + t.bargesBeached < t.bargesTotal;
     const bargeRun = t.gunMission && !Number.isNaN(t.bargeEscapeS);
+    const sighted = t.gunMission && t.gunStatus === GUN_SAFE && t.enemySighted;
     const mode = t.homeWaiting
       ? MISSION_WAITING
       : t.fuelEmpty
@@ -113,23 +119,25 @@ export class MissionLine {
                 ? MISSION_GUN
                 : bargeRun
                   ? MISSION_BARGE_RUN
-                  : t.shallowState !== 0
-                    ? MISSION_SHALLOWS
-                    : stormWarn
-                      ? MISSION_STORM_WARN
-                      : planeApproaching(t)
-                        ? MISSION_PLANE
-                        : event !== 0
-                          ? MISSION_BARGE_EVENT
-                          : ffResult
-                            ? MISSION_FRIENDLY_RESULT
-                            : planeLeaving(t)
-                              ? MISSION_PLANE_RESULT
-                              : stormInfo
-                                ? MISSION_STORM
-                                : call !== 0
-                                  ? MISSION_CALL
-                                  : MISSION_NORMAL;
+                  : sighted
+                    ? MISSION_BARGE_SIGHTED
+                    : t.shallowState !== 0
+                      ? MISSION_SHALLOWS
+                      : stormWarn
+                        ? MISSION_STORM_WARN
+                        : planeApproaching(t)
+                          ? MISSION_PLANE
+                          : event !== 0
+                            ? MISSION_BARGE_EVENT
+                            : ffResult
+                              ? MISSION_FRIENDLY_RESULT
+                              : planeLeaving(t)
+                                ? MISSION_PLANE_RESULT
+                                : stormInfo
+                                  ? MISSION_STORM
+                                  : call !== 0
+                                    ? MISSION_CALL
+                                    : MISSION_NORMAL;
     const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
     // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）
     const planeStep = t.planePhase === SP_APPROACH ? Math.ceil(t.planeDistM / PLANE_DISTANCE_STEP_M) : 0;
@@ -145,6 +153,9 @@ export class MissionLine {
     const bargeKey = t.gunMission
       ? t.gunStatus | (t.gunFast ? 8 : 0) | (t.gunTargetM > t.gunEffectiveM ? 16 : 0) | (t.bargesSunk << 5) | (t.bargesBeached << 8) | (event << 11) | (escapeS << 13) | (distStep << 18)
       : 0;
+    // 撃つ前の手引き: 最寄りの浮いている大発まで 50 m 刻み（四捨五入。平方根はこのモードの間だけフレームに 1 回）
+    const sightStep = mode === MISSION_BARGE_SIGHTED ? Math.round(Math.sqrt(t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy) / TARGET_MARKER_DISTANCE_STEP_M) : 0;
+    const sightKey = mode === MISSION_BARGE_SIGHTED ? 1 | (t.playerDetected ? 2 : 0) | (sightStep << 2) : 0;
     // 識別の残り秒は 5,4,3,2,1（0 は出さない）
     const ffLeft = t.friendlyPhase === FF_CHALLENGE ? Math.max(1, Math.ceil(t.friendlyLeftS)) : 0;
     // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない
@@ -161,7 +172,8 @@ export class MissionLine {
       (mode === MISSION_FRIENDLY_RESULT && (t.friendlyOutcome !== this.lastFriendlyOutcome || t.friendlyPasses !== this.lastFriendlyPasses)) ||
       (planeMode && planeKey !== this.lastPlaneKey) ||
       bargeKey !== this.lastBargeKey ||
-      ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
+      sightKey !== this.lastSightKey ||
+      ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_SIGHTED) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       // 暴風のキー: 警告・情報・味方機の行は fast も文に効く。平常の予報は state・向き・距離だけ（fast は文に出ないので見ない）
       ((mode === MISSION_STORM_WARN || mode === MISSION_STORM || mode === MISSION_FRIENDLY) && t.stormFast !== this.lastStormFast) ||
@@ -186,8 +198,16 @@ export class MissionLine {
       this.lastStormStep = stormStep;
       this.lastPlaneKey = planeKey;
       this.lastBargeKey = bargeKey;
-      if (mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_EVENT) {
-        const l = mode === MISSION_GUN ? gunLine(t, distStep, escapeS, shallowStep) : mode === MISSION_BARGE_RUN ? bargeRunLine(t, escapeS, shallowStep) : bargeEventLine(t, event);
+      this.lastSightKey = sightKey;
+      if (mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_EVENT || mode === MISSION_BARGE_SIGHTED) {
+        const l =
+          mode === MISSION_GUN
+            ? gunLine(t, distStep, escapeS, shallowStep)
+            : mode === MISSION_BARGE_RUN
+              ? bargeRunLine(t, escapeS, shallowStep)
+              : mode === MISSION_BARGE_SIGHTED
+                ? bargeSightedLine(t, sightStep * TARGET_MARKER_DISTANCE_STEP_M, shallowStep)
+                : bargeEventLine(t, event);
         this.missionText.setText(l.text).setColor(l.color);
       } else if (planeMode) {
         const l = seaplaneLine(t, planeStep, shallowStep, stormWarn);
@@ -219,9 +239,10 @@ export class MissionLine {
         const warn = (call & (CALL_FUEL | CALL_DAWN)) !== 0;
         this.missionText.setText(`${callLabel(call, t.gunMission)}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m  夜明けまで ${timeLeft} 秒`).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
       } else {
-        // 平常: 帯が近づいていれば予報を付ける
+        // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば来る方角（「大発は東から」）
         const forecast = t.stormState === STORM_AHEAD ? ` ・ ${t.stormNorth ? '北' : '南'}に暴風 ${stormStep * STORM_AHEAD_STEP_M} m` : '';
-        const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}` : `命中 ${t.hits}`;
+        const hint = t.gunMission && !t.enemySighted && t.bargesSunk + t.bargesBeached < t.bargesTotal ? ` ・ 大発は${t.bargeFrom}から` : '';
+        const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : `命中 ${t.hits}`;
         this.missionText.setText(`夜明けまで ${timeLeft} 秒 ・ ${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
     }

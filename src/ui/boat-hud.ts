@@ -24,6 +24,8 @@ import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { DETECT_RANGE_STEP_M, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
 import { MissionLine } from './mission-line';
 import { STORM_INSIDE } from '../core/storm';
+import { SHALLOW_INSIDE } from '../core/shallows';
+import { SHALLOW_SPEED_WARN_MARGIN_KT } from '../config/hunt-config';
 import { mpsToKt } from '../core/units';
 
 
@@ -90,8 +92,8 @@ export class BoatHud {
       this.lastSpeedKt = kt;
       this.speedText.setText(`${kt} kt`);
     }
-    // 暴風の帯の中で安全速力を超えている間は速力の数字を赤に（v0.3.4）
-    const speedWarn = t.stormState === STORM_INSIDE && t.stormFast;
+    // 暴風の帯の中で安全速力を超えている間（v0.3.4）と、浅瀬の中で安全速力の 1 kt 手前から（v0.4.2。座礁の前に気づけるように）は速力の数字を赤に
+    const speedWarn = (t.stormState === STORM_INSIDE && t.stormFast) || (t.shallowState === SHALLOW_INSIDE && kt >= t.shallowSafeKt - SHALLOW_SPEED_WARN_MARGIN_KT);
     if (speedWarn !== this.lastSpeedWarn) {
       this.lastSpeedWarn = speedWarn;
       this.speedText.setColor(speedWarn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);

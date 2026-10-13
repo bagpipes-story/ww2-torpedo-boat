@@ -70,7 +70,18 @@ export class BootScene extends Phaser.Scene {
     if (barge) generateBargeTextures(this, { lengthUnits: barge.boundsMarginM * 2, beamUnits: (barge.halfBeamM * 2 * spriteScale) / gameData.hitRateModel.world.hit_scale });
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
-    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(DEBUG_MISSION_ID, sortieSeed(), DEBUG_RAID_OVERRIDE));
+    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE));
     else this.scene.start(SCENE_KEYS.title);
+  }
+}
+
+/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない） */
+function debugMissionId(): string {
+  try {
+    getPrototypeMission(gameData, DEBUG_MISSION_ID);
+    return DEBUG_MISSION_ID;
+  } catch (e) {
+    console.warn(`?debug&mission=${DEBUG_MISSION_ID} は出撃できない（${e instanceof Error ? e.message : String(e)}）。${PROTOTYPE_MISSION_ID} で始める`);
+    return PROTOTYPE_MISSION_ID;
   }
 }

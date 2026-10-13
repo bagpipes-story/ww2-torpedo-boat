@@ -22,11 +22,11 @@ export interface BargeParams {
   /** 13mm（駆逐艦の砲と同じ型）と、その命中の被害 */
   gun: GunParams;
   gunHit: HitSpec;
-  /** 先頭の出発点と進路、後ろへの間隔 */
+  /** 先頭の出発点と進路、隻ごとの先頭から航路の後ろへの距離（index 順。2 隻ずつ 2 組なら [0, 100, 1500, 1600]） */
   leadX: number;
   leadY: number;
   headingDeg: number;
-  spacingM: number;
+  offsetsM: readonly number[];
   /** 南の岸: 逃げる大発の中心がこの y を越えたら上陸（逃げ切り） */
   beachY: number;
   /** 逃げる進路の扇（隣どうしの差 deg。180° を中心に開く） */
@@ -52,7 +52,7 @@ export interface BargeDataRecord {
 
 export interface BargeMissionBlock {
   lead_start: { x_m: number; y_m: number; heading_deg: number };
-  spacing_m: number;
+  offsets_m: number[];
   beach_margin_m: number;
   kill_quota: number;
 }
@@ -70,7 +70,10 @@ export function isBargeDataRecord(v: unknown): v is BargeDataRecord {
 }
 
 export function isBargeMissionBlock(v: unknown): v is BargeMissionBlock {
-  return nums(v, ['spacing_m', 'beach_margin_m', 'kill_quota']) && nums((v as Record<string, unknown>)['lead_start'], ['x_m', 'y_m', 'heading_deg']);
+  if (!nums(v, ['beach_margin_m', 'kill_quota'])) return false;
+  const r = v as Record<string, unknown>;
+  const offsets = r['offsets_m'];
+  return nums(r['lead_start'], ['x_m', 'y_m', 'heading_deg']) && Array.isArray(offsets) && offsets.every((o) => typeof o === 'number' && Number.isFinite(o));
 }
 
 /** 設計値の検査込み。count は任務の enemies の数、world は hit_scale / sprite_scale / time_scale、bounds は海域、detectHoldS は hit_rate_model の visibility.detect_hold_s */
@@ -82,11 +85,13 @@ export function bargeParamsFromData(r: BargeDataRecord, b: BargeMissionBlock, co
   if (!Number.isInteger(b.kill_quota) || b.kill_quota < 1 || b.kill_quota > count) bad(`kill_quota は 1〜${count} の整数`);
   if (!(r.hull_hp > 0) || !(r.speed_typical_kt > 0) || !(r.turn_rate_deg_s > 0) || !(r.accel_mps2 > 0)) bad('hull_hp / speed_typical_kt / turn_rate_deg_s / accel_mps2 は正');
   if (!(r.evasion.speed_boost_kt >= 0) || r.speed_typical_kt + r.evasion.speed_boost_kt > r.speed_max_kt) bad('speed_typical_kt + speed_boost_kt は speed_max_kt 以下');
-  if (!(r.detection.reaction_delay_s >= 0) || !(r.detection.base_detect_m > 0) || !(b.spacing_m > 0) || !(b.beach_margin_m > 0)) bad('reaction_delay_s は 0 以上、base_detect_m / spacing_m / beach_margin_m は正');
+  if (!(r.detection.reaction_delay_s >= 0) || !(r.detection.base_detect_m > 0) || !(b.beach_margin_m > 0)) bad('reaction_delay_s は 0 以上、base_detect_m / beach_margin_m は正');
+  const o = b.offsets_m;
+  if (o.length !== count || o.some((d, i) => d < 0 || (i > 0 && d < o[i - 1]!))) bad(`offsets_m は ${count} 個（enemies の数）で、0 以上・前から順に減らない`);
   const beachY = bounds.height - b.beach_margin_m;
   const h = (b.lead_start.heading_deg * Math.PI) / 180;
-  const tailX = b.lead_start.x_m - Math.sin(h) * b.spacing_m * (count - 1);
-  const tailY = b.lead_start.y_m + Math.cos(h) * b.spacing_m * (count - 1);
+  const tailX = b.lead_start.x_m - Math.sin(h) * o[count - 1]!;
+  const tailY = b.lead_start.y_m + Math.cos(h) * o[count - 1]!;
   for (const [x, y] of [[b.lead_start.x_m, b.lead_start.y_m], [tailX, tailY]] as const) if (x < 0 || x > bounds.width || y < 0 || !(y < beachY)) bad('隊（先頭から最後尾まで）は海域の中で、岸の線（高さ − beach_margin_m）より海側');
   const gun = gunParamsFromData(r.guns[0]!);
   return {
@@ -107,7 +112,7 @@ export function bargeParamsFromData(r: BargeDataRecord, b: BargeMissionBlock, co
     leadX: b.lead_start.x_m,
     leadY: b.lead_start.y_m,
     headingDeg: b.lead_start.heading_deg,
-    spacingM: b.spacing_m,
+    offsetsM: [...o],
     beachY,
     fanDeg: r.evasion.beach_fan_deg,
     quota: b.kill_quota,

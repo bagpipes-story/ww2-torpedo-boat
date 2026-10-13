@@ -39,8 +39,8 @@ function killTime(d: number, band: SpeedStep, seed: number): number {
 const median = (a: number[]): number => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)]!;
 
 describe('艇の砲（core/gun-battery、v0.4.2）', () => {
-  it('us_elco80 の gun_battery: 射程 600・遠い 300・死角 ±30°（cos² 0.75）・閃光 1,500・散布の倍率 1/1/1.6/2.5・2 組（150 発/分 8・480 発/分 2）', () => {
-    expect([G.label, G.rangeM, G.effectiveM, G.deadConeDeg, G.flashRevealM]).toEqual(['40mm・37mm・20mm・12.7mm', 600, 300, 30, 1500]);
+  it('us_elco80 の gun_battery: 射程 600・遠い 300・死角 ±30°（cos² 0.75）・閃光 1,200・散布の倍率 1/1/1.6/2.5・2 組（150 発/分 8・480 発/分 2）', () => {
+    expect([G.label, G.rangeM, G.effectiveM, G.deadConeDeg, G.flashRevealM]).toEqual(['40mm・37mm・20mm・12.7mm', 600, 300, 30, 1200]);
     expect(G.deadConeCos2).toBeCloseTo(0.75, 12);
     expect(G.spreadFactor).toEqual({ stop: 1, silent: 1, cruise: 1.6, full: 2.5 });
     expect(G.groups.map((g) => [g.id, g.roundsPerMin, g.damage, g.shellSpeedMps, g.dispersionM, g.splashRadiusM])).toEqual([['40mm_37mm', 150, 8, 400, 30, 2.5], ['20mm_12.7mm', 480, 2, 500, 36, 1]]);

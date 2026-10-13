@@ -220,7 +220,7 @@ export class MissionWorld {
       else consumeFireInput(this.input, this.launcher, this.boat.state, this.torpedoes.remaining);
       this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.extinguishHeldS, realDt, this.extinguishHoldScale);
       if (d) this.launcher.update(realDt, this.boat.state, d.state);
-      if (Number.isNaN(this.fuelAtFirstLaunchGal) && this.torpedoes.remaining < this.torpedoes.capacity) this.fuelAtFirstLaunchGal = this.fuel.gal;
+      if (Number.isNaN(this.fuelAtFirstLaunchGal) && (this.torpedoes.remaining < this.torpedoes.capacity || (this.hunt !== null && this.hunt.battery.shots > 0))) this.fuelAtFirstLaunchGal = this.fuel.gal;
     }
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;

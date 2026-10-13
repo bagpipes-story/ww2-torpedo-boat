@@ -12,7 +12,7 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
 const labelOf = (id: string): string => riskLabelJa(gameData, id);
 
 describe('us_03 の世界と Briefing（v0.4.2）', () => {
-  it('buildWorldSetup: 駆逐艦なし・主兵装 guns・魚雷 0・大発 4・砲あり・危険は無し（味方機・暴風・水上機 null）・視程 900・停止で見つかる 288', () => {
+  it('buildWorldSetup: 駆逐艦なし・主兵装 guns・魚雷 0・大発 4・砲あり・夜明け 200 秒・燃料 30 gal・危険は無し（味方機・暴風・水上機 null）・視程 900・停止で見つかる 288。&barges=near は先頭の 450 m 西・230 m 北', () => {
     const s = buildWorldSetup(gameData, 'us_03', NaN, NaN);
     expect(s.destroyer).toBeNull();
     expect(s.mainWeapon).toBe('guns');
@@ -20,23 +20,24 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
     expect(s.barges!.count).toBe(4);
     expect(s.guns!.rangeM).toBe(600);
     expect(s.playerStart).toEqual({ x: 3000, y: 700, headingDeg: 180 });
-    expect([s.durationS, s.fuelAllotmentGal]).toEqual([180, 28]);
+    expect([s.durationS, s.fuelAllotmentGal]).toEqual([200, 30]);
     expect([s.friendly, s.storm, s.seaplane]).toEqual([null, null, null]);
     expect(s.visRange2).toBeCloseTo(900 * 900, 6);
     expect(s.detectRangeAtStartM).toBeCloseTo(288, 6);
-    expect(buildWorldSetup(gameData, 'us_03', NaN, NaN, false, null, false, true).playerStart).toEqual({ x: 4050, y: 2570, headingDeg: 90 });
+    expect(buildWorldSetup(gameData, 'us_03', NaN, NaN, false, null, false, true).playerStart).toEqual({ x: 3850, y: 2570, headingDeg: 90 });
     expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, false, null, false, true).playerStart).toEqual(getPrototypeMission(gameData, 'us_02').playerStart);
   });
   it('Briefing の数値と行', () => {
     const n = briefingNumbers(buildWorldSetup(gameData, 'us_03', NaN, NaN));
-    expect(n).toEqual({ visM: 900, detectCruiseM: 720, detectSilentM: 360, durationS: 180, fuelGal: 28, torpedoes: 0, gunsLabel: '40mm・37mm・20mm・12.7mm', homeX: 3000, homeY: 300, boundsW: 6000, boundsH: 3000 });
+    expect(n).toEqual({ visM: 900, detectCruiseM: 720, detectSilentM: 360, durationS: 200, fuelGal: 30, torpedoes: 0, gunsLabel: '40mm・37mm・20mm・12.7mm', homeX: 3000, homeY: 300, boundsW: 6000, boundsH: 3000 });
     const rows = briefingRows(getBriefingRecord(gameData, 'us_03'), n, nameOf, labelOf);
     expect(rows.map((r) => r.label)).toEqual(['目的', '成功', '月', '敵', '危険', '条件']);
+    expect(rows[0]!.text).toBe('岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）');
     expect(rows[1]!.text).toBe('大発3隻以上撃破して帰投（帰投地点は北の青い輪）');
     expect(rows[2]!.text).toBe('新月 ・ 見える 900 m ・ 見つかる 巡航 720 m／静音 360 m');
     expect(rows[3]!.text).toBe('大発動艇 ×4');
     expect(rows[4]!.text).toBe('敵艦艇の砲撃・衝突、座礁');
-    expect(rows[5]!.text).toBe('夜明けまで 180 秒 ・ 燃料 28 gal ・ 砲 40mm・37mm・20mm・12.7mm');
+    expect(rows[5]!.text).toBe('夜明けまで 200 秒 ・ 燃料 30 gal ・ 砲 40mm・37mm・20mm・12.7mm');
   });
   it('任務の検査: guns でない（torpedo_immune）・enemy_start と barges の両方・coast が無い・coast が north は例外', () => {
     const a = clone();
@@ -52,10 +53,11 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
     (proto(e)['coast'] as Rec)['side'] = 'north';
     expect(() => getPrototypeMission(e, 'us_03')).toThrow(/south/);
   });
-  it('スコア: 3 隻撃破して帰投（燃料 26%・無傷）1,351、4 隻撃破して沈没 600 < 撃たずに帰投 700 < 2 隻で帰投 850', () => {
+  it('スコア: 4 隻撃破して帰投（燃料 23%・乗員 13/14）1,416、3 隻（25%・13/14）1,343、4 隻撃破して沈没 600 < 撃たずに帰投 700 < 2 隻で帰投 850', () => {
     const P = getScoringParams(gameData);
-    const base: ScoreInput = { returned: true, objectiveDone: true, missionType: 'barge_hunt', bands: [], kills: 3, killEnemyId: 'daihatsu_barge', fuelLeftPct: 26, crewAlive: 14, crewTotal: 14 };
-    expect(computeScore(base, P)).toEqual({ survival: 700, objective: 300, hits: 0, kills: 225, fuel: 26, crew: 100, crewHalf: false, total: 1351 });
+    const base: ScoreInput = { returned: true, objectiveDone: true, missionType: 'barge_hunt', bands: [], kills: 4, killEnemyId: 'daihatsu_barge', fuelLeftPct: 23, crewAlive: 13, crewTotal: 14 };
+    expect(computeScore(base, P)).toEqual({ survival: 700, objective: 300, hits: 0, kills: 300, fuel: 23, crew: 93, crewHalf: false, total: 1416 });
+    expect(computeScore({ ...base, kills: 3, fuelLeftPct: 25 }, P).total).toBe(1343);
     expect(computeScore({ ...base, returned: false, kills: 4, crewAlive: 0 }, P).total).toBe(600);
     expect(computeScore({ ...base, objectiveDone: false, kills: 0 }, P).total).toBe(700);
     expect(computeScore({ ...base, objectiveDone: false, kills: 2 }, P).total).toBe(850);

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission, getRaidParams } from '../src/config/game-data';
 import { enemyNameJa, getBriefingRecord, getMenuEntries, riskLabelJa } from '../src/config/mission-data';
-import { briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
+import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
 import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 
@@ -19,7 +19,7 @@ const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ', 'Ken
 const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
-  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。出撃できるのは us_02 だけで、sub は日付 ・ 場所', () => {
+  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。出撃できるのは us_02 と us_03（v0.4.2）で、sub は日付 ・ 場所', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.campaignName).toBe('米PTキャンペーン');
     expect(menu.entries).toEqual([
@@ -82,6 +82,9 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(compassJa(3000, 3900, 6000, 4000)).toBe('南');
     expect(compassJa(5900, 3900, 6000, 4000)).toBe('南東');
   });
+  it('方位の 8 方角（2 行目の「大発は東から」）: 90 → 東、0 → 北、225 → 南西、−90 → 西', () => {
+    expect([bearingJa(90), bearingJa(0), bearingJa(225), bearingJa(-90)]).toEqual(['東', '北', '南西', '西']);
+  });
   it('us_02 の Briefing: 6 行と史実メモ', () => {
     const rec = getBriefingRecord(gameData, 'us_02');
     expect(rec.titleJa).toBe('東京急行を迎え撃て');
@@ -126,9 +129,9 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it('data の整合: us_02 の hazards は世界の block に一致し（港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', () => {
-    const m = getPrototypeMission(gameData, 'us_02');
-    const proto = (byId(gameData, 'us_02')['v0_1_prototype'] as Record<string, unknown>);
+  it.each(['us_02', 'us_03'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
+    const m = getPrototypeMission(gameData, id);
+    const proto = (byId(gameData, id)['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];
     const armed = enemyIds.some((id) => {
       const e = gameData.enemies.enemies.find((x) => x.id === id) as unknown as Record<string, unknown>;
