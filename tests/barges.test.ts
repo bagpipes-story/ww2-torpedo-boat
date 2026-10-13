@@ -144,6 +144,25 @@ describe('大発の隊（core/barges・barge-data、v0.4.2）', () => {
     expect(hits / f.shotsFired).toBeGreaterThan(0.139);
     expect(hits / f.shotsFired).toBeLessThan(0.159);
   });
+  it('同じステップに着く 13mm: 命中で艇が沈み始めたら（呼ぶ側が boatAfloat を false に）残りの弾は外れとして数える（被弾数を水増ししない）', () => {
+    const f = createFlotilla(P, 16);
+    for (let i = 0; i < 4; i++) f.barges[i]!.phase = BARGE_SUNK; // 撃たせない（弾だけを見る）
+    const boat = { x: 1000, y: 1000, headingDeg: 90, speedMps: 0 };
+    for (let i = 0; i < 3; i++) Object.assign(f.shells[i]!, { active: true, x: 1000, y: 1000, vx: 0, vy: 0, leftS: 0.001, impactX: 1000, impactY: 1000, gunIndex: 0 });
+    const c = check(boat);
+    const log: string[] = [];
+    const ev: FlotillaEvents = {
+      onFire: () => {},
+      onImpact: (_x, _y, hit) => {
+        log.push(hit ? 'hit' : 'miss');
+        if (hit) c.boatAfloat = false; // 1 発目で沈み始めた
+      },
+      onBeached: () => {},
+    };
+    stepFlotilla(f, P, c, new SeededRng(7), DT, DT * TS, ev);
+    expect(log).toEqual(['hit', 'miss', 'miss']);
+    expect(f.hitsOnBoat).toBe(1);
+  });
   it('確保なし: 600 ステップ回しても隊・弾の配列と各要素の参照は同じ', () => {
     const f = createFlotilla(P, 16);
     const barges = f.barges;

@@ -126,15 +126,17 @@ function kills(t: BoatTelemetry): string {
   return `撃破 ${t.bargesSunk}/${t.bargesQuota}`;
 }
 
-/** 射撃ボタンを押している間の 2 行目: 撃っている（距離・速すぎ・遠い。大発が逃げていれば「上陸まで N 秒」を足す）か、撃てない理由（死角・射程外・煙幕・見えない）。浅瀬の警告は後ろに付ける */
+/** 射撃ボタンを押している間の 2 行目: 撃っている（距離・速すぎ・遠い。大発が逃げていれば「上陸まで N 秒」を足す）か、撃てない理由（死角・射程外・煙幕・見えない）。浅瀬の警告は後ろに付ける。
+ * distStep は GUN_DISTANCE_STEP_M 刻みの切り上げ。「遠い」は表示の距離で決める（「300 m ・ 遠い（300 m 以内で）」と矛盾させない） */
 export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, shallowStep: number): HudLine {
   let text: string;
   let warn = true;
+  const d = distStep * GUN_DISTANCE_STEP_M;
   if (t.gunStatus === GUN_FIRING) {
     if (t.gunFast) text = `射撃中 ・ 速すぎて当たらない ・ ${t.gunSteadyKt} kt 以下で`;
-    else if (t.gunTargetM > t.gunEffectiveM) text = `射撃中 ・ 大発 ${distStep * GUN_DISTANCE_STEP_M} m ・ 遠い（${t.gunEffectiveM} m 以内で）`;
+    else if (d > t.gunEffectiveM) text = `射撃中 ・ 大発 ${d} m ・ 遠い（${t.gunEffectiveM} m 以内で）`;
     else {
-      text = `射撃中 ・ 大発 ${distStep * GUN_DISTANCE_STEP_M} m ・ ${kills(t)}`;
+      text = `射撃中 ・ 大発 ${d} m ・ ${kills(t)}`;
       warn = false;
     }
     if (escapeS > 0) text += ` ・ 上陸まで ${escapeS} 秒`; // 撃ったら気づかれて逃げる、を押したまま読めるように（v0.4.2 の試作で、押し続けると「岸へ逃げる」の行が出なかった）
@@ -145,7 +147,7 @@ export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, sha
   return { text: withWarnings(text, t, shallowStep, false), color: warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
 }
 
-/** 撃つ前の手引き（押していない・大発が見えている・逃げている大発がいない）。distM は最寄りの浮いている大発まで（50 m 刻み）。気づかれたら（逃げ出すまでの 5 秒）警告色 */
+/** 撃つ前の手引き（押していない・大発が見えている・逃げている大発がいない）。distM は最寄りの浮いている大発まで（50 m 刻みの切り上げ＝「300 m」は 300 m 以内）。気づかれたら（逃げ出すまでの 5 秒）警告色 */
 export function bargeSightedLine(t: BoatTelemetry, distM: number, shallowStep: number): HudLine {
   if (t.playerDetected) return { text: withWarnings(`大発 ${distM} m ・ 気づかれた！ ・ 舷側を向けて撃て`, t, shallowStep, false), color: HUD_COLOR_WARN };
   return { text: withWarnings(`大発 ${distM} m ・ 気づかれていない ・ 舷側を向け ${t.gunEffectiveM} m で撃て`, t, shallowStep, false), color: HUD_COLOR_STRONG };

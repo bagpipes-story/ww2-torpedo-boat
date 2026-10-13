@@ -188,6 +188,7 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
   f.allBlocked = live > 0 && hidden === live;
   // 岸まで（逃げる速さで。転舵の分は見ない）を体感秒に（game m/秒 × time_scale）
   f.escapeLeftS = escapeM === Infinity ? NaN : escapeM / (p.runSpeedMps * p.timeScale);
+  // 着弾（onImpact の命中で艇が沈み始めたら、呼ぶ側が c.boatAfloat を false にする＝同じステップの残りの弾は外れ）
   for (let i = 0; i < f.shells.length; i++) {
     const s = f.shells[i]!;
     if (!s.active || !advanceShell(s, dt)) continue;

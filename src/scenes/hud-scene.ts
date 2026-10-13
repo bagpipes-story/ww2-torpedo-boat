@@ -108,9 +108,9 @@ export class HudScene extends Phaser.Scene {
     this.boatHud = new BoatHud(this);
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
-    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
-    const targetLabel = mission.mainWeapon === 'guns' ? BARGE_MARKER_LABEL : '敵';
-    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: targetLabel, stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, topMargin: TARGET_MARKER_TOP_MARGIN });
+    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」で切り上げ＝2 行目の手引きと同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
+    const guns = mission.mainWeapon === 'guns';
+    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns, topMargin: TARGET_MARKER_TOP_MARGIN });
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     if (mission.enemyAircraft) {
       this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });

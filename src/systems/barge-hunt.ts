@@ -61,6 +61,8 @@ export class BargeHunt {
   private readonly flash: Phaser.GameObjects.Image;
   private readonly ring: Phaser.GameObjects.Image;
   private flashAge = Infinity;
+  /** 固定ステップの世界（13mm の着弾で艇が沈み始めたかを読む。step で置くだけで確保しない） */
+  private view: BargeHuntView | null = null;
 
   private readonly gunEvents: GunEvents = {
     onFire: (x, y) => {
@@ -77,8 +79,11 @@ export class BargeHunt {
   private readonly flotillaEvents: FlotillaEvents = {
     onFire: () => {},
     onImpact: (x, y, hit) => {
-      if (hit) this.onBoatHit(this.p.gunHit, this.bargeRng, x, y);
-      else this.splashes.splash(x, y, false);
+      if (hit) {
+        this.onBoatHit(this.p.gunHit, this.bargeRng, x, y);
+        // この弾で沈み始めたら、同じステップに着く残りの弾は当たり（被弾数）に数えない
+        if (this.view && this.view.boat.sinking) this.check.boatAfloat = false;
+      } else this.splashes.splash(x, y, false);
     },
     onBeached: (i) => {
       this.sprites[i]!.setTint(BARGE_BEACHED_TINT).setAlpha(BARGE_BEACHED_ALPHA);
@@ -120,6 +125,7 @@ export class BargeHunt {
 
   /** 固定ステップ: 艇の砲（押している間）→ 大発（撃ったら閃光の距離で気づく）。held は射撃ボタン */
   step(dt: number, feelDt: number, w: BargeHuntView, held: boolean): void {
+    this.view = w;
     const afloat = !w.boat.sinking;
     stepGunBattery(this.battery, this.g, this.boat, w.band, held, afloat, this.flotilla.barges, this.p.halfLengthM, this.p.halfBeamM, w.visRange2, this.gunRng, feelDt, dt, this.gunEvents);
     const c = this.check;
