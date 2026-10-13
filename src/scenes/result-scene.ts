@@ -31,6 +31,7 @@ import {
 import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
+import { seaplaneResultLine } from '../ui/hud-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
@@ -82,6 +83,19 @@ export interface MissionResult {
   stormMeanKt: number;
   stormSlams: number;
   stormSlamDamage: number;
+  /** 敵の水上機（v0.4.1。core/seaplane の SP_*）: 任務にいるか、段階・結果、接近と見失わせた回数、減速までの秒（NaN なら無し）、照明弾の下にいた秒とその間の砲撃数、落とした爆弾と命中、各爆弾の転舵までの秒（NaN なら転舵なし）。猶予と散布を調整するための実機の記録 */
+  seaplaneEnabled: boolean;
+  seaplanePhase: number;
+  seaplaneOutcome: number;
+  seaplaneAttacked: boolean;
+  seaplaneSorties: number;
+  seaplaneLost: number;
+  seaplaneSlowReactS: number;
+  seaplaneFlareLitS: number;
+  seaplaneShellsUnderFlare: number;
+  seaplaneBombs: number;
+  seaplaneBombHits: number;
+  seaplaneDodgeS: number[];
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;
   /** 「出撃前」の行（空襲の無い任務は空。空なら出さない） */
@@ -97,6 +111,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   destroyed: '砲撃で沈没',
   friendly_fire: '味方機の誤射で沈没',
   storm: '荒波で船体破損・沈没',
+  bombed: '敵機の爆撃で沈没',
 };
 
 export class ResultScene extends Phaser.Scene {
@@ -166,6 +181,7 @@ export class ResultScene extends Phaser.Scene {
       else text = `味方機: 識別の途中で終了（誤射 ${n} 回）`;
       line(text, HUD_FONT_HEADING_PX);
     }
+    if (r.seaplaneEnabled) line(seaplaneResultLine(r), HUD_FONT_HEADING_PX);
     if (r.crewAlive < r.crewTotal && r.hpLeft > 0) {
       // 乗員が減ったときの影響（v0.3.5）: 旋回・加速の倍率、消火に要する長押し、帰投点（半数以下なら × crew_half_factor）。沈んだ艇には出さない（最後の HP 0 の人数は操作には効いていない）
       const turnPct = Math.round((1 - r.crewTurnFactor) * 100);

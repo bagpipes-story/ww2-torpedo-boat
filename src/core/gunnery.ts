@@ -116,7 +116,7 @@ export function createGunneryState(p: GunneryParams, shellPoolSize: number, ship
  * 星弾は「発見中・探照灯の点灯遅れが明けている・探照灯の射程外かつ星弾の射程内・艇が艦の方へ進んでいる・冷却が明けている」のとき
  * 艇の位置へ撃ち、一定時間その周りを照らす。遠ざかる艇には撃たない（逃げる艇への追い打ちにしない設計上の譲歩）。
  */
-export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number, losBlocked: boolean = false): void {
+export function updateIllumination(g: GunneryState, ship: BoatState, player: BoatState, playerDetected: boolean, p: GunneryParams, realDt: number, losBlocked: boolean = false, externalLit: boolean = false): void {
   const dx = player.x - ship.x;
   const dy = player.y - ship.y;
   const d2 = dx * dx + dy * dy;
@@ -162,6 +162,7 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     light.on &&
     closing &&
     !losBlocked &&
+    !externalLit && // 照明弾（水上機）に照らされている艇に星弾を重ねない（v0.4.1）
     star.leftS <= 0 &&
     star.cooldownLeftS <= 0 &&
     !light.illuminating &&
@@ -174,7 +175,8 @@ export function updateIllumination(g: GunneryState, ship: BoatState, player: Boa
     star.y = player.y;
     star.illuminating = true;
   }
-  g.illuminated = light.illuminating || star.illuminating;
+  // externalLit: 水上機の照明弾の光の中（v0.4.1）。煙幕に遮られていれば艦からは撃てない
+  g.illuminated = light.illuminating || star.illuminating || (externalLit && !losBlocked);
 }
 
 /**

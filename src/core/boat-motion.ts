@@ -106,6 +106,19 @@ export interface BoatTelemetry {
   friendlyPasses: number;
   friendlyOutcome: number;
   friendlyPending: boolean;
+  /** 敵の水上機（core/seaplane の SP_*、v0.4.1）: 段階、機までの距離 m（接近中）、発見確定、航跡が見えている、航跡が見える速力 kt、照明弾が燃えている、落とした爆弾・落下中・命中、結果、機の相対位置（マーカー用。来ていなければ NaN） */
+  planePhase: number;
+  planeDistM: number;
+  planeLocked: boolean;
+  planeWake: boolean;
+  planeWakeKt: number;
+  planeFlareOn: boolean;
+  planeBombsDropped: number;
+  planeBombAir: boolean;
+  planeBombsHit: number;
+  planeOutcome: number;
+  planeDx: number;
+  planeDy: number;
   /** 暴風（core/storm の STORM_*、v0.3.4）: 状態、縁までの距離 m、帯が北にある、安全速力を超えている、艦との線が帯にかかる（雨）、安全速力 kt */
   stormState: number;
   stormGapM: number;

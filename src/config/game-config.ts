@@ -54,6 +54,14 @@ export const DEBUG_FRIENDLY_FORCE = DEBUG_ENABLED && new URLSearchParams(window.
 /** ?debug&storm=Y: 暴風の帯の南の縁の初期 y を固定。?debug&nostorm: 帯なし（v0.3.3 と同じ世界。比較用） */
 export const DEBUG_STORM_START_Y = debugNumber('storm');
 export const DEBUG_STORM_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostorm');
+/** ?debug&plane: 水上機が最初の接近を哨戒 20 秒と航跡 3 秒を待たずに始める（航跡が見え次第。以後の追跡・見失いは通常どおり）。?debug&plane=attack: 加えて常に見えている（減速しても見失わない。照明弾・爆撃の確認用）。?debug&noplane: 水上機なし（v0.4.0 と同じ世界） */
+function debugSeaplane(): 'none' | 'force' | 'attack' {
+  if (!DEBUG_ENABLED) return 'none';
+  const v = new URLSearchParams(window.location.search).get('plane');
+  return v === null ? 'none' : v === 'attack' ? 'attack' : 'force';
+}
+export const DEBUG_SEAPLANE = debugSeaplane();
+export const DEBUG_SEAPLANE_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noplane');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
@@ -134,6 +142,7 @@ export const TEXTURE_KEYS = {
   roundButton: 'tex-round-button',
   smokePuff: 'tex-smoke-puff',
   aircraft: 'tex-aircraft',
+  enemyAircraft: 'tex-aircraft-enemy',
   rainStreak: 'tex-rain-streak',
   stickBase: 'tex-stick-base',
   stickKnob: 'tex-stick-knob',

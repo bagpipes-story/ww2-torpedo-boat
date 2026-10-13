@@ -9,6 +9,8 @@ export const METERS_PER_YARD = 0.9144;
 export const METERS_PER_NAUTICAL_MILE = 1852;
 /** 燃料の消費率（gal/h）を秒の積分に使うとき */
 export const SECONDS_PER_HOUR = 3600;
+/** 重力加速度 m/s²（爆弾の落下秒 √(2h/g)。v0.4.1） */
+export const GRAVITY_MPS2 = 9.81;
 
 export function ktToMps(kt: number): number {
   return kt * MPS_PER_KNOT;

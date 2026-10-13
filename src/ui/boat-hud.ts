@@ -1,11 +1,11 @@
-// 速力・速力段・舵の HUD（右下）と上中央の 2〜3 行目（夜明けまで・帰投せよ・味方機・暴風／敵影と発見（雨））。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
+// 速力・速力段・舵の HUD（右下）と上中央の 2〜3 行目（夜明けまで・帰投せよ・味方機・敵機・暴風／敵影と発見（雨））。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
+// 文と表は ui/hud-lines.ts（v0.4.1 で切り出し）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
   HUD_COLOR,
   HUD_COLOR_STRONG,
   HUD_COLOR_WARN,
-  HOME_COLOR_TEXT,
   HUD_DEBUG_LINE_HEIGHT,
   HUD_FONT_HEADING_PX,
   HUD_FONT_MISSION_PX,
@@ -18,6 +18,7 @@ import {
   HUD_STEP_OFFSET_X,
   HUD_TEXT_GAP,
   HOME_MARKER_DISTANCE_STEP_M,
+  PLANE_DISTANCE_STEP_M,
   RUDDER_BAR_HALF_WIDTH,
   SHALLOW_WARN_STEP_M,
   STORM_AHEAD_STEP_M,
@@ -28,42 +29,13 @@ import {
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { FF_CHALLENGE, FF_LEAVING, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
-import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK, topCall } from '../core/mission-flow';
+import { CALL_DAWN, CALL_FUEL, topCall } from '../core/mission-flow';
+import { SP_APPROACH } from '../core/seaplane';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
+import { CALL_LABEL, DETECT_RANGE_STEP_M, STATUS_LABEL, STATUS_SUNK, STEP_LABEL, friendlyLine, friendlyResultLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine } from './hud-lines';
 import { STORM_AHEAD, STORM_INSIDE, STORM_NEAR } from '../core/storm';
 import { mpsToKt } from '../core/units';
 
-const STEP_LABEL: Record<SpeedStep, string> = {
-  stop: '停止',
-  silent: '静音',
-  cruise: '巡航',
-  full: '全速',
-};
-
-/** 敵影×発見×照射×星弾の 16 状態。index = (敵影あり ? 1 : 0) | (発見された ? 2 : 0) | (照らされている ? 4 : 0) | (星弾 ? 8 : 0) */
-const STATUS_BASE = ['敵影なし ・ 未発見', '敵影あり ・ 未発見', '敵影なし ・ 発見された！', '敵影あり ・ 発見された！'] as const;
-const STATUS_LIT: readonly string[] = [
-  ...STATUS_BASE,
-  ...STATUS_BASE.map((s) => `${s} ・ 探照灯に照射中！`),
-  ...STATUS_BASE.map((s) => `${s} ・ 星弾！`),
-  ...STATUS_BASE.map((s) => `${s} ・ 星弾！`),
-];
-/** bit0 敵影, bit1 発見, bit2 探照灯, bit3 星弾, bit4 煙幕に隠れている（隠れている間は照らされないので照射の文は出ない） */
-const STATUS_LABEL: readonly string[] = [
-  ...STATUS_LIT,
-  ...STATUS_LIT.map((_, i) => `${STATUS_BASE[i & 3]!} ・ 煙幕に隠れている`),
-];
-/** 撃沈後の 3 行目（見つかる距離は付けない） */
-const STATUS_SUNK = 32;
-/** 発見距離の表示刻み m（速力段ごとの段階値なので、変わるのは段が変わったときだけ） */
-const DETECT_RANGE_STEP_M = 50;
-/** 2 行目「帰投せよ」の理由（core/mission-flow のビット → 文言） */
-const CALL_LABEL: Record<number, string> = {
-  [CALL_FUEL]: '燃料少 ',
-  [CALL_DAWN]: '夜明け近し ',
-  [CALL_SUNK]: '撃沈！',
-  [CALL_EXPENDED]: '魚雷なし ',
-};
 /** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 const MISSION_NORMAL = 0;
 const MISSION_CALL = 1;
@@ -75,6 +47,10 @@ const MISSION_FRIENDLY_RESULT = 6;
 /** 7 暴風の警告（近い・中で速すぎる）、8 暴風の情報（近い・中で安全速力以下） */
 const MISSION_STORM_WARN = 7;
 const MISSION_STORM = 8;
+/** 9 水上機の攻撃（発見確定〜爆撃）、10 水上機の未確定の接近、11 水上機の結果（去る間）。v0.4.1 */
+const MISSION_PLANE_ATTACK = 9;
+const MISSION_PLANE = 10;
+const MISSION_PLANE_RESULT = 11;
 
 export class BoatHud {
   private readonly speedText: Phaser.GameObjects.Text;
@@ -101,6 +77,8 @@ export class BoatHud {
   private lastStormFast = false;
   private lastStormNorth = true;
   private lastStormStep = -1;
+  /** 水上機の 2 行目のキー（段階・確定・航跡・照明弾・爆弾・結果・撃沈・距離の刻みを 1 つの数に詰める） */
+  private lastPlaneKey = -1;
   private lastSpeedWarn = false;
   private lastRain = false;
   private lastTimeLeft = -1;
@@ -178,7 +156,7 @@ export class BoatHud {
       this.lastRudderX = x;
       this.rudderMarker.setX(x);
     }
-    // 2 行目: 夜明けまで・命中。優先順: 魚雷待ち > 燃料切れ > 味方機（要求・航過）> 浅瀬 > 暴風の警告 > 味方機の結果 > 暴風の情報 > 帰投せよ > 平常（docs/02 §6.7・§6.8）。表示する値のどれかが変わったときだけ組み立てる
+    // 2 行目: 夜明けまで・命中。優先順: 魚雷待ち > 燃料切れ > 水上機の攻撃 > 味方機（要求・航過）> 浅瀬 > 暴風の警告 > 水上機の接近 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 帰投せよ > 平常（docs/02 §6.7・§6.8）。表示する値のどれかが変わったときだけ組み立てる
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
     const call = topCall(t.callFlags);
     const ffLive = t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE;
@@ -190,19 +168,31 @@ export class BoatHud {
       ? MISSION_WAITING
       : t.fuelEmpty
         ? MISSION_ADRIFT
-        : ffLive
-          ? MISSION_FRIENDLY
-          : t.shallowState !== 0
-            ? MISSION_SHALLOWS
-            : stormWarn
-              ? MISSION_STORM_WARN
-              : ffResult
-                ? MISSION_FRIENDLY_RESULT
-                : stormInfo
-                  ? MISSION_STORM
-                  : call !== 0
-                    ? MISSION_CALL
-                    : MISSION_NORMAL;
+        : planeAttacking(t)
+          ? MISSION_PLANE_ATTACK
+          : ffLive
+            ? MISSION_FRIENDLY
+            : t.shallowState !== 0
+              ? MISSION_SHALLOWS
+              : stormWarn
+                ? MISSION_STORM_WARN
+                : planeApproaching(t)
+                  ? MISSION_PLANE
+                  : ffResult
+                    ? MISSION_FRIENDLY_RESULT
+                    : planeLeaving(t)
+                      ? MISSION_PLANE_RESULT
+                      : stormInfo
+                        ? MISSION_STORM
+                        : call !== 0
+                          ? MISSION_CALL
+                          : MISSION_NORMAL;
+    const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
+    // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）
+    const planeStep = t.planePhase === SP_APPROACH ? Math.ceil(t.planeDistM / PLANE_DISTANCE_STEP_M) : 0;
+    const planeKey = planeMode
+      ? t.planePhase | (t.planeLocked ? 8 : 0) | (t.planeWake ? 16 : 0) | (t.planeFlareOn ? 32 : 0) | (t.planeBombAir ? 64 : 0) | (t.planeBombsDropped << 7) | (t.planeOutcome << 9) | (t.destroyerSunk ? 2048 : 0) | (t.planeBombsHit << 12) | (planeStep << 14)
+      : 0;
     // 暴風の距離の刻み: 近いときは 50 m、予報は 100 m（それ以外は 0）
     const stormStep = t.stormState === STORM_NEAR ? Math.ceil(t.stormGapM / STORM_WARN_STEP_M) : t.stormState === STORM_AHEAD ? Math.ceil(t.stormGapM / STORM_AHEAD_STEP_M) : 0;
     const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);
@@ -220,6 +210,8 @@ export class BoatHud {
       (mode === MISSION_FRIENDLY &&
         (t.friendlyPhase !== this.lastFriendlyPhase || ffLeft !== this.lastFriendlyLeft || t.friendlyPasses !== this.lastFriendlyPasses || t.friendlyPending !== this.lastFriendlyPending)) ||
       (mode === MISSION_FRIENDLY_RESULT && (t.friendlyOutcome !== this.lastFriendlyOutcome || t.friendlyPasses !== this.lastFriendlyPasses)) ||
+      (planeMode && planeKey !== this.lastPlaneKey) ||
+      (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       // 暴風のキー: 警告・情報・味方機の行は fast も文に効く。平常の予報は state・向き・距離だけ（fast は文に出ないので見ない）
       ((mode === MISSION_STORM_WARN || mode === MISSION_STORM || mode === MISSION_FRIENDLY) && t.stormFast !== this.lastStormFast) ||
       ((mode === MISSION_STORM_WARN || mode === MISSION_STORM || mode === MISSION_NORMAL || mode === MISSION_FRIENDLY) &&
@@ -241,23 +233,16 @@ export class BoatHud {
       this.lastStormFast = t.stormFast;
       this.lastStormNorth = t.stormNorth;
       this.lastStormStep = stormStep;
-      if (mode === MISSION_FRIENDLY) {
-        // 識別を求めている / 航過中（真上を過ぎてから押した後は「識別完了」）。浅瀬の警告・中と重なれば後ろに付ける
-        let text: string;
-        let color = HUD_COLOR_WARN;
-        if (t.friendlyPhase === FF_STRAFE && t.friendlyPending) {
-          text = '識別完了 ・ 味方機が離れる';
-          color = HOME_COLOR_TEXT;
-        } else if (t.friendlyPhase === FF_STRAFE) text = '味方機の誤射！ ・ 識別せよ';
-        else if (t.friendlyPasses > 0) text = `味方機 再接近 ・ 識別せよ ${ffLeft}`;
-        else text = `味方機接近 ・ 識別せよ ${ffLeft}`;
-        if (t.shallowState === SHALLOW_APPROACHING) text += ` ・ 浅瀬 ${shallowStep * SHALLOW_WARN_STEP_M} m 減速`;
-        else if (t.shallowState === SHALLOW_INSIDE) text += ` ・ 浅瀬 ${t.shallowSafeKt} kt 以下`;
-        else if (stormWarn) text += ` ・ 暴風 ${t.stormSafeKt} kt 以下`;
-        this.missionText.setText(text).setColor(color);
+      this.lastPlaneKey = planeKey;
+      if (planeMode) {
+        const l = seaplaneLine(t, planeStep, shallowStep, stormWarn);
+        this.missionText.setText(l.text).setColor(l.color);
+      } else if (mode === MISSION_FRIENDLY) {
+        const l = friendlyLine(t, ffLeft, shallowStep, stormWarn);
+        this.missionText.setText(l.text).setColor(l.color);
       } else if (mode === MISSION_FRIENDLY_RESULT) {
-        if (t.friendlyOutcome === FF_OUT_IDENTIFIED) this.missionText.setText('識別完了 ・ 味方機が離れる').setColor(HOME_COLOR_TEXT);
-        else this.missionText.setText(`味方機が離れた ・ 誤射 ${t.friendlyPasses} 回`).setColor(HUD_COLOR_STRONG);
+        const l = friendlyResultLine(t);
+        this.missionText.setText(l.text).setColor(l.color);
       } else if (mode === MISSION_STORM_WARN || mode === MISSION_STORM) {
         // 暴風: 近づいている（縁までの距離）か中。速すぎれば警告色（docs/02 §6.8）
         const near = t.stormState === STORM_NEAR;

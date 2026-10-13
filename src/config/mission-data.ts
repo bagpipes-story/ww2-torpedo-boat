@@ -35,6 +35,8 @@ export interface PrototypeMission {
   storm: StormMissionBlock | null;
   /** 遊べる世界で実際に起きる危険（risk_events の id、出会う順。docs/02 §6.8、v0.4.0）。Briefing の「危険」と出撃前の港内空襲の有無を決める。無ければ [] */
   hazards: string[];
+  /** 敵の水上機（docs/02 §6.8、v0.4.1）: enemies.json の機体 id。無ければ来ない */
+  enemyAircraft: { enemyId: string } | null;
 }
 
 export function isNum(v: unknown): v is number {
@@ -99,6 +101,13 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     if (!isStormMissionBlock(stormRaw)) throw new Error(`${missionId}.v0_1_prototype.storm（sea_state/depth_m/drift_kt/start_south_y_min_m/start_south_y_max_m）が欠けている（docs/02 §6.8）`);
     storm = stormRaw;
   }
+  const eaRaw = proto['enemy_aircraft'] as Record<string, unknown> | undefined;
+  let enemyAircraft: { enemyId: string } | null = null;
+  if (eaRaw !== undefined) {
+    const id = eaRaw?.['enemy_id'];
+    if (typeof id !== 'string' || id.length === 0) throw new Error(`${missionId}.v0_1_prototype.enemy_aircraft.enemy_id（enemies.json の水上機の id）が無い（docs/02 §6.8）`);
+    enemyAircraft = { enemyId: id };
+  }
   const hazardsRaw = proto['hazards'];
   if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
   const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
@@ -120,6 +129,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     friendlyAircraft,
     storm,
     hazards,
+    enemyAircraft,
   };
 }
 

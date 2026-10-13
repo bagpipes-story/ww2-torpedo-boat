@@ -24,7 +24,10 @@ import {
   HOME_COLOR_TEXT,
   HOME_MARKER_DISTANCE_STEP_M,
   HOME_MARKER_TOP_MARGIN,
+  HUD_COLOR_WARN,
   IDENTIFY_BUTTON_Y,
+  PLANE_DISTANCE_STEP_M,
+  PLANE_MARKER_TOP_MARGIN,
   IDENTIFY_PULSE_ALPHA_MAX,
   IDENTIFY_PULSE_HZ,
   ROUND_BUTTON_ALPHA,
@@ -52,6 +55,8 @@ export class HudScene extends Phaser.Scene {
   private hpBar?: HpBar;
   private targetMarker?: EdgeMarker;
   private homeMarker?: EdgeMarker;
+  /** 敵の水上機（v0.4.1）。任務に enemy_aircraft があるときだけ。接近・去る間に画面外なら赤い矢印 */
+  private planeMarker?: EdgeMarker;
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
@@ -101,6 +106,9 @@ export class HudScene extends Phaser.Scene {
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
     this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, topMargin: TARGET_MARKER_TOP_MARGIN });
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+    if (mission.enemyAircraft) {
+      this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+    }
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
@@ -155,6 +163,7 @@ export class HudScene extends Phaser.Scene {
       this.identifyButton?.destroy();
       this.targetMarker?.destroy();
       this.homeMarker?.destroy();
+      this.planeMarker?.destroy();
       this.fuelGauge?.destroy();
       this.boatHud?.destroy();
       this.hpBar?.destroy();
@@ -167,6 +176,7 @@ export class HudScene extends Phaser.Scene {
       this.identifyButton = undefined;
       this.targetMarker = undefined;
       this.homeMarker = undefined;
+      this.planeMarker = undefined;
       this.fuelGauge = undefined;
       this.boatHud = undefined;
       this.hpBar = undefined;
@@ -184,6 +194,7 @@ export class HudScene extends Phaser.Scene {
     this.fuelGauge?.refresh(this.telemetry);
     this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
     this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
+    this.planeMarker?.refresh(this.telemetry.planeDx, this.telemetry.planeDy, !Number.isNaN(this.telemetry.planeDx), this.telemetry);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;

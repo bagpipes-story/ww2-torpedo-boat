@@ -43,9 +43,12 @@ export class EnemyFire {
   private blocked = false;
   private blockedDrawn = false;
   private onHit: ShellHitHandler = () => {};
+  /** 累計の発砲数（Result の KPI。水上機の照明弾の間の砲撃を数える。v0.4.1） */
+  shotsFired = 0;
 
   private readonly events: ShellEvents = {
     onFire: (_gunIndex, x, y) => {
+      this.shotsFired++;
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
       this.flashAge = 0;
     },
@@ -103,6 +106,7 @@ export class EnemyFire {
    * 固定ステップ。dt は time_scale 込み、realDt は実時間。
    * canFire=false（艦か艇が沈没中）でも飛んでいる弾は着弾まで進める。detected=false なら探照灯は消え、星弾は撃たない。
    * losBlocked=true（煙幕が艦と艇の間にある）なら探照灯は向くが照らせず、星弾も照らせない → 砲撃が止まる（v0.2.2）。
+   * externalLit=true（水上機の照明弾の光の中。v0.4.1）なら探照灯が無くても照らされた扱い（煙幕に遮られていれば撃てない）。
    */
   step(
     dt: number,
@@ -114,9 +118,10 @@ export class EnemyFire {
     playerHalfLengthM: number,
     playerHalfBeamM: number,
     losBlocked: boolean,
+    externalLit: boolean = false,
   ): void {
     this.blocked = losBlocked;
-    updateIllumination(this.state, ship, player, detected, this.params, realDt, losBlocked);
+    updateIllumination(this.state, ship, player, detected, this.params, realDt, losBlocked, externalLit);
     updateGuns(this.state, ship, player, canFire, playerHalfLengthM, playerHalfBeamM, this.params, this.rng, realDt, dt, this.events);
   }
 

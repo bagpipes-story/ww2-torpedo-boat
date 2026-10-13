@@ -210,6 +210,13 @@ export const FLARE_LIFETIME_S = 1.2;
 export const STRAFE_SPLASH_INTERVAL_S = 0.06;
 export const STRAFE_SPLASH_LEAD_M = 50;
 export const STRAFE_SPLASH_TAIL_S = 0.15;
+/** 敵の水上機（docs/02 §6.8、v0.4.1）: 照明弾の色（星弾のテクスチャを流用。艦の星弾・識別の緑と区別）、爆弾の点（爆発の輪を流用）の色と落下中の拡大、敵機の画面外マーカー */
+export const SEAPLANE_FLARE_TINT = 0xffc070;
+export const BOMB_TINT = 0xc0c0c0;
+export const BOMB_SCALE_FROM = 0.6;
+export const BOMB_SCALE_TO = 1.4;
+export const PLANE_DISTANCE_STEP_M = 100;
+export const PLANE_MARKER_TOP_MARGIN = HOME_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
 /** 暴風の帯（docs/02 §6.8、v0.3.4）: 帯と前線（南の縁）は HP バーの塗りを伸ばして tint、ラベル、雨筋（世界単位。画面内を流れる）、艇の横揺れ、叩きつけの水しぶきの位置と揺れ、HUD の距離の刻み */
 export const STORM_BAND_COLOR = 0x5a6a88;
 export const STORM_BAND_ALPHA = 0.32;
