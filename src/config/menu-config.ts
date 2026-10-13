@@ -39,7 +39,7 @@ export const TITLE_ROW_SUB_PX = 20;
 export const TITLE_ROW_STATUS_PX = 24;
 export const TITLE_HINT_Y = 560;
 export const TITLE_HINT_PX = 18;
-export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷 ・ 右上で煙幕';
+export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷（大発は射撃）・ 右上で煙幕';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;

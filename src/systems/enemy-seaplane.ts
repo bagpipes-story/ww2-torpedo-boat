@@ -24,8 +24,8 @@ import {
 /** 開始条件と中断の材料として世界から読む部分（MissionWorld がそのまま満たす） */
 export interface SeaplaneWorldView {
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
-  readonly destroyer: { readonly state: BoatState; readonly sinking: boolean; readonly sunk: boolean };
-  readonly enemyFire: { readonly shotsFired: number };
+  /** 敵の側（v0.4.2 で駆逐艦の直読みから。駆逐艦か大発の隊） */
+  readonly enemy: { anchorX(x: number, y: number): number; anchorY(x: number, y: number): number; readonly sinkPlaying: boolean; readonly shotsFired: number };
   readonly friendly: { readonly state: { readonly phase: number } } | null;
   readonly storm: { readonly state: { readonly inside: boolean } } | null;
   readonly fuel: { readonly empty: boolean };
@@ -85,17 +85,17 @@ export class EnemySeaplane {
     const c = this.check;
     const blocked = w.boat.sinking || w.atHome || w.grounded;
     if (blocked) cancelSeaplane(s, this.p);
-    c.targetX = w.destroyer.state.x;
-    c.targetY = w.destroyer.state.y;
+    c.targetX = w.enemy.anchorX(w.boat.state.x, w.boat.state.y);
+    c.targetY = w.enemy.anchorY(w.boat.state.x, w.boat.state.y);
     c.wake = w.band === 'cruise' || w.band === 'full';
     c.stormInside = w.storm ? w.storm.state.inside : false;
     const fp = w.friendly ? w.friendly.state.phase : FF_IDLE;
     c.friendlyLive = !(fp === FF_IDLE || fp === FF_LEAVING || fp === FF_DONE);
-    c.busy = w.slowMoLeftS > 0 || (w.destroyer.sinking && !w.destroyer.sunk);
+    c.busy = w.slowMoLeftS > 0 || w.enemy.sinkPlaying;
     c.blocked = blocked || w.fuel.empty;
     c.boatSinking = w.boat.sinking;
     c.timeS = w.stepTimeS;
-    c.shellsFired = w.enemyFire.shotsFired;
+    c.shellsFired = w.enemy.shotsFired;
     stepSeaplaneTrigger(s, c, this.p, feelDt);
     const ev = stepSeaplane(s, this.p, c, this.rng, feelDt);
     if (ev & SP_EV_FLARE) {

@@ -31,12 +31,15 @@ import {
   IDENTIFY_PULSE_ALPHA_MAX,
   IDENTIFY_PULSE_HZ,
   ROUND_BUTTON_ALPHA,
+  TORPEDO_BUTTON_ARM_MS,
+  TORPEDO_BUTTON_RADIUS,
   ROUND_BUTTON_GAP,
   ROUND_BUTTON_RADIUS,
   TARGET_MARKER_DISTANCE_STEP_M,
   TARGET_MARKER_TOP_MARGIN,
 } from '../config/ui-config';
 import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
+import { GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PinchZoom } from '../systems/pinch-zoom';
@@ -60,6 +63,8 @@ export class HudScene extends Phaser.Scene {
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
+  /** 「射撃」（主兵装が砲の任務。v0.4.2）: 右下の魚雷ボタンの場所。押している間 gunHeld。出だしの 0.6 秒は受けない（「出撃」の 2 度押し） */
+  private gunButton?: HoldButton;
   private smokeButton?: HoldButton;
   private extinguishButton?: HoldButton;
   private lookoutButton?: HoldButton;
@@ -116,8 +121,16 @@ export class HudScene extends Phaser.Scene {
       spreadMaxDeg: launch.spread_angle_deg_max,
       holdSecondsForMax: launch.spread_hold_seconds_for_max,
     };
-    this.torpedoButton = new TorpedoButton(this, input, spread);
-    this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
+    if (mission.mainWeapon === 'guns') {
+      let armed = false;
+      this.time.delayedCall(TORPEDO_BUTTON_ARM_MS, () => (armed = true));
+      const gx = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
+      const gy = GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
+      this.gunButton = new HoldButton(this, gx, gy, GUN_BUTTON_LABEL, { onDown: () => (input.gunHeld = armed), onUp: () => (input.gunHeld = false) }, TEXTURE_KEYS.torpedoButton);
+    } else {
+      this.torpedoButton = new TorpedoButton(this, input, spread);
+      this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
+    }
     // 右上「煙幕」: 離すと展開。その下「消火」: 火災中に押し続けると消火（押している時間は Mission が数える。v0.3.1 実機の要望で煙幕と別ボタンに）。右中「見張り」: 押している間ズームアウト
     const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
     this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
@@ -157,6 +170,7 @@ export class HudScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stick?.destroy();
       this.torpedoButton?.destroy();
+      this.gunButton?.destroy();
       this.smokeButton?.destroy();
       this.extinguishButton?.destroy();
       this.lookoutButton?.destroy();
@@ -170,6 +184,7 @@ export class HudScene extends Phaser.Scene {
       this.debugHud?.destroy();
       this.stick = undefined;
       this.torpedoButton = undefined;
+      this.gunButton = undefined;
       this.smokeButton = undefined;
       this.extinguishButton = undefined;
       this.lookoutButton = undefined;
@@ -189,7 +204,7 @@ export class HudScene extends Phaser.Scene {
 
   override update(): void {
     this.keyboard?.update();
-    this.boatHud?.refresh(this.telemetry);
+    this.boatHud?.refresh(this.telemetry, this.time.now);
     this.hpBar?.refresh(this.telemetry, this.time.now);
     this.fuelGauge?.refresh(this.telemetry);
     this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);

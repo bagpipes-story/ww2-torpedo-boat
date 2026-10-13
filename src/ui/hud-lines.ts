@@ -1,10 +1,11 @@
-// HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機と敵の水上機の 2 行目、Result の「敵機:」の行。
+// HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機・敵の水上機・射撃と大発（v0.4.2）の 2 行目、Result の「敵機:」と大発の行。
 // Phaser は使わない（文を組むだけ）。2 行目の文は値が変わったときだけ組む（呼ぶ側がキャッシュする）。
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK } from '../core/mission-flow';
 import { SP_APPROACH, SP_FLARE_PASS, SP_LEAVING, SP_ORBIT, SP_OUT_BOMBED, SP_OUT_LOST, SP_RUN } from '../core/seaplane';
+import { GUN_BLOCKED, GUN_FIRING, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE } from '../core/gun-battery';
 import { SHALLOW_APPROACHING, SHALLOW_INSIDE } from '../core/shallows';
 
 export const STEP_LABEL: Record<SpeedStep, string> = {
@@ -35,6 +36,16 @@ export const CALL_LABEL: Record<number, string> = {
   [CALL_SUNK]: '撃沈！',
   [CALL_EXPENDED]: '魚雷なし ',
 };
+
+/** 「帰投せよ」の理由の文。大発の任務（v0.4.2）は撃沈ではなく「撃破！」（ノルマ達成）、撃ち尽くしではなく「大発なし」（すべて撃破か上陸） */
+export function callLabel(call: number, gunMission: boolean): string {
+  if (gunMission && call === CALL_SUNK) return '撃破！';
+  if (gunMission && call === CALL_EXPENDED) return '大発なし ';
+  return CALL_LABEL[call] ?? '';
+}
+
+/** 射撃中の大発までの距離の刻み m（2 行目の文が変わる細かさ。v0.4.2） */
+export const GUN_DISTANCE_STEP_M = 10;
 
 export interface HudLine {
   text: string;
@@ -107,4 +118,49 @@ export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacke
   }
   if (r.seaplaneAttacked) return `敵機: ${lostPart ? `${lostPart} → ` : ''}攻撃の途中で終了（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
   return `敵機: 接近 ${r.seaplaneSorties} 回 ・ ${lostPart || '見失わせた 0 回'}`;
+}
+
+// ---------- 大発掃討（v0.4.2） ----------
+
+function kills(t: BoatTelemetry): string {
+  return `撃破 ${t.bargesSunk}/${t.bargesQuota}`;
+}
+
+/** 射撃ボタンを押している間の 2 行目: 撃っている（距離・速すぎ・遠い。大発が逃げていれば「上陸まで N 秒」を足す）か、撃てない理由（死角・射程外・煙幕・見えない）。浅瀬の警告は後ろに付ける */
+export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, shallowStep: number): HudLine {
+  let text: string;
+  let warn = true;
+  if (t.gunStatus === GUN_FIRING) {
+    if (t.gunFast) text = `射撃中 ・ 速すぎて当たらない ・ ${t.gunSteadyKt} kt 以下で`;
+    else if (t.gunTargetM > t.gunEffectiveM) text = `射撃中 ・ 大発 ${distStep * GUN_DISTANCE_STEP_M} m ・ 遠い（${t.gunEffectiveM} m 以内で）`;
+    else {
+      text = `射撃中 ・ 大発 ${distStep * GUN_DISTANCE_STEP_M} m ・ ${kills(t)}`;
+      warn = false;
+    }
+    if (escapeS > 0) text += ` ・ 上陸まで ${escapeS} 秒`; // 撃ったら気づかれて逃げる、を押したまま読めるように（v0.4.2 の試作で、押し続けると「岸へ逃げる」の行が出なかった）
+  } else if (t.gunStatus === GUN_OUT_OF_ARC) text = '射界外 ・ 舷側に向けよ（艇首・艇尾は撃てない）';
+  else if (t.gunStatus === GUN_OUT_OF_RANGE) text = `射程外 ・ ${t.gunRangeM} m 以内へ寄れ`;
+  else if (t.gunStatus === GUN_BLOCKED) text = '煙幕で見えない ・ 撃てない';
+  else text = '大発が見えない ・ 撃てない';
+  return { text: withWarnings(text, t, shallowStep, false), color: warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
+}
+
+/** 大発が岸へ逃げている間（上陸まで N 秒） */
+export function bargeRunLine(t: BoatTelemetry, escapeS: number, shallowStep: number): HudLine {
+  return { text: withWarnings(`大発が岸へ逃げる ・ 上陸まで ${escapeS} 秒 ・ ${kills(t)}`, t, shallowStep, false), color: HUD_COLOR_WARN };
+}
+
+/** 撃破・上陸の直後（kind 1 撃破 / 2 上陸） */
+export function bargeEventLine(t: BoatTelemetry, kind: number): HudLine {
+  if (kind === 1) return { text: `大発 撃破！ ${t.bargesSunk}/${t.bargesQuota}`, color: HOME_COLOR_TEXT };
+  return { text: `大発 上陸 ・ 逃げられた（${t.bargesBeached} 隻）`, color: HUD_COLOR_STRONG };
+}
+
+/** Result の大発の 2 行（射撃の記録と、撃破の距離・気づかれた距離・13mm の被弾）。r は result-scene の BargeResult */
+export function bargeResultLines(r: { shots: number; hits: number; firstShotM: number; firstShotBand: string; firstDetectM: number; flashFirst: boolean; killMinM: number; killMaxM: number; mgHits: number; mgDamage: number }): string[] {
+  const band = (STEP_LABEL as Record<string, string>)[r.firstShotBand] ?? '';
+  const shot = r.shots === 0 ? '射撃なし' : `射撃 ${r.shots} 発 ・ 命中 ${r.hits}（${Math.round((100 * r.hits) / r.shots)}%）・ 最初の射撃 ${Math.round(r.firstShotM)} m（${band}）`;
+  const kill = Number.isNaN(r.killMinM) ? '撃破なし' : r.killMinM === r.killMaxM ? `撃破の距離 ${Math.round(r.killMinM)} m` : `撃破の距離 ${Math.round(r.killMinM)}〜${Math.round(r.killMaxM)} m`;
+  const seen = !Number.isNaN(r.firstDetectM) ? `大発に気づかれた距離 ${Math.round(r.firstDetectM)} m` : r.flashFirst ? '撃つまで気づかれず' : '気づかれず';
+  return [shot, `${kill} ・ ${seen} ・ 13mm の被弾 ${r.mgHits} 発（HP −${r.mgDamage}）`];
 }

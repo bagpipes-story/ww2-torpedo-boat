@@ -1,6 +1,6 @@
 {
   "$schema_note": "敵・味方NPCのパラメータ。AI系の値はすべて design（命中率KPIを合わせるための調整ノブ）。hull_circles は船体を円の列で近似する数。torpedo_hits_to_sink は命中本数。",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "enemies": [
     {
       "id": "ijn_destroyer",
@@ -91,15 +91,20 @@
       "hull_circles": 1,
       "torpedo_hits_to_sink": 0,
       "torpedo_immune": true,
-      "guns": [ { "id": "mg_13mm", "count": 1, "range_m": 1200, "effective_night_m": 600, "rof_per_min": 200, "damage": 3 } ],
+      "guns": [ { "id": "mg_13mm", "count": 1, "range_m": 1200, "effective_night_m": 600, "rof_per_min": 200, "damage": 2, "shell_speed_mps": 500, "dispersion_m": 80, "splash_radius_m": 1.5, "fire_chance": 0.03, "engine_damage_chance": 0.02 } ],
       "searchlight": null,
       "starshell": null,
       "detection": { "base_detect_m": 1200, "wake_detect_m": 500, "reaction_delay_s": 5, "torpedo_wake_detect_m": 0 },
-      "evasion": { "mode": "hug_shore", "turn_toward_wakes": false, "evade_turn_rate_deg_s": 8, "speed_boost_kt": 1 },
+      "evasion": { "mode": "hug_shore", "turn_toward_wakes": false, "evade_turn_rate_deg_s": 8, "speed_boost_kt": 1, "beach_fan_deg": 15 },
       "ram": { "enabled": false, "trigger_m": 0, "turn_rate_bonus_deg_s": 0 },
       "cargo": { "troops": 70, "tons": 10 },
-      "source": { "length_m": "historical", "torpedo_immune": "historical (Mk 8の最小深度約3mで下を抜ける)", "others": "design" },
-      "notes": "魚雷は当たらない。40mm/37mm/20mmで撃破する。岸沿いを這う。"
+      "source": {
+        "length_m": "historical",
+        "torpedo_immune": "historical (Mk 8の最小深度約3mで下を抜ける)",
+        "others": "design",
+        "design_notes": "v0.4.2（大発掃討。docs/02 §6.4）。隊は missions_seed の v0_1_prototype.barges（先頭の位置・間隔・岸の余白・撃破のノルマ）。発見: base_detect_m 1200 × 新月 0.6 × 速力係数 = 停止 288・静音 360・巡航 720・全速 1,152 m（艇の視程 900 m より先に全速の艇に気づく）。艇が撃つと閃光で boats.json の gun_battery.muzzle_flash_reveal_m（1,500 m）以内の大発が気づく。気づいてから reaction_delay_s（5 秒）は進路のまま（撃ち返しは気づいた瞬間から）、その後 speed_typical_kt + speed_boost_kt（8 kt ≤ speed_max_kt）で岸へ逃げ、岸に着いたら上陸＝逃げ切り（撃てない・撃たれない）。逃げる進路は 180° を中心に beach_fan_deg（15°）ずつ扇に開く（157.5〜202.5°。重ならない）。航跡から岸の縁まで 160 m は 8.65〜9.15 秒、気づいてから 13.7〜14.2 秒で上陸。hull_hp 20: 艇の砲（gun_battery）で 250 m なら中央値 1.85 秒、300 m 2.97 秒、400 m 5.0 秒（scratchpad の試算、停止・静音）。guns: 13mm は駆逐艦の砲と同じ模型（見越し＋一様円盤）。damage 3 → 2（v0.4.2。3 だと 100 m で 1 隻 4.4 HP/秒・4 隻 17 HP/秒になり、艇首を向けて突っ込む遊び方で 1 回の交戦 HP −81（最大 −100）。2 なら −56（最大 −72）で、300 m から撃つ遊び方は −10〜−14）。dispersion_m 80（有効射程 600 m での円の半径。300 m で 40 m、1 隻 0.40 HP/秒、200 m で 0.89、150 m で 1.57、100 m で 2.9）。shell_speed_mps 500 は駆逐艦の 25mm と同じ（見える曳光弾）。splash_radius_m 1.5（小口径。25mm は 3）。fire_chance 0.03 / engine_damage_chance 0.02: 10 発受けて火災 26%（ガソリンの艇に焼夷弾）。cargo は使わない"
+      },
+      "notes": "魚雷は当たらない（深度不足）。艇の砲（40mm・37mm・20mm・12.7mm）で撃破する。岸沿いを這い、気づくと岸へ逃げて上陸する。13mm で撃ち返す。"
     },
     {
       "id": "ijn_seaplane_jake",

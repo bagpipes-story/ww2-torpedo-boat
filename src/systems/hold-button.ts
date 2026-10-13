@@ -28,8 +28,10 @@ export class HoldButton {
     cy: number,
     label: string,
     private readonly handlers: HoldButtonHandlers,
+    /** 丸の大きさと色（v0.4.2: 主兵装が砲の任務の「射撃」は魚雷ボタンと同じ大きな黄色い輪） */
+    textureKey: string = TEXTURE_KEYS.roundButton,
   ) {
-    this.button = scene.add.image(cx, cy, TEXTURE_KEYS.roundButton).setScale(1 / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud).setInteractive();
+    this.button = scene.add.image(cx, cy, textureKey).setScale(1 / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud).setInteractive();
     this.label = scene.add.text(cx, cy, '', hudTextStyle(HUD_FONT_BUTTON_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
     this.setLabel(label);
     this.button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.onDown, this);

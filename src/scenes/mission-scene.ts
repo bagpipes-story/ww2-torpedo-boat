@@ -86,6 +86,10 @@ export class MissionScene extends Phaser.Scene {
     },
     // 撃沈では終わらない（帰投が目標）。終了判定は update の decideMissionEnd
     onDestroyerSunk: () => {},
+    onTargetDestroyed: (x, y) => {
+      playExplosion(this, x, y, false);
+      this.shakeCamera();
+    },
     onShellHit: (x, y, small, destroyed) => {
       playExplosion(this, x, y, small);
       // 弱い揺れ。撃沈なら onBoatSinking の強い揺れだけにする（Phaser は揺れている間の新しい揺れを無視するため）
@@ -130,12 +134,13 @@ export class MissionScene extends Phaser.Scene {
     // 乱数: seed は出撃ごとに Title・Result（?debug 直行では Boot）が決めたもの。Result に出す（?debug&title&seed=N で再現）
     this.world = new MissionWorld(this, data, this.sortie, this.inputState, this.worldEvents);
     const w = this.world;
-    drawSea(this, w.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
-    this.shallowsView = new ShallowsView(this, w.shallows);
+    const m = w.setup.mission;
+    drawSea(this, m.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
+    this.shallowsView = new ShallowsView(this, m.shallows, m.coast, m.bounds);
     this.returnView = new ReturnPointView(this, w.returnPoint);
 
     this.timeScale = world.time_scale;
-    this.timeLeftS = w.durationS;
+    this.timeLeftS = w.setup.durationS;
     this.elapsedS = 0;
     this.ended = false;
     this.callFlags = 0;
@@ -190,13 +195,13 @@ export class MissionScene extends Phaser.Scene {
     if (this.startFireS < 0 && w.damage.fireLeftS <= 0) this.startFireS = w.stepTimeS; // NaN < 0 は false
     this.updateZoom();
     this.updateLookAhead();
-    const enemyAlive = w.destroyer.sinking ? null : w.destroyer.state;
-    this.leadMarker?.refresh(w.boat.state, enemyAlive, w.torpedoParams.speedMps);
+    const enemyAlive = w.enemy.focus(w.boat.state.x, w.boat.state.y);
+    this.leadMarker?.refresh(w.boat.state, w.destroyer ? enemyAlive : null, w.setup.torpedoParams.speedMps);
     this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, Math.sqrt(w.visRange2));
 
     this.elapsedS += realDt;
     // 夜明けの時計は固定ステップで実際に進んだ時間（低フレームレートで捨てた時間は数えない。移動と燃料に揃える）
-    this.timeLeftS = Math.max(0, w.durationS - w.stepTimeS);
+    this.timeLeftS = Math.max(0, w.setup.durationS - w.stepTimeS);
     this.refreshReturnState(realDt);
     this.refreshTelemetry();
 
@@ -206,7 +211,7 @@ export class MissionScene extends Phaser.Scene {
     c.torpedoesRunning = w.torpedoesRunning;
     c.waitS = this.waitS;
     c.timeLeftS = this.timeLeftS;
-    c.destroyerSinkPlaying = w.destroyer.sinking && !w.destroyer.sunk;
+    c.destroyerSinkPlaying = w.enemy.sinkPlaying;
     c.fuelEmpty = w.fuel.empty;
     c.stopped = w.band === 'stop';
     c.grounded = w.grounded;
@@ -229,9 +234,10 @@ export class MissionScene extends Phaser.Scene {
     // 巡航で輪の縁まで直線で帰るのに要る燃料・実秒（迂回と敵は余裕 call_margin で吸収する）
     const needGal = this.ringEdgeM * w.fuelCurve.galPerMCruise;
     const needS = this.ringEdgeM / (w.fuelCurve.cruiseMps * this.timeScale);
-    const expended = w.torpedoes.remaining === 0 && !w.torpedoesRunning;
+    // 撃ち尽くし: 魚雷の任務は残弾 0、砲の任務は狩る大発が残っていない（撃破か上陸。v0.4.2）。撃沈は任務の目標（駆逐艦の撃沈／大発のノルマ）
+    const expended = w.setup.mainWeapon === 'torpedo' ? w.torpedoes.remaining === 0 && !w.torpedoesRunning : w.enemy.noTargetsLeft;
     const before = this.callFlags;
-    this.callFlags = updateReturnCalls(before, w.destroyer.sinking, expended, w.fuel.gal, needGal, this.timeLeftS, needS, rp.callMargin);
+    this.callFlags = updateReturnCalls(before, w.enemy.objectiveDone, expended, w.fuel.gal, needGal, this.timeLeftS, needS, rp.callMargin);
     if (before === 0 && this.callFlags !== 0) this.returnView?.pulse();
     // 燃料計の青い目盛り: 全速で輪の縁まで戻るのに要る燃料（全速は巡航の 1.47 倍食うので、巡航基準だと全速で走る人には甘すぎた。v0.3.3 実機）
     t.fuelNeed01 = w.fuelAllotmentGal > 0 ? (this.ringEdgeM * w.fuelCurve.galPerMFull) / w.fuelAllotmentGal : 0;

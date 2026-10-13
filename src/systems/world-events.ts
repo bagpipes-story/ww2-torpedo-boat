@@ -11,6 +11,8 @@ export interface WorldEvents {
   onTorpedoHit(x: number, y: number, dud: boolean): void;
   /** 駆逐艦の沈没演出が終わった（任務は続く。走っていた魚雷は外れとして確定済み） */
   onDestroyerSunk(): void;
+  /** 大発を撃破した（v0.4.2。爆発と揺れ。命中スローは世界が掛けた） */
+  onTargetDestroyed(x: number, y: number): void;
   /** 砲弾（または味方機の掃射）が命中。small は演出を弱くする目安、destroyed なら続けて onBoatSinking が来る */
   onShellHit(x: number, y: number, small: boolean, destroyed: boolean): void;
   /** 自艇が沈み始めた（体当たり・砲撃・掃射）。位置は爆発の演出用 */

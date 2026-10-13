@@ -117,6 +117,8 @@ export interface BriefingNumbers {
   durationS: number;
   fuelGal: number;
   torpedoes: number;
+  /** 主兵装が砲の任務（v0.4.2）は砲の名前（boats.json の gun_battery.label_ja）。魚雷の任務は '' */
+  gunsLabel: string;
   homeX: number;
   homeY: number;
   boundsW: number;
@@ -137,6 +139,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: enemyCountsJa(t.enemyIds, nameOf) },
     { label: '危険', text: hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID]) },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ 魚雷 ${n.torpedoes} 本` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}` },
   ];
 }

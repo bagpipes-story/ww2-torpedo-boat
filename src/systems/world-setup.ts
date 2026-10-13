@@ -8,8 +8,10 @@ import {
   getBoatCrewEffects,
   getBoatCrewParams,
   getBoatSmokeParams,
+  getBargeParams,
   getBoatTorpedoCount,
   getEnemyRecord,
+  getGunBatteryParams,
   getEvasionMultiplier,
   getFriendlyParams,
   getSeaplaneParams,
@@ -22,6 +24,10 @@ import {
   type GameData,
   type PrototypeMission,
 } from '../config/game-data';
+import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
+import type { MainWeapon } from '../config/mission-data';
+import type { BargeParams } from '../core/barge-data';
+import type { GunBatteryParams } from '../core/gun-battery';
 import { boatParamsFromData, type BoatParams } from '../core/boat-motion';
 import { type FuelCurve } from '../core/fuel';
 import { gunneryParamsFromData, type DamageParams, type GunneryParams } from '../core/gunnery';
@@ -49,15 +55,29 @@ export interface DestroyerSpec {
   boundsMarginM: number;
 }
 
+/** 駆逐艦（us_02）の数値: 出発点・寸法・AI・反撃・魚雷の外れ確定の半径二乗（目標中心からこれより離れて遠ざかれば通過） */
+export interface DestroyerSetup {
+  start: { x: number; y: number; headingDeg: number };
+  spec: DestroyerSpec;
+  shipAi: ShipAiParams;
+  gunnery: GunneryParams;
+  passRadius2: number;
+  /** 発見の基準距離（enemies.json の detection.base_detect_m） */
+  baseDetectM: number;
+}
+
 export interface WorldSetup {
   mission: PrototypeMission;
+  /** 自艇の出発点（?debug&barges=near で大発の隊の手前に置く。v0.4.2） */
+  playerStart: { x: number; y: number; headingDeg: number };
+  /** 主兵装（v0.4.2）。guns なら魚雷は積まない（torpedoCapacity 0） */
+  mainWeapon: MainWeapon;
   boatParams: BoatParams;
   /** 境界から押し戻す余白 m（表示上の船体半分）。煙も同じ距離だけ後ろに置く */
   boundsMarginM: number;
   /** 体当たり・着弾判定に使う自艇の半長・半幅 m（hit_scale 込み） */
   boatHalfLengthM: number;
   boatHalfBeamM: number;
-  gunneryParams: GunneryParams;
   damageParams: DamageParams;
   timeScale: number;
   slowMoFactor: number;
@@ -88,10 +108,11 @@ export interface WorldSetup {
   /** 乗員（定員と HP あたりの死傷率）と、減りが操作に効く度合い（v0.3.5） */
   crew: CrewParams;
   crewEffects: CrewEffects;
-  destroyerSpec: DestroyerSpec;
-  shipAi: ShipAiParams;
-  /** 外れ確定の半径二乗: 目標中心からこれより離れて遠ざかれば通過したとみなす */
-  passRadius2: number;
+  /** 駆逐艦（任務に enemy_start があるとき）。大発の任務では null */
+  destroyer: DestroyerSetup | null;
+  /** 大発の隊と艇の砲（v0.4.2。任務に barges があるとき）。無ければ null */
+  barges: BargeParams | null;
+  guns: GunBatteryParams | null;
   torpedoCapacity: number;
   torpedoParams: TorpedoParams;
   torpedoReliability: TorpedoReliability;
@@ -104,15 +125,18 @@ export interface WorldSetup {
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false, debugBargesNear: boolean = false): WorldSetup {
   if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
   const feel = data.hitRateModel.feel;
   const mission = getPrototypeMission(data, missionId);
   const boatRecord = getBoatRecord(data, mission.playerBoatId);
-  const enemyRecord = getEnemyRecord(data, mission.enemyId);
   const torpedoRecord = getTorpedoRecord(data, mission.torpedoId);
+  // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から
+  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStart, mission.enemyId, mission.enemyHitsToSink) : null;
+  const barges = getBargeParams(data, mission);
+  const guns = getGunBatteryParams(data, mission);
 
   const boatParams = boatParamsFromData(boatRecord);
   const fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
@@ -120,19 +144,19 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
   const vis = getVisibilityParams(data, mission.moon);
   const visRange = playerVisRangeM(vis);
-  const baseDetectM = enemyRecord.detection.base_detect_m;
-  const hitLen = enemyRecord.length_m * world.hit_scale;
-  const hitBeam = enemyRecord.beam_m * world.hit_scale;
+  const baseDetectM = destroyer ? destroyer.baseDetectM : barges!.baseDetectM;
+  const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
 
   const raid = getRaidParams(data, mission);
   const start = sortie ? sortieConditions(sortie, raid) : NO_SORTIE_EFFECT;
   return {
     mission,
+    playerStart: debugBargesNear && lead ? lead : mission.playerStart,
+    mainWeapon: mission.mainWeapon,
     boatParams,
     boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2,
     boatHalfLengthM: (boatRecord.length_m * world.hit_scale) / 2,
     boatHalfBeamM: (boatRecord.beam_m * world.hit_scale) / 2,
-    gunneryParams: gunneryParamsFromData(enemyRecord),
     damageParams: getBoatDamageParams(data, mission.playerBoatId),
     timeScale: world.time_scale,
     slowMoFactor: feel.hit_slowmo_factor,
@@ -153,23 +177,32 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     seaplane: debugPlaneOff ? null : getSeaplaneParams(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 }),
     crew: getBoatCrewParams(data, mission.playerBoatId),
     crewEffects: getBoatCrewEffects(data, mission.playerBoatId),
-    destroyerSpec: {
-      lengthM: enemyRecord.length_m,
-      beamM: enemyRecord.beam_m,
-      hullCircles: enemyRecord.hull_circles,
-      hitsToSink: mission.enemyHitsToSink ?? enemyRecord.torpedo_hits_to_sink,
-      hitScale: world.hit_scale,
-      boundsMarginM: (enemyRecord.length_m * world.sprite_scale) / 2,
-    },
-    shipAi: shipAiParamsFromData(enemyRecord, getEvasionMultiplier(data)),
-    passRadius2: (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam),
-    torpedoCapacity: getBoatTorpedoCount(data, mission.playerBoatId),
+    destroyer,
+    barges,
+    guns,
+    torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
     torpedoReliability: torpedoReliabilityFromData(torpedoRecord),
     torpedoJitterDeg: torpedoRecord.reliability.jitter_deg,
     launchOffsetM: boatRecord.beam_m / 2,
     salvoIntervalS: launch.salvo_interval_s,
     smokeParams: getBoatSmokeParams(data, mission.playerBoatId),
+  };
+}
+
+/** 駆逐艦の数値（enemies.json の AI・反撃を持つ記録）。v0.4.2 で buildWorldSetup から切り出し（中身は v0.4.1 のまま） */
+function destroyerSetup(data: GameData, start: DestroyerSetup['start'], enemyId: string, hitsOverride: number | null): DestroyerSetup {
+  const world = data.hitRateModel.world;
+  const r = getEnemyRecord(data, enemyId);
+  const hitLen = r.length_m * world.hit_scale;
+  const hitBeam = r.beam_m * world.hit_scale;
+  return {
+    start,
+    spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale: world.hit_scale, boundsMarginM: (r.length_m * world.sprite_scale) / 2 },
+    shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data)),
+    gunnery: gunneryParamsFromData(r),
+    passRadius2: (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam),
+    baseDetectM: r.detection.base_detect_m,
   };
 }
 
@@ -183,6 +216,7 @@ export function briefingNumbers(s: WorldSetup): BriefingNumbers {
     durationS: s.durationS,
     fuelGal: s.fuelAllotmentGal,
     torpedoes: s.torpedoCapacity,
+    gunsLabel: s.guns ? s.guns.label : '',
     homeX: s.mission.returnPoint.x,
     homeY: s.mission.returnPoint.y,
     boundsW: s.mission.bounds.width,

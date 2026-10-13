@@ -11,8 +11,11 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.durationS).toBe(150);
     expect(s.fuelAllotmentGal).toBe(38);
     expect(s.torpedoCapacity).toBe(4);
-    expect(s.destroyerSpec.hitsToSink).toBe(1);
-    expect(s.destroyerSpec.lengthM).toBe(118);
+    expect(s.destroyer!.spec.hitsToSink).toBe(1);
+    expect(s.destroyer!.spec.lengthM).toBe(118);
+    expect(s.barges).toBeNull();
+    expect(s.guns).toBeNull();
+    expect(s.mainWeapon).toBe('torpedo');
     expect(s.visRange2).toBe(1500 * 1500);
     expect(s.detectRangeAtStartM).toBe(800);
     expect(s.timeScale).toBe(5);
@@ -22,7 +25,7 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.launchOffsetM).toBeCloseTo(6.3 / 2, 9);
     expect(s.smokeParams).not.toBeNull();
     expect(s.grounding.safeSpeedMps).toBeCloseTo(ktToMps(15), 9);
-    expect(s.passRadius2).toBeCloseTo((118 / 2 + 10.8) ** 2, 6);
+    expect(s.destroyer!.passRadius2).toBeCloseTo((118 / 2 + 10.8) ** 2, 6);
     expect(s.friendly).not.toBeNull();
     expect(s.friendly!.windowS).toBe(5);
     expect(s.friendly!.triggerEdgeM).toBe(2600);
@@ -57,7 +60,7 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(hit.fuelStartGal).toBe(38);
     expect(buildWorldSetup(raidData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'stay')).start).toEqual({ fuelFactor: 1, hpLoss: 0, fireAtStart: false });
     expect(() => buildWorldSetup(gameData, 'us_02', NaN, NaN, false, directSortie('us_03', 1, 'none'))).toThrow();
-    expect(briefingNumbers(base)).toEqual({ visM: 1500, detectCruiseM: 2000, detectSilentM: 1000, durationS: 150, fuelGal: 38, torpedoes: 4, homeX: 5400, homeY: 600, boundsW: 6000, boundsH: 4000 });
+    expect(briefingNumbers(base)).toEqual({ visM: 1500, detectCruiseM: 2000, detectSilentM: 1000, durationS: 150, fuelGal: 38, torpedoes: 4, gunsLabel: '', homeX: 5400, homeY: 600, boundsW: 6000, boundsH: 4000 });
   });
   it('敵の水上機（v0.4.1）: us_02 は 308.64 m/s。?debug&noplane（第 7 引数）は null、enemy_aircraft を消した複製は null、enemy_id が無い機体なら例外', () => {
     const base = buildWorldSetup(gameData, 'us_02', NaN, NaN);

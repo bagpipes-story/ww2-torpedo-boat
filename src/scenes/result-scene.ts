@@ -31,7 +31,7 @@ import {
 import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
-import { seaplaneResultLine } from '../ui/hud-lines';
+import { bargeResultLines, seaplaneResultLine } from '../ui/hud-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
@@ -96,10 +96,33 @@ export interface MissionResult {
   seaplaneBombs: number;
   seaplaneBombHits: number;
   seaplaneDodgeS: number[];
+  /** 任務の目標を達した（駆逐艦の撃沈／大発のノルマ。v0.4.2 で destroyerSunk から分けた） */
+  objectiveDone: boolean;
+  /** 大発掃討（v0.4.2）の記録。任務に大発がいなければ null */
+  hunt: BargeResult | null;
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;
   /** 「出撃前」の行（空襲の無い任務は空。空なら出さない） */
   raidLine: string;
+}
+
+/** 大発掃討の記録（v0.4.2）: 隻数・撃破・上陸・ノルマ、射撃の発射と命中、最初に撃った距離 m と速力帯、最初に目で気づかれた距離 m（NaN なら気づかれる前に撃った）、撃破の距離の最小・最大 m、13mm の命中数と被害 HP。実機で数値を合わせる根拠 */
+export interface BargeResult {
+  enemyId: string;
+  total: number;
+  sunk: number;
+  beached: number;
+  quota: number;
+  shots: number;
+  hits: number;
+  firstShotM: number;
+  firstShotBand: string;
+  firstDetectM: number;
+  flashFirst: boolean;
+  killMinM: number;
+  killMaxM: number;
+  mgHits: number;
+  mgDamage: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -112,6 +135,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   friendly_fire: '味方機の誤射で沈没',
   storm: '荒波で船体破損・沈没',
   bombed: '敵機の爆撃で沈没',
+  barge_fire: '大発の機銃で沈没',
 };
 
 export class ResultScene extends Phaser.Scene {
@@ -145,30 +169,33 @@ export class ResultScene extends Phaser.Scene {
       y += size + RESULT_LINE_GAP;
     };
     line(`任務終了 — ${REASON_LABEL[r.reason]}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
-    const fired = r.shots.length;
-    const unfired = r.capacity - fired;
-    line(`命中 ${r.hits} / 発射 ${fired}（不発 ${r.duds}、外れ ${r.misses}${unfired > 0 ? `、未発射 ${unfired}` : ''}）`, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
-    y += RESULT_SECTION_GAP;
-    const bandsFired = r.bands.filter((b) => b.shots > 0);
-    if (bandsFired.length === 0) {
-      line('発射なし', HUD_FONT_HEADING_PX);
+    const h = r.hunt;
+    if (h) {
+      // 大発掃討（v0.4.2）: 撃破・上陸と、射撃・距離の記録（実機で数値を合わせる根拠）
+      line(`大発 撃破 ${h.sunk} / ${h.total}（ノルマ ${h.quota} ・ 上陸 ${h.beached}）`, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+      y += RESULT_SECTION_GAP;
+      for (const l of bargeResultLines(h)) line(l, HUD_FONT_HEADING_PX);
     } else {
-      for (const b of bandsFired) {
-        line(`${b.band}: ${b.hits} / ${b.shots}${b.duds > 0 ? `（不発 ${b.duds}）` : ''}`, HUD_FONT_HEADING_PX);
-      }
+      const fired = r.shots.length;
+      const unfired = r.capacity - fired;
+      line(`命中 ${r.hits} / 発射 ${fired}（不発 ${r.duds}、外れ ${r.misses}${unfired > 0 ? `、未発射 ${unfired}` : ''}）`, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+      y += RESULT_SECTION_GAP;
+      const bandsFired = r.bands.filter((b) => b.shots > 0);
+      if (bandsFired.length === 0) line('発射なし', HUD_FONT_HEADING_PX);
+      for (const b of bandsFired) line(`${b.band}: ${b.hits} / ${b.shots}${b.duds > 0 ? `（不発 ${b.duds}）` : ''}`, HUD_FONT_HEADING_PX);
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     const score = computeScore(
-      { returned: r.returned, objectiveDone: r.destroyerSunk, missionType: r.missionType, bands: r.bands, fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal },
+      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : 0, killEnemyId: h ? h.enemyId : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal },
       scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
-    line(`帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+    line(h ? `帰投 ${score.survival} ・ 達成 ${score.objective} ・ 撃破 ${score.kills} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}` : `帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
-    line(`駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    line(`${h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     if (r.raidLine) line(r.raidLine, HUD_FONT_HEADING_PX);
     if (r.friendlyEnabled) {
       // 味方機: 来たか、識別までの秒（猶予の調整の根拠）、撃たれた回数
