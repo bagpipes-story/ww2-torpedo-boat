@@ -39,7 +39,7 @@ import {
   TARGET_MARKER_TOP_MARGIN,
 } from '../config/ui-config';
 import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
-import { BARGE_MARKER_LABEL, GUN_BUTTON_LABEL } from '../config/hunt-config';
+import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR, GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PinchZoom } from '../systems/pinch-zoom';
@@ -60,6 +60,7 @@ export class HudScene extends Phaser.Scene {
   private homeMarker?: EdgeMarker;
   /** 敵の水上機（v0.4.1）。任務に enemy_aircraft があるときだけ。接近・去る間に画面外なら赤い矢印 */
   private planeMarker?: EdgeMarker;
+  private coastMarker?: EdgeMarker;
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
@@ -112,6 +113,8 @@ export class HudScene extends Phaser.Scene {
     const guns = mission.mainWeapon === 'guns';
     this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns, topMargin: TARGET_MARKER_TOP_MARGIN });
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+    // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
+    if (mission.coast) this.coastMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
     if (mission.enemyAircraft) {
       this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
     }
@@ -179,6 +182,7 @@ export class HudScene extends Phaser.Scene {
       this.targetMarker?.destroy();
       this.homeMarker?.destroy();
       this.planeMarker?.destroy();
+      this.coastMarker?.destroy();
       this.fuelGauge?.destroy();
       this.boatHud?.destroy();
       this.hpBar?.destroy();
@@ -193,6 +197,7 @@ export class HudScene extends Phaser.Scene {
       this.targetMarker = undefined;
       this.homeMarker = undefined;
       this.planeMarker = undefined;
+      this.coastMarker = undefined;
       this.fuelGauge = undefined;
       this.boatHud = undefined;
       this.hpBar = undefined;
@@ -211,6 +216,7 @@ export class HudScene extends Phaser.Scene {
     this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
     this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
     this.planeMarker?.refresh(this.telemetry.planeDx, this.telemetry.planeDy, !Number.isNaN(this.telemetry.planeDx), this.telemetry);
+    this.coastMarker?.refresh(this.telemetry.coastDx, this.telemetry.coastDy, !Number.isNaN(this.telemetry.coastDy), this.telemetry);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;

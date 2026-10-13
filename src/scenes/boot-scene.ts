@@ -32,6 +32,7 @@ import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateRainTexture } from '../assets/storm-placeholder';
 import { generateBargeTextures } from '../assets/barge-placeholder';
 import { getBargeParams } from '../config/game-data';
+import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
 export class BootScene extends Phaser.Scene {
@@ -60,6 +61,7 @@ export class BootScene extends Phaser.Scene {
     generateTorpedoButtonTexture(this);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
+    generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
     generateReturnTextures(this);
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）

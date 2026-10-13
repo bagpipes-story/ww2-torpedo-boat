@@ -34,6 +34,10 @@ export const BARGE_EVENT_SHOW_MS = 2500;
 export const DEBUG_BARGES_NEAR_OFFSET = { dxM: -450, dyM: -230, headingDeg: 90 } as const;
 /** 右下の主ボタン（主兵装が砲の任務）。押している間撃つ */
 export const GUN_BUTTON_LABEL = '射撃\n押し続け';
+/** 「岸 N m」の砂色の矢印（岸のある任務。南の岸沿いの浅瀬の縁が画面外の間。実機で「大発も浅瀬も出てこない」＝出発点からどこへ行くか分からなかった） */
+export const COAST_MARKER_LABEL = '岸';
+export const COAST_MARKER_COLOR = 0xd0b878;
+export const COAST_MARKER_TEXT_COLOR = '#d0b878';
 /** 画面外の矢印のラベル（主兵装が砲の任務。駆逐艦の任務は「敵」） */
 export const BARGE_MARKER_LABEL = '大発';
 /** 浅瀬の中で、安全速力のこの kt 手前から速力の数字を赤にする（見た目だけ。座礁の前に気づけるように） */

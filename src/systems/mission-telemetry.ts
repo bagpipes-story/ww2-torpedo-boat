@@ -98,7 +98,10 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     bargesQuota: w.setup.barges ? w.setup.barges.quota : 0,
     bargesTotal: w.setup.barges ? w.setup.barges.count : 0,
     bargeEscapeS: NaN,
-    bargeFrom: w.setup.barges ? bearingJa(w.setup.barges.headingDeg + 180) : '',
+    // v0.4.2 の岸は南だけ（mission-data の検査）。「大発は東から」だけでは出発点から南へ 1,900 m 行くことが伝わらなかった（実機）
+    bargeHint: w.setup.barges ? `大発は${bearingJa(180)}の岸沿いを${bearingJa(w.setup.barges.headingDeg + 180)}から` : '',
+    coastDx: NaN,
+    coastDy: NaN,
   };
 }
 
@@ -143,6 +146,10 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.atHome = w.atHome;
   t.homeWaiting = w.atHome && w.torpedoesRunning;
   t.destroyerSunk = down;
+  // 「岸 N m」: 浅瀬の縁の真北にいる間だけ（縁を越えたら・岸の無い任務は NaN で出さない）
+  const ey = w.setup.coastEdgeY;
+  t.coastDx = s.y < ey ? 0 : NaN;
+  t.coastDy = s.y < ey ? ey - s.y : NaN;
   const h = w.hunt;
   if (h) {
     t.gunStatus = h.battery.status;

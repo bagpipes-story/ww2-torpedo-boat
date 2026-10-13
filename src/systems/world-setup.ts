@@ -70,6 +70,8 @@ export interface WorldSetup {
   mission: PrototypeMission;
   /** 自艇の出発点（?debug&barges=near で大発の隊の手前に置く。v0.4.2） */
   playerStart: { x: number; y: number; headingDeg: number };
+  /** 岸（南）に接する浅瀬の北の縁 y m（「岸 N m」の矢印の行き先。浅瀬が無ければ岸の線。岸の無い任務は NaN。v0.4.2） */
+  coastEdgeY: number;
   /** 主兵装（v0.4.2）。guns なら魚雷は積まない（torpedoCapacity 0） */
   mainWeapon: MainWeapon;
   boatParams: BoatParams;
@@ -152,6 +154,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   return {
     mission,
     playerStart: debugBargesNear && lead ? lead : mission.playerStart,
+    coastEdgeY: coastEdgeYOf(mission),
     mainWeapon: mission.mainWeapon,
     boatParams,
     boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2,
@@ -188,6 +191,14 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     salvoIntervalS: launch.salvo_interval_s,
     smokeParams: getBoatSmokeParams(data, mission.playerBoatId),
   };
+}
+
+/** 岸（v0.4.2 は南だけ）に接する浅瀬のいちばん海側の縁。無ければ岸の線（海域の南の縁）、岸の無い任務は NaN */
+function coastEdgeYOf(m: PrototypeMission): number {
+  if (!m.coast) return NaN;
+  let y = m.bounds.height;
+  for (const r of m.shallows) if (r.y + r.h >= m.bounds.height && r.y < y) y = r.y;
+  return y;
 }
 
 /** 駆逐艦の数値（enemies.json の AI・反撃を持つ記録）。v0.4.2 で buildWorldSetup から切り出し（中身は v0.4.1 のまま） */

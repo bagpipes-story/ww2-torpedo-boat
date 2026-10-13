@@ -153,4 +153,5 @@ export const TEXTURE_KEYS = {
   rudderMarker: 'tex-rudder-marker',
   barge: 'tex-barge',
   gunTracer: 'tex-gun-tracer',
+  coastMarker: 'tex-coast-marker',
 } as const;

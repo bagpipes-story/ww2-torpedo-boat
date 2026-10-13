@@ -240,9 +240,9 @@ export class MissionLine {
         const warn = (call & (CALL_FUEL | CALL_DAWN)) !== 0;
         this.missionText.setText(`${callLabel(call, t.gunMission)}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m  夜明けまで ${timeLeft} 秒`).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
       } else {
-        // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば来る方角（「大発は東から」）
+        // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば狩り場と来る方角（「大発は南の岸沿いを東から」）
         const forecast = t.stormState === STORM_AHEAD ? ` ・ ${t.stormNorth ? '北' : '南'}に暴風 ${stormStep * STORM_AHEAD_STEP_M} m` : '';
-        const hint = t.gunMission && !t.enemySighted && t.bargesSunk + t.bargesBeached < t.bargesTotal ? ` ・ 大発は${t.bargeFrom}から` : '';
+        const hint = t.gunMission && !t.enemySighted && t.bargesSunk + t.bargesBeached < t.bargesTotal ? ` ・ ${t.bargeHint}` : '';
         const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : `命中 ${t.hits}`;
         this.missionText.setText(`夜明けまで ${timeLeft} 秒 ・ ${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
