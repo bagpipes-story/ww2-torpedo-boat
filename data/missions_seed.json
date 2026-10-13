@@ -108,7 +108,7 @@
         },
         "enemy_aircraft": {
           "enemy_id": "ijn_seaplane_jake",
-          "source": "design (v0.4.1。この block がある任務に水上機が来る。数値は enemies.json の機体と risk_events の enemy_aircraft.params。出発から 20 秒は来ない。帯を抜けて全速で 3 秒走ると敵艦の方角 6,000 m から来る。発見線 1,500 m（約 12 秒）までに 18 kt 以下で見失わせられる。離脱の全速でも来る。照明弾の下で駆逐艦から 1,500〜2,000 m にいると 40 秒で HP −28〜−60（煙幕で砲撃は止まる、光の外へは全速 12 秒）。?debug&noplane で無し)"
+          "source": "design (v0.4.1。この block がある任務に水上機が来る。数値は enemies.json の機体と risk_events の enemy_aircraft.params。出発から 20 秒は来ない。帯を抜けて全速で 3 秒走ると敵艦の方角 6,000 m から来る。警告から約 9 秒以内に 18 kt 以下にすれば、4 秒後に見失わせられる（発見線 1,500 m）。離脱の全速でも来る。照明弾の下で駆逐艦から 1,500〜2,000 m にいると 40 秒で HP −28〜−60（煙幕で砲撃は止まる、光の外へは全速 12 秒）。?debug&noplane で無し)"
         },
         "hazards": [
           "storm",

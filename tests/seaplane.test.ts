@@ -84,7 +84,7 @@ describe('敵の水上機（docs/02 §6.8、v0.4.1）: data と params', () => {
     expect(P.wakeThresholdKt).toBe(18);
     expect(P.patrolFromS).toBe(20);
     expect(P.wakeTriggerS).toBe(3);
-    expect(P.loseS).toBe(1.5);
+    expect(P.loseS).toBe(4);
     expect(P.patrolCooldownS).toBe(10);
     expect(P.runRadiusM).toBe(600);
     expect(P.overpassS).toBeCloseTo(1.944, 3);
@@ -177,19 +177,22 @@ describe('開始条件と接近', () => {
     run(s, { ...c, wake: false, stormInside: true }, 1);
     expect(s.phase).not.toBe(SP_LEAVING);
   });
-  it('見失う: 2 秒後に航跡が消えると 1.5 秒で去る（LOST、slowReactS 2.0、lost 1）。2.5 秒で哨戒に戻り、冷却 10 秒の後にまた 3 秒で来る（DONE にはならない）', () => {
+  it('見失う: 2 秒後に航跡が消えると 4 秒で去る（v0.4.1 の実機で 1.5 → 4。その間も寄り続ける。LOST、slowReactS 2.0、lost 1）。2.5 秒で哨戒に戻り、冷却 10 秒の後にまた 3 秒で来る（DONE にはならない）', () => {
     const s = started();
     const c = check();
     run(s, c, 2);
-    const r = run(s, { ...c, wake: false }, 3);
+    const r0 = s.approachR;
+    const r = run(s, { ...c, wake: false }, 4.5);
     expect(r.ev & SP_EV_LOST).toBe(SP_EV_LOST);
-    expect(r.at.get(SP_EV_LOST)!).toBeCloseTo(1.5, 1);
+    expect(r.at.get(SP_EV_LOST)!).toBeCloseTo(4, 1);
+    // 見失うまでの 4 秒も寄り続ける（1,235 m。見失った瞬間の距離で止まる）
+    expect(Math.abs(s.approachR - (r0 - P.flightMps * 4))).toBeLessThan(P.flightMps * DT * 1.5);
     expect(s.outcome).toBe(SP_OUT_LOST);
     expect(s.slowReactS).toBeCloseTo(2, 1);
     expect(s.lost).toBe(1);
     expect(s.phase).toBe(SP_LEAVING);
     expect(seaplaneActive(s)).toBe(true);
-    run(s, { ...c, wake: false }, 2.6 - 1.5);
+    run(s, { ...c, wake: false }, 2.6 - 0.5);
     expect(s.phase).toBe(SP_PATROL);
     expect(seaplaneActive(s)).toBe(false);
     for (let i = 0; i < Math.round(9 / DT); i++) {
@@ -205,23 +208,24 @@ describe('開始条件と接近', () => {
     expect(s.sorties).toBe(2);
     expect(s.phase).toBe(SP_APPROACH);
   });
-  it('見失いの線: 航跡が消えたとき 2,000 m なら見失う、1,900 m なら 1.5 秒以内に発見線を切って確定する。帯の中は見えない。forceSeen なら見失わない', () => {
+  it('見失いの線: 航跡が消えたとき 2,800 m なら見失う、2,700 m なら 4 秒以内に発見線を切って確定する（実効の線 1,500 + 308.64 × 4 = 2,735 m）。帯の中は見えない。forceSeen なら見失わない', () => {
+    expect(P.baseDetectM + P.flightMps * P.loseS).toBeCloseTo(2734.56, 1);
     for (const [r0, lost] of [
-      [2000, true],
-      [1900, false],
+      [2800, true],
+      [2700, false],
     ] as const) {
       const s = started();
       s.approachR = r0;
-      const r = run(s, { ...check(), wake: false }, 2);
+      const r = run(s, { ...check(), wake: false }, 5);
       expect(s.outcome === SP_OUT_LOST).toBe(lost);
       expect((r.ev & SP_EV_FOUND) !== 0).toBe(!lost);
     }
     const s = started();
-    run(s, { ...check(), stormInside: true }, 2);
+    run(s, { ...check(), stormInside: true }, 5);
     expect(s.outcome).toBe(SP_OUT_LOST);
     expect(Number.isNaN(s.slowReactS)).toBe(true); // 帯に隠れただけ（減速ではない）
     const f = started();
-    run(f, { ...check(), wake: false, forceSeen: true }, 3);
+    run(f, { ...check(), wake: false, forceSeen: true }, 5);
     expect(f.phase).toBe(SP_APPROACH);
   });
 });
