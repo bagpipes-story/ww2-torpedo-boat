@@ -23,7 +23,7 @@ import { CALL_DAWN, CALL_FUEL, topCall } from '../core/mission-flow';
 import { SP_APPROACH } from '../core/seaplane';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { STORM_AHEAD, STORM_INSIDE, STORM_NEAR } from '../core/storm';
-import { GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, callLabel, friendlyLine, friendlyResultLine, gunLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine } from './hud-lines';
+import { DETECT_RANGE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, callLabel, friendlyLine, friendlyResultLine, gunLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine, sightedFast } from './hud-lines';
 
 /** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 const MISSION_NORMAL = 0;
@@ -67,7 +67,7 @@ export class MissionLine {
   private lastPlaneKey = -1;
   /** 大発掃討の 2 行目のキー（射撃の状態・速すぎ・遠い・撃破・上陸・直後の出来事・上陸までの秒・距離の刻み。v0.4.2） */
   private lastBargeKey = -1;
-  /** 撃つ前の手引きのキー（気づかれた・最寄りの大発までの 50 m 刻み） */
+  /** 撃つ前の手引きのキー（気づかれた・速い・最寄りの大発までの 50 m 刻み・見つかる距離の刻み） */
   private lastSightKey = -1;
   private lastTimeLeft = -1;
   private lastHits = -1;
@@ -156,7 +156,8 @@ export class MissionLine {
       : 0;
     // 撃つ前の手引き: 最寄りの浮いている大発まで 50 m 刻みの切り上げ（「300 m で撃て」の 300 m は 300 m 以内。画面外の矢印も大発の任務は切り上げ。平方根はこのモードの間だけフレームに 1 回）
     const sightStep = mode === MISSION_BARGE_SIGHTED ? Math.ceil(Math.sqrt(t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy) / TARGET_MARKER_DISTANCE_STEP_M) : 0;
-    const sightKey = mode === MISSION_BARGE_SIGHTED ? 1 | (t.playerDetected ? 2 : 0) | (sightStep << 2) : 0;
+    // 手引きのキー: 気づかれた・速い（減速の合図）・距離の刻み・見つかる距離の刻み（速いときの文に出る）
+    const sightKey = mode === MISSION_BARGE_SIGHTED ? 1 | (t.playerDetected ? 2 : 0) | (sightedFast(t) ? 4 : 0) | (sightStep << 3) | (Math.round(t.detectRangeM / DETECT_RANGE_STEP_M) << 9) : 0;
     // 識別の残り秒は 5,4,3,2,1（0 は出さない）
     const ffLeft = t.friendlyPhase === FF_CHALLENGE ? Math.max(1, Math.ceil(t.friendlyLeftS)) : 0;
     // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない

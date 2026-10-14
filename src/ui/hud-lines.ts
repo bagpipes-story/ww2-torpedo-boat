@@ -147,9 +147,21 @@ export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, sha
   return { text: withWarnings(text, t, shallowStep, false), color: warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
 }
 
-/** 撃つ前の手引き（押していない・大発が見えている・逃げている大発がいない）。distM は最寄りの浮いている大発まで（50 m 刻みの切り上げ＝「300 m」は 300 m 以内）。気づかれたら（逃げ出すまでの 5 秒）警告色 */
+/** 巡航・全速（航跡が見える速さ）で大発に寄っているか（撃つ前の手引きで減速を促す） */
+export function sightedFast(t: BoatTelemetry): boolean {
+  return t.targetStep === 'cruise' || t.targetStep === 'full';
+}
+
+/**
+ * 撃つ前の手引き（押していない・大発が見えている・逃げている大発がいない）。distM は最寄りの浮いている大発まで（50 m 刻みの切り上げ＝「300 m」は 300 m 以内）。
+ * 気づかれたら（逃げ出すまでの 5 秒）警告色。巡航・全速で寄っていれば見つかる距離（3 行目と同じ 50 m 刻み）を出して減速を促す（v0.4.2 の実機 2 回目: 巡航で寄って 719 m で気づかれ、逃げられた）
+ */
 export function bargeSightedLine(t: BoatTelemetry, distM: number, shallowStep: number): HudLine {
   if (t.playerDetected) return { text: withWarnings(`大発 ${distM} m ・ 気づかれた！ ・ 舷側を向けて撃て`, t, shallowStep, false), color: HUD_COLOR_WARN };
+  if (sightedFast(t)) {
+    const det = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M) * DETECT_RANGE_STEP_M;
+    return { text: withWarnings(`大発 ${distM} m ・ 速い！ ${det} m で気づかれる ・ ${t.gunSteadyKt} kt 以下に`, t, shallowStep, false), color: HUD_COLOR_WARN };
+  }
   return { text: withWarnings(`大発 ${distM} m ・ 気づかれていない ・ 舷側を向け ${t.gunEffectiveM} m で撃て`, t, shallowStep, false), color: HUD_COLOR_STRONG };
 }
 
