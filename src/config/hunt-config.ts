@@ -42,3 +42,15 @@ export const COAST_MARKER_TEXT_COLOR = '#d0b878';
 export const BARGE_MARKER_LABEL = '大発';
 /** 浅瀬の中で、安全速力のこの kt 手前から速力の数字を赤にする（見た目だけ。座礁の前に気づけるように） */
 export const SHALLOW_SPEED_WARN_MARGIN_KT = 1;
+/** 沿岸砲（v0.4.3）: 砲台の四角（論理単位 m）、射界の半円の色、砲弾の色、閃光、砲弾のプール */
+export const BATTERY_SIZE_M = 40;
+export const BATTERY_COLOR = 0x3a3028;
+export const BATTERY_BARREL_COLOR = 0x8a8070;
+export const BATTERY_ARC_COLOR = 0xff6b5a;
+export const BATTERY_ARC_FILL_ALPHA = 0.07;
+export const BATTERY_ARC_LINE_ALPHA = 0.45;
+export const BATTERY_ARC_LINE_WIDTH = 4;
+export const BATTERY_SHELL_TINT = 0xffb060;
+export const BATTERY_SHELL_POOL_SIZE = 6;
+export const BATTERY_FLASH_SCALE = 0.6;
+export const BATTERY_FLASH_LIFETIME_S = 0.12;

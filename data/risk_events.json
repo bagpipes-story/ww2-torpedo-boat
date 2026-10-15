@@ -112,7 +112,13 @@
       "trigger": "岸に近づく（大発掃討で発生）",
       "counterplay": "砲の射界を避ける",
       "penalty": "HP減",
-      "version": "v0.4"
+      "version": "v0.4.3",
+      "params": {
+        "gun": { "id": "type41_75mm", "count": 1, "range_m": 7000, "effective_night_m": 900, "rof_per_min": 12, "damage": 20, "shell_speed_mps": 400, "dispersion_m": 60, "splash_radius_m": 6, "fire_chance": 0.2, "engine_damage_chance": 0.15 },
+        "base_detect_m": 1200,
+        "inland_m": 60,
+        "source": "design (v0.4.3。岸の上の固定砲 1 門（史実: ニューギニアの日本軍は大発の泊地と上陸点を 75mm 山砲（四一式）や 37mm・20mm で守り、PT-337 は 1944 年 3 月にハンサ湾の沿岸砲で沈んだ。1943 年 12 月のフォン半島でも大発の攻撃中に岸から撃たれた）。射界＝effective_night_m 900 m の半円（海側だけ。海域の浅瀬の縁（岸から 300 m）は x ±848 m の範囲が射界の中）。撃つ条件: 艇が射界の中で、大発のどれかが気づいている／自分の目（base_detect_m 1200 × 月 0.6 × 速力係数＝大発と同じ 288〜1,152 m）／艇の射撃の閃光（boats.json の muzzle_flash_reveal_m）。煙幕で線が遮られていれば撃たない。見失ってから visibility.detect_hold_s（8 秒）で解ける。rof 12/分（5 秒に 1 発。見てかわせる間隔）、damage 20（駆逐艦の 127mm 40 の半分）、dispersion_m 60（有効射程 900 m での散り。浅瀬の縁（砲から約 400 m）で命中 2〜3 割＝約 1 HP/秒、射界の縁で 1 割弱）。模型は駆逐艦の砲と同じ（見越し＋一様円盤、shells.ts）。射界の中にいた秒・砲撃・命中を Result に出す。inland_m 60: 岸の線から陸側に据える距離（見た目）)"
+      }
     },
     {
       "id": "mine",

@@ -25,6 +25,9 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
     expect(s.visRange2).toBeCloseTo(900 * 900, 6);
     expect(s.detectRangeAtStartM).toBeCloseTo(288, 6);
     expect(s.coastEdgeY).toBe(2200); // 「岸 N m」の行き先＝岸に接する浅瀬の縁（出発点から 1,500 m 南）
+    expect([s.shoreBattery!.x, s.shoreBattery!.y, s.shoreBattery!.gun.effectiveM]).toEqual([4600, 2560, 900]); // 沿岸砲（v0.4.3）: 岸の線 2,500 の 60 m 陸側
+    expect(buildWorldSetup(gameData, 'us_03', NaN, NaN, false, null, false, false, true).shoreBattery).toBeNull(); // ?debug&nobattery
+    expect(buildWorldSetup(gameData, 'us_02', NaN, NaN).shoreBattery).toBeNull();
     expect(buildWorldSetup(gameData, 'us_02', NaN, NaN).coastEdgeY).toBeNaN(); // 岸の無い任務は矢印なし
     expect(buildWorldSetup(gameData, 'us_03', NaN, NaN, false, null, false, true).playerStart).toEqual({ x: 3800, y: 2170, headingDeg: 90 });
     expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, false, null, false, true).playerStart).toEqual(getPrototypeMission(gameData, 'us_02').playerStart);
@@ -34,11 +37,11 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
     expect(n).toEqual({ visM: 900, detectCruiseM: 720, detectSilentM: 360, durationS: 200, fuelGal: 30, torpedoes: 0, gunsLabel: '40mm・37mm・20mm・12.7mm', homeX: 3000, homeY: 300, boundsW: 6000, boundsH: 2500 });
     const rows = briefingRows(getBriefingRecord(gameData, 'us_03'), n, nameOf, labelOf);
     expect(rows.map((r) => r.label)).toEqual(['目的', '成功', '月', '敵', '危険', '条件']);
-    expect(rows[0]!.text).toBe('南の岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）');
+    expect(rows[0]!.text).toBe('南の岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）。沿岸砲の射界に注意');
     expect(rows[1]!.text).toBe('大発3隻以上撃破して帰投（帰投地点は北の青い輪）');
     expect(rows[2]!.text).toBe('新月 ・ 見える 900 m ・ 見つかる 巡航 720 m／静音 360 m');
     expect(rows[3]!.text).toBe('大発動艇 ×4');
-    expect(rows[4]!.text).toBe('敵艦艇の砲撃・衝突、座礁');
+    expect(rows[4]!.text).toBe('敵艦艇の砲撃・衝突、敵沿岸砲、座礁');
     expect(rows[5]!.text).toBe('夜明けまで 200 秒 ・ 燃料 30 gal ・ 砲 40mm・37mm・20mm・12.7mm');
   });
   it('任務の検査: guns でない（torpedo_immune）・enemy_start と barges の両方・coast が無い・coast が north は例外', () => {
