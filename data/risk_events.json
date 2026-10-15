@@ -1,6 +1,6 @@
 {
   "$schema_note": "リスクイベントの重み。count と share は Bulkley『At Close Quarters』付録Bの米PT損失69隻を本調査で集計した史実値（historical）。game_event 以降は design。weight はミッション中の発生確率の相対重み（share をそのまま使い、プレイテストで調整）。",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "total_losses": 69,
   "enemy_direct_losses": 24,
   "enemy_direct_share": 0.35,
@@ -24,7 +24,7 @@
     },
     {
       "id": "enemy_ship_gunfire_or_ram",
-      "label_ja": "敵艦の砲撃・衝突",
+      "label_ja": "敵艦艇の砲撃・衝突（大発の機銃を含む）",
       "count": 8,
       "share": 0.12,
       "enemy_direct": true,

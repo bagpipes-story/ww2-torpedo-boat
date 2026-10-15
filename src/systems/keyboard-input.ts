@@ -1,4 +1,4 @@
-// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
+// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（砲の任務では押している間 射撃。v0.4.2）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
 // 方向キーはスティックに触れている間は無視する。
 import Phaser from 'phaser';
 import type { InputState } from '../core/input-state';
@@ -29,6 +29,7 @@ export class KeyboardInput {
   /** キーボードが extinguishHeld / lookout を true にした（キーが上がったら自分で戻す。タッチが立てたフラグには触らない） */
   private kbExtinguish = false;
   private kbLookout = false;
+  private kbGun = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -64,7 +65,15 @@ export class KeyboardInput {
   update(): void {
     if (!this.keys) return;
     const k = this.keys;
-    if (Phaser.Input.Keyboard.JustDown(k.space)) this.input.fireTap = true;
+    if (Phaser.Input.Keyboard.JustDown(k.space)) {
+      this.input.fireTap = true;
+      this.input.gunHeld = true;
+      this.kbGun = true;
+    }
+    if ((Phaser.Input.Keyboard.JustUp(k.space) || !k.space.isDown) && this.kbGun) {
+      this.input.gunHeld = false;
+      this.kbGun = false;
+    }
     if (Phaser.Input.Keyboard.JustUp(k.shift)) this.input.smokeTap = true;
     if (Phaser.Input.Keyboard.JustDown(k.f)) this.input.identifyTap = true;
     if (Phaser.Input.Keyboard.JustDown(k.x)) {

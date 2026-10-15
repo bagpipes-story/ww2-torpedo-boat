@@ -22,10 +22,12 @@ export interface InputState {
   zoomRequest: number;
   /** 「識別」ボタンを押した（味方機への識別信号。v0.3.3）。Mission が消費して false に戻す。味方機がいなければ何も起きない */
   identifyTap: boolean;
+  /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。魚雷の任務では読まない */
+  gunHeld: boolean;
 }
 
 export function createInputState(): InputState {
-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false };
 }
 
 export function resetInput(s: InputState): void {
@@ -39,6 +41,7 @@ export function resetInput(s: InputState): void {
   s.lookout = false;
   s.zoomRequest = NaN;
   s.identifyTap = false;
+  s.gunHeld = false;
 }
 
 /**

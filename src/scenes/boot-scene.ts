@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import {
   DEBUG_DIRECT_MISSION,
   DEBUG_ENABLED,
+  DEBUG_MISSION_ID,
   DEBUG_RAID_OVERRIDE,
   PROTOTYPE_MISSION_ID,
   REGISTRY_KEY_DATA,
@@ -29,6 +30,9 @@ import {
 } from '../assets/placeholders';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateRainTexture } from '../assets/storm-placeholder';
+import { generateBargeTextures } from '../assets/barge-placeholder';
+import { getBargeParams } from '../config/game-data';
+import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
 export class BootScene extends Phaser.Scene {
@@ -57,13 +61,29 @@ export class BootScene extends Phaser.Scene {
     generateTorpedoButtonTexture(this);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
+    generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
     generateReturnTextures(this);
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);
+    // 大発（v0.4.2）: 大発の隊を持つ最初の任務の値から（遊べる任務は Boot ですべて読める）
+    const bargeMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['barges']);
+    const barge = bargeMission ? getBargeParams(gameData, getPrototypeMission(gameData, bargeMission.id)) : null;
+    if (barge) generateBargeTextures(this, { lengthUnits: barge.boundsMarginM * 2, beamUnits: (barge.halfBeamM * 2 * spriteScale) / gameData.hitRateModel.world.hit_scale });
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
-    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), DEBUG_RAID_OVERRIDE));
+    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE));
     else this.scene.start(SCENE_KEYS.title);
+  }
+}
+
+/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない） */
+function debugMissionId(): string {
+  try {
+    getPrototypeMission(gameData, DEBUG_MISSION_ID);
+    return DEBUG_MISSION_ID;
+  } catch (e) {
+    console.warn(`?debug&mission=${DEBUG_MISSION_ID} は出撃できない（${e instanceof Error ? e.message : String(e)}）。${PROTOTYPE_MISSION_ID} で始める`);
+    return PROTOTYPE_MISSION_ID;
   }
 }

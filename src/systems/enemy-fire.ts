@@ -10,12 +10,6 @@ import {
   SEARCHLIGHT_BLOCKED_ALPHA_FACTOR,
   SEARCHLIGHT_TEX_LENGTH_UNITS,
   SHELL_POOL_SIZE,
-  SPLASH_LIFETIME_S,
-  SPLASH_POOL_SIZE,
-  SPLASH_SCALE_HIT,
-  SPLASH_SCALE_MISS,
-  SPLASH_TINT_HIT,
-  SPLASH_TINT_MISS,
   STARSHELL_ALPHA,
   STARSHELL_TEX_RADIUS_UNITS,
 } from '../config/ui-config';
@@ -23,6 +17,7 @@ import type { BoatState } from '../core/boat-motion';
 import { createGunneryState, updateGuns, updateIllumination, type GunneryParams, type GunneryState, type ShellEvents } from '../core/gunnery';
 import type { SeededRng } from '../core/rng';
 import { radToDeg } from '../core/units';
+import type { SplashPool } from './splash-pool';
 
 /** 命中の通知（引数はプリミティブ） */
 export type ShellHitHandler = (gunIndex: number, x: number, y: number) => void;
@@ -32,9 +27,6 @@ export class EnemyFire {
   private readonly shellSprites: Phaser.GameObjects.Image[] = [];
   /** 各スプライトが今どの砲のテクスチャか（-1 = 未設定）。同じフレーム内でスロットが別の砲に使い回されても正しく描く */
   private readonly shellTexGun: Int8Array;
-  private readonly splashes: Phaser.GameObjects.Image[] = [];
-  private readonly splashAges: Float32Array;
-  private splashNext = 0;
   private readonly light: Phaser.GameObjects.Image;
   private readonly star: Phaser.GameObjects.Image;
   private readonly flash: Phaser.GameObjects.Image;
@@ -53,7 +45,7 @@ export class EnemyFire {
       this.flashAge = 0;
     },
     onImpact: (gunIndex, x, y, hit) => {
-      this.splash(x, y, hit);
+      this.splashes.splash(x, y, hit);
       if (hit) this.onHit(gunIndex, x, y);
     },
   };
@@ -63,15 +55,13 @@ export class EnemyFire {
     private readonly params: GunneryParams,
     private readonly rng: SeededRng,
     shipHeadingDeg: number,
+    /** 水柱（世界の SplashPool を借りる。v0.4.2 で EnemyFire から出した） */
+    private readonly splashes: SplashPool,
   ) {
     this.state = createGunneryState(params, SHELL_POOL_SIZE, shipHeadingDeg);
     this.shellTexGun = new Int8Array(SHELL_POOL_SIZE).fill(-1);
     for (let i = 0; i < SHELL_POOL_SIZE; i++) {
       this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.tracer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
-    }
-    this.splashAges = new Float32Array(SPLASH_POOL_SIZE).fill(Infinity);
-    for (let i = 0; i < SPLASH_POOL_SIZE; i++) {
-      this.splashes.push(scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setDepth(DEPTH.effects).setVisible(false));
     }
     this.light = scene.add
       .image(0, 0, TEXTURE_KEYS.searchlight)
@@ -125,7 +115,7 @@ export class EnemyFire {
     updateGuns(this.state, ship, player, canFire, playerHalfLengthM, playerHalfBeamM, this.params, this.rng, realDt, dt, this.events);
   }
 
-  /** 毎フレーム: 探照灯の位置と向き、星弾の減衰、砲弾の位置、水柱・閃光のフェード（変わるものだけ触る） */
+  /** 毎フレーム: 探照灯の位置と向き、星弾の減衰、砲弾の位置、閃光のフェード（変わるものだけ触る。水柱は世界の SplashPool） */
   updateVisuals(realDt: number, ship: BoatState): void {
     const light = this.state.light;
     if (light.on) {
@@ -161,18 +151,6 @@ export class EnemyFire {
       if (!img.visible) img.setVisible(true);
       img.setPosition(s.x, s.y).setAngle(radToDeg(Math.atan2(s.vx, -s.vy)));
     }
-    for (let i = 0; i < SPLASH_POOL_SIZE; i++) {
-      const age = this.splashAges[i]!;
-      if (age === Infinity) continue;
-      const next = age + realDt;
-      if (next >= SPLASH_LIFETIME_S) {
-        this.splashAges[i] = Infinity;
-        this.splashes[i]!.setVisible(false);
-        continue;
-      }
-      this.splashAges[i] = next;
-      this.splashes[i]!.setAlpha(1 - next / SPLASH_LIFETIME_S);
-    }
     if (this.flashAge !== Infinity) {
       this.flashAge += realDt;
       if (this.flashAge >= MUZZLE_FLASH_LIFETIME_S) {
@@ -184,22 +162,8 @@ export class EnemyFire {
     }
   }
 
-  /** 水柱を置く（砲弾の着弾。味方機の掃射も借りる。v0.3.3 で公開） */
-  splash(x: number, y: number, hit: boolean): void {
-    const i = this.splashNext;
-    this.splashNext = (this.splashNext + 1) % SPLASH_POOL_SIZE;
-    this.splashAges[i] = 0;
-    this.splashes[i]!
-      .setPosition(x, y)
-      .setScale((hit ? SPLASH_SCALE_HIT : SPLASH_SCALE_MISS) / RENDER_SCALE)
-      .setTint(hit ? SPLASH_TINT_HIT : SPLASH_TINT_MISS)
-      .setAlpha(1)
-      .setVisible(true);
-  }
-
   destroy(): void {
     for (const s of this.shellSprites) s.destroy();
-    for (const s of this.splashes) s.destroy();
     this.light.destroy();
     this.star.destroy();
     this.flash.destroy();

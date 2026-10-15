@@ -31,12 +31,15 @@ import {
   IDENTIFY_PULSE_ALPHA_MAX,
   IDENTIFY_PULSE_HZ,
   ROUND_BUTTON_ALPHA,
+  TORPEDO_BUTTON_ARM_MS,
+  TORPEDO_BUTTON_RADIUS,
   ROUND_BUTTON_GAP,
   ROUND_BUTTON_RADIUS,
   TARGET_MARKER_DISTANCE_STEP_M,
   TARGET_MARKER_TOP_MARGIN,
 } from '../config/ui-config';
 import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
+import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR, GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PinchZoom } from '../systems/pinch-zoom';
@@ -57,9 +60,12 @@ export class HudScene extends Phaser.Scene {
   private homeMarker?: EdgeMarker;
   /** 敵の水上機（v0.4.1）。任務に enemy_aircraft があるときだけ。接近・去る間に画面外なら赤い矢印 */
   private planeMarker?: EdgeMarker;
+  private coastMarker?: EdgeMarker;
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
+  /** 「射撃」（主兵装が砲の任務。v0.4.2）: 右下の魚雷ボタンの場所。押している間 gunHeld。出だしの 0.6 秒は受けない（「出撃」の 2 度押し） */
+  private gunButton?: HoldButton;
   private smokeButton?: HoldButton;
   private extinguishButton?: HoldButton;
   private lookoutButton?: HoldButton;
@@ -103,9 +109,12 @@ export class HudScene extends Phaser.Scene {
     this.boatHud = new BoatHud(this);
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
-    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
-    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, topMargin: TARGET_MARKER_TOP_MARGIN });
+    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」で切り上げ＝2 行目の手引きと同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
+    const guns = mission.mainWeapon === 'guns';
+    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns, topMargin: TARGET_MARKER_TOP_MARGIN });
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+    // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
+    if (mission.coast) this.coastMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
     if (mission.enemyAircraft) {
       this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
     }
@@ -116,8 +125,16 @@ export class HudScene extends Phaser.Scene {
       spreadMaxDeg: launch.spread_angle_deg_max,
       holdSecondsForMax: launch.spread_hold_seconds_for_max,
     };
-    this.torpedoButton = new TorpedoButton(this, input, spread);
-    this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
+    if (mission.mainWeapon === 'guns') {
+      let armed = false;
+      this.time.delayedCall(TORPEDO_BUTTON_ARM_MS, () => (armed = true));
+      const gx = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
+      const gy = GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
+      this.gunButton = new HoldButton(this, gx, gy, GUN_BUTTON_LABEL, { onDown: () => (input.gunHeld = armed), onUp: () => (input.gunHeld = false) }, TEXTURE_KEYS.torpedoButton);
+    } else {
+      this.torpedoButton = new TorpedoButton(this, input, spread);
+      this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
+    }
     // 右上「煙幕」: 離すと展開。その下「消火」: 火災中に押し続けると消火（押している時間は Mission が数える。v0.3.1 実機の要望で煙幕と別ボタンに）。右中「見張り」: 押している間ズームアウト
     const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
     this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
@@ -157,6 +174,7 @@ export class HudScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stick?.destroy();
       this.torpedoButton?.destroy();
+      this.gunButton?.destroy();
       this.smokeButton?.destroy();
       this.extinguishButton?.destroy();
       this.lookoutButton?.destroy();
@@ -164,12 +182,14 @@ export class HudScene extends Phaser.Scene {
       this.targetMarker?.destroy();
       this.homeMarker?.destroy();
       this.planeMarker?.destroy();
+      this.coastMarker?.destroy();
       this.fuelGauge?.destroy();
       this.boatHud?.destroy();
       this.hpBar?.destroy();
       this.debugHud?.destroy();
       this.stick = undefined;
       this.torpedoButton = undefined;
+      this.gunButton = undefined;
       this.smokeButton = undefined;
       this.extinguishButton = undefined;
       this.lookoutButton = undefined;
@@ -177,6 +197,7 @@ export class HudScene extends Phaser.Scene {
       this.targetMarker = undefined;
       this.homeMarker = undefined;
       this.planeMarker = undefined;
+      this.coastMarker = undefined;
       this.fuelGauge = undefined;
       this.boatHud = undefined;
       this.hpBar = undefined;
@@ -189,12 +210,13 @@ export class HudScene extends Phaser.Scene {
 
   override update(): void {
     this.keyboard?.update();
-    this.boatHud?.refresh(this.telemetry);
+    this.boatHud?.refresh(this.telemetry, this.time.now);
     this.hpBar?.refresh(this.telemetry, this.time.now);
     this.fuelGauge?.refresh(this.telemetry);
     this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
     this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
     this.planeMarker?.refresh(this.telemetry.planeDx, this.telemetry.planeDy, !Number.isNaN(this.telemetry.planeDx), this.telemetry);
+    this.coastMarker?.refresh(this.telemetry.coastDx, this.telemetry.coastDy, !Number.isNaN(this.telemetry.coastDy), this.telemetry);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;

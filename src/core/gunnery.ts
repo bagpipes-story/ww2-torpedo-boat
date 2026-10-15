@@ -2,8 +2,10 @@
 // 時間の単位: 探照灯の遅れ・掃引、星弾の持続・冷却、砲の発射間隔、火災は実時間秒（体感に合わせる）。砲弾の飛行は time_scale 込みの dt で積分する。
 import type { BoatState } from './boat-motion';
 import type { SeededRng } from './rng';
-import { interceptTimeS } from './torpedo-solver';
+import { advanceShell, createShells, findFreeShell, launchShell, pointNearBoat, type ShellState } from './shells';
 import { degToRad, wrapDeg180, wrapDeg360 } from './units';
+
+export { pointNearBoat, type ShellState } from './shells';
 
 export interface GunParams {
   id: string;
@@ -69,19 +71,6 @@ export interface StarshellState {
   illuminating: boolean;
 }
 
-export interface ShellState {
-  active: boolean;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  /** 着弾までの残り（game 秒） */
-  leftS: number;
-  impactX: number;
-  impactY: number;
-  gunIndex: number;
-}
-
 export interface GunneryState {
   light: SearchlightState;
   star: StarshellState;
@@ -100,8 +89,7 @@ export interface ShellEvents {
 }
 
 export function createGunneryState(p: GunneryParams, shellPoolSize: number, shipHeadingDeg: number): GunneryState {
-  const shells: ShellState[] = [];
-  for (let i = 0; i < shellPoolSize; i++) shells.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, leftS: 0, impactX: 0, impactY: 0, gunIndex: 0 });
+  const shells = createShells(shellPoolSize);
   return {
     light: { on: false, bearingDeg: shipHeadingDeg, onDelayLeftS: p.searchlight.onDelayS, illuminating: false },
     star: { leftS: 0, x: 0, y: 0, cooldownLeftS: 0, illuminating: false },
@@ -215,75 +203,19 @@ export function updateGuns(
     if (!shell) continue;
     // 残りの負値を繰り越して、固定ステップの刻みに関わらず平均の発射速度を保つ
     g.gunCooldownS[i] = cd + 60 / (gun.roundsPerMinPerGun * gun.count);
-    // 見越し点（解が無ければ現在位置）
-    const t = interceptTimeS(ship.x, ship.y, gun.shellSpeedMps, player.x, player.y, pvx, pvy);
-    let ax = player.x;
-    let ay = player.y;
-    if (t !== null) {
-      ax += pvx * t;
-      ay += pvy * t;
-    }
-    // ばらつき: 半径 dispersion × (距離/有効射程) の円盤に一様に落ちる（r = R√u）。命中率 ≈ 艇の面積 / 円盤の面積 で見積もれる。
+    // 見越し点（解が無ければ現在位置）＋ ばらつき: 半径 dispersion × (距離/有効射程) の円盤に一様に落ちる（r = R√u。shells.ts）。
     // 当初の「軸ごとに 2 つの一様乱数の平均」は中央に寄りすぎて見積もりの約 2 倍の命中率になった（レビューで判明）
-    const spread = (gun.dispersionM * Math.sqrt(d2)) / gun.effectiveM;
-    const r = spread * Math.sqrt(rng.next());
-    const th = rng.next() * Math.PI * 2;
-    ax += Math.cos(th) * r;
-    ay += Math.sin(th) * r;
-    const fx = ax - ship.x;
-    const fy = ay - ship.y;
-    const dist = Math.sqrt(fx * fx + fy * fy);
-    const flight = Math.max(dist / gun.shellSpeedMps, 1e-3);
-    shell.active = true;
-    shell.x = ship.x;
-    shell.y = ship.y;
-    shell.vx = fx / flight;
-    shell.vy = fy / flight;
-    shell.leftS = flight;
-    shell.impactX = ax;
-    shell.impactY = ay;
-    shell.gunIndex = i;
+    launchShell(shell, ship.x, ship.y, player.x, player.y, pvx, pvy, gun.shellSpeedMps, (gun.dispersionM * Math.sqrt(d2)) / gun.effectiveM, i, rng);
     events.onFire(i, ship.x, ship.y);
   }
   // 飛行と着弾
   for (let i = 0; i < g.shells.length; i++) {
     const s = g.shells[i]!;
-    if (!s.active) continue;
-    s.leftS -= dt;
-    if (s.leftS > 0) {
-      s.x += s.vx * dt;
-      s.y += s.vy * dt;
-      continue;
-    }
-    s.active = false;
+    if (!s.active || !advanceShell(s, dt)) continue;
     const gun = p.guns[s.gunIndex]!;
     const hit = pointNearBoat(s.impactX, s.impactY, player, playerHalfLengthM, playerHalfBeamM + gun.splashRadiusM);
     events.onImpact(s.gunIndex, s.impactX, s.impactY, hit);
   }
-}
-
-function findFreeShell(shells: ShellState[]): ShellState | null {
-  for (let i = 0; i < shells.length; i++) if (!shells[i]!.active) return shells[i]!;
-  return null;
-}
-
-/** 点が艇（中心・方位・半長の線分）から radius 以内か（距離二乗で比較） */
-export function pointNearBoat(x: number, y: number, boat: BoatState, halfLengthM: number, radiusM: number): boolean {
-  const h = degToRad(boat.headingDeg);
-  const ux = Math.sin(h) * halfLengthM;
-  const uy = -Math.cos(h) * halfLengthM;
-  const ax = boat.x - ux;
-  const ay = boat.y - uy;
-  const abx = 2 * ux;
-  const aby = 2 * uy;
-  const apx = x - ax;
-  const apy = y - ay;
-  const len2 = abx * abx + aby * aby;
-  let t = len2 > 0 ? (apx * abx + apy * aby) / len2 : 0;
-  t = t < 0 ? 0 : t > 1 ? 1 : t;
-  const ex = apx - abx * t;
-  const ey = apy - aby * t;
-  return ex * ex + ey * ey <= radiusM * radiusM;
 }
 
 // ---------- 艇の被害（docs/02 §6.6） ----------
@@ -372,27 +304,36 @@ export function isEnemyGunneryDataRecord(v: unknown): v is EnemyGunneryDataRecor
   const r = v as Record<string, unknown>;
   const guns = r['guns'];
   if (!Array.isArray(guns) || guns.length === 0) return false;
-  for (const g of guns) {
-    if (!g || typeof g !== 'object' || typeof (g as Record<string, unknown>)['id'] !== 'string') return false;
-    if (!hasNums(g, ['count', 'effective_night_m', 'rof_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m', 'fire_chance', 'engine_damage_chance'])) return false;
-  }
+  if (!guns.every(isGunDataRecord)) return false;
   return hasNums(r['searchlight'], ['range_m', 'cone_deg', 'sweep_deg_s', 'on_delay_s']) && hasNums(r['starshell'], ['range_m', 'illum_radius_m', 'duration_s', 'cooldown_s']);
+}
+
+export type GunDataRecord = EnemyGunneryDataRecord['guns'][number];
+
+/** 砲 1 種の検査（駆逐艦の砲と大発の機銃。v0.4.2 で isEnemyGunneryDataRecord から切り出し） */
+export function isGunDataRecord(g: unknown): g is GunDataRecord {
+  if (!g || typeof g !== 'object' || typeof (g as Record<string, unknown>)['id'] !== 'string') return false;
+  return hasNums(g, ['count', 'effective_night_m', 'rof_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m', 'fire_chance', 'engine_damage_chance']);
+}
+
+export function gunParamsFromData(g: GunDataRecord): GunParams {
+  return {
+    id: g.id,
+    count: g.count,
+    effectiveM: g.effective_night_m,
+    roundsPerMinPerGun: g.rof_per_min,
+    damage: g.damage,
+    shellSpeedMps: g.shell_speed_mps,
+    dispersionM: g.dispersion_m,
+    splashRadiusM: g.splash_radius_m,
+    fireChance: g.fire_chance,
+    engineDamageChance: g.engine_damage_chance,
+  };
 }
 
 export function gunneryParamsFromData(r: EnemyGunneryDataRecord): GunneryParams {
   return {
-    guns: r.guns.map((g) => ({
-      id: g.id,
-      count: g.count,
-      effectiveM: g.effective_night_m,
-      roundsPerMinPerGun: g.rof_per_min,
-      damage: g.damage,
-      shellSpeedMps: g.shell_speed_mps,
-      dispersionM: g.dispersion_m,
-      splashRadiusM: g.splash_radius_m,
-      fireChance: g.fire_chance,
-      engineDamageChance: g.engine_damage_chance,
-    })),
+    guns: r.guns.map(gunParamsFromData),
     searchlight: { rangeM: r.searchlight.range_m, coneDeg: r.searchlight.cone_deg, sweepDegS: r.searchlight.sweep_deg_s, onDelayS: r.searchlight.on_delay_s },
     starshell: { rangeM: r.starshell.range_m, illumRadiusM: r.starshell.illum_radius_m, durationS: r.starshell.duration_s, cooldownS: r.starshell.cooldown_s },
   };

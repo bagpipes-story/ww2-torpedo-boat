@@ -13,6 +13,8 @@ import { friendlyParamsFromData, isFriendlyFireDataRecord, type FriendlyParams }
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAircraftEventRecord, isSeaplaneDataRecord, seaplaneParamsFromData, type SeaplaneParams } from '../core/seaplane-data';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
+import { bargeParamsFromData, isBargeDataRecord, type BargeParams } from '../core/barge-data';
+import { gunBatteryParamsFromData, isGunBatteryDataRecord, type GunBatteryParams } from '../core/gun-battery';
 import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
 import { groundingParamsFromData, isGroundingDataRecord, type GroundingParams } from '../core/shallows';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
@@ -138,6 +140,24 @@ export function getSeaplaneParams(data: GameData, mission: PrototypeMission, tim
   return seaplaneParamsFromData(plane, ev, timeScale, boat);
 }
 
+/** enemies.json の大発と任務の barges（docs/02 §6.4、v0.4.2）。任務に barges が無ければ null。値が欠けていれば例外 */
+export function getBargeParams(data: GameData, mission: PrototypeMission): BargeParams | null {
+  if (!mission.barges) return null;
+  const rec = data.enemies.enemies.find((e) => e.id === mission.enemyId);
+  if (!rec || !isBargeDataRecord(rec)) throw new Error(`enemies.json の ${mission.enemyId} に大発の値（length_m / speed_* / detection / evasion.beach_fan_deg / guns 1 種）が無い（docs/02 §6.4）`);
+  const w = data.hitRateModel.world;
+  return bargeParamsFromData(rec, mission.barges, mission.enemyCount, { hitScale: w.hit_scale, spriteScale: w.sprite_scale, timeScale: w.time_scale }, mission.bounds, data.hitRateModel.visibility.detect_hold_s);
+}
+
+/** boats.json の gun_battery（艇の砲。v0.4.2）。主兵装が guns の任務だけ（それ以外は null）。無ければ例外 */
+export function getGunBatteryParams(data: GameData, mission: PrototypeMission): GunBatteryParams | null {
+  if (mission.mainWeapon !== 'guns') return null;
+  const b = data.boats.boats.find((x) => x.id === mission.playerBoatId) as Record<string, unknown> | undefined;
+  const g = b?.['gun_battery'];
+  if (!isGunBatteryDataRecord(g)) throw new Error(`boats.json の ${mission.playerBoatId}.gun_battery（label_ja / range_m / effective_m / dead_cone_deg / muzzle_flash_reveal_m / spread_factor / groups）が無い（docs/02 §6.4）`);
+  return gunBatteryParamsFromData(g);
+}
+
 /** risk_events.json の storm.params と任務の storm（docs/02 §6.8、v0.3.4）。任務に storm が無ければ null。艇の sea_state_limit が無ければ例外 */
 export function getStormParams(data: GameData, mission: PrototypeMission, timeScale: number): StormParams | null {
   if (!mission.storm) return null;
@@ -179,7 +199,7 @@ export function effectiveFuelAllotmentGal(data: GameData, mission: PrototypeMiss
 
 /** scoring.json の配点（docs/02 §6.9）。距離帯の名前が hit_rate_model.kpi_by_range と一致しなければ例外 */
 export function getScoringParams(data: GameData): ScoringParams {
-  if (!isScoringDataRecord(data.scoring)) throw new Error('scoring.json に survival / objective_by_type / hit / fuel が無い（docs/02 §6.9）');
+  if (!isScoringDataRecord(data.scoring)) throw new Error('scoring.json に survival / objective_by_type / hit / fuel / crew / kill が無い（docs/02 §6.9）');
   return scoringParamsFromData(
     data.scoring,
     data.hitRateModel.kpi_by_range.map((b) => b.band),

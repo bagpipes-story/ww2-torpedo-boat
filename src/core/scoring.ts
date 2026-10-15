@@ -1,5 +1,5 @@
 // スコア（docs/02 §6.9、v0.3.1）。Phaser 非依存。配点は data/scoring.json。
-// 合計 = 帰投 + 任務達成（駆逐艦撃沈）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
+// 合計 = 帰投 + 任務達成（駆逐艦撃沈・大発のノルマ）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 撃破（砲で沈めた敵 1 隻ごと。v0.4.2）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -11,6 +11,8 @@ export interface ScoringParams {
   hitBase: number;
   /** 距離帯の名前（hit_rate_model.kpi_by_range の band）→ 倍率 */
   hitRangeMultiplier: Record<string, number>;
+  /** 砲で撃破した敵の id → 1 隻の点（v0.4.2） */
+  killPoints: Record<string, number>;
   fuelMax: number;
   fuelRequiresReturnedAndObjective: boolean;
   crewMax: number;
@@ -23,6 +25,9 @@ export interface ScoreInput {
   missionType: string;
   /** 距離帯ごとの命中（hits は不発を含むので duds を引く） */
   bands: readonly { band: string; hits: number; duds: number }[];
+  /** 砲で撃破した敵の数と id（v0.4.2。無ければ 0 と ''） */
+  kills: number;
+  killEnemyId: string;
   /** 燃料の残り %（0〜100、HUD と同じ ceil） */
   fuelLeftPct: number;
   /** 乗員の生存と定員（定員 0 なら乗員点は無い） */
@@ -34,6 +39,7 @@ export interface ScoreBreakdown {
   survival: number;
   objective: number;
   hits: number;
+  kills: number;
   fuel: number;
   crew: number;
   /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
@@ -41,7 +47,7 @@ export interface ScoreBreakdown {
   total: number;
 }
 
-export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
+export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, kills: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
   const crewHalf = inp.returned && inp.crewTotal > 0 && inp.crewAlive <= Math.floor(inp.crewTotal * p.crewHalfRatio);
   out.crewHalf = crewHalf;
   out.survival = inp.returned ? (crewHalf ? Math.round(p.returnedPoints * p.crewHalfFactor) : p.returnedPoints) : 0;
@@ -56,12 +62,15 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
     hits += effective * Math.round(p.hitBase * mult);
   }
   out.hits = hits;
+  const per = inp.kills > 0 ? p.killPoints[inp.killEnemyId] : 0;
+  if (per === undefined) throw new Error(`scoring.json の kill.points_by_enemy に ${inp.killEnemyId} が無い`);
+  out.kills = inp.kills * per;
   const fuelAllowed = p.fuelRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   const pct = Math.max(0, Math.min(100, inp.fuelLeftPct));
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
   const crewAllowed = p.crewRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   out.crew = crewAllowed && inp.crewTotal > 0 ? Math.round((p.crewMax * Math.max(0, Math.min(inp.crewTotal, inp.crewAlive))) / inp.crewTotal) : 0;
-  out.total = out.survival + out.objective + out.hits + out.fuel + out.crew;
+  out.total = out.survival + out.objective + out.hits + out.kills + out.fuel + out.crew;
   return out;
 }
 
@@ -73,6 +82,7 @@ export interface ScoringDataRecord {
   hit: { base: number; range_multiplier: Record<string, number> };
   fuel: { max: number; requires_returned_and_objective: boolean };
   crew: { max: number; requires_returned_and_objective: boolean };
+  kill: { points_by_enemy: Record<string, number> };
 }
 
 function isFiniteNum(v: unknown): v is number {
@@ -95,7 +105,8 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   if (!f || !isFiniteNum(f['max']) || typeof f['requires_returned_and_objective'] !== 'boolean') return false;
   const c = r['crew'] as Record<string, unknown> | undefined;
   if (!c || !isFiniteNum(c['max']) || (c['max'] as number) < 0 || typeof c['requires_returned_and_objective'] !== 'boolean') return false;
-  return true;
+  const k = (r['kill'] as Record<string, unknown> | undefined)?.['points_by_enemy'] as Record<string, unknown> | undefined;
+  return !!k && typeof k === 'object' && Object.values(k).every((x) => isFiniteNum(x) && x >= 0);
 }
 
 /**
@@ -115,6 +126,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     objectiveByType: objective,
     hitBase: r.hit.base,
     hitRangeMultiplier: { ...r.hit.range_multiplier },
+    killPoints: { ...r.kill.points_by_enemy },
     fuelMax: r.fuel.max,
     fuelRequiresReturnedAndObjective: r.fuel.requires_returned_and_objective,
     crewMax: r.crew.max,

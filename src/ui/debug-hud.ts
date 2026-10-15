@@ -1,7 +1,7 @@
-// デバッグHUD: FPS とビルド番号を画面に常時表示する（CLAUDE.md §3）。
+// デバッグHUD: FPS とビルド番号を画面に常時表示する（CLAUDE.md §3）。描画サイズの行は ?debug のときだけ（v0.4.2: 2 行目の長い文と同じ段で重なる）。
 // §7: 毎フレーム setText しない。FPS は一定間隔で整数化して前回値と違うときだけ、表示サイズは RESIZE イベント時だけ更新する。
 import Phaser from 'phaser';
-import { DEPTH, GAME_WIDTH, HUD_FPS_INTERVAL_MS, HUD_MARGIN } from '../config/game-config';
+import { DEBUG_ENABLED, DEPTH, GAME_WIDTH, HUD_FPS_INTERVAL_MS, HUD_MARGIN } from '../config/game-config';
 import { HUD_DEBUG_LINE_HEIGHT, HUD_FONT_DEBUG_PX, hudTextStyle } from '../config/ui-config';
 
 export interface DebugHudOptions {
@@ -29,8 +29,9 @@ export class DebugHud {
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.hud);
 
-    // 左上2行目: 描画解像度 -> 実表示サイズ(CSS px) @DPR。FIT が効いているか・どの端末かを見るため（上中央のビルド番号と重ならない位置）
-    this.sizeText = scene.add.text(HUD_MARGIN, HUD_MARGIN + HUD_DEBUG_LINE_HEIGHT, '', style).setDepth(DEPTH.hud);
+    // 左上2行目: 描画解像度 -> 実表示サイズ(CSS px) @DPR。FIT が効いているか・どの端末かを見るため（上中央のビルド番号と重ならない位置）。
+    // 上中央の 2 行目（任務の行）と同じ段なので ?debug のときだけ出す（v0.4.2: 大発の任務の長い文の頭に重なった）
+    this.sizeText = scene.add.text(HUD_MARGIN, HUD_MARGIN + HUD_DEBUG_LINE_HEIGHT, '', style).setDepth(DEPTH.hud).setVisible(DEBUG_ENABLED);
 
     this.timer = scene.time.addEvent({
       delay: HUD_FPS_INTERVAL_MS,

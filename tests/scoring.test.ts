@@ -8,7 +8,7 @@ if (!isScoringDataRecord(scoring)) throw new Error('scoring data');
 const P = scoringParamsFromData(scoring, KPI);
 
 function input(over: Partial<ScoreInput>): ScoreInput {
-  return { returned: false, objectiveDone: false, missionType: 'intercept_destroyer', bands: [], fuelLeftPct: 0, crewAlive: 0, crewTotal: 0, ...over };
+  return { returned: false, objectiveDone: false, missionType: 'intercept_destroyer', bands: [], kills: 0, killEnemyId: '', fuelLeftPct: 0, crewAlive: 0, crewTotal: 0, ...over };
 }
 
 describe('スコア（docs/02 §6.9）', () => {
@@ -32,7 +32,7 @@ describe('スコア（docs/02 §6.9）', () => {
   it('計算例（38 gal の模擬値）: 慎重に撃沈して帰投（800-1200yd、40%）= 1190、全速で撃沈して帰投（400-800yd、3%）= 1123、外して帰投 = 700、撃沈して漂流 = 420、撃沈して沈没（≤400yd）= 400', () => {
     expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 40 }), P).total).toBe(1190);
     expect(computeScore(input({ returned: true, objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 3 }), P).total).toBe(1123);
-    expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 700, objective: 0, hits: 0, fuel: 0, crew: 0, crewHalf: false, total: 700 });
+    expect(computeScore(input({ returned: true, fuelLeftPct: 60 }), P)).toEqual({ survival: 700, objective: 0, hits: 0, kills: 0, fuel: 0, crew: 0, crewHalf: false, total: 700 });
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '400-800yd', hits: 1, duds: 0 }], fuelLeftPct: 0 }), P).total).toBe(420);
     expect(computeScore(input({ objectiveDone: true, bands: [{ band: '<=400yd', hits: 1, duds: 0 }], fuelLeftPct: 50 }), P).total).toBe(400);
   });

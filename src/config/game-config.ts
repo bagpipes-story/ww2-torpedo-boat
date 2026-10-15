@@ -62,6 +62,9 @@ function debugSeaplane(): 'none' | 'force' | 'attack' {
 }
 export const DEBUG_SEAPLANE = debugSeaplane();
 export const DEBUG_SEAPLANE_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noplane');
+/** ?debug&mission=us_03: 直行する任務（v0.4.2。v0_1_prototype を持つ任務の id。無ければ us_02）。?debug&barges=near: 大発の任務で隊の先頭の 450 m 西・230 m 北（浅瀬の縁の外、東向き。先頭まで約 500 m）から始める */
+export const DEBUG_MISSION_ID: string = (DEBUG_ENABLED && new URLSearchParams(window.location.search).get('mission')) || 'us_02';
+export const DEBUG_BARGES_NEAR = DEBUG_ENABLED && new URLSearchParams(window.location.search).get('barges') === 'near';
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
@@ -148,4 +151,7 @@ export const TEXTURE_KEYS = {
   stickKnob: 'tex-stick-knob',
   rudderBar: 'tex-rudder-bar',
   rudderMarker: 'tex-rudder-marker',
+  barge: 'tex-barge',
+  gunTracer: 'tex-gun-tracer',
+  coastMarker: 'tex-coast-marker',
 } as const;

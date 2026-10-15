@@ -1,6 +1,6 @@
 {
   "$schema_note": "ミッションの種。史実アンカー（date/place/historical_note/source_url）は historical、構成（objective/enemies/hazards/moon/duration）は design。v0.1 は us_02 を簡略化した1本だけ使う。v0.4.0: playable_from（design）は Title の任務一覧に出す任務と、出撃できるようになる版（docs/03 のロードマップ。v0_1_prototype が無い任務は『準備中 ・ 版』）。briefing_note_ja（historical）は Briefing に出す史実メモで、実在の人物名を出さない（CLAUDE.md §11。historical_note は調査の記録として残し、画面には出さない）。v0_1_prototype.hazards（design）は遊べる世界で実際に起きる危険（risk_events の id）で、Briefing の『危険』と出撃前の港内空襲の有無を決める。",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "campaigns": [
     {
       "id": "us_pt",
@@ -150,7 +150,7 @@
       "type": "barge_hunt",
       "player_boat": "us_elco80",
       "torpedo_type": "us_mk13",
-      "objective": "岸沿いを這う大発を砲で撃破する。魚雷は当たらない（深度不足）。沿岸砲の射界に注意",
+      "objective": "南の岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）",
       "enemies": [
         "daihatsu_barge",
         "daihatsu_barge",
@@ -167,7 +167,69 @@
       "success": "大発3隻以上撃破して帰投",
       "historical_note": "1943年7〜12月、PTは月間44〜55隻の大発を撃破。史実で最も効果のあった任務。",
       "briefing_note_ja": "1943年7〜12月、PTは月間44〜55隻の大発を撃破。史実で最も効果のあった任務。",
-      "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-4.html"
+      "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-4.html",
+      "v0_1_prototype": {
+        "enemies": [
+          "daihatsu_barge",
+          "daihatsu_barge",
+          "daihatsu_barge",
+          "daihatsu_barge"
+        ],
+        "enemy_behavior": "barges (v0.4.2: 2 隻ずつ 2 組が岸沿いを 7 kt で西へ。艇に気づくとすぐ 13mm で撃ち返し、5 秒後に岸へ逃げて上陸。enemies.json の daihatsu_barge と下の barges)",
+        "main_weapon": "guns",
+        "main_weapon_source": "design (v0.4.2。主兵装。guns なら右下の主ボタンが『射撃』（押している間撃つ。boats.json の gun_battery）で、魚雷は積まない（大発は喫水約 1.5 m で Mk 13 の最小深度 2 m の下を抜ける。enemies.json の torpedo_immune）。torpedo_immune の敵がいる任務で guns でなければ起動時に例外。無ければ torpedo（us_02）)",
+        "barges": {
+          "lead_start": { "x_m": 4250, "y_m": 2300, "heading_deg": 270 },
+          "offsets_m": [0, 100, 1500, 1600],
+          "beach_margin_m": 40,
+          "kill_quota": 3,
+          "source": "design (v0.4.2。大発 4 隻は 2 隻ずつ 2 組: 先頭 (4250, 2300) から航路の後ろ（東）へ offsets_m の距離（x 4250/4350 と 5750/5850）。西へ 7 kt（画面上 18.0 m/秒）、200 秒で 3,600 m 進む（西の端に着かない）。航跡は浅瀬の縁（y 2200）から 100 m 内側・岸（y 2500）から 200 m（史実の『岸から 200〜400 yd』）。縁で止まって待てば 100 m 余り横を通り、岸へ逃げても上陸は縁から 260 m（撃てる距離のうち）。出発点から真南へ巡航すると約 17 秒で 1 組目が見え（900 m）、縁に着いたとき（約 26 秒）は約 790 m で巡航でも気づかれない（720 m）。組の間 1,500 m: 1 組目を撃っている間に 2 組目は閃光（1,200 m）に気づかない（模擬で 0%）。1 組目で覚え、2 組目で試す。beach_margin_m 40: 逃げる大発の中心が y 2460 を越えたら上陸。kill_quota 3: 4 隻中 3 隻（1 隻は逃がしてよい）。模擬（scratchpad v042tune、200 夜）: 縁で待ち伏せ・見えたら静音で寄る 成功 100%（HP −19〜−20）、巡航で寄って気づかれ全速で追って撃つ 100%（命中 25%、HP −30）、全速ばかりは燃料切れで 0%。実機 2 回目（『浅瀬の縁からだと遠くて当たらず上陸される』。命中 9%・気づかれた距離 719 m）で航跡を縁から 200 → 100 m（浅瀬 400 → 300 m）に。先頭の位置は縁に着く時刻に合わせる（最初の版 (4300, 2800)・2 回目 (4100, 1800)・3 回目 (4250, 2300)）)"
+        },
+        "coast": {
+          "side": "south",
+          "land_m": 600,
+          "label_ja": "フォン半島",
+          "source": "design (見た目と逃げる向きだけ。海域の南の縁が岸（浜）で、その外に陸を land_m の幅で描く。艇は海域の境界で止まる。v0.4.2 は south だけ)"
+        },
+        "duration_s": 200,
+        "duration_s_source": "design (夜明けまでの実秒。us_02 の 150 秒より長いのは大発が 2 組で、2 組目へ 1,500 m 移るから。最初の版（岸まで 1,900 m）は 180 秒だと迷う遊び方が 2 組目の前に『夜明け近し』になりノルマに届かなかった（模擬で成功 13%）ので 200 秒にした。浅瀬の縁まで 1,500 m（実機 3 回目）の模擬（scratchpad v042tune、200 夜）の帰投: 縁で待ち伏せ 136 秒、見えたら静音で寄る 123 秒、巡航で寄って全速で追う 89 秒)",
+        "fuel_allotment_gal": 30,
+        "fuel_allotment_gal_source": "design (戦闘に使える割当。us_02 の 38 gal と同じ考え方（標準で 2〜4 割残り、全速ばかりだと帰れない）。模擬（scratchpad v042tune、200 夜、帰投時の残り。浅瀬の縁まで 1,500 m）: 縁で待ち伏せ・見えたら静音で寄る 37〜38%、巡航で寄って全速で追う 17%、全速ばかりは燃料切れ（9 割の夜で漂流）。実機 2 回目で『燃費を 10% 良く』→ 33 gal にしたが、同時に岸を 1,000 m に寄せて燃料が制約にならなくなり（帰投時 24〜57%）、3 回目で『30 gal に戻す』)",
+        "shallows": [
+          {
+            "x_m": 0,
+            "y_m": 2200,
+            "width_m": 6000,
+            "height_m": 300,
+            "label_ja": "浅瀬（岸沿い）"
+          }
+        ],
+        "shallows_source": "design (v0.4.2。岸沿いの浅瀬（環礁・砂州。史実の PT も大発を追って座礁した）。海域の幅いっぱい、岸から 300 m（実機 2 回目で 400 → 300 m: 縁から航跡まで 200 m だと、逃げる大発が縁から 360 m 先に上陸し『縁からだと遠くて当たらない』）。安全速力 15 kt（risk_events の grounding.params）を超えて入ると座礁。大発の航跡は縁から 100 m 内側なので、縁で止まって待てば 100 m 余り横を通る。岸へ逃げる大発を追うなら 15 kt 以下で中へ)",
+        "return_point": {
+          "x_m": 3000,
+          "y_m": 300,
+          "radius_m": 250,
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "source": "design (帰投地点＝海側の集合点（北の中央）。出発点の 400 m 北（出発点は輪の外）。2 組目と撃ち合う辺り (4400, 2170) から輪の縁まで約 2,100 m: 巡航 約 35 秒。torpedo_settle_max_s は魚雷を撃たない任務では使わない)"
+        },
+        "hazards": [
+          "enemy_ship_gunfire_or_ram",
+          "grounding"
+        ],
+        "hazards_source": "design (v0.4.2。出会う順: 大発の 13mm（enemy_ship_gunfire_or_ram。label_ja を『敵艦艇の砲撃・衝突』に）、座礁（岸沿いの浅瀬）。沿岸砲（shore_battery）は次の PATCH、敵航空機（enemy_aircraft）は block が無いので来ない。上位の hazards は任務本体の設計なので変えない。tests/briefing.test.ts が block との一致を検査)",
+        "bounds_m": {
+          "width": 6000,
+          "height": 2500,
+          "source": "design (幅 6,000 m・南北 2,500 m。南の縁が岸。出発点から浅瀬の縁まで 1,500 m（巡航で約 26 秒）。最初の版は南北 3,000 m・縁まで 1,900 m（巡航 32 秒）で実機 2 回目に『岸まで長い』→ 2,000 m・1,000 m、3 回目に『近くなりすぎ』→ 2,500 m・1,500 m（出発点・帰投地点は変えず岸を動かした）)"
+        },
+        "player_start": {
+          "x_m": 3000,
+          "y_m": 700,
+          "heading_deg": 180,
+          "source": "design (海側の北中央から南向き・停止で出発。狩り場は南の岸沿い（浅瀬の縁まで 1,500 m）で、大発は東から来る。Briefing の目的に『南の岸沿いを東から西へ』、2 行目の平常に『大発は南の岸沿いを東から』、画面に砂色の矢印『岸 N m』（浅瀬の縁が画面外の間）。v0.4.2 の実機 1 回目で『大発も浅瀬も出てこない』＝南へ行くと分からなかったので足した)"
+        }
+      }
     },
     {
       "id": "us_04",

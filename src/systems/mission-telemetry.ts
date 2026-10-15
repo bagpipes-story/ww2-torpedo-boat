@@ -6,6 +6,8 @@ import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { countHits, summarizeShots } from '../core/hit-rate';
+import { bearingJa } from '../core/briefing';
+import { GUN_FIRING, GUN_SAFE } from '../core/gun-battery';
 import type { InputState } from '../core/input-state';
 import type { MissionEndReason } from '../core/mission-flow';
 import { SP_APPROACH, SP_IDLE, SP_OUT_NONE, bombInAir, seaplaneActive, seaplanePose } from '../core/seaplane';
@@ -13,7 +15,7 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { mpsToKt } from '../core/units';
-import type { MissionResult } from '../scenes/result-scene';
+import type { BargeResult, MissionResult } from '../scenes/result-scene';
 import type { MissionWorld } from './mission-world';
 
 const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
@@ -28,8 +30,8 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     torpedoesLeft: w.torpedoes.capacity,
     hits: 0,
     timeLeftS,
-    enemyDx: w.destroyer.state.x - w.boat.state.x,
-    enemyDy: w.destroyer.state.y - w.boat.state.y,
+    enemyDx: NaN,
+    enemyDy: NaN,
     enemySighted: false,
     playerDetected: false,
     detectRangeM: w.detectRangeM,
@@ -56,7 +58,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     destroyerSunk: false,
     shallowState: 0,
     shallowAheadM: 0,
-    shallowSafeKt: Math.round(mpsToKt(w.grounding.safeSpeedMps)),
+    shallowSafeKt: Math.round(mpsToKt(w.setup.grounding.safeSpeedMps)),
     friendlyPhase: FF_IDLE,
     friendlyLeftS: NaN,
     friendlyPasses: 0,
@@ -84,6 +86,22 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     crewTotal: w.setup.crew.total,
     crewTurnFactor: 1,
     extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS : 0,
+    gunMission: w.hunt !== null,
+    gunStatus: GUN_SAFE,
+    gunFast: false,
+    gunTargetM: 0,
+    gunRangeM: w.setup.guns ? w.setup.guns.rangeM : 0,
+    gunEffectiveM: w.setup.guns ? w.setup.guns.effectiveM : 0,
+    gunSteadyKt: Math.round(mpsToKt(w.params.silentMaxMps)),
+    bargesSunk: 0,
+    bargesBeached: 0,
+    bargesQuota: w.setup.barges ? w.setup.barges.quota : 0,
+    bargesTotal: w.setup.barges ? w.setup.barges.count : 0,
+    bargeEscapeS: NaN,
+    // v0.4.2 の岸は南だけ（mission-data の検査）。「大発は東から」だけでは出発点から南へ 1,900 m 行くことが伝わらなかった（実機）
+    bargeHint: w.setup.barges ? `大発は${bearingJa(180)}の岸沿いを${bearingJa(w.setup.barges.headingDeg + 180)}から` : '',
+    coastDx: NaN,
+    coastDy: NaN,
   };
 }
 
@@ -94,29 +112,27 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
 export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: InputState, zoom: number, timeLeftS: number, callFlags: number): void {
   const s = w.boat.state;
   const d = w.destroyer;
+  const down = w.enemy.shipDown;
   t.speedMps = s.speedMps;
   // 漂流中は舵が効かないので舵バーも 0
   t.rudder = w.fuel.empty ? 0 : turnCommand(input, s, RUDDER_BAR_FULL_DEG);
   t.headingDeg = s.headingDeg;
   t.targetStep = w.band;
   // 沈み始めた後と帰投地点の輪の中では撃てないので残弾 0 を見せる（魚雷ボタンが暗くなる）
-  t.torpedoesLeft = d.sinking || w.atHome ? 0 : w.torpedoes.remaining;
+  t.torpedoesLeft = down || w.atHome ? 0 : w.torpedoes.remaining;
   t.hits = w.hits;
   t.timeLeftS = timeLeftS;
-  if (d.sinking) {
-    t.enemyDx = NaN;
-    t.enemyDy = NaN;
-    t.enemySighted = false;
-  } else {
-    t.enemyDx = d.state.x - s.x;
-    t.enemyDy = d.state.y - s.y;
-    t.enemySighted = t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy <= w.visRange2;
-    d.setSighted(t.enemySighted);
-  }
-  t.playerDetected = d.ai.playerDetected && !d.sinking;
-  t.detectRangeM = w.detectRangeM;
-  t.illuminated = w.enemyFire.illuminated && !d.sinking;
-  t.starLit = (w.enemyFire.state.star.illuminating || w.flareLit) && !d.sinking; // 照明弾（艦の星弾か水上機の照明弾）
+  // 敵の矢印と敵影: 駆逐艦（沈み始めたら無し）か、最も近い浮いている大発（v0.4.2。大発のスプライトの出し入れは barge-hunt）
+  const e = w.enemy.focus(s.x, s.y);
+  t.enemyDx = e ? e.x - s.x : NaN;
+  t.enemyDy = e ? e.y - s.y : NaN;
+  t.enemySighted = e !== null && t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy <= w.visRange2;
+  if (d && !d.sinking) d.setSighted(t.enemySighted);
+  t.playerDetected = w.enemy.detected;
+  // 大発の任務（v0.4.2）は煙幕を大発ごとに掛けるので、全員から隠れているときだけ表示の距離に smoke_factor を掛ける（us_02 は世界の値に込み）
+  t.detectRangeM = w.hunt && w.hiddenBySmoke ? w.detectRangeM * w.vis.smokeFactor : w.detectRangeM;
+  t.illuminated = w.enemy.illuminated;
+  t.starLit = ((w.enemyFire ? w.enemyFire.state.star.illuminating : false) || w.flareLit) && !down; // 照明弾（艦の星弾か水上機の照明弾）
   t.hp = w.damage.hp;
   t.onFire = w.damage.fireLeftS > 0 && w.damage.hp > 0;
   t.engineDamaged = w.damage.engineDamaged;
@@ -129,7 +145,20 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.callFlags = callFlags;
   t.atHome = w.atHome;
   t.homeWaiting = w.atHome && w.torpedoesRunning;
-  t.destroyerSunk = d.sinking;
+  t.destroyerSunk = down;
+  // 「岸 N m」: 浅瀬の縁の真北にいる間だけ（縁を越えたら・岸の無い任務は NaN で出さない）
+  const ey = w.setup.coastEdgeY;
+  t.coastDx = s.y < ey ? 0 : NaN;
+  t.coastDy = s.y < ey ? ey - s.y : NaN;
+  const h = w.hunt;
+  if (h) {
+    t.gunStatus = h.battery.status;
+    t.gunFast = h.battery.fast && h.battery.status === GUN_FIRING;
+    t.gunTargetM = h.battery.targetM;
+    t.bargesSunk = h.flotilla.sunk;
+    t.bargesBeached = h.flotilla.beached;
+    t.bargeEscapeS = h.flotilla.escapeLeftS;
+  }
   // 浅瀬の警告は世界が毎フレーム更新している（味方機の開始条件も同じ値を読む）
   t.shallowState = w.shallowStatus.state;
   t.shallowAheadM = w.shallowStatus.aheadM;
@@ -181,14 +210,16 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
   const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
   return {
     reason,
-    missionType: w.missionType,
+    missionType: w.setup.mission.type,
     shots: w.shots.slice(),
     bands: summarizeShots(w.shots, data.hitRateModel.kpi_by_range),
     hits: counts.hits - counts.duds,
     duds: counts.duds,
     misses: counts.misses,
     capacity: w.torpedoes.capacity,
-    destroyerSunk: w.destroyer.sinking,
+    destroyerSunk: w.enemy.shipDown,
+    objectiveDone: w.enemy.objectiveDone,
+    hunt: w.hunt ? bargeResult(w) : null,
     returned: reason === 'returned',
     elapsedS,
     seed: w.seed,
@@ -229,5 +260,29 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     seaplaneDodgeS: sp ? sp.ordnance.bombs.map((b) => b.dodgeReactS) : [],
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
+  };
+}
+
+/** 大発掃討の Result の材料（v0.4.2。任務に大発がいるときだけ） */
+function bargeResult(w: MissionWorld): BargeResult {
+  const h = w.hunt!;
+  const f = h.flotilla;
+  const g = h.battery;
+  return {
+    enemyId: w.setup.mission.enemyId,
+    total: h.p.count,
+    sunk: f.sunk,
+    beached: f.beached,
+    quota: h.p.quota,
+    shots: g.shots,
+    hits: g.hits,
+    firstShotM: g.firstShotM,
+    firstShotBand: g.firstShotBand,
+    firstDetectM: f.firstDetectM,
+    flashFirst: f.flashFirst,
+    killMinM: h.killMinM,
+    killMaxM: h.killMaxM,
+    mgHits: f.hitsOnBoat,
+    mgDamage: f.hitsOnBoat * h.p.gunHit.damage,
   };
 }

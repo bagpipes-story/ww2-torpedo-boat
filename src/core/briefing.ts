@@ -1,6 +1,7 @@
 // 任務一覧（Title）と Briefing の文（docs/02 §4、v0.4.0）。Phaser 非依存。data の文と数値から組む（確保は画面を作るときだけ）。
 // 史実メモは表示専用の briefing_note_ja だけを使い、調査の記録 historical_note は画面に出さない（CLAUDE.md §11: 実在の人物を出さない）。
 import { RAID_EVENT_ID } from './sortie';
+import { wrapDeg360 } from './units';
 import type { MoonPhase } from './visibility';
 
 export const MENU_STATUS_PLAYABLE = '出撃準備 →';
@@ -101,6 +102,11 @@ export function compassJa(x: number, y: number, w: number, h: number): string {
   return COMPASS_JA[Math.round(deg / 45) % 8]!;
 }
 
+/** 方位 deg（北 0・時計回り）の 8 方位。2 行目の「大発は東から」（航路の向き + 180°、v0.4.2） */
+export function bearingJa(deg: number): string {
+  return COMPASS_JA[Math.round(wrapDeg360(deg) / 45) % 8]!;
+}
+
 export interface BriefingText {
   objective: string;
   success: string;
@@ -117,6 +123,8 @@ export interface BriefingNumbers {
   durationS: number;
   fuelGal: number;
   torpedoes: number;
+  /** 主兵装が砲の任務（v0.4.2）は砲の名前（boats.json の gun_battery.label_ja）。魚雷の任務は '' */
+  gunsLabel: string;
   homeX: number;
   homeY: number;
   boundsW: number;
@@ -137,6 +145,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: enemyCountsJa(t.enemyIds, nameOf) },
     { label: '危険', text: hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID]) },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ 魚雷 ${n.torpedoes} 本` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}` },
   ];
 }

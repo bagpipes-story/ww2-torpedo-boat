@@ -131,6 +131,26 @@ export interface BoatTelemetry {
   crewTotal: number;
   crewTurnFactor: number;
   extinguishHoldS: number;
+  /**
+   * 大発掃討（v0.4.2。core/gun-battery の GUN_*）: 主兵装が砲、射撃の状態、速力帯で散っている、撃っている大発までの m（撃っていなければ 0）、射程と「遠い」の m、散らない速力の上限 kt（静音帯）。
+   * 撃破・上陸・ノルマ・隻数、逃げている大発が岸に着くまでの最短の体感秒（逃げていなければ NaN）、平常の行の手がかり「大発は南の岸沿いを東から」（岸の向きと航路の向き + 180° の 8 方位。大発の任務でなければ ''。作るときに 1 回だけ）。
+   * 岸の浅瀬の縁への相対位置 m（「岸 N m」の矢印。縁より海側にいる間だけ、それ以外と岸の無い任務は NaN）
+   */
+  gunMission: boolean;
+  gunStatus: number;
+  gunFast: boolean;
+  gunTargetM: number;
+  gunRangeM: number;
+  gunEffectiveM: number;
+  gunSteadyKt: number;
+  bargesSunk: number;
+  bargesBeached: number;
+  bargesQuota: number;
+  bargesTotal: number;
+  bargeEscapeS: number;
+  bargeHint: string;
+  coastDx: number;
+  coastDy: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

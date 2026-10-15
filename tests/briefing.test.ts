@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission, getRaidParams } from '../src/config/game-data';
 import { enemyNameJa, getBriefingRecord, getMenuEntries, riskLabelJa } from '../src/config/mission-data';
-import { briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
+import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
 import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 
@@ -19,13 +19,13 @@ const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ', 'Ken
 const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
-  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。出撃できるのは us_02 だけで、sub は日付 ・ 場所', () => {
+  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。出撃できるのは us_02 と us_03（v0.4.2）で、sub は日付 ・ 場所', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.campaignName).toBe('米PTキャンペーン');
     expect(menu.entries).toEqual([
       { id: 'us_01', title: 'コレヒドール脱出', sub: '1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）', playable: false, status: '準備中 ・ v0.4.3' },
       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
-      { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: false, status: '準備中 ・ v0.4.2' },
+      { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
     ]);
   });
   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
@@ -46,6 +46,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(() => getMenuEntries(dupOrder)).toThrow();
     const nonePlayable = clone();
     delete byId(nonePlayable, 'us_02')['v0_1_prototype'];
+    delete byId(nonePlayable, 'us_03')['v0_1_prototype'];
     expect(() => getMenuEntries(nonePlayable)).toThrow();
   });
   it('日付: 1942-12-11 → 1942年12月11日、1942-03-11 → 1942年3月11日、1942/12/11 は例外', () => {
@@ -81,6 +82,9 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(compassJa(3000, 3900, 6000, 4000)).toBe('南');
     expect(compassJa(5900, 3900, 6000, 4000)).toBe('南東');
   });
+  it('方位の 8 方角（2 行目の「大発は東から」）: 90 → 東、0 → 北、225 → 南西、−90 → 西', () => {
+    expect([bearingJa(90), bearingJa(0), bearingJa(225), bearingJa(-90)]).toEqual(['東', '北', '南西', '西']);
+  });
   it('us_02 の Briefing: 6 行と史実メモ', () => {
     const rec = getBriefingRecord(gameData, 'us_02');
     expect(rec.titleJa).toBe('東京急行を迎え撃て');
@@ -92,7 +96,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       { label: '成功', text: '帰投。命中はボーナス（帰投地点は北東の青い輪）' },
       { label: '月', text: '半月 ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m' },
       { label: '敵', text: '駆逐艦 ×1' },
-      { label: '危険', text: '暴風、敵艦の砲撃・衝突、敵航空機、座礁、友軍誤射' },
+      { label: '危険', text: '暴風、敵艦艇の砲撃・衝突、敵航空機、座礁、友軍誤射' },
       { label: '条件', text: '夜明けまで 150 秒 ・ 燃料 38 gal ・ 魚雷 4 本' },
     ]);
   });
@@ -125,9 +129,9 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it('data の整合: us_02 の hazards は世界の block に一致し（港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', () => {
-    const m = getPrototypeMission(gameData, 'us_02');
-    const proto = (byId(gameData, 'us_02')['v0_1_prototype'] as Record<string, unknown>);
+  it.each(['us_02', 'us_03'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
+    const m = getPrototypeMission(gameData, id);
+    const proto = (byId(gameData, id)['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];
     const armed = enemyIds.some((id) => {
       const e = gameData.enemies.enemies.find((x) => x.id === id) as unknown as Record<string, unknown>;
