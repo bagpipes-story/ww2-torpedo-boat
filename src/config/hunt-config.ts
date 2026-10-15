@@ -42,13 +42,22 @@ export const COAST_MARKER_TEXT_COLOR = '#d0b878';
 export const BARGE_MARKER_LABEL = '大発';
 /** 浅瀬の中で、安全速力のこの kt 手前から速力の数字を赤にする（見た目だけ。座礁の前に気づけるように） */
 export const SHALLOW_SPEED_WARN_MARGIN_KT = 1;
-/** 沿岸砲（v0.4.3）: 砲台の四角（論理単位 m）、射界の半円の色、砲弾の色、閃光、砲弾のプール */
-export const BATTERY_SIZE_M = 40;
-export const BATTERY_COLOR = 0x3a3028;
-export const BATTERY_BARREL_COLOR = 0x8a8070;
+/** 沿岸砲（v0.4.3）: 砲台の四角（論理単位 m）、射界の半円の色、砲弾の色、閃光、砲弾のプール。
+ * 実機 1 回目「陸の色に紛れて見えない」→ 40 m の暗い茶 → 70 m の赤い四角＋明るい縁＋ラベル「沿岸砲」、射界の線を濃く */
+export const BATTERY_SIZE_M = 70;
+export const BATTERY_COLOR = 0xd0503c;
+export const BATTERY_OUTLINE_COLOR = 0xffd8b0;
+export const BATTERY_OUTLINE_WIDTH = 6;
+export const BATTERY_BARREL_COLOR = 0xffd8b0;
+export const BATTERY_BARREL_WIDTH = 10;
+export const BATTERY_LABEL = '沿岸砲';
+export const BATTERY_LABEL_FONT_PX = 30;
+export const BATTERY_LABEL_COLOR = '#ff8a78';
+/** ラベルを砲台の下（陸側）に離す m */
+export const BATTERY_LABEL_GAP_M = 12;
 export const BATTERY_ARC_COLOR = 0xff6b5a;
-export const BATTERY_ARC_FILL_ALPHA = 0.07;
-export const BATTERY_ARC_LINE_ALPHA = 0.45;
+export const BATTERY_ARC_FILL_ALPHA = 0.1;
+export const BATTERY_ARC_LINE_ALPHA = 0.75;
 export const BATTERY_ARC_LINE_WIDTH = 4;
 export const BATTERY_SHELL_TINT = 0xffb060;
 export const BATTERY_SHELL_POOL_SIZE = 6;

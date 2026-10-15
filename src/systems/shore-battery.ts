@@ -2,13 +2,21 @@
 // 着弾の水柱は世界の SplashPool（駆逐艦の砲と同じ大きさ）。被害は世界の hitBoat（終了理由 shore_battery）。§7: 砲弾 6 枚と閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { hudTextStyle } from '../config/ui-config';
 import {
   BATTERY_ARC_COLOR,
   BATTERY_ARC_FILL_ALPHA,
   BATTERY_ARC_LINE_ALPHA,
   BATTERY_ARC_LINE_WIDTH,
   BATTERY_BARREL_COLOR,
+  BATTERY_BARREL_WIDTH,
   BATTERY_COLOR,
+  BATTERY_LABEL,
+  BATTERY_LABEL_COLOR,
+  BATTERY_LABEL_FONT_PX,
+  BATTERY_LABEL_GAP_M,
+  BATTERY_OUTLINE_COLOR,
+  BATTERY_OUTLINE_WIDTH,
   BATTERY_FLASH_LIFETIME_S,
   BATTERY_FLASH_SCALE,
   BATTERY_SHELL_POOL_SIZE,
@@ -27,6 +35,7 @@ export class ShoreBattery {
   readonly state: ShoreBatteryState;
   private readonly check: ShoreBatteryCheck;
   private readonly graphics: Phaser.GameObjects.Graphics;
+  private readonly label: Phaser.GameObjects.Text;
   private readonly shellSprites: Phaser.GameObjects.Image[] = [];
   private readonly flash: Phaser.GameObjects.Image;
   private flashAge = Infinity;
@@ -64,11 +73,16 @@ export class ShoreBattery {
     g.beginPath();
     g.arc(p.x, p.y, r, Math.PI, 2 * Math.PI, false);
     g.strokePath();
+    // 砲台: 陸（暗い緑）に紛れない赤い四角＋明るい縁、砲身は海（北）へ。下にラベル（実機 1 回目「見えづらい」）
+    const half = BATTERY_SIZE_M / 2;
     g.fillStyle(BATTERY_COLOR, 1);
-    g.fillRect(p.x - BATTERY_SIZE_M / 2, p.y - BATTERY_SIZE_M / 2, BATTERY_SIZE_M, BATTERY_SIZE_M);
-    g.lineStyle(6, BATTERY_BARREL_COLOR, 1);
+    g.fillRect(p.x - half, p.y - half, BATTERY_SIZE_M, BATTERY_SIZE_M);
+    g.lineStyle(BATTERY_OUTLINE_WIDTH, BATTERY_OUTLINE_COLOR, 1);
+    g.strokeRect(p.x - half, p.y - half, BATTERY_SIZE_M, BATTERY_SIZE_M);
+    g.lineStyle(BATTERY_BARREL_WIDTH, BATTERY_BARREL_COLOR, 1);
     g.lineBetween(p.x, p.y, p.x, p.y - BATTERY_SIZE_M);
     this.graphics = g;
+    this.label = scene.add.text(p.x, p.y + half + BATTERY_LABEL_GAP_M, BATTERY_LABEL, hudTextStyle(BATTERY_LABEL_FONT_PX, BATTERY_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
     for (let i = 0; i < BATTERY_SHELL_POOL_SIZE; i++) this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.shell).setTint(BATTERY_SHELL_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
     this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
   }
@@ -109,6 +123,7 @@ export class ShoreBattery {
 
   destroy(): void {
     this.graphics.destroy();
+    this.label.destroy();
     for (const s of this.shellSprites) s.destroy();
     this.flash.destroy();
   }
