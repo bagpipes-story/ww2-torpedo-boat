@@ -49,6 +49,9 @@ export interface MissionResult {
   misses: number;
   capacity: number;
   destroyerSunk: boolean;
+  /** 駆逐艦の隊（v0.4.5）: 沈み始めた隻数と隻数（駆逐艦のいない任務は 0） */
+  shipsSunk: number;
+  shipsTotal: number;
   /** 帰投地点の輪に入って終わった（生還）。夜明け・漂流・沈没は false */
   returned: boolean;
   elapsedS: number;
@@ -189,7 +192,7 @@ export class ResultScene extends Phaser.Scene {
       this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
       y += size + RESULT_LINE_GAP;
     };
-    line(`任務終了 — ${REASON_LABEL[r.reason]}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(`任務終了 — ${REASON_LABEL[r.reason]}${r.sortie.hard ? '（ハード）' : ''}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     if (h) {
       // 大発掃討（v0.4.2）: 撃破・上陸と、射撃・距離の記録（実機で数値を合わせる根拠）
@@ -218,7 +221,8 @@ export class ResultScene extends Phaser.Scene {
     line(h ? `帰投 ${score.survival} ・ 達成 ${score.objective} ・ 撃破 ${score.kills} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}` : `帰投 ${score.survival} ・ ${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${evadePart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
-    const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`;
+    const ships = r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`;
+    const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : ships;
     line(`${head}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     if (r.raidLine) line(r.raidLine, HUD_FONT_HEADING_PX);
     if (r.escort) line(escortResultLine(r.escort, r.detections, r.destroyerSunk), HUD_FONT_HEADING_PX);
@@ -275,15 +279,16 @@ export class ResultScene extends Phaser.Scene {
   private leave(missionId: string | null): void {
     if (this.leaving) return;
     this.leaving = true;
+    const r = this.result!;
     if (missionId === null) {
       this.scene.start(SCENE_KEYS.title);
       return;
     }
     if (DEBUG_DIRECT_MISSION) {
-      this.scene.start(SCENE_KEYS.mission, directSortie(missionId, sortieSeed(), DEBUG_RAID_OVERRIDE));
+      this.scene.start(SCENE_KEYS.mission, directSortie(missionId, sortieSeed(), DEBUG_RAID_OVERRIDE, r.sortie.hard));
       return;
     }
-    const init: BriefingInit = { missionId, seed: sortieSeed() };
+    const init: BriefingInit = { missionId, seed: sortieSeed(), hard: r.sortie.hard };
     this.registry.set(REGISTRY_KEY_PENDING_SORTIE, init);
     this.scene.start(SCENE_KEYS.briefing, init);
   }

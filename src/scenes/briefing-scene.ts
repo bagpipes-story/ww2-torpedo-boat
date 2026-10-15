@@ -81,6 +81,8 @@ export class BriefingScene extends Phaser.Scene {
   sortie!: Sortie;
   private missionId = PROTOTYPE_MISSION_ID;
   private seed = 0;
+  /** 難易度ハード（v0.4.5。Title から） */
+  private hard = false;
   private raid: RaidParams | null = null;
   /** 2 択（[分散, 残る]。空襲の夜だけ） */
   private options: MenuButton[] = [];
@@ -99,9 +101,11 @@ export class BriefingScene extends Phaser.Scene {
     if (isBriefingInit(d)) {
       this.missionId = d.missionId;
       this.seed = d.seed;
+      this.hard = d.hard;
     } else {
       this.missionId = PROTOTYPE_MISSION_ID;
       this.seed = sortieSeed();
+      this.hard = false;
     }
     this.options = [];
     this.go = undefined;
@@ -115,14 +119,14 @@ export class BriefingScene extends Phaser.Scene {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const id = this.missionId;
     // Mission と同じ組み立て（?debug の上書き込み）。空襲の有無と強さもここから
-    const setup = buildWorldSetup(data, id, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF);
+    const setup = buildWorldSetup(data, id, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF, null, false, false, false, this.hard);
     const p = setup.raid;
     this.raid = p;
-    this.sortie = rollRaid(id, this.seed, p, DEBUG_RAID_OVERRIDE);
-    const rec = getBriefingRecord(data, id);
+    this.sortie = rollRaid(id, this.seed, p, DEBUG_RAID_OVERRIDE, this.hard);
+    const rec = getBriefingRecord(data, id, this.hard);
 
     addBuildLabel(this);
-    this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);
+    this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}${this.hard ? ' ・ 難易度 ハード' : ''}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);
     this.add.text(BRIEF_X, BRIEF_TITLE_Y, rec.titleJa, hudTextStyle(BRIEF_TITLE_PX, HUD_COLOR_STRONG)).setDepth(DEPTH.hud);
 
     // 6 行: ラベルと値（値は折り返し、次の行は値の高さぶん下げる）。続けて史実の 1 行

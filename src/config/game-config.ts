@@ -16,6 +16,8 @@ export const REGISTRY_KEY_INPUT = 'inputState';
 export const REGISTRY_KEY_TELEMETRY = 'boatTelemetry';
 /** Registry に置く「Briefing まで進んでまだ出撃していない夜」（BriefingInit。出撃で null）。任務一覧へ戻って同じ任務を選び直しても同じ夜にする（v0.4.0） */
 export const REGISTRY_KEY_PENDING_SORTIE = 'pendingSortie';
+/** Title で選んだ難易度（true＝ハード。v0.4.5）。Title → Briefing → Mission → Result の「もう一度」まで持ち回る。初期値はノーマル */
+export const REGISTRY_KEY_HARD = 'hardMode';
 
 /** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
 export const DPR_CAP = 2;
@@ -65,6 +67,8 @@ export const DEBUG_SEAPLANE_OFF = DEBUG_ENABLED && new URLSearchParams(window.lo
 /** ?debug&mission=us_03: 直行する任務（v0.4.2。v0_1_prototype を持つ任務の id。無ければ us_02）。?debug&barges=near: 大発の任務で隊の先頭の 450 m 西・230 m 北（浅瀬の縁の外、東向き。先頭まで約 500 m）から始める */
 export const DEBUG_MISSION_ID: string = (DEBUG_ENABLED && new URLSearchParams(window.location.search).get('mission')) || 'us_02';
 export const DEBUG_BARGES_NEAR = DEBUG_ENABLED && new URLSearchParams(window.location.search).get('barges') === 'near';
+/** ?debug&hard: 直行の出撃を難易度ハードに（v0.4.5。敵の数が増える。通し（&title）では Title の切り替えが優先） */
+export const DEBUG_HARD = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('hard');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
 export const DEBUG_BATTERY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobattery');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */

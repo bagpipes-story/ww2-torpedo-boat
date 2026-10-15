@@ -22,13 +22,14 @@ export interface RaidParams {
   stayHitFire: boolean;
 }
 
-/** この出撃: 任務、seed、空襲が起きたか、選んだ 2 択、残ったら至近弾を受けるか（空襲の夜だけ意味がある） */
+/** この出撃: 任務、seed、空襲が起きたか、選んだ 2 択、残ったら至近弾を受けるか（空襲の夜だけ意味がある）、難易度ハード（v0.4.5。敵の数が増える） */
 export interface Sortie {
   missionId: string;
   seed: number;
   raid: boolean;
   choice: number;
   stayHit: boolean;
+  hard: boolean;
 }
 
 /** 出撃時の状態（world-setup が data の値に当てる） */
@@ -55,18 +56,18 @@ export function parseRaidOverride(raid: string | null, noraid: boolean): RaidOve
 }
 
 /** 空襲の抽選（§2.1）。choice は RAID_NONE。p が null（任務に空襲が無い）なら空襲なし。上書き・任務に関わらず必ず 2 回引く（seed と選択が同じなら再現する） */
-export function rollRaid(missionId: string, seed: number, p: RaidParams | null, o: RaidOverride = 'none'): Sortie {
+export function rollRaid(missionId: string, seed: number, p: RaidParams | null, o: RaidOverride = 'none', hard: boolean = false): Sortie {
   const rng = new SeededRng((seed + RAID_SEED_OFFSET) >>> 0);
   const u1 = rng.next();
   const u2 = rng.next();
   const raid = p !== null && o !== 'off' && (o === 'none' ? u1 < p.chance : true);
   const stayHit = raid && p !== null && (o === 'hit' ? true : o === 'stay' ? false : u2 < p.stayHitChance);
-  return { missionId, seed: seed >>> 0, raid, choice: RAID_NONE, stayHit };
+  return { missionId, seed: seed >>> 0, raid, choice: RAID_NONE, stayHit, hard };
 }
 
-/** ?debug 直行: disperse → 分散、stay → 残って無傷、hit → 残って至近弾、それ以外は空襲なし（乱数は引かない） */
-export function directSortie(missionId: string, seed: number, o: RaidOverride): Sortie {
-  const s: Sortie = { missionId, seed: seed >>> 0, raid: false, choice: RAID_NONE, stayHit: false };
+/** ?debug 直行: disperse → 分散、stay → 残って無傷、hit → 残って至近弾、それ以外は空襲なし（乱数は引かない）。hard は ?debug&hard（v0.4.5） */
+export function directSortie(missionId: string, seed: number, o: RaidOverride, hard: boolean = false): Sortie {
+  const s: Sortie = { missionId, seed: seed >>> 0, raid: false, choice: RAID_NONE, stayHit: false, hard };
   if (o === 'disperse') {
     s.raid = true;
     s.choice = RAID_DISPERSE;
@@ -102,7 +103,7 @@ function isMissionId(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
 }
 
-/** missionId は空でない文字列、seed は 0〜0xffffffff の整数、raid・stayHit は boolean、choice は 0/1/2 */
+/** missionId は空でない文字列、seed は 0〜0xffffffff の整数、raid・stayHit・hard は boolean、choice は 0/1/2 */
 export function isSortie(v: unknown): v is Sortie {
   if (typeof v !== 'object' || v === null) return false;
   const r = v as Record<string, unknown>;
@@ -111,20 +112,22 @@ export function isSortie(v: unknown): v is Sortie {
     isSeed(r['seed']) &&
     typeof r['raid'] === 'boolean' &&
     typeof r['stayHit'] === 'boolean' &&
+    typeof r['hard'] === 'boolean' &&
     (r['choice'] === RAID_NONE || r['choice'] === RAID_DISPERSE || r['choice'] === RAID_STAY)
   );
 }
 
-/** Briefing に渡すもの（Title の行と Result の「もう一度」が作る） */
+/** Briefing に渡すもの（Title の行と Result の「もう一度」が作る）。hard は難易度（v0.4.5） */
 export interface BriefingInit {
   missionId: string;
   seed: number;
+  hard: boolean;
 }
 
 export function isBriefingInit(v: unknown): v is BriefingInit {
   if (typeof v !== 'object' || v === null) return false;
   const r = v as Record<string, unknown>;
-  return isMissionId(r['missionId']) && isSeed(r['seed']);
+  return isMissionId(r['missionId']) && isSeed(r['seed']) && typeof r['hard'] === 'boolean';
 }
 
 /** 同じ任務の保留（registry）があればその seed、無ければ fresh（選ぶ前に任務一覧へ戻っても同じ夜） */

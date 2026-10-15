@@ -22,7 +22,7 @@ import {
   getTorpedoRecord,
   getVisibilityParams,
   type GameData,
-  getShoreBatteryParams,
+  getShoreBatteryParamsList,
   getEscortParams,
   type PrototypeMission,
 } from '../config/game-data';
@@ -59,9 +59,9 @@ export interface DestroyerSpec {
   boundsMarginM: number;
 }
 
-/** 駆逐艦（us_02）の数値: 出発点・寸法・AI・反撃・魚雷の外れ確定の半径二乗（目標中心からこれより離れて遠ざかれば通過） */
+/** 駆逐艦（us_02）の数値: 出発点（全隻。ハードで増える。v0.4.5）・寸法・AI・反撃・魚雷の外れ確定の半径二乗（目標中心からこれより離れて遠ざかれば通過） */
 export interface DestroyerSetup {
-  start: { x: number; y: number; headingDeg: number };
+  starts: { x: number; y: number; headingDeg: number }[];
   spec: DestroyerSpec;
   shipAi: ShipAiParams;
   gunnery: GunneryParams;
@@ -119,8 +119,11 @@ export interface WorldSetup {
   /** 大発の隊と艇の砲（v0.4.2。任務に barges があるとき）。無ければ null */
   barges: BargeParams | null;
   guns: GunBatteryParams | null;
-  /** 沿岸砲（v0.4.3。任務に shore_battery があるとき。?debug&nobattery で null） */
+  /** 沿岸砲（v0.4.3。任務に shore_battery があるとき。?debug&nobattery で null）。shoreBatteries は全門（v0.4.5。ハードで増える。nobattery なら []） */
   shoreBattery: ShoreBatteryParams | null;
+  shoreBatteries: ShoreBatteryParams[];
+  /** 難易度ハード（v0.4.5） */
+  hard: boolean;
   /** 僚艇（v0.4.4。任務に escort があるとき。駆逐艦の任務だけ） */
   escort: EscortParams | null;
   torpedoCapacity: number;
@@ -135,16 +138,17 @@ export interface WorldSetup {
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false, debugBargesNear: boolean = false, debugBatteryOff: boolean = false): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false, debugBargesNear: boolean = false, debugBatteryOff: boolean = false, hard: boolean = false): WorldSetup {
   if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
+  if (sortie && sortie.hard !== hard) throw new Error(`出撃の難易度（${sortie.hard ? 'ハード' : 'ノーマル'}）と引数が違う`);
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
   const feel = data.hitRateModel.feel;
-  const mission = getPrototypeMission(data, missionId);
+  const mission = getPrototypeMission(data, missionId, hard);
   const boatRecord = getBoatRecord(data, mission.playerBoatId);
   const torpedoRecord = getTorpedoRecord(data, mission.torpedoId);
   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から
-  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStart, mission.enemyId, mission.enemyHitsToSink) : null;
+  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink) : null;
   const barges = getBargeParams(data, mission);
   const guns = getGunBatteryParams(data, mission);
 
@@ -191,7 +195,9 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     destroyer,
     barges,
     guns,
-    shoreBattery: debugBatteryOff ? null : getShoreBatteryParams(data, mission),
+    shoreBattery: debugBatteryOff ? null : (getShoreBatteryParamsList(data, mission)[0] ?? null),
+    shoreBatteries: debugBatteryOff ? [] : getShoreBatteryParamsList(data, mission),
+    hard,
     escort: getEscortParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
@@ -212,13 +218,13 @@ function coastEdgeYOf(m: PrototypeMission): number {
 }
 
 /** 駆逐艦の数値（enemies.json の AI・反撃を持つ記録）。v0.4.2 で buildWorldSetup から切り出し（中身は v0.4.1 のまま） */
-function destroyerSetup(data: GameData, start: DestroyerSetup['start'], enemyId: string, hitsOverride: number | null): DestroyerSetup {
+function destroyerSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitsOverride: number | null): DestroyerSetup {
   const world = data.hitRateModel.world;
   const r = getEnemyRecord(data, enemyId);
   const hitLen = r.length_m * world.hit_scale;
   const hitBeam = r.beam_m * world.hit_scale;
   return {
-    start,
+    starts,
     spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale: world.hit_scale, boundsMarginM: (r.length_m * world.sprite_scale) / 2 },
     shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data)),
     gunnery: gunneryParamsFromData(r),

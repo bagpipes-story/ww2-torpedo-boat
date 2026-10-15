@@ -40,6 +40,15 @@ export const TITLE_ROW_STATUS_PX = 24;
 export const TITLE_HINT_Y = 560;
 export const TITLE_HINT_PX = 18;
 export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷（大発は射撃）・ 右上で煙幕';
+/** 難易度の切り替え（v0.4.5。操作の一言の下。タップで ノーマル ⇄ ハード） */
+export const TITLE_DIFF_W = 520;
+export const TITLE_DIFF_H = 88;
+export const TITLE_DIFF_X = (GAME_WIDTH - TITLE_DIFF_W) / 2;
+export const TITLE_DIFF_Y = 596;
+export const TITLE_DIFF_PX = 26;
+export const TITLE_DIFF_NORMAL_JA = '難易度: ノーマル';
+export const TITLE_DIFF_HARD_JA = '難易度: ハード';
+export const TITLE_DIFF_SUB_JA = 'タップで切替 ・ ハードは敵の数が増える';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;

@@ -161,13 +161,18 @@ export function getGunBatteryParams(data: GameData, mission: PrototypeMission): 
   return gunBatteryParamsFromData(g);
 }
 
-/** risk_events.json の shore_battery.params と任務の shore_battery（docs/02 §6.8、v0.4.3）。任務に無ければ null。params が無ければ例外 */
+/** risk_events.json の shore_battery.params と任務の shore_battery（docs/02 §6.8、v0.4.3）。任務に無ければ null。params が無ければ例外。1 門目だけ（全門は getShoreBatteryParamsList） */
 export function getShoreBatteryParams(data: GameData, mission: PrototypeMission): ShoreBatteryParams | null {
-  if (!mission.shoreBattery) return null;
+  return getShoreBatteryParamsList(data, mission)[0] ?? null;
+}
+
+/** 沿岸砲の全門（v0.4.5。ハードなら hard.extra_shore_battery_x_m のぶん増える）。任務に無ければ [] */
+export function getShoreBatteryParamsList(data: GameData, mission: PrototypeMission): ShoreBatteryParams[] {
+  if (!mission.shoreBattery) return [];
   const rec = data.riskEvents.events.find((e) => e.id === 'shore_battery') as Record<string, unknown> | undefined;
   const p = rec?.['params'];
   if (!isShoreBatteryDataRecord(p)) throw new Error('risk_events.json の shore_battery に params（gun / base_detect_m / inland_m）が無い（docs/02 §6.8）');
-  return shoreBatteryParamsFromData(p, mission.shoreBattery.xM, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s);
+  return mission.shoreBatteryXs.map((x) => shoreBatteryParamsFromData(p, x, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s));
 }
 
 /** 任務の escort と boats.json の同型艇（docs/02 §6.4、v0.4.4）。任務に escort が無ければ null。艇の運動・HP が欠けていれば例外 */
