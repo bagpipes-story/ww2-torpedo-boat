@@ -31,7 +31,7 @@ import {
 import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
-import { bargeResultLines, seaplaneResultLine } from '../ui/hud-lines';
+import { bargeResultLines, escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
@@ -100,6 +100,9 @@ export interface MissionResult {
   objectiveDone: boolean;
   /** 大発掃討（v0.4.2）の記録。任務に大発がいなければ null */
   hunt: BargeResult | null;
+  /** 僚艇（v0.4.4）の記録。任務に僚艇がいなければ null。detections は駆逐艦に見つかった回数（回避の点の根拠。駆逐艦のいない任務は 0） */
+  escort: EscortResult | null;
+  detections: number;
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;
   /** 「出撃前」の行（空襲の無い任務は空。空なら出さない） */
@@ -129,6 +132,17 @@ export interface BargeResult {
   batteryShots: number;
   batteryHits: number;
   batteryDamage: number;
+}
+
+/** 僚艇の記録（v0.4.4）: 残り HP と最大、被弾数と被害 HP、自艇から最も離れた距離 m、沈んだか（沈んだ実秒） */
+export interface EscortResult {
+  hpLeft: number;
+  hpMax: number;
+  hits: number;
+  damage: number;
+  maxDistM: number;
+  sunk: boolean;
+  sunkAtS: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -195,15 +209,19 @@ export class ResultScene extends Phaser.Scene {
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     const score = computeScore(
-      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : 0, killEnemyId: h ? h.enemyId : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal },
+      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : 0, killEnemyId: h ? h.enemyId : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections },
       scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
-    line(h ? `帰投 ${score.survival} ・ 達成 ${score.objective} ・ 撃破 ${score.kills} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}` : `帰投 ${score.survival} ・ 撃沈 ${score.objective} ・ 命中 ${score.hits} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+    // 回避（v0.4.4）は type に点がある任務（要人脱出）だけ出す
+    const evadePart = scoringParams.evadeByType[r.missionType] !== undefined ? ` ・ 回避 ${score.evade}` : '';
+    line(h ? `帰投 ${score.survival} ・ 達成 ${score.objective} ・ 撃破 ${score.kills} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}` : `帰投 ${score.survival} ・ ${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${evadePart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
-    line(`${h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`;
+    line(`${head}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     if (r.raidLine) line(r.raidLine, HUD_FONT_HEADING_PX);
+    if (r.escort) line(escortResultLine(r.escort, r.detections, r.destroyerSunk), HUD_FONT_HEADING_PX);
     if (r.friendlyEnabled) {
       // 味方機: 来たか、識別までの秒（猶予の調整の根拠）、撃たれた回数
       const n = r.friendlyPasses;

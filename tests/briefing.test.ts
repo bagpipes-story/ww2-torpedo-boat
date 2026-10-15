@@ -19,11 +19,11 @@ const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ', 'Ken
 const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
-  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。出撃できるのは us_02 と us_03（v0.4.2）で、sub は日付 ・ 場所', () => {
+  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。v0.4.4 から 3 件とも出撃できる。sub は日付 ・ 場所', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.campaignName).toBe('米PTキャンペーン');
     expect(menu.entries).toEqual([
-      { id: 'us_01', title: 'コレヒドール脱出', sub: '1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）', playable: false, status: '準備中 ・ v0.4.3' },
+      { id: 'us_01', title: 'コレヒドール脱出', sub: '1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）', playable: true, status: '出撃準備 →' },
       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
       { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
     ]);
@@ -45,6 +45,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     byId(dupOrder, 'us_03')['order'] = 2;
     expect(() => getMenuEntries(dupOrder)).toThrow();
     const nonePlayable = clone();
+    delete byId(nonePlayable, 'us_01')['v0_1_prototype'];
     delete byId(nonePlayable, 'us_02')['v0_1_prototype'];
     delete byId(nonePlayable, 'us_03')['v0_1_prototype'];
     expect(() => getMenuEntries(nonePlayable)).toThrow();
@@ -129,7 +130,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it.each(['us_02', 'us_03'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
+  it.each(['us_01', 'us_02', 'us_03'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
     const m = getPrototypeMission(gameData, id);
     const proto = (byId(gameData, id)['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];

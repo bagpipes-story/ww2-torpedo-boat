@@ -13,6 +13,7 @@ import { friendlyParamsFromData, isFriendlyFireDataRecord, type FriendlyParams }
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAircraftEventRecord, isSeaplaneDataRecord, seaplaneParamsFromData, type SeaplaneParams } from '../core/seaplane-data';
 import { isShoreBatteryDataRecord, shoreBatteryParamsFromData, type ShoreBatteryParams } from '../core/shore-battery';
+import { escortParamsFromData, type EscortParams } from '../core/escort';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { bargeParamsFromData, isBargeDataRecord, type BargeParams } from '../core/barge-data';
 import { gunBatteryParamsFromData, isGunBatteryDataRecord, type GunBatteryParams } from '../core/gun-battery';
@@ -24,6 +25,7 @@ import { crewEffectsFromData, crewParamsFromData, isBoatCrewDataRecord, type Cre
 import { RAID_EVENT_ID, isRaidDataRecord, raidParamsFromData, type RaidParams } from '../core/sortie';
 import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
 import { type MoonPhase, type VisibilityParams } from '../core/visibility';
+import { ktToMps } from '../core/units';
 import { isNum, type PrototypeMission } from './mission-data';
 
 export const gameData = {
@@ -166,6 +168,16 @@ export function getShoreBatteryParams(data: GameData, mission: PrototypeMission)
   const p = rec?.['params'];
   if (!isShoreBatteryDataRecord(p)) throw new Error('risk_events.json の shore_battery に params（gun / base_detect_m / inland_m）が無い（docs/02 §6.8）');
   return shoreBatteryParamsFromData(p, mission.shoreBattery.xM, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s);
+}
+
+/** 任務の escort と boats.json の同型艇（docs/02 §6.4、v0.4.4）。任務に escort が無ければ null。艇の運動・HP が欠けていれば例外 */
+export function getEscortParams(data: GameData, mission: PrototypeMission): EscortParams | null {
+  if (!mission.escort) return null;
+  const b = getBoatRecord(data, mission.escort.boat);
+  const hp = (b as unknown as Record<string, unknown>)['hull_hp'];
+  if (!isNum(hp)) throw new Error(`boats.json の ${mission.escort.boat}.hull_hp が無い（僚艇の HP。docs/02 §6.4）`);
+  const w = data.hitRateModel.world;
+  return escortParamsFromData(mission.escort, { speedMaxMps: ktToMps(b.speed_max_kt), accelMps2: b.accel_mps2, turnRateDegS: b.turn_rate_deg_s, lengthM: b.length_m, beamM: b.beam_m, maxHp: hp }, w.hit_scale, w.sprite_scale);
 }
 
 /** risk_events.json の storm.params と任務の storm（docs/02 §6.8、v0.3.4）。任務に storm が無ければ null。艇の sea_state_limit が無ければ例外 */

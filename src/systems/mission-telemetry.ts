@@ -15,7 +15,8 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { mpsToKt } from '../core/units';
-import type { BargeResult, MissionResult } from '../scenes/result-scene';
+import type { MissionResult } from '../scenes/result-scene';
+import { bargeResult, escortResult } from './mission-result-extras';
 import type { MissionWorld } from './mission-world';
 
 const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
@@ -105,6 +106,12 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     batteryEnabled: w.hunt !== null && w.hunt.shore !== null,
     batteryInArc: false,
     batteryAlerted: false,
+    escortEnabled: w.escort !== null,
+    escortHp: w.escort ? w.escort.state.hp : 0,
+    escortHpMax: w.escort ? w.escort.p.maxHp : 0,
+    escortDistM: 0,
+    escortSunk: false,
+    escortLagWarnM: w.escort ? w.escort.p.lagWarnM : 0,
   };
 }
 
@@ -165,6 +172,13 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.batteryInArc = sb ? sb.inArc : false;
     t.batteryAlerted = sb ? sb.alerted : false;
   }
+  // 僚艇（v0.4.4）: HP・沈没・自艇からの距離（平方根はここの 1 回だけ）
+  const es = w.escort ? w.escort.state : null;
+  if (es) {
+    t.escortHp = es.hp;
+    t.escortSunk = es.sunk;
+    t.escortDistM = Math.sqrt(es.dist2);
+  }
   // 浅瀬の警告は世界が毎フレーム更新している（味方機の開始条件も同じ値を読む）
   t.shallowState = w.shallowStatus.state;
   t.shallowAheadM = w.shallowStatus.aheadM;
@@ -224,8 +238,11 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     misses: counts.misses,
     capacity: w.torpedoes.capacity,
     destroyerSunk: w.enemy.shipDown,
-    objectiveDone: w.enemy.objectiveDone,
+    // 僚艇の任務（v0.4.4）の達成は「帰投して僚艇が生きている」。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
+    objectiveDone: w.escort ? reason === 'returned' && !w.escort.state.sunk : w.enemy.objectiveDone,
     hunt: w.hunt ? bargeResult(w) : null,
+    escort: w.escort ? escortResult(w) : null,
+    detections: w.detect.count,
     returned: reason === 'returned',
     elapsedS,
     seed: w.seed,
@@ -266,34 +283,5 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     seaplaneDodgeS: sp ? sp.ordnance.bombs.map((b) => b.dodgeReactS) : [],
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
-  };
-}
-
-/** 大発掃討の Result の材料（v0.4.2。任務に大発がいるときだけ） */
-function bargeResult(w: MissionWorld): BargeResult {
-  const h = w.hunt!;
-  const f = h.flotilla;
-  const g = h.battery;
-  return {
-    enemyId: w.setup.mission.enemyId,
-    total: h.p.count,
-    sunk: f.sunk,
-    beached: f.beached,
-    quota: h.p.quota,
-    shots: g.shots,
-    hits: g.hits,
-    firstShotM: g.firstShotM,
-    firstShotBand: g.firstShotBand,
-    firstDetectM: f.firstDetectM,
-    flashFirst: f.flashFirst,
-    killMinM: h.killMinM,
-    killMaxM: h.killMaxM,
-    mgHits: f.hitsOnBoat,
-    mgDamage: f.hitsOnBoat * h.p.gunHit.damage,
-    batteryEnabled: h.shore !== null,
-    batteryInArcS: h.shore ? h.shore.state.inArcS : 0,
-    batteryShots: h.shore ? h.shore.state.shots : 0,
-    batteryHits: h.shore ? h.shore.state.hits : 0,
-    batteryDamage: h.shore ? h.shore.state.hits * h.shore.p.hit.damage : 0,
   };
 }

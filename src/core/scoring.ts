@@ -1,5 +1,5 @@
 // スコア（docs/02 §6.9、v0.3.1）。Phaser 非依存。配点は data/scoring.json。
-// 合計 = 帰投 + 任務達成（駆逐艦撃沈・大発のノルマ）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 撃破（砲で沈めた敵 1 隻ごと。v0.4.2）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
+// 合計 = 帰投 + 任務達成（駆逐艦撃沈・大発のノルマ・僚艇の生還）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 撃破（砲で沈めた敵 1 隻ごと。v0.4.2）+ 回避（v0.4.4。帰投して任務達成し、敵に一度も見つからなかったときだけ、任務の type の点）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -13,6 +13,8 @@ export interface ScoringParams {
   hitRangeMultiplier: Record<string, number>;
   /** 砲で撃破した敵の id → 1 隻の点（v0.4.2） */
   killPoints: Record<string, number>;
+  /** 任務の type → 回避の点（v0.4.4。帰投して任務達成し、敵に一度も見つからなかった）。無い type は 0 */
+  evadeByType: Record<string, number>;
   fuelMax: number;
   fuelRequiresReturnedAndObjective: boolean;
   crewMax: number;
@@ -30,6 +32,8 @@ export interface ScoreInput {
   killEnemyId: string;
   /** 燃料の残り %（0〜100、HUD と同じ ceil） */
   fuelLeftPct: number;
+  /** 敵に見つかった回数（v0.4.4。0 なら回避の点）。無ければ 0 */
+  detections?: number;
   /** 乗員の生存と定員（定員 0 なら乗員点は無い） */
   crewAlive: number;
   crewTotal: number;
@@ -40,6 +44,8 @@ export interface ScoreBreakdown {
   objective: number;
   hits: number;
   kills: number;
+  /** 回避（v0.4.4。type に点が無ければ 0） */
+  evade: number;
   fuel: number;
   crew: number;
   /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
@@ -47,7 +53,7 @@ export interface ScoreBreakdown {
   total: number;
 }
 
-export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, kills: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
+export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, kills: 0, evade: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
   const crewHalf = inp.returned && inp.crewTotal > 0 && inp.crewAlive <= Math.floor(inp.crewTotal * p.crewHalfRatio);
   out.crewHalf = crewHalf;
   out.survival = inp.returned ? (crewHalf ? Math.round(p.returnedPoints * p.crewHalfFactor) : p.returnedPoints) : 0;
@@ -65,12 +71,14 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   const per = inp.kills > 0 ? p.killPoints[inp.killEnemyId] : 0;
   if (per === undefined) throw new Error(`scoring.json の kill.points_by_enemy に ${inp.killEnemyId} が無い`);
   out.kills = inp.kills * per;
+  const evade = p.evadeByType[inp.missionType];
+  out.evade = evade !== undefined && inp.returned && inp.objectiveDone && (inp.detections ?? 0) === 0 ? evade : 0;
   const fuelAllowed = p.fuelRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   const pct = Math.max(0, Math.min(100, inp.fuelLeftPct));
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
   const crewAllowed = p.crewRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   out.crew = crewAllowed && inp.crewTotal > 0 ? Math.round((p.crewMax * Math.max(0, Math.min(inp.crewTotal, inp.crewAlive))) / inp.crewTotal) : 0;
-  out.total = out.survival + out.objective + out.hits + out.kills + out.fuel + out.crew;
+  out.total = out.survival + out.objective + out.hits + out.kills + out.evade + out.fuel + out.crew;
   return out;
 }
 
@@ -83,6 +91,7 @@ export interface ScoringDataRecord {
   fuel: { max: number; requires_returned_and_objective: boolean };
   crew: { max: number; requires_returned_and_objective: boolean };
   kill: { points_by_enemy: Record<string, number> };
+  evade: { points_by_type: Record<string, number | string> };
 }
 
 function isFiniteNum(v: unknown): v is number {
@@ -106,7 +115,10 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   const c = r['crew'] as Record<string, unknown> | undefined;
   if (!c || !isFiniteNum(c['max']) || (c['max'] as number) < 0 || typeof c['requires_returned_and_objective'] !== 'boolean') return false;
   const k = (r['kill'] as Record<string, unknown> | undefined)?.['points_by_enemy'] as Record<string, unknown> | undefined;
-  return !!k && typeof k === 'object' && Object.values(k).every((x) => isFiniteNum(x) && x >= 0);
+  if (!k || typeof k !== 'object' || !Object.values(k).every((x) => isFiniteNum(x) && x >= 0)) return false;
+  // 回避（v0.4.4）: type → 点。"source" のような文字列は読み飛ばす
+  const ev = (r['evade'] as Record<string, unknown> | undefined)?.['points_by_type'] as Record<string, unknown> | undefined;
+  return !!ev && typeof ev === 'object' && Object.values(ev).every((x) => typeof x === 'string' || (isFiniteNum(x) && x >= 0));
 }
 
 /**
@@ -116,6 +128,8 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
 export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly string[]): ScoringParams {
   const objective: Record<string, number> = {};
   for (const [k, v] of Object.entries(r.objective_by_type)) if (isFiniteNum(v)) objective[k] = v;
+  const evade: Record<string, number> = {};
+  for (const [k, v] of Object.entries(r.evade.points_by_type)) if (isFiniteNum(v)) evade[k] = v;
   for (const b of kpiBands) {
     if (!isFiniteNum(r.hit.range_multiplier[b])) throw new Error(`scoring.json の hit.range_multiplier に帯 ${b} が無い（hit_rate_model.kpi_by_range と一致させる）`);
   }
@@ -127,6 +141,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     hitBase: r.hit.base,
     hitRangeMultiplier: { ...r.hit.range_multiplier },
     killPoints: { ...r.kill.points_by_enemy },
+    evadeByType: evade,
     fuelMax: r.fuel.max,
     fuelRequiresReturnedAndObjective: r.fuel.requires_returned_and_objective,
     crewMax: r.crew.max,
