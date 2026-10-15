@@ -23,10 +23,12 @@ import {
   getVisibilityParams,
   type GameData,
   getShoreBatteryParams,
+  getEscortParams,
   type PrototypeMission,
 } from '../config/game-data';
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
 import type { ShoreBatteryParams } from '../core/shore-battery';
+import type { EscortParams } from '../core/escort';
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
@@ -119,6 +121,8 @@ export interface WorldSetup {
   guns: GunBatteryParams | null;
   /** 沿岸砲（v0.4.3。任務に shore_battery があるとき。?debug&nobattery で null） */
   shoreBattery: ShoreBatteryParams | null;
+  /** 僚艇（v0.4.4。任務に escort があるとき。駆逐艦の任務だけ） */
+  escort: EscortParams | null;
   torpedoCapacity: number;
   torpedoParams: TorpedoParams;
   torpedoReliability: TorpedoReliability;
@@ -188,6 +192,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     barges,
     guns,
     shoreBattery: debugBatteryOff ? null : getShoreBatteryParams(data, mission),
+    escort: getEscortParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
     torpedoReliability: torpedoReliabilityFromData(torpedoRecord),

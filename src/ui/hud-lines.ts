@@ -1,6 +1,6 @@
 // HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機・敵の水上機・射撃と大発（v0.4.2）の 2 行目、Result の「敵機:」と大発の行。
 // Phaser は使わない（文を組むだけ）。2 行目の文は値が変わったときだけ組む（呼ぶ側がキャッシュする）。
-import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/ui-config';
+import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK } from '../core/mission-flow';
@@ -181,6 +181,34 @@ export function bargeRunLine(t: BoatTelemetry, escapeS: number, shallowStep: num
 export function bargeEventLine(t: BoatTelemetry, kind: number): HudLine {
   if (kind === 1) return { text: `大発 撃破！ ${t.bargesSunk}/${t.bargesQuota}`, color: HOME_COLOR_TEXT };
   return { text: `大発 上陸 ・ 逃げられた（${t.bargesBeached} 隻）`, color: HUD_COLOR_STRONG };
+}
+
+// ---------- 僚艇（要人脱出、v0.4.4） ----------
+
+/** 「僚艇が遅れている」の距離の刻み m */
+export const ESCORT_DISTANCE_STEP_M = 50;
+
+/** 僚艇が沈んだ後（任務失敗。帰投はできる）: 帰投地点までの距離を付ける */
+export function escortLostLine(homeStep: number): HudLine {
+  return { text: `僚艇 沈没 — 要人を失った ・ 帰投せよ ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`, color: HUD_COLOR_WARN };
+}
+
+/** 僚艇が lag_warn_m より離れた（速すぎる・置き去り）。lagStep は ESCORT_DISTANCE_STEP_M 刻みの切り上げ */
+export function escortLagLine(t: BoatTelemetry, lagStep: number, shallowStep: number, stormWarn: boolean): HudLine {
+  return { text: withWarnings(`僚艇が遅れている ${lagStep * ESCORT_DISTANCE_STEP_M} m ・ 減速して待て`, t, shallowStep, stormWarn), color: HUD_COLOR_WARN };
+}
+
+/** 僚艇が撃たれた直後 */
+export function escortHitLine(t: BoatTelemetry): HudLine {
+  return { text: `僚艇 被弾！ HP ${Math.ceil(t.escortHp)} / ${t.escortHpMax} ・ 煙幕か光の外へ`, color: HUD_COLOR_WARN };
+}
+
+/** Result の僚艇の行: 無事（HP・被弾・最大の遅れ）か沈没（秒・被弾）、駆逐艦に見つかった回数（0 なら回避） */
+export function escortResultLine(r: { hpLeft: number; hpMax: number; hits: number; damage: number; maxDistM: number; sunk: boolean; sunkAtS: number }, detections: number, destroyerSunk: boolean): string {
+  const seen = detections === 0 ? '駆逐艦に見つからず' : `駆逐艦に見つかった ${detections} 回${destroyerSunk ? '（撃沈）' : ''}`;
+  if (r.sunk) return `僚艇: 沈没（${Math.round(r.sunkAtS)} 秒 ・ 被弾 ${r.hits} 発）・ ${seen}`;
+  const hit = r.hits > 0 ? `被弾 ${r.hits} 発（HP −${Math.round(r.damage)}）` : '被弾なし';
+  return `僚艇: HP ${Math.ceil(r.hpLeft)} / ${r.hpMax} ・ ${hit} ・ 最大の遅れ ${Math.round(r.maxDistM)} m ・ ${seen}`;
 }
 
 /** Result の大発の 2 行（射撃の記録と、撃破の距離・気づかれた距離・13mm の被弾）。r は result-scene の BargeResult */

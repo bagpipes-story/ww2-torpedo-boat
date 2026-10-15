@@ -5,6 +5,7 @@ import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '
 import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../core/shallows';
 import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data';
+import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
 import { menuEntries, shortLabelJa, type BriefingText, type MenuEntry } from '../core/briefing';
 
@@ -29,6 +30,8 @@ export interface PrototypeMission {
   coast: CoastBlock | null;
   /** 沿岸砲（v0.4.3。岸沿いの位置 m。無ければ null。岸（coast）が要る） */
   shoreBattery: { xM: number } | null;
+  /** 僚艇（v0.4.4。要人脱出。core/escort）。無ければ null。駆逐艦（enemy_start）の任務だけ */
+  escort: EscortMissionBlock | null;
   durationS: number;
   /** プロトタイプ用の沈没本数の上書き。無ければ enemies.json の torpedo_hits_to_sink */
   enemyHitsToSink: number | null;
@@ -153,6 +156,13 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     if (!coast) throw new Error(`${missionId}.v0_1_prototype: 沿岸砲（shore_battery）には岸（coast）が要る`);
     shoreBattery = { xM: sbRaw['x_m'] };
   }
+  // 僚艇（v0.4.4）: 駆逐艦の任務だけ（砲の 2 目標は駆逐艦の砲だけ）。escort_vip の任務には必ず要る
+  const escortRaw = proto['escort'];
+  if (escortRaw !== undefined && !isEscortMissionBlock(escortRaw)) throw new Error(`${missionId}.v0_1_prototype.escort（boat / station_astern_m / station_abeam_m / lag_warn_m / catch_up_gain_per_s / heading_deadband_m / lit_near_leader_m）が欠けている（docs/02 §6.4）`);
+  const escort = escortRaw === undefined ? null : escortRaw;
+  if (escort && barges) throw new Error(`${missionId}.v0_1_prototype: 僚艇（escort）は駆逐艦（enemy_start）の任務だけ`);
+  if (type === 'escort_vip' && !escort) throw new Error(`${missionId}: type が escort_vip なのに v0_1_prototype.escort が無い`);
+  if (escort && !(data.boats.boats as readonly Record<string, unknown>[]).some((x) => x['id'] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat（${escort.boat}）が boats.json に無い`);
   const hazardsRaw = proto['hazards'];
   if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
   const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
@@ -170,6 +180,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     barges,
     coast,
     shoreBattery,
+    escort,
     durationS: proto['duration_s'],
     enemyHitsToSink: isNum(proto['enemy_hits_to_sink']) ? proto['enemy_hits_to_sink'] : null,
     moon,

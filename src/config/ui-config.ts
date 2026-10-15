@@ -38,6 +38,15 @@ export const STICK_FIXED_CENTER_Y = GAME_HEIGHT - HUD_MARGIN - STICK_FIXED_MARGI
 /** 台座のこの倍率の半径内に触れたら台座の中心が原点（固定スティックの直感）。外なら触れた点が原点 */
 export const STICK_GRAB_RATIO = 1.3;
 
+/** 僚艇（v0.4.4）: 自艇と同じ船形に掛ける色（薄い青）、下のラベル、被弾の表示 ms */
+export const ESCORT_TINT = 0x9ad0ff;
+export const ESCORT_TEXT_COLOR = '#9ad0ff';
+export const ESCORT_LABEL = '僚艇';
+export const ESCORT_LABEL_FONT_PX = 22;
+/** ラベルを船体の下（南）に離す m */
+export const ESCORT_LABEL_OFFSET_M = 18;
+export const ESCORT_EVENT_SHOW_MS = 2500;
+
 /** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
 export const HUD_FONT_MISSION_PX = 22;
 /** 3 行目: 敵影（見えているか）と発見状態（docs/02 §6.5）。発見されたら警告色 */

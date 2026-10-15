@@ -15,6 +15,7 @@ import {
 } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
 import { createGunneryState, updateGuns, updateIllumination, type GunneryParams, type GunneryState, type ShellEvents } from '../core/gunnery';
+import { pointIlluminated, updateGunsPair, type GunTarget, type PairShellEvents } from '../core/gunnery-pair';
 import type { SeededRng } from '../core/rng';
 import { radToDeg } from '../core/units';
 import type { SplashPool } from './splash-pool';
@@ -35,6 +36,19 @@ export class EnemyFire {
   private blocked = false;
   private blockedDrawn = false;
   private onHit: ShellHitHandler = () => {};
+  /** 僚艇への命中（v0.4.4。僚艇のいる任務だけ） */
+  private onHitEscort: ShellHitHandler = () => {};
+  /** 2 目標の砲撃の材料（v0.4.4）。起動時に 1 回作り、stepPair で中身だけ書く */
+  private readonly targetA: GunTarget = { state: { x: 0, y: 0, headingDeg: 0, speedMps: 0 }, halfLengthM: 0, halfBeamM: 0, afloat: true, lit: false };
+  private readonly targetB: GunTarget = { state: { x: 0, y: 0, headingDeg: 0, speedMps: 0 }, halfLengthM: 0, halfBeamM: 0, afloat: true, lit: false };
+  private readonly pairEvents: PairShellEvents = {
+    onFire: (gunIndex, x, y) => this.events.onFire(gunIndex, x, y),
+    onImpact: (gunIndex, x, y, target) => {
+      this.splashes.splash(x, y, target >= 0);
+      if (target === 0) this.onHit(gunIndex, x, y);
+      else if (target === 1) this.onHitEscort(gunIndex, x, y);
+    },
+  };
   /** 累計の発砲数（Result の KPI。水上機の照明弾の間の砲撃を数える。v0.4.1） */
   shotsFired = 0;
 
@@ -88,6 +102,10 @@ export class EnemyFire {
     this.onHit = h;
   }
 
+  setEscortHitHandler(h: ShellHitHandler): void {
+    this.onHitEscort = h;
+  }
+
   get illuminated(): boolean {
     return this.state.illuminated;
   }
@@ -113,6 +131,29 @@ export class EnemyFire {
     this.blocked = losBlocked;
     updateIllumination(this.state, ship, player, detected, this.params, realDt, losBlocked, externalLit);
     updateGuns(this.state, ship, player, canFire, playerHalfLengthM, playerHalfBeamM, this.params, this.rng, realDt, dt, this.events);
+  }
+
+  /**
+   * 僚艇のいる任務（v0.4.4）の固定ステップ。探照灯・星弾は自艇で更新し（step と同じ）、砲は自艇と僚艇のうち「照らされていて・射程内で・近い方」を撃つ（core/gunnery-pair）。
+   * 僚艇は探照灯の扇か星弾の中にいるか、自艇が照らされていて自艇から litNearM 以内なら照らされた扱い（escortBlocked=true＝艦と僚艇の線が煙幕に遮られていれば照らされない）
+   */
+  stepPair(dt: number, realDt: number, ship: BoatState, player: BoatState, escort: BoatState, escortAfloat: boolean, detected: boolean, canFire: boolean, playerHalfLengthM: number, playerHalfBeamM: number, escortHalfLengthM: number, escortHalfBeamM: number, litNearM: number, losBlocked: boolean, escortBlocked: boolean, externalLit: boolean = false): void {
+    this.blocked = losBlocked;
+    updateIllumination(this.state, ship, player, detected, this.params, realDt, losBlocked, externalLit);
+    const a = this.targetA;
+    a.state = player;
+    a.halfLengthM = playerHalfLengthM;
+    a.halfBeamM = playerHalfBeamM;
+    a.lit = this.state.illuminated;
+    const b = this.targetB;
+    b.state = escort;
+    b.halfLengthM = escortHalfLengthM;
+    b.halfBeamM = escortHalfBeamM;
+    b.afloat = escortAfloat;
+    const ex = escort.x - player.x;
+    const ey = escort.y - player.y;
+    b.lit = escortAfloat && !escortBlocked && ((a.lit && ex * ex + ey * ey <= litNearM * litNearM) || pointIlluminated(this.state, ship, escort.x, escort.y, this.params));
+    updateGunsPair(this.state, ship, a, b, canFire, this.params, this.rng, realDt, dt, this.pairEvents);
   }
 
   /** 毎フレーム: 探照灯の位置と向き、星弾の減衰、砲弾の位置、閃光のフェード（変わるものだけ触る。水柱は世界の SplashPool） */

@@ -1,6 +1,6 @@
 {
   "$schema_note": "ミッションの種。史実アンカー（date/place/historical_note/source_url）は historical、構成（objective/enemies/hazards/moon/duration）は design。v0.1 は us_02 を簡略化した1本だけ使う。v0.4.0: playable_from（design）は Title の任務一覧に出す任務と、出撃できるようになる版（docs/03 のロードマップ。v0_1_prototype が無い任務は『準備中 ・ 版』）。briefing_note_ja（historical）は Briefing に出す史実メモで、実在の人物名を出さない（CLAUDE.md §11。historical_note は調査の記録として残し、画面には出さない）。v0_1_prototype.hazards（design）は遊べる世界で実際に起きる危険（risk_events の id）で、Briefing の『危険』と出撃前の港内空襲の有無を決める。",
-  "version": "0.4.2",
+  "version": "0.4.4",
   "campaigns": [
     {
       "id": "us_pt",
@@ -20,14 +20,14 @@
       "id": "us_01",
       "campaign": "us_pt",
       "order": 1,
-      "playable_from": "v0.4.3",
+      "playable_from": "v0.4.4",
       "title_ja": "コレヒドール脱出",
       "date": "1942-03-11",
       "place": "コレヒドール→ミンダナオ（フィリピン）",
       "type": "escort_vip",
       "player_boat": "us_elco77",
       "torpedo_type": "us_mk8",
-      "objective": "要人を乗せた僚艇とともに封鎖線を抜け、約560マイル先の帰投ポイントへ。戦闘を避けるほど高得点",
+      "objective": "要人を乗せた僚艇を連れて封鎖線の駆逐艦を避け、北の帰投地点へ。見つからずに抜けるほど高得点",
       "enemies": [
         "ijn_destroyer"
       ],
@@ -37,10 +37,79 @@
       ],
       "moon": "dark",
       "duration_min": 4,
-      "success": "帰投ポイント到達、僚艇生存",
+      "success": "帰投地点到達、僚艇生存",
       "historical_note": "PT-41がマッカーサーを乗せてコレヒドールから脱出（1942/3/11〜13）。PT-32は途中放棄。",
       "briefing_note_ja": "PT-41が要人を乗せてコレヒドールから脱出（1942/3/11〜13）。PT-32は途中放棄。",
-      "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-1.html"
+      "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-1.html",
+      "v0_1_prototype": {
+        "enemies": [
+          "ijn_destroyer"
+        ],
+        "enemy_behavior": "ai (us_02 と同じ: 巡航・雷跡回避・体当たり・端で向き直し。封鎖線＝海域の中央を東西に往復)",
+        "duration_s": 220,
+        "duration_s_source": "design (夜明けまでの実秒。出発点から帰投地点の輪の縁まで 4,750 m: 巡航（23 kt、画面上 59 m/秒）で 81 秒、静音の上限 18 kt で 103 秒、全速で 48 秒。封鎖線の駆逐艦が通り過ぎるのを 1 回待つ（最長 約 80 秒）＋暴風の減速＋サンゴ礁の迂回でも巡航なら届く長さ。待ちすぎると『夜明け近し』)",
+        "fuel_allotment_gal": 40,
+        "fuel_allotment_gal_source": "design (戦闘に使える割当。Elco 77ft は巡航 214・全速 545 gal/h（boats.json）。直線 5,000 m を巡航で 24 gal・静音 18 kt で 20 gal・全速で 36 gal。全速で突っ切ると迂回の分で足りず、巡航で抜けて 4 割残す設計。us_02 の 38 gal と同じ考え方)",
+        "bounds_m": {
+          "width": 6000,
+          "height": 6000,
+          "source": "design (南北 6,000 m の長い航路。出発点 (3000, 5500) から帰投地点 (3000, 500) まで 5,000 m。幅 6,000 m は封鎖線の駆逐艦が東西に往復する長さ（25 kt で約 78 秒で片道）)"
+        },
+        "player_start": {
+          "x_m": 3000,
+          "y_m": 5500,
+          "heading_deg": 0,
+          "source": "design (南の中央から北向き・停止で出発。僚艇は 120 m 後ろの左舷側に付く)"
+        },
+        "enemy_start": {
+          "x_m": 600,
+          "y_m": 3000,
+          "heading_deg": 90,
+          "source": "design (封鎖線: 海域の中央 y 3,000 を西から東へ 25 kt。端 700 m で中央へ向き直すので東西に往復する（v0.2.0 の patrol）。出発から約 37 秒で中央、約 75 秒で東端に着いて折り返す。新月なので発見距離は 巡航 1,200・静音 600・停止 480・全速 1,920 m、自艇の視程 900 m＝巡航で寄ると見えるより先に見つかる。見張り（ズーム）と減速で駆逐艦の位置を読み、通り過ぎた後ろを抜ける)"
+        },
+        "escort": {
+          "boat": "us_elco77",
+          "station_astern_m": 120,
+          "station_abeam_m": -50,
+          "lag_warn_m": 500,
+          "catch_up_gain_per_s": 0.08,
+          "heading_deadband_m": 15,
+          "lit_near_leader_m": 250,
+          "source": "design (v0.4.4。僚艇＝要人を乗せた同型艇（PT-32・34・35 に当たる。boats.json の us_elco77 の速力・旋回・HP 90 を使う）。自艇の 120 m 後ろ・左舷 50 m の定位置（station）に付き、遅れ 1 m あたり 0.08 m/s（画面上）増速して追いつく（100 m 遅れで +8 m/s ≈ +16 kt。全速が上限）。定位置から 15 m 以内なら自艇と同じ針路。lag_warn_m 500: 自艇からこれ以上離れると 2 行目に『僚艇が遅れている』。駆逐艦は自艇と僚艇のうち照らされていて近い方を撃つ（core/gunnery-pair）。僚艇が照らされる条件: 探照灯の扇か星弾の中にいる、または自艇が照らされていて自艇から lit_near_leader_m（250 m）以内（探照灯の扇は 900 m で幅 190 m なので、定位置 130 m の僚艇は扇の外に出やすい。砲手は照らされた艇の隣の艇も見える、という簡略化）。沈めば任務失敗（任務は帰投まで続く）。座礁・暴風の波・体当たりは受けない（v0.4.5 の候補）)"
+        },
+        "shallows": [
+          {
+            "x_m": 2200,
+            "y_m": 1300,
+            "width_m": 1600,
+            "height_m": 600,
+            "label_ja": "サンゴ礁"
+          }
+        ],
+        "shallows_source": "design (v0.4.4。帰投地点の手前のサンゴ礁（ミンダナオ沖）。出発点から帰投地点への直線（x 3,000）を y 1,300〜1,900 で横切る。安全速力 15 kt で通れば約 16 秒、東か西へ 800 m 迂回すれば巡航で約 14 秒の遠回り。僚艇は座礁しない)",
+        "storm": {
+          "sea_state": 5,
+          "depth_m": 800,
+          "drift_kt": 15,
+          "start_south_y_min_m": 3600,
+          "start_south_y_max_m": 4600,
+          "source": "design (v0.4.4。史実: 1942 年 3 月の脱出行は荒天で艇が分散した。帯は幅いっぱい 800 m、15 kt で南へ。始まりの南の縁は出発点（y 5,500）の 900〜1,900 m 北（y 3,600〜4,600。出発点 − 帯の幅 800 m より北が条件）を seed+3 で決める: 出撃直後〜封鎖線の手前で出会う（止まっていても 23〜49 秒で接触）。sea_state 5 は Elco 77ft の限界 4 を超えるので、帯の中で安全速力（risk_events の storm.params）を超えると叩きつけ。僚艇は波の被害を受けない)"
+        },
+        "return_point": {
+          "x_m": 3000,
+          "y_m": 500,
+          "radius_m": 250,
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "source": "design (帰投地点＝北の中央（ミンダナオ側）。出発点から 5,000 m、輪の縁まで 4,750 m。駆逐艦の封鎖線（y 3,000）から 2,250 m。僚艇が生きて輪に入れば任務達成（僚艇は自艇に付いて来るので、自艇が輪に入れば近くにいる）)"
+        },
+        "hazards": [
+          "storm",
+          "enemy_ship_gunfire_or_ram",
+          "grounding"
+        ],
+        "hazards_source": "design (v0.4.4。出会う順: 暴風（出撃直後）、封鎖線の駆逐艦の砲撃・衝突、帰投地点の手前のサンゴ礁。敵航空機・味方機・沿岸砲の block は無い。tests/briefing.test.ts が block との一致を検査)"
+      }
     },
     {
       "id": "us_02",
@@ -179,8 +248,17 @@
         "main_weapon": "guns",
         "main_weapon_source": "design (v0.4.2。主兵装。guns なら右下の主ボタンが『射撃』（押している間撃つ。boats.json の gun_battery）で、魚雷は積まない（大発は喫水約 1.5 m で Mk 13 の最小深度 2 m の下を抜ける。enemies.json の torpedo_immune）。torpedo_immune の敵がいる任務で guns でなければ起動時に例外。無ければ torpedo（us_02）)",
         "barges": {
-          "lead_start": { "x_m": 4250, "y_m": 2300, "heading_deg": 270 },
-          "offsets_m": [0, 100, 1500, 1600],
+          "lead_start": {
+            "x_m": 4250,
+            "y_m": 2300,
+            "heading_deg": 270
+          },
+          "offsets_m": [
+            0,
+            100,
+            1500,
+            1600
+          ],
           "beach_margin_m": 40,
           "kill_quota": 3,
           "source": "design (v0.4.2。大発 4 隻は 2 隻ずつ 2 組: 先頭 (4250, 2300) から航路の後ろ（東）へ offsets_m の距離（x 4250/4350 と 5750/5850）。西へ 7 kt（画面上 18.0 m/秒）、200 秒で 3,600 m 進む（西の端に着かない）。航跡は浅瀬の縁（y 2200）から 100 m 内側・岸（y 2500）から 200 m（史実の『岸から 200〜400 yd』）。縁で止まって待てば 100 m 余り横を通り、岸へ逃げても上陸は縁から 260 m（撃てる距離のうち）。出発点から真南へ巡航すると約 17 秒で 1 組目が見え（900 m）、縁に着いたとき（約 26 秒）は約 790 m で巡航でも気づかれない（720 m）。組の間 1,500 m: 1 組目を撃っている間に 2 組目は閃光（1,200 m）に気づかない（模擬で 0%）。1 組目で覚え、2 組目で試す。beach_margin_m 40: 逃げる大発の中心が y 2460 を越えたら上陸。kill_quota 3: 4 隻中 3 隻（1 隻は逃がしてよい）。模擬（scratchpad v042tune、200 夜）: 縁で待ち伏せ・見えたら静音で寄る 成功 100%（HP −19〜−20）、巡航で寄って気づかれ全速で追って撃つ 100%（命中 25%、HP −30）、全速ばかりは燃料切れで 0%。実機 2 回目（『浅瀬の縁からだと遠くて当たらず上陸される』。命中 9%・気づかれた距離 719 m）で航跡を縁から 200 → 100 m（浅瀬 400 → 300 m）に。先頭の位置は縁に着く時刻に合わせる（最初の版 (4300, 2800)・2 回目 (4100, 1800)・3 回目 (4250, 2300)）)"

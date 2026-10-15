@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { BARGE_EVENT_SHOW_MS } from '../config/hunt-config';
+import { ESCORT_EVENT_SHOW_MS } from '../config/ui-config';
 import {
   HUD_COLOR_STRONG,
   HUD_COLOR_WARN,
@@ -23,7 +24,7 @@ import { CALL_DAWN, CALL_FUEL, topCall } from '../core/mission-flow';
 import { SP_APPROACH } from '../core/seaplane';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { STORM_AHEAD, STORM_INSIDE, STORM_NEAR } from '../core/storm';
-import { DETECT_RANGE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, callLabel, friendlyLine, friendlyResultLine, gunLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine, sightedFast } from './hud-lines';
+import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, callLabel, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine, planeApproaching, planeAttacking, planeLeaving, seaplaneLine, sightedFast } from './hud-lines';
 
 /** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 const MISSION_NORMAL = 0;
@@ -48,6 +49,10 @@ const MISSION_BARGE_EVENT = 14;
 const MISSION_BARGE_SIGHTED = 15;
 /** 16 沿岸砲の射界の中（上のどれでもないとき。射撃・逃走・手引きの行には末尾に付く）。v0.4.3 */
 const MISSION_BATTERY = 16;
+/** 17 僚艇が沈んだ（燃料切れの下）、18 僚艇が撃たれた直後（ESCORT_EVENT_SHOW_MS。座礁の下）、19 僚艇が遅れている（沿岸砲の下・浅瀬の上）。v0.4.4 */
+const MISSION_ESCORT_LOST = 17;
+const MISSION_ESCORT_HIT = 18;
+const MISSION_ESCORT_LAG = 19;
 
 export class MissionLine {
   private readonly missionText: Phaser.GameObjects.Text;
@@ -78,6 +83,10 @@ export class MissionLine {
   private eventUntil = 0;
   private seenSunk = 0;
   private seenBeached = 0;
+  /** 僚艇（v0.4.4）: 前回見た HP と被弾の表示の終わり ms、2 行目のキー（沈没・被弾・HP・遅れの刻み） */
+  private seenEscortHp = -1;
+  private escortHitUntil = 0;
+  private lastEscortKey = -1;
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -95,7 +104,14 @@ export class MissionLine {
       this.seenBeached = t.bargesBeached;
     }
     const event = nowMs < this.eventUntil ? this.eventKind : 0;
-    // 優先順: 魚雷待ち > 燃料切れ > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 帰投せよ > 平常（docs/02 §6.7・§6.8）
+    // 僚艇の被弾（v0.4.4）: HP が減ったら ESCORT_EVENT_SHOW_MS の間「被弾！」（沈んだら「沈没」の行が勝つ）
+    if (t.escortEnabled) {
+      if (this.seenEscortHp >= 0 && t.escortHp < this.seenEscortHp) this.escortHitUntil = nowMs + ESCORT_EVENT_SHOW_MS;
+      this.seenEscortHp = t.escortHp;
+    }
+    const escortHit = t.escortEnabled && !t.escortSunk && nowMs < this.escortHitUntil;
+    const escortLag = t.escortEnabled && !t.escortSunk && t.escortDistM > t.escortLagWarnM;
+    // 優先順: 魚雷待ち > 燃料切れ > 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 帰投せよ > 平常（docs/02 §6.7・§6.8）
     const timeLeft = Math.max(0, Math.ceil(t.timeLeftS));
     const call = topCall(t.callFlags);
     const ffLive = t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE;
@@ -111,12 +127,16 @@ export class MissionLine {
       ? MISSION_WAITING
       : t.fuelEmpty
         ? MISSION_ADRIFT
+        : t.escortEnabled && t.escortSunk
+          ? MISSION_ESCORT_LOST
         : planeAttacking(t)
           ? MISSION_PLANE_ATTACK
           : ffLive
             ? MISSION_FRIENDLY
             : t.shallowState === SHALLOW_GROUNDED
               ? MISSION_SHALLOWS
+              : escortHit
+                ? MISSION_ESCORT_HIT
               : gunLive
                 ? MISSION_GUN
                 : bargeRun
@@ -125,6 +145,8 @@ export class MissionLine {
                     ? MISSION_BARGE_SIGHTED
                     : t.batteryInArc
                       ? MISSION_BATTERY
+                      : escortLag
+                        ? MISSION_ESCORT_LAG
                       : t.shallowState !== 0
                         ? MISSION_SHALLOWS
                       : stormWarn
@@ -162,6 +184,9 @@ export class MissionLine {
     const sightStep = mode === MISSION_BARGE_SIGHTED ? Math.ceil(Math.sqrt(t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy) / TARGET_MARKER_DISTANCE_STEP_M) : 0;
     // 手引きのキー: 気づかれた・速い（減速の合図）・距離の刻み・見つかる距離の刻み（速いときの文に出る）
     const sightKey = mode === MISSION_BARGE_SIGHTED ? 1 | (t.playerDetected ? 2 : 0) | (sightedFast(t) ? 4 : 0) | (sightStep << 3) | (Math.round(t.detectRangeM / DETECT_RANGE_STEP_M) << 9) : 0;
+    // 僚艇のキー（v0.4.4）: 沈没・被弾・HP（整数）・遅れの刻み（遅れの行のときだけ）
+    const lagStep = mode === MISSION_ESCORT_LAG ? Math.ceil(t.escortDistM / ESCORT_DISTANCE_STEP_M) : 0;
+    const escortKey = t.escortEnabled ? 1 | (t.escortSunk ? 2 : 0) | (escortHit ? 4 : 0) | (Math.ceil(t.escortHp) << 3) | (lagStep << 11) : 0;
     // 識別の残り秒は 5,4,3,2,1（0 は出さない）
     const ffLeft = t.friendlyPhase === FF_CHALLENGE ? Math.max(1, Math.ceil(t.friendlyLeftS)) : 0;
     // 距離は輪の縁まで（目盛り・呼びかけ・Result と同じ基準）。切り上げなので輪の外では 0 にならない
@@ -179,6 +204,8 @@ export class MissionLine {
       (planeMode && planeKey !== this.lastPlaneKey) ||
       bargeKey !== this.lastBargeKey ||
       sightKey !== this.lastSightKey ||
+      escortKey !== this.lastEscortKey ||
+      ((mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_LAG) && (homeStep !== this.lastHomeStep || t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       // 暴風のキー: 警告・情報・味方機の行は fast も文に効く。平常の予報は state・向き・距離だけ（fast は文に出ないので見ない）
@@ -205,7 +232,11 @@ export class MissionLine {
       this.lastPlaneKey = planeKey;
       this.lastBargeKey = bargeKey;
       this.lastSightKey = sightKey;
-      if (mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_EVENT || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) {
+      this.lastEscortKey = escortKey;
+      if (mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_HIT || mode === MISSION_ESCORT_LAG) {
+        const l = mode === MISSION_ESCORT_LOST ? escortLostLine(homeStep) : mode === MISSION_ESCORT_HIT ? escortHitLine(t) : escortLagLine(t, lagStep, shallowStep, stormWarn);
+        this.missionText.setText(l.text).setColor(l.color);
+      } else if (mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_EVENT || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) {
         const l =
           mode === MISSION_GUN
             ? gunLine(t, distStep, escapeS, shallowStep)
@@ -250,7 +281,8 @@ export class MissionLine {
         // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば狩り場と来る方角（「大発は南の岸沿いを東から」）
         const forecast = t.stormState === STORM_AHEAD ? ` ・ ${t.stormNorth ? '北' : '南'}に暴風 ${stormStep * STORM_AHEAD_STEP_M} m` : '';
         const hint = t.gunMission && !t.enemySighted && t.bargesSunk + t.bargesBeached < t.bargesTotal ? ` ・ ${t.bargeHint}` : '';
-        const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : `命中 ${t.hits}`;
+        // 僚艇の任務（v0.4.4）は僚艇の HP（命中は後ろ）
+        const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : t.escortEnabled ? `僚艇 HP ${Math.ceil(t.escortHp)} ・ 命中 ${t.hits}` : `命中 ${t.hits}`;
         this.missionText.setText(`夜明けまで ${timeLeft} 秒 ・ ${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
     }

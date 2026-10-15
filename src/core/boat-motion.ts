@@ -155,6 +155,13 @@ export interface BoatTelemetry {
   batteryEnabled: boolean;
   batteryInArc: boolean;
   batteryAlerted: boolean;
+  /** 僚艇（v0.4.4。core/escort）: 任務にいる、HP と最大、自艇からの距離 m（1 フレーム 1 回の平方根）、沈んだ、「遅れている」の距離 m */
+  escortEnabled: boolean;
+  escortHp: number;
+  escortHpMax: number;
+  escortDistM: number;
+  escortSunk: boolean;
+  escortLagWarnM: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

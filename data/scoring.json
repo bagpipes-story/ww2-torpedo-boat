@@ -1,6 +1,6 @@
 {
   "$schema_note": "スコアの配点（docs/02 §6.9）。合計 = 帰投 + 任務達成 + 命中 + 燃料残 + 乗員生存（v0.3.4）。数値はすべて design。距離帯の名前は hit_rate_model.kpi_by_range の band と一致させる（欠けていれば起動時に例外）。",
-  "version": "0.4.2",
+  "version": "0.4.4",
   "survival": {
     "returned": 700,
     "crew_half_ratio": 0.5,
@@ -10,7 +10,8 @@
   "objective_by_type": {
     "intercept_destroyer": 300,
     "barge_hunt": 300,
-    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。v0.4 で任務の type を増やすときはここに足す)"
+    "escort_vip": 300,
+    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す)"
   },
   "hit": {
     "base": 100,
@@ -38,5 +39,11 @@
       "daihatsu_barge": 75
     },
     "source": "design (v0.4.2。砲で撃破した敵 1 隻ごとの点（魚雷の命中点の代わり。距離の倍率は無い）。75: 4 隻撃破して沈んでも 300 + 4 × 75 = 600 で、撃たずに帰投 700 を下回る（100 だと 700 で並ぶ）。3 隻で帰投 700 + 300 + 225 + 燃料 + 乗員 ≈ 1,340、2 隻で帰投 850（ノルマ未達で達成点・燃料点・乗員点なし）、撃たずに帰投 700）"
+  },
+  "evade": {
+    "points_by_type": {
+      "escort_vip": 400
+    },
+    "source": "design (v0.4.4。「戦闘を避けるほど高得点」: 帰投して任務達成し、かつ駆逐艦に一度も見つからなければ付く（見つかった回数 0。煙幕で隠れた後に見失われても 1 回は 1 回）。400 は、新月の視程 900 m（≤1,000 yd）で駆逐艦に 2 本当てても命中点は最大 2 × 150 = 300 なので、魚雷で沈めに行くより避ける方が上になる値。欠けている type は 0)"
   }
 }

@@ -127,6 +127,8 @@
       "turn_rate_deg_s": 24,
       "fuel_hours_cruise": 14,
       "fuel_hours_full": 5.5,
+      "fuel_capacity_gal": 3000,
+      "fuel_idle_ratio": 0.1,
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 12,
@@ -155,13 +157,30 @@
         "extinguish_hold_s": 1.0
       },
       "hull_hp": 90,
+      "damage": {
+       "engine_damage_speed_factor": 0.7,
+       "fire_dps": 2,
+       "fire_duration_s": 20,
+       "casualties_per_hp": 0.1,
+       "crew_effects": {
+        "extinguish_exponent": 1,
+        "turn_rate_per_loss": 0.04,
+        "accel_per_loss": 0.04,
+        "min_factor": 0.5
+       }
+      },
       "hull_circles": 3,
       "sea_state_limit": 4,
       "source": {
         "speed_max_kt": "historical (1941年比較試験 39.7kt持続)",
+        "fuel_capacity_gal": "historical (Elco 77ft も 3,000 gal 級。fuel_hours_cruise 14 h・full 5.5 h から巡航 214・全速 545 gal/h。v0.4.4 で要人脱出（us_01）の艇として使うために追加)",
+        "fuel_idle_ratio": "design (us_elco80 と同じ 0.1)",
+        "hull_hp": "design (90。Elco 80ft の 100 より一回り小さい。v0.4.4: 僚艇（同型）の HP にも使う)",
+        "damage.*": "design (v0.4.4。us_elco80 と同じ値。crew 12 なので casualties_per_hp 0.1 × 90 = 9 名まで死傷し、浮いている限り 3 名以上が残る)",
+        "sea_state_limit": "design (4。us_01 の暴風は sea_state 5 なので、帯の中で安全速力を超えると叩きつけ)",
         "others": "design"
       },
-      "notes": "PT-41（マッカーサー脱出）など MTB Sqn 3 の艇。"
+      "notes": "MTB Sqn 3（フィリピン 1941-42）の艇。v0.4.4 の要人脱出（us_01）で自艇と僚艇に使う。"
     },
     {
       "id": "us_higgins78",
