@@ -2,7 +2,7 @@
 // 任務は撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入ったときに「帰投」で終わる。夜明け（duration_s）で輪の外なら「帰投できず」、燃料 0 で止まれば「漂流」。
 
 /** 終了理由。Result の見出しは result-scene の表で付ける */
-export type MissionEndReason = 'returned' | 'dawn' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'barge_fire';
+export type MissionEndReason = 'returned' | 'dawn' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'barge_fire' | 'shore_battery';
 
 export interface ReturnPoint {
   x: number;

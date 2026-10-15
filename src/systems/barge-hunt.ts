@@ -27,8 +27,10 @@ import { GUN_FIRING, createGunBattery, stepGunBattery, type GunBatteryParams, ty
 import type { HitSpec } from '../core/gunnery';
 import { SeededRng } from '../core/rng';
 import type { ShellState } from '../core/shells';
+import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { SmokeParams, SmokeState } from '../core/smoke';
 import { radToDeg } from '../core/units';
+import { ShoreBattery } from './shore-battery';
 import { SplashPool } from './splash-pool';
 
 /** 固定ステップで世界から読む部分（MissionWorld がそのまま満たす） */
@@ -46,6 +48,8 @@ export interface BargeHuntView {
 export class BargeHunt {
   readonly flotilla: FlotillaState;
   readonly battery: GunBatteryState;
+  /** 沿岸砲（v0.4.3。任務に shore_battery が無ければ null）。乱数は seed+8 */
+  readonly shore: ShoreBattery | null;
   /** KPI: 撃破したときの艇からの距離の最小・最大 m（撃破なしなら NaN） */
   killMinM = NaN;
   killMaxM = NaN;
@@ -80,7 +84,7 @@ export class BargeHunt {
     onFire: () => {},
     onImpact: (x, y, hit) => {
       if (hit) {
-        this.onBoatHit(this.p.gunHit, this.bargeRng, x, y);
+        this.onBoatHit(this.p.gunHit, this.bargeRng, x, y, 'barge_fire');
         // この弾で沈み始めたら、同じステップに着く残りの弾は当たり（被弾数）に数えない
         if (this.view && this.view.boat.sinking) this.check.boatAfloat = false;
       } else this.splashes.splash(x, y, false);
@@ -98,13 +102,16 @@ export class BargeHunt {
     private readonly boat: BoatState,
     boatHalfLengthM: number,
     boatHalfBeamM: number,
-    /** 13mm が艇に当たった（世界が boat-damage で適用。終了理由は barge_fire） */
-    private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number) => void,
+    /** 13mm・沿岸砲が艇に当たった（世界が boat-damage で適用。終了理由は barge_fire / shore_battery） */
+    private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: 'barge_fire' | 'shore_battery') => void,
     /** 大発を撃破した（世界が命中スローと Scene の爆発・揺れ） */
     private readonly onSunk: (x: number, y: number) => void,
+    shore: ShoreBatteryParams | null = null,
+    worldSplashes: SplashPool | null = null,
   ) {
     this.bargeRng = new SeededRng((seed + 6) >>> 0);
     this.gunRng = new SeededRng((seed + 7) >>> 0);
+    this.shore = shore && worldSplashes ? new ShoreBattery(scene, shore, new SeededRng((seed + 8) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, worldSplashes, (spec, rng, x, y) => onBoatHit(spec, rng, x, y, 'shore_battery')) : null;
     this.flotilla = createFlotilla(p, MG_SHELL_POOL_SIZE);
     this.battery = createGunBattery(g, GUN_SHELL_POOL_SIZE);
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true };
@@ -136,6 +143,8 @@ export class BargeHunt {
     c.flashM = this.battery.fired ? this.g.flashRevealM : 0;
     c.boatAfloat = afloat;
     stepFlotilla(this.flotilla, this.p, c, this.bargeRng, feelDt, dt, this.flotillaEvents);
+    // 沿岸砲（v0.4.3）は大発の後: 大発の気づきと、このステップの閃光を読む
+    this.shore?.step(feelDt, dt, c.boatAfloat, w.detectRangeM, w.vis.smokeFactor, w.smoke, w.smokeParams, this.flotilla.anyDetected, c.flashM);
   }
 
   private sink(i: number): void {
@@ -175,6 +184,7 @@ export class BargeHunt {
     if (t) this.ring.setPosition(t.x, t.y);
     if (!!t !== this.ring.visible) this.ring.setVisible(!!t);
     this.splashes.updateVisuals(realDt);
+    this.shore?.updateVisuals(realDt);
   }
 
   destroy(): void {
@@ -184,6 +194,7 @@ export class BargeHunt {
     this.flash.destroy();
     this.ring.destroy();
     this.splashes.destroy();
+    this.shore?.destroy();
   }
 }
 

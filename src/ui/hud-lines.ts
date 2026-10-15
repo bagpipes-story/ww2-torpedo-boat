@@ -52,8 +52,9 @@ export interface HudLine {
   color: string;
 }
 
-/** 攻撃中・識別中に浅瀬・暴風の警告が重なれば後ろに付ける */
-function withWarnings(text: string, t: BoatTelemetry, shallowStep: number, stormWarn: boolean): string {
+/** 攻撃中・識別中に浅瀬・暴風の警告が重なれば後ろに付ける。沿岸砲の射界の中（v0.4.3）はそれより先に付ける */
+function withWarnings(text: string, t: BoatTelemetry, shallowStep: number, stormWarn: boolean, battery: boolean = true): string {
+  if (battery && t.batteryInArc) text = `${text} ・ ${t.batteryAlerted ? '沿岸砲！' : '沿岸砲の射界'}`;
   if (t.shallowState === SHALLOW_APPROACHING) return `${text} ・ 浅瀬 ${shallowStep * SHALLOW_WARN_STEP_M} m 減速`;
   if (t.shallowState === SHALLOW_INSIDE) return `${text} ・ 浅瀬 ${t.shallowSafeKt} kt 以下`;
   if (stormWarn) return `${text} ・ 暴風 ${t.stormSafeKt} kt 以下`;
@@ -165,6 +166,12 @@ export function bargeSightedLine(t: BoatTelemetry, distM: number, shallowStep: n
   return { text: withWarnings(`大発 ${distM} m ・ 気づかれていない ・ 舷側を向け ${t.gunEffectiveM} m で撃て`, t, shallowStep, false), color: HUD_COLOR_STRONG };
 }
 
+/** 沿岸砲の射界の中（撃っていない・大発が見えていないとき。v0.4.3）: 気づかれていなければ射界を出る勧め、撃ってくれば煙幕か離脱 */
+export function batteryLine(t: BoatTelemetry, shallowStep: number): HudLine {
+  if (t.batteryAlerted) return { text: withWarnings('沿岸砲が撃ってくる！ ・ 射界の外へ（北へ）か煙幕', t, shallowStep, false, false), color: HUD_COLOR_WARN };
+  return { text: withWarnings('沿岸砲の射界の中 ・ 気づかれる前に北へ', t, shallowStep, false, false), color: HUD_COLOR_WARN };
+}
+
 /** 大発が岸へ逃げている間（上陸まで N 秒） */
 export function bargeRunLine(t: BoatTelemetry, escapeS: number, shallowStep: number): HudLine {
   return { text: withWarnings(`大発が岸へ逃げる ・ 上陸まで ${escapeS} 秒 ・ ${kills(t)}`, t, shallowStep, false), color: HUD_COLOR_WARN };
@@ -177,10 +184,13 @@ export function bargeEventLine(t: BoatTelemetry, kind: number): HudLine {
 }
 
 /** Result の大発の 2 行（射撃の記録と、撃破の距離・気づかれた距離・13mm の被弾）。r は result-scene の BargeResult */
-export function bargeResultLines(r: { shots: number; hits: number; firstShotM: number; firstShotBand: string; firstDetectM: number; flashFirst: boolean; killMinM: number; killMaxM: number; mgHits: number; mgDamage: number }): string[] {
+export function bargeResultLines(r: { shots: number; hits: number; firstShotM: number; firstShotBand: string; firstDetectM: number; flashFirst: boolean; killMinM: number; killMaxM: number; mgHits: number; mgDamage: number; batteryEnabled: boolean; batteryInArcS: number; batteryShots: number; batteryHits: number; batteryDamage: number }): string[] {
   const band = (STEP_LABEL as Record<string, string>)[r.firstShotBand] ?? '';
   const shot = r.shots === 0 ? '射撃なし' : `射撃 ${r.shots} 発 ・ 命中 ${r.hits}（${Math.round((100 * r.hits) / r.shots)}%）・ 最初の射撃 ${Math.round(r.firstShotM)} m（${band}）`;
   const kill = Number.isNaN(r.killMinM) ? '撃破なし' : r.killMinM === r.killMaxM ? `撃破の距離 ${Math.round(r.killMinM)} m` : `撃破の距離 ${Math.round(r.killMinM)}〜${Math.round(r.killMaxM)} m`;
   const seen = !Number.isNaN(r.firstDetectM) ? `大発に気づかれた距離 ${Math.round(r.firstDetectM)} m` : r.flashFirst ? '撃つまで気づかれず' : '気づかれず';
-  return [shot, `${kill} ・ ${seen} ・ 13mm の被弾 ${r.mgHits} 発（HP −${r.mgDamage}）`];
+  const lines = [shot, `${kill} ・ ${seen} ・ 13mm の被弾 ${r.mgHits} 発（HP −${r.mgDamage}）`];
+  // 沿岸砲（v0.4.3）: 射界に入った秒と砲撃・命中（岸に寄りすぎたかの根拠）
+  if (r.batteryEnabled) lines.push(r.batteryInArcS < 0.5 ? '沿岸砲: 射界に入らず' : `沿岸砲: 射界の中 ${Math.round(r.batteryInArcS)} 秒 ・ 砲撃 ${r.batteryShots} 発 ・ 命中 ${r.batteryHits}（HP −${r.batteryDamage}）`);
+  return lines;
 }

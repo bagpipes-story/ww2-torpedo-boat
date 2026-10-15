@@ -143,6 +143,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     if (m.friendlyAircraft) expected.add('friendly_fire');
     if (m.enemyAircraft) expected.add('enemy_aircraft');
     if (armed) expected.add('enemy_ship_gunfire_or_ram');
+    if (m.shoreBattery) expected.add('shore_battery');
     expect(new Set(m.hazards)).toEqual(expected);
     for (const h of m.hazards) expect(gameData.riskEvents.events.some((e) => e.id === h)).toBe(true);
     for (const id of enemyIds) expect(gameData.enemies.enemies.some((e) => e.id === id)).toBe(true);

@@ -27,6 +27,8 @@ export interface PrototypeMission {
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
   barges: BargeMissionBlock | null;
   coast: CoastBlock | null;
+  /** 沿岸砲（v0.4.3。岸沿いの位置 m。無ければ null。岸（coast）が要る） */
+  shoreBattery: { xM: number } | null;
   durationS: number;
   /** プロトタイプ用の沈没本数の上書き。無ければ enemies.json の torpedo_hits_to_sink */
   enemyHitsToSink: number | null;
@@ -144,6 +146,13 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     coast = { side: 'south', landM: coastRaw['land_m'], label: coastRaw['label_ja'] };
   }
   if (barges && !coast) throw new Error(`${missionId}.v0_1_prototype: 大発の隊（barges）には岸（coast）が要る（逃げる向き）`);
+  const sbRaw = proto['shore_battery'] as Record<string, unknown> | undefined;
+  let shoreBattery: { xM: number } | null = null;
+  if (sbRaw !== undefined) {
+    if (!isNum(sbRaw?.['x_m'])) throw new Error(`${missionId}.v0_1_prototype.shore_battery.x_m（岸沿いの位置 m）が無い（docs/02 §6.8）`);
+    if (!coast) throw new Error(`${missionId}.v0_1_prototype: 沿岸砲（shore_battery）には岸（coast）が要る`);
+    shoreBattery = { xM: sbRaw['x_m'] };
+  }
   const hazardsRaw = proto['hazards'];
   if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
   const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
@@ -160,6 +169,7 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     mainWeapon,
     barges,
     coast,
+    shoreBattery,
     durationS: proto['duration_s'],
     enemyHitsToSink: isNum(proto['enemy_hits_to_sink']) ? proto['enemy_hits_to_sink'] : null,
     moon,

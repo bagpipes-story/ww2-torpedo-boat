@@ -151,6 +151,10 @@ export interface BoatTelemetry {
   bargeHint: string;
   coastDx: number;
   coastDy: number;
+  /** 沿岸砲（v0.4.3）: 任務にある、艇が射界の中、気づかれて撃ってくる */
+  batteryEnabled: boolean;
+  batteryInArc: boolean;
+  batteryAlerted: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

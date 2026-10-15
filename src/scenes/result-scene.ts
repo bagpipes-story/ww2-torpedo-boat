@@ -123,6 +123,12 @@ export interface BargeResult {
   killMaxM: number;
   mgHits: number;
   mgDamage: number;
+  /** 沿岸砲（v0.4.3）: 任務にある、射界の中にいた体感秒、砲撃・命中・被害 HP */
+  batteryEnabled: boolean;
+  batteryInArcS: number;
+  batteryShots: number;
+  batteryHits: number;
+  batteryDamage: number;
 }
 
 const REASON_LABEL: Record<MissionEndReason, string> = {
@@ -136,6 +142,7 @@ const REASON_LABEL: Record<MissionEndReason, string> = {
   storm: '荒波で船体破損・沈没',
   bombed: '敵機の爆撃で沈没',
   barge_fire: '大発の機銃で沈没',
+  shore_battery: '沿岸砲で沈没',
 };
 
 export class ResultScene extends Phaser.Scene {

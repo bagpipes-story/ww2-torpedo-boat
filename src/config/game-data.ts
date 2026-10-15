@@ -12,6 +12,7 @@ import { fuelCurveFromData, isBoatFuelDataRecord, type FuelCurve } from '../core
 import { friendlyParamsFromData, isFriendlyFireDataRecord, type FriendlyParams } from '../core/friendly';
 import { damageParamsFromData, isBoatDamageDataRecord, isEnemyGunneryDataRecord, type DamageParams, type EnemyGunneryDataRecord } from '../core/gunnery';
 import { isEnemyAircraftEventRecord, isSeaplaneDataRecord, seaplaneParamsFromData, type SeaplaneParams } from '../core/seaplane-data';
+import { isShoreBatteryDataRecord, shoreBatteryParamsFromData, type ShoreBatteryParams } from '../core/shore-battery';
 import { isEnemyAiDataRecord, type EnemyAiDataRecord } from '../core/ship-ai';
 import { bargeParamsFromData, isBargeDataRecord, type BargeParams } from '../core/barge-data';
 import { gunBatteryParamsFromData, isGunBatteryDataRecord, type GunBatteryParams } from '../core/gun-battery';
@@ -156,6 +157,15 @@ export function getGunBatteryParams(data: GameData, mission: PrototypeMission): 
   const g = b?.['gun_battery'];
   if (!isGunBatteryDataRecord(g)) throw new Error(`boats.json の ${mission.playerBoatId}.gun_battery（label_ja / range_m / effective_m / dead_cone_deg / muzzle_flash_reveal_m / spread_factor / groups）が無い（docs/02 §6.4）`);
   return gunBatteryParamsFromData(g);
+}
+
+/** risk_events.json の shore_battery.params と任務の shore_battery（docs/02 §6.8、v0.4.3）。任務に無ければ null。params が無ければ例外 */
+export function getShoreBatteryParams(data: GameData, mission: PrototypeMission): ShoreBatteryParams | null {
+  if (!mission.shoreBattery) return null;
+  const rec = data.riskEvents.events.find((e) => e.id === 'shore_battery') as Record<string, unknown> | undefined;
+  const p = rec?.['params'];
+  if (!isShoreBatteryDataRecord(p)) throw new Error('risk_events.json の shore_battery に params（gun / base_detect_m / inland_m）が無い（docs/02 §6.8）');
+  return shoreBatteryParamsFromData(p, mission.shoreBattery.xM, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s);
 }
 
 /** risk_events.json の storm.params と任務の storm（docs/02 §6.8、v0.3.4）。任務に storm が無ければ null。艇の sea_state_limit が無ければ例外 */

@@ -22,9 +22,11 @@ import {
   getTorpedoRecord,
   getVisibilityParams,
   type GameData,
+  getShoreBatteryParams,
   type PrototypeMission,
 } from '../config/game-data';
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
+import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
@@ -115,6 +117,8 @@ export interface WorldSetup {
   /** 大発の隊と艇の砲（v0.4.2。任務に barges があるとき）。無ければ null */
   barges: BargeParams | null;
   guns: GunBatteryParams | null;
+  /** 沿岸砲（v0.4.3。任務に shore_battery があるとき。?debug&nobattery で null） */
+  shoreBattery: ShoreBatteryParams | null;
   torpedoCapacity: number;
   torpedoParams: TorpedoParams;
   torpedoReliability: TorpedoReliability;
@@ -127,7 +131,7 @@ export interface WorldSetup {
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false, debugBargesNear: boolean = false): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false, debugBargesNear: boolean = false, debugBatteryOff: boolean = false): WorldSetup {
   if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
@@ -183,6 +187,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     destroyer,
     barges,
     guns,
+    shoreBattery: debugBatteryOff ? null : getShoreBatteryParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
     torpedoReliability: torpedoReliabilityFromData(torpedoRecord),

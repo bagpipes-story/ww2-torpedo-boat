@@ -150,7 +150,7 @@
       "type": "barge_hunt",
       "player_boat": "us_elco80",
       "torpedo_type": "us_mk13",
-      "objective": "南の岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）",
+      "objective": "南の岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）。沿岸砲の射界に注意",
       "enemies": [
         "daihatsu_barge",
         "daihatsu_barge",
@@ -215,9 +215,14 @@
         },
         "hazards": [
           "enemy_ship_gunfire_or_ram",
+          "shore_battery",
           "grounding"
         ],
-        "hazards_source": "design (v0.4.2。出会う順: 大発の 13mm（enemy_ship_gunfire_or_ram。label_ja を『敵艦艇の砲撃・衝突』に）、座礁（岸沿いの浅瀬）。沿岸砲（shore_battery）は次の PATCH、敵航空機（enemy_aircraft）は block が無いので来ない。上位の hazards は任務本体の設計なので変えない。tests/briefing.test.ts が block との一致を検査)",
+        "hazards_source": "design (v0.4.2。出会う順: 大発の 13mm（enemy_ship_gunfire_or_ram。label_ja を『敵艦艇の砲撃・衝突』に）、沿岸砲（shore_battery。v0.4.3 で下の shore_battery block）、座礁（岸沿いの浅瀬）。敵航空機（enemy_aircraft）は block が無いので来ない。上位の hazards は任務本体の設計なので変えない。tests/briefing.test.ts が block との一致を検査)",
+        "shore_battery": {
+          "x_m": 4600,
+          "source": "design (v0.4.3。岸沿いの位置 m（岸の線から陸側 risk_events の inland_m）。射界は有効射程 900 m の半円＝浅瀬の縁（砲から 390 m 北）では x 3,752〜5,448 m。1 組目（先頭 x 4,250 から西へ）を縁の x 3,000〜3,850 で待つ遊び方は射界の外（縁で東へ寄りすぎると入る）。2 組目（先頭 x 5,750）は出発時から射界の中を西へ進み、約 111 秒で x 3,750 を過ぎて射界を出る。1 組目の後にすぐ東へ寄って撃つと射界の中で砲撃を受ける。模擬（scratchpad v042tune、100 夜、HP の中央値）: 射界を出るまで待つ −18（砲撃 0）、縁で x 3,000 から待ち伏せ −20（砲撃 1.3 発）、見えたら静音で寄って射界の中で撃つ −22（3.1 発）、巡航で寄って全速で追う −55（6.8 発、3% が沈没）、全速ばかり −40。x 5,000 だと丁寧な遊び方には砲撃が来ず、4,300 だと静音で寄っても −36 で重い)"
+        },
         "bounds_m": {
           "width": 6000,
           "height": 2500,

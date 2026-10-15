@@ -102,6 +102,9 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     bargeHint: w.setup.barges ? `大発は${bearingJa(180)}の岸沿いを${bearingJa(w.setup.barges.headingDeg + 180)}から` : '',
     coastDx: NaN,
     coastDy: NaN,
+    batteryEnabled: w.hunt !== null && w.hunt.shore !== null,
+    batteryInArc: false,
+    batteryAlerted: false,
   };
 }
 
@@ -158,6 +161,9 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.bargesSunk = h.flotilla.sunk;
     t.bargesBeached = h.flotilla.beached;
     t.bargeEscapeS = h.flotilla.escapeLeftS;
+    const sb = h.shore ? h.shore.state : null;
+    t.batteryInArc = sb ? sb.inArc : false;
+    t.batteryAlerted = sb ? sb.alerted : false;
   }
   // 浅瀬の警告は世界が毎フレーム更新している（味方機の開始条件も同じ値を読む）
   t.shallowState = w.shallowStatus.state;
@@ -284,5 +290,10 @@ function bargeResult(w: MissionWorld): BargeResult {
     killMaxM: h.killMaxM,
     mgHits: f.hitsOnBoat,
     mgDamage: f.hitsOnBoat * h.p.gunHit.damage,
+    batteryEnabled: h.shore !== null,
+    batteryInArcS: h.shore ? h.shore.state.inArcS : 0,
+    batteryShots: h.shore ? h.shore.state.shots : 0,
+    batteryHits: h.shore ? h.shore.state.hits : 0,
+    batteryDamage: h.shore ? h.shore.state.hits * h.shore.p.hit.damage : 0,
   };
 }
