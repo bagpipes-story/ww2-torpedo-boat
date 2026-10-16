@@ -103,7 +103,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     bargeHint: w.setup.barges ? `大発は${bearingJa(180)}の岸沿いを${bearingJa(w.setup.barges.headingDeg + 180)}から` : '',
     coastDx: NaN,
     coastDy: NaN,
-    batteryEnabled: w.hunt !== null && w.hunt.shore !== null,
+    batteryEnabled: w.hunt !== null && w.hunt.shores.length > 0,
     batteryInArc: false,
     batteryAlerted: false,
     escortEnabled: w.escort !== null,
@@ -112,6 +112,8 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     escortDistM: 0,
     escortSunk: false,
     escortLagWarnM: w.escort ? w.escort.p.lagWarnM : 0,
+    shipsSunk: 0,
+    shipsTotal: w.destroyers ? w.destroyers.total : 0,
   };
 }
 
@@ -121,7 +123,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
  */
 export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: InputState, zoom: number, timeLeftS: number, callFlags: number): void {
   const s = w.boat.state;
-  const d = w.destroyer;
+  const g = w.destroyers;
   const down = w.enemy.shipDown;
   t.speedMps = s.speedMps;
   // 漂流中は舵が効かないので舵バーも 0
@@ -137,12 +139,21 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.enemyDx = e ? e.x - s.x : NaN;
   t.enemyDy = e ? e.y - s.y : NaN;
   t.enemySighted = e !== null && t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy <= w.visRange2;
-  if (d && !d.sinking) d.setSighted(t.enemySighted);
+  // 駆逐艦のスプライトは艦ごとに視程で出し入れ（v0.4.5。1 隻なら最寄り＝その艦）
+  if (g) {
+    for (const d of g.ships) {
+      if (d.sinking) continue;
+      const dx = d.state.x - s.x;
+      const dy = d.state.y - s.y;
+      d.setSighted(dx * dx + dy * dy <= w.visRange2);
+    }
+    t.shipsSunk = g.sunkCount;
+  }
   t.playerDetected = w.enemy.detected;
   // 大発の任務（v0.4.2）は煙幕を大発ごとに掛けるので、全員から隠れているときだけ表示の距離に smoke_factor を掛ける（us_02 は世界の値に込み）
   t.detectRangeM = w.hunt && w.hiddenBySmoke ? w.detectRangeM * w.vis.smokeFactor : w.detectRangeM;
   t.illuminated = w.enemy.illuminated;
-  t.starLit = ((w.enemyFire ? w.enemyFire.state.star.illuminating : false) || w.flareLit) && !down; // 照明弾（艦の星弾か水上機の照明弾）
+  t.starLit = ((g ? g.anyStarLit : false) || w.flareLit) && !down; // 照明弾（艦の星弾か水上機の照明弾）
   t.hp = w.damage.hp;
   t.onFire = w.damage.fireLeftS > 0 && w.damage.hp > 0;
   t.engineDamaged = w.damage.engineDamaged;
@@ -168,9 +179,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.bargesSunk = h.flotilla.sunk;
     t.bargesBeached = h.flotilla.beached;
     t.bargeEscapeS = h.flotilla.escapeLeftS;
-    const sb = h.shore ? h.shore.state : null;
-    t.batteryInArc = sb ? sb.inArc : false;
-    t.batteryAlerted = sb ? sb.alerted : false;
+    t.batteryInArc = h.shoreInArc;
+    t.batteryAlerted = h.shoreAlerted;
   }
   // 僚艇（v0.4.4）: HP・沈没・自艇からの距離（平方根はここの 1 回だけ）
   const es = w.escort ? w.escort.state : null;
@@ -238,6 +248,8 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     misses: counts.misses,
     capacity: w.torpedoes.capacity,
     destroyerSunk: w.enemy.shipDown,
+    shipsSunk: w.destroyers ? w.destroyers.sunkCount : 0,
+    shipsTotal: w.destroyers ? w.destroyers.total : 0,
     // 僚艇の任務（v0.4.4）の達成は「帰投して僚艇が生きている」。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
     objectiveDone: w.escort ? reason === 'returned' && !w.escort.state.sunk : w.enemy.objectiveDone,
     hunt: w.hunt ? bargeResult(w) : null,

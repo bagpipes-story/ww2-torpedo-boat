@@ -78,6 +78,8 @@ export class HudScene extends Phaser.Scene {
   private telemetry!: BoatTelemetry;
   /** Mission が launch で渡す Sortie の任務（v0.4.0） */
   private missionId: string = PROTOTYPE_MISSION_ID;
+  /** 難易度ハード（v0.4.5。出撃から） */
+  private hard = false;
 
   constructor() {
     super(SCENE_KEYS.hud);
@@ -85,6 +87,7 @@ export class HudScene extends Phaser.Scene {
 
   init(data: unknown): void {
     this.missionId = isSortie(data) ? data.missionId : PROTOTYPE_MISSION_ID;
+    this.hard = isSortie(data) ? data.hard : false;
   }
 
   create(): void {
@@ -97,7 +100,7 @@ export class HudScene extends Phaser.Scene {
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     this.telemetry = this.registry.get(REGISTRY_KEY_TELEMETRY) as BoatTelemetry;
     // 1 行目に割当と夜明けを出す（?debug&fuel=…&dawn=… の上書きが効いているかを実機で確かめられる）
-    const mission = getPrototypeMission(data, this.missionId);
+    const mission = getPrototypeMission(data, this.missionId, this.hard);
     const fuelGal = effectiveFuelAllotmentGal(data, mission, DEBUG_FUEL_ALLOTMENT_GAL);
     const dawnS = Number.isFinite(DEBUG_DAWN_S) ? DEBUG_DAWN_S : mission.durationS;
 

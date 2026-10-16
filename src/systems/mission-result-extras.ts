@@ -23,11 +23,11 @@ export function bargeResult(w: MissionWorld): BargeResult {
     killMaxM: h.killMaxM,
     mgHits: f.hitsOnBoat,
     mgDamage: f.hitsOnBoat * h.p.gunHit.damage,
-    batteryEnabled: h.shore !== null,
-    batteryInArcS: h.shore ? h.shore.state.inArcS : 0,
-    batteryShots: h.shore ? h.shore.state.shots : 0,
-    batteryHits: h.shore ? h.shore.state.hits : 0,
-    batteryDamage: h.shore ? h.shore.state.hits * h.shore.p.hit.damage : 0,
+    batteryEnabled: h.shores.length > 0,
+    batteryInArcS: h.shoreInArcS,
+    batteryShots: h.shoreShots,
+    batteryHits: h.shoreHits,
+    batteryDamage: h.shoreDamage,
   };
 }
 

@@ -16,10 +16,17 @@ import {
 } from '../core/torpedo';
 import { pointHitsHull, type Circle } from '../core/torpedo-solver';
 
-/** 魚雷の結果通知。引数はプリミティブのみ（確保しない） */
+/** 魚雷の結果通知。引数はプリミティブのみ（確保しない）。target は当たった艦の添字（v0.4.5） */
 export interface TorpedoEvents {
-  onHit(x: number, y: number, dud: boolean, erratic: boolean, rangeAtLaunchM: number): void;
+  onHit(target: number, x: number, y: number, dud: boolean, erratic: boolean, rangeAtLaunchM: number): void;
   onMiss(erratic: boolean, rangeAtLaunchM: number): void;
+}
+
+/** 魚雷の目標（駆逐艦）: 船体の円、中心、沈み始めた（沈み始めた艦には当たらず、通過の判定にも使わない） */
+export interface TorpedoTarget {
+  readonly circles: Circle[];
+  readonly state: { readonly x: number; readonly y: number };
+  readonly sinking: boolean;
 }
 
 export class TorpedoPool {
@@ -81,9 +88,9 @@ export class TorpedoPool {
 
   /**
    * 固定ステップ。dt は time_scale 込み、realDt は実時間。
-   * hull が null でなければ武装済みの魚雷と船体の命中を判定し、目標（中心 targetX/Y）を通り過ぎた魚雷は外れとして確定する。
+   * 浮いている目標があれば武装済みの魚雷と船体の命中を判定し（当たった艦の添字を通知）、最も近い浮いている目標の中心を通り過ぎた魚雷は外れとして確定する（1 隻なら v0.4.4 までと同じ）。
    */
-  step(dt: number, realDt: number, hull: Circle[] | null, targetX: number, targetY: number, passRadius2: number, events: TorpedoEvents): void {
+  step(dt: number, realDt: number, targets: readonly TorpedoTarget[], passRadius2: number, events: TorpedoEvents): void {
     for (let i = 0; i < this.states.length; i++) {
       const s = this.states[i]!;
       if (!s.active) continue;
@@ -94,14 +101,32 @@ export class TorpedoPool {
         if (!s.resolved) events.onMiss(s.erratic, s.rangeAtLaunchM);
         continue;
       }
-      if (!hull || s.resolved) continue;
-      if (isArmed(s, this.params) && pointHitsHull(s.x, s.y, hull)) {
+      if (s.resolved) continue;
+      let hit = -1;
+      let nearest = -1;
+      let nearestD2 = Infinity;
+      const armed = isArmed(s, this.params);
+      for (let k = 0; k < targets.length; k++) {
+        const t = targets[k]!;
+        if (t.sinking) continue;
+        if (armed && hit < 0 && pointHitsHull(s.x, s.y, t.circles)) hit = k;
+        const dx = s.x - t.state.x;
+        const dy = s.y - t.state.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < nearestD2) {
+          nearestD2 = d2;
+          nearest = k;
+        }
+      }
+      if (nearest < 0) continue;
+      if (hit >= 0) {
         s.active = false;
         s.resolved = true;
-        events.onHit(s.x, s.y, s.dud, s.erratic, s.rangeAtLaunchM);
+        events.onHit(hit, s.x, s.y, s.dud, s.erratic, s.rangeAtLaunchM);
         continue;
       }
-      if (markMissIfPassed(s, this.params, targetX, targetY, passRadius2)) {
+      const n = targets[nearest]!.state;
+      if (markMissIfPassed(s, this.params, n.x, n.y, passRadius2)) {
         events.onMiss(s.erratic, s.rangeAtLaunchM);
       }
     }

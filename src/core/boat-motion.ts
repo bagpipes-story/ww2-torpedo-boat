@@ -162,6 +162,9 @@ export interface BoatTelemetry {
   escortDistM: number;
   escortSunk: boolean;
   escortLagWarnM: number;
+  /** 駆逐艦の隊（v0.4.5）: 沈み始めた隻数と隻数（駆逐艦のいない任務は 0。2 隻以上なら 2 行目に「撃沈 N/M」） */
+  shipsSunk: number;
+  shipsTotal: number;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

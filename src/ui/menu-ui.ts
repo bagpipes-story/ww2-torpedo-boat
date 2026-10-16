@@ -111,6 +111,11 @@ export class MenuButton {
     else this.rect.setStrokeStyle(MENU_STROKE_PX, MENU_FILL_COLOR, MENU_STROKE_ALPHA);
   }
 
+  /** 題を変える（難易度の切り替えなど。変わったときだけ setText。v0.4.5） */
+  setTitle(text: string): void {
+    if (this.titleText.text !== text) this.titleText.setText(text);
+  }
+
   /** 2 行目を変える（作るときに sub を渡したボタンだけ。変わったときだけ setText。center 揃えは空なら題を中央へ） */
   setSub(text: string): void {
     if (!this.subText || this.subText.text === text) return;

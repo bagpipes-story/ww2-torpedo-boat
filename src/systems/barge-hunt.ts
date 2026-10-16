@@ -48,8 +48,8 @@ export interface BargeHuntView {
 export class BargeHunt {
   readonly flotilla: FlotillaState;
   readonly battery: GunBatteryState;
-  /** 沿岸砲（v0.4.3。任務に shore_battery が無ければ null）。乱数は seed+8 */
-  readonly shore: ShoreBattery | null;
+  /** 沿岸砲（v0.4.3。任務に shore_battery が無ければ []。v0.4.5 からハードで 2 門以上）。乱数は seed+8（2 門目は seed+9、…） */
+  readonly shores: ShoreBattery[] = [];
   /** KPI: 撃破したときの艇からの距離の最小・最大 m（撃破なしなら NaN） */
   killMinM = NaN;
   killMaxM = NaN;
@@ -106,12 +106,12 @@ export class BargeHunt {
     private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: 'barge_fire' | 'shore_battery') => void,
     /** 大発を撃破した（世界が命中スローと Scene の爆発・揺れ） */
     private readonly onSunk: (x: number, y: number) => void,
-    shore: ShoreBatteryParams | null = null,
+    shores: readonly ShoreBatteryParams[] = [],
     worldSplashes: SplashPool | null = null,
   ) {
     this.bargeRng = new SeededRng((seed + 6) >>> 0);
     this.gunRng = new SeededRng((seed + 7) >>> 0);
-    this.shore = shore && worldSplashes ? new ShoreBattery(scene, shore, new SeededRng((seed + 8) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, worldSplashes, (spec, rng, x, y) => onBoatHit(spec, rng, x, y, 'shore_battery')) : null;
+    if (worldSplashes) for (let i = 0; i < shores.length; i++) this.shores.push(new ShoreBattery(scene, shores[i]!, new SeededRng((seed + 8 + i) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, worldSplashes, (spec, rng, x, y) => onBoatHit(spec, rng, x, y, 'shore_battery')));
     this.flotilla = createFlotilla(p, MG_SHELL_POOL_SIZE);
     this.battery = createGunBattery(g, GUN_SHELL_POOL_SIZE);
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true };
@@ -144,7 +144,42 @@ export class BargeHunt {
     c.boatAfloat = afloat;
     stepFlotilla(this.flotilla, this.p, c, this.bargeRng, feelDt, dt, this.flotillaEvents);
     // 沿岸砲（v0.4.3）は大発の後: 大発の気づきと、このステップの閃光を読む
-    this.shore?.step(feelDt, dt, c.boatAfloat, w.detectRangeM, w.vis.smokeFactor, w.smoke, w.smokeParams, this.flotilla.anyDetected, c.flashM);
+    for (const sb of this.shores) sb.step(feelDt, dt, c.boatAfloat, w.detectRangeM, w.vis.smokeFactor, w.smoke, w.smokeParams, this.flotilla.anyDetected, c.flashM);
+  }
+
+  /** 沿岸砲のまとめ（HUD・Result。v0.4.5）: どれかの射界の中、どれかが撃ってくる、射界の中にいた体感秒の最大、砲撃・命中・被害の合計 */
+  get shoreInArc(): boolean {
+    for (const sb of this.shores) if (sb.state.inArc) return true;
+    return false;
+  }
+
+  get shoreAlerted(): boolean {
+    for (const sb of this.shores) if (sb.state.alerted) return true;
+    return false;
+  }
+
+  get shoreInArcS(): number {
+    let m = 0;
+    for (const sb of this.shores) if (sb.state.inArcS > m) m = sb.state.inArcS;
+    return m;
+  }
+
+  get shoreShots(): number {
+    let n = 0;
+    for (const sb of this.shores) n += sb.state.shots;
+    return n;
+  }
+
+  get shoreHits(): number {
+    let n = 0;
+    for (const sb of this.shores) n += sb.state.hits;
+    return n;
+  }
+
+  get shoreDamage(): number {
+    let n = 0;
+    for (const sb of this.shores) n += sb.state.hits * sb.p.hit.damage;
+    return n;
   }
 
   private sink(i: number): void {
@@ -184,7 +219,7 @@ export class BargeHunt {
     if (t) this.ring.setPosition(t.x, t.y);
     if (!!t !== this.ring.visible) this.ring.setVisible(!!t);
     this.splashes.updateVisuals(realDt);
-    this.shore?.updateVisuals(realDt);
+    for (const sb of this.shores) sb.updateVisuals(realDt);
   }
 
   destroy(): void {
@@ -194,7 +229,7 @@ export class BargeHunt {
     this.flash.destroy();
     this.ring.destroy();
     this.splashes.destroy();
-    this.shore?.destroy();
+    for (const sb of this.shores) sb.destroy();
   }
 }
 

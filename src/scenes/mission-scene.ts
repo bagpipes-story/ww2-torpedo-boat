@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import {
   CAMERA_FOLLOW_LERP,
   DEBUG_ENABLED,
+  DEBUG_HARD,
   PROTOTYPE_MISSION_ID,
   REGISTRY_KEY_DATA,
   REGISTRY_KEY_INPUT,
@@ -122,7 +123,7 @@ export class MissionScene extends Phaser.Scene {
 
   init(data: unknown): void {
     // 呼ぶ側は必ず Sortie を渡す（Phaser は data を省くと前回の data を使い回す）。無ければ us_02・空襲なし
-    this.sortie = isSortie(data) ? data : directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), 'none');
+    this.sortie = isSortie(data) ? data : directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), 'none', DEBUG_HARD);
   }
 
   create(): void {
@@ -196,7 +197,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateZoom();
     this.updateLookAhead();
     const enemyAlive = w.enemy.focus(w.boat.state.x, w.boat.state.y);
-    this.leadMarker?.refresh(w.boat.state, w.destroyer ? enemyAlive : null, w.setup.torpedoParams.speedMps);
+    this.leadMarker?.refresh(w.boat.state, w.destroyers ? enemyAlive : null, w.setup.torpedoParams.speedMps);
     this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, Math.sqrt(w.visRange2));
 
     this.elapsedS += realDt;

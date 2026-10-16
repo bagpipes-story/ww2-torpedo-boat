@@ -18,13 +18,12 @@ import { SHALLOW_NONE, shallowIndexAt, updateShallowStatus, type ShallowStatus }
 import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import { startDamageState, type Sortie } from '../core/sortie';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
-import { Destroyer } from '../entities/destroyer';
 import { PlayerBoat } from '../entities/player-boat';
 import { BargeHunt } from './barge-hunt';
 import { BoatDamage } from './boat-damage';
+import { DestroyerGroup } from './destroyer-group';
 import { stepDestroyerSide } from './destroyer-step';
 import { EscortBoat } from './escort-boat';
-import { EnemyFire } from './enemy-fire';
 import { EnemySide } from './enemy-side';
 import type { EnemySeaplane } from './enemy-seaplane';
 import type { FriendlyFire } from './friendly-fire';
@@ -43,9 +42,8 @@ export type { WorldEvents } from './world-events';
 
 export class MissionWorld {
   readonly boat: PlayerBoat;
-  /** 駆逐艦とその反撃（us_02）。大発の任務では null。敵の有無を問わない読み口は enemy */
-  readonly destroyer: Destroyer | null;
-  readonly enemyFire: EnemyFire | null;
+  /** 駆逐艦の隊とその反撃（us_02・us_01。v0.4.5 から複数隻）。大発の任務では null。敵の有無を問わない読み口は enemy */
+  readonly destroyers: DestroyerGroup | null;
   /** 大発の隊と艇の砲（docs/02 §6.4、v0.4.2）。任務に barges が無ければ null */
   readonly hunt: BargeHunt | null;
   /** 僚艇（docs/02 §6.4、v0.4.4。要人脱出）。任務に escort が無ければ null */
@@ -113,9 +111,11 @@ export class MissionWorld {
     const dt = feelDt * c.timeScale;
     this.stepTimeS += realDt;
     const boat = this.boat.state;
-    const d = this.destroyer;
+    const g = this.destroyers;
+    // 最寄りの浮いている駆逐艦（雨の線・煙幕の線の相手。1 隻ならその艦。v0.4.5）
+    const dn = g ? g.nearestAfloat(boat.x, boat.y) : null;
     // 暴風（v0.3.4）: 帯を進め、速すぎれば波の叩きつけ（HP 0 で沈没）。判定は艇を動かす前の位置。雨の線は駆逐艦とだけ（大発の任務は線なし）
-    if (this.storm?.step(feelDt, boat, d ? d.state : boat, d !== null && !d.sinking, this.damage, this.boat.sinking)) this.sinkBoat('storm');
+    if (this.storm?.step(feelDt, boat, dn ? dn.state : boat, dn !== null, this.damage, this.boat.sinking)) this.sinkBoat('storm');
     // 旋回率・加速 = 基準 × 暴風の帯の中 × 乗員の減り（v0.3.5。書く場所はここだけ）
     this.crewLostNow = crewLost(c.crew, this.damageParams.maxHp, this.damage.hp);
     setPerformance(this.params, this.turnBaseDegS, this.accelBaseMps2, (this.storm ? this.storm.turnFactor : 1) * crewTurnFactor(c.crewEffects, this.crewLostNow), crewAccelFactor(c.crewEffects, this.crewLostNow));
@@ -139,15 +139,15 @@ export class MissionWorld {
     this.escort?.step(dt, boat, !this.boat.sinking); // 僚艇（v0.4.4）は自艇を動かした後・駆逐艦の前（同じステップの位置を駆逐艦が狙う）
     if (this.smoke && this.smokeParams) {
       updateSmoke(this.smoke, this.smokeParams, boat, c.boundsMarginM, feelDt);
-      if (d) this.hiddenBySmoke = !d.sinking && losBlocked(this.smoke, this.smokeParams, d.state.x, d.state.y, boat.x, boat.y);
+      if (g) this.hiddenBySmoke = dn !== null && losBlocked(this.smoke, this.smokeParams, dn.state.x, dn.state.y, boat.x, boat.y);
     }
     this.band = nextSpeedBand(this.band, boat.speedMps, this.params);
     this.seaplane?.step(feelDt, this); // 水上機（v0.4.1）は帯の後・発見距離の前（同じステップの帯で航跡を判定し、照明弾の上書きが同じステップの発見に効く）
     this.flareLit = this.seaplane ? this.seaplane.flareLit : false;
-    this.detectRangeM = enemyDetectRangeM(c.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, d !== null && this.hiddenBySmoke, this.storm ? this.storm.detectFactor : 1);
+    this.detectRangeM = enemyDetectRangeM(c.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, g !== null && this.hiddenBySmoke, this.storm ? this.storm.detectFactor : 1);
     if (this.flareLit && this.detectRangeM < c.seaplane!.flareRevealM) this.detectRangeM = c.seaplane!.flareRevealM;
     this.visRange2 = this.storm ? c.visRange2 * this.storm.visFactor2 : c.visRange2;
-    if (d) stepDestroyerSide(this, d, dt, feelDt, boat);
+    if (g) stepDestroyerSide(this, g, dt, feelDt, boat);
     else if (this.hunt) {
       // 大発の任務（v0.4.2）: 艇の砲 → 大発（発見・逃走・13mm）。3 行目の「煙幕に隠れている」は浮いている大発すべてから隠れているとき
       this.hunt.step(dt, feelDt, this, this.input.gunHeld);
@@ -167,7 +167,7 @@ export class MissionWorld {
     this.events = events;
     const seed = (this.seed = sortie.seed);
     // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
-    const s = buildWorldSetup(data, sortie.missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF, sortie, DEBUG_SEAPLANE_OFF, DEBUG_BARGES_NEAR, DEBUG_BATTERY_OFF);
+    const s = buildWorldSetup(data, sortie.missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF, sortie, DEBUG_SEAPLANE_OFF, DEBUG_BARGES_NEAR, DEBUG_BATTERY_OFF, sortie.hard);
     this.setup = s;
     const mission = s.mission;
     this.params = s.boatParams;
@@ -189,12 +189,11 @@ export class MissionWorld {
     this.boatDamage = new BoatDamage(this.boat, this.damage, this.damageParams, this.params, events, SMALL_HIT_DAMAGE_RATIO);
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
     const ds = s.destroyer;
-    this.destroyer = ds ? new Destroyer(scene, ds.start, ds.spec, ds.shipAi, mission.bounds) : null;
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, s.torpedoCapacity, mission.bounds);
-    // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない
+    // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
     this.gunRng = new SeededRng((seed + 1) >>> 0);
-    this.enemyFire = ds ? new EnemyFire(scene, ds.gunnery, this.gunRng, ds.start.headingDeg, this.splashes) : null;
-    this.enemyFire?.setHitHandler((gunIndex, x, y) => this.hitBoat(ds!.gunnery.guns[gunIndex]!, this.gunRng, x, y, 'destroyed'));
+    this.destroyers = ds ? new DestroyerGroup(scene, ds, mission.bounds, this.gunRng, this.splashes) : null;
+    for (const f of this.destroyers ? this.destroyers.fires : []) f.setHitHandler((gunIndex, x, y) => this.hitBoat(ds!.gunnery.guns[gunIndex]!, this.gunRng, x, y, 'destroyed'));
     // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
     const onSunk = (x: number, y: number): void => {
       this.slowMoLeftS = s.slowMoSeconds;
@@ -202,9 +201,9 @@ export class MissionWorld {
     };
     // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
     this.escort = s.escort && ds ? new EscortBoat(scene, s.escort, this.boat.state, mission.bounds) : null;
-    this.enemyFire?.setEscortHitHandler((g, x, y) => (this.escort!.hit(ds!.gunnery.guns[g]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false)));
-    this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBattery, this.splashes) : null;
-    this.enemy = new EnemySide(this.destroyer, this.enemyFire, this.hunt);
+    for (const f of this.destroyers ? this.destroyers.fires : []) f.setEscortHitHandler((gi, x, y) => (this.escort!.hit(ds!.gunnery.guns[gi]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false)));
+    this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBatteries, this.splashes) : null;
+    this.enemy = new EnemySide(this.destroyers, this.hunt);
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS);
     this.torpedoEvents = torpedoEventsFor(this, events);
     this.smokeParams = s.smokeParams;
@@ -222,13 +221,14 @@ export class MissionWorld {
   updateFrame(realDt: number): void {
     // 識別は沈没中でも消費する（フラグを残さない）。ステップの前なので、猶予が尽きるフレームの押下も間に合う
     consumeIdentifyInput(this.input, this.friendly);
-    const d = this.destroyer;
+    const g = this.destroyers;
     if (!this.boat.sinking) {
-      // 駆逐艦が沈み始めた後・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
-      if (!d || d.sinking || this.atHome) discardFireInput(this.input);
+      // 駆逐艦がすべて沈み始めた後・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
+      if (!g || g.allSinking || this.atHome) discardFireInput(this.input);
       else consumeFireInput(this.input, this.launcher, this.boat.state, this.torpedoes.remaining);
       this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.extinguishHeldS, realDt, this.extinguishHoldScale);
-      if (d) this.launcher.update(realDt, this.boat.state, d.state);
+      // 一斉発射の見越しは最寄りの浮いている艦（すべて沈んでいれば 1 隻目。発射はしない）
+      if (g) this.launcher.update(realDt, this.boat.state, (g.nearestAfloat(this.boat.state.x, this.boat.state.y) ?? g.ships[0]!).state);
       if (Number.isNaN(this.fuelAtFirstLaunchGal) && (this.torpedoes.remaining < this.torpedoes.capacity || (this.hunt !== null && this.hunt.battery.shots > 0))) this.fuelAtFirstLaunchGal = this.fuel.gal;
     }
     this.stepper.advance(realDt, this.stepFn);
@@ -237,9 +237,9 @@ export class MissionWorld {
     this.storm?.updateVisuals(realDt, this.boat.state);
     this.boat.syncSprite(this.storm ? this.storm.rollDeg : 0);
     this.escort?.syncSprite();
-    d?.syncSprite();
+    g?.syncSprites();
     this.torpedoes.updateVisuals(realDt);
-    if (d) this.enemyFire?.updateVisuals(realDt, d.state);
+    g?.updateVisuals(realDt);
     this.hunt?.updateVisuals(realDt, this.visRange2);
     this.splashes.updateVisuals(realDt);
     if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
@@ -272,12 +272,11 @@ export class MissionWorld {
     this.seaplane?.destroy();
     this.friendly?.destroy();
     this.torpedoes.destroy();
-    this.enemyFire?.destroy();
     this.hunt?.destroy();
     this.escort?.destroy();
     this.splashes.destroy();
     this.smokeScreen?.destroy();
-    this.destroyer?.destroy();
+    this.destroyers?.destroy();
     this.boat.destroy();
   }
 

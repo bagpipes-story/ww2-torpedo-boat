@@ -3,6 +3,23 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.4.5 — 2026-10-15（難易度：ハード。敵の数を増やす）
+
+- 目的: v0.4.4 の実機「3 シナリオともイージー／ノーマルと考えればこんなもの。難易度が上がれば敵艦・沿岸砲・味方の数が増えていけばよい」を受け、Title に難易度の切り替えを置き、ハードでは**数**で難しくする（us_02 駆逐艦 2 隻、us_01 封鎖線 2 列、us_03 沿岸砲 2 門）。ノーマルの世界は v0.4.4 と同じ。docs/02 §4・§6.4「難易度ハード」、docs/03 v0.4.5。
+- 変更点:
+  - 出撃（`core/sortie.ts`）: `Sortie.hard`・`BriefingInit.hard`（isSortie / isBriefingInit は boolean を要求）。`rollRaid` / `directSortie` に hard。Title（`title-scene.ts`）: 下に「難易度: ノーマル／ハード」のボタン（タップで切替、registry `hardMode` に持ち回る。`MenuButton.setTitle`）。Briefing: 1 行目に「 ・ 難易度 ハード」、敵「駆逐艦 ×2」。Result: 「任務終了 — …（ハード）」、「もう一度」も同じ難易度。`?debug&hard` で直行もハード。
+  - data（`missions_seed.json` の `v0_1_prototype.hard`、根拠は source）: us_02 `extra_enemy_starts` [(4500, 300, 225°)]（北東から南西へ＝挟み撃ち）、us_01 [(5400, 2000, 270°)]（封鎖線 2 列目を逆向きに）、us_03 `extra_shore_battery_x_m` [2600]（縁の x 1,752〜5,448 が射界）。読み出し（`mission-data.ts`）: `enemyStarts`・`shoreBatteryXs`・`hard`（ノーマルでは 1 隻・1 門。block の検査: 大発の任務に extra_enemy_starts、駆逐艦の任務に extra_shore_battery_x_m、幅の外、壊れた start は例外）。`getShoreBatteryParamsList`、`WorldSetup.shoreBatteries`・`hard`、`DestroyerSetup.starts`、`buildWorldSetup(…, hard)`（出撃の難易度と違えば例外）。
+  - 駆逐艦の隊（`systems/destroyer-group.ts`。v0.4.5）: 艦と反撃を隻数ぶん持ち、「どれか／すべて／最寄り」で読む。`enemy-side.ts` は隊を読む（detected＝どれか、illuminated＝どれか、shipDown・objectiveDone＝すべて沈み始めた、sinkPlaying＝どれかが演出中、focus・anchor＝最寄りの浮いている艦）。`torpedo-pool.ts`: 目標を配列で受け、当たった艦の添字を通知（`TorpedoEvents.onHit(target, …)`）、通過の判定は最寄りの浮いている艦。`torpedo-hits.ts`: 当たった艦が沈み始め、全隻が沈み始めたら一斉発射を捨て、最後の演出の後に走っている魚雷を外れに。`destroyer-step.ts`: 艦の順に（砲撃の乱数は 1 つの系列を艦の順に消費）、発見の回数は「どれかが見つけた」の立ち上がり。`mission-world.ts`: `destroyers`（`destroyer`・`enemyFire` は廃止）。雨の線・煙幕の線・見越しは最寄りの浮いている艦。スプライトの出し入れは艦ごと。
+  - 沿岸砲を複数に（`BargeHunt.shores`。乱数は seed+8、+9、…）。HUD の射界・撃ってくるは「どれか」、Result は合計（射界の中の秒は最大）。
+  - HUD: 2 行目の平常に「撃沈 N/M」（2 隻以上のとき）。`BoatTelemetry.shipsSunk / shipsTotal`、`MissionResult.shipsSunk / shipsTotal`、Result「駆逐艦: 撃沈 N/M」。
+  - テスト 294 件（+6）: `tests/hard-mode.test.ts`（3 任務の hard block、us_02 の 2 隻と Briefing「駆逐艦 ×2」、us_01 の 2 列、us_03 の 2 門と射界、block の検査、出撃の hard）。sortie・briefing のテストに hard を足した。
+  - 検証（ヘッドレス Chromium、iPhone 15 横）: us_02 の再生 8 本が f2b5d53 のビルドと差分 0（ノーマル）。us_02 ハード: 2 隻 (1500, 300)・(4500, 300)、2 行目「命中 0 ・ 撃沈 0/2」、1 隻目を沈めると「撃沈 1/2」で魚雷はまだ撃て、矢印は 2 隻目へ。2 隻目も沈めると「撃沈！帰投せよ」「駆逐艦を撃沈」、Result「任務終了 — 帰投した（ハード）」「駆逐艦: 撃沈 2/2」。ノーマルは 1 隻で「撃沈 N/M」無し。us_03 ハード: 砲台 (4600, 2560)・(2600, 2560)、縁の x 3,400 で「沿岸砲の射界」。Title の切替 → registry true・「難易度: ハード」→ Briefing「 ・ 難易度 ハード」「駆逐艦 ×2」、出撃の hard true。ページエラー無し。
+- 既知の制約:
+  - ハードのスコアの配点はノーマルと同じ（倍率なし）。難易度は保存しない（アプリを開き直すとノーマル）。
+  - 僚艇・味方の数は増えない（候補: us_01 で僚艇 2 隻）。大発の数も同じ。駆逐艦 2 隻の挟み撃ちの強さは模擬していない（実機の感想で調整）。
+  - 2 隻の探照灯・星弾は艦ごとに独立（同時に照らされることがある）。
+- 実機テスト結果: 1 回目（d984323）「とりあえずよい」→ マージ
+
 ## v0.4.4 — 2026-10-15（ミッション枠組み④：要人脱出）
 
 - 目的: 「コレヒドール脱出」（us_01）を出撃可にし、「僚艇（要人）を守りながら封鎖線の駆逐艦を避けて抜ける」遊びを iPhone で試せるようにする（docs/03 の v0.4.3（v0.4.4）。史実: 1942 年 3 月 11〜13 日、MTB Sqn 3 の 4 隻が要人を乗せてコレヒドールからミンダナオへ約 560 マイルを脱出。荒天で分散し、PT-32 は途中で放棄された）。docs/02 §6.4「要人脱出」・§6.9。

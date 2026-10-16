@@ -21,15 +21,19 @@ export interface PrototypeMission {
   enemyCount: number;
   bounds: { width: number; height: number };
   playerStart: { x: number; y: number; headingDeg: number };
-  /** 駆逐艦の出発点（us_02）。大発の隊の任務（barges）では null */
+  /** 駆逐艦の出発点（us_02）。大発の隊の任務（barges）では null。enemyStarts は全隻（ハードなら hard.extra_enemy_starts を足す。v0.4.5） */
   enemyStart: { x: number; y: number; headingDeg: number } | null;
+  enemyStarts: { x: number; y: number; headingDeg: number }[];
+  /** 難易度ハードで読んだ（v0.4.5。敵の数が増える。hard block の無い任務ではノーマルと同じ） */
+  hard: boolean;
   /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery） */
   mainWeapon: MainWeapon;
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
   barges: BargeMissionBlock | null;
   coast: CoastBlock | null;
-  /** 沿岸砲（v0.4.3。岸沿いの位置 m。無ければ null。岸（coast）が要る） */
+  /** 沿岸砲（v0.4.3。岸沿いの位置 m。無ければ null。岸（coast）が要る）。shoreBatteryXs は全門（ハードなら hard.extra_shore_battery_x_m を足す。v0.4.5） */
   shoreBattery: { xM: number } | null;
+  shoreBatteryXs: number[];
   /** 僚艇（v0.4.4。要人脱出。core/escort）。無ければ null。駆逐艦（enemy_start）の任務だけ */
   escort: EscortMissionBlock | null;
   durationS: number;
@@ -74,7 +78,7 @@ function readStart(v: unknown, label: string): { x: number; y: number; headingDe
   return { x: r['x_m'], y: r['y_m'], headingDeg: r['heading_deg'] };
 }
 
-export function getPrototypeMission(data: GameData, missionId: string): PrototypeMission {
+export function getPrototypeMission(data: GameData, missionId: string, hard: boolean = false): PrototypeMission {
   const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
   if (!m) throw new Error(`missions_seed.json に ${missionId} が無い`);
   const proto = m['v0_1_prototype'] as Record<string, unknown> | undefined;
@@ -163,6 +167,26 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
   if (escort && barges) throw new Error(`${missionId}.v0_1_prototype: 僚艇（escort）は駆逐艦（enemy_start）の任務だけ`);
   if (type === 'escort_vip' && !escort) throw new Error(`${missionId}: type が escort_vip なのに v0_1_prototype.escort が無い`);
   if (escort && !(data.boats.boats as readonly Record<string, unknown>[]).some((x) => x['id'] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat（${escort.boat}）が boats.json に無い`);
+  // 難易度ハード（v0.4.5）: hard block の extra_enemy_starts（駆逐艦を足す。enemy_start の任務だけ）と extra_shore_battery_x_m（沿岸砲を足す。shore_battery の任務だけ）
+  const hardRaw = proto['hard'] as Record<string, unknown> | undefined;
+  const enemyStart = barges ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
+  const enemyStarts = enemyStart ? [enemyStart] : [];
+  const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
+  if (hardRaw !== undefined) {
+    if (typeof hardRaw !== 'object' || hardRaw === null) throw new Error(`${missionId}.v0_1_prototype.hard が object でない（docs/02 §6.4）`);
+    const es = hardRaw['extra_enemy_starts'];
+    if (es !== undefined) {
+      if (!Array.isArray(es) || es.length === 0) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は空でない配列`);
+      if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は駆逐艦（enemy_start）の任務だけ`);
+      if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
+    }
+    const xs = hardRaw['extra_shore_battery_x_m'];
+    if (xs !== undefined) {
+      if (!Array.isArray(xs) || xs.length === 0 || !xs.every((x) => isNum(x) && x >= 0 && x <= b.width)) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m は海域の幅の中の数の配列`);
+      if (!shoreBattery) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m は沿岸砲（shore_battery）の任務だけ`);
+      if (hard) for (const x of xs as number[]) shoreBatteryXs.push(x);
+    }
+  }
   const hazardsRaw = proto['hazards'];
   if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
   const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
@@ -172,14 +196,17 @@ export function getPrototypeMission(data: GameData, missionId: string): Prototyp
     playerBoatId,
     torpedoId,
     enemyId,
-    enemyCount: ids.length,
+    enemyCount: enemyStart ? enemyStarts.length : ids.length,
     bounds: b,
     playerStart,
-    enemyStart: barges ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`),
+    enemyStart,
+    enemyStarts,
+    hard,
     mainWeapon,
     barges,
     coast,
     shoreBattery,
+    shoreBatteryXs,
     escort,
     durationS: proto['duration_s'],
     enemyHitsToSink: isNum(proto['enemy_hits_to_sink']) ? proto['enemy_hits_to_sink'] : null,
@@ -212,8 +239,8 @@ export interface BriefingRecord extends BriefingText {
   noteJa: string;
 }
 
-/** Briefing に出す文（missions_seed）と遊べる世界の敵・危険・月。文が無ければ例外 */
-export function getBriefingRecord(data: GameData, missionId: string): BriefingRecord {
+/** Briefing に出す文（missions_seed）と遊べる世界の敵・危険・月。文が無ければ例外。hard なら駆逐艦の隻数を hard block のぶん増やして出す（v0.4.5） */
+export function getBriefingRecord(data: GameData, missionId: string, hard: boolean = false): BriefingRecord {
   const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
   if (!m) throw new Error(`missions_seed.json に ${missionId} が無い`);
   const text = (key: string): string => {
@@ -224,7 +251,9 @@ export function getBriefingRecord(data: GameData, missionId: string): BriefingRe
   const proto = m['v0_1_prototype'] as Record<string, unknown> | undefined;
   const enemies = proto?.['enemies'];
   if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === 'string')) throw new Error(`${missionId}.v0_1_prototype.enemies が文字列の配列でない（Briefing）`);
-  const mission = getPrototypeMission(data, missionId);
+  const mission = getPrototypeMission(data, missionId, hard);
+  // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）。大発の任務は enemies のまま
+  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : (enemies as string[]);
   return {
     id: missionId,
     titleJa: text('title_ja'),
@@ -234,7 +263,7 @@ export function getBriefingRecord(data: GameData, missionId: string): BriefingRe
     success: text('success'),
     noteJa: text('briefing_note_ja'),
     moon: mission.moon,
-    enemyIds: enemies as string[],
+    enemyIds,
     hazardIds: mission.hazards,
   };
 }

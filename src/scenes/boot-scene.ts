@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import {
   DEBUG_DIRECT_MISSION,
   DEBUG_ENABLED,
+  DEBUG_HARD,
   DEBUG_MISSION_ID,
   DEBUG_RAID_OVERRIDE,
   PROTOTYPE_MISSION_ID,
@@ -72,7 +73,7 @@ export class BootScene extends Phaser.Scene {
     if (barge) generateBargeTextures(this, { lengthUnits: barge.boundsMarginM * 2, beamUnits: (barge.halfBeamM * 2 * spriteScale) / gameData.hitRateModel.world.hit_scale });
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
-    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE));
+    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD));
     else this.scene.start(SCENE_KEYS.title);
   }
 }

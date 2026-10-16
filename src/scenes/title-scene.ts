@@ -1,13 +1,21 @@
 // Title: ゲーム名と任務一覧（米PTキャンペーンの playable_from を持つ任務を order 順。出撃できない任務は「準備中 ・ 版」で押せない）。docs/02 §4、v0.4.0。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
 import { getGameData } from '../config/game-data';
 import { getMenuEntries } from '../config/mission-data';
 import {
   TITLE_CAMPAIGN_PX,
   TITLE_CAMPAIGN_SUFFIX_JA,
   TITLE_CAMPAIGN_Y,
+  TITLE_DIFF_H,
+  TITLE_DIFF_HARD_JA,
+  TITLE_DIFF_NORMAL_JA,
+  TITLE_DIFF_PX,
+  TITLE_DIFF_SUB_JA,
+  TITLE_DIFF_W,
+  TITLE_DIFF_X,
+  TITLE_DIFF_Y,
   TITLE_HINT_JA,
   TITLE_HINT_PX,
   TITLE_HINT_Y,
@@ -29,6 +37,8 @@ import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export class TitleScene extends Phaser.Scene {
   private rows: MenuButton[] = [];
+  /** 難易度の切り替え（v0.4.5。registry に持ち回る） */
+  private diff?: MenuButton;
   /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
   private leaving = false;
 
@@ -69,18 +79,33 @@ export class TitleScene extends Phaser.Scene {
       this.rows.push(row);
     });
     this.add.text(cx, TITLE_HINT_Y, TITLE_HINT_JA, hudTextStyle(TITLE_HINT_PX, HUD_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
+    // 難易度（v0.4.5）: タップで ノーマル ⇄ ハード。registry に持ち回る（Briefing → Mission → Result の「もう一度」まで同じ難易度）
+    const diffSpec = { x: TITLE_DIFF_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: this.hard ? TITLE_DIFF_HARD_JA : TITLE_DIFF_NORMAL_JA, titlePx: TITLE_DIFF_PX, sub: TITLE_DIFF_SUB_JA, align: 'center' as const };
+    this.diff = new MenuButton(this, diffSpec, () => {
+      this.registry.set(REGISTRY_KEY_HARD, !this.hard);
+      this.diff?.setTitle(this.hard ? TITLE_DIFF_HARD_JA : TITLE_DIFF_NORMAL_JA);
+      this.diff?.setSelected(this.hard);
+    });
+    this.diff.setSelected(this.hard);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const r of this.rows) r.destroy();
       this.rows = [];
+      this.diff?.destroy();
+      this.diff = undefined;
     });
+  }
+
+  /** 選んでいる難易度（未設定ならノーマル） */
+  private get hard(): boolean {
+    return this.registry.get(REGISTRY_KEY_HARD) === true;
   }
 
   /** 任務を選ぶ: 同じ任務の保留（Briefing で選ぶ前に戻った夜）があればその seed、無ければ新しい seed で Briefing へ */
   private open(missionId: string): void {
     if (this.leaving) return;
     this.leaving = true;
-    const init: BriefingInit = { missionId, seed: seedForBriefing(this.registry.get(REGISTRY_KEY_PENDING_SORTIE), missionId, sortieSeed()) };
+    const init: BriefingInit = { missionId, seed: seedForBriefing(this.registry.get(REGISTRY_KEY_PENDING_SORTIE), missionId, sortieSeed()), hard: this.hard };
     this.registry.set(REGISTRY_KEY_PENDING_SORTIE, init);
     this.scene.start(SCENE_KEYS.briefing, init);
   }
