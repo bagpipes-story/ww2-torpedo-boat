@@ -127,6 +127,8 @@ export interface BriefingNumbers {
   torpedoes: number;
   /** 主兵装が砲の任務（v0.4.2）は砲の名前（boats.json の gun_battery.label_ja）。魚雷の任務は '' */
   gunsLabel: string;
+  /** 敵の来る方角（8 方位。v0.4.6。夜ごとに変わる。無ければ ''） */
+  enemyFromJa: string;
   homeX: number;
   homeY: number;
   boundsW: number;
@@ -150,7 +152,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '目的', text: t.objective },
     { label: '成功', text: `${t.success}（帰投地点は${compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
-    { label: '敵', text: enemyCountsJa(t.enemyIds, nameOf) },
+    { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
     { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}` },
   ];

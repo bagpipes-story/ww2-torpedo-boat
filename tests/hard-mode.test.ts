@@ -35,7 +35,7 @@ describe('難易度ハード（v0.4.5。敵の数が増える）', () => {
     const s = buildWorldSetup(gameData, 'us_02', { hard: true });
     expect(s.hard).toBe(true);
     expect(s.destroyer!.starts.length).toBe(2);
-    expect(briefingRows(b, briefingNumbers(s), () => '駆逐艦', (h) => h)[3]).toEqual({ label: '敵', text: '駆逐艦 ×2' });
+    expect(briefingRows(b, briefingNumbers(s), () => '駆逐艦', (h) => h)[3]).toEqual({ label: '敵', text: '駆逐艦 ×2（北西から）' });
   });
   it('us_01 ハード: 封鎖線が 2 列（y 3,000 を東へ、y 2,000 を西へ）。僚艇はそのまま', () => {
     const m = getPrototypeMission(gameData, 'us_01', true);

@@ -30,7 +30,7 @@ import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
 import { fixedNight, rollNight, type NightRoll } from '../core/night';
-import { clamp, wrapDeg360 } from '../core/units';
+import { applyNight } from './world-night';
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
@@ -45,7 +45,7 @@ import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
 import { type StormParams } from '../core/storm';
 import { NO_SORTIE_EFFECT, sortieConditions, type RaidParams, type Sortie, type SortieConditions } from '../core/sortie';
-import type { BriefingNumbers } from '../core/briefing';
+import { compassJa, type BriefingNumbers } from '../core/briefing';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 
@@ -141,6 +141,8 @@ export interface WorldSetup {
   night: NightRoll;
   hazardsTonight: string[];
   absentHazards: string[];
+  /** 敵の来る位置（1 隻目の駆逐艦か大発の隊の先頭の出発点。Briefing の「敵 …（北西から）」） */
+  enemyFrom: { x: number; y: number } | null;
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
@@ -187,18 +189,12 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const forced = (id: string): boolean => (id === 'storm' && !!o.forceStorm) || (id === 'enemy_aircraft' && !!o.forcePlane) || (id === 'friendly_fire' && !!o.forceFriendly);
   const absentHazards = night.absentHazards.filter((id) => !forced(id));
   const absent = (id: string): boolean => absentHazards.includes(id);
-  // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれを足す（駆逐艦は海域の縁の余白の内に収める）
+  // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
   const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink) : null;
-  if (destroyer) {
-    const m = destroyer.spec.boundsMarginM;
-    destroyer.starts = destroyer.starts.map((s, i) => {
-      const d = night.enemyOffsets[i]!;
-      return { x: clamp(s.x + d.dx, m, mission.bounds.width - m), y: clamp(s.y + d.dy, m, mission.bounds.height - m), headingDeg: wrapDeg360(s.headingDeg + d.dh) };
-    });
-  }
-  const barges0 = getBargeParams(data, mission);
-  const barges = barges0 && night.bargeLeadDx !== 0 ? { ...barges0, leadX: barges0.leadX + night.bargeLeadDx } : barges0;
-  const shoreBatteries = batteries.map((p, i) => (night.batteryDx[i] ? { ...p, x: clamp(p.x + night.batteryDx[i]!, 0, mission.bounds.width) } : p));
+  const applied = applyNight(night, mission.bounds, destroyer ? destroyer.starts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
+  if (destroyer) destroyer.starts = applied.starts;
+  const barges = applied.barges;
+  const shoreBatteries = applied.batteries;
   const guns = getGunBatteryParams(data, mission);
 
   const boatParams = boatParamsFromData(boatRecord);
@@ -258,6 +254,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     night,
     hazardsTonight: mission.hazards.filter((h) => !absent(h)),
     absentHazards,
+    enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : null,
   };
 }
 
@@ -296,6 +293,7 @@ export function briefingNumbers(s: WorldSetup): BriefingNumbers {
     fuelGal: s.fuelAllotmentGal,
     torpedoes: s.torpedoCapacity,
     gunsLabel: s.guns ? s.guns.label : '',
+    enemyFromJa: s.enemyFrom ? compassJa(s.enemyFrom.x, s.enemyFrom.y, s.mission.bounds.width, s.mission.bounds.height) : '',
     homeX: s.mission.returnPoint.x,
     homeY: s.mission.returnPoint.y,
     boundsW: s.mission.bounds.width,

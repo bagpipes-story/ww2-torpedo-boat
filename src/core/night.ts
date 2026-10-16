@@ -1,7 +1,8 @@
 // 夜の揺らぎ（docs/02 §6.8、v0.4.6）: 出撃の seed から「今夜の危険の有無」と「敵の出発位置のずれ」を 1 回だけ決める。Phaser 非依存。確保は出撃の組み立てのときだけ。
 // 危険の有無: 任務の night.optional_hazards のそれぞれが、risk_events の share × night.hazard_scale（上限 1）の確率で今夜出る（schema note「weight は share をそのまま使う」）。
 // 乱数は seed+16 の系列だけ（seed〜seed+9 は魚雷・砲撃・掃射・暴風・空襲・水上機・大発・艇の砲・沿岸砲が使う）。引く回数は出る・出ないに関わらず固定
-// （危険 1 回ずつ → 敵 3 回ずつ（x・y・針路）→ 大発の先頭 1 回 → 沿岸砲 1 回ずつ）。ある危険が無い夜だけ後ろのずれが変わる、を起こさない。
+// （危険 1 回ずつ → 敵 3 回ずつ（x・y・針路）→ 大発の先頭 1 回 → 沿岸砲 1 回ずつ → 左右反転 1 回）。ある危険が無い夜だけ後ろのずれが変わる、を起こさない。
+// 左右反転（実機 1 回目「敵の来る位置の違いが分からない」）: mirror_chance で敵の側を東西に入れ替える（systems/world-night）。
 import { SeededRng } from './rng';
 
 export const NIGHT_SEED_OFFSET = 16;
@@ -18,6 +19,8 @@ export interface NightBlock {
   /** 大発の隊の先頭の x のずれの最大（± m）と、沿岸砲の x のずれの最大（± m） */
   bargeLeadJitterM: number;
   shoreBatteryJitterM: number;
+  /** 敵の側（駆逐艦・大発・沿岸砲）を東西に入れ替える確率（0〜1） */
+  mirrorChance: number;
 }
 
 export interface NightOffset {
@@ -26,19 +29,20 @@ export interface NightOffset {
   dh: number;
 }
 
-/** 今夜: いない危険（任務の hazards の id）、敵ごとのずれ、大発の先頭の x のずれ、沿岸砲ごとの x のずれ */
+/** 今夜: いない危険（任務の hazards の id）、敵ごとのずれ、大発の先頭の x のずれ、沿岸砲ごとの x のずれ、敵の側を東西に入れ替えるか */
 export interface NightRoll {
   absentHazards: string[];
   enemyOffsets: NightOffset[];
   bargeLeadDx: number;
   batteryDx: number[];
+  mirrored: boolean;
 }
 
 /** 揺らぎなし（seed の無い組み立て・?debug&fixed・night block の無い任務） */
 export function fixedNight(enemyCount: number, batteryCount: number): NightRoll {
   const enemyOffsets: NightOffset[] = [];
   for (let i = 0; i < enemyCount; i++) enemyOffsets.push({ dx: 0, dy: 0, dh: 0 });
-  return { absentHazards: [], enemyOffsets, bargeLeadDx: 0, batteryDx: new Array<number>(batteryCount).fill(0) };
+  return { absentHazards: [], enemyOffsets, bargeLeadDx: 0, batteryDx: new Array<number>(batteryCount).fill(0), mirrored: false };
 }
 
 /** 今夜を決める。shareOf は risk_events の share（id → 0〜1）。ずれは ±最大の一様 */
@@ -60,7 +64,8 @@ export function rollNight(b: NightBlock, shareOf: (id: string) => number, seed: 
   const bargeLeadDx = sym(b.bargeLeadJitterM);
   const batteryDx: number[] = [];
   for (let i = 0; i < batteryCount; i++) batteryDx.push(sym(b.shoreBatteryJitterM));
-  return { absentHazards, enemyOffsets, bargeLeadDx, batteryDx };
+  const mirrored = rng.next() < b.mirrorChance;
+  return { absentHazards, enemyOffsets, bargeLeadDx, batteryDx, mirrored };
 }
 
 /** 今夜それぞれの危険が出る確率（Briefing・テスト・docs の表の根拠） */
@@ -76,6 +81,7 @@ export interface NightDataRecord {
   enemy_jitter?: { x_m: number; y_m: number; heading_deg: number };
   barge_lead_jitter_m?: number;
   shore_battery_jitter_m?: number;
+  mirror_chance?: number;
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -86,7 +92,7 @@ export function isNightDataRecord(v: unknown): v is NightDataRecord {
   if (!isNum(r['hazard_scale']) || !Array.isArray(r['optional_hazards']) || !r['optional_hazards'].every((h) => typeof h === 'string')) return false;
   const j = r['enemy_jitter'] as Record<string, unknown> | undefined;
   if (j !== undefined && (typeof j !== 'object' || j === null || !isNum(j['x_m']) || !isNum(j['y_m']) || !isNum(j['heading_deg']))) return false;
-  return (r['barge_lead_jitter_m'] === undefined || isNum(r['barge_lead_jitter_m'])) && (r['shore_battery_jitter_m'] === undefined || isNum(r['shore_battery_jitter_m']));
+  return (r['barge_lead_jitter_m'] === undefined || isNum(r['barge_lead_jitter_m'])) && (r['shore_battery_jitter_m'] === undefined || isNum(r['shore_battery_jitter_m'])) && (r['mirror_chance'] === undefined || isNum(r['mirror_chance']));
 }
 
 /** 検査込み。missionHazards は任務の hazards（optional はこの中から）、hasShare は risk_events に share がある id か */
@@ -105,5 +111,7 @@ export function nightFromData(r: NightDataRecord, missionHazards: readonly strin
   const sb = r.shore_battery_jitter_m ?? 0;
   if (!(j.x_m >= 0 && j.y_m >= 0 && j.heading_deg >= 0 && j.heading_deg <= 180)) bad('enemy_jitter は 0 以上（heading_deg は 180 まで）');
   if (!(lead >= 0) || !(sb >= 0)) bad('barge_lead_jitter_m・shore_battery_jitter_m は 0 以上');
-  return { hazardScale: r.hazard_scale, optionalHazards: [...r.optional_hazards], enemyJitterXM: j.x_m, enemyJitterYM: j.y_m, enemyJitterHeadingDeg: j.heading_deg, bargeLeadJitterM: lead, shoreBatteryJitterM: sb };
+  const mirror = r.mirror_chance ?? 0;
+  if (!(mirror >= 0 && mirror <= 1)) bad('mirror_chance は 0〜1');
+  return { hazardScale: r.hazard_scale, optionalHazards: [...r.optional_hazards], enemyJitterXM: j.x_m, enemyJitterYM: j.y_m, enemyJitterHeadingDeg: j.heading_deg, bargeLeadJitterM: lead, shoreBatteryJitterM: sb, mirrorChance: mirror };
 }
