@@ -6,6 +6,7 @@ import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../
 import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data';
 import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
+import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
 import { menuEntries, shortLabelJa, type BriefingText, type MenuEntry } from '../core/briefing';
 
@@ -55,6 +56,8 @@ export interface PrototypeMission {
   hazards: string[];
   /** 敵の水上機（docs/02 §6.8、v0.4.1）: enemies.json の機体 id。無ければ来ない */
   enemyAircraft: { enemyId: string } | null;
+  /** 夜の揺らぎ（docs/02 §6.8、v0.4.6。core/night）。無ければ毎回同じ夜 */
+  night: NightBlock | null;
 }
 
 export type MainWeapon = 'torpedo' | 'guns';
@@ -190,6 +193,14 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const hazardsRaw = proto['hazards'];
   if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
   const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
+  // 夜の揺らぎ（v0.4.6）: optional_hazards は任務の hazards の中から、risk_events に share がある id だけ
+  const nightRaw = proto['night'];
+  let night: NightBlock | null = null;
+  if (nightRaw !== undefined) {
+    if (!isNightDataRecord(nightRaw)) throw new Error(`${missionId}.v0_1_prototype.night（hazard_scale / optional_hazards / enemy_jitter / barge_lead_jitter_m / shore_battery_jitter_m）が壊れている（docs/02 §6.8）`);
+    const events = data.riskEvents.events as readonly Record<string, unknown>[];
+    night = nightFromData(nightRaw, hazards, (id) => events.some((e) => e['id'] === id && isNum(e['share'])), missionId);
+  }
   return {
     id: missionId,
     type,
@@ -218,6 +229,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     storm,
     hazards,
     enemyAircraft,
+    night,
   };
 }
 

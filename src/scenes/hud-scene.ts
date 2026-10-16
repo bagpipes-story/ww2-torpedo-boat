@@ -118,7 +118,7 @@ export class HudScene extends Phaser.Scene {
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
     if (mission.coast) this.coastMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
-    if (mission.enemyAircraft) {
+    if (this.telemetry.seaplaneEnabled) {
       this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
     }
     this.stick = new VirtualStick(this, input);
@@ -162,7 +162,8 @@ export class HudScene extends Phaser.Scene {
       },
     });
     // 「識別」: 見張りと魚雷の間。常に薄く出し、味方機が識別を求めている間だけ青く点滅して残り秒を出す（押下＝識別信号。離しは見ない）
-    if (mission.friendlyAircraft) {
+    // 今夜味方機がいるときだけ（v0.4.6。夜の揺らぎで来ない夜がある）
+    if (this.telemetry.friendlyEnabled) {
       this.identifyButton = new HoldButton(this, bx, IDENTIFY_BUTTON_Y, '識別', {
         onDown: () => {
           input.identifyTap = true;

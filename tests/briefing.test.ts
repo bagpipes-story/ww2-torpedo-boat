@@ -92,19 +92,19 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(formatDateJa(rec.date)).toBe('1942年12月11日');
     expect(rec.place).toBe('ガダルカナル島沖（アイアンボトム・サウンド）');
     expect(rec.noteJa).toBe('PT-37・40（諸説）が駆逐艦照月に命中し爆沈。PT-44喪失。照月の残骸は2025年7月に発見。');
-    expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02', NaN, NaN)), nameOf, labelOf)).toEqual([
+    expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02')), nameOf, labelOf)).toEqual([
       { label: '目的', text: '夜間に補給に来る駆逐艦を雷撃し、生還する' },
       { label: '成功', text: '帰投。命中はボーナス（帰投地点は北東の青い輪）' },
       { label: '月', text: '半月 ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m' },
-      { label: '敵', text: '駆逐艦 ×1' },
+      { label: '敵', text: '駆逐艦 ×1（北西から）' },
       { label: '危険', text: '暴風、敵艦艇の砲撃・衝突、敵航空機、座礁、友軍誤射' },
       { label: '条件', text: '夜明けまで 150 秒 ・ 燃料 38 gal ・ 魚雷 4 本' },
     ]);
   });
   it('?debug の上書きも出る: fuel 20・dawn 60 → 条件「夜明けまで 60 秒 ・ 燃料 20 gal ・ 魚雷 4 本」。小数の燃料は 1 桁', () => {
     const rec = getBriefingRecord(gameData, 'us_02');
-    expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02', 20, 60)), nameOf, labelOf)[5]!.text).toBe('夜明けまで 60 秒 ・ 燃料 20 gal ・ 魚雷 4 本');
-    expect(briefingRows(rec, { ...briefingNumbers(buildWorldSetup(gameData, 'us_02', NaN, NaN)), fuelGal: 34.25 }, nameOf, labelOf)[5]!.text).toBe('夜明けまで 150 秒 ・ 燃料 34.3 gal ・ 魚雷 4 本');
+    expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02', { fuelGal: 20, dawnS: 60 })), nameOf, labelOf)[5]!.text).toBe('夜明けまで 60 秒 ・ 燃料 20 gal ・ 魚雷 4 本');
+    expect(briefingRows(rec, { ...briefingNumbers(buildWorldSetup(gameData, 'us_02')), fuelGal: 34.25 }, nameOf, labelOf)[5]!.text).toBe('夜明けまで 150 秒 ・ 燃料 34.3 gal ・ 魚雷 4 本');
   });
   it('人物名を出さない（CLAUDE.md §11）: 一覧の 3 任務の画面に出す文と空襲の文に人物名が無い。src は historical_note を読まない', () => {
     const raidData = clone();

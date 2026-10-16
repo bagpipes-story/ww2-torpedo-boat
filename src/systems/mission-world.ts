@@ -2,7 +2,8 @@
 // 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、危険の生成は world-hazards.ts、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
-import { DEBUG_BARGES_NEAR, DEBUG_BATTERY_OFF, DEBUG_DAWN_S, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_SEAPLANE_OFF, DEBUG_STORM_OFF, FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
+import { FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
+import { debugSetupOptions } from '../config/debug-setup';
 import type { GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatParams, type SpeedStep } from '../core/boat-motion';
@@ -167,7 +168,7 @@ export class MissionWorld {
     this.events = events;
     const seed = (this.seed = sortie.seed);
     // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
-    const s = buildWorldSetup(data, sortie.missionId, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF, sortie, DEBUG_SEAPLANE_OFF, DEBUG_BARGES_NEAR, DEBUG_BATTERY_OFF, sortie.hard);
+    const s = buildWorldSetup(data, sortie.missionId, debugSetupOptions(sortie, sortie.hard));
     this.setup = s;
     const mission = s.mission;
     this.params = s.boatParams;

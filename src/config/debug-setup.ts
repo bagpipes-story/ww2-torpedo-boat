@@ -1,0 +1,33 @@
+// ?debug の上書きを世界の組み立て（systems/world-setup の SetupOptions）にまとめる（v0.4.6）。Briefing と Mission が同じ値で組むために 1 か所に置く。
+// world-setup 自体は window を読まない（テストの tsconfig に DOM が無い）ので、URL を読む game-config の値はここで渡す。
+import {
+  DEBUG_BARGES_NEAR,
+  DEBUG_BATTERY_OFF,
+  DEBUG_DAWN_S,
+  DEBUG_FIXED_NIGHT,
+  DEBUG_FRIENDLY_FORCE,
+  DEBUG_FUEL_ALLOTMENT_GAL,
+  DEBUG_SEAPLANE,
+  DEBUG_SEAPLANE_OFF,
+  DEBUG_STORM_OFF,
+  DEBUG_STORM_START_Y,
+} from './game-config';
+import type { Sortie } from '../core/sortie';
+import type { SetupOptions } from '../systems/world-setup';
+
+export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
+  return {
+    fuelGal: DEBUG_FUEL_ALLOTMENT_GAL,
+    dawnS: DEBUG_DAWN_S,
+    sortie,
+    hard,
+    stormOff: DEBUG_STORM_OFF,
+    planeOff: DEBUG_SEAPLANE_OFF,
+    bargesNear: DEBUG_BARGES_NEAR,
+    batteryOff: DEBUG_BATTERY_OFF,
+    fixedNight: DEBUG_FIXED_NIGHT,
+    forceStorm: Number.isFinite(DEBUG_STORM_START_Y),
+    forcePlane: DEBUG_SEAPLANE !== 'none',
+    forceFriendly: DEBUG_FRIENDLY_FORCE,
+  };
+}

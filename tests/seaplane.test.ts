@@ -36,7 +36,7 @@ import { aimBomb, releaseBomb } from '../src/core/seaplane-ordnance';
 import { ktToMps } from '../src/core/units';
 import { buildWorldSetup } from '../src/systems/world-setup';
 
-const SETUP = buildWorldSetup(gameData, 'us_02', NaN, NaN);
+const SETUP = buildWorldSetup(gameData, 'us_02');
 const P: SeaplaneParams = SETUP.seaplane!;
 const BP: BoatParams = SETUP.boatParams;
 const TS = gameData.hitRateModel.world.time_scale;

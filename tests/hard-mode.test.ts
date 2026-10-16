@@ -32,10 +32,10 @@ describe('難易度ハード（v0.4.5。敵の数が増える）', () => {
     expect(b.enemyIds).toEqual(['ijn_destroyer', 'ijn_destroyer']);
     expect(enemyCountsJa(b.enemyIds, () => '駆逐艦')).toBe('駆逐艦 ×2');
     expect(getBriefingRecord(gameData, 'us_02').enemyIds).toEqual(['ijn_destroyer']);
-    const s = buildWorldSetup(gameData, 'us_02', NaN, NaN, false, null, false, false, false, true);
+    const s = buildWorldSetup(gameData, 'us_02', { hard: true });
     expect(s.hard).toBe(true);
     expect(s.destroyer!.starts.length).toBe(2);
-    expect(briefingRows(b, briefingNumbers(s), () => '駆逐艦', (h) => h)[3]).toEqual({ label: '敵', text: '駆逐艦 ×2' });
+    expect(briefingRows(b, briefingNumbers(s), () => '駆逐艦', (h) => h)[3]).toEqual({ label: '敵', text: '駆逐艦 ×2（北西から）' });
   });
   it('us_01 ハード: 封鎖線が 2 列（y 3,000 を東へ、y 2,000 を西へ）。僚艇はそのまま', () => {
     const m = getPrototypeMission(gameData, 'us_01', true);
@@ -44,7 +44,7 @@ describe('難易度ハード（v0.4.5。敵の数が増える）', () => {
       [5400, 2000, 270],
     ]);
     expect(m.escort).not.toBeNull();
-    const s = buildWorldSetup(gameData, 'us_01', NaN, NaN, false, null, false, false, false, true);
+    const s = buildWorldSetup(gameData, 'us_01', { hard: true });
     expect(s.destroyer!.starts.length).toBe(2);
     expect(s.escort).not.toBeNull();
   });
@@ -58,10 +58,10 @@ describe('難易度ハード（v0.4.5。敵の数が増える）', () => {
       [2600, 2560],
     ]);
     expect(getShoreBatteryParams(gameData, m)!.x).toBe(4600);
-    const s = buildWorldSetup(gameData, 'us_03', NaN, NaN, false, null, false, false, false, true);
+    const s = buildWorldSetup(gameData, 'us_03', { hard: true });
     expect(s.shoreBatteries.length).toBe(2);
     expect(s.shoreBattery!.x).toBe(4600);
-    expect(buildWorldSetup(gameData, 'us_03', NaN, NaN, false, null, false, false, true, true).shoreBatteries).toEqual([]);
+    expect(buildWorldSetup(gameData, 'us_03', { batteryOff: true, hard: true }).shoreBatteries).toEqual([]);
     // 2 門の射界（浅瀬の縁 y 2,200）: 1,752〜3,448 と 3,752〜5,448 → 縁の x 3,000〜3,850 の待ち伏せも射界の中
     const r = Math.sqrt(900 * 900 - 360 * 360);
     expect(Math.round(2600 - r)).toBe(1775);
@@ -95,7 +95,7 @@ describe('難易度ハード（v0.4.5。敵の数が増える）', () => {
     expect(directSortie('us_02', 1, 'none', true).hard).toBe(true);
     expect(isSortie({ missionId: 'us_02', seed: 1, raid: false, choice: 0, stayHit: false })).toBe(false);
     expect(isSortie(directSortie('us_02', 1, 'none', true))).toBe(true);
-    expect(() => buildWorldSetup(gameData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'none', true))).toThrow(/難易度/);
-    expect(buildWorldSetup(gameData, 'us_02', NaN, NaN, false, directSortie('us_02', 1, 'none', true), false, false, false, true).destroyer!.starts.length).toBe(2);
+    expect(() => buildWorldSetup(gameData, 'us_02', { sortie: directSortie('us_02', 1, 'none', true) })).toThrow(/難易度/);
+    expect(buildWorldSetup(gameData, 'us_02', { sortie: directSortie('us_02', 1, 'none', true), hard: true }).destroyer!.starts.length).toBe(2);
   });
 });

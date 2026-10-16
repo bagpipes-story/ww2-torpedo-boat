@@ -3,10 +3,7 @@
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない。変わるのは選択の 1 回だけ（§7）。
 import Phaser from 'phaser';
 import {
-  DEBUG_DAWN_S,
-  DEBUG_FUEL_ALLOTMENT_GAL,
   DEBUG_RAID_OVERRIDE,
-  DEBUG_STORM_OFF,
   DEPTH,
   GAME_HEIGHT,
   GAME_WIDTH,
@@ -17,8 +14,9 @@ import {
   SCENE_KEYS,
   sortieSeed,
 } from '../config/game-config';
-import { getGameData } from '../config/game-data';
-import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../config/mission-data';
+import { getGameData, getRaidParams } from '../config/game-data';
+import { debugSetupOptions } from '../config/debug-setup';
+import { enemyNameJa, getBriefingRecord, getPrototypeMission, riskLabelJa } from '../config/mission-data';
 import {
   BRIEF_BACK_H,
   BRIEF_BACK_JA,
@@ -118,12 +116,12 @@ export class BriefingScene extends Phaser.Scene {
     this.leaving = false;
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const id = this.missionId;
-    // Mission と同じ組み立て（?debug の上書き込み）。空襲の有無と強さもここから
-    const setup = buildWorldSetup(data, id, DEBUG_FUEL_ALLOTMENT_GAL, DEBUG_DAWN_S, DEBUG_STORM_OFF, null, false, false, false, this.hard);
-    const p = setup.raid;
+    // 空襲を振ってから、Mission と同じ組み立て（?debug の上書き・今夜の揺らぎ込み。v0.4.6）。危険の行は今夜いるものだけ
+    const p = getRaidParams(data, getPrototypeMission(data, id, this.hard));
     this.raid = p;
     this.sortie = rollRaid(id, this.seed, p, DEBUG_RAID_OVERRIDE, this.hard);
-    const rec = getBriefingRecord(data, id, this.hard);
+    const setup = buildWorldSetup(data, id, debugSetupOptions(this.sortie, this.hard));
+    const rec = { ...getBriefingRecord(data, id, this.hard), hazardIds: setup.hazardsTonight, absentHazardIds: setup.absentHazards };
 
     addBuildLabel(this);
     this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}${this.hard ? ' ・ 難易度 ハード' : ''}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);

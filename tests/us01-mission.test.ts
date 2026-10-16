@@ -33,7 +33,7 @@ describe('要人脱出（us_01、v0.4.4）', () => {
     expect(m.shoreBattery).toBeNull();
   });
   it('世界の数値: 僚艇あり・駆逐艦あり・魚雷 4 本・Elco 77ft の HP 90・乗員 12。燃料: 直線 4,750 m を巡航で約 23 gal（40 gal の 6 割以下）、全速だと約 35 gal', () => {
-    const s = buildWorldSetup(gameData, 'us_01', NaN, NaN);
+    const s = buildWorldSetup(gameData, 'us_01');
     expect(s.escort).not.toBeNull();
     expect(s.destroyer).not.toBeNull();
     expect(s.barges).toBeNull();
