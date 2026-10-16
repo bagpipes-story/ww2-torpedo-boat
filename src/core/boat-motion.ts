@@ -165,6 +165,9 @@ export interface BoatTelemetry {
   /** 駆逐艦の隊（v0.4.5）: 沈み始めた隻数と隻数（駆逐艦のいない任務は 0。2 隻以上なら 2 行目に「撃沈 N/M」） */
   shipsSunk: number;
   shipsTotal: number;
+  /** 今夜の危険（v0.4.6。夜の揺らぎ）: 味方機・敵の水上機がいる（識別ボタンと敵機の矢印を作るか） */
+  friendlyEnabled: boolean;
+  seaplaneEnabled: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

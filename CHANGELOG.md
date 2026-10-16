@@ -3,6 +3,26 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.4.6 — 2026-10-16（任務の生成①：毎回違う夜）
+
+- 目的: 出撃ごとに「今夜の危険の有無」と「敵の出発位置」を seed で揺らし、同じ任務でも毎回違う夜にする（docs/03 v0.4.4（v0.4.6）「任務の生成」の前半。輸送船は v0.4.7）。docs/02 §6.8「夜の揺らぎ」。
+- 変更点:
+  - `core/night.ts`（Phaser 非依存）: `rollNight`（seed+16 の系列。危険 1 回ずつ → 敵 3 回ずつ（x・y・針路）→ 大発の先頭 1 回 → 沿岸砲 1 回ずつ、出る・出ないに関わらず回数固定）、`fixedNight`、`hazardChance`、`nightFromData`（optional は任務の hazards の中から・risk_events に share がある・重複なし、倍率は正、ずれは 0 以上）。
+  - 危険の有無: 今夜出る確率 = risk_events の share × `night.hazard_scale`（上限 1）。data の schema note「weight は share をそのまま使う」に沿って史実の損失比率の大小をそのまま夜の出やすさにした。
+  - data（`missions_seed.json` の `v0_1_prototype.night`、design、根拠は source）: us_02 倍率 8（暴風 32%・敵航空機 80%・友軍誤射 80%）、駆逐艦 x ±500・y ±200 m・針路 ±15°。us_01 倍率 15（暴風 60%。史実の脱出行は荒天）、封鎖線 x ±800・y ±100 m（ハードの 2 列目 y 2,000 がサンゴ礁 y 1,300〜1,900 に入らない幅）・針路はずらさない。us_03 揺らぐ危険なし、大発の先頭 x ±250 m・沿岸砲 x ±200 m。
+  - `world-setup.ts`: `buildWorldSetup(data, missionId, options)`（位置引数 10 個を `SetupOptions` にまとめた。§7「順番違いで黙って壊れる」の回避。テストの呼び出し 37 か所を機械的に置換）。出撃の seed があり night block があり `fixedNight` でなければ揺らす: 今夜いない暴風・水上機・味方機は null、駆逐艦の出発点にずれを足して海域の余白の内に収める、大発の先頭・沿岸砲の x にずれ。`WorldSetup.night`・`hazardsTonight`・`absentHazards`。`config/debug-setup.ts`（?debug の上書きを Briefing と Mission で同じ値にまとめる）。
+  - Briefing: 空襲を振ってから出撃の seed で組み、「危険」は今夜いるものだけ＋「（今夜は 暴風・友軍誤射 なし）」（`core/briefing` の `absentJa`、`BriefingText.absentHazardIds`）。
+  - HUD: 識別ボタン・敵機の矢印は今夜いるときだけ作る（`BoatTelemetry.friendlyEnabled`・`seaplaneEnabled`）。
+  - `?debug&fixed`: 揺らぎなし（v0.4.5 と同じ世界）。`?debug&storm=Y`・`&plane`・`&ff` は今夜いなくても出す。
+  - テスト 299 件（+5）: `tests/night.test.ts`（data の確率と幅、同じ seed で同じ夜・2,000 夜の出現率 ±4%・ずれの範囲・引く回数の固定・ハードの追加で 1 隻目が変わらない、検査、world-setup の揺らぎと fixed・force、us_01 ハードの 2 列目 y 1,900 以上、Briefing の「（今夜は … なし）」）。game-data の hazards のテストに night を消す行を足した。
+  - 検証（ヘッドレス Chromium、iPhone 15 横）: us_02 の再生 8 本が f2b5d53 のビルドと差分 0（`&fixed`。比較の道具の URL に足した）。揺らぎあり: us_02 seed 1〜4 で駆逐艦の出発点 (1165, 135, 143°)・(1199, 422, 136°)・(1757, 495, 130°)・(1287, 271, 126°)、暴風は seed 3 だけ（今夜いない夜は暴風の帯なし）。`&fixed` は seed によらず (1500, 300, 135°)・暴風あり。us_01 seed 1 は暴風なし・封鎖線 x 118、seed 2 は暴風あり・x 765。us_03 先頭 4,339 / 4,199、沿岸砲 4,477 / 4,641。Briefing（Title から）seed 1〜6 の「危険」: 暴風ありは seed 3 だけ、他は「…（今夜は 暴風 なし）」。Briefing と Mission の今夜が一致。ページエラー無し。
+- 既知の制約:
+  - 敵の数は難易度で決まり、夜ごとには揺らがない。月齢・夜明け・燃料も揺らがない（史実の日付で固定）。
+  - 暴風が来ない夜・敵機が来ない夜は楽になる（us_02 で 3 つとも来ない夜は 0.8%）。スコアの補正はしない。
+  - 輸送船は v0.4.7。
+  - `world-setup.ts` が 304 行（300 行の目安を超えた）。次に触る v0.4.7 で駆逐艦・夜の組み立てを切り出す。
+- 実機テスト結果: （未）
+
 ## v0.4.5 — 2026-10-15（難易度：ハード。敵の数を増やす）
 
 - 目的: v0.4.4 の実機「3 シナリオともイージー／ノーマルと考えればこんなもの。難易度が上がれば敵艦・沿岸砲・味方の数が増えていけばよい」を受け、Title に難易度の切り替えを置き、ハードでは**数**で難しくする（us_02 駆逐艦 2 隻、us_01 封鎖線 2 列、us_03 沿岸砲 2 門）。ノーマルの世界は v0.4.4 と同じ。docs/02 §4・§6.4「難易度ハード」、docs/03 v0.4.5。

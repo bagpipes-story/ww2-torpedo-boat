@@ -113,6 +113,8 @@ export interface BriefingText {
   moon: MoonPhase;
   enemyIds: readonly string[];
   hazardIds: readonly string[];
+  /** 今夜いない危険（v0.4.6。夜の揺らぎ。無ければ []）。「危険」の行の後ろに「（今夜は … なし）」 */
+  absentHazardIds?: readonly string[];
 }
 
 /** Briefing の数値（world-setup の briefingNumbers が ?debug の上書き込みで作る。Mission と同じ値） */
@@ -136,6 +138,11 @@ export interface BriefingRow {
   text: string;
 }
 
+/** 今夜いない危険の後ろ書き（v0.4.6）: 「（今夜は 暴風・友軍誤射 なし）」。無ければ '' */
+export function absentJa(ids: readonly string[], labelOf: (id: string) => string): string {
+  return ids.length === 0 ? '' : `（今夜は ${ids.map(labelOf).join('・')} なし）`;
+}
+
 /** Briefing の 6 行（目的・成功・月・敵・危険・条件）。距離・秒は Math.round、燃料は整数ならそのまま・違えば小数 1 桁。危険から港内空襲を除く（2 択の欄に出す） */
 export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: string) => string, labelOf: (id: string) => string): BriefingRow[] {
   const gal = Number.isInteger(n.fuelGal) ? String(n.fuelGal) : n.fuelGal.toFixed(1);
@@ -144,7 +151,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '成功', text: `${t.success}（帰投地点は${compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: enemyCountsJa(t.enemyIds, nameOf) },
-    { label: '危険', text: hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID]) },
+    { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
     { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}` },
   ];
 }

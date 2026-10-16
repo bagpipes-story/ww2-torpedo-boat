@@ -92,6 +92,7 @@ describe('game-data（data/*.json の読み出し）', () => {
     const protoOf = (d: typeof gameData): Record<string, unknown> => (d.missionsSeed.missions.find((x) => x.id === 'us_02') as unknown as Proto).v0_1_prototype;
     const none = clone();
     delete protoOf(none)['hazards'];
+    delete protoOf(none)['night']; // 夜の揺らぎ（v0.4.6）の optional_hazards は hazards の中から（無いと例外）
     expect(getPrototypeMission(none, 'us_02').hazards).toEqual([]);
     const bad = clone();
     protoOf(bad)['hazards'] = ['storm', 3];

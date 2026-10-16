@@ -114,6 +114,8 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     escortLagWarnM: w.escort ? w.escort.p.lagWarnM : 0,
     shipsSunk: 0,
     shipsTotal: w.destroyers ? w.destroyers.total : 0,
+    friendlyEnabled: w.friendly !== null,
+    seaplaneEnabled: w.seaplane !== null,
   };
 }
 

@@ -67,6 +67,8 @@ export const DEBUG_SEAPLANE_OFF = DEBUG_ENABLED && new URLSearchParams(window.lo
 /** ?debug&mission=us_03: 直行する任務（v0.4.2。v0_1_prototype を持つ任務の id。無ければ us_02）。?debug&barges=near: 大発の任務で隊の先頭の 450 m 西・230 m 北（浅瀬の縁の外、東向き。先頭まで約 500 m）から始める */
 export const DEBUG_MISSION_ID: string = (DEBUG_ENABLED && new URLSearchParams(window.location.search).get('mission')) || 'us_02';
 export const DEBUG_BARGES_NEAR = DEBUG_ENABLED && new URLSearchParams(window.location.search).get('barges') === 'near';
+/** ?debug&fixed: 夜の揺らぎを掛けない（v0.4.6。危険はすべて出て、敵の位置もずれない＝v0.4.5 と同じ世界。再生の比較用） */
+export const DEBUG_FIXED_NIGHT = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('fixed');
 /** ?debug&hard: 直行の出撃を難易度ハードに（v0.4.5。敵の数が増える。通し（&title）では Title の切り替えが優先） */
 export const DEBUG_HARD = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('hard');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */

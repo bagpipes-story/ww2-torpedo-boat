@@ -29,6 +29,8 @@ import {
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
+import { fixedNight, rollNight, type NightRoll } from '../core/night';
+import { clamp, wrapDeg360 } from '../core/units';
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
@@ -135,10 +137,38 @@ export interface WorldSetup {
   salvoIntervalS: number;
   /** 煙幕発生器が無い艇なら null */
   smokeParams: SmokeParams | null;
+  /** 今夜（v0.4.6。core/night）: 揺らぎ、今夜いる危険（任務の hazards から今夜いないものを除く。Briefing の「危険」）、今夜いない危険 */
+  night: NightRoll;
+  hazardsTonight: string[];
+  absentHazards: string[];
+}
+
+/** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
+export interface SetupOptions {
+  fuelGal?: number;
+  dawnS?: number;
+  /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
+  sortie?: Sortie | null;
+  /** 難易度ハード（sortie があれば sortie.hard と同じでなければ例外） */
+  hard?: boolean;
+  stormOff?: boolean;
+  planeOff?: boolean;
+  bargesNear?: boolean;
+  batteryOff?: boolean;
+  /** 夜の揺らぎを掛けない（?debug&fixed。v0.4.5 と同じ世界） */
+  fixedNight?: boolean;
+  /** 今夜いなくても出す（?debug&storm=Y・&plane・&ff） */
+  forceStorm?: boolean;
+  forcePlane?: boolean;
+  forceFriendly?: boolean;
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
-export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllotmentGal: number, debugDawnS: number, debugStormOff: boolean = false, sortie: Sortie | null = null, debugPlaneOff: boolean = false, debugBargesNear: boolean = false, debugBatteryOff: boolean = false, hard: boolean = false): WorldSetup {
+export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptions = {}): WorldSetup {
+  const sortie = o.sortie ?? null;
+  const hard = o.hard ?? false;
+  const debugFuelAllotmentGal = o.fuelGal ?? NaN;
+  const debugDawnS = o.dawnS ?? NaN;
   if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
   if (sortie && sortie.hard !== hard) throw new Error(`出撃の難易度（${sortie.hard ? 'ハード' : 'ノーマル'}）と引数が違う`);
   const world = data.hitRateModel.world;
@@ -147,9 +177,28 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   const mission = getPrototypeMission(data, missionId, hard);
   const boatRecord = getBoatRecord(data, mission.playerBoatId);
   const torpedoRecord = getTorpedoRecord(data, mission.torpedoId);
-  // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から
+  // 今夜（v0.4.6）: 出撃の seed があり、任務に night block があり、?debug&fixed でなければ揺らぐ
+  const batteries = o.batteryOff ? [] : getShoreBatteryParamsList(data, mission);
+  const events = data.riskEvents.events as readonly Record<string, unknown>[];
+  const night =
+    sortie && mission.night && !o.fixedNight
+      ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, mission.enemyStarts.length, batteries.length)
+      : fixedNight(mission.enemyStarts.length, batteries.length);
+  const forced = (id: string): boolean => (id === 'storm' && !!o.forceStorm) || (id === 'enemy_aircraft' && !!o.forcePlane) || (id === 'friendly_fire' && !!o.forceFriendly);
+  const absentHazards = night.absentHazards.filter((id) => !forced(id));
+  const absent = (id: string): boolean => absentHazards.includes(id);
+  // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれを足す（駆逐艦は海域の縁の余白の内に収める）
   const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink) : null;
-  const barges = getBargeParams(data, mission);
+  if (destroyer) {
+    const m = destroyer.spec.boundsMarginM;
+    destroyer.starts = destroyer.starts.map((s, i) => {
+      const d = night.enemyOffsets[i]!;
+      return { x: clamp(s.x + d.dx, m, mission.bounds.width - m), y: clamp(s.y + d.dy, m, mission.bounds.height - m), headingDeg: wrapDeg360(s.headingDeg + d.dh) };
+    });
+  }
+  const barges0 = getBargeParams(data, mission);
+  const barges = barges0 && night.bargeLeadDx !== 0 ? { ...barges0, leadX: barges0.leadX + night.bargeLeadDx } : barges0;
+  const shoreBatteries = batteries.map((p, i) => (night.batteryDx[i] ? { ...p, x: clamp(p.x + night.batteryDx[i]!, 0, mission.bounds.width) } : p));
   const guns = getGunBatteryParams(data, mission);
 
   const boatParams = boatParamsFromData(boatRecord);
@@ -165,7 +214,7 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
   const start = sortie ? sortieConditions(sortie, raid) : NO_SORTIE_EFFECT;
   return {
     mission,
-    playerStart: debugBargesNear && lead ? lead : mission.playerStart,
+    playerStart: o.bargesNear && lead ? lead : mission.playerStart,
     coastEdgeY: coastEdgeYOf(mission),
     mainWeapon: mission.mainWeapon,
     boatParams,
@@ -187,16 +236,16 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     raid,
     start,
     grounding: getGroundingParams(data),
-    friendly: getFriendlyParams(data, mission, world.time_scale),
-    storm: debugStormOff ? null : getStormParams(data, mission, world.time_scale),
-    seaplane: debugPlaneOff ? null : getSeaplaneParams(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 }),
+    friendly: absent('friendly_fire') ? null : getFriendlyParams(data, mission, world.time_scale),
+    storm: o.stormOff || absent('storm') ? null : getStormParams(data, mission, world.time_scale),
+    seaplane: o.planeOff || absent('enemy_aircraft') ? null : getSeaplaneParams(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 }),
     crew: getBoatCrewParams(data, mission.playerBoatId),
     crewEffects: getBoatCrewEffects(data, mission.playerBoatId),
     destroyer,
     barges,
     guns,
-    shoreBattery: debugBatteryOff ? null : (getShoreBatteryParamsList(data, mission)[0] ?? null),
-    shoreBatteries: debugBatteryOff ? [] : getShoreBatteryParamsList(data, mission),
+    shoreBattery: shoreBatteries[0] ?? null,
+    shoreBatteries,
     hard,
     escort: getEscortParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
@@ -206,6 +255,9 @@ export function buildWorldSetup(data: GameData, missionId: string, debugFuelAllo
     launchOffsetM: boatRecord.beam_m / 2,
     salvoIntervalS: launch.salvo_interval_s,
     smokeParams: getBoatSmokeParams(data, mission.playerBoatId),
+    night,
+    hazardsTonight: mission.hazards.filter((h) => !absent(h)),
+    absentHazards,
   };
 }
 
