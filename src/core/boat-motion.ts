@@ -168,6 +168,9 @@ export interface BoatTelemetry {
   /** 今夜の危険（v0.4.6。夜の揺らぎ）: 味方機・敵の水上機がいる（識別ボタンと敵機の矢印を作るか） */
   friendlyEnabled: boolean;
   seaplaneEnabled: boolean;
+  /** 輸送船（v0.4.7）: 任務にいる、沈み始めた */
+  transportEnabled: boolean;
+  transportSunk: boolean;
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

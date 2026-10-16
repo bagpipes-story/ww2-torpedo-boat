@@ -10,9 +10,7 @@ import {
   getBoatSmokeParams,
   getBargeParams,
   getBoatTorpedoCount,
-  getEnemyRecord,
   getGunBatteryParams,
-  getEvasionMultiplier,
   getFriendlyParams,
   getSeaplaneParams,
   getGroundingParams,
@@ -31,13 +29,15 @@ import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
 import { fixedNight, rollNight, type NightRoll } from '../core/night';
 import { applyNight } from './world-night';
+import { destroyerSetup, type DestroyerSetup, type TransportSetup } from './destroyer-setup';
+
+export type { DestroyerSpec, DestroyerSetup, TransportSetup } from './destroyer-setup';
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
 import { boatParamsFromData, type BoatParams } from '../core/boat-motion';
 import { type FuelCurve } from '../core/fuel';
-import { gunneryParamsFromData, type DamageParams, type GunneryParams } from '../core/gunnery';
-import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
+import { type DamageParams } from '../core/gunnery';
 import { type CrewEffects, type CrewParams } from '../core/crew';
 import { type FriendlyParams } from '../core/friendly';
 import type { SeaplaneParams } from '../core/seaplane-data';
@@ -48,29 +48,6 @@ import { NO_SORTIE_EFFECT, sortieConditions, type RaidParams, type Sortie, type 
 import { compassJa, type BriefingNumbers } from '../core/briefing';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
-
-/** 駆逐艦の寸法と耐久（entities/destroyer が使う。型をここに置くのは、テストの tsconfig（DOM 無し）に Phaser 側を引き込まないため） */
-export interface DestroyerSpec {
-  lengthM: number;
-  beamM: number;
-  hullCircles: number;
-  hitsToSink: number;
-  /** 当たり判定に使う寸法の倍率（data: world.hit_scale。1=実寸） */
-  hitScale: number;
-  /** 海域境界から押し戻す余白 m（表示上の船体半分） */
-  boundsMarginM: number;
-}
-
-/** 駆逐艦（us_02）の数値: 出発点（全隻。ハードで増える。v0.4.5）・寸法・AI・反撃・魚雷の外れ確定の半径二乗（目標中心からこれより離れて遠ざかれば通過） */
-export interface DestroyerSetup {
-  starts: { x: number; y: number; headingDeg: number }[];
-  spec: DestroyerSpec;
-  shipAi: ShipAiParams;
-  gunnery: GunneryParams;
-  passRadius2: number;
-  /** 発見の基準距離（enemies.json の detection.base_detect_m） */
-  baseDetectM: number;
-}
 
 export interface WorldSetup {
   mission: PrototypeMission;
@@ -126,6 +103,8 @@ export interface WorldSetup {
   shoreBatteries: ShoreBatteryParams[];
   /** 難易度ハード（v0.4.5） */
   hard: boolean;
+  /** 輸送船（v0.4.7）。任務に transport が無いか ?debug&notransport なら null */
+  transport: TransportSetup | null;
   /** 僚艇（v0.4.4。任務に escort があるとき。駆逐艦の任務だけ） */
   escort: EscortParams | null;
   torpedoCapacity: number;
@@ -159,6 +138,8 @@ export interface SetupOptions {
   batteryOff?: boolean;
   /** 夜の揺らぎを掛けない（?debug&fixed。v0.4.5 と同じ世界） */
   fixedNight?: boolean;
+  /** 輸送船なし（?debug&notransport。v0.4.6 と同じ世界） */
+  transportOff?: boolean;
   /** 今夜いなくても出す（?debug&storm=Y・&plane・&ff） */
   forceStorm?: boolean;
   forcePlane?: boolean;
@@ -182,17 +163,25 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   // 今夜（v0.4.6）: 出撃の seed があり、任務に night block があり、?debug&fixed でなければ揺らぐ
   const batteries = o.batteryOff ? [] : getShoreBatteryParamsList(data, mission);
   const events = data.riskEvents.events as readonly Record<string, unknown>[];
+  // 輸送船（v0.4.7）は隊の最後の 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける
+  const tr = mission.transport && !o.transportOff ? mission.transport : null;
+  const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
   const night =
     sortie && mission.night && !o.fixedNight
-      ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, mission.enemyStarts.length, batteries.length)
-      : fixedNight(mission.enemyStarts.length, batteries.length);
+      ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, shipStarts.length, batteries.length)
+      : fixedNight(shipStarts.length, batteries.length);
   const forced = (id: string): boolean => (id === 'storm' && !!o.forceStorm) || (id === 'enemy_aircraft' && !!o.forcePlane) || (id === 'friendly_fire' && !!o.forceFriendly);
   const absentHazards = night.absentHazards.filter((id) => !forced(id));
   const absent = (id: string): boolean => absentHazards.includes(id);
   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
   const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink) : null;
-  const applied = applyNight(night, mission.bounds, destroyer ? destroyer.starts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
-  if (destroyer) destroyer.starts = applied.starts;
+  const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
+  if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
+  let transport: TransportSetup | null = null;
+  if (destroyer && tr) {
+    const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null);
+    transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[applied.starts.length - 1]! };
+  }
   const barges = applied.barges;
   const shoreBatteries = applied.batteries;
   const guns = getGunBatteryParams(data, mission);
@@ -243,6 +232,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     shoreBattery: shoreBatteries[0] ?? null,
     shoreBatteries,
     hard,
+    transport,
     escort: getEscortParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
@@ -264,22 +254,6 @@ function coastEdgeYOf(m: PrototypeMission): number {
   let y = m.bounds.height;
   for (const r of m.shallows) if (r.y + r.h >= m.bounds.height && r.y < y) y = r.y;
   return y;
-}
-
-/** 駆逐艦の数値（enemies.json の AI・反撃を持つ記録）。v0.4.2 で buildWorldSetup から切り出し（中身は v0.4.1 のまま） */
-function destroyerSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitsOverride: number | null): DestroyerSetup {
-  const world = data.hitRateModel.world;
-  const r = getEnemyRecord(data, enemyId);
-  const hitLen = r.length_m * world.hit_scale;
-  const hitBeam = r.beam_m * world.hit_scale;
-  return {
-    starts,
-    spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale: world.hit_scale, boundsMarginM: (r.length_m * world.sprite_scale) / 2 },
-    shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data)),
-    gunnery: gunneryParamsFromData(r),
-    passRadius2: (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam),
-    baseDetectM: r.detection.base_detect_m,
-  };
 }
 
 /** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */

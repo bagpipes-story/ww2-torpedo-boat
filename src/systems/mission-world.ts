@@ -193,8 +193,9 @@ export class MissionWorld {
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, s.torpedoCapacity, mission.bounds);
     // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
     this.gunRng = new SeededRng((seed + 1) >>> 0);
-    this.destroyers = ds ? new DestroyerGroup(scene, ds, mission.bounds, this.gunRng, this.splashes) : null;
-    for (const f of this.destroyers ? this.destroyers.fires : []) f.setHitHandler((gunIndex, x, y) => this.hitBoat(ds!.gunnery.guns[gunIndex]!, this.gunRng, x, y, 'destroyed'));
+    this.destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, this.gunRng, this.splashes) : null;
+    // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）
+    this.destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => this.hitBoat((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, this.gunRng, x, y, 'destroyed')));
     // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
     const onSunk = (x: number, y: number): void => {
       this.slowMoLeftS = s.slowMoSeconds;
@@ -202,7 +203,7 @@ export class MissionWorld {
     };
     // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
     this.escort = s.escort && ds ? new EscortBoat(scene, s.escort, this.boat.state, mission.bounds) : null;
-    for (const f of this.destroyers ? this.destroyers.fires : []) f.setEscortHitHandler((gi, x, y) => (this.escort!.hit(ds!.gunnery.guns[gi]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false)));
+    this.destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => (this.escort!.hit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false))));
     this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBatteries, this.splashes) : null;
     this.enemy = new EnemySide(this.destroyers, this.hunt);
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS);

@@ -16,18 +16,81 @@
       "hull_circles": 5,
       "torpedo_hits_to_sink": 2,
       "guns": [
-        { "id": "main_127mm", "count": 3, "range_m": 10000, "effective_night_m": 4000, "rof_per_min": 10, "damage": 40, "shell_speed_mps": 400, "dispersion_m": 160, "splash_radius_m": 8, "fire_chance": 0.35, "engine_damage_chance": 0.3 },
-        { "id": "aa_25mm", "count": 4, "range_m": 2000, "effective_night_m": 1200, "rof_per_min": 120, "damage": 4, "shell_speed_mps": 500, "dispersion_m": 70, "splash_radius_m": 3, "fire_chance": 0.05, "engine_damage_chance": 0.05 }
+        {
+          "id": "main_127mm",
+          "count": 3,
+          "range_m": 10000,
+          "effective_night_m": 4000,
+          "rof_per_min": 10,
+          "damage": 40,
+          "shell_speed_mps": 400,
+          "dispersion_m": 160,
+          "splash_radius_m": 8,
+          "fire_chance": 0.35,
+          "engine_damage_chance": 0.3
+        },
+        {
+          "id": "aa_25mm",
+          "count": 4,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 70,
+          "splash_radius_m": 3,
+          "fire_chance": 0.05,
+          "engine_damage_chance": 0.05
+        }
       ],
-      "searchlight": { "range_m": 3000, "cone_deg": 12, "sweep_deg_s": 20, "on_delay_s": 2.5 },
-      "starshell": { "range_m": 6000, "illum_radius_m": 1500, "duration_s": 25, "cooldown_s": 60 },
-      "detection": { "base_detect_m": 2000, "wake_detect_m": 800, "reaction_delay_s": 4, "torpedo_wake_detect_m": 700, "note": "reaction_delay_s は実時間秒（魚雷の位置が torpedo_wake_detect_m 以内に入ってから転舵を始めるまで）。base_detect_m は半月・巡航での発見距離で、hit_rate_model.visibility の係数を掛ける。v0.2.0 実機: 2500 だと巡航で自艇の視程 1,500m よりずっと先に見つかり厳しすぎたので 2000 に（静音 1,000m・停止 800m・全速 3,200m）" },
-      "evasion": { "mode": "comb_tracks", "turn_toward_wakes": true, "evade_turn_rate_deg_s": 2.0, "speed_boost_kt": 5 },
-      "ram": { "enabled": true, "trigger_m": 400, "give_up_m": 800, "stall_s": 6, "cooldown_s": 12, "turn_rate_bonus_deg_s": 0.5 },
-      "patrol": { "edge_turn_margin_m": 700 },
-      "source": { "length_m": "historical (陽炎型118.5m)", "speed_max_kt": "historical", "turn_rate_deg_s": "design (v0.2.0 実機で 3.0 は「転舵が速すぎる」と感じたので 1.5 に。回避時は面舵いっぱいで 2.0、体当たり時は +0.5)", "guns.*": "design (実射程を夜間有効射程に縮小。rof_per_min は 1 門あたり・実時間分で、砲台の発射間隔 = 60/(rof×count) 実秒。shell_speed_mps は見てかわせるよう実弾より遅い game 時間の速さ。dispersion_m は有効射程での着弾円の半径（一様な円盤。距離に比例して縮む）。splash_radius_m 以内に艇の船体があれば命中。scripts/gunnery-sim.ts の実測（静止・照射中）: 127mm は 600 m 10.8 / 1,000 m 3.7 / 1,500 m 1.5 / 2,000 m 0.7 HP/秒、25mm は 600 m 3.5 / 1,000 m 1.3 / 1,200 m 0.9 HP/秒。照らされたまま留まると沈没まで 730 m 約 10 秒・1,000 m 約 18 秒・1,500 m 約 53 秒・2,000 m 約 97 秒（中央値、火災込み）。静音で 1,000 m まで寄って全速で反転離脱すれば 200 回中 197 回生還)",
+      "searchlight": {
+        "range_m": 3000,
+        "cone_deg": 12,
+        "sweep_deg_s": 20,
+        "on_delay_s": 2.5
+      },
+      "starshell": {
+        "range_m": 6000,
+        "illum_radius_m": 1500,
+        "duration_s": 25,
+        "cooldown_s": 60
+      },
+      "detection": {
+        "base_detect_m": 2000,
+        "wake_detect_m": 800,
+        "reaction_delay_s": 4,
+        "torpedo_wake_detect_m": 700,
+        "note": "reaction_delay_s は実時間秒（魚雷の位置が torpedo_wake_detect_m 以内に入ってから転舵を始めるまで）。base_detect_m は半月・巡航での発見距離で、hit_rate_model.visibility の係数を掛ける。v0.2.0 実機: 2500 だと巡航で自艇の視程 1,500m よりずっと先に見つかり厳しすぎたので 2000 に（静音 1,000m・停止 800m・全速 3,200m）"
+      },
+      "evasion": {
+        "mode": "comb_tracks",
+        "turn_toward_wakes": true,
+        "evade_turn_rate_deg_s": 2.0,
+        "speed_boost_kt": 5
+      },
+      "ram": {
+        "enabled": true,
+        "trigger_m": 400,
+        "give_up_m": 800,
+        "stall_s": 6,
+        "cooldown_s": 12,
+        "turn_rate_bonus_deg_s": 0.5
+      },
+      "patrol": {
+        "edge_turn_margin_m": 700
+      },
+      "source": {
+        "length_m": "historical (陽炎型118.5m)",
+        "speed_max_kt": "historical",
+        "turn_rate_deg_s": "design (v0.2.0 実機で 3.0 は「転舵が速すぎる」と感じたので 1.5 に。回避時は面舵いっぱいで 2.0、体当たり時は +0.5)",
+        "guns.*": "design (実射程を夜間有効射程に縮小。rof_per_min は 1 門あたり・実時間分で、砲台の発射間隔 = 60/(rof×count) 実秒。shell_speed_mps は見てかわせるよう実弾より遅い game 時間の速さ。dispersion_m は有効射程での着弾円の半径（一様な円盤。距離に比例して縮む）。splash_radius_m 以内に艇の船体があれば命中。scripts/gunnery-sim.ts の実測（静止・照射中）: 127mm は 600 m 10.8 / 1,000 m 3.7 / 1,500 m 1.5 / 2,000 m 0.7 HP/秒、25mm は 600 m 3.5 / 1,000 m 1.3 / 1,200 m 0.9 HP/秒。照らされたまま留まると沈没まで 730 m 約 10 秒・1,000 m 約 18 秒・1,500 m 約 53 秒・2,000 m 約 97 秒（中央値、火災込み）。静音で 1,000 m まで寄って全速で反転離脱すれば 200 回中 197 回生還)",
         "searchlight.*": "design (発見から on_delay_s 実秒で点灯し艦首方向から sweep_deg_s（deg/実秒）で艇へ振る。cone_deg の中にいれば照射。on_delay_s は v0.2.1 実機「反転して逃げるのが困難」で 1.5 → 2.5: 「発見された！」を見てから反転する猶予)",
-        "starshell.*": "design (発見中で探照灯の射程外、かつ艇が近づいてくるときだけ艇の位置へ撃ち illum_radius_m を duration_s 実秒照らす。cooldown_s 実秒。遠ざかる艇には撃たない＝逃げる艇への追い打ちにしない。v0.2.1 実機「探照灯の範囲外でも砲撃が続く」への対応)", "detection.*": "design (reaction_delay_s は転舵率を 3.0→2.0 に下げた分 6→4 秒に短縮。scripts/evade-sim.ts で 730m 以上の単発が約半分避けられる水準)", "evasion.*": "design", "ram.*": "design (trigger_m で体当たりを始め give_up_m まで続ける。最接近距離が stall_s（実時間秒）更新されなければ諦め、cooldown_s は再開しない。向かってくる魚雷を見ている間は回避が優先)", "patrol.*": "design (海域の端からこの距離で中央へ向き直す。端に張り付かないため。旋回半径（25kt・1.5°/s で約 490m）＋境界余白 118m より大きくする。v0.2.0 で転舵を 3.0→1.5 にした際に 500→700)" },
+        "starshell.*": "design (発見中で探照灯の射程外、かつ艇が近づいてくるときだけ艇の位置へ撃ち illum_radius_m を duration_s 実秒照らす。cooldown_s 実秒。遠ざかる艇には撃たない＝逃げる艇への追い打ちにしない。v0.2.1 実機「探照灯の範囲外でも砲撃が続く」への対応)",
+        "detection.*": "design (reaction_delay_s は転舵率を 3.0→2.0 に下げた分 6→4 秒に短縮。scripts/evade-sim.ts で 730m 以上の単発が約半分避けられる水準)",
+        "evasion.*": "design",
+        "ram.*": "design (trigger_m で体当たりを始め give_up_m まで続ける。最接近距離が stall_s（実時間秒）更新されなければ諦め、cooldown_s は再開しない。向かってくる魚雷を見ている間は回避が優先)",
+        "patrol.*": "design (海域の端からこの距離で中央へ向き直す。端に張り付かないため。旋回半径（25kt・1.5°/s で約 490m）＋境界余白 118m より大きくする。v0.2.0 で転舵を 3.0→1.5 にした際に 500→700)"
+      },
       "notes": "v0.1は直進のみ。v0.2.0で発見・雷跡回避（櫛で梳く）・体当たり・端での向き直しを有効化。探照灯・星弾・砲撃は v0.2.1。"
     },
     {
@@ -44,15 +107,55 @@
       "hull_circles": 6,
       "torpedo_hits_to_sink": 3,
       "guns": [
-        { "id": "main_140mm", "count": 5, "range_m": 15000, "effective_night_m": 5000, "rof_per_min": 6, "damage": 60 },
-        { "id": "aa_25mm", "count": 6, "range_m": 2000, "effective_night_m": 1200, "rof_per_min": 120, "damage": 4 }
+        {
+          "id": "main_140mm",
+          "count": 5,
+          "range_m": 15000,
+          "effective_night_m": 5000,
+          "rof_per_min": 6,
+          "damage": 60
+        },
+        {
+          "id": "aa_25mm",
+          "count": 6,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4
+        }
       ],
-      "searchlight": { "range_m": 3500, "cone_deg": 12, "sweep_deg_s": 20 },
-      "starshell": { "range_m": 7000, "illum_radius_m": 1800, "duration_s": 25, "cooldown_s": 60 },
-      "detection": { "base_detect_m": 2800, "wake_detect_m": 900, "reaction_delay_s": 8, "torpedo_wake_detect_m": 700 },
-      "evasion": { "mode": "comb_tracks", "turn_toward_wakes": true, "evade_turn_rate_deg_s": 2.2, "speed_boost_kt": 4 },
-      "ram": { "enabled": false, "trigger_m": 0, "turn_rate_bonus_deg_s": 0 },
-      "source": { "length_m": "historical", "others": "design" },
+      "searchlight": {
+        "range_m": 3500,
+        "cone_deg": 12,
+        "sweep_deg_s": 20
+      },
+      "starshell": {
+        "range_m": 7000,
+        "illum_radius_m": 1800,
+        "duration_s": 25,
+        "cooldown_s": 60
+      },
+      "detection": {
+        "base_detect_m": 2800,
+        "wake_detect_m": 900,
+        "reaction_delay_s": 8,
+        "torpedo_wake_detect_m": 700
+      },
+      "evasion": {
+        "mode": "comb_tracks",
+        "turn_toward_wakes": true,
+        "evade_turn_rate_deg_s": 2.2,
+        "speed_boost_kt": 4
+      },
+      "ram": {
+        "enabled": false,
+        "trigger_m": 0,
+        "turn_rate_bonus_deg_s": 0
+      },
+      "source": {
+        "length_m": "historical",
+        "others": "design"
+      },
       "notes": "スリガオ海峡ミッション用。1本命中で落伍（速力半減）、3本で沈没。"
     },
     {
@@ -68,14 +171,56 @@
       "hull_hp": 200,
       "hull_circles": 5,
       "torpedo_hits_to_sink": 1,
-      "guns": [ { "id": "deck_gun_76mm", "count": 1, "range_m": 6000, "effective_night_m": 2500, "rof_per_min": 8, "damage": 25 } ],
+      "guns": [
+        {
+          "id": "deck_gun_76mm",
+          "count": 1,
+          "range_m": 6000,
+          "effective_night_m": 2500,
+          "rof_per_min": 8,
+          "damage": 25,
+          "shell_speed_mps": 400,
+          "dispersion_m": 200,
+          "splash_radius_m": 8,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        }
+      ],
       "searchlight": null,
       "starshell": null,
-      "detection": { "base_detect_m": 1800, "wake_detect_m": 600, "reaction_delay_s": 12, "torpedo_wake_detect_m": 500 },
-      "evasion": { "mode": "turn_away", "turn_toward_wakes": false, "evade_turn_rate_deg_s": 1.5, "speed_boost_kt": 1 },
-      "ram": { "enabled": false, "trigger_m": 0, "turn_rate_bonus_deg_s": 0 },
-      "source": { "all": "design" },
-      "notes": "護衛付き船団の中核。日本ハードモードでは護衛対象になる。"
+      "detection": {
+        "base_detect_m": 1800,
+        "wake_detect_m": 600,
+        "reaction_delay_s": 12,
+        "torpedo_wake_detect_m": 500
+      },
+      "evasion": {
+        "mode": "turn_away",
+        "turn_toward_wakes": false,
+        "evade_turn_rate_deg_s": 1.5,
+        "speed_boost_kt": 1
+      },
+      "ram": {
+        "enabled": false,
+        "trigger_m": 0,
+        "give_up_m": 0,
+        "stall_s": 0,
+        "cooldown_s": 0,
+        "turn_rate_bonus_deg_s": 0
+      },
+      "source": {
+        "length_m": "design (5,000t 級の貨物船 120 m・16 m)",
+        "speed_*": "design (9 kt 巡航・12 kt 最大。駆逐艦（25 kt）に護衛されるが、置いていかれる)",
+        "hull_hp": "design (未使用。魚雷は torpedo_hits_to_sink 1 本で沈む＝大目標で遅いので当てやすい代わりに 1 本)",
+        "guns": "design (v0.4.7。76mm 備砲 1 門。searchlight・starshell が null＝自分では照らせないので、同じ隊の駆逐艦が自艇を照らしている間（または水上機の照明弾）だけ撃つ。rof 8/分・damage 25・dispersion 200（有効射程 2,500 m での散り。駆逐艦の 127mm 160 より粗い）)",
+        "detection": "design (base_detect_m 1,800。見張りは駆逐艦より少ない。wake_detect_m・reaction_delay_s 12 秒＝雷跡に気づいても逃げ始めが遅い)",
+        "evasion": "design (turn_away: 雷跡から離れる向きに転舵 1.5°/s、増速 1 kt。ほぼ避けられない)",
+        "ram・patrol": "design (v0.4.7。体当たりはしない。端 700 m で中央へ向き直す（駆逐艦と同じ）)"
+      },
+      "notes": "護衛付き船団の中核。v0.4.7 から東京急行（us_02）に 1 隻混じる（missions_seed の transport）。日本ハードモードでは護衛対象になる。",
+      "patrol": {
+        "edge_turn_margin_m": 700
+      }
     },
     {
       "id": "daihatsu_barge",
@@ -91,13 +236,45 @@
       "hull_circles": 1,
       "torpedo_hits_to_sink": 0,
       "torpedo_immune": true,
-      "guns": [ { "id": "mg_13mm", "count": 1, "range_m": 1200, "effective_night_m": 600, "rof_per_min": 200, "damage": 2, "shell_speed_mps": 500, "dispersion_m": 50, "splash_radius_m": 1.5, "fire_chance": 0.03, "engine_damage_chance": 0.02 } ],
+      "guns": [
+        {
+          "id": "mg_13mm",
+          "count": 1,
+          "range_m": 1200,
+          "effective_night_m": 600,
+          "rof_per_min": 200,
+          "damage": 2,
+          "shell_speed_mps": 500,
+          "dispersion_m": 50,
+          "splash_radius_m": 1.5,
+          "fire_chance": 0.03,
+          "engine_damage_chance": 0.02
+        }
+      ],
       "searchlight": null,
       "starshell": null,
-      "detection": { "base_detect_m": 1200, "wake_detect_m": 500, "reaction_delay_s": 5, "torpedo_wake_detect_m": 0 },
-      "evasion": { "mode": "hug_shore", "turn_toward_wakes": false, "evade_turn_rate_deg_s": 8, "speed_boost_kt": 1, "beach_fan_deg": 15 },
-      "ram": { "enabled": false, "trigger_m": 0, "turn_rate_bonus_deg_s": 0 },
-      "cargo": { "troops": 70, "tons": 10 },
+      "detection": {
+        "base_detect_m": 1200,
+        "wake_detect_m": 500,
+        "reaction_delay_s": 5,
+        "torpedo_wake_detect_m": 0
+      },
+      "evasion": {
+        "mode": "hug_shore",
+        "turn_toward_wakes": false,
+        "evade_turn_rate_deg_s": 8,
+        "speed_boost_kt": 1,
+        "beach_fan_deg": 15
+      },
+      "ram": {
+        "enabled": false,
+        "trigger_m": 0,
+        "turn_rate_bonus_deg_s": 0
+      },
+      "cargo": {
+        "troops": 70,
+        "tons": 10
+      },
       "source": {
         "length_m": "historical",
         "torpedo_immune": "historical (Mk 8の最小深度約3mで下を抜ける)",
@@ -113,9 +290,25 @@
       "speed_kt": 120,
       "altitude_m": 600,
       "loiter_min": 20,
-      "flare": { "illum_radius_m": 1200, "duration_s": 40, "cooldown_s": 90, "reveal_m": 6000 },
-      "bomb": { "count": 2, "damage": 35, "blast_radius_m": 25, "accuracy_cep_m": 40, "fire_chance": 0.3, "engine_damage_chance": 0.2 },
-      "detection": { "base_detect_m": 1500, "wake_speed_threshold_kt": 18, "wake_detect_m": 6000 },
+      "flare": {
+        "illum_radius_m": 1200,
+        "duration_s": 40,
+        "cooldown_s": 90,
+        "reveal_m": 6000
+      },
+      "bomb": {
+        "count": 2,
+        "damage": 35,
+        "blast_radius_m": 25,
+        "accuracy_cep_m": 40,
+        "fire_chance": 0.3,
+        "engine_damage_chance": 0.2
+      },
+      "detection": {
+        "base_detect_m": 1500,
+        "wake_speed_threshold_kt": 18,
+        "wake_detect_m": 6000
+      },
       "source": {
         "speed_kt": "historical (概略)",
         "others": "design",
@@ -128,8 +321,18 @@
       "faction": "USN",
       "name_ja": "米PTボート（日本ハードモードの敵）",
       "boat_ref": "us_elco80",
-      "ai": { "patrol_speed_kt": 10, "attack_speed_kt": 35, "detect_m": 2500, "radar_m": 8000, "torpedo_launch_range_m": 900, "gun_range_m": 1500, "retreat_after_salvo": true },
-      "source": { "all": "design" },
+      "ai": {
+        "patrol_speed_kt": 10,
+        "attack_speed_kt": 35,
+        "detect_m": 2500,
+        "radar_m": 8000,
+        "torpedo_launch_range_m": 900,
+        "gun_range_m": 1500,
+        "retreat_after_salvo": true
+      },
+      "source": {
+        "all": "design"
+      },
       "notes": "数値は boats.json の us_elco80 を参照。AI部分のみここ。"
     },
     {
@@ -137,8 +340,18 @@
       "faction": "KM",
       "name_ja": "独Sボート（英MTB視点の敵、将来）",
       "boat_ref": "de_s100",
-      "ai": { "patrol_speed_kt": 12, "attack_speed_kt": 38, "detect_m": 2200, "radar_m": 0, "torpedo_launch_range_m": 1200, "gun_range_m": 1500, "retreat_after_salvo": true },
-      "source": { "all": "design" },
+      "ai": {
+        "patrol_speed_kt": 12,
+        "attack_speed_kt": 38,
+        "detect_m": 2200,
+        "radar_m": 0,
+        "torpedo_launch_range_m": 1200,
+        "gun_range_m": 1500,
+        "retreat_after_salvo": true
+      },
+      "source": {
+        "all": "design"
+      },
       "notes": "v0.6以降。"
     }
   ]

@@ -58,6 +58,8 @@ export interface PrototypeMission {
   enemyAircraft: { enemyId: string } | null;
   /** 夜の揺らぎ（docs/02 §6.8、v0.4.6。core/night）。無ければ毎回同じ夜 */
   night: NightBlock | null;
+  /** 輸送船（docs/02 §6.4、v0.4.7）: enemies.json の id と出発点。駆逐艦の任務だけ。無ければ null */
+  transport: { enemyId: string; start: { x: number; y: number; headingDeg: number } } | null;
 }
 
 export type MainWeapon = 'torpedo' | 'guns';
@@ -190,6 +192,15 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
       if (hard) for (const x of xs as number[]) shoreBatteryXs.push(x);
     }
   }
+  // 輸送船（v0.4.7）: 駆逐艦の任務だけ（隊の 1 隻として同じ AI で動く）
+  const trRaw = proto['transport'] as Record<string, unknown> | undefined;
+  let transport: PrototypeMission['transport'] = null;
+  if (trRaw !== undefined) {
+    const tid = trRaw?.['enemy_id'];
+    if (typeof tid !== 'string' || !(data.enemies.enemies as readonly Record<string, unknown>[]).some((x) => x['id'] === tid)) throw new Error(`${missionId}.v0_1_prototype.transport.enemy_id が enemies.json に無い（docs/02 §6.4）`);
+    if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype: 輸送船（transport）は駆逐艦（enemy_start）の任務だけ`);
+    transport = { enemyId: tid, start: readStart(trRaw['start'], `${missionId}.v0_1_prototype.transport.start`) };
+  }
   const hazardsRaw = proto['hazards'];
   if (hazardsRaw !== undefined && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === 'string'))) throw new Error(`${missionId}.v0_1_prototype.hazards（risk_events.json の id の配列。無ければ []）が壊れている（docs/02 §6.8）`);
   const hazards = hazardsRaw === undefined ? [] : (hazardsRaw as string[]).slice();
@@ -230,6 +241,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     hazards,
     enemyAircraft,
     night,
+    transport,
   };
 }
 
@@ -265,7 +277,8 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === 'string')) throw new Error(`${missionId}.v0_1_prototype.enemies が文字列の配列でない（Briefing）`);
   const mission = getPrototypeMission(data, missionId, hard);
   // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）。大発の任務は enemies のまま
-  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : (enemies as string[]);
+  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : [...(enemies as string[])];
+  if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
   return {
     id: missionId,
     titleJa: text('title_ja'),

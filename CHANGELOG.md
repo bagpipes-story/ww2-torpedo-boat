@@ -3,6 +3,24 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.4.7 — 2026-10-16（任務の生成②：輸送船）
+
+- 目的: 東京急行（us_02）に輸送船を 1 隻混ぜ、「駆逐艦と輸送船のどちらを狙うか」の判断を作る（docs/03 の「任務の生成」の後半。史実: 1942 年 11 月のガダルカナル輸送では輸送船団も突入した）。docs/02 §6.4「輸送船」・§6.9。
+- 変更点:
+  - 駆逐艦の隊を「駆逐艦 N 隻＋輸送船 1 隻」に一般化（`systems/destroyer-group.ts`）: 艦ごとの寸法・AI・砲（`world-setup.ts` の `TransportSetup`）。任務の達成（「撃沈！帰投せよ」・達成点）は駆逐艦だけ（`objectiveSinking`）、魚雷は隊のすべてが沈むまで撃てる（`allSinking`）、2 行目の「撃沈 N/M」は駆逐艦だけ、魚雷の通過半径は隊の最大。輸送船のテクスチャは灰色の幅広い船形（`generateTransportTexture`。`Destroyer` にテクスチャの引数）。
+  - 他の艦の光で撃つ（`othersIlluminated`）: 輸送船は探照灯・星弾を持たない（`enemies.json` で null → `core/gunnery` が射程 0 として読む）ので、同じ隊の駆逐艦が自艇を照らしている間か照明弾の下でだけ備砲 76mm（rof 8/分・HP −25・2,500 m）を撃つ。1 隻の隊では自分以外がいないので v0.4.6 と同じ。
+  - data（design、根拠は source）: `enemies.json` ijn_transport を読める形に（guns の shell_speed_mps 400・dispersion_m 200・splash 8・fire 0.3・engine 0.2、ram（なし）、patrol 700 m、source）。`missions_seed.json` us_02 に `transport`（(2100, 900) 135°。駆逐艦の進路の 850 m 先、約 20 秒で追い抜かれる）。`scoring.json` の `kill.points_by_enemy.ijn_transport` 400（達成 300 より少し上＝「輸送船を先に狙う」が割に合う）。
+  - 読み出し: `mission-data.ts` に `transport`（駆逐艦の任務だけ。enemies に無い id は例外）。Briefing の敵「駆逐艦 ×1、輸送船 ×1（北西から）」。今夜の揺らぎは隊の最後の 1 隻として同じ幅のずれと左右反転（`rollNight` の隻数に含める）。`?debug&notransport`（`SetupOptions.transportOff`）。
+  - HUD・Result: 平常の 2 行目「… ・ 輸送船 健在／撃沈」（`BoatTelemetry.transportEnabled / transportSunk`）。Result の内訳「帰投 ・ 撃沈 ・ 命中 ・ 輸送船 N ・ 燃料 ・ 乗員」、「駆逐艦: 健在 ・ 輸送船: 撃沈」。撃破の点は `kills`（大発と同じ経路。魚雷の任務では輸送船）。
+  - `world-setup.ts` 321 → 275 行: 駆逐艦の隊の数値（`DestroyerSpec`・`DestroyerSetup`・`TransportSetup`・`destroyerSetup`）を `systems/destroyer-setup.ts` に切り出し（型は world-setup から再 export。中身は同じ）。
+  - テスト 303 件（+4）: `tests/transport.test.ts`（enemies の読み出しと射程 0、us_02 の block と Briefing、world-setup の数値・揺らぎ・反転・ハード・notransport・検査、スコア）。briefing・hard-mode・night のテストに輸送船を足した。
+  - 検証（ヘッドレス Chromium、iPhone 15 横）: us_02 の再生 8 本が f2b5d53 のビルドと差分 0（`&fixed&notransport`。比較の道具の URL に足した）。輸送船あり（`&fixed`）: 隊 2 隻（駆逐艦 25 kt・輸送船 9 kt）、2 行目「命中 0 ・ 輸送船 健在」。輸送船に 1 本当てると「命中 1 ・ 輸送船 撃沈」、駆逐艦は健在で魚雷はまだ 4 本・矢印は駆逐艦へ、達成は未。Result「帰投 700 ・ 撃沈 0 ・ 命中 150 ・ 輸送船 400」「駆逐艦: 健在 ・ 輸送船: 撃沈」（スコア 1,250）。駆逐艦に照らされた 14.5 秒に輸送船の 76mm も撃ち始める（30 秒で駆逐艦 37 発・輸送船 1 発）。`&notransport` で 1 隻、反転の夜は輸送船も反転。ページエラー無し。
+- 既知の制約:
+  - 輸送船は駆逐艦の護衛位置を保たない（同じ針路で先行し、追い抜かれるだけ。端の向き直しで離れる）。
+  - 輸送船の発見距離は駆逐艦の値（隊で 1 つ）。輸送船だけが残っても探照灯が無いので撃たれない。
+  - 輸送船は us_02 だけ。ハードでも 1 隻。
+- 実機テスト結果: （未）
+
 ## v0.4.6 — 2026-10-16（任務の生成①：毎回違う夜）
 
 - 目的: 出撃ごとに「今夜の危険の有無」と「敵の出発位置」を seed で揺らし、同じ任務でも毎回違う夜にする（docs/03 v0.4.4（v0.4.6）「任務の生成」の前半。輸送船は v0.4.7）。docs/02 §6.8「夜の揺らぎ」。

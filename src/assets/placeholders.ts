@@ -34,6 +34,8 @@ import {
 /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
 const COLOR_PLAYER = 0xf2f5f8;
 const COLOR_ENEMY = 0xe08a8a;
+/** 輸送船（v0.4.7）: 敵だが砲台ではないことが分かる灰色がかった赤 */
+const COLOR_TRANSPORT = 0xb89a9a;
 const COLOR_TORPEDO = 0xffe066;
 const COLOR_WAKE = 0xdfe8f2;
 const COLOR_UI = 0x9fb3c8;
@@ -114,6 +116,29 @@ export function generateUiTextures(scene: Phaser.Scene, silentRingRatio: number)
   g.fillStyle(COLOR_PLAYER, 1);
   g.fillRect(0, 0, mW, mH);
   g.generateTexture(TEXTURE_KEYS.rudderMarker, mW, mH);
+  g.destroy();
+}
+
+/** 輸送船（v0.4.7）: 幅広い船形（灰色）＋後ろ寄りの船橋。原点はテクスチャ中央 */
+export function generateTransportTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
+  const k = RENDER_SCALE;
+  const L = spec.lengthUnits * k;
+  const B = spec.beamUnits * k;
+  const g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.fillStyle(COLOR_TRANSPORT, 1);
+  g.beginPath();
+  g.moveTo(B / 2, 0);
+  g.lineTo(B, L * 0.22);
+  g.lineTo(B, L * 0.92);
+  g.lineTo(B * 0.7, L);
+  g.lineTo(B * 0.3, L);
+  g.lineTo(0, L * 0.92);
+  g.lineTo(0, L * 0.22);
+  g.closePath();
+  g.fillPath();
+  g.fillStyle(0x0b1020, 0.8);
+  g.fillRect(B * 0.25, L * 0.62, B * 0.5, L * 0.18);
+  g.generateTexture(TEXTURE_KEYS.transport, Math.ceil(B), Math.ceil(L));
   g.destroy();
 }
 

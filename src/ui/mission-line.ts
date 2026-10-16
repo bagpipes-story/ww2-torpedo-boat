@@ -79,6 +79,7 @@ export class MissionLine {
   private lastTimeLeft = -1;
   private lastHits = -1;
   private lastShipsSunk = -1;
+  private lastTransportSunk = false;
   /** 撃破・上陸の直後の表示（1 撃破 / 2 上陸）と、その終わりの時刻 ms */
   private eventKind = 0;
   private eventUntil = 0;
@@ -198,6 +199,7 @@ export class MissionLine {
       timeLeft !== this.lastTimeLeft ||
       t.hits !== this.lastHits ||
       t.shipsSunk !== this.lastShipsSunk ||
+      t.transportSunk !== this.lastTransportSunk ||
       (mode === MISSION_CALL && homeStep !== this.lastHomeStep) ||
       ((mode === MISSION_SHALLOWS || mode === MISSION_FRIENDLY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_FRIENDLY &&
@@ -220,6 +222,7 @@ export class MissionLine {
       this.lastTimeLeft = timeLeft;
       this.lastHits = t.hits;
       this.lastShipsSunk = t.shipsSunk;
+      this.lastTransportSunk = t.transportSunk;
       this.lastHomeStep = homeStep;
       this.lastShallowState = t.shallowState;
       this.lastShallowStep = shallowStep;
@@ -286,7 +289,7 @@ export class MissionLine {
         const hint = t.gunMission && !t.enemySighted && t.bargesSunk + t.bargesBeached < t.bargesTotal ? ` ・ ${t.bargeHint}` : '';
         // 僚艇の任務（v0.4.4）は僚艇の HP（命中は後ろ）
         // 駆逐艦が 2 隻以上（ハード。v0.4.5）なら「撃沈 N/M」を足す
-        const ships = t.shipsTotal > 1 ? ` ・ 撃沈 ${t.shipsSunk}/${t.shipsTotal}` : '';
+        const ships = (t.shipsTotal > 1 ? ` ・ 撃沈 ${t.shipsSunk}/${t.shipsTotal}` : '') + (t.transportEnabled ? ` ・ 輸送船 ${t.transportSunk ? '撃沈' : '健在'}` : '');
         const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : t.escortEnabled ? `僚艇 HP ${Math.ceil(t.escortHp)} ・ 命中 ${t.hits}${ships}` : `命中 ${t.hits}${ships}`;
         this.missionText.setText(`夜明けまで ${timeLeft} 秒 ・ ${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
