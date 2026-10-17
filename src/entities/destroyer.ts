@@ -29,11 +29,12 @@ export class Destroyer {
     readonly spec: DestroyerSpec,
     private readonly aiParams: ShipAiParams,
     private readonly bounds: SeaBounds,
+    textureKey: string = TEXTURE_KEYS.destroyer,
   ) {
     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: aiParams.cruiseSpeedMps };
     this.ai = createShipAiState(start.headingDeg, aiParams.cruiseSpeedMps);
     this.circles = createCircles(spec.hullCircles);
-    this.sprite = scene.add.image(start.x, start.y, TEXTURE_KEYS.destroyer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.destroyer);
+    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.destroyer);
     this.refreshHull();
     this.syncSprite();
   }

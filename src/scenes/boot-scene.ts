@@ -20,6 +20,7 @@ import { directSortie } from '../core/sortie';
 import {
   generateDebugRingTexture,
   generateDestroyerTexture,
+  generateTransportTexture,
   generateGunneryTextures,
   generateSmokeTextures,
   generatePlayerBoatTexture,
@@ -57,7 +58,14 @@ export class BootScene extends Phaser.Scene {
     // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける
     const silentRatio = boat.speed_bands_kt.silent_max / boat.speed_max_kt;
     generateUiTextures(this, STICK_DEAD_ZONE + (1 - STICK_DEAD_ZONE) * silentRatio);
-    generateGunneryTextures(this, enemy.searchlight.cone_deg);
+    generateGunneryTextures(this, enemy.searchlight ? enemy.searchlight.cone_deg : 0);
+    // 輸送船（v0.4.7）: 輸送船を持つ最初の任務の値から（灰色の幅広い船形）
+    const transportMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['transport']);
+    const transport = transportMission ? getPrototypeMission(gameData, transportMission.id).transport : null;
+    if (transport) {
+      const tr = getEnemyRecord(gameData, transport.enemyId);
+      generateTransportTexture(this, { lengthUnits: tr.length_m * spriteScale, beamUnits: tr.beam_m * spriteScale });
+    }
     generateSmokeTextures(this);
     generateTorpedoButtonTexture(this);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);

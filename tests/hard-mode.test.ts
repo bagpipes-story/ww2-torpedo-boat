@@ -29,13 +29,13 @@ describe('難易度ハード（v0.4.5。敵の数が増える）', () => {
     expect(m.enemyCount).toBe(2);
     expect(m.enemyStart).toEqual({ x: 1500, y: 300, headingDeg: 135 });
     const b = getBriefingRecord(gameData, 'us_02', true);
-    expect(b.enemyIds).toEqual(['ijn_destroyer', 'ijn_destroyer']);
-    expect(enemyCountsJa(b.enemyIds, () => '駆逐艦')).toBe('駆逐艦 ×2');
-    expect(getBriefingRecord(gameData, 'us_02').enemyIds).toEqual(['ijn_destroyer']);
+    expect(b.enemyIds).toEqual(['ijn_destroyer', 'ijn_destroyer', 'ijn_transport']); // 輸送船（v0.4.7）は隊の後ろ
+    expect(enemyCountsJa(b.enemyIds.slice(0, 2), () => '駆逐艦')).toBe('駆逐艦 ×2');
+    expect(getBriefingRecord(gameData, 'us_02').enemyIds).toEqual(['ijn_destroyer', 'ijn_transport']);
     const s = buildWorldSetup(gameData, 'us_02', { hard: true });
     expect(s.hard).toBe(true);
     expect(s.destroyer!.starts.length).toBe(2);
-    expect(briefingRows(b, briefingNumbers(s), () => '駆逐艦', (h) => h)[3]).toEqual({ label: '敵', text: '駆逐艦 ×2（北西から）' });
+    expect(briefingRows(b, briefingNumbers(s), (id) => (id === 'ijn_transport' ? '輸送船' : '駆逐艦'), (h) => h)[3]).toEqual({ label: '敵', text: '駆逐艦 ×2、輸送船 ×1（北西から）' });
   });
   it('us_01 ハード: 封鎖線が 2 列（y 3,000 を東へ、y 2,000 を西へ）。僚艇はそのまま', () => {
     const m = getPrototypeMission(gameData, 'us_01', true);

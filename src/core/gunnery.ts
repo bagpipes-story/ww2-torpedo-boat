@@ -289,8 +289,9 @@ export interface EnemyGunneryDataRecord {
     fire_chance: number;
     engine_damage_chance: number;
   }>;
-  searchlight: { range_m: number; cone_deg: number; sweep_deg_s: number; on_delay_s: number };
-  starshell: { range_m: number; illum_radius_m: number; duration_s: number; cooldown_s: number };
+  /** null＝持たない（輸送船。v0.4.7）。自分では照らせず、同じ隊の艦の光か照明弾の下でだけ撃つ */
+  searchlight: { range_m: number; cone_deg: number; sweep_deg_s: number; on_delay_s: number } | null;
+  starshell: { range_m: number; illum_radius_m: number; duration_s: number; cooldown_s: number } | null;
 }
 
 function hasNums(o: unknown, keys: readonly string[]): o is Record<string, number> {
@@ -305,7 +306,7 @@ export function isEnemyGunneryDataRecord(v: unknown): v is EnemyGunneryDataRecor
   const guns = r['guns'];
   if (!Array.isArray(guns) || guns.length === 0) return false;
   if (!guns.every(isGunDataRecord)) return false;
-  return hasNums(r['searchlight'], ['range_m', 'cone_deg', 'sweep_deg_s', 'on_delay_s']) && hasNums(r['starshell'], ['range_m', 'illum_radius_m', 'duration_s', 'cooldown_s']);
+  return (r['searchlight'] === null || hasNums(r['searchlight'], ['range_m', 'cone_deg', 'sweep_deg_s', 'on_delay_s'])) && (r['starshell'] === null || hasNums(r['starshell'], ['range_m', 'illum_radius_m', 'duration_s', 'cooldown_s']));
 }
 
 export type GunDataRecord = EnemyGunneryDataRecord['guns'][number];
@@ -334,8 +335,9 @@ export function gunParamsFromData(g: GunDataRecord): GunParams {
 export function gunneryParamsFromData(r: EnemyGunneryDataRecord): GunneryParams {
   return {
     guns: r.guns.map(gunParamsFromData),
-    searchlight: { rangeM: r.searchlight.range_m, coneDeg: r.searchlight.cone_deg, sweepDegS: r.searchlight.sweep_deg_s, onDelayS: r.searchlight.on_delay_s },
-    starshell: { rangeM: r.starshell.range_m, illumRadiusM: r.starshell.illum_radius_m, durationS: r.starshell.duration_s, cooldownS: r.starshell.cooldown_s },
+    // 持たない艦（null）は射程 0＝決して照らさない・撃たない（点灯の遅れは十分大きく）
+    searchlight: r.searchlight ? { rangeM: r.searchlight.range_m, coneDeg: r.searchlight.cone_deg, sweepDegS: r.searchlight.sweep_deg_s, onDelayS: r.searchlight.on_delay_s } : { rangeM: 0, coneDeg: 0, sweepDegS: 0, onDelayS: Infinity },
+    starshell: r.starshell ? { rangeM: r.starshell.range_m, illumRadiusM: r.starshell.illum_radius_m, durationS: r.starshell.duration_s, cooldownS: r.starshell.cooldown_s } : { rangeM: 0, illumRadiusM: 0, durationS: 0, cooldownS: 0 },
   };
 }
 

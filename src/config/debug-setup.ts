@@ -11,6 +11,7 @@ import {
   DEBUG_SEAPLANE_OFF,
   DEBUG_STORM_OFF,
   DEBUG_STORM_START_Y,
+  DEBUG_TRANSPORT_OFF,
 } from './game-config';
 import type { Sortie } from '../core/sortie';
 import type { SetupOptions } from '../systems/world-setup';
@@ -26,6 +27,7 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     bargesNear: DEBUG_BARGES_NEAR,
     batteryOff: DEBUG_BATTERY_OFF,
     fixedNight: DEBUG_FIXED_NIGHT,
+    transportOff: DEBUG_TRANSPORT_OFF,
     forceStorm: Number.isFinite(DEBUG_STORM_START_Y),
     forcePlane: DEBUG_SEAPLANE !== 'none',
     forceFriendly: DEBUG_FRIENDLY_FORCE,

@@ -69,7 +69,7 @@ describe('夜の揺らぎ（core/night、v0.4.6）', () => {
   });
   it('world-setup: 出撃の seed があれば揺らぐ（暴風・敵機・味方機が今夜いなければ null、駆逐艦の出発点がずれて海域の内）。seed が無い・fixedNight なら v0.4.5 と同じ。force は今夜いなくても出す', () => {
     const fixed = buildWorldSetup(gameData, 'us_02');
-    expect(fixed.night).toEqual(fixedNight(1, 0));
+    expect(fixed.night).toEqual(fixedNight(2, 0)); // 駆逐艦 1 隻＋輸送船 1 隻（v0.4.7）
     expect(fixed.hazardsTonight).toEqual(fixed.mission.hazards);
     let noStorm = -1;
     for (let seed = 1; seed < 200 && noStorm < 0; seed++) if (buildWorldSetup(gameData, 'us_02', { sortie: directSortie('us_02', seed, 'none') }).storm === null) noStorm = seed;

@@ -32,9 +32,9 @@ export class EnemySide {
     return this.g ? this.g.anySinkPlaying : false;
   }
 
-  /** 任務の目標を達した（駆逐艦がすべて沈み始めた／大発をノルマ以上撃破）。「撃沈！帰投せよ」と Result の任務達成 */
+  /** 任務の目標を達した（駆逐艦がすべて沈み始めた（輸送船は数えない）／大発をノルマ以上撃破）。「撃沈！帰投せよ」と Result の任務達成 */
   get objectiveDone(): boolean {
-    if (this.g) return this.g.allSinking;
+    if (this.g) return this.g.objectiveSinking;
     return this.hunt ? this.hunt.quotaMet : false;
   }
 

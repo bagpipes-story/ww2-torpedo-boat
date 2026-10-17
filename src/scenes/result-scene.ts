@@ -38,6 +38,9 @@ import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export type { MissionEndReason } from '../core/mission-flow';
 
+/** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
+const TRANSPORT_ENEMY_ID = 'ijn_transport';
+
 export interface MissionResult {
   reason: MissionEndReason;
   /** 任務の種類（scoring.json の達成点） */
@@ -52,6 +55,9 @@ export interface MissionResult {
   /** 駆逐艦の隊（v0.4.5）: 沈み始めた隻数と隻数（駆逐艦のいない任務は 0） */
   shipsSunk: number;
   shipsTotal: number;
+  /** 輸送船（v0.4.7）: 任務にいる、沈めた（撃破 400） */
+  transportEnabled: boolean;
+  transportSunk: boolean;
   /** 帰投地点の輪に入って終わった（生還）。夜明け・漂流・沈没は false */
   returned: boolean;
   elapsedS: number;
@@ -212,16 +218,18 @@ export class ResultScene extends Phaser.Scene {
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     const score = computeScore(
-      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : 0, killEnemyId: h ? h.enemyId : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections },
+      // 撃破: 大発（砲）か輸送船（魚雷。v0.4.7）
+      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections },
       scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     // 回避（v0.4.4）は type に点がある任務（要人脱出）だけ出す
     const evadePart = scoringParams.evadeByType[r.missionType] !== undefined ? ` ・ 回避 ${score.evade}` : '';
-    line(h ? `帰投 ${score.survival} ・ 達成 ${score.objective} ・ 撃破 ${score.kills} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}` : `帰投 ${score.survival} ・ ${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${evadePart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+    const transportPart = r.transportEnabled ? ` ・ 輸送船 ${score.kills}` : '';
+    line(h ? `帰投 ${score.survival} ・ 達成 ${score.objective} ・ 撃破 ${score.kills} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}` : `帰投 ${score.survival} ・ ${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
-    const ships = r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`;
+    const ships = (r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`) + (r.transportEnabled ? ` ・ 輸送船: ${r.transportSunk ? '撃沈' : '健在'}` : '');
     const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : ships;
     line(`${head}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     if (r.raidLine) line(r.raidLine, HUD_FONT_HEADING_PX);

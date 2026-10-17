@@ -12,7 +12,7 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
   const detectedNow = g.anyDetected;
   if (detectedNow && !w.detect.prev) w.detect.count++;
   w.detect.prev = detectedNow;
-  w.torpedoes.step(dt, feelDt, g.ships, c.destroyer!.passRadius2, w.torpedoEvents);
+  w.torpedoes.step(dt, feelDt, g.ships, g.passRadius2, w.torpedoEvents);
   if (!w.boat.sinking && g.touchesBoat(boat, c.boatHalfLengthM)) w.sinkBoat('rammed');
   const e = w.escort;
   for (let i = 0; i < g.ships.length; i++) {
@@ -20,13 +20,15 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
     const fire = g.fires[i]!;
     const alive = !d.sinking && !w.boat.sinking;
     const detected = d.ai.playerDetected && !d.sinking;
+    // 他の艦の光（輸送船は自分では照らせない。v0.4.7）か水上機の照明弾の下なら、自分の探照灯が無くても撃てる（1 隻の隊では自分以外がいないので v0.4.6 と同じ）
+    const lit = w.flareLit || g.othersIlluminated(i);
     if (!e) {
-      fire.step(dt, feelDt, d.state, boat, detected, alive, c.boatHalfLengthM, c.boatHalfBeamM, w.hiddenBySmoke, w.flareLit);
+      fire.step(dt, feelDt, d.state, boat, detected, alive, c.boatHalfLengthM, c.boatHalfBeamM, w.hiddenBySmoke, lit);
       continue;
     }
     // 僚艇（v0.4.4）: 艦と僚艇の線が煙幕に遮られていれば僚艇は照らされない。沈んだ僚艇は狙わない
     const eb = e.state.boat;
     const escortBlocked = w.smoke !== null && w.smokeParams !== null && losBlocked(w.smoke, w.smokeParams, d.state.x, d.state.y, eb.x, eb.y);
-    fire.stepPair(dt, feelDt, d.state, boat, eb, !e.state.sunk, detected, alive, c.boatHalfLengthM, c.boatHalfBeamM, e.p.halfLengthM, e.p.halfBeamM, e.p.litNearLeaderM, w.hiddenBySmoke, escortBlocked, w.flareLit);
+    fire.stepPair(dt, feelDt, d.state, boat, eb, !e.state.sunk, detected, alive, c.boatHalfLengthM, c.boatHalfBeamM, e.p.halfLengthM, e.p.halfBeamM, e.p.litNearLeaderM, w.hiddenBySmoke, escortBlocked, lit);
   }
 }
