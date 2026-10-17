@@ -3,6 +3,7 @@ import { gameData, getEnemyRecord, getPrototypeMission, getScoringParams } from 
 import { getBriefingRecord } from '../src/config/mission-data';
 import { gunneryParamsFromData, isEnemyGunneryDataRecord } from '../src/core/gunnery';
 import { computeScore } from '../src/core/scoring';
+import { createCircles, fillHullCircles, pointHitsHull } from '../src/core/torpedo-solver';
 import { directSortie } from '../src/core/sortie';
 import { ktToMps } from '../src/core/units';
 import { buildWorldSetup } from '../src/systems/world-setup';
@@ -64,6 +65,36 @@ describe('輸送船（v0.4.7。東京急行に 1 隻混じる）', () => {
     const barges = clone();
     proto(barges, 'us_03')['transport'] = proto(barges, 'us_02')['transport'];
     expect(() => getPrototypeMission(barges, 'us_03')).toThrow(/駆逐艦/);
+  });
+  it('当たり判定（v0.4.8。実機「輸送船・駆逐艦の後部に当たったはずが当たらない」）: 絵と同じ倍率（案 A）なら絵の艦尾から 5% の点（中心から 45%）に当たり、絵の外（中心から 52%）には当たらない。実寸（v0.4.7 まで）だと絵の艦尾の 1/4 は当たらない', () => {
+    const w = gameData.hitRateModel.world;
+    // data は 2 つの位置のどちらか（いつでも戻せる: 1.0 = v0.4.7 の実寸、sprite_scale = 絵と同じ）
+    expect([1, w.sprite_scale]).toContain(w.ship_hit_scale);
+    const hullOf = (shipHitScale: number, id: string) => {
+      const s = buildWorldSetup(gameData, 'us_02', { shipHitScale });
+      const setup = id === 'ijn_transport' ? s.transport! : s.destroyer!;
+      expect(setup.spec.hitScale).toBe(shipHitScale);
+      const hull = createCircles(setup.spec.hullCircles);
+      // 北向き・原点。艦尾は +y
+      fillHullCircles(hull, 0, 0, 0, setup.spec.lengthM * setup.spec.hitScale, setup.spec.beamM * setup.spec.hitScale);
+      return hull;
+    };
+    for (const id of ['ijn_transport', 'ijn_destroyer']) {
+      const spriteLen = getEnemyRecord(gameData, id).length_m * w.sprite_scale;
+      const a = hullOf(w.sprite_scale, id);
+      expect(pointHitsHull(0, spriteLen * 0.45, a), id).toBe(true);
+      expect(pointHitsHull(0, -spriteLen * 0.45, a), id).toBe(true);
+      expect(pointHitsHull(0, spriteLen * 0.52, a), id).toBe(false);
+      const real = hullOf(1, id);
+      expect(pointHitsHull(0, spriteLen * 0.45, real), id).toBe(false);
+      expect(pointHitsHull(0, spriteLen * 0.2, real), id).toBe(true);
+    }
+    // 上書きなし・正でない上書き（?debug&shiphit が無い＝NaN）は data の値
+    expect(buildWorldSetup(gameData, 'us_02').destroyer!.spec.hitScale).toBe(w.ship_hit_scale);
+    expect(buildWorldSetup(gameData, 'us_02', { shipHitScale: Number.NaN }).transport!.spec.hitScale).toBe(w.ship_hit_scale);
+    expect(buildWorldSetup(gameData, 'us_02', { shipHitScale: 0 }).destroyer!.spec.hitScale).toBe(w.ship_hit_scale);
+    // 実寸の通過半径（v0.4.7 と同じ）
+    expect(buildWorldSetup(gameData, 'us_02', { shipHitScale: 1, transportOff: true }).destroyer!.passRadius2).toBeCloseTo((118 / 2 + 10.8) ** 2, 6);
   });
   it('スコア: 輸送船の撃破 400（kill.points_by_enemy.ijn_transport）。駆逐艦と輸送船を 1 本ずつ（800-1200yd）沈めて帰投 = 700+300+300+400+燃料+乗員', () => {
     const P = getScoringParams(gameData);

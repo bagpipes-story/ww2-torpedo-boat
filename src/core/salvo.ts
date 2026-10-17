@@ -1,17 +1,25 @@
-// 扇状一斉発射（docs/02 §5: 長押し→離す。長押し時間で開き角 2°〜12°）。Phaser 非依存。
-import { clamp } from './units';
-
+// 扇状一斉発射（docs/02 §5: 長押し→離す。v0.4.8 から長押しの長さで本数 2 → 3 → 4、扇は隣どうしの間隔が固定（本数で開く））。Phaser 非依存。
 export interface SpreadConfig {
-  spreadMinDeg: number;
-  spreadMaxDeg: number;
-  holdSecondsForMax: number;
+  /** 隣どうしの魚雷の角度の間隔（度。固定）。扇の開き角 = 間隔 × (本数 − 1) */
+  spacingDeg: number;
+  /** 長押しの始まり（秒）: これより短い押下はタップ（1 本）。これ以上押して離すと 2 本から */
+  holdStartS: number;
+  /** 本数の刻み（秒）: holdStartS で 2 本、以後この秒ごとに 1 本増える（残弾まで）。0 以下なら長押しは残弾すべて */
+  countStepS: number;
 }
 
-/** 長押し時間（秒）から開き角（度）。0 秒で最小、holdSecondsForMax 以上で最大 */
-export function spreadAngleForHold(holdS: number, cfg: SpreadConfig): number {
-  if (cfg.holdSecondsForMax <= 0) return cfg.spreadMaxDeg;
-  const k = clamp(holdS / cfg.holdSecondsForMax, 0, 1);
-  return cfg.spreadMinDeg + (cfg.spreadMaxDeg - cfg.spreadMinDeg) * k;
+/** 押していた時間（秒）から発射する本数: holdStartS 未満は 1 本（タップ）、以後 2 本から countStepS ごとに 1 本増える。残弾 remaining が上限（1 なら 1、0 なら 0） */
+export function salvoCountForHold(holdS: number, cfg: SpreadConfig, remaining: number): number {
+  if (remaining <= 1) return Math.max(0, remaining);
+  if (!(holdS >= cfg.holdStartS)) return 1;
+  if (cfg.countStepS <= 0) return remaining;
+  const n = 2 + Math.floor((holdS - cfg.holdStartS) / cfg.countStepS);
+  return n < remaining ? n : remaining;
+}
+
+/** 本数から扇の開き角（度）。1 本以下は 0 */
+export function salvoSpreadDeg(count: number, cfg: SpreadConfig): number {
+  return count <= 1 ? 0 : cfg.spacingDeg * (count - 1);
 }
 
 /**

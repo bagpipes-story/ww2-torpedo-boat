@@ -9,9 +9,10 @@ import type { TorpedoLauncher } from './torpedo-launcher';
 export function discardFireInput(input: InputState): void {
   input.fireTap = false;
   input.fireSalvoSpreadDeg = NaN;
+  input.fireSalvoCount = 0;
 }
 
-/** HUD からの発射要求を消費する。タップは 1 本、一斉は残弾すべてを扇状に（間隔は launcher が持つ） */
+/** HUD からの発射要求を消費する。タップは 1 本、一斉は本数（v0.4.8。0 なら残弾すべて）を扇状に（間隔は launcher が持つ） */
 export function consumeFireInput(input: InputState, launcher: TorpedoLauncher, boat: BoatState, remaining: number): void {
   if (input.fireTap) {
     input.fireTap = false;
@@ -19,8 +20,10 @@ export function consumeFireInput(input: InputState, launcher: TorpedoLauncher, b
   }
   if (!Number.isNaN(input.fireSalvoSpreadDeg)) {
     const spread = input.fireSalvoSpreadDeg;
+    const count = input.fireSalvoCount > 0 ? Math.min(input.fireSalvoCount, remaining) : remaining;
     input.fireSalvoSpreadDeg = NaN;
-    launcher.queueFan(boat, remaining, spread);
+    input.fireSalvoCount = 0;
+    launcher.queueFan(boat, count, spread);
   }
 }
 

@@ -1,20 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import hitRateModel from '../data/hit_rate_model.json';
-import { fillSalvoHeadings, spreadAngleForHold, type SpreadConfig } from '../src/core/salvo';
+import { fillSalvoHeadings, salvoCountForHold, salvoSpreadDeg, type SpreadConfig } from '../src/core/salvo';
 import { bandIndexForRange, countHits, summarizeShots, type ShotRecord } from '../src/core/hit-rate';
 
 const cfg: SpreadConfig = {
-  spreadMinDeg: hitRateModel.torpedo_launch.spread_angle_deg_min,
-  spreadMaxDeg: hitRateModel.torpedo_launch.spread_angle_deg_max,
-  holdSecondsForMax: hitRateModel.torpedo_launch.spread_hold_seconds_for_max,
+  spacingDeg: hitRateModel.torpedo_launch.salvo_spacing_deg,
+  holdStartS: hitRateModel.torpedo_launch.salvo_hold_start_s,
+  countStepS: hitRateModel.torpedo_launch.salvo_count_step_s,
 };
 
-describe('spreadAngleForHold', () => {
-  it('0 秒で最小、上限以上で最大、途中は線形', () => {
-    expect(spreadAngleForHold(0, cfg)).toBe(cfg.spreadMinDeg);
-    expect(spreadAngleForHold(cfg.holdSecondsForMax, cfg)).toBe(cfg.spreadMaxDeg);
-    expect(spreadAngleForHold(cfg.holdSecondsForMax * 10, cfg)).toBe(cfg.spreadMaxDeg);
-    expect(spreadAngleForHold(cfg.holdSecondsForMax / 2, cfg)).toBeCloseTo((cfg.spreadMinDeg + cfg.spreadMaxDeg) / 2, 9);
+describe('salvoCountForHold（v0.4.8。長押しの本数）', () => {
+  it('data（実機 3 回目）: 1.0 秒未満はタップ 1 本、1.0〜2.0 秒で 2 本、2.0〜3.0 秒で 3 本、3.0 秒以上で 4 本。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら長押しは残弾すべて', () => {
+    expect([cfg.holdStartS, cfg.countStepS]).toEqual([1.0, 1.0]);
+    expect([0, 0.3, 0.999, 1.0, 1.999, 2.0, 2.999, 3.0, 5].map((t) => salvoCountForHold(t, cfg, 4))).toEqual([1, 1, 1, 2, 2, 3, 3, 4, 4]);
+    // 実時間の ms から（Phaser の time.now の差 / 1000）
+    expect([999, 1000, 1999, 2000, 3000].map((ms) => salvoCountForHold(ms / 1000, cfg, 4))).toEqual([1, 2, 2, 3, 4]);
+    expect(salvoCountForHold(5, cfg, 3)).toBe(3);
+    expect(salvoCountForHold(5, cfg, 2)).toBe(2);
+    expect(salvoCountForHold(5, cfg, 1)).toBe(1);
+    expect(salvoCountForHold(0, cfg, 1)).toBe(1);
+    expect(salvoCountForHold(5, cfg, 0)).toBe(0);
+    expect(salvoCountForHold(Number.NaN, cfg, 4)).toBe(1);
+    expect(salvoCountForHold(1.0, { ...cfg, countStepS: 0 }, 4)).toBe(4);
+    expect(salvoCountForHold(0.5, { ...cfg, countStepS: 0 }, 4)).toBe(1);
+  });
+});
+
+describe('salvoSpreadDeg（v0.4.8。角度は固定の間隔）', () => {
+  it('間隔 4°（実機 3 回目で 3 → 4）: 1 本 0°、2 本 4°、3 本 8°、4 本 12°', () => {
+    expect(cfg.spacingDeg).toBe(4);
+    expect([0, 1, 2, 3, 4].map((n) => salvoSpreadDeg(n, cfg))).toEqual([0, 0, 4, 8, 12]);
+    const out = [0, 0, 0, 0];
+    fillSalvoHeadings(90, 3, salvoSpreadDeg(3, cfg), out);
+    expect(out.slice(0, 3)).toEqual([86, 90, 94]);
+    fillSalvoHeadings(90, 4, salvoSpreadDeg(4, cfg), out);
+    expect(out).toEqual([84, 88, 92, 96]);
   });
 });
 

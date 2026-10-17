@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import {
   DEBUG_DAWN_S,
   DEBUG_FUEL_ALLOTMENT_GAL,
+  DEBUG_SHIP_HIT_SCALE,
   GAME_HEIGHT,
   GAME_WIDTH,
   HUD_MARGIN,
@@ -107,7 +108,8 @@ export class HudScene extends Phaser.Scene {
     this.debugHud = new DebugHud(this, {
       buildLabel: import.meta.env.VITE_BUILD_LABEL,
       // 短く保つ（長いブランチ名でも右上の煙幕ボタンに掛からないよう、1 行目は約 80 文字以内）
-      dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s`,
+      // ?debug&shiphit=N（v0.4.8）のときだけ「当たり xN」を足す（実機でどちらの当たり判定か分かるように）
+      dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s${Number.isFinite(DEBUG_SHIP_HIT_SCALE) ? ` ・ 当たり x${DEBUG_SHIP_HIT_SCALE}` : ''}`,
     });
     this.boatHud = new BoatHud(this);
     this.hpBar = new HpBar(this);
@@ -124,9 +126,9 @@ export class HudScene extends Phaser.Scene {
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
-      spreadMinDeg: launch.spread_angle_deg_min,
-      spreadMaxDeg: launch.spread_angle_deg_max,
-      holdSecondsForMax: launch.spread_hold_seconds_for_max,
+      spacingDeg: launch.salvo_spacing_deg,
+      holdStartS: launch.salvo_hold_start_s,
+      countStepS: launch.salvo_count_step_s,
     };
     if (mission.mainWeapon === 'guns') {
       let armed = false;
