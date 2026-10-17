@@ -25,7 +25,9 @@ describe('world-setup（data から世界の数値を組み立てる。Phaser �
     expect(s.launchOffsetM).toBeCloseTo(6.3 / 2, 9);
     expect(s.smokeParams).not.toBeNull();
     expect(s.grounding.safeSpeedMps).toBeCloseTo(ktToMps(15), 9);
-    expect(s.destroyer!.passRadius2).toBeCloseTo((118 / 2 + 10.8) ** 2, 6);
+    // 船体の当たり判定は絵と同じ 2 倍（v0.4.8。ship_hit_scale）
+    expect(s.destroyer!.spec.hitScale).toBe(2);
+    expect(s.destroyer!.passRadius2).toBeCloseTo((236 / 2 + 21.6) ** 2, 6);
     expect(s.friendly).not.toBeNull();
     expect(s.friendly!.windowS).toBe(5);
     expect(s.friendly!.triggerEdgeM).toBe(2600);

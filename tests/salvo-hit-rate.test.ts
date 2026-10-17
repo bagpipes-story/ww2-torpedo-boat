@@ -1,19 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import hitRateModel from '../data/hit_rate_model.json';
-import { fillSalvoHeadings, salvoCountForHold, spreadAngleForHold, type SpreadConfig } from '../src/core/salvo';
+import { fillSalvoHeadings, salvoCountForHold, salvoSpreadDeg, type SpreadConfig } from '../src/core/salvo';
 import { bandIndexForRange, countHits, summarizeShots, type ShotRecord } from '../src/core/hit-rate';
 
 const cfg: SpreadConfig = {
-  spreadMinDeg: hitRateModel.torpedo_launch.spread_angle_deg_min,
-  spreadMaxDeg: hitRateModel.torpedo_launch.spread_angle_deg_max,
-  holdSecondsForMax: hitRateModel.torpedo_launch.spread_hold_seconds_for_max,
+  spacingDeg: hitRateModel.torpedo_launch.salvo_spacing_deg,
   countStepS: hitRateModel.torpedo_launch.salvo_count_step_s,
 };
 
 describe('salvoCountForHold（v0.4.8。長押しの本数）', () => {
-  it('data: 刻み 1.0 秒（実機で 0.5 → 1.0）。長押しに入った時点で 2 本、1.0 秒で 3 本、2.0 秒で 4 本。開き角の最大は 3.0 秒。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら残弾すべて', () => {
+  it('data: 刻み 1.0 秒（実機で 0.5 → 1.0）。長押しに入った時点で 2 本、1.0 秒で 3 本、2.0 秒で 4 本。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら残弾すべて', () => {
     expect(cfg.countStepS).toBe(1.0);
-    expect(cfg.holdSecondsForMax).toBe(3.0);
     expect(salvoCountForHold(0, cfg, 4)).toBe(2);
     expect(salvoCountForHold(0.99, cfg, 4)).toBe(2);
     expect(salvoCountForHold(1.0, cfg, 4)).toBe(3);
@@ -26,12 +23,13 @@ describe('salvoCountForHold（v0.4.8。長押しの本数）', () => {
   });
 });
 
-describe('spreadAngleForHold', () => {
-  it('0 秒で最小、上限以上で最大、途中は線形', () => {
-    expect(spreadAngleForHold(0, cfg)).toBe(cfg.spreadMinDeg);
-    expect(spreadAngleForHold(cfg.holdSecondsForMax, cfg)).toBe(cfg.spreadMaxDeg);
-    expect(spreadAngleForHold(cfg.holdSecondsForMax * 10, cfg)).toBe(cfg.spreadMaxDeg);
-    expect(spreadAngleForHold(cfg.holdSecondsForMax / 2, cfg)).toBeCloseTo((cfg.spreadMinDeg + cfg.spreadMaxDeg) / 2, 9);
+describe('salvoSpreadDeg（v0.4.8。角度は固定の間隔）', () => {
+  it('間隔 3°: 1 本 0°、2 本 3°、3 本 6°、4 本 9°', () => {
+    expect(cfg.spacingDeg).toBe(3);
+    expect([0, 1, 2, 3, 4].map((n) => salvoSpreadDeg(n, cfg))).toEqual([0, 0, 3, 6, 9]);
+    const out = [0, 0, 0, 0];
+    fillSalvoHeadings(90, 3, salvoSpreadDeg(3, cfg), out);
+    expect(out.slice(0, 3)).toEqual([87, 90, 93]);
   });
 });
 

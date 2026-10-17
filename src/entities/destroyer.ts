@@ -13,7 +13,7 @@ export type { DestroyerSpec };
 export class Destroyer {
   readonly sprite: Phaser.GameObjects.Image;
   readonly state: BoatState;
-  /** 船体を近似する円の列（実寸 × hit_scale。見た目は sprite_scale 倍。docs/02 §6.10） */
+  /** 船体を近似する円の列（実寸 × ship_hit_scale。v0.4.8 から見た目（sprite_scale 倍）と同じ。docs/02 §6.10） */
   readonly circles: Circle[];
   readonly ai: ShipAiState;
   hitsTaken = 0;

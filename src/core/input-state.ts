@@ -10,7 +10,7 @@ export interface InputState {
   stickActive: boolean;
   /** 魚雷ボタンのタップ（1 本）。Mission が消費して false に戻す */
   fireTap: boolean;
-  /** 長押し→離す の一斉発射。開き角（度）。NaN なら要求なし。Mission が消費して NaN に戻す */
+  /** 長押し→離す の一斉発射。扇の開き角（度。v0.4.8 から本数 × 固定の間隔）。NaN なら要求なし。Mission が消費して NaN に戻す */
   fireSalvoSpreadDeg: number;
   /** 一斉の本数（v0.4.8。長押しの長さで 2 → 3 → 4。0 なら残弾すべて） */
   fireSalvoCount: number;

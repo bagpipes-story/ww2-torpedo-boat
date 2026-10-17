@@ -56,7 +56,7 @@ export const HUD_COLOR_WARN = '#ff8a7a';
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉 */
 export const TORPEDO_BUTTON_RADIUS = 64;
-/** これより短い押下はタップ扱い（秒）。長押しの開き角は、この閾値を超えてからの時間で spread_hold_seconds_for_max に達する */
+/** これより短い押下はタップ扱い（秒）。長押しの本数は、この閾値を超えてからの時間で数える（hit_rate_model の salvo_count_step_s） */
 export const TORPEDO_BUTTON_TAP_MAX_S = 0.3;
 export const TORPEDO_BUTTON_ALPHA = 0.55;
 export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
@@ -140,7 +140,7 @@ export const EXPLOSION_TINT_DUD = 0x9a9a9a;
 /** 沈没演出: 縮小率と傾き（度） */
 export const SINK_SCALE_TO = 0.6;
 export const SINK_TILT_DEG = 18;
-/** 魚雷ボタン: 開き角予告の位置（ボタン上端からの隙間）と残弾 0 のときの濃さ */
+/** 魚雷ボタン: 本数の予告「一斉 N 本」の位置（ボタン上端からの隙間）と残弾 0 のときの濃さ */
 export const TORPEDO_SPREAD_LABEL_GAP = 8;
 export const TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR = 0.4;
 /** デバッグ時（?debug）だけ出す見越し点マーカー（docs/02 §6.3「v0.1 はデバッグ切替で常時表示可」） */

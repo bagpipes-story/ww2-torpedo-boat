@@ -9,7 +9,7 @@ export interface DestroyerSpec {
   beamM: number;
   hullCircles: number;
   hitsToSink: number;
-  /** 当たり判定に使う寸法の倍率（data: world.hit_scale。1=実寸） */
+  /** 当たり判定に使う寸法の倍率（data: world.ship_hit_scale。v0.4.8 から絵と同じ 2） */
   hitScale: number;
   /** 海域境界から押し戻す余白 m（表示上の船体半分） */
   boundsMarginM: number;
@@ -36,11 +36,12 @@ export interface TransportSetup extends Omit<DestroyerSetup, 'starts'> {
 export function destroyerSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitsOverride: number | null): DestroyerSetup {
   const world = data.hitRateModel.world;
   const r = getEnemyRecord(data, enemyId);
-  const hitLen = r.length_m * world.hit_scale;
-  const hitBeam = r.beam_m * world.hit_scale;
+  // 船体の当たり判定は絵と同じ倍率（v0.4.8。ship_hit_scale）。自艇・大発は hit_scale のまま
+  const hitLen = r.length_m * world.ship_hit_scale;
+  const hitBeam = r.beam_m * world.ship_hit_scale;
   return {
     starts,
-    spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale: world.hit_scale, boundsMarginM: (r.length_m * world.sprite_scale) / 2 },
+    spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale: world.ship_hit_scale, boundsMarginM: (r.length_m * world.sprite_scale) / 2 },
     shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data)),
     gunnery: gunneryParamsFromData(r),
     passRadius2: (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam),

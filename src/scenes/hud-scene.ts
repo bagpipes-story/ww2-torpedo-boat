@@ -124,9 +124,7 @@ export class HudScene extends Phaser.Scene {
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
-      spreadMinDeg: launch.spread_angle_deg_min,
-      spreadMaxDeg: launch.spread_angle_deg_max,
-      holdSecondsForMax: launch.spread_hold_seconds_for_max,
+      spacingDeg: launch.salvo_spacing_deg,
       countStepS: launch.salvo_count_step_s,
     };
     if (mission.mainWeapon === 'guns') {

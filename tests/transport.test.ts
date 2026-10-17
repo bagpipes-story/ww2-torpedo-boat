@@ -3,6 +3,7 @@ import { gameData, getEnemyRecord, getPrototypeMission, getScoringParams } from 
 import { getBriefingRecord } from '../src/config/mission-data';
 import { gunneryParamsFromData, isEnemyGunneryDataRecord } from '../src/core/gunnery';
 import { computeScore } from '../src/core/scoring';
+import { createCircles, fillHullCircles, pointHitsHull } from '../src/core/torpedo-solver';
 import { directSortie } from '../src/core/sortie';
 import { ktToMps } from '../src/core/units';
 import { buildWorldSetup } from '../src/systems/world-setup';
@@ -64,6 +65,23 @@ describe('輸送船（v0.4.7。東京急行に 1 隻混じる）', () => {
     const barges = clone();
     proto(barges, 'us_03')['transport'] = proto(barges, 'us_02')['transport'];
     expect(() => getPrototypeMission(barges, 'us_03')).toThrow(/駆逐艦/);
+  });
+  it('当たり判定（v0.4.8。実機「輸送船・駆逐艦の後部に当たったはずが当たらない」）: 船体は絵と同じ 2 倍。絵の艦尾から 5% の点（中心から 45%）に当たり、絵の外（中心から 52%）には当たらない', () => {
+    const w = gameData.hitRateModel.world;
+    expect(w.ship_hit_scale).toBe(w.sprite_scale);
+    for (const [id, setup] of [['ijn_transport', buildWorldSetup(gameData, 'us_02').transport!], ['ijn_destroyer', buildWorldSetup(gameData, 'us_02').destroyer!]] as const) {
+      const r = getEnemyRecord(gameData, id);
+      const spriteLen = r.length_m * w.sprite_scale;
+      const hull = createCircles(setup.spec.hullCircles);
+      // 北向き・原点。艦尾は +y
+      fillHullCircles(hull, 0, 0, 0, setup.spec.lengthM * setup.spec.hitScale, setup.spec.beamM * setup.spec.hitScale);
+      expect(pointHitsHull(0, spriteLen * 0.45, hull), id).toBe(true);
+      expect(pointHitsHull(0, -spriteLen * 0.45, hull), id).toBe(true);
+      expect(pointHitsHull(0, spriteLen * 0.52, hull), id).toBe(false);
+      // 実寸（v0.4.7 まで）だと絵の艦尾の 1/4 は当たらなかった
+      fillHullCircles(hull, 0, 0, 0, r.length_m, r.beam_m);
+      expect(pointHitsHull(0, spriteLen * 0.45, hull), id).toBe(false);
+    }
   });
   it('スコア: 輸送船の撃破 400（kill.points_by_enemy.ijn_transport）。駆逐艦と輸送船を 1 本ずつ（800-1200yd）沈めて帰投 = 700+300+300+400+燃料+乗員', () => {
     const P = getScoringParams(gameData);
