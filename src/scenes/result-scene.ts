@@ -17,9 +17,11 @@ import { getGameData, getScoringParams } from '../config/game-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import {
+  HUD_COLOR_KPI,
   HUD_COLOR_STRONG,
   HUD_FONT_HEADING_PX,
   HUD_FONT_SPEED_PX,
+  HUD_FONT_STATUS_PX,
   HUD_FONT_STEP_PX,
   RESULT_INPUT_DELAY_MS,
   RESULT_LINE_GAP,
@@ -31,6 +33,7 @@ import {
 import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
 import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
+import type { KpiResultLines } from '../systems/kpi-storage';
 import { bargeResultLines, escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
@@ -47,6 +50,8 @@ export interface MissionResult {
   missionType: string;
   shots: ShotRecord[];
   bands: BandSummary[];
+  /** 通算の命中率（正しく狙った 1 本。v0.5.0）。Mission の終わりに 1 回だけ記録して作る（魚雷の任務だけ。大発の任務は null） */
+  kpi: KpiResultLines | null;
   hits: number;
   duds: number;
   misses: number;
@@ -212,7 +217,12 @@ export class ResultScene extends Phaser.Scene {
       y += RESULT_SECTION_GAP;
       const bandsFired = r.bands.filter((b) => b.shots > 0);
       if (bandsFired.length === 0) line('発射なし', HUD_FONT_HEADING_PX);
-      for (const b of bandsFired) line(`${b.band}: ${b.hits} / ${b.shots}${b.duds > 0 ? `（不発 ${b.duds}）` : ''}`, HUD_FONT_HEADING_PX);
+      // 通算（v0.5.0）: 撃った帯の行の右に、その帯の通算の命中率と目標帯（命中率チューニングの根拠。CLAUDE.md §9）。凡例は下に 1 行
+      const kpi = r.kpi;
+      r.bands.forEach((b, i) => {
+        if (b.shots > 0) line(`${b.band}: ${b.hits} / ${b.shots}${b.duds > 0 ? `（不発 ${b.duds}）` : ''}${kpi ? `   ${kpi.byBand[i]}` : ''}`, HUD_FONT_HEADING_PX);
+      });
+      if (kpi) line(kpi.legend, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）

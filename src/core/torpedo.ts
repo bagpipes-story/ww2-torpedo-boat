@@ -35,6 +35,10 @@ export interface TorpedoState {
   erraticBiasDeg: number;
   /** 発射時の目標までの距離 m（KPI 記録用） */
   rangeAtLaunchM: number;
+  /** 発射時の見越し角のずれ（度。発射針路 − 目標が今の速さと針路のまま進むとしたときの命中針路。解けなければ NaN。v0.5.0 の KPI 記録用。発射管制が書く） */
+  leadErrDeg: number;
+  /** KPI に数える目標（駆逐艦）を狙った発射か（v0.5.0。輸送船は数えない。発射管制が書く） */
+  kpiTarget: boolean;
   /** 次に雷跡の点を置く走行距離 m */
   nextWakeAtM: number;
   /** 結果（命中/外れ）が確定済み。確定後も表示のために走り続けることがある */
@@ -56,6 +60,8 @@ export function createTorpedoState(): TorpedoState {
     erratic: false,
     erraticBiasDeg: 0,
     rangeAtLaunchM: 0,
+    leadErrDeg: Number.NaN,
+    kpiTarget: false,
     nextWakeAtM: 0,
     resolved: false,
     lastTargetDist2: -1,
@@ -128,6 +134,8 @@ export function launchTorpedo(
   s.erratic = erratic;
   s.erraticBiasDeg = erratic ? erraticBiasDeg : 0;
   s.rangeAtLaunchM = rangeAtLaunchM;
+  s.leadErrDeg = Number.NaN;
+  s.kpiTarget = false;
   s.nextWakeAtM = wakeSpacingM;
   s.resolved = false;
   s.lastTargetDist2 = -1;

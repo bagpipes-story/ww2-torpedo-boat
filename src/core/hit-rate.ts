@@ -7,6 +7,15 @@ export interface ShotRecord {
   hit: boolean;
   dud: boolean;
   erratic: boolean;
+  /** 発射時の見越し角のずれ（度。解けなければ NaN。v0.5.0） */
+  leadErrDeg: number;
+  /** 駆逐艦を狙った発射（KPI に数える。輸送船は false。v0.5.0） */
+  kpiTarget: boolean;
+}
+
+/** KPI の「正しく狙った 1 本」（docs/02 §6.3。v0.5.0）: 駆逐艦を狙い、蛇行せず、見越し角のずれが maxDeg 以内 */
+export function isAimedShot(r: ShotRecord, maxDeg: number): boolean {
+  return r.kpiTarget && !r.erratic && Math.abs(r.leadErrDeg) <= maxDeg;
 }
 
 export interface RangeBand {

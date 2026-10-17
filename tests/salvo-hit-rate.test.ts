@@ -10,19 +10,19 @@ const cfg: SpreadConfig = {
 };
 
 describe('salvoCountForHold（v0.4.8。長押しの本数）', () => {
-  it('data（実機 3 回目）: 1.0 秒未満はタップ 1 本、1.0〜2.0 秒で 2 本、2.0〜3.0 秒で 3 本、3.0 秒以上で 4 本。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら長押しは残弾すべて', () => {
-    expect([cfg.holdStartS, cfg.countStepS]).toEqual([1.0, 1.0]);
-    expect([0, 0.3, 0.999, 1.0, 1.999, 2.0, 2.999, 3.0, 5].map((t) => salvoCountForHold(t, cfg, 4))).toEqual([1, 1, 1, 2, 2, 3, 3, 4, 4]);
+  it('data（v0.5.0 の実機）: 0.5 秒未満はタップ 1 本、0.5〜1.5 秒で 2 本、1.5〜2.5 秒で 3 本、2.5 秒以上で 4 本。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら長押しは残弾すべて', () => {
+    expect([cfg.holdStartS, cfg.countStepS]).toEqual([0.5, 1.0]);
+    expect([0, 0.3, 0.499, 0.5, 1.499, 1.5, 2.499, 2.5, 5].map((t) => salvoCountForHold(t, cfg, 4))).toEqual([1, 1, 1, 2, 2, 3, 3, 4, 4]);
     // 実時間の ms から（Phaser の time.now の差 / 1000）
-    expect([999, 1000, 1999, 2000, 3000].map((ms) => salvoCountForHold(ms / 1000, cfg, 4))).toEqual([1, 2, 2, 3, 4]);
+    expect([499, 500, 1499, 1500, 2500].map((ms) => salvoCountForHold(ms / 1000, cfg, 4))).toEqual([1, 2, 2, 3, 4]);
     expect(salvoCountForHold(5, cfg, 3)).toBe(3);
     expect(salvoCountForHold(5, cfg, 2)).toBe(2);
     expect(salvoCountForHold(5, cfg, 1)).toBe(1);
     expect(salvoCountForHold(0, cfg, 1)).toBe(1);
     expect(salvoCountForHold(5, cfg, 0)).toBe(0);
     expect(salvoCountForHold(Number.NaN, cfg, 4)).toBe(1);
-    expect(salvoCountForHold(1.0, { ...cfg, countStepS: 0 }, 4)).toBe(4);
-    expect(salvoCountForHold(0.5, { ...cfg, countStepS: 0 }, 4)).toBe(1);
+    expect(salvoCountForHold(0.5, { ...cfg, countStepS: 0 }, 4)).toBe(4);
+    expect(salvoCountForHold(0.3, { ...cfg, countStepS: 0 }, 4)).toBe(1);
   });
 });
 
@@ -63,10 +63,10 @@ describe('hit-rate: 帯の判定と集計', () => {
   });
   it('集計: 帯ごとの発射数・命中数・不発数', () => {
     const shots: ShotRecord[] = [
-      { rangeM: 300, hit: true, dud: false, erratic: false },
-      { rangeM: 350, hit: false, dud: false, erratic: true },
-      { rangeM: 800, hit: true, dud: true, erratic: false },
-      { rangeM: 2500, hit: false, dud: false, erratic: false },
+      { rangeM: 300, hit: true, dud: false, erratic: false, leadErrDeg: 0, kpiTarget: true },
+      { rangeM: 350, hit: false, dud: false, erratic: true, leadErrDeg: 0, kpiTarget: true },
+      { rangeM: 800, hit: true, dud: true, erratic: false, leadErrDeg: 0, kpiTarget: true },
+      { rangeM: 2500, hit: false, dud: false, erratic: false, leadErrDeg: 0, kpiTarget: true },
     ];
     const s = summarizeShots(shots, bands);
     expect(s).toHaveLength(bands.length);

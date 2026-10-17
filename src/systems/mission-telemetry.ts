@@ -248,6 +248,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     missionType: w.setup.mission.type,
     shots: w.shots.slice(),
     bands: summarizeShots(w.shots, data.hitRateModel.kpi_by_range),
+    kpi: null,
     hits: counts.hits - counts.duds,
     duds: counts.duds,
     misses: counts.misses,

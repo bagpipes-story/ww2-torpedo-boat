@@ -1,5 +1,5 @@
 // 駆逐艦の隊（v0.4.5。難易度ハードで 2 隻以上。v0.4.7 から輸送船も隊の 1 隻）: 艦（entities/destroyer）とその反撃（enemy-fire）を隻数ぶん持ち、世界・敵の側・テレメトリが「どれか／すべて／最寄り」で読む。
-// 任務の達成は駆逐艦だけ（輸送船は撃破の加点）。砲撃の乱数は 1 つの系列（seed+1）を艦の順に消費する（1 隻ならこれまでと同じ）。§7: 確保しない（最寄りは添字で返す）。
+// 任務の達成は駆逐艦だけ（輸送船は撃破の加点）。砲撃の乱数は 1 つの系列（seed+1）を、見張り（雷跡に気づく。v0.5.0）の乱数は別の系列（seed+17）を、それぞれ艦の順に消費する（1 隻ならこれまでと同じ）。§7: 確保しない（最寄りは添字で返す）。
 import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
@@ -17,15 +17,15 @@ export class DestroyerGroup {
   /** 魚雷の通過判定の半径二乗（隊の最大） */
   readonly passRadius2: number;
 
-  constructor(scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, splashes: SplashPool) {
+  constructor(scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool) {
     for (const st of ds.starts) {
-      this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds));
+      this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng));
       this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, st.headingDeg, splashes));
     }
     this.destroyerCount = this.ships.length;
     this.passRadius2 = ds.passRadius2;
     if (transport) {
-      this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, TEXTURE_KEYS.transport));
+      this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, lookoutRng, TEXTURE_KEYS.transport));
       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
       if (transport.passRadius2 > this.passRadius2) this.passRadius2 = transport.passRadius2;
     }

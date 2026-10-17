@@ -15,6 +15,7 @@ import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import { insideRing, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
+import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
 import { SHALLOW_NONE, shallowIndexAt, updateShallowStatus, type ShallowStatus } from '../core/shallows';
 import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import { startDamageState, type Sortie } from '../core/sortie';
@@ -193,7 +194,8 @@ export class MissionWorld {
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, s.torpedoCapacity, mission.bounds);
     // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
     this.gunRng = new SeededRng((seed + 1) >>> 0);
-    this.destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, this.gunRng, this.splashes) : null;
+    // 見張り（雷跡に気づく抽選。v0.5.0）も別系列（seed+17。seed+16 は今夜の揺らぎ）。気づくまで 1 ステップ 1 回だけ引く
+    this.destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, this.gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), this.splashes) : null;
     // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）
     this.destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => this.hitBoat((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, this.gunRng, x, y, 'destroyed')));
     // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
@@ -206,7 +208,7 @@ export class MissionWorld {
     this.destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => (this.escort!.hit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false))));
     this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBatteries, this.splashes) : null;
     this.enemy = new EnemySide(this.destroyers, this.hunt);
-    this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS);
+    this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
     this.torpedoEvents = torpedoEventsFor(this, events);
     this.smokeParams = s.smokeParams;
     this.smoke = this.smokeParams ? createSmokeState(SMOKE_POOL_SIZE) : null;
@@ -230,7 +232,11 @@ export class MissionWorld {
       else consumeFireInput(this.input, this.launcher, this.boat.state, this.torpedoes.remaining);
       this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.extinguishHeldS, realDt, this.extinguishHoldScale);
       // 一斉発射の見越しは最寄りの浮いている艦（すべて沈んでいれば 1 隻目。発射はしない）
-      if (g) this.launcher.update(realDt, this.boat.state, (g.nearestAfloat(this.boat.state.x, this.boat.state.y) ?? g.ships[0]!).state);
+      if (g) {
+        // 狙う艦は最寄りの浮いている艦。駆逐艦なら KPI に数える（輸送船は数えない。v0.5.0）
+        const ti = g.nearestAfloatIndex(this.boat.state.x, this.boat.state.y);
+        this.launcher.update(realDt, this.boat.state, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount);
+      }
       if (Number.isNaN(this.fuelAtFirstLaunchGal) && (this.torpedoes.remaining < this.torpedoes.capacity || (this.hunt !== null && this.hunt.battery.shots > 0))) this.fuelAtFirstLaunchGal = this.fuel.gal;
     }
     this.stepper.advance(realDt, this.stepFn);

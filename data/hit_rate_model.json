@@ -17,9 +17,9 @@
     "salvo_spacing_deg": 4,
     "salvo_interval_s": 0.4,
     "erratic_period_s": 6,
-    "salvo_hold_start_s": 1.0,
+    "salvo_hold_start_s": 0.5,
     "salvo_count_step_s": 1.0,
-    "source": "design (erratic_period_s: 蛇行魚雷の進路が ±jitter_deg を往復する周期。実時間秒。salvo_hold_start_s・salvo_count_step_s（v0.4.8）: 長押しの本数。salvo_hold_start_s 未満の押下はタップ（1 本）、それ以上押して離すと 2 本、そこから salvo_count_step_s ごとに 1 本増える（1.0 秒・1.0 秒: 1.0〜2.0 秒で 2 本、2.0〜3.0 秒で 3 本、3.0 秒以上で 4 本＝残弾すべて）。経緯: v0.4.7 の実機「長押しは必ず 4 本で 1 回で残数ゼロ」→ 本数を選べるように（タップの閾値 0.3 秒＋刻み 0.5 秒）。v0.4.8 の実機 1 回目「長押しで本数と角度を調整するのはきつい。長さを 2 倍に」→ 刻み 1.0 秒。2 回目「長押しは本数だけ、角度は固定でいい」→ 開き角の長押し（2°〜12°、spread_angle_deg_min / max・spread_hold_seconds_for_max）をやめた。3 回目「2 本の長押しは 1.0〜2.0 秒、以降 1 秒ごとに増やす」→ 長押しの始まりを 0.3 秒（ui-config の TORPEDO_BUTTON_TAP_MAX_S）から data の salvo_hold_start_s 1.0 秒に。salvo_spacing_deg（v0.4.8）: 一斉の隣どうしの魚雷の角度の間隔（固定）。扇の開き角 = 間隔 × (本数 − 1)＝2 本 4°・3 本 8°・4 本 12°。合計の角度を固定するより、本数を変えても魚雷どうしの密度が同じ。3° → 4°（実機 3 回目「魚雷の角度が狭い」）: 1,000 m で隣の魚雷の間 約 52 → 70 m、4 本の扇の幅 約 157 → 210 m（従来の長押しの最大 12° と同じ）。扇が艦に掛かって 1 本は当たるのは、艦の針路と魚雷の進路の角度が、当たり判定 2 倍（長さ 236 m・幅 21.6 m）で約 12° 以上（3° なら約 8° 以上）、実寸（118 m・10.8 m）なら約 31° 以上（3° なら約 21° 以上）。真正面・真後ろからの扇は間をすり抜けうる)"
+    "source": "design (erratic_period_s: 蛇行魚雷の進路が ±jitter_deg を往復する周期。実時間秒。salvo_hold_start_s・salvo_count_step_s（v0.4.8）: 長押しの本数。salvo_hold_start_s 未満の押下はタップ（1 本）、それ以上押して離すと 2 本、そこから salvo_count_step_s ごとに 1 本増える（0.5 秒・1.0 秒: 0.5〜1.5 秒で 2 本、1.5〜2.5 秒で 3 本、2.5 秒以上で 4 本＝残弾すべて）。経緯: v0.4.7 の実機「長押しは必ず 4 本で 1 回で残数ゼロ」→ 本数を選べるように（タップの閾値 0.3 秒＋刻み 0.5 秒）。v0.4.8 の実機 1 回目「長押しで本数と角度を調整するのはきつい。長さを 2 倍に」→ 刻み 1.0 秒。2 回目「長押しは本数だけ、角度は固定でいい」→ 開き角の長押し（2°〜12°、spread_angle_deg_min / max・spread_hold_seconds_for_max）をやめた。3 回目「2 本の長押しは 1.0〜2.0 秒、以降 1 秒ごとに増やす」→ 長押しの始まりを 0.3 秒（ui-config の TORPEDO_BUTTON_TAP_MAX_S）から data の salvo_hold_start_s 1.0 秒に。v0.5.0 の実機「0.5 秒未満で 1 本、0.5〜1.5 秒で 2 本、以降 1 秒ごと」→ salvo_hold_start_s 1.0 → 0.5 秒（刻みは 1.0 秒のまま）。salvo_spacing_deg（v0.4.8）: 一斉の隣どうしの魚雷の角度の間隔（固定）。扇の開き角 = 間隔 × (本数 − 1)＝2 本 4°・3 本 8°・4 本 12°。合計の角度を固定するより、本数を変えても魚雷どうしの密度が同じ。3° → 4°（実機 3 回目「魚雷の角度が狭い」）: 1,000 m で隣の魚雷の間 約 52 → 70 m、4 本の扇の幅 約 157 → 210 m（従来の長押しの最大 12° と同じ）。扇が艦に掛かって 1 本は当たるのは、艦の針路と魚雷の進路の角度が、当たり判定 2 倍（長さ 236 m・幅 21.6 m）で約 12° 以上（3° なら約 8° 以上）、実寸（118 m・10.8 m）なら約 31° 以上（3° なら約 21° 以上）。真正面・真後ろからの扇は間をすり抜けうる)"
   },
   "kpi_by_range": [
     {
@@ -28,6 +28,7 @@
       "range_m_max": 366,
       "target_hit_min": 0.6,
       "target_hit_max": 0.7,
+      "sim_ranges_m": [150, 250, 350],
       "historical_note": "PTの典型発射距離の下限。最も危険"
     },
     {
@@ -36,6 +37,7 @@
       "range_m_max": 732,
       "target_hit_min": 0.45,
       "target_hit_max": 0.55,
+      "sim_ranges_m": [400, 500, 600, 700],
       "historical_note": "PTの典型発射距離"
     },
     {
@@ -44,6 +46,7 @@
       "range_m_max": 1097,
       "target_hit_min": 0.3,
       "target_hit_max": 0.35,
+      "sim_ranges_m": [750, 850, 950, 1050],
       "historical_note": "2,000ydの手前"
     },
     {
@@ -52,6 +55,7 @@
       "range_m_max": 1829,
       "target_hit_min": 0.1,
       "target_hit_max": 0.15,
+      "sim_ranges_m": [1150, 1350, 1550, 1750],
       "historical_note": "Bulkleyが『成果が乏しい』とした距離"
     },
     {
@@ -60,6 +64,7 @@
       "range_m_max": 99999,
       "target_hit_min": 0.0,
       "target_hit_max": 0.05,
+      "sim_ranges_m": [1900, 2200, 2500],
       "historical_note": "Channel Dashの4,000ydは全弾外れ"
     }
   ],
@@ -74,7 +79,17 @@
       "dud",
       "erratic"
     ],
-    "source": "design"
+    "aimed_lead_error_deg_max": 3,
+    "record_version": "v0.5.0",
+    "sim": {
+      "enemy_id": "ijn_destroyer",
+      "torpedo_id": "us_mk8",
+      "bearing_step_deg": 15,
+      "aim_errors_deg": [-2, 0, 2],
+      "reps": 4,
+      "seed": 1
+    },
+    "source": "design (v0.5.0。aimed_lead_error_deg_max: Result の通算の命中率は「正しく狙った 1 本」＝発射時の見越し角のずれ（目標の今の速さと針路のまま進むとしたときの命中針路との差）がこの度以内で、蛇行していない魚雷だけを数える（KPI の表は『正しい見越し角の 1 本』の命中率なので）。3°: 1,000 m で船体の長さ方向に約 50 m のずれ。当たり判定 2 倍の艦（236 m）なら避けなければ当たる幅。扇の内側の 2 本（±2°）は入り、外側（±6°）は入らない。record_version: 通算の記録の版（localStorage の鍵）。回避や当たり判定を変えて測り直すときに上げる（古い記録は読まない）。sim: src/core/hit-rate-sim.ts の模擬（tests/hit-rate-sim.test.ts と scripts/hit-rate-sim.ts）。止まった艇から、kpi_by_range の sim_ranges_m の各距離・艦の左正横〜艦首〜右正横 bearing_step_deg 刻み・見越し角のずれ aim_errors_deg を reps 回ずつ撃つ（見張りの抽選は seed の 1 系列）。ずれ −2/0/+2° は aimed の ±3° の中のばらつきの代わり（一様 ±3° と標準偏差がほぼ同じ）)"
   },
   "reliability_by_era": {
     "early_1942": {

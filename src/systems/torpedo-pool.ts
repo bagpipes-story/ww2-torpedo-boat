@@ -18,8 +18,9 @@ import { pointHitsHull, type Circle } from '../core/torpedo-solver';
 
 /** 魚雷の結果通知。引数はプリミティブのみ（確保しない）。target は当たった艦の添字（v0.4.5） */
 export interface TorpedoEvents {
-  onHit(target: number, x: number, y: number, dud: boolean, erratic: boolean, rangeAtLaunchM: number): void;
-  onMiss(erratic: boolean, rangeAtLaunchM: number): void;
+  /** 当たった艦の添字と位置。s は魚雷の状態（不発・蛇行・発射時の距離と見越し角のずれを読む。呼び出しの中だけ有効） */
+  onHit(target: number, x: number, y: number, s: TorpedoState): void;
+  onMiss(s: TorpedoState): void;
 }
 
 /** 魚雷の目標（駆逐艦）: 船体の円、中心、沈み始めた（沈み始めた艦には当たらず、通過の判定にも使わない） */
@@ -75,15 +76,15 @@ export class TorpedoPool {
     return n;
   }
 
-  /** 1 本発射。残弾が無ければ false。引数はプリミティブ（確保しない） */
-  fire(x: number, y: number, headingDeg: number, dud: boolean, erratic: boolean, erraticBiasDeg: number, rangeAtLaunchM: number): boolean {
-    if (this.remaining <= 0) return false;
+  /** 1 本発射して、その魚雷の状態を返す（発射管制が KPI の記録を書き足す。v0.5.0）。残弾が無ければ null。引数はプリミティブ（確保しない） */
+  fire(x: number, y: number, headingDeg: number, dud: boolean, erratic: boolean, erraticBiasDeg: number, rangeAtLaunchM: number): TorpedoState | null {
+    if (this.remaining <= 0) return null;
     const s = this.states[this.firedCount]!;
     this.firedCount++;
     launchTorpedo(s, x, y, headingDeg, dud, erratic, erraticBiasDeg, rangeAtLaunchM, WAKE_DOT_SPACING_M);
     const img = this.sprites[this.firedCount - 1]!;
     img.setPosition(x, y).setAngle(s.headingDeg).setVisible(true);
-    return true;
+    return s;
   }
 
   /**
@@ -98,7 +99,7 @@ export class TorpedoPool {
       while (consumeWakeMark(s, WAKE_DOT_SPACING_M)) this.placeWakeDot(s.x, s.y);
       if (expired || s.x < 0 || s.y < 0 || s.x > this.bounds.width || s.y > this.bounds.height) {
         s.active = false;
-        if (!s.resolved) events.onMiss(s.erratic, s.rangeAtLaunchM);
+        if (!s.resolved) events.onMiss(s);
         continue;
       }
       if (s.resolved) continue;
@@ -122,12 +123,12 @@ export class TorpedoPool {
       if (hit >= 0) {
         s.active = false;
         s.resolved = true;
-        events.onHit(hit, s.x, s.y, s.dud, s.erratic, s.rangeAtLaunchM);
+        events.onHit(hit, s.x, s.y, s);
         continue;
       }
       const n = targets[nearest]!.state;
       if (markMissIfPassed(s, this.params, n.x, n.y, passRadius2)) {
-        events.onMiss(s.erratic, s.rangeAtLaunchM);
+        events.onMiss(s);
       }
     }
   }
@@ -138,7 +139,7 @@ export class TorpedoPool {
       const s = this.states[i]!;
       if (!s.active || s.resolved) continue;
       s.resolved = true;
-      events.onMiss(s.erratic, s.rangeAtLaunchM);
+      events.onMiss(s);
     }
   }
 

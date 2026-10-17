@@ -94,6 +94,7 @@ interface Run {
 function run(style: Style, seed: number): Run {
   const rng = new SeededRng(seed);
   const gunRng = new SeededRng(seed + 7777);
+  const lookoutRng = new SeededRng(seed + 17); // v0.5.0: 見張りが雷跡に気づく抽選
   const boat: BoatState = { x: PROTO.player_start.x_m, y: PROTO.player_start.y_m, headingDeg: PROTO.player_start.heading_deg, speedMps: 0 };
   const ship: BoatState = { x: PROTO.enemy_start.x_m, y: PROTO.enemy_start.y_m, headingDeg: PROTO.enemy_start.heading_deg, speedMps: AIP.cruiseSpeedMps };
   const ai = createShipAiState(ship.headingDeg, AIP.cruiseSpeedMps);
@@ -215,7 +216,7 @@ function run(style: Style, seed: number): Run {
     band = nextSpeedBand(band, boat.speedMps, BP);
     const detR = E.detection.base_detect_m * SF[band] * hitRateModel.visibility.moon_factor.half;
     if (!sinking) {
-      updateShipAi(ai, ship, boat, detR, hitRateModel.visibility.detect_hold_s, torps, AIP, BOUNDS, REAL);
+      updateShipAi(ai, ship, boat, detR, hitRateModel.visibility.detect_hold_s, torps, AIP, BOUNDS, REAL, lookoutRng);
       steerShip(ship, ai.desiredHeadingDeg, ai.desiredSpeedMps, turnRateFor(ai.mode, AIP), AIP.accelMps2, GAME);
       clampToBounds(ship, BOUNDS, SHIP_MARGIN);
       fillHullCircles(hull, ship.x, ship.y, ship.headingDeg, E.length_m, E.beam_m);

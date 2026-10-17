@@ -144,7 +144,8 @@ describe('game-data（data/*.json の読み出し）', () => {
     const e = getEnemyRecord(gameData, 'ijn_destroyer');
     expect(e.length_m).toBe(118);
     expect(e.detection.base_detect_m).toBe(2000);
-    expect(e.detection.torpedo_wake_detect_m).toBe(700);
+    expect(e.detection.torpedo_wake_detect_m).toBe(2000); // v0.5.0: 雷跡が見える距離（気づくのは毎秒 wake_spot_rate_per_s の割合）
+    expect(e.detection.wake_spot_rate_per_s).toBe(0.2);
     expect(e.evasion.turn_toward_wakes).toBe(true);
     expect(e.ram.trigger_m).toBe(400);
     expect(e.patrol.edge_turn_margin_m).toBe(700);
