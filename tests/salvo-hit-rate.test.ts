@@ -11,12 +11,13 @@ const cfg: SpreadConfig = {
 };
 
 describe('salvoCountForHold（v0.4.8。長押しの本数）', () => {
-  it('data: 刻み 0.5 秒。長押しに入った時点で 2 本、0.5 秒で 3 本、1.0 秒で 4 本。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら残弾すべて', () => {
-    expect(cfg.countStepS).toBe(0.5);
+  it('data: 刻み 1.0 秒（実機で 0.5 → 1.0）。長押しに入った時点で 2 本、1.0 秒で 3 本、2.0 秒で 4 本。開き角の最大は 3.0 秒。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら残弾すべて', () => {
+    expect(cfg.countStepS).toBe(1.0);
+    expect(cfg.holdSecondsForMax).toBe(3.0);
     expect(salvoCountForHold(0, cfg, 4)).toBe(2);
-    expect(salvoCountForHold(0.49, cfg, 4)).toBe(2);
-    expect(salvoCountForHold(0.5, cfg, 4)).toBe(3);
-    expect(salvoCountForHold(1.0, cfg, 4)).toBe(4);
+    expect(salvoCountForHold(0.99, cfg, 4)).toBe(2);
+    expect(salvoCountForHold(1.0, cfg, 4)).toBe(3);
+    expect(salvoCountForHold(2.0, cfg, 4)).toBe(4);
     expect(salvoCountForHold(5, cfg, 4)).toBe(4);
     expect(salvoCountForHold(5, cfg, 3)).toBe(3);
     expect(salvoCountForHold(0, cfg, 1)).toBe(1);

@@ -15,11 +15,11 @@
     "arming_distance_m": 100,
     "spread_angle_deg_min": 2,
     "spread_angle_deg_max": 12,
-    "spread_hold_seconds_for_max": 1.5,
+    "spread_hold_seconds_for_max": 3.0,
     "salvo_interval_s": 0.4,
     "erratic_period_s": 6,
-    "salvo_count_step_s": 0.5,
-    "source": "design (erratic_period_s: 蛇行魚雷の進路が ±jitter_deg を往復する周期。実時間秒。salvo_count_step_s（v0.4.8）: 長押しの本数の刻み。タップの閾値（0.3 秒）を超えたら 2 本、そこから 0.5 秒ごとに 1 本増える（0.8 秒で 3 本、1.3 秒で 4 本＝残弾すべて）。実機「長押しは必ず 4 本で 1 回で残数ゼロ、自然と 1 本ずつになる」→ 2 本・3 本の一斉を選べるように。開き角は従来どおり長押し 1.5 秒で最大。残弾より多くは撃てない)"
+    "salvo_count_step_s": 1.0,
+    "source": "design (erratic_period_s: 蛇行魚雷の進路が ±jitter_deg を往復する周期。実時間秒。salvo_count_step_s（v0.4.8）: 長押しの本数の刻み。タップの閾値（0.3 秒）を超えたら 2 本、そこから 1.0 秒ごとに 1 本増える（1.3 秒で 3 本、2.3 秒で 4 本＝残弾すべて）。v0.4.8 の実機 1 回目「長押しで本数と角度を調整するのはきつい」→ 刻み 0.5 → 1.0 秒、開き角が最大になる spread_hold_seconds_for_max 1.5 → 3.0 秒（どちらも 2 倍）。実機「長押しは必ず 4 本で 1 回で残数ゼロ、自然と 1 本ずつになる」→ 2 本・3 本の一斉を選べるように。開き角は従来どおり長押し 1.5 秒で最大。残弾より多くは撃てない)"
   },
   "kpi_by_range": [
     {
