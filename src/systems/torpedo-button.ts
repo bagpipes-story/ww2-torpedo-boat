@@ -1,4 +1,4 @@
-// 魚雷ボタン（docs/02 §5: 右下。タップ=1本、長押し→離す=残弾を扇状に一斉発射、長押し時間で開き角）。
+// 魚雷ボタン（docs/02 §5: 右下。タップ=1本、長押し→離す=扇状に一斉発射。長押し時間で本数 2 → 3 → 4（v0.4.8）と開き角）。
 // HUD シーンに置く。結果は共有 InputState に書き、Mission が消費する。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -15,7 +15,7 @@ import {
   hudTextStyle,
 } from '../config/ui-config';
 import type { InputState } from '../core/input-state';
-import { spreadAngleForHold, type SpreadConfig } from '../core/salvo';
+import { salvoCountForHold, spreadAngleForHold, type SpreadConfig } from '../core/salvo';
 
 export class TorpedoButton {
   private readonly button: Phaser.GameObjects.Image;
@@ -26,6 +26,7 @@ export class TorpedoButton {
   private pointerId = -1;
   private lastRemaining = -1;
   private lastSpreadShown = -1;
+  private lastCountShown = -1;
   /** 作ってから TORPEDO_BUTTON_ARM_MS は押下を受けない（前の画面の「出撃」の 2 度押し。v0.4.0）。scene.time.now は作った時点では前回の値なのでタイマーで待つ */
   private armed = false;
   private readonly armTimer: Phaser.Time.TimerEvent;
@@ -75,13 +76,16 @@ export class TorpedoButton {
     if (holdS < TORPEDO_BUTTON_TAP_MAX_S) {
       this.input.fireTap = true;
     } else {
-      this.input.fireSalvoSpreadDeg = spreadAngleForHold(holdS - TORPEDO_BUTTON_TAP_MAX_S, this.spread);
+      const over = holdS - TORPEDO_BUTTON_TAP_MAX_S;
+      this.input.fireSalvoCount = salvoCountForHold(over, this.spread, this.lastRemaining);
+      this.input.fireSalvoSpreadDeg = spreadAngleForHold(over, this.spread);
     }
   }
 
   private hideSpread(): void {
     if (this.lastSpreadShown !== -1) {
       this.lastSpreadShown = -1;
+      this.lastCountShown = -1;
       this.spreadText.setText('');
     }
   }
@@ -94,15 +98,18 @@ export class TorpedoButton {
     this.button.setAlpha(n > 0 ? TORPEDO_BUTTON_ALPHA : TORPEDO_BUTTON_ALPHA * TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR);
   }
 
-  /** 毎フレーム: 長押し中は開き角の予告を出す（整数が変わったときだけ） */
+  /** 毎フレーム: 長押し中は本数と開き角の予告を出す（どちらかの整数が変わったときだけ） */
   update(): void {
     if (this.pressedAt < 0) return;
     const holdS = (this.scene.time.now - this.pressedAt) / 1000;
     if (holdS < TORPEDO_BUTTON_TAP_MAX_S) return;
-    const deg = Math.round(spreadAngleForHold(holdS - TORPEDO_BUTTON_TAP_MAX_S, this.spread));
-    if (deg === this.lastSpreadShown) return;
+    const over = holdS - TORPEDO_BUTTON_TAP_MAX_S;
+    const deg = Math.round(spreadAngleForHold(over, this.spread));
+    const n = salvoCountForHold(over, this.spread, this.lastRemaining);
+    if (deg === this.lastSpreadShown && n === this.lastCountShown) return;
     this.lastSpreadShown = deg;
-    this.spreadText.setText(`一斉 ${deg}°`);
+    this.lastCountShown = n;
+    this.spreadText.setText(`一斉 ${n} 本 ・ ${deg}°`);
   }
 
   destroy(): void {

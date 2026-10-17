@@ -1,13 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import hitRateModel from '../data/hit_rate_model.json';
-import { fillSalvoHeadings, spreadAngleForHold, type SpreadConfig } from '../src/core/salvo';
+import { fillSalvoHeadings, salvoCountForHold, spreadAngleForHold, type SpreadConfig } from '../src/core/salvo';
 import { bandIndexForRange, countHits, summarizeShots, type ShotRecord } from '../src/core/hit-rate';
 
 const cfg: SpreadConfig = {
   spreadMinDeg: hitRateModel.torpedo_launch.spread_angle_deg_min,
   spreadMaxDeg: hitRateModel.torpedo_launch.spread_angle_deg_max,
   holdSecondsForMax: hitRateModel.torpedo_launch.spread_hold_seconds_for_max,
+  countStepS: hitRateModel.torpedo_launch.salvo_count_step_s,
 };
+
+describe('salvoCountForHold（v0.4.8。長押しの本数）', () => {
+  it('data: 刻み 0.5 秒。長押しに入った時点で 2 本、0.5 秒で 3 本、1.0 秒で 4 本。残弾が上限、残弾 1 なら 1、0 なら 0。刻み 0 以下なら残弾すべて', () => {
+    expect(cfg.countStepS).toBe(0.5);
+    expect(salvoCountForHold(0, cfg, 4)).toBe(2);
+    expect(salvoCountForHold(0.49, cfg, 4)).toBe(2);
+    expect(salvoCountForHold(0.5, cfg, 4)).toBe(3);
+    expect(salvoCountForHold(1.0, cfg, 4)).toBe(4);
+    expect(salvoCountForHold(5, cfg, 4)).toBe(4);
+    expect(salvoCountForHold(5, cfg, 3)).toBe(3);
+    expect(salvoCountForHold(0, cfg, 1)).toBe(1);
+    expect(salvoCountForHold(0, cfg, 0)).toBe(0);
+    expect(salvoCountForHold(0, { ...cfg, countStepS: 0 }, 4)).toBe(4);
+  });
+});
 
 describe('spreadAngleForHold', () => {
   it('0 秒で最小、上限以上で最大、途中は線形', () => {

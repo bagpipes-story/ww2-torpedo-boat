@@ -127,6 +127,7 @@ export class HudScene extends Phaser.Scene {
       spreadMinDeg: launch.spread_angle_deg_min,
       spreadMaxDeg: launch.spread_angle_deg_max,
       holdSecondsForMax: launch.spread_hold_seconds_for_max,
+      countStepS: launch.salvo_count_step_s,
     };
     if (mission.mainWeapon === 'guns') {
       let armed = false;

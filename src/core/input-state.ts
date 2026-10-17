@@ -12,6 +12,8 @@ export interface InputState {
   fireTap: boolean;
   /** 長押し→離す の一斉発射。開き角（度）。NaN なら要求なし。Mission が消費して NaN に戻す */
   fireSalvoSpreadDeg: number;
+  /** 一斉の本数（v0.4.8。長押しの長さで 2 → 3 → 4。0 なら残弾すべて） */
+  fireSalvoCount: number;
   /** 煙幕ボタンを離した（展開）。Mission が消費して false に戻す */
   smokeTap: boolean;
   /** 消火ボタンを押している間 true（火災中に extinguish_hold_s 押し続けると消火。Mission が押し続けた時間を数える。v0.3.1 で煙幕と別ボタンに） */
@@ -27,7 +29,7 @@ export interface InputState {
 }
 
 export function createInputState(): InputState {
-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false };
 }
 
 export function resetInput(s: InputState): void {
@@ -36,6 +38,7 @@ export function resetInput(s: InputState): void {
   s.stickActive = false;
   s.fireTap = false;
   s.fireSalvoSpreadDeg = NaN;
+  s.fireSalvoCount = 0;
   s.smokeTap = false;
   s.extinguishHeld = false;
   s.lookout = false;

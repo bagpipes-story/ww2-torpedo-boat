@@ -1,10 +1,20 @@
-// 扇状一斉発射（docs/02 §5: 長押し→離す。長押し時間で開き角 2°〜12°）。Phaser 非依存。
+// 扇状一斉発射（docs/02 §5: 長押し→離す。長押し時間で開き角 2°〜12°、v0.4.8 から本数も 2 → 3 → 4 と増える）。Phaser 非依存。
 import { clamp } from './units';
 
 export interface SpreadConfig {
   spreadMinDeg: number;
   spreadMaxDeg: number;
   holdSecondsForMax: number;
+  /** 本数の刻み（秒）: 長押しに入った時点で 2 本、以後この秒ごとに 1 本増える（残弾まで）。0 以下なら従来どおり残弾すべて */
+  countStepS: number;
+}
+
+/** 長押し時間（タップの閾値を除いた秒）から一斉の本数。残弾 remaining が上限（1 本なら 1）。countStepS が 0 以下なら残弾すべて */
+export function salvoCountForHold(holdS: number, cfg: SpreadConfig, remaining: number): number {
+  if (remaining <= 1) return Math.max(0, remaining);
+  if (cfg.countStepS <= 0) return remaining;
+  const n = 2 + Math.floor(Math.max(0, holdS) / cfg.countStepS);
+  return n < remaining ? n : remaining;
 }
 
 /** 長押し時間（秒）から開き角（度）。0 秒で最小、holdSecondsForMax 以上で最大 */
