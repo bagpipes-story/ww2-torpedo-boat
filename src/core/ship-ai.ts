@@ -1,15 +1,26 @@
 // 駆逐艦の操舵と v0.2 の AI（docs/02 §6.4）。Phaser 非依存、毎ステップ確保しない。
-// 行動: 巡航（海域の端が近づけば中央へ向き直す）→ 雷跡を見つけたら reaction_delay 後に雷跡と平行に転舵して「櫛で梳く」→ プレイヤーを発見し近ければ体当たり。
+// 行動: 巡航（海域の端が近づけば中央へ向き直す）→ 雷跡に気づいたら reaction_delay 後に雷跡と平行に転舵して「櫛で梳く」→ プレイヤーを発見し近ければ体当たり。
+// 雷跡に気づく（v0.5.0）: 見える距離（torpedo_wake_detect_m）に向かってくる魚雷がある間、見張りが実時間 1 秒あたり wake_spot_rate_per_s の割合で気づく
+// （乱数は 1 ステップ 1 回、気づくまで。遠くから撃つほど気づかれる時間が長い＝距離で命中率が下がる。docs/02 §6.3）。
 // 時間の単位: reaction_delay_s と detect_hold_s は実時間秒（プレイヤーの体感に合わせる）。旋回率・加速度・速度は time_scale 込みの dt で積分する。
 import type { BoatState, SeaBounds } from './boat-motion';
+import type { SeededRng } from './rng';
 import type { TorpedoState } from './torpedo';
-import { clamp, degToRad, ktToMps, wrapDeg180, wrapDeg360 } from './units';
+import { clamp, degToRad, wrapDeg180, wrapDeg360 } from './units';
+
+// data の読み出し（v0.5.0 で ship-ai-data.ts に分けた。300 行を超えたため。import 先はこれまでどおり ship-ai でよい）
+export { isEnemyAiDataRecord, shipAiParamsFromData, type EnemyAiDataRecord } from './ship-ai-data';
 
 export type ShipAiMode = 'cruise' | 'evade' | 'ram';
 
+/** 見張りの乱数の系列（出撃の seed + 17。v0.5.0。seed〜seed+9 は魚雷・砲撃・掃射・暴風・空襲・水上機・大発・艇の砲・沿岸砲、seed+16 は今夜の揺らぎ） */
+export const LOOKOUT_SEED_OFFSET = 17;
+
 export interface ShipAiParams {
-  /** 魚雷（雷跡）を見つける距離 m */
+  /** 魚雷（雷跡）が見える距離 m（この中の向かってくる魚雷に見張りが気づきうる） */
   torpedoWakeDetectM: number;
+  /** 見張りが雷跡に気づく割合（実時間 1 秒あたり。v0.5.0）。Infinity なら見える距離に入った瞬間に気づく（v0.4.8 までと同じ。乱数を引かない） */
+  wakeSpotRatePerS: number;
   /** 見つけてから転舵を始めるまでの実時間秒 */
   reactionDelayS: number;
   /** 回避時の転舵率 deg/s（通常の turn_rate より優先） */
@@ -45,8 +56,10 @@ export interface ShipAiState {
   /** 哨戒の針路。回避・体当たりが終わればここへ戻る（端での向き直しで更新される） */
   patrolHeadingDeg: number;
   desiredSpeedMps: number;
-  /** 雷跡を見つけてからの経過（実時間秒）。-1 は未発見 */
+  /** 雷跡に気づいてからの経過（実時間秒）。-1 は気づいていない */
   wakeSeenForS: number;
+  /** 見張りが向かってくる雷跡に気づいている（v0.5.0。向かってくる魚雷が見える距離から無くなれば解く） */
+  wakeSpotted: boolean;
   /** 直近に見た魚雷の進路（回避方位の計算用） */
   seenTorpedoHeadingDeg: number;
   /** 直近に見た魚雷の相対位置（雷跡の方へ向くか決める用） */
@@ -70,6 +83,7 @@ export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): S
     patrolHeadingDeg: headingDeg,
     desiredSpeedMps: cruiseSpeedMps,
     wakeSeenForS: -1,
+    wakeSpotted: false,
     seenTorpedoHeadingDeg: 0,
     seenTorpedoDx: 0,
     seenTorpedoDy: 0,
@@ -83,7 +97,7 @@ export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): S
 
 /**
  * 1 ステップの判断。dt は実時間秒（反応遅れと警戒解除は実時間で数える）。
- * playerDetectRangeM はこのステップでの発見距離（速力・月明・煙幕込み）。
+ * playerDetectRangeM はこのステップでの発見距離（速力・月明・煙幕込み）。lookoutRng は雷跡に気づく抽選（seed+17。wakeSpotRatePerS が Infinity なら引かない）。
  */
 export function updateShipAi(
   ai: ShipAiState,
@@ -95,6 +109,7 @@ export function updateShipAi(
   p: ShipAiParams,
   bounds: SeaBounds,
   realDt: number,
+  lookoutRng: SeededRng,
 ): void {
   // --- プレイヤーの発見（距離二乗で比較） ---
   const pdx = player.x - ship.x;
@@ -128,9 +143,12 @@ export function updateShipAi(
     }
   }
   if (nearest2 !== Infinity) {
-    ai.wakeSeenForS = (ai.wakeSeenForS < 0 ? 0 : ai.wakeSeenForS) + realDt;
-  } else if (ai.wakeSeenForS >= 0) {
-    // 向かってくる魚雷が無くなれば（消えた・通り過ぎた）回避を解き、巡航へ戻る
+    // 見張り（v0.5.0）: 気づくまで毎ステップ 1 回だけ抽選（このステップに気づく確率 1 − e^(−率 × 実秒)）
+    if (!ai.wakeSpotted) ai.wakeSpotted = !(p.wakeSpotRatePerS < Infinity) || lookoutRng.next() < 1 - Math.exp(-p.wakeSpotRatePerS * realDt);
+    if (ai.wakeSpotted) ai.wakeSeenForS = (ai.wakeSeenForS < 0 ? 0 : ai.wakeSeenForS) + realDt;
+  } else {
+    // 向かってくる魚雷が無くなれば（消えた・通り過ぎた）回避を解き、巡航へ戻る。次の魚雷は気づき直す
+    ai.wakeSpotted = false;
     ai.wakeSeenForS = -1;
   }
   if (ai.ramCooldownLeftS > 0) ai.ramCooldownLeftS -= realDt;
@@ -143,7 +161,7 @@ export function updateShipAi(
     return;
   }
   // 体当たりは trigger_m で始め、give_up_m を超えるまで続ける。近づけないまま stall_s 経てば諦め、cooldown_s は再開しない。
-  // 向かってくる魚雷が見えている間（反応遅れの最中も）は突っ込まず針路を保つ: 至近距離の魚雷が「体当たりの転舵」で外れないように
+  // 向かってくる魚雷に気づいている間（反応遅れの最中も）は突っ込まず針路を保つ: 至近距離の魚雷が「体当たりの転舵」で外れないように（気づく前は知らないので突っ込み続ける。v0.5.0）
   const ramRange = ai.mode === 'ram' ? p.ramGiveUpM : p.ramTriggerM;
   if (p.ramEnabled && ai.playerDetected && ai.wakeSeenForS < 0 && ai.ramCooldownLeftS <= 0 && pd2 <= ramRange * ramRange) {
     if (ai.mode !== 'ram' || pd2 < ai.ramClosestD2) {
@@ -238,59 +256,4 @@ export function turnRateFor(mode: ShipAiMode, p: ShipAiParams): number {
   if (mode === 'evade') return p.evadeTurnRateDegS;
   if (mode === 'ram') return p.turnRateDegS + p.ramTurnRateBonusDegS;
   return p.turnRateDegS;
-}
-
-/** enemies.json の 1 レコードのうち AI が使う部分（docs/02 §6.4・§6.5） */
-export interface EnemyAiDataRecord {
-  speed_typical_kt: number;
-  speed_max_kt: number;
-  turn_rate_deg_s: number;
-  accel_mps2: number;
-  detection: { base_detect_m: number; reaction_delay_s: number; torpedo_wake_detect_m: number };
-  evasion: { turn_toward_wakes: boolean; evade_turn_rate_deg_s: number; speed_boost_kt: number };
-  ram: { enabled: boolean; trigger_m: number; give_up_m: number; stall_s: number; cooldown_s: number; turn_rate_bonus_deg_s: number };
-  patrol: { edge_turn_margin_m: number };
-}
-
-function hasNums(o: unknown, keys: readonly string[]): o is Record<string, number> {
-  if (!o || typeof o !== 'object') return false;
-  const r = o as Record<string, unknown>;
-  return keys.every((k) => typeof r[k] === 'number' && Number.isFinite(r[k]));
-}
-
-export function isEnemyAiDataRecord(v: unknown): v is EnemyAiDataRecord {
-  if (!hasNums(v, ['speed_typical_kt', 'speed_max_kt', 'turn_rate_deg_s', 'accel_mps2'])) return false;
-  const r = v as Record<string, unknown>;
-  const eva = r['evasion'] as Record<string, unknown> | undefined;
-  const ram = r['ram'] as Record<string, unknown> | undefined;
-  return (
-    hasNums(r['detection'], ['base_detect_m', 'reaction_delay_s', 'torpedo_wake_detect_m']) &&
-    hasNums(eva, ['evade_turn_rate_deg_s', 'speed_boost_kt']) &&
-    typeof eva?.['turn_toward_wakes'] === 'boolean' &&
-    hasNums(ram, ['trigger_m', 'give_up_m', 'stall_s', 'cooldown_s', 'turn_rate_bonus_deg_s']) &&
-    typeof ram?.['enabled'] === 'boolean' &&
-    hasNums(r['patrol'], ['edge_turn_margin_m'])
-  );
-}
-
-/** data → AI パラメータ（kt→m/s）。evasionMultiplier は史実モードの倍率（通常 1。転舵率に掛ける） */
-export function shipAiParamsFromData(r: EnemyAiDataRecord, evasionMultiplier: number = 1): ShipAiParams {
-  return {
-    torpedoWakeDetectM: r.detection.torpedo_wake_detect_m,
-    reactionDelayS: r.detection.reaction_delay_s / evasionMultiplier,
-    evadeTurnRateDegS: r.evasion.evade_turn_rate_deg_s * evasionMultiplier,
-    speedBoostMps: ktToMps(r.evasion.speed_boost_kt),
-    turnTowardWakes: r.evasion.turn_toward_wakes,
-    ramTriggerM: r.ram.trigger_m,
-    ramEnabled: r.ram.enabled,
-    ramGiveUpM: Math.max(r.ram.give_up_m, r.ram.trigger_m),
-    ramStallS: r.ram.stall_s,
-    ramCooldownS: r.ram.cooldown_s,
-    ramTurnRateBonusDegS: r.ram.turn_rate_bonus_deg_s,
-    edgeTurnMarginM: r.patrol.edge_turn_margin_m,
-    turnRateDegS: r.turn_rate_deg_s,
-    accelMps2: r.accel_mps2,
-    cruiseSpeedMps: ktToMps(r.speed_typical_kt),
-    maxSpeedMps: ktToMps(r.speed_max_kt),
-  };
 }

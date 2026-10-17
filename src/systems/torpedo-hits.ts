@@ -19,8 +19,9 @@ export interface TorpedoHitWorld {
 
 export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): TorpedoEvents {
   return {
-    onHit: (target, x, y, dud, erratic, rangeAtLaunchM) => {
-      w.shots.push({ rangeM: rangeAtLaunchM, hit: true, dud, erratic });
+    onHit: (target, x, y, s) => {
+      const dud = s.dud;
+      w.shots.push({ rangeM: s.rangeAtLaunchM, hit: true, dud, erratic: s.erratic, leadErrDeg: s.leadErrDeg, kpiTarget: s.kpiTarget });
       const g = w.destroyers;
       const d = g ? g.ships[target] : undefined;
       if (!dud && g && d) {
@@ -39,8 +40,8 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
       }
       events.onTorpedoHit(x, y, dud);
     },
-    onMiss: (erratic, rangeAtLaunchM) => {
-      w.shots.push({ rangeM: rangeAtLaunchM, hit: false, dud: false, erratic });
+    onMiss: (s) => {
+      w.shots.push({ rangeM: s.rangeAtLaunchM, hit: false, dud: false, erratic: s.erratic, leadErrDeg: s.leadErrDeg, kpiTarget: s.kpiTarget });
     },
   };
 }

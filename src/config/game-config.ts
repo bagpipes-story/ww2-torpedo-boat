@@ -121,9 +121,8 @@ export const DEPTH = {
   stickKnob: 991,
 } as const;
 
-/** 固定ステップ積分（CLAUDE.md §7）。実時間 1/60 秒 × time_scale を 1 ステップにする */
-export const FIXED_STEP_S = 1 / 60;
-export const MAX_STEPS_PER_FRAME = 4;
+/** 固定ステップ積分（CLAUDE.md §7）。値は step-config（v0.5.0 で分けた。テストと命中率の模擬が DOM 無しで読む） */
+export { FIXED_STEP_S, MAX_STEPS_PER_FRAME } from './step-config';
 
 /** ?debug 直行で出る任務と、Boot のテクスチャの任務（data/missions_seed.json の us_02 の簡略版。v0.4.0 で出撃できるのはこれだけ） */
 export const PROTOTYPE_MISSION_ID = 'us_02';
