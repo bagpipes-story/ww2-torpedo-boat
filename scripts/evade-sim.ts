@@ -2,6 +2,7 @@
 // 静止した艇が見越し角どおりに 1 本（または扇 4 本）撃ち、雷跡回避・発見・体当たりをする駆逐艦に当たるかを、
 // 艦の左正横〜艦首〜右正横の 13 方位 × 距離帯で数える。enemies.json / hit_rate_model.json を変えたらこれで当たりを取る（KPI 本番は Result の集計）。
 // 実行: npx esbuild scripts/evade-sim.ts --bundle --platform=node --format=esm --outfile=/tmp/evade-sim.mjs && node /tmp/evade-sim.mjs
+// v0.5.0 から命中率 KPI の模擬は scripts/hit-rate-sim.ts（当たり判定の倍率・見張りの抽選・距離帯の目標つき）。これは v0.2 の感度を見る古い道具（船体は実寸のまま）
 import enemies from '../data/enemies.json';
 import torpedoes from '../data/torpedoes.json';
 import hitRateModel from '../data/hit_rate_model.json';
@@ -10,6 +11,9 @@ import { createTorpedoState, launchTorpedo, stepTorpedo, torpedoParamsFromData, 
 import { createCircles, fillHullCircles, pointHitsHull, interceptHeadingDeg, velocityFromHeading } from '../src/core/torpedo-solver';
 import { fillSalvoHeadings } from '../src/core/salvo';
 import { ktToMps } from '../src/core/units';
+import { SeededRng } from '../src/core/rng';
+
+const LOOKOUT = new SeededRng(17); // v0.5.0: 見張りの抽選
 
 const raw: unknown = enemies.enemies.find((e) => e.id === 'ijn_destroyer');
 if (!isEnemyAiDataRecord(raw)) throw new Error('enemy');
@@ -43,7 +47,7 @@ function run(rangeM: number, bearingFromShipDeg: number, reactionRealS: number, 
   const far = { x: 1e6, y: 1e6, headingDeg: 0, speedMps: 0 };
   const bounds = { width: 1e7, height: 1e7 };
   for (let step = 0; step < 60 * 60 * 5; step++) {
-    updateShipAi(ai, ship, detectM > 0 ? boat : far, detectM, 8, torps, p, bounds, DT / TIME_SCALE);
+    updateShipAi(ai, ship, detectM > 0 ? boat : far, detectM, 8, torps, p, bounds, DT / TIME_SCALE, LOOKOUT);
     steerShip(ship, ai.desiredHeadingDeg, ai.desiredSpeedMps, turnRateFor(ai.mode, p), p.accelMps2, DT);
     fillHullCircles(hull, ship.x, ship.y, ship.headingDeg, 118, 10.8);
     let anyActive = false;

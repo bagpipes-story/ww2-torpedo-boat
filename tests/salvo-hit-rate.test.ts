@@ -63,10 +63,10 @@ describe('hit-rate: 帯の判定と集計', () => {
   });
   it('集計: 帯ごとの発射数・命中数・不発数', () => {
     const shots: ShotRecord[] = [
-      { rangeM: 300, hit: true, dud: false, erratic: false },
-      { rangeM: 350, hit: false, dud: false, erratic: true },
-      { rangeM: 800, hit: true, dud: true, erratic: false },
-      { rangeM: 2500, hit: false, dud: false, erratic: false },
+      { rangeM: 300, hit: true, dud: false, erratic: false, leadErrDeg: 0, kpiTarget: true },
+      { rangeM: 350, hit: false, dud: false, erratic: true, leadErrDeg: 0, kpiTarget: true },
+      { rangeM: 800, hit: true, dud: true, erratic: false, leadErrDeg: 0, kpiTarget: true },
+      { rangeM: 2500, hit: false, dud: false, erratic: false, leadErrDeg: 0, kpiTarget: true },
     ];
     const s = summarizeShots(shots, bands);
     expect(s).toHaveLength(bands.length);

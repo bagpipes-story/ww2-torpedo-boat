@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
+import type { SeededRng } from '../core/rng';
 import { createShipAiState, steerShip, turnRateFor, updateShipAi, type ShipAiMode, type ShipAiParams, type ShipAiState } from '../core/ship-ai';
 import type { TorpedoState } from '../core/torpedo';
 import { boatTouchesHull, createCircles, fillHullCircles, type Circle } from '../core/torpedo-solver';
@@ -29,6 +30,8 @@ export class Destroyer {
     readonly spec: DestroyerSpec,
     private readonly aiParams: ShipAiParams,
     private readonly bounds: SeaBounds,
+    /** 見張りが雷跡に気づく抽選（v0.5.0。seed+17。隊の艦が順に同じ系列を引く） */
+    private readonly lookoutRng: SeededRng,
     textureKey: string = TEXTURE_KEYS.destroyer,
   ) {
     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: aiParams.cruiseSpeedMps };
@@ -49,7 +52,7 @@ export class Destroyer {
    */
   step(dt: number, realDt: number, player: BoatState, playerDetectRangeM: number, detectHoldS: number, torpedoes: readonly TorpedoState[]): void {
     if (this.sinking) return;
-    updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt);
+    updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
     clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
     this.refreshHull();

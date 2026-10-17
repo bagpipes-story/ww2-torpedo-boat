@@ -5,6 +5,8 @@ import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE } from './game-config
 export const HUD_FONT = 'Menlo, Consolas, monospace';
 export const HUD_COLOR = '#9fb3c8';
 export const HUD_COLOR_STRONG = '#e6eef7';
+/** Result の通算の命中率の行（v0.5.0。今回の記録と見分ける） */
+export const HUD_COLOR_KPI = '#e8d48a';
 
 /** Text の style。resolution に RENDER_SCALE を渡し、カメラの DPR ズームでぼやけないようにする */
 export function hudTextStyle(fontSizePx: number, color: string = HUD_COLOR): Phaser.Types.GameObjects.Text.TextStyle {

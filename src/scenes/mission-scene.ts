@@ -33,6 +33,7 @@ import { ReturnPointView } from '../entities/return-point';
 import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
 import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
+import { recordKpi } from '../systems/kpi-storage';
 import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
 
@@ -290,7 +291,10 @@ export class MissionScene extends Phaser.Scene {
     const w = this.world;
     // まだ走っている魚雷は外れとして記録し、Result の集計から漏れないようにする（帰投は最大 torpedo_settle_max_s 待った後）
     w.resolveRemainingAsMisses();
-    const result = buildMissionResult(reason, w, getGameData(this.registry, REGISTRY_KEY_DATA), this.elapsedS, this.ringEdgeM, this.startFireS);
+    const data = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const result = buildMissionResult(reason, w, data, this.elapsedS, this.ringEdgeM, this.startFireS);
+    // 通算の命中率（v0.5.0）: 魚雷の任務だけ、ここで 1 回だけ足して保存する（Result の作り直しで二重に数えない）
+    if (w.destroyers) result.kpi = recordKpi(data, result.shots);
     this.scene.start(SCENE_KEYS.result, result);
   }
 }

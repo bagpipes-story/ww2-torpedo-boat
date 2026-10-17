@@ -28,6 +28,7 @@
       "range_m_max": 366,
       "target_hit_min": 0.6,
       "target_hit_max": 0.7,
+      "sim_ranges_m": [150, 250, 350],
       "historical_note": "PTの典型発射距離の下限。最も危険"
     },
     {
@@ -36,6 +37,7 @@
       "range_m_max": 732,
       "target_hit_min": 0.45,
       "target_hit_max": 0.55,
+      "sim_ranges_m": [400, 500, 600, 700],
       "historical_note": "PTの典型発射距離"
     },
     {
@@ -44,6 +46,7 @@
       "range_m_max": 1097,
       "target_hit_min": 0.3,
       "target_hit_max": 0.35,
+      "sim_ranges_m": [750, 850, 950, 1050],
       "historical_note": "2,000ydの手前"
     },
     {
@@ -52,6 +55,7 @@
       "range_m_max": 1829,
       "target_hit_min": 0.1,
       "target_hit_max": 0.15,
+      "sim_ranges_m": [1150, 1350, 1550, 1750],
       "historical_note": "Bulkleyが『成果が乏しい』とした距離"
     },
     {
@@ -60,6 +64,7 @@
       "range_m_max": 99999,
       "target_hit_min": 0.0,
       "target_hit_max": 0.05,
+      "sim_ranges_m": [1900, 2200, 2500],
       "historical_note": "Channel Dashの4,000ydは全弾外れ"
     }
   ],
@@ -74,7 +79,17 @@
       "dud",
       "erratic"
     ],
-    "source": "design"
+    "aimed_lead_error_deg_max": 3,
+    "record_version": "v0.5.0",
+    "sim": {
+      "enemy_id": "ijn_destroyer",
+      "torpedo_id": "us_mk8",
+      "bearing_step_deg": 15,
+      "aim_errors_deg": [-2, 0, 2],
+      "reps": 4,
+      "seed": 1
+    },
+    "source": "design (v0.5.0。aimed_lead_error_deg_max: Result の通算の命中率は「正しく狙った 1 本」＝発射時の見越し角のずれ（目標の今の速さと針路のまま進むとしたときの命中針路との差）がこの度以内で、蛇行していない魚雷だけを数える（KPI の表は『正しい見越し角の 1 本』の命中率なので）。3°: 1,000 m で船体の長さ方向に約 50 m のずれ。当たり判定 2 倍の艦（236 m）なら避けなければ当たる幅。扇の内側の 2 本（±2°）は入り、外側（±6°）は入らない。record_version: 通算の記録の版（localStorage の鍵）。回避や当たり判定を変えて測り直すときに上げる（古い記録は読まない）。sim: src/core/hit-rate-sim.ts の模擬（tests/hit-rate-sim.test.ts と scripts/hit-rate-sim.ts）。止まった艇から、kpi_by_range の sim_ranges_m の各距離・艦の左正横〜艦首〜右正横 bearing_step_deg 刻み・見越し角のずれ aim_errors_deg を reps 回ずつ撃つ（見張りの抽選は seed の 1 系列）。ずれ −2/0/+2° は aimed の ±3° の中のばらつきの代わり（一様 ±3° と標準偏差がほぼ同じ）)"
   },
   "reliability_by_era": {
     "early_1942": {

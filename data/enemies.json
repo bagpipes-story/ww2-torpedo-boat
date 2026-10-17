@@ -58,15 +58,16 @@
       "detection": {
         "base_detect_m": 2000,
         "wake_detect_m": 800,
-        "reaction_delay_s": 4,
-        "torpedo_wake_detect_m": 700,
-        "note": "reaction_delay_s は実時間秒（魚雷の位置が torpedo_wake_detect_m 以内に入ってから転舵を始めるまで）。base_detect_m は半月・巡航での発見距離で、hit_rate_model.visibility の係数を掛ける。v0.2.0 実機: 2500 だと巡航で自艇の視程 1,500m よりずっと先に見つかり厳しすぎたので 2000 に（静音 1,000m・停止 800m・全速 3,200m）"
+        "reaction_delay_s": 0.5,
+        "torpedo_wake_detect_m": 2000,
+        "wake_spot_rate_per_s": 0.2,
+        "note": "torpedo_wake_detect_m は雷跡が見える距離 m。この中に向かってくる魚雷がある間、見張りが実時間 1 秒あたり wake_spot_rate_per_s の割合で気づく（v0.5.0。乱数 seed+17）。reaction_delay_s は気づいてから転舵を始めるまでの実時間秒。base_detect_m は半月・巡航での発見距離で、hit_rate_model.visibility の係数を掛ける。v0.2.0 実機: 2500 だと巡航で自艇の視程 1,500m よりずっと先に見つかり厳しすぎたので 2000 に（静音 1,000m・停止 800m・全速 3,200m）"
       },
       "evasion": {
         "mode": "comb_tracks",
         "turn_toward_wakes": true,
         "evade_turn_rate_deg_s": 2.0,
-        "speed_boost_kt": 5
+        "speed_boost_kt": -10
       },
       "ram": {
         "enabled": true,
@@ -86,8 +87,8 @@
         "guns.*": "design (実射程を夜間有効射程に縮小。rof_per_min は 1 門あたり・実時間分で、砲台の発射間隔 = 60/(rof×count) 実秒。shell_speed_mps は見てかわせるよう実弾より遅い game 時間の速さ。dispersion_m は有効射程での着弾円の半径（一様な円盤。距離に比例して縮む）。splash_radius_m 以内に艇の船体があれば命中。scripts/gunnery-sim.ts の実測（静止・照射中）: 127mm は 600 m 10.8 / 1,000 m 3.7 / 1,500 m 1.5 / 2,000 m 0.7 HP/秒、25mm は 600 m 3.5 / 1,000 m 1.3 / 1,200 m 0.9 HP/秒。照らされたまま留まると沈没まで 730 m 約 10 秒・1,000 m 約 18 秒・1,500 m 約 53 秒・2,000 m 約 97 秒（中央値、火災込み）。静音で 1,000 m まで寄って全速で反転離脱すれば 200 回中 197 回生還)",
         "searchlight.*": "design (発見から on_delay_s 実秒で点灯し艦首方向から sweep_deg_s（deg/実秒）で艇へ振る。cone_deg の中にいれば照射。on_delay_s は v0.2.1 実機「反転して逃げるのが困難」で 1.5 → 2.5: 「発見された！」を見てから反転する猶予)",
         "starshell.*": "design (発見中で探照灯の射程外、かつ艇が近づいてくるときだけ艇の位置へ撃ち illum_radius_m を duration_s 実秒照らす。cooldown_s 実秒。遠ざかる艇には撃たない＝逃げる艇への追い打ちにしない。v0.2.1 実機「探照灯の範囲外でも砲撃が続く」への対応)",
-        "detection.*": "design (reaction_delay_s は転舵率を 3.0→2.0 に下げた分 6→4 秒に短縮。scripts/evade-sim.ts で 730m 以上の単発が約半分避けられる水準)",
-        "evasion.*": "design",
+        "detection.*": "design (v0.5.0 命中率チューニング: 当たり判定を絵と同じ 2 倍（v0.4.8 案 A）にして命中率が目標帯を大きく超えた（模擬で正しく狙った 1 本が 800yd 以遠でも 66〜79%）。雷跡に気づく距離を 700 → 2,000 m、気づき方を「入った瞬間」から「毎秒 20%（wake_spot_rate_per_s 0.2。平均 5 秒）」に、気づいてからの反応を 4 → 0.5 秒にした。遠くから撃つほど走っている間に気づかれやすく、命中率が距離で下がる（従来は 700 m で必ず気づくので 700 m 以遠の命中率が距離によらず一定だった）。src/core/hit-rate-sim.ts（scripts/hit-rate-sim.ts）の模擬、正しい見越し角±2°の 1 本、左正横〜艦首〜右正横 13 方位: ≤400yd 95%・400-800yd 63%・800-1200yd 26%・1200-2000yd 11%・≥2000yd 5%（目標 60-70・45-55・30-35・10-15・0-5%）、800yd（732 m）前後は 41%。≤400yd は発射から約 3.6 秒で届くので回避では下がらない（近づく危険の見返り）。旧: reaction_delay_s は転舵率を 3.0→2.0 に下げた分 6→4 秒に短縮（v0.2.0）)",
+        "evasion.*": "design (v0.5.0: speed_boost_kt は回避中の速力の増減（負は減速）。+5 → −10（25 → 15 kt）: 転舵の速さ 2.0°/s は変えず（v0.2.0 の実機で 3.0 は「転舵が速すぎる」）、減速で艦を見越し点から外す。模擬（見張り 2,000 m・毎秒 0.2・反応 0.5 秒）で +5 kt・2.0°/s だと 400-800yd が 84%、転舵 4.5°/s・+5 kt でも 59%（800-1200yd 24%）と減速の案（63%・26%）と大差なく、見た目が速すぎるので減速を選んだ)",
         "ram.*": "design (trigger_m で体当たりを始め give_up_m まで続ける。最接近距離が stall_s（実時間秒）更新されなければ諦め、cooldown_s は再開しない。向かってくる魚雷を見ている間は回避が優先)",
         "patrol.*": "design (海域の端からこの距離で中央へ向き直す。端に張り付かないため。旋回半径（25kt・1.5°/s で約 490m）＋境界余白 118m より大きくする。v0.2.0 で転舵を 3.0→1.5 にした際に 500→700)"
       },
