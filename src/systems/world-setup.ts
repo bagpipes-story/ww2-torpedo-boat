@@ -144,6 +144,8 @@ export interface SetupOptions {
   forceStorm?: boolean;
   forcePlane?: boolean;
   forceFriendly?: boolean;
+  /** 駆逐艦・輸送船の船体の当たり判定の倍率の上書き（?debug&shiphit=N。v0.4.8。正の数でなければ data の world.ship_hit_scale） */
+  shipHitScale?: number;
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
@@ -174,12 +176,13 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const absentHazards = night.absentHazards.filter((id) => !forced(id));
   const absent = (id: string): boolean => absentHazards.includes(id);
   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
-  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink) : null;
+  const shipHitScale = o.shipHitScale !== undefined && o.shipHitScale > 0 ? o.shipHitScale : world.ship_hit_scale;
+  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale) : null;
   const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
   if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
   let transport: TransportSetup | null = null;
   if (destroyer && tr) {
-    const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null);
+    const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null, shipHitScale);
     transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[applied.starts.length - 1]! };
   }
   const barges = applied.barges;

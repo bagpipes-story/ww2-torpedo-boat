@@ -1,4 +1,4 @@
-// 魚雷ボタン（docs/02 §5: 右下。タップ=1本、長押し→離す=扇状に一斉発射。長押し時間で本数 2 → 3 → 4（v0.4.8）。扇は隣どうしの間隔が固定）。
+// 魚雷ボタン（docs/02 §5: 右下。タップ=1本、長押し→離す=扇状に一斉発射。長押し時間で本数 2 → 3 → 4（v0.4.8。何秒で何本かは data の salvo_hold_start_s・salvo_count_step_s）。扇は隣どうしの間隔が固定）。
 // HUD シーンに置く。結果は共有 InputState に書き、Mission が消費する。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -11,7 +11,6 @@ import {
   TORPEDO_BUTTON_PRESSED_SCALE,
   TORPEDO_SPREAD_LABEL_GAP,
   TORPEDO_BUTTON_RADIUS,
-  TORPEDO_BUTTON_TAP_MAX_S,
   hudTextStyle,
 } from '../config/ui-config';
 import type { InputState } from '../core/input-state';
@@ -72,12 +71,13 @@ export class TorpedoButton {
     this.pressedAt = -1;
     this.button.setScale(1 / RENDER_SCALE);
     this.hideSpread();
-    if (holdS < TORPEDO_BUTTON_TAP_MAX_S) {
-      this.input.fireTap = true;
-    } else {
-      const n = salvoCountForHold(holdS - TORPEDO_BUTTON_TAP_MAX_S, this.spread, this.lastRemaining);
+    // holdStartS 未満（と残弾 1）は 1 本＝タップ。2 本以上は扇
+    const n = salvoCountForHold(holdS, this.spread, this.lastRemaining);
+    if (n >= 2) {
       this.input.fireSalvoCount = n;
       this.input.fireSalvoSpreadDeg = salvoSpreadDeg(n, this.spread);
+    } else if (n === 1) {
+      this.input.fireTap = true;
     }
   }
 
@@ -96,13 +96,11 @@ export class TorpedoButton {
     this.button.setAlpha(n > 0 ? TORPEDO_BUTTON_ALPHA : TORPEDO_BUTTON_ALPHA * TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR);
   }
 
-  /** 毎フレーム: 長押し中は本数の予告を出す（本数が変わったときだけ） */
+  /** 毎フレーム: 長押し中は本数の予告を出す（2 本になってから。本数が変わったときだけ） */
   update(): void {
     if (this.pressedAt < 0) return;
-    const holdS = (this.scene.time.now - this.pressedAt) / 1000;
-    if (holdS < TORPEDO_BUTTON_TAP_MAX_S) return;
-    const n = salvoCountForHold(holdS - TORPEDO_BUTTON_TAP_MAX_S, this.spread, this.lastRemaining);
-    if (n === this.lastCountShown) return;
+    const n = salvoCountForHold((this.scene.time.now - this.pressedAt) / 1000, this.spread, this.lastRemaining);
+    if (n < 2 || n === this.lastCountShown) return;
     this.lastCountShown = n;
     this.spreadText.setText(`一斉 ${n} 本`);
   }

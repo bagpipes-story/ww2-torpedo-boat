@@ -2,15 +2,18 @@
 export interface SpreadConfig {
   /** 隣どうしの魚雷の角度の間隔（度。固定）。扇の開き角 = 間隔 × (本数 − 1) */
   spacingDeg: number;
-  /** 本数の刻み（秒）: 長押しに入った時点で 2 本、以後この秒ごとに 1 本増える（残弾まで）。0 以下なら残弾すべて */
+  /** 長押しの始まり（秒）: これより短い押下はタップ（1 本）。これ以上押して離すと 2 本から */
+  holdStartS: number;
+  /** 本数の刻み（秒）: holdStartS で 2 本、以後この秒ごとに 1 本増える（残弾まで）。0 以下なら長押しは残弾すべて */
   countStepS: number;
 }
 
-/** 長押し時間（タップの閾値を除いた秒）から一斉の本数。残弾 remaining が上限（1 本なら 1）。countStepS が 0 以下なら残弾すべて */
+/** 押していた時間（秒）から発射する本数: holdStartS 未満は 1 本（タップ）、以後 2 本から countStepS ごとに 1 本増える。残弾 remaining が上限（1 なら 1、0 なら 0） */
 export function salvoCountForHold(holdS: number, cfg: SpreadConfig, remaining: number): number {
   if (remaining <= 1) return Math.max(0, remaining);
+  if (!(holdS >= cfg.holdStartS)) return 1;
   if (cfg.countStepS <= 0) return remaining;
-  const n = 2 + Math.floor(Math.max(0, holdS) / cfg.countStepS);
+  const n = 2 + Math.floor((holdS - cfg.holdStartS) / cfg.countStepS);
   return n < remaining ? n : remaining;
 }
 

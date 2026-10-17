@@ -54,10 +54,8 @@ export const HUD_FONT_STATUS_PX = 20;
 export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX + 8;
 export const HUD_COLOR_WARN = '#ff8a7a';
 
-/** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉 */
+/** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった） */
 export const TORPEDO_BUTTON_RADIUS = 64;
-/** これより短い押下はタップ扱い（秒）。長押しの本数は、この閾値を超えてからの時間で数える（hit_rate_model の salvo_count_step_s） */
-export const TORPEDO_BUTTON_TAP_MAX_S = 0.3;
 export const TORPEDO_BUTTON_ALPHA = 0.55;
 export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
 /** Mission が始まってから魚雷ボタンが押下を受けない ms（v0.4.0）。Briefing の「出撃」（?debug 直行では Result の「もう一度」）の右側が魚雷ボタンと重なるので、2 度押しの 2 回目で出だしに 1 本撃たない。出だしの 0.6 秒に撃つ場面は無い */

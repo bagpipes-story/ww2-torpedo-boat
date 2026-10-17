@@ -9,6 +9,7 @@ import {
   DEBUG_FUEL_ALLOTMENT_GAL,
   DEBUG_SEAPLANE,
   DEBUG_SEAPLANE_OFF,
+  DEBUG_SHIP_HIT_SCALE,
   DEBUG_STORM_OFF,
   DEBUG_STORM_START_Y,
   DEBUG_TRANSPORT_OFF,
@@ -31,5 +32,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     forceStorm: Number.isFinite(DEBUG_STORM_START_Y),
     forcePlane: DEBUG_SEAPLANE !== 'none',
     forceFriendly: DEBUG_FRIENDLY_FORCE,
+    shipHitScale: DEBUG_SHIP_HIT_SCALE,
   };
 }

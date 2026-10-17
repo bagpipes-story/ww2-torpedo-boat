@@ -73,6 +73,8 @@ export const DEBUG_TRANSPORT_OFF = DEBUG_ENABLED && new URLSearchParams(window.l
 export const DEBUG_FIXED_NIGHT = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('fixed');
 /** ?debug&hard: 直行の出撃を難易度ハードに（v0.4.5。敵の数が増える。通し（&title）では Title の切り替えが優先） */
 export const DEBUG_HARD = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('hard');
+/** ?debug&shiphit=N: 駆逐艦・輸送船の船体の当たり判定の倍率（v0.4.8。data の world.ship_hit_scale の代わり。1 = v0.4.7 までの実寸、2 = 絵と同じ。実機で比べる・再生の比較用）。無ければ NaN（data の値） */
+export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
 export const DEBUG_BATTERY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobattery');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
