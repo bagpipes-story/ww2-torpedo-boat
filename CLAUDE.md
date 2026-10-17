@@ -33,6 +33,7 @@ Phaser 3 + TypeScript + Vite で作り、PWAとしてiPhone Safariで遊べる�
   - `npm run lint`
 - **動作確認はGitHub Pages**。どのブランチでもpushすると `.github/workflows/deploy-pages.yml` がビルドして `https://<user>.github.io/ww2-torpedo-boat/` に公開する（1〜2分）。ユーザーはこのURLをiPhone Safariで開いて実機テストする。
 - `npm run dev -- --host` などローカルサーバー前提の案内はしない。ユーザーのiPhone実機テストが各バージョンの完了条件に含まれる。
+- PWA（v0.5.1）: ホーム画面に追加したアプリでも、Service Worker がページ本体をネットワーク優先で取るので、オンラインなら push した最新のビルドが出る（オフラインは最後に開いたビルド）。古いままのときの対処は `docs/04` §5（`?nosw`）。Service Worker の方針を変えるときは「古いキャッシュで実機テストが迷わない」を崩さない。
 - ビルド番号: `vite.config.ts` が `import.meta.env.VITE_BUILD_LABEL`（ブランチ@コミット7桁）を注入する。画面上部中央に常に表示し（左下はスティック、右下は速力HUD、右上は煙幕ボタンが使うため）、ユーザーがどのビルドを見ているか分かるようにする（雛形: `docs/snippets/vite.config.ts`）。
 
 ## 4. ディレクトリ構成
@@ -154,3 +155,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
 - 2026-10-02 v0.1.1 iPhone完結（クラウドセッション＋GitHub Pages）前提に §3・§5・§6 を改訂、§12 追加
 - 2026-10-04 v0.1.2 §3 ビルド番号の表示位置を「画面の隅」から「画面上部中央」に（隅は操作系と HUD が使う）
 - 2026-10-12 v0.4.0 §4 scenes に Briefing・Hud を追記（Title → Briefing → Mission（＋Hud）→ Result の流れ）
+- 2026-10-17 v0.5.1 §3 に PWA（ホーム画面のアプリでも最新ビルドが出る仕組みと、古いときの対処）を追記

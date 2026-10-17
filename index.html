@@ -11,6 +11,10 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- PWA（v0.5.1）: ホーム画面に追加すると全画面（standalone）で起動。名前・アイコンは manifest と apple-touch-icon（iOS は apple-touch-icon を使う） -->
+    <meta name="apple-mobile-web-app-title" content="Night Hunters" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>Night Hunters (WWII魚雷艇)</title>
     <style>
       html,
@@ -29,10 +33,13 @@
         -webkit-tap-highlight-color: transparent;
       }
       #game {
-        width: 100vw;
+        /* ノッチ・角丸・ホームバー（画面下の横線）の内側に収める（CLAUDE.md §7 iOS: env(safe-area-inset-*)。v0.5.1）。
+           Phaser の FIT は親の外寸（getBoundingClientRect）で合わせるので、padding ではなく margin と大きさで内側に寄せる */
+        margin: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+        width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
         /* 100vh は iOS Safari のツールバー分ずれるので 100dvh（CLAUDE.md §7） */
-        height: 100vh;
-        height: 100dvh;
+        height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       }
       #game canvas {
         display: block;
@@ -42,5 +49,6 @@
   <body>
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/pwa/register-sw.ts"></script>
   </body>
 </html>
