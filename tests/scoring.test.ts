@@ -16,6 +16,7 @@ describe('スコア（docs/02 §6.9）', () => {
     expect(P.returnedPoints).toBe(700);
     expect(P.crewHalfRatio).toBe(0.5);
     expect(P.crewHalfFactor).toBe(0.5);
+    expect(P.afterDawnFactor).toBe(0.9);
     expect(P.returnedPoints).toBeGreaterThan(P.objectiveByType['intercept_destroyer']! + Math.round(P.hitBase * Math.max(...Object.values(P.hitRangeMultiplier))));
     expect(P.objectiveByType['intercept_destroyer']).toBe(300);
     expect(P.hitBase).toBe(100);
@@ -84,6 +85,37 @@ describe('スコア（docs/02 §6.9）', () => {
       expect(careful).toBeGreaterThan(reckless);
     }
   });
+  it('v0.6.1 夜明けに輪の外だった帰投: 帰投点 630（乗員半数以下は 315）。afterDawn が無い・false なら 700。帰投しなければ 0', () => {
+    expect(computeScore(input({ returned: true, afterDawn: true }), P).survival).toBe(630);
+    expect(computeScore(input({ returned: true, afterDawn: true, crewAlive: 7, crewTotal: 14 }), P).survival).toBe(315);
+    expect(computeScore(input({ returned: true, afterDawn: true, crewAlive: 7, crewTotal: 14 }), P).crewHalf).toBe(true);
+    expect(computeScore(input({ returned: true, afterDawn: false }), P).survival).toBe(700);
+    expect(computeScore(input({ returned: true }), P).survival).toBe(700);
+    expect(computeScore(input({ returned: false, afterDawn: true }), P).survival).toBe(0);
+    // 夜明け後の帰投でも達成・命中・燃料・乗員の点は同じ
+    const day = computeScore(input({ returned: true, afterDawn: true, objectiveDone: true, bands: [{ band: '800-1200yd', hits: 1, duds: 0 }], fuelLeftPct: 40, crewAlive: 14, crewTotal: 14 }), P);
+    expect(day.total).toBe(1290 - 70);
+  });
+  it('v0.6.1 回避（要人脱出 400）は夜明け前の帰投だけ。夜明けに輪の外なら 0（昼に敵機に見つかった扱い）', () => {
+    const vip = { returned: true, objectiveDone: true, missionType: 'escort_vip', detections: 0 };
+    expect(computeScore(input(vip), P).evade).toBe(400);
+    expect(computeScore(input({ ...vip, afterDawn: true }), P).evade).toBe(0);
+    expect(computeScore(input({ ...vip, afterDawn: true }), P).survival).toBe(630);
+  });
+  it('v0.6.1 不変: 夜明け後の帰投 round(700 × 0.9) = 630 > 沈めて死ぬ最大（撃沈 300 ＋ ≥2000yd の命中 1 本 300 = 600）。0.857 未満だと崩れる', () => {
+    const maxHit = Math.round(P.hitBase * Math.max(...Object.values(P.hitRangeMultiplier)));
+    const diedMax = P.objectiveByType['intercept_destroyer']! + maxHit;
+    expect(diedMax).toBe(600);
+    expect(Math.round(P.returnedPoints * P.afterDawnFactor)).toBe(630);
+    expect(Math.round(P.returnedPoints * P.afterDawnFactor)).toBeGreaterThan(diedMax);
+    expect(Math.round(P.returnedPoints * 0.857)).not.toBeGreaterThan(diedMax); // 600 で並ぶ＝『外して帰る＞沈めて死ぬ』が崩れる
+    // 外して夜明け後に帰投 > 沈めて死ぬ（どの帯でも）
+    for (const band of Object.keys(P.hitRangeMultiplier)) {
+      const missedAfterDawn = computeScore(input({ returned: true, afterDawn: true, fuelLeftPct: 20, crewAlive: 14, crewTotal: 14 }), P).total;
+      const died = computeScore(input({ objectiveDone: true, bands: [{ band, hits: 1, duds: 0 }], crewAlive: 14, crewTotal: 14 }), P).total;
+      expect(missedAfterDawn).toBeGreaterThan(died);
+    }
+  });
   it('不発は数えない。複数命中は本数ぶん。帯ごとの倍率は四捨五入した点', () => {
     const s = computeScore(input({ bands: [{ band: '400-800yd', hits: 3, duds: 1 }, { band: '>=2000yd', hits: 1, duds: 0 }] }), P);
     expect(s.hits).toBe(2 * 120 + 300);
@@ -123,5 +155,14 @@ describe('スコア（docs/02 §6.9）', () => {
     const badHalf = JSON.parse(JSON.stringify(scoring)) as Record<string, unknown>;
     (badHalf['survival'] as Record<string, unknown>)['crew_half_factor'] = 1.5;
     expect(isScoringDataRecord(badHalf)).toBe(false);
+    // v0.6.1 after_dawn_factor は必須で 0〜1
+    const noDawn = JSON.parse(JSON.stringify(scoring)) as Record<string, unknown>;
+    delete (noDawn['survival'] as Record<string, unknown>)['after_dawn_factor'];
+    expect(isScoringDataRecord(noDawn)).toBe(false);
+    for (const bad of [1.1, -0.1, '0.9']) {
+      const badDawn = JSON.parse(JSON.stringify(scoring)) as Record<string, unknown>;
+      (badDawn['survival'] as Record<string, unknown>)['after_dawn_factor'] = bad;
+      expect(isScoringDataRecord(badDawn)).toBe(false);
+    }
   });
 });

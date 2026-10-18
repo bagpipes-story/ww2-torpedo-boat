@@ -42,6 +42,9 @@ describe('日本ハードモードの data（v0.6.0。T-38・米駆逐艦・jp_0
   it('jp_06: 任務・Briefing・世界が組める。T-38・魚雷 2 本・煙幕なし・米駆逐艦 1 隻（ハード 2 隻）・新月・夜明け 160 秒・燃料 16 gal', () => {
     const m = getPrototypeMission(gameData, 'jp_06');
     expect([m.playerBoatId, m.torpedoId, m.enemyId, m.moon, m.durationS, m.fuelAllotmentGal]).toEqual(['jp_t38', 'jp_45cm', 'us_destroyer', 'dark', 160, 16]);
+    // v0.6.1: 夜明けの後は米艦載機 4 機の空襲（東から。僚艇はいない）
+    expect(m.hazards).toEqual(['enemy_ship_gunfire_or_ram', 'grounding', 'dawn_air_strike']);
+    expect(m.dawnStrike).toMatchObject({ aircraft_id: 'us_carrier_aircraft', count: 4, from_bearing_deg: 90, escort_target_planes: [] });
     // 史実メモは史実だけ（出撃できなかったとは書かない）。「もしも」は目的の側に書く
     const b = getBriefingRecord(gameData, 'jp_06');
     expect(b.noteJa).toContain('戦闘能力を失った');

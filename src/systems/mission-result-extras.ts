@@ -1,5 +1,6 @@
-// Result の材料のうち任務ごとの部分（v0.4.4 で mission-telemetry から切り出し）: 大発掃討（v0.4.2）と僚艇（v0.4.4）。終了時に 1 回だけ作る。
-import type { BargeResult, EscortResult } from '../scenes/result-scene';
+// Result の材料のうち任務ごとの部分（v0.4.4 で mission-telemetry から切り出し）: 大発掃討（v0.4.2）と僚艇（v0.4.4）、敵の水上機（v0.4.1。v0.6.1 で切り出し）。終了時に 1 回だけ作る。
+import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
+import type { BargeResult, EscortResult, MissionResult } from '../scenes/result-scene';
 import type { MissionWorld } from './mission-world';
 
 /** 大発掃討の Result の材料（v0.4.2。任務に大発がいるときだけ） */
@@ -36,4 +37,28 @@ export function escortResult(w: MissionWorld): EscortResult {
   const e = w.escort!;
   const s = e.state;
   return { hpLeft: s.hp, hpMax: e.p.maxHp, hits: s.hits, damage: e.p.maxHp - s.hp, maxDistM: Math.sqrt(s.maxDist2), sunk: s.sunk, sunkAtS: s.sunkAtS };
+}
+
+/** 敵の水上機の Result の材料（v0.4.1。v0.6.1 で mission-telemetry から切り出し。中身は同じ）。水上機のいない任務は既定値 */
+export type SeaplaneResultFields = Pick<
+  MissionResult,
+  'seaplaneEnabled' | 'seaplanePhase' | 'seaplaneOutcome' | 'seaplaneAttacked' | 'seaplaneSorties' | 'seaplaneLost' | 'seaplaneSlowReactS' | 'seaplaneFlareLitS' | 'seaplaneShellsUnderFlare' | 'seaplaneBombs' | 'seaplaneBombHits' | 'seaplaneDodgeS'
+>;
+
+export function seaplaneResultFields(w: MissionWorld): SeaplaneResultFields {
+  const sp = w.seaplane ? w.seaplane.state : null;
+  return {
+    seaplaneEnabled: w.seaplane !== null,
+    seaplanePhase: sp ? sp.phase : SP_IDLE,
+    seaplaneOutcome: sp ? sp.outcome : SP_OUT_NONE,
+    seaplaneAttacked: sp ? sp.attacked : false,
+    seaplaneSorties: sp ? sp.sorties : 0,
+    seaplaneLost: sp ? sp.lost : 0,
+    seaplaneSlowReactS: sp ? sp.slowReactS : NaN,
+    seaplaneFlareLitS: sp ? sp.ordnance.flare.litS : 0,
+    seaplaneShellsUnderFlare: sp ? sp.ordnance.flare.shellsUnderFlare : 0,
+    seaplaneBombs: sp ? sp.ordnance.bombsDropped : 0,
+    seaplaneBombHits: sp ? sp.ordnance.bombsHit : 0,
+    seaplaneDodgeS: sp ? sp.ordnance.bombs.map((b) => b.dodgeReactS) : [],
+  };
 }

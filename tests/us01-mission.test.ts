@@ -25,7 +25,8 @@ describe('要人脱出（us_01、v0.4.4）', () => {
     expect(m.fuelAllotmentGal).toBe(40);
     expect(m.shallows.map((r) => [r.x, r.y, r.w, r.h])).toEqual([[2200, 1300, 1600, 600]]);
     expect(m.storm).toMatchObject({ sea_state: 5, start_south_y_min_m: 3600, start_south_y_max_m: 4600 });
-    expect(m.hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding']);
+    expect(m.hazards).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding', 'dawn_air_strike']);
+    expect(m.dawnStrike).toMatchObject({ aircraft_id: 'ijn_f1m2_pete', count: 4, from_bearing_deg: 90, escort_target_planes: [1, 3] }); // 夜明けの空襲（v0.6.1）
     expect(m.moon).toBe('dark');
     expect(m.enemyAircraft).toBeNull();
     expect(m.friendlyAircraft).toBeNull();
@@ -51,13 +52,13 @@ describe('要人脱出（us_01、v0.4.4）', () => {
     expect(fullGal).toBeLessThan(40);
     expect(f.cruiseMps).toBeCloseTo(ktToMps(23), 9);
   });
-  it('Title: us_01 が出撃可で先頭。Briefing の文: 目的に「僚艇」、成功に「僚艇生存」、危険は暴風・敵艦艇の砲撃・衝突・座礁、人物名なし', () => {
+  it('Title: us_01 が出撃可で先頭。Briefing の文: 目的に「僚艇」、成功に「僚艇生存」、危険は暴風・敵艦艇の砲撃・衝突・座礁・夜明けの空襲、人物名なし', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.entries[0]).toMatchObject({ id: 'us_01', playable: true, status: '出撃準備 →' });
     const b = getBriefingRecord(gameData, 'us_01');
     expect(b.objective).toContain('僚艇');
     expect(b.success).toContain('僚艇生存');
-    expect(b.hazardIds).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding']);
+    expect(b.hazardIds).toEqual(['storm', 'enemy_ship_gunfire_or_ram', 'grounding', 'dawn_air_strike']);
     expect(b.noteJa).not.toMatch(/マッカーサー|MacArthur/);
   });
   it('検査: escort は駆逐艦の任務だけ（大発と同居は例外）、escort_vip に escort が無ければ例外、boat が boats.json に無ければ例外', () => {

@@ -60,6 +60,7 @@ import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
 import { HpBar } from '../ui/hp-bar';
 import { EdgeMarker } from '../ui/edge-marker';
+import { DawnBanner } from '../ui/dawn-banner';
 import { FuelGauge } from '../ui/fuel-gauge';
 import type { BoatTelemetry } from '../core/boat-motion';
 
@@ -69,8 +70,9 @@ export class HudScene extends Phaser.Scene {
   private hpBar?: HpBar;
   private targetMarker?: EdgeMarker;
   private homeMarker?: EdgeMarker;
-  /** 敵の水上機（v0.4.1）。任務に enemy_aircraft があるときだけ。接近・去る間に画面外なら赤い矢印 */
+  /** 敵機（v0.4.1 の水上機、v0.6.1 から夜明けの空襲の印の機も）。どちらかがある任務だけ。来ている間に画面外なら赤い矢印 */
   private planeMarker?: EdgeMarker;
+  private dawnBanner?: DawnBanner; // 夜明けの帯（v0.6.1。夜明けに 1 回だけ。ui/dawn-banner）
   private coastMarker?: EdgeMarker;
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
@@ -139,9 +141,8 @@ export class HudScene extends Phaser.Scene {
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
     if (mission.coast) this.coastMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
-    if (this.telemetry.seaplaneEnabled) {
-      this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
-    }
+    if (this.telemetry.seaplaneEnabled || this.telemetry.dawn.strikeEnabled) this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached);
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
@@ -212,6 +213,7 @@ export class HudScene extends Phaser.Scene {
       this.targetMarker?.destroy();
       this.homeMarker?.destroy();
       this.planeMarker?.destroy();
+      this.dawnBanner?.destroy();
       this.coastMarker?.destroy();
       this.fuelGauge?.destroy();
       this.boatHud?.destroy();
@@ -227,6 +229,7 @@ export class HudScene extends Phaser.Scene {
       this.targetMarker = undefined;
       this.homeMarker = undefined;
       this.planeMarker = undefined;
+      this.dawnBanner = undefined;
       this.coastMarker = undefined;
       this.fuelGauge = undefined;
       this.boatHud = undefined;
@@ -251,6 +254,7 @@ export class HudScene extends Phaser.Scene {
     this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
     this.planeMarker?.refresh(this.telemetry.planeDx, this.telemetry.planeDy, !Number.isNaN(this.telemetry.planeDx), this.telemetry);
     this.coastMarker?.refresh(this.telemetry.coastDx, this.telemetry.coastDy, !Number.isNaN(this.telemetry.coastDy), this.telemetry);
+    this.dawnBanner?.refresh(this.telemetry, this.time.now);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;

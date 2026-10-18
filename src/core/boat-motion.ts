@@ -2,6 +2,7 @@
 // 単位は実寸: 位置 m、速度 m/s、針路は方位角（0=北=画面上、時計回り、[0,360)）。
 // 時間圧縮（time_scale）は呼び出し側が dt に掛けて渡す（docs/02 §6.10）。
 // §7: 毎フレーム呼ばれる関数はオブジェクトを確保しない。state を書き換える。
+import type { DawnTelemetry } from './dawn-air';
 import { clamp, degToRad, ktToMps, mpsToKt, wrapDeg180, wrapDeg360 } from './units';
 
 export interface BoatParams {
@@ -57,7 +58,7 @@ export interface BoatTelemetry {
   torpedoesLeft: number;
   /** 有効弾の命中数（不発を除く） */
   hits: number;
-  /** 夜明けまでの実時間秒（0 で任務終了。帰投地点の外なら「帰投できず」） */
+  /** 夜明けまでの実時間秒（0 で夜明け。v0.6.1 から任務は終わらない。夜明けの後の時計・空襲は dawn） */
   timeLeftS: number;
   /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */
   enemyDx: number;
@@ -171,6 +172,7 @@ export interface BoatTelemetry {
   /** 輸送船（v0.4.7）: 任務にいる、沈み始めた */
   transportEnabled: boolean;
   transportSunk: boolean;
+  dawn: DawnTelemetry; // 夜明け（v0.6.1。core/dawn-air）: ラッチ・夜明け後の秒・空の持ち主・空襲の段（systems/dawn-telemetry が毎フレーム書く）
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

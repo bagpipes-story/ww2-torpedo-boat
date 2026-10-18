@@ -27,6 +27,7 @@ import {
 } from '../config/game-data';
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
 import { missionCampaignId } from '../config/campaign-data';
+import { getAirStrikeParams, getDawnAir, type AirStrikeParams } from '../config/dawn-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
 import { fixedNight, rollNight, type NightRoll } from '../core/night';
@@ -48,6 +49,7 @@ import { type SmokeParams } from '../core/smoke';
 import { type StormParams } from '../core/storm';
 import { NO_SORTIE_EFFECT, sortieConditions, type RaidParams, type Sortie, type SortieConditions } from '../core/sortie';
 import { compassJa, type BriefingNumbers } from '../core/briefing';
+import { dawnConditionJa, type DawnAir } from '../core/dawn-air';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 
@@ -126,6 +128,8 @@ export interface WorldSetup {
   absentHazards: string[];
   /** 敵の来る位置（1 隻目の駆逐艦か大発の隊の先頭の出発点。Briefing の「敵 …（北西から）」） */
   enemyFrom: { x: number; y: number } | null;
+  dawnAir: DawnAir; // 夜明けの空（v0.6.1。missions_seed の dawn_air。遊べる任務の規則は config/dawn-data が検査）
+  airStrike: AirStrikeParams | null; // 夜明けの空襲（v0.6.1。dawn_strike の任務だけ。?debug&nostrike で null。水上機とは別に組み、今夜の absent() は通さない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
@@ -152,6 +156,7 @@ export interface SetupOptions {
   forceFriendly?: boolean;
   /** 駆逐艦・輸送船の船体の当たり判定の倍率の上書き（?debug&shiphit=N。v0.4.8。正の数でなければ data の world.ship_hit_scale） */
   shipHitScale?: number;
+  strikeOff?: boolean; // ?debug&nostrike: 夜明けの空襲なし（v0.6.1。夜明けの後も任務は続く）
 }
 
 /** data から世界の数値をすべて作る。data が壊れていれば各 getter が例外を投げる（起動時に分かる） */
@@ -196,6 +201,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const barges = applied.barges;
   const shoreBatteries = applied.batteries;
   const guns = getGunBatteryParams(data, mission);
+  const escort = getEscortParams(data, mission);
 
   const boatParams = boatParamsFromData(boatRecord);
   const fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
@@ -245,7 +251,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     hard,
     historical,
     transport,
-    escort: getEscortParams(data, mission),
+    escort,
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
     // 史実モード（v0.5.2）は不発・蛇行の確率を historical_mode.reliability で上書き（torpedoes.json の値の代わり）。v0.6.0 から reliability_campaigns（米PT）の任務だけ（日本の 45cm 魚雷には米の Mk 8 の値を掛けない）
@@ -258,6 +264,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     hazardsTonight: mission.hazards.filter((h) => !absent(h)),
     absentHazards,
     enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : null,
+    dawnAir: getDawnAir(data, missionId),
+    airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 }, escort),
   };
 }
 
@@ -279,6 +287,7 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
     durationS: s.durationS,
+    dawnJa: dawnConditionJa(s.dawnAir.playAs),
     fuelGal: s.fuelAllotmentGal,
     torpedoes: s.torpedoCapacity,
     gunsLabel: s.guns ? s.guns.label : '',

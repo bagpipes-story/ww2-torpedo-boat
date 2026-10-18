@@ -16,8 +16,8 @@ const SCREEN = startScreenFit();
  * HUD は GAME_WIDTH からの位置で並ぶので右端・中央に付いてくる。起動後に向きや大きさが変わっても幅は変えない（FIT が黒帯で合わせる）
  */
 export const GAME_WIDTH = SCREEN ? logicalWidthFor(SCREEN.width, SCREEN.height, GAME_HEIGHT, GAME_WIDTH_MIN, GAME_WIDTH_MAX, GAME_WIDTH_STEP) : GAME_WIDTH_MIN;
-/** 夜の海の背景色（docs/02 §7） */
-export const SEA_COLOR = '#0b1020';
+/** 夜の海の背景色（docs/02 §7）。値は dawn-config（v0.6.1。夜明けの海の明るさが DOM 無しで読む） */
+export { SEA_COLOR } from './dawn-config';
 /** HUD の余白（ゲーム座標 px）。ノッチ・角丸は枠の外（screen-fit が左右の safe-area を引く）、下のホームバーは引かない（v0.5.1） */
 export const HUD_MARGIN = 24;
 /** HUD の FPS 更新間隔（ms）。毎フレーム setText しない（CLAUDE.md §7） */
@@ -99,6 +99,8 @@ export const DEBUG_UNLOCK_ALL = DEBUG_ENABLED && new URLSearchParams(window.loca
 export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
 export const DEBUG_BATTERY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobattery');
+/** ?debug&nostrike: 夜明けの空襲なし（v0.6.1。敵の制空下の任務でも敵機が来ない。夜明けの後も任務は続く。&dawn=S と合わせて夜明けの後を試す） */
+export const DEBUG_STRIKE_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostrike');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */

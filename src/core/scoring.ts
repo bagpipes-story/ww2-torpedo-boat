@@ -1,11 +1,14 @@
 // スコア（docs/02 §6.9、v0.3.1）。Phaser 非依存。配点は data/scoring.json。
 // 合計 = 帰投 + 任務達成（駆逐艦撃沈・大発のノルマ・僚艇の生還）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 撃破（砲で沈めた敵 1 隻ごと。v0.4.2）+ 回避（v0.4.4。帰投して任務達成し、敵に一度も見つからなかったときだけ、任務の type の点）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
+// 夜明けに輪の外だった帰投は帰投点 × after_dawn_factor、回避は付かない（v0.6.1）。
 
 export interface ScoringParams {
   returnedPoints: number;
   /** 乗員が定員 × ratio 以下なら帰投点 × factor（v0.3.5。負傷者を抱えて任務継続不能） */
   crewHalfRatio: number;
   crewHalfFactor: number;
+  /** 夜明けに輪の外で、その後に帰投したら帰投点 × これ（v0.6.1。630 は『沈めて死ぬ』最大 600 を上回る） */
+  afterDawnFactor: number;
   /** 任務の type → 達成点 */
   objectiveByType: Record<string, number>;
   hitBase: number;
@@ -37,6 +40,8 @@ export interface ScoreInput {
   /** 乗員の生存と定員（定員 0 なら乗員点は無い） */
   crewAlive: number;
   crewTotal: number;
+  /** 夜明けに輪の外で、その後に帰投した（v0.6.1。returned && dawn.caughtOutside）。帰投点 × afterDawnFactor、回避なし */
+  afterDawn?: boolean;
 }
 
 export interface ScoreBreakdown {
@@ -56,7 +61,8 @@ export interface ScoreBreakdown {
 export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakdown = { survival: 0, objective: 0, hits: 0, kills: 0, evade: 0, fuel: 0, crew: 0, crewHalf: false, total: 0 }): ScoreBreakdown {
   const crewHalf = inp.returned && inp.crewTotal > 0 && inp.crewAlive <= Math.floor(inp.crewTotal * p.crewHalfRatio);
   out.crewHalf = crewHalf;
-  out.survival = inp.returned ? (crewHalf ? Math.round(p.returnedPoints * p.crewHalfFactor) : p.returnedPoints) : 0;
+  const afterDawn = inp.returned && inp.afterDawn === true;
+  out.survival = inp.returned ? Math.round(p.returnedPoints * (crewHalf ? p.crewHalfFactor : 1) * (afterDawn ? p.afterDawnFactor : 1)) : 0;
   out.objective = inp.objectiveDone ? (p.objectiveByType[inp.missionType] ?? 0) : 0;
   let hits = 0;
   for (let i = 0; i < inp.bands.length; i++) {
@@ -72,7 +78,8 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   if (per === undefined) throw new Error(`scoring.json の kill.points_by_enemy に ${inp.killEnemyId} が無い`);
   out.kills = inp.kills * per;
   const evade = p.evadeByType[inp.missionType];
-  out.evade = evade !== undefined && inp.returned && inp.objectiveDone && (inp.detections ?? 0) === 0 ? evade : 0;
+  // 回避は夜明け前の帰投だけ（夜明けに輪の外なら昼に敵機に見つかった扱い。v0.6.1）
+  out.evade = evade !== undefined && inp.returned && inp.objectiveDone && (inp.detections ?? 0) === 0 && !afterDawn ? evade : 0;
   const fuelAllowed = p.fuelRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   const pct = Math.max(0, Math.min(100, inp.fuelLeftPct));
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
@@ -85,7 +92,7 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
 // ---------- data の読み出し ----------
 
 export interface ScoringDataRecord {
-  survival: { returned: number; crew_half_ratio: number; crew_half_factor: number };
+  survival: { returned: number; crew_half_ratio: number; crew_half_factor: number; after_dawn_factor: number };
   objective_by_type: Record<string, number | string>;
   hit: { base: number; range_multiplier: Record<string, number> };
   fuel: { max: number; requires_returned_and_objective: boolean };
@@ -107,6 +114,7 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   const f = r['fuel'] as Record<string, unknown> | undefined;
   if (!s || !isFiniteNum(s['returned']) || !isFiniteNum(s['crew_half_ratio']) || !isFiniteNum(s['crew_half_factor'])) return false;
   if ((s['crew_half_ratio'] as number) < 0 || (s['crew_half_ratio'] as number) > 1 || (s['crew_half_factor'] as number) < 0 || (s['crew_half_factor'] as number) > 1) return false;
+  if (!isFiniteNum(s['after_dawn_factor']) || s['after_dawn_factor'] < 0 || s['after_dawn_factor'] > 1) return false;
   if (!o || typeof o !== 'object') return false;
   if (!h || !isFiniteNum(h['base']) || !h['range_multiplier'] || typeof h['range_multiplier'] !== 'object') return false;
   const rm = h['range_multiplier'] as Record<string, unknown>;
@@ -137,6 +145,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     returnedPoints: r.survival.returned,
     crewHalfRatio: r.survival.crew_half_ratio,
     crewHalfFactor: r.survival.crew_half_factor,
+    afterDawnFactor: r.survival.after_dawn_factor,
     objectiveByType: objective,
     hitBase: r.hit.base,
     hitRangeMultiplier: { ...r.hit.range_multiplier },

@@ -123,6 +123,8 @@ export interface BriefingNumbers {
   detectCruiseM: number;
   detectSilentM: number;
   durationS: number;
+  /** 「夜明けまで N 秒」の後ろの句（v0.6.1。dawn_air.play_as: enemy は「（以後は空襲）」、own は「（昼の空は味方）」。core/dawn-air の dawnConditionJa） */
+  dawnJa: string;
   fuelGal: number;
   torpedoes: number;
   /** 主兵装が砲の任務（v0.4.2）は砲の名前（boats.json の gun_battery.label_ja）。魚雷の任務は '' */
@@ -156,6 +158,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒 ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
   ];
 }

@@ -6,6 +6,7 @@ import { enemyNameJa, getBriefingRecord, getMenuEntries, riskLabelJa } from '../
 import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
 import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
+import { PERSON_DENYLIST, RANK_RE } from './person-denylist';
 
 type Mission = Record<string, unknown>;
 const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
@@ -13,10 +14,6 @@ const missionsOf = (d: typeof gameData): Mission[] => d.missionsSeed.missions as
 const byId = (d: typeof gameData, id: string): Mission => missionsOf(d).find((m) => m['id'] === id)!;
 const nameOf = (id: string): string => enemyNameJa(gameData, id);
 const labelOf = (id: string): string => riskLabelJa(gameData, id);
-
-/** 人物名の denylist（CLAUDE.md §11）と階級つきの呼び方 */
-const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ', 'Kennedy', 'バルクリー', 'Bulkeley', 'Bulkley', '白石'];
-const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
   it('任務一覧: 米PTキャンペーンの 3 件を order 順に。v0.4.4 から 3 件とも出撃できる。sub は日付 ・ 場所', () => {
@@ -34,10 +31,11 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     const otherCampaign = clone();
     byId(otherCampaign, 'jp_01')['playable_from'] = 'v0.5.0';
     expect(getMenuEntries(otherCampaign).entries.map((e) => e.id)).toEqual(US_IDS);
-    // 日本側（v0.6.0）: jp_01・jp_05 は準備中（版）、jp_06 は出撃できる。jp_06 の世界を消すと出撃できる任務が無くて例外
+    // 日本側（v0.6.0）: jp_01・jp_05 は準備中（版）、jp_06 は出撃できる。jp_06 の世界を消すと出撃できる任務が無くて例外。
+    // v0.6.1: 版を付け替え（v0.6.1 夜明け・v0.6.2 敵が退く・v0.6.3 昼の海が入ったので、jp_05 は v0.6.4、jp_01 は v0.6.5）
     expect(menuEntries(gameData.missionsSeed.missions, 'jp_hard').map((e) => [e.id, e.playable, e.status])).toEqual([
-      ['jp_01', false, '準備中 ・ v0.6.2'],
-      ['jp_05', false, '準備中 ・ v0.6.1'],
+      ['jp_01', false, '準備中 ・ v0.6.5'],
+      ['jp_05', false, '準備中 ・ v0.6.4'],
       ['jp_06', true, '出撃準備 →'],
     ]);
     const jpNone = clone();
@@ -106,13 +104,13 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       { label: '月', text: '半月 ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m' },
       { label: '敵', text: '駆逐艦 ×1、輸送船 ×1（北西から）' },
       { label: '危険', text: '暴風、敵艦艇の砲撃・衝突、敵航空機、座礁、友軍誤射' },
-      { label: '条件', text: '夜明けまで 150 秒 ・ 燃料 38 gal ・ 魚雷 4 本' },
+      { label: '条件', text: '夜明けまで 150 秒（昼の空は味方） ・ 燃料 38 gal ・ 魚雷 4 本' },
     ]);
   });
-  it('?debug の上書きも出る: fuel 20・dawn 60 → 条件「夜明けまで 60 秒 ・ 燃料 20 gal ・ 魚雷 4 本」。小数の燃料は 1 桁', () => {
+  it('?debug の上書きも出る: fuel 20・dawn 60 → 条件「夜明けまで 60 秒（昼の空は味方） ・ 燃料 20 gal ・ 魚雷 4 本」。小数の燃料は 1 桁', () => {
     const rec = getBriefingRecord(gameData, 'us_02');
-    expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02', { fuelGal: 20, dawnS: 60 })), nameOf, labelOf)[5]!.text).toBe('夜明けまで 60 秒 ・ 燃料 20 gal ・ 魚雷 4 本');
-    expect(briefingRows(rec, { ...briefingNumbers(buildWorldSetup(gameData, 'us_02')), fuelGal: 34.25 }, nameOf, labelOf)[5]!.text).toBe('夜明けまで 150 秒 ・ 燃料 34.3 gal ・ 魚雷 4 本');
+    expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02', { fuelGal: 20, dawnS: 60 })), nameOf, labelOf)[5]!.text).toBe('夜明けまで 60 秒（昼の空は味方） ・ 燃料 20 gal ・ 魚雷 4 本');
+    expect(briefingRows(rec, { ...briefingNumbers(buildWorldSetup(gameData, 'us_02')), fuelGal: 34.25 }, nameOf, labelOf)[5]!.text).toBe('夜明けまで 150 秒（昼の空は味方） ・ 燃料 34.3 gal ・ 魚雷 4 本');
   });
   it('人物名を出さない（CLAUDE.md §11）: 一覧の 3 任務の画面に出す文と空襲の文に人物名が無い。src は historical_note を読まない', () => {
     const raidData = clone();
@@ -154,6 +152,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     if (m.enemyAircraft) expected.add('enemy_aircraft');
     if (armed) expected.add('enemy_ship_gunfire_or_ram');
     if (m.shoreBattery) expected.add('shore_battery');
+    if (m.dawnStrike) expected.add('dawn_air_strike'); // 夜明けの空襲（v0.6.1。敵の制空下の任務だけ）
     expect(new Set(m.hazards)).toEqual(expected);
     for (const h of m.hazards) expect(gameData.riskEvents.events.some((e) => e.id === h)).toBe(true);
     for (const id of enemyIds) expect(gameData.enemies.enemies.some((e) => e.id === id)).toBe(true);

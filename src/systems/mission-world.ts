@@ -35,11 +35,11 @@ import type { StormFront } from './storm-front';
 import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
 import { torpedoEventsFor } from './torpedo-hits';
+import { WorldDawn } from './world-dawn';
 import { buildHazards } from './world-hazards';
 import { DRIFT_INPUT, type WorldEvents } from './world-events';
-import { consumeFireInput, consumeIdentifyInput, consumeSmokeInput, discardFireInput } from './world-input';
+import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
-
 export type { WorldEvents } from './world-events';
 
 export class MissionWorld {
@@ -59,6 +59,7 @@ export class MissionWorld {
   readonly friendly: FriendlyFire | null;
   readonly storm: StormFront | null;
   readonly seaplane: EnemySeaplane | null;
+  readonly dawn: WorldDawn; // 夜明けのラッチと夜明けの空襲（v0.6.1。world-dawn.ts）。夜明けは任務の終わりではない
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
   readonly returnPoint: ReturnPoint;
@@ -100,7 +101,7 @@ export class MissionWorld {
   private readonly turnBaseDegS: number;
   private readonly accelBaseMps2: number;
   crewLostNow = 0; // 失った乗員（HP から。毎ステップ更新し、生成時は出撃時の HP から決める）
-  private extinguishHeldS = 0;
+  extinguishHeldS = 0; // 消火ボタンを押し続けている実秒（world-input だけが書く）
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
 
   /** 魚雷の命中・外れの記録と撃沈の開始（torpedo-hits.ts。v0.4.2 で切り出し。destroyer-step が読む） */
@@ -112,6 +113,7 @@ export class MissionWorld {
     const feelDt = realDt * factor;
     const dt = feelDt * c.timeScale;
     this.stepTimeS += realDt;
+    this.dawn.latch(this); // 夜明けのラッチ（v0.6.1）は時計を進めた直後・自艇を動かす前（atHome は夜明けの瞬間の位置）
     const boat = this.boat.state;
     const g = this.destroyers;
     // 最寄りの浮いている駆逐艦（雨の線・煙幕の線の相手。1 隻ならその艦。v0.4.5）
@@ -157,13 +159,14 @@ export class MissionWorld {
     }
     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.boatDamage.fireReason);
     this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
+    this.dawn.step(feelDt, this); // 夜明けの空襲は最後（夜明け前は何もしない＝夜の順序と乱数は v0.6.0 のまま）
   };
 
   constructor(
     scene: Phaser.Scene,
     data: GameData,
     readonly sortie: Sortie,
-    private readonly input: InputState,
+    readonly input: InputState,
     events: WorldEvents,
   ) {
     this.events = events;
@@ -203,9 +206,10 @@ export class MissionWorld {
       this.slowMoLeftS = s.slowMoSeconds;
       this.events.onTargetDestroyed(x, y);
     };
-    // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
+    // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
     this.escort = s.escort && ds ? new EscortBoat(scene, s.escort, this.boat.state, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
-    this.destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => (this.escort!.hit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false))));
+    const escortHit = (damage: number, x: number, y: number): void => (this.escort!.hit(damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false));
+    this.destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
     this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBatteries, this.splashes) : null;
     this.enemy = new EnemySide(this.destroyers, this.hunt);
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
@@ -213,32 +217,19 @@ export class MissionWorld {
     this.smokeParams = s.smokeParams;
     this.smoke = this.smokeParams ? createSmokeState(SMOKE_POOL_SIZE) : null;
     this.smokeScreen = this.smokeParams ? new SmokeScreen(scene, this.smokeParams) : null;
-    // 味方機（seed+2）・暴風（seed+3）・水上機（seed+5）。被害はすべて hitBoat
-    const hz = buildHazards(scene, s, seed, this.boat.state, this.splashes, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), (x, y) => this.events.onSlam(x, y));
+    // 味方機（seed+2）・暴風（seed+3）・水上機（seed+5）・夜明けの空襲（seed+19）。被害はすべて hitBoat（僚艇は escortHit）
+    const hz = buildHazards(scene, s, seed, this.boat.state, this.splashes, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), (x, y) => this.events.onSlam(x, y), escortHit);
     this.friendly = hz.friendly;
     this.storm = hz.storm;
     this.seaplane = hz.seaplane;
+    this.dawn = new WorldDawn(scene, s, hz.strike); // 夜明けのラッチ・海の明るさ・夜明けの空襲（空襲の無い任務は null）
     this.refreshShallowStatus();
   }
 
   /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
   updateFrame(realDt: number): void {
-    // 識別は沈没中でも消費する（フラグを残さない）。ステップの前なので、猶予が尽きるフレームの押下も間に合う
-    consumeIdentifyInput(this.input, this.friendly);
+    consumeFrameInput(this, realDt); // 入力の消費（world-input.ts。v0.6.1 で切り出し）
     const g = this.destroyers;
-    if (!this.boat.sinking) {
-      // 駆逐艦がすべて沈み始めた後・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
-      if (!g || g.allSinking || this.atHome) discardFireInput(this.input);
-      else consumeFireInput(this.input, this.launcher, this.boat.state, this.torpedoes.remaining);
-      this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.damageParams.extinguishHoldS, this.extinguishHeldS, realDt, this.extinguishHoldScale);
-      // 一斉発射の見越しは最寄りの浮いている艦（すべて沈んでいれば 1 隻目。発射はしない）
-      if (g) {
-        // 狙う艦は最寄りの浮いている艦。駆逐艦なら KPI に数える（輸送船は数えない。v0.5.0）
-        const ti = g.nearestAfloatIndex(this.boat.state.x, this.boat.state.y);
-        this.launcher.update(realDt, this.boat.state, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount);
-      }
-      if (Number.isNaN(this.fuelAtFirstLaunchGal) && (this.torpedoes.remaining < this.torpedoes.capacity || (this.hunt !== null && this.hunt.battery.shots > 0))) this.fuelAtFirstLaunchGal = this.fuel.gal;
-    }
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
     this.refreshShallowStatus();
@@ -253,11 +244,12 @@ export class MissionWorld {
     if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
     this.friendly?.updateVisuals(realDt, this);
     this.seaplane?.updateVisuals(this.boat.state);
+    this.dawn.updateVisuals(this);
   }
 
-  /** 水上機が来ている（味方機の開始条件が読む） */
+  /** 水上機か夜明けの空襲の機体が来ている（味方機の開始条件が読む） */
   get seaplaneActive(): boolean {
-    return this.seaplane ? this.seaplane.active : false;
+    return (this.seaplane ? this.seaplane.active : false) || this.dawn.strikeActive;
   }
 
   /** 消火の長押し秒に掛ける倍率（定員/生存。v0.3.5） */
@@ -278,6 +270,7 @@ export class MissionWorld {
   destroy(): void {
     this.storm?.destroy();
     this.seaplane?.destroy();
+    this.dawn.destroy();
     this.friendly?.destroy();
     this.torpedoes.destroy();
     this.hunt?.destroy();

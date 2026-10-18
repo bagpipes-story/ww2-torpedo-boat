@@ -6,6 +6,7 @@ import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../
 import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data';
 import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
+import { dawnStrikeFromData, type DawnStrikeBlock } from '../core/air-strike-data';
 import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
 import { shortLabelJa, type BriefingText } from '../core/briefing';
@@ -62,6 +63,7 @@ export interface PrototypeMission {
   night: NightBlock | null;
   /** 輸送船（docs/02 §6.4、v0.4.7）: enemies.json の id と出発点。駆逐艦の任務だけ。無ければ null */
   transport: { enemyId: string; start: { x: number; y: number; headingDeg: number } } | null;
+  dawnStrike: DawnStrikeBlock | null; // 夜明けの空襲（v0.6.1。dawn_air.play_as が enemy の任務だけ。規則は config/dawn-data）。無ければ null
 }
 
 export type MainWeapon = 'torpedo' | 'guns';
@@ -250,6 +252,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     enemyAircraft,
     night,
     transport,
+    dawnStrike: proto['dawn_strike'] === undefined ? null : dawnStrikeFromData(proto['dawn_strike'], missionId),
   };
 }
 

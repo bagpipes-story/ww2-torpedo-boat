@@ -88,9 +88,8 @@ export const TITLE_MARKER_SUB_JA = 'タップで切替 ・ 史実モードでは
 export function titleMarkerLockedSubJa(sortiesLeft: number): string {
   return `あと ${sortiesLeft} 回の任務で解放`;
 }
-/** Briefing の 1 行目と Result の見出しに足す印 */
+/** Briefing の 1 行目に足す印（Result の見出しの印「（史実）」は ui/result-heading の RESULT_HISTORICAL_TAG_JA） */
 export const BRIEF_HISTORICAL_JA = ' ・ 史実モード';
-export const RESULT_HISTORICAL_TAG_JA = '（史実）';
 /** Result: 史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠。CLAUDE.md §9） */
 export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
 /** Result: 米PT以外のキャンペーンの魚雷も通算に数えない（v0.6.0。hit_rate_model.kpi_measurement.campaigns） */
@@ -153,7 +152,7 @@ export const PAUSE_DIM_ALPHA = 0.62;
 export const PAUSE_TITLE_JA = '一時停止';
 export const PAUSE_TITLE_Y = 200;
 export const PAUSE_TITLE_PX = 48;
-export const PAUSE_NOTE_JA = '任務は止まっています（夜明けの時計・敵・燃料も止まる）';
+export const PAUSE_NOTE_JA = '任務は止まっています（夜明けの時計・敵・空襲・燃料も止まる）';
 export const PAUSE_NOTE_Y = 280;
 export const PAUSE_NOTE_PX = 22;
 export const PAUSE_RESUME_JA = '再開';

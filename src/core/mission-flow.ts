@@ -1,8 +1,9 @@
 // 任務の流れ（docs/02 §3・§6.7、v0.3.0）: 帰投地点の輪、「帰投せよ」の呼びかけ、終了理由の判定。Phaser 非依存、確保しない。
-// 任務は撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入ったときに「帰投」で終わる。夜明け（duration_s）で輪の外なら「帰投できず」、燃料 0 で止まれば「漂流」。
+// 任務は撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入ったときに「帰投」で終わる。燃料 0 で止まれば「漂流」。
+// 夜明け（duration_s）は終わりではなく状態（v0.6.1）。終わるのは帰投・沈没・漂流・座礁だけ
 
-/** 終了理由。Result の見出しは result-scene の表で付ける */
-export type MissionEndReason = 'returned' | 'dawn' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'barge_fire' | 'shore_battery';
+/** 終了理由。Result の見出しは ui/result-heading の表で付ける。bombed は夜の水上機、air_strike は夜明けの空襲（v0.6.1。dawn「夜明け — 帰投できず」は廃止） */
+export type MissionEndReason = 'returned' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'air_strike' | 'barge_fire' | 'shore_battery';
 
 export interface ReturnPoint {
   x: number;
@@ -73,7 +74,7 @@ export interface EndCheck {
   torpedoesRunning: boolean;
   /** 輪の中にいる間、または燃料 0 で止まっている間だけ数えた実秒（それ以外は 0） */
   waitS: number;
-  /** 夜明けまでの実秒 */
+  /** 夜明けまでの実秒（夜明け後は 0 以下。輪の中なら魚雷を待たずに帰投する） */
   timeLeftS: number;
   /** 駆逐艦の沈没演出中（完了前）。演出は見せてから次へ */
   destroyerSinkPlaying: boolean;
@@ -92,8 +93,9 @@ export interface EndParams {
 
 /**
  * 終了理由を決める。null なら続行。
- * 1 自艇が沈没中 → null、2 輪の中で魚雷が無い（または待ち切った・夜明け）→ returned、2' 輪の中なら他の理由では終わらない（魚雷待ちの間に燃料が尽きても漂流にしない。レビューで判明）、
- * 2'' 座礁していれば adriftDelayS 後に grounded、3 撃沈演出中 → null、4 夜明け → 燃料 0 なら adrift、あれば dawn、5 燃料 0 で止まって adriftDelayS → adrift
+ * 1 自艇が沈没中 → null、2 輪の中で魚雷が無い（または待ち切った・夜明け後）→ returned、2' 輪の中なら他の理由では終わらない（魚雷待ちの間に燃料が尽きても漂流にしない。レビューで判明）、
+ * 2'' 座礁していれば adriftDelayS 後に grounded、3 撃沈演出中 → null、4 燃料 0 で止まって adriftDelayS → adrift（夜明け後も同じ）。
+ * 夜明けそのものでは終わらない（v0.6.1）。時間の打ち切りは置かない: 敵の制空下は空襲の波、どの任務も止まっていれば燃料が尽きて漂流で終わる
  */
 export function decideMissionEnd(c: EndCheck, p: EndParams): MissionEndReason | null {
   if (c.boatSinking) return null;
@@ -101,7 +103,6 @@ export function decideMissionEnd(c: EndCheck, p: EndParams): MissionEndReason | 
   if (c.atHome) return null;
   if (c.grounded) return c.waitS >= p.adriftDelayS ? 'grounded' : null;
   if (c.destroyerSinkPlaying) return null;
-  if (c.timeLeftS <= 0) return c.fuelEmpty ? 'adrift' : 'dawn';
   if (c.fuelEmpty && c.stopped && c.waitS >= p.adriftDelayS) return 'adrift';
   return null;
 }

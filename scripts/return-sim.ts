@@ -266,7 +266,7 @@ function run(style: Style, seed: number): Run {
       if (stoppedS >= 1.5) return result('adrift', t);
     }
   }
-  return result('dawn', DAWN_S);
+  return result('out_at_dawn', DAWN_S); // 夜明けに輪の外（以後は空襲・敵機なし）
 }
 
 const q = (a: number[], p: number): number => {
