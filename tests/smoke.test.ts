@@ -19,14 +19,14 @@ describe('煙幕', () => {
     expect(smokeParamsFromData({ smoke_generator: false })).toBeNull();
     expect(isBoatSmokeDataRecord({ smoke_generator: true })).toBe(false); // 発生器ありなら smoke.* が必要
     for (const b of boats.boats) expect(isBoatSmokeDataRecord(b), b.id).toBe(true);
-    // 0 以下の間隔は updateSmoke の while が止まらないので data の段階で弾く。冷却と長押しは 0 でもよい
-    const base = { duration_s: 5, cooldown_s: 20, puff_interval_s: 0.5, puff_radius_m: 60, puff_lifetime_s: 25, extinguish_hold_s: 1 };
+    // 0 以下の間隔は updateSmoke の while が止まらないので data の段階で弾く。冷却は 0 でもよい（消火の長押しは v0.6.0 から damage）
+    const base = { duration_s: 5, cooldown_s: 20, puff_interval_s: 0.5, puff_radius_m: 60, puff_lifetime_s: 25 };
     expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: base })).toBe(true);
     expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, puff_interval_s: 0 } })).toBe(false);
     expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, puff_radius_m: -1 } })).toBe(false);
     expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, puff_lifetime_s: 0 } })).toBe(false);
     expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, duration_s: 0 } })).toBe(false);
-    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, cooldown_s: 0, extinguish_hold_s: 0 } })).toBe(true);
+    expect(isBoatSmokeDataRecord({ smoke_generator: true, smoke: { ...base, cooldown_s: 0 } })).toBe(true);
   });
   it('タップで展開、duration の間 interval ごとに艇尾へ煙、冷却中は再展開できない。煙は寿命で消える', () => {
     const s = createSmokeState(32);

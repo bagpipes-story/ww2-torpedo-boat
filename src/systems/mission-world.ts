@@ -2,7 +2,7 @@
 // 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、危険の生成は world-hazards.ts、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
-import { FIXED_STEP_S, MAX_STEPS_PER_FRAME } from '../config/game-config';
+import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
 import { debugSetupOptions } from '../config/debug-setup';
 import type { GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
@@ -187,7 +187,7 @@ export class MissionWorld {
     this.detectRangeM = s.detectRangeAtStartM;
 
     // スティック中立=停止なので、出発時は停止している（docs/02 §5、v0.2.1）
-    this.boat = new PlayerBoat(scene, s.playerStart, 0);
+    this.boat = new PlayerBoat(scene, s.playerStart, 0, boatTextureKey(s.mission.playerBoatId));
     this.boatDamage = new BoatDamage(this.boat, this.damage, this.damageParams, this.params, events, SMALL_HIT_DAMAGE_RATIO);
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
     const ds = s.destroyer;
@@ -204,7 +204,7 @@ export class MissionWorld {
       this.events.onTargetDestroyed(x, y);
     };
     // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
-    this.escort = s.escort && ds ? new EscortBoat(scene, s.escort, this.boat.state, mission.bounds) : null;
+    this.escort = s.escort && ds ? new EscortBoat(scene, s.escort, this.boat.state, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
     this.destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => (this.escort!.hit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false))));
     this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBatteries, this.splashes) : null;
     this.enemy = new EnemySide(this.destroyers, this.hunt);
@@ -230,7 +230,7 @@ export class MissionWorld {
       // 駆逐艦がすべて沈み始めた後・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
       if (!g || g.allSinking || this.atHome) discardFireInput(this.input);
       else consumeFireInput(this.input, this.launcher, this.boat.state, this.torpedoes.remaining);
-      this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.extinguishHeldS, realDt, this.extinguishHoldScale);
+      this.extinguishHeldS = consumeSmokeInput(this.input, this.smoke, this.smokeParams, this.damage, this.damageParams.extinguishHoldS, this.extinguishHeldS, realDt, this.extinguishHoldScale);
       // 一斉発射の見越しは最寄りの浮いている艦（すべて沈んでいれば 1 隻目。発射はしない）
       if (g) {
         // 狙う艦は最寄りの浮いている艦。駆逐艦なら KPI に数える（輸送船は数えない。v0.5.0）

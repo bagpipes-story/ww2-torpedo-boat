@@ -10,8 +10,6 @@ export interface SmokeParams {
   puffIntervalS: number;
   puffRadiusM: number;
   puffLifetimeS: number;
-  /** 煙幕ボタンをこの実秒以上押し続けると消火（docs/02 §6.6） */
-  extinguishHoldS: number;
 }
 
 export interface SmokePuff {
@@ -109,7 +107,7 @@ export function activePuffCount(s: SmokeState): number {
 
 export interface BoatSmokeDataRecord {
   smoke_generator: boolean;
-  smoke?: { duration_s: number; cooldown_s: number; puff_interval_s: number; puff_radius_m: number; puff_lifetime_s: number; extinguish_hold_s: number };
+  smoke?: { duration_s: number; cooldown_s: number; puff_interval_s: number; puff_radius_m: number; puff_lifetime_s: number };
 }
 
 export function isBoatSmokeDataRecord(v: unknown): v is BoatSmokeDataRecord {
@@ -122,8 +120,8 @@ export function isBoatSmokeDataRecord(v: unknown): v is BoatSmokeDataRecord {
   const finite = (k: string): number | null => (typeof s[k] === 'number' && Number.isFinite(s[k] as number) ? (s[k] as number) : null);
   const positive = (k: string): boolean => (finite(k) ?? 0) > 0;
   const nonNegative = (k: string): boolean => (finite(k) ?? -1) >= 0;
-  // puff_interval_s が 0 以下だと updateSmoke の while が止まらない。半径・寿命・時間は正、冷却と長押しは 0 でもよい
-  return positive('duration_s') && positive('puff_interval_s') && positive('puff_radius_m') && positive('puff_lifetime_s') && nonNegative('cooldown_s') && nonNegative('extinguish_hold_s');
+  // puff_interval_s が 0 以下だと updateSmoke の while が止まらない。半径・寿命・時間は正、冷却は 0 でもよい（消火の長押しは v0.6.0 から damage.extinguish_hold_s）
+  return positive('duration_s') && positive('puff_interval_s') && positive('puff_radius_m') && positive('puff_lifetime_s') && nonNegative('cooldown_s');
 }
 
 /** 煙幕発生器が無い艇なら null */
@@ -135,6 +133,5 @@ export function smokeParamsFromData(r: BoatSmokeDataRecord): SmokeParams | null 
     puffIntervalS: r.smoke.puff_interval_s,
     puffRadiusM: r.smoke.puff_radius_m,
     puffLifetimeS: r.smoke.puff_lifetime_s,
-    extinguishHoldS: r.smoke.extinguish_hold_s,
   };
 }

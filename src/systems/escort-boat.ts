@@ -1,7 +1,7 @@
 // 僚艇の世界側（docs/02 §6.4、v0.4.4）: core/escort を固定ステップで進め、自艇と同じ船形（薄い青）とラベル「僚艇」を描く。被弾は世界の SplashPool と Scene の演出、沈没は駆逐艦と同じ tween。
 // §7: スプライト 1 枚とラベル 1 つを起動時に作り、毎フレームは位置と角度だけ。沈没の tween は発生時に 1 回。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE } from '../config/game-config';
 import { ESCORT_LABEL, ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, ESCORT_TINT, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
 import { createEscort, hitEscort, stepEscort, type EscortParams, type EscortState } from '../core/escort';
@@ -16,10 +16,12 @@ export class EscortBoat {
     readonly p: EscortParams,
     player: BoatState,
     private readonly bounds: SeaBounds,
+    /** 僚艇の絵（boatTextureKey(僚艇の id)。v0.6.0） */
+    textureKey: string,
   ) {
     this.state = createEscort(p, player);
     const b = this.state.boat;
-    this.sprite = scene.add.image(b.x, b.y, TEXTURE_KEYS.playerBoat).setTint(ESCORT_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat);
+    this.sprite = scene.add.image(b.x, b.y, textureKey).setTint(ESCORT_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat);
     this.label = scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, ESCORT_LABEL, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.playerBoat);
     this.syncSprite();
   }

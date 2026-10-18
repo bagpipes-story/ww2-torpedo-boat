@@ -17,7 +17,7 @@ import {
   SCENE_KEYS,
   TEXTURE_KEYS,
 } from '../config/game-config';
-import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
+import { effectiveFuelAllotmentGal, getBoatSmokeParams, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { isSortie } from '../core/sortie';
@@ -162,11 +162,14 @@ export class HudScene extends Phaser.Scene {
     }
     // 右上「煙幕」: 離すと展開。その下「消火」: 火災中に押し続けると消火（押している時間は Mission が数える。v0.3.1 実機の要望で煙幕と別ボタンに）。右中「見張り」: 押している間ズームアウト
     const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
-    this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
-      onUp: () => {
-        input.smokeTap = true;
-      },
-    });
+    // 煙幕発生器の無い艇（日本の魚雷艇。v0.6.0）は煙幕ボタンを作らない（消火・見張りの位置は変えない）
+    if (getBoatSmokeParams(data, mission.playerBoatId) !== null) {
+      this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
+        onUp: () => {
+          input.smokeTap = true;
+        },
+      });
+    }
     this.extinguishButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS * 3 + ROUND_BUTTON_GAP, '消火', {
       onDown: () => {
         input.extinguishHeld = true;

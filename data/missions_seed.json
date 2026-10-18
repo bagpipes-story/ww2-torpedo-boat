@@ -5,14 +5,17 @@
     {
       "id": "us_pt",
       "name_ja": "米PTキャンペーン",
+      "short_ja": "米PT",
       "player_boat_default": "us_elco80",
       "unlock": "default"
     },
     {
       "id": "jp_hard",
       "name_ja": "日本ハードモード",
+      "short_ja": "日本",
       "player_boat_default": "jp_t38",
-      "unlock": "complete_us_pt"
+      "unlock": "complete_us_pt",
+      "source": "design (v0.6.0。unlock complete_us_pt: 米PTキャンペーンの遊べる任務（playable_from と v0_1_prototype を持つ。v0.6.0 では us_01・us_02・us_03）を、それぞれ 1 回、帰投で終えると開く（撃沈やノルマの達成は問わない）。一度開いたら閉じない（localStorage night-hunters.unlocked）。v0.5.2 までに任務を 3 回以上終えた端末は開いたものとみなす。?debug&title&unlock で保存を変えずに開ける。CLAUDE.md §2『米PTキャンペーンの後にアンロック』の具体化)"
     }
   ],
   "missions": [
@@ -492,6 +495,7 @@
       "id": "jp_01",
       "campaign": "jp_hard",
       "order": 1,
+      "playable_from": "v0.6.2",
       "title_ja": "夜の輸送護衛",
       "date": "1942-12-20",
       "place": "ショートランド〜ガダルカナル",
@@ -603,6 +607,7 @@
       "id": "jp_05",
       "campaign": "jp_hard",
       "order": 5,
+      "playable_from": "v0.6.1",
       "title_ja": "鹵獲艇の哨戒",
       "date": "1943-06-01",
       "place": "ラバウル",
@@ -628,6 +633,7 @@
       "id": "jp_06",
       "campaign": "jp_hard",
       "order": 6,
+      "playable_from": "v0.6.0",
       "title_ja": "慶良間の夜・最終出撃",
       "date": "1945-03-28",
       "place": "沖縄・慶良間列島沖",
@@ -647,10 +653,84 @@
       ],
       "moon": "dark",
       "duration_min": 6,
-      "success": "生還（命中は大ボーナス）。クリアで jp_t35 を解放",
+      "success": "帰投。命中はボーナス（米駆逐艦の撃沈は大きな点）",
       "historical_note": "第27魚雷艇隊は慶良間上陸後に米艦艇攻撃を試みたが運天港空爆で戦闘能力を喪失。",
       "source_url": "https://note.com/bouheitai1958/n/n83db84b58fc6",
-      "todo": "us_destroyer を enemies.json に追加（v0.6）"
+      "todo": "PT ×2 と敵機は v0.6.x で足す（v0.6.0 の遊べる世界は米駆逐艦 1 隻）。クリアで jp_t35 を解放は未実装。史実の月齢（1945-03-28）は要確認（moon dark は design）",
+      "briefing_note_ja": "第27魚雷艇隊は慶良間列島への米軍上陸の後、泊地の米艦艇への攻撃を試みたが、運天港への空襲で戦闘能力を失い出撃できなかった。この任務は「もしも出撃できていたら」の夜。",
+      "v0_1_prototype": {
+        "enemies": [
+          "us_destroyer"
+        ],
+        "enemy_behavior": "ai (ijn_destroyer と同じ AI・砲・探照灯。enemies.json の us_destroyer。v0.6.0)",
+        "duration_s": 160,
+        "duration_s_source": "design (v0.6.0。夜明けまでの実秒。return-sim（MISSION=jp_06、被弾なし、理想化した操作）で、静音で寄り 1,000 m で 2 本撃って静音で帰ると 105 秒（p90 109）、巡航で帰ると 87 秒、全速だけで 1 回攻撃は 62 秒、攻撃せず直帰 56 秒。us_02（150 秒、静音中心 100 秒）と同じく約 50 秒の余り。実際の操作は模擬より遅い)",
+        "fuel_allotment_gal": 16,
+        "fuel_allotment_gal_source": "design (v0.6.0。交戦海域で使える割当（us_02 の 38 gal と同じ考え方）。T-38 は全速 200・巡航 94 gal/h（boats.json。燃料曲線の指数 2.55 で全速が割高）。return-sim（MISSION=jp_06、被弾なし、100 回、帰投時の残りの中央値）: 静音中心 54%／標準（全速 15 秒離脱 → 巡航で帰投）34%／全速だけで 1 回攻撃 3%（p10 1%。100 回中 99 回帰れる）／攻撃せず直帰 82%。全速だけの 1 回攻撃が数 % で帰れる＝us_02 と同じ厳しさにした。15 gal だと全速だけでは 71% が漂流、17 gal だと 9% 残る。外して再攻撃は巡航でも 8 割が漂流（us_02 と同じ）)",
+        "shallows": [
+          {
+            "x_m": 1400,
+            "y_m": 2500,
+            "width_m": 700,
+            "height_m": 400,
+            "label_ja": "礁"
+          }
+        ],
+        "shallows_source": "design (v0.6.0。慶良間の島々の間の礁。典型的な交戦点 (3000,1500) から南西の島陰の帰投地点 (900,3500) へ直線で帰ると x 1,530〜1,950 で横切る。北か南へ迂回できる)",
+        "return_point": {
+          "x_m": 900,
+          "y_m": 3500,
+          "radius_m": 250,
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "source": "design (v0.6.0。南西の島陰（味方の隠れ場所）。出発点 (3000,3400) から 2,100 m、典型的な交戦点 (3000,1500) から約 2,900 m)"
+        },
+        "hazards": [
+          "enemy_ship_gunfire_or_ram",
+          "grounding"
+        ],
+        "hazards_source": "design (v0.6.0。この遊べる世界で起きる危険。任務本体の hazards にある enemy_aircraft（米の夜間哨戒機）と PT は v0.6.x で足す)",
+        "bounds_m": {
+          "width": 6000,
+          "height": 4000,
+          "source": "design (us_02 と同じ広さ)"
+        },
+        "player_start": {
+          "x_m": 3000,
+          "y_m": 3400,
+          "heading_deg": 0,
+          "source": "design (v0.6.0。海域の南寄り中央から北向き)"
+        },
+        "enemy_start": {
+          "x_m": 1500,
+          "y_m": 1500,
+          "heading_deg": 90,
+          "source": "design (v0.6.0。泊地の警戒の駆逐艦が出発点の約 1,900 m 北を東へ横切る（18 kt＝画面上 46 m/秒）。新月なら、静音（13 kt 以下）で寄る自艇は 600 m まで、巡航なら 1,200 m で見つかる（base_detect_m 2,000 × 新月 0.6 × 速力係数）。T-38 の視程は新月 900 m)"
+        },
+        "enemy_hits_to_sink": 1,
+        "enemy_hits_to_sink_source": "design (us_02 と同じ。45cm 魚雷 1 本で撃沈。T-38 は 2 本しか積まない)",
+        "hard": {
+          "extra_enemy_starts": [
+            {
+              "x_m": 4500,
+              "y_m": 900,
+              "heading_deg": 270
+            }
+          ],
+          "source": "design (v0.6.0。難易度ハード: 駆逐艦 2 隻。2 隻目は北東 (4500,900) から西へ＝1 隻目とすれ違い、どちらを狙っても片方に見つかりやすい)"
+        },
+        "night": {
+          "hazard_scale": 1,
+          "optional_hazards": [],
+          "enemy_jitter": {
+            "x_m": 500,
+            "y_m": 200,
+            "heading_deg": 15
+          },
+          "mirror_chance": 0.5,
+          "source": "design (v0.6.0。夜の揺らぎ: 駆逐艦の出発点を x ±500・y ±200・針路 ±15°、左右反転 0.5。出す・出さないを夜ごとに決める危険はまだ無い（optional_hazards 空）)"
+        }
+      }
     }
   ]
 }

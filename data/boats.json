@@ -66,14 +66,14 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 100,
       "damage": {
         "engine_damage_speed_factor": 0.7,
         "fire_dps": 2,
         "fire_duration_s": 20,
+        "extinguish_hold_s": 1.0,
         "casualties_per_hp": 0.1,
         "crew_effects": {
           "extinguish_exponent": 1,
@@ -94,8 +94,8 @@
         "turn_rate_deg_s": "design",
         "accel_mps2": "design",
         "hull_hp": "design",
-        "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.3.1 の消火ボタン長押し。casualties_per_hp 0.1（v0.3.4）: HP が 10 減るごとに乗員 1 名が死傷する（砲弾・掃射・火災・暴風の波の叩きつけのどれでも。乗員は HP から決まり、別の状態は持たない）。127mm 1 発（40）で 4 名、掃射 1 回（25）で 2 名、全速で暴風の帯を抜けて（24）2 名。hull_hp × 率 = 10 ≤ 14 なので、浮いている限り 5 名以上が残る（HP 0 の沈没で 4 名）。乗員が減ると消火・旋回・加速に効く（v0.3.5。damage.crew_effects）)",
-        "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。長押し extinguish_hold_s 実秒で消火)",
+        "damage.*": "design (機関損傷で最大速力 0.7 倍。火災は実時間 20 秒で計 40 HP。消火は v0.3.1 の消火ボタンを extinguish_hold_s（1.0 実秒。v0.6.0 で smoke から移した）押し続ける。casualties_per_hp 0.1（v0.3.4）: HP が 10 減るごとに乗員 1 名が死傷する（砲弾・掃射・火災・暴風の波の叩きつけのどれでも。乗員は HP から決まり、別の状態は持たない）。127mm 1 発（40）で 4 名、掃射 1 回（25）で 2 名、全速で暴風の帯を抜けて（24）2 名。hull_hp × 率 = 10 ≤ 14 なので、浮いている限り 5 名以上が残る（HP 0 の沈没で 4 名）。乗員が減ると消火・旋回・加速に効く（v0.3.5。damage.crew_effects）)",
+        "smoke.*": "design (docs/02 §5: タップで duration_s 実秒、艇尾に puff_interval_s ごとに半径 puff_radius_m の煙を置き puff_lifetime_s 実秒残る。cooldown_s は展開開始から。艦と艇を結ぶ線が煙に遮られると発見距離 × smoke_factor、探照灯・星弾は照らせない。消火の長押しは v0.6.0 から damage.extinguish_hold_s（煙幕の無い日本艇でも消火できるように移した。値は 1.0 秒のまま）)",
         "speed_bands_kt": "design (速力帯。表示用に丸めた kt で判定し、stop_max 以下=停止、silent_max 以下=静音（見つかりにくい）、cruise_max 以下=巡航、それ以上=全速。上の帯へ移るには境界＋hysteresis kt を超える必要（境界付近の揺れで帯が点滅しない）。v0.2.1 実機の要望で静音帯を 18 kt まで広げた。同じ速力段の Elco 77ft・Higgins も同じ帯。他艇は暫定で速力段の値)",
         "crew": "historical (12〜17。v0.3.4 から Result の乗員とスコア（scoring.json の crew）の母数に使う)",
         "gun_battery": "design (v0.4.2。大発掃討の艇の砲。史実: 1943 年後半の Elco 80ft は 40mm Bofors ×1（約 120 発/分）・37mm M4 ×1（約 150 発/分、P-39 の転用）・20mm Oerlikon ×1（約 450 発/分）・12.7mm 連装 ×2（約 450〜550 発/分/門）。大発（喫水約 1.5 m）は Mk 8・Mk 13 の下を抜けるので砲で撃った（docs/01）。ゲームでは 2 組（重い 40mm・37mm と、曳光弾の 20mm・12.7mm）にまとめ、射撃ボタンを押している間、射界にいる最寄りの大発へ撃つ（狙いは見越し点、散布は駆逐艦の砲と同じ一様円盤）。rounds_per_min は組の合計の体感の発/分（1 発＝数発の束。20mm・12.7mm の 480 は曳光弾 1 本＝約 5 発）。range_m 600: 撃てる距離（新月の視程 900 m より内、大発の 13mm の夜間有効射程と同じ）。effective_m 300: これより遠いと HUD に『遠い』（撃破まで 300 m 約 3 秒、400 m 約 5 秒、500 m 約 8 秒）。dead_cone_deg 30: 艇首・艇尾 ±30° は撃たない（全門が向くのは舷側という簡略化。射界は左右 30〜150°。航跡と平行に L m 離れて待つと近づく大発は 2L m で射界に入る）。muzzle_flash_reveal_m 1200: 撃ったステップに閃光と曳光弾で 1,200 m 以内の大発が気づく（大発の 13mm の range_m と同じ。同じ組の 2 隻は必ず気づき、1,500 m 後ろの 2 組目は気づかない。模擬で 1 組目と撃ち合う間の 2 組目までは最小 1,325 m。1,500 m だと待ち伏せで 44% の夜に 2 組目が先に逃げた）。spread_factor: 艇の速力帯で散布に掛ける（300 m の撃破は停止・静音 約 3 秒、巡航 1.6 で約 7.7 秒、全速 2.5 で約 18 秒）。damage 8 / 2・dispersion_m 30 / 36（600 m での円の半径。距離に比例）・splash_radius_m 2.5 / 1.0: 大発（hull_hp 20、14.9 × 3.4 m）への 1 発の命中率 200 m 52% / 23%、300 m 25% / 10%、400 m 14% / 6%。shell_speed_mps 400 / 500 は game 時間の速さ（300 m を体感 0.15 / 0.12 秒。曳光弾が見える）)",
@@ -153,14 +153,14 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 90,
       "damage": {
        "engine_damage_speed_factor": 0.7,
        "fire_dps": 2,
        "fire_duration_s": 20,
+       "extinguish_hold_s": 1.0,
        "casualties_per_hp": 0.1,
        "crew_effects": {
         "extinguish_exponent": 1,
@@ -231,8 +231,7 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 100,
       "hull_circles": 3,
@@ -291,8 +290,7 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 95,
       "hull_circles": 3,
@@ -354,8 +352,7 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 180,
       "hull_circles": 5,
@@ -420,8 +417,7 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 150,
       "hull_circles": 5,
@@ -448,7 +444,7 @@
       "speed_silent_kt": 7,
       "speed_bands_kt": {
         "stop_max": 0.5,
-        "silent_max": 7,
+        "silent_max": 13,
         "cruise_max": 20,
         "hysteresis": 1
       },
@@ -457,6 +453,8 @@
       "turn_rate_deg_s": 26,
       "fuel_hours_cruise": 8.5,
       "fuel_hours_full": 4,
+      "fuel_capacity_gal": 800,
+      "fuel_idle_ratio": 0.1,
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 7,
@@ -478,11 +476,28 @@
       "smoke_generator": false,
       "engine_reliability": 0.85,
       "hull_hp": 60,
+      "damage": {
+        "engine_damage_speed_factor": 0.7,
+        "fire_dps": 1.5,
+        "fire_duration_s": 16,
+        "extinguish_hold_s": 1.0,
+        "casualties_per_hp": 0.1,
+        "crew_effects": {
+          "extinguish_exponent": 1,
+          "turn_rate_per_loss": 0.04,
+          "accel_per_loss": 0.04,
+          "min_factor": 0.5
+        }
+      },
       "hull_circles": 2,
       "sea_state_limit": 3,
       "source": {
         "speed_max_kt": "historical",
-        "fuel_hours_cruise": "historical (220nm@26ktの算出値)",
+        "fuel_hours_cruise": "design (v0.6.0。資料の 220nm@26kt の 8.5 時間を、20 kt 巡航の時間として流用。fuel_hours_full 4（27.5 kt）と組むと燃料曲線の指数は約 2.55（Elco は 1.86）＝全速が割高)",
+        "fuel_capacity_gal": "design (v0.6.0。史料なし。800 gal で巡航 94・全速 200 gal/h（fuel_hours_* から）。任務で積む量は missions_seed の fuel_allotment_gal で決めるので、満タンの値は燃料曲線の形にしか効かない)",
+        "fuel_idle_ratio": "design (v0.6.0。us_elco80 と同じ 0.1)",
+        "speed_bands_kt": "design (v0.6.0。silent_max 7 → 13: Elco の 18/39 と同じ比（27.5 × 0.46 ≈ 12.7）。7 kt では画面上 18 m/秒で 3,000 m に 167 秒かかり、夜明け 180 秒の任務で静かに寄る遊び方が成り立たない。台座の内側の輪（Boot が us_02 の艇の比 0.462 で 1 枚だけ作る）とも 0.473 で合う。speed_silent_kt 7 は資料の値として残す)",
+        "damage": "design (v0.6.0。HP 60 は Elco 80ft の 100 の 6 割。機関損傷 0.7 倍は Elco と同じ。火災は 1.5 HP/秒 × 16 秒 = 24（HP の 4 割＝Elco の 40/100 と同じ比）。港内空襲の検査（HP − 至近弾 20 > 火災の総量: 60 − 20 = 40 > 24）を通る。消火の長押し 1.0 秒は Elco と同じ。casualties_per_hp 0.1: HP 10 で 1 名、HP 0 で 6 名（定員 7 なので浮いている限り 2 名以上が残る。crew.ts の検査 60 × 0.1 ≤ 7）。crew_effects は Elco と同じ)",
         "engine_reliability": "design (金星エンジンは比較的安定)",
         "others": "design"
       },
@@ -746,8 +761,7 @@
         "cooldown_s": 20,
         "puff_interval_s": 0.5,
         "puff_radius_m": 60,
-        "puff_lifetime_s": 25,
-        "extinguish_hold_s": 1.0
+        "puff_lifetime_s": 25
       },
       "hull_hp": 50,
       "hull_circles": 2,

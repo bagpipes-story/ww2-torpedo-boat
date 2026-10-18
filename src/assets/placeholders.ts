@@ -52,8 +52,8 @@ export interface BoatTextureSpec {
   beamUnits: number;
 }
 
-/** 自艇: 船首を上にした船形ポリゴン。原点はテクスチャ中央 */
-export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
+/** 自艇・僚艇: 船首を上にした船形ポリゴン。原点はテクスチャ中央。key は艇ごと（boatTextureKey。v0.6.0） */
+export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void {
   const k = RENDER_SCALE;
   const L = spec.lengthUnits * k;
   const B = spec.beamUnits * k;
@@ -73,7 +73,7 @@ export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTexture
   g.moveTo(B / 2, L * 0.08);
   g.lineTo(B / 2, L * 0.45);
   g.strokePath();
-  g.generateTexture(TEXTURE_KEYS.playerBoat, Math.ceil(B), Math.ceil(L));
+  g.generateTexture(key, Math.ceil(B), Math.ceil(L));
   g.destroy();
 }
 

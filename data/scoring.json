@@ -11,7 +11,8 @@
     "intercept_destroyer": 300,
     "barge_hunt": 300,
     "escort_vip": 300,
-    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す)"
+    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない)",
+    "attack_and_survive": 300
   },
   "hit": {
     "base": 100,

@@ -13,6 +13,7 @@ import {
   REGISTRY_KEY_INPUT,
   SCENE_KEYS,
   TEXTURE_KEYS,
+  boatTextureKey,
   sortieSeed,
 } from '../config/game-config';
 import { gameData, getBoatRecord, getEnemyRecord, getPrototypeMission, getTorpedoRecord } from '../config/game-data';
@@ -51,7 +52,18 @@ export class BootScene extends Phaser.Scene {
     const mission = getPrototypeMission(gameData, PROTOTYPE_MISSION_ID);
     const boat = getBoatRecord(gameData, mission.playerBoatId);
     const spriteScale = gameData.hitRateModel.world.sprite_scale;
-    generatePlayerBoatTexture(this, { lengthUnits: boat.length_m * spriteScale, beamUnits: boat.beam_m * spriteScale });
+    // 艇の絵（v0.6.0）: v0_1_prototype を持つ任務の自艇と僚艇ごとに 1 枚（今は Elco 80ft・77ft・T-38 の 3 枚）
+    const boatIds = new Set<string>();
+    for (const m of gameData.missionsSeed.missions as readonly Record<string, unknown>[]) {
+      if (!m['v0_1_prototype'] || typeof m['id'] !== 'string') continue;
+      const pm = getPrototypeMission(gameData, m['id']);
+      boatIds.add(pm.playerBoatId);
+      if (pm.escort) boatIds.add(pm.escort.boat);
+    }
+    for (const id of boatIds) {
+      const b = getBoatRecord(gameData, id);
+      generatePlayerBoatTexture(this, { lengthUnits: b.length_m * spriteScale, beamUnits: b.beam_m * spriteScale }, boatTextureKey(id));
+    }
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);

@@ -8,7 +8,7 @@ import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data'
 import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
 import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
-import { menuEntries, shortLabelJa, type BriefingText, type MenuEntry } from '../core/briefing';
+import { shortLabelJa, type BriefingText } from '../core/briefing';
 
 /** ミッションの種から v0.1 プロトタイプ用の設定を取り出す（型は実行時に検査する: data 駆動なので壊れていれば起動時に分かる） */
 export interface PrototypeMission {
@@ -247,12 +247,8 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
 
 // ---------- 任務一覧と Briefing（v0.4.0）。data を直接読み、game-data の関数は呼ばない（値の循環を作らない） ----------
 
-/** Title の任務一覧: unlock が default の最初のキャンペーンの、playable_from を持つ任務を order 順に */
-export function getMenuEntries(data: GameData): { campaignName: string; entries: MenuEntry[] } {
-  const c = (data.missionsSeed.campaigns as readonly Record<string, unknown>[]).find((x) => x['unlock'] === 'default');
-  if (!c || typeof c['id'] !== 'string' || typeof c['name_ja'] !== 'string') throw new Error('missions_seed.json に unlock が default のキャンペーン（id / name_ja）が無い');
-  return { campaignName: c['name_ja'], entries: menuEntries(data.missionsSeed.missions, c['id']) };
-}
+/** Title の任務一覧（v0.6.0 から campaign-data.ts。キャンペーンを選べる。ここは今までの import のための再 export） */
+export { getMenuEntries } from './campaign-data';
 
 export interface BriefingRecord extends BriefingText {
   id: string;

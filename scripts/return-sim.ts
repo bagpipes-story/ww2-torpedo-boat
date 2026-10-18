@@ -2,7 +2,8 @@
 // 実際の ship-ai・魚雷・砲撃・被害・燃料曲線を使い、遊び方ごとに 帰投時の燃料残・所要時間・帰投率 を測る。
 // 操作は理想化している（敵の位置を常に知り、直線で動く）ので、燃料と所要時間の目安に使い、生存率は参考にしない。
 // 実行: npx esbuild scripts/return-sim.ts --bundle --platform=node --format=esm --outfile=/tmp/return-sim.mjs && node /tmp/return-sim.mjs
-// 環境変数: ALLOT（割当 gal、既定は data）、DAWN（夜明け秒、既定は data）、NOGUN=1（被弾なし）、MISSFIRST=1（初弾を外す）、RUNS（回数、既定 200）
+// 環境変数: ALLOT（割当 gal、既定は data）、DAWN（夜明け秒、既定は data）、NOGUN=1（被弾なし）、MISSFIRST=1（初弾を外す）、RUNS（回数、既定 200）、
+//   MISSION（任務の id、既定 us_02。v0.6.0: 艇・魚雷・敵・月・積む本数はその任務の data から）
 import boats from '../data/boats.json';
 import enemies from '../data/enemies.json';
 import hitRateModel from '../data/hit_rate_model.json';
@@ -36,21 +37,24 @@ const N = Number(process.env['RUNS'] ?? 200);
 const NOGUN = !!process.env['NOGUN'];
 const MISSFIRST = !!process.env['MISSFIRST'];
 
-const rb: unknown = boats.boats.find((b) => b.id === 'us_elco80');
+const MISSION_ID = process.env['MISSION'] ?? 'us_02';
+const MREC = missionsSeed.missions.find((m) => m.id === MISSION_ID) as unknown as { player_boat: string; torpedo_type: string; moon: 'dark' | 'half' | 'full'; v0_1_prototype: { enemies: string[] } };
+if (!MREC) throw new Error(`mission ${MISSION_ID}`);
+const rb: unknown = boats.boats.find((b) => b.id === MREC.player_boat);
 if (!isBoatDataRecord(rb) || !isBoatDamageDataRecord(rb) || !isBoatFuelDataRecord(rb)) throw new Error('boat');
 const BP = boatParamsFromData(rb);
 const DP = damageParamsFromData(rb);
 const FC = fuelCurveFromData(rb);
-const re: unknown = enemies.enemies.find((e) => e.id === 'ijn_destroyer');
+const re: unknown = enemies.enemies.find((e) => e.id === MREC.v0_1_prototype.enemies[0]);
 if (!isEnemyAiDataRecord(re) || !isEnemyGunneryDataRecord(re)) throw new Error('enemy');
 const AIP = shipAiParamsFromData(re);
 const GP = gunneryParamsFromData(re);
 const E = re as unknown as { length_m: number; beam_m: number; hull_circles: number; detection: { base_detect_m: number } };
-const rt: unknown = torpedoes.torpedoes.find((t) => t.id === 'us_mk8');
+const rt: unknown = torpedoes.torpedoes.find((t) => t.id === MREC.torpedo_type);
 if (!isTorpedoDataRecord(rt)) throw new Error('torp');
 const TP = torpedoParamsFromData(rt, hitRateModel.torpedo_launch.arming_distance_m, hitRateModel.torpedo_launch.erratic_period_s);
 const RELIABILITY = torpedoReliabilityFromData(rt);
-const mission = missionsSeed.missions.find((m) => m.id === 'us_02') as unknown as {
+const mission = MREC as unknown as {
   v0_1_prototype: { duration_s: number; fuel_allotment_gal: number; return_point: unknown; bounds_m: { width: number; height: number }; player_start: { x_m: number; y_m: number; heading_deg: number }; enemy_start: { x_m: number; y_m: number; heading_deg: number } };
 };
 const PROTO = mission.v0_1_prototype;
@@ -69,6 +73,9 @@ const BOAT_MARGIN = (rb.length_m * hitRateModel.world.sprite_scale) / 2;
 const SHIP_MARGIN = (E.length_m * hitRateModel.world.sprite_scale) / 2;
 const PASS_R2 = (E.length_m / 2 + E.beam_m) ** 2;
 const SPEED_SILENT01 = BP.silentMaxMps / BP.speedMaxMps;
+/** 積む魚雷の本数（v0.6.0。T-38 は 2 本）と月の係数 */
+const CAP = (rb as unknown as { torpedoes: { count: number } }).torpedoes.count;
+const MOON = hitRateModel.visibility.moon_factor[MREC.moon];
 const SPEED_CRUISE01 = BP.speedCruiseMps / BP.speedMaxMps;
 
 type Style = 'silent' | 'standard' | 'full' | 'reattack' | 'fullReattack' | 'direct';
@@ -99,7 +106,7 @@ function run(style: Style, seed: number): Run {
   const ship: BoatState = { x: PROTO.enemy_start.x_m, y: PROTO.enemy_start.y_m, headingDeg: PROTO.enemy_start.heading_deg, speedMps: AIP.cruiseSpeedMps };
   const ai = createShipAiState(ship.headingDeg, AIP.cruiseSpeedMps);
   const hull = createCircles(E.hull_circles);
-  const torps = Array.from({ length: 4 }, () => createTorpedoState());
+  const torps = Array.from({ length: CAP }, () => createTorpedoState());
   let fired = 0;
   const g = createGunneryState(GP, 48, ship.headingDeg);
   const dmg = createDamageState(DP);
@@ -124,7 +131,7 @@ function run(style: Style, seed: number): Run {
   const approachSpeed01 = style === 'full' || style === 'fullReattack' ? 1 : SPEED_SILENT01;
   const reSpeed01 = style === 'fullReattack' ? 1 : SPEED_CRUISE01;
   const homeSpeed01 = style === 'silent' || style === 'direct' ? SPEED_SILENT01 : style === 'full' || style === 'fullReattack' ? 1 : SPEED_CRUISE01;
-  const perAttack = style === 'reattack' || style === 'fullReattack' ? 2 : 4;
+  const perAttack = style === 'reattack' || style === 'fullReattack' ? Math.max(1, Math.floor(CAP / 2)) : CAP;
   let phaseT = 0;
   let detectedOnReturn = false;
   let minDistOnReturn = Infinity;
@@ -163,7 +170,7 @@ function run(style: Style, seed: number): Run {
       const fr = phase === 'reapproach' ? (style === 'fullReattack' ? fireRange : 800) : fireRange;
       if (!sinking && dist <= fr && queue === 0) {
         const h = interceptHeadingDeg(boat.x, boat.y, TP.speedMps, ship.x, ship.y, Math.sin(hs) * ship.speedMps, -Math.cos(hs) * ship.speedMps) ?? input.headingDeg;
-        const n = Math.min(perAttack, 4 - fired);
+        const n = Math.min(perAttack, CAP - fired);
         fillSalvoHeadings(h + rng.nextRange(-3, 3), n, 6, headings);
         queue = n;
         qi = 0;
@@ -187,7 +194,7 @@ function run(style: Style, seed: number): Run {
       input.headingDeg = (Math.atan2(-dx, dy) * 180) / Math.PI;
       input.speed01 = 1;
       if (phaseT >= escapeS) {
-        const torpsLeft = 4 - fired;
+        const torpsLeft = CAP - fired;
         phase = !sinking && torpsLeft > 0 && (style === 'reattack' || style === 'fullReattack') ? 'reapproach' : 'home';
         phaseT = 0;
       }
@@ -214,7 +221,7 @@ function run(style: Style, seed: number): Run {
       fuel = Math.max(0, fuel - (burnGph(FC, boat.speedMps) * GAME) / SECONDS_PER_HOUR);
     }
     band = nextSpeedBand(band, boat.speedMps, BP);
-    const detR = E.detection.base_detect_m * SF[band] * hitRateModel.visibility.moon_factor.half;
+    const detR = E.detection.base_detect_m * SF[band] * MOON;
     if (!sinking) {
       updateShipAi(ai, ship, boat, detR, hitRateModel.visibility.detect_hold_s, torps, AIP, BOUNDS, REAL, lookoutRng);
       steerShip(ship, ai.desiredHeadingDeg, ai.desiredSpeedMps, turnRateFor(ai.mode, AIP), AIP.accelMps2, GAME);
@@ -263,7 +270,7 @@ const q = (a: number[], p: number): number => {
   const s = a.slice().sort((x, y) => x - y);
   return s[Math.min(s.length - 1, Math.floor(p * s.length))] ?? NaN;
 };
-console.log(`idle ${FC.idleGph.toFixed(0)} gal/h, n=${FC.exponent.toFixed(3)}, allot=${ALLOT} gal, dawn=${DAWN_S} s, home=(${HOME.x},${HOME.y}) r${HOME.radiusM}, runs=${N}${NOGUN ? ', 被弾なし' : ''}${MISSFIRST ? ', 初弾を外す' : ''}`);
+console.log(`${MISSION_ID} ${MREC.player_boat} 魚雷 ${CAP} 本 月 ${MREC.moon} | idle ${FC.idleGph.toFixed(0)} gal/h, n=${FC.exponent.toFixed(3)}, allot=${ALLOT} gal, dawn=${DAWN_S} s, home=(${HOME.x},${HOME.y}) r${HOME.radiusM}, runs=${N}${NOGUN ? ', 被弾なし' : ''}${MISSFIRST ? ', 初弾を外す' : ''}`);
 for (const style of ['silent', 'standard', 'full', 'reattack', 'fullReattack', 'direct'] as Style[]) {
   const rs = Array.from({ length: N }, (_, k) => run(style, 1000 + k));
   const cnt: Record<string, number> = {};

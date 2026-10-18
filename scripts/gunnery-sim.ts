@@ -23,10 +23,14 @@ import {
 import { SeededRng } from '../src/core/rng';
 import { ktToMps } from '../src/core/units';
 
-const rawEnemy: unknown = enemies.enemies.find((e) => e.id === 'ijn_destroyer');
+// v0.6.0: BOAT（艇の id、既定 us_elco80）・ENEMY（敵の id、既定 ijn_destroyer）・DMG127（127mm の damage の上書き）
+const rawEnemy: unknown = enemies.enemies.find((e) => e.id === (process.env['ENEMY'] ?? 'ijn_destroyer'));
 if (!isEnemyGunneryDataRecord(rawEnemy)) throw new Error('enemy');
 const GP = gunneryParamsFromData(rawEnemy);
-const rawBoat: unknown = boats.boats.find((b) => b.id === 'us_elco80');
+if (process.env['DMG127']) GP.guns[0]!.damage = Number(process.env['DMG127']);
+/** 月の係数（v0.6.0。既定 1＝半月。新月 0.6） */
+const MOON = Number(process.env['MOON'] ?? 1);
+const rawBoat: unknown = boats.boats.find((b) => b.id === (process.env['BOAT'] ?? 'us_elco80'));
 if (!isBoatDamageDataRecord(rawBoat) || !isBoatDataRecord(rawBoat)) throw new Error('boat');
 const DP = damageParamsFromData(rawBoat);
 const BP = boatParamsFromData(rawBoat);
@@ -93,7 +97,7 @@ function attackRun(seed: number): { hpLeft: number; litS: number; sankAtS: numbe
     stepBoat(player, input, BP, GAME);
     const band = speedBandFor(player.speedMps, BP);
     const stepFactor = band === 'full' ? 1.6 : band === 'cruise' ? 1 : band === 'silent' ? 0.5 : 0.4; // 速力帯の係数（半月）
-    const detected = dist <= 2000 * stepFactor;
+    const detected = dist <= 2000 * stepFactor * MOON;
     updateIllumination(g, shipMoving, player, detected, GP, REAL);
     if (g.illuminated) litS += REAL;
     updateGuns(g, shipMoving, player, true, HALF_LEN, HALF_BEAM, GP, rng, REAL, GAME, ev);

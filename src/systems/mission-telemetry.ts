@@ -86,7 +86,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     crewAlive: w.setup.crew.total,
     crewTotal: w.setup.crew.total,
     crewTurnFactor: 1,
-    extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS : 0,
+    extinguishHoldS: w.damageParams.extinguishHoldS,
     gunMission: w.hunt !== null,
     gunStatus: GUN_SAFE,
     gunFast: false,
@@ -234,7 +234,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   }
   t.crewAlive = crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp);
   t.crewTurnFactor = crewTurnFactor(w.setup.crewEffects, w.crewLostNow);
-  t.extinguishHoldS = w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0;
+  t.extinguishHoldS = w.damageParams.extinguishHoldS * w.extinguishHoldScale;
 }
 
 /** 終了時に 1 回だけ Result の材料を作る（走っている魚雷は呼び出し側が先に外れとして確定しておく） */
@@ -281,7 +281,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     crewTotal: w.setup.crew.total,
     crewTurnFactor: crewTurnFactor(w.setup.crewEffects, w.crewLostNow),
     crewAccelFactor: crewAccelFactor(w.setup.crewEffects, w.crewLostNow),
-    extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0,
+    extinguishHoldS: w.damageParams.extinguishHoldS * w.extinguishHoldScale,
     stormEnabled: w.storm !== null,
     stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
     stormInsideS: w.storm ? w.storm.state.insideS : 0,

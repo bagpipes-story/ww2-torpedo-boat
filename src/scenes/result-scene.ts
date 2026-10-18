@@ -14,7 +14,7 @@ import {
   sortieSeed,
 } from '../config/game-config';
 import { getGameData, getScoringParams } from '../config/game-data';
-import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_HISTORICAL_KPI_JA, RESULT_HISTORICAL_TAG_JA, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
+import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA, RESULT_HISTORICAL_TAG_JA, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import {
   HUD_COLOR_KPI,
@@ -224,6 +224,7 @@ export class ResultScene extends Phaser.Scene {
       });
       if (kpi) line(kpi.legend, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
       else if (r.sortie.historical) line(RESULT_HISTORICAL_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+      else line(RESULT_CAMPAIGN_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
