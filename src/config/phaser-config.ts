@@ -4,6 +4,7 @@ import { BootScene } from '../scenes/boot-scene';
 import { BriefingScene } from '../scenes/briefing-scene';
 import { HudScene } from '../scenes/hud-scene';
 import { MissionScene } from '../scenes/mission-scene';
+import { PauseScene } from '../scenes/pause-scene';
 import { ResultScene } from '../scenes/result-scene';
 import { TitleScene } from '../scenes/title-scene';
 import { ACTIVE_TOUCH_POINTERS, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SEA_COLOR } from './game-config';
@@ -32,5 +33,6 @@ export const phaserConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene],
+  // 後ろほど手前に描く（Pause は Mission・Hud の上。v0.5.1）
+  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene],
 };

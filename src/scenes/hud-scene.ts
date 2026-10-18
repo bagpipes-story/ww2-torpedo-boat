@@ -1,4 +1,4 @@
-// HUD シーン: Mission の上に重ねて動く。カメラは RENDER_SCALE 倍ズームで論理座標 1280×720 を保つ。
+// HUD シーン: Mission の上に重ねて動く。カメラは RENDER_SCALE 倍ズームで論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） を保つ。
 // デバッグHUD（FPS・ビルド番号）、速力・舵、バーチャルスティック、PC デバッグキーをここに置く。
 import Phaser from 'phaser';
 import {
@@ -27,7 +27,9 @@ import {
   HOME_MARKER_TOP_MARGIN,
   HUD_COLOR_WARN,
   IDENTIFY_BUTTON_Y,
+  LOOKOUT_BUTTON_Y,
   PLANE_DISTANCE_STEP_M,
+  SPREAD_BUTTON_Y,
   PLANE_MARKER_TOP_MARGIN,
   IDENTIFY_PULSE_ALPHA_MAX,
   IDENTIFY_PULSE_HZ,
@@ -43,7 +45,9 @@ import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
 import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR, GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
+import { PauseControl } from '../systems/pause-control';
 import { PinchZoom } from '../systems/pinch-zoom';
+import { SpreadButton } from '../systems/spread-button';
 import { TorpedoButton } from '../systems/torpedo-button';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
@@ -65,6 +69,8 @@ export class HudScene extends Phaser.Scene {
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
+  /** 扇の角度（v0.5.1 実機 1 回目）。魚雷ボタンの下。魚雷の任務だけ */
+  private spreadButton?: SpreadButton;
   /** 「射撃」（主兵装が砲の任務。v0.4.2）: 右下の魚雷ボタンの場所。押している間 gunHeld。出だしの 0.6 秒は受けない（「出撃」の 2 度押し） */
   private gunButton?: HoldButton;
   private smokeButton?: HoldButton;
@@ -76,6 +82,8 @@ export class HudScene extends Phaser.Scene {
   private lastHoldTenths = -1;
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
+  /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
+  private pause?: PauseControl;
   private telemetry!: BoatTelemetry;
   /** Mission が launch で渡す Sortie の任務（v0.4.0） */
   private missionId: string = PROTOTYPE_MISSION_ID;
@@ -92,7 +100,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   create(): void {
-    // 論理座標 1280×720 を canvas（1280×RENDER_SCALE）に合わせる
+    // 論理座標 GAME_WIDTH×720 を canvas（GAME_WIDTH×RENDER_SCALE）に合わせる
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
     this.lastIdentifyN = -1; // 再開で前回の値を引きずらない
     this.lastHoldTenths = -1;
@@ -139,6 +147,7 @@ export class HudScene extends Phaser.Scene {
     } else {
       this.torpedoButton = new TorpedoButton(this, input, spread);
       this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
+      this.spreadButton = new SpreadButton(this, GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS, SPREAD_BUTTON_Y, spread, launch.salvo_spacing_deg, launch.salvo_spacing_choices_deg);
     }
     // 右上「煙幕」: 離すと展開。その下「消火」: 火災中に押し続けると消火（押している時間は Mission が数える。v0.3.1 実機の要望で煙幕と別ボタンに）。右中「見張り」: 押している間ズームアウト
     const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
@@ -155,7 +164,7 @@ export class HudScene extends Phaser.Scene {
         input.extinguishHeld = false;
       },
     });
-    this.lookoutButton = new HoldButton(this, bx, GAME_HEIGHT / 2, '見張り', {
+    this.lookoutButton = new HoldButton(this, bx, LOOKOUT_BUTTON_Y, '見張り', {
       onDown: () => {
         input.lookout = true;
       },
@@ -176,6 +185,7 @@ export class HudScene extends Phaser.Scene {
     this.keyboard = new KeyboardInput(this, input);
     // ピンチズーム（右半分、ボタンの列を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
+    this.pause = new PauseControl(this, input, () => [this.stick, this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton, this.pinch]);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stick?.destroy();
@@ -211,6 +221,10 @@ export class HudScene extends Phaser.Scene {
       this.keyboard = undefined;
       this.pinch?.destroy();
       this.pinch = undefined;
+      this.pause?.destroy();
+      this.pause = undefined;
+      this.spreadButton?.destroy();
+      this.spreadButton = undefined;
     });
   }
 

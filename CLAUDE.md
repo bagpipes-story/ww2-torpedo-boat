@@ -112,7 +112,7 @@ iPhone SafariのWebGL/Canvasで60fpsを守るための構造ルール。守れ�
 | 外部CDNからの読み込み | オフラインPWAで壊れる | 依存はnpmでバンドル |
 | 音を自動再生 | iOSは初回タッチまで再生不可 | 初回タッチで `sound.unlock()`。音は v0.7 まで実装しない |
 
-iOS固有の注意: `touch-action: none` と `user-scalable=no` でピンチ・引っ張り更新を止める。`100vh` ではなく `100dvh` か `window.innerHeight`。`env(safe-area-inset-*)` をHUD余白に使う。
+iOS固有の注意: `touch-action: none` と `user-scalable=no` でピンチ・引っ張り更新を止める。画面の高さは CSS の `100vh`/`100dvh` に頼らず JS の `window.innerHeight`（ホーム画面のアプリで `100dvh` が起動直後に画面より大きく出て上下が見切れた。v0.5.1。`config/screen-fit.ts`）。`env(safe-area-inset-*)` は JS で測ってゲームの枠に使う（下のホームバーは引かない）。
 
 ## 8. データ駆動の原則
 
@@ -156,3 +156,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
 - 2026-10-04 v0.1.2 §3 ビルド番号の表示位置を「画面の隅」から「画面上部中央」に（隅は操作系と HUD が使う）
 - 2026-10-12 v0.4.0 §4 scenes に Briefing・Hud を追記（Title → Briefing → Mission（＋Hud）→ Result の流れ）
 - 2026-10-17 v0.5.1 §3 に PWA（ホーム画面のアプリでも最新ビルドが出る仕組みと、古いときの対処）を追記
+- 2026-10-18 v0.5.1 §7 iOS: 画面の高さは 100dvh ではなく JS の innerHeight（ホーム画面のアプリで 100dvh が起動直後に大きく出て見切れた）

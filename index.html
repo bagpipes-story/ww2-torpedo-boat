@@ -33,13 +33,13 @@
         -webkit-tap-highlight-color: transparent;
       }
       #game {
-        /* ノッチ・角丸・ホームバー（画面下の横線）の内側に収める（CLAUDE.md §7 iOS: env(safe-area-inset-*)。v0.5.1）。
-           Phaser の FIT は親の外寸（getBoundingClientRect）で合わせるので、padding ではなく margin と大きさで内側に寄せる */
-        margin: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-        width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-        /* 100vh は iOS Safari のツールバー分ずれるので 100dvh（CLAUDE.md §7） */
-        height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-        height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        /* 左上と大きさは JS（src/config/screen-fit.ts）が innerWidth/innerHeight と safe-area から入れる（v0.5.1 実機 1 回目:
+           iOS のホーム画面のアプリで 100dvh が起動直後に画面より大きく出て上下が見切れた）。ここは JS が動く前の仮の値 */
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
       }
       #game canvas {
         display: block;

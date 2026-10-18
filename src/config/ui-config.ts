@@ -1,4 +1,4 @@
-// HUD・操作系の見た目の寸法（論理座標 1280×720 の px）。ゲームの数値ではないので data/*.json には置かない。
+// HUD・操作系の見た目の寸法（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE } from './game-config';
 
@@ -58,6 +58,19 @@ export const HUD_COLOR_WARN = '#ff8a7a';
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった） */
 export const TORPEDO_BUTTON_RADIUS = 64;
+/**
+ * 扇の角度ボタン（v0.5.1 実機 1 回目）: 魚雷ボタンの下の小さな横長のボタン（幅は魚雷ボタンと同じ）。押すたびに 狭 → 中 → 広（data の salvo_spacing_choices_deg）。
+ * 魚雷ボタンはその分だけ上へ（中心 y 582。魚雷の任務だけ。砲の任務の「射撃」は従来どおり右下の角）
+ */
+export const SPREAD_BUTTON_W = TORPEDO_BUTTON_RADIUS * 2;
+export const SPREAD_BUTTON_H = 40;
+export const SPREAD_BUTTON_GAP = 10;
+export const SPREAD_BUTTON_LABELS = ['狭', '中', '広'] as const;
+export const SPREAD_BUTTON_FONT_PX = 20;
+export const SPREAD_BUTTON_FILL_ALPHA = 0.22;
+export const SPREAD_BUTTON_PRESSED_ALPHA = 0.45;
+export const TORPEDO_BUTTON_Y = GAME_HEIGHT - HUD_MARGIN - SPREAD_BUTTON_H - SPREAD_BUTTON_GAP - TORPEDO_BUTTON_RADIUS;
+export const SPREAD_BUTTON_Y = GAME_HEIGHT - HUD_MARGIN - SPREAD_BUTTON_H / 2;
 export const TORPEDO_BUTTON_ALPHA = 0.55;
 export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
 /** Mission が始まってから魚雷ボタンが押下を受けない ms（v0.4.0）。Briefing の「出撃」（?debug 直行では Result の「もう一度」）の右側が魚雷ボタンと重なるので、2 度押しの 2 回目で出だしに 1 本撃たない。出だしの 0.6 秒に撃つ場面は無い */
@@ -198,13 +211,23 @@ export const PINCH_BUTTON_COLUMN_X = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RA
 export const PINCH_MIN_DIST_PX = 40;
 /** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
 export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
+/** 「見張り」の中心 y（v0.5.1: 魚雷ボタンが扇の角度ボタンの分だけ上がったので、中央より 20 上げて識別の入る隙間を作る） */
+export const LOOKOUT_BUTTON_Y = GAME_HEIGHT / 2 - 20;
 /**
- * 「識別」ボタン（v0.3.3）: 右の見張り（中央）と魚雷（右下）の間。見張りの下端 408 と魚雷の上端 568 の中点（488）で、上下に 32 px ずつ隙間。
+ * 「識別」ボタン（v0.3.3）: 右の見張りと魚雷の間の中点（v0.5.1 から: 見張りの下端 388 と魚雷の上端 518 の中点 453。上下に 17 px ずつ隙間）。
  * 味方機が識別を求めている間だけ青く点滅し、残り秒を出す
  */
-export const IDENTIFY_BUTTON_Y = (GAME_HEIGHT / 2 + ROUND_BUTTON_RADIUS + (GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2)) / 2;
+export const IDENTIFY_BUTTON_Y = (LOOKOUT_BUTTON_Y + ROUND_BUTTON_RADIUS + (TORPEDO_BUTTON_Y - TORPEDO_BUTTON_RADIUS)) / 2;
 export const IDENTIFY_PULSE_HZ = 2.5;
 export const IDENTIFY_PULSE_ALPHA_MAX = 0.95;
+/**
+ * 「一時停止」（v0.5.1 実機 1 回目。ホーム画面のアプリにはブラウザの戻るが無い）: 左端、燃料計の下とスティックの間（燃料計の下端 162・スティックの上端 436 から離す）。
+ * 押しても止まるだけ（任務をやめるのは一時停止の画面で 1 秒長押し）。丸は見張りなどの丸ボタンの 3/4
+ */
+export const PAUSE_BUTTON_SIZE_SCALE = 0.75;
+export const PAUSE_BUTTON_X = HUD_MARGIN + ROUND_BUTTON_RADIUS * PAUSE_BUTTON_SIZE_SCALE;
+export const PAUSE_BUTTON_Y = 270;
+export const PAUSE_BUTTON_LABEL = '一時\n停止';
 /** 味方機のプレースホルダー（上から見た十字。世界単位。味方＝薄い青）: 全長・翼幅・胴の幅・尾翼の幅 */
 export const AIRCRAFT_LENGTH_UNITS = 48;
 export const AIRCRAFT_SPAN_UNITS = 60;

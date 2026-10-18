@@ -150,12 +150,13 @@ describe('manifest とアイコン（v0.5.1。public/）', () => {
       expect(pngSize(`public/${i.src}`), i.src).toEqual([w, h]);
     }
   });
-  it('index.html: manifest と iOS 用アイコン（180×180）を読み、Service Worker の登録を main.ts と別に読む。ゲームの枠はノッチ・ホームバーの内側（safe-area）', () => {
+  it('index.html: manifest と iOS 用アイコン（180×180）を読み、Service Worker の登録を main.ts と別に読む。ゲームの枠は JS が safe-area の内側に合わせる（v0.5.1 実機 1 回目）', () => {
     const html = readFileSync('index.html', 'utf-8');
     expect(html).toContain('<link rel="manifest" href="/manifest.webmanifest" />');
     expect(html).toContain('<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />');
     expect(html).toContain('<script type="module" src="/src/pwa/register-sw.ts"></script>');
-    expect(html).toContain('env(safe-area-inset-bottom, 0px)');
+    expect(html).toMatch(/#game \{[^}]*position: fixed;/);
+    expect(readFileSync('src/config/screen-fit.ts', 'utf-8')).toContain('env(safe-area-inset-left,0px)');
     expect(existsSync('public/icons/apple-touch-icon.png')).toBe(true);
     expect(pngSize('public/icons/apple-touch-icon.png')).toEqual([180, 180]);
   });
