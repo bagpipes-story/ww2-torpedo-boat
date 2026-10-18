@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import hitRateModel from '../data/hit_rate_model.json';
-import { fillSalvoHeadings, salvoCountForHold, salvoSpreadDeg, type SpreadConfig } from '../src/core/salvo';
+import { fillSalvoHeadings, nextSpacing, salvoCountForHold, salvoSpreadDeg, spacingChoices, type SpreadConfig } from '../src/core/salvo';
 import { bandIndexForRange, countHits, summarizeShots, type ShotRecord } from '../src/core/hit-rate';
 
 const cfg: SpreadConfig = {
@@ -35,6 +35,37 @@ describe('salvoSpreadDeg（v0.4.8。角度は固定の間隔）', () => {
     expect(out.slice(0, 3)).toEqual([86, 90, 94]);
     fillSalvoHeadings(90, 4, salvoSpreadDeg(4, cfg), out);
     expect(out).toEqual([84, 88, 92, 96]);
+  });
+});
+
+describe('扇の角度ボタン（v0.5.1 実機 1 回目。spacingChoices・nextSpacing）', () => {
+  const launch = hitRateModel.torpedo_launch;
+  // ラベル（狭・中・広）は ui-config の SPREAD_BUTTON_LABELS。ui-config は画面の大きさを測る（DOM）ので Node の型検査に入れず、数 3 を直に書く
+  it('data: 狭 3°・中 4°・広 5°。最初の選択は中 4°（salvo_spacing_deg）。ラベルの数（3）と同じ', () => {
+    expect(spacingChoices(launch.salvo_spacing_choices_deg, launch.salvo_spacing_deg, 3)).toEqual([3, 4, 5]);
+    expect(launch.salvo_spacing_deg).toBe(4);
+  });
+  it('押すたびに 中 4° → 広 5° → 狭 3° → 中 4°。選択肢に無い値（壊れた保存値など）からは最初の選択', () => {
+    const c = [3, 4, 5];
+    expect([4, 5, 3].map((d) => nextSpacing(c, d, 4))).toEqual([5, 3, 4]);
+    expect(nextSpacing(c, 7, 4)).toBe(4);
+    expect(nextSpacing(c, Number.NaN, 4)).toBe(4);
+  });
+  it('選択肢が壊れていれば起動時に例外: 数がラベルと違う・小さい順でない・0 以下・最初の選択を含まない', () => {
+    expect(() => spacingChoices([3, 4], 4, 3)).toThrow();
+    expect(() => spacingChoices([4, 3, 5], 4, 3)).toThrow();
+    expect(() => spacingChoices([3, 3, 5], 3, 3)).toThrow();
+    expect(() => spacingChoices([0, 4, 5], 4, 3)).toThrow();
+    expect(() => spacingChoices([3, 4, 5], 6, 3)).toThrow();
+  });
+  it('広 5° の 4 本は 15° の扇（82.5°〜97.5°）、狭 3° の 2 本は ±1.5°', () => {
+    const out = [0, 0, 0, 0];
+    const wide: SpreadConfig = { ...cfg, spacingDeg: 5 };
+    fillSalvoHeadings(90, 4, salvoSpreadDeg(4, wide), out);
+    expect(out).toEqual([82.5, 87.5, 92.5, 97.5]);
+    const narrow: SpreadConfig = { ...cfg, spacingDeg: 3 };
+    fillSalvoHeadings(90, 2, salvoSpreadDeg(2, narrow), out);
+    expect(out.slice(0, 2)).toEqual([88.5, 91.5]);
   });
 });
 

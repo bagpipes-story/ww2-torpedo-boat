@@ -1,4 +1,4 @@
-// Title・Briefing・Result のボタンと配置（論理座標 1280×720 の px）と UI の語（v0.4.0、docs/02 §4）。ゲームの数値ではないので data/*.json には置かない。
+// Title・Briefing・Result のボタンと配置（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）と UI の語（v0.4.0、docs/02 §4）。ゲームの数値ではないので data/*.json には置かない。
 // ui-config.ts（HUD）が 270 行を超えたので分けた。ボタンの高さはどれも 96 px 以上（iPhone の表示倍率 0.483〜0.546 で 46 pt 以上）。
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN } from './game-config';
 
@@ -98,3 +98,26 @@ export const RESULT_LIST_X = HUD_MARGIN;
 export const RESULT_RETRY_JA = 'もう一度';
 export const RESULT_RETRY_SUB_JA = '同じ任務・新しい夜';
 export const RESULT_LIST_JA = '任務一覧';
+
+/**
+ * 一時停止（v0.5.1 実機 1 回目。ホーム画面のアプリにはブラウザの「戻る」が無いので、任務の途中で一覧へ戻る道）。
+ * 左の「一時停止」を押すと世界が止まり、この画面。右下「再開」（主ボタンの位置）、左下「任務をやめる」は 1 秒長押しで任務一覧へ（押し間違いで任務を捨てない）
+ */
+export const PAUSE_DIM_ALPHA = 0.62;
+export const PAUSE_TITLE_JA = '一時停止';
+export const PAUSE_TITLE_Y = 200;
+export const PAUSE_TITLE_PX = 48;
+export const PAUSE_NOTE_JA = '任務は止まっています（夜明けの時計・敵・燃料も止まる）';
+export const PAUSE_NOTE_Y = 280;
+export const PAUSE_NOTE_PX = 22;
+export const PAUSE_RESUME_JA = '再開';
+export const PAUSE_QUIT_JA = '任務をやめる';
+export const PAUSE_QUIT_SUB_JA = '1 秒長押しで任務一覧へ';
+export const PAUSE_QUIT_HOLD_MS = 1000;
+/** 長押しの帯（警告の色）と太さ */
+export const PAUSE_QUIT_BAR_COLOR = 0xff8a7a;
+export const PAUSE_QUIT_BAR_H = 8;
+/** 下の HUD が透けて読みにくい所（上中央のビルド番号の行・2 つのボタン）に暗幕の上から敷く黒の濃さ（ヘッドレス確認: 「再開」の下に速力と魚雷ボタンが透けた） */
+export const PAUSE_BACKING_ALPHA = 0.85;
+/** 再開してから Hud が押下を受けない ms（右下の「再開」の 2 度押しが、下にある魚雷・扇のボタンに入らないように） */
+export const PAUSE_RESUME_GUARD_MS = 300;

@@ -59,7 +59,7 @@ Codeセッションにファイルを添付できる場合は、#3の代わり�
 1. **Claudeアプリ → Code → `ww2-torpedo-boat` を選択**。ブランチは `main`。モードは **Accept edits**（Autoが出る場合はAutoでも可）。
 2. **プロンプトを貼る**。`prompts/claude_code_kickoff.md`（初回）または `prompts/session_template.md`（2回目以降）をメモ帳に入れておき、`{{ }}` だけ埋めて貼る。長文を打たなくていいようにしてある。
 3. **放置する**。クラウドで実装・テスト・ビルド・push・PR作成まで進む。終わるとセッションに「Pages URL」と「ビルド番号」と「実機テスト項目」が書かれる。
-4. **Pages URLをSafariで開いて遊ぶ**（1〜2分でデプロイされる。タイトル画面のビルド番号がPRのコミットと一致しているか確認）。
+4. **Pages URLをSafariで開いて遊ぶ**（1〜2分でデプロイされる。タイトル画面のビルド番号がPRのコミットと一致しているか確認）。v0.5.1 から、Safari の共有ボタン →「ホーム画面に追加」で全画面のアプリとしても遊べる（オンラインなら最新のビルド、一度開けばオフラインでも起動）。
 5. **同じセッションに感想を返す**。`prompts/feedback_template.md` の形式で短く。直ったら「**マージして v0.x.y にタグを打って、CHANGELOGに実機テスト結果を書いて**」と送る。
 
 セッションは放置すると休止するが、開き直せば会話履歴ごと復元される。CIが落ちたら「このPRを監視してCI失敗を直して」と送るとAuto-fixが働く。
@@ -72,7 +72,8 @@ Codeセッションにファイルを添付できる場合は、#3の代わり�
 | `.claude/settings.json` | セッション開始時に `scripts/install_pkgs.sh` を実行（クラウドでのみ `npm ci`）。`npm`/`git`/`gh` を許可してプロンプトの承認待ちを減らす |
 | `scripts/install_pkgs.sh` | `CLAUDE_CODE_REMOTE=true` のときだけ依存をインストール |
 | `docs/snippets/vite.config.ts` | `base` を `VITE_BASE`（Actionsが `/ww2-torpedo-boat/` を渡す）から取り、ビルド番号を `import.meta.env` に注入する雛形 |
-| ビルド番号表示 | タイトル画面（v0.1はMissionのHUD上部中央）に `VITE_BUILD_REF@VITE_BUILD_SHA(先頭7桁)` を表示。v0.5のPWA化以降はService Workerを `autoUpdate` にし、古いキャッシュで迷わないようにする |
+| ビルド番号表示 | タイトル画面（v0.1はMissionのHUD上部中央）に `VITE_BUILD_REF@VITE_BUILD_SHA(先頭7桁)` を表示 |
+| Service Worker（v0.5.1） | `src/pwa/service-worker.ts`（ビルドの最後に `dist/sw.js` を書く）。ページ本体はネットワーク優先なので、オンラインならホーム画面のアプリでも push した最新のビルドが出る（ビルド番号で確認）。JS はキャッシュ優先、オフラインでは最後に開いたビルドが起動する。新しいビルドのオフライン用キャッシュは、起動時と前面に戻ったときに裏で入れ替わる |
 
 セッションの終わり方（CLAUDE.md §6 に同じ）: 変更をcommitしてpush → `gh pr create`（既にPRがあればpushのみ）→ Pages URL・ビルド番号・実機テスト項目を報告。**ローカルで動かす前提の指示（`npm run dev -- --host` など）は使わない。**
 
@@ -82,6 +83,8 @@ Codeセッションにファイルを添付できる場合は、#3の代わり�
 | --- | --- |
 | Actionsが「not allowed to deploy to github-pages」で失敗 | §2の#4（github-pages環境の Deployment branches を No restriction） |
 | Pages URLが古いまま | Actionsのデプロイ完了を待つ（1〜2分）。Safariでリロード。v0.5以降はアプリ内のビルド番号を見る |
+| ホーム画面のアプリ（v0.5.1）が古いビルドのまま | オンラインか確かめる（オフラインでは最後に開いたビルド）。アプリを上にスワイプして閉じてから開き直す。直らなければ Safari で `…/ww2-torpedo-boat/?nosw` を開く（Service Worker の登録とキャッシュを消す）→ 普通の URL を開き直す |
+| ホーム画面のアプリで通算の命中率が 0 になった | iOS は Safari とホーム画面のアプリで保存場所が別（v0.5.0 の通算は Safari 側に残っている）。以後はどちらか一方で遊ぶ |
 | セッションが「Environment expired」 | セッションを開き直す。履歴は復元される。走っていたコマンドは再実行を頼む |
 | `npm ci` が lockfile 不一致で失敗 | 「package-lock.json を作り直して」と頼む |
 | リポジトリが一覧に出ない | Privateなら Claude GitHub App のインストール対象に入っているか確認（§2の#6） |

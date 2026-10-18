@@ -37,3 +37,19 @@ export function fillSalvoHeadings(baseHeadingDeg: number, count: number, spreadD
   }
   return count;
 }
+
+/**
+ * 扇の間隔の選択肢（v0.5.1 実機 1 回目。魚雷ボタンの下のボタンで 狭 → 中 → 広 → 狭 …）を検査して返す。
+ * 正の数が小さい順に並び、最初の選択（salvo_spacing_deg）を含むこと。壊れていれば例外（起動時に分かる）
+ */
+export function spacingChoices(choices: readonly number[], defaultDeg: number, labelCount: number): number[] {
+  const ok = choices.length === labelCount && choices.every((c, i) => Number.isFinite(c) && c > 0 && (i === 0 || c > choices[i - 1]!)) && choices.includes(defaultDeg);
+  if (!ok) throw new Error(`hit_rate_model.torpedo_launch.salvo_spacing_choices_deg は ${labelCount} 個の正の数（小さい順）で salvo_spacing_deg ${defaultDeg} を含む`);
+  return [...choices];
+}
+
+/** 押したときの次の間隔（最後の次は最初）。今の間隔が選択肢に無ければ最初の選択 */
+export function nextSpacing(choices: readonly number[], currentDeg: number, defaultDeg: number): number {
+  const i = choices.indexOf(currentDeg);
+  return i < 0 ? defaultDeg : choices[(i + 1) % choices.length]!;
+}

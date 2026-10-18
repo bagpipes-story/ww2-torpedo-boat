@@ -11,6 +11,10 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- PWA（v0.5.1）: ホーム画面に追加すると全画面（standalone）で起動。名前・アイコンは manifest と apple-touch-icon（iOS は apple-touch-icon を使う） -->
+    <meta name="apple-mobile-web-app-title" content="Night Hunters" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>Night Hunters (WWII魚雷艇)</title>
     <style>
       html,
@@ -29,10 +33,13 @@
         -webkit-tap-highlight-color: transparent;
       }
       #game {
+        /* 左上と大きさは JS（src/config/screen-fit.ts）が innerWidth/innerHeight と safe-area から入れる（v0.5.1 実機 1 回目:
+           iOS のホーム画面のアプリで 100dvh が起動直後に画面より大きく出て上下が見切れた）。ここは JS が動く前の仮の値 */
+        position: fixed;
+        left: 0;
+        top: 0;
         width: 100vw;
-        /* 100vh は iOS Safari のツールバー分ずれるので 100dvh（CLAUDE.md §7） */
         height: 100vh;
-        height: 100dvh;
       }
       #game canvas {
         display: block;
@@ -42,5 +49,6 @@
   <body>
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/pwa/register-sw.ts"></script>
   </body>
 </html>

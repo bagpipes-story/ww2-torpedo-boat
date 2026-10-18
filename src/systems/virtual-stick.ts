@@ -3,7 +3,7 @@
 // 原点の決め方（ハイブリッド）: 台座に触れればその中心が原点（縁に触れればすぐ倒した扱い＝固定スティックの直感）。
 // 左半分の台座の外に触れればその点が原点（置いただけで動き出さない。v0.2.1 の「触れた点が中立」を残す）。ノブはどちらでも台座の上に描く。
 // 台座は動かさず、指が半径を越えてもノブは縁で止まる（v0.2.1 実機: 台座が指についてくる方式は不評だった）。
-// HUD シーン（論理座標 1280×720）で動かす。結果は共有 InputState に書く（確保しない）。
+// HUD シーン（論理座標 GAME_WIDTH×720）で動かす。結果は共有 InputState に書く（確保しない）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { STICK_BASE_ALPHA, STICK_DEAD_ZONE, STICK_FIXED_CENTER_X, STICK_FIXED_CENTER_Y, STICK_GRAB_RATIO, STICK_KNOB_ALPHA, STICK_RADIUS } from '../config/ui-config';
@@ -44,8 +44,9 @@ export class VirtualStick {
     return this.scene.cameras.main.getWorldPoint(p.x, p.y, this.tmp);
   }
 
-  private onDown(p: Phaser.Input.Pointer): void {
-    if (this.pointerId !== -1) return;
+  private onDown(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
+    // ボタン（左半分の「一時停止」。v0.5.1）の上で始まった指はスティックにしない
+    if (this.pointerId !== -1 || over.length > 0) return;
     const v = this.toLogical(p);
     if (v.x >= GAME_WIDTH / 2) return; // 右半分はボタン領域（v0.1.3〜）
     this.pointerId = p.id;
@@ -88,6 +89,11 @@ export class VirtualStick {
 
   private onUp(p: Phaser.Input.Pointer): void {
     if (p.id !== this.pointerId) return;
+    this.cancel();
+  }
+
+  /** 離したことにする（一時停止でも。v0.5.1）。中立＝停止 */
+  cancel(): void {
     this.pointerId = -1;
     this.knob.setPosition(STICK_FIXED_CENTER_X, STICK_FIXED_CENTER_Y);
     this.input.stickActive = false;

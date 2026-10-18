@@ -1,10 +1,24 @@
 // Phaser 設定と画面定数（docs/02 §2）。数値はここだけに置く。
+import { logicalWidthFor } from '../core/screen';
 import { parseRaidOverride, type RaidOverride } from '../core/sortie';
-export const GAME_WIDTH = 1280;
+import { startScreenFit } from './screen-fit';
+
+/** 論理座標の高さ（固定）。幅は起動時の横持ちの縦横比で決める（v0.5.1 実機 1 回目） */
 export const GAME_HEIGHT = 720;
+/** 論理幅の下限（16:9。これより太い画面は左右に黒帯）・上限（2.2:1）・刻み */
+export const GAME_WIDTH_MIN = 1280;
+export const GAME_WIDTH_MAX = 1584;
+export const GAME_WIDTH_STEP = 8;
+/** ゲームの枠（#game）を画面に合わせる（JS。iOS の 100dvh は起動直後に狂う）。横持ちの枠の CSS px。テスト（window 無し）では null */
+const SCREEN = startScreenFit();
+/**
+ * 論理幅: 高さ 720 のまま、横持ちの枠の縦横比に合わせて広げる（iPhone 15 のホーム画面のアプリで 734×393 → 1344）。
+ * HUD は GAME_WIDTH からの位置で並ぶので右端・中央に付いてくる。起動後に向きや大きさが変わっても幅は変えない（FIT が黒帯で合わせる）
+ */
+export const GAME_WIDTH = SCREEN ? logicalWidthFor(SCREEN.width, SCREEN.height, GAME_HEIGHT, GAME_WIDTH_MIN, GAME_WIDTH_MAX, GAME_WIDTH_STEP) : GAME_WIDTH_MIN;
 /** 夜の海の背景色（docs/02 §7） */
 export const SEA_COLOR = '#0b1020';
-/** HUD の余白（ゲーム座標 px）。safe-area 補正は未実装（横持ちの 16:9 黒帯がノッチを吸収する想定。CHANGELOG 既知の制約。対応版は docs/03 に未記載） */
+/** HUD の余白（ゲーム座標 px）。ノッチ・角丸は枠の外（screen-fit が左右の safe-area を引く）、下のホームバーは引かない（v0.5.1） */
 export const HUD_MARGIN = 24;
 /** HUD の FPS 更新間隔（ms）。毎フレーム setText しない（CLAUDE.md §7） */
 export const HUD_FPS_INTERVAL_MS = 250;
@@ -23,16 +37,14 @@ export const REGISTRY_KEY_HARD = 'hardMode';
 export const DPR_CAP = 2;
 /**
  * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, 2)。
- * Phaser 3 には resolution 設定が無いので、ゲームサイズをこの倍率で作り、各シーンのカメラを同じ倍率でズームして論理座標 1280×720 を保つ。
+ * Phaser 3 には resolution 設定が無いので、ゲームサイズをこの倍率で作り、各シーンのカメラを同じ倍率でズームして論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） を保つ。
  * 論理 px に DPR を掛けると、FIT で縮む分だけ画面の物理画素より大きな canvas を塗ることになる（§7「フル解像度のCanvas」）ので、
  * 表示サイズ基準にする。横持ち前提なので起動時の向きに関わらず長辺を幅として計算する。下限 1（生成テクスチャの線幅を 1px 以上に保つ）。
  * Text は style.resolution に同じ値を渡す。
  */
 function computeRenderScale(): number {
-  if (typeof window === 'undefined') return 1;
-  const w = Math.max(window.innerWidth, window.innerHeight);
-  const h = Math.min(window.innerWidth, window.innerHeight);
-  const fit = Math.min(w / GAME_WIDTH, h / GAME_HEIGHT);
+  if (typeof window === 'undefined' || !SCREEN) return 1;
+  const fit = Math.min(SCREEN.width / GAME_WIDTH, SCREEN.height / GAME_HEIGHT);
   const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
   return Math.max(1, fit * dpr);
 }
@@ -134,6 +146,8 @@ export const SCENE_KEYS = {
   mission: 'Mission',
   hud: 'Hud',
   result: 'Result',
+  /** 一時停止（v0.5.1 実機 1 回目）。Mission と Hud の上に重ねる */
+  pause: 'Pause',
 } as const;
 
 export const TEXTURE_KEYS = {

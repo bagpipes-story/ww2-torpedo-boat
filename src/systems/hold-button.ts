@@ -30,8 +30,10 @@ export class HoldButton {
     private readonly handlers: HoldButtonHandlers,
     /** 丸の大きさと色（v0.4.2: 主兵装が砲の任務の「射撃」は魚雷ボタンと同じ大きな黄色い輪） */
     textureKey: string = TEXTURE_KEYS.roundButton,
+    /** 丸の倍率（v0.5.1: 「一時停止」は小さく） */
+    private readonly sizeScale: number = 1,
   ) {
-    this.button = scene.add.image(cx, cy, textureKey).setScale(1 / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud).setInteractive();
+    this.button = scene.add.image(cx, cy, textureKey).setScale(sizeScale / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud).setInteractive();
     this.label = scene.add.text(cx, cy, '', hudTextStyle(HUD_FONT_BUTTON_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
     this.setLabel(label);
     this.button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.onDown, this);
@@ -82,7 +84,7 @@ export class HoldButton {
     if (this.pointerId !== -1) return;
     this.pointerId = p.id;
     this.pressedAt = this.scene.time.now;
-    this.button.setScale(ROUND_BUTTON_PRESSED_SCALE / RENDER_SCALE);
+    this.button.setScale((ROUND_BUTTON_PRESSED_SCALE * this.sizeScale) / RENDER_SCALE);
     this.handlers.onDown?.();
   }
 
@@ -91,8 +93,16 @@ export class HoldButton {
     const holdS = (this.scene.time.now - this.pressedAt) / 1000;
     this.pointerId = -1;
     this.pressedAt = -1;
-    this.button.setScale(1 / RENDER_SCALE);
+    this.button.setScale(this.sizeScale / RENDER_SCALE);
     this.handlers.onUp?.(holdS);
+  }
+
+  /** 押している途中を取り消す（一時停止。v0.5.1）。離したことにはしない（煙幕を出さない）。InputState は呼び出し側が戻す */
+  cancel(): void {
+    if (this.pointerId === -1) return;
+    this.pointerId = -1;
+    this.pressedAt = -1;
+    this.button.setScale(this.sizeScale / RENDER_SCALE);
   }
 
   destroy(): void {

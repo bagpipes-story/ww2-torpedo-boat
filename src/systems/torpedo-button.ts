@@ -11,6 +11,7 @@ import {
   TORPEDO_BUTTON_PRESSED_SCALE,
   TORPEDO_SPREAD_LABEL_GAP,
   TORPEDO_BUTTON_RADIUS,
+  TORPEDO_BUTTON_Y,
   hudTextStyle,
 } from '../config/ui-config';
 import type { InputState } from '../core/input-state';
@@ -35,7 +36,8 @@ export class TorpedoButton {
     private readonly spread: SpreadConfig,
   ) {
     const cx = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
-    const cy = GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
+    // v0.5.1: 下に扇の角度ボタンがあるので、その分だけ上（TORPEDO_BUTTON_Y）
+    const cy = TORPEDO_BUTTON_Y;
     this.button = scene.add
       .image(cx, cy, TEXTURE_KEYS.torpedoButton)
       .setScale(1 / RENDER_SCALE)
@@ -79,6 +81,15 @@ export class TorpedoButton {
     } else if (n === 1) {
       this.input.fireTap = true;
     }
+  }
+
+  /** 押している途中を取り消す（一時停止。v0.5.1）。撃たない */
+  cancel(): void {
+    if (this.pointerId === -1) return;
+    this.pointerId = -1;
+    this.pressedAt = -1;
+    this.button.setScale(1 / RENDER_SCALE);
+    this.hideSpread();
   }
 
   private hideSpread(): void {

@@ -33,6 +33,13 @@ export class PinchZoom {
     return this.pinching;
   }
 
+  /** 指を数え直す（一時停止。v0.5.1） */
+  cancel(): void {
+    this.ids[0] = -1;
+    this.ids[1] = -1;
+    this.pinching = false;
+  }
+
   private slotOf(id: number): number {
     return this.ids[0] === id ? 0 : this.ids[1] === id ? 1 : -1;
   }
