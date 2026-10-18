@@ -1,8 +1,8 @@
 // Title: ゲーム名と任務一覧（米PTキャンペーンの playable_from を持つ任務を order 順。出撃できない任務は「準備中 ・ 版」で押せない）。docs/02 §4、v0.4.0。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
-import { getGameData } from '../config/game-data';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
+import { getAimAssistLevels, getGameData } from '../config/game-data';
 import { getMenuEntries } from '../config/mission-data';
 import {
   TITLE_CAMPAIGN_PX,
@@ -19,9 +19,18 @@ import {
   TITLE_HINT_JA,
   TITLE_HINT_PX,
   TITLE_HINT_Y,
+  TITLE_HIST_OFF_JA,
+  TITLE_HIST_ON_JA,
+  TITLE_HIST_X,
   TITLE_LOGO_PX,
   TITLE_LOGO_TEXT,
   TITLE_LOGO_Y,
+  TITLE_MARKER_JA,
+  TITLE_MARKER_LOCKED_JA,
+  TITLE_MARKER_OFF_JA,
+  TITLE_MARKER_ON_JA,
+  TITLE_MARKER_SUB_JA,
+  TITLE_MARKER_X,
   TITLE_ROW_GAP,
   TITLE_ROW_H,
   TITLE_ROW_STATUS_PX,
@@ -30,14 +39,21 @@ import {
   TITLE_ROW_TOP,
   TITLE_ROW_W,
   TITLE_ROW_X,
+  titleHistSubJa,
+  titleMarkerLockedSubJa,
 } from '../config/menu-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
 import { seedForBriefing, type BriefingInit } from '../core/sortie';
+import { leadMarkerEnabled, setLeadMarkerEnabled, sortiesDone } from '../systems/progress-storage';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export class TitleScene extends Phaser.Scene {
   private rows: MenuButton[] = [];
-  /** 難易度の切り替え（v0.4.5。registry に持ち回る） */
+  /** 難易度の切り替え（v0.4.5。registry に持ち回る）と史実モードの切り替え（v0.5.2。同じく registry） */
+  private hist?: MenuButton;
+  /** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目。localStorage に覚える。解放前は押せない） */
+  private marker?: MenuButton;
   private diff?: MenuButton;
   /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
   private leaving = false;
@@ -87,12 +103,40 @@ export class TitleScene extends Phaser.Scene {
       this.diff?.setSelected(this.hard);
     });
     this.diff.setSelected(this.hard);
+    // 史実モード（v0.5.2。docs/02 §6.3）: タップで オフ ⇄ オン。題と 2 行目は data の historical_mode から（倍率・不発の確率を直書きしない）
+    const hm = getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.historical_mode;
+    const histTitle = (): string => `${hm.title_ja}${this.historical ? TITLE_HIST_ON_JA : TITLE_HIST_OFF_JA}`;
+    const histSpec = { x: TITLE_HIST_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: histTitle(), titlePx: TITLE_DIFF_PX, sub: titleHistSubJa(hm.enemy_evasion_multiplier, Math.round(hm.reliability.dud * 100)), align: 'center' as const };
+    this.hist = new MenuButton(this, histSpec, () => {
+      this.registry.set(REGISTRY_KEY_HISTORICAL, !this.historical);
+      this.hist?.setTitle(histTitle());
+      this.hist?.setSelected(this.historical);
+    });
+    this.hist.setSelected(this.historical);
+    // 見越し点マーカー（v0.5.2 実機 1 回目「使うかどうか選択制に」）: 解放前は「未解放」で押せず、2 行目に解放までの回数。解放後はタップで 使う ⇄ 使わない（localStorage）
+    const levels = getAimAssistLevels(getGameData(this.registry, REGISTRY_KEY_DATA));
+    const done = sortiesDone();
+    const unlocked = aimAssistLevelFor(levels, done, false).id !== AIM_ASSIST_NONE;
+    const next = nextAimAssistUnlock(levels, done);
+    const markerTitle = (): string => `${TITLE_MARKER_JA}${!unlocked ? TITLE_MARKER_LOCKED_JA : leadMarkerEnabled() ? TITLE_MARKER_ON_JA : TITLE_MARKER_OFF_JA}`;
+    const markerSpec = { x: TITLE_MARKER_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: markerTitle(), titlePx: TITLE_DIFF_PX, sub: unlocked ? TITLE_MARKER_SUB_JA : titleMarkerLockedSubJa(next ? next.unlockSorties - done : 0), align: 'center' as const };
+    this.marker = new MenuButton(this, markerSpec, () => {
+      setLeadMarkerEnabled(!leadMarkerEnabled());
+      this.marker?.setTitle(markerTitle());
+      this.marker?.setSelected(leadMarkerEnabled());
+    });
+    this.marker.setEnabled(unlocked);
+    this.marker.setSelected(unlocked && leadMarkerEnabled());
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const r of this.rows) r.destroy();
       this.rows = [];
       this.diff?.destroy();
       this.diff = undefined;
+      this.hist?.destroy();
+      this.hist = undefined;
+      this.marker?.destroy();
+      this.marker = undefined;
     });
   }
 
@@ -101,11 +145,17 @@ export class TitleScene extends Phaser.Scene {
     return this.registry.get(REGISTRY_KEY_HARD) === true;
   }
 
+  /** 選んでいる史実モード（未設定なら data の enabled_default＝オフ） */
+  private get historical(): boolean {
+    const v = this.registry.get(REGISTRY_KEY_HISTORICAL);
+    return typeof v === 'boolean' ? v : getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.historical_mode.enabled_default;
+  }
+
   /** 任務を選ぶ: 同じ任務の保留（Briefing で選ぶ前に戻った夜）があればその seed、無ければ新しい seed で Briefing へ */
   private open(missionId: string): void {
     if (this.leaving) return;
     this.leaving = true;
-    const init: BriefingInit = { missionId, seed: seedForBriefing(this.registry.get(REGISTRY_KEY_PENDING_SORTIE), missionId, sortieSeed()), hard: this.hard };
+    const init: BriefingInit = { missionId, seed: seedForBriefing(this.registry.get(REGISTRY_KEY_PENDING_SORTIE), missionId, sortieSeed()), hard: this.hard, historical: this.historical };
     this.registry.set(REGISTRY_KEY_PENDING_SORTIE, init);
     this.scene.start(SCENE_KEYS.briefing, init);
   }

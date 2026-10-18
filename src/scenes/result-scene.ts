@@ -14,7 +14,7 @@ import {
   sortieSeed,
 } from '../config/game-config';
 import { getGameData, getScoringParams } from '../config/game-data';
-import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
+import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_HISTORICAL_KPI_JA, RESULT_HISTORICAL_TAG_JA, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import {
   HUD_COLOR_KPI,
@@ -203,7 +203,7 @@ export class ResultScene extends Phaser.Scene {
       this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
       y += size + RESULT_LINE_GAP;
     };
-    line(`任務終了 — ${REASON_LABEL[r.reason]}${r.sortie.hard ? '（ハード）' : ''}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(`任務終了 — ${REASON_LABEL[r.reason]}${r.sortie.hard ? '（ハード）' : ''}${r.sortie.historical ? RESULT_HISTORICAL_TAG_JA : ''}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     if (h) {
       // 大発掃討（v0.4.2）: 撃破・上陸と、射撃・距離の記録（実機で数値を合わせる根拠）
@@ -223,6 +223,7 @@ export class ResultScene extends Phaser.Scene {
         if (b.shots > 0) line(`${b.band}: ${b.hits} / ${b.shots}${b.duds > 0 ? `（不発 ${b.duds}）` : ''}${kpi ? `   ${kpi.byBand[i]}` : ''}`, HUD_FONT_HEADING_PX);
       });
       if (kpi) line(kpi.legend, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+      else if (r.sortie.historical) line(RESULT_HISTORICAL_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
@@ -303,10 +304,10 @@ export class ResultScene extends Phaser.Scene {
       return;
     }
     if (DEBUG_DIRECT_MISSION) {
-      this.scene.start(SCENE_KEYS.mission, directSortie(missionId, sortieSeed(), DEBUG_RAID_OVERRIDE, r.sortie.hard));
+      this.scene.start(SCENE_KEYS.mission, directSortie(missionId, sortieSeed(), DEBUG_RAID_OVERRIDE, r.sortie.hard, r.sortie.historical));
       return;
     }
-    const init: BriefingInit = { missionId, seed: sortieSeed(), hard: r.sortie.hard };
+    const init: BriefingInit = { missionId, seed: sortieSeed(), hard: r.sortie.hard, historical: r.sortie.historical };
     this.registry.set(REGISTRY_KEY_PENDING_SORTIE, init);
     this.scene.start(SCENE_KEYS.briefing, init);
   }

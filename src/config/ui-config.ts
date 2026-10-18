@@ -54,6 +54,12 @@ export const HUD_FONT_MISSION_PX = 22;
 /** 3 行目: 敵影（見えているか）と発見状態（docs/02 §6.5）。発見されたら警告色 */
 export const HUD_FONT_STATUS_PX = 20;
 export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX + 8;
+/**
+ * 史実モードの印（v0.5.2 実機 2 回目「FPS の右に［史実］とだけ」）: 左上の FPS と同じ行・同じ大きさで、FPS の右に黄色で。固定文字列なので 1 回だけ描く。
+ * x は「FPS 120」（7 文字 × 約 10.8 px）の右に 12 px 空けた所。上中央の「ビルド番号｜データ版」の行（約 80 文字以内）は論理幅 1280 でも x 約 208 から始まるので重ならない
+ */
+export const HUD_HIST_BADGE_JA = '［史実］';
+export const HUD_HIST_BADGE_X = HUD_MARGIN + 88;
 export const HUD_COLOR_WARN = '#ff8a7a';
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった） */
@@ -156,10 +162,14 @@ export const SINK_TILT_DEG = 18;
 /** 魚雷ボタン: 本数の予告「一斉 N 本」の位置（ボタン上端からの隙間）と残弾 0 のときの濃さ */
 export const TORPEDO_SPREAD_LABEL_GAP = 8;
 export const TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR = 0.4;
-/** デバッグ時（?debug）だけ出す見越し点マーカー（docs/02 §6.3「v0.1 はデバッグ切替で常時表示可」） */
+/** 見越し点マーカー（docs/02 §6.3。v0.5.1 までは ?debug だけ、v0.5.2 から任務を 3 回終えると解放。?debug では常に） */
 export const LEAD_MARKER_SCALE = 0.35;
 export const LEAD_MARKER_TINT = 0xffe066;
 export const LEAD_MARKER_ALPHA = 0.8;
+/** 到達秒数（v0.5.2。aim_assist の lead_marker_time。任務を 6 回終えると解放）: マーカーの上に「N 秒」。世界座標の px（既定ズーム 0.75 で約 20 px） */
+export const LEAD_MARKER_TIME_PX = 26;
+export const LEAD_MARKER_TIME_DY = 36;
+export const LEAD_MARKER_TIME_COLOR = '#ffe066';
 
 /** デバッグ時（?debug）だけ出す距離の円: テクスチャの半径（世界単位。表示時に必要な半径へ拡縮する）、線幅、色、濃さ */
 export const DEBUG_RING_RADIUS_UNITS = 500;

@@ -14,6 +14,8 @@ export interface HitRateSimOverrides {
   shipHitScale?: number;
   /** 艇を見つける距離 m（無ければ 0＝見つけない） */
   detectM?: number;
+  /** 史実モード（v0.5.2。見張り・回避の倍率。不発は模擬に入れないので、命中率に (1 − dud) を掛けて読む） */
+  historical?: boolean;
 }
 
 export function hitRateSimSetup(data: GameData, o: HitRateSimOverrides = {}): ShotSimSetup {
@@ -22,7 +24,7 @@ export function hitRateSimSetup(data: GameData, o: HitRateSimOverrides = {}): Sh
   const launch = data.hitRateModel.torpedo_launch;
   const r = getEnemyRecord(data, o.enemyId ?? sim.enemy_id);
   const k = o.shipHitScale ?? world.ship_hit_scale;
-  const ai = shipAiParamsFromData(r, getEvasionMultiplier(data));
+  const ai = shipAiParamsFromData(r, getEvasionMultiplier(data, o.historical));
   return {
     ai,
     torpedo: torpedoParamsFromData(getTorpedoRecord(data, o.torpedoId ?? sim.torpedo_id), launch.arming_distance_m, launch.erratic_period_s),

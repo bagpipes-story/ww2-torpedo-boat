@@ -14,10 +14,11 @@ import {
   SCENE_KEYS,
   sortieSeed,
 } from '../config/game-config';
-import { getGameData, getRaidParams } from '../config/game-data';
+import { getAimAssistLevels, getGameData, getRaidParams } from '../config/game-data';
 import { debugSetupOptions } from '../config/debug-setup';
 import { enemyNameJa, getBriefingRecord, getPrototypeMission, riskLabelJa } from '../config/mission-data';
 import {
+  BRIEF_HISTORICAL_JA,
   BRIEF_BACK_H,
   BRIEF_BACK_JA,
   BRIEF_BACK_PX,
@@ -58,6 +59,7 @@ import {
 } from '../config/menu-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, HUD_COLOR_WARN, hudTextStyle } from '../config/ui-config';
 import { briefingRows, formatDateJa } from '../core/briefing';
+import { aimAssistStatusJa } from '../core/progress';
 import {
   RAID_ALERT_JA,
   RAID_CALM_JA,
@@ -71,6 +73,7 @@ import {
   type RaidParams,
   type Sortie,
 } from '../core/sortie';
+import { leadMarkerEnabled, sortiesDone } from '../systems/progress-storage';
 import { briefingNumbers, buildWorldSetup } from '../systems/world-setup';
 import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
 
@@ -81,6 +84,8 @@ export class BriefingScene extends Phaser.Scene {
   private seed = 0;
   /** 難易度ハード（v0.4.5。Title から） */
   private hard = false;
+  /** 史実モード（v0.5.2。Title の切り替え） */
+  private historical = false;
   private raid: RaidParams | null = null;
   /** 2 択（[分散, 残る]。空襲の夜だけ） */
   private options: MenuButton[] = [];
@@ -100,10 +105,12 @@ export class BriefingScene extends Phaser.Scene {
       this.missionId = d.missionId;
       this.seed = d.seed;
       this.hard = d.hard;
+      this.historical = d.historical;
     } else {
       this.missionId = PROTOTYPE_MISSION_ID;
       this.seed = sortieSeed();
       this.hard = false;
+      this.historical = false;
     }
     this.options = [];
     this.go = undefined;
@@ -119,17 +126,18 @@ export class BriefingScene extends Phaser.Scene {
     // 空襲を振ってから、Mission と同じ組み立て（?debug の上書き・今夜の揺らぎ込み。v0.4.6）。危険の行は今夜いるものだけ
     const p = getRaidParams(data, getPrototypeMission(data, id, this.hard));
     this.raid = p;
-    this.sortie = rollRaid(id, this.seed, p, DEBUG_RAID_OVERRIDE, this.hard);
+    this.sortie = rollRaid(id, this.seed, p, DEBUG_RAID_OVERRIDE, this.hard, this.historical);
     const setup = buildWorldSetup(data, id, debugSetupOptions(this.sortie, this.hard));
     const rec = { ...getBriefingRecord(data, id, this.hard), hazardIds: setup.hazardsTonight, absentHazardIds: setup.absentHazards };
 
     addBuildLabel(this);
-    this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}${this.hard ? ' ・ 難易度 ハード' : ''}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);
+    this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}${this.hard ? ' ・ 難易度 ハード' : ''}${this.historical ? BRIEF_HISTORICAL_JA : ''}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);
     this.add.text(BRIEF_X, BRIEF_TITLE_Y, rec.titleJa, hudTextStyle(BRIEF_TITLE_PX, HUD_COLOR_STRONG)).setDepth(DEPTH.hud);
 
     // 6 行: ラベルと値（値は折り返し、次の行は値の高さぶん下げる）。続けて史実の 1 行
     let y = BRIEF_ROW_TOP;
-    const rows = briefingRows(rec, briefingNumbers(setup), (e) => enemyNameJa(data, e), (h) => riskLabelJa(data, h));
+    // 条件の行に見越し点マーカーの解放の状態（v0.5.2。終えた任務の回数は localStorage。史実モードでは「なし」）
+    const rows = briefingRows(rec, briefingNumbers(setup, aimAssistStatusJa(getAimAssistLevels(data), sortiesDone(), this.historical, leadMarkerEnabled())), (e) => enemyNameJa(data, e), (h) => riskLabelJa(data, h));
     for (const r of rows) {
       this.add.text(BRIEF_X, y, r.label, hudTextStyle(BRIEF_ROW_PX, HUD_COLOR)).setDepth(DEPTH.hud);
       const v = this.add.text(BRIEF_VALUE_X, y, r.text, menuWrapStyle(BRIEF_ROW_PX, HUD_COLOR_STRONG, BRIEF_VALUE_WRAP)).setDepth(DEPTH.hud);

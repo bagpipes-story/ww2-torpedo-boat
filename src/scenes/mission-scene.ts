@@ -2,6 +2,7 @@
 // 運動・魚雷・反撃・煙幕・被害・燃料は systems/mission-world.ts。終了理由の判定は core/mission-flow.ts（v0.3.0: 撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入って終わる）。
 import Phaser from 'phaser';
 import {
+  DEBUG_HISTORICAL,
   CAMERA_FOLLOW_LERP,
   DEBUG_ENABLED,
   DEBUG_HARD,
@@ -13,7 +14,7 @@ import {
   SCENE_KEYS,
   sortieSeed,
 } from '../config/game-config';
-import { getGameData } from '../config/game-data';
+import { getAimAssistLevels, getGameData } from '../config/game-data';
 import {
   BOAT_HIT_SHAKE_INTENSITY,
   CAMERA_LOOK_AHEAD_M,
@@ -26,6 +27,7 @@ import {
 } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { resetInput, type InputState } from '../core/input-state';
+import { AIM_ASSIST_LEAD_MARKER_TIME, AIM_ASSIST_NONE, aimAssistLevelFor } from '../core/progress';
 import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
 import { directSortie, isSortie, type Sortie } from '../core/sortie';
 import { clamp, degToRad } from '../core/units';
@@ -34,6 +36,7 @@ import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
 import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
 import { recordKpi } from '../systems/kpi-storage';
+import { leadMarkerEnabled, recordSortie, sortiesDone } from '../systems/progress-storage';
 import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
 
@@ -124,7 +127,7 @@ export class MissionScene extends Phaser.Scene {
 
   init(data: unknown): void {
     // 呼ぶ側は必ず Sortie を渡す（Phaser は data を省くと前回の data を使い回す）。無ければ us_02・空襲なし
-    this.sortie = isSortie(data) ? data : directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), 'none', DEBUG_HARD);
+    this.sortie = isSortie(data) ? data : directSortie(PROTOTYPE_MISSION_ID, sortieSeed(), 'none', DEBUG_HARD, DEBUG_HISTORICAL);
   }
 
   create(): void {
@@ -166,11 +169,11 @@ export class MissionScene extends Phaser.Scene {
     this.refreshReturnState(0);
     this.refreshTelemetry();
 
-    // 見越し点マーカー（docs/02 §6.3: v0.1 はデバッグ切替で常時表示可）と距離の円。URL に ?debug があるときだけ
-    if (DEBUG_ENABLED) {
-      this.leadMarker = new LeadMarker(this);
-      this.debugRanges = new DebugRanges(this);
-    }
+    // 見越し点マーカー（docs/02 §6.3。v0.5.2 から解放制）: 終えた任務の回数で解放した段階（3 回で輪、6 回で到達秒数も）。史実モードでは出ない。
+    // Title で「使わない」にしていれば出さない（実機 1 回目）。?debug では段階に関わらず出す（使わないは効く）。距離の円は ?debug だけ
+    const assist = aimAssistLevelFor(getAimAssistLevels(data), sortiesDone(), this.sortie.historical);
+    if (leadMarkerEnabled() && (DEBUG_ENABLED || assist.id !== AIM_ASSIST_NONE)) this.leadMarker = new LeadMarker(this, assist.id === AIM_ASSIST_LEAD_MARKER_TIME);
+    if (DEBUG_ENABLED) this.debugRanges = new DebugRanges(this);
 
     this.scene.launch(SCENE_KEYS.hud, this.sortie);
 
@@ -198,7 +201,11 @@ export class MissionScene extends Phaser.Scene {
     this.updateZoom();
     this.updateLookAhead();
     const enemyAlive = w.enemy.focus(w.boat.state.x, w.boat.state.y);
-    this.leadMarker?.refresh(w.boat.state, w.destroyers ? enemyAlive : null, w.setup.torpedoParams.speedMps);
+    // 見越し点は見えている（視程 visRange2 以内＝絵が出ている）艦にだけ（v0.5.2。見えない艦の位置を漏らさない。距離の 2 乗で比べる。§7）
+    if (this.leadMarker) {
+      const target = w.destroyers && enemyAlive && Phaser.Math.Distance.Squared(w.boat.state.x, w.boat.state.y, enemyAlive.x, enemyAlive.y) <= w.visRange2 ? enemyAlive : null;
+      this.leadMarker.refresh(w.boat.state, target, w.setup.torpedoParams.speedMps, this.timeScale);
+    }
     this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, Math.sqrt(w.visRange2));
 
     this.elapsedS += realDt;
@@ -293,8 +300,10 @@ export class MissionScene extends Phaser.Scene {
     w.resolveRemainingAsMisses();
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const result = buildMissionResult(reason, w, data, this.elapsedS, this.ringEdgeM, this.startFireS);
-    // 通算の命中率（v0.5.0）: 魚雷の任務だけ、ここで 1 回だけ足して保存する（Result の作り直しで二重に数えない）
-    if (w.destroyers) result.kpi = recordKpi(data, result.shots);
+    // 通算の命中率（v0.5.0）: 魚雷の任務だけ、ここで 1 回だけ足して保存する（Result の作り直しで二重に数えない）。史実モード（v0.5.2）は数えない（通算はノーマルの調整の根拠）
+    if (w.destroyers && !this.sortie.historical) result.kpi = recordKpi(data, result.shots);
+    // 終えた任務の回数（v0.5.2。見越し点マーカーの解放）: Result まで行った任務だけ、ここで 1 回だけ +1
+    recordSortie();
     this.scene.start(SCENE_KEYS.result, result);
   }
 }

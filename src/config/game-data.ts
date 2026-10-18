@@ -20,10 +20,11 @@ import { gunBatteryParamsFromData, isGunBatteryDataRecord, type GunBatteryParams
 import { isScoringDataRecord, scoringParamsFromData, type ScoringParams } from '../core/scoring';
 import { groundingParamsFromData, isGroundingDataRecord, type GroundingParams } from '../core/shallows';
 import { isBoatSmokeDataRecord, smokeParamsFromData, type SmokeParams } from '../core/smoke';
+import { isAimAssistLevels, type AimAssistLevel } from '../core/progress';
 import { isStormDataRecord, stormParamsFromData, type StormParams } from '../core/storm';
 import { crewEffectsFromData, crewParamsFromData, isBoatCrewDataRecord, type CrewEffects, type CrewParams } from '../core/crew';
 import { RAID_EVENT_ID, isRaidDataRecord, raidParamsFromData, type RaidParams } from '../core/sortie';
-import { isTorpedoDataRecord, type TorpedoDataRecord } from '../core/torpedo';
+import { isTorpedoDataRecord, type TorpedoDataRecord, type TorpedoReliability } from '../core/torpedo';
 import { type MoonPhase, type VisibilityParams } from '../core/visibility';
 import { ktToMps } from '../core/units';
 import { isNum, type PrototypeMission } from './mission-data';
@@ -248,10 +249,10 @@ export function getBoatDamageParams(data: GameData, boatId: string): DamageParam
 }
 
 /**
- * 視界パラメータ（docs/02 §6.5）: hit_rate_model.visibility に月齢を当て、史実モードが既定で有効なら発見距離の倍率を掛ける。
+ * 視界パラメータ（docs/02 §6.5）: hit_rate_model.visibility に月齢を当て、史実モード（v0.5.2 で Title の切り替え。省けば data の enabled_default）なら発見距離の倍率を掛ける。
  * 起動時に 1 回作り、以後は数値だけ読む（§7）。
  */
-export function getVisibilityParams(data: GameData, moon: MoonPhase): VisibilityParams {
+export function getVisibilityParams(data: GameData, moon: MoonPhase, historical: boolean = data.hitRateModel.historical_mode.enabled_default): VisibilityParams {
   const v = data.hitRateModel.visibility;
   const hm = data.hitRateModel.historical_mode;
   return {
@@ -260,12 +261,27 @@ export function getVisibilityParams(data: GameData, moon: MoonPhase): Visibility
     speedFactor: v.speed_factor,
     smokeFactor: v.smoke_factor,
     detectHoldS: v.detect_hold_s,
-    detectionMultiplier: hm.enabled_default ? hm.enemy_detection_multiplier : 1,
+    detectionMultiplier: historical ? hm.enemy_detection_multiplier : 1,
   };
 }
 
-/** 史実モードが既定で有効なら回避の倍率、そうでなければ 1 */
-export function getEvasionMultiplier(data: GameData): number {
+/** 史実モード（省けば data の enabled_default）なら回避の倍率（見張り・転舵に掛け、反応遅れを割る）、そうでなければ 1 */
+export function getEvasionMultiplier(data: GameData, historical: boolean = data.hitRateModel.historical_mode.enabled_default): number {
   const hm = data.hitRateModel.historical_mode;
-  return hm.enabled_default ? hm.enemy_evasion_multiplier : 1;
+  return historical ? hm.enemy_evasion_multiplier : 1;
+}
+
+/** 史実モードの魚雷の信頼性（v0.5.2。historical_mode.reliability が torpedoes.json の値に代わる）。0〜1 でなければ例外 */
+export function getHistoricalReliability(data: GameData): TorpedoReliability {
+  const r = data.hitRateModel.historical_mode.reliability;
+  const ok = (x: unknown): x is number => typeof x === 'number' && x >= 0 && x <= 1;
+  if (!ok(r.dud) || !ok(r.erratic)) throw new Error('hit_rate_model.historical_mode.reliability の dud / erratic は 0〜1');
+  return { dud: r.dud, erratic: r.erratic };
+}
+
+/** 見越し点マーカーの段階（v0.5.2。hit_rate_model.aim_assist.levels: id・name_ja・unlock_sorties）。壊れていれば例外（起動時に分かる） */
+export function getAimAssistLevels(data: GameData): AimAssistLevel[] {
+  const levels = data.hitRateModel.aim_assist.levels.map((l) => ({ id: l.id, nameJa: l.name_ja, unlockSorties: l.unlock_sorties }));
+  if (!isAimAssistLevels(levels)) throw new Error('hit_rate_model.aim_assist.levels は none（0 回）から unlock_sorties が増える順');
+  return levels;
 }

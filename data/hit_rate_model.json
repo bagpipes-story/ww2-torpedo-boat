@@ -113,27 +113,30 @@
     "enemy_evasion_multiplier": 1.5,
     "aim_assist": "none",
     "title_ja": "史実モード",
-    "source": "design"
+    "source": "design (v0.5.2 で Title の切り替えに。enabled_default は切り替えの初期値（false＝ノーマル）。オンのとき: 駆逐艦の見張り・回避に enemy_evasion_multiplier（雷跡に気づく割合と転舵率に掛け、反応遅れを割る）、敵が艇を見つける距離に enemy_detection_multiplier、魚雷の不発・蛇行の確率を reliability で上書き（torpedoes.json の値の代わり。1942 年前半の Mk 8 の不良率の目安）、見越し点マーカーは aim_assist の none（解放していても出ない）。史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠）。模擬（scripts/hit-rate-sim.ts HISTORICAL=1）の値は CHANGELOG v0.5.2)"
   },
   "aim_assist": {
     "levels": [
       {
         "id": "none",
         "name_ja": "なし",
-        "unlock": "default"
+        "unlock": "default",
+        "unlock_sorties": 0
       },
       {
         "id": "lead_marker",
         "name_ja": "見越し点マーカー",
-        "unlock": "radar_or_3_missions"
+        "unlock": "radar_or_3_missions",
+        "unlock_sorties": 3
       },
       {
         "id": "lead_marker_time",
         "name_ja": "見越し点＋到達秒数",
-        "unlock": "6_missions"
+        "unlock": "6_missions",
+        "unlock_sorties": 6
       }
     ],
-    "source": "design"
+    "source": "design (v0.5.2: unlock_sorties は解放に要る「終えた任務の回数」（Result まで行った任務。一時停止でやめた任務は数えない。localStorage の night-hunters.sorties）。0 → なし、3 → 見越し点マーカー（今撃てば当たる点に黄色の輪）、6 → マーカーの横に魚雷が届くまでの実時間秒。unlock の文字列は説明（レーダー装備は未実装）。史実モードでは historical_mode.aim_assist（none）が優先し、回数に関わらず出ない)"
   },
   "reference_travel_time_s": {
     "note": "実時間（圧縮前）。1kt=0.5144m/s",

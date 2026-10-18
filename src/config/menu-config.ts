@@ -40,15 +40,42 @@ export const TITLE_ROW_STATUS_PX = 24;
 export const TITLE_HINT_Y = 560;
 export const TITLE_HINT_PX = 18;
 export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷（大発は射撃）・ 右上で煙幕';
-/** 難易度の切り替え（v0.4.5。操作の一言の下。タップで ノーマル ⇄ ハード） */
-export const TITLE_DIFF_W = 520;
+/**
+ * 操作の一言の下の 3 つの切り替え: 難易度（v0.4.5。タップで ノーマル ⇄ ハード）、史実モード（v0.5.2。オフ ⇄ オン）、見越し点マーカー（v0.5.2 実機 1 回目。使う ⇄ 使わない。解放前は押せない）。
+ * 同じ大きさで中央に並べる。論理幅 1280 でも左右に 31 px 余る（3 × 390 + 2 × 24 = 1218）
+ */
+export const TITLE_DIFF_W = 390;
 export const TITLE_DIFF_H = 88;
-export const TITLE_DIFF_X = (GAME_WIDTH - TITLE_DIFF_W) / 2;
+export const TITLE_TOGGLE_GAP = 24;
+export const TITLE_DIFF_X = GAME_WIDTH / 2 - TITLE_TOGGLE_GAP - TITLE_DIFF_W * 1.5;
+export const TITLE_HIST_X = GAME_WIDTH / 2 - TITLE_DIFF_W / 2;
+export const TITLE_MARKER_X = GAME_WIDTH / 2 + TITLE_TOGGLE_GAP + TITLE_DIFF_W / 2;
 export const TITLE_DIFF_Y = 596;
 export const TITLE_DIFF_PX = 26;
 export const TITLE_DIFF_NORMAL_JA = '難易度: ノーマル';
 export const TITLE_DIFF_HARD_JA = '難易度: ハード';
 export const TITLE_DIFF_SUB_JA = 'タップで切替 ・ ハードは敵の数が増える';
+/** 史実モードの題は data の title_ja（「史実モード」）に「: オフ／オン」。2 行目は data の倍率と不発の確率から作る（HUD の印にも使う） */
+export const TITLE_HIST_OFF_JA = ': オフ';
+export const TITLE_HIST_ON_JA = ': オン';
+export function titleHistSubJa(evasionMultiplier: number, dudPct: number): string {
+  // 幅 390 に収める（実機 1 回目: 「マーカーなし」と書いていたら、オン／オフに関わらず出るので状態と読まれた → マーカーは右の切り替えに）
+  return `敵の回避 ×${evasionMultiplier} ・ 不発 ${dudPct}%`;
+}
+/** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目「使うかどうか選択制に」）: 解放前は「未解放」で押せず、2 行目に解放までの回数 */
+export const TITLE_MARKER_JA = '見越し点マーカー';
+export const TITLE_MARKER_ON_JA = ': 使う';
+export const TITLE_MARKER_OFF_JA = ': 使わない';
+export const TITLE_MARKER_LOCKED_JA = ': 未解放';
+export const TITLE_MARKER_SUB_JA = 'タップで切替 ・ 史実モードでは出ない';
+export function titleMarkerLockedSubJa(sortiesLeft: number): string {
+  return `あと ${sortiesLeft} 回の任務で解放`;
+}
+/** Briefing の 1 行目と Result の見出しに足す印 */
+export const BRIEF_HISTORICAL_JA = ' ・ 史実モード';
+export const RESULT_HISTORICAL_TAG_JA = '（史実）';
+/** Result: 史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠。CLAUDE.md §9） */
+export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;
