@@ -27,6 +27,8 @@ export interface PrototypeMission {
   enemyStarts: { x: number; y: number; headingDeg: number }[];
   /** 難易度ハードで読んだ（v0.4.5。敵の数が増える。hard block の無い任務ではノーマルと同じ） */
   hard: boolean;
+  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。無ければ全隻＝null） */
+  objectiveSinkCount: number | null;
   /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery） */
   mainWeapon: MainWeapon;
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
@@ -177,6 +179,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const enemyStart = barges ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
   const enemyStarts = enemyStart ? [enemyStart] : [];
   const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
+  let objectiveSinkCount: number | null = null;
   if (hardRaw !== undefined) {
     if (typeof hardRaw !== 'object' || hardRaw === null) throw new Error(`${missionId}.v0_1_prototype.hard が object でない（docs/02 §6.4）`);
     const es = hardRaw['extra_enemy_starts'];
@@ -185,6 +188,10 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
       if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は駆逐艦（enemy_start）の任務だけ`);
       if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
     }
+    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）
+    const osc = hardRaw['objective_sink_count'];
+    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || !Array.isArray(es) || (osc as number) > 1 + (es as unknown[]).length)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
+    if (hard && osc !== undefined) objectiveSinkCount = osc as number;
     const xs = hardRaw['extra_shore_battery_x_m'];
     if (xs !== undefined) {
       if (!Array.isArray(xs) || xs.length === 0 || !xs.every((x) => isNum(x) && x >= 0 && x <= b.width)) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m は海域の幅の中の数の配列`);
@@ -224,6 +231,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     enemyStart,
     enemyStarts,
     hard,
+    objectiveSinkCount,
     mainWeapon,
     barges,
     coast,

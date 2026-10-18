@@ -50,10 +50,10 @@ import {
   titleMarkerLockedSubJa,
 } from '../config/menu-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
-import { campaignStatus, legacyUnlocked, type CampaignStatus } from '../core/campaign';
+import { campaignStatus, type CampaignStatus } from '../core/campaign';
 import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
 import { seedForBriefing, type BriefingInit } from '../core/sortie';
-import { clearedMissionIds, initClearedIfAbsent, leadMarkerEnabled, markCampaignUnlocked, readClearedRaw, setLeadMarkerEnabled, sortiesDone, storedSorties, unlockedCampaignIds } from '../systems/progress-storage';
+import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLegacyUnlocks, setLeadMarkerEnabled, sortiesDone, unlockedCampaignIds } from '../systems/progress-storage';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export class TitleScene extends Phaser.Scene {
@@ -131,7 +131,7 @@ export class TitleScene extends Phaser.Scene {
     // 史実モード（v0.5.2。docs/02 §6.3）: タップで オフ ⇄ オン。題と 2 行目は data の historical_mode から（倍率・不発の確率を直書きしない）
     const hm = getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.historical_mode;
     const histTitle = (): string => `${hm.title_ja}${this.historical ? TITLE_HIST_ON_JA : TITLE_HIST_OFF_JA}`;
-    const histSpec = { x: TITLE_HIST_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: histTitle(), titlePx: TITLE_DIFF_PX, sub: titleHistSubJa(hm.enemy_evasion_multiplier, Math.round(hm.reliability.dud * 100)), align: 'center' as const };
+    const histSpec = { x: TITLE_HIST_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: histTitle(), titlePx: TITLE_DIFF_PX, sub: titleHistSubJa(hm.enemy_evasion_multiplier, hm.reliability_campaigns.includes(selected.id) ? Math.round(hm.reliability.dud * 100) : null), align: 'center' as const };
     this.hist = new MenuButton(this, histSpec, () => {
       this.registry.set(REGISTRY_KEY_HISTORICAL, !this.historical);
       this.hist?.setTitle(histTitle());
@@ -169,16 +169,15 @@ export class TitleScene extends Phaser.Scene {
 
   /**
    * 解放の状態を求め、選んでいるキャンペーンを決める（create で 1 回だけ。localStorage はここで読み書きする）。
-   * v0.5.2 までの端末: 帰投の記録がまだ無く、終えた任務の回数が条件の数以上なら開いたものとみなす（移し替えは 1 回だけ）。
+   * v0.5.2 までの端末の移し替えは Boot で 1 回（systems/progress-storage の migrateLegacyUnlocks）。
    * 条件を満たしたキャンペーンには開いた印を書く（一度開いたら閉じない。?debug&unlock だけで開いたときは書かない）
    */
   private selectCampaign(): { id: string; status: Map<string, CampaignStatus> } {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const campaigns = getCampaigns(data);
     const prereq = (c: (typeof campaigns)[number]): string[] => (c.unlock.kind === 'complete' ? playableMissionIds(data, c.unlock.campaignId) : []);
-    const raw = readClearedRaw();
-    for (const c of campaigns) if (c.unlock.kind === 'complete' && legacyUnlocked(raw, storedSorties(), prereq(c).length)) markCampaignUnlocked(c.id);
-    initClearedIfAbsent();
+    // v0.5.2 までの端末の移し替えは Boot（migrateLegacyUnlocks）で済んでいる。念のためここでも（2 回目からは何もしない）
+    migrateLegacyUnlocks(data);
     const cleared = clearedMissionIds();
     const flagged = unlockedCampaignIds();
     const status = new Map<string, CampaignStatus>();

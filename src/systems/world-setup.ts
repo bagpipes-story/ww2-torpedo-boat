@@ -26,6 +26,7 @@ import {
   type PrototypeMission,
 } from '../config/game-data';
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
+import { missionCampaignId } from '../config/campaign-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
 import { fixedNight, rollNight, type NightRoll } from '../core/night';
@@ -184,7 +185,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const absent = (id: string): boolean => absentHazards.includes(id);
   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
   const shipHitScale = o.shipHitScale !== undefined && o.shipHitScale > 0 ? o.shipHitScale : world.ship_hit_scale;
-  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical) : null;
+  const destroyer = mission.enemyStart ? { ...destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical), objectiveSinks: mission.objectiveSinkCount ?? mission.enemyStarts.length } : null;
   const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
   if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
   let transport: TransportSetup | null = null;
@@ -247,8 +248,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     escort: getEscortParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
-    // 史実モード（v0.5.2）は不発・蛇行の確率を historical_mode.reliability で上書き（torpedoes.json の値の代わり）
-    torpedoReliability: historical ? getHistoricalReliability(data) : torpedoReliabilityFromData(torpedoRecord),
+    // 史実モード（v0.5.2）は不発・蛇行の確率を historical_mode.reliability で上書き（torpedoes.json の値の代わり）。v0.6.0 から reliability_campaigns（米PT）の任務だけ（日本の 45cm 魚雷には米の Mk 8 の値を掛けない）
+    torpedoReliability: historical && data.hitRateModel.historical_mode.reliability_campaigns.includes(missionCampaignId(data, missionId)) ? getHistoricalReliability(data) : torpedoReliabilityFromData(torpedoRecord),
     torpedoJitterDeg: torpedoRecord.reliability.jitter_deg,
     launchOffsetM: boatRecord.beam_m / 2,
     salvoIntervalS: launch.salvo_interval_s,

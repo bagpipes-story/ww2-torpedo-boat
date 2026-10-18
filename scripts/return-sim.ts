@@ -79,13 +79,16 @@ const MOON = hitRateModel.visibility.moon_factor[MREC.moon];
 const SPEED_CRUISE01 = BP.speedCruiseMps / BP.speedMaxMps;
 
 type Style = 'silent' | 'standard' | 'full' | 'reattack' | 'fullReattack' | 'direct';
+// 遊び方の説明（v0.6.0: 静音の上限と本数は艇から。T-38 は 13 kt・2 本）
+const SILENT_KT = Math.round(BP.silentMaxMps / 0.514444);
+const HALF = Math.max(1, Math.floor(CAP / 2));
 const STYLE_NOTE: Record<Style, string> = {
-  silent: '18 kt で接近 → 1,000 m で扇射 4 本 → 全速 10 秒離脱 → 18 kt で帰投',
-  standard: '18 kt で接近 → 1,000 m で扇射 4 本 → 全速 15 秒離脱 → 巡航で帰投',
-  full: '全速で接近 → 550 m で扇射 4 本 → 全速で離脱・帰投',
-  reattack: '18 kt で接近 → 2 本 → 全速 15 秒離脱 → 巡航で再接近 800 m → 2 本 → 巡航で帰投',
-  fullReattack: '全速で接近 → 2 本 → 全速 10 秒離脱 → 全速で再接近 → 2 本 → 全速で帰投',
-  direct: '攻撃せず 18 kt で直帰',
+  silent: `${SILENT_KT} kt で接近 → 1,000 m で扇射 ${CAP} 本 → 全速 10 秒離脱 → ${SILENT_KT} kt で帰投`,
+  standard: `${SILENT_KT} kt で接近 → 1,000 m で扇射 ${CAP} 本 → 全速 15 秒離脱 → 巡航で帰投`,
+  full: `全速で接近 → 550 m で扇射 ${CAP} 本 → 全速で離脱・帰投`,
+  reattack: `${SILENT_KT} kt で接近 → ${HALF} 本 → 全速 15 秒離脱 → 巡航で再接近 800 m → ${HALF} 本 → 巡航で帰投`,
+  fullReattack: `全速で接近 → ${HALF} 本 → 全速 10 秒離脱 → 全速で再接近 → ${HALF} 本 → 全速で帰投`,
+  direct: `攻撃せず ${SILENT_KT} kt で直帰`,
 };
 interface Run {
   outcome: string;

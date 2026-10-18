@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { gameData, getBoatCrewEffects, getBoatCrewParams, getBoatDamageParams, getBoatFuelCurve, getBoatRecord, getBoatSmokeParams, getEnemyRecord, getScoringParams } from '../src/config/game-data';
+import { gameData, getBoatCrewEffects, getBoatCrewParams, getBoatDamageParams, getBoatFuelCurve, getBoatRecord, getBoatSmokeParams, getEnemyRecord, getScoringParams, getTorpedoRecord } from '../src/config/game-data';
 import { getBriefingRecord, getPrototypeMission } from '../src/config/mission-data';
 import { playableMissionIds } from '../src/config/campaign-data';
-import { isRaidDataRecord, raidParamsFromData } from '../src/core/sortie';
+import { directSortie, isRaidDataRecord, raidParamsFromData } from '../src/core/sortie';
+import { torpedoReliabilityFromData } from '../src/core/torpedo';
 import { buildWorldSetup } from '../src/systems/world-setup';
 
 describe('日本ハードモードの data（v0.6.0。T-38・米駆逐艦・jp_06 慶良間の夜）', () => {
@@ -41,13 +42,43 @@ describe('日本ハードモードの data（v0.6.0。T-38・米駆逐艦・jp_0
   it('jp_06: 任務・Briefing・世界が組める。T-38・魚雷 2 本・煙幕なし・米駆逐艦 1 隻（ハード 2 隻）・新月・夜明け 160 秒・燃料 16 gal', () => {
     const m = getPrototypeMission(gameData, 'jp_06');
     expect([m.playerBoatId, m.torpedoId, m.enemyId, m.moon, m.durationS, m.fuelAllotmentGal]).toEqual(['jp_t38', 'jp_45cm', 'us_destroyer', 'dark', 160, 16]);
-    expect(getBriefingRecord(gameData, 'jp_06').noteJa).toContain('もしも');
+    // 史実メモは史実だけ（出撃できなかったとは書かない）。「もしも」は目的の側に書く
+    const b = getBriefingRecord(gameData, 'jp_06');
+    expect(b.noteJa).toContain('戦闘能力を失った');
+    expect(b.noteJa).not.toContain('もしも');
+    expect(b.objective.startsWith('もしも')).toBe(true);
     const s = buildWorldSetup(gameData, 'jp_06', { fixedNight: true });
     expect(s.torpedoCapacity).toBe(2);
     expect(s.smokeParams).toBeNull();
     expect(s.damageParams.extinguishHoldS).toBe(1.0);
     expect(s.destroyer!.starts.length).toBe(1);
     expect(buildWorldSetup(gameData, 'jp_06', { hard: true, fixedNight: true }).destroyer!.starts.length).toBe(2);
+  });
+  it('jp_06 ハード: 駆逐艦 2 隻でも達成は 1 隻の撃沈（objective_sink_count 1。魚雷 2 本では 2 隻撃沈に全弾命中が要る）。us_02 ハードは 2 隻のまま、ノーマルは隻数', () => {
+    expect(getPrototypeMission(gameData, 'jp_06', true).objectiveSinkCount).toBe(1);
+    expect(getPrototypeMission(gameData, 'jp_06').objectiveSinkCount).toBeNull();
+    const jh = buildWorldSetup(gameData, 'jp_06', { hard: true, fixedNight: true }).destroyer!;
+    expect([jh.starts.length, jh.objectiveSinks]).toEqual([2, 1]);
+    expect(buildWorldSetup(gameData, 'jp_06', { fixedNight: true }).destroyer!.objectiveSinks).toBe(1);
+    expect(buildWorldSetup(gameData, 'us_02', { hard: true, fixedNight: true }).destroyer!.objectiveSinks).toBe(2);
+    expect(buildWorldSetup(gameData, 'us_02', { fixedNight: true }).destroyer!.objectiveSinks).toBe(1);
+  });
+  it('objective_sink_count が壊れていれば例外（0・小数・ハードの隻数より多い）', () => {
+    for (const bad of [0, 1.5, 3, '1']) {
+      const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+      const p = (d.missionsSeed.missions as unknown as Record<string, Record<string, Record<string, unknown>>>[]).find((m) => (m as unknown as { id: string }).id === 'jp_06')!['v0_1_prototype']!;
+      (p['hard'] as Record<string, unknown>)['objective_sink_count'] = bad;
+      expect(() => getPrototypeMission(d, 'jp_06', true), String(bad)).toThrow();
+    }
+  });
+  it('史実モードの魚雷の信頼性（hit_rate_model.historical_mode.reliability_campaigns）は米PTだけ: jp_06 は torpedoes.json の 45cm のまま、us_02 は 0.1 / 0.08', () => {
+    expect(gameData.hitRateModel.historical_mode.reliability_campaigns).toEqual(['us_pt']);
+    const jp = buildWorldSetup(gameData, 'jp_06', { sortie: directSortie('jp_06', 5, 'none', false, true), fixedNight: true });
+    expect(jp.historical).toBe(true);
+    expect(jp.torpedoReliability).toEqual(torpedoReliabilityFromData(getTorpedoRecord(gameData, 'jp_45cm')));
+    expect(jp.torpedoReliability).toEqual({ dud: 0.05, erratic: 0.05 });
+    const us = buildWorldSetup(gameData, 'us_02', { sortie: directSortie('us_02', 5, 'none', false, true), fixedNight: true });
+    expect(us.torpedoReliability).toEqual({ dud: 0.1, erratic: 0.08 });
   });
   it('遊べる任務の type はすべて scoring.json の objective_by_type にある（無いと黙って 0 点になる）', () => {
     const sp = getScoringParams(gameData);

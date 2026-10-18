@@ -24,6 +24,8 @@ export interface DestroyerSetup {
   passRadius2: number;
   /** 発見の基準距離（enemies.json の detection.base_detect_m） */
   baseDetectM: number;
+  /** 撃沈の達成に要る隻数（v0.6.0。無ければ全隻。world-setup が任務の hard.objective_sink_count から入れる） */
+  objectiveSinks?: number;
 }
 
 /** 輸送船（v0.4.7）: 駆逐艦の隊の 1 隻として同じ型で動く（出発点 1 つ、寸法・AI・備砲は enemies.json の輸送船から）。任務の達成には数えない */

@@ -271,7 +271,7 @@ export function getEvasionMultiplier(data: GameData, historical: boolean = data.
   return historical ? hm.enemy_evasion_multiplier : 1;
 }
 
-/** 史実モードの魚雷の信頼性（v0.5.2。historical_mode.reliability が torpedoes.json の値に代わる）。0〜1 でなければ例外 */
+/** 史実モードの魚雷の信頼性（v0.5.2。historical_mode.reliability が torpedoes.json の値に代わる。v0.6.0 から reliability_campaigns のキャンペーンだけ）。0〜1 でなければ例外 */
 export function getHistoricalReliability(data: GameData): TorpedoReliability {
   const r = data.hitRateModel.historical_mode.reliability;
   const ok = (x: unknown): x is number => typeof x === 'number' && x >= 0 && x <= 1;

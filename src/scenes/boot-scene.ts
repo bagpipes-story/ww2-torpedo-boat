@@ -19,6 +19,7 @@ import {
 import { gameData, getBoatRecord, getEnemyRecord, getPrototypeMission, getTorpedoRecord } from '../config/game-data';
 import { createInputState } from '../core/input-state';
 import { directSortie } from '../core/sortie';
+import { migrateLegacyUnlocks } from '../systems/progress-storage';
 import {
   generateDebugRingTexture,
   generateDestroyerTexture,
@@ -46,6 +47,8 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.registry.set(REGISTRY_KEY_DATA, gameData);
+    // v0.5.2 までの端末のキャンペーンの解放の移し替え（v0.6.0）: どの任務より先に 1 回（?debug 直行でも）
+    migrateLegacyUnlocks(gameData);
     this.registry.set(REGISTRY_KEY_INPUT, createInputState());
 
     // プレースホルダー生成は 1 回だけ（CLAUDE.md §7）
