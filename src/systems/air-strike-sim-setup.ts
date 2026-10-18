@@ -5,7 +5,7 @@ import { getDawnStrikeEventRecord, getStrikeAircraftRecord } from '../config/daw
 import type { GameData } from '../config/game-data';
 import { FIXED_STEP_S } from '../config/step-config';
 import { airStrikeParamsFromData } from '../core/air-strike-data';
-import { parseStrikePolicy, runStrikeCell, type StrikeCellResult, type StrikeSimSetup } from '../core/air-strike-sim';
+import { SIM_BOUNDS, parseStrikePolicy, runStrikeCell, type StrikeCellResult, type StrikeSimSetup } from '../core/air-strike-sim';
 import { buildWorldSetup } from './world-setup';
 
 /** 感度を見る上書き（無ければ data の値）。tuning の順は wave_rest_s → release_altitude_m → run_gap_s → CEP（spec §12） */
@@ -33,7 +33,8 @@ export function strikeSimSetup(data: GameData, missionId: string, o: StrikeSimOv
   const b = { ...block, escort_target_planes: o.vipAim === false ? [] : block.escort_target_planes };
   const esc = w.escort;
   return {
-    strike: airStrikeParamsFromData({ ...plane, strike }, { ...ev, params }, b, w.timeScale, { halfLengthM: w.boatHalfLengthM, halfBeamM: w.boatHalfBeamM }, esc ? { halfLengthM: esc.halfLengthM, halfBeamM: esc.halfBeamM } : null, w.airStrike.fromJa),
+    // 狙いを収める海域は模擬の広い海（SIM_BOUNDS。艇は真ん中から走るので端は効かない）。余白は世界と同じ
+    strike: airStrikeParamsFromData({ ...plane, strike }, { ...ev, params }, b, w.timeScale, { halfLengthM: w.boatHalfLengthM, halfBeamM: w.boatHalfBeamM, boundsMarginM: w.boundsMarginM }, esc, SIM_BOUNDS, w.airStrike.fromJa),
     boat: w.boatParams,
     damage: w.damageParams,
     escort: esc,
@@ -62,7 +63,11 @@ const cell = (missionId: string, secs: number, policy: string, vipAim: boolean, 
   missionId, secs, policy, vipAim, survPct, vipPct, hitsPerBomb, protoSurvPct: proto[0], protoVipPct: proto[1], protoHitsPerBomb: proto[2],
 });
 
-/** spec §12 の表（jp_06 40 秒の circle は「回り続け ≤ 5%」と全任務の 1 発あたり 0.45〜0.70 のために足した行） */
+/**
+ * spec §12 の表（jp_06 40 秒の circle は「回り続け ≤ 5%」と全任務の 1 発あたり 0.45〜0.70 のために足した行）。
+ * 最後の行（レビュー [11]、試作なし）: 転舵を 2.3 秒保つと次の投下は輪へ戻る旋回の途中に来る。そこで今の旋回と同じ側へ切ると円弧の見越しに当たる
+ * （jp_06 N 600 で 4%。逆へ切れば 93%）。表の名前の幅（scripts の 26 字）に収めるため 'react0.5same2.3' と詰めて書く
+ */
 export const STRIKE_CALIBRATION: readonly StrikeCalibrationCell[] = [
   cell('us_01', 30, 'react0.5', true, [90, 100], [90, 100], null, [99, 100, 0.15]),
   cell('us_01', 30, 'react0.7', true, [70, 92], null, null, [82, 100, 0.39]),
@@ -79,6 +84,7 @@ export const STRIKE_CALIBRATION: readonly StrikeCalibrationCell[] = [
   cell('jp_06', 40, 'stop', true, [0, 5], null, HPB, [0, NaN, 0.54]),
   cell('jp_06', 40, 'circle', true, [0, 5], null, HPB, [0, NaN, 0.52]),
   cell('jp_06', 20, 'react0.5', true, [70, 100], null, null, [84, NaN, 0.24]),
+  cell('jp_06', 40, 'react0.5same2.3', true, [0, 15], null, null, [NaN, NaN, NaN]),
 ];
 
 /** 較正の行の seed（固定。試作と同じく 1000 + 秒） */

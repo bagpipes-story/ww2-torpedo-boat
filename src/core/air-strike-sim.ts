@@ -26,10 +26,14 @@ export interface StrikeSimSetup {
 
 /** 遊び方の台本: 直進で帰る・止まる（隠れる）・舵いっぱいで回り続ける・帰る向き ±45° のジグザグ・投下を見て r 秒後に 90° 転舵 */
 export type StrikePolicyKind = 'straight' | 'stop' | 'circle' | 'zigzag' | 'react';
+/** react の転舵の向き: home＝輪に近い側、same＝今の旋回と同じ側、opp＝今の旋回と逆（same・opp は旋回していなければ home） */
+export type StrikeReactSide = 'home' | 'same' | 'opp';
 export interface StrikePolicy {
   kind: StrikePolicyKind;
-  /** react の反応秒（投下から転舵まで。他は NaN） */
+  /** react の反応秒（投下から転舵まで。他は NaN）、転舵を保つ秒、向き */
   reactS: number;
+  holdS: number;
+  side: StrikeReactSide;
   /** 火災が起きてから消すまでの体感秒（消火ボタンの長押しを含む） */
   extinguishS: number;
   name: string;
@@ -51,26 +55,28 @@ const REACT_EXTINGUISH: readonly (readonly [number, number])[] = [
 ];
 /** この体感秒までに輪に着かなければ「着かなかった」（止まる・回り続けるは波が続いて必ず沈む） */
 const SIM_MAX_S = 400;
-/** 模擬の海域（端の押し戻しが働かない広さ）と艇の出発点 */
-const SIM_BOUNDS: SeaBounds = { width: 1e6, height: 1e6 };
+/** 模擬の海域（端の押し戻しも狙いの端の収めも働かない広さ。systems/air-strike-sim-setup が空襲の値にも使う）と艇の出発点 */
+export const SIM_BOUNDS: SeaBounds = { width: 1e6, height: 1e6 };
 const SIM_ORIGIN = 5e5;
 /** 時刻の比較の丸めの余裕（1/60 秒の積み上げの誤差で 1 ステップ遅れないように） */
 const TIME_EPS_S = 1e-6;
 
-export function strikePolicy(kind: StrikePolicyKind, reactS: number = NaN): StrikePolicy {
-  if (kind !== 'react') return { kind, reactS: NaN, extinguishS: EXTINGUISH_S[kind], name: kind };
+export function strikePolicy(kind: StrikePolicyKind, reactS: number = NaN, side: StrikeReactSide = 'home', holdS: number = DODGE_HOLD_S): StrikePolicy {
+  if (kind !== 'react') return { kind, reactS: NaN, holdS: NaN, side: 'home', extinguishS: EXTINGUISH_S[kind], name: kind };
   if (!(reactS >= 0)) throw new Error(`react の反応秒（${reactS}）は 0 以上`);
+  if (!(holdS > 0)) throw new Error(`react の転舵を保つ秒（${holdS}）は正`);
   const ext = REACT_EXTINGUISH.find((e) => reactS <= e[0])![1];
-  return { kind, reactS, extinguishS: ext, name: `react ${reactS}` };
+  const plain = side === 'home' && holdS === DODGE_HOLD_S;
+  return { kind, reactS, holdS, side, extinguishS: ext, name: plain ? `react ${reactS}` : `react ${reactS} ${side}${holdS}` };
 }
 
-/** 'straight' | 'stop' | 'circle' | 'zigzag' | 'react0.5'（scripts の POL） */
+/** 'straight' | 'stop' | 'circle' | 'zigzag' | 'react0.5' | 'react0.5 same2.3'（= 'react0.5same2.3'。向き home / same / opp と保つ秒。scripts の POL） */
 export function parseStrikePolicy(name: string): StrikePolicy {
   const n = name.trim();
   if (n === 'straight' || n === 'stop' || n === 'circle' || n === 'zigzag') return strikePolicy(n);
-  const m = /^react\s*([0-9.]+)$/.exec(n);
-  if (m) return strikePolicy('react', Number(m[1]));
-  throw new Error(`遊び方 ${name} は straight / stop / circle / zigzag / react<秒>`);
+  const m = /^react\s*([0-9.]+)(?:\s*(home|same|opp)\s*([0-9.]+))?$/.exec(n);
+  if (m) return strikePolicy('react', Number(m[1]), (m[2] ?? 'home') as StrikeReactSide, m[3] !== undefined ? Number(m[3]) : DODGE_HOLD_S);
+  throw new Error(`遊び方 ${name} は straight / stop / circle / zigzag / react<秒>（/ react<秒> home|same|opp<保つ秒>）`);
 }
 
 export interface StrikeTrial {
@@ -122,9 +128,13 @@ export function runStrikeTrial(s: StrikeSimSetup, pol: StrikePolicy, distM: numb
     else if (pol.kind === 'zigzag') input.headingDeg = wrapDeg360(homeBrg + (Math.floor((t0 + zigPhase) / ZIGZAG_LEG_S) % 2 === 0 ? ZIGZAG_DEG : -ZIGZAG_DEG));
     else {
       if (t0 >= dodgeAt - TIME_EPS_S) {
-        // 投下を見て r 秒後: 輪に近い側へ 90° 転舵して DODGE_HOLD_S 保ち、また輪へ
-        dodgeHeading = wrapDeg360(boat.headingDeg + (wrapDeg180(homeBrg - boat.headingDeg) >= 0 ? DODGE_TURN_DEG : -DODGE_TURN_DEG));
-        dodgeUntil = t0 + DODGE_HOLD_S;
+        // 投下を見て r 秒後: 90° 転舵して holdS 保ち、また輪へ。向きは輪に近い側（home）か、旋回中なら今の旋回（空襲が測った旋回率）と同じ側・逆
+        const yaw = st.yawDegS;
+        const turning = yaw !== 0 && Math.abs(yaw) >= s.strike.aimTurnMinDegS;
+        const homeSide = wrapDeg180(homeBrg - boat.headingDeg) >= 0 ? 1 : -1;
+        const dir = pol.side === 'home' || !turning ? homeSide : (yaw > 0) === (pol.side === 'same') ? 1 : -1;
+        dodgeHeading = wrapDeg360(boat.headingDeg + dir * DODGE_TURN_DEG);
+        dodgeUntil = t0 + pol.holdS;
         dodgeAt = NaN;
       }
       input.headingDeg = t0 < dodgeUntil - TIME_EPS_S ? dodgeHeading : homeBrg;

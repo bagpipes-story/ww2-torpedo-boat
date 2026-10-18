@@ -1,4 +1,5 @@
 // 夜明けの帯（v0.6.1。spec §8.3）: HUD 中央に「夜明け — 空襲」／「夜明け」と 2 行までの説明を DAWN_BANNER_MS だけ出す。夜明けのラッチで 1 回だけ。
+// 高さは上の縁の印（帰投・敵機の矢印と距離）の帯より下（DAWN_BANNER_OFFSET_Y。帯の文字が矢印に重ならない）。
 // §7: Text 3 つは HUD の create で 1 回だけ作る。文を組むのは出す瞬間の 1 回（ui/dawn-lines の dawnBannerLines）。毎フレームは濃さ（alpha）だけで、tween は使わない。
 import Phaser from 'phaser';
 import { DAWN_BANNER_FADE_MS, DAWN_BANNER_LINE_GAP, DAWN_BANNER_MS, DAWN_BANNER_OFFSET_Y } from '../config/dawn-config';

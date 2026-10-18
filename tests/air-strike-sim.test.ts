@@ -2,7 +2,7 @@
 // 帯を外したら、まず模擬が spec どおりかを確かめ、次に data の値だけを wave_rest_s → release_altitude_m → run_gap_s → CEP の順で直す（damage は夜の水偵と揃えたまま）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
-import { parseStrikePolicy, runStrikeCell, strikePolicy, type StrikeCellResult } from '../src/core/air-strike-sim';
+import { SIM_BOUNDS, parseStrikePolicy, runStrikeCell, strikePolicy, type StrikeCellResult } from '../src/core/air-strike-sim';
 import { STRIKE_CALIBRATION, calibrationLabel, calibrationMisses, runCalibrationCell, strikeSimSetup } from '../src/systems/air-strike-sim-setup';
 import { buildWorldSetup } from '../src/systems/world-setup';
 
@@ -13,7 +13,9 @@ describe('夜明けの空襲の模擬（v0.6.1）', () => {
     for (const id of ['us_01', 'jp_06']) {
       const s = strikeSimSetup(gameData, id);
       const w = buildWorldSetup(gameData, id);
-      expect(s.strike).toEqual(w.airStrike);
+      // 狙いを収める海域だけは模擬の広い海（SIM_BOUNDS。艇は真ん中から走るので端は効かない）。余白は世界と同じ
+      expect({ ...s.strike, boundsW: w.airStrike!.boundsW, boundsH: w.airStrike!.boundsH }).toEqual(w.airStrike);
+      expect([s.strike.boundsW, s.strike.boundsH]).toEqual([SIM_BOUNDS.width, SIM_BOUNDS.height]);
       expect(s.boat).toEqual(w.boatParams);
       expect(s.damage).toEqual(w.damageParams);
       expect(s.ringRadiusM).toBe(w.mission.returnPoint.radiusM);
@@ -33,6 +35,14 @@ describe('夜明けの空襲の模擬（v0.6.1）', () => {
     expect(parseStrikePolicy('circle')).toMatchObject({ kind: 'circle', extinguishS: 1.5 });
     expect(() => parseStrikePolicy('dance')).toThrow(/straight/);
     expect(() => strikePolicy('react')).toThrow(/反応秒/);
+    // react の向きと保つ秒（既定は輪に近い側・0.9 秒。same / opp は旋回中だけ今の旋回の側で決める）
+    expect(parseStrikePolicy('react0.5')).toMatchObject({ side: 'home', holdS: 0.9, name: 'react 0.5' });
+    expect(parseStrikePolicy('react0.5 same2.3')).toMatchObject({ kind: 'react', reactS: 0.5, side: 'same', holdS: 2.3, extinguishS: 2.0, name: 'react 0.5 same2.3' });
+    expect(parseStrikePolicy('react0.5same2.3')).toEqual(parseStrikePolicy('react0.5 same2.3'));
+    expect(parseStrikePolicy('react0.35 opp2')).toMatchObject({ side: 'opp', holdS: 2, extinguishS: 1.5 });
+    expect(parseStrikePolicy('stop')).toMatchObject({ side: 'home', holdS: NaN });
+    expect(() => parseStrikePolicy('react0.5 left2')).toThrow(/react/);
+    expect(() => strikePolicy('react', 0.5, 'same', 0)).toThrow(/保つ秒/);
     const s = strikeSimSetup(gameData, 'us_01');
     const pol = parseStrikePolicy('zigzag');
     const a = runStrikeCell(s, pol, 30, 20, 7);
@@ -40,7 +50,7 @@ describe('夜明けの空襲の模擬（v0.6.1）', () => {
     expect(runStrikeCell(s, pol, 30, 20, 8)).not.toEqual(a);
   });
 
-  // 較正の表は 1 回だけ回す（N 200 × 15 行で 2 秒ほど）
+  // 較正の表は 1 回だけ回す（N 200 × 16 行で 2 秒ほど）
   const results = new Map<string, StrikeCellResult>();
   const resultOf = (i: number): StrikeCellResult => {
     const c = STRIKE_CALIBRATION[i]!;

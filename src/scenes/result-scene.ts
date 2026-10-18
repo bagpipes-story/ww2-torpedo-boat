@@ -1,18 +1,7 @@
 // Result: 命中数・距離帯別の命中・駆逐艦の状態・帰投・燃料・出撃前の空襲・夜明け（v0.6.1）を表示する（docs/02 §4）。終了理由の型は core/mission-flow、見出しの文は ui/result-heading.ts（v0.6.1 で切り出し）、夜明けの行は ui/dawn-lines.ts。
 // 「もう一度」は同じ任務の Briefing へ新しい seed で（?debug 直行では Mission へ）、「任務一覧」は Title へ（v0.4.0）。
 import Phaser from 'phaser';
-import {
-  DEBUG_DIRECT_MISSION,
-  DEBUG_RAID_OVERRIDE,
-  DEPTH,
-  GAME_HEIGHT,
-  GAME_WIDTH,
-  REGISTRY_KEY_DATA,
-  REGISTRY_KEY_PENDING_SORTIE,
-  RENDER_SCALE,
-  SCENE_KEYS,
-  sortieSeed,
-} from '../config/game-config';
+import { DEBUG_DIRECT_MISSION, DEBUG_RAID_OVERRIDE, DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, REGISTRY_KEY_DATA, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
 import { getGameData, getScoringParams } from '../config/game-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
@@ -29,6 +18,7 @@ import {
   RESULT_SECTION_GAP,
   RESULT_SEED_Y,
   RESULT_TOP_Y,
+  HOME_MARKER_DISTANCE_STEP_M,
   hudTextStyle,
 } from '../config/ui-config';
 import { FF_IDLE, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED } from '../core/friendly';
@@ -36,10 +26,9 @@ import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
 import type { KpiResultLines } from '../systems/kpi-storage';
 import { bargeResultLines, escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
-import { resultDawnSuffixS, resultHeadingJa } from '../ui/result-heading';
+import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa } from '../ui/result-heading';
 import { dawnResultLine } from '../ui/dawn-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
-import { HOME_MARKER_DISTANCE_STEP_M } from '../config/ui-config';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export type { MissionEndReason } from '../core/mission-flow';
@@ -189,8 +178,11 @@ export class ResultScene extends Phaser.Scene {
     addBuildLabel(this);
     const cx = GAME_WIDTH / 2;
     let y = RESULT_TOP_Y;
+    // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）
+    const maxW = GAME_WIDTH - 2 * HUD_MARGIN;
     const line = (text: string, size: number, color?: string): void => {
-      this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
+      const tx = this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
+      if (tx.width > maxW) tx.setScale(maxW / tx.width);
       y += size + RESULT_LINE_GAP;
     };
     line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), r.sortie.hard, r.sortie.historical), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
@@ -225,8 +217,8 @@ export class ResultScene extends Phaser.Scene {
       scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
-    // 回避（v0.4.4）は type に点がある任務（要人脱出）だけ出す。夜明けに輪の外だった帰投（v0.6.1）は「帰投 630（夜明け後 ×0.9）」
-    const evadePart = scoringParams.evadeByType[r.missionType] !== undefined ? ` ・ 回避 ${score.evade}` : '';
+    // 回避（v0.4.4）は type に点がある任務（要人脱出）だけ出す。夜明けに輪の外だった帰投（v0.6.1）は「帰投 630（夜明け後 ×0.9）」、夜明けだけが理由で回避が 0 なら「回避 0（夜明け後）」
+    const evadePart = resultEvadePartJa(scoringParams.evadeByType[r.missionType], score.evade, r);
     const transportPart = r.transportEnabled ? ` ・ 輸送船 ${score.kills}` : '';
     line(`帰投 ${score.survival}${r.returned && r.dawn.caughtOutside ? `（夜明け後 ×${scoringParams.afterDawnFactor}）` : ''} ・ ${h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : `${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart}`} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;

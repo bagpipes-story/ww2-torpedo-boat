@@ -66,6 +66,11 @@ export interface AirStrikeParams {
   playerHitRadiusM: number;
   escortHalfLengthM: number;
   escortHitRadiusM: number;
+  /** 狙いを海域に収める（端に押し付けた艇は clampToBounds で止まり、速力は残る）: 海域の幅・高さ m、自艇・僚艇の端の余白 m（clampToBounds と同じ。模擬は広い海） */
+  boundsW: number;
+  boundsH: number;
+  playerMarginM: number;
+  escortMarginM: number;
   /** 機ごとに、僚艇（要人）が浮いていれば僚艇を狙うか（planes 個） */
   escortPlanes: readonly boolean[];
   /** 爆弾のプールの大きさ（ceil(落下 / 間隔) + 1） */
@@ -95,7 +100,7 @@ export interface AirBomb {
   active: boolean;
   toEscort: boolean;
   plane: number;
-  /** 投下の瞬間の目標の位置（爆弾の絵の始点）と狙点 */
+  /** 投下の瞬間の機の位置（爆弾の絵の始点。投下点 E0。進路の途中で僚艇が沈めば沈んだ所）と狙点 */
   fromX: number;
   fromY: number;
   aimX: number;

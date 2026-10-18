@@ -6,7 +6,7 @@ import type { GameData } from './game-data';
 import type { PrototypeMission } from './mission-data';
 import { dawnAirFromData, isDawnAirRecord, type DawnAir } from '../core/dawn-air';
 import type { AirStrikeParams } from '../core/air-strike';
-import { DAWN_STRIKE_EVENT_ID, airStrikeParamsFromData, dawnStrikeFromData, isDawnStrikeEventRecord, isStrikeAircraftRecord, type DawnStrikeEventRecord, type StrikeAircraftRecord } from '../core/air-strike-data';
+import { DAWN_STRIKE_EVENT_ID, airStrikeParamsFromData, dawnStrikeFromData, isDawnStrikeEventRecord, isStrikeAircraftRecord, type DawnStrikeEventRecord, type StrikeAircraftRecord, type StrikeHull } from '../core/air-strike-data';
 import { bearingJa } from '../core/briefing';
 
 export type { AirStrikeParams } from '../core/air-strike';
@@ -98,22 +98,24 @@ export function getDawnStrikeEventRecord(data: GameData): DawnStrikeEventRecord 
 
 /**
  * 夜明けの空襲の値（spec §7.1。core/air-strike-data の airStrikeParamsFromData。§4.1 の検査込み）。任務に dawn_strike が無ければ null
- * （?debug&nostrike は world-setup が null にする）。player・escort は命中の半長・半幅 m（hit_scale 込み）。僚艇のいない任務は escort = null。
+ * （?debug&nostrike は world-setup が null にする）。player・escort は命中の半長・半幅 m（hit_scale 込み）と端の余白 m（world の boundsMarginM・僚艇の
+ * boundsMarginM。狙いを任務の bounds に収める）。僚艇のいない任務は escort = null。player の余白を省けるのは空襲の無い任務だけ（空襲のある任務は例外）。
  * 来る方角の 8 方位（HUD・帯の「東から」）は core/briefing の bearingJa。値の例外には任務の id を付ける
  */
 export function getAirStrikeParams(
   data: GameData,
   mission: PrototypeMission,
   timeScale: number,
-  player: { halfLengthM: number; halfBeamM: number },
-  escort: { halfLengthM: number; halfBeamM: number } | null,
+  player: { halfLengthM: number; halfBeamM: number; boundsMarginM?: number },
+  escort: StrikeHull | null,
 ): AirStrikeParams | null {
   const b = mission.dawnStrike;
   if (!b) return null;
   const plane = getStrikeAircraftRecord(data, b.aircraft_id, mission.id);
   const ev = getDawnStrikeEventRecord(data);
   try {
-    return airStrikeParamsFromData(plane, ev, b, timeScale, player, escort, bearingJa(b.from_bearing_deg));
+    const hull: StrikeHull = { halfLengthM: player.halfLengthM, halfBeamM: player.halfBeamM, boundsMarginM: player.boundsMarginM ?? NaN };
+    return airStrikeParamsFromData(plane, ev, b, timeScale, hull, escort, mission.bounds, bearingJa(b.from_bearing_deg));
   } catch (e) {
     throw new Error(`missions_seed ${mission.id}: ${(e as Error).message}`);
   }

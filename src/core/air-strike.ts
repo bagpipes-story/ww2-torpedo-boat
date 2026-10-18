@@ -1,6 +1,6 @@
 // 夜明けの空襲（v0.6.1。docs/02 §6.8）: 敵の制空下の任務で、夜明けに敵機が現れて自艇の周りを時計回りに旋回し、1 機ずつ直線の爆撃進路 → 真上で投下。
 // 爆弾を落とし切ると去り、最後の投下から wave_rest_s で次の波（上限なし）。狙いは投下の瞬間: 落下の game 秒後の位置を、今の旋回を続けた円弧
-// （旋回が aim_turn_min 未満なら直進）で見越す ＋ 一様円盤の散布。僚艇を狙う機は直進の見越しだけ（自艇の転舵に付いて来る僚艇は外れる）。
+// （旋回が aim_turn_min 未満なら直進）で見越し、海域に収め（端に押し付けた艇は止まる）＋ 一様円盤の散布。僚艇を狙う機は直進の見越しだけ（自艇の転舵に付いて来る僚艇は外れる）。
 // Phaser 非依存・毎ステップ確保しない（確保は createAirStrike だけ）。機の位置は自艇からの相対（seaplanePose と同じ）。時計は体感の実秒、見越しと旋回率は game 秒。
 // 乱数は seed+19 の専用の系列（AIR_STRIKE_SEED_OFFSET。投下ごとに散布の 2 回だけ。startAirStrike までは引かない）。夜の水上機（seaplane*.ts）には触らない。
 // 定数・型・確保は air-strike-state.ts、姿勢・脅威・見越しは air-strike-pose.ts（ここから出し直す。使う側はここだけを import する）。
@@ -9,7 +9,7 @@ import type { AircraftPose } from './friendly';
 import { pointNearBoat } from './gunnery';
 import type { SeededRng } from './rng';
 import { DODGE_TURN_DEG } from './seaplane-ordnance';
-import { radToDeg, wrapDeg180, wrapDeg360 } from './units';
+import { clamp, radToDeg, wrapDeg180, wrapDeg360 } from './units';
 import { AS_DONE, AS_EV_IMPACT, AS_EV_RELEASE, AS_EV_RUN, AS_EV_WAVE, AS_INBOUND, AS_LEAVING, AS_ORBIT, AS_OUTBOUND, AS_RUN, type AirStrikeCheck, type AirStrikeParams, type AirStrikeState } from './air-strike-state';
 import { allDone, bombInAir, predictBoat, strikePose } from './air-strike-pose';
 
@@ -60,7 +60,10 @@ function cancelStrike(s: AirStrikeState, p: AirStrikeParams): void {
   }
 }
 
-/** 投下: 目標の落下後の位置を見越し（僚艇は直進）、散布を 2 回引く（半径 → 角度の順）。carry は投下から今のステップの終わりまでの秒 */
+/**
+ * 投下: 目標の落下後の位置を見越し（僚艇は直進）、海域に収め、散布を 2 回引く（半径 → 角度の順）。carry は投下から今のステップの終わりまでの秒。
+ * 爆弾の絵は機の投下点（自艇 + E0）から落ちる（進路の途中で僚艇が沈めば、狙いは自艇に移るが絵は沈んだ所の上の機から）
+ */
 function release(s: AirStrikeState, p: AirStrikeParams, c: AirStrikeCheck, rng: SeededRng, i: number, yaw: number, feelDt: number, carry: number): void {
   const pl = s.planes[i]!;
   pl.bombsLeft--;
@@ -78,14 +81,18 @@ function release(s: AirStrikeState, p: AirStrikeParams, c: AirStrikeCheck, rng: 
   const target = atEscort ? c.escort! : c.player;
   const by = atEscort ? 0 : yaw;
   predictBoat(target, by, p.fallGameS, p.aimTurnMinDegS, aimTmp);
+  // 端に押し付けて走る艇は clampToBounds が位置だけ止める（速力は残る）ので、見越しも同じ余白で海域に収める（開けた海では何もしない）
+  const mg = atEscort ? p.escortMarginM : p.playerMarginM;
+  aimTmp.x = clamp(aimTmp.x, mg, p.boundsW - mg);
+  aimTmp.y = clamp(aimTmp.y, mg, p.boundsH - mg);
   const rr = p.scatterM * Math.sqrt(rng.next());
   const th = 2 * Math.PI * rng.next();
   const b = s.bombs[slot]!;
   b.active = true;
   b.toEscort = atEscort;
   b.plane = i;
-  b.fromX = target.x;
-  b.fromY = target.y;
+  b.fromX = c.player.x + pl.e0x;
+  b.fromY = c.player.y + pl.e0y;
   b.aimX = aimTmp.x + rr * Math.cos(th);
   b.aimY = aimTmp.y + rr * Math.sin(th);
   // 爆弾はこのステップの最後（5）でも feelDt 進むので、その分を足しておく（投下からの経過 carry を正しく数える）

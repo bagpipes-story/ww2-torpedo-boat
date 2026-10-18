@@ -80,6 +80,8 @@ export interface DawnTelemetry {
   /** 空襲の段（core/air-strike の AS_T_*。0 は無し） */
   threat: number;
   toEscort: boolean;
+  /** 落下中の自艇への爆弾の狙いが旋回の弧の先（投下の瞬間に旋回していた。core/air-strike-pose の predictBoat と同じ判定）。落下中でなければ false */
+  fallingArc: boolean;
   /** 0 始まりの機の番号（-1 は無し） */
   plane: number;
   bombsLeft: number;
@@ -88,6 +90,7 @@ export interface DawnTelemetry {
   /** 接近中の距離 m（接近中でなければ NaN） */
   inboundDistM: number;
   count: number;
+  /** 今の波が来る方角（8 方位。波ごとに wave_rotate_deg 回る＝毎フレーム書く。出発時と夜明けの帯は最初の波） */
   fromJa: string;
   nameJa: string;
   labelJa: string;
@@ -104,6 +107,7 @@ export function createDawnTelemetry(): DawnTelemetry {
     strikeEnabled: false,
     threat: 0,
     toEscort: false,
+    fallingArc: false,
     plane: -1,
     bombsLeft: 0,
     restS: NaN,

@@ -19,6 +19,7 @@ import {
   strikeRestLeftS,
   strikeThreat,
 } from '../core/air-strike';
+import { bearingJa } from '../core/briefing';
 import { createDawnTelemetry, daylightS, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
 import type { WorldDawn } from './world-dawn';
 import type { WorldSetup } from './world-setup';
@@ -31,7 +32,7 @@ export interface DawnTelemetryWorld {
   readonly dawn: WorldDawn;
 }
 
-/** 出発時の dawn（任務で決まる値: 空の持ち主・空襲の有無・機数・方角・機名・空の文・僚艇を狙う機。毎フレームは変えない） */
+/** 出発時の dawn（任務で決まる値: 空の持ち主・空襲の有無・機数・機名・空の文・僚艇を狙う機。毎フレームは変えない。方角は最初の波で、fillDawn が波ごとに書く） */
 export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
   const d = createDawnTelemetry();
   const p = w.dawn.strike ? w.dawn.strike.p : null;
@@ -67,6 +68,7 @@ function fillDawn(d: DawnTelemetry, w: DawnTelemetryWorld): void {
   d.caughtOutside = w.dawn.caughtOutside;
   d.daylightS = daylightS(w.setup.durationS, w.stepTimeS);
   d.toEscort = false;
+  d.fallingArc = false;
   d.plane = -1;
   d.bombsLeft = 0;
   d.restS = NaN;
@@ -80,6 +82,8 @@ function fillDawn(d: DawnTelemetry, w: DawnTelemetryWorld): void {
   const p = st.p;
   const threat = strikeThreat(s);
   d.threat = threat;
+  // 今の波の方角（波ごとに wave_rotate_deg 回る。機の散らばりは左右対称なので波の中心＝from + wave × rotate。bearingJa は定数の表を引くだけで確保しない）
+  d.fromJa = bearingJa(p.fromBearingDeg + s.wave * p.waveRotateDeg);
   if (threat === AS_T_FALLING) {
     // 落下中の爆弾は常に 1 発（run_gap_s > 落下。検査済み）
     for (let i = 0; i < s.bombs.length; i++) {
@@ -87,6 +91,8 @@ function fillDawn(d: DawnTelemetry, w: DawnTelemetryWorld): void {
       if (!b.active) continue;
       d.plane = b.plane;
       d.toEscort = b.toEscort;
+      // 狙いが旋回の弧の先か（predictBoat と同じ判定: 旋回率 0 か aim_turn_min 未満なら直進の先）。弧なら同じ向きに切り続けると当たる＝「逆へ」
+      d.fallingArc = !b.toEscort && !(b.yawDegS === 0 || Math.abs(b.yawDegS) < p.aimTurnMinDegS);
       break;
     }
   } else if (threat === AS_T_RUN) {

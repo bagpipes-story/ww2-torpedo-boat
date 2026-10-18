@@ -142,7 +142,7 @@
         "dawn_strike": {
           "aircraft_id": "ijn_f1m2_pete",
           "count": 4,
-          "count_source": "historical (1942-04-09 に同じ第3魚雷艇隊の PT-34 を襲った零式水上観測機は 4 機: Pacific Wrecks PT-34 / ja.wikipedia 球磨。抜粋のみ・本文未読。ユーザーの例『敵水上機戦隊四機』と同じ)",
+          "count_source": "design (ユーザーの例『敵水上機戦隊四機』。史実の類例: 1942-04-09 に同じ第3魚雷艇隊の PT-34 を襲った零式水上観測機は 4 機: Pacific Wrecks PT-34 / ja.wikipedia 球磨。抜粋のみ・本文未読。脱出行そのものへの空襲の記録は見つからない)",
           "from_bearing_deg": 90,
           "escort_target_planes": [
             1,
@@ -505,14 +505,14 @@
         "refs": [
           {
             "url": "https://www.history.navy.mil/research/histories/ship-histories/danfs/p/pt-109.html",
-            "claim": "PT-109 の艦歴（DANFS）。1943-08-01〜02 の夜、ブラケット海峡で東京急行の駆逐艦を迎え撃った PT の 1 隻"
+            "claim": "PT-109 の艦歴（DANFS）。1943-08-01〜02 の夜、ブラケット海峡で東京急行の駆逐艦を迎え撃った PT の 1 隻。1943-08-01（任務の当日）、日本の爆撃機 18 機がレンドバの PT 基地を空襲し、PT-117 大破・PT-164 沈没"
           },
           {
             "url": "https://pacificwrecks.com/ship/ptboat/PT-166.html",
-            "claim": "1943-07-20 の朝（08:00 ごろ）、味方の B-25 4 機が PT-166 を攻撃した（夜明けの後の PT の空の危険は味方機の誤射）"
+            "claim": "1943-07-20 の朝（08:00 ごろ）、パトロール帰りの PT-164・166・168 を味方の B-25 4 機が敵と誤認して攻撃し、PT-166 が沈没"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語・日本語の調査とも contested（英語は自軍寄り）。夜明けの PT の空の危険は味方 B-25 の誤射（PT-166）) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語・日本語の調査とも contested（英語は自軍寄り）。日本機の空襲もある（任務の当日、レンドバの PT 基地へ爆撃機 18 機: DANFS PT-109。海上の艇でなく基地）。夜明けの帰り道に空から襲われた記録で見つけたのは味方 B-25 の誤射（PT-166、07-20）だけ) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。control は contested で、ユーザーの規則は『制空権がない限り全シナリオ共通』なので、play_as own は遊べるようにする前にユーザーと見直す)"
       }
     },
     {
@@ -914,7 +914,7 @@
           },
           {
             "url": "https://www.ibiblio.org/pha/comms/1945-04.html",
-            "claim": "3/30〜31、艦載機（コルセア・ヘルキャット・ヘルダイバー・アベンジャー）が運天で魚雷艇 3 隻を撃沈"
+            "claim": "3/30〜31、艦載機（コルセア・ヘルキャット・ヘルダイバー・アベンジャー）の南西諸島への空襲で魚雷艇 3 隻撃沈・1 隻損傷（場所は抜粋に無い）、運天湾の潜水艦の掩体 6 つ破壊"
           },
           {
             "url": "https://www.ibiblio.org/hyperwar/USA/USA-P-Okinawa/USA-P-Okinawa-2.html",

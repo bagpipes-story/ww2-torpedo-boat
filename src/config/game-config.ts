@@ -136,6 +136,8 @@ export const DEPTH = {
   light: 2,
   storm: 3,
   shell: 12,
+  /** 空襲の着弾点の輪（v0.6.1）: 爆弾（shell）・自艇・煙の上、雨筋の下（爆弾の灰色の円や艇に隠れない） */
+  impactRing: 12.5,
   /** 雨筋は砲弾の上、味方機は煙と砲弾の上、演出の下 */
   rain: 13,
   aircraft: 14,
@@ -177,6 +179,8 @@ export const TEXTURE_KEYS = {
   targetMarker: 'tex-target-marker',
   homeMarker: 'tex-home-marker',
   returnRing: 'tex-return-ring',
+  /** 空襲の着弾点の輪（v0.6.1。線の太い専用の輪） */
+  impactRing: 'tex-impact-ring',
   debugRing: 'tex-debug-ring',
   shell: 'tex-shell',
   tracer: 'tex-tracer',

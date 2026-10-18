@@ -4,8 +4,17 @@
 // 自艇への命中の火災・機関は世界の hitBoat が同じ系列から引く。僚艇の被弾は乱数を引かない）。
 import type Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { AIR_STRIKE_RING_ALPHA, AIR_STRIKE_RING_TINT, AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
-import { BOMB_SCALE_FROM, BOMB_SCALE_TO, BOMB_TINT, RETURN_RING_TEX_RADIUS_UNITS } from '../config/ui-config';
+import {
+  AIR_STRIKE_BOMB_SCALE_FROM,
+  AIR_STRIKE_BOMB_SCALE_TO,
+  AIR_STRIKE_RING_ALPHA,
+  AIR_STRIKE_RING_TEX_RADIUS_UNITS,
+  AIR_STRIKE_RING_TINT,
+  AIR_STRIKE_RUN_LINE_ALPHA,
+  AIR_STRIKE_RUN_LINE_TINT,
+  AIR_STRIKE_RUN_LINE_WIDTH_M,
+} from '../config/dawn-config';
+import { BOMB_TINT } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
 import type { AircraftPose } from '../core/friendly';
 import type { SeededRng } from '../core/rng';
@@ -61,10 +70,11 @@ export class AirStrikeFlight {
       this.planes.push(scene.add.image(0, 0, TEXTURE_KEYS.enemyAircraft).setScale(1 / RENDER_SCALE).setDepth(DEPTH.aircraft).setVisible(false));
       this.planeShown.push(false);
     }
-    const ringScale = p.playerHitRadiusM / RETURN_RING_TEX_RADIUS_UNITS / RENDER_SCALE;
+    // 着弾点の輪は専用の太線の絵（Boot の impact-ring-placeholder）を命中の半径へ。爆弾（shell）・自艇の上に描く（DEPTH.impactRing）
+    const ringScale = p.playerHitRadiusM / AIR_STRIKE_RING_TEX_RADIUS_UNITS / RENDER_SCALE;
     for (let i = 0; i < p.poolSize; i++) {
       this.bombs.push(scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(BOMB_TINT).setDepth(DEPTH.shell).setVisible(false));
-      this.rings.push(scene.add.image(0, 0, TEXTURE_KEYS.returnRing).setTint(AIR_STRIKE_RING_TINT).setAlpha(AIR_STRIKE_RING_ALPHA).setScale(ringScale).setDepth(DEPTH.returnRing).setVisible(false));
+      this.rings.push(scene.add.image(0, 0, TEXTURE_KEYS.impactRing).setTint(AIR_STRIKE_RING_TINT).setAlpha(AIR_STRIKE_RING_ALPHA).setScale(ringScale).setDepth(DEPTH.impactRing).setVisible(false));
     }
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
     this.lineTexW = this.line.width;
@@ -95,7 +105,7 @@ export class AirStrikeFlight {
     const ev = stepAirStrike(s, this.p, c, this.rng, feelDt);
     if (ev & AS_EV_RELEASE) {
       const b = s.bombs[s.lastRelease]!;
-      this.bombs[s.lastRelease]!.setPosition(b.fromX, b.fromY).setScale(BOMB_SCALE_FROM / RENDER_SCALE).setVisible(true);
+      this.bombs[s.lastRelease]!.setPosition(b.fromX, b.fromY).setScale(AIR_STRIKE_BOMB_SCALE_FROM / RENDER_SCALE).setVisible(true);
       this.rings[s.lastRelease]!.setPosition(b.aimX, b.aimY).setVisible(true);
     }
     if (ev & AS_EV_IMPACT) {
@@ -108,7 +118,7 @@ export class AirStrikeFlight {
     }
   }
 
-  /** 毎フレーム: 機の位置・向き・濃さ、爆撃進路の線（hypot と atan2 は線の 1 回だけ）、落下中の爆弾の位置と大きさ */
+  /** 毎フレーム: 機の位置・向き・濃さ、爆撃進路の線（hypot と atan2 は線の 1 回だけ）、落下中の爆弾の位置と大きさ（着弾時も輪の線の内側に収まる） */
   updateVisuals(player: BoatState, escort: BoatState | null): void {
     const s = this.state;
     let runPlane = -1;
@@ -147,7 +157,7 @@ export class AirStrikeFlight {
       const b = s.bombs[i]!;
       if (!b.active) continue;
       const k = 1 - Math.max(0, b.leftS) / this.p.fallFeelS;
-      this.bombs[i]!.setPosition(b.fromX + (b.aimX - b.fromX) * k, b.fromY + (b.aimY - b.fromY) * k).setScale((BOMB_SCALE_FROM + (BOMB_SCALE_TO - BOMB_SCALE_FROM) * k) / RENDER_SCALE);
+      this.bombs[i]!.setPosition(b.fromX + (b.aimX - b.fromX) * k, b.fromY + (b.aimY - b.fromY) * k).setScale((AIR_STRIKE_BOMB_SCALE_FROM + (AIR_STRIKE_BOMB_SCALE_TO - AIR_STRIKE_BOMB_SCALE_FROM) * k) / RENDER_SCALE);
     }
   }
 

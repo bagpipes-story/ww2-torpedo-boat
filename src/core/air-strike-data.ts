@@ -3,6 +3,7 @@
 // 値の範囲と段階の時間の検査（機数 ≤ 4・落下 < 投下の間隔ほか。spec §4.1）は空襲の値を組むとき（airStrikeParamsFromData）。
 // 夜の水上機（seaplane-data）の航跡の速力の検査はしない（T-38 で例外になるため。昼は航跡でなく目で見つける）。
 import { AIR_STRIKE_MAX_PLANES, type AirStrikeParams } from './air-strike-state';
+import type { SeaBounds } from './boat-motion';
 import { GRAVITY_MPS2, ktToMps, radToDeg } from './units';
 
 /** risk_events.json の夜明けの空襲の id（任務の v0_1_prototype.hazards にも入る。night.optional_hazards には入れない） */
@@ -41,6 +42,13 @@ export interface DawnStrikeEventRecord {
     wave_rotate_deg: number;
     aim_turn_min_deg_s: number;
   };
+}
+
+/** 狙われる艇: 命中の半長・半幅 m（hit_scale 込み）と、海域の端の余白 m（clampToBounds と同じ。見越しを海域に収める） */
+export interface StrikeHull {
+  halfLengthM: number;
+  halfBeamM: number;
+  boundsMarginM: number;
 }
 
 /** missions_seed.json の v0_1_prototype.dawn_strike（dawn_air.play_as が enemy の遊べる任務だけ。config/dawn-data が検査） */
@@ -124,15 +132,17 @@ export function dawnStrikeFromData(raw: unknown, missionId: string): DawnStrikeB
  * 空襲の値を組む（spec §4.1。起動時に 1 回）。例外: 機数が 1〜4 でない、方角のずれが機数より少ない、僚艇を狙う機の番号が範囲外・重複・
  * 僚艇のいない任務で空でない、速度・高度が正でない、爆弾が 1 発未満、CEP が負、火災・機関が 0〜1 の外、
  * 投下の間隔が落下以下（空中の爆弾は常に 1 発）、最初の進路までに旋回に着けない、機が旋回に戻る前に次の順番が来る（機数 × 間隔 < 2 × 進路）、
- * 次の波の前に全機が去れない（wave_rest_s < 進路 + leave_s）。夜の水上機の航跡の速力の検査はしない（T-38 で例外になるため）
+ * 次の波の前に全機が去れない（wave_rest_s < 進路 + leave_s）。夜の水上機の航跡の速力の検査はしない（T-38 で例外になるため）。
+ * sea は狙いを収める海域（ゲームは任務の bounds、模擬は広い海）。艇の余白が負か、海域が余白の 2 倍以下なら例外
  */
 export function airStrikeParamsFromData(
   aircraft: StrikeAircraftRecord,
   event: DawnStrikeEventRecord,
   block: DawnStrikeBlock,
   timeScale: number,
-  player: { halfLengthM: number; halfBeamM: number },
-  escort: { halfLengthM: number; halfBeamM: number } | null,
+  player: StrikeHull,
+  escort: StrikeHull | null,
+  sea: SeaBounds,
   fromJa: string,
 ): AirStrikeParams {
   const q = event.params;
@@ -157,8 +167,9 @@ export function airStrikeParamsFromData(
   if (!(bomb.fire_chance >= 0 && bomb.fire_chance <= 1) || !(bomb.engine_damage_chance >= 0 && bomb.engine_damage_chance <= 1)) bad('bomb.fire_chance / engine_damage_chance は 0〜1');
   if (!(q.run_radius_m > 0) || !(q.spawn_m > q.run_radius_m)) bad('0 < run_radius_m < spawn_m');
   if (!(q.first_run_s >= 0) || !(q.run_gap_s > 0) || !(q.wave_rest_s >= 0) || !(q.leave_s > 0) || !(q.aim_turn_min_deg_s >= 0)) bad('first_run_s / wave_rest_s / aim_turn_min_deg_s は 0 以上、run_gap_s / leave_s は正');
-  if (!(timeScale > 0) || !(player.halfLengthM > 0) || !(player.halfBeamM >= 0)) throw new Error('夜明けの空襲: time_scale と艇の寸法が不正');
-  if (escort && (!(escort.halfLengthM > 0) || !(escort.halfBeamM >= 0))) throw new Error('夜明けの空襲: 僚艇の寸法が不正');
+  const fits = (h: StrikeHull): boolean => h.halfLengthM > 0 && h.halfBeamM >= 0 && h.boundsMarginM >= 0 && sea.width > 2 * h.boundsMarginM && sea.height > 2 * h.boundsMarginM;
+  if (!(timeScale > 0) || !fits(player)) throw new Error('夜明けの空襲: time_scale と艇の寸法・端の余白（海域の半分未満）が不正');
+  if (escort && !fits(escort)) throw new Error('夜明けの空襲: 僚艇の寸法・端の余白（海域の半分未満）が不正');
   const v = ktToMps(st.run_speed_kt) * timeScale;
   const runS = q.run_radius_m / v;
   const fallGameS = Math.sqrt((2 * st.release_altitude_m) / GRAVITY_MPS2);
@@ -195,6 +206,10 @@ export function airStrikeParamsFromData(
     playerHitRadiusM: player.halfBeamM + bomb.blast_radius_m,
     escortHalfLengthM: escort ? escort.halfLengthM : 0,
     escortHitRadiusM: escort ? escort.halfBeamM + bomb.blast_radius_m : 0,
+    boundsW: sea.width,
+    boundsH: sea.height,
+    playerMarginM: player.boundsMarginM,
+    escortMarginM: escort ? escort.boundsMarginM : 0,
     escortPlanes,
     poolSize: Math.ceil(fallFeelS / q.run_gap_s) + 1,
     nameJa: aircraft.name_ja,

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { playableMissionIds } from '../src/config/campaign-data';
-import { getDawnStrikeEventRecord, getStrikeAircraftRecord } from '../src/config/dawn-data';
+import { getAirStrikeParams, getDawnStrikeEventRecord, getStrikeAircraftRecord } from '../src/config/dawn-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import {
   AIR_STRIKE_SEED_OFFSET,
@@ -30,7 +30,7 @@ import {
   type AirStrikeState,
 } from '../src/core/air-strike';
 import { airStrikeParamsFromData } from '../src/core/air-strike-data';
-import type { BoatState } from '../src/core/boat-motion';
+import { clampToBounds, stepBoat, stepStraight, type BoatInput, type BoatState } from '../src/core/boat-motion';
 import type { AircraftPose } from '../src/core/friendly';
 import { NIGHT_SEED_OFFSET } from '../src/core/night';
 import { SeededRng } from '../src/core/rng';
@@ -52,7 +52,12 @@ class CountingRng extends SeededRng {
   }
 }
 
-const boat = (x = 0, y = 0, headingDeg = 0, speedMps = 0): BoatState => ({ x, y, headingDeg, speedMps });
+/** 海域の中ほど（us_01 6000×6000・jp_06 6000×4000 の両方の内側）。空襲の狙いは海域に収めるので、的は端から遠い所に置く（端は「端に押し付けた艇」） */
+const CX = 3000;
+const CY = 2000;
+const boat = (x = 0, y = 0, headingDeg = 0, speedMps = 0): BoatState => ({ x: CX + x, y: CY + y, headingDeg, speedMps });
+/** 原点の艇（predictBoat の解析解の検査） */
+const at = (x: number, y: number, headingDeg: number, speedMps: number): BoatState => ({ x, y, headingDeg, speedMps });
 const check = (player: BoatState, escort: BoatState | null = null): AirStrikeCheck => ({ player, playerSinking: false, escort, escortAfloat: escort !== null, cancel: false });
 
 /** 始めてから seconds 秒、固定ステップで進める（onStep は各ステップの後。t はステップの終わりの秒） */
@@ -97,6 +102,14 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
     expect(P01.escortHitRadiusM).toBeGreaterThan(25);
     expect([P06.escortHalfLengthM, P06.escortHitRadiusM]).toEqual([0, 0]);
     expect(buildWorldSetup(gameData, 'jp_06', { hard: true }).airStrike).not.toBeNull();
+    // 狙いを収める海域と余白は世界の clampToBounds と同じ（自艇は world の boundsMarginM、僚艇は僚艇の boundsMarginM。僚艇のいない任務は 0）
+    for (const id of ['us_01', 'jp_06']) {
+      const w = buildWorldSetup(gameData, id);
+      const p = w.airStrike!;
+      expect([p.boundsW, p.boundsH, p.playerMarginM, p.escortMarginM], id).toEqual([w.mission.bounds.width, w.mission.bounds.height, w.boundsMarginM, w.escort ? w.escort.boundsMarginM : 0]);
+    }
+    expect(P01.escortMarginM).toBeGreaterThan(0);
+    expect(P06.playerMarginM).toBeGreaterThan(0);
     // 空襲の無い任務と ?debug&nostrike は null（今夜の揺らぎ absent() は通さない）
     expect(buildWorldSetup(gameData, 'us_02').airStrike).toBeNull();
     expect(buildWorldSetup(gameData, 'us_03').airStrike).toBeNull();
@@ -107,16 +120,18 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
     const pete = getStrikeAircraftRecord(gameData, 'ijn_f1m2_pete', 'us_01');
     const ev = getDawnStrikeEventRecord(gameData);
     const block = getPrototypeMission(gameData, 'us_01').dawnStrike!;
-    const hull = { halfLengthM: 11.75, halfBeamM: 3 };
-    type Over = { strike?: Record<string, number>; params?: Record<string, number>; block?: Record<string, unknown>; escort?: typeof hull | null };
+    const hull = { halfLengthM: 11.75, halfBeamM: 3, boundsMarginM: 12 };
+    const sea = { width: 6000, height: 4000 };
+    type Over = { strike?: Record<string, number>; params?: Record<string, number>; block?: Record<string, unknown>; escort?: typeof hull | null; player?: typeof hull; sea?: typeof sea };
     const build = (o: Over): AirStrikeParams =>
       airStrikeParamsFromData(
         { ...pete, strike: { ...pete.strike, ...o.strike } },
         { ...ev, params: { ...ev.params, ...o.params } },
         { ...block, ...o.block },
         5,
-        hull,
+        o.player ?? hull,
         o.escort === undefined ? hull : o.escort,
+        o.sea ?? sea,
         '東',
       );
     expect(() => build({})).not.toThrow();
@@ -133,10 +148,17 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
       [{ block: { escort_target_planes: [1, 4] } }, /escort_target_planes の 4/],
       [{ block: { escort_target_planes: [1, 1] } }, /重複/],
       [{ escort: null }, /僚艇（escort）のいる任務だけ/],
+      // 狙いを海域に収める余白（負・NaN・海域の半分以上）
+      [{ player: { ...hull, boundsMarginM: -1 } }, /艇の寸法・端の余白/],
+      [{ player: { ...hull, boundsMarginM: NaN } }, /艇の寸法・端の余白/],
+      [{ sea: { width: 24, height: 4000 } }, /艇の寸法・端の余白/],
+      [{ escort: { ...hull, boundsMarginM: 2001 } }, /僚艇の寸法・端の余白/],
     ];
     for (const [o, re] of cases) expect(() => build(o), JSON.stringify(o)).toThrow(re);
     // 方角のずれが機数より少ない
-    expect(() => airStrikeParamsFromData(pete, { ...ev, params: { ...ev.params, spawn_offsets_deg: [0, 10] } }, block, 5, hull, hull, '東')).toThrow(/spawn_offsets_deg/);
+    expect(() => airStrikeParamsFromData(pete, { ...ev, params: { ...ev.params, spawn_offsets_deg: [0, 10] } }, block, 5, hull, hull, sea, '東')).toThrow(/spawn_offsets_deg/);
+    // 自艇の端の余白を省けるのは空襲の無い任務だけ（tests/dawn-air の us_02）
+    expect(() => getAirStrikeParams(gameData, getPrototypeMission(gameData, 'jp_06'), 5, { halfLengthM: 12, halfBeamM: 3 }, null)).toThrow(/jp_06.*端の余白/);
     // data から組むときは任務の id を付ける（起動時に分かる）
     const bad = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
     const rec = (bad.riskEvents.events as unknown as Record<string, unknown>[]).find((e) => e['id'] === 'dawn_air_strike')!;
@@ -199,24 +221,24 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
 
   it('predictBoat: 直進（旋回 0）、四分円（90° を落下の秒で回る＝解析解）、最小の旋回率の閾値、左旋回', () => {
     const o = { x: 0, y: 0 };
-    predictBoat(boat(10, 20, 90, 15), 0, 4, 0.5, o);
+    predictBoat(at(10, 20, 90, 15), 0, 4, 0.5, o);
     expect(o.x).toBeCloseTo(70, 9);
     expect(o.y).toBeCloseTo(20, 9);
     const T = P01.fallGameS;
     const yaw = 90 / T;
     const rho = 20 / degToRad(yaw);
-    predictBoat(boat(0, 0, 0, 20), yaw, T, 0.5, o);
+    predictBoat(at(0, 0, 0, 20), yaw, T, 0.5, o);
     expect(o.x).toBeCloseTo(rho, 6);
     expect(o.y).toBeCloseTo(-rho, 6);
-    predictBoat(boat(0, 0, 0, 20), -yaw, T, 0.5, o);
+    predictBoat(at(0, 0, 0, 20), -yaw, T, 0.5, o);
     expect(o.x).toBeCloseTo(-rho, 6);
     expect(o.y).toBeCloseTo(-rho, 6);
-    predictBoat(boat(0, 0, 0, 20), 0.49, T, 0.5, o); // 閾値未満は直進
+    predictBoat(at(0, 0, 0, 20), 0.49, T, 0.5, o); // 閾値未満は直進
     expect(o.x).toBe(0);
     expect(o.y).toBeCloseTo(-20 * T, 9);
-    predictBoat(boat(0, 0, 0, 20), 0.51, T, 0.5, o); // 閾値以上は円弧
+    predictBoat(at(0, 0, 0, 20), 0.51, T, 0.5, o); // 閾値以上は円弧
     expect(o.x).toBeGreaterThan(0);
-    predictBoat(boat(0, 0, 0, 20), 3, T, 0, o); // 閾値 0 でも割り算は旋回 0 のときだけ避ける
+    predictBoat(at(0, 0, 0, 20), 3, T, 0, o); // 閾値 0 でも割り算は旋回 0 のときだけ避ける
     expect(Number.isFinite(o.x)).toBe(true);
   });
 
@@ -440,5 +462,153 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     expect(new Set(offsets).size).toBe(offsets.length);
     expect(AIR_STRIKE_SEED_OFFSET).toBe(19);
     expect([RAID_SEED_OFFSET, NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET]).toEqual([4, 16, 17]);
+  });
+});
+
+describe('端に押し付けた艇（狙いは clampToBounds と同じ余白で海域に収める）と、進路の途中で僚艇が沈んだ爆弾の絵', () => {
+  const W01 = buildWorldSetup(gameData, 'us_01');
+  const W06 = buildWorldSetup(gameData, 'jp_06');
+  /** 見越しを海域に収めない（直す前と同じ）。端の効きを確かめる対照 */
+  const open = (p: AirStrikeParams): AirStrikeParams => ({ ...p, boundsW: Infinity, boundsH: Infinity, playerMarginM: -Infinity, escortMarginM: -Infinity });
+  const STEPS = Math.round(37 / DT); // 1 波（8 発。最後の着弾は 36.2 秒）
+  const TRIALS = 100;
+
+  /** 世界の順（艇 → clampToBounds → 空襲）で 1 波を TRIALS 回。舵（針路）と速力は一定。自艇を狙った爆弾 1 発あたりの命中 */
+  function playerRate(w: typeof W01, p: AirStrikeParams, x: number, y: number, headingDeg: number, speed01: number, seed: number): number {
+    const rng = new SeededRng(seed);
+    const input: BoatInput = { headingDeg, speed01 };
+    let bombs = 0;
+    let hits = 0;
+    for (let t = 0; t < TRIALS; t++) {
+      const b = at(x, y, headingDeg, speed01 * w.boatParams.speedMaxMps);
+      const c = check(b);
+      const s = createAirStrike(p);
+      startAirStrike(s, p, b);
+      for (let k = 0; k < STEPS; k++) {
+        stepBoat(b, input, w.boatParams, DT * w.timeScale);
+        clampToBounds(b, w.mission.bounds, w.boundsMarginM);
+        const ev = stepAirStrike(s, p, c, rng, DT);
+        if (ev & AS_EV_IMPACT) {
+          bombs++;
+          if (s.bombs[s.lastImpact]!.hitPlayer) hits++;
+        }
+      }
+    }
+    expect(bombs).toBe(TRIALS * 8);
+    return hits / bombs;
+  }
+
+  it('自艇: 端へ全速で押し付けても、端を 45° 押し付けて滑っても、止まった艇と同じくらい当たる（0.45〜0.70。収めなければ ほぼ 0）', () => {
+    const rows: [typeof W01, number, number, number, string][] = [];
+    // jp_06（6000×4000）: 南の端へ真っ直ぐ・南西へ押し付けて西へ滑る・西の端へ。us_01（6000×6000）: 北の端へ・北西へ押し付けて西へ滑る
+    const m6 = W06.boundsMarginM;
+    const m1 = W01.boundsMarginM;
+    rows.push([W06, 3000, 4000 - m6, 180, 'jp_06 南へ押し付け'], [W06, 5500, 4000 - m6, 225, 'jp_06 南の端を滑る'], [W06, m6, 2000, 270, 'jp_06 西へ押し付け']);
+    rows.push([W01, 3000, m1, 0, 'us_01 北へ押し付け'], [W01, 5500, m1, 315, 'us_01 北の端を滑る']);
+    const stopped = new Map<typeof W01, number>();
+    for (const w of [W01, W06]) {
+      const r = playerRate(w, w.airStrike!, CX, CY, 0, 0, 71);
+      expect(r).toBeGreaterThanOrEqual(0.45);
+      expect(r).toBeLessThanOrEqual(0.7);
+      stopped.set(w, r);
+    }
+    for (const [w, x, y, h, name] of rows) {
+      const r = playerRate(w, w.airStrike!, x, y, h, 1, 71);
+      expect(r, name).toBeGreaterThanOrEqual(0.45);
+      expect(r, name).toBeLessThanOrEqual(0.7);
+      expect(Math.abs(r - stopped.get(w)!), `${name} ${r.toFixed(3)} vs 止まった艇 ${stopped.get(w)!.toFixed(3)}`).toBeLessThan(0.08);
+    }
+    // 対照: 収めなければ押し付けた艇にはほとんど当たらない（直す前の抜け道）
+    expect(playerRate(W06, open(W06.airStrike!), 3000, 4000 - m6, 180, 1, 71)).toBeLessThan(0.1);
+    expect(playerRate(W01, open(W01.airStrike!), 3000, m1, 0, 1, 71)).toBeLessThan(0.1);
+  }, 30_000);
+
+  it('僚艇: 端へ全速で押し付けた僚艇も、止まった僚艇と同じくらい当たる（僚艇の余白で収める。収めなければ ほぼ 0）', () => {
+    const esc = W01.escort!;
+    const m = esc.boundsMarginM;
+    /** 僚艇を狙った爆弾 1 発あたりの命中（自艇は 1,000 m 北で停止。2・4 番機が僚艇へ） */
+    const escortRate = (p: AirStrikeParams, x: number, y: number, headingDeg: number, speedMps: number): number => {
+      const rng = new SeededRng(73);
+      let bombs = 0;
+      let hits = 0;
+      for (let t = 0; t < TRIALS * 2; t++) {
+        const e = at(x, y, headingDeg, speedMps);
+        const c = check(at(x, y - 1000, 0, 0), e);
+        const s = createAirStrike(p);
+        startAirStrike(s, p, c.player);
+        for (let k = 0; k < STEPS; k++) {
+          stepStraight(e, DT * W01.timeScale); // 僚艇の操舵（steerShip）は針路に進んでから端で止める
+          clampToBounds(e, W01.mission.bounds, m);
+          const ev = stepAirStrike(s, p, c, rng, DT);
+          if (ev & AS_EV_IMPACT && s.bombs[s.lastImpact]!.toEscort) {
+            bombs++;
+            if (s.bombs[s.lastImpact]!.hitEscort) hits++;
+          }
+        }
+      }
+      expect(bombs).toBe(TRIALS * 2 * 4);
+      return hits / bombs;
+    };
+    const still = escortRate(P01, CX, CY, 0, 0);
+    const pinned = escortRate(P01, 3000, 6000 - m, 180, esc.speedMaxMps);
+    expect(still).toBeGreaterThanOrEqual(0.45);
+    expect(still).toBeLessThanOrEqual(0.7);
+    expect(Math.abs(pinned - still), `${pinned.toFixed(3)} vs ${still.toFixed(3)}`).toBeLessThan(0.08);
+    expect(escortRate(open(P01), 3000, 6000 - m, 180, esc.speedMaxMps)).toBeLessThan(0.1);
+  }, 30_000);
+
+  it('開けた海では収めても狙いは 1 ビットも変わらない（同じ seed で収めない値と同じ着弾）', () => {
+    const impacts = (p: AirStrikeParams): number[] => {
+      const out: number[] = [];
+      const b1 = boat(0, 0, 0, 20);
+      run(p, check(b1, boat(-20, 60)), new SeededRng(81), 100, (s, ev) => {
+        if (ev & AS_EV_IMPACT) out.push(s.bombs[s.lastImpact]!.aimX, s.bombs[s.lastImpact]!.aimY);
+      }, () => moveBoat(b1, 12, DT * P01.timeScale));
+      return out;
+    };
+    const a = impacts(P01);
+    expect(a.length).toBe(32);
+    expect(impacts(open(P01))).toEqual(a);
+  });
+
+  it('爆弾の絵は機の投下点から: 自艇へはちょうど自艇の位置、僚艇へは僚艇の位置。進路の途中で僚艇が沈めば狙いは自艇へ移るが、絵は沈んだ所の上の機から', () => {
+    const player = boat();
+    const vip = boat(-20, 130);
+    const c = check(player, vip);
+    const q: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
+    let checked = 0;
+    // 2 番機（index 1）の僚艇への進路は 15 秒から、投下は 16.94 秒。16 秒（進路の途中）で僚艇が沈む
+    run(
+      P01,
+      c,
+      new SeededRng(91),
+      24,
+      (s, ev, t) => {
+        if (!(ev & AS_EV_RELEASE)) return;
+        const b = s.bombs[s.lastRelease]!;
+        const pl = s.planes[b.plane]!;
+        expect([b.fromX, b.fromY]).toEqual([player.x + pl.e0x, player.y + pl.e0y]); // 投下点 E0（自艇からの相対）
+        strikePose(s, P01, b.plane, q); // 抜け始めの機（投下から持ち越した秒だけ進んでいる）
+        expect(Math.hypot(b.fromX - (player.x + q.dx), b.fromY - (player.y + q.dy)), `t ${t.toFixed(2)}`).toBeLessThanOrEqual(P01.flightMps * DT);
+        if (b.plane === 0) expect([b.fromX, b.fromY]).toEqual([player.x, player.y]);
+        if (b.plane === 1) {
+          expect(b.toEscort).toBe(false);
+          expect(pl.toEscort).toBe(true); // 進路は僚艇（の沈んだ所）へ飛んだ
+          expect(Math.hypot(b.fromX - vip.x, b.fromY - vip.y)).toBeLessThan(1e-9);
+          expect(Math.hypot(b.aimX - player.x, b.aimY - player.y)).toBeLessThanOrEqual(P01.scatterM + 1e-9);
+        }
+        checked++;
+      },
+      (t) => {
+        if (t > 16) c.escortAfloat = false;
+      },
+    );
+    expect(checked).toBe(4); // 1〜4 番機（13.94・16.94・19.94・22.94 秒）
+    // 浮いている僚艇へ: 絵は僚艇の位置から（丸めの差だけ）
+    run(P01, check(boat(), boat(-20, 130)), new SeededRng(92), 18, (s, ev) => {
+      if (!(ev & AS_EV_RELEASE)) return;
+      const b = s.bombs[s.lastRelease]!;
+      if (b.toEscort) expect(Math.hypot(b.fromX - (CX - 20), b.fromY - (CY + 130))).toBeLessThan(1e-9);
+    });
   });
 });

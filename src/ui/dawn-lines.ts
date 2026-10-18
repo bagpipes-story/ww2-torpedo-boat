@@ -1,7 +1,7 @@
 // 夜明け（v0.6.1。docs/02 §6.7・§6.8、spec §8）の HUD と Result の文: 2 行目の時計と「帰投せよ」の理由、夜明けの空襲の行とそのキー、夜明けの帯、Result の夜明けの行。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
-import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_RUN } from '../core/air-strike';
+import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, type DawnResult } from '../core/dawn-air';
@@ -11,6 +11,12 @@ import { stormWarning } from './mission-mode';
 
 /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
 const RESULT_DODGE_SHOWN = 8;
+
+/**
+ * 自艇を狙う爆撃の避け方（爆撃進路の行と夜明けの帯で同じ文）: 狙いは投下の瞬間の動きの先（直進なら直線、旋回中なら弧）。
+ * 直進中はどちらへ切ってもよく、旋回中は同じ向きに切り続けると当たる（逆へ切る）。僚艇の狙いは常に直線なので僚艇へは「投下で転舵」だけ
+ */
+export const STRIKE_DODGE_RULE_JA = '投下で転舵（旋回中は逆へ）';
 
 /** 2 行目の時計: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む） */
 export function clockJa(t: BoatTelemetry): string {
@@ -37,13 +43,16 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number): s
   return callLabel(call, gunMission);
 }
 
-/** 夜明けの空襲の 2 行目（落下中・爆撃進路・接近・旋回・波の合間）。浅瀬・暴風の警告は hud-lines の withWarnings で後ろに付ける */
-export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boolean): HudLine {
+/**
+ * 夜明けの空襲の 2 行目（落下中・爆撃進路・接近・旋回・波の合間）。僚艇が浮いていれば僚艇の HP（被弾の直後 escortHit は「被弾！」。キャッシュは mission-line の escortKey）、
+ * 浅瀬・暴風の警告は hud-lines の withWarnings で後ろに付ける。落下中の自艇への爆弾は、狙いが旋回の弧の先（fallingArc）なら「旋回と逆へ」
+ */
+export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boolean, escortHit: boolean): HudLine {
   const d = t.dawn;
   let text: string;
   let warn = true;
-  if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : '爆弾投下！ 転舵！';
-  else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下を見たら転舵` : `爆撃進路 ・ ${d.plane + 1} 番機 ・ 投下を見たら舵を切り替えろ`;
+  if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : d.fallingArc ? '爆弾投下！ 旋回と逆へ転舵！' : '爆弾投下！ 転舵！';
+  else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下で転舵` : `爆撃進路 ・ ${d.plane + 1} 番機 ・ ${STRIKE_DODGE_RULE_JA}`;
   else if (d.threat === AS_T_INBOUND) text = `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M} m ・ 帰投を急げ`;
   else if (d.threat === AS_T_ORBIT) {
     text = `敵機 旋回 ・ 次は ${d.plane + 1} 番機 ・ 残り爆弾 ${d.bombsLeft}`;
@@ -52,12 +61,14 @@ export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boo
     text = `敵機 去る ・ 次の空襲まで ${Math.ceil(Number.isNaN(d.restS) ? 0 : d.restS)} 秒 ・ 帰投を急げ`;
     warn = false;
   }
-  return { text: withWarnings(text, t, shallowStep, stormWarn), color: warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
+  if (t.escortEnabled && !t.escortSunk) text += escortHit ? ` ・ 僚艇 被弾！ HP ${Math.ceil(t.escortHp)}` : ` ・ 僚艇 HP ${Math.ceil(t.escortHp)}`;
+  return { text: withWarnings(text, t, shallowStep, stormWarn), color: warn || escortHit ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
 }
 
 /**
- * 空襲の行のキー（planeKey とは別。planeKey の落とした数は 2 ビットで 4 発以上が重なる）:
- * threat | toEscort<<3 | (plane+1)<<4 | bombsLeft<<7 | min(63, 波の合間の秒)<<11 | min(63, 接近の距離の刻み)<<17 | shallowState<<23 | min(31, 浅瀬の刻み)<<25 | 暴風の警告<<30
+ * 空襲の行のキー（planeKey とは別。planeKey の落とした数は 2 ビットで 4 発以上が重なる。僚艇の HP と被弾は mission-line の escortKey）:
+ * threat | toEscort<<3 | (plane+1)<<4 | bombsLeft<<7 | 秒か距離<<11（波の合間は min(63, 秒)、接近は min(63, 距離の刻み)。段で分かれるので 1 つの欄）|
+ * shallowState<<17 | min(31, 浅瀬の刻み)<<19 | 暴風の警告<<24 | 落下中の弧<<25
  */
 export function strikeKey(t: BoatTelemetry): number {
   const d = t.dawn;
@@ -69,11 +80,11 @@ export function strikeKey(t: BoatTelemetry): number {
     (d.toEscort ? 1 << 3 : 0) |
     ((d.plane + 1) << 4) |
     (Math.min(15, d.bombsLeft) << 7) |
-    (rest << 11) |
-    (dist << 17) |
-    (t.shallowState << 23) |
-    (shallowStep << 25) |
-    (stormWarning(t) ? 1 << 30 : 0)
+    ((d.threat === AS_T_REST ? rest : d.threat === AS_T_INBOUND ? dist : 0) << 11) |
+    (t.shallowState << 17) |
+    (shallowStep << 19) |
+    (stormWarning(t) ? 1 << 24 : 0) |
+    (d.threat === AS_T_FALLING && d.fallingArc ? 1 << 25 : 0)
   );
 }
 
@@ -84,7 +95,7 @@ export function strikeKey(t: BoatTelemetry): number {
 export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
   const d = t.dawn;
   if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
-    const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ 投下を見たら舵を切り替えろ`;
+    const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;
     return d.vip && t.escortEnabled && !t.escortSunk ? ['夜明け — 空襲', sub, '僚艇も狙われる ・ 自艇の転舵に僚艇が付いてくる'] : ['夜明け — 空襲', sub];
   }
   return ['夜明け', `${d.labelJa} ・ 敵機は来ない ・ 帰投せよ`];

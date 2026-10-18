@@ -200,7 +200,8 @@ export class MissionLine {
       this.lastEscortKey = escortKey;
       this.lastStrikeKey = sKey;
       if (strikeMode) {
-        const l = strikeLine(t, shallowStep, stormWarn);
+        // 僚艇の HP と被弾（v0.6.1 レビュー: 空襲の行が被弾の行より上なので、行の中で出す。変わったときは escortKey が組み直させる）
+        const l = strikeLine(t, shallowStep, stormWarn, escortHit);
         this.missionText.setText(l.text).setColor(l.color);
       } else if (mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_HIT || mode === MISSION_ESCORT_LAG) {
         const l = mode === MISSION_ESCORT_LOST ? escortLostLine(homeStep) : mode === MISSION_ESCORT_HIT ? escortHitLine(t) : escortLagLine(t, lagStep, shallowStep, stormWarn);

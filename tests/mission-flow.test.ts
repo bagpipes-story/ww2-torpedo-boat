@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
-import { REASON_LABEL, resultDawnSuffixS, resultHeadingJa } from '../src/ui/result-heading';
+import { REASON_LABEL, resultDawnSuffixS, resultEvadePartJa, resultHeadingJa } from '../src/ui/result-heading';
 import {
   CALL_DAWN,
   CALL_EXPENDED,
@@ -139,6 +139,19 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(resultHeadingJa('adrift', resultDawnSuffixS(false, caught), true, false)).toBe('任務終了 — 燃料切れで漂流（夜明け後 42 秒）（ハード）');
     expect(resultHeadingJa('destroyed', NaN, true, false)).toBe('任務終了 — 砲撃で沈没（ハード）');
     expect(resultHeadingJa('returned', 30.4, true, true)).toBe('任務終了 — 帰投した（夜明け後 30 秒）（ハード）（史実）');
+  });
+  it('v0.6.1 Result の「回避 N」: 回避に点のある任務だけ。夜明けだけが理由の 0 は「回避 0（夜明け後）」、見つかった・届けていない・帰投していない 0 には付けない', () => {
+    const r = (over: Partial<{ returned: boolean; objectiveDone: boolean; detections: number; caughtOutside: boolean }> = {}) => {
+      const o = { returned: true, objectiveDone: true, detections: 0, caughtOutside: true, ...over };
+      return { returned: o.returned, objectiveDone: o.objectiveDone, detections: o.detections, dawn: { caughtOutside: o.caughtOutside } };
+    };
+    expect(resultEvadePartJa(undefined, 0, r())).toBe('');
+    expect(resultEvadePartJa(400, 400, r({ caughtOutside: false }))).toBe(' ・ 回避 400');
+    expect(resultEvadePartJa(400, 0, r())).toBe(' ・ 回避 0（夜明け後）');
+    expect(resultEvadePartJa(400, 0, r({ detections: 2 }))).toBe(' ・ 回避 0');
+    expect(resultEvadePartJa(400, 0, r({ objectiveDone: false }))).toBe(' ・ 回避 0');
+    expect(resultEvadePartJa(400, 0, r({ returned: false }))).toBe(' ・ 回避 0');
+    expect(resultEvadePartJa(400, 0, r({ caughtOutside: false, detections: 1 }))).toBe(' ・ 回避 0');
   });
   it('巡航で帰る実秒: 2,580 m は 43.6 秒（time_scale 5、23 kt）', () => {
     const cruiseMps = 23 * 0.5144;

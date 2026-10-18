@@ -35,6 +35,7 @@ import {
 } from '../assets/placeholders';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateRainTexture } from '../assets/storm-placeholder';
+import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures } from '../assets/barge-placeholder';
 import { getBargeParams } from '../config/game-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
@@ -88,6 +89,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
     generateReturnTextures(this);
+    generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);

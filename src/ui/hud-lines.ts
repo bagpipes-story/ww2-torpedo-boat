@@ -2,6 +2,7 @@
 // Phaser も DOM を読む config も使わない（文を組むだけ。色と刻みは config/hud-text-config）。2 行目の文は値が変わったときだけ組む（呼ぶ側がキャッシュする）。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
+import { DAWN_AIR_ENEMY } from '../core/dawn-air';
 import { FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK } from '../core/mission-flow';
 import { SP_APPROACH, SP_FLARE_PASS, SP_LEAVING, SP_ORBIT, SP_OUT_BOMBED, SP_OUT_LOST, SP_RUN } from '../core/seaplane';
@@ -198,9 +199,10 @@ export function escortLagLine(t: BoatTelemetry, lagStep: number, shallowStep: nu
   return { text: withWarnings(`僚艇が遅れている ${lagStep * ESCORT_DISTANCE_STEP_M} m ・ 減速して待て`, t, shallowStep, stormWarn), color: HUD_COLOR_WARN };
 }
 
-/** 僚艇が撃たれた直後 */
+/** 僚艇が撃たれた直後。夜明けの後の空襲の下（v0.6.1）は煙幕が敵機に効かないので転舵の勧め（夜は煙幕か光の外へ） */
 export function escortHitLine(t: BoatTelemetry): HudLine {
-  return { text: `僚艇 被弾！ HP ${Math.ceil(t.escortHp)} / ${t.escortHpMax} ・ 煙幕か光の外へ`, color: HUD_COLOR_WARN };
+  const air = t.dawn.reached && t.dawn.air === DAWN_AIR_ENEMY && t.dawn.strikeEnabled;
+  return { text: `僚艇 被弾！ HP ${Math.ceil(t.escortHp)} / ${t.escortHpMax} ・ ${air ? '転舵して連れて逃げよ' : '煙幕か光の外へ'}`, color: HUD_COLOR_WARN };
 }
 
 /** Result の僚艇の行: 無事（HP・被弾・最大の遅れ）か沈没（秒・被弾）、駆逐艦に見つかった回数（0 なら回避） */
