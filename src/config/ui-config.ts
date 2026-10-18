@@ -54,9 +54,12 @@ export const HUD_FONT_MISSION_PX = 22;
 /** 3 行目: 敵影（見えているか）と発見状態（docs/02 §6.5）。発見されたら警告色 */
 export const HUD_FONT_STATUS_PX = 20;
 export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX + 8;
-/** 史実モードの印（v0.5.2 実機 1 回目「史実の表示がゲーム画面に出ない」）: 上中央の 4 行目。固定文字列なので 1 回だけ描く */
-export const HUD_FONT_BADGE_PX = 18;
-export const HUD_BADGE_OFFSET_Y = HUD_STATUS_OFFSET_Y + HUD_FONT_STATUS_PX + 6;
+/**
+ * 史実モードの印（v0.5.2 実機 2 回目「FPS の右に［史実］とだけ」）: 左上の FPS と同じ行・同じ大きさで、FPS の右に黄色で。固定文字列なので 1 回だけ描く。
+ * x は「FPS 120」（7 文字 × 約 10.8 px）の右に 12 px 空けた所。上中央の「ビルド番号｜データ版」の行（約 80 文字以内）は論理幅 1280 でも x 約 208 から始まるので重ならない
+ */
+export const HUD_HIST_BADGE_JA = '［史実］';
+export const HUD_HIST_BADGE_X = HUD_MARGIN + 88;
 export const HUD_COLOR_WARN = '#ff8a7a';
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった） */
