@@ -34,9 +34,9 @@ export interface TransportSetup extends Omit<DestroyerSetup, 'starts'> {
 
 /**
  * 駆逐艦の数値（enemies.json の AI・反撃を持つ記録）。v0.4.2 で buildWorldSetup から切り出し（中身は v0.4.1 のまま）。
- * hitScale は船体の当たり判定の倍率（buildWorldSetup が data の world.ship_hit_scale か ?debug&shiphit=N の上書きを渡す。v0.4.8）
+ * hitScale は船体の当たり判定の倍率（buildWorldSetup が data の world.ship_hit_scale か ?debug&shiphit=N の上書きを渡す。v0.4.8）。historical は史実モード（v0.5.2。見張り・回避の倍率）
  */
-export function destroyerSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitsOverride: number | null, hitScale: number): DestroyerSetup {
+export function destroyerSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitsOverride: number | null, hitScale: number, historical: boolean = false): DestroyerSetup {
   const world = data.hitRateModel.world;
   const r = getEnemyRecord(data, enemyId);
   // 船体の当たり判定（v0.4.8 から既定は絵と同じ 2 倍）。自艇・大発は hit_scale のまま
@@ -45,7 +45,7 @@ export function destroyerSetup(data: GameData, starts: DestroyerSetup['starts'],
   return {
     starts,
     spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale, boundsMarginM: (r.length_m * world.sprite_scale) / 2 },
-    shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data)),
+    shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data, historical)),
     gunnery: gunneryParamsFromData(r),
     passRadius2: (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam),
     baseDetectM: r.detection.base_detect_m,

@@ -1,4 +1,4 @@
-// 任務中の演出とデバッグ表示: 爆発リング（発生時に 1 回だけ tween）、見越し点マーカーと距離の円（?debug のときだけ）。
+// 任務中の演出と補助表示: 爆発リング（発生時に 1 回だけ tween）、見越し点マーカー（v0.5.2 から解放制。?debug では常に）と距離の円（?debug のときだけ）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -14,7 +14,11 @@ import {
   EXPLOSION_TINT_HIT,
   LEAD_MARKER_ALPHA,
   LEAD_MARKER_SCALE,
+  LEAD_MARKER_TIME_COLOR,
+  LEAD_MARKER_TIME_DY,
+  LEAD_MARKER_TIME_PX,
   LEAD_MARKER_TINT,
+  hudTextStyle,
 } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
 import { interceptHeadingDeg, velocityFromHeading } from '../core/torpedo-solver';
@@ -39,12 +43,17 @@ export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: bo
   });
 }
 
-/** 見越し点マーカー（docs/02 §6.3「v0.1 はデバッグ切替で常時表示可」）。sqrt は 1 回/フレーム、デバッグ時のみ */
+/**
+ * 見越し点マーカー（docs/02 §6.3。aim_assist の lead_marker。showTime なら lead_marker_time＝魚雷が届くまでの実時間秒も）。
+ * sqrt は 1 回/フレーム。秒の文字は整数が変わったときだけ setText（§7）
+ */
 export class LeadMarker {
   private readonly image: Phaser.GameObjects.Image;
+  private readonly time: Phaser.GameObjects.Text | null;
   private readonly tmpVel = { x: 0, y: 0 };
+  private lastSecs = -1;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, showTime: boolean = false) {
     this.image = scene.add
       .image(0, 0, TEXTURE_KEYS.explosionRing)
       .setScale(LEAD_MARKER_SCALE / RENDER_SCALE)
@@ -52,27 +61,44 @@ export class LeadMarker {
       .setAlpha(LEAD_MARKER_ALPHA)
       .setDepth(DEPTH.effects)
       .setVisible(false);
+    this.time = showTime ? scene.add.text(0, 0, '', hudTextStyle(LEAD_MARKER_TIME_PX, LEAD_MARKER_TIME_COLOR)).setOrigin(0.5, 1).setAlpha(LEAD_MARKER_ALPHA).setDepth(DEPTH.effects).setVisible(false) : null;
   }
 
-  /** 今この瞬間に撃った魚雷が当たる方位へ、目標までの距離だけ進んだ点に置く（会合点の近似） */
-  refresh(boat: BoatState, target: BoatState | null, torpedoSpeedMps: number): void {
+  private hide(): void {
+    if (this.image.visible) this.image.setVisible(false);
+    if (this.time?.visible) this.time.setVisible(false);
+  }
+
+  /** 今この瞬間に撃った魚雷が当たる方位へ、目標までの距離だけ進んだ点に置く（会合点の近似）。timeScale は時間圧縮（魚雷は game 秒で進むので実時間秒に直す） */
+  refresh(boat: BoatState, target: BoatState | null, torpedoSpeedMps: number, timeScale: number = 1): void {
     if (!target) {
-      if (this.image.visible) this.image.setVisible(false);
+      this.hide();
       return;
     }
     velocityFromHeading(target.headingDeg, target.speedMps, this.tmpVel);
     const h = interceptHeadingDeg(boat.x, boat.y, torpedoSpeedMps, target.x, target.y, this.tmpVel.x, this.tmpVel.y);
     if (h === null) {
-      if (this.image.visible) this.image.setVisible(false);
+      this.hide();
       return;
     }
     const dist = Math.hypot(target.x - boat.x, target.y - boat.y);
     const hr = degToRad(h);
-    this.image.setPosition(boat.x + Math.sin(hr) * dist, boat.y - Math.cos(hr) * dist).setVisible(true);
+    const x = boat.x + Math.sin(hr) * dist;
+    const y = boat.y - Math.cos(hr) * dist;
+    this.image.setPosition(x, y).setVisible(true);
+    if (this.time) {
+      const secs = Math.round(dist / (torpedoSpeedMps * timeScale));
+      if (secs !== this.lastSecs) {
+        this.lastSecs = secs;
+        this.time.setText(`${secs} 秒`);
+      }
+      this.time.setPosition(x, y - LEAD_MARKER_TIME_DY).setVisible(true);
+    }
   }
 
   destroy(): void {
     this.image.destroy();
+    this.time?.destroy();
   }
 }
 

@@ -44,7 +44,7 @@ const DP = getBoatDamageParams(gameData, MISSION.playerBoatId);
 const rawRec: unknown = gameData.riskEvents.events.find((e) => e.id === 'harbor_fire_explosion');
 if (!isRaidDataRecord(rawRec)) throw new Error('raid params');
 const REC: RaidDataRecord = rawRec;
-const sortie = (over: Partial<Sortie>): Sortie => ({ missionId: 'us_02', seed: 1, raid: true, choice: RAID_NONE, stayHit: false, hard: false, ...over });
+const sortie = (over: Partial<Sortie>): Sortie => ({ missionId: 'us_02', seed: 1, raid: true, choice: RAID_NONE, stayHit: false, hard: false, historical: false, ...over });
 
 describe('出撃と港内空襲（docs/02 §6.8、v0.4.0）', () => {
   it('data: us_02 本体は空襲なし（null。実機で外した）。hazards に足した複製は 0.5・分散 0.9・至近弾 0.5・HP −20・火災。params を消した複製は例外', () => {
@@ -85,9 +85,9 @@ describe('出撃と港内空襲（docs/02 §6.8、v0.4.0）', () => {
     expect(isRaidDataRecord({ params: { chance: 0.5 } })).toBe(false);
   });
   it('抽選は seed+4 の系列から必ず 2 回: seed 1 は空襲なし、3 は空襲・至近弾、4 は空襲・無傷。SeededRng(7) の 1・2 回目と一致し、同じ seed なら同じ', () => {
-    expect(rollRaid('us_02', 1, P)).toEqual({ missionId: 'us_02', seed: 1, raid: false, choice: RAID_NONE, stayHit: false, hard: false });
-    expect(rollRaid('us_02', 3, P)).toEqual({ missionId: 'us_02', seed: 3, raid: true, choice: RAID_NONE, stayHit: true, hard: false });
-    expect(rollRaid('us_02', 4, P)).toEqual({ missionId: 'us_02', seed: 4, raid: true, choice: RAID_NONE, stayHit: false, hard: false });
+    expect(rollRaid('us_02', 1, P)).toEqual({ missionId: 'us_02', seed: 1, raid: false, choice: RAID_NONE, stayHit: false, hard: false, historical: false });
+    expect(rollRaid('us_02', 3, P)).toEqual({ missionId: 'us_02', seed: 3, raid: true, choice: RAID_NONE, stayHit: true, hard: false, historical: false });
+    expect(rollRaid('us_02', 4, P)).toEqual({ missionId: 'us_02', seed: 4, raid: true, choice: RAID_NONE, stayHit: false, hard: false, historical: false });
     const r = new SeededRng(7);
     const u1 = r.next();
     const u2 = r.next();
@@ -135,18 +135,18 @@ describe('出撃と港内空襲（docs/02 §6.8、v0.4.0）', () => {
     expect(parseRaidOverride('x', false)).toBe('none');
   });
   it('直行: disperse は分散、stay は残って無傷、hit は残って至近弾で出撃。none・force・off は空襲なし', () => {
-    expect(directSortie('us_02', 9, 'disperse')).toEqual({ missionId: 'us_02', seed: 9, raid: true, choice: RAID_DISPERSE, stayHit: false, hard: false });
-    expect(directSortie('us_02', 9, 'stay')).toEqual({ missionId: 'us_02', seed: 9, raid: true, choice: RAID_STAY, stayHit: false, hard: false });
-    expect(directSortie('us_02', 9, 'hit')).toEqual({ missionId: 'us_02', seed: 9, raid: true, choice: RAID_STAY, stayHit: true, hard: false });
-    for (const o of ['none', 'force', 'off'] as RaidOverride[]) expect(directSortie('us_02', 9, o)).toEqual({ missionId: 'us_02', seed: 9, raid: false, choice: RAID_NONE, stayHit: false, hard: false });
+    expect(directSortie('us_02', 9, 'disperse')).toEqual({ missionId: 'us_02', seed: 9, raid: true, choice: RAID_DISPERSE, stayHit: false, hard: false, historical: false });
+    expect(directSortie('us_02', 9, 'stay')).toEqual({ missionId: 'us_02', seed: 9, raid: true, choice: RAID_STAY, stayHit: false, hard: false, historical: false });
+    expect(directSortie('us_02', 9, 'hit')).toEqual({ missionId: 'us_02', seed: 9, raid: true, choice: RAID_STAY, stayHit: true, hard: false, historical: false });
+    for (const o of ['none', 'force', 'off'] as RaidOverride[]) expect(directSortie('us_02', 9, o)).toEqual({ missionId: 'us_02', seed: 9, raid: false, choice: RAID_NONE, stayHit: false, hard: false, historical: false });
   });
   it('出撃時の状態: 空襲なし・未選択・p null は効果なし、分散は 0.9・0・なし、至近弾は 1・20・火災、無傷は効果なし', () => {
     expect(sortieConditions(sortie({ raid: false }), P)).toEqual(NO_SORTIE_EFFECT);
     expect(sortieConditions(sortie({ choice: RAID_NONE }), P)).toEqual(NO_SORTIE_EFFECT);
-    expect(sortieConditions(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), null)).toEqual(NO_SORTIE_EFFECT);
+    expect(sortieConditions(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), null)).toEqual(NO_SORTIE_EFFECT);
     expect(sortieConditions(sortie({ choice: RAID_DISPERSE }), P)).toEqual({ fuelFactor: 0.9, hpLoss: 0, fireAtStart: false });
-    expect(sortieConditions(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), P)).toEqual({ fuelFactor: 1, hpLoss: 20, fireAtStart: true });
-    expect(sortieConditions(sortie({ choice: RAID_STAY, stayHit: false, hard: false }), P)).toEqual(NO_SORTIE_EFFECT);
+    expect(sortieConditions(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), P)).toEqual({ fuelFactor: 1, hpLoss: 20, fireAtStart: true });
+    expect(sortieConditions(sortie({ choice: RAID_STAY, stayHit: false, hard: false, historical: false }), P)).toEqual(NO_SORTIE_EFFECT);
   });
   it('出撃時の被害: 至近弾は HP 80・火災 20 秒・機関損傷なし、効果なしは 100・0・なし', () => {
     expect(startDamageState(DP, { fuelFactor: 1, hpLoss: 20, fireAtStart: true })).toEqual({ hp: 80, engineDamaged: false, fireLeftS: 20 });
@@ -176,27 +176,27 @@ describe('出撃と港内空襲（docs/02 §6.8、v0.4.0）', () => {
     expect(raidChoiceText(P, RAID_STAY)).toEqual({ title: '残って給油・消火', detail: '燃料 100% ・ 50% で HP −20・火災' });
     expect(raidOutcomeText(sortie({ choice: RAID_DISPERSE }), P)).toBe('分散した。燃料 90% で出撃');
     expect(raidOutcomeText(sortie({ choice: RAID_STAY }), P)).toBe('被弾なし。燃料 100% で出撃');
-    expect(raidOutcomeText(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), P)).toBe('至近弾！ HP −20・火災のまま出撃 — 出たらすぐ「消火」を長押し');
-    expect(raidOutcomeText(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), { ...P, stayHitFire: false })).toBe('至近弾！ HP −20 で出撃');
+    expect(raidOutcomeText(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), P)).toBe('至近弾！ HP −20・火災のまま出撃 — 出たらすぐ「消火」を長押し');
+    expect(raidOutcomeText(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), { ...P, stayHitFire: false })).toBe('至近弾！ HP −20 で出撃');
     expect(raidOutcomeText(sortie({ choice: RAID_NONE }), P)).toBe('');
     expect(raidOutcomeText(sortie({ raid: false }), P)).toBe('');
     expect(raidResultLine(sortie({ raid: false }), P, NaN)).toBe('出撃前: 空襲なし');
     expect(raidResultLine(sortie({ choice: RAID_DISPERSE }), P, NaN)).toBe('出撃前: 港内空襲 → 分散して退避（燃料 90% で出撃）');
     expect(raidResultLine(sortie({ choice: RAID_STAY }), P, NaN)).toBe('出撃前: 港内空襲 → 残って給油・消火（被弾なし）');
-    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), P, 2.44)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20・火災 2.4 秒');
-    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), P, NaN)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20・火災');
-    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), P, -1)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20・火災');
-    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false }), { ...P, stayHitFire: false }, NaN)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20');
+    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), P, 2.44)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20・火災 2.4 秒');
+    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), P, NaN)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20・火災');
+    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), P, -1)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20・火災');
+    expect(raidResultLine(sortie({ choice: RAID_STAY, stayHit: true, hard: false, historical: false }), { ...P, stayHitFire: false }, NaN)).toBe('出撃前: 港内空襲 → 残って給油・消火 → 至近弾 HP −20');
     expect(raidResultLine(sortie({ raid: false }), null, NaN)).toBe('');
   });
   it('受け渡しの検査: isSortie・isBriefingInit は正しい形だけ通す。seedForBriefing は同じ任務の保留だけを使う', () => {
     const ok = sortie({});
     expect(isSortie(ok)).toBe(true);
-    for (const bad of [{}, { ...ok, seed: undefined }, { ...ok, seed: NaN }, { ...ok, seed: -1 }, { ...ok, seed: 1.5 }, { ...ok, choice: 3 }, { ...ok, choice: '1' }, { ...ok, missionId: '' }, null, 'x']) expect(isSortie(bad)).toBe(false);
-    expect(isBriefingInit({ missionId: 'us_02', seed: 0, hard: false })).toBe(true);
-    expect(isBriefingInit({ missionId: 'us_02', seed: 0xffffffff, hard: true })).toBe(true);
-    for (const bad of [{}, { missionId: 'us_02' }, { missionId: '', seed: 1 }, { missionId: 'us_02', seed: -1 }, { missionId: 'us_02', seed: 2 ** 32 }]) expect(isBriefingInit(bad)).toBe(false);
-    expect(seedForBriefing({ missionId: 'us_02', seed: 77, hard: false }, 'us_02', 5)).toBe(77);
+    for (const bad of [{}, { ...ok, seed: undefined }, { ...ok, seed: NaN }, { ...ok, seed: -1 }, { ...ok, seed: 1.5 }, { ...ok, choice: 3 }, { ...ok, choice: '1' }, { ...ok, missionId: '' }, { ...ok, historical: undefined }, null, 'x']) expect(isSortie(bad)).toBe(false);
+    expect(isBriefingInit({ missionId: 'us_02', seed: 0, hard: false, historical: false })).toBe(true);
+    expect(isBriefingInit({ missionId: 'us_02', seed: 0xffffffff, hard: true, historical: true })).toBe(true);
+    for (const bad of [{}, { missionId: 'us_02' }, { missionId: '', seed: 1 }, { missionId: 'us_02', seed: -1 }, { missionId: 'us_02', seed: 2 ** 32 }, { missionId: 'us_02', seed: 0, hard: false }]) expect(isBriefingInit(bad)).toBe(false);
+    expect(seedForBriefing({ missionId: 'us_02', seed: 77, hard: false, historical: false }, 'us_02', 5)).toBe(77);
     expect(seedForBriefing({ missionId: 'us_03', seed: 77 }, 'us_02', 5)).toBe(5);
     expect(seedForBriefing(null, 'us_02', 5)).toBe(5);
     expect(seedForBriefing({ missionId: 'us_02', seed: -1 }, 'us_02', 5)).toBe(5);

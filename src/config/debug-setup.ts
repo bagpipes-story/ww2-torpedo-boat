@@ -23,6 +23,7 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     dawnS: DEBUG_DAWN_S,
     sortie,
     hard,
+    historical: sortie.historical,
     stormOff: DEBUG_STORM_OFF,
     planeOff: DEBUG_SEAPLANE_OFF,
     bargesNear: DEBUG_BARGES_NEAR,

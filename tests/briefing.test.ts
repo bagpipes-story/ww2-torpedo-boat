@@ -111,7 +111,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     const proto = byId(raidData, 'us_02')['v0_1_prototype'] as Record<string, unknown>;
     proto['hazards'] = [...(proto['hazards'] as string[]), 'harbor_fire_explosion'];
     const p = getRaidParams(raidData, getPrototypeMission(raidData, 'us_02'))!;
-    const s = { missionId: 'us_02', seed: 3, raid: true, choice: RAID_STAY, stayHit: true, hard: false };
+    const s = { missionId: 'us_02', seed: 3, raid: true, choice: RAID_STAY, stayHit: true, hard: false, historical: false };
     const texts: string[] = [RAID_ALERT_JA, RAID_CALM_JA, raidChoiceText(p, RAID_DISPERSE).detail, raidChoiceText(p, RAID_STAY).detail, raidOutcomeText(s, p), raidResultLine(s, p, 1)];
     for (const e of getMenuEntries(gameData).entries) {
       const m = byId(gameData, e.id);

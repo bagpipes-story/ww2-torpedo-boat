@@ -18,6 +18,7 @@ import {
   getRaidParams,
   getStormParams,
   getTorpedoRecord,
+  getHistoricalReliability,
   getVisibilityParams,
   type GameData,
   getShoreBatteryParamsList,
@@ -103,6 +104,8 @@ export interface WorldSetup {
   shoreBatteries: ShoreBatteryParams[];
   /** 難易度ハード（v0.4.5） */
   hard: boolean;
+  /** 史実モード（v0.5.2。hit_rate_model.historical_mode） */
+  historical: boolean;
   /** 輸送船（v0.4.7）。任務に transport が無いか ?debug&notransport なら null */
   transport: TransportSetup | null;
   /** 僚艇（v0.4.4。任務に escort があるとき。駆逐艦の任務だけ） */
@@ -132,6 +135,8 @@ export interface SetupOptions {
   sortie?: Sortie | null;
   /** 難易度ハード（sortie があれば sortie.hard と同じでなければ例外） */
   hard?: boolean;
+  /** 史実モード（v0.5.2。省けば sortie の値、sortie も無ければオフ。sortie と違えば例外） */
+  historical?: boolean;
   stormOff?: boolean;
   planeOff?: boolean;
   bargesNear?: boolean;
@@ -152,10 +157,12 @@ export interface SetupOptions {
 export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptions = {}): WorldSetup {
   const sortie = o.sortie ?? null;
   const hard = o.hard ?? false;
+  const historical = o.historical ?? sortie?.historical ?? false;
   const debugFuelAllotmentGal = o.fuelGal ?? NaN;
   const debugDawnS = o.dawnS ?? NaN;
   if (sortie && sortie.missionId !== missionId) throw new Error(`出撃（${sortie.missionId}）と任務（${missionId}）が違う`);
   if (sortie && sortie.hard !== hard) throw new Error(`出撃の難易度（${sortie.hard ? 'ハード' : 'ノーマル'}）と引数が違う`);
+  if (sortie && sortie.historical !== historical) throw new Error(`出撃の史実モード（${sortie.historical ? 'オン' : 'オフ'}）と引数が違う`);
   const world = data.hitRateModel.world;
   const launch = data.hitRateModel.torpedo_launch;
   const feel = data.hitRateModel.feel;
@@ -177,12 +184,12 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const absent = (id: string): boolean => absentHazards.includes(id);
   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
   const shipHitScale = o.shipHitScale !== undefined && o.shipHitScale > 0 ? o.shipHitScale : world.ship_hit_scale;
-  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale) : null;
+  const destroyer = mission.enemyStart ? destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical) : null;
   const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
   if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
   let transport: TransportSetup | null = null;
   if (destroyer && tr) {
-    const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null, shipHitScale);
+    const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null, shipHitScale, historical);
     transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[applied.starts.length - 1]! };
   }
   const barges = applied.barges;
@@ -193,7 +200,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
   const fuelAllotmentGal = effectiveFuelAllotmentGal(data, mission, debugFuelAllotmentGal);
   if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
-  const vis = getVisibilityParams(data, mission.moon);
+  const vis = getVisibilityParams(data, mission.moon, historical);
   const visRange = playerVisRangeM(vis);
   const baseDetectM = destroyer ? destroyer.baseDetectM : barges!.baseDetectM;
   const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
@@ -235,11 +242,13 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     shoreBattery: shoreBatteries[0] ?? null,
     shoreBatteries,
     hard,
+    historical,
     transport,
     escort: getEscortParams(data, mission),
     torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
-    torpedoReliability: torpedoReliabilityFromData(torpedoRecord),
+    // 史実モード（v0.5.2）は不発・蛇行の確率を historical_mode.reliability で上書き（torpedoes.json の値の代わり）
+    torpedoReliability: historical ? getHistoricalReliability(data) : torpedoReliabilityFromData(torpedoRecord),
     torpedoJitterDeg: torpedoRecord.reliability.jitter_deg,
     launchOffsetM: boatRecord.beam_m / 2,
     salvoIntervalS: launch.salvo_interval_s,
@@ -260,9 +269,11 @@ function coastEdgeYOf(m: PrototypeMission): number {
 }
 
 /** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */
-export function briefingNumbers(s: WorldSetup): BriefingNumbers {
+export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): BriefingNumbers {
   const f = s.vis.speedFactor;
   return {
+    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）
+    ...(aimAssistJa ? { aimAssistJa } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),

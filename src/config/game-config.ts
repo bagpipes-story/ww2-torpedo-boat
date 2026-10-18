@@ -32,6 +32,8 @@ export const REGISTRY_KEY_TELEMETRY = 'boatTelemetry';
 export const REGISTRY_KEY_PENDING_SORTIE = 'pendingSortie';
 /** Title で選んだ難易度（true＝ハード。v0.4.5）。Title → Briefing → Mission → Result の「もう一度」まで持ち回る。初期値はノーマル */
 export const REGISTRY_KEY_HARD = 'hardMode';
+/** Title で選んだ史実モード（true＝オン。v0.5.2。hit_rate_model.historical_mode）。難易度と同じく Result の「もう一度」まで持ち回る。初期値は data の enabled_default（オフ） */
+export const REGISTRY_KEY_HISTORICAL = 'historicalMode';
 
 /** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
 export const DPR_CAP = 2;
@@ -85,6 +87,10 @@ export const DEBUG_TRANSPORT_OFF = DEBUG_ENABLED && new URLSearchParams(window.l
 export const DEBUG_FIXED_NIGHT = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('fixed');
 /** ?debug&hard: 直行の出撃を難易度ハードに（v0.4.5。敵の数が増える。通し（&title）では Title の切り替えが優先） */
 export const DEBUG_HARD = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('hard');
+/** ?debug&historical: 直行の出撃を史実モードに（v0.5.2。通し（&title）では Title の切り替えが優先） */
+export const DEBUG_HISTORICAL = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('historical');
+/** ?debug&sorties=N: 終えた任務の回数を N とみなす（v0.5.2。見越し点マーカーの解放を実機・ヘッドレスで確かめる。保存した回数は変えない）。無ければ NaN（保存した回数） */
+export const DEBUG_SORTIES = debugNumber('sorties');
 /** ?debug&shiphit=N: 駆逐艦・輸送船の船体の当たり判定の倍率（v0.4.8。data の world.ship_hit_scale の代わり。1 = v0.4.7 までの実寸、2 = 絵と同じ。実機で比べる・再生の比較用）。無ければ NaN（data の値） */
 export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */

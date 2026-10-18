@@ -40,15 +40,32 @@ export const TITLE_ROW_STATUS_PX = 24;
 export const TITLE_HINT_Y = 560;
 export const TITLE_HINT_PX = 18;
 export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷（大発は射撃）・ 右上で煙幕';
-/** 難易度の切り替え（v0.4.5。操作の一言の下。タップで ノーマル ⇄ ハード） */
+/**
+ * 操作の一言の下の 2 つの切り替え: 難易度（v0.4.5。タップで ノーマル ⇄ ハード）と史実モード（v0.5.2。タップで オフ ⇄ オン）。
+ * 同じ大きさで中央に並べる（v0.5.1 までは難易度だけ中央）。論理幅 1280 でも左右に 108 px 余る
+ */
 export const TITLE_DIFF_W = 520;
 export const TITLE_DIFF_H = 88;
-export const TITLE_DIFF_X = (GAME_WIDTH - TITLE_DIFF_W) / 2;
+export const TITLE_TOGGLE_GAP = 24;
+export const TITLE_DIFF_X = GAME_WIDTH / 2 - TITLE_TOGGLE_GAP / 2 - TITLE_DIFF_W;
+export const TITLE_HIST_X = GAME_WIDTH / 2 + TITLE_TOGGLE_GAP / 2;
 export const TITLE_DIFF_Y = 596;
 export const TITLE_DIFF_PX = 26;
 export const TITLE_DIFF_NORMAL_JA = '難易度: ノーマル';
 export const TITLE_DIFF_HARD_JA = '難易度: ハード';
 export const TITLE_DIFF_SUB_JA = 'タップで切替 ・ ハードは敵の数が増える';
+/** 史実モードの題は data の title_ja（「史実モード」）に「: オフ／オン」。2 行目は data の倍率と不発の確率から作る */
+export const TITLE_HIST_OFF_JA = ': オフ';
+export const TITLE_HIST_ON_JA = ': オン';
+export function titleHistSubJa(evasionMultiplier: number, dudPct: number): string {
+  // 幅 520 に収める（「タップで切替」は左の難易度に書いてある。ヘッドレスで長い文がはみ出した）
+  return `敵の回避 ×${evasionMultiplier} ・ 不発 ${dudPct}% ・ マーカーなし`;
+}
+/** Briefing の 1 行目と Result の見出しに足す印 */
+export const BRIEF_HISTORICAL_JA = ' ・ 史実モード';
+export const RESULT_HISTORICAL_TAG_JA = '（史実）';
+/** Result: 史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠。CLAUDE.md §9） */
+export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;

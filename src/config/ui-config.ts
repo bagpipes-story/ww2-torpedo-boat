@@ -156,10 +156,14 @@ export const SINK_TILT_DEG = 18;
 /** 魚雷ボタン: 本数の予告「一斉 N 本」の位置（ボタン上端からの隙間）と残弾 0 のときの濃さ */
 export const TORPEDO_SPREAD_LABEL_GAP = 8;
 export const TORPEDO_BUTTON_EMPTY_ALPHA_FACTOR = 0.4;
-/** デバッグ時（?debug）だけ出す見越し点マーカー（docs/02 §6.3「v0.1 はデバッグ切替で常時表示可」） */
+/** 見越し点マーカー（docs/02 §6.3。v0.5.1 までは ?debug だけ、v0.5.2 から任務を 3 回終えると解放。?debug では常に） */
 export const LEAD_MARKER_SCALE = 0.35;
 export const LEAD_MARKER_TINT = 0xffe066;
 export const LEAD_MARKER_ALPHA = 0.8;
+/** 到達秒数（v0.5.2。aim_assist の lead_marker_time。任務を 6 回終えると解放）: マーカーの上に「N 秒」。世界座標の px（既定ズーム 0.75 で約 20 px） */
+export const LEAD_MARKER_TIME_PX = 26;
+export const LEAD_MARKER_TIME_DY = 36;
+export const LEAD_MARKER_TIME_COLOR = '#ffe066';
 
 /** デバッグ時（?debug）だけ出す距離の円: テクスチャの半径（世界単位。表示時に必要な半径へ拡縮する）、線幅、色、濃さ */
 export const DEBUG_RING_RADIUS_UNITS = 500;
