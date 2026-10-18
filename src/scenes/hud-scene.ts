@@ -5,6 +5,7 @@ import {
   DEBUG_DAWN_S,
   DEBUG_FUEL_ALLOTMENT_GAL,
   DEBUG_SHIP_HIT_SCALE,
+  DEPTH,
   GAME_HEIGHT,
   GAME_WIDTH,
   HUD_MARGIN,
@@ -40,7 +41,12 @@ import {
   ROUND_BUTTON_RADIUS,
   TARGET_MARKER_DISTANCE_STEP_M,
   TARGET_MARKER_TOP_MARGIN,
+  HUD_BADGE_OFFSET_Y,
+  HUD_COLOR_KPI,
+  HUD_FONT_BADGE_PX,
+  hudTextStyle,
 } from '../config/ui-config';
+import { titleHistSubJa } from '../config/menu-config';
 import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
 import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR, GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HoldButton } from '../systems/hold-button';
@@ -89,6 +95,8 @@ export class HudScene extends Phaser.Scene {
   private missionId: string = PROTOTYPE_MISSION_ID;
   /** 難易度ハード（v0.4.5。出撃から） */
   private hard = false;
+  /** 史実モード（v0.5.2。出撃から） */
+  private historical = false;
 
   constructor() {
     super(SCENE_KEYS.hud);
@@ -97,6 +105,7 @@ export class HudScene extends Phaser.Scene {
   init(data: unknown): void {
     this.missionId = isSortie(data) ? data.missionId : PROTOTYPE_MISSION_ID;
     this.hard = isSortie(data) ? data.hard : false;
+    this.historical = isSortie(data) ? data.historical : false;
   }
 
   create(): void {
@@ -120,6 +129,11 @@ export class HudScene extends Phaser.Scene {
       dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s${Number.isFinite(DEBUG_SHIP_HIT_SCALE) ? ` ・ 当たり x${DEBUG_SHIP_HIT_SCALE}` : ''}`,
     });
     this.boatHud = new BoatHud(this);
+    // 史実モードの印（v0.5.2 実機 1 回目「史実の表示がゲーム画面に出ない」）: 上中央の 4 行目に黄色で。固定文字列なので 1 回だけ描く（§7）
+    if (this.historical) {
+      const hm = data.hitRateModel.historical_mode;
+      this.add.text(GAME_WIDTH / 2, HUD_MARGIN + HUD_BADGE_OFFSET_Y, `${hm.title_ja} ・ ${titleHistSubJa(hm.enemy_evasion_multiplier, Math.round(hm.reliability.dud * 100))}`, hudTextStyle(HUD_FONT_BADGE_PX, HUD_COLOR_KPI)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
+    }
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」で切り上げ＝2 行目の手引きと同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）

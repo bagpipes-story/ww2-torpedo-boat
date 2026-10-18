@@ -25,6 +25,10 @@ describe('見越し点マーカーの解放（v0.5.2。core/progress、hit_rate_
     expect(aimAssistStatusJa(LEVELS, 2, false)).toBe('見越し点マーカー: あと 1 回の任務で解放（終えた任務 2 回）');
     expect(aimAssistStatusJa(LEVELS, 3, false)).toBe('見越し点マーカー 使用可（見越し点＋到達秒数は あと 3 回）');
     expect(aimAssistStatusJa(LEVELS, 6, false)).toBe('見越し点＋到達秒数 使用可');
+    // Title で「使わない」（実機 1 回目）: 解放後だけ効く。解放前は回数の案内のまま
+    expect(aimAssistStatusJa(LEVELS, 3, false, false)).toBe('見越し点マーカー 使わない（任務一覧で切り替え）');
+    expect(aimAssistStatusJa(LEVELS, 2, false, false)).toBe('見越し点マーカー: あと 1 回の任務で解放（終えた任務 2 回）');
+    expect(aimAssistStatusJa(LEVELS, 9, true, false)).toBe('史実モード: 見越し点マーカーなし');
     expect(aimAssistStatusJa(LEVELS, 9, true)).toBe('史実モード: 見越し点マーカーなし');
   });
   it('段階の検査: 空・最初が none 以外・0 以外・回数が増えない・id の重複は不可。壊れた data は getAimAssistLevels が例外', () => {

@@ -73,7 +73,7 @@ import {
   type RaidParams,
   type Sortie,
 } from '../core/sortie';
-import { sortiesDone } from '../systems/progress-storage';
+import { leadMarkerEnabled, sortiesDone } from '../systems/progress-storage';
 import { briefingNumbers, buildWorldSetup } from '../systems/world-setup';
 import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
 
@@ -137,7 +137,7 @@ export class BriefingScene extends Phaser.Scene {
     // 6 行: ラベルと値（値は折り返し、次の行は値の高さぶん下げる）。続けて史実の 1 行
     let y = BRIEF_ROW_TOP;
     // 条件の行に見越し点マーカーの解放の状態（v0.5.2。終えた任務の回数は localStorage。史実モードでは「なし」）
-    const rows = briefingRows(rec, briefingNumbers(setup, aimAssistStatusJa(getAimAssistLevels(data), sortiesDone(), this.historical)), (e) => enemyNameJa(data, e), (h) => riskLabelJa(data, h));
+    const rows = briefingRows(rec, briefingNumbers(setup, aimAssistStatusJa(getAimAssistLevels(data), sortiesDone(), this.historical, leadMarkerEnabled())), (e) => enemyNameJa(data, e), (h) => riskLabelJa(data, h));
     for (const r of rows) {
       this.add.text(BRIEF_X, y, r.label, hudTextStyle(BRIEF_ROW_PX, HUD_COLOR)).setDepth(DEPTH.hud);
       const v = this.add.text(BRIEF_VALUE_X, y, r.text, menuWrapStyle(BRIEF_ROW_PX, HUD_COLOR_STRONG, BRIEF_VALUE_WRAP)).setDepth(DEPTH.hud);

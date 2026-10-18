@@ -5,6 +5,8 @@ import { DEBUG_SORTIES } from '../config/game-config';
 import { parseSortieCount, serializeSortieCount } from '../core/progress';
 
 const KEY = 'night-hunters.sorties';
+/** 見越し点マーカーを使うか（v0.5.2 実機 1 回目「使うかどうか選択制に」）。'0' で使わない。無い・読めなければ使う */
+const MARKER_KEY = 'night-hunters.lead-marker';
 
 function read(): string | null {
   try {
@@ -29,4 +31,21 @@ export function recordSortie(): number {
     // 覚えないだけ
   }
   return n;
+}
+
+/** 見越し点マーカーを使う設定か（解放していても、使わないを選べる。Title で切り替え） */
+export function leadMarkerEnabled(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(MARKER_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function setLeadMarkerEnabled(v: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(MARKER_KEY, v ? '1' : '0');
+  } catch {
+    // 覚えないだけ
+  }
 }

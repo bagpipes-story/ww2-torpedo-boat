@@ -36,7 +36,7 @@ import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
 import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
 import { recordKpi } from '../systems/kpi-storage';
-import { recordSortie, sortiesDone } from '../systems/progress-storage';
+import { leadMarkerEnabled, recordSortie, sortiesDone } from '../systems/progress-storage';
 import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
 
@@ -169,9 +169,10 @@ export class MissionScene extends Phaser.Scene {
     this.refreshReturnState(0);
     this.refreshTelemetry();
 
-    // 見越し点マーカー（docs/02 §6.3。v0.5.2 から解放制）: 終えた任務の回数で解放した段階（3 回で輪、6 回で到達秒数も）。史実モードでは出ない。?debug では段階に関わらず出す。距離の円は ?debug だけ
+    // 見越し点マーカー（docs/02 §6.3。v0.5.2 から解放制）: 終えた任務の回数で解放した段階（3 回で輪、6 回で到達秒数も）。史実モードでは出ない。
+    // Title で「使わない」にしていれば出さない（実機 1 回目）。?debug では段階に関わらず出す（使わないは効く）。距離の円は ?debug だけ
     const assist = aimAssistLevelFor(getAimAssistLevels(data), sortiesDone(), this.sortie.historical);
-    if (DEBUG_ENABLED || assist.id !== AIM_ASSIST_NONE) this.leadMarker = new LeadMarker(this, assist.id === AIM_ASSIST_LEAD_MARKER_TIME);
+    if (leadMarkerEnabled() && (DEBUG_ENABLED || assist.id !== AIM_ASSIST_NONE)) this.leadMarker = new LeadMarker(this, assist.id === AIM_ASSIST_LEAD_MARKER_TIME);
     if (DEBUG_ENABLED) this.debugRanges = new DebugRanges(this);
 
     this.scene.launch(SCENE_KEYS.hud, this.sortie);

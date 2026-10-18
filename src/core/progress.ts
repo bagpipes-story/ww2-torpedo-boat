@@ -41,12 +41,13 @@ export function nextAimAssistUnlock(levels: readonly AimAssistLevel[], sortiesDo
   return null;
 }
 
-/** Briefing の「条件」に足す一言: 解放までの回数か、使える段階 */
-export function aimAssistStatusJa(levels: readonly AimAssistLevel[], sortiesDone: number, historical: boolean): string {
+/** Briefing の「条件」に足す一言: 解放までの回数か、使える段階。enabled は Title の「使う／使わない」（解放していても使わないを選べる） */
+export function aimAssistStatusJa(levels: readonly AimAssistLevel[], sortiesDone: number, historical: boolean, enabled: boolean = true): string {
   if (historical) return `史実モード: ${levels[1]?.nameJa ?? '見越し点マーカー'}なし`;
   const cur = aimAssistLevelFor(levels, sortiesDone, false);
   const next = nextAimAssistUnlock(levels, sortiesDone);
   if (cur.id === AIM_ASSIST_NONE) return next ? `${next.nameJa}: あと ${next.unlockSorties - sortiesDone} 回の任務で解放（終えた任務 ${sortiesDone} 回）` : '';
+  if (!enabled) return `${cur.nameJa} 使わない（任務一覧で切り替え）`;
   return `${cur.nameJa} 使用可${next ? `（${next.nameJa}は あと ${next.unlockSorties - sortiesDone} 回）` : ''}`;
 }
 
