@@ -34,7 +34,7 @@ if (process.env['TABLE'] === '1') {
   for (const c of STRIKE_CALIBRATION) {
     const r = runCalibrationCell(gameData, c, n, o);
     const miss = calibrationMisses(c, r);
-    const proto = `${c.protoSurvPct}% h${hpb(c.protoHitsPerBomb)}${Number.isNaN(c.protoVipPct) ? '' : ` v${c.protoVipPct}%`}`;
+    const proto = `${Number.isNaN(c.protoSurvPct) ? '—' : `${c.protoSurvPct}%`} h${hpb(c.protoHitsPerBomb)}${Number.isNaN(c.protoVipPct) ? '' : ` v${c.protoVipPct}%`}`;
     console.log(`${calibrationLabel(c).padEnd(26)}${cellText(r).padEnd(18)}${proto.padEnd(18)}${band(c.survPct, '生還', '%')}${band(c.vipPct, '僚艇', '%')}${band(c.hitsPerBomb, '1 発', '')}  ${miss.length === 0 ? '✓' : `✗ ${miss.join('・')}`}`);
   }
 } else {
