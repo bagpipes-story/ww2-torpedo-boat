@@ -428,7 +428,32 @@
         "others": "design",
         "design_notes": "v0.6.1（夜明けの空襲。段階と時間は risk_events の dawn_air_strike.params）。release_altitude_m 200: 落下 √(2h/g) = 6.39 game 秒（体感 1.28 秒）＝投下を見てからの回避の窓。高いほど落下が長く、かわしやすい（実機で『理不尽』なら上げる・『ぬるい』なら下げる）。150 m（体感 1.11 秒）では反応 0.7 秒の転舵でも 1 発 約 0.5 と直進並みに当たり（輪の縁まで全速 30 秒で us_01 57%・jp_06 8%）、250 m（1.43 秒）では反応 0.35 秒でほぼ外れる（1 発 0.00〜0.01、us_01 100%・jp_06 99%）。200 m は反応 0.7 秒で us_01 82%・jp_06 16%（scripts/dawn-strike-sim.ts ALT=150/200/250・SECS=30・N=300。投下の間隔 3 秒のときの値。v0.6.1 実機 1 回目で間隔 2 秒にした後の表は risk_events の dawn_air_strike.params.source）。accuracy_cep_m 32: 一様円盤 R = 32√2 = 45.3 m。直進・停止の艇に 1 発 約 0.6（夜の水偵の CEP 40・0.38 より良い＝昼の照準）。狙いは投下の瞬間の艇の位置・速度・旋回から落下後の位置を見越す（旋回し続けても当たる。舵を切り替えると外れる）。damage 35・fire 0.3・engine 0.2 は夜の水偵と同じ（Elco 77ft は 3 発、T-38 は 2 発で沈む）"
       },
-      "notes": "夜明けの後、敵の制空下の任務（us_01・us_03）で 4 機が波で来る。投下を見たら舵を切り替える（直進なら切る・旋回中なら逆へ切る）。止まる・回り続けるは当たる。"
+      "notes": "夜明けの後、敵の制空下の任務（us_01）で 4 機が波で来る。投下を見たら舵を切り替える（直進なら切る・旋回中なら逆へ切る）。止まる・回り続けるは当たる。"
+    },
+    {
+      "id": "ijn_a6m2n_rufe",
+      "faction": "IJN",
+      "name_ja": "二式水上戦闘機",
+      "strike": {
+        "run_speed_kt": 120,
+        "release_altitude_m": 200,
+        "bomb": {
+          "count": 2,
+          "damage": 35,
+          "blast_radius_m": 25,
+          "accuracy_cep_m": 32,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        }
+      },
+      "source": {
+        "type": "historical (A6M2-N。零戦一一型を元にした水上戦闘機。武装 7.7mm × 2・20mm × 2、爆弾 60 kg × 2: Wikipedia「Nakajima A6M2-N」・valka.cz。日本語の記事（trafficnews）は機銃・機関砲の数まで。抜粋のみ・本文未読) / design (us_03 の機体は v0.6.1 の実機 2 回目でユーザーが二式水戦に指定。1943-07 のフオン湾で二式水戦が昼に PT を襲った記録は未確認)",
+        "bomb.count": "historical (60 kg × 2。同上の 2 件で一致)",
+        "run_speed_kt": "design (実速は零観よりずっと速い（historical）が、投下の予告を読めるよう零観と同じ 120 kt)",
+        "others": "design",
+        "design_notes": "v0.6.1 実機 2 回目。値は ijn_f1m2_pete と同じ（爆弾 2 発・高さ 200 m・CEP 32・HP −35・火災 0.3・機関 0.2）。機銃・機関砲の掃射は未実装（夜明けの空襲は爆弾だけ。v0.6.3 の候補）"
+      },
+      "notes": "舟艇狩り（us_03）の夜明けの後に 4 機が西から来る（次の波は 90° ずつ回った方角から）。"
     },
     {
       "id": "us_carrier_aircraft",

@@ -346,20 +346,22 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
     delete byId(noAir, 'us_04')['dawn_air'];
     expect(() => getDawnAir(noAir, 'us_04')).toThrow(/us_04/);
   });
-  it('enemies.json の空襲の機体 2 つと risk_events.json の dawn_air_strike（spec §6.3・§6.4 の値。夜の水上機と同じ被害・速さ）', () => {
+  it('enemies.json の空襲の機体 3 つ（零観・二式水戦・米艦載機）と risk_events.json の dawn_air_strike（spec §6.3・§6.4 の値。夜の水上機と同じ被害・速さ）', () => {
     const want = { run_speed_kt: 120, release_altitude_m: 200, bomb: { count: 2, damage: 35, blast_radius_m: 25, accuracy_cep_m: 32, fire_chance: 0.3, engine_damage_chance: 0.2 } };
     const pete = getStrikeAircraftRecord(gameData, 'ijn_f1m2_pete', 'us_01');
     const carrier = getStrikeAircraftRecord(gameData, 'us_carrier_aircraft', 'jp_06');
-    expect([pete.faction, pete.name_ja, carrier.faction, carrier.name_ja]).toEqual(['IJN', '零式水上観測機', 'USN', '米艦載機（F6F 相当）']);
+    const rufe = getStrikeAircraftRecord(gameData, 'ijn_a6m2n_rufe', 'us_03'); // v0.6.1 実機 2 回目: 舟艇狩りは二式水戦（値は零観と同じ）
+    expect([pete.faction, pete.name_ja, carrier.faction, carrier.name_ja, rufe.faction, rufe.name_ja]).toEqual(['IJN', '零式水上観測機', 'USN', '米艦載機（F6F 相当）', 'IJN', '二式水上戦闘機']);
     expect(pete.strike).toEqual(want);
+    expect(rufe.strike).toEqual(want);
     expect(carrier.strike).toEqual(want);
     const jake = gameData.enemies.enemies.find((e) => e.id === 'ijn_seaplane_jake') as unknown as { speed_kt: number; bomb: Rec };
     expect(pete.strike.run_speed_kt).toBe(jake.speed_kt);
     for (const k of ['damage', 'blast_radius_m', 'fire_chance', 'engine_damage_chance']) expect(pete.strike.bomb[k as keyof typeof pete.strike.bomb], k).toBe(jake.bomb[k]);
     expect(isStrikeAircraftRecord(jake)).toBe(false); // 夜の水上機は strike を持たない
     const ev = getDawnStrikeEventRecord(gameData);
-    // v0.6.1 実機 1 回目でテンポを上げた（spawn_m 3600・first_run_s 12・run_gap_s 3・wave_rest_s 28 → 3000・9・2・16）
-    expect(ev.params).toMatchObject({ spawn_m: 3000, run_radius_m: 600, first_run_s: 9, run_gap_s: 2, wave_rest_s: 16, leave_s: 2.5, spawn_offsets_deg: [-30, -10, 10, 30], wave_rotate_deg: 90, aim_turn_min_deg_s: 0.5 });
+    // v0.6.1 実機 1 回目でテンポを上げた（spawn_m 3600・first_run_s 12・run_gap_s 3・wave_rest_s 28 → 3000・9・2・16）。実機 2 回目で間隔 2 → 2.2
+    expect(ev.params).toMatchObject({ spawn_m: 3000, run_radius_m: 600, first_run_s: 9, run_gap_s: 2.2, wave_rest_s: 16, leave_s: 2.5, spawn_offsets_deg: [-30, -10, 10, 30], wave_rotate_deg: 90, aim_turn_min_deg_s: 0.5 });
     const raw = ev as unknown as Rec;
     expect([raw['count'], raw['share'], raw['enemy_direct'], raw['version']]).toEqual([0, 0, true, 'v0.6.1']);
     expect(riskLabelJa(gameData, DAWN_STRIKE_EVENT_ID)).toBe('夜明けの空襲');
@@ -394,7 +396,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       const ds = (byId(gameData, id)['v0_1_prototype'] as Rec | undefined)?.['dawn_strike'] as Rec | undefined;
       if (ds) texts.push(String(ds['count_source']), String(ds['source']));
     }
-    for (const id of ['ijn_f1m2_pete', 'us_carrier_aircraft']) texts.push(JSON.stringify(gameData.enemies.enemies.find((e) => e.id === id)));
+    for (const id of ['ijn_f1m2_pete', 'ijn_a6m2n_rufe', 'us_carrier_aircraft']) texts.push(JSON.stringify(gameData.enemies.enemies.find((e) => e.id === id)));
     texts.push(JSON.stringify(gameData.riskEvents.events.find((e) => e.id === DAWN_STRIKE_EVENT_ID)));
     expect(texts.length).toBeGreaterThan(13 * 3);
     for (const t of texts) {

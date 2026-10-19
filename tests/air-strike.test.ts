@@ -107,7 +107,7 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
       expect(p.fallFeelS).toBeCloseTo(1.277, 3);
       expect(p.scatterM).toBeCloseTo(45.25, 2);
       expect(p.orbitDegPerS).toBeCloseTo(29.47, 2);
-      expect([p.fromBearingDeg, p.fromJa, p.firstRunS, p.runGapS, p.waveRestS, p.leaveS, p.aimTurnMinDegS, p.timeScale]).toEqual([90, '東', 9, 2, 16, 2.5, 0.5, 5]); // v0.6.1 実機 1 回目でテンポを上げた（12・3・28 → 9・2・16）
+      expect([p.fromBearingDeg, p.fromJa, p.firstRunS, p.runGapS, p.waveRestS, p.leaveS, p.aimTurnMinDegS, p.timeScale]).toEqual([90, '東', 9, 2.2, 16, 2.5, 0.5, 5]); // v0.6.1 実機 1 回目でテンポを上げた（12・3・28 → 9・2・16）
       expect(p.bombHit).toEqual({ damage: 35, fireChance: 0.3, engineDamageChance: 0.2 });
       expect(p.playerHitRadiusM).toBeGreaterThan(25);
     }
@@ -128,9 +128,9 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
     expect(P06.playerMarginM).toBeGreaterThan(0);
     // 空襲の無い任務と ?debug&nostrike は null（今夜の揺らぎ absent() は通さない）
     expect(buildWorldSetup(gameData, 'us_02').airStrike).toBeNull();
-    // us_03 は v0.6.1 の実機 1 回目から空襲あり（零観・西から・僚艇なし・砲の任務でも組める）
+    // us_03 は v0.6.1 の実機 1 回目から空襲あり（2 回目から二式水戦・西から・僚艇なし・砲の任務でも組める）
     const p03 = buildWorldSetup(gameData, 'us_03').airStrike!;
-    expect([p03.planes, p03.fromBearingDeg, p03.fromJa, p03.nameJa, p03.boundsH]).toEqual([4, 270, '西', '零式水上観測機', 2500]);
+    expect([p03.planes, p03.fromBearingDeg, p03.fromJa, p03.nameJa, p03.boundsH]).toEqual([4, 270, '西', '二式水上戦闘機', 2500]);
     expect(p03.escortPlanes).toEqual([false, false, false, false]);
     expect(buildWorldSetup(gameData, 'us_01', { strikeOff: true }).airStrike).toBeNull();
   });

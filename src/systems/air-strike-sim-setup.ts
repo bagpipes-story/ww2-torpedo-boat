@@ -64,7 +64,8 @@ const cell = (missionId: string, secs: number, policy: string, vipAim: boolean, 
 });
 
 /**
- * spec §12 の表を v0.6.1 の実機 1 回目（「一機ずつ順番に来るので避けやすい。テンポ良く」→ 間隔 3 → 2 秒・波の休み 28 → 16 秒・現れる距離 3,600 → 3,000 m・最初の進路 12 → 9 秒）で測り直した。
+ * spec §12 の表を v0.6.1 の実機 1 回目（「一機ずつ順番に来るので避けやすい。テンポ良く」→ 間隔 3 → 2 秒・波の休み 28 → 16 秒・現れる距離 3,600 → 3,000 m・最初の進路 12 → 9 秒）と
+ * 実機 2 回目（間隔 2 → 2.2 秒）で測り直した。
  * 決まった反応（react）の行は、転舵を保つ秒と投下の間隔の噛み合わせで大きく振れる（同じ 0.5 秒でも保つ秒しだいで 0〜96%）ので、帯は回帰の検出用。
  * 「輪を見て離れる側へ切る」（ring。画面の着弾点の輪を見る人に近い）は間隔 1.4〜3 秒のどれでもほぼ 100% ＝ 速くしても理不尽にはならない、の行。
  * 直進・止まる・回り続けるは沈む（直進は輪までの距離しだい）。us_03 は実機 1 回目で空襲ありにした
@@ -78,10 +79,10 @@ export const STRIKE_CALIBRATION: readonly StrikeCalibrationCell[] = [
   cell('us_01', 40, 'straight', true, null, [0, 85], null, [50, 75, 0.6]),
   cell('us_01', 40, 'straight', false, [0, 12], null, null, [5, 100, 0.59]),
   cell('us_01', 40, 'react0.5', false, [80, 100], null, null, [91, 100, 0.12]),
-  cell('us_01', 30, 'react0.5ring1.2', true, [95, 100], [85, 100], null, [NaN, NaN, NaN]),
+  cell('us_01', 30, 'react0.5ring1.2', true, [95, 100], [62, 92], null, [NaN, NaN, NaN]),
   cell('jp_06', 40, 'react0.35', true, [65, 92], null, null, [83, NaN, 0.09]),
-  cell('jp_06', 40, 'react0.5', true, [52, 80], null, null, [42, NaN, 0.23]),
-  cell('jp_06', 40, 'react0.7', true, [58, 85], null, null, [12, NaN, 0.39]),
+  cell('jp_06', 40, 'react0.5', true, [30, 58], null, null, [42, NaN, 0.23]),
+  cell('jp_06', 40, 'react0.7', true, [75, 98], null, null, [12, NaN, 0.39]),
   cell('jp_06', 40, 'straight', true, [0, 10], null, null, [3, NaN, 0.52]),
   cell('jp_06', 40, 'stop', true, [0, 5], null, HPB, [0, NaN, 0.51]),
   cell('jp_06', 40, 'circle', true, [0, 5], null, HPB, [0, NaN, 0.52]),
