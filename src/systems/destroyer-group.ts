@@ -16,6 +16,8 @@ export class DestroyerGroup {
   readonly destroyerCount: number;
   /** 魚雷の通過判定の半径二乗（隊の最大） */
   readonly passRadius2: number;
+  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。既定は全隻。jp_06 のハードは 2 隻中 1 隻） */
+  readonly objectiveSinks: number;
 
   constructor(scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool) {
     for (const st of ds.starts) {
@@ -23,6 +25,7 @@ export class DestroyerGroup {
       this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, st.headingDeg, splashes));
     }
     this.destroyerCount = this.ships.length;
+    this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
     this.passRadius2 = ds.passRadius2;
     if (transport) {
       this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, lookoutRng, TEXTURE_KEYS.transport));
@@ -52,9 +55,9 @@ export class DestroyerGroup {
     return n;
   }
 
-  /** 駆逐艦がすべて沈み始めた（任務の目標） */
+  /** 達成の隻数の駆逐艦が沈み始めた（任務の目標。既定は全隻） */
   get objectiveSinking(): boolean {
-    return this.sunkCount === this.destroyerCount;
+    return this.sunkCount >= this.objectiveSinks;
   }
 
   /** 隊のすべて（輸送船込み）が沈み始めた。以後は魚雷を撃てない */

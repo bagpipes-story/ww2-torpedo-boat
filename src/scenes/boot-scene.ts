@@ -13,11 +13,13 @@ import {
   REGISTRY_KEY_INPUT,
   SCENE_KEYS,
   TEXTURE_KEYS,
+  boatTextureKey,
   sortieSeed,
 } from '../config/game-config';
 import { gameData, getBoatRecord, getEnemyRecord, getPrototypeMission, getTorpedoRecord } from '../config/game-data';
 import { createInputState } from '../core/input-state';
 import { directSortie } from '../core/sortie';
+import { migrateLegacyUnlocks } from '../systems/progress-storage';
 import {
   generateDebugRingTexture,
   generateDestroyerTexture,
@@ -33,6 +35,7 @@ import {
 } from '../assets/placeholders';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateRainTexture } from '../assets/storm-placeholder';
+import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures } from '../assets/barge-placeholder';
 import { getBargeParams } from '../config/game-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
@@ -45,13 +48,26 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.registry.set(REGISTRY_KEY_DATA, gameData);
+    // v0.5.2 までの端末のキャンペーンの解放の移し替え（v0.6.0）: どの任務より先に 1 回（?debug 直行でも）
+    migrateLegacyUnlocks(gameData);
     this.registry.set(REGISTRY_KEY_INPUT, createInputState());
 
     // プレースホルダー生成は 1 回だけ（CLAUDE.md §7）
     const mission = getPrototypeMission(gameData, PROTOTYPE_MISSION_ID);
     const boat = getBoatRecord(gameData, mission.playerBoatId);
     const spriteScale = gameData.hitRateModel.world.sprite_scale;
-    generatePlayerBoatTexture(this, { lengthUnits: boat.length_m * spriteScale, beamUnits: boat.beam_m * spriteScale });
+    // 艇の絵（v0.6.0）: v0_1_prototype を持つ任務の自艇と僚艇ごとに 1 枚（今は Elco 80ft・77ft・T-38 の 3 枚）
+    const boatIds = new Set<string>();
+    for (const m of gameData.missionsSeed.missions as readonly Record<string, unknown>[]) {
+      if (!m['v0_1_prototype'] || typeof m['id'] !== 'string') continue;
+      const pm = getPrototypeMission(gameData, m['id']);
+      boatIds.add(pm.playerBoatId);
+      if (pm.escort) boatIds.add(pm.escort.boat);
+    }
+    for (const id of boatIds) {
+      const b = getBoatRecord(gameData, id);
+      generatePlayerBoatTexture(this, { lengthUnits: b.length_m * spriteScale, beamUnits: b.beam_m * spriteScale }, boatTextureKey(id));
+    }
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
@@ -73,6 +89,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
     generateReturnTextures(this);
+    generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);

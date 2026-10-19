@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { SeededRng } from '../src/core/rng';
+import { REASON_LABEL, resultDawnSuffixS, resultEvadePartJa, resultHeadingJa } from '../src/ui/result-heading';
 import {
   CALL_DAWN,
   CALL_EXPENDED,
@@ -12,6 +14,7 @@ import {
   topCall,
   updateReturnCalls,
   type EndCheck,
+  type MissionEndReason,
   type ReturnPoint,
 } from '../src/core/mission-flow';
 
@@ -81,16 +84,74 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(decideMissionEnd(check({ grounded: true, waitS: 1.5, timeLeftS: 0 }), P)).toBe('grounded');
     expect(decideMissionEnd(check({ grounded: true, waitS: 1.5, destroyerSinkPlaying: true }), P)).toBe('grounded');
     expect(decideMissionEnd(check({ grounded: true, waitS: 5, boatSinking: true }), P)).toBeNull();
-    // 撃沈演出中で夜明けなら null、演出が終われば dawn（撃沈後に夜明けが来なくなる罠の回帰）
+    // 撃沈演出中で夜明けなら null、演出が終わっても夜明けでは終わらない（v0.6.1。夜明けは状態）
     expect(decideMissionEnd(check({ destroyerSinkPlaying: true, timeLeftS: 0 }), P)).toBeNull();
-    expect(decideMissionEnd(check({ destroyerSinkPlaying: false, timeLeftS: 0 }), P)).toBe('dawn');
-    // 夜明け: 燃料ありは dawn、0 は adrift
-    expect(decideMissionEnd(check({ timeLeftS: 0, fuelEmpty: true }), P)).toBe('adrift');
+    expect(decideMissionEnd(check({ destroyerSinkPlaying: false, timeLeftS: 0 }), P)).toBeNull();
+    // 夜明け後に燃料 0: 動いていれば続く、止まって 1.5 秒で adrift（夜明け前と同じ規則。v0.6.1）
+    expect(decideMissionEnd(check({ timeLeftS: 0, fuelEmpty: true }), P)).toBeNull();
+    expect(decideMissionEnd(check({ timeLeftS: 0, fuelEmpty: true, stopped: true, waitS: 1.5 }), P)).toBe('adrift');
     // 燃料 0: 動いていれば null、止まって 1.4 秒は null、1.5 秒で adrift
     expect(decideMissionEnd(check({ fuelEmpty: true, stopped: false, waitS: 5 }), P)).toBeNull();
     expect(decideMissionEnd(check({ fuelEmpty: true, stopped: true, waitS: 1.4 }), P)).toBeNull();
     expect(decideMissionEnd(check({ fuelEmpty: true, stopped: true, waitS: 1.5 }), P)).toBe('adrift');
     expect(decideMissionEnd(check({}), P)).toBeNull();
+  });
+  it('v0.6.1 夜明けでは終わらない: 夜明け後（timeLeftS ≤ 0）の判定は夜明け前（1 秒）と同じ。違うのは輪の中で魚雷を待つときだけ（待たずに帰投）', () => {
+    const rng = new SeededRng(20261018);
+    const flag = (): boolean => rng.next() < 0.5;
+    let differ = 0;
+    for (let n = 0; n < 500; n++) {
+      const c = check({ boatSinking: rng.next() < 0.1, atHome: flag(), torpedoesRunning: flag(), waitS: rng.next() * 12, destroyerSinkPlaying: rng.next() < 0.2, fuelEmpty: flag(), stopped: flag(), grounded: rng.next() < 0.2 });
+      const k = Math.floor(rng.next() * 300);
+      const before = decideMissionEnd({ ...c, timeLeftS: 1 }, P);
+      const after = decideMissionEnd({ ...c, timeLeftS: -k }, P);
+      if (c.atHome && c.torpedoesRunning) {
+        if (!c.boatSinking) expect(after).toBe('returned');
+        if (after !== before) differ++;
+      } else expect(after).toBe(before);
+      expect(after).not.toBe('dawn');
+    }
+    expect(differ).toBeGreaterThan(0); // 輪の中で魚雷を待つ場合を実際に通った
+  });
+  it('v0.6.1 終了理由: air_strike（夜明けの空襲で沈没）が増え、dawn（夜明け — 帰投できず）は無い', () => {
+    const reasons = Object.keys(REASON_LABEL) as MissionEndReason[];
+    expect(reasons).toContain('air_strike');
+    expect(reasons).not.toContain('dawn');
+    expect(REASON_LABEL.air_strike).toBe('夜明けの空襲で沈没');
+    expect(REASON_LABEL.bombed).toBe('敵機の爆撃で沈没'); // 夜の水上機とは別
+    // @ts-expect-error 'dawn' は終了理由ではない（型で戻らないようにする）
+    const dawn: MissionEndReason = 'dawn';
+    expect(reasons).not.toContain(dawn);
+  });
+  it('v0.6.1 Result の見出し: 夜明け後に終わった任務だけ「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に', () => {
+    const before = { reached: false, caughtOutside: false, daylightS: 0 };
+    const caught = { reached: true, caughtOutside: true, daylightS: 41.6 };
+    const homeAtDawn = { reached: true, caughtOutside: false, daylightS: 0.02 };
+    expect(resultDawnSuffixS(true, before)).toBeNaN();
+    expect(resultDawnSuffixS(false, before)).toBeNaN();
+    expect(resultDawnSuffixS(true, homeAtDawn)).toBeNaN();
+    expect(resultDawnSuffixS(true, caught)).toBe(41.6);
+    expect(resultDawnSuffixS(false, caught)).toBe(41.6);
+    expect(resultDawnSuffixS(false, homeAtDawn)).toBe(0.02);
+    expect(resultHeadingJa('returned', resultDawnSuffixS(true, before), false, false)).toBe('任務終了 — 帰投した');
+    expect(resultHeadingJa('returned', resultDawnSuffixS(true, caught), false, false)).toBe('任務終了 — 帰投した（夜明け後 42 秒）');
+    expect(resultHeadingJa('air_strike', resultDawnSuffixS(false, caught), false, false)).toBe('任務終了 — 夜明けの空襲で沈没（夜明け後 42 秒）');
+    expect(resultHeadingJa('adrift', resultDawnSuffixS(false, caught), true, false)).toBe('任務終了 — 燃料切れで漂流（夜明け後 42 秒）（ハード）');
+    expect(resultHeadingJa('destroyed', NaN, true, false)).toBe('任務終了 — 砲撃で沈没（ハード）');
+    expect(resultHeadingJa('returned', 30.4, true, true)).toBe('任務終了 — 帰投した（夜明け後 30 秒）（ハード）（史実）');
+  });
+  it('v0.6.1 Result の「回避 N」: 回避に点のある任務だけ。夜明けだけが理由の 0 は「回避 0（夜明け後）」、見つかった・届けていない・帰投していない 0 には付けない', () => {
+    const r = (over: Partial<{ returned: boolean; objectiveDone: boolean; detections: number; caughtOutside: boolean }> = {}) => {
+      const o = { returned: true, objectiveDone: true, detections: 0, caughtOutside: true, ...over };
+      return { returned: o.returned, objectiveDone: o.objectiveDone, detections: o.detections, dawn: { caughtOutside: o.caughtOutside } };
+    };
+    expect(resultEvadePartJa(undefined, 0, r())).toBe('');
+    expect(resultEvadePartJa(400, 400, r({ caughtOutside: false }))).toBe(' ・ 回避 400');
+    expect(resultEvadePartJa(400, 0, r())).toBe(' ・ 回避 0（夜明け後）');
+    expect(resultEvadePartJa(400, 0, r({ detections: 2 }))).toBe(' ・ 回避 0');
+    expect(resultEvadePartJa(400, 0, r({ objectiveDone: false }))).toBe(' ・ 回避 0');
+    expect(resultEvadePartJa(400, 0, r({ returned: false }))).toBe(' ・ 回避 0');
+    expect(resultEvadePartJa(400, 0, r({ caughtOutside: false, detections: 1 }))).toBe(' ・ 回避 0');
   });
   it('巡航で帰る実秒: 2,580 m は 43.6 秒（time_scale 5、23 kt）', () => {
     const cruiseMps = 23 * 0.5144;

@@ -22,24 +22,40 @@ export const MENU_SUB_PX = 18;
 export const MENU_PRIMARY_W = 320;
 export const MENU_PRIMARY_X = GAME_WIDTH - HUD_MARGIN - MENU_PRIMARY_W;
 
-/** Title: ゲーム名、キャンペーン、任務の行（3 件）、操作の一言 */
+/**
+ * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（3 件）、操作の一言。
+ * v0.6.0 でタブを入れた分、ロゴを縮め行を詰めた（行 104 → 96 px・間 16 → 12。3 行で 216〜528。ボタンの高さは 96 px 以上のまま）
+ */
 export const TITLE_LOGO_TEXT = 'NIGHT HUNTERS';
-export const TITLE_LOGO_Y = 64;
-export const TITLE_LOGO_PX = 56;
-export const TITLE_CAMPAIGN_Y = 140;
-export const TITLE_CAMPAIGN_PX = 22;
-export const TITLE_CAMPAIGN_SUFFIX_JA = ' ・ 任務を選べ';
+export const TITLE_LOGO_Y = 52;
+export const TITLE_LOGO_PX = 44;
+export const TITLE_TAB_Y = 108;
+export const TITLE_TAB_H = 96;
+export const TITLE_TAB_W = 460;
+export const TITLE_TAB_GAP = 24;
+export const TITLE_TAB_PX = 26;
+export const TITLE_TAB_SUB_JA = 'タップで切替';
+export const TITLE_TAB_SELECTED_SUB_JA = '選択中';
+/** 未解放のタブの 2 行目（解放の条件と進み。CLAUDE.md §2「米PTキャンペーンの後にアンロック」） */
+export function titleCampaignLockedSubJa(prereqName: string, done: number, total: number): string {
+  return `未解放 ・ ${prereqName}の ${total} 任務を帰投で（済 ${done}/${total}）`;
+}
 export const TITLE_ROW_X = 160;
 export const TITLE_ROW_W = 960;
-export const TITLE_ROW_H = 104;
-export const TITLE_ROW_TOP = 184;
-export const TITLE_ROW_GAP = 16;
+export const TITLE_ROW_H = 96;
+export const TITLE_ROW_TOP = 216;
+export const TITLE_ROW_GAP = 12;
 export const TITLE_ROW_TITLE_PX = 30;
 export const TITLE_ROW_SUB_PX = 20;
 export const TITLE_ROW_STATUS_PX = 24;
 export const TITLE_HINT_Y = 560;
 export const TITLE_HINT_PX = 18;
 export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷（大発は射撃）・ 右上で煙幕';
+/** 操作の一言はキャンペーンごと（v0.6.0。日本の魚雷艇に煙幕は無い）。無いキャンペーンは TITLE_HINT_JA */
+export const TITLE_HINT_BY_CAMPAIGN_JA: Readonly<Record<string, string>> = {
+  us_pt: TITLE_HINT_JA,
+  jp_hard: '操作: 左下のスティックで進む ・ 右下で魚雷 ・ 煙幕なし（暗さと静音で寄り、逃げる）',
+};
 /**
  * 操作の一言の下の 3 つの切り替え: 難易度（v0.4.5。タップで ノーマル ⇄ ハード）、史実モード（v0.5.2。オフ ⇄ オン）、見越し点マーカー（v0.5.2 実機 1 回目。使う ⇄ 使わない。解放前は押せない）。
  * 同じ大きさで中央に並べる。論理幅 1280 でも左右に 31 px 余る（3 × 390 + 2 × 24 = 1218）
@@ -58,9 +74,13 @@ export const TITLE_DIFF_SUB_JA = 'タップで切替 ・ ハードは敵の数�
 /** 史実モードの題は data の title_ja（「史実モード」）に「: オフ／オン」。2 行目は data の倍率と不発の確率から作る（HUD の印にも使う） */
 export const TITLE_HIST_OFF_JA = ': オフ';
 export const TITLE_HIST_ON_JA = ': オン';
-export function titleHistSubJa(evasionMultiplier: number, dudPct: number): string {
-  // 幅 390 に収める（実機 1 回目: 「マーカーなし」と書いていたら、オン／オフに関わらず出るので状態と読まれた → マーカーは右の切り替えに）
-  return `敵の回避 ×${evasionMultiplier} ・ 不発 ${dudPct}%`;
+/** 史実モードがオフのときの 2 行目（v0.6.1 実機 1 回目「オフなら回避 ×1.5・不発 10% は出さない」） */
+export const TITLE_HIST_OFF_SUB_JA = 'タップで切替';
+export function titleHistSubJa(on: boolean, evasionMultiplier: number, dudPct: number | null): string {
+  // 幅 390 に収める（v0.5.2 実機 1 回目: 「マーカーなし」と書いていたら、オン／オフに関わらず出るので状態と読まれた → マーカーは右の切り替えに）。
+  // オンのときだけ中身を出す（v0.6.1 実機 1 回目）。dudPct が null（不発の上書きを掛けないキャンペーン。v0.6.0 の日本側）なら回避だけ
+  if (!on) return TITLE_HIST_OFF_SUB_JA;
+  return dudPct === null ? `敵の回避 ×${evasionMultiplier}` : `敵の回避 ×${evasionMultiplier} ・ 不発 ${dudPct}%`;
 }
 /** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目「使うかどうか選択制に」）: 解放前は「未解放」で押せず、2 行目に解放までの回数 */
 export const TITLE_MARKER_JA = '見越し点マーカー';
@@ -71,11 +91,12 @@ export const TITLE_MARKER_SUB_JA = 'タップで切替 ・ 史実モードでは
 export function titleMarkerLockedSubJa(sortiesLeft: number): string {
   return `あと ${sortiesLeft} 回の任務で解放`;
 }
-/** Briefing の 1 行目と Result の見出しに足す印 */
+/** Briefing の 1 行目に足す印（Result の見出しの印「（史実）」は ui/result-heading の RESULT_HISTORICAL_TAG_JA） */
 export const BRIEF_HISTORICAL_JA = ' ・ 史実モード';
-export const RESULT_HISTORICAL_TAG_JA = '（史実）';
 /** Result: 史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠。CLAUDE.md §9） */
 export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
+/** Result: 米PT以外のキャンペーンの魚雷も通算に数えない（v0.6.0。hit_rate_model.kpi_measurement.campaigns） */
+export const RESULT_CAMPAIGN_KPI_JA = 'この任務の魚雷は通算の命中率に数えない（通算は米PTの調整の根拠）';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;
@@ -134,7 +155,7 @@ export const PAUSE_DIM_ALPHA = 0.62;
 export const PAUSE_TITLE_JA = '一時停止';
 export const PAUSE_TITLE_Y = 200;
 export const PAUSE_TITLE_PX = 48;
-export const PAUSE_NOTE_JA = '任務は止まっています（夜明けの時計・敵・燃料も止まる）';
+export const PAUSE_NOTE_JA = '任務は止まっています（夜明けの時計・敵・空襲・燃料も止まる）';
 export const PAUSE_NOTE_Y = 280;
 export const PAUSE_NOTE_PX = 22;
 export const PAUSE_RESUME_JA = '再開';

@@ -34,6 +34,8 @@ export interface SeaplaneWorldView {
   readonly grounded: boolean;
   readonly slowMoLeftS: number;
   readonly stepTimeS: number;
+  /** 夜明けに達した（v0.6.1。夜の水上機は去り、二度と来ない） */
+  readonly dawn: { readonly reached: boolean };
 }
 
 export class EnemySeaplane {
@@ -83,7 +85,7 @@ export class EnemySeaplane {
   step(feelDt: number, w: SeaplaneWorldView): void {
     const s = this.state;
     const c = this.check;
-    const blocked = w.boat.sinking || w.atHome || w.grounded;
+    const blocked = w.boat.sinking || w.atHome || w.grounded || w.dawn.reached;
     if (blocked) cancelSeaplane(s, this.p);
     c.targetX = w.enemy.anchorX(w.boat.state.x, w.boat.state.y);
     c.targetY = w.enemy.anchorY(w.boat.state.x, w.boat.state.y);

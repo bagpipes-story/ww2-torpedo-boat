@@ -15,6 +15,7 @@ import {
   sortieSeed,
 } from '../config/game-config';
 import { getAimAssistLevels, getGameData } from '../config/game-data';
+import { recordsHitKpi } from '../config/campaign-data';
 import {
   BOAT_HIT_SHAKE_INTENSITY,
   CAMERA_LOOK_AHEAD_M,
@@ -36,7 +37,7 @@ import { ShallowsView } from '../entities/shallows';
 import { drawSea } from '../entities/sea';
 import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';
 import { recordKpi } from '../systems/kpi-storage';
-import { leadMarkerEnabled, recordSortie, sortiesDone } from '../systems/progress-storage';
+import { leadMarkerEnabled, recordClear, recordSortie, sortiesDone } from '../systems/progress-storage';
 import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
 
@@ -300,10 +301,13 @@ export class MissionScene extends Phaser.Scene {
     w.resolveRemainingAsMisses();
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const result = buildMissionResult(reason, w, data, this.elapsedS, this.ringEdgeM, this.startFireS);
-    // 通算の命中率（v0.5.0）: 魚雷の任務だけ、ここで 1 回だけ足して保存する（Result の作り直しで二重に数えない）。史実モード（v0.5.2）は数えない（通算はノーマルの調整の根拠）
-    if (w.destroyers && !this.sortie.historical) result.kpi = recordKpi(data, result.shots);
+    // 通算の命中率（v0.5.0）: 魚雷の任務だけ、ここで 1 回だけ足して保存する（Result の作り直しで二重に数えない）。史実モード（v0.5.2）と
+    // 米PT以外のキャンペーン（v0.6.0。hit_rate_model.kpi_measurement.campaigns）は数えない（通算はノーマルの米PTの調整の根拠）
+    if (w.destroyers && !this.sortie.historical && recordsHitKpi(data, this.sortie.missionId)) result.kpi = recordKpi(data, result.shots);
     // 終えた任務の回数（v0.5.2。見越し点マーカーの解放）: Result まで行った任務だけ、ここで 1 回だけ +1
     recordSortie();
+    // 帰投で終えた任務（v0.6.0。キャンペーンの解放の条件）: 帰投したときだけ、任務ごとに 1 回
+    if (result.returned) recordClear(this.sortie.missionId);
     this.scene.start(SCENE_KEYS.result, result);
   }
 }

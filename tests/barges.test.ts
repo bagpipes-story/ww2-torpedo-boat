@@ -102,7 +102,7 @@ describe('大発の隊（core/barges・barge-data、v0.4.2）', () => {
   it('煙幕: 艇との線が煙に遮られた大発は見つける距離 × 0.3（288 → 86.4 m）、気づいても撃たない。全員から隠れれば allBlocked', () => {
     const f = createFlotilla(P, 16);
     for (let i = 1; i < 4; i++) f.barges[i]!.phase = BARGE_SUNK;
-    const sp: SmokeParams = { durationS: 5, cooldownS: 20, puffIntervalS: 0.5, puffRadiusM: 60, puffLifetimeS: 25, extinguishHoldS: 1 };
+    const sp: SmokeParams = { durationS: 5, cooldownS: 20, puffIntervalS: 0.5, puffRadiusM: 60, puffLifetimeS: 25 };
     const smoke = createSmokeState(4);
     Object.assign(smoke.puffs[0]!, { active: true, x: 4250, y: 2150, leftS: 20 });
     const log: string[] = [];

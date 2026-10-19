@@ -6,9 +6,10 @@ import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../
 import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data';
 import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
+import { dawnStrikeFromData, type DawnStrikeBlock } from '../core/air-strike-data';
 import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
-import { menuEntries, shortLabelJa, type BriefingText, type MenuEntry } from '../core/briefing';
+import { shortLabelJa, type BriefingText } from '../core/briefing';
 
 /** ミッションの種から v0.1 プロトタイプ用の設定を取り出す（型は実行時に検査する: data 駆動なので壊れていれば起動時に分かる） */
 export interface PrototypeMission {
@@ -27,6 +28,8 @@ export interface PrototypeMission {
   enemyStarts: { x: number; y: number; headingDeg: number }[];
   /** 難易度ハードで読んだ（v0.4.5。敵の数が増える。hard block の無い任務ではノーマルと同じ） */
   hard: boolean;
+  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。無ければ全隻＝null） */
+  objectiveSinkCount: number | null;
   /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery） */
   mainWeapon: MainWeapon;
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
@@ -60,6 +63,7 @@ export interface PrototypeMission {
   night: NightBlock | null;
   /** 輸送船（docs/02 §6.4、v0.4.7）: enemies.json の id と出発点。駆逐艦の任務だけ。無ければ null */
   transport: { enemyId: string; start: { x: number; y: number; headingDeg: number } } | null;
+  dawnStrike: DawnStrikeBlock | null; // 夜明けの空襲（v0.6.1。dawn_air.play_as が enemy の任務だけ。規則は config/dawn-data）。無ければ null
 }
 
 export type MainWeapon = 'torpedo' | 'guns';
@@ -177,6 +181,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const enemyStart = barges ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
   const enemyStarts = enemyStart ? [enemyStart] : [];
   const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
+  let objectiveSinkCount: number | null = null;
   if (hardRaw !== undefined) {
     if (typeof hardRaw !== 'object' || hardRaw === null) throw new Error(`${missionId}.v0_1_prototype.hard が object でない（docs/02 §6.4）`);
     const es = hardRaw['extra_enemy_starts'];
@@ -185,6 +190,10 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
       if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は駆逐艦（enemy_start）の任務だけ`);
       if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
     }
+    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）
+    const osc = hardRaw['objective_sink_count'];
+    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || !Array.isArray(es) || (osc as number) > 1 + (es as unknown[]).length)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
+    if (hard && osc !== undefined) objectiveSinkCount = osc as number;
     const xs = hardRaw['extra_shore_battery_x_m'];
     if (xs !== undefined) {
       if (!Array.isArray(xs) || xs.length === 0 || !xs.every((x) => isNum(x) && x >= 0 && x <= b.width)) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m は海域の幅の中の数の配列`);
@@ -224,6 +233,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     enemyStart,
     enemyStarts,
     hard,
+    objectiveSinkCount,
     mainWeapon,
     barges,
     coast,
@@ -242,17 +252,14 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     enemyAircraft,
     night,
     transport,
+    dawnStrike: proto['dawn_strike'] === undefined ? null : dawnStrikeFromData(proto['dawn_strike'], missionId),
   };
 }
 
 // ---------- 任務一覧と Briefing（v0.4.0）。data を直接読み、game-data の関数は呼ばない（値の循環を作らない） ----------
 
-/** Title の任務一覧: unlock が default の最初のキャンペーンの、playable_from を持つ任務を order 順に */
-export function getMenuEntries(data: GameData): { campaignName: string; entries: MenuEntry[] } {
-  const c = (data.missionsSeed.campaigns as readonly Record<string, unknown>[]).find((x) => x['unlock'] === 'default');
-  if (!c || typeof c['id'] !== 'string' || typeof c['name_ja'] !== 'string') throw new Error('missions_seed.json に unlock が default のキャンペーン（id / name_ja）が無い');
-  return { campaignName: c['name_ja'], entries: menuEntries(data.missionsSeed.missions, c['id']) };
-}
+/** Title の任務一覧（v0.6.0 から campaign-data.ts。キャンペーンを選べる。ここは今までの import のための再 export） */
+export { getMenuEntries } from './campaign-data';
 
 export interface BriefingRecord extends BriefingText {
   id: string;

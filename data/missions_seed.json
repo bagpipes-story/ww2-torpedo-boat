@@ -1,18 +1,25 @@
 {
-  "$schema_note": "ミッションの種。史実アンカー（date/place/historical_note/source_url）は historical、構成（objective/enemies/hazards/moon/duration）は design。v0.1 は us_02 を簡略化した1本だけ使う。v0.4.0: playable_from（design）は Title の任務一覧に出す任務と、出撃できるようになる版（docs/03 のロードマップ。v0_1_prototype が無い任務は『準備中 ・ 版』）。briefing_note_ja（historical）は Briefing に出す史実メモで、実在の人物名を出さない（CLAUDE.md §11。historical_note は調査の記録として残し、画面には出さない）。v0_1_prototype.hazards（design）は遊べる世界で実際に起きる危険（risk_events の id）で、Briefing の『危険』と出撃前の港内空襲の有無を決める。",
+  "$schema_note": "ミッションの種。史実アンカー（date/place/historical_note/source_url）は historical、構成（objective/enemies/hazards/moon/duration）は design。v0.1 は us_02 を簡略化した1本だけ使う。v0.4.0: playable_from（design）は Title の任務一覧に出す任務と、出撃できるようになる版（docs/03 のロードマップ。v0_1_prototype が無い任務は『準備中 ・ 版』）。briefing_note_ja（historical）は Briefing に出す史実メモで、実在の人物名を出さない（CLAUDE.md §11。historical_note は調査の記録として残し、画面には出さない）。v0_1_prototype.hazards（design）は遊べる世界で実際に起きる危険（risk_events の id）で、Briefing の『危険』と出撃前の港内空襲の有無を決める。 v0.6.1: dawn_air（13 任務すべて）は夜明けの空を握っていた側。control・confidence・refs は historical、play_as・label_ja は design（core/dawn-air が検査。遊べる任務の play_as が enemy なら v0_1_prototype.dawn_strike と hazards の dawn_air_strike が要る）。campaigns の enemy_faction（design）は夜明けの空襲の機体の faction。",
   "version": "0.4.4",
   "campaigns": [
     {
       "id": "us_pt",
       "name_ja": "米PTキャンペーン",
+      "short_ja": "米PT",
       "player_boat_default": "us_elco80",
-      "unlock": "default"
+      "unlock": "default",
+      "enemy_faction": "IJN",
+      "enemy_faction_source": "design (v0.6.1。夜明けの空襲の機体の faction を検査する（日本の艇を零観が襲う写し間違いを起動時に止める）)"
     },
     {
       "id": "jp_hard",
       "name_ja": "日本ハードモード",
+      "short_ja": "日本",
       "player_boat_default": "jp_t38",
-      "unlock": "complete_us_pt"
+      "unlock": "complete_us_pt",
+      "enemy_faction": "USN",
+      "enemy_faction_source": "design (v0.6.1。夜明けの空襲の機体の faction を検査する（日本の艇を零観が襲う写し間違いを起動時に止める）)",
+      "source": "design (v0.6.0。unlock complete_us_pt: 米PTキャンペーンの遊べる任務（playable_from と v0_1_prototype を持つ。v0.6.0 では us_01・us_02・us_03）を、それぞれ 1 回、帰投で終えると開く（撃沈やノルマの達成は問わない）。一度開いたら閉じない（localStorage night-hunters.unlocked）。v0.5.2 までに任務を 3 回以上終えた端末は開いたものとみなす。?debug&title&unlock で保存を変えずに開ける。CLAUDE.md §2『米PTキャンペーンの後にアンロック』の具体化)"
     }
   ],
   "missions": [
@@ -41,13 +48,35 @@
       "historical_note": "PT-41がマッカーサーを乗せてコレヒドールから脱出（1942/3/11〜13）。PT-32は途中放棄。",
       "briefing_note_ja": "PT-41が要人を乗せてコレヒドールから脱出（1942/3/11〜13）。PT-32は途中放棄。",
       "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-1.html",
+      "dawn_air": {
+        "control": "enemy",
+        "confidence": "medium",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "stay",
+        "label_ja": "昼の空は敵（日本の水上機）",
+        "refs": [
+          {
+            "url": "https://pacificwrecks.com/ship/ptboat/PT-34.html",
+            "claim": "1942-04-09、讃岐丸の零式水上観測機 4 機が昼に PT-34 を爆撃・掃射してカウイット島に擱座させ、12:30 ごろ再来して焼いた"
+          },
+          {
+            "url": "https://en.wikipedia.org/wiki/Bataan_Airfield",
+            "claim": "1941 年 12 月の損害で日本がフィリピン全域の制空・制海権を握った"
+          },
+          {
+            "url": "https://www.ozatwar.com/ptboat.htm",
+            "claim": "脱出の艇は 1942-03-12 の昼をクヨの島陰で過ごした（PT-34 は 09:30、PT-41 は 16:00 ごろ着）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。日本の艦は昼も哨戒し、隠れたのは PT の側。脱出行の艇そのものが空襲された記録は見つからず、同じ隊の 4 週間後の類例（PT-34）による。英語の調査は確度 high、日本語の調査は medium → 低い方) / design (v0.6.1。play_as・label_ja)"
+      },
       "v0_1_prototype": {
         "enemies": [
           "ijn_destroyer"
         ],
         "enemy_behavior": "ai (us_02 と同じ: 巡航・雷跡回避・体当たり・端で向き直し。封鎖線＝海域の中央を東西に往復)",
         "duration_s": 220,
-        "duration_s_source": "design (夜明けまでの実秒。出発点から帰投地点の輪の縁まで 4,750 m: 巡航（23 kt、画面上 59 m/秒）で 81 秒、静音の上限 18 kt で 103 秒、全速で 48 秒。封鎖線の駆逐艦が通り過ぎるのを 1 回待つ（最長 約 80 秒）＋暴風の減速＋サンゴ礁の迂回でも巡航なら届く長さ。待ちすぎると『夜明け近し』)",
+        "duration_s_source": "design (夜明けまでの実秒。夜明けの後は敵機の空襲（us_01・us_03・jp_06。us_03 は v0.6.1 の実機 1 回目から）／敵機は来ない（us_02）。v0.6.1 から夜明けで任務は終わらない。出発点から帰投地点の輪の縁まで 4,750 m: 巡航（23 kt、画面上 59 m/秒）で 81 秒、静音の上限 18 kt で 103 秒、全速で 48 秒。封鎖線の駆逐艦が通り過ぎるのを 1 回待つ（最長 約 80 秒）＋暴風の減速＋サンゴ礁の迂回でも巡航なら届く長さ。待ちすぎると『夜明け近し』)",
         "fuel_allotment_gal": 40,
         "fuel_allotment_gal_source": "design (戦闘に使える割当。Elco 77ft は巡航 214・全速 545 gal/h（boats.json）。直線 5,000 m を巡航で 24 gal・静音 18 kt で 20 gal・全速で 36 gal。全速で突っ切ると迂回の分で足りず、巡航で抜けて 4 割残す設計。us_02 の 38 gal と同じ考え方)",
         "bounds_m": {
@@ -106,9 +135,21 @@
         "hazards": [
           "storm",
           "enemy_ship_gunfire_or_ram",
-          "grounding"
+          "grounding",
+          "dawn_air_strike"
         ],
-        "hazards_source": "design (v0.4.4。出会う順: 暴風（出撃直後）、封鎖線の駆逐艦の砲撃・衝突、帰投地点の手前のサンゴ礁。敵航空機・味方機・沿岸砲の block は無い。tests/briefing.test.ts が block との一致を検査)",
+        "hazards_source": "design (v0.4.4。出会う順: 暴風（出撃直後）、封鎖線の駆逐艦の砲撃・衝突、帰投地点の手前のサンゴ礁。敵航空機・味方機・沿岸砲の block は無い。tests/briefing.test.ts が block との一致を検査。v0.6.1: 夜明けの後の敵機 4 機の空襲（dawn_strike block）)",
+        "dawn_strike": {
+          "aircraft_id": "ijn_f1m2_pete",
+          "count": 4,
+          "count_source": "design (ユーザーの例『敵水上機戦隊四機』。史実の類例: 1942-04-09 に同じ第3魚雷艇隊の PT-34 を襲った零式水上観測機は 4 機: Pacific Wrecks PT-34 / ja.wikipedia 球磨。抜粋のみ・本文未読。脱出行そのものへの空襲の記録は見つからない)",
+          "from_bearing_deg": 90,
+          "escort_target_planes": [
+            1,
+            3
+          ],
+          "source": "design (v0.6.1。東＝朝日の方角から。讃岐丸の零観が動いたセブ・ビサヤ方面も脱出路の東。2・4 番機は僚艇（要人）が浮いていれば僚艇を狙う（狙いは直進の見越しだけ）。僚艇は自艇の針路に付いて来るので、自艇の転舵が僚艇の回避になる)"
+        },
         "hard": {
           "extra_enemy_starts": [
             {
@@ -159,13 +200,35 @@
       "historical_note": "PT-37・40（諸説）が駆逐艦照月に命中し爆沈。PT-44喪失。照月の残骸は2025年7月に発見。",
       "briefing_note_ja": "PT-37・40（諸説）が駆逐艦照月に命中し爆沈。PT-44喪失。照月の残骸は2025年7月に発見。",
       "source_url": "https://en.wikipedia.org/wiki/Japanese_destroyer_Teruzuki_(1941)",
+      "dawn_air": {
+        "control": "own",
+        "confidence": "high",
+        "play_as": "own",
+        "enemy_ships_at_dawn": "retire",
+        "label_ja": "昼の空は味方（ヘンダーソン基地）",
+        "refs": [
+          {
+            "url": "https://en.wikipedia.org/wiki/Tokyo_Express",
+            "claim": "昼はヘンダーソン基地から約 200 マイル以内の日本艦は空襲を受けるので、東京急行は一晩で往復した"
+          },
+          {
+            "url": "https://warfarehistorynetwork.com/article/navy-pilots-at-cactus/",
+            "claim": "日本は昼に増援を動かせず、駆逐艦は夜にスロットを下り、夜明けに連合軍機が戻る前に離れた"
+          },
+          {
+            "url": "https://pacificwrecks.com/ship/ptboat/PT-123.html",
+            "claim": "日本の水上機は夜の脅威（1943-02-01 夜、零観の爆弾で PT-123 沈没）＝この任務の夜の敵機"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語・日本語の調査とも own・high) / design (v0.6.1。日本機の夜明けの空襲は史実に反するので出さない。敵艦が北へ退くのは v0.6.2)"
+      },
       "v0_1_prototype": {
         "enemies": [
           "ijn_destroyer"
         ],
         "enemy_behavior": "ai (v0.2.0: 雷跡回避・体当たり・端で向き直し。enemies.json の detection/evasion/ram/patrol)。輸送船（v0.4.7）は同じ AI で 9 kt、体当たりなし",
         "duration_s": 150,
-        "duration_s_source": "design (夜明けまでの実秒。v0.1.3 60 秒 → v0.2.0 90 秒 → v0.3.0 150 秒。経過で夜明けになり、帰投地点の輪の外なら『夜明け — 帰投できず』。模擬（scripts/return-sim.ts、200 回、理想化した操作）で、1 回攻撃して帰投は 97〜102 秒、外して巡航で再攻撃して帰投は 123 秒（p90 127 秒）。実際の操作は模擬より遅いので、再攻撃した人だけが『速く帰るか』を迫られる長さ。duration_min 4 は任務本体の設計値（v0.4）で、これとは別のプロトタイプ値)",
+        "duration_s_source": "design (夜明けまでの実秒。v0.1.3 60 秒 → v0.2.0 90 秒 → v0.3.0 150 秒。経過で夜明けになり、帰投地点の輪の外なら夜明けの後は敵機の空襲（us_01・us_03・jp_06。us_03 は v0.6.1 の実機 1 回目から）／敵機は来ない（us_02）。v0.6.1 から夜明けで任務は終わらない。模擬（scripts/return-sim.ts、200 回、理想化した操作）で、1 回攻撃して帰投は 97〜102 秒、外して巡航で再攻撃して帰投は 123 秒（p90 127 秒）。実際の操作は模擬より遅いので、再攻撃した人だけが『速く帰るか』を迫られる長さ。duration_min 4 は任務本体の設計値（v0.4）で、これとは別のプロトタイプ値)",
         "fuel_allotment_gal": 38,
         "fuel_allotment_gal_source": "design (戦闘に使える割当。満タン 3,000 gal は 150 実秒（game 750 秒）全速で走っても 104 gal＝3.5% しか減らず、判断材料にならない。そこで、往復の航程と予備を画面外で済ませた扱いにし、交戦海域で使ってよい量だけを積む。v0.3.0 は 50 gal だったが実機で『意識しなくていいくらい余裕があった』ので v0.3.1 で 36 gal に、その実機で『本当に若干だけ緩めて』と要望があり 38 gal に。38 gal の模擬（被弾なし、帰投時の残りの中央値）: 静音中心 40%／標準 22%／全速だけで 1 回攻撃 3%（p10 1%。200 回中 200 回帰れるが、燃料計の『減速しないと届かない』が出る）／外して再攻撃は巡航でも帰れない／攻撃せず直帰 65%。参考 36 gal の模擬（被弾なし、帰投時の残りの中央値）: 静音中心 37%／標準（全速 15 秒離脱 → 巡航で帰投）18%／全速だけで 1 回攻撃は 200 回中 85 回しか帰れない（燃料計の『減速しないと届かない』を見て減速すれば届く）／外して再攻撃は巡航でも帰れない／攻撃せず直帰 63%。40 gal だと全速だけでも 8% 残して帰れてしまい、32 gal だと標準でも 7%。以下は v0.3.0（50 gal）時点の記録: 時間圧縮は time_scale だけで、燃料用の倍率は作らない。消費率（巡航 200・全速 500 gal/h）は史実のまま。50 gal は全速だけなら 72 実秒、巡航 180 秒、静音上限 18 kt で 268 秒で尽きる。模擬（scripts/return-sim.ts、200 回、被弾なし、帰投時の残りの中央値）: 静音中心 54%／標準 41%／全速だけで 1 回攻撃 26%／外して巡航で再攻撃 14%／全速だけで再攻撃 3%（1 割は 0%）／攻撃せず直帰 74%。60 gal だと全速で再攻撃しても 19% 残って問いが効かず、45 gal だと巡航での再攻撃が 4% で厳しすぎた)",
         "shallows": [
@@ -294,6 +357,28 @@
       "historical_note": "1943年7〜12月、PTは月間44〜55隻の大発を撃破。史実で最も効果のあった任務。",
       "briefing_note_ja": "1943年7〜12月、PTは月間44〜55隻の大発を撃破。史実で最も効果のあった任務。",
       "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-4.html",
+      "dawn_air": {
+        "control": "contested",
+        "confidence": "medium",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "hide",
+        "label_ja": "昼の空は争奪（日本機の昼の空襲）",
+        "refs": [
+          {
+            "url": "https://www.lonesentry.com/articles/ttt09/barges.html",
+            "claim": "連合軍の航空が活発な所では大発は夜だけ動き、昼は入江に入って偽装した"
+          },
+          {
+            "url": "https://ibiblio.org/hyperwar/AAF/USSBS/PTO-Campaigns/USSBS-PTO-8.html",
+            "claim": "第5空軍は PT・哨戒機とラエ〜サラモアの大発狩りで協同。日本の航空は 1943 年 8 月のウエワク空襲で無力化された"
+          },
+          {
+            "url": "https://www.ibiblio.org/hyperwar/AAF/IV/AAF-IV-6.html",
+            "claim": "1943-07-02〜03、日本の爆撃機がナッソー湾の上陸地点を空襲（昼の日本機はまだ来た）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は contested（自軍寄り）、日本語の調査は own・medium で分かれた → control は contested のまま。7 月のフオン湾で PT が夜明けに日本機に襲われた記録はどちらも見つけていない) / design (v0.6.1。play_as: 最初は両方の調査が寄る own にしたが、v0.6.1 の実機 1 回目でユーザーが「舟艇狩りには空襲ありに」と決めた → enemy（control は contested のままなので、史実の読みと矛盾はしない。7 月のフオン湾にはまだ日本機の昼の空襲があった）。label_ja も争奪に。大発が岸に隠れる（enemy_ships_at_dawn hide）は未実装)"
+      },
       "v0_1_prototype": {
         "enemies": [
           "daihatsu_barge",
@@ -327,9 +412,9 @@
           "source": "design (見た目と逃げる向きだけ。海域の南の縁が岸（浜）で、その外に陸を land_m の幅で描く。艇は海域の境界で止まる。v0.4.2 は south だけ)"
         },
         "duration_s": 200,
-        "duration_s_source": "design (夜明けまでの実秒。us_02 の 150 秒より長いのは大発が 2 組で、2 組目へ 1,500 m 移るから。最初の版（岸まで 1,900 m）は 180 秒だと迷う遊び方が 2 組目の前に『夜明け近し』になりノルマに届かなかった（模擬で成功 13%）ので 200 秒にした。浅瀬の縁まで 1,500 m（実機 3 回目）の模擬（scratchpad v042tune、200 夜）の帰投: 縁で待ち伏せ 136 秒、見えたら静音で寄る 123 秒、巡航で寄って全速で追う 89 秒)",
-        "fuel_allotment_gal": 30,
-        "fuel_allotment_gal_source": "design (戦闘に使える割当。us_02 の 38 gal と同じ考え方（標準で 2〜4 割残り、全速ばかりだと帰れない）。模擬（scratchpad v042tune、200 夜、帰投時の残り。浅瀬の縁まで 1,500 m）: 縁で待ち伏せ・見えたら静音で寄る 37〜38%、巡航で寄って全速で追う 17%、全速ばかりは燃料切れ（9 割の夜で漂流）。実機 2 回目で『燃費を 10% 良く』→ 33 gal にしたが、同時に岸を 1,000 m に寄せて燃料が制約にならなくなり（帰投時 24〜57%）、3 回目で『30 gal に戻す』)",
+        "duration_s_source": "design (夜明けまでの実秒。夜明けの後は敵機の空襲（us_01・us_03・jp_06。us_03 は v0.6.1 の実機 1 回目から）／敵機は来ない（us_02）。v0.6.1 から夜明けで任務は終わらない。us_02 の 150 秒より長いのは大発が 2 組で、2 組目へ 1,500 m 移るから。最初の版（岸まで 1,900 m）は 180 秒だと迷う遊び方が 2 組目の前に『夜明け近し』になりノルマに届かなかった（模擬で成功 13%）ので 200 秒にした。浅瀬の縁まで 1,500 m（実機 3 回目）の模擬（scratchpad v042tune、200 夜）の帰投: 縁で待ち伏せ 136 秒、見えたら静音で寄る 123 秒、巡航で寄って全速で追う 89 秒)",
+        "fuel_allotment_gal": 36,
+        "fuel_allotment_gal_source": "design (戦闘に使える割当。us_02 の 38 gal と同じ考え方（標準で 2〜4 割残り、全速ばかりだと帰れない）。模擬（scratchpad v042tune、200 夜、帰投時の残り。浅瀬の縁まで 1,500 m）: 縁で待ち伏せ・見えたら静音で寄る 37〜38%、巡航で寄って全速で追う 17%、全速ばかりは燃料切れ（9 割の夜で漂流）。実機 2 回目で『燃費を 10% 良く』→ 33 gal にしたが、同時に岸を 1,000 m に寄せて燃料が制約にならなくなり（帰投時 24〜57%）、3 回目で『30 gal に戻す』。v0.6.1 の実機 1 回目で『舟艇狩りの燃料が厳しい』→ 36 gal（同じ回に夜明けの後の空襲が入り、空襲の中を全速で帰る分も要る）)",
         "shallows": [
           {
             "x_m": 0,
@@ -351,9 +436,10 @@
         "hazards": [
           "enemy_ship_gunfire_or_ram",
           "shore_battery",
-          "grounding"
+          "grounding",
+          "dawn_air_strike"
         ],
-        "hazards_source": "design (v0.4.2。出会う順: 大発の 13mm（enemy_ship_gunfire_or_ram。label_ja を『敵艦艇の砲撃・衝突』に）、沿岸砲（shore_battery。v0.4.3 で下の shore_battery block）、座礁（岸沿いの浅瀬）。敵航空機（enemy_aircraft）は block が無いので来ない。上位の hazards は任務本体の設計なので変えない。tests/briefing.test.ts が block との一致を検査)",
+        "hazards_source": "design (v0.4.2。出会う順: 大発の 13mm（enemy_ship_gunfire_or_ram。label_ja を『敵艦艇の砲撃・衝突』に）、沿岸砲（shore_battery。v0.4.3 で下の shore_battery block）、座礁（岸沿いの浅瀬）。敵航空機（enemy_aircraft）は block が無いので来ない。上位の hazards は任務本体の設計なので変えない。tests/briefing.test.ts が block との一致を検査) v0.6.1 実機 1 回目: 夜明けの後の敵機 4 機の空襲（dawn_strike block。ユーザーの判断で空襲ありに）。",
         "shore_battery": {
           "x_m": 4600,
           "source": "design (v0.4.3。岸沿いの位置 m（岸の線から陸側 risk_events の inland_m）。射界は有効射程 900 m の半円＝浅瀬の縁（砲から 390 m 北）では x 3,752〜5,448 m。1 組目（先頭 x 4,250 から西へ）を縁の x 3,000〜3,850 で待つ遊び方は射界の外（縁で東へ寄りすぎると入る）。2 組目（先頭 x 5,750）は出発時から射界の中を西へ進み、約 111 秒で x 3,750 を過ぎて射界を出る。1 組目の後にすぐ東へ寄って撃つと射界の中で砲撃を受ける。模擬（scratchpad v042tune、100 夜、HP の中央値）: 射界を出るまで待つ −18（砲撃 0）、縁で x 3,000 から待ち伏せ −20（砲撃 1.3 発）、見えたら静音で寄って射界の中で撃つ −22（3.1 発）、巡航で寄って全速で追う −55（6.8 発、3% が沈没）、全速ばかり −40。x 5,000 だと丁寧な遊び方には砲撃が来ず、4,300 だと静音で寄っても −36 で重い)"
@@ -382,6 +468,14 @@
           "shore_battery_jitter_m": 200,
           "mirror_chance": 0.5,
           "source": "design (v0.4.6。夜の揺らぎ。危険はどれも任務の中身（大発の 13mm・沿岸砲・座礁）なので毎晩。大発の隊の先頭の x ±250 m（7 kt で ±14 秒、浅瀬の縁に着いたときの距離が変わる。2 組目の後ろは最大 x 6,100 で海域の東の外から入る）、沿岸砲の x ±200 m（射界が縁で ±200 m ずれる。待ち伏せの位置を毎回見直す）。左右反転 mirror_chance 0.5（大発が西から東へ、先頭 x 1,750・沿岸砲 x 1,400（ハード 2 門目 3,400）。出発点 x 3,000 で左右対称なので、縁に着く時刻と射界の位置関係は同じ。HUD の「大発は南の岸沿いを西から」・矢印も入れ替わる）)"
+        },
+        "dawn_strike": {
+          "aircraft_id": "ijn_a6m2n_rufe",
+          "count": 4,
+          "count_source": "design (us_01 と同じ 4 機（ユーザーの例『敵水上機戦隊四機』）。1943-07 のフオン湾で PT を襲った日本機の編成の記録は見つけていない)",
+          "from_bearing_deg": 270,
+          "escort_target_planes": [],
+          "source": "design (v0.6.1 実機 1 回目。ユーザーの判断で空襲ありに。機体は実機 2 回目でユーザーが二式水上戦闘機に指定（最初は零式水上観測機で代用。この時期・場所で昼に来た日本機の機種は未確認）。西＝ウエワク・マダン方面（日本の航空基地）の方角から（推定）。僚艇はいない)"
         }
       }
     },
@@ -410,7 +504,25 @@
       "duration_min": 5,
       "success": "帰投。命中はボーナス",
       "historical_note": "PT15隻・約30本で命中ゼロ。駆逐艦天霧がPT-109を切断。",
-      "source_url": "https://en.wikipedia.org/wiki/Motor_Torpedo_Boat_PT-109"
+      "source_url": "https://en.wikipedia.org/wiki/Motor_Torpedo_Boat_PT-109",
+      "dawn_air": {
+        "control": "contested",
+        "confidence": "medium",
+        "play_as": "own",
+        "enemy_ships_at_dawn": "retire",
+        "label_ja": "昼の空はおおむね味方（エアソルス）",
+        "refs": [
+          {
+            "url": "https://www.history.navy.mil/research/histories/ship-histories/danfs/p/pt-109.html",
+            "claim": "PT-109 の艦歴（DANFS）。1943-08-01〜02 の夜、ブラケット海峡で東京急行の駆逐艦を迎え撃った PT の 1 隻。1943-08-01（任務の当日）、日本の爆撃機 18 機がレンドバの PT 基地を空襲し、PT-117 大破・PT-164 沈没"
+          },
+          {
+            "url": "https://pacificwrecks.com/ship/ptboat/PT-166.html",
+            "claim": "1943-07-20 の朝（08:00 ごろ）、パトロール帰りの PT-164・166・168 を味方の B-25 4 機が敵と誤認して攻撃し、PT-166 が沈没"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語・日本語の調査とも contested（英語は自軍寄り）。日本機の空襲もある（任務の当日、レンドバの PT 基地へ爆撃機 18 機: DANFS PT-109。海上の艇でなく基地）。夜明けの帰り道に空から襲われた記録で見つけたのは味方 B-25 の誤射（PT-166、07-20）だけ) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。control は contested で、ユーザーの規則は『制空権がない限り全シナリオ共通』なので、play_as own は遊べるようにする前にユーザーと見直す)"
+      }
     },
     {
       "id": "us_05",
@@ -436,7 +548,25 @@
       "duration_min": 6,
       "success": "報告（一定時間追尾）して帰投。巡洋艦への命中は大ボーナス",
       "historical_note": "PT39隻・13セクション。35本発射で日本側確認は阿武隈への1本（PT-137）。PT-493喪失。",
-      "source_url": "https://en.wikipedia.org/wiki/Battle_of_Surigao_Strait"
+      "source_url": "https://en.wikipedia.org/wiki/Battle_of_Surigao_Strait",
+      "dawn_air": {
+        "control": "own",
+        "confidence": "medium",
+        "play_as": "own",
+        "enemy_ships_at_dawn": "retire",
+        "label_ja": "昼の空は味方（護衛空母）",
+        "refs": [
+          {
+            "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+            "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+          },
+          {
+            "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+            "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "us_06",
@@ -461,7 +591,25 @@
       "duration_min": 5,
       "success": "駆逐艦撃沈または輸送船撃沈、帰投",
       "historical_note": "PT-490・492が駆逐艦卯月を撃沈（日本側記録一致）。特攻でPT-323・300喪失。",
-      "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay"
+      "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
+      "dawn_air": {
+        "control": "contested",
+        "confidence": "medium",
+        "play_as": "contested",
+        "enemy_ships_at_dawn": "retire",
+        "label_ja": "昼の空は争奪（特攻とコルセア）",
+        "refs": [
+          {
+            "url": "https://pacificwrecks.com/battle/battle-of-ormoc-bay.html",
+            "claim": "オルモック湾の戦い（1944-11〜12）。日本の輸送と特攻機、米の PT・駆逐艦・陸上機が湾の上空と海で争った"
+          },
+          {
+            "url": "https://www.navsource.org/archives/12/05323.htm",
+            "claim": "PT-323 はレイテ方面で特攻機の体当たりを受けて失われた（1944-12）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。play_as contested は将来の『敵機 → 遅れて味方戦闘機』用。遊べる世界を作るときに決める)"
+      }
     },
     {
       "id": "us_07",
@@ -486,12 +634,31 @@
       "success": "生存者40名以上収容して帰投",
       "historical_note": "PT-199が駆逐艦Corryの生存者61名を救助。",
       "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-7.html",
-      "optional": true
+      "optional": true,
+      "dawn_air": {
+        "control": "own",
+        "confidence": "high",
+        "play_as": "own",
+        "enemy_ships_at_dawn": "none",
+        "label_ja": "昼の空は味方（連合軍）",
+        "refs": [
+          {
+            "url": "https://www.historyhit.com/the-crippling-losses-of-the-luftwaffe-during-operation-overlord/",
+            "claim": "オーバーロード作戦の前と間にドイツ空軍は大きな損失を出し、上陸海域の昼の空にほとんど出られなかった"
+          },
+          {
+            "url": "https://www.airuniversity.af.edu/News/Display/Article/1859844/key-to-success-allied-airpower-at-normandy/",
+            "claim": "ノルマンディー上陸の成功の鍵は連合軍の航空優勢だった"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "jp_01",
       "campaign": "jp_hard",
       "order": 1,
+      "playable_from": "v0.6.5",
       "title_ja": "夜の輸送護衛",
       "date": "1942-12-20",
       "place": "ショートランド〜ガダルカナル",
@@ -517,7 +684,25 @@
       "duration_min": 5,
       "success": "大発2隻以上到達、自艇生還",
       "historical_note": "米PTの大発掃討の裏返し。隼艇は米PT対抗のため魚雷を外して機銃を増備した艇。",
-      "source_url": "https://ja.wikipedia.org/wiki/隼艇"
+      "source_url": "https://ja.wikipedia.org/wiki/隼艇",
+      "dawn_air": {
+        "control": "enemy",
+        "confidence": "medium",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "retire",
+        "label_ja": "昼の空は敵（ヘンダーソン基地）",
+        "refs": [
+          {
+            "url": "https://en.wikipedia.org/wiki/Tokyo_Express",
+            "claim": "昼はヘンダーソン基地から約 200 マイル以内の日本艦は空襲を受けるので、東京急行は一晩で往復した"
+          },
+          {
+            "url": "https://pacificwrecks.com/unit/ijn/802.html",
+            "claim": "第802航空隊（水上戦闘機・飛行艇）。ショートランド方面の日本の水上機の部隊（日本側の掩護はショートランド寄り）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は確度 medium、日本語の調査は high → 低い方。ショートランド寄りでは日本の水上戦闘機・ブインの零戦の掩護があり場所しだい（zones は将来）) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "jp_02",
@@ -542,7 +727,25 @@
       "success": "生還",
       "historical_note": "1944/1/30 ウェークで第5・6号艇がPB2Yに撃沈された。",
       "source_url": "https://www.ibiblio.org/hyperwar/USN/USN-Chron/USN-Chron-1944.html",
-      "todo": "us_patrol_bomber を enemies.json に追加（v0.6）"
+      "todo": "us_patrol_bomber を enemies.json に追加（v0.6）",
+      "dawn_air": {
+        "control": "enemy",
+        "confidence": "low",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "none",
+        "label_ja": "昼の空は敵（米の飛行艇）",
+        "refs": [
+          {
+            "url": "https://en.wikipedia.org/wiki/VPB-4",
+            "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+          },
+          {
+            "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+            "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。コロナドの空襲は夜。夜明けに米機がいたかは未確認。historical_note の第5・6号艇の喪失も未確認) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "jp_03",
@@ -567,7 +770,24 @@
       "success": "18隻中6隻以上を残す（史実は5隻）",
       "historical_note": "第27魚雷艇隊は10/10の空襲で18隻中13隻喪失。",
       "source_url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
-      "todo": "us_carrier_aircraft を enemies.json に追加（v0.6）"
+      "dawn_air": {
+        "control": "enemy",
+        "confidence": "high",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "none",
+        "label_ja": "昼の空は敵（第38任務部隊）",
+        "refs": [
+          {
+            "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+            "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+          },
+          {
+            "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+            "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "jp_04",
@@ -597,12 +817,31 @@
       "duration_min": 6,
       "success": "輸送船の揚陸完了、自艇生還",
       "historical_note": "同夜、駆逐艦卯月がPT-490・492に撃沈された。",
-      "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay"
+      "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
+      "dawn_air": {
+        "control": "contested",
+        "confidence": "medium",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "retire",
+        "label_ja": "昼の空は敵（タクロバンのコルセア）",
+        "refs": [
+          {
+            "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
+            "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のオルモック湾で米 PT に撃沈された"
+          },
+          {
+            "url": "https://trafficnews.jp/post/117332",
+            "claim": "多号作戦（レイテ島への輸送）の船団は米の陸上機の空襲を受け、昼の輸送・揚陸は危うかった"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は contested（敵寄り）、日本語の調査は enemy・high) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "jp_05",
       "campaign": "jp_hard",
       "order": 5,
+      "playable_from": "v0.6.4",
       "title_ja": "鹵獲艇の哨戒",
       "date": "1943-06-01",
       "place": "ラバウル",
@@ -622,19 +861,38 @@
       "success": "生還",
       "historical_note": "鹵獲オランダTM艇（第101号型）はラバウル方面で使用、4隻沈没と伝わる。",
       "source_url": "https://ja.wikipedia.org/wiki/第百一号型魚雷艇",
-      "todo": "鹵獲艇 jp_tm101 を boats.json に追加するか jp_t14 で代用（v0.6）"
+      "todo": "鹵獲艇 jp_tm101 を boats.json に追加するか jp_t14 で代用（v0.6）",
+      "dawn_air": {
+        "control": "own",
+        "confidence": "medium",
+        "play_as": "own",
+        "enemy_ships_at_dawn": "none",
+        "label_ja": "昼の空は味方（ラバウルの零戦）",
+        "refs": [
+          {
+            "url": "https://www.ibiblio.org/hyperwar/USMC/II/USMC-II-V-3.html",
+            "claim": "米海兵隊の戦史（第 2 巻）。ラバウルは日本の航空の大きな基地で、連合軍の航空が叩くまで日本側の空だった"
+          },
+          {
+            "url": "https://pacificwrecks.com/date/1943/10/12.html",
+            "claim": "1943-10-12、第5空軍がラバウルに最初の大規模な昼の空襲をした（それより前の 1943-06 の昼の空は日本側）"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+      }
     },
     {
       "id": "jp_06",
       "campaign": "jp_hard",
       "order": 6,
+      "playable_from": "v0.6.0",
       "title_ja": "慶良間の夜・最終出撃",
       "date": "1945-03-28",
       "place": "沖縄・慶良間列島沖",
       "type": "attack_and_survive",
       "player_boat": "jp_t38",
       "torpedo_type": "jp_45cm",
-      "objective": "泊地の米艦艇へ接近して雷撃し、生還する。史実では戦闘能力を失った",
+      "objective": "もしも戦闘能力が残っていたら、泊地の米艦艇へ接近して雷撃し、生還する",
       "enemies": [
         "us_destroyer",
         "us_pt_enemy",
@@ -647,10 +905,116 @@
       ],
       "moon": "dark",
       "duration_min": 6,
-      "success": "生還（命中は大ボーナス）。クリアで jp_t35 を解放",
+      "success": "帰投。命中はボーナス（米駆逐艦の撃沈は大きな点）",
       "historical_note": "第27魚雷艇隊は慶良間上陸後に米艦艇攻撃を試みたが運天港空爆で戦闘能力を喪失。",
       "source_url": "https://note.com/bouheitai1958/n/n83db84b58fc6",
-      "todo": "us_destroyer を enemies.json に追加（v0.6）"
+      "todo": "PT ×2 と敵機は v0.6.x で足す（v0.6.0 の遊べる世界は米駆逐艦 1 隻）。クリアで jp_t35 を解放は未実装。月: 1945-03-28 は満月（17:44 UT＝3/29 02:44 JST。月齢 約 14.5。月相の暦と計算で確認）。moon dark（新月）は design（満月にすると静音でも 1,300 m で見つかり、T-38 の弱さが勝負にならない）",
+      "briefing_note_ja": "第27魚雷艇隊は慶良間列島への米軍上陸の後、泊地の米艦艇への攻撃を試みたが、運天港への空襲で戦闘能力を失った。",
+      "dawn_air": {
+        "control": "enemy",
+        "confidence": "high",
+        "play_as": "enemy",
+        "enemy_ships_at_dawn": "stay",
+        "label_ja": "昼の空は敵（米艦載機）",
+        "refs": [
+          {
+            "url": "https://www.history.navy.mil/about-us/leadership/director/directors-corner/h-grams/h-gram-044/h-044-2.html",
+            "claim": "護衛空母 18 隻の TG 52.1 が 3/25〜26 に着いて沖縄への空襲を始めた。慶良間は小艇の基地を封じるためにも先に取った"
+          },
+          {
+            "url": "https://www.ibiblio.org/pha/comms/1945-04.html",
+            "claim": "3/30〜31、艦載機（コルセア・ヘルキャット・ヘルダイバー・アベンジャー）の南西諸島への空襲で魚雷艇 3 隻撃沈・1 隻損傷（場所は抜粋に無い）、運天湾の潜水艦の掩体 6 つ破壊"
+          },
+          {
+            "url": "https://www.ibiblio.org/hyperwar/USA/USA-P-Okinawa/USA-P-Okinawa-2.html",
+            "claim": "3/29、艦載機が運天港の掩体を少なくとも 8 つ破壊"
+          }
+        ],
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。日本の航空は特攻だけで魚雷艇の上空の掩護は無く、米艦は侵攻の泊地に残った。3/27〜28 の第27魚雷艇隊の出撃と戦果は個人ブログ 1 件だけで未確認＝使わない) / design (v0.6.1。play_as・label_ja)"
+      },
+      "v0_1_prototype": {
+        "enemies": [
+          "us_destroyer"
+        ],
+        "enemy_behavior": "ai (ijn_destroyer と同じ AI・砲・探照灯。enemies.json の us_destroyer。v0.6.0)",
+        "duration_s": 160,
+        "duration_s_source": "design (v0.6.0。夜明けまでの実秒。夜明けの後は敵機の空襲（us_01・us_03・jp_06。us_03 は v0.6.1 の実機 1 回目から）／敵機は来ない（us_02）。v0.6.1 から夜明けで任務は終わらない。return-sim（MISSION=jp_06、被弾なし、理想化した操作）で、静音で寄り 1,000 m で 2 本撃って静音で帰ると 105 秒（p90 109）、巡航で帰ると 87 秒、全速だけで 1 回攻撃は 62 秒、攻撃せず直帰 56 秒。us_02（150 秒、静音中心 100 秒）と同じく約 50 秒の余り。実際の操作は模擬より遅い)",
+        "fuel_allotment_gal": 16,
+        "fuel_allotment_gal_source": "design (v0.6.0。交戦海域で使える割当（us_02 の 38 gal と同じ考え方）。T-38 は全速 200・巡航 94 gal/h（boats.json。燃料曲線の指数 2.55 で全速が割高）。return-sim（MISSION=jp_06、被弾なし、100 回、帰投時の残りの中央値）: 静音中心 54%／標準（全速 15 秒離脱 → 巡航で帰投）34%／全速だけで 1 回攻撃 3%（100 回中 99 回帰れる）／攻撃せず直帰 82%。全速だけの 1 回攻撃がかろうじて帰れる＝us_02 と同じ厳しさにした。15 gal だと全速だけでは 76% が漂流、17 gal だと 9% 残る。外して再攻撃は 92% が漂流（1 本目を外す想定では全部漂流）。砲撃ありでは静音 97・標準 95 回帰投、全速だけは 13 回帰投・87 回撃沈)",
+        "shallows": [
+          {
+            "x_m": 1400,
+            "y_m": 2500,
+            "width_m": 700,
+            "height_m": 400,
+            "label_ja": "礁"
+          }
+        ],
+        "shallows_source": "design (v0.6.0。慶良間の島々の間の礁。典型的な交戦点 (3000,1500) から南西の島陰の帰投地点 (900,3500) へ直線で帰ると x 1,530〜1,950 で横切る。北か南へ迂回できる)",
+        "return_point": {
+          "x_m": 900,
+          "y_m": 3500,
+          "radius_m": 250,
+          "call_margin": 1.6,
+          "torpedo_settle_max_s": 10,
+          "source": "design (v0.6.0。南西の島陰（味方の隠れ場所）。出発点 (3000,3400) から 2,100 m、典型的な交戦点 (3000,1500) から約 2,900 m。call_margin 1.6: 呼ばれた時点で全速でも静音でも帰れるよう、T-38 の全速/巡航の距離あたり消費比 1.545（200/27.5 ÷ 94.1/20）と巡航/静音上限の速力比 1.538（20/13）を上回る値（us_02 の Elco は 1.47・1.28 で 1.5）)"
+        },
+        "hazards": [
+          "enemy_ship_gunfire_or_ram",
+          "grounding",
+          "dawn_air_strike"
+        ],
+        "hazards_source": "design (v0.6.0。この遊べる世界で起きる危険。任務本体の hazards にある enemy_aircraft（米の夜間哨戒機）と PT は v0.6.x で足す。v0.6.1: 夜明けの空襲（米艦載機 4 機）。夜間哨戒機と PT は v0.6.x)",
+        "dawn_strike": {
+          "aircraft_id": "us_carrier_aircraft",
+          "count": 4,
+          "count_source": "design (米海軍の戦闘機は 4 機で 1 個分隊＝一般知識・未検証。この日の編成は未確認)",
+          "from_bearing_deg": 90,
+          "escort_target_planes": [],
+          "source": "design (v0.6.1。東＝TF 58 の側・朝日の方角から。僚艇はいない)"
+        },
+        "bounds_m": {
+          "width": 6000,
+          "height": 4000,
+          "source": "design (us_02 と同じ広さ)"
+        },
+        "player_start": {
+          "x_m": 3000,
+          "y_m": 3400,
+          "heading_deg": 0,
+          "source": "design (v0.6.0。海域の南寄り中央から北向き)"
+        },
+        "enemy_start": {
+          "x_m": 1500,
+          "y_m": 1500,
+          "heading_deg": 90,
+          "source": "design (v0.6.0。泊地の警戒の駆逐艦が出発点の約 1,900 m 北を東へ横切る（18 kt＝画面上 46 m/秒）。新月なら、静音（13 kt 以下）で寄る自艇は 600 m まで、巡航なら 1,200 m で見つかる（base_detect_m 2,000 × 新月 0.6 × 速力係数）。T-38 の視程は新月 900 m。史実の 1945-03-28 は満月（月齢 約 14.5）で、満月なら静音でも 1,300 m で見つかる。新月は遊べる勝負にするための設計値)"
+        },
+        "enemy_hits_to_sink": 1,
+        "enemy_hits_to_sink_source": "design (us_02 と同じ。45cm 魚雷 1 本で撃沈。T-38 は 2 本しか積まない)",
+        "hard": {
+          "extra_enemy_starts": [
+            {
+              "x_m": 4500,
+              "y_m": 900,
+              "heading_deg": 270
+            }
+          ],
+          "objective_sink_count": 1,
+          "source": "design (v0.6.0。難易度ハード: 駆逐艦 2 隻。2 隻目は北東 (4500,900) から西へ＝1 隻目とすれ違い、どちらを狙っても片方に見つかりやすい。objective_sink_count 1: T-38 は魚雷 2 本しか積まないので、2 隻の撃沈を達成にすると全弾命中が要る（模擬の 400-800yd 77% でも 2 本とも当たるのは約 59%）。達成は 1 隻の撃沈（撃沈の表示は 撃沈 n/2）。ハードの重さは 2 隻目の見張り・砲で出す)"
+        },
+        "night": {
+          "hazard_scale": 1,
+          "optional_hazards": [],
+          "enemy_jitter": {
+            "x_m": 500,
+            "y_m": 200,
+            "heading_deg": 15
+          },
+          "mirror_chance": 0.5,
+          "source": "design (v0.6.0。夜の揺らぎ: 駆逐艦の出発点を x ±500・y ±200・針路 ±15°、左右反転 0.5。出す・出さないを夜ごとに決める危険はまだ無い（optional_hazards 空）)"
+        }
+      }
     }
   ]
 }

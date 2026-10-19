@@ -227,6 +227,8 @@ export interface DamageParams {
   /** 火災の継続ダメージ（HP/実秒）と持続（実秒） */
   fireDps: number;
   fireDurationS: number;
+  /** 消火ボタンをこの実秒以上押し続けると消える（乗員で伸びる。v0.6.0 で煙幕から移した＝煙幕の無い日本艇でも消火できる） */
+  extinguishHoldS: number;
 }
 
 export interface DamageState {
@@ -343,13 +345,14 @@ export function gunneryParamsFromData(r: EnemyGunneryDataRecord): GunneryParams 
 
 export interface BoatDamageDataRecord {
   hull_hp: number;
-  damage: { engine_damage_speed_factor: number; fire_dps: number; fire_duration_s: number };
+  damage: { engine_damage_speed_factor: number; fire_dps: number; fire_duration_s: number; extinguish_hold_s: number };
 }
 
 export function isBoatDamageDataRecord(v: unknown): v is BoatDamageDataRecord {
-  return hasNums(v, ['hull_hp']) && hasNums((v as Record<string, unknown>)['damage'], ['engine_damage_speed_factor', 'fire_dps', 'fire_duration_s']);
+  const d = (v as Record<string, unknown> | null)?.['damage'];
+  return hasNums(v, ['hull_hp']) && hasNums(d, ['engine_damage_speed_factor', 'fire_dps', 'fire_duration_s', 'extinguish_hold_s']) && (d as Record<string, number>)['extinguish_hold_s']! >= 0;
 }
 
 export function damageParamsFromData(r: BoatDamageDataRecord): DamageParams {
-  return { maxHp: r.hull_hp, engineSpeedFactor: r.damage.engine_damage_speed_factor, fireDps: r.damage.fire_dps, fireDurationS: r.damage.fire_duration_s };
+  return { maxHp: r.hull_hp, engineSpeedFactor: r.damage.engine_damage_speed_factor, fireDps: r.damage.fire_dps, fireDurationS: r.damage.fire_duration_s, extinguishHoldS: r.damage.extinguish_hold_s };
 }

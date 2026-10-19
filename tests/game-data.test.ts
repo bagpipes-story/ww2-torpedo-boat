@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getBoatFuelCurve, getBoatRecord, getEnemyRecord, getEvasionMultiplier, getBoatCrewEffects, getBoatCrewParams, getFriendlyParams, getGroundingParams, getPrototypeMission, getScoringParams, getSeaplaneParams, getStormParams, getVisibilityParams } from '../src/config/game-data';
+import { getCampaigns, playableMissionIds } from '../src/config/campaign-data';
 import { distanceToShallowsM } from '../src/core/shallows';
 import { ktToMps } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
@@ -25,6 +26,21 @@ describe('game-data（data/*.json の読み出し）', () => {
     const boat = getBoatRecord(gameData, m.playerBoatId);
     expect(rp.callMargin).toBeGreaterThanOrEqual(curve.galPerMFull / curve.galPerMCruise);
     expect(rp.callMargin).toBeGreaterThanOrEqual(ktToMps(boat.speed_cruise_kt) / ktToMps(boat.speed_bands_kt.silent_max));
+  });
+  it('呼びかけの余裕の不変条件は遊べる任務すべてで成り立つ（米PT・日本。艇ごとの全速/巡航の消費比と巡航/静音上限の速力比を上回る）', () => {
+    for (const c of getCampaigns(gameData)) {
+      for (const id of playableMissionIds(gameData, c.id)) {
+        const m = getPrototypeMission(gameData, id);
+        const curve = getBoatFuelCurve(gameData, m.playerBoatId);
+        const boat = getBoatRecord(gameData, m.playerBoatId);
+        expect(m.fuelAllotmentGal, id).toBeLessThanOrEqual(curve.capacityGal);
+        const fuelRatio = curve.galPerMFull / curve.galPerMCruise;
+        // us_01（Elco 77ft）は v0.4 からの既知の差: 1.5 < 1.5012（0.08%＝呼ばれた瞬間から全速だけで帰ると、帰り道の燃料の 0.1% ほど足りない）。米PTの挙動を変えないため v0.6.0 では直さない
+        if (id === 'us_01') expect(fuelRatio - m.returnPoint.callMargin, id).toBeLessThan(0.002);
+        else expect(m.returnPoint.callMargin, `${id} 消費比`).toBeGreaterThanOrEqual(fuelRatio);
+        expect(m.returnPoint.callMargin, `${id} 速力比`).toBeGreaterThanOrEqual(ktToMps(boat.speed_cruise_kt) / ktToMps(boat.speed_bands_kt.silent_max));
+      }
+    }
   });
   it('浅瀬: us_02 に 1 つ（4300,900 700×800）。帰投地点への直線が横切る。grounding.params は 15 kt・6 秒', () => {
     const m = getPrototypeMission(gameData, 'us_02');

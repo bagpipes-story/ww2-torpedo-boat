@@ -74,7 +74,7 @@ describe('沿岸砲（core/shore-battery、v0.4.3）', () => {
   });
   it('煙幕で砲台との線が遮られると撃たない。艇が沈んでいれば射界に数えない', () => {
     const s = createShoreBattery(6);
-    const sp: SmokeParams = { durationS: 5, cooldownS: 20, puffIntervalS: 0.5, puffRadiusM: 60, puffLifetimeS: 25, extinguishHoldS: 1 };
+    const sp: SmokeParams = { durationS: 5, cooldownS: 20, puffIntervalS: 0.5, puffRadiusM: 60, puffLifetimeS: 25 };
     const smoke = createSmokeState(4);
     Object.assign(smoke.puffs[0]!, { active: true, x: 4600, y: 2400, leftS: 20 });
     const log: string[] = [];

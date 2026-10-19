@@ -12,6 +12,7 @@ import {
   DEBUG_SHIP_HIT_SCALE,
   DEBUG_STORM_OFF,
   DEBUG_STORM_START_Y,
+  DEBUG_STRIKE_OFF,
   DEBUG_TRANSPORT_OFF,
 } from './game-config';
 import type { Sortie } from '../core/sortie';
@@ -34,5 +35,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     forcePlane: DEBUG_SEAPLANE !== 'none',
     forceFriendly: DEBUG_FRIENDLY_FORCE,
     shipHitScale: DEBUG_SHIP_HIT_SCALE,
+    strikeOff: DEBUG_STRIKE_OFF,
   };
 }

@@ -1,10 +1,11 @@
 // HUD・操作系の見た目の寸法（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE } from './game-config';
+// 文の色と距離の刻みは hud-text-config（v0.6.1。DOM 無しで ui/hud-lines・ui/dawn-lines が読む）
+export { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from './hud-text-config';
 
 export const HUD_FONT = 'Menlo, Consolas, monospace';
 export const HUD_COLOR = '#9fb3c8';
-export const HUD_COLOR_STRONG = '#e6eef7';
 /** Result の通算の命中率の行（v0.5.0。今回の記録と見分ける） */
 export const HUD_COLOR_KPI = '#e8d48a';
 
@@ -60,7 +61,6 @@ export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX +
  */
 export const HUD_HIST_BADGE_JA = '［史実］';
 export const HUD_HIST_BADGE_X = HUD_MARGIN + 88;
-export const HUD_COLOR_WARN = '#ff8a7a';
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった） */
 export const TORPEDO_BUTTON_RADIUS = 64;
@@ -111,7 +111,6 @@ export const FUEL_TICK_HEIGHT = 18;
 export const FUEL_FLAGS_OFFSET_X = 120;
 /** 味方＝薄い青（docs/02 §7）。帰投地点の輪・帰投マーカー・燃料の目盛り */
 export const HOME_COLOR = 0x8fc8ff;
-export const HOME_COLOR_TEXT = '#8fc8ff';
 /** 帰投地点の輪（世界単位 × RENDER_SCALE のテクスチャを半径へ拡縮）。線幅・内側の塗り・濃さ・点滅 */
 export const RETURN_RING_TEX_RADIUS_UNITS = 128;
 export const RETURN_RING_LINE_WIDTH = 4;
@@ -120,7 +119,6 @@ export const RETURN_RING_ALPHA = 0.7;
 export const RETURN_RING_PULSE_ALPHA = 0.3;
 export const RETURN_RING_PULSE_MS = 600;
 export const HOME_LABEL_FONT_PX = 28;
-export const HOME_MARKER_DISTANCE_STEP_M = 100;
 /** 浅瀬（docs/02 §6.8）: 砂色の暗い帯。塗り・縁・ラベル。警告の距離の刻み m */
 export const SHALLOW_FILL_COLOR = 0x6b5d3a;
 export const SHALLOW_FILL_ALPHA = 0.35;
@@ -129,7 +127,6 @@ export const SHALLOW_LINE_ALPHA = 0.7;
 export const SHALLOW_LINE_WIDTH = 3;
 export const SHALLOW_LABEL_FONT_PX = 26;
 export const SHALLOW_TEXT_COLOR = '#c8b078';
-export const SHALLOW_WARN_STEP_M = 50;
 
 /** 画面外の敵マーカー（三角と距離）。画面端からの内側マージン、三角の寸法、距離表示の刻み */
 export const TARGET_MARKER_MARGIN = 56;
@@ -257,7 +254,6 @@ export const SEAPLANE_FLARE_TINT = 0xffc070;
 export const BOMB_TINT = 0xc0c0c0;
 export const BOMB_SCALE_FROM = 0.6;
 export const BOMB_SCALE_TO = 1.4;
-export const PLANE_DISTANCE_STEP_M = 100;
 export const PLANE_MARKER_TOP_MARGIN = HOME_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
 /** 暴風の帯（docs/02 §6.8、v0.3.4）: 帯と前線（南の縁）は HP バーの塗りを伸ばして tint、ラベル、雨筋（世界単位。画面内を流れる）、艇の横揺れ、叩きつけの水しぶきの位置と揺れ、HUD の距離の刻み */
 export const STORM_BAND_COLOR = 0x5a6a88;

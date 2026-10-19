@@ -16,7 +16,8 @@ import { raidResultLine } from '../core/sortie';
 import { STORM_NONE, meanInsideKt } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
-import { bargeResult, escortResult } from './mission-result-extras';
+import { bargeResult, escortResult, seaplaneResultFields } from './mission-result-extras';
+import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
 import type { MissionWorld } from './mission-world';
 
 const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
@@ -86,7 +87,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     crewAlive: w.setup.crew.total,
     crewTotal: w.setup.crew.total,
     crewTurnFactor: 1,
-    extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS : 0,
+    extinguishHoldS: w.damageParams.extinguishHoldS,
     gunMission: w.hunt !== null,
     gunStatus: GUN_SAFE,
     gunFast: false,
@@ -118,6 +119,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     seaplaneEnabled: w.seaplane !== null,
     transportEnabled: w.destroyers !== null && w.destroyers.hasTransport,
     transportSunk: false,
+    dawn: initDawnTelemetry(w),
   };
 }
 
@@ -223,6 +225,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.planeDx = NaN;
     t.planeDy = NaN;
   }
+  // 夜明け（v0.6.1）: ラッチ・夜明け後の秒・空襲の段。空襲の機が来ていれば「敵機」の矢印をその機で上書き（水上機の後）
+  refreshDawnTelemetry(t, w, scratchPose);
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
   const st = w.storm;
   if (st) {
@@ -234,14 +238,13 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   }
   t.crewAlive = crewAlive(w.setup.crew, w.damageParams.maxHp, w.damage.hp);
   t.crewTurnFactor = crewTurnFactor(w.setup.crewEffects, w.crewLostNow);
-  t.extinguishHoldS = w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0;
+  t.extinguishHoldS = w.damageParams.extinguishHoldS * w.extinguishHoldScale;
 }
 
 /** 終了時に 1 回だけ Result の材料を作る（走っている魚雷は呼び出し側が先に外れとして確定しておく） */
 /** 終了時に 1 回だけ。startFireS は出撃時の火災が消えた実秒（燃えたまま終われば -1、火災なしで出撃なら NaN。Result の「出撃前」の行） */
 export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, data: GameData, elapsedS: number, ringEdgeM: number, startFireS: number): MissionResult {
   const counts = countHits(w.shots);
-  const sp = w.seaplane ? w.seaplane.state : null;
   const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
   return {
     reason,
@@ -281,7 +284,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     crewTotal: w.setup.crew.total,
     crewTurnFactor: crewTurnFactor(w.setup.crewEffects, w.crewLostNow),
     crewAccelFactor: crewAccelFactor(w.setup.crewEffects, w.crewLostNow),
-    extinguishHoldS: w.smokeParams ? w.smokeParams.extinguishHoldS * w.extinguishHoldScale : 0,
+    extinguishHoldS: w.damageParams.extinguishHoldS * w.extinguishHoldScale,
     stormEnabled: w.storm !== null,
     stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
     stormInsideS: w.storm ? w.storm.state.insideS : 0,
@@ -289,19 +292,9 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     stormMeanKt: w.storm ? meanInsideKt(w.storm.state) : NaN,
     stormSlams: w.storm ? w.storm.state.slams : 0,
     stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
-    seaplaneEnabled: w.seaplane !== null,
-    seaplanePhase: sp ? sp.phase : SP_IDLE,
-    seaplaneOutcome: sp ? sp.outcome : SP_OUT_NONE,
-    seaplaneAttacked: sp ? sp.attacked : false,
-    seaplaneSorties: sp ? sp.sorties : 0,
-    seaplaneLost: sp ? sp.lost : 0,
-    seaplaneSlowReactS: sp ? sp.slowReactS : NaN,
-    seaplaneFlareLitS: sp ? sp.ordnance.flare.litS : 0,
-    seaplaneShellsUnderFlare: sp ? sp.ordnance.flare.shellsUnderFlare : 0,
-    seaplaneBombs: sp ? sp.ordnance.bombsDropped : 0,
-    seaplaneBombHits: sp ? sp.ordnance.bombsHit : 0,
-    seaplaneDodgeS: sp ? sp.ordnance.bombs.map((b) => b.dodgeReactS) : [],
+    ...seaplaneResultFields(w),
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
+    dawn: dawnResult(w),
   };
 }

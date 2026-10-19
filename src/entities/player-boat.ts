@@ -1,6 +1,6 @@
 // 自艇。core の BoatState を持ち、スプライトへ位置・角度を反映するだけ。運動は src/core/boat-motion.ts。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
 
@@ -14,10 +14,12 @@ export class PlayerBoat {
     private readonly scene: Phaser.Scene,
     start: { x: number; y: number; headingDeg: number },
     initialSpeedMps: number,
+    /** 艇の絵（boatTextureKey(艇の id)。v0.6.0） */
+    textureKey: string,
   ) {
     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: initialSpeedMps };
     // テクスチャは RENDER_SCALE 倍で作ってあるので、世界単位に戻す
-    this.sprite = scene.add.image(start.x, start.y, TEXTURE_KEYS.playerBoat).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat);
+    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat);
     this.syncSprite();
   }
 

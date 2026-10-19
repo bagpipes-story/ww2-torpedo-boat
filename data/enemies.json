@@ -95,6 +95,94 @@
       "notes": "v0.1は直進のみ。v0.2.0で発見・雷跡回避（櫛で梳く）・体当たり・端での向き直しを有効化。探照灯・星弾・砲撃は v0.2.1。"
     },
     {
+      "id": "us_destroyer",
+      "faction": "USN",
+      "name_ja": "米駆逐艦（フレッチャー級の簡略）",
+      "length_m": 114.8,
+      "beam_m": 12.0,
+      "speed_max_kt": 36.5,
+      "speed_typical_kt": 18,
+      "turn_rate_deg_s": 1.5,
+      "accel_mps2": 0.3,
+      "hull_hp": 300,
+      "hull_circles": 5,
+      "torpedo_hits_to_sink": 2,
+      "guns": [
+        {
+          "id": "main_127mm",
+          "count": 3,
+          "range_m": 10000,
+          "effective_night_m": 4000,
+          "rof_per_min": 10,
+          "damage": 30,
+          "shell_speed_mps": 400,
+          "dispersion_m": 160,
+          "splash_radius_m": 8,
+          "fire_chance": 0.35,
+          "engine_damage_chance": 0.3
+        },
+        {
+          "id": "aa_40mm_20mm",
+          "count": 4,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 70,
+          "splash_radius_m": 3,
+          "fire_chance": 0.05,
+          "engine_damage_chance": 0.05
+        }
+      ],
+      "searchlight": {
+        "range_m": 3000,
+        "cone_deg": 12,
+        "sweep_deg_s": 20,
+        "on_delay_s": 2.5
+      },
+      "starshell": {
+        "range_m": 6000,
+        "illum_radius_m": 1500,
+        "duration_s": 25,
+        "cooldown_s": 60
+      },
+      "detection": {
+        "base_detect_m": 2000,
+        "wake_detect_m": 800,
+        "reaction_delay_s": 0.5,
+        "torpedo_wake_detect_m": 2000,
+        "wake_spot_rate_per_s": 0.3,
+        "note": "torpedo_wake_detect_m は雷跡が見える距離 m。この中に向かってくる魚雷がある間、見張りが実時間 1 秒あたり wake_spot_rate_per_s の割合で気づく（v0.5.0。乱数 seed+17）。reaction_delay_s は気づいてから転舵を始めるまでの実時間秒。base_detect_m は半月・巡航での発見距離で、hit_rate_model.visibility の係数を掛ける。v0.2.0 実機: 2500 だと巡航で自艇の視程 1,500m よりずっと先に見つかり厳しすぎたので 2000 に（静音 1,000m・停止 800m・全速 3,200m）"
+      },
+      "evasion": {
+        "mode": "comb_tracks",
+        "turn_toward_wakes": true,
+        "evade_turn_rate_deg_s": 2.0,
+        "speed_boost_kt": -10
+      },
+      "ram": {
+        "enabled": true,
+        "trigger_m": 400,
+        "give_up_m": 800,
+        "stall_s": 6,
+        "cooldown_s": 12,
+        "turn_rate_bonus_deg_s": 0.5
+      },
+      "patrol": {
+        "edge_turn_margin_m": 700
+      },
+      "source": {
+        "length_m・beam_m・speed_max_kt": "historical (フレッチャー級 全長 114.8 m・幅 12.0 m・36.5 kt)",
+        "speed_typical_kt": "design (v0.6.0。泊地の警戒の 18 kt。ijn_destroyer の 25 kt（東京急行の突入）より遅い＝追いつかれにくいが、見張りの時間は長い)",
+        "guns": "design (v0.6.0。ijn_destroyer の 127mm・25mm の模型を写し、127mm の damage を 40 → 30 にした（T-38 の HP 60 に 2 発で HP 0、Elco 100 なら 4 発）。史実の 5 インチ 38 口径 ×5・40mm・20mm の門数と性能は扱わない。gunnery-sim（BOAT=jp_t38 ENEMY=us_destroyer）の値は CHANGELOG v0.6.0)",
+        "others": "design (ijn_destroyer と同じ)",
+        "detection": "design (v0.6.0。wake_spot_rate_per_s 0.2 → 0.3（平均 3.3 秒で雷跡に気づく）。日本の 45cm 魚雷（35 kt）は Mk 8 より速く、泊地の警戒の 18 kt は東京急行の 25 kt より遅いので、ijn_destroyer の値のままだと正しく狙った 1 本が当たりすぎた（hit-rate-sim ENEMY=us_destroyer TORP=jp_45cm: 0.2 で 100・84・44・19・8%）。0.3 で 100・77・32・10・4%（REPS 12）（目標 60-70・45-55・30-35・10-15・0-5%）。400-800yd は飛ぶ時間が短く回避では下がらない（us_02 の 63% と同じ事情）。ほかの見張りの値（見える距離 2,000 m・反応 0.5 秒・base_detect_m 2,000）は ijn_destroyer と同じ)",
+        "searchlight・starshell・evasion・ram・patrol": "design (v0.6.0。ijn_destroyer の値を写した。SG レーダー（1943 年以降の米駆逐艦）は扱わない＝目で見つける)"
+      },
+      "notes": "v0.6.0。日本ハードモード（jp_06 慶良間の夜）の敵。AI・砲・探照灯は ijn_destroyer と同じ仕組み。絵は Boot が us_02 の駆逐艦から作る 1 枚を使う（当たり判定はこの寸法）。"
+    },
+    {
       "id": "ijn_light_cruiser",
       "faction": "IJN",
       "name_ja": "軽巡洋艦（阿武隈相当）",
@@ -316,6 +404,81 @@
         "design_notes": "v0.4.1（任務中の敵の水上機。docs/02 §6.8。段階と時間は risk_events の enemy_aircraft.params）。speed_kt 120: 画面上 308.64 m/秒（time_scale 5）＝艇の全速の 3.1 倍、画面幅 1,707 m を 5.5 秒で横切る。altitude_m 600: 爆弾の落下秒 √(2h/g) = 11.06 game 秒（体感 2.21 秒）の元で、高いほど転舵の猶予が増える。flare.illum_radius_m 1200（2000 から）: 2,000 だと既定ズーム（半幅 853 m）でも見張り（1,280 m）でも光の縁が画面に入らず『光の外へ』が読めない。1,200 なら縁が見え、全速 12 秒・巡航 20 秒・静音 26 秒で出られる。duration_s 40: 爆撃（照明弾から 18 秒）が終わっても 22 秒残る＝晒されたまま。星弾 25 秒より長い。cooldown_s 90: v0.4.1 では使わない（1 任務 1 発）。flare.reveal_m 6000: 光の中の艇を駆逐艦が見つける距離（駆逐艦の星弾の range_m と同じ。海域の対角 7,211 m なので事実上どこでも。砲撃は有効射程 4,000 で頭打ち）。bomb: CEP 40 m は一様円盤 R = 40√2 = 56.6 m（gunnery の dispersion と同じ模型）。直進・停止の艇（船体の半幅 3.15 + 爆風 25 = 28.15 m）に 1 発 38%、2 発で少なくとも 1 発 62%。damage 35 は 127mm 40 と掃射 25 の間（2 発とも受けると −70 で無傷なら沈まないが 127mm 1 発の後なら沈む）。fire_chance 0.3 / engine_damage_chance 0.2: 至近弾の衝撃。127mm（0.35 / 0.3）より少し軽く掃射（0.25 / 0）より重い。機関損傷を入れるのは接近中の被弾が帰り道にも効くため。detection.base_detect_m 1500（3000 から）: 発見確定の線＝航跡のない艇を高度 600 m から見つける距離＝艇自身の視程（半月 1,500 m）と同じ。見失うまでの 4 秒（risk_events の lose_s）込みで、3,000 だと減速を始める猶予が 4.4 秒（初見の反応 2.3 秒＋減速 1.35 秒の 1.2 倍）、1,500 なら 9.2 秒（2.5 倍）。wake_speed_threshold_kt 18（20 から）: 航跡が見える速力＝静音帯の上限（boats.json の silent_max、暴風の安全速力、台座の内側の輪）。起動時に silent_max と一致を検査（20 だと HUD の帯と結果が合わない。v0.2.0 の教訓）。wake_detect_m 6000: 機が現れる距離。発見線まで 14.6 秒、上空まで 17.5 秒"
       },
       "notes": "全速で走ると航跡で 6,000 m から寄ってくる。警告から約 9 秒以内に 18 kt 以下にすれば、4 秒後に見失って去る（発見線 1,500 m を切ったら逃れられない）。寄られたら照明弾（駆逐艦に見られる）→ 爆弾 2 発。爆弾は転舵でかわす。"
+    },
+    {
+      "id": "ijn_f1m2_pete",
+      "faction": "IJN",
+      "name_ja": "零式水上観測機",
+      "strike": {
+        "run_speed_kt": 120,
+        "release_altitude_m": 200,
+        "bomb": {
+          "count": 2,
+          "damage": 35,
+          "blast_radius_m": 25,
+          "accuracy_cep_m": 32,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        }
+      },
+      "source": {
+        "type": "historical (F1M2。1942-04-09 に讃岐丸の 4 機が PT-34 を爆撃・掃射: Pacific Wrecks PT-34。讃岐丸の搭載は零観 6・九五水偵 2: tokusetsukansen 讃岐丸。抜粋のみ・本文未読)",
+        "bomb.count": "historical (60 kg × 2。一般知識・未検証)",
+        "run_speed_kt": "design (爆撃進路は夜の水偵 ijn_seaplane_jake と同じ 120 kt＝画面上 308.6 m/秒。進路 600 m を 1.94 秒で、投下の予告として読める)",
+        "others": "design",
+        "design_notes": "v0.6.1（夜明けの空襲。段階と時間は risk_events の dawn_air_strike.params）。release_altitude_m 200: 落下 √(2h/g) = 6.39 game 秒（体感 1.28 秒）＝投下を見てからの回避の窓。高いほど落下が長く、かわしやすい（実機で『理不尽』なら上げる・『ぬるい』なら下げる）。150 m（体感 1.11 秒）では反応 0.7 秒の転舵でも 1 発 約 0.5 と直進並みに当たり（輪の縁まで全速 30 秒で us_01 57%・jp_06 8%）、250 m（1.43 秒）では反応 0.35 秒でほぼ外れる（1 発 0.00〜0.01、us_01 100%・jp_06 99%）。200 m は反応 0.7 秒で us_01 82%・jp_06 16%（scripts/dawn-strike-sim.ts ALT=150/200/250・SECS=30・N=300。投下の間隔 3 秒のときの値。v0.6.1 実機 1 回目で間隔 2 秒にした後の表は risk_events の dawn_air_strike.params.source）。accuracy_cep_m 32: 一様円盤 R = 32√2 = 45.3 m。直進・停止の艇に 1 発 約 0.6（夜の水偵の CEP 40・0.38 より良い＝昼の照準）。狙いは投下の瞬間の艇の位置・速度・旋回から落下後の位置を見越す（旋回し続けても当たる。舵を切り替えると外れる）。damage 35・fire 0.3・engine 0.2 は夜の水偵と同じ（Elco 77ft は 3 発、T-38 は 2 発で沈む）"
+      },
+      "notes": "夜明けの後、敵の制空下の任務（us_01）で 4 機が波で来る。投下を見たら舵を切り替える（直進なら切る・旋回中なら逆へ切る）。止まる・回り続けるは当たる。"
+    },
+    {
+      "id": "ijn_a6m2n_rufe",
+      "faction": "IJN",
+      "name_ja": "二式水上戦闘機",
+      "strike": {
+        "run_speed_kt": 120,
+        "release_altitude_m": 200,
+        "bomb": {
+          "count": 2,
+          "damage": 35,
+          "blast_radius_m": 25,
+          "accuracy_cep_m": 32,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        }
+      },
+      "source": {
+        "type": "historical (A6M2-N。零戦一一型を元にした水上戦闘機。武装 7.7mm × 2・20mm × 2、爆弾 60 kg × 2: Wikipedia「Nakajima A6M2-N」・valka.cz。日本語の記事（trafficnews）は機銃・機関砲の数まで。抜粋のみ・本文未読) / design (us_03 の機体は v0.6.1 の実機 2 回目でユーザーが二式水戦に指定。1943-07 のフオン湾で二式水戦が昼に PT を襲った記録は未確認)",
+        "bomb.count": "historical (60 kg × 2。同上の 2 件で一致)",
+        "run_speed_kt": "design (実速は零観よりずっと速い（historical）が、投下の予告を読めるよう零観と同じ 120 kt)",
+        "others": "design",
+        "design_notes": "v0.6.1 実機 2 回目。値は ijn_f1m2_pete と同じ（爆弾 2 発・高さ 200 m・CEP 32・HP −35・火災 0.3・機関 0.2）。機銃・機関砲の掃射は未実装（夜明けの空襲は爆弾だけ。v0.6.3 の候補）"
+      },
+      "notes": "舟艇狩り（us_03）の夜明けの後に 4 機が西から来る（次の波は 90° ずつ回った方角から）。"
+    },
+    {
+      "id": "us_carrier_aircraft",
+      "faction": "USN",
+      "name_ja": "米艦載機（F6F 相当）",
+      "strike": {
+        "run_speed_kt": 120,
+        "release_altitude_m": 200,
+        "bomb": {
+          "count": 2,
+          "damage": 35,
+          "blast_radius_m": 25,
+          "accuracy_cep_m": 32,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        }
+      },
+      "source": {
+        "type": "historical (1945-03 の沖縄・慶良間は TF 58 と TG 52.1 の艦載機の制空下。3/30〜31 に艦載機が南西諸島で魚雷艇 3 隻を撃沈（場所は抜粋に無い）・運天湾の潜水艦の掩体 6 つを破壊: 米海軍公報 1945-04。抜粋のみ・本文未読)",
+        "bomb.count": "design (爆弾 1 発とロケット弾 1 斉射を 2 回の投下にまとめた)",
+        "run_speed_kt": "design (F6F の実速はもっと速い（historical）が、投下の予告を読めるよう零観と同じ 120 kt。v0.6.1 の模擬もこの速さ)",
+        "others": "design",
+        "design_notes": "v0.6.1。数値は ijn_f1m2_pete と同じ（実機の感想で分ける。T-38 は HP 60 で 2 発で沈む＝ハードモード）。jp_03 の todo を解消"
+      },
+      "notes": "jp_06 の夜明けの後に 4 機が東から来る（次の波は 90° ずつ回った方角から）。"
     },
     {
       "id": "us_pt_enemy",

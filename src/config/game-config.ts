@@ -16,8 +16,8 @@ const SCREEN = startScreenFit();
  * HUD は GAME_WIDTH からの位置で並ぶので右端・中央に付いてくる。起動後に向きや大きさが変わっても幅は変えない（FIT が黒帯で合わせる）
  */
 export const GAME_WIDTH = SCREEN ? logicalWidthFor(SCREEN.width, SCREEN.height, GAME_HEIGHT, GAME_WIDTH_MIN, GAME_WIDTH_MAX, GAME_WIDTH_STEP) : GAME_WIDTH_MIN;
-/** 夜の海の背景色（docs/02 §7） */
-export const SEA_COLOR = '#0b1020';
+/** 夜の海の背景色（docs/02 §7）。値は dawn-config（v0.6.1。夜明けの海の明るさが DOM 無しで読む） */
+export { SEA_COLOR } from './dawn-config';
 /** HUD の余白（ゲーム座標 px）。ノッチ・角丸は枠の外（screen-fit が左右の safe-area を引く）、下のホームバーは引かない（v0.5.1） */
 export const HUD_MARGIN = 24;
 /** HUD の FPS 更新間隔（ms）。毎フレーム setText しない（CLAUDE.md §7） */
@@ -34,6 +34,8 @@ export const REGISTRY_KEY_PENDING_SORTIE = 'pendingSortie';
 export const REGISTRY_KEY_HARD = 'hardMode';
 /** Title で選んだ史実モード（true＝オン。v0.5.2。hit_rate_model.historical_mode）。難易度と同じく Result の「もう一度」まで持ち回る。初期値は data の enabled_default（オフ） */
 export const REGISTRY_KEY_HISTORICAL = 'historicalMode';
+/** Title で選んでいるキャンペーンのタブ（v0.6.0。'us_pt' / 'jp_hard'）。Result の「任務一覧」から戻っても同じタブ。無ければ default のキャンペーン */
+export const REGISTRY_KEY_CAMPAIGN = 'campaign';
 
 /** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
 export const DPR_CAP = 2;
@@ -91,10 +93,14 @@ export const DEBUG_HARD = DEBUG_ENABLED && new URLSearchParams(window.location.s
 export const DEBUG_HISTORICAL = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('historical');
 /** ?debug&sorties=N: 終えた任務の回数を N とみなす（v0.5.2。見越し点マーカーの解放を実機・ヘッドレスで確かめる。保存した回数は変えない）。無ければ NaN（保存した回数） */
 export const DEBUG_SORTIES = debugNumber('sorties');
+/** ?debug&unlock: すべてのキャンペーンを開いたものとして扱う（v0.6.0。保存は変えない。Safari とホーム画面のアプリは保存が別なので、日本側を Safari で試すとき用） */
+export const DEBUG_UNLOCK_ALL = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('unlock');
 /** ?debug&shiphit=N: 駆逐艦・輸送船の船体の当たり判定の倍率（v0.4.8。data の world.ship_hit_scale の代わり。1 = v0.4.7 までの実寸、2 = 絵と同じ。実機で比べる・再生の比較用）。無ければ NaN（data の値） */
 export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
 export const DEBUG_BATTERY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobattery');
+/** ?debug&nostrike: 夜明けの空襲なし（v0.6.1。敵の制空下の任務でも敵機が来ない。夜明けの後も任務は続く。&dawn=S と合わせて夜明けの後を試す） */
+export const DEBUG_STRIKE_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostrike');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
@@ -130,6 +136,8 @@ export const DEPTH = {
   light: 2,
   storm: 3,
   shell: 12,
+  /** 空襲の着弾点の輪（v0.6.1）: 爆弾（shell）・自艇・煙の上、雨筋の下（爆弾の灰色の円や艇に隠れない） */
+  impactRing: 12.5,
   /** 雨筋は砲弾の上、味方機は煙と砲弾の上、演出の下 */
   rain: 13,
   aircraft: 14,
@@ -156,8 +164,12 @@ export const SCENE_KEYS = {
   pause: 'Pause',
 } as const;
 
+/** 艇の絵の鍵（v0.6.0: 艇ごとに 1 枚。Boot が遊べる任務の自艇と僚艇の寸法から 1 回だけ作る。T-38 は Elco より小さい） */
+export function boatTextureKey(boatId: string): string {
+  return `tex-boat-${boatId}`;
+}
+
 export const TEXTURE_KEYS = {
-  playerBoat: 'tex-player-boat',
   destroyer: 'tex-destroyer',
   transport: 'tex-transport',
   torpedo: 'tex-torpedo',
@@ -167,6 +179,8 @@ export const TEXTURE_KEYS = {
   targetMarker: 'tex-target-marker',
   homeMarker: 'tex-home-marker',
   returnRing: 'tex-return-ring',
+  /** 空襲の着弾点の輪（v0.6.1。線の太い専用の輪） */
+  impactRing: 'tex-impact-ring',
   debugRing: 'tex-debug-ring',
   shell: 'tex-shell',
   tracer: 'tex-tracer',

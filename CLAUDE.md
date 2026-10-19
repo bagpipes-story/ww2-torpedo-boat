@@ -17,6 +17,7 @@ Phaser 3 + TypeScript + Vite で作り、PWAとしてiPhone Safariで遊べる�
 | 主軸 | 米PT（Elco 80ft）キャンペーンをまず作る |
 | スタック | Phaser 3 + TypeScript（strict）+ Vite。PWA先行、App StoreはCapacitor + GitHub Actions（macOSランナー） |
 | アート | v0.6まではプレースホルダー図形。画像・音の制作にセッションを使わない |
+| 夜明け | 失敗ではなく状態。夜明けに帰投地点の輪の外なら、敵の制空下（`missions_seed` の `dawn_air.play_as` が enemy）は敵機 4 機の空襲が波で続き、味方の制空下は敵機は来ない。任務が終わるのは帰投・沈没・漂流・座礁だけ（v0.6.1。ユーザーの要望「制空権がない限り全シナリオ共通」） |
 
 設計の根拠は `docs/01_史実リサーチ＆設計資料.md`、仕様は `docs/02_ゲーム設計書_v0.1.md`、計画は `docs/03_開発ロードマップ.md`。
 数値はすべて `data/*.json` にあり、コード内にマジックナンバーを書かない。
@@ -157,3 +158,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
 - 2026-10-12 v0.4.0 §4 scenes に Briefing・Hud を追記（Title → Briefing → Mission（＋Hud）→ Result の流れ）
 - 2026-10-17 v0.5.1 §3 に PWA（ホーム画面のアプリでも最新ビルドが出る仕組みと、古いときの対処）を追記
 - 2026-10-18 v0.5.1 §7 iOS: 画面の高さは 100dvh ではなく JS の innerHeight（ホーム画面のアプリで 100dvh が起動直後に大きく出て見切れた）
+- 2026-10-18 v0.6.1 §2 に「夜明け」の判断を追記（夜明けで任務失敗にしない。敵の制空下は空襲）
