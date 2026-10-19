@@ -358,7 +358,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
     for (const k of ['damage', 'blast_radius_m', 'fire_chance', 'engine_damage_chance']) expect(pete.strike.bomb[k as keyof typeof pete.strike.bomb], k).toBe(jake.bomb[k]);
     expect(isStrikeAircraftRecord(jake)).toBe(false); // 夜の水上機は strike を持たない
     const ev = getDawnStrikeEventRecord(gameData);
-    expect(ev.params).toMatchObject({ spawn_m: 3600, run_radius_m: 600, first_run_s: 12, run_gap_s: 3, wave_rest_s: 28, leave_s: 2.5, spawn_offsets_deg: [-30, -10, 10, 30], wave_rotate_deg: 90, aim_turn_min_deg_s: 0.5 });
+    // v0.6.1 実機 1 回目でテンポを上げた（spawn_m 3600・first_run_s 12・run_gap_s 3・wave_rest_s 28 → 3000・9・2・16）
+    expect(ev.params).toMatchObject({ spawn_m: 3000, run_radius_m: 600, first_run_s: 9, run_gap_s: 2, wave_rest_s: 16, leave_s: 2.5, spawn_offsets_deg: [-30, -10, 10, 30], wave_rotate_deg: 90, aim_turn_min_deg_s: 0.5 });
     const raw = ev as unknown as Rec;
     expect([raw['count'], raw['share'], raw['enemy_direct'], raw['version']]).toEqual([0, 0, true, 'v0.6.1']);
     expect(riskLabelJa(gameData, DAWN_STRIKE_EVENT_ID)).toBe('夜明けの空襲');

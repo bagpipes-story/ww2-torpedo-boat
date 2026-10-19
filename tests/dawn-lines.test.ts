@@ -369,7 +369,10 @@ describe('夜明けのテレメトリ（systems/dawn-telemetry）', () => {
     const rng = new SeededRng(7);
     const seen = new Set<number>();
     let restSeen = false;
-    for (let k = 0; k < Math.round(70 / DT); k++) {
+    // 1 波の投下・波の合間（REST）を通り、2 波目の接近の途中（最初の進路の前）で止める（以前の 70 秒と同じ意味。秒は data から）
+    const per = p.planes * p.bombsPerPlane;
+    const wave2StartS = p.firstRunS + p.runS + (per - 1) * p.runGapS + p.waveRestS;
+    for (let k = 0; k < Math.round((wave2StartS + p.firstRunS / 2) / DT); k++) {
       stepAirStrike(s, p, c, rng, DT);
       t.planeDx = NaN; // 水上機の段（来ていない）が毎フレーム NaN を書く
       t.planeDy = NaN;
@@ -451,7 +454,10 @@ describe('夜明けのテレメトリ（systems/dawn-telemetry）', () => {
     const c: AirStrikeCheck = { player, playerSinking: false, escort: null, escortAfloat: false, cancel: false };
     const rng = new SeededRng(5);
     const byWave = new Map<number, string>();
-    for (let k = 0; k < Math.round(270 / DT) && s.wave < 5; k++) {
+    // 5 波目（wave 4）の接近の途中まで。6 波目は来ない（以前の 270 秒と同じ意味。波の周期は data から）
+    const per = p.planes * p.bombsPerPlane;
+    const periodS = p.firstRunS + p.runS + (per - 1) * p.runGapS + p.waveRestS;
+    for (let k = 0; k < Math.round((4 * periodS + p.firstRunS / 2) / DT) && s.wave < 5; k++) {
       stepAirStrike(s, p, c, rng, DT);
       refreshDawnTelemetry(t, w, scratch);
       if (t.dawn.threat !== AS_T_INBOUND) continue;

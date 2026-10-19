@@ -81,6 +81,22 @@ function moveBoat(b: BoatState, yawDegS: number, dtG: number): void {
   b.headingDeg += yawDegS * dtG;
 }
 
+/**
+ * 中断の無い空襲の i 発目（0 始まり）の予定の投下の秒（±1 ステップ）: 波の始まり + first_run_s + 進路（R / v）+ run_gap_s × k。
+ * 次の波は前の波の最後の投下 + wave_rest_s で始まる。試験の長さと秒は data から組む（v0.6.1 実機 1 回目でテンポを上げても意味が変わらない）
+ */
+function releaseAt(p: AirStrikeParams, i: number): number {
+  const per = p.planes * p.bombsPerPlane;
+  const period = p.firstRunS + p.runS + (per - 1) * p.runGapS + p.waveRestS;
+  return Math.floor(i / per) * period + p.firstRunS + p.runS + (i % per) * p.runGapS;
+}
+
+/** n 波ぶんの着弾が済み、次の波の最初の着弾より前の秒（その 2 つの着弾の中ほど）。n 波を数える試験の長さ */
+function afterWaves(p: AirStrikeParams, n: number): number {
+  const per = p.planes * p.bombsPerPlane;
+  return (releaseAt(p, n * per - 1) + releaseAt(p, n * per)) / 2 + p.fallFeelS;
+}
+
 describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFromData。spec §4.1）', () => {
   it('us_01・us_03・jp_06 で組める（jp_06 の T-38 でも例外にならない＝夜の水上機の航跡の検査はしない）。値は spec §4.1', () => {
     for (const p of [P01, P06]) {
@@ -91,7 +107,7 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
       expect(p.fallFeelS).toBeCloseTo(1.277, 3);
       expect(p.scatterM).toBeCloseTo(45.25, 2);
       expect(p.orbitDegPerS).toBeCloseTo(29.47, 2);
-      expect([p.fromBearingDeg, p.fromJa, p.firstRunS, p.runGapS, p.waveRestS, p.leaveS, p.aimTurnMinDegS, p.timeScale]).toEqual([90, '東', 12, 3, 28, 2.5, 0.5, 5]);
+      expect([p.fromBearingDeg, p.fromJa, p.firstRunS, p.runGapS, p.waveRestS, p.leaveS, p.aimTurnMinDegS, p.timeScale]).toEqual([90, '東', 9, 2, 16, 2.5, 0.5, 5]); // v0.6.1 実機 1 回目でテンポを上げた（12・3・28 → 9・2・16）
       expect(p.bombHit).toEqual({ damage: 35, fireChance: 0.3, engineDamageChance: 0.2 });
       expect(p.playerHitRadiusM).toBeGreaterThan(25);
     }
@@ -145,7 +161,8 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
       [{ strike: { run_speed_kt: 0 } }, /run_speed_kt/],
       [{ params: { run_gap_s: 1.2 } }, /run_gap_s.*落下/],
       [{ params: { run_gap_s: P01.fallFeelS } }, /run_gap_s.*落下/],
-      [{ params: { first_run_s: 9 } }, /first_run_s/],
+      // 旋回に着くまでの秒（(spawn_m − run_radius_m) / v）より 0.5 秒短い
+      [{ params: { first_run_s: (P01.spawnM - P01.runRadiusM) / P01.flightMps - 0.5 } }, /first_run_s/],
       [{ block: { count: 1, escort_target_planes: [] }, escort: null }, /count × run_gap_s/],
       [{ params: { wave_rest_s: 4 } }, /wave_rest_s/],
       [{ block: { escort_target_planes: [1, 4] } }, /escort_target_planes の 4/],
@@ -192,21 +209,24 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     expect(releases).toBeGreaterThanOrEqual(16);
   });
 
-  it('止まった的: 投下は 13.94 + 3k 秒（k = 0〜7、±1 ステップ）、2 波目の最初は 76.89、3 波目は 139.83。波は 3 回。空中の爆弾は常に 1 発まで', () => {
+  it('止まった的: 投下は first_run_s + 進路 + run_gap_s × k 秒（k = 0〜7、±1 ステップ）、次の波の最初は前の波の最後 + wave_rest_s + first_run_s + 進路。3 波目の最初の投下まで: 17 発・波は 3 回。空中の爆弾は常に 1 発まで', () => {
+    const first = P06.firstRunS + P06.runS;
+    const want: number[] = [];
+    for (let w = 0, f = first; w < 3; w++, f += 7 * P06.runGapS + P06.waveRestS + first) for (let k = 0; k < 8; k++) want.push(f + k * P06.runGapS);
+    // 秒は data から（v0.6.1 実機 1 回目でテンポを上げた。今の値で 10.94 + 2k、2 波目 51.89、3 波目 92.83。以前は 13.94 + 3k・76.89・139.83）
+    expect(want[0]).toBeCloseTo(P06.firstRunS + P06.runRadiusM / P06.flightMps, 9);
+    expect(want[8]).toBeCloseTo(want[7]! + P06.waveRestS + P06.firstRunS + P06.runS, 9);
+    expect(want[16]).toBeCloseTo(want[15]! + P06.waveRestS + P06.firstRunS + P06.runS, 9);
+    for (let i = 0; i < want.length; i++) expect(releaseAt(P06, i), `releaseAt ${i}`).toBeCloseTo(want[i]!, 9);
     const rel: number[] = [];
     let waves = 0;
     let maxInAir = 0;
-    run(P06, check(boat(300, 400, 30)), new SeededRng(3), 140, (s, ev, t) => {
+    // 3 波目の最初の投下の後、次の投下（+ run_gap_s）の前まで（以前の 140 秒と同じ意味）
+    run(P06, check(boat(300, 400, 30)), new SeededRng(3), want[16]! + P06.runGapS / 2, (s, ev, t) => {
       if (ev & AS_EV_RELEASE) rel.push(t);
       if (ev & AS_EV_WAVE) waves++;
       maxInAir = Math.max(maxInAir, s.bombs.filter((b) => b.active).length);
     });
-    const first = P06.firstRunS + P06.runS;
-    const want: number[] = [];
-    for (let w = 0, f = first; w < 3; w++, f += 7 * P06.runGapS + P06.waveRestS + first) for (let k = 0; k < 8; k++) want.push(f + k * P06.runGapS);
-    expect(want[0]).toBeCloseTo(13.94, 2);
-    expect(want[8]).toBeCloseTo(76.89, 2);
-    expect(want[16]).toBeCloseTo(139.83, 2);
     expect(rel.length).toBe(17);
     for (let i = 0; i < rel.length; i++) expect(Math.abs(rel[i]! - want[i]!), `release ${i}`).toBeLessThanOrEqual(DT * 1.01);
     expect(waves).toBe(3);
@@ -260,7 +280,7 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
       P06,
       check(b1),
       new SeededRng(12),
-      110,
+      afterWaves(P06, 2), // 2 波ぶんの着弾まで（以前の 110 秒と同じ意味）
       (s, ev) => {
         if (!(ev & AS_EV_IMPACT)) return;
         const b = s.bombs[s.lastImpact]!;
@@ -270,7 +290,7 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
       },
       () => moveBoat(b1, yaw, DT * P06.timeScale),
     );
-    expect(impacts).toBe(16);
+    expect(impacts).toBe(2 * P06.planes * P06.bombsPerPlane); // 2 波ぶん（16 発）
     expect(hits).toBeGreaterThan(0);
   });
 
@@ -310,11 +330,14 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     const vip = boat(-20, 60);
     const c = check(player, vip);
     const log: { t: number; plane: number; toEscort: boolean }[] = [];
+    // 1 波（8 発）の投下の後、次の波の前まで（以前の 36 秒）。僚艇は 2 番機の最初の投下と 4 番機の最初の進路入りの中ほどで沈む（以前の 20 秒）
+    const oneWaveS = releaseAt(P01, 7) + P01.runGapS / 2;
+    const sinkS = (releaseAt(P01, 1) + releaseAt(P01, 3) - P01.runS) / 2;
     const s = run(
       P01,
       c,
       new SeededRng(21),
-      36,
+      oneWaveS,
       (st, ev, t) => {
         if (!(ev & AS_EV_RELEASE)) return;
         const b = st.bombs[st.lastRelease]!;
@@ -322,15 +345,15 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
         if (b.toEscort) expect(Math.hypot(b.aimX - vip.x, b.aimY - vip.y)).toBeLessThanOrEqual(P01.scatterM + 1e-9);
       },
       (t) => {
-        if (t > 20) c.escortAfloat = false;
+        if (t > sinkS) c.escortAfloat = false;
       },
     );
     expect(log.length).toBe(8);
-    for (const r of log) expect(r.toEscort, JSON.stringify(r)).toBe(r.t < 20 && (r.plane === 1 || r.plane === 3));
-    expect(log.filter((r) => r.toEscort).length).toBe(1); // 16.94 秒の 2 番機だけ（22.94 秒の 4 番機は 21 秒の進路入りで自艇へ）
+    for (const r of log) expect(r.toEscort, JSON.stringify(r)).toBe(r.t < sinkS && (r.plane === 1 || r.plane === 3));
+    expect(log.filter((r) => r.toEscort).length).toBe(1); // 2 番機の最初の投下だけ（4 番機は僚艇が沈んだ後の進路入りで自艇へ）
     expect(s.bombsAtEscort).toBe(1);
     // ずっと浮いていれば 8 発中 4 発が僚艇へ
-    expect(run(P01, check(boat(), boat(-20, 60)), new SeededRng(21), 36).bombsAtEscort).toBe(4);
+    expect(run(P01, check(boat(), boat(-20, 60)), new SeededRng(21), oneWaveS).bombsAtEscort).toBe(4);
   });
 
   it('中断（沈没・輪の中・座礁）: 来ている機は全部去って終わり、それ以上の進路も波も無い', () => {
@@ -411,14 +434,15 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
       );
     };
     scan(Infinity);
-    scan(16); // 2 番機の僚艇への爆撃進路の途中で中断（1 番機は旋回に戻った直後、3・4 番機は旋回中）
+    scan(releaseAt(P01, 1) - P01.runS / 2); // 2 番機の僚艇への爆撃進路の途中で中断（3・4 番機は旋回中。以前の 16 秒と同じ意味）
     for (const tr of [`${AS_INBOUND}>${AS_ORBIT}`, `${AS_ORBIT}>${AS_RUN}`, `${AS_RUN}>${AS_OUTBOUND}`, `${AS_OUTBOUND}>${AS_ORBIT}`, `${AS_OUTBOUND}>${AS_LEAVING}`, `${AS_RUN}>${AS_LEAVING}`, `${AS_ORBIT}>${AS_LEAVING}`, 'run-vip']) expect(seen.has(tr), tr).toBe(true);
   });
 
   it('同じ seed なら同じ着弾、違う seed なら違う着弾', () => {
     const impacts = (seed: number): number[] => {
       const out: number[] = [];
-      run(P01, check(boat(0, 0, 45, 10), boat(-20, 60)), new SeededRng(seed), 100, (s, ev) => {
+      // 2 波ぶんの着弾まで（以前の 100 秒と同じ意味）
+      run(P01, check(boat(0, 0, 45, 10), boat(-20, 60)), new SeededRng(seed), afterWaves(P01, 2), (s, ev) => {
         if (ev & AS_EV_IMPACT) {
           const b = s.bombs[s.lastImpact]!;
           out.push(b.aimX, b.aimY, b.hitPlayer ? 1 : 0, b.hitEscort ? 1 : 0);
@@ -427,7 +451,7 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
       return out;
     };
     const a = impacts((12345 + AIR_STRIKE_SEED_OFFSET) >>> 0);
-    expect(a.length).toBe(16 * 4);
+    expect(a.length).toBe(2 * P01.planes * P01.bombsPerPlane * 4); // 2 波 16 発 × 4 個
     expect(impacts((12345 + AIR_STRIKE_SEED_OFFSET) >>> 0)).toEqual(a);
     expect(impacts((54321 + AIR_STRIKE_SEED_OFFSET) >>> 0)).not.toEqual(a);
   });
@@ -473,7 +497,7 @@ describe('端に押し付けた艇（狙いは clampToBounds と同じ余白で�
   const W06 = buildWorldSetup(gameData, 'jp_06');
   /** 見越しを海域に収めない（直す前と同じ）。端の効きを確かめる対照 */
   const open = (p: AirStrikeParams): AirStrikeParams => ({ ...p, boundsW: Infinity, boundsH: Infinity, playerMarginM: -Infinity, escortMarginM: -Infinity });
-  const STEPS = Math.round(37 / DT); // 1 波（8 発。最後の着弾は 36.2 秒）
+  const STEPS = Math.round(37 / DT); // 1 波（8 発。最後の着弾の後、次の波の最初の着弾の前。playerRate・escortRate の bombs の数が見張る）
   const TRIALS = 100;
 
   /** 世界の順（艇 → clampToBounds → 空襲）で 1 波を TRIALS 回。舵（針路）と速力は一定。自艇を狙った爆弾 1 発あたりの命中 */
@@ -564,13 +588,14 @@ describe('端に押し付けた艇（狙いは clampToBounds と同じ余白で�
     const impacts = (p: AirStrikeParams): number[] => {
       const out: number[] = [];
       const b1 = boat(0, 0, 0, 20);
-      run(p, check(b1, boat(-20, 60)), new SeededRng(81), 100, (s, ev) => {
+      // 2 波ぶんの着弾まで（以前の 100 秒と同じ意味）
+      run(p, check(b1, boat(-20, 60)), new SeededRng(81), afterWaves(P01, 2), (s, ev) => {
         if (ev & AS_EV_IMPACT) out.push(s.bombs[s.lastImpact]!.aimX, s.bombs[s.lastImpact]!.aimY);
       }, () => moveBoat(b1, 12, DT * P01.timeScale));
       return out;
     };
     const a = impacts(P01);
-    expect(a.length).toBe(32);
+    expect(a.length).toBe(2 * P01.planes * P01.bombsPerPlane * 2); // 2 波 16 発 × 2 個
     expect(impacts(open(P01))).toEqual(a);
   });
 
@@ -580,12 +605,14 @@ describe('端に押し付けた艇（狙いは clampToBounds と同じ余白で�
     const c = check(player, vip);
     const q: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
     let checked = 0;
-    // 2 番機（index 1）の僚艇への進路は 15 秒から、投下は 16.94 秒。16 秒（進路の途中）で僚艇が沈む
+    // 2 番機（index 1）の僚艇への最初の進路の中ほど（投下の 進路 / 2 秒前。以前の 16 秒）で僚艇が沈む。
+    // 試験は 1〜4 番機の最初の投下の後、次の投下の前まで（以前の 24 秒）
+    const sinkS = releaseAt(P01, 1) - P01.runS / 2;
     run(
       P01,
       c,
       new SeededRng(91),
-      24,
+      releaseAt(P01, 3) + P01.runGapS / 2,
       (s, ev, t) => {
         if (!(ev & AS_EV_RELEASE)) return;
         const b = s.bombs[s.lastRelease]!;
@@ -603,10 +630,10 @@ describe('端に押し付けた艇（狙いは clampToBounds と同じ余白で�
         checked++;
       },
       (t) => {
-        if (t > 16) c.escortAfloat = false;
+        if (t > sinkS) c.escortAfloat = false;
       },
     );
-    expect(checked).toBe(4); // 1〜4 番機（13.94・16.94・19.94・22.94 秒）
+    expect(checked).toBe(4); // 1〜4 番機の最初の投下（releaseAt 0〜3）
     // 浮いている僚艇へ: 絵は僚艇の位置から（丸めの差だけ）
     run(P01, check(boat(), boat(-20, 130)), new SeededRng(92), 18, (s, ev) => {
       if (!(ev & AS_EV_RELEASE)) return;
