@@ -26,8 +26,11 @@ export interface StrikeSimSetup {
 
 /** 遊び方の台本: 直進で帰る・止まる（隠れる）・舵いっぱいで回り続ける・帰る向き ±45° のジグザグ・投下を見て r 秒後に 90° 転舵 */
 export type StrikePolicyKind = 'straight' | 'stop' | 'circle' | 'zigzag' | 'react';
-/** react の転舵の向き: home＝輪に近い側、same＝今の旋回と同じ側、opp＝今の旋回と逆（same・opp は旋回していなければ home） */
-export type StrikeReactSide = 'home' | 'same' | 'opp';
+/**
+ * react の転舵の向き: home＝輪に近い側、same＝今の旋回と同じ側、opp＝今の旋回と逆（same・opp は旋回していなければ home）、
+ * ring＝着弾点の輪から離れる側（v0.6.1 実機 1 回目。画面の赤い輪を見て逃げる人に近い。輪がほぼ正面なら home）
+ */
+export type StrikeReactSide = 'home' | 'same' | 'opp' | 'ring';
 export interface StrikePolicy {
   kind: StrikePolicyKind;
   /** react の反応秒（投下から転舵まで。他は NaN）、転舵を保つ秒、向き */
@@ -43,6 +46,8 @@ export interface StrikePolicy {
 const DODGE_TURN_DEG = 90;
 const DODGE_HOLD_S = 0.9;
 const ZIGZAG_DEG = 45;
+/** ring: 輪が針路からこの角度（°）以内なら「正面」とみなして home の側へ */
+const RING_AHEAD_DEG = 10;
 const ZIGZAG_LEG_S = 2;
 /** 回り続ける: 目標方位を今の針路 + 90° に置き続ける（舵いっぱい） */
 const CIRCLE_AHEAD_DEG = 90;
@@ -74,9 +79,9 @@ export function strikePolicy(kind: StrikePolicyKind, reactS: number = NaN, side:
 export function parseStrikePolicy(name: string): StrikePolicy {
   const n = name.trim();
   if (n === 'straight' || n === 'stop' || n === 'circle' || n === 'zigzag') return strikePolicy(n);
-  const m = /^react\s*([0-9.]+)(?:\s*(home|same|opp)\s*([0-9.]+))?$/.exec(n);
+  const m = /^react\s*([0-9.]+)(?:\s*(home|same|opp|ring)\s*([0-9.]+))?$/.exec(n);
   if (m) return strikePolicy('react', Number(m[1]), (m[2] ?? 'home') as StrikeReactSide, m[3] !== undefined ? Number(m[3]) : DODGE_HOLD_S);
-  throw new Error(`遊び方 ${name} は straight / stop / circle / zigzag / react<秒>（/ react<秒> home|same|opp<保つ秒>）`);
+  throw new Error(`遊び方 ${name} は straight / stop / circle / zigzag / react<秒>（/ react<秒> home|same|opp|ring<保つ秒>）`);
 }
 
 export interface StrikeTrial {
@@ -132,7 +137,13 @@ export function runStrikeTrial(s: StrikeSimSetup, pol: StrikePolicy, distM: numb
         const yaw = st.yawDegS;
         const turning = yaw !== 0 && Math.abs(yaw) >= s.strike.aimTurnMinDegS;
         const homeSide = wrapDeg180(homeBrg - boat.headingDeg) >= 0 ? 1 : -1;
-        const dir = pol.side === 'home' || !turning ? homeSide : (yaw > 0) === (pol.side === 'same') ? 1 : -1;
+        let dir = pol.side === 'home' || pol.side === 'ring' || !turning ? homeSide : (yaw > 0) === (pol.side === 'same') ? 1 : -1;
+        if (pol.side === 'ring' && st.lastRelease >= 0) {
+          // 輪（直近の爆弾の狙い）が針路の右なら左へ、左なら右へ。正面なら home の側（atan2 は反応のときだけ）
+          const b = st.bombs[st.lastRelease]!;
+          const rel = wrapDeg180(radToDeg(Math.atan2(b.aimX - boat.x, -(b.aimY - boat.y))) - boat.headingDeg);
+          if (Math.abs(rel) > RING_AHEAD_DEG) dir = rel > 0 ? -1 : 1;
+        }
         dodgeHeading = wrapDeg360(boat.headingDeg + dir * DODGE_TURN_DEG);
         dodgeUntil = t0 + pol.holdS;
         dodgeAt = NaN;

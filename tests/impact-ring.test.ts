@@ -19,7 +19,7 @@ const EXPLOSION_RING_LINE_UNITS = 4;
 const STRIKE_IDS = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => buildWorldSetup(gameData, id).airStrike !== null);
 
 describe('着弾点の輪と空襲の爆弾の大きさ（v0.6.1）', () => {
-  it('空襲のある任務がある（us_01・jp_06）', () => {
+  it('空襲のある任務がある（us_01・us_03・jp_06）', () => {
     expect(STRIKE_IDS).toEqual(expect.arrayContaining(['us_01', 'jp_06']));
   });
 

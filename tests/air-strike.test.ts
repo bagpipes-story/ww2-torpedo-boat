@@ -82,7 +82,7 @@ function moveBoat(b: BoatState, yawDegS: number, dtG: number): void {
 }
 
 describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFromData。spec §4.1）', () => {
-  it('us_01・jp_06 で組める（jp_06 の T-38 でも例外にならない＝夜の水上機の航跡の検査はしない）。値は spec §4.1', () => {
+  it('us_01・us_03・jp_06 で組める（jp_06 の T-38 でも例外にならない＝夜の水上機の航跡の検査はしない）。値は spec §4.1', () => {
     for (const p of [P01, P06]) {
       expect([p.planes, p.bombsPerPlane, p.poolSize]).toEqual([4, 2, 2]);
       expect(p.flightMps).toBeCloseTo(308.64, 1);
@@ -112,7 +112,10 @@ describe('夜明けの空襲の値（core/air-strike-data の airStrikeParamsFro
     expect(P06.playerMarginM).toBeGreaterThan(0);
     // 空襲の無い任務と ?debug&nostrike は null（今夜の揺らぎ absent() は通さない）
     expect(buildWorldSetup(gameData, 'us_02').airStrike).toBeNull();
-    expect(buildWorldSetup(gameData, 'us_03').airStrike).toBeNull();
+    // us_03 は v0.6.1 の実機 1 回目から空襲あり（零観・西から・僚艇なし・砲の任務でも組める）
+    const p03 = buildWorldSetup(gameData, 'us_03').airStrike!;
+    expect([p03.planes, p03.fromBearingDeg, p03.fromJa, p03.nameJa, p03.boundsH]).toEqual([4, 270, '西', '零式水上観測機', 2500]);
+    expect(p03.escortPlanes).toEqual([false, false, false, false]);
     expect(buildWorldSetup(gameData, 'us_01', { strikeOff: true }).airStrike).toBeNull();
   });
 

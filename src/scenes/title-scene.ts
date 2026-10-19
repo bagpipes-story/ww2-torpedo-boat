@@ -131,10 +131,13 @@ export class TitleScene extends Phaser.Scene {
     // 史実モード（v0.5.2。docs/02 §6.3）: タップで オフ ⇄ オン。題と 2 行目は data の historical_mode から（倍率・不発の確率を直書きしない）
     const hm = getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.historical_mode;
     const histTitle = (): string => `${hm.title_ja}${this.historical ? TITLE_HIST_ON_JA : TITLE_HIST_OFF_JA}`;
-    const histSpec = { x: TITLE_HIST_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: histTitle(), titlePx: TITLE_DIFF_PX, sub: titleHistSubJa(hm.enemy_evasion_multiplier, hm.reliability_campaigns.includes(selected.id) ? Math.round(hm.reliability.dud * 100) : null), align: 'center' as const };
+    const histDud = hm.reliability_campaigns.includes(selected.id) ? Math.round(hm.reliability.dud * 100) : null;
+    const histSub = (): string => titleHistSubJa(this.historical, hm.enemy_evasion_multiplier, histDud);
+    const histSpec = { x: TITLE_HIST_X, y: TITLE_DIFF_Y, w: TITLE_DIFF_W, h: TITLE_DIFF_H, title: histTitle(), titlePx: TITLE_DIFF_PX, sub: histSub(), align: 'center' as const };
     this.hist = new MenuButton(this, histSpec, () => {
       this.registry.set(REGISTRY_KEY_HISTORICAL, !this.historical);
       this.hist?.setTitle(histTitle());
+      this.hist?.setSub(histSub());
       this.hist?.setSelected(this.historical);
     });
     this.hist.setSelected(this.historical);

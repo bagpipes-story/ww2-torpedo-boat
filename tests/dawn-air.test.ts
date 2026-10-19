@@ -255,7 +255,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
     const table: Record<string, [string, string, string, string, string]> = {
       us_01: ['enemy', 'medium', 'enemy', 'stay', '昼の空は敵（日本の水上機）'],
       us_02: ['own', 'high', 'own', 'retire', '昼の空は味方（ヘンダーソン基地）'],
-      us_03: ['contested', 'medium', 'own', 'hide', '昼の空は味方（第5空軍）'],
+      us_03: ['contested', 'medium', 'enemy', 'hide', '昼の空は争奪（日本機の昼の空襲）'], // v0.6.1 実機 1 回目: ユーザーの判断で空襲あり
       us_04: ['contested', 'medium', 'own', 'retire', '昼の空はおおむね味方（エアソルス）'],
       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
       us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
@@ -278,7 +278,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
   });
   it('遊べる任務（us_01・us_02・us_03・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
     expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'jp_06']);
-    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'own', jp_06: 'enemy' };
+    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', jp_06: 'enemy' };
     for (const id of PLAYABLE_IDS) {
       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
       const s = buildWorldSetup(gameData, id);
@@ -321,7 +321,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       ['us_01', (d) => delete protoOf(d, 'us_01')['dawn_strike'], /dawn_strike/],
       ['us_02', (d) => (protoOf(d, 'us_02')['dawn_strike'] = protoOf(gameData, 'us_01')['dawn_strike']), /dawn_strike/],
       ['jp_06', (d) => (protoOf(d, 'jp_06')['hazards'] = ['enemy_ship_gunfire_or_ram', 'grounding']), /hazards/],
-      ['us_03', (d) => (protoOf(d, 'us_03')['hazards'] as string[]).push(DAWN_STRIKE_EVENT_ID), /hazards/],
+      ['us_02', (d) => (protoOf(d, 'us_02')['hazards'] as string[]).push(DAWN_STRIKE_EVENT_ID), /hazards/],
+      ['us_03', (d) => (protoOf(d, 'us_03')['hazards'] = (protoOf(d, 'us_03')['hazards'] as string[]).filter((h) => h !== DAWN_STRIKE_EVENT_ID)), /hazards/],
       ['us_01', (d) => ((protoOf(d, 'us_01')['dawn_strike'] as Rec)['aircraft_id'] = 'us_carrier_aircraft'), /faction/],
       ['jp_06', (d) => ((protoOf(d, 'jp_06')['dawn_strike'] as Rec)['aircraft_id'] = 'ijn_seaplane_jake'), /strike/],
       ['jp_06', (d) => ((protoOf(d, 'jp_06')['dawn_strike'] as Rec)['aircraft_id'] = 'no_such_plane'), /no_such_plane/],
@@ -380,8 +381,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(idleS[id] + 1.5, id).toBeLessThan(1500);
       expect(idleS[id], id).toBeGreaterThan(s.durationS); // 夜明けの前に漂流はしない
     }
-    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は計算すると 1,080）
-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1080, 1224]);
+    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296）
+    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1224]);
   });
   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲の機体・dawn_air_strike の文', () => {
     const texts: string[] = [];
@@ -411,11 +412,11 @@ describe('Briefing の条件と危険（v0.6.1。spec §8.4）', () => {
     expect(rowsOf('us_01')[5]).toBe('夜明けまで 220 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本');
     expect(rowsOf('jp_06')[5]).toBe('夜明けまで 160 秒（以後は空襲） ・ 燃料 16 gal ・ 魚雷 2 本');
     expect(rowsOf('us_02')[5]).toBe('夜明けまで 150 秒（昼の空は味方） ・ 燃料 38 gal ・ 魚雷 4 本');
-    expect(rowsOf('us_03')[5]).toBe('夜明けまで 200 秒（昼の空は味方） ・ 燃料 30 gal ・ 砲 40mm・37mm・20mm・12.7mm');
+    expect(rowsOf('us_03')[5]).toBe('夜明けまで 200 秒（以後は空襲） ・ 燃料 36 gal ・ 砲 40mm・37mm・20mm・12.7mm');
     expect(rowsOf('us_01')[4]).toBe('暴風、敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('jp_06')[4]).toBe('敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('us_02')[4]).not.toContain('夜明けの空襲');
-    expect(rowsOf('us_03')[4]).not.toContain('夜明けの空襲');
+    expect(rowsOf('us_03')[4]).toBe('敵艦艇の砲撃・衝突、敵沿岸砲、座礁、夜明けの空襲');
     expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa('enemy'));
   });
 });

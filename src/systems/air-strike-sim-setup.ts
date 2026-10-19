@@ -44,7 +44,7 @@ export function strikeSimSetup(data: GameData, missionId: string, o: StrikeSimOv
   };
 }
 
-/** 較正の 1 行（spec §12）。帯は % と 1 発あたりの命中。proto* は試作（scratchpad v061/raid-sim、N 600）の値（無ければ NaN） */
+/** 較正の 1 行（spec §12）。帯は % と 1 発あたりの命中。proto* は前回の値（v0.6.1 の最初: 間隔 3 秒・波の休み 28 秒・最初の進路 12 秒、N 600。新しい行は NaN） */
 export interface StrikeCalibrationCell {
   missionId: string;
   secs: number;
@@ -64,27 +64,33 @@ const cell = (missionId: string, secs: number, policy: string, vipAim: boolean, 
 });
 
 /**
- * spec §12 の表（jp_06 40 秒の circle は「回り続け ≤ 5%」と全任務の 1 発あたり 0.45〜0.70 のために足した行）。
- * 最後の行（レビュー [11]、試作なし）: 転舵を 2.3 秒保つと次の投下は輪へ戻る旋回の途中に来る。そこで今の旋回と同じ側へ切ると円弧の見越しに当たる
- * （jp_06 N 600 で 4%。逆へ切れば 93%）。表の名前の幅（scripts の 26 字）に収めるため 'react0.5same2.3' と詰めて書く
+ * spec §12 の表を v0.6.1 の実機 1 回目（「一機ずつ順番に来るので避けやすい。テンポ良く」→ 間隔 3 → 2 秒・波の休み 28 → 16 秒・現れる距離 3,600 → 3,000 m・最初の進路 12 → 9 秒）で測り直した。
+ * 決まった反応（react）の行は、転舵を保つ秒と投下の間隔の噛み合わせで大きく振れる（同じ 0.5 秒でも保つ秒しだいで 0〜96%）ので、帯は回帰の検出用。
+ * 「輪を見て離れる側へ切る」（ring。画面の着弾点の輪を見る人に近い）は間隔 1.4〜3 秒のどれでもほぼ 100% ＝ 速くしても理不尽にはならない、の行。
+ * 直進・止まる・回り続けるは沈む（直進は輪までの距離しだい）。us_03 は実機 1 回目で空襲ありにした
  */
 export const STRIKE_CALIBRATION: readonly StrikeCalibrationCell[] = [
-  cell('us_01', 30, 'react0.5', true, [90, 100], [90, 100], null, [99, 100, 0.15]),
-  cell('us_01', 30, 'react0.7', true, [70, 92], null, null, [82, 100, 0.39]),
-  cell('us_01', 30, 'straight', true, [55, 85], null, null, [70, 95, 0.6]),
-  cell('us_01', 30, 'stop', true, [0, 5], null, HPB, [0, 62, 0.6]),
-  cell('us_01', 30, 'circle', true, [0, 5], null, HPB, [0, 99, 0.6]),
-  cell('us_01', 40, 'straight', true, null, [0, 80], null, [49, 69, 0.59]),
-  cell('us_01', 40, 'straight', false, [0, 10], null, null, [4, 100, 0.62]),
-  cell('us_01', 40, 'react0.5', false, [70, 100], null, null, [85, 100, 0.15]),
-  cell('jp_06', 40, 'react0.35', true, [60, 88], null, null, [74, NaN, 0.12]),
-  cell('jp_06', 40, 'react0.5', true, [20, 50], null, null, [32, NaN, 0.27]),
-  cell('jp_06', 40, 'react0.7', true, [0, 20], null, null, [7, NaN, 0.43]),
-  cell('jp_06', 40, 'straight', true, [0, 10], null, null, [2, NaN, 0.54]),
-  cell('jp_06', 40, 'stop', true, [0, 5], null, HPB, [0, NaN, 0.54]),
+  cell('us_01', 30, 'react0.5', true, [90, 100], [78, 100], null, [99, 100, 0.13]),
+  cell('us_01', 30, 'react0.7', true, [85, 100], null, null, [83, 100, 0.38]),
+  cell('us_01', 30, 'straight', true, [35, 62], null, null, [70, 96, 0.6]),
+  cell('us_01', 30, 'stop', true, [0, 5], null, HPB, [0, 59, 0.6]),
+  cell('us_01', 30, 'circle', true, [0, 5], null, HPB, [0, 98, 0.59]),
+  cell('us_01', 40, 'straight', true, null, [0, 85], null, [50, 75, 0.6]),
+  cell('us_01', 40, 'straight', false, [0, 12], null, null, [5, 100, 0.59]),
+  cell('us_01', 40, 'react0.5', false, [80, 100], null, null, [91, 100, 0.12]),
+  cell('us_01', 30, 'react0.5ring1.2', true, [95, 100], [85, 100], null, [NaN, NaN, NaN]),
+  cell('jp_06', 40, 'react0.35', true, [65, 92], null, null, [83, NaN, 0.09]),
+  cell('jp_06', 40, 'react0.5', true, [52, 80], null, null, [42, NaN, 0.23]),
+  cell('jp_06', 40, 'react0.7', true, [58, 85], null, null, [12, NaN, 0.39]),
+  cell('jp_06', 40, 'straight', true, [0, 10], null, null, [3, NaN, 0.52]),
+  cell('jp_06', 40, 'stop', true, [0, 5], null, HPB, [0, NaN, 0.51]),
   cell('jp_06', 40, 'circle', true, [0, 5], null, HPB, [0, NaN, 0.52]),
-  cell('jp_06', 20, 'react0.5', true, [70, 100], null, null, [84, NaN, 0.24]),
-  cell('jp_06', 40, 'react0.5same2.3', true, [0, 15], null, null, [NaN, NaN, NaN]),
+  cell('jp_06', 20, 'react0.5', true, [42, 68], null, null, [82, NaN, 0.25]),
+  cell('jp_06', 40, 'react0.5ring0.9', true, [95, 100], null, null, [NaN, NaN, NaN]),
+  cell('us_03', 20, 'straight', true, [30, 58], null, null, [96, NaN, 0.62]),
+  cell('us_03', 40, 'straight', true, [0, 12], null, null, [3, NaN, 0.6]),
+  cell('us_03', 40, 'stop', true, [0, 5], null, HPB, [NaN, NaN, NaN]),
+  cell('us_03', 40, 'react0.5ring0.9', true, [95, 100], null, null, [NaN, NaN, NaN]),
 ];
 
 /** 較正の行の seed（固定。試作と同じく 1000 + 秒） */

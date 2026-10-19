@@ -30,7 +30,7 @@ function knobs(missionId: string): string {
 console.log(`[N ${n}${o.releaseAltitudeM !== undefined ? ` ALT ${o.releaseAltitudeM}` : ''}${o.cepM !== undefined ? ` CEP ${o.cepM}` : ''}${o.runGapS !== undefined ? ` GAP ${o.runGapS}` : ''}${o.waveRestS !== undefined ? ` REST ${o.waveRestS}` : ''}${o.vipAim === false ? ' VIP=0' : ''}]`);
 if (process.env['TABLE'] === '1') {
   for (const id of ['us_01', 'jp_06']) console.log(knobs(id));
-  console.log(`${'行'.padEnd(26)}${'実測'.padEnd(18)}${'試作'.padEnd(18)}帯（tests は N 200）`);
+  console.log(`${'行'.padEnd(26)}${'実測'.padEnd(18)}${'前回'.padEnd(18)}帯（tests は N 200）`);
   for (const c of STRIKE_CALIBRATION) {
     const r = runCalibrationCell(gameData, c, n, o);
     const miss = calibrationMisses(c, r);

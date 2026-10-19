@@ -74,9 +74,12 @@ export const TITLE_DIFF_SUB_JA = 'タップで切替 ・ ハードは敵の数�
 /** 史実モードの題は data の title_ja（「史実モード」）に「: オフ／オン」。2 行目は data の倍率と不発の確率から作る（HUD の印にも使う） */
 export const TITLE_HIST_OFF_JA = ': オフ';
 export const TITLE_HIST_ON_JA = ': オン';
-export function titleHistSubJa(evasionMultiplier: number, dudPct: number | null): string {
-  // 幅 390 に収める（実機 1 回目: 「マーカーなし」と書いていたら、オン／オフに関わらず出るので状態と読まれた → マーカーは右の切り替えに）。
-  // dudPct が null（不発の上書きを掛けないキャンペーン。v0.6.0 の日本側）なら回避だけ
+/** 史実モードがオフのときの 2 行目（v0.6.1 実機 1 回目「オフなら回避 ×1.5・不発 10% は出さない」） */
+export const TITLE_HIST_OFF_SUB_JA = 'タップで切替';
+export function titleHistSubJa(on: boolean, evasionMultiplier: number, dudPct: number | null): string {
+  // 幅 390 に収める（v0.5.2 実機 1 回目: 「マーカーなし」と書いていたら、オン／オフに関わらず出るので状態と読まれた → マーカーは右の切り替えに）。
+  // オンのときだけ中身を出す（v0.6.1 実機 1 回目）。dudPct が null（不発の上書きを掛けないキャンペーン。v0.6.0 の日本側）なら回避だけ
+  if (!on) return TITLE_HIST_OFF_SUB_JA;
   return dudPct === null ? `敵の回避 ×${evasionMultiplier}` : `敵の回避 ×${evasionMultiplier} ・ 不発 ${dudPct}%`;
 }
 /** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目「使うかどうか選択制に」）: 解放前は「未解放」で押せず、2 行目に解放までの回数 */
