@@ -109,9 +109,9 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   return { text: `${((key >> 21) & 1) !== 0 ? '夜明け ・ ' : ''}米PT は${p.leaveDirJa}へ${((key >> 22) & 1) !== 0 ? '去った' : '去る'} ・ 帰投せよ  ${((key >> 23) & 63) * HOME_MARKER_DISTANCE_STEP_M} m`, color: HUD_COLOR_STRONG };
 }
 
-/** Result の被弾の句: 0 発は「被弾なし」、ほかは「被弾 N 発（HP −x）」 */
+/** Result の被弾の句: 0 発は「被弾なし」、ほかは「被弾 N 発（HP −x）」。x は最大 HP まで（沈めた 1 発は残りの HP を超えることがある） */
 function hitsJa(r: PtResult): string {
-  return r.hits === 0 ? '被弾なし' : `被弾 ${r.hits} 発（HP −${r.hits * r.damagePerHit}）`;
+  return r.hits === 0 ? '被弾なし' : `被弾 ${r.hits} 発（HP −${Math.min(r.hits * r.damagePerHit, r.hpMax)}）`;
 }
 
 /**

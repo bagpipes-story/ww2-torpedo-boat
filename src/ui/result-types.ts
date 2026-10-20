@@ -55,6 +55,8 @@ export interface PtResult {
   shots: number;
   hits: number;
   damagePerHit: number;
+  /** 艇の最大 HP（「HP −x」の上限。沈める 1 発は残りの HP より大きいことがある） */
+  hpMax: number;
   firstDetectM: number;
   firstDetectBand: SpeedStep | '';
   lostContacts: number;

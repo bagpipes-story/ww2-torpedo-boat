@@ -17,6 +17,8 @@ export interface PtTelemetryWorld {
   readonly params: { readonly silentMaxMps: number };
   /** 自艇の視程の二乗（見えている PT だけ距離を出す） */
   readonly visRange2: number;
+  /** 艇の最大 HP（Result の「HP −x」を沈んだ艇の HP より大きく言わない） */
+  readonly damageParams: { readonly maxHp: number };
 }
 
 /** 出発時の pt（任務で決まる値: 隻数・航過の上限・1 発の HP・静音の上限 kt・去る方角。毎フレームは変えない） */
@@ -86,6 +88,7 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     shots: q.shots,
     hits: q.hits,
     damagePerHit: s.p.hit.damage,
+    hpMax: w.damageParams.maxHp,
     firstDetectM: q.firstDetectM,
     firstDetectBand: s.firstDetectBand,
     lostContacts: q.lostContacts,

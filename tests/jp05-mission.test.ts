@@ -218,7 +218,7 @@ const S05 = buildWorldSetup(gameData, 'jp_05');
 /** 米PT の隊と自艇（出発点）だけの世界（systems/pt-telemetry が読む部分） */
 function ptWorld(): PtTelemetryWorld & { boat: { state: BoatState } } {
   const p = S05.ptBoats!;
-  return { pts: { section: createPtSection(p, PT_SHELL_POOL_SIZE), p, firstDetectBand: '' }, boat: { state: { ...S05.playerStart, speedMps: 0 } }, params: S05.boatParams, visRange2: S05.visRange2 };
+  return { pts: { section: createPtSection(p, PT_SHELL_POOL_SIZE), p, firstDetectBand: '' }, boat: { state: { ...S05.playerStart, speedMps: 0 } }, params: S05.boatParams, visRange2: S05.visRange2, damageParams: S05.damageParams };
 }
 const PT0 = initPtTelemetry(ptWorld());
 
@@ -405,7 +405,7 @@ describe('jp_05 のテレメトリ（systems/pt-telemetry。v0.6.3）', () => {
     q.closest2 = 250000;
     q.firstDetectM = 1180;
     const r = ptResult(w)!;
-    expect([r.total, r.alive, r.maxPasses, r.passes, r.damagePerHit, r.closestM, r.firstDetectM, r.firstDetectBand]).toEqual([2, 1, 4, 2, 4, 500, 1180, '']);
+    expect([r.total, r.alive, r.maxPasses, r.passes, r.damagePerHit, r.hpMax, r.closestM, r.firstDetectM, r.firstDetectBand]).toEqual([2, 1, 4, 2, 4, 50, 500, 1180, '']);
     expect(ptResult({ ...w, pts: null })).toBeNull();
   });
   it('Result の材料: 終わる瞬間に撃っていた航過も航過・撃った航過に数える（命中があれば無傷に数えない）。撃つ前の航過は数えない。隊の KPI は変えない', () => {
@@ -433,7 +433,7 @@ describe('jp_05 のテレメトリ（systems/pt-telemetry。v0.6.3）', () => {
 
 describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
   const base: PtResult = {
-    total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 4, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4,
+    total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 4, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4, hpMax: 50,
     firstDetectM: NaN, firstDetectBand: '', lostContacts: 0, closestM: 812.4, minWarnS: Infinity,
   };
   it('一度も見つからずに抜けた: 最接近と「—」（撃たれていない）。帰投しなかった（漂流）なら「抜けた」と言わない', () => {
@@ -447,7 +447,7 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
   });
   it('沈んだ: PT は「健在 N 隻」（去っていない数）。みな去る途中・去った後は「去った」、夜明けに去った夜は「夜明けに去った」', () => {
     const r: PtResult = { ...base, out: 0, alive: 2, passes: 2, firedPasses: 2, shots: 24, hits: 13, firstDetectM: 1200, firstDetectBand: 'cruise', minWarnS: 2.5 };
-    expect(ptResultLines(r, 2, false)[0]).toBe('米PT 航過 2 回 ・ かわした 0/2 ・ 被弾 13 発（HP −52）');
+    expect(ptResultLines(r, 2, false)[0]).toBe('米PT 航過 2 回 ・ かわした 0/2 ・ 被弾 13 発（HP −50）');
     expect(ptHeadJa(r)).toBe('米PT: 健在 2 隻');
     expect(ptHeadJa({ ...r, alive: 1 })).toBe('米PT: 健在 1 隻');
     expect(ptHeadJa({ ...r, alive: 0, out: 1 })).toBe('米PT: 去った'); // 去る途中も
