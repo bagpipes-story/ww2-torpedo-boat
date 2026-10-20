@@ -112,7 +112,8 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
   const eff = g.effective_night_m;
   if (!(r.patrol.speed_kt > 0 && r.patrol.speed_kt < a.pass_speed_kt && a.pass_speed_kt <= a.run_in_speed_kt && a.run_in_speed_kt <= boat.speed_max_kt)) bad('0 < patrol.speed_kt < pass_speed_kt ≤ run_in_speed_kt ≤ 艇の最大速力');
   if (!(a.leave_speed_kt > 0 && a.leave_speed_kt <= boat.speed_max_kt) || !(a.overtake_kt >= 0)) bad('0 < leave_speed_kt ≤ 艇の最大速力、overtake_kt は 0 以上');
-  if (!(a.min_range_m > 0 && a.min_range_m < a.pass_offset_m && a.pass_offset_m < eff && eff < a.break_off_m && eff < a.commit_max_m)) bad('0 < min_range_m < pass_offset_m < effective_night_m < break_off_m、effective_night_m < commit_max_m');
+  if (!(a.min_range_m > 0 && a.min_range_m < a.pass_offset_m && a.pass_offset_m < eff && eff < a.break_off_m)) bad('0 < min_range_m < pass_offset_m < effective_night_m < break_off_m');
+  // effective_night_m < commit_max_m（spec §C.3-2）はこの 2 つから出る（v0.6.3 レビュー: 前の行に重ねて書いていたので、どちらの句が止めたか検査で分からなかった）
   if (!(eff < a.hold_off_m && a.hold_off_m < a.commit_max_m)) bad('effective_night_m < hold_off_m < commit_max_m（航過を待つ PT は有効射程の外・航過を固める距離の内で待つ）');
   if (!(a.commit_heading_tol_deg > 0 && a.commit_heading_tol_deg < 90)) bad('0 < commit_heading_tol_deg < 90（向かってくるときだけ航過を固める）');
   if (!(a.open_fire_s >= PT_OPEN_FIRE_MIN_S && a.open_fire_s < a.pass_max_s && a.open_fire_s < a.commit_tcpa_s)) bad(`予告から撃つまで ${PT_OPEN_FIRE_MIN_S} 秒以上（open_fire_s）、open_fire_s < pass_max_s・commit_tcpa_s`);

@@ -3,17 +3,19 @@
 // 航過を固めるのは本当に向かってくるときだけ（v0.6.3 の直し: 針路の差が commit_heading_tol_deg 以内・艇が固める線の前・航過の速さで最接近まで commit_tcpa_s・その距離が有効射程の内）。
 // 待つ PT（他が航過中か次の航過まで）は hold_off_m の内へ寄らない（2 番手が艇に重ならない）。待つ間は突撃の秒に数えない。
 // 見えていない間は最後に見た位置と速度から推す（全知にしない）。航過の針路は固めたまま直さない（転舵でかわせる）。
+// v0.6.3 レビューの直し: 航過は海域の縁（絵の半長）まで走る・撃つか open_fire_s 経った航過だけ回数に数える（縁へ逃げても PT は撃たずに去らない）、
+// みな去れば捉えるのをやめる（見失わせたに数えない）、待つ PT は海域の外へ回らない、突撃の打ち切りの離脱は艇から離れる向き、夜明けで切れた撃った航過も数える。
 // Phaser 非依存・毎ステップ確保しない。時計は体感秒 feelDt、運動と弾の飛行は game 秒 dt。数値は core/pt-data の PtParams。
 // 乱数は seed+18 の系列だけ（1 発 2 回。命中の火災・機関は呼ぶ側が同じ系列で引く）。AI は引かない。
 // 定数・型・確保・脅威の PT は pt-state.ts、航過の幾何は pt-pass.ts（使う側はここだけを import する。pt-state を出し直している）。
 import type { BoatState } from './boat-motion';
 import { beyondBounds } from './dawn-withdraw';
 import type { PtParams } from './pt-data';
-import { aimPoint, dodgeTurn, holdOffHeading, inDeadCone, nearEdge, passCommitOk, targetSide } from './pt-pass';
+import { aimPoint, dodgeTurn, escapeHeadingDeg, holdOffHeading, inDeadCone, nearEdge, passCommitOk, targetSide } from './pt-pass';
 import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
 import type { SeededRng } from './rng';
 import { advanceShell, findFreeShell, launchShell, pointNearBoat } from './shells';
-import { bearingDeg, steerShip } from './ship-ai';
+import { bearingDeg, edgeTurnHeadingDeg, steerShip } from './ship-ai';
 import { losBlocked } from './smoke';
 import { degToRad } from './units';
 
@@ -33,9 +35,11 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
   const eff2 = p.gun.effectiveM * p.gun.effectiveM;
   // 1. 接触: どれか 1 隻が見れば隊が捉える（最後に見た位置と速度を残す）
   let anySeen = false;
+  let anyLive = false;
   let near2 = Infinity;
   for (let i = 0; i < boats.length; i++) {
     const b = boats[i]!;
+    if (b.phase <= PT_BREAK) anyLive = true;
     const live = b.phase <= PT_BREAK && c.targetValid;
     const d2 = (boat.x - b.x) * (boat.x - b.x) + (boat.y - b.y) * (boat.y - b.y);
     const r = live && smokeBlocked(c, b) ? c.detectOpenM * c.smokeFactor : c.detectOpenM;
@@ -55,25 +59,32 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
     q.lkVy = vpy;
     q.lkAgeS = 0;
     if (gained) ev.onContact(true);
+  } else if (q.detected && !anyLive) {
+    // みな去る（max_passes か夜明け）: 見る PT がいないので捉えるのをやめる（見失わせたには数えない。3 行目の「発見された！」も消える）
+    q.detected = false;
+    ev.onContact(false);
   } else if (q.detected) {
     q.holdLeftS -= feelDt;
     q.lkAgeS += feelDt;
     if (q.holdLeftS <= 0) {
       q.detected = false;
-      q.lostContacts++;
+      if (c.targetValid) q.lostContacts++; // 沈み始め・輪の中で切れたのは見失わせたではない
       ev.onContact(false);
     }
   }
   // 2. 目標: 見えていれば今の位置（lkAgeS 0）、見えていなければ最後に見た位置から推す（体感秒 × time_scale で game 秒）
   const tx = q.lkX + q.lkVx * q.lkAgeS * p.timeScale;
   const ty = q.lkY + q.lkVy * q.lkAgeS * p.timeScale;
-  // 3. 夜明け: 去っていない PT はこのステップで去る（航過中なら数えず、その弾は前の航過にも数えない）。乱数は引かない
+  // 3. 夜明け: 去っていない PT はこのステップで去る。乱数は引かない。航過中なら、撃った航過は数え（その命中は被弾に入っている）、撃つ前の航過は数えない
+  // （その後に落ちる弾は前の航過にも数えない）。どちらも HUD の結果は出さない（通し番号は変えない）
   for (let i = 0; c.dawn && i < boats.length; i++) {
-    if (boats[i]!.phase >= PT_LEAVE) continue;
-    boats[i]!.phase = PT_LEAVE;
+    const b = boats[i]!;
+    if (b.phase >= PT_LEAVE) continue;
+    b.phase = PT_LEAVE;
     if (q.owner === i) {
       q.owner = -1;
-      if (q.lastPassBoat === i) q.lastPassBoat = -1;
+      if (b.firedThisPass > 0) countPass(q, b, i, true);
+      else if (q.lastPassBoat === i) q.lastPassBoat = -1;
     }
     q.leftAtDawn = true;
     ev.onLeave(i);
@@ -104,8 +115,8 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       const held = q.owner >= 0 || q.gapLeftS > 0; // 他の PT が航過中か次の航過まで: 待つ（待つ間は突撃の秒に数えない。打ち切りは追いつけないときだけ）
       if (!held) b.timerS += feelDt;
       if (b.timerS >= p.runInMaxS) {
-        b.phase = PT_BREAK; // 追いつけない突撃の打ち切り（航過には数えない）
-        b.lockDeg = b.headingDeg;
+        b.phase = PT_BREAK; // 追いつけない突撃の打ち切り（航過には数えない）。離脱は目標から離れる向き（追う針路のままだと「離脱」と出たまま寄り続けた）
+        b.lockDeg = bearingDeg(tx, ty, b.x, b.y);
         b.timerS = 0;
         hd = b.lockDeg;
       } else {
@@ -114,6 +125,7 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
         if (held) {
           // 2 番手は距離を取る: 寄る途中で外へ曲がり hold_off_m の内へ入らない（解けたらそのまま寄る）
           if ((tx - b.x) * (tx - b.x) + (ty - b.y) * (ty - b.y) < p.holdOuter2) hd = holdOffHeading(b.x, b.y, tx, ty, b.side, p.holdOff2, p.holdOuter2);
+          if (nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) hd = edgeTurnHeadingDeg(b, p.bounds, p.edgeMarginM); // 縁の近くでは内へ（艇が縁にいても海域の外を回らない）
         } else if (q.seen[i] === 1 && dx * dx + dy * dy <= p.commitMax2 && !nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) {
           // 航過を固める: この PT が今見ていて・900 m 以内・縁の外で、本当に向かってくる（針路の差・艇が線の前・航過の速さで最接近まで 5 秒・その距離が射程の内）
           const passMps = passSpeedMps(p, boat.speedMps);
@@ -144,10 +156,15 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       ev.onOut(i);
     } else if (b.phase === PT_PASS && b.timerS > 0) stepPass(q, p, c, b, i, vpx, vpy, rng, feelDt, ev); // 固めたステップ（timerS 0）は撃たない
   }
-  // 5. 弾: 航過の命中はその航過に、終わった後に落ちた弾は撃った PT の最後の航過に数える
+  // 5. 弾: 航過の命中はその航過に、終わった後に落ちた弾は撃った PT の最後の航過に数える。その PT の弾がみな落ちたら航過の通し番号を増やす（HUD の結果は確定してから）
+  let lastInFlight = false;
   for (let k = 0; k < q.shells.length; k++) {
     const s = q.shells[k]!;
-    if (!s.active || !advanceShell(s, dt)) continue;
+    if (!s.active) continue;
+    if (!advanceShell(s, dt)) {
+      if (s.gunIndex === q.lastPassBoat) lastInFlight = true;
+      continue;
+    }
     const hit = c.targetValid && pointNearBoat(s.impactX, s.impactY, boat, c.boatHalfLengthM, c.boatHalfBeamM + p.gun.splashRadiusM);
     if (hit) {
       q.hits++;
@@ -155,6 +172,10 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       else if (s.gunIndex === q.lastPassBoat && q.lastPassHits++ === 0 && q.lastPassFired) q.cleanPasses--;
     }
     ev.onImpact(s.impactX, s.impactY, hit);
+  }
+  if (q.seqPending && !lastInFlight) {
+    q.seqPending = false;
+    q.passSeq++;
   }
 }
 
@@ -192,7 +213,8 @@ function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, i: numb
     }
   }
   const dot = hx * dx + hy * dy;
-  if (b.timerS >= p.passMaxS || (dot < 0 && (d2 > eff2 || cone)) || nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) endPass(q, p, b, i, ev);
+  // 縁は海域の外へ出る手前（絵の半長）で終える（v0.6.3 レビュー: edge_margin_m で終えると、縁にいる艇へ固めた航過が撃つ前に終わった）
+  if (b.timerS >= p.passMaxS || (dot < 0 && (d2 > eff2 || cone)) || nearEdge(b.x, b.y, p.bounds, p.boundsMarginM)) endPass(q, p, b, i, ev);
 }
 
 /** 航過の速さ: 艇の速さ + 追い越し（下限 pass_speed_kt・上限は艇の最大） */
@@ -211,26 +233,38 @@ function commitPass(q: PtSection, c: PtCheck, b: PtBoatState, i: number, lockDeg
   q.owner = i;
   q.passHits = 0;
   q.commitAtS = c.timeS;
-  q.dodge = dodgeTurn(lockDeg, b.x, b.y, c.boat.x, c.boat.y, c.boat.headingDeg);
+  q.escapeDeg = escapeHeadingDeg(lockDeg, b.x, b.y, c.boat.x, c.boat.y);
+  q.dodge = dodgeTurn(q.escapeDeg, c.boat.headingDeg);
 }
 
-/** 航過の終わり: 数えて、次の航過まで pass_gap_s。max_passes に達したら去る、まだなら離脱 */
+/**
+ * 航過の終わり: 数えて、次の航過まで pass_gap_s。max_passes に達したら去る、まだなら離脱。回数に数えるのは撃ったか予告から open_fire_s 経った航過だけ
+ * （撃つ前に艇首尾の円錐・射程の外へ抜けた航過は数えない＝その PT はもう一度来る）。HUD の結果の通し番号は弾がみな落ちてから（step の 5）
+ */
 function endPass(q: PtSection, p: PtParams, b: PtBoatState, i: number, ev: PtEvents): void {
   const fired = b.firedThisPass > 0;
-  b.passes++;
-  q.passes++;
-  if (fired) q.firedPasses++;
-  if (fired && q.passHits === 0) q.cleanPasses++;
-  q.lastPassHits = q.passHits;
-  q.lastPassFired = fired;
-  q.lastPassBoat = i;
-  q.passSeq++;
+  countPass(q, b, i, fired || b.timerS >= p.openFireS);
+  q.seqPending = true;
   q.owner = -1;
   q.gapLeftS = p.passGapS;
   b.phase = b.passes >= p.maxPasses ? PT_LEAVE : PT_BREAK;
   b.timerS = 0;
   ev.onPassEnd(i, fired, q.passHits);
   if (b.phase === PT_LEAVE) ev.onLeave(i);
+}
+
+/** 航過を数える（counts が false なら回数には入れない）: 撃った航過・無傷の航過、最後の航過の命中と撃ったか・その PT（後から落ちた弾の数え先） */
+function countPass(q: PtSection, b: PtBoatState, i: number, counts: boolean): void {
+  const fired = b.firedThisPass > 0;
+  if (counts) {
+    b.passes++;
+    q.passes++;
+  }
+  if (fired) q.firedPasses++;
+  if (fired && q.passHits === 0) q.cleanPasses++;
+  q.lastPassHits = q.passHits;
+  q.lastPassFired = fired;
+  q.lastPassBoat = i;
 }
 
 /** 突撃へ: 目標が PT の右か左かで航過する側を決める */

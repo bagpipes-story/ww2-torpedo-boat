@@ -264,6 +264,16 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   };
 }
 
+/**
+ * 任務にハードの違い（v0_1_prototype.hard）があるか（v0.6.3 レビュー: jp_05 はハード＝ノーマルなのに Briefing・Result が「ハード」と出た）。
+ * PrototypeMission・WorldSetup には足さない（他の任務の setup の snapshot を変えない）。Briefing の「（この任務は同じ）」と Result の「（ハード）」が読む
+ */
+export function hasHardVariant(data: GameData, missionId: string): boolean {
+  const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
+  const proto = m?.['v0_1_prototype'] as Record<string, unknown> | undefined;
+  return proto?.['hard'] !== undefined;
+}
+
 // ---------- 任務一覧（v0.4.0）。Briefing の文（getBriefingRecord・enemyNameJa・riskLabelJa）は v0.6.3 から config/briefing-data.ts（ここから再 export すると循環になる） ----------
 
 /** Title の任務一覧（v0.6.0 から campaign-data.ts。キャンペーンを選べる。ここは今までの import のための再 export） */

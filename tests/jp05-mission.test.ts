@@ -18,7 +18,9 @@ import type { PtResult } from '../src/ui/result-types';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { getDawnAir } from '../src/config/dawn-data';
-import { NO_WEAPON_BRIEFING_JA, briefingRows } from '../src/core/briefing';
+import { NO_WEAPON_BRIEFING_JA, bearingJa, briefingRows, compassJa, difficultyJa, formatDateJa } from '../src/core/briefing';
+import { bearingDeg } from '../src/core/ship-ai';
+import { hasHardVariant } from '../src/config/mission-data';
 import { endCountsAsReturn } from '../src/core/mission-flow';
 import { SeededRng } from '../src/core/rng';
 import { computeScore, type ScoreInput } from '../src/core/scoring';
@@ -42,7 +44,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect([m.enemyStart, m.enemyStarts, m.barges, m.escort, m.transport, m.dawnStrike, m.storm, m.enemyAircraft]).toEqual([null, [], null, null, null, null, null, null]);
     expect(m.shallows).toEqual([]);
     expect(m.hazards).toEqual(['enemy_ship_gunfire_or_ram']);
-    expect(m.playerStart).toEqual({ x: 4300, y: 600, headingDeg: 225 });
+    expect(m.playerStart).toEqual({ x: 4300, y: 450, headingDeg: 225 });
     expect([m.returnPoint.x, m.returnPoint.y, m.returnPoint.radiusM, m.returnPoint.callMargin, m.returnPoint.torpedoEndSettleS]).toEqual([1700, 3200, 250, 1.5, 5]);
     expect(m.bounds).toEqual({ width: 6000, height: 4000 });
   });
@@ -50,7 +52,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     const s = buildWorldSetup(gameData, 'jp_05');
     expect([s.mainWeapon, s.torpedoCapacity, s.baseDetectM, s.durationS, s.fuelAllotmentGal]).toEqual(['none', 0, 2000, 170, 23]);
     expect(s.detectRangeAtStartM).toBeCloseTo(480, 9);
-    expect(s.enemyFrom).toEqual({ x: 2000, y: 2000 });
+    expect(s.enemyFrom).toEqual({ x: 2000, y: 2200 });
     expect([s.airStrike, s.destroyer, s.barges, s.guns, s.escort, s.transport, s.smokeParams, s.seaplane, s.storm]).toEqual([null, null, null, null, null, null, null, null, null]);
     expect(s.ptBoats!.count).toBe(2);
     expect(s.dawnAir.playAs).toBe('own');
@@ -68,7 +70,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
       }
     }
   });
-  it('今夜（seed+16）: 引くのは 5 回（隊 3・大発の先頭 1・反転 1）。同じ seed なら同じ夜。どの夜も出発点は自艇から巡航で見つかる 1,200 m より遠い。反転した夜は西へ哨戒', () => {
+  it('今夜（seed+16）: 引くのは 5 回（隊 3・大発の先頭 1・反転 1）。同じ seed なら同じ夜。どの夜も出発点は自艇から史実モードの巡航で見つかる 1,560 m より遠い（v0.6.3 レビュー）。反転した夜は西へ哨戒', () => {
     const spy = vi.spyOn(SeededRng.prototype, 'next');
     buildWorldSetup(gameData, 'jp_05', { sortie: sortie(1) });
     expect(spy.mock.calls.length).toBe(5);
@@ -89,24 +91,39 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
       expect(p.startY[1]! - p.startY[0]!).toBeCloseTo(200, 9); // 2 隻は 200 m 離れて並ぶ
       if (s.night.mirrored) mirrored++;
     }
-    expect(minM).toBeGreaterThanOrEqual(1200);
+    expect(minM).toBeGreaterThanOrEqual(1560);
+    // 史実モードの世界の見つかる距離（巡航）もこれより近い（出発で見つからない）
+    const h = buildWorldSetup(gameData, 'jp_05', { sortie: directSortie('jp_05', 1, 'none', false, true), historical: true });
+    expect(h.vis.detectionMultiplier).toBe(1.3);
+    expect(h.baseDetectM * h.vis.speedFactor.cruise * h.vis.moonFactor * h.vis.detectionMultiplier).toBeCloseTo(1560, 6);
     expect(mirrored).toBeGreaterThan(100);
     expect(mirrored).toBeLessThan(200);
     // ?debug&fixed と Briefing（出撃前）は data のまま
-    expect(buildWorldSetup(gameData, 'jp_05', { sortie: sortie(1), fixedNight: true }).enemyFrom).toEqual({ x: 2000, y: 2000 });
+    expect(buildWorldSetup(gameData, 'jp_05', { sortie: sortie(1), fixedNight: true }).enemyFrom).toEqual({ x: 2000, y: 2200 });
   });
-  it('Briefing の 6 行（spec §B.9。出撃前は揺らぎなし＝敵は西から。和文と英字・数字の間に半角スペースを入れない＝Phaser が半角スペースで折り返して「2⏎隻組」と割れない）。反転した夜は東から', () => {
+  it('Briefing の 6 行（spec §B.9。和文と英字・数字の間に半角スペースを入れない＝Phaser が半角スペースで折り返して「2⏎隻組」と割れない）。敵の方角は自艇の出発点から見た 1 隻目の PT（v0.6.3 レビュー: 海域の中心から見た「東から」は真南の PT だった）', () => {
     const s = buildWorldSetup(gameData, 'jp_05');
     const rec = { ...getBriefingRecord(gameData, 'jp_05'), hazardIds: s.hazardsTonight, absentHazardIds: s.absentHazards };
     const rows = briefingRows(rec, briefingNumbers(s), nameOf, labelOf);
     expect(rows.map((r) => [r.label, r.text])).toEqual([
       ['目的', '哨戒の帰り道に米PTの2隻組。速さでは振り切れない。静音で暗さに隠れ、航過は転舵でかわしてラバウルへ帰る'],
-      ['成功', '生還（PTに一度も見つからずに帰れば回避の点）（帰投地点は南西の青い輪）'],
+      ['成功', '生還。PTに一度も見つからずに帰れば回避の点（帰投地点は南西の青い輪）'],
       ['月', '新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m'],
-      ['敵', '米PTボート ×2（西から）'],
+      ['敵', '米PTボート ×2（南西から）'],
       ['危険', '敵艦艇の砲撃・衝突'],
-      ['条件', `夜明けまで 170 秒（昼の空は味方） ・ 燃料 23 gal ・ ${NO_WEAPON_BRIEFING_JA}`],
+      // 昼の空は争奪で味方として遊ぶので「おおむね」（label_ja・夜明けの帯と同じ）。武器の句は「・」の後がノーブレークスペース（「・」が行末に残らない）
+      ['条件', `夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 23 gal ・\u00a0${NO_WEAPON_BRIEFING_JA}`],
     ]);
+    // 条件の行（24 px・折り返し 1,056 px）は「gal」の後で折り返し、2 行目が「・ 魚雷は…」で始まる（「・」が行末に残らない）
+    const cond = rows[5]!.text;
+    const brk = cond.lastIndexOf(' ', cond.indexOf('\u00a0'));
+    expect(cond.slice(brk + 1).startsWith('・\u00a0魚雷')).toBe(true);
+    expect(textWidthPx(cond, 24)).toBeGreaterThan(1056);
+    expect(textWidthPx(cond.slice(0, brk), 24)).toBeLessThanOrEqual(1056);
+    expect(textWidthPx(cond.slice(brk + 1), 24)).toBeLessThanOrEqual(1056);
+    // 他の任務の条件の行は今までどおり「・ 」（区切りの後は半角スペース）
+    const us02 = buildWorldSetup(gameData, 'us_02');
+    expect(briefingRows({ ...getBriefingRecord(gameData, 'us_02'), hazardIds: us02.hazardsTonight }, briefingNumbers(us02), nameOf, labelOf)[5]!.text).not.toContain('\u00a0魚雷');
     expect(NO_WEAPON_BRIEFING_JA).toBe('魚雷はPTの下を抜ける（撃たない）');
     // 目的・成功・史実と武器の句: 和文の中に半角スペースが無い（「条件」は「 ・ 」の区切りだけで折り返す）
     const r = getBriefingRecord(gameData, 'jp_05');
@@ -117,7 +134,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     // 見越し点マーカーの解放の状態は魚雷を撃たない jp_05 には付けない（他の任務は今までどおり付く）
     const marker = '見越し点マーカー: あと 3 回の任務で解放（終えた任務 0 回）';
     expect('aimAssistJa' in briefingNumbers(s, marker)).toBe(false);
-    expect(briefingRows(rec, briefingNumbers(s, marker), nameOf, labelOf)[5]!.text).toBe(`夜明けまで 170 秒（昼の空は味方） ・ 燃料 23 gal ・ ${NO_WEAPON_BRIEFING_JA}`);
+    expect(briefingRows(rec, briefingNumbers(s, marker), nameOf, labelOf)[5]!.text).toBe(`夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 23 gal ・\u00a0${NO_WEAPON_BRIEFING_JA}`);
     expect(briefingNumbers(s, '史実モード: 見越し点マーカーなし').aimAssistJa).toBeUndefined();
     for (const id of ['us_02', 'jp_06']) expect(briefingNumbers(buildWorldSetup(gameData, id), marker).aimAssistJa, id).toBe(marker);
     const dirs = new Set<string>();
@@ -125,9 +142,13 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
       const t = buildWorldSetup(gameData, 'jp_05', { sortie: sortie(seed) });
       const d = briefingNumbers(t).enemyFromJa;
       dirs.add(d);
-      if (t.night.mirrored && t.ptBoats!.startX[0]! > 3600) expect(d, `${seed}`).toBe('東');
+      expect(d, `${seed}`).toBe(bearingJa(bearingDeg(t.playerStart.x, t.playerStart.y, t.ptBoats!.startX[0]!, t.ptBoats!.startY[0]!)));
+      // 反転した夜で PT が出発点の真南の側にいれば「南から」（前は海域の中心から見て「東から」と出た）
+      if (t.night.mirrored && Math.abs(t.ptBoats!.startX[0]! - t.playerStart.x) < 600) expect(d, `${seed}`).toBe('南');
     }
-    expect([...dirs].sort()).toEqual(['中央', '東', '西'].sort());
+    expect([...dirs].sort()).toEqual(['南', '南西'].sort());
+    // 他の任務は今までどおり海域の中心から見た方角
+    expect(briefingNumbers(us02).enemyFromJa).toBe(compassJa(us02.enemyFrom!.x, us02.enemyFrom!.y, us02.mission.bounds.width, us02.mission.bounds.height));
   });
   it('史実: 1944-02-18 ラバウル沖・ゲーム上の想定（艇は T-14 で代用）。人物名なし。dawn_air は争奪で、遊び方は味方の空（夜明けに敵機は来ない）・米PT は夜明けに去る', () => {
     const r = getBriefingRecord(gameData, 'jp_05');
@@ -144,6 +165,25 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     const src = String((protoOf('jp_05')['return_point'] as Rec)['torpedo_end_settle_s_source']);
     expect(src).toBe(`${String((protoOf('jp_06')['return_point'] as Rec)['torpedo_end_settle_s_source'])}（jp_05 は魚雷を撃たないので効かない）`);
     for (const k of ['main_weapon_source', 'duration_s_source', 'fuel_allotment_gal_source', 'hazards_source']) expect(String(protoOf('jp_05')[k]), k).toContain('design (v0.6.3');
+  });
+});
+
+describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い任務に「ハード」と出していた）', () => {
+  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
+    const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
+    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_03']);
+    expect(hasHardVariant(gameData, 'jp_05')).toBe(false);
+    expect(difficultyJa(false, true)).toBe('');
+    expect(difficultyJa(false, false)).toBe('');
+    expect(difficultyJa(true, true)).toBe(' ・ 難易度 ハード'); // 他の任務は今までどおり
+    expect(difficultyJa(true, false)).toBe(' ・ 難易度 ハード（この任務は同じ）');
+    // Result の見出し（result-scene は hard && hasHardVariant を渡す）
+    expect(resultHeadingJa('returned', NaN, true && hasHardVariant(gameData, 'jp_05'), false)).toBe('任務終了 — 帰投した');
+    expect(resultHeadingJa('returned', NaN, true && hasHardVariant(gameData, 'us_02'), false)).toBe('任務終了 — 帰投した（ハード）');
+    // Briefing の副題の幅（20 px・縮めない行）: いちばん長い形でも論理幅 1280 − 左右の余白の内
+    const r = getBriefingRecord(gameData, 'jp_05');
+    const sub = `${formatDateJa(r.date)} ・ ${r.place}${difficultyJa(true, false)} ・ 史実モード`; // 史実モードの句は config/menu-config の BRIEF_HISTORICAL_JA（DOM を読むので import しない）
+    expect(textWidthPx(sub, 20)).toBeLessThanOrEqual(1280 - 2 * 24);
   });
 });
 
@@ -189,7 +229,7 @@ function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry> = {}):
     planePhase: 0, planeLocked: false, planeOutcome: 0, planeDx: NaN, planeDy: NaN, friendlyPhase: 0, friendlyOutcome: 0,
     shallowState: 0, shallowAheadM: 0, shallowSafeKt: 10, gunMission: false, gunStatus: 0, bargesSunk: 0, bargesBeached: 0, bargesTotal: 0, bargeEscapeS: NaN,
     enemySighted: false, batteryInArc: false, batteryAlerted: false, stormState: 0, stormFast: false, stormSafeKt: 12,
-    targetStep: 'silent', detectRangeM: 600,
+    targetStep: 'silent', detectRangeM: 600, homeEdgeM: 1950,
     ...over,
     dawn: { ...createDawnTelemetry(), ...(over.dawn ?? {}) },
     pt: { ...PT0, ...pt },
@@ -234,43 +274,52 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 2, passSeq: 2, lastPassHits: 3, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '被弾 3 発（HP −12） ・ 航過 2/4', HUD_COLOR_STRONG]);
     // 結果の表示は見失った後・夜明けに去った後も出る（表示の秒が終われば平常へ）
     expect(row(tele({ passes: 4, passSeq: 4, alive: 0, lastPassHits: 0, lastPassFired: true }), 0, RESULT)[0]).toBe(MISSION_PT_CONTACT);
-    expect(row(tele({ passes: 4, passSeq: 4, alive: 0, out: 2 }))).toEqual([MISSION_PT, '米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ passes: 4, passSeq: 4, alive: 0, out: 2 }))).toEqual([MISSION_PT, '米PT は東へ去った ・ 帰投せよ  2000 m', HUD_COLOR_STRONG]);
   });
-  it('撃たなかった航過（固めたが撃てずに抜けた）の後は「かわした！」を出さず、いつもの接触・平常の行（Result の「かわした 無傷/撃った」と同じ数え方）', () => {
+  it('撃たなかった航過（転舵で艇首尾の円錐・射程の外へ抜けた）の後は「撃たせなかった！」（味方の青。v0.6.3 レビュー: いちばん良いかわし方に何も出ず、航過の数が飛んで見えた）。見失った後・みな去った後も出る', () => {
     const det = { detected: true, ...NE500 };
     const unfired = { passes: 1, passSeq: 1, lastPassHits: 0, lastPassFired: false };
-    expect(ptResultShown(tele(unfired), RESULT)).toBe(false);
-    expect(ptResultShown(tele({ ...unfired, lastPassFired: true }), RESULT)).toBe(true);
-    expect(ptResultShown(tele({ ...unfired, lastPassFired: true }), 0)).toBe(false);
-    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 3 回 ・ 静音で見失わせろ', HUD_COLOR_STRONG]);
-    expect(row(tele({ ...det, ...unfired, threatPhase: PT_ALERT, sighted: true }), 0, RESULT)[1]).toBe('米PT 北東から突撃 500 m ・ 赤い線で転舵');
-    // 見失った後・みな去った後の撃たなかった航過は平常の行のまま（接触のモードに上げない）
-    expect(row(tele(unfired), 0, RESULT)).toEqual([MISSION_PT, '米PT 2 隻が哨戒中 ・ 静音で抜けて帰投', HUD_COLOR_STRONG]);
-    expect(row(tele({ ...unfired, passes: 4, passSeq: 4, alive: 0 }), 0, RESULT)).toEqual([MISSION_PT, '米PT は東へ去る ・ 帰投せよ', HUD_COLOR_STRONG]);
-    // キーも結果の行のものにならない（撃たなかった航過の前の結果の表示を引きずらない）
+    expect(ptResultShown(tele(unfired), RESULT)).toBe(true);
+    expect(ptResultShown(tele(unfired), 0)).toBe(false);
+    expect(ptResultShown({ ...tele(unfired), pt: createPtTelemetry() }, RESULT)).toBe(false); // 米PT の無い任務は出さない
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '撃たせなかった！ ・ 航過 1/4', HOME_COLOR_TEXT]);
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_ALERT, sighted: true }), 0, RESULT)[1]).toBe('撃たせなかった！ ・ 航過 1/4');
+    expect(row(tele(unfired), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '撃たせなかった！ ・ 航過 1/4', HOME_COLOR_TEXT]);
+    expect(row(tele({ ...unfired, passes: 4, passSeq: 4, alive: 0 }), 0, RESULT)[1]).toBe('撃たせなかった！ ・ 航過 4/4');
+    // 表示の秒が過ぎればいつもの行
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 残り 3 回 ・ 静音で見失わせろ');
+    // キーは撃った航過の結果（被弾なし）と違う
     const k = (t: BoatTelemetry, flags: number): number => ptKey(t, missionMode(t, 0, flags), flags);
-    expect(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), RESULT)).toBe(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0));
+    expect(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), RESULT)).not.toBe(k(tele({ ...det, ...unfired, lastPassFired: true, threatPhase: PT_BREAK }), RESULT));
   });
-  it('みな去る途中は「去る」、みな海域の外へ出たら「去った」（夜明けの前と後）。キーは変わる', () => {
+  it('みな去る途中は「去る」、みな海域の外へ出たら「去った」（夜明けの前と後）。後ろに帰投の輪の縁までの距離（100 m 刻みの切り上げ。v0.6.3 レビュー: 夜明けの後に距離が消えた）。キーは変わる', () => {
     const dawn = { ...createDawnTelemetry(), reached: true };
-    expect(row(tele({ alive: 0, out: 0 }))[1]).toBe('米PT は東へ去る ・ 帰投せよ');
-    expect(row(tele({ alive: 0, out: 1 }))[1]).toBe('米PT は東へ去る ・ 帰投せよ');
-    expect(row(tele({ alive: 0, out: 2 }))[1]).toBe('米PT は東へ去った ・ 帰投せよ');
-    expect(row(tele({ alive: 0, out: 1, leftAtDawn: true }, { dawn }))).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去る ・ 帰投せよ', HUD_COLOR_STRONG]);
-    expect(row(tele({ alive: 0, out: 2, leftAtDawn: true }, { dawn }))).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, out: 0 }))[1]).toBe('米PT は東へ去る ・ 帰投せよ  2000 m');
+    expect(row(tele({ alive: 0, out: 1 }))[1]).toBe('米PT は東へ去る ・ 帰投せよ  2000 m');
+    expect(row(tele({ alive: 0, out: 2 }))[1]).toBe('米PT は東へ去った ・ 帰投せよ  2000 m');
+    expect(row(tele({ alive: 0, out: 1, leftAtDawn: true }, { dawn }))).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去る ・ 帰投せよ  2000 m', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, out: 2, leftAtDawn: true }, { dawn, homeEdgeM: 301 }))).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ  400 m', HUD_COLOR_STRONG]);
     const k = (t: BoatTelemetry): number => ptKey(t, missionMode(t, 0, 0), 0);
     expect(k(tele({ alive: 0, out: 1 }))).not.toBe(k(tele({ alive: 0, out: 2 })));
     expect(k(tele({ alive: 0, out: 0 }))).toBe(k(tele({ alive: 0, out: 1 }))); // 文が同じなら組み直さない
     expect(k(tele({ alive: 0, out: 2 }))).not.toBe(k(tele({ alive: 0, out: 2 }, { dawn })));
+    expect(k(tele({ alive: 0, out: 2 }, { homeEdgeM: 1901 }))).toBe(k(tele({ alive: 0, out: 2 }, { homeEdgeM: 1999 }))); // 同じ 100 m の刻み
+    expect(k(tele({ alive: 0, out: 2 }, { homeEdgeM: 1899 }))).not.toBe(k(tele({ alive: 0, out: 2 }, { homeEdgeM: 1901 })));
+    expect(k(tele({ alive: 2 }, { homeEdgeM: 1000 }))).toBe(k(tele({ alive: 2 }, { homeEdgeM: 3000 }))); // 哨戒中の行には距離が出ない
   });
-  it('航過: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわす向きは固めたときの 1 つ（右・左・そのまま）', () => {
+  it('航過: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわし方は固めたときの 1 つ: 逃げる針路の方角（スティックの向き）へ転舵、もう向いていればそのまま（v0.6.3 レビュー: 「右へ／左へ」は艇から見た回り方で、南へ走る艇では画面の逆だった）', () => {
     const pass = { detected: true, passing: true, threatPhase: PT_PASS, ...NE500, sighted: true };
-    expect(row(tele({ ...pass, dodge: 1 }))).toEqual([MISSION_PT_PASS, 'PT 航過！ 右へ転舵・全速', HUD_COLOR_WARN]);
-    expect(row(tele({ ...pass, dodge: -1 }))[1]).toBe('PT 航過！ 左へ転舵・全速');
-    expect(row(tele({ ...pass, dodge: 0 }))[1]).toBe('PT 航過！ そのまま全速で離れろ');
-    expect(row(tele({ ...pass, dodge: 1, fired: true }))[1]).toBe('PT 掃射！ 右へ転舵・全速');
-    expect(row(tele({ ...pass, dodge: -1, fired: true }))[1]).toBe('PT 掃射！ 左へ転舵・全速');
-    expect(row(tele({ ...pass, dodge: 0, fired: true }))[1]).toBe('PT 掃射！ そのまま全速で離れろ');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toEqual([MISSION_PT_PASS, '米PT 航過！ 北西へ転舵・全速', HUD_COLOR_WARN]);
+    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 135 }))[1]).toBe('米PT 航過！ 南東へ転舵・全速');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 10 }))[1]).toBe('米PT 航過！ 北へ転舵・全速'); // 8 方位に丸める
+    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 225 }))[1]).toBe('米PT 航過！ そのまま全速で離れろ');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315, fired: true }))[1]).toBe('米PT 掃射！ 北西へ転舵・全速');
+    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ 東へ転舵・全速');
+    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ そのまま全速で離れろ');
+    // 回り方（dodge ±1）が違っても方角が同じなら同じ文・同じキー（文はスティックの向きだけを言う）
+    const k = (t: BoatTelemetry): number => ptKey(t, missionMode(t, 0, 0), 0);
+    expect(k(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toBe(k(tele({ ...pass, dodge: -1, escapeDeg: 320 })));
+    expect(k(tele({ ...pass, dodge: 0, escapeDeg: 315 }))).toBe(k(tele({ ...pass, dodge: 0, escapeDeg: 90 })));
     // 航過は結果の表示より上、燃料切れ（漂流）は航過より上
     expect(row(tele({ ...pass, dodge: 1 }), 0, RESULT)[0]).toBe(MISSION_PT_PASS);
     expect(row(tele({ ...pass, dodge: 1 }, { fuelEmpty: true }))[0]).toBe(MISSION_ADRIFT);
@@ -279,8 +328,8 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele(), CALL_DAWN)[0]).toBe(MISSION_CALL);
     expect(row(tele({ alive: 0 }), CALL_DAWN)[0]).toBe(MISSION_CALL); // 夜明け前の「夜明け近し」は消さない
     const dawn = { ...createDawnTelemetry(), reached: true };
-    expect(row(tele({ alive: 0, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去る ・ 帰投せよ', HUD_COLOR_STRONG]);
-    expect(row(tele({ alive: 0, out: 2, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去る ・ 帰投せよ  2000 m', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, out: 2, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ  2000 m', HUD_COLOR_STRONG]);
     expect(row(tele({ alive: 0, leftAtDawn: true }, { dawn }), CALL_FUEL)[0]).toBe(MISSION_CALL); // 燃料の帰投せよは残す
     // 接触中（見つかっている）は帰投せよより上
     expect(row(tele({ detected: true, threatPhase: PT_RUN_IN, ...NE500 }), CALL_DAWN)[0]).toBe(MISSION_PT_CONTACT);
@@ -294,7 +343,7 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(k(tele({ ...seen, passing: true, detected: true, dodge: 1 }))).not.toBe(k(tele({ ...seen, passing: true, detected: true, dodge: 1, fired: true })));
     expect(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 1 }))).not.toBe(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 2 })));
     expect(k(tele({ detected: true, passes: 1, lastPassHits: 1, lastPassFired: true }), RESULT)).not.toBe(k(tele({ detected: true, passes: 1, lastPassHits: 2, lastPassFired: true }), RESULT));
-    for (const t of [tele(), tele({ ...seen, passing: true, detected: true }), tele({ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true } })]) {
+    for (const t of [tele(), tele({ ...seen, passing: true, detected: true, dodge: 1, escapeDeg: 315, fired: true }), tele({ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true }, homeEdgeM: 6300 })]) {
       const key = k(t);
       expect(Number.isInteger(key) && key >= 0 && key < 2 ** 31).toBe(true);
     }
@@ -304,9 +353,11 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     const det = { detected: true, ...far, passes: 15, maxPasses: 15, lastPassHits: 63, lastPassFired: true, damagePerHit: 4 };
     const cases: [Partial<PtTelemetry>, Partial<BoatTelemetry>, number][] = [
       [{ ...det, passing: true, fired: true, dodge: 0 }, {}, 0],
-      [{ ...det, passing: true, dodge: 1 }, {}, 0],
+      [{ ...det, passing: true, dodge: 1, escapeDeg: 315 }, {}, 0],
+      [{ ...det, passing: true, fired: true, dodge: -1, escapeDeg: 135 }, {}, 0],
       [det, {}, RESULT],
       [{ ...det, lastPassHits: 0 }, {}, RESULT],
+      [{ ...det, lastPassHits: 0, lastPassFired: false }, {}, RESULT],
       [{ ...det, threatPhase: PT_RUN_IN, sighted: true }, {}, 0],
       [{ ...det, threatPhase: PT_RUN_IN }, {}, 0],
       [{ ...det, threatPhase: PT_BREAK, passes: 0 }, {}, 0],
@@ -314,7 +365,8 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
       [{ ...far, sighted: true }, { targetStep: 'full', detectRangeM: 3150 }, 0],
       [{ alive: 4 }, {}, 0],
       [{ alive: 0 }, { dawn: { ...createDawnTelemetry(), reached: true } }, 0],
-      [{ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true } }, 0],
+      [{ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true }, homeEdgeM: 6300 }, 0],
+      [{ alive: 0, out: 1 }, { dawn: { ...createDawnTelemetry(), reached: true }, homeEdgeM: 6300 }, 0],
     ];
     for (const [pt, over, flags] of cases) {
       const [, text] = row(tele(pt, over), 0, flags);
@@ -429,8 +481,9 @@ const TITLE_ROW_W_PX = 960;
 describe('Title の日本の操作の一言（v0.6.3）', () => {
   it('魚雷のある任務（jp_06）と撃たない任務（jp_05「鹵獲艇の哨戒」）のどちらでも本当。煙幕なし。任務の行の幅（TITLE_ROW_W）の内', () => {
     const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
-    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（哨戒は撃たない）・ 煙幕なし（暗さと静音が頼り）');
-    expect(getBriefingRecord(gameData, 'jp_05').titleJa).toContain('哨戒'); // 「哨戒」で指す任務
+    // 任務の名前で言う（「哨戒は撃たない」は米PT の哨戒が撃たないとも読めた。v0.6.3 レビュー）
+    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（鹵獲艇の哨戒は魚雷なし）・ 煙幕なし（暗さと静音が頼り）');
+    expect(hint).toContain(getBriefingRecord(gameData, 'jp_05').titleJa); // 「鹵獲艇の哨戒」で指す任務
     expect(getPrototypeMission(gameData, 'jp_05').mainWeapon).toBe('none');
     expect(getPrototypeMission(gameData, 'jp_06').mainWeapon).not.toBe('none');
     for (const [k, v] of Object.entries(TITLE_HINT_BY_CAMPAIGN_JA)) expect(textWidthPx(v, TITLE_HINT_PX), k).toBeLessThanOrEqual(TITLE_ROW_W_PX);

@@ -55,11 +55,11 @@ export function stormWarning(t: BoatTelemetry): boolean {
 }
 
 /**
- * 米PT の航過の結果を出す（v0.6.3）: 表示の秒の内（MODE_FLAG_PT_RESULT）で、最後の航過が撃った航過のとき。
- * 撃たなかった航過（固めたが撃てずに抜けた）は「かわした！」を出さず、いつもの接触・平常の行のまま（Result の「かわした 無傷/撃った」と同じ数え方）
+ * 米PT の航過の結果を出す（v0.6.3）: 表示の秒の内（MODE_FLAG_PT_RESULT。通し番号は撃った弾がみな落ちてから増える）。
+ * 撃った航過は「かわした！」か「被弾」、撃たなかった航過（転舵で艇首尾の円錐・射程の外へ抜けた）は「撃たせなかった！」（v0.6.3 レビュー: いちばん良いかわし方に何も出なかった。ui/pt-lines）
  */
 export function ptResultShown(t: BoatTelemetry, flags: number): boolean {
-  return (flags & MODE_FLAG_PT_RESULT) !== 0 && t.pt.lastPassFired;
+  return t.pt.enabled && (flags & MODE_FLAG_PT_RESULT) !== 0;
 }
 
 /** 大発が岸へ逃げている（大発の任務だけ） */

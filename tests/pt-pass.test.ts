@@ -1,6 +1,6 @@
 // 米PT の航過の読みやすさの部品（v0.6.3。core/pt-pass、spec §C.7）: 最接近までの体感秒・航過を固めてよいか・待つ PT の針路・艇首尾の円錐・かわす向き・突撃の狙いの点。
 import { describe, expect, it } from 'vitest';
-import { PT_DODGE_STRAIGHT_DEG, aimPoint, dodgeTurn, holdOffHeading, inDeadCone, nearEdge, passCommitOk, targetSide, tcpaFeltS } from '../src/core/pt-pass';
+import { PT_DODGE_STRAIGHT_DEG, aimPoint, dodgeTurn, escapeHeadingDeg, holdOffHeading, inDeadCone, nearEdge, passCommitOk, targetSide, tcpaFeltS } from '../src/core/pt-pass';
 import { degToRad, ktToMps } from '../src/core/units';
 
 const TS = 5;
@@ -106,24 +106,30 @@ describe('艇首尾の撃たない円錐（inDeadCone）', () => {
   });
 });
 
-describe('かわす向き（dodgeTurn）: 航過の線から離れる直角へ右回りか左回りか', () => {
+describe('逃げる針路（escapeHeadingDeg）とかわす向き（dodgeTurn）: 航過の線から離れる直角と、そこへ右回りか左回りか', () => {
   // PT は (0, 0) から東（90°）へ。南は線の右、北は左
+  const dodge = (px: number, py: number, playerHeadingDeg: number): number => dodgeTurn(escapeHeadingDeg(90, 0, 0, px, py), playerHeadingDeg);
+  it('逃げる針路は線から離れる直角: 線の右（南）にいれば南（180°）、左（北）にいれば北（0°）。線の上（真正面）は右側として扱う', () => {
+    expect([escapeHeadingDeg(90, 0, 0, 500, 100), escapeHeadingDeg(90, 0, 0, 500, -100), escapeHeadingDeg(90, 0, 0, 500, 0)]).toEqual([180, 0, 180]);
+    expect(escapeHeadingDeg(0, 0, 0, -50, -500)).toBe(270); // 北へ走る PT の西（左）にいれば西
+    expect(escapeHeadingDeg(315, 0, 0, 100, -500)).toBe(45); // 北西へ走る PT の右にいれば北東
+  });
   it('4 つの象限: 線の右（南）にいて東向き → 右へ、西向き → 左へ。線の左（北）にいて東向き → 左へ、西向き → 右へ', () => {
-    expect(dodgeTurn(90, 0, 0, 500, 100, 90)).toBe(1);
-    expect(dodgeTurn(90, 0, 0, 500, 100, 270)).toBe(-1);
-    expect(dodgeTurn(90, 0, 0, 500, -100, 90)).toBe(-1);
-    expect(dodgeTurn(90, 0, 0, 500, -100, 270)).toBe(1);
+    expect(dodge(500, 100, 90)).toBe(1);
+    expect(dodge(500, 100, 270)).toBe(-1);
+    expect(dodge(500, -100, 90)).toBe(-1);
+    expect(dodge(500, -100, 270)).toBe(1);
   });
   it(`逃げる針路との差が ${PT_DODGE_STRAIGHT_DEG}° 未満なら 0（そのまま全速で離れる）`, () => {
     expect(PT_DODGE_STRAIGHT_DEG).toBe(30);
-    expect(dodgeTurn(90, 0, 0, 500, 100, 180)).toBe(0); // すでに南（線から離れる向き）
-    expect(dodgeTurn(90, 0, 0, 500, 100, 160)).toBe(0); // 差 20°
-    expect(dodgeTurn(90, 0, 0, 500, 100, 205)).toBe(0); // 差 −25°
-    expect(dodgeTurn(90, 0, 0, 500, 100, 145)).toBe(1); // 差 35° → 右へ
-    expect(dodgeTurn(90, 0, 0, 500, 100, 215)).toBe(-1); // 差 −35° → 左へ
+    expect(dodge(500, 100, 180)).toBe(0); // すでに南（線から離れる向き）
+    expect(dodge(500, 100, 160)).toBe(0); // 差 20°
+    expect(dodge(500, 100, 205)).toBe(0); // 差 −25°
+    expect(dodge(500, 100, 145)).toBe(1); // 差 35° → 右へ
+    expect(dodge(500, 100, 215)).toBe(-1); // 差 −35° → 左へ
   });
   it('線の上（真正面）は右側として扱う（決まった向きを 1 つ出す）', () => {
-    expect(dodgeTurn(90, 0, 0, 500, 0, 90)).toBe(1);
+    expect(dodge(500, 0, 90)).toBe(1);
   });
 });
 

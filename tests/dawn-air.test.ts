@@ -86,8 +86,8 @@ describe('夜明けの時計（v0.6.1。core/dawn-air）', () => {
     expect(seaLightStep(d, d, 0, 0, steps)).toBe(16);
   });
   it('dawnConditionJa・dawnAirCode・テレメトリと Result の初期値', () => {
-    const cond = (playAs: 'enemy' | 'own' | 'contested', shipsAtDawn: 'stay' | 'retire' | 'hide' | 'none' = 'stay', retireEdge: 'north' | 'south' | 'east' | 'west' | null = null, mirrored = false): string =>
-      dawnConditionJa({ playAs, shipsAtDawn, retireEdge }, mirrored);
+    const cond = (playAs: 'enemy' | 'own' | 'contested', shipsAtDawn: 'stay' | 'retire' | 'hide' | 'none' = 'stay', retireEdge: 'north' | 'south' | 'east' | 'west' | null = null, mirrored = false, control: 'enemy' | 'own' | 'contested' = playAs): string =>
+      dawnConditionJa({ control, playAs, shipsAtDawn, retireEdge }, mirrored);
     expect(cond('enemy')).toBe('（以後は空襲）');
     expect(cond('own')).toBe('（昼の空は味方）');
     expect(cond('enemy', 'none')).toBe('（以後は空襲）');
@@ -101,6 +101,9 @@ describe('夜明けの時計（v0.6.1。core/dawn-air）', () => {
     expect(cond('enemy', 'hide')).toBe('（以後は空襲・大発は岸へ隠れる）');
     expect(cond('contested', 'hide')).toBe('（大発は岸へ隠れる）');
     expect(cond('contested')).toBe('');
+    // 史実の空が争奪で味方の空として遊ぶ（jp_05。v0.6.3 レビュー）は「おおむね」。争奪で敵の空として遊ぶ（us_03）は今までどおり
+    expect(cond('own', 'none', null, false, 'contested')).toBe('（昼の空はおおむね味方）');
+    expect(cond('enemy', 'stay', null, false, 'contested')).toBe('（以後は空襲）');
     expect(dawnAirCode('enemy')).toBe(DAWN_AIR_ENEMY);
     expect(dawnAirCode('own')).toBe(DAWN_AIR_OWN);
     expect(dawnAirCode('contested')).toBe(DAWN_AIR_NONE);
@@ -436,7 +439,7 @@ describe('Briefing の条件と危険（v0.6.1。spec §8.4）', () => {
     expect(rowsOf('jp_06')[4]).toBe('敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('us_02')[4]).not.toContain('夜明けの空襲');
     expect(rowsOf('us_03')[4]).toBe('敵艦艇の砲撃・衝突、敵沿岸砲、座礁、夜明けの空襲');
-    expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa({ playAs: 'enemy', shipsAtDawn: 'stay', retireEdge: null }));
+    expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa({ control: 'enemy', playAs: 'enemy', shipsAtDawn: 'stay', retireEdge: null }));
     // 出撃の seed の夜（左右反転の夜を含む）でも us_02 は北のまま（反転は東西だけ）
     let mirroredNights = 0;
     for (let seed = 1; seed <= 40; seed++) {

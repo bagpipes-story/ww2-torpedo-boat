@@ -44,10 +44,13 @@ export interface PtSection {
   holdLeftS: number;
   /** 最後に見た艇の位置・速度（game m/s）とそれからの体感秒（見えていない間はここから推す） */
   lkX: number; lkY: number; lkVx: number; lkVy: number; lkAgeS: number;
-  /** 航過中の PT（−1 は無し）、次の航過を固められるまでの体感秒、固めたときのかわす向き（−1 左・0 そのまま・+1 右） */
-  owner: number; gapLeftS: number; dodge: number;
-  /** 今の航過の命中・終わった航過の通し番号（HUD の「かわした！」）・最後の航過の命中と撃ったか・その PT（後から落ちた弾もその航過に数える）・固めた時刻 */
-  passHits: number; passSeq: number; lastPassHits: number; lastPassFired: boolean; lastPassBoat: number; commitAtS: number;
+  /** 航過中の PT（−1 は無し）、次の航過を固められるまでの体感秒、固めたときのかわす向き（−1 左・0 そのまま・+1 右）と逃げる針路 deg（HUD の「北西へ転舵」） */
+  owner: number; gapLeftS: number; dodge: number; escapeDeg: number;
+  /**
+   * 今の航過の命中・終わった航過の通し番号（HUD の結果の表示）・最後の航過の命中と撃ったか・その PT（後から落ちた弾もその航過に数える）・固めた時刻。
+   * 通し番号は航過の終わりに撃った弾がまだ飛んでいれば、みな落ちてから増やす（seqPending。「かわした！」が後から「被弾」に変わらない）
+   */
+  passHits: number; passSeq: number; seqPending: boolean; lastPassHits: number; lastPassFired: boolean; lastPassBoat: number; commitAtS: number;
   /** 突撃の狙いの点（使い回し） */
   aim: { x: number; y: number };
   /** KPI: 航過（撃った・無傷）・発射・命中、最初に見つけた距離 m（NaN は無し）、見失わせた回数、予告から初弾までの最短秒、最接近の二乗、去った数、夜明けに去った */
@@ -90,8 +93,8 @@ export interface PtTelemetry {
   enabled: boolean;
   /** 隻数・去っていない（< 去る）・海域の外へ出た */
   total: number; alive: number; out: number;
-  /** 隊が捉えている・航過中・その航過で撃った・かわす向き・脅威の PT の段階（−1 は無し） */
-  detected: boolean; passing: boolean; fired: boolean; dodge: number; threatPhase: number;
+  /** 隊が捉えている・航過中・その航過で撃った・かわす向き（0 は「そのまま」）と逃げる針路 deg（航過中でなければ NaN）・脅威の PT の段階（−1 は無し） */
+  detected: boolean; passing: boolean; fired: boolean; dodge: number; escapeDeg: number; threatPhase: number;
   /** 艇から脅威の PT へ（m。無ければ NaN）、それが見えている（視程の内） */
   dx: number; dy: number; sighted: boolean;
   /** 隊の航過の数と上限（count × max_passes）、終わった航過の通し番号、最後の航過の命中と撃ったか（撃たなかった航過は「かわした！」を出さない）、1 発の HP、夜明けに去った */
@@ -102,7 +105,7 @@ export interface PtTelemetry {
 
 export function createPtTelemetry(): PtTelemetry {
   return {
-    enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
+    enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, escapeDeg: NaN, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
   };
 }
@@ -115,8 +118,8 @@ export function createPtSection(p: PtParams, shellPoolSize: number): PtSection {
   }
   return {
     boats, shells: createShells(shellPoolSize), seen: new Uint8Array(p.count), detected: false, holdLeftS: 0,
-    lkX: 0, lkY: 0, lkVx: 0, lkVy: 0, lkAgeS: 0, owner: -1, gapLeftS: 0, dodge: 0,
-    passHits: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, lastPassBoat: -1, commitAtS: NaN, aim: { x: 0, y: 0 },
+    lkX: 0, lkY: 0, lkVx: 0, lkVy: 0, lkAgeS: 0, owner: -1, gapLeftS: 0, dodge: 0, escapeDeg: NaN,
+    passHits: 0, passSeq: 0, seqPending: false, lastPassHits: 0, lastPassFired: false, lastPassBoat: -1, commitAtS: NaN, aim: { x: 0, y: 0 },
     passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, firstDetectM: NaN, lostContacts: 0, minWarnS: Infinity, closest2: Infinity, out: 0, leftAtDawn: false,
   };
 }

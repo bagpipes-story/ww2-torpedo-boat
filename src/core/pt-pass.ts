@@ -1,4 +1,4 @@
-// 米PT の航過の読みやすさの部品（v0.6.3。docs/02 §6.4、spec §C.7）: 最接近までの体感秒・航過を固めてよいか・待つ PT の針路・突撃の狙いの点・艇首尾の撃たない円錐・かわす向き。
+// 米PT の航過の読みやすさの部品（v0.6.3。docs/02 §6.4、spec §C.7）: 最接近までの体感秒・航過を固めてよいか・待つ PT の針路・突撃の狙いの点・艇首尾の撃たない円錐・逃げる針路とかわす向き。
 // Phaser 非依存・確保しない（狙いの点は呼ぶ側の使い回しの out に書く）。方位は北 0・時計回り、x は東・y は南。
 import { bearingDeg } from './ship-ai';
 import { interceptTimeS } from './torpedo-solver';
@@ -86,16 +86,21 @@ export function inDeadCone(hx: number, hy: number, dx: number, dy: number, d2: n
 }
 
 /**
- * かわす向き（航過の進路を固めた瞬間に 1 回。HUD の「右へ／左へ転舵」）: 航過の線（PT (bx, by) から lockDeg）のどちら側に艇がいるかで、
- * 線から離れる直角（線の右なら lockDeg + 90）へ向くのに右回りか左回りか。差が PT_DODGE_STRAIGHT_DEG 未満なら 0（そのまま全速で離れる）
+ * 逃げる針路（航過の進路を固めた瞬間に 1 回。v0.6.3 レビュー: HUD は「北西へ転舵」の方角で言う＝スティックの向きそのまま）: 航過の線（PT (bx, by) から lockDeg）の
+ * どちら側に艇 (px, py) がいるかで、線から離れる直角（線の右なら lockDeg + 90、左なら − 90）。0〜360
  */
-export function dodgeTurn(lockDeg: number, bx: number, by: number, px: number, py: number, playerHeadingDeg: number): PtDodge {
+export function escapeHeadingDeg(lockDeg: number, bx: number, by: number, px: number, py: number): number {
   const r = degToRad(lockDeg);
-  const hx = Math.sin(r);
-  const hy = -Math.cos(r);
-  const cross = hx * (py - by) - hy * (px - bx);
-  const escape = lockDeg + (cross >= 0 ? 90 : -90);
-  const turn = wrapDeg180(escape - playerHeadingDeg);
+  const cross = Math.sin(r) * (py - by) + Math.cos(r) * (px - bx);
+  return wrapDeg360(lockDeg + (cross >= 0 ? 90 : -90));
+}
+
+/**
+ * かわす向き: 逃げる針路 escapeDeg（escapeHeadingDeg）へ向くのに右回り（+1）か左回り（−1）か。差が PT_DODGE_STRAIGHT_DEG 未満なら 0（そのまま全速で離れる）。
+ * 右・左は艇から見た回り方なので、HUD の文には使わない（画面は北が上で回らず、南へ走る艇の右は画面の左。v0.6.3 レビュー）。HUD は escapeDeg の方角と「そのまま」かどうかだけ
+ */
+export function dodgeTurn(escapeDeg: number, playerHeadingDeg: number): PtDodge {
+  const turn = wrapDeg180(escapeDeg - playerHeadingDeg);
   if (Math.abs(turn) < PT_DODGE_STRAIGHT_DEG) return 0;
   return turn > 0 ? 1 : -1;
 }

@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { DEBUG_DIRECT_MISSION, DEBUG_RAID_OVERRIDE, DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, REGISTRY_KEY_DATA, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
 import { getGameData, getScoringParams } from '../config/game-data';
+import { hasHardVariant } from '../config/mission-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import type { DawnResult } from '../core/dawn-air';
@@ -153,7 +154,8 @@ export class ResultScene extends Phaser.Scene {
       if (tx.width > maxW) tx.setScale(maxW / tx.width);
       y += size + RESULT_LINE_GAP;
     };
-    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), r.sortie.hard, r.sortie.historical), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）
+    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId), r.sortie.historical), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     if (h) {
       // 大発掃討（v0.4.2）: 撃破・上陸と、射撃・距離の記録（実機で数値を合わせる根拠）

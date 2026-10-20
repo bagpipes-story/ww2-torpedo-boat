@@ -2,7 +2,7 @@
 // 平常（見えている PT・哨戒・去る／去った）とそのキャッシュのキー、Result の本文の 3 行と状況の行の頭。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。距離（平方根 1 回）と方角（atan2 1 回）は ptKey が、それを出すモードのときだけ
 // 1 フレーム 1 回求めてキーに詰める。文（ptLine）はキーから距離と方角を読み、キーが変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
-import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
+import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { PT_ALERT, PT_RUN_IN } from '../core/pt-boats';
@@ -14,24 +14,33 @@ import type { PtResult } from './result-types';
 /** 2 行目の米PT までの距離の刻み m（切り上げ。表示が実際より遠くならない。画面外の矢印も米PT の任務は切り上げ） */
 export const PT_DISTANCE_STEP_M = 50;
 
-/** かわす向き（core の dodge −1 左 / 0 そのまま / +1 右 → 添字 0 / 1 / 2。航過を固めた瞬間に 1 回決まり点滅しない） */
-const DODGE_JA = ['左へ転舵・全速', 'そのまま全速で離れろ', '右へ転舵・全速'] as const;
+/**
+ * 航過の行のかわし方（航過を固めた瞬間に 1 回決まり点滅しない）: 逃げる針路の方角へ転舵（core の escapeDeg。「北西へ転舵・全速」）か、もう向いていれば（dodge 0）そのまま。
+ * v0.6.3 レビュー: 「右へ／左へ」は艇から見た回り方で、スティックは画面の向き（北が上・画面は回らない）なので、南へ走る jp_05 では毎回逆に読めた。方角ならスティックの向きそのまま
+ */
+const DODGE_STRAIGHT_JA = 'そのまま全速で離れろ';
 
-/** 接触の行の種類（キーの下 3 ビット）: 航過の結果（被弾なし・被弾）、突撃（PT が見えている・音だけ）、離脱 */
+/** 接触の行の種類（キーの下 3 ビット）: 航過の結果（被弾なし・被弾・撃たせなかった）、突撃（PT が見えている・音だけ）、離脱 */
 const C_CLEAN = 1;
 const C_HIT = 2;
 const C_RUSH_SEEN = 3;
 const C_RUSH_HEARD = 4;
 const C_BREAK = 5;
+const C_NOFIRE = 6;
 /** 平常の行の種類: 見えている PT（停止・静音／巡航・全速）、見えていない、みな去る（海域の外へ出たかはキーの別のビット） */
 const N_SLOW = 1;
 const N_FAST = 2;
 const N_UNSEEN = 3;
 const N_GONE = 4;
 
-/** 艇から (dx, dy) の 8 方位の添字（bearingJa と同じ丸め。北 0・時計回り） */
+/** 方位 deg（北 0・時計回り）の 8 方位の添字（bearingJa と同じ丸め） */
+function headingIndex(deg: number): number {
+  return Math.round(wrapDeg360(deg) / 45) % 8;
+}
+
+/** 艇から (dx, dy) の 8 方位の添字 */
 function dirIndex(dx: number, dy: number): number {
-  return Math.round(wrapDeg360(radToDeg(Math.atan2(dx, -dy))) / 45) % 8;
+  return headingIndex(radToDeg(Math.atan2(dx, -dy)));
 }
 
 /** 距離の刻み（切り上げ、63 まで＝3,150 m。見えている PT は視程の内なので届かない） */
@@ -39,27 +48,31 @@ function distStep(dx: number, dy: number): number {
   return Math.min(63, Math.ceil(Math.sqrt(dx * dx + dy * dy) / PT_DISTANCE_STEP_M));
 }
 
-/** 接触の行の種類: 撃った航過の結果の表示中（ui/mission-mode の ptResultShown）→ 結果、脅威の PT が警戒・突撃 → 突撃、ほか（離脱・航過の合間）→ 離脱 */
+/** 接触の行の種類: 航過の結果の表示中（ui/mission-mode の ptResultShown）→ 結果（撃たなかった航過は「撃たせなかった！」）、脅威の PT が警戒・突撃 → 突撃、ほか（離脱・航過の合間）→ 離脱 */
 function contactSub(t: BoatTelemetry, flags: number): number {
   const p = t.pt;
-  if (ptResultShown(t, flags)) return p.lastPassHits > 0 ? C_HIT : C_CLEAN;
+  if (ptResultShown(t, flags)) return !p.lastPassFired ? C_NOFIRE : p.lastPassHits > 0 ? C_HIT : C_CLEAN;
   if (p.threatPhase === PT_ALERT || p.threatPhase === PT_RUN_IN) return p.sighted ? C_RUSH_SEEN : C_RUSH_HEARD;
   return C_BREAK;
 }
 
 /**
  * 2 行目のキー（mode は MISSION_PT_PASS / MISSION_PT_CONTACT / MISSION_PT、flags は MODE_FLAG_*）。整数だけで、モードごとに 1 つの詰め方（どれも 32 ビットに収まる）。
- * 航過: 撃った | かわす向き + 1 << 1。接触: 種類 | 方位 << 3 | 距離の刻み << 6 | 残り << 12 | 航過の数 << 16 | 被弾 << 20。
- * 平常: 種類 | 方位 << 3 | 距離の刻み << 6 | 見つかる距離の刻み << 12 | 隻数 << 18 | 夜明け << 21 | みな海域の外 << 22。行に出ない値は 0（無駄に組み直さない）
+ * 航過: 撃った | そのまま（dodge 0）<< 1 | 逃げる方角 << 2。接触: 種類 | 方位 << 3 | 距離の刻み << 6 | 残り << 12 | 航過の数 << 16 | 被弾 << 20。
+ * 平常: 種類 | 方位 << 3 | 距離の刻み << 6 | 見つかる距離の刻み << 12 | 隻数 << 18 | 夜明け << 21 | みな海域の外 << 22 | 帰投の輪の縁までの 100 m の刻み（みな去った後だけ）<< 23。
+ * 行に出ない値は 0（無駄に組み直さない）
  */
 export function ptKey(t: BoatTelemetry, mode: number, flags: number): number {
   const p = t.pt;
-  if (mode === MISSION_PT_PASS) return (p.fired ? 1 : 0) | ((p.dodge + 1) << 1);
+  if (mode === MISSION_PT_PASS) {
+    const straight = p.dodge === 0;
+    return (p.fired ? 1 : 0) | ((straight ? 1 : 0) << 1) | ((straight || Number.isNaN(p.escapeDeg) ? 0 : headingIndex(p.escapeDeg)) << 2);
+  }
   if (mode === MISSION_PT_CONTACT) {
     const sub = contactSub(t, flags);
     const rush = sub === C_RUSH_SEEN || sub === C_RUSH_HEARD;
     const left = sub === C_BREAK ? Math.min(15, Math.max(0, p.maxPasses - p.passes)) : 0;
-    const n = sub === C_CLEAN || sub === C_HIT ? Math.min(15, p.passes) : 0;
+    const n = sub === C_CLEAN || sub === C_HIT || sub === C_NOFIRE ? Math.min(15, p.passes) : 0;
     const h = sub === C_HIT ? Math.min(63, p.lastPassHits) : 0;
     return sub | ((rush ? dirIndex(p.dx, p.dy) : 0) << 3) | ((sub === C_RUSH_SEEN ? distStep(p.dx, p.dy) : 0) << 6) | (left << 12) | (n << 16) | (h << 20);
   }
@@ -68,13 +81,15 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number): number {
   const det = sub === N_FAST ? Math.min(63, Math.round(t.detectRangeM / DETECT_RANGE_STEP_M)) : 0;
   const d = sub === N_SLOW || sub === N_FAST ? distStep(p.dx, p.dy) : 0;
   const gone = sub === N_GONE ? (t.dawn.reached ? 1 : 0) | (p.out >= p.total ? 2 : 0) : 0;
-  return sub | ((sub === N_SLOW ? dirIndex(p.dx, p.dy) : 0) << 3) | (d << 6) | (det << 12) | ((sub === N_UNSEEN ? Math.min(7, p.alive) : 0) << 18) | (gone << 21);
+  // みな去った後の帰投の距離（v0.6.3 レビュー: 夜明けの後は「夜明け 帰投せよ N m」の行の代わりに出るので、距離を消さない。切り上げで輪の外では 0 にならない）
+  const home = sub === N_GONE ? Math.min(63, Math.max(0, Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M))) : 0;
+  return sub | ((sub === N_SLOW ? dirIndex(p.dx, p.dy) : 0) << 3) | (d << 6) | (det << 12) | ((sub === N_UNSEEN ? Math.min(7, p.alive) : 0) << 18) | (gone << 21) | (home << 23);
 }
 
 /** 2 行目の文と色（key は同じフレームの ptKey。距離・方角・見つかる距離はキーから、航過の数・被弾・隻数はテレメトリから） */
 export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   const p = t.pt;
-  if (mode === MISSION_PT_PASS) return { text: `PT ${(key & 1) !== 0 ? '掃射' : '航過'}！ ${DODGE_JA[(key >> 1) & 3]!}`, color: HUD_COLOR_WARN };
+  if (mode === MISSION_PT_PASS) return { text: `米PT ${(key & 1) !== 0 ? '掃射' : '航過'}！ ${(key & 2) !== 0 ? DODGE_STRAIGHT_JA : `${bearingJa(((key >> 2) & 7) * 45)}へ転舵・全速`}`, color: HUD_COLOR_WARN };
   const sub = key & 7;
   const dir = bearingJa(((key >> 3) & 7) * 45);
   const d = ((key >> 6) & 63) * PT_DISTANCE_STEP_M;
@@ -82,6 +97,7 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
     const tally = `航過 ${p.passes}/${p.maxPasses}`;
     if (sub === C_CLEAN) return { text: `かわした！ 被弾なし ・ ${tally}`, color: HOME_COLOR_TEXT };
     if (sub === C_HIT) return { text: `被弾 ${p.lastPassHits} 発（HP −${p.lastPassHits * p.damagePerHit}） ・ ${tally}`, color: HUD_COLOR_STRONG };
+    if (sub === C_NOFIRE) return { text: `撃たせなかった！ ・ ${tally}`, color: HOME_COLOR_TEXT };
     if (sub === C_RUSH_SEEN) return { text: `米PT ${dir}から突撃 ${d} m ・ 赤い線で転舵`, color: HUD_COLOR_WARN };
     if (sub === C_RUSH_HEARD) return { text: `米PT のエンジン音 ・ ${dir}から突撃`, color: HUD_COLOR_WARN };
     return { text: `米PT 離脱 ・ 残り ${Math.max(0, p.maxPasses - p.passes)} 回 ・ 静音で見失わせろ`, color: HUD_COLOR_STRONG };
@@ -89,8 +105,8 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   if (sub === N_SLOW) return { text: `米PT ${d} m（${dir}） ・ 気づかれていない ・ 静音でやり過ごせ`, color: HUD_COLOR_STRONG };
   if (sub === N_FAST) return { text: `米PT ${d} m ・ 速い！ ${((key >> 12) & 63) * DETECT_RANGE_STEP_M} m で見つかる ・ ${p.silentMaxKt} kt 以下に`, color: HUD_COLOR_WARN };
   if (sub === N_UNSEEN) return { text: `米PT ${p.alive} 隻が哨戒中 ・ 静音で抜けて帰投`, color: HUD_COLOR_STRONG };
-  // みな去る: 去る途中（海域の外へ出ていない PT がいる）は「去る」、みな出たら「去った」
-  return { text: `${((key >> 21) & 1) !== 0 ? '夜明け ・ ' : ''}米PT は${p.leaveDirJa}へ${((key >> 22) & 1) !== 0 ? '去った' : '去る'} ・ 帰投せよ`, color: HUD_COLOR_STRONG };
+  // みな去る: 去る途中（海域の外へ出ていない PT がいる）は「去る」、みな出たら「去った」。後ろに帰投の輪の縁までの距離（帰投せよの行と同じ書き方）
+  return { text: `${((key >> 21) & 1) !== 0 ? '夜明け ・ ' : ''}米PT は${p.leaveDirJa}へ${((key >> 22) & 1) !== 0 ? '去った' : '去る'} ・ 帰投せよ  ${((key >> 23) & 63) * HOME_MARKER_DISTANCE_STEP_M} m`, color: HUD_COLOR_STRONG };
 }
 
 /** Result の被弾の句: 0 発は「被弾なし」、ほかは「被弾 N 発（HP −x）」 */

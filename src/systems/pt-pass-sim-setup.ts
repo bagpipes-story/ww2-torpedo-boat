@@ -65,7 +65,7 @@ export interface PtCalibrationRow {
   proto: { detectedPct: number; hpMean: number; sunkPct: number; homePct: number };
 }
 
-/** どの遊び方も帰投 65% 以上（罠にしない）・漂流 1% 以下（燃料は脅威ではない。turn_full だけ 8%） */
+/** どの遊び方も帰投 65% 以上（罠にしない）・漂流 1% 以下（燃料は脅威ではない。全速で逃げ回る turn_full は 8%・北の縁まで全速で逃げて待つ edge_flee は 10%） */
 const HOME_MIN: Band = [65, 100];
 const ADRIFT: Band = [0, 1];
 const row = (policy: PtPolicy, star: boolean, b: Partial<Omit<PtCalibrationRow, 'policy' | 'star' | 'proto'>>, proto: readonly [number, number, number, number]): PtCalibrationRow => ({
@@ -75,23 +75,25 @@ const row = (policy: PtPolicy, star: boolean, b: Partial<Omit<PtCalibrationRow, 
 
 /**
  * spec §F.4: 1 何もしないと痛い、2 転舵で助かる、3 遅い反応でも効く、4 暗さが効く、5 罠にしない、6 燃料は脅威ではない（7 の不変は ptCalibrationMisses がどの行にも見る）。
- * proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（v0.6.3 の航過の直し（本当に向かってくるときだけ固める・待つ PT は hold_off_m の外）と再調整（10 発・ずらし 155 m・待つ 500 m）の後、
- * N 400・seed 1〜400。直す前（487ca74）は 巡航 [100, 35.8, 19, 81]・静音 [90, 29.6, 9, 92]。spec §F.3 の試作 ptsim3.final とも違う）
+ * proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（v0.6.3 レビューの直し（縁の航過・回数の数え方・出発点 150 m 北・線 200 m 南）と再調整（ずらし 155 → 140 m）の後、N 400・seed 1〜400）。
+ * 沈没の帯は 200 夜 1 組のぶれ（seed 1〜1200 の 6 組: 巡航 7〜11%・静音 23〜29%）より広く、その平均（9%・26%）を真ん中に置いた（v0.6.3 レビュー: 前の帯の端に 1 組の値が乗っていた）。
+ * 「何もしないと痛い」は HP の平均（巡航・静音とも 31〜32）でも見る。縁へ逃げる（edge_flee）は、縁で航過が撃たずに終わる抜け道が無い＝HP は巡航並み
  */
 export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
-  row('cruise', true, { detectedPct: [95, 100], sunkPct: [10, 32], hpMean: [25, 42] }, [100, 31.5, 11.3, 88.8]),
-  row('silent', true, { detectedPct: [75, 98], sunkPct: [4, 25] }, [89.8, 36.4, 19.0, 81.0]),
-  row('full', false, { firstDetectMedM: [1500, Infinity] }, [100, 17.4, 0.8, 99.3]),
-  row('zigzag', false, {}, [100, 28.6, 5.8, 94.3]),
-  row('turn_cruise', true, { sunkPct: [0, 3], hpVsCruise: 0.6 }, [100, 14.3, 0, 100]),
-  row('react_full', false, { sunkPct: [0, 2], hpMean: [0, 16] }, [100, 8.7, 0, 100]),
-  row('dodge_silent', true, { sunkPct: [0, 2], hpMean: [0, 16] }, [89.8, 8.7, 0, 100]),
-  row('turn_silent', false, {}, [89.8, 18.1, 0, 100]),
-  row('late_turn', true, { sunkPct: [0, 6], hpMean: [0, 30] }, [100, 23.3, 0.8, 99.3]),
-  row('turn_full', false, { adriftPct: [0, 8] }, [100, 6.5, 0, 100]),
-  row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 2], homeBeforeDawnPct: [90, 100] }, [40.3, 8.0, 0.3, 99.8]),
-  row('meet', false, { sunkPct: [0, 5] }, [100, 27.7, 1.8, 98.3]),
+  row('cruise', true, { detectedPct: [95, 100], sunkPct: [3, 25], hpMean: [25, 42] }, [100, 30.6, 7.5, 92.5]),
+  row('silent', true, { detectedPct: [65, 95], sunkPct: [12, 40], hpMean: [25, 42] }, [78.3, 32.2, 23.3, 76.8]),
+  row('full', false, { firstDetectMedM: [1500, Infinity] }, [100, 18.6, 0.5, 99.5]),
+  row('zigzag', false, {}, [100, 31.5, 11.5, 88.5]),
+  row('turn_cruise', true, { sunkPct: [0, 3], hpVsCruise: 0.6 }, [100, 14.7, 0, 100]),
+  row('react_full', false, { sunkPct: [0, 2], hpMean: [0, 16] }, [100, 8.8, 0, 100]),
+  row('dodge_silent', true, { sunkPct: [0, 2], hpMean: [0, 16] }, [78.3, 8.6, 0, 100]),
+  row('turn_silent', false, {}, [78.3, 17.3, 0.3, 99.8]),
+  row('late_turn', true, { sunkPct: [0, 6], hpMean: [0, 30] }, [100, 25.2, 1.5, 98.5]),
+  row('turn_full', false, { adriftPct: [0, 8] }, [100, 6.2, 0, 95.8]),
+  row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 2], homeBeforeDawnPct: [90, 100] }, [38.8, 6.0, 0, 100]),
+  row('meet', false, { sunkPct: [0, 5] }, [100, 26.9, 1.5, 98.5]),
   row('stop_dawn', false, { detectedPct: [0, 5], homePct: [100, 100], afterDawnPct: [100, 100] }, [0, 0, 0, 100]),
+  row('edge_flee', false, { hpMean: [20, 50], adriftPct: [0, 10] }, [100, 32.7, 5.3, 89]),
 ];
 
 /**

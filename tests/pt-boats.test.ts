@@ -174,11 +174,11 @@ const circle = (s: Sim): void => {
 };
 
 describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
-  it('作る: 出発点に哨戒で並ぶ（揺らぎなし (2000, 2000)/(2000, 2200) を東へ 8 kt）、確保は作るときだけ', () => {
+  it('作る: 出発点に哨戒で並ぶ（揺らぎなし (2000, 2200)/(2000, 2400) を東へ 8 kt）、確保は作るときだけ', () => {
     const q = createPtSection(P, 24);
     expect(q.boats.map((b) => [b.x, b.y, b.headingDeg, b.phase, b.wp])).toEqual([
-      [2000, 2000, 90, PT_PATROL, 1],
       [2000, 2200, 90, PT_PATROL, 1],
+      [2000, 2400, 90, PT_PATROL, 1],
     ]);
     expect(q.boats[0]!.speedMps).toBeCloseTo(ktToMps(8), 9);
     expect([q.shells.length, q.seen.length, q.owner, q.detected, q.firstDetectM, q.minWarnS]).toEqual([24, 2, -1, false, NaN, Infinity]);
@@ -191,7 +191,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(detectM('cruise')).toBeCloseTo(1200, 9);
     const seen = (dist: number, band: SpeedStep, timeS: number): boolean => {
       const q = createPtSection(P, 24);
-      const boat = { x: 2000 + dist, y: 2000, headingDeg: 0, speedMps: 0 };
+      const boat = { x: 2000 + dist, y: 2200, headingDeg: 0, speedMps: 0 };
       let gained = 0;
       stepPtSection(q, P, check(boat, { detectOpenM: detectM(band), timeS }), new SeededRng(1), DT, DT * TS, events({ onContact: (g) => (gained += g ? 1 : 0) }));
       expect(gained).toBe(q.detected ? 1 : 0);
@@ -201,7 +201,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect([seen(100, 'cruise', P.detectFromS - 0.01), seen(100, 'cruise', P.detectFromS)]).toEqual([false, true]);
     // 最初に見つけた距離（KPI）は 1 回だけ、生きている PT の最寄り
     const q = createPtSection(P, 24);
-    stepPtSection(q, P, check({ x: 2590, y: 2000, headingDeg: 0, speedMps: 0 }, { detectOpenM: 600 }), new SeededRng(1), DT, DT * TS, events());
+    stepPtSection(q, P, check({ x: 2590, y: 2200, headingDeg: 0, speedMps: 0 }, { detectOpenM: 600 }), new SeededRng(1), DT, DT * TS, events());
     expect(q.firstDetectM).toBeCloseTo(590, 6);
   });
 
@@ -493,7 +493,6 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     let worstRounds = 0;
     for (let seed = 1; passes < 500 && seed <= 400; seed++) {
       let seq = 0;
-      let prev = 0;
       const rounds = [0, 0];
       const s = simulate({
         seed,
@@ -506,11 +505,11 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
           onFire: (i) => (worstRounds = Math.max(worstRounds, ++rounds[i]!)),
         }),
         onStep: (s) => {
+          // 通し番号はその航過の弾がみな落ちてから増える（v0.6.3 レビュー）ので、増えたときの命中がその航過の確定の値
           if (s.q.passSeq !== seq) {
-            if (seq > 0) worstHits = Math.max(worstHits, prev);
             seq = s.q.passSeq;
+            worstHits = Math.max(worstHits, s.q.lastPassHits);
           }
-          prev = s.q.lastPassHits;
         },
       });
       if (seq > 0) worstHits = Math.max(worstHits, s.q.lastPassHits);
@@ -646,7 +645,8 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
               } else {
                 r.inside++;
                 r.insideWorstDrop = Math.max(r.insideWorstDrop, e.d0 - e.min);
-                r.insideOpenS = Math.max(r.insideOpenS, Number.isNaN(e.openAt) ? Infinity : e.openAt - e.t0);
+                // 向き直る秒より早く待ちが解けた（離れ始める前に終わった）のは数えない
+                r.insideOpenS = Math.max(r.insideOpenS, Number.isNaN(e.openAt) ? (s.t - e.t0 <= turnAroundS + DT ? 0 : Infinity) : e.openAt - e.t0);
               }
               ep[i] = null;
             }
@@ -662,7 +662,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(r.overallMin).toBeGreaterThan(2 * P.spriteLengthUnits); // PT の絵 2 隻ぶん（約 98 m）より遠い＝艇の絵に重ならない（直す前は 16〜27 m）
   });
 
-  it('航過の後に落ちた弾は撃った PT の最後の航過に数える（「かわした！」は後から「被弾」に直る・無傷の航過から外す）', () => {
+  it('航過の後に落ちた弾は撃った PT の最後の航過に数える（無傷の航過から外す。通し番号はその弾が落ちてから増えるので、HUD の「かわした！」は後から変わらない。tests/pt-boats-review）', () => {
     const q = createPtSection(P, 24);
     Object.assign(q, { lastPassBoat: 0, lastPassFired: true, lastPassHits: 0, cleanPasses: 1, firedPasses: 1, passes: 1, passSeq: 1 });
     Object.assign(q.shells[0]!, { active: true, x: 3000, y: 2200, vx: 0, vy: 0, leftS: 0.001, impactX: 3000, impactY: 2200, gunIndex: 0 });
@@ -672,17 +672,17 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
   });
 
   it('脅威の PT（threatIndex）: 航過中 → 警戒・突撃の最寄り → 離脱の最寄り → 哨戒の最寄り。去っていない PT が無ければ −1', () => {
-    const q = createPtSection(P, 24);
-    expect(threatIndex(q, 2000, 2250)).toBe(1);
+    const q = createPtSection(P, 24); // PT0 (2000, 2200)・PT1 (2000, 2400)
+    expect(threatIndex(q, 2000, 2450)).toBe(1);
     q.boats[0]!.phase = PT_BREAK;
-    expect(threatIndex(q, 2000, 2250)).toBe(0);
+    expect(threatIndex(q, 2000, 2450)).toBe(0);
     q.boats[1]!.phase = PT_RUN_IN;
-    expect(threatIndex(q, 2000, 1900)).toBe(1);
+    expect(threatIndex(q, 2000, 2100)).toBe(1);
     q.boats[0]!.phase = PT_ALERT;
-    expect(threatIndex(q, 2000, 1900)).toBe(0);
+    expect(threatIndex(q, 2000, 2100)).toBe(0);
     q.boats[1]!.phase = PT_PASS;
     q.owner = 1;
-    expect(threatIndex(q, 2000, 1900)).toBe(1);
+    expect(threatIndex(q, 2000, 2100)).toBe(1);
     q.owner = -1;
     q.boats[0]!.phase = PT_LEAVE;
     q.boats[1]!.phase = PT_OUT;

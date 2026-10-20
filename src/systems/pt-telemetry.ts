@@ -47,6 +47,7 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.passing = q.owner >= 0;
   t.fired = q.owner >= 0 && q.boats[q.owner]!.firedThisPass > 0;
   t.dodge = q.owner >= 0 ? q.dodge : 0;
+  t.escapeDeg = q.owner >= 0 ? q.escapeDeg : NaN;
   const b = w.boat.state;
   const i = threatIndex(q, b.x, b.y);
   const pt = i < 0 ? null : q.boats[i]!;

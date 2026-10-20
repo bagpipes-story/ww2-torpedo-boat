@@ -31,7 +31,7 @@ export interface PtSimSetup {
 }
 
 /** 遊び方（spec §F.2）。表の順 */
-export const PT_POLICIES = ['cruise', 'silent', 'full', 'zigzag', 'turn_cruise', 'react_full', 'dodge_silent', 'turn_silent', 'late_turn', 'turn_full', 'dark_stop', 'meet', 'stop_dawn'] as const;
+export const PT_POLICIES = ['cruise', 'silent', 'full', 'zigzag', 'turn_cruise', 'react_full', 'dodge_silent', 'turn_silent', 'late_turn', 'turn_full', 'dark_stop', 'meet', 'stop_dawn', 'edge_flee'] as const;
 export type PtPolicy = (typeof PT_POLICIES)[number];
 
 /** 台本（spec §F.2）: ふだんの速さ（静音の上限 14 kt・巡航 20 kt・全速）、赤い線を見たら（何もしない・線から離れる直角へ・PT へ向かう）とそのときの速さ、反応の秒（NaN は乱数） */
@@ -50,11 +50,13 @@ const POLICY: Record<PtPolicy, { base: Speed; dodge: 'none' | 'away' | 'toward';
   dark_stop: { base: 'silent', dodge: 'away', dodgeSpeed: 'silent', reactS: NaN },
   meet: { base: 'cruise', dodge: 'toward', dodgeSpeed: 'cruise', reactS: NaN },
   stop_dawn: { base: 'cruise', dodge: 'none', dodgeSpeed: 'cruise', reactS: NaN },
+  // 縁へ逃げる（v0.6.3 レビュー）: 見つかったら全速で北の縁へ走って止まり、PT がみな去ってから巡航で帰る（縁で航過が撃たずに終わる抜け道が無いことを見る）
+  edge_flee: { base: 'cruise', dodge: 'none', dodgeSpeed: 'cruise', reactS: NaN },
 };
 
 // 台本の値（模擬の設定。ゲームの値ではない。lead の試作 ptsim3.final と同じ）: 出発の遅れの最大・赤い線から反応までの秒（一様）・転舵の角と保つ秒（meet は PT へ 3 秒）・
-// ジグザグ（±40° を 3 秒ごと）・dark_stop の止まる秒の上限・火災を消すまでの秒・台本の乱数の系列（seed × 7919 + 1000）・打ち切りの実秒・時刻の比較の丸めの余裕
-const PLAY = { departMaxS: 4, reactMinS: 0.4, reactMaxS: 1.2, dodgeDeg: 90, dodgeHoldS: 4, meetHoldS: 3, zigzagDeg: 40, zigzagLegS: 3, darkStopMaxS: 40, fireOutS: 1.5 } as const;
+// ジグザグ（±40° を 3 秒ごと）・dark_stop の止まる秒の上限・火災を消すまでの秒・edge_flee が止まる縁からの m（押し戻しの余白の外）・台本の乱数の系列（seed × 7919 + 1000）・打ち切りの実秒・時刻の比較の丸めの余裕
+const PLAY = { departMaxS: 4, reactMinS: 0.4, reactMaxS: 1.2, dodgeDeg: 90, dodgeHoldS: 4, meetHoldS: 3, zigzagDeg: 40, zigzagLegS: 3, darkStopMaxS: 40, fireOutS: 1.5, edgeStopM: 15 } as const;
 const POLICY_SEED_MUL = 7919;
 const POLICY_SEED_ADD = 1000;
 const SIM_MAX_S = 400;
@@ -104,7 +106,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
   let atHome = false;
   let band: SpeedStep = 'stop';
   /** 台本の覚え: 反応を待つ PT と時刻、転舵の終わりと針路、火災を消す時刻、止まった秒 */
-  const m = { reactBoat: -1, reactAt: NaN, dodgeUntil: -1, dodgeDeg: 0, fireOutAt: NaN, stopUsedS: 0 };
+  const m = { reactBoat: -1, reactAt: NaN, dodgeUntil: -1, dodgeDeg: 0, fireOutAt: NaN, stopUsedS: 0, fled: false };
   const ev: PtEvents = {
     onContact: () => {}, onLeave: () => {}, onOut: () => {},
     onPassEnd: () => {
@@ -143,6 +145,13 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
     if (policy === 'dark_stop' && !q.detected && m.stopUsedS < PLAY.darkStopMaxS && ptInSight(q.boats, boat, s.visRange2)) {
       want = 0;
       m.stopUsedS += realDt;
+    }
+    if (policy === 'edge_flee') {
+      m.fled = m.fled || q.detected;
+      if (m.fled && !allLeft(q.boats)) {
+        hd = 0;
+        want = boat.y > s.boundsMarginM + PLAY.edgeStopM ? speedMps('full') : 0;
+      }
     }
     if (sp.dodge !== 'none' && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
       // 赤い線（固めた針路 lockDeg を PT から引いた線）のどちら側にいるかを見て、線から離れる直角へ（meet は PT へ向かう）
@@ -191,6 +200,12 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
     hpLost: sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, fuelPct: (fuel.gal / s.fuelGal) * 100,
   });
   return out;
+}
+
+/** PT がみな去った（去る途中も） */
+function allLeft(boats: readonly PtBoatState[]): boolean {
+  for (let i = 0; i < boats.length; i++) if (boats[i]!.phase < PT_LEAVE) return false;
+  return true;
 }
 
 /** 去っていない PT のどれかが艇の視程の内（艇長に見えている） */

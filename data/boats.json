@@ -566,12 +566,12 @@
       "hull_circles": 2,
       "sea_state_limit": 3,
       "source": {
-        "speed_max_kt": "historical (30〜33kt。ja.wikipedia の要目は 33.3 kt。31 kt は整備の悪い艇の design として残す)",
+        "speed_max_kt": "historical (30〜33 kt。ja.wikipedia の要目は 33.3 kt、WebSearch の抜粋のみ・本文未読) / design (31 kt は整備の悪い艇として残す)",
         "speed_bands_kt": "design (v0.6.3。silent_max 7 → 14: Elco の 18/39＝0.462 と同じ比（14/31＝0.452。tests/jp-data の ±0.02・Boot の台座の輪）。T-38 の 7 → 13 と同じ考え。speed_silent_kt 7 は資料の値として残す)",
         "fuel_capacity_gal": "design (v0.6.3。T-38 と同じ 800。巡航 114・全速 229・アイドル 11.4 gal/h（fuel_hours_* から）。任務で積む量は missions_seed の fuel_allotment_gal)",
         "fuel_idle_ratio": "design (v0.6.3。us_elco80・jp_t38 と同じ 0.1)",
         "damage": "design (v0.6.3。T-38 の値を HP 50 に合わせた: 火災 1.25 HP/秒 × 16 秒 = 20＝HP の 4 割（T-38・Elco と同じ比）。casualties_per_hp 0.1: HP 0 で 5 名（定員 7。crew.ts の検査 50 × 0.1 ≤ 7）。機関損傷 0.7 倍・消火 1.0 秒・crew_effects は T-38 と同じ)",
-        "crew": "design (ja.wikipedia は 6、別資料は 7。7 のまま)",
+        "crew": "design (ja.wikipedia は 6（WebSearch の抜粋のみ・本文未読）、別資料は 7。7 のまま)",
         "engine_reliability": "design (71号6型の組立不良を反映。v0.6.5 の機関の不調まで読まない)",
         "others": "design"
       },

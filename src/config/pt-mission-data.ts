@@ -1,5 +1,5 @@
 // 敵の米PT（v0.6.3。docs/02 §6.4）の数値の読み出し: enemies.json の PT・boats.json の boat_ref・任務の pt_boats から core/pt-data の PtParams を組み、
-// 他の記録が要る検査（spec §C.3 の 6〜10: 振り切れない・1 回の航過で沈まない・見えない PT から撃たない・出発で見つからない・夜明けに去る）を足す。
+// 他の記録が要る検査（spec §C.3 の 6〜10: 振り切れない・1 回の航過で沈まない・見えない PT から撃たない・出発で見つからない（史実モード込み）・夜明けに去る）を足す。
 // 米PT の隊の無い任務は null（dawn-data と同じ形）。world-setup が組み立てのたびに呼ぶ（壊れた data は任務の id を付けて例外）。
 import { getBoatDamageParams, getBoatRecord, getVisibilityParams, type GameData } from './game-data';
 import type { PrototypeMission } from './mission-data';
@@ -29,10 +29,12 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   const vis = getVisibilityParams(data, mission.moon, false);
   const visM = playerVisRangeM(vis);
   if (!(gun.effective_night_m <= visM)) bad(`effective_night_m（${gun.effective_night_m} m）は自艇の視程（${visM} m）以下（見えない PT から撃たない）`);
-  // 出発で見つからない: 今夜の揺らぎの取りうる出発点（線に沿って ±x・南北 ±y・東西反転）のどれも、巡航で見つかる距離（ノーマル）より遠い
-  const detectM = enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false);
+  // 出発で見つからない: 今夜の揺らぎの取りうる出発点（線に沿って ±x・南北 ±y・東西反転）のどれも、巡航で見つかる距離より遠い。
+  // 距離はノーマルと史実モード（Title の切り替え。見つかる距離に enemy_detection_multiplier を掛ける）の遠い方（v0.6.3 レビュー: ノーマルだけ見ていたので、史実モードの 3 夜に 1 夜は出発で見つかった）
+  const histVis = getVisibilityParams(data, mission.moon, true);
+  const detectM = Math.max(enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false), enemyDetectRangeM(p.baseDetectM, histVis.speedFactor.cruise, histVis, false));
   const nearM = nearestStartM(p, mission.night, mission.playerStart.x, mission.playerStart.y);
-  if (!(nearM >= detectM)) bad(`今夜の揺らぎで出発点が自艇の出発点から ${Math.round(nearM)} m（巡航で見つかる ${Math.round(detectM)} m より近い。出発で見つかる）`);
+  if (!(nearM >= detectM)) bad(`今夜の揺らぎで出発点が自艇の出発点から ${Math.round(nearM)} m（巡航で見つかる ${Math.round(detectM)} m（史実モード込み）より近い。出発で見つかる）`);
   if (getDawnAir(data, id).shipsAtDawn !== 'none') bad('dawn_air.enemy_ships_at_dawn は none（v0.6.3 の米PT は夜明けに東へ去る。retire・hide・stay は他の敵の規則）');
   return p;
 }

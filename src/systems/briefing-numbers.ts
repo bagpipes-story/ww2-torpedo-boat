@@ -1,6 +1,7 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
-import { NO_WEAPON_BRIEFING_JA, compassJa, type BriefingNumbers } from '../core/briefing';
+import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
+import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
 import type { WorldSetup } from './world-setup';
 
@@ -20,10 +21,21 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     fuelGal: s.fuelAllotmentGal,
     torpedoes: s.torpedoCapacity,
     gunsLabel: s.guns ? s.guns.label : '',
-    enemyFromJa: s.enemyFrom ? compassJa(s.enemyFrom.x, s.enemyFrom.y, s.mission.bounds.width, s.mission.bounds.height) : '',
+    enemyFromJa: enemyFromJa(s),
     homeX: s.mission.returnPoint.x,
     homeY: s.mission.returnPoint.y,
     boundsW: s.mission.bounds.width,
     boundsH: s.mission.bounds.height,
   };
+}
+
+/**
+ * 敵の来る方角（8 方位）: 海域の中心から見た敵の出発点（v0.4.6）。米PT（v0.6.3 レビュー）は自艇の出発点から見た 1 隻目の PT の出発点
+ * （帰り道を東西に横切る線を哨戒するので、中心から見た「東から」は線のどちら寄りかでしかなく、出発点からは南にいた）
+ */
+function enemyFromJa(s: WorldSetup): string {
+  const e = s.enemyFrom;
+  if (!e) return '';
+  if (s.ptBoats) return bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, e.x, e.y));
+  return compassJa(e.x, e.y, s.mission.bounds.width, s.mission.bounds.height);
 }

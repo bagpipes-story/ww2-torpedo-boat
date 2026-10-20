@@ -1,5 +1,5 @@
 // 米PT の掃射の航過の模擬（v0.6.3、spec §F.4）の残りの 7 行（★ の 6 行と模擬の組み立ては tests/pt-pass-sim.test.ts。1 ファイル 20 秒を超えないよう分けた）:
-// 全速は遠くから見つかる・全速で転舵・ジグザグ・静音で転舵・PT へ向かう（罠にしない）・夜明けまで止まる。どの遊び方も帰投 65% 以上・漂流 1% 以下（turn_full だけ 8%）と不変（§F.4 の 7）。
+// 全速は遠くから見つかる・全速で転舵・ジグザグ・静音で転舵・PT へ向かう（罠にしない）・夜明けまで止まる・縁へ逃げる（v0.6.3 レビュー: 抜け道にならない）。どの遊び方も帰投 65% 以上・漂流 1% 以下（turn_full だけ 8%）と不変（§F.4 の 7）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { PT_CALIBRATION, ptCalibrationMisses, ptCalibrationRun } from '../src/systems/pt-pass-sim-setup';
@@ -13,10 +13,15 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F.4 の ★ 以外
   const rows = PT_CALIBRATION.filter((r) => !r.star);
 
   it('較正（N 200・seed 1〜200）: 全速は 1,500 m より遠くで見つかる、全速の転舵と PT へ向かうは沈まない、夜明けまで止まれば見つからずに夜明け後に帰る、帰投 65% 以上・漂流の帯・不変', () => {
-    expect(rows.map((r) => r.policy)).toEqual(['full', 'zigzag', 'react_full', 'turn_silent', 'turn_full', 'meet', 'stop_dawn']);
+    expect(rows.map((r) => r.policy)).toEqual(['full', 'zigzag', 'react_full', 'turn_silent', 'turn_full', 'meet', 'stop_dawn', 'edge_flee']);
     expect(rows.flatMap((r) => ptCalibrationMisses(r, run.cell(r.policy), run.setup, NaN).map((m) => `${r.policy}: ${m}`))).toEqual([]);
     for (const r of rows) expect(run.cell(r.policy).timeoutPct, r.policy).toBe(0);
     const still = run.cell('stop_dawn');
     expect([still.shots, still.passes, still.maxPassing]).toEqual([0, 0, 0]); // 見つからなければ撃たれない
+    // 縁へ逃げる（v0.6.3 レビュー）: 縁で航過が撃たずに終わる抜け道は無い（数えた航過のほとんどで撃ち、1 夜 4 発以上当たる。前は 0.56 発）
+    const edge = run.cell('edge_flee');
+    expect(edge.firedPasses).toBeGreaterThanOrEqual(0.9 * edge.passes);
+    expect(edge.hits).toBeGreaterThan(4);
+    expect(edge.hpMean).toBeGreaterThan(run.cell('react_full').hpMean); // 転舵でかわすより痛い
   }, 60_000);
 });

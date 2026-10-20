@@ -22,6 +22,11 @@ const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const VERSION_RE = /^v\d+\.\d+\.\d+$/;
 
 /** '1942-12-11' → '1942年12月11日'（月・日の先頭の 0 は落とす）。書式違いは例外 */
+/** Briefing の副題の難易度（v0.6.3 レビュー）: ノーマルは無し、ハードは「 ・ 難易度 ハード」、ハードの違いが無い任務（jp_05）は「（この任務は同じ）」を足す */
+export function difficultyJa(hard: boolean, hasHardVariant: boolean): string {
+  return hard ? ` ・ 難易度 ハード${hasHardVariant ? '' : '（この任務は同じ）'}` : '';
+}
+
 export function formatDateJa(iso: string): string {
   const m = DATE_RE.exec(iso);
   if (!m) throw new Error(`missions_seed.json の date が YYYY-MM-DD でない（${iso}）`);
@@ -154,6 +159,15 @@ export function absentJa(ids: readonly string[], labelOf: (id: string) => string
 }
 
 /**
+ * 条件の武器の句（区切りの「・」から）。撃たない任務（v0.6.3）の句は「・」の後をノーブレークスペースにする（v0.6.3 レビュー: 長い句が次の行へ送られ、
+ * 「・」が行末に残った。区切りの前の半角スペースで折り返す）。ほかの任務は今までどおり「・ 」
+ */
+function weaponPartJa(n: BriefingNumbers): string {
+  if (n.weaponJa !== undefined) return `・\u00a0${n.weaponJa}`;
+  return `・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}`;
+}
+
+/**
  * Briefing の 6 行（目的・成功・月・敵・危険・条件）。距離・秒は Math.round、燃料は整数ならそのまま・違えば小数 1 桁。危険から港内空襲を除く（2 択の欄に出す）。
  * 条件の「砲」と砲の名前の間はノーブレークスペース（v0.6.2 レビュー: Phaser の折り返しは半角スペースだけで切るので、us_03 で「砲」が行末に 1 字だけ残った）
  */
@@ -165,6 +179,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.weaponJa ?? (n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
   ];
 }

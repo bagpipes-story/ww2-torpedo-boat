@@ -51,7 +51,7 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect(() => ptSimSetup(gameData, 'jp_05', { runInKt: 30 })).toThrow(/振り切れない/);
     expect(() => ptSimSetup(gameData, 'jp_05', { holdOffM: 350 })).toThrow(/hold_off_m/);
     const base = getPtParams(gameData, getPrototypeMission(gameData, 'jp_05'), TS)!;
-    expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM]).toEqual([4, 10, 155, 2000]);
+    expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM]).toEqual([4, 10, 140, 2000]);
   });
 
   it('同じ seed なら同じ夜・同じ集計、違う seed なら違う', () => {
