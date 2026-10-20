@@ -8,8 +8,8 @@ import type { WorldSetup } from './world-setup';
 export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): BriefingNumbers {
   const f = s.vis.speedFactor;
   return {
-    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）
-    ...(aimAssistJa ? { aimAssistJa } : {}),
+    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。魚雷を撃たない任務（v0.6.3。main_weapon none）はマーカーが無いので出さない
+    ...(aimAssistJa && s.mainWeapon !== 'none' ? { aimAssistJa } : {}),
     // 撃たない任務（v0.6.3。main_weapon none＝米PT）は条件の武器の句。他の任務は鍵ごと省く
     ...(s.mainWeapon === 'none' ? { weaponJa: NO_WEAPON_BRIEFING_JA } : {}),
     visM: playerVisRangeM(s.vis),

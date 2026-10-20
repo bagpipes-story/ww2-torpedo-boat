@@ -49,13 +49,8 @@ export const TITLE_ROW_TITLE_PX = 30;
 export const TITLE_ROW_SUB_PX = 20;
 export const TITLE_ROW_STATUS_PX = 24;
 export const TITLE_HINT_Y = 560;
-export const TITLE_HINT_PX = 18;
-export const TITLE_HINT_JA = '操作: 左下のスティックで進む ・ 右下で魚雷（大発は射撃）・ 右上で煙幕';
-/** 操作の一言はキャンペーンごと（v0.6.0。日本の魚雷艇に煙幕は無い）。無いキャンペーンは TITLE_HINT_JA */
-export const TITLE_HINT_BY_CAMPAIGN_JA: Readonly<Record<string, string>> = {
-  us_pt: TITLE_HINT_JA,
-  jp_hard: '操作: 左下のスティックで進む ・ 右下で魚雷 ・ 煙幕なし（暗さと静音で寄り、逃げる）',
-};
+// 操作の一言（文・字の大きさ・キャンペーンごと）は title-hint-config（v0.6.3。DOM を読まないのでテストが幅を測れる）。ここから出し直す
+export { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_JA, TITLE_HINT_PX } from './title-hint-config';
 /**
  * 操作の一言の下の 3 つの切り替え: 難易度（v0.4.5。タップで ノーマル ⇄ ハード）、史実モード（v0.5.2。オフ ⇄ オン）、見越し点マーカー（v0.5.2 実機 1 回目。使う ⇄ 使わない。解放前は押せない）。
  * 同じ大きさで中央に並べる。論理幅 1280 でも左右に 31 px 余る（3 × 390 + 2 × 24 = 1218）

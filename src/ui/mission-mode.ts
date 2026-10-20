@@ -54,6 +54,14 @@ export function stormWarning(t: BoatTelemetry): boolean {
   return (t.stormState === STORM_NEAR || t.stormState === STORM_INSIDE) && t.stormFast;
 }
 
+/**
+ * 米PT の航過の結果を出す（v0.6.3）: 表示の秒の内（MODE_FLAG_PT_RESULT）で、最後の航過が撃った航過のとき。
+ * 撃たなかった航過（固めたが撃てずに抜けた）は「かわした！」を出さず、いつもの接触・平常の行のまま（Result の「かわした 無傷/撃った」と同じ数え方）
+ */
+export function ptResultShown(t: BoatTelemetry, flags: number): boolean {
+  return (flags & MODE_FLAG_PT_RESULT) !== 0 && t.pt.lastPassFired;
+}
+
 /** 大発が岸へ逃げている（大発の任務だけ） */
 export function bargeRunning(t: BoatTelemetry): boolean {
   return t.gunMission && !Number.isNaN(t.bargeEscapeS);
@@ -61,14 +69,14 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過 > 米PT との接触 > 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去った夜明けの後だけ「夜明け ・ 米PT は東へ去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過 > 米PT との接触 > 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   if (t.homeWaiting) return MISSION_WAITING;
   if (t.fuelEmpty) return MISSION_ADRIFT;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
   if (t.pt.enabled && t.pt.passing) return MISSION_PT_PASS;
-  if (t.pt.enabled && ((flags & MODE_FLAG_PT_RESULT) !== 0 || (t.pt.detected && t.pt.alive > 0))) return MISSION_PT_CONTACT;
+  if (t.pt.enabled && (ptResultShown(t, flags) || (t.pt.detected && t.pt.alive > 0))) return MISSION_PT_CONTACT;
   if (t.escortEnabled && t.escortSunk) return MISSION_ESCORT_LOST;
   if (planeAttacking(t)) return MISSION_PLANE_ATTACK;
   if (t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE) return MISSION_FRIENDLY;

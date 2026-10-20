@@ -94,8 +94,8 @@ export interface PtTelemetry {
   detected: boolean; passing: boolean; fired: boolean; dodge: number; threatPhase: number;
   /** 艇から脅威の PT へ（m。無ければ NaN）、それが見えている（視程の内） */
   dx: number; dy: number; sighted: boolean;
-  /** 隊の航過の数と上限（count × max_passes）、終わった航過の通し番号、最後の航過の命中、1 発の HP、夜明けに去った */
-  passes: number; maxPasses: number; passSeq: number; lastPassHits: number; damagePerHit: number; leftAtDawn: boolean;
+  /** 隊の航過の数と上限（count × max_passes）、終わった航過の通し番号、最後の航過の命中と撃ったか（撃たなかった航過は「かわした！」を出さない）、1 発の HP、夜明けに去った */
+  passes: number; maxPasses: number; passSeq: number; lastPassHits: number; lastPassFired: boolean; damagePerHit: number; leftAtDawn: boolean;
   /** 出撃のときに 1 回: 艇の静音の上限 kt・去る方角（東など） */
   silentMaxKt: number; leaveDirJa: string;
 }
@@ -103,7 +103,7 @@ export interface PtTelemetry {
 export function createPtTelemetry(): PtTelemetry {
   return {
     enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
-    passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
+    passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
   };
 }
 

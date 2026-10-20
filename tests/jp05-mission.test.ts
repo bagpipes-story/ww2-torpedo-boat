@@ -1,5 +1,6 @@
 // jp_05「鹵獲艇の哨戒」（v0.6.3。日本ハードモード②：敵の米PT）: 任務の data・世界の組み立て・今夜の揺らぎ・Briefing の行・終了理由・得点の順、
-// HUD の 2 行目（ui/mission-mode の 3 つのモードと ui/pt-lines の文・キー。幅は 840 px 以内＝縮まない）、テレメトリ（systems/pt-telemetry）、Result の本文と頭。
+// HUD の 2 行目（ui/mission-mode の 3 つのモードと ui/pt-lines の文・キー。幅は 840 px 以内＝縮まない）、テレメトリ（systems/pt-telemetry）、Result の本文と頭、
+// Title の日本の操作の一言（config/title-hint-config。魚雷のある jp_06 と撃たない jp_05 のどちらでも本当・行の幅の内）。
 // ui-config・game-config は DOM を読むので使わない（色は hud-text-config、文の幅は tests/dawn-clock と同じ見積もり）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData, getPrototypeMission, getScoringParams } from '../src/config/game-data';
@@ -8,9 +9,10 @@ import { PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
 import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
 import { createDawnTelemetry } from '../src/core/dawn-air';
 import { CALL_DAWN, CALL_FUEL } from '../src/core/mission-flow';
-import { PT_ALERT, PT_BREAK, PT_PASS, PT_PATROL, PT_RUN_IN, createPtSection, createPtTelemetry, type PtTelemetry } from '../src/core/pt-boats';
+import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_PASS, PT_PATROL, PT_RUN_IN, createPtSection, createPtTelemetry, type PtTelemetry } from '../src/core/pt-boats';
 import { initPtTelemetry, ptResult, refreshPtTelemetry, type PtTelemetryWorld } from '../src/systems/pt-telemetry';
-import { MISSION_ADRIFT, MISSION_CALL, MISSION_NORMAL, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_PASS, MODE_FLAG_PT_RESULT, missionMode } from '../src/ui/mission-mode';
+import { MISSION_ADRIFT, MISSION_CALL, MISSION_NORMAL, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_PASS, MODE_FLAG_PT_RESULT, missionMode, ptResultShown } from '../src/ui/mission-mode';
+import { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_PX } from '../src/config/title-hint-config';
 import { PT_DISTANCE_STEP_M, ptHeadJa, ptKey, ptLine, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
@@ -93,22 +95,31 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     // ?debug&fixed と Briefing（出撃前）は data のまま
     expect(buildWorldSetup(gameData, 'jp_05', { sortie: sortie(1), fixedNight: true }).enemyFrom).toEqual({ x: 2000, y: 2000 });
   });
-  it('Briefing の 6 行（spec §B.9。出撃前は揺らぎなし＝敵は西から）。反転した夜は東から', () => {
+  it('Briefing の 6 行（spec §B.9。出撃前は揺らぎなし＝敵は西から。和文と英字・数字の間に半角スペースを入れない＝Phaser が半角スペースで折り返して「2⏎隻組」と割れない）。反転した夜は東から', () => {
     const s = buildWorldSetup(gameData, 'jp_05');
     const rec = { ...getBriefingRecord(gameData, 'jp_05'), hazardIds: s.hazardsTonight, absentHazardIds: s.absentHazards };
     const rows = briefingRows(rec, briefingNumbers(s), nameOf, labelOf);
     expect(rows.map((r) => [r.label, r.text])).toEqual([
-      ['目的', '哨戒の帰り道に米PTの 2 隻組。速さでは振り切れない。静音で暗さに隠れ、航過は転舵でかわしてラバウルへ帰る'],
-      ['成功', '生還（PT に一度も見つからずに帰れば回避の点）（帰投地点は南西の青い輪）'],
+      ['目的', '哨戒の帰り道に米PTの2隻組。速さでは振り切れない。静音で暗さに隠れ、航過は転舵でかわしてラバウルへ帰る'],
+      ['成功', '生還（PTに一度も見つからずに帰れば回避の点）（帰投地点は南西の青い輪）'],
       ['月', '新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m'],
       ['敵', '米PTボート ×2（西から）'],
       ['危険', '敵艦艇の砲撃・衝突'],
       ['条件', `夜明けまで 170 秒（昼の空は味方） ・ 燃料 23 gal ・ ${NO_WEAPON_BRIEFING_JA}`],
     ]);
-    expect(NO_WEAPON_BRIEFING_JA).toBe('魚雷は PT の下を抜ける（撃たない）');
+    expect(NO_WEAPON_BRIEFING_JA).toBe('魚雷はPTの下を抜ける（撃たない）');
+    // 目的・成功・史実と武器の句: 和文の中に半角スペースが無い（「条件」は「 ・ 」の区切りだけで折り返す）
+    const r = getBriefingRecord(gameData, 'jp_05');
+    for (const t of [r.objective, r.success, r.noteJa, NO_WEAPON_BRIEFING_JA]) expect(t, t).not.toContain(' ');
     expect(briefingNumbers(s).weaponJa).toBe(NO_WEAPON_BRIEFING_JA);
     // 他の任務は鍵ごと無い（us_02 の toEqual が変わらない）
     expect('weaponJa' in briefingNumbers(buildWorldSetup(gameData, 'us_02'))).toBe(false);
+    // 見越し点マーカーの解放の状態は魚雷を撃たない jp_05 には付けない（他の任務は今までどおり付く）
+    const marker = '見越し点マーカー: あと 3 回の任務で解放（終えた任務 0 回）';
+    expect('aimAssistJa' in briefingNumbers(s, marker)).toBe(false);
+    expect(briefingRows(rec, briefingNumbers(s, marker), nameOf, labelOf)[5]!.text).toBe(`夜明けまで 170 秒（昼の空は味方） ・ 燃料 23 gal ・ ${NO_WEAPON_BRIEFING_JA}`);
+    expect(briefingNumbers(s, '史実モード: 見越し点マーカーなし').aimAssistJa).toBeUndefined();
+    for (const id of ['us_02', 'jp_06']) expect(briefingNumbers(buildWorldSetup(gameData, id), marker).aimAssistJa, id).toBe(marker);
     const dirs = new Set<string>();
     for (let seed = 1; seed <= 60; seed++) {
       const t = buildWorldSetup(gameData, 'jp_05', { sortie: sortie(seed) });
@@ -122,7 +133,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     const r = getBriefingRecord(gameData, 'jp_05');
     expect([r.date, r.place, r.titleJa]).toEqual(['1944-02-18', 'ラバウル沖（セント・ジョージ海峡）', '鹵獲艇の哨戒']);
     expect(r.noteJa).toContain('ゲーム上の想定');
-    expect(r.noteJa).toContain('T-14 で代用');
+    expect(r.noteJa).toContain('T-14で代用');
     expect(String(byId('jp_05')['historical_note'])).toContain('抜粋のみ・本文未読');
     expect(byId('jp_05')['playable_from']).toBe('v0.6.3');
     expect(byId('jp_01')['playable_from']).toBe('v0.6.4');
@@ -214,16 +225,43 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele({ ...NE500, sighted: true }, { targetStep: 'full', detectRangeM: 1920 }))[1]).toBe('米PT 500 m ・ 速い！ 1900 m で見つかる ・ 14 kt 以下に');
     expect(PT_DISTANCE_STEP_M).toBe(50);
   });
-  it('接触: 突撃（見えている＝方角と距離・音だけ＝方角）、離脱（残りの航過）。航過の結果は表示中だけ（被弾なし＝味方の青・被弾＝HP）', () => {
+  it('接触: 突撃（見えている＝方角と距離・音だけ＝方角）、離脱（残りの航過）。航過の結果は撃った航過の表示中だけ（被弾なし＝味方の青・被弾＝HP）', () => {
     const det = { detected: true, ...NE500 };
     expect(row(tele({ ...det, threatPhase: PT_ALERT, sighted: true }))).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵', HUD_COLOR_WARN]);
     expect(row(tele({ detected: true, threatPhase: PT_RUN_IN, dx: 0, dy: 1000 }))).toEqual([MISSION_PT_CONTACT, '米PT のエンジン音 ・ 南から突撃', HUD_COLOR_WARN]);
     expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 3 回 ・ 静音で見失わせろ', HUD_COLOR_STRONG]);
-    expect(row(tele({ ...det, threatPhase: PT_ALERT, passes: 1, passSeq: 1, lastPassHits: 0 }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, 'かわした！ 被弾なし ・ 航過 1/4', HOME_COLOR_TEXT]);
-    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 2, passSeq: 2, lastPassHits: 3 }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '被弾 3 発（HP −12） ・ 航過 2/4', HUD_COLOR_STRONG]);
+    expect(row(tele({ ...det, threatPhase: PT_ALERT, passes: 1, passSeq: 1, lastPassHits: 0, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, 'かわした！ 被弾なし ・ 航過 1/4', HOME_COLOR_TEXT]);
+    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 2, passSeq: 2, lastPassHits: 3, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '被弾 3 発（HP −12） ・ 航過 2/4', HUD_COLOR_STRONG]);
     // 結果の表示は見失った後・夜明けに去った後も出る（表示の秒が終われば平常へ）
-    expect(row(tele({ passes: 4, passSeq: 4, alive: 0, lastPassHits: 0 }), 0, RESULT)[0]).toBe(MISSION_PT_CONTACT);
-    expect(row(tele({ passes: 4, passSeq: 4, alive: 0 }))).toEqual([MISSION_PT, '米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ passes: 4, passSeq: 4, alive: 0, lastPassHits: 0, lastPassFired: true }), 0, RESULT)[0]).toBe(MISSION_PT_CONTACT);
+    expect(row(tele({ passes: 4, passSeq: 4, alive: 0, out: 2 }))).toEqual([MISSION_PT, '米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+  });
+  it('撃たなかった航過（固めたが撃てずに抜けた）の後は「かわした！」を出さず、いつもの接触・平常の行（Result の「かわした 無傷/撃った」と同じ数え方）', () => {
+    const det = { detected: true, ...NE500 };
+    const unfired = { passes: 1, passSeq: 1, lastPassHits: 0, lastPassFired: false };
+    expect(ptResultShown(tele(unfired), RESULT)).toBe(false);
+    expect(ptResultShown(tele({ ...unfired, lastPassFired: true }), RESULT)).toBe(true);
+    expect(ptResultShown(tele({ ...unfired, lastPassFired: true }), 0)).toBe(false);
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 3 回 ・ 静音で見失わせろ', HUD_COLOR_STRONG]);
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_ALERT, sighted: true }), 0, RESULT)[1]).toBe('米PT 北東から突撃 500 m ・ 赤い線で転舵');
+    // 見失った後・みな去った後の撃たなかった航過は平常の行のまま（接触のモードに上げない）
+    expect(row(tele(unfired), 0, RESULT)).toEqual([MISSION_PT, '米PT 2 隻が哨戒中 ・ 静音で抜けて帰投', HUD_COLOR_STRONG]);
+    expect(row(tele({ ...unfired, passes: 4, passSeq: 4, alive: 0 }), 0, RESULT)).toEqual([MISSION_PT, '米PT は東へ去る ・ 帰投せよ', HUD_COLOR_STRONG]);
+    // キーも結果の行のものにならない（撃たなかった航過の前の結果の表示を引きずらない）
+    const k = (t: BoatTelemetry, flags: number): number => ptKey(t, missionMode(t, 0, flags), flags);
+    expect(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), RESULT)).toBe(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0));
+  });
+  it('みな去る途中は「去る」、みな海域の外へ出たら「去った」（夜明けの前と後）。キーは変わる', () => {
+    const dawn = { ...createDawnTelemetry(), reached: true };
+    expect(row(tele({ alive: 0, out: 0 }))[1]).toBe('米PT は東へ去る ・ 帰投せよ');
+    expect(row(tele({ alive: 0, out: 1 }))[1]).toBe('米PT は東へ去る ・ 帰投せよ');
+    expect(row(tele({ alive: 0, out: 2 }))[1]).toBe('米PT は東へ去った ・ 帰投せよ');
+    expect(row(tele({ alive: 0, out: 1, leftAtDawn: true }, { dawn }))).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去る ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, out: 2, leftAtDawn: true }, { dawn }))).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+    const k = (t: BoatTelemetry): number => ptKey(t, missionMode(t, 0, 0), 0);
+    expect(k(tele({ alive: 0, out: 1 }))).not.toBe(k(tele({ alive: 0, out: 2 })));
+    expect(k(tele({ alive: 0, out: 0 }))).toBe(k(tele({ alive: 0, out: 1 }))); // 文が同じなら組み直さない
+    expect(k(tele({ alive: 0, out: 2 }))).not.toBe(k(tele({ alive: 0, out: 2 }, { dawn })));
   });
   it('航過: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわす向きは固めたときの 1 つ（右・左・そのまま）', () => {
     const pass = { detected: true, passing: true, threatPhase: PT_PASS, ...NE500, sighted: true };
@@ -237,11 +275,12 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele({ ...pass, dodge: 1 }), 0, RESULT)[0]).toBe(MISSION_PT_PASS);
     expect(row(tele({ ...pass, dodge: 1 }, { fuelEmpty: true }))[0]).toBe(MISSION_ADRIFT);
   });
-  it('帰投せよ（燃料・夜明け近し）は平常の米PT の行より上。夜明けの後に米PT がみな去っていれば「夜明け ・ 米PT は東へ去った」', () => {
+  it('帰投せよ（燃料・夜明け近し）は平常の米PT の行より上。夜明けの後に米PT がみな去っていれば「夜明け ・ 米PT は東へ去る／去った」', () => {
     expect(row(tele(), CALL_DAWN)[0]).toBe(MISSION_CALL);
     expect(row(tele({ alive: 0 }), CALL_DAWN)[0]).toBe(MISSION_CALL); // 夜明け前の「夜明け近し」は消さない
     const dawn = { ...createDawnTelemetry(), reached: true };
-    expect(row(tele({ alive: 0, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去る ・ 帰投せよ', HUD_COLOR_STRONG]);
+    expect(row(tele({ alive: 0, out: 2, leftAtDawn: true }, { dawn }), CALL_DAWN)).toEqual([MISSION_PT, '夜明け ・ 米PT は東へ去った ・ 帰投せよ', HUD_COLOR_STRONG]);
     expect(row(tele({ alive: 0, leftAtDawn: true }, { dawn }), CALL_FUEL)[0]).toBe(MISSION_CALL); // 燃料の帰投せよは残す
     // 接触中（見つかっている）は帰投せよより上
     expect(row(tele({ detected: true, threatPhase: PT_RUN_IN, ...NE500 }), CALL_DAWN)[0]).toBe(MISSION_PT_CONTACT);
@@ -254,15 +293,15 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(k(tele())).toBe(k(tele({ dx: 100, dy: 2000 }))); // 見えていない PT の位置は出さない
     expect(k(tele({ ...seen, passing: true, detected: true, dodge: 1 }))).not.toBe(k(tele({ ...seen, passing: true, detected: true, dodge: 1, fired: true })));
     expect(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 1 }))).not.toBe(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 2 })));
-    expect(k(tele({ detected: true, passes: 1, lastPassHits: 1 }), RESULT)).not.toBe(k(tele({ detected: true, passes: 1, lastPassHits: 2 }), RESULT));
-    for (const t of [tele(), tele({ ...seen, passing: true, detected: true }), tele({ alive: 0 }, { dawn: { ...createDawnTelemetry(), reached: true } })]) {
+    expect(k(tele({ detected: true, passes: 1, lastPassHits: 1, lastPassFired: true }), RESULT)).not.toBe(k(tele({ detected: true, passes: 1, lastPassHits: 2, lastPassFired: true }), RESULT));
+    for (const t of [tele(), tele({ ...seen, passing: true, detected: true }), tele({ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true } })]) {
       const key = k(t);
       expect(Number.isInteger(key) && key >= 0 && key < 2 ** 31).toBe(true);
     }
   });
   it('どの文もいちばん長い値で 840 px 以内（論理幅 1280 で左上の時計を避けても縮まない）', () => {
     const far = { dx: -2200, dy: -2200 }; // 北西・刻みの上限（3,150 m）
-    const det = { detected: true, ...far, passes: 15, maxPasses: 15, lastPassHits: 63, damagePerHit: 4 };
+    const det = { detected: true, ...far, passes: 15, maxPasses: 15, lastPassHits: 63, lastPassFired: true, damagePerHit: 4 };
     const cases: [Partial<PtTelemetry>, Partial<BoatTelemetry>, number][] = [
       [{ ...det, passing: true, fired: true, dodge: 0 }, {}, 0],
       [{ ...det, passing: true, dodge: 1 }, {}, 0],
@@ -275,6 +314,7 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
       [{ ...far, sighted: true }, { targetStep: 'full', detectRangeM: 3150 }, 0],
       [{ alive: 4 }, {}, 0],
       [{ alive: 0 }, { dawn: { ...createDawnTelemetry(), reached: true } }, 0],
+      [{ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true } }, 0],
     ];
     for (const [pt, over, flags] of cases) {
       const [, text] = row(tele(pt, over), 0, flags);
@@ -306,35 +346,93 @@ describe('jp_05 のテレメトリ（systems/pt-telemetry。v0.6.3）', () => {
     q.passes = 2;
     q.passSeq = 2;
     q.lastPassHits = 1;
+    q.lastPassFired = true;
     q.out = 0;
     refreshPtTelemetry(t, w);
-    expect([t.alive, t.passing, t.fired, t.dodge, t.passes, t.passSeq, t.lastPassHits]).toEqual([1, false, false, 0, 2, 2, 1]);
+    expect([t.alive, t.passing, t.fired, t.dodge, t.passes, t.passSeq, t.lastPassHits, t.lastPassFired]).toEqual([1, false, false, 0, 2, 2, 1, true]);
     q.closest2 = 250000;
     q.firstDetectM = 1180;
     const r = ptResult(w)!;
-    expect([r.total, r.maxPasses, r.passes, r.damagePerHit, r.closestM, r.firstDetectM, r.firstDetectBand]).toEqual([2, 4, 2, 4, 500, 1180, '']);
+    expect([r.total, r.alive, r.maxPasses, r.passes, r.damagePerHit, r.closestM, r.firstDetectM, r.firstDetectBand]).toEqual([2, 1, 4, 2, 4, 500, 1180, '']);
     expect(ptResult({ ...w, pts: null })).toBeNull();
+  });
+  it('Result の材料: 終わる瞬間に撃っていた航過も航過・撃った航過に数える（命中があれば無傷に数えない）。撃つ前の航過は数えない。隊の KPI は変えない', () => {
+    const w = ptWorld();
+    const q = w.pts!.section;
+    q.passes = 1;
+    q.firedPasses = 1;
+    q.cleanPasses = 1;
+    q.boats[0]!.phase = PT_LEAVE;
+    q.boats[1]!.phase = PT_PASS;
+    q.owner = 1;
+    q.boats[1]!.firedThisPass = 0;
+    let r = ptResult(w)!;
+    expect([r.passes, r.firedPasses, r.cleanPasses, r.alive]).toEqual([1, 1, 1, 1]); // 固めただけ（撃つ前）
+    q.boats[1]!.firedThisPass = 8;
+    q.passHits = 13;
+    r = ptResult(w)!;
+    expect([r.passes, r.firedPasses, r.cleanPasses]).toEqual([2, 2, 1]); // 沈んだ航過（「かわした 1/1 ・ 被弾 13 発」と出ない）
+    q.passHits = 0;
+    r = ptResult(w)!;
+    expect([r.passes, r.firedPasses, r.cleanPasses]).toEqual([2, 2, 2]); // 撃たれながら輪に入った（無傷）
+    expect([q.passes, q.firedPasses, q.cleanPasses]).toEqual([1, 1, 1]);
   });
 });
 
 describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
   const base: PtResult = {
-    total: 2, out: 2, leftAtDawn: false, passes: 0, maxPasses: 4, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4,
+    total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 4, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4,
     firstDetectM: NaN, firstDetectBand: '', lostContacts: 0, closestM: 812.4, minWarnS: Infinity,
   };
-  it('一度も見つからずに抜けた: 最接近と「—」（撃たれていない）', () => {
-    expect(ptResultLines(base, 0)).toEqual(['米PT に一度も見つからずに抜けた', '見つからず ・ PT の最接近 812 m', '予告から初弾まで 最短 — 秒 ・ 撃たれた弾 0 発']);
-    expect(ptHeadJa(base)).toBe('米PT: 去った（2/2）');
+  it('一度も見つからずに抜けた: 最接近と「—」（撃たれていない）。帰投しなかった（漂流）なら「抜けた」と言わない', () => {
+    expect(ptResultLines(base, 0, true)).toEqual(['米PT に一度も見つからずに抜けた', '見つからず ・ PT の最接近 812 m', '予告から初弾まで 最短 — 秒 ・ 撃たれた弾 0 発']);
+    expect(ptResultLines(base, 0, false)[0]).toBe('米PT に一度も見つからなかった');
+    expect(ptHeadJa(base)).toBe('米PT: 去った');
   });
   it('見つかって転舵でかわした: 航過・かわした（撃たれた航過のうち）・被弾と HP、最初の距離と速力帯・見失わせた回数、予告から初弾', () => {
     const r: PtResult = { ...base, passes: 4, firedPasses: 3, cleanPasses: 2, shots: 30, hits: 3, firstDetectM: 1199.6, firstDetectBand: 'cruise', lostContacts: 1, minWarnS: 2.52 };
-    expect(ptResultLines(r, 1)).toEqual(['米PT 航過 4 回 ・ かわした 2/3 ・ 被弾 3 発（HP −12）', '見つかった 1 回（最初 1200 m ・ 巡航） ・ 見失わせた 1 回', '予告から初弾まで 最短 2.5 秒 ・ 撃たれた弾 30 発']);
+    expect(ptResultLines(r, 1, true)).toEqual(['米PT 航過 4 回 ・ かわした 2/3 ・ 被弾 3 発（HP −12）', '見つかった 1 回（最初 1200 m ・ 巡航） ・ 見失わせた 1 回', '予告から初弾まで 最短 2.5 秒 ・ 撃たれた弾 30 発']);
   });
-  it('沈んだ: PT は健在（去った数）。夜明けに去った夜は「夜明けに去った」', () => {
-    const r: PtResult = { ...base, out: 0, passes: 2, firedPasses: 2, shots: 24, hits: 13, firstDetectM: 1200, firstDetectBand: 'cruise', minWarnS: 2.5 };
-    expect(ptResultLines(r, 2)[0]).toBe('米PT 航過 2 回 ・ かわした 0/2 ・ 被弾 13 発（HP −52）');
-    expect(ptHeadJa(r)).toBe('米PT: 健在（0/2 去った）');
-    expect(ptHeadJa({ ...r, out: 1 })).toBe('米PT: 健在（1/2 去った）');
-    expect(ptHeadJa({ ...r, leftAtDawn: true })).toBe('米PT: 夜明けに去った');
+  it('沈んだ: PT は「健在 N 隻」（去っていない数）。みな去る途中・去った後は「去った」、夜明けに去った夜は「夜明けに去った」', () => {
+    const r: PtResult = { ...base, out: 0, alive: 2, passes: 2, firedPasses: 2, shots: 24, hits: 13, firstDetectM: 1200, firstDetectBand: 'cruise', minWarnS: 2.5 };
+    expect(ptResultLines(r, 2, false)[0]).toBe('米PT 航過 2 回 ・ かわした 0/2 ・ 被弾 13 発（HP −52）');
+    expect(ptHeadJa(r)).toBe('米PT: 健在 2 隻');
+    expect(ptHeadJa({ ...r, alive: 1 })).toBe('米PT: 健在 1 隻');
+    expect(ptHeadJa({ ...r, alive: 0, out: 1 })).toBe('米PT: 去った'); // 去る途中も
+    expect(ptHeadJa({ ...r, alive: 0, out: 2 })).toBe('米PT: 去った');
+    expect(ptHeadJa({ ...r, alive: 0, leftAtDawn: true })).toBe('米PT: 夜明けに去った');
+  });
+  it('被弾 0 は「被弾なし」。撃たれた航過が無ければ「かわした」を出さない（「かわした 0/0」と出ない）', () => {
+    const r: PtResult = { ...base, passes: 4, firedPasses: 3, cleanPasses: 3, shots: 30, hits: 0, firstDetectM: 1200, firstDetectBand: 'cruise', minWarnS: 2.6 };
+    expect(ptResultLines(r, 1, true)[0]).toBe('米PT 航過 4 回 ・ かわした 3/3 ・ 被弾なし');
+    expect(ptResultLines({ ...r, passes: 1, firedPasses: 0, cleanPasses: 0, shots: 0, minWarnS: Infinity }, 1, true)[0]).toBe('米PT 航過 1 回 ・ 被弾なし');
+    expect(ptResultLines({ ...r, passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, minWarnS: Infinity }, 1, true)[0]).toBe('米PT 航過 0 回 ・ 被弾なし');
+  });
+  it('Result の行は縮めずに画面の幅に収まる（本文 24 px・20 px・20 px と状況の行 20 px。見積もりが論理幅 1280 − 左右の HUD_MARGIN 48 の内）', () => {
+    const wide: PtResult = { ...base, out: 0, alive: 2, passes: 15, maxPasses: 15, firedPasses: 15, cleanPasses: 15, shots: 999, hits: 99, firstDetectM: 3150, firstDetectBand: 'cruise', lostContacts: 99, minWarnS: 99.9 };
+    const [a, b, c] = ptResultLines(wide, 99, true);
+    const MAX = 1280 - 2 * 24;
+    expect(textWidthPx(a, 24), a).toBeLessThanOrEqual(MAX); // HUD_FONT_STEP_PX
+    expect(textWidthPx(b, 20), b).toBeLessThanOrEqual(MAX); // HUD_FONT_HEADING_PX
+    expect(textWidthPx(c, 20), c).toBeLessThanOrEqual(MAX); // HUD_FONT_STATUS_PX
+    // 状況の行（result-scene: 頭・帰投・HP・乗員・燃料・秒。米PT の任務は初発射の燃料なし）
+    for (const head of [ptHeadJa(wide), ptHeadJa({ ...wide, alive: 0 }), ptHeadJa({ ...wide, leftAtDawn: true })]) {
+      const status = `${head}   帰投: なし   艇 HP 50 / 50   乗員 7/7   燃料 100%   9999 秒`;
+      expect(textWidthPx(status, 20), status).toBeLessThanOrEqual(MAX);
+    }
+  });
+});
+
+/** Title の任務の行の幅（config/menu-config の TITLE_ROW_W。menu-config は game-config → DOM を読むので import しない） */
+const TITLE_ROW_W_PX = 960;
+
+describe('Title の日本の操作の一言（v0.6.3）', () => {
+  it('魚雷のある任務（jp_06）と撃たない任務（jp_05「鹵獲艇の哨戒」）のどちらでも本当。煙幕なし。任務の行の幅（TITLE_ROW_W）の内', () => {
+    const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
+    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（哨戒は撃たない）・ 煙幕なし（暗さと静音が頼り）');
+    expect(getBriefingRecord(gameData, 'jp_05').titleJa).toContain('哨戒'); // 「哨戒」で指す任務
+    expect(getPrototypeMission(gameData, 'jp_05').mainWeapon).toBe('none');
+    expect(getPrototypeMission(gameData, 'jp_06').mainWeapon).not.toBe('none');
+    for (const [k, v] of Object.entries(TITLE_HINT_BY_CAMPAIGN_JA)) expect(textWidthPx(v, TITLE_HINT_PX), k).toBeLessThanOrEqual(TITLE_ROW_W_PX);
   });
 });

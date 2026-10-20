@@ -1,7 +1,7 @@
 // 上中央の 2 行目（v0.4.2 で boat-hud.ts から切り出し。中身は v0.4.1 のまま、大発掃討の 4 つのモードを足した）: 夜明けまで・帰投せよ・味方機・敵機・暴風・浅瀬・射撃・大発の逃走・撃つ前の手引き・撃破と上陸・夜明けの空襲（v0.6.1）。
 // §7: 表示する値のどれかが変わったときだけ文字を組んで setText する。文と表は ui/hud-lines.ts（夜明けの時計・空襲は ui/dawn-lines.ts）、どの行を出すかの優先順は ui/mission-mode.ts（v0.6.1 で切り出し）。
 // v0.6.2 実機 1 回目: 左上 2 段目の時計（ui/dawn-clock）と同じ段なので、組み直したときだけ時計を左右対称に避ける幅に縮める（lineFitScale。収まれば等倍）。
-// v0.6.3: 米PT の 3 つのモード（文とキーは ui/pt-lines.ts）。航過の結果は航過の通し番号が増えてから PT_RESULT_SHOW_MS の間。
+// v0.6.3: 米PT の 3 つのモード（文とキーは ui/pt-lines.ts）。航過の結果は航過の通し番号が増えてから PT_RESULT_SHOW_MS の間（撃った航過だけ。ui/mission-mode の ptResultShown）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';

@@ -162,7 +162,7 @@ export class ResultScene extends Phaser.Scene {
       for (const l of bargeResultLines(h)) line(l, HUD_FONT_HEADING_PX);
     } else if (r.pt) {
       // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾（data/enemies.json を合わせる根拠。CLAUDE.md §9）
-      const [a, b, c] = ptResultLines(r.pt, r.detections);
+      const [a, b, c] = ptResultLines(r.pt, r.detections, r.returned);
       line(a, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
       y += RESULT_SECTION_GAP;
       line(b, HUD_FONT_HEADING_PX);

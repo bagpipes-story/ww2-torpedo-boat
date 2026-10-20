@@ -1,5 +1,5 @@
 // 敵の米PT（v0.6.3。docs/02 §6.4、spec §D.1・§D.4）の HUD と Result の文: 2 行目の航過（予告・掃射とかわす向き）・接触（航過の結果・突撃・離脱）・
-// 平常（見えている PT・哨戒・去った）とそのキャッシュのキー、Result の本文の 3 行と状況の行の頭。
+// 平常（見えている PT・哨戒・去る／去った）とそのキャッシュのキー、Result の本文の 3 行と状況の行の頭。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。距離（平方根 1 回）と方角（atan2 1 回）は ptKey が、それを出すモードのときだけ
 // 1 フレーム 1 回求めてキーに詰める。文（ptLine）はキーから距離と方角を読み、キーが変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
@@ -8,7 +8,7 @@ import { bearingJa } from '../core/briefing';
 import { PT_ALERT, PT_RUN_IN } from '../core/pt-boats';
 import { radToDeg, wrapDeg360 } from '../core/units';
 import { DETECT_RANGE_STEP_M, STEP_LABEL, type HudLine } from './hud-lines';
-import { MISSION_PT_CONTACT, MISSION_PT_PASS, MODE_FLAG_PT_RESULT } from './mission-mode';
+import { MISSION_PT_CONTACT, MISSION_PT_PASS, ptResultShown } from './mission-mode';
 import type { PtResult } from './result-types';
 
 /** 2 行目の米PT までの距離の刻み m（切り上げ。表示が実際より遠くならない。画面外の矢印も米PT の任務は切り上げ） */
@@ -23,7 +23,7 @@ const C_HIT = 2;
 const C_RUSH_SEEN = 3;
 const C_RUSH_HEARD = 4;
 const C_BREAK = 5;
-/** 平常の行の種類: 見えている PT（停止・静音／巡航・全速）、見えていない、みな去った */
+/** 平常の行の種類: 見えている PT（停止・静音／巡航・全速）、見えていない、みな去る（海域の外へ出たかはキーの別のビット） */
 const N_SLOW = 1;
 const N_FAST = 2;
 const N_UNSEEN = 3;
@@ -39,10 +39,10 @@ function distStep(dx: number, dy: number): number {
   return Math.min(63, Math.ceil(Math.sqrt(dx * dx + dy * dy) / PT_DISTANCE_STEP_M));
 }
 
-/** 接触の行の種類: 航過の結果の表示中（MODE_FLAG_PT_RESULT）→ 結果、脅威の PT が警戒・突撃 → 突撃、ほか（離脱・航過の合間）→ 離脱 */
+/** 接触の行の種類: 撃った航過の結果の表示中（ui/mission-mode の ptResultShown）→ 結果、脅威の PT が警戒・突撃 → 突撃、ほか（離脱・航過の合間）→ 離脱 */
 function contactSub(t: BoatTelemetry, flags: number): number {
   const p = t.pt;
-  if ((flags & MODE_FLAG_PT_RESULT) !== 0) return p.lastPassHits > 0 ? C_HIT : C_CLEAN;
+  if (ptResultShown(t, flags)) return p.lastPassHits > 0 ? C_HIT : C_CLEAN;
   if (p.threatPhase === PT_ALERT || p.threatPhase === PT_RUN_IN) return p.sighted ? C_RUSH_SEEN : C_RUSH_HEARD;
   return C_BREAK;
 }
@@ -50,7 +50,7 @@ function contactSub(t: BoatTelemetry, flags: number): number {
 /**
  * 2 行目のキー（mode は MISSION_PT_PASS / MISSION_PT_CONTACT / MISSION_PT、flags は MODE_FLAG_*）。整数だけで、モードごとに 1 つの詰め方（どれも 32 ビットに収まる）。
  * 航過: 撃った | かわす向き + 1 << 1。接触: 種類 | 方位 << 3 | 距離の刻み << 6 | 残り << 12 | 航過の数 << 16 | 被弾 << 20。
- * 平常: 種類 | 方位 << 3 | 距離の刻み << 6 | 見つかる距離の刻み << 12 | 隻数 << 18 | 夜明け << 21。行に出ない値は 0（無駄に組み直さない）
+ * 平常: 種類 | 方位 << 3 | 距離の刻み << 6 | 見つかる距離の刻み << 12 | 隻数 << 18 | 夜明け << 21 | みな海域の外 << 22。行に出ない値は 0（無駄に組み直さない）
  */
 export function ptKey(t: BoatTelemetry, mode: number, flags: number): number {
   const p = t.pt;
@@ -67,7 +67,8 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number): number {
   const sub = p.alive === 0 ? N_GONE : p.sighted ? (slow ? N_SLOW : N_FAST) : N_UNSEEN;
   const det = sub === N_FAST ? Math.min(63, Math.round(t.detectRangeM / DETECT_RANGE_STEP_M)) : 0;
   const d = sub === N_SLOW || sub === N_FAST ? distStep(p.dx, p.dy) : 0;
-  return sub | ((sub === N_SLOW ? dirIndex(p.dx, p.dy) : 0) << 3) | (d << 6) | (det << 12) | ((sub === N_UNSEEN ? Math.min(7, p.alive) : 0) << 18) | ((sub === N_GONE && t.dawn.reached ? 1 : 0) << 21);
+  const gone = sub === N_GONE ? (t.dawn.reached ? 1 : 0) | (p.out >= p.total ? 2 : 0) : 0;
+  return sub | ((sub === N_SLOW ? dirIndex(p.dx, p.dy) : 0) << 3) | (d << 6) | (det << 12) | ((sub === N_UNSEEN ? Math.min(7, p.alive) : 0) << 18) | (gone << 21);
 }
 
 /** 2 行目の文と色（key は同じフレームの ptKey。距離・方角・見つかる距離はキーから、航過の数・被弾・隻数はテレメトリから） */
@@ -88,25 +89,33 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   if (sub === N_SLOW) return { text: `米PT ${d} m（${dir}） ・ 気づかれていない ・ 静音でやり過ごせ`, color: HUD_COLOR_STRONG };
   if (sub === N_FAST) return { text: `米PT ${d} m ・ 速い！ ${((key >> 12) & 63) * DETECT_RANGE_STEP_M} m で見つかる ・ ${p.silentMaxKt} kt 以下に`, color: HUD_COLOR_WARN };
   if (sub === N_UNSEEN) return { text: `米PT ${p.alive} 隻が哨戒中 ・ 静音で抜けて帰投`, color: HUD_COLOR_STRONG };
-  return { text: `${((key >> 21) & 1) !== 0 ? '夜明け ・ ' : ''}米PT は${p.leaveDirJa}へ去った ・ 帰投せよ`, color: HUD_COLOR_STRONG };
+  // みな去る: 去る途中（海域の外へ出ていない PT がいる）は「去る」、みな出たら「去った」
+  return { text: `${((key >> 21) & 1) !== 0 ? '夜明け ・ ' : ''}米PT は${p.leaveDirJa}へ${((key >> 22) & 1) !== 0 ? '去った' : '去る'} ・ 帰投せよ`, color: HUD_COLOR_STRONG };
+}
+
+/** Result の被弾の句: 0 発は「被弾なし」、ほかは「被弾 N 発（HP −x）」 */
+function hitsJa(r: PtResult): string {
+  return r.hits === 0 ? '被弾なし' : `被弾 ${r.hits} 発（HP −${r.hits * r.damagePerHit}）`;
 }
 
 /**
- * Result の本文（spec §D.4。魚雷の行の代わり）: 1 行目 航過・かわした（撃たれた航過のうち無傷）・被弾、2 行目 見つかった回数と最初の距離・速力帯・見失わせた回数
- * （一度も見つからなければ PT の最接近）、3 行目 予告から初弾までの最短秒と撃たれた弾（data/enemies.json の調整の根拠。CLAUDE.md §9）。detections は MissionResult.detections
+ * Result の本文（spec §D.4。魚雷の行の代わり）: 1 行目 航過・かわした（撃たれた航過のうち無傷。撃たれた航過が無ければ出さない）・被弾、2 行目 見つかった回数と最初の距離・速力帯・見失わせた回数
+ * （一度も見つからなければ PT の最接近）、3 行目 予告から初弾までの最短秒と撃たれた弾（data/enemies.json の調整の根拠。CLAUDE.md §9）。detections は MissionResult.detections、
+ * returned は帰投した（見つからずに漂流で終わった夜を「抜けた」と言わない）
  */
-export function ptResultLines(r: PtResult, detections: number): [string, string, string] {
+export function ptResultLines(r: PtResult, detections: number, returned: boolean): [string, string, string] {
   const seen = detections > 0;
   const band = r.firstDetectBand === '' ? '—' : STEP_LABEL[r.firstDetectBand];
+  const dodged = r.firedPasses > 0 ? ` ・ かわした ${r.cleanPasses}/${r.firedPasses}` : '';
   return [
-    seen ? `米PT 航過 ${r.passes} 回 ・ かわした ${r.cleanPasses}/${r.firedPasses} ・ 被弾 ${r.hits} 発（HP −${r.hits * r.damagePerHit}）` : '米PT に一度も見つからずに抜けた',
+    seen ? `米PT 航過 ${r.passes} 回${dodged} ・ ${hitsJa(r)}` : returned ? '米PT に一度も見つからずに抜けた' : '米PT に一度も見つからなかった',
     seen ? `見つかった ${detections} 回（最初 ${Math.round(r.firstDetectM)} m ・ ${band}） ・ 見失わせた ${r.lostContacts} 回` : `見つからず ・ PT の最接近 ${Number.isFinite(r.closestM) ? Math.round(r.closestM) : '—'} m`,
     `予告から初弾まで 最短 ${Number.isFinite(r.minWarnS) ? r.minWarnS.toFixed(1) : '—'} 秒 ・ 撃たれた弾 ${r.shots} 発`,
   ];
 }
 
-/** Result の状況の行の頭（駆逐艦の「駆逐艦: 撃沈」の代わり）: 夜明けに去った／みな海域の外へ去った／健在（去った数） */
+/** Result の状況の行の頭（駆逐艦の「駆逐艦: 撃沈」の代わり）: 夜明けに去った／みな去った（去る途中も）／健在 N 隻（去っていない PT） */
 export function ptHeadJa(r: PtResult): string {
   if (r.leftAtDawn) return '米PT: 夜明けに去った';
-  return r.out >= r.total ? `米PT: 去った（${r.out}/${r.total}）` : `米PT: 健在（${r.out}/${r.total} 去った）`;
+  return r.alive === 0 ? '米PT: 去った' : `米PT: 健在 ${r.alive} 隻`;
 }

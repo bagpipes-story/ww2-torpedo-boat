@@ -57,22 +57,31 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.passes = q.passes;
   t.passSeq = q.passSeq;
   t.lastPassHits = q.lastPassHits;
+  t.lastPassFired = q.lastPassFired;
   t.leftAtDawn = q.leftAtDawn;
 }
 
-/** 終了時に 1 回だけ: MissionResult.pt（見つかった回数は世界の detect.count＝MissionResult.detections） */
+/**
+ * 終了時に 1 回だけ: MissionResult.pt（見つかった回数は世界の detect.count＝MissionResult.detections）。
+ * 終わる瞬間に撃っていた航過（沈没・帰投が航過の途中）も航過・撃った航過に数え、その航過の命中が 0 なら無傷に数える
+ * （その航過の命中は被弾に入っているので、数えないと沈んだ夜が「かわした 1/1 ・ 被弾 13 発」と出た）。隊の KPI（模擬が読む）は変えない
+ */
 export function ptResult(w: PtTelemetryWorld): PtResult | null {
   const s = w.pts;
   if (!s) return null;
   const q = s.section;
+  let alive = 0;
+  for (let i = 0; i < q.boats.length; i++) if (q.boats[i]!.phase < PT_LEAVE) alive++;
+  const open = q.owner >= 0 && q.boats[q.owner]!.firedThisPass > 0 ? 1 : 0;
   return {
     total: s.p.count,
     out: q.out,
+    alive,
     leftAtDawn: q.leftAtDawn,
-    passes: q.passes,
+    passes: q.passes + open,
     maxPasses: s.p.count * s.p.maxPasses,
-    firedPasses: q.firedPasses,
-    cleanPasses: q.cleanPasses,
+    firedPasses: q.firedPasses + open,
+    cleanPasses: q.cleanPasses + (open === 1 && q.passHits === 0 ? 1 : 0),
     shots: q.shots,
     hits: q.hits,
     damagePerHit: s.p.hit.damage,
