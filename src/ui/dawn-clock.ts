@@ -1,5 +1,5 @@
 // 左上 2 段目（FPS の下）の夜明けの時計（v0.6.2 実機 1 回目「夜明けまで何秒の表示が別のメッセージが出ると見えなくなる」）: 夜明け前は「夜明けまで N 秒」、
-// 夜明けの後は「夜明け後 N 秒」（敵の空襲がある任務は警告色）。文とキーは 2 行目と同じ ui/dawn-lines の clockJa・clockKey（2 行目の時計はそのまま残す）。
+// 夜明けの後は「夜明け後 N 秒」（敵の空襲がある任務は警告色）。文とキーは ui/dawn-lines の clockJa・clockKey。v0.6.2 実機 2 回目から夜明けの秒数はここだけ（2 行目には出さない）。
 // §7: キーが変わったとき（1 秒に 1 回）だけ setText、色は変わったときだけ。上中央の 2 行目は同じ段なので mission-line がこの幅を避ける（HUD_CLOCK_MAX_W_PX）。
 import Phaser from 'phaser';
 import { DEPTH, HUD_MARGIN } from '../config/game-config';

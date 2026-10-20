@@ -27,7 +27,7 @@ import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/s
 import { STORM_AHEAD, STORM_NEAR } from '../core/storm';
 import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine, seaplaneLine, sightedFast } from './hud-lines';
 import { DAWN_AIR_NONE } from '../core/dawn-air';
-import { airRaidTagJa, bargeHideTagKey, clockJa, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
+import { airRaidTagJa, bargeHideTagKey, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
 import {
   MISSION_ADRIFT,
   MISSION_BARGE_EVENT,
@@ -119,7 +119,8 @@ export class MissionLine {
       this.seenEscortHp = t.escortHp;
     }
     const escortHit = t.escortEnabled && !t.escortSunk && nowMs < this.escortHitUntil;
-    // 時計のキー（夜明け前は残り秒の切り上げ、夜明けの後は負の数で夜明け後の秒。v0.6.1）
+    // 時計のキー（夜明け前は残り秒の切り上げ、夜明けの後は負の数で夜明け後の秒。v0.6.1）。v0.6.2 実機 2 回目から 2 行目に時計の文字は出さない（左上の時計と重なる）が、
+    // キーに入っていない値（見えている敵・大発の手引きなど）を毎秒拾い直すために、見直しの合図としては残す（同じ文字なら setText は描き直さない）
     const timeLeft = clockKey(t);
     const call = topCall(t.callFlags);
     const stormWarn = stormWarning(t);
@@ -251,10 +252,10 @@ export class MissionLine {
       } else if (mode === MISSION_WAITING) {
         this.missionText.setText('帰投 — 魚雷の決着待ち').setColor(HUD_COLOR_STRONG);
       } else if (mode === MISSION_ADRIFT) {
-        this.missionText.setText(`燃料切れ — 漂流 ・ ${clockJa(t)}`).setColor(HUD_COLOR_WARN);
+        this.missionText.setText('燃料切れ — 漂流').setColor(HUD_COLOR_WARN);
       } else if (mode === MISSION_CALL) {
         const warn = (call & (CALL_FUEL | CALL_DAWN)) !== 0;
-        this.missionText.setText(`${dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE)}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m  ${clockJa(t)}`).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
+        this.missionText.setText(`${dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE)}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
       } else {
         // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば狩り場と来る方角（「大発は南の岸沿いを東から」）
         const forecast = t.stormState === STORM_AHEAD ? ` ・ ${t.stormNorth ? '北' : '南'}に暴風 ${stormStep * STORM_AHEAD_STEP_M} m` : '';
@@ -263,7 +264,7 @@ export class MissionLine {
         // 駆逐艦が 2 隻以上（ハード。v0.4.5）なら「撃沈 N/M」を足す
         const ships = (t.shipsTotal > 1 ? ` ・ 撃沈 ${t.shipsSunk}/${t.shipsTotal}` : '') + (t.transportEnabled ? ` ・ 輸送船 ${t.transportSunk ? '撃沈' : '健在'}` : '');
         const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : t.escortEnabled ? `僚艇 HP ${Math.ceil(t.escortHp)} ・ 命中 ${t.hits}${ships}` : `命中 ${t.hits}${ships}`;
-        this.missionText.setText(`${clockJa(t)}${airRaidTagJa(t)} ・ ${score}${forecast}`).setColor(HUD_COLOR_STRONG);
+        this.missionText.setText(`${airRaidTagJa(t)}${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
       // 左上の時計を避ける（Text.width は等倍の幅）
       const k = lineFitScale(this.missionText.width, GAME_WIDTH, HUD_MARGIN + HUD_CLOCK_MAX_W_PX + HUD_CLOCK_GAP_PX);

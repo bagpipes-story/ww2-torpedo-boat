@@ -168,6 +168,8 @@ function fakeWorld(over: Partial<{ sinking: boolean; atHome: boolean; grounded: 
 }
 
 const RP_US02 = getPrototypeMission(gameData, 'us_02').returnPoint;
+/** 終わり際の魚雷待ち（data。v0.6.2 実機 2 回目で 3 → 5 秒） */
+const S = RP_US02.torpedoEndSettleS;
 
 describe('systems/mission-end（v0.6.2 実機 1 回目で mission-scene から切り出し）', () => {
   const RP = RP_US02;
@@ -181,16 +183,16 @@ describe('systems/mission-end（v0.6.2 実機 1 回目で mission-scene から�
     expect(off.step(fakeWorld({ allOut: true, t: 40 }), 0, 100)).toBeNull();
     expect(off.step(fakeWorld({ allOut: true, t: 40 }), 0, -20)).toBeNull(); // 夜明け後も
   });
-  it('cleared の窓: 走っている魚雷を最大 3 秒待つ', () => {
+  it('cleared の窓: 走っている魚雷を最大 torpedo_end_settle_s（5 秒）待つ', () => {
     const e = new MissionEnd(RP, 1.5, true);
     const w = fakeWorld({ allOut: true, unresolved: 1, t: 40 });
     expect(e.step(w, 0, 100)).toBeNull();
-    w.o.t = 42.9;
+    w.o.t = 40 + S - 0.1;
     expect(e.step(w, 0, 100)).toBeNull();
-    w.o.t = 43;
+    w.o.t = 40 + S;
     expect(e.step(w, 0, 100)).toBe('cleared');
   });
-  it('自艇の沈没: 沈没の演出の完了（boatSunk）で、魚雷が無ければすぐ、走っていれば沈み始めて 3 秒まで待つ。発射待ちは数えない（沈んだ艇からは撃たない）', () => {
+  it('自艇の沈没: 沈没の演出の完了（boatSunk）で、魚雷が無ければすぐ、走っていれば沈み始めて torpedo_end_settle_s まで待つ。発射待ちは数えない（沈んだ艇からは撃たない）', () => {
     const e = new MissionEnd(RP, 1.5, false);
     const w = fakeWorld({ sinking: true, unresolved: 2, t: 10 });
     expect(e.step(w, 0, 100)).toBeNull(); // 沈み始め（窓を開ける）
@@ -206,20 +208,22 @@ describe('systems/mission-end（v0.6.2 実機 1 回目で mission-scene から�
     wq.o.t = 12;
     expect(q.boatSunk(wq, 'rammed')).toBe('rammed');
   });
-  it('夜明け後に輪の中: 走っている魚雷を輪に入ってから 3 秒待つ（夜明け前は 10 秒）', () => {
+  it('夜明け後に輪の中: 走っている魚雷を輪に入ってから torpedo_end_settle_s（5 秒）待つ（夜明け前は 10 秒）', () => {
     const e = new MissionEnd(RP, 1.5, false);
     const w = fakeWorld({ atHome: true, unresolved: 1, band: 'stop', t: 200 });
-    expect(e.step(w, 2.9, -10)).toBeNull();
-    expect(e.step(w, 3, -10)).toBe('returned');
-    expect(new MissionEnd(RP, 1.5, false).step(w, 3, 10)).toBeNull();
+    expect(e.step(w, S - 0.1, -10)).toBeNull();
+    expect(e.step(w, S, -10)).toBe('returned');
+    expect(new MissionEnd(RP, 1.5, false).step(w, S, 10)).toBeNull();
     expect(new MissionEnd(RP, 1.5, false).step(w, 10, 10)).toBe('returned');
   });
-  it('漂流・座礁: 理由が決まってから 3 秒まで待つ', () => {
+  it('漂流・座礁: 理由が決まってから torpedo_end_settle_s（5 秒）まで待つ', () => {
     const e = new MissionEnd(RP, 1.5, false);
     const w = fakeWorld({ fuelEmpty: true, band: 'stop', unresolved: 1, t: 90 });
     expect(e.step(w, 1.5, 50)).toBeNull();
-    w.o.t = 93;
-    expect(e.step(w, 4.5, 50)).toBe('adrift');
+    w.o.t = 90 + S - 0.1;
+    expect(e.step(w, 1.5 + S - 0.1, 50)).toBeNull();
+    w.o.t = 90 + S;
+    expect(e.step(w, 1.5 + S, 50)).toBe('adrift');
     const g = new MissionEnd(RP, 1.5, false);
     const wg = fakeWorld({ grounded: true, band: 'stop', t: 90 });
     expect(g.step(wg, 1.5, 50)).toBe('grounded');
@@ -259,23 +263,23 @@ describe('レビューの直し: 漂流の窓の間に敵艦隊がいなくな�
         continue;
       }
       expect(e.step(w, 2.2, 50)).toBeNull();
-      w.o.t = 92.7;
-      expect(e.step(w, 4.2, 50)).toBeNull(); // 窓を開けて 3 秒を過ぎても演出の間は待つ
+      w.o.t = 90 + S + 0.2;
+      expect(e.step(w, 1.5 + S + 0.2, 50)).toBeNull(); // 窓を開けて torpedo_end_settle_s を過ぎても演出の間は待つ
       w.o.sinkPlaying = false;
       expect(e.step(w, 4.3, 50)).toBe('cleared');
       expect(endCountsAsReturn('cleared')).toBe(true);
     }
   });
-  it('mission-end: 上げた cleared の窓は上げたときから最大 3 秒（終わり際の当たりの魚雷を待つ）', () => {
+  it('mission-end: 上げた cleared の窓は上げたときから最大 torpedo_end_settle_s（終わり際の当たりの魚雷を待つ）', () => {
     const e = new MissionEnd(RP_US02, 1.5, true);
     const w = fakeWorld({ fuelEmpty: true, band: 'stop', unresolved: 2, t: 90 });
     expect(e.step(w, 1.5, 50)).toBeNull();
     Object.assign(w.o, { t: 92.5, unresolved: 1, allOut: true, sinkPlaying: false });
-    expect(e.step(w, 4, 50)).toBeNull(); // 92.5 から開け直し（漂流の窓のままなら 93 で終わる）
-    w.o.t = 93.2;
-    expect(e.step(w, 4.7, 50)).toBeNull();
-    w.o.t = 95.5;
-    expect(e.step(w, 7, 50)).toBe('cleared');
+    expect(e.step(w, 4, 50)).toBeNull(); // 92.5 から開け直し（漂流の窓のままなら 90 + S で終わる）
+    w.o.t = 90 + S + 0.2;
+    expect(e.step(w, 1.5 + S + 0.2, 50)).toBeNull();
+    w.o.t = 92.5 + S;
+    expect(e.step(w, 4 + S, 50)).toBe('cleared');
   });
 });
 
@@ -365,11 +369,12 @@ describe('data: fleet_gone_clears（us_02）と torpedo_end_settle_s', () => {
     expect(String(protoOf(gameData, 'us_02')['fleet_gone_clears_source'])).toContain('帰投は必須ではない');
     expect(getDawnAir(gameData, 'us_04').fleetGoneClears).toBe(false); // 遊べない任務
   });
-  it('遊べる 4 任務の帰投地点に torpedo_end_settle_s 3 秒（design。ユーザーの「3秒ほど待ってほしい」）', () => {
+  it('遊べる 4 任務の帰投地点に torpedo_end_settle_s 5 秒（design。実機 1 回目「3秒ほど待ってほしい」→ 2 回目「5秒にしましょう」）', () => {
     for (const id of PLAYABLE) {
-      expect(getPrototypeMission(gameData, id).returnPoint.torpedoEndSettleS, id).toBe(3);
+      expect(getPrototypeMission(gameData, id).returnPoint.torpedoEndSettleS, id).toBe(5);
       const src = String((protoOf(gameData, id)['return_point'] as Rec)['torpedo_end_settle_s_source']);
-      expect(src, id).toContain('design (v0.6.2 実機 1 回目');
+      expect(src, id).toContain('design (v0.6.2 実機 2 回目');
+      expect(src, id).toContain('5秒にしましょう');
       expect(src, id).toContain('3秒ほど待ってほしい');
     }
   });

@@ -1,6 +1,7 @@
-// 夜明け（v0.6.1。docs/02 §6.7・§6.8、spec §8）の HUD と Result の文: 2 行目の時計と「帰投せよ」の理由、夜明けの空襲の行とそのキー、夜明けの帯、Result の夜明けの行。
+// 夜明け（v0.6.1。docs/02 §6.7・§6.8、spec §8）の HUD と Result の文: 時計（v0.6.2 実機 2 回目から左上だけ）と「帰投せよ」の理由、夜明けの空襲の行とそのキー、夜明けの帯、Result の夜明けの行。
 // v0.6.2: 夜明けに敵が退く任務（retire・hide）は帯の 2 行目と Result の行の後ろに付ける。
 // v0.6.2 実機 1 回目: 左上の時計の色、2 行目が時計を避ける倍率、空襲の行の後ろの「大発 岸へ N 隻」。
+// v0.6.2 実機 2 回目: 夜明けの秒数は左上の時計だけ（2 行目には出さない。ユーザー「メインメッセージの方に夜明けまでの秒数は不用」）。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
@@ -20,7 +21,7 @@ const RESULT_DODGE_SHOWN = 8;
  */
 export const STRIKE_DODGE_RULE_JA = '投下で転舵（旋回中は逆へ）';
 
-/** 2 行目の時計: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む） */
+/** 左上の時計（ui/dawn-clock）の文: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む）。v0.6.2 実機 1 回目までは 2 行目にも出していた */
 export function clockJa(t: BoatTelemetry): string {
   return t.dawn.reached ? `夜明け後 ${Math.floor(t.dawn.daylightS)} 秒` : `夜明けまで ${Math.max(0, Math.ceil(t.timeLeftS))} 秒`;
 }
@@ -60,9 +61,10 @@ export function bargeHideTagKey(d: DawnTelemetry, landedShow: boolean): number {
   return landedShow && d.bargesHidden > 0 ? -d.bargesHidden : 0;
 }
 
-/** 平常の行で時計の後ろに付ける「空襲下」（夜明けの後、敵の制空下の任務だけ） */
+/** 平常の行の頭に付ける「空襲下 ・ 」（夜明けの後、敵の制空下の任務だけ） */
 export function airRaidTagJa(t: BoatTelemetry): string {
-  return t.dawn.reached && t.dawn.air === DAWN_AIR_ENEMY ? ' ・ 空襲下' : '';
+  // v0.6.2 実機 2 回目: 2 行目から夜明けの時計を外した（左上の時計と重なる）ので、空襲下は行の頭に付ける
+  return t.dawn.reached && t.dawn.air === DAWN_AIR_ENEMY ? '空襲下 ・ ' : '';
 }
 
 /**

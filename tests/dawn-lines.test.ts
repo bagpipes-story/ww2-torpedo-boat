@@ -1,5 +1,6 @@
 // 夜明け（v0.6.1。spec §8・§10-6）の HUD と Result の文（ui/dawn-lines）、2 行目の優先順（ui/mission-mode の空襲の 2 つ）、
 // 夜明けのテレメトリと Result の材料（systems/dawn-telemetry）、Result の見出し（ui/result-heading）
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
@@ -117,11 +118,11 @@ describe('2 行目の時計と「帰投せよ」の理由（spec §8.1）', () =
     }
     expect(seen.size).toBe(30 + 30);
   });
-  it('平常の行: 夜明けの後・敵の制空下だけ「空襲下」を付ける', () => {
-    const normal = (t: BoatTelemetry): string => `${clockJa(t)}${airRaidTagJa(t)} ・ 命中 0`;
-    expect(normal(tele({}, { timeLeftS: 99.5 }))).toBe('夜明けまで 100 秒 ・ 命中 0');
-    expect(normal(tele({ ...ENEMY, daylightS: 12.4 }, { timeLeftS: 0 }))).toBe('夜明け後 12 秒 ・ 空襲下 ・ 命中 0');
-    expect(normal(tele({ ...OWN, daylightS: 12.4 }, { timeLeftS: 0 }))).toBe('夜明け後 12 秒 ・ 命中 0');
+  it('平常の行: 夜明けの後・敵の制空下だけ行の頭に「空襲下」を付ける（v0.6.2 実機 2 回目から 2 行目に時計は出さない。左上の時計と重なる）', () => {
+    const normal = (t: BoatTelemetry): string => `${airRaidTagJa(t)}命中 0`;
+    expect(normal(tele({}, { timeLeftS: 99.5 }))).toBe('命中 0');
+    expect(normal(tele({ ...ENEMY, daylightS: 12.4 }, { timeLeftS: 0 }))).toBe('空襲下 ・ 命中 0');
+    expect(normal(tele({ ...OWN, daylightS: 12.4 }, { timeLeftS: 0 }))).toBe('命中 0');
     // 敵の制空下でも夜明け前は付けない
     expect(airRaidTagJa(tele({ air: DAWN_AIR_ENEMY, strikeEnabled: true }))).toBe('');
   });
@@ -133,13 +134,13 @@ describe('2 行目の時計と「帰投せよ」の理由（spec §8.1）', () =
     expect(dawnCallLabel(CALL_SUNK, false, DAWN_AIR_ENEMY)).toBe('撃沈！');
     expect(dawnCallLabel(CALL_SUNK, true, DAWN_AIR_OWN)).toBe('撃破！');
     expect(dawnCallLabel(CALL_EXPENDED, true, DAWN_AIR_NONE)).toBe('大発なし ');
-    // 帰投せよの行（mission-line と同じ組み方）
+    // 帰投せよの行（mission-line と同じ組み方。v0.6.2 実機 2 回目から時計は付けない）
     const t = tele({ ...ENEMY, daylightS: 3.2 }, { timeLeftS: 0 });
-    expect(`${dawnCallLabel(CALL_DAWN, false, t.dawn.air)}帰投せよ  800 m  ${clockJa(t)}`).toBe('空襲下 帰投せよ  800 m  夜明け後 3 秒');
+    expect(`${dawnCallLabel(CALL_DAWN, false, t.dawn.air)}帰投せよ  800 m`).toBe('空襲下 帰投せよ  800 m');
     const o = tele({ ...OWN, daylightS: 3.2 }, { timeLeftS: 0 });
-    expect(`${dawnCallLabel(CALL_DAWN, false, o.dawn.air)}帰投せよ  800 m  ${clockJa(o)}`).toBe('夜明け 帰投せよ  800 m  夜明け後 3 秒');
-    expect(`燃料切れ — 漂流 ・ ${clockJa(o)}`).toBe('燃料切れ — 漂流 ・ 夜明け後 3 秒');
-    expect(`燃料切れ — 漂流 ・ ${clockJa(tele({}, { timeLeftS: 20 }))}`).toBe('燃料切れ — 漂流 ・ 夜明けまで 20 秒');
+    expect(`${dawnCallLabel(CALL_DAWN, false, o.dawn.air)}帰投せよ  800 m`).toBe('夜明け 帰投せよ  800 m');
+    // 2 行目の文を組む所（mission-line）に時計の関数が残っていない
+    expect(readFileSync('src/ui/mission-line.ts', 'utf8')).not.toMatch(/clockJa\(/);
   });
 });
 

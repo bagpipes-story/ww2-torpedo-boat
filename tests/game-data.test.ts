@@ -14,7 +14,7 @@ describe('game-data（data/*.json の読み出し）', () => {
     expect(m.enemyId).toBe('ijn_destroyer');
     expect(m.enemyHitsToSink).toBe(1);
     expect(m.fuelAllotmentGal).toBe(38);
-    expect(m.returnPoint).toEqual({ x: 5400, y: 600, radiusM: 250, callMargin: 1.5, torpedoSettleMaxS: 10, torpedoEndSettleS: 3 });
+    expect(m.returnPoint).toEqual({ x: 5400, y: 600, radiusM: 250, callMargin: 1.5, torpedoSettleMaxS: 10, torpedoEndSettleS: 5 });
     // 輪は海域の中、出発点は輪の外（約 3,538 m）
     const rp = m.returnPoint;
     expect(rp.x + rp.radiusM).toBeLessThanOrEqual(m.bounds.width);
