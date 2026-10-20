@@ -123,7 +123,7 @@ describe('dawn_air の検査（v0.6.1。spec §6.6）', () => {
     expect(isDawnAirRecord(US01)).toBe(true);
     const a = dawnAirFromData(US01, 'us_01', true);
     // retireEdge・retireForceJa は v0.6.2（dawn_air だけからは決まらない。retire の遊べる任務で config/dawn-data の getDawnAir が dawn_withdraw から入れる）
-    expect(a).toEqual({ control: 'enemy', confidence: 'medium', playAs: 'enemy', shipsAtDawn: 'stay', labelJa: '昼の空は敵（日本の水上機）', refs: US01.refs, retireEdge: null, retireForceJa: '' });
+    expect(a).toEqual({ control: 'enemy', confidence: 'medium', playAs: 'enemy', shipsAtDawn: 'stay', labelJa: '昼の空は敵（日本の水上機）', refs: US01.refs, retireEdge: null, retireForceJa: '', fleetGoneClears: false });
     expect(a.refs[0]).not.toBe(US01.refs[0]);
     // 争奪は遊べない任務なら何として遊ぶ予定でもよい
     for (const playAs of ['enemy', 'own', 'contested']) expect(dawnAirFromData(rec({ control: 'contested', play_as: playAs }), 'us_06', false).playAs).toBe(playAs);
@@ -428,10 +428,10 @@ describe('Briefing の条件と危険（v0.6.1。spec §8.4）', () => {
     return briefingRows(getBriefingRecord(gameData, id), briefingNumbers(s), (e) => enemyNameJa(gameData, e), (h) => riskLabelJa(gameData, h)).map((r) => r.text);
   };
   it('条件: 「夜明けまで N 秒」の後ろに（以後は空襲）／（昼の空は味方）と夜明けの敵艦（v0.6.2: us_02 は敵が北へ退く、us_03 は大発が岸へ隠れる）。危険の最後に「夜明けの空襲」（敵の制空下の任務だけ）', () => {
-    expect(rowsOf('us_01')[5]).toBe('夜明けまで 220 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本');
+    expect(rowsOf('us_01')[5]).toBe('夜明けまで 180 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本');
     expect(rowsOf('jp_06')[5]).toBe('夜明けまで 160 秒（以後は空襲） ・ 燃料 16 gal ・ 魚雷 2 本');
     expect(rowsOf('us_02')[5]).toBe('夜明けまで 150 秒（昼の空は味方・敵は北へ退く） ・ 燃料 38 gal ・ 魚雷 4 本');
-    expect(rowsOf('us_03')[5]).toBe('夜明けまで 200 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm');
+    expect(rowsOf('us_03')[5]).toBe('夜明けまで 160 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm');
     expect(rowsOf('us_01')[4]).toBe('暴風、敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('jp_06')[4]).toBe('敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('us_02')[4]).not.toContain('夜明けの空襲');

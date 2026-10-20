@@ -1,6 +1,7 @@
 // 夜明けの空（v0.6.1。docs/02 §6.7）の data の読み出し: missions_seed.json の dawn_air（13 任務すべて）と、遊べる任務の夜明けの空襲の規則
 // （v0_1_prototype.dawn_strike・hazards の dawn_air_strike・enemies.json の機体・キャンペーンの enemy_faction・risk_events.json の dawn_air_strike）。
 // v0.6.2: 夜明けに敵が退く規則（enemy_ships_at_dawn と v0_1_prototype.dawn_withdraw・駆逐艦／大発の有無）も遊べる任務で検査する。
+// v0.6.2 実機 1 回目: 制空権下で敵艦隊がいなくなれば任務終了（v0_1_prototype.fleet_gone_clears。play_as が own で駆逐艦のいる任務だけ）も検査して DawnAir に入れる。
 // mission-data と同じく data を直接読み、game-data の関数は呼ばない（値の循環を作らない）。window を読まない（?debug&nostrike は world-setup の SetupOptions.strikeOff）。
 // 壊れた data は任務の id を付けて例外（起動時に分かる）。
 import type { GameData } from './game-data';
@@ -33,13 +34,17 @@ function readDawnAir(m: Rec, missionId: string): DawnAir {
   return dawnAirFromData(raw, missionId, protoOf(m) !== null);
 }
 
-/** 任務の夜明けの空（13 任務すべてにある）。遊べる任務は checkPlayableDawn の規則も通し、retire の任務は退く先の縁と呼び名（dawn_withdraw.retire_edge・force_ja）を入れる */
+/**
+ * 任務の夜明けの空（13 任務すべてにある）。遊べる任務は checkPlayableDawn の規則も通し、retire の任務は退く先の縁と呼び名（dawn_withdraw.retire_edge・force_ja）を、
+ * fleet_gone_clears の任務はそれ（v0.6.2 実機 1 回目）を入れる
+ */
 export function getDawnAir(data: GameData, missionId: string): DawnAir {
   const m = missionRec(data, missionId);
   const air = readDawnAir(m, missionId);
   const proto = protoOf(m);
-  const withdraw = proto ? checkPlayable(data, m, proto, missionId, air) : null;
-  return withdraw ? { ...air, retireEdge: withdraw.retireEdge, retireForceJa: withdraw.forceJa } : air;
+  if (!proto) return air;
+  const { withdraw, fleetGoneClears } = checkPlayable(data, m, proto, missionId, air);
+  return withdraw ? { ...air, retireEdge: withdraw.retireEdge, retireForceJa: withdraw.forceJa, fleetGoneClears } : { ...air, fleetGoneClears };
 }
 
 /**
@@ -50,6 +55,7 @@ export function getDawnAir(data: GameData, missionId: string): DawnAir {
  * - risk_events.json の dawn_air_strike に params がある
  * - 夜明けに敵が退く（v0.6.2）: enemy_ships_at_dawn が retire ⇒ 駆逐艦（enemy_start）の任務で、v0_1_prototype.dawn_withdraw.retire_edge が north・south・east・west。
  *   hide ⇒ 大発の隊（barges）の任務。dawn_withdraw は retire の任務だけ（stay・none・hide には置かない。知らないキーも例外）
+ * - 敵艦隊なしで任務終了（v0.6.2 実機 1 回目）: v0_1_prototype.fleet_gone_clears は play_as が own で駆逐艦（enemy_start）のいる任務だけ。true / false と fleet_gone_clears_source（design）
  */
 export function checkPlayableDawn(data: GameData, missionId: string): void {
   const m = missionRec(data, missionId);
@@ -58,10 +64,11 @@ export function checkPlayableDawn(data: GameData, missionId: string): void {
   checkPlayable(data, m, proto, missionId, readDawnAir(m, missionId));
 }
 
-/** 遊べる任務の規則を検査し、retire の任務の dawn_withdraw を返す（ほかは null） */
-function checkPlayable(data: GameData, m: Rec, proto: Rec, missionId: string, air: DawnAir): DawnWithdraw | null {
+/** 遊べる任務の規則を検査し、retire の任務の dawn_withdraw（ほかは null）と fleet_gone_clears（無ければ false）を返す */
+function checkPlayable(data: GameData, m: Rec, proto: Rec, missionId: string, air: DawnAir): { withdraw: DawnWithdraw | null; fleetGoneClears: boolean } {
   const at = `missions_seed ${missionId}`;
   const withdraw = checkWithdraw(proto, missionId, air);
+  const fleetGoneClears = checkFleetGoneClears(proto, missionId, air);
   const raw = proto['dawn_strike'];
   const block = raw === undefined ? null : dawnStrikeFromData(raw, missionId);
   const enemy = air.playAs === 'enemy';
@@ -72,12 +79,31 @@ function checkPlayable(data: GameData, m: Rec, proto: Rec, missionId: string, ai
   const night = proto['night'];
   const optional = typeof night === 'object' && night !== null ? (night as Rec)['optional_hazards'] : undefined;
   if (Array.isArray(optional) && optional.includes(DAWN_STRIKE_EVENT_ID)) throw new Error(`${at}: ${DAWN_STRIKE_EVENT_ID} を night.optional_hazards に入れない（夜の揺らぎの乱数がずれる。夜明けの空襲は夜ごとに決めない）`);
-  if (!block) return withdraw;
+  if (!block) return { withdraw, fleetGoneClears };
   const plane = getStrikeAircraftRecord(data, block.aircraft_id, missionId);
   const faction = campaignEnemyFaction(data, m, missionId);
   if (plane.faction !== faction) throw new Error(`${at}: 夜明けの空襲の機体 ${plane.id} の faction（${plane.faction}）がキャンペーンの enemy_faction（${faction}）と違う`);
   getDawnStrikeEventRecord(data);
-  return withdraw;
+  return { withdraw, fleetGoneClears };
+}
+
+/**
+ * 制空権下で敵艦隊がいなくなれば任務終了（v0.6.2 実機 1 回目。checkPlayable の一部）: v0_1_prototype.fleet_gone_clears。無ければ false。
+ * 置けるのは dawn_air.play_as が own（制空権下）で駆逐艦（enemy_start）のいる任務だけ。値は true / false で、fleet_gone_clears_source（design の理由）が要る
+ */
+function checkFleetGoneClears(proto: Rec, missionId: string, air: DawnAir): boolean {
+  const at = `missions_seed ${missionId}`;
+  const v = proto['fleet_gone_clears'];
+  const src = proto['fleet_gone_clears_source'];
+  if (v === undefined) {
+    if (src !== undefined) throw new Error(`${at}: v0_1_prototype.fleet_gone_clears_source だけがある（fleet_gone_clears が無い）`);
+    return false;
+  }
+  if (typeof v !== 'boolean') throw new Error(`${at}: v0_1_prototype.fleet_gone_clears は true か false（${String(v)}）`);
+  if (typeof src !== 'string' || !src.includes('design')) throw new Error(`${at}: v0_1_prototype.fleet_gone_clears_source（design の理由）が無い`);
+  if (air.playAs !== 'own') throw new Error(`${at}: v0_1_prototype.fleet_gone_clears は dawn_air.play_as が own（制空権下）の任務だけ（${air.playAs}）`);
+  if (proto['enemy_start'] === undefined) throw new Error(`${at}: v0_1_prototype.fleet_gone_clears は駆逐艦（enemy_start）の任務だけ`);
+  return v;
 }
 
 /** 夜明けに敵が退く規則（v0.6.2。checkPlayable の一部）。retire の任務の dawn_withdraw を返す（ほかは null） */

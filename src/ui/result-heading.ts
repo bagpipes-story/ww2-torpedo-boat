@@ -1,5 +1,6 @@
 // Result の見出し（v0.6.1 で scenes/result-scene.ts から切り出し）: 終了理由の文と「任務終了 — …」の 1 行、得点の行の「回避 N」、艦の行（v0.6.2）。
 // v0.6.1: 夜明けは終了理由でなくなり（dawn を削除）、夜明けの後に終わった任務は見出しに「（夜明け後 N 秒）」を付ける。
+// v0.6.2 実機 1 回目: 制空権下で敵艦隊がいなくなって終えた任務（cleared）は「敵艦隊なし（制空権下・帰投不要）」。帰投と同じに数える（returned が true）。
 // Phaser も config（DOM を読む game-config）も使わない（文を組むだけ。tests から型検査ごと読める）。終了理由の型は core/mission-flow。
 import type { MissionEndReason } from '../core/mission-flow';
 
@@ -8,6 +9,7 @@ export const RESULT_HISTORICAL_TAG_JA = '（史実）';
 
 export const REASON_LABEL: Record<MissionEndReason, string> = {
   returned: '帰投した',
+  cleared: '敵艦隊なし（制空権下・帰投不要）',
   adrift: '燃料切れで漂流',
   grounded: '浅瀬に座礁',
   rammed: '駆逐艦に体当たりされた',
@@ -19,6 +21,11 @@ export const REASON_LABEL: Record<MissionEndReason, string> = {
   barge_fire: '大発の機銃で沈没',
   shore_battery: '沿岸砲で沈没',
 };
+
+/** Result の「帰投: あり／なし」の値（v0.6.2 実機 1 回目: 敵艦隊なしで終えた任務は「不要」。輪に入っていないので「あり」と出さない） */
+export function resultReturnJa(reason: MissionEndReason, returned: boolean): string {
+  return reason === 'cleared' ? '不要' : returned ? 'あり' : 'なし';
+}
 
 /**
  * 見出しに付ける夜明け後の秒（付けなければ NaN）。夜明けの後に終わった任務に付ける（夜明けに輪の外で帰投した、沈んだ・漂流した・座礁した）。

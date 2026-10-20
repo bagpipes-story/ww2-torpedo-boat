@@ -132,7 +132,7 @@ export class BargeHunt {
     return this.flotilla.sunk >= this.p.quota;
   }
 
-  /** 夜明けに岸へ隠れる（v0.6.2。hide の任務で夜明けのラッチの 1 回だけ）。以後の固定ステップで、岸沿いを進む大発が反応の遅れの後に岸へ逃げる（乱数は引かない） */
+  /** 夜明けに岸へ隠れる（v0.6.2。hide の任務で夜明けのラッチの 1 回だけ）。次の固定ステップで、岸沿いを進む大発がすぐ岸へ逃げる（実機 1 回目で反応の遅れを外した。乱数は引かない） */
   withdraw(): void {
     if (this.check.dawn) return;
     this.check.dawn = true;
@@ -142,6 +142,11 @@ export class BargeHunt {
   /** 夜明けの後に岸へ隠れた（上陸した）隻数（夜明け前は 0。Result の夜明けの行） */
   get hiddenAfterDawn(): number {
     return this.check.dawn ? this.flotilla.beached - this.beachedAtDawn : 0;
+  }
+
+  /** 夜明けの後に岸へ逃げている隻数（夜明け前は 0。v0.6.2 実機 1 回目: 空襲の行の「大発 岸へ N 隻」） */
+  get runningAfterDawn(): number {
+    return this.check.dawn ? this.flotilla.running : 0;
   }
 
   /** 固定ステップ: 艇の砲（押している間）→ 大発（撃ったら閃光の距離で気づく）。held は射撃ボタン */

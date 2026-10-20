@@ -1,5 +1,5 @@
 // 大発の隊（docs/02 §6.4、v0.4.2）: 岸沿いを低速で進み、艇に気づくと反応の遅れの後に岸へ逃げる（上陸＝逃げ切り）。気づいている間は 13mm で撃ち返す。
-// 夜明け（v0.6.2。FlotillaCheck.dawn）: 岸沿いを進む大発すべてが、気づいたときと同じく反応の遅れの後に岸へ逃げて隠れる（気づいてはいないので撃たない＝乱数を引かない）。
+// 夜明け（v0.6.2。FlotillaCheck.dawn）: 岸沿いを進む大発すべてが、反応の遅れなしにすぐ岸へ逃げて隠れる（実機 1 回目「逃げたように見えない」で遅れを外した。気づいてはいないので撃たない＝乱数を引かない）。
 // Phaser 非依存・毎ステップ確保しない。操舵は ship-ai の steerShip、弾は shells.ts（駆逐艦の砲と同じ見越し＋一様円盤）。
 // 時計（反応の遅れ・警戒・機銃の間隔）は体感の実秒 feelDt、運動と弾の飛行は game 秒 dt。数値と検査は barge-data.ts。乱数は seed+6 の系列だけ（2 回/発）。
 import type { BoatState } from './boat-motion';
@@ -44,6 +44,8 @@ export interface FlotillaState {
   allBlocked: boolean;
   /** 逃げている大発が岸に着くまでの最短の体感秒（逃げていなければ NaN） */
   escapeLeftS: number;
+  /** 岸へ逃げている（RUN の）浮いている大発の隻数（v0.6.2 実機 1 回目。夜明けの空襲の行の「大発 岸へ（N 隻）」） */
+  running: number;
   /** KPI: 機銃の発射・艇への命中、最初に（目で）気づかれたときの距離 m（NaN なら目では気づかれていない）、最初の気づきが艇の射撃の閃光だった */
   shotsFired: number;
   hitsOnBoat: number;
@@ -65,7 +67,7 @@ export interface FlotillaCheck {
   flashM: number;
   /** 艇が浮いている（気づく・撃つ相手がいる） */
   boatAfloat: boolean;
-  /** 夜明け後（v0.6.2。enemy_ships_at_dawn が hide の任務で、夜明けのラッチから true）。岸沿いを進む大発は反応の遅れの後に岸へ逃げる。省略は夜明け前 */
+  /** 夜明け後（v0.6.2。enemy_ships_at_dawn が hide の任務で、夜明けのラッチから true）。岸沿いを進む大発はすぐ（反応の遅れなしに）岸へ逃げる。省略は夜明け前 */
   dawn?: boolean;
 }
 
@@ -99,7 +101,7 @@ export function createFlotilla(p: BargeParams, shellPoolSize: number): FlotillaS
       runHeadingDeg: wrapDeg360(180 + (i - (p.count - 1) / 2) * p.fanDeg),
     });
   }
-  return { barges, shells: createShells(shellPoolSize), sunk: 0, beached: 0, anyDetected: false, allBlocked: false, escapeLeftS: NaN, shotsFired: 0, hitsOnBoat: 0, firstDetectM: NaN, flashFirst: false };
+  return { barges, shells: createShells(shellPoolSize), sunk: 0, beached: 0, anyDetected: false, allBlocked: false, escapeLeftS: NaN, running: 0, shotsFired: 0, hitsOnBoat: 0, firstDetectM: NaN, flashFirst: false };
 }
 
 /** 艇の砲が当たった: HP を減らして気づかせる。沈んだら true（撃破の演出と KPI は呼ぶ側） */
@@ -119,7 +121,8 @@ export function hitBarge(f: FlotillaState, p: BargeParams, i: number, damage: nu
 
 /**
  * 固定ステップ: 気づく（目か閃光）→ 段階 → 操舵 → 上陸 → 機銃 → 弾の飛行と着弾。
- * 気づいた大発は reaction_delay_s の間は進路のまま（撃ち返しは気づいた瞬間から）、その後は岸へ逃げる（気づきが解けても戻らない）
+ * 気づいた大発は reaction_delay_s の間は進路のまま（撃ち返しは気づいた瞬間から）、その後は岸へ逃げる（気づきが解けても戻らない）。
+ * 夜明けの後（c.dawn）は岸沿いを進む大発がそのステップで岸へ逃げる（警戒と反応の遅れを飛ばす。すでに気づいた・逃げている大発はそのまま）
  */
 export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck, rng: SeededRng, feelDt: number, dt: number, ev: FlotillaEvents): void {
   const boat = c.boat;
@@ -128,6 +131,7 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
   let live = 0;
   let hidden = 0;
   let escapeM = Infinity;
+  let running = 0;
   for (let i = 0; i < f.barges.length; i++) {
     const b = f.barges[i]!;
     if (!bargeAfloat(b)) continue;
@@ -148,7 +152,8 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
       b.holdLeftS -= feelDt;
       if (b.holdLeftS <= 0) b.detected = false;
     }
-    if (b.phase === BARGE_CRUISE && (b.detected || c.dawn === true)) {
+    if (b.phase === BARGE_CRUISE && c.dawn === true) b.phase = BARGE_RUN;
+    else if (b.phase === BARGE_CRUISE && b.detected) {
       b.phase = BARGE_ALERT;
       b.alertS = 0;
     }
@@ -170,7 +175,10 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
     live++;
     if (b.blocked) hidden++;
     if (b.detected) anyDetected = true;
-    if (b.phase === BARGE_RUN && p.beachY - b.y < escapeM) escapeM = p.beachY - b.y;
+    if (b.phase === BARGE_RUN) {
+      running++;
+      if (p.beachY - b.y < escapeM) escapeM = p.beachY - b.y;
+    }
     // 13mm: 気づいていて、煙幕に遮られず、有効射程内なら撃つ（間隔は駆逐艦の砲と同じく負の残りを繰り越す）
     const g = p.gun;
     const cd = Math.max(b.gunCooldownS - feelDt, -feelDt);
@@ -189,6 +197,7 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
   }
   f.anyDetected = anyDetected;
   f.allBlocked = live > 0 && hidden === live;
+  f.running = running;
   // 岸まで（逃げる速さで。転舵の分は見ない）を体感秒に（game m/秒 × time_scale）
   f.escapeLeftS = escapeM === Infinity ? NaN : escapeM / (p.runSpeedMps * p.timeScale);
   // 着弾（onImpact の命中で艇が沈み始めたら、呼ぶ側が c.boatAfloat を false にする＝同じステップの残りの弾は外れ）

@@ -1,5 +1,6 @@
 // 夜明け（v0.6.1。docs/02 §6.7・§6.8、spec §8）の HUD と Result の文: 2 行目の時計と「帰投せよ」の理由、夜明けの空襲の行とそのキー、夜明けの帯、Result の夜明けの行。
 // v0.6.2: 夜明けに敵が退く任務（retire・hide）は帯の 2 行目と Result の行の後ろに付ける。
+// v0.6.2 実機 1 回目: 左上の時計の色、2 行目が時計を避ける倍率、空襲の行の後ろの「大発 岸へ N 隻」。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
@@ -29,6 +30,36 @@ export function clockKey(t: BoatTelemetry): number {
   return t.dawn.reached ? -1 - Math.floor(t.dawn.daylightS) : Math.max(0, Math.ceil(t.timeLeftS));
 }
 
+/** 左上の時計（v0.6.2 実機 1 回目。ui/dawn-clock）の色: 夜明けの後で敵の空襲がある任務（敵の制空下・strikeEnabled）は警告色、ほかは強調色。夜明けで clockKey の符号が変わるので色もキーの変化で組み直せる */
+export function clockColor(t: BoatTelemetry): string {
+  return t.dawn.reached && t.dawn.air === DAWN_AIR_ENEMY && t.dawn.strikeEnabled ? HUD_COLOR_WARN : HUD_COLOR_STRONG;
+}
+
+/**
+ * 上中央の 2 行目（中央寄せ）の倍率（v0.6.2 実機 1 回目）: 左上の時計（左端から reservePx）と左右対称に避ける幅 gameW − 2×reservePx に収める。収まれば 1。
+ * 論理幅 1280 で僚艇・浅瀬の付いた空襲の行（約 1,020 px）などが時計にかかるときだけ縮む（空襲の行は幅 1,560（Safari の iPhone 15）では縮まない。
+ * us_03 の砲の行は「遠い・上陸まで・沿岸砲の射界・浅瀬」が揃うと約 1,140 px で、1,560 でも約 0.98 倍・1,280 では約 16 px 相当）。文が変わったときだけ呼ぶ
+ */
+export function lineFitScale(textW: number, gameW: number, reservePx: number): number {
+  const maxW = gameW - 2 * reservePx;
+  return textW > maxW && textW > 0 ? Math.max(0, maxW) / textW : 1;
+}
+
+/**
+ * 夜明けに岸へ隠れる大発（v0.6.2 実機 1 回目「逃げたように見えない」）の、空襲の行の後ろ: 逃げている間は「 ・ 大発 岸へ N 隻」、
+ * 逃げている大発がいなくなった直後（landedShow: 上陸の表示 BARGE_EVENT_SHOW_MS の間）は「 ・ 大発 上陸 N 隻」（N は夜明けの後に上陸した数）、ほかは ''
+ */
+export function bargeHideTagJa(d: DawnTelemetry, landedShow: boolean): string {
+  if (d.bargesRunning > 0) return ` ・ 大発 岸へ ${d.bargesRunning} 隻`;
+  return landedShow && d.bargesHidden > 0 ? ` ・ 大発 上陸 ${d.bargesHidden} 隻` : '';
+}
+
+/** bargeHideTagJa のキー（strikeKey は 31 ビット使い切りなので別の数。逃げている間は隻数、上陸の直後は −隻数、無ければ 0） */
+export function bargeHideTagKey(d: DawnTelemetry, landedShow: boolean): number {
+  if (d.bargesRunning > 0) return d.bargesRunning;
+  return landedShow && d.bargesHidden > 0 ? -d.bargesHidden : 0;
+}
+
 /** 平常の行で時計の後ろに付ける「空襲下」（夜明けの後、敵の制空下の任務だけ） */
 export function airRaidTagJa(t: BoatTelemetry): string {
   return t.dawn.reached && t.dawn.air === DAWN_AIR_ENEMY ? ' ・ 空襲下' : '';
@@ -46,9 +77,10 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number): s
 
 /**
  * 夜明けの空襲の 2 行目（落下中・爆撃進路・接近・旋回・波の合間）。僚艇が浮いていれば僚艇の HP（被弾の直後 escortHit は「被弾！」。キャッシュは mission-line の escortKey）、
- * 浅瀬・暴風の警告は hud-lines の withWarnings で後ろに付ける。落下中の自艇への爆弾は、狙いが旋回の弧の先（fallingArc）なら「旋回と逆へ」
+ * 夜明けに岸へ逃げる大発（v0.6.2 実機 1 回目。bargeHideTagJa。landedShow は上陸の直後。キャッシュは mission-line の bargeTagKey）、
+ * 沿岸砲（大発の後ろ書きがある間は出さない）・浅瀬・暴風の警告は hud-lines の withWarnings で後ろに付ける。落下中の自艇への爆弾は、狙いが旋回の弧の先（fallingArc）なら「旋回と逆へ」
  */
-export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boolean, escortHit: boolean): HudLine {
+export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boolean, escortHit: boolean, landedShow: boolean = false): HudLine {
   const d = t.dawn;
   let text: string;
   let warn = true;
@@ -63,7 +95,10 @@ export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boo
     warn = false;
   }
   if (t.escortEnabled && !t.escortSunk) text += escortHit ? ` ・ 僚艇 被弾！ HP ${Math.ceil(t.escortHp)}` : ` ・ 僚艇 HP ${Math.ceil(t.escortHp)}`;
-  return { text: withWarnings(text, t, shallowStep, stormWarn), color: warn || escortHit ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
+  // 大発の後ろ書きがある間（夜明けの後の約 12 秒）は沿岸砲の警告を出さない（us_03 の空襲＋大発＋沿岸砲＋浅瀬は約 1,170 px で上限 1,040 px を超えた。レビュー）
+  const tag = bargeHideTagJa(d, landedShow);
+  text += tag;
+  return { text: withWarnings(text, t, shallowStep, stormWarn, tag === ''), color: warn || escortHit ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
 }
 
 /**
@@ -131,11 +166,12 @@ function withdrawResultJa(d: DawnResult): string {
 
 /**
  * Result の夜明けの行（無ければ null）: 夜明けに輪の外だった（空襲の集計か「敵機は来ない」）、夜明け前に帰投した（残り秒）。後ろに夜明けに退いた敵（v0.6.2）。
- * 夜明け前に帰投せずに終わった・夜明けに輪の中にいて帰投しなかった任務は出さない。転舵は自艇を狙った最初の 8 発（— は転舵なし。無ければ付けない）
+ * 夜明け前に帰投せずに終わった・夜明けに輪の中にいて帰投しなかった任務は出さない。転舵は自艇を狙った最初の 8 発（— は転舵なし。無ければ付けない）。
+ * cleared（v0.6.2 実機 1 回目。敵艦隊なしで終えた）は returned と同じ扱いで、夜明け前なら「夜明け: 前に敵艦隊なし（残り N 秒）」
  */
-export function dawnResultLine(d: DawnResult, returned: boolean): string | null {
+export function dawnResultLine(d: DawnResult, returned: boolean, cleared = false): string | null {
   const w = withdrawResultJa(d);
-  if (!d.reached || !d.caughtOutside) return returned ? `夜明け: 前に帰投（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）${w}` : null;
+  if (!d.reached || !d.caughtOutside) return returned ? `夜明け: 前に${cleared ? '敵艦隊なし' : '帰投'}（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）${w}` : null;
   const s = Math.round(d.daylightS);
   const k = d.strike;
   if (d.air !== DAWN_AIR_ENEMY || !k) return `夜明け後 ${s} 秒 ・ ${d.labelJa}（敵機は来ない）${w}`;

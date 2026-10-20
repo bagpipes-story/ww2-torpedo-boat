@@ -48,6 +48,11 @@ export class EnemySide {
     return this.hunt ? this.hunt.hiddenAfterDawn : 0;
   }
 
+  /** 夜明けの後に岸へ逃げている大発の隻数（v0.6.2 実機 1 回目。夜明け前と駆逐艦の任務では 0）。空襲の行の「大発 岸へ N 隻」 */
+  get bargesRunning(): number {
+    return this.hunt ? this.hunt.runningAfterDawn : 0;
+  }
+
   /**
    * 夜明けに退く（v0.6.2）。夜明けのラッチ（systems/world-dawn）で 1 回だけ、enemy_ships_at_dawn が retire か hide の任務で呼ぶ（stay・none は呼ばない）。
    * retire: 駆逐艦の隊は retireHeadingDeg（core/dawn-withdraw の retireHeadingDeg。今夜の左右反転込み）へ全速。hide は NaN を渡す（駆逐艦は退かない）。

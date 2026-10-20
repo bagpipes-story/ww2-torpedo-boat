@@ -26,6 +26,8 @@ export interface DawnAir {
   retireEdge: RetireEdge | null;
   /** 退く敵の呼び名（v0.6.2。dawn_withdraw.force_ja。夜明けの帯の「東京急行は北へ退く」）。retireEdge が null なら '' */
   retireForceJa: string;
+  /** 制空権下で敵艦隊がいなくなれば任務終了（v0.6.2 実機 1 回目。v0_1_prototype.fleet_gone_clears を config/dawn-data の getDawnAir が入れる）。ほかは false */
+  fleetGoneClears: boolean;
 }
 
 /** テレメトリ・Result の夜明けの空の符号（NONE は夜明け前、または遊び方の無い争奪） */
@@ -112,6 +114,9 @@ export interface DawnTelemetry {
   forceJa: string;
   /** 駆逐艦・輸送船がすべて沈み始めたか退き、そのうち 1 隻でも退いた（v0.6.2 レビュー。HUD の 3 行目「東京急行は北へ去った ・ 狙う艦なし」）。夜明け前は常に false */
   shipsGone: boolean;
+  /** 夜明けの後に岸へ逃げている大発の隻数と、夜明けの後に岸へ隠れた（上陸した）隻数（v0.6.2 実機 1 回目。空襲の行の後ろ。夜明け前・大発の無い任務は 0） */
+  bargesRunning: number;
+  bargesHidden: number;
 }
 
 export function createDawnTelemetry(): DawnTelemetry {
@@ -137,6 +142,8 @@ export function createDawnTelemetry(): DawnTelemetry {
     retireJa: '',
     forceJa: '',
     shipsGone: false,
+    bargesRunning: 0,
+    bargesHidden: 0,
   };
 }
 
@@ -239,5 +246,6 @@ export function dawnAirFromData(r: DawnAirRecord, missionId: string, playable: b
     refs: r.refs.map((x) => ({ url: x.url, claim: x.claim })),
     retireEdge: null,
     retireForceJa: '',
+    fleetGoneClears: false,
   };
 }

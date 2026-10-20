@@ -1,8 +1,15 @@
 // デバッグHUD: FPS とビルド番号を画面に常時表示する（CLAUDE.md §3）。描画サイズの行は ?debug のときだけ（v0.4.2: 2 行目の長い文と同じ段で重なる）。
+// v0.6.2 実機 1 回目: 左上 2 段目は夜明けの時計（ui/dawn-clock）が使うので、描画サイズの行は燃料計の下へ移した（SIZE_TEXT_Y）。
 // §7: 毎フレーム setText しない。FPS は一定間隔で整数化して前回値と違うときだけ、表示サイズは RESIZE イベント時だけ更新する。
 import Phaser from 'phaser';
 import { DEBUG_ENABLED, DEPTH, GAME_WIDTH, HUD_FPS_INTERVAL_MS, HUD_MARGIN } from '../config/game-config';
-import { HUD_DEBUG_LINE_HEIGHT, HUD_FONT_DEBUG_PX, hudTextStyle } from '../config/ui-config';
+import { FUEL_GAUGE_OFFSET_Y, FUEL_TICK_HEIGHT, HP_BAR_HEIGHT, HP_FONT_PX, HUD_FONT_DEBUG_PX, HUD_TEXT_GAP, hudTextStyle } from '../config/ui-config';
+
+/**
+ * ?debug の描画サイズの行の y（v0.6.2 実機 1 回目: 左上 2 段目は夜明けの時計になったので、燃料計の下端（目盛りのはみ出し込み）から HUD_TEXT_GAP 空けた所 = 174。
+ * 一時停止ボタンの上端（PAUSE_BUTTON_Y − 半径 = 234）より上。ui-config は 300 行を超えているのでここに置く）
+ */
+const SIZE_TEXT_Y = HUD_MARGIN + FUEL_GAUGE_OFFSET_Y + HP_FONT_PX + HUD_TEXT_GAP + HP_BAR_HEIGHT / 2 + FUEL_TICK_HEIGHT / 2 + HUD_TEXT_GAP;
 
 export interface DebugHudOptions {
   buildLabel: string;
@@ -29,9 +36,9 @@ export class DebugHud {
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.hud);
 
-    // 左上2行目: 描画解像度 -> 実表示サイズ(CSS px) @DPR。FIT が効いているか・どの端末かを見るため（上中央のビルド番号と重ならない位置）。
-    // 上中央の 2 行目（任務の行）と同じ段なので ?debug のときだけ出す（v0.4.2: 大発の任務の長い文の頭に重なった）
-    this.sizeText = scene.add.text(HUD_MARGIN, HUD_MARGIN + HUD_DEBUG_LINE_HEIGHT, '', style).setDepth(DEPTH.hud).setVisible(DEBUG_ENABLED);
+    // 左上・燃料計の下: 描画解像度 -> 実表示サイズ(CSS px) @DPR。FIT が効いているか・どの端末かを見るため。?debug のときだけ出す
+    // （v0.4.2: 上中央の 2 行目の長い文の頭に重なった。v0.6.2 実機 1 回目: 左上 2 段目は夜明けの時計になったので燃料計の下へ）
+    this.sizeText = scene.add.text(HUD_MARGIN, SIZE_TEXT_Y, '', style).setDepth(DEPTH.hud).setVisible(DEBUG_ENABLED);
 
     this.timer = scene.time.addEvent({
       delay: HUD_FPS_INTERVAL_MS,

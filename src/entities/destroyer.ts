@@ -25,6 +25,8 @@ export class Destroyer {
   sinking = false;
   /** 沈没演出が終わった（sinking は演出中も true のまま。終了判定は「演出中」をこれで区別する） */
   sunk = false;
+  /** 沈み始めたときの時計（世界の stepTimeS。沈んでいなければ NaN）。終わり際の当たりの窓（v0.6.2 実機 1 回目。core/torpedo-targets） */
+  sinkStartS = NaN;
   /** 夜明けに退いて海域を出た（v0.6.2。スプライトは隠した。運動・当たり判定・反撃を止める。撃沈には数えない） */
   withdrawn = false;
   private sighted = true;
@@ -104,10 +106,11 @@ export class Destroyer {
     return this.hitsTaken >= this.spec.hitsToSink;
   }
 
-  /** 沈没演出（図形: 縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る */
-  playSinking(onDone: () => void): void {
+  /** 沈没演出（図形: 縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る。nowS は沈み始めた時計（世界の stepTimeS） */
+  playSinking(nowS: number, onDone: () => void): void {
     if (this.sinking) return;
     this.sinking = true;
+    this.sinkStartS = nowS;
     this.state.speedMps = 0;
     if (!this.sighted) this.sprite.setVisible(true);
     this.scene.tweens.add({

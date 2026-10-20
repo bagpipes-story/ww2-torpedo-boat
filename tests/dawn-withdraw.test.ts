@@ -193,22 +193,29 @@ describe('大発の夜明け（FlotillaCheck.dawn。hide の任務）', () => {
     expect(b).toEqual(a);
     expect(a.barges.map((x) => x.phase)).toContain(BARGE_CRUISE); // 2 組目は気づかず岸沿いのまま
   });
-  it('夜明け後: 岸沿いを進む大発すべてが反応の遅れの後に岸へ逃げて上陸する（気づいていないので撃たない＝乱数を引かない）。「大発なし」の条件（撃破＋上陸＝全隻）が立つ', () => {
+  it('夜明け後: 岸沿いを進む大発すべてが最初のステップで岸へ逃げ（v0.6.2 実機 1 回目: 警戒と反応の遅れを飛ばす）、上陸する（気づいていないので撃たない＝乱数を引かない）。「大発なし」の条件（撃破＋上陸＝全隻）が立つ', () => {
     const f = createFlotilla(BP, 16);
     const { rng, calls } = spied(8);
     const log: string[] = [];
     const c = check(far(), { dawn: true });
+    const y0 = f.barges.map((x) => x.y);
     stepFlotilla(f, BP, c, rng, DT, DT * TS, events(log));
-    expect(f.barges.map((x) => x.phase)).toEqual([BARGE_ALERT, BARGE_ALERT, BARGE_ALERT, BARGE_ALERT]);
-    expect(f.barges.every((x) => !x.detected)).toBe(true);
-    let t = DT;
-    while (f.barges.some((x) => x.phase === BARGE_ALERT)) {
+    expect(f.barges.map((x) => x.phase)).toEqual([BARGE_RUN, BARGE_RUN, BARGE_RUN, BARGE_RUN]);
+    expect(f.barges.every((x) => !x.detected && x.alertS === 0)).toBe(true);
+    expect(f.running).toBe(4);
+    expect(f.escapeLeftS).not.toBeNaN(); // HUD の「大発が岸へ逃げる ・ 上陸まで N 秒」がすぐ出る
+    // 逃げる向き（南へ扇に開く）へ舵を切り、run_speed へ加速し始める（巡航の進路のままではない）
+    for (let i = 0; i < 60; i++) stepFlotilla(f, BP, c, rng, DT, DT * TS, events(log));
+    expect(f.barges.every((x, i) => x.y > y0[i]!)).toBe(true);
+    let t = 61 * DT;
+    for (let i = 0; i < 60 * 60 && f.beached < f.barges.length; i++) {
       stepFlotilla(f, BP, c, rng, DT, DT * TS, events(log));
       t += DT;
+      expect(f.running + f.beached).toBe(4);
     }
-    expect(t).toBeCloseTo(BP.reactionDelayS, 1);
-    expect(f.barges.map((x) => x.phase)).toEqual([BARGE_RUN, BARGE_RUN, BARGE_RUN, BARGE_RUN]);
-    for (let i = 0; i < 60 * 60 && f.beached < f.barges.length; i++) stepFlotilla(f, BP, c, rng, DT, DT * TS, events(log));
+    // 反応の遅れ（reaction_delay_s 5 秒）を待っていた v0.6.2 の初版より、全隻の上陸がその分早い（岸まで 160 m を run_speed で走る分だけ）
+    expect(t).toBeLessThan(BP.reactionDelayS + 15);
+    expect(f.running).toBe(0);
     expect(f.beached).toBe(4);
     expect(f.sunk + f.beached).toBe(f.barges.length);
     expect(f.barges.every((x) => x.phase === BARGE_BEACHED && x.y >= BP.beachY)).toBe(true);
@@ -216,13 +223,31 @@ describe('大発の夜明け（FlotillaCheck.dawn。hide の任務）', () => {
     expect(log).not.toContain('fire');
     expect(calls()).toBe(0);
   });
-  it('夜明け後も、撃破した大発は沈んだまま・逃げている大発はそのまま逃げる（段階を戻さない）', () => {
+  it('夜明け後も、撃破した大発は沈んだまま・逃げている大発はそのまま逃げる・気づいて反応の遅れの途中の大発は遅れを続ける（段階を戻さない・飛ばさない）', () => {
     const f = createFlotilla(BP, 16);
     f.barges[0]!.phase = BARGE_SUNK;
     f.sunk = 1;
     f.barges[1]!.phase = BARGE_RUN;
+    f.barges[2]!.phase = BARGE_ALERT;
+    f.barges[2]!.alertS = 1;
     stepFlotilla(f, BP, check(far(), { dawn: true }), new SeededRng(9), DT, DT * TS, events());
-    expect(f.barges.map((x) => x.phase)).toEqual([BARGE_SUNK, BARGE_RUN, BARGE_ALERT, BARGE_ALERT]);
+    expect(f.barges.map((x) => x.phase)).toEqual([BARGE_SUNK, BARGE_RUN, BARGE_ALERT, BARGE_RUN]);
+    expect(f.barges[2]!.alertS).toBeCloseTo(1 + DT, 9);
+    expect(f.running).toBe(2);
+    // 警戒中の大発は反応の遅れの残り（5 − 1 秒）の後に逃げる
+    let n = 0;
+    while (f.barges[2]!.phase === BARGE_ALERT && n < 1000) {
+      stepFlotilla(f, BP, check(far(), { dawn: true }), new SeededRng(9), DT, DT * TS, events());
+      n++;
+    }
+    expect((n + 1) * DT).toBeCloseTo(BP.reactionDelayS - 1, 1);
+  });
+  it('夜明け前（dawn 省略）は気づいた大発だけが警戒（反応の遅れ）に入る（v0.6.1 と同じ）。running は逃げている隻数', () => {
+    const f = createFlotilla(BP, 16);
+    const boat = { x: 4300, y: 2300 - 280, headingDeg: 90, speedMps: 0 }; // 1 組目の 2 隻の発見距離 288 m の内
+    stepFlotilla(f, BP, check(boat), new SeededRng(7), DT, DT * TS, events());
+    expect(f.barges.map((x) => x.phase)).toEqual([BARGE_ALERT, BARGE_ALERT, BARGE_CRUISE, BARGE_CRUISE]);
+    expect(f.running).toBe(0);
   });
 });
 

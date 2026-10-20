@@ -1,7 +1,9 @@
 // 上中央の 2 行目（v0.4.2 で boat-hud.ts から切り出し。中身は v0.4.1 のまま、大発掃討の 4 つのモードを足した）: 夜明けまで・帰投せよ・味方機・敵機・暴風・浅瀬・射撃・大発の逃走・撃つ前の手引き・撃破と上陸・夜明けの空襲（v0.6.1）。
 // §7: 表示する値のどれかが変わったときだけ文字を組んで setText する。文と表は ui/hud-lines.ts（夜明けの時計・空襲は ui/dawn-lines.ts）、どの行を出すかの優先順は ui/mission-mode.ts（v0.6.1 で切り出し）。
+// v0.6.2 実機 1 回目: 左上 2 段目の時計（ui/dawn-clock）と同じ段なので、組み直したときだけ時計を左右対称に避ける幅に縮める（lineFitScale。収まれば等倍）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
+import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
 import { BARGE_EVENT_SHOW_MS } from '../config/hunt-config';
 import { ESCORT_EVENT_SHOW_MS } from '../config/ui-config';
 import {
@@ -25,7 +27,7 @@ import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/s
 import { STORM_AHEAD, STORM_NEAR } from '../core/storm';
 import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine, seaplaneLine, sightedFast } from './hud-lines';
 import { DAWN_AIR_NONE } from '../core/dawn-air';
-import { airRaidTagJa, clockJa, clockKey, dawnCallLabel, strikeKey, strikeLine } from './dawn-lines';
+import { airRaidTagJa, bargeHideTagKey, clockJa, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
 import {
   MISSION_ADRIFT,
   MISSION_BARGE_EVENT,
@@ -91,8 +93,9 @@ export class MissionLine {
   private seenEscortHp = -1;
   private escortHitUntil = 0;
   private lastEscortKey = -1;
-  /** 夜明けの空襲の 2 行目のキー（v0.6.1。ui/dawn-lines の strikeKey） */
+  /** 夜明けの空襲の 2 行目のキー（v0.6.1。ui/dawn-lines の strikeKey）と、後ろの「大発 岸へ N 隻」のキー（v0.6.2 実機 1 回目。bargeHideTagKey） */
   private lastStrikeKey = -1;
+  private lastBargeTagKey = 0;
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -151,6 +154,9 @@ export class MissionLine {
     const homeStep = Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M);
     const strikeMode = mode === MISSION_STRIKE || mode === MISSION_STRIKE_REST;
     const sKey = strikeMode ? strikeKey(t) : 0;
+    // 夜明けに岸へ逃げる大発（v0.6.2 実機 1 回目）: 上陸の直後の表示（event 2）の間は「上陸 N 隻」
+    const landedShow = event === 2;
+    const tagKey = strikeMode ? bargeHideTagKey(t.dawn, landedShow) : 0;
     if (
       mode !== this.lastMissionMode ||
       call !== this.lastCall ||
@@ -168,6 +174,7 @@ export class MissionLine {
       sightKey !== this.lastSightKey ||
       escortKey !== this.lastEscortKey ||
       sKey !== this.lastStrikeKey ||
+      tagKey !== this.lastBargeTagKey ||
       ((mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_LAG) && (homeStep !== this.lastHomeStep || t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
@@ -199,9 +206,10 @@ export class MissionLine {
       this.lastSightKey = sightKey;
       this.lastEscortKey = escortKey;
       this.lastStrikeKey = sKey;
+      this.lastBargeTagKey = tagKey;
       if (strikeMode) {
         // 僚艇の HP と被弾（v0.6.1 レビュー: 空襲の行が被弾の行より上なので、行の中で出す。変わったときは escortKey が組み直させる）
-        const l = strikeLine(t, shallowStep, stormWarn, escortHit);
+        const l = strikeLine(t, shallowStep, stormWarn, escortHit, landedShow);
         this.missionText.setText(l.text).setColor(l.color);
       } else if (mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_HIT || mode === MISSION_ESCORT_LAG) {
         const l = mode === MISSION_ESCORT_LOST ? escortLostLine(homeStep) : mode === MISSION_ESCORT_HIT ? escortHitLine(t) : escortLagLine(t, lagStep, shallowStep, stormWarn);
@@ -257,6 +265,9 @@ export class MissionLine {
         const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : t.escortEnabled ? `僚艇 HP ${Math.ceil(t.escortHp)} ・ 命中 ${t.hits}${ships}` : `命中 ${t.hits}${ships}`;
         this.missionText.setText(`${clockJa(t)}${airRaidTagJa(t)} ・ ${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
+      // 左上の時計を避ける（Text.width は等倍の幅）
+      const k = lineFitScale(this.missionText.width, GAME_WIDTH, HUD_MARGIN + HUD_CLOCK_MAX_W_PX + HUD_CLOCK_GAP_PX);
+      if (k !== this.missionText.scaleX) this.missionText.setScale(k);
     }
   }
 

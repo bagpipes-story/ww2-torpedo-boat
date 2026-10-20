@@ -111,7 +111,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const b = { width: bounds['width'], height: bounds['height'] };
   const playerStart = readStart(proto['player_start'], `${missionId}.v0_1_prototype.player_start`);
   const rp = proto['return_point'];
-  if (!isReturnPointDataRecord(rp)) throw new Error(`${missionId}.v0_1_prototype.return_point（x_m/y_m/radius_m/call_margin/torpedo_settle_max_s）が無い（docs/02 §6.7）`);
+  if (!isReturnPointDataRecord(rp)) throw new Error(`${missionId}.v0_1_prototype.return_point（x_m/y_m/radius_m/call_margin/torpedo_settle_max_s/torpedo_end_settle_s）が無い（docs/02 §6.7）`);
   const returnPoint = returnPointFromData(rp, b);
   const sdx = playerStart.x - returnPoint.x;
   const sdy = playerStart.y - returnPoint.y;

@@ -7,7 +7,7 @@ import { airStrikeActive, createAirStrike, startAirStrike, type AirStrikeParams 
 import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
 import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, createDawnResult, type DawnResult } from '../src/core/dawn-air';
 import { shotKpiTarget } from '../src/core/dawn-withdraw';
-import { dawnResult, initDawnTelemetry, type DawnTelemetryWorld } from '../src/systems/dawn-telemetry';
+import { dawnResult, initDawnTelemetry, refreshDawnTelemetry, type DawnTelemetryWorld } from '../src/systems/dawn-telemetry';
 import { WorldDawn, type DawnStrike, type DawnWorldView } from '../src/systems/world-dawn';
 import { buildWorldSetup, type WorldSetup } from '../src/systems/world-setup';
 import { STRIKE_DODGE_RULE_JA, dawnBannerLines, dawnResultLine, shipsGoneStatusJa } from '../src/ui/dawn-lines';
@@ -20,6 +20,7 @@ interface FakeEnemy {
   shipsWithdrawn: number;
   transportWithdrawn: boolean;
   bargesHidden: number;
+  bargesRunning: number;
   allOut: boolean;
   shipDown: boolean;
   /** withdraw に渡された向き（呼ばれた順） */
@@ -28,7 +29,7 @@ interface FakeEnemy {
 }
 
 function fakeEnemy(): FakeEnemy {
-  const e: FakeEnemy = { shipsWithdrawn: 0, transportWithdrawn: false, bargesHidden: 0, allOut: false, shipDown: false, calls: [], withdraw: (h) => void e.calls.push(h) };
+  const e: FakeEnemy = { shipsWithdrawn: 0, transportWithdrawn: false, bargesHidden: 0, bargesRunning: 0, allOut: false, shipDown: false, calls: [], withdraw: (h) => void e.calls.push(h) };
   return e;
 }
 
@@ -138,6 +139,21 @@ describe('夜明けのテレメトリと Result の材料（systems/dawn-telemet
     expect(initDawnTelemetry(world(S03).w)).toMatchObject({ ships: 'hide', retireJa: '', forceJa: '' });
     expect(initDawnTelemetry(world(S01).w)).toMatchObject({ ships: 'stay', retireJa: '', forceJa: '' });
     expect(initDawnTelemetry(world(S06).w)).toMatchObject({ ships: 'stay', retireJa: '', forceJa: '' });
+  });
+  it('HUD: 夜明けの後に岸へ逃げている・隠れた大発の数を毎フレーム写す（v0.6.2 実機 1 回目。空襲の行の「大発 岸へ N 隻」）', () => {
+    const x = world(S03);
+    const d = initDawnTelemetry(x.w);
+    expect([d.bargesRunning, d.bargesHidden]).toEqual([0, 0]);
+    runTo(x, S03.durationS + 1);
+    x.enemy.bargesRunning = 3;
+    x.enemy.bargesHidden = 1;
+    const t = { dawn: d, planeDx: NaN, planeDy: NaN } as unknown as BoatTelemetry;
+    refreshDawnTelemetry(t, x.w, { dx: 0, dy: 0, headingDeg: 0, alpha: 0 });
+    expect([t.dawn.bargesRunning, t.dawn.bargesHidden]).toEqual([3, 1]);
+    x.enemy.bargesRunning = 0;
+    x.enemy.bargesHidden = 4;
+    refreshDawnTelemetry(t, x.w, { dx: 0, dy: 0, headingDeg: 0, alpha: 0 });
+    expect([t.dawn.bargesRunning, t.dawn.bargesHidden]).toEqual([0, 4]);
   });
   it('Result: 退いた駆逐艦の数・輸送船・方角、隠れた大発の数を写す', () => {
     const x = world(S02);

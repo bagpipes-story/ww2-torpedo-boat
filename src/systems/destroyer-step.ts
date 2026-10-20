@@ -1,9 +1,12 @@
 // 駆逐艦の側の固定ステップ（v0.4.4 で mission-world から切り出し。順序は v0.4.1 のまま: 艦 → 魚雷 → 体当たり → 反撃。v0.4.5 から隊（複数隻）を艦の順に）。
 // 反撃は、僚艇のいる任務（v0.4.4）では自艇と僚艇の 2 目標（core/gunnery-pair。照らされていて近い方）、それ以外は v0.4.1 のまま（EnemyFire.step）。
 // 発見の回数（Result の「回避」の根拠）もここで数える: どれかの ai.playerDetected が false → true になった回数。確保しない。
-// 夜明けに退く（v0.6.2）: 海域を出た艦（out）は撃たず照らさない。最後の 1 隻が出たら、沈み始めたとき（torpedo-hits）と同じく残りの一斉発射を捨て、決着がついていれば走っている魚雷を外れとして確定する。
+// 夜明けに退く（v0.6.2）: 海域を出た艦（out）は撃たず照らさない。最後の 1 隻が出たら、沈み始めたとき（torpedo-hits）と同じく残りの一斉発射を捨てる。
+// 走っている魚雷の外れの確定（v0.6.2 実機 1 回目からここだけ）: すべて出て、沈む船体の終わり際の当たりの窓（演出の終わりと沈み始めて torpedo_end_settle_s の遅い方。
+// core/torpedo-targets）が閉じたステップから。それまで沈む船体へ当たった魚雷は命中に数える（記録だけ）。沈んだ艦が無ければ退き終えたステップで（v0.6.2 と同じ）。
 import type { BoatState } from '../core/boat-motion';
 import { losBlocked } from '../core/smoke';
+import { remainingTorpedoesSettled } from '../core/torpedo-targets';
 import type { DestroyerGroup } from './destroyer-group';
 import type { MissionWorld } from './mission-world';
 
@@ -11,14 +14,13 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
   const c = w.setup;
   let left = false;
   for (const d of g.ships) if (d.step(dt, feelDt, boat, w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
-  if (left && g.allOut) {
-    w.launcher.clearQueue();
-    if (g.allSettled) w.resolveRemainingAsMisses();
-  }
+  if (left && g.allOut) w.launcher.clearQueue();
+  const settleS = w.returnPoint.torpedoEndSettleS;
+  if (remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();
   const detectedNow = g.anyDetected;
   if (detectedNow && !w.detect.prev) w.detect.count++;
   w.detect.prev = detectedNow;
-  w.torpedoes.step(dt, feelDt, g.ships, g.passRadius2, w.torpedoEvents);
+  w.torpedoes.step(dt, feelDt, g.ships, g.passRadius2, w.torpedoEvents, w.stepTimeS, settleS);
   if (!w.boat.sinking && g.touchesBoat(boat, c.boatHalfLengthM)) w.sinkBoat('rammed');
   const e = w.escort;
   for (let i = 0; i < g.ships.length; i++) {

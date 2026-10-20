@@ -30,8 +30,11 @@ export interface DawnTelemetryWorld {
   readonly stepTimeS: number;
   readonly setup: WorldSetup;
   readonly dawn: WorldDawn;
-  /** 夜明けに退いた敵の数（v0.6.2。systems/enemy-side。Result の夜明けの行）と、狙う艦がいないか（allOut）・すべて沈み始めたか（shipDown。HUD の 3 行目） */
-  readonly enemy: { readonly shipsWithdrawn: number; readonly transportWithdrawn: boolean; readonly bargesHidden: number; readonly allOut: boolean; readonly shipDown: boolean };
+  /**
+   * 夜明けに退いた敵の数（v0.6.2。systems/enemy-side。Result の夜明けの行）と、狙う艦がいないか（allOut）・すべて沈み始めたか（shipDown。HUD の 3 行目）、
+   * 夜明けの後に岸へ逃げている大発の隻数（bargesRunning。v0.6.2 実機 1 回目。空襲の行の後ろ）
+   */
+  readonly enemy: { readonly shipsWithdrawn: number; readonly transportWithdrawn: boolean; readonly bargesHidden: number; readonly bargesRunning: number; readonly allOut: boolean; readonly shipDown: boolean };
 }
 
 /** 出発時の dawn（任務で決まる値: 空の持ち主・空襲の有無・機数・機名・空の文・僚艇を狙う機・夜明けの敵艦と退く方角と呼び名。毎フレームは変えない。方角は最初の波で、fillDawn が波ごとに書く） */
@@ -74,6 +77,9 @@ function fillDawn(d: DawnTelemetry, w: DawnTelemetryWorld): void {
   d.daylightS = daylightS(w.setup.durationS, w.stepTimeS);
   // 狙う艦がいなくなったのが退いた艦のせい（退く艦がいなければ allOut は shipDown と同じ＝夜明け前と退かない任務は false。隊は最大 3 隻を見るだけで確保しない）
   d.shipsGone = w.enemy.allOut && !w.enemy.shipDown;
+  // 夜明けの後に岸へ逃げている・隠れた大発（v0.6.2 実機 1 回目。夜明け前と大発の無い任務は 0）
+  d.bargesRunning = w.enemy.bargesRunning;
+  d.bargesHidden = w.enemy.bargesHidden;
   d.toEscort = false;
   d.fallingArc = false;
   d.plane = -1;

@@ -12,7 +12,7 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
 const labelOf = (id: string): string => riskLabelJa(gameData, id);
 
 describe('us_03 の世界と Briefing（v0.4.2）', () => {
-  it('buildWorldSetup: 駆逐艦なし・主兵装 guns・魚雷 0・大発 4・砲あり・夜明け 200 秒・燃料 36 gal（v0.6.1 実機 1 回目）・夜明けの空襲あり・危険は無し（味方機・暴風・水上機 null）・視程 900・停止で見つかる 288。&barges=near は先頭の 450 m 西・130 m 北（浅瀬の縁の 30 m 外）', () => {
+  it('buildWorldSetup: 駆逐艦なし・主兵装 guns・魚雷 0・大発 4・砲あり・夜明け 160 秒（v0.6.2 実機 1 回目。200 → 160）・燃料 36 gal（v0.6.1 実機 1 回目）・夜明けの空襲あり・危険は無し（味方機・暴風・水上機 null）・視程 900・停止で見つかる 288。&barges=near は先頭の 450 m 西・130 m 北（浅瀬の縁の 30 m 外）', () => {
     const s = buildWorldSetup(gameData, 'us_03');
     expect(s.destroyer).toBeNull();
     expect(s.mainWeapon).toBe('guns');
@@ -20,7 +20,7 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
     expect(s.barges!.count).toBe(4);
     expect(s.guns!.rangeM).toBe(600);
     expect(s.playerStart).toEqual({ x: 3000, y: 700, headingDeg: 180 });
-    expect([s.durationS, s.fuelAllotmentGal]).toEqual([200, 36]);
+    expect([s.durationS, s.fuelAllotmentGal]).toEqual([160, 36]); // v0.6.2 実機 1 回目: 200 → 160 秒（「夜明けまでの時間を 40 秒縮めて」）
     expect(s.dawnAir.playAs).toBe('enemy');
     expect(s.airStrike).not.toBeNull();
     expect([s.friendly, s.storm, s.seaplane]).toEqual([null, null, null]);
@@ -36,7 +36,7 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
   });
   it('Briefing の数値と行', () => {
     const n = briefingNumbers(buildWorldSetup(gameData, 'us_03'));
-    expect(n).toEqual({ visM: 900, detectCruiseM: 720, detectSilentM: 360, durationS: 200, dawnJa: '（以後は空襲・大発は岸へ隠れる）', fuelGal: 36, torpedoes: 0, gunsLabel: '40mm・37mm・20mm・12.7mm', enemyFromJa: '南東', homeX: 3000, homeY: 300, boundsW: 6000, boundsH: 2500 });
+    expect(n).toEqual({ visM: 900, detectCruiseM: 720, detectSilentM: 360, durationS: 160, dawnJa: '（以後は空襲・大発は岸へ隠れる）', fuelGal: 36, torpedoes: 0, gunsLabel: '40mm・37mm・20mm・12.7mm', enemyFromJa: '南東', homeX: 3000, homeY: 300, boundsW: 6000, boundsH: 2500 });
     const rows = briefingRows(getBriefingRecord(gameData, 'us_03'), n, nameOf, labelOf);
     expect(rows.map((r) => r.label)).toEqual(['目的', '成功', '月', '敵', '危険', '条件']);
     expect(rows[0]!.text).toBe('南の岸沿いを東から西へ這う大発を砲で撃破する。魚雷は当たらない（深度不足）。沿岸砲の射界に注意');
@@ -44,7 +44,7 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
     expect(rows[2]!.text).toBe('新月 ・ 見える 900 m ・ 見つかる 巡航 720 m／静音 360 m');
     expect(rows[3]!.text).toBe('大発動艇 ×4（南東から）');
     expect(rows[4]!.text).toBe('敵艦艇の砲撃・衝突、敵沿岸砲、座礁、夜明けの空襲');
-    expect(rows[5]!.text).toBe('夜明けまで 200 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm');
+    expect(rows[5]!.text).toBe('夜明けまで 160 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm');
   });
   it('任務の検査: guns でない（torpedo_immune）・enemy_start と barges の両方・coast が無い・coast が north は例外', () => {
     const a = clone();

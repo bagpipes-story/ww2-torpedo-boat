@@ -2,17 +2,12 @@
 // v0.6.1: updateFrame の入力の段（consumeFrameInput）もここへ移した（中身は v0.6.0 のまま）。
 import type { BoatState } from '../core/boat-motion';
 import type { DamageState } from '../core/gunnery';
-import type { InputState } from '../core/input-state';
+import { discardFireInput, type InputState } from '../core/input-state';
 import { startSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import type { MissionWorld } from './mission-world';
 import type { TorpedoLauncher } from './torpedo-launcher';
 
-/** 発射要求を捨てる（駆逐艦が沈み始めた後・帰投地点の輪の中） */
-export function discardFireInput(input: InputState): void {
-  input.fireTap = false;
-  input.fireSalvoSpreadDeg = NaN;
-  input.fireSalvoCount = 0;
-}
+export { discardFireInput }; // 発射要求を捨てる（core/input-state へ移した。v0.6.2 実機 1 回目）
 
 /** HUD からの発射要求を消費する。タップは 1 本、一斉は本数（v0.4.8。0 なら残弾すべて）を扇状に（間隔は launcher が持つ） */
 export function consumeFireInput(input: InputState, launcher: TorpedoLauncher, boat: BoatState, remaining: number): void {

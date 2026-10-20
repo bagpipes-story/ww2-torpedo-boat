@@ -100,7 +100,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(rec.noteJa).toBe('PT-37・40（諸説）が駆逐艦照月に命中し爆沈。PT-44喪失。照月の残骸は2025年7月に発見。');
     expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02')), nameOf, labelOf)).toEqual([
       { label: '目的', text: '夜間に補給に来る駆逐艦を雷撃し、生還する' },
-      { label: '成功', text: '帰投。命中はボーナス（帰投地点は北東の青い輪）' },
+      { label: '成功', text: '帰投（敵艦隊がいなくなれば不要）。命中はボーナス（帰投地点は北東の青い輪）' }, // v0.6.2 実機 1 回目: fleet_gone_clears
       { label: '月', text: '半月 ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m' },
       { label: '敵', text: '駆逐艦 ×1、輸送船 ×1（北西から）' },
       { label: '危険', text: '暴風、敵艦艇の砲撃・衝突、敵航空機、座礁、友軍誤射' },

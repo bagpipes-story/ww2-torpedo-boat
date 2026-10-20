@@ -26,7 +26,7 @@ import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
 import type { KpiResultLines } from '../systems/kpi-storage';
 import { bargeResultLines, escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
-import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa, resultShipsJa } from '../ui/result-heading';
+import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
 import { dawnResultLine } from '../ui/dawn-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
@@ -225,8 +225,8 @@ export class ResultScene extends Phaser.Scene {
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     const ships = resultShipsJa(r); // 夜明けに退いた艦（v0.6.2）は「退いた」。1 隻の任務は駆逐艦の撃沈数で（輸送船が沈まなくても「撃沈」）
     const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : ships;
-    line(`${head}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
-    for (const l of [r.raidLine, dawnResultLine(r.dawn, r.returned)]) if (l) line(l, HUD_FONT_HEADING_PX); // 「出撃前」と夜明け（v0.6.1）の行。無ければ出さない
+    line(`${head}   帰投: ${resultReturnJa(r.reason, r.returned)}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+    for (const l of [r.raidLine, dawnResultLine(r.dawn, r.returned, r.reason === 'cleared')]) if (l) line(l, HUD_FONT_HEADING_PX); // 「出撃前」と夜明け（v0.6.1）の行。無ければ出さない
     if (r.escort) line(escortResultLine(r.escort, r.detections, r.destroyerSunk), HUD_FONT_HEADING_PX);
     if (r.friendlyEnabled) {
       // 味方機: 来たか、識別までの秒（猶予の調整の根拠）、撃たれた回数

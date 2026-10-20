@@ -9,7 +9,7 @@ import { countHits, summarizeShots } from '../core/hit-rate';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, GUN_SAFE } from '../core/gun-battery';
 import type { InputState } from '../core/input-state';
-import type { MissionEndReason } from '../core/mission-flow';
+import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
 import { SP_APPROACH, SP_IDLE, SP_OUT_NONE, bombInAir, seaplaneActive, seaplanePose } from '../core/seaplane';
 import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
@@ -262,18 +262,18 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     transportEnabled: w.destroyers !== null && w.destroyers.hasTransport,
     transportSunk: w.destroyers !== null && w.destroyers.transportSunk,
     // 僚艇の任務（v0.4.4）の達成は「帰投して僚艇が生きている」。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
-    objectiveDone: w.escort ? reason === 'returned' && !w.escort.state.sunk : w.enemy.objectiveDone,
+    objectiveDone: w.escort ? endCountsAsReturn(reason) && !w.escort.state.sunk : w.enemy.objectiveDone,
     hunt: w.hunt ? bargeResult(w) : null,
     escort: w.escort ? escortResult(w) : null,
     detections: w.detect.count,
-    returned: reason === 'returned',
+    returned: endCountsAsReturn(reason), // 敵艦隊なし（cleared。v0.6.2 実機 1 回目）も帰投と同じに数える
     elapsedS,
     seed: w.seed,
     hpLeft: w.damage.hp,
     hpMax: w.damageParams.maxHp,
     fuelLeftPct: pct(w.fuel.gal),
     fuelAtFirstLaunchPct: Number.isNaN(w.fuelAtFirstLaunchGal) ? NaN : pct(w.fuelAtFirstLaunchGal),
-    ringDistM: reason === 'returned' ? 0 : ringEdgeM,
+    ringDistM: endCountsAsReturn(reason) ? 0 : ringEdgeM,
     friendlyEnabled: w.friendly !== null,
     friendlyPhase: w.friendly ? w.friendly.state.phase : FF_IDLE,
     friendlyOutcome: w.friendly ? w.friendly.state.outcome : FF_OUT_NONE,

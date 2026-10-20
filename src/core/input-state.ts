@@ -47,6 +47,13 @@ export function resetInput(s: InputState): void {
   s.gunHeld = false;
 }
 
+/** 発射要求を捨てる（駆逐艦がすべて沈み始めたか退いた後・帰投地点の輪の中・終わり際の窓の間。v0.6.2 実機 1 回目で systems/world-input から移した） */
+export function discardFireInput(input: InputState): void {
+  input.fireTap = false;
+  input.fireSalvoSpreadDeg = NaN;
+  input.fireSalvoCount = 0;
+}
+
 /**
  * スティックの指位置（原点からの差 dx, dy。画面座標で y は下向き）を目標方位と速度に写す。
  * 倒した量（半径で正規化、デッドゾーン適用）が speed01、方向が headingDeg（画面上=0、時計回り）。デッドゾーン内は NaN（針路を保つ）。
