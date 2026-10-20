@@ -9,12 +9,12 @@ import { degToRad, ktToMps } from './units';
 /** 今夜の揺らぎ（pt-night.ts。使う側はここから import する） */
 export { ptParamsAtNight, ptStartAt } from './pt-night';
 
-/** attack の鍵（ちょうどこの 20 個。打ち間違いを止める） */
+/** attack の鍵（ちょうどこの 22 個。打ち間違いを止める） */
 export const PT_ATTACK_KEYS = [
-  'run_in_speed_kt', 'pass_speed_kt', 'overtake_kt', 'commit_max_m', 'commit_tcpa_s',
+  'run_in_speed_kt', 'pass_speed_kt', 'overtake_kt', 'commit_max_m', 'commit_tcpa_s', 'commit_heading_tol_deg',
   'pass_offset_m', 'open_fire_s', 'pass_max_s', 'rounds_per_pass', 'dead_cone_deg',
   'min_range_m', 'spread_min_m', 'break_off_m', 'break_max_s', 'run_in_max_s',
-  'pass_gap_s', 'wingman_delay_s', 'max_passes', 'edge_margin_m', 'leave_speed_kt',
+  'pass_gap_s', 'wingman_delay_s', 'hold_off_m', 'max_passes', 'edge_margin_m', 'leave_speed_kt',
 ] as const;
 export type PtAttackKey = (typeof PT_ATTACK_KEYS)[number];
 
@@ -61,12 +61,14 @@ export interface PtParams {
   baseDetectM: number; reactionDelayS: number; detectFromS: number; detectHoldS: number;
   /** 速さ m/s: 哨戒・突撃・航過の下限・自艇に足す追い越し・最大（boat_ref。航過の上限）・去る。哨戒の点に着いた距離の二乗 */
   patrolMps: number; runInMps: number; passMinMps: number; overtakeMps: number; dashMps: number; leaveMps: number; arrive2: number;
-  /** 航過: 進路を固める距離の二乗と最接近までの秒、横にずらす m、予告から撃つまでの秒、航過の最大秒、1 回の弾数 */
-  commitMax2: number; commitTcpaS: number; offsetM: number; openFireS: number; passMaxS: number; roundsPerPass: number;
+  /** 航過: 進路を固める距離の二乗と最接近までの秒（航過の速さで）、固める針路と今の針路の差の上限 deg、横にずらす m、予告から撃つまでの秒、航過の最大秒、1 回の弾数 */
+  commitMax2: number; commitTcpaS: number; commitHeadingTolDeg: number; offsetM: number; openFireS: number; passMaxS: number; roundsPerPass: number;
   /** 撃たない: 艇首尾の円錐の cos²、近すぎる距離の二乗。散布の下限 m */
   cosDead2: number; minRange2: number; spreadMinM: number;
   /** 離脱の距離の二乗と最大秒、突撃の最大秒、次の航過までの秒、2 隻目の遅れ秒、1 隻の航過の回数 */
   breakOff2: number; breakMaxS: number; runInMaxS: number; passGapS: number; wingmanDelayS: number; maxPasses: number;
+  /** 航過を待つ PT: これより内へ寄らない距離の二乗（hold_off_m）と、曲がり始める距離の二乗（hold_off_m + (hold_off_m − 有効射程)。真横に回るのはその中ほど） */
+  holdOff2: number; holdOuter2: number;
   /** 海域の縁の余白 m、去る方位、旋回 deg/秒・加速（boat_ref）、縁の外へ出たとみなす余白（絵の半長）と絵の大きさ */
   edgeMarginM: number; leaveHeadingDeg: number; turnRateDegS: number; accelMps2: number; boundsMarginM: number; spriteLengthUnits: number; spriteBeamUnits: number;
   gun: GunParams;
@@ -111,6 +113,8 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
   if (!(r.patrol.speed_kt > 0 && r.patrol.speed_kt < a.pass_speed_kt && a.pass_speed_kt <= a.run_in_speed_kt && a.run_in_speed_kt <= boat.speed_max_kt)) bad('0 < patrol.speed_kt < pass_speed_kt ≤ run_in_speed_kt ≤ 艇の最大速力');
   if (!(a.leave_speed_kt > 0 && a.leave_speed_kt <= boat.speed_max_kt) || !(a.overtake_kt >= 0)) bad('0 < leave_speed_kt ≤ 艇の最大速力、overtake_kt は 0 以上');
   if (!(a.min_range_m > 0 && a.min_range_m < a.pass_offset_m && a.pass_offset_m < eff && eff < a.break_off_m && eff < a.commit_max_m)) bad('0 < min_range_m < pass_offset_m < effective_night_m < break_off_m、effective_night_m < commit_max_m');
+  if (!(eff < a.hold_off_m && a.hold_off_m < a.commit_max_m)) bad('effective_night_m < hold_off_m < commit_max_m（航過を待つ PT は有効射程の外・航過を固める距離の内で待つ）');
+  if (!(a.commit_heading_tol_deg > 0 && a.commit_heading_tol_deg < 90)) bad('0 < commit_heading_tol_deg < 90（向かってくるときだけ航過を固める）');
   if (!(a.open_fire_s >= PT_OPEN_FIRE_MIN_S && a.open_fire_s < a.pass_max_s && a.open_fire_s < a.commit_tcpa_s)) bad(`予告から撃つまで ${PT_OPEN_FIRE_MIN_S} 秒以上（open_fire_s）、open_fire_s < pass_max_s・commit_tcpa_s`);
   if (!(a.dead_cone_deg > 0 && a.dead_cone_deg < 90) || !(a.spread_min_m > 0)) bad('0 < dead_cone_deg < 90、spread_min_m は正');
   for (const k of ['rounds_per_pass', 'max_passes'] as const) if (!Number.isInteger(a[k]) || a[k] < 1) bad(`${k} は 1 以上の整数`);
@@ -140,9 +144,10 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
     baseDetectM: r.detection.base_detect_m, reactionDelayS: r.detection.reaction_delay_s, detectFromS: r.detection.detect_from_s, detectHoldS: ctx.detectHoldS,
     patrolMps: ktToMps(r.patrol.speed_kt), runInMps: ktToMps(a.run_in_speed_kt), passMinMps: ktToMps(a.pass_speed_kt), overtakeMps: ktToMps(a.overtake_kt),
     dashMps: ktToMps(boat.speed_max_kt), leaveMps: ktToMps(a.leave_speed_kt), arrive2: sq(r.patrol.arrive_m),
-    commitMax2: sq(a.commit_max_m), commitTcpaS: a.commit_tcpa_s, offsetM: a.pass_offset_m, openFireS: a.open_fire_s, passMaxS: a.pass_max_s, roundsPerPass: a.rounds_per_pass,
+    commitMax2: sq(a.commit_max_m), commitTcpaS: a.commit_tcpa_s, commitHeadingTolDeg: a.commit_heading_tol_deg, offsetM: a.pass_offset_m, openFireS: a.open_fire_s, passMaxS: a.pass_max_s, roundsPerPass: a.rounds_per_pass,
     cosDead2: sq(Math.cos(degToRad(a.dead_cone_deg))), minRange2: sq(a.min_range_m), spreadMinM: a.spread_min_m,
     breakOff2: sq(a.break_off_m), breakMaxS: a.break_max_s, runInMaxS: a.run_in_max_s, passGapS: a.pass_gap_s, wingmanDelayS: a.wingman_delay_s, maxPasses: a.max_passes,
+    holdOff2: sq(a.hold_off_m), holdOuter2: sq(2 * a.hold_off_m - eff),
     edgeMarginM: m, leaveHeadingDeg: b.leave_heading_deg, turnRateDegS: boat.turn_rate_deg_s, accelMps2: boat.accel_mps2,
     boundsMarginM: (boat.length_m * ctx.spriteScale) / 2, spriteLengthUnits: boat.length_m * ctx.spriteScale, spriteBeamUnits: boat.beam_m * ctx.spriteScale,
     gun,

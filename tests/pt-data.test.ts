@@ -27,22 +27,26 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect([p.baseDetectM, p.reactionDelayS, p.detectFromS, p.detectHoldS]).toEqual([2000, 1.5, 5, 8]);
     expect(p.cosDead2).toBeCloseTo(Math.cos(degToRad(30)) ** 2, 12);
     expect([p.commitMax2, p.minRange2, p.breakOff2, p.arrive2]).toEqual([900 ** 2, 60 ** 2, 800 ** 2, 100 ** 2]);
-    expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS]).toEqual([5, 120, 2.5, 8, 12, 2, 2.5, 3]);
+    expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS]).toEqual([5, 155, 2.5, 8, 10, 2, 2.5, 3]);
+    // v0.6.3 の直し: 固める針路の差 30°・待つ PT は 500 m より内へ寄らず、600 m（500 + (500 − 有効射程 400)）から曲がる
+    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([30, 500 ** 2, 600 ** 2]);
     expect([p.turnRateDegS, p.accelMps2, p.spriteLengthUnits, p.spriteBeamUnits, p.boundsMarginM]).toEqual([24, 1.2, 48.8, 12.6, 24.4]);
     expect([p.gun.effectiveM, p.gun.damage, p.gun.roundsPerMinPerGun, p.hit.damage, p.hit.fireChance, p.hit.engineDamageChance]).toEqual([400, 4, 240, 4, 0.03, 0.02]);
     expect([...p.legs]).toEqual([1200, 2000, 4800, 2000, 1200, 2200, 4800, 2200]);
     expect([...p.startX, ...p.startY, ...p.startHeadingDeg]).toEqual([2000, 2000, 2000, 2200, 90, 90]);
     expect([p.leaveHeadingDeg, p.edgeMarginM, p.timeScale]).toEqual([90, 200, TS]);
     // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
-    expect(p.roundsPerPass * p.hit.damage).toBe(48);
+    expect(p.roundsPerPass * p.hit.damage).toBe(40);
     expect(p.openFireS).toBeGreaterThanOrEqual(2);
   });
   it('米PT の無い任務は null', () => {
     for (const id of ['us_01', 'us_02', 'us_03', 'jp_06']) expect(getPrototypeMission(gameData, id).ptBoats, id).toBeNull();
     for (const id of ['us_01', 'us_02', 'us_03', 'jp_06']) expect(getPtParams(gameData, getPrototypeMission(gameData, id), TS), id).toBeNull();
   });
-  it('記録の形: attack はちょうど 20 個（知らないキー・欠けは false）、guns は 1 種、torpedo_immune と guns がある。source はすべて historical か design', () => {
-    expect(PT_ATTACK_KEYS.length).toBe(20);
+  it('記録の形: attack はちょうど 22 個（知らないキー・欠けは false）、guns は 1 種、torpedo_immune と guns がある。source はすべて historical か design', () => {
+    expect(PT_ATTACK_KEYS.length).toBe(22);
+    expect(PT_ATTACK_KEYS).toContain('commit_heading_tol_deg');
+    expect(PT_ATTACK_KEYS).toContain('hold_off_m');
     const r = ptRec(gameData);
     expect(isPtDataRecord(r)).toBe(true);
     expect(r['torpedo_immune']).toBe(true);
@@ -52,6 +56,11 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     const missing = { ...(r['attack'] as Rec) };
     delete missing['max_passes'];
     expect(isPtDataRecord({ ...r, attack: missing })).toBe(false);
+    for (const k of ['commit_heading_tol_deg', 'hold_off_m']) {
+      const without = { ...(r['attack'] as Rec) };
+      delete without[k];
+      expect(isPtDataRecord({ ...r, attack: without }), k).toBe(false);
+    }
     expect(isPtDataRecord({ ...r, guns: [...(r['guns'] as unknown[]), ...(r['guns'] as unknown[])] })).toBe(false);
     for (const [k, v] of Object.entries(r['source'] as Rec)) expect(/historical|design/.test(String(v)), k).toBe(true);
     // 史料は検索の抜粋だけ（本文未読）
@@ -69,7 +78,7 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     ['1 突撃 > boat_ref の最大', (d) => (attackOf(d)['run_in_speed_kt'] = 40)],
     ['1 去る速さ 0', (d) => (attackOf(d)['leave_speed_kt'] = 0)],
     ['1 追い越し 負', (d) => (attackOf(d)['overtake_kt'] = -1)],
-    ['2 min_range ≥ offset', (d) => (attackOf(d)['min_range_m'] = 130)],
+    ['2 min_range ≥ offset', (d) => (attackOf(d)['min_range_m'] = 160)],
     ['2 effective ≥ break_off', (d) => (gunOf(d)['effective_night_m'] = 850)],
     ['2 effective ≥ commit_max', (d) => (attackOf(d)['commit_max_m'] = 400)],
     ['3 予告から 2 秒未満', (d) => (attackOf(d)['open_fire_s'] = 1.5)],
@@ -90,13 +99,14 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     ['5 去る方位 360', (d) => (blockOf(d)['leave_heading_deg'] = 360)],
     ['形 attack に知らないキー', (d) => (attackOf(d)['passes_max'] = 2)],
     ['6 振り切れる（突撃 30 kt < T-14 31 kt）', (d) => (attackOf(d)['run_in_speed_kt'] = 30)],
-    ['7 1 回の航過で沈む（12 × 5 ≥ 50）', (d) => (gunOf(d)['damage'] = 5)],
+    ['7 1 回の航過で沈む（10 × 5 ≥ 50）', (d) => (gunOf(d)['damage'] = 5)],
     [
       '8 見えない PT から撃てる（950 m > 視程 900 m）',
       (d) => {
         gunOf(d)['effective_night_m'] = 950;
         attackOf(d)['break_off_m'] = 1000;
         attackOf(d)['commit_max_m'] = 1000;
+        attackOf(d)['hold_off_m'] = 980;
       },
     ],
     ['9 出発で見つかる（自艇が線の 350 m 北）', (d) => ((protoOf(d, 'jp_05')['player_start'] as Rec)['y_m'] = 1500)],
@@ -107,6 +117,26 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     const d = clone();
     breakIt(d);
     expect(() => params(d)).toThrow(/jp_05/);
+  });
+  // v0.6.3 の直しの 2 つの鍵: 向きの許容は 0〜90° の間、待つ距離は有効射程（400 m）より外で航過を固める距離（900 m）より内
+  const fixCases: [string, (d: typeof gameData) => void, RegExp][] = [
+    ['2 hold_off ≤ 有効射程', (d) => (attackOf(d)['hold_off_m'] = 400), /hold_off_m/],
+    ['2 hold_off ≥ commit_max', (d) => (attackOf(d)['hold_off_m'] = 900), /hold_off_m/],
+    ['4 commit_heading_tol 0', (d) => (attackOf(d)['commit_heading_tol_deg'] = 0), /commit_heading_tol_deg/],
+    ['4 commit_heading_tol 90', (d) => (attackOf(d)['commit_heading_tol_deg'] = 90), /commit_heading_tol_deg/],
+  ];
+  it.each(fixCases)('%s', (_name, breakIt, msg) => {
+    const d = clone();
+    breakIt(d);
+    expect(() => params(d)).toThrow(/jp_05/);
+    expect(() => params(d)).toThrow(msg);
+  });
+  it('境目は通る: hold_off 401 m・899 m、向きの許容 1°・89°', () => {
+    for (const [k, v] of [['hold_off_m', 401], ['hold_off_m', 899], ['commit_heading_tol_deg', 1], ['commit_heading_tol_deg', 89]] as const) {
+      const d = clone();
+      attackOf(d)[k] = v;
+      expect(() => params(d), `${k} ${v}`).not.toThrow();
+    }
   });
   it('9 の境目: 一番近い出発点は (4300, 1850) の 1,250 m（巡航で見つかる 1,200 m より遠い）。自艇を 51 m 南へ寄せると例外', () => {
     const d = clone();

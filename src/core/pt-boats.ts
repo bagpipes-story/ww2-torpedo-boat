@@ -1,5 +1,7 @@
 // 敵の米PT の隊の段階と運動（v0.6.3。docs/02 §6.4、spec §C.5〜C.6）: 哨戒 → 発見（隊で 1 つ）→ 警戒（反応の遅れ。2 隻目は遅れを足す）→ 突撃 →
 // 航過（進路を固めて赤い線で予告、open_fire_s 後から掃射）→ 離脱 → 再攻撃、1 隻 max_passes 回か夜明けで去る。航過は同時に 1 隻・次まで pass_gap_s。
+// 航過を固めるのは本当に向かってくるときだけ（v0.6.3 の直し: 針路の差が commit_heading_tol_deg 以内・艇が固める線の前・航過の速さで最接近まで commit_tcpa_s・その距離が有効射程の内）。
+// 待つ PT（他が航過中か次の航過まで）は hold_off_m の内へ寄らない（2 番手が艇に重ならない）。待つ間は突撃の秒に数えない。
 // 見えていない間は最後に見た位置と速度から推す（全知にしない）。航過の針路は固めたまま直さない（転舵でかわせる）。
 // Phaser 非依存・毎ステップ確保しない。時計は体感秒 feelDt、運動と弾の飛行は game 秒 dt。数値は core/pt-data の PtParams。
 // 乱数は seed+18 の系列だけ（1 発 2 回。命中の火災・機関は呼ぶ側が同じ系列で引く）。AI は引かない。
@@ -7,7 +9,7 @@
 import type { BoatState } from './boat-motion';
 import { beyondBounds } from './dawn-withdraw';
 import type { PtParams } from './pt-data';
-import { aimPoint, dodgeTurn, inDeadCone, nearEdge, targetSide, tcpaFeltS } from './pt-pass';
+import { aimPoint, dodgeTurn, holdOffHeading, inDeadCone, nearEdge, passCommitOk, targetSide } from './pt-pass';
 import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
 import type { SeededRng } from './rng';
 import { advanceShell, findFreeShell, launchShell, pointNearBoat } from './shells';
@@ -28,6 +30,7 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
   const ph = degToRad(boat.headingDeg);
   const vpx = Math.sin(ph) * boat.speedMps;
   const vpy = -Math.cos(ph) * boat.speedMps;
+  const eff2 = p.gun.effectiveM * p.gun.effectiveM;
   // 1. 接触: どれか 1 隻が見れば隊が捉える（最後に見た位置と速度を残す）
   let anySeen = false;
   let near2 = Infinity;
@@ -98,7 +101,8 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       b.timerS -= feelDt;
       if (b.timerS <= 0) startRunIn(b, tx, ty);
     } else if (b.phase === PT_RUN_IN) {
-      b.timerS += feelDt;
+      const held = q.owner >= 0 || q.gapLeftS > 0; // 他の PT が航過中か次の航過まで: 待つ（待つ間は突撃の秒に数えない。打ち切りは追いつけないときだけ）
+      if (!held) b.timerS += feelDt;
       if (b.timerS >= p.runInMaxS) {
         b.phase = PT_BREAK; // 追いつけない突撃の打ち切り（航過には数えない）
         b.lockDeg = b.headingDeg;
@@ -106,13 +110,16 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
         hd = b.lockDeg;
       } else {
         aimPoint(q.aim, b.x, b.y, p.runInMps, tx, ty, q.lkVx, q.lkVy, b.side, p.offsetM, p.bounds.width, p.bounds.height, p.edgeMarginM);
-        hd = bearingDeg(b.x, b.y, q.aim.x, q.aim.y);
-        // 航過を固める: この PT が今見ていて・航過中の PT が無く・間隔が空き・900 m 以内で、最接近まで 5 秒（今の速度どうし）
-        if (q.seen[i] === 1 && q.owner < 0 && q.gapLeftS <= 0 && dx * dx + dy * dy <= p.commitMax2) {
-          const r = degToRad(b.headingDeg);
-          if (tcpaFeltS(dx, dy, vpx - Math.sin(r) * b.speedMps, vpy + Math.cos(r) * b.speedMps, p.timeScale) <= p.commitTcpaS) {
-            commitPass(q, p, c, b, i, hd);
-            sp = b.passMps;
+        hd = bearingDeg(b.x, b.y, q.aim.x, q.aim.y); // 固めるならこの針路
+        if (held) {
+          // 2 番手は距離を取る: 寄る途中で外へ曲がり hold_off_m の内へ入らない（解けたらそのまま寄る）
+          if ((tx - b.x) * (tx - b.x) + (ty - b.y) * (ty - b.y) < p.holdOuter2) hd = holdOffHeading(b.x, b.y, tx, ty, b.side, p.holdOff2, p.holdOuter2);
+        } else if (q.seen[i] === 1 && dx * dx + dy * dy <= p.commitMax2 && !nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) {
+          // 航過を固める: この PT が今見ていて・900 m 以内・縁の外で、本当に向かってくる（針路の差・艇が線の前・航過の速さで最接近まで 5 秒・その距離が射程の内）
+          const passMps = passSpeedMps(p, boat.speedMps);
+          if (passCommitOk(b.headingDeg, hd, passMps, dx, dy, vpx, vpy, p.commitHeadingTolDeg, p.commitTcpaS, eff2, p.timeScale)) {
+            commitPass(q, c, b, i, hd, passMps, p.roundsPerPass);
+            sp = passMps;
             ev.onCommit(i, hd, q.dodge);
           }
         }
@@ -188,13 +195,18 @@ function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, i: numb
   if (b.timerS >= p.passMaxS || (dot < 0 && (d2 > eff2 || cone)) || nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) endPass(q, p, b, i, ev);
 }
 
-/** 航過を固める: 針路・速さ（艇の速さ + 追い越し、下限と最大の間）・弾数・かわす向き（このときの艇の針路から 1 回だけ。点滅しない） */
-function commitPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, i: number, lockDeg: number): void {
+/** 航過の速さ: 艇の速さ + 追い越し（下限 pass_speed_kt・上限は艇の最大） */
+function passSpeedMps(p: PtParams, playerMps: number): number {
+  return Math.min(p.dashMps, Math.max(p.passMinMps, playerMps + p.overtakeMps));
+}
+
+/** 航過を固める: 針路・速さ・弾数・かわす向き（このときの艇の針路から 1 回だけ。点滅しない） */
+function commitPass(q: PtSection, c: PtCheck, b: PtBoatState, i: number, lockDeg: number, passMps: number, rounds: number): void {
   b.phase = PT_PASS;
   b.lockDeg = lockDeg;
-  b.passMps = Math.min(p.dashMps, Math.max(p.passMinMps, c.boat.speedMps + p.overtakeMps));
+  b.passMps = passMps;
   b.timerS = 0;
-  b.roundsLeft = p.roundsPerPass;
+  b.roundsLeft = rounds;
   b.firedThisPass = 0;
   q.owner = i;
   q.passHits = 0;

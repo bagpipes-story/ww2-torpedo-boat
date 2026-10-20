@@ -1,5 +1,5 @@
 // 敵の米PT の隊（v0.6.3。core/pt-boats・pt-state、spec §C.5〜C.9・§G.1）: 暗さ・段階と時間・撃たない条件・航過は同時に 1 隻・転舵で減る・見失う・夜明け・
-// 的でない艇・決定性・乱数の数・止まらない・1 回の航過の上限・確保なし。数値は jp_05 の getPtParams（data のまま）。
+// 的でない艇・決定性・乱数の数・止まらない・1 回の航過の上限・確保なし。v0.6.3 の直し: 航過は本当に向かってくるときだけ・2 番手は距離を取る。数値は jp_05 の getPtParams（data のまま）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getBoatDamageParams, getBoatRecord, getPrototypeMission, getVisibilityParams } from '../src/config/game-data';
 import { getPtParams } from '../src/config/pt-mission-data';
@@ -14,7 +14,7 @@ import { ptParamsAtNight, type PtParams } from '../src/core/pt-data';
 import { inDeadCone, tcpaFeltS } from '../src/core/pt-pass';
 import { SeededRng } from '../src/core/rng';
 import { bearingDeg } from '../src/core/ship-ai';
-import { degToRad, ktToMps, wrapDeg360 } from '../src/core/units';
+import { degToRad, ktToMps, wrapDeg180, wrapDeg360 } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
 
 const DT = 1 / 60;
@@ -106,6 +106,30 @@ function simulate(o: SimOpts): Sim {
   return s;
 }
 
+/**
+ * 航過を固めた瞬間の幾何（onCommit の中で。v0.6.3 の直し）: 今の針路と固めた針路の差 deg・艇が線の前か（> 0）・航過の速さで線を進むときの最接近までの体感秒とその距離 m・
+ * 今の距離 m、直す前の判定（PT の今の速度どうし）の最接近までの体感秒
+ */
+function commitGeom(s: Sim, i: number, lockDeg: number): { headingErr: number; ahead: number; tcpa: number; missM: number; dM: number; oldTcpa: number } {
+  const b = s.q.boats[i]!;
+  const dx = s.boat.x - b.x;
+  const dy = s.boat.y - b.y;
+  const ph = degToRad(s.boat.headingDeg);
+  const vpx = Math.sin(ph) * s.boat.speedMps;
+  const vpy = -Math.cos(ph) * s.boat.speedMps;
+  const r = degToRad(lockDeg);
+  const rvx = vpx - Math.sin(r) * b.passMps;
+  const rvy = vpy + Math.cos(r) * b.passMps;
+  const tg = -(dx * rvx + dy * rvy) / (rvx * rvx + rvy * rvy);
+  const h = degToRad(b.headingDeg);
+  return {
+    headingErr: Math.abs(wrapDeg180(b.headingDeg - lockDeg)), ahead: Math.sin(r) * dx - Math.cos(r) * dy, tcpa: tcpaFeltS(dx, dy, rvx, rvy, TS), missM: Math.hypot(dx + rvx * tg, dy + rvy * tg), dM: Math.hypot(dx, dy),
+    oldTcpa: tcpaFeltS(dx, dy, vpx - Math.sin(h) * b.speedMps, vpy + Math.cos(h) * b.speedMps, TS),
+  };
+}
+/** その幾何が直しの規則（向きの許容・艇が線の前・航過の速さで最接近まで commit_tcpa_s・その距離が有効射程の内・commit_max_m の内）を満たす */
+const commitOk = (g: ReturnType<typeof commitGeom>): boolean => g.headingErr <= P.commitHeadingTolDeg + 1e-9 && g.ahead > 0 && g.tcpa <= P.commitTcpaS && g.missM <= P.gun.effectiveM && g.dM ** 2 <= P.commitMax2;
+
 const toHome = (s: Sim): number => bearingDeg(s.boat.x, s.boat.y, HOME.x, HOME.y);
 /** まっすぐ帰る（速さ speed01） */
 const straight = (speed01: number) => (s: Sim): void => {
@@ -193,14 +217,8 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
       policy: circle,
       start: { x: 3000, y: 1400, headingDeg: 90 },
       ev: (s) => ({
-        onCommit: (i) => {
-          const b = s.q.boats[i]!;
-          const dx = s.boat.x - b.x;
-          const dy = s.boat.y - b.y;
-          const ph = degToRad(s.boat.headingDeg);
-          const r = degToRad(b.headingDeg);
-          const tcpa = tcpaFeltS(dx, dy, Math.sin(ph) * s.boat.speedMps - Math.sin(r) * b.speedMps, -Math.cos(ph) * s.boat.speedMps + Math.cos(r) * b.speedMps, TS);
-          if (s.q.seen[i] !== 1 || dx * dx + dy * dy > P.commitMax2 || tcpa > P.commitTcpaS) badCommit++;
+        onCommit: (i, lockDeg) => {
+          if (s.q.seen[i] !== 1 || !commitOk(commitGeom(s, i, lockDeg))) badCommit++;
           commits.push({ i, t: s.t, first: NaN });
         },
         onFire: () => {
@@ -237,7 +255,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(s.q.leftAtDawn).toBe(false);
   });
 
-  it('3 撃たない: 航過の外・予告から 2.5 秒の内・艇首尾の円錐・60 m 以内・400 m より遠く・艇の視程の外からは撃たない。1 回の航過は 12 発まで', () => {
+  it(`3 撃たない: 航過の外・予告から 2.5 秒の内・艇首尾の円錐・60 m 以内・400 m より遠く・艇の視程の外からは撃たない。1 回の航過は ${P.roundsPerPass} 発まで`, () => {
     const fired = [0, 0];
     let bad = 0;
     [VIS2, 300 ** 2].forEach((vis, v) => {
@@ -426,22 +444,33 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     }
   });
 
-  it('11 止まらない: 各段階は上限の中で抜ける（警戒 ≤ 1.5 + 3 秒・突撃 ≤ 25 秒・航過 ≤ 8 秒・離脱 ≤ 8 秒）。逃げる艇には突撃を打ち切る', () => {
+  it('11 止まらない: 各段階は上限の中で抜ける（警戒 ≤ 1.5 + 3 秒・突撃 ≤ 25 秒（他の PT の航過を待つ間は数えない）・航過 ≤ 8 秒・離脱 ≤ 8 秒）。逃げる艇には突撃を打ち切る', () => {
     const maxS = [0, 0, 0, 0, 0, 0, 0];
     let runInCut = 0;
+    let maxRunInTimer = 0;
+    let heldS = 0;
     const runs: SimOpts[] = [{ seed: 1, steps: 60 * 90, policy: fleeEast, start: { x: 3000, y: 1500, headingDeg: 90 } }];
     for (let seed = 1; seed <= 10; seed++) runs.push({ seed, steps: 60 * 60, policy: randomWalk, start: { x: 2900, y: 1500, headingDeg: 180 } });
     for (let seed = 1; seed <= 10; seed++) runs.push({ seed, steps: 60 * 120, night: true, policy: straight(CRUISE01) });
     for (const o of runs) {
       const since = [0, 0];
+      const held = [0, 0];
       const phase = [PT_PATROL, PT_PATROL];
       simulate({
         ...o,
         onStep: (s) => {
           for (let i = 0; i < 2; i++) {
             const ph = s.q.boats[i]!.phase;
+            if (ph === PT_RUN_IN) {
+              maxRunInTimer = Math.max(maxRunInTimer, s.q.boats[i]!.timerS);
+              if (s.q.owner >= 0 || s.q.gapLeftS > 0) held[i]! += DT;
+            }
             if (ph === phase[i]) continue;
-            maxS[phase[i]!] = Math.max(maxS[phase[i]!]!, s.t - since[i]!);
+            // 突撃は待った秒を除いて数える（待つ秒は他の PT の航過 ≤ 8 秒 + 間隔 2.5 秒で尽きる）
+            const waited = phase[i] === PT_RUN_IN ? held[i]! : 0;
+            heldS = Math.max(heldS, waited);
+            held[i] = 0;
+            maxS[phase[i]!] = Math.max(maxS[phase[i]!]!, s.t - since[i]! - waited);
             if (phase[i] === PT_RUN_IN && ph === PT_BREAK) runInCut++;
             phase[i] = ph;
             since[i] = s.t;
@@ -450,13 +479,15 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
       });
     }
     expect(maxS[PT_ALERT]).toBeLessThanOrEqual(P.reactionDelayS + P.wingmanDelayS + 2 * DT);
-    expect(maxS[PT_RUN_IN]).toBeLessThanOrEqual(P.runInMaxS + 2 * DT);
+    expect(maxS[PT_RUN_IN]).toBeLessThanOrEqual(P.runInMaxS + 4 * DT);
+    expect(maxRunInTimer).toBeLessThanOrEqual(P.runInMaxS + DT);
+    expect(heldS).toBeGreaterThan(0);
     expect(maxS[PT_PASS]).toBeLessThanOrEqual(P.passMaxS + 2 * DT);
     expect(maxS[PT_BREAK]).toBeLessThanOrEqual(P.breakMaxS + 2 * DT);
     expect(runInCut).toBeGreaterThan(0);
   });
 
-  it('12 1 回の航過の砲の被害は 48 以下（12 発 × 4 < T-14 の HP 50）: 500 回以上の航過で、後から落ちた弾も含めて', () => {
+  it(`12 1 回の航過の砲の被害は ${P.roundsPerPass * P.hit.damage} 以下（${P.roundsPerPass} 発 × ${P.hit.damage} < T-14 の HP 50）: 500 回以上の航過で、後から落ちた弾も含めて`, () => {
     let passes = 0;
     let worstHits = 0;
     let worstRounds = 0;
@@ -488,7 +519,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(passes).toBeGreaterThanOrEqual(500);
     expect(worstRounds).toBeLessThanOrEqual(P.roundsPerPass);
     expect(worstHits).toBeGreaterThan(0);
-    expect(worstHits * P.hit.damage).toBeLessThanOrEqual(48);
+    expect(worstHits * P.hit.damage).toBeLessThanOrEqual(P.roundsPerPass * P.hit.damage);
     expect(P.roundsPerPass * P.hit.damage).toBeLessThan(getBoatDamageParams(gameData, MISSION.playerBoatId).maxHp);
   });
 
@@ -507,6 +538,128 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(now.length).toBe(refs.length);
     for (let i = 0; i < now.length; i++) expect(now[i]).toBe(refs[i]);
     expect(s.q.shots).toBeGreaterThan(0);
+  });
+
+  it('14 航過は本当に向かってくるときだけ（v0.6.3 の直し）: 固めた瞬間はいつも 針路の差 ≤ 30°・艇が線の前・航過の速さで最接近まで 5 秒以内・その距離 ≤ 400 m。2 ステップで終わる航過は無く、まっすぐ帰る艇への航過はどれも撃つ', () => {
+    let commits = 0;
+    let bad = 0;
+    let instant = 0;
+    let straightPasses = 0;
+    let straightUnfired = 0;
+    const runs: [SimOpts['policy'], boolean, ((s: Sim) => Partial<PtEvents>) | undefined][] = [[straight(CRUISE01), true, undefined], [straight(14 / 31), true, undefined], [turnAway(CRUISE01), true, onCommitTurn], [randomWalk, false, undefined], [circle, false, undefined]];
+    runs.forEach(([policy, night, extra], k) => {
+      for (let seed = 1; seed <= 30; seed++) {
+        const commitAt = [0, 0];
+        simulate({
+          seed, steps: night ? 60 * 170 : 3000, night, policy, stopAtHome: night, start: night ? undefined : { x: 2900, y: 1500, headingDeg: 180 },
+          ev: (s) => {
+            const turn = extra?.(s);
+            return {
+              onCommit: (i, lockDeg, dodge) => {
+                turn?.onCommit?.(i, lockDeg, dodge);
+                commits++;
+                commitAt[i] = s.t;
+                if (s.q.seen[i] !== 1 || !commitOk(commitGeom(s, i, lockDeg))) bad++;
+              },
+              onPassEnd: (i, fired) => {
+                if (s.t - commitAt[i]! <= 2 * DT + 1e-9) instant++;
+                if (k < 2) {
+                  straightPasses++;
+                  if (!fired) straightUnfired++;
+                }
+              },
+            };
+          },
+        });
+      }
+    });
+    expect([bad, instant, straightUnfired]).toEqual([0, 0, 0]);
+    expect(commits).toBeGreaterThan(300);
+    expect(straightPasses).toBeGreaterThan(100);
+  });
+
+  it('15 離脱の直後に背を向けたままの PT は固めない: 東へ 35 kt で走る PT に艇が北から寄る（直す前は今の速度どうしの最接近 2.4 秒・500 m で固め、1 ステップで航過が終わった）→ 向き直ってから固め、撃つ', () => {
+    const q = createPtSection(P, 24);
+    const boat: BoatState = { x: 3000, y: 1500, headingDeg: 180, speedMps: ktToMps(20) };
+    Object.assign(q, { detected: true, holdLeftS: P.detectHoldS, lkX: boat.x, lkY: boat.y, lkVx: 0, lkVy: boat.speedMps });
+    Object.assign(q.boats[0]!, { x: 3000, y: 2000, headingDeg: 90, speedMps: P.runInMps, phase: PT_RUN_IN, side: 1, timerS: 0 });
+    q.boats[1]!.phase = PT_OUT;
+    const c = check(boat, { detectOpenM: detectM('cruise') });
+    // 直す前の規則なら固めていた形（PT の今の速度で最接近まで 5 秒以内・900 m 以内）
+    expect(tcpaFeltS(0, -500, -P.runInMps, boat.speedMps, TS)).toBeLessThan(P.commitTcpaS);
+    let k = 0;
+    let commitK = -1;
+    let commitErr = NaN;
+    let endK = -1;
+    let fired = 0;
+    const ev = events({
+      onCommit: (_i, lockDeg) => {
+        commitErr = Math.abs(wrapDeg180(q.boats[0]!.headingDeg - lockDeg));
+      },
+      onPassEnd: () => {
+        if (endK < 0) endK = k;
+      },
+      onFire: () => fired++,
+    });
+    for (; k < 60 * 12; k++) {
+      boat.y += boat.speedMps * DT * TS;
+      c.timeS = 10 + k * DT;
+      stepPtSection(q, P, c, new SeededRng(1), DT, DT * TS, ev);
+      if (commitK < 0 && q.boats[0]!.phase === PT_PASS) commitK = k;
+      if (k === 0) expect(q.boats[0]!.phase).toBe(PT_RUN_IN); // 最初のステップでは固めない（針路の差 約 90°）
+      if (endK >= 0) break;
+    }
+    expect(commitK).toBeGreaterThan(0);
+    expect(commitErr).toBeLessThanOrEqual(P.commitHeadingTolDeg);
+    expect((endK - commitK) * DT).toBeGreaterThan(P.openFireS);
+    expect(fired).toBeGreaterThan(0);
+  });
+
+  it('16 2 番手は距離を取る（v0.6.3 の直し）: 他の PT の航過中と次の航過までの間、待ち始めに hold_off_m の外にいた PT は（旋回半径 × 2 の惰性を除いて）その内へ入らず、内にいた PT は向き直るまでに離れ始める。直す前は艇の 16〜27 m まで寄った', () => {
+    const holdM = Math.sqrt(P.holdOff2);
+    const turnR = P.runInMps / degToRad(P.turnRateDegS); // 突撃の速さの旋回半径 m（約 43 m）
+    const turnAroundS = 180 / P.turnRateDegS / TS; // 180° 向き直る体感秒（1.5 秒）
+    const r = { outside: 0, outsideMin: Infinity, inside: 0, insideWorstDrop: 0, insideOpenS: 0, overallMin: Infinity };
+    const runs: [SimOpts['policy'], ((s: Sim) => Partial<PtEvents>) | undefined][] = [[straight(CRUISE01), undefined], [straight(14 / 31), undefined], [turnAway(CRUISE01), onCommitTurn]];
+    for (const [policy, extra] of runs) {
+      for (let seed = 1; seed <= 40; seed++) {
+        const ep: ({ d0: number; min: number; t0: number; openAt: number; prev: number } | null)[] = [null, null];
+        simulate({
+          seed, steps: 60 * 170, night: true, policy, stopAtHome: true, ev: extra,
+          onStep: (s) => {
+            for (let i = 0; i < 2; i++) {
+              const b = s.q.boats[i]!;
+              const d = Math.hypot(b.x - s.boat.x, b.y - s.boat.y);
+              if (b.phase === PT_RUN_IN && (s.q.owner >= 0 || s.q.gapLeftS > 0) && s.c.targetValid) {
+                const e = (ep[i] ??= { d0: d, min: d, t0: s.t, openAt: NaN, prev: d });
+                e.min = Math.min(e.min, d);
+                if (Number.isNaN(e.openAt) && d > e.prev) e.openAt = s.t;
+                e.prev = d;
+                continue;
+              }
+              const e = ep[i];
+              if (!e) continue;
+              r.overallMin = Math.min(r.overallMin, e.min);
+              if (e.d0 >= holdM) {
+                r.outside++;
+                r.outsideMin = Math.min(r.outsideMin, e.min);
+              } else {
+                r.inside++;
+                r.insideWorstDrop = Math.max(r.insideWorstDrop, e.d0 - e.min);
+                r.insideOpenS = Math.max(r.insideOpenS, Number.isNaN(e.openAt) ? Infinity : e.openAt - e.t0);
+              }
+              ep[i] = null;
+            }
+          },
+        });
+      }
+    }
+    expect(r.outside).toBeGreaterThan(100);
+    expect(r.inside).toBeGreaterThan(10);
+    expect(r.outsideMin).toBeGreaterThanOrEqual(holdM - 2 * turnR);
+    expect(r.insideWorstDrop).toBeLessThanOrEqual(2 * turnR);
+    expect(r.insideOpenS).toBeLessThanOrEqual(turnAroundS + DT);
+    expect(r.overallMin).toBeGreaterThan(2 * P.spriteLengthUnits); // PT の絵 2 隻ぶん（約 98 m）より遠い＝艇の絵に重ならない（直す前は 16〜27 m）
   });
 
   it('航過の後に落ちた弾は撃った PT の最後の航過に数える（「かわした！」は後から「被弾」に直る・無傷の航過から外す）', () => {

@@ -12,6 +12,8 @@ import { buildWorldSetup } from './world-setup';
 export interface PtSimOverrides {
   detectM?: number; damage?: number; rounds?: number; offsetM?: number; passes?: number; openFireS?: number;
   commitTcpaS?: number; runInKt?: number; passGapS?: number; wingmanDelayS?: number;
+  /** 航過を固める針路の差の上限 deg・航過を待つ PT が寄らない距離 m（v0.6.3 の直し） */
+  commitHeadingTolDeg?: number; holdOffM?: number;
   /** 任務の燃料 gal・夜明けまでの実秒（buildWorldSetup の fuelGal・dawnS） */
   fuelGal?: number; dawnS?: number;
 }
@@ -33,7 +35,7 @@ export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides 
 
 /** 米PT の上書きを当てた data の写し（上書きが無ければそのまま）。世界と同じ getPtParams の検査を通す */
 function withPtOverrides(data: GameData, missionId: string, o: PtSimOverrides): GameData {
-  const keys = [o.detectM, o.damage, o.rounds, o.offsetM, o.passes, o.openFireS, o.commitTcpaS, o.runInKt, o.passGapS, o.wingmanDelayS];
+  const keys = [o.detectM, o.damage, o.rounds, o.offsetM, o.passes, o.openFireS, o.commitTcpaS, o.runInKt, o.passGapS, o.wingmanDelayS, o.commitHeadingTolDeg, o.holdOffM];
   if (keys.every((v) => v === undefined)) return data;
   const id = getPrototypeMission(data, missionId).enemyId;
   const rec: unknown = data.enemies.enemies.find((e) => e.id === id);
@@ -45,6 +47,7 @@ function withPtOverrides(data: GameData, missionId: string, o: PtSimOverrides): 
     attack: {
       ...a, rounds_per_pass: o.rounds ?? a.rounds_per_pass, pass_offset_m: o.offsetM ?? a.pass_offset_m, max_passes: o.passes ?? a.max_passes, open_fire_s: o.openFireS ?? a.open_fire_s,
       commit_tcpa_s: o.commitTcpaS ?? a.commit_tcpa_s, run_in_speed_kt: o.runInKt ?? a.run_in_speed_kt, pass_gap_s: o.passGapS ?? a.pass_gap_s, wingman_delay_s: o.wingmanDelayS ?? a.wingman_delay_s,
+      commit_heading_tol_deg: o.commitHeadingTolDeg ?? a.commit_heading_tol_deg, hold_off_m: o.holdOffM ?? a.hold_off_m,
     },
   };
   const enemies = data.enemies.enemies.map((e) => (e.id === id ? (r as unknown as typeof e) : e));
@@ -52,7 +55,7 @@ function withPtOverrides(data: GameData, missionId: string, o: PtSimOverrides): 
 }
 
 type Band = readonly [number, number];
-/** 較正の 1 行（spec §F.4）。帯は %・HP・m（端を含む）。hpVsCruise は巡航（cruise）の HP の平均に掛ける上限。proto は試作の値（spec §F.3、N 400） */
+/** 較正の 1 行（spec §F.4）。帯は %・HP・m（端を含む）。hpVsCruise は巡航（cruise）の HP の平均に掛ける上限。proto は今の data の模擬の値（N 400。目安で、検査はしない） */
 export interface PtCalibrationRow {
   policy: PtPolicy;
   /** spec §F.3 の ★（最小の組） */
@@ -72,25 +75,29 @@ const row = (policy: PtPolicy, star: boolean, b: Partial<Omit<PtCalibrationRow, 
 
 /**
  * spec §F.4: 1 何もしないと痛い、2 転舵で助かる、3 遅い反応でも効く、4 暗さが効く、5 罠にしない、6 燃料は脅威ではない（7 の不変は ptCalibrationMisses がどの行にも見る）。
- * proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（試作 ptsim3.final、N 400）
+ * proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（v0.6.3 の航過の直し（本当に向かってくるときだけ固める・待つ PT は hold_off_m の外）と再調整（10 発・ずらし 155 m・待つ 500 m）の後、
+ * N 400・seed 1〜400。直す前（487ca74）は 巡航 [100, 35.8, 19, 81]・静音 [90, 29.6, 9, 92]。spec §F.3 の試作 ptsim3.final とも違う）
  */
 export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
-  row('cruise', true, { detectedPct: [95, 100], sunkPct: [10, 32], hpMean: [25, 42] }, [100, 34.8, 20, 80]),
-  row('silent', true, { detectedPct: [75, 98], sunkPct: [4, 25] }, [90, 30.7, 12, 88]),
-  row('full', false, { firstDetectMedM: [1500, Infinity] }, [100, 26.9, 6, 94]),
-  row('zigzag', false, {}, [100, 21.1, 3, 97]),
-  row('turn_cruise', true, { sunkPct: [0, 3], hpVsCruise: 0.6 }, [100, 14.9, 0, 100]),
-  row('react_full', false, { sunkPct: [0, 2], hpMean: [0, 16] }, [100, 8.4, 0, 100]),
-  row('dodge_silent', true, { sunkPct: [0, 2], hpMean: [0, 16] }, [90, 11.5, 0, 100]),
-  row('turn_silent', false, {}, [90, 21.4, 1, 99]),
-  row('late_turn', true, { sunkPct: [0, 6], hpMean: [0, 30] }, [100, 22.8, 1, 99]),
-  row('turn_full', false, { adriftPct: [0, 8] }, [100, 4.8, 0, 97]),
-  row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 2], homeBeforeDawnPct: [90, 100] }, [40, 9.7, 0, 100]),
-  row('meet', false, { sunkPct: [0, 5] }, [100, 18.0, 0, 100]),
+  row('cruise', true, { detectedPct: [95, 100], sunkPct: [10, 32], hpMean: [25, 42] }, [100, 31.5, 11.3, 88.8]),
+  row('silent', true, { detectedPct: [75, 98], sunkPct: [4, 25] }, [89.8, 36.4, 19.0, 81.0]),
+  row('full', false, { firstDetectMedM: [1500, Infinity] }, [100, 17.4, 0.8, 99.3]),
+  row('zigzag', false, {}, [100, 28.6, 5.8, 94.3]),
+  row('turn_cruise', true, { sunkPct: [0, 3], hpVsCruise: 0.6 }, [100, 14.3, 0, 100]),
+  row('react_full', false, { sunkPct: [0, 2], hpMean: [0, 16] }, [100, 8.7, 0, 100]),
+  row('dodge_silent', true, { sunkPct: [0, 2], hpMean: [0, 16] }, [89.8, 8.7, 0, 100]),
+  row('turn_silent', false, {}, [89.8, 18.1, 0, 100]),
+  row('late_turn', true, { sunkPct: [0, 6], hpMean: [0, 30] }, [100, 23.3, 0.8, 99.3]),
+  row('turn_full', false, { adriftPct: [0, 8] }, [100, 6.5, 0, 100]),
+  row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 2], homeBeforeDawnPct: [90, 100] }, [40.3, 8.0, 0.3, 99.8]),
+  row('meet', false, { sunkPct: [0, 5] }, [100, 27.7, 1.8, 98.3]),
   row('stop_dawn', false, { detectedPct: [0, 5], homePct: [100, 100], afterDawnPct: [100, 100] }, [0, 0, 0, 100]),
 ];
 
-/** 帯と不変（spec §F.4 の 7: 予告から初弾 ≥ open_fire_s・航過は同時に 1 隻・射程と視程の外から撃たない・1 回の航過 ≤ 弾数 × 被害）を外れた項目（空なら合格） */
+/**
+ * 帯と不変（spec §F.4 の 7: 予告から初弾 ≥ open_fire_s・航過は同時に 1 隻・射程と視程の外から撃たない・1 回の航過 ≤ 弾数 × 被害。
+ * v0.6.3 の直しで、予告から 2 ステップ以内に終わる航過（赤い線が 1 フレームだけ出て「かわした！」になる）が無いことも）を外れた項目（空なら合格）
+ */
 export function ptCalibrationMisses(r: PtCalibrationRow, c: PtCell, s: PtSimSetup, cruiseHpMean: number): string[] {
   const out: string[] = [];
   const bands: readonly (readonly [string, number, Band | null])[] = [
@@ -104,6 +111,7 @@ export function ptCalibrationMisses(r: PtCalibrationRow, c: PtCell, s: PtSimSetu
   if (c.maxPassing > 1) out.push(`同時に航過 ${c.maxPassing} 隻`);
   if (c.beyondEff + c.beyondSight > 0) out.push(`射程の外 ${c.beyondEff} 発・視程の外 ${c.beyondSight} 発`);
   if (!(c.worstPassHits <= p.roundsPerPass && c.worstPassHits * p.hit.damage < s.damage.maxHp)) out.push(`1 回の航過の命中 ${c.worstPassHits} 発（${p.roundsPerPass} 発まで・HP ${s.damage.maxHp} 未満）`);
+  if (c.passes > 0 && !(c.minPassS > 2 * s.stepS + 1e-9)) out.push(`予告から ${c.minPassS.toFixed(3)} 秒で終わった航過（2 ステップより長く）`);
   return out;
 }
 

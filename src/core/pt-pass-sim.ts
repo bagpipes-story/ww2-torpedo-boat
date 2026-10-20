@@ -68,8 +68,8 @@ export interface PtTrial {
   end: PtTrialEnd; timeS: number; afterDawn: boolean;
   /** 隊の KPI（core/pt-state の PtSection と同じ意味）、失った HP、残りの燃料 % */
   detected: boolean; firstDetectM: number; lostContacts: number; passes: number; firedPasses: number; cleanPasses: number; shots: number; hits: number; hpLost: number; fuelPct: number;
-  /** 不変の確かめ: 予告から初弾の最短秒、同時に航過中の PT の最大、有効射程・艇の視程の外からの発射、1 回の航過の最大命中 */
-  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number;
+  /** 不変の確かめ: 予告から初弾の最短秒、同時に航過中の PT の最大、有効射程・艇の視程の外からの発射、1 回の航過の最大命中、予告から航過の終わりまでの最短秒（v0.6.3 の直し: 一瞬で終わる航過が無い） */
+  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number; minPassS: number;
 }
 
 /** seed の夜の米PT（world-setup の applyPtNight と同じ: rollNight の敵の 1 件目のずれと左右反転） */
@@ -96,7 +96,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
   const eff2 = p.gun.effectiveM * p.gun.effectiveM;
   const realDt = s.stepS;
   const dt = realDt * s.timeScale;
-  const out: PtTrial = { end: 'timeout', timeS: 0, afterDawn: false, detected: false, firstDetectM: NaN, lostContacts: 0, passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, hpLost: 0, fuelPct: 0, minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, worstPassHits: 0 };
+  const out: PtTrial = { end: 'timeout', timeS: 0, afterDawn: false, detected: false, firstDetectM: NaN, lostContacts: 0, passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, hpLost: 0, fuelPct: 0, minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, worstPassHits: 0, minPassS: Infinity };
   const departS = pol.nextRange(0, PLAY.departMaxS);
   const speedMps = (k: Speed): number => (k === 'silent' ? s.boat.silentMaxMps : k === 'cruise' ? s.boat.speedCruiseMps : Infinity);
   let t = 0;
@@ -106,7 +106,10 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
   /** 台本の覚え: 反応を待つ PT と時刻、転舵の終わりと針路、火災を消す時刻、止まった秒 */
   const m = { reactBoat: -1, reactAt: NaN, dodgeUntil: -1, dodgeDeg: 0, fireOutAt: NaN, stopUsedS: 0 };
   const ev: PtEvents = {
-    onContact: () => {}, onPassEnd: () => {}, onLeave: () => {}, onOut: () => {},
+    onContact: () => {}, onLeave: () => {}, onOut: () => {},
+    onPassEnd: () => {
+      out.minPassS = Math.min(out.minPassS, c.timeS - q.commitAtS);
+    },
     // 赤い線: 反応の秒は毎回引く（台本どうしで同じ乱数の列）。late_turn は決まった秒
     onCommit: (i) => {
       const r = pol.nextRange(PLAY.reactMinS, PLAY.reactMaxS);
@@ -205,8 +208,8 @@ export interface PtCell {
   detectedPct: number; firstDetectMedM: number; passes: number; firedPasses: number; cleanPasses: number; shots: number; hits: number; hpMean: number; hpP90: number;
   /** 帰投は夜明けの前と後に分けても出す（どちらも全体に対する %） */
   sunkPct: number; homePct: number; homeBeforeDawnPct: number; afterDawnPct: number; homeMedS: number; fuelMedPct: number; fuelP10Pct: number; adriftPct: number; timeoutPct: number; lostContacts: number;
-  /** 不変（spec §F.4 の 7）: 予告から初弾の最短秒・同時に航過中の最大・射程の外と視程の外からの発射の数・1 回の航過の最大命中 */
-  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number;
+  /** 不変（spec §F.4 の 7）: 予告から初弾の最短秒・同時に航過中の最大・射程の外と視程の外からの発射の数・1 回の航過の最大命中・予告から航過の終わりの最短秒 */
+  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number; minPassS: number;
 }
 
 /** seed は seedBase 〜 seedBase + n − 1（同じ seed なら同じ結果） */
@@ -228,6 +231,7 @@ export function runPtCell(s: PtSimSetup, policy: PtPolicy, n: number, seedBase: 
     adriftPct: pct((r) => r.end === 'adrift'), timeoutPct: pct((r) => r.end === 'timeout'), lostContacts: mean((r) => r.lostContacts),
     minWarnS: trials.reduce((a, r) => Math.min(a, r.minWarnS), Infinity), maxPassing: trials.reduce((a, r) => Math.max(a, r.maxPassing), 0),
     beyondEff: sum((r) => r.beyondEff), beyondSight: sum((r) => r.beyondSight), worstPassHits: trials.reduce((a, r) => Math.max(a, r.worstPassHits), 0),
+    minPassS: trials.reduce((a, r) => Math.min(a, r.minPassS), Infinity),
   };
 }
 
