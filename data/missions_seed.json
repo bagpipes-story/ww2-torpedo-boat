@@ -897,7 +897,7 @@
             "claim": "米PT 第10戦隊が 1944-02-16 にグリーン島へ進出（ラバウル沖への出撃の記録は 2 月末から）"
           }
         ],
-        "source": "historical (control: 1943-11 から連合軍の昼の空襲がラバウルに続き空は争奪、02-19 の夜明けはまだ零戦がいる。refs は 2026-10-20 の WebSearch の抜粋のみ・本文未読) / design (v0.6.3。play_as own＝夜明けに敵機は来ない・label_ja・enemy_ships_at_dawn none＝米PT は夜明けに東へ去る（core/pt-boats が夜明けのラッチで去る。retire の仕組みは使わない）)"
+        "source": "historical (control: 1943-10-12 から連合軍の大規模な昼の空襲がラバウルにあり、1944-02 も昼の空襲が続いて空は争奪、02-19 の夜明けはまだ零戦がいる。refs は 2026-10-20 の WebSearch の抜粋のみ・本文未読) / design (v0.6.3。play_as own＝夜明けに敵機は来ない・label_ja・enemy_ships_at_dawn none＝米PT は夜明けに東へ去る（core/pt-boats が夜明けのラッチで去る。retire の仕組みは使わない）)"
       },
       "v0_1_prototype": {
         "enemies": [
