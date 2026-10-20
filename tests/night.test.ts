@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
-import { getBriefingRecord, riskLabelJa } from '../src/config/mission-data';
+import { getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { absentJa, briefingRows } from '../src/core/briefing';
 import { fixedNight, hazardChance, isNightDataRecord, nightFromData, rollNight, NIGHT_SEED_OFFSET } from '../src/core/night';
 import { directSortie } from '../src/core/sortie';

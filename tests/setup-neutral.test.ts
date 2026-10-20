@@ -2,7 +2,7 @@
 // snapshot は v0.6.2（8a9cd3c）の木で作った。以後 -u で書き換えない（違ったら他任務の挙動が変わったということ）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
-import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { briefingRows } from '../src/core/briefing';
 import { SeededRng } from '../src/core/rng';
 import { directSortie } from '../src/core/sortie';

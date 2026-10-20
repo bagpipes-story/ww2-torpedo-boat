@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission, getScoringParams } from '../src/config/game-data';
-import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { briefingRows } from '../src/core/briefing';
 import { computeScore, type ScoreInput } from '../src/core/scoring';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';

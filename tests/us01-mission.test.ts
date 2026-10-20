@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getBoatFuelCurve, getPrototypeMission, getScoringParams } from '../src/config/game-data';
-import { getBriefingRecord, getMenuEntries } from '../src/config/mission-data';
+import { getMenuEntries } from '../src/config/mission-data';
+import { getBriefingRecord } from '../src/config/briefing-data';
 import { computeScore } from '../src/core/scoring';
 import { ktToMps } from '../src/core/units';
 import { buildWorldSetup } from '../src/systems/world-setup';

@@ -35,6 +35,7 @@ import { applyNight } from './world-night';
 import { destroyerSetup, type DestroyerSetup, type TransportSetup } from './destroyer-setup';
 
 export type { DestroyerSpec, DestroyerSetup, TransportSetup } from './destroyer-setup';
+export { briefingNumbers } from './briefing-numbers'; // Briefing の数値（v0.6.3 で briefing-numbers.ts へ。今までの import のため）
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
@@ -48,8 +49,7 @@ import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
 import { type StormParams } from '../core/storm';
 import { NO_SORTIE_EFFECT, sortieConditions, type RaidParams, type Sortie, type SortieConditions } from '../core/sortie';
-import { compassJa, type BriefingNumbers } from '../core/briefing';
-import { dawnConditionJa, type DawnAir } from '../core/dawn-air';
+import type { DawnAir } from '../core/dawn-air';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 
@@ -275,26 +275,4 @@ function coastEdgeYOf(m: PrototypeMission): number {
   let y = m.bounds.height;
   for (const r of m.shallows) if (r.y + r.h >= m.bounds.height && r.y < y) y = r.y;
   return y;
-}
-
-/** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */
-export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): BriefingNumbers {
-  const f = s.vis.speedFactor;
-  return {
-    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）
-    ...(aimAssistJa ? { aimAssistJa } : {}),
-    visM: playerVisRangeM(s.vis),
-    detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
-    detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
-    durationS: s.durationS,
-    dawnJa: dawnConditionJa(s.dawnAir, s.night.mirrored),
-    fuelGal: s.fuelAllotmentGal,
-    torpedoes: s.torpedoCapacity,
-    gunsLabel: s.guns ? s.guns.label : '',
-    enemyFromJa: s.enemyFrom ? compassJa(s.enemyFrom.x, s.enemyFrom.y, s.mission.bounds.width, s.mission.bounds.height) : '',
-    homeX: s.mission.returnPoint.x,
-    homeY: s.mission.returnPoint.y,
-    boundsW: s.mission.bounds.width,
-    boundsH: s.mission.bounds.height,
-  };
 }

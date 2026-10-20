@@ -1,5 +1,5 @@
 // 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・敵（駆逐艦か大発の隊。v0.4.2）・魚雷・艇の砲・反撃・煙幕・被害・燃料（v0.3.0）・危険（味方機・暴風・水上機）・出撃（v0.4.0）を持ち、固定ステップで進める。
-// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、危険の生成は world-hazards.ts、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
+// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
@@ -15,18 +15,17 @@ import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import { insideRing, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
-import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
 import { SHALLOW_NONE, shallowIndexAt, updateShallowStatus, type ShallowStatus } from '../core/shallows';
 import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import { startDamageState, type Sortie } from '../core/sortie';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 import { PlayerBoat } from '../entities/player-boat';
-import { BargeHunt } from './barge-hunt';
+import type { BargeHunt } from './barge-hunt';
 import { BoatDamage } from './boat-damage';
-import { DestroyerGroup } from './destroyer-group';
+import type { DestroyerGroup } from './destroyer-group';
 import { stepDestroyerSide } from './destroyer-step';
-import { EscortBoat } from './escort-boat';
-import { EnemySide } from './enemy-side';
+import type { EscortBoat } from './escort-boat';
+import type { EnemySide } from './enemy-side';
 import type { EnemySeaplane } from './enemy-seaplane';
 import type { FriendlyFire } from './friendly-fire';
 import { SmokeScreen } from './smoke-screen';
@@ -36,6 +35,7 @@ import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
 import { torpedoEventsFor } from './torpedo-hits';
 import { WorldDawn } from './world-dawn';
+import { buildEnemies } from './world-enemies';
 import { buildHazards } from './world-hazards';
 import { DRIFT_INPUT, type WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
@@ -94,7 +94,7 @@ export class MissionWorld {
   readonly setup: WorldSetup;
   private readonly events: WorldEvents;
   private readonly smokeScreen: SmokeScreen | null;
-  private readonly gunRng: SeededRng;
+  readonly gunRng: SeededRng; // 砲撃のばらつき（seed+1。world-enemies が作る。ヘッドレスの再生が状態を読む）
   /** 命中の適用と沈没の開始（砲弾・機銃・掃射・爆弾はすべてここを通る。v0.4.1 で切り出し） */
   private readonly boatDamage: BoatDamage;
   /** 旋回率・加速の基準（暴風 × 乗員の倍率を掛けて毎ステップ書く） */
@@ -193,32 +193,23 @@ export class MissionWorld {
     this.boat = new PlayerBoat(scene, s.playerStart, 0, boatTextureKey(s.mission.playerBoatId));
     this.boatDamage = new BoatDamage(this.boat, this.damage, this.damageParams, this.params, events, SMALL_HIT_DAMAGE_RATIO);
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
-    const ds = s.destroyer;
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, s.torpedoCapacity, mission.bounds);
-    // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
-    this.gunRng = new SeededRng((seed + 1) >>> 0);
-    // 見張り（雷跡に気づく抽選。v0.5.0）も別系列（seed+17。seed+16 は今夜の揺らぎ）。気づくまで 1 ステップ 1 回だけ引く
-    this.destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, this.gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), this.splashes) : null;
-    // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）
-    this.destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => this.hitBoat((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, this.gunRng, x, y, 'destroyed')));
-    // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
-    const onSunk = (x: number, y: number): void => {
-      this.slowMoLeftS = s.slowMoSeconds;
-      this.events.onTargetDestroyed(x, y);
-    };
-    // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
-    this.escort = s.escort && ds ? new EscortBoat(scene, s.escort, this.boat.state, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
-    const escortHit = (damage: number, x: number, y: number): void => (this.escort!.hit(damage, this.stepTimeS) ? onSunk(x, y) : this.events.onShellHit(x, y, true, false));
-    this.destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
-    this.hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, this.boat.state, s.boatHalfLengthM, s.boatHalfBeamM, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), onSunk, s.shoreBatteries, this.splashes) : null;
-    this.enemy = new EnemySide(this.destroyers, this.hunt);
+    const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
+    const onSunk = (x: number, y: number): void => { this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発
+    // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）
+    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this);
+    this.gunRng = en.gunRng;
+    this.destroyers = en.destroyers;
+    this.escort = en.escort;
+    this.hunt = en.hunt;
+    this.enemy = en.enemy;
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
     this.torpedoEvents = torpedoEventsFor(this, events);
     this.smokeParams = s.smokeParams;
     this.smoke = this.smokeParams ? createSmokeState(SMOKE_POOL_SIZE) : null;
     this.smokeScreen = this.smokeParams ? new SmokeScreen(scene, this.smokeParams) : null;
     // 味方機（seed+2）・暴風（seed+3）・水上機（seed+5）・夜明けの空襲（seed+19）。被害はすべて hitBoat（僚艇は escortHit）
-    const hz = buildHazards(scene, s, seed, this.boat.state, this.splashes, (spec, rng, x, y, reason) => this.hitBoat(spec, rng, x, y, reason), (x, y) => this.events.onSlam(x, y), escortHit);
+    const hz = buildHazards(scene, s, seed, this.boat.state, this.splashes, hit, (x, y) => this.events.onSlam(x, y), en.escortHit);
     this.friendly = hz.friendly;
     this.storm = hz.storm;
     this.seaplane = hz.seaplane;

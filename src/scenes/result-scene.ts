@@ -30,8 +30,10 @@ import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa, resultReturnJa, 
 import { dawnResultLine } from '../ui/dawn-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
+import type { BargeResult, EscortResult } from '../ui/result-types';
 
 export type { MissionEndReason } from '../core/mission-flow';
+export type { BargeResult, EscortResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
 
 /** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
 const TRANSPORT_ENEMY_ID = 'ijn_transport';
@@ -114,42 +116,6 @@ export interface MissionResult {
   /** 「出撃前」の行（空襲の無い任務は空。空なら出さない） */
   raidLine: string;
   dawn: DawnResult; // 夜明け（v0.6.1。systems/dawn-telemetry の dawnResult）: ラッチ・輪の外・夜明け後の秒・空の持ち主・空襲の集計（見出し・帰投点 ×0.9・夜明けの行）
-}
-
-/** 大発掃討の記録（v0.4.2）: 隻数・撃破・上陸・ノルマ、射撃の発射と命中、最初に撃った距離 m と速力帯、最初に目で気づかれた距離 m（NaN なら気づかれる前に撃った）、撃破の距離の最小・最大 m、13mm の命中数と被害 HP。実機で数値を合わせる根拠 */
-export interface BargeResult {
-  enemyId: string;
-  total: number;
-  sunk: number;
-  beached: number;
-  quota: number;
-  shots: number;
-  hits: number;
-  firstShotM: number;
-  firstShotBand: string;
-  firstDetectM: number;
-  flashFirst: boolean;
-  killMinM: number;
-  killMaxM: number;
-  mgHits: number;
-  mgDamage: number;
-  /** 沿岸砲（v0.4.3）: 任務にある、射界の中にいた体感秒、砲撃・命中・被害 HP */
-  batteryEnabled: boolean;
-  batteryInArcS: number;
-  batteryShots: number;
-  batteryHits: number;
-  batteryDamage: number;
-}
-
-/** 僚艇の記録（v0.4.4）: 残り HP と最大、被弾数と被害 HP、自艇から最も離れた距離 m、沈んだか（沈んだ実秒） */
-export interface EscortResult {
-  hpLeft: number;
-  hpMax: number;
-  hits: number;
-  damage: number;
-  maxDistM: number;
-  sunk: boolean;
-  sunkAtS: number;
 }
 
 export class ResultScene extends Phaser.Scene {

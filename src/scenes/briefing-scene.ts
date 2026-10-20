@@ -16,7 +16,8 @@ import {
 } from '../config/game-config';
 import { getAimAssistLevels, getGameData, getRaidParams } from '../config/game-data';
 import { debugSetupOptions } from '../config/debug-setup';
-import { enemyNameJa, getBriefingRecord, getPrototypeMission, riskLabelJa } from '../config/mission-data';
+import { getPrototypeMission } from '../config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../config/briefing-data';
 import {
   BRIEF_HISTORICAL_JA,
   BRIEF_BACK_H,

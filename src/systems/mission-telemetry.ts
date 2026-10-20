@@ -13,10 +13,10 @@ import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
 import { SP_APPROACH, SP_IDLE, SP_OUT_NONE, bombInAir, seaplaneActive, seaplanePose } from '../core/seaplane';
 import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
-import { STORM_NONE, meanInsideKt } from '../core/storm';
+import { STORM_NONE } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
-import { bargeResult, escortResult, seaplaneResultFields } from './mission-result-extras';
+import { bargeResult, escortResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
 import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
 import type { MissionWorld } from './mission-world';
 
@@ -285,13 +285,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     crewTurnFactor: crewTurnFactor(w.setup.crewEffects, w.crewLostNow),
     crewAccelFactor: crewAccelFactor(w.setup.crewEffects, w.crewLostNow),
     extinguishHoldS: w.damageParams.extinguishHoldS * w.extinguishHoldScale,
-    stormEnabled: w.storm !== null,
-    stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
-    stormInsideS: w.storm ? w.storm.state.insideS : 0,
-    stormOverS: w.storm ? w.storm.state.overS : 0,
-    stormMeanKt: w.storm ? meanInsideKt(w.storm.state) : NaN,
-    stormSlams: w.storm ? w.storm.state.slams : 0,
-    stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
+    ...stormResultFields(w),
     ...seaplaneResultFields(w),
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getBoatCrewEffects, getBoatCrewParams, getBoatDamageParams, getBoatFuelCurve, getBoatRecord, getBoatSmokeParams, getEnemyRecord, getScoringParams, getTorpedoRecord } from '../src/config/game-data';
-import { getBriefingRecord, getPrototypeMission } from '../src/config/mission-data';
+import { getPrototypeMission } from '../src/config/mission-data';
+import { getBriefingRecord } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { directSortie, isRaidDataRecord, raidParamsFromData } from '../src/core/sortie';
 import { torpedoReliabilityFromData } from '../src/core/torpedo';

@@ -19,7 +19,7 @@ import { WorldDawn, type DawnStrike, type DawnWorldView } from '../src/systems/w
 import { DAY_SEA_COLOR, SEA_LIGHT_PRE_S, SEA_LIGHT_STEPS } from '../src/config/dawn-config';
 import { briefingNumbers, buildWorldSetup, type WorldSetup } from '../src/systems/world-setup';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
-import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { checkPlayableDawn, getAirStrikeParams, getDawnAir, getDawnStrikeEventRecord, getStrikeAircraftRecord } from '../src/config/dawn-data';
 import { DAWN_STRIKE_EVENT_ID, dawnStrikeFromData, isDawnStrikeBlock, isDawnStrikeEventRecord, isStrikeAircraftRecord } from '../src/core/air-strike-data';

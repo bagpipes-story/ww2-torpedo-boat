@@ -1,5 +1,5 @@
 // 任務の種（data/missions_seed.json）の読み出し（v0.4.0 で game-data.ts から切り出し。切り出した中身は v0.3.5 のまま、v0.4.0 で hazards を足した）。
-// 型は実行時に検査する（data 駆動なので壊れていれば起動時に分かる）。v0.4.0 の任務一覧・Briefing の読み出しもここに置く。
+// 型は実行時に検査する（data 駆動なので壊れていれば起動時に分かる）。Briefing の文の読み出しは v0.6.3 から config/briefing-data.ts。
 import type { GameData } from './game-data';
 import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '../core/mission-flow';
 import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../core/shallows';
@@ -9,7 +9,6 @@ import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
 import { dawnStrikeFromData, type DawnStrikeBlock } from '../core/air-strike-data';
 import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
-import { shortLabelJa, type BriefingText } from '../core/briefing';
 
 /** ミッションの種から v0.1 プロトタイプ用の設定を取り出す（型は実行時に検査する: data 駆動なので壊れていれば起動時に分かる） */
 export interface PrototypeMission {
@@ -256,62 +255,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   };
 }
 
-// ---------- 任務一覧と Briefing（v0.4.0）。data を直接読み、game-data の関数は呼ばない（値の循環を作らない） ----------
+// ---------- 任務一覧（v0.4.0）。Briefing の文（getBriefingRecord・enemyNameJa・riskLabelJa）は v0.6.3 から config/briefing-data.ts（ここから再 export すると循環になる） ----------
 
 /** Title の任務一覧（v0.6.0 から campaign-data.ts。キャンペーンを選べる。ここは今までの import のための再 export） */
 export { getMenuEntries } from './campaign-data';
-
-export interface BriefingRecord extends BriefingText {
-  id: string;
-  titleJa: string;
-  date: string;
-  place: string;
-  /** 表示用の史実メモ（人物名なし。CLAUDE.md §11） */
-  noteJa: string;
-}
-
-/** Briefing に出す文（missions_seed）と遊べる世界の敵・危険・月。文が無ければ例外。hard なら駆逐艦の隻数を hard block のぶん増やして出す（v0.4.5） */
-export function getBriefingRecord(data: GameData, missionId: string, hard: boolean = false): BriefingRecord {
-  const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
-  if (!m) throw new Error(`missions_seed.json に ${missionId} が無い`);
-  const text = (key: string): string => {
-    const v = m[key];
-    if (typeof v !== 'string' || v.length === 0) throw new Error(`${missionId}.${key} が無い（Briefing、docs/02 §4）`);
-    return v;
-  };
-  const proto = m['v0_1_prototype'] as Record<string, unknown> | undefined;
-  const enemies = proto?.['enemies'];
-  if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === 'string')) throw new Error(`${missionId}.v0_1_prototype.enemies が文字列の配列でない（Briefing）`);
-  const mission = getPrototypeMission(data, missionId, hard);
-  // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）。大発の任務は enemies のまま
-  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : [...(enemies as string[])];
-  if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
-  return {
-    id: missionId,
-    titleJa: text('title_ja'),
-    date: text('date'),
-    place: text('place'),
-    objective: text('objective'),
-    success: text('success'),
-    noteJa: text('briefing_note_ja'),
-    moon: mission.moon,
-    enemyIds,
-    hazardIds: mission.hazards,
-  };
-}
-
-/** 敵の名前（enemies.json の name_ja から資料の注記「（…）」を落とす） */
-export function enemyNameJa(data: GameData, id: string): string {
-  const e = (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === id);
-  const name = e?.['name_ja'];
-  if (typeof name !== 'string') throw new Error(`enemies.json の ${id}.name_ja が無い`);
-  return shortLabelJa(name);
-}
-
-/** 危険の名前（risk_events.json の label_ja から資料の注記を落とす） */
-export function riskLabelJa(data: GameData, id: string): string {
-  const e = (data.riskEvents.events as readonly Record<string, unknown>[]).find((x) => x['id'] === id);
-  const label = e?.['label_ja'];
-  if (typeof label !== 'string') throw new Error(`risk_events.json に ${id}（label_ja）が無い`);
-  return shortLabelJa(label);
-}
