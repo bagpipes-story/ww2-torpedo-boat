@@ -1,0 +1,538 @@
+// 敵の米PT の隊（v0.6.3。core/pt-boats・pt-state、spec §C.5〜C.9・§G.1）: 暗さ・段階と時間・撃たない条件・航過は同時に 1 隻・転舵で減る・見失う・夜明け・
+// 的でない艇・決定性・乱数の数・止まらない・1 回の航過の上限・確保なし。数値は jp_05 の getPtParams（data のまま）。
+import { describe, expect, it } from 'vitest';
+import { gameData, getBoatDamageParams, getBoatRecord, getPrototypeMission, getVisibilityParams } from '../src/config/game-data';
+import { getPtParams } from '../src/config/pt-mission-data';
+import { boatParamsFromData, clampToBounds, nextSpeedBand, stepBoat, type BoatInput, type BoatState, type SpeedStep } from '../src/core/boat-motion';
+import { applyShellHit, createDamageState, type HitOutcome } from '../src/core/gunnery';
+import { rollNight } from '../src/core/night';
+import {
+  PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SEED_OFFSET,
+  createPtSection, createPtTelemetry, stepPtSection, threatIndex, type PtCheck, type PtEvents, type PtSection,
+} from '../src/core/pt-boats';
+import { ptParamsAtNight, type PtParams } from '../src/core/pt-data';
+import { inDeadCone, tcpaFeltS } from '../src/core/pt-pass';
+import { SeededRng } from '../src/core/rng';
+import { bearingDeg } from '../src/core/ship-ai';
+import { degToRad, ktToMps, wrapDeg360 } from '../src/core/units';
+import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
+
+const DT = 1 / 60;
+const TS = gameData.hitRateModel.world.time_scale;
+const MISSION = getPrototypeMission(gameData, 'jp_05');
+const P = getPtParams(gameData, MISSION, TS)!;
+const VIS = getVisibilityParams(gameData, MISSION.moon, false);
+const detectM = (band: SpeedStep): number => enemyDetectRangeM(P.baseDetectM, VIS.speedFactor[band], VIS, false);
+const VIS2 = playerVisRangeM(VIS) ** 2;
+const T14 = boatParamsFromData(getBoatRecord(gameData, MISSION.playerBoatId));
+const HOME = MISSION.returnPoint;
+const CRUISE01 = 20 / 31;
+const FULL01 = 1;
+
+function check(boat: BoatState, over: Partial<PtCheck> = {}): PtCheck {
+  return { boat, boatHalfLengthM: T14.lengthM / 2, boatHalfBeamM: T14.beamM / 2, detectOpenM: detectM('cruise'), smokeFactor: 1, smoke: null, smokeParams: null, targetValid: true, visRange2: VIS2, dawn: false, timeS: 10, ...over };
+}
+function events(over: Partial<PtEvents> = {}): PtEvents {
+  const none = (): void => {};
+  return { onContact: none, onCommit: none, onFire: none, onImpact: none, onPassEnd: none, onLeave: none, onOut: none, ...over };
+}
+
+/** next() を数える乱数（乱数の消費の検査。air-strike.test と同じ） */
+class CountingRng extends SeededRng {
+  draws = 0;
+  override next(): number {
+    this.draws++;
+    return super.next();
+  }
+}
+
+/** 艇（T-14 の運動・速力帯で発見距離）と隊を固定ステップで回す。policy は入力を書く。帰投の輪に入ったら的でなくなり止まる */
+interface Sim {
+  q: PtSection;
+  p: PtParams;
+  c: PtCheck;
+  boat: BoatState;
+  input: BoatInput;
+  band: SpeedStep;
+  t: number;
+  /** 方針の乱数（PT の系列とは別） */
+  pol: SeededRng;
+  rng: SeededRng;
+  home: boolean;
+  /** 方針の覚え（転舵の残り秒・針路） */
+  turnLeftS: number;
+  turnDeg: number;
+}
+interface SimOpts {
+  seed: number;
+  steps: number;
+  policy: (s: Sim) => void;
+  start?: { x: number; y: number; headingDeg: number };
+  night?: boolean;
+  visRange2?: number;
+  dawnAtS?: number;
+  ev?: (s: Sim) => Partial<PtEvents>;
+  onStep?: (s: Sim) => void;
+  rng?: SeededRng;
+  /** 帰投の輪に入ったら止める（それ以上は何も起きない） */
+  stopAtHome?: boolean;
+}
+function simulate(o: SimOpts): Sim {
+  let p = P;
+  if (o.night) {
+    const n = rollNight(MISSION.night!, () => 0, o.seed, 1, 0);
+    p = ptParamsAtNight(P, n.enemyOffsets[0]!.dx, n.enemyOffsets[0]!.dy, n.mirrored);
+  }
+  const st = o.start ?? MISSION.playerStart;
+  const boat: BoatState = { x: st.x, y: st.y, headingDeg: st.headingDeg, speedMps: 0 };
+  const s: Sim = { q: createPtSection(p, 24), p, c: check(boat, { visRange2: o.visRange2 ?? VIS2, timeS: 0 }), boat, input: { headingDeg: NaN, speed01: 0 }, band: 'stop', t: 0, pol: new SeededRng((o.seed * 7919 + 1000) >>> 0), rng: o.rng ?? new SeededRng((o.seed + PT_SEED_OFFSET) >>> 0), home: false, turnLeftS: 0, turnDeg: 0 };
+  const ev = events(o.ev ? o.ev(s) : {});
+  for (let k = 0; k < o.steps; k++) {
+    if (!s.home) o.policy(s);
+    else s.input.speed01 = 0;
+    stepBoat(boat, s.input, T14, DT * TS);
+    clampToBounds(boat, p.bounds, 15);
+    s.band = nextSpeedBand(s.band, boat.speedMps, T14);
+    s.home = s.home || (boat.x - HOME.x) ** 2 + (boat.y - HOME.y) ** 2 <= HOME.radiusM ** 2;
+    s.c.detectOpenM = detectM(s.band);
+    s.c.targetValid = !s.home;
+    s.c.timeS = s.t;
+    s.c.dawn = o.dawnAtS !== undefined && s.t >= o.dawnAtS;
+    stepPtSection(s.q, p, s.c, s.rng, DT, DT * TS, ev);
+    o.onStep?.(s);
+    s.t += DT;
+    if (o.stopAtHome && s.home) break;
+  }
+  return s;
+}
+
+const toHome = (s: Sim): number => bearingDeg(s.boat.x, s.boat.y, HOME.x, HOME.y);
+/** まっすぐ帰る（速さ speed01） */
+const straight = (speed01: number) => (s: Sim): void => {
+  s.input.headingDeg = toHome(s);
+  s.input.speed01 = s.t < 1 ? 0 : speed01;
+};
+/** 赤い線（航過を固めた）で線から離れる直角へ 4 秒、その後は帰る（HUD の教え） */
+const turnAway = (speed01: number) => (s: Sim): void => {
+  straight(speed01)(s);
+  if (s.turnLeftS > 0) {
+    s.turnLeftS -= DT;
+    s.input.headingDeg = s.turnDeg;
+  }
+};
+const onCommitTurn = (s: Sim): Partial<PtEvents> => ({
+  onCommit: (i, lockDeg) => {
+    const b = s.q.boats[i]!;
+    const r = degToRad(lockDeg);
+    const cross = Math.sin(r) * (s.boat.y - b.y) + Math.cos(r) * (s.boat.x - b.x);
+    s.turnDeg = wrapDeg360(lockDeg + (cross >= 0 ? 90 : -90));
+    s.turnLeftS = 4;
+  },
+});
+/** 気まぐれ: 2 秒ごとに針路と速さ（停止〜全速）を変える */
+const randomWalk = (s: Sim): void => {
+  if (Number.isNaN(s.input.headingDeg) || s.pol.next() < DT / 2) {
+    s.input.headingDeg = s.pol.next() * 360;
+    s.input.speed01 = [0, 0.4, CRUISE01, FULL01][Math.floor(s.pol.next() * 4)]!;
+  }
+};
+/** 全速で東へ逃げる（追いつけない突撃の打ち切りを通る） */
+const fleeEast = (s: Sim): void => {
+  s.input.headingDeg = 90;
+  s.input.speed01 = FULL01;
+};
+/** 円を描いて PT の線の近くに居続ける（中心 (3000, 2100)・半径 700・巡航） */
+const circle = (s: Sim): void => {
+  const out = bearingDeg(3000, 2100, s.boat.x, s.boat.y);
+  const r = Math.hypot(s.boat.x - 3000, s.boat.y - 2100);
+  s.input.headingDeg = wrapDeg360(out + 90 + (r > 700 ? 20 : -20));
+  s.input.speed01 = CRUISE01;
+};
+
+describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
+  it('作る: 出発点に哨戒で並ぶ（揺らぎなし (2000, 2000)/(2000, 2200) を東へ 8 kt）、確保は作るときだけ', () => {
+    const q = createPtSection(P, 24);
+    expect(q.boats.map((b) => [b.x, b.y, b.headingDeg, b.phase, b.wp])).toEqual([
+      [2000, 2000, 90, PT_PATROL, 1],
+      [2000, 2200, 90, PT_PATROL, 1],
+    ]);
+    expect(q.boats[0]!.speedMps).toBeCloseTo(ktToMps(8), 9);
+    expect([q.shells.length, q.seen.length, q.owner, q.detected, q.firstDetectM, q.minWarnS]).toEqual([24, 2, -1, false, NaN, Infinity]);
+    const t = createPtTelemetry();
+    expect([t.enabled, t.threatPhase, t.dx, t.leaveDirJa]).toEqual([false, -1, NaN, '']);
+  });
+
+  it('1 暗さ（新月）: 静音 600 m → 610 m では見つからず 590 m で見つかる、巡航 1,200 m → 1,190 m で見つかる、出撃から 5 秒は見つけない', () => {
+    expect(detectM('silent')).toBeCloseTo(600, 9);
+    expect(detectM('cruise')).toBeCloseTo(1200, 9);
+    const seen = (dist: number, band: SpeedStep, timeS: number): boolean => {
+      const q = createPtSection(P, 24);
+      const boat = { x: 2000 + dist, y: 2000, headingDeg: 0, speedMps: 0 };
+      let gained = 0;
+      stepPtSection(q, P, check(boat, { detectOpenM: detectM(band), timeS }), new SeededRng(1), DT, DT * TS, events({ onContact: (g) => (gained += g ? 1 : 0) }));
+      expect(gained).toBe(q.detected ? 1 : 0);
+      return q.detected;
+    };
+    expect([seen(610, 'silent', 10), seen(590, 'silent', 10), seen(1190, 'cruise', 10), seen(1210, 'cruise', 10)]).toEqual([false, true, true, false]);
+    expect([seen(100, 'cruise', P.detectFromS - 0.01), seen(100, 'cruise', P.detectFromS)]).toEqual([false, true]);
+    // 最初に見つけた距離（KPI）は 1 回だけ、生きている PT の最寄り
+    const q = createPtSection(P, 24);
+    stepPtSection(q, P, check({ x: 2590, y: 2000, headingDeg: 0, speedMps: 0 }, { detectOpenM: 600 }), new SeededRng(1), DT, DT * TS, events());
+    expect(q.firstDetectM).toBeCloseTo(590, 6);
+  });
+
+  it('2 段階と時間: 哨戒 → 警戒 → 1.5 秒で突撃（2 隻目は 4.5 秒）→ 見えていて最接近 5 秒前に航過 → 2.5 秒は撃たない → 離脱 → 突撃 → 航過 → 2 回で去る → 東の縁の外', () => {
+    const seq: number[][] = [[], []];
+    const at: number[][] = [[], []];
+    const commits: { i: number; t: number; first: number }[] = [];
+    const outX: number[] = [];
+    let badCommit = 0;
+    const s = simulate({
+      seed: 1,
+      steps: 60 * 200,
+      policy: circle,
+      start: { x: 3000, y: 1400, headingDeg: 90 },
+      ev: (s) => ({
+        onCommit: (i) => {
+          const b = s.q.boats[i]!;
+          const dx = s.boat.x - b.x;
+          const dy = s.boat.y - b.y;
+          const ph = degToRad(s.boat.headingDeg);
+          const r = degToRad(b.headingDeg);
+          const tcpa = tcpaFeltS(dx, dy, Math.sin(ph) * s.boat.speedMps - Math.sin(r) * b.speedMps, -Math.cos(ph) * s.boat.speedMps + Math.cos(r) * b.speedMps, TS);
+          if (s.q.seen[i] !== 1 || dx * dx + dy * dy > P.commitMax2 || tcpa > P.commitTcpaS) badCommit++;
+          commits.push({ i, t: s.t, first: NaN });
+        },
+        onFire: () => {
+          const c = commits[commits.length - 1]!;
+          if (Number.isNaN(c.first)) c.first = s.t;
+        },
+        onOut: (i) => outX.push(s.q.boats[i]!.x),
+      }),
+      onStep: (s) => {
+        for (let i = 0; i < 2; i++) {
+          const l = seq[i]!;
+          if (l[l.length - 1] !== s.q.boats[i]!.phase) {
+            l.push(s.q.boats[i]!.phase);
+            at[i]!.push(s.t);
+          }
+        }
+      },
+    });
+    const walk = [PT_PATROL, PT_ALERT, PT_RUN_IN, PT_PASS, PT_BREAK, PT_RUN_IN, PT_PASS, PT_LEAVE, PT_OUT];
+    expect(seq).toEqual([walk, walk]);
+    expect(at[0]![1]).toBe(at[1]![1]); // 隊で 1 つの発見 → 2 隻とも同じステップに警戒
+    const alertS = [at[0]![2]! - at[0]![1]!, at[1]![2]! - at[1]![1]!];
+    expect(alertS[0]).toBeGreaterThanOrEqual(P.reactionDelayS - 1e-9);
+    expect(alertS[0]).toBeLessThanOrEqual(P.reactionDelayS + 2 * DT);
+    expect(alertS[1]).toBeGreaterThanOrEqual(P.reactionDelayS + P.wingmanDelayS - 1e-9);
+    expect(alertS[1]).toBeLessThanOrEqual(P.reactionDelayS + P.wingmanDelayS + 2 * DT);
+    expect(commits.length).toBe(2 * P.maxPasses);
+    expect(badCommit).toBe(0);
+    for (const c of commits) if (!Number.isNaN(c.first)) expect(c.first - c.t).toBeGreaterThanOrEqual(P.openFireS - 1e-9);
+    expect(commits.filter((c) => !Number.isNaN(c.first)).length).toBeGreaterThan(0);
+    expect(s.q.minWarnS).toBeGreaterThanOrEqual(P.openFireS - 1e-9);
+    expect([s.q.passes, s.q.out, ...s.q.boats.map((b) => b.passes)]).toEqual([4, 2, 2, 2]);
+    for (const x of outX) expect(x).toBeGreaterThan(P.bounds.width + P.boundsMarginM);
+    expect(s.q.leftAtDawn).toBe(false);
+  });
+
+  it('3 撃たない: 航過の外・予告から 2.5 秒の内・艇首尾の円錐・60 m 以内・400 m より遠く・艇の視程の外からは撃たない。1 回の航過は 12 発まで', () => {
+    const fired = [0, 0];
+    let bad = 0;
+    [VIS2, 300 ** 2].forEach((vis, v) => {
+      for (let seed = 1; seed <= 12; seed++) {
+        simulate({
+          seed,
+          steps: 3000,
+          policy: randomWalk,
+          start: { x: 2900, y: 1500, headingDeg: 180 },
+          visRange2: vis,
+          ev: (s) => ({
+            onFire: (i, x, y) => {
+              const b = s.q.boats[i]!;
+              const dx = s.boat.x - x;
+              const dy = s.boat.y - y;
+              const d2 = dx * dx + dy * dy;
+              const r = degToRad(b.headingDeg);
+              const ok = b.phase === PT_PASS && s.q.owner === i && b.timerS >= P.openFireS && d2 >= P.minRange2 && d2 <= P.gun.effectiveM ** 2 && d2 <= vis && !inDeadCone(Math.sin(r), -Math.cos(r), dx, dy, d2, P.cosDead2) && b.firedThisPass <= P.roundsPerPass && b.roundsLeft >= 0;
+              if (!ok) bad++;
+              fired[v]!++;
+            },
+          }),
+        });
+      }
+    });
+    expect(bad).toBe(0);
+    expect(fired[0]).toBeGreaterThan(50);
+    expect(fired[1]).toBeGreaterThan(10);
+  });
+
+  it('4 航過は同時に 1 隻: 2 隻・気まぐれな艇・20 夜 × 3,000 ステップで、航過中は owner の 1 隻だけ、航過の終わりから次の固めまで pass_gap_s 以上', () => {
+    let commitsTotal = 0;
+    let bad = 0;
+    let shortGap = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      let lastEnd = -Infinity;
+      simulate({
+        seed,
+        steps: 3000,
+        policy: randomWalk,
+        start: { x: 2900, y: 1500, headingDeg: 180 },
+        ev: (s) => ({
+          onCommit: () => {
+            if (s.t - lastEnd < P.passGapS - 1e-6) shortGap++;
+            commitsTotal++;
+          },
+          onPassEnd: () => (lastEnd = s.t),
+        }),
+        onStep: (s) => {
+          let n = 0;
+          for (const b of s.q.boats) if (b.phase === PT_PASS) n++;
+          if (n > 1 || (n === 1 && s.q.boats[s.q.owner]?.phase !== PT_PASS) || (n === 0 && s.q.owner !== -1)) bad++;
+        },
+      });
+    }
+    expect([bad, shortGap]).toEqual([0, 0]);
+    expect(commitsTotal).toBeGreaterThan(20);
+  });
+
+  it('5 転舵で被弾が減る: 200 夜（今夜の揺らぎ込み）、赤い線で線から離れる直角へ 4 秒の命中は、まっすぐ巡航で帰るの半分未満', () => {
+    let straightHits = 0;
+    let turnHits = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      straightHits += simulate({ seed, steps: 60 * 170, night: true, policy: straight(CRUISE01), stopAtHome: true }).q.hits;
+      turnHits += simulate({ seed, steps: 60 * 170, night: true, policy: turnAway(CRUISE01), ev: onCommitTurn, stopAtHome: true }).q.hits;
+    }
+    expect(straightHits).toBeGreaterThan(200);
+    expect(turnHits).toBeLessThan(0.5 * straightHits);
+  });
+
+  it('6 見失う: 航過の後に艇が止まり 700 m 先（停止 480 m では見つからない）→ 8 秒で隊は見失って哨戒へ。航過の数は変わらない。見えない間の突撃は推した位置（全速で北へ）へ向かい、本当の位置には寄らない', () => {
+    const L = { x: 3000, y: 2000 };
+    const q = createPtSection(P, 24);
+    Object.assign(q, { detected: true, holdLeftS: P.detectHoldS, lkX: L.x, lkY: L.y, lkVx: 0, lkVy: -ktToMps(31), lkAgeS: 0 });
+    Object.assign(q.boats[0]!, { x: L.x + 700, y: L.y, headingDeg: 90, lockDeg: 90, speedMps: P.runInMps, phase: PT_BREAK, passes: 1, timerS: 0 });
+    Object.assign(q.boats[1]!, { x: L.x - 700, y: L.y, headingDeg: 270, lockDeg: 270, speedMps: P.runInMps, phase: PT_BREAK, passes: 1, timerS: 0 });
+    const c = check({ x: L.x, y: L.y, headingDeg: 0, speedMps: 0 }, { detectOpenM: detectM('stop') });
+    const rng = new CountingRng(18);
+    const contacts: boolean[] = [];
+    let lostAt = NaN;
+    let minD2 = Infinity;
+    let sawRunIn = 0;
+    let y4 = NaN;
+    for (let k = 0; k < 60 * 9; k++) {
+      c.timeS = 10 + k * DT;
+      stepPtSection(q, P, c, rng, DT, DT * TS, events({ onContact: (g) => { contacts.push(g); if (!g) lostAt = (k + 1) * DT; } }));
+      for (const b of q.boats) {
+        minD2 = Math.min(minD2, (b.x - L.x) ** 2 + (b.y - L.y) ** 2);
+        if (b.phase === PT_RUN_IN) sawRunIn++;
+      }
+      if (k === 60 * 4) y4 = Math.max(q.boats[0]!.y, q.boats[1]!.y);
+    }
+    expect(contacts).toEqual([false]);
+    expect(lostAt).toBeCloseTo(P.detectHoldS, 1);
+    expect([q.detected, q.lostContacts, q.passes, ...q.boats.map((b) => b.passes)]).toEqual([false, 1, 0, 1, 1]);
+    expect(q.boats.map((b) => b.phase)).toEqual([PT_PATROL, PT_PATROL]);
+    expect(sawRunIn).toBeGreaterThan(0);
+    expect(y4).toBeLessThan(L.y - 150);
+    expect(Math.sqrt(minD2)).toBeGreaterThan(detectM('stop'));
+    expect(rng.draws).toBe(0);
+  });
+
+  /** 航過中で撃てる形（PT0 は東へ・艇は真横 200 m・予告から 3 秒）、PT1 は突撃中 */
+  function passing(over: Partial<PtCheck> = {}): { q: PtSection; c: PtCheck } {
+    const q = createPtSection(P, 24);
+    Object.assign(q, { detected: true, holdLeftS: P.detectHoldS, lkX: 3000, lkY: 2200, owner: 0, commitAtS: 7 });
+    Object.assign(q.boats[0]!, { x: 3000, y: 2000, headingDeg: 90, lockDeg: 90, passMps: P.passMinMps, speedMps: P.passMinMps, phase: PT_PASS, timerS: 3, roundsLeft: P.roundsPerPass });
+    Object.assign(q.boats[1]!, { x: 2500, y: 2600, phase: PT_RUN_IN, speedMps: P.runInMps });
+    return { q, c: check({ x: 3000, y: 2200, headingDeg: 0, speedMps: 0 }, over) };
+  }
+
+  it('7 夜明け: 去っていない PT はそのステップで去る（航過中は数えず owner −1）。乱数は引かず、その後も撃たずに東の縁の外へ', () => {
+    const a = passing();
+    const ra = new CountingRng(18);
+    stepPtSection(a.q, P, a.c, ra, DT, DT * TS, events());
+    expect([a.q.shots, ra.draws]).toEqual([1, 2]); // 夜明け前なら同じ形で撃つ
+    const b = passing({ dawn: true });
+    const rb = new CountingRng(18);
+    const log: number[] = [];
+    const ev = events({ onLeave: (i) => log.push(i), onFire: () => log.push(-1), onPassEnd: () => log.push(-2) });
+    stepPtSection(b.q, P, b.c, rb, DT, DT * TS, ev);
+    expect(log).toEqual([0, 1]);
+    expect(b.q.boats.map((x) => x.phase)).toEqual([PT_LEAVE, PT_LEAVE]);
+    expect([b.q.owner, b.q.passes, b.q.passSeq, b.q.shots, rb.draws, b.q.leftAtDawn]).toEqual([-1, 0, 0, 0, 0, true]);
+    for (let k = 0; k < 60 * 60; k++) stepPtSection(b.q, P, b.c, rb, DT, DT * TS, ev);
+    expect(log).toEqual([0, 1]);
+    expect([rb.draws, b.q.out, ...b.q.boats.map((x) => x.phase)]).toEqual([0, 2, PT_OUT, PT_OUT]);
+    for (const x of b.q.boats) expect(x.x).toBeGreaterThan(P.bounds.width);
+  });
+
+  it('8 的でない艇（沈み始め・帰投の輪の中）: 見つけない・撃たない・当たらない（PT は動き続ける）', () => {
+    const q = createPtSection(P, 24);
+    const c = check({ x: 2100, y: 2000, headingDeg: 0, speedMps: 0 }, { targetValid: false });
+    const rng = new CountingRng(18);
+    for (let k = 0; k < 600; k++) stepPtSection(q, P, c, rng, DT, DT * TS, events());
+    expect([q.detected, q.shots, q.hits, rng.draws, q.closest2, q.firstDetectM]).toEqual([false, 0, 0, 0, Infinity, NaN]);
+    expect(q.boats[0]!.x).toBeGreaterThan(2100);
+    const b = passing({ targetValid: false });
+    Object.assign(b.q.shells[0]!, { active: true, x: 3000, y: 2200, vx: 0, vy: 0, leftS: 0.001, impactX: 3000, impactY: 2200, gunIndex: 0 });
+    const impacts: boolean[] = [];
+    for (let k = 0; k < 60; k++) stepPtSection(b.q, P, b.c, rng, DT, DT * TS, events({ onImpact: (_x, _y, hit) => impacts.push(hit) }));
+    expect(impacts).toEqual([false]);
+    expect([b.q.shots, b.q.hits, rng.draws]).toEqual([0, 0, 0]);
+  });
+
+  it('9 決定性: 同じ seed は同じ発射と着弾の列、違う seed は違う', () => {
+    const log = (rngSeed: number): number[] => {
+      const out: number[] = [];
+      simulate({ seed: 5, steps: 60 * 120, night: true, policy: straight(CRUISE01), stopAtHome: true, rng: new SeededRng(rngSeed), ev: () => ({ onFire: (i, x, y) => out.push(i, x, y), onImpact: (x, y, hit) => out.push(x, y, hit ? 1 : 0) }) });
+      return out;
+    };
+    const a = log(23);
+    expect(a.length).toBeGreaterThan(0);
+    expect(log(23)).toEqual(a);
+    expect(log(24)).not.toEqual(a);
+  });
+
+  it('10 乱数の数 = 2 × 発射 + 命中の火災・機関（呼ぶ側が同じ seed+18 の系列で引く）。AI は引かない', () => {
+    const dp = getBoatDamageParams(gameData, MISSION.playerBoatId);
+    for (const seed of [1, 2, 3, 4]) {
+      const rng = new CountingRng((seed + PT_SEED_OFFSET) >>> 0);
+      const dmg = createDamageState(dp);
+      const out: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
+      let hitDraws = 0;
+      let hits = 0;
+      const s = simulate({
+        seed,
+        steps: 60 * 120,
+        night: true,
+        policy: straight(CRUISE01),
+        rng,
+        ev: () => ({
+          onImpact: (_x, _y, hit) => {
+            if (!hit) return;
+            hits++;
+            const before = rng.draws;
+            applyShellHit(dmg, P.hit, dp, rng, out);
+            hitDraws += rng.draws - before;
+            if (dmg.hp <= 0) dmg.hp = dp.maxHp; // 沈めずに続ける（引く数の形だけを見る）
+          },
+        }),
+      });
+      expect(s.q.shots).toBeGreaterThan(0);
+      expect(hits).toBe(s.q.hits);
+      expect(rng.draws).toBe(2 * s.q.shots + hitDraws);
+    }
+  });
+
+  it('11 止まらない: 各段階は上限の中で抜ける（警戒 ≤ 1.5 + 3 秒・突撃 ≤ 25 秒・航過 ≤ 8 秒・離脱 ≤ 8 秒）。逃げる艇には突撃を打ち切る', () => {
+    const maxS = [0, 0, 0, 0, 0, 0, 0];
+    let runInCut = 0;
+    const runs: SimOpts[] = [{ seed: 1, steps: 60 * 90, policy: fleeEast, start: { x: 3000, y: 1500, headingDeg: 90 } }];
+    for (let seed = 1; seed <= 10; seed++) runs.push({ seed, steps: 60 * 60, policy: randomWalk, start: { x: 2900, y: 1500, headingDeg: 180 } });
+    for (let seed = 1; seed <= 10; seed++) runs.push({ seed, steps: 60 * 120, night: true, policy: straight(CRUISE01) });
+    for (const o of runs) {
+      const since = [0, 0];
+      const phase = [PT_PATROL, PT_PATROL];
+      simulate({
+        ...o,
+        onStep: (s) => {
+          for (let i = 0; i < 2; i++) {
+            const ph = s.q.boats[i]!.phase;
+            if (ph === phase[i]) continue;
+            maxS[phase[i]!] = Math.max(maxS[phase[i]!]!, s.t - since[i]!);
+            if (phase[i] === PT_RUN_IN && ph === PT_BREAK) runInCut++;
+            phase[i] = ph;
+            since[i] = s.t;
+          }
+        },
+      });
+    }
+    expect(maxS[PT_ALERT]).toBeLessThanOrEqual(P.reactionDelayS + P.wingmanDelayS + 2 * DT);
+    expect(maxS[PT_RUN_IN]).toBeLessThanOrEqual(P.runInMaxS + 2 * DT);
+    expect(maxS[PT_PASS]).toBeLessThanOrEqual(P.passMaxS + 2 * DT);
+    expect(maxS[PT_BREAK]).toBeLessThanOrEqual(P.breakMaxS + 2 * DT);
+    expect(runInCut).toBeGreaterThan(0);
+  });
+
+  it('12 1 回の航過の砲の被害は 48 以下（12 発 × 4 < T-14 の HP 50）: 500 回以上の航過で、後から落ちた弾も含めて', () => {
+    let passes = 0;
+    let worstHits = 0;
+    let worstRounds = 0;
+    for (let seed = 1; passes < 500 && seed <= 400; seed++) {
+      let seq = 0;
+      let prev = 0;
+      const rounds = [0, 0];
+      const s = simulate({
+        seed,
+        steps: 60 * 100,
+        night: true,
+        policy: seed % 3 === 0 ? straight(CRUISE01) : circle,
+        start: seed % 3 === 0 ? undefined : { x: 3000, y: 1400, headingDeg: 90 },
+        ev: () => ({
+          onCommit: (i) => (rounds[i] = 0),
+          onFire: (i) => (worstRounds = Math.max(worstRounds, ++rounds[i]!)),
+        }),
+        onStep: (s) => {
+          if (s.q.passSeq !== seq) {
+            if (seq > 0) worstHits = Math.max(worstHits, prev);
+            seq = s.q.passSeq;
+          }
+          prev = s.q.lastPassHits;
+        },
+      });
+      if (seq > 0) worstHits = Math.max(worstHits, s.q.lastPassHits);
+      passes += s.q.passes;
+    }
+    expect(passes).toBeGreaterThanOrEqual(500);
+    expect(worstRounds).toBeLessThanOrEqual(P.roundsPerPass);
+    expect(worstHits).toBeGreaterThan(0);
+    expect(worstHits * P.hit.damage).toBeLessThanOrEqual(48);
+    expect(P.roundsPerPass * P.hit.damage).toBeLessThan(getBoatDamageParams(gameData, MISSION.playerBoatId).maxHp);
+  });
+
+  it('13 確保なし: 10,000 ステップ回しても隊・弾・見た印・狙いの点の配列と各要素の参照は同じ', () => {
+    let refs: unknown[] = [];
+    const s = simulate({
+      seed: 4,
+      steps: 10000,
+      policy: randomWalk,
+      start: { x: 2900, y: 1500, headingDeg: 180 },
+      onStep: (s) => {
+        if (refs.length === 0) refs = [s.q.boats, s.q.boats[0], s.q.boats[1], s.q.shells, ...s.q.shells, s.q.seen, s.q.aim];
+      },
+    });
+    const now = [s.q.boats, s.q.boats[0], s.q.boats[1], s.q.shells, ...s.q.shells, s.q.seen, s.q.aim];
+    expect(now.length).toBe(refs.length);
+    for (let i = 0; i < now.length; i++) expect(now[i]).toBe(refs[i]);
+    expect(s.q.shots).toBeGreaterThan(0);
+  });
+
+  it('航過の後に落ちた弾は撃った PT の最後の航過に数える（「かわした！」は後から「被弾」に直る・無傷の航過から外す）', () => {
+    const q = createPtSection(P, 24);
+    Object.assign(q, { lastPassBoat: 0, lastPassFired: true, lastPassHits: 0, cleanPasses: 1, firedPasses: 1, passes: 1, passSeq: 1 });
+    Object.assign(q.shells[0]!, { active: true, x: 3000, y: 2200, vx: 0, vy: 0, leftS: 0.001, impactX: 3000, impactY: 2200, gunIndex: 0 });
+    Object.assign(q.shells[1]!, { active: true, x: 3000, y: 2200, vx: 0, vy: 0, leftS: 0.001, impactX: 3000, impactY: 2200, gunIndex: 1 });
+    stepPtSection(q, P, check({ x: 3000, y: 2200, headingDeg: 0, speedMps: 0 }, { detectOpenM: 0 }), new SeededRng(1), DT, DT * TS, events());
+    expect([q.hits, q.lastPassHits, q.cleanPasses, q.passHits]).toEqual([2, 1, 0, 0]); // PT1 の弾は PT0 の航過に数えない
+  });
+
+  it('脅威の PT（threatIndex）: 航過中 → 警戒・突撃の最寄り → 離脱の最寄り → 哨戒の最寄り。去っていない PT が無ければ −1', () => {
+    const q = createPtSection(P, 24);
+    expect(threatIndex(q, 2000, 2250)).toBe(1);
+    q.boats[0]!.phase = PT_BREAK;
+    expect(threatIndex(q, 2000, 2250)).toBe(0);
+    q.boats[1]!.phase = PT_RUN_IN;
+    expect(threatIndex(q, 2000, 1900)).toBe(1);
+    q.boats[0]!.phase = PT_ALERT;
+    expect(threatIndex(q, 2000, 1900)).toBe(0);
+    q.boats[1]!.phase = PT_PASS;
+    q.owner = 1;
+    expect(threatIndex(q, 2000, 1900)).toBe(1);
+    q.owner = -1;
+    q.boats[0]!.phase = PT_LEAVE;
+    q.boats[1]!.phase = PT_OUT;
+    expect(threatIndex(q, 0, 0)).toBe(-1);
+  });
+});

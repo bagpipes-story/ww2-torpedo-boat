@@ -3,8 +3,11 @@
 // 単位: *_kt は ktToMps で game m/s、*_s は体感秒、距離の比較は二乗で持つ。確保は出撃の組み立てのときだけ。
 import type { BoatDataRecord } from './boat-motion';
 import { gunParamsFromData, isGunDataRecord, type GunDataRecord, type GunParams, type HitSpec } from './gunnery';
-import { bearingDeg } from './ship-ai';
-import { clamp, degToRad, ktToMps } from './units';
+import { ptParamsAtNight } from './pt-night';
+import { degToRad, ktToMps } from './units';
+
+/** 今夜の揺らぎ（pt-night.ts。使う側はここから import する） */
+export { ptParamsAtNight, ptStartAt } from './pt-night';
 
 /** attack の鍵（ちょうどこの 20 個。打ち間違いを止める） */
 export const PT_ATTACK_KEYS = [
@@ -149,53 +152,4 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
     timeScale: ctx.timeScale,
   };
   return ptParamsAtNight(base, 0, 0, false);
-}
-
-/**
- * i 隻目の今夜の線と出発点を out に書く（spec §C.4）: 出発位置を線に沿って dx（線の中に収める）、線ごと南北に dy（端の余白の中へ線ごと戻す。片端だけを動かさない）、
- * mirrored なら東西反転（逆向きに哨戒）。針路は線の向き（始点 → 終点）。p は揺らぎの前（getPtParams の値）
- */
-export function ptStartAt(p: PtParams, i: number, dx: number, dy: number, mirrored: boolean, out: { x0: number; y0: number; x1: number; y1: number; x: number; y: number; headingDeg: number }): void {
-  const x0 = p.legs[4 * i]!;
-  const y0 = p.legs[4 * i + 1]!;
-  const x1 = p.legs[4 * i + 2]!;
-  const y1 = p.legs[4 * i + 3]!;
-  const len = Math.hypot(x1 - x0, y1 - y0);
-  const along = clamp(p.startAlongM + dx, 0, len);
-  const lo = p.edgeMarginM;
-  const hi = p.bounds.height - p.edgeMarginM;
-  let sy = dy;
-  const top = Math.min(y0, y1) + sy;
-  const bottom = Math.max(y0, y1) + sy;
-  if (top < lo) sy += lo - top;
-  else if (bottom > hi) sy -= bottom - hi;
-  const w = p.bounds.width;
-  const mx = (x: number): number => (mirrored ? w - x : x);
-  out.x0 = mx(x0);
-  out.y0 = y0 + sy;
-  out.x1 = mx(x1);
-  out.y1 = y1 + sy;
-  out.x = mx(x0 + ((x1 - x0) * along) / len);
-  out.y = y0 + ((y1 - y0) * along) / len + sy;
-  out.headingDeg = bearingDeg(out.x0, out.y0, out.x1, out.y1);
-}
-
-/** 今夜の揺らぎを当てた複製（systems/world-night の applyPtNight。出撃の組み立ての 1 回だけ）。p は揺らぎの前（getPtParams の値。二重に掛けない） */
-export function ptParamsAtNight(p: PtParams, dx: number, dy: number, mirrored: boolean): PtParams {
-  const legs = new Float64Array(4 * p.count);
-  const startX = new Float64Array(p.count);
-  const startY = new Float64Array(p.count);
-  const startHeadingDeg = new Float64Array(p.count);
-  const s = { x0: 0, y0: 0, x1: 0, y1: 0, x: 0, y: 0, headingDeg: 0 };
-  for (let i = 0; i < p.count; i++) {
-    ptStartAt(p, i, dx, dy, mirrored, s);
-    legs[4 * i] = s.x0;
-    legs[4 * i + 1] = s.y0;
-    legs[4 * i + 2] = s.x1;
-    legs[4 * i + 3] = s.y1;
-    startX[i] = s.x;
-    startY[i] = s.y;
-    startHeadingDeg[i] = s.headingDeg;
-  }
-  return { ...p, legs, startX, startY, startHeadingDeg };
 }
