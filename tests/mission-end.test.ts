@@ -18,9 +18,9 @@ type Rec = Record<string, unknown>;
 const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
 const byId = (d: typeof gameData, id: string): Rec => (d.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === id)!;
 const protoOf = (d: typeof gameData, id: string): Rec => byId(d, id)['v0_1_prototype'] as Rec;
-const PLAYABLE = ['us_01', 'us_02', 'us_03', 'jp_06'];
+const PLAYABLE = ['us_01', 'us_02', 'us_03', 'jp_05', 'jp_06'];
 const P = { torpedoSettleMaxS: 10, adriftDelayS: 1.5, endSettleS: 3 };
-const SINKS: MissionEndReason[] = ['rammed', 'destroyed', 'friendly_fire', 'storm', 'bombed', 'air_strike', 'barge_fire', 'shore_battery'];
+const SINKS: MissionEndReason[] = ['rammed', 'destroyed', 'friendly_fire', 'storm', 'bombed', 'air_strike', 'barge_fire', 'shore_battery', 'pt_fire'];
 
 function check(over: Partial<EndCheck>): EndCheck {
   return { boatSinking: false, atHome: false, torpedoesRunning: false, waitS: 0, timeLeftS: 100, destroyerSinkPlaying: false, fuelEmpty: false, stopped: false, grounded: false, fleetGone: false, ...over };
@@ -369,7 +369,7 @@ describe('data: fleet_gone_clears（us_02）と torpedo_end_settle_s', () => {
     expect(String(protoOf(gameData, 'us_02')['fleet_gone_clears_source'])).toContain('帰投は必須ではない');
     expect(getDawnAir(gameData, 'us_04').fleetGoneClears).toBe(false); // 遊べない任務
   });
-  it('遊べる 4 任務の帰投地点に torpedo_end_settle_s 5 秒（design。実機 1 回目「3秒ほど待ってほしい」→ 2 回目「5秒にしましょう」）', () => {
+  it('遊べる 5 任務の帰投地点に torpedo_end_settle_s 5 秒（design。実機 1 回目「3秒ほど待ってほしい」→ 2 回目「5秒にしましょう」）', () => {
     for (const id of PLAYABLE) {
       expect(getPrototypeMission(gameData, id).returnPoint.torpedoEndSettleS, id).toBe(5);
       const src = String((protoOf(gameData, id)['return_point'] as Rec)['torpedo_end_settle_s_source']);

@@ -17,7 +17,7 @@ const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typ
 const byId = (d: typeof gameData, id: string): Rec => (d.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === id)!;
 const protoOf = (d: typeof gameData, id: string): Rec => byId(d, id)['v0_1_prototype'] as Rec;
 const dawnAirOf = (d: typeof gameData, id: string): Rec => byId(d, id)['dawn_air'] as Rec;
-const PLAYABLE = ['us_01', 'us_02', 'us_03', 'jp_06'];
+const PLAYABLE = ['us_01', 'us_02', 'us_03', 'jp_05', 'jp_06'];
 
 const US02 = buildWorldSetup(gameData, 'us_02');
 const DS = US02.destroyer!;
@@ -256,7 +256,7 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
     expect(protoOf(gameData, 'us_02')['dawn_withdraw']).toEqual({ retire_edge: 'north', force_ja: '東京急行', source: expect.stringContaining('design (v0.6.2') as unknown as string });
     expect(getDawnAir(gameData, 'us_02').retireForceJa).toBe('東京急行');
     for (const id of ['us_01', 'us_03', 'jp_06']) expect(getDawnAir(gameData, id).retireForceJa, id).toBe('');
-    const want: Record<string, [string, string | null]> = { us_01: ['stay', null], us_02: ['retire', 'north'], us_03: ['hide', null], jp_06: ['stay', null] };
+    const want: Record<string, [string, string | null]> = { us_01: ['stay', null], us_02: ['retire', 'north'], us_03: ['hide', null], jp_05: ['none', null], jp_06: ['stay', null] };
     for (const id of PLAYABLE) {
       const a = getDawnAir(gameData, id);
       expect([a.shipsAtDawn, a.retireEdge], id).toEqual(want[id]);

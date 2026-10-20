@@ -485,19 +485,67 @@
       "faction": "USN",
       "name_ja": "米PTボート（日本ハードモードの敵）",
       "boat_ref": "us_elco80",
-      "ai": {
-        "patrol_speed_kt": 10,
-        "attack_speed_kt": 35,
-        "detect_m": 2500,
-        "radar_m": 8000,
-        "torpedo_launch_range_m": 900,
-        "gun_range_m": 1500,
+      "torpedo_immune": true,
+      "detection": {
+        "base_detect_m": 2000,
+        "reaction_delay_s": 1.5,
+        "detect_from_s": 5
+      },
+      "patrol": {
+        "speed_kt": 8,
+        "arrive_m": 100
+      },
+      "attack": {
+        "run_in_speed_kt": 35,
+        "pass_speed_kt": 25,
+        "overtake_kt": 6,
+        "commit_max_m": 900,
+        "commit_tcpa_s": 5.0,
+        "pass_offset_m": 120,
+        "open_fire_s": 2.5,
+        "pass_max_s": 8,
+        "rounds_per_pass": 12,
+        "dead_cone_deg": 30,
+        "min_range_m": 60,
+        "spread_min_m": 8,
+        "break_off_m": 800,
+        "break_max_s": 8,
+        "run_in_max_s": 25,
+        "pass_gap_s": 2.5,
+        "wingman_delay_s": 3,
+        "max_passes": 2,
+        "edge_margin_m": 200,
+        "leave_speed_kt": 30
+      },
+      "guns": [
+        {
+          "id": "pt_50cal_20mm",
+          "count": 1,
+          "range_m": 1500,
+          "effective_night_m": 400,
+          "rof_per_min": 240,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 32,
+          "splash_radius_m": 1.5,
+          "fire_chance": 0.03,
+          "engine_damage_chance": 0.02
+        }
+      ],
+      "torpedo_attack": {
+        "launch_range_m": 900,
         "retreat_after_salvo": true
       },
       "source": {
-        "all": "design"
+        "boat_ref": "historical (寸法 24.4×6.3 m・最大 39 kt は boats.json の us_elco80。旋回 24°/秒・加速 1.2 はその design 値)",
+        "torpedo_immune": "historical (Elco の吃水 約 1.1〜1.5 m は 45cm 魚雷の最小深度 2 m より浅く、魚雷は下を抜ける。大発と同じ理由。PT も小艇には砲で戦った: UNO 論文・Bulkley、WebSearch の抜粋のみ・本文未読)",
+        "detection": "design (v0.6.3。base_detect_m 2000 は us_destroyer と同じ。新月 × 速力係数で 停止 480・静音 600・巡航 1,200・全速 1,920 m。艇の視程 900 m より静音なら先に見つけ、巡航なら先に見つかる。史実の暗夜の目視（Bulkley IV「隊列の真ん中に入るまで気づかなかった」、抜粋のみ）は 300〜800 m で、停止〜巡航が入る。radar_m 8000 は外した: SO レーダーは 1943 年から一部の艇だけ・小さな木造艇への距離は不明（low）・8,000 m だと暗さが効かない。reaction_delay_s 1.5 は発見から突撃までの予告。detect_from_s 5: 出撃から 5 秒は見つけない（出発で即発見を防ぐ）)",
+        "patrol": "historical / design (1 軸のアイドル約 6 kt・「8〜9 kt のアイドル」: PT-109 の DANFS・UNO 論文、抜粋のみ。8 kt と arrive_m は設計値)",
+        "attack": "design (v0.6.3。模擬 pt-pass-sim（400 夜）で決めた。史実の掃射の航過は 15〜20 kt・600 yd で撃ち始め 100〜300 yd で効く（UNO 論文・Bulkley、抜粋のみ）。突撃 35 kt は T-14 の 31 kt より速い＝振り切れない。最接近の 5 秒前に航過の進路を固めて赤い線で予告し、2.5 秒は撃たない。1 回 12 発まで・艇首尾 30° と 60 m 以内は撃たない・航過は同時に 1 隻・次の航過まで 2.5 秒・1 隻 2 回で去る（2 回目の航過は PT-323/369 の記録。回数で去る規則の史料は無い＝弾と時間の抽象））",
+        "guns": "historical (2 連装 .50 ×2 と 20mm、1943 後半から 37/40mm を現地で追加: navweaps・NHHC、抜粋のみ) / design (1 門にまとめた値。damage 4 × 12 発 = 48 < T-14 の HP 50＝1 回の航過では砲だけで沈まない。rof 240/分（体感）・dispersion 32 m（400 m で）・shell_speed 500 は大発の 13mm と同じ見える曳光弾。fire 0.03・engine 0.02 は大発と同じ)",
+        "torpedo_attack": "design (v0.6.8 の PT の雷撃まで読まない)"
       },
-      "notes": "数値は boats.json の us_elco80 を参照。AI部分のみここ。"
+      "notes": "v0.6.3。動き（長さ・幅・旋回・加速・最大速力）は boats.json の us_elco80。航過のときだけ撃つ・航過は同時に 1 隻・1 隻 2 回の航過か夜明けで東へ去る。魚雷は使わない（v0.6.8 で雷撃）"
     },
     {
       "id": "de_sboat_enemy",

@@ -33,6 +33,7 @@ import { airStrikeParamsFromData } from '../src/core/air-strike-data';
 import { clampToBounds, stepBoat, stepStraight, type BoatInput, type BoatState } from '../src/core/boat-motion';
 import type { AircraftPose } from '../src/core/friendly';
 import { NIGHT_SEED_OFFSET } from '../src/core/night';
+import { PT_SEED_OFFSET } from '../src/core/pt-boats';
 import { SeededRng } from '../src/core/rng';
 import { LOOKOUT_SEED_OFFSET } from '../src/core/ship-ai';
 import { RAID_SEED_OFFSET } from '../src/core/sortie';
@@ -477,7 +478,7 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     expect(s.dodgeCount).toBeGreaterThan(16); // 17 発目からは数だけ（配列は伸ばさない）
   });
 
-  it('乱数の系列は重ならない: seed+0〜7、沿岸砲 8〜8+門数−1、今夜 16、見張り 17、敵の PT 18（予約）、空襲 19。data の最大の門数は 8 以下', () => {
+  it('乱数の系列は重ならない: seed+0〜7、沿岸砲 8〜8+門数−1、今夜 16、見張り 17、敵の米PT 18（v0.6.3）、空襲 19。data の最大の門数は 8 以下', () => {
     let maxBatteries = 0;
     for (const id of [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')])
       for (const hard of [false, true]) maxBatteries = Math.max(maxBatteries, buildWorldSetup(gameData, id, { hard }).shoreBatteries.length);
@@ -485,7 +486,7 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     expect(maxBatteries).toBeLessThanOrEqual(8);
     const offsets = [0, 1, 2, 3, RAID_SEED_OFFSET, 5, 6, 7];
     for (let i = 0; i < maxBatteries; i++) offsets.push(8 + i);
-    offsets.push(NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET, 18, AIR_STRIKE_SEED_OFFSET);
+    offsets.push(NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET, PT_SEED_OFFSET, AIR_STRIKE_SEED_OFFSET);
     expect(new Set(offsets).size).toBe(offsets.length);
     expect(AIR_STRIKE_SEED_OFFSET).toBe(19);
     expect([RAID_SEED_OFFSET, NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET]).toEqual([4, 16, 17]);

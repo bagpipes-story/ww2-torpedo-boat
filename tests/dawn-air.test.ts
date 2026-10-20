@@ -280,7 +280,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       jp_02: ['enemy', 'low', 'enemy', 'none', '昼の空は敵（米の飛行艇）'],
       jp_03: ['enemy', 'high', 'enemy', 'none', '昼の空は敵（第38任務部隊）'],
       jp_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は敵（タクロバンのコルセア）'],
-      jp_05: ['own', 'medium', 'own', 'none', '昼の空は味方（ラバウルの零戦）'],
+      jp_05: ['contested', 'medium', 'own', 'none', '昼の空はおおむね味方（ラバウルの零戦）'], // v0.6.3: 1944-02-18 ラバウル沖（空は争奪・零戦はまだいる）
       jp_06: ['enemy', 'high', 'enemy', 'stay', '昼の空は敵（米艦載機）'],
     };
     expect(new Set(ALL_IDS)).toEqual(new Set(Object.keys(table)));
@@ -292,9 +292,9 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(String((byId(gameData, id)['dawn_air'] as Rec)['source']), id).toContain('抜粋のみ・本文未読');
     }
   });
-  it('遊べる任務（us_01・us_02・us_03・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
-    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'jp_06']);
-    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', jp_06: 'enemy' };
+  it('遊べる任務（us_01・us_02・us_03・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
+    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'jp_05', 'jp_06']);
+    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', jp_05: 'own', jp_06: 'enemy' };
     for (const id of PLAYABLE_IDS) {
       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
       const s = buildWorldSetup(gameData, id);
@@ -400,8 +400,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(idleS[id] + 1.5, id).toBeLessThan(1500);
       expect(idleS[id], id).toBeGreaterThan(s.durationS); // 夜明けの前に漂流はしない
     }
-    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296）
-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1224]);
+    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296。v0.6.3 の jp_05 は 23 gal で 1,449）
+    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1449, 1224]);
   });
   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲の機体・dawn_air_strike の文', () => {
     const texts: string[] = [];

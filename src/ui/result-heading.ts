@@ -20,6 +20,7 @@ export const REASON_LABEL: Record<MissionEndReason, string> = {
   air_strike: '夜明けの空襲で沈没',
   barge_fire: '大発の機銃で沈没',
   shore_battery: '沿岸砲で沈没',
+  pt_fire: 'PTの掃射で沈没',
 };
 
 /** Result の「帰投: あり／なし」の値（v0.6.2 実機 1 回目: 敵艦隊なしで終えた任務は「不要」。輪に入っていないので「あり」と出さない） */

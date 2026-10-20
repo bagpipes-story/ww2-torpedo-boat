@@ -1,5 +1,5 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
-import { compassJa, type BriefingNumbers } from '../core/briefing';
+import { NO_WEAPON_BRIEFING_JA, compassJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
 import type { WorldSetup } from './world-setup';
@@ -10,6 +10,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
   return {
     // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）
     ...(aimAssistJa ? { aimAssistJa } : {}),
+    // 撃たない任務（v0.6.3。main_weapon none＝米PT）は条件の武器の句。他の任務は鍵ごと省く
+    ...(s.mainWeapon === 'none' ? { weaponJa: NO_WEAPON_BRIEFING_JA } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),

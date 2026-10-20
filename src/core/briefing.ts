@@ -5,6 +5,8 @@ import { wrapDeg360 } from './units';
 import type { MoonPhase } from './visibility';
 
 export const MENU_STATUS_PLAYABLE = '出撃準備 →';
+/** 撃たない任務（v0.6.3。main_weapon none＝米PT）の「条件」の武器の句 */
+export const NO_WEAPON_BRIEFING_JA = '魚雷は PT の下を抜ける（撃たない）';
 
 export interface MenuEntry {
   id: string;
@@ -137,6 +139,8 @@ export interface BriefingNumbers {
   boundsH: number;
   /** 「条件」に足す一言（v0.5.2。見越し点マーカーの解放の状態。無ければ ''） */
   aimAssistJa?: string;
+  /** 「条件」の武器の句の差し替え（v0.6.3。撃たない任務だけ。無ければ砲か魚雷の本数） */
+  weaponJa?: string;
 }
 
 export interface BriefingRow {
@@ -161,6 +165,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.weaponJa ?? (n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
   ];
 }

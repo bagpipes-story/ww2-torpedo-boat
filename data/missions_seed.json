@@ -671,7 +671,7 @@
       "id": "jp_01",
       "campaign": "jp_hard",
       "order": 1,
-      "playable_from": "v0.6.5",
+      "playable_from": "v0.6.4",
       "title_ja": "夜の輸送護衛",
       "date": "1942-12-20",
       "place": "ショートランド〜ガダルカナル",
@@ -854,44 +854,119 @@
       "id": "jp_05",
       "campaign": "jp_hard",
       "order": 5,
-      "playable_from": "v0.6.4",
+      "playable_from": "v0.6.3",
       "title_ja": "鹵獲艇の哨戒",
-      "date": "1943-06-01",
-      "place": "ラバウル",
+      "date": "1944-02-18",
+      "place": "ラバウル沖（セント・ジョージ海峡）",
       "type": "patrol_and_evade",
       "player_boat": "jp_t14",
       "torpedo_type": "jp_45cm",
-      "objective": "部品不足の鹵獲艇で哨戒。エンジン不調イベントを乗り切って帰投",
+      "objective": "哨戒の帰り道に米PTの 2 隻組。速さでは振り切れない。静音で暗さに隠れ、航過は転舵でかわしてラバウルへ帰る",
       "enemies": [
+        "us_pt_enemy",
         "us_pt_enemy"
       ],
       "hazards": [
-        "engine_failure",
-        "enemy_aircraft"
+        "enemy_ship_gunfire_or_ram",
+        "engine_failure"
       ],
       "moon": "dark",
       "duration_min": 4,
-      "success": "生還",
-      "historical_note": "鹵獲オランダTM艇（第101号型）はラバウル方面で使用、4隻沈没と伝わる。",
-      "source_url": "https://ja.wikipedia.org/wiki/第百一号型魚雷艇",
-      "todo": "鹵獲艇 jp_tm101 を boats.json に追加するか jp_t14 で代用（v0.6）",
+      "success": "生還（PT に一度も見つからずに帰れば回避の点）",
+      "historical_note": "鹵獲した蘭 TM-4 型（日本の第102〜120号。第101号＝旧 TM 3 は就役せず。seed の『第101号型』は誤り）はラバウル・ラエ方面で使われた。第115号は1943-07-26 ラバウルでガソリン爆発、第116・117号は1944年ラバウル（沖）で沈没と伝わる。米PT 第10戦隊のグリーン島進出は1944-02-16、ラバウル沖への最初の出撃の記録は02-29。PT と日本の魚雷艇の交戦の記録は見つからない（WebSearch の抜粋のみ・本文未読）",
+      "source_url": "https://www.netherlandsnavy.nl/TM4class.htm",
+      "todo": "機関の不調は v0.6.5（長押しで再始動）。鹵獲艇の data（jp_tm4。旧 TM-4 型 18.6 m・30 kt）は候補（今は T-14 で代用）",
+      "briefing_note_ja": "日本海軍はスラバヤで引き揚げた旧オランダの TM 型魚雷艇をラバウル方面で使った。1944年2月、米PTはグリーン島に進出し、ラバウルの海軍機は2月20日に引き揚げた。魚雷艇どうしの夜戦の記録は無く、この夜はゲーム上の想定（艇は T-14 で代用）。",
       "dawn_air": {
-        "control": "own",
+        "control": "contested",
         "confidence": "medium",
         "play_as": "own",
         "enemy_ships_at_dawn": "none",
-        "label_ja": "昼の空は味方（ラバウルの零戦）",
+        "label_ja": "昼の空はおおむね味方（ラバウルの零戦）",
         "refs": [
           {
-            "url": "https://www.ibiblio.org/hyperwar/USMC/II/USMC-II-V-3.html",
-            "claim": "米海兵隊の戦史（第 2 巻）。ラバウルは日本の航空の大きな基地で、連合軍の航空が叩くまで日本側の空だった"
+            "url": "https://pacificwrecks.com/history/rabaul/index.html",
+            "claim": "1944-02-20 の夜明けにラバウルの海軍機へ引き揚げの命令、25 日までに完了（それまでは零戦が残り、昼の空襲を迎え撃っていた）"
           },
           {
-            "url": "https://pacificwrecks.com/date/1943/10/12.html",
-            "claim": "1943-10-12、第5空軍がラバウルに最初の大規模な昼の空襲をした（それより前の 1943-06 の昼の空は日本側）"
+            "url": "https://nzetc.victoria.ac.nz/tm/scholarly/tei-WH2AirF-c16-1.html",
+            "claim": "1944-02 のラバウルには連合軍（エアソルス）の昼の空襲が続き、日本の航空は 2 月 20 日に引き揚げた"
+          },
+          {
+            "url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-3.html",
+            "claim": "米PT 第10戦隊が 1944-02-16 にグリーン島へ進出（ラバウル沖への出撃の記録は 2 月末から）"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+        "source": "historical (control: 1943-11 から連合軍の昼の空襲がラバウルに続き空は争奪、02-19 の夜明けはまだ零戦がいる。refs は 2026-10-20 の WebSearch の抜粋のみ・本文未読) / design (v0.6.3。play_as own＝夜明けに敵機は来ない・label_ja・enemy_ships_at_dawn none＝米PT は夜明けに東へ去る（core/pt-boats が夜明けのラッチで去る。retire の仕組みは使わない）)"
+      },
+      "v0_1_prototype": {
+        "enemies": [
+          "us_pt_enemy",
+          "us_pt_enemy"
+        ],
+        "enemy_behavior": "ai (v0.6.3。米PT 2 隻の隊。哨戒 → 発見 → 突撃 → 予告（赤い線）→ 掃射しながら航過 → 離脱 → 再攻撃、1 隻 2 回の航過か夜明けで東へ去る。core/pt-boats)",
+        "main_weapon": "none",
+        "main_weapon_source": "design (v0.6.3。45cm 魚雷の最小深度 2 m は PT の吃水より深く、魚雷は下を抜ける（us_pt_enemy.torpedo_immune）。T-14 の 13mm の撃ち返しは後の版)",
+        "duration_s": 170,
+        "duration_s_source": "design (v0.6.3。夜明けまでの実秒。帰投地点の輪の縁まで 3,427 m: 静音 95 秒・巡航 67 秒・全速 43 秒。模擬（pt-pass-sim、400 夜）の帰投の中央値は 46〜139 秒（止まってやり過ごすと 139 秒・夜明け後の帰投 3%）。tests/dawn-clock『巡航で帰る秒 × call_margin < 夜明け − 50』: 66.7 × 1.5 = 100 < 120)",
+        "fuel_allotment_gal": 23,
+        "fuel_allotment_gal_source": "design (v0.6.3。T-14 は巡航 114・全速 229 gal/h。直線で帰ると全速 13.6 gal（残り 41%）・巡航 10.6 gal。模擬: 航過ごとに全速で 4 秒逃げても漂流 0%、ずっと全速で逃げ回ると 3.5% が漂流（22 gal だと 20%）。上限は tests/dawn-air『止まって待つと 1,500 秒未満で漂流』: 23 / 11.43 × 720 + 1.5 = 1,450)",
+        "shallows": [],
+        "bounds_m": {
+          "width": 6000,
+          "height": 4000,
+          "source": "design (us_02・jp_06 と同じ広さ)"
+        },
+        "player_start": {
+          "x_m": 4300,
+          "y_m": 600,
+          "heading_deg": 225,
+          "source": "design (v0.6.3。哨戒の東の端から南西のラバウルへ帰る)"
+        },
+        "return_point": {
+          "x_m": 1700,
+          "y_m": 3200,
+          "radius_m": 250,
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "torpedo_end_settle_s": 5,
+          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。終わり際に走っている魚雷の決着を待つ最大実秒: 自艇の沈没は沈み始めてから数え、沈没の演出（2 秒）が終わるまでは終えない。敵艦隊なし（cleared）・漂流・座礁は理由が決まってから、夜明け後の輪の中は輪に入ってから数える。夜明け前の輪の中は torpedo_settle_max_s のまま。待つ間の命中は得点・命中率・Result に入り、待ち切って走っている魚雷は外れ)（jp_05 は魚雷を撃たないので効かない）",
+          "source": "design (v0.6.3。南西の湾口（ラバウル）。出発点から輪の縁まで 3,427 m。call_margin 1.5: T-14 の全速/巡航の距離あたり消費比 1.29 と巡航/静音上限の速力比 20/14＝1.43 を上回る)"
+        },
+        "pt_boats": {
+          "legs_m": [
+            [
+              1200,
+              2000,
+              4800,
+              2000
+            ],
+            [
+              1200,
+              2200,
+              4800,
+              2200
+            ]
+          ],
+          "start_along_m": 800,
+          "leave_heading_deg": 90,
+          "source": "design (v0.6.3。2 隻が 200 m 離れて並び、帰り道を東西に横切る線（y 2,000・2,200）を 8 kt で往復する。直線の帰り道は x 約 2,900 で線を横切る。出発は各線の始点から 800 m（x 2,000）で終点（東）へ。夜の揺らぎ（night）で線に沿って ±800 m・線ごと南北 ±150 m・東西反転 0.5。去るのは東（グリーン島の方角）)"
+        },
+        "night": {
+          "hazard_scale": 1,
+          "optional_hazards": [],
+          "enemy_jitter": {
+            "x_m": 800,
+            "y_m": 150,
+            "heading_deg": 0
+          },
+          "mirror_chance": 0.5,
+          "source": "design (v0.6.3。米PT の隊を 1 つの敵として揺らす: x は線に沿った出発位置（線の中に収める）、y は線ごと南北、heading_deg は使わない（0）。左右反転は線と出発位置を東西に入れ替える＝逆向きに哨戒。乱数は seed+16 の 5 回（隊 3・大発の先頭 1・反転 1）)"
+        },
+        "hazards": [
+          "enemy_ship_gunfire_or_ram"
+        ],
+        "hazards_source": "design (v0.6.3。遊べる世界で起きる危険は米PT の掃射だけ。浅瀬なし。機関の不調（engine_failure）は v0.6.5、米の夜間哨戒機は後の版)"
       }
     },
     {

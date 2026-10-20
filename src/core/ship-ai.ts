@@ -236,7 +236,7 @@ export function edgeTurnHeadingDeg(ship: BoatState, bounds: SeaBounds, marginM: 
 }
 
 /** 点 (x, y) から (tx, ty) への方位（0=北、時計回り） */
-function bearingDeg(x: number, y: number, tx: number, ty: number): number {
+export function bearingDeg(x: number, y: number, tx: number, ty: number): number {
   return wrapDeg360((Math.atan2(tx - x, -(ty - y)) * 180) / Math.PI);
 }
 
