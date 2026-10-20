@@ -18,6 +18,7 @@ import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, escortResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
 import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
+import { initPtTelemetry, ptResult, refreshPtTelemetry } from './pt-telemetry';
 import type { MissionWorld } from './mission-world';
 
 const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
@@ -120,6 +121,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     transportEnabled: w.destroyers !== null && w.destroyers.hasTransport,
     transportSunk: false,
     dawn: initDawnTelemetry(w),
+    pt: initPtTelemetry(w), // 敵の米PT（v0.6.3。systems/pt-telemetry。無い任務は enabled false）
   };
 }
 
@@ -227,6 +229,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   }
   // 夜明け（v0.6.1）: ラッチ・夜明け後の秒・空襲の段。空襲の機が来ていれば「敵機」の矢印をその機で上書き（水上機の後）
   refreshDawnTelemetry(t, w, scratchPose);
+  refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
   const st = w.storm;
   if (st) {
@@ -261,10 +264,11 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     shipsTotal: w.destroyers ? w.destroyers.destroyerCount : 0,
     transportEnabled: w.destroyers !== null && w.destroyers.hasTransport,
     transportSunk: w.destroyers !== null && w.destroyers.transportSunk,
-    // 僚艇の任務（v0.4.4）の達成は「帰投して僚艇が生きている」。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
-    objectiveDone: w.escort ? endCountsAsReturn(reason) && !w.escort.state.sunk : w.enemy.objectiveDone,
+    // 僚艇の任務（v0.4.4）の達成は「帰投して僚艇が生きている」、米PT の任務（v0.6.3）は帰投。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
+    objectiveDone: w.escort ? endCountsAsReturn(reason) && !w.escort.state.sunk : w.pts ? endCountsAsReturn(reason) : w.enemy.objectiveDone,
     hunt: w.hunt ? bargeResult(w) : null,
     escort: w.escort ? escortResult(w) : null,
+    pt: ptResult(w), // 米PT（v0.6.3）の記録。無い任務は null
     detections: w.detect.count,
     returned: endCountsAsReturn(reason), // 敵艦隊なし（cleared。v0.6.2 実機 1 回目）も帰投と同じに数える
     elapsedS,

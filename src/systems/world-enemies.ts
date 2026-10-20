@@ -1,5 +1,5 @@
-// 敵の側（駆逐艦の隊・僚艇・大発の隊）の生成（v0.6.3 で mission-world の constructor から切り出し。中身と生成の順はそのまま）。
-// 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）。
+// 敵の側（駆逐艦の隊・僚艇・大発の隊・米PT の隊）の生成（v0.6.3 で mission-world の constructor から切り出し。中身と生成の順はそのまま。米PT は大発の後）。
+// 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）、米PT は PtSquadron の中（seed+18）。
 // 被害はすべて世界の hitBoat を通り、撃破・僚艇の沈没は世界の onSunk（命中スロー＋Scene の爆発）。
 import type Phaser from 'phaser';
 import { boatTextureKey } from '../config/game-config';
@@ -12,6 +12,7 @@ import { BargeHunt } from './barge-hunt';
 import { DestroyerGroup } from './destroyer-group';
 import { EnemySide } from './enemy-side';
 import { EscortBoat } from './escort-boat';
+import { PtSquadron } from './pt-squadron';
 import type { SplashPool } from './splash-pool';
 import type { WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup';
@@ -24,6 +25,8 @@ export interface Enemies {
   /** 僚艇（要人）への命中（被害 HP と位置。乱数は引かない）。夜明けの空襲も使う */
   escortHit: (damage: number, x: number, y: number) => void;
   hunt: BargeHunt | null;
+  /** 米PT の隊（v0.6.3）。任務に pt_boats が無ければ null */
+  pts: PtSquadron | null;
   enemy: EnemySide;
 }
 
@@ -53,6 +56,8 @@ export function buildEnemies(
   destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
   // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
-  const enemy = new EnemySide(destroyers, hunt);
-  return { gunRng, destroyers, escort, escortHit, hunt, enemy };
+  // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）
+  const pts = s.ptBoats ? new PtSquadron(scene, s.ptBoats, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat) : null;
+  const enemy = new EnemySide(destroyers, hunt, pts);
+  return { gunRng, destroyers, escort, escortHit, hunt, pts, enemy };
 }

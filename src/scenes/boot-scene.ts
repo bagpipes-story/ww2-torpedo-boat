@@ -37,7 +37,9 @@ import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateRainTexture } from '../assets/storm-placeholder';
 import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures } from '../assets/barge-placeholder';
+import { generatePtBoatTexture } from '../assets/pt-placeholder';
 import { getBargeParams } from '../config/game-data';
+import { getPtParams } from '../config/pt-mission-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -97,6 +99,10 @@ export class BootScene extends Phaser.Scene {
     const bargeMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['barges']);
     const barge = bargeMission ? getBargeParams(gameData, getPrototypeMission(gameData, bargeMission.id)) : null;
     if (barge) generateBargeTextures(this, { lengthUnits: barge.boundsMarginM * 2, beamUnits: (barge.halfBeamM * 2 * spriteScale) / gameData.hitRateModel.world.hit_scale });
+    // 米PT（v0.6.3）: 米PT の隊を持つ最初の任務の値から（us_elco80 の寸法 × sprite_scale）。getPtParams は米PT の data の検査も兼ねる（壊れていれば Boot で止まる）
+    const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats']);
+    const pt = ptMission ? getPtParams(gameData, getPrototypeMission(gameData, ptMission.id), gameData.hitRateModel.world.time_scale) : null;
+    if (pt) generatePtBoatTexture(this, { lengthUnits: pt.spriteLengthUnits, beamUnits: pt.spriteBeamUnits });
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));

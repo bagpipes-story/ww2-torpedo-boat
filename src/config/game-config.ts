@@ -200,4 +200,5 @@ export const TEXTURE_KEYS = {
   barge: 'tex-barge',
   gunTracer: 'tex-gun-tracer',
   coastMarker: 'tex-coast-marker',
+  ptBoat: 'tex-pt-boat', // 敵の米PT（v0.6.3。assets/pt-placeholder）
 } as const;

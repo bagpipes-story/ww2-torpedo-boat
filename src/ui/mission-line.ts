@@ -1,10 +1,12 @@
 // 上中央の 2 行目（v0.4.2 で boat-hud.ts から切り出し。中身は v0.4.1 のまま、大発掃討の 4 つのモードを足した）: 夜明けまで・帰投せよ・味方機・敵機・暴風・浅瀬・射撃・大発の逃走・撃つ前の手引き・撃破と上陸・夜明けの空襲（v0.6.1）。
 // §7: 表示する値のどれかが変わったときだけ文字を組んで setText する。文と表は ui/hud-lines.ts（夜明けの時計・空襲は ui/dawn-lines.ts）、どの行を出すかの優先順は ui/mission-mode.ts（v0.6.1 で切り出し）。
 // v0.6.2 実機 1 回目: 左上 2 段目の時計（ui/dawn-clock）と同じ段なので、組み直したときだけ時計を左右対称に避ける幅に縮める（lineFitScale。収まれば等倍）。
+// v0.6.3: 米PT の 3 つのモード（文とキーは ui/pt-lines.ts）。航過の結果は航過の通し番号が増えてから PT_RESULT_SHOW_MS の間。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
 import { BARGE_EVENT_SHOW_MS } from '../config/hunt-config';
+import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import { ESCORT_EVENT_SHOW_MS } from '../config/ui-config';
 import {
   HUD_COLOR_STRONG,
@@ -28,34 +30,11 @@ import { STORM_AHEAD, STORM_NEAR } from '../core/storm';
 import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine, seaplaneLine, sightedFast } from './hud-lines';
 import { DAWN_AIR_NONE } from '../core/dawn-air';
 import { airRaidTagJa, bargeHideTagKey, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
+import { ptKey, ptLine } from './pt-lines';
 import {
-  MISSION_ADRIFT,
-  MISSION_BARGE_EVENT,
-  MISSION_BARGE_RUN,
-  MISSION_BARGE_SIGHTED,
-  MISSION_BATTERY,
-  MISSION_CALL,
-  MISSION_ESCORT_HIT,
-  MISSION_ESCORT_LAG,
-  MISSION_ESCORT_LOST,
-  MISSION_FRIENDLY,
-  MISSION_FRIENDLY_RESULT,
-  MISSION_GUN,
-  MISSION_NORMAL,
-  MISSION_PLANE,
-  MISSION_PLANE_ATTACK,
-  MISSION_PLANE_RESULT,
-  MISSION_SHALLOWS,
-  MISSION_STORM,
-  MISSION_STORM_WARN,
-  MISSION_STRIKE,
-  MISSION_STRIKE_REST,
-  MISSION_WAITING,
-  MODE_FLAG_BARGE_EVENT,
-  MODE_FLAG_ESCORT_HIT,
-  bargeRunning,
-  missionMode,
-  stormWarning,
+  MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
+  MISSION_NORMAL, MISSION_PLANE, MISSION_PLANE_ATTACK, MISSION_PLANE_RESULT, MISSION_PT, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING,
+  MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, MODE_FLAG_PT_RESULT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -96,6 +75,10 @@ export class MissionLine {
   /** 夜明けの空襲の 2 行目のキー（v0.6.1。ui/dawn-lines の strikeKey）と、後ろの「大発 岸へ N 隻」のキー（v0.6.2 実機 1 回目。bargeHideTagKey） */
   private lastStrikeKey = -1;
   private lastBargeTagKey = 0;
+  /** 米PT（v0.6.3）: 見た航過の通し番号と結果の表示の終わり ms、2 行目のキー（ui/pt-lines の ptKey） */
+  private seenPassSeq = 0;
+  private ptResultUntil = 0;
+  private lastPtKey = -1;
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -125,7 +108,14 @@ export class MissionLine {
     const call = topCall(t.callFlags);
     const stormWarn = stormWarning(t);
     const bargeRun = bargeRunning(t);
-    const mode = missionMode(t, call, (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0));
+    if (t.pt.passSeq > this.seenPassSeq) {
+      this.seenPassSeq = t.pt.passSeq;
+      this.ptResultUntil = nowMs + PT_RESULT_SHOW_MS;
+    }
+    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | (nowMs < this.ptResultUntil ? MODE_FLAG_PT_RESULT : 0);
+    const mode = missionMode(t, call, flags);
+    const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT; // 米PT の 3 つ（22〜24）。距離と方角はこのときだけ ptKey が求める
+    const pKey = ptMode ? ptKey(t, mode, flags) : 0;
     const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
     // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）
     const planeStep = t.planePhase === SP_APPROACH ? Math.ceil(t.planeDistM / PLANE_DISTANCE_STEP_M) : 0;
@@ -176,6 +166,7 @@ export class MissionLine {
       escortKey !== this.lastEscortKey ||
       sKey !== this.lastStrikeKey ||
       tagKey !== this.lastBargeTagKey ||
+      pKey !== this.lastPtKey ||
       ((mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_LAG) && (homeStep !== this.lastHomeStep || t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
@@ -208,7 +199,11 @@ export class MissionLine {
       this.lastEscortKey = escortKey;
       this.lastStrikeKey = sKey;
       this.lastBargeTagKey = tagKey;
-      if (strikeMode) {
+      this.lastPtKey = pKey;
+      if (ptMode) {
+        const l = ptLine(t, mode, pKey);
+        this.missionText.setText(l.text).setColor(l.color);
+      } else if (strikeMode) {
         // 僚艇の HP と被弾（v0.6.1 レビュー: 空襲の行が被弾の行より上なので、行の中で出す。変わったときは escortKey が組み直させる）
         const l = strikeLine(t, shallowStep, stormWarn, escortHit, landedShow);
         this.missionText.setText(l.text).setColor(l.color);

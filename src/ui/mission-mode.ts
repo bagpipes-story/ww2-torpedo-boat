@@ -1,6 +1,7 @@
 // 上中央の 2 行目のモード（v0.6.1 で ui/mission-line.ts から切り出し。v0.6.0 のモードはそのまま、夜明けの空襲の 2 つを足した）: どの行を出すかの優先順だけを決める。
 // 文は ui/hud-lines.ts、setText のキャッシュは ui/mission-line.ts。テレメトリを読むだけで、毎フレーム呼んでも確保しない（§7）。
 import { AS_T_NONE, AS_T_REST } from '../core/air-strike';
+import { CALL_DAWN } from '../core/mission-flow';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { FF_CHALLENGE, FF_LEAVING, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { GUN_SAFE } from '../core/gun-battery';
@@ -38,10 +39,15 @@ export const MISSION_ESCORT_LAG = 19;
 /** 20 夜明けの空襲（落下中・爆撃進路・接近・旋回。燃料切れの下・僚艇の沈没の上＝沈没の行が爆弾の警告を隠さない）、21 波の合間（帰投せよの上）。v0.6.1 */
 export const MISSION_STRIKE = 20;
 export const MISSION_STRIKE_REST = 21;
+/** 22 米PT の航過（赤い線〜掃射。空襲の下）、23 米PT との接触（航過の結果の直後・突撃・離脱）、24 米PT の任務の平常（「命中 0」の平常の代わり。文は ui/pt-lines）。v0.6.3 */
+export const MISSION_PT_PASS = 22;
+export const MISSION_PT_CONTACT = 23;
+export const MISSION_PT = 24;
 
-/** missionMode の flags（MissionLine が時刻で決める 2 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中 */
+/** missionMode の flags（MissionLine が時刻で決める 3 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3） */
 export const MODE_FLAG_BARGE_EVENT = 1;
 export const MODE_FLAG_ESCORT_HIT = 2;
+export const MODE_FLAG_PT_RESULT = 4;
 
 /** 暴風の近く・中で安全速力を超えている（警告。ほかの行の末尾にも付く） */
 export function stormWarning(t: BoatTelemetry): boolean {
@@ -55,12 +61,14 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 平常（docs/02 §6.7・§6.8）
+ * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過 > 米PT との接触 > 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去った夜明けの後だけ「夜明け ・ 米PT は東へ去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   if (t.homeWaiting) return MISSION_WAITING;
   if (t.fuelEmpty) return MISSION_ADRIFT;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
+  if (t.pt.enabled && t.pt.passing) return MISSION_PT_PASS;
+  if (t.pt.enabled && ((flags & MODE_FLAG_PT_RESULT) !== 0 || (t.pt.detected && t.pt.alive > 0))) return MISSION_PT_CONTACT;
   if (t.escortEnabled && t.escortSunk) return MISSION_ESCORT_LOST;
   if (planeAttacking(t)) return MISSION_PLANE_ATTACK;
   if (t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE) return MISSION_FRIENDLY;
@@ -80,6 +88,8 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (planeLeaving(t)) return MISSION_PLANE_RESULT;
   if ((t.stormState === STORM_NEAR || t.stormState === STORM_INSIDE) && !t.stormFast) return MISSION_STORM;
   if (t.dawn.threat === AS_T_REST) return MISSION_STRIKE_REST;
+  if (t.pt.enabled && t.pt.alive === 0 && t.dawn.reached && call === CALL_DAWN) return MISSION_PT;
   if (call !== 0) return MISSION_CALL;
+  if (t.pt.enabled) return MISSION_PT;
   return MISSION_NORMAL;
 }
