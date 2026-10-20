@@ -1,5 +1,8 @@
 // 魚雷の命中・外れの記録と撃沈の開始（v0.4.2 で mission-world から切り出し。中身は v0.4.1 のまま。v0.4.5 から駆逐艦の隊＝当たった艦を添字で受ける）。
 // 命中（不発でなければ）で命中スロー。当たった艦が沈み始め、それで隊のすべてが沈み始めたら残りの一斉発射を捨て、最後の演出の後に走っている魚雷を外れとして確定する。
+// v0.6.2: 「すべて」は夜明けに退いて海域を出た艦も含む（allOut・allSettled。退く艦がいなければ v0.6.1 と同じ。最後に出たのが退いた艦なら destroyer-step が同じ処理をする）。
+// v0.6.2: 艦が退く任務では夜明けのラッチの後に決着した魚雷を通算の命中率に入れない（core/dawn-withdraw の shotKpiTarget。退かない任務と夜明け前は v0.6.1 のまま）。
+import { shotKpiTarget } from '../core/dawn-withdraw';
 import type { ShotRecord } from '../core/hit-rate';
 import type { DestroyerGroup } from './destroyer-group';
 import type { TorpedoLauncher } from './torpedo-launcher';
@@ -14,6 +17,8 @@ export interface TorpedoHitWorld {
   readonly setup: { readonly slowMoSeconds: number };
   readonly destroyers: DestroyerGroup | null;
   readonly launcher: TorpedoLauncher;
+  /** 夜明けのラッチと退く向き（systems/world-dawn。退かない任務は NaN）。記録の kpiTarget を決める */
+  readonly dawn: { readonly reached: boolean; readonly retireHeadingDeg: number };
   resolveRemainingAsMisses(): void;
 }
 
@@ -21,7 +26,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
   return {
     onHit: (target, x, y, s) => {
       const dud = s.dud;
-      w.shots.push({ rangeM: s.rangeAtLaunchM, hit: true, dud, erratic: s.erratic, leadErrDeg: s.leadErrDeg, kpiTarget: s.kpiTarget });
+      w.shots.push({ rangeM: s.rangeAtLaunchM, hit: true, dud, erratic: s.erratic, leadErrDeg: s.leadErrDeg, kpiTarget: shotKpiTarget(s.kpiTarget, w.dawn.reached, w.dawn.retireHeadingDeg) });
       const g = w.destroyers;
       const d = g ? g.ships[target] : undefined;
       if (!dud && g && d) {
@@ -30,18 +35,18 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
         if (d.takeHit()) {
           d.playSinking(() => {
             // 最後の艦の演出が終わったら、走っている魚雷を外れとして確定する（v0.2 の「撃沈で終了」と同じ記録。艦が無いと通過判定が無く、海域を出るまで決着しないため）
-            if (!g.allSunk) return;
+            if (!g.allSettled) return;
             w.resolveRemainingAsMisses();
             events.onDestroyerSunk();
           });
           // すべて沈み始めたら残りの一斉発射は撃たない（残りの艦がいれば撃ち続けられる）
-          if (g.allSinking) w.launcher.clearQueue();
+          if (g.allOut) w.launcher.clearQueue();
         }
       }
       events.onTorpedoHit(x, y, dud);
     },
     onMiss: (s) => {
-      w.shots.push({ rangeM: s.rangeAtLaunchM, hit: false, dud: false, erratic: s.erratic, leadErrDeg: s.leadErrDeg, kpiTarget: s.kpiTarget });
+      w.shots.push({ rangeM: s.rangeAtLaunchM, hit: false, dud: false, erratic: s.erratic, leadErrDeg: s.leadErrDeg, kpiTarget: shotKpiTarget(s.kpiTarget, w.dawn.reached, w.dawn.retireHeadingDeg) });
     },
   };
 }

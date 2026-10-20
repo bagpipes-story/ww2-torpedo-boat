@@ -1,4 +1,5 @@
 // 大発の隊（docs/02 §6.4、v0.4.2）: 岸沿いを低速で進み、艇に気づくと反応の遅れの後に岸へ逃げる（上陸＝逃げ切り）。気づいている間は 13mm で撃ち返す。
+// 夜明け（v0.6.2。FlotillaCheck.dawn）: 岸沿いを進む大発すべてが、気づいたときと同じく反応の遅れの後に岸へ逃げて隠れる（気づいてはいないので撃たない＝乱数を引かない）。
 // Phaser 非依存・毎ステップ確保しない。操舵は ship-ai の steerShip、弾は shells.ts（駆逐艦の砲と同じ見越し＋一様円盤）。
 // 時計（反応の遅れ・警戒・機銃の間隔）は体感の実秒 feelDt、運動と弾の飛行は game 秒 dt。数値と検査は barge-data.ts。乱数は seed+6 の系列だけ（2 回/発）。
 import type { BoatState } from './boat-motion';
@@ -64,6 +65,8 @@ export interface FlotillaCheck {
   flashM: number;
   /** 艇が浮いている（気づく・撃つ相手がいる） */
   boatAfloat: boolean;
+  /** 夜明け後（v0.6.2。enemy_ships_at_dawn が hide の任務で、夜明けのラッチから true）。岸沿いを進む大発は反応の遅れの後に岸へ逃げる。省略は夜明け前 */
+  dawn?: boolean;
 }
 
 export interface FlotillaEvents {
@@ -145,7 +148,7 @@ export function stepFlotilla(f: FlotillaState, p: BargeParams, c: FlotillaCheck,
       b.holdLeftS -= feelDt;
       if (b.holdLeftS <= 0) b.detected = false;
     }
-    if (b.phase === BARGE_CRUISE && b.detected) {
+    if (b.phase === BARGE_CRUISE && (b.detected || c.dawn === true)) {
       b.phase = BARGE_ALERT;
       b.alertS = 0;
     }

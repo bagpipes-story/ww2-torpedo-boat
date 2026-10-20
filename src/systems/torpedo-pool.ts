@@ -23,11 +23,11 @@ export interface TorpedoEvents {
   onMiss(s: TorpedoState): void;
 }
 
-/** 魚雷の目標（駆逐艦）: 船体の円、中心、沈み始めた（沈み始めた艦には当たらず、通過の判定にも使わない） */
+/** 魚雷の目標（駆逐艦）: 船体の円、中心、もう狙えない（沈み始めたか夜明けに退いて海域を出た。v0.6.2。当たらず、通過の判定にも使わない） */
 export interface TorpedoTarget {
   readonly circles: Circle[];
   readonly state: { readonly x: number; readonly y: number };
-  readonly sinking: boolean;
+  readonly out: boolean;
 }
 
 export class TorpedoPool {
@@ -109,7 +109,7 @@ export class TorpedoPool {
       const armed = isArmed(s, this.params);
       for (let k = 0; k < targets.length; k++) {
         const t = targets[k]!;
-        if (t.sinking) continue;
+        if (t.out) continue;
         if (armed && hit < 0 && pointHitsHull(s.x, s.y, t.circles)) hit = k;
         const dx = s.x - t.state.x;
         const dy = s.y - t.state.y;

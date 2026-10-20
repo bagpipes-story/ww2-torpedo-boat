@@ -1,4 +1,4 @@
-// Result の見出し（v0.6.1 で scenes/result-scene.ts から切り出し）: 終了理由の文と「任務終了 — …」の 1 行、得点の行の「回避 N」。
+// Result の見出し（v0.6.1 で scenes/result-scene.ts から切り出し）: 終了理由の文と「任務終了 — …」の 1 行、得点の行の「回避 N」、艦の行（v0.6.2）。
 // v0.6.1: 夜明けは終了理由でなくなり（dawn を削除）、夜明けの後に終わった任務は見出しに「（夜明け後 N 秒）」を付ける。
 // Phaser も config（DOM を読む game-config）も使わない（文を組むだけ。tests から型検査ごと読める）。終了理由の型は core/mission-flow。
 import type { MissionEndReason } from '../core/mission-flow';
@@ -46,4 +46,20 @@ export function resultEvadePartJa(
   if (evadePoints === undefined) return '';
   const lostAtDawn = evade === 0 && r.returned && r.objectiveDone && r.detections === 0 && r.dawn.caughtOutside;
   return ` ・ 回避 ${evade}${lostAtDawn ? '（夜明け後）' : ''}`;
+}
+
+/**
+ * Result の艦の行（「駆逐艦: …」と輸送船。v0.6.2 で result-scene から切り出し）。1 隻の任務は沈み始めた駆逐艦の数（shipsSunk）で「撃沈」
+ * （v0.6.2 レビュー: 隊のすべて＝輸送船込みの destroyerSunk で決めていたので、輸送船が沈まない・退いた夜は沈めた駆逐艦が「健在」と出た）。
+ * 夜明けに退いた艦（v0.6.2）は「健在」ではなく「退いた」。複数隻は「撃沈 N/M」
+ */
+export function resultShipsJa(r: {
+  readonly shipsTotal: number;
+  readonly shipsSunk: number;
+  readonly transportEnabled: boolean;
+  readonly transportSunk: boolean;
+  readonly dawn: { readonly shipsWithdrawn: number; readonly transportWithdrawn: boolean };
+}): string {
+  const ds = r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.shipsSunk > 0 ? '撃沈' : r.dawn.shipsWithdrawn > 0 ? '退いた' : '健在'}`;
+  return ds + (r.transportEnabled ? ` ・ 輸送船: ${r.transportSunk ? '撃沈' : r.dawn.transportWithdrawn ? '退いた' : '健在'}` : '');
 }

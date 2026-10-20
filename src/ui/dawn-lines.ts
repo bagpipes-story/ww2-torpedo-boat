@@ -1,10 +1,11 @@
 // 夜明け（v0.6.1。docs/02 §6.7・§6.8、spec §8）の HUD と Result の文: 2 行目の時計と「帰投せよ」の理由、夜明けの空襲の行とそのキー、夜明けの帯、Result の夜明けの行。
+// v0.6.2: 夜明けに敵が退く任務（retire・hide）は帯の 2 行目と Result の行の後ろに付ける。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
-import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, type DawnResult } from '../core/dawn-air';
+import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
 import { CALL_DAWN } from '../core/mission-flow';
 import { callLabel, withWarnings, type HudLine } from './hud-lines';
 import { stormWarning } from './mission-mode';
@@ -89,31 +90,67 @@ export function strikeKey(t: BoatTelemetry): number {
 }
 
 /**
- * 夜明けの帯（HUD 中央。夜明けのラッチで 1 回だけ組む）: [見出し, 1 行目, 2 行目（あれば）]。
- * 敵の制空下（空襲あり）は「夜明け — 空襲」、僚艇を狙う機があり僚艇が浮いていれば 2 行目。それ以外（味方の制空下・?debug&nostrike）は「夜明け」
+ * 夜明けに敵が退く任務の帯の行（v0.6.2）: retire は「東京急行は北へ退く ・ 追うか帰投か」（残弾 0＝撃ち尽くし・輪の中なら「・ 帰投せよ」）、
+ * hide は「大発は岸へ隠れる ・ 帰投せよ」。退く相手が残っていなければ ''（v0.6.2 レビュー: 夜明けまでに全艦（輸送船込み。destroyerSunk）を沈めた・
+ * 大発がすべて撃破か上陸した夜に「追うか」と出ていた。夜明けの瞬間はまだ退いた艦は無いので、全艦が沈み始めた＝狙う艦なし）。stay・none は ''
  */
-export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
+function withdrawBannerJa(t: BoatTelemetry): string {
   const d = t.dawn;
-  if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
-    const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;
-    return d.vip && t.escortEnabled && !t.escortSunk ? ['夜明け — 空襲', sub, '僚艇も狙われる ・ 自艇の転舵に僚艇が付いてくる'] : ['夜明け — 空襲', sub];
-  }
-  return ['夜明け', `${d.labelJa} ・ 敵機は来ない ・ 帰投せよ`];
+  if (d.ships === 'retire' && d.forceJa && d.retireJa && !t.destroyerSunk) return `${d.forceJa}は${d.retireJa}へ退く ・ ${t.torpedoesLeft > 0 ? '追うか帰投か' : '帰投せよ'}`;
+  return d.ships === 'hide' && t.bargesSunk + t.bargesBeached < t.bargesTotal ? '大発は岸へ隠れる ・ 帰投せよ' : '';
 }
 
 /**
- * Result の夜明けの行（無ければ null）: 夜明けに輪の外だった（空襲の集計か「敵機は来ない」）、夜明け前に帰投した（残り秒）。
+ * 夜明けの帯（HUD 中央。夜明けのラッチで 1 回だけ組む）: [見出し, 1 行目, 2 行目（あれば）]。
+ * 敵の制空下（空襲あり）は「夜明け — 空襲」、2 行目は僚艇を狙う機があり僚艇が浮いていればその行、無ければ敵が退く行（v0.6.2）。
+ * それ以外（味方の制空下・?debug&nostrike）は「夜明け」。敵が退く任務は 1 行目を「… ・ 敵機は来ない」にして 2 行目に退く行（「帰投せよ」は 2 行目が持つ）。
+ * 退く相手が残っていなければ v0.6.1 の帯（「… ・ 敵機は来ない ・ 帰投せよ」／空襲の 2 行）
+ */
+export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
+  const d = t.dawn;
+  const withdraw = withdrawBannerJa(t);
+  if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
+    const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;
+    if (d.vip && t.escortEnabled && !t.escortSunk) return ['夜明け — 空襲', sub, '僚艇も狙われる ・ 自艇の転舵に僚艇が付いてくる'];
+    return withdraw ? ['夜明け — 空襲', sub, withdraw] : ['夜明け — 空襲', sub];
+  }
+  return withdraw ? ['夜明け', `${d.labelJa} ・ 敵機は来ない`, withdraw] : ['夜明け', `${d.labelJa} ・ 敵機は来ない ・ 帰投せよ`];
+}
+
+/**
+ * Result の夜明けの行の後ろ（v0.6.2。退いた艦・隠れた大発が無ければ ''）: 「 ・ 駆逐艦は北へ退いた（N 隻）」（輸送船も出たら「（N 隻＋輸送船）」、
+ * 駆逐艦が残らず輸送船だけなら「 ・ 輸送船は北へ退いた」）、「 ・ 大発は岸に隠れた（N 隻）」
+ */
+function withdrawResultJa(d: DawnResult): string {
+  let s = '';
+  if (d.shipsWithdrawn > 0) s += ` ・ 駆逐艦は${d.retireJa}へ退いた（${d.shipsWithdrawn} 隻${d.transportWithdrawn ? '＋輸送船' : ''}）`;
+  else if (d.transportWithdrawn) s += ` ・ 輸送船は${d.retireJa}へ退いた`;
+  if (d.bargesHidden > 0) s += ` ・ 大発は岸に隠れた（${d.bargesHidden} 隻）`;
+  return s;
+}
+
+/**
+ * Result の夜明けの行（無ければ null）: 夜明けに輪の外だった（空襲の集計か「敵機は来ない」）、夜明け前に帰投した（残り秒）。後ろに夜明けに退いた敵（v0.6.2）。
  * 夜明け前に帰投せずに終わった・夜明けに輪の中にいて帰投しなかった任務は出さない。転舵は自艇を狙った最初の 8 発（— は転舵なし。無ければ付けない）
  */
 export function dawnResultLine(d: DawnResult, returned: boolean): string | null {
-  if (!d.reached || !d.caughtOutside) return returned ? `夜明け: 前に帰投（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）` : null;
+  const w = withdrawResultJa(d);
+  if (!d.reached || !d.caughtOutside) return returned ? `夜明け: 前に帰投（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）${w}` : null;
   const s = Math.round(d.daylightS);
   const k = d.strike;
-  if (d.air !== DAWN_AIR_ENEMY || !k) return `夜明け後 ${s} 秒 ・ ${d.labelJa}（敵機は来ない）`;
+  if (d.air !== DAWN_AIR_ENEMY || !k) return `夜明け後 ${s} 秒 ・ ${d.labelJa}（敵機は来ない）${w}`;
   const shown = k.dodgeS.slice(0, RESULT_DODGE_SHOWN);
   const dodge = shown.length > 0 ? ` ・ 転舵 ${shown.map((x) => (Number.isNaN(x) ? '—' : x.toFixed(1))).join('/')} 秒` : '';
-  if (k.vip) return `夜明け後 ${s} 秒 ・ 空襲 ${k.waves} 波 ・ 爆弾 ${k.bombs} 発（自艇 ${k.bombs - k.bombsAtEscort}・僚艇 ${k.bombsAtEscort}） ・ 命中 自艇 ${k.hitsPlayer}・僚艇 ${k.hitsEscort}${dodge}`;
-  return `夜明け後 ${s} 秒 ・ 空襲 ${k.waves} 波 ・ 爆弾 ${k.bombs} 発 ・ 命中 ${k.hitsPlayer}${dodge}`;
+  if (k.vip) return `夜明け後 ${s} 秒 ・ 空襲 ${k.waves} 波 ・ 爆弾 ${k.bombs} 発（自艇 ${k.bombs - k.bombsAtEscort}・僚艇 ${k.bombsAtEscort}） ・ 命中 自艇 ${k.hitsPlayer}・僚艇 ${k.hitsEscort}${dodge}${w}`;
+  return `夜明け後 ${s} 秒 ・ 空襲 ${k.waves} 波 ・ 爆弾 ${k.bombs} 発 ・ 命中 ${k.hitsPlayer}${dodge}${w}`;
+}
+
+/**
+ * 夜明けに退いて狙う艦がいなくなった後の HUD の 3 行目（v0.6.2 レビュー。d.shipsGone のときだけ。退いた艦があるのは retire の任務だけなので呼び名と方角は入っている）。
+ * 魚雷ボタンが 0 になった理由（撃沈のときの「駆逐艦を撃沈」と同じ役目）。値が変わったときだけ ui/boat-hud が setText する
+ */
+export function shipsGoneStatusJa(d: DawnTelemetry): string {
+  return `${d.forceJa}は${d.retireJa}へ去った ・ 狙う艦なし`;
 }
 
 /** 方位 deg（北 0・時計回り）の 8 方位（core/briefing の bearingJa。空襲の「東から」） */

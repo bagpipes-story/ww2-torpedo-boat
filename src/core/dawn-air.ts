@@ -2,6 +2,7 @@
 // （enemy は敵機の空襲が波で続く、own は敵機は来ない）。Phaser 非依存、判定の関数は確保しない。
 // 夜明けの判定 dawnReached は scene の timeLeftS <= 0（mission-scene）と同じ不等式。世界は固定ステップの中でラッチする（systems/world-dawn.ts）。
 // missions_seed.json の dawn_air（13 任務すべて）の検査と読み出し、テレメトリと Result の型もここ。
+import { retireDirJa, type RetireEdge } from './dawn-withdraw';
 
 /** 夜明けの空を握っている側（史実の control と、遊び方の play_as） */
 export type AirSide = 'enemy' | 'own' | 'contested';
@@ -21,6 +22,10 @@ export interface DawnAir {
   shipsAtDawn: ShipsAtDawn;
   labelJa: string;
   refs: readonly DawnAirRef[];
+  /** 退く先の縁（v0.6.2。shipsAtDawn が retire の遊べる任務だけ。v0_1_prototype.dawn_withdraw を config/dawn-data の getDawnAir が入れる）。ほかは null */
+  retireEdge: RetireEdge | null;
+  /** 退く敵の呼び名（v0.6.2。dawn_withdraw.force_ja。夜明けの帯の「東京急行は北へ退く」）。retireEdge が null なら '' */
+  retireForceJa: string;
 }
 
 /** テレメトリ・Result の夜明けの空の符号（NONE は夜明け前、または遊び方の無い争奪） */
@@ -61,9 +66,14 @@ export function seaLightStep(stepTimeS: number, durationS: number, preS: number,
   return k < steps ? k : steps;
 }
 
-/** Briefing の「夜明けまで N 秒」の後ろに付ける句（争奪は遊べる任務に無いので空） */
-export function dawnConditionJa(playAs: AirSide): string {
-  return playAs === 'enemy' ? '（以後は空襲）' : playAs === 'own' ? '（昼の空は味方）' : '';
+/**
+ * Briefing の「夜明けまで N 秒」の後ろに付ける句（Briefing を作るときの 1 回だけ）。空: enemy は「以後は空襲」、own は「昼の空は味方」（争奪は遊べる任務に無いので無し）。
+ * 夜明けの敵艦（v0.6.2）: retire は「敵は北へ退く」（方角は今夜の左右反転込み）、hide は「大発は岸へ隠れる」。stay・none は付けない。両方あれば「・」でつなぐ
+ */
+export function dawnConditionJa(air: Pick<DawnAir, 'playAs' | 'shipsAtDawn' | 'retireEdge'>, mirrored = false): string {
+  const sky = air.playAs === 'enemy' ? '以後は空襲' : air.playAs === 'own' ? '昼の空は味方' : '';
+  const ships = air.shipsAtDawn === 'retire' && air.retireEdge ? `敵は${retireDirJa(air.retireEdge, mirrored)}へ退く` : air.shipsAtDawn === 'hide' ? '大発は岸へ隠れる' : '';
+  return sky && ships ? `（${sky}・${ships}）` : sky || ships ? `（${sky}${ships}）` : '';
 }
 
 // ---------- テレメトリと Result ----------
@@ -96,6 +106,12 @@ export interface DawnTelemetry {
   labelJa: string;
   /** 空襲に僚艇（要人）を狙う機がある（escort_target_planes。夜明けの帯の 2 行目） */
   vip: boolean;
+  /** 夜明けの敵艦（v0.6.2。dawn_air.enemy_ships_at_dawn。夜明けの帯の「…は北へ退く」「大発は岸へ隠れる」）と、退く方角（北など。retire だけ、ほかは ''）・退く敵の呼び名（retire だけ） */
+  ships: ShipsAtDawn;
+  retireJa: string;
+  forceJa: string;
+  /** 駆逐艦・輸送船がすべて沈み始めたか退き、そのうち 1 隻でも退いた（v0.6.2 レビュー。HUD の 3 行目「東京急行は北へ去った ・ 狙う艦なし」）。夜明け前は常に false */
+  shipsGone: boolean;
 }
 
 export function createDawnTelemetry(): DawnTelemetry {
@@ -117,6 +133,10 @@ export function createDawnTelemetry(): DawnTelemetry {
     nameJa: '',
     labelJa: '',
     vip: false,
+    ships: 'none',
+    retireJa: '',
+    forceJa: '',
+    shipsGone: false,
   };
 }
 
@@ -143,11 +163,19 @@ export interface DawnResult {
   air: number;
   labelJa: string;
   strike: DawnStrikeResult | null;
+  /**
+   * 夜明けに退いた（v0.6.2。Result の夜明けの行の後ろ）: 海域を出た駆逐艦の隻数（輸送船は数えない）・輸送船も出た・退いた方角（retire の任務だけ、ほかは ''）、
+   * 夜明けの後に岸へ隠れた（上陸した）大発の隻数。退いた艦・隠れた大発は撃沈・撃破に数えない
+   */
+  shipsWithdrawn: number;
+  transportWithdrawn: boolean;
+  retireJa: string;
+  bargesHidden: number;
 }
 
 /** 夜明け前に終わった任務の形（呼ぶ側が中身を書く） */
 export function createDawnResult(): DawnResult {
-  return { reached: false, caughtOutside: false, daylightS: 0, timeLeftAtEndS: 0, air: DAWN_AIR_NONE, labelJa: '', strike: null };
+  return { reached: false, caughtOutside: false, daylightS: 0, timeLeftAtEndS: 0, air: DAWN_AIR_NONE, labelJa: '', strike: null, shipsWithdrawn: 0, transportWithdrawn: false, retireJa: '', bargesHidden: 0 };
 }
 
 // ---------- data の読み出し（missions_seed.json の dawn_air） ----------
@@ -209,5 +237,7 @@ export function dawnAirFromData(r: DawnAirRecord, missionId: string, playable: b
     shipsAtDawn: r.enemy_ships_at_dawn as ShipsAtDawn,
     labelJa: r.label_ja,
     refs: r.refs.map((x) => ({ url: x.url, claim: x.claim })),
+    retireEdge: null,
+    retireForceJa: '',
   };
 }

@@ -1,8 +1,11 @@
 // 駆逐艦（v0.2.0: 巡航・雷跡回避・体当たり。docs/02 §6.4）。判断と操舵は core/ship-ai.ts、船体円は事前確保して座標だけ更新する（§7）。
+// 夜明けに退く（v0.6.2）: ai.retiring の間は海域の縁で止めず、縁の外へ boundsMarginM より出たら withdrawn（スプライトを 1 回だけ隠す）。
+// out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
+import { beyondBounds } from '../core/dawn-withdraw';
 import type { SeededRng } from '../core/rng';
 import { createShipAiState, steerShip, turnRateFor, updateShipAi, type ShipAiMode, type ShipAiParams, type ShipAiState } from '../core/ship-ai';
 import type { TorpedoState } from '../core/torpedo';
@@ -22,6 +25,8 @@ export class Destroyer {
   sinking = false;
   /** 沈没演出が終わった（sinking は演出中も true のまま。終了判定は「演出中」をこれで区別する） */
   sunk = false;
+  /** 夜明けに退いて海域を出た（v0.6.2。スプライトは隠した。運動・当たり判定・反撃を止める。撃沈には数えない） */
+  withdrawn = false;
   private sighted = true;
 
   constructor(
@@ -46,39 +51,51 @@ export class Destroyer {
     return this.ai.mode;
   }
 
+  /** もう狙えない（沈み始めたか、夜明けに退いて海域を出た） */
+  get out(): boolean {
+    return this.sinking || this.withdrawn;
+  }
+
   /**
    * 固定ステップ。dt は time_scale 込み、realDt は実時間（反応遅れ・警戒解除）。
    * playerDetectRangeM はこのステップで自艇を見つける距離（速力・月明・煙幕込み）。torpedoes は雷跡の発見に読むだけ。
+   * 戻り値は「このステップで退き終えた（海域を出た）」（v0.6.2。最後の 1 隻なら隊の側が残りの一斉発射を捨てる）
    */
-  step(dt: number, realDt: number, player: BoatState, playerDetectRangeM: number, detectHoldS: number, torpedoes: readonly TorpedoState[]): void {
-    if (this.sinking) return;
+  step(dt: number, realDt: number, player: BoatState, playerDetectRangeM: number, detectHoldS: number, torpedoes: readonly TorpedoState[]): boolean {
+    if (this.out) return false;
     updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
-    clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
+    if (!this.ai.retiring) clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
+    else if (beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
+      this.withdrawn = true;
+      this.sprite.setVisible(false);
+      return true;
+    }
     this.refreshHull();
+    return false;
   }
 
   private refreshHull(): void {
     fillHullCircles(this.circles, this.state.x, this.state.y, this.state.headingDeg, this.spec.lengthM * this.spec.hitScale, this.spec.beamM * this.spec.hitScale);
   }
 
-  /** 沈没演出中は tween が角度と拡縮を持つので触らない */
+  /** 沈没演出中は tween が角度と拡縮を持つので触らない（退いた艦は隠したまま） */
   syncSprite(): void {
-    if (this.sinking) return;
+    if (this.out) return;
     this.sprite.setPosition(this.state.x, this.state.y);
     this.sprite.setAngle(this.state.headingDeg);
   }
 
-  /** 自艇の視程内かどうかでスプライトを出し入れする（変わったときだけ setVisible。沈没演出中は触らない） */
+  /** 自艇の視程内かどうかでスプライトを出し入れする（変わったときだけ setVisible。沈没演出中と退いた後は触らない） */
   setSighted(v: boolean): void {
-    if (v === this.sighted || this.sinking) return;
+    if (v === this.sighted || this.out) return;
     this.sighted = v;
     this.sprite.setVisible(v);
   }
 
   /** 艇（中心・方位・半長）が船体に触れているか（体当たり） */
   touchesBoat(boat: BoatState, boatHalfLengthM: number): boolean {
-    return !this.sinking && boatTouchesHull(boat.x, boat.y, boat.headingDeg, boatHalfLengthM, this.circles);
+    return !this.out && boatTouchesHull(boat.x, boat.y, boat.headingDeg, boatHalfLengthM, this.circles);
   }
 
   /** 命中（有効弾）。沈没に達したら true */

@@ -26,7 +26,7 @@ import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
 import type { KpiResultLines } from '../systems/kpi-storage';
 import { bargeResultLines, escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
-import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa } from '../ui/result-heading';
+import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa, resultShipsJa } from '../ui/result-heading';
 import { dawnResultLine } from '../ui/dawn-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
@@ -223,7 +223,7 @@ export class ResultScene extends Phaser.Scene {
     line(`帰投 ${score.survival}${r.returned && r.dawn.caughtOutside ? `（夜明け後 ×${scoringParams.afterDawnFactor}）` : ''} ・ ${h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : `${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart}`} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
-    const ships = (r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.destroyerSunk ? '撃沈' : '健在'}`) + (r.transportEnabled ? ` ・ 輸送船: ${r.transportSunk ? '撃沈' : '健在'}` : '');
+    const ships = resultShipsJa(r); // 夜明けに退いた艦（v0.6.2）は「退いた」。1 隻の任務は駆逐艦の撃沈数で（輸送船が沈まなくても「撃沈」）
     const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : ships;
     line(`${head}   帰投: ${r.returned ? 'あり' : 'なし'}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     for (const l of [r.raidLine, dawnResultLine(r.dawn, r.returned)]) if (l) line(l, HUD_FONT_HEADING_PX); // 「出撃前」と夜明け（v0.6.1）の行。無ければ出さない

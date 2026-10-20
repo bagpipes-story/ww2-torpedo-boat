@@ -332,8 +332,9 @@ function world(setup: WorldSetup): { w: DawnTelemetryWorld & { stepTimeS: number
   const player: BoatState = { x: 5000, y: 5000, headingDeg: 0, speedMps: 0 };
   const strike = setup.airStrike ? liveStrike(setup.airStrike) : null;
   const dawn = new WorldDawn(fakeScene, setup, strike);
-  const view = { stepTimeS: 0, atHome: false, grounded: false, boat: { state: player, sinking: false }, escort: null };
-  const w = { stepTimeS: 0, setup, dawn };
+  const enemy = { shipsWithdrawn: 0, transportWithdrawn: false, bargesHidden: 0, allOut: false, shipDown: false, withdrawn: [] as number[], withdraw: (h: number): void => void enemy.withdrawn.push(h) };
+  const view = { stepTimeS: 0, atHome: false, grounded: false, boat: { state: player, sinking: false }, escort: null, enemy };
+  const w = { stepTimeS: 0, setup, dawn, enemy };
   return { w, view, strike, player };
 }
 

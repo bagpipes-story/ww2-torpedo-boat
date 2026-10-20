@@ -28,6 +28,8 @@ const STATUS_LIT: readonly string[] = [
 export const STATUS_LABEL: readonly string[] = [...STATUS_LIT, ...STATUS_LIT.map((_, i) => `${STATUS_BASE[i & 3]!} ・ 煙幕に隠れている`)];
 /** 撃沈後の 3 行目（見つかる距離は付けない） */
 export const STATUS_SUNK = 32;
+/** 夜明けに退いて狙う艦がいなくなった後の 3 行目（v0.6.2。ui/dawn-lines の shipsGoneStatusJa。見つかる距離は付けない） */
+export const STATUS_GONE = 33;
 /** 発見距離の表示刻み m（速力段ごとの段階値なので、変わるのは段が変わったときだけ） */
 export const DETECT_RANGE_STEP_M = 50;
 /** 2 行目「帰投せよ」の理由（core/mission-flow のビット → 文言） */

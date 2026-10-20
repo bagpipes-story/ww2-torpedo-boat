@@ -21,7 +21,8 @@ import {
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
-import { DETECT_RANGE_STEP_M, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
+import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
+import { shipsGoneStatusJa } from './dawn-lines';
 import { MissionLine } from './mission-line';
 import { STORM_INSIDE } from '../core/storm';
 import { SHALLOW_INSIDE } from '../core/shallows';
@@ -113,8 +114,8 @@ export class BoatHud {
       this.rudderMarker.setX(x);
     }
     this.missionLine.refresh(t, nowMs);
-    // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」に固定
-    const status = t.destroyerSunk ? STATUS_SUNK : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
+    // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」、夜明けに退いて狙う艦がいなくなった後（v0.6.2）は「東京急行は北へ去った ・ 狙う艦なし」に固定
+    const status = t.destroyerSunk ? STATUS_SUNK : t.dawn.shipsGone ? STATUS_GONE : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
     // 雨: 艦と艇を結ぶ線が暴風の帯にかかっている（発見距離・視程が下がる。v0.3.4）
     const rain = t.stormLos && !t.destroyerSunk;
@@ -124,6 +125,8 @@ export class BoatHud {
       this.lastRain = rain;
       if (status === STATUS_SUNK) {
         this.statusText.setText('駆逐艦を撃沈').setColor(HUD_COLOR_STRONG);
+      } else if (status === STATUS_GONE) {
+        this.statusText.setText(shipsGoneStatusJa(t.dawn)).setColor(HUD_COLOR_STRONG);
       } else {
         this.statusText
           .setText(`${STATUS_LABEL[status]!} ・ 見つかる距離 ${detectStep * DETECT_RANGE_STEP_M} m${rain ? '（雨）' : ''}`)

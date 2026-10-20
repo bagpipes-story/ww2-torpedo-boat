@@ -61,8 +61,8 @@ export function consumeFrameInput(w: MissionWorld, realDt: number): void {
   if (w.boat.sinking) return;
   const g = w.destroyers;
   const boat = w.boat.state;
-  // 駆逐艦がすべて沈み始めた後・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
-  if (!g || g.allSinking || w.atHome) discardFireInput(w.input);
+  // 駆逐艦がすべて沈み始めたか退いた後（v0.6.2）・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
+  if (!g || g.allOut || w.atHome) discardFireInput(w.input);
   else consumeFireInput(w.input, w.launcher, boat, w.torpedoes.remaining);
   w.extinguishHeldS = consumeSmokeInput(w.input, w.smoke, w.smokeParams, w.damage, w.damageParams.extinguishHoldS, w.extinguishHeldS, realDt, w.extinguishHoldScale);
   // 一斉発射の見越しは最寄りの浮いている艦（すべて沈んでいれば 1 隻目。発射はしない）
