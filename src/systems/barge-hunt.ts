@@ -53,6 +53,8 @@ export class BargeHunt {
   /** KPI: 撃破したときの艇からの距離の最小・最大 m（撃破なしなら NaN） */
   killMinM = NaN;
   killMaxM = NaN;
+  /** 夜明け（v0.6.2。withdraw）の時点で上陸していた隻数（夜明けの後に岸へ隠れた数 = beached − これ） */
+  private beachedAtDawn = 0;
   private readonly bargeRng: SeededRng;
   private readonly gunRng: SeededRng;
   private readonly check: FlotillaCheck;
@@ -114,7 +116,7 @@ export class BargeHunt {
     if (worldSplashes) for (let i = 0; i < shores.length; i++) this.shores.push(new ShoreBattery(scene, shores[i]!, new SeededRng((seed + 8 + i) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, worldSplashes, (spec, rng, x, y) => onBoatHit(spec, rng, x, y, 'shore_battery')));
     this.flotilla = createFlotilla(p, MG_SHELL_POOL_SIZE);
     this.battery = createGunBattery(g, GUN_SHELL_POOL_SIZE);
-    this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true };
+    this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true, dawn: false };
     this.splashes = new SplashPool(scene, GUN_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
     this.shown = new Uint8Array(p.count);
     for (const b of this.flotilla.barges) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
@@ -128,6 +130,23 @@ export class BargeHunt {
   /** 撃破のノルマに達した（任務の目標） */
   get quotaMet(): boolean {
     return this.flotilla.sunk >= this.p.quota;
+  }
+
+  /** 夜明けに岸へ隠れる（v0.6.2。hide の任務で夜明けのラッチの 1 回だけ）。次の固定ステップで、岸沿いを進む大発がすぐ岸へ逃げる（実機 1 回目で反応の遅れを外した。乱数は引かない） */
+  withdraw(): void {
+    if (this.check.dawn) return;
+    this.check.dawn = true;
+    this.beachedAtDawn = this.flotilla.beached;
+  }
+
+  /** 夜明けの後に岸へ隠れた（上陸した）隻数（夜明け前は 0。Result の夜明けの行） */
+  get hiddenAfterDawn(): number {
+    return this.check.dawn ? this.flotilla.beached - this.beachedAtDawn : 0;
+  }
+
+  /** 夜明けの後に岸へ逃げている隻数（夜明け前は 0。v0.6.2 実機 1 回目: 空襲の行の「大発 岸へ N 隻」） */
+  get runningAfterDawn(): number {
+    return this.check.dawn ? this.flotilla.running : 0;
   }
 
   /** 固定ステップ: 艇の砲（押している間）→ 大発（撃ったら閃光の距離で気づく）。held は射撃ボタン */

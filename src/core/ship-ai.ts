@@ -2,6 +2,7 @@
 // 行動: 巡航（海域の端が近づけば中央へ向き直す）→ 雷跡に気づいたら reaction_delay 後に雷跡と平行に転舵して「櫛で梳く」→ プレイヤーを発見し近ければ体当たり。
 // 雷跡に気づく（v0.5.0）: 見える距離（torpedo_wake_detect_m）に向かってくる魚雷がある間、見張りが実時間 1 秒あたり wake_spot_rate_per_s の割合で気づく
 // （乱数は 1 ステップ 1 回、気づくまで。遠くから撃つほど気づかれる時間が長い＝距離で命中率が下がる。docs/02 §6.3）。
+// 夜明けに退く（v0.6.2）: retiring が立った艦は退く向きへ全速（体当たりと端での向き直しはしない。見た雷跡の回避は続ける）。立てるのは夜明けのラッチだけ（startRetire）。
 // 時間の単位: reaction_delay_s と detect_hold_s は実時間秒（プレイヤーの体感に合わせる）。旋回率・加速度・速度は time_scale 込みの dt で積分する。
 import type { BoatState, SeaBounds } from './boat-motion';
 import type { SeededRng } from './rng';
@@ -11,7 +12,7 @@ import { clamp, degToRad, wrapDeg180, wrapDeg360 } from './units';
 // data の読み出し（v0.5.0 で ship-ai-data.ts に分けた。300 行を超えたため。import 先はこれまでどおり ship-ai でよい）
 export { isEnemyAiDataRecord, shipAiParamsFromData, type EnemyAiDataRecord } from './ship-ai-data';
 
-export type ShipAiMode = 'cruise' | 'evade' | 'ram';
+export type ShipAiMode = 'cruise' | 'evade' | 'ram' | 'retire';
 
 /** 見張りの乱数の系列（出撃の seed + 17。v0.5.0。seed〜seed+9 は魚雷・砲撃・掃射・暴風・空襲・水上機・大発・艇の砲・沿岸砲、seed+16 は今夜の揺らぎ） */
 export const LOOKOUT_SEED_OFFSET = 17;
@@ -74,6 +75,9 @@ export interface ShipAiState {
   ramStalledS: number;
   /** 体当たりを諦めてからの再開禁止の残り秒 */
   ramCooldownLeftS: number;
+  /** 夜明けに退いている（v0.6.2。一度立ったら任務中は消えない）と、その向き（0=北、時計回り） */
+  retiring: boolean;
+  retireHeadingDeg: number;
 }
 
 export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): ShipAiState {
@@ -92,7 +96,15 @@ export function createShipAiState(headingDeg: number, cruiseSpeedMps: number): S
     ramClosestD2: Infinity,
     ramStalledS: 0,
     ramCooldownLeftS: 0,
+    retiring: false,
+    retireHeadingDeg: 0,
   };
+}
+
+/** 夜明けに退き始める（v0.6.2。夜明けのラッチで 1 回だけ。次の updateShipAi から退く向きへ全速） */
+export function startRetire(ai: ShipAiState, headingDeg: number): void {
+  ai.retiring = true;
+  ai.retireHeadingDeg = wrapDeg360(headingDeg);
 }
 
 /**
@@ -153,11 +165,18 @@ export function updateShipAi(
   }
   if (ai.ramCooldownLeftS > 0) ai.ramCooldownLeftS -= realDt;
 
-  // --- モード決定（回避 > 体当たり > 巡航）。向かってくる魚雷を見ている間は避けるのが先（体当たりは始めない） ---
+  // --- モード決定（回避 > 退避 > 体当たり > 巡航）。向かってくる魚雷を見ている間は避けるのが先（体当たりは始めない） ---
   if (ai.wakeSeenForS >= p.reactionDelayS) {
     ai.mode = 'evade';
     ai.desiredHeadingDeg = combHeadingDeg(ai.seenTorpedoHeadingDeg, ai.seenTorpedoDx, ai.seenTorpedoDy, p.turnTowardWakes);
     ai.desiredSpeedMps = clamp(p.cruiseSpeedMps + p.speedBoostMps, 0, p.maxSpeedMps);
+    return;
+  }
+  // 夜明けに退く（v0.6.2）: 退く向きへ全速。体当たりと端での向き直しはしない（海域の外へ抜ける。回避が終われば退く向きへ戻る）
+  if (ai.retiring) {
+    ai.mode = 'retire';
+    ai.desiredHeadingDeg = ai.retireHeadingDeg;
+    ai.desiredSpeedMps = p.maxSpeedMps;
     return;
   }
   // 体当たりは trigger_m で始め、give_up_m を超えるまで続ける。近づけないまま stall_s 経てば諦め、cooldown_s は再開しない。
@@ -251,7 +270,7 @@ export function steerShip(ship: BoatState, desiredHeadingDeg: number, desiredSpe
   ship.y -= Math.cos(h) * ship.speedMps * dt;
 }
 
-/** モードに応じた旋回率 */
+/** モードに応じた旋回率（退避は通常の旋回率） */
 export function turnRateFor(mode: ShipAiMode, p: ShipAiParams): number {
   if (mode === 'evade') return p.evadeTurnRateDegS;
   if (mode === 'ram') return p.turnRateDegS + p.ramTurnRateBonusDegS;

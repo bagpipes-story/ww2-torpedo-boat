@@ -30,9 +30,14 @@ export interface DawnTelemetryWorld {
   readonly stepTimeS: number;
   readonly setup: WorldSetup;
   readonly dawn: WorldDawn;
+  /**
+   * 夜明けに退いた敵の数（v0.6.2。systems/enemy-side。Result の夜明けの行）と、狙う艦がいないか（allOut）・すべて沈み始めたか（shipDown。HUD の 3 行目）、
+   * 夜明けの後に岸へ逃げている大発の隻数（bargesRunning。v0.6.2 実機 1 回目。空襲の行の後ろ）
+   */
+  readonly enemy: { readonly shipsWithdrawn: number; readonly transportWithdrawn: boolean; readonly bargesHidden: number; readonly bargesRunning: number; readonly allOut: boolean; readonly shipDown: boolean };
 }
 
-/** 出発時の dawn（任務で決まる値: 空の持ち主・空襲の有無・機数・機名・空の文・僚艇を狙う機。毎フレームは変えない。方角は最初の波で、fillDawn が波ごとに書く） */
+/** 出発時の dawn（任務で決まる値: 空の持ち主・空襲の有無・機数・機名・空の文・僚艇を狙う機・夜明けの敵艦と退く方角と呼び名。毎フレームは変えない。方角は最初の波で、fillDawn が波ごとに書く） */
 export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
   const d = createDawnTelemetry();
   const p = w.dawn.strike ? w.dawn.strike.p : null;
@@ -43,6 +48,9 @@ export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
   d.nameJa = p ? p.nameJa : '';
   d.labelJa = w.setup.dawnAir.labelJa;
   d.vip = p ? p.escortPlanes.includes(true) : false;
+  d.ships = w.dawn.ships;
+  d.retireJa = w.dawn.retireJa;
+  d.forceJa = w.dawn.retireJa ? w.setup.dawnAir.retireForceJa : '';
   fillDawn(d, w);
   return d;
 }
@@ -67,6 +75,11 @@ function fillDawn(d: DawnTelemetry, w: DawnTelemetryWorld): void {
   d.reached = w.dawn.reached;
   d.caughtOutside = w.dawn.caughtOutside;
   d.daylightS = daylightS(w.setup.durationS, w.stepTimeS);
+  // 狙う艦がいなくなったのが退いた艦のせい（退く艦がいなければ allOut は shipDown と同じ＝夜明け前と退かない任務は false。隊は最大 3 隻を見るだけで確保しない）
+  d.shipsGone = w.enemy.allOut && !w.enemy.shipDown;
+  // 夜明けの後に岸へ逃げている・隠れた大発（v0.6.2 実機 1 回目。夜明け前と大発の無い任務は 0）
+  d.bargesRunning = w.enemy.bargesRunning;
+  d.bargesHidden = w.enemy.bargesHidden;
   d.toEscort = false;
   d.fallingArc = false;
   d.plane = -1;
@@ -121,7 +134,7 @@ function fillDawn(d: DawnTelemetry, w: DawnTelemetryWorld): void {
   }
 }
 
-/** 終了時に 1 回だけ: MissionResult.dawn（空襲の無い任務は strike: null。転舵の秒は自艇を狙って着弾した爆弾の分だけ写す） */
+/** 終了時に 1 回だけ: MissionResult.dawn（空襲の無い任務は strike: null。転舵の秒は自艇を狙って着弾した爆弾の分だけ写す。退いた艦・隠れた大発の数は v0.6.2） */
 export function dawnResult(w: DawnTelemetryWorld): DawnResult {
   const st = w.dawn.strike;
   const s = st ? st.state : null;
@@ -145,5 +158,9 @@ export function dawnResult(w: DawnTelemetryWorld): DawnResult {
             vip: st.p.escortPlanes.includes(true),
           }
         : null,
+    shipsWithdrawn: w.enemy.shipsWithdrawn,
+    transportWithdrawn: w.enemy.transportWithdrawn,
+    retireJa: w.dawn.retireJa,
+    bargesHidden: w.enemy.bargesHidden,
   };
 }

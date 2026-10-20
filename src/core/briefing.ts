@@ -123,7 +123,7 @@ export interface BriefingNumbers {
   detectCruiseM: number;
   detectSilentM: number;
   durationS: number;
-  /** 「夜明けまで N 秒」の後ろの句（v0.6.1。dawn_air.play_as: enemy は「（以後は空襲）」、own は「（昼の空は味方）」。core/dawn-air の dawnConditionJa） */
+  /** 「夜明けまで N 秒」の後ろの句（v0.6.1。dawn_air.play_as: enemy は「以後は空襲」、own は「昼の空は味方」。v0.6.2 から夜明けの敵艦: retire は「敵は北へ退く」、hide は「大発は岸へ隠れる」。core/dawn-air の dawnConditionJa） */
   dawnJa: string;
   fuelGal: number;
   torpedoes: number;
@@ -149,7 +149,10 @@ export function absentJa(ids: readonly string[], labelOf: (id: string) => string
   return ids.length === 0 ? '' : `（今夜は ${ids.map(labelOf).join('・')} なし）`;
 }
 
-/** Briefing の 6 行（目的・成功・月・敵・危険・条件）。距離・秒は Math.round、燃料は整数ならそのまま・違えば小数 1 桁。危険から港内空襲を除く（2 択の欄に出す） */
+/**
+ * Briefing の 6 行（目的・成功・月・敵・危険・条件）。距離・秒は Math.round、燃料は整数ならそのまま・違えば小数 1 桁。危険から港内空襲を除く（2 択の欄に出す）。
+ * 条件の「砲」と砲の名前の間はノーブレークスペース（v0.6.2 レビュー: Phaser の折り返しは半角スペースだけで切るので、us_03 で「砲」が行末に 1 字だけ残った）
+ */
 export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: string) => string, labelOf: (id: string) => string): BriefingRow[] {
   const gal = Number.isInteger(n.fuelGal) ? String(n.fuelGal) : n.fuelGal.toFixed(1);
   return [
@@ -158,6 +161,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲 ${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
   ];
 }

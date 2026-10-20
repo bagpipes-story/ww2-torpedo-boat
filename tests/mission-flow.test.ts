@@ -18,8 +18,8 @@ import {
   type ReturnPoint,
 } from '../src/core/mission-flow';
 
-const RP: ReturnPoint = { x: 5400, y: 600, radiusM: 250, callMargin: 1.5, torpedoSettleMaxS: 10 };
-const P = { torpedoSettleMaxS: 10, adriftDelayS: 1.5 };
+const RP: ReturnPoint = { x: 5400, y: 600, radiusM: 250, callMargin: 1.5, torpedoSettleMaxS: 10, torpedoEndSettleS: 3 };
+const P = { torpedoSettleMaxS: 10, adriftDelayS: 1.5, endSettleS: 3 };
 
 function check(over: Partial<EndCheck>): EndCheck {
   return {
@@ -32,6 +32,7 @@ function check(over: Partial<EndCheck>): EndCheck {
     fuelEmpty: false,
     stopped: false,
     grounded: false,
+    fleetGone: false,
     ...over,
   };
 }
@@ -70,14 +71,17 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(decideMissionEnd(check({ atHome: true }), P)).toBe('returned');
     expect(decideMissionEnd(check({ atHome: true, destroyerSinkPlaying: true }), P)).toBe('returned');
     expect(decideMissionEnd(check({ atHome: true, fuelEmpty: true, stopped: true }), P)).toBe('returned');
-    // 輪の中で魚雷が走っていれば待つ。10 秒か夜明けで帰投
+    // 輪の中で魚雷が走っていれば待つ。夜明け前は 10 秒、夜明け後は 3 秒（v0.6.2 実機 1 回目。それまでは夜明け後は待たずに帰投）
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, waitS: 9.9 }), P)).toBeNull();
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, waitS: 10 }), P)).toBe('returned');
-    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, timeLeftS: 0 }), P)).toBe('returned');
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, timeLeftS: 0 }), P)).toBeNull();
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, timeLeftS: 0, waitS: 2.9 }), P)).toBeNull();
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, timeLeftS: 0, waitS: 3 }), P)).toBe('returned');
     // 輪の中で魚雷を待つ間に燃料が尽きて止まっても漂流にしない（待ち切れば帰投）。レビューで判明
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, waitS: 5 }), P)).toBeNull();
     expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, waitS: 10 }), P)).toBe('returned');
-    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, timeLeftS: 0 }), P)).toBe('returned');
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, timeLeftS: 0 }), P)).toBeNull();
+    expect(decideMissionEnd(check({ atHome: true, torpedoesRunning: true, fuelEmpty: true, stopped: true, timeLeftS: 0, waitS: 3 }), P)).toBe('returned');
     // 座礁: 1.4 秒は null、1.5 秒で grounded。夜明けや撃沈演出より先。自艇の沈没中は null（砲撃で沈めば destroyed）
     expect(decideMissionEnd(check({ grounded: true, waitS: 1.4 }), P)).toBeNull();
     expect(decideMissionEnd(check({ grounded: true, waitS: 1.5 }), P)).toBe('grounded');
@@ -96,7 +100,7 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(decideMissionEnd(check({ fuelEmpty: true, stopped: true, waitS: 1.5 }), P)).toBe('adrift');
     expect(decideMissionEnd(check({}), P)).toBeNull();
   });
-  it('v0.6.1 夜明けでは終わらない: 夜明け後（timeLeftS ≤ 0）の判定は夜明け前（1 秒）と同じ。違うのは輪の中で魚雷を待つときだけ（待たずに帰投）', () => {
+  it('v0.6.1 夜明けでは終わらない: 夜明け後（timeLeftS ≤ 0）の判定は夜明け前（1 秒）と同じ。違うのは輪の中で魚雷を待つときだけ（v0.6.2 実機 1 回目から 3 秒まで待つ。それまでは待たずに帰投）', () => {
     const rng = new SeededRng(20261018);
     const flag = (): boolean => rng.next() < 0.5;
     let differ = 0;
@@ -106,7 +110,7 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
       const before = decideMissionEnd({ ...c, timeLeftS: 1 }, P);
       const after = decideMissionEnd({ ...c, timeLeftS: -k }, P);
       if (c.atHome && c.torpedoesRunning) {
-        if (!c.boatSinking) expect(after).toBe('returned');
+        if (!c.boatSinking) expect(after).toBe(c.waitS >= P.endSettleS ? 'returned' : null);
         if (after !== before) differ++;
       } else expect(after).toBe(before);
       expect(after).not.toBe('dawn');
@@ -158,7 +162,7 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(2580 / (cruiseMps * 5)).toBeCloseTo(43.6, 1);
   });
   it('data の読み出し: 検査', () => {
-    const rec = { x_m: 5400, y_m: 600, radius_m: 250, call_margin: 1.5, torpedo_settle_max_s: 10 };
+    const rec = { x_m: 5400, y_m: 600, radius_m: 250, call_margin: 1.5, torpedo_settle_max_s: 10, torpedo_end_settle_s: 3 };
     const bounds = { width: 6000, height: 4000 };
     expect(isReturnPointDataRecord(rec)).toBe(true);
     expect(isReturnPointDataRecord({ ...rec, radius_m: 'x' })).toBe(false);
@@ -166,6 +170,8 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(() => returnPointFromData({ ...rec, radius_m: 0 }, bounds)).toThrow();
     expect(() => returnPointFromData({ ...rec, call_margin: 0.99 }, bounds)).toThrow();
     expect(() => returnPointFromData({ ...rec, torpedo_settle_max_s: -1 }, bounds)).toThrow();
+    expect(() => returnPointFromData({ ...rec, torpedo_end_settle_s: -1 }, bounds)).toThrow(/torpedo_end_settle_s/);
+    expect(isReturnPointDataRecord({ ...rec, torpedo_end_settle_s: undefined })).toBe(false);
     expect(() => returnPointFromData({ ...rec, y_m: 100 }, bounds)).toThrow(); // 輪が上端からはみ出す
     expect(() => returnPointFromData({ ...rec, x_m: 5900 }, bounds)).toThrow();
   });

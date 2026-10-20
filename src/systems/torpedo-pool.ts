@@ -1,5 +1,5 @@
 // 魚雷と雷跡のプール（CLAUDE.md §7: update 内で new しない。起動時に全部作って使い回す）。
-// 運動・武装・射程は core/torpedo.ts、命中幾何は core/torpedo-solver.ts。
+// 運動・武装・射程は core/torpedo.ts、命中幾何は core/torpedo-solver.ts、目標の走査と終わり際の当たり（v0.6.2 実機 1 回目）は core/torpedo-targets.ts。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { WAKE_DOT_ALPHA, WAKE_DOT_LIFETIME_S, WAKE_DOT_POOL_SIZE, WAKE_DOT_SPACING_M } from '../config/ui-config';
@@ -14,21 +14,10 @@ import {
   type TorpedoParams,
   type TorpedoState,
 } from '../core/torpedo';
-import { pointHitsHull, type Circle } from '../core/torpedo-solver';
+import { createTargetScan, scanTargets, type TorpedoEvents, type TorpedoTarget } from '../core/torpedo-targets';
 
-/** 魚雷の結果通知。引数はプリミティブのみ（確保しない）。target は当たった艦の添字（v0.4.5） */
-export interface TorpedoEvents {
-  /** 当たった艦の添字と位置。s は魚雷の状態（不発・蛇行・発射時の距離と見越し角のずれを読む。呼び出しの中だけ有効） */
-  onHit(target: number, x: number, y: number, s: TorpedoState): void;
-  onMiss(s: TorpedoState): void;
-}
-
-/** 魚雷の目標（駆逐艦）: 船体の円、中心、沈み始めた（沈み始めた艦には当たらず、通過の判定にも使わない） */
-export interface TorpedoTarget {
-  readonly circles: Circle[];
-  readonly state: { readonly x: number; readonly y: number };
-  readonly sinking: boolean;
-}
+// 魚雷の結果通知と目標の形は core/torpedo-targets（v0.6.2 実機 1 回目で移した。終わり際の当たり onLateHit を足した）
+export type { TorpedoEvents, TorpedoTarget };
 
 export class TorpedoPool {
   /** 魚雷の状態（敵 AI が雷跡の発見に読む。書き換えない） */
@@ -38,6 +27,8 @@ export class TorpedoPool {
   private readonly wakeAges: Float32Array;
   private wakeNext = 0;
   private firedCount = 0;
+  /** 目標の走査の結果（core/torpedo-targets。1 個だけ持って中身を書き換える） */
+  private readonly scan = createTargetScan();
 
   constructor(
     scene: Phaser.Scene,
@@ -90,8 +81,9 @@ export class TorpedoPool {
   /**
    * 固定ステップ。dt は time_scale 込み、realDt は実時間。
    * 浮いている目標があれば武装済みの魚雷と船体の命中を判定し（当たった艦の添字を通知）、最も近い浮いている目標の中心を通り過ぎた魚雷は外れとして確定する（1 隻なら v0.4.4 までと同じ）。
+   * すべて出た後は、沈む船体への終わり際の当たり（v0.6.2 実機 1 回目。nowS は時計、settleS は torpedo_end_settle_s。nowS が NaN なら見ない）を onLateHit で通知する。
    */
-  step(dt: number, realDt: number, targets: readonly TorpedoTarget[], passRadius2: number, events: TorpedoEvents): void {
+  step(dt: number, realDt: number, targets: readonly TorpedoTarget[], passRadius2: number, events: TorpedoEvents, nowS: number = NaN, settleS: number = 0): void {
     for (let i = 0; i < this.states.length; i++) {
       const s = this.states[i]!;
       if (!s.active) continue;
@@ -103,30 +95,22 @@ export class TorpedoPool {
         continue;
       }
       if (s.resolved) continue;
-      let hit = -1;
-      let nearest = -1;
-      let nearestD2 = Infinity;
-      const armed = isArmed(s, this.params);
-      for (let k = 0; k < targets.length; k++) {
-        const t = targets[k]!;
-        if (t.sinking) continue;
-        if (armed && hit < 0 && pointHitsHull(s.x, s.y, t.circles)) hit = k;
-        const dx = s.x - t.state.x;
-        const dy = s.y - t.state.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < nearestD2) {
-          nearestD2 = d2;
-          nearest = k;
-        }
-      }
-      if (nearest < 0) continue;
-      if (hit >= 0) {
+      const sc = this.scan;
+      scanTargets(sc, s.x, s.y, isArmed(s, this.params), targets, nowS, settleS);
+      if (sc.late >= 0) {
         s.active = false;
         s.resolved = true;
-        events.onHit(hit, s.x, s.y, s);
+        events.onLateHit(sc.late, s.x, s.y, s);
         continue;
       }
-      const n = targets[nearest]!.state;
+      if (sc.nearest < 0) continue;
+      if (sc.hit >= 0) {
+        s.active = false;
+        s.resolved = true;
+        events.onHit(sc.hit, s.x, s.y, s);
+        continue;
+      }
+      const n = targets[sc.nearest]!.state;
       if (markMissIfPassed(s, this.params, n.x, n.y, passRadius2)) {
         events.onMiss(s);
       }

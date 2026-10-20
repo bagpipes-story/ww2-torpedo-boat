@@ -86,8 +86,21 @@ describe('夜明けの時計（v0.6.1。core/dawn-air）', () => {
     expect(seaLightStep(d, d, 0, 0, steps)).toBe(16);
   });
   it('dawnConditionJa・dawnAirCode・テレメトリと Result の初期値', () => {
-    expect(dawnConditionJa('enemy')).toBe('（以後は空襲）');
-    expect(dawnConditionJa('own')).toBe('（昼の空は味方）');
+    const cond = (playAs: 'enemy' | 'own' | 'contested', shipsAtDawn: 'stay' | 'retire' | 'hide' | 'none' = 'stay', retireEdge: 'north' | 'south' | 'east' | 'west' | null = null, mirrored = false): string =>
+      dawnConditionJa({ playAs, shipsAtDawn, retireEdge }, mirrored);
+    expect(cond('enemy')).toBe('（以後は空襲）');
+    expect(cond('own')).toBe('（昼の空は味方）');
+    expect(cond('enemy', 'none')).toBe('（以後は空襲）');
+    // 夜明けの敵艦（v0.6.2）: retire は退く方角（左右反転の夜は東西を入れ替える）、hide は大発。縁の無い retire（遊べない任務の形）は付けない
+    expect(cond('own', 'retire', 'north')).toBe('（昼の空は味方・敵は北へ退く）');
+    expect(cond('own', 'retire', 'north', true)).toBe('（昼の空は味方・敵は北へ退く）');
+    expect(cond('own', 'retire', 'east')).toBe('（昼の空は味方・敵は東へ退く）');
+    expect(cond('own', 'retire', 'east', true)).toBe('（昼の空は味方・敵は西へ退く）');
+    expect(cond('enemy', 'retire', 'south')).toBe('（以後は空襲・敵は南へ退く）');
+    expect(cond('own', 'retire', null)).toBe('（昼の空は味方）');
+    expect(cond('enemy', 'hide')).toBe('（以後は空襲・大発は岸へ隠れる）');
+    expect(cond('contested', 'hide')).toBe('（大発は岸へ隠れる）');
+    expect(cond('contested')).toBe('');
     expect(dawnAirCode('enemy')).toBe(DAWN_AIR_ENEMY);
     expect(dawnAirCode('own')).toBe(DAWN_AIR_OWN);
     expect(dawnAirCode('contested')).toBe(DAWN_AIR_NONE);
@@ -99,7 +112,9 @@ describe('夜明けの時計（v0.6.1。core/dawn-air）', () => {
     expect(t.restS).toBeNaN();
     expect(t.inboundDistM).toBeNaN();
     expect(createDawnTelemetry()).not.toBe(t);
-    expect(createDawnResult()).toEqual({ reached: false, caughtOutside: false, daylightS: 0, timeLeftAtEndS: 0, air: DAWN_AIR_NONE, labelJa: '', strike: null });
+    expect(t.ships).toBe('none');
+    expect([t.retireJa, t.forceJa]).toEqual(['', '']);
+    expect(createDawnResult()).toEqual({ reached: false, caughtOutside: false, daylightS: 0, timeLeftAtEndS: 0, air: DAWN_AIR_NONE, labelJa: '', strike: null, shipsWithdrawn: 0, transportWithdrawn: false, retireJa: '', bargesHidden: 0 });
   });
 });
 
@@ -107,7 +122,8 @@ describe('dawn_air の検査（v0.6.1。spec §6.6）', () => {
   it('正しい記録は読める（refs は写す）', () => {
     expect(isDawnAirRecord(US01)).toBe(true);
     const a = dawnAirFromData(US01, 'us_01', true);
-    expect(a).toEqual({ control: 'enemy', confidence: 'medium', playAs: 'enemy', shipsAtDawn: 'stay', labelJa: '昼の空は敵（日本の水上機）', refs: US01.refs });
+    // retireEdge・retireForceJa は v0.6.2（dawn_air だけからは決まらない。retire の遊べる任務で config/dawn-data の getDawnAir が dawn_withdraw から入れる）
+    expect(a).toEqual({ control: 'enemy', confidence: 'medium', playAs: 'enemy', shipsAtDawn: 'stay', labelJa: '昼の空は敵（日本の水上機）', refs: US01.refs, retireEdge: null, retireForceJa: '', fleetGoneClears: false });
     expect(a.refs[0]).not.toBe(US01.refs[0]);
     // 争奪は遊べない任務なら何として遊ぶ予定でもよい
     for (const playAs of ['enemy', 'own', 'contested']) expect(dawnAirFromData(rec({ control: 'contested', play_as: playAs }), 'us_06', false).playAs).toBe(playAs);
@@ -152,7 +168,7 @@ describe('dawn_air の検査（v0.6.1。spec §6.6）', () => {
 describe('WorldDawn（v0.6.1。夜明けのラッチ）', () => {
   const boat = (): BoatState => ({ x: 0, y: 0, headingDeg: 0, speedMps: 0 }) as BoatState;
   function view(): DawnWorldView & { stepTimeS: number; atHome: boolean } {
-    return { stepTimeS: 0, atHome: false, grounded: false, boat: { state: boat(), sinking: false }, escort: null };
+    return { stepTimeS: 0, atHome: false, grounded: false, boat: { state: boat(), sinking: false }, escort: null, enemy: { withdraw: () => undefined } };
   }
   function fakeStrike(log: string[]): DawnStrike {
     return {
@@ -411,15 +427,23 @@ describe('Briefing の条件と危険（v0.6.1。spec §8.4）', () => {
     const s = buildWorldSetup(gameData, id);
     return briefingRows(getBriefingRecord(gameData, id), briefingNumbers(s), (e) => enemyNameJa(gameData, e), (h) => riskLabelJa(gameData, h)).map((r) => r.text);
   };
-  it('条件: 「夜明けまで N 秒」の後ろに（以後は空襲）／（昼の空は味方）。危険の最後に「夜明けの空襲」（敵の制空下の任務だけ）', () => {
-    expect(rowsOf('us_01')[5]).toBe('夜明けまで 220 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本');
+  it('条件: 「夜明けまで N 秒」の後ろに（以後は空襲）／（昼の空は味方）と夜明けの敵艦（v0.6.2: us_02 は敵が北へ退く、us_03 は大発が岸へ隠れる）。危険の最後に「夜明けの空襲」（敵の制空下の任務だけ）', () => {
+    expect(rowsOf('us_01')[5]).toBe('夜明けまで 180 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本');
     expect(rowsOf('jp_06')[5]).toBe('夜明けまで 160 秒（以後は空襲） ・ 燃料 16 gal ・ 魚雷 2 本');
-    expect(rowsOf('us_02')[5]).toBe('夜明けまで 150 秒（昼の空は味方） ・ 燃料 38 gal ・ 魚雷 4 本');
-    expect(rowsOf('us_03')[5]).toBe('夜明けまで 200 秒（以後は空襲） ・ 燃料 36 gal ・ 砲 40mm・37mm・20mm・12.7mm');
+    expect(rowsOf('us_02')[5]).toBe('夜明けまで 150 秒（昼の空は味方・敵は北へ退く） ・ 燃料 38 gal ・ 魚雷 4 本');
+    expect(rowsOf('us_03')[5]).toBe('夜明けまで 160 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm');
     expect(rowsOf('us_01')[4]).toBe('暴風、敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('jp_06')[4]).toBe('敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('us_02')[4]).not.toContain('夜明けの空襲');
     expect(rowsOf('us_03')[4]).toBe('敵艦艇の砲撃・衝突、敵沿岸砲、座礁、夜明けの空襲');
-    expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa('enemy'));
+    expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa({ playAs: 'enemy', shipsAtDawn: 'stay', retireEdge: null }));
+    // 出撃の seed の夜（左右反転の夜を含む）でも us_02 は北のまま（反転は東西だけ）
+    let mirroredNights = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const s = buildWorldSetup(gameData, 'us_02', { sortie: { missionId: 'us_02', seed, raid: false, choice: 0, stayHit: false, hard: false, historical: false } });
+      if (s.night.mirrored) mirroredNights++;
+      expect(briefingNumbers(s).dawnJa, `seed ${seed}`).toBe('（昼の空は味方・敵は北へ退く）');
+    }
+    expect(mirroredNights).toBeGreaterThan(0);
   });
 });

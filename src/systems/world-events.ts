@@ -9,7 +9,7 @@ export const DRIFT_INPUT: BoatInput = { headingDeg: NaN, speed01: 0 };
 export interface WorldEvents {
   /** 魚雷が命中（不発含む）。不発でなければ hits は増えている */
   onTorpedoHit(x: number, y: number, dud: boolean): void;
-  /** 駆逐艦の沈没演出が終わった（任務は続く。走っていた魚雷は外れとして確定済み） */
+  /** 隊の最後の沈没演出が終わった（任務は続く。走っている魚雷の外れの確定は終わり際の当たりの窓の後＝destroyer-step。v0.6.2 実機 1 回目） */
   onDestroyerSunk(): void;
   /** 大発を撃破した（v0.4.2。爆発と揺れ。命中スローは世界が掛けた） */
   onTargetDestroyed(x: number, y: number): void;

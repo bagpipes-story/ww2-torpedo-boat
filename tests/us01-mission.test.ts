@@ -10,7 +10,7 @@ const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typ
 const proto = (d: typeof gameData): Rec => (d.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_01')!['v0_1_prototype'] as Rec;
 
 describe('要人脱出（us_01、v0.4.4）', () => {
-  it('任務: Elco 77ft・魚雷・駆逐艦 1 隻（封鎖線 (600, 3000) 東向き）・僚艇・サンゴ礁・暴風・海域 6,000 × 6,000・出発 (3000, 5500)・帰投 (3000, 500)・夜明け 220 秒・燃料 40 gal', () => {
+  it('任務: Elco 77ft・魚雷・駆逐艦 1 隻（封鎖線 (600, 3000) 東向き）・僚艇・サンゴ礁・暴風・海域 6,000 × 6,000・出発 (3000, 5500)・帰投 (3000, 500)・夜明け 180 秒（v0.6.2 実機 1 回目。220 → 180）・燃料 40 gal', () => {
     const m = getPrototypeMission(gameData, 'us_01');
     expect(m.type).toBe('escort_vip');
     expect(m.playerBoatId).toBe('us_elco77');
@@ -21,7 +21,7 @@ describe('要人脱出（us_01、v0.4.4）', () => {
     expect(m.bounds).toEqual({ width: 6000, height: 6000 });
     expect(m.playerStart).toEqual({ x: 3000, y: 5500, headingDeg: 0 });
     expect([m.returnPoint.x, m.returnPoint.y, m.returnPoint.radiusM]).toEqual([3000, 500, 250]);
-    expect(m.durationS).toBe(220);
+    expect(m.durationS).toBe(180); // v0.6.2 実機 1 回目: 220 → 180 秒（「夜明けまでの時間を 40 秒縮めて」）
     expect(m.fuelAllotmentGal).toBe(40);
     expect(m.shallows.map((r) => [r.x, r.y, r.w, r.h])).toEqual([[2200, 1300, 1600, 600]]);
     expect(m.storm).toMatchObject({ sea_state: 5, start_south_y_min_m: 3600, start_south_y_max_m: 4600 });

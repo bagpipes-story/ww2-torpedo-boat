@@ -1,5 +1,6 @@
 // Mission: カメラ（追従・先読み・見張りズーム）、演出（爆発・揺れ）、帰投の呼びかけ、終了判定と Result への遷移。テレメトリと Result の組み立ては systems/mission-telemetry.ts（v0.4.0 で切り出し）。
-// 運動・魚雷・反撃・煙幕・被害・燃料は systems/mission-world.ts。終了理由の判定は core/mission-flow.ts（v0.3.0: 撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入って終わる）。
+// 運動・魚雷・反撃・煙幕・被害・燃料は systems/mission-world.ts。終了理由の判定は core/mission-flow.ts（v0.3.0: 撃沈・撃ち尽くしでは終わらず、帰投地点の輪に入って終わる）、
+// その材料と終わり際の魚雷待ち（v0.6.2 実機 1 回目）は systems/mission-end.ts。
 import Phaser from 'phaser';
 import {
   DEBUG_HISTORICAL,
@@ -29,7 +30,7 @@ import {
 import type { BoatTelemetry } from '../core/boat-motion';
 import { resetInput, type InputState } from '../core/input-state';
 import { AIM_ASSIST_LEAD_MARKER_TIME, AIM_ASSIST_NONE, aimAssistLevelFor } from '../core/progress';
-import { decideMissionEnd, updateReturnCalls, type EndCheck, type EndParams, type MissionEndReason } from '../core/mission-flow';
+import { updateReturnCalls, type MissionEndReason } from '../core/mission-flow';
 import { directSortie, isSortie, type Sortie } from '../core/sortie';
 import { clamp, degToRad } from '../core/units';
 import { ReturnPointView } from '../entities/return-point';
@@ -39,6 +40,7 @@ import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effec
 import { recordKpi } from '../systems/kpi-storage';
 import { leadMarkerEnabled, recordClear, recordSortie, sortiesDone } from '../systems/progress-storage';
 import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
+import { MissionEnd } from '../systems/mission-end';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
 
 export class MissionScene extends Phaser.Scene {
@@ -71,26 +73,15 @@ export class MissionScene extends Phaser.Scene {
   /** 輪の縁までの距離 m（Result 用。毎フレーム更新） */
   private ringEdgeM = 0;
   private ended = false;
-  /** 終了判定の材料。毎フレーム中身だけ書き換える（§7: 確保しない） */
-  private readonly endCheck: EndCheck = {
-    boatSinking: false,
-    atHome: false,
-    torpedoesRunning: false,
-    waitS: 0,
-    timeLeftS: 0,
-    destroyerSinkPlaying: false,
-    fuelEmpty: false,
-    stopped: true,
-    grounded: false,
-  };
-  private endParams: EndParams = { torpedoSettleMaxS: 0, adriftDelayS: MISSION_END_DELAY_MS / 1000 };
+  /** 終了判定と終わり際の魚雷待ち（systems/mission-end。出撃ごとに create で作る） */
+  private end!: MissionEnd;
 
   private readonly worldEvents: WorldEvents = {
     onTorpedoHit: (x, y, dud) => {
       playExplosion(this, x, y, dud);
       if (!dud) this.shakeCamera();
     },
-    // 撃沈では終わらない（帰投が目標）。終了判定は update の decideMissionEnd
+    // 撃沈では終わらない（帰投が目標。制空権下で敵艦隊がいなくなれば cleared）。終了判定は update の MissionEnd（systems/mission-end）
     onDestroyerSunk: () => {},
     onTargetDestroyed: (x, y) => {
       playExplosion(this, x, y, false);
@@ -108,14 +99,18 @@ export class MissionScene extends Phaser.Scene {
       playExplosion(this, x, y, false);
       this.shakeCamera();
     },
-    onBoatSunk: (reason) => this.endMission(reason),
+    // 沈没の演出が終わった: 走っている魚雷の決着（最大 torpedo_end_settle_s。沈み始めてから数える）を待ってから終える（v0.6.2 実機 1 回目）
+    onBoatSunk: (reason) => {
+      const r = this.end.boatSunk(this.world, reason);
+      if (r) this.endMission(r);
+    },
     onSlam: () => {
       // 波の叩きつけ: 水しぶきは世界が出す。ここは弱い揺れだけ（進行中の揺れは上書きしない）
       const z = this.cameras.main.zoom;
       this.cameras.main.shake(STORM_SLAM_SHAKE_MS, STORM_SLAM_SHAKE_INTENSITY / (z * z));
     },
     onGrounded: (x, y) => {
-      // 座礁: 小さな衝撃の輪と弱い揺れ。終了は decideMissionEnd（adriftDelayS 後）
+      // 座礁: 小さな衝撃の輪と弱い揺れ。終了は MissionEnd（adriftDelayS 後、走っている魚雷を最大 torpedo_end_settle_s 待って）
       playExplosion(this, x, y, true);
       const z = this.cameras.main.zoom;
       this.cameras.main.shake(HIT_SHAKE_MS, BOAT_HIT_SHAKE_INTENSITY / (z * z));
@@ -152,7 +147,7 @@ export class MissionScene extends Phaser.Scene {
     this.callFlags = 0;
     this.waitS = 0;
     this.startFireS = w.setup.start.fireAtStart ? -1 : NaN;
-    this.endParams = { torpedoSettleMaxS: w.returnPoint.torpedoSettleMaxS, adriftDelayS: MISSION_END_DELAY_MS / 1000 };
+    this.end = new MissionEnd(w.returnPoint, MISSION_END_DELAY_MS / 1000, w.setup.dawnAir.fleetGoneClears);
 
     // カメラ: 既定ズーム（docs/02 §6.10）× 描画スケール。追従は少し遅らせ、進行方向に先読みする。見張り（右中ボタン）で zoom_min まで引く
     this.zoomDefault = world.camera_zoom_default;
@@ -197,6 +192,7 @@ export class MissionScene extends Phaser.Scene {
     const realDt = delta / 1000;
     const w = this.world;
 
+    this.end.holdFire(w); // 終わり際の窓の間は撃たない（入力の消費の前に）
     w.updateFrame(realDt);
     if (this.startFireS < 0 && w.damage.fireLeftS <= 0) this.startFireS = w.stepTimeS; // NaN < 0 は false
     this.updateZoom();
@@ -215,17 +211,7 @@ export class MissionScene extends Phaser.Scene {
     this.refreshReturnState(realDt);
     this.refreshTelemetry();
 
-    const c = this.endCheck;
-    c.boatSinking = w.boat.sinking;
-    c.atHome = w.atHome;
-    c.torpedoesRunning = w.torpedoesRunning;
-    c.waitS = this.waitS;
-    c.timeLeftS = this.timeLeftS;
-    c.destroyerSinkPlaying = w.enemy.sinkPlaying;
-    c.fuelEmpty = w.fuel.empty;
-    c.stopped = w.band === 'stop';
-    c.grounded = w.grounded;
-    const reason = decideMissionEnd(c, this.endParams);
+    const reason = this.end.step(w, this.waitS, this.timeLeftS);
     if (reason) this.endMission(reason);
   }
 
@@ -297,7 +283,7 @@ export class MissionScene extends Phaser.Scene {
     if (this.ended) return;
     this.ended = true;
     const w = this.world;
-    // まだ走っている魚雷は外れとして記録し、Result の集計から漏れないようにする（帰投は最大 torpedo_settle_max_s 待った後）
+    // まだ走っている魚雷は外れとして記録し、Result の集計から漏れないようにする（帰投は最大 torpedo_settle_max_s、ほかは torpedo_end_settle_s 待った後）
     w.resolveRemainingAsMisses();
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const result = buildMissionResult(reason, w, data, this.elapsedS, this.ringEdgeM, this.startFireS);
@@ -306,7 +292,7 @@ export class MissionScene extends Phaser.Scene {
     if (w.destroyers && !this.sortie.historical && recordsHitKpi(data, this.sortie.missionId)) result.kpi = recordKpi(data, result.shots);
     // 終えた任務の回数（v0.5.2。見越し点マーカーの解放）: Result まで行った任務だけ、ここで 1 回だけ +1
     recordSortie();
-    // 帰投で終えた任務（v0.6.0。キャンペーンの解放の条件）: 帰投したときだけ、任務ごとに 1 回
+    // 帰投で終えた任務（v0.6.0。キャンペーンの解放の条件）: 帰投したとき（敵艦隊なし＝cleared も。v0.6.2 実機 1 回目）だけ、任務ごとに 1 回
     if (result.returned) recordClear(this.sortie.missionId);
     this.scene.start(SCENE_KEYS.result, result);
   }

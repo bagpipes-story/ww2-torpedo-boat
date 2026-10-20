@@ -287,7 +287,7 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
     durationS: s.durationS,
-    dawnJa: dawnConditionJa(s.dawnAir.playAs),
+    dawnJa: dawnConditionJa(s.dawnAir, s.night.mirrored),
     fuelGal: s.fuelAllotmentGal,
     torpedoes: s.torpedoCapacity,
     gunsLabel: s.guns ? s.guns.label : '',

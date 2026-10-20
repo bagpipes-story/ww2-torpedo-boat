@@ -1,5 +1,5 @@
 // 速力・速力段・舵の HUD（右下）と上中央の 3 行目（敵影と発見（雨））。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
-// 2 行目は ui/mission-line.ts（v0.4.2 で切り出し）、文と表は ui/hud-lines.ts（v0.4.1 で切り出し）。
+// 2 行目は ui/mission-line.ts（v0.4.2 で切り出し）、文と表は ui/hud-lines.ts（v0.4.1 で切り出し）。左上 2 段目の夜明けの時計は ui/dawn-clock.ts（v0.6.2 実機 1 回目）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -21,7 +21,9 @@ import {
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
-import { DETECT_RANGE_STEP_M, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
+import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
+import { shipsGoneStatusJa } from './dawn-lines';
+import { DawnClock } from './dawn-clock';
 import { MissionLine } from './mission-line';
 import { STORM_INSIDE } from '../core/storm';
 import { SHALLOW_INSIDE } from '../core/shallows';
@@ -37,6 +39,8 @@ export class BoatHud {
   private readonly rudderMarker: Phaser.GameObjects.Image;
   /** 上中央 2 行目（ui/mission-line.ts。v0.4.2 で切り出し） */
   private readonly missionLine: MissionLine;
+  /** 左上 2 段目の夜明けの時計（v0.6.2 実機 1 回目） */
+  private readonly clock: DawnClock;
   private readonly statusText: Phaser.GameObjects.Text;
   private readonly barCenterX: number;
   private lastStatus = -1;
@@ -78,6 +82,7 @@ export class BoatHud {
       .setDepth(DEPTH.hud);
 
     this.missionLine = new MissionLine(scene);
+    this.clock = new DawnClock(scene);
     // 上中央 3 行目: 敵影と発見状態（docs/02 §6.5）
     this.statusText = scene.add
       .text(GAME_WIDTH / 2, HUD_MARGIN + HUD_STATUS_OFFSET_Y, '', hudTextStyle(HUD_FONT_STATUS_PX))
@@ -113,8 +118,9 @@ export class BoatHud {
       this.rudderMarker.setX(x);
     }
     this.missionLine.refresh(t, nowMs);
-    // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」に固定
-    const status = t.destroyerSunk ? STATUS_SUNK : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
+    this.clock.refresh(t);
+    // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」、夜明けに退いて狙う艦がいなくなった後（v0.6.2）は「東京急行は北へ去った ・ 狙う艦なし」に固定
+    const status = t.destroyerSunk ? STATUS_SUNK : t.dawn.shipsGone ? STATUS_GONE : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
     // 雨: 艦と艇を結ぶ線が暴風の帯にかかっている（発見距離・視程が下がる。v0.3.4）
     const rain = t.stormLos && !t.destroyerSunk;
@@ -124,6 +130,8 @@ export class BoatHud {
       this.lastRain = rain;
       if (status === STATUS_SUNK) {
         this.statusText.setText('駆逐艦を撃沈').setColor(HUD_COLOR_STRONG);
+      } else if (status === STATUS_GONE) {
+        this.statusText.setText(shipsGoneStatusJa(t.dawn)).setColor(HUD_COLOR_STRONG);
       } else {
         this.statusText
           .setText(`${STATUS_LABEL[status]!} ・ 見つかる距離 ${detectStep * DETECT_RANGE_STEP_M} m${rain ? '（雨）' : ''}`)
@@ -139,6 +147,7 @@ export class BoatHud {
     this.rudderBar.destroy();
     this.rudderMarker.destroy();
     this.missionLine.destroy();
+    this.clock.destroy();
     this.statusText.destroy();
   }
 }

@@ -17,7 +17,7 @@ interface FakeView extends DawnWorldView {
 }
 
 function view(): FakeView {
-  return { stepTimeS: 0, atHome: false, grounded: false, boat: { state: { x: 0, y: 0, headingDeg: 0, speedMps: 0 } as BoatState, sinking: false }, escort: null };
+  return { stepTimeS: 0, atHome: false, grounded: false, boat: { state: { x: 0, y: 0, headingDeg: 0, speedMps: 0 } as BoatState, sinking: false }, escort: null, enemy: { withdraw: () => undefined } };
 }
 
 function fakeStrike(log: string[]): DawnStrike {

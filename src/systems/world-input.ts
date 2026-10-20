@@ -2,17 +2,12 @@
 // v0.6.1: updateFrame の入力の段（consumeFrameInput）もここへ移した（中身は v0.6.0 のまま）。
 import type { BoatState } from '../core/boat-motion';
 import type { DamageState } from '../core/gunnery';
-import type { InputState } from '../core/input-state';
+import { discardFireInput, type InputState } from '../core/input-state';
 import { startSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import type { MissionWorld } from './mission-world';
 import type { TorpedoLauncher } from './torpedo-launcher';
 
-/** 発射要求を捨てる（駆逐艦が沈み始めた後・帰投地点の輪の中） */
-export function discardFireInput(input: InputState): void {
-  input.fireTap = false;
-  input.fireSalvoSpreadDeg = NaN;
-  input.fireSalvoCount = 0;
-}
+export { discardFireInput }; // 発射要求を捨てる（core/input-state へ移した。v0.6.2 実機 1 回目）
 
 /** HUD からの発射要求を消費する。タップは 1 本、一斉は本数（v0.4.8。0 なら残弾すべて）を扇状に（間隔は launcher が持つ） */
 export function consumeFireInput(input: InputState, launcher: TorpedoLauncher, boat: BoatState, remaining: number): void {
@@ -61,8 +56,8 @@ export function consumeFrameInput(w: MissionWorld, realDt: number): void {
   if (w.boat.sinking) return;
   const g = w.destroyers;
   const boat = w.boat.state;
-  // 駆逐艦がすべて沈み始めた後・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
-  if (!g || g.allSinking || w.atHome) discardFireInput(w.input);
+  // 駆逐艦がすべて沈み始めたか退いた後（v0.6.2）・帰投地点の輪の中・魚雷を使わない任務では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。煙幕は漂流中でも使える
+  if (!g || g.allOut || w.atHome) discardFireInput(w.input);
   else consumeFireInput(w.input, w.launcher, boat, w.torpedoes.remaining);
   w.extinguishHeldS = consumeSmokeInput(w.input, w.smoke, w.smokeParams, w.damage, w.damageParams.extinguishHoldS, w.extinguishHeldS, realDt, w.extinguishHoldScale);
   // 一斉発射の見越しは最寄りの浮いている艦（すべて沈んでいれば 1 隻目。発射はしない）
