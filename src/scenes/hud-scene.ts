@@ -63,6 +63,7 @@ import { HpBar } from '../ui/hp-bar';
 import { EdgeMarker } from '../ui/edge-marker';
 import { DawnBanner } from '../ui/dawn-banner';
 import { FuelGauge } from '../ui/fuel-gauge';
+import { gunButtonLabel, gunButtonReloadN } from '../ui/pt-gun-lines';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
@@ -89,6 +90,7 @@ export class HudScene extends Phaser.Scene {
   private identifyButton?: HoldButton;
   private lastIdentifyN = -1;
   private lastHoldTenths = -1;
+  private lastReloadN = 0; // 射撃ボタンの弾倉交換の残り秒（0 は交換中でない。v0.6.3 実機 1 回目のレビュー ux-2: 赤い線の下で弾が止まる訳が見えなかった）
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
   /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
@@ -116,6 +118,7 @@ export class HudScene extends Phaser.Scene {
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
     this.lastIdentifyN = -1; // 再開で前回の値を引きずらない
     this.lastHoldTenths = -1;
+    this.lastReloadN = 0;
 
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
@@ -259,6 +262,12 @@ export class HudScene extends Phaser.Scene {
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;
+    const reloadN = this.gunButton ? gunButtonReloadN(t) : 0; // 米PT の任務の 13mm だけ（大発の任務は弾倉なしで 0 のまま）
+    if (reloadN !== this.lastReloadN) {
+      this.lastReloadN = reloadN;
+      this.gunButton?.setLabel(gunButtonLabel(reloadN));
+      this.gunButton?.setEnabled(reloadN === 0); // 薄く（押したままでよい。交換が済めば撃ち続ける）
+    }
     if (this.smokeButton) {
       // 展開中 / 冷却の残り秒 / 使える。整数が変わったときだけ文字が変わる
       this.smokeButton.setLabel(t.smokeLeftS > 0 ? '煙幕\n展開中' : t.smokeCooldownS > 0 ? `煙幕\n${Math.ceil(t.smokeCooldownS)}` : '煙幕');

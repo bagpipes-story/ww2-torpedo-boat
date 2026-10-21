@@ -24,7 +24,7 @@ export const PT_OPEN_FIRE_MIN_S = 2.0;
 export const PT_MAX_COUNT = 4;
 /** 待つ PT の位置取りの角の数の上限（tactics.station_rel_deg。航過ごとに順に使う） */
 export const PT_STATION_REL_MAX = 4;
-/** 13mm を受けた PT の死傷・引火の確率の上限（1 命中ごとに引く。これより高いと撃ち返しが強すぎる。和は 1 未満） */
+/** 13mm を受けた PT の死傷・引火の確率の上限（1 命中ごとに引く。これより高いと撃ち返しが強すぎる。和は 0.4 以下で 1 に届かない） */
 export const PT_UNDER_FIRE_CHANCE_MAX = 0.2;
 
 export interface PtDataRecord {
@@ -166,7 +166,7 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
   const u = r.under_fire;
   if (!(u.retreat_hp > 0 && u.retreat_hp < ctx.hullHp)) bad(`0 < under_fire.retreat_hp < PT の HP（${ctx.hullHp}。HP だけでは沈まない）`);
   const chanceOk = (x: number): boolean => x >= 0 && x <= PT_UNDER_FIRE_CHANCE_MAX;
-  if (!(chanceOk(u.casualty_chance) && chanceOk(u.fire_chance) && u.casualty_chance + u.fire_chance < 1)) bad(`under_fire.casualty_chance・fire_chance は 0〜${PT_UNDER_FIRE_CHANCE_MAX}（和は 1 未満）`);
+  if (!(chanceOk(u.casualty_chance) && chanceOk(u.fire_chance))) bad(`under_fire.casualty_chance・fire_chance は 0〜${PT_UNDER_FIRE_CHANCE_MAX}`); // 和 < 1 は上限で決まる（レビュー F8）
   const gun = gunParamsFromData(g);
   const sq = (x: number): number => x * x;
   const base: PtParams = {

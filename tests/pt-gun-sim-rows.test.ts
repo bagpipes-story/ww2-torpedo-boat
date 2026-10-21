@@ -18,7 +18,7 @@ describe('T-14 の 13mm を撃つ遊び方の模擬（v0.6.3 実機 1 回目、s
     expect(rows.flatMap((r) => ptGunCalibrationMisses(r, run.cell, run.setup).map((m) => `${r.policy}: ${m}`))).toEqual([]);
     for (const r of rows) {
       const c = run.cell(r.policy);
-      expect([c.maxPassing, c.gunBeyond, c.hpSinkPt, c.timeoutPct, c.flashFirstPct], r.policy).toEqual([1, 0, 0, 0, 0]); // 見つかってから撃つので閃光が最初の発見にはならない
+      expect([c.maxPassing, c.gunBeyond, c.timeoutPct, c.flashFirstPct], r.policy).toEqual([1, 0, 0, 0]); // 見つかってから撃つので閃光が最初の発見にはならない
       expect(c.heldMinM, r.policy).toBeGreaterThanOrEqual(PT_HELD_MIN_M);
       expect(c.ptSunkPct, r.policy).toBeLessThanOrEqual(PT_GUN_SUNK_NIGHT_MAX);
     }

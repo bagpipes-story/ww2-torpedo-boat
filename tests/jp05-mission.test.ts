@@ -169,6 +169,9 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect([r.date, r.place, r.titleJa]).toEqual(['1944-02-18', 'ラバウル沖（セント・ジョージ海峡）', '鹵獲艇の哨戒']);
     expect(r.noteJa).toContain('ゲーム上の想定');
     expect(r.noteJa).toContain('T-14で代用');
+    // 機銃の句は数字を続けない（レビュー ux-9: 「13mm1挺」は「13mm1」と読めた。条件の行は「13mm機銃1挺」）
+    expect(r.noteJa).toContain('T-14型の機銃は13mmが1挺（25mmの艇もあった）');
+    expect(r.noteJa).not.toMatch(/mm\d/);
     expect(String(byId('jp_05')['historical_note'])).toContain('抜粋のみ・本文未読');
     expect(byId('jp_05')['playable_from']).toBe('v0.6.3');
     expect(byId('jp_01')['playable_from']).toBe('v0.6.4');
@@ -216,13 +219,20 @@ describe('jp_05 の終わりと得点（v0.6.3）', () => {
     const hidUntilDawn = computeScore({ ...base, afterDawn: true, fuelLeftPct: 43 }, sp).total;
     const sunk = computeScore({ ...base, returned: false, objectiveDone: false, detections: 2, crewAlive: 2 }, sp).total;
     expect([unseen, dodged, hidUntilDawn, sunk]).toEqual([1460, 1129, 1073, 0]);
-    // v0.6.3 実機 1 回目: 13mm で沈めた米PT 1 隻 200 点（撃退は点なし）。見つからずに帰投 > 撃ち返して 1 隻沈めて帰投 > 転舵でかわして帰投 > 2 隻沈めて沈没（生還が先）
-    expect(sp.killPoints['us_pt_enemy']).toBe(200);
+    // v0.6.3 実機 1 回目: 13mm で沈めた米PT 1 隻 140 点（撃退は点なし）。見つからずに帰投 > 撃ち返して 1 隻沈めて帰投 > 転舵でかわして帰投 > 2 隻沈めて沈没（生還が先）
+    expect(sp.killPoints['us_pt_enemy']).toBe(140);
     const shotOne = computeScore({ ...base, detections: 1, fuelLeftPct: 43, crewAlive: 6, kills: 1, killEnemyId: 'us_pt_enemy' }, sp).total;
     const sunkTwoKills = computeScore({ ...base, returned: false, objectiveDone: false, detections: 2, crewAlive: 2, kills: 2, killEnemyId: 'us_pt_enemy' }, sp).total;
-    expect([shotOne, sunkTwoKills]).toEqual([1329, 400]);
+    expect([shotOne, sunkTwoKills]).toEqual([1269, 280]);
     expect(unseen > shotOne && shotOne > dodged && dodged > sunkTwoKills).toBe(true);
-    expect(sp.killPoints['us_pt_enemy']! < sp.evadeByType['patrol_and_evade']!).toBe(true); // 見つからずに帰るのがいちばん上（撃てば閃光で見つかる）
+    // 見つからずに帰るのがいちばん上（撃てば閃光で見つかる）: 隊を全部沈めて帰っても回避の点に届かない（レビュー F1: 200 点では 2 隻で 400 > 回避 300 となり、
+    // 模擬の 2 隻撃沈の帰投 1,528〜1,566 点が見つからずに帰投の最高 1,471 点を超えた）。同じ燃料・乗員なら全部沈めた帰投 < 見つからずに帰投
+    const ptCount = buildWorldSetup(gameData, 'jp_05').ptBoats!.count;
+    expect(ptCount * sp.killPoints['us_pt_enemy']!).toBeLessThan(sp.evadeByType['patrol_and_evade']!);
+    const allKilledHome = computeScore({ ...base, detections: 1, kills: ptCount, killEnemyId: 'us_pt_enemy' }, sp).total;
+    expect([allKilledHome, allKilledHome < unseen]).toEqual([1440, true]);
+    // 模擬の最良の夜（燃料 66% で 2 隻沈めて無傷で帰投）も、見つからずに帰投の最良（燃料 71%）に届かない
+    expect(computeScore({ ...base, detections: 1, fuelLeftPct: 66, kills: 2, killEnemyId: 'us_pt_enemy' }, sp).total).toBeLessThan(computeScore({ ...base, fuelLeftPct: 71 }, sp).total);
   });
 });
 

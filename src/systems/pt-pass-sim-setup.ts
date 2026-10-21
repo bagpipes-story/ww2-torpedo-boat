@@ -107,15 +107,16 @@ const row = (policy: PtNoGunPolicy, star: boolean, b: Partial<Omit<PtCalibration
 /**
  * spec §F.4: 1 何もしないと痛い、2 転舵で助かる、3 遅い反応でも効く、4 暗さが効く、5 罠にしない、6 燃料は脅威ではない（7 の不変は ptInvariantMisses がどの行にも見る）。
  * v0.6.3 実機 1 回目（「簡単すぎる・PT が執拗でない・単調」）の帯（spec r1 §G.3）: 何もしないと沈む（巡航 18〜40%・静音 30〜60%）・HUD どおりの転舵は HP 12〜24 で沈まない・
- * 航過は 1 夜 4.5 回以上・赤い線は前と反対の舷から半分以上（挟み撃ち）・2 秒遅れの転舵は 4〜22% 沈む。proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（N 400・seed 1〜400）
+ * 航過は 1 夜 4.5 回以上・2 秒遅れの転舵は 4〜22% 沈む。赤い線が前と反対の舷から来る割合（挟み撃ち）は巡航 0.75 以上・赤い線で全速の転舵 0.65 以上（レビュー F2: 0.5 は挟み撃ちを
+ * 外しても通った。seed 1〜200 で 位置取りなし → あり が 巡航 0.49 → 0.88・全速の転舵 0.56 → 0.74）。proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（N 400・seed 1〜400）
  */
 export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
-  row('cruise', true, { detectedPct: [95, 100], sunkPct: [18, 40], hpMean: [35, 46], homePct: [50, 100] }, [100, 40.5, 26.3, 74]),
+  row('cruise', true, { detectedPct: [95, 100], sunkPct: [18, 40], hpMean: [35, 46], homePct: [50, 100], altMin: 0.75 }, [100, 40.5, 26.3, 74]),
   row('silent', true, { detectedPct: [65, 92], sunkPct: [30, 60], hpMean: [28, 42], homePct: [35, 100] }, [78, 36.1, 45.0, 55]),
   row('full', false, { firstDetectMedM: [1500, Infinity], sunkPct: [0, 8] }, [100, 24.0, 3.3, 97]),
   row('zigzag', false, {}, [100, 35.1, 19.3, 81]),
   row('turn_cruise', true, { sunkPct: [0, 6], hpVsCruise: 0.6 }, [100, 20.9, 1.8, 98]),
-  row('react_full', false, { sunkPct: [0, 4], hpMean: [12, 24], passesMin: 4.5, altMin: 0.5 }, [100, 18.6, 1.5, 99]),
+  row('react_full', false, { sunkPct: [0, 4], hpMean: [12, 24], passesMin: 4.5, altMin: 0.65 }, [100, 18.6, 1.5, 99]),
   row('dodge_silent', true, { sunkPct: [0, 5], hpMean: [12, 24], passesMin: 4.5 }, [78, 18.2, 1.0, 99]),
   row('turn_silent', false, {}, [78, 23.5, 13.5, 87]),
   row('late_turn', true, { sunkPct: [4, 22], hpMean: [26, 40] }, [100, 33.0, 10.3, 90]),
@@ -123,7 +124,7 @@ export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
   row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 10], homeBeforeDawnPct: [75, 100] }, [39, 9.2, 5.3, 95]),
   row('meet', false, { sunkPct: [0, 15] }, [100, 30.2, 3.5, 97]),
   row('stop_dawn', false, { detectedPct: [0, 5], homePct: [100, 100], afterDawnPct: [100, 100] }, [0, 0, 0, 100]),
-  row('edge_flee', false, { hpMean: [40, 50], adriftPct: [0, 10], homePct: [0, 100] }, [100, 48.4, 81.8, 18]),
+  row('edge_flee', false, { hpMean: [40, 50], adriftPct: [0, 10], homePct: [0, 100] }, [100, 47.3, 70.8, 29]),
 ];
 
 /** 帯（spec §F.4・r1 §G.3）と不変（ptInvariantMisses）を外れた項目（空なら合格） */
@@ -143,7 +144,7 @@ export function ptCalibrationMisses(r: PtCalibrationRow, c: PtCell, s: PtSimSetu
 /**
  * 不変（spec §F.4 の 7・r1 §G.5。どの遊び方も）: 予告から初弾 ≥ open_fire_s・航過は同時に 1 隻・射程と視程の外から撃たない・1 回の航過 ≤ 弾数 で × 被害 < 艇の HP・
  * AI が終えた航過は予告から 2 ステップより長い（v0.6.3 の直し。13mm で沈んで閉じた航過は onPassEnd を呼ばないので入らない）・
- * 待つ PT は hold_off_m の外で待ち始めたら PT_HELD_MIN_M より内へ来ない・13mm は視程と射程の外へ撃たない・HP だけで沈む PT は無い（v0.6.3 実機 1 回目）
+ * 待つ PT は hold_off_m の外で待ち始めたら PT_HELD_MIN_M より内へ来ない・13mm は視程と射程の外へ撃たない（v0.6.3 実機 1 回目。「HP だけで沈む PT は無い」F11 は数えても外れようがないので数えない＝レビュー R4。守りは pt-data の retreat_hp < hull_hp の検査と tests/pt-damage）
  */
 export function ptInvariantMisses(c: PtCell, s: PtSimSetup): string[] {
   const out: string[] = [];
@@ -155,7 +156,6 @@ export function ptInvariantMisses(c: PtCell, s: PtSimSetup): string[] {
   if (c.passes > 0 && !(c.minPassS > 2 * s.stepS + 1e-9)) out.push(`予告から ${c.minPassS.toFixed(3)} 秒で終わった航過（2 ステップより長く）`);
   if (!(c.heldMinM >= PT_HELD_MIN_M)) out.push(`待つ PT の最接近 ${c.heldMinM.toFixed(0)} m（${PT_HELD_MIN_M} m 以上）`);
   if (c.gunBeyond > 0) out.push(`13mm が視程か射程の外へ ${c.gunBeyond} 回`);
-  if (c.hpSinkPt > 0) out.push(`HP だけで沈んだ PT ${c.hpSinkPt} 隻`);
   return out;
 }
 

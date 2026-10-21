@@ -54,8 +54,8 @@ export interface PtSection {
   seen: Uint8Array;
   detected: boolean;
   holdLeftS: number;
-  /** 最後に見た艇の位置・速度（game m/s）とそれからの体感秒（見えていない間はここから推す） */
-  lkX: number; lkY: number; lkVx: number; lkVy: number; lkAgeS: number;
+  /** 最後に見た艇の位置・速度（game m/s）とそれからの体感秒（見えていない間はここから推す）、そのときの艇首の向き deg（止まった艇の位置取りの基準。レビュー R3） */
+  lkX: number; lkY: number; lkVx: number; lkVy: number; lkAgeS: number; lkHeadingDeg: number;
   /** 航過中の PT（−1 は無し）、次の航過を固められるまでの体感秒、固めたときのかわす向き（−1 左・0 そのまま・+1 右）と逃げる針路 deg（HUD の「北西へ転舵」） */
   owner: number; gapLeftS: number; dodge: number; escapeDeg: number;
   /**
@@ -145,7 +145,7 @@ export function createPtSection(p: PtParams, shellPoolSize: number): PtSection {
   }
   return {
     boats, shells: createShells(shellPoolSize), seen: new Uint8Array(p.count), detected: false, holdLeftS: 0,
-    lkX: 0, lkY: 0, lkVx: 0, lkVy: 0, lkAgeS: 0, owner: -1, gapLeftS: 0, dodge: 0, escapeDeg: NaN,
+    lkX: 0, lkY: 0, lkVx: 0, lkVy: 0, lkAgeS: 0, lkHeadingDeg: 0, owner: -1, gapLeftS: 0, dodge: 0, escapeDeg: NaN,
     passHits: 0, passSeq: 0, seqPending: false, lastPassHits: 0, lastPassFired: false, lastPassBoat: -1, commitAtS: NaN, aim: { x: 0, y: 0 },
     passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, firstDetectM: NaN, lostContacts: 0, minWarnS: Infinity, closest2: Infinity, out: 0, leftAtDawn: false,
     ownerFlank: 1, held: new Uint8Array(p.count), gunHits: 0, retired: 0, sunk: 0, flashFirst: false, gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1,

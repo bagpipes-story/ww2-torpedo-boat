@@ -13,7 +13,7 @@ import type { GunBatteryParams, GunEvents } from './gun-battery';
 import { applyShellHit, createDamageState, stepDamage, type DamageParams, type HitOutcome } from './gunnery';
 import { insideRing, type ReturnPoint } from './mission-flow';
 import { fixedNight, rollNight, type NightBlock } from './night';
-import { PT_FATE_SUNK, PT_GUN_SEED_OFFSET, PT_PASS, PT_RUN_IN, PT_SEED_OFFSET, PT_SUNK, createPtSection, stepPtSection, threatIndex, type PtCheck, type PtEvents } from './pt-boats';
+import { PT_GUN_SEED_OFFSET, PT_PASS, PT_RUN_IN, PT_SEED_OFFSET, createPtSection, stepPtSection, threatIndex, type PtCheck, type PtEvents } from './pt-boats';
 import { hitPt } from './pt-damage';
 import { ptParamsAtNight, type PtParams } from './pt-data';
 import { createPtGun, stepPtGun } from './pt-gun';
@@ -53,8 +53,11 @@ export interface PtTrial {
   detected: boolean; firstDetectM: number; lostContacts: number; passes: number; firedPasses: number; cleanPasses: number; shots: number; hits: number; hpLost: number; fuelPct: number;
   /** 不変の確かめ: 予告から初弾の最短秒、同時に航過中の PT の最大、有効射程・艇の視程の外からの発射、1 回の航過の最大命中、予告から航過の終わりまでの最短秒（v0.6.3 の直し: 一瞬で終わる航過が無い） */
   minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number; minPassS: number;
-  /** 13mm（v0.6.3 実機 1 回目）: 撃った・PT に当てた・撃退・撃沈の数、最初に見つかったのが閃光、視程か射程の外へ撃ったステップ、HP だけで沈んだ PT（どれも撃たなければ 0） */
-  gunShots: number; gunHits: number; ptRetired: number; ptSunk: number; flashFirst: boolean; gunBeyond: number; hpSinkPt: number;
+  /**
+   * 13mm（v0.6.3 実機 1 回目）: 撃った・PT に当てた・撃退・撃沈の数、最初に見つかったのが閃光、視程か射程の外へ撃ったステップ（どれも撃たなければ 0）。
+   * 「HP だけでは沈まない」（F11）は数えない（レビュー R4: 沈むのは引火の 1 か所だけで、数えても外れようがない。守りは validator の retreat_hp < hull_hp と tests/pt-damage）
+   */
+  gunShots: number; gunHits: number; ptRetired: number; ptSunk: number; flashFirst: boolean; gunBeyond: number;
   /** 挟み撃ち: 赤い線の PT の舷が前の赤い線と替わった数と比べた数（2 本目から）・赤い線の間の体感秒の和、待つ PT（hold_off_m の外で待ち始めた）の艇への最接近 m（無ければ Infinity） */
   flankAlt: number; flankPairs: number; commitGapSumS: number; heldMinM: number;
 }
@@ -87,7 +90,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
   const out: PtTrial = {
     end: 'timeout', timeS: 0, afterDawn: false, detected: false, firstDetectM: NaN, lostContacts: 0, passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, hpLost: 0, fuelPct: 0,
     minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, worstPassHits: 0, minPassS: Infinity,
-    gunShots: 0, gunHits: 0, ptRetired: 0, ptSunk: 0, flashFirst: false, gunBeyond: 0, hpSinkPt: 0, flankAlt: 0, flankPairs: 0, commitGapSumS: 0, heldMinM: Infinity,
+    gunShots: 0, gunHits: 0, ptRetired: 0, ptSunk: 0, flashFirst: false, gunBeyond: 0, flankAlt: 0, flankPairs: 0, commitGapSumS: 0, heldMinM: Infinity,
   };
   const departS = pol.nextRange(0, PT_PLAY.departMaxS);
   const speedMps = (k: PtSimSpeed): number => (k === 'silent' ? s.boat.silentMaxMps : k === 'cruise' ? s.boat.speedCruiseMps : Infinity);
@@ -236,13 +239,11 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
     out.end = sinking ? 'sunk' : atHome ? 'home' : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout') break;
   }
-  let hpSinkPt = 0;
-  for (let i = 0; i < q.boats.length; i++) if (q.boats[i]!.phase === PT_SUNK && q.boats[i]!.fate !== PT_FATE_SUNK) hpSinkPt++;
   Object.assign(out, {
     timeS: t, afterDawn: out.end === 'home' && c.dawn, detected: !Number.isNaN(q.firstDetectM), firstDetectM: q.firstDetectM, lostContacts: q.lostContacts,
     passes: q.passes, firedPasses: q.firedPasses, cleanPasses: q.cleanPasses, shots: q.shots, hits: q.hits, minWarnS: q.minWarnS,
     hpLost: sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, fuelPct: (fuel.gal / s.fuelGal) * 100,
-    gunShots: gun ? gun.battery.shots : 0, gunHits: q.gunHits, ptRetired: q.retired, ptSunk: q.sunk, flashFirst: q.flashFirst, hpSinkPt, heldMinM: Math.sqrt(heldMin2),
+    gunShots: gun ? gun.battery.shots : 0, gunHits: q.gunHits, ptRetired: q.retired, ptSunk: q.sunk, flashFirst: q.flashFirst, heldMinM: Math.sqrt(heldMin2),
   });
   return out;
 }

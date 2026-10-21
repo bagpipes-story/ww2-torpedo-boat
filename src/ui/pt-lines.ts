@@ -138,7 +138,9 @@ function hitsJa(r: PtResult): string {
 function gunResultJa(r: PtResult): string {
   if (!r.gunEnabled) return '';
   if (r.gunShots === 0) return '13mm は撃たなかった';
-  return `13mm 射撃 ${r.gunShots} 発 ・ 命中 ${r.gunHits}（${Math.round((100 * r.gunHits) / r.gunShots)}%） ・ 撃退 ${r.retired} ・ 撃沈 ${r.sunk}`;
+  // 当てたのに 0% と出さない（レビュー ux-4: 240 発で 1 発は「命中 1（0%）」と読めた）
+  const pct = (100 * r.gunHits) / r.gunShots;
+  return `13mm 射撃 ${r.gunShots} 発 ・ 命中 ${r.gunHits}（${r.gunHits > 0 && pct < 1 ? '1% 未満' : `${Math.round(pct)}%`}） ・ 撃退 ${r.retired} ・ 撃沈 ${r.sunk}`;
 }
 
 /**

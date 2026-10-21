@@ -40,7 +40,7 @@ export const PT_GUN_CALIBRATION: readonly PtGunCalibrationRow[] = [
   row('turn_shoot', true, { sunkPct: [0, 5], gunHits: [5, 14], hitNightPct: [90, 100], retiredPct: [12, 40], ptSunkPct: [0, 8] }, [['hpMean', 'dodge_silent', -Infinity, -0.5]], [0.8, 16.5, 9.1, 22.3, 2.3]),
   row('react_shoot', false, { ptSunkPct: [0, 8] }, [['hpMean', 'react_full', -Infinity, 0]], [1.0, 18.0, 5.4, 13.0, 1.0]),
   row('late_shoot', false, {}, [['sunkPct', 'late_turn', -Infinity, 1]], [8.8, 31.6, 7.8, 22.0, 3.0]),
-  row('stop_shoot', true, { ptSunkPct: [2, 16] }, [['sunkPct', 'turn_shoot', 15, Infinity], ['hpMean', 'turn_shoot', 6, Infinity]], [25.5, 30.1, 26.2, 67.5, 10.0]),
+  row('stop_shoot', true, { ptSunkPct: [2, 16] }, [['sunkPct', 'turn_shoot', 15, Infinity], ['hpMean', 'turn_shoot', 6, Infinity]], [28.5, 30.1, 26.3, 68.0, 9.5]),
   row('fight', false, { sunkPct: [0, 8], ptSunkPct: [0, 10], homePct: [85, 100] }, [], [2.8, 20.3, 11.1, 27.3, 4.5]),
   row('silent_shoot', false, { ptSunkPct: [0, 12] }, [['sunkPct', 'silent', -Infinity, -8]], [27.3, 31.0, 18.9, 47.3, 5.5]),
   row('dark_shoot', true, { flashFirstPct: [8, 35], sunkPct: [0, 6] }, [['detectedPct', 'dark_stop', -5, 5]], [0.5, 7.2, 5.6, 13.3, 3.0]),

@@ -65,7 +65,7 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect(() => ptSimSetup(gameData, 'jp_05', { retreatHp: 100 })).toThrow(/retreat_hp/); // HP だけで沈む
     expect(() => ptSimSetup(gameData, 'jp_05', { stationM: 600 })).toThrow(/station_m/);
     expect(() => ptSimSetup(gameData, 'jp_05', { magRounds: 0 })).toThrow(/magazine/);
-    expect(() => ptSimSetup(gameData, 'jp_05', { magRounds: 50 })).toThrow(/弾倉/); // 1 弾倉 × 2 = 100 ≥ PT の HP
+    expect(() => ptSimSetup(gameData, 'jp_05', { magRounds: 50 })).not.toThrow(); // 1 弾倉 × 2 = 100 ≥ PT の HP でもよい（HP だけでは沈まない。レビュー F8）
     const base = getPtParams(gameData, getPrototypeMission(gameData, 'jp_05'), TS)!;
     expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM, base.breakMaxS, base.breakOff2, base.stationM]).toEqual([4, 10, 120, 2000, 5, 650 ** 2, 550]);
     expect(ptSimSetup(gameData, 'jp_05').gun!.groups[0]!.dispersionM).toBe(64); // data は変えない
@@ -80,7 +80,7 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect(a.shots).toBeGreaterThan(0);
     // 撃たない遊び方は 13mm を作らない（世界でも押さなければ seed+20 を引かない）: 13mm の数はみな 0
     const r = runPtTrial(s, 'dodge_silent', 7);
-    expect([r.gunShots, r.gunHits, r.ptRetired, r.ptSunk, r.flashFirst, r.gunBeyond, r.hpSinkPt]).toEqual([0, 0, 0, 0, false, 0, 0]);
+    expect([r.gunShots, r.gunHits, r.ptRetired, r.ptSunk, r.flashFirst, r.gunBeyond]).toEqual([0, 0, 0, 0, false, 0]);
   });
 
   // 較正の表は 1 回だけ回す（★ の 6 行、N 200 で 10 秒ほど）
@@ -103,7 +103,7 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
       expect(c.worstPassHits * p.hit.damage, r.policy).toBeLessThanOrEqual(p.roundsPerPass * p.hit.damage);
       expect(c.heldMinM, r.policy).toBeGreaterThanOrEqual(PT_HELD_MIN_M);
       expect(c.heldMinM, r.policy).toBeLessThan(p.stationM); // 待つ PT は位置取りをする（その夜があった）
-      expect([c.gunShots, c.gunBeyond, c.hpSinkPt], r.policy).toEqual([0, 0, 0]); // 撃たない遊び方
+      expect([c.gunShots, c.gunBeyond], r.policy).toEqual([0, 0]); // 撃たない遊び方
     }
     expect(p.roundsPerPass * p.hit.damage).toBeLessThan(run.setup.damage.maxHp);
   });

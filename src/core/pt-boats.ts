@@ -71,6 +71,7 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
     q.lkY = boat.y;
     q.lkVx = vpx;
     q.lkVy = vpy;
+    q.lkHeadingDeg = boat.headingDeg;
     q.lkAgeS = 0;
     if (gained) ev.onContact(true);
   } else if (q.detected && !anyLive) {
@@ -133,16 +134,18 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
         b.lockDeg = bearingDeg(tx, ty, b.x, b.y);
         b.timerS = 0;
         hd = b.lockDeg;
+      } else if (held) {
+        // 2 番手は前の航過と反対の舷の位置を取る（挟み撃ち。v0.6.3 実機 1 回目）: 艇の針路から航過ごとに 90°・45°・135°、station_m の点へ。遠回りの内では hold_off_m の内へ入らない。
+        // 止まった艇は最後に見た艇首の向きから（レビュー R3: PT の方位を基準にすると点がいつも PT の先へ逃げ、反対の舷へ回らずに艇の周りを回り続けた）
+        q.held[i] = 1;
+        hd = stationHeading(b.x, b.y, tx, ty, q.lkVx, q.lkVy, q.lkHeadingDeg, q.ownerFlank, p.stationRelDeg[q.passes % p.stationRelDeg.length]!, p, STATION);
+        sp = STATION.sp;
+        if (nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) hd = edgeTurnHeadingDeg(b, p.bounds, p.edgeMarginM); // 縁の近くでは内へ（艇が縁にいても海域の外を回らない）
       } else {
+        // 突撃の狙いの点（待つ PT は使わないので求めない。レビュー NP-4）
         aimPoint(q.aim, b.x, b.y, p.runInMps, tx, ty, q.lkVx, q.lkVy, b.side, p.offsetM, p.bounds.width, p.bounds.height, p.edgeMarginM);
         hd = bearingDeg(b.x, b.y, q.aim.x, q.aim.y); // 固めるならこの針路
-        if (held) {
-          // 2 番手は前の航過と反対の舷の位置を取る（挟み撃ち。v0.6.3 実機 1 回目）: 艇の針路から航過ごとに 90°・45°・135°、station_m の点へ。遠回りの内では hold_off_m の内へ入らない
-          q.held[i] = 1;
-          hd = stationHeading(b.x, b.y, tx, ty, q.lkVx, q.lkVy, q.ownerFlank, p.stationRelDeg[q.passes % p.stationRelDeg.length]!, p, STATION);
-          sp = STATION.sp;
-          if (nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) hd = edgeTurnHeadingDeg(b, p.bounds, p.edgeMarginM); // 縁の近くでは内へ（艇が縁にいても海域の外を回らない）
-        } else if (q.held[i] === 1) {
+        if (q.held[i] === 1) {
           q.held[i] = 0;
           b.side = targetSide(b.headingDeg, b.x, b.y, tx, ty); // 待ちが解けた: 取った位置から自分の舷で寄る（固めるのは次のステップから）
         } else if (q.seen[i] === 1 && dx * dx + dy * dy <= p.commitMax2 && !nearEdge(b.x, b.y, p.bounds, p.edgeMarginM)) {

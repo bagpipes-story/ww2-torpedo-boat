@@ -8,7 +8,7 @@ import { clamp, degToRad, radToDeg, wrapDeg180, wrapDeg360 } from './units';
 
 /** かわす向きの言い方の境目 deg: 逃げる針路（航過の線の直角）との差がこれ未満なら「そのまま」。言い回しの閾値で、強さの調整値ではない（seaplane-ordnance の DODGE_TURN_DEG と同じ考え） */
 export const PT_DODGE_STRAIGHT_DEG = 30;
-/** 待つ PT の位置取りで目標の針路を使う速さの下限 game m/s（これより遅い目標は向きが定まらないので、目標から見た PT の方位を基準にする）。幾何の閾値で、強さの調整値ではない */
+/** 待つ PT の位置取りで目標の速度の向きを使う速さの下限 game m/s（これより遅い目標は速度の向きが定まらないので、最後に見た艇首の向きを基準にする）。幾何の閾値で、強さの調整値ではない */
 export const PT_STATION_COURSE_MIN_MPS = 0.5;
 
 /** stationHeading が読む PtParams（待つ PT の位置取り・突撃と追い越しの速さ・hold_off の距離の二乗・時間圧縮） */
@@ -113,15 +113,17 @@ export function dodgeTurn(escapeDeg: number, playerHeadingDeg: number): PtDodge 
 }
 
 /**
- * 待つ PT の針路と速さ（v0.6.3 実機 1 回目の挟み撃ち。速さは out.sp に書く）: 目標 (tx, ty) の針路（推した速度 (tvx, tvy) の向き。ほぼ止まっていれば目標から見た PT の方位）から
- * −flank × relDeg の方角（flank は前の航過の PT の舷 +1 右・−1 左＝その反対の舷）、station_m の点（station_lead_s 先へ）を目指す。
+ * 待つ PT の針路と速さ（v0.6.3 実機 1 回目の挟み撃ち。速さは out.sp に書く）: 目標 (tx, ty) の針路（推した速度 (tvx, tvy) の向き。ほぼ止まっていれば最後に見た艇首の向き headingDeg）から
+ * −flank × relDeg の方角（flank は前の航過の PT の舷 +1 右・−1 左＝その反対の舷。commitPass が艇首の向きで決める）、station_m の点（station_lead_s 先へ）を目指す。
  * 目標から見た PT の方位と点の方位の差が station_tol_deg 以内なら点へ（station_close_m より近ければ目標の速さ + 追い越しで並ぶ）、外なら hold_off の形で短い方へ回る（内へ寄らない）。
+ * relDeg は向かう角で、着く角ではない（巡航の艇には遅れて、艇首から約 40° か 150〜175° で待ちが解けることが多い。レビュー R1）。
+ * レビュー R3: 止まった艇で PT の方位を基準にすると点がいつも PT から −flank × relDeg 先へ逃げ、反対の舷へ回らずに艇の周りを回り続けた（挟み撃ちが効かない）。
  * 乱数なし・確保なし（平方根は点の近くだけ）
  */
-export function stationHeading(bx: number, by: number, tx: number, ty: number, tvx: number, tvy: number, flank: number, relDeg: number, p: StationParams, out: { sp: number }): number {
+export function stationHeading(bx: number, by: number, tx: number, ty: number, tvx: number, tvy: number, headingDeg: number, flank: number, relDeg: number, p: StationParams, out: { sp: number }): number {
   const v2 = tvx * tvx + tvy * tvy;
   const brgT = bearingDeg(tx, ty, bx, by);
-  const course = v2 > PT_STATION_COURSE_MIN_MPS * PT_STATION_COURSE_MIN_MPS ? radToDeg(Math.atan2(tvx, -tvy)) : brgT;
+  const course = v2 > PT_STATION_COURSE_MIN_MPS * PT_STATION_COURSE_MIN_MPS ? radToDeg(Math.atan2(tvx, -tvy)) : headingDeg;
   const theta = course - flank * relDeg;
   const th = degToRad(theta);
   const lead = p.stationLeadS * p.timeScale;

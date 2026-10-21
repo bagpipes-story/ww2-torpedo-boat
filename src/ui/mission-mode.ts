@@ -4,7 +4,9 @@ import { AS_T_NONE, AS_T_REST } from '../core/air-strike';
 import { CALL_DAWN } from '../core/mission-flow';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { FF_CHALLENGE, FF_LEAVING, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
-import { GUN_SAFE } from '../core/gun-battery';
+import { GUN_FIRING, GUN_OUT_OF_ARC, GUN_SAFE } from '../core/gun-battery';
+import { PT_ALERT, PT_RUN_IN } from '../core/pt-boats';
+import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { SHALLOW_GROUNDED } from '../core/shallows';
 import { STORM_INSIDE, STORM_NEAR } from '../core/storm';
 import { planeApproaching, planeAttacking, planeLeaving } from './hud-lines';
@@ -66,9 +68,18 @@ export function ptResultShown(t: BoatTelemetry, flags: number): boolean {
   return t.pt.enabled && (flags & MODE_FLAG_PT_RESULT) !== 0;
 }
 
-/** T-14 の 13mm の行を出す（v0.6.3 実機 1 回目）: 射撃を押していて撃てる（状態 ≠ SAFE。弾倉の交換中も）・生きた PT（去っていない・沈んでいない）がいる */
+/**
+ * T-14 の 13mm の行を出す（v0.6.3 実機 1 回目）: 射撃を押していて撃てる（状態 ≠ SAFE。弾倉の交換中も）・生きた PT（去っていない・沈んでいない）がいる。
+ * 撃っている・弾倉交換はいつも出す。ほかは見つかってから（レビュー ux-3: 見つかる前は「静音でやり過ごせ」の行を「引きつけよ」で消し、閃光で見つかる撃ち合いへ誘っていた。
+ * 撃てば閃光で同じステップに見つかる。押したままでも帰投せよ（夜明け・燃料）の行を隠さない＝NP-1）。射界外は出す。撃てるものが無い（射程外・見えない・煙幕）は
+ * 突撃の行（どこから来るか）に勝たない（ux-1: 押したままだと突撃の行が 1 夜に 1 度しか出ず、挟み撃ちの左右が文で見えなかった）
+ */
 export function ptGunShown(t: BoatTelemetry): boolean {
-  return t.pt.enabled && t.pt.gunEnabled && t.pt.gunStatus !== GUN_SAFE && t.pt.alive > 0;
+  const p = t.pt;
+  if (!(p.enabled && p.gunEnabled && p.gunStatus !== GUN_SAFE && p.alive > 0)) return false;
+  if (p.gunStatus === GUN_FIRING || p.gunStatus === PT_GUN_RELOAD) return true;
+  if (!p.detected) return false;
+  return p.gunStatus === GUN_OUT_OF_ARC || (p.threatPhase !== PT_ALERT && p.threatPhase !== PT_RUN_IN);
 }
 
 /** 大発が岸へ逃げている（大発の任務だけ） */
@@ -85,7 +96,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.fuelEmpty) return MISSION_ADRIFT;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
   if (t.pt.enabled) {
-    // 米PT（v0.6.3）: 赤い線がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈の直後 > 航過の結果 > 射撃中 > 突撃・離脱
+    // 米PT（v0.6.3）: 赤い線がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈の直後 > 航過の結果 > 射撃中 > 突撃・離脱（何も撃てない射撃の行は突撃の下。ptGunShown）
     if (t.pt.passing) return MISSION_PT_PASS;
     if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
     if (ptResultShown(t, flags)) return MISSION_PT_CONTACT;

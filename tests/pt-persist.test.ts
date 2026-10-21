@@ -49,51 +49,59 @@ describe('待つ PT の位置取り（pt-pass の stationHeading。乱数なし�
     const sx = tx - P.stationM;
     const sy = ty - v * lead;
     // 点の真東 300 m（点の方位 270° から 30° の内）: 点へ全速
-    const hd = stationHeading(sx + 300, sy - 50, tx, ty, 0, -v, 1, 90, P, OUT);
+    const hd = stationHeading(sx + 300, sy - 50, tx, ty, 0, -v, 0, 1, 90, P, OUT);
     expect(hd).toBeCloseTo(bearingDeg(sx + 300, sy - 50, sx, sy), 9);
     expect(OUT.sp).toBe(P.runInMps);
     // 点の 100 m 内: 目標の速さ + 追い越しで並ぶ
-    const hd2 = stationHeading(sx + 40, sy + 60, tx, ty, 0, -v, 1, 90, P, OUT);
+    const hd2 = stationHeading(sx + 40, sy + 60, tx, ty, 0, -v, 0, 1, 90, P, OUT);
     expect(hd2).toBeCloseTo(bearingDeg(sx + 40, sy + 60, sx, sy), 9);
     expect(OUT.sp).toBeCloseTo(Math.min(P.runInMps, v + P.overtakeMps), 9);
     // flank −1 は右舷、45° は左舷の艇首寄り
-    expect(stationHeading(tx + 300, ty, tx, ty, 0, -v, -1, 90, P, OUT)).toBeCloseTo(bearingDeg(tx + 300, ty, tx + P.stationM, ty - v * P.stationLeadS * P.timeScale), 9);
+    expect(stationHeading(tx + 300, ty, tx, ty, 0, -v, 0, -1, 90, P, OUT)).toBeCloseTo(bearingDeg(tx + 300, ty, tx + P.stationM, ty - v * P.stationLeadS * P.timeScale), 9);
     expect(OUT.sp).toBe(P.runInMps);
     const r45 = degToRad(-45);
     const px = tx + Math.sin(r45) * P.stationM;
     const py = ty - Math.cos(r45) * P.stationM - v * lead;
-    expect(stationHeading(px, py + 10, tx, ty, 0, -v, 1, 45, P, OUT)).toBeCloseTo(bearingDeg(px, py + 10, px, py), 9);
+    expect(stationHeading(px, py + 10, tx, ty, 0, -v, 0, 1, 45, P, OUT)).toBeCloseTo(bearingDeg(px, py + 10, px, py), 9);
   });
   it('点の方位から 30° より外: 600 m（曲がり始め）の内なら hold_off の形で短い方へ回り（内へ寄らない）、外なら点へ', () => {
     const tx = 3000;
     const ty = 2000;
     // PT は目標の右舷 550 m、点は左舷: 差 −180 → 左回り（side −1）
-    expect(stationHeading(tx + 550, ty, tx, ty, 0, -v, 1, 90, P, OUT)).toBeCloseTo(holdOffHeading(tx + 550, ty, tx, ty, wrapDeg180(-90 - 90) > 0 ? 1 : -1, P.holdOff2, P.holdOuter2), 9);
+    expect(stationHeading(tx + 550, ty, tx, ty, 0, -v, 0, 1, 90, P, OUT)).toBeCloseTo(holdOffHeading(tx + 550, ty, tx, ty, wrapDeg180(-90 - 90) > 0 ? 1 : -1, P.holdOff2, P.holdOuter2), 9);
     expect(OUT.sp).toBe(P.runInMps);
     // PT は艇首 520 m、点は左舷（差 −90）→ 左回り
-    expect(stationHeading(tx, ty - 520, tx, ty, 0, -v, 1, 90, P, OUT)).toBeCloseTo(holdOffHeading(tx, ty - 520, tx, ty, -1, P.holdOff2, P.holdOuter2), 9);
+    expect(stationHeading(tx, ty - 520, tx, ty, 0, -v, 0, 1, 90, P, OUT)).toBeCloseTo(holdOffHeading(tx, ty - 520, tx, ty, -1, P.holdOff2, P.holdOuter2), 9);
     // 500 m より内は真っすぐ外へ
-    expect(stationHeading(tx + 450, ty, tx, ty, 0, -v, 1, 90, P, OUT)).toBeCloseTo(90, 9);
+    expect(stationHeading(tx + 450, ty, tx, ty, 0, -v, 0, 1, 90, P, OUT)).toBeCloseTo(90, 9);
     // 900 m の外は点へ真っすぐ
     const lead = P.stationLeadS * P.timeScale;
-    expect(stationHeading(tx + 900, ty, tx, ty, 0, -v, 1, 90, P, OUT)).toBeCloseTo(bearingDeg(tx + 900, ty, tx - P.stationM, ty - v * lead), 9);
+    expect(stationHeading(tx + 900, ty, tx, ty, 0, -v, 0, 1, 90, P, OUT)).toBeCloseTo(bearingDeg(tx + 900, ty, tx - P.stationM, ty - v * lead), 9);
   });
-  it(`止まった目標（${PT_STATION_COURSE_MIN_MPS} m/s 以下）は PT の方位を基準にする: 点はいつも PT から −flank × 角だけ回った先＝待つ PT は艇の周りを回り続ける（内へは寄らない）`, () => {
+  it(`止まった目標（${PT_STATION_COURSE_MIN_MPS} m/s 以下）は最後に見た艇首の向きを基準にする（レビュー R3。PT の方位を基準にすると点がいつも PT の先へ逃げ、艇の周りを回り続けた）`, () => {
     const tx = 3000;
     const ty = 2000;
     for (const flank of [1, -1]) {
-      const hd = stationHeading(tx + 550, ty, tx, ty, 0, 0, flank, 90, P, OUT);
-      expect(hd).toBeCloseTo(holdOffHeading(tx + 550, ty, tx, ty, -flank, P.holdOff2, P.holdOuter2), 9);
+      // 艇首は北・前の航過は flank の舷: 点は反対の舷の真横 550 m（止まっているので先へずらさない）。PT が点の方位の ±30° なら点へ
+      const sx = tx - flank * P.stationM;
+      expect(stationHeading(sx + flank * 200, ty - 60, tx, ty, 0, 0, 0, flank, 90, P, OUT)).toBeCloseTo(bearingDeg(sx + flank * 200, ty - 60, sx, ty), 9);
+      expect(OUT.sp).toBe(P.runInMps);
+      expect(stationHeading(sx + flank * 40, ty + 30, tx, ty, 0, 0, 0, flank, 90, P, OUT)).toBeCloseTo(bearingDeg(sx + flank * 40, ty + 30, sx, ty), 9);
+      expect(OUT.sp).toBeCloseTo(P.overtakeMps, 9); // 点の近く: 目標の速さ 0 + 追い越し
+      // PT が前の航過の舷（flank）の真横: 点は真反対（差 180°）→ hold_off の形で回る（内へ寄らない）。艇首の向きが変われば点も回る
+      expect(stationHeading(tx + flank * 550, ty, tx, ty, 0, 0, 0, flank, 90, P, OUT)).toBeCloseTo(holdOffHeading(tx + flank * 550, ty, tx, ty, wrapDeg180(-flank * 90 - flank * 90) > 0 ? 1 : -1, P.holdOff2, P.holdOuter2), 9);
+      const py = ty - flank * (P.stationM + 100); // 艇首が東: 点は北（flank +1）か南
+      expect(stationHeading(tx + 80, py, tx, ty, 0, 0, 90, flank, 90, P, OUT)).toBeCloseTo(bearingDeg(tx + 80, py, tx, ty - flank * P.stationM), 9);
     }
   });
 });
 
 describe('挟み撃ち（待つ PT は前の航過と反対の舷へ回る。spec §C.2）', () => {
   /** 艇は (3000, 3300) から北へ静音で走り、PT1 だけが突撃で待つ（PT0 は海域の外）。PT1 は艇の startRel の舷 800 m から */
-  function hold(flank: number, passes: number, startRel: number, seconds: number, onStep?: (q: PtSection, boat: { x: number; y: number; headingDeg: number }) => void): { q: PtSection; boat: { x: number; y: number; headingDeg: number; speedMps: number } } {
+  function hold(flank: number, passes: number, startRel: number, seconds: number, onStep?: (q: PtSection, boat: { x: number; y: number; headingDeg: number }) => void, kt = 14): { q: PtSection; boat: { x: number; y: number; headingDeg: number; speedMps: number } } {
     const q = createPtSection(P, 24);
     q.boats[0]!.phase = PT_OUT;
-    const boat = { x: 3000, y: 3300, headingDeg: 0, speedMps: ktToMps(14) };
+    const boat = { x: 3000, y: 3300, headingDeg: 0, speedMps: ktToMps(kt) };
     const r = degToRad(startRel);
     Object.assign(q.boats[1]!, { x: boat.x + Math.sin(r) * 800, y: boat.y - Math.cos(r) * 800, headingDeg: 180, speedMps: P.runInMps, phase: PT_RUN_IN, side: 1 });
     Object.assign(q, { gapLeftS: 1e9, ownerFlank: flank, passes, detected: true, holdLeftS: 1e9 });
@@ -106,7 +114,7 @@ describe('挟み撃ち（待つ PT は前の航過と反対の舷へ回る。spe
     }
     return { q, boat };
   }
-  it('前の航過が右舷（flank +1）なら左舷へ、左舷なら右舷へ。角は航過ごとに 90° → 45° → 135°（q.passes の順）。550 m 前後に並び、待つ間は撃たない・350 m より内へ来ない', () => {
+  it.each([14, 0])('前の航過が右舷（flank +1）なら左舷へ、左舷なら右舷へ。角は航過ごとに 90° → 45° → 135°（q.passes の順）。550 m 前後に並び、待つ間は撃たない・350 m より内へ来ない（艇 %s kt。0 kt はレビュー R3）', (kt) => {
     for (const flank of [1, -1]) {
       for (const passes of [0, 1, 2, 3]) {
         const want = -flank * P.stationRelDeg[passes % P.stationRelDeg.length]!;
@@ -119,7 +127,7 @@ describe('挟み撃ち（待つ PT は前の航過と反対の舷へ回る。spe
           min = Math.min(min, d);
           rels.push(relOf({ boat }, b));
           ds.push(d);
-        });
+        }, kt);
         const late = rels.slice(60 * 20);
         const mean = late.reduce((a, x) => a + x, 0) / late.length;
         expect(Math.abs(wrapDeg180(mean - want)), `flank ${flank} passes ${passes}: ${mean}`).toBeLessThan(10);

@@ -204,7 +204,6 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     ['弾倉が無い', (d) => delete t14Gun(d)['magazine'], /jp_05.*magazine/],
     ['射程 950 m > 視程 900 m（見えない PT へ撃てる）', (d) => (t14Gun(d)['range_m'] = 950), /jp_05.*range_m/],
     ['閃光 500 m < 射程 600 m（撃っても見えない）', (d) => (t14Gun(d)['muzzle_flash_reveal_m'] = 500), /jp_05.*muzzle_flash_reveal_m/],
-    ['1 弾倉 50 発 × 2 = PT の HP 100', (d) => ((t14Gun(d)['magazine'] as Rec)['rounds'] = 50), /jp_05.*magazine.rounds/],
     ['弾倉の発数が小数', (d) => ((t14Gun(d)['magazine'] as Rec)['rounds'] = 2.5), /magazine/],
     ['弾倉の交換 0 秒', (d) => ((t14Gun(d)['magazine'] as Rec)['reload_s'] = 0), /magazine/],
   ];
@@ -212,6 +211,14 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     const d = clone();
     breakIt(d);
     expect(() => params(d)).toThrow(msg);
+  });
+  it('自艇の砲: 1 弾倉 × damage が PT の HP 以上でも通る（レビュー F8: PT は HP だけでは沈まない＝retreat_hp < hull_hp なので比べない。25mm の 15 発 × 7 などの差し替えを止めない）', () => {
+    for (const [rounds, damage] of [[50, 2], [15, 7], [15, 5]] as const) {
+      const d = clone();
+      (t14Gun(d)['magazine'] as Rec)['rounds'] = rounds;
+      ((t14Gun(d)['groups'] as Rec[])[0]!)['damage'] = damage;
+      expect(() => params(d), `${rounds} × ${damage}`).not.toThrow();
+    }
   });
   it('9 の境目（史実モード込み。v0.6.3 レビュー）: 一番近い出発点は (4300, 2050) の 1,600 m＝史実モードの巡航で見つかる 1,560 m（ノーマル 1,200 m × 1.3）より遠い。自艇を 41 m 南へ寄せると例外', () => {
     const d = clone();

@@ -13,9 +13,9 @@ export interface PtCell {
   minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number; minPassS: number;
   /**
    * 13mm（v0.6.3 実機 1 回目。spec r1 §G.2）: 1 夜の発射・PT への命中の平均、撃った夜のうち 1 発以上当てた夜 %（撃った夜が無ければ NaN）、1 隻以上撃退した夜 %・撃沈した夜 %、
-   * 最初に見つかったのが閃光の夜 %、視程か射程の外へ撃ったステップの数・HP だけで沈んだ PT の数（どちらも 0 が不変）
+   * 最初に見つかったのが閃光の夜 %、視程か射程の外へ撃ったステップの数（0 が不変）
    */
-  gunShots: number; gunHits: number; hitNightPct: number; retiredPct: number; ptSunkPct: number; flashFirstPct: number; gunBeyond: number; hpSinkPt: number;
+  gunShots: number; gunHits: number; hitNightPct: number; retiredPct: number; ptSunkPct: number; flashFirstPct: number; gunBeyond: number;
   /** 挟み撃ち: 赤い線が前と反対の舷から来た割合（0〜1。比べた組が無ければ 0）・赤い線の間の平均の体感秒、待つ PT（hold_off_m の外で待ち始めた）の最接近 m の最小（不変は 350 m 以上） */
   alt: number; commitGapS: number; heldMinM: number;
 }
@@ -45,7 +45,7 @@ export function runPtCell(s: PtSimSetup, policy: PtPolicy, n: number, seedBase: 
     gunShots: mean((r) => r.gunShots), gunHits: mean((r) => r.gunHits),
     hitNightPct: fired.length === 0 ? NaN : (fired.filter((r) => r.gunHits > 0).length / fired.length) * 100,
     retiredPct: pct((r) => r.ptRetired > 0), ptSunkPct: pct((r) => r.ptSunk > 0), flashFirstPct: pct((r) => r.flashFirst),
-    gunBeyond: sum((r) => r.gunBeyond), hpSinkPt: sum((r) => r.hpSinkPt),
+    gunBeyond: sum((r) => r.gunBeyond),
     alt: pairs === 0 ? 0 : sum((r) => r.flankAlt) / pairs, commitGapS: pairs === 0 ? NaN : sum((r) => r.commitGapSumS) / pairs,
     heldMinM: trials.reduce((a, r) => Math.min(a, r.heldMinM), Infinity),
   };

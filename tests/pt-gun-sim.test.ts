@@ -34,19 +34,19 @@ describe('T-14 の 13mm を撃つ遊び方の模擬（v0.6.3 実機 1 回目、s
     expect(rows.flatMap((r) => ptGunCalibrationMisses(r, run.cell, run.setup).map((m) => `${r.policy}: ${m}`))).toEqual([]);
   }, 60_000);
 
-  it('不変（spec r1 §G.5・F1〜F11）は数でも: 予告から初弾は open_fire_s 以上・航過は同時に 1 隻・PT は視程と有効射程の外から撃たない・13mm も視程と射程の外へ撃たない・HP だけで沈む PT は無い・待つ PT は 350 m より内へ来ない・撃沈の夜は 16% 以下', () => {
+  it('不変（spec r1 §G.5・F1〜F11）は数でも: 予告から初弾は open_fire_s 以上・航過は同時に 1 隻・PT は視程と有効射程の外から撃たない・13mm も視程と射程の外へ撃たない・待つ PT は 350 m より内へ来ない・撃沈の夜は 16% 以下', () => {
     const p = run.setup.pt;
     for (const r of rows) {
       const c = run.cell(r.policy);
       expect(c.gunShots, r.policy).toBeGreaterThan(0);
       expect(c.minWarnS, r.policy).toBeGreaterThanOrEqual(p.openFireS - 1e-9);
-      expect([c.maxPassing, c.beyondEff, c.beyondSight, c.gunBeyond, c.hpSinkPt, c.timeoutPct], r.policy).toEqual([1, 0, 0, 0, 0, 0]);
+      expect([c.maxPassing, c.beyondEff, c.beyondSight, c.gunBeyond, c.timeoutPct], r.policy).toEqual([1, 0, 0, 0, 0]);
       expect(c.worstPassHits * p.hit.damage, r.policy).toBeLessThan(run.setup.damage.maxHp);
       expect(c.heldMinM, r.policy).toBeGreaterThanOrEqual(PT_HELD_MIN_M);
       expect(c.ptSunkPct, r.policy).toBeLessThanOrEqual(PT_GUN_SUNK_NIGHT_MAX);
       // 見つかってから撃つ遊び方は閃光が最初の発見にならない（閃光で先に見つかるのは暗さに隠れて撃つ dark_shoot だけ）
       if (r.policy !== 'dark_shoot') expect(c.flashFirstPct, r.policy).toBe(0);
     }
-    expect(p.retreatHp).toBeLessThan(p.hullHp); // HP だけでは沈まない（沈むのは引火だけ）
+    expect(p.retreatHp).toBeLessThan(p.hullHp); // HP だけでは沈まない（F11。沈むのは引火だけ＝core/pt-damage の作り。数えても外れようがないので模擬では数えない＝レビュー R4。HP の撃退は tests/pt-damage）
   });
 });
