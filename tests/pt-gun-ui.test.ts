@@ -12,7 +12,7 @@ import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK } from '../src/core/pt-d
 import { PT_GUN_RELOAD } from '../src/core/pt-gun';
 import { initPtTelemetry, ptMaxPasses, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
 import { MISSION_ADRIFT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_STRIKE, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT, missionMode, ptGunShown } from '../src/ui/mission-mode';
-import { gunEventShowUntil } from '../src/ui/pt-gun-lines';
+import { holdShowUntil } from '../src/ui/pt-gun-lines';
 import { ptHeadJa, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
 import { CRUISE01, HOME, runPtSim, type PtSim } from './pt-kit';
@@ -54,11 +54,11 @@ describe('13mm の 2 行目（ui/pt-gun-lines）', () => {
     expect(row(tele({ gunEvent: PT_GUN_EV_SUNK, fighting: 0, alive: 0 }), 0, EVENT)).toEqual([MISSION_PT_GUN_EVENT, '米PT 撃沈！ ガソリンに引火 ・ 帰投せよ', HOME_COLOR_TEXT]);
     expect(row(tele({ gunEvent: PT_GUN_EV_CREW, fighting: 0, alive: 0 }), 0, EVENT)[1]).toBe('米PT 撃退！ 死傷者が出て離脱 ・ 帰投せよ');
   });
-  it('出来事は赤い線の下では始めない（R5）: 航過中は終わりを先へ送り、線が消えてから 2,500 ms。航過の外・時間切れの後は変えない', () => {
-    expect(gunEventShowUntil(3500, true, 2000)).toBe(4500);
-    expect(gunEventShowUntil(3500, false, 2000)).toBe(3500);
-    expect(gunEventShowUntil(3500, true, 3500)).toBe(3500);
-    expect(gunEventShowUntil(-1, true, 2000)).toBe(-1);
+  it('時刻で出す行は上の行に隠れている間は始めない（R5）: 隠れている間は終わりを先へ送り、出てから 2,500 ms。隠れていない・時間切れの後は変えない', () => {
+    expect(holdShowUntil(3500, true, 2000)).toBe(4500);
+    expect(holdShowUntil(3500, false, 2000)).toBe(3500);
+    expect(holdShowUntil(3500, true, 3500)).toBe(3500);
+    expect(holdShowUntil(-1, true, 2000)).toBe(-1);
   });
   it('優先順: 夜明けの空襲・燃料切れ > 赤い線 > 13mm の出来事 > 航過の結果 > 射撃 > 突撃・離脱。射撃は押していて生きた PT がいるときだけ', () => {
     const pass = { ...FIRING, passing: true, threatPhase: PT_PASS, dodge: 1, escapeDeg: 315 };
@@ -271,11 +271,12 @@ function seesLivePt(s: PtSim): boolean {
 }
 
 /**
- * mission-line の時刻の旗（航過の結果・13mm の出来事を通し番号が増えてから 2,500 ms。出来事は赤い線に隠れている間は始めない＝gunEventShowUntil）を真似て、
+ * mission-line の時刻の旗（航過の結果・13mm の出来事を通し番号が増えてから 2,500 ms。出来事は赤い線に、結果は出来事に隠れている間は始めない＝holdShowUntil）を真似て、
  * 1 夜の 2 行目を集める。shoot は撃ち合う台本（無ければ巡航で帰り、押さない）。passTop は航過中（赤い線が出ている）のステップのモードがみな航過だった。
- * 出来事の数え: shown は行に出た出来事、hidden は通し番号から 2,500 ms たっても赤い線の下にあった出来事（R5 の前はそのまま出なかった）、missed は出ずに次の出来事にも替わらなかった出来事
+ * 出来事の数え: shown は行に出た出来事、hidden は通し番号から 2,500 ms たっても赤い線の下にあった出来事（R5 の前はそのまま出なかった）、missed は出ずに次の出来事にも替わらなかった出来事。
+ * shortResults は赤い線に替わられずに 2.5 秒より短く（R5 の途中では 1 フレーム）しか出なかった航過の結果の数、heldResults は出来事の後に回った結果の数
  */
-function nightLines(seed: number, withGun: boolean, shoot = false): { lines: string[]; modes: Set<number>; maxPasses: Set<number>; passTop: boolean; events: number; shown: Set<number>; hidden: Set<number>; missed: number } {
+function nightLines(seed: number, withGun: boolean, shoot = false): { lines: string[]; modes: Set<number>; maxPasses: Set<number>; passTop: boolean; events: number; shown: Set<number>; hidden: Set<number>; missed: number; shortResults: number; heldResults: number } {
   const w = ptWorld(withGun);
   const lines: string[] = [];
   const modes = new Set<number>();
@@ -289,6 +290,12 @@ function nightLines(seed: number, withGun: boolean, shoot = false): { lines: str
   const shown = new Set<number>();
   const hidden = new Set<number>();
   let missed = 0;
+  let resultSteps = 0;
+  let resultCut = false;
+  let resultHeld = false;
+  let shortResults = 0;
+  let heldResults = 0;
+  let lastMs = 0;
   let t: PtTelemetry | null = null;
   runPtSim({
     seed,
@@ -310,20 +317,33 @@ function nightLines(seed: number, withGun: boolean, shoot = false): { lines: str
       w.boat.state = s.boat;
       refreshPtTelemetry(t, w);
       const ms = s.t * 1000;
+      lastMs = ms;
       if (t.passSeq > seenPass) {
+        if (seenPass > 0 && !resultCut && resultSteps < 149) shortResults++;
         seenPass = t.passSeq;
         resultUntil = ms + 2500;
+        resultSteps = 0;
+        resultCut = false;
+        resultHeld = false;
       }
       if (t.gunEventSeq > seenEvent) {
         seenEvent = t.gunEventSeq;
         eventUntil = ms + 2500;
         eventAt = ms;
       }
-      eventUntil = gunEventShowUntil(eventUntil, t.passing, ms);
+      eventUntil = holdShowUntil(eventUntil, t.passing, ms);
+      const held = holdShowUntil(resultUntil, !t.passing && ms < eventUntil, ms);
+      if (held !== resultUntil && !resultHeld) {
+        resultHeld = true;
+        heldResults++;
+      }
+      resultUntil = held;
+      if (ms < resultUntil && t.passing) resultCut = true; // 結果の間に次の赤い線（v0.6.3 のまま、線が勝つ）
       if (t.passing && seenEvent > 0 && !shown.has(seenEvent) && ms >= eventAt + 2500) hidden.add(seenEvent);
       const flags = (ms < resultUntil ? RESULT : 0) | (ms < eventUntil ? EVENT : 0);
       const [mode, text] = row(tele(t), 0, flags);
       if (mode === MISSION_PT_GUN_EVENT) shown.add(seenEvent);
+      if (mode === MISSION_PT_CONTACT && ms < resultUntil) resultSteps++;
       else if (seenEvent > 0 && ms >= eventUntil && ms < eventUntil + 1000 / 60 && !shown.has(seenEvent)) missed++;
       if (s.q.owner >= 0 && mode !== MISSION_PT_PASS) passTop = false;
       modes.add(mode);
@@ -331,7 +351,8 @@ function nightLines(seed: number, withGun: boolean, shoot = false): { lines: str
       if (lines[lines.length - 1] !== text) lines.push(text);
     },
   });
-  return { lines, modes, maxPasses, passTop, events: seenEvent, shown, hidden, missed };
+  if (seenPass > 0 && !resultCut && resultSteps < 149 && lastMs >= resultUntil) shortResults++; // 夜の終わりに出ている途中の結果は数えない
+  return { lines, modes, maxPasses, passTop, events: seenEvent, shown, hidden, missed, shortResults, heldResults };
 }
 
 describe('射撃を押さない夜（spec r1 §H）', () => {
@@ -394,6 +415,7 @@ describe('射撃を押し続ける夜（台本: 見つかったら舷側を向�
     const seen = new Set<string>();
     let events = 0;
     let hidden = 0;
+    let heldResults = 0;
     for (let seed = 1; seed <= 12; seed++) {
       const r = nightLines(seed, true, true);
       expect(r.passTop, `${seed}`).toBe(true);
@@ -401,7 +423,10 @@ describe('射撃を押し続ける夜（台本: 見つかったら舷側を向�
       // R5: 赤い線の下に 2.5 秒より長く隠れた出来事（航過中の PT が撃退されて黙ったまま抜ける）も、線が消えてから出る。出ずに時間切れの出来事は無い
       for (const e of r.hidden) expect(r.shown.has(e), `${seed}: 出来事 ${e}`).toBe(true);
       expect(r.missed, `${seed}`).toBe(0);
+      // 航過の結果は出来事の後に回り、赤い線に替わられない限り 2.5 秒出る（出来事と結果の時間が重なって 1 フレームだけ出ることが無い）
+      expect(r.shortResults, `${seed}`).toBe(0);
       hidden += r.hidden.size;
+      heldResults += r.heldResults;
       for (const l of r.lines) {
         const m = GUN.findIndex((re) => re.test(l));
         if (m >= 0) seen.add(String(m));
@@ -412,5 +437,6 @@ describe('射撃を押し続ける夜（台本: 見つかったら舷側を向�
     expect(events).toBeGreaterThan(0); // 撃退か撃沈が 12 夜のどこかで
     expect(seen.has('5')).toBe(true);
     expect(hidden).toBeGreaterThan(0); // 赤い線の下に隠れた出来事が 12 夜のどこかで（この確かめが空でない）
+    expect(heldResults).toBeGreaterThan(0); // 出来事の後に回った航過の結果も
   });
 });

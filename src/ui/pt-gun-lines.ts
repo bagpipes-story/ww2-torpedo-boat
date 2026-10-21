@@ -47,12 +47,12 @@ export function ptGunLine(t: BoatTelemetry, key: number): HudLine {
 }
 
 /**
- * 出来事の行を出す時刻の終わり ms（mission-line が毎フレーム。untilMs は通し番号が増えたときに now + PT_RESULT_SHOW_MS）。
- * 赤い線（航過中。出来事より上）に隠れている間は終わりを先へ送り、線が消えてから PT_RESULT_SHOW_MS 出す（R5 ヘッドレス: 航過中の PT が撃退されて
- * 黙ったまま抜ける間に 2.5 秒が線の下で過ぎ、「撃退！ … 残り 1 隻」が出ない夜が 14 回のうち 6 回あった）
+ * 時刻で出す行（13mm の出来事・航過の結果）の表示の終わり ms（mission-line が毎フレーム。untilMs は通し番号が増えたときに now + PT_RESULT_SHOW_MS）。
+ * 上の行に隠れている間（hidden）は終わりを先へ送り、隠れなくなってから PT_RESULT_SHOW_MS 出す。時間切れの後は変えない。R5 ヘッドレス: 航過中の PT が撃退されて
+ * 黙ったまま抜ける間に 2.5 秒が赤い線の下で過ぎ、「撃退！ … 残り 1 隻」が出ない夜が 14 回のうち 6 回あった（出来事は赤い線の後、航過の結果は出来事の後に出す）
  */
-export function gunEventShowUntil(untilMs: number, passing: boolean, nowMs: number): number {
-  return passing && nowMs < untilMs ? nowMs + PT_RESULT_SHOW_MS : untilMs;
+export function holdShowUntil(untilMs: number, hidden: boolean, nowMs: number): number {
+  return hidden && nowMs < untilMs ? nowMs + PT_RESULT_SHOW_MS : untilMs;
 }
 
 /** 出来事の行のキー（モード MISSION_PT_GUN_EVENT）: 種類（PT_GUN_EV_*）| まだ戦う PT の数 << 3 */
