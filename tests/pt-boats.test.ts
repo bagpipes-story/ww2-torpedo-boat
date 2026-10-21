@@ -523,7 +523,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(P.roundsPerPass * P.hit.damage).toBeLessThan(getBoatDamageParams(gameData, MISSION.playerBoatId).maxHp);
   });
 
-  it('13 確保なし: 10,000 ステップ回しても隊・弾・見た印・狙いの点の配列と各要素の参照は同じ', () => {
+  it('13 確保なし: 10,000 ステップ回しても隊・弾・見た印・待つ印（v0.6.3 実機 1 回目）・狙いの点の配列と各要素の参照は同じ', () => {
     let refs: unknown[] = [];
     const s = simulate({
       seed: 4,
@@ -531,10 +531,10 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
       policy: randomWalk,
       start: { x: 2900, y: 1500, headingDeg: 180 },
       onStep: (s) => {
-        if (refs.length === 0) refs = [s.q.boats, s.q.boats[0], s.q.boats[1], s.q.shells, ...s.q.shells, s.q.seen, s.q.aim];
+        if (refs.length === 0) refs = [s.q.boats, s.q.boats[0], s.q.boats[1], s.q.shells, ...s.q.shells, s.q.seen, s.q.held, s.q.aim];
       },
     });
-    const now = [s.q.boats, s.q.boats[0], s.q.boats[1], s.q.shells, ...s.q.shells, s.q.seen, s.q.aim];
+    const now = [s.q.boats, s.q.boats[0], s.q.boats[1], s.q.shells, ...s.q.shells, s.q.seen, s.q.held, s.q.aim];
     expect(now.length).toBe(refs.length);
     for (let i = 0; i < now.length; i++) expect(now[i]).toBe(refs[i]);
     expect(s.q.shots).toBeGreaterThan(0);

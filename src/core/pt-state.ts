@@ -5,10 +5,12 @@ import type { PtParams } from './pt-data';
 import { createShells, type ShellState } from './shells';
 import type { SmokeParams, SmokeState } from './smoke';
 
-/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲） */
+/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm） */
 export const PT_SEED_OFFSET = 18;
+/** T-14 の 13mm の乱数の系列（seed+20。v0.6.3 実機 1 回目。1 発 2 回・生きた PT への命中 1 回。米PT の隊で艇に砲がある任務（jp_05）だけ作る） */
+export const PT_GUN_SEED_OFFSET = 20;
 
-/** 段階: 哨戒 → 警戒 → 突撃 → 航過 → 離脱（→ 突撃）→ 去る → 海域の外 */
+/** 段階: 哨戒 → 警戒 → 突撃 → 航過 → 離脱（→ 突撃）→ 去る → 海域の外（v0.6.3 実機 1 回目から、どの段階からも沈む） */
 export const PT_PATROL = 0;
 export const PT_ALERT = 1;
 export const PT_RUN_IN = 2;
@@ -16,6 +18,14 @@ export const PT_PASS = 3;
 export const PT_BREAK = 4;
 export const PT_LEAVE = 5;
 export const PT_OUT = 6;
+/** 沈んだ（v0.6.3 実機 1 回目。T-14 の 13mm でガソリンに引火）。去った（≥ PT_LEAVE）の側に数え、動かず・撃たず・脅威の PT にもならない */
+export const PT_SUNK = 7;
+
+/** 13mm を受けた結末（v0.6.3 実機 1 回目。core/pt-damage）: 無し・死傷で撃退・穴だらけで撃退・撃沈 */
+export const PT_FATE_NONE = 0;
+export const PT_FATE_CREW = 1;
+export const PT_FATE_HULL = 2;
+export const PT_FATE_SUNK = 3;
 
 export interface PtBoatState extends BoatState {
   phase: number;
@@ -33,6 +43,8 @@ export interface PtBoatState extends BoatState {
   cooldownS: number;
   roundsLeft: number;
   firedThisPass: number;
+  /** T-14 の 13mm を受けた（v0.6.3 実機 1 回目）: HP（boat_ref の hull_hp から）・結末（PT_FATE_*）・受けた命中の数 */
+  hp: number; fate: number; hitsTaken: number;
 }
 
 export interface PtSection {
@@ -56,6 +68,10 @@ export interface PtSection {
   /** KPI: 航過（撃った・無傷）・発射・命中、最初に見つけた距離 m（NaN は無し）、見失わせた回数、予告から初弾までの最短秒、最接近の二乗、去った数、夜明けに去った */
   passes: number; firedPasses: number; cleanPasses: number; shots: number; hits: number;
   firstDetectM: number; lostContacts: number; minWarnS: number; closest2: number; out: number; leftAtDawn: boolean;
+  /** 挟み撃ち（v0.6.3 実機 1 回目）: 最後に航過を固めた PT が艇のどちらの舷にいたか（+1 右・−1 左）、待っている PT（1。他の PT の航過中か次の航過まで） */
+  ownerFlank: number; held: Uint8Array;
+  /** T-14 の 13mm（v0.6.3 実機 1 回目）: PT への命中・撃退・撃沈の数、最初に見つかったのが閃光だった、出来事（HUD の 2 行目）の通し番号・種類（PT_GUN_EV_*）・PT */
+  gunHits: number; retired: number; sunk: number; flashFirst: boolean; gunEventSeq: number; gunEvent: number; gunEventBoat: number;
 }
 
 /** 世界が固定ステップごとに中身だけ書き換える材料（1 個だけ作る。barges の FlotillaCheck と同じ） */
@@ -75,6 +91,8 @@ export interface PtCheck {
   /** 夜明けのラッチの後、出撃からの体感秒 */
   dawn: boolean;
   timeS: number;
+  /** 艇の 13mm の閃光が見える距離 m（v0.6.3 実機 1 回目。撃ったステップだけ。0 か無しは撃っていない。detect_from_s の前は見つけない） */
+  flashM?: number;
 }
 
 /** 呼ぶ側への知らせ（引数は数と真偽だけ） */
@@ -101,12 +119,21 @@ export interface PtTelemetry {
   passes: number; maxPasses: number; passSeq: number; lastPassHits: number; lastPassFired: boolean; damagePerHit: number; leftAtDawn: boolean;
   /** 出撃のときに 1 回: 艇の静音の上限 kt・去る方角（東など） */
   silentMaxKt: number; leaveDirJa: string;
+  /**
+   * T-14 の 13mm（v0.6.3 実機 1 回目。砲の無い任務は gunEnabled false のまま）: 状態（GUN_* と PT_GUN_RELOAD）・速くて散る・標的までの m・PT への命中・今夜撃った・
+   * 弾倉の交換の残り秒、出撃のときに 1 回の射程と有効射程 m
+   */
+  gunEnabled: boolean; gunStatus: number; gunFast: boolean; gunTargetM: number; gunHits: number; gunEverFired: boolean; reloadLeftS: number; gunRangeM: number; gunEffectiveM: number;
+  /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った */
+  gunEventSeq: number; gunEvent: number; fighting: number; sunk: number; passSilenced: boolean;
 }
 
 export function createPtTelemetry(): PtTelemetry {
   return {
     enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, escapeDeg: NaN, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
+    gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
+    gunEventSeq: 0, gunEvent: 0, fighting: 0, sunk: 0, passSilenced: false,
   };
 }
 
@@ -114,13 +141,14 @@ export function createPtTelemetry(): PtTelemetry {
 export function createPtSection(p: PtParams, shellPoolSize: number): PtSection {
   const boats: PtBoatState[] = [];
   for (let i = 0; i < p.count; i++) {
-    boats.push({ x: p.startX[i]!, y: p.startY[i]!, headingDeg: p.startHeadingDeg[i]!, speedMps: p.patrolMps, phase: PT_PATROL, wp: 1, timerS: 0, side: 1, lockDeg: 0, passMps: 0, passes: 0, cooldownS: 0, roundsLeft: 0, firedThisPass: 0 });
+    boats.push({ x: p.startX[i]!, y: p.startY[i]!, headingDeg: p.startHeadingDeg[i]!, speedMps: p.patrolMps, phase: PT_PATROL, wp: 1, timerS: 0, side: 1, lockDeg: 0, passMps: 0, passes: 0, cooldownS: 0, roundsLeft: 0, firedThisPass: 0, hp: p.hullHp, fate: PT_FATE_NONE, hitsTaken: 0 });
   }
   return {
     boats, shells: createShells(shellPoolSize), seen: new Uint8Array(p.count), detected: false, holdLeftS: 0,
     lkX: 0, lkY: 0, lkVx: 0, lkVy: 0, lkAgeS: 0, owner: -1, gapLeftS: 0, dodge: 0, escapeDeg: NaN,
     passHits: 0, passSeq: 0, seqPending: false, lastPassHits: 0, lastPassFired: false, lastPassBoat: -1, commitAtS: NaN, aim: { x: 0, y: 0 },
     passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, firstDetectM: NaN, lostContacts: 0, minWarnS: Infinity, closest2: Infinity, out: 0, leftAtDawn: false,
+    ownerFlank: 1, held: new Uint8Array(p.count), gunHits: 0, retired: 0, sunk: 0, flashFirst: false, gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1,
   };
 }
 

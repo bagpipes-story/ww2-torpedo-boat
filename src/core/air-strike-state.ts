@@ -4,7 +4,7 @@
 import type { BoatState } from './boat-motion';
 import type { HitSpec } from './gunnery';
 
-/** 空襲の乱数の系列（seed+19）。+18 は敵の米PT（core/pt-boats の PT_SEED_OFFSET。射撃だけ）、+17 は見張り、+16 は今夜の揺らぎ、+8+i は沿岸砲、+5 は夜の水上機 */
+/** 空襲の乱数の系列（seed+19）。+20 は T-14 の 13mm（core/pt-state の PT_GUN_SEED_OFFSET）、+18 は敵の米PT（core/pt-boats の PT_SEED_OFFSET。射撃だけ）、+17 は見張り、+16 は今夜の揺らぎ、+8+i は沿岸砲、+5 は夜の水上機 */
 export const AIR_STRIKE_SEED_OFFSET = 19;
 /** 機数の上限（史実の 4 機の編成。HUD の番号と strikeKey の桁もこれで足りる） */
 export const AIR_STRIKE_MAX_PLANES = 4;

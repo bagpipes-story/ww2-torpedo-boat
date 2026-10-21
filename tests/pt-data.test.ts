@@ -38,7 +38,8 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect([p.leaveHeadingDeg, p.edgeMarginM, p.timeScale]).toEqual([90, 200, TS]);
     // v0.6.3 実機 1 回目: T-14 の 13mm を受ける（HP は boat_ref us_elco80 の hull_hp 100、当たりは 24.4 × 6.3 m × hit_scale 1 の半分）と、待つ PT の位置取り
     expect([p.hullHp, p.hitHalfLengthM, p.hitHalfBeamM, p.retreatHp, p.casualtyChance, p.fireChance]).toEqual([100, 12.2, 3.15, 60, 0.03, 0.003]);
-    expect([p.stationM, [...p.stationRelDeg], p.stationTolDeg, p.stationClose2, p.stationLeadS]).toEqual([550, [90, 45, 135], 30, 150 ** 2, 1]);    // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
+    expect([p.stationM, [...p.stationRelDeg], p.stationTolDeg, p.stationClose2, p.stationLeadS]).toEqual([550, [90, 45, 135], 30, 150 ** 2, 1]);
+    // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
     expect(p.roundsPerPass * p.hit.damage).toBe(40);
     expect(p.openFireS).toBeGreaterThanOrEqual(2);
   });
@@ -76,7 +77,8 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect(isPtDataRecord({ ...r, tactics: { ...t, station_rel_deg: [90, 45, 135, 60, 120] } })).toBe(false);
     expect(isPtDataRecord({ ...r, tactics: { ...t, station_rel_deg: [90, '45'] } })).toBe(false);
     expect(isPtDataRecord({ ...r, under_fire: { ...(r['under_fire'] as Rec), fire_chance: undefined } })).toBe(false);
-    for (const k of ['attack', 'tactics', 'under_fire']) expect(String((r['source'] as Rec)[k]), k).toContain('WebSearch の抜粋のみ・本文未読');    for (const [k, v] of Object.entries(r['source'] as Rec)) expect(/historical|design/.test(String(v)), k).toBe(true);
+    for (const k of ['attack', 'tactics', 'under_fire']) expect(String((r['source'] as Rec)[k]), k).toContain('WebSearch の抜粋のみ・本文未読');
+    for (const [k, v] of Object.entries(r['source'] as Rec)) expect(/historical|design/.test(String(v)), k).toBe(true);
     // 史料は検索の抜粋だけ（本文未読）
     expect(String((r['source'] as Rec)['torpedo_immune'])).toContain('抜粋のみ・本文未読');
     const b = blockOf(gameData);
