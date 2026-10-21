@@ -6,7 +6,7 @@ import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { getPtParams } from '../src/config/pt-mission-data';
 import {
   PT_BREAK, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_PASS, PT_RUN_IN, PT_SUNK,
-  createPtSection, stepPtSection, threatIndex, type PtEvents, type PtSection,
+  createPtSection, ptFighting, stepPtSection, threatIndex, type PtEvents, type PtSection,
 } from '../src/core/pt-boats';
 import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, hitPt, ptLive, ptNeverBlocked } from '../src/core/pt-damage';
 import { SeededRng } from '../src/core/rng';
@@ -181,7 +181,7 @@ describe('13mm の命中の結末（core/pt-damage の hitPt。u は seed+20 の
     }
     expect(log.some(([k, i]) => k === 'fire' && i === 1)).toBe(true); // PT1 は撃つ
     expect(log.filter(([, i]) => i === 0)).toEqual([]);
-    expect([ptLive(b), ptNeverBlocked(b), ptLive(q.boats[1]!)]).toEqual([false, false, q.boats[1]!.phase <= PT_BREAK]);
+    expect([ptLive(b), ptNeverBlocked(b), ptLive(q.boats[1]!)]).toEqual([false, false, ptFighting(q.boats[1]!.phase)]);
     c.dawn = true;
     log.length = 0;
     stepPtSection(q, P, c, new SeededRng(3), DT, DT * TS, ev);

@@ -5,16 +5,16 @@
 // 標的の判定（ptLive・ptNeverBlocked）は gun-battery の本体に渡す module の関数（毎ステップ閉包を作らない）。Phaser 非依存・確保しない。AI は乱数を引かない。
 import type { PtParams } from './pt-data';
 import { dropOwner } from './pt-pass-end';
-import { PT_BREAK, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_SUNK, type PtBoatState, type PtEvents, type PtSection } from './pt-state';
+import { PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_SUNK, ptFighting, type PtBoatState, type PtEvents, type PtSection } from './pt-state';
 
 /** 13mm の出来事（PtSection.gunEvent。HUD の 2 行目「米PT 撃退！」「米PT 撃沈！」）: 値は結末（PT_FATE_*）と同じ */
 export const PT_GUN_EV_CREW = PT_FATE_CREW;
 export const PT_GUN_EV_HULL = PT_FATE_HULL;
 export const PT_GUN_EV_SUNK = PT_FATE_SUNK;
 
-/** 13mm の標的にできる PT（去っていない・沈んでいない＝段階が離脱まで。去る・海域の外・沈んだ PT に落ちた弾は外れ） */
+/** 13mm の標的にできる PT（去っていない・沈んでいない＝まだ戦う段階 ptFighting。去る・海域の外・沈んだ PT に落ちた弾は外れ） */
 export function ptLive(b: PtBoatState): boolean {
-  return b.phase <= PT_BREAK;
+  return ptFighting(b.phase);
 }
 
 /** T-14 に煙幕は無い（PT への線はいつも遮られない） */

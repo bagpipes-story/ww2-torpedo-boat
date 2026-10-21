@@ -10,16 +10,26 @@ export const PT_SEED_OFFSET = 18;
 /** T-14 の 13mm の乱数の系列（seed+20。v0.6.3 実機 1 回目。1 発 2 回・生きた PT への命中 1 回。米PT の隊で艇に砲がある任務（jp_05）だけ作る） */
 export const PT_GUN_SEED_OFFSET = 20;
 
-/** 段階: 哨戒 → 警戒 → 突撃 → 航過 → 離脱（→ 突撃）→ 去る → 海域の外（v0.6.3 実機 1 回目から、どの段階からも沈む） */
+/**
+ * 段階: 哨戒 → 警戒 → 突撃 → 航過 → 離脱（→ 突撃）→ 去る → 海域の外（v0.6.3 実機 1 回目から、どの段階からも沈む）。
+ * v0.6.3 実機 2 回目: 追撃（PT_CHASE）を離脱と去るの間に入れ、去る・海域の外・沈んだを 5/6/7 → 6/7/8 に付け直した。まだ戦う段階（< PT_LEAVE）は ptFighting で見る
+ */
 export const PT_PATROL = 0;
 export const PT_ALERT = 1;
 export const PT_RUN_IN = 2;
 export const PT_PASS = 3;
 export const PT_BREAK = 4;
-export const PT_LEAVE = 5;
-export const PT_OUT = 6;
+/** 追撃（v0.6.3 実機 2 回目。逃げる艇の後ろ寄りの舷へ回って並ぶ。撃つのは PT_PASS の連射）。番号だけ先に取ってある */
+export const PT_CHASE = 5;
+export const PT_LEAVE = 6;
+export const PT_OUT = 7;
 /** 沈んだ（v0.6.3 実機 1 回目。T-14 の 13mm でガソリンに引火）。去った（≥ PT_LEAVE）の側に数え、動かず・撃たず・脅威の PT にもならない */
-export const PT_SUNK = 7;
+export const PT_SUNK = 8;
+
+/** まだ戦う段階（哨戒〜追撃。去る・海域の外・沈んだは false）: 見つける・接触・13mm の標的・HUD の「まだ戦う PT」 */
+export function ptFighting(phase: number): boolean {
+  return phase < PT_LEAVE;
+}
 
 /** 13mm を受けた結末（v0.6.3 実機 1 回目。core/pt-damage）: 無し・死傷で撃退・穴だらけで撃退・撃沈 */
 export const PT_FATE_NONE = 0;

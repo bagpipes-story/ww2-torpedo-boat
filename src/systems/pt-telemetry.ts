@@ -6,7 +6,7 @@
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
-import { PT_BREAK, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, createPtTelemetry, threatIndex, type PtParams, type PtSection, type PtTelemetry } from '../core/pt-boats';
+import { PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, createPtTelemetry, ptFighting, threatIndex, type PtParams, type PtSection, type PtTelemetry } from '../core/pt-boats';
 import type { PtGunState } from '../core/pt-gun';
 import { mpsToKt } from '../core/units';
 import type { PtResult } from '../ui/result-types';
@@ -75,7 +75,7 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   for (let i = 0; i < q.boats.length; i++) {
     const b = q.boats[i]!;
     if (b.phase < PT_LEAVE) alive++;
-    if (b.phase <= PT_BREAK && b.fate === PT_FATE_NONE) fighting++;
+    if (ptFighting(b.phase) && b.fate === PT_FATE_NONE) fighting++;
   }
   t.alive = alive;
   t.fighting = fighting;

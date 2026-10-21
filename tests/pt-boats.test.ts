@@ -446,7 +446,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
   });
 
   it('11 止まらない: 各段階は上限の中で抜ける（警戒 ≤ 1.5 + 3 秒・突撃 ≤ 25 秒（他の PT の航過を待つ間は数えない）・航過 ≤ 8 秒・離脱 ≤ 8 秒）。逃げる艇には突撃を打ち切る', () => {
-    const maxS = [0, 0, 0, 0, 0, 0, 0];
+    const maxS = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     let runInCut = 0;
     let maxRunInTimer = 0;
     let heldS = 0;

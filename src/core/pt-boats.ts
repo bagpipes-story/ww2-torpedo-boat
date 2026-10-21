@@ -15,7 +15,7 @@ import { beyondBounds } from './dawn-withdraw';
 import type { PtParams } from './pt-data';
 import { aimPoint, inDeadCone, nearEdge, passCommitOk, stationHeading, targetSide } from './pt-pass';
 import { commitPass, countPass, endPass } from './pt-pass-end';
-import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
+import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, ptFighting, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
 import type { SeededRng } from './rng';
 import { advanceShell, findFreeShell, launchShell, pointNearBoat } from './shells';
 import { bearingDeg, edgeTurnHeadingDeg, steerShip } from './ship-ai';
@@ -48,8 +48,8 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
   const fl2 = fl * fl;
   for (let i = 0; i < boats.length; i++) {
     const b = boats[i]!;
-    if (b.phase <= PT_BREAK) anyLive = true;
-    const live = b.phase <= PT_BREAK && c.targetValid;
+    if (ptFighting(b.phase)) anyLive = true;
+    const live = ptFighting(b.phase) && c.targetValid;
     const d2 = (boat.x - b.x) * (boat.x - b.x) + (boat.y - b.y) * (boat.y - b.y);
     const r = live && smokeBlocked(c, b) ? c.detectOpenM * c.smokeFactor : c.detectOpenM;
     const normal = live && c.timeS >= p.detectFromS && d2 <= r * r;

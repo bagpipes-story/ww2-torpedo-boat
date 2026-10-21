@@ -8,7 +8,7 @@ import { boatParamsFromData, clampToBounds, nextSpeedBand, stepBoat, type BoatIn
 import { rollNight } from '../src/core/night';
 import {
   PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SEED_OFFSET,
-  createPtSection, stepPtSection, type PtCheck, type PtEvents, type PtSection,
+  createPtSection, ptFighting, stepPtSection, type PtCheck, type PtEvents, type PtSection,
 } from '../src/core/pt-boats';
 import { ptParamsAtNight, type PtParams } from '../src/core/pt-data';
 import { SeededRng } from '../src/core/rng';
@@ -217,7 +217,7 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
       run(seed, 60 * 170, cruiseHome, () => ({}), (r) => {
         if (r.q.lostContacts > prev) {
           lost++;
-          if (!r.q.boats.some((b) => b.phase <= PT_BREAK)) bad++;
+          if (!r.q.boats.some((b) => ptFighting(b.phase))) bad++;
           prev = r.q.lostContacts;
         }
       });

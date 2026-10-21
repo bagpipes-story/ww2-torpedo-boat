@@ -386,7 +386,7 @@ describe('jp_05 のテレメトリ（systems/pt-telemetry。v0.6.3）', () => {
     q.detected = true;
     refreshPtTelemetry(t, w);
     expect([t.passing, t.fired, t.dodge, t.detected, t.threatPhase, t.sighted]).toEqual([true, true, -1, true, PT_PASS, false]);
-    q.boats[0]!.phase = 5; // 去る
+    q.boats[0]!.phase = PT_LEAVE; // 去る
     q.boats[0]!.passes = 2; // 隊の航過の数は PT ごとの数の和（航過の上限 = 終わった 2 + 残り 2 + 4。撃退・撃沈が無ければ去っても 8 のまま）
     q.owner = -1;
     q.passes = 2;

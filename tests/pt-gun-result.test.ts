@@ -2,7 +2,7 @@
 // 押さない夜は 13mm の無い米PT の任務と同じ行（離脱の末尾だけ違う）、押し続ける夜の行（台本）。2 行目の文・優先順・幅は tests/pt-gun-ui.test.ts（レビュー NP-5 で分けた）。
 import { describe, expect, it } from 'vitest';
 import { GUN_FIRING, GUN_OUT_OF_ARC } from '../src/core/gun-battery';
-import { PT_BREAK, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_SUNK, PT_PASS, PT_SUNK, threatIndex, type PtTelemetry } from '../src/core/pt-boats';
+import { PT_FATE_CREW, PT_FATE_HULL, PT_FATE_SUNK, PT_PASS, PT_SUNK, ptFighting, threatIndex, type PtTelemetry } from '../src/core/pt-boats';
 import { PT_GUN_EV_HULL } from '../src/core/pt-damage';
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
 import { MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT } from '../src/ui/mission-mode';
@@ -106,7 +106,7 @@ function fight(s: PtSim): void {
   s.input.speed01 = 0;
 }
 function seesLivePt(s: PtSim): boolean {
-  return s.q.boats.some((b) => b.phase <= PT_BREAK && (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 <= S05.visRange2);
+  return s.q.boats.some((b) => ptFighting(b.phase) && (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 <= S05.visRange2);
 }
 
 /**

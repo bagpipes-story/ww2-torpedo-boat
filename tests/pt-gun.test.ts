@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { gameData, getGunBatteryParams, getPrototypeMission } from '../src/config/game-data';
 import type { BoatState, SpeedStep } from '../src/core/boat-motion';
 import { GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE, type GunBatteryParams, type GunEvents } from '../src/core/gun-battery';
-import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SUNK, createPtSection, type PtSection } from '../src/core/pt-boats';
+import { PT_ALERT, PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SUNK, createPtSection, ptFighting, type PtSection } from '../src/core/pt-boats';
 import { PT_GUN_RELOAD, createPtGun, stepPtGun, type PtGunState } from '../src/core/pt-gun';
 import { CountingRng, DT, G, P, TS, VIS2, runPtSim } from './pt-kit';
 
@@ -91,14 +91,14 @@ describe('T-14 の 13mm（core/pt-gun）', () => {
     expect([b.s.magLeft, b.s.reloadLeftS, b.shotsAt.length]).toEqual([MAG.rounds, 0, MAG.rounds]);
   });
 
-  it('標的: 去っていない PT（哨戒〜離脱）だけ、見えていて（視程）・600 m 以内・艇首尾 ±30° の外。理由は 射界外 > 射程外 > いない。最寄りを撃つ', () => {
+  it('標的: 去っていない PT（哨戒〜追撃。ptFighting）だけ、見えていて（視程）・600 m 以内・艇首尾 ±30° の外。理由は 射界外 > 射程外 > いない。最寄りを撃つ', () => {
     const at = (distM: number, brg: number, phase = PT_RUN_IN, vis2 = VIS2): number => {
       const b = bench(distM, brg);
       b.q.boats[0]!.phase = phase;
       stepPtGun(b.s, G, b.boat, 'stop', true, true, b.q, P, vis2, b.rng, DT, DT * TS, b.ev);
       return b.s.battery.status;
     };
-    for (const ph of [PT_PATROL, PT_ALERT, PT_RUN_IN, PT_PASS, PT_BREAK]) expect(at(300, 90, ph), `phase ${ph}`).toBe(GUN_FIRING);
+    for (const ph of [PT_PATROL, PT_ALERT, PT_RUN_IN, PT_PASS, PT_BREAK, PT_CHASE]) expect(at(300, 90, ph), `phase ${ph}`).toBe(GUN_FIRING);
     for (const ph of [PT_LEAVE, PT_OUT, PT_SUNK]) expect(at(300, 90, ph), `phase ${ph}`).toBe(GUN_NO_TARGET);
     expect([at(G.rangeM - 1, 90), at(G.rangeM + 10, 90), at(950, 90)]).toEqual([GUN_FIRING, GUN_OUT_OF_RANGE, GUN_NO_TARGET]);
     expect([at(300, 20), at(300, 35), at(300, 175), at(300, 360 - 25), at(300, 270)]).toEqual([GUN_OUT_OF_ARC, GUN_FIRING, GUN_OUT_OF_ARC, GUN_OUT_OF_ARC, GUN_FIRING]);
@@ -138,7 +138,7 @@ describe('T-14 の 13mm（core/pt-gun）', () => {
           s.input.headingDeg = Math.atan2(s.p.bounds.width / 2 - s.boat.x, -(s.p.bounds.height / 2 - s.boat.y)) * (180 / Math.PI);
           s.input.speed01 = s.t < 1 ? 0 : 14 / 31;
         },
-        gunHeld: (s) => s.q.boats.some((b) => b.phase <= PT_BREAK && (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 <= VIS2),
+        gunHeld: (s) => s.q.boats.some((b) => ptFighting(b.phase) && (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 <= VIS2),
       });
       const bat = s.gun!.battery;
       expect(gunRng.draws, `seed ${seed}`).toBe(2 * bat.shots + bat.hits);
