@@ -56,7 +56,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect([s.airStrike, s.destroyer, s.barges, s.escort, s.transport, s.smokeParams, s.seaplane, s.storm]).toEqual([null, null, null, null, null, null, null, null]);
     const g = s.guns!;
     expect([g.label, g.rangeM, g.effectiveM, g.deadConeDeg, g.flashRevealM, g.magazine]).toEqual(['13mm機銃', 600, 300, 30, 1200, { rounds: 30, reloadS: 3.2 }]);
-    expect(g.groups.map((x) => [x.id, x.roundsPerMin, x.damage, x.shellSpeedMps, x.dispersionM, x.splashRadiusM])).toEqual([['13mm_type93', 450, 2, 500, 64, 1]]);
+    expect(g.groups.map((x) => [x.id, x.roundsPerMin, x.damage, x.shellSpeedMps, x.dispersionM, x.splashRadiusM])).toEqual([['13mm_type93', 450, 2, 500, 56, 1]]); // 散布 64 → 56（v0.6.3 実機 2 回目）
     expect(g.spreadFactor).toEqual({ stop: 1, silent: 1, cruise: 1.6, full: 2.5 });
     // 弾倉は jp_t14 だけ（us_03 の us_elco80 の砲には鍵ごと無い）
     expect('magazine' in buildWorldSetup(gameData, 'us_03').guns!).toBe(false);
@@ -112,7 +112,8 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     const rec = { ...getBriefingRecord(gameData, 'jp_05'), hazardIds: s.hazardsTonight, absentHazardIds: s.absentHazards };
     const rows = briefingRows(rec, briefingNumbers(s), nameOf, labelOf);
     expect(rows.map((r) => [r.label, r.text])).toEqual([
-      ['目的', '哨戒の帰り道に米PTの2隻組。振り切れず、左右から何度も来る。赤い線で転舵してかわし、機銃で撃ち返してラバウルへ帰る'],
+      // v0.6.3 実機 2 回目: 航過のあとも後ろから追って撃つ（追撃）。航過は全速で転舵、追撃は針路そのまま撃ち返す
+      ['目的', '哨戒の帰り道に米PTの2隻組。振り切れず、航過のあとも後ろから追って撃つ。航過は全速で転舵、追撃は針路そのまま機銃で撃ち返して追い払い、ラバウルへ帰る'],
       ['成功', '生還。PTに一度も見つからずに帰れば回避の点。PTを沈めれば撃沈の点、ただし撃てば閃光で見つかる（帰投地点は南西の青い輪）'],
       ['月', '新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m'],
       ['敵', '米PTボート ×2（南西から）'],

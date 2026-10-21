@@ -316,15 +316,19 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(commitsTotal).toBeGreaterThan(20);
   });
 
-  it('5 転舵で被弾が減る: 200 夜（今夜の揺らぎ込み）、赤い線で線から離れる直角へ 4 秒の命中は、まっすぐ巡航で帰るの半分未満', () => {
+  // v0.6.3 実機 2 回目（有効射程 450 m・航過は危ない間だけ・機関損傷 0.15）: 巡航のまま 4 秒の転舵は 0.64 倍（前は 0.5 倍未満）。HUD は「全速で転舵」に戻した（全速で 4 秒・その後も全速は 0.1 倍）
+  it('5 転舵で被弾が減る: 200 夜（今夜の揺らぎ込み）、赤い線で線から離れる直角へ 4 秒の命中は、まっすぐ巡航で帰るより少ない（巡航で 0.8 倍未満・全速で半分未満）', () => {
     let straightHits = 0;
     let turnHits = 0;
+    let fullHits = 0;
     for (let seed = 1; seed <= 200; seed++) {
       straightHits += simulate({ seed, steps: 60 * 170, night: true, policy: straight(CRUISE01), stopAtHome: true }).q.hits;
       turnHits += simulate({ seed, steps: 60 * 170, night: true, policy: turnAway(CRUISE01), ev: onCommitTurn, stopAtHome: true }).q.hits;
+      fullHits += simulate({ seed, steps: 60 * 170, night: true, policy: turnAway(FULL01), ev: onCommitTurn, stopAtHome: true }).q.hits;
     }
     expect(straightHits).toBeGreaterThan(200);
-    expect(turnHits).toBeLessThan(0.5 * straightHits);
+    expect(turnHits).toBeLessThan(0.8 * straightHits);
+    expect(fullHits).toBeLessThan(0.5 * straightHits);
   });
 
   it('6 見失う: 航過の後に艇が止まり 700 m 先（停止 480 m では見つからない）→ 8 秒で隊は見失って哨戒へ。航過の数は変わらない。見えない間の突撃は推した位置（全速で北へ）へ向かい、本当の位置には寄らない', () => {
@@ -540,7 +544,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(s.q.shots).toBeGreaterThan(0);
   });
 
-  it('14 航過は本当に向かってくるときだけ（v0.6.3 の直し）: 固めた瞬間はいつも 針路の差 ≤ 30°・艇が線の前・航過の速さで最接近まで 5 秒以内・その距離 ≤ 400 m。2 ステップで終わる航過は無く、まっすぐ帰る艇への航過はどれも撃つ', () => {
+  it('14 航過は本当に向かってくるときだけ（v0.6.3 の直し）: 固めた瞬間はいつも 針路の差 ≤ 30°・艇が線の前・航過の速さで最接近まで 5 秒以内・その距離 ≤ 有効射程（450 m）。2 ステップで終わる航過は無く、まっすぐ帰る艇への航過はほとんど撃つ', () => {
     let commits = 0;
     let bad = 0;
     let instant = 0;
@@ -573,7 +577,9 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
         });
       }
     });
-    expect([bad, instant, straightUnfired]).toEqual([0, 0, 0]);
+    // v0.6.3 実機 2 回目: 有効射程 450 m で反航の航過を固めると、open_fire_s の前に艇首尾の円錐の後ろへすれ違うことがまれにある（seed 26 の 1 回。2.5 秒の線のあと撃たずに終わる）
+    expect([bad, instant]).toEqual([0, 0]);
+    expect(straightUnfired).toBeLessThanOrEqual(0.02 * straightPasses);
     expect(commits).toBeGreaterThan(300);
     expect(straightPasses).toBeGreaterThan(100);
   });

@@ -23,17 +23,20 @@ export interface PtSimOverrides {
   gunDisp?: number; gunRpm?: number; gunCone?: number; magRounds?: number; reloadS?: number;
   /** 任務の燃料 gal・夜明けまでの実秒（buildWorldSetup の fuelGal・dawnS） */
   fuelGal?: number; dawnS?: number;
+  /** v0.6.3 実機 2 回目: PT の砲の有効射程 m・1 命中の機関損傷の確率、航過は危ない間だけ（core/pt-fire）を切る（true で f27b266 の航過の終わり。spec r2 §I.3-5） */
+  effectiveM?: number; engineDamage?: number; passEndOff?: boolean;
 }
 
 export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides = {}): PtSimSetup {
   const w = buildWorldSetup(withGunOverrides(withPtOverrides(data, missionId, o), missionId, o), missionId, { fuelGal: o.fuelGal ?? NaN, dawnS: o.dawnS ?? NaN });
   if (!w.ptBoats) throw new Error(`${missionId} に米PT の隊（v0_1_prototype.pt_boats）が無い`);
+  const pt = o.passEndOff === true ? { ...w.ptBoats, passEndsWhenSafe: false } : w.ptBoats;
   const night = w.mission.night;
   const events = data.riskEvents.events as readonly Record<string, unknown>[];
   const hazardShares: Record<string, number> = {};
   for (const id of night ? night.optionalHazards : []) hazardShares[id] = events.find((e) => e['id'] === id)?.['share'] as number;
   return {
-    pt: w.ptBoats, night, hazardShares, nightEnemyRolls: w.night.enemyOffsets.length, nightBatteries: w.night.batteryDx.length, shellPoolSize: PT_SHELL_POOL_SIZE, // pt は揺らぎなし（= getPtParams）。試行ごとに seed の夜を当てる
+    pt, night, hazardShares, nightEnemyRolls: w.night.enemyOffsets.length, nightBatteries: w.night.batteryDx.length, shellPoolSize: PT_SHELL_POOL_SIZE, // pt は揺らぎなし（= getPtParams）。試行ごとに seed の夜を当てる
     boat: w.boatParams, start: w.playerStart, boundsMarginM: w.boundsMarginM, halfLengthM: w.boatHalfLengthM, halfBeamM: w.boatHalfBeamM,
     damage: w.damageParams, crew: w.crew, crewEffects: w.crewEffects, fuel: w.fuelCurve, fuelGal: w.fuelStartGal, vis: w.vis, visRange2: w.visRange2, ring: w.mission.returnPoint,
     durationS: w.durationS, timeScale: w.timeScale, stepS: FIXED_STEP_S, gun: w.guns, gunShellPoolSize: PT_GUN_SHELL_POOL_SIZE,
@@ -42,7 +45,7 @@ export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides 
 
 /** 米PT の上書きを当てた data の写し（上書きが無ければそのまま）。世界と同じ getPtParams の検査を通す */
 function withPtOverrides(data: GameData, missionId: string, o: PtSimOverrides): GameData {
-  const keys = [o.detectM, o.damage, o.rounds, o.offsetM, o.passes, o.openFireS, o.commitTcpaS, o.runInKt, o.passGapS, o.wingmanDelayS, o.commitHeadingTolDeg, o.holdOffM, o.breakMaxS, o.breakOffM, o.stationM, o.retreatHp, o.casualty, o.fireChance];
+  const keys = [o.detectM, o.damage, o.rounds, o.offsetM, o.passes, o.openFireS, o.commitTcpaS, o.runInKt, o.passGapS, o.wingmanDelayS, o.commitHeadingTolDeg, o.holdOffM, o.breakMaxS, o.breakOffM, o.stationM, o.retreatHp, o.casualty, o.fireChance, o.effectiveM, o.engineDamage];
   if (keys.every((v) => v === undefined)) return data;
   const id = getPrototypeMission(data, missionId).enemyId;
   const rec: unknown = data.enemies.enemies.find((e) => e.id === id);
@@ -51,7 +54,7 @@ function withPtOverrides(data: GameData, missionId: string, o: PtSimOverrides): 
   const g = rec.guns[0]!;
   const u = rec.under_fire;
   const r = {
-    ...rec, detection: { ...rec.detection, base_detect_m: o.detectM ?? rec.detection.base_detect_m }, guns: [{ ...g, damage: o.damage ?? g.damage }],
+    ...rec, detection: { ...rec.detection, base_detect_m: o.detectM ?? rec.detection.base_detect_m }, guns: [{ ...g, damage: o.damage ?? g.damage, effective_night_m: o.effectiveM ?? g.effective_night_m, engine_damage_chance: o.engineDamage ?? g.engine_damage_chance }],
     attack: {
       ...a, rounds_per_pass: o.rounds ?? a.rounds_per_pass, pass_offset_m: o.offsetM ?? a.pass_offset_m, max_passes: o.passes ?? a.max_passes, open_fire_s: o.openFireS ?? a.open_fire_s,
       commit_tcpa_s: o.commitTcpaS ?? a.commit_tcpa_s, run_in_speed_kt: o.runInKt ?? a.run_in_speed_kt, pass_gap_s: o.passGapS ?? a.pass_gap_s, wingman_delay_s: o.wingmanDelayS ?? a.wingman_delay_s,

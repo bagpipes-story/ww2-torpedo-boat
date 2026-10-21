@@ -12,6 +12,7 @@ import { PT_POLICIES } from '../src/core/pt-sim-policy';
 import { directSortie } from '../src/core/sortie';
 import { PT_CALIBRATION, PT_HELD_MIN_M, ptCalibrationMisses, ptCalibrationRun, ptSimSetup } from '../src/systems/pt-pass-sim-setup';
 import { buildWorldSetup } from '../src/systems/world-setup';
+import { PT_SIM_R1 } from './pt-sim-r1';
 
 const N = 200;
 const SEED_BASE = 1;
@@ -45,30 +46,35 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
   });
 
   it('上書き（scripts の DMG・ROUNDS・OFFSET…）は data の写しに当てて getPtParams の検査を通る。data は変えない', () => {
-    // hold_off は tactics.station_m 550 の内（hold_off_m < station_m < 2 × hold_off_m − 有効射程 400。v0.6.3 実機 1 回目）
-    const s = ptSimSetup(gameData, 'jp_05', { damage: 3, rounds: 9, offsetM: 150, passes: 1, openFireS: 3, commitTcpaS: 4, runInKt: 37, passGapS: 5, wingmanDelayS: 2, detectM: 1800, commitHeadingTolDeg: 20, holdOffM: 520, fuelGal: 22, dawnS: 150 });
+    // hold_off は tactics.station_m 600 の内（hold_off_m < station_m < 2 × hold_off_m − 有効射程 450。v0.6.3 実機 2 回目）
+    const s = ptSimSetup(gameData, 'jp_05', { damage: 3, rounds: 9, offsetM: 150, passes: 1, openFireS: 3, commitTcpaS: 4, runInKt: 37, passGapS: 5, wingmanDelayS: 2, detectM: 1800, commitHeadingTolDeg: 20, holdOffM: 560, fuelGal: 22, dawnS: 150 });
     const p = s.pt;
     expect([p.hit.damage, p.gun.damage, p.roundsPerPass, p.offsetM, p.maxPasses, p.openFireS, p.commitTcpaS, p.passGapS, p.wingmanDelayS, p.baseDetectM]).toEqual([3, 3, 9, 150, 1, 3, 4, 5, 2, 1800]);
-    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([20, 520 ** 2, 640 ** 2]);
+    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([20, 560 ** 2, 670 ** 2]);
     expect(p.runInMps).toBeCloseTo(ptSimSetup(gameData, 'jp_05').pt.runInMps * (37 / 35), 9);
     expect([s.fuelGal, s.durationS]).toEqual([22, 150]);
     expect(() => ptSimSetup(gameData, 'jp_05', { rounds: 13 })).toThrow(/1 回の航過では砲だけで沈まない/); // 13 × 4 = 52 ≥ HP 50
     expect(() => ptSimSetup(gameData, 'jp_05', { openFireS: 1.5 })).toThrow(/open_fire_s/);
     expect(() => ptSimSetup(gameData, 'jp_05', { runInKt: 30 })).toThrow(/振り切れない/);
     expect(() => ptSimSetup(gameData, 'jp_05', { holdOffM: 350 })).toThrow(/hold_off_m/);
-    expect(() => ptSimSetup(gameData, 'jp_05', { holdOffM: 550 })).toThrow(/station_m/); // 待つ PT の位置取りが hold_off の内になる
+    expect(() => ptSimSetup(gameData, 'jp_05', { holdOffM: 600 })).toThrow(/tactics\.station_m/); // 待つ PT の位置取りが hold_off の内になる
     // v0.6.3 実機 1 回目の上書き（BREAKS・BREAKM・STATION・RETHP・CAS・PFIRE と自艇の 13mm の GDISP・GRPM・GCONE・MAG・RELOAD）
     const t = ptSimSetup(gameData, 'jp_05', { breakMaxS: 6, breakOffM: 700, stationM: 560, retreatHp: 50, casualty: 0.04, fireChance: 0.004, gunDisp: 56, gunRpm: 400, gunCone: 20, magRounds: 20, reloadS: 4 });
     expect([t.pt.breakMaxS, t.pt.breakOff2, t.pt.stationM, t.pt.retreatHp, t.pt.casualtyChance, t.pt.fireChance]).toEqual([6, 700 ** 2, 560, 50, 0.04, 0.004]);
     const tg = t.gun!;
     expect([tg.groups[0]!.dispersionM, tg.groups[0]!.roundsPerMin, tg.deadConeDeg, tg.magazine]).toEqual([56, 400, 20, { rounds: 20, reloadS: 4 }]);
     expect(() => ptSimSetup(gameData, 'jp_05', { retreatHp: 100 })).toThrow(/retreat_hp/); // HP だけで沈む
-    expect(() => ptSimSetup(gameData, 'jp_05', { stationM: 600 })).toThrow(/station_m/);
+    expect(() => ptSimSetup(gameData, 'jp_05', { stationM: 650 })).toThrow(/tactics\.station_m/);
     expect(() => ptSimSetup(gameData, 'jp_05', { magRounds: 0 })).toThrow(/magazine/);
     expect(() => ptSimSetup(gameData, 'jp_05', { magRounds: 50 })).not.toThrow(); // 1 弾倉 × 2 = 100 ≥ PT の HP でもよい（HP だけでは沈まない。レビュー F8）
     const base = getPtParams(gameData, getPrototypeMission(gameData, 'jp_05'), TS)!;
-    expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM, base.breakMaxS, base.breakOff2, base.stationM]).toEqual([4, 10, 120, 2000, 5, 650 ** 2, 550]);
-    expect(ptSimSetup(gameData, 'jp_05').gun!.groups[0]!.dispersionM).toBe(64); // data は変えない
+    expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM, base.breakMaxS, base.breakOff2, base.stationM]).toEqual([4, 10, 120, 2000, 5, 650 ** 2, 600]);
+    expect(ptSimSetup(gameData, 'jp_05').gun!.groups[0]!.dispersionM).toBe(56); // data は変えない
+    // v0.6.3 実機 2 回目の上書き（PEFF・PENG・GR_OFF）: 有効射程は検査を通る（追撃の commit_m 350 < 有効射程・hold_off の外）、GR_OFF だけが航過は危ない間だけを切る
+    const r = ptSimSetup(gameData, 'jp_05', { effectiveM: 420, engineDamage: 0.05, passEndOff: true });
+    expect([r.pt.gun.effectiveM, r.pt.hit.engineDamageChance, r.pt.passEndsWhenSafe, base.passEndsWhenSafe, base.gun.effectiveM, base.hit.engineDamageChance]).toEqual([420, 0.05, false, true, 450, 0.15]);
+    expect(() => ptSimSetup(gameData, 'jp_05', { effectiveM: 350 })).toThrow(/commit_m < guns\.effective_night_m/);
+    expect(ptSimSetup(gameData, 'jp_05', PT_SIM_R1).pt).toEqual({ ...base, gun: { ...base.gun, effectiveM: 400, engineDamageChance: 0.02 }, hit: { ...base.hit, engineDamageChance: 0.02 }, holdOff2: 500 ** 2, holdOuter2: 600 ** 2, stationM: 550, passGapS: 2.5, passEndsWhenSafe: false });
   });
 
   it('同じ seed なら同じ夜・同じ集計、違う seed なら違う', () => {
@@ -83,8 +89,8 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect([r.gunShots, r.gunHits, r.ptRetired, r.ptSunk, r.flashFirst, r.gunBeyond]).toEqual([0, 0, 0, 0, false, 0]);
   });
 
-  // 較正の表は 1 回だけ回す（★ の 6 行、N 200 で 10 秒ほど）
-  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE);
+  // 較正の表は 1 回だけ回す（★ の 6 行、N 200 で 10 秒ほど）。v0.6.3 実機 2 回目: 実機 1 回目の帯は実機 1 回目の値と航過の終わりで回す（tests/pt-sim-r1。f27b266 の表に戻る関門）
+  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE, PT_SIM_R1);
   const rows = PT_CALIBRATION.filter((r) => r.star);
 
   it('較正 ★（spec §F.4・r1 §G.3、N 200・seed 1〜200）: 何もしないと沈む（巡航・静音）・転舵で助かる（航過は 4.5 回以上）・遅い反応でも効く・暗さが効く。不変（予告から初弾・同時に 1 隻・射程と視程・1 回の航過・待つ PT の最接近）も', () => {

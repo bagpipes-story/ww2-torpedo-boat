@@ -276,13 +276,13 @@ describe('1 隻 4 回・夜明け・後ろへ抜けたの判定（pt-pass-end �
     expect([q.out, ...q.boats.map((b) => b.phase)]).toEqual([2, PT_OUT, PT_OUT]);
   });
 
-  it('後ろへ抜けたかは固めた針路で見る: 固めた線（東）へ向き直る途中（針路 115°）の PT の真横 404 m に艇がいても、2 ステップで航過は終わらない（今の針路だと 1 ステップで終わった）', () => {
+  it('後ろへ抜けたかは固めた針路で見る: 固めた線（東）へ向き直る途中（針路 115°）の PT の真横 454 m（有効射程 450 m の外）に艇がいても、2 ステップで航過は終わらない（今の針路だと 1 ステップで終わった）', () => {
     const q = createPtSection(P, 24);
     const b = q.boats[0]!;
     Object.assign(b, { x: 3000, y: 2000, headingDeg: 115, lockDeg: 90, passMps: P.passMinMps, speedMps: P.passMinMps, phase: PT_PASS, timerS: 0.1, roundsLeft: P.roundsPerPass });
     q.boats[1]!.phase = PT_OUT;
     Object.assign(q, { owner: 0, detected: true, holdLeftS: 1e9, commitAtS: 9.9 });
-    const boat = { x: 3020, y: 2000 - 404, headingDeg: 0, speedMps: 0 };
+    const boat = { x: 3020, y: 2000 - 454, headingDeg: 0, speedMps: 0 };
     // 今の針路で見た「後ろへ抜けた」は真（直す前の判定）、固めた針路では偽
     const h = degToRad(b.headingDeg);
     const l = degToRad(b.lockDeg);

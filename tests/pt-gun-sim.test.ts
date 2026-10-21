@@ -8,6 +8,7 @@ import { runPtTrial } from '../src/core/pt-pass-sim';
 import { PT_GUN_POLICIES } from '../src/core/pt-sim-policy';
 import { PT_GUN_CALIBRATION, PT_GUN_SUNK_NIGHT_MAX, ptGunCalibrationMisses } from '../src/systems/pt-gun-calibration';
 import { PT_HELD_MIN_M, ptCalibrationRun, ptSimSetup } from '../src/systems/pt-pass-sim-setup';
+import { PT_SIM_R1 } from './pt-sim-r1';
 
 const N = 200;
 const SEED_BASE = 1;
@@ -24,7 +25,8 @@ describe('T-14 の 13mm を撃つ遊び方の模擬（v0.6.3 実機 1 回目、s
   });
 
   // 較正の表は 1 回だけ回す（撃つ 4 行 + 対の 2 行、N 200 で 8 秒ほど）
-  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE);
+  // v0.6.3 実機 2 回目: 実機 1 回目の帯は実機 1 回目の値と航過の終わりで回す（tests/pt-sim-r1）
+  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE, PT_SIM_R1);
   const rows = PT_GUN_CALIBRATION.filter((r) => r.star || r.policy === 'fight');
 
   it('較正 ★（spec r1 §G.4、N 200・seed 1〜200）: 転舵しながら撃つと HUD どおりの転舵より痛くなく 1 夜 5〜14 発当たる・止まって撃ち合うのは罠・暗さに隠れて撃っても発見はほとんど増えない（と fight）', () => {

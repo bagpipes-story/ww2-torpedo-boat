@@ -4,7 +4,7 @@
 // 環境変数: MISSION（既定 jp_05）・N（夜の数。既定 400）・SEED（最初の seed。既定 1）・POL（既定 全部 22）・TABLE=1（撃たない較正の帯と ✓/✗）・TABLE=2（13mm の較正の帯と ✓/✗）・
 //   上書き DETECT（base_detect_m）・DMG（guns.damage）・ROUNDS・OFFSET・PASSES・OPEN・COMMITT・RUNKT・GAP・WING・TOL（commit_heading_tol_deg）・HOLD（hold_off_m）・
 //   BREAKS・BREAKM（break_max_s・break_off_m）・STATION（tactics.station_m）・RETHP・CAS・PFIRE（under_fire）・GDISP・GRPM・GCONE・MAG・RELOAD（自艇の gun_battery）・
-//   ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）
+//   ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）、v0.6.3 実機 2 回目: PEFF（guns.effective_night_m）・PENG（guns.engine_damage_chance）・GR_OFF=1（航過は危ない間だけを切る）
 // 実行: npx esbuild scripts/pt-pass-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/pt.mjs && node <scratch>/pt.mjs
 import { gameData } from '../src/config/game-data';
 import type { PtCell } from '../src/core/pt-sim-cell';
@@ -22,6 +22,7 @@ const o: PtSimOverrides = {
   commitTcpaS: num('COMMITT'), runInKt: num('RUNKT'), passGapS: num('GAP'), wingmanDelayS: num('WING'), commitHeadingTolDeg: num('TOL'), holdOffM: num('HOLD'),
   breakMaxS: num('BREAKS'), breakOffM: num('BREAKM'), stationM: num('STATION'), retreatHp: num('RETHP'), casualty: num('CAS'), fireChance: num('PFIRE'),
   gunDisp: num('GDISP'), gunRpm: num('GRPM'), gunCone: num('GCONE'), magRounds: num('MAG'), reloadS: num('RELOAD'), fuelGal: num('ALLOT'), dawnS: num('DAWN'),
+  effectiveM: num('PEFF'), engineDamage: num('PENG'), passEndOff: process.env['GR_OFF'] === '1' ? true : undefined,
 };
 const all: readonly string[] = [...PT_POLICIES, ...PT_GUN_POLICIES];
 const pols = (process.env['POL'] ?? all.join(','))

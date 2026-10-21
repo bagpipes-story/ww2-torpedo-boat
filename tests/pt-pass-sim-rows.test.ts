@@ -4,13 +4,15 @@
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { PT_CALIBRATION, ptCalibrationMisses, ptCalibrationRun } from '../src/systems/pt-pass-sim-setup';
+import { PT_SIM_R1 } from './pt-sim-r1';
 
 const N = 200;
 const SEED_BASE = 1;
 
 describe('米PT の掃射の航過の模擬（v0.6.3、spec §F.4 の ★ 以外）', () => {
   // 較正の表は 1 回だけ回す（8 行、N 200 で 7 秒ほど。turn_cruise の帯が読む巡航の HP は ★ の側）
-  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE);
+  // v0.6.3 実機 2 回目: 実機 1 回目の帯は実機 1 回目の値と航過の終わりで回す（tests/pt-sim-r1。f27b266 の表に戻る関門）
+  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE, PT_SIM_R1);
   const rows = PT_CALIBRATION.filter((r) => !r.star);
 
   it('較正（N 200・seed 1〜200）: 全速は 1,500 m より遠くで見つかる、全速の転舵は沈まず航過 4.5 回以上で左右から代わる代わる、PT へ向かうは 15% 以下、夜明けまで止まれば見つからずに夜明け後に帰る、帰投 65% 以上（縁へ逃げるは床なし）・漂流の帯・不変', () => {

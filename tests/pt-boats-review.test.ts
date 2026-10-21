@@ -184,7 +184,8 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
     void uncounted;
     expect(badCount).toBe(0);
     expect(passes).toBeGreaterThan(2 * N);
-    expect(fired).toBeGreaterThanOrEqual(0.9 * passes); // 前は 800 回の航過のうち撃ったのは 220 回
+    // 前は 800 回の航過のうち撃ったのは 220 回。v0.6.3 実機 2 回目: open_fire_s の後に有効射程の外へ離れていく航過は撃たずに終わる（回数に数える）ので 0.9 → 0.8（60 夜で 0.87）
+    expect(fired).toBeGreaterThanOrEqual(0.8 * passes);
     expect(hits / N).toBeGreaterThan(4); // 前は 1 夜 0.56 発
   });
 

@@ -1,5 +1,6 @@
 // 敵の米PT（v0.6.3。docs/02 §6.4）の数値の読み出し: enemies.json の PT・boats.json の boat_ref・任務の pt_boats から core/pt-data の PtParams を組み、
 // 他の記録が要る検査（spec §C.3 の 6〜10: 振り切れない・1 回の航過で沈まない・見えない PT から撃たない・出発で見つからない（史実モード込み）・夜明けに去る）を足す。
+// v0.6.3 実機 2 回目: 追撃（chase）も振り切れない（speed_kt > 自艇の最大）・1 回の連射で沈まない（burst_rounds × damage < 自艇の HP）。
 // 主兵装が guns（v0.6.3 実機 1 回目。T-14 の 13mm）なら自艇の砲の検査も: 弾倉がある・見えない PT へ撃たない（射程 ≤ 視程）・撃てば撃った相手に見える（閃光 ≥ 射程）。
 // 1 弾倉 × damage を PT の HP と比べる検査は外した（レビュー F8: PT は HP だけでは沈まない＝pt-data の retreat_hp < hull_hp。守るものが無く、25mm の 15 発 × 7 などの差し替えを誤った文で止めた）。
 // 米PT の隊の無い任務は null（dawn-data と同じ形）。world-setup が組み立てのたびに呼ぶ（壊れた data は任務の id を付けて例外）。
@@ -16,7 +17,7 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   if (!block) return null;
   const id = mission.id;
   const rec = (data.enemies.enemies as readonly unknown[]).find((e) => (e as Record<string, unknown>)['id'] === mission.enemyId);
-  if (!isPtDataRecord(rec)) throw new Error(`${id}: enemies.json の ${mission.enemyId} に米PT の値（boat_ref / torpedo_immune / detection / patrol / attack の ${PT_ATTACK_KEYS.length} 個 / guns 1 種 / tactics / under_fire）が無いか、attack に知らないキーがある（docs/02 §6.4）`);
+  if (!isPtDataRecord(rec)) throw new Error(`${id}: enemies.json の ${mission.enemyId} に米PT の値（boat_ref / torpedo_immune / detection / patrol / attack の ${PT_ATTACK_KEYS.length} 個 / guns 1 種 / tactics / under_fire / chase の 19 個）が無いか、attack・chase に知らないキーがある（docs/02 §6.4）`);
   const w = data.hitRateModel.world;
   const ptHp = getBoatDamageParams(data, rec.boat_ref).maxHp;
   const p = ptParamsFromData(rec, getBoatRecord(data, rec.boat_ref), block, { missionId: id, count: mission.enemyCount, bounds: mission.bounds, timeScale, detectHoldS: data.hitRateModel.visibility.detect_hold_s, spriteScale: w.sprite_scale, hitScale: w.hit_scale, hullHp: ptHp });
@@ -27,8 +28,10 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   const gun = rec.guns[0]!;
   const player = getBoatRecord(data, mission.playerBoatId);
   if (!(a.run_in_speed_kt > player.speed_max_kt)) bad(`突撃 run_in_speed_kt（${a.run_in_speed_kt} kt）は自艇の最大速力（${player.speed_max_kt} kt）より速い（PT は振り切れない）`);
+  if (!(rec.chase.speed_kt > player.speed_max_kt)) bad(`追撃 chase.speed_kt（${rec.chase.speed_kt} kt）は自艇の最大速力（${player.speed_max_kt} kt）より速い（PT は振り切れない）`);
   const hp = getBoatDamageParams(data, mission.playerBoatId).maxHp;
   if (!(a.rounds_per_pass * gun.damage < hp)) bad(`rounds_per_pass × damage（${a.rounds_per_pass * gun.damage}）は自艇の HP（${hp}）未満（1 回の航過では砲だけで沈まない）`);
+  if (!(rec.chase.burst_rounds * gun.damage < hp)) bad(`chase.burst_rounds × damage（${rec.chase.burst_rounds * gun.damage}）は自艇の HP（${hp}）未満（1 回の連射では砲だけで沈まない）`);
   const vis = getVisibilityParams(data, mission.moon, false);
   const visM = playerVisRangeM(vis);
   if (!(gun.effective_night_m <= visM)) bad(`effective_night_m（${gun.effective_night_m} m）は自艇の視程（${visM} m）以下（見えない PT から撃たない）`);

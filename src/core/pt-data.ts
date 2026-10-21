@@ -3,6 +3,7 @@
 // 単位: *_kt は ktToMps で game m/s、*_s は体感秒、距離の比較は二乗で持つ。確保は出撃の組み立てのときだけ。
 import type { BoatDataRecord } from './boat-motion';
 import { gunParamsFromData, isGunDataRecord, type GunDataRecord, type GunParams, type HitSpec } from './gunnery';
+import { chaseParamsFromData, isChaseRecord, type PtChaseParams, type PtChaseRecord } from './pt-chase-data';
 import { ptParamsAtNight } from './pt-night';
 import { degToRad, ktToMps } from './units';
 
@@ -39,6 +40,8 @@ export interface PtDataRecord {
   tactics: { station_m: number; station_rel_deg: number[]; station_tol_deg: number; station_close_m: number; station_lead_s: number };
   /** T-14 の 13mm を受けたとき（v0.6.3 実機 1 回目。1 命中ごとに 1 回引く: 引火で沈む・死傷で去る、どれでもなく HP が retreat_hp 以下なら去る） */
   under_fire: { retreat_hp: number; casualty_chance: number; fire_chance: number };
+  /** 追撃（v0.6.3 実機 2 回目。ちょうど 19 鍵。core/pt-chase-data） */
+  chase: PtChaseRecord;
 }
 
 /** missions_seed の v0_1_prototype.pt_boats: PT ごとの往復する線 [x0, y0, x1, y1]、線の始点からの出発位置 m、去る方位 */
@@ -67,7 +70,7 @@ export interface PtDataContext {
   hullHp: number;
 }
 
-export interface PtParams {
+export interface PtParams extends PtChaseParams {
   count: number;
   /** 発見: 基準距離 m（月明・速力帯は世界が掛ける）、発見から突撃までの秒、出撃からこの秒は見つけない、見失ってから警戒を解く秒（体感） */
   baseDetectM: number; reactionDelayS: number; detectFromS: number; detectHoldS: number;
@@ -93,6 +96,8 @@ export interface PtParams {
   legs: Float64Array; startX: Float64Array; startY: Float64Array; startHeadingDeg: Float64Array; startAlongM: number;
   bounds: { width: number; height: number };
   timeScale: number;
+  /** 航過は危ない間だけ（v0.6.3 実機 2 回目。core/pt-fire: 撃ち切ったか、open_fire_s の後に有効射程の外へ離れていけば終える）。data からはいつも true（模擬の上書き GR_OFF だけが false） */
+  passEndsWhenSafe: boolean;
 }
 
 function nums(v: unknown, keys: readonly string[]): boolean {
@@ -111,7 +116,7 @@ export function isPtDataRecord(v: unknown): v is PtDataRecord {
   const t = r['tactics'];
   const rel = (t as Record<string, unknown> | undefined)?.['station_rel_deg'];
   const tacticsOk = nums(t, ['station_m', 'station_tol_deg', 'station_close_m', 'station_lead_s']) && Array.isArray(rel) && rel.length >= 1 && rel.length <= PT_STATION_REL_MAX && nums(rel, rel.map((_, i) => String(i)));
-  return nums(r['detection'], ['base_detect_m', 'reaction_delay_s', 'detect_from_s']) && nums(r['patrol'], ['speed_kt', 'arrive_m']) && Array.isArray(g) && g.length === 1 && isGunDataRecord(g[0]) && tacticsOk && nums(r['under_fire'], ['retreat_hp', 'casualty_chance', 'fire_chance']);
+  return nums(r['detection'], ['base_detect_m', 'reaction_delay_s', 'detect_from_s']) && nums(r['patrol'], ['speed_kt', 'arrive_m']) && Array.isArray(g) && g.length === 1 && isGunDataRecord(g[0]) && tacticsOk && nums(r['under_fire'], ['retreat_hp', 'casualty_chance', 'fire_chance']) && isChaseRecord(r['chase']);
 }
 
 export function isPtMissionBlock(v: unknown): v is PtMissionBlock {
@@ -167,6 +172,7 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
   if (!(u.retreat_hp > 0 && u.retreat_hp < ctx.hullHp)) bad(`0 < under_fire.retreat_hp < PT の HP（${ctx.hullHp}。HP だけでは沈まない）`);
   const chanceOk = (x: number): boolean => x >= 0 && x <= PT_UNDER_FIRE_CHANCE_MAX;
   if (!(chanceOk(u.casualty_chance) && chanceOk(u.fire_chance))) bad(`under_fire.casualty_chance・fire_chance は 0〜${PT_UNDER_FIRE_CHANCE_MAX}`); // 和 < 1 は上限で決まる（レビュー F8）
+  const chase = chaseParamsFromData(r.chase, { boatMaxKt: boat.speed_max_kt, minRangeM: a.min_range_m, holdOffM: a.hold_off_m, effectiveM: eff, openFireS: a.open_fire_s }, bad);
   const gun = gunParamsFromData(g);
   const sq = (x: number): number => x * x;
   const base: PtParams = {
@@ -188,6 +194,8 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
     legs, startX: new Float64Array(n), startY: new Float64Array(n), startHeadingDeg: new Float64Array(n), startAlongM: b.start_along_m,
     bounds: { width: ctx.bounds.width, height: ctx.bounds.height },
     timeScale: ctx.timeScale,
+    passEndsWhenSafe: true,
+    ...chase,
   };
   return ptParamsAtNight(base, 0, 0, false);
 }

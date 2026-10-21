@@ -9,17 +9,16 @@
 // 乱数は seed+18 の系列だけ（1 発 2 回。命中の火災・機関は呼ぶ側が同じ系列で引く）。AI は引かない。
 // v0.6.3 実機 1 回目: 待つ PT は前の航過と反対の舷の位置（艇の針路から 90°・45°・135° を航過ごとに順に、station_m）を取り、待ちが解けたらその舷から寄る（挟み撃ち）。
 // 艇の 13mm の閃光（c.flashM）でも見つける。13mm で沈んだ PT（PT_SUNK）は動かない。撃退・撃沈は core/pt-damage（乱数は呼ぶ側の seed+20）。
-// 定数・型・確保・脅威の PT は pt-state.ts、航過の幾何は pt-pass.ts、航過の固め・終わり・数えは pt-pass-end.ts（使う側はここだけを import する。pt-state を出し直している）。
-import type { BoatState } from './boat-motion';
+// 定数・型・確保・脅威の PT は pt-state.ts、航過の幾何は pt-pass.ts、航過の固め・終わり・数えは pt-pass-end.ts、航過の射撃と終わりの判定は pt-fire.ts（使う側はここだけを import する。pt-state を出し直している）。
 import { beyondBounds } from './dawn-withdraw';
 import type { PtParams } from './pt-data';
-import { aimPoint, inDeadCone, nearEdge, passCommitOk, stationHeading, targetSide } from './pt-pass';
-import { commitPass, countPass, endPass } from './pt-pass-end';
+import { smokeBlocked, stepPass } from './pt-fire';
+import { aimPoint, nearEdge, passCommitOk, stationHeading, targetSide } from './pt-pass';
+import { commitPass, countPass } from './pt-pass-end';
 import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, ptFighting, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
 import type { SeededRng } from './rng';
-import { advanceShell, findFreeShell, launchShell, pointNearBoat } from './shells';
+import { advanceShell, pointNearBoat } from './shells';
 import { bearingDeg, edgeTurnHeadingDeg, steerShip } from './ship-ai';
-import { losBlocked } from './smoke';
 import { degToRad } from './units';
 
 export * from './pt-state';
@@ -201,46 +200,6 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
   }
 }
 
-/**
- * 航過の 1 ステップ（操舵の後）: 撃つのは航過中の 1 隻だけ、予告から open_fire_s 後・捉えていて・艇が的で・煙幕に遮られず・残り弾あり・近すぎず・
- * 有効射程と視程の内・艇首尾の円錐の外。間隔は負の残りを繰り越す（barges と同じ）。1 発ごとに今の艇の速度で直線の見越し（乱数 2 回）。
- * 後ろへ抜けた（有効射程の外か艇尾の円錐）・最大秒・海域の縁で終わる
- */
-function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, i: number, vpx: number, vpy: number, rng: SeededRng, feelDt: number, ev: PtEvents): void {
-  const boat = c.boat;
-  const g = p.gun;
-  const eff2 = g.effectiveM * g.effectiveM;
-  const dx = boat.x - b.x;
-  const dy = boat.y - b.y;
-  const d2 = dx * dx + dy * dy;
-  const r = degToRad(b.headingDeg);
-  const hx = Math.sin(r);
-  const hy = -Math.cos(r);
-  const cone = inDeadCone(hx, hy, dx, dy, d2, p.cosDead2);
-  const cd = Math.max(b.cooldownS - feelDt, -feelDt);
-  b.cooldownS = cd;
-  const canFire = i === q.owner && b.timerS >= p.openFireS && q.detected && c.targetValid && b.roundsLeft > 0 && d2 >= p.minRange2 && d2 <= eff2 && d2 <= c.visRange2 && !cone && !smokeBlocked(c, b);
-  if (!canFire) {
-    if (cd < 0) b.cooldownS = 0;
-  } else if (cd <= 0) {
-    const s = findFreeShell(q.shells);
-    if (s) {
-      b.cooldownS = cd + 60 / (g.roundsPerMinPerGun * g.count);
-      launchShell(s, b.x, b.y, boat.x, boat.y, vpx, vpy, g.shellSpeedMps, Math.max(p.spreadMinM, (g.dispersionM * Math.sqrt(d2)) / g.effectiveM), i, rng);
-      b.roundsLeft--;
-      if (b.firedThisPass === 0) q.minWarnS = Math.min(q.minWarnS, c.timeS - q.commitAtS);
-      b.firedThisPass++;
-      q.shots++;
-      ev.onFire(i, b.x, b.y);
-    }
-  }
-  // 後ろへ抜けたかは固めた針路で見る（v0.6.3 実機 1 回目の守りの直し: 今の針路だと、固めた線へ向き直る途中の PT が 1 ステップで航過を終えうる）。艇首尾の円錐は今の針路のまま
-  const lr = degToRad(b.lockDeg);
-  const dot = Math.sin(lr) * dx - Math.cos(lr) * dy;
-  // 縁は海域の外へ出る手前（絵の半長）で終える（v0.6.3 レビュー: edge_margin_m で終えると、縁にいる艇へ固めた航過が撃つ前に終わった）
-  if (b.timerS >= p.passMaxS || (dot < 0 && (d2 > eff2 || cone)) || nearEdge(b.x, b.y, p.bounds, p.boundsMarginM)) endPass(q, p, b, i, ev);
-}
-
 /** 航過の速さ: 艇の速さ + 追い越し（下限 pass_speed_kt・上限は艇の最大） */
 function passSpeedMps(p: PtParams, playerMps: number): number {
   return Math.min(p.dashMps, Math.max(p.passMinMps, playerMps + p.overtakeMps));
@@ -263,9 +222,4 @@ function patrolHeading(b: PtBoatState, p: PtParams, i: number): number {
     k = 4 * i + 2 * b.wp;
   }
   return bearingDeg(b.x, b.y, p.legs[k]!, p.legs[k + 1]!);
-}
-
-/** PT と艇の間の線が煙幕に遮られている（煙幕の無い艇では常に false） */
-function smokeBlocked(c: PtCheck, b: BoatState): boolean {
-  return c.smoke !== null && c.smokeParams !== null && losBlocked(c.smoke, c.smokeParams, b.x, b.y, c.boat.x, c.boat.y);
 }

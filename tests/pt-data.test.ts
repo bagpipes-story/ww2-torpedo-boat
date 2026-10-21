@@ -28,17 +28,25 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect(p.cosDead2).toBeCloseTo(Math.cos(degToRad(30)) ** 2, 12);
     // v0.6.3 実機 1 回目: 離脱 650 m・5 秒（前は 800 m・8 秒）、ずらし 120 m（前は 140）、1 隻 4 回（前は 2）
     expect([p.commitMax2, p.minRange2, p.breakOff2, p.arrive2]).toEqual([900 ** 2, 60 ** 2, 650 ** 2, 100 ** 2]);
-    expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS, p.breakMaxS]).toEqual([5, 120, 2.5, 8, 10, 4, 2.5, 3, 5]);
-    // v0.6.3 の直し: 固める針路の差 30°・待つ PT は 500 m より内へ寄らず、600 m（500 + (500 − 有効射程 400)）から曲がる
-    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([30, 500 ** 2, 600 ** 2]);
+    // v0.6.3 実機 2 回目: 次の航過まで 2.5 → 3 秒（線が撃ち切りで早く消えるので）
+    expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS, p.breakMaxS]).toEqual([5, 120, 2.5, 8, 10, 4, 3, 3, 5]);
+    // v0.6.3 の直し: 固める針路の差 30°・待つ PT は hold_off より内へ寄らず、外側から曲がる。v0.6.3 実機 2 回目: 550 m より内へ寄らず、650 m（550 + (550 − 有効射程 450)）から
+    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([30, 550 ** 2, 650 ** 2]);
     expect([p.turnRateDegS, p.accelMps2, p.spriteLengthUnits, p.spriteBeamUnits, p.boundsMarginM]).toEqual([24, 1.2, 48.8, 12.6, 24.4]);
-    expect([p.gun.effectiveM, p.gun.damage, p.gun.roundsPerMinPerGun, p.hit.damage, p.hit.fireChance, p.hit.engineDamageChance]).toEqual([400, 4, 240, 4, 0.03, 0.02]);
+    // v0.6.3 実機 2 回目: 有効射程 400 → 450 m・1 命中の機関損傷 0.02 → 0.15
+    expect([p.gun.effectiveM, p.gun.damage, p.gun.roundsPerMinPerGun, p.hit.damage, p.hit.fireChance, p.hit.engineDamageChance]).toEqual([450, 4, 240, 4, 0.03, 0.15]);
     expect([...p.legs]).toEqual([1200, 2200, 4800, 2200, 1200, 2400, 4800, 2400]);
     expect([...p.startX, ...p.startY, ...p.startHeadingDeg]).toEqual([2000, 2000, 2200, 2400, 90, 90]);
     expect([p.leaveHeadingDeg, p.edgeMarginM, p.timeScale]).toEqual([90, 200, TS]);
     // v0.6.3 実機 1 回目: T-14 の 13mm を受ける（HP は boat_ref us_elco80 の hull_hp 100、当たりは 24.4 × 6.3 m × hit_scale 1 の半分）と、待つ PT の位置取り
     expect([p.hullHp, p.hitHalfLengthM, p.hitHalfBeamM, p.retreatHp, p.casualtyChance, p.fireChance]).toEqual([100, 12.2, 3.15, 60, 0.03, 0.003]);
-    expect([p.stationM, [...p.stationRelDeg], p.stationTolDeg, p.stationClose2, p.stationLeadS]).toEqual([550, [90, 45, 135], 30, 150 ** 2, 1]);
+    expect([p.stationM, [...p.stationRelDeg], p.stationTolDeg, p.stationClose2, p.stationLeadS]).toEqual([600, [90, 45, 135], 30, 150 ** 2, 1]);
+    // v0.6.3 実機 2 回目: 追撃（us_pt_enemy.chase。core/pt-chase-data）と、航過は危ない間だけ（core/pt-fire。data からはいつも有効）
+    expect([p.chaseMps, p.chaseMinMps, p.chaseStationM, p.chaseRelDeg, p.chaseHeldM, p.chaseHeldRelDeg, p.chaseHeldGuard2, p.chaseCommit2]).toEqual([ktToMps(39), ktToMps(10), 170, 135, 350, 150, 150 ** 2, 350 ** 2]);
+    expect([p.burstRounds, p.burstMaxS, p.maxBursts, p.burstBowRofFactor, p.burstConeQuitS, p.chaseGapS, p.chaseSelfGapS, p.chaseSlowExitS, p.chaseSuppressHits, p.passEndsWhenSafe]).toEqual([6, 3, 6, 0.4, 2, 2, 3, 2, 3, true]);
+    expect(p.chaseCosAft2).toBeCloseTo(Math.cos(degToRad(75)) ** 2, 12);
+    expect(p.chaseCosExit2).toBeCloseTo(Math.cos(degToRad(45)) ** 2, 12);
+    expect(p.burstRounds * p.hit.damage).toBe(24); // 1 回の連射では沈まない（< HP 50）
     // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
     expect(p.roundsPerPass * p.hit.damage).toBe(40);
     expect(p.openFireS).toBeGreaterThanOrEqual(2);
@@ -155,16 +163,16 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
   // v0.6.3 の直しの 2 つの鍵: 向きの許容は 0〜90° の間、待つ距離は有効射程（400 m）より外で航過を固める距離（900 m）より内
   const fixCases: [string, (d: typeof gameData) => void, RegExp][] = [
     // v0.6.3 レビュー: 句ごとに、その句だけが崩れる形と文で見る（前は有効射程 850 m が hold_off_m の句にも掛かり、break_off_m の句を消しても通った）
-    ['2 effective ≥ break_off（離脱 380 m < 有効射程 400 m）', (d) => (attackOf(d)['break_off_m'] = 380), /effective_night_m < break_off_m/],
+    ['2 effective ≥ break_off（離脱 380 m < 有効射程 450 m）', (d) => (attackOf(d)['break_off_m'] = 380), /effective_night_m < break_off_m/],
     ['2 effective ≥ commit_max（hold_off < commit_max の句から出る）', (d) => (attackOf(d)['commit_max_m'] = 400), /hold_off_m < commit_max_m/],
-    ['2 offset ≥ effective', (d) => (attackOf(d)['pass_offset_m'] = 400), /pass_offset_m < effective_night_m/],
-    ['2 hold_off ≤ 有効射程', (d) => (attackOf(d)['hold_off_m'] = 400), /hold_off_m/],
+    ['2 offset ≥ effective', (d) => (attackOf(d)['pass_offset_m'] = 450), /pass_offset_m < effective_night_m/],
+    ['2 hold_off ≤ 有効射程', (d) => (attackOf(d)['hold_off_m'] = 450), /hold_off_m/],
     ['2 hold_off ≥ commit_max', (d) => (attackOf(d)['hold_off_m'] = 900), /hold_off_m/],
     ['4 commit_heading_tol 0', (d) => (attackOf(d)['commit_heading_tol_deg'] = 0), /commit_heading_tol_deg/],
     ['4 commit_heading_tol 90', (d) => (attackOf(d)['commit_heading_tol_deg'] = 90), /commit_heading_tol_deg/],
-    // v0.6.3 実機 1 回目: 待つ PT の位置取り（hold_off_m 500 < station_m < 2 × 500 − 400 = 600）と 13mm を受けたとき
-    ['位置取り station_m = hold_off_m', (d) => ((ptRec(d)['tactics'] as Rec)['station_m'] = 500), /station_m/],
-    ['位置取り station_m = 2 × hold_off_m − 有効射程', (d) => ((ptRec(d)['tactics'] as Rec)['station_m'] = 600), /station_m/],
+    // v0.6.3 実機 1 回目: 待つ PT の位置取り（実機 2 回目から hold_off_m 550 < station_m < 2 × 550 − 450 = 650）と 13mm を受けたとき
+    ['位置取り station_m = hold_off_m', (d) => ((ptRec(d)['tactics'] as Rec)['station_m'] = 550), /tactics\.station_m/],
+    ['位置取り station_m = 2 × hold_off_m − 有効射程', (d) => ((ptRec(d)['tactics'] as Rec)['station_m'] = 650), /tactics\.station_m/],
     ['位置取り station_rel_deg 180（艇尾）', (d) => ((ptRec(d)['tactics'] as Rec)['station_rel_deg'] = [90, 180]), /station_rel_deg/],
     ['位置取り station_rel_deg 0（艇首）', (d) => ((ptRec(d)['tactics'] as Rec)['station_rel_deg'] = [0]), /station_rel_deg/],
     ['位置取り station_tol_deg 0', (d) => ((ptRec(d)['tactics'] as Rec)['station_tol_deg'] = 0), /station_tol_deg/],
@@ -184,8 +192,8 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     expect(() => params(d)).toThrow(/jp_05/);
     expect(() => params(d)).toThrow(msg);
   });
-  it('境目は通る: hold_off 401 m・899 m（位置取りの station_m も hold_off の外・曲がり始めの内へ）、向きの許容 1°・89°、station_m 501・599 m、retreat_hp 1・99、確率 0・0.2', () => {
-    const cases: readonly [string, number, number][] = [['hold_off_m', 401, 401.5], ['hold_off_m', 899, 900], ['commit_heading_tol_deg', 1, 550], ['commit_heading_tol_deg', 89, 550], ['hold_off_m', 500, 501], ['hold_off_m', 500, 599]];
+  it('境目は通る: hold_off 451 m・899 m（有効射程 450 m の外。位置取りの station_m も hold_off の外・曲がり始めの内へ）、向きの許容 1°・89°、station_m 551・649 m、retreat_hp 1・99、確率 0・0.2', () => {
+    const cases: readonly [string, number, number][] = [['hold_off_m', 451, 451.5], ['hold_off_m', 899, 900], ['commit_heading_tol_deg', 1, 600], ['commit_heading_tol_deg', 89, 600], ['hold_off_m', 550, 551], ['hold_off_m', 550, 649]];
     for (const [k, v, station] of cases) {
       const d = clone();
       attackOf(d)[k] = v;

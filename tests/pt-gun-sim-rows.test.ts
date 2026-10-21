@@ -4,13 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { PT_GUN_CALIBRATION, PT_GUN_SUNK_NIGHT_MAX, ptGunCalibrationMisses } from '../src/systems/pt-gun-calibration';
 import { PT_HELD_MIN_M, ptCalibrationRun } from '../src/systems/pt-pass-sim-setup';
+import { PT_SIM_R1 } from './pt-sim-r1';
 
 const N = 200;
 const SEED_BASE = 1;
 
 describe('T-14 の 13mm を撃つ遊び方の模擬（v0.6.3 実機 1 回目、spec r1 §G.4 の ★ 以外）', () => {
   // 較正の表は 1 回だけ回す（撃つ 4 行 + 対の 4 行、N 200 で 7 秒ほど）
-  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE);
+  // v0.6.3 実機 2 回目: 実機 1 回目の帯は実機 1 回目の値と航過の終わりで回す（tests/pt-sim-r1）
+  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE, PT_SIM_R1);
   const rows = PT_GUN_CALIBRATION.filter((r) => !r.star && r.policy !== 'fight');
 
   it('較正（N 200・seed 1〜200）: 巡航のまま撃っても何もしないより沈みにくく痛くない・全速の転舵に撃ち返しを足しても痛くならない・2 秒遅れでも撃てば悪くならない・静音のまま撃つと何もしないより 8 点以上沈みにくい・不変', () => {
