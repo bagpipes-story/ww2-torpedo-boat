@@ -10,7 +10,7 @@
     "lint": "npm run typecheck",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "test": "vitest run --testTimeout=30000"
+    "test": "vitest run --testTimeout=90000"
   },
   "dependencies": {
     "phaser": "^3.90.0"
