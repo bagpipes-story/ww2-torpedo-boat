@@ -2,7 +2,7 @@
 // ui/pt-lines の ptKey / ptLine がこの 2 つのモードのときに呼ぶ。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 // 距離は gun-battery が撃つときに求めた targetM を 50 m 刻みで切り上げる（平方根を足さない）。キーは行に出る値だけを詰める（50 m・命中 1 発・交換の 1 秒ごとにしか組み直さない）。
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
-import { PT_DISTANCE_STEP_M } from '../config/pt-config';
+import { PT_DISTANCE_STEP_M, PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE } from '../core/gun-battery';
 import { PT_GUN_EV_CREW, PT_GUN_EV_SUNK } from '../core/pt-damage';
@@ -44,6 +44,15 @@ export function ptGunLine(t: BoatTelemetry, key: number): HudLine {
   if ((key & K_FAST) !== 0) return { text: `${head} ・ 速くて散る（${p.silentMaxKt} kt 以下で）`, color: HUD_COLOR_WARN };
   if ((key & K_FAR) !== 0) return { text: `${head} ・ 遠い（${p.gunEffectiveM} m 以内で）`, color: HUD_COLOR_WARN };
   return { text: `${head} ・ 命中 ${(key >> K_HITS) & 63}`, color: HUD_COLOR_STRONG };
+}
+
+/**
+ * 出来事の行を出す時刻の終わり ms（mission-line が毎フレーム。untilMs は通し番号が増えたときに now + PT_RESULT_SHOW_MS）。
+ * 赤い線（航過中。出来事より上）に隠れている間は終わりを先へ送り、線が消えてから PT_RESULT_SHOW_MS 出す（R5 ヘッドレス: 航過中の PT が撃退されて
+ * 黙ったまま抜ける間に 2.5 秒が線の下で過ぎ、「撃退！ … 残り 1 隻」が出ない夜が 14 回のうち 6 回あった）
+ */
+export function gunEventShowUntil(untilMs: number, passing: boolean, nowMs: number): number {
+  return passing && nowMs < untilMs ? nowMs + PT_RESULT_SHOW_MS : untilMs;
 }
 
 /** 出来事の行のキー（モード MISSION_PT_GUN_EVENT）: 種類（PT_GUN_EV_*）| まだ戦う PT の数 << 3 */
