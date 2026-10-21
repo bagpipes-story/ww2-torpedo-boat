@@ -657,9 +657,9 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
         });
       }
     });
-    // v0.6.3 実機 2 回目: 有効射程 450 m で反航の航過を固めると、open_fire_s の前に艇首尾の円錐の後ろへすれ違うことがまれにある（seed 26 の 1 回。2.5 秒の線のあと撃たずに終わる）
-    expect([bad, instant]).toEqual([0, 0]);
-    expect(straightUnfired).toBeLessThanOrEqual(0.02 * straightPasses);
+    // まっすぐ帰る艇への航過はみな撃つ（v0.6.3 レビューの直し）。実機 2 回目のレビュー F6: 追撃の前の作りで seed 26 に 1 回あった撃たない反航の航過は、追撃が入ってもう起きない
+    // （速い艇は追われる）ので 2% の許しを外して厳しく戻した。また起きたら許しではなく spec r2 §J.1-7 の外れとして書く
+    expect([bad, instant, straightUnfired]).toEqual([0, 0, 0]);
     expect(commits - burstCommits).toBeGreaterThan(250); // 航過 330・連射 511（まっすぐ帰る艇への航過 100）
     expect(burstCommits).toBeGreaterThan(300);
     expect(straightPasses).toBeGreaterThan(80);

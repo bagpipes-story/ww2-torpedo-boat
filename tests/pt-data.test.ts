@@ -26,14 +26,13 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect([p.runInMps, p.passMinMps, p.patrolMps, p.leaveMps, p.overtakeMps, p.dashMps]).toEqual([ktToMps(35), ktToMps(25), ktToMps(8), ktToMps(30), ktToMps(6), ktToMps(39)]);
     expect([p.baseDetectM, p.reactionDelayS, p.detectFromS, p.detectHoldS]).toEqual([2000, 1.5, 5, 8]);
     expect(p.cosDead2).toBeCloseTo(Math.cos(degToRad(30)) ** 2, 12);
-    // v0.6.3 実機 1 回目: 離脱 650 m・5 秒（前は 800 m・8 秒）、ずらし 120 m（前は 140）、1 隻 4 回（前は 2）
+    // v0.6.3 実機 1 回目: 離脱 650 m・5 秒（前は 800 m・8 秒）、ずらし 120 m（前は 140）、1 隻 4 回（前は 2）。実機 2 回目: 次の航過まで 2.5 → 3 秒（線が撃ち切りで早く消える）。
+    // 追撃（us_pt_enemy.chase）の固定の値は tests/pt-chase-data
     expect([p.commitMax2, p.minRange2, p.breakOff2, p.arrive2]).toEqual([900 ** 2, 60 ** 2, 650 ** 2, 100 ** 2]);
-    // v0.6.3 実機 2 回目: 次の航過まで 2.5 → 3 秒（線が撃ち切りで早く消えるので）
     expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS, p.breakMaxS]).toEqual([5, 120, 2.5, 8, 10, 4, 3, 3, 5]);
-    // v0.6.3 の直し: 固める針路の差 30°・待つ PT は hold_off より内へ寄らず、外側から曲がる。v0.6.3 実機 2 回目: 550 m より内へ寄らず、650 m（550 + (550 − 有効射程 450)）から
+    // v0.6.3 の直し: 固める針路の差 30°・待つ PT は hold_off より内へ寄らず、外側から曲がる。v0.6.3 実機 2 回目: 550 m より内へ寄らず、650 m（550 + (550 − 有効射程 450)）から。有効射程 400 → 450 m・機関損傷 0.02 → 0.15（下の 2 行目）
     expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([30, 550 ** 2, 650 ** 2]);
     expect([p.turnRateDegS, p.accelMps2, p.spriteLengthUnits, p.spriteBeamUnits, p.boundsMarginM]).toEqual([24, 1.2, 48.8, 12.6, 24.4]);
-    // v0.6.3 実機 2 回目: 有効射程 400 → 450 m・1 命中の機関損傷 0.02 → 0.15
     expect([p.gun.effectiveM, p.gun.damage, p.gun.roundsPerMinPerGun, p.hit.damage, p.hit.fireChance, p.hit.engineDamageChance]).toEqual([450, 4, 240, 4, 0.03, 0.15]);
     expect([...p.legs]).toEqual([1200, 2200, 4800, 2200, 1200, 2400, 4800, 2400]);
     expect([...p.startX, ...p.startY, ...p.startHeadingDeg]).toEqual([2000, 2000, 2200, 2400, 90, 90]);
@@ -41,12 +40,6 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     // v0.6.3 実機 1 回目: T-14 の 13mm を受ける（HP は boat_ref us_elco80 の hull_hp 100、当たりは 24.4 × 6.3 m × hit_scale 1 の半分）と、待つ PT の位置取り
     expect([p.hullHp, p.hitHalfLengthM, p.hitHalfBeamM, p.retreatHp, p.casualtyChance, p.fireChance]).toEqual([100, 12.2, 3.15, 60, 0.03, 0.003]);
     expect([p.stationM, [...p.stationRelDeg], p.stationTolDeg, p.stationClose2, p.stationLeadS]).toEqual([600, [90, 45, 135], 30, 150 ** 2, 1]);
-    // v0.6.3 実機 2 回目: 追撃（us_pt_enemy.chase。core/pt-chase-data）と、航過は危ない間だけ（core/pt-fire。data からはいつも有効）
-    expect([p.chaseMps, p.chaseMinMps, p.chaseStationM, p.chaseRelDeg, p.chaseHeldM, p.chaseHeldRelDeg, p.chaseHeldGuard2, p.chaseCommit2]).toEqual([ktToMps(39), ktToMps(10), 170, 135, 350, 150, 150 ** 2, 350 ** 2]);
-    expect([p.burstRounds, p.burstMaxS, p.maxBursts, p.burstBowRofFactor, p.burstConeQuitS, p.chaseGapS, p.chaseSelfGapS, p.chaseSlowExitS, p.chaseSuppressHits, p.passEndsWhenSafe]).toEqual([6, 3, 6, 0.4, 2, 2, 3, 2, 3, true]);
-    expect(p.chaseCosAft2).toBeCloseTo(Math.cos(degToRad(75)) ** 2, 12);
-    expect(p.chaseCosExit2).toBeCloseTo(Math.cos(degToRad(45)) ** 2, 12);
-    expect(p.burstRounds * p.hit.damage).toBe(24); // 1 回の連射では沈まない（< HP 50）
     // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
     expect(p.roundsPerPass * p.hit.damage).toBe(40);
     expect(p.openFireS).toBeGreaterThanOrEqual(2);

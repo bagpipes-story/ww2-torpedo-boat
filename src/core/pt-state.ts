@@ -84,8 +84,8 @@ export interface PtSection {
   ownerFlank: number; held: Uint8Array;
   /** T-14 の 13mm（v0.6.3 実機 1 回目）: PT への命中・撃退・撃沈の数、最初に見つかったのが閃光だった、出来事（HUD の 2 行目）の通し番号・種類（PT_GUN_EV_*）・PT */
   gunHits: number; retired: number; sunk: number; flashFirst: boolean; gunEventSeq: number; gunEvent: number; gunEventBoat: number;
-  /** 追撃（v0.6.3 実機 2 回目）: 撃った連射（firedPasses の内）・連射の命中・制圧の数と通し番号、最後に終えた攻撃が連射、最後に連射を撃った PT とそれが続けて撃てるまでの秒 */
-  bursts: number; firedBursts: number; burstHits: number; suppressions: number; suppressSeq: number; lastPassBurst: boolean; lastBurstBoat: number; selfGapLeftS: number;
+  /** 追撃（v0.6.3 実機 2 回目）: 撃った連射（firedPasses の内）・連射の命中（後から落ちた弾も）・制圧の数（HUD の出来事は gunEventSeq）、最後に終えた攻撃が連射、最後に連射を撃った PT とそれが続けて撃てるまでの秒 */
+  bursts: number; firedBursts: number; burstHits: number; suppressions: number; lastPassBurst: boolean; lastBurstBoat: number; selfGapLeftS: number;
 }
 
 /** 世界が固定ステップごとに中身だけ書き換える材料（1 個だけ作る。barges の FlotillaCheck と同じ） */
@@ -138,10 +138,13 @@ export interface PtTelemetry {
    * 弾倉の交換の残り秒、出撃のときに 1 回の射程と有効射程 m
    */
   gunEnabled: boolean; gunStatus: number; gunFast: boolean; gunTargetM: number; gunHits: number; gunEverFired: boolean; reloadLeftS: number; gunRangeM: number; gunEffectiveM: number;
-  /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った */
-  gunEventSeq: number; gunEvent: number; fighting: number; sunk: number; passSilenced: boolean;
-  /** 追撃（v0.6.3 実機 2 回目）: 航過中の攻撃が連射・最後に終えた攻撃が連射・制圧の通し番号・連射の数と上限（撃退・撃沈した PT の使わなかった分を引く）・追撃中の PT の数・攻撃が終わって弾がまだ飛んでいる（隊の seqPending。ui/pt-chase-lines の ptHoldPass） */
-  burst: boolean; burstFired: boolean; suppressSeq: number; bursts: number; maxBursts: number; chasing: number; resultPending: boolean;
+  /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）とその PT、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った（撃退か、連射なら制圧も）・撃退で黙った */
+  gunEventSeq: number; gunEvent: number; gunEventBoat: number; fighting: number; sunk: number; passSilenced: boolean; passRetired: boolean;
+  /**
+   * 追撃（v0.6.3 実機 2 回目）: 航過中の攻撃が連射・最後に終えた攻撃が連射とその PT（ui/pt-line-clock が 13mm の出来事と同じ PT の連射の結果を 1 行にまとめる）・撃った連射の数・
+   * 攻撃が終わって弾がまだ飛んでいる（隊の seqPending。ui/pt-chase-lines の ptHoldPass）
+   */
+  burst: boolean; burstFired: boolean; lastPassBoat: number; bursts: number; resultPending: boolean;
 }
 
 export function createPtTelemetry(): PtTelemetry {
@@ -149,7 +152,7 @@ export function createPtTelemetry(): PtTelemetry {
     enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, escapeDeg: NaN, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
     gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
-    gunEventSeq: 0, gunEvent: 0, fighting: 0, sunk: 0, passSilenced: false, burst: false, burstFired: false, suppressSeq: 0, bursts: 0, maxBursts: 0, chasing: 0, resultPending: false,
+    gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1, fighting: 0, sunk: 0, passSilenced: false, passRetired: false, burst: false, burstFired: false, lastPassBoat: -1, bursts: 0, resultPending: false,
   };
 }
 
@@ -165,27 +168,43 @@ export function createPtSection(p: PtParams, shellPoolSize: number): PtSection {
     passHits: 0, passSeq: 0, seqPending: false, lastPassHits: 0, lastPassFired: false, lastPassBoat: -1, commitAtS: NaN, aim: { x: 0, y: 0 },
     passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, firstDetectM: NaN, lostContacts: 0, minWarnS: Infinity, closest2: Infinity, out: 0, leftAtDawn: false,
     ownerFlank: 1, held: new Uint8Array(p.count), gunHits: 0, retired: 0, sunk: 0, flashFirst: false, gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1,
-    bursts: 0, firedBursts: 0, burstHits: 0, suppressions: 0, suppressSeq: 0, lastPassBurst: false, lastBurstBoat: -1, selfGapLeftS: 0,
+    bursts: 0, firedBursts: 0, burstHits: 0, suppressions: 0, lastPassBurst: false, lastBurstBoat: -1, selfGapLeftS: 0,
   };
 }
 
-/** 脅威の PT（HUD の方角・端の矢印）: 撃っている（航過・連射）→ 追撃の最寄り → 警戒・突撃の最寄り → 離脱の最寄り → 哨戒の最寄り。去っていない PT が無ければ −1。距離二乗・確保なし */
+/** 脅威の順（段階 lo・hi・待っているか held。held −1 は問わない、0 は待っていない、1 は待っている。q.held は突撃の PT だけが書く）。module に 1 個ずつ、確保しない */
+const SIM_THREAT = [PT_CHASE, PT_CHASE, -1, PT_ALERT, PT_RUN_IN, -1, PT_BREAK, PT_BREAK, -1, PT_PATROL, PT_PATROL, -1] as const;
+const HUD_THREAT = [PT_ALERT, PT_RUN_IN, 0, PT_CHASE, PT_CHASE, -1, PT_ALERT, PT_RUN_IN, 1, PT_BREAK, PT_BREAK, -1, PT_PATROL, PT_PATROL, -1] as const;
+
+/** 脅威の PT（模擬の台本の構え）: 撃っている（航過・連射）→ 追撃の最寄り → 警戒・突撃の最寄り → 離脱の最寄り → 哨戒の最寄り。去っていない PT が無ければ −1。距離二乗・確保なし */
 export function threatIndex(q: PtSection, x: number, y: number): number {
-  if (q.owner >= 0) return q.owner;
-  let best = nearestIn(q, x, y, PT_CHASE, PT_CHASE);
-  if (best < 0) best = nearestIn(q, x, y, PT_ALERT, PT_RUN_IN);
-  if (best < 0) best = nearestIn(q, x, y, PT_BREAK, PT_BREAK);
-  if (best < 0) best = nearestIn(q, x, y, PT_PATROL, PT_PATROL);
-  return best;
+  return threatBy(q, x, y, SIM_THREAT);
 }
 
-/** 段階が lo〜hi の PT のうち (x, y) に最も近いもの（無ければ −1） */
-function nearestIn(q: PtSection, x: number, y: number, lo: number, hi: number): number {
+/**
+ * HUD の脅威の PT（2 行目の方角と距離・端の矢印。実機 2 回目のレビュー ux-5）: 撃っている → 待っていない警戒・突撃（次の航過の PT）→ 追撃 → 待っている警戒・突撃 → 離脱 → 哨戒。
+ * threatIndex（spec r2 §D.1 の順）だと、追ってくる PT がいる間は航過に来る PT の「…から突撃」が 2 行目に出なかった。模擬の構えは threatIndex のまま（表は変わらない）
+ */
+export function hudThreatIndex(q: PtSection, x: number, y: number): number {
+  return threatBy(q, x, y, HUD_THREAT);
+}
+
+function threatBy(q: PtSection, x: number, y: number, order: readonly number[]): number {
+  if (q.owner >= 0) return q.owner;
+  for (let k = 0; k < order.length; k += 3) {
+    const i = nearestIn(q, x, y, order[k]!, order[k + 1]!, order[k + 2]!);
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+/** 段階が lo〜hi（held が 0・1 なら q.held もそれ）の PT のうち (x, y) に最も近いもの（無ければ −1） */
+function nearestIn(q: PtSection, x: number, y: number, lo: number, hi: number, held: number): number {
   let best = -1;
   let best2 = Infinity;
   for (let i = 0; i < q.boats.length; i++) {
     const b = q.boats[i]!;
-    if (b.phase < lo || b.phase > hi) continue;
+    if (b.phase < lo || b.phase > hi || (held >= 0 && q.held[i] !== held)) continue;
     const d2 = (b.x - x) * (b.x - x) + (b.y - y) * (b.y - y);
     if (d2 < best2) {
       best2 = d2;

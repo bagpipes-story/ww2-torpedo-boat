@@ -14,20 +14,23 @@ const REACT_ROWS: readonly (readonly ['away' | 'full', PtPolicy])[] = [
 ];
 
 describe('追撃の連射への反応の表（v0.6.3 実機 2 回目、spec r2 §H.1）', () => {
-  // 較正の表は反応ごとに 1 回だけ回す（6 行、N 200 で 7 秒ほど）
+  // 較正の表は反応ごとに 1 回だけ回す（行は初めて読むときに回る。3 行ずつ、N 200 で手元 7 秒ほど・2 つで 15 秒ほど。実機 2 回目のレビュー: 1 つの it だと 15 秒で、遅い CI の余裕が少なかった）
   const runs = { away: simRun({ burstReact: 'away' }), full: simRun({ burstReact: 'full' }) };
 
-  it('どの反応でも不変（spec r2 §E）を守る: 予告から初弾 ≥ open_fire_s・撃つのは同時に 1 隻・射程と視程の外から撃たない・1 回の航過 10 発・連射 6 発・1 隻の連射 6 回・連射の線 ≥ open_fire_s・交互・待つ PT は 300 m より内へ来ない', () => {
-    expect([PT_HELD_MIN_REACT_M, PT_HELD_MIN_M]).toEqual([300, 350]);
-    const miss: string[] = [];
-    for (const [br, pol] of REACT_ROWS) {
-      const run = runs[br];
-      const c = run.cell(pol);
-      expect([run.setup.burstReact, c.shots > 0, c.bursts > 0], `${br} ${pol}`).toEqual([br, true, true]);
-      miss.push(...ptInvariantMisses(c, run.setup).map((m) => `${br} ${pol}: ${m}`));
-    }
-    expect(miss).toEqual([]);
-  }, 60_000);
+  for (const br of ['away', 'full'] as const) {
+    it(`${br}: 不変（spec r2 §E）を守る: 予告から初弾 ≥ open_fire_s・撃つのは同時に 1 隻・射程と視程の外から撃たない・1 回の航過 10 発・連射 6 発・1 隻の連射 6 回・連射の線 ≥ open_fire_s・交互・待つ PT は 300 m より内へ来ない`, () => {
+      expect([PT_HELD_MIN_REACT_M, PT_HELD_MIN_M]).toEqual([300, 350]);
+      const miss: string[] = [];
+      for (const [b, pol] of REACT_ROWS) {
+        if (b !== br) continue;
+        const run = runs[br];
+        const c = run.cell(pol);
+        expect([run.setup.burstReact, c.shots > 0, c.bursts > 0], `${br} ${pol}`).toEqual([br, true, true]);
+        miss.push(...ptInvariantMisses(c, run.setup).map((m) => `${br} ${pol}: ${m}`));
+      }
+      expect(miss).toEqual([]);
+    }, 60_000);
+  }
 
   it('反応は台本を変える: keep（既定）は連射の線で転舵も加速もしない、away は転舵する遊び方だけ、full はどの遊び方も変わる（同じ seed の夜が違う）', () => {
     const keep = simRun().setup;

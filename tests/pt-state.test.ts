@@ -1,9 +1,10 @@
 // 米PT の段階の番号（v0.6.3 実機 2 回目。core/pt-state、spec r2 §D.1）: 追撃 PT_CHASE を離脱と去るの間に入れ、去る・海域の外・沈んだを 6/7/8 に付け直した。
 // まだ戦う段階は ptFighting（< PT_LEAVE）だけで見る（`<= PT_BREAK` の比べは追撃の PT を落とす）。脅威の PT は撃っている PT → 追撃の最寄り → 警戒・突撃 → 離脱 → 哨戒。
+// HUD の脅威の PT（hudThreatIndex。実機 2 回目のレビュー ux-5）は待っていない警戒・突撃（次の航過の PT）を追撃より先に。
 import { describe, expect, it } from 'vitest';
 import {
   PT_ALERT, PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SUNK,
-  countPass, createPtSection, createPtTelemetry, ptFighting, threatIndex,
+  countPass, createPtSection, createPtTelemetry, hudThreatIndex, ptFighting, threatIndex,
 } from '../src/core/pt-boats';
 import { P } from './pt-kit';
 
@@ -22,9 +23,9 @@ describe('追撃の欄と脅威の PT（v0.6.3 実機 2 回目）', () => {
   it('作るとき: PT の連射・制圧の欄は 0・false、隊の連射・制圧の数は 0、最後に連射を撃った PT は −1。テレメトリの追撃の欄も 0・false', () => {
     const q = createPtSection(P, 24);
     for (const b of q.boats) expect([b.burst, b.bursts, b.slowS, b.chaseHits, b.suppressed, b.coneS]).toEqual([false, 0, 0, 0, false, 0]);
-    expect([q.bursts, q.firedBursts, q.burstHits, q.suppressions, q.suppressSeq, q.lastPassBurst, q.lastBurstBoat, q.selfGapLeftS]).toEqual([0, 0, 0, 0, 0, false, -1, 0]);
+    expect([q.bursts, q.firedBursts, q.burstHits, q.suppressions, q.lastPassBurst, q.lastBurstBoat, q.selfGapLeftS]).toEqual([0, 0, 0, 0, false, -1, 0]);
     const t = createPtTelemetry();
-    expect([t.burst, t.burstFired, t.suppressSeq, t.bursts, t.maxBursts, t.chasing]).toEqual([false, false, 0, 0, 0, 0]);
+    expect([t.burst, t.burstFired, t.lastPassBoat, t.bursts, t.gunEventBoat, t.passRetired]).toEqual([false, false, -1, 0, -1, false]);
   });
 
   it('threatIndex: 撃っている PT（航過・連射）→ 追撃の最寄り（突撃より先）→ 警戒・突撃の最寄り → 離脱 → 哨戒', () => {
@@ -42,6 +43,30 @@ describe('追撃の欄と脅威の PT（v0.6.3 実機 2 回目）', () => {
     q.boats[0]!.phase = PT_BREAK;
     q.boats[1]!.phase = PT_LEAVE;
     expect(threatIndex(q, 0, 0)).toBe(0);
+  });
+
+  it('hudThreatIndex（ux-5）: 撃っている PT → 待っていない警戒・突撃（次の航過）→ 追撃 → 待っている突撃 → 離脱 → 哨戒。threatIndex（模擬の構え）は変えない', () => {
+    const q = createPtSection(P, 24); // PT0 (2000, 2200)・PT1 (2000, 2400)
+    q.boats[0]!.phase = PT_CHASE;
+    q.boats[1]!.phase = PT_RUN_IN; // 待っていない突撃（q.held 0）
+    expect([hudThreatIndex(q, 2000, 2100), threatIndex(q, 2000, 2100)]).toEqual([1, 0]); // 追ってくる PT0 の方が近いが、航過に来る PT1 が先
+    q.held[1] = 1; // 待っている突撃は追撃の後
+    expect(hudThreatIndex(q, 2000, 2500)).toBe(0);
+    q.boats[1]!.phase = PT_ALERT;
+    q.held[1] = 0;
+    expect(hudThreatIndex(q, 2000, 2100)).toBe(1); // 警戒も次の航過の PT
+    q.boats[0]!.phase = PT_BREAK;
+    q.held[1] = 1;
+    expect(hudThreatIndex(q, 2000, 2100)).toBe(1); // 待っている突撃でも離脱より先
+    q.owner = 0;
+    expect(hudThreatIndex(q, 2000, 2500)).toBe(0); // 撃っている PT がいちばん先
+    q.owner = -1;
+    q.boats[1]!.phase = PT_PATROL;
+    expect(hudThreatIndex(q, 2000, 2500)).toBe(0);
+    q.boats[0]!.phase = PT_LEAVE;
+    expect(hudThreatIndex(q, 2000, 2500)).toBe(1);
+    q.boats[1]!.phase = PT_OUT;
+    expect(hudThreatIndex(q, 0, 0)).toBe(-1);
   });
 
   it('countPass: 最後の攻撃が連射だったか（lastPassBurst）を残す。連射は航過の回数に数えない（counts false）が、撃てば firedPasses に入る', () => {

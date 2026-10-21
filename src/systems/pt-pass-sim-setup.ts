@@ -161,7 +161,9 @@ export function ptCalibrationMisses(r: PtCalibrationRow, c: PtCell, s: PtSimSetu
  * 不変（spec §F.4 の 7・r1 §G.5・r2 §E。どの遊び方も）: 予告から初弾 ≥ open_fire_s・撃つのは同時に 1 隻・射程と視程の外から撃たない・1 回の攻撃 ≤ 航過の弾数 で × 被害 < 艇の HP・
  * AI が終えた航過は予告から 2 ステップより長い（13mm で沈んで閉じた航過は onPassEnd を呼ばないので入らない）・待つ PT は hold_off_m の外で待ち始めたら PT_HELD_MIN_M
  * （連射への反応の表は PT_HELD_MIN_REACT_M）より内へ来ない・13mm は視程と射程の外へ撃たない・打ち切りなし。
- * 実機 2 回目: 連射の線は open_fire_s 以上（黙った連射も窓の終わりまで）・1 回の連射 ≤ burst_rounds・1 隻の連射（制圧の分も）≤ max_bursts・同じ PT の続けての連射（相方が撃てる距離）0。
+ * 実機 2 回目: 連射の線は open_fire_s 以上（黙った連射も窓の終わりまで）・1 回の連射 ≤ burst_rounds・1 隻の撃った連射 ≤ max_bursts（制圧の 1 回分は数えない。撃っている連射が制圧されると
+ * b.bursts は max_bursts + 1 になりうるがその PT は去る）・同じ PT の続けての連射（相方が撃てる距離）0（AI の partnerReady と同じ判定なので、門が外れたか時計が壊れたときだけ外れる。
+ * 交互そのものの守りは tests/pt-chase-step の partnerReady と前と反対の舷の帯。レビュー F5）。
  * 「HP だけで沈む PT は無い」F11 は数えても外れようがないので数えない（レビュー R4。守りは pt-data の retreat_hp < hull_hp の検査と tests/pt-damage）
  */
 export function ptInvariantMisses(c: PtCell, s: PtSimSetup): string[] {

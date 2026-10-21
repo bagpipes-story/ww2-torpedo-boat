@@ -3,12 +3,13 @@
 // 距離と方角は 2 行目を出すモードのときだけ ui/pt-lines の ptKey が求める）。米PT の無い任務は enabled false のまま何も書かない。
 // 世界は構造の型 PtTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
 // v0.6.3 実機 1 回目: T-14 の 13mm（状態・標的の距離・命中・弾倉の交換・出来事）、航過の上限は撃退・撃沈で減る（戦う PT の残り回数）、まだ戦う PT・沈めた数・航過中の PT が黙った。
-// v0.6.3 実機 2 回目（追撃。spec r2 §F）: 撃つ PT の攻撃が連射か・最後に終えた攻撃が連射か・連射の数と上限（撃退・撃沈・制圧で減る）・追撃中の PT の数、黙った連射（制圧も）、
+// v0.6.3 実機 2 回目（追撃。spec r2 §F）: 撃つ PT の攻撃が連射か・最後に終えた攻撃が連射かとその PT・撃った連射の数、黙った連射（制圧も）と撃退で黙った、13mm の出来事の PT、
 // Result の連射と制圧の数（終わる瞬間に撃っていた連射は航過ではなく連射に数える）。まだ戦う PT は core の ptFighting で数える。攻撃の後に弾がまだ飛んでいる（resultPending。2 行目の ptHoldPass）。
+// 脅威の PT は HUD の順（core の hudThreatIndex。レビュー ux-5: 次の航過の PT を追ってくる PT より先に）。
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
-import { PT_CHASE, PT_FATE_NONE, PT_FATE_SUNK, createPtTelemetry, ptFighting, threatIndex, type PtParams, type PtSection, type PtTelemetry } from '../core/pt-boats';
+import { PT_FATE_NONE, PT_FATE_SUNK, createPtTelemetry, hudThreatIndex, ptFighting, type PtParams, type PtSection, type PtTelemetry } from '../core/pt-boats';
 import type { PtGunState } from '../core/pt-gun';
 import { mpsToKt } from '../core/units';
 import type { PtResult } from '../ui/result-types';
@@ -67,48 +68,33 @@ export function ptMaxPasses(q: PtSection, p: PtParams): number {
   return n;
 }
 
-/**
- * 連射の上限（HUD の「追撃 n/M」。v0.6.3 実機 2 回目）: 撃った連射 + 結末の無い PT の残りの連射（max_bursts − 使った連射。制圧は 1 回分を使う）。
- * 出撃時は隻数 × max_bursts、撃退・撃沈・制圧でだけ減る（ptMaxPasses と同じ考え）。確保なし
- */
-export function ptMaxBursts(q: PtSection, p: PtParams): number {
-  let n = q.firedBursts;
-  for (let i = 0; i < q.boats.length; i++) {
-    const b = q.boats[i]!;
-    if (b.fate === PT_FATE_NONE) n += Math.max(0, p.maxBursts - b.bursts);
-  }
-  return n;
-}
-
-/** 毎フレーム 1 回: 隊の段階・航過・脅威の PT（core の threatIndex）の相対位置とそれが見えているか（距離二乗）、13mm の状態（距離は gun-battery が撃つときの 1 回の平方根） */
+/** 毎フレーム 1 回: 隊の段階・航過・脅威の PT（core の hudThreatIndex）の相対位置とそれが見えているか（距離二乗）、13mm の状態（距離は gun-battery が撃つときの 1 回の平方根） */
 export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   const s = w.pts;
   if (!s) return;
   const q = s.section;
   let alive = 0;
   let fighting = 0;
-  let chasing = 0;
   for (let i = 0; i < q.boats.length; i++) {
     const b = q.boats[i]!;
     if (ptFighting(b.phase)) alive++;
     if (ptFighting(b.phase) && b.fate === PT_FATE_NONE) fighting++;
-    if (b.phase === PT_CHASE || (i === q.owner && b.burst)) chasing++;
   }
   t.alive = alive;
   t.fighting = fighting;
-  t.chasing = chasing;
   t.sunk = q.sunk;
   t.maxPasses = ptMaxPasses(q, s.p);
-  t.maxBursts = ptMaxBursts(q, s.p);
   t.bursts = q.firedBursts;
-  t.suppressSeq = q.suppressSeq;
   t.burstFired = q.lastPassBurst;
+  t.lastPassBoat = q.lastPassBoat;
   // 撃つ PT が黙った: 13mm の結末（撃退）、連射なら制圧も（制圧の旗が残った PT の航過は黙ったと言わない）
   const ob = q.owner >= 0 ? q.boats[q.owner]! : null;
   t.burst = ob !== null && ob.burst;
-  t.passSilenced = ob !== null && (ob.fate !== PT_FATE_NONE || (ob.burst && ob.suppressed));
+  t.passRetired = ob !== null && ob.fate !== PT_FATE_NONE;
+  t.passSilenced = t.passRetired || (ob !== null && ob.burst && ob.suppressed);
   t.gunEventSeq = q.gunEventSeq;
   t.gunEvent = q.gunEvent;
+  t.gunEventBoat = q.gunEventBoat;
   t.gunHits = q.gunHits;
   const g = s.gun ? s.gun.state : null;
   if (g) {
@@ -125,7 +111,7 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.dodge = q.owner >= 0 ? q.dodge : 0;
   t.escapeDeg = q.owner >= 0 ? q.escapeDeg : NaN;
   const b = w.boat.state;
-  const i = threatIndex(q, b.x, b.y);
+  const i = hudThreatIndex(q, b.x, b.y);
   const pt = i < 0 ? null : q.boats[i]!;
   t.threatPhase = pt ? pt.phase : -1;
   t.dx = pt ? pt.x - b.x : NaN;

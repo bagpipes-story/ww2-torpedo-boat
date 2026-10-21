@@ -3,6 +3,7 @@
 // v0.6.3 実機 1 回目: 艇に砲のある任務（jp_05 の T-14 の 13mm）は固定ステップで 13mm（systems/pt-gun）→ 閃光 → 隊の順（模擬 core/pt-pass-sim と同じ）。
 // 撃退された PT は灰色に（1 回だけ）、沈んだ PT は沈み込みの tween（1 夜 2 回まで）と世界の onSunk（命中スロー＋爆発）。
 // v0.6.3 実機 2 回目（追撃の連射。spec r2 §F.2）: 連射の赤い線は同じ 1 本を PT から艇へ（毎フレーム位置・向き・長さの倍率だけ直す。平方根と atan2 は撃つ PT の 1 回）。制圧された PT は色を変えない。
+// 黙った連射の線は予告の秒の後に消す（窓は core のまま。レビュー ux-1）。
 // §7: PT count 枚・線 1 本・曳光弾 24 枚・水柱 24 枚・閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。check と events は 1 個だけ作る。
 // 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
 import Phaser from 'phaser';
@@ -14,7 +15,8 @@ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-con
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import type { GunBatteryParams } from '../core/gun-battery';
 import type { HitSpec } from '../core/gunnery';
-import { PT_FATE_SUNK, PT_OUT, PT_SEED_OFFSET, PT_SUNK, createPtSection, stepPtSection, threatIndex, type PtCheck, type PtEvents, type PtParams, type PtSection } from '../core/pt-boats';
+import { PT_FATE_SUNK, PT_OUT, PT_SEED_OFFSET, PT_SUNK, createPtSection, hudThreatIndex, stepPtSection, type PtCheck, type PtEvents, type PtParams, type PtSection } from '../core/pt-boats';
+import { attackLineShown } from '../core/pt-chase';
 import { SeededRng } from '../core/rng';
 import type { SmokeParams, SmokeState } from '../core/smoke';
 import { radToDeg } from '../core/units';
@@ -136,9 +138,9 @@ export class PtSquadron {
     w.detect.prev = q.detected;
   }
 
-  /** 自艇から見た「いまの敵」: 脅威の PT（撃つ PT → 追撃 → 突撃 → 離脱 → 哨戒。core/pt-boats の threatIndex）。去った PT だけなら null */
+  /** 自艇から見た「いまの敵」: HUD の脅威の PT（撃つ PT → 次の航過の PT → 追撃 → 待つ突撃 → 離脱 → 哨戒。core/pt-boats の hudThreatIndex＝2 行目と同じ）。去った PT だけなら null */
   focus(x: number, y: number): BoatState | null {
-    const i = threatIndex(this.section, x, y);
+    const i = hudThreatIndex(this.section, x, y);
     return i < 0 ? null : this.section.boats[i]!;
   }
 
@@ -171,8 +173,9 @@ export class PtSquadron {
       }
       if (show) img.setPosition(b.x, b.y).setAngle(b.headingDeg);
     }
-    // 航過・連射は同時に 1 隻だけ（core）なので線は 1 本。固めた時に出し、終わり（撃ち切り・離れていく・窓の終わり）・夜明けで去ると消える
-    const owner = q.owner;
+    // 航過・連射は同時に 1 隻だけ（core）なので線は 1 本。固めた時に出し、終わり（撃ち切り・離れていく・窓の終わり）・夜明けで去ると消える。
+    // 制圧・撃退で黙った連射は予告の秒を過ぎたら窓の終わりを待たずに消す（core/pt-chase の attackLineShown。レビュー ux-1）
+    const owner = attackLineShown(q, this.p) ? q.owner : -1;
     if ((owner >= 0) !== this.lineShown) {
       this.lineShown = owner >= 0;
       this.line.setVisible(this.lineShown);

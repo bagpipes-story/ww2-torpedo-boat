@@ -3,18 +3,14 @@
 // v0.6.3 実機 2 回目（spec r2 §I.2）: 行の形は追撃の行（連射・追ってくる・連射の結果・制圧）と「全速で」・「残り N 回」のない離脱。
 import { describe, expect, it } from 'vitest';
 import { GUN_FIRING, GUN_OUT_OF_ARC } from '../src/core/gun-battery';
-import { PT_FATE_CREW, PT_FATE_HULL, PT_FATE_SUNK, PT_PASS, PT_SUNK, ptFighting, threatIndex, type PtTelemetry } from '../src/core/pt-boats';
+import { PT_FATE_CREW, PT_FATE_HULL, PT_FATE_SUNK, PT_PASS, PT_SUNK } from '../src/core/pt-boats';
 import { PT_GUN_EV_HULL } from '../src/core/pt-damage';
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
-import { MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT } from '../src/ui/mission-mode';
-import { holdShowUntil } from '../src/ui/pt-gun-lines';
+import { MISSION_PT_GUN, MISSION_PT_GUN_EVENT } from '../src/ui/mission-mode';
 import { ptHeadJa, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
-import { CRUISE01, HOME, runPtSim, type PtSim } from './pt-kit';
-import { S05, ptWorld, row, tele, textWidthPx } from './pt-ui-kit';
-
-const RESULT = MODE_FLAG_PT_RESULT;
-const EVENT = MODE_FLAG_PT_GUN_EVENT;
+import { nightLines } from './pt-night-lines';
+import { ptWorld, textWidthPx } from './pt-ui-kit';
 
 describe('13mm のテレメトリと Result の材料（systems/pt-telemetry）', () => {
   it('状態・速い（撃っている間だけ）・距離・命中・撃ったか・交換の残り・出来事・黙った航過', () => {
@@ -95,116 +91,14 @@ describe('13mm の Result（ui/pt-lines）', () => {
   });
 });
 
-/** 撃ち合う夜の台本: 見つかったら脅威の PT に舷側を向けて止まり（止まって撃ち合う罠。命中が多く撃退・撃沈が出る）、生きた PT が見えていれば押し続ける */
-function fight(s: PtSim): void {
-  s.input.headingDeg = (Math.atan2(HOME.x - s.boat.x, -(HOME.y - s.boat.y)) * 180) / Math.PI;
-  s.input.speed01 = CRUISE01;
-  const i = s.q.detected ? threatIndex(s.q, s.boat.x, s.boat.y) : -1;
-  if (i < 0) return;
-  const b = s.q.boats[i]!;
-  const brg = (Math.atan2(b.x - s.boat.x, -(b.y - s.boat.y)) * 180) / Math.PI;
-  s.input.headingDeg = (brg + 90 + 360) % 360;
-  s.input.speed01 = 0;
-}
-function seesLivePt(s: PtSim): boolean {
-  return s.q.boats.some((b) => ptFighting(b.phase) && (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 <= S05.visRange2);
-}
-
-/**
- * mission-line の時刻の旗（航過の結果・13mm の出来事を通し番号が増えてから 2,500 ms。出来事は赤い線に、結果は出来事に隠れている間は始めない＝holdShowUntil）を真似て、
- * 1 夜の 2 行目を集める。shoot は撃ち合う台本（無ければ巡航で帰り、押さない）。passTop は航過中（赤い線が出ている）のステップのモードがみな航過だった。
- * 出来事の数え: shown は行に出た出来事、hidden は通し番号から 2,500 ms たっても赤い線の下にあった出来事（R5 の前はそのまま出なかった）、missed は出ずに次の出来事にも替わらなかった出来事。
- * shortResults は赤い線に替わられずに 2.5 秒より短く（R5 の途中では 1 フレーム）しか出なかった航過の結果の数、heldResults は出来事の後に回った結果の数
- */
-function nightLines(seed: number, withGun: boolean, shoot = false): { lines: string[]; modes: Set<number>; maxPasses: Set<number>; maxBursts: Set<number>; passTop: boolean; events: number; shown: Set<number>; hidden: Set<number>; missed: number; shortResults: number; heldResults: number } {
-  const w = ptWorld(withGun);
-  const lines: string[] = [];
-  const modes = new Set<number>();
-  const maxPasses = new Set<number>();
-  const maxBursts = new Set<number>();
-  let passTop = true;
-  let seenPass = 0;
-  let resultUntil = -1;
-  let seenEvent = 0;
-  let eventUntil = -1;
-  let eventAt = -1;
-  const shown = new Set<number>();
-  const hidden = new Set<number>();
-  let missed = 0;
-  let resultSteps = 0;
-  let resultCut = false;
-  let resultHeld = false;
-  let shortResults = 0;
-  let heldResults = 0;
-  let lastMs = 0;
-  let t: PtTelemetry | null = null;
-  runPtSim({
-    seed,
-    steps: 60 * 170,
-    night: true,
-    stopAtHome: true,
-    gunHeld: withGun ? (s) => shoot && seesLivePt(s) : undefined,
-    policy: (s) => {
-      if (shoot) return fight(s);
-      s.input.headingDeg = (Math.atan2(HOME.x - s.boat.x, -(HOME.y - s.boat.y)) * 180) / Math.PI;
-      s.input.speed01 = CRUISE01;
-    },
-    onStep: (s) => {
-      // ptWorld の隊と砲を模擬のものに差し替える（初回だけ）
-      if (!t) {
-        Object.assign(w.pts, { section: s.q, p: s.p, gun: s.gun ? { state: s.gun, g: S05.guns! } : null });
-        t = initPtTelemetry(w);
-      }
-      w.boat.state = s.boat;
-      refreshPtTelemetry(t, w);
-      const ms = s.t * 1000;
-      lastMs = ms;
-      if (t.passSeq > seenPass) {
-        if (seenPass > 0 && !resultCut && resultSteps < 149) shortResults++;
-        seenPass = t.passSeq;
-        resultUntil = ms + 2500;
-        resultSteps = 0;
-        resultCut = false;
-        resultHeld = false;
-      }
-      if (t.gunEventSeq > seenEvent) {
-        seenEvent = t.gunEventSeq;
-        eventUntil = ms + 2500;
-        eventAt = ms;
-      }
-      eventUntil = holdShowUntil(eventUntil, t.passing, ms);
-      const held = holdShowUntil(resultUntil, !t.passing && ms < eventUntil, ms);
-      if (held !== resultUntil && !resultHeld) {
-        resultHeld = true;
-        heldResults++;
-      }
-      resultUntil = held;
-      if (ms < resultUntil && t.passing) resultCut = true; // 結果の間に次の赤い線（v0.6.3 のまま、線が勝つ）
-      if (t.passing && seenEvent > 0 && !shown.has(seenEvent) && ms >= eventAt + 2500) hidden.add(seenEvent);
-      const flags = (ms < resultUntil ? RESULT : 0) | (ms < eventUntil ? EVENT : 0);
-      const [mode, text] = row(tele(t), 0, flags);
-      if (mode === MISSION_PT_GUN_EVENT) shown.add(seenEvent);
-      if (mode === MISSION_PT_CONTACT && ms < resultUntil) resultSteps++;
-      else if (seenEvent > 0 && ms >= eventUntil && ms < eventUntil + 1000 / 60 && !shown.has(seenEvent)) missed++;
-      if (s.q.owner >= 0 && mode !== MISSION_PT_PASS) passTop = false;
-      modes.add(mode);
-      maxPasses.add(t.maxPasses);
-      maxBursts.add(t.maxBursts);
-      if (lines[lines.length - 1] !== text) lines.push(text);
-    },
-  });
-  if (seenPass > 0 && !resultCut && resultSteps < 149 && lastMs >= resultUntil) shortResults++; // 夜の終わりに出ている途中の結果は数えない
-  return { lines, modes, maxPasses, maxBursts, passTop, events: seenEvent, shown, hidden, missed, shortResults, heldResults };
-}
-
 describe('射撃を押さない夜（spec r1 §H・spec r2 §I.2）', () => {
-  it('砲を積んでいても押さなければ、13mm の無い米PT の任務と同じ行（離脱・追ってくる PT の末尾だけ違う）。13mm の行は出ず、航過の上限は 8・連射の上限は 12 のまま、行はみな決まった形', () => {
+  it('砲を積んでいても押さなければ、13mm の無い米PT の任務と同じ行（離脱・追ってくる PT の末尾だけ違う）。13mm の行は出ず、航過の上限は 8 のまま、行はみな決まった形', () => {
     const V063 = [
       /^米PT (航過|掃射)！ (\S+へ全速で転舵|そのまま全速で離れろ)$/,
       /^(かわした！ 被弾なし|被弾 \d+ 発（HP −\d+）|撃たせなかった！) ・ 航過 \d+\/8$/,
       /^米PT (追撃|連射)！ \S+から ・ 針路そのまま撃ち返せ$/,
-      /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 追撃 \d+\/12$/,
-      /^米PT \S+から追ってくる( \d+ m)? ・ (右下の射撃で撃ち返せ|撃ち返せ)$/,
+      /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 計 \d+ 回$/,
+      /^米PT \S+から追ってくる( \d+ m)? ・ (右下の射撃で撃ち返せ|撃ち返せ|600 m まで引きつけよ)$/,
       /^米PT \S+から突撃 \d+ m ・ 赤い線で転舵$/,
       /^米PT のエンジン音 ・ \S+から突撃$/,
       /^米PT 離脱 ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ)$/,
@@ -219,16 +113,15 @@ describe('射撃を押さない夜（spec r1 §H・spec r2 §I.2）', () => {
       const a = nightLines(seed, true);
       const b = nightLines(seed, false);
       // 末尾: 13mm を撃つ前の勧め（砲あり）と、砲の無い任務の離脱「次の赤い線に備えよ」・追ってくる PT「撃ち返せ」（連射の「針路そのまま撃ち返せ」はどちらも同じ）
-      const norm = (l: string): string => l.replace(/ ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ|撃ち返せ)$/, ' ・ 〈末尾〉');
+      const norm = (l: string): string => l.replace(/ ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ|撃ち返せ|600 m まで引きつけよ)$/, ' ・ 〈末尾〉');
       expect(a.lines.map(norm), `${seed}`).toEqual(b.lines.map(norm));
       expect(a.modes.has(MISSION_PT_GUN) || a.modes.has(MISSION_PT_GUN_EVENT), `${seed}`).toBe(false);
       expect([...a.maxPasses], `${seed}`).toEqual([8]);
-      expect([...a.maxBursts], `${seed}`).toEqual([12]);
       for (const l of a.lines) expect(V063.some((re) => re.test(l)), `${seed}: ${l}`).toBe(true);
       results += a.lines.filter((l) => / ・ 航過 \d+\/8$/.test(l)).length;
       passes += a.lines.filter((l) => l.startsWith('米PT 航過！') || l.startsWith('米PT 掃射！')).length;
       bursts += a.lines.filter((l) => l.startsWith('米PT 追撃！') || l.startsWith('米PT 連射！')).length;
-      burstResults += a.lines.filter((l) => / ・ 追撃 \d+\/12$/.test(l)).length;
+      burstResults += a.lines.filter((l) => / ・ 計 \d+ 回$/.test(l)).length;
       chasing += a.lines.filter((l) => l.includes('から追ってくる')).length;
     }
     // 赤い線と航過の結果が出た夜がある（離脱の行は挟み撃ちでもう 1 隻がいつも突撃の行なので、まれ。末尾の違いは上の離脱の行のテスト）。
@@ -249,16 +142,16 @@ describe('射撃を押し続ける夜（台本: 見つかったら舷側を向�
       /^射界外 ・ 舷側に向けよ（艇首・艇尾は撃てない）$/,
       /^射程外 ・ 600 m まで引きつけよ$/,
       /^撃てる PT が見えない$/,
-      /^米PT (撃退！ 死傷者が出て離脱|撃退！ 穴だらけで離脱|撃沈！ ガソリンに引火|制圧！ 追撃をやめて離れる) ・ (残り [12] 隻|帰投せよ)$/,
+      /^米PT (撃退！ 死傷者が出て離脱|撃退！ 穴だらけで離脱|撃沈！ ガソリンに引火|制圧！ 追撃をやめて離れる)( ・ (連射を撃たせなかった|連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）))? ・ (残り [12] 隻|帰投せよ)$/,
     ];
     // 13mm の行でなければ、v0.6.3 の行か 13mm で変わった行（黙った航過・減る上限・全隻撃沈）か追撃の行（実機 2 回目。黙った連射・減る連射の上限）
     const OTHER = [
       /^米PT (航過|掃射)！ (\S+へ全速で転舵|そのまま全速で離れろ)$/,
-      /^米PT (被弾で沈黙！ もう撃ってこない|制圧！ 連射が止んだ)$/,
+      /^米PT (被弾で沈黙！ もう撃ってこない|制圧！ 連射をやめた)$/,
       /^(かわした！ 被弾なし|被弾 \d+ 発（HP −\d+）|撃たせなかった！) ・ 航過 \d+\/[1-8]$/,
-      /^米PT (追撃|連射)！ \S+から ・ 針路そのまま撃ち返せ$/,
-      /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 追撃 \d+\/([1-9]|1[0-2])$/,
-      /^米PT \S+から追ってくる( \d+ m)? ・ 撃ち返せ$/,
+      /^米PT (追撃|連射)！ \S+から ・ 針路そのまま(撃ち返せ| 艇尾は撃てない| 艇首は撃てない)$/,
+      /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 計 \d+ 回$/,
+      /^米PT \S+から追ってくる( \d+ m)? ・ (撃ち返せ|600 m まで引きつけよ)$/,
       /^米PT \S+から突撃 \d+ m ・ 赤い線で転舵$/,
       /^米PT のエンジン音 ・ \S+から突撃$/,
       /^米PT 離脱 ・ 次の赤い線に備えよ$/,
@@ -273,7 +166,7 @@ describe('射撃を押し続ける夜（台本: 見つかったら舷側を向�
     let hidden = 0;
     let heldResults = 0;
     for (let seed = 1; seed <= 12; seed++) {
-      const r = nightLines(seed, true, true);
+      const r = nightLines(seed, true, 'fight');
       expect(r.passTop, `${seed}`).toBe(true);
       events += r.events;
       // R5: 赤い線の下に 2.5 秒より長く隠れた出来事（航過中の PT が撃退されて黙ったまま抜ける）も、線が消えてから出る。出ずに時間切れの出来事は無い

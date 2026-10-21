@@ -3,11 +3,11 @@
 // v0.6.2 実機 1 回目: 左上 2 段目の時計（ui/dawn-clock）と同じ段なので、組み直したときだけ時計を左右対称に避ける幅に縮める（lineFitScale。収まれば等倍）。
 // v0.6.3: 米PT の 3 つのモード（文とキーは ui/pt-lines.ts）。航過の結果は航過の通し番号が増えてから PT_RESULT_SHOW_MS の間（通し番号は撃った弾がみな落ちてから増える。ui/mission-mode の ptResultShown）。
 // 実機 1 回目: T-14 の 13mm の 2 つ（射撃・撃退と撃沈。ui/pt-gun-lines）。出来事は 13mm の出来事の通し番号が増えてから PT_RESULT_SHOW_MS の間（赤い線に隠れている間は始めず、航過の結果は出来事の後に出す）。
+// 実機 2 回目のレビュー R2・ux-3: 米PT の時刻の旗は ui/pt-line-clock（出来事は 1 度出たら出し直さない・同じ PT の連射の結果は出来事の行に足す）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
 import { BARGE_EVENT_SHOW_MS } from '../config/hunt-config';
-import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import { ESCORT_EVENT_SHOW_MS } from '../config/ui-config';
 import {
   HUD_COLOR_STRONG,
@@ -32,12 +32,11 @@ import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, barge
 import { DAWN_AIR_NONE } from '../core/dawn-air';
 import { airRaidTagJa, bargeHideTagKey, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
 import { ptKey, ptLine } from './pt-lines';
-import { holdShowUntil } from './pt-gun-lines';
-import { ptHoldPass } from './pt-chase-lines';
+import { PtLineClock } from './pt-line-clock';
 import {
   MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
   MISSION_NORMAL, MISSION_PLANE, MISSION_PLANE_ATTACK, MISSION_PLANE_RESULT, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING,
-  MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT, bargeRunning, missionMode, stormWarning,
+  MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -78,13 +77,9 @@ export class MissionLine {
   /** 夜明けの空襲の 2 行目のキー（v0.6.1。ui/dawn-lines の strikeKey）と、後ろの「大発 岸へ N 隻」のキー（v0.6.2 実機 1 回目。bargeHideTagKey） */
   private lastStrikeKey = -1;
   private lastBargeTagKey = 0;
-  /** 米PT（v0.6.3）: 見た航過の通し番号と結果の表示の終わり ms、2 行目のキー（ui/pt-lines の ptKey） */
-  private seenPassSeq = 0;
-  private ptResultUntil = 0;
+  /** 米PT（v0.6.3）: 2 行目のキー（ui/pt-lines の ptKey）と、攻撃の結果・13mm の出来事の時刻の旗（ui/pt-line-clock） */
   private lastPtKey = -1;
-  /** 13mm（v0.6.3 実機 1 回目）: 見た出来事（撃退・撃沈）の通し番号とその表示の終わり ms */
-  private seenGunEventSeq = 0;
-  private ptGunEventUntil = 0;
+  private readonly ptClock = new PtLineClock();
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -114,24 +109,12 @@ export class MissionLine {
     const call = topCall(t.callFlags);
     const stormWarn = stormWarning(t);
     const bargeRun = bargeRunning(t);
-    if (t.pt.passSeq > this.seenPassSeq) {
-      this.seenPassSeq = t.pt.passSeq;
-      this.ptResultUntil = nowMs + PT_RESULT_SHOW_MS;
-    }
-    if (t.pt.gunEventSeq > this.seenGunEventSeq) {
-      this.seenGunEventSeq = t.pt.gunEventSeq;
-      this.ptGunEventUntil = nowMs + PT_RESULT_SHOW_MS;
-    }
-    // 赤い線 > 13mm の出来事 > 航過の結果: 上の行に隠れている間は始めない（出来事は線が消えてから、結果は出来事の後に。どれも PT_RESULT_SHOW_MS）。
-    // 攻撃が終わって弾がまだ飛んでいる間は赤い線の行を前のキーのまま保つ（実機 2 回目。結果の前に追ってくる PT・射撃中の行が一瞬出ない。ptHoldPass）
-    const ptHold = ptHoldPass(t, this.lastMissionMode);
-    const passShown = t.pt.passing || ptHold;
-    this.ptGunEventUntil = holdShowUntil(this.ptGunEventUntil, passShown, nowMs);
-    this.ptResultUntil = holdShowUntil(this.ptResultUntil, !passShown && nowMs < this.ptGunEventUntil, nowMs);
-    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | (nowMs < this.ptResultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.ptGunEventUntil ? MODE_FLAG_PT_GUN_EVENT : 0) | (ptHold ? MODE_FLAG_PT_HOLD : 0);
+    // 米PT: 赤い線 > 13mm の出来事 > 攻撃の結果（上の行に隠れている間は始めない）と、攻撃の後に弾が飛んでいる間の赤い線の行の保ち（ui/pt-line-clock）
+    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | this.ptClock.flags(t, nowMs, this.lastMissionMode);
     const mode = missionMode(t, call, flags);
+    this.ptClock.shown(mode);
     const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
-    const pKey = ptMode ? ptKey(t, mode, flags, this.lastPtKey) : 0;
+    const pKey = ptMode ? ptKey(t, mode, flags, this.lastPtKey, this.ptClock.merge) : 0;
     const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
     // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）
     const planeStep = t.planePhase === SP_APPROACH ? Math.ceil(t.planeDistM / PLANE_DISTANCE_STEP_M) : 0;

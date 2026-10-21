@@ -5,6 +5,7 @@ import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { getPtParams } from '../src/config/pt-mission-data';
 import { PT_CHASE_KEYS, isChaseRecord } from '../src/core/pt-chase-data';
 import type { PtParams } from '../src/core/pt-data';
+import { degToRad, ktToMps } from '../src/core/units';
 
 type Rec = Record<string, unknown>;
 const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
@@ -21,6 +22,14 @@ const withChase = (over: Rec, extra?: (d: typeof gameData) => void): (() => PtPa
 };
 
 describe('米PT の追撃の data（us_pt_enemy.chase）', () => {
+  it('jp_05 の値（固定。tests/pt-data から移した）: 追撃と連射と、航過は危ない間だけ（core/pt-fire。data からはいつも有効）。1 回の連射では沈まない（24 < HP 50）', () => {
+    const p = params(gameData)!;
+    expect([p.chaseMps, p.chaseMinMps, p.chaseStationM, p.chaseRelDeg, p.chaseHeldM, p.chaseHeldRelDeg, p.chaseHeldGuard2, p.chaseCommit2]).toEqual([ktToMps(39), ktToMps(10), 170, 135, 350, 150, 150 ** 2, 350 ** 2]);
+    expect([p.burstRounds, p.burstMaxS, p.maxBursts, p.burstBowRofFactor, p.burstConeQuitS, p.chaseGapS, p.chaseSelfGapS, p.chaseSlowExitS, p.chaseSuppressHits, p.passEndsWhenSafe]).toEqual([6, 3, 6, 0.4, 2, 2, 3, 2, 3, true]);
+    expect(p.chaseCosAft2).toBeCloseTo(Math.cos(degToRad(75)) ** 2, 12);
+    expect(p.chaseCosExit2).toBeCloseTo(Math.cos(degToRad(45)) ** 2, 12);
+    expect(p.burstRounds * p.hit.damage).toBe(24);
+  });
   it('ちょうど 19 鍵（data の並びと同じ）、どれも数。余分・欠け・文字・配列は形が違う', () => {
     const c = chaseOf(gameData);
     expect(PT_CHASE_KEYS.length).toBe(19);
@@ -84,16 +93,18 @@ describe('米PT の追撃の data（us_pt_enemy.chase）', () => {
     ['bow_rof_factor 0', { bow_rof_factor: 0 }, /chase: 0 < bow_rof_factor ≤ 1/],
     ['bow_rof_factor 1.1', { bow_rof_factor: 1.1 }, /chase: 0 < bow_rof_factor ≤ 1/],
     ['cone_quit_s 0', { cone_quit_s: 0 }, /chase: 0 < cone_quit_s/],
-    ['cone_quit_s 5.5（= burst_max_s 3 + open_fire_s 2.5）', { cone_quit_s: 5.5 }, /chase: 0 < cone_quit_s < burst_max_s \+ attack\.open_fire_s（5\.5）/],
+    // 実機 2 回目のレビュー R5: 円錐の秒は open_fire_s の後だけ数えるので、burst_max_s 3 以上（前の上限 5.5 の手前 3〜5.4 も）はいつまでも効かない
+    ['cone_quit_s 3（= burst_max_s）', { cone_quit_s: 3 }, /chase: 0 < cone_quit_s < burst_max_s（3。艇首の円錐の秒は open_fire_s の後だけ数える）/],
+    ['cone_quit_s 5.4（前の上限 burst_max_s + open_fire_s の内）', { cone_quit_s: 5.4 }, /chase: 0 < cone_quit_s < burst_max_s/],
   ];
   it.each(stops)('止まる: %s', (_name, over, msg) => {
     expect(withChase(over)).toThrow(msg);
   });
 
-  it('通る: speed_kt 31.5・39、start_aft_deg 89、station_m 61・349、commit_m 449、station_rel_deg = held_rel_deg 150、held_station_m 549、held_guard_m 349、burst_rounds 12（48 < 50）、gap 0、bow_rof_factor 1、cone_quit_s 5.4', () => {
+  it('通る: speed_kt 31.5・39、start_aft_deg 89、station_m 61・349、commit_m 449、station_rel_deg = held_rel_deg 150、held_station_m 549、held_guard_m 349、burst_rounds 12（48 < 50）、gap 0、bow_rof_factor 1、cone_quit_s 2.9', () => {
     const ok: Rec[] = [
       { speed_kt: 31.5 }, { speed_kt: 39 }, { start_aft_deg: 89 }, { station_m: 61 }, { station_m: 349 }, { commit_m: 449 }, { station_rel_deg: 150, held_rel_deg: 150 },
-      { held_station_m: 549 }, { held_guard_m: 349 }, { burst_rounds: 12 }, { gap_s: 0, self_gap_s: 0 }, { bow_rof_factor: 1 }, { cone_quit_s: 5.4 },
+      { held_station_m: 549 }, { held_guard_m: 349 }, { burst_rounds: 12 }, { gap_s: 0, self_gap_s: 0 }, { bow_rof_factor: 1 }, { cone_quit_s: 2.9 },
     ];
     for (const o of ok) expect(withChase(o), JSON.stringify(o)).not.toThrow();
   });

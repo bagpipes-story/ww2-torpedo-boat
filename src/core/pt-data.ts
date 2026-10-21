@@ -174,7 +174,7 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
   if (!(u.retreat_hp > 0 && u.retreat_hp < ctx.hullHp)) bad(`0 < under_fire.retreat_hp < PT の HP（${ctx.hullHp}。HP だけでは沈まない）`);
   const chanceOk = (x: number): boolean => x >= 0 && x <= PT_UNDER_FIRE_CHANCE_MAX;
   if (!(chanceOk(u.casualty_chance) && chanceOk(u.fire_chance))) bad(`under_fire.casualty_chance・fire_chance は 0〜${PT_UNDER_FIRE_CHANCE_MAX}`); // 和 < 1 は上限で決まる（レビュー F8）
-  const chase = chaseParamsFromData(r.chase, { boatMaxKt: boat.speed_max_kt, minRangeM: a.min_range_m, holdOffM: a.hold_off_m, effectiveM: eff, openFireS: a.open_fire_s }, bad);
+  const chase = chaseParamsFromData(r.chase, { boatMaxKt: boat.speed_max_kt, minRangeM: a.min_range_m, holdOffM: a.hold_off_m, effectiveM: eff }, bad);
   const gun = gunParamsFromData(g);
   const sq = (x: number): number => x * x;
   const base: PtParams = {

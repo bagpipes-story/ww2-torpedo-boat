@@ -1,7 +1,7 @@
 // 米PT の追撃（v0.6.3 実機 2 回目。docs/02 §6.4、spec r2 §D.2、enemies.json の us_pt_enemy.chase）: 逃げる艇（chase.min_target_kt 以上）の艇尾側にいる PT は横切る航過ではなく、
 // 艇の後ろ寄りの舷（艇の針路から side × station_rel_deg・station_m）へ speed_kt で回り込んで並び、撃つ権利（q.owner。航過と同じ 1 つ）が空けば「連射」を固めて PT から艇への
 // 赤い線で予告し、open_fire_s 後から burst_rounds 発まで撃つ（撃つ規則は航過と同じ core/pt-fire。連射だけ艇首の円錐へも遅く撃つ）。待つ追撃の PT は撃っている PT と反対の舷の
-// held_rel_deg・held_station_m（有効射程の外）で待ち、held_guard_m より内へは自分から寄らない。同じ PT が続けて撃つのは相方が撃てる距離にいないときだけ（gap_s + self_gap_s）。
+// held_rel_deg・held_station_m（有効射程の内・commit_m の縁。撃つ権利は 1 つなので待つ間は撃たない）で待ち、held_guard_m より内へは自分から寄らない。同じ PT が続けて撃つのは相方が撃てる距離にいないときだけ（gap_s + self_gap_s）。
 // 連射の後も離脱しない（制圧された PT だけ離れる。core/pt-damage）。Phaser 非依存・確保しない（目標は使い回しの ChaseTarget、速さは module の CHASE_OUT）・乱数なし。距離は二乗で比べる。
 import type { PtParams } from './pt-data';
 import { dodgeTurn, nearEdge, PT_STATION_COURSE_MIN_MPS, targetSide } from './pt-pass';
@@ -137,6 +137,16 @@ export function burstEnded(p: PtParams, b: PtBoatState, d2: number): boolean {
   if (b.timerS < p.openFireS) return false;
   const silenced = b.suppressed || b.fate !== PT_FATE_NONE;
   return b.timerS >= p.openFireS + p.burstMaxS || (b.roundsLeft <= 0 && !silenced) || b.coneS >= p.burstConeQuitS || d2 > p.breakOff2 || nearEdge(b.x, b.y, p.bounds, p.boundsMarginM);
+}
+
+/**
+ * 赤い線を描くか（PtSquadron の絵。v0.6.3 実機 2 回目のレビュー ux-1）: 撃つ PT がいて、その連射が制圧・撃退で黙って予告の秒（open_fire_s）を過ぎた、でない。
+ * 黙った連射も撃つ権利と窓は終わりまで持つ（burstEnded。模擬と公平さは変わらない）が、もう撃たない線を最長 5.5 秒出していた。航過（撃退で黙っても抜けるまで線）は変えない
+ */
+export function attackLineShown(q: PtSection, p: PtParams): boolean {
+  if (q.owner < 0) return false;
+  const b = q.boats[q.owner]!;
+  return !(b.burst && b.timerS >= p.openFireS && (b.suppressed || b.fate !== PT_FATE_NONE));
 }
 
 /** 連射を数える（航過の回数には入れない）: 撃った連射だけ PT と隊の連射に数え、命中は連射の命中へ（終わり・夜明け・沈んだ） */

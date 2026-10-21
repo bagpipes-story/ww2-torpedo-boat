@@ -3,7 +3,7 @@
 // tests/pt-chase-step、制圧（13mm）は tests/pt-damage。数値は jp_05 の getPtParams（data のまま）。方位は北 0・時計回り、x は東・y は南。
 import { describe, expect, it } from 'vitest';
 import { PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_NONE, PT_LEAVE, PT_OUT, PT_PASS, createPtSection, type PtBoatState, type PtCheck, type PtSection } from '../src/core/pt-boats';
-import { CHASE_OUT, PT_CHASE_LOOKAHEAD_M, burstEnded, chaseEntryOk, chaseHeading, chaseKeep, commitBurst, createChaseTarget, endBurst, setChaseTarget, type ChaseTarget } from '../src/core/pt-chase';
+import { CHASE_OUT, PT_CHASE_LOOKAHEAD_M, attackLineShown, burstEnded, chaseEntryOk, chaseHeading, chaseKeep, commitBurst, createChaseTarget, endBurst, setChaseTarget, type ChaseTarget } from '../src/core/pt-chase';
 import type { PtParams } from '../src/core/pt-data';
 import { stepPass } from '../src/core/pt-fire';
 import { SeededRng } from '../src/core/rng';
@@ -174,6 +174,23 @@ describe('連射（commitBurst・pt-fire の stepPass・burstEnded・endBurst）
     expect(burstEnded(P, Object.assign(b, { suppressed: false, fate: PT_FATE_CREW }), near)).toBe(false);
     expect(burstEnded(P, Object.assign(b, { timerS: P.openFireS + P.burstMaxS }), near)).toBe(true);
     expect(burstEnded(P, Object.assign(b, { timerS: P.openFireS, fate: PT_FATE_NONE, roundsLeft: 3, x: P.boundsMarginM / 2 }), near)).toBe(true);
+  });
+
+  it('赤い線を描くか（attackLineShown。レビュー ux-1）: 撃つ PT がいれば出す。黙った（制圧・撃退）連射は予告の秒（open_fire_s）の後は消す（撃つ権利と窓は burstEnded のまま）。航過は黙っても抜けるまで出す', () => {
+    const q = createPtSection(P, 24);
+    const b = q.boats[0]!;
+    expect(attackLineShown(q, P)).toBe(false);
+    Object.assign(b, { phase: PT_PASS, burst: true, timerS: P.openFireS + 0.5, suppressed: false, fate: PT_FATE_NONE, roundsLeft: 0 });
+    q.owner = 0;
+    expect(attackLineShown(q, P)).toBe(true); // 撃ち切っただけ（次のステップで終わる）
+    b.suppressed = true;
+    expect([attackLineShown(q, P), burstEnded(P, b, 200 ** 2)]).toEqual([false, false]); // 権利は窓の終わりまで持つが線は消す
+    b.timerS = P.openFireS - 0.5;
+    expect(attackLineShown(q, P)).toBe(true); // 予告の間に黙った連射は予告の秒だけ出す（一瞬で消えない）
+    Object.assign(b, { timerS: P.openFireS + 0.5, suppressed: false, fate: PT_FATE_CREW });
+    expect(attackLineShown(q, P)).toBe(false);
+    b.burst = false; // 撃退で黙った航過は抜けるまで線
+    expect(attackLineShown(q, P)).toBe(true);
   });
 
   it(`endBurst: 次まで gap_s（同じ PT は gap_s + self_gap_s）。${P.maxBursts} 回目で去る・撃退なら去る・制圧なら艇から離れる向きへ離脱・ほかは追撃のまま（onPassEnd の間は burst が立っている）`, () => {

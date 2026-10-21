@@ -5,7 +5,8 @@
 // v0.6.3 実機 1 回目: T-14 の 13mm の 2 つのモード（射撃・撃退と撃沈）は ui/pt-gun-lines へ渡す。被弾で黙った航過、離脱の行の末尾（撃つ前は射撃ボタン・撃った後は次の赤い線）、
 // 全隻撃沈、航過の上限は撃退・撃沈で減る（テレメトリ）。Result の 4 行目は 13mm の記録、最初に見つかったのが閃光なら「閃光」、頭に撃沈・撃退の数。
 // v0.6.3 実機 2 回目（追撃。spec r2 §F）: 連射の行・追ってくる PT の行・連射の結果・Result の連射と制圧の句は ui/pt-chase-lines へ渡す。航過の行に「全速で」を戻し、
-// 離脱の行から「残り N 回」を外した（追撃があるので回数はもう次を言い当てない）。
+// 離脱の行から「残り N 回」を外した（追撃があるので回数はもう次を言い当てない）。レビュー: 13mm の出来事の行に同じ PT の連射の結果を足す（merge。ui/pt-line-clock）、
+// 方角と距離は HUD の脅威の PT（core の hudThreatIndex。次の航過の PT を追ってくる PT より先に）。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_DISTANCE_STEP_M } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
@@ -75,15 +76,16 @@ function contactSub(t: BoatTelemetry, flags: number): number {
  * 航過: 撃った | そのまま（dodge 0）<< 1 | 逃げる方角 << 2（被弾で黙った航過は 1 << 5 だけ。連射は ui/pt-chase-lines の burstKey）。
  * 接触: 種類 | 方位 << 3 | 距離の刻み << 6 | 上限 << 12 | 攻撃の数 << 16 | 被弾 << 20 | 13mm を撃つ前 << 26（離脱・追ってくる）| 結果が連射 << 27（追ってくる PT は chaseKey）。
  * 平常: 種類 | 方位 << 3 | 距離の刻み << 6 | 見つかる距離の刻み << 12 | 隻数 << 18 | 夜明け << 21 | みな去った（海域の外か沈んだ）<< 22 | みな沈めた << 23 | 帰投の輪の縁までの 100 m の刻み（みな去った後だけ）<< 24。
- * 13mm の 2 つは ui/pt-gun-lines。行に出ない値は 0（無駄に組み直さない）。攻撃が終わって赤い線の行を保つ間（航過のモードで撃つ PT がいない。ptHoldPass）は前のキー lastKey
+ * 13mm の 2 つは ui/pt-gun-lines（出来事に足した連射の結果 merge は ui/pt-line-clock の merge）。行に出ない値は 0（無駄に組み直さない）。
+ * 攻撃が終わって赤い線の行を保つ間（航過のモードで撃つ PT がいない。ptHoldPass）は前のキー lastKey
  */
-export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0): number {
+export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0, merge = 0): number {
   const p = t.pt;
   if (mode === MISSION_PT_PASS && !p.passing) return lastKey;
   if (mode === MISSION_PT_GUN) return ptGunKey(t);
-  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventKey(t);
+  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventKey(t) | merge;
   if (mode === MISSION_PT_PASS) {
-    if (p.burst) return burstKey(p, dirIndex(p.dx, p.dy));
+    if (p.burst) return burstKey(t, dirIndex(p.dx, p.dy));
     if (p.passSilenced) return K_SILENCED;
     const straight = p.dodge === 0;
     return (p.fired ? 1 : 0) | ((straight ? 1 : 0) << 1) | ((straight || Number.isNaN(p.escapeDeg) ? 0 : headingIndex(p.escapeDeg)) << 2);
@@ -94,9 +96,9 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0
     if (sub === C_CHASE) return chaseKey(dirIndex(p.dx, p.dy), p.sighted ? distStep(p.dx, p.dy) : 0, hint);
     const rush = sub === C_RUSH_SEEN || sub === C_RUSH_HEARD;
     const result = sub === C_CLEAN || sub === C_HIT || sub === C_NOFIRE;
-    const burst = result && p.burstFired; // 結果が連射なら「追撃 n/m」（連射の数と上限）
+    const burst = result && p.burstFired; // 結果が連射なら「計 n 回」（撃った連射の数。上限は出さない＝レビュー ux-7）
     const n = result ? Math.min(15, burst ? p.bursts : p.passes) : 0;
-    const m = result ? Math.min(15, burst ? p.maxBursts : p.maxPasses) : 0;
+    const m = result && !burst ? Math.min(15, p.maxPasses) : 0;
     const h = sub === C_HIT ? Math.min(63, p.lastPassHits) : 0;
     return sub | ((rush ? dirIndex(p.dx, p.dy) : 0) << 3) | ((sub === C_RUSH_SEEN ? distStep(p.dx, p.dy) : 0) << 6) | (m << 12) | (n << 16) | (h << 20) | hint | (burst ? K_BURST_RESULT : 0);
   }
@@ -115,7 +117,7 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0
 export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   const p = t.pt;
   if (mode === MISSION_PT_GUN) return ptGunLine(t, key);
-  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key);
+  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key, p.damagePerHit);
   if (mode === MISSION_PT_PASS && (key & K_BURST) !== 0) return burstLine(key);
   if (mode === MISSION_PT_PASS && (key & K_SILENCED) !== 0) return { text: '米PT 被弾で沈黙！ もう撃ってこない', color: HOME_COLOR_TEXT };
   if (mode === MISSION_PT_PASS) return { text: `米PT ${(key & 1) !== 0 ? '掃射' : '航過'}！ ${(key & 2) !== 0 ? DODGE_STRAIGHT_JA : `${bearingJa(((key >> 2) & 7) * 45)}へ全速で転舵`}`, color: HUD_COLOR_WARN };
@@ -123,7 +125,7 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   const dir = bearingJa(((key >> 3) & 7) * 45);
   const d = ((key >> 6) & 63) * PT_DISTANCE_STEP_M;
   if (mode === MISSION_PT_CONTACT) {
-    if (sub === C_CHASE) return chaseLine(key, (key & K_FIRE_HINT) !== 0);
+    if (sub === C_CHASE) return chaseLine(key, (key & K_FIRE_HINT) !== 0, p.gunRangeM);
     if ((key & K_BURST_RESULT) !== 0) return burstResultLine(p);
     const tally = `航過 ${p.passes}/${p.maxPasses}`;
     if (sub === C_CLEAN) return { text: `かわした！ 被弾なし ・ ${tally}`, color: HOME_COLOR_TEXT };

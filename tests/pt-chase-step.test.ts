@@ -154,6 +154,18 @@ describe('追撃の段階（pt-boats の stepPtSection）', () => {
     expect([s.owner, s.gapLeftS, s.passes, s.bursts, s.firedBursts, s.boats[0]!.burst, s.seqPending]).toEqual([-1, P.chaseGapS, 0, 1, 1, false, true]);
   });
 
+  it('連射の最後の弾が連射の終わった後に落ちても連射の命中に数える（レビュー R4: 撃ち切ったステップに連射が終わるので最後の弾はいつも後から落ちる）。航過の後から落ちた弾は入れない', () => {
+    for (const burst of [true, false]) {
+      const q = twoChasers();
+      q.boats[0]!.phase = PT_OUT;
+      q.boats[1]!.phase = PT_OUT;
+      Object.assign(q, { lastPassBoat: 0, lastPassBurst: burst, lastPassFired: true, lastPassHits: 0, cleanPasses: 1, burstHits: 0, seqPending: true });
+      Object.assign(q.shells[0]!, { active: true, x: TX, y: TY, vx: 0, vy: 0, leftS: (DT * TS) / 2, impactX: TX, impactY: TY, gunIndex: 0 }); // このステップに艇の真ん中へ落ちる
+      stepPtSection(q, P, fleeing(), new SeededRng(1), DT, DT * TS, events());
+      expect([q.burstHits, q.lastPassHits, q.cleanPasses, q.hits, q.passSeq], `${burst}`).toEqual([burst ? 1 : 0, 1, 0, 1, 1]);
+    }
+  });
+
   it('逃げる艇を 40 夜追うと連射が来る（追撃の段階を通る）。連射の赤い線は予告から open_fire_s の後だけ撃ち、1 回 burst_rounds 発まで・同時に撃つ PT は 1 隻・1 隻の連射は max_bursts まで', () => {
     let bursts = 0;
     let bad = 0;

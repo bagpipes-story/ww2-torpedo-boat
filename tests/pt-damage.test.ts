@@ -219,7 +219,7 @@ describe(`制圧（v0.6.3 実機 2 回目。hitPt の結末の無い命中を追
       expect([b.phase, b.chaseHits, b.suppressed, q.suppressions, q.gunEventSeq]).toEqual([PT_CHASE, k, false, 0, 0]);
     }
     expect(hitPt(q, P, 0, DMG, U_NONE, ev)).toBe(PT_FATE_NONE);
-    expect([b.phase, b.suppressed, b.chaseHits, b.bursts, b.timerS, b.fate, q.suppressions, q.suppressSeq, q.retired]).toEqual([PT_BREAK, true, 0, 1, 0, PT_FATE_NONE, 1, 1, 0]);
+    expect([b.phase, b.suppressed, b.chaseHits, b.bursts, b.timerS, b.fate, q.suppressions, q.retired]).toEqual([PT_BREAK, true, 0, 1, 0, PT_FATE_NONE, 1, 0]);
     expect(b.lockDeg).toBeCloseTo(bearingDeg(q.lkX, q.lkY, b.x, b.y), 9);
     expect([q.gunEventSeq, q.gunEvent, q.gunEventBoat]).toEqual([1, PT_GUN_EV_SUPPRESS, 0]);
     expect(log).toEqual([]);

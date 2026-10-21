@@ -76,7 +76,6 @@ function suppressChaser(q: PtSection, p: PtParams, b: PtBoatState, i: number, ow
   b.chaseHits = 0;
   b.bursts++;
   q.suppressions++;
-  q.suppressSeq++;
   if (owner) b.roundsLeft = 0;
   else {
     b.phase = PT_BREAK;

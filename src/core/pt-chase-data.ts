@@ -23,9 +23,9 @@ export interface PtChaseParams {
   chaseGapS: number; chaseSelfGapS: number; chaseCosExit2: number; chaseSlowExitS: number; chaseSuppressHits: number;
 }
 
-/** chaseParamsFromData が読む他の値（boat_ref の最大速力 kt と attack・guns の距離 m・予告の秒） */
+/** chaseParamsFromData が読む他の値（boat_ref の最大速力 kt と attack・guns の距離 m） */
 export interface PtChaseContext {
-  boatMaxKt: number; minRangeM: number; holdOffM: number; effectiveM: number; openFireS: number;
+  boatMaxKt: number; minRangeM: number; holdOffM: number; effectiveM: number;
 }
 
 /** chase の形: ちょうど PT_CHASE_KEYS の 19 鍵で、どれも有限の数（余分・欠け・文字は false） */
@@ -44,13 +44,14 @@ export function chaseParamsFromData(c: PtChaseRecord, x: PtChaseContext, bad: (m
   if (!(x.minRangeM < c.station_m && c.station_m < c.commit_m)) no(`attack.min_range_m < station_m < commit_m（${x.minRangeM} < ${c.station_m} < ${c.commit_m}）`);
   if (!(c.commit_m < x.effectiveM)) no(`commit_m < guns.effective_night_m（${c.commit_m} < ${x.effectiveM}。連射は有効射程の内で固める）`);
   if (!(c.station_rel_deg > 90 && c.station_rel_deg <= c.held_rel_deg && c.held_rel_deg < 180)) no('90 < station_rel_deg ≤ held_rel_deg < 180（後ろ寄りの舷。待つ PT はもっと後ろ）');
-  if (!(c.held_guard_m > 0 && c.held_guard_m < c.held_station_m && c.held_station_m < x.holdOffM)) no(`0 < held_guard_m < held_station_m < attack.hold_off_m（${c.held_guard_m} < ${c.held_station_m} < ${x.holdOffM}。待つ PT は有効射程の外）`);
+  if (!(c.held_guard_m > 0 && c.held_guard_m < c.held_station_m && c.held_station_m < x.holdOffM)) no(`0 < held_guard_m < held_station_m < attack.hold_off_m（${c.held_guard_m} < ${c.held_station_m} < ${x.holdOffM}。追撃の待つ PT は待つ突撃の PT より内）`);
   for (const k of ['burst_rounds', 'max_bursts', 'suppress_hits'] as const) if (!Number.isInteger(c[k]) || c[k] < 1) no(`${k} は 1 以上の整数`);
   if (!(c.burst_max_s > 0 && c.slow_exit_s > 0)) no('burst_max_s・slow_exit_s は正');
   if (!(c.gap_s >= 0 && c.self_gap_s >= 0)) no('gap_s・self_gap_s は 0 以上');
   if (!(c.exit_fwd_deg > 0 && c.exit_fwd_deg < 90)) no('0 < exit_fwd_deg < 90');
   if (!(c.bow_rof_factor > 0 && c.bow_rof_factor <= 1)) no('0 < bow_rof_factor ≤ 1（艇首の円錐へは遅く撃つ）');
-  if (!(c.cone_quit_s > 0 && c.cone_quit_s < c.burst_max_s + x.openFireS)) no(`0 < cone_quit_s < burst_max_s + attack.open_fire_s（${c.burst_max_s + x.openFireS}）`);
+  // 艇首の円錐の秒は open_fire_s の後だけ数え（core/pt-fire）、連射は open_fire_s + burst_max_s で終わるので、burst_max_s 以上はいつまでも効かない（実機 2 回目のレビュー R5。spec r2 §C.2 の上限 burst_max_s + open_fire_s は緩すぎた）
+  if (!(c.cone_quit_s > 0 && c.cone_quit_s < c.burst_max_s)) no(`0 < cone_quit_s < burst_max_s（${c.burst_max_s}。艇首の円錐の秒は open_fire_s の後だけ数える）`);
   const sq = (v: number): number => v * v;
   const cos2 = (deg: number): number => sq(Math.cos(degToRad(deg)));
   return {

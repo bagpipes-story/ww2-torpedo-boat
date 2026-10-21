@@ -241,7 +241,10 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
     if (hit) {
       q.hits++;
       if (s.gunIndex === q.owner) q.passHits++;
-      else if (s.gunIndex === q.lastPassBoat && q.lastPassHits++ === 0 && q.lastPassFired) q.cleanPasses--;
+      else if (s.gunIndex === q.lastPassBoat) {
+        if (q.lastPassBurst) q.burstHits++; // 連射の最後の弾は撃ち切ったステップに連射が終わってから落ちる（レビュー R4: 連射の命中に数えていなかった）
+        if (q.lastPassHits++ === 0 && q.lastPassFired) q.cleanPasses--;
+      }
     }
     ev.onImpact(s.impactX, s.impactY, hit);
   }
