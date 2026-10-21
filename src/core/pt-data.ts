@@ -22,6 +22,10 @@ export type PtAttackKey = (typeof PT_ATTACK_KEYS)[number];
 export const PT_OPEN_FIRE_MIN_S = 2.0;
 /** 1 つの隊の PT の数の上限（HUD の鍵の桁がこれで足りる） */
 export const PT_MAX_COUNT = 4;
+/** 待つ PT の位置取りの角の数の上限（tactics.station_rel_deg。航過ごとに順に使う） */
+export const PT_STATION_REL_MAX = 4;
+/** 13mm を受けた PT の死傷・引火の確率の上限（1 命中ごとに引く。これより高いと撃ち返しが強すぎる。和は 1 未満） */
+export const PT_UNDER_FIRE_CHANCE_MAX = 0.2;
 
 export interface PtDataRecord {
   id: string;
@@ -31,6 +35,10 @@ export interface PtDataRecord {
   patrol: { speed_kt: number; arrive_m: number };
   attack: Record<PtAttackKey, number>;
   guns: GunDataRecord[];
+  /** 待つ PT の位置取り（v0.6.3 実機 1 回目。前の航過と反対の舷・艇の針路からの角の順・距離・許す角・近いときの並び・先読みの秒） */
+  tactics: { station_m: number; station_rel_deg: number[]; station_tol_deg: number; station_close_m: number; station_lead_s: number };
+  /** T-14 の 13mm を受けたとき（v0.6.3 実機 1 回目。1 命中ごとに 1 回引く: 引火で沈む・死傷で去る、どれでもなく HP が retreat_hp 以下なら去る） */
+  under_fire: { retreat_hp: number; casualty_chance: number; fire_chance: number };
 }
 
 /** missions_seed の v0_1_prototype.pt_boats: PT ごとの往復する線 [x0, y0, x1, y1]、線の始点からの出発位置 m、去る方位 */
@@ -53,6 +61,10 @@ export interface PtDataContext {
   /** 見失ってから警戒を解くまでの体感秒（hit_rate_model の visibility.detect_hold_s） */
   detectHoldS: number;
   spriteScale: number;
+  /** 当たりの倍率（hit_rate_model の world.hit_scale。T-14 の 13mm の命中） */
+  hitScale: number;
+  /** PT の HP（boat_ref の boats.json hull_hp。config/game-data の getBoatDamageParams） */
+  hullHp: number;
 }
 
 export interface PtParams {
@@ -73,6 +85,10 @@ export interface PtParams {
   edgeMarginM: number; leaveHeadingDeg: number; turnRateDegS: number; accelMps2: number; boundsMarginM: number; spriteLengthUnits: number; spriteBeamUnits: number;
   gun: GunParams;
   hit: HitSpec;
+  /** T-14 の 13mm を受ける（v0.6.3 実機 1 回目）: HP（boat_ref の hull_hp）・当たりの半長と半幅 m・去る HP・1 命中の死傷（去る）と引火（沈む）の確率 */
+  hullHp: number; hitHalfLengthM: number; hitHalfBeamM: number; retreatHp: number; casualtyChance: number; fireChance: number;
+  /** 待つ PT の位置取り（v0.6.3 実機 1 回目）: 艇からの距離 m、艇の針路からの角 deg（航過ごとに順に）、点の方位との差の許し deg、並ぶ距離の二乗、艇の先読みの体感秒 */
+  stationM: number; stationRelDeg: Float64Array; stationTolDeg: number; stationClose2: number; stationLeadS: number;
   /** PT ごとの線 [x0, y0, x1, y1]（4 × count）と出発点・針路（今夜の揺らぎ込み）。startAlongM は data の出発位置（線の始点から m） */
   legs: Float64Array; startX: Float64Array; startY: Float64Array; startHeadingDeg: Float64Array; startAlongM: number;
   bounds: { width: number; height: number };
@@ -92,7 +108,10 @@ export function isPtDataRecord(v: unknown): v is PtDataRecord {
   const a = r['attack'];
   if (!nums(a, PT_ATTACK_KEYS) || Object.keys(a as object).length !== PT_ATTACK_KEYS.length) return false;
   const g = r['guns'];
-  return nums(r['detection'], ['base_detect_m', 'reaction_delay_s', 'detect_from_s']) && nums(r['patrol'], ['speed_kt', 'arrive_m']) && Array.isArray(g) && g.length === 1 && isGunDataRecord(g[0]);
+  const t = r['tactics'];
+  const rel = (t as Record<string, unknown> | undefined)?.['station_rel_deg'];
+  const tacticsOk = nums(t, ['station_m', 'station_tol_deg', 'station_close_m', 'station_lead_s']) && Array.isArray(rel) && rel.length >= 1 && rel.length <= PT_STATION_REL_MAX && nums(rel, rel.map((_, i) => String(i)));
+  return nums(r['detection'], ['base_detect_m', 'reaction_delay_s', 'detect_from_s']) && nums(r['patrol'], ['speed_kt', 'arrive_m']) && Array.isArray(g) && g.length === 1 && isGunDataRecord(g[0]) && tacticsOk && nums(r['under_fire'], ['retreat_hp', 'casualty_chance', 'fire_chance']);
 }
 
 export function isPtMissionBlock(v: unknown): v is PtMissionBlock {
@@ -138,6 +157,16 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
     if (!(b.start_along_m >= 0 && b.start_along_m <= len)) bad(`start_along_m は 0〜線の長さ（legs_m[${i}]）`);
   }
   if (!(b.leave_heading_deg >= 0 && b.leave_heading_deg < 360)) bad('leave_heading_deg は 0 以上 360 未満');
+  // 待つ PT の位置取り（v0.6.3 実機 1 回目）: hold_off の外・曲がり始める距離（2 × hold_off_m − 有効射程）の内に立つ（待つ PT は撃たず、内へ寄らない）
+  const t = r.tactics;
+  if (!(a.hold_off_m < t.station_m && t.station_m < 2 * a.hold_off_m - eff)) bad(`hold_off_m < tactics.station_m < 2 × hold_off_m − effective_night_m（${a.hold_off_m} < ${t.station_m} < ${2 * a.hold_off_m - eff}）`);
+  if (!t.station_rel_deg.every((x) => x > 0 && x < 180)) bad('tactics.station_rel_deg はどれも 0〜180 の間（艇の針路からの角。0 と 180 は艇首・艇尾）');
+  if (!(t.station_tol_deg > 0 && t.station_tol_deg < 90) || !(t.station_close_m > 0) || !(t.station_lead_s >= 0)) bad('0 < tactics.station_tol_deg < 90、station_close_m は正、station_lead_s は 0 以上');
+  // 13mm を受けたとき: HP だけでは沈まない（retreat_hp < hull_hp。沈むのは引火だけ）・確率は小さく
+  const u = r.under_fire;
+  if (!(u.retreat_hp > 0 && u.retreat_hp < ctx.hullHp)) bad(`0 < under_fire.retreat_hp < PT の HP（${ctx.hullHp}。HP だけでは沈まない）`);
+  const chanceOk = (x: number): boolean => x >= 0 && x <= PT_UNDER_FIRE_CHANCE_MAX;
+  if (!(chanceOk(u.casualty_chance) && chanceOk(u.fire_chance) && u.casualty_chance + u.fire_chance < 1)) bad(`under_fire.casualty_chance・fire_chance は 0〜${PT_UNDER_FIRE_CHANCE_MAX}（和は 1 未満）`);
   const gun = gunParamsFromData(g);
   const sq = (x: number): number => x * x;
   const base: PtParams = {
@@ -153,6 +182,9 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
     boundsMarginM: (boat.length_m * ctx.spriteScale) / 2, spriteLengthUnits: boat.length_m * ctx.spriteScale, spriteBeamUnits: boat.beam_m * ctx.spriteScale,
     gun,
     hit: { damage: gun.damage, fireChance: gun.fireChance, engineDamageChance: gun.engineDamageChance },
+    hullHp: ctx.hullHp, hitHalfLengthM: (boat.length_m * ctx.hitScale) / 2, hitHalfBeamM: (boat.beam_m * ctx.hitScale) / 2,
+    retreatHp: u.retreat_hp, casualtyChance: u.casualty_chance, fireChance: u.fire_chance,
+    stationM: t.station_m, stationRelDeg: Float64Array.from(t.station_rel_deg), stationTolDeg: t.station_tol_deg, stationClose2: sq(t.station_close_m), stationLeadS: t.station_lead_s,
     legs, startX: new Float64Array(n), startY: new Float64Array(n), startHeadingDeg: new Float64Array(n), startAlongM: b.start_along_m,
     bounds: { width: ctx.bounds.width, height: ctx.bounds.height },
     timeScale: ctx.timeScale,

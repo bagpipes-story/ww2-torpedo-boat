@@ -26,8 +26,9 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect([p.runInMps, p.passMinMps, p.patrolMps, p.leaveMps, p.overtakeMps, p.dashMps]).toEqual([ktToMps(35), ktToMps(25), ktToMps(8), ktToMps(30), ktToMps(6), ktToMps(39)]);
     expect([p.baseDetectM, p.reactionDelayS, p.detectFromS, p.detectHoldS]).toEqual([2000, 1.5, 5, 8]);
     expect(p.cosDead2).toBeCloseTo(Math.cos(degToRad(30)) ** 2, 12);
-    expect([p.commitMax2, p.minRange2, p.breakOff2, p.arrive2]).toEqual([900 ** 2, 60 ** 2, 800 ** 2, 100 ** 2]);
-    expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS]).toEqual([5, 140, 2.5, 8, 10, 2, 2.5, 3]);
+    // v0.6.3 実機 1 回目: 離脱 650 m・5 秒（前は 800 m・8 秒）、ずらし 120 m（前は 140）、1 隻 4 回（前は 2）
+    expect([p.commitMax2, p.minRange2, p.breakOff2, p.arrive2]).toEqual([900 ** 2, 60 ** 2, 650 ** 2, 100 ** 2]);
+    expect([p.commitTcpaS, p.offsetM, p.openFireS, p.passMaxS, p.roundsPerPass, p.maxPasses, p.passGapS, p.wingmanDelayS, p.breakMaxS]).toEqual([5, 120, 2.5, 8, 10, 4, 2.5, 3, 5]);
     // v0.6.3 の直し: 固める針路の差 30°・待つ PT は 500 m より内へ寄らず、600 m（500 + (500 − 有効射程 400)）から曲がる
     expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([30, 500 ** 2, 600 ** 2]);
     expect([p.turnRateDegS, p.accelMps2, p.spriteLengthUnits, p.spriteBeamUnits, p.boundsMarginM]).toEqual([24, 1.2, 48.8, 12.6, 24.4]);
@@ -35,7 +36,9 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
     expect([...p.legs]).toEqual([1200, 2200, 4800, 2200, 1200, 2400, 4800, 2400]);
     expect([...p.startX, ...p.startY, ...p.startHeadingDeg]).toEqual([2000, 2000, 2200, 2400, 90, 90]);
     expect([p.leaveHeadingDeg, p.edgeMarginM, p.timeScale]).toEqual([90, 200, TS]);
-    // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
+    // v0.6.3 実機 1 回目: T-14 の 13mm を受ける（HP は boat_ref us_elco80 の hull_hp 100、当たりは 24.4 × 6.3 m × hit_scale 1 の半分）と、待つ PT の位置取り
+    expect([p.hullHp, p.hitHalfLengthM, p.hitHalfBeamM, p.retreatHp, p.casualtyChance, p.fireChance]).toEqual([100, 12.2, 3.15, 60, 0.03, 0.003]);
+    expect([p.stationM, [...p.stationRelDeg], p.stationTolDeg, p.stationClose2, p.stationLeadS]).toEqual([550, [90, 45, 135], 30, 150 ** 2, 1]);    // 公平さの不変条件（spec §C.8）: 1 回の航過では砲だけで沈まない・予告から 2 秒以上撃たない
     expect(p.roundsPerPass * p.hit.damage).toBe(40);
     expect(p.openFireS).toBeGreaterThanOrEqual(2);
   });
@@ -62,7 +65,18 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
       expect(isPtDataRecord({ ...r, attack: without }), k).toBe(false);
     }
     expect(isPtDataRecord({ ...r, guns: [...(r['guns'] as unknown[]), ...(r['guns'] as unknown[])] })).toBe(false);
-    for (const [k, v] of Object.entries(r['source'] as Rec)) expect(/historical|design/.test(String(v)), k).toBe(true);
+    // v0.6.3 実機 1 回目: tactics（station_rel_deg は 1〜4 個の数）と under_fire が要る
+    const t = r['tactics'] as Rec;
+    for (const k of ['tactics', 'under_fire']) {
+      const without = { ...r };
+      delete without[k];
+      expect(isPtDataRecord(without), k).toBe(false);
+    }
+    expect(isPtDataRecord({ ...r, tactics: { ...t, station_rel_deg: [] } })).toBe(false);
+    expect(isPtDataRecord({ ...r, tactics: { ...t, station_rel_deg: [90, 45, 135, 60, 120] } })).toBe(false);
+    expect(isPtDataRecord({ ...r, tactics: { ...t, station_rel_deg: [90, '45'] } })).toBe(false);
+    expect(isPtDataRecord({ ...r, under_fire: { ...(r['under_fire'] as Rec), fire_chance: undefined } })).toBe(false);
+    for (const k of ['attack', 'tactics', 'under_fire']) expect(String((r['source'] as Rec)[k]), k).toContain('WebSearch の抜粋のみ・本文未読');    for (const [k, v] of Object.entries(r['source'] as Rec)) expect(/historical|design/.test(String(v)), k).toBe(true);
     // 史料は検索の抜粋だけ（本文未読）
     expect(String((r['source'] as Rec)['torpedo_immune'])).toContain('抜粋のみ・本文未読');
     const b = blockOf(gameData);
@@ -75,7 +89,8 @@ describe('米PT の値（jp_05。enemies.json の us_pt_enemy・boat_ref us_elco
 describe('史料の書き方（v0.6.3 レビュー）', () => {
   it('検索の抜粋だけの数は「WebSearch の抜粋のみ・本文未読」を付け、史実と設計を分けて書く。抜粋で言い切らない', () => {
     const t14 = (gameData.boats.boats as unknown as Rec[]).find((b) => b['id'] === 'jp_t14')!['source'] as Rec;
-    for (const k of ['speed_max_kt', 'crew']) expect(String(t14[k]), k).toContain('WebSearch の抜粋のみ・本文未読');
+    for (const k of ['speed_max_kt', 'crew', 'gun_battery']) expect(String(t14[k]), k).toContain('WebSearch の抜粋のみ・本文未読');
+    expect(String(t14['gun_battery'])).toMatch(/historical .*\/ design \(v0\.6\.3 実機 1 回目/); // 13mm を選んだのと弾倉・交換秒は設計
     expect(String(t14['speed_max_kt'])).toMatch(/historical .*\/ design \(31 kt/); // 31 kt は設計の値（史実は 30〜33）
     // 暗夜の目視 300〜800 m に入るのは停止・静音（480・600 m）で、巡航 1,200 m は入らない
     const det = String((ptRec(gameData)['source'] as Rec)['detection']);
@@ -123,6 +138,7 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
         attackOf(d)['break_off_m'] = 1000;
         attackOf(d)['commit_max_m'] = 1000;
         attackOf(d)['hold_off_m'] = 980;
+        (ptRec(d)['tactics'] as Rec)['station_m'] = 1000; // 980 < 1000 < 2 × 980 − 950（位置取りの検査では止めない）
       },
     ],
     ['9 出発で見つかる（自艇が線の 700 m 北）', (d) => ((protoOf(d, 'jp_05')['player_start'] as Rec)['y_m'] = 1500)],
@@ -144,6 +160,21 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     ['2 hold_off ≥ commit_max', (d) => (attackOf(d)['hold_off_m'] = 900), /hold_off_m/],
     ['4 commit_heading_tol 0', (d) => (attackOf(d)['commit_heading_tol_deg'] = 0), /commit_heading_tol_deg/],
     ['4 commit_heading_tol 90', (d) => (attackOf(d)['commit_heading_tol_deg'] = 90), /commit_heading_tol_deg/],
+    // v0.6.3 実機 1 回目: 待つ PT の位置取り（hold_off_m 500 < station_m < 2 × 500 − 400 = 600）と 13mm を受けたとき
+    ['位置取り station_m = hold_off_m', (d) => ((ptRec(d)['tactics'] as Rec)['station_m'] = 500), /station_m/],
+    ['位置取り station_m = 2 × hold_off_m − 有効射程', (d) => ((ptRec(d)['tactics'] as Rec)['station_m'] = 600), /station_m/],
+    ['位置取り station_rel_deg 180（艇尾）', (d) => ((ptRec(d)['tactics'] as Rec)['station_rel_deg'] = [90, 180]), /station_rel_deg/],
+    ['位置取り station_rel_deg 0（艇首）', (d) => ((ptRec(d)['tactics'] as Rec)['station_rel_deg'] = [0]), /station_rel_deg/],
+    ['位置取り station_tol_deg 0', (d) => ((ptRec(d)['tactics'] as Rec)['station_tol_deg'] = 0), /station_tol_deg/],
+    ['位置取り station_tol_deg 90', (d) => ((ptRec(d)['tactics'] as Rec)['station_tol_deg'] = 90), /station_tol_deg/],
+    ['位置取り station_close_m 0', (d) => ((ptRec(d)['tactics'] as Rec)['station_close_m'] = 0), /station_close_m/],
+    ['位置取り station_lead_s 負', (d) => ((ptRec(d)['tactics'] as Rec)['station_lead_s'] = -1), /station_lead_s/],
+    ['位置取り station_rel_deg 5 個', (d) => ((ptRec(d)['tactics'] as Rec)['station_rel_deg'] = [90, 45, 135, 60, 120]), /tactics/],
+    ['撃たれて retreat_hp = PT の HP 100（HP だけで沈む）', (d) => ((ptRec(d)['under_fire'] as Rec)['retreat_hp'] = 100), /retreat_hp/],
+    ['撃たれて retreat_hp 0', (d) => ((ptRec(d)['under_fire'] as Rec)['retreat_hp'] = 0), /retreat_hp/],
+    ['撃たれて casualty_chance 0.25', (d) => ((ptRec(d)['under_fire'] as Rec)['casualty_chance'] = 0.25), /casualty_chance/],
+    ['撃たれて fire_chance 負', (d) => ((ptRec(d)['under_fire'] as Rec)['fire_chance'] = -0.01), /fire_chance/],
+    ['撃たれて under_fire が無い', (d) => delete ptRec(d)['under_fire'], /under_fire/],
   ];
   it.each(fixCases)('%s', (_name, breakIt, msg) => {
     const d = clone();
@@ -151,12 +182,34 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
     expect(() => params(d)).toThrow(/jp_05/);
     expect(() => params(d)).toThrow(msg);
   });
-  it('境目は通る: hold_off 401 m・899 m、向きの許容 1°・89°', () => {
-    for (const [k, v] of [['hold_off_m', 401], ['hold_off_m', 899], ['commit_heading_tol_deg', 1], ['commit_heading_tol_deg', 89]] as const) {
+  it('境目は通る: hold_off 401 m・899 m（位置取りの station_m も hold_off の外・曲がり始めの内へ）、向きの許容 1°・89°、station_m 501・599 m、retreat_hp 1・99、確率 0・0.2', () => {
+    const cases: readonly [string, number, number][] = [['hold_off_m', 401, 401.5], ['hold_off_m', 899, 900], ['commit_heading_tol_deg', 1, 550], ['commit_heading_tol_deg', 89, 550], ['hold_off_m', 500, 501], ['hold_off_m', 500, 599]];
+    for (const [k, v, station] of cases) {
       const d = clone();
       attackOf(d)[k] = v;
+      (ptRec(d)['tactics'] as Rec)['station_m'] = station;
+      expect(() => params(d), `${k} ${v}・station_m ${station}`).not.toThrow();
+    }
+    for (const [k, v] of [['retreat_hp', 1], ['retreat_hp', 99], ['casualty_chance', 0], ['casualty_chance', 0.2], ['fire_chance', 0], ['fire_chance', 0.2]] as const) {
+      const d = clone();
+      (ptRec(d)['under_fire'] as Rec)[k] = v;
       expect(() => params(d), `${k} ${v}`).not.toThrow();
     }
+  });
+  // v0.6.3 実機 1 回目: 主兵装 guns の米PT の任務は自艇の砲（jp_t14 の 13mm）も見る
+  const t14Gun = (d: typeof gameData): Rec => (d.boats.boats as unknown as Rec[]).find((b) => b['id'] === 'jp_t14')!['gun_battery'] as Rec;
+  const ownCases: [string, (d: typeof gameData) => void, RegExp][] = [
+    ['弾倉が無い', (d) => delete t14Gun(d)['magazine'], /jp_05.*magazine/],
+    ['射程 950 m > 視程 900 m（見えない PT へ撃てる）', (d) => (t14Gun(d)['range_m'] = 950), /jp_05.*range_m/],
+    ['閃光 500 m < 射程 600 m（撃っても見えない）', (d) => (t14Gun(d)['muzzle_flash_reveal_m'] = 500), /jp_05.*muzzle_flash_reveal_m/],
+    ['1 弾倉 50 発 × 2 = PT の HP 100', (d) => ((t14Gun(d)['magazine'] as Rec)['rounds'] = 50), /jp_05.*magazine.rounds/],
+    ['弾倉の発数が小数', (d) => ((t14Gun(d)['magazine'] as Rec)['rounds'] = 2.5), /magazine/],
+    ['弾倉の交換 0 秒', (d) => ((t14Gun(d)['magazine'] as Rec)['reload_s'] = 0), /magazine/],
+  ];
+  it.each(ownCases)('自艇の砲: %s', (_name, breakIt, msg) => {
+    const d = clone();
+    breakIt(d);
+    expect(() => params(d)).toThrow(msg);
   });
   it('9 の境目（史実モード込み。v0.6.3 レビュー）: 一番近い出発点は (4300, 2050) の 1,600 m＝史実モードの巡航で見つかる 1,560 m（ノーマル 1,200 m × 1.3）より遠い。自艇を 41 m 南へ寄せると例外', () => {
     const d = clone();
@@ -180,13 +233,15 @@ describe('検査（spec §C.3 の 1〜10）: 崩れたら jp_05 を付けて例�
 });
 
 describe('任務の検査（mission-data。v0.6.3）', () => {
-  it('main_weapon torpedo の米PT は torpedo_immune で例外、none でない米PT・米PT の無い none も例外。pt_boats は enemy_start・barges と置けない', () => {
+  it('main_weapon torpedo の米PT は torpedo_immune で例外、米PT は guns（v0.6.3 実機 1 回目から jp_05）か none、米PT の無い none は例外。pt_boats は enemy_start・barges と置けない', () => {
     const a = clone();
     protoOf(a, 'jp_05')['main_weapon'] = 'torpedo';
     expect(() => getPrototypeMission(a, 'jp_05')).toThrow(/torpedo_immune/);
+    expect(getPrototypeMission(gameData, 'jp_05').mainWeapon).toBe('guns');
     const b = clone();
-    protoOf(b, 'jp_05')['main_weapon'] = 'guns';
-    expect(() => getPrototypeMission(b, 'jp_05')).toThrow(/jp_05.*none/);
+    protoOf(b, 'jp_05')['main_weapon'] = 'none'; // 撃たない米PT の任務（v0.6.3 の最初の形）も置ける
+    expect(getPrototypeMission(b, 'jp_05').mainWeapon).toBe('none');
+    expect(params(b)).not.toBeNull();
     const c = clone();
     protoOf(c, 'us_02')['main_weapon'] = 'none';
     expect(() => getPrototypeMission(c, 'us_02')).toThrow(/us_02.*none/);

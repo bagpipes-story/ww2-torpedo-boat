@@ -55,45 +55,48 @@ function withPtOverrides(data: GameData, missionId: string, o: PtSimOverrides): 
 }
 
 type Band = readonly [number, number];
-/** 較正の 1 行（spec §F.4）。帯は %・HP・m（端を含む）。hpVsCruise は巡航（cruise）の HP の平均に掛ける上限。proto は今の data の模擬の値（N 400。目安で、検査はしない） */
+/** 較正の 1 行（spec §F.4）。帯は %・HP・m（端を含む）。hpVsCruise は巡航（cruise）の HP の平均に掛ける上限、passesMin は 1 夜の航過の平均の下限（NaN は見ない）。proto は今の data の模擬の値（N 400。目安で、検査はしない） */
 export interface PtCalibrationRow {
   policy: PtPolicy;
   /** spec §F.3 の ★（最小の組） */
   star: boolean;
   detectedPct: Band | null; sunkPct: Band | null; hpMean: Band | null; hpVsCruise: number; homePct: Band; homeBeforeDawnPct: Band | null; afterDawnPct: Band | null;
-  firstDetectMedM: Band | null; adriftPct: Band;
+  firstDetectMedM: Band | null; adriftPct: Band; passesMin: number;
   proto: { detectedPct: number; hpMean: number; sunkPct: number; homePct: number };
 }
 
-/** どの遊び方も帰投 65% 以上（罠にしない）・漂流 1% 以下（燃料は脅威ではない。全速で逃げ回る turn_full は 8%・北の縁まで全速で逃げて待つ edge_flee は 10%） */
+/**
+ * どの遊び方も帰投 65% 以上（罠にしない）・漂流 1% 以下（燃料は脅威ではない。全速で逃げ回る turn_full は 8%・北の縁まで全速で逃げて待つ edge_flee は 10%）。
+ * v0.6.3 実機 1 回目（「簡単すぎる」）から、何もしない巡航・静音は 50%・35% 以上（何もしないと沈むのが設計）、縁へ逃げる edge_flee は床なし（縁に逃げ場は無い＝分かっている罠）
+ */
 const HOME_MIN: Band = [65, 100];
 const ADRIFT: Band = [0, 1];
 const row = (policy: PtPolicy, star: boolean, b: Partial<Omit<PtCalibrationRow, 'policy' | 'star' | 'proto'>>, proto: readonly [number, number, number, number]): PtCalibrationRow => ({
-  policy, star, detectedPct: null, sunkPct: null, hpMean: null, hpVsCruise: NaN, homePct: HOME_MIN, homeBeforeDawnPct: null, afterDawnPct: null, firstDetectMedM: null, adriftPct: ADRIFT, ...b,
+  policy, star, detectedPct: null, sunkPct: null, hpMean: null, hpVsCruise: NaN, homePct: HOME_MIN, homeBeforeDawnPct: null, afterDawnPct: null, firstDetectMedM: null, adriftPct: ADRIFT, passesMin: NaN, ...b,
   proto: { detectedPct: proto[0], hpMean: proto[1], sunkPct: proto[2], homePct: proto[3] },
 });
 
 /**
  * spec §F.4: 1 何もしないと痛い、2 転舵で助かる、3 遅い反応でも効く、4 暗さが効く、5 罠にしない、6 燃料は脅威ではない（7 の不変は ptCalibrationMisses がどの行にも見る）。
- * proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（v0.6.3 レビューの直し（縁の航過・回数の数え方・出発点 150 m 北・線 200 m 南）と再調整（ずらし 155 → 140 m）の後、N 400・seed 1〜400）。
- * 沈没の帯は 200 夜 1 組のぶれ（seed 1〜1200 の 6 組: 巡航 7〜11%・静音 23〜29%）より広く、その平均（9%・26%）を真ん中に置いた（v0.6.3 レビュー: 前の帯の端に 1 組の値が乗っていた）。
- * 「何もしないと痛い」は HP の平均（巡航・静音とも 31〜32）でも見る。縁へ逃げる（edge_flee）は、縁で航過が撃たずに終わる抜け道が無い＝HP は巡航並み
+ * v0.6.3 実機 1 回目（「簡単すぎる・PT が執拗でない」）の帯（spec r1 §G.3）: 何もしないと沈む（巡航 18〜40%・静音 30〜60%）・HUD どおりの転舵は HP 12〜24 で沈まない・航過は 1 夜 4.5 回以上。
+ * 待つ PT の位置取り（enemies の tactics。挟み撃ち）の core の実装の前は、巡航 12%・HP 34.6・turn_cruise は巡航の 0.77 倍なので、巡航の沈没 6〜40%・HP 30〜46・turn_cruise 0.85 倍で見る
+ * （挟み撃ちの後に spec の 18〜40・35〜46・0.6 に締める）。proto は [発見 %, HP の平均, 沈没 %, 帰投 %]（max_passes 4・pass_offset_m 120・break 5 秒/650 m・燃料 32 gal、挟み撃ちの前。N 400・seed 1〜400）
  */
 export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
-  row('cruise', true, { detectedPct: [95, 100], sunkPct: [3, 25], hpMean: [25, 42] }, [100, 30.6, 7.5, 92.5]),
-  row('silent', true, { detectedPct: [65, 95], sunkPct: [12, 40], hpMean: [25, 42] }, [78.3, 32.2, 23.3, 76.8]),
-  row('full', false, { firstDetectMedM: [1500, Infinity] }, [100, 18.6, 0.5, 99.5]),
-  row('zigzag', false, {}, [100, 31.5, 11.5, 88.5]),
-  row('turn_cruise', true, { sunkPct: [0, 3], hpVsCruise: 0.6 }, [100, 14.7, 0, 100]),
-  row('react_full', false, { sunkPct: [0, 2], hpMean: [0, 16] }, [100, 8.8, 0, 100]),
-  row('dodge_silent', true, { sunkPct: [0, 2], hpMean: [0, 16] }, [78.3, 8.6, 0, 100]),
-  row('turn_silent', false, {}, [78.3, 17.3, 0.3, 99.8]),
-  row('late_turn', true, { sunkPct: [0, 6], hpMean: [0, 30] }, [100, 25.2, 1.5, 98.5]),
-  row('turn_full', false, { adriftPct: [0, 8] }, [100, 6.2, 0, 95.8]),
-  row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 2], homeBeforeDawnPct: [90, 100] }, [38.8, 6.0, 0, 100]),
-  row('meet', false, { sunkPct: [0, 5] }, [100, 26.9, 1.5, 98.5]),
+  row('cruise', true, { detectedPct: [95, 100], sunkPct: [6, 40], hpMean: [30, 46], homePct: [50, 100] }, [100, 34.6, 12, 89]),
+  row('silent', true, { detectedPct: [65, 92], sunkPct: [30, 60], hpMean: [28, 42], homePct: [35, 100] }, [78, 36.2, 48, 53]),
+  row('full', false, { firstDetectMedM: [1500, Infinity], sunkPct: [0, 8] }, [100, 20.4, 1, 99]),
+  row('zigzag', false, {}, [100, 35.9, 18, 82]),
+  row('turn_cruise', true, { sunkPct: [0, 6], hpVsCruise: 0.85 }, [100, 26.5, 4, 97]),
+  row('react_full', false, { sunkPct: [0, 4], hpMean: [12, 24], passesMin: 4.5 }, [100, 19.1, 1, 100]),
+  row('dodge_silent', true, { sunkPct: [0, 5], hpMean: [12, 24], passesMin: 4.5 }, [78, 19.3, 1, 99]),
+  row('turn_silent', false, {}, [78, 29.3, 14, 86]),
+  row('late_turn', true, { sunkPct: [4, 22], hpMean: [26, 40] }, [100, 34.5, 14, 86]),
+  row('turn_full', false, { adriftPct: [0, 8] }, [100, 7.4, 0, 100]),
+  row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [0, 10], homeBeforeDawnPct: [75, 100] }, [39, 9.8, 3, 97]),
+  row('meet', false, { sunkPct: [0, 15] }, [100, 36.0, 13, 87]),
   row('stop_dawn', false, { detectedPct: [0, 5], homePct: [100, 100], afterDawnPct: [100, 100] }, [0, 0, 0, 100]),
-  row('edge_flee', false, { hpMean: [20, 50], adriftPct: [0, 10] }, [100, 32.7, 5.3, 89]),
+  row('edge_flee', false, { hpMean: [40, 50], adriftPct: [0, 10], homePct: [0, 100] }, [100, 49.5, 94, 6]),
 ];
 
 /**
@@ -108,6 +111,7 @@ export function ptCalibrationMisses(r: PtCalibrationRow, c: PtCell, s: PtSimSetu
   ];
   for (const [name, v, b] of bands) if (b && !(v >= b[0] && v <= b[1])) out.push(`${name} ${v.toFixed(1)}（帯 ${b[0]}〜${b[1]}）`);
   if (!Number.isNaN(r.hpVsCruise) && !(c.hpMean <= r.hpVsCruise * cruiseHpMean)) out.push(`HP の平均 ${c.hpMean.toFixed(1)}（巡航 ${cruiseHpMean.toFixed(1)} の ${r.hpVsCruise} 倍以下）`);
+  if (!Number.isNaN(r.passesMin) && !(c.passes >= r.passesMin)) out.push(`1 夜の航過 ${c.passes.toFixed(2)} 回（${r.passesMin} 回以上）`);
   const p = s.pt;
   if (c.shots > 0 && !(c.minWarnS >= p.openFireS - 1e-9)) out.push(`予告から初弾 ${c.minWarnS.toFixed(2)} 秒（${p.openFireS} 秒以上）`);
   if (c.maxPassing > 1) out.push(`同時に航過 ${c.maxPassing} 隻`);

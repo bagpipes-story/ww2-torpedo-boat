@@ -1,6 +1,8 @@
 // 艇の砲（docs/02 §5・§6.4、v0.4.2）: 射撃ボタンを押している間、見えていて射程内・射界内（艇首・艇尾の ±dead_cone_deg は撃たない）・煙幕に遮られていない最寄りの大発へ撃つ。
 // 狙いは見越し点、散布は駆逐艦の砲と同じ一様円盤（shells.ts）× 艇の速力帯の倍率。着弾点にいる大発に当たる（狙った 1 隻に限らない）。
-// Phaser 非依存・毎ステップ確保しない。乱数は seed+7 の系列だけ（2 回/発）。時計（発射間隔）は体感の実秒、弾の飛行は game 秒。
+// Phaser 非依存・毎ステップ確保しない。乱数は呼ぶ側の系列（大発は seed+7）だけ（2 回/発）。時計（発射間隔）は体感の実秒、弾の飛行は game 秒。
+// v0.6.3 実機 1 回目: 本体は標的の型を問わない selectTargetOf / stepGunBatteryOf（浮いている・煙幕に遮られたの判定は module の関数を渡す。毎ステップ閉包を作らない）。
+// 大発の selectTarget / stepGunBattery はその 1 行の包み（us_03 の弾・乱数の順は同じ）。米PT（jp_05）は T-14 の 13mm から同じ本体を使う。
 import type { BoatState, SpeedStep } from './boat-motion';
 import { bargeAfloat, type BargeState } from './barges';
 import type { SeededRng } from './rng';
@@ -39,6 +41,8 @@ export interface GunBatteryParams {
   flashRevealM: number;
   /** 艇の速力帯ごとの散布の倍率 */
   spreadFactor: SpeedFactorTable;
+  /** 弾倉（v0.6.3 実機 1 回目。T-14 の 13mm だけ。1 弾倉の発数と交換の体感秒）。無い砲は鍵ごと無い（us_03 の値は変わらない） */
+  magazine?: { rounds: number; reloadS: number };
 }
 
 export interface GunBatteryState {
@@ -61,7 +65,7 @@ export interface GunBatteryState {
 
 export interface GunEvents {
   onFire(x: number, y: number): void;
-  /** 大発 i に当たった（被害は呼ぶ側が hitBarge で適用） */
+  /** 標的 i に当たった（被害は呼ぶ側が適用: 大発は hitBarge） */
   onHit(i: number, group: number, x: number, y: number): void;
   onMiss(x: number, y: number): void;
 }
@@ -75,6 +79,16 @@ export function createGunBattery(p: GunBatteryParams, shellPoolSize: number): Gu
  * 状態（理由の優先: 煙幕 > 死角 > 射程外 > いない）を g.status に書き、index を返す（無ければ -1）。g.targetM は撃つときに埋める
  */
 export function selectTarget(g: GunBatteryState, p: GunBatteryParams, boat: BoatState, barges: readonly BargeState[], visRange2: number): number {
+  return selectTargetOf(g, p, boat, barges, bargeAfloat, bargeBlocked, visRange2);
+}
+
+/** 煙幕に遮られた大発（module の関数。毎ステップ閉包を作らない。tests/gun-battery-generic が本体と包みの一致を見るのにも使う） */
+export function bargeBlocked(b: BargeState): boolean {
+  return b.blocked;
+}
+
+/** 標的選びの本体（型を問わない）: afloat が偽の標的は数えない、blockedOf が真の標的は「煙幕」。どちらも module の関数を渡す */
+export function selectTargetOf<T extends BoatState>(g: GunBatteryState, p: GunBatteryParams, boat: BoatState, barges: readonly T[], afloat: (t: T) => boolean, blockedOf: (t: T) => boolean, visRange2: number): number {
   const h = degToRad(boat.headingDeg);
   const hx = Math.sin(h);
   const hy = -Math.cos(h);
@@ -86,7 +100,7 @@ export function selectTarget(g: GunBatteryState, p: GunBatteryParams, boat: Boat
   let blocked = false;
   for (let i = 0; i < barges.length; i++) {
     const b = barges[i]!;
-    if (!bargeAfloat(b)) continue;
+    if (!afloat(b)) continue;
     const dx = b.x - boat.x;
     const dy = b.y - boat.y;
     const d2 = dx * dx + dy * dy;
@@ -96,7 +110,7 @@ export function selectTarget(g: GunBatteryState, p: GunBatteryParams, boat: Boat
     inRange = true;
     const dot = dx * hx + dy * hy;
     if (dot * dot > p.deadConeCos2 * d2) continue;
-    if (b.blocked) {
+    if (blockedOf(b)) {
       blocked = true;
       continue;
     }
@@ -126,10 +140,32 @@ export function stepGunBattery(
   dt: number,
   ev: GunEvents,
 ): void {
+  stepGunBatteryOf(g, p, boat, band, held, canFire, barges, bargeAfloat, bargeBlocked, bargeHalfLengthM, bargeHalfBeamM, visRange2, rng, feelDt, dt, ev);
+}
+
+/** 固定ステップの本体（型を問わない）。afloat が偽の標的は狙わず、着弾も数えない（外れ）。afloat・blockedOf は module の関数を渡す */
+export function stepGunBatteryOf<T extends BoatState>(
+  g: GunBatteryState,
+  p: GunBatteryParams,
+  boat: BoatState,
+  band: SpeedStep,
+  held: boolean,
+  canFire: boolean,
+  barges: readonly T[],
+  afloat: (t: T) => boolean,
+  blockedOf: (t: T) => boolean,
+  bargeHalfLengthM: number,
+  bargeHalfBeamM: number,
+  visRange2: number,
+  rng: SeededRng,
+  feelDt: number,
+  dt: number,
+  ev: GunEvents,
+): void {
   g.fired = false;
   const k = p.spreadFactor[band];
   g.fast = k > 1;
-  const target = held && canFire ? selectTarget(g, p, boat, barges, visRange2) : -1;
+  const target = held && canFire ? selectTargetOf(g, p, boat, barges, afloat, blockedOf, visRange2) : -1;
   if (!held || !canFire) g.status = GUN_SAFE;
   g.target = target;
   g.targetM = 0;
@@ -166,7 +202,7 @@ export function stepGunBattery(
     let hit = -1;
     for (let j = 0; j < barges.length && hit < 0; j++) {
       const b = barges[j]!;
-      if (bargeAfloat(b) && pointNearBoat(s.impactX, s.impactY, b, bargeHalfLengthM, bargeHalfBeamM + gr.splashRadiusM)) hit = j;
+      if (afloat(b) && pointNearBoat(s.impactX, s.impactY, b, bargeHalfLengthM, bargeHalfBeamM + gr.splashRadiusM)) hit = j;
     }
     if (hit >= 0) {
       g.hits++;
@@ -187,6 +223,8 @@ export interface GunBatteryDataRecord {
   muzzle_flash_reveal_m: number;
   spread_factor: SpeedFactorTable;
   groups: Array<{ id: string; rounds_per_min: number; damage: number; shell_speed_mps: number; dispersion_m: number; splash_radius_m: number }>;
+  /** 弾倉（v0.6.3 実機 1 回目。jp_t14 の 13mm だけ。省略可） */
+  magazine?: { rounds: number; reload_s: number };
 }
 
 function nums(v: unknown, keys: readonly string[]): boolean {
@@ -199,10 +237,11 @@ export function isGunBatteryDataRecord(v: unknown): v is GunBatteryDataRecord {
   if (!nums(v, ['range_m', 'effective_m', 'dead_cone_deg', 'muzzle_flash_reveal_m'])) return false;
   const r = v as Record<string, unknown>;
   const groups = r['groups'];
-  return typeof r['label_ja'] === 'string' && nums(r['spread_factor'], ['stop', 'silent', 'cruise', 'full']) && Array.isArray(groups) && groups.length > 0 && groups.every((g) => typeof (g as Record<string, unknown>)?.['id'] === 'string' && nums(g, ['rounds_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m']));
+  const mag = r['magazine'];
+  return typeof r['label_ja'] === 'string' && nums(r['spread_factor'], ['stop', 'silent', 'cruise', 'full']) && Array.isArray(groups) && groups.length > 0 && groups.every((g) => typeof (g as Record<string, unknown>)?.['id'] === 'string' && nums(g, ['rounds_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m'])) && (mag === undefined || nums(mag, ['rounds', 'reload_s']));
 }
 
-/** 検査込み: 射程 > 0、0 < effective ≤ range、死角 0〜90°、閃光 ≥ 0、倍率 ≥ 1、組の値は正（splash は 0 以上） */
+/** 検査込み: 射程 > 0、0 < effective ≤ range、死角 0〜90°、閃光 ≥ 0、倍率 ≥ 1、組の値は正（splash は 0 以上）。弾倉があれば 1 以上の整数の発数・正の交換秒・組 1 つ */
 export function gunBatteryParamsFromData(r: GunBatteryDataRecord): GunBatteryParams {
   const bad = (msg: string): never => {
     throw new Error(`boats.json の gun_battery: ${msg}（docs/02 §6.4）`);
@@ -212,6 +251,8 @@ export function gunBatteryParamsFromData(r: GunBatteryDataRecord): GunBatteryPar
   const f = r.spread_factor;
   if (![f.stop, f.silent, f.cruise, f.full].every((x) => x >= 1)) bad('spread_factor は 1 以上（速いほど散る）');
   for (const g of r.groups) if (!(g.rounds_per_min > 0 && g.damage > 0 && g.shell_speed_mps > 0 && g.dispersion_m >= 0 && g.splash_radius_m >= 0)) bad(`${g.id}: rounds_per_min / damage / shell_speed_mps は正、dispersion_m / splash_radius_m は 0 以上`);
+  const mag = r.magazine;
+  if (mag && !(Number.isInteger(mag.rounds) && mag.rounds >= 1 && mag.reload_s > 0 && r.groups.length === 1)) bad('magazine は rounds（1 以上の整数）・reload_s（正）、弾倉のある砲は組 1 つ（1 発＝1 弾）');
   const c = Math.cos((r.dead_cone_deg * Math.PI) / 180);
   return {
     label: r.label_ja,
@@ -222,5 +263,7 @@ export function gunBatteryParamsFromData(r: GunBatteryDataRecord): GunBatteryPar
     deadConeCos2: c * c,
     flashRevealM: r.muzzle_flash_reveal_m,
     spreadFactor: { stop: f.stop, silent: f.silent, cruise: f.cruise, full: f.full },
+    // 弾倉は最後に、あるときだけ鍵を足す（us_elco80 には無い＝us_03 の WorldSetup.guns の JSON は変わらない）
+    ...(mag ? { magazine: { rounds: mag.rounds, reloadS: mag.reload_s } } : {}),
   };
 }

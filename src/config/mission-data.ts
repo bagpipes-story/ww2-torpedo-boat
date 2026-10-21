@@ -30,7 +30,7 @@ export interface PrototypeMission {
   hard: boolean;
   /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。無ければ全隻＝null） */
   objectiveSinkCount: number | null;
-  /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery）か none（v0.6.3。撃たない。米PT の任務） */
+  /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery。v0.6.3 実機 1 回目から米PT の jp_05 も T-14 の 13mm）か none（v0.6.3。撃たない。米PT の任務だけ） */
   mainWeapon: MainWeapon;
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
   barges: BargeMissionBlock | null;
@@ -145,7 +145,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     if (typeof id !== 'string' || id.length === 0) throw new Error(`${missionId}.v0_1_prototype.enemy_aircraft.enemy_id（enemies.json の水上機の id）が無い（docs/02 §6.8）`);
     enemyAircraft = { enemyId: id };
   }
-  // 駆逐艦（enemy_start）か大発の隊（barges）のどちらか一方。大発には魚雷が当たらない（torpedo_immune）ので主兵装は砲（v0.4.2）。米PT の隊（pt_boats。v0.6.3）はどちらとも置けず、主兵装は none（撃ち返しはまだ無い）
+  // 駆逐艦（enemy_start）か大発の隊（barges）のどちらか一方。大発には魚雷が当たらない（torpedo_immune）ので主兵装は砲（v0.4.2）。米PT の隊（pt_boats。v0.6.3）はどちらとも置けず、主兵装は guns か none（魚雷は PT の下を抜ける。v0.6.3 実機 1 回目から jp_05 は guns）
   const bargesRaw = proto['barges'];
   if (bargesRaw !== undefined && !isBargeMissionBlock(bargesRaw)) throw new Error(`${missionId}.v0_1_prototype.barges（lead_start / offsets_m / beach_margin_m / kill_quota）が欠けている（docs/02 §6.4）`);
   const barges = bargesRaw === undefined ? null : bargesRaw;
@@ -161,7 +161,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const immune = ids.some((e) => (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === e)?.['torpedo_immune'] === true);
   if (immune && mainWeapon === 'torpedo') throw new Error(`${missionId}: 魚雷が当たらない敵（enemies.json の torpedo_immune）がいるので main_weapon は guns か none`);
   if (barges && mainWeapon !== 'guns') throw new Error(`${missionId}: 大発の隊（barges）の任務の main_weapon は guns`);
-  if ((ptBoats !== null) !== (mainWeapon === 'none')) throw new Error(`${missionId}: main_weapon none は米PT の隊（pt_boats）の任務だけ（米PT の任務は必ず none。撃ち返しはまだ無い）`);
+  if (mainWeapon === 'none' && ptBoats === null) throw new Error(`${missionId}: main_weapon none は米PT の隊（pt_boats）の任務だけ`);
   const coastRaw = proto['coast'] as Record<string, unknown> | undefined;
   let coast: CoastBlock | null = null;
   if (coastRaw !== undefined) {

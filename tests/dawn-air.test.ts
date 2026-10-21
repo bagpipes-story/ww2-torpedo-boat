@@ -403,8 +403,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(idleS[id] + 1.5, id).toBeLessThan(1500);
       expect(idleS[id], id).toBeGreaterThan(s.durationS); // 夜明けの前に漂流はしない
     }
-    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296。v0.6.3 の jp_05 は 23 gal で 1,449）
-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1449, 1224]);
+    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296。v0.6.3 の jp_05 は 23 gal で 1,449、実機 1 回目の 32 gal・アイドル 0.14 で 1,440）
+    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1440, 1224]);
   });
   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲の機体・dawn_air_strike の文', () => {
     const texts: string[] = [];

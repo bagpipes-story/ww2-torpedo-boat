@@ -1,5 +1,5 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
-import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, type BriefingNumbers } from '../core/briefing';
+import { NO_WEAPON_BRIEFING_JA, PT_GUN_BRIEFING_JA, bearingJa, compassJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
 import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
@@ -9,10 +9,10 @@ import type { WorldSetup } from './world-setup';
 export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): BriefingNumbers {
   const f = s.vis.speedFactor;
   return {
-    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。魚雷を撃たない任務（v0.6.3。main_weapon none）はマーカーが無いので出さない
-    ...(aimAssistJa && s.mainWeapon !== 'none' ? { aimAssistJa } : {}),
-    // 撃たない任務（v0.6.3。main_weapon none＝米PT）は条件の武器の句。他の任務は鍵ごと省く
-    ...(s.mainWeapon === 'none' ? { weaponJa: NO_WEAPON_BRIEFING_JA } : {}),
+    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。米PT の任務（v0.6.3。魚雷を撃たない）はマーカーが無いので出さない
+    ...(aimAssistJa && !s.ptBoats ? { aimAssistJa } : {}),
+    // 米PT の任務（v0.6.3）は条件の武器の句: 砲（実機 1 回目から jp_05 は T-14 の 13mm）か撃たない（none）。他の任務は鍵ごと省く
+    ...(s.ptBoats ? { weaponJa: s.guns ? PT_GUN_BRIEFING_JA : NO_WEAPON_BRIEFING_JA } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),

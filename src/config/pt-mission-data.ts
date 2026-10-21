@@ -1,7 +1,8 @@
 // 敵の米PT（v0.6.3。docs/02 §6.4）の数値の読み出し: enemies.json の PT・boats.json の boat_ref・任務の pt_boats から core/pt-data の PtParams を組み、
 // 他の記録が要る検査（spec §C.3 の 6〜10: 振り切れない・1 回の航過で沈まない・見えない PT から撃たない・出発で見つからない（史実モード込み）・夜明けに去る）を足す。
+// 主兵装が guns（v0.6.3 実機 1 回目。T-14 の 13mm）なら自艇の砲の検査も: 弾倉がある・見えない PT へ撃たない（射程 ≤ 視程）・撃てば撃った相手に見える（閃光 ≥ 射程）・1 弾倉では HP だけで沈まない。
 // 米PT の隊の無い任務は null（dawn-data と同じ形）。world-setup が組み立てのたびに呼ぶ（壊れた data は任務の id を付けて例外）。
-import { getBoatDamageParams, getBoatRecord, getVisibilityParams, type GameData } from './game-data';
+import { getBoatDamageParams, getBoatRecord, getGunBatteryParams, getVisibilityParams, type GameData } from './game-data';
 import type { PrototypeMission } from './mission-data';
 import { getDawnAir } from './dawn-data';
 import { PT_ATTACK_KEYS, isPtDataRecord, ptParamsFromData, ptStartAt, type PtParams } from '../core/pt-data';
@@ -14,9 +15,10 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   if (!block) return null;
   const id = mission.id;
   const rec = (data.enemies.enemies as readonly unknown[]).find((e) => (e as Record<string, unknown>)['id'] === mission.enemyId);
-  if (!isPtDataRecord(rec)) throw new Error(`${id}: enemies.json の ${mission.enemyId} に米PT の値（boat_ref / torpedo_immune / detection / patrol / attack の ${PT_ATTACK_KEYS.length} 個 / guns 1 種）が無いか、attack に知らないキーがある（docs/02 §6.4）`);
+  if (!isPtDataRecord(rec)) throw new Error(`${id}: enemies.json の ${mission.enemyId} に米PT の値（boat_ref / torpedo_immune / detection / patrol / attack の ${PT_ATTACK_KEYS.length} 個 / guns 1 種 / tactics / under_fire）が無いか、attack に知らないキーがある（docs/02 §6.4）`);
   const w = data.hitRateModel.world;
-  const p = ptParamsFromData(rec, getBoatRecord(data, rec.boat_ref), block, { missionId: id, count: mission.enemyCount, bounds: mission.bounds, timeScale, detectHoldS: data.hitRateModel.visibility.detect_hold_s, spriteScale: w.sprite_scale });
+  const ptHp = getBoatDamageParams(data, rec.boat_ref).maxHp;
+  const p = ptParamsFromData(rec, getBoatRecord(data, rec.boat_ref), block, { missionId: id, count: mission.enemyCount, bounds: mission.bounds, timeScale, detectHoldS: data.hitRateModel.visibility.detect_hold_s, spriteScale: w.sprite_scale, hitScale: w.hit_scale, hullHp: ptHp });
   const bad = (msg: string): never => {
     throw new Error(`${id}: 米PT（enemies.json の ${rec.id}）: ${msg}（docs/02 §6.4）`);
   };
@@ -29,6 +31,16 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   const vis = getVisibilityParams(data, mission.moon, false);
   const visM = playerVisRangeM(vis);
   if (!(gun.effective_night_m <= visM)) bad(`effective_night_m（${gun.effective_night_m} m）は自艇の視程（${visM} m）以下（見えない PT から撃たない）`);
+  const own = getGunBatteryParams(data, mission);
+  if (own) {
+    const mine = (msg: string): never => bad(`自艇（${mission.playerBoatId}）の gun_battery: ${msg}`);
+    const mag = own.magazine;
+    if (!mag) mine('米PT の任務の砲は magazine（弾倉の発数・交換秒）を持つ');
+    if (!(own.rangeM <= visM)) mine(`range_m（${own.rangeM} m）は自艇の視程（${visM} m）以下（見えない PT へ撃たない）`);
+    if (!(own.flashRevealM >= own.rangeM)) mine(`muzzle_flash_reveal_m（${own.flashRevealM} m）は range_m（${own.rangeM} m）以上（撃てば撃った PT に見える）`);
+    const dmg = own.groups[0]!.damage;
+    if (mag && !(mag.rounds * dmg < ptHp)) mine(`magazine.rounds × damage（${mag.rounds * dmg}）は PT の HP（${ptHp}）未満（1 弾倉では HP だけで沈まない）`);
+  }
   // 出発で見つからない: 今夜の揺らぎの取りうる出発点（線に沿って ±x・南北 ±y・東西反転）のどれも、巡航で見つかる距離より遠い。
   // 距離はノーマルと史実モード（Title の切り替え。見つかる距離に enemy_detection_multiplier を掛ける）の遠い方（v0.6.3 レビュー: ノーマルだけ見ていたので、史実モードの 3 夜に 1 夜は出発で見つかった）
   const histVis = getVisibilityParams(data, mission.moon, true);

@@ -84,10 +84,10 @@ describe('日本ハードモードの data（v0.6.0。T-38・米駆逐艦・jp_0
     const us = buildWorldSetup(gameData, 'us_02', { sortie: directSortie('us_02', 5, 'none', false, true), fixedNight: true });
     expect(us.torpedoReliability).toEqual({ dud: 0.1, erratic: 0.08 });
   });
-  it('T-14（v0.6.3。jp_05）: 燃料曲線（800 gal・アイドル 11.43 gal/h）・被害（HP 50・火災 1.25 × 16 秒）・乗員 7・乗員の効き（T-38 と同じ）・煙幕なし。静音の上限 14 kt', () => {
+  it('T-14（v0.6.3。jp_05）: 燃料曲線（800 gal・アイドル 16.00 gal/h。v0.6.3 実機 1 回目で fuel_idle_ratio 0.1 → 0.14）・被害（HP 50・火災 1.25 × 16 秒）・乗員 7・乗員の効き（T-38 と同じ）・煙幕なし。静音の上限 14 kt', () => {
     const f = getBoatFuelCurve(gameData, 'jp_t14');
     expect(f.capacityGal).toBe(800);
-    expect(f.idleGph).toBeCloseTo(11.43, 2);
+    expect(f.idleGph).toBeCloseTo(16.0, 2);
     expect([f.cruiseGph, f.fullGph]).toEqual([800 / 7, 800 / 3.5]);
     const d = getBoatDamageParams(gameData, 'jp_t14');
     expect([d.maxHp, d.engineSpeedFactor, d.fireDps, d.fireDurationS, d.extinguishHoldS]).toEqual([50, 0.7, 1.25, 16, 1.0]);

@@ -205,7 +205,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(q.firstDetectM).toBeCloseTo(590, 6);
   });
 
-  it('2 段階と時間: 哨戒 → 警戒 → 1.5 秒で突撃（2 隻目は 4.5 秒）→ 見えていて最接近 5 秒前に航過 → 2.5 秒は撃たない → 離脱 → 突撃 → 航過 → 2 回で去る → 東の縁の外', () => {
+  it(`2 段階と時間: 哨戒 → 警戒 → 1.5 秒で突撃（2 隻目は 4.5 秒）→ 見えていて最接近 5 秒前に航過 → 2.5 秒は撃たない → 離脱 → 突撃 → 航過 …（1 隻 ${P.maxPasses} 回。v0.6.3 実機 1 回目で 2 → 4）で去る → 東の縁の外`, () => {
     const seq: number[][] = [[], []];
     const at: number[][] = [[], []];
     const commits: { i: number; t: number; first: number }[] = [];
@@ -213,9 +213,10 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     let badCommit = 0;
     const s = simulate({
       seed: 1,
-      steps: 60 * 200,
+      // 1 隻 4 回（v0.6.3 実機 1 回目）で突撃の打ち切り（run_in_max_s）の無い道筋になる出発（前は 200 秒・東向き。東向きだと 1 隻目の突撃が 1 回打ち切られる）
+      steps: 60 * 300,
       policy: circle,
-      start: { x: 3000, y: 1400, headingDeg: 90 },
+      start: { x: 3000, y: 1400, headingDeg: 270 },
       ev: (s) => ({
         onCommit: (i, lockDeg) => {
           if (s.q.seen[i] !== 1 || !commitOk(commitGeom(s, i, lockDeg))) badCommit++;
@@ -237,7 +238,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
         }
       },
     });
-    const walk = [PT_PATROL, PT_ALERT, PT_RUN_IN, PT_PASS, PT_BREAK, PT_RUN_IN, PT_PASS, PT_LEAVE, PT_OUT];
+    const walk = [PT_PATROL, PT_ALERT, PT_RUN_IN, PT_PASS, ...Array.from({ length: P.maxPasses - 1 }, () => [PT_BREAK, PT_RUN_IN, PT_PASS]).flat(), PT_LEAVE, PT_OUT];
     expect(seq).toEqual([walk, walk]);
     expect(at[0]![1]).toBe(at[1]![1]); // 隊で 1 つの発見 → 2 隻とも同じステップに警戒
     const alertS = [at[0]![2]! - at[0]![1]!, at[1]![2]! - at[1]![1]!];
@@ -250,7 +251,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     for (const c of commits) if (!Number.isNaN(c.first)) expect(c.first - c.t).toBeGreaterThanOrEqual(P.openFireS - 1e-9);
     expect(commits.filter((c) => !Number.isNaN(c.first)).length).toBeGreaterThan(0);
     expect(s.q.minWarnS).toBeGreaterThanOrEqual(P.openFireS - 1e-9);
-    expect([s.q.passes, s.q.out, ...s.q.boats.map((b) => b.passes)]).toEqual([4, 2, 2, 2]);
+    expect([s.q.passes, s.q.out, ...s.q.boats.map((b) => b.passes)]).toEqual([2 * P.maxPasses, 2, P.maxPasses, P.maxPasses]);
     for (const x of outX) expect(x).toBeGreaterThan(P.bounds.width + P.boundsMarginM);
     expect(s.q.leftAtDawn).toBe(false);
   });

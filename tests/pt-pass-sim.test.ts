@@ -25,7 +25,7 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect(s.damage).toEqual(w.damageParams);
     expect(s.fuel).toEqual(w.fuelCurve);
     expect([s.crew, s.crewEffects, s.vis, s.visRange2, s.ring, s.start]).toEqual([w.crew, w.crewEffects, w.vis, w.visRange2, w.mission.returnPoint, w.playerStart]);
-    expect([s.fuelGal, s.durationS, s.timeScale, s.stepS, s.boundsMarginM, s.halfLengthM, s.halfBeamM]).toEqual([23, 170, TS, FIXED_STEP_S, w.boundsMarginM, w.boatHalfLengthM, w.boatHalfBeamM]);
+    expect([s.fuelGal, s.durationS, s.timeScale, s.stepS, s.boundsMarginM, s.halfLengthM, s.halfBeamM]).toEqual([32, 170, TS, FIXED_STEP_S, w.boundsMarginM, w.boatHalfLengthM, w.boatHalfBeamM]);
     expect([s.shellPoolSize, s.nightEnemyRolls, s.nightBatteries, s.night]).toEqual([PT_SHELL_POOL_SIZE, 1, 0, w.mission.night]);
     let mirrored = 0;
     for (let seed = 1; seed <= 40; seed++) {
@@ -40,18 +40,20 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
   });
 
   it('上書き（scripts の DMG・ROUNDS・OFFSET…）は data の写しに当てて getPtParams の検査を通る。data は変えない', () => {
-    const s = ptSimSetup(gameData, 'jp_05', { damage: 3, rounds: 9, offsetM: 150, passes: 1, openFireS: 3, commitTcpaS: 4, runInKt: 37, passGapS: 5, wingmanDelayS: 2, detectM: 1800, commitHeadingTolDeg: 20, holdOffM: 550, fuelGal: 22, dawnS: 150 });
+    // hold_off は tactics.station_m 550 の内（hold_off_m < station_m < 2 × hold_off_m − 有効射程 400。v0.6.3 実機 1 回目）
+    const s = ptSimSetup(gameData, 'jp_05', { damage: 3, rounds: 9, offsetM: 150, passes: 1, openFireS: 3, commitTcpaS: 4, runInKt: 37, passGapS: 5, wingmanDelayS: 2, detectM: 1800, commitHeadingTolDeg: 20, holdOffM: 520, fuelGal: 22, dawnS: 150 });
     const p = s.pt;
     expect([p.hit.damage, p.gun.damage, p.roundsPerPass, p.offsetM, p.maxPasses, p.openFireS, p.commitTcpaS, p.passGapS, p.wingmanDelayS, p.baseDetectM]).toEqual([3, 3, 9, 150, 1, 3, 4, 5, 2, 1800]);
-    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([20, 550 ** 2, 700 ** 2]);
+    expect([p.commitHeadingTolDeg, p.holdOff2, p.holdOuter2]).toEqual([20, 520 ** 2, 640 ** 2]);
     expect(p.runInMps).toBeCloseTo(ptSimSetup(gameData, 'jp_05').pt.runInMps * (37 / 35), 9);
     expect([s.fuelGal, s.durationS]).toEqual([22, 150]);
     expect(() => ptSimSetup(gameData, 'jp_05', { rounds: 13 })).toThrow(/1 回の航過では砲だけで沈まない/); // 13 × 4 = 52 ≥ HP 50
     expect(() => ptSimSetup(gameData, 'jp_05', { openFireS: 1.5 })).toThrow(/open_fire_s/);
     expect(() => ptSimSetup(gameData, 'jp_05', { runInKt: 30 })).toThrow(/振り切れない/);
     expect(() => ptSimSetup(gameData, 'jp_05', { holdOffM: 350 })).toThrow(/hold_off_m/);
+    expect(() => ptSimSetup(gameData, 'jp_05', { holdOffM: 550 })).toThrow(/station_m/); // 待つ PT の位置取りが hold_off の内になる
     const base = getPtParams(gameData, getPrototypeMission(gameData, 'jp_05'), TS)!;
-    expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM]).toEqual([4, 10, 140, 2000]);
+    expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM]).toEqual([4, 10, 120, 2000]);
   });
 
   it('同じ seed なら同じ夜・同じ集計、違う seed なら違う', () => {
@@ -85,11 +87,12 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect(p.roundsPerPass * p.hit.damage).toBeLessThan(run.setup.damage.maxHp);
   });
 
-  it('v0.6.3 の直し: 撃てる航過だけ（何もしない巡航・静音は撃たずに終わる航過 0・赤い線から 5 秒より前に終わる航過 0）、どの遊び方も 2 ステップ以内に終わる航過は無い', () => {
+  it('v0.6.3 の直し: 撃てる航過だけ（何もしない巡航・静音は撃たずに終わる航過 0・赤い線から open_fire_s より前に終わる航過 0）、どの遊び方も 2 ステップ以内に終わる航過は無い', () => {
+    // v0.6.3 実機 1 回目: 「5 秒より前に終わる航過 0」→「open_fire_s（2.5 秒）より前に 0」（短い航過もある。どれも撃つ）
     for (const pol of ['cruise', 'silent'] as const) {
       const c = run.cell(pol);
       expect(c.passes - c.firedPasses, pol).toBe(0);
-      expect(c.minPassS, pol).toBeGreaterThan(5);
+      expect(c.minPassS, pol).toBeGreaterThan(run.setup.pt.openFireS);
     }
     for (const r of rows) expect(run.cell(r.policy).minPassS, r.policy).toBeGreaterThan(2 * run.setup.stepS);
   });
