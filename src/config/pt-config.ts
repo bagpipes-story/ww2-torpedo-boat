@@ -2,6 +2,8 @@
 // 何も import しない（ui/pt-lines・tests から型検査ごと読める）。
 /** 米PT の弾のプール（1 隻ずつしか撃たない: 4 発/体感秒 × 飛行 0.2 秒まで。模擬 core/pt-pass-sim も同じ数） */
 export const PT_SHELL_POOL_SIZE = 24;
+/** T-14 の 13mm の弾（曳光弾）のプール（v0.6.3 実機 1 回目: 450 発/分 = 7.5 発/体感秒 × 飛行 0.24 秒まで ≤ 2 発に余裕。模擬 core/pt-pass-sim も同じ数） */
+export const PT_GUN_SHELL_POOL_SIZE = 8;
 /** 外れ弾の小さい水柱のプール（命中は世界の小さな爆発） */
 export const PT_SPLASH_POOL_SIZE = 24;
 /** 航過の赤い線（予告）の長さ m（航過中の PT から固めた針路へ。夜明けの空襲の爆撃進路の線と同じ色・濃さ・太さ） */
