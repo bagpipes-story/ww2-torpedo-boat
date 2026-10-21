@@ -24,10 +24,11 @@ const K_GONE = 21;
 const K_HOME = 24;
 
 /**
- * 航過の行のかわし方（航過を固めた瞬間に 1 回決まり点滅しない）: 逃げる針路の方角へ転舵（core の escapeDeg。「北西へ転舵・全速」）か、もう向いていれば（dodge 0）そのまま。
+ * 航過の行のかわし方（航過を固めた瞬間に 1 回決まり点滅しない）: 逃げる針路の方角へ転舵（core の escapeDeg。「北西へ転舵」）か、もう向いていれば（dodge 0）そのまま。
  * v0.6.3 レビュー: 「右へ／左へ」は艇から見た回り方で、スティックは画面の向き（北が上・画面は回らない）なので、南へ走る jp_05 では毎回逆に読めた。方角ならスティックの向きそのまま
+ * v0.6.3 実機 1 回目: 「・全速」を外した（赤い線の間ずっと全速で走ると 32 gal でも帰り道で尽きる夜があった。模擬で巡航のまま転舵しても沈む率は 1.8%（全速 0.8%））
  */
-const DODGE_STRAIGHT_JA = 'そのまま全速で離れろ';
+const DODGE_STRAIGHT_JA = 'そのまま離れろ';
 
 /** 接触の行の種類（キーの下 3 ビット）: 航過の結果（被弾なし・被弾・撃たせなかった）、突撃（PT が見えている・音だけ）、離脱 */
 const C_CLEAN = 1;
@@ -106,7 +107,7 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   if (mode === MISSION_PT_GUN) return ptGunLine(t, key);
   if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key);
   if (mode === MISSION_PT_PASS && (key & K_SILENCED) !== 0) return { text: '米PT 被弾で沈黙！ もう撃ってこない', color: HOME_COLOR_TEXT };
-  if (mode === MISSION_PT_PASS) return { text: `米PT ${(key & 1) !== 0 ? '掃射' : '航過'}！ ${(key & 2) !== 0 ? DODGE_STRAIGHT_JA : `${bearingJa(((key >> 2) & 7) * 45)}へ転舵・全速`}`, color: HUD_COLOR_WARN };
+  if (mode === MISSION_PT_PASS) return { text: `米PT ${(key & 1) !== 0 ? '掃射' : '航過'}！ ${(key & 2) !== 0 ? DODGE_STRAIGHT_JA : `${bearingJa(((key >> 2) & 7) * 45)}へ転舵`}`, color: HUD_COLOR_WARN };
   const sub = key & 7;
   const dir = bearingJa(((key >> 3) & 7) * 45);
   const d = ((key >> 6) & 63) * PT_DISTANCE_STEP_M;

@@ -302,13 +302,13 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
   });
   it('航過: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわし方は固めたときの 1 つ: 逃げる針路の方角（スティックの向き）へ転舵、もう向いていればそのまま（v0.6.3 レビュー: 「右へ／左へ」は艇から見た回り方で、南へ走る艇では画面の逆だった）', () => {
     const pass = { detected: true, passing: true, threatPhase: PT_PASS, ...NE500, sighted: true };
-    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toEqual([MISSION_PT_PASS, '米PT 航過！ 北西へ転舵・全速', HUD_COLOR_WARN]);
-    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 135 }))[1]).toBe('米PT 航過！ 南東へ転舵・全速');
-    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 10 }))[1]).toBe('米PT 航過！ 北へ転舵・全速'); // 8 方位に丸める
-    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 225 }))[1]).toBe('米PT 航過！ そのまま全速で離れろ');
-    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315, fired: true }))[1]).toBe('米PT 掃射！ 北西へ転舵・全速');
-    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ 東へ転舵・全速');
-    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ そのまま全速で離れろ');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toEqual([MISSION_PT_PASS, '米PT 航過！ 北西へ転舵', HUD_COLOR_WARN]);
+    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 135 }))[1]).toBe('米PT 航過！ 南東へ転舵');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 10 }))[1]).toBe('米PT 航過！ 北へ転舵'); // 8 方位に丸める
+    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 225 }))[1]).toBe('米PT 航過！ そのまま離れろ');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315, fired: true }))[1]).toBe('米PT 掃射！ 北西へ転舵');
+    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ 東へ転舵');
+    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ そのまま離れろ');
     // 回り方（dodge ±1）が違っても方角が同じなら同じ文・同じキー（文はスティックの向きだけを言う）
     const k = (t: BoatTelemetry): number => ptKey(t, missionMode(t, 0, 0), 0);
     expect(k(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toBe(k(tele({ ...pass, dodge: -1, escapeDeg: 320 })));

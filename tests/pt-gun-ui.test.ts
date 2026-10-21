@@ -97,7 +97,7 @@ describe('13mm の 2 行目（ui/pt-gun-lines）', () => {
   it('優先順: 夜明けの空襲・燃料切れ > 赤い線 > 13mm の出来事 > 航過の結果 > 射撃 > 突撃・離脱。射撃は押していて生きた PT がいるときだけ', () => {
     const pass = { ...FIRING, passing: true, threatPhase: PT_PASS, dodge: 1, escapeDeg: 315 };
     expect(row(tele(pass), 0, EVENT | RESULT)[0]).toBe(MISSION_PT_PASS); // 撃っている間も赤い線がいちばん上
-    expect(row(tele(pass), 0, 0)[1]).toBe('米PT 航過！ 北西へ転舵・全速');
+    expect(row(tele(pass), 0, 0)[1]).toBe('米PT 航過！ 北西へ転舵');
     expect(row(tele(FIRING, { fuelEmpty: true }), 0, EVENT)[0]).toBe(MISSION_ADRIFT);
     expect(row(tele(pass, { dawn: { ...createDawnTelemetry(), threat: AS_T_RUN } }), 0, EVENT)[0]).toBe(MISSION_STRIKE);
     const result = { ...FIRING, passes: 1, passSeq: 1, lastPassFired: true, lastPassHits: 0, gunEvent: PT_GUN_EV_CREW, fighting: 1 };
@@ -141,7 +141,7 @@ describe('航過・離脱・平常の行の 13mm の変化（ui/pt-lines）', ()
   it('航過中の PT が被弾で黙った: 「もう撃ってこない」（味方の青。赤い線と航過は続く）', () => {
     const pass = { ...RUSH, passing: true, threatPhase: PT_PASS, dodge: 1, escapeDeg: 315, fired: true };
     expect(row(tele({ ...pass, passSilenced: true }))).toEqual([MISSION_PT_PASS, '米PT 被弾で沈黙！ もう撃ってこない', HOME_COLOR_TEXT]);
-    expect(row(tele(pass))[1]).toBe('米PT 掃射！ 北西へ転舵・全速');
+    expect(row(tele(pass))[1]).toBe('米PT 掃射！ 北西へ転舵');
   });
   it('離脱の末尾: 13mm を撃つ前は「右下の射撃で撃ち返せ」、撃った後と砲の無い任務は「次の赤い線に備えよ」。キーも変わる', () => {
     const br = { detected: true, threatPhase: PT_BREAK, passes: 1, dx: 300, dy: -400 };
