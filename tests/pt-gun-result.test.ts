@@ -1,5 +1,6 @@
 // T-14 の 13mm（v0.6.3 実機 1 回目。spec r1 §E・§H）のテレメトリと Result: 13mm の状態・Result の材料（systems/pt-telemetry）、Result の 4 行と頭（ui/pt-lines）、
-// 押さない夜は 13mm の無い米PT の任務と同じ行（離脱の末尾だけ違う）、押し続ける夜の行（台本）。2 行目の文・優先順・幅は tests/pt-gun-ui.test.ts（レビュー NP-5 で分けた）。
+// 押さない夜は 13mm の無い米PT の任務と同じ行（離脱・追ってくる PT の行の末尾だけ違う）、押し続ける夜の行（台本）。2 行目の文・優先順・幅は tests/pt-gun-ui.test.ts（レビュー NP-5 で分けた）。
+// v0.6.3 実機 2 回目（spec r2 §I.2）: 行の形は追撃の行（連射・追ってくる・連射の結果・制圧）と「全速で」・「残り N 回」のない離脱。
 import { describe, expect, it } from 'vitest';
 import { GUN_FIRING, GUN_OUT_OF_ARC } from '../src/core/gun-battery';
 import { PT_FATE_CREW, PT_FATE_HULL, PT_FATE_SUNK, PT_PASS, PT_SUNK, ptFighting, threatIndex, type PtTelemetry } from '../src/core/pt-boats';
@@ -55,7 +56,7 @@ describe('13mm のテレメトリと Result の材料（systems/pt-telemetry）'
 const BASE: PtResult = {
   enemyId: 'us_pt_enemy', total: 2, out: 0, alive: 2, leftAtDawn: false, passes: 5, maxPasses: 8, firedPasses: 4, cleanPasses: 2, shots: 40, hits: 4, damagePerHit: 4, hpMax: 50,
   firstDetectM: 1199.6, firstDetectBand: 'silent', lostContacts: 0, closestM: 120, minWarnS: 2.52,
-  gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false,
+  gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false, bursts: 0, suppressions: 0,
 };
 
 describe('13mm の Result（ui/pt-lines）', () => {
@@ -115,11 +116,12 @@ function seesLivePt(s: PtSim): boolean {
  * 出来事の数え: shown は行に出た出来事、hidden は通し番号から 2,500 ms たっても赤い線の下にあった出来事（R5 の前はそのまま出なかった）、missed は出ずに次の出来事にも替わらなかった出来事。
  * shortResults は赤い線に替わられずに 2.5 秒より短く（R5 の途中では 1 フレーム）しか出なかった航過の結果の数、heldResults は出来事の後に回った結果の数
  */
-function nightLines(seed: number, withGun: boolean, shoot = false): { lines: string[]; modes: Set<number>; maxPasses: Set<number>; passTop: boolean; events: number; shown: Set<number>; hidden: Set<number>; missed: number; shortResults: number; heldResults: number } {
+function nightLines(seed: number, withGun: boolean, shoot = false): { lines: string[]; modes: Set<number>; maxPasses: Set<number>; maxBursts: Set<number>; passTop: boolean; events: number; shown: Set<number>; hidden: Set<number>; missed: number; shortResults: number; heldResults: number } {
   const w = ptWorld(withGun);
   const lines: string[] = [];
   const modes = new Set<number>();
   const maxPasses = new Set<number>();
+  const maxBursts = new Set<number>();
   let passTop = true;
   let seenPass = 0;
   let resultUntil = -1;
@@ -187,43 +189,55 @@ function nightLines(seed: number, withGun: boolean, shoot = false): { lines: str
       if (s.q.owner >= 0 && mode !== MISSION_PT_PASS) passTop = false;
       modes.add(mode);
       maxPasses.add(t.maxPasses);
+      maxBursts.add(t.maxBursts);
       if (lines[lines.length - 1] !== text) lines.push(text);
     },
   });
   if (seenPass > 0 && !resultCut && resultSteps < 149 && lastMs >= resultUntil) shortResults++; // 夜の終わりに出ている途中の結果は数えない
-  return { lines, modes, maxPasses, passTop, events: seenEvent, shown, hidden, missed, shortResults, heldResults };
+  return { lines, modes, maxPasses, maxBursts, passTop, events: seenEvent, shown, hidden, missed, shortResults, heldResults };
 }
 
-describe('射撃を押さない夜（spec r1 §H）', () => {
-  it('砲を積んでいても押さなければ、13mm の無い米PT の任務と同じ行（離脱の末尾だけ違う）。13mm の行は出ず、航過の上限は 8 のまま、行はみな v0.6.3 の形', () => {
+describe('射撃を押さない夜（spec r1 §H・spec r2 §I.2）', () => {
+  it('砲を積んでいても押さなければ、13mm の無い米PT の任務と同じ行（離脱・追ってくる PT の末尾だけ違う）。13mm の行は出ず、航過の上限は 8・連射の上限は 12 のまま、行はみな決まった形', () => {
     const V063 = [
-      /^米PT (航過|掃射)！ (\S+へ転舵|そのまま離れろ)$/,
+      /^米PT (航過|掃射)！ (\S+へ全速で転舵|そのまま全速で離れろ)$/,
       /^(かわした！ 被弾なし|被弾 \d+ 発（HP −\d+）|撃たせなかった！) ・ 航過 \d+\/8$/,
+      /^米PT (追撃|連射)！ \S+から ・ 針路そのまま撃ち返せ$/,
+      /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 追撃 \d+\/12$/,
+      /^米PT \S+から追ってくる( \d+ m)? ・ (右下の射撃で撃ち返せ|撃ち返せ)$/,
       /^米PT \S+から突撃 \d+ m ・ 赤い線で転舵$/,
       /^米PT のエンジン音 ・ \S+から突撃$/,
-      /^米PT 離脱 ・ 残り \d+ 回 ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ)$/,
+      /^米PT 離脱 ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ)$/,
       /^米PT \d+ m（\S+） ・ 気づかれていない ・ 静音でやり過ごせ$/,
       /^米PT \d+ m ・ 速い！ \d+ m で見つかる ・ 14 kt 以下に$/,
       /^米PT \d+ 隻が哨戒中 ・ 静音で抜けて帰投$/,
       /^(夜明け ・ )?米PT は東へ(去る|去った) ・ 帰投せよ {2}\d+ m$/,
       /^$/, // 米PT のモードでない（帰投せよ・平常）
     ];
-    let results = 0;
-    let passes = 0;
+    let [results, passes, bursts, burstResults, chasing] = [0, 0, 0, 0, 0];
     for (const seed of [1, 2, 3, 4, 5, 6]) {
       const a = nightLines(seed, true);
       const b = nightLines(seed, false);
-      const norm = (l: string): string => l.replace('右下の射撃で撃ち返せ', '〈末尾〉').replace('次の赤い線に備えよ', '〈末尾〉');
+      // 末尾: 13mm を撃つ前の勧め（砲あり）と、砲の無い任務の離脱「次の赤い線に備えよ」・追ってくる PT「撃ち返せ」（連射の「針路そのまま撃ち返せ」はどちらも同じ）
+      const norm = (l: string): string => l.replace(/ ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ|撃ち返せ)$/, ' ・ 〈末尾〉');
       expect(a.lines.map(norm), `${seed}`).toEqual(b.lines.map(norm));
       expect(a.modes.has(MISSION_PT_GUN) || a.modes.has(MISSION_PT_GUN_EVENT), `${seed}`).toBe(false);
       expect([...a.maxPasses], `${seed}`).toEqual([8]);
+      expect([...a.maxBursts], `${seed}`).toEqual([12]);
       for (const l of a.lines) expect(V063.some((re) => re.test(l)), `${seed}: ${l}`).toBe(true);
       results += a.lines.filter((l) => / ・ 航過 \d+\/8$/.test(l)).length;
       passes += a.lines.filter((l) => l.startsWith('米PT 航過！') || l.startsWith('米PT 掃射！')).length;
+      bursts += a.lines.filter((l) => l.startsWith('米PT 追撃！') || l.startsWith('米PT 連射！')).length;
+      burstResults += a.lines.filter((l) => / ・ 追撃 \d+\/12$/.test(l)).length;
+      chasing += a.lines.filter((l) => l.includes('から追ってくる')).length;
     }
-    // 赤い線と航過の結果が出た夜がある（離脱の行は挟み撃ちでもう 1 隻がいつも突撃の行なので、まれ。末尾の違いは上の離脱の行のテスト）
+    // 赤い線と航過の結果が出た夜がある（離脱の行は挟み撃ちでもう 1 隻がいつも突撃の行なので、まれ。末尾の違いは上の離脱の行のテスト）。
+    // 巡航で帰る艇には航過のあとも追撃の連射（予告と撃ち始め）・その結果・追ってくる PT の行が出る（実機 2 回目）
     expect(passes).toBeGreaterThan(6);
     expect(results).toBeGreaterThan(6);
+    expect(bursts).toBeGreaterThan(6);
+    expect(burstResults).toBeGreaterThan(3);
+    expect(chasing).toBeGreaterThan(0);
   });
 });
 
@@ -235,16 +249,19 @@ describe('射撃を押し続ける夜（台本: 見つかったら舷側を向�
       /^射界外 ・ 舷側に向けよ（艇首・艇尾は撃てない）$/,
       /^射程外 ・ 600 m まで引きつけよ$/,
       /^撃てる PT が見えない$/,
-      /^米PT (撃退！ 死傷者が出て離脱|撃退！ 穴だらけで離脱|撃沈！ ガソリンに引火) ・ (残り 1 隻|帰投せよ)$/,
+      /^米PT (撃退！ 死傷者が出て離脱|撃退！ 穴だらけで離脱|撃沈！ ガソリンに引火|制圧！ 追撃をやめて離れる) ・ (残り [12] 隻|帰投せよ)$/,
     ];
-    // 13mm の行でなければ、v0.6.3 の行か 13mm で変わった行（黙った航過・減る上限・全隻撃沈）
+    // 13mm の行でなければ、v0.6.3 の行か 13mm で変わった行（黙った航過・減る上限・全隻撃沈）か追撃の行（実機 2 回目。黙った連射・減る連射の上限）
     const OTHER = [
-      /^米PT (航過|掃射)！ (\S+へ転舵|そのまま離れろ)$/,
-      /^米PT 被弾で沈黙！ もう撃ってこない$/,
+      /^米PT (航過|掃射)！ (\S+へ全速で転舵|そのまま全速で離れろ)$/,
+      /^米PT (被弾で沈黙！ もう撃ってこない|制圧！ 連射が止んだ)$/,
       /^(かわした！ 被弾なし|被弾 \d+ 発（HP −\d+）|撃たせなかった！) ・ 航過 \d+\/[1-8]$/,
+      /^米PT (追撃|連射)！ \S+から ・ 針路そのまま撃ち返せ$/,
+      /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 追撃 \d+\/([1-9]|1[0-2])$/,
+      /^米PT \S+から追ってくる( \d+ m)? ・ 撃ち返せ$/,
       /^米PT \S+から突撃 \d+ m ・ 赤い線で転舵$/,
       /^米PT のエンジン音 ・ \S+から突撃$/,
-      /^米PT 離脱 ・ 残り \d+ 回 ・ 次の赤い線に備えよ$/,
+      /^米PT 離脱 ・ 次の赤い線に備えよ$/,
       /^米PT \d+ m（\S+） ・ 気づかれていない ・ 静音でやり過ごせ$/,
       /^米PT \d+ m ・ 速い！ \d+ m で見つかる ・ 14 kt 以下に$/,
       /^米PT \d+ 隻が哨戒中 ・ 静音で抜けて帰投$/,

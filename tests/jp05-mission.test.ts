@@ -258,12 +258,13 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele({ ...NE500, sighted: true }, { targetStep: 'full', detectRangeM: 1920 }))[1]).toBe('米PT 500 m ・ 速い！ 1900 m で見つかる ・ 14 kt 以下に');
     expect(PT_DISTANCE_STEP_M).toBe(50);
   });
-  it('接触: 突撃（見えている＝方角と距離・音だけ＝方角）、離脱（残りの航過）。航過の結果は撃った航過の表示中だけ（被弾なし＝味方の青・被弾＝HP）', () => {
+  it('接触: 突撃（見えている＝方角と距離・音だけ＝方角）、離脱（v0.6.3 実機 2 回目から「残り N 回」なし）。航過の結果は撃った航過の表示中だけ（被弾なし＝味方の青・被弾＝HP）', () => {
     const det = { detected: true, ...NE500 };
     expect(row(tele({ ...det, threatPhase: PT_ALERT, sighted: true }))).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵', HUD_COLOR_WARN]);
     expect(row(tele({ detected: true, threatPhase: PT_RUN_IN, dx: 0, dy: 1000 }))).toEqual([MISSION_PT_CONTACT, '米PT のエンジン音 ・ 南から突撃', HUD_COLOR_WARN]);
-    // 離脱の末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の射撃を勧める（前は「静音で見失わせろ」。模擬で見失わせた夜は 0 だった）。撃った後は tests/pt-gun-ui
-    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 7 回 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
+    // 離脱の末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の射撃を勧める（前は「静音で見失わせろ」。模擬で見失わせた夜は 0 だった）。撃った後は tests/pt-gun-ui。
+    // 実機 2 回目: 「残り N 回」を外した（追撃の連射があるので航過の残りはもう次を言い当てない。spec r2 §F.1）
+    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...det, threatPhase: PT_ALERT, passes: 1, passSeq: 1, lastPassHits: 0, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, 'かわした！ 被弾なし ・ 航過 1/8', HOME_COLOR_TEXT]);
     expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 2, passSeq: 2, lastPassHits: 3, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '被弾 3 発（HP −12） ・ 航過 2/8', HUD_COLOR_STRONG]);
     // 結果の表示は見失った後・夜明けに去った後も出る（表示の秒が終われば平常へ）
@@ -281,7 +282,7 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele(unfired), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '撃たせなかった！ ・ 航過 1/8', HOME_COLOR_TEXT]);
     expect(row(tele({ ...unfired, passes: 8, passSeq: 8, alive: 0 }), 0, RESULT)[1]).toBe('撃たせなかった！ ・ 航過 8/8');
     // 表示の秒が過ぎればいつもの行
-    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 残り 7 回 ・ 右下の射撃で撃ち返せ');
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 右下の射撃で撃ち返せ');
     // キーは撃った航過の結果（被弾なし）と違う
     const k = (t: BoatTelemetry, flags: number): number => ptKey(t, missionMode(t, 0, flags), flags);
     expect(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), RESULT)).not.toBe(k(tele({ ...det, ...unfired, lastPassFired: true, threatPhase: PT_BREAK }), RESULT));
@@ -301,15 +302,15 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(k(tele({ alive: 0, out: 2 }, { homeEdgeM: 1899 }))).not.toBe(k(tele({ alive: 0, out: 2 }, { homeEdgeM: 1901 })));
     expect(k(tele({ alive: 2 }, { homeEdgeM: 1000 }))).toBe(k(tele({ alive: 2 }, { homeEdgeM: 3000 }))); // 哨戒中の行には距離が出ない
   });
-  it('航過: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわし方は固めたときの 1 つ: 逃げる針路の方角（スティックの向き）へ転舵、もう向いていればそのまま（v0.6.3 レビュー: 「右へ／左へ」は艇から見た回り方で、南へ走る艇では画面の逆だった）', () => {
+  it('航過: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわし方は固めたときの 1 つ: 逃げる針路の方角（スティックの向き）へ全速で転舵、もう向いていればそのまま全速で（v0.6.3 レビュー: 「右へ／左へ」は艇から見た回り方で、南へ走る艇では画面の逆だった。実機 2 回目で「全速で」を戻した）', () => {
     const pass = { detected: true, passing: true, threatPhase: PT_PASS, ...NE500, sighted: true };
-    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toEqual([MISSION_PT_PASS, '米PT 航過！ 北西へ転舵', HUD_COLOR_WARN]);
-    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 135 }))[1]).toBe('米PT 航過！ 南東へ転舵');
-    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 10 }))[1]).toBe('米PT 航過！ 北へ転舵'); // 8 方位に丸める
-    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 225 }))[1]).toBe('米PT 航過！ そのまま離れろ');
-    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315, fired: true }))[1]).toBe('米PT 掃射！ 北西へ転舵');
-    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ 東へ転舵');
-    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ そのまま離れろ');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toEqual([MISSION_PT_PASS, '米PT 航過！ 北西へ全速で転舵', HUD_COLOR_WARN]);
+    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 135 }))[1]).toBe('米PT 航過！ 南東へ全速で転舵');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 10 }))[1]).toBe('米PT 航過！ 北へ全速で転舵'); // 8 方位に丸める
+    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 225 }))[1]).toBe('米PT 航過！ そのまま全速で離れろ');
+    expect(row(tele({ ...pass, dodge: 1, escapeDeg: 315, fired: true }))[1]).toBe('米PT 掃射！ 北西へ全速で転舵');
+    expect(row(tele({ ...pass, dodge: -1, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ 東へ全速で転舵');
+    expect(row(tele({ ...pass, dodge: 0, escapeDeg: 90, fired: true }))[1]).toBe('米PT 掃射！ そのまま全速で離れろ');
     // 回り方（dodge ±1）が違っても方角が同じなら同じ文・同じキー（文はスティックの向きだけを言う）
     const k = (t: BoatTelemetry): number => ptKey(t, missionMode(t, 0, 0), 0);
     expect(k(tele({ ...pass, dodge: 1, escapeDeg: 315 }))).toBe(k(tele({ ...pass, dodge: -1, escapeDeg: 320 })));
@@ -335,7 +336,7 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(k(tele(seen))).not.toBe(k(tele({ dx: 330, dy: -400, sighted: true })));
     expect(k(tele())).toBe(k(tele({ dx: 100, dy: 2000 }))); // 見えていない PT の位置は出さない
     expect(k(tele({ ...seen, passing: true, detected: true, dodge: 1 }))).not.toBe(k(tele({ ...seen, passing: true, detected: true, dodge: 1, fired: true })));
-    expect(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 1 }))).not.toBe(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 2 })));
+    expect(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 1 }))).toBe(k(tele({ detected: true, threatPhase: PT_BREAK, passes: 2 }))); // 離脱の行に航過の数は出ない（実機 2 回目）
     expect(k(tele({ detected: true, passes: 1, lastPassHits: 1, lastPassFired: true }), RESULT)).not.toBe(k(tele({ detected: true, passes: 1, lastPassHits: 2, lastPassFired: true }), RESULT));
     for (const t of [tele(), tele({ ...seen, passing: true, detected: true, dodge: 1, escapeDeg: 315, fired: true }), tele({ alive: 0, out: 2 }, { dawn: { ...createDawnTelemetry(), reached: true }, homeEdgeM: 6300 })]) {
       const key = k(t);
@@ -431,7 +432,7 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
   const base: PtResult = {
     enemyId: 'us_pt_enemy', total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 8, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4, hpMax: 50,
     firstDetectM: NaN, firstDetectBand: '', lostContacts: 0, closestM: 812.4, minWarnS: Infinity,
-    gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false,
+    gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false, bursts: 0, suppressions: 0,
   };
   it('一度も見つからずに抜けた: 最接近と「—」（撃たれていない）。帰投しなかった（漂流）なら「抜けた」と言わない', () => {
     expect(ptResultLines(base, 0, true)).toEqual(['米PT に一度も見つからずに抜けた', '見つからず ・ PT の最接近 812 m', '予告から初弾まで 最短 — 秒 ・ 撃たれた弾 0 発', '13mm は撃たなかった']);

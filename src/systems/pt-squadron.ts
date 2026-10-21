@@ -2,6 +2,7 @@
 // PT・航過の赤い線（予告）・曳光弾・外れ弾の水柱・砲口の閃光を描く（barge-hunt と同じ形）。
 // v0.6.3 実機 1 回目: 艇に砲のある任務（jp_05 の T-14 の 13mm）は固定ステップで 13mm（systems/pt-gun）→ 閃光 → 隊の順（模擬 core/pt-pass-sim と同じ）。
 // 撃退された PT は灰色に（1 回だけ）、沈んだ PT は沈み込みの tween（1 夜 2 回まで）と世界の onSunk（命中スロー＋爆発）。
+// v0.6.3 実機 2 回目（追撃の連射。spec r2 §F.2）: 連射の赤い線は同じ 1 本を PT から艇へ（毎フレーム位置・向き・長さの倍率だけ直す。平方根と atan2 は撃つ PT の 1 回）。制圧された PT は色を変えない。
 // §7: PT count 枚・線 1 本・曳光弾 24 枚・水柱 24 枚・閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。check と events は 1 個だけ作る。
 // 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
 import Phaser from 'phaser';
@@ -51,6 +52,9 @@ export class PtSquadron {
   private readonly tracers: Phaser.GameObjects.Image[] = [];
   private readonly line: Phaser.GameObjects.Image;
   private lineShown = false;
+  /** 線が連射の形（PT → 艇の長さ）になっている。航過へ戻すときに長さの倍率を 1 回だけ戻す */
+  private lineBurst = false;
+  private readonly lineScaleY: number;
   private readonly flash: Phaser.GameObjects.Image;
   private flashAge = Infinity;
   /** 固定ステップの世界（掃射の着弾で艇が沈み始めたかを読む。step で置くだけで確保しない） */
@@ -100,7 +104,8 @@ export class PtSquadron {
     for (let i = 0; i < PT_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
     // 航過の赤い線: 夜明けの空襲の爆撃進路の線と同じ絵・色・濃さ・太さ（ユーザーが知っている「この線から離れる」）。長さは一定なので倍率は 1 回だけ
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
-    this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height);
+    this.lineScaleY = AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height;
+    this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
     this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(scene, i, fate)) : null;
   }
@@ -131,7 +136,7 @@ export class PtSquadron {
     w.detect.prev = q.detected;
   }
 
-  /** 自艇から見た「いまの敵」: 脅威の PT（航過中 → 突撃 → 離脱 → 哨戒。core/pt-boats の threatIndex）。去った PT だけなら null */
+  /** 自艇から見た「いまの敵」: 脅威の PT（撃つ PT → 追撃 → 突撃 → 離脱 → 哨戒。core/pt-boats の threatIndex）。去った PT だけなら null */
   focus(x: number, y: number): BoatState | null {
     const i = threatIndex(this.section, x, y);
     return i < 0 ? null : this.section.boats[i]!;
@@ -166,7 +171,7 @@ export class PtSquadron {
       }
       if (show) img.setPosition(b.x, b.y).setAngle(b.headingDeg);
     }
-    // 航過は同時に 1 隻だけ（core）なので線は 1 本。固めた時に出し、航過の終わり・夜明けで去ると消える
+    // 航過・連射は同時に 1 隻だけ（core）なので線は 1 本。固めた時に出し、終わり（撃ち切り・離れていく・窓の終わり）・夜明けで去ると消える
     const owner = q.owner;
     if ((owner >= 0) !== this.lineShown) {
       this.lineShown = owner >= 0;
@@ -174,7 +179,19 @@ export class PtSquadron {
     }
     if (owner >= 0) {
       const b = q.boats[owner]!;
-      this.line.setPosition(b.x, b.y).setAngle(b.lockDeg - 90); // 絵の x 軸を針路へ（北 0・時計回り → 東 0 の角度）
+      if (b.burst) {
+        // 連射: PT から今の艇へ（向きは東 0・時計回りの atan2、長さは距離 / 絵の幅）
+        const dx = boat.x - b.x;
+        const dy = boat.y - b.y;
+        this.line.setPosition(b.x, b.y).setAngle(radToDeg(Math.atan2(dy, dx))).setScale(Math.sqrt(dx * dx + dy * dy) / this.line.width, this.lineScaleY);
+        this.lineBurst = true;
+      } else {
+        if (this.lineBurst) {
+          this.lineBurst = false;
+          this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
+        }
+        this.line.setPosition(b.x, b.y).setAngle(b.lockDeg - 90); // 絵の x 軸を針路へ（北 0・時計回り → 東 0 の角度）
+      }
     }
     for (let i = 0; i < q.shells.length; i++) {
       const s = q.shells[i]!;

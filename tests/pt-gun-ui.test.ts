@@ -10,8 +10,8 @@ import { createDawnTelemetry } from '../src/core/dawn-air';
 import { AS_T_RUN } from '../src/core/air-strike';
 import { GUN_BLOCKED, GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE } from '../src/core/gun-battery';
 import { CALL_DAWN, CALL_FUEL } from '../src/core/mission-flow';
-import { PT_ALERT, PT_BREAK, PT_FATE_CREW, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_RUN_IN, PT_SUNK, createPtTelemetry, type PtTelemetry } from '../src/core/pt-boats';
-import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK } from '../src/core/pt-damage';
+import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_RUN_IN, PT_SUNK, createPtTelemetry, type PtTelemetry } from '../src/core/pt-boats';
+import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
 import { PT_GUN_RELOAD } from '../src/core/pt-gun';
 import { initPtTelemetry, ptMaxPasses, refreshPtTelemetry } from '../src/systems/pt-telemetry';
 import { MISSION_ADRIFT, MISSION_CALL, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_STRIKE, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT, missionMode, ptGunShown } from '../src/ui/mission-mode';
@@ -56,7 +56,10 @@ describe('13mm の 2 行目（ui/pt-gun-lines）', () => {
       expect(row(tele({ ...RUSH, gunStatus: st })), `${st}`).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵', HUD_COLOR_WARN]);
       expect(row(tele({ ...RUSH, threatPhase: PT_ALERT, sighted: false, gunStatus: st }))[1], `${st}`).toBe('米PT のエンジン音 ・ 北東から突撃');
       expect(row(tele({ ...BRK, gunStatus: st }))[0], `${st}`).toBe(MISSION_PT_GUN); // 離脱の間は射撃の行（押しても撃てない訳）
+      // 追ってくる PT（v0.6.3 実機 2 回目）にも勝たない: どの舷から追ってくるか・撃ち返せ
+      expect(row(tele({ ...RUSH, threatPhase: PT_CHASE, gunStatus: st, gunEverFired: true })), `${st}`).toEqual([MISSION_PT_CONTACT, '米PT 北東から追ってくる 500 m ・ 撃ち返せ', HUD_COLOR_WARN]);
     }
+    expect(row(tele({ ...FIRING, threatPhase: PT_CHASE }))[0]).toBe(MISSION_PT_GUN); // 撃っている間は射撃の行
     expect(row(tele(FIRING))[0]).toBe(MISSION_PT_GUN);
     expect(row(tele({ ...RUSH, gunStatus: PT_GUN_RELOAD, reloadLeftS: 2 }))[0]).toBe(MISSION_PT_GUN);
     expect(row(tele({ ...RUSH, gunStatus: GUN_OUT_OF_ARC }))[0]).toBe(MISSION_PT_GUN);
@@ -87,6 +90,10 @@ describe('13mm の 2 行目（ui/pt-gun-lines）', () => {
     expect(row(tele({ ...RUSH, gunEvent: PT_GUN_EV_SUNK, fighting: 1 }), 0, EVENT)[1]).toBe('米PT 撃沈！ ガソリンに引火 ・ 残り 1 隻');
     expect(row(tele({ gunEvent: PT_GUN_EV_SUNK, fighting: 0, alive: 0 }), 0, EVENT)).toEqual([MISSION_PT_GUN_EVENT, '米PT 撃沈！ ガソリンに引火 ・ 帰投せよ', HOME_COLOR_TEXT]);
     expect(row(tele({ gunEvent: PT_GUN_EV_CREW, fighting: 0, alive: 0 }), 0, EVENT)[1]).toBe('米PT 撃退！ 死傷者が出て離脱 ・ 帰投せよ');
+    // 制圧（v0.6.3 実機 2 回目。追撃の PT が 13mm を 3 発受けて追撃をやめる。制圧された PT はまだ戦う数に入る）
+    expect(PT_GUN_EV_SUPPRESS).toBe(4);
+    expect(row(tele({ ...RUSH, gunEvent: PT_GUN_EV_SUPPRESS, fighting: 2 }), 0, EVENT)).toEqual([MISSION_PT_GUN_EVENT, '米PT 制圧！ 追撃をやめて離れる ・ 残り 2 隻', HOME_COLOR_TEXT]);
+    expect(row(tele({ gunEvent: PT_GUN_EV_SUPPRESS, fighting: 0, alive: 0 }), 0, EVENT)[1]).toBe('米PT 制圧！ 追撃をやめて離れる ・ 帰投せよ');
   });
   it('時刻で出す行は上の行に隠れている間は始めない（R5）: 隠れている間は終わりを先へ送り、出てから 2,500 ms。隠れていない・時間切れの後は変えない', () => {
     expect(holdShowUntil(3500, true, 2000)).toBe(4500);
@@ -97,7 +104,7 @@ describe('13mm の 2 行目（ui/pt-gun-lines）', () => {
   it('優先順: 夜明けの空襲・燃料切れ > 赤い線 > 13mm の出来事 > 航過の結果 > 射撃 > 突撃・離脱。射撃は押していて生きた PT がいるときだけ', () => {
     const pass = { ...FIRING, passing: true, threatPhase: PT_PASS, dodge: 1, escapeDeg: 315 };
     expect(row(tele(pass), 0, EVENT | RESULT)[0]).toBe(MISSION_PT_PASS); // 撃っている間も赤い線がいちばん上
-    expect(row(tele(pass), 0, 0)[1]).toBe('米PT 航過！ 北西へ転舵');
+    expect(row(tele(pass), 0, 0)[1]).toBe('米PT 航過！ 北西へ全速で転舵');
     expect(row(tele(FIRING, { fuelEmpty: true }), 0, EVENT)[0]).toBe(MISSION_ADRIFT);
     expect(row(tele(pass, { dawn: { ...createDawnTelemetry(), threat: AS_T_RUN } }), 0, EVENT)[0]).toBe(MISSION_STRIKE);
     const result = { ...FIRING, passes: 1, passSeq: 1, lastPassFired: true, lastPassHits: 0, gunEvent: PT_GUN_EV_CREW, fighting: 1 };
@@ -141,13 +148,13 @@ describe('航過・離脱・平常の行の 13mm の変化（ui/pt-lines）', ()
   it('航過中の PT が被弾で黙った: 「もう撃ってこない」（味方の青。赤い線と航過は続く）', () => {
     const pass = { ...RUSH, passing: true, threatPhase: PT_PASS, dodge: 1, escapeDeg: 315, fired: true };
     expect(row(tele({ ...pass, passSilenced: true }))).toEqual([MISSION_PT_PASS, '米PT 被弾で沈黙！ もう撃ってこない', HOME_COLOR_TEXT]);
-    expect(row(tele(pass))[1]).toBe('米PT 掃射！ 北西へ転舵');
+    expect(row(tele(pass))[1]).toBe('米PT 掃射！ 北西へ全速で転舵');
   });
-  it('離脱の末尾: 13mm を撃つ前は「右下の射撃で撃ち返せ」、撃った後と砲の無い任務は「次の赤い線に備えよ」。キーも変わる', () => {
+  it('離脱の末尾: 13mm を撃つ前は「右下の射撃で撃ち返せ」、撃った後と砲の無い任務は「次の赤い線に備えよ」。キーも変わる（実機 2 回目から「残り N 回」なし）', () => {
     const br = { detected: true, threatPhase: PT_BREAK, passes: 1, dx: 300, dy: -400 };
-    expect(row(tele(br))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 7 回 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
-    expect(row(tele({ ...br, gunEverFired: true }))[1]).toBe('米PT 離脱 ・ 残り 7 回 ・ 次の赤い線に備えよ');
-    expect(row(tele({ ...br, gunEnabled: false }))[1]).toBe('米PT 離脱 ・ 残り 7 回 ・ 次の赤い線に備えよ');
+    expect(row(tele(br))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
+    expect(row(tele({ ...br, gunEverFired: true }))[1]).toBe('米PT 離脱 ・ 次の赤い線に備えよ');
+    expect(row(tele({ ...br, gunEnabled: false }))[1]).toBe('米PT 離脱 ・ 次の赤い線に備えよ');
     expect(keyOf(tele(br))).not.toBe(keyOf(tele({ ...br, gunEverFired: true })));
     // 突撃の行は撃ったかで変わらない
     expect(keyOf(tele(RUSH))).toBe(keyOf(tele({ ...RUSH, gunEverFired: true })));
@@ -161,7 +168,7 @@ describe('航過・離脱・平常の行の 13mm の変化（ui/pt-lines）', ()
     expect(keyOf(tele({ alive: 0, out: 1, sunk: 1 }))).toBe(keyOf(tele({ alive: 0, out: 2, sunk: 0 }))); // 同じ文
     expect(keyOf(tele({ alive: 0, out: 0, sunk: 2 }))).not.toBe(keyOf(tele({ alive: 0, out: 2, sunk: 0 })));
   });
-  it('航過の上限は撃退・撃沈でだけ減る（終わった航過 + 結末の無い PT の残り）。「航過 n/M」「残り N 回」', () => {
+  it('航過の上限は撃退・撃沈でだけ減る（終わった航過 + 結末の無い PT の残り）。「航過 n/M」（離脱の行はもう回数を言わない）', () => {
     const w = ptWorld();
     const q = w.pts.section;
     const t = initPtTelemetry(w);
@@ -176,7 +183,7 @@ describe('航過・離脱・平常の行の 13mm の変化（ui/pt-lines）', ()
     q.boats[0]!.fate = PT_FATE_CREW; // 撃退: 残り 3 回が消える
     refreshPtTelemetry(t, w);
     expect([t.maxPasses, t.fighting]).toEqual([5, 1]);
-    expect(row(tele({ ...t, detected: true, threatPhase: PT_BREAK, dx: 300, dy: -400 }))[1]).toBe('米PT 離脱 ・ 残り 3 回 ・ 右下の射撃で撃ち返せ');
+    expect(row(tele({ ...t, detected: true, threatPhase: PT_BREAK, dx: 300, dy: -400 }))[1]).toBe('米PT 離脱 ・ 右下の射撃で撃ち返せ');
     expect(row(tele({ ...t, detected: true, passSeq: 2, lastPassFired: true, lastPassHits: 0 }), 0, RESULT)[1]).toBe('かわした！ 被弾なし ・ 航過 2/5');
     q.boats[1]!.phase = PT_SUNK; // 撃沈
     q.boats[1]!.fate = PT_FATE_SUNK;
@@ -199,7 +206,7 @@ describe('13mm の行の幅（22 px・論理幅 1280 で左上の時計を避け
       [{ ...RUSH, gunStatus: GUN_OUT_OF_ARC }, {}, 0],
       [{ ...BRK, gunStatus: GUN_OUT_OF_RANGE }, {}, 0],
       [{ ...BRK, gunStatus: GUN_NO_TARGET }, {}, 0],
-      ...[PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK].flatMap((e): [Partial<PtTelemetry>, Partial<BoatTelemetry>, number][] => [
+      ...[PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, PT_GUN_EV_SUPPRESS].flatMap((e): [Partial<PtTelemetry>, Partial<BoatTelemetry>, number][] => [
         [{ gunEvent: e, fighting: 7 }, {}, EVENT],
         [{ gunEvent: e, fighting: 0 }, {}, EVENT],
       ]),

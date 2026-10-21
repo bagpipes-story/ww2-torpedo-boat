@@ -1,12 +1,13 @@
 // T-14 の 13mm 機銃（v0.6.3 実機 1 回目。spec r1 §E.1）の HUD の 2 行目: 射撃（状態・PT までの距離・命中・弾倉の交換）と出来事（撃退・撃沈・残りの隻数）の文とキャッシュのキー。
 // ui/pt-lines の ptKey / ptLine がこの 2 つのモードのときに呼ぶ。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
+// v0.6.3 実機 2 回目: 出来事に制圧（追撃の PT が 13mm を 3 発受けて追撃をやめ離れる。core/pt-damage の PT_GUN_EV_SUPPRESS = 4）を足した。
 // 距離は gun-battery が撃つときに求めた targetM を 50 m 刻みで切り上げる（平方根を足さない）。キーは行に出る値だけを詰める（50 m・命中 1 発・交換の 1 秒ごとにしか組み直さない）。
 import { GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_DISTANCE_STEP_M, PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE } from '../core/gun-battery';
-import { PT_GUN_EV_CREW, PT_GUN_EV_SUNK } from '../core/pt-damage';
+import { PT_GUN_EV_CREW, PT_GUN_EV_SUNK, PT_GUN_EV_SUPPRESS } from '../core/pt-damage';
 import { PT_GUN_RELOAD } from '../core/pt-gun';
 import type { HudLine } from './hud-lines';
 
@@ -64,11 +65,12 @@ export function ptGunEventKey(t: BoatTelemetry): number {
   return t.pt.gunEvent | (Math.min(7, t.pt.fighting) << 3);
 }
 
-/** 出来事の行（味方の青）: 撃退（死傷・穴だらけ）か撃沈と、まだ戦う PT の数（0 なら「帰投せよ」） */
+/** 出来事の行（味方の青）: 撃退（死傷・穴だらけ）・撃沈・制圧（追撃をやめて離れる。制圧された PT はまだ戦う数に入る）と、まだ戦う PT の数（0 なら「帰投せよ」） */
 export function ptGunEventLine(key: number): HudLine {
   const kind = key & 7;
   const n = (key >> 3) & 7;
-  const head = kind === PT_GUN_EV_SUNK ? '米PT 撃沈！ ガソリンに引火' : kind === PT_GUN_EV_CREW ? '米PT 撃退！ 死傷者が出て離脱' : '米PT 撃退！ 穴だらけで離脱';
+  const head =
+    kind === PT_GUN_EV_SUPPRESS ? '米PT 制圧！ 追撃をやめて離れる' : kind === PT_GUN_EV_SUNK ? '米PT 撃沈！ ガソリンに引火' : kind === PT_GUN_EV_CREW ? '米PT 撃退！ 死傷者が出て離脱' : '米PT 撃退！ 穴だらけで離脱';
   return { text: `${head} ・ ${n === 0 ? '帰投せよ' : `残り ${n} 隻`}`, color: HOME_COLOR_TEXT };
 }
 

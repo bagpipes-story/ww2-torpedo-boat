@@ -1,5 +1,5 @@
 // Result の材料の型のうち任務ごとの部分（v0.6.3 で result-scene から切り出し。中身はそのまま。型だけ）。result-scene.ts が再 export する（今までの import のため）。
-// v0.6.3: 米PT の記録（PtResult）を足した。実機 1 回目: T-14 の 13mm の記録（射撃・命中・撃退・撃沈・閃光が最初）と enemies.json の id。
+// v0.6.3: 米PT の記録（PtResult）を足した。実機 1 回目: T-14 の 13mm の記録（射撃・命中・撃退・撃沈・閃光が最初）と enemies.json の id。実機 2 回目: 連射と制圧の数。
 import type { SpeedStep } from '../core/boat-motion';
 
 /** 大発掃討の記録（v0.4.2）: 隻数・撃破・上陸・ノルマ、射撃の発射と命中、最初に撃った距離 m と速力帯、最初に目で気づかれた距離 m（NaN なら気づかれる前に撃った）、撃破の距離の最小・最大 m、13mm の命中数と被害 HP。実機で数値を合わせる根拠 */
@@ -74,4 +74,10 @@ export interface PtResult {
   retired: number;
   sunk: number;
   flashFirst: boolean;
+  /**
+   * 追撃（v0.6.3 実機 2 回目。spec r2 §F.4）: 撃たれた連射（firedPasses・cleanPasses の内。終わる瞬間に撃っていた連射も数える。passes は航過だけ）、
+   * 13mm で追撃をやめさせた（制圧）回数
+   */
+  bursts: number;
+  suppressions: number;
 }
