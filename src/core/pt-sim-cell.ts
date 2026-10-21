@@ -1,4 +1,5 @@
-// 米PT の掃射の航過の模擬（core/pt-pass-sim）の n 夜の集計（v0.6.3。spec §F.3 の表の列、v0.6.3 実機 1 回目 spec r1 §G.2 の 13mm と挟み撃ちの列。pt-pass-sim から分けた。300 行を超えないため）。
+// 米PT の掃射の航過の模擬（core/pt-pass-sim）の n 夜の集計（v0.6.3。spec §F.3 の表の列、v0.6.3 実機 1 回目 spec r1 §G.2 の 13mm と挟み撃ちの列、実機 2 回目 spec r2 §H.2 の追撃の列。
+// pt-pass-sim から分けた。300 行を超えないため）。
 // Phaser 非依存。集計は 1 セルに 1 回（毎ステップではない）なので配列を作ってよい。
 import { runPtTrial, type PtSimSetup, type PtTrial } from './pt-pass-sim';
 import type { PtPolicy } from './pt-sim-policy';
@@ -18,6 +19,11 @@ export interface PtCell {
   gunShots: number; gunHits: number; hitNightPct: number; retiredPct: number; ptSunkPct: number; flashFirstPct: number; gunBeyond: number;
   /** 挟み撃ち: 赤い線が前と反対の舷から来た割合（0〜1。比べた組が無ければ 0）・赤い線の間の平均の体感秒、待つ PT（hold_off_m の外で待ち始めた）の最接近 m の最小（不変は 350 m 以上） */
   alt: number; commitGapS: number; heldMinM: number;
+  /**
+   * 追撃（v0.6.3 実機 2 回目。spec r2 §H.2）: 1 夜の撃った連射・連射の命中・制圧の平均、1 回の連射の最大命中・1 隻の連射（制圧の分も）の最大、同じ PT の続けての連射の数（0 が不変）、
+   * 予告から連射の終わりの最短秒、他の PT が撃っている間の追撃の PT の最接近 m の最小（表に出すだけ）、機関損傷を受けた夜 %
+   */
+  bursts: number; burstHits: number; suppressions: number; worstBurstHits: number; maxBoatBursts: number; selfRepeats: number; minBurstS: number; chaseHeldMinM: number; enginePct: number;
 }
 
 /** seed は seedBase 〜 seedBase + n − 1（同じ seed なら同じ結果） */
@@ -48,6 +54,9 @@ export function runPtCell(s: PtSimSetup, policy: PtPolicy, n: number, seedBase: 
     gunBeyond: sum((r) => r.gunBeyond),
     alt: pairs === 0 ? 0 : sum((r) => r.flankAlt) / pairs, commitGapS: pairs === 0 ? NaN : sum((r) => r.commitGapSumS) / pairs,
     heldMinM: trials.reduce((a, r) => Math.min(a, r.heldMinM), Infinity),
+    bursts: mean((r) => r.bursts), burstHits: mean((r) => r.burstHits), suppressions: mean((r) => r.suppressions),
+    worstBurstHits: trials.reduce((a, r) => Math.max(a, r.worstBurstHits), 0), maxBoatBursts: trials.reduce((a, r) => Math.max(a, r.maxBoatBursts), 0), selfRepeats: sum((r) => r.selfRepeats),
+    minBurstS: trials.reduce((a, r) => Math.min(a, r.minBurstS), Infinity), chaseHeldMinM: trials.reduce((a, r) => Math.min(a, r.chaseHeldMinM), Infinity), enginePct: pct((r) => r.engineHit),
   };
 }
 

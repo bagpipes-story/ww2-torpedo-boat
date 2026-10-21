@@ -1,21 +1,23 @@
-// 米PT の掃射の航過の模擬（v0.6.3。core/pt-pass-sim・systems/pt-pass-sim-setup、spec §F・§G.1）: ゲームと同じ値と core で、遊び方ごとの帯（spec §F.4）を N 200・固定 seed で検査する。
-// ここは ★ の 6 行（最小の組）、残りの 8 行は tests/pt-pass-sim-rows.test.ts、13mm を撃つ 8 行は tests/pt-gun-sim.test.ts・pt-gun-sim-rows.test.ts（1 ファイル 20 秒を超えないよう分けた。ファイルどうしは並んで回る）。
-// 帯を外したら、まず模擬が spec §C・r1 §C どおりかを確かめ、次に data の値だけを spec r1 §G.6 の順で直す（source に理由）。
+// 米PT の掃射の航過と追撃の模擬（v0.6.3。core/pt-pass-sim・systems/pt-pass-sim-setup・pt-gun-calibration、spec §F・r2 §H）: ゲームと同じ値と core で、遊び方ごとの帯（spec r2 §H.2）を
+// N 200・固定 seed で検査する。ここは模擬の組み立て・上書き・再現・行の分け方と、何もしない巡航・HUD の巡航の転舵とその撃ち返し・止まって撃ち合う（対の撃たない行と同じファイル）。
+// 残りは tests/pt-pass-sim-rows・pt-gun-sim・pt-gun-sim-rows・pt-sim-silent・pt-sim-edge・pt-sim-late・pt-sim-dark（行の分け方は tests/pt-sim-kit の SIM_FILES。1 ファイル 10 行・
+// 手元の vitest で 14 秒ほどまで）と、連射への反応の表 tests/pt-sim-react。
+// 帯を外したら、まず模擬が spec r2 §D・§H.1 どおりかを確かめ、次に data の値だけを spec r2 §H.2 の順で直す（source に理由）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { PT_GUN_SHELL_POOL_SIZE, PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
 import { getPtParams } from '../src/config/pt-mission-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import { ptNightParams, runPtTrial } from '../src/core/pt-pass-sim';
-import { runPtCell, type PtCell } from '../src/core/pt-sim-cell';
-import { PT_POLICIES } from '../src/core/pt-sim-policy';
+import { runPtCell } from '../src/core/pt-sim-cell';
+import { PT_GUN_POLICIES, PT_POLICIES } from '../src/core/pt-sim-policy';
 import { directSortie } from '../src/core/sortie';
-import { PT_CALIBRATION, PT_HELD_MIN_M, ptCalibrationMisses, ptCalibrationRun, ptSimSetup } from '../src/systems/pt-pass-sim-setup';
+import { PT_GUN_CALIBRATION } from '../src/systems/pt-gun-calibration';
+import { PT_CALIBRATION, PT_HELD_MIN_M, ptSimSetup } from '../src/systems/pt-pass-sim-setup';
 import { buildWorldSetup } from '../src/systems/world-setup';
+import { SIM_FILES, itSimBands, simPartners } from './pt-sim-kit';
 import { PT_SIM_R1 } from './pt-sim-r1';
 
-const N = 200;
-const SEED_BASE = 1;
 const TS = gameData.hitRateModel.world.time_scale;
 
 describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
@@ -76,6 +78,13 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect(() => ptSimSetup(gameData, 'jp_05', { effectiveM: 350 })).toThrow(/commit_m < guns\.effective_night_m/);
     // CH_OFF だけが追撃を切る（data からはいつも入る）
     expect([ptSimSetup(gameData, 'jp_05', { chaseOff: true }).pt.chaseOn, ptSimSetup(gameData, 'jp_05', { chaseOff: true }).pt.passEndsWhenSafe, base.chaseOn]).toEqual([false, true, true]);
+    // CH_<鍵>（追撃の鍵）と BREACT（連射への反応の表）: chase の検査を通る・知らない鍵は止まる
+    const ch = ptSimSetup(gameData, 'jp_05', { chase: { burst_rounds: 5, suppress_hits: 4 }, burstReact: 'away' });
+    expect([ch.pt.burstRounds, ch.pt.chaseSuppressHits, base.burstRounds, base.chaseSuppressHits, ch.burstReact, ptSimSetup(gameData, 'jp_05').burstReact]).toEqual([5, 4, 6, 3, 'away', undefined]);
+    expect(() => ptSimSetup(gameData, 'jp_05', { chase: { commit_m: 450 } })).toThrow(/commit_m < guns\.effective_night_m/);
+    expect(() => ptSimSetup(gameData, 'jp_05', { chase: { burst_rounds: 13 } })).toThrow(/chase\.burst_rounds × damage/); // 13 × 4 = 52 ≥ HP 50
+    expect(() => ptSimSetup(gameData, 'jp_05', { chase: { bogus_m: 1 } as never })).toThrow(/chase の鍵ではない/);
+    // 実機 1 回目の値と航過の終わり・追撃を切る上書き（tests/pt-sim-r1。spec r2 §I.3-5 の関門の材料）
     expect(ptSimSetup(gameData, 'jp_05', PT_SIM_R1).pt).toEqual({ ...base, gun: { ...base.gun, effectiveM: 400, engineDamageChance: 0.02 }, hit: { ...base.hit, engineDamageChance: 0.02 }, holdOff2: 500 ** 2, holdOuter2: 600 ** 2, stationM: 550, passGapS: 2.5, passEndsWhenSafe: false, chaseOn: false });
   });
 
@@ -91,38 +100,49 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     expect([r.gunShots, r.gunHits, r.ptRetired, r.ptSunk, r.flashFirst, r.gunBeyond]).toEqual([0, 0, 0, 0, false, 0]);
   });
 
-  // 較正の表は 1 回だけ回す（★ の 6 行、N 200 で 10 秒ほど）。v0.6.3 実機 2 回目: 実機 1 回目の帯は実機 1 回目の値と航過の終わりで回す（tests/pt-sim-r1。f27b266 の表に戻る関門）
-  const run = ptCalibrationRun(gameData, 'jp_05', N, SEED_BASE, PT_SIM_R1);
-  const rows = PT_CALIBRATION.filter((r) => r.star);
-
-  it('較正 ★（spec §F.4・r1 §G.3、N 200・seed 1〜200）: 何もしないと沈む（巡航・静音）・転舵で助かる（航過は 4.5 回以上）・遅い反応でも効く・暗さが効く。不変（予告から初弾・同時に 1 隻・射程と視程・1 回の航過・待つ PT の最接近）も', () => {
+  it('37 の遊び方（撃たない 21・撃つ 16）は表の順に帯の行があり、8 つのファイルで 1 回ずつ回す。撃つ行の対の相手は同じファイル（回し直さない）。★ は spec r2 §H.2 の 16 行', () => {
     expect(PT_CALIBRATION.map((r) => r.policy)).toEqual([...PT_POLICIES]);
-    expect(rows.map((r) => r.policy)).toEqual(['cruise', 'silent', 'turn_cruise', 'dodge_silent', 'late_turn', 'dark_stop']);
-    expect(rows.flatMap((r) => ptCalibrationMisses(r, run.cell(r.policy), run.setup, run.cell('cruise').hpMean).map((m) => `${r.policy}: ${m}`))).toEqual([]);
-  }, 60_000);
-
-  it('不変（spec §F.4 の 7、C.8・r1 §G.5）は数でも: 予告から初弾は open_fire_s 以上・航過は同時に 1 隻・有効射程と視程の外から撃たない・1 回の航過の砲の被害は 弾数 × 被害（40）以下・打ち切りなし・待つ PT は 350 m より内へ来ない', () => {
-    const p = run.setup.pt;
-    for (const r of rows) {
-      const c: PtCell = run.cell(r.policy);
-      expect(c.shots, r.policy).toBeGreaterThan(0);
-      expect(c.minWarnS, r.policy).toBeGreaterThanOrEqual(p.openFireS - 1e-9);
-      expect([c.maxPassing, c.beyondEff, c.beyondSight, c.timeoutPct], r.policy).toEqual([1, 0, 0, 0]);
-      expect(c.worstPassHits * p.hit.damage, r.policy).toBeLessThanOrEqual(p.roundsPerPass * p.hit.damage);
-      expect(c.heldMinM, r.policy).toBeGreaterThanOrEqual(PT_HELD_MIN_M);
-      expect(c.heldMinM, r.policy).toBeLessThan(p.stationM); // 待つ PT は位置取りをする（その夜があった）
-      expect([c.gunShots, c.gunBeyond], r.policy).toEqual([0, 0]); // 撃たない遊び方
+    expect(PT_GUN_CALIBRATION.map((r) => r.policy)).toEqual([...PT_GUN_POLICIES]);
+    const files = Object.values(SIM_FILES);
+    expect(files.flat().sort()).toEqual([...PT_POLICIES, ...PT_GUN_POLICIES].sort());
+    for (const f of files) {
+      expect(f.length).toBeLessThanOrEqual(10);
+      for (const pol of f) for (const other of simPartners(pol)) expect(f, `${pol} の相手 ${other}`).toContain(other);
     }
-    expect(p.roundsPerPass * p.hit.damage).toBeLessThan(run.setup.damage.maxHp);
+    expect(PT_CALIBRATION.filter((r) => r.star).map((r) => r.policy)).toEqual(['cruise', 'silent', 'turn_cruise', 'dodge_silent', 'late_turn', 'dark_stop', 'hold_cruise', 'hold_full', 'mid_full', 'flee_full']);
+    expect(PT_GUN_CALIBRATION.filter((r) => r.star).map((r) => r.policy)).toEqual(['turn_shoot', 'stop_shoot', 'dark_shoot', 'tc_shoot', 'hold_shoot', 'slow_shoot']);
   });
 
-  it('v0.6.3 の直し: 撃てる航過だけ（何もしない巡航・静音は撃たずに終わる航過 0・赤い線から open_fire_s より前に終わる航過 0）、どの遊び方も 2 ステップ以内に終わる航過は無い', () => {
-    // v0.6.3 実機 1 回目: 「5 秒より前に終わる航過 0」→「open_fire_s（2.5 秒）より前に 0」（短い航過もある。どれも撃つ）
-    for (const pol of ['cruise', 'silent'] as const) {
+  // 較正の表は 1 回だけ回す（5 行、N 200 で 12 秒ほど）
+  const rows = SIM_FILES.pass;
+  const run = itSimBands(
+    '較正（spec r2 §H.2、N 200・seed 1〜200）: 何もしない巡航は 32〜58% 沈む、HUD の巡航の転舵だけでも 18〜42%、撃ち返すと同じ転舵の半分以下（巡航のままは 0.65 倍）、止まって撃ち合うのは罠（転舵して撃つより 15 点以上）だが何もしないより安全。不変も',
+    rows,
+  );
+
+  it('不変（spec §F.4・r1 §G.5・r2 §E）は数でも: 予告から初弾は open_fire_s 以上・撃つのは同時に 1 隻・有効射程と視程の外から撃たない・1 回の航過は 10 発・1 回の連射は 6 発まで・1 隻の連射は 6 回まで・連射の線は open_fire_s 以上・交互・打ち切りなし・待つ PT は 350 m より内へ来ない', () => {
+    const p = run.setup.pt;
+    for (const pol of rows) {
       const c = run.cell(pol);
-      expect(c.passes - c.firedPasses, pol).toBe(0);
-      expect(c.minPassS, pol).toBeGreaterThan(run.setup.pt.openFireS);
+      expect([c.shots > 0, c.bursts > 0], pol).toEqual([true, pol !== 'stop_shoot']); // 止まった艇は追わない（航過だけ）
+      expect(c.minWarnS, pol).toBeGreaterThanOrEqual(p.openFireS - 1e-9);
+      expect(c.minBurstS, pol).toBeGreaterThanOrEqual(p.openFireS);
+      expect([c.maxPassing, c.beyondEff, c.beyondSight, c.timeoutPct, c.selfRepeats, c.gunBeyond], pol).toEqual([1, 0, 0, 0, 0, 0]);
+      expect(c.worstPassHits * p.hit.damage, pol).toBeLessThan(run.setup.damage.maxHp);
+      expect([c.worstBurstHits <= p.burstRounds, c.maxBoatBursts <= p.maxBursts], pol).toEqual([true, true]);
+      expect(c.heldMinM, pol).toBeGreaterThanOrEqual(PT_HELD_MIN_M);
+      expect(c.heldMinM, pol).toBeLessThan(p.stationM); // 待つ PT は位置取りをする（その夜があった）
     }
-    for (const r of rows) expect(run.cell(r.policy).minPassS, r.policy).toBeGreaterThan(2 * run.setup.stepS);
+    expect([p.roundsPerPass * p.hit.damage, p.burstRounds * p.hit.damage].every((hp) => hp < run.setup.damage.maxHp)).toBe(true);
+  });
+
+  it('撃てる航過だけ（何もしない巡航は撃たずに終わる航過 0・赤い線から open_fire_s より前に終わる航過 0。静音は tests/pt-sim-silent）、どの遊び方も 2 ステップ以内に終わる航過は無い。追撃は来る（連射・機関損傷）', () => {
+    // 撃った攻撃（firedPasses）は航過と連射の和。航過は撃ったか open_fire_s 経ったものだけ数える
+    const c = run.cell('cruise');
+    expect(c.passes - (c.firedPasses - c.bursts)).toBeCloseTo(0, 9);
+    expect(c.minPassS).toBeGreaterThan(run.setup.pt.openFireS);
+    expect(c.bursts).toBeGreaterThan(2); // 航過の後も追って撃つ（1 夜 2 回より多く）
+    expect(c.enginePct).toBeGreaterThan(40); // 機関を撃ち抜かれる夜が多い（engine_damage_chance 0.15）
+    for (const pol of rows) expect(run.cell(pol).minPassS, pol).toBeGreaterThan(2 * run.setup.stepS);
   });
 });
