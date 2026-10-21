@@ -2,6 +2,7 @@
 // §7: 表示する値のどれかが変わったときだけ文字を組んで setText する。文と表は ui/hud-lines.ts（夜明けの時計・空襲は ui/dawn-lines.ts）、どの行を出すかの優先順は ui/mission-mode.ts（v0.6.1 で切り出し）。
 // v0.6.2 実機 1 回目: 左上 2 段目の時計（ui/dawn-clock）と同じ段なので、組み直したときだけ時計を左右対称に避ける幅に縮める（lineFitScale。収まれば等倍）。
 // v0.6.3: 米PT の 3 つのモード（文とキーは ui/pt-lines.ts）。航過の結果は航過の通し番号が増えてから PT_RESULT_SHOW_MS の間（通し番号は撃った弾がみな落ちてから増える。ui/mission-mode の ptResultShown）。
+// 実機 1 回目: T-14 の 13mm の 2 つ（射撃・撃退と撃沈。ui/pt-gun-lines）。出来事は 13mm の出来事の通し番号が増えてから PT_RESULT_SHOW_MS の間。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
@@ -33,8 +34,8 @@ import { airRaidTagJa, bargeHideTagKey, clockKey, dawnCallLabel, lineFitScale, s
 import { ptKey, ptLine } from './pt-lines';
 import {
   MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
-  MISSION_NORMAL, MISSION_PLANE, MISSION_PLANE_ATTACK, MISSION_PLANE_RESULT, MISSION_PT, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING,
-  MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, MODE_FLAG_PT_RESULT, bargeRunning, missionMode, stormWarning,
+  MISSION_NORMAL, MISSION_PLANE, MISSION_PLANE_ATTACK, MISSION_PLANE_RESULT, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING,
+  MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -79,6 +80,9 @@ export class MissionLine {
   private seenPassSeq = 0;
   private ptResultUntil = 0;
   private lastPtKey = -1;
+  /** 13mm（v0.6.3 実機 1 回目）: 見た出来事（撃退・撃沈）の通し番号とその表示の終わり ms */
+  private seenGunEventSeq = 0;
+  private ptGunEventUntil = 0;
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -112,9 +116,13 @@ export class MissionLine {
       this.seenPassSeq = t.pt.passSeq;
       this.ptResultUntil = nowMs + PT_RESULT_SHOW_MS;
     }
-    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | (nowMs < this.ptResultUntil ? MODE_FLAG_PT_RESULT : 0);
+    if (t.pt.gunEventSeq > this.seenGunEventSeq) {
+      this.seenGunEventSeq = t.pt.gunEventSeq;
+      this.ptGunEventUntil = nowMs + PT_RESULT_SHOW_MS;
+    }
+    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | (nowMs < this.ptResultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.ptGunEventUntil ? MODE_FLAG_PT_GUN_EVENT : 0);
     const mode = missionMode(t, call, flags);
-    const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT; // 米PT の 3 つ（22〜24）。距離と方角はこのときだけ ptKey が求める
+    const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
     const pKey = ptMode ? ptKey(t, mode, flags) : 0;
     const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
     // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）

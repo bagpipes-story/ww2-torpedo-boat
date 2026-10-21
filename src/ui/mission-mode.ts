@@ -43,11 +43,15 @@ export const MISSION_STRIKE_REST = 21;
 export const MISSION_PT_PASS = 22;
 export const MISSION_PT_CONTACT = 23;
 export const MISSION_PT = 24;
+/** 25 T-14 の 13mm の射撃（ボタンを押している間・生きた PT がいる）、26 13mm の出来事（撃退・撃沈の直後 PT_RESULT_SHOW_MS）。v0.6.3 実機 1 回目（文は ui/pt-gun-lines） */
+export const MISSION_PT_GUN = 25;
+export const MISSION_PT_GUN_EVENT = 26;
 
-/** missionMode の flags（MissionLine が時刻で決める 3 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3） */
+/** missionMode の flags（MissionLine が時刻で決める 4 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目） */
 export const MODE_FLAG_BARGE_EVENT = 1;
 export const MODE_FLAG_ESCORT_HIT = 2;
 export const MODE_FLAG_PT_RESULT = 4;
+export const MODE_FLAG_PT_GUN_EVENT = 8;
 
 /** 暴風の近く・中で安全速力を超えている（警告。ほかの行の末尾にも付く） */
 export function stormWarning(t: BoatTelemetry): boolean {
@@ -62,6 +66,11 @@ export function ptResultShown(t: BoatTelemetry, flags: number): boolean {
   return t.pt.enabled && (flags & MODE_FLAG_PT_RESULT) !== 0;
 }
 
+/** T-14 の 13mm の行を出す（v0.6.3 実機 1 回目）: 射撃を押していて撃てる（状態 ≠ SAFE。弾倉の交換中も）・生きた PT（去っていない・沈んでいない）がいる */
+export function ptGunShown(t: BoatTelemetry): boolean {
+  return t.pt.enabled && t.pt.gunEnabled && t.pt.gunStatus !== GUN_SAFE && t.pt.alive > 0;
+}
+
 /** 大発が岸へ逃げている（大発の任務だけ） */
 export function bargeRunning(t: BoatTelemetry): boolean {
   return t.gunMission && !Number.isNaN(t.bargeEscapeS);
@@ -69,14 +78,20 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過 > 米PT との接触 > 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過（赤い線）> 13mm の出来事 > 米PT の航過の結果 > 13mm の射撃 > 米PT との接触（突撃・離脱）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   if (t.homeWaiting) return MISSION_WAITING;
   if (t.fuelEmpty) return MISSION_ADRIFT;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
-  if (t.pt.enabled && t.pt.passing) return MISSION_PT_PASS;
-  if (t.pt.enabled && (ptResultShown(t, flags) || (t.pt.detected && t.pt.alive > 0))) return MISSION_PT_CONTACT;
+  if (t.pt.enabled) {
+    // 米PT（v0.6.3）: 赤い線がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈の直後 > 航過の結果 > 射撃中 > 突撃・離脱
+    if (t.pt.passing) return MISSION_PT_PASS;
+    if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
+    if (ptResultShown(t, flags)) return MISSION_PT_CONTACT;
+    if (ptGunShown(t)) return MISSION_PT_GUN;
+    if (t.pt.detected && t.pt.alive > 0) return MISSION_PT_CONTACT;
+  }
   if (t.escortEnabled && t.escortSunk) return MISSION_ESCORT_LOST;
   if (planeAttacking(t)) return MISSION_PLANE_ATTACK;
   if (t.friendlyPhase === FF_CHALLENGE || t.friendlyPhase === FF_STRAFE) return MISSION_FRIENDLY;

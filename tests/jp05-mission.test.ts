@@ -1,19 +1,18 @@
 // jp_05「鹵獲艇の哨戒」（v0.6.3。日本ハードモード②：敵の米PT）: 任務の data・世界の組み立て・今夜の揺らぎ・Briefing の行・終了理由・得点の順、
-// HUD の 2 行目（ui/mission-mode の 3 つのモードと ui/pt-lines の文・キー。幅は 840 px 以内＝縮まない）、テレメトリ（systems/pt-telemetry）、Result の本文と頭、
+// HUD の 2 行目（ui/mission-mode の米PT のモードと ui/pt-lines の文・キー。幅は 840 px 以内＝縮まない。13mm の行は tests/pt-gun-ui）、テレメトリ（systems/pt-telemetry）、Result の本文と頭、
 // Title の日本の操作の一言（config/title-hint-config。魚雷のある jp_06 と 13mm 機銃の jp_05 のどちらでも本当・行の幅の内）。
 // ui-config・game-config は DOM を読むので使わない（色は hud-text-config、文の幅は tests/dawn-clock と同じ見積もり）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData, getPrototypeMission, getScoringParams } from '../src/config/game-data';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../src/config/hud-text-config';
-import { PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
-import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
+import type { BoatTelemetry } from '../src/core/boat-motion';
 import { createDawnTelemetry } from '../src/core/dawn-air';
 import { CALL_DAWN, CALL_FUEL } from '../src/core/mission-flow';
-import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_PASS, PT_PATROL, PT_RUN_IN, createPtSection, createPtTelemetry, type PtTelemetry } from '../src/core/pt-boats';
-import { initPtTelemetry, ptResult, refreshPtTelemetry, type PtTelemetryWorld } from '../src/systems/pt-telemetry';
+import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_PASS, PT_PATROL, PT_RUN_IN, createPtTelemetry, type PtTelemetry } from '../src/core/pt-boats';
+import { initPtTelemetry, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
 import { MISSION_ADRIFT, MISSION_CALL, MISSION_NORMAL, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_PASS, MODE_FLAG_PT_RESULT, missionMode, ptResultShown } from '../src/ui/mission-mode';
 import { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_PX } from '../src/config/title-hint-config';
-import { PT_DISTANCE_STEP_M, ptHeadJa, ptKey, ptLine, ptResultLines } from '../src/ui/pt-lines';
+import { PT_DISTANCE_STEP_M, ptHeadJa, ptKey, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
@@ -27,6 +26,7 @@ import { computeScore, type ScoreInput } from '../src/core/scoring';
 import { directSortie } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 import { REASON_LABEL, resultHeadingJa } from '../src/ui/result-heading';
+import { LINE2_MAX_PX, PT0, ptWorld, row, tele, textWidthPx } from './pt-ui-kit';
 
 type Rec = Record<string, unknown>;
 const byId = (id: string): Rec => (gameData.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === id)!;
@@ -226,45 +226,6 @@ describe('jp_05 の終わりと得点（v0.6.3）', () => {
   });
 });
 
-/** HUD の文の幅の見積もり px（Menlo の半角 0.602 em・全角 1 em。tests/dawn-clock と同じ） */
-function textWidthPx(str: string, px: number): number {
-  let w = 0;
-  for (const ch of str) w += (ch.charCodeAt(0) < 0x2000 ? 0.602 : 1) * px;
-  return w;
-}
-/** 2 行目（22 px）が縮まない幅: 論理幅 1280 − 左右の時計の避け 220（HUD_MARGIN 24 + 時計 184 + 隙間 12） */
-const LINE2_MAX_PX = 1280 - 2 * 220;
-
-const S05 = buildWorldSetup(gameData, 'jp_05');
-/** 米PT の隊と自艇（出発点）だけの世界（systems/pt-telemetry が読む部分） */
-function ptWorld(): PtTelemetryWorld & { boat: { state: BoatState } } {
-  const p = S05.ptBoats!;
-  return { pts: { section: createPtSection(p, PT_SHELL_POOL_SIZE), p, firstDetectBand: '' }, boat: { state: { ...S05.playerStart, speedMps: 0 } }, params: S05.boatParams, visRange2: S05.visRange2, damageParams: S05.damageParams };
-}
-const PT0 = initPtTelemetry(ptWorld());
-
-/** 2 行目の優先順と文が読む項目だけの中立のテレメトリ（tests/dawn-lines と同じ形）に、jp_05 の出撃時の米PT（initPtTelemetry）を重ねる */
-function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry> = {}): BoatTelemetry {
-  return {
-    timeLeftS: 100, homeWaiting: false, fuelEmpty: false, escortEnabled: false, escortSunk: false, escortDistM: 0, escortLagWarnM: 400,
-    planePhase: 0, planeLocked: false, planeOutcome: 0, planeDx: NaN, planeDy: NaN, friendlyPhase: 0, friendlyOutcome: 0,
-    shallowState: 0, shallowAheadM: 0, shallowSafeKt: 10, gunMission: false, gunStatus: 0, bargesSunk: 0, bargesBeached: 0, bargesTotal: 0, bargeEscapeS: NaN,
-    enemySighted: false, batteryInArc: false, batteryAlerted: false, stormState: 0, stormFast: false, stormSafeKt: 12,
-    targetStep: 'silent', detectRangeM: 600, homeEdgeM: 1950,
-    ...over,
-    dawn: { ...createDawnTelemetry(), ...(over.dawn ?? {}) },
-    pt: { ...PT0, ...pt },
-  } as BoatTelemetry;
-}
-
-/** モード・文・色（call は topCall の値、flags は MODE_FLAG_*） */
-function row(t: BoatTelemetry, call = 0, flags = 0): [number, string, string] {
-  const mode = missionMode(t, call, flags);
-  if (mode !== MISSION_PT_PASS && mode !== MISSION_PT_CONTACT && mode !== MISSION_PT) return [mode, '', ''];
-  const l = ptLine(t, mode, ptKey(t, mode, flags));
-  return [mode, l.text, l.color];
-}
-
 const RESULT = MODE_FLAG_PT_RESULT;
 /** 脅威の PT が艇から北東 500 m（300, −400） */
 const NE500 = { dx: 300, dy: -400 };
@@ -290,7 +251,8 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     const det = { detected: true, ...NE500 };
     expect(row(tele({ ...det, threatPhase: PT_ALERT, sighted: true }))).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵', HUD_COLOR_WARN]);
     expect(row(tele({ detected: true, threatPhase: PT_RUN_IN, dx: 0, dy: 1000 }))).toEqual([MISSION_PT_CONTACT, '米PT のエンジン音 ・ 南から突撃', HUD_COLOR_WARN]);
-    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 7 回 ・ 静音で見失わせろ', HUD_COLOR_STRONG]);
+    // 離脱の末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の射撃を勧める（前は「静音で見失わせろ」。模擬で見失わせた夜は 0 だった）。撃った後は tests/pt-gun-ui
+    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 残り 7 回 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...det, threatPhase: PT_ALERT, passes: 1, passSeq: 1, lastPassHits: 0, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, 'かわした！ 被弾なし ・ 航過 1/8', HOME_COLOR_TEXT]);
     expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 2, passSeq: 2, lastPassHits: 3, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '被弾 3 発（HP −12） ・ 航過 2/8', HUD_COLOR_STRONG]);
     // 結果の表示は見失った後・夜明けに去った後も出る（表示の秒が終われば平常へ）
@@ -308,7 +270,7 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele(unfired), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '撃たせなかった！ ・ 航過 1/8', HOME_COLOR_TEXT]);
     expect(row(tele({ ...unfired, passes: 8, passSeq: 8, alive: 0 }), 0, RESULT)[1]).toBe('撃たせなかった！ ・ 航過 8/8');
     // 表示の秒が過ぎればいつもの行
-    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 残り 7 回 ・ 静音で見失わせろ');
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 残り 7 回 ・ 右下の射撃で撃ち返せ');
     // キーは撃った航過の結果（被弾なし）と違う
     const k = (t: BoatTelemetry, flags: number): number => ptKey(t, missionMode(t, 0, flags), flags);
     expect(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), RESULT)).not.toBe(k(tele({ ...det, ...unfired, lastPassFired: true, threatPhase: PT_BREAK }), RESULT));
@@ -415,6 +377,7 @@ describe('jp_05 のテレメトリ（systems/pt-telemetry。v0.6.3）', () => {
     refreshPtTelemetry(t, w);
     expect([t.passing, t.fired, t.dodge, t.detected, t.threatPhase, t.sighted]).toEqual([true, true, -1, true, PT_PASS, false]);
     q.boats[0]!.phase = 5; // 去る
+    q.boats[0]!.passes = 2; // 隊の航過の数は PT ごとの数の和（航過の上限 = 終わった 2 + 残り 2 + 4。撃退・撃沈が無ければ去っても 8 のまま）
     q.owner = -1;
     q.passes = 2;
     q.passSeq = 2;
@@ -453,18 +416,20 @@ describe('jp_05 のテレメトリ（systems/pt-telemetry。v0.6.3）', () => {
 });
 
 describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
+  // 13mm（v0.6.3 実機 1 回目）は撃たなかった夜（4 行目「13mm は撃たなかった」）。撃った夜の 4 行目・閃光・頭の撃沈・撃退は tests/pt-gun-ui
   const base: PtResult = {
-    total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 4, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4, hpMax: 50,
+    enemyId: 'us_pt_enemy', total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 8, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4, hpMax: 50,
     firstDetectM: NaN, firstDetectBand: '', lostContacts: 0, closestM: 812.4, minWarnS: Infinity,
+    gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false,
   };
   it('一度も見つからずに抜けた: 最接近と「—」（撃たれていない）。帰投しなかった（漂流）なら「抜けた」と言わない', () => {
-    expect(ptResultLines(base, 0, true)).toEqual(['米PT に一度も見つからずに抜けた', '見つからず ・ PT の最接近 812 m', '予告から初弾まで 最短 — 秒 ・ 撃たれた弾 0 発']);
+    expect(ptResultLines(base, 0, true)).toEqual(['米PT に一度も見つからずに抜けた', '見つからず ・ PT の最接近 812 m', '予告から初弾まで 最短 — 秒 ・ 撃たれた弾 0 発', '13mm は撃たなかった']);
     expect(ptResultLines(base, 0, false)[0]).toBe('米PT に一度も見つからなかった');
     expect(ptHeadJa(base)).toBe('米PT: 去った');
   });
   it('見つかって転舵でかわした: 航過・かわした（撃たれた航過のうち）・被弾と HP、最初の距離と速力帯・見失わせた回数、予告から初弾', () => {
     const r: PtResult = { ...base, passes: 4, firedPasses: 3, cleanPasses: 2, shots: 30, hits: 3, firstDetectM: 1199.6, firstDetectBand: 'cruise', lostContacts: 1, minWarnS: 2.52 };
-    expect(ptResultLines(r, 1, true)).toEqual(['米PT 航過 4 回 ・ かわした 2/3 ・ 被弾 3 発（HP −12）', '見つかった 1 回（最初 1200 m ・ 巡航） ・ 見失わせた 1 回', '予告から初弾まで 最短 2.5 秒 ・ 撃たれた弾 30 発']);
+    expect(ptResultLines(r, 1, true)).toEqual(['米PT 航過 4 回 ・ かわした 2/3 ・ 被弾 3 発（HP −12）', '見つかった 1 回（最初 1200 m ・ 巡航） ・ 見失わせた 1 回', '予告から初弾まで 最短 2.5 秒 ・ 撃たれた弾 30 発', '13mm は撃たなかった']);
   });
   it('沈んだ: PT は「健在 N 隻」（去っていない数）。みな去る途中・去った後は「去った」、夜明けに去った夜は「夜明けに去った」', () => {
     const r: PtResult = { ...base, out: 0, alive: 2, passes: 2, firedPasses: 2, shots: 24, hits: 13, firstDetectM: 1200, firstDetectBand: 'cruise', minWarnS: 2.5 };
@@ -483,11 +448,12 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
   });
   it('Result の行は縮めずに画面の幅に収まる（本文 24 px・20 px・20 px と状況の行 20 px。見積もりが論理幅 1280 − 左右の HUD_MARGIN 48 の内）', () => {
     const wide: PtResult = { ...base, out: 0, alive: 2, passes: 15, maxPasses: 15, firedPasses: 15, cleanPasses: 15, shots: 999, hits: 99, firstDetectM: 3150, firstDetectBand: 'cruise', lostContacts: 99, minWarnS: 99.9 };
-    const [a, b, c] = ptResultLines(wide, 99, true);
+    const [a, b, c, d] = ptResultLines(wide, 99, true);
     const MAX = 1280 - 2 * 24;
     expect(textWidthPx(a, 24), a).toBeLessThanOrEqual(MAX); // HUD_FONT_STEP_PX
     expect(textWidthPx(b, 20), b).toBeLessThanOrEqual(MAX); // HUD_FONT_HEADING_PX
     expect(textWidthPx(c, 20), c).toBeLessThanOrEqual(MAX); // HUD_FONT_STATUS_PX
+    expect(textWidthPx(d, 20), d).toBeLessThanOrEqual(MAX); // HUD_FONT_STATUS_PX（13mm。撃った夜のいちばん長い形は tests/pt-gun-ui）
     // 状況の行（result-scene: 頭・帰投・HP・乗員・燃料・秒。米PT の任務は初発射の燃料なし）
     for (const head of [ptHeadJa(wide), ptHeadJa({ ...wide, alive: 0 }), ptHeadJa({ ...wide, leftAtDawn: true })]) {
       const status = `${head}   帰投: なし   艇 HP 50 / 50   乗員 7/7   燃料 100%   9999 秒`;

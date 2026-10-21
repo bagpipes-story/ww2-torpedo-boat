@@ -1,18 +1,23 @@
 // 敵の米PT の隊（v0.6.3。docs/02 §6.4、spec §C.5〜C.6・§D.5）の世界側: core/pt-boats を固定ステップで進め、掃射の命中を世界に伝え、
 // PT・航過の赤い線（予告）・曳光弾・外れ弾の水柱・砲口の閃光を描く（barge-hunt と同じ形）。
+// v0.6.3 実機 1 回目: 艇に砲のある任務（jp_05 の T-14 の 13mm）は固定ステップで 13mm（systems/pt-gun）→ 閃光 → 隊の順（模擬 core/pt-pass-sim と同じ）。
+// 撃退された PT は灰色に（1 回だけ）、沈んだ PT は沈み込みの tween（1 夜 2 回まで）と世界の onSunk（命中スロー＋爆発）。
 // §7: PT count 枚・線 1 本・曳光弾 24 枚・水柱 24 枚・閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。check と events は 1 個だけ作る。
-// 乱数: seed+18（PT_SEED_OFFSET）の 1 系列だけ（1 発 2 回と命中の火災・機関）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
+// 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
 import { GUN_SPLASH_SCALE_HIT, GUN_SPLASH_SCALE_MISS, MG_TRACER_TINT } from '../config/hunt-config';
-import { PT_MUZZLE_FLASH_S, PT_MUZZLE_FLASH_SCALE, PT_MUZZLE_FLASH_TINT, PT_PASS_LINE_LEN_M, PT_SHELL_POOL_SIZE, PT_SPLASH_POOL_SIZE } from '../config/pt-config';
+import { PT_MUZZLE_FLASH_S, PT_MUZZLE_FLASH_SCALE, PT_MUZZLE_FLASH_TINT, PT_PASS_LINE_LEN_M, PT_RETIRED_TINT, PT_SHELL_POOL_SIZE, PT_SPLASH_POOL_SIZE } from '../config/pt-config';
+import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import type { BoatState, SpeedStep } from '../core/boat-motion';
+import type { GunBatteryParams } from '../core/gun-battery';
 import type { HitSpec } from '../core/gunnery';
-import { PT_OUT, PT_SEED_OFFSET, createPtSection, stepPtSection, threatIndex, type PtCheck, type PtEvents, type PtParams, type PtSection } from '../core/pt-boats';
+import { PT_FATE_SUNK, PT_OUT, PT_SEED_OFFSET, PT_SUNK, createPtSection, stepPtSection, threatIndex, type PtCheck, type PtEvents, type PtParams, type PtSection } from '../core/pt-boats';
 import { SeededRng } from '../core/rng';
 import type { SmokeParams, SmokeState } from '../core/smoke';
 import { radToDeg } from '../core/units';
+import { PtGun } from './pt-gun';
 import { SplashPool } from './splash-pool';
 
 /** 固定ステップで世界から読む部分（MissionWorld がそのまま満たす）。detect は駆逐艦と同じ「見つかった回数」（Result の回避の点） */
@@ -37,6 +42,8 @@ export class PtSquadron {
   readonly rng: SeededRng;
   /** 最初に見つかったときの自艇の速力帯（Result の「最初 N m ・ 巡航」。見つかっていなければ ''） */
   firstDetectBand: SpeedStep | '' = '';
+  /** T-14 の 13mm（v0.6.3 実機 1 回目。艇に砲のある任務だけ。無ければ null で seed+20 も作らない） */
+  readonly gun: PtGun | null;
   private readonly check: PtCheck;
   private readonly splashes: SplashPool;
   private readonly sprites: Phaser.GameObjects.Image[] = [];
@@ -77,6 +84,12 @@ export class PtSquadron {
     boatHalfBeamM: number,
     /** 掃射が艇に当たった（世界が boat-damage で適用。終了理由は pt_fire。火災で沈んでも pt_fire） */
     private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: 'pt_fire') => void,
+    /** 艇の砲（world-setup の guns。米PT を撃つ砲は弾倉がある＝config/pt-mission-data の検査）。無い任務は null */
+    guns: GunBatteryParams | null,
+    /** 米PT の enemies.json の id（Result の撃沈の点 scoring.json の kill.points_by_enemy のキー） */
+    readonly enemyId: string,
+    /** 13mm で PT を沈めた（世界が命中スローと Scene の爆発。大発の撃破と同じ） */
+    private readonly onSunk: (x: number, y: number) => void,
   ) {
     this.rng = new SeededRng((seed + PT_SEED_OFFSET) >>> 0);
     this.section = createPtSection(p, PT_SHELL_POOL_SIZE);
@@ -89,13 +102,14 @@ export class PtSquadron {
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
     this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height);
     this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(scene, i, fate)) : null;
   }
 
   /**
-   * 固定ステップ（自艇・速力帯・発見距離の後、火災の前。模擬 core/pt-pass-sim と同じ順）: 材料を書いて隊を進め、
+   * 固定ステップ（自艇・速力帯・発見距離の後、火災の前。模擬 core/pt-pass-sim と同じ順）: 材料を書いて、艇の 13mm（held は射撃ボタン）→ 閃光 → 隊を進め、
    * 隊が捉えた立ち上がりで「見つかった回数」を数える（駆逐艦の destroyer-step と同じ数え方）。最初の 1 回は自艇の速力帯を覚える
    */
-  step(dt: number, feelDt: number, w: PtSquadronView): void {
+  step(dt: number, feelDt: number, w: PtSquadronView, held: boolean): void {
     this.view = w;
     const c = this.check;
     c.detectOpenM = w.detectRangeM;
@@ -107,6 +121,8 @@ export class PtSquadron {
     c.dawn = w.dawn.reached;
     c.timeS = w.stepTimeS;
     const q = this.section;
+    // 13mm（浮いていて輪の外だけ撃つ）→ 撃ったステップは閃光の距離で PT が見つける（detect_from_s の前は見つけない）
+    if (this.gun) c.flashM = this.gun.step(w.band, held, c.targetValid, w.visRange2, feelDt, dt) ? this.gun.g.flashRevealM : 0;
     stepPtSection(q, this.p, c, this.rng, feelDt, dt, this.events);
     if (q.detected && !w.detect.prev) {
       w.detect.count++;
@@ -121,14 +137,29 @@ export class PtSquadron {
     return i < 0 ? null : this.section.boats[i]!;
   }
 
-  /** 毎フレーム: PT（視程の内だけ表示）、航過の赤い線（航過中の PT から固めた針路へ）、曳光弾、閃光、水柱（変わるものだけ触る） */
+  /** 13mm の結末（PtGun の onFate）: 撃退は灰色に 1 回だけ、撃沈は沈み込みの tween と世界の onSunk（大発の撃破と同じ） */
+  private onFate(scene: Phaser.Scene, i: number, fate: number): void {
+    const img = this.sprites[i]!;
+    if (fate !== PT_FATE_SUNK) {
+      img.setTint(PT_RETIRED_TINT);
+      return;
+    }
+    const b = this.section.boats[i]!;
+    this.shown[i] = 1;
+    img.setVisible(true).setPosition(b.x, b.y).setAngle(b.headingDeg);
+    scene.tweens.add({ targets: img, scaleX: img.scaleX * SINK_SCALE_TO, scaleY: img.scaleY * SINK_SCALE_TO, alpha: 0, angle: img.angle + SINK_TILT_DEG, duration: SINK_DURATION_MS, ease: 'Sine.easeIn' });
+    this.onSunk(b.x, b.y);
+  }
+
+  /** 毎フレーム: PT（視程の内だけ表示。沈んだ PT は tween に任せる）、航過の赤い線（航過中の PT から固めた針路へ）、曳光弾、閃光、水柱、13mm（変わるものだけ触る） */
   updateVisuals(realDt: number, visRange2: number): void {
     const q = this.section;
     const boat = this.check.boat;
     for (let i = 0; i < this.sprites.length; i++) {
       const b = q.boats[i]!;
+      if (b.phase === PT_SUNK) continue; // 沈み込みは tween に任せる
       const img = this.sprites[i]!;
-      const show = b.phase !== PT_OUT && (b.x - boat.x) * (b.x - boat.x) + (b.y - boat.y) * (b.y - boat.y) <= visRange2;
+      const show = b.phase < PT_OUT && (b.x - boat.x) * (b.x - boat.x) + (b.y - boat.y) * (b.y - boat.y) <= visRange2;
       if (show !== (this.shown[i] === 1)) {
         this.shown[i] = show ? 1 : 0;
         img.setVisible(show);
@@ -163,6 +194,7 @@ export class PtSquadron {
       } else this.flash.setAlpha(1 - this.flashAge / PT_MUZZLE_FLASH_S);
     }
     this.splashes.updateVisuals(realDt);
+    this.gun?.updateVisuals(realDt);
   }
 
   destroy(): void {
@@ -171,5 +203,6 @@ export class PtSquadron {
     this.line.destroy();
     this.flash.destroy();
     this.splashes.destroy();
+    this.gun?.destroy();
   }
 }

@@ -149,7 +149,7 @@ export class MissionWorld {
       this.hunt.step(dt, feelDt, this, this.input.gunHeld);
       this.hiddenBySmoke = this.hunt.flotilla.allBlocked;
     }
-    this.pts?.step(dt, feelDt, this); // 米PT の隊（v0.6.3）は自艇・速力帯・発見距離の後、火災の前（模擬 core/pt-pass-sim と同じ順）。米PT の無い任務は何もしない
+    this.pts?.step(dt, feelDt, this, this.input.gunHeld); // 米PT の隊（v0.6.3。艇の 13mm が先）は自艇・速力帯・発見距離の後、火災の前（模擬 core/pt-pass-sim と同じ順）。米PT の無い任務は何もしない
     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.boatDamage.fireReason);
     this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
     this.dawn.step(feelDt, this); // 夜明けの空襲は最後（夜明け前は何もしない＝夜の順序と乱数は v0.6.0 のまま）
