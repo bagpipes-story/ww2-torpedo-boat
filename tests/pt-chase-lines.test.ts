@@ -5,12 +5,12 @@ import { describe, expect, it } from 'vitest';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../src/config/hud-text-config';
 import type { BoatTelemetry } from '../src/core/boat-motion';
 import { GUN_FIRING, GUN_OUT_OF_RANGE } from '../src/core/gun-battery';
-import { PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_PASS, PT_RUN_IN, type PtTelemetry } from '../src/core/pt-boats';
+import { PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_LEAVE, PT_PASS, PT_RUN_IN, type PtTelemetry } from '../src/core/pt-boats';
 import { PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
 import { initPtTelemetry, ptMaxBursts, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
 import { MISSION_ADRIFT, MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT, missionMode } from '../src/ui/mission-mode';
 import { ptHoldPass } from '../src/ui/pt-chase-lines';
-import { ptKey, ptLine, ptResultLines } from '../src/ui/pt-lines';
+import { ptHeadJa, ptKey, ptLine, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
 import { LINE2_MAX_PX, keyOf, ptWorld, row, tele, textWidthPx } from './pt-ui-kit';
 
@@ -225,5 +225,19 @@ describe('テレメトリと Result の材料（systems/pt-telemetry）', () => 
     r = ptResult(w)!;
     expect([r.passes, r.bursts, r.firedPasses, r.cleanPasses]).toEqual([3, 3, 6, 3]);
     expect([q.passes, q.firedBursts, q.firedPasses]).toEqual([2, 3, 5]);
+  });
+  it('Result の健在（実機 2 回目のヘッドレス確認の直し）: 撃退で黙った連射・航過の線が残る間に任務が終わっても、撃退した PT は健在に数えない', () => {
+    const w = ptWorld();
+    const q = w.pts.section;
+    Object.assign(q.boats[0]!, { phase: PT_PASS, burst: true, fate: PT_FATE_CREW, firedThisPass: 3 }); // 撃退で黙った連射（線は窓の終わりまで）
+    q.owner = 0;
+    q.boats[1]!.phase = PT_CHASE;
+    const r = ptResult(w)!;
+    expect([r.alive, r.retired]).toEqual([1, 1]);
+    expect(ptHeadJa(r)).toBe('米PT: 撃退 1 ・ 健在 1 隻'); // 前は「撃退 1 ・ 健在 2 隻」（2 隻の隊）
+    q.boats[0]!.burst = false; // 黙った航過も同じ
+    expect(ptHeadJa(ptResult(w)!)).toBe('米PT: 撃退 1 ・ 健在 1 隻');
+    q.boats[1]!.phase = PT_LEAVE;
+    expect(ptHeadJa(ptResult(w)!)).toBe('米PT: 撃退 1 ・ 去った');
   });
 });

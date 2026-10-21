@@ -39,7 +39,7 @@ export interface EscortResult {
 }
 
 /**
- * 米PT の記録（v0.6.3。spec §D.4。systems/pt-telemetry の ptResult）: 隻数・去った数（海域の外）・去っていない数（Result の「健在 N 隻」）・夜明けに去った、
+ * 米PT の記録（v0.6.3。spec §D.4。systems/pt-telemetry の ptResult）: 隻数・去った数（海域の外）・去っていない結末の無い数（Result の「健在 N 隻」。撃退・撃沈した PT は入れない）・夜明けに去った、
  * 航過（撃った・無傷。終わる瞬間に撃っていた航過も数える）と上限（終わった航過 + まだ戦う PT の残り。撃退・撃沈で減る）、撃たれた弾・命中・1 発の HP、
  * 最初に見つかった距離 m（NaN なら見つからず）とそのときの速力帯、見失わせた回数、PT の最接近 m、予告（赤い線）から初弾までの最短秒（撃たれなければ Infinity）。data/enemies.json を合わせる根拠
  */

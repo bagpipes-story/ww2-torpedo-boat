@@ -149,11 +149,11 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
   if (!s) return null;
   const q = s.section;
   let alive = 0;
-  // 撃退した PT は今の結末で数える（航過を抜けるところで沈んだ PT は撃沈だけに。隊の KPI q.retired は模擬のまま）
+  // 撃退した PT は今の結末で数える（航過を抜けるところで沈んだ PT は撃沈だけに。隊の KPI q.retired は模擬のまま）。健在は結末の無い PT だけ（実機 2 回目: 撃退で黙った航過・連射の線が残る間に終わった夜が「撃退 1 ・ 健在 2 隻」と出た）
   let retired = 0;
   for (let i = 0; i < q.boats.length; i++) {
     const b = q.boats[i]!;
-    if (ptFighting(b.phase)) alive++;
+    if (ptFighting(b.phase) && b.fate === PT_FATE_NONE) alive++;
     if (b.fate !== PT_FATE_NONE && b.fate !== PT_FATE_SUNK) retired++;
   }
   // 終わる瞬間に撃っていた攻撃（航過か連射。連射は航過の回数に入れず連射に数える。撃った・無傷の数はどちらも）
