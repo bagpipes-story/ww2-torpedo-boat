@@ -49,11 +49,15 @@ export const MISSION_PT = 24;
 export const MISSION_PT_GUN = 25;
 export const MISSION_PT_GUN_EVENT = 26;
 
-/** missionMode の flags（MissionLine が時刻で決める 4 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目） */
+/**
+ * missionMode の flags（MissionLine が時刻と前のフレームで決める 5 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
+ * 米PT の赤い線の行を保つ（実機 2 回目。攻撃の後に弾がまだ飛んでいる間。ui/pt-chase-lines の ptHoldPass）
+ */
 export const MODE_FLAG_BARGE_EVENT = 1;
 export const MODE_FLAG_ESCORT_HIT = 2;
 export const MODE_FLAG_PT_RESULT = 4;
 export const MODE_FLAG_PT_GUN_EVENT = 8;
+export const MODE_FLAG_PT_HOLD = 16;
 
 /** 暴風の近く・中で安全速力を超えている（警告。ほかの行の末尾にも付く） */
 export function stormWarning(t: BoatTelemetry): boolean {
@@ -97,8 +101,8 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.fuelEmpty) return MISSION_ADRIFT;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
   if (t.pt.enabled) {
-    // 米PT（v0.6.3）: 赤い線（航過・連射）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）
-    if (t.pt.passing) return MISSION_PT_PASS;
+    // 米PT（v0.6.3）: 赤い線（航過・連射。終わって弾が飛んでいる間も MODE_FLAG_PT_HOLD で保つ）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）
+    if (t.pt.passing || (flags & MODE_FLAG_PT_HOLD) !== 0) return MISSION_PT_PASS;
     if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
     if (ptResultShown(t, flags)) return MISSION_PT_CONTACT;
     if (ptGunShown(t)) return MISSION_PT_GUN;

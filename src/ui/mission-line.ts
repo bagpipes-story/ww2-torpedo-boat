@@ -33,10 +33,11 @@ import { DAWN_AIR_NONE } from '../core/dawn-air';
 import { airRaidTagJa, bargeHideTagKey, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
 import { ptKey, ptLine } from './pt-lines';
 import { holdShowUntil } from './pt-gun-lines';
+import { ptHoldPass } from './pt-chase-lines';
 import {
   MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
   MISSION_NORMAL, MISSION_PLANE, MISSION_PLANE_ATTACK, MISSION_PLANE_RESULT, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING,
-  MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT, bargeRunning, missionMode, stormWarning,
+  MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -121,13 +122,16 @@ export class MissionLine {
       this.seenGunEventSeq = t.pt.gunEventSeq;
       this.ptGunEventUntil = nowMs + PT_RESULT_SHOW_MS;
     }
-    // 赤い線 > 13mm の出来事 > 航過の結果: 上の行に隠れている間は始めない（出来事は線が消えてから、結果は出来事の後に。どれも PT_RESULT_SHOW_MS）
-    this.ptGunEventUntil = holdShowUntil(this.ptGunEventUntil, t.pt.passing, nowMs);
-    this.ptResultUntil = holdShowUntil(this.ptResultUntil, !t.pt.passing && nowMs < this.ptGunEventUntil, nowMs);
-    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | (nowMs < this.ptResultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.ptGunEventUntil ? MODE_FLAG_PT_GUN_EVENT : 0);
+    // 赤い線 > 13mm の出来事 > 航過の結果: 上の行に隠れている間は始めない（出来事は線が消えてから、結果は出来事の後に。どれも PT_RESULT_SHOW_MS）。
+    // 攻撃が終わって弾がまだ飛んでいる間は赤い線の行を前のキーのまま保つ（実機 2 回目。結果の前に追ってくる PT・射撃中の行が一瞬出ない。ptHoldPass）
+    const ptHold = ptHoldPass(t, this.lastMissionMode);
+    const passShown = t.pt.passing || ptHold;
+    this.ptGunEventUntil = holdShowUntil(this.ptGunEventUntil, passShown, nowMs);
+    this.ptResultUntil = holdShowUntil(this.ptResultUntil, !passShown && nowMs < this.ptGunEventUntil, nowMs);
+    const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | (nowMs < this.ptResultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.ptGunEventUntil ? MODE_FLAG_PT_GUN_EVENT : 0) | (ptHold ? MODE_FLAG_PT_HOLD : 0);
     const mode = missionMode(t, call, flags);
     const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
-    const pKey = ptMode ? ptKey(t, mode, flags) : 0;
+    const pKey = ptMode ? ptKey(t, mode, flags, this.lastPtKey) : 0;
     const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
     // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）
     const planeStep = t.planePhase === SP_APPROACH ? Math.ceil(t.planeDistM / PLANE_DISTANCE_STEP_M) : 0;

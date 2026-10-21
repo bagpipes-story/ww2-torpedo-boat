@@ -6,8 +6,10 @@
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_DISTANCE_STEP_M } from '../config/pt-config';
 import { bearingJa } from '../core/briefing';
+import type { BoatTelemetry } from '../core/boat-motion';
 import type { PtTelemetry } from '../core/pt-boats';
 import type { HudLine } from './hud-lines';
+import { MISSION_PT_PASS } from './mission-mode';
 import type { PtResult } from './result-types';
 
 /** 航過のモードのキーの連射のビット（spec r2 §F.1）: 連射 | 撃った << 7 | 艇から連射の PT への 8 方位 << 8 | 黙った（制圧・撃退）<< 11 */
@@ -63,4 +65,13 @@ export function burstsResultJa(r: PtResult): string {
 /** Result の 4 行目の制圧の句（制圧 0 なら出さない） */
 export function suppressResultJa(r: PtResult): string {
   return r.suppressions > 0 ? ` ・ 制圧 ${r.suppressions}` : '';
+}
+
+/**
+ * 赤い線の行を保つ（ui/mission-line が MODE_FLAG_PT_HOLD を立て、前のキーのまま）: 攻撃（航過・連射）が終わって撃った弾がまだ飛んでいる間（≤ 0.2 秒。結果の通し番号の前）で、
+ * 前のフレームが赤い線の行（lastMode）。v0.6.3 実機 2 回目のヘッドレス確認: 線が撃ち切りで消えるようになり、攻撃の 76% で終わりから結果までの数フレームに
+ * 追ってくる PT・射撃中・弾倉交換の行が一瞬出てから結果へ変わっていた（実機 1 回目は 7%）
+ */
+export function ptHoldPass(t: BoatTelemetry, lastMode: number): boolean {
+  return t.pt.enabled && !t.pt.passing && t.pt.resultPending && lastMode === MISSION_PT_PASS;
 }

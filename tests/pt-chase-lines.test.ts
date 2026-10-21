@@ -8,13 +8,15 @@ import { GUN_FIRING, GUN_OUT_OF_RANGE } from '../src/core/gun-battery';
 import { PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_PASS, PT_RUN_IN, type PtTelemetry } from '../src/core/pt-boats';
 import { PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
 import { initPtTelemetry, ptMaxBursts, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
-import { MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_RESULT } from '../src/ui/mission-mode';
-import { ptResultLines } from '../src/ui/pt-lines';
+import { MISSION_ADRIFT, MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT, missionMode } from '../src/ui/mission-mode';
+import { ptHoldPass } from '../src/ui/pt-chase-lines';
+import { ptKey, ptLine, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
 import { LINE2_MAX_PX, keyOf, ptWorld, row, tele, textWidthPx } from './pt-ui-kit';
 
 const RESULT = MODE_FLAG_PT_RESULT;
 const EVENT = MODE_FLAG_PT_GUN_EVENT;
+const HOLD = MODE_FLAG_PT_HOLD;
 /** 連射を固めた PT（艇から南東 283 m） */
 const BURST: Partial<PtTelemetry> = { detected: true, passing: true, burst: true, threatPhase: PT_PASS, dx: 200, dy: 200, sighted: true, dodge: 1, escapeDeg: 315 };
 /** 追ってくる PT（撃つ権利なし。艇から南東 283 m → 300 m） */
@@ -57,6 +59,47 @@ describe('2 行目の文（spec r2 §F.1 のとおり）', () => {
     expect(row(tele({ ...CHASE, threatPhase: PT_BREAK }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...CHASE, threatPhase: PT_BREAK, gunEverFired: true }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 次の赤い線に備えよ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...CHASE, threatPhase: PT_RUN_IN }))[1]).toBe('米PT 南東から突撃 300 m ・ 赤い線で転舵'); // 突撃は今のまま
+  });
+});
+
+describe('攻撃の終わりから結果まで（実機 2 回目のヘッドレス確認の直し）', () => {
+  it('攻撃が終わって撃った弾がまだ飛んでいる間は赤い線の行を前のキーのまま保つ（追ってくる PT・射撃中の行が一瞬出てから結果へ変わらない）', () => {
+    // ui/mission-line の 1 フレーム: 前のフレームのモードで ptHoldPass → flags に HOLD → missionMode → ptKey（前のキー）
+    const frame = (t: BoatTelemetry, lastMode: number, lastKey: number, flags = 0): [number, number, string] => {
+      const f = flags | (ptHoldPass(t, lastMode) ? HOLD : 0);
+      const mode = missionMode(t, 0, f);
+      const key = ptKey(t, mode, f, lastKey);
+      return [mode, key, ptLine(t, mode, key).text];
+    };
+    const firing = tele({ ...BURST, fired: true, gunStatus: GUN_FIRING, gunTargetM: 280, gunEverFired: true });
+    const [m1, k1, l1] = frame(firing, MISSION_PT_PASS, -1);
+    expect([m1, l1]).toEqual([MISSION_PT_PASS, '米PT 連射！ 南東から ・ 針路そのまま撃ち返せ']);
+    // 撃ち切って線が消えた次のフレーム（撃つ PT なし・弾が飛んでいる・その PT は追撃へ戻った・13mm は撃っている）
+    const pending = tele({ ...CHASE, resultPending: true, gunStatus: GUN_FIRING, gunTargetM: 280, gunEverFired: true });
+    expect(row(pending)[0]).toBe(MISSION_PT_GUN); // 保たなければ射撃中の行が数フレーム出ていた
+    expect(frame(pending, m1, k1)).toEqual([MISSION_PT_PASS, k1, l1]);
+    expect(frame(tele({ ...CHASE, resultPending: true }), m1, k1)).toEqual([MISSION_PT_PASS, k1, l1]); // 追ってくる PT の行も出ない
+    const passK = keyOf(tele({ ...BURST, burst: false, fired: true }));
+    expect(frame(tele({ ...CHASE, resultPending: true }), MISSION_PT_PASS, passK)[2]).toBe('米PT 掃射！ 北西へ全速で転舵'); // 航過も同じ
+    // 弾がみな落ちたら結果（通し番号が増えて RESULT）
+    expect(frame(tele({ ...BRES }), MISSION_PT_PASS, k1, RESULT)).toEqual([MISSION_PT_CONTACT, keyOf(tele(BRES), 0, RESULT), '連射 被弾なし ・ 追撃 3/12']);
+    // 保たない: 前のフレームが赤い線の行でない・弾が飛んでいない・撃つ PT がいる（いつもの線）・米PT の無い任務。上の行（燃料切れ）はいつも勝つ
+    expect(ptHoldPass(pending, MISSION_PT_CONTACT)).toBe(false);
+    expect(ptHoldPass(tele(CHASE), MISSION_PT_PASS)).toBe(false);
+    expect(ptHoldPass(tele({ ...BURST, resultPending: true }), MISSION_PT_PASS)).toBe(false);
+    expect(ptHoldPass(tele({ enabled: false, resultPending: true }), MISSION_PT_PASS)).toBe(false);
+    expect(missionMode(tele({ ...CHASE, resultPending: true }, { fuelEmpty: true }), 0, HOLD)).toBe(MISSION_ADRIFT);
+  });
+  it('テレメトリ: 隊の seqPending（攻撃の終わりに撃った弾がまだ飛んでいる）をそのまま', () => {
+    const w = ptWorld();
+    const t = initPtTelemetry(w);
+    expect(t.resultPending).toBe(false);
+    w.pts.section.seqPending = true;
+    refreshPtTelemetry(t, w);
+    expect(t.resultPending).toBe(true);
+    w.pts.section.seqPending = false;
+    refreshPtTelemetry(t, w);
+    expect(t.resultPending).toBe(false);
   });
 });
 

@@ -4,7 +4,7 @@
 // 世界は構造の型 PtTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
 // v0.6.3 実機 1 回目: T-14 の 13mm（状態・標的の距離・命中・弾倉の交換・出来事）、航過の上限は撃退・撃沈で減る（戦う PT の残り回数）、まだ戦う PT・沈めた数・航過中の PT が黙った。
 // v0.6.3 実機 2 回目（追撃。spec r2 §F）: 撃つ PT の攻撃が連射か・最後に終えた攻撃が連射か・連射の数と上限（撃退・撃沈・制圧で減る）・追撃中の PT の数、黙った連射（制圧も）、
-// Result の連射と制圧の数（終わる瞬間に撃っていた連射は航過ではなく連射に数える）。まだ戦う PT は core の ptFighting で数える。
+// Result の連射と制圧の数（終わる瞬間に撃っていた連射は航過ではなく連射に数える）。まだ戦う PT は core の ptFighting で数える。攻撃の後に弾がまだ飛んでいる（resultPending。2 行目の ptHoldPass）。
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
@@ -133,6 +133,7 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.sighted = pt !== null && t.dx * t.dx + t.dy * t.dy <= w.visRange2;
   t.passes = q.passes;
   t.passSeq = q.passSeq;
+  t.resultPending = q.seqPending;
   t.lastPassHits = q.lastPassHits;
   t.lastPassFired = q.lastPassFired;
   t.leftAtDawn = q.leftAtDawn;

@@ -75,10 +75,11 @@ function contactSub(t: BoatTelemetry, flags: number): number {
  * 航過: 撃った | そのまま（dodge 0）<< 1 | 逃げる方角 << 2（被弾で黙った航過は 1 << 5 だけ。連射は ui/pt-chase-lines の burstKey）。
  * 接触: 種類 | 方位 << 3 | 距離の刻み << 6 | 上限 << 12 | 攻撃の数 << 16 | 被弾 << 20 | 13mm を撃つ前 << 26（離脱・追ってくる）| 結果が連射 << 27（追ってくる PT は chaseKey）。
  * 平常: 種類 | 方位 << 3 | 距離の刻み << 6 | 見つかる距離の刻み << 12 | 隻数 << 18 | 夜明け << 21 | みな去った（海域の外か沈んだ）<< 22 | みな沈めた << 23 | 帰投の輪の縁までの 100 m の刻み（みな去った後だけ）<< 24。
- * 13mm の 2 つは ui/pt-gun-lines。行に出ない値は 0（無駄に組み直さない）
+ * 13mm の 2 つは ui/pt-gun-lines。行に出ない値は 0（無駄に組み直さない）。攻撃が終わって赤い線の行を保つ間（航過のモードで撃つ PT がいない。ptHoldPass）は前のキー lastKey
  */
-export function ptKey(t: BoatTelemetry, mode: number, flags: number): number {
+export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0): number {
   const p = t.pt;
+  if (mode === MISSION_PT_PASS && !p.passing) return lastKey;
   if (mode === MISSION_PT_GUN) return ptGunKey(t);
   if (mode === MISSION_PT_GUN_EVENT) return ptGunEventKey(t);
   if (mode === MISSION_PT_PASS) {

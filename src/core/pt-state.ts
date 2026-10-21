@@ -140,8 +140,8 @@ export interface PtTelemetry {
   gunEnabled: boolean; gunStatus: number; gunFast: boolean; gunTargetM: number; gunHits: number; gunEverFired: boolean; reloadLeftS: number; gunRangeM: number; gunEffectiveM: number;
   /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った */
   gunEventSeq: number; gunEvent: number; fighting: number; sunk: number; passSilenced: boolean;
-  /** 追撃（v0.6.3 実機 2 回目）: 航過中の攻撃が連射・最後に終えた攻撃が連射・制圧の通し番号・連射の数と上限（撃退・撃沈した PT の使わなかった分を引く）・追撃中の PT の数 */
-  burst: boolean; burstFired: boolean; suppressSeq: number; bursts: number; maxBursts: number; chasing: number;
+  /** 追撃（v0.6.3 実機 2 回目）: 航過中の攻撃が連射・最後に終えた攻撃が連射・制圧の通し番号・連射の数と上限（撃退・撃沈した PT の使わなかった分を引く）・追撃中の PT の数・攻撃が終わって弾がまだ飛んでいる（隊の seqPending。ui/pt-chase-lines の ptHoldPass） */
+  burst: boolean; burstFired: boolean; suppressSeq: number; bursts: number; maxBursts: number; chasing: number; resultPending: boolean;
 }
 
 export function createPtTelemetry(): PtTelemetry {
@@ -149,7 +149,7 @@ export function createPtTelemetry(): PtTelemetry {
     enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, escapeDeg: NaN, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
     gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
-    gunEventSeq: 0, gunEvent: 0, fighting: 0, sunk: 0, passSilenced: false, burst: false, burstFired: false, suppressSeq: 0, bursts: 0, maxBursts: 0, chasing: 0,
+    gunEventSeq: 0, gunEvent: 0, fighting: 0, sunk: 0, passSilenced: false, burst: false, burstFired: false, suppressSeq: 0, bursts: 0, maxBursts: 0, chasing: 0, resultPending: false,
   };
 }
 
