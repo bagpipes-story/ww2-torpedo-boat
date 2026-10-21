@@ -1,16 +1,18 @@
 // T-14 の 13mm が米PT に当たったとき（v0.6.3 実機 1 回目。core/pt-damage・pt-pass-end、spec §C.2・§H）: u（seed+20 の 1 回）を決めて、
 // 引火で沈む（u < fire_chance）・死傷で撃退（その上の casualty_chance）・穴だらけで撃退（HP ≤ retreat_hp）・何もなし。航過中の撃沈は dropOwner（onPassEnd なし）、
 // 航過中の撃退は黙って固めた針路のまま抜けてから去る（赤い線は消えない）、結末は 1 回、沈めた後も次の航過まで pass_gap_s、沈んだ PT は動かず撃たず脅威でない・夜明けも飛ばす。
+// v0.6.3 実機 2 回目（spec r2 §D.2-8）: 制圧＝結末の無い命中を追撃中・連射中の PT だけ数え、chase.suppress_hits で追撃をやめる（結末が先・連射 1 回分を使う）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { getPtParams } from '../src/config/pt-mission-data';
 import {
-  PT_BREAK, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_PASS, PT_RUN_IN, PT_SUNK,
+  PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_PASS, PT_RUN_IN, PT_SUNK,
   createPtSection, ptFighting, stepPtSection, threatIndex, type PtEvents, type PtSection,
 } from '../src/core/pt-boats';
-import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, hitPt, ptLive, ptNeverBlocked } from '../src/core/pt-damage';
+import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, PT_GUN_EV_SUPPRESS, hitPt, ptLive, ptNeverBlocked } from '../src/core/pt-damage';
 import { SeededRng } from '../src/core/rng';
 import { bearingDeg } from '../src/core/ship-ai';
+import { ktToMps } from '../src/core/units';
 import { CRUISE01, DT, HOME, P, TS, check, events, runPtSim } from './pt-kit';
 
 const DMG = 2; // jp_t14.gun_battery の 13mm の 1 発
@@ -189,6 +191,77 @@ describe('13mm の命中の結末（core/pt-damage の hitPt。u は seed+20 の
     expect([b.phase, q.boats[1]!.phase, q.leftAtDawn]).toEqual([PT_SUNK, PT_LEAVE, true]);
     for (let k = 0; k < 60 * 60; k++) stepPtSection(q, P, c, new SeededRng(3), DT, DT * TS, ev);
     expect([b.phase, q.boats[1]!.phase, q.out, q.detected]).toEqual([PT_SUNK, PT_OUT, 1, false]);
+  });
+});
+
+/** PT0 が追撃中（艇の左後ろ 170 m・北へ 20 kt）か連射中（予告から 3 秒・2 発撃った）、PT1 は突撃。艇は (3000, 2000) を北へ 20 kt（最後に見た位置と速度） */
+function chasing(burst: boolean): PtSection {
+  const q = createPtSection(P, 24);
+  Object.assign(q, { detected: true, holdLeftS: P.detectHoldS, lkX: 3000, lkY: 2000, lkVx: 0, lkVy: -ktToMps(20), lkHeadingDeg: 0 });
+  Object.assign(q.boats[0]!, { x: 2880, y: 2120, headingDeg: 0, speedMps: ktToMps(20), phase: PT_CHASE, side: -1 });
+  if (burst) {
+    Object.assign(q.boats[0]!, { phase: PT_PASS, burst: true, timerS: 3, roundsLeft: P.burstRounds - 2, firedThisPass: 2, lockDeg: 45 });
+    Object.assign(q, { owner: 0, commitAtS: 7 });
+  }
+  Object.assign(q.boats[1]!, { x: 2500, y: 2600, phase: PT_RUN_IN, speedMps: P.runInMps });
+  return q;
+}
+
+describe(`制圧（v0.6.3 実機 2 回目。hitPt の結末の無い命中を追撃中・連射中の PT だけ数え、${P.chaseSuppressHits} 発で追撃をやめる）`, () => {
+  const U_NONE = 0.5; // 結末の無い u（引火・死傷の外）
+
+  it(`待っている追撃の PT: ${P.chaseSuppressHits} 発目で制圧（離脱。最後に見た艇から離れる向き・連射 1 回分を使う・HUD の出来事）。去らない（onLeave なし）`, () => {
+    const q = chasing(false);
+    const b = q.boats[0]!;
+    const { log, ev } = logged();
+    for (let k = 1; k < P.chaseSuppressHits; k++) {
+      expect(hitPt(q, P, 0, DMG, U_NONE, ev)).toBe(PT_FATE_NONE);
+      expect([b.phase, b.chaseHits, b.suppressed, q.suppressions, q.gunEventSeq]).toEqual([PT_CHASE, k, false, 0, 0]);
+    }
+    expect(hitPt(q, P, 0, DMG, U_NONE, ev)).toBe(PT_FATE_NONE);
+    expect([b.phase, b.suppressed, b.chaseHits, b.bursts, b.timerS, b.fate, q.suppressions, q.suppressSeq, q.retired]).toEqual([PT_BREAK, true, 0, 1, 0, PT_FATE_NONE, 1, 1, 0]);
+    expect(b.lockDeg).toBeCloseTo(bearingDeg(q.lkX, q.lkY, b.x, b.y), 9);
+    expect([q.gunEventSeq, q.gunEvent, q.gunEventBoat]).toEqual([1, PT_GUN_EV_SUPPRESS, 0]);
+    expect(log).toEqual([]);
+    // 制圧された PT にもう制圧は無い（離脱中は数えない）。追撃に入り直すと数え直す（core/pt-chase の startChase）
+    for (let k = 0; k < 5; k++) hitPt(q, P, 0, DMG, U_NONE, ev);
+    expect([q.suppressions, b.bursts, b.chaseHits]).toEqual([1, 1, 0]);
+  });
+
+  it('連射中の PT: 3 発目で黙る（弾 0・赤い線は窓の終わりまで残る）→ 連射の終わり（open_fire_s + burst_max_s）で離脱。撃った連射と制圧で 2 回分を使う', () => {
+    const q = chasing(true);
+    const b = q.boats[0]!;
+    const { log, ev } = logged();
+    for (let k = 0; k < P.chaseSuppressHits; k++) hitPt(q, P, 0, DMG, U_NONE, ev);
+    expect([b.phase, b.burst, q.owner, b.roundsLeft, b.suppressed, b.bursts, q.suppressions, q.gunEvent]).toEqual([PT_PASS, true, 0, 0, true, 1, 1, PT_GUN_EV_SUPPRESS]);
+    const c = check({ x: 3000, y: 2000, headingDeg: 0, speedMps: ktToMps(20) }, { detectOpenM: 5000 });
+    let endAt = NaN;
+    for (let k = 0; k < 60 * 5 && b.phase === PT_PASS; k++) {
+      c.timeS += DT;
+      stepPtSection(q, P, c, new SeededRng(1), DT, DT * TS, ev);
+      if (b.phase !== PT_PASS) endAt = b.timerS === 0 ? 3 + (k + 1) * DT : NaN;
+    }
+    expect(endAt).toBeGreaterThanOrEqual(P.openFireS + P.burstMaxS - 1e-9); // 黙っても窓の終わりまで線を残す
+    expect(endAt).toBeLessThanOrEqual(P.openFireS + P.burstMaxS + 2 * DT);
+    expect(log.filter(([k]) => k === 'fire')).toEqual([]);
+    expect(log).toEqual([['end', 0]]);
+    expect([b.phase, b.burst, q.owner, b.bursts, q.bursts, q.firedBursts]).toEqual([PT_BREAK, false, -1, 2, 1, 1]);
+  });
+
+  it('結末が先: 引火・死傷・HP の結末になる命中は制圧に数えない（追撃の PT は撃退なら去り、沈めば沈む）。突撃・航過中の PT の命中は数えない', () => {
+    for (const [u, hp, fate, phase] of [[0, P.hullHp, PT_FATE_SUNK, PT_SUNK], [P.fireChance, P.hullHp, PT_FATE_CREW, PT_LEAVE], [U_NONE, P.retreatHp + DMG, PT_FATE_HULL, PT_LEAVE]] as const) {
+      const q = chasing(false);
+      const b = q.boats[0]!;
+      Object.assign(b, { hp, chaseHits: P.chaseSuppressHits - 1 });
+      expect(hitPt(q, P, 0, DMG, u, logged().ev)).toBe(fate);
+      expect([b.phase, b.suppressed, b.chaseHits, q.suppressions, b.bursts]).toEqual([phase, false, P.chaseSuppressHits - 1, 0, 0]);
+    }
+    const q = passing(2, 3); // PT0 は航過中（連射でない）、PT1 は突撃
+    for (let k = 0; k < 5; k++) {
+      hitPt(q, P, 0, DMG, U_NONE, logged().ev);
+      hitPt(q, P, 1, DMG, U_NONE, logged().ev);
+    }
+    expect([q.boats[0]!.chaseHits, q.boats[1]!.chaseHits, q.suppressions, q.boats[0]!.roundsLeft]).toEqual([0, 0, 0, P.roundsPerPass - 2]);
   });
 });
 

@@ -1,8 +1,10 @@
-// 米PT の航過の射撃と終わり（v0.6.3 実機 2 回目。docs/02 §6.4、spec r2 §D.2-9）: core/pt-boats の stepPass をそのまま移した（pt-boats が 300 行を超えないため）。
-// 撃つのは航過中の 1 隻だけ・予告から open_fire_s 後。航過は 最大秒・後ろへ抜けた・海域の縁 で終わる。
+// 米PT の航過と追撃の連射の射撃と終わり（v0.6.3 実機 2 回目。docs/02 §6.4、spec r2 §D.2-5・6・9）: core/pt-boats の stepPass を移した（pt-boats が 300 行を超えないため）。
+// 撃つのは航過中（連射中）の 1 隻だけ・予告から open_fire_s 後。航過は 最大秒・後ろへ抜けた・海域の縁 で終わる。
 // v0.6.3 実機 2 回目（赤い線は危ない間だけ）: 撃ち切った航過（撃退で黙った PT は今どおり線のまま抜ける）と、open_fire_s の後に有効射程の外へ離れていく航過も終える。
-// Phaser 非依存・確保しない。乱数は seed+18 の系列だけ（1 発 2 回。launchShell の散布）。使う側は core/pt-boats だけ（ここを import するのは pt-boats）。
+// 連射（b.burst。core/pt-chase）は艇首の円錐の中へも bow_rof_factor の速さで撃ち（艇尾の円錐へは撃たない）、終わりは pt-chase の burstEnded。
+// Phaser 非依存・確保しない。乱数は seed+18 の系列だけ（1 発 2 回。launchShell の散布。連射も同じ）。使う側は core/pt-boats だけ（ここを import するのは pt-boats）。
 import type { BoatState } from './boat-motion';
+import { burstEnded, endBurst } from './pt-chase';
 import type { PtParams } from './pt-data';
 import { inDeadCone, nearEdge } from './pt-pass';
 import { endPass } from './pt-pass-end';
@@ -14,9 +16,10 @@ import { degToRad } from './units';
 
 /**
  * 航過の 1 ステップ（操舵の後）: 撃つのは航過中の 1 隻だけ、予告から open_fire_s 後・捉えていて・艇が的で・煙幕に遮られず・残り弾あり・近すぎず・
- * 有効射程と視程の内・艇首尾の円錐の外。間隔は負の残りを繰り越す（barges と同じ）。1 発ごとに今の艇の速度で直線の見越し（乱数 2 回）。
+ * 有効射程と視程の内・艇首尾の円錐の外（連射は艇首の円錐の中へも、間隔 ÷ bow_rof_factor で）。間隔は負の残りを繰り越す（barges と同じ）。1 発ごとに今の艇の速度で直線の見越し（乱数 2 回）。
  * 後ろへ抜けた（有効射程の外か艇尾の円錐）・最大秒・海域の縁で終わる。p.passEndsWhenSafe なら、撃ち切った（弾 0・撃った・結末なし）か
- * open_fire_s の後に有効射程の外で離れていく（艇の速度 − PT の速度が PT から艇への向きに正）ときも終わる（どちらも回数に数える航過。平方根なし）
+ * open_fire_s の後に有効射程の外で離れていく（艇の速度 − PT の速度が PT から艇への向きに正）ときも終わる（どちらも回数に数える航過。平方根なし）。
+ * 連射は艇首の円錐に艇がいる秒を数え（open_fire_s の後）、core/pt-chase の burstEnded で終える
  */
 export function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, i: number, vpx: number, vpy: number, rng: SeededRng, feelDt: number, ev: PtEvents): void {
   const boat = c.boat;
@@ -28,7 +31,9 @@ export function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, 
   const r = degToRad(b.headingDeg);
   const hx = Math.sin(r);
   const hy = -Math.cos(r);
-  const cone = inDeadCone(hx, hy, dx, dy, d2, p.cosDead2);
+  const dead = inDeadCone(hx, hy, dx, dy, d2, p.cosDead2);
+  const bow = b.burst && dead && hx * dx + hy * dy > 0; // 連射の艇首の円錐（撃てる・遅く）
+  const cone = dead && !bow;
   const cd = Math.max(b.cooldownS - feelDt, -feelDt);
   b.cooldownS = cd;
   const canFire = i === q.owner && b.timerS >= p.openFireS && q.detected && c.targetValid && b.roundsLeft > 0 && d2 >= p.minRange2 && d2 <= eff2 && d2 <= c.visRange2 && !cone && !smokeBlocked(c, b);
@@ -37,7 +42,7 @@ export function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, 
   } else if (cd <= 0) {
     const s = findFreeShell(q.shells);
     if (s) {
-      b.cooldownS = cd + 60 / (g.roundsPerMinPerGun * g.count);
+      b.cooldownS = cd + 60 / (g.roundsPerMinPerGun * g.count) / (bow ? p.burstBowRofFactor : 1);
       launchShell(s, b.x, b.y, boat.x, boat.y, vpx, vpy, g.shellSpeedMps, Math.max(p.spreadMinM, (g.dispersionM * Math.sqrt(d2)) / g.effectiveM), i, rng);
       b.roundsLeft--;
       if (b.firedThisPass === 0) q.minWarnS = Math.min(q.minWarnS, c.timeS - q.commitAtS);
@@ -45,6 +50,11 @@ export function stepPass(q: PtSection, p: PtParams, c: PtCheck, b: PtBoatState, 
       q.shots++;
       ev.onFire(i, b.x, b.y);
     }
+  }
+  if (b.burst) {
+    b.coneS = bow && b.timerS >= p.openFireS ? b.coneS + feelDt : 0;
+    if (burstEnded(p, b, d2)) endBurst(q, p, b, i, boat.x, boat.y, ev);
+    return;
   }
   // 後ろへ抜けたかは固めた針路で見る（v0.6.3 実機 1 回目の守りの直し: 今の針路だと、固めた線へ向き直る途中の PT が 1 ステップで航過を終えうる）。艇首尾の円錐は今の針路のまま
   const lr = degToRad(b.lockDeg);

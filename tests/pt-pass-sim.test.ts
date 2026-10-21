@@ -70,11 +70,13 @@ describe('米PT の掃射の航過の模擬（v0.6.3、spec §F）', () => {
     const base = getPtParams(gameData, getPrototypeMission(gameData, 'jp_05'), TS)!;
     expect([base.hit.damage, base.roundsPerPass, base.offsetM, base.baseDetectM, base.breakMaxS, base.breakOff2, base.stationM]).toEqual([4, 10, 120, 2000, 5, 650 ** 2, 600]);
     expect(ptSimSetup(gameData, 'jp_05').gun!.groups[0]!.dispersionM).toBe(56); // data は変えない
-    // v0.6.3 実機 2 回目の上書き（PEFF・PENG・GR_OFF）: 有効射程は検査を通る（追撃の commit_m 350 < 有効射程・hold_off の外）、GR_OFF だけが航過は危ない間だけを切る
+    // v0.6.3 実機 2 回目の上書き（PEFF・PENG・GR_OFF・CH_OFF）: 有効射程は検査を通る（追撃の commit_m 350 < 有効射程・hold_off の外）、GR_OFF だけが航過は危ない間だけを切る
     const r = ptSimSetup(gameData, 'jp_05', { effectiveM: 420, engineDamage: 0.05, passEndOff: true });
     expect([r.pt.gun.effectiveM, r.pt.hit.engineDamageChance, r.pt.passEndsWhenSafe, base.passEndsWhenSafe, base.gun.effectiveM, base.hit.engineDamageChance]).toEqual([420, 0.05, false, true, 450, 0.15]);
     expect(() => ptSimSetup(gameData, 'jp_05', { effectiveM: 350 })).toThrow(/commit_m < guns\.effective_night_m/);
-    expect(ptSimSetup(gameData, 'jp_05', PT_SIM_R1).pt).toEqual({ ...base, gun: { ...base.gun, effectiveM: 400, engineDamageChance: 0.02 }, hit: { ...base.hit, engineDamageChance: 0.02 }, holdOff2: 500 ** 2, holdOuter2: 600 ** 2, stationM: 550, passGapS: 2.5, passEndsWhenSafe: false });
+    // CH_OFF だけが追撃を切る（data からはいつも入る）
+    expect([ptSimSetup(gameData, 'jp_05', { chaseOff: true }).pt.chaseOn, ptSimSetup(gameData, 'jp_05', { chaseOff: true }).pt.passEndsWhenSafe, base.chaseOn]).toEqual([false, true, true]);
+    expect(ptSimSetup(gameData, 'jp_05', PT_SIM_R1).pt).toEqual({ ...base, gun: { ...base.gun, effectiveM: 400, engineDamageChance: 0.02 }, hit: { ...base.hit, engineDamageChance: 0.02 }, holdOff2: 500 ** 2, holdOuter2: 600 ** 2, stationM: 550, passGapS: 2.5, passEndsWhenSafe: false, chaseOn: false });
   });
 
   it('同じ seed なら同じ夜・同じ集計、違う seed なら違う', () => {

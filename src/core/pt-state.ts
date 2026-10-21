@@ -1,5 +1,5 @@
 // 敵の米PT の隊（v0.6.3。docs/02 §6.4）の定数・型・状態の確保と読み出し（core/pt-boats から分けた。300 行を超えないため。air-strike-state と同じ形）。Phaser 非依存。
-// 確保は createPtSection・createPtTelemetry だけ（出撃の組み立てのとき）。段階の進め方は pt-boats.ts。使う側は core/pt-boats だけを import する（ここを出し直している）。
+// 確保は createPtSection・createPtTelemetry だけ（出撃の組み立てのとき）。段階の進め方は pt-boats.ts。攻撃の数え（countPass）もここ。使う側は core/pt-boats だけを import する（ここを出し直している）。
 import type { BoatState } from './boat-motion';
 import type { PtParams } from './pt-data';
 import { createShells, type ShellState } from './shells';
@@ -19,7 +19,7 @@ export const PT_ALERT = 1;
 export const PT_RUN_IN = 2;
 export const PT_PASS = 3;
 export const PT_BREAK = 4;
-/** 追撃（v0.6.3 実機 2 回目。逃げる艇の後ろ寄りの舷へ回って並ぶ。撃つのは PT_PASS の連射）。番号だけ先に取ってある */
+/** 追撃（v0.6.3 実機 2 回目。逃げる艇の後ろ寄りの舷へ回って並ぶ。撃たない。撃つのは PT_PASS の連射＝burst。core/pt-chase） */
 export const PT_CHASE = 5;
 export const PT_LEAVE = 6;
 export const PT_OUT = 7;
@@ -55,6 +55,8 @@ export interface PtBoatState extends BoatState {
   firedThisPass: number;
   /** T-14 の 13mm を受けた（v0.6.3 実機 1 回目）: HP（boat_ref の hull_hp から）・結末（PT_FATE_*）・受けた命中の数 */
   hp: number; fate: number; hitsTaken: number;
+  /** 追撃（v0.6.3 実機 2 回目。core/pt-chase）: 今の PT_PASS が連射・使った連射（制圧で 1 回分）・目標が遅い秒・追撃中に受けた 13mm・制圧された・艇首の円錐に艇がいる秒 */
+  burst: boolean; bursts: number; slowS: number; chaseHits: number; suppressed: boolean; coneS: number;
 }
 
 export interface PtSection {
@@ -82,6 +84,8 @@ export interface PtSection {
   ownerFlank: number; held: Uint8Array;
   /** T-14 の 13mm（v0.6.3 実機 1 回目）: PT への命中・撃退・撃沈の数、最初に見つかったのが閃光だった、出来事（HUD の 2 行目）の通し番号・種類（PT_GUN_EV_*）・PT */
   gunHits: number; retired: number; sunk: number; flashFirst: boolean; gunEventSeq: number; gunEvent: number; gunEventBoat: number;
+  /** 追撃（v0.6.3 実機 2 回目）: 撃った連射（firedPasses の内）・連射の命中・制圧の数と通し番号、最後に終えた攻撃が連射、最後に連射を撃った PT とそれが続けて撃てるまでの秒 */
+  bursts: number; firedBursts: number; burstHits: number; suppressions: number; suppressSeq: number; lastPassBurst: boolean; lastBurstBoat: number; selfGapLeftS: number;
 }
 
 /** 世界が固定ステップごとに中身だけ書き換える材料（1 個だけ作る。barges の FlotillaCheck と同じ） */
@@ -136,6 +140,8 @@ export interface PtTelemetry {
   gunEnabled: boolean; gunStatus: number; gunFast: boolean; gunTargetM: number; gunHits: number; gunEverFired: boolean; reloadLeftS: number; gunRangeM: number; gunEffectiveM: number;
   /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った */
   gunEventSeq: number; gunEvent: number; fighting: number; sunk: number; passSilenced: boolean;
+  /** 追撃（v0.6.3 実機 2 回目）: 航過中の攻撃が連射・最後に終えた攻撃が連射・制圧の通し番号・連射の数と上限（撃退・撃沈した PT の使わなかった分を引く）・追撃中の PT の数 */
+  burst: boolean; burstFired: boolean; suppressSeq: number; bursts: number; maxBursts: number; chasing: number;
 }
 
 export function createPtTelemetry(): PtTelemetry {
@@ -143,7 +149,7 @@ export function createPtTelemetry(): PtTelemetry {
     enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, escapeDeg: NaN, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
     gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
-    gunEventSeq: 0, gunEvent: 0, fighting: 0, sunk: 0, passSilenced: false,
+    gunEventSeq: 0, gunEvent: 0, fighting: 0, sunk: 0, passSilenced: false, burst: false, burstFired: false, suppressSeq: 0, bursts: 0, maxBursts: 0, chasing: 0,
   };
 }
 
@@ -151,7 +157,7 @@ export function createPtTelemetry(): PtTelemetry {
 export function createPtSection(p: PtParams, shellPoolSize: number): PtSection {
   const boats: PtBoatState[] = [];
   for (let i = 0; i < p.count; i++) {
-    boats.push({ x: p.startX[i]!, y: p.startY[i]!, headingDeg: p.startHeadingDeg[i]!, speedMps: p.patrolMps, phase: PT_PATROL, wp: 1, timerS: 0, side: 1, lockDeg: 0, passMps: 0, passes: 0, cooldownS: 0, roundsLeft: 0, firedThisPass: 0, hp: p.hullHp, fate: PT_FATE_NONE, hitsTaken: 0 });
+    boats.push({ x: p.startX[i]!, y: p.startY[i]!, headingDeg: p.startHeadingDeg[i]!, speedMps: p.patrolMps, phase: PT_PATROL, wp: 1, timerS: 0, side: 1, lockDeg: 0, passMps: 0, passes: 0, cooldownS: 0, roundsLeft: 0, firedThisPass: 0, hp: p.hullHp, fate: PT_FATE_NONE, hitsTaken: 0, burst: false, bursts: 0, slowS: 0, chaseHits: 0, suppressed: false, coneS: 0 });
   }
   return {
     boats, shells: createShells(shellPoolSize), seen: new Uint8Array(p.count), detected: false, holdLeftS: 0,
@@ -159,13 +165,15 @@ export function createPtSection(p: PtParams, shellPoolSize: number): PtSection {
     passHits: 0, passSeq: 0, seqPending: false, lastPassHits: 0, lastPassFired: false, lastPassBoat: -1, commitAtS: NaN, aim: { x: 0, y: 0 },
     passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, firstDetectM: NaN, lostContacts: 0, minWarnS: Infinity, closest2: Infinity, out: 0, leftAtDawn: false,
     ownerFlank: 1, held: new Uint8Array(p.count), gunHits: 0, retired: 0, sunk: 0, flashFirst: false, gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1,
+    bursts: 0, firedBursts: 0, burstHits: 0, suppressions: 0, suppressSeq: 0, lastPassBurst: false, lastBurstBoat: -1, selfGapLeftS: 0,
   };
 }
 
-/** 脅威の PT（HUD の方角・端の矢印）: 航過中 → 警戒・突撃の最寄り → 離脱の最寄り → 哨戒の最寄り。去っていない PT が無ければ −1。距離二乗・確保なし */
+/** 脅威の PT（HUD の方角・端の矢印）: 撃っている（航過・連射）→ 追撃の最寄り → 警戒・突撃の最寄り → 離脱の最寄り → 哨戒の最寄り。去っていない PT が無ければ −1。距離二乗・確保なし */
 export function threatIndex(q: PtSection, x: number, y: number): number {
   if (q.owner >= 0) return q.owner;
-  let best = nearestIn(q, x, y, PT_ALERT, PT_RUN_IN);
+  let best = nearestIn(q, x, y, PT_CHASE, PT_CHASE);
+  if (best < 0) best = nearestIn(q, x, y, PT_ALERT, PT_RUN_IN);
   if (best < 0) best = nearestIn(q, x, y, PT_BREAK, PT_BREAK);
   if (best < 0) best = nearestIn(q, x, y, PT_PATROL, PT_PATROL);
   return best;
@@ -185,4 +193,22 @@ function nearestIn(q: PtSection, x: number, y: number, lo: number, hi: number): 
     }
   }
   return best;
+}
+
+/**
+ * 攻撃（航過・連射）を数える（counts が false なら航過の回数には入れない。連射はいつも false）: 撃った攻撃・無傷の攻撃、最後の攻撃の命中・撃ったか・連射か・その PT（後から落ちた弾の数え先）。
+ * core/pt-pass-end の endPass・dropOwner、core/pt-chase の連射の終わり、pt-boats の夜明けが呼ぶ（pt-pass-end と pt-chase が互いに import しないようここに置く）
+ */
+export function countPass(q: PtSection, b: PtBoatState, i: number, counts: boolean): void {
+  const fired = b.firedThisPass > 0;
+  if (counts) {
+    b.passes++;
+    q.passes++;
+  }
+  if (fired) q.firedPasses++;
+  if (fired && q.passHits === 0) q.cleanPasses++;
+  q.lastPassHits = q.passHits;
+  q.lastPassFired = fired;
+  q.lastPassBurst = b.burst;
+  q.lastPassBoat = i;
 }

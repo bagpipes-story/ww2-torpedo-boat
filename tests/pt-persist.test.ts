@@ -163,7 +163,7 @@ describe('挟み撃ち（待つ PT は前の航過と反対の舷へ回る。spe
   });
 });
 
-describe('待つ PT は内へ来ない・赤い線は左右から代わる代わる（40 夜 × 遊び方。spec §C.4 F9）', () => {
+describe('待つ PT は内へ来ない・赤い線は左右から代わる代わる（80 夜 × 遊び方。spec §C.4 F9。赤い線は航過と追撃の連射の両方）', () => {
   const toHome = (s: PtSim): number => bearingDeg(s.boat.x, s.boat.y, HOME.x, HOME.y);
   const straight = (v: number) => (s: PtSim): void => {
     s.input.headingDeg = toHome(s);
@@ -177,7 +177,7 @@ describe('待つ PT は内へ来ない・赤い線は左右から代わる代わ
       if (s.q.held[i] === 1 && b.phase === PT_RUN_IN && (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 <= VIS2) s.input.headingDeg = bearingDeg(s.boat.x, s.boat.y, b.x, b.y);
     }
   };
-  /** 赤い線で線から離れる直角へ全速 4 秒（HUD の教え） */
+  /** 赤い線（航過）で線から離れる直角へ全速 4 秒（HUD の教え。追撃の連射は針路そのまま） */
   const dodge = (s: PtSim): void => {
     straight(1)(s);
     if ((s.m['until'] ?? -1) > s.t) s.input.headingDeg = s.m['deg']!;
@@ -185,7 +185,8 @@ describe('待つ PT は内へ来ない・赤い線は左右から代わる代わ
   interface Tally { episodes: number; outsideMin: number; closeFarFromEdge: number; pairs: number; alt: number }
   function run(policy: (s: PtSim) => void): Tally {
     const r: Tally = { episodes: 0, outsideMin: Infinity, closeFarFromEdge: 0, pairs: 0, alt: 0 };
-    for (let seed = 1; seed <= 40; seed++) {
+    // v0.6.3 実機 2 回目: 逃げる艇の艇尾側で待つ PT は追撃（tests/pt-chase-step）に入り、突撃のまま待つ PT は 40 夜で 34〜61 回に減った。80 夜・下限 50 に（距離の規則は同じ）
+    for (let seed = 1; seed <= 80; seed++) {
       const start = [NaN, NaN];
       let lastFlank = 0;
       runPtSim({
@@ -194,11 +195,10 @@ describe('待つ PT は内へ来ない・赤い線は左右から代わる代わ
           onCommit: (i, lock) => {
             const b = s.q.boats[i]!;
             const fl = targetSide(s.boat.headingDeg, s.boat.x, s.boat.y, b.x, b.y);
-            if (lastFlank !== 0) {
-              r.pairs++;
-              if (fl !== lastFlank) r.alt++;
-            }
+            if (lastFlank !== 0) r.pairs++;
+            if (lastFlank !== 0 && fl !== lastFlank) r.alt++;
             lastFlank = fl;
+            if (b.burst) return; // 追撃の連射は針路そのまま（HUD の教え。v0.6.3 実機 2 回目）
             const lr = degToRad(lock);
             const cross = Math.sin(lr) * (s.boat.y - b.y) + Math.cos(lr) * (s.boat.x - b.x);
             s.m['deg'] = wrapDeg360(lock + (cross >= 0 ? 90 : -90));
@@ -234,14 +234,14 @@ describe('待つ PT は内へ来ない・赤い線は左右から代わる代わ
     ['待つ PT を巡航で追う', chase(CRUISE01)],
   ] as const)(`%s: 外（${HOLD_M} m）で待ち始めた PT は ${KEEP_OUT_M} m より内へ来ない。赤い線の半分より多くが前と反対の舷から`, (_name, policy) => {
     const r = run(policy);
-    expect(r.episodes).toBeGreaterThan(100);
+    expect(r.episodes).toBeGreaterThan(50);
     expect(r.outsideMin).toBeGreaterThanOrEqual(KEEP_OUT_M);
     expect(r.pairs).toBeGreaterThan(60);
     expect(r.alt / r.pairs).toBeGreaterThan(0.5);
   });
   it(`待つ PT を全速で追い詰めると縁の帯で内へ入りうる（縁の内向きが勝つ。待つ PT は撃たない）: ${KEEP_OUT_M} m より内はどれも縁から edge_margin_m + 旋回半径 × 2 の内`, () => {
     const r = run(chase(1));
-    expect(r.episodes).toBeGreaterThan(100);
+    expect(r.episodes).toBeGreaterThan(50);
     expect(r.closeFarFromEdge).toBe(0);
   });
 });

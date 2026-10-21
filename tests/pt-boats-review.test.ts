@@ -7,13 +7,13 @@ import { getPtParams } from '../src/config/pt-mission-data';
 import { boatParamsFromData, clampToBounds, nextSpeedBand, stepBoat, type BoatInput, type BoatState, type SpeedStep } from '../src/core/boat-motion';
 import { rollNight } from '../src/core/night';
 import {
-  PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SEED_OFFSET,
+  PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SEED_OFFSET,
   createPtSection, ptFighting, stepPtSection, type PtCheck, type PtEvents, type PtSection,
 } from '../src/core/pt-boats';
 import { ptParamsAtNight, type PtParams } from '../src/core/pt-data';
 import { SeededRng } from '../src/core/rng';
 import { bearingDeg } from '../src/core/ship-ai';
-import { degToRad, wrapDeg180 } from '../src/core/units';
+import { degToRad, ktToMps, wrapDeg180 } from '../src/core/units';
 import { enemyDetectRangeM, playerVisRangeM } from '../src/core/visibility';
 
 const DT = 1 / 60;
@@ -27,6 +27,8 @@ const T14 = boatParamsFromData(getBoatRecord(gameData, MISSION.playerBoatId));
 const HOME = MISSION.returnPoint;
 const W = P.bounds.width;
 const H = P.bounds.height;
+/** 追撃を切った隊（v0.6.3 実機 2 回目の前の動き。打ち切りの道を見る） */
+const NO_CHASE: PtParams = { ...P, chaseOn: false };
 /** 突撃の速さの旋回半径 m（約 43 m）。向き直る間の膨らみの上限に使う */
 const TURN_R = P.runInMps / degToRad(P.turnRateDegS);
 
@@ -53,9 +55,9 @@ interface Run {
   fled: boolean;
 }
 /** 艇（T-14）と隊を今夜の揺らぎ込みで固定ステップで回す（tests/pt-boats.test の simulate と同じ順）。帰投の輪に入ったら止める */
-function run(seed: number, steps: number, policy: (r: Run) => void, ev: (r: Run) => Partial<PtEvents> = () => ({}), onStep?: (r: Run) => void, dawnAtS = Infinity): Run {
+function run(seed: number, steps: number, policy: (r: Run) => void, ev: (r: Run) => Partial<PtEvents> = () => ({}), onStep?: (r: Run) => void, dawnAtS = Infinity, base: PtParams = P): Run {
   const n = rollNight(MISSION.night!, () => 0, seed, 1, 0);
-  const p = ptParamsAtNight(P, n.enemyOffsets[0]!.dx, n.enemyOffsets[0]!.dy, n.mirrored);
+  const p = ptParamsAtNight(base, n.enemyOffsets[0]!.dx, n.enemyOffsets[0]!.dy, n.mirrored);
   const st = MISSION.playerStart;
   const boat: BoatState = { x: st.x, y: st.y, headingDeg: st.headingDeg, speedMps: 0 };
   const r: Run = { q: createPtSection(p, 24), p, c: check(boat, { timeS: 0 }), boat, input: { headingDeg: NaN, speed01: 0 }, band: 'stop', t: 0, home: false, fled: false };
@@ -126,7 +128,8 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
     expect(endY).toBeLessThan(P.edgeMarginM);
     expect(endY).toBeGreaterThan(0); // 海域の外へ出る手前で終える
     expect(fired).toBeGreaterThan(0);
-    expect([q.passes, q.firedPasses, q.boats[0]!.passes, q.boats[0]!.phase]).toEqual([1, 1, 1, PT_BREAK]);
+    // 止まった艇（最後に見た速さ 0 < chase.min_target_kt）への航過の後は今どおり離脱（v0.6.3 実機 2 回目: 逃げる艇なら追撃。下の「回数に数える…」の速い台本）
+    expect([Math.hypot(q.lkVx, q.lkVy), q.passes, q.firedPasses, q.boats[0]!.passes, q.boats[0]!.phase]).toEqual([0, 1, 1, 1, PT_BREAK]);
   });
 
   it('回数に数えるのは撃ったか open_fire_s 経った航過だけ: 撃つ前に後ろへ抜けた航過は数えず（max_passes の 1 つ前でも去らない）、open_fire_s 経って撃てずに抜けた航過は数える', () => {
@@ -138,8 +141,14 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
     let ended = 0;
     stepPtSection(early.q, P, early.c, new SeededRng(1), DT, DT * TS, events({ onPassEnd: () => ended++ }));
     expect(ended).toBe(1);
-    expect([early.q.owner, early.q.passes, early.q.firedPasses, early.q.boats[0]!.passes, early.q.boats[0]!.phase]).toEqual([-1, 0, 0, P.maxPasses - 1, PT_BREAK]);
+    expect([early.q.owner, early.q.passes, early.q.firedPasses, early.q.boats[0]!.passes, early.q.boats[0]!.phase]).toEqual([-1, 0, 0, P.maxPasses - 1, PT_BREAK]); // 止まった艇: 離脱
     expect([early.q.passSeq, early.q.lastPassFired, early.q.lastPassBoat]).toEqual([1, false, 0]); // HUD は「撃たせなかった！」を出せる
+    // 同じ形で艇が 20 kt で北へ逃げている（v0.6.3 実機 2 回目）: 離脱せずに追撃へ（PT は艇の東＝艇の針路の右舷 side +1）。数え方は同じ
+    const fast = passing();
+    Object.assign(fast.q.boats[0]!, { timerS: 1, passes: P.maxPasses - 1 });
+    Object.assign(fast.c.boat, { x: 2500, y: 2000, headingDeg: 0, speedMps: ktToMps(20) });
+    stepPtSection(fast.q, P, fast.c, new SeededRng(1), DT, DT * TS, events());
+    expect([fast.q.owner, fast.q.passes, fast.q.boats[0]!.passes, fast.q.boats[0]!.phase, fast.q.boats[0]!.side]).toEqual([-1, 0, P.maxPasses - 1, PT_CHASE, 1]);
     // 予告から 3 秒（open_fire_s の後）、撃てないまま後ろへ抜けた → 数える（max_passes に達して去る）
     const late = passing();
     Object.assign(late.q.boats[0]!, { timerS: 3, passes: P.maxPasses - 1 });
@@ -166,6 +175,7 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
         (r) => ({
           onCommit: (i) => (before[i] = r.q.boats[i]!.passes),
           onPassEnd: (i, f) => {
+            if (r.q.boats[i]!.burst) return; // 追撃の連射（v0.6.3 実機 2 回目）は航過の回数に数えない（tests/pt-chase）
             const counted = r.q.boats[i]!.passes - before[i]!;
             const endS = timer[i]! + DT; // 終わったステップの航過の秒（endPass が 0 に戻す前）
             if (!f && Math.abs(endS - P.openFireS) < 2 * DT) return; // 境目のステップは見ない
@@ -178,7 +188,7 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
         },
       );
       passes += r.q.passes;
-      fired += r.q.firedPasses;
+      fired += r.q.firedPasses - r.q.firedBursts; // 航過だけ（firedPasses は撃った連射も数える）
       hits += r.q.hits;
     }
     void uncounted;
@@ -256,6 +266,7 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
     expect(worstRunIn).toBeLessThanOrEqual(2 * TURN_R);
   });
 
+  // v0.6.3 実機 2 回目: 逃げる艇の艇尾側の突撃は追撃（core/pt-chase）になり、打ち切りまで追い続けることはまず無い。打ち切りの離脱の向きは追撃を切った隊（chaseOn false）で見る
   it('追いつけない突撃の打ち切り（run_in_max_s）の離脱は目標から離れる向き: 全速で東へ逃げる艇に、離脱中の PT は旋回の膨らみより寄らない（前は追う針路のまま 50 m 以上寄り 100 m 以内まで来た）', () => {
     let cuts = 0;
     let worstClose = -Infinity;
@@ -284,7 +295,7 @@ describe('米PT の隊: v0.6.3 レビューの直し（core/pt-boats）', () => 
           }
           prev[i] = b.phase;
         }
-      });
+      }, Infinity, NO_CHASE);
     }
     expect(cuts).toBeGreaterThan(5);
     expect(worstClose).toBeLessThanOrEqual(2 * TURN_R);

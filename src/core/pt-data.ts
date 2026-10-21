@@ -90,14 +90,16 @@ export interface PtParams extends PtChaseParams {
   hit: HitSpec;
   /** T-14 の 13mm を受ける（v0.6.3 実機 1 回目）: HP（boat_ref の hull_hp）・当たりの半長と半幅 m・去る HP・1 命中の死傷（去る）と引火（沈む）の確率 */
   hullHp: number; hitHalfLengthM: number; hitHalfBeamM: number; retreatHp: number; casualtyChance: number; fireChance: number;
-  /** 待つ PT の位置取り（v0.6.3 実機 1 回目）: 艇からの距離 m、艇の針路からの角 deg（航過ごとに順に）、点の方位との差の許し deg、並ぶ距離の二乗、艇の先読みの体感秒 */
-  stationM: number; stationRelDeg: Float64Array; stationTolDeg: number; stationClose2: number; stationLeadS: number;
+  /** 待つ PT の位置取り（v0.6.3 実機 1 回目）: 艇からの距離 m、艇の針路からの角 deg（航過ごとに順に）、点の方位との差の許し deg、並ぶ距離 m とその二乗、艇の先読みの体感秒 */
+  stationM: number; stationRelDeg: Float64Array; stationTolDeg: number; stationCloseM: number; stationClose2: number; stationLeadS: number;
   /** PT ごとの線 [x0, y0, x1, y1]（4 × count）と出発点・針路（今夜の揺らぎ込み）。startAlongM は data の出発位置（線の始点から m） */
   legs: Float64Array; startX: Float64Array; startY: Float64Array; startHeadingDeg: Float64Array; startAlongM: number;
   bounds: { width: number; height: number };
   timeScale: number;
   /** 航過は危ない間だけ（v0.6.3 実機 2 回目。core/pt-fire: 撃ち切ったか、open_fire_s の後に有効射程の外へ離れていけば終える）。data からはいつも true（模擬の上書き GR_OFF だけが false） */
   passEndsWhenSafe: boolean;
+  /** 追撃（v0.6.3 実機 2 回目。core/pt-chase）に入る。data からはいつも true（模擬の上書き CH_OFF だけが false。spec r2 §I.3-5 の関門） */
+  chaseOn: boolean;
 }
 
 function nums(v: unknown, keys: readonly string[]): boolean {
@@ -190,11 +192,12 @@ export function ptParamsFromData(r: PtDataRecord, boat: PtBoatRef, b: PtMissionB
     hit: { damage: gun.damage, fireChance: gun.fireChance, engineDamageChance: gun.engineDamageChance },
     hullHp: ctx.hullHp, hitHalfLengthM: (boat.length_m * ctx.hitScale) / 2, hitHalfBeamM: (boat.beam_m * ctx.hitScale) / 2,
     retreatHp: u.retreat_hp, casualtyChance: u.casualty_chance, fireChance: u.fire_chance,
-    stationM: t.station_m, stationRelDeg: Float64Array.from(t.station_rel_deg), stationTolDeg: t.station_tol_deg, stationClose2: sq(t.station_close_m), stationLeadS: t.station_lead_s,
+    stationM: t.station_m, stationRelDeg: Float64Array.from(t.station_rel_deg), stationTolDeg: t.station_tol_deg, stationCloseM: t.station_close_m, stationClose2: sq(t.station_close_m), stationLeadS: t.station_lead_s,
     legs, startX: new Float64Array(n), startY: new Float64Array(n), startHeadingDeg: new Float64Array(n), startAlongM: b.start_along_m,
     bounds: { width: ctx.bounds.width, height: ctx.bounds.height },
     timeScale: ctx.timeScale,
     passEndsWhenSafe: true,
+    chaseOn: true,
     ...chase,
   };
   return ptParamsAtNight(base, 0, 0, false);

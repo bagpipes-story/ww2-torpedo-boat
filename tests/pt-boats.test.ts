@@ -7,7 +7,7 @@ import { boatParamsFromData, clampToBounds, nextSpeedBand, stepBoat, type BoatIn
 import { applyShellHit, createDamageState, type HitOutcome } from '../src/core/gunnery';
 import { rollNight } from '../src/core/night';
 import {
-  PT_ALERT, PT_BREAK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SEED_OFFSET,
+  PT_ALERT, PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SEED_OFFSET,
   createPtSection, createPtTelemetry, stepPtSection, threatIndex, type PtCheck, type PtEvents, type PtSection,
 } from '../src/core/pt-boats';
 import { ptParamsAtNight, type PtParams } from '../src/core/pt-data';
@@ -147,6 +147,7 @@ const turnAway = (speed01: number) => (s: Sim): void => {
 const onCommitTurn = (s: Sim): Partial<PtEvents> => ({
   onCommit: (i, lockDeg) => {
     const b = s.q.boats[i]!;
+    if (b.burst) return; // 追撃の連射は針路そのまま（HUD の教え。v0.6.3 実機 2 回目）
     const r = degToRad(lockDeg);
     const cross = Math.sin(r) * (s.boat.y - b.y) + Math.cos(r) * (s.boat.x - b.x);
     s.turnDeg = wrapDeg360(lockDeg + (cross >= 0 ? 90 : -90));
@@ -165,13 +166,17 @@ const fleeEast = (s: Sim): void => {
   s.input.headingDeg = 90;
   s.input.speed01 = FULL01;
 };
-/** 円を描いて PT の線の近くに居続ける（中心 (3000, 2100)・半径 700・巡航） */
-const circle = (s: Sim): void => {
+/** 円を描いて PT の線の近くに居続ける（中心 (3000, 2100)・半径 700・速さ speed01） */
+const circleAt = (speed01: number) => (s: Sim): void => {
   const out = bearingDeg(3000, 2100, s.boat.x, s.boat.y);
   const r = Math.hypot(s.boat.x - 3000, s.boat.y - 2100);
   s.input.headingDeg = wrapDeg360(out + 90 + (r > 700 ? 20 : -20));
-  s.input.speed01 = CRUISE01;
+  s.input.speed01 = speed01;
 };
+/** 巡航（20 kt）で円を描く */
+const circle = circleAt(CRUISE01);
+/** 追撃に入らない遅い艇（8 kt。chase.min_target_kt 10 kt 未満。v0.6.3 実機 2 回目） */
+const SLOW01 = 8 / 31;
 
 describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
   it('作る: 出発点に哨戒で並ぶ（揺らぎなし (2000, 2200)/(2000, 2400) を東へ 8 kt）、確保は作るときだけ', () => {
@@ -205,7 +210,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(q.firstDetectM).toBeCloseTo(590, 6);
   });
 
-  it(`2 段階と時間: 哨戒 → 警戒 → 1.5 秒で突撃（2 隻目は 4.5 秒）→ 見えていて最接近 5 秒前に航過 → 2.5 秒は撃たない → 離脱 → 突撃 → 航過 …（1 隻 ${P.maxPasses} 回。v0.6.3 実機 1 回目で 2 → 4）で去る → 東の縁の外`, () => {
+  it(`2 段階と時間（遅い艇 8 kt）: 哨戒 → 警戒 → 1.5 秒で突撃（2 隻目は 4.5 秒）→ 見えていて最接近 5 秒前に航過 → 2.5 秒は撃たない → 離脱 → 突撃 → 航過 …（1 隻 ${P.maxPasses} 回。v0.6.3 実機 1 回目で 2 → 4）で去る → 東の縁の外`, () => {
     const seq: number[][] = [[], []];
     const at: number[][] = [[], []];
     const commits: { i: number; t: number; first: number }[] = [];
@@ -213,9 +218,10 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     let badCommit = 0;
     const s = simulate({
       seed: 1,
-      // 1 隻 4 回（v0.6.3 実機 1 回目）で突撃の打ち切り（run_in_max_s）の無い道筋になる出発（前は 200 秒・東向き。東向きだと 1 隻目の突撃が 1 回打ち切られる）
+      // 1 隻 4 回（v0.6.3 実機 1 回目）で突撃の打ち切り（run_in_max_s）の無い道筋になる出発（前は 200 秒・東向き。東向きだと 1 隻目の突撃が 1 回打ち切られる）。
+      // v0.6.3 実機 2 回目: 10 kt 以上で逃げる艇には離脱せず追撃する（2b）ので、この歩みは追撃に入らない 8 kt の艇で見る
       steps: 60 * 300,
-      policy: circle,
+      policy: circleAt(SLOW01),
       start: { x: 3000, y: 1400, headingDeg: 270 },
       ev: (s) => ({
         onCommit: (i, lockDeg) => {
@@ -256,9 +262,65 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(s.q.leftAtDawn).toBe(false);
   });
 
-  it(`3 撃たない: 航過の外・予告から 2.5 秒の内・艇首尾の円錐・60 m 以内・400 m より遠く・艇の視程の外からは撃たない。1 回の航過は ${P.roundsPerPass} 発まで`, () => {
+  it(`2b 段階と時間（逃げる艇 20 kt。v0.6.3 実機 2 回目）: 航過 → 離脱せずに追撃 → 予告つきの連射 → 追撃 …（1 隻 連射 ${P.maxBursts} 回）で去る → 東の縁の外。連射は 2 隻が代わる代わる・予告から 2.5 秒は撃たない・1 回 ${P.burstRounds} 発まで`, () => {
+    const seq: number[][] = [[], []];
+    const commits: { i: number; t: number; first: number; burst: boolean; rounds: number; end: number; otherLeft: boolean }[] = [];
+    let badCommit = 0;
+    const s = simulate({
+      seed: 1,
+      steps: 60 * 300,
+      policy: circle,
+      start: { x: 3000, y: 1400, headingDeg: 270 },
+      ev: (s) => ({
+        onCommit: (i, lockDeg) => {
+          const b = s.q.boats[i]!;
+          // 連射は追撃の位置から: この PT が見ていて commit_m の内、赤い線は PT → 艇
+          const d2 = (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2;
+          if (s.q.seen[i] !== 1 || (b.burst ? d2 > P.chaseCommit2 || Math.abs(wrapDeg180(lockDeg - bearingDeg(b.x, b.y, s.boat.x, s.boat.y))) > 1e-9 : !commitOk(commitGeom(s, i, lockDeg)))) badCommit++;
+          commits.push({ i, t: s.t, first: NaN, burst: b.burst, rounds: 0, end: NaN, otherLeft: s.q.boats[1 - i]!.phase >= PT_LEAVE });
+        },
+        onFire: () => {
+          const c = commits[commits.length - 1]!;
+          if (Number.isNaN(c.first)) c.first = s.t;
+          c.rounds++;
+        },
+        onPassEnd: () => (commits[commits.length - 1]!.end = s.t),
+      }),
+      onStep: (s) => {
+        for (let i = 0; i < 2; i++) {
+          const b = s.q.boats[i]!;
+          const l = seq[i]!;
+          const ph = b.phase === PT_PASS && b.burst ? -PT_PASS : b.phase; // 連射は −PT_PASS
+          if (l[l.length - 1] !== ph) l.push(ph);
+        }
+      },
+    });
+    const walk = [PT_PATROL, PT_ALERT, PT_RUN_IN, PT_PASS, PT_CHASE, ...Array.from({ length: P.maxBursts - 1 }, () => [-PT_PASS, PT_CHASE]).flat(), -PT_PASS, PT_LEAVE, PT_OUT];
+    expect(seq).toEqual([walk, walk]);
+    expect(badCommit).toBe(0);
+    const bursts = commits.filter((c) => c.burst);
+    expect([commits.length, bursts.length]).toEqual([2 + 2 * P.maxBursts, 2 * P.maxBursts]);
+    for (const c of commits) if (!Number.isNaN(c.first)) expect(c.first - c.t).toBeGreaterThanOrEqual(P.openFireS - 1e-9);
+    for (const c of bursts) expect(c.rounds).toBeLessThanOrEqual(P.burstRounds);
+    expect(bursts.filter((c) => c.rounds > 0).length).toBe(2 * P.maxBursts); // 撃った連射だけ回数に数える
+    // 代わる代わる: 同じ PT が続けて連射するのは、前の連射の終わりから gap_s + self_gap_s 経ったか相方が去った後だけ（seed 1 は相方の航過の間と、相方が去った後の 2 回）
+    let alternations = 0;
+    for (let k = 1; k < bursts.length; k++) {
+      const a = bursts[k - 1]!;
+      const b = bursts[k]!;
+      if (b.i !== a.i) alternations++;
+      else expect(b.otherLeft || b.t - a.end >= P.chaseGapS + P.chaseSelfGapS - 1e-9, `連射 ${k}`).toBe(true);
+    }
+    expect(alternations).toBeGreaterThanOrEqual(bursts.length - 3);
+    expect([s.q.passes, s.q.bursts, s.q.firedBursts, s.q.out, ...s.q.boats.map((b) => b.passes), ...s.q.boats.map((b) => b.bursts)]).toEqual([2, 2 * P.maxBursts, 2 * P.maxBursts, 2, 1, 1, P.maxBursts, P.maxBursts]);
+    expect(s.q.firedPasses - s.q.firedBursts).toBe(2);
+    expect(s.q.leftAtDawn).toBe(false);
+  });
+
+  it(`3 撃たない: 航過・連射の外・予告から 2.5 秒の内・艇首尾の円錐（連射だけは艇首の円錐へも撃つ。艇尾へは撃たない）・60 m 以内・${P.gun.effectiveM} m より遠く・艇の視程の外からは撃たない。1 回の航過は ${P.roundsPerPass} 発・連射は ${P.burstRounds} 発まで`, () => {
     const fired = [0, 0];
     let bad = 0;
+    let bowShots = 0;
     [VIS2, 300 ** 2].forEach((vis, v) => {
       for (let seed = 1; seed <= 12; seed++) {
         simulate({
@@ -274,8 +336,11 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
               const dy = s.boat.y - y;
               const d2 = dx * dx + dy * dy;
               const r = degToRad(b.headingDeg);
-              const ok = b.phase === PT_PASS && s.q.owner === i && b.timerS >= P.openFireS && d2 >= P.minRange2 && d2 <= P.gun.effectiveM ** 2 && d2 <= vis && !inDeadCone(Math.sin(r), -Math.cos(r), dx, dy, d2, P.cosDead2) && b.firedThisPass <= P.roundsPerPass && b.roundsLeft >= 0;
+              const cone = inDeadCone(Math.sin(r), -Math.cos(r), dx, dy, d2, P.cosDead2);
+              const bow = Math.sin(r) * dx - Math.cos(r) * dy > 0;
+              const ok = b.phase === PT_PASS && s.q.owner === i && b.timerS >= P.openFireS && d2 >= P.minRange2 && d2 <= P.gun.effectiveM ** 2 && d2 <= vis && (!cone || (b.burst && bow)) && b.firedThisPass <= (b.burst ? P.burstRounds : P.roundsPerPass) && b.roundsLeft >= 0;
               if (!ok) bad++;
+              if (b.burst && cone) bowShots++;
               fired[v]!++;
             },
           }),
@@ -285,25 +350,32 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(bad).toBe(0);
     expect(fired[0]).toBeGreaterThan(50);
     expect(fired[1]).toBeGreaterThan(10);
+    expect(bowShots).toBeGreaterThan(0); // 連射の艇首の円錐への射撃も通る（seed 1〜12 で 69 発）
   });
 
-  it('4 航過は同時に 1 隻: 2 隻・気まぐれな艇・20 夜 × 3,000 ステップで、航過中は owner の 1 隻だけ、航過の終わりから次の固めまで pass_gap_s 以上', () => {
+  it('4 航過・連射は同時に 1 隻: 2 隻・気まぐれな艇・20 夜 × 3,000 ステップで、航過中（連射中）は owner の 1 隻だけ、航過の終わりから次の固めまで pass_gap_s 以上（連射の終わりからは chase.gap_s 以上）', () => {
     let commitsTotal = 0;
+    let burstsTotal = 0;
     let bad = 0;
     let shortGap = 0;
     for (let seed = 1; seed <= 20; seed++) {
       let lastEnd = -Infinity;
+      let lastGap = 0;
       simulate({
         seed,
         steps: 3000,
         policy: randomWalk,
         start: { x: 2900, y: 1500, headingDeg: 180 },
         ev: (s) => ({
-          onCommit: () => {
-            if (s.t - lastEnd < P.passGapS - 1e-6) shortGap++;
+          onCommit: (i) => {
+            if (s.t - lastEnd < lastGap - 1e-6) shortGap++;
             commitsTotal++;
+            if (s.q.boats[i]!.burst) burstsTotal++;
           },
-          onPassEnd: () => (lastEnd = s.t),
+          onPassEnd: (i) => {
+            lastEnd = s.t;
+            lastGap = s.q.boats[i]!.burst ? P.chaseGapS : P.passGapS; // 連射の終わりでは burst がまだ立っている
+          },
         }),
         onStep: (s) => {
           let n = 0;
@@ -314,10 +386,12 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     }
     expect([bad, shortGap]).toEqual([0, 0]);
     expect(commitsTotal).toBeGreaterThan(20);
+    expect(burstsTotal).toBeGreaterThan(5);
   });
 
-  // v0.6.3 実機 2 回目（有効射程 450 m・航過は危ない間だけ・機関損傷 0.15）: 巡航のまま 4 秒の転舵は 0.64 倍（前は 0.5 倍未満）。HUD は「全速で転舵」に戻した（全速で 4 秒・その後も全速は 0.1 倍）
-  it('5 転舵で被弾が減る: 200 夜（今夜の揺らぎ込み）、赤い線で線から離れる直角へ 4 秒の命中は、まっすぐ巡航で帰るより少ない（巡航で 0.8 倍未満・全速で半分未満）', () => {
+  // v0.6.3 実機 2 回目（有効射程 450 m・航過は危ない間だけ・機関損傷 0.15）: 巡航のまま 4 秒の転舵は 0.64 倍（前は 0.5 倍未満）。HUD は「全速で転舵」に戻した（全速で 4 秒・その後も全速は 0.1 倍）。
+  // 追撃（逃げる艇に離脱せず、後ろから予告つきの連射。連射は針路そのまま）を入れて、航過の転舵だけでは 0.81 倍・全速で 0.51 倍（seed 1〜200。「逃げるだけなら簡単」への答え）
+  it('5 転舵で被弾が減る: 200 夜（今夜の揺らぎ込み）、赤い線（航過）で線から離れる直角へ 4 秒の命中は、まっすぐ巡航で帰るより少ない（巡航で 0.9 倍未満・全速で 0.6 倍未満）', () => {
     let straightHits = 0;
     let turnHits = 0;
     let fullHits = 0;
@@ -327,8 +401,8 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
       fullHits += simulate({ seed, steps: 60 * 170, night: true, policy: turnAway(FULL01), ev: onCommitTurn, stopAtHome: true }).q.hits;
     }
     expect(straightHits).toBeGreaterThan(200);
-    expect(turnHits).toBeLessThan(0.8 * straightHits);
-    expect(fullHits).toBeLessThan(0.5 * straightHits);
+    expect(turnHits).toBeLessThan(0.9 * straightHits);
+    expect(fullHits).toBeLessThan(0.6 * straightHits);
   });
 
   it('6 見失う: 航過の後に艇が止まり 700 m 先（停止 480 m では見つからない）→ 8 秒で隊は見失って哨戒へ。航過の数は変わらない。見えない間の突撃は推した位置（全速で北へ）へ向かい、本当の位置には寄らない', () => {
@@ -544,8 +618,9 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(s.q.shots).toBeGreaterThan(0);
   });
 
-  it('14 航過は本当に向かってくるときだけ（v0.6.3 の直し）: 固めた瞬間はいつも 針路の差 ≤ 30°・艇が線の前・航過の速さで最接近まで 5 秒以内・その距離 ≤ 有効射程（450 m）。2 ステップで終わる航過は無く、まっすぐ帰る艇への航過はほとんど撃つ', () => {
+  it('14 航過は本当に向かってくるときだけ（v0.6.3 の直し）: 固めた瞬間はいつも 針路の差 ≤ 30°・艇が線の前・航過の速さで最接近まで 5 秒以内・その距離 ≤ 有効射程（450 m）。連射は追撃から commit_m の内で PT → 艇の線。2 ステップで終わる航過は無く、まっすぐ帰る艇への航過はほとんど撃つ', () => {
     let commits = 0;
+    let burstCommits = 0;
     let bad = 0;
     let instant = 0;
     let straightPasses = 0;
@@ -563,11 +638,16 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
                 turn?.onCommit?.(i, lockDeg, dodge);
                 commits++;
                 commitAt[i] = s.t;
-                if (s.q.seen[i] !== 1 || !commitOk(commitGeom(s, i, lockDeg))) bad++;
+                const b = s.q.boats[i]!;
+                if (b.burst) {
+                  // 連射（v0.6.3 実機 2 回目）: 追撃中にこの PT が見ていて commit_m の内、赤い線は PT → 艇
+                  burstCommits++;
+                  if (s.q.seen[i] !== 1 || (b.x - s.boat.x) ** 2 + (b.y - s.boat.y) ** 2 > P.chaseCommit2 || Math.abs(wrapDeg180(lockDeg - bearingDeg(b.x, b.y, s.boat.x, s.boat.y))) > 1e-9) bad++;
+                } else if (s.q.seen[i] !== 1 || !commitOk(commitGeom(s, i, lockDeg))) bad++;
               },
               onPassEnd: (i, fired) => {
                 if (s.t - commitAt[i]! <= 2 * DT + 1e-9) instant++;
-                if (k < 2) {
+                if (k < 2 && !s.q.boats[i]!.burst) {
                   straightPasses++;
                   if (!fired) straightUnfired++;
                 }
@@ -580,8 +660,9 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     // v0.6.3 実機 2 回目: 有効射程 450 m で反航の航過を固めると、open_fire_s の前に艇首尾の円錐の後ろへすれ違うことがまれにある（seed 26 の 1 回。2.5 秒の線のあと撃たずに終わる）
     expect([bad, instant]).toEqual([0, 0]);
     expect(straightUnfired).toBeLessThanOrEqual(0.02 * straightPasses);
-    expect(commits).toBeGreaterThan(300);
-    expect(straightPasses).toBeGreaterThan(100);
+    expect(commits - burstCommits).toBeGreaterThan(250); // 航過 330・連射 511（まっすぐ帰る艇への航過 100）
+    expect(burstCommits).toBeGreaterThan(300);
+    expect(straightPasses).toBeGreaterThan(80);
   });
 
   it('15 離脱の直後に背を向けたままの PT は固めない: 東へ 35 kt で走る PT に艇が北から寄る（直す前は今の速度どうしの最接近 2.4 秒・500 m で固め、1 ステップで航過が終わった）→ 向き直ってから固め、撃つ', () => {
@@ -626,18 +707,22 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     const turnR = P.runInMps / degToRad(P.turnRateDegS); // 突撃の速さの旋回半径 m（約 43 m）
     const turnAroundS = 180 / P.turnRateDegS / TS; // 180° 向き直る体感秒（1.5 秒）
     const r = { outside: 0, outsideMin: Infinity, inside: 0, insideWorstDrop: 0, insideOpenS: 0, overallMin: Infinity };
+    let fromChase = 0;
     const runs: [SimOpts['policy'], ((s: Sim) => Partial<PtEvents>) | undefined][] = [[straight(CRUISE01), undefined], [straight(14 / 31), undefined], [turnAway(CRUISE01), onCommitTurn]];
     for (const [policy, extra] of runs) {
       for (let seed = 1; seed <= 40; seed++) {
-        const ep: ({ d0: number; min: number; t0: number; openAt: number; prev: number } | null)[] = [null, null];
+        const ep: ({ d0: number; min: number; t0: number; openAt: number; prev: number; from: number } | null)[] = [null, null];
+        const was = [PT_PATROL, PT_PATROL];
         simulate({
           seed, steps: 60 * 170, night: true, policy, stopAtHome: true, ev: extra,
           onStep: (s) => {
             for (let i = 0; i < 2; i++) {
               const b = s.q.boats[i]!;
               const d = Math.hypot(b.x - s.boat.x, b.y - s.boat.y);
+              const from = was[i]!;
+              was[i] = b.phase;
               if (b.phase === PT_RUN_IN && (s.q.owner >= 0 || s.q.gapLeftS > 0) && s.c.targetValid) {
-                const e = (ep[i] ??= { d0: d, min: d, t0: s.t, openAt: NaN, prev: d });
+                const e = (ep[i] ??= { d0: d, min: d, t0: s.t, openAt: NaN, prev: d, from });
                 e.min = Math.min(e.min, d);
                 if (Number.isNaN(e.openAt) && d > e.prev) e.openAt = s.t;
                 e.prev = d;
@@ -645,7 +730,10 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
               }
               const e = ep[i];
               if (!e) continue;
-              r.overallMin = Math.min(r.overallMin, e.min);
+              // 追撃から突撃へ戻ってすぐ待つ PT（逃げる艇への航過の終わりに艇首の前にいて、追撃を 1 ステップで抜けた。v0.6.3 実機 2 回目）は待ち始めがもう近い（約 65 m）。
+              // 内・外の規則（寄らない・向き直るまでに離れ始める）は同じに見て、最接近の下限だけは見ない
+              if (e.from === PT_CHASE) fromChase++;
+              else r.overallMin = Math.min(r.overallMin, e.min);
               if (e.d0 >= holdM) {
                 r.outside++;
                 r.outsideMin = Math.min(r.outsideMin, e.min);
@@ -663,10 +751,11 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     }
     expect(r.outside).toBeGreaterThan(100);
     expect(r.inside).toBeGreaterThan(10);
+    expect(fromChase).toBeGreaterThan(0);
     expect(r.outsideMin).toBeGreaterThanOrEqual(holdM - 2 * turnR);
     expect(r.insideWorstDrop).toBeLessThanOrEqual(2 * turnR);
     expect(r.insideOpenS).toBeLessThanOrEqual(turnAroundS + DT);
-    expect(r.overallMin).toBeGreaterThan(2 * P.spriteLengthUnits); // PT の絵 2 隻ぶん（約 98 m）より遠い＝艇の絵に重ならない（直す前は 16〜27 m）
+    expect(r.overallMin).toBeGreaterThan(2 * P.spriteLengthUnits); // PT の絵 2 隻ぶん（約 98 m）より遠い＝艇の絵に重ならない（直す前は 16〜27 m。追撃から戻った PT は除く）
   });
 
   it('航過の後に落ちた弾は撃った PT の最後の航過に数える（無傷の航過から外す。通し番号はその弾が落ちてから増えるので、HUD の「かわした！」は後から変わらない。tests/pt-boats-review）', () => {

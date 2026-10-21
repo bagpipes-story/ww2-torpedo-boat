@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { gameData, getGunBatteryParams, getPrototypeMission } from '../src/config/game-data';
 import type { BoatState, SpeedStep } from '../src/core/boat-motion';
 import { GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE, type GunBatteryParams, type GunEvents } from '../src/core/gun-battery';
-import { PT_ALERT, PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SUNK, createPtSection, ptFighting, type PtSection } from '../src/core/pt-boats';
+import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_HULL, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SUNK, createPtSection, ptFighting, type PtSection } from '../src/core/pt-boats';
 import { PT_GUN_RELOAD, createPtGun, stepPtGun, type PtGunState } from '../src/core/pt-gun';
 import { CountingRng, DT, G, P, TS, VIS2, runPtSim } from './pt-kit';
 
@@ -143,7 +143,10 @@ describe('T-14 の 13mm（core/pt-gun）', () => {
       const bat = s.gun!.battery;
       expect(gunRng.draws, `seed ${seed}`).toBe(2 * bat.shots + bat.hits);
       expect(bat.hits).toBe(s.q.gunHits);
-      expect(s.q.retired + s.q.sunk).toBeLessThanOrEqual(s.q.boats.length);
+      // 結末は 1 隻に 1 つ（Result と同じ今の結末で）。隊の KPI q.retired は撃退された PT の数のまま（撃退されて連射・航過を抜けるところで沈んだ PT も入る。v0.6.3 実機 2 回目の連射で起きる）
+      const retiredNow = s.q.boats.filter((b) => b.fate === PT_FATE_CREW || b.fate === PT_FATE_HULL).length;
+      expect(retiredNow + s.q.sunk).toBeLessThanOrEqual(s.q.boats.length);
+      expect(s.q.retired).toBeGreaterThanOrEqual(retiredNow);
       shots += bat.shots;
       hits += bat.hits;
       const quiet = new CountingRng((seed + 20) >>> 0);

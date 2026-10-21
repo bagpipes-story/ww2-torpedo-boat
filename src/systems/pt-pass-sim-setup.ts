@@ -23,14 +23,14 @@ export interface PtSimOverrides {
   gunDisp?: number; gunRpm?: number; gunCone?: number; magRounds?: number; reloadS?: number;
   /** 任務の燃料 gal・夜明けまでの実秒（buildWorldSetup の fuelGal・dawnS） */
   fuelGal?: number; dawnS?: number;
-  /** v0.6.3 実機 2 回目: PT の砲の有効射程 m・1 命中の機関損傷の確率、航過は危ない間だけ（core/pt-fire）を切る（true で f27b266 の航過の終わり。spec r2 §I.3-5） */
-  effectiveM?: number; engineDamage?: number; passEndOff?: boolean;
+  /** v0.6.3 実機 2 回目: PT の砲の有効射程 m・1 命中の機関損傷の確率、航過は危ない間だけ（core/pt-fire）を切る・追撃（core/pt-chase）を切る（両方 true で f27b266 の動き。spec r2 §I.3-5） */
+  effectiveM?: number; engineDamage?: number; passEndOff?: boolean; chaseOff?: boolean;
 }
 
 export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides = {}): PtSimSetup {
   const w = buildWorldSetup(withGunOverrides(withPtOverrides(data, missionId, o), missionId, o), missionId, { fuelGal: o.fuelGal ?? NaN, dawnS: o.dawnS ?? NaN });
   if (!w.ptBoats) throw new Error(`${missionId} に米PT の隊（v0_1_prototype.pt_boats）が無い`);
-  const pt = o.passEndOff === true ? { ...w.ptBoats, passEndsWhenSafe: false } : w.ptBoats;
+  const pt = o.passEndOff === true || o.chaseOff === true ? { ...w.ptBoats, passEndsWhenSafe: o.passEndOff !== true, chaseOn: o.chaseOff !== true } : w.ptBoats;
   const night = w.mission.night;
   const events = data.riskEvents.events as readonly Record<string, unknown>[];
   const hazardShares: Record<string, number> = {};
