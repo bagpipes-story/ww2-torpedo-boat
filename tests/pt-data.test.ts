@@ -94,6 +94,10 @@ describe('史料の書き方（v0.6.3 レビュー）', () => {
     const t14 = (gameData.boats.boats as unknown as Rec[]).find((b) => b['id'] === 'jp_t14')!['source'] as Rec;
     for (const k of ['speed_max_kt', 'crew', 'gun_battery']) expect(String(t14[k]), k).toContain('WebSearch の抜粋のみ・本文未読');
     expect(String(t14['gun_battery'])).toMatch(/historical .*\/ design \(v0\.6\.3 実機 1 回目/); // 13mm を選んだのと弾倉・交換秒は設計
+    // v0.6.4: T-38 の 25mm（jp_01「夜の輸送護衛」）も同じ作法（抜粋のみ・史実と設計を分ける）
+    const t38 = (gameData.boats.boats as unknown as Rec[]).find((b) => b['id'] === 'jp_t38')!['source'] as Rec;
+    expect(String(t38['gun_battery'])).toContain('WebSearch の抜粋のみ・本文未読');
+    expect(String(t38['gun_battery'])).toMatch(/historical .*\/ design \(v0\.6\.4/);
     expect(String(t14['speed_max_kt'])).toMatch(/historical .*\/ design \(31 kt/); // 31 kt は設計の値（史実は 30〜33）
     // 暗夜の目視 300〜800 m に入るのは停止・静音（480・600 m）で、巡航 1,200 m は入らない
     const det = String((ptRec(gameData)['source'] as Rec)['detection']);

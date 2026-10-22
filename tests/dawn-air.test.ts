@@ -279,7 +279,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
       us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
       us_07: ['own', 'high', 'own', 'none', '昼の空は味方（連合軍）'],
-      jp_01: ['enemy', 'medium', 'enemy', 'retire', '昼の空は敵（ヘンダーソン基地）'],
+      jp_01: ['enemy', 'medium', 'enemy', 'none', '昼の空は敵（ヘンダーソン基地）'], // v0.6.4: 米PT は夜明けに core/pt-boats のラッチで去る（retire は駆逐艦の規則で、無い任務には置けない）
       jp_02: ['enemy', 'low', 'enemy', 'none', '昼の空は敵（米の飛行艇）'],
       jp_03: ['enemy', 'high', 'enemy', 'none', '昼の空は敵（第38任務部隊）'],
       jp_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は敵（タクロバンのコルセア）'],

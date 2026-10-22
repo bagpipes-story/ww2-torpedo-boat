@@ -673,14 +673,13 @@
       "order": 1,
       "playable_from": "v0.6.4",
       "title_ja": "夜の輸送護衛",
-      "date": "1942-12-20",
-      "place": "ショートランド〜ガダルカナル",
+      "date": "1942-12-09",
+      "place": "ガダルカナル島北岸（カミンボ沖）",
       "type": "escort_convoy",
       "player_boat": "jp_t38",
       "torpedo_type": "jp_45cm",
-      "objective": "隼艇と組んで大発輸送をPTの夜襲から守る。大発の到達数で評価",
+      "objective": "大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。大発は見つかりにくく、自艇は撃てば閃光で狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵",
       "allies": [
-        "jp_h2_hayabusa",
         "daihatsu_barge",
         "daihatsu_barge",
         "daihatsu_barge"
@@ -695,14 +694,15 @@
       ],
       "moon": "dark",
       "duration_min": 5,
-      "success": "大発2隻以上到達、自艇生還",
-      "historical_note": "米PTの大発掃討の裏返し。隼艇は米PT対抗のため魚雷を外して機銃を増備した艇。",
-      "source_url": "https://ja.wikipedia.org/wiki/隼艇",
+      "success": "大発2隻以上を浜に届けて帰投。3隻なら上陸の点が増える",
+      "historical_note": "1942年12月、ガダルカナル島北岸の大発の夜間前送は月明かりの夜に米PTと夜間機に止められ、計画の半分も運べなかった（NIDS 齋藤 2023、medium）。12月9日夜、PT-44・PT-59がカミンボ沖で大発を見つけて撃った（米海軍公刊史 At Close Quarters 付録C、high）。T-38型は1943〜45年の艇で、日本の魚雷艇・隼艇が大発を護衛して米PTと戦った記録は無い。遭遇はゲーム上の想定（艇は T-38 で代用）。すべて WebSearch の抜粋のみ・本文未読",
+      "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-C.html",
+      "briefing_note_ja": "1942年12月、ガダルカナル島北岸では月明かりの夜の大発の輸送が米PTと夜間機に阻まれ、計画の半分も運べなかった。12月9日夜にはPT-44とPT-59がカミンボ沖で大発を襲った。魚雷艇が大発を護衛してPTと戦った記録は無く、この夜はゲーム上の想定（艇は1944年のT-38で代用）。",
       "dawn_air": {
         "control": "enemy",
         "confidence": "medium",
         "play_as": "enemy",
-        "enemy_ships_at_dawn": "retire",
+        "enemy_ships_at_dawn": "none",
         "label_ja": "昼の空は敵（ヘンダーソン基地）",
         "refs": [
           {
@@ -714,7 +714,7 @@
             "claim": "第802航空隊（水上戦闘機・飛行艇）。ショートランド方面の日本の水上機の部隊（日本側の掩護はショートランド寄り）"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は確度 medium、日本語の調査は high → 低い方。ショートランド寄りでは日本の水上戦闘機・ブインの零戦の掩護があり場所しだい（zones は将来）) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は確度 medium、日本語の調査は high → 低い方。ショートランド寄りでは日本の水上戦闘機・ブインの零戦の掩護があり場所しだい（zones は将来）) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。v0.6.4: enemy_ships_at_dawn retire → none（米PT は core/pt-boats の夜明けのラッチで北東へ去る＝jp_05 と同じ規則。retire は駆逐艦（enemy_start）の規則で、無い任務には置けない: config/dawn-data の checkWithdraw）)"
       }
     },
     {
