@@ -32,10 +32,10 @@ import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa, ptResultLines } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import type { BargeResult, EscortResult, PtResult } from '../ui/result-types';
+import type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types';
 
 export type { MissionEndReason } from '../core/mission-flow';
-export type { BargeResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
+export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
 
 /** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
 const TRANSPORT_ENEMY_ID = 'ijn_transport';
@@ -113,6 +113,7 @@ export interface MissionResult {
   /** 僚艇（v0.4.4）の記録。任務に僚艇がいなければ null。detections は駆逐艦に見つかった回数（回避の点の根拠。駆逐艦のいない任務は 0） */
   escort: EscortResult | null;
   pt: PtResult | null; // 敵の米PT（v0.6.3）の記録。米PT の任務でなければ null（detections は米PT の隊に見つかった回数）
+  convoy: ConvoyResult | null; // 味方の大発の輸送隊（v0.6.4）の記録。輸送隊の任務でなければ null
   detections: number;
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;

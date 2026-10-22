@@ -4,6 +4,7 @@
 import { gameData } from '../src/config/game-data';
 import { PT_GUN_SHELL_POOL_SIZE, PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
 import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
+import { createConvoyTelemetry } from '../src/core/convoy';
 import { createDawnTelemetry } from '../src/core/dawn-air';
 import { createPtSection, type PtSection, type PtTelemetry } from '../src/core/pt-boats';
 import { createPtGun, type PtGunState } from '../src/core/pt-gun';
@@ -52,6 +53,7 @@ export function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry>
     ...over,
     dawn: { ...createDawnTelemetry(), ...(over.dawn ?? {}) },
     pt: { ...PT0, ...pt },
+    convoy: createConvoyTelemetry(), // 輸送隊の無い任務（v0.6.4。enabled false）
   } as BoatTelemetry;
 }
 

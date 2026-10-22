@@ -1,0 +1,147 @@
+// 米PT の隊の標的スロットの世界側（v0.6.4。jp_01「夜の輸送護衛」。docs/02 §6.4、spec §C.2〜C.6・§E.2）: 自艇と味方の大発の船体（PtHull）の配列を出撃時に 1 回作り、
+// 毎ステップ valid と発見距離を書いて core/pt-target（pickPtTarget → applyPtTarget）で PtCheck の標的を差し替える。掃射の着弾（hull）を自艇の被害か輸送隊の命中へ分け、
+// 自艇だけの成績（被弾・自艇への攻撃のうち撃った／無傷・最後の攻撃の標的への命中）と HUD 用の標的の種類（0 自艇・1 大発）を持つ。隊の KPI（q.hits など）はどの船体への命中も数える（core。模擬と同じ）。
+// 大発が沈んだ・上陸した同じステップで valid（標的なら targetValid も）を落とす＝残りの弾が沈み始めた大発に当たらない（模擬 core/convoy-sim と同じ）。
+// Phaser を import しない（tests から読む）。§7: 確保は constructor だけ。乱数は引かない（大発への命中は HP だけ）。PtSquadron が輸送隊のある任務でだけ作る（jp_05 は作らない＝core は v0.6.3 の枝）。
+import type { BoatState } from '../core/boat-motion';
+import { CV_SAILING, type ConvoyParams, type ConvoyState } from '../core/convoy';
+import type { PtCheck, PtHull, PtSection } from '../core/pt-boats';
+import { applyPtTarget, createPtTargetSet, pickPtTarget, type PtTargetRule, type PtTargetSet } from '../core/pt-target';
+
+/** 標的スロットが読む輸送隊（systems/convoy の Convoy がそのまま満たす）: 隊の状態・寸法、米PT の標的の規則、大発が見つかる距離 m、命中（沈んだら true） */
+export interface PtTargetConvoy {
+  readonly state: ConvoyState;
+  readonly p: ConvoyParams;
+  readonly rule: PtTargetRule;
+  readonly detectM: number;
+  hit(i: number, damage: number, nowS: number): boolean;
+}
+
+export class PtTargets {
+  /** [0] は自艇、[1..] は大発（core の PtCheck.targets がこの配列を読む） */
+  readonly hulls: PtHull[];
+  readonly set: PtTargetSet;
+  readonly rule: PtTargetRule;
+  /** 自艇への命中・大発への命中（隊の全命中は core の q.hits）、大発を狙った攻撃（航過。連射は大発に起きない）、最初に捉えた標的（0 自艇・1 大発） */
+  playerHits = 0;
+  bargeHits = 0;
+  attacksOnBarges = 0;
+  firstDetectKind = 0;
+  /** 自艇への攻撃（航過＋連射）のうち撃ったもの・自艇に 1 発も当たらなかったもの（Result の「かわした N/M」。大発への航過は分母に入らない） */
+  firedPassesOnPlayer = 0;
+  cleanPassesOnPlayer = 0;
+  /** 最後に終えた攻撃の標的の船体への命中（後から落ちた弾も。HUD の「被弾 N 発」「大発 被弾 N 発」）とその標的（0 自艇・1 大発） */
+  lastAttackTargetHits = 0;
+  lastPassTargetKind = 0;
+  /** 今の攻撃（固めた瞬間の標的）の種類と標的の船体への命中（終わる瞬間に撃っていた攻撃を Result が数えるため） */
+  attackKind = 0;
+  attackHits = 0;
+  /** 25mm を最後に撃った体感秒（閃光の記憶 ptHeldFlashM の元。撃っていなければ −Infinity） */
+  lastFireS = -Infinity;
+  private attackHull = 0;
+  /** 今の攻撃の PT と、攻撃が開いている（固めてから終わるまで。25mm で沈んだ PT の攻撃は core の dropOwner が onPassEnd 無しで閉じるので、PtSquadron の onFate が dropAttack で閉じる） */
+  private attackOwner = -1;
+  private attackOpen = false;
+  private lastHull = 0;
+  private lastFired = false;
+  private contacted = false;
+
+  constructor(
+    player: BoatState,
+    playerHalfLengthM: number,
+    playerHalfBeamM: number,
+    private readonly convoy: PtTargetConvoy,
+  ) {
+    this.rule = convoy.rule;
+    this.hulls = [{ boat: player, halfLengthM: playerHalfLengthM, halfBeamM: playerHalfBeamM, valid: true }];
+    for (const b of convoy.state.barges) this.hulls.push({ boat: b, halfLengthM: convoy.p.halfLengthM, halfBeamM: convoy.p.halfBeamM, valid: b.phase === CV_SAILING });
+    this.set = createPtTargetSet(this.hulls);
+    for (let k = 1; k < this.hulls.length; k++) this.set.detectM[k] = convoy.detectM;
+  }
+
+  /** 今の標的の種類（0 自艇・1 大発。HUD の文の分岐） */
+  get targetKind(): number {
+    return this.set.current > 0 ? 1 : 0;
+  }
+
+  /** 自艇が的になれる（浮いていて輪の外。25mm の canFire もこれ） */
+  get playerValid(): boolean {
+    return this.hulls[0]!.valid;
+  }
+
+  /** 毎ステップの始め（25mm の前）: 自艇の帯の発見距離と有効、大発の有効（航行中だけ。上陸・沈没は的でなくなる） */
+  begin(playerDetectM: number, playerValid: boolean): void {
+    this.set.detectM[0] = playerDetectM;
+    this.hulls[0]!.valid = playerValid;
+    const barges = this.convoy.state.barges;
+    for (let k = 1; k < this.hulls.length; k++) this.hulls[k]!.valid = barges[k - 1]!.phase === CV_SAILING;
+  }
+
+  /** 25mm の後・接触の前: 標的を選んで PtCheck に書く（heldFlashM は閃光の記憶。core/pt-target） */
+  apply(q: PtSection, c: PtCheck, heldFlashM: number, nowS: number): void {
+    applyPtTarget(q, c, this.set, pickPtTarget(q, this.set, heldFlashM, this.rule, nowS), nowS);
+  }
+
+  /** 隊が捉えた立ち上がり（PtEvents.onContact）: 最初の 1 回だけ、そのときの標的を覚える */
+  onContact(gained: boolean): void {
+    if (!gained || this.contacted) return;
+    this.contacted = true;
+    this.firstDetectKind = this.targetKind;
+  }
+
+  /** 攻撃を固めた（PtEvents.onCommit）: 標的の種類と船体を固め、命中を 0 から */
+  onCommit(i: number): void {
+    this.attackOwner = i;
+    this.attackOpen = true;
+    this.attackHull = this.set.current;
+    this.attackKind = this.targetKind;
+    this.attackHits = 0;
+    if (this.attackKind === 1) this.attacksOnBarges++;
+  }
+
+  /** 攻撃中の PT が 25mm で沈んだ（core の dropOwner が閉じた攻撃。PtSquadron の onFate）: 終わった攻撃として数える（fired は隊の lastPassFired） */
+  dropAttack(i: number, fired: boolean): void {
+    if (this.attackOpen && this.attackOwner === i) this.onPassEnd(fired);
+  }
+
+  /** 攻撃が終わった（PtEvents.onPassEnd）: 自艇への攻撃なら撃った・無傷を数え、最後の攻撃の標的と命中を覚える（後から落ちた弾はここへ戻す） */
+  onPassEnd(fired: boolean): void {
+    this.attackOpen = false;
+    this.lastHull = this.attackHull;
+    this.lastPassTargetKind = this.attackKind;
+    this.lastAttackTargetHits = this.attackHits;
+    this.lastFired = fired;
+    if (this.attackKind !== 0) return;
+    if (fired) this.firedPassesOnPlayer++;
+    if (fired && this.attackHits === 0) this.cleanPassesOnPlayer++;
+  }
+
+  /** 自艇への命中（世界が被害を当てた後）。沈み始めたら自艇の船体を落とす（標的なら同じステップの残りの弾は当たらない） */
+  playerHit(q: PtSection, c: PtCheck, sinking: boolean): void {
+    this.playerHits++;
+    this.countHit(q, 0);
+    if (!sinking) return;
+    this.hulls[0]!.valid = false;
+    if (this.set.current === 0) c.targetValid = false;
+  }
+
+  /** 大発への命中（hull ≥ 1）: HP だけ（乱数なし）。沈んだら同じステップで valid（標的なら targetValid も）を落とし true */
+  bargeHit(q: PtSection, c: PtCheck, hull: number, damage: number, nowS: number): boolean {
+    this.bargeHits++;
+    this.countHit(q, hull);
+    if (!this.convoy.hit(hull - 1, damage, nowS)) return false;
+    this.hulls[hull]!.valid = false;
+    if (this.set.current === hull) c.targetValid = false;
+    return true;
+  }
+
+  /** 攻撃の標的の船体への命中を数える: 攻撃中（owner ≥ 0）はその攻撃へ、終わった後に落ちた弾は最後の攻撃へ（攻撃は同時に 1 つで gap ≥ 2 秒 > 弾の飛行なので取り違えない。core の cleanPasses-- と同じ） */
+  private countHit(q: PtSection, hull: number): void {
+    if (q.owner >= 0) {
+      if (hull === this.attackHull) this.attackHits++;
+      return;
+    }
+    if (hull !== this.lastHull) return;
+    if (this.lastAttackTargetHits++ === 0 && this.lastFired && this.lastPassTargetKind === 0) this.cleanPassesOnPlayer--;
+  }
+}

@@ -198,6 +198,7 @@ export const TEXTURE_KEYS = {
   rudderBar: 'tex-rudder-bar',
   rudderMarker: 'tex-rudder-marker',
   barge: 'tex-barge',
+  bargeFriendly: 'tex-barge-friendly', // 味方の大発（v0.6.4。assets/barge-placeholder。赤い tex-barge を tint しても青くならないので別の 1 枚）
   gunTracer: 'tex-gun-tracer',
   coastMarker: 'tex-coast-marker',
   ptBoat: 'tex-pt-boat', // 敵の米PT（v0.6.3。assets/pt-placeholder）

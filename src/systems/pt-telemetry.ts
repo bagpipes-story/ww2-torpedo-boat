@@ -6,6 +6,8 @@
 // v0.6.3 実機 2 回目（追撃。spec r2 §F）: 撃つ PT の攻撃が連射か・最後に終えた攻撃が連射かとその PT・撃った連射の数、黙った連射（制圧も）と撃退で黙った、13mm の出来事の PT、
 // Result の連射と制圧の数（終わる瞬間に撃っていた連射は航過ではなく連射に数える）。まだ戦う PT は core の ptFighting で数える。攻撃の後に弾がまだ飛んでいる（resultPending。2 行目の ptHoldPass）。
 // 脅威の PT は HUD の順（core の hudThreatIndex。レビュー ux-5: 次の航過の PT を追ってくる PT より先に）。
+// v0.6.4（標的スロット。jp_01）: 隊の今の標的・最後の攻撃の標的（HUD の文の分岐）、HUD の「被弾 N 発」は最後の攻撃の標的の船体への命中、Result の被弾・かわしたは自艇への攻撃だけ
+// （大発への航過は分母に入らない）、大発への航過・最初に捉えた標的・砲の名。標的スロットの無い任務（jp_05）は core の値のまま。
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
@@ -13,6 +15,7 @@ import { PT_FATE_NONE, PT_FATE_SUNK, createPtTelemetry, hudThreatIndex, ptFighti
 import type { PtGunState } from '../core/pt-gun';
 import { mpsToKt } from '../core/units';
 import type { PtResult } from '../ui/result-types';
+import type { PtTargets } from './pt-target';
 
 /** テレメトリと Result が読む世界の部分 */
 export interface PtTelemetryWorld {
@@ -26,6 +29,8 @@ export interface PtTelemetryWorld {
     readonly firstDetectBand: SpeedStep | '';
     readonly enemyId: string;
     readonly gun: { readonly state: PtGunState; readonly g: GunBatteryParams } | null;
+    /** 標的スロット（v0.6.4。輸送隊の無い任務は null か省略） */
+    readonly targets?: PtTargets | null;
   } | null;
   readonly boat: { readonly state: BoatState };
   /** 艇の静音の上限（2 行目の「14 kt 以下に」） */
@@ -120,9 +125,13 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.passes = q.passes;
   t.passSeq = q.passSeq;
   t.resultPending = q.seqPending;
-  t.lastPassHits = q.lastPassHits;
   t.lastPassFired = q.lastPassFired;
   t.leftAtDawn = q.leftAtDawn;
+  // 標的スロット（v0.6.4）: 今の標的・最後の攻撃の標的、「被弾 N 発」は最後の攻撃の標的の船体への命中（自艇の航過中に大発へ逸れた弾は数えない）
+  const ts = s.targets ?? null;
+  t.targetKind = ts ? ts.targetKind : 0;
+  t.lastPassTargetKind = ts ? ts.lastPassTargetKind : 0;
+  t.lastPassHits = ts ? ts.lastAttackTargetHits : q.lastPassHits;
 }
 
 /**
@@ -146,6 +155,9 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
   const open = q.owner >= 0 && q.boats[q.owner]!.firedThisPass > 0 ? 1 : 0;
   const openBurst = open === 1 && q.boats[q.owner]!.burst ? 1 : 0;
   const g = s.gun ? s.gun.state : null;
+  // 標的スロット（v0.6.4。jp_01）: 被弾・撃った・無傷は自艇への攻撃だけ（終わる瞬間の攻撃も標的が自艇のときだけ）。無い任務は隊の値
+  const ts = s.targets ?? null;
+  const openOnPlayer = ts && open === 1 && ts.attackKind === 0 ? 1 : 0;
   return {
     enemyId: s.enemyId,
     total: s.p.count,
@@ -154,10 +166,10 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     leftAtDawn: q.leftAtDawn,
     passes: q.passes + open - openBurst,
     maxPasses: ptMaxPasses(q, s.p),
-    firedPasses: q.firedPasses + open,
-    cleanPasses: q.cleanPasses + (open === 1 && q.passHits === 0 ? 1 : 0),
+    firedPasses: ts ? ts.firedPassesOnPlayer + openOnPlayer : q.firedPasses + open,
+    cleanPasses: ts ? ts.cleanPassesOnPlayer + (openOnPlayer === 1 && ts.attackHits === 0 ? 1 : 0) : q.cleanPasses + (open === 1 && q.passHits === 0 ? 1 : 0),
     shots: q.shots,
-    hits: q.hits,
+    hits: ts ? ts.playerHits : q.hits,
     damagePerHit: s.p.hit.damage,
     hpMax: w.damageParams.maxHp,
     firstDetectM: q.firstDetectM,
@@ -173,5 +185,8 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     flashFirst: q.flashFirst,
     bursts: q.firedBursts + openBurst,
     suppressions: q.suppressions,
+    passesOnBarges: ts ? ts.attacksOnBarges : 0,
+    firstDetectKind: ts ? ts.firstDetectKind : 0,
+    gunLabel: s.gun ? s.gun.g.label.replace('機銃', '') : '',
   };
 }

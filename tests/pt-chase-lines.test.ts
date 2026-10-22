@@ -201,6 +201,7 @@ const BASE: PtResult = {
   enemyId: 'us_pt_enemy', total: 2, out: 0, alive: 2, leftAtDawn: false, passes: 3, maxPasses: 8, firedPasses: 7, cleanPasses: 2, shots: 70, hits: 9, damagePerHit: 4, hpMax: 50,
   firstDetectM: 1199.6, firstDetectBand: 'cruise', lostContacts: 0, closestM: 120, minWarnS: 2.52,
   gunEnabled: true, gunShots: 223, gunHits: 25, retired: 1, sunk: 0, flashFirst: false, bursts: 4, suppressions: 4,
+  passesOnBarges: 0, firstDetectKind: 0, gunLabel: '13mm', // v0.6.4 の標的スロットの欄（jp_05 は自艇だけ）
 };
 
 describe('Result（spec r2 §F.4）', () => {

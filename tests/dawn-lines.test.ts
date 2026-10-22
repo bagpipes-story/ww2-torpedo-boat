@@ -23,6 +23,7 @@ import {
 } from '../src/core/air-strike';
 import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
 import { createPtTelemetry } from '../src/core/pt-boats';
+import { createConvoyTelemetry } from '../src/core/convoy';
 import { DAWN_AIR_ENEMY, DAWN_AIR_NONE, DAWN_AIR_OWN, createDawnResult, createDawnTelemetry, type DawnResult, type DawnTelemetry } from '../src/core/dawn-air';
 import { FF_IDLE, FF_OUT_NONE, type AircraftPose } from '../src/core/friendly';
 import { GUN_SAFE } from '../src/core/gun-battery';
@@ -77,6 +78,7 @@ function tele(dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> = 
     stormFast: false,
     stormSafeKt: 12,
     pt: createPtTelemetry(), // 米PT の無い任務（v0.6.3。enabled false）
+    convoy: createConvoyTelemetry(), // 輸送隊の無い任務（v0.6.4。enabled false）
     ...over,
     dawn: { ...createDawnTelemetry(), ...dawn },
   } as BoatTelemetry;

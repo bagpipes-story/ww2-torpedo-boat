@@ -53,6 +53,7 @@ const BASE: PtResult = {
   enemyId: 'us_pt_enemy', total: 2, out: 0, alive: 2, leftAtDawn: false, passes: 5, maxPasses: 8, firedPasses: 4, cleanPasses: 2, shots: 40, hits: 4, damagePerHit: 4, hpMax: 50,
   firstDetectM: 1199.6, firstDetectBand: 'silent', lostContacts: 0, closestM: 120, minWarnS: 2.52,
   gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false, bursts: 0, suppressions: 0,
+  passesOnBarges: 0, firstDetectKind: 0, gunLabel: '13mm', // v0.6.4 の標的スロットの欄（jp_05 は自艇だけ）
 };
 
 describe('13mm の Result（ui/pt-lines）', () => {

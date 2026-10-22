@@ -54,6 +54,23 @@ export interface ConvoyEvents {
   onSunk(i: number): void;
 }
 
+/** HUD に渡す輸送隊の状態（systems/convoy-telemetry が毎フレーム中身だけ書く。輸送隊の無い任務は enabled false のまま。core/pt-state の PtTelemetry と同じ形） */
+export interface ConvoyTelemetry {
+  enabled: boolean;
+  /** 隻数・航行中・上陸・沈没、決着（みな上陸か沈没） */
+  total: number; afloat: number; arrived: number; sunk: number; resolved: boolean;
+  /** 最も遅れた航行中の大発から上陸線まで m（x の差だけ。無ければ 0。「浜まで N m」） */
+  leftM: number;
+  /** 自艇から最寄りの航行中の大発へ（m。無ければ NaN）とその距離 m（端の矢印・離脱の尾。平方根は 1 フレーム 1 回） */
+  nearestDx: number; nearestDy: number; nearestM: number;
+  /** 米PT の来る方角（出撃時に 1 回。Briefing の敵と同じ「東」） */
+  fromDirJa: string;
+}
+
+export function createConvoyTelemetry(): ConvoyTelemetry {
+  return { enabled: false, total: 0, afloat: 0, arrived: 0, sunk: 0, resolved: false, leftM: 0, nearestDx: NaN, nearestDy: NaN, nearestM: NaN, fromDirJa: '' };
+}
+
 /** 航行中（上陸も沈没もしていない）＝的になり、HUD の「大発 N 隻」に数える */
 export function convoyAfloat(b: ConvoyBarge): boolean {
   return b.phase === CV_SAILING;

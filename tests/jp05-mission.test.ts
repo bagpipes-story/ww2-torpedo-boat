@@ -436,6 +436,7 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
     enemyId: 'us_pt_enemy', total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 8, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 4, hpMax: 50,
     firstDetectM: NaN, firstDetectBand: '', lostContacts: 0, closestM: 812.4, minWarnS: Infinity,
     gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false, bursts: 0, suppressions: 0,
+  passesOnBarges: 0, firstDetectKind: 0, gunLabel: '13mm', // v0.6.4 の標的スロットの欄（jp_05 は自艇だけ）
   };
   it('一度も見つからずに抜けた: 最接近と「—」（撃たれていない）。帰投しなかった（漂流）なら「抜けた」と言わない', () => {
     expect(ptResultLines(base, 0, true)).toEqual(['米PT に一度も見つからずに抜けた', '見つからず ・ PT の最接近 812 m', '予告から初弾まで 最短 — 秒 ・ 撃たれた弾 0 発', '13mm は撃たなかった']);

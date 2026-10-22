@@ -231,9 +231,9 @@ export class MissionScene extends Phaser.Scene {
     const needGal = this.ringEdgeM * w.fuelCurve.galPerMCruise;
     const needS = this.ringEdgeM / (w.fuelCurve.cruiseMps * this.timeScale);
     // 撃ち尽くし: 魚雷の任務は残弾 0、砲の任務は狩る大発が残っていない（撃破か上陸。v0.4.2）。撃沈は任務の目標（駆逐艦の撃沈／大発のノルマ）
-    const expended = w.setup.mainWeapon === 'torpedo' ? w.torpedoes.remaining === 0 && !w.torpedoesRunning : w.enemy.noTargetsLeft;
+    const expended = w.setup.mainWeapon === 'torpedo' ? w.torpedoes.remaining === 0 && !w.torpedoesRunning : w.noTargetsLeft;
     const before = this.callFlags;
-    this.callFlags = updateReturnCalls(before, w.enemy.objectiveDone, expended, w.fuel.gal, needGal, this.timeLeftS, needS, rp.callMargin);
+    this.callFlags = updateReturnCalls(before, w.returnCallDone, expended, w.fuel.gal, needGal, this.timeLeftS, needS, rp.callMargin);
     if (before === 0 && this.callFlags !== 0) this.returnView?.pulse();
     // 燃料計の青い目盛り: 全速で輪の縁まで戻るのに要る燃料（全速は巡航の 1.47 倍食うので、巡航基準だと全速で走る人には甘すぎた。v0.3.3 実機）
     t.fuelNeed01 = w.fuelAllotmentGal > 0 ? (this.ringEdgeM * w.fuelCurve.galPerMFull) / w.fuelAllotmentGal : 0;
