@@ -1,5 +1,6 @@
 // 敵の米PT の隊の接触（spec §C.5 の 1。v0.6.4 で core/pt-boats の stepPtSection から切り出し。中身はそのまま）: どれか 1 隻が見れば隊が捉え、最後に見た位置と速度（lk*）を残す。
-// 艇の 13mm の閃光（c.flashM）でも見つける。みな去れば捉えるのをやめる（見失わせたに数えない）。乱数は引かない・毎ステップ確保しない。
+// 艇の 13mm の閃光（c.flashM）でも見つける。閃光の位置は c.flashX/Y（v0.6.4。標的が大発でも閃光は自艇から。無ければ boat の位置＝jp_05 は同じ式・同じ値）。
+// みな去れば捉えるのをやめる（見失わせたに数えない）。乱数は引かない・毎ステップ確保しない。
 // pt-boats だけが呼ぶ（stepPtSection の 1。目標の推定・夜明け・PT ごとの段階はそのまま pt-boats）。
 import type { BoatState } from './boat-motion';
 import type { PtParams } from './pt-data';
@@ -16,6 +17,8 @@ export function stepPtContact(q: PtSection, p: PtParams, c: PtCheck, boat: BoatS
   let near2 = Infinity;
   const fl = c.flashM ?? 0;
   const fl2 = fl * fl;
+  const fx = c.flashX ?? boat.x; // 閃光の位置（v0.6.4）。無ければ標的＝自艇の位置で、閃光の距離は d2 と同じ被演算子・同じ順＝同じ double
+  const fy = c.flashY ?? boat.y;
   for (let i = 0; i < boats.length; i++) {
     const b = boats[i]!;
     if (ptFighting(b.phase)) anyLive = true;
@@ -24,7 +27,7 @@ export function stepPtContact(q: PtSection, p: PtParams, c: PtCheck, boat: BoatS
     const r = live && smokeBlocked(c, b) ? c.detectOpenM * c.smokeFactor : c.detectOpenM;
     const normal = live && c.timeS >= p.detectFromS && d2 <= r * r;
     if (normal) anyNormal = true;
-    q.seen[i] = normal || (live && c.timeS >= p.detectFromS && d2 <= fl2) ? 1 : 0;
+    q.seen[i] = normal || (live && c.timeS >= p.detectFromS && (fx - b.x) * (fx - b.x) + (fy - b.y) * (fy - b.y) <= fl2) ? 1 : 0;
     if (q.seen[i] === 1) anySeen = true;
     if (live && d2 < near2) near2 = d2;
   }

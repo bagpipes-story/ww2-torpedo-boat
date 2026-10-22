@@ -182,7 +182,10 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       ev.onOut(i);
     } else if (b.phase === PT_PASS && b.timerS > 0) stepPass(q, p, c, b, i, vpx, vpy, rng, feelDt, ev); // 固めたステップ（timerS 0）は撃たない（連射も）
   }
-  // 5. 弾: 航過の命中はその航過に、終わった後に落ちた弾は撃った PT の最後の航過に数える。その PT の弾がみな落ちたら航過の通し番号を増やす（HUD の結果は確定してから）
+  // 5. 弾: 航過の命中はその航過に、終わった後に落ちた弾は撃った PT の最後の航過に数える。その PT の弾がみな落ちたら航過の通し番号を増やす（HUD の結果は確定してから）。
+  // 着弾の相手（v0.6.4）: 船体の集合（c.targets）があればその valid な船体を index 順に見て最初に当たった 1 つ（自艇が [0]）、無ければ標的の 1 隻（v0.6.3 の式と 3 引数の onImpact そのまま）。
+  // 隊の命中（hits・passHits・lastPassHits・cleanPasses）はどの船体への命中も数える（隊の KPI。自艇だけの成績は世界が hull で分ける）
+  const hulls = c.targets;
   let lastInFlight = false;
   for (let k = 0; k < q.shells.length; k++) {
     const s = q.shells[k]!;
@@ -191,7 +194,18 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       if (s.gunIndex === q.lastPassBoat) lastInFlight = true;
       continue;
     }
-    const hit = c.targetValid && pointNearBoat(s.impactX, s.impactY, boat, c.boatHalfLengthM, c.boatHalfBeamM + p.gun.splashRadiusM);
+    let hull = 0;
+    let hit = false;
+    if (hulls === undefined) hit = c.targetValid && pointNearBoat(s.impactX, s.impactY, boat, c.boatHalfLengthM, c.boatHalfBeamM + p.gun.splashRadiusM);
+    else {
+      for (let j = 0; j < hulls.length && !hit; j++) {
+        const h = hulls[j]!;
+        if (h.valid && pointNearBoat(s.impactX, s.impactY, h.boat, h.halfLengthM, h.halfBeamM + p.gun.splashRadiusM)) {
+          hit = true;
+          hull = j;
+        }
+      }
+    }
     if (hit) {
       q.hits++;
       if (s.gunIndex === q.owner) q.passHits++;
@@ -200,7 +214,8 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
         if (q.lastPassHits++ === 0 && q.lastPassFired) q.cleanPasses--;
       }
     }
-    ev.onImpact(s.impactX, s.impactY, hit);
+    if (hulls === undefined) ev.onImpact(s.impactX, s.impactY, hit);
+    else ev.onImpact(s.impactX, s.impactY, hit, hull);
   }
   if (q.seqPending && !lastInFlight) {
     q.seqPending = false;

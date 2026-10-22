@@ -5,7 +5,7 @@ import type { PtParams } from './pt-data';
 import { createShells, type ShellState } from './shells';
 import type { SmokeParams, SmokeState } from './smoke';
 
-/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm） */
+/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm。+21 は大発の 13mm の撃ち返し（v0.6.5 候補）に予約） */
 export const PT_SEED_OFFSET = 18;
 /** T-14 の 13mm の乱数の系列（seed+20。v0.6.3 実機 1 回目。1 発 2 回・生きた PT への命中 1 回。米PT の隊で艇に砲がある任務（jp_05）だけ作る） */
 export const PT_GUN_SEED_OFFSET = 20;
@@ -107,6 +107,22 @@ export interface PtCheck {
   timeS: number;
   /** 艇の 13mm の閃光が見える距離 m（v0.6.3 実機 1 回目。撃ったステップだけ。0 か無しは撃っていない。detect_from_s の前は見つけない） */
   flashM?: number;
+  /** 閃光の位置（v0.6.4。標的が大発でも自艇の砲の閃光は自艇から）。無ければ boat の位置（jp_05: 同じ式・同じ値） */
+  flashX?: number;
+  flashY?: number;
+  /**
+   * 弾が当たる船体の集合（v0.6.4。味方の大発を守る任務だけ。[0] は自艇）: 着弾はこの配列の valid な船体を index 順に見て最初に当たった 1 つに当て、その index を onImpact の hull に渡す。
+   * 無ければ（jp_05）boat 1 隻だけ＝v0.6.3 の式と 3 引数の onImpact そのまま
+   */
+  targets?: readonly PtHull[];
+}
+
+/** 掃射の弾が当たる船体（v0.6.4。core/pt-target の標的スロットの材料）: 位置と向き、当たりの半長・半幅 m、浮いていて的になる（世界が毎ステップ書く） */
+export interface PtHull {
+  boat: BoatState;
+  halfLengthM: number;
+  halfBeamM: number;
+  valid: boolean;
 }
 
 /** 呼ぶ側への知らせ（引数は数と真偽だけ） */
@@ -114,7 +130,8 @@ export interface PtEvents {
   onContact(gained: boolean): void;
   onCommit(i: number, lockDeg: number, dodge: number): void;
   onFire(i: number, x: number, y: number): void;
-  onImpact(x: number, y: number, hit: boolean): void;
+  /** 着弾。hit なら船体に当たった。hull は当たった船体の index（v0.6.4。PtCheck.targets の無い任務は渡さない＝自艇） */
+  onImpact(x: number, y: number, hit: boolean, hull?: number): void;
   onPassEnd(i: number, fired: boolean, hits: number): void;
   onLeave(i: number): void;
   onOut(i: number): void;
@@ -145,6 +162,8 @@ export interface PtTelemetry {
    * 攻撃が終わって弾がまだ飛んでいる（隊の seqPending。ui/pt-chase-lines の ptHoldPass）
    */
   burst: boolean; burstFired: boolean; lastPassBoat: number; bursts: number; resultPending: boolean;
+  /** 隊の今の標的と最後に終えた攻撃の標的（v0.6.4。0 自艇・1 大発。米PT の標的スロットの無い任務は 0 のまま）: HUD の航過・突撃・結果の文を切り替える */
+  targetKind: number; lastPassTargetKind: number;
 }
 
 export function createPtTelemetry(): PtTelemetry {
@@ -153,6 +172,7 @@ export function createPtTelemetry(): PtTelemetry {
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
     gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
     gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1, fighting: 0, sunk: 0, passSilenced: false, passRetired: false, burst: false, burstFired: false, lastPassBoat: -1, bursts: 0, resultPending: false,
+    targetKind: 0, lastPassTargetKind: 0,
   };
 }
 
