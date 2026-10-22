@@ -9,8 +9,8 @@ import type { PrototypeMission } from './mission-data';
 import { getDawnAir } from './dawn-data';
 import { PT_ATTACK_KEYS, isPtDataRecord, ptParamsFromData, ptStartAt, type PtParams } from '../core/pt-data';
 import type { NightBlock } from '../core/night';
-import { clamp } from '../core/units';
-import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
+import { clamp, degToRad } from '../core/units';
+import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand } from '../core/visibility';
 
 export function getPtParams(data: GameData, mission: PrototypeMission, timeScale: number): PtParams | null {
   const block = mission.ptBoats;
@@ -49,12 +49,30 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   const detectM = Math.max(enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false), enemyDetectRangeM(p.baseDetectM, histVis.speedFactor.cruise, histVis, false));
   const nearM = nearestStartM(p, mission.night, mission.playerStart.x, mission.playerStart.y);
   if (!(nearM >= detectM)) bad(`今夜の揺らぎで出発点が自艇の出発点から ${Math.round(nearM)} m（巡航で見つかる ${Math.round(detectM)} m（史実モード込み）より近い。出発で見つかる）`);
+  // 輸送隊（v0.6.4。jp_01）: 船団の先頭・最後尾（先頭の x の揺らぎ ±barge_lead_jitter_m 込み）も、大発の帯（convoy.detect_band）で見つかる距離（史実モード込み）より遠い（出発で大発が見つからない。jp_01 は約 1,464 m ≥ 624 m）
+  if (mission.convoy) {
+    const band = mission.convoy.detect_band;
+    const bargeM = Math.max(enemyDetectRangeM(p.baseDetectM, speedFactorForBand(band, vis.speedFactor), vis, false), enemyDetectRangeM(p.baseDetectM, speedFactorForBand(band, histVis.speedFactor), histVis, false));
+    const clearM = convoyStartClearM(p, mission);
+    if (!(clearM >= bargeM)) bad(`今夜の揺らぎで出発点が船団（先頭〜最後尾）から ${Math.round(clearM)} m（大発が見つかる ${Math.round(bargeM)} m（史実モード込み）より近い。出発で大発が見つかる）`);
+  }
   if (getDawnAir(data, id).shipsAtDawn !== 'none') bad('dawn_air.enemy_ships_at_dawn は none（v0.6.3 の米PT は夜明けに東へ去る。retire・hide・stay は他の敵の規則）');
   return p;
 }
 
+/** PT の出発点（揺らぎ・反転込み）から船団の先頭・最後尾（先頭の x の揺らぎ ±barge_lead_jitter_m 込みの 4 点）までの最短 m（検査と scripts/convoy-sim の表の頭）。輸送隊の無い任務は Infinity */
+export function convoyStartClearM(p: PtParams, mission: PrototypeMission): number {
+  const c = mission.convoy;
+  if (!c) return Infinity;
+  const jl = mission.night ? mission.night.bargeLeadJitterM : 0;
+  const tailOff = Math.sin(degToRad(c.lead_start.heading_deg)) * (c.offsets_m[c.offsets_m.length - 1] ?? 0);
+  let best = Infinity;
+  for (const x of [c.lead_start.x_m - jl, c.lead_start.x_m + jl, c.lead_start.x_m - jl - tailOff, c.lead_start.x_m + jl - tailOff]) best = Math.min(best, nearestStartM(p, mission.night, x, c.lead_start.y_m));
+  return best;
+}
+
 /** 揺らぎの取りうる出発点（PT ごと・反転ごとに、線に沿ったずれ × 南北のずれの平行四辺形）と点 (px, py) の最短距離 m。中なら 0 */
-function nearestStartM(p: PtParams, night: NightBlock | null, px: number, py: number): number {
+export function nearestStartM(p: PtParams, night: NightBlock | null, px: number, py: number): number {
   const jx = night ? night.enemyJitterXM : 0;
   const jy = night ? night.enemyJitterYM : 0;
   const mirrors = night && night.mirrorChance > 0 ? [false, true] : [false];

@@ -40,7 +40,7 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     ]);
     expect(defaultCampaign(gameData).id).toBe('us_pt');
     expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03']);
-    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_05', 'jp_06']);
+    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。配列順
     expect(getMenuEntries(gameData, 'jp_hard').campaignName).toBe('日本ハードモード');
     expect(() => getMenuEntries(gameData, 'nope')).toThrow();
   });

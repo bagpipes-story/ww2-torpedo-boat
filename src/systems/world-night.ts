@@ -2,6 +2,7 @@
 // 順序: ずれを足す → 左右反転（実機 1 回目「敵の来る位置の違いが分からない」→ ±数百 m のずれに加えて、来る方角そのものを東西で入れ替える）。
 // 反転するのは敵の側（駆逐艦の出発点と針路・大発の隊・沿岸砲）だけ。地形（浅瀬・岸）・帰投地点・出発点はそのまま。
 import type { BargeParams } from '../core/barge-data';
+import { convoyParamsAtNight, type ConvoySetup } from '../core/convoy-data';
 import type { NightRoll } from '../core/night';
 import { ptParamsAtNight, type PtParams } from '../core/pt-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
@@ -41,6 +42,14 @@ export function applyNight(
   }
   const outBatteries = batteries.map((p, i) => (night.batteryDx[i] || night.mirrored ? { ...p, x: clamp(mx(p.x + night.batteryDx[i]!), 0, w) } : p));
   return { starts: outStarts, barges: outBarges, batteries: outBatteries };
+}
+
+/**
+ * 味方の大発の輸送隊（v0.6.4）に今夜を当てた複製: 先頭の x に bargeLeadDx（敵の大発の隊と同じ揺らぎ）、左右反転なら先頭・上陸線・針路を東西に入れ替える（jp_01 は mirror_chance 0）。
+ * 規則・帯はそのまま。中身は core/convoy-data の convoyParamsAtNight（模擬 core/convoy-sim と同じ式）
+ */
+export function applyConvoyNight(night: NightRoll, c: ConvoySetup, boundsWidth: number): ConvoySetup {
+  return { ...c, params: convoyParamsAtNight(c.params, night.bargeLeadDx, night.mirrored, boundsWidth) };
 }
 
 /**

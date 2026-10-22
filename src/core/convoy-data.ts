@@ -7,6 +7,16 @@ import type { ConvoyParams } from './convoy';
 import type { PtTargetRule } from './pt-target';
 import { ktToMps } from './units';
 
+/** 輸送隊の大発の id（enemies.json。任務の allies に並ぶ数が隻数。寸法・速さは敵の大発と同じ record） */
+export const CONVOY_BARGE_ID = 'daihatsu_barge';
+
+/** 世界の組み立て（systems/world-setup の convoy）と模擬（core/convoy-sim）が持つ輸送隊の設定: 隊・大発が見つかる速力帯・米PT の標的の規則（規則は convoy の中。WorldSetup に別の鍵を置かない） */
+export interface ConvoySetup {
+  params: ConvoyParams;
+  detectBand: SpeedStep;
+  rule: PtTargetRule;
+}
+
 /** missions_seed の v0_1_prototype.convoy（spec §B.2） */
 export interface ConvoyMissionBlock {
   lead_start: { x_m: number; y_m: number; heading_deg: number };
@@ -103,6 +113,16 @@ export function convoyParamsFromData(r: BargeDataRecord, b: ConvoyMissionBlock, 
     landingX: landing,
     quota: b.arrive_quota,
   };
+}
+
+/**
+ * 今夜の揺らぎ（core/night の bargeLeadDx・mirrored）を当てた複製（systems/world-night の applyConvoyNight と模擬 core/convoy-sim の convoyNight が同じ式）:
+ * 先頭の x にずれを足してから左右反転（上陸線・針路も反転。帰投の輪は地形なので反転しない＝輸送隊の任務は mirror_chance 0: config/mission-data）。ずれも反転も無ければそのまま
+ */
+export function convoyParamsAtNight(p: ConvoyParams, leadDx: number, mirrored: boolean, boundsWidth: number): ConvoyParams {
+  if (leadDx === 0 && !mirrored) return p;
+  const mx = (x: number): number => (mirrored ? boundsWidth - x : x);
+  return { ...p, leadX: mx(p.leadX + leadDx), headingDeg: mirrored ? (360 - p.headingDeg) % 360 : p.headingDeg, landingX: mx(p.landingX) };
 }
 
 /** 米PT の標的の規則（core/pt-target）: keepRatio2 = target_keep_ratio²・lockS・flashHoldS。値の検査は convoyParamsFromData（同じ block を先に通す） */

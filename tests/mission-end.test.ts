@@ -18,7 +18,7 @@ type Rec = Record<string, unknown>;
 const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
 const byId = (d: typeof gameData, id: string): Rec => (d.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === id)!;
 const protoOf = (d: typeof gameData, id: string): Rec => byId(d, id)['v0_1_prototype'] as Rec;
-const PLAYABLE = ['us_01', 'us_02', 'us_03', 'jp_05', 'jp_06'];
+const PLAYABLE = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_05', 'jp_06']; // v0.6.4: jp_01 も（魚雷を撃たないが return_point の形は同じ）
 const P = { torpedoSettleMaxS: 10, adriftDelayS: 1.5, endSettleS: 3 };
 const SINKS: MissionEndReason[] = ['rammed', 'destroyed', 'friendly_fire', 'storm', 'bombed', 'air_strike', 'barge_fire', 'shore_battery', 'pt_fire'];
 

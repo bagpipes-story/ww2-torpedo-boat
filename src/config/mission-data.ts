@@ -8,6 +8,7 @@ import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data';
 import { isPtMissionBlock, type PtMissionBlock } from '../core/pt-data';
 import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
+import { CONVOY_BARGE_ID, isConvoyMissionBlock, type ConvoyMissionBlock } from '../core/convoy-data';
 import { dawnStrikeFromData, type DawnStrikeBlock } from '../core/air-strike-data';
 import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
@@ -36,6 +37,7 @@ export interface PrototypeMission {
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
   barges: BargeMissionBlock | null;
   ptBoats: PtMissionBlock | null; // 米PT の隊（v0.6.3。core/pt-data・config/pt-mission-data）。無ければ null。enemy_start・barges と一緒に置けない
+  convoy: ConvoyMissionBlock | null; // 味方の大発の輸送隊（v0.6.4。core/convoy-data・config/convoy-mission-data）。無ければ null。米PT の隊（pt_boats）の任務だけ。隻数は allies の大発の数
   coast: CoastBlock | null;
   /** 沿岸砲（v0.4.3。岸沿いの位置 m。無ければ null。岸（coast）が要る）。shoreBatteryXs は全門（ハードなら hard.extra_shore_battery_x_m を足す。v0.4.5） */
   shoreBattery: { xM: number } | null;
@@ -198,6 +200,17 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     const events = data.riskEvents.events as readonly Record<string, unknown>[];
     night = nightFromData(nightRaw, hazards, (id) => events.some((e) => e['id'] === id && isNum(e['share'])), missionId);
   }
+  // 味方の大発の輸送隊（v0.6.4。jp_01）: 米PT の隊（pt_boats）の任務だけ（駆逐艦・敵の大発・僚艇はその検査で既に排他）。岸（coast）が要り、主兵装は guns（25mm で守る）。
+  // allies に大発（CONVOY_BARGE_ID）が 1 隻以上（数が隻数。offsets_m と同じ数かは convoy-data の検査）。帰投の輪と上陸線は反転しないので night.mirror_chance は 0
+  const convoyRaw = proto['convoy'];
+  if (convoyRaw !== undefined && !isConvoyMissionBlock(convoyRaw)) throw new Error(`${missionId}.v0_1_prototype.convoy（lead_start / offsets_m / landing_x_m / arrive_quota / barge_hp / detect_band / target_keep_ratio / target_switch_hold_s / flash_hold_s / source）が欠けている（docs/02 §6.4）`);
+  const convoy = convoyRaw === undefined ? null : convoyRaw;
+  if (convoy && !ptBoats) throw new Error(`${missionId}.v0_1_prototype: 輸送隊（convoy）は米PT の隊（pt_boats）の任務だけ`);
+  if (convoy && !coast) throw new Error(`${missionId}.v0_1_prototype: 輸送隊（convoy）には岸（coast）が要る（浜の見た目）`);
+  if (convoy && mainWeapon !== 'guns') throw new Error(`${missionId}: 輸送隊（convoy）の任務の main_weapon は guns（大発を守る砲）`);
+  const allies = m['allies'];
+  if (convoy && (!Array.isArray(allies) || !allies.some((a) => a === CONVOY_BARGE_ID))) throw new Error(`${missionId}.allies に輸送隊の大発（${CONVOY_BARGE_ID}）が無い（数が隻数）`);
+  if (convoy && night && night.mirrorChance > 0) throw new Error(`${missionId}.v0_1_prototype.night.mirror_chance は輸送隊の任務では 0（帰投の輪と上陸線は反転しない）`);
   return {
     id: missionId,
     type,
@@ -214,6 +227,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     mainWeapon,
     barges,
     ptBoats,
+    convoy,
     coast,
     shoreBattery,
     shoreBatteryXs,

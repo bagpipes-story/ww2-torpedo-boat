@@ -65,14 +65,17 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect(s.dawnAir.shipsAtDawn).toBe('none');
     expect(s.boatParams.silentMaxMps).toBeGreaterThan(s.boatParams.speedSilentMps); // 静音の帯は 14 kt まで
   });
-  it('米PT は jp_05 だけ: 他の遊べる任務の世界に ptBoats は無い（null）', () => {
+  it('米PT は jp_05 と jp_01（v0.6.4。夜の輸送護衛）だけ: 他の遊べる任務の世界に ptBoats は無い（null）。輸送隊（convoy）は jp_01 だけ', () => {
     const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
     expect(ids).toContain('jp_05');
+    expect(ids).toContain('jp_01');
     for (const id of ids) {
       for (const hard of [false, true]) {
         const s = buildWorldSetup(gameData, id, { hard });
-        expect(s.ptBoats === null, `${id} ${hard}`).toBe(id !== 'jp_05');
-        expect(s.mission.ptBoats === null, `${id} ${hard}`).toBe(id !== 'jp_05');
+        expect(s.ptBoats === null, `${id} ${hard}`).toBe(id !== 'jp_05' && id !== 'jp_01');
+        expect(s.mission.ptBoats === null, `${id} ${hard}`).toBe(id !== 'jp_05' && id !== 'jp_01');
+        expect(s.convoy === null, `${id} ${hard}`).toBe(id !== 'jp_01');
+        expect(s.mission.convoy === null, `${id} ${hard}`).toBe(id !== 'jp_01');
       }
     }
   });

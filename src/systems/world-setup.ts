@@ -29,11 +29,13 @@ import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
 import { missionCampaignId } from '../config/campaign-data';
 import { getAirStrikeParams, getDawnAir, type AirStrikeParams } from '../config/dawn-data';
 import { getPtParams } from '../config/pt-mission-data';
+import { getConvoyParams } from '../config/convoy-mission-data';
+import type { ConvoySetup } from '../core/convoy-data';
 import type { PtParams } from '../core/pt-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
 import { fixedNight, rollNight, type NightRoll } from '../core/night';
-import { applyNight, applyPtNight } from './world-night';
+import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, type DestroyerSetup, type TransportSetup } from './destroyer-setup';
 
 export type { DestroyerSpec, DestroyerSetup, TransportSetup } from './destroyer-setup';
@@ -105,6 +107,7 @@ export interface WorldSetup {
   barges: BargeParams | null;
   guns: GunBatteryParams | null;
   ptBoats: PtParams | null; // 米PT の隊（v0.6.3。任務に pt_boats があるとき。今夜の揺らぎ込み）。無ければ null
+  convoy: ConvoySetup | null; // 味方の大発の輸送隊（v0.6.4。任務に convoy があるとき。先頭の今夜のずれ込み。大発の帯・米PT の標的の規則もこの中）。無ければ null
   /** 沿岸砲（v0.4.3。任務に shore_battery があるとき。?debug&nobattery で null）。shoreBatteries は全門（v0.4.5。ハードで増える。nobattery なら []） */
   shoreBattery: ShoreBatteryParams | null;
   shoreBatteries: ShoreBatteryParams[];
@@ -205,6 +208,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   }
   const barges = applied.barges;
   const ptBoats = ptBase ? applyPtNight(night, ptBase) : null;
+  const convoyBase = getConvoyParams(data, mission);
   const shoreBatteries = applied.batteries;
   const guns = getGunBatteryParams(data, mission);
   const escort = getEscortParams(data, mission);
@@ -253,6 +257,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     barges,
     guns,
     ptBoats,
+    convoy: convoyBase ? applyConvoyNight(night, convoyBase, mission.bounds.width) : null,
     shoreBattery: shoreBatteries[0] ?? null,
     shoreBatteries,
     hard,
