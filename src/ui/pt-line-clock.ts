@@ -45,6 +45,10 @@ export class PtLineClock {
         this.convoyEvent = sunk ? CONVOY_EV_SUNK : CONVOY_EV_ARRIVED;
         this.convoyUntil = nowMs + CONVOY_EVENT_SHOW_MS;
         this.convoyShown = false;
+      } else if (this.convoyEvent === CONVOY_EV_ARRIVED) {
+        // 前の上陸の出来事がまだ出ている・赤い線の下で待っている間に最後の 1 隻が上陸した: その出来事は捨てる（文は今の数で組むので「上陸 3/3 ・ 残り 0 隻」と出た。
+        // v0.6.4 ヘッドレス確認）。沈没の出来事は残す（afloat 0 の文「沈没 ・ 上陸 k/n ・ 帰投せよ」が決着を言う）
+        this.convoyUntil = 0;
       }
     }
     if (p.gunEventSeq > this.seenEventSeq) {

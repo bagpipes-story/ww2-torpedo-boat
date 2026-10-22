@@ -166,6 +166,45 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     expect(row(after, 0, f)).toEqual([MISSION_PT_CONTACT, '大発への航過 撃たず ・ 航過 1/8', HUD_COLOR_STRONG]);
     expect(c2.flags(after, 8600, MISSION_PT_CONTACT) & RESULT).toBe(0);
   });
+  it('上陸の出来事が出ている・赤い線の下で待っている間に最後の 1 隻が上陸（決着）したら、その出来事は捨てて呼びかけへ（ヘッドレスで「大発 上陸 3/3 ・ 残り 0 隻」が出た）。沈没の出来事は残る', () => {
+    // 赤い線の下で待つ上陸の出来事 → 線の途中で最後の 1 隻が上陸 → 線が消えても出来事は出ず、呼びかけ「大発 上陸 2/3 ・ 帰投せよ」
+    const c = new PtLineClock();
+    c.flags(t01(PASS_BARGE), 500, -1);
+    const one = t01(PASS_BARGE, { afloat: 2, arrived: 1 });
+    expect(c.flags(one, 1000, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT);
+    expect(missionMode(one, 0, c.flags(one, 1500, MISSION_PT_PASS))).toBe(MISSION_PT_PASS);
+    c.shown(MISSION_PT_PASS);
+    const two = t01(PASS_BARGE, { afloat: 1, arrived: 2 });
+    expect(c.flags(two, 1800, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT); // 2 隻目の上陸も線の下で待つ（決着ではない）
+    c.shown(MISSION_PT_PASS);
+    const done = { afloat: 0, arrived: 3, resolved: true };
+    expect(c.flags(t01(PASS_BARGE, done), 2000, MISSION_PT_PASS) & CV_EVENT).toBe(0);
+    const after = t01({ threatPhase: PT_PATROL }, done);
+    const f = c.flags(after, 3000, MISSION_PT_PASS);
+    expect(f & CV_EVENT).toBe(0);
+    expect(row(after, CALL_SUNK, f)).toEqual([MISSION_CALL, '', '']);
+    // 出ている途中の上陸の出来事も同じ（文は今の数で組むので、残すと「上陸 3/3 ・ 残り 0 隻」になる）
+    const c2 = new PtLineClock();
+    const twoShown = t01({}, { afloat: 1, arrived: 2 });
+    expect(c2.flags(twoShown, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
+    c2.shown(MISSION_CONVOY_EVENT);
+    const all = t01({}, { afloat: 0, arrived: 3, resolved: true });
+    expect(c2.flags(all, 1500, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+    expect(c2.flags(all, 1600, MISSION_PT) & CV_EVENT).toBe(0);
+    // 沈没の出来事の途中で最後の 1 隻が上陸: 出来事は残り、文は「大発 1 隻 沈没 ・ 上陸 2/3 ・ 帰投せよ」
+    const c3 = new PtLineClock();
+    c3.flags(t01({}, { afloat: 2, arrived: 1 }), 500, MISSION_PT);
+    const sunkOne = t01({}, { afloat: 1, sunk: 1, arrived: 1 });
+    expect(c3.flags(sunkOne, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
+    expect(c3.convoyEvent).toBe(CONVOY_EV_SUNK);
+    c3.shown(MISSION_CONVOY_EVENT);
+    const done2 = { afloat: 0, sunk: 1, arrived: 2, resolved: true };
+    const f3 = c3.flags(t01({}, done2), 1500, MISSION_CONVOY_EVENT);
+    expect(f3 & CV_EVENT).toBe(CV_EVENT);
+    expect(c3.convoyEvent).toBe(CONVOY_EV_SUNK);
+    expect(convoyEventLine(cv(done2), c3.convoyEvent).text).toBe('大発 1 隻 沈没 ・ 上陸 2/3 ・ 帰投せよ');
+    expect(c3.flags(t01({}, done2), 3600, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+  });
   it('呼びかけの 3 形: 決着は「大発 上陸 2/3 ・ 帰投せよ  2000 m」（全滅なら「大発 全滅 ・ 」）、燃料少・空襲下は既存の頭だけ（topCall は 1 ビット）。jp_05・大発の任務の語は変わらない', () => {
     const done = cv({ afloat: 0, sunk: 1, arrived: 2, resolved: true });
     const line = (call: number, air: number, c: ConvoyTelemetry | null): string => `${dawnCallLabel(call, false, air, c ? convoyCallJa(c) : '')}帰投せよ  2000 m`;
