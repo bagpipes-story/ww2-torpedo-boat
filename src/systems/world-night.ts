@@ -3,6 +3,7 @@
 // 反転するのは敵の側（駆逐艦の出発点と針路・大発の隊・沿岸砲）だけ。地形（浅瀬・岸）・帰投地点・出発点はそのまま。
 import type { BargeParams } from '../core/barge-data';
 import type { NightRoll } from '../core/night';
+import { ptParamsAtNight, type PtParams } from '../core/pt-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import { clamp, wrapDeg360 } from '../core/units';
 
@@ -40,4 +41,13 @@ export function applyNight(
   }
   const outBatteries = batteries.map((p, i) => (night.batteryDx[i] || night.mirrored ? { ...p, x: clamp(mx(p.x + night.batteryDx[i]!), 0, w) } : p));
   return { starts: outStarts, barges: outBarges, batteries: outBatteries };
+}
+
+/**
+ * 米PT の隊（v0.6.3）に今夜を当てた複製: 敵の 1 件目のずれ（米PT の任務に駆逐艦はいない）で、出発位置を線に沿って dx（線の中）、線ごと南北に dy（縁の余白の中へ線ごと戻す）、
+ * 左右反転なら線と出発点を東西に入れ替える（逆向きに哨戒）。dh は使わない（data は 0）。p は揺らぎの前（config/pt-mission-data の getPtParams）。中身は core/pt-data の ptParamsAtNight
+ */
+export function applyPtNight(night: NightRoll, p: PtParams): PtParams {
+  const o = night.enemyOffsets[0]!;
+  return ptParamsAtNight(p, o.dx, o.dy, night.mirrored);
 }

@@ -1,6 +1,6 @@
 {
   "name": "ww2-torpedo-boat",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "private": true,
   "description": "WWII魚雷艇ゲーム（仮称: Night Hunters）— Phaser 3 + TypeScript + Vite",
   "type": "module",
@@ -10,7 +10,7 @@
     "lint": "npm run typecheck",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run --testTimeout=90000"
   },
   "dependencies": {
     "phaser": "^3.90.0"

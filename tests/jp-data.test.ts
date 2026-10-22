@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getBoatCrewEffects, getBoatCrewParams, getBoatDamageParams, getBoatFuelCurve, getBoatRecord, getBoatSmokeParams, getEnemyRecord, getScoringParams, getTorpedoRecord } from '../src/config/game-data';
-import { getBriefingRecord, getPrototypeMission } from '../src/config/mission-data';
+import { getPrototypeMission } from '../src/config/mission-data';
+import { getBriefingRecord } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { directSortie, isRaidDataRecord, raidParamsFromData } from '../src/core/sortie';
 import { torpedoReliabilityFromData } from '../src/core/torpedo';
@@ -82,6 +83,23 @@ describe('日本ハードモードの data（v0.6.0。T-38・米駆逐艦・jp_0
     expect(jp.torpedoReliability).toEqual({ dud: 0.05, erratic: 0.05 });
     const us = buildWorldSetup(gameData, 'us_02', { sortie: directSortie('us_02', 5, 'none', false, true), fixedNight: true });
     expect(us.torpedoReliability).toEqual({ dud: 0.1, erratic: 0.08 });
+  });
+  it('T-14（v0.6.3。jp_05）: 燃料曲線（800 gal・アイドル 16.00 gal/h。v0.6.3 実機 1 回目で fuel_idle_ratio 0.1 → 0.14）・被害（HP 50・火災 1.25 × 16 秒）・乗員 7・乗員の効き（T-38 と同じ）・煙幕なし。静音の上限 14 kt', () => {
+    const f = getBoatFuelCurve(gameData, 'jp_t14');
+    expect(f.capacityGal).toBe(800);
+    expect(f.idleGph).toBeCloseTo(16.0, 2);
+    expect([f.cruiseGph, f.fullGph]).toEqual([800 / 7, 800 / 3.5]);
+    const d = getBoatDamageParams(gameData, 'jp_t14');
+    expect([d.maxHp, d.engineSpeedFactor, d.fireDps, d.fireDurationS, d.extinguishHoldS]).toEqual([50, 0.7, 1.25, 16, 1.0]);
+    // 火災の総量は HP の 4 割（T-38・Elco と同じ比）
+    expect((d.fireDps * d.fireDurationS) / d.maxHp).toBeCloseTo(0.4, 9);
+    const c = getBoatCrewParams(gameData, 'jp_t14');
+    expect([c.total, c.casualtiesPerHp]).toEqual([7, 0.1]);
+    expect(getBoatCrewEffects(gameData, 'jp_t14')).toEqual(getBoatCrewEffects(gameData, 'jp_t38'));
+    expect(getBoatSmokeParams(gameData, 'jp_t14')).toBeNull();
+    expect(getBoatRecord(gameData, 'jp_t14').speed_bands_kt.silent_max).toBe(14);
+    const src = (gameData.boats.boats.find((b) => b.id === 'jp_t14') as unknown as { source: Record<string, string> }).source;
+    for (const [k, v] of Object.entries(src)) expect(/historical|design/.test(v), k).toBe(true);
   });
   it('遊べる任務の type はすべて scoring.json の objective_by_type にある（無いと黙って 0 点になる）', () => {
     const sp = getScoringParams(gameData);

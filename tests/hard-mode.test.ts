@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission, getShoreBatteryParams, getShoreBatteryParamsList } from '../src/config/game-data';
-import { getBriefingRecord, getMenuEntries } from '../src/config/mission-data';
+import { getMenuEntries } from '../src/config/mission-data';
+import { getBriefingRecord } from '../src/config/briefing-data';
 import { briefingRows, enemyCountsJa } from '../src/core/briefing';
 import { directSortie, isSortie, rollRaid } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';

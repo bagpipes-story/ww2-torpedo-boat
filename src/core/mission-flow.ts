@@ -5,9 +5,9 @@
 
 /**
  * 終了理由。Result の見出しは ui/result-heading の表で付ける。bombed は夜の水上機、air_strike は夜明けの空襲（v0.6.1。dawn「夜明け — 帰投できず」は廃止）。
- * cleared は制空権下で敵艦隊がいなくなった（v0.6.2 実機 1 回目。fleet_gone_clears の任務だけ。輪に入らなくても帰投と同じに数える＝endCountsAsReturn）
+ * cleared は制空権下で敵艦隊がいなくなった（v0.6.2 実機 1 回目。fleet_gone_clears の任務だけ。輪に入らなくても帰投と同じに数える＝endCountsAsReturn）。pt_fire は米PT の掃射（v0.6.3。その火災で沈んでも）
  */
-export type MissionEndReason = 'returned' | 'cleared' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'air_strike' | 'barge_fire' | 'shore_battery';
+export type MissionEndReason = 'returned' | 'cleared' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'air_strike' | 'barge_fire' | 'shore_battery' | 'pt_fire';
 
 /** 帰投と同じに数える終わり（Result の returned・得点・キャンペーンの解放）: 帰投と cleared（v0.6.2 実機 1 回目。帰投は不要） */
 export function endCountsAsReturn(reason: MissionEndReason): boolean {

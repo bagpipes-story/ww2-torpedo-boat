@@ -2,7 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission, getRaidParams } from '../src/config/game-data';
-import { enemyNameJa, getBriefingRecord, getMenuEntries, riskLabelJa } from '../src/config/mission-data';
+import { getMenuEntries } from '../src/config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
 import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
@@ -33,13 +34,16 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(getMenuEntries(otherCampaign).entries.map((e) => e.id)).toEqual(US_IDS);
     // 日本側（v0.6.0）: jp_01・jp_05 は準備中（版）、jp_06 は出撃できる。jp_06 の世界を消すと出撃できる任務が無くて例外。
     // v0.6.1: 版を付け替え（v0.6.1 夜明け・v0.6.2 敵が退く・v0.6.3 昼の海が入ったので、jp_05 は v0.6.4、jp_01 は v0.6.5）
+    // v0.6.3: jp_05 は米PT で出撃できる、jp_01 は v0.6.4（jp_05・jp_06 の世界を消すと例外）
     expect(menuEntries(gameData.missionsSeed.missions, 'jp_hard').map((e) => [e.id, e.playable, e.status])).toEqual([
-      ['jp_01', false, '準備中 ・ v0.6.5'],
-      ['jp_05', false, '準備中 ・ v0.6.4'],
+      ['jp_01', false, '準備中 ・ v0.6.4'],
+      ['jp_05', true, '出撃準備 →'],
       ['jp_06', true, '出撃準備 →'],
     ]);
     const jpNone = clone();
     delete byId(jpNone, 'jp_06')['v0_1_prototype'];
+    expect(() => menuEntries(jpNone.missionsSeed.missions, 'jp_hard')).not.toThrow(); // jp_05 が残る
+    delete byId(jpNone, 'jp_05')['v0_1_prototype'];
     expect(() => menuEntries(jpNone.missionsSeed.missions, 'jp_hard')).toThrow(/出撃できる任務/);
     const badFrom = clone();
     byId(badFrom, 'us_03')['playable_from'] = '0.4.1';
@@ -137,7 +141,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it.each(['us_01', 'us_02', 'us_03', 'jp_06'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
+  it.each(['us_01', 'us_02', 'us_03', 'jp_05', 'jp_06'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
     const m = getPrototypeMission(gameData, id);
     const proto = (byId(gameData, id)['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];

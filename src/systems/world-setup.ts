@@ -28,13 +28,16 @@ import {
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
 import { missionCampaignId } from '../config/campaign-data';
 import { getAirStrikeParams, getDawnAir, type AirStrikeParams } from '../config/dawn-data';
+import { getPtParams } from '../config/pt-mission-data';
+import type { PtParams } from '../core/pt-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
 import type { EscortParams } from '../core/escort';
 import { fixedNight, rollNight, type NightRoll } from '../core/night';
-import { applyNight } from './world-night';
+import { applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, type DestroyerSetup, type TransportSetup } from './destroyer-setup';
 
 export type { DestroyerSpec, DestroyerSetup, TransportSetup } from './destroyer-setup';
+export { briefingNumbers } from './briefing-numbers'; // Briefing の数値（v0.6.3 で briefing-numbers.ts へ。今までの import のため）
 import type { MainWeapon } from '../config/mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { GunBatteryParams } from '../core/gun-battery';
@@ -48,8 +51,7 @@ import { type GroundingParams } from '../core/shallows';
 import { type SmokeParams } from '../core/smoke';
 import { type StormParams } from '../core/storm';
 import { NO_SORTIE_EFFECT, sortieConditions, type RaidParams, type Sortie, type SortieConditions } from '../core/sortie';
-import { compassJa, type BriefingNumbers } from '../core/briefing';
-import { dawnConditionJa, type DawnAir } from '../core/dawn-air';
+import type { DawnAir } from '../core/dawn-air';
 import { torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from '../core/torpedo';
 import { enemyDetectRangeM, playerVisRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
 
@@ -59,7 +61,7 @@ export interface WorldSetup {
   playerStart: { x: number; y: number; headingDeg: number };
   /** 岸（南）に接する浅瀬の北の縁 y m（「岸 N m」の矢印の行き先。浅瀬が無ければ岸の線。岸の無い任務は NaN。v0.4.2） */
   coastEdgeY: number;
-  /** 主兵装（v0.4.2）。guns なら魚雷は積まない（torpedoCapacity 0） */
+  /** 主兵装（v0.4.2）。guns・none（v0.6.3）なら魚雷は積まない（torpedoCapacity 0） */
   mainWeapon: MainWeapon;
   boatParams: BoatParams;
   /** 境界から押し戻す余白 m（表示上の船体半分）。煙も同じ距離だけ後ろに置く */
@@ -102,6 +104,7 @@ export interface WorldSetup {
   /** 大発の隊と艇の砲（v0.4.2。任務に barges があるとき）。無ければ null */
   barges: BargeParams | null;
   guns: GunBatteryParams | null;
+  ptBoats: PtParams | null; // 米PT の隊（v0.6.3。任務に pt_boats があるとき。今夜の揺らぎ込み）。無ければ null
   /** 沿岸砲（v0.4.3。任務に shore_battery があるとき。?debug&nobattery で null）。shoreBatteries は全門（v0.4.5。ハードで増える。nobattery なら []） */
   shoreBattery: ShoreBatteryParams | null;
   shoreBatteries: ShoreBatteryParams[];
@@ -126,7 +129,7 @@ export interface WorldSetup {
   night: NightRoll;
   hazardsTonight: string[];
   absentHazards: string[];
-  /** 敵の来る位置（1 隻目の駆逐艦か大発の隊の先頭の出発点。Briefing の「敵 …（北西から）」） */
+  /** 敵の来る位置（1 隻目の駆逐艦・大発の隊の先頭・1 隻目の米PT の出発点。Briefing の「敵 …（北西から）」） */
   enemyFrom: { x: number; y: number } | null;
   dawnAir: DawnAir; // 夜明けの空（v0.6.1。missions_seed の dawn_air。遊べる任務の規則は config/dawn-data が検査）
   airStrike: AirStrikeParams | null; // 夜明けの空襲（v0.6.1。dawn_strike の任務だけ。?debug&nostrike で null。水上機とは別に組み、今夜の absent() は通さない）
@@ -181,10 +184,12 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   // 輸送船（v0.4.7）は隊の最後の 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける
   const tr = mission.transport && !o.transportOff ? mission.transport : null;
   const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
+  const ptBase = getPtParams(data, mission, world.time_scale);
+  const enemyRolls = shipStarts.length + (ptBase ? 1 : 0); // 米PT の隊（v0.6.3）は隊ごと 1 件の敵として揺らす（米PT の無い任務の回数は同じ）
   const night =
     sortie && mission.night && !o.fixedNight
-      ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, shipStarts.length, batteries.length)
-      : fixedNight(shipStarts.length, batteries.length);
+      ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, enemyRolls, batteries.length)
+      : fixedNight(enemyRolls, batteries.length);
   const forced = (id: string): boolean => (id === 'storm' && !!o.forceStorm) || (id === 'enemy_aircraft' && !!o.forcePlane) || (id === 'friendly_fire' && !!o.forceFriendly);
   const absentHazards = night.absentHazards.filter((id) => !forced(id));
   const absent = (id: string): boolean => absentHazards.includes(id);
@@ -199,6 +204,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[applied.starts.length - 1]! };
   }
   const barges = applied.barges;
+  const ptBoats = ptBase ? applyPtNight(night, ptBase) : null;
   const shoreBatteries = applied.batteries;
   const guns = getGunBatteryParams(data, mission);
   const escort = getEscortParams(data, mission);
@@ -209,7 +215,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
   const vis = getVisibilityParams(data, mission.moon, historical);
   const visRange = playerVisRangeM(vis);
-  const baseDetectM = destroyer ? destroyer.baseDetectM : barges!.baseDetectM;
+  const baseDetectM = destroyer ? destroyer.baseDetectM : barges ? barges.baseDetectM : ptBoats!.baseDetectM;
   const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
 
   const raid = getRaidParams(data, mission);
@@ -246,13 +252,14 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     destroyer,
     barges,
     guns,
+    ptBoats,
     shoreBattery: shoreBatteries[0] ?? null,
     shoreBatteries,
     hard,
     historical,
     transport,
     escort,
-    torpedoCapacity: mission.mainWeapon === 'guns' ? 0 : getBoatTorpedoCount(data, mission.playerBoatId),
+    torpedoCapacity: mission.mainWeapon === 'torpedo' ? getBoatTorpedoCount(data, mission.playerBoatId) : 0,
     torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
     // 史実モード（v0.5.2）は不発・蛇行の確率を historical_mode.reliability で上書き（torpedoes.json の値の代わり）。v0.6.0 から reliability_campaigns（米PT）の任務だけ（日本の 45cm 魚雷には米の Mk 8 の値を掛けない）
     torpedoReliability: historical && data.hitRateModel.historical_mode.reliability_campaigns.includes(missionCampaignId(data, missionId)) ? getHistoricalReliability(data) : torpedoReliabilityFromData(torpedoRecord),
@@ -263,7 +270,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     night,
     hazardsTonight: mission.hazards.filter((h) => !absent(h)),
     absentHazards,
-    enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : null,
+    enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0]!, y: ptBoats.startY[0]! } : null,
     dawnAir: getDawnAir(data, missionId),
     airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2, boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2 }, escort),
   };
@@ -275,26 +282,4 @@ function coastEdgeYOf(m: PrototypeMission): number {
   let y = m.bounds.height;
   for (const r of m.shallows) if (r.y + r.h >= m.bounds.height && r.y < y) y = r.y;
   return y;
-}
-
-/** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */
-export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): BriefingNumbers {
-  const f = s.vis.speedFactor;
-  return {
-    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）
-    ...(aimAssistJa ? { aimAssistJa } : {}),
-    visM: playerVisRangeM(s.vis),
-    detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
-    detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
-    durationS: s.durationS,
-    dawnJa: dawnConditionJa(s.dawnAir, s.night.mirrored),
-    fuelGal: s.fuelAllotmentGal,
-    torpedoes: s.torpedoCapacity,
-    gunsLabel: s.guns ? s.guns.label : '',
-    enemyFromJa: s.enemyFrom ? compassJa(s.enemyFrom.x, s.enemyFrom.y, s.mission.bounds.width, s.mission.bounds.height) : '',
-    homeX: s.mission.returnPoint.x,
-    homeY: s.mission.returnPoint.y,
-    boundsW: s.mission.bounds.width,
-    boundsH: s.mission.bounds.height,
-  };
 }

@@ -252,8 +252,8 @@ export class BargeHunt {
   }
 }
 
-/** 弾のスプライトを状態に合わせる。tex があれば組 0（40mm・37mm）は点、他は曳光弾（組が変わったときだけ切り替える） */
-function syncShells(shells: ShellState[], sprites: Phaser.GameObjects.Image[], tex: Int8Array | null): void {
+/** 弾のスプライトを状態に合わせる。tex があれば組 0（40mm・37mm）は点、他は曳光弾（組が変わったときだけ切り替える）。T-14 の 13mm（systems/pt-gun。v0.6.3 実機 1 回目）も使う */
+export function syncShells(shells: ShellState[], sprites: Phaser.GameObjects.Image[], tex: Int8Array | null): void {
   for (let i = 0; i < shells.length; i++) {
     const s = shells[i]!;
     const img = sprites[i]!;

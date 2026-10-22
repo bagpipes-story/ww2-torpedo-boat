@@ -3,6 +3,7 @@
 // 時間圧縮（time_scale）は呼び出し側が dt に掛けて渡す（docs/02 §6.10）。
 // §7: 毎フレーム呼ばれる関数はオブジェクトを確保しない。state を書き換える。
 import type { DawnTelemetry } from './dawn-air';
+import type { PtTelemetry } from './pt-boats';
 import { clamp, degToRad, ktToMps, mpsToKt, wrapDeg180, wrapDeg360 } from './units';
 
 export interface BoatParams {
@@ -173,6 +174,7 @@ export interface BoatTelemetry {
   transportEnabled: boolean;
   transportSunk: boolean;
   dawn: DawnTelemetry; // 夜明け（v0.6.1。core/dawn-air）: ラッチ・夜明け後の秒・空の持ち主・空襲の段（systems/dawn-telemetry が毎フレーム書く）
+  pt: PtTelemetry; // 敵の米PT（v0.6.3。core/pt-boats）: 隊の段階・航過・かわす向き・脅威の PT の相対位置（systems/pt-telemetry が毎フレーム書く。無い任務は enabled false）
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

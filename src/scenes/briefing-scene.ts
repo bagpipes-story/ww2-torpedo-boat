@@ -16,7 +16,8 @@ import {
 } from '../config/game-config';
 import { getAimAssistLevels, getGameData, getRaidParams } from '../config/game-data';
 import { debugSetupOptions } from '../config/debug-setup';
-import { enemyNameJa, getBriefingRecord, getPrototypeMission, riskLabelJa } from '../config/mission-data';
+import { getPrototypeMission, hasHardVariant } from '../config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../config/briefing-data';
 import {
   BRIEF_HISTORICAL_JA,
   BRIEF_BACK_H,
@@ -58,7 +59,7 @@ import {
   MENU_PRIMARY_X,
 } from '../config/menu-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, HUD_COLOR_WARN, hudTextStyle } from '../config/ui-config';
-import { briefingRows, formatDateJa } from '../core/briefing';
+import { briefingRows, difficultyJa, formatDateJa } from '../core/briefing';
 import { aimAssistStatusJa } from '../core/progress';
 import {
   RAID_ALERT_JA,
@@ -131,7 +132,7 @@ export class BriefingScene extends Phaser.Scene {
     const rec = { ...getBriefingRecord(data, id, this.hard), hazardIds: setup.hazardsTonight, absentHazardIds: setup.absentHazards };
 
     addBuildLabel(this);
-    this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}${this.hard ? ' ・ 難易度 ハード' : ''}${this.historical ? BRIEF_HISTORICAL_JA : ''}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);
+    this.add.text(BRIEF_X, BRIEF_SUB_Y, `${formatDateJa(rec.date)} ・ ${rec.place}${difficultyJa(this.hard, hasHardVariant(data, id))}${this.historical ? BRIEF_HISTORICAL_JA : ''}`, hudTextStyle(BRIEF_SUB_PX, HUD_COLOR)).setDepth(DEPTH.hud);
     this.add.text(BRIEF_X, BRIEF_TITLE_Y, rec.titleJa, hudTextStyle(BRIEF_TITLE_PX, HUD_COLOR_STRONG)).setDepth(DEPTH.hud);
 
     // 6 行: ラベルと値（値は折り返し、次の行は値の高さぶん下げる）。続けて史実の 1 行

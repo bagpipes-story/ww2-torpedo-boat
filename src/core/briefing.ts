@@ -5,6 +5,10 @@ import { wrapDeg360 } from './units';
 import type { MoonPhase } from './visibility';
 
 export const MENU_STATUS_PLAYABLE = '出撃準備 →';
+/** 撃たない任務（v0.6.3。main_weapon none＝米PT）の「条件」の武器の句。和文と英字の間に半角スペースを入れない（Phaser の折り返しは半角スペースで切るので「魚雷は PT⏎の下」と割れた） */
+export const NO_WEAPON_BRIEFING_JA = '魚雷はPTの下を抜ける（撃たない）';
+/** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由） */
+export const PT_GUN_BRIEFING_JA = '13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）';
 
 export interface MenuEntry {
   id: string;
@@ -20,6 +24,11 @@ const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const VERSION_RE = /^v\d+\.\d+\.\d+$/;
 
 /** '1942-12-11' → '1942年12月11日'（月・日の先頭の 0 は落とす）。書式違いは例外 */
+/** Briefing の副題の難易度（v0.6.3 レビュー）: ノーマルは無し、ハードは「 ・ 難易度 ハード」、ハードの違いが無い任務（jp_05）は「（この任務は同じ）」を足す */
+export function difficultyJa(hard: boolean, hasHardVariant: boolean): string {
+  return hard ? ` ・ 難易度 ハード${hasHardVariant ? '' : '（この任務は同じ）'}` : '';
+}
+
 export function formatDateJa(iso: string): string {
   const m = DATE_RE.exec(iso);
   if (!m) throw new Error(`missions_seed.json の date が YYYY-MM-DD でない（${iso}）`);
@@ -137,6 +146,8 @@ export interface BriefingNumbers {
   boundsH: number;
   /** 「条件」に足す一言（v0.5.2。見越し点マーカーの解放の状態。無ければ ''） */
   aimAssistJa?: string;
+  /** 「条件」の武器の句の差し替え（v0.6.3。撃たない任務だけ。無ければ砲か魚雷の本数） */
+  weaponJa?: string;
 }
 
 export interface BriefingRow {
@@ -147,6 +158,15 @@ export interface BriefingRow {
 /** 今夜いない危険の後ろ書き（v0.4.6）: 「（今夜は 暴風・友軍誤射 なし）」。無ければ '' */
 export function absentJa(ids: readonly string[], labelOf: (id: string) => string): string {
   return ids.length === 0 ? '' : `（今夜は ${ids.map(labelOf).join('・')} なし）`;
+}
+
+/**
+ * 条件の武器の句（区切りの「・」から）。撃たない任務（v0.6.3）の句は「・」の後をノーブレークスペースにする（v0.6.3 レビュー: 長い句が次の行へ送られ、
+ * 「・」が行末に残った。区切りの前の半角スペースで折り返す）。ほかの任務は今までどおり「・ 」
+ */
+function weaponPartJa(n: BriefingNumbers): string {
+  if (n.weaponJa !== undefined) return `・\u00a0${n.weaponJa}`;
+  return `・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}`;
 }
 
 /**
@@ -161,6 +181,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
   ];
 }

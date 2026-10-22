@@ -19,7 +19,7 @@ import { WorldDawn, type DawnStrike, type DawnWorldView } from '../src/systems/w
 import { DAY_SEA_COLOR, SEA_LIGHT_PRE_S, SEA_LIGHT_STEPS } from '../src/config/dawn-config';
 import { briefingNumbers, buildWorldSetup, type WorldSetup } from '../src/systems/world-setup';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
-import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/mission-data';
+import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { checkPlayableDawn, getAirStrikeParams, getDawnAir, getDawnStrikeEventRecord, getStrikeAircraftRecord } from '../src/config/dawn-data';
 import { DAWN_STRIKE_EVENT_ID, dawnStrikeFromData, isDawnStrikeBlock, isDawnStrikeEventRecord, isStrikeAircraftRecord } from '../src/core/air-strike-data';
@@ -86,8 +86,8 @@ describe('夜明けの時計（v0.6.1。core/dawn-air）', () => {
     expect(seaLightStep(d, d, 0, 0, steps)).toBe(16);
   });
   it('dawnConditionJa・dawnAirCode・テレメトリと Result の初期値', () => {
-    const cond = (playAs: 'enemy' | 'own' | 'contested', shipsAtDawn: 'stay' | 'retire' | 'hide' | 'none' = 'stay', retireEdge: 'north' | 'south' | 'east' | 'west' | null = null, mirrored = false): string =>
-      dawnConditionJa({ playAs, shipsAtDawn, retireEdge }, mirrored);
+    const cond = (playAs: 'enemy' | 'own' | 'contested', shipsAtDawn: 'stay' | 'retire' | 'hide' | 'none' = 'stay', retireEdge: 'north' | 'south' | 'east' | 'west' | null = null, mirrored = false, control: 'enemy' | 'own' | 'contested' = playAs): string =>
+      dawnConditionJa({ control, playAs, shipsAtDawn, retireEdge }, mirrored);
     expect(cond('enemy')).toBe('（以後は空襲）');
     expect(cond('own')).toBe('（昼の空は味方）');
     expect(cond('enemy', 'none')).toBe('（以後は空襲）');
@@ -101,6 +101,9 @@ describe('夜明けの時計（v0.6.1。core/dawn-air）', () => {
     expect(cond('enemy', 'hide')).toBe('（以後は空襲・大発は岸へ隠れる）');
     expect(cond('contested', 'hide')).toBe('（大発は岸へ隠れる）');
     expect(cond('contested')).toBe('');
+    // 史実の空が争奪で味方の空として遊ぶ（jp_05。v0.6.3 レビュー）は「おおむね」。争奪で敵の空として遊ぶ（us_03）は今までどおり
+    expect(cond('own', 'none', null, false, 'contested')).toBe('（昼の空はおおむね味方）');
+    expect(cond('enemy', 'stay', null, false, 'contested')).toBe('（以後は空襲）');
     expect(dawnAirCode('enemy')).toBe(DAWN_AIR_ENEMY);
     expect(dawnAirCode('own')).toBe(DAWN_AIR_OWN);
     expect(dawnAirCode('contested')).toBe(DAWN_AIR_NONE);
@@ -280,7 +283,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       jp_02: ['enemy', 'low', 'enemy', 'none', '昼の空は敵（米の飛行艇）'],
       jp_03: ['enemy', 'high', 'enemy', 'none', '昼の空は敵（第38任務部隊）'],
       jp_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は敵（タクロバンのコルセア）'],
-      jp_05: ['own', 'medium', 'own', 'none', '昼の空は味方（ラバウルの零戦）'],
+      jp_05: ['contested', 'medium', 'own', 'none', '昼の空はおおむね味方（ラバウルの零戦）'], // v0.6.3: 1944-02-18 ラバウル沖（空は争奪・零戦はまだいる）
       jp_06: ['enemy', 'high', 'enemy', 'stay', '昼の空は敵（米艦載機）'],
     };
     expect(new Set(ALL_IDS)).toEqual(new Set(Object.keys(table)));
@@ -292,9 +295,9 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(String((byId(gameData, id)['dawn_air'] as Rec)['source']), id).toContain('抜粋のみ・本文未読');
     }
   });
-  it('遊べる任務（us_01・us_02・us_03・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
-    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'jp_06']);
-    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', jp_06: 'enemy' };
+  it('遊べる任務（us_01・us_02・us_03・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
+    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'jp_05', 'jp_06']);
+    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', jp_05: 'own', jp_06: 'enemy' };
     for (const id of PLAYABLE_IDS) {
       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
       const s = buildWorldSetup(gameData, id);
@@ -400,8 +403,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(idleS[id] + 1.5, id).toBeLessThan(1500);
       expect(idleS[id], id).toBeGreaterThan(s.durationS); // 夜明けの前に漂流はしない
     }
-    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296）
-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1224]);
+    // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296。v0.6.3 の jp_05 は 23 gal で 1,449、実機 1 回目の 32 gal・アイドル 0.14 で 1,440）
+    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1440, 1224]);
   });
   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲の機体・dawn_air_strike の文', () => {
     const texts: string[] = [];
@@ -436,7 +439,7 @@ describe('Briefing の条件と危険（v0.6.1。spec §8.4）', () => {
     expect(rowsOf('jp_06')[4]).toBe('敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('us_02')[4]).not.toContain('夜明けの空襲');
     expect(rowsOf('us_03')[4]).toBe('敵艦艇の砲撃・衝突、敵沿岸砲、座礁、夜明けの空襲');
-    expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa({ playAs: 'enemy', shipsAtDawn: 'stay', retireEdge: null }));
+    expect(briefingNumbers(buildWorldSetup(gameData, 'us_01')).dawnJa).toBe(dawnConditionJa({ control: 'enemy', playAs: 'enemy', shipsAtDawn: 'stay', retireEdge: null }));
     // 出撃の seed の夜（左右反転の夜を含む）でも us_02 は北のまま（反転は東西だけ）
     let mirroredNights = 0;
     for (let seed = 1; seed <= 40; seed++) {

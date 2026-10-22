@@ -1,0 +1,152 @@
+// 米PT の航過の読みやすさの部品（v0.6.3。docs/02 §6.4、spec §C.7）: 最接近までの体感秒・航過を固めてよいか・待つ PT の針路（v0.6.3 実機 1 回目から反対の舷の位置取りも）・
+// 突撃の狙いの点・艇首尾の撃たない円錐・逃げる針路とかわす向き。
+// Phaser 非依存・確保しない（狙いの点は呼ぶ側の使い回しの out に書く）。方位は北 0・時計回り、x は東・y は南。
+import type { PtParams } from './pt-data';
+import { bearingDeg } from './ship-ai';
+import { interceptTimeS } from './torpedo-solver';
+import { clamp, degToRad, radToDeg, wrapDeg180, wrapDeg360 } from './units';
+
+/** かわす向きの言い方の境目 deg: 逃げる針路（航過の線の直角）との差がこれ未満なら「そのまま」。言い回しの閾値で、強さの調整値ではない（seaplane-ordnance の DODGE_TURN_DEG と同じ考え） */
+export const PT_DODGE_STRAIGHT_DEG = 30;
+/** 待つ PT の位置取りで目標の速度の向きを使う速さの下限 game m/s（これより遅い目標は速度の向きが定まらないので、最後に見た艇首の向きを基準にする）。幾何の閾値で、強さの調整値ではない */
+export const PT_STATION_COURSE_MIN_MPS = 0.5;
+
+/** stationHeading が読む PtParams（待つ PT の位置取り・突撃と追い越しの速さ・hold_off の距離の二乗・時間圧縮） */
+export type StationParams = Pick<PtParams, 'stationM' | 'stationLeadS' | 'stationTolDeg' | 'stationClose2' | 'runInMps' | 'overtakeMps' | 'holdOff2' | 'holdOuter2' | 'timeScale'>;
+
+/** かわす向き: +1 = 右へ（時計回り）、−1 = 左へ、0 = そのまま */
+export type PtDodge = -1 | 0 | 1;
+
+/**
+ * 最接近までの体感秒: r は相手の位置 − 自分の位置、rv は相手の速度 − 自分の速度（game m/s）。
+ * 近づいていない（r·rv ≥ 0）か相対速度 0 なら Infinity。game 秒を time_scale で割って体感秒にする
+ */
+export function tcpaFeltS(rx: number, ry: number, rvx: number, rvy: number, timeScale: number): number {
+  const rr = rx * rvx + ry * rvy;
+  const vv = rvx * rvx + rvy * rvy;
+  return rr < 0 && vv > 0 ? -rr / vv / timeScale : Infinity;
+}
+
+/**
+ * 航過を固めてよいか（v0.6.3 の直し: 本当に向かってくるときだけ）。lockDeg は固める針路（突撃の狙いの点への方位）、(dx, dy) は艇 − PT、(vpx, vpy) は艇の速度（game m/s）。
+ * 1. PT の今の針路 headingDeg と lockDeg の差が tolDeg 以内（離脱から向き直る前・背を向けたままは固めない）。2. 艇が固める線の前（線が艇から離れる向きなら固めない）。
+ * 3. PT が lockDeg を航過の速さ passMps で進むとして（今の速度ではなく）、艇の今の速度との最接近が tcpaS 体感秒以内、4. その距離が有効射程の内（二乗 eff2）。
+ * 3・4 で、追い越す速さでは縮まらない後ろからの遠い航過を固めない。平方根なし
+ */
+export function passCommitOk(headingDeg: number, lockDeg: number, passMps: number, dx: number, dy: number, vpx: number, vpy: number, tolDeg: number, tcpaS: number, eff2: number, timeScale: number): boolean {
+  if (Math.abs(wrapDeg180(headingDeg - lockDeg)) > tolDeg) return false;
+  const r = degToRad(lockDeg);
+  const hx = Math.sin(r);
+  const hy = -Math.cos(r);
+  if (hx * dx + hy * dy <= 0) return false;
+  const rvx = vpx - hx * passMps;
+  const rvy = vpy - hy * passMps;
+  if (!(tcpaFeltS(dx, dy, rvx, rvy, timeScale) <= tcpaS)) return false;
+  const t = -(dx * rvx + dy * rvy) / (rvx * rvx + rvy * rvy);
+  const mx = dx + rvx * t;
+  const my = dy + rvy * t;
+  return mx * mx + my * my <= eff2;
+}
+
+/**
+ * 航過を待つ PT の針路（v0.6.3 の直し: 2 番手が艇に寄り過ぎない）: 目標 (tx, ty) から見た PT の方位（外向き）に side × θ を足す。
+ * θ は目標までの距離の二乗で、hold2（hold_off_m の二乗）以内は 0°（真っすぐ外へ）、outer2（曲がり始める距離の二乗）で 180°（目標へ真っすぐ）、間は比例（真横に回るのは中ほど）。
+ * side +1 は目標を右に見て回る（突撃の側のまま。待ちが解けたらそのまま寄れる）。乱数なし
+ */
+export function holdOffHeading(bx: number, by: number, tx: number, ty: number, side: number, hold2: number, outer2: number): number {
+  const ex = bx - tx;
+  const ey = by - ty;
+  const k = clamp((ex * ex + ey * ey - hold2) / (outer2 - hold2), 0, 1);
+  return wrapDeg360(bearingDeg(tx, ty, bx, by) + side * 180 * k);
+}
+
+/**
+ * 突撃の狙いの点を out に書く: 目標 (tx, ty)・速度 (tvx, tvy) との会合点（解が無ければ今の距離 / 速さ の秒だけ先）から、
+ * 進む向きの直角に side × offsetM ずらす（side +1 は目標を PT の右に見て航過する側）。海域の縁から marginM の内に収める
+ */
+export function aimPoint(
+  out: { x: number; y: number },
+  bx: number, by: number, speedMps: number,
+  tx: number, ty: number, tvx: number, tvy: number,
+  side: number, offsetM: number, w: number, h: number, marginM: number,
+): void {
+  const rx = tx - bx;
+  const ry = ty - by;
+  const tau = interceptTimeS(bx, by, speedMps, tx, ty, tvx, tvy) ?? Math.sqrt(rx * rx + ry * ry) / speedMps;
+  let ax = tx + tvx * tau;
+  let ay = ty + tvy * tau;
+  const ux = ax - bx;
+  const uy = ay - by;
+  const len = Math.sqrt(ux * ux + uy * uy);
+  if (len > 0) {
+    ax += (side * offsetM * uy) / len;
+    ay -= (side * offsetM * ux) / len;
+  }
+  out.x = clamp(ax, marginM, w - marginM);
+  out.y = clamp(ay, marginM, h - marginM);
+}
+
+/** 艇首・艇尾の円錐（半角の cos²）の中か: 向き (hx, hy) は単位ベクトル、(dx, dy) は相手への相対位置、d2 はその二乗の長さ。平方根なし */
+export function inDeadCone(hx: number, hy: number, dx: number, dy: number, d2: number, cosDead2: number): boolean {
+  const dot = hx * dx + hy * dy;
+  return dot * dot > cosDead2 * d2;
+}
+
+/**
+ * 逃げる針路（航過の進路を固めた瞬間に 1 回。v0.6.3 レビュー: HUD は「北西へ転舵」の方角で言う＝スティックの向きそのまま）: 航過の線（PT (bx, by) から lockDeg）の
+ * どちら側に艇 (px, py) がいるかで、線から離れる直角（線の右なら lockDeg + 90、左なら − 90）。0〜360
+ */
+export function escapeHeadingDeg(lockDeg: number, bx: number, by: number, px: number, py: number): number {
+  const r = degToRad(lockDeg);
+  const cross = Math.sin(r) * (py - by) + Math.cos(r) * (px - bx);
+  return wrapDeg360(lockDeg + (cross >= 0 ? 90 : -90));
+}
+
+/**
+ * かわす向き: 逃げる針路 escapeDeg（escapeHeadingDeg）へ向くのに右回り（+1）か左回り（−1）か。差が PT_DODGE_STRAIGHT_DEG 未満なら 0（そのまま全速で離れる）。
+ * 右・左は艇から見た回り方なので、HUD の文には使わない（画面は北が上で回らず、南へ走る艇の右は画面の左。v0.6.3 レビュー）。HUD は escapeDeg の方角と「そのまま」かどうかだけ
+ */
+export function dodgeTurn(escapeDeg: number, playerHeadingDeg: number): PtDodge {
+  const turn = wrapDeg180(escapeDeg - playerHeadingDeg);
+  if (Math.abs(turn) < PT_DODGE_STRAIGHT_DEG) return 0;
+  return turn > 0 ? 1 : -1;
+}
+
+/**
+ * 待つ PT の針路と速さ（v0.6.3 実機 1 回目の挟み撃ち。速さは out.sp に書く）: 目標 (tx, ty) の針路（推した速度 (tvx, tvy) の向き。ほぼ止まっていれば最後に見た艇首の向き headingDeg）から
+ * −flank × relDeg の方角（flank は前の航過の PT の舷 +1 右・−1 左＝その反対の舷。commitPass が艇首の向きで決める）、station_m の点（station_lead_s 先へ）を目指す。
+ * 目標から見た PT の方位と点の方位の差が station_tol_deg 以内なら点へ（station_close_m より近ければ目標の速さ + 追い越しで並ぶ）、外なら hold_off の形で短い方へ回る（内へ寄らない）。
+ * relDeg は向かう角で、着く角ではない（巡航の艇には遅れて、艇首から約 40° か 150〜175° で待ちが解けることが多い。レビュー R1）。
+ * レビュー R3: 止まった艇で PT の方位を基準にすると点がいつも PT から −flank × relDeg 先へ逃げ、反対の舷へ回らずに艇の周りを回り続けた（挟み撃ちが効かない）。
+ * 乱数なし・確保なし（平方根は点の近くだけ）
+ */
+export function stationHeading(bx: number, by: number, tx: number, ty: number, tvx: number, tvy: number, headingDeg: number, flank: number, relDeg: number, p: StationParams, out: { sp: number }): number {
+  const v2 = tvx * tvx + tvy * tvy;
+  const brgT = bearingDeg(tx, ty, bx, by);
+  const course = v2 > PT_STATION_COURSE_MIN_MPS * PT_STATION_COURSE_MIN_MPS ? radToDeg(Math.atan2(tvx, -tvy)) : headingDeg;
+  const theta = course - flank * relDeg;
+  const th = degToRad(theta);
+  const lead = p.stationLeadS * p.timeScale;
+  const sx = tx + Math.sin(th) * p.stationM + tvx * lead;
+  const sy = ty - Math.cos(th) * p.stationM + tvy * lead;
+  const e = wrapDeg180(theta - brgT);
+  if (Math.abs(e) < p.stationTolDeg) {
+    const ds2 = (sx - bx) * (sx - bx) + (sy - by) * (sy - by);
+    out.sp = ds2 > p.stationClose2 ? p.runInMps : Math.min(p.runInMps, Math.sqrt(v2) + p.overtakeMps);
+    return bearingDeg(bx, by, sx, sy);
+  }
+  out.sp = p.runInMps;
+  if ((tx - bx) * (tx - bx) + (ty - by) * (ty - by) < p.holdOuter2) return holdOffHeading(bx, by, tx, ty, e > 0 ? 1 : -1, p.holdOff2, p.holdOuter2);
+  return bearingDeg(bx, by, sx, sy);
+}
+
+/** 目標 (tx, ty) が針路 headingDeg の (bx, by) から見て右（+1）か左（−1）か（真正面・真後ろは右） */
+export function targetSide(headingDeg: number, bx: number, by: number, tx: number, ty: number): number {
+  const r = degToRad(headingDeg);
+  return Math.sin(r) * (ty - by) + Math.cos(r) * (tx - bx) >= 0 ? 1 : -1;
+}
+
+/** 海域の縁から marginM の内側の帯にいる（航過・離脱を打ち切る） */
+export function nearEdge(x: number, y: number, bounds: { width: number; height: number }, marginM: number): boolean {
+  return x < marginM || y < marginM || x > bounds.width - marginM || y > bounds.height - marginM;
+}

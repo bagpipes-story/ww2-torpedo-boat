@@ -70,10 +70,12 @@ export function seaLightStep(stepTimeS: number, durationS: number, preS: number,
 
 /**
  * Briefing の「夜明けまで N 秒」の後ろに付ける句（Briefing を作るときの 1 回だけ）。空: enemy は「以後は空襲」、own は「昼の空は味方」（争奪は遊べる任務に無いので無し）。
+ * 史実の空が争奪（control contested）で味方の空として遊ぶ任務（jp_05）は「昼の空はおおむね味方」（v0.6.3 レビュー: label_ja・夜明けの帯と同じ言い方）。
  * 夜明けの敵艦（v0.6.2）: retire は「敵は北へ退く」（方角は今夜の左右反転込み）、hide は「大発は岸へ隠れる」。stay・none は付けない。両方あれば「・」でつなぐ
  */
-export function dawnConditionJa(air: Pick<DawnAir, 'playAs' | 'shipsAtDawn' | 'retireEdge'>, mirrored = false): string {
-  const sky = air.playAs === 'enemy' ? '以後は空襲' : air.playAs === 'own' ? '昼の空は味方' : '';
+export function dawnConditionJa(air: Pick<DawnAir, 'control' | 'playAs' | 'shipsAtDawn' | 'retireEdge'>, mirrored = false): string {
+  const own = air.control === 'contested' ? '昼の空はおおむね味方' : '昼の空は味方';
+  const sky = air.playAs === 'enemy' ? '以後は空襲' : air.playAs === 'own' ? own : '';
   const ships = air.shipsAtDawn === 'retire' && air.retireEdge ? `敵は${retireDirJa(air.retireEdge, mirrored)}へ退く` : air.shipsAtDawn === 'hide' ? '大発は岸へ隠れる' : '';
   return sky && ships ? `（${sky}・${ships}）` : sky || ships ? `（${sky}${ships}）` : '';
 }

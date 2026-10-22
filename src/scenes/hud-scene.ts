@@ -49,6 +49,7 @@ import {
 } from '../config/ui-config';
 import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
 import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR, GUN_BUTTON_LABEL } from '../config/hunt-config';
+import { PT_MARKER_LABEL } from '../config/pt-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PauseControl } from '../systems/pause-control';
@@ -62,6 +63,7 @@ import { HpBar } from '../ui/hp-bar';
 import { EdgeMarker } from '../ui/edge-marker';
 import { DawnBanner } from '../ui/dawn-banner';
 import { FuelGauge } from '../ui/fuel-gauge';
+import { gunButtonLabel, gunButtonReloadN } from '../ui/pt-gun-lines';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
@@ -88,6 +90,7 @@ export class HudScene extends Phaser.Scene {
   private identifyButton?: HoldButton;
   private lastIdentifyN = -1;
   private lastHoldTenths = -1;
+  private lastReloadN = 0; // 射撃ボタンの弾倉交換の残り秒（0 は交換中でない。v0.6.3 実機 1 回目のレビュー ux-2: 赤い線の下で弾が止まる訳が見えなかった）
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
   /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
@@ -115,6 +118,7 @@ export class HudScene extends Phaser.Scene {
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
     this.lastIdentifyN = -1; // 再開で前回の値を引きずらない
     this.lastHoldTenths = -1;
+    this.lastReloadN = 0;
 
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
@@ -135,9 +139,9 @@ export class HudScene extends Phaser.Scene {
     if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud);
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
-    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」で切り上げ＝2 行目の手引きと同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
+    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
     const guns = mission.mainWeapon === 'guns';
-    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns, topMargin: TARGET_MARKER_TOP_MARGIN });
+    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: mission.ptBoats ? PT_MARKER_LABEL : guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns || mission.ptBoats !== null, topMargin: TARGET_MARKER_TOP_MARGIN });
     this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
     if (mission.coast) this.coastMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
@@ -156,7 +160,7 @@ export class HudScene extends Phaser.Scene {
       const gx = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
       const gy = GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
       this.gunButton = new HoldButton(this, gx, gy, GUN_BUTTON_LABEL, { onDown: () => (input.gunHeld = armed), onUp: () => (input.gunHeld = false) }, TEXTURE_KEYS.torpedoButton);
-    } else {
+    } else if (mission.mainWeapon === 'torpedo') { // 主兵装 none（撃たない米PT の任務。v0.6.3 の最初の jp_05。実機 1 回目から jp_05 は guns）は魚雷・扇・射撃のボタンを作らない（発射の入力は世界が捨てる）
       this.torpedoButton = new TorpedoButton(this, input, spread);
       this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
       this.spreadButton = new SpreadButton(this, GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS, SPREAD_BUTTON_Y, spread, launch.salvo_spacing_deg, launch.salvo_spacing_choices_deg);
@@ -258,6 +262,12 @@ export class HudScene extends Phaser.Scene {
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();
     const t = this.telemetry;
+    const reloadN = this.gunButton ? gunButtonReloadN(t) : 0; // 米PT の任務の 13mm だけ（大発の任務は弾倉なしで 0 のまま）
+    if (reloadN !== this.lastReloadN) {
+      this.lastReloadN = reloadN;
+      this.gunButton?.setLabel(gunButtonLabel(reloadN));
+      this.gunButton?.setEnabled(reloadN === 0); // 薄く（押したままでよい。交換が済めば撃ち続ける）
+    }
     if (this.smokeButton) {
       // 展開中 / 冷却の残り秒 / 使える。整数が変わったときだけ文字が変わる
       this.smokeButton.setLabel(t.smokeLeftS > 0 ? '煙幕\n展開中' : t.smokeCooldownS > 0 ? `煙幕\n${Math.ceil(t.smokeCooldownS)}` : '煙幕');

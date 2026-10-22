@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getEnemyRecord, getPrototypeMission, getScoringParams } from '../src/config/game-data';
-import { getBriefingRecord } from '../src/config/mission-data';
+import { getBriefingRecord } from '../src/config/briefing-data';
 import { gunneryParamsFromData, isEnemyGunneryDataRecord } from '../src/core/gunnery';
 import { computeScore } from '../src/core/scoring';
 import { createCircles, fillHullCircles, pointHitsHull } from '../src/core/torpedo-solver';
