@@ -10,7 +10,7 @@ import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, GUN_SAFE } from '../core/gun-battery';
 import type { InputState } from '../core/input-state';
 import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
-import { SP_APPROACH, SP_IDLE, SP_OUT_NONE, bombInAir, seaplaneActive, seaplanePose } from '../core/seaplane';
+import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
 import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import { STORM_NONE } from '../core/storm';
@@ -19,6 +19,7 @@ import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, escortResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
 import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from './pt-telemetry';
+import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
 import type { MissionWorld } from './mission-world';
 
 const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
@@ -208,25 +209,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.friendlyPasses = f ? f.passes : 0;
   t.friendlyOutcome = f ? f.outcome : FF_OUT_NONE;
   t.friendlyPending = f ? f.pending : false;
-  // 敵の水上機（docs/02 §6.8、v0.4.1）: 距離は接近中だけ（相対の半径。sqrt 無し）。マーカーの相対位置は来ている間だけ
-  const sp = w.seaplane ? w.seaplane.state : null;
-  t.planePhase = sp ? sp.phase : SP_IDLE;
-  t.planeDistM = sp && sp.phase === SP_APPROACH ? sp.approachR : 0;
-  t.planeLocked = sp ? sp.locked : false;
-  t.planeWake = w.band === 'cruise' || w.band === 'full';
-  t.planeFlareOn = sp ? sp.ordnance.flare.leftS > 0 : false;
-  t.planeBombsDropped = sp ? sp.ordnance.bombsDropped : 0;
-  t.planeBombAir = sp ? bombInAir(sp.ordnance) : false;
-  t.planeBombsHit = sp ? sp.ordnance.bombsHit : 0;
-  t.planeOutcome = sp ? sp.outcome : SP_OUT_NONE;
-  if (sp && w.seaplane && seaplaneActive(sp)) {
-    const q = seaplanePose(sp, w.seaplane.p, scratchPose);
-    t.planeDx = q.dx;
-    t.planeDy = q.dy;
-  } else {
-    t.planeDx = NaN;
-    t.planeDy = NaN;
-  }
+  refreshSeaplaneTelemetry(t, w, scratchPose); // 敵の水上機（v0.4.1。systems/seaplane-telemetry。v0.6.4 で切り出し）
   // 夜明け（v0.6.1）: ラッチ・夜明け後の秒・空襲の段。空襲の機が来ていれば「敵機」の矢印をその機で上書き（水上機の後）
   refreshDawnTelemetry(t, w, scratchPose);
   refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
