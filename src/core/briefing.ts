@@ -7,8 +7,13 @@ import type { MoonPhase } from './visibility';
 export const MENU_STATUS_PLAYABLE = '出撃準備 →';
 /** 撃たない任務（v0.6.3。main_weapon none＝米PT）の「条件」の武器の句。和文と英字の間に半角スペースを入れない（Phaser の折り返しは半角スペースで切るので「魚雷は PT⏎の下」と割れた） */
 export const NO_WEAPON_BRIEFING_JA = '魚雷はPTの下を抜ける（撃たない）';
-/** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由） */
+/** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由）。v0.6.4 から ptGunBriefingJa('13mm機銃') と同じ文 */
 export const PT_GUN_BRIEFING_JA = '13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）';
+
+/** 米PT の任務の「条件」の武器の句を砲の名（boats.json の gun_battery.label_ja。「13mm機銃」「25mm機銃」）から（v0.6.4。jp_01 の T-38 の 25mm）。数字の後に「機銃」が続くので「13mm1挺」とは読めない */
+export function ptGunBriefingJa(label: string): string {
+  return `${label}1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`;
+}
 
 export interface MenuEntry {
   id: string;

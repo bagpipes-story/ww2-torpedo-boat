@@ -53,7 +53,7 @@ export function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry>
     ...over,
     dawn: { ...createDawnTelemetry(), ...(over.dawn ?? {}) },
     pt: { ...PT0, ...pt },
-    convoy: createConvoyTelemetry(), // 輸送隊の無い任務（v0.6.4。enabled false）
+    convoy: over.convoy ?? createConvoyTelemetry(), // 輸送隊の無い任務（v0.6.4。enabled false）。jp_01 のテストは over.convoy で渡す
   } as BoatTelemetry;
 }
 

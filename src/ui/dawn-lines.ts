@@ -69,12 +69,12 @@ export function airRaidTagJa(t: BoatTelemetry): string {
 
 /**
  * 「帰投せよ」の理由の文（夜明けの後の CALL_DAWN だけ変える。ほかは hud-lines の callLabel）。
- * air は t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE（夜明け前は「夜明け近し」のまま）
+ * air は t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE（夜明け前は「夜明け近し」のまま）。convoyJa は輸送隊の決着の語（v0.6.4。ui/convoy-lines の convoyCallJa。無い任務は ''）
  */
-export function dawnCallLabel(call: number, gunMission: boolean, air: number): string {
+export function dawnCallLabel(call: number, gunMission: boolean, air: number, convoyJa = ''): string {
   if (call === CALL_DAWN && air === DAWN_AIR_ENEMY) return '空襲下 ';
   if (call === CALL_DAWN && air === DAWN_AIR_OWN) return '夜明け ';
-  return callLabel(call, gunMission);
+  return callLabel(call, gunMission, convoyJa);
 }
 
 /**

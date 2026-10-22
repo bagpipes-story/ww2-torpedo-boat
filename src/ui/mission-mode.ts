@@ -48,9 +48,11 @@ export const MISSION_PT = 24;
 /** 25 T-14 の 13mm の射撃（ボタンを押している間・生きた PT がいる）、26 13mm の出来事（撃退・撃沈の直後 PT_RESULT_SHOW_MS）。v0.6.3 実機 1 回目（文は ui/pt-gun-lines） */
 export const MISSION_PT_GUN = 25;
 export const MISSION_PT_GUN_EVENT = 26;
+/** 27 味方の大発の輸送隊の出来事（沈没・上陸の直後 CONVOY_EVENT_SHOW_MS。13mm の出来事の下・航過の結果の上）。v0.6.4（文は ui/convoy-lines） */
+export const MISSION_CONVOY_EVENT = 27;
 
 /**
- * missionMode の flags（MissionLine が時刻と前のフレームで決める 5 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
+ * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
  * 米PT の赤い線の行を保つ（実機 2 回目。攻撃の後に弾がまだ飛んでいる間。ui/pt-chase-lines の ptHoldPass）
  */
 export const MODE_FLAG_BARGE_EVENT = 1;
@@ -58,6 +60,8 @@ export const MODE_FLAG_ESCORT_HIT = 2;
 export const MODE_FLAG_PT_RESULT = 4;
 export const MODE_FLAG_PT_GUN_EVENT = 8;
 export const MODE_FLAG_PT_HOLD = 16;
+/** 輸送隊の出来事の表示中（v0.6.4。ui/pt-line-clock が沈没・上陸の数の立ち上がりで立てる） */
+export const MODE_FLAG_CONVOY_EVENT = 32;
 
 /** 暴風の近く・中で安全速力を超えている（警告。ほかの行の末尾にも付く） */
 export function stormWarning(t: BoatTelemetry): boolean {
@@ -94,7 +98,7 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過（赤い線）> 13mm の出来事 > 米PT の航過の結果 > 13mm の射撃 > 米PT との接触（突撃・離脱）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過（赤い線）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 米PT の航過の結果 > 13mm の射撃 > 米PT との接触（突撃・離脱）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   if (t.homeWaiting) return MISSION_WAITING;
@@ -104,6 +108,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
     // 米PT（v0.6.3）: 赤い線（航過・連射。終わって弾が飛んでいる間も MODE_FLAG_PT_HOLD で保つ）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）
     if (t.pt.passing || (flags & MODE_FLAG_PT_HOLD) !== 0) return MISSION_PT_PASS;
     if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
+    if ((flags & MODE_FLAG_CONVOY_EVENT) !== 0) return MISSION_CONVOY_EVENT; // 大発の沈没・上陸（v0.6.4。沈んだ航過の結果より上）
     if (ptResultShown(t, flags)) return MISSION_PT_CONTACT;
     if (ptGunShown(t)) return MISSION_PT_GUN;
     if (t.pt.detected && t.pt.alive > 0) return MISSION_PT_CONTACT;

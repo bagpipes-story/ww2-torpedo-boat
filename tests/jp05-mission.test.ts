@@ -17,7 +17,7 @@ import type { PtResult } from '../src/ui/result-types';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { getDawnAir } from '../src/config/dawn-data';
-import { NO_WEAPON_BRIEFING_JA, PT_GUN_BRIEFING_JA, bearingJa, briefingRows, compassJa, difficultyJa, formatDateJa } from '../src/core/briefing';
+import { NO_WEAPON_BRIEFING_JA, PT_GUN_BRIEFING_JA, bearingJa, briefingRows, compassJa, difficultyJa, formatDateJa, ptGunBriefingJa } from '../src/core/briefing';
 import { bearingDeg } from '../src/core/ship-ai';
 import { hasHardVariant } from '../src/config/mission-data';
 import { endCountsAsReturn } from '../src/core/mission-flow';
@@ -137,6 +137,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect(briefingRows({ ...getBriefingRecord(gameData, 'us_02'), hazardIds: us02.hazardsTonight }, briefingNumbers(us02), nameOf, labelOf)[5]!.text).not.toContain('\u00a0魚雷');
     expect(NO_WEAPON_BRIEFING_JA).toBe('魚雷はPTの下を抜ける（撃たない）');
     expect(PT_GUN_BRIEFING_JA).toBe('13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）');
+    expect(ptGunBriefingJa('13mm機銃')).toBe(PT_GUN_BRIEFING_JA); // v0.6.4: 砲の名から組む（jp_01 の 25mm と同じ関数）。jp_05 の文は変わらない
     // 目的・成功・史実と武器の句: 和文の中に半角スペースが無い（「条件」は「 ・ 」の区切りだけで折り返す）
     const r = getBriefingRecord(gameData, 'jp_05');
     for (const t of [r.objective, r.success, r.noteJa, NO_WEAPON_BRIEFING_JA, PT_GUN_BRIEFING_JA]) expect(t, t).not.toContain(' ');
@@ -482,13 +483,17 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
 const TITLE_ROW_W_PX = 960;
 
 describe('Title の日本の操作の一言（v0.6.3）', () => {
-  it('魚雷のある任務（jp_06）と 13mm 機銃の任務（jp_05「鹵獲艇の哨戒」。v0.6.3 実機 1 回目から）のどちらでも本当。煙幕なし。任務の行の幅（TITLE_ROW_W）の内', () => {
+  it('魚雷のある任務（jp_06）と機銃の任務（jp_05「鹵獲艇の哨戒」の 13mm・jp_01「夜の輸送護衛」の 25mm。v0.6.4）のどれでも本当。煙幕なし。任務の行の幅（TITLE_ROW_W）の内', () => {
     const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
-    // 任務の名前で言う（「哨戒は撃たない」は米PT の哨戒が撃たないとも読めた。v0.6.3 レビュー）
-    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（鹵獲艇の哨戒は13mm機銃）・ 煙幕なし（暗さと静音が頼り）');
+    // 任務の名前で言う（「哨戒は撃たない」は米PT の哨戒が撃たないとも読めた。v0.6.3 レビュー）。口径は言わない（「13mm機銃」は jp_01 の 25mm で嘘になる。v0.6.4）
+    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（鹵獲艇の哨戒と輸送護衛は機銃）・ 煙幕なし（暗さと静音が頼り）');
     expect(hint).toContain(getBriefingRecord(gameData, 'jp_05').titleJa); // 「鹵獲艇の哨戒」で指す任務
+    expect(hint).toContain('輸送護衛'); // jp_01 の title_ja「夜の輸送護衛」の一部
+    expect(getBriefingRecord(gameData, 'jp_01').titleJa).toContain('輸送護衛');
     expect(getPrototypeMission(gameData, 'jp_05').mainWeapon).toBe('guns');
-    expect(hint).toContain(buildWorldSetup(gameData, 'jp_05').guns!.label); // 「13mm機銃」は jp_t14 の gun_battery.label_ja
+    expect(getPrototypeMission(gameData, 'jp_01').mainWeapon).toBe('guns');
+    expect(hint).toContain('機銃'); // 「13mm機銃」「25mm機銃」（gun_battery.label_ja）のどちらにも本当
+    for (const id of ['jp_05', 'jp_01']) expect(buildWorldSetup(gameData, id).guns!.label, id).toContain('機銃');
     expect(getPrototypeMission(gameData, 'jp_06').mainWeapon).not.toBe('none');
     for (const [k, v] of Object.entries(TITLE_HINT_BY_CAMPAIGN_JA)) expect(textWidthPx(v, TITLE_HINT_PX), k).toBeLessThanOrEqual(TITLE_ROW_W_PX);
   });

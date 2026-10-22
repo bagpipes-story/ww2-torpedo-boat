@@ -1,0 +1,98 @@
+// 味方の大発の輸送隊（v0.6.4。jp_01「夜の輸送護衛」。docs/02 §6.4、spec §D.2・§D.3）の HUD と Result の文: 2 行目の平常（大発の数・上陸・浜まで・米PT の哨戒）、
+// 米PT が大発を狙うときの航過・突撃・航過の結果、離脱の尾「大発のそばへ戻れ」、出来事（沈没・上陸）、呼びかけの語「大発 上陸 2/3 ・ 」、Result の 1 行目と状況の行の頭、2 行目のキャッシュのキー。
+// ui/pt-lines の ptKey / ptLine（標的の種類のビットで分岐）と ui/mission-line がこのときに呼ぶ。Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。
+// 距離はキーの刻み（切り上げ）から、隻数はテレメトリから組み、キーが変わったときだけ組む（ui/mission-line がキャッシュする）。
+// 語の作法（spec §I.6）: 付くだけ・間に入るだけは罠（自艇が先に狙われる）なので「引き受けろ」「間に入れ」とは言わず、いつも「近づいて撃ち返せ」。失った大発への航過は褒めない（「撃たせなかった！」は自艇だけ）。
+import { CONVOY_LEFT_STEP_M, CONVOY_MARKER_STEP_M, CONVOY_NEAR_WARN_M } from '../config/convoy-config';
+import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
+import type { BoatTelemetry } from '../core/boat-motion';
+import type { ConvoyTelemetry } from '../core/convoy';
+import type { HudLine } from './hud-lines';
+import type { ConvoyResult } from './result-types';
+
+/** 出来事の種類（ui/pt-line-clock が上陸・沈没の数の立ち上がりで決める。0 は無し） */
+export const CONVOY_EV_SUNK = 1;
+export const CONVOY_EV_ARRIVED = 2;
+
+/** 大発が狙われたときの勧め（航過・突撃・沈没の出来事で同じ語） */
+const FIGHT_BACK_JA = '近づいて撃ち返せ';
+
+/** 「浜まで N m」の刻み（最も遅れた航行中の大発から上陸線まで。切り上げ。63 まで＝6,300 m） */
+export function convoyLeftStep(c: ConvoyTelemetry): number {
+  return Math.min(63, Math.ceil(c.leftM / CONVOY_LEFT_STEP_M));
+}
+
+/** 離脱の行の「大発のそばへ戻れ（N m）」の距離の刻み（最寄りの航行中の大発が CONVOY_NEAR_WARN_M より遠いときだけ。近い・無い（NaN）・輸送隊の無い任務は 0＝jp_05 のキーは変わらない） */
+export function convoyNearStep(c: ConvoyTelemetry): number {
+  return c.enabled && c.nearestM > CONVOY_NEAR_WARN_M ? Math.min(63, Math.ceil(c.nearestM / CONVOY_MARKER_STEP_M)) : 0;
+}
+
+/**
+ * 輸送隊のキー（ui/mission-line が ptKey と並べて持つ）: 1 | 航行中 << 1 | 上陸 << 3 | 浜までの刻み << 5（平常の行のときだけ。0〜63）| 出来事 << 11（0 なし・1 沈没・2 上陸）。
+ * 「米PT N 隻」は ptKey（N_UNSEEN の隻数）が、離脱の尾の距離は ptKey（接触の距離の刻み）が持つ。輸送隊の無い任務は 0
+ */
+export function convoyKey(c: ConvoyTelemetry, normal: boolean, event: number): number {
+  if (!c.enabled) return 0;
+  return 1 | (Math.min(3, c.afloat) << 1) | (Math.min(3, c.arrived) << 3) | ((normal ? convoyLeftStep(c) : 0) << 5) | (event << 11);
+}
+
+/** 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中 ・ 静音で抜けて帰投」の代わり）: 航行中の大発・上陸・浜まで・去っていない米PT と来る方角 */
+export function convoyNormalLine(t: BoatTelemetry): HudLine {
+  const c = t.convoy;
+  return { text: `大発 ${c.afloat} 隻 ・ 上陸 ${c.arrived}/${c.total} ・ 浜まで ${convoyLeftStep(c) * CONVOY_LEFT_STEP_M} m ・ 米PT ${t.pt.alive} 隻 ${c.fromDirJa}で哨戒中`, color: HUD_COLOR_STRONG };
+}
+
+/** 見えている PT に気づかれていない間（停止・静音）: jp_05 の「静音でやり過ごせ」の代わり（抜けるのではなく大発のそばで待つ） */
+export function convoySlowLine(distM: number, dirJa: string): HudLine {
+  return { text: `米PT ${distM} m（${dirJa}） ・ まだ気づいていない ・ 大発のそばで備えよ`, color: HUD_COLOR_STRONG };
+}
+
+/** 赤い線（標的が大発）: 撃つ前は「航過！」、撃ち始めたら「掃射！」。かわす向きは出さない（線の先は大発。自艇は寄って撃ち返す） */
+export function convoyPassLine(fired: boolean): HudLine {
+  return { text: `米PT ${fired ? '掃射' : '航過'}！ 大発を狙う ・ ${FIGHT_BACK_JA}`, color: HUD_COLOR_WARN };
+}
+
+/** 突撃（標的が大発）: PT が見えていれば方角と距離、音だけなら方角だけ */
+export function convoyRushLine(dirJa: string, distM: number, seen: boolean): HudLine {
+  return { text: seen ? `米PT ${dirJa}から突撃 ${distM} m ・ 大発を狙う ・ ${FIGHT_BACK_JA}` : `米PT のエンジン音 ・ ${dirJa}から突撃 ・ 大発を狙う`, color: HUD_COLOR_WARN };
+}
+
+/**
+ * 航過の結果（最後の攻撃の標的が大発）: 命中（標的の船体だけ。systems/pt-target の lastAttackTargetHits）か「被弾なし」。撃たずに終わった航過（上陸・沈没で標的を失った）は
+ * 「大発への航過 撃たず」（強調色。「撃たせなかった！」とは言わない＝失った大発を褒めない。spec §C.5・§I.3）。hits < 0 が撃たず
+ */
+export function convoyPassResultLine(hits: number, damagePerHit: number, tally: string): HudLine {
+  if (hits < 0) return { text: `大発への航過 撃たず ・ ${tally}`, color: HUD_COLOR_STRONG };
+  if (hits === 0) return { text: `大発 被弾なし ・ ${tally}`, color: HOME_COLOR_TEXT };
+  return { text: `大発 被弾 ${hits} 発（HP −${hits * damagePerHit}） ・ ${tally}`, color: HUD_COLOR_STRONG };
+}
+
+/** 離脱の行に挟む「大発のそばへ戻れ（N m） ・ 」（nearStep は convoyNearStep。0 なら ''） */
+export function convoyBreakTailJa(nearStep: number): string {
+  return nearStep > 0 ? `大発のそばへ戻れ（${nearStep * CONVOY_MARKER_STEP_M} m） ・ ` : '';
+}
+
+/**
+ * 出来事の行（CONVOY_EVENT_SHOW_MS の間。13mm の出来事の下・航過の結果の上）: 沈没は警告色で「近づいて撃ち返せ」、残りが無ければ全滅（上陸が 0）か上陸の数と帰投。
+ * 上陸は味方の青（最後の 1 隻の上陸は出来事を出さず呼びかけへ＝pt-line-clock が始めない）
+ */
+export function convoyEventLine(c: ConvoyTelemetry, event: number): HudLine {
+  if (event === CONVOY_EV_ARRIVED) return { text: `大発 上陸 ${c.arrived}/${c.total} ・ 残り ${c.afloat} 隻`, color: HOME_COLOR_TEXT };
+  if (c.afloat > 0) return { text: `大発 1 隻 沈没 ・ 残り ${c.afloat} 隻 ・ ${FIGHT_BACK_JA}`, color: HUD_COLOR_WARN };
+  return { text: c.arrived === 0 ? '大発 全滅 ・ 帰投せよ' : `大発 1 隻 沈没 ・ 上陸 ${c.arrived}/${c.total} ・ 帰投せよ`, color: HUD_COLOR_WARN };
+}
+
+/** 呼びかけの語（決着＝CALL_SUNK のとき hud-lines の callLabel が「撃沈！」の代わりに返す）: 「大発 上陸 2/3 ・ 」、1 隻も届かなければ「大発 全滅 ・ 」。後ろに mission-line の「帰投せよ  N m」 */
+export function convoyCallJa(c: ConvoyTelemetry): string {
+  return c.arrived === 0 ? '大発 全滅 ・ ' : `大発 上陸 ${c.arrived}/${c.total} ・ `;
+}
+
+/** Result の本文 1 行目（24 px・強調）: 上陸・沈没・ノルマ・隊の被弾（data の barge_hp を合わせる根拠。CLAUDE.md §9） */
+export function convoyResultLine(c: ConvoyResult): string {
+  return `大発 上陸 ${c.arrived}/${c.total} ・ 沈没 ${c.sunk}（ノルマ ${c.quota}） ・ 大発の被弾 ${c.hitsTaken} 発`;
+}
+
+/** Result の状況の行の頭: 「大発 2/3 ・ 米PT: 撃退 1 ・ 健在 1 隻」（ptHead は ui/pt-lines の ptHeadJa。届けた／届かずは 1 行目の「（ノルマ 2）」が言う） */
+export function convoyHeadJa(c: ConvoyResult, ptHead: string): string {
+  return `大発 ${c.arrived}/${c.total} ・ ${ptHead}`;
+}
