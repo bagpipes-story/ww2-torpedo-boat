@@ -3,12 +3,12 @@
 // tests/convoy.test.ts（浜の無い隊＝v0.6.4 の上陸線。300 行に近いので浜はこのファイル）と同じく block は data と独立な固定値（spec-r1 §2.1 の写し。data の値の pin は tests/jp01-mission）。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { isBargeDataRecord, type BargeDataRecord } from '../src/core/barge-data';
 import { CV_ARRIVED, CV_SAILING, convoyLeftM, convoyResolved, createConvoy, hitConvoyBarge, stepConvoy, type ConvoyEvents, type ConvoyParams, type ConvoyState } from '../src/core/convoy';
-import { CONVOY_RING_CLEAR_M, convoyParamsAtNight, convoyParamsFromData, type ConvoyMissionBlock, type ConvoyMissionContext } from '../src/core/convoy-data';
-import { CountingRng } from './pt-kit';
+import { CONVOY_RING_CLEAR_M, convoyParamsAtNight, convoyParamsFromData, isConvoyMissionBlock, type ConvoyMissionBlock, type ConvoyMissionContext } from '../src/core/convoy-data';
+import { SeededRng } from '../src/core/rng';
 
 const DT = 1 / 60;
 const TS = gameData.hitRateModel.world.time_scale;
@@ -115,6 +115,14 @@ describe('浜の data の検査（壊れた data は jp_01 の id 付きで例�
     expect(bad({ landing_x_m: 5980 }, {}, { ...CTX, ring: { x: 6000, y: 1000, radiusM: 250 } })).toThrow(/上陸地点は海域の中/); // 先頭の上陸地点 6,040
     expect(bad({ landing_x_m: 1700 })).toThrow(/転舵の x/); // 先頭の転舵 1,199.4 ≤ 出発 1,200 + 250
   });
+  it('beach の形（isConvoyMissionBlock。レビュー R3）: 鍵が無ければ浜の無い隊で通る。null・false・0・数の文字・鍵の欠け・NaN は「convoy が壊れている」で落ちる（前は null が通り、沖の上陸線に黙って戻った）', () => {
+    expect(isConvoyMissionBlock(BLOCK)).toBe(true);
+    const { beach: _b, ...noBeach } = clone(BLOCK);
+    expect(isConvoyMissionBlock(noBeach)).toBe(true);
+    for (const beach of [null, false, 0, 'beach', { spacing_m: '60', margin_m: 12, run_in_deg: 38 }, { spacing_m: 60, margin_m: 12 }, { spacing_m: 60, margin_m: Number.NaN, run_in_deg: 38 }]) {
+      expect(isConvoyMissionBlock({ ...clone(BLOCK), beach }), JSON.stringify(beach)).toBe(false);
+    }
+  });
   it(`各隻の航路と浜への道から帰投の輪の縁まで ${CONVOY_RING_CLEAR_M} m 以上: (3900, 2750) は先頭の浜への道から 338 m（縁まで 88 m）で落ちる。jp_01 の (4150, 2700) は先頭の上陸地点から縁まで 318 m`, () => {
     expect(bad({}, {}, { ...CTX, ring: { x: 3900, y: 2750, radiusM: 250 } })).toThrow(/輪の縁まで 300 m 以上/);
     expect(bad({}, {}, { ...CTX, ring: { x: 3900, y: 2750, radiusM: 250 } })).toThrow(ID);
@@ -126,10 +134,13 @@ describe('浜の data の検査（壊れた data は jp_01 の id 付きで例�
 describe('浜の経路も乱数を引かない・確保なし（CLAUDE.md §7）', () => {
   const stripComments = (s: string): string => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   const noAlloc = (src: string): boolean[] => [src.includes('new '), src.includes('[]'), src.includes('{}'), src.includes('=>')];
-  it('出撃から上陸まで回しても CountingRng は 0 回。stepConvoyBeach・convoyBeachLeftM に new・[]・{}・=> が無い', () => {
-    const rng = new CountingRng(16);
+  it('出撃から上陸まで回しても SeededRng.next は 0 回（tests/setup-neutral と同じ見張り。レビュー R4: 前の CountingRng はどこにも渡しておらず必ず 0 だった）。stepConvoyBeach・convoyBeachLeftM に new・[]・{}・=> が無い', () => {
+    const spy = vi.spyOn(SeededRng.prototype, 'next');
     const { f } = sail(P);
-    expect([f.arrived, rng.draws]).toEqual([3, 0]);
+    expect(convoyLeftM(createConvoy(P), P)).toBeCloseTo(2730.8, 1); // 浜までの道のり（convoyBeachLeftM）も見張りの内
+    const draws = spy.mock.calls.length;
+    spy.mockRestore();
+    expect([f.arrived, draws]).toEqual([3, 0]);
     expect(f.barges.every((b) => b.phase !== CV_SAILING)).toBe(true);
     const src = stripComments(readFileSync(join(__dirname, '..', 'src', 'core', 'convoy.ts'), 'utf8'));
     for (const name of ['stepConvoyBeach', 'convoyBeachLeftM']) {

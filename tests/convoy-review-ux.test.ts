@@ -3,6 +3,7 @@
 // 撃つ前に 25mm で黙らせた大発への航過の結果（ux-7）、Result の航行中の数（ux-9）。どれも jp_05（輸送隊の無い任務）の文・キー・優先は変わらないことも並べて確かめる。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CONVOY_EVENT_SHOW_MS } from '../src/config/convoy-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG } from '../src/config/hud-text-config';
 import { gameData } from '../src/config/game-data';
 import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
@@ -131,10 +132,10 @@ describe('ux-3・ux-4: 標的の大発を失った赤い線の行・決着の後
     const clk = new PtLineClock();
     clk.flags(t01({ ...PASS_BARGE, fired: true }), 500, -1);
     expect(missionMode(lost, 0, clk.flags(lost, 1000, MISSION_PT_PASS))).toBe(MISSION_CONVOY_EVENT);
-    // 時計も標的を失った航過を「赤い線に隠れている」と見ない（shown の前でも 2.5 秒で終わる。mission-mode と同じ条件）
+    // 時計も標的を失った航過を「赤い線に隠れている」と見ない（shown の前でも CONVOY_EVENT_SHOW_MS で終わる。mission-mode と同じ条件）
     expect(clk.flags(lost, 2000, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(CV_EVENT);
-    expect(clk.flags(lost, 3400, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(CV_EVENT);
-    expect(clk.flags(lost, 3600, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+    expect(clk.flags(lost, 1000 + CONVOY_EVENT_SHOW_MS - 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(CV_EVENT);
+    expect(clk.flags(lost, 1000 + CONVOY_EVENT_SHOW_MS + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
     expect(tele().pt.passTargetLost).toBe(false);
     // テレメトリ: 航過中（owner ≥ 0）で今の標的の大発が valid でない
     const { t, q, w } = targetsWorld();

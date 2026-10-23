@@ -21,7 +21,7 @@ const CV = S.convoy!;
 const PT = S.ptBoats!;
 const DAMAGE = PT.hit.damage;
 const BARGE_DETECT_M = enemyDetectRangeM(PT.baseDetectM, speedFactorForBand(CV.detectBand, S.vis.speedFactor), S.vis, false);
-/** 自艇の停止の帯の発見距離（新月 480 m。大発と同じ） */
+/** 自艇の停止の帯の発見距離（新月 480 m。大発（静音の帯 600 m。v0.6.4 実機 1 回目）より近い） */
 const STOP_M = 480;
 const FEEL = 1 / 60;
 const noEv: ConvoyEvents = { onArrived: () => {}, onSunk: () => {} };

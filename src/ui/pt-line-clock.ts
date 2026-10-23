@@ -5,7 +5,7 @@
 // ux-3: 連射の結果が同じ PT の 13mm の出来事（制圧・撃退・撃沈）とまだ出ている・待っている間に届いたら、結果は出来事の行に足して 1 行で出す（前は出来事の 2.5 秒の後が結果の番で、
 //   連射の合間 2 秒に次の線が来て、撃ち返す遊び方で連射の結果の 26% が出なかった）。
 // v0.6.4（jp_01。味方の大発の輸送隊）: 大発の沈没・上陸の出来事も同じ作法（上陸・沈没の数の立ち上がりから CONVOY_EVENT_SHOW_MS。赤い線・13mm の出来事の下では 1 度出るまで待ち、
-//   航過の結果はその下で待つ＝沈んだ航過の結果「大発への航過 撃たず」は出来事の後に出る）。最後の 1 隻の上陸は出来事を出さず呼びかけ「大発 上陸 k/n ・ 帰投せよ」へ。
+//   航過の結果はその下で待つ＝沈んだ航過の結果「大発への航過 撃たず」は出来事の後に出る）。最後の 1 隻の上陸（決着）は出来事「大発 上陸 k/n ・ 帰投せよ」（実機 1 回目のレビュー ux-2）。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
 import { PT_RESULT_SHOW_MS } from '../config/pt-config';
@@ -40,15 +40,13 @@ export class PtLineClock {
       const sunk = cv.sunk > this.seenSunk;
       this.seenSunk = cv.sunk;
       this.seenArrived = cv.arrived;
-      // 最後の 1 隻の上陸（決着）は出来事を出さず呼びかけへ。沈没はいつも出す（全滅・上陸 k/n と帰投）
-      if (sunk || !cv.resolved) {
+      // 沈没と上陸はいつも出来事を始める。最後の 1 隻の上陸（決着）は「大発 上陸 k/n ・ 帰投せよ」（ui/convoy-lines。v0.6.4 実機 1 回目のレビュー ux-2: 浜の上陸は 3.3 秒おきで、
+      // 前は待っている上陸の出来事を捨てて呼びかけへ回し、呼びかけは赤い線・結果・射撃中の行に負けて「上陸 3/3」がほぼ出なかった）。ただし沈没の出来事が出ている・待っている間の
+      // 決着の上陸はそれを残す（afloat 0 の文「沈没 ・ 上陸 k/n ・ 帰投せよ」が決着を言う）
+      if (sunk || !(cv.resolved && this.convoyEvent === CONVOY_EV_SUNK && nowMs < this.convoyUntil)) {
         this.convoyEvent = sunk ? CONVOY_EV_SUNK : CONVOY_EV_ARRIVED;
         this.convoyUntil = nowMs + CONVOY_EVENT_SHOW_MS;
         this.convoyShown = false;
-      } else if (this.convoyEvent === CONVOY_EV_ARRIVED) {
-        // 前の上陸の出来事がまだ出ている・赤い線の下で待っている間に最後の 1 隻が上陸した: その出来事は捨てる（文は今の数で組むので「上陸 3/3 ・ 残り 0 隻」と出た。
-        // v0.6.4 ヘッドレス確認）。沈没の出来事は残す（afloat 0 の文「沈没 ・ 上陸 k/n ・ 帰投せよ」が決着を言う）
-        this.convoyUntil = 0;
       }
     }
     if (p.gunEventSeq > this.seenEventSeq) {
@@ -71,7 +69,7 @@ export class PtLineClock {
     const passShown = (p.passing && !p.passTargetLost) || hold; // 標的の大発を失った航過は赤い線の行を出さない（mission-mode と同じ。v0.6.4 レビュー ux-3）
     this.eventUntil = holdShowUntil(this.eventUntil, passShown && !this.eventShown, nowMs);
     // 輸送隊の出来事は赤い線・13mm の出来事の下で 1 度出るまで待ち、航過の結果はそのどちらの下でも待つ（輸送隊の無い任務は convoyUntil 0 のまま＝v0.6.3 と同じ）
-    this.convoyUntil = holdShowUntil(this.convoyUntil, (passShown || nowMs < this.eventUntil) && !this.convoyShown, nowMs);
+    this.convoyUntil = holdShowUntil(this.convoyUntil, (passShown || nowMs < this.eventUntil) && !this.convoyShown, nowMs, CONVOY_EVENT_SHOW_MS);
     this.resultUntil = holdShowUntil(this.resultUntil, !passShown && (nowMs < this.eventUntil || nowMs < this.convoyUntil), nowMs);
     return (nowMs < this.resultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.eventUntil ? MODE_FLAG_PT_GUN_EVENT : 0) | (hold ? MODE_FLAG_PT_HOLD : 0) | (nowMs < this.convoyUntil ? MODE_FLAG_CONVOY_EVENT : 0);
   }

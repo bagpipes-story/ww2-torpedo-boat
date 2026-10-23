@@ -100,6 +100,7 @@ describe('13mm の 2 行目（ui/pt-gun-lines）', () => {
     expect(holdShowUntil(3500, false, 2000)).toBe(3500);
     expect(holdShowUntil(3500, true, 3500)).toBe(3500);
     expect(holdShowUntil(-1, true, 2000)).toBe(-1);
+    expect(holdShowUntil(3500, true, 2000, 3500)).toBe(5500); // 輸送隊の出来事は CONVOY_EVENT_SHOW_MS（v0.6.4 実機 1 回目のレビュー ux-2）。既定は PT_RESULT_SHOW_MS のまま
   });
   it('優先順: 夜明けの空襲・燃料切れ > 赤い線 > 13mm の出来事 > 航過の結果 > 射撃 > 突撃・離脱。射撃は押していて生きた PT がいるときだけ', () => {
     const pass = { ...FIRING, passing: true, threatPhase: PT_PASS, dodge: 1, escapeDeg: 315 };

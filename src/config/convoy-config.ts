@@ -1,7 +1,10 @@
 // 味方の大発の輸送隊（v0.6.4。jp_01「夜の輸送護衛」。spec §D.2）の見た目と語の定数。ゲームの強さの値ではないので data/*.json には置かない（hunt-config・pt-config と同じ考え）。
 // 何も import しない（ui/convoy-lines・tests から型検査ごと読める）。
-/** 2 行目の出来事（「大発 1 隻 沈没」「大発 上陸 1/3」）を出す ms（大発掃討の BARGE_EVENT_SHOW_MS・米PT の PT_RESULT_SHOW_MS と同じ） */
-export const CONVOY_EVENT_SHOW_MS = 2500;
+/**
+ * 2 行目の出来事（「大発 1 隻 沈没」「大発 上陸 1/3」）を出す ms（v0.6.4 実機 1 回目のレビュー ux-2: 2,500 → 3,500。前は大発掃討の BARGE_EVENT_SHOW_MS・米PT の PT_RESULT_SHOW_MS と同じ 2.5 秒。
+ * 浜の上陸は 60 m おき＝3.3 秒おきなので、2.5 秒だと「上陸 1/3」と「2/3」の間に別の行が 0.8 秒挟まった。3.5 秒なら 1/3 → 2/3 → 「上陸 3/3 ・ 帰投せよ」が続けて出る）
+ */
+export const CONVOY_EVENT_SHOW_MS = 3500;
 /** 大発の絵のラベルと、画面外の矢印「大発 N m」のラベル（味方の青。最寄りの航行中の大発へ） */
 export const CONVOY_MARKER_LABEL = '大発';
 /**

@@ -216,4 +216,16 @@ describe('散布の最小半径（core/gun-battery の min_spread_m、v0.6.4 実
     expect(zero.minSpreadM).toBe(0);
     expect(spreadAt(zero, 100, 'stop')).toBe(((zero.groups[0]!.dispersionM * 100) / zero.rangeM) * zero.spreadFactor.stop);
   });
+  it('Boot の文（config/game-data の getGunBatteryParams。レビュー R2）: 値の誤りは任務と艇の id を頭に付ける（「jp_01 の jp_t38: … min_spread_m は 0 以上」）。型の誤りは鍵の並びに min_spread_m を挙げる', () => {
+    const withFloor = (v: unknown): typeof gameData => {
+      const d = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+      const boat = (d.boats.boats as unknown as Record<string, unknown>[]).find((b) => b['id'] === 'jp_t38')!;
+      (boat['gun_battery'] as Record<string, unknown>)['min_spread_m'] = v;
+      return d;
+    };
+    const jp01 = getPrototypeMission(gameData, 'jp_01');
+    expect(() => getGunBatteryParams(withFloor(-1), jp01)).toThrow(/^jp_01 の jp_t38: boats\.json の gun_battery: min_spread_m は 0 以上/);
+    expect(() => getGunBatteryParams(withFloor('22'), jp01)).toThrow(/^boats\.json の jp_t38\.gun_battery（.*min_spread_m は数）が無い/);
+    expect(getGunBatteryParams(withFloor(22), jp01)!.minSpreadM).toBe(22);
+  });
 });

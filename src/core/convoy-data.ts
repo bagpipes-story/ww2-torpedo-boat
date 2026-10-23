@@ -60,7 +60,9 @@ export function isConvoyMissionBlock(v: unknown): v is ConvoyMissionBlock {
   const r = v as Record<string, unknown>;
   const offsets = r['offsets_m'];
   return nums(r['lead_start'], ['x_m', 'y_m', 'heading_deg']) && Array.isArray(offsets) && offsets.every((o) => typeof o === 'number' && Number.isFinite(o))
-    && DETECT_BANDS.includes(r['detect_band'] as SpeedStep) && typeof r['source'] === 'string';
+    && DETECT_BANDS.includes(r['detect_band'] as SpeedStep) && typeof r['source'] === 'string'
+    // 浜は省略できる block。鍵があれば 3 つの数のある object（レビュー R3: null・false・数の文字は形の検査で落とす。前は浜の無い隊＝沖の上陸線に黙って戻った）
+    && (r['beach'] === undefined || nums(r['beach'], ['spacing_m', 'margin_m', 'run_in_deg']));
 }
 
 /**

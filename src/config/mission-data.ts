@@ -203,7 +203,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   // 味方の大発の輸送隊（v0.6.4。jp_01）: 米PT の隊（pt_boats）の任務だけ（駆逐艦・敵の大発・僚艇はその検査で既に排他）。岸（coast）が要り、主兵装は guns（25mm で守る）。
   // allies に大発（CONVOY_BARGE_ID）が 1 隻以上（数が隻数。offsets_m と同じ数かは convoy-data の検査）。帰投の輪と上陸線は反転しないので night.mirror_chance は 0
   const convoyRaw = proto['convoy'];
-  if (convoyRaw !== undefined && !isConvoyMissionBlock(convoyRaw)) throw new Error(`${missionId}.v0_1_prototype.convoy（lead_start / offsets_m / landing_x_m / arrive_quota / barge_hp / detect_band / target_keep_ratio / target_switch_hold_s / flash_hold_s / source）が欠けている（docs/02 §6.4）`);
+  if (convoyRaw !== undefined && !isConvoyMissionBlock(convoyRaw)) throw new Error(`${missionId}.v0_1_prototype.convoy（lead_start / offsets_m / landing_x_m / arrive_quota / barge_hp / detect_band / target_keep_ratio / target_switch_hold_s / flash_hold_s / source。任意の beach は spacing_m / margin_m / run_in_deg の数）が欠けている（docs/02 §6.4）`);
   const convoy = convoyRaw === undefined ? null : convoyRaw;
   if (convoy && !ptBoats) throw new Error(`${missionId}.v0_1_prototype: 輸送隊（convoy）は米PT の隊（pt_boats）の任務だけ`);
   if (convoy && !coast) throw new Error(`${missionId}.v0_1_prototype: 輸送隊（convoy）には岸（coast）が要る（浜の見た目）`);

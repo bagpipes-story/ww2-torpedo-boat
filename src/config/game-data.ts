@@ -158,8 +158,15 @@ export function getGunBatteryParams(data: GameData, mission: PrototypeMission): 
   if (mission.mainWeapon !== 'guns') return null;
   const b = data.boats.boats.find((x) => x.id === mission.playerBoatId) as Record<string, unknown> | undefined;
   const g = b?.['gun_battery'];
-  if (!isGunBatteryDataRecord(g)) throw new Error(`boats.json の ${mission.playerBoatId}.gun_battery（label_ja / range_m / effective_m / dead_cone_deg / muzzle_flash_reveal_m / spread_factor / groups）が無い（docs/02 §6.4）`);
-  return gunBatteryParamsFromData(g);
+  if (!isGunBatteryDataRecord(g)) {
+    throw new Error(`boats.json の ${mission.playerBoatId}.gun_battery（label_ja / range_m / effective_m / dead_cone_deg / muzzle_flash_reveal_m / spread_factor / groups・任意の magazine（rounds / reload_s）・min_spread_m は数）が無い（docs/02 §6.4）`);
+  }
+  try {
+    return gunBatteryParamsFromData(g);
+  } catch (e) {
+    // 値の誤りにも艇と任務の id を付ける（レビュー R2。core の文は tests が部分一致で読むのでそのまま後ろに）
+    throw new Error(`${mission.id} の ${mission.playerBoatId}: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 /** risk_events.json の shore_battery.params と任務の shore_battery（docs/02 §6.8、v0.4.3）。任務に無ければ null。params が無ければ例外。1 門目だけ（全門は getShoreBatteryParamsList） */

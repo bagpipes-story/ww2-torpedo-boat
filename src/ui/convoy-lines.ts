@@ -92,10 +92,10 @@ export function convoyBreakTailJa(nearStep: number): string {
 
 /**
  * 出来事の行（CONVOY_EVENT_SHOW_MS の間。13mm の出来事の下・航過の結果の上）: 沈没は警告色で「近づいて撃ち返せ」、残りが無ければ全滅（上陸が 0）か上陸の数と帰投。
- * 上陸は味方の青（最後の 1 隻の上陸は出来事を出さず呼びかけへ＝pt-line-clock が始めない）
+ * 上陸は味方の青。最後の 1 隻の上陸（残り 0）は「大発 上陸 k/n ・ 帰投せよ」（v0.6.4 実機 1 回目のレビュー ux-2。呼びかけと同じ語で、赤い線・13mm の出来事の下で 1 度出るまで待つ）
  */
 export function convoyEventLine(c: ConvoyTelemetry, event: number): HudLine {
-  if (event === CONVOY_EV_ARRIVED) return { text: `大発 上陸 ${c.arrived}/${c.total} ・ 残り ${c.afloat} 隻`, color: HOME_COLOR_TEXT };
+  if (event === CONVOY_EV_ARRIVED) return { text: c.afloat > 0 ? `大発 上陸 ${c.arrived}/${c.total} ・ 残り ${c.afloat} 隻` : `大発 上陸 ${c.arrived}/${c.total} ・ 帰投せよ`, color: HOME_COLOR_TEXT };
   if (c.afloat > 0) return { text: `大発 1 隻 沈没 ・ 残り ${c.afloat} 隻 ・ ${FIGHT_BACK_JA}`, color: HUD_COLOR_WARN };
   return { text: c.arrived === 0 ? '大発 全滅 ・ 帰投せよ' : `大発 1 隻 沈没 ・ 上陸 ${c.arrived}/${c.total} ・ 帰投せよ`, color: HUD_COLOR_WARN };
 }

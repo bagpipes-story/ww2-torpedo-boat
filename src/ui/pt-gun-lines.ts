@@ -59,10 +59,11 @@ export function ptGunLine(t: BoatTelemetry, key: number): HudLine {
  * 時刻で出す行（13mm の出来事・航過の結果）の表示の終わり ms（ui/pt-line-clock が毎フレーム。untilMs は通し番号が増えたときに now + PT_RESULT_SHOW_MS）。
  * 上の行に隠れている間（hidden）は終わりを先へ送り、隠れなくなってから PT_RESULT_SHOW_MS 出す。時間切れの後は変えない。R5 ヘッドレス: 航過中の PT が撃退されて
  * 黙ったまま抜ける間に 2.5 秒が赤い線の下で過ぎ、「撃退！ … 残り 1 隻」が出ない夜が 14 回のうち 6 回あった（出来事は赤い線の後、航過の結果は出来事の後に出す）。
- * 実機 2 回目のレビュー R2: 出来事は 1 度出たらもう送らない（pt-line-clock が hidden を偽にする。出た後は時計のまま終わる）
+ * 実機 2 回目のレビュー R2: 出来事は 1 度出たらもう送らない（pt-line-clock が hidden を偽にする。出た後は時計のまま終わる）。
+ * showMs は隠れなくなってから出す ms（既定 PT_RESULT_SHOW_MS。輸送隊の出来事は CONVOY_EVENT_SHOW_MS＝v0.6.4 実機 1 回目のレビュー ux-2。jp_05 の行は既定のまま）
  */
-export function holdShowUntil(untilMs: number, hidden: boolean, nowMs: number): number {
-  return hidden && nowMs < untilMs ? nowMs + PT_RESULT_SHOW_MS : untilMs;
+export function holdShowUntil(untilMs: number, hidden: boolean, nowMs: number, showMs = PT_RESULT_SHOW_MS): number {
+  return hidden && nowMs < untilMs ? nowMs + showMs : untilMs;
 }
 
 /** 出来事のキーの「戦う PT が残らず、輸送隊の決着を待つ」（bit 14。足した連射の結果の 6〜13 の上） */

@@ -2,6 +2,7 @@
 // 離脱の尾「大発のそばへ戻れ」、出来事（沈没・上陸）とその時計（ui/pt-line-clock）、呼びかけの 3 形、キー（表示が変わるときだけ変わる）、幅（22 px で 840 px 以内）、Result の行と頭。
 // jp_05 の文（輸送隊の無い任務）は変わらないことも並べて確かめる。ui-config・game-config は DOM を読むので使わない（色は hud-text-config、幅は tests/pt-ui-kit の見積もり）。
 import { describe, expect, it } from 'vitest';
+import { CONVOY_EVENT_SHOW_MS } from '../src/config/convoy-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../src/config/hud-text-config';
 import type { BoatTelemetry } from '../src/core/boat-motion';
 import { createConvoyTelemetry, type ConvoyTelemetry } from '../src/core/convoy';
@@ -33,6 +34,14 @@ const RUSH_BARGE: Partial<PtTelemetry> = { ...SEEN, threatPhase: PT_RUN_IN, targ
 const RESULT_BARGE: Partial<PtTelemetry> = { detected: true, threatPhase: PT_BREAK, passes: 2, maxPasses: 8, lastPassFired: true, lastPassHits: 6, lastPassTargetKind: 1 };
 const RESULT = MODE_FLAG_PT_RESULT;
 const CV_EVENT = MODE_FLAG_CONVOY_EVENT;
+const SHOW = CONVOY_EVENT_SHOW_MS;
+/** mission-line と同じ文（輸送隊の出来事は時計の種類から convoyEventLine。ほかは tests/pt-ui-kit の row） */
+function rowAt(t: BoatTelemetry, call: number, flags: number, clk: PtLineClock): [number, string, string] {
+  const mode = missionMode(t, call, flags);
+  if (mode !== MISSION_CONVOY_EVENT) return row(t, call, flags);
+  const l = convoyEventLine(t.convoy, clk.convoyEvent);
+  return [mode, l.text, l.color];
+}
 
 describe('平常・見えている PT（spec §D.2）', () => {
   it('平常: 「大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中」（浜までは 100 m 刻みの切り上げ）。米PT の数は ptKey が、浜までと上陸は convoyKey が組み直させる。jp_05 の文は変わらない', () => {
@@ -114,11 +123,12 @@ describe('赤い線・突撃・航過の結果・離脱（標的が大発。spec
 });
 
 describe('出来事と呼びかけ（spec §D.2）', () => {
-  it('出来事: 沈没は「大発 1 隻 沈没 ・ 残り 2 隻 ・ 近づいて撃ち返せ」（警告色）、残りが無ければ「大発 全滅 ・ 帰投せよ」か「… 上陸 2/3 ・ 帰投せよ」。上陸は「大発 上陸 1/3 ・ 残り 2 隻」（味方の青）', () => {
+  it('出来事: 沈没は「大発 1 隻 沈没 ・ 残り 2 隻 ・ 近づいて撃ち返せ」（警告色）、残りが無ければ「大発 全滅 ・ 帰投せよ」か「… 上陸 2/3 ・ 帰投せよ」。上陸は「大発 上陸 1/3 ・ 残り 2 隻」、決着の上陸は「大発 上陸 3/3 ・ 帰投せよ」（味方の青）', () => {
     expect(convoyEventLine(cv({ afloat: 2, sunk: 1 }), CONVOY_EV_SUNK)).toEqual({ text: '大発 1 隻 沈没 ・ 残り 2 隻 ・ 近づいて撃ち返せ', color: HUD_COLOR_WARN });
     expect(convoyEventLine(cv({ afloat: 0, sunk: 3, resolved: true }), CONVOY_EV_SUNK)).toEqual({ text: '大発 全滅 ・ 帰投せよ', color: HUD_COLOR_WARN });
     expect(convoyEventLine(cv({ afloat: 0, sunk: 1, arrived: 2, resolved: true }), CONVOY_EV_SUNK).text).toBe('大発 1 隻 沈没 ・ 上陸 2/3 ・ 帰投せよ');
     expect(convoyEventLine(cv({ afloat: 2, arrived: 1 }), CONVOY_EV_ARRIVED)).toEqual({ text: '大発 上陸 1/3 ・ 残り 2 隻', color: HOME_COLOR_TEXT });
+    expect(convoyEventLine(cv({ afloat: 0, arrived: 3, resolved: true }), CONVOY_EV_ARRIVED)).toEqual({ text: '大発 上陸 3/3 ・ 帰投せよ', color: HOME_COLOR_TEXT }); // 決着の上陸（レビュー ux-2）
     // 優先: 赤い線 > 13mm の出来事 > 輸送隊の出来事 > 航過の結果
     const t = t01({ detected: true, threatPhase: PT_BREAK });
     expect(missionMode(t, 0, CV_EVENT)).toBe(MISSION_CONVOY_EVENT);
@@ -128,7 +138,8 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     expect(missionMode(t, 0, RESULT)).toBe(MISSION_PT_CONTACT);
     expect(missionMode(tele(), 0, CV_EVENT)).toBe(MISSION_CONVOY_EVENT); // 旗は時計が立てるので、輸送隊の無い任務では立たない（pt-line-clock）
   });
-  it('出来事の時計（ui/pt-line-clock）: 沈没・上陸の数の立ち上がりから 2.5 秒。赤い線の下では 1 度出るまで待ち、最後の 1 隻の上陸（決着）は出さない。航過の結果は出来事の後', () => {
+  it('出来事の時計（ui/pt-line-clock）: 沈没・上陸の数の立ち上がりから 3.5 秒（CONVOY_EVENT_SHOW_MS）。赤い線の下では 1 度出るまで待ち、隠れなくなってから 3.5 秒。最後の 1 隻の上陸（決着）も出来事。航過の結果は出来事の後', () => {
+    expect(SHOW).toBe(3500);
     const clk = new PtLineClock();
     expect(clk.flags(t01(), 1000, -1) & CV_EVENT).toBe(0);
     expect(clk.flags(tele(), 1000, -1)).toBe(0); // jp_05: 何も立たない
@@ -136,16 +147,25 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     expect(clk.flags(sunk, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
     expect(clk.convoyEvent).toBe(CONVOY_EV_SUNK);
     clk.shown(MISSION_CONVOY_EVENT);
-    expect(clk.flags(sunk, 3400, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(CV_EVENT);
-    expect(clk.flags(sunk, 3600, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
-    // 上陸（残りあり）は出来事、最後の 1 隻の上陸（決着）は出さない
+    expect(clk.flags(sunk, 1000 + SHOW - 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(CV_EVENT);
+    expect(clk.flags(sunk, 1000 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+    // 上陸（残りあり）は出来事
+    const e2 = 1000 + SHOW + 500;
     const landed = t01({}, { afloat: 1, sunk: 1, arrived: 1 });
-    expect(clk.flags(landed, 4000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
+    expect(clk.flags(landed, e2, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
     expect(clk.convoyEvent).toBe(CONVOY_EV_ARRIVED);
     clk.shown(MISSION_CONVOY_EVENT);
-    expect(clk.flags(landed, 6600, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
-    expect(clk.flags(t01({}, { afloat: 0, sunk: 1, arrived: 2, resolved: true }), 7000, MISSION_PT) & CV_EVENT).toBe(0);
-    // 赤い線の下で沈んだ: 線が消えるまで待ち、消えてから 2.5 秒出す。その間、航過の結果は待つ（結果は出来事の後）
+    expect(clk.flags(landed, e2 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+    // 最後の 1 隻の上陸（決着）も出来事「大発 上陸 2/3 ・ 帰投せよ」（レビュー ux-2。前は出さずに呼びかけへ回し、呼びかけは赤い線・結果・射撃中に負けた）
+    const done = { afloat: 0, sunk: 1, arrived: 2, resolved: true };
+    const e3 = e2 + SHOW + 500;
+    expect(clk.flags(t01({}, done), e3, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
+    expect(clk.convoyEvent).toBe(CONVOY_EV_ARRIVED);
+    expect(rowAt(t01({}, done), CALL_SUNK, clk.flags(t01({}, done), e3 + 10, MISSION_PT), clk)).toEqual([MISSION_CONVOY_EVENT, '大発 上陸 2/3 ・ 帰投せよ', HOME_COLOR_TEXT]);
+    clk.shown(MISSION_CONVOY_EVENT);
+    expect(clk.flags(t01({}, done), e3 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+    expect(row(t01({}, done), CALL_SUNK, 0)).toEqual([MISSION_CALL, '', '']); // 出来事の後は呼びかけ（文は mission-line の「大発 上陸 2/3 ・ 帰投せよ  N m」）
+    // 赤い線の下で沈んだ: 線が消えるまで待ち、消えてから 3.5 秒出す。その間、航過の結果は待つ（結果は出来事の後）
     const c2 = new PtLineClock();
     c2.flags(t01(PASS_BARGE), 500, -1);
     const sunkPass = t01(PASS_BARGE, { afloat: 2, sunk: 1 });
@@ -158,52 +178,15 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     expect(f & CV_EVENT).toBe(CV_EVENT);
     expect(missionMode(after, 0, f)).toBe(MISSION_CONVOY_EVENT);
     c2.shown(MISSION_CONVOY_EVENT);
-    f = c2.flags(after, 5800, MISSION_CONVOY_EVENT);
-    expect(missionMode(after, 0, f)).toBe(MISSION_CONVOY_EVENT);
-    f = c2.flags(after, 6000, MISSION_CONVOY_EVENT);
+    for (let ms = 3600; ms <= 3400 + SHOW - 100; ms += 100) { // 線の最後のフレーム（3,400）から 3.5 秒
+      f = c2.flags(after, ms, MISSION_CONVOY_EVENT);
+      expect(missionMode(after, 0, f), `${ms}`).toBe(MISSION_CONVOY_EVENT);
+    }
+    f = c2.flags(after, 3400 + SHOW, MISSION_CONVOY_EVENT);
     expect(f & CV_EVENT).toBe(0);
     expect(f & RESULT).toBe(RESULT); // 出来事の間は結果を待ち、終わってから 2.5 秒出す
     expect(row(after, 0, f)).toEqual([MISSION_PT_CONTACT, '大発への航過 撃たず ・ 航過 1/8', HUD_COLOR_STRONG]);
-    expect(c2.flags(after, 8600, MISSION_PT_CONTACT) & RESULT).toBe(0);
-  });
-  it('上陸の出来事が出ている・赤い線の下で待っている間に最後の 1 隻が上陸（決着）したら、その出来事は捨てて呼びかけへ（ヘッドレスで「大発 上陸 3/3 ・ 残り 0 隻」が出た）。沈没の出来事は残る', () => {
-    // 赤い線の下で待つ上陸の出来事 → 線の途中で最後の 1 隻が上陸 → 線が消えても出来事は出ず、呼びかけ「大発 上陸 2/3 ・ 帰投せよ」
-    const c = new PtLineClock();
-    c.flags(t01(PASS_BARGE), 500, -1);
-    const one = t01(PASS_BARGE, { afloat: 2, arrived: 1 });
-    expect(c.flags(one, 1000, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT);
-    expect(missionMode(one, 0, c.flags(one, 1500, MISSION_PT_PASS))).toBe(MISSION_PT_PASS);
-    c.shown(MISSION_PT_PASS);
-    const two = t01(PASS_BARGE, { afloat: 1, arrived: 2 });
-    expect(c.flags(two, 1800, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT); // 2 隻目の上陸も線の下で待つ（決着ではない）
-    c.shown(MISSION_PT_PASS);
-    const done = { afloat: 0, arrived: 3, resolved: true };
-    expect(c.flags(t01(PASS_BARGE, done), 2000, MISSION_PT_PASS) & CV_EVENT).toBe(0);
-    const after = t01({ threatPhase: PT_PATROL }, done);
-    const f = c.flags(after, 3000, MISSION_PT_PASS);
-    expect(f & CV_EVENT).toBe(0);
-    expect(row(after, CALL_SUNK, f)).toEqual([MISSION_CALL, '', '']);
-    // 出ている途中の上陸の出来事も同じ（文は今の数で組むので、残すと「上陸 3/3 ・ 残り 0 隻」になる）
-    const c2 = new PtLineClock();
-    const twoShown = t01({}, { afloat: 1, arrived: 2 });
-    expect(c2.flags(twoShown, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
-    c2.shown(MISSION_CONVOY_EVENT);
-    const all = t01({}, { afloat: 0, arrived: 3, resolved: true });
-    expect(c2.flags(all, 1500, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
-    expect(c2.flags(all, 1600, MISSION_PT) & CV_EVENT).toBe(0);
-    // 沈没の出来事の途中で最後の 1 隻が上陸: 出来事は残り、文は「大発 1 隻 沈没 ・ 上陸 2/3 ・ 帰投せよ」
-    const c3 = new PtLineClock();
-    c3.flags(t01({}, { afloat: 2, arrived: 1 }), 500, MISSION_PT);
-    const sunkOne = t01({}, { afloat: 1, sunk: 1, arrived: 1 });
-    expect(c3.flags(sunkOne, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
-    expect(c3.convoyEvent).toBe(CONVOY_EV_SUNK);
-    c3.shown(MISSION_CONVOY_EVENT);
-    const done2 = { afloat: 0, sunk: 1, arrived: 2, resolved: true };
-    const f3 = c3.flags(t01({}, done2), 1500, MISSION_CONVOY_EVENT);
-    expect(f3 & CV_EVENT).toBe(CV_EVENT);
-    expect(c3.convoyEvent).toBe(CONVOY_EV_SUNK);
-    expect(convoyEventLine(cv(done2), c3.convoyEvent).text).toBe('大発 1 隻 沈没 ・ 上陸 2/3 ・ 帰投せよ');
-    expect(c3.flags(t01({}, done2), 3600, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
+    expect(c2.flags(after, 3400 + SHOW + 2600, MISSION_PT_CONTACT) & RESULT).toBe(0);
   });
   it('呼びかけの 3 形: 決着は「大発 上陸 2/3 ・ 帰投せよ  2000 m」（全滅なら「大発 全滅 ・ 」）、燃料少・空襲下は既存の頭だけ（topCall は 1 ビット）。jp_05・大発の任務の語は変わらない', () => {
     const done = cv({ afloat: 0, sunk: 1, arrived: 2, resolved: true });
@@ -236,10 +219,11 @@ describe('幅と Result（spec §D.2・§D.3）', () => {
       convoyEventLine(cv({ afloat: 2, sunk: 1 }), CONVOY_EV_SUNK).text,
       convoyEventLine(cv({ afloat: 0, sunk: 1, arrived: 2 }), CONVOY_EV_SUNK).text,
       convoyEventLine(cv({ afloat: 2, arrived: 1 }), CONVOY_EV_ARRIVED).text,
+      convoyEventLine(cv({ afloat: 0, arrived: 3 }), CONVOY_EV_ARRIVED).text,
       `${convoyCallJa(cv({ arrived: 2 }))}帰投せよ  6300 m`,
       row(t01({ alive: 0, out: 2 }, {}, { homeEdgeM: 6250, dawn: { ...tele().dawn, reached: true } }))[1],
     ];
-    expect(lines.length).toBe(13);
+    expect(lines.length).toBe(14);
     for (const l of lines) expect(textWidthPx(l, 22), l).toBeLessThanOrEqual(LINE2_MAX_PX);
     expect(textWidthPx(row(t01({ ...RUSH_BARGE, dx: -600, dy: 600 }))[1], 22)).toBeLessThanOrEqual(762); // 最長でも 762 px（spec §I.11）
   });

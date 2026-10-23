@@ -19,12 +19,12 @@ const TS = gameData.hitRateModel.world.time_scale;
 const W = { hitScale: gameData.hitRateModel.world.hit_scale, spriteScale: gameData.hitRateModel.world.sprite_scale };
 /** jp_01 の海域（spec §B.2 bounds_m） */
 const B = { width: 6000, height: 3000 };
-/** jp_01 の convoy の block: data と独立な固定値（spec §B.2 の写し。data の値の pin は tests/jp01-mission。実機後に data を変えてもここは変えない） */
+/** v0.6.4（30a1297）の jp_01 の convoy の block＝浜の無い隊の固定値（data と独立。spec §B.2 の写し。実機後に data を変えてもここは変えない。今の jp_01 は浜・3,600・HP 12・silent: tests/convoy-beach・jp01-mission） */
 const BLOCK: ConvoyMissionBlock = {
   lead_start: { x_m: 1200, y_m: 2550, heading_deg: 90 }, offsets_m: [0, 120, 240], landing_x_m: 4000, arrive_quota: 2, barge_hp: 20,
   detect_band: 'stop', target_keep_ratio: 0.8, target_switch_hold_s: 1.0, flash_hold_s: 1.0, source: 'design (tests/convoy。spec §B.2 の写し)',
 };
-/** jp_01 の周り: night.barge_lead_jitter_m 250・帰投の輪 (4500, 2250) r 250 */
+/** v0.6.4（30a1297）の jp_01 の周り: night.barge_lead_jitter_m 250・帰投の輪 (4500, 2250) r 250（今の data は (4150, 2700)） */
 const CTX: ConvoyMissionContext = { missionId: 'jp_01', leadJitterM: 250, ring: { x: 4500, y: 2250, radiusM: 250 } };
 const recRaw = gameData.enemies.enemies.find((e) => e.id === 'daihatsu_barge');
 if (!isBargeDataRecord(recRaw)) throw new Error('enemies.json の daihatsu_barge が大発の record でない');

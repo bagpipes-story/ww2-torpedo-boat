@@ -208,24 +208,38 @@ export function convoyLeadIndex(f: ConvoyState, p: ConvoyParams): number {
   return convoyEndIndex(f, p, false);
 }
 
-/** 上陸地点の印（systems/convoy が起動時に 1 回だけ描く）: 岸の線（y）の上の帯の両端の x と、陸の側のラベル「上陸地点」の上の真ん中 */
+/** 上陸地点の印（systems/convoy が起動時に 1 回だけ描く）: 岸の線（y）の上の帯の両端の x と、陸の側のラベル「上陸地点」の上の端の x・y と横の原点（1 は右の端、0 は左の端） */
 export interface ConvoyLandingMark {
   x0: number;
   x1: number;
   y: number;
   labelX: number;
   labelY: number;
+  labelOriginX: number;
 }
 
-/** 浜の上陸地点の印の置き場所（起動時に 1 回。帯は上陸地点の両端から padM 外まで、ラベルは岸から labelOffsetM 陸の側＝浜に残る大発のラベル「上陸」の下。tests/convoy-landing-mark） */
-export function convoyLandingMark(bp: ConvoyBeach, padM: number, labelOffsetM: number): ConvoyLandingMark {
+/**
+ * 浜の上陸地点の印の置き場所（起動時に 1 回。tests/convoy-landing-mark）: 帯は上陸地点の両端から padM 外まで。ラベルは岸から labelOffsetM 陸の側（浜に残る大発のラベル「上陸」の下の行）で、
+ * 帯の針路の後ろの端の外に寄せる（東へ向かう隊なら西の端に右の端を揃える。v0.6.4 実機 1 回目のレビュー ux-4: 帯の真ん中の下だと、後ろから付いてくる自艇の画面では浜が右下の速力の表示の下に入り、
+ * 「上陸地点静音」と読めた。後ろの端なら画面の真ん中の側）
+ */
+export function convoyLandingMark(p: ConvoyParams, bp: ConvoyBeach, padM: number, labelOffsetM: number): ConvoyLandingMark {
   let x0 = Infinity;
   let x1 = -Infinity;
   for (const x of bp.x) {
     if (x < x0) x0 = x;
     if (x > x1) x1 = x;
   }
-  return { x0: x0 - padM, x1: x1 + padM, y: bp.shoreY, labelX: (x0 + x1) / 2, labelY: bp.shoreY + labelOffsetM };
+  const east = alongSign(p) > 0;
+  return { x0: x0 - padM, x1: x1 + padM, y: bp.shoreY, labelX: east ? x0 - padM : x1 + padM, labelY: bp.shoreY + labelOffsetM, labelOriginX: east ? 1 : 0 };
+}
+
+/**
+ * 狙われている大発の 2 行のラベル「大発／狙われている」を絵の上に置くか（v0.6.4 実機 1 回目のレビュー R1: 絵の下のままだと浜へ向かう最後の約 2 秒、浜の「上陸地点」と、上陸した隣の「上陸」に重なった。
+ * tests/convoy-landing-mark）: 浜のある隊で、浜へ向かっている（leg 1）大発が狙われている間。沈む間もそのまま（上陸したら絵の下の「上陸」）。浜の無い隊はいつも絵の下
+ */
+export function convoyLabelAbove(p: ConvoyParams, b: ConvoyBarge, marked: boolean): boolean {
+  return marked && p.beach !== undefined && b.leg === 1 && b.phase !== CV_ARRIVED;
 }
 
 /** 最も遅れた航行中の大発から浜（上陸地点）までの道のり m（HUD の「浜まで N m」の元。航行中の大発が無ければ 0）。浜の無い隊は上陸線までの航路に沿った x の差（平方根なし） */

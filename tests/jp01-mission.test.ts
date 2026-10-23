@@ -65,7 +65,7 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
     expect(m['allies']).toEqual(['daihatsu_barge', 'daihatsu_barge', 'daihatsu_barge']);
     expect(m['enemies']).toEqual(['us_pt_enemy', 'us_pt_enemy']);
     expect(m['hazards']).toEqual(['grounding', 'enemy_aircraft']);
-    expect(m['objective']).toBe('大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。大発は見つかりにくく、自艇は撃てば閃光で狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵');
+    expect(m['objective']).toBe('大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。速く走るか撃てば自艇が大発より先に狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵');
     expect(m['success']).toBe('大発2隻以上を浜に届けて帰投。3隻なら上陸の点が増える');
     expect(m['source_url']).toBe('https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-C.html');
     const note = String(m['historical_note']);
@@ -106,7 +106,7 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
     // 浜（v0.6.4 実機 1 回目のユーザーの原文と、大発の歩板の史実は抜粋の注と確度）
     const beachSrc = String(((proto['convoy'] as Rec)['beach'] as Rec)['source']);
     expect(beachSrc).toContain('design (v0.6.4 実機 1 回目「大発が浜に上陸っていうけど何もない海の真ん中で消えていくので意味不明です」');
-    expect(beachSrc).toContain(`${EXCERPT}。high`);
+    expect(beachSrc).toContain(`${EXCERPT}。medium`); // 要約 1 つだけ（レビュー D7: high は docs/01 の作法より上）
     for (const k of ['convoy', 'return_point']) expect(String((proto[k] as Rec)['source']), k).toContain('v0.6.4 実機 1 回目');
     expect(String(proto['enemy_behavior'])).toContain('core/pt-target');
     expect(String((proto['return_point'] as Rec)['torpedo_end_settle_s_source'])).toContain('（jp_01 は魚雷を撃たないので効かない）');
@@ -261,7 +261,7 @@ describe('jp_01 の Briefing・Title（spec §D.1）', () => {
     const n = briefingNumbers(S);
     const rows = briefingRows(rec, n, nameOf, labelOf);
     expect(rows.map((r) => [r.label, r.text])).toEqual([
-      ['目的', '大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。大発は見つかりにくく、自艇は撃てば閃光で狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵'],
+      ['目的', '大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。速く走るか撃てば自艇が大発より先に狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵'],
       ['成功', '大発2隻以上を浜に届けて帰投。3隻なら上陸の点が増える（帰投地点は東の青い輪）'], // 自艇の出発点から（レビュー ux-6。中心からは南東）
       ['月', '新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m'],
       ['敵', '米PTボート ×2（東から）'],
