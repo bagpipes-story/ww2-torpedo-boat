@@ -2,7 +2,7 @@
 // 味方色の大発（assets/barge-placeholder の tex-barge-friendly）とラベル「大発」を描く。上陸は灰色（敵の大発の上陸と同じ）、沈没は駆逐艦と同じ tween と世界の onSunk（命中スロー＋爆発）。
 // 米PT の掃射の命中は PtSquadron（systems/pt-target）が hit で伝える（着弾の水柱は PtSquadron の SplashPool）。大発が見つかる距離と米PT の標的の規則もここが持つ（PtTargets が読む）。
 // §7: スプライト count 枚とラベル count 個を起動時に作り、毎フレームは視程の内の絵だけ位置・角度を触る（shown でトグル）。乱数は引かない（先頭の揺らぎは world-setup の applyConvoyNight）。
-// v0.6.4 レビュー ux-5: 米PT の隊が狙っている大発のラベルを「大発（狙われている）」の警告色に（狙いが替わったときだけ setText。systems/pt-target の aimedBarge）。
+// v0.6.4 レビュー ux-5: 米PT の隊が狙っている大発のラベルを 2 行の「大発／狙われている」の警告色に（狙いが替わったときだけ setText。systems/pt-target の aimedBarge。1 行目は隣と同じ幅＝重ならない。config/convoy-config）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { CONVOY_MARKER_LABEL, CONVOY_TARGET_LABEL } from '../config/convoy-config';
@@ -57,7 +57,8 @@ export class Convoy {
     this.shown = new Uint8Array(this.p.count);
     for (const b of this.state.barges) {
       this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
-      this.labels.push(scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, CONVOY_MARKER_LABEL, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer).setVisible(false));
+      // 中央揃え: 狙われている大発の 2 行のラベル（CONVOY_TARGET_LABEL）の 1 行目「大発」を絵の真下に置く（1 行のラベルには効かない）
+      this.labels.push(scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, CONVOY_MARKER_LABEL, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setAlign('center').setDepth(DEPTH.destroyer).setVisible(false));
     }
   }
 
@@ -78,7 +79,7 @@ export class Convoy {
 
   /**
    * 毎フレーム: 視程の内の大発だけ表示して位置・角度を直す（沈み込みは tween に任せる。上陸した大発は止まっているので位置は変わらないが絵は出す）。
-   * aimed は米PT の隊が狙っている航行中の大発（PtTargets.aimedBarge。無ければ −1）: 替わったときだけ前のラベルを戻し、新しいラベルを警告色の「大発（狙われている）」に
+   * aimed は米PT の隊が狙っている航行中の大発（PtTargets.aimedBarge。無ければ −1）: 替わったときだけ前のラベルを戻し、新しいラベルを警告色の 2 行「大発／狙われている」に（CONVOY_TARGET_LABEL）
    */
   updateVisuals(player: BoatState, visRange2: number, aimed: number): void {
     if (aimed !== this.marked) {
