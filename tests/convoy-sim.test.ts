@@ -1,5 +1,5 @@
 // 味方の大発を守る模擬（v0.6.4。core/convoy-sim・convoy-sim-policy・convoy-sim-cell・systems/convoy-sim-setup、spec §F）: 模擬の組み立て・上書き・再現・行の分け方（速い検査だけ）。
-// 遊び方ごとの帯（spec §F.4。N 200・固定 seed）は tests/convoy-sim-{a,b,c,d,e,f}（行の分け方は tests/convoy-sim-kit の SIM_FILES。1 夜が 170〜200 秒で 1 行 6 秒ほどなので 1 ファイル 2〜3 行＝13 秒ほどまで）。
+// 遊び方ごとの帯（spec §F.4。N 200・固定 seed）は tests/convoy-sim-{a,b,c,d,e,f}（簡単側への揺れを捕まえるかは convoy-sim-g。行の分け方は tests/convoy-sim-kit の SIM_FILES。1 夜が 170〜200 秒で 1 行 6 秒ほどなので 1 ファイル 2〜3 行＝vitest で 13〜16 秒ほど。実測は tests/convoy-sim-kit）。
 // 帯を外したら、まず模擬が spec §F.1〜F.2 どおりかを確かめ、次に data の jp_01・jp_t38 の値だけを直す（source に理由）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';

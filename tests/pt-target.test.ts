@@ -1,6 +1,6 @@
 // 米PT の隊の標的スロット（v0.6.4。core/pt-target、spec §C.3〜C.6・§G.2）: (a) jp_05 の中立（targets＝自艇 1 隻・flashX/Y＝自艇でもビット同一）、(b) 選び方（手空きのときだけ・見つかる距離で割る・
 // 閃光の記憶・keep と 1 秒のロック・沈んだ標的は即・候補なし・決定性・確保なし）、(c) applyPtTarget は捉えているときだけ lk*、(d) 着弾は船体の集合の最初の 1 つ、(e) 接触の閃光は閃光の位置で判定。
-// 規則の値は spec §B.2 の convoy（keep 0.8²・1 秒・閃光の記憶 1 秒。jp_01 の data は段 4 で入る）。
+// 規則の値（keep 0.8²・1 秒・閃光の記憶 1 秒）は data と独立な固定値（spec §B.2 の写し。data の値の pin は tests/jp01-mission。実機後に data を変えてもここは変えない）。
 import { describe, expect, it } from 'vitest';
 import type { GunEvents } from '../src/core/gun-battery';
 import { clampToBounds, nextSpeedBand, stepBoat, type BoatInput, type BoatState, type SpeedStep } from '../src/core/boat-motion';
@@ -18,7 +18,7 @@ import { bearingDeg } from '../src/core/ship-ai';
 import { ktToMps } from '../src/core/units';
 import { DT, G, HOME, MISSION, P, T14, TS, VIS2, check, detectM, events } from './pt-kit';
 
-/** spec §B.2 の convoy の規則（target_keep_ratio 0.8 → 0.64・target_switch_hold_s 1・flash_hold_s 1）と、順位だけを見る規則（余裕なし・ロックなし） */
+/** convoy の規則（target_keep_ratio 0.8 → 0.64・target_switch_hold_s 1・flash_hold_s 1。data と独立な固定値＝spec §B.2 の写し）と、順位だけを見る規則（余裕なし・ロックなし） */
 const RULE: PtTargetRule = { keepRatio2: 0.64, lockS: 1, flashHoldS: 1 };
 const RAW: PtTargetRule = { keepRatio2: 1, lockS: 0, flashHoldS: 1 };
 const FLASH = G.flashRevealM;

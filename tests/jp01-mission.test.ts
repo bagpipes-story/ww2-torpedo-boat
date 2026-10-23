@@ -16,7 +16,7 @@ import type { BoatState } from '../src/core/boat-motion';
 import { PT_GUN_BRIEFING_JA, briefingRows, compassJa, ptGunBriefingJa } from '../src/core/briefing';
 import { CV_ARRIVED, CV_SUNK, convoyResolved, createConvoy } from '../src/core/convoy';
 import { DAWN_AIR_NONE } from '../src/core/dawn-air';
-import { CALL_FUEL, CALL_SUNK, endCountsAsReturn, topCall, updateReturnCalls } from '../src/core/mission-flow';
+import { CALL_FUEL, CALL_SUNK, convoyObjectiveDone, topCall, updateReturnCalls } from '../src/core/mission-flow';
 import { PT_BREAK, PT_PASS, PT_RUN_IN, createPtSection } from '../src/core/pt-boats';
 import { createPtGun } from '../src/core/pt-gun';
 import { SeededRng } from '../src/core/rng';
@@ -222,14 +222,19 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     expect(`${dawnCallLabel(fuel, false, DAWN_AIR_NONE, convoyCallJa(t.convoy))}帰投せよ  3100 m`).toBe('燃料少 帰投せよ  3100 m');
     // 世界の配線（systems/mission-world の getter）: 呼びかけは決着の生の真偽、撃ち尽くしは輸送隊では偽
     const world = readFileSync('src/systems/mission-world.ts', 'utf8');
-    expect(world).toMatch(/get returnCallDone\(\): boolean \{ return this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone; \}/);
-    expect(world).toMatch(/get noTargetsLeft\(\): boolean \{ return this\.convoy \? false : this\.enemy\.noTargetsLeft; \}/);
+    // 書き方の揺れ（空白・改行）では落ちない形で、配線（輸送隊なら決着／偽）だけを見る
+    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone;/);
+    expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
   });
   it('達成（Result の objectiveDone。systems/mission-telemetry）は終了理由から: 帰投して上陸がノルマ以上。2/3 で沈めば達成でない（帰投 700 > 沈没 580）、3/3 決着でも帰投前は呼びかけだけ', () => {
     const src = readFileSync('src/systems/mission-telemetry.ts', 'utf8');
-    expect(src).toContain('objectiveDone: w.convoy ? endCountsAsReturn(reason) && w.convoy.state.arrived >= w.convoy.p.quota :');
-    const done = (reason: Parameters<typeof endCountsAsReturn>[0], arrived: number): boolean => endCountsAsReturn(reason) && arrived >= S.convoy!.params.quota;
-    expect([done('returned', 2), done('returned', 3), done('returned', 1), done('pt_fire', 2), done('adrift', 3), done('cleared', 2)]).toEqual([true, true, false, false, false, true]);
+    // 配線: 輸送隊の任務は core の convoyObjectiveDone（上陸数とノルマ）。中身は下で core の関数を直接見る
+    expect(src).toMatch(/objectiveDone:\s*w\.convoy\s*\?\s*convoyObjectiveDone\(reason,\s*w\.convoy\.state\.arrived,\s*w\.convoy\.p\.quota\)\s*:/);
+    const q = S.convoy!.params.quota;
+    expect(q).toBe(2);
+    const done = (reason: Parameters<typeof convoyObjectiveDone>[0], arrived: number): boolean => convoyObjectiveDone(reason, arrived, q);
+    expect([done('returned', 2), done('returned', 3), done('returned', 1), done('pt_fire', 2), done('adrift', 3), done('cleared', 2), done('air_strike', 3), done('grounded', 2)]).toEqual([true, true, false, false, false, true, false, false]);
+    expect([convoyObjectiveDone('returned', 0, 0), convoyObjectiveDone('returned', 2, 3), convoyObjectiveDone('returned', 3, 3)]).toEqual([true, false, true]);
   });
 });
 

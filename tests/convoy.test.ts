@@ -1,6 +1,6 @@
 // 味方の大発の輸送隊（v0.6.4。core/convoy・convoy-data、spec §C.7・§E.5・§G.2）: 置き方（先頭＋offsets・揺らぎ・西向き）、7 kt で針路のまま、到達線で上陸（止まる・arrived・onArrived 1 回）、
 // 掃射の命中（HP → 沈没・onSunk 1 回・沈んだ／上陸した大発に当たらない）、決着、最寄り・最後尾・先頭、浜までの距離、data の検査（§E.5 の各項目が任務の id 付きで例外）、乱数を引かない・確保なし。
-// jp_01 の v0_1_prototype.convoy は段 4 で data に入るので、ここでは spec §B.2 の値を直書きした block を使う（大発の record は enemies.json の daihatsu_barge、砲の damage は us_pt_enemy）。
+// convoy の block は data と独立な固定値（spec §B.2 の写し。data の値の pin は tests/jp01-mission。実機後に data を変えてもここは変えない）。大発の record は enemies.json の daihatsu_barge、砲の damage は us_pt_enemy。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -19,7 +19,7 @@ const TS = gameData.hitRateModel.world.time_scale;
 const W = { hitScale: gameData.hitRateModel.world.hit_scale, spriteScale: gameData.hitRateModel.world.sprite_scale };
 /** jp_01 の海域（spec §B.2 bounds_m） */
 const B = { width: 6000, height: 3000 };
-/** spec §B.2 の jp_01 の convoy（data は段 4 で入る） */
+/** jp_01 の convoy の block: data と独立な固定値（spec §B.2 の写し。data の値の pin は tests/jp01-mission。実機後に data を変えてもここは変えない） */
 const BLOCK: ConvoyMissionBlock = {
   lead_start: { x_m: 1200, y_m: 2550, heading_deg: 90 }, offsets_m: [0, 120, 240], landing_x_m: 4000, arrive_quota: 2, barge_hp: 20,
   detect_band: 'stop', target_keep_ratio: 0.8, target_switch_hold_s: 1.0, flash_hold_s: 1.0, source: 'design (tests/convoy。spec §B.2 の写し)',

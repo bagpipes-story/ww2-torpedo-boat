@@ -69,8 +69,12 @@ export const CONVOY_RESOLVED_AFTER_DAWN_MAX = 5;
 const row = (policy: ConvoyPolicy, star: boolean, bands: Partial<Record<Metric, Band>>, vs: readonly Vs[], proto: ConvoyCalibrationRow['proto'], adriftMax: number = CONVOY_ADRIFT_MAX): ConvoyCalibrationRow => ({ policy, star, bands, vs, adriftMax, proto });
 
 /**
- * lead の難しさの帯（spec §A・§F.4。N 200 × 4 組の最小〜最大に N 200 の揺らぎ（到達 ±0.1・% ±4）を足した。端を含む）: HUD どおり（shield_full: 寄って撃って転舵）は 2.2〜2.6 隻・3 隻の夜 45〜67%・自艇の沈没 4〜16%・2 隻以上 82% 超、
- * 後ろに付いて撃って転舵（follow_full）も同程度、隠れる（none）と 0.7〜1.3 隻（守らなければ 2 隻沈む）で夜明け後の帰投＝空襲、撃つだけで転舵しないと 19〜30% 沈む（転舵の効きが正: follow_full より 8 点以上）、
+ * 回帰の帯（spec §F.4。lead の難しさの帯ではない）: 今の data で測った値のまわりに置き、data や core が動いて遊びが変わったら落ちる。根拠は N 200 × 4 組（seed 1・201・401・601）の
+ * 最小〜最大に N 200 の揺らぎ（到達 ±0.1・% ±4）を足したもの。端を含む。設計の目標（spec §A）は HUD どおりで 2.2〜2.5 隻・3 隻の夜 30〜55%・自艇の沈没 8〜15% だが、
+ * 測った shield_full の 3 隻の夜は 53〜58%（N 400 × 2 組）・53〜63%（N 200 × 4 組）で目標の簡単側に出ている（lead の判断事項 (a) で受け入れた。帯はこの測った値を守る）。
+ * 3 隻の夜の上の端 64 は簡単側への揺れを捕まえる: 4 組とも通る一番きつい値（seed 401 の組が shield_full 63）で、barge_hp 24 なら seed 1〜200 で shield_full 66%・follow_full 73% になり落ちる。
+ * 行ごと: HUD どおり（shield_full: 寄って撃って転舵）は 2.2〜2.6 隻・3 隻の夜 45〜64%・自艇の沈没 4〜16%・2 隻以上 82% 超、後ろに付いて撃って転舵（follow_full）も同程度（3 隻の夜 50〜64%）、
+ * 隠れる（none）と 0.7〜1.3 隻（守らなければ 2 隻沈む）で夜明け後の帰投＝空襲、撃つだけで転舵しないと 19〜30% 沈む（転舵の効きが正: follow_full より 8 点以上）、
  * 遠くから撃つだけも逃れられない（follow_shoot − 8 以上）、付くだけ・間に入るだけは罠（40%・85% 以上沈む）、囮は到達 0 で帰投 700 点だけ、見捨てると 0 隻で帰り道の哨戒線に 35〜50% 沈む。lead_shoot・shield_dodge は表だけ
  */
 export const CONVOY_CALIBRATION: readonly ConvoyCalibrationRow[] = [
@@ -78,11 +82,11 @@ export const CONVOY_CALIBRATION: readonly ConvoyCalibrationRow[] = [
   row('follow', false, { sunkPct: [40, 100] }, [], ['1.24', '52.0〜53.5']),
   row('follow_shoot', true, { arrivedMean: [1.9, 2.3], sunkPct: [19, 30], bargesSunkMean: [0, 0.6] }, [['sunkPct', 'follow_full', 8, Infinity]], ['2.11〜2.14', '24.3〜24.8']),
   row('follow_dodge', false, { arrivedMean: [1.7, Infinity], sunkPct: [28, 46] }, [], ['1.94〜2.00', '34.5〜37.8']),
-  row('follow_full', true, { arrivedMean: [2.3, 2.6], sunkPct: [7, 19], arrived3Pct: [50, 65], arrived2Pct: [85, 100], afterDawnPct: [0, 25] }, [], ['2.48〜2.51', '11.5〜13.0']),
+  row('follow_full', true, { arrivedMean: [2.3, 2.6], sunkPct: [7, 19], arrived3Pct: [50, 64], arrived2Pct: [85, 100], afterDawnPct: [0, 25] }, [], ['2.48〜2.51', '11.5〜13.0']),
   row('shield', false, { sunkPct: [85, 100] }, [], ['0.43〜0.50', '93.8〜95.5']),
   row('shield_shoot', false, { arrivedMean: [1.9, 2.4], sunkPct: [17, 38] }, [], ['2.12〜2.17', '26.0〜29.8']),
   row('shield_dodge', false, {}, [], ['2.05〜2.07', '29.5〜31.5']),
-  row('shield_full', true, { arrivedMean: [2.2, 2.6], sunkPct: [4, 16], arrived3Pct: [45, 67], arrived2Pct: [82, 100], hpMean: [26, 38], retiredPct: [45, 100], afterDawnPct: [0, 10] }, [], ['2.38〜2.46', '9.0〜10.0']),
+  row('shield_full', true, { arrivedMean: [2.2, 2.6], sunkPct: [4, 16], arrived3Pct: [45, 64], arrived2Pct: [82, 100], hpMean: [26, 38], retiredPct: [45, 100], afterDawnPct: [0, 10] }, [], ['2.38〜2.46', '9.0〜10.0']),
   row('far_shoot', false, { arrivedMean: [2.0, 2.5], sunkPct: [15, 30] }, [['sunkPct', 'follow_shoot', -8, Infinity]], ['2.21〜2.27', '22.3〜23.8']),
   row('far_full', false, { arrivedMean: [2.5, Infinity], sunkPct: [8, 22], afterDawnPct: [20, 100] }, [], ['2.63〜2.69', '12.8〜16.3']),
   row('lead', false, { arrivedMean: [0, 0.2], sunkPct: [22, 100] }, [], ['0.02〜0.04', '32.0〜34.3'], 3),
