@@ -55,7 +55,7 @@ function tele01(): ReturnType<typeof tele> {
   const boat: BoatState = { ...S.playerStart, speedMps: 0 };
   const pt = initPtTelemetry({ pts: { section: createPtSection(p, PT_SHELL_POOL_SIZE), p, firstDetectBand: '', enemyId: 'us_pt_enemy', gun: { state: createPtGun(g, PT_GUN_SHELL_POOL_SIZE), g } }, boat: { state: boat }, params: S.boatParams, visRange2: S.visRange2, damageParams: S.damageParams });
   const convoy = initConvoyTelemetry({ convoy: { state: createConvoy(S.convoy!.params), p: S.convoy!.params }, boat: { state: boat }, setup: { playerStart: S.playerStart, enemyFrom: S.enemyFrom } });
-  return tele(pt, { convoy, homeEdgeM: 3053 });
+  return tele(pt, { convoy, homeEdgeM: 2715 });
 }
 
 describe('jp_01 の data（spec §B。すべて data/*.json。source は historical／design と「WebSearch の抜粋のみ・本文未読」）', () => {
@@ -89,13 +89,13 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
     expect([a.control, a.playAs, a.shipsAtDawn, a.labelJa]).toEqual(['enemy', 'enemy', 'none', '昼の空は敵（ヘンダーソン基地）']);
     expect(String((m['dawn_air'] as Rec)['source'])).toContain('v0.6.4: enemy_ships_at_dawn retire → none');
   });
-  it('遊べる世界（v0_1_prototype）: 米PT 2 隻・guns・夜明け 200 秒・燃料 19 gal・6000×3000・出発 (1200, 2400) 東向き・輪 (4500, 2250) r 250 margin 1.6・哨戒線・convoy の鍵・岸・今夜の揺らぎ・危険・空襲 4 機東から。source は design (v0.6.4', () => {
+  it('遊べる世界（v0_1_prototype）: 米PT 2 隻・guns・夜明け 200 秒・燃料 19 gal・6000×3000・出発 (1200, 2400) 東向き・輪 (4150, 2700) r 250 margin 1.6・哨戒線・convoy の鍵（浜 60 m おき・12 m・38°）・岸・今夜の揺らぎ・危険・空襲 4 機東から。source は design (v0.6.4', () => {
     expect([proto['enemies'], proto['main_weapon'], proto['duration_s'], proto['fuel_allotment_gal'], proto['shallows']]).toEqual([['us_pt_enemy', 'us_pt_enemy'], 'guns', 200, 19, []]);
     expect(proto['bounds_m']).toMatchObject({ width: 6000, height: 3000 });
     expect(proto['player_start']).toMatchObject({ x_m: 1200, y_m: 2400, heading_deg: 90 });
-    expect(proto['return_point']).toMatchObject({ x_m: 4500, y_m: 2250, radius_m: 250, call_margin: 1.6, torpedo_settle_max_s: 10, torpedo_end_settle_s: 5 });
+    expect(proto['return_point']).toMatchObject({ x_m: 4150, y_m: 2700, radius_m: 250, call_margin: 1.6, torpedo_settle_max_s: 10, torpedo_end_settle_s: 5 });
     expect(proto['pt_boats']).toMatchObject({ legs_m: [[4100, 2000, 2900, 2000], [4100, 2200, 2900, 2200]], start_along_m: 600, leave_heading_deg: 45 });
-    expect(proto['convoy']).toMatchObject({ lead_start: { x_m: 1200, y_m: 2550, heading_deg: 90 }, offsets_m: [0, 120, 240], landing_x_m: 4000, arrive_quota: 2, barge_hp: 20, detect_band: 'stop', target_keep_ratio: 0.8, target_switch_hold_s: 1.0, flash_hold_s: 1.0 });
+    expect(proto['convoy']).toMatchObject({ lead_start: { x_m: 1200, y_m: 2550, heading_deg: 90 }, offsets_m: [0, 120, 240], landing_x_m: 3600, arrive_quota: 2, barge_hp: 12, detect_band: 'silent', target_keep_ratio: 0.8, target_switch_hold_s: 1.0, flash_hold_s: 1.0, beach: { spacing_m: 60, margin_m: 12, run_in_deg: 38 } });
     expect(proto['coast']).toMatchObject({ side: 'south', land_m: 600, label_ja: 'ガダルカナル島（カミンボ）' });
     expect(proto['night']).toMatchObject({ hazard_scale: 1, optional_hazards: [], enemy_jitter: { x_m: 800, y_m: 150, heading_deg: 0 }, barge_lead_jitter_m: 250, mirror_chance: 0 });
     expect(proto['hazards']).toEqual(['enemy_ship_gunfire_or_ram', 'dawn_air_strike']);
@@ -103,20 +103,32 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
     for (const k of ['main_weapon_source', 'duration_s_source', 'fuel_allotment_gal_source', 'hazards_source']) expect(String(proto[k]), k).toContain('design (v0.6.4');
     for (const k of ['bounds_m', 'player_start', 'return_point', 'pt_boats', 'convoy', 'night', 'dawn_strike']) expect(String((proto[k] as Rec)['source']), k).toContain('design (v0.6.4');
     expect(String((proto['convoy'] as Rec)['source'])).toContain(EXCERPT);
+    // 浜（v0.6.4 実機 1 回目のユーザーの原文と、大発の歩板の史実は抜粋の注と確度）
+    const beachSrc = String(((proto['convoy'] as Rec)['beach'] as Rec)['source']);
+    expect(beachSrc).toContain('design (v0.6.4 実機 1 回目「大発が浜に上陸っていうけど何もない海の真ん中で消えていくので意味不明です」');
+    expect(beachSrc).toContain(`${EXCERPT}。high`);
+    for (const k of ['convoy', 'return_point']) expect(String((proto[k] as Rec)['source']), k).toContain('v0.6.4 実機 1 回目');
     expect(String(proto['enemy_behavior'])).toContain('core/pt-target');
     expect(String((proto['return_point'] as Rec)['torpedo_end_settle_s_source'])).toContain('（jp_01 は魚雷を撃たないので効かない）');
   });
-  it('T-38 の 25mm（boats.json の jp_t38.gun_battery）: 25mm機銃・射程 600／有効 300・死角 30°・閃光 1200・1 群 220 発/分・damage 4・散布 56・水柱 3・弾倉 15 発／交換 3.2 秒。source は historical / design (v0.6.4 と抜粋の注。jp_06（魚雷の任務）では読まない', () => {
+  it('T-38 の 25mm（boats.json の jp_t38.gun_battery）: 25mm機銃・射程 600／有効 300・死角 30°・閃光 1200・1 群 220 発/分・damage 4・散布 56・水柱 3・弾倉 15 発／交換 3.2 秒・最小散布 22 m（v0.6.4 実機 1 回目）。source は historical / design (v0.6.4 と抜粋の注。jp_06（魚雷の任務）では読まない', () => {
     const boat = (gameData.boats.boats as unknown as Rec[]).find((b) => b['id'] === 'jp_t38')!;
     expect(boat['gun_battery']).toEqual({
       label_ja: '25mm機銃', range_m: 600, effective_m: 300, dead_cone_deg: 30, muzzle_flash_reveal_m: 1200,
       spread_factor: { stop: 1.0, silent: 1.0, cruise: 1.6, full: 2.5 },
       groups: [{ id: '25mm_type96', rounds_per_min: 220, damage: 4, shell_speed_mps: 500, dispersion_m: 56, splash_radius_m: 3.0 }],
       magazine: { rounds: 15, reload_s: 3.2 },
+      min_spread_m: 22,
     });
+    expect(S.guns!.minSpreadM).toBe(22);
     const src = String((boat['source'] as Rec)['gun_battery']);
     expect(src).toMatch(/historical .*\/ design \(v0\.6\.4/);
     expect(src).toContain(EXCERPT);
+    // 最小散布の文（v0.6.4 実機 1 回目のユーザーの原文・九六式の照準の評価は抜粋の注と確度・下限の値は design）
+    const floor = src.slice(src.indexOf('min_spread_m 22（v0.6.4 実機 1 回目'));
+    expect(floor).toContain('「こちらの命中率が高くて割と撃退できますね」');
+    expect(floor).toContain(`${EXCERPT}。medium`);
+    expect(floor).toContain('下限の値に史料は無い（design）');
     expect(boat['guns']).toEqual(['25mm_x1']);
     expect(buildWorldSetup(gameData, 'jp_06').guns).toBeNull();
     expect(getPrototypeMission(gameData, 'jp_06').playerBoatId).toBe('jp_t38');
@@ -149,15 +161,19 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
 
 describe('jp_01 の世界（spec §B.2・§E.5）', () => {
   afterEach(() => vi.restoreAllMocks());
-  it('組み立て: guns・魚雷 0・夜明け 200・燃料 19・停止で 480 m・輸送隊 3 隻（HP 20・上陸線 4000・ノルマ 2・停止の帯・規則 0.64／1 秒／1 秒）・25mm・米PT 2 隻（西向きに出発）・空襲あり（夜明けの空は敵）・岸あり・敵の大発なし', () => {
+  it('組み立て: guns・魚雷 0・夜明け 200・燃料 19・停止で 480 m・輸送隊 3 隻（HP 12・上陸地点 3,660／3,600／3,540・浜の線 y 2,988・転舵 3,099／3,039／2,979・浜への道 711 m・ノルマ 2・静音の帯 600 m・規則 0.64／1 秒／1 秒）・25mm（最小散布 22 m）・米PT 2 隻（西向きに出発）・空襲あり（夜明けの空は敵）・岸あり・敵の大発なし・輪 (4150, 2700)', () => {
     expect([S.mainWeapon, S.torpedoCapacity, S.durationS, S.fuelAllotmentGal, S.baseDetectM]).toEqual(['guns', 0, 200, 19, 2000]);
     expect(S.detectRangeAtStartM).toBeCloseTo(480, 9);
-    expect(S.convoy!.params).toMatchObject({ count: 3, hp: 20, leadX: 1200, leadY: 2550, headingDeg: 90, offsetsM: [0, 120, 240], landingX: 4000, quota: 2 });
-    expect(S.convoy!.detectBand).toBe('stop');
+    expect(S.convoy!.params).toMatchObject({ count: 3, hp: 12, leadX: 1200, leadY: 2550, headingDeg: 90, offsetsM: [0, 120, 240], landingX: 3600, quota: 2 });
+    const beach = S.convoy!.params.beach!;
+    expect([beach.y, beach.shoreY, beach.x]).toEqual([2988, 3000, [3660, 3600, 3540]]);
+    [3099.39, 3039.39, 2979.39].forEach((x, i) => expect(beach.turnX[i]).toBeCloseTo(x, 2));
+    expect(beach.runInM).toBeCloseTo(711.43, 2);
+    expect(S.convoy!.detectBand).toBe('silent');
     expect(S.convoy!.rule.keepRatio2).toBeCloseTo(0.64, 12);
     expect([S.convoy!.rule.lockS, S.convoy!.rule.flashHoldS]).toEqual([1, 1]);
     const g = S.guns!;
-    expect([g.label, g.rangeM, g.effectiveM, g.deadConeDeg, g.flashRevealM, g.magazine]).toEqual(['25mm機銃', 600, 300, 30, 1200, { rounds: 15, reloadS: 3.2 }]);
+    expect([g.label, g.rangeM, g.effectiveM, g.deadConeDeg, g.flashRevealM, g.magazine, g.minSpreadM]).toEqual(['25mm機銃', 600, 300, 30, 1200, { rounds: 15, reloadS: 3.2 }, 22]);
     expect(g.groups.map((x) => [x.id, x.roundsPerMin, x.damage, x.shellSpeedMps, x.dispersionM, x.splashRadiusM])).toEqual([['25mm_type96', 220, 4, 500, 56, 3]]);
     expect(S.ptBoats!.count).toBe(2);
     expect(Array.from(S.ptBoats!.startHeadingDeg)).toEqual([270, 270]);
@@ -170,12 +186,12 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     expect(S.mission.coast).toEqual({ side: 'south', landM: 600, label: 'ガダルカナル島（カミンボ）' });
     expect(S.mission.shallows).toEqual([]);
     expect(S.playerStart).toEqual({ x: 1200, y: 2400, headingDeg: 90 });
-    expect([S.mission.returnPoint.x, S.mission.returnPoint.y, S.mission.returnPoint.radiusM, S.mission.returnPoint.callMargin]).toEqual([4500, 2250, 250, 1.6]);
+    expect([S.mission.returnPoint.x, S.mission.returnPoint.y, S.mission.returnPoint.radiusM, S.mission.returnPoint.callMargin]).toEqual([4150, 2700, 250, 1.6]);
     expect(S.mission.bounds).toEqual({ width: 6000, height: 3000 });
     expect(hasHardVariant(gameData, 'jp_01')).toBe(false);
     expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_05', 'jp_06']);
   });
-  it('今夜（seed+16）: 引くのは 5 回（隊 3・大発の先頭 1・反転 1＝jp_05 と同じ）。反転しない。PT の出発点は自艇から ≥ 1,560 m・船団（先頭〜最後尾・揺らぎ込み）から ≥ 624 m（隅は約 1,464 m）。先頭は 1200 ± 250', () => {
+  it('今夜（seed+16）: 引くのは 5 回（隊 3・大発の先頭 1・反転 1＝jp_05 と同じ）。反転しない。PT の出発点は自艇から ≥ 1,560 m・船団（先頭〜最後尾・揺らぎ込み）から ≥ 780 m（静音の帯 600 × 1.3。隅は約 1,464 m）。先頭は 1200 ± 250', () => {
     const spy = vi.spyOn(SeededRng.prototype, 'next');
     buildWorldSetup(gameData, 'jp_01', { sortie: sortie(1) });
     expect(spy.mock.calls.length).toBe(5);
@@ -188,7 +204,8 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
       expect(s.night.mirrored, `${seed}`).toBe(false);
       const c = s.convoy!.params;
       expect(Math.abs(c.leadX - 1200), `${seed}`).toBeLessThanOrEqual(250);
-      expect([c.leadY, c.headingDeg, c.landingX], `${seed}`).toEqual([2550, 90, 4000]);
+      expect([c.leadY, c.headingDeg, c.landingX], `${seed}`).toEqual([2550, 90, 3600]);
+      expect(c.beach, `${seed}`).toEqual(S.convoy!.params.beach); // 浜は地形（揺らぎで動かない）
       const p = s.ptBoats!;
       for (let i = 0; i < p.count; i++) {
         expect(p.startHeadingDeg[i], `${seed}`).toBe(270);
@@ -197,7 +214,7 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
       }
     }
     expect(minPlayerM).toBeGreaterThanOrEqual(1560);
-    expect(minBargeM).toBeGreaterThanOrEqual(624);
+    expect(minBargeM).toBeGreaterThanOrEqual(780);
   });
   it('呼びかけ（core/mission-flow と ui/convoy-lines）: 決着（みな上陸か沈没）で CALL_SUNK＝「大発 上陸 2/3 ・ 帰投せよ」（0/3 なら全滅）、2 隻上陸＋1 隻航行中は呼びかけ無し、燃料少が上なら「燃料少 帰投せよ」。輸送隊では撃ち尽くし（CALL_EXPENDED）は立てない', () => {
     const f = createConvoy(S.convoy!.params);
@@ -277,11 +294,12 @@ describe('jp_01 の Briefing・Title（spec §D.1）', () => {
 });
 
 describe('jp_01 の HUD と Result（spec §D.2・§D.3・§D.5）', () => {
-  it('出撃時の 2 行目（jp_01 の世界の値）: 「大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中」。全速なら「13 kt 以下に」（T-38 の静音の上限）', () => {
+  it('出撃時の 2 行目（jp_01 の世界の値）: 「大発 3 隻 ・ 上陸 0/3 ・ 浜まで 2800 m ・ 米PT 2 隻 東で哨戒中」（最後尾 x 960 → 転舵 2,979 → 浜 711 m＝2,731 m）。全速なら「13 kt 以下に」（T-38 の静音の上限）', () => {
     const t = tele01();
-    expect(t.convoy).toMatchObject({ enabled: true, total: 3, afloat: 3, arrived: 0, sunk: 0, resolved: false, leftM: 3040, fromDirJa: '東' });
+    expect(t.convoy).toMatchObject({ enabled: true, total: 3, afloat: 3, arrived: 0, sunk: 0, resolved: false, fromDirJa: '東' });
+    expect(t.convoy.leftM).toBeCloseTo(2730.8, 1);
     expect([t.pt.total, t.pt.alive, t.pt.silentMaxKt, t.pt.leaveDirJa, t.pt.damagePerHit, t.pt.gunEnabled, t.pt.gunRangeM]).toEqual([2, 2, 13, '北東', 4, true, 600]);
-    expect(row(t)).toEqual([MISSION_PT, '大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中', '#e6eef7']);
+    expect(row(t)).toEqual([MISSION_PT, '大発 3 隻 ・ 上陸 0/3 ・ 浜まで 2800 m ・ 米PT 2 隻 東で哨戒中', '#e6eef7']);
     expect(textWidthPx(row(t)[1], 22)).toBeLessThanOrEqual(LINE2_MAX_PX);
     const fast = tele01();
     Object.assign(fast.pt, { sighted: true, dx: 0, dy: -600 });

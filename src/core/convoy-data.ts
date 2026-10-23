@@ -3,9 +3,9 @@
 // 任務の他の鍵との排他（pt_boats のある任務だけ・barges / enemy_start / escort と同居不可・coast 必須・main_weapon guns）と出発で見つからない距離は config 側（mission-data・pt-mission-data）。段階と運動は convoy.ts。
 import type { BargeDataRecord } from './barge-data';
 import type { SpeedStep } from './boat-motion';
-import type { ConvoyParams } from './convoy';
+import type { ConvoyBeach, ConvoyParams } from './convoy';
 import type { PtTargetRule } from './pt-target';
-import { ktToMps } from './units';
+import { degToRad, ktToMps } from './units';
 
 /** 輸送隊の大発の id（enemies.json。任務の allies に並ぶ数が隻数。寸法・速さは敵の大発と同じ record） */
 export const CONVOY_BARGE_ID = 'daihatsu_barge';
@@ -31,17 +31,20 @@ export interface ConvoyMissionBlock {
   target_keep_ratio: number;
   target_switch_hold_s: number;
   flash_hold_s: number;
+  /** 浜へ上陸する（v0.6.4 実機 1 回目。opt-in。無ければ landing_x_m の線で上陸）: 上陸地点は landing_x_m を中心に spacing_m ずつ（先頭が針路の先）、浜の線は南の縁から margin_m、
+   *  航路から浜へ向かう転舵は上陸地点への方位が針路から run_in_deg 開いたとき */
+  beach?: { spacing_m: number; margin_m: number; run_in_deg: number; source?: string };
   source: string;
 }
 
-/** 検査に要る任務の周り: id（例外の文）、先頭の x の揺らぎ ±m（night.barge_lead_jitter_m）、帰投の輪（到達線の側で、到達線上の航路の点から縁まで CONVOY_RING_CLEAR_M 以上） */
+/** 検査に要る任務の周り: id（例外の文）、先頭の x の揺らぎ ±m（night.barge_lead_jitter_m）、帰投の輪（到達線の側で、到達線上の航路の点＝浜のある隊は各隻の航路と浜への道から縁まで CONVOY_RING_CLEAR_M 以上） */
 export interface ConvoyMissionContext {
   missionId: string;
   leadJitterM: number;
   ring: { x: number; y: number; radiusM: number };
 }
 
-/** 到達線上の航路の点から帰投の輪の縁までの最短 m（spec §B.2 return_point: 到達線で止まった先頭の大発のそばで撃ち合っていて誤って輪に入らない。jp_01 は 333 m） */
+/** 到達線上の航路の点（浜のある隊は各隻の航路と浜への道）から帰投の輪の縁までの最短 m（spec §B.2 return_point: 上陸する大発のそばで撃ち合っていて誤って輪に入らない。jp_01 は先頭の上陸地点から 318 m） */
 export const CONVOY_RING_CLEAR_M = 300;
 
 const DETECT_BANDS: readonly SpeedStep[] = ['stop', 'silent', 'cruise', 'full'];
@@ -62,7 +65,7 @@ export function isConvoyMissionBlock(v: unknown): v is ConvoyMissionBlock {
 
 /**
  * 設計値の検査込み（spec §E.5）。count は任務の allies の daihatsu_barge の数、world は hit_rate_model の hit_scale / sprite_scale、bounds は海域。
- * 隊（先頭〜最後尾。揺らぎ込み）は海域の縁から絵の半長の内で岸（南の縁）より海側、針路は東西、上陸線は針路の先、帰投の輪は上陸線の側で縁まで CONVOY_RING_CLEAR_M 以上
+ * 隊（先頭〜最後尾。揺らぎ込み）は海域の縁から絵の半長の内で岸（南の縁）より海側、針路は東西、上陸線は針路の先、帰投の輪は上陸線の側で縁まで CONVOY_RING_CLEAR_M 以上。浜（beach）は convoyBeachFromData
  */
 export function convoyParamsFromData(r: BargeDataRecord, b: ConvoyMissionBlock, count: number, world: { hitScale: number; spriteScale: number }, bounds: { width: number; height: number }, ctx: ConvoyMissionContext): ConvoyParams {
   const bad = (msg: string): never => {
@@ -96,7 +99,8 @@ export function convoyParamsFromData(r: BargeDataRecord, b: ConvoyMissionBlock, 
   const rdx = ctx.ring.x - landing;
   const rdy = ctx.ring.y - y;
   const clear = ctx.ring.radiusM + CONVOY_RING_CLEAR_M;
-  if (rdx * rdx + rdy * rdy < clear * clear) bad(`上陸線上の航路の点から帰投地点の輪の縁まで ${CONVOY_RING_CLEAR_M} m 以上（そばで撃ち合っていて輪に入らない）`);
+  if (!b.beach && rdx * rdx + rdy * rdy < clear * clear) bad(`上陸線上の航路の点から帰投地点の輪の縁まで ${CONVOY_RING_CLEAR_M} m 以上（そばで撃ち合っていて輪に入らない）`);
+  const beach = b.beach ? convoyBeachFromData(b.beach, count, ux, leadX, y, o, jit, landing, margin, bounds, ctx, bad) : undefined;
   return {
     count,
     hp: b.barge_hp,
@@ -112,7 +116,38 @@ export function convoyParamsFromData(r: BargeDataRecord, b: ConvoyMissionBlock, 
     offsetsM: [...o],
     landingX: landing,
     quota: b.arrive_quota,
+    ...(beach ? { beach } : {}),
   };
+}
+
+/**
+ * 浜（v0.6.4 実機 1 回目）: 上陸地点 x[i] = landing + ux·((count−1)/2 − i)·spacing（先頭が針路の先）、浜の線 y = 高さ − margin（南の縁が岸＝config/mission-data の coast は south だけ）、
+ * 転舵 turnX[i] = x[i] − ux·(y − 航路の y)/tan(run_in)、浜への道のり (y − 航路の y)/sin(run_in)。検査: 上陸地点は海域の中、浜の線は航路＋絵の半長より岸側、
+ * 転舵は各隻の出発（揺らぎ込み）より針路の先、各隻の航路（出発〜転舵）と浜への道（転舵〜上陸地点）から帰投の輪の縁まで CONVOY_RING_CLEAR_M 以上
+ */
+function convoyBeachFromData(
+  bb: NonNullable<ConvoyMissionBlock['beach']>, count: number, ux: number, leadX: number, laneY: number, o: readonly number[], jit: number, landing: number, margin: number,
+  bounds: { width: number; height: number }, ctx: ConvoyMissionContext, bad: (msg: string) => never,
+): ConvoyBeach {
+  if (!(bb.spacing_m >= 0) || !(bb.margin_m > 0) || !(bb.run_in_deg > 0 && bb.run_in_deg <= 90)) bad('beach の spacing_m ≥ 0・margin_m > 0・0 < run_in_deg ≤ 90');
+  const by = bounds.height - bb.margin_m;
+  if (!(by > laneY + margin)) bad('beach の浜の線（高さ − margin_m）は航路より岸側');
+  const depth = by - laneY;
+  const run = depth / Math.tan(degToRad(bb.run_in_deg));
+  const xs: number[] = [];
+  const turns: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const bx = landing + ux * ((count - 1) / 2 - i) * bb.spacing_m;
+    if (bx < margin || bx > bounds.width - margin) bad('beach の上陸地点は海域の中');
+    const tx = bx - ux * run;
+    if (!((tx - (leadX - ux * o[i]!)) * ux > jit)) bad('beach の転舵の x は各隻の出発（揺らぎ込み）より針路の先');
+    const clear = ctx.ring.radiusM + CONVOY_RING_CLEAR_M;
+    // 転舵の点から上陸地点までの道（浜へ向かう大発のそばで撃ち合っていて輪に入らない）と、転舵の点の手前の航路（出発から転舵まで）の両方から輪の縁まで
+    if (segDist2(ctx.ring.x, ctx.ring.y, tx, laneY, bx, by) < clear * clear || segDist2(ctx.ring.x, ctx.ring.y, leadX - ux * o[i]!, laneY, tx, laneY) < clear * clear) bad(`beach の航路と浜への道から帰投地点の輪の縁まで ${CONVOY_RING_CLEAR_M} m 以上`);
+    xs.push(bx);
+    turns.push(tx);
+  }
+  return { x: xs, y: by, shoreY: bounds.height, turnX: turns, runInM: depth / Math.sin(degToRad(bb.run_in_deg)) };
 }
 
 /**
@@ -122,10 +157,22 @@ export function convoyParamsFromData(r: BargeDataRecord, b: ConvoyMissionBlock, 
 export function convoyParamsAtNight(p: ConvoyParams, leadDx: number, mirrored: boolean, boundsWidth: number): ConvoyParams {
   if (leadDx === 0 && !mirrored) return p;
   const mx = (x: number): number => (mirrored ? boundsWidth - x : x);
-  return { ...p, leadX: mx(p.leadX + leadDx), headingDeg: mirrored ? (360 - p.headingDeg) % 360 : p.headingDeg, landingX: mx(p.landingX) };
+  const beach = p.beach && mirrored ? { ...p.beach, x: p.beach.x.map(mx), turnX: p.beach.turnX.map(mx) } : p.beach;
+  return { ...p, leadX: mx(p.leadX + leadDx), headingDeg: mirrored ? (360 - p.headingDeg) % 360 : p.headingDeg, landingX: mx(p.landingX), ...(beach ? { beach } : {}) };
 }
 
 /** 米PT の標的の規則（core/pt-target）: keepRatio2 = target_keep_ratio²・lockS・flashHoldS。値の検査は convoyParamsFromData（同じ block を先に通す） */
 export function ptTargetRuleFromData(b: ConvoyMissionBlock): PtTargetRule {
   return { keepRatio2: b.target_keep_ratio * b.target_keep_ratio, lockS: b.target_switch_hold_s, flashHoldS: b.flash_hold_s };
+}
+
+/** 点 (px, py) から線分 (ax, ay)–(bx, by) までの距離の二乗（検査に 1 回） */
+function segDist2(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const l2 = vx * vx + vy * vy;
+  const k = l2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l2)) : 0;
+  const dx = ax + k * vx - px;
+  const dy = ay + k * vy - py;
+  return dx * dx + dy * dy;
 }

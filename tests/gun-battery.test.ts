@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, getBargeParams, getGunBatteryParams, getPrototypeMission } from '../src/config/game-data';
-import type { SpeedStep } from '../src/core/boat-motion';
+import type { BoatState, SpeedStep } from '../src/core/boat-motion';
 import { BARGE_SUNK, createFlotilla, hitBarge } from '../src/core/barges';
-import { GUN_BLOCKED, GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE, createGunBattery, gunBatteryParamsFromData, selectTarget, stepGunBattery, type GunBatteryDataRecord, type GunEvents } from '../src/core/gun-battery';
+import { GUN_BLOCKED, GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE, createGunBattery, gunBatteryParamsFromData, isGunBatteryDataRecord, selectTarget, stepGunBattery, stepGunBatteryOf, type GunBatteryDataRecord, type GunBatteryParams, type GunEvents } from '../src/core/gun-battery';
 import { SeededRng } from '../src/core/rng';
+import { stepGunBattery as stepGunBatteryD09000b } from './gun-battery-frozen';
 
 const DT = 1 / 60;
 const TS = 5;
@@ -11,7 +12,8 @@ const M = getPrototypeMission(gameData, 'us_03');
 const G = getGunBatteryParams(gameData, M)!;
 const P = getBargeParams(gameData, M)!;
 const VIS2 = 900 * 900;
-const raw = (): GunBatteryDataRecord => JSON.parse(JSON.stringify((gameData.boats.boats.find((b) => b.id === 'us_elco80') as unknown as { gun_battery: GunBatteryDataRecord }).gun_battery)) as GunBatteryDataRecord;
+const rawOf = (id: string): GunBatteryDataRecord => JSON.parse(JSON.stringify((gameData.boats.boats.find((b) => b.id === id) as unknown as { gun_battery: GunBatteryDataRecord }).gun_battery)) as GunBatteryDataRecord;
+const raw = (): GunBatteryDataRecord => rawOf('us_elco80');
 const quiet: GunEvents = { onFire: () => {}, onHit: () => {}, onMiss: () => {} };
 
 /** 大発 1 隻だけを (x, y) に止めて置く（他は撃破済み） */
@@ -121,5 +123,97 @@ describe('艇の砲（core/gun-battery、v0.4.2）', () => {
     f.barges[0]!.phase = BARGE_SUNK;
     for (let i = 0; i < 30; i++) stepGunBattery(g, G, { x: 0, y: 0, headingDeg: 90, speedMps: 0 }, 'stop', true, true, f.barges, P.halfLengthM, P.halfBeamM, VIS2, rng, DT, DT * TS, quiet);
     expect(g.target).toBe(1);
+  });
+});
+
+// ---------- 散布の最小半径（v0.6.4 実機 1 回目。jp_t38 の min_spread_m だけ） ----------
+
+const J = getGunBatteryParams(gameData, getPrototypeMission(gameData, 'jp_01'))!;
+const always = (): boolean => true;
+const never = (): boolean => false;
+/** 乱数の代わり: 1 回目 1（円の縁）・2 回目 0（東へ）を繰り返す。止まった標的の x が 0 なら、弾の着点の x ＝ 散布の円の半径 */
+function edgeRng(): SeededRng {
+  let n = 0;
+  return { next: () => (n++ % 2 === 0 ? 1 : 0) } as unknown as SeededRng;
+}
+/** 東向きで止まった艇から南 d m の止まった標的へ、本物の stepGunBatteryOf で 1 ステップ撃った 1 組目の円の半径 m */
+function spreadAt(p: GunBatteryParams, d: number, band: SpeedStep): number {
+  const g = createGunBattery(p, 4);
+  const t: BoatState = { x: 0, y: d, headingDeg: 270, speedMps: 0 };
+  stepGunBatteryOf(g, p, { x: 0, y: 0, headingDeg: 90, speedMps: 0 }, band, true, true, [t], always, never, 12.2, 3.15, VIS2, edgeRng(), DT, DT * TS, quiet);
+  expect(g.shots).toBe(p.groups.length); // 組ごとに 1 発。shells[0] は 1 組目の弾
+  return g.shells[0]!.impactX;
+}
+/** 鍵を外した写し（今の式に戻る） */
+function withoutFloor(p: GunBatteryParams): GunBatteryParams {
+  const q: GunBatteryParams = { ...p };
+  delete q.minSpreadM;
+  return q;
+}
+
+describe('散布の最小半径（core/gun-battery の min_spread_m、v0.6.4 実機 1 回目）', () => {
+  it('jp_t38 だけが鍵を持つ（22 m）。jp_t14・us_elco80 の params には鍵ごと無い', () => {
+    expect(J.minSpreadM).toBe(22);
+    const withKey = (gameData.boats.boats as unknown as Array<Record<string, unknown>>).filter((b) => typeof b['gun_battery'] === 'object' && b['gun_battery'] !== null && 'min_spread_m' in (b['gun_battery'] as object)).map((b) => b['id']);
+    expect(withKey).toEqual(['jp_t38']);
+    for (const id of ['jp_t14', 'us_elco80']) expect('minSpreadM' in gunBatteryParamsFromData(rawOf(id)), id).toBe(false);
+    expect('minSpreadM' in G).toBe(false);
+  });
+  it('円の半径は速力帯の倍率の後に max(56·R/600·k, 22): 停止 100 m で 22・停止 400 m で 37.3・巡航 100 m で 22（倍率の前なら 35.2）・全速 100 m で 23.3（倍率の前なら 55）', () => {
+    const prop = (d: number, band: SpeedStep): number => ((J.groups[0]!.dispersionM * d) / J.rangeM) * J.spreadFactor[band];
+    expect(spreadAt(J, 100, 'stop')).toBe(22);
+    expect(spreadAt(J, 400, 'stop')).toBe(prop(400, 'stop'));
+    expect(prop(400, 'stop')).toBeCloseTo(37.333, 3);
+    expect(spreadAt(J, 100, 'cruise')).toBe(22);
+    expect(spreadAt(J, 100, 'full')).toBe(prop(100, 'full'));
+    expect(prop(100, 'full')).toBeCloseTo(23.333, 3);
+    // 下限が効く境目: 止まって 236 m・巡航 147 m・全速 94 m より近く
+    expect(spreadAt(J, 230, 'silent')).toBe(22);
+    expect(spreadAt(J, 240, 'silent')).toBe(prop(240, 'silent'));
+    // 鍵が無いと今の式の double そのまま（近くでも広がらない）
+    const n = withoutFloor(J);
+    expect(spreadAt(n, 100, 'stop')).toBe(prop(100, 'stop'));
+    expect(spreadAt(n, 100, 'full')).toBe(prop(100, 'full'));
+    expect(spreadAt(G, 100, 'stop')).toBe(((G.groups[0]!.dispersionM * 100) / G.rangeM) * G.spreadFactor.stop);
+  });
+  it('鍵が無いと d09000b の写しと同じ着点・同じ乱数。鍵があっても比例の円が 22 m より大きい距離（止まって 300〜560 m）では鍵の無い砲と同じ着点・同じ乱数（1 発 2 回のまま）', () => {
+    const n = withoutFloor(J);
+    const bands: readonly SpeedStep[] = ['stop', 'silent', 'cruise', 'full'];
+    let shots = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const band = bands[seed % 4]!;
+      const d = 60 + ((seed * 37) % 500);
+      const runs = [0, 1].map(() => ({ f: oneBarge(0, d), g: createGunBattery(n, 24), rng: new SeededRng(seed) }));
+      for (const r of runs) Object.assign(r.f.barges[0]!, { speedMps: 3, headingDeg: 90 });
+      for (let k = 0; k < 120; k++) {
+        stepGunBatteryD09000b(runs[0]!.g, n, { x: 0, y: 0, headingDeg: 90, speedMps: 0 }, band, true, true, runs[0]!.f.barges, P.halfLengthM, P.halfBeamM, VIS2, runs[0]!.rng, DT, DT * TS, quiet);
+        stepGunBattery(runs[1]!.g, n, { x: 0, y: 0, headingDeg: 90, speedMps: 0 }, band, true, true, runs[1]!.f.barges, P.halfLengthM, P.halfBeamM, VIS2, runs[1]!.rng, DT, DT * TS, quiet);
+        for (let i = 0; i < 24; i++) expect([runs[1]!.g.shells[i]!.impactX, runs[1]!.g.shells[i]!.impactY]).toEqual([runs[0]!.g.shells[i]!.impactX, runs[0]!.g.shells[i]!.impactY]);
+        expect(runs[1]!.rng.next() === runs[0]!.rng.next()).toBe(true);
+      }
+      shots += runs[1]!.g.shots;
+    }
+    expect(shots).toBeGreaterThan(30 * 6); // 1 seed 2 秒・220 発/分で約 7 発
+    for (let seed = 1; seed <= 10; seed++) {
+      const d = 300 + seed * 26;
+      const a = { f: oneBarge(0, d), g: createGunBattery(J, 24), rng: new SeededRng(seed) };
+      const b = { f: oneBarge(0, d), g: createGunBattery(n, 24), rng: new SeededRng(seed) };
+      for (let k = 0; k < 60; k++) {
+        stepGunBattery(a.g, J, { x: 0, y: 0, headingDeg: 90, speedMps: 0 }, 'stop', true, true, a.f.barges, P.halfLengthM, P.halfBeamM, VIS2, a.rng, DT, DT * TS, quiet);
+        stepGunBattery(b.g, n, { x: 0, y: 0, headingDeg: 90, speedMps: 0 }, 'stop', true, true, b.f.barges, P.halfLengthM, P.halfBeamM, VIS2, b.rng, DT, DT * TS, quiet);
+      }
+      expect(a.g.shells.map((s) => [s.impactX, s.impactY])).toEqual(b.g.shells.map((s) => [s.impactX, s.impactY]));
+      expect(a.rng.next()).toBe(b.rng.next());
+    }
+  });
+  it('壊れた data は例外: min_spread_m −1 は「min_spread_m は 0 以上」、NaN・文字列は型の検査で落ちる。0 は通る（比例の円のまま）', () => {
+    expect(() => gunBatteryParamsFromData({ ...rawOf('jp_t38'), min_spread_m: -1 })).toThrow('min_spread_m は 0 以上');
+    expect(isGunBatteryDataRecord({ ...rawOf('jp_t38'), min_spread_m: Number.NaN })).toBe(false);
+    expect(isGunBatteryDataRecord({ ...rawOf('jp_t38'), min_spread_m: '22' })).toBe(false);
+    expect(isGunBatteryDataRecord(rawOf('jp_t38'))).toBe(true);
+    expect(isGunBatteryDataRecord(rawOf('us_elco80'))).toBe(true);
+    const zero = gunBatteryParamsFromData({ ...rawOf('jp_t38'), min_spread_m: 0 });
+    expect(zero.minSpreadM).toBe(0);
+    expect(spreadAt(zero, 100, 'stop')).toBe(((zero.groups[0]!.dispersionM * 100) / zero.rangeM) * zero.spreadFactor.stop);
   });
 });

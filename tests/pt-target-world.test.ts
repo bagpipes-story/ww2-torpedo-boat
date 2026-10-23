@@ -39,12 +39,12 @@ function world(): { player: BoatState; cv: ReturnType<typeof fakeConvoy>; t: PtT
 }
 
 describe('PtTargets（systems/pt-target。spec §C.2・§C.4・§E.2）', () => {
-  it('出撃時: 船体は自艇 + 大発 3 隻、大発の発見距離は停止の帯 480 m（新月）、標的は自艇（targetKind 0）。規則は data（0.64・1 秒・1 秒）', () => {
+  it('出撃時: 船体は自艇 + 大発 3 隻、大発の発見距離は静音の帯 600 m（新月。v0.6.4 実機 1 回目）、標的は自艇（targetKind 0）。規則は data（0.64・1 秒・1 秒）', () => {
     const { t, cv } = world();
     expect(t.hulls.length).toBe(4);
     expect(t.hulls[0]!.boat).toBe(t.hulls[0]!.boat);
     expect(t.hulls[1]!.boat).toBe(cv.state.barges[0]!);
-    expect([t.set.detectM[1], t.set.detectM[2], t.set.detectM[3], BARGE_DETECT_M]).toEqual([480, 480, 480, 480]);
+    expect([t.set.detectM[1], t.set.detectM[2], t.set.detectM[3], BARGE_DETECT_M]).toEqual([600, 600, 600, 600]);
     expect([t.set.current, t.targetKind, t.playerValid, t.lastPassTargetKind, t.firstDetectKind]).toEqual([0, 0, true, 0, 0]);
     expect(t.rule).toEqual({ keepRatio2: 0.8 * 0.8, lockS: 1, flashHoldS: 1 });
     expect([t.hulls[1]!.halfLengthM, t.hulls[1]!.halfBeamM]).toEqual([CV.params.halfLengthM, CV.params.halfBeamM]);
@@ -58,33 +58,35 @@ describe('PtTargets（systems/pt-target。spec §C.2・§C.4・§E.2）', () => 
     expect(t.hulls.map((h) => h.valid)).toEqual([false, true, false, false]);
     expect(t.playerValid).toBe(false);
   });
-  it('apply: 手空きの隊が自艇（停止 480 m・遠い）より近い大発を選ぶと check.boat は大発・detectOpenM は大発の帯・targetKind 1。自艇に戻せば自艇の帯', () => {
+  it('apply: 手空きの隊が自艇（停止 480 m・遠い）より近い大発（静音の帯 600 m）を選ぶと check.boat は大発・detectOpenM は大発の帯・targetKind 1。自艇に戻せば自艇の帯', () => {
     const { t, q, c, cv, player } = world();
     const b0 = cv.state.barges[0]!;
     Object.assign(q.boats[0]!, { x: b0.x + 300, y: b0.y, phase: PT_RUN_IN });
     player.x = b0.x + 1500;
     t.begin(480, true);
     t.apply(q, c, 0, 10);
-    expect([t.set.current, t.targetKind, c.boat, c.detectOpenM, c.boatHalfLengthM, c.targetValid]).toEqual([1, 1, b0, 480, CV.params.halfLengthM, true]);
-    // 自艇が閃光（1,200 m）で撃って PT から 500 m なら自艇へ戻る（点数 500²/1200² = 0.17 < 大発 300²/480² × 0.64 = 0.25。ロック 1 秒の後）
-    player.x = b0.x + 800;
+    // 点数: 自艇 1,200²/480² = 6.25、大発 300²/600² = 0.25
+    expect([t.set.current, t.targetKind, c.boat, c.detectOpenM, c.boatHalfLengthM, c.targetValid]).toEqual([1, 1, b0, 600, CV.params.halfLengthM, true]);
+    // 自艇が閃光（1,200 m）で撃って PT から 400 m なら自艇へ戻る（点数 400²/1200² = 0.11 < 大発 300²/600² × 0.64 = 0.16。ロック 1 秒の後。500 m の 0.17 では戻らない）
+    player.x = b0.x + 700;
     t.begin(600, true);
     t.apply(q, c, 1200, 12);
     expect([t.set.current, c.boat, c.detectOpenM, c.boatHalfLengthM]).toEqual([0, player, 600, S.boatHalfLengthM]);
   });
-  it('大発への命中: HP −4 ずつ、5 発目で沈没＝同じステップで valid と（標的なら）targetValid を落とし true。隊の命中は数えず（core）自艇の被弾も増えない', () => {
+  it('大発への命中: HP 12 から −4 ずつ、3 発目で沈没（v0.6.4 実機 1 回目）＝同じステップで valid と（標的なら）targetValid を落とし true。隊の命中は数えず（core）自艇の被弾も増えない', () => {
     const { t, q, c, cv } = world();
     t.begin(480, true);
     t.set.current = 1;
     c.targetValid = true;
-    for (let k = 0; k < 4; k++) expect(t.bargeHit(q, c, 1, DAMAGE, 20 + k)).toBe(false);
-    expect([cv.state.barges[0]!.hp, cv.state.barges[0]!.phase, t.hulls[1]!.valid, c.targetValid, t.bargeHits, t.playerHits]).toEqual([4, CV_SAILING, true, true, 4, 0]);
-    expect(t.bargeHit(q, c, 1, DAMAGE, 24)).toBe(true);
-    expect([cv.state.barges[0]!.phase, cv.state.sunk, t.hulls[1]!.valid, c.targetValid, t.bargeHits]).toEqual([CV_SUNK, 1, false, false, 5]);
+    expect(CV.params.hp).toBe(12);
+    for (let k = 0; k < 2; k++) expect(t.bargeHit(q, c, 1, DAMAGE, 20 + k)).toBe(false);
+    expect([cv.state.barges[0]!.hp, cv.state.barges[0]!.phase, t.hulls[1]!.valid, c.targetValid, t.bargeHits, t.playerHits]).toEqual([4, CV_SAILING, true, true, 2, 0]);
+    expect(t.bargeHit(q, c, 1, DAMAGE, 22)).toBe(true);
+    expect([cv.state.barges[0]!.phase, cv.state.sunk, t.hulls[1]!.valid, c.targetValid, t.bargeHits]).toEqual([CV_SUNK, 1, false, false, 3]);
     // 標的でない大発が沈んでも targetValid は触らない
     t.set.current = 0;
     c.targetValid = true;
-    for (let k = 0; k < 5; k++) t.bargeHit(q, c, 2, DAMAGE, 30 + k);
+    for (let k = 0; k < 3; k++) t.bargeHit(q, c, 2, DAMAGE, 30 + k);
     expect([t.hulls[2]!.valid, c.targetValid, cv.state.sunk]).toEqual([false, true, 2]);
   });
   it('自艇への命中: 被弾を数え、沈み始めたら自艇の船体を落とす（標的が自艇なら targetValid も。標的が大発なら触らない）', () => {
@@ -229,33 +231,43 @@ describe('輸送隊のテレメトリと Result の材料（systems/convoy-telem
     expect(initConvoyTelemetry(w)).toEqual(createConvoyTelemetry());
     expect(convoyResult(w)).toBeNull();
   });
-  it('jp_01 の出撃時: 3 隻・上陸 0・浜まで 3,040（最後尾 x 960 → 4,000）・最寄りは先頭（150 m 北の自艇から dy +150）・米PT は「東」から', () => {
+  it('jp_01 の出撃時: 3 隻・上陸 0・浜まで 2,730.8（最後尾 x 960 → 転舵 2,979.39 → 浜への道 711.43。v0.6.4 実機 1 回目）・最寄りは先頭（150 m 北の自艇から dy +150）・米PT は「東」から', () => {
     const player: BoatState = { ...S.playerStart, speedMps: 0 };
     const cv = fakeConvoy();
     const t = initConvoyTelemetry(cw(cv, player));
-    expect([t.enabled, t.total, t.afloat, t.arrived, t.sunk, t.resolved, t.leftM, t.fromDirJa]).toEqual([true, 3, 3, 0, 0, false, 3040, '東']);
+    expect([t.enabled, t.total, t.afloat, t.arrived, t.sunk, t.resolved, t.fromDirJa]).toEqual([true, 3, 3, 0, 0, false, '東']);
+    expect(t.leftM).toBeCloseTo(2979.39 - 960 + 711.43, 1);
     expect([t.nearestDx, t.nearestDy, t.nearestM]).toEqual([0, 150, 150]);
   });
-  it('進む・上陸・沈没: 浜までは最も遅れた航行中の大発から、最寄りは航行中の大発だけ、決着でみな上陸か沈没。Result の材料は隻数・上陸・沈没・ノルマ 2・被弾', () => {
+  it('進む・上陸・沈没: 浜までは最も遅れた航行中の大発から（転舵の前は x の差 + 浜への道、後は上陸地点までの直線）、最寄りは航行中の大発だけ、決着でみな上陸か沈没。Result の材料は隻数・上陸・沈没・ノルマ 2・被弾', () => {
     const player: BoatState = { ...S.playerStart, speedMps: 0 };
     const cv = fakeConvoy();
     const w = cw(cv, player);
     const t = initConvoyTelemetry(w);
     for (let k = 0; k < 600; k++) stepConvoy(cv.state, cv.p, (1 / 60) * 5, noEv); // 10 秒 ≈ 180 m
     refreshConvoyTelemetry(t, w);
-    expect(t.leftM).toBeCloseTo(3040 - 180.04, 0);
+    expect(t.leftM).toBeCloseTo(2979.39 - 960 + 711.43 - 180.04, 0);
     expect(t.nearestM).toBeGreaterThan(150);
-    for (let k = 0; k < 5; k++) hitConvoyBarge(cv.state, 0, DAMAGE, 30, noEv); // 先頭が沈む → 最後尾は変わらず、最寄りは航行中の 2 隻のうち近い方（3 隻目: 自艇 x 1200 の西 59.96 m < 2 隻目の東 60.04 m）
+    for (let k = 0; k < 3; k++) hitConvoyBarge(cv.state, 0, DAMAGE, 30, noEv); // 先頭が沈む（HP 12 で 3 発） → 最後尾は変わらず、最寄りは航行中の 2 隻のうち近い方（3 隻目: 自艇 x 1200 の西 59.96 m < 2 隻目の東 60.04 m）
     refreshConvoyTelemetry(t, w);
     expect([t.afloat, t.sunk, t.arrived, t.resolved]).toEqual([2, 1, 0, false]);
     expect(t.nearestDx).toBeCloseTo(cv.state.barges[2]!.x - player.x, 6);
     expect(Math.abs(t.nearestDx)).toBeLessThan(Math.abs(cv.state.barges[1]!.x - player.x));
+    // 最後尾が浜へ向かい始めたら、浜までは最後尾から上陸地点までの直線（2 隻目も浜へ向かっていて近い）
+    const beach = cv.p.beach!;
+    const tail = cv.state.barges[2]!;
+    while (tail.leg === 0) stepConvoy(cv.state, cv.p, (1 / 60) * 5, noEv);
+    for (let k = 0; k < 60; k++) stepConvoy(cv.state, cv.p, (1 / 60) * 5, noEv);
+    refreshConvoyTelemetry(t, w);
+    expect(cv.state.barges[1]!.leg).toBe(1);
+    expect(t.leftM).toBeCloseTo(Math.hypot(beach.x[2]! - tail.x, beach.y - tail.y), 9);
+    expect(t.leftM).toBeLessThan(beach.runInM);
     cv.state.barges[1]!.phase = CV_ARRIVED;
     cv.state.barges[2]!.phase = CV_ARRIVED;
     cv.state.arrived = 2;
     refreshConvoyTelemetry(t, w);
     expect([t.afloat, t.arrived, t.resolved, t.leftM, t.nearestM]).toEqual([0, 2, true, 0, NaN]);
-    expect(convoyResult(w)).toEqual({ total: 3, arrived: 2, sunk: 1, quota: 2, hitsTaken: 5 });
+    expect(convoyResult(w)).toEqual({ total: 3, arrived: 2, sunk: 1, quota: 2, hitsTaken: 3 });
   });
 });
 

@@ -12,7 +12,7 @@ export interface ConvoyCell {
   /** 見つかった夜 %・見つかった秒の中央値・最初の標的が大発だった割合 %（見つかった夜のうち）、1 夜の大発への航過・自艇への航過・自艇への連射・標的の切り替え、大発への連射の合計（不変で 0） */
   detectedPct: number; detectMedS: number; firstBargePct: number; passesBarge: number; passesPlayer: number; bursts: number; burstsBarge: number; switches: number;
   /** 25mm: 1 夜の発射・命中、撃退した夜 %・撃沈した夜 %、1 夜の制圧、機関損傷の夜 % */
-  gunShots: number; gunHits: number; retiredPct: number; ptSunkPct: number; suppressions: number; engineHitPct: number;
+  gunShots: number; gunHits: number; retiredMean: number; retiredPct: number; ptSunkPct: number; suppressions: number; engineHitPct: number;
   /** 不変: 予告から初弾の最短秒、同時に航過中の最大、射程・視程（標的から）の外からの発射の合計、自艇の視程の外からの発射の合計、1 回の攻撃の最大命中（大発・自艇）、健全な大発が 1 回の航過で沈んだ数、決着の秒の中央値、夜明け後の決着 % */
   minWarnS: number; maxPassing: number; beyond: number; beyondPlayerSight: number; worstBarge: number; worstPlayer: number; singlePassKills: number; resolvedMedS: number; resolvedAfterDawnPct: number;
 }
@@ -34,7 +34,7 @@ export function runConvoyCell(s: ConvoySimSetup, policy: ConvoyPolicy, n: number
     hpMean: mean((r) => r.hpLost), playerHits: mean((r) => r.playerHits), fuelMed: quantile(home, 0.5), fuelP10: quantile(home, 0.1),
     detectedPct: pct((r) => r.detected), detectMedS: quantile(det.map((r) => r.detectS), 0.5), firstBargePct: det.length === 0 ? NaN : (100 * det.filter((r) => r.firstTargetBarge).length) / det.length,
     passesBarge: mean((r) => r.passesBarge), passesPlayer: mean((r) => r.passesPlayer), bursts: mean((r) => r.burstsPlayer), burstsBarge: sum((r) => r.burstsBarge), switches: mean((r) => r.switches),
-    gunShots: mean((r) => r.gunShots), gunHits: mean((r) => r.gunHits), retiredPct: pct((r) => r.ptRetired > 0), ptSunkPct: pct((r) => r.ptSunk > 0), suppressions: mean((r) => r.suppressions), engineHitPct: pct((r) => r.engineHit),
+    gunShots: mean((r) => r.gunShots), gunHits: mean((r) => r.gunHits), retiredMean: mean((r) => r.ptRetired), retiredPct: pct((r) => r.ptRetired > 0), ptSunkPct: pct((r) => r.ptSunk > 0), suppressions: mean((r) => r.suppressions), engineHitPct: pct((r) => r.engineHit),
     minWarnS: rs.reduce((a, r) => Math.min(a, r.minWarnS), Infinity), maxPassing: max((r) => r.maxPassing), beyond: sum((r) => r.beyondSight + r.beyondEff), beyondPlayerSight: sum((r) => r.beyondPlayerSight),
     worstBarge: max((r) => r.worstBargePassHits), worstPlayer: max((r) => r.worstPlayerPassHits), singlePassKills: sum((r) => r.singlePassKills),
     resolvedMedS: quantile(rs.filter((r) => !Number.isNaN(r.resolvedS)).map((r) => r.resolvedS), 0.5), resolvedAfterDawnPct: pct((r) => r.resolvedAfterDawn),

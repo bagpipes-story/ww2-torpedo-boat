@@ -33,7 +33,7 @@ export function convoyWaitShoreJa(leftStep: number): string {
   return `${CONVOY_WAIT_JA}  浜まで ${leftStep * CONVOY_LEFT_STEP_M} m`;
 }
 
-/** 「浜まで N m」の刻み（最も遅れた航行中の大発から上陸線まで。切り上げ。63 まで＝6,300 m） */
+/** 「浜まで N m」の刻み（最も遅れた航行中の大発から浜（上陸地点）まで。浜の無い隊は上陸線までの x の差。切り上げ。63 まで＝6,300 m） */
 export function convoyLeftStep(c: ConvoyTelemetry): number {
   return Math.min(63, Math.ceil(c.leftM / CONVOY_LEFT_STEP_M));
 }

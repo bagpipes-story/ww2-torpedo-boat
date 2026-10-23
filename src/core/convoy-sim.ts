@@ -32,6 +32,8 @@ export interface ConvoySimSetup extends PtSimSetup {
   convoy: ConvoyParams;
   detectBand: SpeedStep;
   rule: PtTargetRule;
+  /** 射撃ボタンを押す距離 m（v0.6.4 実機 1 回目。無ければ射程＝戦う PT が 600 m 以内に見えている間押す）。近くまで待って撃つ人の型（scripts の FIRER）を測る */
+  fireRangeM?: number;
 }
 
 export interface ConvoyTrial {
@@ -172,7 +174,8 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
   // 25mm（撃つ台本だけ。世界の PtSquadron と同じ: 着弾した生きた PT ごとに seed+20 から 1 回引いて hitPt）
   const g = sp.shoot ? s.gun : null;
   const gun = g ? createPtGun(g, s.gunShellPoolSize) : null;
-  const range2 = g ? g.rangeM * g.rangeM : 0;
+  const fireM = g ? Math.min(g.rangeM, s.fireRangeM ?? g.rangeM) : 0;
+  const range2 = fireM * fireM;
   const gunEv: GunEvents = { onFire: () => {}, onHit: (i, gi) => hitPt(q, p, i, g!.groups[gi]!.damage, gunRng.next(), ev), onMiss: () => {} };
   const steer: ConvoySteer = { headingDeg: NaN, wantMps: 0 };
   const ctx: ConvoySteerCtx = { boat, f, cp, q, ring: s.ring, visRange2: s.visRange2, silentMps: s.boat.silentMaxMps, cruiseMps: s.boat.speedCruiseMps };

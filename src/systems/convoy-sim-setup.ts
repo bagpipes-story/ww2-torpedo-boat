@@ -9,9 +9,11 @@ import type { ConvoyPolicy } from '../core/convoy-sim-policy';
 import { ptSimSetup, type PtSimOverrides } from './pt-pass-sim-setup';
 import { buildWorldSetup } from './world-setup';
 
-/** 感度を見る上書き（無ければ data の値）: 大発の HP・大発が見つかる帯・標的の keep 比・切り替えのロック秒・閃光の記憶の秒・25mm の 1 発の被害。残りは pt-pass-sim-setup の上書き（GRPM・GMAG・GDISP・ALLOT・DAWN…） */
+/** 感度を見る上書き（無ければ data の値）: 大発の HP・大発が見つかる帯・標的の keep 比・切り替えのロック秒・閃光の記憶の秒・25mm の 1 発の被害と散布の最小半径・射撃ボタンを押す距離。残りは pt-pass-sim-setup の上書き（GRPM・GMAG・GDISP・ALLOT・DAWN…） */
 export interface ConvoySimOverrides extends PtSimOverrides {
   bargeHp?: number; detectBand?: SpeedStep; keepRatio?: number; holdS?: number; flashHoldS?: number; gunDamage?: number;
+  /** 25mm の散布の最小半径 m（艇の gun_battery.min_spread_m の上書き。0 で外したのと同じ）・射撃ボタンを押す距離 m（模擬の台本の上書き。data は変えない） */
+  gunFloorM?: number; fireRangeM?: number;
 }
 
 export function convoySimSetup(data: GameData, missionId: string, o: ConvoySimOverrides = {}): ConvoySimSetup {
@@ -19,12 +21,12 @@ export function convoySimSetup(data: GameData, missionId: string, o: ConvoySimOv
   const base = ptSimSetup(d, missionId, o);
   const w = buildWorldSetup(d, missionId); // 揺らぎなし（= getConvoyParams）。試行ごとに seed の夜を当てる（convoy-sim の convoyNight）
   if (!w.convoy) throw new Error(`${missionId} に味方の大発の輸送隊（v0_1_prototype.convoy）が無い`);
-  return { ...base, convoy: w.convoy.params, detectBand: w.convoy.detectBand, rule: w.convoy.rule };
+  return { ...base, convoy: w.convoy.params, detectBand: w.convoy.detectBand, rule: w.convoy.rule, ...(o.fireRangeM !== undefined ? { fireRangeM: o.fireRangeM } : {}) };
 }
 
-/** 輸送隊と 25mm の被害の上書きを当てた data の写し（上書きが無ければそのまま）。世界と同じ検査を通す */
+/** 輸送隊と 25mm の被害・最小散布の上書きを当てた data の写し（上書きが無ければそのまま）。世界と同じ検査を通す */
 function withConvoyOverrides(data: GameData, missionId: string, o: ConvoySimOverrides): GameData {
-  if ([o.bargeHp, o.detectBand, o.keepRatio, o.holdS, o.flashHoldS, o.gunDamage].every((v) => v === undefined)) return data;
+  if ([o.bargeHp, o.detectBand, o.keepRatio, o.holdS, o.flashHoldS, o.gunDamage, o.gunFloorM].every((v) => v === undefined)) return data;
   type Rec = Record<string, unknown>;
   const missions = (data.missionsSeed.missions as readonly Rec[]).map((m) => {
     if (m['id'] !== missionId) return m;
@@ -35,8 +37,10 @@ function withConvoyOverrides(data: GameData, missionId: string, o: ConvoySimOver
   });
   const boatId = getPrototypeMission(data, missionId).playerBoatId;
   const boats = (data.boats.boats as readonly Rec[]).map((b) => {
-    const g = b['id'] === boatId && o.gunDamage !== undefined ? (b['gun_battery'] as { groups: Rec[] } | undefined) : undefined;
-    return g ? { ...b, gun_battery: { ...g, groups: [{ ...g.groups[0], damage: o.gunDamage }, ...g.groups.slice(1)] } } : b;
+    const g = b['id'] === boatId && (o.gunDamage !== undefined || o.gunFloorM !== undefined) ? (b['gun_battery'] as { groups: Rec[] } | undefined) : undefined;
+    if (!g) return b;
+    const groups = o.gunDamage !== undefined ? [{ ...g.groups[0], damage: o.gunDamage }, ...g.groups.slice(1)] : g.groups;
+    return { ...b, gun_battery: { ...g, groups, ...(o.gunFloorM !== undefined ? { min_spread_m: o.gunFloorM } : {}) } };
   });
   return { ...data, missionsSeed: { ...data.missionsSeed, missions }, boats: { ...data.boats, boats } } as unknown as GameData;
 }
@@ -45,7 +49,7 @@ type Band = readonly [number, number];
 /** 帯を掛ける列（ConvoyCell の名前）と表の名前 */
 const METRICS = {
   arrivedMean: '到達/3', arrived3Pct: '3 隻の夜 %', arrived2Pct: '2 隻以上の夜 %', bargesSunkMean: '沈んだ大発', sunkPct: '自艇の沈没 %', homePct: '帰投 %', afterDawnPct: '夜明け後の帰投 %',
-  hpMean: '失った HP', retiredPct: '撃退の夜 %', passesBarge: '大発への航過', passesPlayer: '自艇への航過',
+  hpMean: '失った HP', retiredPct: '撃退の夜 %', retiredMean: '撃退/夜', passesBarge: '大発への航過', passesPlayer: '自艇への航過',
 } as const;
 type Metric = keyof typeof METRICS;
 /** 対の帯: [列, 相手の遊び方, 差の下限, 上限]（この行 − 相手。端を含む。相手は同じ seed） */
@@ -70,29 +74,37 @@ const row = (policy: ConvoyPolicy, star: boolean, bands: Partial<Record<Metric, 
 
 /**
  * 回帰の帯（spec §F.4。lead の難しさの帯ではない）: 今の data で測った値のまわりに置き、data や core が動いて遊びが変わったら落ちる。根拠は N 200 × 4 組（seed 1・201・401・601）の
- * 最小〜最大に N 200 の揺らぎ（到達 ±0.1・% ±4）を足したもの。端を含む。設計の目標（spec §A）は HUD どおりで 2.2〜2.5 隻・3 隻の夜 30〜55%・自艇の沈没 8〜15% だが、
- * 測った shield_full の 3 隻の夜は 53〜58%（N 400 × 2 組）・53〜63%（N 200 × 4 組）で目標の簡単側に出ている（lead の判断事項 (a) で受け入れた。帯はこの測った値を守る）。
- * 3 隻の夜の上の端 64 は簡単側への揺れを捕まえる: 4 組とも通る一番きつい値（seed 401 の組が shield_full 63）で、barge_hp 24 なら seed 1〜200 で shield_full 66%・follow_full 73% になり落ちる。
- * 行ごと: HUD どおり（shield_full: 寄って撃って転舵）は 2.2〜2.6 隻・3 隻の夜 45〜64%・自艇の沈没 4〜16%・2 隻以上 82% 超、後ろに付いて撃って転舵（follow_full）も同程度（3 隻の夜 50〜64%）、
- * 隠れる（none）と 0.7〜1.3 隻（守らなければ 2 隻沈む）で夜明け後の帰投＝空襲、撃つだけで転舵しないと 19〜30% 沈む（転舵の効きが正: follow_full より 8 点以上）、
- * 遠くから撃つだけも逃れられない（follow_shoot − 8 以上）、付くだけ・間に入るだけは罠（40%・85% 以上沈む）、囮は到達 0 で帰投 700 点だけ、見捨てると 0 隻で帰り道の哨戒線に 35〜50% 沈む。lead_shoot・shield_dodge は表だけ
+ * 最小〜最大に N 200 の揺らぎ（到達 ±0.1・% ±4・HP ±4・撃退/夜 ±0.08）を足したもの。端を含む。設計の目標（v0.6.4 実機 1 回目）は HUD どおり（shield_full・follow_full）で
+ * 到達 2.0〜2.5 隻・3 隻の夜 30〜55%・自艇の沈没 8〜15%・2 隻以上の夜 75% 以上。測った値（N 400 × 2 組）は shield_full 2.40〜2.41 隻・52〜53%・10.5〜11.8%、follow_full 2.17〜2.21 隻・36〜38%・9.5〜11.2%。
+ * 3 隻の夜の上の端 58 は簡単側への揺れを捕まえる: barge_hp を 1 段上げる（12 → 16）と seed 1〜200 で shield_full 61.5% になり落ちる（tests/convoy-sim-g）。
+ * 行ごと: HUD どおり（shield_full: 寄って撃って転舵）は 2.3〜2.52 隻・3 隻の夜 47〜58%・自艇の沈没 6〜17%・2 隻以上 84% 以上・撃退/夜 0.44〜0.70（25mm の最小散布。外すと上の端を越える）、
+ * 撃たずに転舵するだけ（shield_dodge）より到達 0.15 隻以上多い（砲が効く）。後ろに付いて撃って転舵（follow_full）は 2.0〜2.4 隻・3 隻の夜 29〜44%。
+ * 隠れる（none）と 0.7〜1.1 隻（守らなければ約 2 隻沈む）で、決着が早く夜明けの前に帰り道へ出て 30〜43% 沈む（夜明け後の帰投は 25〜37%）。撃つだけで転舵しないと 18〜31% 沈む
+ * （転舵の効きが正: follow_full より 8 点以上）、遠くから撃つだけも逃れられない（follow_shoot − 1 以上）。付くだけ・間に入るだけは 20〜32%・38〜49% 沈む（大発が 600 m で見つかるので、撃たない艇は狙われにくい）。
+ * 囮は到達 0 で帰投 700 点だけ、見捨てると 0 隻で帰り道に 3〜13% 沈む（輪が浜の近く）。lead_shoot・shield_dodge の行は表だけ
  */
 export const CONVOY_CALIBRATION: readonly ConvoyCalibrationRow[] = [
-  row('none', true, { arrivedMean: [0.7, 1.3], sunkPct: [0, 15], homePct: [85, 100], afterDawnPct: [80, 100], passesBarge: [3.5, Infinity], passesPlayer: [0, 2] }, [], ['0.91〜0.93', '8.0〜9.3']),
-  row('follow', false, { sunkPct: [40, 100] }, [], ['1.24', '52.0〜53.5']),
-  row('follow_shoot', true, { arrivedMean: [1.9, 2.3], sunkPct: [19, 30], bargesSunkMean: [0, 0.6] }, [['sunkPct', 'follow_full', 8, Infinity]], ['2.11〜2.14', '24.3〜24.8']),
-  row('follow_dodge', false, { arrivedMean: [1.7, Infinity], sunkPct: [28, 46] }, [], ['1.94〜2.00', '34.5〜37.8']),
-  row('follow_full', true, { arrivedMean: [2.3, 2.6], sunkPct: [7, 19], arrived3Pct: [50, 64], arrived2Pct: [85, 100], afterDawnPct: [0, 25] }, [], ['2.48〜2.51', '11.5〜13.0']),
-  row('shield', false, { sunkPct: [85, 100] }, [], ['0.43〜0.50', '93.8〜95.5']),
-  row('shield_shoot', false, { arrivedMean: [1.9, 2.4], sunkPct: [17, 38] }, [], ['2.12〜2.17', '26.0〜29.8']),
-  row('shield_dodge', false, {}, [], ['2.05〜2.07', '29.5〜31.5']),
-  row('shield_full', true, { arrivedMean: [2.2, 2.6], sunkPct: [4, 16], arrived3Pct: [45, 64], arrived2Pct: [82, 100], hpMean: [26, 38], retiredPct: [45, 100], afterDawnPct: [0, 10] }, [], ['2.38〜2.46', '9.0〜10.0']),
-  row('far_shoot', false, { arrivedMean: [2.0, 2.5], sunkPct: [15, 30] }, [['sunkPct', 'follow_shoot', -8, Infinity]], ['2.21〜2.27', '22.3〜23.8']),
-  row('far_full', false, { arrivedMean: [2.5, Infinity], sunkPct: [8, 22], afterDawnPct: [20, 100] }, [], ['2.63〜2.69', '12.8〜16.3']),
-  row('lead', false, { arrivedMean: [0, 0.2], sunkPct: [22, 100] }, [], ['0.02〜0.04', '32.0〜34.3'], 3),
-  row('lead_shoot', false, {}, [], ['0.02〜0.04', '18.3〜21.5'], 3),
-  row('dash_home', false, { arrivedMean: [0, 0], sunkPct: [35, 50] }, [], ['0.00', '42.3〜44.0']),
+  row('none', true, { arrivedMean: [0.7, 1.1], sunkPct: [30, 43], afterDawnPct: [25, 37], passesBarge: [2.5, Infinity], passesPlayer: [0, 2.2] }, [], ['0.88〜0.89', '36.2〜38.2']),
+  row('follow', false, { sunkPct: [20, 32] }, [], ['1.49〜1.52', '24.8〜26.8']),
+  row('follow_shoot', true, { arrivedMean: [1.85, 2.2], sunkPct: [18, 31], bargesSunkMean: [0, 0.9] }, [['sunkPct', 'follow_full', 8, Infinity]], ['1.98〜2.02', '24.5']),
+  row('follow_dodge', false, { arrivedMean: [1.55, 1.95], sunkPct: [7, 20] }, [], ['1.70〜1.74', '12.5〜14.5']),
+  row('follow_full', true, { arrivedMean: [2.0, 2.4], sunkPct: [3, 18], arrived3Pct: [29, 44], arrived2Pct: [77, 91], afterDawnPct: [0, 6] }, [], ['2.17〜2.21', '9.5〜11.2']),
+  row('shield', false, { sunkPct: [38, 49] }, [], ['1.84〜1.85', '42.5〜45.0']),
+  row('shield_shoot', false, { arrivedMean: [2.0, 2.4], sunkPct: [26, 37] }, [], ['2.20〜2.24', '31.2〜32.0']),
+  row('shield_dodge', false, {}, [], ['2.04〜2.09', '14.8〜17.8']),
+  row('shield_full', true, { arrivedMean: [2.3, 2.52], sunkPct: [6, 17], arrived3Pct: [47, 58], arrived2Pct: [84, 100], hpMean: [30, 40], retiredPct: [42, 100], retiredMean: [0.44, 0.7], afterDawnPct: [0, 5] }, [['arrivedMean', 'shield_dodge', 0.15, Infinity]], ['2.40〜2.41', '10.5〜11.8']),
+  row('far_shoot', false, { arrivedMean: [1.45, 1.9], sunkPct: [26, 40] }, [['sunkPct', 'follow_shoot', -1, Infinity]], ['1.68〜1.71', '30.2〜33.2']),
+  row('far_full', false, { arrivedMean: [1.92, 2.25], sunkPct: [11, 22], afterDawnPct: [0, 8] }, [], ['2.08', '15.2〜16.2']),
+  row('lead', false, { arrivedMean: [0, 0.25], sunkPct: [13, 26] }, [], ['0.09〜0.10', '19.2〜19.5'], 3),
+  row('lead_shoot', false, {}, [], ['0.09', '13.8〜16.0'], 3),
+  row('dash_home', false, { arrivedMean: [0, 0], sunkPct: [3, 13] }, [], ['0.00', '8.2〜8.8']),
 ];
+
+/**
+ * 近くまで待って撃つ人の型（v0.6.4 実機 1 回目のユーザー: 間に入って止まり気味に 200 m 以内で撃ち、転舵しない。1 夜 60 発 27 命中＝45%・撃退 2）の帯: 25mm の命中 %（gunHits / gunShots）と
+ * 撃退/夜（N 200・seed 1。tests/convoy-sim-h）。N 200 × 4 組（seed 1・201・401・601）の実測は命中 21.4〜22.45%・撃退 0.60〜0.69（seed 1 は 22.45%・0.69）。最小散布を外すと seed 1 の命中は 55.5%・撃退 1.68
+ */
+export const CONVOY_CLOSE_FIRE = { policy: 'shield_shoot', fireRangeM: 200, hitPct: [19, 25], retiredMean: [0.5, 0.8] } as const;
 
 /** 行の帯（対の帯は cell で相手の行を読む。同じ seed）と不変を外れた項目（空なら合格） */
 export function convoyCalibrationMisses(r: ConvoyCalibrationRow, cell: (policy: ConvoyPolicy) => ConvoyCell, s: ConvoySimSetup): string[] {

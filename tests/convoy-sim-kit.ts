@@ -1,6 +1,6 @@
 // 味方の大発を守る模擬の帯の検査の共通（v0.6.4。spec §F.4・§F.5。tests/pt-sim-kit の写し）: jp_01 の N 200・seed 1〜200 の表を 1 ファイルに 1 回だけ回し、遊び方の帯と不変を外れた項目を返す。
 // 14 の遊び方のうち帯のある 12 行を SIM_FILES のファイルに分ける（1 夜が 170〜200 秒なので 1 行 N 200 で node 5 秒ほど・vitest はその 1.3 倍ほど。1 ファイル 2〜3 行で vitest の tests 13〜16 秒。4 コアの VM で 1 ファイルずつ測って a 13〜15・b 16・c 13〜14・d 15〜16・e 13〜14・f 13〜14 秒、CI のランナーはこれより遅いことがある）。
-// 対の帯（follow_shoot − follow_full・far_shoot − follow_shoot）の相手は同じファイルで回す（cell が同じ seed で遅延して回す。ファイルどうしで同じ行を回し直さない）。lead_shoot・shield_dodge は表（scripts）だけ。
+// 対の帯（follow_shoot − follow_full・far_shoot − follow_shoot・shield_full − shield_dodge）の相手は同じファイルで回す（cell が同じ seed で遅延して回す。ファイルどうしで同じ行を回し直さない）。lead_shoot・shield_dodge の行の帯は表（scripts）だけ。
 import { expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { ConvoyPolicy } from '../src/core/convoy-sim-policy';

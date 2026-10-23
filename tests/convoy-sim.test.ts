@@ -24,9 +24,11 @@ describe('味方の大発を守る模擬（v0.6.4、spec §F）', () => {
     const m = getPrototypeMission(gameData, 'jp_01');
     expect(s.pt).toEqual(getPtParams(gameData, m, TS));
     expect([s.pt, s.boat, s.damage, s.fuel, s.crew, s.vis, s.ring, s.start]).toEqual([w.ptBoats, w.boatParams, w.damageParams, w.fuelCurve, w.crew, w.vis, w.mission.returnPoint, w.playerStart]);
-    expect([s.convoy, s.detectBand, s.rule]).toEqual([w.convoy!.params, 'stop', { keepRatio2: 0.8 * 0.8, lockS: 1, flashHoldS: 1 }]);
-    expect([s.convoy.count, s.convoy.hp, s.convoy.quota, s.convoy.landingX, s.convoy.leadX, s.convoy.leadY, s.convoy.headingDeg, s.convoy.offsetsM]).toEqual([3, 20, 2, 4000, 1200, 2550, 90, [0, 120, 240]]);
-    expect([s.fuelGal, s.durationS, s.timeScale, s.stepS, s.gun?.label, s.gun?.magazine, s.gun?.groups[0]?.roundsPerMin, s.gun?.groups[0]?.damage]).toEqual([19, 200, TS, FIXED_STEP_S, '25mm機銃', { rounds: 15, reloadS: 3.2 }, 220, 4]);
+    expect([s.convoy, s.detectBand, s.rule]).toEqual([w.convoy!.params, 'silent', { keepRatio2: 0.8 * 0.8, lockS: 1, flashHoldS: 1 }]);
+    expect([s.convoy.count, s.convoy.hp, s.convoy.quota, s.convoy.landingX, s.convoy.leadX, s.convoy.leadY, s.convoy.headingDeg, s.convoy.offsetsM]).toEqual([3, 12, 2, 3600, 1200, 2550, 90, [0, 120, 240]]);
+    expect(s.convoy.beach).toEqual(w.convoy!.params.beach);
+    expect([s.fuelGal, s.durationS, s.timeScale, s.stepS, s.gun?.label, s.gun?.magazine, s.gun?.minSpreadM, s.gun?.groups[0]?.roundsPerMin, s.gun?.groups[0]?.damage]).toEqual([19, 200, TS, FIXED_STEP_S, '25mm機銃', { rounds: 15, reloadS: 3.2 }, 22, 220, 4]);
+    expect('fireRangeM' in s).toBe(false); // 射撃ボタンは射程 600 m の内で押す（上書きしたときだけ鍵がある）
     expect([s.nightEnemyRolls, s.nightBatteries, s.night]).toEqual([1, 0, w.mission.night]);
     // 米PT の部分は jp_05 と同じ組み立て（ptSimSetup）
     const pt = ptSimSetup(gameData, 'jp_01');
@@ -38,18 +40,22 @@ describe('味方の大発を守る模擬（v0.6.4、spec §F）', () => {
       expect(night.pt, `seed ${seed}`).toEqual(ptNightParams(s, seed));
       expect(night.convoy, `seed ${seed}`).toEqual(game.convoy!.params);
       expect(Math.abs(night.convoy.leadX - 1200), `seed ${seed}`).toBeLessThanOrEqual(250);
-      expect([night.convoy.headingDeg, night.convoy.landingX], `seed ${seed}`).toEqual([90, 4000]); // mirror_chance 0
+      expect([night.convoy.headingDeg, night.convoy.landingX], `seed ${seed}`).toEqual([90, 3600]); // mirror_chance 0
+      expect(night.convoy.beach, `seed ${seed}`).toBe(s.convoy.beach); // 浜は地形（揺らぎで動かない）
     }
-    // 出発で大発が見つからない: PT の出発の隅（clamp 込み）から船団まで約 1,464 m ≥ 停止の帯 480 × 史実 1.3 = 624 m
+    // 出発で大発が見つからない: PT の出発の隅（clamp 込み）から船団まで約 1,464 m ≥ 静音の帯 600 × 史実 1.3 = 780 m
     expect(convoyStartClearM(s.pt, m)).toBeCloseTo(1463.7, 0);
     expect(() => convoySimSetup(gameData, 'jp_05')).toThrow(/convoy/);
   });
 
-  it('上書き（scripts の BHP・DBAND・KEEP・HOLD・FLASHHOLD・GDMG・GRPM・GMAG・ALLOT・DAWN）は data の写しに当てて検査を通る。data は変えない', () => {
-    const s = convoySimSetup(gameData, 'jp_01', { bargeHp: 24, detectBand: 'silent', keepRatio: 1, holdS: 0, flashHoldS: 3.2, gunDamage: 3, gunRpm: 180, magRounds: 12, fuelGal: 18, dawnS: 210 });
-    expect([s.convoy.hp, s.detectBand, s.rule, s.gun!.groups[0]!.damage, s.gun!.groups[0]!.roundsPerMin, s.gun!.magazine, s.fuelGal, s.durationS]).toEqual([24, 'silent', { keepRatio2: 1, lockS: 0, flashHoldS: 3.2 }, 3, 180, { rounds: 12, reloadS: 3.2 }, 18, 210]);
+  it('上書き（scripts の BHP・DBAND・KEEP・HOLD・FLASHHOLD・GDMG・GRPM・GMAG・ALLOT・DAWN・GFLOOR・FIRER）は data の写しに当てて検査を通る。data は変えない', () => {
+    const s = convoySimSetup(gameData, 'jp_01', { bargeHp: 24, detectBand: 'stop', keepRatio: 1, holdS: 0, flashHoldS: 3.2, gunDamage: 3, gunRpm: 180, magRounds: 12, fuelGal: 18, dawnS: 210, gunFloorM: 18, fireRangeM: 200 });
+    expect([s.convoy.hp, s.detectBand, s.rule, s.gun!.groups[0]!.damage, s.gun!.groups[0]!.roundsPerMin, s.gun!.magazine, s.fuelGal, s.durationS]).toEqual([24, 'stop', { keepRatio2: 1, lockS: 0, flashHoldS: 3.2 }, 3, 180, { rounds: 12, reloadS: 3.2 }, 18, 210]);
+    expect([s.gun!.minSpreadM, s.fireRangeM]).toEqual([18, 200]);
+    expect(convoySimSetup(gameData, 'jp_01', { gunFloorM: 0 }).gun!.minSpreadM).toBe(0); // 0 は外したのと同じ（比例の円のまま）
     const base = convoySimSetup(gameData, 'jp_01');
-    expect([base.convoy.hp, base.detectBand, base.gun!.groups[0]!.damage, base.gun!.groups[0]!.roundsPerMin]).toEqual([20, 'stop', 4, 220]);
+    expect([base.convoy.hp, base.detectBand, base.gun!.groups[0]!.damage, base.gun!.groups[0]!.roundsPerMin, base.gun!.minSpreadM]).toEqual([12, 'silent', 4, 220, 22]);
+    expect(() => convoySimSetup(gameData, 'jp_01', { gunFloorM: -1 })).toThrow(/min_spread_m は 0 以上/);
     expect(() => convoySimSetup(gameData, 'jp_01', { bargeHp: 0 })).toThrow(/barge_hp/);
     expect(() => convoySimSetup(gameData, 'jp_01', { keepRatio: 1.2 })).toThrow(/target_keep_ratio/);
     expect(() => convoySimSetup(gameData, 'jp_01', { detectBand: 'full' })).toThrow(/出発で大発が見つかる/); // 全速の帯 1,920 × 1.3 > 1,464 m
@@ -67,7 +73,7 @@ describe('味方の大発を守る模擬（v0.6.4、spec §F）', () => {
     expect(CONVOY_CALIBRATION.map((x) => x.policy)).toEqual([...CONVOY_POLICIES]);
     expect(CONVOY_CALIBRATION.filter((x) => x.star).map((x) => x.policy)).toEqual(['none', 'follow_shoot', 'follow_full', 'shield_full']);
     for (const p of CONVOY_POLICIES) expect([CONVOY_POLICY_SPECS[p].shoot, CONVOY_POLICY_SPECS[p].dodge], p).toEqual([p.endsWith('_shoot') || p.endsWith('_full'), p.startsWith('lead') || p.endsWith('_dodge') || p.endsWith('_full')]);
-    // 帯のある行は 6 つのファイルで 1 回ずつ回す（表だけの lead_shoot・shield_dodge は回さない）。対の相手は同じファイルで回る（相手を含めて 1 ファイル 3 行まで）
+    // 帯のある行は 6 つのファイルで 1 回ずつ回す（表だけの lead_shoot は回さない。帯の無い shield_dodge は shield_full の対の相手として a で回る）。対の相手は同じファイルで回る（相手を含めて 1 ファイル 3 行まで）
     const files = Object.values(SIM_FILES) as readonly (readonly ConvoyPolicy[])[];
     expect(files.flat().sort()).toEqual(CONVOY_CALIBRATION.filter((x) => Object.keys(x.bands).length > 0).map((x) => x.policy).sort());
     for (const f of files) expect(new Set([...f, ...f.flatMap((p) => simPartners(p))]).size, f.join(',')).toBeLessThanOrEqual(3);

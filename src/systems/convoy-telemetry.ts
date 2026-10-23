@@ -1,6 +1,6 @@
 // 味方の大発の輸送隊（v0.6.4。jp_01。docs/02 §6.4、spec §D.2・§D.3）の HUD 向けテレメトリと Result の材料。mission-telemetry から呼ぶ（pt-telemetry と同じ形）。
 // テレメトリの convoy は createTelemetry で 1 回だけ作り（initConvoyTelemetry）、refreshConvoyTelemetry が毎フレーム 1 回だけ中身を書き換える（§7: 確保しない。
-// 平方根は端の矢印・離脱の尾の「大発 N m」の 1 回だけ。「浜まで」は x の差）。輸送隊の無い任務は enabled false のまま何も書かない。
+// 平方根は端の矢印・離脱の尾の「大発 N m」の 1 回と、「浜まで」の浜へ向かっている大発の分（多くて隻数。core/convoy の convoyLeftM。浜の無い隊は x の差）。輸送隊の無い任務は enabled false のまま何も書かない。
 // 世界は構造の型 ConvoyTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
 import type { BoatState } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';

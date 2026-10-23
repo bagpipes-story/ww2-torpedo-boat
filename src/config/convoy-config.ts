@@ -14,5 +14,15 @@ export const CONVOY_TARGET_LABEL = `${CONVOY_MARKER_LABEL}\n狙われている`;
 export const CONVOY_MARKER_STEP_M = 100;
 /** 離脱の行に「大発のそばへ戻れ」を足す距離 m（最寄りの航行中の大発がこれより遠い） */
 export const CONVOY_NEAR_WARN_M = 500;
-/** 平常の行「浜まで N m」の刻み m（切り上げ。最も遅れた航行中の大発から上陸線まで） */
+/** 平常の行「浜まで N m」の刻み m（切り上げ。最も遅れた航行中の大発から浜（上陸地点）まで。浜の無い隊は上陸線までの x の差） */
 export const CONVOY_LEFT_STEP_M = 100;
+
+/** 浜に上陸した大発（v0.6.4 実機 1 回目「何もない海の真ん中で消えていく」）: 絵は浜に残す（少し暗い色・不透明）、ラベルは「上陸」 */
+export const CONVOY_BEACHED_LABEL = '上陸';
+export const CONVOY_BEACHED_TINT = 0xb0b0b0;
+export const CONVOY_BEACHED_ALPHA = 1;
+/** 上陸地点の印（起動時に 1 回だけ描く。systems/convoy）: 岸の線の上の砂色の帯（上陸地点の両端から余白 m・線の幅）、陸の側のラベルとその岸からの距離 m */
+export const CONVOY_LANDING_MARK_LABEL = '上陸地点';
+export const CONVOY_LANDING_MARK_PAD_M = 40;
+export const CONVOY_LANDING_MARK_WIDTH = 10;
+export const CONVOY_LANDING_MARK_LABEL_OFFSET_M = 40;

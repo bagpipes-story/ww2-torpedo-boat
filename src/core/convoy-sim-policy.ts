@@ -1,7 +1,7 @@
 // 味方の大発を守る模擬（core/convoy-sim）の遊び方の台本（v0.6.4。spec §F.2。pt-sim-policy と同じ考え: 艇長に見えるものだけを使う）。Phaser 非依存・毎ステップ確保しない。
 // 動き（move）: none 出発点で止まって隠れ、決着（みな上陸か沈没）の後に巡航で帰投 / follow 最後尾の 200 m 後ろ・120 m 沖に 13 kt 以下で付く（着けば 7 kt）/ far 最後尾の 450 m 後ろ（遠くから撃つだけ）/
 //   shield 脅威の PT が見えたら、その PT に最も近い大発から PT の方へ 150 m の点へ（見えなければ船団の真ん中の 180 m 沖）/ lead 先頭の 700 m 前・150 m 沖に静音で先行（先に見つかる囮。見つかったら輪へ巡航）/
-//   dash 出発直後に巡航で輪へ（見捨てる）。shoot: 600 m 以内に戦う PT が見えている間 射撃を押す。dodge: 自艇への赤い線で HUD どおり（航過は逃げる針路へ全速 4 秒、連射は PT から離れる向きへ全速）。
+//   dash 出発直後に巡航で輪へ（見捨てる）。shoot: 600 m（ConvoySimSetup.fireRangeM があればその距離）以内に戦う PT が見えている間 射撃を押す。dodge: 自艇への赤い線で HUD どおり（航過は逃げる針路へ全速 4 秒、連射は PT から離れる向きへ全速）。
 // 決着の後（none 以外）と航行中の大発が無いときは巡航で帰投（輪に入った瞬間に終わる＝core/mission-flow と同じ）。
 import type { BoatState } from './boat-motion';
 import { convoyLeadIndex, convoyTailIndex, type ConvoyParams, type ConvoyState } from './convoy';
@@ -78,9 +78,11 @@ export function convoySteer(sp: ConvoyPolicySpec, c: ConvoySteerCtx, resolved: b
   }
   const ux = Math.sin(degToRad(c.cp.headingDeg));
   const offY = c.cp.leadY;
+  // 浜のある隊（v0.6.4 実機 1 回目）: 沖の距離は大発の今の y から（浜へ向かう大発に付いていく）。浜の無い隊は航路の y のまま（v0.6.4 の表と同じ）
+  const beach = c.cp.beach !== undefined;
   if (sp.move === 'follow' || sp.move === 'far') {
     const tb = c.f.barges[tail]!;
-    toward(c, tb.x - ux * (sp.move === 'far' ? CONVOY_PLAY.farAsternM : CONVOY_PLAY.followAsternM), offY - CONVOY_PLAY.followOffM, c.silentMps, c.cp.speedMps, out);
+    toward(c, tb.x - ux * (sp.move === 'far' ? CONVOY_PLAY.farAsternM : CONVOY_PLAY.followAsternM), (beach ? tb.y : offY) - CONVOY_PLAY.followOffM, c.silentMps, c.cp.speedMps, out);
   } else if (sp.move === 'shield') {
     const ti = threatIndex(c.q, c.boat.x, c.boat.y);
     const pt = ti >= 0 ? c.q.boats[ti]! : null;
@@ -102,11 +104,11 @@ export function convoySteer(sp: ConvoyPolicySpec, c: ConvoySteerCtx, resolved: b
     } else {
       const tb = c.f.barges[tail]!;
       const lb = c.f.barges[convoyLeadIndex(c.f, c.cp)]!;
-      toward(c, (tb.x + lb.x) / 2, offY - CONVOY_PLAY.shieldOffM, c.silentMps, c.cp.speedMps, out);
+      toward(c, (tb.x + lb.x) / 2, (beach ? (tb.y + lb.y) / 2 : offY) - CONVOY_PLAY.shieldOffM, c.silentMps, c.cp.speedMps, out);
     }
   } else if (fled) home(c, out);
   else {
     const lb = c.f.barges[convoyLeadIndex(c.f, c.cp)]!;
-    toward(c, lb.x + ux * CONVOY_PLAY.leadAheadM, offY - CONVOY_PLAY.leadOffM, c.silentMps, c.cp.speedMps, out);
+    toward(c, lb.x + ux * CONVOY_PLAY.leadAheadM, (beach ? lb.y : offY) - CONVOY_PLAY.leadOffM, c.silentMps, c.cp.speedMps, out);
   }
 }
