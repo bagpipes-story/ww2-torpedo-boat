@@ -403,7 +403,7 @@ describe('米PT の隊（core/pt-boats、spec §G.1）', () => {
     expect(straightHits).toBeGreaterThan(200);
     expect(turnHits).toBeLessThan(0.9 * straightHits);
     expect(fullHits).toBeLessThan(0.6 * straightHits);
-    // 1 ファイルずつなら約 4.8 秒で、vitest の既定 5 秒の際（v0.6.4 の模擬の帯 7 ファイルと並ぶ npm test で 5,166 ms の打ち切りが出た）。ほかの模擬の it と同じ 60 秒に
+    // 約 4.8 秒の it で、素の `npx vitest run` では既定 5 秒が効いて際どい（v0.6.4 の模擬の帯 7 ファイルと並べて 5,166 ms で打ち切られた）。npm test は --testTimeout=90000 なので守りはこちら向け。ほかの模擬の it と同じ 60 秒に
   }, 60_000);
 
   it('6 見失う: 航過の後に艇が止まり 700 m 先（停止 480 m では見つからない）→ 8 秒で隊は見失って哨戒へ。航過の数は変わらない。見えない間の突撃は推した位置（全速で北へ）へ向かい、本当の位置には寄らない', () => {
