@@ -13,6 +13,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(aimAssistJa && !s.ptBoats ? { aimAssistJa } : {}),
     // 米PT の任務（v0.6.3）は条件の武器の句: 砲の名から（実機 1 回目から jp_05 は T-14 の 13mm、v0.6.4 の jp_01 は T-38 の 25mm）か撃たない（none）。他の任務は鍵ごと省く
     ...(s.ptBoats ? { weaponJa: s.guns ? ptGunBriefingJa(s.guns.label) : NO_WEAPON_BRIEFING_JA } : {}),
+    // 輸送隊の任務（v0.6.4 レビュー ux-6。jp_01）は帰投地点の方角を自艇の出発点から（中心からの「南東」は出発点からは東・上陸の先頭からは北東だった）。他の任務は鍵ごと省く
+    ...(s.convoy ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),

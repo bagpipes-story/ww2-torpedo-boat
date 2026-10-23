@@ -3,12 +3,13 @@
 // v0.6.2 実機 1 回目: 左上の時計の色、2 行目が時計を避ける倍率、空襲の行の後ろの「大発 岸へ N 隻」。
 // v0.6.2 実機 2 回目: 夜明けの秒数は左上の時計だけ（2 行目には出さない。ユーザー「メインメッセージの方に夜明けまでの秒数は不用」）。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
-import { HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
+import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
-import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
+import { DAWN_AIR_ENEMY, DAWN_AIR_NONE, DAWN_AIR_OWN, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
 import { CALL_DAWN } from '../core/mission-flow';
+import { convoyCallJa, convoyLeftStep, convoyWaitShoreJa, convoyWaiting } from './convoy-lines';
 import { callLabel, withWarnings, type HudLine } from './hud-lines';
 import { stormWarning } from './mission-mode';
 
@@ -75,6 +76,17 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number, co
   if (call === CALL_DAWN && air === DAWN_AIR_ENEMY) return '空襲下 ';
   if (call === CALL_DAWN && air === DAWN_AIR_OWN) return '夜明け ';
   return callLabel(call, gunMission, convoyJa);
+}
+
+/**
+ * 呼びかけの行の文（ui/mission-line の MISSION_CALL。v0.6.4 レビュー ux-1 で切り出し。色は mission-line）: 理由の頭（dawnCallLabel）＋「帰投せよ  N m」（homeStep は輪の縁までの 100 m 刻み）。
+ * 輸送隊（jp_01）が決着する前の夜明け近しは「夜明け近し 大発の上陸を待て  浜まで N m」（従うと上陸の前に輪で終わり、達成と上陸の点を失った）。
+ * 燃料少は決着の前でも「帰投せよ」のまま（漂流すれば達成も帰投の点も失う）。輸送隊の無い任務の文は前と同じ
+ */
+export function callLineText(t: BoatTelemetry, call: number, homeStep: number): string {
+  const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : '');
+  if (call === CALL_DAWN && convoyWaiting(t.convoy)) return `${head}${convoyWaitShoreJa(convoyLeftStep(t.convoy))}`;
+  return `${head}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`;
 }
 
 /**

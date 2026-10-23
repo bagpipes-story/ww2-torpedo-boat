@@ -230,7 +230,7 @@ export class MissionWorld {
     g?.updateVisuals(realDt);
     this.hunt?.updateVisuals(realDt, this.visRange2);
     this.pts?.updateVisuals(realDt, this.visRange2);
-    this.convoy?.updateVisuals(this.boat.state, this.visRange2);
+    this.convoy?.updateVisuals(this.boat.state, this.visRange2, this.pts?.targets ? this.pts.targets.aimedBarge : -1);
     this.splashes.updateVisuals(realDt);
     if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
     this.friendly?.updateVisuals(realDt, this);

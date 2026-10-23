@@ -68,7 +68,7 @@ export class PtLineClock {
     }
     // 攻撃が終わって弾がまだ飛んでいる間は赤い線の行を前のキーのまま保つ（ptHoldPass。結果の前に追ってくる PT・射撃中の行が一瞬出ない）
     const hold = ptHoldPass(t, lastMode);
-    const passShown = p.passing || hold;
+    const passShown = (p.passing && !p.passTargetLost) || hold; // 標的の大発を失った航過は赤い線の行を出さない（mission-mode と同じ。v0.6.4 レビュー ux-3）
     this.eventUntil = holdShowUntil(this.eventUntil, passShown && !this.eventShown, nowMs);
     // 輸送隊の出来事は赤い線・13mm の出来事の下で 1 度出るまで待ち、航過の結果はそのどちらの下でも待つ（輸送隊の無い任務は convoyUntil 0 のまま＝v0.6.3 と同じ）
     this.convoyUntil = holdShowUntil(this.convoyUntil, (passShown || nowMs < this.eventUntil) && !this.convoyShown, nowMs);

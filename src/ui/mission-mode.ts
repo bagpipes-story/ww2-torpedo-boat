@@ -106,12 +106,14 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
   if (t.pt.enabled) {
     // 米PT（v0.6.3）: 赤い線（航過・連射。終わって弾が飛んでいる間も MODE_FLAG_PT_HOLD で保つ）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）
-    if (t.pt.passing || (flags & MODE_FLAG_PT_HOLD) !== 0) return MISSION_PT_PASS;
+    // v0.6.4 レビュー ux-3: 航過中に標的の大発が沈んだ・上陸した（passTargetLost。jp_01 だけ）なら赤い線の行を降ろす（沈没・上陸の出来事がすぐ出る）
+    if ((t.pt.passing && !t.pt.passTargetLost) || (flags & MODE_FLAG_PT_HOLD) !== 0) return MISSION_PT_PASS;
     if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
     if ((flags & MODE_FLAG_CONVOY_EVENT) !== 0) return MISSION_CONVOY_EVENT; // 大発の沈没・上陸（v0.6.4。沈んだ航過の結果より上）
     if (ptResultShown(t, flags)) return MISSION_PT_CONTACT;
     if (ptGunShown(t)) return MISSION_PT_GUN;
-    if (t.pt.detected && t.pt.alive > 0) return MISSION_PT_CONTACT;
+    // ux-4: 輸送隊が決着した後（jp_01 だけ）は、呼びかけ「大発 上陸 k/3 ・ 帰投せよ」が突撃・追撃・離脱の行に勝つ（赤い線・出来事・結果・射撃は上のまま）
+    if (t.pt.detected && t.pt.alive > 0 && !(t.convoy.resolved && call !== 0)) return MISSION_PT_CONTACT;
   }
   if (t.escortEnabled && t.escortSunk) return MISSION_ESCORT_LOST;
   if (planeAttacking(t)) return MISSION_PLANE_ATTACK;

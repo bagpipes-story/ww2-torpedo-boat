@@ -164,6 +164,11 @@ export interface PtTelemetry {
   burst: boolean; burstFired: boolean; lastPassBoat: number; bursts: number; resultPending: boolean;
   /** 隊の今の標的と最後に終えた攻撃の標的（v0.6.4。0 自艇・1 大発。米PT の標的スロットの無い任務は 0 のまま）: HUD の航過・突撃・結果の文を切り替える */
   targetKind: number; lastPassTargetKind: number;
+  /**
+   * v0.6.4 レビュー（標的スロットの無い任務は false のまま）: 航過中の標的の大発が沈んだ・上陸した（赤い線の行を降ろし、沈没・上陸の出来事を先に出す。ux-3）、
+   * 最後に終えた攻撃の PT が撃つ前に 25mm で黙った（大発への航過の結果「大発を守った！」。ux-7）
+   */
+  passTargetLost: boolean; lastPassSilenced: boolean;
 }
 
 export function createPtTelemetry(): PtTelemetry {
@@ -172,7 +177,7 @@ export function createPtTelemetry(): PtTelemetry {
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
     gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
     gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1, fighting: 0, sunk: 0, passSilenced: false, passRetired: false, burst: false, burstFired: false, lastPassBoat: -1, bursts: 0, resultPending: false,
-    targetKind: 0, lastPassTargetKind: 0,
+    targetKind: 0, lastPassTargetKind: 0, passTargetLost: false, lastPassSilenced: false,
   };
 }
 

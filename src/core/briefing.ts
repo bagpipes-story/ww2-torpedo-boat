@@ -149,6 +149,11 @@ export interface BriefingNumbers {
   homeY: number;
   boundsW: number;
   boundsH: number;
+  /**
+   * 帰投地点の方角の差し替え（v0.6.4 レビュー ux-6。輸送隊の任務だけ: 自艇の出発点から見た帰投地点。「敵（東から）」と同じ基準）。
+   * 無ければ海域の中心から（compassJa。ほかの任務の文は変わらない）
+   */
+  homeFromJa?: string;
   /** 「条件」に足す一言（v0.5.2。見越し点マーカーの解放の状態。無ければ ''） */
   aimAssistJa?: string;
   /** 「条件」の武器の句の差し替え（v0.6.3。撃たない任務だけ。無ければ砲か魚雷の本数） */
@@ -182,7 +187,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
   const gal = Number.isInteger(n.fuelGal) ? String(n.fuelGal) : n.fuelGal.toFixed(1);
   return [
     { label: '目的', text: t.objective },
-    { label: '成功', text: `${t.success}（帰投地点は${compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
+    { label: '成功', text: `${t.success}（帰投地点は${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },

@@ -161,7 +161,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.shipsSunk = g.sunkCount;
     t.transportSunk = g.transportSunk;
   }
-  t.playerDetected = w.enemy.detected;
+  t.playerDetected = w.pts?.targets ? w.pts.targets.playerSeen() : w.enemy.detected; // 輸送隊の任務（v0.6.4 レビュー ux-2）は大発だけが見つかっている間は偽
   // 大発の任務（v0.4.2）は煙幕を大発ごとに掛けるので、全員から隠れているときだけ表示の距離に smoke_factor を掛ける（us_02 は世界の値に込み）
   t.detectRangeM = w.hunt && w.hiddenBySmoke ? w.detectRangeM * w.vis.smokeFactor : w.detectRangeM;
   t.illuminated = w.enemy.illuminated;

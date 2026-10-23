@@ -8,6 +8,7 @@
 // 脅威の PT は HUD の順（core の hudThreatIndex。レビュー ux-5: 次の航過の PT を追ってくる PT より先に）。
 // v0.6.4（標的スロット。jp_01）: 隊の今の標的・最後の攻撃の標的（HUD の文の分岐）、HUD の「被弾 N 発」は最後の攻撃の標的の船体への命中、Result の被弾・かわしたは自艇への攻撃だけ
 // （大発への航過は分母に入らない）、大発への航過・最初に捉えた標的・砲の名。標的スロットの無い任務（jp_05）は core の値のまま。
+// レビュー: 航過中に標的の大発を失った（passTargetLost。ux-3）・撃つ前に黙った大発への航過（lastPassSilenced。ux-7）。jp_05 はどちらも false のまま。
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
@@ -132,6 +133,9 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.targetKind = ts ? ts.targetKind : 0;
   t.lastPassTargetKind = ts ? ts.lastPassTargetKind : 0;
   t.lastPassHits = ts ? ts.lastAttackTargetHits : q.lastPassHits;
+  // レビュー ux-3・ux-7: 航過中の標的の大発が沈んだ・上陸した（core は航過を時間・縁・後ろまで続け、赤い線の行が 3〜5 秒残った）、撃つ前に 25mm で黙った大発への航過
+  t.passTargetLost = ts !== null && ob !== null && ts.targetKind === 1 && !ts.hulls[ts.set.current]!.valid;
+  t.lastPassSilenced = ts !== null && ts.lastPassSilenced;
 }
 
 /**

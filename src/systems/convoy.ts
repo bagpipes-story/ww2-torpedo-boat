@@ -2,11 +2,12 @@
 // 味方色の大発（assets/barge-placeholder の tex-barge-friendly）とラベル「大発」を描く。上陸は灰色（敵の大発の上陸と同じ）、沈没は駆逐艦と同じ tween と世界の onSunk（命中スロー＋爆発）。
 // 米PT の掃射の命中は PtSquadron（systems/pt-target）が hit で伝える（着弾の水柱は PtSquadron の SplashPool）。大発が見つかる距離と米PT の標的の規則もここが持つ（PtTargets が読む）。
 // §7: スプライト count 枚とラベル count 個を起動時に作り、毎フレームは視程の内の絵だけ位置・角度を触る（shown でトグル）。乱数は引かない（先頭の揺らぎは world-setup の applyConvoyNight）。
+// v0.6.4 レビュー ux-5: 米PT の隊が狙っている大発のラベルを「大発（狙われている）」の警告色に（狙いが替わったときだけ setText。systems/pt-target の aimedBarge）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { CONVOY_MARKER_LABEL } from '../config/convoy-config';
+import { CONVOY_MARKER_LABEL, CONVOY_TARGET_LABEL } from '../config/convoy-config';
 import { BARGE_BEACHED_ALPHA, BARGE_BEACHED_TINT } from '../config/hunt-config';
-import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
+import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
 import { CV_SAILING, CV_SUNK, convoyResolved, createConvoy, hitConvoyBarge, stepConvoy, type ConvoyEvents, type ConvoyParams, type ConvoyState } from '../core/convoy';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -22,6 +23,8 @@ export class Convoy {
   private readonly sprites: Phaser.GameObjects.Image[] = [];
   private readonly labels: Phaser.GameObjects.Text[] = [];
   private readonly shown: Uint8Array;
+  /** ラベルを「狙われている」にしている大発（−1 は無し） */
+  private marked = -1;
 
   private readonly events: ConvoyEvents = {
     onArrived: (i) => {
@@ -73,8 +76,16 @@ export class Convoy {
     return convoyResolved(this.state);
   }
 
-  /** 毎フレーム: 視程の内の大発だけ表示して位置・角度を直す（沈み込みは tween に任せる。上陸した大発は止まっているので位置は変わらないが絵は出す） */
-  updateVisuals(player: BoatState, visRange2: number): void {
+  /**
+   * 毎フレーム: 視程の内の大発だけ表示して位置・角度を直す（沈み込みは tween に任せる。上陸した大発は止まっているので位置は変わらないが絵は出す）。
+   * aimed は米PT の隊が狙っている航行中の大発（PtTargets.aimedBarge。無ければ −1）: 替わったときだけ前のラベルを戻し、新しいラベルを警告色の「大発（狙われている）」に
+   */
+  updateVisuals(player: BoatState, visRange2: number, aimed: number): void {
+    if (aimed !== this.marked) {
+      if (this.marked >= 0) this.labels[this.marked]!.setText(CONVOY_MARKER_LABEL).setColor(ESCORT_TEXT_COLOR);
+      if (aimed >= 0) this.labels[aimed]!.setText(CONVOY_TARGET_LABEL).setColor(HUD_COLOR_WARN);
+      this.marked = aimed;
+    }
     for (let i = 0; i < this.sprites.length; i++) {
       const b = this.state.barges[i]!;
       if (b.phase === CV_SUNK) continue;

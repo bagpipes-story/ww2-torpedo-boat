@@ -59,8 +59,8 @@ describe('平常・見えている PT（spec §D.2）', () => {
     expect(row(tele(slow))).toEqual([MISSION_PT, '米PT 500 m（北東） ・ 気づかれていない ・ 静音でやり過ごせ', HUD_COLOR_STRONG]);
     expect(row(t01(slow, {}, { targetStep: 'cruise', detectRangeM: 1200 }))).toEqual([MISSION_PT, '米PT 500 m ・ 速い！ 1200 m で見つかる ・ 13 kt 以下に', HUD_COLOR_WARN]);
     expect(convoySlowLine(900, '南西').text).toBe('米PT 900 m（南西） ・ まだ気づいていない ・ 大発のそばで備えよ');
-    // みな去った後は jp_05 の文のまま（去る方角は jp_01 の北東）
-    expect(row(t01({ alive: 0, out: 2 }, {}, { homeEdgeM: 1950 }))[1]).toBe('米PT は北東へ去った ・ 帰投せよ  2000 m');
+    // みな去った後、輸送隊が決着していれば jp_05 の文のまま（去る方角は jp_01 の北東）。決着の前は「大発の上陸を待て」（レビュー ux-1。tests/convoy-review-ux）
+    expect(row(t01({ alive: 0, out: 2 }, { afloat: 0, arrived: 3, resolved: true }, { homeEdgeM: 1950 }))[1]).toBe('米PT は北東へ去った ・ 帰投せよ  2000 m');
   });
 });
 
@@ -216,9 +216,9 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     expect(line(CALL_SUNK, DAWN_AIR_NONE, null)).toBe('撃沈！帰投せよ  2000 m');
     expect(callLabel(CALL_SUNK, true, '')).toBe('撃破！');
     expect(callLabel(CALL_EXPENDED, false, convoyCallJa(done))).toBe('魚雷なし ');
-    // 決着（CALL_SUNK）で米PT が見えていなければ呼びかけの行、米PT が捉えていれば接触の行が勝つ（jp_05 と同じ優先）
+    // 決着（CALL_SUNK）の後は、米PT が捉えていても呼びかけの行が離脱・突撃の行に勝つ（レビュー ux-4。jp_05 は接触の行のまま＝tests/convoy-review-ux）
     expect(missionMode(t01({}, done), CALL_SUNK, 0)).toBe(MISSION_CALL);
-    expect(missionMode(t01({ detected: true, threatPhase: PT_BREAK }, done), CALL_SUNK, 0)).toBe(MISSION_PT_CONTACT);
+    expect(missionMode(t01({ detected: true, threatPhase: PT_BREAK }, done), CALL_SUNK, 0)).toBe(MISSION_CALL);
   });
 });
 

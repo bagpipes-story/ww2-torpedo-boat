@@ -5,9 +5,10 @@
 // Phaser を import しない（tests から読む）。§7: 確保は constructor だけ。乱数は引かない（大発への命中は HP だけ）。PtSquadron が輸送隊のある任務でだけ作る（jp_05 は作らない＝core は v0.6.3 の枝）。
 // v0.6.4 レビューの直し: 夜明けで切れた攻撃も閉じる（onLeave。ai:R1）、大発への航過は core が航過に数えたものだけ（ai:R2）、
 // 標的が沈んだ・上陸した・輪に入ったための切り替えで受け継いだ接触が切れたのは「見失わせた」から引く（inheritedLosses。ai:R4。core と模擬は変えない）。
+// HUD（ux-2・ux-5・ux-7）: 3 行目の「発見された！」は自艇が見られているときだけ（playerSeen）、狙われている大発の印（aimedBarge）、撃つ前に 25mm で黙った大発への航過（lastPassSilenced）。
 import type { BoatState } from '../core/boat-motion';
 import { CV_SAILING, type ConvoyParams, type ConvoyState } from '../core/convoy';
-import type { PtCheck, PtHull, PtSection } from '../core/pt-boats';
+import { PT_FATE_NONE, ptFighting, type PtCheck, type PtHull, type PtSection } from '../core/pt-boats';
 import { applyPtTarget, createPtTargetSet, pickPtTarget, type PtTargetRule, type PtTargetSet } from '../core/pt-target';
 
 /** 標的スロットが読む輸送隊（systems/convoy の Convoy がそのまま満たす）: 隊の状態・寸法、米PT の標的の規則、大発が見つかる距離 m、命中（沈んだら true） */
@@ -38,6 +39,8 @@ export class PtTargets {
   /** 最後に終えた攻撃の標的の船体への命中（後から落ちた弾も。HUD の「被弾 N 発」「大発 被弾 N 発」）とその標的（0 自艇・1 大発） */
   lastAttackTargetHits = 0;
   lastPassTargetKind = 0;
+  /** 最後に終えた攻撃は撃たずに終わり、その PT は 25mm で黙っていた（撃退・撃沈。大発への航過の結果「大発を守った！」） */
+  lastPassSilenced = false;
   /** 今の攻撃（固めた瞬間の標的）の種類と標的の船体への命中（終わる瞬間に撃っていた攻撃を Result が数えるため） */
   attackKind = 0;
   attackHits = 0;
@@ -59,6 +62,8 @@ export class PtTargets {
   private contacted = false;
   /** 今の接触は標的が valid でなくなった切り替えで受け継いだもので、まだどの PT も新しい標的を見ていない */
   private inherited = false;
+  /** apply が受けた閃光の記憶 m（playerSeen の自艇の見つかる距離に） */
+  private heldFlashM = 0;
 
   constructor(
     player: BoatState,
@@ -98,6 +103,7 @@ export class PtTargets {
    * 捉えている間に今の標的が valid でなくなって替わったら、その接触は受け継いだもの（新しい標的を誰かが見るまで。afterStep）
    */
   apply(q: PtSection, c: PtCheck, heldFlashM: number, nowS: number): void {
+    this.heldFlashM = heldFlashM;
     const before = this.set.current;
     const forced = q.detected && !this.hulls[before]!.valid;
     applyPtTarget(q, c, this.set, pickPtTarget(q, this.set, heldFlashM, this.rule, nowS), nowS);
@@ -113,6 +119,31 @@ export class PtTargets {
     if (this.inherited && q.lostContacts > lostBefore) this.inheritedLosses++;
     if (!q.detected) this.inherited = false;
     for (let i = 0; this.inherited && i < q.seen.length; i++) if (q.seen[i] === 1) this.inherited = false;
+  }
+
+  /**
+   * 3 行目の「発見された！」（mission-telemetry の playerDetected。v0.6.4 レビュー ux-2）: 隊が捉えていて、標的が自艇（大発からの受け継ぎの接触でない）か、自艇が的になれて（浮いていて輪の外）
+   * まだ戦う PT のどれかが自艇の見つかる距離（速力帯と閃光の記憶の大きい方）の内。大発だけが見つかっている間は偽（隊の detected と Result の数えは変えない）。距離二乗・確保なし。
+   * 受け継ぎ: 標的の大発が沈んで自艇へ替わった接触の残りの秒（ヘッドレスの none で 1,966 m 先の自艇に 0.6 秒「発見された！」が出た）
+   */
+  playerSeen(): boolean {
+    const q = this.section;
+    if (!q.detected) return false;
+    if (this.set.current === 0 && !this.inherited) return true;
+    const h = this.hulls[0]!;
+    if (!h.valid) return false;
+    const r = Math.max(this.set.detectM[0]!, this.heldFlashM);
+    for (let i = 0; i < q.boats.length; i++) {
+      const b = q.boats[i]!;
+      if (ptFighting(b.phase) && (b.x - h.boat.x) * (b.x - h.boat.x) + (b.y - h.boat.y) * (b.y - h.boat.y) <= r * r) return true;
+    }
+    return false;
+  }
+
+  /** 狙われている大発（state.barges の index。ux-5 の印）: 隊が捉えているか攻撃中で、標的が航行中の大発。ほかは −1（自艇が標的・哨戒中・標的の大発が沈んだ・上陸した） */
+  get aimedBarge(): number {
+    const k = this.set.current;
+    return k > 0 && this.hulls[k]!.valid && (this.section.detected || this.section.owner >= 0) ? k - 1 : -1;
   }
 
   /** 隊が捉えた立ち上がり（PtEvents.onContact）: 最初の 1 回だけ、そのときの標的を覚える */
@@ -145,13 +176,17 @@ export class PtTargets {
     this.dropAttack(i, this.section.boats[i]!.firedThisPass > 0);
   }
 
-  /** 攻撃が終わった（PtEvents.onPassEnd・dropAttack）: 自艇への攻撃なら撃った・無傷を数え、大発への航過は core が数えたときだけ数え、最後の攻撃の標的と命中を覚える（後から落ちた弾はここへ戻す） */
+  /**
+   * 攻撃が終わった（PtEvents.onPassEnd・dropAttack）: 自艇への攻撃なら撃った・無傷を数え、大発への航過は core が数えたときだけ数え、最後の攻撃の標的と命中を覚える（後から落ちた弾はここへ戻す）。
+   * 撃たずに終わり、その PT が 25mm の結末（撃退・撃沈）を受けていれば lastPassSilenced（ux-7）
+   */
   onPassEnd(fired: boolean): void {
     this.attackOpen = false;
     this.lastHull = this.attackHull;
     this.lastPassTargetKind = this.attackKind;
     this.lastAttackTargetHits = this.attackHits;
     this.lastFired = fired;
+    this.lastPassSilenced = !fired && this.attackOwner >= 0 && this.section.boats[this.attackOwner]!.fate !== PT_FATE_NONE;
     if (this.attackKind === 1 && this.section.passes > this.passesAtCommit) this.attacksOnBarges++;
     if (this.attackKind !== 0) return;
     if (fired) this.firedPassesOnPlayer++;
