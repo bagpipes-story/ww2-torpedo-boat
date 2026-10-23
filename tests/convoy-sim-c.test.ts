@@ -4,7 +4,7 @@ import { describe, expect } from 'vitest';
 import { SIM_FILES, itSimBands } from './convoy-sim-kit';
 
 describe('味方の大発を守る模擬の帯（spec §F.4: 遠くから撃つだけ）', () => {
-  // 較正の表は 1 回だけ回す（1 行＋相手 1 行、N 200 で 13 秒ほど）
+  // 較正の表は 1 回だけ回す（1 行＋相手 1 行、N 200 で 13〜14 秒ほど）
   itSimBands('較正（N 200・seed 1〜200）: 遠くから撃つだけ（far_shoot）は 2.0〜2.5 隻・自艇の沈没 15〜30% で、後ろから撃つだけ（follow_shoot）より 8 点以上少なくはならない（遠くからでも逃れられない）。不変', SIM_FILES.c, (run) => {
     // 遠いと最初の標的はほぼ大発（95% 超）。自艇の視程の外からの掃射はほぼ無い（撃ちに寄るので 1 夜 0〜数発）
     expect(run.cell('far_shoot').firstBargePct).toBeGreaterThan(90);

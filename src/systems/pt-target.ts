@@ -3,6 +3,8 @@
 // 自艇だけの成績（被弾・自艇への攻撃のうち撃った／無傷・最後の攻撃の標的への命中）と HUD 用の標的の種類（0 自艇・1 大発）を持つ。隊の KPI（q.hits など）はどの船体への命中も数える（core。模擬と同じ）。
 // 大発が沈んだ・上陸した同じステップで valid（標的なら targetValid も）を落とす＝残りの弾が沈み始めた大発に当たらない（模擬 core/convoy-sim と同じ）。
 // Phaser を import しない（tests から読む）。§7: 確保は constructor だけ。乱数は引かない（大発への命中は HP だけ）。PtSquadron が輸送隊のある任務でだけ作る（jp_05 は作らない＝core は v0.6.3 の枝）。
+// v0.6.4 レビューの直し: 夜明けで切れた攻撃も閉じる（onLeave。ai:R1）、大発への航過は core が航過に数えたものだけ（ai:R2）、
+// 標的が沈んだ・上陸した・輪に入ったための切り替えで受け継いだ接触が切れたのは「見失わせた」から引く（inheritedLosses。ai:R4。core と模擬は変えない）。
 import type { BoatState } from '../core/boat-motion';
 import { CV_SAILING, type ConvoyParams, type ConvoyState } from '../core/convoy';
 import type { PtCheck, PtHull, PtSection } from '../core/pt-boats';
@@ -22,7 +24,10 @@ export class PtTargets {
   readonly hulls: PtHull[];
   readonly set: PtTargetSet;
   readonly rule: PtTargetRule;
-  /** 自艇への命中・大発への命中（隊の全命中は core の q.hits）、大発を狙った攻撃（航過。連射は大発に起きない）、最初に捉えた標的（0 自艇・1 大発） */
+  /**
+   * 自艇への命中・大発への命中（隊の全命中は core の q.hits）、大発を狙った航過のうち core が航過に数えたもの（撃ったか open_fire_s 経った。Result の「航過 N 回（大発へ M）」の M。
+   * 連射は大発に起きない）、最初に捉えた標的（0 自艇・1 大発）
+   */
   playerHits = 0;
   bargeHits = 0;
   attacksOnBarges = 0;
@@ -39,18 +44,29 @@ export class PtTargets {
   /** 25mm を最後に撃った体感秒（閃光の記憶 ptHeldFlashM の元。撃っていなければ −Infinity） */
   lastFireS = -Infinity;
   private attackHull = 0;
-  /** 今の攻撃の PT と、攻撃が開いている（固めてから終わるまで。25mm で沈んだ PT の攻撃は core の dropOwner が onPassEnd 無しで閉じるので、PtSquadron の onFate が dropAttack で閉じる） */
+  /** 標的が valid でなくなったための切り替えで受け継いだ接触が、どの PT にも見られないまま切れた回数（core の q.lostContacts から引く。Result の「見失わせた」） */
+  inheritedLosses = 0;
+  /**
+   * 今の攻撃の PT と、攻撃が開いている（固めてから終わるまで。core が onPassEnd 無しで閉じる攻撃: 25mm で沈んだ PT（dropOwner）は PtSquadron の onFate が dropAttack で、
+   * 夜明け（pt-boats の夜明けの latch）は onLeave で閉じる）
+   */
   private attackOwner = -1;
   private attackOpen = false;
+  /** 固めたときの core の q.passes（終わりで増えていれば core が航過に数えた） */
+  private passesAtCommit = 0;
   private lastHull = 0;
   private lastFired = false;
   private contacted = false;
+  /** 今の接触は標的が valid でなくなった切り替えで受け継いだもので、まだどの PT も新しい標的を見ていない */
+  private inherited = false;
 
   constructor(
     player: BoatState,
     playerHalfLengthM: number,
     playerHalfBeamM: number,
     private readonly convoy: PtTargetConvoy,
+    /** 米PT の隊（core が航過に数えたか・夜明けで切れた攻撃が撃ったか・見たかを読む。書かない） */
+    private readonly section: PtSection,
   ) {
     this.rule = convoy.rule;
     this.hulls = [{ boat: player, halfLengthM: playerHalfLengthM, halfBeamM: playerHalfBeamM, valid: true }];
@@ -77,9 +93,26 @@ export class PtTargets {
     for (let k = 1; k < this.hulls.length; k++) this.hulls[k]!.valid = barges[k - 1]!.phase === CV_SAILING;
   }
 
-  /** 25mm の後・接触の前: 標的を選んで PtCheck に書く（heldFlashM は閃光の記憶。core/pt-target） */
+  /**
+   * 25mm の後・接触の前: 標的を選んで PtCheck に書く（heldFlashM は閃光の記憶。core/pt-target）。
+   * 捉えている間に今の標的が valid でなくなって替わったら、その接触は受け継いだもの（新しい標的を誰かが見るまで。afterStep）
+   */
   apply(q: PtSection, c: PtCheck, heldFlashM: number, nowS: number): void {
+    const before = this.set.current;
+    const forced = q.detected && !this.hulls[before]!.valid;
     applyPtTarget(q, c, this.set, pickPtTarget(q, this.set, heldFlashM, this.rule, nowS), nowS);
+    if (forced && this.set.current !== before) this.inherited = true;
+  }
+
+  /**
+   * 隊を進めた後（PtSquadron.step。lostBefore は進める前の q.lostContacts）: 受け継いだ接触がそのまま切れたなら inheritedLosses に数える
+   * （core は今の標的が valid なら見失わせたに数える。沈んだ大発の接触の残りの秒が、見えていない自艇へ移って切れただけ）。捉えていない・どれかの PT が見ていれば受け継ぎは終わり
+   */
+  afterStep(lostBefore: number): void {
+    const q = this.section;
+    if (this.inherited && q.lostContacts > lostBefore) this.inheritedLosses++;
+    if (!q.detected) this.inherited = false;
+    for (let i = 0; this.inherited && i < q.seen.length; i++) if (q.seen[i] === 1) this.inherited = false;
   }
 
   /** 隊が捉えた立ち上がり（PtEvents.onContact）: 最初の 1 回だけ、そのときの標的を覚える */
@@ -89,28 +122,37 @@ export class PtTargets {
     this.firstDetectKind = this.targetKind;
   }
 
-  /** 攻撃を固めた（PtEvents.onCommit）: 標的の種類と船体を固め、命中を 0 から */
+  /** 攻撃を固めた（PtEvents.onCommit）: 標的の種類と船体を固め、命中を 0 から。core の航過の数を覚える */
   onCommit(i: number): void {
     this.attackOwner = i;
     this.attackOpen = true;
     this.attackHull = this.set.current;
     this.attackKind = this.targetKind;
     this.attackHits = 0;
-    if (this.attackKind === 1) this.attacksOnBarges++;
+    this.passesAtCommit = this.section.passes;
   }
 
-  /** 攻撃中の PT が 25mm で沈んだ（core の dropOwner が閉じた攻撃。PtSquadron の onFate）: 終わった攻撃として数える（fired は隊の lastPassFired） */
+  /** core が onPassEnd 無しで閉じた攻撃（25mm で沈んだ PT の dropOwner＝PtSquadron の onFate、夜明け＝onLeave）: 終わった攻撃として数える。開いていない・別の PT なら何もしない */
   dropAttack(i: number, fired: boolean): void {
     if (this.attackOpen && this.attackOwner === i) this.onPassEnd(fired);
   }
 
-  /** 攻撃が終わった（PtEvents.onPassEnd）: 自艇への攻撃なら撃った・無傷を数え、最後の攻撃の標的と命中を覚える（後から落ちた弾はここへ戻す） */
+  /**
+   * PT が去る（PtEvents.onLeave）: 夜明けの latch（core/pt-boats）は航過・連射を数えて onLeave だけを呼ぶので、その PT の攻撃が開いていれば閉じる
+   * （撃ったかはその PT の firedThisPass。撃たずに切れた航過では core の lastPassFired は前の攻撃のまま）。endPass・endBurst の後・連射の使い切り・撃退の onLeave は開いた攻撃の PT ではないので何もしない
+   */
+  onLeave(i: number): void {
+    this.dropAttack(i, this.section.boats[i]!.firedThisPass > 0);
+  }
+
+  /** 攻撃が終わった（PtEvents.onPassEnd・dropAttack）: 自艇への攻撃なら撃った・無傷を数え、大発への航過は core が数えたときだけ数え、最後の攻撃の標的と命中を覚える（後から落ちた弾はここへ戻す） */
   onPassEnd(fired: boolean): void {
     this.attackOpen = false;
     this.lastHull = this.attackHull;
     this.lastPassTargetKind = this.attackKind;
     this.lastAttackTargetHits = this.attackHits;
     this.lastFired = fired;
+    if (this.attackKind === 1 && this.section.passes > this.passesAtCommit) this.attacksOnBarges++;
     if (this.attackKind !== 0) return;
     if (fired) this.firedPassesOnPlayer++;
     if (fired && this.attackHits === 0) this.cleanPassesOnPlayer++;

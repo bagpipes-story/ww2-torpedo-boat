@@ -6,7 +6,7 @@
 // 黙った連射の線は予告の秒の後に消す（窓は core のまま。レビュー ux-1）。
 // v0.6.4（味方の大発の輸送隊。jp_01）: 標的スロット（systems/pt-target の PtTargets）が check.boat を自艇か大発に差し替える。固定ステップは 25mm → 標的の選択（閃光の記憶）・差し替え →
 // 接触の閃光（自艇が標的のときだけ。位置は自艇）→ 隊（模擬 core/convoy-sim と同じ順）。着弾は hull で自艇の被害か大発の命中へ。PT の絵の表示判定は自艇（player）で、連射の線は標的（check.boat）へ。
-// 輸送隊の無い任務（jp_05）は PtTargets を作らず、check の鍵も v0.6.3 のまま（core は targets 無しの枝＝ビット同一）。
+// 輸送隊の無い任務（jp_05）は PtTargets を作らず、check の鍵も v0.6.3 のまま（core は targets 無しの枝＝ビット同一）。夜明けで切れた攻撃は onLeave で、受け継いだ接触は隊の後の afterStep で PtTargets が数える（レビュー ai:R1・R4）。
 // §7: PT count 枚・線 1 本・曳光弾 24 枚・水柱 24 枚・閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。check と events は 1 個だけ作る。
 // 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
 import Phaser from 'phaser';
@@ -97,7 +97,7 @@ export class PtSquadron {
       else if (sinking) this.check.targetValid = false;
     },
     onPassEnd: (_i, fired) => this.targets?.onPassEnd(fired),
-    onLeave: () => {},
+    onLeave: (i) => this.targets?.onLeave(i),
     onOut: () => {},
   };
 
@@ -123,7 +123,7 @@ export class PtSquadron {
     this.section = createPtSection(p, PT_SHELL_POOL_SIZE);
     this.player = boat;
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, targetValid: true, visRange2: 0, dawn: false, timeS: 0 };
-    this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy) : null;
+    this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section) : null;
     if (this.targets) this.check.targets = this.targets.hulls;
     this.splashes = new SplashPool(scene, PT_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
     this.shown = new Uint8Array(p.count);
@@ -169,7 +169,9 @@ export class PtSquadron {
       // 13mm（浮いていて輪の外だけ撃つ）→ 撃ったステップは閃光の距離で PT が見つける（detect_from_s の前は見つけない）
       if (this.gun) c.flashM = this.gun.step(w.band, held, c.targetValid, w.visRange2, feelDt, dt) ? this.gun.g.flashRevealM : 0;
     }
+    const lost0 = q.lostContacts;
     stepPtSection(q, this.p, c, this.rng, feelDt, dt, this.events);
+    t?.afterStep(lost0);
     if (q.detected && !w.detect.prev) {
       w.detect.count++;
       if (this.firstDetectBand === '') this.firstDetectBand = w.band;

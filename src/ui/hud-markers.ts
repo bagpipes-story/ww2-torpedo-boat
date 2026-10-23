@@ -50,7 +50,7 @@ export class HudMarkers {
     this.homeMarker?.refresh(telemetry.homeDx, telemetry.homeDy, !telemetry.atHome, telemetry, telemetry.homeEdgeM);
     this.planeMarker?.refresh(telemetry.planeDx, telemetry.planeDy, !Number.isNaN(telemetry.planeDx), telemetry);
     this.coastMarker?.refresh(telemetry.coastDx, telemetry.coastDy, !Number.isNaN(telemetry.coastDy), telemetry);
-    this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry);
+    this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry, telemetry.convoy.nearestM); // 平方根は convoy-telemetry の 1 回（レビュー neutral:N2）
   }
 
   destroy(): void {

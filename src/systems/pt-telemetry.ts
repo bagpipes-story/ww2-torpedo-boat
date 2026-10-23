@@ -174,7 +174,7 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     hpMax: w.damageParams.maxHp,
     firstDetectM: q.firstDetectM,
     firstDetectBand: s.firstDetectBand,
-    lostContacts: q.lostContacts,
+    lostContacts: q.lostContacts - (ts ? ts.inheritedLosses : 0), // 標的が沈んだ・上陸した・輪に入ったための切り替えで受け継いだ接触が切れたのは見失わせたではない（v0.6.4 レビュー ai:R4）
     closestM: Math.sqrt(q.closest2),
     minWarnS: q.minWarnS,
     gunEnabled: g !== null,
@@ -185,7 +185,7 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     flashFirst: q.flashFirst,
     bursts: q.firedBursts + openBurst,
     suppressions: q.suppressions,
-    passesOnBarges: ts ? ts.attacksOnBarges : 0,
+    passesOnBarges: ts ? ts.attacksOnBarges + (open === 1 && openBurst === 0 && ts.attackKind === 1 ? 1 : 0) : 0, // 航過（passes）の内訳: 終わる瞬間に撃っていた大発への航過も（レビュー ai:R2）
     firstDetectKind: ts ? ts.firstDetectKind : 0,
     gunLabel: s.gun ? s.gun.g.label.replace('機銃', '') : '',
   };

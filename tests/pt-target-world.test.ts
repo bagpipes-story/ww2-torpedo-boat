@@ -31,8 +31,8 @@ function fakeConvoy(): PtTargetConvoy & { state: ConvoyState } {
 function world(): { player: BoatState; cv: ReturnType<typeof fakeConvoy>; t: PtTargets; q: PtSection; c: PtCheck } {
   const player: BoatState = { ...S.playerStart, speedMps: 0 };
   const cv = fakeConvoy();
-  const t = new PtTargets(player, S.boatHalfLengthM, S.boatHalfBeamM, cv);
   const q = createPtSection(PT, 24);
+  const t = new PtTargets(player, S.boatHalfLengthM, S.boatHalfBeamM, cv, q);
   Object.assign(q.boats[1]!, { phase: PT_LEAVE });
   const c: PtCheck = { boat: player, boatHalfLengthM: S.boatHalfLengthM, boatHalfBeamM: S.boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, targetValid: true, visRange2: S.visRange2, dawn: false, timeS: 10, targets: t.hulls };
   return { player, cv, t, q, c };
@@ -100,7 +100,7 @@ describe('PtTargets（systems/pt-target。spec §C.2・§C.4・§E.2）', () => 
     t.playerHit(q, c, true);
     expect(c.targetValid).toBe(false);
   });
-  it('攻撃の数え: 自艇への攻撃だけ撃った／無傷に数え、最後の攻撃の標的の船体への命中は後から落ちた弾も戻す（無傷を取り消す）。大発への航過は分母に入らず attacksOnBarges に', () => {
+  it('攻撃の数え: 自艇への攻撃だけ撃った／無傷に数え、最後の攻撃の標的の船体への命中は後から落ちた弾も戻す（無傷を取り消す）。大発への航過は分母に入らず attacksOnBarges に（core が数えた航過＝q.passes が増えたとき）', () => {
     const { t, q, c } = world();
     t.begin(480, true);
     // 自艇への航過: 固めて 2 発当たって終わる
@@ -111,12 +111,14 @@ describe('PtTargets（systems/pt-target。spec §C.2・§C.4・§E.2）', () => 
     t.bargeHit(q, c, 1, DAMAGE, 10); // 自艇の航過中に大発へ逸れた弾は標的の命中に数えない
     t.playerHit(q, c, false);
     q.owner = -1;
+    q.passes++; // core の endPass が数えた（撃った航過）
     t.onPassEnd(true);
     expect([t.firedPassesOnPlayer, t.cleanPassesOnPlayer, t.lastAttackTargetHits, t.lastPassTargetKind, t.attacksOnBarges]).toEqual([1, 0, 2, 0, 0]);
     // 無傷の航過 → 後から 1 発落ちた: 無傷を取り消し、最後の攻撃の命中 1
     q.owner = 0;
     t.onCommit(0);
     q.owner = -1;
+    q.passes++;
     t.onPassEnd(true);
     expect([t.firedPassesOnPlayer, t.cleanPassesOnPlayer, t.lastAttackTargetHits]).toEqual([2, 1, 0]);
     t.playerHit(q, c, false);
@@ -128,6 +130,7 @@ describe('PtTargets（systems/pt-target。spec §C.2・§C.4・§E.2）', () => 
     for (let k = 0; k < 3; k++) t.bargeHit(q, c, 2, DAMAGE, 20 + k);
     t.playerHit(q, c, false); // 大発への航過中に自艇へ逸れた弾
     q.owner = -1;
+    q.passes++;
     t.onPassEnd(true);
     expect([t.firedPassesOnPlayer, t.cleanPassesOnPlayer, t.lastAttackTargetHits, t.lastPassTargetKind, t.attacksOnBarges, t.targetKind]).toEqual([2, 0, 3, 1, 1, 1]);
     // 撃たずに終わった航過（標的を失った）は撃った数に入らない
@@ -161,8 +164,8 @@ describe('PtTargets（systems/pt-target。spec §C.2・§C.4・§E.2）', () => 
     t.onContact(true);
     expect(t.firstDetectKind).toBe(1);
   });
-  it('§7: 毎ステップの関数（begin・apply・playerHit・bargeHit・onCommit・onPassEnd）に new・[]・{}・=> が無い', () => {
-    for (const fn of [PtTargets.prototype.begin, PtTargets.prototype.apply, PtTargets.prototype.playerHit, PtTargets.prototype.bargeHit, PtTargets.prototype.onCommit, PtTargets.prototype.onPassEnd]) {
+  it('§7: 毎ステップの関数（begin・apply・afterStep・playerHit・bargeHit・onCommit・onPassEnd・onLeave）に new・[]・{}・=> が無い', () => {
+    for (const fn of [PtTargets.prototype.begin, PtTargets.prototype.apply, PtTargets.prototype.afterStep, PtTargets.prototype.playerHit, PtTargets.prototype.bargeHit, PtTargets.prototype.onCommit, PtTargets.prototype.onPassEnd, PtTargets.prototype.onLeave]) {
       const src = fn.toString();
       expect(src, src).not.toMatch(/\bnew\b|\[\]|\{\}|=>/);
     }
