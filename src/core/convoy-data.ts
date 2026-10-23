@@ -25,7 +25,7 @@ export interface ConvoyMissionBlock {
   landing_x_m: number;
   arrive_quota: number;
   barge_hp: number;
-  /** 大発が見つかる距離の帯（自艇の速力帯の係数を借りる。stop なら新月で 480 m） */
+  /** 大発が見つかる距離の帯（自艇の速力帯の係数を借りる。新月で stop なら 480 m、silent なら 600 m＝jp_01。v0.6.4 実機 1 回目） */
   detect_band: SpeedStep;
   /** 米PT の標的の規則: 今の標的の点数 × ratio² より小さい候補がいて、前の切り替えから hold 秒たったときだけ替える。閃光の記憶は flash_hold_s */
   target_keep_ratio: number;

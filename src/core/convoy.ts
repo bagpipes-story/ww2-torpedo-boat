@@ -208,6 +208,26 @@ export function convoyLeadIndex(f: ConvoyState, p: ConvoyParams): number {
   return convoyEndIndex(f, p, false);
 }
 
+/** 上陸地点の印（systems/convoy が起動時に 1 回だけ描く）: 岸の線（y）の上の帯の両端の x と、陸の側のラベル「上陸地点」の上の真ん中 */
+export interface ConvoyLandingMark {
+  x0: number;
+  x1: number;
+  y: number;
+  labelX: number;
+  labelY: number;
+}
+
+/** 浜の上陸地点の印の置き場所（起動時に 1 回。帯は上陸地点の両端から padM 外まで、ラベルは岸から labelOffsetM 陸の側＝浜に残る大発のラベル「上陸」の下。tests/convoy-landing-mark） */
+export function convoyLandingMark(bp: ConvoyBeach, padM: number, labelOffsetM: number): ConvoyLandingMark {
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  for (const x of bp.x) {
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+  }
+  return { x0: x0 - padM, x1: x1 + padM, y: bp.shoreY, labelX: (x0 + x1) / 2, labelY: bp.shoreY + labelOffsetM };
+}
+
 /** 最も遅れた航行中の大発から浜（上陸地点）までの道のり m（HUD の「浜まで N m」の元。航行中の大発が無ければ 0）。浜の無い隊は上陸線までの航路に沿った x の差（平方根なし） */
 export function convoyLeftM(f: ConvoyState, p: ConvoyParams): number {
   if (p.beach) return convoyBeachLeftM(f, p, p.beach);

@@ -1,7 +1,7 @@
 // 味方の大発の輸送隊の世界側（v0.6.4。jp_01「夜の輸送護衛」。docs/02 §6.4、spec §C.7・§E.2）: core/convoy を固定ステップで進め（自艇の後・米PT の前＝僚艇と同じ位置）、
-// 味方色の大発（assets/barge-placeholder の tex-barge-friendly）とラベル「大発」を描く。上陸は灰色（敵の大発の上陸と同じ）、沈没は駆逐艦と同じ tween と世界の onSunk（命中スロー＋爆発）。
-// v0.6.4 実機 1 回目（「何もない海の真ん中で消えていく」）: 浜（ConvoyParams.beach）のある隊は、起動時に 1 回だけ浜の線に砂色の帯とラベル「上陸地点」を描き、上陸した大発は
-// 少し暗い不透明の絵とラベル「上陸」で浜に残す（視程の外でも消さない。onArrived で 1 回だけ触り、以後 updateVisuals は飛ばす）。
+// 味方色の大発（assets/barge-placeholder の tex-barge-friendly）とラベル「大発」を描く。浜の無い隊の上陸は灰色（敵の大発の上陸と同じ。視程の外では隠す）、沈没は駆逐艦と同じ tween と世界の onSunk（命中スロー＋爆発）。
+// v0.6.4 実機 1 回目（「何もない海の真ん中で消えていく」）: 浜（ConvoyParams.beach）のある隊は、起動時に 1 回だけ浜の線に砂色の帯とラベル「上陸地点」を描き（core/convoy の convoyLandingMark。
+// DEPTH.landingMark＝陸の塗りの上）、上陸した大発は少し暗い不透明の絵とラベル「上陸」（味方の青）で浜に残す（視程の外でも消さない。onArrived で 1 回だけ触り、以後 updateVisuals は飛ばす）。
 // 米PT の掃射の命中は PtSquadron（systems/pt-target）が hit で伝える（着弾の水柱は PtSquadron の SplashPool）。大発が見つかる距離と米PT の標的の規則もここが持つ（PtTargets が読む）。
 // §7: スプライト count 枚とラベル count 個を起動時に作り、毎フレームは視程の内の絵だけ位置・角度を触る（shown でトグル）。乱数は引かない（先頭の揺らぎは world-setup の applyConvoyNight）。
 // v0.6.4 レビュー ux-5: 米PT の隊が狙っている大発のラベルを 2 行の「大発／狙われている」の警告色に（狙いが替わったときだけ setText。systems/pt-target の aimedBarge。1 行目は隣と同じ幅＝重ならない。config/convoy-config）。
@@ -14,7 +14,7 @@ import {
 import { BARGE_BEACHED_ALPHA, BARGE_BEACHED_TINT, COAST_LABEL_FONT_PX, COAST_MARKER_COLOR, COAST_MARKER_TEXT_COLOR } from '../config/hunt-config';
 import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
-import { CV_ARRIVED, CV_SAILING, CV_SUNK, convoyResolved, createConvoy, hitConvoyBarge, stepConvoy, type ConvoyEvents, type ConvoyParams, type ConvoyState } from '../core/convoy';
+import { CV_ARRIVED, CV_SAILING, CV_SUNK, convoyLandingMark, convoyResolved, createConvoy, hitConvoyBarge, stepConvoy, type ConvoyEvents, type ConvoyParams, type ConvoyState } from '../core/convoy';
 import type { ConvoySetup } from '../core/convoy-data';
 import type { PtTargetRule } from '../core/pt-target';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
@@ -71,18 +71,12 @@ export class Convoy {
     this.detectM = enemyDetectRangeM(ptBaseDetectM, speedFactorForBand(setup.detectBand, vis.speedFactor), vis, false);
     this.state = createConvoy(this.p);
     this.shown = new Uint8Array(this.p.count);
-    const beach = this.p.beach;
-    if (beach) {
-      // 上陸地点の印: 浜の線の上の明るい帯と、陸の側のラベル「上陸地点」（1 回だけ記録。毎フレーム触らない）
-      let x0 = Infinity;
-      let x1 = -Infinity;
-      for (const x of beach.x) {
-        x0 = Math.min(x0, x);
-        x1 = Math.max(x1, x);
-      }
-      this.mark = scene.add.graphics().setDepth(DEPTH.shallows);
-      this.mark.lineStyle(CONVOY_LANDING_MARK_WIDTH, COAST_MARKER_COLOR, 1).lineBetween(x0 - CONVOY_LANDING_MARK_PAD_M, beach.shoreY, x1 + CONVOY_LANDING_MARK_PAD_M, beach.shoreY);
-      this.markLabel = scene.add.text((x0 + x1) / 2, beach.shoreY + CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_LABEL, hudTextStyle(COAST_LABEL_FONT_PX, COAST_MARKER_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.shallows);
+    if (this.p.beach) {
+      // 上陸地点の印: 浜の線の上の砂色の帯と、陸の側のラベル「上陸地点」（1 回だけ記録。毎フレーム触らない。Scene の終わりに destroy）
+      const mk = convoyLandingMark(this.p.beach, CONVOY_LANDING_MARK_PAD_M, CONVOY_LANDING_MARK_LABEL_OFFSET_M);
+      this.mark = scene.add.graphics().setDepth(DEPTH.landingMark);
+      this.mark.lineStyle(CONVOY_LANDING_MARK_WIDTH, COAST_MARKER_COLOR, 1).lineBetween(mk.x0, mk.y, mk.x1, mk.y);
+      this.markLabel = scene.add.text(mk.labelX, mk.labelY, CONVOY_LANDING_MARK_LABEL, hudTextStyle(COAST_LABEL_FONT_PX, COAST_MARKER_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.landingMark);
     }
     for (const b of this.state.barges) {
       this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));

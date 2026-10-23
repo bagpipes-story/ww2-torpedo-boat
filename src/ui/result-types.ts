@@ -82,7 +82,7 @@ export interface PtResult {
   bursts: number;
   suppressions: number;
   /**
-   * 米PT の標的スロット（v0.6.4。jp_01）: 大発を狙った攻撃の数（航過の後の「（大発へ N）」）、最初に捉えた標的（0 自艇・1 大発。「最初 480 m ・ 大発」）、
+   * 米PT の標的スロット（v0.6.4。jp_01）: 大発を狙った攻撃の数（航過の後の「（大発へ N）」）、最初に捉えた標的（0 自艇・1 大発。「最初 600 m ・ 大発」＝jp_01 の大発の帯 silent・新月）、
    * 砲の名の頭（label から「機銃」を除いた「25mm」。jp_05 は「13mm」）。jp_01 では hits / cleanPasses / firedPasses は自艇への攻撃だけ（大発への航過は「かわした」の分母に入らない）
    */
   passesOnBarges: number;

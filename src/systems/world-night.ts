@@ -45,7 +45,7 @@ export function applyNight(
 }
 
 /**
- * 味方の大発の輸送隊（v0.6.4）に今夜を当てた複製: 先頭の x に bargeLeadDx（敵の大発の隊と同じ揺らぎ）、左右反転なら先頭・上陸線・針路を東西に入れ替える（jp_01 は mirror_chance 0）。
+ * 味方の大発の輸送隊（v0.6.4）に今夜を当てた複製: 先頭の x に bargeLeadDx（敵の大発の隊と同じ揺らぎ）、左右反転なら先頭・上陸線（浜があれば上陸地点と転舵の x も）・針路を東西に入れ替える（jp_01 は mirror_chance 0）。
  * 規則・帯はそのまま。中身は core/convoy-data の convoyParamsAtNight（模擬 core/convoy-sim と同じ式）
  */
 export function applyConvoyNight(night: NightRoll, c: ConvoySetup, boundsWidth: number): ConvoySetup {

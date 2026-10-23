@@ -126,6 +126,8 @@ export const DEPTH = {
   /** 帰投地点の輪・浅瀬: 海の上、光と艦艇の下 */
   returnRing: 1,
   shallows: 1,
+  /** 上陸地点の印（v0.6.4 実機 1 回目。systems/convoy）: 陸・浜の線の上。shallows と同じだと後に作る陸の塗り（entities/shallows）に帯の半分と「上陸地点」が隠れた */
+  landingMark: 1.5,
   wake: 4,
   torpedo: 8,
   destroyer: 9,

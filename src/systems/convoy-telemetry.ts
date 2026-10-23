@@ -31,7 +31,7 @@ export function initConvoyTelemetry(w: ConvoyTelemetryWorld): ConvoyTelemetry {
   return t;
 }
 
-/** 毎フレーム 1 回: 上陸・沈没・航行中・決着、浜まで（最も遅れた航行中の大発。x の差）、最寄りの航行中の大発への相対位置と距離（1 回の平方根） */
+/** 毎フレーム 1 回: 上陸・沈没・航行中・決着、浜まで（最も遅れた航行中の大発から浜（上陸地点）まで。core/convoy の convoyLeftM。浜の無い隊は上陸線までの x の差）、最寄りの航行中の大発への相対位置と距離（1 回の平方根） */
 export function refreshConvoyTelemetry(t: ConvoyTelemetry, w: ConvoyTelemetryWorld): void {
   const c = w.convoy;
   if (!c) return;
