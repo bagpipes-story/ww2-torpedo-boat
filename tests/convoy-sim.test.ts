@@ -1,5 +1,5 @@
 // 味方の大発を守る模擬（v0.6.4。core/convoy-sim・convoy-sim-policy・convoy-sim-cell・systems/convoy-sim-setup、spec §F）: 模擬の組み立て・上書き・再現・行の分け方（速い検査だけ）。
-// 遊び方ごとの帯（spec §F.4。N 200・固定 seed）は tests/convoy-sim-{a,b,c,d,e,f}（簡単側への揺れを捕まえるかは convoy-sim-g。行の分け方は tests/convoy-sim-kit の SIM_FILES。1 夜が 170〜200 秒で 1 行 6 秒ほどなので 1 ファイル 2〜3 行＝vitest で 13〜16 秒ほど。実測は tests/convoy-sim-kit）。
+// 遊び方ごとの帯（spec §F.4。N 200・固定 seed）は tests/convoy-sim-{a,b,c,d,e,f,i}（簡単側への揺れを捕まえるかは convoy-sim-g、近くから撃つ人の型は convoy-sim-h。行の分け方は tests/convoy-sim-kit の SIM_FILES。1 行 vitest で 7 秒ほどなので 1 ファイル 2 行（短い夜は 3 行）＝15 秒ほど。実測は tests/convoy-sim-kit）。
 // 帯を外したら、まず模擬が spec §F.1〜F.2 どおりかを確かめ、次に data の jp_01・jp_t38 の値だけを直す（source に理由）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
@@ -73,7 +73,7 @@ describe('味方の大発を守る模擬（v0.6.4、spec §F）', () => {
     expect(CONVOY_CALIBRATION.map((x) => x.policy)).toEqual([...CONVOY_POLICIES]);
     expect(CONVOY_CALIBRATION.filter((x) => x.star).map((x) => x.policy)).toEqual(['none', 'follow_shoot', 'follow_full', 'shield_full']);
     for (const p of CONVOY_POLICIES) expect([CONVOY_POLICY_SPECS[p].shoot, CONVOY_POLICY_SPECS[p].dodge], p).toEqual([p.endsWith('_shoot') || p.endsWith('_full'), p.startsWith('lead') || p.endsWith('_dodge') || p.endsWith('_full')]);
-    // 帯のある行は 6 つのファイルで 1 回ずつ回す（表だけの lead_shoot は回さない。帯の無い shield_dodge は shield_full の対の相手として a で回る）。対の相手は同じファイルで回る（相手を含めて 1 ファイル 3 行まで）
+    // 帯のある行は 7 つのファイルで 1 回ずつ回す（表だけの lead_shoot は回さない。帯の無い shield_dodge は shield_full の対の相手として a で回る）。対の相手は同じファイルで回る（相手を含めて 1 ファイル 3 行まで）
     const files = Object.values(SIM_FILES) as readonly (readonly ConvoyPolicy[])[];
     expect(files.flat().sort()).toEqual(CONVOY_CALIBRATION.filter((x) => Object.keys(x.bands).length > 0).map((x) => x.policy).sort());
     for (const f of files) expect(new Set([...f, ...f.flatMap((p) => simPartners(p))]).size, f.join(',')).toBeLessThanOrEqual(3);
