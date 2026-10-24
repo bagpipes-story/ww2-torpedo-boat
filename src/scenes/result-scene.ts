@@ -28,14 +28,15 @@ import type { MissionEndReason } from '../core/mission-flow';
 import type { KpiResultLines } from '../systems/kpi-storage';
 import { bargeResultLines, escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
 import { resultDawnSuffixS, resultEvadePartJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
+import { convoyHeadJa, convoyResultLine } from '../ui/convoy-lines';
 import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa, ptResultLines } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import type { BargeResult, EscortResult, PtResult } from '../ui/result-types';
+import type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types';
 
 export type { MissionEndReason } from '../core/mission-flow';
-export type { BargeResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
+export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
 
 /** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
 const TRANSPORT_ENEMY_ID = 'ijn_transport';
@@ -113,6 +114,7 @@ export interface MissionResult {
   /** 僚艇（v0.4.4）の記録。任務に僚艇がいなければ null。detections は駆逐艦に見つかった回数（回避の点の根拠。駆逐艦のいない任務は 0） */
   escort: EscortResult | null;
   pt: PtResult | null; // 敵の米PT（v0.6.3）の記録。米PT の任務でなければ null（detections は米PT の隊に見つかった回数）
+  convoy: ConvoyResult | null; // 味方の大発の輸送隊（v0.6.4）の記録。輸送隊の任務でなければ null
   detections: number;
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;
@@ -163,10 +165,17 @@ export class ResultScene extends Phaser.Scene {
       y += RESULT_SECTION_GAP;
       for (const l of bargeResultLines(h)) line(l, HUD_FONT_HEADING_PX);
     } else if (r.pt) {
-      // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾、13mm の射撃・命中・撃退・撃沈（実機 1 回目。data を合わせる根拠。CLAUDE.md §9）
-      const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned);
-      line(a, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
-      y += RESULT_SECTION_GAP;
+      // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾、13mm の射撃・命中・撃退・撃沈（実機 1 回目。data を合わせる根拠。CLAUDE.md §9）。
+      // 味方の大発の輸送隊（v0.6.4。jp_01）はその上に 1 行目「大発 上陸 2/3 ・ 沈没 1（ノルマ 2） ・ 大発の被弾 9 発」（米PT の 1 行目は 20 px に）
+      const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned, r.convoy !== null);
+      if (r.convoy) {
+        line(convoyResultLine(r.convoy), HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+        y += RESULT_SECTION_GAP;
+        line(a, HUD_FONT_HEADING_PX);
+      } else {
+        line(a, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+        y += RESULT_SECTION_GAP;
+      }
       line(b, HUD_FONT_HEADING_PX);
       line(c, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
       if (d) line(d, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
@@ -191,7 +200,8 @@ export class ResultScene extends Phaser.Scene {
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     const score = computeScore(
       // 撃破: 大発（砲）・13mm で沈めた米PT（v0.6.3 実機 1 回目。撃退は点なし）か輸送船（魚雷。v0.4.7）
-      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside },
+      // 上陸（v0.6.4。味方の大発の輸送隊。scoring.json の convoy.points_per_arrival）は帰投の有無に関わらず上陸した隻数ぶん
+      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside, arrivals: r.convoy ? r.convoy.arrived : 0 },
       scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
@@ -199,11 +209,13 @@ export class ResultScene extends Phaser.Scene {
     const evadePart = resultEvadePartJa(scoringParams.evadeByType[r.missionType], score.evade, r);
     const transportPart = r.transportEnabled ? ` ・ 輸送船 ${score.kills}` : '';
     const ptKillPart = r.pt && r.pt.gunEnabled ? ` ・ 撃沈 ${score.kills}` : ''; // 13mm で沈めた米PT の点（v0.6.3 実機 1 回目。砲のある米PT の任務だけ）
-    line(`帰投 ${score.survival}${r.returned && r.dawn.caughtOutside ? `（夜明け後 ×${scoringParams.afterDawnFactor}）` : ''} ・ ${h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${ptKillPart}${evadePart}` : `${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart}`} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+    const convoyPart = r.convoy ? ` ・ 上陸 ${score.deliveries}` : ''; // 上陸した大発の点（v0.6.4。輸送隊の任務だけ。達成の次）
+    line(`帰投 ${score.survival}${r.returned && r.dawn.caughtOutside ? `（夜明け後 ×${scoringParams.afterDawnFactor}）` : ''} ・ ${h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${convoyPart}${ptKillPart}${evadePart}` : `${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart}`} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     const ships = resultShipsJa(r); // 夜明けに退いた艦（v0.6.2）は「退いた」。1 隻の任務は駆逐艦の撃沈数で（輸送船が沈まなくても「撃沈」）
-    const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : r.pt ? ptHeadJa(r.pt) : ships;
+    // 輸送隊（v0.6.4）の頭は「大発 2/3 ・ 米PT: …」（届けた／届かずは本文 1 行目の「（ノルマ 2）」が言う）
+    const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : r.pt ? (r.convoy ? convoyHeadJa(r.convoy, ptHeadJa(r.pt)) : ptHeadJa(r.pt)) : ships;
     line(`${head}   帰投: ${resultReturnJa(r.reason, r.returned)}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
     for (const l of [r.raidLine, dawnResultLine(r.dawn, r.returned, r.reason === 'cleared')]) if (l) line(l, HUD_FONT_HEADING_PX); // 「出撃前」と夜明け（v0.6.1）の行。無ければ出さない
     if (r.escort) line(escortResultLine(r.escort, r.detections, r.destroyerSunk), HUD_FONT_HEADING_PX);

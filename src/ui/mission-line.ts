@@ -4,6 +4,7 @@
 // v0.6.3: 米PT の 3 つのモード（文とキーは ui/pt-lines.ts）。航過の結果は航過の通し番号が増えてから PT_RESULT_SHOW_MS の間（通し番号は撃った弾がみな落ちてから増える。ui/mission-mode の ptResultShown）。
 // 実機 1 回目: T-14 の 13mm の 2 つ（射撃・撃退と撃沈。ui/pt-gun-lines）。出来事は 13mm の出来事の通し番号が増えてから PT_RESULT_SHOW_MS の間（赤い線に隠れている間は始めず、航過の結果は出来事の後に出す）。
 // 実機 2 回目のレビュー R2・ux-3: 米PT の時刻の旗は ui/pt-line-clock（出来事は 1 度出たら出し直さない・同じ PT の連射の結果は出来事の行に足す）。
+// v0.6.4: 味方の大発の輸送隊（jp_01）: 平常の行は ptKey と convoyKey の両方で組み直し、沈没・上陸の出来事（時計は pt-line-clock）、呼びかけの語「大発 上陸 2/3 ・ 」（ui/convoy-lines）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
@@ -29,14 +30,14 @@ import { SP_APPROACH } from '../core/seaplane';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { STORM_AHEAD, STORM_NEAR } from '../core/storm';
 import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine, seaplaneLine, sightedFast } from './hud-lines';
-import { DAWN_AIR_NONE } from '../core/dawn-air';
-import { airRaidTagJa, bargeHideTagKey, clockKey, dawnCallLabel, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
+import { airRaidTagJa, bargeHideTagKey, callLineText, clockKey, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
+import { convoyEventLine, convoyKey, convoyWaiting } from './convoy-lines';
 import { ptKey, ptLine } from './pt-lines';
 import { PtLineClock } from './pt-line-clock';
 import {
   MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
   MISSION_NORMAL, MISSION_PLANE, MISSION_PLANE_ATTACK, MISSION_PLANE_RESULT, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING,
-  MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
+  MISSION_CONVOY_EVENT, MISSION_PT, MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -80,6 +81,8 @@ export class MissionLine {
   /** 米PT（v0.6.3）: 2 行目のキー（ui/pt-lines の ptKey）と、攻撃の結果・13mm の出来事の時刻の旗（ui/pt-line-clock） */
   private lastPtKey = -1;
   private readonly ptClock = new PtLineClock();
+  /** 味方の大発の輸送隊（v0.6.4）: 2 行目のキー（ui/convoy-lines の convoyKey。平常の行の浜まで・出来事） */
+  private lastConvoyKey = -1;
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -115,6 +118,8 @@ export class MissionLine {
     this.ptClock.shown(mode);
     const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
     const pKey = ptMode ? ptKey(t, mode, flags, this.lastPtKey, this.ptClock.merge) : 0;
+    // 輸送隊（v0.6.4）: 浜までの刻みは平常の行（米PT が見えていない）と決着の前の呼びかけ（「大発の上陸を待て  浜まで N m」。レビュー ux-1）のときだけ求める。出来事の種類は出来事の行のときだけ
+    const cKey = convoyKey(t.convoy, (mode === MISSION_PT && !t.pt.sighted) || (mode === MISSION_CALL && convoyWaiting(t.convoy)), mode === MISSION_CONVOY_EVENT ? this.ptClock.convoyEvent : 0);
     const planeMode = mode === MISSION_PLANE_ATTACK || mode === MISSION_PLANE || mode === MISSION_PLANE_RESULT;
     // 敵機までの距離は接近中だけ 100 m 刻み（切り上げ）
     const planeStep = t.planePhase === SP_APPROACH ? Math.ceil(t.planeDistM / PLANE_DISTANCE_STEP_M) : 0;
@@ -166,6 +171,7 @@ export class MissionLine {
       sKey !== this.lastStrikeKey ||
       tagKey !== this.lastBargeTagKey ||
       pKey !== this.lastPtKey ||
+      cKey !== this.lastConvoyKey ||
       ((mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_LAG) && (homeStep !== this.lastHomeStep || t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
@@ -199,7 +205,11 @@ export class MissionLine {
       this.lastStrikeKey = sKey;
       this.lastBargeTagKey = tagKey;
       this.lastPtKey = pKey;
-      if (ptMode) {
+      this.lastConvoyKey = cKey;
+      if (mode === MISSION_CONVOY_EVENT) {
+        const l = convoyEventLine(t.convoy, this.ptClock.convoyEvent);
+        this.missionText.setText(l.text).setColor(l.color);
+      } else if (ptMode) {
         const l = ptLine(t, mode, pKey);
         this.missionText.setText(l.text).setColor(l.color);
       } else if (strikeMode) {
@@ -249,7 +259,8 @@ export class MissionLine {
         this.missionText.setText('燃料切れ — 漂流').setColor(HUD_COLOR_WARN);
       } else if (mode === MISSION_CALL) {
         const warn = (call & (CALL_FUEL | CALL_DAWN)) !== 0;
-        this.missionText.setText(`${dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE)}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
+        // 輸送隊の任務（v0.6.4）の決着は「大発 上陸 2/3 ・ 帰投せよ」（燃料・夜明けの理由が上ならその頭。core/mission-flow の topCall は 1 ビットだけ）、決着の前の夜明け近しは「大発の上陸を待て」（ui/dawn-lines）
+        this.missionText.setText(callLineText(t, call, homeStep)).setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
       } else {
         // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば狩り場と来る方角（「大発は南の岸沿いを東から」）
         const forecast = t.stormState === STORM_AHEAD ? ` ・ ${t.stormNorth ? '北' : '南'}に暴風 ${stormStep * STORM_AHEAD_STEP_M} m` : '';

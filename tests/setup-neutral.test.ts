@@ -21,12 +21,14 @@ function build(id: string, hard: boolean, seed: number): { s: ReturnType<typeof 
   return { s, draws };
 }
 
-/** 米PT の鍵（v0.6.3 で足す。無ければ何もしない）を消した JSON */
+/** 米PT の鍵（v0.6.3 で足す）と輸送隊の鍵（v0.6.4 で足す。規則は convoy の中なので他に消す鍵は無い）を消した JSON（無ければ何もしない） */
 function neutralJson(s: ReturnType<typeof buildWorldSetup>): string {
   const o = JSON.parse(JSON.stringify(s)) as Record<string, unknown>;
   delete o['ptBoats'];
+  delete o['convoy'];
   const m = o['mission'] as Record<string, unknown> | undefined;
   if (m) delete m['ptBoats'];
+  if (m) delete m['convoy'];
   return JSON.stringify(o, null, 1);
 }
 

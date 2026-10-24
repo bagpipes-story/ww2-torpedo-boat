@@ -23,15 +23,9 @@ import type { SpreadConfig } from '../core/salvo';
 import { isSortie } from '../core/sortie';
 import {
   HOME_COLOR,
-  HOME_COLOR_TEXT,
-  HOME_MARKER_DISTANCE_STEP_M,
-  HOME_MARKER_TOP_MARGIN,
-  HUD_COLOR_WARN,
   IDENTIFY_BUTTON_Y,
   LOOKOUT_BUTTON_Y,
-  PLANE_DISTANCE_STEP_M,
   SPREAD_BUTTON_Y,
-  PLANE_MARKER_TOP_MARGIN,
   IDENTIFY_PULSE_ALPHA_MAX,
   IDENTIFY_PULSE_HZ,
   ROUND_BUTTON_ALPHA,
@@ -39,8 +33,6 @@ import {
   TORPEDO_BUTTON_RADIUS,
   ROUND_BUTTON_GAP,
   ROUND_BUTTON_RADIUS,
-  TARGET_MARKER_DISTANCE_STEP_M,
-  TARGET_MARKER_TOP_MARGIN,
   HUD_COLOR_KPI,
   HUD_FONT_DEBUG_PX,
   HUD_HIST_BADGE_JA,
@@ -48,8 +40,7 @@ import {
   hudTextStyle,
 } from '../config/ui-config';
 import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
-import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR, GUN_BUTTON_LABEL } from '../config/hunt-config';
-import { PT_MARKER_LABEL } from '../config/pt-config';
+import { GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HoldButton } from '../systems/hold-button';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PauseControl } from '../systems/pause-control';
@@ -60,7 +51,7 @@ import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
 import { HpBar } from '../ui/hp-bar';
-import { EdgeMarker } from '../ui/edge-marker';
+import { HudMarkers } from '../ui/hud-markers';
 import { DawnBanner } from '../ui/dawn-banner';
 import { FuelGauge } from '../ui/fuel-gauge';
 import { gunButtonLabel, gunButtonReloadN } from '../ui/pt-gun-lines';
@@ -70,12 +61,9 @@ export class HudScene extends Phaser.Scene {
   private debugHud?: DebugHud;
   private boatHud?: BoatHud;
   private hpBar?: HpBar;
-  private targetMarker?: EdgeMarker;
-  private homeMarker?: EdgeMarker;
-  /** 敵機（v0.4.1 の水上機、v0.6.1 から夜明けの空襲の印の機も）。どちらかがある任務だけ。来ている間に画面外なら赤い矢印 */
-  private planeMarker?: EdgeMarker;
+  /** 画面端のマーカー 4 本（敵・帰投・敵機・岸。v0.6.4 で ui/hud-markers へ） */
+  private markers?: HudMarkers;
   private dawnBanner?: DawnBanner; // 夜明けの帯（v0.6.1。夜明けに 1 回だけ。ui/dawn-banner）
-  private coastMarker?: EdgeMarker;
   private fuelGauge?: FuelGauge;
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
@@ -139,13 +127,7 @@ export class HudScene extends Phaser.Scene {
     if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud);
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
-    // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
-    const guns = mission.mainWeapon === 'guns';
-    this.targetMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: mission.ptBoats ? PT_MARKER_LABEL : guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns || mission.ptBoats !== null, topMargin: TARGET_MARKER_TOP_MARGIN });
-    this.homeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
-    // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
-    if (mission.coast) this.coastMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
-    if (this.telemetry.seaplaneEnabled || this.telemetry.dawn.strikeEnabled) this.planeMarker = new EdgeMarker(this, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+    this.markers = new HudMarkers(this, mission, this.telemetry); // 画面外マーカー 4 本（敵・帰投・敵機・岸。ui/hud-markers。v0.6.4 で切り出し）
     this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached);
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
@@ -214,11 +196,8 @@ export class HudScene extends Phaser.Scene {
       this.extinguishButton?.destroy();
       this.lookoutButton?.destroy();
       this.identifyButton?.destroy();
-      this.targetMarker?.destroy();
-      this.homeMarker?.destroy();
-      this.planeMarker?.destroy();
+      this.markers?.destroy();
       this.dawnBanner?.destroy();
-      this.coastMarker?.destroy();
       this.fuelGauge?.destroy();
       this.boatHud?.destroy();
       this.hpBar?.destroy();
@@ -230,11 +209,8 @@ export class HudScene extends Phaser.Scene {
       this.extinguishButton = undefined;
       this.lookoutButton = undefined;
       this.identifyButton = undefined;
-      this.targetMarker = undefined;
-      this.homeMarker = undefined;
-      this.planeMarker = undefined;
+      this.markers = undefined;
       this.dawnBanner = undefined;
-      this.coastMarker = undefined;
       this.fuelGauge = undefined;
       this.boatHud = undefined;
       this.hpBar = undefined;
@@ -254,10 +230,7 @@ export class HudScene extends Phaser.Scene {
     this.boatHud?.refresh(this.telemetry, this.time.now);
     this.hpBar?.refresh(this.telemetry, this.time.now);
     this.fuelGauge?.refresh(this.telemetry);
-    this.targetMarker?.refresh(this.telemetry.enemyDx, this.telemetry.enemyDy, this.telemetry.enemySighted, this.telemetry);
-    this.homeMarker?.refresh(this.telemetry.homeDx, this.telemetry.homeDy, !this.telemetry.atHome, this.telemetry, this.telemetry.homeEdgeM);
-    this.planeMarker?.refresh(this.telemetry.planeDx, this.telemetry.planeDy, !Number.isNaN(this.telemetry.planeDx), this.telemetry);
-    this.coastMarker?.refresh(this.telemetry.coastDx, this.telemetry.coastDy, !Number.isNaN(this.telemetry.coastDy), this.telemetry);
+    this.markers?.refresh(this.telemetry);
     this.dawnBanner?.refresh(this.telemetry, this.time.now);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
     this.torpedoButton?.update();

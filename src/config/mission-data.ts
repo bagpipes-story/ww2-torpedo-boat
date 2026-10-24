@@ -1,12 +1,14 @@
 // 任務の種（data/missions_seed.json）の読み出し（v0.4.0 で game-data.ts から切り出し。切り出した中身は v0.3.5 のまま、v0.4.0 で hazards を足した）。
-// 型は実行時に検査する（data 駆動なので壊れていれば起動時に分かる）。Briefing の文の読み出しは v0.6.3 から config/briefing-data.ts。
+// 型は実行時に検査する（data 駆動なので壊れていれば起動時に分かる）。Briefing の文の読み出しは v0.6.3 から config/briefing-data.ts、難易度ハード（hard）の読み出しと isNum・readStart は v0.6.4 から config/mission-hard-data.ts。
 import type { GameData } from './game-data';
+import { isNum, readHardBlock, readStart } from './mission-hard-data';
 import { isReturnPointDataRecord, returnPointFromData, type ReturnPoint } from '../core/mission-flow';
 import { isShallowRectDataRecord, shallowsFromData, type ShallowRect } from '../core/shallows';
 import { isStormMissionBlock, type StormMissionBlock } from '../core/storm';
 import { isBargeMissionBlock, type BargeMissionBlock } from '../core/barge-data';
 import { isPtMissionBlock, type PtMissionBlock } from '../core/pt-data';
 import { isEscortMissionBlock, type EscortMissionBlock } from '../core/escort';
+import { CONVOY_BARGE_ID, isConvoyMissionBlock, type ConvoyMissionBlock } from '../core/convoy-data';
 import { dawnStrikeFromData, type DawnStrikeBlock } from '../core/air-strike-data';
 import { isNightDataRecord, nightFromData, type NightBlock } from '../core/night';
 import { isMoonPhase, type MoonPhase } from '../core/visibility';
@@ -35,6 +37,7 @@ export interface PrototypeMission {
   /** 大発の隊（v0.4.2。core/barge-data）と岸（見た目と逃げる向き）。無ければ null */
   barges: BargeMissionBlock | null;
   ptBoats: PtMissionBlock | null; // 米PT の隊（v0.6.3。core/pt-data・config/pt-mission-data）。無ければ null。enemy_start・barges と一緒に置けない
+  convoy: ConvoyMissionBlock | null; // 味方の大発の輸送隊（v0.6.4。core/convoy-data・config/convoy-mission-data）。無ければ null。米PT の隊（pt_boats）の任務だけ。隻数は allies の大発の数
   coast: CoastBlock | null;
   /** 沿岸砲（v0.4.3。岸沿いの位置 m。無ければ null。岸（coast）が要る）。shoreBatteryXs は全門（ハードなら hard.extra_shore_battery_x_m を足す。v0.4.5） */
   shoreBattery: { xM: number } | null;
@@ -76,17 +79,8 @@ export interface CoastBlock {
   label: string;
 }
 
-export function isNum(v: unknown): v is number {
-  return typeof v === 'number' && Number.isFinite(v);
-}
-
-function readStart(v: unknown, label: string): { x: number; y: number; headingDeg: number } {
-  const r = v as Record<string, unknown> | undefined;
-  if (!r || !isNum(r['x_m']) || !isNum(r['y_m']) || !isNum(r['heading_deg'])) {
-    throw new Error(`${label} に x_m / y_m / heading_deg が無い`);
-  }
-  return { x: r['x_m'], y: r['y_m'], headingDeg: r['heading_deg'] };
-}
+/** isNum は v0.6.4 から config/mission-hard-data（game-data が import する。今までの import のための再 export） */
+export { isNum } from './mission-hard-data';
 
 export function getPrototypeMission(data: GameData, missionId: string, hard: boolean = false): PrototypeMission {
   const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
@@ -183,31 +177,9 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   if (escort && (barges || ptBoats)) throw new Error(`${missionId}.v0_1_prototype: 僚艇（escort）は駆逐艦（enemy_start）の任務だけ`);
   if (type === 'escort_vip' && !escort) throw new Error(`${missionId}: type が escort_vip なのに v0_1_prototype.escort が無い`);
   if (escort && !(data.boats.boats as readonly Record<string, unknown>[]).some((x) => x['id'] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat（${escort.boat}）が boats.json に無い`);
-  // 難易度ハード（v0.4.5）: hard block の extra_enemy_starts（駆逐艦を足す。enemy_start の任務だけ）と extra_shore_battery_x_m（沿岸砲を足す。shore_battery の任務だけ）
-  const hardRaw = proto['hard'] as Record<string, unknown> | undefined;
   const enemyStart = barges || ptBoats ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
-  const enemyStarts = enemyStart ? [enemyStart] : [];
-  const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
-  let objectiveSinkCount: number | null = null;
-  if (hardRaw !== undefined) {
-    if (typeof hardRaw !== 'object' || hardRaw === null) throw new Error(`${missionId}.v0_1_prototype.hard が object でない（docs/02 §6.4）`);
-    const es = hardRaw['extra_enemy_starts'];
-    if (es !== undefined) {
-      if (!Array.isArray(es) || es.length === 0) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は空でない配列`);
-      if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は駆逐艦（enemy_start）の任務だけ`);
-      if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
-    }
-    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）
-    const osc = hardRaw['objective_sink_count'];
-    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || !Array.isArray(es) || (osc as number) > 1 + (es as unknown[]).length)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
-    if (hard && osc !== undefined) objectiveSinkCount = osc as number;
-    const xs = hardRaw['extra_shore_battery_x_m'];
-    if (xs !== undefined) {
-      if (!Array.isArray(xs) || xs.length === 0 || !xs.every((x) => isNum(x) && x >= 0 && x <= b.width)) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m は海域の幅の中の数の配列`);
-      if (!shoreBattery) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m は沿岸砲（shore_battery）の任務だけ`);
-      if (hard) for (const x of xs as number[]) shoreBatteryXs.push(x);
-    }
-  }
+  // 難易度ハード（v0.4.5。config/mission-hard-data。v0.6.4 で切り出し）: 全隻の出発点・全門の沿岸砲・撃沈の達成の隻数（ハードなら hard block の分を足す）
+  const { enemyStarts, shoreBatteryXs, objectiveSinkCount } = readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b);
   // 輸送船（v0.4.7）: 駆逐艦の任務だけ（隊の 1 隻として同じ AI で動く）
   const trRaw = proto['transport'] as Record<string, unknown> | undefined;
   let transport: PrototypeMission['transport'] = null;
@@ -228,6 +200,17 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     const events = data.riskEvents.events as readonly Record<string, unknown>[];
     night = nightFromData(nightRaw, hazards, (id) => events.some((e) => e['id'] === id && isNum(e['share'])), missionId);
   }
+  // 味方の大発の輸送隊（v0.6.4。jp_01）: 米PT の隊（pt_boats）の任務だけ（駆逐艦・敵の大発・僚艇はその検査で既に排他）。岸（coast）が要り、主兵装は guns（25mm で守る）。
+  // allies に大発（CONVOY_BARGE_ID）が 1 隻以上（数が隻数。offsets_m と同じ数かは convoy-data の検査）。帰投の輪と上陸線は反転しないので night.mirror_chance は 0
+  const convoyRaw = proto['convoy'];
+  if (convoyRaw !== undefined && !isConvoyMissionBlock(convoyRaw)) throw new Error(`${missionId}.v0_1_prototype.convoy（lead_start / offsets_m / landing_x_m / arrive_quota / barge_hp / detect_band / target_keep_ratio / target_switch_hold_s / flash_hold_s / source。任意の beach は spacing_m / margin_m / run_in_deg の数）が欠けている（docs/02 §6.4）`);
+  const convoy = convoyRaw === undefined ? null : convoyRaw;
+  if (convoy && !ptBoats) throw new Error(`${missionId}.v0_1_prototype: 輸送隊（convoy）は米PT の隊（pt_boats）の任務だけ`);
+  if (convoy && !coast) throw new Error(`${missionId}.v0_1_prototype: 輸送隊（convoy）には岸（coast）が要る（浜の見た目）`);
+  if (convoy && mainWeapon !== 'guns') throw new Error(`${missionId}: 輸送隊（convoy）の任務の main_weapon は guns（大発を守る砲）`);
+  const allies = m['allies'];
+  if (convoy && (!Array.isArray(allies) || !allies.some((a) => a === CONVOY_BARGE_ID))) throw new Error(`${missionId}.allies に輸送隊の大発（${CONVOY_BARGE_ID}）が無い（数が隻数）`);
+  if (convoy && night && night.mirrorChance > 0) throw new Error(`${missionId}.v0_1_prototype.night.mirror_chance は輸送隊の任務では 0（帰投の輪と上陸線は反転しない）`);
   return {
     id: missionId,
     type,
@@ -244,6 +227,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     mainWeapon,
     barges,
     ptBoats,
+    convoy,
     coast,
     shoreBattery,
     shoreBatteryXs,

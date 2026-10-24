@@ -7,8 +7,13 @@ import type { MoonPhase } from './visibility';
 export const MENU_STATUS_PLAYABLE = '出撃準備 →';
 /** 撃たない任務（v0.6.3。main_weapon none＝米PT）の「条件」の武器の句。和文と英字の間に半角スペースを入れない（Phaser の折り返しは半角スペースで切るので「魚雷は PT⏎の下」と割れた） */
 export const NO_WEAPON_BRIEFING_JA = '魚雷はPTの下を抜ける（撃たない）';
-/** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由） */
+/** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由）。v0.6.4 から ptGunBriefingJa('13mm機銃') と同じ文 */
 export const PT_GUN_BRIEFING_JA = '13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）';
+
+/** 米PT の任務の「条件」の武器の句を砲の名（boats.json の gun_battery.label_ja。「13mm機銃」「25mm機銃」）から（v0.6.4。jp_01 の T-38 の 25mm）。数字の後に「機銃」が続くので「13mm1挺」とは読めない */
+export function ptGunBriefingJa(label: string): string {
+  return `${label}1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`;
+}
 
 export interface MenuEntry {
   id: string;
@@ -144,6 +149,11 @@ export interface BriefingNumbers {
   homeY: number;
   boundsW: number;
   boundsH: number;
+  /**
+   * 帰投地点の方角の差し替え（v0.6.4 レビュー ux-6。輸送隊の任務だけ: 自艇の出発点から見た帰投地点。「敵（東から）」と同じ基準）。
+   * 無ければ海域の中心から（compassJa。ほかの任務の文は変わらない）
+   */
+  homeFromJa?: string;
   /** 「条件」に足す一言（v0.5.2。見越し点マーカーの解放の状態。無ければ ''） */
   aimAssistJa?: string;
   /** 「条件」の武器の句の差し替え（v0.6.3。撃たない任務だけ。無ければ砲か魚雷の本数） */
@@ -177,7 +187,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
   const gal = Number.isInteger(n.fuelGal) ? String(n.fuelGal) : n.fuelGal.toFixed(1);
   return [
     { label: '目的', text: t.objective },
-    { label: '成功', text: `${t.success}（帰投地点は${compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
+    { label: '成功', text: `${t.success}（帰投地点は${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
     { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },

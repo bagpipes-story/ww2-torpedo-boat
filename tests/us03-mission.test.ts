@@ -63,7 +63,7 @@ describe('us_03 の世界と Briefing（v0.4.2）', () => {
   it('スコア: 4 隻撃破して帰投（燃料 23%・乗員 13/14）1,416、3 隻（25%・13/14）1,343、4 隻撃破して沈没 600 < 撃たずに帰投 700 < 2 隻で帰投 850', () => {
     const P = getScoringParams(gameData);
     const base: ScoreInput = { returned: true, objectiveDone: true, missionType: 'barge_hunt', bands: [], kills: 4, killEnemyId: 'daihatsu_barge', fuelLeftPct: 23, crewAlive: 13, crewTotal: 14 };
-    expect(computeScore(base, P)).toEqual({ survival: 700, objective: 300, hits: 0, kills: 300, evade: 0, fuel: 23, crew: 93, crewHalf: false, total: 1416 });
+    expect(computeScore(base, P)).toEqual({ survival: 700, objective: 300, hits: 0, kills: 300, evade: 0, fuel: 23, crew: 93, deliveries: 0, crewHalf: false, total: 1416 });
     expect(computeScore({ ...base, kills: 3, fuelLeftPct: 25 }, P).total).toBe(1343);
     expect(computeScore({ ...base, returned: false, kills: 4, crewAlive: 0 }, P).total).toBe(600);
     expect(computeScore({ ...base, objectiveDone: false, kills: 0 }, P).total).toBe(700);

@@ -22,6 +22,7 @@ import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '..
 import { PlayerBoat } from '../entities/player-boat';
 import type { BargeHunt } from './barge-hunt';
 import { BoatDamage } from './boat-damage';
+import { Convoy } from './convoy';
 import type { DestroyerGroup } from './destroyer-group';
 import { stepDestroyerSide } from './destroyer-step';
 import type { EscortBoat } from './escort-boat';
@@ -48,6 +49,7 @@ export class MissionWorld {
   readonly destroyers: DestroyerGroup | null; // 駆逐艦の隊とその反撃（us_02・us_01。v0.4.5 から複数隻）。大発の任務では null。敵の有無を問わない読み口は enemy
   readonly hunt: BargeHunt | null; // 大発の隊と艇の砲（docs/02 §6.4、v0.4.2）。任務に barges が無ければ null
   readonly pts: PtSquadron | null; // 敵の米PT の隊（docs/02 §6.4、v0.6.3）。任務に pt_boats が無ければ null
+  readonly convoy: Convoy | null; // 味方の大発の輸送隊（docs/02 §6.4、v0.6.4。jp_01）。任務に convoy が無ければ null。米PT の標的スロットの的
   readonly escort: EscortBoat | null; // 僚艇（docs/02 §6.4、v0.4.4。要人脱出）。任務に escort が無ければ null
   readonly enemy: EnemySide;
   readonly torpedoes: TorpedoPool;
@@ -133,6 +135,7 @@ export class MissionWorld {
       this.atHome = insideRing(this.returnPoint, boat.x, boat.y);
     }
     this.escort?.step(dt, boat, !this.boat.sinking); // 僚艇（v0.4.4）は自艇を動かした後・駆逐艦の前（同じステップの位置を駆逐艦が狙う）
+    this.convoy?.step(dt); // 輸送隊（v0.6.4）も自艇の後・米PT の前（同じステップの大発の位置を米PT が狙う。模擬 core/convoy-sim と同じ順）
     if (this.smoke && this.smokeParams) {
       updateSmoke(this.smoke, this.smokeParams, boat, c.boundsMarginM, feelDt);
       if (g) this.hiddenBySmoke = dn !== null && losBlocked(this.smoke, this.smokeParams, dn.state.x, dn.state.y, boat.x, boat.y);
@@ -189,8 +192,9 @@ export class MissionWorld {
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, s.torpedoCapacity, mission.bounds);
     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
     const onSunk = (x: number, y: number): void => { this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発
+    this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
     // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）
-    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this);
+    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy);
     this.gunRng = en.gunRng;
     this.destroyers = en.destroyers;
     this.escort = en.escort;
@@ -226,6 +230,7 @@ export class MissionWorld {
     g?.updateVisuals(realDt);
     this.hunt?.updateVisuals(realDt, this.visRange2);
     this.pts?.updateVisuals(realDt, this.visRange2);
+    this.convoy?.updateVisuals(this.boat.state, this.visRange2, this.pts?.targets ? this.pts.targets.aimedBarge : -1);
     this.splashes.updateVisuals(realDt);
     if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
     this.friendly?.updateVisuals(realDt, this);
@@ -248,6 +253,12 @@ export class MissionWorld {
     return this.torpedoes.unresolvedCount > 0 || this.launcher.queued > 0;
   }
 
+  /** 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標 */
+  get returnCallDone(): boolean { return this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
+
+  /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。輸送隊の任務（v0.6.4）では立てない（大発は狩る相手ではない。決着は returnCallDone） */
+  get noTargetsLeft(): boolean { return this.convoy ? false : this.enemy.noTargetsLeft; }
+
   /** 走っている魚雷を外れとして確定する（終了時。Result の集計から漏れないようにする） */
   resolveRemainingAsMisses(): void {
     this.torpedoes.resolveRemainingAsMisses(this.torpedoEvents);
@@ -261,6 +272,7 @@ export class MissionWorld {
     this.torpedoes.destroy();
     this.hunt?.destroy();
     this.pts?.destroy();
+    this.convoy?.destroy();
     this.escort?.destroy();
     this.splashes.destroy();
     this.smokeScreen?.destroy();

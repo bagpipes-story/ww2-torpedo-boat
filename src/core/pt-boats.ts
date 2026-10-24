@@ -11,15 +11,16 @@
 // 艇の 13mm の閃光（c.flashM）でも見つける。13mm で沈んだ PT（PT_SUNK）は動かない。撃退・撃沈は core/pt-damage（乱数は呼ぶ側の seed+20）。
 // v0.6.3 実機 2 回目（「逃げるだけなら簡単。もっと執拗に追いかけ回して射撃して」）: 逃げる艇の艇尾側の突撃の PT（待つ PT は反対の舷）と、逃げる艇への航過を終えた PT は
 // 追撃（PT_CHASE。core/pt-chase）へ: 艇の後ろ寄りの舷へ回って並び、撃つ権利が空けば予告つきの連射（PT_PASS の burst）。連射の後も離れない。遅い艇・艇首の前へ出たら突撃へ戻る。
-// 定数・型・確保・脅威の PT・数えは pt-state.ts、航過の幾何は pt-pass.ts、航過の固め・終わりは pt-pass-end.ts、航過と連射の射撃と終わりの判定は pt-fire.ts、追撃は pt-chase.ts
+// 定数・型・確保・脅威の PT・数えは pt-state.ts、接触は pt-contact.ts（v0.6.4 で切り出し）、航過の幾何は pt-pass.ts、航過の固め・終わりは pt-pass-end.ts、航過と連射の射撃と終わりの判定は pt-fire.ts、追撃は pt-chase.ts
 // （使う側はここだけを import する。pt-state を出し直している）。
 import { beyondBounds } from './dawn-withdraw';
 import { CHASE_OUT, chaseEntryOk, chaseHeading, chaseKeep, commitBurst, countBurst, createChaseTarget, partnerReady, setChaseTarget, startChase, targetCourse } from './pt-chase';
+import { stepPtContact } from './pt-contact';
 import type { PtParams } from './pt-data';
-import { smokeBlocked, stepPass } from './pt-fire';
+import { stepPass } from './pt-fire';
 import { aimPoint, nearEdge, passCommitOk, stationHeading, targetSide } from './pt-pass';
 import { commitPass } from './pt-pass-end';
-import { countPass, PT_ALERT, PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, ptFighting, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
+import { countPass, PT_ALERT, PT_BREAK, PT_CHASE, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, type PtBoatState, type PtCheck, type PtEvents, type PtSection } from './pt-state';
 import type { SeededRng } from './rng';
 import { advanceShell, pointNearBoat } from './shells';
 import { bearingDeg, edgeTurnHeadingDeg, steerShip } from './ship-ai';
@@ -44,54 +45,7 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
   const vpx = Math.sin(ph) * boat.speedMps;
   const vpy = -Math.cos(ph) * boat.speedMps;
   const eff2 = p.gun.effectiveM * p.gun.effectiveM;
-  // 1. 接触: どれか 1 隻が見れば隊が捉える（最後に見た位置と速度を残す）。艇の 13mm を撃ったステップは閃光の距離（c.flashM）でも見つける（煙幕は無関係）
-  let anySeen = false;
-  let anyLive = false;
-  let anyNormal = false;
-  let near2 = Infinity;
-  const fl = c.flashM ?? 0;
-  const fl2 = fl * fl;
-  for (let i = 0; i < boats.length; i++) {
-    const b = boats[i]!;
-    if (ptFighting(b.phase)) anyLive = true;
-    const live = ptFighting(b.phase) && c.targetValid;
-    const d2 = (boat.x - b.x) * (boat.x - b.x) + (boat.y - b.y) * (boat.y - b.y);
-    const r = live && smokeBlocked(c, b) ? c.detectOpenM * c.smokeFactor : c.detectOpenM;
-    const normal = live && c.timeS >= p.detectFromS && d2 <= r * r;
-    if (normal) anyNormal = true;
-    q.seen[i] = normal || (live && c.timeS >= p.detectFromS && d2 <= fl2) ? 1 : 0;
-    if (q.seen[i] === 1) anySeen = true;
-    if (live && d2 < near2) near2 = d2;
-  }
-  if (near2 < q.closest2) q.closest2 = near2;
-  if (anySeen) {
-    const gained = !q.detected;
-    if (Number.isNaN(q.firstDetectM)) {
-      q.firstDetectM = Math.sqrt(near2);
-      q.flashFirst = !anyNormal; // 最初に見つかったのが閃光だけ（Result の「閃光」）
-    }
-    q.detected = true;
-    q.holdLeftS = p.detectHoldS;
-    q.lkX = boat.x;
-    q.lkY = boat.y;
-    q.lkVx = vpx;
-    q.lkVy = vpy;
-    q.lkHeadingDeg = boat.headingDeg;
-    q.lkAgeS = 0;
-    if (gained) ev.onContact(true);
-  } else if (q.detected && !anyLive) {
-    // みな去る（max_passes か夜明け）: 見る PT がいないので捉えるのをやめる（見失わせたには数えない。3 行目の「発見された！」も消える）
-    q.detected = false;
-    ev.onContact(false);
-  } else if (q.detected) {
-    q.holdLeftS -= feelDt;
-    q.lkAgeS += feelDt;
-    if (q.holdLeftS <= 0) {
-      q.detected = false;
-      if (c.targetValid) q.lostContacts++; // 沈み始め・輪の中で切れたのは見失わせたではない
-      ev.onContact(false);
-    }
-  }
+  stepPtContact(q, p, c, boat, vpx, vpy, feelDt, ev); // 1. 接触（隊で 1 つ。core/pt-contact。v0.6.4 で切り出し）
   // 2. 目標: 見えていれば今の位置（lkAgeS 0）、見えていなければ最後に見た位置から推す（体感秒 × time_scale で game 秒）
   const tx = q.lkX + q.lkVx * q.lkAgeS * p.timeScale;
   const ty = q.lkY + q.lkVy * q.lkAgeS * p.timeScale;
@@ -228,7 +182,10 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       ev.onOut(i);
     } else if (b.phase === PT_PASS && b.timerS > 0) stepPass(q, p, c, b, i, vpx, vpy, rng, feelDt, ev); // 固めたステップ（timerS 0）は撃たない（連射も）
   }
-  // 5. 弾: 航過の命中はその航過に、終わった後に落ちた弾は撃った PT の最後の航過に数える。その PT の弾がみな落ちたら航過の通し番号を増やす（HUD の結果は確定してから）
+  // 5. 弾: 航過の命中はその航過に、終わった後に落ちた弾は撃った PT の最後の航過に数える。その PT の弾がみな落ちたら航過の通し番号を増やす（HUD の結果は確定してから）。
+  // 着弾の相手（v0.6.4）: 船体の集合（c.targets）があればその valid な船体を index 順に見て最初に当たった 1 つ（自艇が [0]）、無ければ標的の 1 隻（v0.6.3 の式と 3 引数の onImpact そのまま）。
+  // 隊の命中（hits・passHits・lastPassHits・cleanPasses）はどの船体への命中も数える（隊の KPI。自艇だけの成績は世界が hull で分ける）
+  const hulls = c.targets;
   let lastInFlight = false;
   for (let k = 0; k < q.shells.length; k++) {
     const s = q.shells[k]!;
@@ -237,7 +194,18 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
       if (s.gunIndex === q.lastPassBoat) lastInFlight = true;
       continue;
     }
-    const hit = c.targetValid && pointNearBoat(s.impactX, s.impactY, boat, c.boatHalfLengthM, c.boatHalfBeamM + p.gun.splashRadiusM);
+    let hull = 0;
+    let hit = false;
+    if (hulls === undefined) hit = c.targetValid && pointNearBoat(s.impactX, s.impactY, boat, c.boatHalfLengthM, c.boatHalfBeamM + p.gun.splashRadiusM);
+    else {
+      for (let j = 0; j < hulls.length && !hit; j++) {
+        const h = hulls[j]!;
+        if (h.valid && pointNearBoat(s.impactX, s.impactY, h.boat, h.halfLengthM, h.halfBeamM + p.gun.splashRadiusM)) {
+          hit = true;
+          hull = j;
+        }
+      }
+    }
     if (hit) {
       q.hits++;
       if (s.gunIndex === q.owner) q.passHits++;
@@ -246,7 +214,8 @@ export function stepPtSection(q: PtSection, p: PtParams, c: PtCheck, rng: Seeded
         if (q.lastPassHits++ === 0 && q.lastPassFired) q.cleanPasses--;
       }
     }
-    ev.onImpact(s.impactX, s.impactY, hit);
+    if (hulls === undefined) ev.onImpact(s.impactX, s.impactY, hit);
+    else ev.onImpact(s.impactX, s.impactY, hit, hull);
   }
   if (q.seqPending && !lastInFlight) {
     q.seqPending = false;

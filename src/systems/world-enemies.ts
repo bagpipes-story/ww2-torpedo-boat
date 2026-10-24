@@ -13,6 +13,7 @@ import { DestroyerGroup } from './destroyer-group';
 import { EnemySide } from './enemy-side';
 import { EscortBoat } from './escort-boat';
 import { PtSquadron } from './pt-squadron';
+import type { PtTargetConvoy } from './pt-target';
 import type { SplashPool } from './splash-pool';
 import type { WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup';
@@ -41,6 +42,8 @@ export function buildEnemies(
   onSunk: (x: number, y: number) => void,
   /** 僚艇の沈んだ実秒に使う時計（世界の stepTimeS を命中のときに読む） */
   clock: { readonly stepTimeS: number },
+  /** 味方の大発の輸送隊（v0.6.4。systems/convoy。米PT の隊の標的スロットの的。無い任務は null） */
+  convoy: PtTargetConvoy | null = null,
 ): Enemies {
   const mission = s.mission;
   const ds = s.destroyer;
@@ -58,7 +61,7 @@ export function buildEnemies(
   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。
   // 艇の砲（実機 1 回目から jp_05 の T-14 の 13mm。seed+20 は PtSquadron が砲のあるときだけ作る）で沈めた PT は大発の撃破と同じ onSunk
-  const pts = s.ptBoats ? new PtSquadron(scene, s.ptBoats, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk) : null;
+  const pts = s.ptBoats ? new PtSquadron(scene, s.ptBoats, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy) : null;
   const enemy = new EnemySide(destroyers, hunt, pts);
   return { gunRng, destroyers, escort, escortHit, hunt, pts, enemy };
 }

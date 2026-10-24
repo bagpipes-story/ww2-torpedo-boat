@@ -2,6 +2,7 @@
 // 単位は実寸: 位置 m、速度 m/s、針路は方位角（0=北=画面上、時計回り、[0,360)）。
 // 時間圧縮（time_scale）は呼び出し側が dt に掛けて渡す（docs/02 §6.10）。
 // §7: 毎フレーム呼ばれる関数はオブジェクトを確保しない。state を書き換える。
+import type { ConvoyTelemetry } from './convoy';
 import type { DawnTelemetry } from './dawn-air';
 import type { PtTelemetry } from './pt-boats';
 import { clamp, degToRad, ktToMps, mpsToKt, wrapDeg180, wrapDeg360 } from './units';
@@ -175,6 +176,7 @@ export interface BoatTelemetry {
   transportSunk: boolean;
   dawn: DawnTelemetry; // 夜明け（v0.6.1。core/dawn-air）: ラッチ・夜明け後の秒・空の持ち主・空襲の段（systems/dawn-telemetry が毎フレーム書く）
   pt: PtTelemetry; // 敵の米PT（v0.6.3。core/pt-boats）: 隊の段階・航過・かわす向き・脅威の PT の相対位置（systems/pt-telemetry が毎フレーム書く。無い任務は enabled false）
+  convoy: ConvoyTelemetry; // 味方の大発の輸送隊（v0.6.4。core/convoy）: 隻数・上陸・沈没・浜まで・最寄りの大発（systems/convoy-telemetry が毎フレーム書く。無い任務は enabled false）
 }
 
 /** data/boats.json の1レコードのうち運動に使う部分 */

@@ -40,8 +40,12 @@ export const CALL_LABEL: Record<number, string> = {
   [CALL_EXPENDED]: '魚雷なし ',
 };
 
-/** 「帰投せよ」の理由の文。大発の任務（v0.4.2）は撃沈ではなく「撃破！」（ノルマ達成）、撃ち尽くしではなく「大発なし」（すべて撃破か上陸） */
-export function callLabel(call: number, gunMission: boolean): string {
+/**
+ * 「帰投せよ」の理由の文。大発の任務（v0.4.2）は撃沈ではなく「撃破！」（ノルマ達成）、撃ち尽くしではなく「大発なし」（すべて撃破か上陸）。
+ * 味方の大発の輸送隊（v0.6.4。jp_01）は決着（CALL_SUNK）に convoyJa「大発 上陸 2/3 ・ 」／「大発 全滅 ・ 」（ui/convoy-lines の convoyCallJa。輸送隊の無い任務は ''）
+ */
+export function callLabel(call: number, gunMission: boolean, convoyJa = ''): string {
+  if (convoyJa !== '' && call === CALL_SUNK) return convoyJa;
   if (gunMission && call === CALL_SUNK) return '撃破！';
   if (gunMission && call === CALL_EXPENDED) return '大発なし ';
   return CALL_LABEL[call] ?? '';

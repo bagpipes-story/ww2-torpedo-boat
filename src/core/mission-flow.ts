@@ -14,6 +14,11 @@ export function endCountsAsReturn(reason: MissionEndReason): boolean {
   return reason === 'returned' || reason === 'cleared';
 }
 
+/** 輸送隊の任務（v0.6.4）の達成: 帰投と同じに数える終わりで、上陸がノルマ以上（決着しても沈めば達成でない＝帰投 700 > 沈没） */
+export function convoyObjectiveDone(reason: MissionEndReason, arrived: number, quota: number): boolean {
+  return endCountsAsReturn(reason) && arrived >= quota;
+}
+
 export interface ReturnPoint {
   x: number;
   y: number;

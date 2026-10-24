@@ -481,6 +481,30 @@
       "notes": "jp_06 の夜明けの後に 4 機が東から来る（次の波は 90° ずつ回った方角から）。"
     },
     {
+      "id": "us_henderson_aircraft",
+      "faction": "USN",
+      "name_ja": "米陸上機（F4F／SBD 相当）",
+      "strike": {
+        "run_speed_kt": 120,
+        "release_altitude_m": 200,
+        "bomb": {
+          "count": 2,
+          "damage": 35,
+          "blast_radius_m": 25,
+          "accuracy_cep_m": 32,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        }
+      },
+      "source": {
+        "type": "historical (1942-12 のガダルカナル島周辺の昼はヘンダーソン基地の米機の制空下（jp_01 の dawn_air と同じ medium）。12-24 にはムンダへ向かう大発 13 隻のうち 9 隻を昼に沈めた: 米海軍の 1942 年の年表（ibiblio。high）。大発の夜間前送は『月明かりの夜は PT と夜間機で半分も運べず』: 防衛研究所 NIDS の 2023 年の論文（medium）。WebSearch の抜粋のみ・本文未読)",
+        "bomb.count": "design (機種の F4F・SBD は抜粋に無い当てはめ（name_ja の「F4F／SBD 相当」も design）。F4F の機銃掃射と SBD の爆弾を 2 回の投下にまとめた抽象)",
+        "run_speed_kt": "design (投下の予告を読めるよう零観・艦載機と同じ 120 kt)",
+        "others": "design (v0.6.4。値は us_carrier_aircraft（jp_06）の写し。記録を分けたのは name_ja: 夜明けの帯・Briefing の危険・Result に name_ja が出るので、ガ島の陸上機を『米艦載機』と書かないため。name_ja は夜明けの帯の 2 行目（ui/dawn-lines.ts の『${d.nameJa} ${d.count} 機が…』）にそのまま出るので短く（22 px で 819 px。jp_06 の 757 と同程度。『ヘンダーソン基地』は dawn_air.label_ja『昼の空は敵（ヘンダーソン基地）』が持つ）)"
+      },
+      "notes": "jp_01 の夜明けの後に 4 機が東（ルンガ）から来る（次の波は 90° ずつ）。狙うのは自艇だけ（海上の大発は爆撃しない。v0.6.4 の既知の制約）"
+    },
+    {
       "id": "us_pt_enemy",
       "faction": "USN",
       "name_ja": "米PTボート（日本ハードモードの敵）",
