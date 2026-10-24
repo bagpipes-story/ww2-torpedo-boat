@@ -5,6 +5,7 @@
 // Phaser を import しない（tests から読む）。§7: 確保は constructor だけ。乱数は引かない（大発への命中は HP だけ）。PtSquadron が輸送隊のある任務でだけ作る（jp_05 は作らない＝core は v0.6.3 の枝）。
 // v0.6.4 レビューの直し: 夜明けで切れた攻撃も閉じる（onLeave。ai:R1）、大発への航過は core が航過に数えたものだけ（ai:R2）、
 // 標的が沈んだ・上陸した・輪に入ったための切り替えで受け継いだ接触が切れたのは「見失わせた」から引く（inheritedLosses。ai:R4。core と模擬は変えない）。
+// v0.6.6 の準備: 船体の並びは [0] 自艇・[1..nb] 大発（nb は大発の数。隼艇を末尾 nb+1 に足せるように「[1..] はみな大発」と読まない）。着弾の振り分けは hullHit（PtSquadron.onImpact から移した）。
 // HUD（ux-2・ux-5・ux-7）: 3 行目の「発見された！」は自艇が見られているときだけ（playerSeen）、狙われている大発の印（aimedBarge）、撃つ前に 25mm で黙った大発への航過（lastPassSilenced）。
 import type { BoatState } from '../core/boat-motion';
 import { CV_SAILING, type ConvoyParams, type ConvoyState } from '../core/convoy';
@@ -21,8 +22,10 @@ export interface PtTargetConvoy {
 }
 
 export class PtTargets {
-  /** [0] は自艇、[1..] は大発（core の PtCheck.targets がこの配列を読む） */
+  /** [0] は自艇、[1..nb] は大発（core の PtCheck.targets がこの配列を読む） */
   readonly hulls: PtHull[];
+  /** 大発の数（hulls の [1..nb]） */
+  readonly nb: number;
   readonly set: PtTargetSet;
   readonly rule: PtTargetRule;
   /**
@@ -76,13 +79,15 @@ export class PtTargets {
     this.rule = convoy.rule;
     this.hulls = [{ boat: player, halfLengthM: playerHalfLengthM, halfBeamM: playerHalfBeamM, valid: true }];
     for (const b of convoy.state.barges) this.hulls.push({ boat: b, halfLengthM: convoy.p.halfLengthM, halfBeamM: convoy.p.halfBeamM, valid: b.phase === CV_SAILING });
+    this.nb = convoy.state.barges.length;
     this.set = createPtTargetSet(this.hulls);
-    for (let k = 1; k < this.hulls.length; k++) this.set.detectM[k] = convoy.detectM;
+    for (let k = 1; k <= this.nb; k++) this.set.detectM[k] = convoy.detectM;
   }
 
-  /** 今の標的の種類（0 自艇・1 大発。HUD の文の分岐） */
+  /** 今の標的の種類（0 自艇・1 大発（1..nb）・2 は末尾の船体（v0.6.6 の隼艇）。HUD の文の分岐） */
   get targetKind(): number {
-    return this.set.current > 0 ? 1 : 0;
+    const k = this.set.current;
+    return k === 0 ? 0 : k <= this.nb ? 1 : 2;
   }
 
   /** 自艇が的になれる（浮いていて輪の外。25mm の canFire もこれ） */
@@ -95,7 +100,7 @@ export class PtTargets {
     this.set.detectM[0] = playerDetectM;
     this.hulls[0]!.valid = playerValid;
     const barges = this.convoy.state.barges;
-    for (let k = 1; k < this.hulls.length; k++) this.hulls[k]!.valid = barges[k - 1]!.phase === CV_SAILING;
+    for (let k = 1; k <= this.nb; k++) this.hulls[k]!.valid = barges[k - 1]!.phase === CV_SAILING;
   }
 
   /**
@@ -143,7 +148,7 @@ export class PtTargets {
   /** 狙われている大発（state.barges の index。ux-5 の印）: 隊が捉えているか攻撃中で、標的が航行中の大発。ほかは −1（自艇が標的・哨戒中・標的の大発が沈んだ・上陸した） */
   get aimedBarge(): number {
     const k = this.set.current;
-    return k > 0 && this.hulls[k]!.valid && (this.section.detected || this.section.owner >= 0) ? k - 1 : -1;
+    return k > 0 && k <= this.nb && this.hulls[k]!.valid && (this.section.detected || this.section.owner >= 0) ? k - 1 : -1;
   }
 
   /** 隊が捉えた立ち上がり（PtEvents.onContact）: 最初の 1 回だけ、そのときの標的を覚える */
@@ -202,7 +207,14 @@ export class PtTargets {
     if (this.set.current === 0) c.targetValid = false;
   }
 
-  /** 大発への命中（hull ≥ 1）: HP だけ（乱数なし）。沈んだら同じステップで valid（標的なら targetValid も）を落とし true */
+  /** 着弾の船体の振り分け（PtSquadron.onImpact から移した）: 自艇（hull が無いか 0）は false（世界が自艇の被害を当てる）、大発（1..nb）は bargeHit して true。確保なし・乱数なし */
+  hullHit(q: PtSection, c: PtCheck, hull: number | undefined, damage: number, nowS: number): boolean {
+    if (hull === undefined || hull <= 0) return false;
+    if (hull <= this.nb) this.bargeHit(q, c, hull, damage, nowS);
+    return true;
+  }
+
+  /** 大発への命中（1 ≤ hull ≤ nb）: HP だけ（乱数なし）。沈んだら同じステップで valid（標的なら targetValid も）を落とし true */
   bargeHit(q: PtSection, c: PtCheck, hull: number, damage: number, nowS: number): boolean {
     this.bargeHits++;
     this.countHit(q, hull);

@@ -84,10 +84,9 @@ export class PtSquadron {
         return;
       }
       const t = this.targets;
-      if (t && hull !== undefined && hull > 0) {
-        // 大発への命中（v0.6.4）: HP だけ（乱数なし）。沈んだ同じステップで標的から外れる（残りの弾は当たらない）
+      // 大発への命中（v0.6.4）: HP だけ（乱数なし）。沈んだ同じステップで標的から外れる（残りの弾は当たらない）。船体の振り分けは PtTargets.hullHit
+      if (t && t.hullHit(this.section, this.check, hull, this.p.hit.damage, this.check.timeS)) {
         this.splashes.splash(x, y, true);
-        t.bargeHit(this.section, this.check, hull, this.p.hit.damage, this.check.timeS);
         return;
       }
       this.onBoatHit(this.p.hit, this.rng, x, y, 'pt_fire');

@@ -2,10 +2,11 @@
 // 25mm → 標的（閃光の記憶）→ 閃光（自艇が標的のときだけ）→ 米PT → 火災）で、輸送隊（core/convoy）と米PT の標的スロット（core/pt-target）を足す。本物の stepPtSection・stepBoat・燃料・被害・stepPtGun/hitPt を使う。
 // 乱数: 今夜 seed+16（rollNight。world-setup と同じ: 米PT の隊のずれと大発の先頭のずれを同じ夜から）、米PT seed+18、25mm seed+20（撃つ台本だけ）、台本 seed×7919+1000（出発の遅れ・赤い線への反応の秒）。
 // 終わり: 沈没・漂流・輪に入った瞬間（台本を問わず。core/mission-flow の decideMissionEnd と同じ: jp_01 は魚雷を撃たないので輪に入れば即 returned。その瞬間の上陸数＝Result）・400 秒（打ち切り。不変で 0）。
-// 台本は core/convoy-sim-policy、n 夜の集計は core/convoy-sim-cell（pt-sim-cell と同じ分け方。300 行を超えないため）。Phaser 非依存。確保は 1 夜の始めだけ。
+// 台本は core/convoy-sim-policy、n 夜の集計は core/convoy-sim-cell、1 夜の記録は core/convoy-trial（pt-sim-cell・pt-trial と同じ分け方。300 行を超えないため）。Phaser 非依存。確保は 1 夜の始めだけ。
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
 import { CV_ARRIVED, convoyResolved, createConvoy, hitConvoyBarge, stepConvoy, type ConvoyEvents, type ConvoyParams } from './convoy';
 import { convoyParamsAtNight } from './convoy-data';
+import { createConvoyTrial, finishConvoyTrial, type ConvoyTrial } from './convoy-trial';
 import { CONVOY_POLICY_SPECS, convoySteer, type ConvoyPolicy, type ConvoySteer, type ConvoySteerCtx } from './convoy-sim-policy';
 import { crewAccelFactor, crewLost, crewTurnFactor } from './crew';
 import { dawnReached } from './dawn-air';
@@ -36,20 +37,7 @@ export interface ConvoySimSetup extends PtSimSetup {
   fireRangeM?: number;
 }
 
-export interface ConvoyTrial {
-  /** 終わり方と秒、夜明けの後に帰投した */
-  end: 'home' | 'sunk' | 'adrift' | 'timeout'; timeS: number; afterDawn: boolean;
-  /** 上陸・沈んだ大発・大発への命中・自艇への命中・失った HP・残りの燃料 % */
-  arrived: number; bargesSunk: number; bargeHits: number; playerHits: number; hpLost: number; fuelPct: number;
-  /** 見つかった（秒）・最初の標的が大発・大発への航過・自艇への航過・連射（自艇・大発。大発は不変で 0）・標的が替わった回数 */
-  detected: boolean; detectS: number; firstTargetBarge: boolean; passesBarge: number; passesPlayer: number; burstsPlayer: number; burstsBarge: number; switches: number;
-  /** 25mm: 発射・命中・撃退・撃沈・制圧 */
-  gunShots: number; gunHits: number; ptRetired: number; ptSunk: number; suppressions: number;
-  /** 不変の確かめ: 予告から初弾の最短秒、同時に航過中の最大、有効射程・標的の視程の外からの発射、自艇の視程の外からの発射（大発への掃射で起きる）、1 回の攻撃の最大命中（大発・自艇）、健全な大発が 1 回の航過で沈んだ数 */
-  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; beyondPlayerSight: number; worstBargePassHits: number; worstPlayerPassHits: number; singlePassKills: number;
-  /** 決着（みな上陸か沈没）の秒（NaN は無し）・夜明けの後の決着・機関損傷 */
-  resolvedS: number; resolvedAfterDawn: boolean; engineHit: boolean;
-}
+export type { ConvoyTrial } from './convoy-trial';
 
 const SIM_MAX_S = 400;
 const TIME_EPS_S = 1e-6;
@@ -90,13 +78,7 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
   const realDt = s.stepS;
   const dt = realDt * s.timeScale;
   const eff2 = p.gun.effectiveM * p.gun.effectiveM;
-  const out: ConvoyTrial = {
-    end: 'timeout', timeS: 0, afterDawn: false, arrived: 0, bargesSunk: 0, bargeHits: 0, playerHits: 0, hpLost: 0, fuelPct: 0,
-    detected: false, detectS: NaN, firstTargetBarge: false, passesBarge: 0, passesPlayer: 0, burstsPlayer: 0, burstsBarge: 0, switches: 0,
-    gunShots: 0, gunHits: 0, ptRetired: 0, ptSunk: 0, suppressions: 0,
-    minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, beyondPlayerSight: 0, worstBargePassHits: 0, worstPlayerPassHits: 0, singlePassKills: 0,
-    resolvedS: NaN, resolvedAfterDawn: false, engineHit: false,
-  };
+  const out = createConvoyTrial();
   let t = 0;
   let sinking = false;
   let atHome = false;
@@ -269,10 +251,5 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
     out.end = sinking ? 'sunk' : atHome ? 'home' : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout') break;
   }
-  Object.assign(out, {
-    timeS: t, afterDawn: out.end === 'home' && c.dawn, arrived: f.arrived, bargesSunk: f.sunk, detected: !Number.isNaN(out.detectS), switches: ts.switches,
-    hpLost: sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, fuelPct: (fuel.gal / s.fuelGal) * 100,
-    gunShots: gun ? gun.battery.shots : 0, gunHits: q.gunHits, ptRetired: q.retired, ptSunk: q.sunk, suppressions: q.suppressions, minWarnS: q.minWarnS,
-  });
-  return out;
+  return finishConvoyTrial(out, q, f, t, c.dawn, ts.switches, sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, (fuel.gal / s.fuelGal) * 100, gun ? gun.battery.shots : 0);
 }

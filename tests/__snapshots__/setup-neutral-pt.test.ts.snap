@@ -1,0 +1,2715 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_01 ハード false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_01 normal seed 1 briefing 1`] = `
+[
+  "目的: 大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。速く走るか撃てば自艇が大発より先に狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵",
+  "成功: 大発2隻以上を浜に届けて帰投。3隻なら上陸の点が増える（帰投地点は東の青い輪）",
+  "月: 新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m",
+  "敵: 米PTボート ×2（東から）",
+  "危険: 敵艦艇の砲撃・衝突、夜明けの空襲",
+  "条件: 夜明けまで 180 秒（以後は空襲） ・ 燃料 19 gal ・ 25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）",
+]
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_01 ハード false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_01 normal seed 1 night draws 1`] = `5`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_01 ハード false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_01 normal seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_01",
+  "type": "escort_convoy",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_pt_enemy",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 3000
+  },
+  "playerStart": {
+   "x": 1200,
+   "y": 2400,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "guns",
+  "barges": null,
+  "ptBoats": {
+   "legs_m": [
+    [
+     4100,
+     2000,
+     2900,
+     2000
+    ],
+    [
+     4100,
+     2200,
+     2900,
+     2200
+    ]
+   ],
+   "start_along_m": 600,
+   "leave_heading_deg": 45,
+   "source": "design (v0.6.4。2 隻が 200 m 離れて並び、大発の航路（y 2,550）の 350〜550 m 沖で東西 1,200 m の線を 8 kt で往復する哨戒線（岸沿いの輸送路に張った picket の抽象）。線の始点は東（ツラギの側）で、出発時は西＝船団へ向かって走る。大発は見つかる距離 600 m（静音の帯。v0.6.4 実機 1 回目）なので船団が線の下を通れば近い方の線が見つける。片道 約 50 秒・1 往復 約 100 秒（8 kt × time_scale 5 = 20.6 m/秒。端の 100 m 手前（arrive_m）で折り返す）・出発位置の揺らぎ ±800 m で見つかる時刻が 70〜130 秒（中央値 100〜102 秒）にばらける。去るのは北東（ツラギの方角）。線を船団の近く（x 2,700〜3,500）に置くと見つかるのが 75 秒・隠れた船団の到達 0.97/3 で厳しすぎ、線を 100 m 岸寄り（y 2,100/2,300）だと隠れた船団 0.78/3（レビュー前の試作・hp 24 での比較。相対の傾向だけ使う）。PT の出発の隅から船団の先頭・最後尾（揺らぎ込み）まで最短 1,464 m ≥ 大発の発見 600 × 1.3 = 780 m（出発で大発が見つからない。隅は core/pt-night の ptStartAt＝線に沿ったずれ ±800 を線の中に収める clamp 込み: 西端は x 2,900 のまま。clamp 無しの素の値 1,266 は試作の表の頭の数で、本番の検査には使わない））"
+  },
+  "convoy": {
+   "lead_start": {
+    "x_m": 1200,
+    "y_m": 2550,
+    "heading_deg": 90
+   },
+   "offsets_m": [
+    0,
+    120,
+    240
+   ],
+   "landing_x_m": 3600,
+   "arrive_quota": 2,
+   "barge_hp": 12,
+   "detect_band": "silent",
+   "target_keep_ratio": 0.8,
+   "target_switch_hold_s": 1,
+   "flash_hold_s": 1,
+   "beach": {
+    "spacing_m": 60,
+    "margin_m": 12,
+    "run_in_deg": 38,
+    "source": "design (v0.6.4 実機 1 回目「大発が浜に上陸っていうけど何もない海の真ん中で消えていくので意味不明です」: 大発は 450 m 沖の上陸線で数えて消えていた。今は航路を東へ進み、自分の上陸地点への方位が針路から run_in_deg 38° 開いたら（転舵の x は 3,099／3,039／2,979）その点へまっすぐ向かい、浜の線（南の縁から margin_m 12 m＝艇首が浜の線に届く y 2,988）に着いたら上陸して浜に残る。上陸地点は landing_x_m を中心に spacing_m 60 m おき（先頭が東: 3,660／3,600／3,540）。史実: 大発は艇首の歩板を下ろして揚陸する舟艇（Wikipedia の Daihatsu-class landing craft の要約・Pacific Wrecks の大発の頁。WebSearch の抜粋のみ・本文未読。medium）。浜に乗り上げる形は海軍の特大発（Toku Daihatsu-class）の頁の抜粋からの類推（low。大発の頁の文とは確かめていない。docs/01 §8）。38°・40°・42°・45° を試した（浜 3,600・HP 12）。38° は、HUD どおりの 3 隻の夜（shield_full 53%＝上の端 55）と follow_full の 3 隻の夜（37〜38%＝下の端 30）の両方に余裕が残り、撃つだけの沈没も 35% の内に収まる角度（45° だと follow_full の 3 隻の夜 25%）。浜へ向かう道のりは 711 m（39.5 秒）で、出撃時の「浜まで」は揺らぎの無い夜で 2,731 m（HUD は 2800 m。夜ごとに先頭の x が ±250 m 揺らぐので 2500〜3000 m）。邪魔が無ければ 145.1／148.4／151.8 秒に上陸（転舵は 105.5／108.8／112.2 秒）。模擬（N 400 × 2 組）で、上陸の瞬間に大発と浜の線が画面（iPhone 15 横・既定ズーム 0.75・先読み 320 m）に入っている夜は shield_full 93〜94%・follow_full 89%（上陸線のときは 0〜33%）)"
+   },
+   "source": "design (v0.6.4。大発 3 隻の単縦陣が岸（南の縁 y 3,000）から 450 m 沖を 7 kt で東へ進み、beach の転舵の点から南東の浜へ向かって、浜の線に着いたら上陸（到達）。浜に残る。landing_x_m 3600 は上陸地点 3 つの中心の x（v0.6.4 実機 1 回目。前は 4,000 の上陸線）。浜を 400 m 西へ寄せたのは、米PT の哨戒線（x 2,900〜4,100）の下で戦う時間を約 22 秒短くするため（同じ浜を 4,000 に置いたときより。前の上陸線と比べると先頭 11 秒・最後尾 17 秒）。25mm に最小散布（jp_t38.gun_battery.min_spread_m）を足すと近くからの撃退が減り、撃つだけで転舵しない遊び方の沈没が 44〜57% に上がった（最小散布 22 だけ・前の地図、N 400 × 2 組。目標 20〜35）。浜 3,600 だと 24.5〜33.3%。史実: 大発は岸づたいに夜だけ動き（米陸軍の情報誌 Tactical and Technical Trends・米海軍公刊史。high）、隊列の間隔を書いた資料は無い（docs/01 §8「大発の夜間輸送と米PT・T-38 の代役」の表の隊列の間隔の行。WebSearch の抜粋のみ・本文未読）。間隔 120 m（全長 15 m の 8 倍）は PT の航過の横ずらし 120 m・散布 8〜9 m で 1 回の航過が隣の大発に当たらない最小の間隔（150 m だと船団が長くなるぶん守りにくい）。arrive_quota 2 は『見つかった船団の 1〜3 割が沈む』目安（docs/01 §8 の損耗の目安の行の私の集計。low。事例は 0〜75%: 8 隻の単縦陣 0%〜ヘンリー・リード湾 75%）に合わせた設計値。barge_hp 12（v0.6.4 実機 1 回目。20 → 12）: PT の 1 発 HP 4 で 3 発で沈む（PT の砲は 1 回の航過 10 発。us_pt_enemy。jp_05 と共有で変えない）。浜を 400 m 西へ寄せると戦う時間が短くなり、20 のままだと shield_full の 3 隻の夜が 68%（浜 3,600・detect_band silent・輪 (4050, 2550)・40° の試作、N 400）で目標（30〜55）の外。16（4 発）だと 56〜62%。12 で 53%（N 400 × 2 組）・51.5〜53.5%（N 200 × 4 組）。代価: 健全な大発が 1 回の航過で沈むことが、shield_full で 400 夜に 191〜202 隻・follow_full で 261〜274 隻（20 のときは 88〜117）＝ほぼ 2 夜に 1 回。HP は 4 の倍数でしか効かない（9〜12 は同じ 3 発）。実機で理不尽なら 16（本番の帯の検査 N 200・seed 1〜200 では shield_full の到達と 3 隻の夜が帯の上の端を超えて落ちる: tests/convoy-sim-g）。HP は『沈むまでの小口径弾の数』の読み替えで、装甲 3〜9 mm の操舵手の盾（米陸軍ハンドブック。medium）と満載の兵員 70 名（daihatsu_barge.cargo）から置いた設計値（us_03 の敵の大発の hull_hp 20 とは別の鍵: us_03 は艇の 40mm・37mm 用で変えない）。寄って撃てば撃退（船体に 10 発＝HP 100 → 60、または 1 発ごとに 3% の死傷。us_pt_enemy.under_fire）か 0.3% の引火の撃沈で航過を黙らせられるので『近づいて撃ち返せ』に手が残る（3 発の制圧＝us_pt_enemy.chase.suppress_hits は追撃・連射中の PT だけで、7 kt の大発への航過には効かない）。模擬（v0.6.4 実機 1 回目の convoy-sim、N 400 × 2 組・seed 1〜400／401〜800）: 隠れた船団 0.88〜0.89/3（約 2.1 隻沈む＝設計の目標『守らなければ 1〜2 隻』の上の端を少し超える。目標の検査は隠れた船団の到達 1.5 隻以下）、HUD どおり（寄って撃って転舵 shield_full）2.40〜2.41/3・3 隻の夜 53%・自艇の沈没 10.5〜11.8%、後ろに付いて撃って転舵（follow_full）2.17〜2.21・37〜38%・9.5〜11.3%。detect_band silent（v0.6.4 実機 1 回目。stop → silent）: 3 隻の隊列が見つかる距離 600 m（静音の帯の係数 × 新月 0.6 × 2,000）。T-38 を静音で走らせたときと同じで、撃った自艇（閃光 1,200 m）や巡航の自艇（1,200 m）よりは見つかりにくい。史実の「暗い雨の夜は隊列の真ん中に入るまで気づかなかった」（docs/01 §8。WebSearch の抜粋のみ・本文未読。medium）より遠くから見つかる設計値（480 m でも史実より遠い。遊びの帯のため 600 m に寄せた）。silent にすると米PT が大発を狙う夜が増え、自艇への航過が減る: HUD どおりの沈没は follow_full で 18 → 10%（浜だけ＋最小散布の試作の比べ）。stop のまま浜 3,600・hp 12 だと HUD どおりの沈没 15〜16% と隠れた船団 1.51 隻で目標の外。v0.6.4 で silent を退けた理由（隠れた船団 0.63 隻・撃つだけ 39〜45%）は、浜 3,600 では 0.88〜0.89 隻・24.5〜33.3% で当たらない。target_keep_ratio 0.8・target_switch_hold_s 1.0: 標的を替えるのは今の標的より点数（距離² ÷ 見つかる距離²）が 0.64 倍より小さい候補がいて、前の切り替えから 1 秒以上のとき。1.0（即時）だと 1 夜 9〜20 回切り替わり HUD が点滅。0.8＋1 秒で 1 夜 3〜5 回。flash_hold_s 1.0: 閃光の記憶＝25mm を最後に撃ってから 1 秒は『撃った艇』として 1,200 m で選ばれる（弾の間隔 0.27 秒を埋め、弾倉交換 3.2 秒の後半は帯の距離に戻る＝交換の間に近い大発へ狙いが戻りうる。『撃てば狙われる・撃ちやむと戻る』が読める）。1.6 秒だと shield_full の沈没 11.8%・3.2 秒（交換の間ずっと）だと 20〜23%（自艇への航過 5.4〜5.5 回）で設計の目標 8〜15 を超え、0（撃ったステップだけ）だと 20 ステップに 1 回しか効かず標的が大発へ戻ってしまう（統合仕様のレビューの指摘）。大発の 13mm の撃ち返し・隊列の崩し・浜への逃げ込みは v0.6.4 では無し（lead の判断 10「やらないこと」。docs/03 の v0.6.4 の候補）)"
+  },
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ガダルカナル島（カミンボ）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 180,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 4150,
+   "y": 2700,
+   "radiusM": 250,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 19,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 800,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 250,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_henderson_aircraft",
+   "count": 4,
+   "count_source": "design (us_01〜03・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）。1942-12 のヘンダーソン基地の朝の哨戒の編成は未確認)",
+   "from_bearing_deg": 90,
+   "escort_target_planes": [],
+   "source": "design (v0.6.4。東＝ヘンダーソン基地（ルンガ岬）の方角（方角だけ design。距離は docs/01 §8 の調査に無いので書かない）。昼の空が敵（dawn_air control enemy。確度は dawn_air.confidence の medium）で play_as enemy なので要る。狙うのは自艇だけ（core の既存の形。海上に残った大発は爆撃しない＝既知の制約）。僚艇はいない)"
+  }
+ },
+ "playerStart": {
+  "x": 1200,
+  "y": 2400,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 3000,
+ "mainWeapon": "guns",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 480,
+ "durationS": 180,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 19,
+ "fuelStartGal": 19,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": {
+  "label": "25mm機銃",
+  "groups": [
+   {
+    "id": "25mm_type96",
+    "roundsPerMin": 220,
+    "damage": 4,
+    "shellSpeedMps": 500,
+    "dispersionM": 56,
+    "splashRadiusM": 3
+   }
+  ],
+  "rangeM": 600,
+  "effectiveM": 300,
+  "deadConeDeg": 30,
+  "deadConeCos2": 0.7500000000000001,
+  "flashRevealM": 1200,
+  "spreadFactor": {
+   "stop": 1,
+   "silent": 1,
+   "cruise": 1.6,
+   "full": 2.5
+  },
+  "magazine": {
+   "rounds": 15,
+   "reloadS": 3.2
+  },
+  "minSpreadM": 22
+ },
+ "ptBoats": {
+  "count": 2,
+  "baseDetectM": 2000,
+  "reactionDelayS": 1.5,
+  "detectFromS": 5,
+  "detectHoldS": 8,
+  "patrolMps": 4.1152,
+  "runInMps": 18.003999999999998,
+  "passMinMps": 12.86,
+  "overtakeMps": 3.0864,
+  "dashMps": 20.0616,
+  "leaveMps": 15.431999999999999,
+  "arrive2": 10000,
+  "commitMax2": 810000,
+  "commitTcpaS": 5,
+  "commitHeadingTolDeg": 30,
+  "offsetM": 120,
+  "openFireS": 2.5,
+  "passMaxS": 8,
+  "roundsPerPass": 10,
+  "cosDead2": 0.7500000000000001,
+  "minRange2": 3600,
+  "spreadMinM": 8,
+  "breakOff2": 422500,
+  "breakMaxS": 5,
+  "runInMaxS": 25,
+  "passGapS": 3,
+  "wingmanDelayS": 3,
+  "maxPasses": 4,
+  "holdOff2": 302500,
+  "holdOuter2": 422500,
+  "edgeMarginM": 200,
+  "leaveHeadingDeg": 45,
+  "turnRateDegS": 24,
+  "accelMps2": 1.2,
+  "boundsMarginM": 24.4,
+  "spriteLengthUnits": 48.8,
+  "spriteBeamUnits": 12.6,
+  "gun": {
+   "id": "pt_50cal_20mm",
+   "count": 1,
+   "effectiveM": 450,
+   "roundsPerMinPerGun": 240,
+   "damage": 4,
+   "shellSpeedMps": 500,
+   "dispersionM": 32,
+   "splashRadiusM": 1.5,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hit": {
+   "damage": 4,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hullHp": 100,
+  "hitHalfLengthM": 12.2,
+  "hitHalfBeamM": 3.15,
+  "retreatHp": 60,
+  "casualtyChance": 0.03,
+  "fireChance": 0.003,
+  "stationM": 600,
+  "stationRelDeg": {
+   "0": 90,
+   "1": 45,
+   "2": 135
+  },
+  "stationTolDeg": 30,
+  "stationCloseM": 150,
+  "stationClose2": 22500,
+  "stationLeadS": 1,
+  "legs": {
+   "0": 4100,
+   "1": 1907.7970763668418,
+   "2": 2900,
+   "3": 1907.7970763668418,
+   "4": 4100,
+   "5": 2107.797076366842,
+   "6": 2900,
+   "7": 2107.797076366842
+  },
+  "startX": {
+   "0": 3216.559526324272,
+   "1": 3216.559526324272
+  },
+  "startY": {
+   "0": 1907.7970763668418,
+   "1": 2107.797076366842
+  },
+  "startHeadingDeg": {
+   "0": 270,
+   "1": 270
+  },
+  "startAlongM": 600,
+  "bounds": {
+   "width": 6000,
+   "height": 3000
+  },
+  "timeScale": 5,
+  "passEndsWhenSafe": true,
+  "chaseOn": true,
+  "chaseMps": 20.0616,
+  "chaseMinMps": 5.144,
+  "chaseCosAft2": 0.06698729810778066,
+  "chaseStationM": 170,
+  "chaseRelDeg": 135,
+  "chaseHeldM": 350,
+  "chaseHeldRelDeg": 150,
+  "chaseHeldGuard2": 22500,
+  "chaseCommit2": 122500,
+  "burstRounds": 6,
+  "burstMaxS": 3,
+  "maxBursts": 6,
+  "burstBowRofFactor": 0.4,
+  "burstConeQuitS": 2,
+  "chaseGapS": 2,
+  "chaseSelfGapS": 3,
+  "chaseCosExit2": 0.5000000000000001,
+  "chaseSlowExitS": 2,
+  "chaseSuppressHits": 3
+ },
+ "convoy": {
+  "params": {
+   "count": 3,
+   "hp": 12,
+   "halfLengthM": 7.45,
+   "halfBeamM": 1.7,
+   "boundsMarginM": 14.9,
+   "speedMps": 3.6007999999999996,
+   "turnRateDegS": 8,
+   "accelMps2": 0.4,
+   "leadX": 1032.7361573465168,
+   "leadY": 2550,
+   "headingDeg": 90,
+   "offsetsM": [
+    0,
+    120,
+    240
+   ],
+   "landingX": 3600,
+   "quota": 2,
+   "beach": {
+    "x": [
+     3660,
+     3600,
+     3540
+    ],
+    "y": 2988,
+    "shoreY": 3000,
+    "turnX": [
+     3099.3855650994315,
+     3039.3855650994315,
+     2979.3855650994315
+    ],
+    "runInM": 711.429929521442
+   }
+  },
+  "detectBand": "silent",
+  "rule": {
+   "keepRatio2": 0.6400000000000001,
+   "lockS": 1,
+   "flashHoldS": 1
+  }
+ },
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 283.44047367572784,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": -167.26384265348315,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 3216.559526324272,
+  "y": 1907.7970763668418
+ },
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "medium",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（ヘンダーソン基地）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/Tokyo_Express",
+    "claim": "昼はヘンダーソン基地から約 200 マイル以内の日本艦は空襲を受けるので、東京急行は一晩で往復した"
+   },
+   {
+    "url": "https://pacificwrecks.com/unit/ijn/802.html",
+    "claim": "第802航空隊（水上戦闘機・飛行艇）。ショートランド方面の日本の水上機の部隊（日本側の掩護はショートランド寄り）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 90,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 3000,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米陸上機（F4F／SBD 相当）",
+  "fromJa": "東"
+ }
+}"
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_01 ハード false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_01 normal seed 12345 briefing 1`] = `
+[
+  "目的: 大発3隻を浜まで護衛する。米PTは見つけやすくて近い方を狙う。速く走るか撃てば自艇が大発より先に狙われる。大発が狙われたら寄って撃ち返し、赤い線は全速で転舵",
+  "成功: 大発2隻以上を浜に届けて帰投。3隻なら上陸の点が増える（帰投地点は東の青い輪）",
+  "月: 新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m",
+  "敵: 米PTボート ×2（東から）",
+  "危険: 敵艦艇の砲撃・衝突、夜明けの空襲",
+  "条件: 夜明けまで 180 秒（以後は空襲） ・ 燃料 19 gal ・ 25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）",
+]
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_01 ハード false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_01 normal seed 12345 night draws 1`] = `5`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_01 ハード false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_01 normal seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_01",
+  "type": "escort_convoy",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_pt_enemy",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 3000
+  },
+  "playerStart": {
+   "x": 1200,
+   "y": 2400,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "guns",
+  "barges": null,
+  "ptBoats": {
+   "legs_m": [
+    [
+     4100,
+     2000,
+     2900,
+     2000
+    ],
+    [
+     4100,
+     2200,
+     2900,
+     2200
+    ]
+   ],
+   "start_along_m": 600,
+   "leave_heading_deg": 45,
+   "source": "design (v0.6.4。2 隻が 200 m 離れて並び、大発の航路（y 2,550）の 350〜550 m 沖で東西 1,200 m の線を 8 kt で往復する哨戒線（岸沿いの輸送路に張った picket の抽象）。線の始点は東（ツラギの側）で、出発時は西＝船団へ向かって走る。大発は見つかる距離 600 m（静音の帯。v0.6.4 実機 1 回目）なので船団が線の下を通れば近い方の線が見つける。片道 約 50 秒・1 往復 約 100 秒（8 kt × time_scale 5 = 20.6 m/秒。端の 100 m 手前（arrive_m）で折り返す）・出発位置の揺らぎ ±800 m で見つかる時刻が 70〜130 秒（中央値 100〜102 秒）にばらける。去るのは北東（ツラギの方角）。線を船団の近く（x 2,700〜3,500）に置くと見つかるのが 75 秒・隠れた船団の到達 0.97/3 で厳しすぎ、線を 100 m 岸寄り（y 2,100/2,300）だと隠れた船団 0.78/3（レビュー前の試作・hp 24 での比較。相対の傾向だけ使う）。PT の出発の隅から船団の先頭・最後尾（揺らぎ込み）まで最短 1,464 m ≥ 大発の発見 600 × 1.3 = 780 m（出発で大発が見つからない。隅は core/pt-night の ptStartAt＝線に沿ったずれ ±800 を線の中に収める clamp 込み: 西端は x 2,900 のまま。clamp 無しの素の値 1,266 は試作の表の頭の数で、本番の検査には使わない））"
+  },
+  "convoy": {
+   "lead_start": {
+    "x_m": 1200,
+    "y_m": 2550,
+    "heading_deg": 90
+   },
+   "offsets_m": [
+    0,
+    120,
+    240
+   ],
+   "landing_x_m": 3600,
+   "arrive_quota": 2,
+   "barge_hp": 12,
+   "detect_band": "silent",
+   "target_keep_ratio": 0.8,
+   "target_switch_hold_s": 1,
+   "flash_hold_s": 1,
+   "beach": {
+    "spacing_m": 60,
+    "margin_m": 12,
+    "run_in_deg": 38,
+    "source": "design (v0.6.4 実機 1 回目「大発が浜に上陸っていうけど何もない海の真ん中で消えていくので意味不明です」: 大発は 450 m 沖の上陸線で数えて消えていた。今は航路を東へ進み、自分の上陸地点への方位が針路から run_in_deg 38° 開いたら（転舵の x は 3,099／3,039／2,979）その点へまっすぐ向かい、浜の線（南の縁から margin_m 12 m＝艇首が浜の線に届く y 2,988）に着いたら上陸して浜に残る。上陸地点は landing_x_m を中心に spacing_m 60 m おき（先頭が東: 3,660／3,600／3,540）。史実: 大発は艇首の歩板を下ろして揚陸する舟艇（Wikipedia の Daihatsu-class landing craft の要約・Pacific Wrecks の大発の頁。WebSearch の抜粋のみ・本文未読。medium）。浜に乗り上げる形は海軍の特大発（Toku Daihatsu-class）の頁の抜粋からの類推（low。大発の頁の文とは確かめていない。docs/01 §8）。38°・40°・42°・45° を試した（浜 3,600・HP 12）。38° は、HUD どおりの 3 隻の夜（shield_full 53%＝上の端 55）と follow_full の 3 隻の夜（37〜38%＝下の端 30）の両方に余裕が残り、撃つだけの沈没も 35% の内に収まる角度（45° だと follow_full の 3 隻の夜 25%）。浜へ向かう道のりは 711 m（39.5 秒）で、出撃時の「浜まで」は揺らぎの無い夜で 2,731 m（HUD は 2800 m。夜ごとに先頭の x が ±250 m 揺らぐので 2500〜3000 m）。邪魔が無ければ 145.1／148.4／151.8 秒に上陸（転舵は 105.5／108.8／112.2 秒）。模擬（N 400 × 2 組）で、上陸の瞬間に大発と浜の線が画面（iPhone 15 横・既定ズーム 0.75・先読み 320 m）に入っている夜は shield_full 93〜94%・follow_full 89%（上陸線のときは 0〜33%）)"
+   },
+   "source": "design (v0.6.4。大発 3 隻の単縦陣が岸（南の縁 y 3,000）から 450 m 沖を 7 kt で東へ進み、beach の転舵の点から南東の浜へ向かって、浜の線に着いたら上陸（到達）。浜に残る。landing_x_m 3600 は上陸地点 3 つの中心の x（v0.6.4 実機 1 回目。前は 4,000 の上陸線）。浜を 400 m 西へ寄せたのは、米PT の哨戒線（x 2,900〜4,100）の下で戦う時間を約 22 秒短くするため（同じ浜を 4,000 に置いたときより。前の上陸線と比べると先頭 11 秒・最後尾 17 秒）。25mm に最小散布（jp_t38.gun_battery.min_spread_m）を足すと近くからの撃退が減り、撃つだけで転舵しない遊び方の沈没が 44〜57% に上がった（最小散布 22 だけ・前の地図、N 400 × 2 組。目標 20〜35）。浜 3,600 だと 24.5〜33.3%。史実: 大発は岸づたいに夜だけ動き（米陸軍の情報誌 Tactical and Technical Trends・米海軍公刊史。high）、隊列の間隔を書いた資料は無い（docs/01 §8「大発の夜間輸送と米PT・T-38 の代役」の表の隊列の間隔の行。WebSearch の抜粋のみ・本文未読）。間隔 120 m（全長 15 m の 8 倍）は PT の航過の横ずらし 120 m・散布 8〜9 m で 1 回の航過が隣の大発に当たらない最小の間隔（150 m だと船団が長くなるぶん守りにくい）。arrive_quota 2 は『見つかった船団の 1〜3 割が沈む』目安（docs/01 §8 の損耗の目安の行の私の集計。low。事例は 0〜75%: 8 隻の単縦陣 0%〜ヘンリー・リード湾 75%）に合わせた設計値。barge_hp 12（v0.6.4 実機 1 回目。20 → 12）: PT の 1 発 HP 4 で 3 発で沈む（PT の砲は 1 回の航過 10 発。us_pt_enemy。jp_05 と共有で変えない）。浜を 400 m 西へ寄せると戦う時間が短くなり、20 のままだと shield_full の 3 隻の夜が 68%（浜 3,600・detect_band silent・輪 (4050, 2550)・40° の試作、N 400）で目標（30〜55）の外。16（4 発）だと 56〜62%。12 で 53%（N 400 × 2 組）・51.5〜53.5%（N 200 × 4 組）。代価: 健全な大発が 1 回の航過で沈むことが、shield_full で 400 夜に 191〜202 隻・follow_full で 261〜274 隻（20 のときは 88〜117）＝ほぼ 2 夜に 1 回。HP は 4 の倍数でしか効かない（9〜12 は同じ 3 発）。実機で理不尽なら 16（本番の帯の検査 N 200・seed 1〜200 では shield_full の到達と 3 隻の夜が帯の上の端を超えて落ちる: tests/convoy-sim-g）。HP は『沈むまでの小口径弾の数』の読み替えで、装甲 3〜9 mm の操舵手の盾（米陸軍ハンドブック。medium）と満載の兵員 70 名（daihatsu_barge.cargo）から置いた設計値（us_03 の敵の大発の hull_hp 20 とは別の鍵: us_03 は艇の 40mm・37mm 用で変えない）。寄って撃てば撃退（船体に 10 発＝HP 100 → 60、または 1 発ごとに 3% の死傷。us_pt_enemy.under_fire）か 0.3% の引火の撃沈で航過を黙らせられるので『近づいて撃ち返せ』に手が残る（3 発の制圧＝us_pt_enemy.chase.suppress_hits は追撃・連射中の PT だけで、7 kt の大発への航過には効かない）。模擬（v0.6.4 実機 1 回目の convoy-sim、N 400 × 2 組・seed 1〜400／401〜800）: 隠れた船団 0.88〜0.89/3（約 2.1 隻沈む＝設計の目標『守らなければ 1〜2 隻』の上の端を少し超える。目標の検査は隠れた船団の到達 1.5 隻以下）、HUD どおり（寄って撃って転舵 shield_full）2.40〜2.41/3・3 隻の夜 53%・自艇の沈没 10.5〜11.8%、後ろに付いて撃って転舵（follow_full）2.17〜2.21・37〜38%・9.5〜11.3%。detect_band silent（v0.6.4 実機 1 回目。stop → silent）: 3 隻の隊列が見つかる距離 600 m（静音の帯の係数 × 新月 0.6 × 2,000）。T-38 を静音で走らせたときと同じで、撃った自艇（閃光 1,200 m）や巡航の自艇（1,200 m）よりは見つかりにくい。史実の「暗い雨の夜は隊列の真ん中に入るまで気づかなかった」（docs/01 §8。WebSearch の抜粋のみ・本文未読。medium）より遠くから見つかる設計値（480 m でも史実より遠い。遊びの帯のため 600 m に寄せた）。silent にすると米PT が大発を狙う夜が増え、自艇への航過が減る: HUD どおりの沈没は follow_full で 18 → 10%（浜だけ＋最小散布の試作の比べ）。stop のまま浜 3,600・hp 12 だと HUD どおりの沈没 15〜16% と隠れた船団 1.51 隻で目標の外。v0.6.4 で silent を退けた理由（隠れた船団 0.63 隻・撃つだけ 39〜45%）は、浜 3,600 では 0.88〜0.89 隻・24.5〜33.3% で当たらない。target_keep_ratio 0.8・target_switch_hold_s 1.0: 標的を替えるのは今の標的より点数（距離² ÷ 見つかる距離²）が 0.64 倍より小さい候補がいて、前の切り替えから 1 秒以上のとき。1.0（即時）だと 1 夜 9〜20 回切り替わり HUD が点滅。0.8＋1 秒で 1 夜 3〜5 回。flash_hold_s 1.0: 閃光の記憶＝25mm を最後に撃ってから 1 秒は『撃った艇』として 1,200 m で選ばれる（弾の間隔 0.27 秒を埋め、弾倉交換 3.2 秒の後半は帯の距離に戻る＝交換の間に近い大発へ狙いが戻りうる。『撃てば狙われる・撃ちやむと戻る』が読める）。1.6 秒だと shield_full の沈没 11.8%・3.2 秒（交換の間ずっと）だと 20〜23%（自艇への航過 5.4〜5.5 回）で設計の目標 8〜15 を超え、0（撃ったステップだけ）だと 20 ステップに 1 回しか効かず標的が大発へ戻ってしまう（統合仕様のレビューの指摘）。大発の 13mm の撃ち返し・隊列の崩し・浜への逃げ込みは v0.6.4 では無し（lead の判断 10「やらないこと」。docs/03 の v0.6.4 の候補）)"
+  },
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ガダルカナル島（カミンボ）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 180,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 4150,
+   "y": 2700,
+   "radiusM": 250,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 19,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 800,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 250,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_henderson_aircraft",
+   "count": 4,
+   "count_source": "design (us_01〜03・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）。1942-12 のヘンダーソン基地の朝の哨戒の編成は未確認)",
+   "from_bearing_deg": 90,
+   "escort_target_planes": [],
+   "source": "design (v0.6.4。東＝ヘンダーソン基地（ルンガ岬）の方角（方角だけ design。距離は docs/01 §8 の調査に無いので書かない）。昼の空が敵（dawn_air control enemy。確度は dawn_air.confidence の medium）で play_as enemy なので要る。狙うのは自艇だけ（core の既存の形。海上に残った大発は爆撃しない＝既知の制約）。僚艇はいない)"
+  }
+ },
+ "playerStart": {
+  "x": 1200,
+  "y": 2400,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 3000,
+ "mainWeapon": "guns",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 480,
+ "durationS": 180,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 19,
+ "fuelStartGal": 19,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": {
+  "label": "25mm機銃",
+  "groups": [
+   {
+    "id": "25mm_type96",
+    "roundsPerMin": 220,
+    "damage": 4,
+    "shellSpeedMps": 500,
+    "dispersionM": 56,
+    "splashRadiusM": 3
+   }
+  ],
+  "rangeM": 600,
+  "effectiveM": 300,
+  "deadConeDeg": 30,
+  "deadConeCos2": 0.7500000000000001,
+  "flashRevealM": 1200,
+  "spreadFactor": {
+   "stop": 1,
+   "silent": 1,
+   "cruise": 1.6,
+   "full": 2.5
+  },
+  "magazine": {
+   "rounds": 15,
+   "reloadS": 3.2
+  },
+  "minSpreadM": 22
+ },
+ "ptBoats": {
+  "count": 2,
+  "baseDetectM": 2000,
+  "reactionDelayS": 1.5,
+  "detectFromS": 5,
+  "detectHoldS": 8,
+  "patrolMps": 4.1152,
+  "runInMps": 18.003999999999998,
+  "passMinMps": 12.86,
+  "overtakeMps": 3.0864,
+  "dashMps": 20.0616,
+  "leaveMps": 15.431999999999999,
+  "arrive2": 10000,
+  "commitMax2": 810000,
+  "commitTcpaS": 5,
+  "commitHeadingTolDeg": 30,
+  "offsetM": 120,
+  "openFireS": 2.5,
+  "passMaxS": 8,
+  "roundsPerPass": 10,
+  "cosDead2": 0.7500000000000001,
+  "minRange2": 3600,
+  "spreadMinM": 8,
+  "breakOff2": 422500,
+  "breakMaxS": 5,
+  "runInMaxS": 25,
+  "passGapS": 3,
+  "wingmanDelayS": 3,
+  "maxPasses": 4,
+  "holdOff2": 302500,
+  "holdOuter2": 422500,
+  "edgeMarginM": 200,
+  "leaveHeadingDeg": 45,
+  "turnRateDegS": 24,
+  "accelMps2": 1.2,
+  "boundsMarginM": 24.4,
+  "spriteLengthUnits": 48.8,
+  "spriteBeamUnits": 12.6,
+  "gun": {
+   "id": "pt_50cal_20mm",
+   "count": 1,
+   "effectiveM": 450,
+   "roundsPerMinPerGun": 240,
+   "damage": 4,
+   "shellSpeedMps": 500,
+   "dispersionM": 32,
+   "splashRadiusM": 1.5,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hit": {
+   "damage": 4,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hullHp": 100,
+  "hitHalfLengthM": 12.2,
+  "hitHalfBeamM": 3.15,
+  "retreatHp": 60,
+  "casualtyChance": 0.03,
+  "fireChance": 0.003,
+  "stationM": 600,
+  "stationRelDeg": {
+   "0": 90,
+   "1": 45,
+   "2": 135
+  },
+  "stationTolDeg": 30,
+  "stationCloseM": 150,
+  "stationClose2": 22500,
+  "stationLeadS": 1,
+  "legs": {
+   "0": 4100,
+   "1": 1893.1681577349082,
+   "2": 2900,
+   "3": 1893.1681577349082,
+   "4": 4100,
+   "5": 2093.168157734908,
+   "6": 2900,
+   "7": 2093.168157734908
+  },
+  "startX": {
+   "0": 2917.7484776824713,
+   "1": 2917.7484776824713
+  },
+  "startY": {
+   "0": 1893.1681577349082,
+   "1": 2093.168157734908
+  },
+  "startHeadingDeg": {
+   "0": 270,
+   "1": 270
+  },
+  "startAlongM": 600,
+  "bounds": {
+   "width": 6000,
+   "height": 3000
+  },
+  "timeScale": 5,
+  "passEndsWhenSafe": true,
+  "chaseOn": true,
+  "chaseMps": 20.0616,
+  "chaseMinMps": 5.144,
+  "chaseCosAft2": 0.06698729810778066,
+  "chaseStationM": 170,
+  "chaseRelDeg": 135,
+  "chaseHeldM": 350,
+  "chaseHeldRelDeg": 150,
+  "chaseHeldGuard2": 22500,
+  "chaseCommit2": 122500,
+  "burstRounds": 6,
+  "burstMaxS": 3,
+  "maxBursts": 6,
+  "burstBowRofFactor": 0.4,
+  "burstConeQuitS": 2,
+  "chaseGapS": 2,
+  "chaseSelfGapS": 3,
+  "chaseCosExit2": 0.5000000000000001,
+  "chaseSlowExitS": 2,
+  "chaseSuppressHits": 3
+ },
+ "convoy": {
+  "params": {
+   "count": 3,
+   "hp": 12,
+   "halfLengthM": 7.45,
+   "halfBeamM": 1.7,
+   "boundsMarginM": 14.9,
+   "speedMps": 3.6007999999999996,
+   "turnRateDegS": 8,
+   "accelMps2": 0.4,
+   "leadX": 1417.340737581253,
+   "leadY": 2550,
+   "headingDeg": 90,
+   "offsetsM": [
+    0,
+    120,
+    240
+   ],
+   "landingX": 3600,
+   "quota": 2,
+   "beach": {
+    "x": [
+     3660,
+     3600,
+     3540
+    ],
+    "y": 2988,
+    "shoreY": 3000,
+    "turnX": [
+     3099.3855650994315,
+     3039.3855650994315,
+     2979.3855650994315
+    ],
+    "runInM": 711.429929521442
+   }
+  },
+  "detectBand": "silent",
+  "rule": {
+   "keepRatio2": 0.6400000000000001,
+   "lockS": 1,
+   "flashHoldS": 1
+  }
+ },
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 582.2515223175287,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 217.34073758125305,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 2917.7484776824713,
+  "y": 1893.1681577349082
+ },
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "medium",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（ヘンダーソン基地）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/Tokyo_Express",
+    "claim": "昼はヘンダーソン基地から約 200 マイル以内の日本艦は空襲を受けるので、東京急行は一晩で往復した"
+   },
+   {
+    "url": "https://pacificwrecks.com/unit/ijn/802.html",
+    "claim": "第802航空隊（水上戦闘機・飛行艇）。ショートランド方面の日本の水上機の部隊（日本側の掩護はショートランド寄り）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 90,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 3000,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米陸上機（F4F／SBD 相当）",
+  "fromJa": "東"
+ }
+}"
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 normal seed 1 briefing 1`] = `
+[
+  "目的: 哨戒の帰り道に米PTの2隻組。振り切れず、航過のあとも後ろから追って撃つ。航過は全速で転舵、追撃は針路そのまま機銃で撃ち返して追い払い、ラバウルへ帰る",
+  "成功: 生還。PTに一度も見つからずに帰れば回避の点。PTを沈めれば撃沈の点、ただし撃てば閃光で見つかる（帰投地点は南西の青い輪）",
+  "月: 新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m",
+  "敵: 米PTボート ×2（南から）",
+  "危険: 敵艦艇の砲撃・衝突、全速を続けると機関が不調になる",
+  "条件: 夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 32 gal ・ 13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）",
+]
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 normal seed 1 night draws 1`] = `5`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 normal seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_05",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_pt_enemy",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4300,
+   "y": 450,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "guns",
+  "barges": null,
+  "ptBoats": {
+   "legs_m": [
+    [
+     1200,
+     2200,
+     4800,
+     2200
+    ],
+    [
+     1200,
+     2400,
+     4800,
+     2400
+    ]
+   ],
+   "start_along_m": 800,
+   "leave_heading_deg": 90,
+   "source": "design (v0.6.3。2 隻が 200 m 離れて並び、帰り道を東西に横切る線（y 2,200・2,400。v0.6.3 レビューで 2,000・2,200 から 200 m 南へ＝出発で見つからない、player_start）を 8 kt で往復する。直線の帰り道は x 約 2,650 で線を横切る。出発は各線の始点から 800 m（x 2,000）で終点（東）へ。夜の揺らぎ（night）で線に沿って ±800 m・線ごと南北 ±150 m・東西反転 0.5。去るのは東（グリーン島の方角）)"
+  },
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 170,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 1700,
+   "y": 3200,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "engine_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 800,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0.5
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4300,
+  "y": 450,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "guns",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 480,
+ "durationS": 170,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": {
+  "label": "13mm機銃",
+  "groups": [
+   {
+    "id": "13mm_type93",
+    "roundsPerMin": 450,
+    "damage": 2,
+    "shellSpeedMps": 500,
+    "dispersionM": 56,
+    "splashRadiusM": 1
+   }
+  ],
+  "rangeM": 600,
+  "effectiveM": 300,
+  "deadConeDeg": 30,
+  "deadConeCos2": 0.7500000000000001,
+  "flashRevealM": 1200,
+  "spreadFactor": {
+   "stop": 1,
+   "silent": 1,
+   "cruise": 1.6,
+   "full": 2.5
+  },
+  "magazine": {
+   "rounds": 30,
+   "reloadS": 3.2
+  }
+ },
+ "ptBoats": {
+  "count": 2,
+  "baseDetectM": 2000,
+  "reactionDelayS": 1.5,
+  "detectFromS": 5,
+  "detectHoldS": 8,
+  "patrolMps": 4.1152,
+  "runInMps": 18.003999999999998,
+  "passMinMps": 12.86,
+  "overtakeMps": 3.0864,
+  "dashMps": 20.0616,
+  "leaveMps": 15.431999999999999,
+  "arrive2": 10000,
+  "commitMax2": 810000,
+  "commitTcpaS": 5,
+  "commitHeadingTolDeg": 30,
+  "offsetM": 120,
+  "openFireS": 2.5,
+  "passMaxS": 8,
+  "roundsPerPass": 10,
+  "cosDead2": 0.7500000000000001,
+  "minRange2": 3600,
+  "spreadMinM": 8,
+  "breakOff2": 422500,
+  "breakMaxS": 5,
+  "runInMaxS": 25,
+  "passGapS": 3,
+  "wingmanDelayS": 3,
+  "maxPasses": 4,
+  "holdOff2": 302500,
+  "holdOuter2": 422500,
+  "edgeMarginM": 200,
+  "leaveHeadingDeg": 90,
+  "turnRateDegS": 24,
+  "accelMps2": 1.2,
+  "boundsMarginM": 24.4,
+  "spriteLengthUnits": 48.8,
+  "spriteBeamUnits": 12.6,
+  "gun": {
+   "id": "pt_50cal_20mm",
+   "count": 1,
+   "effectiveM": 450,
+   "roundsPerMinPerGun": 240,
+   "damage": 4,
+   "shellSpeedMps": 500,
+   "dispersionM": 32,
+   "splashRadiusM": 1.5,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hit": {
+   "damage": 4,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hullHp": 100,
+  "hitHalfLengthM": 12.2,
+  "hitHalfBeamM": 3.15,
+  "retreatHp": 60,
+  "casualtyChance": 0.03,
+  "fireChance": 0.003,
+  "stationM": 600,
+  "stationRelDeg": {
+   "0": 90,
+   "1": 45,
+   "2": 135
+  },
+  "stationTolDeg": 30,
+  "stationCloseM": 150,
+  "stationClose2": 22500,
+  "stationLeadS": 1,
+  "legs": {
+   "0": 4800,
+   "1": 2107.797076366842,
+   "2": 1200,
+   "3": 2107.797076366842,
+   "4": 4800,
+   "5": 2307.797076366842,
+   "6": 1200,
+   "7": 2307.797076366842
+  },
+  "startX": {
+   "0": 3716.559526324272,
+   "1": 3716.559526324272
+  },
+  "startY": {
+   "0": 2107.797076366842,
+   "1": 2307.797076366842
+  },
+  "startHeadingDeg": {
+   "0": 270,
+   "1": 270
+  },
+  "startAlongM": 800,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "timeScale": 5,
+  "passEndsWhenSafe": true,
+  "chaseOn": true,
+  "chaseMps": 20.0616,
+  "chaseMinMps": 5.144,
+  "chaseCosAft2": 0.06698729810778066,
+  "chaseStationM": 170,
+  "chaseRelDeg": 135,
+  "chaseHeldM": 350,
+  "chaseHeldRelDeg": 150,
+  "chaseHeldGuard2": 22500,
+  "chaseCommit2": 122500,
+  "burstRounds": 6,
+  "burstMaxS": 3,
+  "maxBursts": 6,
+  "burstBowRofFactor": 0.4,
+  "burstConeQuitS": 2,
+  "chaseGapS": 2,
+  "chaseSelfGapS": 3,
+  "chaseCosExit2": 0.5000000000000001,
+  "chaseSlowExitS": 2,
+  "chaseSuppressHits": 3
+ },
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 283.44047367572784,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": true
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "engine_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 3716.559526324272,
+  "y": 2107.797076366842
+ },
+ "dawnAir": {
+  "control": "contested",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空はおおむね味方（ラバウルの零戦）",
+  "refs": [
+   {
+    "url": "https://pacificwrecks.com/history/rabaul/index.html",
+    "claim": "1944-02-20 の夜明けにラバウルの海軍機へ引き揚げの命令、25 日までに完了（それまでは零戦が残り、昼の空襲を迎え撃っていた）"
+   },
+   {
+    "url": "https://nzetc.victoria.ac.nz/tm/scholarly/tei-WH2AirF-c16-1.html",
+    "claim": "1944-02 のラバウルには連合軍（エアソルス）の昼の空襲が続き、日本の航空は 2 月 20 日に引き揚げた"
+   },
+   {
+    "url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-3.html",
+    "claim": "米PT 第10戦隊が 1944-02-16 にグリーン島へ進出（ラバウル沖への出撃の記録は 2 月末から）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "engine": {
+  "fullToLimpS": 30,
+  "cruiseCoolS": 30,
+  "silentCoolS": 20,
+  "warnHeat": 0.6,
+  "finalWarnHeat": 0.85,
+  "recoverHeat": 0.6,
+  "warnRearmHeat": 0.5,
+  "startHeat": 0
+ }
+}"
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 normal seed 12345 briefing 1`] = `
+[
+  "目的: 哨戒の帰り道に米PTの2隻組。振り切れず、航過のあとも後ろから追って撃つ。航過は全速で転舵、追撃は針路そのまま機銃で撃ち返して追い払い、ラバウルへ帰る",
+  "成功: 生還。PTに一度も見つからずに帰れば回避の点。PTを沈めれば撃沈の点、ただし撃てば閃光で見つかる（帰投地点は南西の青い輪）",
+  "月: 新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m",
+  "敵: 米PTボート ×2（南西から）",
+  "危険: 敵艦艇の砲撃・衝突、全速を続けると機関が不調になる",
+  "条件: 夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 32 gal ・ 13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）",
+]
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 normal seed 12345 night draws 1`] = `5`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 normal seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_05",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_pt_enemy",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4300,
+   "y": 450,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "guns",
+  "barges": null,
+  "ptBoats": {
+   "legs_m": [
+    [
+     1200,
+     2200,
+     4800,
+     2200
+    ],
+    [
+     1200,
+     2400,
+     4800,
+     2400
+    ]
+   ],
+   "start_along_m": 800,
+   "leave_heading_deg": 90,
+   "source": "design (v0.6.3。2 隻が 200 m 離れて並び、帰り道を東西に横切る線（y 2,200・2,400。v0.6.3 レビューで 2,000・2,200 から 200 m 南へ＝出発で見つからない、player_start）を 8 kt で往復する。直線の帰り道は x 約 2,650 で線を横切る。出発は各線の始点から 800 m（x 2,000）で終点（東）へ。夜の揺らぎ（night）で線に沿って ±800 m・線ごと南北 ±150 m・東西反転 0.5。去るのは東（グリーン島の方角）)"
+  },
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 170,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 1700,
+   "y": 3200,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "engine_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 800,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0.5
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4300,
+  "y": 450,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "guns",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 480,
+ "durationS": 170,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": {
+  "label": "13mm機銃",
+  "groups": [
+   {
+    "id": "13mm_type93",
+    "roundsPerMin": 450,
+    "damage": 2,
+    "shellSpeedMps": 500,
+    "dispersionM": 56,
+    "splashRadiusM": 1
+   }
+  ],
+  "rangeM": 600,
+  "effectiveM": 300,
+  "deadConeDeg": 30,
+  "deadConeCos2": 0.7500000000000001,
+  "flashRevealM": 1200,
+  "spreadFactor": {
+   "stop": 1,
+   "silent": 1,
+   "cruise": 1.6,
+   "full": 2.5
+  },
+  "magazine": {
+   "rounds": 30,
+   "reloadS": 3.2
+  }
+ },
+ "ptBoats": {
+  "count": 2,
+  "baseDetectM": 2000,
+  "reactionDelayS": 1.5,
+  "detectFromS": 5,
+  "detectHoldS": 8,
+  "patrolMps": 4.1152,
+  "runInMps": 18.003999999999998,
+  "passMinMps": 12.86,
+  "overtakeMps": 3.0864,
+  "dashMps": 20.0616,
+  "leaveMps": 15.431999999999999,
+  "arrive2": 10000,
+  "commitMax2": 810000,
+  "commitTcpaS": 5,
+  "commitHeadingTolDeg": 30,
+  "offsetM": 120,
+  "openFireS": 2.5,
+  "passMaxS": 8,
+  "roundsPerPass": 10,
+  "cosDead2": 0.7500000000000001,
+  "minRange2": 3600,
+  "spreadMinM": 8,
+  "breakOff2": 422500,
+  "breakMaxS": 5,
+  "runInMaxS": 25,
+  "passGapS": 3,
+  "wingmanDelayS": 3,
+  "maxPasses": 4,
+  "holdOff2": 302500,
+  "holdOuter2": 422500,
+  "edgeMarginM": 200,
+  "leaveHeadingDeg": 90,
+  "turnRateDegS": 24,
+  "accelMps2": 1.2,
+  "boundsMarginM": 24.4,
+  "spriteLengthUnits": 48.8,
+  "spriteBeamUnits": 12.6,
+  "gun": {
+   "id": "pt_50cal_20mm",
+   "count": 1,
+   "effectiveM": 450,
+   "roundsPerMinPerGun": 240,
+   "damage": 4,
+   "shellSpeedMps": 500,
+   "dispersionM": 32,
+   "splashRadiusM": 1.5,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hit": {
+   "damage": 4,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hullHp": 100,
+  "hitHalfLengthM": 12.2,
+  "hitHalfBeamM": 3.15,
+  "retreatHp": 60,
+  "casualtyChance": 0.03,
+  "fireChance": 0.003,
+  "stationM": 600,
+  "stationRelDeg": {
+   "0": 90,
+   "1": 45,
+   "2": 135
+  },
+  "stationTolDeg": 30,
+  "stationCloseM": 150,
+  "stationClose2": 22500,
+  "stationLeadS": 1,
+  "legs": {
+   "0": 1200,
+   "1": 2093.168157734908,
+   "2": 4800,
+   "3": 2093.168157734908,
+   "4": 1200,
+   "5": 2293.168157734908,
+   "6": 4800,
+   "7": 2293.168157734908
+  },
+  "startX": {
+   "0": 2582.2515223175287,
+   "1": 2582.2515223175287
+  },
+  "startY": {
+   "0": 2093.168157734908,
+   "1": 2293.168157734908
+  },
+  "startHeadingDeg": {
+   "0": 90,
+   "1": 90
+  },
+  "startAlongM": 800,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "timeScale": 5,
+  "passEndsWhenSafe": true,
+  "chaseOn": true,
+  "chaseMps": 20.0616,
+  "chaseMinMps": 5.144,
+  "chaseCosAft2": 0.06698729810778066,
+  "chaseStationM": 170,
+  "chaseRelDeg": 135,
+  "chaseHeldM": 350,
+  "chaseHeldRelDeg": 150,
+  "chaseHeldGuard2": 22500,
+  "chaseCommit2": 122500,
+  "burstRounds": 6,
+  "burstMaxS": 3,
+  "maxBursts": 6,
+  "burstBowRofFactor": 0.4,
+  "burstConeQuitS": 2,
+  "chaseGapS": 2,
+  "chaseSelfGapS": 3,
+  "chaseCosExit2": 0.5000000000000001,
+  "chaseSlowExitS": 2,
+  "chaseSuppressHits": 3
+ },
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 582.2515223175287,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "engine_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 2582.2515223175287,
+  "y": 2093.168157734908
+ },
+ "dawnAir": {
+  "control": "contested",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空はおおむね味方（ラバウルの零戦）",
+  "refs": [
+   {
+    "url": "https://pacificwrecks.com/history/rabaul/index.html",
+    "claim": "1944-02-20 の夜明けにラバウルの海軍機へ引き揚げの命令、25 日までに完了（それまでは零戦が残り、昼の空襲を迎え撃っていた）"
+   },
+   {
+    "url": "https://nzetc.victoria.ac.nz/tm/scholarly/tei-WH2AirF-c16-1.html",
+    "claim": "1944-02 のラバウルには連合軍（エアソルス）の昼の空襲が続き、日本の航空は 2 月 20 日に引き揚げた"
+   },
+   {
+    "url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-3.html",
+    "claim": "米PT 第10戦隊が 1944-02-16 にグリーン島へ進出（ラバウル沖への出撃の記録は 2 月末から）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "engine": {
+  "fullToLimpS": 30,
+  "cruiseCoolS": 30,
+  "silentCoolS": 20,
+  "warnHeat": 0.6,
+  "finalWarnHeat": 0.85,
+  "recoverHeat": 0.6,
+  "warnRearmHeat": 0.5,
+  "startHeat": 0
+ }
+}"
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 hard seed 1 briefing 1`] = `
+[
+  "目的: 哨戒の帰り道に米PTの2隻組。振り切れず、航過のあとも後ろから追って撃つ。航過は全速で転舵、追撃は針路そのまま機銃で撃ち返して追い払い、ラバウルへ帰る",
+  "成功: 生還。PTに一度も見つからずに帰れば回避の点。PTを沈めれば撃沈の点、ただし撃てば閃光で見つかる（帰投地点は南西の青い輪）",
+  "月: 新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m",
+  "敵: 米PTボート ×2（南から）",
+  "危険: 敵艦艇の砲撃・衝突、全速を続けると機関が不調になる",
+  "条件: 夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 32 gal ・ 13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）",
+]
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 hard seed 1 night draws 1`] = `5`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 hard seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_05",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_pt_enemy",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4300,
+   "y": 450,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "guns",
+  "barges": null,
+  "ptBoats": {
+   "legs_m": [
+    [
+     1200,
+     2200,
+     4800,
+     2200
+    ],
+    [
+     1200,
+     2400,
+     4800,
+     2400
+    ]
+   ],
+   "start_along_m": 800,
+   "leave_heading_deg": 90,
+   "source": "design (v0.6.3。2 隻が 200 m 離れて並び、帰り道を東西に横切る線（y 2,200・2,400。v0.6.3 レビューで 2,000・2,200 から 200 m 南へ＝出発で見つからない、player_start）を 8 kt で往復する。直線の帰り道は x 約 2,650 で線を横切る。出発は各線の始点から 800 m（x 2,000）で終点（東）へ。夜の揺らぎ（night）で線に沿って ±800 m・線ごと南北 ±150 m・東西反転 0.5。去るのは東（グリーン島の方角）)"
+  },
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 170,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 1700,
+   "y": 3200,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "engine_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 800,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0.5
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4300,
+  "y": 450,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "guns",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 480,
+ "durationS": 170,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": {
+  "label": "13mm機銃",
+  "groups": [
+   {
+    "id": "13mm_type93",
+    "roundsPerMin": 450,
+    "damage": 2,
+    "shellSpeedMps": 500,
+    "dispersionM": 56,
+    "splashRadiusM": 1
+   }
+  ],
+  "rangeM": 600,
+  "effectiveM": 300,
+  "deadConeDeg": 30,
+  "deadConeCos2": 0.7500000000000001,
+  "flashRevealM": 1200,
+  "spreadFactor": {
+   "stop": 1,
+   "silent": 1,
+   "cruise": 1.6,
+   "full": 2.5
+  },
+  "magazine": {
+   "rounds": 30,
+   "reloadS": 3.2
+  }
+ },
+ "ptBoats": {
+  "count": 2,
+  "baseDetectM": 2000,
+  "reactionDelayS": 1.5,
+  "detectFromS": 5,
+  "detectHoldS": 8,
+  "patrolMps": 4.1152,
+  "runInMps": 18.003999999999998,
+  "passMinMps": 12.86,
+  "overtakeMps": 3.0864,
+  "dashMps": 20.0616,
+  "leaveMps": 15.431999999999999,
+  "arrive2": 10000,
+  "commitMax2": 810000,
+  "commitTcpaS": 5,
+  "commitHeadingTolDeg": 30,
+  "offsetM": 120,
+  "openFireS": 2.5,
+  "passMaxS": 8,
+  "roundsPerPass": 10,
+  "cosDead2": 0.7500000000000001,
+  "minRange2": 3600,
+  "spreadMinM": 8,
+  "breakOff2": 422500,
+  "breakMaxS": 5,
+  "runInMaxS": 25,
+  "passGapS": 3,
+  "wingmanDelayS": 3,
+  "maxPasses": 4,
+  "holdOff2": 302500,
+  "holdOuter2": 422500,
+  "edgeMarginM": 200,
+  "leaveHeadingDeg": 90,
+  "turnRateDegS": 24,
+  "accelMps2": 1.2,
+  "boundsMarginM": 24.4,
+  "spriteLengthUnits": 48.8,
+  "spriteBeamUnits": 12.6,
+  "gun": {
+   "id": "pt_50cal_20mm",
+   "count": 1,
+   "effectiveM": 450,
+   "roundsPerMinPerGun": 240,
+   "damage": 4,
+   "shellSpeedMps": 500,
+   "dispersionM": 32,
+   "splashRadiusM": 1.5,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hit": {
+   "damage": 4,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hullHp": 100,
+  "hitHalfLengthM": 12.2,
+  "hitHalfBeamM": 3.15,
+  "retreatHp": 60,
+  "casualtyChance": 0.03,
+  "fireChance": 0.003,
+  "stationM": 600,
+  "stationRelDeg": {
+   "0": 90,
+   "1": 45,
+   "2": 135
+  },
+  "stationTolDeg": 30,
+  "stationCloseM": 150,
+  "stationClose2": 22500,
+  "stationLeadS": 1,
+  "legs": {
+   "0": 4800,
+   "1": 2107.797076366842,
+   "2": 1200,
+   "3": 2107.797076366842,
+   "4": 4800,
+   "5": 2307.797076366842,
+   "6": 1200,
+   "7": 2307.797076366842
+  },
+  "startX": {
+   "0": 3716.559526324272,
+   "1": 3716.559526324272
+  },
+  "startY": {
+   "0": 2107.797076366842,
+   "1": 2307.797076366842
+  },
+  "startHeadingDeg": {
+   "0": 270,
+   "1": 270
+  },
+  "startAlongM": 800,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "timeScale": 5,
+  "passEndsWhenSafe": true,
+  "chaseOn": true,
+  "chaseMps": 20.0616,
+  "chaseMinMps": 5.144,
+  "chaseCosAft2": 0.06698729810778066,
+  "chaseStationM": 170,
+  "chaseRelDeg": 135,
+  "chaseHeldM": 350,
+  "chaseHeldRelDeg": 150,
+  "chaseHeldGuard2": 22500,
+  "chaseCommit2": 122500,
+  "burstRounds": 6,
+  "burstMaxS": 3,
+  "maxBursts": 6,
+  "burstBowRofFactor": 0.4,
+  "burstConeQuitS": 2,
+  "chaseGapS": 2,
+  "chaseSelfGapS": 3,
+  "chaseCosExit2": 0.5000000000000001,
+  "chaseSlowExitS": 2,
+  "chaseSuppressHits": 3
+ },
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 283.44047367572784,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": true
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "engine_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 3716.559526324272,
+  "y": 2107.797076366842
+ },
+ "dawnAir": {
+  "control": "contested",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空はおおむね味方（ラバウルの零戦）",
+  "refs": [
+   {
+    "url": "https://pacificwrecks.com/history/rabaul/index.html",
+    "claim": "1944-02-20 の夜明けにラバウルの海軍機へ引き揚げの命令、25 日までに完了（それまでは零戦が残り、昼の空襲を迎え撃っていた）"
+   },
+   {
+    "url": "https://nzetc.victoria.ac.nz/tm/scholarly/tei-WH2AirF-c16-1.html",
+    "claim": "1944-02 のラバウルには連合軍（エアソルス）の昼の空襲が続き、日本の航空は 2 月 20 日に引き揚げた"
+   },
+   {
+    "url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-3.html",
+    "claim": "米PT 第10戦隊が 1944-02-16 にグリーン島へ進出（ラバウル沖への出撃の記録は 2 月末から）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "engine": {
+  "fullToLimpS": 30,
+  "cruiseCoolS": 30,
+  "silentCoolS": 20,
+  "warnHeat": 0.6,
+  "finalWarnHeat": 0.85,
+  "recoverHeat": 0.6,
+  "warnRearmHeat": 0.5,
+  "startHeat": 0
+ }
+}"
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 hard seed 12345 briefing 1`] = `
+[
+  "目的: 哨戒の帰り道に米PTの2隻組。振り切れず、航過のあとも後ろから追って撃つ。航過は全速で転舵、追撃は針路そのまま機銃で撃ち返して追い払い、ラバウルへ帰る",
+  "成功: 生還。PTに一度も見つからずに帰れば回避の点。PTを沈めれば撃沈の点、ただし撃てば閃光で見つかる（帰投地点は南西の青い輪）",
+  "月: 新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m",
+  "敵: 米PTボート ×2（南西から）",
+  "危険: 敵艦艇の砲撃・衝突、全速を続けると機関が不調になる",
+  "条件: 夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 32 gal ・ 13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）",
+]
+`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 hard seed 12345 night draws 1`] = `5`;
+
+exports[`米PT の任務の setup の中立性（v0.6.6 の隼艇の前の snapshot） > jp_05 ハード true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_05 hard seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_05",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_pt_enemy",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4300,
+   "y": 450,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "guns",
+  "barges": null,
+  "ptBoats": {
+   "legs_m": [
+    [
+     1200,
+     2200,
+     4800,
+     2200
+    ],
+    [
+     1200,
+     2400,
+     4800,
+     2400
+    ]
+   ],
+   "start_along_m": 800,
+   "leave_heading_deg": 90,
+   "source": "design (v0.6.3。2 隻が 200 m 離れて並び、帰り道を東西に横切る線（y 2,200・2,400。v0.6.3 レビューで 2,000・2,200 から 200 m 南へ＝出発で見つからない、player_start）を 8 kt で往復する。直線の帰り道は x 約 2,650 で線を横切る。出発は各線の始点から 800 m（x 2,000）で終点（東）へ。夜の揺らぎ（night）で線に沿って ±800 m・線ごと南北 ±150 m・東西反転 0.5。去るのは東（グリーン島の方角）)"
+  },
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 170,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 1700,
+   "y": 3200,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "engine_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 800,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0.5
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4300,
+  "y": 450,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "guns",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 480,
+ "durationS": 170,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": {
+  "label": "13mm機銃",
+  "groups": [
+   {
+    "id": "13mm_type93",
+    "roundsPerMin": 450,
+    "damage": 2,
+    "shellSpeedMps": 500,
+    "dispersionM": 56,
+    "splashRadiusM": 1
+   }
+  ],
+  "rangeM": 600,
+  "effectiveM": 300,
+  "deadConeDeg": 30,
+  "deadConeCos2": 0.7500000000000001,
+  "flashRevealM": 1200,
+  "spreadFactor": {
+   "stop": 1,
+   "silent": 1,
+   "cruise": 1.6,
+   "full": 2.5
+  },
+  "magazine": {
+   "rounds": 30,
+   "reloadS": 3.2
+  }
+ },
+ "ptBoats": {
+  "count": 2,
+  "baseDetectM": 2000,
+  "reactionDelayS": 1.5,
+  "detectFromS": 5,
+  "detectHoldS": 8,
+  "patrolMps": 4.1152,
+  "runInMps": 18.003999999999998,
+  "passMinMps": 12.86,
+  "overtakeMps": 3.0864,
+  "dashMps": 20.0616,
+  "leaveMps": 15.431999999999999,
+  "arrive2": 10000,
+  "commitMax2": 810000,
+  "commitTcpaS": 5,
+  "commitHeadingTolDeg": 30,
+  "offsetM": 120,
+  "openFireS": 2.5,
+  "passMaxS": 8,
+  "roundsPerPass": 10,
+  "cosDead2": 0.7500000000000001,
+  "minRange2": 3600,
+  "spreadMinM": 8,
+  "breakOff2": 422500,
+  "breakMaxS": 5,
+  "runInMaxS": 25,
+  "passGapS": 3,
+  "wingmanDelayS": 3,
+  "maxPasses": 4,
+  "holdOff2": 302500,
+  "holdOuter2": 422500,
+  "edgeMarginM": 200,
+  "leaveHeadingDeg": 90,
+  "turnRateDegS": 24,
+  "accelMps2": 1.2,
+  "boundsMarginM": 24.4,
+  "spriteLengthUnits": 48.8,
+  "spriteBeamUnits": 12.6,
+  "gun": {
+   "id": "pt_50cal_20mm",
+   "count": 1,
+   "effectiveM": 450,
+   "roundsPerMinPerGun": 240,
+   "damage": 4,
+   "shellSpeedMps": 500,
+   "dispersionM": 32,
+   "splashRadiusM": 1.5,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hit": {
+   "damage": 4,
+   "fireChance": 0.03,
+   "engineDamageChance": 0.15
+  },
+  "hullHp": 100,
+  "hitHalfLengthM": 12.2,
+  "hitHalfBeamM": 3.15,
+  "retreatHp": 60,
+  "casualtyChance": 0.03,
+  "fireChance": 0.003,
+  "stationM": 600,
+  "stationRelDeg": {
+   "0": 90,
+   "1": 45,
+   "2": 135
+  },
+  "stationTolDeg": 30,
+  "stationCloseM": 150,
+  "stationClose2": 22500,
+  "stationLeadS": 1,
+  "legs": {
+   "0": 1200,
+   "1": 2093.168157734908,
+   "2": 4800,
+   "3": 2093.168157734908,
+   "4": 1200,
+   "5": 2293.168157734908,
+   "6": 4800,
+   "7": 2293.168157734908
+  },
+  "startX": {
+   "0": 2582.2515223175287,
+   "1": 2582.2515223175287
+  },
+  "startY": {
+   "0": 2093.168157734908,
+   "1": 2293.168157734908
+  },
+  "startHeadingDeg": {
+   "0": 90,
+   "1": 90
+  },
+  "startAlongM": 800,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "timeScale": 5,
+  "passEndsWhenSafe": true,
+  "chaseOn": true,
+  "chaseMps": 20.0616,
+  "chaseMinMps": 5.144,
+  "chaseCosAft2": 0.06698729810778066,
+  "chaseStationM": 170,
+  "chaseRelDeg": 135,
+  "chaseHeldM": 350,
+  "chaseHeldRelDeg": 150,
+  "chaseHeldGuard2": 22500,
+  "chaseCommit2": 122500,
+  "burstRounds": 6,
+  "burstMaxS": 3,
+  "maxBursts": 6,
+  "burstBowRofFactor": 0.4,
+  "burstConeQuitS": 2,
+  "chaseGapS": 2,
+  "chaseSelfGapS": 3,
+  "chaseCosExit2": 0.5000000000000001,
+  "chaseSlowExitS": 2,
+  "chaseSuppressHits": 3
+ },
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 582.2515223175287,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "engine_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 2582.2515223175287,
+  "y": 2093.168157734908
+ },
+ "dawnAir": {
+  "control": "contested",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空はおおむね味方（ラバウルの零戦）",
+  "refs": [
+   {
+    "url": "https://pacificwrecks.com/history/rabaul/index.html",
+    "claim": "1944-02-20 の夜明けにラバウルの海軍機へ引き揚げの命令、25 日までに完了（それまでは零戦が残り、昼の空襲を迎え撃っていた）"
+   },
+   {
+    "url": "https://nzetc.victoria.ac.nz/tm/scholarly/tei-WH2AirF-c16-1.html",
+    "claim": "1944-02 のラバウルには連合軍（エアソルス）の昼の空襲が続き、日本の航空は 2 月 20 日に引き揚げた"
+   },
+   {
+    "url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-3.html",
+    "claim": "米PT 第10戦隊が 1944-02-16 にグリーン島へ進出（ラバウル沖への出撃の記録は 2 月末から）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "engine": {
+  "fullToLimpS": 30,
+  "cruiseCoolS": 30,
+  "silentCoolS": 20,
+  "warnHeat": 0.6,
+  "finalWarnHeat": 0.85,
+  "recoverHeat": 0.6,
+  "warnRearmHeat": 0.5,
+  "startHeat": 0
+ }
+}"
+`;
