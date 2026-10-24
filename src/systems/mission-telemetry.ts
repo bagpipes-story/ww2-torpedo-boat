@@ -17,7 +17,7 @@ import { raidResultLine } from '../core/sortie';
 import { STORM_NONE } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
-import { bargeResult, escortResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { bargeResult, engineResult, escortResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
 import { convoyResult, initConvoyTelemetry, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from './pt-telemetry';
@@ -260,6 +260,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     escort: w.escort ? escortResult(w) : null,
     pt: ptResult(w), // 米PT（v0.6.3）の記録。無い任務は null
     convoy: convoyResult(w), // 味方の大発の輸送隊（v0.6.4）の記録。無い任務は null
+    engine: engineResult(w), // 機関の不調（v0.6.5）の記録。無い任務は null
     detections: w.detect.count,
     returned: endCountsAsReturn(reason), // 敵艦隊なし（cleared。v0.6.2 実機 1 回目）も帰投と同じに数える
     elapsedS,
