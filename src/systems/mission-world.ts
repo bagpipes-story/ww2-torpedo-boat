@@ -1,21 +1,21 @@
 // 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・敵（駆逐艦か大発の隊。v0.4.2。米PT の隊 v0.6.3）・魚雷・艇の砲・反撃・煙幕・被害・燃料（v0.3.0）・危険（味方機・暴風・水上機）・出撃（v0.4.0）を持ち、固定ステップで進める。
-// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
+// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
 import { debugSetupOptions } from '../config/debug-setup';
 import type { GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
-import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatParams, type SpeedStep } from '../core/boat-motion';
+import { nextSpeedBand, setPerformance, type BoatParams, type SpeedStep } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
 import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor } from '../core/crew';
-import { createFuelState, stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
+import { createFuelState, type FuelCurve, type FuelState } from '../core/fuel';
 import { stepDamage, type DamageParams, type DamageState, type HitSpec } from '../core/gunnery';
 import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
-import { insideRing, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
+import type { MissionEndReason, ReturnPoint } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
-import { SHALLOW_NONE, shallowIndexAt, updateShallowStatus, type ShallowStatus } from '../core/shallows';
+import { SHALLOW_NONE, updateShallowStatus, type ShallowStatus } from '../core/shallows';
 import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import { startDamageState, type Sortie } from '../core/sortie';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
@@ -37,9 +37,10 @@ import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
 import { torpedoEventsFor } from './torpedo-hits';
 import { WorldDawn } from './world-dawn';
+import { stepPlayerBoat } from './world-boat';
 import { buildEnemies } from './world-enemies';
 import { buildHazards } from './world-hazards';
-import { DRIFT_INPUT, type WorldEvents } from './world-events';
+import type { WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
 export type { WorldEvents } from './world-events';
@@ -88,7 +89,7 @@ export class MissionWorld {
   slowMoLeftS = 0;
 
   readonly setup: WorldSetup; // data から組み立てた数値（world-setup.ts）。固定ステップはここから読み、Scene は crew / storm を読む
-  private readonly events: WorldEvents;
+  readonly events: WorldEvents; // Scene への通知（world-events.ts）。world-boat の座礁も呼ぶ
   private readonly smokeScreen: SmokeScreen | null;
   readonly gunRng: SeededRng; // 砲撃のばらつき（seed+1。world-enemies が作る。ヘッドレスの再生が状態を読む）
   private readonly boatDamage: BoatDamage; // 命中の適用と沈没の開始（砲弾・機銃・掃射・爆弾はすべてここを通る。v0.4.1 で切り出し）
@@ -117,23 +118,7 @@ export class MissionWorld {
     // 旋回率・加速 = 基準 × 暴風の帯の中 × 乗員の減り（v0.3.5。書く場所はここだけ）
     this.crewLostNow = crewLost(c.crew, this.damageParams.maxHp, this.damage.hp);
     setPerformance(this.params, this.turnBaseDegS, this.accelBaseMps2, (this.storm ? this.storm.turnFactor : 1) * crewTurnFactor(c.crewEffects, this.crewLostNow), crewAccelFactor(c.crewEffects, this.crewLostNow));
-    if (!this.boat.sinking) {
-      if (this.grounded) {
-        boat.speedMps = 0;
-      } else {
-        // 燃料切れなら漂流（舵も速度指令も効かない）。燃料は運動と同じ game dt で積分する
-        stepBoat(boat, this.fuel.empty ? DRIFT_INPUT : this.input, this.params, dt);
-        clampToBounds(boat, c.mission.bounds, c.boundsMarginM);
-        // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
-        if (boat.speedMps > c.grounding.safeSpeedMps && shallowIndexAt(c.mission.shallows, boat.x, boat.y) >= 0) {
-          this.grounded = true;
-          boat.speedMps = 0;
-          this.events.onGrounded(boat.x, boat.y);
-        }
-      }
-      stepFuel(this.fuel, this.fuelCurve, boat.speedMps, dt);
-      this.atHome = insideRing(this.returnPoint, boat.x, boat.y);
-    }
+    stepPlayerBoat(this, dt); // 自艇の運動（座礁・縁・浅瀬・燃料・輪。world-boat.ts。沈み始めたら何もしない）
     this.escort?.step(dt, boat, !this.boat.sinking); // 僚艇（v0.4.4）は自艇を動かした後・駆逐艦の前（同じステップの位置を駆逐艦が狙う）
     this.convoy?.step(dt); // 輸送隊（v0.6.4）も自艇の後・米PT の前（同じステップの大発の位置を米PT が狙う。模擬 core/convoy-sim と同じ順）
     if (this.smoke && this.smokeParams) {

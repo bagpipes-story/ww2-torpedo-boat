@@ -27,9 +27,11 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { FF_CHALLENGE } from '../core/friendly';
 import { CALL_DAWN, CALL_FUEL, topCall } from '../core/mission-flow';
 import { SP_APPROACH } from '../core/seaplane';
-import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { STORM_AHEAD, STORM_NEAR } from '../core/storm';
-import { DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine, seaplaneLine, sightedFast } from './hud-lines';
+import {
+  ADRIFT_LINE, DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, WAITING_LINE, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine,
+  seaplaneLine, shallowsLine, sightedFast, stormLine,
+} from './hud-lines';
 import { airRaidTagJa, bargeHideTagKey, callLineText, clockKey, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
 import { convoyEventLine, convoyKey, convoyWaiting } from './convoy-lines';
 import { ptKey, ptLine } from './pt-lines';
@@ -240,23 +242,10 @@ export class MissionLine {
       } else if (mode === MISSION_FRIENDLY_RESULT) {
         const l = friendlyResultLine(t);
         this.missionText.setText(l.text).setColor(l.color);
-      } else if (mode === MISSION_STORM_WARN || mode === MISSION_STORM) {
-        // 暴風: 近づいている（縁までの距離）か中。速すぎれば警告色（docs/02 §6.8）
-        const near = t.stormState === STORM_NEAR;
-        if (mode === MISSION_STORM_WARN) {
-          this.missionText.setText(near ? `暴風まで ${stormStep * STORM_WARN_STEP_M} m ・ ${t.stormSafeKt} kt 以下に減速！` : `暴風 ・ ${t.stormSafeKt} kt 以下に減速！ 波で損傷`).setColor(HUD_COLOR_WARN);
-        } else {
-          this.missionText.setText(near ? `暴風まで ${stormStep * STORM_WARN_STEP_M} m ・ ${t.stormSafeKt} kt 以下で進め` : `暴風 ・ ${t.stormSafeKt} kt 以下で進め ・ 旋回が鈍い`).setColor(HUD_COLOR_STRONG);
-        }
-      } else if (mode === MISSION_SHALLOWS) {
-        // 接近: 縁までの距離と安全速力。中: 安全速力で進めば通れる。座礁: 終わるまでの短い表示
-        if (t.shallowState === SHALLOW_APPROACHING) this.missionText.setText(`浅瀬まで ${shallowStep * SHALLOW_WARN_STEP_M} m ・ ${t.shallowSafeKt} kt 以下に減速！`).setColor(HUD_COLOR_WARN);
-        else if (t.shallowState === SHALLOW_INSIDE) this.missionText.setText(`浅瀬 ・ ${t.shallowSafeKt} kt 以下で進め`).setColor(HUD_COLOR_STRONG);
-        else if (t.shallowState === SHALLOW_GROUNDED) this.missionText.setText('座礁！').setColor(HUD_COLOR_WARN);
-      } else if (mode === MISSION_WAITING) {
-        this.missionText.setText('帰投 — 魚雷の決着待ち').setColor(HUD_COLOR_STRONG);
-      } else if (mode === MISSION_ADRIFT) {
-        this.missionText.setText('燃料切れ — 漂流').setColor(HUD_COLOR_WARN);
+      } else if (mode === MISSION_STORM_WARN || mode === MISSION_STORM || mode === MISSION_SHALLOWS || mode === MISSION_WAITING || mode === MISSION_ADRIFT) {
+        // 暴風（縁までの距離か中。速すぎれば警告色）・浅瀬（接近・中・座礁。どれでもなければ書き換えない）・魚雷の決着待ち・燃料切れ（文は ui/hud-lines）
+        const l = mode === MISSION_SHALLOWS ? shallowsLine(t, shallowStep) : mode === MISSION_WAITING ? WAITING_LINE : mode === MISSION_ADRIFT ? ADRIFT_LINE : stormLine(t, mode === MISSION_STORM_WARN, stormStep * STORM_WARN_STEP_M);
+        if (l) this.missionText.setText(l.text).setColor(l.color);
       } else if (mode === MISSION_CALL) {
         const warn = (call & (CALL_FUEL | CALL_DAWN)) !== 0;
         // 輸送隊の任務（v0.6.4）の決着は「大発 上陸 2/3 ・ 帰投せよ」（燃料・夜明けの理由が上ならその頭。core/mission-flow の topCall は 1 ビットだけ）、決着の前の夜明け近しは「大発の上陸を待て」（ui/dawn-lines）

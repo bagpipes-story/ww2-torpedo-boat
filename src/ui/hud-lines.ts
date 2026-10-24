@@ -1,4 +1,4 @@
-// HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機・敵の水上機・射撃と大発（v0.4.2）の 2 行目、Result の「敵機:」と大発の行。
+// HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機・敵の水上機・暴風・浅瀬・魚雷の決着待ち・燃料切れ（v0.6.5 で mission-line から）・射撃と大発（v0.4.2）の 2 行目、Result の「敵機:」と大発の行。
 // Phaser も DOM を読む config も使わない（文を組むだけ。色と刻みは config/hud-text-config）。2 行目の文は値が変わったときだけ組む（呼ぶ側がキャッシュする）。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
@@ -7,7 +7,8 @@ import { FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK } from '../core/mission-flow';
 import { SP_APPROACH, SP_FLARE_PASS, SP_LEAVING, SP_ORBIT, SP_OUT_BOMBED, SP_OUT_LOST, SP_RUN } from '../core/seaplane';
 import { GUN_BLOCKED, GUN_FIRING, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE } from '../core/gun-battery';
-import { SHALLOW_APPROACHING, SHALLOW_INSIDE } from '../core/shallows';
+import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
+import { STORM_NEAR } from '../core/storm';
 
 export const STEP_LABEL: Record<SpeedStep, string> = {
   stop: '停止',
@@ -127,6 +128,27 @@ export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacke
   if (r.seaplaneAttacked) return `敵機: ${lostPart ? `${lostPart} → ` : ''}攻撃の途中で終了（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
   return `敵機: 接近 ${r.seaplaneSorties} 回 ・ ${lostPart || '見失わせた 0 回'}`;
 }
+
+// ---------- 暴風・浅瀬・魚雷の決着待ち・燃料切れ（v0.6.5 の準備で ui/mission-line から移した。文と色は 1 字も変えていない） ----------
+
+/** 暴風（docs/02 §6.8）: 近づいている（縁までの距離 nearM）か中。warn（速すぎる。MISSION_STORM_WARN）なら警告色 */
+export function stormLine(t: BoatTelemetry, warn: boolean, nearM: number): HudLine {
+  const near = t.stormState === STORM_NEAR;
+  if (warn) return { text: near ? `暴風まで ${nearM} m ・ ${t.stormSafeKt} kt 以下に減速！` : `暴風 ・ ${t.stormSafeKt} kt 以下に減速！ 波で損傷`, color: HUD_COLOR_WARN };
+  return { text: near ? `暴風まで ${nearM} m ・ ${t.stormSafeKt} kt 以下で進め` : `暴風 ・ ${t.stormSafeKt} kt 以下で進め ・ 旋回が鈍い`, color: HUD_COLOR_STRONG };
+}
+
+/** 浅瀬: 接近は縁までの距離と安全速力、中は安全速力で進めば通れる、座礁は終わるまでの短い表示。どれでもなければ null（行を書き換えない） */
+export function shallowsLine(t: BoatTelemetry, shallowStep: number): HudLine | null {
+  if (t.shallowState === SHALLOW_APPROACHING) return { text: `浅瀬まで ${shallowStep * SHALLOW_WARN_STEP_M} m ・ ${t.shallowSafeKt} kt 以下に減速！`, color: HUD_COLOR_WARN };
+  if (t.shallowState === SHALLOW_INSIDE) return { text: `浅瀬 ・ ${t.shallowSafeKt} kt 以下で進め`, color: HUD_COLOR_STRONG };
+  if (t.shallowState === SHALLOW_GROUNDED) return { text: '座礁！', color: HUD_COLOR_WARN };
+  return null;
+}
+
+/** 帰投の輪の中で魚雷の決着を待つ間・燃料切れの漂流（文が変わらないので 1 個だけ） */
+export const WAITING_LINE: Readonly<HudLine> = { text: '帰投 — 魚雷の決着待ち', color: HUD_COLOR_STRONG };
+export const ADRIFT_LINE: Readonly<HudLine> = { text: '燃料切れ — 漂流', color: HUD_COLOR_WARN };
 
 // ---------- 大発掃討（v0.4.2） ----------
 

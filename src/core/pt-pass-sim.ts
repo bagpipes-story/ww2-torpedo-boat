@@ -5,7 +5,7 @@
 // 乱数: 今夜の揺らぎは seed+16（rollNight。world-setup と同じ）、米PT の射撃と命中の火災・機関は seed+18、13mm は seed+20（1 発 2 回・生きた PT への命中 1 回。撃つ遊び方だけ作る。
 // 押さなければ引かないので世界と同じ）。台本の揺らぎ（出発の遅れ・赤い線から転舵までの反応）は別の系列。実機 2 回目: 追撃の連射（PT_PASS の burst）への反応（keep・away・full）と、
 // 連射・制圧・待つ追撃の PT の最接近・同じ PT の続けての連射・連射の線の最短・機関損傷の夜を数える（spec r2 §H）。
-// 省いたもの: 命中スロー、消火ボタンの長押し（火災は起きて PT_PLAY.fireOutS で消す＝気の付く艇長）、漂流の待ち（燃料 0 で止まったら漂流）。確保は 1 夜の始めだけ。集計は core/pt-sim-cell。
+// 省いたもの: 命中スロー、消火ボタンの長押し（火災は起きて PT_PLAY.fireOutS で消す＝気の付く艇長）、漂流の待ち（燃料 0 で止まったら漂流）。確保は 1 夜の始めだけ。1 夜の記録は core/pt-trial、集計は core/pt-sim-cell。
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
 import { crewAccelFactor, crewLost, crewTurnFactor, type CrewEffects, type CrewParams } from './crew';
 import { dawnReached } from './dawn-air';
@@ -21,6 +21,7 @@ import { ptParamsAtNight, type PtParams } from './pt-data';
 import { createPtGun, stepPtGun } from './pt-gun';
 import { targetSide } from './pt-pass';
 import { PT_PLAY, PT_POLICY_SEED_ADD, PT_POLICY_SEED_MUL, PT_POLICY_SPECS, allLeft, broadsideDeg, ptInSight, stopsInDark, type PtBurstReact, type PtPolicy, type PtSimSpeed } from './pt-sim-policy';
+import { createPtTrial, finishPtTrial, type PtTrial } from './pt-trial';
 import { SeededRng } from './rng';
 import { bearingDeg } from './ship-ai';
 import { wrapDeg360 } from './units';
@@ -50,23 +51,7 @@ const DRIFT: BoatInput = { headingDeg: NaN, speed01: 0 };
 /** hold が転舵を延ばすステップ数（線が消えた次のステップで転舵が終わる。1 ステップの丸めの余裕に半ステップ） */
 const HOLD_EXTEND_STEPS = 1.5;
 
-export type PtTrialEnd = 'home' | 'sunk' | 'adrift' | 'timeout';
-
-export interface PtTrial {
-  /** 終わり方と秒、夜明けの後に帰投した */
-  end: PtTrialEnd; timeS: number; afterDawn: boolean;
-  /** 隊の KPI（core/pt-state の PtSection と同じ意味）、失った HP、残りの燃料 % */
-  detected: boolean; firstDetectM: number; lostContacts: number; passes: number; firedPasses: number; cleanPasses: number; shots: number; hits: number; hpLost: number; fuelPct: number;
-  /** 不変の確かめ: 予告から初弾の最短秒、同時に航過中の PT の最大、有効射程・艇の視程の外からの発射、1 回の航過の最大命中、予告から航過の終わりまでの最短秒（v0.6.3 の直し: 一瞬で終わる航過が無い） */
-  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; worstPassHits: number; minPassS: number;
-  /** 13mm（実機 1 回目）: 撃った・PT に当てた・撃退・撃沈の数、最初に見つかったのが閃光、視程か射程の外へ撃ったステップ（「HP だけでは沈まない」F11 は数えない＝レビュー R4。守りは pt-data と tests/pt-damage） */
-  gunShots: number; gunHits: number; ptRetired: number; ptSunk: number; flashFirst: boolean; gunBeyond: number;
-  /** 挟み撃ち: 赤い線の PT の舷が前の赤い線と替わった数と比べた数（2 本目から）・赤い線の間の体感秒の和、待つ PT（hold_off_m の外で待ち始めた）の艇への最接近 m（無ければ Infinity） */
-  flankAlt: number; flankPairs: number; commitGapSumS: number; heldMinM: number;
-  /** 追撃（実機 2 回目。r2 §H.2）: 撃った連射・その命中・制圧、1 回の連射の最大命中、1 隻の撃った連射の最大、同じ PT の続けての連射（相方が撃てる距離で gap_s + self_gap_s の内）、
-   * 予告から連射の終わりの最短秒、他の PT が撃っている間の追撃の PT の最接近 m（無ければ Infinity）、機関損傷を受けた */
-  bursts: number; burstHits: number; suppressions: number; worstBurstHits: number; maxBoatBursts: number; selfRepeats: number; minBurstS: number; chaseHeldMinM: number; engineHit: boolean;
-}
+export type { PtTrial, PtTrialEnd } from './pt-trial';
 
 /** seed の夜の米PT（world-setup の applyPtNight と同じ: rollNight の敵の 1 件目のずれと左右反転） */
 export function ptNightParams(s: PtSimSetup, seed: number): PtParams {
@@ -93,12 +78,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
   const eff2 = p.gun.effectiveM * p.gun.effectiveM;
   const realDt = s.stepS;
   const dt = realDt * s.timeScale;
-  const out: PtTrial = {
-    end: 'timeout', timeS: 0, afterDawn: false, detected: false, firstDetectM: NaN, lostContacts: 0, passes: 0, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, hpLost: 0, fuelPct: 0,
-    minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, worstPassHits: 0, minPassS: Infinity,
-    gunShots: 0, gunHits: 0, ptRetired: 0, ptSunk: 0, flashFirst: false, gunBeyond: 0, flankAlt: 0, flankPairs: 0, commitGapSumS: 0, heldMinM: Infinity,
-    bursts: 0, burstHits: 0, suppressions: 0, worstBurstHits: 0, maxBoatBursts: 0, selfRepeats: 0, minBurstS: Infinity, chaseHeldMinM: Infinity, engineHit: false,
-  };
+  const out = createPtTrial();
   const br: PtBurstReact = s.burstReact ?? sp.burst ?? 'keep';
   const departS = pol.nextRange(0, PT_PLAY.departMaxS);
   const speedMps = (k: PtSimSpeed): number => (k === 'silent' ? s.boat.silentMaxMps : k === 'cruise' ? s.boat.speedCruiseMps : Infinity);
@@ -283,12 +263,5 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
     out.end = sinking ? 'sunk' : atHome ? 'home' : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout') break;
   }
-  Object.assign(out, {
-    timeS: t, afterDawn: out.end === 'home' && c.dawn, detected: !Number.isNaN(q.firstDetectM), firstDetectM: q.firstDetectM, lostContacts: q.lostContacts,
-    passes: q.passes, firedPasses: q.firedPasses, cleanPasses: q.cleanPasses, shots: q.shots, hits: q.hits, minWarnS: q.minWarnS,
-    hpLost: sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, fuelPct: (fuel.gal / s.fuelGal) * 100,
-    gunShots: gun ? gun.battery.shots : 0, gunHits: q.gunHits, ptRetired: q.retired, ptSunk: q.sunk, flashFirst: q.flashFirst, heldMinM: Math.sqrt(heldMin2),
-    bursts: q.firedBursts, burstHits: q.burstHits, suppressions: q.suppressions, chaseHeldMinM: Math.sqrt(chaseHeld2),
-  });
-  return out;
+  return finishPtTrial(out, q, t, c.dawn, sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, (fuel.gal / s.fuelGal) * 100, gun ? gun.battery.shots : 0, heldMin2, chaseHeld2);
 }
