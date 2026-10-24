@@ -10,6 +10,7 @@ import { AS_T_FALLING, AS_T_INBOUND, AS_T_NONE, AS_T_ORBIT, AS_T_REST, AS_T_RUN 
 import type { BoatTelemetry } from '../src/core/boat-motion';
 import { createPtTelemetry } from '../src/core/pt-boats';
 import { createConvoyTelemetry } from '../src/core/convoy';
+import { createEngineTelemetry } from '../src/core/engine-trouble';
 import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, createDawnTelemetry, type DawnTelemetry } from '../src/core/dawn-air';
 import { FF_IDLE, FF_OUT_NONE } from '../src/core/friendly';
 import { GUN_SAFE } from '../src/core/gun-battery';
@@ -61,6 +62,7 @@ function tele(dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> = 
     stormSafeKt: 12,
     pt: createPtTelemetry(), // 米PT の無い任務（v0.6.3。enabled false）
     convoy: createConvoyTelemetry(), // 輸送隊の無い任務（v0.6.4。enabled false）
+    engine: createEngineTelemetry(), // 機関の不調の無い任務（v0.6.5。on false）
     ...over,
     dawn: { ...createDawnTelemetry(), ...dawn },
   } as BoatTelemetry;

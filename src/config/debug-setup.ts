@@ -4,6 +4,8 @@ import {
   DEBUG_BARGES_NEAR,
   DEBUG_BATTERY_OFF,
   DEBUG_DAWN_S,
+  DEBUG_ENGINE_HOT,
+  DEBUG_ENGINE_OFF,
   DEBUG_FIXED_NIGHT,
   DEBUG_FRIENDLY_FORCE,
   DEBUG_FUEL_ALLOTMENT_GAL,
@@ -36,5 +38,7 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     forceFriendly: DEBUG_FRIENDLY_FORCE,
     shipHitScale: DEBUG_SHIP_HIT_SCALE,
     strikeOff: DEBUG_STRIKE_OFF,
+    engineOff: DEBUG_ENGINE_OFF, // ?debug&engoff（v0.6.5）
+    engineHot: DEBUG_ENGINE_HOT, // ?debug&enghot（v0.6.5）
   };
 }

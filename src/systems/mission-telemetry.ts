@@ -4,6 +4,7 @@ import type { GameData } from '../config/game-data';
 import { RUDDER_BAR_FULL_DEG } from '../config/ui-config';
 import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
+import { createEngineTelemetry } from '../core/engine-trouble';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { countHits, summarizeShots } from '../core/hit-rate';
 import { bearingJa } from '../core/briefing';
@@ -125,6 +126,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     dawn: initDawnTelemetry(w),
     pt: initPtTelemetry(w), // 敵の米PT（v0.6.3。systems/pt-telemetry。無い任務は enabled false）
     convoy: initConvoyTelemetry(w), // 味方の大発の輸送隊（v0.6.4。systems/convoy-telemetry。無い任務は enabled false）
+    engine: createEngineTelemetry(), // 機関の不調（v0.6.5。jp_05。無い任務は on false のまま。下の refreshTelemetry が毎フレーム写す）
   };
 }
 
@@ -216,6 +218,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshDawnTelemetry(t, w, scratchPose);
   refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
   refreshConvoyTelemetry(t.convoy, w); // 味方の大発の輸送隊（v0.6.4）: 上陸・沈没・浜まで・最寄りの大発
+  w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
   const st = w.storm;
   if (st) {

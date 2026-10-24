@@ -1,7 +1,8 @@
-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。中身は 1 字も変えていない。boat-motion が再 export する）。
+// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine を足した）。
 // Phaser 非依存。型だけ（実行時の値を持たない）。
 import type { ConvoyTelemetry } from './convoy';
 import type { DawnTelemetry } from './dawn-air';
+import type { EngineTelemetry } from './engine-trouble';
 import type { PtTelemetry } from './pt-boats';
 import type { SpeedStep } from './boat-motion';
 
@@ -134,4 +135,5 @@ export interface BoatTelemetry {
   dawn: DawnTelemetry; // 夜明け（v0.6.1。core/dawn-air）: ラッチ・夜明け後の秒・空の持ち主・空襲の段（systems/dawn-telemetry が毎フレーム書く）
   pt: PtTelemetry; // 敵の米PT（v0.6.3。core/pt-boats）: 隊の段階・航過・かわす向き・脅威の PT の相対位置（systems/pt-telemetry が毎フレーム書く。無い任務は enabled false）
   convoy: ConvoyTelemetry; // 味方の大発の輸送隊（v0.6.4。core/convoy）: 隻数・上陸・沈没・浜まで・最寄りの大発（systems/convoy-telemetry が毎フレーム書く。無い任務は enabled false）
+  engine: EngineTelemetry; // 機関の不調（v0.6.5。core/engine-trouble）: 熱・段・不調の残りの秒・出来事（systems/engine-trouble が毎フレーム書く。不調の無い任務は on false）
 }
