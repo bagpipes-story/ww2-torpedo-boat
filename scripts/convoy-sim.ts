@@ -2,7 +2,8 @@
 // 見つかった夜と秒・最初の標的が大発・大発／自艇への航過・連射・標的の切り替え、25mm の発射／命中／撃退／撃沈／制圧・機関損傷、不変（予告から初弾・同時の攻撃・射程と視程の外・自艇の視程の外・大発への連射・
 // 1 回の攻撃の最大命中・健全な大発が 1 航過で沈んだ数・決着の秒・夜明け後の決着）を出す。中身は src/core/convoy-sim（tests/convoy-sim-*.test.ts と同じ）。値は data。
 // 環境変数: MISSION（既定 jp_01）・N（夜の数。既定 400）・SEED（最初の seed。既定 1）・POL（既定 全部 14）・TABLE=1（較正の帯と ✓/✗）・
-//   上書き BHP（barge_hp）・DBAND（detect_band）・KEEP（target_keep_ratio）・HOLD（target_switch_hold_s）・FLASHHOLD（flash_hold_s）・GDMG（25mm の 1 発の被害）・GRPM・GMAG・GDISP（25mm）・ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）・GFLOOR（25mm の散布の最小半径 m）・FIRER（射撃ボタンを押す距離 m。近くまで待って撃つ人の型）
+//   上書き BHP（barge_hp）・DBAND（detect_band）・KEEP（target_keep_ratio）・HOLD（target_switch_hold_s）・FLASHHOLD（flash_hold_s）・GDMG（25mm の 1 発の被害）・GRPM・GMAG・GDISP（25mm）・ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）・GFLOOR（25mm の散布の最小半径 m）・FIRER（射撃ボタンを押す距離 m。近くまで待って撃つ人の型）・
+//   HARD=1（v0.6.6。難易度ハード: jp_01 は米PT 3 隻・ノルマ 3。TABLE=1 とは組めない＝ノーマルの帯の ✓/✗ をハードの値に付けない）。新しい鍵は env が無ければ undefined（見出しに出さない＝ノーマルの表は同じ）
 // 実行: npx esbuild scripts/convoy-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/convoy.mjs && node <scratch>/convoy.mjs
 import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { convoyStartClearM } from '../src/config/pt-mission-data';
@@ -21,7 +22,9 @@ if (dband !== undefined && dband !== '' && !['stop', 'silent', 'cruise', 'full']
 const o: ConvoySimOverrides = {
   bargeHp: num('BHP'), detectBand: dband ? (dband as SpeedStep) : undefined, keepRatio: num('KEEP'), holdS: num('HOLD'), flashHoldS: num('FLASHHOLD'), gunDamage: num('GDMG'),
   gunRpm: num('GRPM'), magRounds: num('GMAG'), gunDisp: num('GDISP'), fuelGal: num('ALLOT'), dawnS: num('DAWN'), gunFloorM: num('GFLOOR'), fireRangeM: num('FIRER'),
+  hard: process.env['HARD'] === '1' ? true : undefined,
 };
+if (o.hard && process.env['TABLE'] === '1') throw new Error('HARD=1 と TABLE=1 は組めない（TABLE=1 はノーマルの帯）');
 const pols = (process.env['POL'] ?? CONVOY_POLICIES.join(',')).split(',').map((x) => x.trim()).filter((x) => x !== '') as ConvoyPolicy[];
 for (const p of pols) if (!(CONVOY_POLICIES as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は ${CONVOY_POLICIES.join(' / ')}`);
 
@@ -30,7 +33,7 @@ const s = run.setup;
 const g = s.gun!;
 const cv = s.convoy;
 const bargeDetectM = enemyDetectRangeM(s.pt.baseDetectM, speedFactorForBand(s.detectBand, s.vis.speedFactor), s.vis, false);
-const clearM = convoyStartClearM(s.pt, getPrototypeMission(gameData, mission));
+const clearM = convoyStartClearM(s.pt, getPrototypeMission(gameData, mission, o.hard));
 const f = (x: number, d: number, w: number): string => (Number.isFinite(x) ? x.toFixed(d) : '-').padStart(w);
 const set = Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${String(v)}`);
 console.log(`[${mission} ${s.pt.bounds.width}x${s.pt.bounds.height} N ${n} seed ${seed}〜${seed + n - 1}${set.length > 0 ? ` ${set.join(' ')}` : ''}]`);
@@ -38,6 +41,7 @@ console.log(
   `大発 ${cv.count} 隻 HP ${cv.hp}・先頭 ${cv.leadX},${cv.leadY} → ${cv.beach ? `浜 ${cv.beach.x.join('/')}（y ${cv.beach.y}・転舵 ${cv.beach.turnX.map((x) => x.toFixed(0)).join('/')}・浜への道 ${cv.beach.runInM.toFixed(0)} m）` : `上陸線 ${cv.landingX}`}・間隔 ${cv.offsetsM.join('/')}・見つかる帯 ${s.detectBand}（${bargeDetectM.toFixed(0)} m）・標的 keep ${Math.sqrt(s.rule.keepRatio2).toFixed(2)} ロック ${s.rule.lockS} 秒 閃光の記憶 ${s.rule.flashHoldS} 秒 | ` +
     `自艇 ${s.start.x},${s.start.y} 輪 ${s.ring.x},${s.ring.y} 夜明け ${s.durationS} 秒 燃料 ${s.fuelGal} gal | 25mm ${g.groups[0]!.roundsPerMin} 発/分 × ${g.groups[0]!.damage}・散布 ${g.groups[0]!.dispersionM} m${g.minSpreadM !== undefined ? `（最小 ${g.minSpreadM} m）` : ''}・弾倉 ${g.magazine?.rounds ?? '-'}/${g.magazine?.reloadS ?? '-'} | PT の出発 → 船団 ≥ ${clearM.toFixed(0)} m（clamp 込み）`,
 );
+if (o.hard) console.log(`ハード: 米PT ${s.pt.count} 隻（線 ${Array.from({ length: s.pt.count }, (_, i) => `y ${s.pt.legs[4 * i + 1]}`).join('・')}）・上陸のノルマ ${cv.quota} 隻`);
 console.log('policy        arr/3  a3%  a2+%  a0%  bSunk bHit | pSunk% home% adrift% dawn%  HP   pHit fuel(med/p10) | det% detS 1stB%  passB passP burst  sw | gun hits ret% ret/n PTsunk% supp eng% | warn maxSim beyond beyondP bBurst worstB/P spk resolved(med) resDawn%');
 const line = (c: ConvoyCell): string =>
   `${c.policy.padEnd(13)} ${f(c.arrivedMean, 2, 5)} ${f(c.arrived3Pct, 0, 4)} ${f(c.arrived2Pct, 0, 5)} ${f(c.arrived0Pct, 0, 4)}  ${f(c.bargesSunkMean, 2, 4)} ${f(c.bargeHits, 1, 4)} | ${f(c.sunkPct, 1, 6)} ${f(c.homePct, 0, 5)} ${f(c.adriftPct, 1, 7)} ${f(c.afterDawnPct, 0, 5)} ${f(c.hpMean, 1, 5)} ${f(c.playerHits, 1, 4)} ${f(c.fuelMed, 0, 4)}/${f(c.fuelP10, 0, 3)} | ` +

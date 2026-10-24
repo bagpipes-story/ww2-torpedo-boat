@@ -35,10 +35,12 @@ export interface PtSimOverrides {
    * engineParamsFromData の検査を通す）・予告への反応の台本（ENG_REACT。無ければ ignore）
    */
   engineOff?: boolean; engineFullS?: number; engineReact?: PtEngineReact;
+  /** 難易度ハード（v0.6.6。scripts/convoy-sim の HARD=1: jp_01 は米PT 3 隻・ノルマ 3）。無ければノーマル（jp_05 の表は渡さない） */
+  hard?: boolean;
 }
 
 export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides = {}): PtSimSetup {
-  const w = buildWorldSetup(withEngineOverrides(withGunOverrides(withPtOverrides(data, missionId, o), missionId, o), o), missionId, { fuelGal: o.fuelGal ?? NaN, dawnS: o.dawnS ?? NaN, engineOff: o.engineOff });
+  const w = buildWorldSetup(withEngineOverrides(withGunOverrides(withPtOverrides(data, missionId, o), missionId, o), o), missionId, { fuelGal: o.fuelGal ?? NaN, dawnS: o.dawnS ?? NaN, engineOff: o.engineOff, hard: o.hard });
   if (!w.ptBoats) throw new Error(`${missionId} に米PT の隊（v0_1_prototype.pt_boats）が無い`);
   const pt = o.passEndOff === true || o.chaseOff === true ? { ...w.ptBoats, passEndsWhenSafe: o.passEndOff !== true, chaseOn: o.chaseOff !== true } : w.ptBoats;
   const night = w.mission.night;

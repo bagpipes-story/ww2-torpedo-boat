@@ -17,6 +17,7 @@ import {
   sortieSeed,
 } from '../config/game-config';
 import { gameData, getBoatRecord, getEnemyRecord, getPrototypeMission, getTorpedoRecord } from '../config/game-data';
+import { hasHardVariant } from '../config/mission-data';
 import { createInputState } from '../core/input-state';
 import { directSortie } from '../core/sortie';
 import { migrateLegacyUnlocks } from '../systems/progress-storage';
@@ -68,6 +69,8 @@ export class BootScene extends Phaser.Scene {
       boatIds.add(pm.playerBoatId);
       if (pm.escort) boatIds.add(pm.escort.boat);
       getEngineParams(gameData, m['id']); // 機関の不調（v0.6.5）の data と同居の検査（壊れていれば Boot で止まる。不調の無い任務は null）
+      const hm = hasHardVariant(gameData, m['id']) ? getPrototypeMission(gameData, m['id'], true) : null; // ハード（v0.6.6）も 1 回組んで米PT と輸送隊を検査（3 本目の哨戒線の出発点・ノルマ。壊れていれば Boot で止まる）
+      if (hm) { getPtParams(gameData, hm, gameData.hitRateModel.world.time_scale); getConvoyParams(gameData, hm); }
     }
     for (const id of boatIds) {
       const b = getBoatRecord(gameData, id);

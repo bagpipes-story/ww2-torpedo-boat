@@ -19,7 +19,7 @@ export interface ConvoySimOverrides extends PtSimOverrides {
 export function convoySimSetup(data: GameData, missionId: string, o: ConvoySimOverrides = {}): ConvoySimSetup {
   const d = withConvoyOverrides(data, missionId, o);
   const base = ptSimSetup(d, missionId, o);
-  const w = buildWorldSetup(d, missionId); // 揺らぎなし（= getConvoyParams）。試行ごとに seed の夜を当てる（convoy-sim の convoyNight）
+  const w = buildWorldSetup(d, missionId, { hard: o.hard }); // 揺らぎなし（= getConvoyParams）。試行ごとに seed の夜を当てる（convoy-sim の convoyNight）。ハード（v0.6.6）はノルマ 3（米PT 3 隻は ptSimSetup）
   if (!w.convoy) throw new Error(`${missionId} に味方の大発の輸送隊（v0_1_prototype.convoy）が無い`);
   return { ...base, convoy: w.convoy.params, detectBand: w.convoy.detectBand, rule: w.convoy.rule, ...(o.fireRangeM !== undefined ? { fireRangeM: o.fireRangeM } : {}) };
 }
