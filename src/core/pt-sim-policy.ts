@@ -94,8 +94,9 @@ export function stopsInDark(policy: PtPolicy): boolean {
 }
 
 // 台本の値（模擬の設定。ゲームの値ではない。lead の試作 ptsim3.final と同じ）: 出発の遅れの最大・赤い線から反応までの秒（一様）・転舵の角と保つ秒（meet は PT へ 3 秒。連射への反応も dodgeHoldS）・
-// ジグザグ（±40° を 3 秒ごと）・dark_stop の止まる秒の上限・火災を消すまでの秒・edge_flee が止まる縁からの m（押し戻しの余白の外）
-export const PT_PLAY = { departMaxS: 4, reactMinS: 0.4, reactMaxS: 1.2, dodgeDeg: 90, dodgeHoldS: 4, meetHoldS: 3, zigzagDeg: 40, zigzagLegS: 3, darkStopMaxS: 40, fireOutS: 1.5, edgeStopM: 15 } as const;
+// ジグザグ（±40° を 3 秒ごと）・dark_stop の止まる秒の上限・火災を消すまでの秒・edge_flee が止まる縁からの m（押し戻しの余白の外）、
+// v0.6.5 機関の不調の予告に従う台本（core/pt-sim-engine の cool・cruise。spec-v065 §F.1）: 1 段目（過熱）に入ってから落とすまでの秒・戻す熱
+export const PT_PLAY = { departMaxS: 4, reactMinS: 0.4, reactMaxS: 1.2, dodgeDeg: 90, dodgeHoldS: 4, meetHoldS: 3, zigzagDeg: 40, zigzagLegS: 3, darkStopMaxS: 40, fireOutS: 1.5, edgeStopM: 15, coolDelayS: 3, coolToHeat: 0.4 } as const;
 /** 台本の乱数の系列（seed × 7919 + 1000。米PT・13mm の系列とは別） */
 export const PT_POLICY_SEED_MUL = 7919;
 export const PT_POLICY_SEED_ADD = 1000;

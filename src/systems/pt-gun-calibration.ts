@@ -42,7 +42,9 @@ const row = (policy: PtGunPolicy, star: boolean, bands: Partial<Record<Metric, B
 /**
  * spec r2 §H.2: 転舵しながら撃つ（★）は 0〜6% 沈み、撃退の夜 35〜65%・1 夜 10〜28 発当たる。撃たない行に撃ち返しを足すと半分以下（★ の対。2 秒遅れ・巡航のまま・静音のままは 0.65 倍）。
  * HUD の教える 14 kt＋撃つ（★）は 0〜10%・撃退 70% 以上・1 夜 2.5 回以上制圧。止まって撃ち合う（★）は 25〜50%（罠）で何もしない巡航より危なくない。暗さに隠れて撃つ（★）は発見が増えない。
- * 全速で逃げて撃つのは散るので帯だけ（≤ 25・≤ 20）
+ * 全速で逃げて撃つのは散るので帯だけ（≤ 25・≤ 20）。
+ * v0.6.5（jp_05 の機関の不調。spec-v065 §F.4）: 全速で逃げて撃つ 2 行は不調が起き、不調の 14 kt は 13mm が散りにくいので命中・撃退が増える（proto は不調ありの値。帯は不調ありの
+ * N 200 × 4 組の最大 15.0・5.5% ＋ 4 点でも内なので同じ）。不調ありの帯は systems/pt-engine-calibration。ほかの 14 行は不調が起きないので値も帯も同じ
  */
 export const PT_GUN_CALIBRATION: readonly PtGunCalibrationRow[] = [
   row('shoot_cruise', false, {}, [], ['cruise', LOOSE, 3], [21.8, 39.7, 12.0, 27.0, 2.8]),
@@ -58,8 +60,8 @@ export const PT_GUN_CALIBRATION: readonly PtGunCalibrationRow[] = [
   row('holdfull_shoot', false, {}, [], ['hold_full', HALF, HP_GAIN], [7.3, 27.9, 11.6, 33.5, 4.0]),
   row('midfull_shoot', false, {}, [], ['mid_full', HALF, HP_GAIN], [11.0, 31.4, 11.7, 32.0, 2.8]),
   row('latefull_shoot', false, {}, [], ['late_full', LOOSE, HP_GAIN], [18.0, 33.3, 11.9, 30.5, 3.3]),
-  row('flee_shoot', false, { sunkPct: [0, 25] }, [], null, [9.8, 32.5, 4.4, 13.3, 1.8]),
-  row('fleedodge_shoot', false, { sunkPct: [0, 20] }, [], null, [6.5, 24.7, 4.9, 13.5, 2.0]),
+  row('flee_shoot', false, { sunkPct: [0, 25] }, [], null, [11.5, 32.8, 7.1, 20.5, 2.0]),
+  row('fleedodge_shoot', false, { sunkPct: [0, 20] }, [], null, [4.5, 24.6, 11.5, 33.0, 4.0]),
   row('slow_shoot', true, { sunkPct: [0, 10], retiredPct: [70, 100], suppressions: [2.5, Infinity] }, [], null, [2.3, 20.7, 28.5, 87.5, 10.3]),
 ];
 

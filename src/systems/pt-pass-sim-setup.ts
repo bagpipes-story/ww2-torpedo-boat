@@ -5,10 +5,12 @@
 import { getPrototypeMission, type GameData } from '../config/game-data';
 import { PT_GUN_SHELL_POOL_SIZE, PT_SHELL_POOL_SIZE } from '../config/pt-config';
 import { FIXED_STEP_S } from '../config/step-config';
+import { ENGINE_FAILURE_EVENT_ID } from '../core/engine-trouble-data';
 import { PT_CHASE_KEYS, type PtChaseKey } from '../core/pt-chase-data';
 import { isPtDataRecord } from '../core/pt-data';
 import type { PtSimSetup } from '../core/pt-pass-sim';
 import { runPtCell, type PtCell } from '../core/pt-sim-cell';
+import type { PtEngineReact } from '../core/pt-sim-engine';
 import type { PtBurstReact, PtNoGunPolicy, PtPolicy } from '../core/pt-sim-policy';
 import { buildWorldSetup } from './world-setup';
 
@@ -28,10 +30,15 @@ export interface PtSimOverrides {
   effectiveM?: number; engineDamage?: number; passEndOff?: boolean; chaseOff?: boolean;
   /** 追撃の鍵の上書き（scripts の CH_<鍵>。data の chase に当てて検査を通す）、連射への反応（scripts の BREACT。反応の表） */
   chase?: Partial<Record<PtChaseKey, number>>; burstReact?: PtBurstReact;
+  /**
+   * v0.6.5 機関の不調（jp_05）: 切る（scripts の ENG_OFF=1。TABLE=1・2 が v0.6.4 の md5 に戻る関門）・全速を続けて不調までの秒（ENG_FULL。risk_events の full_to_limp_s に当てて
+   * engineParamsFromData の検査を通す）・予告への反応の台本（ENG_REACT。無ければ ignore）
+   */
+  engineOff?: boolean; engineFullS?: number; engineReact?: PtEngineReact;
 }
 
 export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides = {}): PtSimSetup {
-  const w = buildWorldSetup(withGunOverrides(withPtOverrides(data, missionId, o), missionId, o), missionId, { fuelGal: o.fuelGal ?? NaN, dawnS: o.dawnS ?? NaN });
+  const w = buildWorldSetup(withEngineOverrides(withGunOverrides(withPtOverrides(data, missionId, o), missionId, o), o), missionId, { fuelGal: o.fuelGal ?? NaN, dawnS: o.dawnS ?? NaN, engineOff: o.engineOff });
   if (!w.ptBoats) throw new Error(`${missionId} に米PT の隊（v0_1_prototype.pt_boats）が無い`);
   const pt = o.passEndOff === true || o.chaseOff === true ? { ...w.ptBoats, passEndsWhenSafe: o.passEndOff !== true, chaseOn: o.chaseOff !== true } : w.ptBoats;
   const night = w.mission.night;
@@ -43,7 +50,16 @@ export function ptSimSetup(data: GameData, missionId: string, o: PtSimOverrides 
     boat: w.boatParams, start: w.playerStart, boundsMarginM: w.boundsMarginM, halfLengthM: w.boatHalfLengthM, halfBeamM: w.boatHalfBeamM,
     damage: w.damageParams, crew: w.crew, crewEffects: w.crewEffects, fuel: w.fuelCurve, fuelGal: w.fuelStartGal, vis: w.vis, visRange2: w.visRange2, ring: w.mission.returnPoint,
     durationS: w.durationS, timeScale: w.timeScale, stepS: FIXED_STEP_S, gun: w.guns, gunShellPoolSize: PT_GUN_SHELL_POOL_SIZE, ...(o.burstReact ? { burstReact: o.burstReact } : {}),
+    engine: w.engine ?? null, ...(o.engineReact ? { engineReact: o.engineReact } : {}),
   };
+}
+
+/** 機関の不調の上書きを当てた data の写し（risk_events の engine_failure.params の full_to_limp_s。上書きが無ければそのまま）。世界と同じ getEngineParams の検査を通す */
+function withEngineOverrides(data: GameData, o: PtSimOverrides): GameData {
+  if (o.engineFullS === undefined) return data;
+  type Rec = Record<string, unknown>;
+  const events = (data.riskEvents.events as readonly Rec[]).map((e) => (e['id'] === ENGINE_FAILURE_EVENT_ID ? { ...e, params: { ...(e['params'] as Rec), full_to_limp_s: o.engineFullS } } : e));
+  return { ...data, riskEvents: { ...data.riskEvents, events } } as unknown as GameData;
 }
 
 /** 米PT の上書きを当てた data の写し（上書きが無ければそのまま）。世界と同じ getPtParams の検査を通す */
@@ -118,19 +134,22 @@ const row = (policy: PtNoGunPolicy, star: boolean, b: Partial<Omit<PtCalibration
 /**
  * v0.6.3 実機 2 回目（「逃げるだけなら簡単。もっと執拗に追いかけ回して射撃して」）の帯（spec r2 §H.2）: 何もしないと沈む（巡航 32〜58%・静音 35〜62%）、
  * かわすだけ（HUD の転舵・線の間かわし続ける・全速でまっすぐ逃げる）も 8〜46% 沈み HP 24〜46 を失う、全速で逃げるだけでも 14〜40%、暗さに隠れるのは効く（5〜25%）。
- * 赤い線が前と反対の舷から来る割合（挟み撃ち）は巡航 0.6 以上・赤い線で全速の転舵 0.5 以上。漂流 2% 以下・打ち切り 0（不変）。撃ち返す行は systems/pt-gun-calibration
+ * 赤い線が前と反対の舷から来る割合（挟み撃ち）は巡航 0.6 以上・赤い線で全速の転舵 0.5 以上。漂流 2% 以下・打ち切り 0（不変）。撃ち返す行は systems/pt-gun-calibration。
+ * v0.6.5（jp_05 の機関の不調。spec-v065 §F.4）: 既定の表は不調あり（予告を無視）。不調の起きる 5 行（full・turn_full・flee_full・flee_dodge・flee_hold）は沈没の帯の上の端を
+ * 不調ありの N 200 × 4 組（seed 1・201・401・601）の最大 ＋ 4 点に広げ（下の端と ENG_OFF の値は前の帯の内のまま＝ENG_OFF=1 の表が v0.6.4 と同じ）、proto を不調ありの値に。
+ * 不調ありの回帰の帯（沈没・不調の夜）と設計の帯は systems/pt-engine-calibration。ほかの 16 行は不調が起きないので値も帯も同じ
  */
 export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
   row('cruise', true, { detectedPct: [95, 100], sunkPct: [32, 58], hpMean: [40, 50], altMin: 0.6 }, [100, 44.7, 45.3, 54.8]),
   row('silent', true, { detectedPct: [65, 92], sunkPct: [35, 62] }, [78.3, 36.4, 48.5, 51.5]),
-  row('full', false, { firstDetectMedM: [1500, Infinity], sunkPct: [14, 40] }, [100, 37.7, 26.0, 74.0]),
+  row('full', false, { firstDetectMedM: [1500, Infinity], sunkPct: [14, 46.5] }, [100, 41.1, 38.0, 62.0]),
   row('zigzag', false, { sunkPct: [0, 80] }, [100, 47.5, 69.3, 30.8]),
   row('turn_cruise', true, { sunkPct: [18, 42], hpMean: [33, 46] }, [100, 40.5, 31.0, 69.0]),
   row('react_full', false, { sunkPct: [20, 44], hpMean: [32, 46], passesMin: 2.5, altMin: 0.5 }, [100, 39.5, 30.3, 69.8]),
   row('dodge_silent', true, { sunkPct: [10, 30], hpMean: [24, 36] }, [78.3, 29.9, 16.8, 83.3]),
   row('turn_silent', false, { sunkPct: [24, 46] }, [78.3, 33.4, 34.5, 65.5]),
   row('late_turn', true, { sunkPct: [32, 58] }, [100, 43.9, 45.5, 54.5]),
-  row('turn_full', false, { sunkPct: [8, 30] }, [100, 32.6, 16.0, 83.8]),
+  row('turn_full', false, { sunkPct: [8, 37] }, [100, 37.5, 31.3, 68.8]),
   row('dark_stop', true, { detectedPct: [25, 55], sunkPct: [5, 25], homeBeforeDawnPct: [70, 100] }, [38.8, 12.0, 15.0, 85.0]),
   row('meet', false, { sunkPct: [24, 50] }, [100, 43.0, 38.3, 61.8]),
   row('stop_dawn', false, { detectedPct: [0, 5], homePct: [100, 100], afterDawnPct: [100, 100] }, [0, 0, 0, 100]),
@@ -139,9 +158,9 @@ export const PT_CALIBRATION: readonly PtCalibrationRow[] = [
   row('hold_full', true, { sunkPct: [14, 36], hpMean: [30, 45] }, [100, 38.1, 24.3, 75.8]),
   row('mid_full', true, { sunkPct: [22, 46] }, [100, 41.0, 32.5, 67.5]),
   row('late_full', false, { sunkPct: [28, 52] }, [100, 43.0, 40.3, 59.8]),
-  row('flee_full', true, { sunkPct: [8, 26], hpMean: [30, 50] }, [100, 33.7, 13.3, 86.8]),
-  row('flee_dodge', false, { sunkPct: [5, 25] }, [100, 28.6, 12.0, 88.0]),
-  row('flee_hold', false, { sunkPct: [4, 24] }, [100, 29.4, 10.8, 89.3]),
+  row('flee_full', true, { sunkPct: [8, 26.5], hpMean: [30, 50] }, [100, 34.8, 17.3, 82.8]),
+  row('flee_dodge', false, { sunkPct: [5, 27.5] }, [100, 33.2, 19.3, 80.8]),
+  row('flee_hold', false, { sunkPct: [4, 33] }, [100, 36.2, 24.3, 75.8]),
 ];
 
 /** 帯（spec r2 §H.2）と不変（ptInvariantMisses）を外れた項目（空なら合格） */

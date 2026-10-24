@@ -6,9 +6,11 @@
 // 押さなければ引かないので世界と同じ）。台本の揺らぎ（出発の遅れ・赤い線から転舵までの反応）は別の系列。実機 2 回目: 追撃の連射（PT_PASS の burst）への反応（keep・away・full）と、
 // 連射・制圧・待つ追撃の PT の最接近・同じ PT の続けての連射・連射の線の最短・機関損傷の夜を数える（spec r2 §H）。
 // 省いたもの: 命中スロー、消火ボタンの長押し（火災は起きて PT_PLAY.fireOutS で消す＝気の付く艇長）、漂流の待ち（燃料 0 で止まったら漂流）。確保は 1 夜の始めだけ。1 夜の記録は core/pt-trial、集計は core/pt-sim-cell。
+// v0.6.5: 機関の不調（setup.engine。jp_05）は core/pt-sim-engine のつなぎで、米PT の段の直後に熱を進め、不調の間は世界と同じ engineInput。null（ENG_OFF）なら前と同じ演算・同じ順。
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
 import { crewAccelFactor, crewLost, crewTurnFactor, type CrewEffects, type CrewParams } from './crew';
 import { dawnReached } from './dawn-air';
+import type { EngineParams } from './engine-trouble';
 import { createFuelState, stepFuel, type FuelCurve } from './fuel';
 import type { GunBatteryParams, GunEvents } from './gun-battery';
 import { applyShellHit, createDamageState, stepDamage, type DamageParams, type HitOutcome } from './gunnery';
@@ -20,6 +22,7 @@ import { hitPt } from './pt-damage';
 import { ptParamsAtNight, type PtParams } from './pt-data';
 import { createPtGun, stepPtGun } from './pt-gun';
 import { targetSide } from './pt-pass';
+import { createSimEngine, simEngineCommit, simEngineInput, simEngineOut, simEngineStep, simEngineWant, type PtEngineReact } from './pt-sim-engine';
 import { PT_PLAY, PT_POLICY_SEED_ADD, PT_POLICY_SEED_MUL, PT_POLICY_SPECS, allLeft, broadsideDeg, ptInSight, stopsInDark, type PtBurstReact, type PtPolicy, type PtSimSpeed } from './pt-sim-policy';
 import { createPtTrial, finishPtTrial, type PtTrial } from './pt-trial';
 import { SeededRng } from './rng';
@@ -41,6 +44,8 @@ export interface PtSimSetup {
   gun: GunBatteryParams | null; gunShellPoolSize: number;
   /** 追撃の連射への反応の上書き（v0.6.3 実機 2 回目。連射への反応の表。無ければ台本の burst か keep） */
   burstReact?: PtBurstReact;
+  /** 機関の不調（v0.6.5。world-setup の engine＝hazards に engine_failure がある任務だけ。null は不調なし＝ENG_OFF）と予告への反応の台本（core/pt-sim-engine。無ければ ignore） */
+  engine: EngineParams | null; engineReact?: PtEngineReact;
 }
 
 /** 打ち切りの実秒・時刻の比較の丸めの余裕・13mm の距離の二乗の比較の余裕 m²（targetM は平方根を二乗し直すので 1 ulp ずれる） */
@@ -80,6 +85,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
   const dt = realDt * s.timeScale;
   const out = createPtTrial();
   const br: PtBurstReact = s.burstReact ?? sp.burst ?? 'keep';
+  const eng = s.engine ? createSimEngine(s.engine, s.engineReact ?? 'ignore') : null;
   const departS = pol.nextRange(0, PT_PLAY.departMaxS);
   const speedMps = (k: PtSimSpeed): number => (k === 'silent' ? s.boat.silentMaxMps : k === 'cruise' ? s.boat.speedCruiseMps : Infinity);
   let t = 0;
@@ -111,6 +117,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
       }
       m.flank = q.ownerFlank;
       m.commitT = t;
+      if (eng) simEngineCommit(eng, out, t);
       const r = pol.nextRange(PT_PLAY.reactMinS, PT_PLAY.reactMaxS);
       m.reactBoat = i;
       m.reactAt = t + (Number.isNaN(sp.reactS) ? r : sp.reactS);
@@ -210,6 +217,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
       hd = m.dodgeDeg;
       want = speedMps(sp.dodgeSpeed);
     }
+    if (eng) want = simEngineWant(eng, want, t0, q.owner >= 0, s.boat.silentMaxMps, s.boat.speedCruiseMps);
     input.headingDeg = hd;
     input.speed01 = want > 0 ? Math.min(1, want / bp.speedMaxMps) : 0;
     if (t0 >= m.fireOutAt - TIME_EPS_S) {
@@ -221,7 +229,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
     if (!c.dawn && dawnReached(s.durationS, t)) c.dawn = true;
     const lost = crewLost(s.crew, s.damage.maxHp, d.hp);
     setPerformance(bp, s.boat.turnRateDegS, s.boat.accelMps2, crewTurnFactor(s.crewEffects, lost), crewAccelFactor(s.crewEffects, lost));
-    stepBoat(boat, fuel.empty ? DRIFT : input, bp, dt);
+    stepBoat(boat, fuel.empty ? DRIFT : eng ? simEngineInput(eng, input, bp) : input, bp, dt);
     clampToBounds(boat, p.bounds, s.boundsMarginM);
     stepFuel(fuel, s.fuel, boat.speedMps, dt);
     atHome = insideRing(s.ring, boat.x, boat.y);
@@ -235,6 +243,7 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
       c.flashM = gun.battery.fired ? g.flashRevealM : 0;
     }
     stepPtSection(q, p, c, rng, realDt, dt, ev);
+    if (eng) simEngineStep(eng, out, band, q.owner >= 0, !sinking && !atHome && !fuel.empty, t, realDt);
     if (!sinking && stepDamage(d, s.damage, realDt)) sinking = true;
     // 計測（航過中の数・1 回の航過の命中。後から落ちた弾は core が最後の航過に数える）、待つ PT の最接近（hold_off_m の外で待ち始めた PT だけ）、
     // 他の PT が撃っている間の追撃の PT の最接近（平方根は最後に 1 回）、1 隻の撃った連射の最大（1 ステップに 1 回まで。終わり・夜明け・沈没のどれも countPass が lastPassBoat を書く）
@@ -263,5 +272,6 @@ export function runPtTrial(s: PtSimSetup, policy: PtPolicy, seed: number): PtTri
     out.end = sinking ? 'sunk' : atHome ? 'home' : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout') break;
   }
+  if (eng) simEngineOut(eng, out, t, sinking);
   return finishPtTrial(out, q, t, c.dawn, sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, (fuel.gal / s.fuelGal) * 100, gun ? gun.battery.shots : 0, heldMin2, chaseHeld2);
 }

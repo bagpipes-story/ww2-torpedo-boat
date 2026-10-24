@@ -1,4 +1,4 @@
-// 米PT の模擬の 1 夜の記録（v0.6.5 の準備で core/pt-pass-sim.ts から移した。型と初期値は 1 字も変えていない。pt-pass-sim が型を再 export する）。Phaser 非依存。
+// 米PT の模擬の 1 夜の記録（v0.6.5 の準備で core/pt-pass-sim.ts から移した。pt-pass-sim が型を再 export する。v0.6.5 で機関の不調の eng の列を足した）。Phaser 非依存。
 // 確保は createPtTrial の 1 夜に 1 回だけ。finishPtTrial は夜の終わりに隊の KPI と自艇の結果を前と同じ式で写す（失った HP・燃料・13mm の撃った数は runPtTrial が求めて渡す）。
 import type { PtSection } from './pt-boats';
 
@@ -18,6 +18,12 @@ export interface PtTrial {
   /** 追撃（実機 2 回目。r2 §H.2）: 撃った連射・その命中・制圧、1 回の連射の最大命中、1 隻の撃った連射の最大、同じ PT の続けての連射（相方が撃てる距離で gap_s + self_gap_s の内）、
    * 予告から連射の終わりの最短秒、他の PT が撃っている間の追撃の PT の最接近 m（無ければ Infinity）、機関損傷を受けた */
   bursts: number; burstHits: number; suppressions: number; worstBurstHits: number; maxBoatBursts: number; selfRepeats: number; minBurstS: number; chaseHeldMinM: number; engineHit: boolean;
+  /**
+   * 機関の不調（v0.6.5。jp_05。spec-v065 §F.1。core/pt-sim-engine が書く。setup.engine が null の夜は初期値のまま・TABLE=1／2 には出さない）: 予告の 1 段目に入った・不調の回数と秒の和・
+   * 最長の不調の秒（夜の終わりで切れた不調はそこまで）・1 段目に入ってから不調までの最短秒・回復から次の不調までの最短秒（無ければ Infinity）・赤い線の最中に始まった不調（不変 0）・
+   * 不調の間に固めた赤い線・不調から 1 秒以内に固めた線・不調の間か回復から 10 秒以内に沈んだ
+   */
+  engWarned: boolean; engLimps: number; engLimpS: number; engMaxLimpS: number; engMinLeadS: number; engMinRecoverLeadS: number; engLimpsInLine: number; engLinesInLimp: number; engLinesNearLimp: number; engSunkNearLimp: boolean;
 }
 
 /** 1 夜の記録の初期値（runPtTrial の始めに 1 回） */
@@ -27,6 +33,7 @@ export function createPtTrial(): PtTrial {
     minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, worstPassHits: 0, minPassS: Infinity,
     gunShots: 0, gunHits: 0, ptRetired: 0, ptSunk: 0, flashFirst: false, gunBeyond: 0, flankAlt: 0, flankPairs: 0, commitGapSumS: 0, heldMinM: Infinity,
     bursts: 0, burstHits: 0, suppressions: 0, worstBurstHits: 0, maxBoatBursts: 0, selfRepeats: 0, minBurstS: Infinity, chaseHeldMinM: Infinity, engineHit: false,
+    engWarned: false, engLimps: 0, engLimpS: 0, engMaxLimpS: 0, engMinLeadS: Infinity, engMinRecoverLeadS: Infinity, engLimpsInLine: 0, engLinesInLimp: 0, engLinesNearLimp: 0, engSunkNearLimp: false,
   };
 }
 

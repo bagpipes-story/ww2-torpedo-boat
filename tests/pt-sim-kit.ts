@@ -1,9 +1,11 @@
 // 米PT の模擬の帯の検査の共通（v0.6.3 実機 2 回目。spec r2 §H.2・§I.2）: N 200・seed 1〜200 の表を 1 ファイルに 1 回だけ回し、遊び方の帯（撃たない・撃つ）と不変を外れた項目を返す。
 // 37 行を 8 つのファイルに分ける（1 ファイル 10 行まで・手元の vitest で 14 秒ほどまで）。撃つ行の対の帯（同じ seed の撃たない行）は相手を同じファイルで回す（ファイルどうしで同じ行を回し直さない）。
 // 連射への反応の表は tests/pt-sim-react.test.ts。どのファイルが何を回すかは SIM_FILES（tests/pt-pass-sim.test.ts が 37 行を 1 回ずつ・対が同じファイルにあることを見る）。
+// v0.6.5: 既定の表は jp_05 の機関の不調あり（予告を無視＝ignore）。行ごとに機関の不変・HUD どおりの T-E2・不調の起きる 7 行の回帰の帯（systems/pt-engine-calibration の engineKitMisses）も見る。
 import { expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { PtPolicy } from '../src/core/pt-sim-policy';
+import { engineKitMisses } from '../src/systems/pt-engine-calibration';
 import { PT_GUN_CALIBRATION, ptGunCalibrationMisses } from '../src/systems/pt-gun-calibration';
 import { PT_CALIBRATION, ptCalibrationMisses, ptCalibrationRun, type PtSimOverrides } from '../src/systems/pt-pass-sim-setup';
 
@@ -40,13 +42,13 @@ export function simPartners(policy: PtPolicy): PtPolicy[] {
   return g ? [...(g.pair ? [g.pair[0]] : []), ...g.vs.map((v) => v[1])] : [];
 }
 
-/** 行の帯と不変を外れた項目（「遊び方: 項目」。空なら合格） */
+/** 行の帯と不変（機関の不変・T-E2・回帰の帯も）を外れた項目（「遊び方: 項目」。空なら合格） */
 export function simMisses(run: SimRun, policies: readonly PtPolicy[]): string[] {
   return policies.flatMap((pol) => {
     const g = PT_GUN_CALIBRATION.find((r) => r.policy === pol);
     const r = PT_CALIBRATION.find((x) => x.policy === pol);
     const miss = g ? ptGunCalibrationMisses(g, run.cell, run.setup) : r ? ptCalibrationMisses(r, run.cell(pol), run.setup) : ['帯の行が無い'];
-    return miss.map((m) => `${pol}: ${m}`);
+    return [...miss, ...engineKitMisses(pol, run.cell(pol), run.setup)].map((m) => `${pol}: ${m}`);
   });
 }
 
