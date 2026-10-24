@@ -7,6 +7,7 @@ import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/brief
 import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
 import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
+import { getEngineParams } from '../src/config/engine-mission-data';
 import { PERSON_DENYLIST, RANK_RE } from './person-denylist';
 
 type Mission = Record<string, unknown>;
@@ -159,6 +160,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     if (armed) expected.add('enemy_ship_gunfire_or_ram');
     if (m.shoreBattery) expected.add('shore_battery');
     if (m.dawnStrike) expected.add('dawn_air_strike'); // 夜明けの空襲（v0.6.1。敵の制空下の任務だけ）
+    if (getEngineParams(gameData, id)) expected.add('engine_failure'); // 機関の不調（v0.6.5。jp_05 だけ）
     expect(new Set(m.hazards)).toEqual(expected);
     for (const h of m.hazards) expect(gameData.riskEvents.events.some((e) => e.id === h)).toBe(true);
     for (const id of enemyIds) expect(gameData.enemies.enemies.some((e) => e.id === id)).toBe(true);

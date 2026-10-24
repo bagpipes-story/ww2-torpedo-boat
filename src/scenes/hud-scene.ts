@@ -50,6 +50,7 @@ import { TorpedoButton } from '../systems/torpedo-button';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
+import { EngineHud } from '../ui/engine-hud';
 import { HpBar } from '../ui/hp-bar';
 import { HudMarkers } from '../ui/hud-markers';
 import { DawnBanner } from '../ui/dawn-banner';
@@ -65,6 +66,7 @@ export class HudScene extends Phaser.Scene {
   private markers?: HudMarkers;
   private dawnBanner?: DawnBanner; // 夜明けの帯（v0.6.1。夜明けに 1 回だけ。ui/dawn-banner）
   private fuelGauge?: FuelGauge;
+  private engineHud?: EngineHud; // 右下の機関の熱の帯（v0.6.5。機関の不調のある夜だけ。ui/engine-hud）
   private stick?: VirtualStick;
   private torpedoButton?: TorpedoButton;
   /** 扇の角度（v0.5.1 実機 1 回目）。魚雷ボタンの下。魚雷の任務だけ */
@@ -127,6 +129,7 @@ export class HudScene extends Phaser.Scene {
     if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud);
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
+    if (this.telemetry.engine.on) this.engineHud = new EngineHud(this); // Mission が launch の前にテレメトリを 1 回書く（?debug&engoff の夜は on false）
     this.markers = new HudMarkers(this, mission, this.telemetry); // 画面外マーカー 4 本（敵・帰投・敵機・岸。ui/hud-markers。v0.6.4 で切り出し）
     this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached);
     this.stick = new VirtualStick(this, input);
@@ -199,6 +202,8 @@ export class HudScene extends Phaser.Scene {
       this.markers?.destroy();
       this.dawnBanner?.destroy();
       this.fuelGauge?.destroy();
+      this.engineHud?.destroy();
+      this.engineHud = undefined;
       this.boatHud?.destroy();
       this.hpBar?.destroy();
       this.debugHud?.destroy();
@@ -230,6 +235,7 @@ export class HudScene extends Phaser.Scene {
     this.boatHud?.refresh(this.telemetry, this.time.now);
     this.hpBar?.refresh(this.telemetry, this.time.now);
     this.fuelGauge?.refresh(this.telemetry);
+    this.engineHud?.refresh(this.telemetry, this.time.now);
     this.markers?.refresh(this.telemetry);
     this.dawnBanner?.refresh(this.telemetry, this.time.now);
     this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);

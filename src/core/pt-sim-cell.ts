@@ -1,4 +1,4 @@
-// 米PT の掃射の航過の模擬（core/pt-pass-sim）の n 夜の集計（v0.6.3。spec §F.3 の表の列、v0.6.3 実機 1 回目 spec r1 §G.2 の 13mm と挟み撃ちの列、実機 2 回目 spec r2 §H.2 の追撃の列。
+// 米PT の掃射の航過の模擬（core/pt-pass-sim）の n 夜の集計（v0.6.3。spec §F.3 の表の列、v0.6.3 実機 1 回目 spec r1 §G.2 の 13mm と挟み撃ちの列、実機 2 回目 spec r2 §H.2 の追撃の列、v0.6.5 の機関の不調の列。
 // pt-pass-sim から分けた。300 行を超えないため）。
 // Phaser 非依存。集計は 1 セルに 1 回（毎ステップではない）なので配列を作ってよい。
 import { runPtTrial, type PtSimSetup, type PtTrial } from './pt-pass-sim';
@@ -24,6 +24,12 @@ export interface PtCell {
    * 予告から連射の終わりの最短秒、他の PT が撃っている間の追撃の PT の最接近 m の最小（表に出すだけ）、機関損傷を受けた夜 %
    */
   bursts: number; burstHits: number; suppressions: number; worstBurstHits: number; maxBoatBursts: number; selfRepeats: number; minBurstS: number; chaseHeldMinM: number; enginePct: number;
+  /**
+   * 機関の不調（v0.6.5。spec-v065 §F.1・§F.3。不調の無い setup では予告・不調 0）: 予告の 1 段目に入った夜 %・不調の夜 %・1 夜の不調の回数・不調 1 回あたりの不調の間に固めた赤い線
+   * （不調が無ければ NaN）・不調から 1 秒以内に固めた線の和・最長の不調の秒・1 段目から不調の最短秒・回復から次の不調の最短秒（無ければ Infinity）・赤い線の最中に始まった不調の和（不変 0）・
+   * 不調の間か回復から 10 秒以内に沈んだ夜 %
+   */
+  engWarnedPct: number; engLimpPct: number; engLimps: number; engLinesPerLimp: number; engLinesNearLimp: number; engMaxLimpS: number; engMinLeadS: number; engMinRecoverLeadS: number; engLimpsInLine: number; engSunkNearLimpPct: number;
 }
 
 /** seed は seedBase 〜 seedBase + n − 1（同じ seed なら同じ結果） */
@@ -37,6 +43,7 @@ export function runPtCell(s: PtSimSetup, policy: PtPolicy, n: number, seedBase: 
   const det = trials.filter((r) => r.detected);
   const fired = trials.filter((r) => r.gunShots > 0);
   const pairs = sum((r) => r.flankPairs);
+  const limps = sum((r) => r.engLimps);
   return {
     policy, trials: n,
     detectedPct: pct((r) => r.detected), firstDetectMedM: quantile(det.map((r) => r.firstDetectM), 0.5),
@@ -57,6 +64,9 @@ export function runPtCell(s: PtSimSetup, policy: PtPolicy, n: number, seedBase: 
     bursts: mean((r) => r.bursts), burstHits: mean((r) => r.burstHits), suppressions: mean((r) => r.suppressions),
     worstBurstHits: trials.reduce((a, r) => Math.max(a, r.worstBurstHits), 0), maxBoatBursts: trials.reduce((a, r) => Math.max(a, r.maxBoatBursts), 0), selfRepeats: sum((r) => r.selfRepeats),
     minBurstS: trials.reduce((a, r) => Math.min(a, r.minBurstS), Infinity), chaseHeldMinM: trials.reduce((a, r) => Math.min(a, r.chaseHeldMinM), Infinity), enginePct: pct((r) => r.engineHit),
+    engWarnedPct: pct((r) => r.engWarned), engLimpPct: pct((r) => r.engLimps > 0), engLimps: limps / n, engLinesPerLimp: limps === 0 ? NaN : sum((r) => r.engLinesInLimp) / limps,
+    engLinesNearLimp: sum((r) => r.engLinesNearLimp), engMaxLimpS: trials.reduce((a, r) => Math.max(a, r.engMaxLimpS), 0), engMinLeadS: trials.reduce((a, r) => Math.min(a, r.engMinLeadS), Infinity),
+    engMinRecoverLeadS: trials.reduce((a, r) => Math.min(a, r.engMinRecoverLeadS), Infinity), engLimpsInLine: sum((r) => r.engLimpsInLine), engSunkNearLimpPct: pct((r) => r.engSunkNearLimp),
   };
 }
 

@@ -33,7 +33,8 @@ import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa, ptResultLines } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types';
+import type { BargeResult, ConvoyResult, EngineResult, EscortResult, PtResult } from '../ui/result-types';
+import { engineResultLine } from '../ui/engine-lines';
 
 export type { MissionEndReason } from '../core/mission-flow';
 export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
@@ -115,6 +116,7 @@ export interface MissionResult {
   escort: EscortResult | null;
   pt: PtResult | null; // 敵の米PT（v0.6.3）の記録。米PT の任務でなければ null（detections は米PT の隊に見つかった回数）
   convoy: ConvoyResult | null; // 味方の大発の輸送隊（v0.6.4）の記録。輸送隊の任務でなければ null
+  engine: EngineResult | null; // 機関の不調（v0.6.5。jp_05）の記録。不調の無い任務・?debug&engoff の夜は null
   detections: number;
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;
@@ -179,6 +181,7 @@ export class ResultScene extends Phaser.Scene {
       line(b, HUD_FONT_HEADING_PX);
       line(c, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
       if (d) line(d, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+      if (r.engine) line(engineResultLine(r.engine), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 機関の不調（v0.6.5。full_to_limp_s を動かす根拠。CLAUDE.md §9）
     } else {
       const fired = r.shots.length;
       const unfired = r.capacity - fired;

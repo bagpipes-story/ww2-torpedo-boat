@@ -146,7 +146,7 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     const sunk = t01({}, { afloat: 2, sunk: 1 });
     expect(clk.flags(sunk, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
     expect(clk.convoyEvent).toBe(CONVOY_EV_SUNK);
-    clk.shown(MISSION_CONVOY_EVENT);
+    clk.shown(MISSION_CONVOY_EVENT, 1000);
     expect(clk.flags(sunk, 1000 + SHOW - 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(CV_EVENT);
     expect(clk.flags(sunk, 1000 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
     // 上陸（残りあり）は出来事
@@ -154,7 +154,7 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     const landed = t01({}, { afloat: 1, sunk: 1, arrived: 1 });
     expect(clk.flags(landed, e2, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
     expect(clk.convoyEvent).toBe(CONVOY_EV_ARRIVED);
-    clk.shown(MISSION_CONVOY_EVENT);
+    clk.shown(MISSION_CONVOY_EVENT, e2);
     expect(clk.flags(landed, e2 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
     // 最後の 1 隻の上陸（決着）も出来事「大発 上陸 2/3 ・ 帰投せよ」（レビュー ux-2。前は出さずに呼びかけへ回し、呼びかけは赤い線・結果・射撃中に負けた）
     const done = { afloat: 0, sunk: 1, arrived: 2, resolved: true };
@@ -162,7 +162,7 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     expect(clk.flags(t01({}, done), e3, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
     expect(clk.convoyEvent).toBe(CONVOY_EV_ARRIVED);
     expect(rowAt(t01({}, done), CALL_SUNK, clk.flags(t01({}, done), e3 + 10, MISSION_PT), clk)).toEqual([MISSION_CONVOY_EVENT, '大発 上陸 2/3 ・ 帰投せよ', HOME_COLOR_TEXT]);
-    clk.shown(MISSION_CONVOY_EVENT);
+    clk.shown(MISSION_CONVOY_EVENT, e3 + 10);
     expect(clk.flags(t01({}, done), e3 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
     expect(row(t01({}, done), CALL_SUNK, 0)).toEqual([MISSION_CALL, '', '']); // 出来事の後は呼びかけ（文は mission-line の「大発 上陸 2/3 ・ 帰投せよ  N m」）
     // 赤い線の下で沈んだ: 線が消えるまで待ち、消えてから 3.5 秒出す。その間、航過の結果は待つ（結果は出来事の後）
@@ -171,13 +171,13 @@ describe('出来事と呼びかけ（spec §D.2）', () => {
     const sunkPass = t01(PASS_BARGE, { afloat: 2, sunk: 1 });
     expect(c2.flags(sunkPass, 1000, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT);
     expect(missionMode(sunkPass, 0, c2.flags(sunkPass, 2000, MISSION_PT_PASS))).toBe(MISSION_PT_PASS);
-    c2.shown(MISSION_PT_PASS);
+    c2.shown(MISSION_PT_PASS, 2000);
     c2.flags(sunkPass, 3400, MISSION_PT_PASS);
     const after = t01({ detected: true, threatPhase: PT_BREAK, passes: 1, maxPasses: 8, passSeq: 1, lastPassFired: false, lastPassTargetKind: 1 }, { afloat: 2, sunk: 1 });
     let f = c2.flags(after, 3500, MISSION_PT_PASS);
     expect(f & CV_EVENT).toBe(CV_EVENT);
     expect(missionMode(after, 0, f)).toBe(MISSION_CONVOY_EVENT);
-    c2.shown(MISSION_CONVOY_EVENT);
+    c2.shown(MISSION_CONVOY_EVENT, 3500);
     for (let ms = 3600; ms <= 3400 + SHOW - 100; ms += 100) { // 線の最後のフレーム（3,400）から 3.5 秒
       f = c2.flags(after, ms, MISSION_CONVOY_EVENT);
       expect(missionMode(after, 0, f), `${ms}`).toBe(MISSION_CONVOY_EVENT);

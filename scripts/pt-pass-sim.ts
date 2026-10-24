@@ -7,13 +7,18 @@
 //   BREAKS・BREAKM（break_max_s・break_off_m）・STATION（tactics.station_m）・RETHP・CAS・PFIRE（under_fire）・GDISP・GRPM・GCONE・MAG・RELOAD（自艇の gun_battery）・
 //   ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）、v0.6.3 実機 2 回目: PEFF（guns.effective_night_m）・PENG（guns.engine_damage_chance）・CH_<鍵>（chase の鍵。例 CH_BURST_ROUNDS=5）・
 //   BREACT=keep|away|full（連射への反応の表）・GR_OFF=1（航過は危ない間だけを切る）・CH_OFF=1（追撃を切る。GR_OFF=1 と実機 1 回目の値の上書き
-//   PEFF=400 HOLD=500 STATION=550 GAP=2.5 PENG=0.02 GDISP=64 で f27b266 の表。spec r2 §I.3-5）
+//   PEFF=400 HOLD=500 STATION=550 GAP=2.5 PENG=0.02 GDISP=64 で f27b266 の表。spec r2 §I.3-5）、
+//   v0.6.5 機関の不調（jp_05。spec-v065 §F）: ENG_OFF=1（不調を切る。N=400 の TABLE=1／2 が v0.6.4 の md5 c0bd15f2…／d3e42cb3… に戻る関門。見出しも前と同じ）・
+//   ENG_REACT=ignore|cool|cruise（予告への反応の台本）・ENG_FULL（full_to_limp_s の秒）・TABLE=3（37 台本 × {不調なし, ignore, cool, cruise} の機関の表と ENGINE_CALIBRATION の ✓/✗。
+//   ENG_OFF・ENG_REACT は見ない。設計の帯は N 400・seed 1 で読む）
 // 実行: npx esbuild scripts/pt-pass-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/pt.mjs && node <scratch>/pt.mjs
 import { gameData } from '../src/config/game-data';
 import type { PtChaseKey } from '../src/core/pt-chase-data';
 import type { PtCell } from '../src/core/pt-sim-cell';
+import { PT_ENGINE_REACTS, type PtEngineReact } from '../src/core/pt-sim-engine';
 import { PT_BURST_REACTS, PT_GUN_POLICIES, PT_POLICIES, type PtBurstReact, type PtPolicy } from '../src/core/pt-sim-policy';
 import { mpsToKt } from '../src/core/units';
+import { engineTableMisses } from '../src/systems/pt-engine-calibration';
 import { PT_GUN_CALIBRATION, ptGunCalibrationMisses } from '../src/systems/pt-gun-calibration';
 import { PT_CALIBRATION, ptCalibrationMisses, ptCalibrationRun, type PtSimOverrides } from '../src/systems/pt-pass-sim-setup';
 
@@ -25,6 +30,8 @@ const chase: Partial<Record<PtChaseKey, number>> = {};
 for (const [k, v] of Object.entries(process.env)) if (k.startsWith('CH_') && k !== 'CH_OFF' && v !== undefined && v !== '') chase[k.slice(3).toLowerCase() as PtChaseKey] = Number(v);
 const breact = process.env['BREACT'];
 if (breact !== undefined && !(PT_BURST_REACTS as readonly string[]).includes(breact)) throw new Error(`BREACT は ${PT_BURST_REACTS.join(' / ')}`);
+const ereact = process.env['ENG_REACT'];
+if (ereact !== undefined && !(PT_ENGINE_REACTS as readonly string[]).includes(ereact)) throw new Error(`ENG_REACT は ${PT_ENGINE_REACTS.join(' / ')}`);
 const o: PtSimOverrides = {
   detectM: num('DETECT'), damage: num('DMG'), rounds: num('ROUNDS'), offsetM: num('OFFSET'), passes: num('PASSES'), openFireS: num('OPEN'),
   commitTcpaS: num('COMMITT'), runInKt: num('RUNKT'), passGapS: num('GAP'), wingmanDelayS: num('WING'), commitHeadingTolDeg: num('TOL'), holdOffM: num('HOLD'),
@@ -32,6 +39,7 @@ const o: PtSimOverrides = {
   gunDisp: num('GDISP'), gunRpm: num('GRPM'), gunCone: num('GCONE'), magRounds: num('MAG'), reloadS: num('RELOAD'), fuelGal: num('ALLOT'), dawnS: num('DAWN'),
   effectiveM: num('PEFF'), engineDamage: num('PENG'), passEndOff: process.env['GR_OFF'] === '1' ? true : undefined, chaseOff: process.env['CH_OFF'] === '1' ? true : undefined,
   chase: Object.keys(chase).length > 0 ? chase : undefined, burstReact: breact as PtBurstReact | undefined,
+  engineOff: process.env['ENG_OFF'] === '1' ? true : undefined, engineFullS: num('ENG_FULL'), engineReact: ereact as PtEngineReact | undefined,
 };
 const all: readonly string[] = [...PT_POLICIES, ...PT_GUN_POLICIES];
 const pols = (process.env['POL'] ?? all.join(','))
@@ -45,7 +53,7 @@ const s = run.setup;
 const p = s.pt;
 const g = s.gun;
 const f = (x: number, d: number, w: number): string => (Number.isFinite(x) ? x.toFixed(d) : '-').padStart(w);
-const set = Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`);
+const set = Object.entries(o).filter(([k, v]) => v !== undefined && k !== 'engineOff').map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`);
 console.log(`[${mission} N ${n} seed ${seed}〜${seed + n - 1}${set.length > 0 ? ` ${set.join(' ')}` : ''}]`);
 console.log(
   `発見 ${p.baseDetectM} m・突撃 ${Math.round(mpsToKt(p.runInMps))} kt・最接近 ${p.commitTcpaS} 秒前に固める・ずらし ${p.offsetM} m・予告から ${p.openFireS} 秒・1 回 ${p.roundsPerPass} 発 × ${p.hit.damage}・` +
@@ -63,7 +71,15 @@ if (g) {
       `PT HP ${p.hullHp}・去る ${p.retreatHp}・死傷 ${p.casualtyChance}・引火 ${p.fireChance}`,
   );
 }
-console.log('policy          det%  1stDet passes(fired/clean) burst(hit) supp shots hits HP(mean/p90) sunk% ret% t(med) fuel%(med/p10) dawn% eng% warn pass burst maxSim adrift/timeout | alt  gap  held chHeld worst rep | gun hits hit%n retire% PTsunk% flash1st%');
+const e = s.engine; // 不調を切った表（ENG_OFF）と不調の無い任務は出さない（v0.6.4 の表と 1 字も違わない）
+if (e) {
+  console.log(
+    `機関の不調 全速 ${e.fullToLimpS} 秒で不調（過熱 ${e.warnHeat}・限界 ${e.finalWarnHeat}）・不調 ${Math.round((1 - e.recoverHeat) * e.silentCoolS)} 秒で戻る（熱 ${e.recoverHeat}）・` +
+      `冷え 巡航 ${e.cruiseCoolS} 秒／静音 ${e.silentCoolS} 秒・予告への反応 ${s.engineReact ?? 'ignore'}`,
+  );
+}
+const table3 = process.env['TABLE'] === '3'; // 機関の表は自分の見出しと注を出す
+if (!table3) console.log('policy          det%  1stDet passes(fired/clean) burst(hit) supp shots hits HP(mean/p90) sunk% ret% t(med) fuel%(med/p10) dawn% eng% warn pass burst maxSim adrift/timeout | alt  gap  held chHeld worst rep | gun hits hit%n retire% PTsunk% flash1st%');
 const line = (c: PtCell): string =>
   `${c.policy.padEnd(15)} ${f(c.detectedPct, 0, 4)}  ${f(c.firstDetectMedM, 0, 6)}  ${c.passes.toFixed(2)}(${c.firedPasses.toFixed(2)}/${c.cleanPasses.toFixed(2)}) ${c.bursts.toFixed(2)}(${c.burstHits.toFixed(1)}) ${c.suppressions.toFixed(2)} ${f(c.shots, 0, 4)} ${f(c.hits, 1, 4)}  ${f(c.hpMean, 1, 5)}/${f(c.hpP90, 0, 2)}  ` +
   `${f(c.sunkPct, 1, 5)} ${f(c.homePct, 0, 4)}  ${f(c.homeMedS, 0, 5)}  ${f(c.fuelMedPct, 0, 3)}/${f(c.fuelP10Pct, 0, 3)}  ${f(c.afterDawnPct, 0, 4)} ${f(c.enginePct, 0, 4)} ${f(c.minWarnS, 2, 5)} ${f(c.minPassS, 2, 5)} ${f(c.minBurstS, 2, 5)}  ${c.maxPassing} ${f(c.adriftPct, 1, 4)}/${f(c.timeoutPct, 1, 3)} | ` +
@@ -73,10 +89,38 @@ const cellOf = run.cell;
 const mark = (star: boolean, miss: string[]): string => `  ${star ? '★' : ' '} ${miss.length === 0 ? '✓' : `✗ ${miss.join('・')}`}`;
 if (process.env['TABLE'] === '1') for (const r of PT_CALIBRATION) console.log(line(cellOf(r.policy)) + mark(r.star, ptCalibrationMisses(r, cellOf(r.policy), s)));
 else if (process.env['TABLE'] === '2') for (const r of PT_GUN_CALIBRATION) console.log(line(cellOf(r.policy)) + mark(r.star, ptGunCalibrationMisses(r, cellOf, s)));
+else if (table3) engineTable();
 else for (const pol of pols) console.log(line(cellOf(pol)));
-console.log(
+if (!table3) console.log(
   'det% = 見つかった夜 | 1stDet = 最初に見つかった距離の中央値 m | passes − (fired − burst) = 撃たなかった航過 | burst(hit) = 撃った連射（その命中） | supp = 制圧 | HP = 失った HP | ret% = 帰投 | ' +
     't・fuel% は帰投した夜 | dawn% = 夜明けの後に帰投 | eng% = 機関損傷の夜 | warn = 予告から初弾の最短秒 | pass・burst = 予告から航過・連射の終わりの最短秒 | maxSim = 同時に撃つ攻撃 | ' +
     'alt = 赤い線が前と反対の舷から | gap = 赤い線の間の秒 | held・chHeld = 待つ PT・他が撃つ間の追撃の PT の最接近 m | worst = 1 回の航過/連射の最大命中/1 隻の連射の最大 | rep = 同じ PT の続けての連射 | ' +
     'gun・hits = 13mm の 1 夜の発射・命中 | hit%n = 撃った夜のうち当てた夜 | retire%・PTsunk% = 撃退・撃沈した夜 | flash1st% = 最初が閃光の夜',
 );
+
+/** TABLE=3（v0.6.5。spec-v065 §F.1）: 37 台本 × {不調なし, ignore, cool, cruise}。列は不調なしの沈没 %・HP／ignore の沈没 %・HP・帰投 %・予告の夜 %・不調の夜 %・1 夜の不調・
+ * 不調 1 回の間の線・不調から 1 秒以内の線・最長の不調・1 段目から不調の最短・回復から次の不調の最短・線の最中の不調・不調の近くの沈没 %／cool と cruise の沈没 %・不調の夜 %、末尾に ENGINE_CALIBRATION の ✓/✗ */
+function engineTable(): void {
+  const base = { ...o, engineOff: undefined };
+  const runs = {
+    off: ptCalibrationRun(gameData, mission, n, seed, { ...base, engineOff: true }),
+    ignore: ptCalibrationRun(gameData, mission, n, seed, { ...base, engineReact: 'ignore' }),
+    cool: ptCalibrationRun(gameData, mission, n, seed, { ...base, engineReact: 'cool' }),
+    cruise: ptCalibrationRun(gameData, mission, n, seed, { ...base, engineReact: 'cruise' }),
+  };
+  console.log('policy          | off sunk%   HP | ign sunk%   HP ret% | warn% limp% lim/n ln/lim near1s maxLimp  lead recLead inLine near10% | cool sunk% limp% | cruise sunk% limp%');
+  for (const pol of pols) {
+    const [a, b, c, d] = [runs.off.cell(pol), runs.ignore.cell(pol), runs.cool.cell(pol), runs.cruise.cell(pol)];
+    console.log(
+      `${pol.padEnd(15)} | ${f(a.sunkPct, 1, 9)} ${f(a.hpMean, 1, 4)} | ${f(b.sunkPct, 1, 9)} ${f(b.hpMean, 1, 4)} ${f(b.homePct, 0, 4)} | ` +
+        `${f(b.engWarnedPct, 0, 5)} ${f(b.engLimpPct, 0, 5)} ${f(b.engLimps, 2, 5)} ${f(b.engLinesPerLimp, 2, 6)} ${f(b.engLinesNearLimp, 0, 6)} ${f(b.engMaxLimpS, 2, 7)} ${f(b.engMinLeadS, 2, 5)} ${f(b.engMinRecoverLeadS, 2, 7)} ` +
+        `${f(b.engLimpsInLine, 0, 6)} ${f(b.engSunkNearLimpPct, 1, 7)} | ${f(c.sunkPct, 1, 10)} ${f(c.engLimpPct, 0, 5)} | ${f(d.sunkPct, 1, 12)} ${f(d.engLimpPct, 0, 5)}` +
+        mark(false, engineTableMisses(pol, { off: a, ignore: b, cool: c, cruise: d }, runs.ignore.setup)),
+    );
+  }
+  console.log(
+    'off = 不調なし（ENG_OFF） | ign = 予告を無視 | cool・cruise = 予告の 3 秒後から熱 0.4 まで静音・巡航へ落とす（赤い線の間は落とさない） | warn% = 予告の 1 段目に入った夜 | limp% = 不調の夜 | lim/n = 1 夜の不調 | ' +
+      'ln/lim = 不調 1 回の間に固めた赤い線 | near1s = 不調から 1 秒以内の線（和） | maxLimp = 最長の不調の秒 | lead・recLead = 1 段目・回復から不調の最短秒 | inLine = 赤い線の最中に始まった不調（不変 0） | ' +
+      'near10% = 不調の間か回復から 10 秒以内に沈んだ夜',
+  );
+}

@@ -101,6 +101,9 @@ export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 export const DEBUG_BATTERY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobattery');
 /** ?debug&nostrike: 夜明けの空襲なし（v0.6.1。敵の制空下の任務でも敵機が来ない。夜明けの後も任務は続く。&dawn=S と合わせて夜明けの後を試す） */
 export const DEBUG_STRIKE_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nostrike');
+/** ?debug&engoff: 機関の不調なし（v0.6.5。jp_05 が v0.6.4 と同じ世界。再生の比較用）。?debug&enghot: 出撃時の機関の熱を config/engine-config の DEBUG_ENGINE_HOT_HEAT に（すぐ「過熱」。不調を早く見る） */
+export const DEBUG_ENGINE_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('engoff');
+export const DEBUG_ENGINE_HOT = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('enghot');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */

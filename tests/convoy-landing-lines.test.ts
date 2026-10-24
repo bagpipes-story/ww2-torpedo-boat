@@ -42,7 +42,7 @@ describe('浜の上陸の出来事の並び（レビュー ux-2）', () => {
       const flags = c.flags(t, ms, mode);
       const r = rowAt(t, cvNow.resolved ? CALL_SUNK : 0, flags, c);
       mode = r[0];
-      c.shown(mode);
+      c.shown(mode, ms);
       if (texts[texts.length - 1] !== r[1]) texts.push(r[1]);
     }
     expect(texts).toEqual(['大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中', '大発 上陸 1/3 ・ 残り 2 隻', '大発 上陸 2/3 ・ 残り 1 隻', '大発 上陸 3/3 ・ 帰投せよ', '']);
@@ -51,14 +51,14 @@ describe('浜の上陸の出来事の並び（レビュー ux-2）', () => {
     d.flags(t01(PASS_BARGE), 500, -1);
     const two = t01(PASS_BARGE, { afloat: 1, arrived: 2 });
     expect(d.flags(two, 1000, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT);
-    d.shown(MISSION_PT_PASS);
+    d.shown(MISSION_PT_PASS, 1000);
     const done = { afloat: 0, arrived: 3, resolved: true };
     expect(d.flags(t01(PASS_BARGE, done), 2000, MISSION_PT_PASS) & CV_EVENT).toBe(CV_EVENT);
-    d.shown(MISSION_PT_PASS);
+    d.shown(MISSION_PT_PASS, 2000);
     const after = t01({ threatPhase: PT_PATROL }, done);
     const f = d.flags(after, 3000, MISSION_PT_PASS);
     expect(rowAt(after, CALL_SUNK, f, d)).toEqual([MISSION_CONVOY_EVENT, '大発 上陸 3/3 ・ 帰投せよ', HOME_COLOR_TEXT]);
-    d.shown(MISSION_CONVOY_EVENT);
+    d.shown(MISSION_CONVOY_EVENT, 3000);
     expect(d.flags(after, 2950 + SHOW + 100, MISSION_CONVOY_EVENT) & CV_EVENT).toBe(0);
     // 沈没の出来事の途中で最後の 1 隻が上陸: 沈没の出来事が残り、文は「大発 1 隻 沈没 ・ 上陸 2/3 ・ 帰投せよ」
     const c3 = new PtLineClock();
@@ -66,7 +66,7 @@ describe('浜の上陸の出来事の並び（レビュー ux-2）', () => {
     const sunkOne = t01({}, { afloat: 1, sunk: 1, arrived: 1 });
     expect(c3.flags(sunkOne, 1000, MISSION_PT) & CV_EVENT).toBe(CV_EVENT);
     expect(c3.convoyEvent).toBe(CONVOY_EV_SUNK);
-    c3.shown(MISSION_CONVOY_EVENT);
+    c3.shown(MISSION_CONVOY_EVENT, 1000);
     const done2 = { afloat: 0, sunk: 1, arrived: 2, resolved: true };
     const f3 = c3.flags(t01({}, done2), 1500, MISSION_CONVOY_EVENT);
     expect(f3 & CV_EVENT).toBe(CV_EVENT);

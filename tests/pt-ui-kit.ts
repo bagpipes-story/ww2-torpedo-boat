@@ -6,6 +6,7 @@ import { PT_GUN_SHELL_POOL_SIZE, PT_SHELL_POOL_SIZE } from '../src/config/pt-con
 import type { BoatState, BoatTelemetry } from '../src/core/boat-motion';
 import { createConvoyTelemetry } from '../src/core/convoy';
 import { createDawnTelemetry } from '../src/core/dawn-air';
+import { createEngineTelemetry } from '../src/core/engine-trouble';
 import { createPtSection, type PtSection, type PtTelemetry } from '../src/core/pt-boats';
 import { createPtGun, type PtGunState } from '../src/core/pt-gun';
 import { initPtTelemetry, type PtTelemetryWorld } from '../src/systems/pt-telemetry';
@@ -54,6 +55,7 @@ export function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry>
     dawn: { ...createDawnTelemetry(), ...(over.dawn ?? {}) },
     pt: { ...PT0, ...pt },
     convoy: over.convoy ?? createConvoyTelemetry(), // 輸送隊の無い任務（v0.6.4。enabled false）。jp_01 のテストは over.convoy で渡す
+    engine: over.engine ?? createEngineTelemetry(), // 機関の不調はまだ起きていない（v0.6.5。on false）。機関の行のテストは over.engine で渡す
   } as BoatTelemetry;
 }
 
