@@ -1,7 +1,7 @@
 // 機関の不調（v0.6.5。日本ハードモード④・jp_05。spec-v065 §B.1〜B.4・§C.2・§G.1）の data と検査:
 // risk_events.json の engine_failure.params（ちょうど 7 鍵＋source）・各検査の境の両側・例外の文、任務の同居（米PT の任務だけ・輸送隊と同居しない・夜ごとの危険にしない）、
 // jp_05 の hazards と文・jp_t14 の source・先の版の番号の付け替え（v0.6.8 → v0.6.9）、WorldSetup.engine（jp_05 だけ・鍵ごと出ない・engineOff・engineHot）。
-// 不調の本体（熱の式・段・入力）はまだ無い（v0.6.5 の S2 で core/engine-trouble）。
+// 不調の本体（熱の式・段・入力。core/engine-trouble）は tests/engine-trouble.test.ts。
 import { describe, expect, it, vi } from 'vitest';
 import { gameData, getBoatRecord } from '../src/config/game-data';
 import { riskLabelJa } from '../src/config/briefing-data';
