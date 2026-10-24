@@ -30,6 +30,7 @@ import { missionCampaignId } from '../config/campaign-data';
 import { getAirStrikeParams, getDawnAir, type AirStrikeParams } from '../config/dawn-data';
 import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
+import { engineSetupPart, type EngineParams, type EngineSetupOptions } from '../config/engine-mission-data';
 import type { ConvoySetup } from '../core/convoy-data';
 import type { PtParams } from '../core/pt-data';
 import type { ShoreBatteryParams } from '../core/shore-battery';
@@ -136,10 +137,11 @@ export interface WorldSetup {
   enemyFrom: { x: number; y: number } | null;
   dawnAir: DawnAir; // 夜明けの空（v0.6.1。missions_seed の dawn_air。遊べる任務の規則は config/dawn-data が検査）
   airStrike: AirStrikeParams | null; // 夜明けの空襲（v0.6.1。dawn_strike の任務だけ。?debug&nostrike で null。水上機とは別に組み、今夜の absent() は通さない）
+  engine?: EngineParams; // 機関の不調（v0.6.5。hazards に engine_failure がある任務＝jp_05 だけ。無い任務と engineOff では鍵ごと出ない＝setup の snapshot を変えない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
-export interface SetupOptions {
+export interface SetupOptions extends EngineSetupOptions {
   fuelGal?: number;
   dawnS?: number;
   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
@@ -278,6 +280,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0]!, y: ptBoats.startY[0]! } : null,
     dawnAir: getDawnAir(data, missionId),
     airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2, boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2 }, escort),
+    ...engineSetupPart(data, missionId, o),
   };
 }
 

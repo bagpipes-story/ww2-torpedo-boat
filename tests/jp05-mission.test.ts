@@ -37,13 +37,13 @@ const sortie = (seed: number): ReturnType<typeof directSortie> => directSortie('
 
 describe('jp_05 の任務と世界（v0.6.3）', () => {
   afterEach(() => vi.restoreAllMocks());
-  it('任務: T-14・主兵装 guns（13mm 機銃。v0.6.3 実機 1 回目。前は none）・米PT 2 隻の隊（駆逐艦・大発なし）・新月・夜明け 170 秒・燃料 32 gal（前は 23）・浅瀬なし。危険は米PT の掃射だけ', () => {
+  it('任務: T-14・主兵装 guns（13mm 機銃。v0.6.3 実機 1 回目。前は none）・米PT 2 隻の隊（駆逐艦・大発なし）・新月・夜明け 170 秒・燃料 32 gal（前は 23）・浅瀬なし。危険は米PT の掃射と機関の不調（v0.6.5）', () => {
     const m = getPrototypeMission(gameData, 'jp_05');
     expect([m.playerBoatId, m.mainWeapon, m.enemyId, m.enemyCount, m.moon, m.durationS, m.fuelAllotmentGal]).toEqual(['jp_t14', 'guns', 'us_pt_enemy', 2, 'dark', 170, 32]);
     expect(m.ptBoats).not.toBeNull();
     expect([m.enemyStart, m.enemyStarts, m.barges, m.escort, m.transport, m.dawnStrike, m.storm, m.enemyAircraft]).toEqual([null, [], null, null, null, null, null, null]);
     expect(m.shallows).toEqual([]);
-    expect(m.hazards).toEqual(['enemy_ship_gunfire_or_ram']);
+    expect(m.hazards).toEqual(['enemy_ship_gunfire_or_ram', 'engine_failure']);
     expect(m.playerStart).toEqual({ x: 4300, y: 450, headingDeg: 225 });
     expect([m.returnPoint.x, m.returnPoint.y, m.returnPoint.radiusM, m.returnPoint.callMargin, m.returnPoint.torpedoEndSettleS]).toEqual([1700, 3200, 250, 1.5, 5]);
     expect(m.bounds).toEqual({ width: 6000, height: 4000 });
@@ -120,7 +120,7 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
       ['成功', '生還。PTに一度も見つからずに帰れば回避の点。PTを沈めれば撃沈の点、ただし撃てば閃光で見つかる（帰投地点は南西の青い輪）'],
       ['月', '新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m'],
       ['敵', '米PTボート ×2（南西から）'],
-      ['危険', '敵艦艇の砲撃・衝突'],
+      ['危険', '敵艦艇の砲撃・衝突、全速を続けると機関が不調になる'], // v0.6.5: 機関の不調（risk_events の engine_failure の短い名）
       // 昼の空は争奪で味方として遊ぶので「おおむね」（label_ja・夜明けの帯と同じ）。武器の句は「・」の後がノーブレークスペース（「・」が行末に残らない）
       // v0.6.3 実機 1 回目: 武器の句は T-14 の 13mm（PT_GUN_BRIEFING_JA。前は撃たない NO_WEAPON_BRIEFING_JA）
       ['条件', `夜明けまで 170 秒（昼の空はおおむね味方） ・ 燃料 32 gal ・\u00a0${PT_GUN_BRIEFING_JA}`],

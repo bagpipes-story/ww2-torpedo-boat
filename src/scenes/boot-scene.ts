@@ -41,6 +41,7 @@ import { generatePtBoatTexture } from '../assets/pt-placeholder';
 import { getBargeParams } from '../config/game-data';
 import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
+import { getEngineParams } from '../config/engine-mission-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -66,6 +67,7 @@ export class BootScene extends Phaser.Scene {
       const pm = getPrototypeMission(gameData, m['id']);
       boatIds.add(pm.playerBoatId);
       if (pm.escort) boatIds.add(pm.escort.boat);
+      getEngineParams(gameData, m['id']); // 機関の不調（v0.6.5）の data と同居の検査（壊れていれば Boot で止まる。不調の無い任務は null）
     }
     for (const id of boatIds) {
       const b = getBoatRecord(gameData, id);
