@@ -112,7 +112,7 @@
     - src 変: core/boat-motion 299 → 167・core/pt-pass-sim 294 → 277・core/pt-sim-cell 68 → 78・core/pt-sim-policy 124 → 125・core/pt-state 258・core/night 117（この 2 つは乱数の系列の注記だけ）・config/game-config 207 → 210・config/debug-setup 40 → 44・systems/mission-world 299 → 288・systems/mission-telemetry 286 → 290・systems/world-setup 290 → 293・systems/pt-pass-sim-setup 193 → 212・systems/pt-gun-calibration 85 → 87・systems/mission-result-extras 80 → 88・scenes/hud-scene 273 → 279・scenes/result-scene 288 → 291・scenes/boot-scene 127 → 129・ui/mission-line 283 → 287・ui/hud-lines 232 → 254・ui/mission-mode 141 → 166・ui/pt-line-clock 82 → 119・ui/result-types 100 → 108。scripts/pt-pass-sim 82 → 126。
     - data: risk_events 255 → 266・missions_seed 1,221 → 1,222・boats 894・enemies 636（文だけ）。
     - tests 新: engine-data 267・engine-lines 293・engine-trouble-world 255・engine-trouble 189・engine-trouble-rules 197・pt-sim-engine-unit 152・pt-sim-engine-identity 100・engine-hud 84・pt-sim-engine-kit 62・engine-trouble-kit 40・pt-sim-engine-a〜h 各 8。tests 変: air-strike 645 → 646・dawn-lines 525 → 527・jp05-mission 500・convoy-lines 275・dawn-clock 251 → 253・briefing 166 → 168・pt-night-lines 143・pt-line-clock 135・pt-ui-kit 76 → 78・convoy-landing-lines 77・pt-sim-kit 61 → 63・pt-sim-late 13 → 16。
-- 実機テスト結果: 未（push の後に Pages の URL とビルド番号 `claude/v0.6.5-engine-trouble@<7 桁>` で。項目は docs/03 の v0.6.5 の行の 3 つ）。
+- 実機テスト結果: 1 回目（2026-10-24、ビルド ad1dc7e）「OK」（ほかの指摘なし）。同時に v0.6.6 の分け方「隼艇は jp_01 のハードだけ（米PT 3 隻＋隼艇 1 隻・3 隻とも上陸で達成。ノーマルの jp_01 は今のまま）」に「はい、この分け方でよい」。「次へ進めて」で v0.6.6 へ。
 
 ## v0.6.4 — 2026-10-23（日本ハードモード③：味方の大発を守る）
 
