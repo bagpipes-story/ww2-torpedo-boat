@@ -1,6 +1,7 @@
 // 機関の不調（v0.6.5。jp_05。docs/02 §6.8、spec-v065 §F.3。R8 の作法）の模擬の帯: 回帰の帯（測った値の近く。外れたら回帰）と設計の帯（意味のある閾値。±4 点で広げない）。
 // 回帰の帯は既定の表（予告を無視＝ignore。N 200・seed 1〜200）で tests/pt-sim-kit が 37 行の帯と一緒に検査する（engineKitMisses）。設計の帯は N 400・seed 1〜400 の
-// {不調なし（ENG_OFF）, ignore, cool, cruise} の同じ seed で tests/pt-sim-engine-a〜g（無視の代価）・a2〜g2（従う）が検査し、scripts/pt-pass-sim.ts の TABLE=3 が ✓/✗ を出す（engineTableMisses）。
+// {不調なし（ENG_OFF）, ignore, cool, cruise} の同じ seed で tests/pt-sim-engine-a〜g（1 台本 1 ファイルで代価・従う台本・不変。edge_flee の従う台本の不変は h）が検査し、
+// scripts/pt-pass-sim.ts の TABLE=3 が ✓/✗ を出す（engineTableMisses）。
 // 不変（T-E1）はどの台本・どの反応も。帯を外したら値を動かす前に模擬が spec §C.1・§F.1 どおりかを確かめる（data は risk_events.engine_failure.params。理由は source に）。Phaser 非依存。
 import type { PtSimSetup } from '../core/pt-pass-sim';
 import type { PtCell } from '../core/pt-sim-cell';

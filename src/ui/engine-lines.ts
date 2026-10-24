@@ -1,5 +1,7 @@
-// 機関の不調（v0.6.5。jp_05。docs/02 §6.7・§6.8、spec-v065 §D）の文: 2 行目のモード 28〜30（過熱の出来事・限界（全速の帯）・機関の状態）とそのキー、
-// 米PT の行（赤い線・航過と連射の結果・接触）の末尾の札「 ・ 機関 限界／不調」、右下の熱の帯の字・色・幅の刻み（ui/engine-hud が変わったときだけ書く）、Result の 1 行。
+// 機関の不調（v0.6.5。jp_05。docs/02 §6.11 の jp_05・§6.8、spec-v065 §D）の文: 2 行目のモード 28〜30（過熱の出来事・限界（全速の帯）・機関の状態）とそのキー、
+// 米PT の行（赤い線・航過と連射の結果・接触）の末尾の札「 ・ 自艇 機関限界／機関不調」、右下の熱の帯の字・色・幅の刻み（ui/engine-hud が変わったときだけ書く）、Result の 1 行。
+// レビューの直し: 札に「自艇」（ux-3: 米PT で始まる行の末尾の「機関 不調」が米PT の機関と読めた）、右下の平常の字は「機関の熱」（ux-5: HP の旗「機関損傷」と同じ名詞で
+// 「機関は平常」と読めた）、不調の字は「機関 不調 あと N 秒」（ux-4: 単位の無い数が秒と読めなかった）。
 // Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。「巡航以下」は右下の速力の段の字（停止／静音／巡航／全速）と同じ言葉。
 // 熱の値そのものは文に出さない（キーは段と不調の残りの秒の整数だけ＝熱が少し動いても組み直さない）。回復の行は出さない（右下の字が「機関 過熱」に戻り、速さが戻る）。
 import {
@@ -57,7 +59,7 @@ export function engineTagKey(e: EngineTelemetry): number {
   return e.stage === ENGINE_LIMP ? 2 : e.stage === ENGINE_FINAL ? 1 : 0;
 }
 
-const TAG_JA: readonly string[] = ['', ' ・ 機関 限界', ' ・ 機関 不調'];
+const TAG_JA: readonly string[] = ['', ' ・ 自艇 機関限界', ' ・ 自艇 機関不調'];
 
 /** 札の文（tagKey は engineTagKey。赤い線の行・結果・接触の文の後ろに足す。13mm の射撃・出来事と平常の行には付けない） */
 export function engineTagJa(tagKey: number): string {
@@ -69,12 +71,12 @@ export function engineGaugeStep(heat: number): number {
   return Math.round((heat < 0 ? 0 : heat > 1 ? 1 : heat) * ENGINE_GAUGE_STEPS);
 }
 
-const GAUGE_JA: readonly string[] = ['機関', '機関 過熱', '機関 限界'];
+const GAUGE_JA: readonly string[] = ['機関の熱', '機関 過熱', '機関 限界'];
 
-/** 右下の字（key は engineStageKey）: 「機関」「機関 過熱」「機関 限界」「機関 不調 8」（数は残りの秒の切り上げ） */
+/** 右下の字（key は engineStageKey）: 「機関の熱」「機関 過熱」「機関 限界」「機関 不調 あと 8 秒」（数は残りの秒の切り上げ） */
 export function engineGaugeLabel(key: number): string {
   const st = key & STAGE_MASK;
-  return st === ENGINE_LIMP ? `機関 不調 ${key >> K_LEFT}` : GAUGE_JA[st]!;
+  return st === ENGINE_LIMP ? `機関 不調 あと ${key >> K_LEFT} 秒` : GAUGE_JA[st]!;
 }
 
 /** 帯の色: 平常 緑・過熱 黄・限界と不調 赤 */

@@ -1,7 +1,7 @@
 // 機関の不調の模擬のつなぎ（v0.6.5。core/pt-sim-engine。spec-v065 §F.1）の単体: 予告に従う台本（cool・cruise）の落とす時と戻す時・赤い線の間は落とさない、
 // 不調の間の入力は世界と同じ engineInput、計測（1 段目から不調・回復から次の不調・最長の不調・線の最中の不調 0・不調の間と 1 秒以内の線・夜の終わり・不調の近くの沈没）、乱数 0 回。
+// 機関の値は tests/engine-trouble-kit の固定の fixture（レビュー F6）。艇は jp_05 の T-14（静音の上限 14 kt・巡航）。
 import { describe, expect, it, vi } from 'vitest';
-import { getEngineParams } from '../src/config/engine-mission-data';
 import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import type { BoatInput, SpeedStep } from '../src/core/boat-motion';
@@ -22,8 +22,8 @@ import { PT_PLAY } from '../src/core/pt-sim-policy';
 import { createPtTrial, type PtTrial } from '../src/core/pt-trial';
 import { SeededRng } from '../src/core/rng';
 import { ptSimSetup } from '../src/systems/pt-pass-sim-setup';
+import { P } from './engine-trouble-kit';
 
-const P = getEngineParams(gameData, 'jp_05')!;
 const DT = FIXED_STEP_S;
 const BOAT = ptSimSetup(gameData, 'jp_05').boat;
 
@@ -100,10 +100,29 @@ describe('機関の不調の模擬のつなぎ（v0.6.5、core/pt-sim-engine）'
     const t0 = x.e.st.limpStartS;
     simEngineCommit(x.e, x.out, t0 + 0.5);
     simEngineCommit(x.e, x.out, t0 + ENGINE_LINE_NEAR_S + 0.5);
-    expect([x.out.engLinesInLimp, x.out.engLinesNearLimp]).toEqual([2, 1]);
+    expect([x.out.engLinesInLimp, x.out.engLinesNearLimp, x.out.engLimpsInLine]).toEqual([2, 1, 0]);
     const y = run(sim(), steps(20), 'full');
     simEngineCommit(y.e, y.out, 20);
     expect([y.out.engLinesInLimp, y.out.engLinesNearLimp]).toEqual([0, 0]);
+  });
+
+  it('赤い線の最中に始まった不調（E1。レビュー fair-2・F1）は onCommit で数える: 不調が始まった同じステップに固めた線は、機関の段が米PT の段より先に回った回帰', () => {
+    // 正しい順（米PT の段 → 機関）: 線を固めたステップは lineOn なので不調は始まらず、線は次のステップ以降の不調の間に来る＝数えない
+    const ok = run(sim(), steps(30) + 1, 'full');
+    simEngineCommit(ok.e, ok.out, ok.e.st.limpStartS + DT);
+    expect(ok.out.engLimpsInLine).toBe(0);
+    // 逆の順（機関 → 米PT の段）: このステップの線を見ずに不調が始まり、同じステップに線が固まる
+    const bad = sim();
+    for (let k = 0; k < steps(30); k++) {
+      bad.i++;
+      simEngineStep(bad.e, bad.out, 'full', false, true, bad.i * DT, DT); // 線はまだ見えない
+    }
+    expect(bad.e.st.limp).toBe(true);
+    simEngineCommit(bad.e, bad.out, bad.i * DT); // 同じステップの onCommit
+    expect(bad.out.engLimpsInLine).toBe(1);
+    // simEngineStep は lineOn の線の最中を数えない（stepEngine の条件と同じ旗で、いつも 0 だった）
+    const y = run(sim(), steps(40), 'full', true);
+    expect([y.e.st.limps, y.out.engLimpsInLine]).toEqual([0, 0]);
   });
 
   it('夜の終わり: 不調の回数と秒の和、夜の終わりで切れた不調の長さ、不調の間か回復から 10 秒以内に沈んだ', () => {

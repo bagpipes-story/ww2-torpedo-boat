@@ -1,4 +1,4 @@
-// 機関の不調（v0.6.5。日本ハードモード④・jp_05。docs/02 §6.8、spec-v065 §B.1・§C.2）の数値: risk_events.json の engine_failure.params（ちょうど 7 鍵＋source）の形と検査、EngineParams を組む。
+// 機関の不調（v0.6.5。日本ハードモード④・jp_05。docs/02 §6.8、spec-v065 §B.1・§C.2）の数値: risk_events.json の engine_failure.params（ちょうど 8 鍵＋source）の形と検査、EngineParams を組む。
 // 乱数なしの「熱」: 全速の帯で溜まり、巡航・静音以下で冷える。熱 1.0 で不調（速さの上限が艇の静音の上限）、recover_heat まで冷えれば操作なしに戻る（本体は core/engine-trouble。v0.6.5 の S2）。
 // 熱の溜まる速さは自艇の engine_reliability で変わる: 実効の秒 T = full_to_limp_s × (1 − reliability_ref) / (1 − engine_reliability)。
 // 任務の同居の検査（米PT の任務だけ・輸送隊と同居しない）と自艇の値の引き出しは config/engine-mission-data。Phaser 非依存・確保は組み立てのときだけ。
@@ -6,8 +6,8 @@
 /** risk_events.json の機関の不調の id（任務の v0_1_prototype.hazards にあれば不調が入る。night.optional_hazards には入れない） */
 export const ENGINE_FAILURE_EVENT_ID = 'engine_failure';
 
-/** params の数の鍵（ちょうどこの 7 個＋source。打ち間違い・知らない鍵を止める。pt-chase-data の 19 鍵と同じ作法） */
-export const ENGINE_PARAM_KEYS = ['full_to_limp_s', 'reliability_ref', 'cruise_cool_s', 'silent_cool_s', 'warn_heat', 'final_warn_heat', 'recover_heat'] as const;
+/** params の数の鍵（ちょうどこの 8 個＋source。打ち間違い・知らない鍵を止める。pt-chase-data の 19 鍵と同じ作法。warn_rearm_heat は v0.6.5 のレビュー） */
+export const ENGINE_PARAM_KEYS = ['full_to_limp_s', 'reliability_ref', 'cruise_cool_s', 'silent_cool_s', 'warn_heat', 'final_warn_heat', 'recover_heat', 'warn_rearm_heat'] as const;
 export type EngineParamKey = (typeof ENGINE_PARAM_KEYS)[number];
 
 /** 不調の前の予告の最短（体感秒。spec E2）: 冷えた機関から全速でも 1 段目（過熱）から不調まで・回復から次の不調まで ≥ 8 秒、2 段目（限界）から不調まで ≥ 3 秒 */
@@ -29,6 +29,8 @@ export interface EngineParams {
   warnHeat: number;
   finalWarnHeat: number;
   recoverHeat: number;
+  /** 回復の後の過熱の段の保ち（v0.6.5 のレビュー）: 回復から熱がこの値を割るまでは段を過熱のまま・過熱の出来事と数えを出し直さない（0 < warnRearmHeat < recoverHeat） */
+  warnRearmHeat: number;
   /** 出撃時の熱（既定 0。?debug&enghot だけ config/engine-config の DEBUG_ENGINE_HOT_HEAT） */
   startHeat: number;
 }
@@ -43,7 +45,7 @@ export function engineParamsFromData(raw: unknown, reliability: unknown, label: 
   const bad = (msg: string): never => {
     throw new Error(`risk_events.engine_failure.params: ${msg}（${label}。docs/02 §6.8）`);
   };
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return bad('params（full_to_limp_s ほか 7 個と source）が無い');
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return bad('params（full_to_limp_s ほか 8 個と source）が無い');
   const r = raw as Record<string, unknown>;
   for (const k of Object.keys(r)) if (k !== 'source' && !(ENGINE_PARAM_KEYS as readonly string[]).includes(k)) bad(`知らない鍵 ${k}（鍵は ${ENGINE_PARAM_KEYS.join(' / ')} と source）`);
   for (const k of ENGINE_PARAM_KEYS) if (!isFiniteNum(r[k])) bad(`${k} が無いか有限の数でない`);
@@ -57,6 +59,7 @@ export function engineParamsFromData(raw: unknown, reliability: unknown, label: 
   if (!(t >= ENGINE_MIN_FULL_TO_LIMP_S - LEAD_EPS_S)) bad(`full_to_limp_s の実効の秒（${t} 秒 = full_to_limp_s × (1 − reliability_ref) / (1 − 自艇の engine_reliability)）は ${ENGINE_MIN_FULL_TO_LIMP_S} 秒以上`);
   if (!(q.warn_heat > 0 && q.warn_heat < q.final_warn_heat && q.final_warn_heat < 1)) bad(`0 < warn_heat < final_warn_heat < 1（${q.warn_heat}・${q.final_warn_heat}）`);
   if (!(q.recover_heat > 0)) bad(`recover_heat は正（${q.recover_heat}）`);
+  if (!(q.warn_rearm_heat > 0 && q.warn_rearm_heat < q.recover_heat)) bad(`0 < warn_rearm_heat < recover_heat（${q.warn_rearm_heat}・${q.recover_heat}。回復の後の過熱の段は熱がここを割るまで保つ）`);
   // E2: 不調の前に必ず予告（冷えた機関から全速でも）。回復の後の秒は recover_heat ≤ warn_heat の前に見る（どちらが壊れたかを文で分ける）
   if (!((1 - q.warn_heat) * t >= ENGINE_MIN_WARN_LEAD_S - LEAD_EPS_S)) bad(`warn_heat の予告（(1 − warn_heat) × 実効の秒 = ${(1 - q.warn_heat) * t} 秒）は ${ENGINE_MIN_WARN_LEAD_S} 秒以上（過熱から不調まで）`);
   if (!((1 - q.final_warn_heat) * t >= ENGINE_MIN_FINAL_LEAD_S - LEAD_EPS_S)) bad(`final_warn_heat の予告（(1 − final_warn_heat) × 実効の秒 = ${(1 - q.final_warn_heat) * t} 秒）は ${ENGINE_MIN_FINAL_LEAD_S} 秒以上（限界から不調まで）`);
@@ -70,6 +73,7 @@ export function engineParamsFromData(raw: unknown, reliability: unknown, label: 
     warnHeat: q.warn_heat,
     finalWarnHeat: q.final_warn_heat,
     recoverHeat: q.recover_heat,
+    warnRearmHeat: q.warn_rearm_heat,
     startHeat: 0,
   };
 }

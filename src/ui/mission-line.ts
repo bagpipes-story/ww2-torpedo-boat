@@ -122,7 +122,7 @@ export class MissionLine {
     // 米PT: 赤い線 > 13mm の出来事 > 攻撃の結果（上の行に隠れている間は始めない）と、攻撃の後に弾が飛んでいる間の赤い線の行の保ち（ui/pt-line-clock）
     const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | this.ptClock.flags(t, nowMs, this.lastMissionMode);
     const mode = missionMode(t, call, flags);
-    this.ptClock.shown(mode);
+    this.ptClock.shown(mode, nowMs);
     const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
     const pKey = ptMode ? ptKey(t, mode, flags, this.lastPtKey, this.ptClock.merge) : 0;
     // 輸送隊（v0.6.4）: 浜までの刻みは平常の行（米PT が見えていない）と決着の前の呼びかけ（「大発の上陸を待て  浜まで N m」。レビュー ux-1）のときだけ求める。出来事の種類は出来事の行のときだけ

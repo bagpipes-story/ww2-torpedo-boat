@@ -1,6 +1,7 @@
 // 機関の不調（v0.6.5。jp_05。docs/02 §6.8、spec-v065 §C.2）の任務の読み出し: 任務の v0_1_prototype.hazards に engine_failure があれば、
 // risk_events.json の engine_failure.params と自艇の engine_reliability から EngineParams を組む（data の検査は core/engine-trouble-data）。
-// 同居の検査: 米PT の隊（pt_boats）の任務だけ・輸送隊（convoy）と同居しない（標的が自艇だけの任務に限る＝不調にしない「赤い線の最中」は隊が攻撃中かだけで決まる）・夜ごとの危険にしない。
+// 同居の検査: 米PT の隊（pt_boats）の任務だけ・輸送隊（convoy）と同居しない（標的が自艇だけの任務に限る＝不調にしない「赤い線の最中」は隊が攻撃中かだけで決まる）・
+// 夜明けの空襲（dawn_strike）と敵の水上機（enemy_aircraft）と同居しない（その攻撃の最中は赤い線に入れていない。米PT は夜明けに去るので空襲だけの間に不調が始まりうる。レビュー fair-3）・夜ごとの危険にしない。
 // world-setup が組み立てのたびに（engineSetupPart）、Boot が遊べる任務ごとに 1 回（検査）呼ぶ。game-data.ts が 300 行に近いので別ファイル。
 import { getPrototypeMission, type GameData } from './game-data';
 import { DEBUG_ENGINE_HOT_HEAT } from './engine-config';
@@ -17,6 +18,8 @@ export function getEngineParams(data: GameData, missionId: string): EngineParams
   };
   if (!mission.ptBoats) bad('米PT の隊（pt_boats）の任務だけ（赤い線＝米PT の攻撃の最中には不調にしない）');
   if (mission.convoy) bad('輸送隊（convoy）と同居しない（標的が自艇だけの任務に限る）');
+  if (mission.dawnStrike) bad('夜明けの空襲（dawn_strike）と同居しない（空襲の攻撃の最中は赤い線に入らない）');
+  if (mission.enemyAircraft) bad('敵の水上機（enemy_aircraft）と同居しない（水上機の攻撃の最中は赤い線に入らない）');
   if (mission.night?.optionalHazards.includes(ENGINE_FAILURE_EVENT_ID)) bad('night.optional_hazards に入れない（不調は夜ごとに決めない。今夜の揺らぎの乱数の回数が変わる）');
   const ev = (data.riskEvents.events as readonly Record<string, unknown>[]).find((e) => e['id'] === ENGINE_FAILURE_EVENT_ID) ?? bad(`risk_events.json に ${ENGINE_FAILURE_EVENT_ID} が無い`);
   const boat = (data.boats.boats as readonly Record<string, unknown>[]).find((b) => b['id'] === mission.playerBoatId);

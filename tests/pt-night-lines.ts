@@ -94,7 +94,7 @@ export function nightLines(seed: number, withGun: boolean, style: NightStyle = '
       const bt = tele(t, { headingDeg: s.boat.headingDeg });
       const flags = clock.flags(bt, ms, lastMode);
       const mode = missionMode(bt, 0, flags);
-      clock.shown(mode);
+      clock.shown(mode, ms);
       const key = isPtMode(mode) ? ptKey(bt, mode, flags, lastKey, clock.merge) : 0;
       const text = isPtMode(mode) ? ptLine(bt, mode, key).text : '';
       lastMode = mode;

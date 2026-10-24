@@ -2,6 +2,8 @@
 // 熱は全速の帯で溜まり（実効の T 秒で 0 → 1）、巡航（cruise_cool_s）・静音以下（silent_cool_s）で 1 → 0 の速さで冷える。熱 1.0 で不調＝速さの上限が艇の静音の上限
 // （止まらない・舵と機銃は残る）。不調の間は帯に関わらず silent_cool_s で冷え、recover_heat まで冷えれば操作なしに戻る（ちょうど (1 − recover_heat) × silent_cool_s 秒）。回数の上限なし。
 // 赤い線（米PT の攻撃の最中。そのステップに固めた線も）・沈み始め・帰投の輪の中・燃料切れの間は不調にならず、熱 1.0 で待つ（予告は嘘を言わない）。
+// 回復の後は熱が warn_rearm_heat を割るまで段を過熱のまま保ち、過熱の出来事と数えを出し直さない（v0.6.5 のレビュー fair-1: 不調の 14 kt から加速し直す間に熱が 0.6 を少し割り、
+// 右下の字が 1.5 秒ほど平常に戻ってから過熱の行が不調のたびに出直していた）。
 // 呼ぶのは米PT の段の直後（世界は feelDt、模擬は realDt）。Phaser 非依存・乱数なし・確保なし・atan2 なし（数の比較と足し引きだけ）。data の値と検査は core/engine-trouble-data。
 import type { BoatInput, BoatParams, SpeedStep } from './boat-motion';
 import type { EngineParams } from './engine-trouble-data';
@@ -33,8 +35,10 @@ export interface EngineState {
   /** 前のステップの終わりの熱（「下から越えた」の比べ。作ったときは 0＝startHeat ≥ warn_heat のデバッグの出撃は最初のステップで過熱の出来事と数えが出る） */
   prevHeat: number;
   limp: boolean;
+  /** 回復した後で、熱がまだ warn_rearm_heat を割っていない（段は少なくとも過熱・過熱の出来事と数えは出さない） */
+  afterLimp: boolean;
   stage: EngineStage;
-  /** 熱が warn_heat を下から越えた回数（過熱）・final_warn_heat を下から越えた回数（限界）。回復は熱をちょうど recover_heat（≤ warn_heat）に置くので数えない */
+  /** 熱が warn_heat を下から越えた回数（過熱）・final_warn_heat を下から越えた回数（限界）。回復の後は afterLimp の間は過熱を数えない */
   warns: number;
   finals: number;
   /** 不調の回数と秒の和（stepEngine の dt の和＝世界は体感秒）・最後の不調が始まった時刻（nowS） */
@@ -48,18 +52,18 @@ export interface EngineState {
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-/** 段（熱と不調から決まる。ほかの状態を見ない） */
-export function engineStageOf(heat: number, limp: boolean, p: EngineParams): EngineStage {
+/** 段（熱・不調・回復の後の保ちから決まる。ほかの状態を見ない）。afterLimp の間は熱が warn_rearm_heat 以上なら少なくとも過熱 */
+export function engineStageOf(heat: number, limp: boolean, p: EngineParams, afterLimp = false): EngineStage {
   if (limp) return ENGINE_LIMP;
   if (heat >= p.finalWarnHeat - ENGINE_EPS) return ENGINE_FINAL;
-  if (heat >= p.warnHeat - ENGINE_EPS) return ENGINE_WARN;
+  if (heat >= p.warnHeat - ENGINE_EPS || (afterLimp && heat >= p.warnRearmHeat - ENGINE_EPS)) return ENGINE_WARN;
   return ENGINE_OK;
 }
 
 /** 出撃時の状態（熱は startHeat。既定 0、?debug&enghot だけ 0.75）。前の熱は 0 として持つ */
 export function createEngineState(p: EngineParams): EngineState {
   const heat = clamp01(p.startHeat);
-  return { heat, prevHeat: 0, limp: false, stage: engineStageOf(heat, false, p), warns: 0, finals: 0, limps: 0, limpS: 0, limpStartS: NaN, eventSeq: 0, lastEvent: ENGINE_EV_NONE };
+  return { heat, prevHeat: 0, limp: false, afterLimp: false, stage: engineStageOf(heat, false, p), warns: 0, finals: 0, limps: 0, limpS: 0, limpStartS: NaN, eventSeq: 0, lastEvent: ENGINE_EV_NONE };
 }
 
 function emit(s: EngineState, ev: EngineEvent): void {
@@ -70,8 +74,9 @@ function emit(s: EngineState, ev: EngineEvent): void {
 /**
  * 1 固定ステップ（spec §C.1。米PT の段の直後・火災の前）。band は今の速力帯、lineOnPlayer は隊が攻撃中（q.owner ≥ 0。このステップに固めた線も）、
  * canLimp は沈み始めていない・帰投の輪の中でない・燃料切れでない。dt は世界の feelDt／模擬の realDt、nowS は同じ時計の今の秒（limpStartS に写すだけ）。
- * 順: 熱 → 下から越えた数えと出来事 → 回復 → 不調 → 段。越えの数えは熱だけで決まり、回復（熱を recover_heat ≤ warn_heat に置く。冷えた後なので上へは越えない）と
+ * 順: 熱 → 回復の後の保ちを解く → 下から越えた数えと出来事 → 回復 → 不調 → 段。越えの数えは熱だけで決まり、回復（熱を recover_heat ≤ warn_heat に置く。冷えた後なので上へは越えない）と
  * 不調（熱 1 − ε を 1.0 に置くだけ。境はみな 1 より下）はそれを変えないので、spec の順（熱 → 回復 → 不調 → 段と数え）と同じ数えになる。
+ * 回復の後（afterLimp）は熱が warn_rearm_heat を割るまで過熱を数えない・出来事を出さない（段は engineStageOf が過熱に保つ）。限界と不調はいつもどおり。
  */
 export function stepEngine(s: EngineState, p: EngineParams, band: SpeedStep, lineOnPlayer: boolean, canLimp: boolean, dt: number, nowS: number): void {
   const before = s.prevHeat;
@@ -83,7 +88,8 @@ export function stepEngine(s: EngineState, p: EngineParams, band: SpeedStep, lin
   else if (band === 'cruise') h -= dt / p.cruiseCoolS;
   else h -= dt / p.silentCoolS;
   s.heat = clamp01(h);
-  if (before < p.warnHeat - ENGINE_EPS && s.heat >= p.warnHeat - ENGINE_EPS) {
+  if (s.afterLimp && s.heat < p.warnRearmHeat - ENGINE_EPS) s.afterLimp = false;
+  if (!s.afterLimp && before < p.warnHeat - ENGINE_EPS && s.heat >= p.warnHeat - ENGINE_EPS) {
     s.warns++;
     emit(s, ENGINE_EV_WARN);
   }
@@ -93,7 +99,8 @@ export function stepEngine(s: EngineState, p: EngineParams, band: SpeedStep, lin
   }
   if (s.limp && s.heat <= p.recoverHeat + ENGINE_EPS) {
     s.limp = false;
-    s.heat = p.recoverHeat; // ちょうど戻す（丸めで少し下だと、次の全速で過熱を下から越えたと数えてしまう）
+    s.heat = p.recoverHeat; // ちょうど戻す（段は 3 → 1）
+    s.afterLimp = true; // 14 kt から加速し直す間に熱が少し割っても過熱のまま（出し直さない）
     emit(s, ENGINE_EV_RECOVER);
   } else if (!s.limp && s.heat >= 1 - ENGINE_EPS && !lineOnPlayer && canLimp) {
     s.limp = true;
@@ -102,7 +109,7 @@ export function stepEngine(s: EngineState, p: EngineParams, band: SpeedStep, lin
     s.limpStartS = nowS;
     emit(s, ENGINE_EV_LIMP);
   }
-  s.stage = engineStageOf(s.heat, s.limp, p);
+  s.stage = engineStageOf(s.heat, s.limp, p, s.afterLimp);
   s.prevHeat = s.heat;
 }
 

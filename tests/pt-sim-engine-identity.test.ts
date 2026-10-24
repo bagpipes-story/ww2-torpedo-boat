@@ -13,7 +13,7 @@ import { convoySimSetup } from '../src/systems/convoy-sim-setup';
 import { ENGINE_CALIBRATION, ENGINE_HUD_POLICIES } from '../src/systems/pt-engine-calibration';
 import { ptSimSetup } from '../src/systems/pt-pass-sim-setup';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { ENGINE_SIM_FILES, engineSetups } from './pt-sim-engine-kit';
+import { ENGINE_SIM_EXTRA, ENGINE_SIM_FILES, engineSetups } from './pt-sim-engine-kit';
 import { SIM_FILES } from './pt-sim-kit';
 
 /** PtTrial の機関の列（eng の後が大文字。機関損傷の engineHit は隊の列） */
@@ -80,14 +80,20 @@ describe('機関の不調の模擬（v0.6.5、spec-v065 §F.1）', () => {
     expect(changed).toBeGreaterThan(0.9 * limped);
   }, 60_000);
 
-  it('帯の行: 不調の起きる 7 台本は 1 台本 2 ファイル（tests/pt-sim-engine-a〜g が無視の代価・a2〜g2 が従う台本）・HUD どおりの 9 台本（T-E2）は別。どれも 37 の台本の中で、既定の表の 8 ファイルのどれかが回す', () => {
+  it('帯の行: 不調の起きる 7 台本は 1 台本 1 ファイル（tests/pt-sim-engine-a〜g が代価・従う台本・不変を 1 回の 4 表で。レビュー N1 で a2〜g2 をまとめた）・edge_flee の従う台本の不変は h・HUD どおりの 9 台本（T-E2）は別。どれも 37 の台本の中で、既定の表の 8 ファイルのどれかが回す', () => {
     const engine = ENGINE_CALIBRATION.map((r) => r.policy);
     expect(engine).toEqual(['full', 'turn_full', 'flee_full', 'flee_dodge', 'flee_hold', 'flee_shoot', 'fleedodge_shoot']);
     expect(Object.values(ENGINE_SIM_FILES)).toEqual(engine);
-    for (const k of Object.keys(ENGINE_SIM_FILES)) for (const f of [k, `${k}2`]) expect(existsSync(join(__dirname, `pt-sim-engine-${f}.test.ts`)), f).toBe(true);
+    for (const k of Object.keys(ENGINE_SIM_FILES)) {
+      expect(existsSync(join(__dirname, `pt-sim-engine-${k}.test.ts`)), k).toBe(true);
+      expect(existsSync(join(__dirname, `pt-sim-engine-${k}2.test.ts`)), `${k}2`).toBe(false);
+    }
+    expect(Object.values(ENGINE_SIM_EXTRA)).toEqual(['edge_flee']);
+    expect(existsSync(join(__dirname, 'pt-sim-engine-h.test.ts'))).toBe(true);
+    expect(engine.includes(ENGINE_SIM_EXTRA.h)).toBe(false);
     const all: readonly string[] = [...PT_POLICIES, ...PT_GUN_POLICIES];
     const kit = Object.values(SIM_FILES).flat() as readonly string[];
-    for (const pol of [...engine, ...ENGINE_HUD_POLICIES]) expect([all.includes(pol), kit.includes(pol)], pol).toEqual([true, true]);
+    for (const pol of [...engine, ...ENGINE_HUD_POLICIES, ...Object.values(ENGINE_SIM_EXTRA)]) expect([all.includes(pol), kit.includes(pol)], pol).toEqual([true, true]);
     expect(ENGINE_HUD_POLICIES.filter((p) => engine.includes(p))).toEqual([]);
     expect(ENGINE_HUD_POLICIES).toHaveLength(9);
   });

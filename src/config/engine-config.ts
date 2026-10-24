@@ -5,8 +5,10 @@
 /** ?debug&enghot の出撃時の熱（spec-v065 §A.1・R11）: すぐ「過熱」が見え、全速の帯に入るまでの約 2 秒の冷えで warn_heat 0.6 を割らない */
 export const DEBUG_ENGINE_HOT_HEAT = 0.75;
 
-/** 2 行目の過熱の出来事（熱が warn_heat を下から越えた）を出す ms（赤い線・13mm の出来事・輸送隊の出来事の下では 1 度出るまで待つ。spec §D.1） */
+/** 2 行目の過熱の出来事（熱が warn_heat を下から越えた）を出す ms（赤い線・13mm の出来事・輸送隊の出来事の下では、出た秒の和が ENGINE_EVENT_MIN_SHOWN_MS になるまで待つ。spec §D.1） */
 export const ENGINE_EVENT_SHOW_MS = 3500;
+/** 過熱の出来事を「出た」とみなす 2 行目に出ていた ms の和（v0.6.5 のレビュー ux-2: 568 px の文は 1 秒では読めない。これより短く赤い線に替わられたら、線の後にまた出す） */
+export const ENGINE_EVENT_MIN_SHOWN_MS = 2000;
 
 /** 右下の熱の帯（spec §D.2）: 帯の幅・高さ px、字の大きさ px、帯と字の隙間 px、「針路」の文の上端からの隙間 px */
 export const ENGINE_GAUGE_W_PX = 80;

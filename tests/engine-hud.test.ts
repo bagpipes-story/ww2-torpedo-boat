@@ -1,26 +1,29 @@
 // 機関の不調（v0.6.5。jp_05。spec-v065 §D.2・§G.1）の右下の熱の帯の Phaser を使わない部分（ui/engine-lines の写像。ui/engine-hud はこれを値の変わったときだけ書く）:
-// 字（段と不調の残りの秒の整数）・帯の色と字の色（段）・帯の幅の刻み（熱の 1/50）・点滅する段。jp_05 の本物の値で全速 → 不調 → 回復を回し、書き換えの回数が §7 の作法どおり少ないこと。
+// 字（段と不調の残りの秒の整数）・帯の色と字の色（段）・帯の幅の刻み（熱の 1/50）・点滅する段。fixture（tests/engine-trouble-kit。jp_05 と同じ数）で全速 → 不調 → 回復を回し、
+// 写像の値が変わる回数（ui/engine-hud はこの回数だけ書く）が少ないこと。レビュー: 平常の字は「機関の熱」（ux-5）、不調は「機関 不調 あと N 秒」（ux-4）。
 import { describe, expect, it } from 'vitest';
 import { ENGINE_GAUGE_STEPS, ENGINE_TEXT_FINAL, ENGINE_TEXT_OK, ENGINE_TEXT_WARN, ENGINE_TINT_FINAL, ENGINE_TINT_OK, ENGINE_TINT_WARN } from '../src/config/engine-config';
-import { getEngineParams } from '../src/config/engine-mission-data';
-import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import type { SpeedStep } from '../src/core/boat-motion';
 import { ENGINE_FINAL, ENGINE_LIMP, ENGINE_OK, ENGINE_WARN, createEngineState, createEngineTelemetry, stepEngine, writeEngineTelemetry, type EngineStage, type EngineTelemetry } from '../src/core/engine-trouble';
 import { engineGaugeLabel, engineGaugePulses, engineGaugeStep, engineGaugeTextColor, engineGaugeTint, engineStageKey } from '../src/ui/engine-lines';
+import { P } from './engine-trouble-kit';
 import { textWidthPx } from './pt-ui-kit';
 
-const P = getEngineParams(gameData, 'jp_05')!;
 const tel = (stage: EngineStage, over: Partial<EngineTelemetry> = {}): EngineTelemetry => ({ ...createEngineTelemetry(), on: true, stage, limpLeftS: stage === ENGINE_LIMP ? 8 : 0, ...over });
 
 describe('右下の字・色・点滅（段の写像）', () => {
-  it('字: 「機関」「機関 過熱」「機関 限界」「機関 不調 8」（数は残りの秒の切り上げ）。いちばん長い字は 18 px で 105 px 以内。機関の無い夜は「機関」', () => {
+  it('字: 「機関の熱」「機関 過熱」「機関 限界」「機関 不調 あと 8 秒」（数は残りの秒の切り上げ）。いちばん長い字は 18 px で 185 px 以内。機関の無い夜は「機関の熱」', () => {
     const labels = [ENGINE_OK, ENGINE_WARN, ENGINE_FINAL, ENGINE_LIMP].map((s) => engineGaugeLabel(engineStageKey(tel(s as EngineStage))));
-    expect(labels).toEqual(['機関', '機関 過熱', '機関 限界', '機関 不調 8']);
-    expect(engineGaugeLabel(engineStageKey(tel(ENGINE_LIMP, { limpLeftS: 0.3 })))).toBe('機関 不調 1');
-    expect(engineGaugeLabel(engineStageKey(tel(ENGINE_LIMP, { limpLeftS: 8.0000001 })))).toBe('機関 不調 8');
-    expect(Math.max(...labels.map((s) => textWidthPx(s, 18)))).toBeLessThanOrEqual(105);
-    expect(engineGaugeLabel(engineStageKey({ ...createEngineTelemetry(), stage: ENGINE_LIMP, limpLeftS: 5 }))).toBe('機関');
+    expect(labels).toEqual(['機関の熱', '機関 過熱', '機関 限界', '機関 不調 あと 8 秒']);
+    expect(engineGaugeLabel(engineStageKey(tel(ENGINE_LIMP, { limpLeftS: 0.3 })))).toBe('機関 不調 あと 1 秒');
+    expect(engineGaugeLabel(engineStageKey(tel(ENGINE_LIMP, { limpLeftS: 8.0000001 })))).toBe('機関 不調 あと 8 秒');
+    // 平常の字は HP の旗「機関損傷」（PT の命中）と別の言葉（E11。レビュー ux-5: 「機関」だけだと「機関は平常」と読めた）
+    expect(labels[0]).not.toBe('機関');
+    // 不調の字は単位つき（ux-4）。右寄せで左は空いている（速力の表示の上の段。帯 80 px の左）
+    expect(Math.round(textWidthPx(labels[3]!, 18))).toBe(180);
+    expect(Math.max(...labels.map((s) => textWidthPx(s, 18)))).toBeLessThanOrEqual(185);
+    expect(engineGaugeLabel(engineStageKey({ ...createEngineTelemetry(), stage: ENGINE_LIMP, limpLeftS: 5 }))).toBe('機関の熱');
   });
   it('キーは段か残りの秒の整数が変わったときだけ変わる（熱が動いても同じ）', () => {
     expect(engineStageKey(tel(ENGINE_FINAL, { heat: 0.86 }))).toBe(engineStageKey(tel(ENGINE_FINAL, { heat: 0.99 })));
@@ -42,8 +45,8 @@ describe('右下の字・色・点滅（段の写像）', () => {
   });
 });
 
-describe('jp_05 の本物の値で 1 夜（§7: 書き換えは値が変わったときだけ）', () => {
-  it('全速 40 秒 → 静音 30 秒: 字の書き換え 13 回（機関→過熱→限界→不調 8〜1→過熱→機関）・帯の幅の書き換えは刻みが変わったときだけ（107 回）・色は段が変わったときだけ', () => {
+describe('写像の値が変わる回数（ui/engine-hud はこの回数だけ書く。レビュー F9: engine-hud そのものは Phaser なのでここでは回さない）', () => {
+  it('全速 40 秒 → 静音 30 秒: 字のキーが変わるのは 13 回（機関の熱→過熱→限界→不調 あと 8〜1 秒→過熱→機関の熱）・帯の幅の刻みは 107 回・色の段は 6 回', () => {
     const s = createEngineState(P);
     const t = createEngineTelemetry();
     let lastKey = -1;
@@ -74,8 +77,8 @@ describe('jp_05 の本物の値で 1 夜（§7: 書き換えは値が変わっ�
     };
     frame('full', 40);
     frame('silent', 30);
-    expect(labels).toEqual(['機関', '機関 過熱', '機関 限界', '機関 不調 8', '機関 不調 7', '機関 不調 6', '機関 不調 5', '機関 不調 4', '機関 不調 3', '機関 不調 2', '機関 不調 1', '機関 過熱', '機関']);
-    expect(colorWrites).toBe(6); // 平常・過熱・限界・不調・過熱（回復）・平常
+    expect(labels).toEqual(['機関の熱', '機関 過熱', '機関 限界', ...[8, 7, 6, 5, 4, 3, 2, 1].map((n) => `機関 不調 あと ${n} 秒`), '機関 過熱', '機関の熱']);
+    expect(colorWrites).toBe(6); // 平常・過熱・限界・不調・過熱（回復。熱が warn_rearm_heat を割るまで）・平常
     expect(widthWrites).toBe(107); // 4,200 ステップのうち（0 → 50・不調で 50 → 30・戻って 2 秒の全速で +3・静音 30 秒で 33 → 0。1 刻みに 1 回）
   });
 });

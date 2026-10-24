@@ -24,7 +24,7 @@ class Hud {
     const t = tele({ detected: true, fighting: 2, ...pt });
     const flags = this.c.flags(t, this.ms, this.mode);
     const mode = missionMode(t, 0, flags);
-    this.c.shown(mode);
+    this.c.shown(mode, this.ms);
     this.mode = mode;
     return [mode, ptLine(t, mode, ptKey(t, mode, flags, 0, this.c.merge)).text, flags];
   }

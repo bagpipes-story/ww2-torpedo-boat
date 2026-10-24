@@ -1,12 +1,15 @@
 // 機関の不調の世界側（v0.6.5。systems/engine-trouble・systems/world-boat。spec-v065 §C.1・§E.4 の S4）:
 // 入力の差し替え（不調でなければ w.input そのもの・不調なら同じ写しに上限・燃料切れの漂流が優先）、米PT の段の後に読む赤い線（owner ≥ 0）・沈み始め／輪の中／燃料切れでは不調にならない、
-// jp_05 の本物の値と stepBoat で「全速を続ける → 30 秒で不調 → 14 kt まで落ちる → 8 秒で戻ってまた全速」、乱数 0 回、テレメトリ、?debug&engoff／enghot の組み立て。
+// jp_05 の本物の値と stepBoat で「全速を続ける → 30 秒で不調 → 14 kt まで落ちる → 8 秒で戻ってまた全速」（秒は data の値から求める＝レビュー F6）、
+// 回復の後は加速し直す間も過熱のまま（レビュー fair-1）、mission-world と模擬の段の順（米PT の段 → 機関 → 火災。レビュー fair-2）、乱数 0 回、テレメトリ、?debug&engoff／enghot の組み立て。
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { DEBUG_ENGINE_HOT_HEAT } from '../src/config/engine-config';
 import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import { nextSpeedBand, type BoatInput, type BoatState, type SpeedStep } from '../src/core/boat-motion';
-import { ENGINE_LIMP, ENGINE_OK, createEngineTelemetry } from '../src/core/engine-trouble';
+import { ENGINE_EV_FINAL, ENGINE_EV_LIMP, ENGINE_FINAL, ENGINE_LIMP, ENGINE_OK, ENGINE_WARN, createEngineTelemetry } from '../src/core/engine-trouble';
 import { createFuelState } from '../src/core/fuel';
 import { SeededRng } from '../src/core/rng';
 import { mpsToKt } from '../src/core/units';
@@ -135,7 +138,7 @@ function miniWorld(engine: boolean) {
 }
 
 describe('world-boat の入力（jp_05 の本物の値。spec §G.4 の秒の目安）', () => {
-  it('全速を続ける: 全速の帯から約 18 秒で過熱・25.5 秒で限界・30 秒で不調、不調の間は 14 kt まで（減速の後）、ちょうど 8 秒で戻ってまた全速', () => {
+  it('全速を続ける: 全速の帯から warn_heat × T（18 秒）で過熱・final_warn_heat × T（25.5 秒）で限界・T（30 秒）で不調、不調の間は 14 kt まで（減速の後）、(1 − recover_heat) × silent_cool_s（8 秒）で戻ってまた全速', () => {
     const { w, boat, step } = miniWorld(true);
     const e = w.engine!;
     let fullAt = NaN;
@@ -158,15 +161,42 @@ describe('world-boat の入力（jp_05 の本物の値。spec §G.4 の秒の目
       if (e.state.limp && t - e.state.limpStartS > 2) maxKtLate = Math.max(maxKtLate, mpsToKt(boat.speedMps));
       if (!Number.isNaN(recoverAt)) maxKtAfter = Math.max(maxKtAfter, mpsToKt(boat.speedMps));
     }
-    expect(warnAt - fullAt).toBeCloseTo(18, 1);
-    expect(finalAt - fullAt).toBeCloseTo(25.5, 1);
-    expect(limpAt - fullAt).toBeCloseTo(30, 1);
-    expect(recoverAt - limpAt).toBeCloseTo(8, 6);
+    expect(warnAt - fullAt).toBeCloseTo(P.warnHeat * P.fullToLimpS, 1);
+    expect(finalAt - fullAt).toBeCloseTo(P.finalWarnHeat * P.fullToLimpS, 1);
+    expect(limpAt - fullAt).toBeCloseTo(P.fullToLimpS, 1);
+    expect(recoverAt - limpAt).toBeCloseTo((1 - P.recoverHeat) * P.silentCoolS, 6);
     expect(maxKtLate).toBeLessThanOrEqual(mpsToKt(S.boatParams.silentMaxMps) + 0.5);
     expect(maxKtLate).toBeGreaterThan(mpsToKt(S.boatParams.silentMaxMps) - 0.5); // 止まらない（静音の上限で走り続ける）
     expect(maxKtAfter).toBeGreaterThan(30); // 戻った後はまた全速
     expect(w.input).toEqual({ headingDeg: 180, speed01: 1 }); // 入力は書き換えない
     expect(w.atHome).toBe(false);
+  });
+
+  it('回復の後（帯は上限の 14 kt から加速し直す速さで決まる）: 段は 3 → 1 のまま平常に戻らず、過熱の出来事も数えも出ず、次は限界 → 不調（レビュー fair-1。前は 1 → 0 → 1 で過熱が不調のたびに出直した）', () => {
+    const { w, step } = miniWorld(true);
+    const e = w.engine!;
+    while (e.state.limps < 1) step();
+    while (e.state.limp) step();
+    expect([e.state.stage, e.state.heat, e.state.warns]).toEqual([ENGINE_WARN, P.recoverHeat, 1]);
+    expect(w.band).toBe('silent'); // 上限の 14 kt＝静音の帯で戻る
+    const recAt = w.stepTimeS;
+    const stages: number[] = [e.state.stage];
+    const events: number[] = [];
+    let seq = e.state.eventSeq;
+    let minHeat = 1;
+    while (e.state.limps < 2) {
+      step();
+      if (stages[stages.length - 1] !== e.state.stage) stages.push(e.state.stage);
+      if (e.state.eventSeq !== seq) events.push(e.state.lastEvent);
+      seq = e.state.eventSeq;
+      minHeat = Math.min(minHeat, e.state.heat);
+    }
+    expect(minHeat).toBeLessThan(P.warnHeat); // 加速し直す間に 0.6 を割る
+    expect(minHeat).toBeGreaterThan(P.warnRearmHeat);
+    expect(stages).toEqual([ENGINE_WARN, ENGINE_FINAL, ENGINE_LIMP]);
+    expect(events).toEqual([ENGINE_EV_FINAL, ENGINE_EV_LIMP]);
+    expect([e.state.warns, e.state.finals, e.state.limps]).toEqual([1, 2, 2]);
+    expect(w.stepTimeS - recAt).toBeGreaterThan((1 - P.recoverHeat) * P.fullToLimpS); // 回復から次の不調まで 12 秒より長い（E2）
   });
 
   it('不調の無い世界（engine null）は w.input そのまま（全速のまま）。燃料切れは不調より漂流が優先', () => {
@@ -190,6 +220,25 @@ describe('world-boat の入力（jp_05 の本物の値。spec §G.4 の秒の目
     for (let i = 0; i < steps(60); i++) step();
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+describe('段の順（レビュー fair-2: 機関の段が米PT の段より先に回ると、同じステップに固めた赤い線を見ずに不調が始まる＝R1 の回帰。模擬の不変は core/pt-sim-engine の onCommit で数える）', () => {
+  const code = (rel: string): string => readFileSync(join(__dirname, '..', 'src', ...rel.split('/')), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  it('ソース: systems/mission-world の stepFn は 米PT の段（pts.step）→ 機関（engine.step）→ 火災（stepDamage）の順', () => {
+    const src = code('systems/mission-world.ts');
+    const fn = src.slice(src.indexOf('stepFn'));
+    const [pts, eng, dmg] = [fn.indexOf('this.pts?.step('), fn.indexOf('this.engine?.step('), fn.indexOf('stepDamage(')];
+    expect([pts, eng, dmg].every((i) => i > 0), `${pts} ${eng} ${dmg}`).toBe(true);
+    expect(pts).toBeLessThan(eng);
+    expect(eng).toBeLessThan(dmg);
+  });
+  it('ソース: core/pt-pass-sim の 1 ステップは 米PT の段（stepPtSection）→ 機関（simEngineStep）→ 火災（stepDamage）の順', () => {
+    const src = code('core/pt-pass-sim.ts');
+    const [pts, eng, dmg] = [src.indexOf('stepPtSection(q'), src.indexOf('simEngineStep(eng'), src.indexOf('stepDamage(d')];
+    expect([pts, eng, dmg].every((i) => i > 0), `${pts} ${eng} ${dmg}`).toBe(true);
+    expect(pts).toBeLessThan(eng);
+    expect(eng).toBeLessThan(dmg);
   });
 });
 

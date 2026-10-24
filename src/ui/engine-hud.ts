@@ -1,7 +1,7 @@
 // 機関の不調（v0.6.5。jp_05。spec-v065 §D.2・R3）の右下の熱の帯: 速力の表示の上（「針路」の文の上端から ENGINE_GAUGE_GAP_PX 上）に字（18 px）と帯（80 × 8 px）を 1 列に。
 // 右端は速力の表示と同じ（W − 176）。2 行目が何を出していても見える（予告がいつも 1 か所に出る）。入力は増えない（ボタンは無い）。
 // §7: 帯は Boot で作った HP バーの白い矩形を setScale するだけ（熱を 1/50 に丸めた値が変わったときだけ）、色は段が変わったときだけ、字は段か不調の残りの秒の整数が変わったときだけ setText。
-// 限界と不調の間は識別ボタンと同じ速さ（IDENTIFY_PULSE_HZ）で濃さだけ点滅する。字・色・幅の刻みの写像は ui/engine-lines（Phaser 非依存でテストする）。
+// 限界と不調の間は識別ボタンと同じ速さ（IDENTIFY_PULSE_HZ）で帯の濃さだけ点滅する（字は点滅させない＝レビュー ux-4: 薄いときの字が読めなかった）。字・色・幅の刻みの写像は ui/engine-lines（Phaser 非依存でテストする）。
 import Phaser from 'phaser';
 import {
   ENGINE_FONT_PX,
@@ -77,7 +77,6 @@ export class EngineHud {
     if (alpha !== this.lastAlpha) {
       this.lastAlpha = alpha;
       this.fill.setAlpha(alpha);
-      this.label.setAlpha(alpha);
     }
   }
 

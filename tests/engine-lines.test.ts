@@ -1,7 +1,7 @@
 // 機関の不調（v0.6.5。jp_05。spec-v065 §D.1・§D.4・§G.1・R3・R5）の 2 行目と Result の文（ui/engine-lines）・優先順（ui/mission-mode）・過熱の出来事の時計（ui/pt-line-clock）。
 // 2 行目は mission-line と同じ順（PtLineClock.flags → missionMode → shown → 文）で組む。ui-config・game-config は DOM を読むので使わない（色は hud-text-config、幅は tests/pt-ui-kit の見積もり）。
 import { describe, expect, it } from 'vitest';
-import { ENGINE_EVENT_SHOW_MS } from '../src/config/engine-config';
+import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../src/config/engine-config';
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../src/config/hud-text-config';
 import { PT_RESULT_SHOW_MS } from '../src/config/pt-config';
 import type { BoatTelemetry } from '../src/core/boat-motion';
@@ -81,7 +81,7 @@ describe('2 行目の機関の 3 つ（モード 28〜30）', () => {
     ];
     let widest = 0;
     for (const [pt, flags] of cases) {
-      for (const [stage, tag] of [[ENGINE_FINAL, ' ・ 機関 限界'], [ENGINE_LIMP, ' ・ 機関 不調']] as const) {
+      for (const [stage, tag] of [[ENGINE_FINAL, ' ・ 自艇 機関限界'], [ENGINE_LIMP, ' ・ 自艇 機関不調']] as const) {
         const [mode, text] = rowOf(T(pt, eng(stage)), 0, flags);
         expect([MISSION_PT_PASS, MISSION_PT_CONTACT], JSON.stringify(pt)).toContain(mode);
         expect(text.endsWith(tag), text).toBe(true);
@@ -89,7 +89,7 @@ describe('2 行目の機関の 3 つ（モード 28〜30）', () => {
         widest = Math.max(widest, textWidthPx(text, 22));
       }
     }
-    expect(widest).toBeLessThanOrEqual(790); // いちばん長いのは 3,150 m の追ってくる PT の行＋札で 784 px（spec §D.1 の表は 900 m で 771 px）
+    expect(widest).toBeLessThanOrEqual(830); // いちばん長いのは 3,150 m の追ってくる PT の行＋札で 828 px（札に「自艇」。レビュー ux-3: 米PT で始まる行の「機関 不調」が米PT の機関と読めた）
   });
   it('札は 13mm の射撃・出来事と平常の行には付けない。機関の無い夜（on false）は札が付かない（過熱の出来事の旗も立たない＝下の時計のテスト）', () => {
     const firing = { detected: true, threatPhase: PT_RUN_IN, dx: 300, dy: -400, sighted: true, gunStatus: GUN_FIRING, gunTargetM: 231, gunHits: 3, gunEverFired: true };
@@ -132,8 +132,8 @@ describe('優先順（spec §G.1）', () => {
   });
   it('R5: 突撃・追撃・離脱の行は機関の状態（限界で全速でない・不調）に勝ち、札が付く。全速の帯の限界だけが接触より上', () => {
     const rush = { detected: true, threatPhase: PT_RUN_IN, dx: 300, dy: -400, sighted: true };
-    expect(rowOf(T(rush, eng(ENGINE_LIMP)))).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵 ・ 機関 不調']);
-    expect(rowOf(T({ ...rush, threatPhase: PT_CHASE }, eng(ENGINE_FINAL)))[1].endsWith(' ・ 機関 限界')).toBe(true);
+    expect(rowOf(T(rush, eng(ENGINE_LIMP)))).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵 ・ 自艇 機関不調']);
+    expect(rowOf(T({ ...rush, threatPhase: PT_CHASE }, eng(ENGINE_FINAL)))[1].endsWith(' ・ 自艇 機関限界')).toBe(true);
     expect(rowOf(T({ ...rush, threatPhase: PT_BREAK }, eng(ENGINE_LIMP)))[0]).toBe(MISSION_PT_CONTACT);
     expect(rowOf(T(rush, eng(ENGINE_FINAL), { targetStep: 'full' }))).toEqual([MISSION_ENGINE_FINAL, '機関 限界！ 巡航以下に落とせ（このままだと不調）']);
   });
@@ -168,7 +168,7 @@ class Hud {
     const t = T({ detected: true, fighting: 2, ...pt }, e);
     const flags = this.c.flags(t, this.ms, this.mode);
     const mode = missionMode(t, 0, flags);
-    this.c.shown(mode);
+    this.c.shown(mode, this.ms);
     this.mode = mode;
     return [mode, textOf(t, mode, flags), flags];
   }
@@ -185,7 +185,8 @@ class Hud {
 describe('過熱の出来事の時計（ui/pt-line-clock。R3）', () => {
   const warned = eng(ENGINE_WARN, { eventSeq: 1, lastEvent: ENGINE_EV_WARN });
   const line = { passing: true, dodge: 1, escapeDeg: 315 };
-  it('赤い線の下に来た出来事は線が消えてから 3.5 秒出る。出た後に次の赤い線に替わられたら、その時計のまま終わる', () => {
+  it('赤い線の下に来た出来事は線が消えてから 3.5 秒出る。2 秒出るより前に赤い線に替わられたら、線の後にまた出す（レビュー ux-2）', () => {
+    expect(ENGINE_EVENT_MIN_SHOWN_MS).toBe(2000);
     const h = new Hud();
     const [m0, t0, f0] = h.until(5000, line, warned);
     expect([m0, f0 & ENG]).toEqual([MISSION_PT_PASS, ENG]);
@@ -193,12 +194,45 @@ describe('過熱の出来事の時計（ui/pt-line-clock。R3）', () => {
     h.ms += F;
     const shownAt = h.ms;
     expect(h.frame({}, warned)[0]).toBe(MISSION_ENGINE_EVENT);
-    h.until(shownAt + 1000, {}, warned);
+    h.until(shownAt + 1000, {}, warned); // 1 秒だけ出た（568 px の文は読み切れない）
     h.ms += F;
     expect(h.until(shownAt + 3000, line, warned)[0]).toBe(MISSION_PT_PASS); // 2 秒の線
     h.ms += F;
+    const back = h.ms;
+    expect(h.frame({}, warned)[0]).toBe(MISSION_ENGINE_EVENT); // 線の後にまた出る（前はここで残りの約 0.5 秒だけ）
+    expect(h.until(back + ENGINE_EVENT_SHOW_MS - 2 * F, {}, warned)[0]).toBe(MISSION_ENGINE_EVENT); // 3.5 秒まるごと
+    expect(h.until(back + ENGINE_EVENT_SHOW_MS + F, {}, warned)[0]).toBe(MISSION_PT_CONTACT);
+  });
+  it('2 秒出た後に次の赤い線に替わられたら、その時計のまま終わる（出し直さない）', () => {
+    const h = new Hud();
+    h.frame({}, eng(ENGINE_OK));
+    h.ms += F;
+    const shownAt = h.ms;
+    expect(h.frame({}, warned)[0]).toBe(MISSION_ENGINE_EVENT);
+    expect(h.until(shownAt + ENGINE_EVENT_MIN_SHOWN_MS + 100, {}, warned)[0]).toBe(MISSION_ENGINE_EVENT); // 2 秒あまり出た
+    h.ms += F;
+    expect(h.until(shownAt + 3000, line, warned)[0]).toBe(MISSION_PT_PASS);
+    h.ms += F;
     expect(h.frame({}, warned)[0]).toBe(MISSION_ENGINE_EVENT); // 残りの約 0.5 秒
     expect(h.until(shownAt + ENGINE_EVENT_SHOW_MS + 2 * F, {}, warned)[0]).toBe(MISSION_PT_CONTACT); // 出し直さない（接触の行へ）
+    // 1 秒ずつ 2 回出れば（間に赤い線）2 秒に届き、その後の赤い線では出し直さない
+    const g = new Hud();
+    g.frame({}, eng(ENGINE_OK));
+    g.ms += F;
+    const a = g.ms;
+    g.until(a + 1000, {}, warned);
+    g.ms += F;
+    g.until(a + 2000, line, warned);
+    g.ms += F;
+    const b = g.ms;
+    expect(g.until(b + 1100, {}, warned)[0]).toBe(MISSION_ENGINE_EVENT);
+    g.ms += F;
+    g.until(b + 2000, line, warned);
+    g.ms += F;
+    const c = g.ms;
+    expect(g.frame({}, warned)[0]).toBe(MISSION_ENGINE_EVENT); // 時計の残り（線の前の 3.5 秒の内）
+    expect(g.until(b + ENGINE_EVENT_SHOW_MS, {}, warned)[0]).toBe(MISSION_PT_CONTACT); // 最初の線の後の時計（b − 1 フレーム ＋ 3.5 秒）で終わる
+    expect(c).toBeLessThan(b + ENGINE_EVENT_SHOW_MS);
   });
   it('航過の結果は機関の出来事の下で待ち、出来事の後に 2.5 秒出る', () => {
     const h = new Hud();

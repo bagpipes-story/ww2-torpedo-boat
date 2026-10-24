@@ -1,5 +1,6 @@
 // 機関の不調（v0.6.5。日本ハードモード④・jp_05。spec-v065 §B.1〜B.4・§C.2・§G.1）の data と検査:
-// risk_events.json の engine_failure.params（ちょうど 7 鍵＋source）・各検査の境の両側・例外の文、任務の同居（米PT の任務だけ・輸送隊と同居しない・夜ごとの危険にしない）、
+// risk_events.json の engine_failure.params（ちょうど 8 鍵＋source。warn_rearm_heat はレビュー fair-1）・各検査の境の両側・例外の文、
+// 任務の同居（米PT の任務だけ・輸送隊・夜明けの空襲・水上機と同居しない・夜ごとの危険にしない）、
 // jp_05 の hazards と文・jp_t14 の source・先の版の番号の付け替え（v0.6.8 → v0.6.9）、WorldSetup.engine（jp_05 だけ・鍵ごと出ない・engineOff・engineHot）。
 // 不調の本体（熱の式・段・入力。core/engine-trouble）は tests/engine-trouble.test.ts。
 import { describe, expect, it, vi } from 'vitest';
@@ -30,10 +31,10 @@ const BASE = Object.fromEntries(ENGINE_PARAM_KEYS.map((k) => [k, paramsOf(gameDa
 const withP = (over: Partial<typeof BASE>, reliability: unknown = 0.7): ReturnType<typeof engineParamsFromData> => engineParamsFromData({ ...BASE, ...over, source: 'design (テスト)' }, reliability, 'テスト');
 
 describe('risk_events.json の engine_failure（v0.6.5。spec §B.1）', () => {
-  it('値: 全速 30 秒で不調・予告は熱 0.6 と 0.85・巡航 30 秒／静音 20 秒で冷える・熱 0.6 で戻る（不調 8 秒）。鍵はちょうど 7 個＋source', () => {
+  it('値: 全速 30 秒で不調・予告は熱 0.6 と 0.85・巡航 30 秒／静音 20 秒で冷える・熱 0.6 で戻る（不調 8 秒）・回復の後は熱 0.5 まで過熱のまま。鍵はちょうど 8 個＋source', () => {
     const p = paramsOf(gameData);
     expect(Object.keys(p).sort()).toEqual([...ENGINE_PARAM_KEYS, 'source'].sort());
-    expect(BASE).toEqual({ full_to_limp_s: 30, reliability_ref: 0.7, cruise_cool_s: 30, silent_cool_s: 20, warn_heat: 0.6, final_warn_heat: 0.85, recover_heat: 0.6 });
+    expect(BASE).toEqual({ full_to_limp_s: 30, reliability_ref: 0.7, cruise_cool_s: 30, silent_cool_s: 20, warn_heat: 0.6, final_warn_heat: 0.85, recover_heat: 0.6, warn_rearm_heat: 0.5 });
     const e = eventOf(gameData);
     expect([e['count'], e['share'], e['enemy_direct'], e['game_event'], e['version']]).toEqual([0, 0, false, 'engine_failure', 'v0.6.5']);
     // 短い名（Briefing の「危険」）は「（」の前。HUD の「機関損傷」（PT の命中）とは別の言葉
@@ -42,6 +43,8 @@ describe('risk_events.json の engine_failure（v0.6.5。spec §B.1）', () => {
     expect(String(e['penalty'])).toContain('止まらない');
     expect(String(e['penalty'])).toContain('8 秒で操作なしに戻る');
     expect(String(e['trigger'])).toContain('乱数の判定はしない');
+    expect(String(e['trigger'])).toContain('熱 1.0（full_to_limp_s）で不調'); // 「限界」は 0.85 の予告の段の名（レビュー F8）
+    expect(String(e['trigger'])).not.toContain('限界で不調');
     // 「止まる 3 秒は次の攻撃までの 3 秒に収まる」は成り立たなかったので書かない（spec R1）
     expect(JSON.stringify(e)).not.toContain('収まる');
     expect(JSON.stringify(e)).not.toContain('組立不良を反映');
@@ -54,6 +57,10 @@ describe('risk_events.json の engine_failure（v0.6.5。spec §B.1）', () => {
     expect(src).toContain('Lorraine-Dietrich 12E');
     expect(src).toContain('空冷の乙型の話');
     expect(src).toContain('への当てはめは design');
+    expect(src).toContain('warn_rearm_heat 0.5');
+    // 止まる形の数は scratchpad の試作の値（repo の TABLE=3 には止まる形が無い。レビュー F2）。repo に無い spec を出どころにしない
+    expect(src).toContain('scratchpad の試作（止まる形。repo に無い）');
+    expect(src).not.toContain('spec-v065');
     const texts = [JSON.stringify(eventOf(gameData)), String((boatOf(gameData, 'jp_t14')['source'] as Rec)['engine_reliability'])];
     for (const t of texts) {
       for (const name of PERSON_DENYLIST) expect(t).not.toContain(name);
@@ -64,7 +71,7 @@ describe('risk_events.json の engine_failure（v0.6.5。spec §B.1）', () => {
 
 describe('engineParamsFromData の検査（spec §C.2。壊れていれば「risk_events.engine_failure.params: …」で Boot で止まる）', () => {
   it('今の data: 実効の T = 30 秒（jp_t14 の engine_reliability 0.7 = reliability_ref）。engine_reliability 0.85 なら 60 秒、0.55 なら下限ちょうどの 20 秒', () => {
-    expect(withP({})).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, startHeat: 0 });
+    expect(withP({})).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, warnRearmHeat: 0.5, startHeat: 0 });
     expect(withP({}, 0.85).fullToLimpS).toBeCloseTo(60, 9);
     expect(withP({}, 0.55).fullToLimpS).toBeCloseTo(ENGINE_MIN_FULL_TO_LIMP_S, 9);
     expect(() => withP({}, 0.5)).toThrow(/full_to_limp_s の実効の秒/); // 18 秒
@@ -77,7 +84,8 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
     // 不調の秒（(1 − recover_heat) × silent_cool_s）は 8 秒
     expect((1 - p.recoverHeat) * p.silentCoolS).toBeCloseTo(8, 9);
   });
-  it('鍵: ちょうど 7 個＋source（欠け・余分・数でない・source なしは例外。文に鍵の名）', () => {
+  it('鍵: ちょうど 8 個＋source（欠け・余分・数でない・source なしは例外。文に鍵の名）', () => {
+    expect(ENGINE_PARAM_KEYS).toHaveLength(8);
     const ok = { ...BASE, source: 'design (テスト)' };
     for (const k of ENGINE_PARAM_KEYS) {
       const missing: Rec = { ...ok };
@@ -112,7 +120,7 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
     expect(() => withP({ warn_heat: 0, recover_heat: 0 })).toThrow(/warn_heat/);
     expect(() => withP({ final_warn_heat: 1 })).toThrow(/final_warn_heat < 1/);
     expect(() => withP({ recover_heat: 0 })).toThrow(/recover_heat は正/);
-    expect(withP({ recover_heat: 0.01 }).recoverHeat).toBe(0.01);
+    expect(withP({ recover_heat: 0.01, warn_rearm_heat: 0.005 }).recoverHeat).toBe(0.01);
   });
   it('E2（不調の前に必ず予告）の境の両側: 過熱から不調まで ≥ 8 秒・限界から ≥ 3 秒・回復から次の不調まで ≥ 8 秒・recover_heat ≤ warn_heat', () => {
     // 過熱の予告: (1 − warn) × 30 ≥ 8 ⇔ warn ≤ 1 − 8/30
@@ -130,6 +138,13 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
     expect(() => withP({ warn_heat: 0.61 }, 0.55)).toThrow(/warn_heat の予告/);
     expect(() => withP({ final_warn_heat: 0.86 }, 0.55)).toThrow(/final_warn_heat の予告/);
   });
+  it('回復の後の保ち: 0 < warn_rearm_heat < recover_heat（0・recover_heat ちょうど・その上は例外。recover_heat を下げたらこれも下げる）', () => {
+    expect(withP({ warn_rearm_heat: 0.59 }).warnRearmHeat).toBe(0.59);
+    expect(withP({ warn_rearm_heat: 0.01 }).warnRearmHeat).toBe(0.01);
+    for (const v of [0, -0.1, 0.6, 0.7]) expect(() => withP({ warn_rearm_heat: v }), String(v)).toThrow(/0 < warn_rearm_heat < recover_heat/);
+    expect(() => withP({ recover_heat: 0.5 })).toThrow(/warn_rearm_heat < recover_heat/); // spec §I.1 の「まだ簡単」の 1 つ目は warn_rearm_heat も下げる
+    expect(withP({ recover_heat: 0.5, warn_rearm_heat: 0.4 }).recoverHeat).toBe(0.5);
+  });
   it('静音以下のほうが速く冷える: silent_cool_s ≤ cruise_cool_s（= は通る）', () => {
     expect(withP({ silent_cool_s: 30 }).silentCoolS).toBe(30);
     expect(() => withP({ silent_cool_s: 31 })).toThrow(/silent_cool_s ≤ cruise_cool_s/);
@@ -141,7 +156,7 @@ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の�
   it('不調が入るのは v0_1_prototype.hazards に engine_failure がある jp_05 だけ（jp_01 の T-38 にも engine_reliability 0.85 があるが読まない）', () => {
     expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
     for (const id of PROTO_IDS) expect(getEngineParams(gameData, id) !== null, id).toBe(id === 'jp_05');
-    expect(getEngineParams(gameData, 'jp_05')).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, startHeat: 0 });
+    expect(getEngineParams(gameData, 'jp_05')).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, warnRearmHeat: 0.5, startHeat: 0 });
     expect(boatOf(gameData, 'jp_t38')['engine_reliability']).toBe(0.85);
   });
   it('同居: 米PT の隊（pt_boats）の任務だけ・輸送隊（convoy）と同居しない・night.optional_hazards に入れない（どれも任務の id 付きの例外）', () => {
@@ -154,6 +169,15 @@ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の�
     const d3 = clone();
     ((protoOf(d3, 'jp_05')['night'] as Rec)['optional_hazards'] as string[]).push(ENGINE_FAILURE_EVENT_ID);
     expect(() => getEngineParams(d3, 'jp_05')).toThrow(/jp_05: 機関の不調.*optional_hazards/);
+  });
+  it('同居（レビュー fair-3）: 夜明けの空襲（dawn_strike）・敵の水上機（enemy_aircraft）のある米PT の任務は例外（その攻撃の最中は赤い線に入らず、米PT は夜明けに去る）', () => {
+    const d1 = clone();
+    protoOf(d1, 'jp_05')['dawn_strike'] = JSON.parse(JSON.stringify(protoOf(gameData, 'jp_01')['dawn_strike']));
+    expect(() => getEngineParams(d1, 'jp_05')).toThrow(/jp_05: 機関の不調.*dawn_strike/);
+    const d2 = clone();
+    protoOf(d2, 'jp_05')['enemy_aircraft'] = JSON.parse(JSON.stringify(protoOf(gameData, 'us_02')['enemy_aircraft']));
+    expect(() => getEngineParams(d2, 'jp_05')).toThrow(/jp_05: 機関の不調.*enemy_aircraft/);
+    expect(getEngineParams(gameData, 'jp_05')).not.toBeNull(); // 今の jp_05（味方の制空下・水上機なし）は通る
   });
   it('data が壊れていれば任務の自艇の名を付けて例外: params の欠け・自艇の engine_reliability の欠け・risk_events に無い', () => {
     const d1 = clone();
@@ -192,7 +216,7 @@ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の�
     const pt = (gameData.enemies.enemies as unknown as Rec[]).find((e) => e['id'] === 'us_pt_enemy')!;
     expect((pt['source'] as Rec)['torpedo_attack']).toBe('design (v0.6.9 の PT の雷撃まで読まない)');
     expect(String(pt['notes']).endsWith('魚雷は使わない（v0.6.9 で雷撃）')).toBe(true);
-    expect(JSON.stringify(gameData.enemies)).not.toContain('v0.6.8');
+    expect(JSON.stringify(gameData.enemies)).not.toMatch(/v0\.6\.8 (の PT の雷撃|で雷撃)/); // v0.6.8 は今は空襲下の退避（その版の source は書いてよい。レビュー F7）
   });
 });
 

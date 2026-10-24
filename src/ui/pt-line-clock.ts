@@ -6,11 +6,13 @@
 //   連射の合間 2 秒に次の線が来て、撃ち返す遊び方で連射の結果の 26% が出なかった）。
 // v0.6.4（jp_01。味方の大発の輸送隊）: 大発の沈没・上陸の出来事も同じ作法（上陸・沈没の数の立ち上がりから CONVOY_EVENT_SHOW_MS。赤い線・13mm の出来事の下では 1 度出るまで待ち、
 //   航過の結果はその下で待つ＝沈んだ航過の結果「大発への航過 撃たず」は出来事の後に出る）。最後の 1 隻の上陸（決着）は出来事「大発 上陸 k/n ・ 帰投せよ」（実機 1 回目のレビュー ux-2）。
-// v0.6.5（jp_05。機関の不調）: 過熱の出来事（熱が warn_heat を下から越えた）も同じ作法（ENGINE_EVENT_SHOW_MS。赤い線・13mm の出来事・輸送隊の出来事の下では 1 度出るまで待ち、
+// v0.6.5（jp_05。機関の不調）: 過熱の出来事（熱が warn_heat を下から越えた）も同じ作法（ENGINE_EVENT_SHOW_MS。赤い線・13mm の出来事・輸送隊の出来事の下では待ち、
 //   航過の結果はその下でも待つ）。段が過熱でなくなったら（限界・不調へ進んだ・冷えた）待っている出来事は捨てる（右下の帯と札・限界の行が今の段を言う）。
+//   レビュー ux-2: 「出た」は 2 行目に出ていた ms の和が ENGINE_EVENT_MIN_SHOWN_MS（2 秒）に届いたとき（前は 1 フレーム出たら出たとみなし、1 秒で赤い線に替わられると
+//   規則の文「巡航以下で冷える」が二度と出なかった）。届く前に赤い線などに隠れたら、隠れている間は待ち、消えた後にまた ENGINE_EVENT_SHOW_MS 出す。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
-import { ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
+import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
 import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_EV_WARN, ENGINE_WARN } from '../core/engine-trouble';
@@ -35,10 +37,14 @@ export class PtLineClock {
   private convoyUntil = 0;
   private convoyShown = false;
   convoyEvent = 0;
-  /** 機関の過熱の出来事（v0.6.5）: 見た出来事の通し番号、表示の終わり ms、1 度でも 2 行目に出た */
+  /** 機関の過熱の出来事（v0.6.5）: 見た出来事の通し番号、表示の終わり ms、出た（2 行目に出ていた ms の和が ENGINE_EVENT_MIN_SHOWN_MS に届いた）、
+   * 出ていた ms の和、前のフレームに出ていた・その時刻（shown が次のフレームで和に足す） */
   private seenEngineSeq = 0;
   private engineUntil = 0;
   private engineShown = false;
+  private engineOnMs = 0;
+  private engineOnPrev = false;
+  private prevShownMs = 0;
 
   /** 毎フレーム（2 行目のモードを決める前）: MODE_FLAG_PT_RESULT・MODE_FLAG_PT_GUN_EVENT・MODE_FLAG_PT_HOLD・MODE_FLAG_CONVOY_EVENT・MODE_FLAG_ENGINE_EVENT。lastMode は前に組んだ 2 行目のモード。米PT の無い任務は 0 */
   flags(t: BoatTelemetry, nowMs: number, lastMode: number): number {
@@ -69,6 +75,8 @@ export class PtLineClock {
       if (e.lastEvent === ENGINE_EV_WARN) {
         this.engineUntil = nowMs + ENGINE_EVENT_SHOW_MS;
         this.engineShown = false;
+        this.engineOnMs = 0;
+        this.engineOnPrev = false;
       }
     }
     if (e.stage !== ENGINE_WARN) this.engineUntil = 0; // 過熱の段のままの間だけ（機関の無い任務は 0 のまま）
@@ -96,10 +104,16 @@ export class PtLineClock {
     );
   }
 
-  /** そのフレームのモードが決まった後: 出来事の行が出たら、もう赤い線の下で待たない（R2。輸送隊の出来事も同じ） */
-  shown(mode: number): void {
+  /**
+   * そのフレームのモードが決まった後（nowMs は flags と同じ時刻）: 出来事の行が出たら、もう赤い線の下で待たない（R2。輸送隊の出来事も同じ）。
+   * 機関の過熱の出来事は、前のフレームから今までそれが出ていた ms を足し、和が ENGINE_EVENT_MIN_SHOWN_MS に届いたら出たとみなす（ux-2）
+   */
+  shown(mode: number, nowMs: number): void {
     if (mode === MISSION_PT_GUN_EVENT) this.eventShown = true;
     if (mode === MISSION_CONVOY_EVENT) this.convoyShown = true;
-    if (mode === MISSION_ENGINE_EVENT) this.engineShown = true;
+    if (this.engineOnPrev) this.engineOnMs += nowMs - this.prevShownMs;
+    this.engineOnPrev = mode === MISSION_ENGINE_EVENT;
+    this.prevShownMs = nowMs;
+    if (this.engineOnMs >= ENGINE_EVENT_MIN_SHOWN_MS) this.engineShown = true;
   }
 }

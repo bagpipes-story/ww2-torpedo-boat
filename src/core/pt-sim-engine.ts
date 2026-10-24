@@ -2,7 +2,7 @@
 // 火災の前。時計は realDt＝米PT の AI と同じ）で回し、不調の間の入力は世界と同じ engineInput（速さの上限が艇の静音の上限。舵は残る）。
 // 予告への反応の台本（模擬の設定。ゲームの値ではない）: ignore は何もしない（不調の無い夜は ENG_OFF と全欄同一＝T-E3）、cool／cruise は予告の 1 段目に入って
 // PT_PLAY.coolDelayS 秒後から熱が PT_PLAY.coolToHeat を下回るまで、赤い線の外では静音の上限／巡航まで落とす。
-// 計測（PtTrial の eng の列）: 赤い線の最中に始まった不調（不変 0）・不調の間に固めた赤い線・不調から 1 秒以内に固めた線・1 段目から不調の最短・回復から次の不調の最短・
+// 計測（PtTrial の eng の列）: 赤い線の最中に始まった不調（不変 0。不調が始まった同じステップに固めた線を onCommit で数える＝機関の段が米PT の段より先に回る並びの回帰を捕まえる）・不調の間に固めた赤い線・不調から 1 秒以内に固めた線・1 段目から不調の最短・回復から次の不調の最短・
 // 最長の不調・不調の間か回復から 10 秒以内の沈没。乱数を引かない。setup.engine が null（不調の無い任務・ENG_OFF）なら pt-pass-sim は何も呼ばない。Phaser 非依存・確保は 1 夜の始めだけ。
 import type { BoatInput, BoatParams, SpeedStep } from './boat-motion';
 import { ENGINE_OK, ENGINE_WARN, createEngineState, engineCap01, engineInput, stepEngine, type EngineParams, type EngineState } from './engine-trouble';
@@ -64,7 +64,6 @@ export function simEngineStep(e: SimEngine, out: PtTrial, band: SpeedStep, lineO
   else if (Number.isNaN(e.warnSinceS)) e.warnSinceS = t;
   if (s.stage >= ENGINE_WARN) out.engWarned = true;
   if (s.limps > limps) {
-    if (lineOn) out.engLimpsInLine++;
     if (t - e.warnSinceS < out.engMinLeadS) out.engMinLeadS = t - e.warnSinceS;
     if (t - e.lastRecoverS < out.engMinRecoverLeadS) out.engMinRecoverLeadS = t - e.lastRecoverS;
   } else if (wasLimp && !s.limp) {
@@ -73,9 +72,14 @@ export function simEngineStep(e: SimEngine, out: PtTrial, band: SpeedStep, lineO
   }
 }
 
-/** 赤い線を固めた（pt-pass-sim の onCommit。米PT の段の中＝そのステップの機関の段の前）: 不調の間の線と、不調から ENGINE_LINE_NEAR_S 秒以内の線 */
+/**
+ * 赤い線を固めた（pt-pass-sim の onCommit。米PT の段の中＝そのステップの機関の段の前）: 不調の間の線と、不調から ENGINE_LINE_NEAR_S 秒以内の線。
+ * 赤い線の最中に始まった不調（E1。レビュー fair-2・F1）: 不調が始まった同じステップ（limpStartS = t）に線を固めたなら、機関の段が米PT の段より先に回って
+ * そのステップの線を見なかった（R1 の回帰）。正しい並び（米PT の段 → 機関の段）では、線のあるステップに不調は始まらないので 0（stepEngine の条件と別の数え）
+ */
 export function simEngineCommit(e: SimEngine, out: PtTrial, t: number): void {
   if (!e.st.limp) return;
+  if (t - e.st.limpStartS < TIME_EPS_S) out.engLimpsInLine++;
   out.engLinesInLimp++;
   if (t - e.st.limpStartS < ENGINE_LINE_NEAR_S + TIME_EPS_S) out.engLinesNearLimp++;
 }
