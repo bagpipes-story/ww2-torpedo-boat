@@ -27,7 +27,7 @@ describe('味方の大発を守る模擬（v0.6.4、spec §F）', () => {
     expect([s.convoy, s.detectBand, s.rule]).toEqual([w.convoy!.params, 'silent', { keepRatio2: 0.8 * 0.8, lockS: 1, flashHoldS: 1 }]);
     expect([s.convoy.count, s.convoy.hp, s.convoy.quota, s.convoy.landingX, s.convoy.leadX, s.convoy.leadY, s.convoy.headingDeg, s.convoy.offsetsM]).toEqual([3, 12, 2, 3600, 1200, 2550, 90, [0, 120, 240]]);
     expect(s.convoy.beach).toEqual(w.convoy!.params.beach);
-    expect([s.fuelGal, s.durationS, s.timeScale, s.stepS, s.gun?.label, s.gun?.magazine, s.gun?.minSpreadM, s.gun?.groups[0]?.roundsPerMin, s.gun?.groups[0]?.damage]).toEqual([19, 200, TS, FIXED_STEP_S, '25mm機銃', { rounds: 15, reloadS: 3.2 }, 22, 220, 4]);
+    expect([s.fuelGal, s.durationS, s.timeScale, s.stepS, s.gun?.label, s.gun?.magazine, s.gun?.minSpreadM, s.gun?.groups[0]?.roundsPerMin, s.gun?.groups[0]?.damage]).toEqual([19, 180, TS, FIXED_STEP_S, '25mm機銃', { rounds: 15, reloadS: 3.2 }, 22, 220, 4]);
     expect('fireRangeM' in s).toBe(false); // 射撃ボタンは射程 600 m の内で押す（上書きしたときだけ鍵がある）
     expect([s.nightEnemyRolls, s.nightBatteries, s.night]).toEqual([1, 0, w.mission.night]);
     // 米PT の部分は jp_05 と同じ組み立て（ptSimSetup）

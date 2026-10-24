@@ -89,8 +89,8 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
     expect([a.control, a.playAs, a.shipsAtDawn, a.labelJa]).toEqual(['enemy', 'enemy', 'none', '昼の空は敵（ヘンダーソン基地）']);
     expect(String((m['dawn_air'] as Rec)['source'])).toContain('v0.6.4: enemy_ships_at_dawn retire → none');
   });
-  it('遊べる世界（v0_1_prototype）: 米PT 2 隻・guns・夜明け 200 秒・燃料 19 gal・6000×3000・出発 (1200, 2400) 東向き・輪 (4150, 2700) r 250 margin 1.6・哨戒線・convoy の鍵（浜 60 m おき・12 m・38°）・岸・今夜の揺らぎ・危険・空襲 4 機東から。source は design (v0.6.4', () => {
-    expect([proto['enemies'], proto['main_weapon'], proto['duration_s'], proto['fuel_allotment_gal'], proto['shallows']]).toEqual([['us_pt_enemy', 'us_pt_enemy'], 'guns', 200, 19, []]);
+  it('遊べる世界（v0_1_prototype）: 米PT 2 隻・guns・夜明け 180 秒（実機 2 回目に 200 → 180）・燃料 19 gal・6000×3000・出発 (1200, 2400) 東向き・輪 (4150, 2700) r 250 margin 1.6・哨戒線・convoy の鍵（浜 60 m おき・12 m・38°）・岸・今夜の揺らぎ・危険・空襲 4 機東から。source は design (v0.6.4', () => {
+    expect([proto['enemies'], proto['main_weapon'], proto['duration_s'], proto['fuel_allotment_gal'], proto['shallows']]).toEqual([['us_pt_enemy', 'us_pt_enemy'], 'guns', 180, 19, []]);
     expect(proto['bounds_m']).toMatchObject({ width: 6000, height: 3000 });
     expect(proto['player_start']).toMatchObject({ x_m: 1200, y_m: 2400, heading_deg: 90 });
     expect(proto['return_point']).toMatchObject({ x_m: 4150, y_m: 2700, radius_m: 250, call_margin: 1.6, torpedo_settle_max_s: 10, torpedo_end_settle_s: 5 });
@@ -161,8 +161,8 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
 
 describe('jp_01 の世界（spec §B.2・§E.5）', () => {
   afterEach(() => vi.restoreAllMocks());
-  it('組み立て: guns・魚雷 0・夜明け 200・燃料 19・停止で 480 m・輸送隊 3 隻（HP 12・上陸地点 3,660／3,600／3,540・浜の線 y 2,988・転舵 3,099／3,039／2,979・浜への道 711 m・ノルマ 2・静音の帯 600 m・規則 0.64／1 秒／1 秒）・25mm（最小散布 22 m）・米PT 2 隻（西向きに出発）・空襲あり（夜明けの空は敵）・岸あり・敵の大発なし・輪 (4150, 2700)', () => {
-    expect([S.mainWeapon, S.torpedoCapacity, S.durationS, S.fuelAllotmentGal, S.baseDetectM]).toEqual(['guns', 0, 200, 19, 2000]);
+  it('組み立て: guns・魚雷 0・夜明け 180・燃料 19・停止で 480 m・輸送隊 3 隻（HP 12・上陸地点 3,660／3,600／3,540・浜の線 y 2,988・転舵 3,099／3,039／2,979・浜への道 711 m・ノルマ 2・静音の帯 600 m・規則 0.64／1 秒／1 秒）・25mm（最小散布 22 m）・米PT 2 隻（西向きに出発）・空襲あり（夜明けの空は敵）・岸あり・敵の大発なし・輪 (4150, 2700)', () => {
+    expect([S.mainWeapon, S.torpedoCapacity, S.durationS, S.fuelAllotmentGal, S.baseDetectM]).toEqual(['guns', 0, 180, 19, 2000]);
     expect(S.detectRangeAtStartM).toBeCloseTo(480, 9);
     expect(S.convoy!.params).toMatchObject({ count: 3, hp: 12, leadX: 1200, leadY: 2550, headingDeg: 90, offsetsM: [0, 120, 240], landingX: 3600, quota: 2 });
     const beach = S.convoy!.params.beach!;
@@ -266,7 +266,7 @@ describe('jp_01 の Briefing・Title（spec §D.1）', () => {
       ['月', '新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m'],
       ['敵', '米PTボート ×2（東から）'],
       ['危険', '敵艦艇の砲撃・衝突、夜明けの空襲'],
-      ['条件', `夜明けまで 200 秒（以後は空襲） ・ 燃料 19 gal ・ 25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`],
+      ['条件', `夜明けまで 180 秒（以後は空襲） ・ 燃料 19 gal ・ 25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`],
     ]);
     expect(n.weaponJa).toBe(ptGunBriefingJa('25mm機銃'));
     expect(ptGunBriefingJa('13mm機銃')).toBe(PT_GUN_BRIEFING_JA);
