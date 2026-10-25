@@ -21,6 +21,10 @@ const RESULT_DODGE_SHOWN = 8;
  * 直進中はどちらへ切ってもよく、旋回中は同じ向きに切り続けると当たる（逆へ切る）。僚艇の狙いは常に直線なので僚艇へは「投下で転舵」だけ
  */
 export const STRIKE_DODGE_RULE_JA = '投下で転舵（旋回中は逆へ）';
+/** 空襲の行の 3 つの句（v0.6.7 S0 で strikeLine から切り出し。夜の哨戒機の行も同じ字）: 旋回（plane は次に進路に入る機の 0 始まり、left は残りの爆弾）・自艇への爆撃進路・自艇への落下（arc は狙いが旋回の弧の先） */
+export const strikeOrbitJa = (plane: number, left: number): string => `敵機 旋回 ・ 次は ${plane + 1} 番機 ・ 残り爆弾 ${left}`;
+export const strikeRunJa = (plane: number): string => `爆撃進路 ・ ${plane + 1} 番機 ・ ${STRIKE_DODGE_RULE_JA}`;
+export const strikeFallJa = (arc: boolean): string => (arc ? '爆弾投下！ 旋回と逆へ転舵！' : '爆弾投下！ 転舵！');
 
 /** 左上の時計（ui/dawn-clock）の文: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む）。v0.6.2 実機 1 回目までは 2 行目にも出していた */
 export function clockJa(t: BoatTelemetry): string {
@@ -98,11 +102,11 @@ export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boo
   const d = t.dawn;
   let text: string;
   let warn = true;
-  if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : d.fallingArc ? '爆弾投下！ 旋回と逆へ転舵！' : '爆弾投下！ 転舵！';
-  else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下で転舵` : `爆撃進路 ・ ${d.plane + 1} 番機 ・ ${STRIKE_DODGE_RULE_JA}`;
+  if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : strikeFallJa(d.fallingArc);
+  else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下で転舵` : strikeRunJa(d.plane);
   else if (d.threat === AS_T_INBOUND) text = `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M} m ・ 帰投を急げ`;
   else if (d.threat === AS_T_ORBIT) {
-    text = `敵機 旋回 ・ 次は ${d.plane + 1} 番機 ・ 残り爆弾 ${d.bombsLeft}`;
+    text = strikeOrbitJa(d.plane, d.bombsLeft);
     warn = false;
   } else {
     text = `敵機 去る ・ 次の空襲まで ${Math.ceil(Number.isNaN(d.restS) ? 0 : d.restS)} 秒 ・ 帰投を急げ`;

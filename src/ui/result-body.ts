@@ -1,4 +1,4 @@
-// Result の本文の枝（v0.6.7 S0。scenes/result-scene の大発掃討／米PT／魚雷の枝を純粋な関数に写した。文・字の大きさ・色・後ろの間は v0.6.6 のまま。tests/result-body-neutral が pin）。
+// Result の本文の枝（v0.6.7 S0 で scenes/result-scene から移した。文・字の大きさ・色・後ろの間は v0.6.6 のまま。tests/result-body-neutral が pin）: 大発掃討／米PT／魚雷。
 // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
 import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
@@ -11,45 +11,22 @@ import { ptResultLines } from './pt-lines';
 import type { BargeResult, ConvoyResult, EngineResult, GunboatResult, PtResult } from './result-types';
 
 /** 本文の 1 行: 文・字の大きさ px・色（undefined なら hudTextStyle の既定の色）・後ろに節の間（RESULT_SECTION_GAP）を足すか（行の間 RESULT_LINE_GAP はいつも） */
-export interface ResultBodyLine {
-  text: string;
-  px: number;
-  color: string | undefined;
-  sectionAfter: boolean;
-}
+export interface ResultBodyLine { text: string; px: number; color: string | undefined; sectionAfter: boolean }
 
 /** 本文が読む Result の材料（scenes/result-scene の MissionResult がそのまま満たす。result-scene は Phaser を import するので構造の型で読む） */
 export interface ResultBodySource {
-  hunt: BargeResult | null;
-  pt: PtResult | null;
-  convoy: ConvoyResult | null;
-  engine: EngineResult | null;
-  gunboat: GunboatResult | null;
-  detections: number;
-  returned: boolean;
-  objectiveDone: boolean;
-  shots: readonly unknown[];
-  capacity: number;
-  hits: number;
-  duds: number;
-  misses: number;
-  bands: readonly BandSummary[];
+  hunt: BargeResult | null; pt: PtResult | null; convoy: ConvoyResult | null; engine: EngineResult | null; gunboat: GunboatResult | null;
+  detections: number; returned: boolean; objectiveDone: boolean;
+  shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
   sortie: { readonly historical: boolean };
 }
 
-/**
- * 見出しの下の本文（大発掃討 v0.4.2・米PT v0.6.3（輸送隊 v0.6.4・隼艇 v0.6.6・機関の不調 v0.6.5）・魚雷（距離帯と通算の命中率 v0.5.0））。
- * hardV はハードの違いのある任務のハード（輸送隊の 1 行目にノルマの達成／未達を出す。見出しの「（ハード）」と同じ条件。v0.6.6 レビュー ux:ux-7）
- */
+/** 見出しの下の本文。hardV はハードの違いのある任務のハード（輸送隊の 1 行目にノルマの達成／未達。見出しの「（ハード）」と同じ条件。v0.6.6 レビュー ux:ux-7） */
 export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBodyLine[] {
   const out: ResultBodyLine[] = [];
-  const line = (text: string, px: number, color?: string): void => {
-    out.push({ text, px, color, sectionAfter: false });
-  };
-  const section = (): void => {
-    out[out.length - 1]!.sectionAfter = true;
-  };
+  const line = (text: string, px: number, color?: string): void => void out.push({ text, px, color, sectionAfter: false });
+  const section = (): void => void (out[out.length - 1]!.sectionAfter = true);
   const h = r.hunt;
   if (h) {
     // 大発掃討（v0.4.2）: 撃破・上陸と、射撃・距離の記録（実機で数値を合わせる根拠）

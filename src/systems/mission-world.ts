@@ -1,5 +1,5 @@
 // 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・敵（駆逐艦か大発の隊。v0.4.2。米PT の隊 v0.6.3）・魚雷・艇の砲・反撃・煙幕・被害・燃料（v0.3.0）・危険（味方機・暴風・水上機）・出撃（v0.4.0）を持ち、固定ステップで進める。
-// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
+// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
@@ -25,7 +25,6 @@ import { BoatDamage } from './boat-damage';
 import { Convoy } from './convoy';
 import { EngineTrouble } from './engine-trouble';
 import type { DestroyerGroup } from './destroyer-group';
-import { stepDestroyerSide } from './destroyer-step';
 import type { EscortBoat } from './escort-boat';
 import type { EnemySide } from './enemy-side';
 import type { EnemySeaplane } from './enemy-seaplane';
@@ -41,6 +40,7 @@ import { torpedoEventsFor } from './torpedo-hits';
 import { WorldDawn } from './world-dawn';
 import { stepPlayerBoat } from './world-boat';
 import { buildEnemies } from './world-enemies';
+import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
 import type { WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
@@ -136,14 +136,7 @@ export class MissionWorld {
     this.detectRangeM = enemyDetectRangeM(c.baseDetectM, speedFactorForBand(this.band, this.vis.speedFactor), this.vis, g !== null && this.hiddenBySmoke, this.storm ? this.storm.detectFactor : 1);
     if (this.flareLit && this.detectRangeM < c.seaplane!.flareRevealM) this.detectRangeM = c.seaplane!.flareRevealM;
     this.visRange2 = this.storm ? c.visRange2 * this.storm.visFactor2 : c.visRange2;
-    if (g) stepDestroyerSide(this, g, dt, feelDt, boat);
-    else if (this.hunt) {
-      // 大発の任務（v0.4.2）: 艇の砲 → 大発（発見・逃走・13mm）。3 行目の「煙幕に隠れている」は浮いている大発すべてから隠れているとき
-      this.hunt.step(dt, feelDt, this, this.input.gunHeld);
-      this.hiddenBySmoke = this.hunt.flotilla.allBlocked;
-    }
-    this.pts?.step(dt, feelDt, this, this.input.gunHeld); // 米PT の隊（v0.6.3。艇の 13mm が先）は自艇・速力帯・発見距離の後、火災の前（模擬 core/pt-pass-sim と同じ順）。米PT の無い任務は何もしない
-    this.engine?.step(this, feelDt); // 機関の熱と不調（v0.6.5）は米PT の段の直後（このステップに固めた赤い線も見る）・火災の前（模擬 core/pt-sim-engine と同じ順・同じ時計）
+    stepEnemySide(this, g, dt, feelDt, boat); // 駆逐艦の隊か大発の隊 → 米PT の隊 → 機関の不調（world-enemy-step.ts。v0.6.6 までここに書いていた段。同じ順）
     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.boatDamage.fireReason);
     this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
     this.dawn.step(feelDt, this); // 夜明けの空襲は最後（夜明け前は何もしない＝夜の順序と乱数は v0.6.0 のまま）

@@ -190,7 +190,9 @@ describe('PtTargets の隼艇（systems/pt-target。spec-v066 §C.4）', () => {
     expect(gb).toContain("{ seedOffset: GUNBOAT_GUN_SEED_OFFSET, tint: GUNBOAT_TRACER_TINT, ring: false }");
     const mw = strip(readFileSync('src/systems/mission-world.ts', 'utf8'));
     const fn = mw.slice(mw.indexOf('stepFn'));
-    const [cvI, gbI, ptI] = [fn.indexOf('this.convoy?.step(dt);'), fn.indexOf('this.gunboat?.step(dt,'), fn.indexOf('this.pts?.step(')];
+    // 米PT の段は v0.6.7 S0 から systems/world-enemy-step の stepEnemySide の中（mission-world はその段を隼艇の後に呼ぶ）
+    const [cvI, gbI, ptI] = [fn.indexOf('this.convoy?.step(dt);'), fn.indexOf('this.gunboat?.step(dt,'), fn.indexOf('stepEnemySide(this, g, dt, feelDt, boat);')];
+    expect(strip(readFileSync('src/systems/world-enemy-step.ts', 'utf8'))).toContain('w.pts?.step(dt, feelDt, w, w.input.gunHeld);');
     expect([cvI, gbI, ptI].every((i) => i > 0)).toBe(true);
     expect(cvI).toBeLessThan(gbI);
     expect(gbI).toBeLessThan(ptI);

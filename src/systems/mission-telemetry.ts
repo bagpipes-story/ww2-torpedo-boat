@@ -11,7 +11,7 @@ import { countHits, summarizeShots } from '../core/hit-rate';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, GUN_SAFE } from '../core/gun-battery';
 import type { InputState } from '../core/input-state';
-import { convoyObjectiveDone, endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
+import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
 import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
 import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
@@ -21,6 +21,7 @@ import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
 import { convoyResult, initConvoyTelemetry, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
+import { detectionsOf, objectiveDoneOf } from './mission-objective';
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from './pt-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
 import type { MissionWorld } from './mission-world';
@@ -256,16 +257,14 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     shipsTotal: w.destroyers ? w.destroyers.destroyerCount : 0,
     transportEnabled: w.destroyers !== null && w.destroyers.hasTransport,
     transportSunk: w.destroyers !== null && w.destroyers.transportSunk,
-    // 輸送隊の任務（v0.6.4）の達成は「帰投して上陸がノルマ以上」（決着しても沈めば達成でない＝帰投 700 > 沈没。呼びかけは mission-world の returnCallDone）、
-    // 僚艇の任務（v0.4.4）は「帰投して僚艇が生きている」、米PT の任務（v0.6.3）は帰投。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
-    objectiveDone: w.convoy ? convoyObjectiveDone(reason, w.convoy.state.arrived, w.convoy.p.quota) : w.escort ? endCountsAsReturn(reason) && !w.escort.state.sunk : w.pts ? endCountsAsReturn(reason) : w.enemy.objectiveDone,
+    objectiveDone: objectiveDoneOf(reason, w), // 任務ごとの達成（systems/mission-objective。v0.6.7 S0 で移した）
     hunt: w.hunt ? bargeResult(w) : null,
     escort: w.escort ? escortResult(w) : null,
     pt: ptResult(w), // 米PT（v0.6.3）の記録。無い任務は null
     convoy: convoyResult(w), // 味方の大発の輸送隊（v0.6.4）の記録。無い任務は null
     engine: engineResult(w), // 機関の不調（v0.6.5）の記録。無い任務は null
     gunboat: gunboatResult(w), // 隼艇の僚艇（v0.6.6。jp_01 のハード）の記録。無い任務は null
-    detections: w.detect.count,
+    detections: detectionsOf(w),
     returned: endCountsAsReturn(reason), // 敵艦隊なし（cleared。v0.6.2 実機 1 回目）も帰投と同じに数える
     elapsedS,
     seed: w.seed,

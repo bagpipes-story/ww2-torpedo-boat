@@ -244,9 +244,10 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
   });
   it('達成（Result の objectiveDone。systems/mission-telemetry）は終了理由から: 帰投して上陸がノルマ以上。2/3 で沈めば達成でない（帰投 700 > 沈没 580）、3/3 決着でも帰投前は呼びかけだけ', () => {
-    const src = readFileSync('src/systems/mission-telemetry.ts', 'utf8');
-    // 配線: 輸送隊の任務は core の convoyObjectiveDone（上陸数とノルマ）。中身は下で core の関数を直接見る
-    expect(src).toMatch(/objectiveDone:\s*w\.convoy\s*\?\s*convoyObjectiveDone\(reason,\s*w\.convoy\.state\.arrived,\s*w\.convoy\.p\.quota\)\s*:/);
+    // 配線: 輸送隊の任務は core の convoyObjectiveDone（上陸数とノルマ）。中身は下で core の関数を直接見る。v0.6.7 S0 から式は systems/mission-objective（mission-telemetry はそれを呼ぶ）
+    expect(readFileSync('src/systems/mission-telemetry.ts', 'utf8')).toContain('objectiveDone: objectiveDoneOf(reason, w),');
+    const src = readFileSync('src/systems/mission-objective.ts', 'utf8');
+    expect(src).toMatch(/return w\.convoy\s*\?\s*convoyObjectiveDone\(reason,\s*w\.convoy\.state\.arrived,\s*w\.convoy\.p\.quota\)\s*:/);
     const q = S.convoy!.params.quota;
     expect(q).toBe(2);
     const done = (reason: Parameters<typeof convoyObjectiveDone>[0], arrived: number): boolean => convoyObjectiveDone(reason, arrived, q);
