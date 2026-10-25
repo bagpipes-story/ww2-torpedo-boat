@@ -9,6 +9,9 @@ export const MENU_STATUS_PLAYABLE = '出撃準備 →';
 export const NO_WEAPON_BRIEFING_JA = '魚雷はPTの下を抜ける（撃たない）';
 /** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由）。v0.6.4 から ptGunBriefingJa('13mm機銃') と同じ文 */
 export const PT_GUN_BRIEFING_JA = '13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）';
+/** 夜の哨戒機の任務（v0.6.7。jp_02。main_weapon none・魚雷なし）の「条件」の武器の句と、月の行の「見つかる…」の差し替え（空からの見え方。距離は門番の値から） */
+export const PATROL_WEAPON_BRIEFING_JA = '武器なし（止まって隠れ、投下で転舵）';
+export const patrolAirDetectJa = (wakeM: number, nearM: number): string => `空から 航跡 ${Math.round(wakeM)} m／動く船体 ${Math.round(nearM)} m／停止は見えない`;
 
 /** 米PT の任務の「条件」の武器の句を砲の名（boats.json の gun_battery.label_ja。「13mm機銃」「25mm機銃」）から（v0.6.4。jp_01 の T-38 の 25mm）。数字の後に「機銃」が続くので「13mm1挺」とは読めない */
 export function ptGunBriefingJa(label: string): string {
@@ -160,6 +163,8 @@ export interface BriefingNumbers {
   aimAssistJa?: string;
   /** 「条件」の武器の句の差し替え（v0.6.3。撃たない任務だけ。無ければ砲か魚雷の本数） */
   weaponJa?: string;
+  /** 月の行の「見つかる 巡航 N m／静音 N m」の差し替え（v0.6.7。夜の哨戒機の任務だけ＝patrolAirDetectJa。無い任務では鍵ごと出ない） */
+  airDetectJa?: string;
 }
 
 export interface BriefingRow {
@@ -190,7 +195,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
   return [
     { label: '目的', text: t.objective },
     { label: '成功', text: `${t.success}（帰投地点は${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
-    { label: '月', text: `${moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ 見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m` },
+    { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
     { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },

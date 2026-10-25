@@ -1,4 +1,5 @@
 // Result の本文の枝（v0.6.7 S0 で scenes/result-scene から移した。文・字の大きさ・色・後ろの間は v0.6.6 のまま。tests/result-body-neutral が pin）: 大発掃討／米PT／魚雷。
+// v0.6.7 S5: 夜の哨戒機（jp_02）の 2 行の枝（ui/patrol-result-lines）。ほかの枝は変えない。
 // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
 import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
@@ -7,8 +8,9 @@ import { convoyResultLine } from './convoy-lines';
 import { engineResultLine } from './engine-lines';
 import { gunboatResultLineJa } from './gunboat-lines';
 import { bargeResultLines } from './hud-lines';
+import { patrolBombResultJa, patrolSearchResultJa } from './patrol-result-lines';
 import { ptResultLines } from './pt-lines';
-import type { BargeResult, ConvoyResult, EngineResult, GunboatResult, PtResult } from './result-types';
+import type { BargeResult, ConvoyResult, EngineResult, GunboatResult, PatrolResult, PtResult } from './result-types';
 
 /** 本文の 1 行: 文・字の大きさ px・色（undefined なら hudTextStyle の既定の色）・後ろに節の間（RESULT_SECTION_GAP）を足すか（行の間 RESULT_LINE_GAP はいつも） */
 export interface ResultBodyLine { text: string; px: number; color: string | undefined; sectionAfter: boolean }
@@ -16,6 +18,8 @@ export interface ResultBodyLine { text: string; px: number; color: string | unde
 /** 本文が読む Result の材料（scenes/result-scene の MissionResult がそのまま満たす。result-scene は Phaser を import するので構造の型で読む） */
 export interface ResultBodySource {
   hunt: BargeResult | null; pt: PtResult | null; convoy: ConvoyResult | null; engine: EngineResult | null; gunboat: GunboatResult | null;
+  /** 夜の哨戒機（v0.6.7。jp_02）。無い任務は null（構造の型で読むので鍵が無い材料も null と同じ） */
+  patrol?: PatrolResult | null;
   detections: number; returned: boolean; objectiveDone: boolean;
   shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
@@ -50,6 +54,10 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
     line(c, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     if (d) line(d, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     if (r.engine) line(engineResultLine(r.engine), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 機関の不調（v0.6.5。full_to_limp_s を動かす根拠。CLAUDE.md §9）
+  } else if (r.patrol) {
+    // 夜の哨戒機（v0.6.7。jp_02）: 捜索・隠れた・見つかった回数と、夜の爆撃と投下から転舵の秒（data を合わせる根拠。CLAUDE.md §9）。魚雷の行は出さない（撃たない任務）
+    line(patrolSearchResultJa(r.patrol), HUD_FONT_HEADING_PX, HUD_COLOR_STRONG);
+    line(patrolBombResultJa(r.patrol), HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
   } else {
     const fired = r.shots.length;
     const unfired = r.capacity - fired;

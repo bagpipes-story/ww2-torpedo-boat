@@ -6,6 +6,7 @@
 // 実機 2 回目のレビュー R2・ux-3: 米PT の時刻の旗は ui/pt-line-clock（出来事は 1 度出たら出し直さない・同じ PT の連射の結果は出来事の行に足す）。
 // v0.6.4: 味方の大発の輸送隊（jp_01）: 平常の行は ptKey と convoyKey の両方で組み直し、沈没・上陸の出来事（時計は pt-line-clock）、呼びかけの語「大発 上陸 2/3 ・ 」（ui/convoy-lines）。
 // v0.6.5: 機関の不調（jp_05）の 3 つのモード（文とキーは ui/engine-lines。過熱の出来事の時計は pt-line-clock）と、赤い線・結果・接触の行の末尾の札（engineTagKey で組み直す）。
+// v0.6.7: 夜の哨戒機（jp_02）の 4 つのモード（文とキーは ui/patrol-lines。lastPatrolKey）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
@@ -33,6 +34,7 @@ import {
 } from './hud-lines';
 import { airRaidTagJa, bargeHideTagKey, callLineText, clockKey, lineFitScale } from './dawn-lines';
 import { airLine, planeKeyOf, planeModeOf, strikeKeyOf, strikeModeOf } from './mission-line-air';
+import { patrolKey, patrolLine, patrolModeOf } from './patrol-lines';
 import { convoyKey, convoyWaiting } from './convoy-lines';
 import { engineKey, engineLine, engineTagJa, engineTagKey } from './engine-lines';
 import { convoyEventLineGb } from './gunboat-lines';
@@ -90,6 +92,8 @@ export class MissionLine {
   /** 機関の不調（v0.6.5）: 2 行目のキー（ui/engine-lines の engineKey。モード 28〜30）と、米PT の行の末尾の札のキー（engineTagKey。0 なし・1 限界・2 不調） */
   private lastEngineKey = -1;
   private lastEngineTagKey = 0;
+  /** 夜の哨戒機（v0.6.7。jp_02）: 2 行目のキー（ui/patrol-lines の patrolKey。モード 31〜34） */
+  private lastPatrolKey = -1;
 
   constructor(scene: Phaser.Scene) {
     this.missionText = scene.add
@@ -155,6 +159,8 @@ export class MissionLine {
     const homeStep = Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M);
     const strikeMode = strikeModeOf(mode); // 夜明けの空襲の 2 つ（20・21）
     const sKey = strikeKeyOf(t, strikeMode);
+    const patrolMode = patrolModeOf(mode); // 夜の哨戒機の 4 つ（31〜34。v0.6.7）
+    const paKey = patrolMode ? patrolKey(t, mode) : 0;
     // 夜明けに岸へ逃げる大発（v0.6.2 実機 1 回目）: 上陸の直後の表示（event 2）の間は「上陸 N 隻」
     const landedShow = event === 2;
     const tagKey = strikeMode ? bargeHideTagKey(t.dawn, landedShow) : 0;
@@ -180,6 +186,7 @@ export class MissionLine {
       cKey !== this.lastConvoyKey ||
       eKey !== this.lastEngineKey ||
       eTag !== this.lastEngineTagKey ||
+      paKey !== this.lastPatrolKey ||
       ((mode === MISSION_ESCORT_LOST || mode === MISSION_ESCORT_LAG) && (homeStep !== this.lastHomeStep || t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
       ((mode === MISSION_GUN || mode === MISSION_BARGE_RUN || mode === MISSION_BARGE_SIGHTED || mode === MISSION_BATTERY) && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep)) ||
       (mode === MISSION_PLANE_ATTACK && (t.shallowState !== this.lastShallowState || shallowStep !== this.lastShallowStep || t.stormFast !== this.lastStormFast || t.stormState !== this.lastStormState)) ||
@@ -216,7 +223,11 @@ export class MissionLine {
       this.lastConvoyKey = cKey;
       this.lastEngineKey = eKey;
       this.lastEngineTagKey = eTag;
-      if (mode === MISSION_CONVOY_EVENT) {
+      this.lastPatrolKey = paKey;
+      if (patrolMode) {
+        const l = patrolLine(t, mode);
+        this.missionText.setText(l.text).setColor(l.color);
+      } else if (mode === MISSION_CONVOY_EVENT) {
         const l = convoyEventLineGb(t, this.ptClock.convoyEvent); // 大発の沈没・上陸と、隼艇の沈没・決着の末尾「隼艇は浜に残る」（v0.6.6。隼艇のいない任務は convoyEventLine と同じ）
         this.missionText.setText(l.text).setColor(l.color);
       } else if (engineMode) {

@@ -22,6 +22,7 @@ import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultF
 import { convoyResult, initConvoyTelemetry, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
+import { initPatrolTelemetry, patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from './pt-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
 import type { MissionWorld } from './mission-world';
@@ -130,6 +131,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     convoy: initConvoyTelemetry(w), // 味方の大発の輸送隊（v0.6.4。systems/convoy-telemetry。無い任務は enabled false）
     engine: createEngineTelemetry(), // 機関の不調（v0.6.5。jp_05。無い任務は on false のまま。下の refreshTelemetry が毎フレーム写す）
     gunboat: createGunboatTelemetry(), // 隼艇（v0.6.6。jp_01 のハード。無い任務は enabled false のまま。下の refreshTelemetry が毎フレーム写す）
+    patrol: initPatrolTelemetry(w), // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry。無い任務は enabled false）
   };
 }
 
@@ -217,6 +219,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.friendlyOutcome = f ? f.outcome : FF_OUT_NONE;
   t.friendlyPending = f ? f.pending : false;
   refreshSeaplaneTelemetry(t, w, scratchPose); // 敵の水上機（v0.4.1。systems/seaplane-telemetry。v0.6.4 で切り出し）
+  refreshPatrolTelemetry(t, w, scratchPose); // 夜の哨戒機（v0.6.7）: 機が画面にいるときだけ「敵機」の矢印を書く（水上機の後・夜明けの前。NaN は書かない）
   // 夜明け（v0.6.1）: ラッチ・夜明け後の秒・空襲の段。空襲の機が来ていれば「敵機」の矢印をその機で上書き（水上機の後）
   refreshDawnTelemetry(t, w, scratchPose);
   refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
@@ -237,8 +240,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.extinguishHoldS = w.damageParams.extinguishHoldS * w.extinguishHoldScale;
 }
 
-/** 終了時に 1 回だけ Result の材料を作る（走っている魚雷は呼び出し側が先に外れとして確定しておく） */
-/** 終了時に 1 回だけ。startFireS は出撃時の火災が消えた実秒（燃えたまま終われば -1、火災なしで出撃なら NaN。Result の「出撃前」の行） */
+/** 終了時に 1 回だけ Result の材料を作る（走っている魚雷は呼び出し側が先に外れとして確定しておく）。startFireS は出撃時の火災が消えた実秒（燃えたまま終われば -1、火災なしで出撃なら NaN。Result の「出撃前」の行） */
 export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, data: GameData, elapsedS: number, ringEdgeM: number, startFireS: number): MissionResult {
   const counts = countHits(w.shots);
   const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
@@ -289,5 +291,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
     dawn: dawnResult(w),
+    patrol: patrolResult(w), // 夜の哨戒機（v0.6.7。jp_02）の記録。無い任務は null
   };
 }

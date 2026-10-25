@@ -38,7 +38,7 @@ const shift: MarkerShift = { dx: 0, dy: 0 };
 export class HudMarkers {
   private targetMarker?: EdgeMarker;
   private homeMarker?: EdgeMarker;
-  /** 敵機（v0.4.1 の水上機、v0.6.1 から夜明けの空襲の印の機も）。どちらかがある任務だけ。来ている間に画面外なら赤い矢印 */
+  /** 敵機（v0.4.1 の水上機、v0.6.1 から夜明けの空襲の印の機も、v0.6.7 から夜の哨戒機も）。どれかがある任務だけ（?debug&nostrike の jp_02 でも夜の機）。来ている間に画面外なら赤い矢印 */
   private planeMarker?: EdgeMarker;
   private coastMarker?: EdgeMarker;
   /** 味方の大発（v0.6.4。輸送隊の任務だけ）: 最寄りの航行中の大発が画面外のとき青い「大発 N m」（100 m 刻み・切り上げ・矢印の上） */
@@ -55,7 +55,7 @@ export class HudMarkers {
     if (mission.coast && mission.barges) this.coastMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
     if (mission.convoy) this.convoyMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: CONVOY_MARKER_LABEL, stepM: CONVOY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     if (telemetry.gunboat.enabled) this.gunboatMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: telemetry.gunboat.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 });
-    if (telemetry.seaplaneEnabled || telemetry.dawn.strikeEnabled) this.planeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+    if (telemetry.seaplaneEnabled || telemetry.dawn.strikeEnabled || telemetry.patrol.enabled) this.planeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
   }
 
   /** 毎フレーム（距離の刻みが変わったときだけ EdgeMarker が setText する） */

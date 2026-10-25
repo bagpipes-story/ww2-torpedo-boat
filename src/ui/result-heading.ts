@@ -71,3 +71,8 @@ export function resultShipsJa(r: {
   const ds = r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.shipsSunk > 0 ? '撃沈' : r.dawn.shipsWithdrawn > 0 ? '退いた' : '健在'}`;
   return ds + (r.transportEnabled ? ` ・ 輸送船: ${r.transportSunk ? '撃沈' : r.dawn.transportWithdrawn ? '退いた' : '健在'}` : '');
 }
+
+/** Result の頭の行の前置き（v0.6.7: 夜の哨戒機の任務は艦も大発も相手にしないので頭を出さない＝head ''）。頭があれば「頭   」、無ければ ''（行は「帰投: …」から） */
+export function resultHeadPrefixJa(head: string): string {
+  return head === '' ? '' : `${head}   `;
+}
