@@ -9,3 +9,11 @@ export function markerOnScreen(sx: number, sy: number, cx: number, cy: number, t
   const side = hideMargin ?? sideMargin;
   return Math.abs(sx) < cx - side && sy < cy - side && -sy < cy - (hideMargin ?? topMargin);
 }
+
+/**
+ * 矢印のラベルの距離 m（v0.6.7 レビュー ux:ux-2。夜の哨戒機の矢印だけが使う）: hypot を µm に丸める。半径ちょうどの機（付近の捜索の 900 m・接近の始まりの 6000 m・出撃の旋回の 600 m）で
+ * hypot が 1 ulp 上に出て、100 m 刻みの切り上げのラベルが「敵機 900 m」と「1000 m」を行き来し（約 21 回/秒の setText）、2 行目の距離とも食い違った
+ */
+export function snappedDistM(dx: number, dy: number): number {
+  return Math.round(Math.hypot(dx, dy) * 1e6) / 1e6;
+}

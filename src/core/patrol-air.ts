@@ -6,7 +6,7 @@
 // Phaser 非依存・乱数なし・毎ステップ確保しない・平方根と atan2 なし（機の位置は自艇からの相対の方位と距離＝水上機と同じ。姿勢の sin/cos は描くときだけ）。
 import type { SpeedStep } from './boat-motion';
 import type { AircraftPose } from './friendly';
-import { PA_EV_FIND, PA_EV_HUNT, PA_EV_LEAVE, PA_EV_OFF, PA_EV_PASS, PA_HUNT, PA_LEAVE, PA_OFF, PA_ORBIT, PA_PASS, PA_SORTIE, type PatrolParams, type PatrolState } from './patrol-air-state';
+import { PA_EV_FIND, PA_EV_HUNT, PA_EV_LEAVE, PA_EV_OFF, PA_EV_PASS, PA_HUNT, PA_LEAVE, PA_OFF, PA_ORBIT, PA_PASS, PA_SORTIE, type PatrolParams, type PatrolState, type PatrolTelemetry } from './patrol-air-state';
 import { degToRad, wrapDeg360 } from './units';
 
 export * from './patrol-air-state';
@@ -152,6 +152,14 @@ export function patrolWakeLeftS(s: PatrolState, p: PatrolParams): number {
   if (s.phase !== PA_HUNT || s.k === 0 || !(s.wakeAcc > 0)) return NaN;
   const x = p.wakeTriggerS - s.wakeAcc;
   return x > 0 ? x : 0;
+}
+
+/**
+ * HUD の「航跡が出ている ・ あと N 秒で敵機が寄ってくる」を出すか（v0.6.7 レビュー ux:ux-1・ux-4）: 航跡の帯で数えていて、定時の捜索より先に届く（次の捜索が NaN なら航跡のまま）。
+ * 静音・停止で数えが減っている間（N が増えて見え、航跡では来ない）と、定時の捜索が先に来る間は出さない（2 行目は「次の捜索まで N 秒」）
+ */
+export function patrolWakeLine(p: PatrolTelemetry, band: SpeedStep): boolean {
+  return patrolWake(band) && !Number.isNaN(p.wakeLeftS) && !(p.nextPassS < p.wakeLeftS);
 }
 
 /** 方位 bearingDeg・距離 r の機の相対の姿勢を out に（接近は機首が自艇・付近の捜索は時計回りの接線・去るは外向き） */

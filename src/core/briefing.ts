@@ -11,6 +11,8 @@ export const NO_WEAPON_BRIEFING_JA = '魚雷はPTの下を抜ける（撃たな�
 export const PT_GUN_BRIEFING_JA = '13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）';
 /** 夜の哨戒機の任務（v0.6.7。jp_02。main_weapon none・魚雷なし）の「条件」の武器の句と、月の行の「見つかる…」の差し替え（空からの見え方。距離は門番の値から） */
 export const PATROL_WEAPON_BRIEFING_JA = '武器なし（止まって隠れ、投下で転舵）';
+/** 同じ任務の「条件」の武器の句の全体: 武器なしの句と、航跡が出る速さ（自艇の静音の上限。v0.6.7 レビュー ux:ux-7: 規則の 1 つ目「14 kt を超えると航跡」が出撃の前にどこにも無かった）。「・」の後はノーブレークスペース（weaponPartJa と同じ理由） */
+export const patrolWeaponBriefingJa = (quietKt: number): string => `${PATROL_WEAPON_BRIEFING_JA} ・\u00a0航跡は ${Math.round(quietKt)} kt 超`;
 export const patrolAirDetectJa = (wakeM: number, nearM: number): string => `空から 航跡 ${Math.round(wakeM)} m／動く船体 ${Math.round(nearM)} m／停止は見えない`;
 
 /** 米PT の任務の「条件」の武器の句を砲の名（boats.json の gun_battery.label_ja。「13mm機銃」「25mm機銃」）から（v0.6.4。jp_01 の T-38 の 25mm）。数字の後に「機銃」が続くので「13mm1挺」とは読めない */

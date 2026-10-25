@@ -407,7 +407,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
     // v0.6.4 の jp_01 は 19 gal で 1,453（T-38 のアイドル 800/8.5 × 0.1 = 9.4118 gal/h: 19 / 9.4118 × 720 = 1453.4999… → 1453。上限いっぱい）。v0.6.7 の jp_02 は jp_05 と同じ T-14・32 gal で 1,440
     expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1453, 1440, 1440, 1224]);
   });
-  it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲の機体・dawn_air_strike の文', () => {
+  it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲と夜の哨戒の機体・dawn_air_strike と patrol_air の文', () => {
     const texts: string[] = [];
     for (const id of ALL_IDS) {
       const a = byId(gameData, id)['dawn_air'] as Rec;
@@ -416,8 +416,26 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       const ds = (byId(gameData, id)['v0_1_prototype'] as Rec | undefined)?.['dawn_strike'] as Rec | undefined;
       if (ds) texts.push(String(ds['count_source']), String(ds['source']));
     }
-    for (const id of ['ijn_f1m2_pete', 'ijn_a6m2n_rufe', 'us_carrier_aircraft']) texts.push(JSON.stringify(gameData.enemies.enemies.find((e) => e.id === id)));
-    texts.push(JSON.stringify(gameData.riskEvents.events.find((e) => e.id === DAWN_STRIKE_EVENT_ID)));
+    // 機体は data から集める（夜明けの空襲と夜の哨戒機の aircraft_id。v0.6.7 レビュー data:D7: jp_02 の us_patrol_bomber が漏れていた）。前からの 3 機は残す
+    const aircraft = new Set(['ijn_f1m2_pete', 'ijn_a6m2n_rufe', 'us_carrier_aircraft']);
+    for (const m of missionsOf(gameData)) {
+      const proto = m['v0_1_prototype'] as Rec | undefined;
+      for (const k of ['dawn_strike', 'patrol_air']) {
+        const id = (proto?.[k] as Rec | undefined)?.['aircraft_id'];
+        if (typeof id === 'string') aircraft.add(id);
+      }
+    }
+    expect(aircraft.has('us_patrol_bomber')).toBe(true);
+    for (const id of aircraft) {
+      const rec = gameData.enemies.enemies.find((e) => e.id === id);
+      expect(rec, id).toBeDefined();
+      texts.push(JSON.stringify(rec));
+    }
+    for (const ev of [DAWN_STRIKE_EVENT_ID, 'patrol_air']) {
+      const e = gameData.riskEvents.events.find((x) => x.id === ev);
+      expect(e, ev).toBeDefined();
+      texts.push(JSON.stringify(e));
+    }
     expect(texts.length).toBeGreaterThan(13 * 3);
     for (const t of texts) {
       for (const name of PERSON_DENYLIST) expect(t).not.toContain(name);

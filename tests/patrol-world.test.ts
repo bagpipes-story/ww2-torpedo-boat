@@ -5,6 +5,7 @@ import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/brief
 import { getScoringParams, gameData } from '../src/config/game-data';
 import { hasHardVariant } from '../src/config/mission-data';
 import { briefingRows } from '../src/core/briefing';
+import { detectionsOf, objectiveDoneOf, type ObjectiveWorld } from '../src/systems/mission-objective';
 import { CALL_DAWN, CALL_FUEL, updateReturnCalls } from '../src/core/mission-flow';
 import { computeScore, type ScoreInput } from '../src/core/scoring';
 import { briefingNumbers } from '../src/systems/world-setup';
@@ -50,7 +51,7 @@ describe('jp_02 の Briefing（spec §D.4）', () => {
       ['月', '月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない'],
       ['敵', '米飛行艇 ×2（北東から）'],
       ['危険', '夜の哨戒機、夜明けの空襲'],
-      ['条件', `夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・${NB}武器なし（止まって隠れ、投下で転舵）`],
+      ['条件', `夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・${NB}武器なし（止まって隠れ、投下で転舵） ・${NB}航跡は 14 kt 超`],
     ]);
     expect(S02.hazardsTonight).toEqual(['patrol_air', 'dawn_air_strike']);
     expect(S02.absentHazards).toEqual([]);
@@ -59,6 +60,9 @@ describe('jp_02 の Briefing（spec §D.4）', () => {
     const lines = [2, 1, 1, 1, 1, 2];
     rows.forEach((r, i) => expect(textWidthPx(r.text, 24), r.label).toBeLessThanOrEqual(lines[i]! * WRAP));
     const note = rec.noteJa;
+    // 画面に出る史実メモそのもの（レビュー data:D2。種の「PB2Y に撃沈された」に戻せば落ちる。調査の記録 historical_note は画面に出ない＝tests/briefing）
+    expect(note).toBe('1944年1月30日、第一号型魚雷艇の第5・6号艇が失われたと伝わる（場所と原因は未確認で、ウェークにいたかも分からない）。同じ頃、米の飛行艇PB2Yがミッドウェーから夜にウェークの飛行場を爆撃した。飛行艇が魚雷艇を捜して沈めた記録は見つかっておらず、この夜はゲーム上の想定（失われた第5・6号は第一号型。艇はT-14で代用）。');
+    expect(note).not.toContain('撃沈');
     expect(textWidthPx(note, 20)).toBeLessThanOrEqual(textWidthPx(getBriefingRecord(gameData, 'jp_05', false).noteJa, 20));
     expect(note).not.toMatch(/[^\x20-\x7e] |\s[^\x20-\x7e]/);
     for (const s of [note, ...rows.map((r) => r.text)]) {
@@ -84,11 +88,34 @@ describe('jp_02 の得点の順（spec §C.5。scoring.json は変えない）',
   });
 });
 
+describe('jp_02 の回避の数え（systems/mission-objective。spec §C.5・D15。レビュー data:D3）', () => {
+  /** 終了時の世界の読む部分だけ（艦・PT の検出の数と、夜の哨戒の発見・目の発見） */
+  const w = (count: number, finds: number, findsVisual: number, patrol = true): ObjectiveWorld => {
+    const state = { finds, findsVisual }; // 発見（レーダー込み）と目の発見（門番の PatrolState の 2 つ）
+    return { detect: { count }, patrol: patrol ? { state } : null, convoy: null, escort: null, pts: null, enemy: { objectiveDone: false } };
+  };
+  it('最初のレーダーの発見は数えない（レーダーだけなら 0＝回避 300 が付く）、レーダーの後の目の発見は 1 回ずつ、哨戒の無い任務は艦・PT の数のまま', () => {
+    expect(detectionsOf(w(0, 1, 0))).toBe(0);
+    expect(detectionsOf(w(0, 2, 1))).toBe(1);
+    expect(detectionsOf(w(0, 4, 3))).toBe(3);
+    expect(detectionsOf(w(2, 0, 0, false))).toBe(2);
+  });
+  it('達成は帰投（夜の哨戒機の任務。敵の側の達成を読まない）', () => {
+    expect(objectiveDoneOf('returned', w(0, 1, 0))).toBe(true);
+    expect(objectiveDoneOf('bombed', w(0, 1, 0))).toBe(false);
+    expect(objectiveDoneOf('returned', w(0, 1, 0, false))).toBe(false);
+  });
+});
+
 describe('jp_02 の Result（spec §D.5）', () => {
   const R: PatrolResult = { passes: 5, passesWake: 3, hides: 3, finds: 2, findsVisual: 1, bombs: 8, hits: 2, damage: 70, dodgeS: [0.4, 0.6, NaN, 0.3, 0.5, NaN, 0.4, 0.3, 0.9], restartDelayed: 0 };
   it('夜の哨戒機の行と夜の爆撃の行（最初の 8 発の転舵。— は転舵なし）、見つからなければ「レーダーの後は見つからなかった」、爆撃なしは「なし」', () => {
-    expect(patrolSearchResultJa(R)).toBe('夜の哨戒機: 捜索 5 回（航跡で 3 回） ・ 隠れた 3 回 ・ 見つかった 1 回（レーダーの後）');
-    expect(patrolSearchResultJa({ ...R, findsVisual: 0 })).toBe('夜の哨戒機: 捜索 5 回（航跡で 3 回） ・ 隠れた 3 回 ・ レーダーの後は見つからなかった');
+    expect(patrolSearchResultJa(R)).toBe('夜の哨戒機: 捜索 5 回（レーダー 1・航跡 3） ・ 隠れた 3 回 ・ 見つかった 1 回（レーダーの後）');
+    // 捜索の内訳（レビュー ux:ux-6）: 捜索 ＝ レーダー（発見 − 目の発見）＋ 隠れた ＋ 目の発見 ＋ 帰投・夜明けで途中で終わった
+    expect(patrolSearchResultJa({ ...R, finds: 1, findsVisual: 0 })).toBe('夜の哨戒機: 捜索 5 回（レーダー 1・航跡 3） ・ 隠れた 3 回 ・ レーダーの後は見つからなかった ・ 途中で終わった 1 回');
+    expect(patrolSearchResultJa({ ...R, passes: 4, passesWake: 2, hides: 2, finds: 1, findsVisual: 0 })).toBe('夜の哨戒機: 捜索 4 回（レーダー 1・航跡 2） ・ 隠れた 2 回 ・ レーダーの後は見つからなかった ・ 途中で終わった 1 回');
+    // 夜に収まる多い側（捜索 10・航跡 9・隠れた 4・目の発見 4・途中 1）でも 20 px で縮まない
+    expect(textWidthPx(patrolSearchResultJa({ ...R, passes: 10, passesWake: 9, hides: 4, finds: 5, findsVisual: 4 }), 20)).toBeLessThanOrEqual(RESULT_MAX);
     expect(patrolBombResultJa(R)).toBe('夜の爆撃: 8 発 命中 2（HP −70） ・ 投下から転舵 0.4／0.6／—／0.3／0.5／—／0.4／0.3 秒');
     expect(patrolBombResultJa({ ...R, hits: 0, damage: 0, dodgeS: [0.5] })).toBe('夜の爆撃: 8 発 命中 0 ・ 投下から転舵 0.5 秒');
     expect(patrolBombResultJa({ ...R, bombs: 0, hits: 0, damage: 0, dodgeS: [] })).toBe('夜の爆撃: なし');

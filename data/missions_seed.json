@@ -911,9 +911,9 @@
         "main_weapon": "none",
         "main_weapon_source": "design (v0.6.7。航空機だけの任務で撃つ相手がいない。T-14 の 13mm で機を撃つ仕組み（機の HP・撃墜・閃光で見つかる）は無いので候補へ。45cm 魚雷も積まない（torpedoCapacity 0）。史実の第一号型は 7.7mm ×2（high。WebSearch の抜粋のみ・本文未読）)",
         "duration_s": 220,
-        "duration_s_source": "design (v0.6.7。夜明けまでの実秒。輪の縁まで 5,602 m: 全速 70.3・巡航 108.9・14 kt 155.6 秒。出発時に帰投せよが立たない検査（巡航 × call_margin 1.5 = 163.4 < 220 − 50）の下限 213.4 秒の上。試作（v2）で HUD どおり（全速＋捜索で止まる）は帰投の中央値 101.4 秒、14 kt＋止まるは 197.3 秒（夜明け前 85%）)",
+        "duration_s_source": "design (v0.6.7。夜明けまでの実秒。輪の縁まで 5,602 m: 全速 70.3・巡航 108.9・14 kt 155.6 秒。出発時に帰投せよが立たない検査（巡航 × call_margin 1.5 = 163.4 < 220 − 50）の下限 213.4 秒の上。模擬（scripts/patrol-air-sim.ts。試作 v2 と同じ）で HUD どおり（全速＋捜索で止まる）は帰投の中央値 101.4 秒、14 kt＋止まるは 197.3 秒（夜明け前 85%）)",
         "fuel_allotment_gal": 32,
-        "fuel_allotment_gal_source": "design (v0.6.7。jp_05 と同じ T-14・同じ量。輪の縁まで全速 22.3・巡航 17.3・14 kt 14.8 gal。止まって待つと 1,440 実秒で漂流（< 1,500・> 220）。試作（v2）の残り 10 パーセンタイルは HUD どおり 26%、14 kt で 42%)",
+        "fuel_allotment_gal_source": "design (v0.6.7。jp_05 と同じ T-14・同じ量。輪の縁まで全速 22.3・巡航 17.3・14 kt 14.8 gal。止まって待つと 1,440 実秒で漂流（< 1,500・> 220）。模擬（scripts/patrol-air-sim.ts。試作 v2 と同じ）の残り 10 パーセンタイルは HUD どおり 26%、14 kt で 42%)",
         "shallows": [],
         "bounds_m": {
           "width": 6000,
@@ -949,7 +949,7 @@
           "from_bearing_deg": 56,
           "pass_rotate_deg": 90,
           "radar_passes": 1,
-          "source": "design (v0.6.7。段と時間は risk_events.json の patrol_air.params、見える距離は enemies.json の us_patrol_bomber.patrol。from_bearing_deg 56: ウェークから見たミッドウェーの大圏の初方位（計算 55.6°。出典ではない）。pass_rotate_deg 90: 捜索ごとに 90° 回す（北東 → 南東 → 南西 → 北西。夜明けの波と同じ作法）。radar_passes 1: 最初の 1 回の捜索はレーダーで、止まっていても見つかる（毎夜 1 回は爆撃を投下で転舵してかわす。試作で 0 だと HUD どおりは 1 度も爆撃されない）。PB2Y-3 の一部に水上捜索レーダー（medium。WebSearch の抜粋のみ・本文未読）。小さな木の艇をどこまで追えたかは資料が無く、以後は目で捜す＝design)"
+          "source": "design (v0.6.7。段と時間は risk_events.json の patrol_air.params、見える距離は enemies.json の us_patrol_bomber.patrol。from_bearing_deg 56: ウェークから見たミッドウェーの大圏の初方位（計算 55.6°。出典ではない）。pass_rotate_deg 90: 捜索ごとに 90° 回す（北東 → 南東 → 南西 → 北西。夜明けの波と同じ作法）。radar_passes 1: 最初の 1 回の捜索はレーダーで、止まっていても見つかる（毎夜 1 回は爆撃を投下で転舵してかわす。試作で 0 だと HUD どおりは 1 度も爆撃されない）。後期の PB2Y-3 の一部に水上捜索レーダー（medium。WebSearch の抜粋のみ・本文未読）。1944-01 のウェーク空襲の機にあったかは抜粋に無い（research 2-4）。小さな木の艇をどこまで追えたかは資料が無く、以後は目で捜す＝design)"
         },
         "dawn_strike": {
           "aircraft_id": "us_patrol_bomber",

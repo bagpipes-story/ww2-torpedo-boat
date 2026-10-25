@@ -3,9 +3,10 @@
 // v0.6.4（jp_01）: 5 本目＝味方の大発の輸送隊（最寄りの航行中の大発へ青い「大発 N m」）。「岸」の矢印は大発を狩る任務（barges）だけ（輸送隊の任務は大発が浜へ向かうので要らない）。
 // v0.6.6（jp_01 のハード）: 6 本目＝隼艇（生きていて決着の前の間に画面外なら僚艇の青い「隼艇 N m」。ラベルは矢印の下）。輸送隊の矢印の後に refresh し、縁で近ければ縁に沿ってずらす（ui/marker-separation。レビュー R6）。
 // 隼艇の矢印の「画面の内」は本当の画面の矩形で、隼艇の絵が出ている（自艇の視程の内）間だけ（hideMargin 0・drawn＝inSight。上の余白 293 px のままだと画面の上 4 割に見えている隼艇にも矢印が出た。レビュー ux:ux-1）。
+// v0.6.7 レビュー（夜の哨戒機の任務だけ。ほかの任務の矢印は今のまま）: 「敵機 N m」の距離は µm に丸めた hypot（ux:ux-2）、右下の速力の HUD に乗れば縁に沿ってずらす（ux:ux-5）。
 import Phaser from 'phaser';
 import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
-import { GAME_HEIGHT, GAME_WIDTH, TEXTURE_KEYS } from '../config/game-config';
+import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
 import { BARGE_MARKER_LABEL, COAST_MARKER_LABEL, COAST_MARKER_TEXT_COLOR } from '../config/hunt-config';
 import type { PrototypeMission } from '../config/mission-data';
 import { PT_MARKER_LABEL } from '../config/pt-config';
@@ -17,16 +18,23 @@ import {
   HUD_FONT_MARKER_PX,
   HOME_MARKER_TOP_MARGIN,
   HUD_COLOR_WARN,
+  HUD_FONT_HEADING_PX,
+  HUD_HEADING_OFFSET_Y,
+  HUD_TEXT_GAP,
   PLANE_DISTANCE_STEP_M,
   PLANE_MARKER_TOP_MARGIN,
   TARGET_MARKER_DISTANCE_STEP_M,
   TARGET_MARKER_MARGIN,
   TARGET_MARKER_RIGHT_MARGIN,
   TARGET_MARKER_TOP_MARGIN,
+  RUDDER_BAR_HALF_WIDTH,
+  RUDDER_MARKER_HEIGHT,
+  TORPEDO_BUTTON_RADIUS,
 } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { EdgeMarker } from './edge-marker';
-import { separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
+import { snappedDistM } from './edge-marker-screen';
+import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
 
 /** 味方の大発の矢印「大発 N m」（v0.6.4）の上端の余白: 敵機の矢印の下（帰投の矢印と同じく上にラベル。ui-config は 300 行を超えているのでここに置く） */
 const CONVOY_MARKER_TOP_MARGIN = PLANE_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
@@ -34,6 +42,10 @@ const CONVOY_MARKER_TOP_MARGIN = PLANE_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 
 const GUNBOAT_MARKER_SEP_PX = HUD_FONT_MARKER_PX * 2 + 8;
 const CONVOY_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: CONVOY_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
 const shift: MarkerShift = { dx: 0, dy: 0 };
+/** 夜の哨戒機の矢印（v0.6.7 レビュー ux:ux-5）が避ける右下の速力の HUD（ui/boat-hud の舵のバー・速力・段・針路の塊）の左と上。左はラベルの半分と矢印の分（字 4 つ）、上はラベルが矢印の下に出る分（字 3 行）の余白込み */
+const SPEED_HUD_KEEP_LEFT = GAME_WIDTH - HUD_MARGIN * 2 - TORPEDO_BUTTON_RADIUS * 2 - RUDDER_BAR_HALF_WIDTH * 2 - HUD_FONT_MARKER_PX * 4;
+const SPEED_HUD_KEEP_TOP = GAME_HEIGHT - HUD_MARGIN - RUDDER_MARKER_HEIGHT - HUD_TEXT_GAP - HUD_HEADING_OFFSET_Y - HUD_FONT_HEADING_PX - HUD_FONT_MARKER_PX * 3;
+const PLANE_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: PLANE_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
 
 export class HudMarkers {
   private targetMarker?: EdgeMarker;
@@ -62,7 +74,11 @@ export class HudMarkers {
   refresh(telemetry: BoatTelemetry): void {
     this.targetMarker?.refresh(telemetry.enemyDx, telemetry.enemyDy, telemetry.enemySighted, telemetry);
     this.homeMarker?.refresh(telemetry.homeDx, telemetry.homeDy, !telemetry.atHome, telemetry, telemetry.homeEdgeM);
-    this.planeMarker?.refresh(telemetry.planeDx, telemetry.planeDy, !Number.isNaN(telemetry.planeDx), telemetry);
+    const pm = this.planeMarker;
+    const pdx = telemetry.planeDx;
+    const patrol = telemetry.patrol.enabled;
+    pm?.refresh(pdx, telemetry.planeDy, !Number.isNaN(pdx), telemetry, patrol && !Number.isNaN(pdx) ? snappedDistM(pdx, telemetry.planeDy) : undefined);
+    if (pm && patrol && pm.isShown) pm.nudge(avoidCorner(pm.shownX, pm.shownY, PLANE_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
     this.coastMarker?.refresh(telemetry.coastDx, telemetry.coastDy, !Number.isNaN(telemetry.coastDy), telemetry);
     this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry, telemetry.convoy.nearestM); // 平方根は convoy-telemetry の 1 回（レビュー neutral:N2）
     const gb = telemetry.gunboat;

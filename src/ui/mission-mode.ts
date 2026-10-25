@@ -7,7 +7,7 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_FINAL } from '../core/engine-trouble';
 import { FF_CHALLENGE, FF_LEAVING, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { GUN_FIRING, GUN_OUT_OF_ARC, GUN_SAFE } from '../core/gun-battery';
-import { PA_ORBIT, PA_PASS } from '../core/patrol-air-state';
+import { PA_HUNT, PA_ORBIT, PA_PASS, patrolWakeLine } from '../core/patrol-air';
 import { PT_ALERT, PT_CHASE, PT_RUN_IN } from '../core/pt-boats';
 import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { SHALLOW_GROUNDED } from '../core/shallows';
@@ -139,10 +139,10 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (pa.enabled && pa.threat === AS_T_FALLING && (t.dawn.threat === AS_T_INBOUND || t.dawn.threat === AS_T_ORBIT)) return MISSION_PATROL_ATTACK;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
   if (pa.enabled) {
-    // 夜の哨戒機（v0.6.7。jp_02 に他の敵はいない）: 発見と夜の出撃 > 捜索 > 結果（平常は下の帰投せよの下）
+    // 夜の哨戒機（v0.6.7。jp_02 に他の敵はいない）: 発見と夜の出撃 > 捜索 > 結果（平常は下の帰投せよの下。出撃の後の哨戒で航跡の行が出るなら結果より航跡。レビュー ux:ux-4）
     if (pa.threat !== AS_T_NONE && pa.threat !== AS_T_REST) return MISSION_PATROL_ATTACK;
     if (pa.phase === PA_PASS || pa.phase === PA_ORBIT) return MISSION_PATROL_PASS;
-    if (pa.resultKind !== 0) return MISSION_PATROL_RESULT;
+    if (pa.resultKind !== 0 && !(pa.phase === PA_HUNT && patrolWakeLine(pa, t.targetStep))) return MISSION_PATROL_RESULT;
   }
   if (t.pt.enabled) {
     // 米PT（v0.6.3）: 赤い線（航過・連射。終わって弾が飛んでいる間も MODE_FLAG_PT_HOLD で保つ）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）

@@ -1,13 +1,13 @@
 // 夜の哨戒機（v0.6.7。jp_02「孤島の哨戒」。spec-v067 §D.2・§D.3）の HUD の文とキー: 2 行目のモード 31〜34（発見と夜の出撃・捜索・去る・平常）と、3 行目の空からの見え方。
 // 「14」は t.patrol.quietKt（自艇の静音の上限）、方角は compass8Ja（8 方位）、距離は 100 m 刻みの切り上げ。旋回・進路・落下の句は夜明けの空襲と同じ字（ui/dawn-lines）。
-// キーの欄の上限は core/patrol-air-state の PA_KEY_*（起動時の検査 C9 が data と結ぶ）。秒・距離は整数＝書き直しは最大 1 回/秒（§7）。どのキーも 0 < key < 2¹⁸。
+// キーの欄の上限は core/patrol-air-state の PA_KEY_*（起動時の検査 C9 が data と結ぶ）。秒は整数（1 回/秒）、距離は 100 m 刻み（機の接近中は約 3 回/秒。水上機・夜明けの空襲の接近の行と同じ）＝値が変わったときだけ組む（§7）。どのキーも 0 < key < 2¹⁸。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M } from '../config/hud-text-config';
-import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_RUN } from '../core/air-strike';
+import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import {
-  PA_HUNT, PA_KEY_BOMBS_MAX, PA_KEY_DIST_HM_MAX, PA_KEY_HP5_MAX, PA_KEY_NEAR_HM_MAX, PA_KEY_SEC_MAX, PA_KEY_WAKE_S_MAX, PA_OFF, PA_ORBIT, PA_PASS, PA_SORTIE, type PatrolTelemetry,
-} from '../core/patrol-air-state';
+  PA_HUNT, PA_KEY_BOMBS_MAX, PA_KEY_DIST_HM_MAX, PA_KEY_HP5_MAX, PA_KEY_NEAR_HM_MAX, PA_KEY_SEC_MAX, PA_KEY_WAKE_S_MAX, PA_OFF, PA_ORBIT, PA_PASS, PA_SORTIE, patrolWakeLine, type PatrolTelemetry,
+} from '../core/patrol-air';
 import { wrapDeg360 } from '../core/units';
 import { airRaidTagJa, compass8Ja, strikeFallJa, strikeOrbitJa, strikeRunJa } from './dawn-lines';
 import type { HudLine } from './hud-lines';
@@ -48,11 +48,11 @@ export function patrolPassSub(p: PatrolTelemetry, band: SpeedStep): number {
   return wakeBand(band) ? PATROL_PASS_NOW_WAKE : PATROL_PASS_NOW_HULL;
 }
 
-/** モード 34 の副 */
-export function patrolNormalSub(p: PatrolTelemetry): number {
+/** モード 34 の副。航跡の行は航跡の帯で数えていて定時より先に届く間だけ（core/patrol-air の patrolWakeLine。減っている間は「次の捜索まで」。レビュー ux:ux-1） */
+export function patrolNormalSub(p: PatrolTelemetry, band: SpeedStep): number {
   if (p.phase === PA_OFF) return PATROL_NORMAL_OFF;
   if (p.phase === PA_HUNT && p.passes === 0) return PATROL_NORMAL_RADAR;
-  return Number.isNaN(p.wakeLeftS) ? PATROL_NORMAL_HUNT : PATROL_NORMAL_WAKE;
+  return patrolWakeLine(p, band) ? PATROL_NORMAL_WAKE : PATROL_NORMAL_HUNT;
 }
 
 /**
@@ -79,7 +79,7 @@ export function patrolKey(t: BoatTelemetry, mode: number): number {
     return p.resultKind | (cap(sortie ? p.sortieBombs : 0, PA_KEY_BOMBS_MAX) << 2) | (cap(sortie ? p.sortieHits : 0, PA_KEY_BOMBS_MAX) << 5) | (cap(sortie ? Math.ceil(p.sortieDamage / 5) : 0, PA_KEY_HP5_MAX) << 8);
   }
   if (mode === MISSION_PATROL) {
-    const sub = patrolNormalSub(p);
+    const sub = patrolNormalSub(p, t.targetStep);
     const next = sub === PATROL_NORMAL_HUNT ? secs(p.nextPassS) : 0;
     const wake = sub === PATROL_NORMAL_WAKE ? secs(p.wakeLeftS) : 0;
     return NORMAL_KEY_TAG | sub | (cap(next, PA_KEY_SEC_MAX) << 2) | (cap(wake, PA_KEY_WAKE_S_MAX) << 7) | ((sub === PATROL_NORMAL_RADAR ? dirIdx(p.bearingDeg) : 0) << 10);
@@ -114,24 +114,30 @@ export function patrolLine(t: BoatTelemetry, mode: number): HudLine {
     const hp = p.sortieHits > 0 ? `（HP −${Math.ceil(p.sortieDamage)}）` : '';
     return { text: `敵機 去る ・ 爆弾 ${p.sortieBombs} 発 命中 ${p.sortieHits}${hp} ・ また捜しに来る`, color: HUD_COLOR_STRONG };
   }
-  const sub = patrolNormalSub(p);
+  const sub = patrolNormalSub(p, t.targetStep);
   if (sub === PATROL_NORMAL_RADAR) return { text: `レーダーに捉えられている ・ 敵機 ${p.planes} 機が${compass8Ja(p.bearingDeg)}から来る`, color: HUD_COLOR_WARN };
   if (sub === PATROL_NORMAL_WAKE) return { text: `航跡が出ている ・ あと ${secs(p.wakeLeftS)} 秒で敵機が寄ってくる（${p.quietKt} kt 以下で消える）`, color: HUD_COLOR_WARN };
   if (sub === PATROL_NORMAL_OFF) return { text: `${airRaidTagJa(t)}夜の哨戒機は去った ・ 帰投せよ`, color: HUD_COLOR_STRONG };
   return { text: `敵機は捜索中 ・ 次の捜索まで ${secs(p.nextPassS)} 秒 ・ ${p.quietKt} kt を超えると航跡で早く来る`, color: HUD_COLOR_STRONG };
 }
 
-/** 3 行目の状態の番号（40 番台。今の 0〜33 と重ならない）: 出撃中・レーダーで見えている・航跡・動く船体・止まって見えない。哨戒の無い任務と OFF（夜明けの後など）は -1（今の 3 行目） */
+/** 3 行目の状態の番号（40 番台。今の 0〜33 と重ならない）: 出撃中・レーダーで見えている・航跡・動く船体・止まって見えない・夜明けの空襲。哨戒の無い任務と、空襲の無い OFF（沈没・?debug&nostrike）は -1（今の 3 行目） */
 export const PATROL_STATUS_SORTIE = 40;
 export const PATROL_STATUS_RADAR = 41;
 export const PATROL_STATUS_WAKE = 42;
 export const PATROL_STATUS_HULL = 43;
 export const PATROL_STATUS_HIDDEN = 44;
+export const PATROL_STATUS_DAWN = 45;
 
-/** 3 行目の状態（優先: 出撃中 > レーダーの前とレーダーの捜索（帯より上。出撃は止まって始まる＝無いと最初の 17 秒に「止まっていて見えない」と嘘を言う。R4）> 帯） */
-export function patrolStatusOf(p: PatrolTelemetry, band: SpeedStep): number {
-  if (!p.enabled || p.phase === PA_OFF) return -1;
-  if (p.phase === PA_SORTIE) return PATROL_STATUS_SORTIE;
+/**
+ * 3 行目の状態（優先: 出撃中 > レーダーの前とレーダーの捜索（帯より上。出撃は止まって始まる＝無いと最初の 17 秒に「止まっていて見えない」と嘘を言う。R4）> 帯）。
+ * 出撃中は機が爆弾を落とし切って去るまで（脅威が波の合間 REST の間は帯の状態。2 行目「敵機 去る」の下で古い「全速で走り」を出さない。レビュー ux:ux-4）。
+ * dawnRaid（夜明けに達していて空襲がある）なら OFF の後は「夜明けの空襲（止まっても見える）」（2 行目の空襲と食い違わない。艦影の行の「未発見」を出さない。レビュー ai・ux:ux-3）
+ */
+export function patrolStatusOf(p: PatrolTelemetry, band: SpeedStep, dawnRaid = false): number {
+  if (!p.enabled) return -1;
+  if (p.phase === PA_OFF) return dawnRaid ? PATROL_STATUS_DAWN : -1;
+  if (p.phase === PA_SORTIE && p.threat !== AS_T_REST) return PATROL_STATUS_SORTIE;
   if ((p.phase === PA_HUNT && p.passes === 0) || ((p.phase === PA_PASS || p.phase === PA_ORBIT) && p.radar)) return PATROL_STATUS_RADAR;
   if (wakeBand(band)) return PATROL_STATUS_WAKE;
   return band === 'silent' ? PATROL_STATUS_HULL : PATROL_STATUS_HIDDEN;
@@ -143,5 +149,6 @@ export function patrolStatusLine(p: PatrolTelemetry, status: number): { text: st
   if (status === PATROL_STATUS_RADAR) return { text: '空から ・ レーダーで見えている（止まっても）', warn: true };
   if (status === PATROL_STATUS_WAKE) return { text: `空から ・ 航跡は ${p.wakeDetectM} m で見える`, warn: true };
   if (status === PATROL_STATUS_HULL) return { text: `空から ・ 動く船体は ${p.nearM} m で見える`, warn: false };
+  if (status === PATROL_STATUS_DAWN) return { text: '空から ・ 夜明けの空襲（止まっても見える）', warn: true };
   return { text: '空から ・ 止まっていて見えない', warn: false };
 }

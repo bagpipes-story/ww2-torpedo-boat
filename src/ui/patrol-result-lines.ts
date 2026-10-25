@@ -5,10 +5,14 @@ import type { PatrolResult } from './result-types';
 /** 「投下から転舵 …」に出す自艇を狙った夜の爆弾の数（最初の N 発。夜明けの行と同じ） */
 const PATROL_RESULT_DODGE_SHOWN = 8;
 
-/** 1 行目: 「夜の哨戒機: 捜索 5 回（航跡で 3 回） ・ 隠れた 3 回 ・ 見つかった 1 回（レーダーの後）」。レーダーの後に見つからなければ「 ・ レーダーの後は見つからなかった」 */
+/**
+ * 1 行目: 「夜の哨戒機: 捜索 5 回（レーダー 1・航跡 3） ・ 隠れた 3 回 ・ 見つかった 1 回（レーダーの後）」。レーダーの後に見つからなければ「 ・ レーダーの後は見つからなかった」。
+ * 捜索の内訳を足し上げられるように（v0.6.7 レビュー ux:ux-6）: レーダーの捜索はいつも発見で終わる（発見 − 目の発見）、帰投・夜明けで終わった捜索は「 ・ 途中で終わった N 回」
+ */
 export function patrolSearchResultJa(r: PatrolResult): string {
   const found = r.findsVisual > 0 ? `見つかった ${r.findsVisual} 回（レーダーの後）` : 'レーダーの後は見つからなかった';
-  return `夜の哨戒機: 捜索 ${r.passes} 回（航跡で ${r.passesWake} 回） ・ 隠れた ${r.hides} 回 ・ ${found}`;
+  const cut = r.passes - r.hides - r.finds;
+  return `夜の哨戒機: 捜索 ${r.passes} 回（レーダー ${r.finds - r.findsVisual}・航跡 ${r.passesWake}） ・ 隠れた ${r.hides} 回 ・ ${found}${cut > 0 ? ` ・ 途中で終わった ${cut} 回` : ''}`;
 }
 
 /** 2 行目: 「夜の爆撃: 8 発 命中 2（HP −70） ・ 投下から転舵 0.4／0.6／—／0.3 秒」（— は転舵なし。命中 0 なら HP は付けない）。爆撃が無ければ「夜の爆撃: なし」 */
