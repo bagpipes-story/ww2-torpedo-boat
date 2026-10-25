@@ -188,7 +188,7 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     expect(S.playerStart).toEqual({ x: 1200, y: 2400, headingDeg: 90 });
     expect([S.mission.returnPoint.x, S.mission.returnPoint.y, S.mission.returnPoint.radiusM, S.mission.returnPoint.callMargin]).toEqual([4150, 2700, 250, 1.6]);
     expect(S.mission.bounds).toEqual({ width: 6000, height: 3000 });
-    expect(hasHardVariant(gameData, 'jp_01')).toBe(false);
+    expect(hasHardVariant(gameData, 'jp_01')).toBe(true); // v0.6.6 から jp_01 にハードの違い（隼艇・米PT 3 隻・ノルマ 3）
     expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_05', 'jp_06']);
   });
   it('今夜（seed+16）: 引くのは 5 回（隊 3・大発の先頭 1・反転 1＝jp_05 と同じ）。反転しない。PT の出発点は自艇から ≥ 1,560 m・船団（先頭〜最後尾・揺らぎ込み）から ≥ 780 m（静音の帯 600 × 1.3。隅は約 1,464 m）。先頭は 1200 ± 250', () => {

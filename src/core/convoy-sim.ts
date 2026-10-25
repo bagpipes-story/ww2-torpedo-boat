@@ -2,16 +2,21 @@
 // 25mm → 標的（閃光の記憶）→ 閃光（自艇が標的のときだけ）→ 米PT → 火災）で、輸送隊（core/convoy）と米PT の標的スロット（core/pt-target）を足す。本物の stepPtSection・stepBoat・燃料・被害・stepPtGun/hitPt を使う。
 // 乱数: 今夜 seed+16（rollNight。world-setup と同じ: 米PT の隊のずれと大発の先頭のずれを同じ夜から）、米PT seed+18、25mm seed+20（撃つ台本だけ）、台本 seed×7919+1000（出発の遅れ・赤い線への反応の秒）。
 // 終わり: 沈没・漂流・輪に入った瞬間（台本を問わず。core/mission-flow の decideMissionEnd と同じ: jp_01 は魚雷を撃たないので輪に入れば即 returned。その瞬間の上陸数＝Result）・400 秒（打ち切り。不変で 0）。
-// 台本は core/convoy-sim-policy、n 夜の集計は core/convoy-sim-cell（pt-sim-cell と同じ分け方。300 行を超えないため）。Phaser 非依存。確保は 1 夜の始めだけ。
+// 台本は core/convoy-sim-policy、n 夜の集計は core/convoy-sim-cell、1 夜の記録は core/convoy-trial（pt-sim-cell・pt-trial と同じ分け方。300 行を超えないため）。Phaser 非依存。確保は 1 夜の始めだけ。
+// 隼艇（v0.6.6。jp_01 のハードの setup.gunboat だけ。core/convoy-sim-gunboat）: 船体の末尾 [nb+1]。輸送隊の後に判断と運動、自艇の 25mm の後に隼艇の 25mm（seed+22）と見つかる距離、標的の後に閃光。
+// 隼艇の無い夜（ノーマル・GUNBOAT_OFF）は同じ演算・同じ順・同じ乱数。
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
 import { CV_ARRIVED, convoyResolved, createConvoy, hitConvoyBarge, stepConvoy, type ConvoyEvents, type ConvoyParams } from './convoy';
 import { convoyParamsAtNight } from './convoy-data';
+import { createConvoySimGunboat, finishConvoySimGunboat, fireConvoySimGunboat, gunboatContactFlash, hitConvoySimGunboat, noteGunboatAttack, notePlayerFate, stepConvoySimGunboat } from './convoy-sim-gunboat';
+import { createConvoyTrial, finishConvoyTrial, type ConvoyTrial } from './convoy-trial';
 import { CONVOY_POLICY_SPECS, convoySteer, type ConvoyPolicy, type ConvoySteer, type ConvoySteerCtx } from './convoy-sim-policy';
 import { crewAccelFactor, crewLost, crewTurnFactor } from './crew';
 import { dawnReached } from './dawn-air';
 import { createFuelState, stepFuel } from './fuel';
 import type { GunEvents } from './gun-battery';
 import { applyShellHit, createDamageState, stepDamage, type HitOutcome } from './gunnery';
+import type { GunboatParams } from './gunboat';
 import { insideRing } from './mission-flow';
 import { fixedNight, rollNight } from './night';
 import { PT_GUN_SEED_OFFSET, PT_PASS, PT_SEED_OFFSET, createPtSection, ptFighting, stepPtSection, type PtCheck, type PtEvents, type PtHull } from './pt-boats';
@@ -34,22 +39,11 @@ export interface ConvoySimSetup extends PtSimSetup {
   rule: PtTargetRule;
   /** 射撃ボタンを押す距離 m（v0.6.4 実機 1 回目。無ければ射程＝戦う PT が 600 m 以内に見えている間押す）。近くまで待って撃つ人の型（scripts の FIRER）を測る */
   fireRangeM?: number;
+  /** 隼艇（v0.6.6。world-setup の gunboat＝jp_01 のハードだけ。無い任務・ノーマル・GUNBOAT_OFF は鍵ごと無い） */
+  gunboat?: GunboatParams;
 }
 
-export interface ConvoyTrial {
-  /** 終わり方と秒、夜明けの後に帰投した */
-  end: 'home' | 'sunk' | 'adrift' | 'timeout'; timeS: number; afterDawn: boolean;
-  /** 上陸・沈んだ大発・大発への命中・自艇への命中・失った HP・残りの燃料 % */
-  arrived: number; bargesSunk: number; bargeHits: number; playerHits: number; hpLost: number; fuelPct: number;
-  /** 見つかった（秒）・最初の標的が大発・大発への航過・自艇への航過・連射（自艇・大発。大発は不変で 0）・標的が替わった回数 */
-  detected: boolean; detectS: number; firstTargetBarge: boolean; passesBarge: number; passesPlayer: number; burstsPlayer: number; burstsBarge: number; switches: number;
-  /** 25mm: 発射・命中・撃退・撃沈・制圧 */
-  gunShots: number; gunHits: number; ptRetired: number; ptSunk: number; suppressions: number;
-  /** 不変の確かめ: 予告から初弾の最短秒、同時に航過中の最大、有効射程・標的の視程の外からの発射、自艇の視程の外からの発射（大発への掃射で起きる）、1 回の攻撃の最大命中（大発・自艇）、健全な大発が 1 回の航過で沈んだ数 */
-  minWarnS: number; maxPassing: number; beyondEff: number; beyondSight: number; beyondPlayerSight: number; worstBargePassHits: number; worstPlayerPassHits: number; singlePassKills: number;
-  /** 決着（みな上陸か沈没）の秒（NaN は無し）・夜明けの後の決着・機関損傷 */
-  resolvedS: number; resolvedAfterDawn: boolean; engineHit: boolean;
-}
+export type { ConvoyTrial } from './convoy-trial';
 
 const SIM_MAX_S = 400;
 const TIME_EPS_S = 1e-6;
@@ -80,23 +74,15 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
   const fuel = createFuelState(s.fuelGal);
   const hit: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
   const input: BoatInput = { headingDeg: NaN, speed01: 0 };
-  // 船体: [0] 自艇、[1..] 大発（valid は毎ステップ書く）。大発の発見距離は帯で 1 回
+  // 船体: [0] 自艇、[1..nb] 大発、[nb+1] 隼艇（あれば。valid は毎ステップ書く）。大発の発見距離は帯で 1 回、隼艇は毎ステップ（fireConvoySimGunboat）
   const hulls: PtHull[] = [{ boat, halfLengthM: s.halfLengthM, halfBeamM: s.halfBeamM, valid: true }];
   for (const b of f.barges) hulls.push({ boat: b, halfLengthM: cp.halfLengthM, halfBeamM: cp.halfBeamM, valid: true });
-  const ts = createPtTargetSet(hulls);
-  const bargeDetectM = enemyDetectRangeM(p.baseDetectM, speedFactorForBand(s.detectBand, s.vis.speedFactor), s.vis, false);
-  for (let k = 1; k < hulls.length; k++) ts.detectM[k] = bargeDetectM;
+  const nb = f.barges.length;
   const c: PtCheck = { boat, boatHalfLengthM: s.halfLengthM, boatHalfBeamM: s.halfBeamM, detectOpenM: 0, smokeFactor: s.vis.smokeFactor, smoke: null, smokeParams: null, targetValid: true, visRange2: s.visRange2, dawn: false, timeS: 0, targets: hulls, flashX: boat.x, flashY: boat.y };
   const realDt = s.stepS;
   const dt = realDt * s.timeScale;
   const eff2 = p.gun.effectiveM * p.gun.effectiveM;
-  const out: ConvoyTrial = {
-    end: 'timeout', timeS: 0, afterDawn: false, arrived: 0, bargesSunk: 0, bargeHits: 0, playerHits: 0, hpLost: 0, fuelPct: 0,
-    detected: false, detectS: NaN, firstTargetBarge: false, passesBarge: 0, passesPlayer: 0, burstsPlayer: 0, burstsBarge: 0, switches: 0,
-    gunShots: 0, gunHits: 0, ptRetired: 0, ptSunk: 0, suppressions: 0,
-    minWarnS: Infinity, maxPassing: 0, beyondEff: 0, beyondSight: 0, beyondPlayerSight: 0, worstBargePassHits: 0, worstPlayerPassHits: 0, singlePassKills: 0,
-    resolvedS: NaN, resolvedAfterDawn: false, engineHit: false,
-  };
+  const out = createConvoyTrial();
   let t = 0;
   let sinking = false;
   let atHome = false;
@@ -113,7 +99,8 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
     onContact: (gained) => {
       if (gained && Number.isNaN(out.detectS)) {
         out.detectS = t;
-        out.firstTargetBarge = ts.current > 0;
+        out.firstTargetBarge = ts.current > 0 && ts.current <= nb;
+        if (gb) gb.rec.firstTarget = ts.current === gb.hull;
       }
     },
     onLeave: () => {}, onOut: () => {},
@@ -121,8 +108,9 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
     onCommit: (i) => {
       curPassTarget = ts.current;
       passHitsCur = 0;
-      for (let k = 1; k < hulls.length; k++) hitsAtCommit[k] = f.barges[k - 1]!.hits;
-      if (q.boats[i]!.burst) {
+      for (let k = 1; k <= nb; k++) hitsAtCommit[k] = f.barges[k - 1]!.hits;
+      if (gb && ts.current === gb.hull) noteGunboatAttack(gb, q.boats[i]!.burst);
+      else if (q.boats[i]!.burst) {
         if (ts.current === 0) out.burstsPlayer++;
         else out.burstsBarge++;
       } else if (ts.current === 0) out.passesPlayer++;
@@ -132,6 +120,7 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
     },
     onPassEnd: () => {
       if (curPassTarget === 0) out.worstPlayerPassHits = Math.max(out.worstPlayerPassHits, passHitsCur);
+      else if (gb && curPassTarget === gb.hull) gb.rec.worstPassHits = Math.max(gb.rec.worstPassHits, passHitsCur);
       else out.worstBargePassHits = Math.max(out.worstBargePassHits, passHitsCur);
     },
     // 射程・視程は標的から（core/pt-fire と同じ基準）。自艇の視程の外からの発射は標的が大発のときに起きる（見捨てた艇が遠くの掃射を見る絵）
@@ -163,6 +152,7 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
         }
         return;
       }
+      if (gb && hull === gb.hull) return hitConvoySimGunboat(gb, ts, c, p.hit.damage, t);
       out.bargeHits++;
       if (hitConvoyBarge(f, hull - 1, p.hit.damage, t, cev)) {
         hulls[hull]!.valid = false;
@@ -171,12 +161,25 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
       }
     },
   };
-  // 25mm（撃つ台本だけ。世界の PtSquadron と同じ: 着弾した生きた PT ごとに seed+20 から 1 回引いて hitPt）
+  // 隼艇（あれば）を末尾の船体に足してから標的スロットを作る
+  const gb = s.gunboat ? createConvoySimGunboat(s.gunboat, { pt: p, q, f, cp, player: boat, start: s.start, ring: s.ring, visRange2: s.visRange2, gunShellPoolSize: s.gunShellPoolSize }, hulls, seed, ev) : null;
+  const ts = createPtTargetSet(hulls);
+  const bargeDetectM = enemyDetectRangeM(p.baseDetectM, speedFactorForBand(s.detectBand, s.vis.speedFactor), s.vis, false);
+  for (let k = 1; k <= nb; k++) ts.detectM[k] = bargeDetectM;
+  // 25mm（撃つ台本だけ。世界の PtSquadron と同じ: 着弾した生きた PT ごとに seed+20 から 1 回引いて hitPt。隼艇がいれば結末を変えた砲を覚える）
   const g = sp.shoot ? s.gun : null;
   const gun = g ? createPtGun(g, s.gunShellPoolSize) : null;
   const fireM = g ? Math.min(g.rangeM, s.fireRangeM ?? g.rangeM) : 0;
   const range2 = fireM * fireM;
-  const gunEv: GunEvents = { onFire: () => {}, onHit: (i, gi) => hitPt(q, p, i, g!.groups[gi]!.damage, gunRng.next(), ev), onMiss: () => {} };
+  const gunEv: GunEvents = {
+    onFire: () => {},
+    onHit: (i, gi) => {
+      const f0 = q.boats[i]!.fate;
+      hitPt(q, p, i, g!.groups[gi]!.damage, gunRng.next(), ev);
+      if (gb && q.boats[i]!.fate !== f0) notePlayerFate(gb, i);
+    },
+    onMiss: () => {},
+  };
   const steer: ConvoySteer = { headingDeg: NaN, wantMps: 0 };
   const ctx: ConvoySteerCtx = { boat, f, cp, q, ring: s.ring, visRange2: s.visRange2, silentMps: s.boat.silentMaxMps, cruiseMps: s.boat.speedCruiseMps };
   while (t < SIM_MAX_S - TIME_EPS_S) {
@@ -234,13 +237,14 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
     const arrivedBefore = f.arrived;
     stepConvoy(f, cp, dt, cev);
     if (f.arrived !== arrivedBefore) {
-      for (let k = 1; k < hulls.length; k++) {
+      for (let k = 1; k <= nb; k++) {
         if (f.barges[k - 1]!.phase === CV_ARRIVED && hulls[k]!.valid) {
           hulls[k]!.valid = false;
           if (ts.current === k) c.targetValid = false;
         }
       }
     }
+    if (gb) stepConvoySimGunboat(gb, ts, c, sinking, realDt, dt); // 隼艇（判断 → 運動 → 帯 → valid）
     band = nextSpeedBand(band, boat.speedMps, bp);
     ts.detectM[0] = enemyDetectRangeM(p.baseDetectM, speedFactorForBand(band, s.vis.speedFactor), s.vis, false);
     hulls[0]!.valid = !sinking && !atHome;
@@ -254,10 +258,12 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
       flashM = gun.battery.fired ? g.flashRevealM : 0;
       heldFlashM = ptHeldFlashM(t, lastFireS, s.rule.flashHoldS, g.flashRevealM);
     }
+    if (gb) fireConvoySimGunboat(gb, q, p, ts, s.rule, s.vis, s.visRange2, t, realDt, dt); // 隼艇の 25mm（seed+22）→ 隼艇の見つかる距離
     c.flashX = boat.x;
     c.flashY = boat.y;
     applyPtTarget(q, c, ts, pickPtTarget(q, ts, heldFlashM, s.rule, t), t);
     c.flashM = ptContactFlashM(ts.current, flashM);
+    if (gb) gunboatContactFlash(gb, ts, c);
     stepPtSection(q, p, c, rng, realDt, dt, ev);
     if (!sinking && stepDamage(d, s.damage, realDt)) {
       sinking = true;
@@ -269,10 +275,6 @@ export function runConvoyTrial(s: ConvoySimSetup, policy: ConvoyPolicy, seed: nu
     out.end = sinking ? 'sunk' : atHome ? 'home' : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout') break;
   }
-  Object.assign(out, {
-    timeS: t, afterDawn: out.end === 'home' && c.dawn, arrived: f.arrived, bargesSunk: f.sunk, detected: !Number.isNaN(out.detectS), switches: ts.switches,
-    hpLost: sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, fuelPct: (fuel.gal / s.fuelGal) * 100,
-    gunShots: gun ? gun.battery.shots : 0, gunHits: q.gunHits, ptRetired: q.retired, ptSunk: q.sunk, suppressions: q.suppressions, minWarnS: q.minWarnS,
-  });
-  return out;
+  if (gb) out.gunboat = finishConvoySimGunboat(gb, q);
+  return finishConvoyTrial(out, q, f, t, c.dawn, ts.switches, sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, (fuel.gal / s.fuelGal) * 100, gun ? gun.battery.shots : 0);
 }

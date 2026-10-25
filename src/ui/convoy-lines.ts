@@ -12,12 +12,18 @@ import type { ConvoyTelemetry } from '../core/convoy';
 import type { HudLine } from './hud-lines';
 import type { ConvoyResult } from './result-types';
 
-/** 出来事の種類（ui/pt-line-clock が上陸・沈没の数の立ち上がりで決める。0 は無し） */
+/**
+ * 出来事の種類（ui/pt-line-clock が上陸・沈没の数の立ち上がりで決める。0 は無し）。v0.6.6（隼艇。jp_01 のハード）: 隼艇の沈没（種類 3）と、決着の出来事の末尾「隼艇は浜に残る」の旗 4
+ * （種類と旗は ui/gunboat-lines の convoyEventLineGb が読む。convoyKey の event << 11 で bits 11〜13）。CONVOY_EV_KIND は種類の取り出し
+ */
 export const CONVOY_EV_SUNK = 1;
 export const CONVOY_EV_ARRIVED = 2;
+export const CONVOY_EV_GB_SUNK = 3;
+export const CONVOY_EV_GB_BEACH = 4;
+export const CONVOY_EV_KIND = 3;
 
-/** 大発が狙われたときの勧め（航過・突撃・沈没の出来事で同じ語） */
-const FIGHT_BACK_JA = '近づいて撃ち返せ';
+/** 大発（v0.6.6 から隼艇も）が狙われたときの勧め（航過・突撃・沈没の出来事で同じ語） */
+export const FIGHT_BACK_JA = '近づいて撃ち返せ';
 
 /** 輸送隊がまだ決着していない（みな上陸か沈没でない。輸送隊の無い任務は false＝jp_05 の文とキーは変わらない）: この間は「帰投せよ」と言わない */
 export function convoyWaiting(c: ConvoyTelemetry): boolean {
@@ -44,7 +50,7 @@ export function convoyNearStep(c: ConvoyTelemetry): number {
 }
 
 /**
- * 輸送隊のキー（ui/mission-line が ptKey と並べて持つ）: 1 | 航行中 << 1 | 上陸 << 3 | 浜までの刻み << 5（平常の行のときだけ。0〜63）| 出来事 << 11（0 なし・1 沈没・2 上陸）。
+ * 輸送隊のキー（ui/mission-line が ptKey と並べて持つ）: 1 | 航行中 << 1 | 上陸 << 3 | 浜までの刻み << 5（平常の行のときだけ。0〜63）| 出来事 << 11（0 なし・1 沈没・2 上陸・3 隼艇の沈没、| 4 浜の旗＝bit 13）。
  * 「米PT N 隻」は ptKey（N_UNSEEN の隻数）が、離脱の尾の距離は ptKey（接触の距離の刻み）が持つ。輸送隊の無い任務は 0
  */
 export function convoyKey(c: ConvoyTelemetry, normal: boolean, event: number): number {
@@ -105,10 +111,17 @@ export function convoyCallJa(c: ConvoyTelemetry): string {
   return c.arrived === 0 ? '大発 全滅 ・ ' : `大発 上陸 ${c.arrived}/${c.total} ・ `;
 }
 
-/** Result の本文 1 行目（24 px・強調）: 上陸・沈没・ノルマ・隊の被弾（data の barge_hp を合わせる根拠。CLAUDE.md §9）。まだ航行中の大発があれば「航行中 N」（ux-9: 上陸の前に終わった夜の達成 0 の訳） */
-export function convoyResultLine(c: ConvoyResult): string {
+/**
+ * Result の本文 1 行目（24 px・強調）: 上陸・沈没・ノルマ・隊の被弾（data の barge_hp を合わせる根拠。CLAUDE.md §9）。まだ航行中の大発があれば「航行中 N」（ux-9: 上陸の前に終わった夜の達成 0 の訳）。
+ * verdict（ハードの違いのある任務のハードだけ。result-scene が objectiveDone を渡す）があれば、ノルマを上陸の後ろに「（ノルマ 3 ・ 達成／未達）」（v0.6.6 レビュー ux:ux-7: ノルマ 3 では 1 隻の沈没で未達になり、
+ * 「沈没 1（ノルマ 3）」が沈んでよい数に読めた）。省けば今の行（ノーマルの pin）。
+ * 達成でなくノルマの数は上陸した夜（達成＝帰投してノルマ以上＝core/mission-flow の convoyObjectiveDone なので、帰投しなかった）は「帰投なし」（v0.6.6 最終確認: 3 隻とも上陸して沈んだ夜が
+ * 「上陸 3/3（ノルマ 3 ・ 未達）」と食い違って読めた。ヘッドレスの 16 夜で 2 夜）
+ */
+export function convoyResultLine(c: ConvoyResult, verdict?: boolean): string {
   const sailing = c.total - c.arrived - c.sunk;
-  return `大発 上陸 ${c.arrived}/${c.total} ・ 沈没 ${c.sunk}（ノルマ ${c.quota}） ・ 大発の被弾 ${c.hitsTaken} 発${sailing > 0 ? ` ・ 航行中 ${sailing}` : ''}`;
+  const head = verdict === undefined ? `大発 上陸 ${c.arrived}/${c.total} ・ 沈没 ${c.sunk}（ノルマ ${c.quota}）` : `大発 上陸 ${c.arrived}/${c.total}（ノルマ ${c.quota} ・ ${verdict ? '達成' : c.arrived >= c.quota ? '帰投なし' : '未達'}） ・ 沈没 ${c.sunk}`;
+  return `${head} ・ 大発の被弾 ${c.hitsTaken} 発${sailing > 0 ? ` ・ 航行中 ${sailing}` : ''}`;
 }
 
 /** Result の状況の行の頭: 「大発 2/3 ・ 米PT: 撃退 1 ・ 健在 1 隻」（ptHead は ui/pt-lines の ptHeadJa。届けた／届かずは 1 行目の「（ノルマ 2）」が言う） */

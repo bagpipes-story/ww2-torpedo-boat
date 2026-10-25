@@ -1,9 +1,11 @@
 // 敵の側（駆逐艦の隊・僚艇・大発の隊・米PT の隊）の生成（v0.6.3 で mission-world の constructor から切り出し。中身と生成の順はそのまま。米PT は大発の後）。
 // 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）、米PT と T-14 の 13mm は PtSquadron の中（seed+18・+20）。
 // 被害はすべて世界の hitBoat を通り、撃破・僚艇の沈没は世界の onSunk（命中スロー＋Scene の爆発）。
+// v0.6.6: 隼艇（jp_01 のハードの WorldSetup.gunboat だけ。systems/gunboat）は米PT の隊が隊の後に作る（判断が隊を読む・標的スロットの末尾の船体・25mm は seed+22）。
 import type Phaser from 'phaser';
 import { boatTextureKey } from '../config/game-config';
 import type { BoatState } from '../core/boat-motion';
+import type { PtSection } from '../core/pt-boats';
 import type { HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
@@ -12,6 +14,7 @@ import { BargeHunt } from './barge-hunt';
 import { DestroyerGroup } from './destroyer-group';
 import { EnemySide } from './enemy-side';
 import { EscortBoat } from './escort-boat';
+import { Gunboat, type GunboatGunKit } from './gunboat';
 import { PtSquadron } from './pt-squadron';
 import type { PtTargetConvoy } from './pt-target';
 import type { SplashPool } from './splash-pool';
@@ -26,8 +29,9 @@ export interface Enemies {
   /** 僚艇（要人）への命中（被害 HP と位置。乱数は引かない）。夜明けの空襲も使う */
   escortHit: (damage: number, x: number, y: number) => void;
   hunt: BargeHunt | null;
-  /** 米PT の隊（v0.6.3）。任務に pt_boats が無ければ null */
+  /** 米PT の隊（v0.6.3）。任務に pt_boats が無ければ null。隼艇（v0.6.6）は隊が持つ（無い任務は null） */
   pts: PtSquadron | null;
+  gunboat: Gunboat | null;
   enemy: EnemySide;
 }
 
@@ -61,7 +65,11 @@ export function buildEnemies(
   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。
   // 艇の砲（実機 1 回目から jp_05 の T-14 の 13mm。seed+20 は PtSquadron が砲のあるときだけ作る）で沈めた PT は大発の撃破と同じ onSunk
-  const pts = s.ptBoats ? new PtSquadron(scene, s.ptBoats, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy) : null;
+  // 隼艇（v0.6.6。輸送隊と米PT の隊のある任務の WorldSetup.gunboat だけ）: 隊が隊の後・標的スロットの前に作る（乱数は 25mm の seed+22 だけ。動きと被弾は引かない）
+  const pt = s.ptBoats;
+  const gb = s.gunboat;
+  const makeGunboat = gb && pt && convoy ? (q: PtSection, kit: GunboatGunKit): Gunboat => new Gunboat(scene, gb, { player: boat, convoy: convoy.state, convoyParams: convoy.p, pts: q, ring: mission.returnPoint, bounds: mission.bounds, visRange2: s.visRange2 }, s.vis, pt.baseDetectM, onSunk, kit) : null;
+  const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat) : null;
   const enemy = new EnemySide(destroyers, hunt, pts);
-  return { gunRng, destroyers, escort, escortHit, hunt, pts, enemy };
+  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy };
 }

@@ -2,6 +2,7 @@
 // mission-data と同じく data を直接読み、game-data の関数は呼ばない（値の循環を作らない）。mission-data からは再 export しない（循環になる）。
 import type { GameData } from './game-data';
 import { getPrototypeMission } from './mission-data';
+import { readHardText } from './mission-hard-data';
 import { shortLabelJa, type BriefingText } from '../core/briefing';
 
 export interface BriefingRecord extends BriefingText {
@@ -13,7 +14,10 @@ export interface BriefingRecord extends BriefingText {
   noteJa: string;
 }
 
-/** Briefing に出す文（missions_seed）と遊べる世界の敵・危険・月。文が無ければ例外。hard なら駆逐艦の隻数を hard block のぶん増やして出す（v0.4.5） */
+/**
+ * Briefing に出す文（missions_seed）と遊べる世界の敵・危険・月。文が無ければ例外。hard なら駆逐艦の隻数を hard block のぶん増やして出す（v0.4.5）。
+ * v0.6.6: 米PT の隊は哨戒線の本数ぶん（jp_01 のハードで ×3）、hard block に objective_ja・success_ja・note_ja があればハードではその文
+ */
 export function getBriefingRecord(data: GameData, missionId: string, hard: boolean = false): BriefingRecord {
   const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
   if (!m) throw new Error(`missions_seed.json に ${missionId} が無い`);
@@ -26,17 +30,18 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   const enemies = proto?.['enemies'];
   if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === 'string')) throw new Error(`${missionId}.v0_1_prototype.enemies が文字列の配列でない（Briefing）`);
   const mission = getPrototypeMission(data, missionId, hard);
-  // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）。大発の任務は enemies のまま
-  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : [...(enemies as string[])];
+  const ht = hard ? readHardText(proto?.['hard'], missionId) : null;
+  // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）、米PT の任務は線の本数ぶん（v0.6.6）。大発の任務は enemies のまま
+  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : mission.ptBoats ? mission.ptBoats.legs_m.map(() => mission.enemyId) : [...(enemies as string[])];
   if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
   return {
     id: missionId,
     titleJa: text('title_ja'),
     date: text('date'),
     place: text('place'),
-    objective: text('objective'),
-    success: text('success'),
-    noteJa: text('briefing_note_ja'),
+    objective: ht ? ht.objective : text('objective'),
+    success: ht ? ht.success : text('success'),
+    noteJa: ht ? ht.note : text('briefing_note_ja'),
     moon: mission.moon,
     enemyIds,
     hazardIds: mission.hazards,

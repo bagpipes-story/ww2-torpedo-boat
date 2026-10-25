@@ -9,6 +9,8 @@
 // v0.6.4（標的スロット。jp_01）: 隊の今の標的・最後の攻撃の標的（HUD の文の分岐）、HUD の「被弾 N 発」は最後の攻撃の標的の船体への命中、Result の被弾・かわしたは自艇への攻撃だけ
 // （大発への航過は分母に入らない）、大発への航過・最初に捉えた標的・砲の名。標的スロットの無い任務（jp_05）は core の値のまま。
 // レビュー: 航過中に標的の大発を失った（passTargetLost。ux-3）・撃つ前に黙った大発への航過（lastPassSilenced。ux-7）。jp_05 はどちらも false のまま。
+// v0.6.6（隼艇。jp_01 のハード）: HUD の「命中 計 N」は自艇の分（隊の命中 − 隼艇の分。systems/gunboat-credit）、航過中に標的の隼艇を失ったときも赤い線の行を降ろす、
+// Result の「見失わせた」は隼艇が標的の間の見失いを引く。頭の行・得点の撃退・撃沈は隊の数のまま（自艇の分と隼艇の分は gunboat-credit の gunboatFates）。最後の出来事が隼艇の砲か（2 行目の頭）。
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
@@ -16,6 +18,7 @@ import { PT_FATE_NONE, PT_FATE_SUNK, createPtTelemetry, hudThreatIndex, ptFighti
 import type { PtGunState } from '../core/pt-gun';
 import { mpsToKt } from '../core/units';
 import type { PtResult } from '../ui/result-types';
+import type { GunboatCredit } from './gunboat-credit';
 import type { PtTargets } from './pt-target';
 
 /** テレメトリと Result が読む世界の部分 */
@@ -30,8 +33,9 @@ export interface PtTelemetryWorld {
     readonly firstDetectBand: SpeedStep | '';
     readonly enemyId: string;
     readonly gun: { readonly state: PtGunState; readonly g: GunBatteryParams } | null;
-    /** 標的スロット（v0.6.4。輸送隊の無い任務は null か省略） */
+    /** 標的スロット（v0.6.4。輸送隊の無い任務は null か省略）、隼艇（v0.6.6。手柄の分け。無い任務は null か省略） */
     readonly targets?: PtTargets | null;
+    readonly gunboat?: { readonly credit: GunboatCredit } | null;
   } | null;
   readonly boat: { readonly state: BoatState };
   /** 艇の静音の上限（2 行目の「14 kt 以下に」） */
@@ -101,7 +105,8 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.gunEventSeq = q.gunEventSeq;
   t.gunEvent = q.gunEvent;
   t.gunEventBoat = q.gunEventBoat;
-  t.gunHits = q.gunHits;
+  t.gunEventByGunboat = s.gunboat ? q.gunEventSeq > 0 && s.gunboat.credit.eventSeq === q.gunEventSeq : false; // 最後の出来事は隼艇の砲（v0.6.6。2 行目の「隼艇 撃退！」）
+  t.gunHits = q.gunHits - (s.gunboat ? s.gunboat.credit.hits : 0); // 自艇の 25mm の分（v0.6.6。隼艇の無い任務は隊の数）
   const g = s.gun ? s.gun.state : null;
   if (g) {
     t.gunStatus = g.battery.status;
@@ -134,7 +139,7 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.lastPassTargetKind = ts ? ts.lastPassTargetKind : 0;
   t.lastPassHits = ts ? ts.lastAttackTargetHits : q.lastPassHits;
   // レビュー ux-3・ux-7: 航過中の標的の大発が沈んだ・上陸した（core は航過を時間・縁・後ろまで続け、赤い線の行が 3〜5 秒残った）、撃つ前に 25mm で黙った大発への航過
-  t.passTargetLost = ts !== null && ob !== null && ts.targetKind === 1 && !ts.hulls[ts.set.current]!.valid;
+  t.passTargetLost = ts !== null && ob !== null && ts.targetKind !== 0 && !ts.hulls[ts.set.current]!.valid; // 大発か隼艇（v0.6.6）
   t.lastPassSilenced = ts !== null && ts.lastPassSilenced;
 }
 
@@ -178,7 +183,7 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     hpMax: w.damageParams.maxHp,
     firstDetectM: q.firstDetectM,
     firstDetectBand: s.firstDetectBand,
-    lostContacts: q.lostContacts - (ts ? ts.inheritedLosses : 0), // 標的が沈んだ・上陸した・輪に入ったための切り替えで受け継いだ接触が切れたのは見失わせたではない（v0.6.4 レビュー ai:R4）
+    lostContacts: q.lostContacts - (ts ? ts.inheritedLosses + ts.gunboatLosses : 0), // 受け継いだ接触が切れた（v0.6.4 レビュー ai:R4）・隼艇が標的の間に切れた（v0.6.6 レビュー R5）のは見失わせたではない
     closestM: Math.sqrt(q.closest2),
     minWarnS: q.minWarnS,
     gunEnabled: g !== null,

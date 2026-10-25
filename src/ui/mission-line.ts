@@ -34,8 +34,9 @@ import {
   seaplaneLine, shallowsLine, sightedFast, stormLine,
 } from './hud-lines';
 import { airRaidTagJa, bargeHideTagKey, callLineText, clockKey, lineFitScale, strikeKey, strikeLine } from './dawn-lines';
-import { convoyEventLine, convoyKey, convoyWaiting } from './convoy-lines';
+import { convoyKey, convoyWaiting } from './convoy-lines';
 import { engineKey, engineLine, engineTagJa, engineTagKey } from './engine-lines';
+import { convoyEventLineGb } from './gunboat-lines';
 import { ptKey, ptLine } from './pt-lines';
 import { PtLineClock } from './pt-line-clock';
 import {
@@ -221,7 +222,7 @@ export class MissionLine {
       this.lastEngineKey = eKey;
       this.lastEngineTagKey = eTag;
       if (mode === MISSION_CONVOY_EVENT) {
-        const l = convoyEventLine(t.convoy, this.ptClock.convoyEvent);
+        const l = convoyEventLineGb(t, this.ptClock.convoyEvent); // 大発の沈没・上陸と、隼艇の沈没・決着の末尾「隼艇は浜に残る」（v0.6.6。隼艇のいない任務は convoyEventLine と同じ）
         this.missionText.setText(l.text).setColor(l.color);
       } else if (engineMode) {
         const l = engineLine(t, mode, eKey);

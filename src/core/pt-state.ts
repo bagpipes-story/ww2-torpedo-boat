@@ -5,10 +5,12 @@ import type { PtParams } from './pt-data';
 import { createShells, type ShellState } from './shells';
 import type { SmokeParams, SmokeState } from './smoke';
 
-/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm（jp_01 の T-38 の 25mm も）。+21 は大発の 13mm の撃ち返しに予約（版未定）。+22 は v0.6.6 の隼艇の 25mm に予約、+23 は空き。機関の不調（v0.6.5）は乱数を引かない） */
+/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm（jp_01 の T-38 の 25mm も）。+21 は大発の 13mm の撃ち返しに予約（版未定）。+22 は v0.6.6 の隼艇の 25mm、+23 は空き。機関の不調（v0.6.5）は乱数を引かない） */
 export const PT_SEED_OFFSET = 18;
 /** T-14 の 13mm の乱数の系列（seed+20。v0.6.3 実機 1 回目。1 発 2 回・生きた PT への命中 1 回。米PT の隊で艇に砲がある任務（jp_05）だけ作る） */
 export const PT_GUN_SEED_OFFSET = 20;
+/** 隼艇の 25mm の乱数の系列（seed+22。v0.6.6。jp_01 のハードだけ。1 発 2 回・生きた PT への命中 1 回。撃たなければ引かない。隼艇の動き・被弾・見つかる距離は引かない） */
+export const GUNBOAT_GUN_SEED_OFFSET = 22;
 
 /**
  * 段階: 哨戒 → 警戒 → 突撃 → 航過 → 離脱（→ 突撃）→ 去る → 海域の外（v0.6.3 実機 1 回目から、どの段階からも沈む）。
@@ -155,14 +157,14 @@ export interface PtTelemetry {
    * 弾倉の交換の残り秒、出撃のときに 1 回の射程と有効射程 m
    */
   gunEnabled: boolean; gunStatus: number; gunFast: boolean; gunTargetM: number; gunHits: number; gunEverFired: boolean; reloadLeftS: number; gunRangeM: number; gunEffectiveM: number;
-  /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）とその PT、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った（撃退か、連射なら制圧も）・撃退で黙った */
-  gunEventSeq: number; gunEvent: number; gunEventBoat: number; fighting: number; sunk: number; passSilenced: boolean; passRetired: boolean;
+  /** 13mm の出来事の通し番号と種類（PT_GUN_EV_*）とその PT、まだ戦う PT（去っていない・結末なし）の数、沈めた数、航過中の PT が被弾で黙った（撃退か、連射なら制圧も）・撃退で黙った、その出来事は隼艇の砲が起こした（v0.6.6） */
+  gunEventSeq: number; gunEvent: number; gunEventBoat: number; fighting: number; sunk: number; passSilenced: boolean; passRetired: boolean; gunEventByGunboat: boolean;
   /**
    * 追撃（v0.6.3 実機 2 回目）: 航過中の攻撃が連射・最後に終えた攻撃が連射とその PT（ui/pt-line-clock が 13mm の出来事と同じ PT の連射の結果を 1 行にまとめる）・撃った連射の数・
    * 攻撃が終わって弾がまだ飛んでいる（隊の seqPending。ui/pt-chase-lines の ptHoldPass）
    */
   burst: boolean; burstFired: boolean; lastPassBoat: number; bursts: number; resultPending: boolean;
-  /** 隊の今の標的と最後に終えた攻撃の標的（v0.6.4。0 自艇・1 大発。米PT の標的スロットの無い任務は 0 のまま）: HUD の航過・突撃・結果の文を切り替える */
+  /** 隊の今の標的と最後に終えた攻撃の標的（v0.6.4。0 自艇・1 大発・2 隼艇（v0.6.6）。米PT の標的スロットの無い任務は 0 のまま）: HUD の航過・突撃・結果の文を切り替える */
   targetKind: number; lastPassTargetKind: number;
   /**
    * v0.6.4 レビュー（標的スロットの無い任務は false のまま）: 航過中の標的の大発が沈んだ・上陸した（赤い線の行を降ろし、沈没・上陸の出来事を先に出す。ux-3）、
@@ -176,7 +178,7 @@ export function createPtTelemetry(): PtTelemetry {
     enabled: false, total: 0, alive: 0, out: 0, detected: false, passing: false, fired: false, dodge: 0, escapeDeg: NaN, threatPhase: -1, dx: NaN, dy: NaN, sighted: false,
     passes: 0, maxPasses: 0, passSeq: 0, lastPassHits: 0, lastPassFired: false, damagePerHit: 0, leftAtDawn: false, silentMaxKt: NaN, leaveDirJa: '',
     gunEnabled: false, gunStatus: 0, gunFast: false, gunTargetM: 0, gunHits: 0, gunEverFired: false, reloadLeftS: 0, gunRangeM: NaN, gunEffectiveM: NaN,
-    gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1, fighting: 0, sunk: 0, passSilenced: false, passRetired: false, burst: false, burstFired: false, lastPassBoat: -1, bursts: 0, resultPending: false,
+    gunEventSeq: 0, gunEvent: 0, gunEventBoat: -1, fighting: 0, sunk: 0, passSilenced: false, passRetired: false, gunEventByGunboat: false, burst: false, burstFired: false, lastPassBoat: -1, bursts: 0, resultPending: false,
     targetKind: 0, lastPassTargetKind: 0, passTargetLost: false, lastPassSilenced: false,
   };
 }

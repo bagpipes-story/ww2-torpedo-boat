@@ -178,8 +178,8 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   if (type === 'escort_vip' && !escort) throw new Error(`${missionId}: type が escort_vip なのに v0_1_prototype.escort が無い`);
   if (escort && !(data.boats.boats as readonly Record<string, unknown>[]).some((x) => x['id'] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat（${escort.boat}）が boats.json に無い`);
   const enemyStart = barges || ptBoats ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
-  // 難易度ハード（v0.4.5。config/mission-hard-data。v0.6.4 で切り出し）: 全隻の出発点・全門の沿岸砲・撃沈の達成の隻数（ハードなら hard block の分を足す）
-  const { enemyStarts, shoreBatteryXs, objectiveSinkCount } = readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b);
+  // 難易度ハード（v0.4.5。config/mission-hard-data。v0.6.4 で切り出し）: 全隻の出発点・全門の沿岸砲・撃沈の達成の隻数、v0.6.6 から米PT の哨戒線・上陸のノルマ（ハードなら hard block の分を足す）
+  const { enemyStarts, shoreBatteryXs, objectiveSinkCount, ptLegs, convoyQuota } = readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b, { ptBoats: ptBoats !== null, convoy: proto['convoy'] !== undefined });
   // 輸送船（v0.4.7）: 駆逐艦の任務だけ（隊の 1 隻として同じ AI で動く）
   const trRaw = proto['transport'] as Record<string, unknown> | undefined;
   let transport: PrototypeMission['transport'] = null;
@@ -217,7 +217,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     playerBoatId,
     torpedoId,
     enemyId,
-    enemyCount: enemyStart ? enemyStarts.length : ids.length,
+    enemyCount: enemyStart ? enemyStarts.length : ids.length + (ptLegs ? ptLegs.length : 0),
     bounds: b,
     playerStart,
     enemyStart,
@@ -226,8 +226,9 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
     objectiveSinkCount,
     mainWeapon,
     barges,
-    ptBoats,
-    convoy,
+    // ハード（v0.6.6。jp_01）: 足す哨戒線を legs_m の後ろに・上陸のノルマを置き換えた写し（data の配列は触らない。PrototypeMission の鍵は増やさない）
+    ptBoats: ptBoats && ptLegs ? { ...ptBoats, legs_m: [...ptBoats.legs_m, ...ptLegs] } : ptBoats,
+    convoy: convoy && convoyQuota !== null ? { ...convoy, arrive_quota: convoyQuota } : convoy,
     coast,
     shoreBattery,
     shoreBatteryXs,

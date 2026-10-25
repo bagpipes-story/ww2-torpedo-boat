@@ -1,11 +1,14 @@
 // 画面外の目標（敵の駆逐艦・帰投地点）の方向と距離を画面端に出すマーカー（docs/02 §6.5・§6.7）。
 // v0.3.0 で target-marker を一般化: テクスチャ・ラベルの接頭辞・距離の刻み・ラベルの上下・上端の余白を指定する。
 // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
+// v0.6.6（隼艇の矢印）: 任意の矢印の色 tint、出ている間の点（読むだけ）と nudge（縁に沿ってずらす。ui/marker-separation。次の refresh が方位どおりに戻す）。
+// v0.6.6 レビュー ux:ux-1: 任意の hideMargin（「画面の内なら隠す」の余白。ui/edge-marker-screen）と refresh の drawn（目標の絵が出ていなければ画面の内でも縁へ）。省けば今のまま。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/game-config';
 import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_MARGIN, TARGET_MARKER_RIGHT_MARGIN, hudTextStyle } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { degToRad, radToDeg } from '../core/units';
+import { markerOnScreen } from './edge-marker-screen';
 
 export interface EdgeMarkerOptions {
   textureKey: string;
@@ -20,6 +23,10 @@ export interface EdgeMarkerOptions {
   /** 上端の余白（中心からの距離ではなく、画面上端から） */
   topMargin: number;
   color?: string;
+  /** 矢印の絵に掛ける色（v0.6.6。隼艇の矢印。省略は絵の色のまま） */
+  tint?: number;
+  /** 「画面の内なら隠す」の判定の余白 px（全辺。v0.6.6 レビュー ux:ux-1。隼艇は 0＝本当の画面の矩形）。省略は今の縁（上 topMargin・左右と下 TARGET_MARKER_MARGIN）。クランプの縁は変えない */
+  hideMargin?: number;
 }
 
 export class EdgeMarker {
@@ -27,12 +34,16 @@ export class EdgeMarker {
   private readonly label: Phaser.GameObjects.Text;
   private lastDistanceStep = -1;
   private visible = false;
+  /** 最後の refresh で矢印を置いた論理画面の点（nudge 込み） */
+  private mx = 0;
+  private my = 0;
 
   constructor(
     scene: Phaser.Scene,
     private readonly opts: EdgeMarkerOptions,
   ) {
     this.arrow = scene.add.image(0, 0, opts.textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.hud).setVisible(false);
+    if (opts.tint !== undefined) this.arrow.setTint(opts.tint);
     this.label = scene.add
       .text(0, 0, '', hudTextStyle(HUD_FONT_MARKER_PX, opts.color))
       .setOrigin(0.5, opts.labelAbove ? 1 : 0)
@@ -42,9 +53,10 @@ export class EdgeMarker {
 
   /**
    * 毎フレーム。目標の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する。
-   * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）
+   * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）。
+   * drawn=false（目標の絵が出ていない。隼艇は自艇の視程の外）なら画面の内でも隠さず、方位どおり縁に置く（v0.6.6 レビュー ux:ux-1。既定 true＝今のまま）
    */
-  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number): void {
+  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true): void {
     if (!show || Number.isNaN(dx)) {
       this.setShown(false);
       return;
@@ -59,16 +71,16 @@ export class EdgeMarker {
     const halfW = cx - TARGET_MARKER_MARGIN;
     const downH = cy - TARGET_MARKER_MARGIN;
     const upH = cy - this.opts.topMargin;
-    // 「画面内なら隠す」は画面全体で判定する（ボタンの列の下に見えている目標にマーカーを出さない）
-    if (Math.abs(sx) < halfW && sy < downH && -sy < upH) {
+    // 「画面内なら隠す」は画面全体で判定する（ボタンの列の下に見えている目標にマーカーを出さない）。hideMargin のある矢印はその余白で（ui/edge-marker-screen）
+    if (drawn && markerOnScreen(sx, sy, cx, cy, this.opts.topMargin, TARGET_MARKER_MARGIN, this.opts.hideMargin)) {
       this.setShown(false);
       return;
     }
     // 画面の矩形の縁へクランプ（中心からの方向を保つ）。右へ出るときは「煙幕」「見張り」ボタンの左に置く
     const sideW = sx > 0 ? cx - TARGET_MARKER_RIGHT_MARGIN : halfW;
     const k = Math.min(sideW / Math.max(Math.abs(sx), 1e-6), (sy >= 0 ? downH : upH) / Math.max(Math.abs(sy), 1e-6));
-    const mx = cx + sx * k;
-    const my = cy + sy * k;
+    const mx = (this.mx = cx + sx * k);
+    const my = (this.my = cy + sy * k);
     this.arrow.setPosition(mx, my).setAngle(radToDeg(Math.atan2(sx, -sy)));
     const gap = TARGET_MARKER_MARGIN * 0.35;
     this.label.setPosition(mx, this.opts.labelAbove ? my - gap : my + gap);
@@ -79,6 +91,20 @@ export class EdgeMarker {
       this.label.setText(`${this.opts.labelPrefix} ${step * this.opts.stepM} m`);
     }
     this.setShown(true);
+  }
+
+  /** 出ているか・矢印の点（v0.6.6。ui/marker-separation が読む） */
+  get isShown(): boolean { return this.visible; }
+  get shownX(): number { return this.mx; }
+  get shownY(): number { return this.my; }
+
+  /** refresh の後に矢印とラベルを (dx, dy) px だけ動かす（v0.6.6。隼艇の矢印を輸送隊の矢印から縁に沿ってずらす） */
+  nudge(dx: number, dy: number): void {
+    if (dx === 0 && dy === 0) return;
+    this.mx += dx;
+    this.my += dy;
+    this.arrow.setPosition(this.arrow.x + dx, this.arrow.y + dy);
+    this.label.setPosition(this.label.x + dx, this.label.y + dy);
   }
 
   private setShown(v: boolean): void {
