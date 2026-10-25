@@ -157,6 +157,17 @@ describe('jp_01 のハードの世界（米PT 3 隻・ノルマ 3）', () => {
     expect(rs).toContain('const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);');
     expect(rs).toContain('convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined)');
   });
+  it('Result の輸送隊の 1 行目（ハード）: 3 隻とも上陸したのに帰投しなかった夜（沈没・漂流）は「未達」ではなく「帰投なし」（v0.6.6 最終確認: 「上陸 3/3（ノルマ 3 ・ 未達）」が食い違って読めた）。24 px で 1 行', () => {
+    const q = H.convoy!.params.quota;
+    const done = (reason: 'returned' | 'pt_fire' | 'adrift', arrived: number): string => convoyResultLine({ total: 3, arrived, sunk: 3 - arrived, quota: q, hitsTaken: 2 }, convoyObjectiveDone(reason, arrived, q));
+    expect(done('pt_fire', 3)).toBe('大発 上陸 3/3（ノルマ 3 ・ 帰投なし） ・ 沈没 0 ・ 大発の被弾 2 発');
+    expect(done('adrift', 3)).toBe('大発 上陸 3/3（ノルマ 3 ・ 帰投なし） ・ 沈没 0 ・ 大発の被弾 2 発');
+    expect(done('returned', 3)).toBe('大発 上陸 3/3（ノルマ 3 ・ 達成） ・ 沈没 0 ・ 大発の被弾 2 発');
+    expect(done('pt_fire', 2)).toBe('大発 上陸 2/3（ノルマ 3 ・ 未達） ・ 沈没 1 ・ 大発の被弾 2 発'); // ノルマに届かなければ帰投の有無に関わらず未達
+    expect(done('returned', 2)).toBe('大発 上陸 2/3（ノルマ 3 ・ 未達） ・ 沈没 1 ・ 大発の被弾 2 発');
+    const worst = convoyResultLine({ total: 3, arrived: 3, sunk: 0, quota: q, hitsTaken: 99 }, false);
+    expect(textWidthPx(worst, 24), worst).toBeLessThanOrEqual(1280 - 2 * 24);
+  });
 });
 
 describe('jp_01 のハードの Briefing（spec-v066 §D.6）', () => {
