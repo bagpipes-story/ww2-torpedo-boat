@@ -12,12 +12,18 @@ import type { ConvoyTelemetry } from '../core/convoy';
 import type { HudLine } from './hud-lines';
 import type { ConvoyResult } from './result-types';
 
-/** 出来事の種類（ui/pt-line-clock が上陸・沈没の数の立ち上がりで決める。0 は無し） */
+/**
+ * 出来事の種類（ui/pt-line-clock が上陸・沈没の数の立ち上がりで決める。0 は無し）。v0.6.6（隼艇。jp_01 のハード）: 隼艇の沈没（種類 3）と、決着の出来事の末尾「隼艇は浜に残る」の旗 4
+ * （種類と旗は ui/gunboat-lines の convoyEventLineGb が読む。convoyKey の event << 11 で bits 11〜13）。CONVOY_EV_KIND は種類の取り出し
+ */
 export const CONVOY_EV_SUNK = 1;
 export const CONVOY_EV_ARRIVED = 2;
+export const CONVOY_EV_GB_SUNK = 3;
+export const CONVOY_EV_GB_BEACH = 4;
+export const CONVOY_EV_KIND = 3;
 
-/** 大発が狙われたときの勧め（航過・突撃・沈没の出来事で同じ語） */
-const FIGHT_BACK_JA = '近づいて撃ち返せ';
+/** 大発（v0.6.6 から隼艇も）が狙われたときの勧め（航過・突撃・沈没の出来事で同じ語） */
+export const FIGHT_BACK_JA = '近づいて撃ち返せ';
 
 /** 輸送隊がまだ決着していない（みな上陸か沈没でない。輸送隊の無い任務は false＝jp_05 の文とキーは変わらない）: この間は「帰投せよ」と言わない */
 export function convoyWaiting(c: ConvoyTelemetry): boolean {
@@ -44,7 +50,7 @@ export function convoyNearStep(c: ConvoyTelemetry): number {
 }
 
 /**
- * 輸送隊のキー（ui/mission-line が ptKey と並べて持つ）: 1 | 航行中 << 1 | 上陸 << 3 | 浜までの刻み << 5（平常の行のときだけ。0〜63）| 出来事 << 11（0 なし・1 沈没・2 上陸）。
+ * 輸送隊のキー（ui/mission-line が ptKey と並べて持つ）: 1 | 航行中 << 1 | 上陸 << 3 | 浜までの刻み << 5（平常の行のときだけ。0〜63）| 出来事 << 11（0 なし・1 沈没・2 上陸・3 隼艇の沈没、| 4 浜の旗＝bit 13）。
  * 「米PT N 隻」は ptKey（N_UNSEEN の隻数）が、離脱の尾の距離は ptKey（接触の距離の刻み）が持つ。輸送隊の無い任務は 0
  */
 export function convoyKey(c: ConvoyTelemetry, normal: boolean, event: number): number {

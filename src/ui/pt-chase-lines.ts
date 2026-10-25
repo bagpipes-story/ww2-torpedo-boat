@@ -5,6 +5,7 @@
 // 「針路そのまま」: 連射から巡航で離れて戻ると 62〜78% 沈む（速い追っ手が転舵の内側を切る）。撃ち返す行は針路そのままがいちばん良い（模擬 N 400。spec r2 §F.1）
 // 実機 2 回目のレビュー: 射撃を押していて連射の PT が射界の外なら「艇尾（艇首）は撃てない」（ux-2）、撃退で黙った連射は航過と同じ「被弾で沈黙」・制圧は「連射をやめた」（ux-4）、
 // 追ってくる PT が 13mm の射程の外なら「600 m まで引きつけよ」（ux-8）、連射の結果は「計 n 回」（上限は撃退・制圧で減って逆戻りに見えた。ux-7）
+// v0.6.6（隼艇。jp_01 のハード）: 隼艇を狙う連射・追ってくる PT・連射の結果は ui/gunboat-lines（連射の撃ったビット K_BURST_FIRED を共有）。Result の制圧の句は自艇の分を渡す
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_DISTANCE_STEP_M } from '../config/pt-config';
 import { bearingJa } from '../core/briefing';
@@ -21,7 +22,7 @@ import type { PtResult } from './result-types';
  * 射撃を押していて射界の外（ux-2）<< 13 | その PT が艇首の側 << 14
  */
 export const K_BURST = 1 << 6;
-const K_BURST_FIRED = 1 << 7;
+export const K_BURST_FIRED = 1 << 7;
 const K_BURST_DIR = 8;
 const K_BURST_SILENCED = 1 << 11;
 const K_BURST_RETIRED = 1 << 12;
@@ -90,8 +91,8 @@ export function burstsResultJa(r: PtResult): string {
   return r.bursts > 0 ? ` ・ 連射 ${r.bursts} 回` : '';
 }
 
-/** Result の 4 行目の制圧の句（制圧 0 なら出さない） */
-export function suppressResultJa(r: PtResult): string {
+/** Result の 4 行目の制圧の句（制圧 0 なら出さない。隼艇のいる任務は自艇の分。v0.6.6） */
+export function suppressResultJa(r: Pick<PtResult, 'suppressions'>): string {
   return r.suppressions > 0 ? ` ・ 制圧 ${r.suppressions}` : '';
 }
 

@@ -131,6 +131,11 @@ export class Gunboat {
     this.label.setText(`${this.p.labelJa}${g.toBeach ? GUNBOAT_BEACH_SUFFIX : ''}${g.hp < this.p.hullHp ? `${GUNBOAT_HP_PREFIX}${g.hp}` : ''}${aimed ? GUNBOAT_AIMED_SUFFIX : ''}`).setColor(aimed ? HUD_COLOR_WARN : ESCORT_TEXT_COLOR);
   }
 
+  /** 隼艇の 25mm が撃った弾（Result の「命中 9/39 発」の分母。systems/mission-result-extras） */
+  get shots(): number {
+    return this.gun.state.battery.shots;
+  }
+
   /** HUD のテレメトリへ（mission-telemetry が毎フレーム。平方根 1 回） */
   writeTelemetry(t: GunboatTelemetry, player: BoatState): void {
     writeGunboatTelemetry(t, this.state, this.p, player);

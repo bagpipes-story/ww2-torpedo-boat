@@ -1,6 +1,7 @@
 // Result の材料の型のうち任務ごとの部分（v0.6.3 で result-scene から切り出し。中身はそのまま。型だけ）。result-scene.ts が再 export する（今までの import のため）。
 // v0.6.3: 米PT の記録（PtResult）を足した。実機 1 回目: T-14 の 13mm の記録（射撃・命中・撃退・撃沈・閃光が最初）と enemies.json の id。実機 2 回目: 連射と制圧の数。
 // v0.6.4: 味方の大発の輸送隊の記録（ConvoyResult）と、米PT の標的スロットの欄（大発への航過・最初に捉えた標的・砲の名）。v0.6.5: 機関の不調の記録（EngineResult）。
+// v0.6.6: 隼艇の僚艇の記録（GunboatResult。jp_01 のハード）。
 import type { SpeedStep } from '../core/boat-motion';
 
 /** 大発掃討の記録（v0.4.2）: 隻数・撃破・上陸・ノルマ、射撃の発射と命中、最初に撃った距離 m と速力帯、最初に目で気づかれた距離 m（NaN なら気づかれる前に撃った）、撃破の距離の最小・最大 m、13mm の命中数と被害 HP。実機で数値を合わせる根拠 */
@@ -82,7 +83,7 @@ export interface PtResult {
   bursts: number;
   suppressions: number;
   /**
-   * 米PT の標的スロット（v0.6.4。jp_01）: 大発を狙った攻撃の数（航過の後の「（大発へ N）」）、最初に捉えた標的（0 自艇・1 大発。「最初 600 m ・ 大発」＝jp_01 の大発の帯 silent・新月）、
+   * 米PT の標的スロット（v0.6.4。jp_01）: 大発を狙った攻撃の数（航過の後の「（大発へ N）」）、最初に捉えた標的（0 自艇・1 大発・2 隼艇。「最初 600 m ・ 大発」＝jp_01 の大発の帯 silent・新月）、
    * 砲の名の頭（label から「機銃」を除いた「25mm」。jp_05 は「13mm」）。jp_01 では hits / cleanPasses / firedPasses は自艇への攻撃だけ（大発への航過は「かわした」の分母に入らない）
    */
   passesOnBarges: number;
@@ -105,4 +106,15 @@ export interface EngineResult {
   finals: number;
   limps: number;
   limpS: number;
+}
+
+/**
+ * 隼艇の僚艇の記録（v0.6.6。jp_01 のハード。systems/mission-result-extras の gunboatResult）: 名（data の label_ja）・残り HP と最大・受けた命中・沈んだか（その体感秒）、
+ * 隼艇の 25mm の射撃・PT への命中・撃退・撃沈（最後の結末を決めた砲が隼艇の PT。systems/gunboat-credit）・制圧、米PT が隼艇を狙った攻撃の数（航過＋連射）。Result の 1 行（ui/gunboat-lines）
+ */
+export interface GunboatResult {
+  labelJa: string;
+  hp: number; maxHp: number; hitsTaken: number; sunk: boolean; sunkS: number;
+  shots: number; hits: number; retired: number; ptSunk: number; suppressions: number;
+  attacked: number;
 }

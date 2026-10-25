@@ -10,13 +10,15 @@
 //   航過の結果はその下でも待つ）。段が過熱でなくなったら（限界・不調へ進んだ・冷えた）待っている出来事は捨てる（右下の帯と札・限界の行が今の段を言う）。
 //   レビュー ux-2: 「出た」は 2 行目に出ていた ms の和が ENGINE_EVENT_MIN_SHOWN_MS（2 秒）に届いたとき（前は 1 フレーム出たら出たとみなし、1 秒で赤い線に替わられると
 //   規則の文「巡航以下で冷える」が二度と出なかった）。届く前に赤い線などに隠れたら、隠れている間は待ち、消えた後にまた ENGINE_EVENT_SHOW_MS 出す。
+// v0.6.6（隼艇。jp_01 のハード）: 隼艇の沈没も輸送隊の出来事の欄（同じフレームの大発の出来事を残す）、決着の出来事に「隼艇は浜に残る」の旗（上陸した大発があり隼艇が浮いているときだけ。
+//   全滅には付けない。spec-v066 §N-10）。出来事に足す連射の結果は、その連射の標的が自艇のときだけ（隼艇への連射を自艇の HP で言わない。§N-7）。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
 import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
 import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_EV_WARN, ENGINE_WARN } from '../core/engine-trouble';
-import { CONVOY_EV_ARRIVED, CONVOY_EV_SUNK } from './convoy-lines';
+import { CONVOY_EV_ARRIVED, CONVOY_EV_GB_BEACH, CONVOY_EV_GB_SUNK, CONVOY_EV_KIND, CONVOY_EV_SUNK } from './convoy-lines';
 import { MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_PT_GUN_EVENT, MODE_FLAG_CONVOY_EVENT, MODE_FLAG_ENGINE_EVENT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT } from './mission-mode';
 import { ptHoldPass } from './pt-chase-lines';
 import { holdShowUntil, mergeBurstBits } from './pt-gun-lines';
@@ -36,6 +38,7 @@ export class PtLineClock {
   private seenSunk = 0;
   private convoyUntil = 0;
   private convoyShown = false;
+  private seenGunboatSunk = false; // 隼艇の沈没を見た（v0.6.6。隼艇のいない任務は偽のまま）
   convoyEvent = 0;
   /** 機関の過熱の出来事（v0.6.5）: 見た出来事の通し番号、表示の終わり ms、出た（2 行目に出ていた ms の和が ENGINE_EVENT_MIN_SHOWN_MS に届いた）、
    * 出ていた ms の和、前のフレームに出ていた・その時刻（shown が次のフレームで和に足す） */
@@ -50,19 +53,19 @@ export class PtLineClock {
   flags(t: BoatTelemetry, nowMs: number, lastMode: number): number {
     const p = t.pt;
     const cv = t.convoy;
-    if (cv.enabled && (cv.sunk > this.seenSunk || cv.arrived > this.seenArrived)) {
+    const bargeEvent = cv.enabled && (cv.sunk > this.seenSunk || cv.arrived > this.seenArrived);
+    if (bargeEvent) {
       const sunk = cv.sunk > this.seenSunk;
       this.seenSunk = cv.sunk;
       this.seenArrived = cv.arrived;
       // 沈没と上陸はいつも出来事を始める。最後の 1 隻の上陸（決着）は「大発 上陸 k/n ・ 帰投せよ」（ui/convoy-lines。v0.6.4 実機 1 回目のレビュー ux-2: 浜の上陸は 3.3 秒おきで、
       // 前は待っている上陸の出来事を捨てて呼びかけへ回し、呼びかけは赤い線・結果・射撃中の行に負けて「上陸 3/3」がほぼ出なかった）。ただし沈没の出来事が出ている・待っている間の
       // 決着の上陸はそれを残す（afloat 0 の文「沈没 ・ 上陸 k/n ・ 帰投せよ」が決着を言う）
-      if (sunk || !(cv.resolved && this.convoyEvent === CONVOY_EV_SUNK && nowMs < this.convoyUntil)) {
-        this.convoyEvent = sunk ? CONVOY_EV_SUNK : CONVOY_EV_ARRIVED;
-        this.convoyUntil = nowMs + CONVOY_EVENT_SHOW_MS;
-        this.convoyShown = false;
-      }
+      if (sunk || !(cv.resolved && (this.convoyEvent & CONVOY_EV_KIND) === CONVOY_EV_SUNK && nowMs < this.convoyUntil)) this.startConvoyEvent(sunk ? CONVOY_EV_SUNK : CONVOY_EV_ARRIVED, nowMs);
+      if (cv.resolved && cv.arrived > 0 && t.gunboat.enabled && !t.gunboat.sunk) this.convoyEvent |= CONVOY_EV_GB_BEACH; // 決着の出来事の末尾「隼艇は浜に残る」（v0.6.6）
     }
+    if (t.gunboat.sunk && !this.seenGunboatSunk && !bargeEvent) this.startConvoyEvent(CONVOY_EV_GB_SUNK, nowMs); // 「隼艇 沈没 ・ 大発は自艇で守れ」（v0.6.6。同じフレームの大発の出来事を残す）
+    this.seenGunboatSunk = t.gunboat.sunk;
     if (p.gunEventSeq > this.seenEventSeq) {
       this.seenEventSeq = p.gunEventSeq;
       this.eventUntil = nowMs + PT_RESULT_SHOW_MS;
@@ -82,7 +85,7 @@ export class PtLineClock {
     if (e.stage !== ENGINE_WARN) this.engineUntil = 0; // 過熱の段のままの間だけ（機関の無い任務は 0 のまま）
     if (p.passSeq > this.seenPassSeq) {
       this.seenPassSeq = p.passSeq;
-      if (p.burstFired && p.gunEventBoat === p.lastPassBoat && nowMs < this.eventUntil) {
+      if (p.burstFired && p.gunEventBoat === p.lastPassBoat && p.lastPassTargetKind === 0 && nowMs < this.eventUntil) {
         // 同じ PT の連射の結果は出来事の行へ（出来事は今から少なくとも PT_RESULT_SHOW_MS）
         this.merge = mergeBurstBits(p);
         this.eventUntil = Math.max(this.eventUntil, nowMs + PT_RESULT_SHOW_MS);
@@ -102,6 +105,13 @@ export class PtLineClock {
       (nowMs < this.resultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.eventUntil ? MODE_FLAG_PT_GUN_EVENT : 0) | (hold ? MODE_FLAG_PT_HOLD : 0) | (nowMs < this.convoyUntil ? MODE_FLAG_CONVOY_EVENT : 0) |
       (nowMs < this.engineUntil ? MODE_FLAG_ENGINE_EVENT : 0)
     );
+  }
+
+  /** 輸送隊の出来事を始める（種類 CONVOY_EV_*。今から CONVOY_EVENT_SHOW_MS、まだ出ていない） */
+  private startConvoyEvent(kind: number, nowMs: number): void {
+    this.convoyEvent = kind;
+    this.convoyUntil = nowMs + CONVOY_EVENT_SHOW_MS;
+    this.convoyShown = false;
   }
 
   /**

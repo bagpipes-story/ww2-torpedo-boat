@@ -33,8 +33,9 @@ import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa, ptResultLines } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import type { BargeResult, ConvoyResult, EngineResult, EscortResult, PtResult } from '../ui/result-types';
+import type { BargeResult, ConvoyResult, EngineResult, EscortResult, GunboatResult, PtResult } from '../ui/result-types';
 import { engineResultLine } from '../ui/engine-lines';
+import { gunboatResultLineJa } from '../ui/gunboat-lines';
 
 export type { MissionEndReason } from '../core/mission-flow';
 export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
@@ -117,6 +118,7 @@ export interface MissionResult {
   pt: PtResult | null; // 敵の米PT（v0.6.3）の記録。米PT の任務でなければ null（detections は米PT の隊に見つかった回数）
   convoy: ConvoyResult | null; // 味方の大発の輸送隊（v0.6.4）の記録。輸送隊の任務でなければ null
   engine: EngineResult | null; // 機関の不調（v0.6.5。jp_05）の記録。不調の無い任務・?debug&engoff の夜は null
+  gunboat: GunboatResult | null; // 隼艇の僚艇（v0.6.6。jp_01 のハード）の記録。隼艇のいない任務・?debug&nogunboat の夜は null
   detections: number;
   /** 出撃（v0.4.0。「もう一度」の任務と再現用） */
   sortie: Sortie;
@@ -169,9 +171,10 @@ export class ResultScene extends Phaser.Scene {
     } else if (r.pt) {
       // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾、13mm の射撃・命中・撃退・撃沈（実機 1 回目。data を合わせる根拠。CLAUDE.md §9）。
       // 味方の大発の輸送隊（v0.6.4。jp_01）はその上に 1 行目「大発 上陸 2/3 ・ 沈没 1（ノルマ 2） ・ 大発の被弾 9 発」（米PT の 1 行目は 20 px に）
-      const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned, r.convoy !== null);
+      const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned, r.convoy !== null, r.gunboat);
       if (r.convoy) {
         line(convoyResultLine(r.convoy), HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+        if (r.gunboat) line(gunboatResultLineJa(r.gunboat), HUD_FONT_HEADING_PX); // 隼艇（v0.6.6。jp_01 のハード）: 生還／沈没・25mm・狙われた回数（自艇の 25mm の行は自艇の分）
         y += RESULT_SECTION_GAP;
         line(a, HUD_FONT_HEADING_PX);
       } else {
