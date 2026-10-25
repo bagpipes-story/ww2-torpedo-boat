@@ -861,6 +861,7 @@
       "id": "jp_02",
       "campaign": "jp_hard",
       "order": 2,
+      "playable_from": "v0.6.7",
       "title_ja": "孤島の哨戒",
       "date": "1944-01-30",
       "place": "ウェーク島",

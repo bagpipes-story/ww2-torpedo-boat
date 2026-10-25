@@ -62,9 +62,9 @@ describe('3 つの記録の値と source（spec §B.1・§B.3・§B.5）', () =>
     expect(paramsOf(gameData)['wake_trigger_s']).toBe((eventOf(gameData, 'enemy_aircraft')['params'] as Rec)['wake_trigger_s']);
     expect(riskLabelJa(gameData, 'patrol_air')).toBe('夜の哨戒機');
   });
-  it('missions_seed の jp_02: 月没後（dark）・文の差し替え・v0_1_prototype（2 機・撃たない・220 秒・32 gal・北東から南西へ）・playable_from はまだ無い', () => {
+  it('missions_seed の jp_02: 月没後（dark）・文の差し替え・v0_1_prototype（2 機・撃たない・220 秒・32 gal・北東から南西へ）・playable_from v0.6.7（S6 から Title に並ぶ）', () => {
     const m = missionOf(gameData, 'jp_02');
-    expect([m['playable_from'], m['moon'], m['moon_label_ja'], m['hazards']]).toEqual([undefined, 'dark', '月没後', ['enemy_aircraft', 'storm']]);
+    expect([m['playable_from'], m['moon'], m['moon_label_ja'], m['hazards']]).toEqual(['v0.6.7', 'dark', '月没後', ['enemy_aircraft', 'storm']]);
     expect(String(m['historical_note'])).toContain(EXCERPT);
     expect(String(m['historical_note'])).not.toContain('撃沈された');
     const da = m['dawn_air'] as Rec;

@@ -37,14 +37,17 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     // v0.6.1: 版を付け替え（v0.6.1 夜明け・v0.6.2 敵が退く・v0.6.3 昼の海が入ったので、jp_05 は v0.6.4、jp_01 は v0.6.5）
     // v0.6.3: jp_05 は米PT で出撃できる、jp_01 は v0.6.4（jp_05・jp_06 の世界を消すと例外）
     // v0.6.4: jp_01 も出撃できる（味方の大発の輸送隊）。3 つの世界をみな消すと例外
+    // v0.6.7: jp_02「孤島の哨戒」も出撃できる（米の飛行艇の夜の哨戒。order 2 なので 2 番目＝Title の格子の右上）
     expect(menuEntries(gameData.missionsSeed.missions, 'jp_hard').map((e) => [e.id, e.playable, e.status])).toEqual([
       ['jp_01', true, '出撃準備 →'],
+      ['jp_02', true, '出撃準備 →'],
       ['jp_05', true, '出撃準備 →'],
       ['jp_06', true, '出撃準備 →'],
     ]);
     const jpNone = clone();
     delete byId(jpNone, 'jp_06')['v0_1_prototype'];
     delete byId(jpNone, 'jp_01')['v0_1_prototype'];
+    delete byId(jpNone, 'jp_02')['v0_1_prototype'];
     expect(() => menuEntries(jpNone.missionsSeed.missions, 'jp_hard')).not.toThrow(); // jp_05 が残る
     delete byId(jpNone, 'jp_05')['v0_1_prototype'];
     expect(() => menuEntries(jpNone.missionsSeed.missions, 'jp_hard')).toThrow(/出撃できる任務/);
