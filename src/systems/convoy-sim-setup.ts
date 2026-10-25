@@ -14,26 +14,33 @@ export interface ConvoySimOverrides extends PtSimOverrides {
   bargeHp?: number; detectBand?: SpeedStep; keepRatio?: number; holdS?: number; flashHoldS?: number; gunDamage?: number;
   /** 25mm の散布の最小半径 m（艇の gun_battery.min_spread_m の上書き。0 で外したのと同じ）・射撃ボタンを押す距離 m（模擬の台本の上書き。data は変えない） */
   gunFloorM?: number; fireRangeM?: number;
+  /**
+   * ハード（v0.6.6。hard と組む）: gunboatOff は隼艇を切る（米PT 3 隻・ノルマ 3 のまま）・pt3Off は 3 本目の哨戒線を足さない（hard.extra_pt_legs_m を外した写し）・
+   * gbFactor は hard.gunboat.target_range_factor の上書き。どれも無ければ undefined（scripts の見出しに出さない）
+   */
+  gunboatOff?: boolean; pt3Off?: boolean; gbFactor?: number;
+  /** 隼艇の候補（S3 で測るだけ。data の鍵は無い）: 追い付きの距離 m・定位置の内の速さを自艇の速さまでに */
+  gbCatchupM?: number; gbSlow2?: boolean;
 }
 
 export function convoySimSetup(data: GameData, missionId: string, o: ConvoySimOverrides = {}): ConvoySimSetup {
   const d = withConvoyOverrides(data, missionId, o);
   const base = ptSimSetup(d, missionId, o);
-  const w = buildWorldSetup(d, missionId, { hard: o.hard }); // 揺らぎなし（= getConvoyParams）。試行ごとに seed の夜を当てる（convoy-sim の convoyNight）。ハード（v0.6.6）はノルマ 3（米PT 3 隻は ptSimSetup）
+  const w = buildWorldSetup(d, missionId, { hard: o.hard, gunboatOff: o.gunboatOff }); // 揺らぎなし（= getConvoyParams）。試行ごとに seed の夜を当てる（convoy-sim の convoyNight）。ハード（v0.6.6）はノルマ 3・隼艇（米PT 3 隻は ptSimSetup）
   if (!w.convoy) throw new Error(`${missionId} に味方の大発の輸送隊（v0_1_prototype.convoy）が無い`);
-  return { ...base, convoy: w.convoy.params, detectBand: w.convoy.detectBand, rule: w.convoy.rule, ...(o.fireRangeM !== undefined ? { fireRangeM: o.fireRangeM } : {}) };
+  return { ...base, convoy: w.convoy.params, detectBand: w.convoy.detectBand, rule: w.convoy.rule, ...(o.fireRangeM !== undefined ? { fireRangeM: o.fireRangeM } : {}), ...(w.gunboat ? { gunboat: { ...w.gunboat, ...(o.gbCatchupM !== undefined ? { catchupM: o.gbCatchupM } : {}), ...(o.gbSlow2 ? { slowToPlayer: true } : {}) } } : {}) };
 }
 
 /** 輸送隊と 25mm の被害・最小散布の上書きを当てた data の写し（上書きが無ければそのまま）。世界と同じ検査を通す */
 function withConvoyOverrides(data: GameData, missionId: string, o: ConvoySimOverrides): GameData {
-  if ([o.bargeHp, o.detectBand, o.keepRatio, o.holdS, o.flashHoldS, o.gunDamage, o.gunFloorM].every((v) => v === undefined)) return data;
+  if ([o.bargeHp, o.detectBand, o.keepRatio, o.holdS, o.flashHoldS, o.gunDamage, o.gunFloorM, o.pt3Off, o.gbFactor].every((v) => v === undefined)) return data;
   type Rec = Record<string, unknown>;
   const missions = (data.missionsSeed.missions as readonly Rec[]).map((m) => {
     if (m['id'] !== missionId) return m;
     const proto = m['v0_1_prototype'] as Rec;
     const cv = proto['convoy'] as Rec;
     const convoy = { ...cv, barge_hp: o.bargeHp ?? cv['barge_hp'], detect_band: o.detectBand ?? cv['detect_band'], target_keep_ratio: o.keepRatio ?? cv['target_keep_ratio'], target_switch_hold_s: o.holdS ?? cv['target_switch_hold_s'], flash_hold_s: o.flashHoldS ?? cv['flash_hold_s'] };
-    return { ...m, v0_1_prototype: { ...proto, convoy } };
+    return { ...m, v0_1_prototype: { ...proto, convoy, ...withHardOverrides(proto['hard'] as Rec | undefined, o) } };
   });
   const boatId = getPrototypeMission(data, missionId).playerBoatId;
   const boats = (data.boats.boats as readonly Rec[]).map((b) => {
@@ -43,6 +50,14 @@ function withConvoyOverrides(data: GameData, missionId: string, o: ConvoySimOver
     return { ...b, gun_battery: { ...g, groups, ...(o.gunFloorM !== undefined ? { min_spread_m: o.gunFloorM } : {}) } };
   });
   return { ...data, missionsSeed: { ...data.missionsSeed, missions }, boats: { ...data.boats, boats } } as unknown as GameData;
+}
+
+/** ハードの block の上書き（v0.6.6。PT3_OFF・GB_FACTOR）: 上書きが無いか hard block が無ければ {}（鍵を足さない） */
+function withHardOverrides(hard: Record<string, unknown> | undefined, o: ConvoySimOverrides): { hard?: Record<string, unknown> } {
+  if (!hard || (o.pt3Off === undefined && o.gbFactor === undefined)) return {};
+  const { extra_pt_legs_m: legs, ...rest } = hard;
+  const gb = rest['gunboat'] as Record<string, unknown> | undefined;
+  return { hard: { ...rest, ...(o.pt3Off ? {} : { extra_pt_legs_m: legs }), ...(gb && o.gbFactor !== undefined ? { gunboat: { ...gb, target_range_factor: o.gbFactor } } : {}) } };
 }
 
 type Band = readonly [number, number];

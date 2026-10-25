@@ -31,6 +31,8 @@ export interface GunboatParams {
   beachStandoffM: number; beachArriveM: number;
   /** 米PT が隼艇の見つかる距離に掛ける倍率（0 < f ≤ 1。呼ぶ側が標的の detectM に掛ける。撃ったステップの閃光には掛けない） */
   targetRangeFactor: number;
+  /** 候補（S3 の模擬の上書きだけ。data の鍵は無い＝無ければ使わない）: 追い付き（脅威が無く定位置からこれより遠ければ巡航で戻る m）・定位置の内の速さを自艇の速さまでに抑える */
+  catchupM?: number; slowToPlayer?: boolean;
 }
 
 export interface GunboatState {
@@ -112,10 +114,11 @@ function follow(g: GunboatState, p: GunboatParams, c: GunboatCtx, ptTarget: numb
   const sdx = g.stationX - b.x;
   const sdy = g.stationY - b.y;
   const s2 = sdx * sdx + sdy * sdy;
-  if (!g.held && nearestSailing2(c.convoy, b.x, b.y) > p.rejoinM * p.rejoinM) setInput(g, p, bearingDeg(b.x, b.y, g.stationX, g.stationY), silent);
+  if (pi < 0 && p.catchupM !== undefined && s2 > p.catchupM * p.catchupM) setInput(g, p, bearingDeg(b.x, b.y, g.stationX, g.stationY), p.boat.speedCruiseMps);
+  else if (!g.held && nearestSailing2(c.convoy, b.x, b.y) > p.rejoinM * p.rejoinM) setInput(g, p, bearingDeg(b.x, b.y, g.stationX, g.stationY), silent);
   else if (pi >= 0 && pd <= p.fireM * p.fireM) setInput(g, p, broadsideDeg(b, q.boats[pi]!.x, q.boats[pi]!.y), Math.min(silent, p.engageMps));
   else if (pi >= 0 || s2 > p.stationSlowM * p.stationSlowM) setInput(g, p, bearingDeg(b.x, b.y, g.stationX, g.stationY), silent);
-  else setInput(g, p, s2 > p.headingDeadbandM * p.headingDeadbandM ? bearingDeg(b.x, b.y, g.stationX, g.stationY) : c.convoyParams.headingDeg, Math.min(silent, c.convoyParams.speedMps));
+  else setInput(g, p, s2 > p.headingDeadbandM * p.headingDeadbandM ? bearingDeg(b.x, b.y, g.stationX, g.stationY) : c.convoyParams.headingDeg, Math.min(silent, p.slowToPlayer ? Math.min(c.convoyParams.speedMps, c.player.speedMps) : c.convoyParams.speedMps));
 }
 
 /** 決着の後（ラッチ）: 的でなく撃たない。上陸した大発があれば浜の点（先頭の上陸地点の x・浜の線から beach_standoff_m 沖）へ巡航で向かい beach_arrive_m の内で止まる。全滅ならその場で止まる */
