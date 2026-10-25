@@ -5,10 +5,12 @@ import type { PtParams } from './pt-data';
 import { createShells, type ShellState } from './shells';
 import type { SmokeParams, SmokeState } from './smoke';
 
-/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm（jp_01 の T-38 の 25mm も）。+21 は大発の 13mm の撃ち返しに予約（版未定）。+22 は v0.6.6 の隼艇の 25mm に予約、+23 は空き。機関の不調（v0.6.5）は乱数を引かない） */
+/** 米PT の乱数の系列（seed+18。射撃の散布と命中の火災・機関だけ。+17 は見張り、+16 は今夜の揺らぎ、+19 は夜明けの空襲、+20 は T-14 の 13mm（jp_01 の T-38 の 25mm も）。+21 は大発の 13mm の撃ち返しに予約（版未定）。+22 は v0.6.6 の隼艇の 25mm、+23 は空き。機関の不調（v0.6.5）は乱数を引かない） */
 export const PT_SEED_OFFSET = 18;
 /** T-14 の 13mm の乱数の系列（seed+20。v0.6.3 実機 1 回目。1 発 2 回・生きた PT への命中 1 回。米PT の隊で艇に砲がある任務（jp_05）だけ作る） */
 export const PT_GUN_SEED_OFFSET = 20;
+/** 隼艇の 25mm の乱数の系列（seed+22。v0.6.6。jp_01 のハードだけ。1 発 2 回・生きた PT への命中 1 回。撃たなければ引かない。隼艇の動き・被弾・見つかる距離は引かない） */
+export const GUNBOAT_GUN_SEED_OFFSET = 22;
 
 /**
  * 段階: 哨戒 → 警戒 → 突撃 → 航過 → 離脱（→ 突撃）→ 去る → 海域の外（v0.6.3 実機 1 回目から、どの段階からも沈む）。

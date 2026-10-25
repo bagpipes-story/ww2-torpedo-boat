@@ -152,10 +152,10 @@ function withoutFloor(p: GunBatteryParams): GunBatteryParams {
 }
 
 describe('散布の最小半径（core/gun-battery の min_spread_m、v0.6.4 実機 1 回目）', () => {
-  it('jp_t38 だけが鍵を持つ（22 m）。jp_t14・us_elco80 の params には鍵ごと無い', () => {
+  it('jp_t38・jp_h38_hayabusa が鍵を持つ（22 m）。jp_t14・us_elco80 の params には鍵ごと無い', () => {
     expect(J.minSpreadM).toBe(22);
     const withKey = (gameData.boats.boats as unknown as Array<Record<string, unknown>>).filter((b) => typeof b['gun_battery'] === 'object' && b['gun_battery'] !== null && 'min_spread_m' in (b['gun_battery'] as object)).map((b) => b['id']);
-    expect(withKey).toEqual(['jp_t38']);
+    expect(withKey).toEqual(['jp_t38', 'jp_h38_hayabusa']); // v0.6.6 の隼艇（H-38）は jp_t38 と同じ砲（試作はこの値で測った。spec-v066 §B.5）
     for (const id of ['jp_t14', 'us_elco80']) expect('minSpreadM' in gunBatteryParamsFromData(rawOf(id)), id).toBe(false);
     expect('minSpreadM' in G).toBe(false);
   });

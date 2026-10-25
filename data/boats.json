@@ -775,7 +775,98 @@
         "speed_max_kt": "historical",
         "others": "design"
       },
-      "notes": "米PT対抗のため魚雷を外して機銃を増備した艇。日本ハードモードでは護衛の相棒。"
+      "notes": "米PT対抗のため魚雷を外して機銃を増備した艇。日本ハードモードでは護衛の相棒。v0.6.6 からの僚艇は H-38（jp_h38_hayabusa）。寸法 18 × 4.3 は H-38 の値で H-2 の寸法は抜粋に無い。H-2 は 8 隻だけで、多くが前線に着く前に輸送中に失われた（medium の推論。WebSearch の抜粋のみ・本文未読）"
+    },
+    {
+      "id": "jp_h38_hayabusa",
+      "nation": "JP",
+      "name": "H-38 Hayabusa gunboat (No.10 class)",
+      "name_ja": "日 H-38型隼艇（10号隼型・砲艇）",
+      "role": "escort_ally",
+      "length_m": 18.0,
+      "beam_m": 4.3,
+      "displacement_t": 24.8,
+      "speed_max_kt": 27,
+      "speed_cruise_kt": 20,
+      "speed_silent_kt": 7,
+      "speed_bands_kt": {
+        "stop_max": 0.5,
+        "silent_max": 13,
+        "cruise_max": 20,
+        "hysteresis": 1
+      },
+      "accel_mps2": 1.0,
+      "decel_mps2": 1.4,
+      "turn_rate_deg_s": 26,
+      "fire_risk": "high",
+      "crew": 7,
+      "torpedoes": {
+        "count": 0,
+        "reloads": 0,
+        "type_early": null,
+        "type_late": null,
+        "launch_early": null,
+        "launch_late": null
+      },
+      "guns": [
+        "25mm_x3"
+      ],
+      "radar": {
+        "available_from": null,
+        "range_m": 0
+      },
+      "gun_battery": {
+        "label_ja": "25mm機銃",
+        "range_m": 600,
+        "effective_m": 300,
+        "dead_cone_deg": 30,
+        "muzzle_flash_reveal_m": 1200,
+        "spread_factor": {
+          "stop": 1.0,
+          "silent": 1.0,
+          "cruise": 1.6,
+          "full": 2.5
+        },
+        "groups": [
+          {
+            "id": "25mm_type96",
+            "rounds_per_min": 220,
+            "damage": 4,
+            "shell_speed_mps": 500,
+            "dispersion_m": 56,
+            "splash_radius_m": 3.0
+          }
+        ],
+        "magazine": {
+          "rounds": 15,
+          "reload_s": 3.2
+        },
+        "min_spread_m": 22
+      },
+      "smoke_generator": false,
+      "engine_reliability": 0.85,
+      "hull_hp": 60,
+      "hull_circles": 2,
+      "sea_state_limit": 3,
+      "source": {
+        "name": "historical (H-38 型隼艇（10 号隼型）。T-38 型魚雷艇の船体の砲艇。navypedia の jap_aux_h38・weblio の H38（Wikipedia 由来）。WebSearch の抜粋のみ・本文未読。medium)",
+        "length_m": "historical (18.0 m。navypedia・weblio（Wikipedia 由来）。WebSearch の抜粋のみ・本文未読。medium)",
+        "beam_m": "historical (4.3 m。資料で 4.38〜4.30。navypedia・weblio（Wikipedia 由来）。WebSearch の抜粋のみ・本文未読。medium)",
+        "displacement_t": "historical (24.8 t。navypedia・weblio（Wikipedia 由来）。WebSearch の抜粋のみ・本文未読。medium)",
+        "speed_max_kt": "historical (金星41型 × 2・27 kt。navypedia・weblio（Wikipedia 由来）。WebSearch の抜粋のみ・本文未読。medium)",
+        "speed_cruise_kt": "design (T-38 と同じ船体の値 20 kt)",
+        "speed_silent_kt": "design (T-38 と同じ船体の値 7 kt)",
+        "speed_bands_kt": "design (v0.6.6。T-38 と同じ帯（silent_max 13）。H-2 の silent_max 7 だと、静音の上限 13 kt で付いて走る隼艇が巡航の帯になり、新月で 1,200 m から見つかる)",
+        "accel_mps2": "design (T-38 と同じ船体: accel_mps2 1.0・decel_mps2 1.4・turn_rate_deg_s 26)",
+        "crew": "historical (T-38 と同じ乗員 7。navypedia。WebSearch の抜粋のみ・本文未読。medium)",
+        "torpedoes": "historical (魚雷を外した艇。jp_h2 と同じ形)",
+        "guns": "historical (25mm 九六式 単装 × 3 か三連装 × 1・爆雷投下台 4。navypedia／ja.wikipedia。WebSearch の抜粋のみ・本文未読。medium)",
+        "gun_battery": "design (v0.6.6。jp_t38 の gun_battery と同じ値（25mm 単装 1 挺ぶん。label_ja・射程 600・有効 300・死角 30°・閃光 1,200・速力帯の倍率・220 発/分・damage 4・散布 56・水柱 3.0・弾倉 15 発／3.2 秒・min_spread_m 22）。3 挺の火力は 1 挺ぶんに丸めた＝つり合いの選択（抽象・史料なし。三連装 × 1 なら 3 門が同時に向くので、物の理屈で 1 挺とは言えない）: 2 挺ぶん（440 発/分・弾倉 30）だと試作で 3 隻とも上陸して帰投 +8 点・自艇の沈没 −3 点、3 挺ぶんは大発 2.9〜3.0 隻で簡単すぎた（scratchpad の試作。repo に無い）。爆雷は使わない。min_spread_m 22 も jp_t38 のまま＝試作はこの値で測った)",
+        "hull_hp": "design (T-38 と同じ木の船体で HP も同じ 60。僚艇は燃料と火災（fuel・damage の鍵）を持たない＝HP だけ（us_01 の僚艇・jp_h2 と同じ作法）)",
+        "engine_reliability": "design (T-38 と同じ 0.85。読まない＝機関の不調は jp_05 の自艇だけ)",
+        "others": "design (T-38 と同じ: smoke_generator false・hull_circles 2・sea_state_limit 3・fire_risk)"
+      },
+      "notes": "米PT が非武装の大発を止めたので、乙型の船体から魚雷を外して 25mm を積んだ砲艇。目的は大発の護衛と敵魚雷艇の駆逐（ja.wikipedia 隼艇。WebSearch の抜粋のみ・本文未読。high）。約 40〜50 隻で隼艇の主力（medium。隻数が資料で食い違う）。大発を護衛して米PT と戦った記録は抜粋に見つからない（medium。無いことの証拠ではない）。jp_01 のハードでは自艇の後ろに付く僚艇"
     },
     {
       "id": "it_mas500",

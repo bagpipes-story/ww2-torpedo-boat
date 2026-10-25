@@ -836,6 +836,20 @@
             ]
           ],
           "convoy_arrive_quota": 3,
+          "gunboat": {
+            "boat": "jp_h38_hayabusa",
+            "label_ja": "隼艇",
+            "station_astern_m": 150,
+            "station_abeam_m": 120,
+            "station_slow_m": 60,
+            "heading_deadband_m": 5,
+            "rejoin_m": 450,
+            "fire_m": 300,
+            "engage_speed_kt": 10.5,
+            "beach_standoff_m": 60,
+            "beach_arrive_m": 30,
+            "target_range_factor": 0.5
+          },
           "objective_ja": "大発3隻を浜まで護衛する。隼艇が後ろの岸側に付き、大発や隼艇を襲うPTと追ってくるPTを撃つ。自艇への赤い線は自分で全速転舵",
           "success_ja": "大発3隻とも浜に届けて帰投。1隻でも失えば達成の点は無い",
           "note_ja": "1942年12月、ガダルカナル島北岸では月明かりの夜の大発の輸送が米PTと夜間機に阻まれ、計画の半分も運べなかった。12月9日夜にはPT-44とPT-59がカミンボ沖で大発を襲った。魚雷艇や隼艇が大発を護衛してPTと戦った記録は見つかっておらず、この夜はゲーム上の想定（艇は1944年のT-38、隼艇は1943〜44年のH-38で代用）。",
