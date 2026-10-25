@@ -14,7 +14,7 @@ export { isEnemyAiDataRecord, shipAiParamsFromData, type EnemyAiDataRecord } fro
 
 export type ShipAiMode = 'cruise' | 'evade' | 'ram' | 'retire';
 
-/** 見張りの乱数の系列（出撃の seed + 17。v0.5.0。seed〜seed+9 は魚雷・砲撃・掃射・暴風・空襲・水上機・大発・艇の砲・沿岸砲、seed+16 は今夜の揺らぎ、+18 は米PT、+19 は夜明けの空襲、+20 は T-14 の 13mm） */
+/** 見張りの乱数の系列（出撃の seed + 17。v0.5.0。seed〜seed+9 は魚雷・砲撃・掃射・暴風・空襲・水上機・大発・艇の砲・沿岸砲、seed+16 は今夜の揺らぎ、+18 は米PT、+19 は夜明けの空襲、+20 は T-14 の 13mm、+22 は隼艇の 25mm、+23 は夜の哨戒機の出撃） */
 export const LOOKOUT_SEED_OFFSET = 17;
 
 export interface ShipAiParams {

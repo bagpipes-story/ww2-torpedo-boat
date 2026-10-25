@@ -1,5 +1,5 @@
 // 任務の危険（味方機・暴風・水上機・夜明けの空襲）の生成（v0.4.2 で mission-world の constructor から切り出し。中身は v0.4.1 のまま）。
-// 乱数は別系列: 味方機の掃射 seed+2、暴風の始まり seed+3（StormFront の中で 1 回）、水上機の散布 seed+5、夜明けの空襲 seed+19（v0.6.1。夜明けまで引かない）。
+// 乱数は別系列: 味方機の掃射 seed+2、暴風の始まり seed+3（StormFront の中で 1 回）、水上機の散布 seed+5、夜明けの空襲 seed+19（v0.6.1。夜明けまで引かない）。夜の哨戒機の出撃は seed+23（v0.6.7。core/patrol-air-state の PATROL_AIR_SEED_OFFSET。哨戒のある任務だけで作る）。
 // 被害はすべて世界の hitBoat を通る（空襲の終了理由は air_strike。僚艇への爆弾は escortHit）。
 import type Phaser from 'phaser';
 import { DEBUG_FRIENDLY_FORCE, DEBUG_SEAPLANE, DEBUG_STORM_START_Y } from '../config/game-config';
