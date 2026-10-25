@@ -134,7 +134,7 @@ export function getFriendlyParams(data: GameData, mission: PrototypeMission, tim
   return friendlyParamsFromData(f, mission.friendlyAircraft.triggerEdgeM, mission.returnPoint.radiusM, timeScale);
 }
 
-/** enemies.json の水上機と risk_events.json の enemy_aircraft.params（docs/02 §6.8、v0.4.1）。任務に enemy_aircraft が無ければ null。機体・params が無ければ例外。boat は航跡の速力の検査と命中半径に使う */
+/** enemies.json の水上機と risk_events.json の enemy_aircraft.params（docs/02 §6.8、v0.4.1）。任務に enemy_aircraft が無ければ null。機体・params が無ければ例外。boat は航跡の閾値（艇の静音の上限。v0.6.7）と命中半径に使う */
 export function getSeaplaneParams(data: GameData, mission: PrototypeMission, timeScale: number, boat: { silentMaxKt: number; halfLengthM: number; halfBeamM: number }): SeaplaneParams | null {
   if (!mission.enemyAircraft) return null;
   const plane = data.enemies.enemies.find((e) => e.id === mission.enemyAircraft!.enemyId);

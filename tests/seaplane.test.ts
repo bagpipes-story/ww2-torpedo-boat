@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameData } from '../src/config/game-data';
+import { gameData, getBoatRecord } from '../src/config/game-data';
 import { stepBoat, type BoatParams, type BoatState } from '../src/core/boat-motion';
 import type { AircraftPose } from '../src/core/friendly';
 import { SeededRng } from '../src/core/rng';
@@ -42,7 +42,7 @@ const BP: BoatParams = SETUP.boatParams;
 const TS = gameData.hitRateModel.world.time_scale;
 const PLANE = gameData.enemies.enemies.find((e) => e.id === 'ijn_seaplane_jake') as unknown as SeaplaneDataRecord;
 const EVENT = gameData.riskEvents.events.find((e) => e.id === 'enemy_aircraft') as unknown as EnemyAircraftEventRecord;
-const BOAT = { silentMaxKt: 18, halfLengthM: 12.2, halfBeamM: 3.15 };
+const BOAT = { silentMaxKt: getBoatRecord(gameData, 'us_elco80').speed_bands_kt.silent_max, halfLengthM: 12.2, halfBeamM: 3.15 }; // 航跡の閾値は艇の静音の上限（v0.6.7。Elco 18）
 const DT = 1 / 60;
 const FULL = ktToMps(39);
 
@@ -114,7 +114,12 @@ describe('敵の水上機（docs/02 §6.8、v0.4.1）: data と params', () => {
     };
     expect(() => seaplaneParamsFromData(PLANE, ev({ run_radius_m: 1500 }), TS, BOAT)).toThrow();
     expect(() => seaplaneParamsFromData(pl((p) => (p.detection.wake_detect_m = 1000)), EVENT, TS, BOAT)).toThrow();
-    expect(() => seaplaneParamsFromData(pl((p) => (p.detection.wake_speed_threshold_kt = 20)), EVENT, TS, BOAT)).toThrow(/18 kt/);
+    // v0.6.7: 航跡の閾値は data に持たず艇の静音の上限から（一致の検査は無い）。T-14 14・T-38 13・Elco 18 で組め、us_02 は 18
+    for (const [id, kt] of [['jp_t14', 14], ['jp_t38', 13], ['us_elco80', 18]] as const) {
+      expect(seaplaneParamsFromData(PLANE, EVENT, TS, { ...BOAT, silentMaxKt: getBoatRecord(gameData, id).speed_bands_kt.silent_max }).wakeThresholdKt).toBe(kt);
+    }
+    expect(P.wakeThresholdKt).toBe(18);
+    expect(() => seaplaneParamsFromData(PLANE, EVENT, TS, { ...BOAT, silentMaxKt: 0 })).toThrow(/静音の上限/);
     expect(() => seaplaneParamsFromData(pl((p) => (p.bomb.count = 0)), EVENT, TS, BOAT)).toThrow();
     expect(() => seaplaneParamsFromData(pl((p) => (p.bomb.count = 1.5)), EVENT, TS, BOAT)).toThrow();
     expect(() => seaplaneParamsFromData(pl((p) => (p.bomb.accuracy_cep_m = 0)), EVENT, TS, BOAT)).toThrow();
