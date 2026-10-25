@@ -88,10 +88,8 @@ export function titleMarkerLockedSubJa(sortiesLeft: number): string {
 }
 /** Briefing の 1 行目に足す印（Result の見出しの印「（史実）」は ui/result-heading の RESULT_HISTORICAL_TAG_JA） */
 export const BRIEF_HISTORICAL_JA = ' ・ 史実モード';
-/** Result: 史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠。CLAUDE.md §9） */
-export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
-/** Result: 米PT以外のキャンペーンの魚雷も通算に数えない（v0.6.0。hit_rate_model.kpi_measurement.campaigns） */
-export const RESULT_CAMPAIGN_KPI_JA = 'この任務の魚雷は通算の命中率に数えない（通算は米PTの調整の根拠）';
+/** Result: 史実モード・米PT以外のキャンペーンの魚雷は通算の命中率に数えない（文は v0.6.7 から result-text-config。ui/result-body が DOM 無しで読む） */
+export { RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from './result-text-config';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;

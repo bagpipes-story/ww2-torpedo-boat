@@ -1,13 +1,13 @@
 // HUD・操作系の見た目の寸法（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE } from './game-config';
-// 文の色と距離の刻みは hud-text-config（v0.6.1。DOM 無しで ui/hud-lines・ui/dawn-lines が読む）
-export { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from './hud-text-config';
+// 文の色と距離の刻みは hud-text-config（v0.6.1。DOM 無しで ui/hud-lines・ui/dawn-lines が読む）。速力段・見出し・3 行目の文字サイズも（v0.6.7。ui/result-body が読む）
+export { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from './hud-text-config';
 
 export const HUD_FONT = 'Menlo, Consolas, monospace';
 export const HUD_COLOR = '#9fb3c8';
-/** Result の通算の命中率の行（v0.5.0。今回の記録と見分ける） */
-export const HUD_COLOR_KPI = '#e8d48a';
+/** Result の通算の命中率の行の色（v0.5.0。値は v0.6.7 から result-text-config。ui/result-body が DOM 無しで読む） */
+export { HUD_COLOR_KPI } from './result-text-config';
 
 /** Text の style。resolution に RENDER_SCALE を渡し、カメラの DPR ズームでぼやけないようにする */
 export function hudTextStyle(fontSizePx: number, color: string = HUD_COLOR): Phaser.Types.GameObjects.Text.TextStyle {
@@ -17,8 +17,6 @@ export function hudTextStyle(fontSizePx: number, color: string = HUD_COLOR): Pha
 /** HUD の文字サイズと配置（論理 px） */
 export const HUD_FONT_DEBUG_PX = 18;
 export const HUD_FONT_SPEED_PX = 44;
-export const HUD_FONT_STEP_PX = 24;
-export const HUD_FONT_HEADING_PX = 20;
 /** デバッグ HUD の行送り。文字サイズに追従させる */
 export const HUD_DEBUG_LINE_HEIGHT = HUD_FONT_DEBUG_PX + 8;
 /** 速力テキストと舵バーの隙間 */
@@ -52,8 +50,6 @@ export const ESCORT_EVENT_SHOW_MS = 2500;
 
 /** 任務情報（残り時間・命中）の文字サイズ。上中央のビルド番号の下 */
 export const HUD_FONT_MISSION_PX = 22;
-/** 3 行目: 敵影（見えているか）と発見状態（docs/02 §6.5）。発見されたら警告色 */
-export const HUD_FONT_STATUS_PX = 20;
 export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX + 8;
 /**
  * 史実モードの印（v0.5.2 実機 2 回目「FPS の右に［史実］とだけ」）: 左上の FPS と同じ行・同じ大きさで、FPS の右に黄色で。固定文字列なので 1 回だけ描く。
