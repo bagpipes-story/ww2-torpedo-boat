@@ -4,6 +4,7 @@ import type { EngineParams, EngineSetupOptions } from '../config/engine-mission-
 import type { PrototypeMission } from '../config/game-data';
 import type { GunboatParams, GunboatSetupOptions } from '../config/gunboat-mission-data';
 import type { MainWeapon } from '../config/mission-data';
+import type { PatrolAirSetup, PatrolAirSetupOptions } from '../config/patrol-air-mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -107,10 +108,11 @@ export interface WorldSetup {
   airStrike: AirStrikeParams | null; // 夜明けの空襲（v0.6.1。dawn_strike の任務だけ。?debug&nostrike で null。水上機とは別に組み、今夜の absent() は通さない）
   engine?: EngineParams; // 機関の不調（v0.6.5。hazards に engine_failure がある任務＝jp_05 だけ。無い任務と engineOff では鍵ごと出ない＝setup の snapshot を変えない）
   gunboat?: GunboatParams; // 隼艇（v0.6.6。jp_01 のハードの hard.gunboat だけ。core/gunboat。無い任務・ノーマル・gunboatOff では鍵ごと出ない＝setup の snapshot を変えない）
+  patrolAir?: PatrolAirSetup; // 夜の哨戒機（v0.6.7。v0_1_prototype.patrol_air のある任務＝jp_02 だけ。門番と夜の出撃の値。無い任務と patrolOff では鍵ごと出ない＝setup の snapshot を変えない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions {
+export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions {
   fuelGal?: number;
   dawnS?: number;
   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */

@@ -31,6 +31,8 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === 'string')) throw new Error(`${missionId}.v0_1_prototype.enemies が文字列の配列でない（Briefing）`);
   const mission = getPrototypeMission(data, missionId, hard);
   const ht = hard ? readHardText(proto?.['hard'], missionId) : null;
+  const moonLabel = m['moon_label_ja']; // 月の行の頭の差し替え（v0.6.7。任意。無い任務では鍵ごと出ない＝他の任務の Briefing は同じ）
+  if (moonLabel !== undefined && (typeof moonLabel !== 'string' || moonLabel.trim() === '')) throw new Error(`${missionId}.moon_label_ja は空でない文字列（Briefing の月の行）`);
   // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）、米PT の任務は線の本数ぶん（v0.6.6）。大発の任務は enemies のまま
   const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : mission.ptBoats ? mission.ptBoats.legs_m.map(() => mission.enemyId) : [...(enemies as string[])];
   if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
@@ -45,6 +47,7 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
     moon: mission.moon,
     enemyIds,
     hazardIds: mission.hazards,
+    ...(typeof moonLabel === 'string' ? { moonLabelJa: moonLabel } : {}),
   };
 }
 

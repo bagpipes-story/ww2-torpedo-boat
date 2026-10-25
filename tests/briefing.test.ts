@@ -144,7 +144,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it.each(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_05', 'jp_06'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
+  it.each(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_05', 'jp_06'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
     const m = getPrototypeMission(gameData, id);
     const proto = (byId(gameData, id)['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];
@@ -161,6 +161,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     if (m.shoreBattery) expected.add('shore_battery');
     if (m.dawnStrike) expected.add('dawn_air_strike'); // 夜明けの空襲（v0.6.1。敵の制空下の任務だけ）
     if (getEngineParams(gameData, id)) expected.add('engine_failure'); // 機関の不調（v0.6.5。jp_05 だけ）
+    if (proto['patrol_air'] !== undefined) expected.add('patrol_air'); // 夜の哨戒機（v0.6.7。jp_02 だけ）
     expect(new Set(m.hazards)).toEqual(expected);
     for (const h of m.hazards) expect(gameData.riskEvents.events.some((e) => e.id === h)).toBe(true);
     for (const id of enemyIds) expect(gameData.enemies.enemies.some((e) => e.id === id)).toBe(true);

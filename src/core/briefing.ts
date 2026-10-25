@@ -129,6 +129,8 @@ export interface BriefingText {
   hazardIds: readonly string[];
   /** 今夜いない危険（v0.4.6。夜の揺らぎ。無ければ []）。「危険」の行の後ろに「（今夜は … なし）」 */
   absentHazardIds?: readonly string[];
+  /** 月の行の頭の差し替え（v0.6.7。missions_seed の任意の moon_label_ja。jp_02 の「月没後」＝dark でも新月ではない）。無い任務では鍵ごと出ない */
+  moonLabelJa?: string;
 }
 
 /** Briefing の数値（world-setup の briefingNumbers が ?debug の上書き込みで作る。Mission と同じ値） */

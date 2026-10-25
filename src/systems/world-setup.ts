@@ -32,6 +32,7 @@ import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
 import { engineSetupPart } from '../config/engine-mission-data';
 import { gunboatSetupPart } from '../config/gunboat-mission-data';
+import { patrolAirSetupPart } from '../config/patrol-air-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, type TransportSetup } from './destroyer-setup';
@@ -99,7 +100,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
   const vis = getVisibilityParams(data, mission.moon, historical);
   const visRange = playerVisRangeM(vis);
-  const baseDetectM = destroyer ? destroyer.baseDetectM : barges ? barges.baseDetectM : ptBoats!.baseDetectM;
+  const baseDetectM = destroyer ? destroyer.baseDetectM : barges ? barges.baseDetectM : ptBoats ? ptBoats.baseDetectM : visRange; // 艦艇のいない夜の哨戒機の任務（v0.6.7。jp_02）は自艇の視程
   const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
 
   const raid = getRaidParams(data, mission);
@@ -160,6 +161,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2, boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2 }, escort),
     ...engineSetupPart(data, missionId, o),
     ...gunboatSetupPart(data, mission, o),
+    ...patrolAirSetupPart(data, missionId, o),
   };
 }
 
