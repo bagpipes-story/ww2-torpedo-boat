@@ -9,10 +9,12 @@ import { hasHardVariant } from '../src/config/mission-data';
 import { convoyStartClearM, getPtParams, nearestStartM } from '../src/config/pt-mission-data';
 import { briefingRows, difficultyJa } from '../src/core/briefing';
 import { convoyObjectiveDone } from '../src/core/mission-flow';
+import { PT_ALERT, createPtSection, stepPtSection, type PtCheck, type PtEvents } from '../src/core/pt-boats';
 import { SeededRng } from '../src/core/rng';
 import { computeScore, type ScoreInput } from '../src/core/scoring';
 import { directSortie } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
+import { convoyResultLine } from '../src/ui/convoy-lines';
 import { PERSON_DENYLIST, RANK_RE } from './person-denylist';
 import { textWidthPx } from './pt-ui-kit';
 
@@ -25,7 +27,8 @@ const sortie = (seed: number): ReturnType<typeof directSortie> => directSortie('
 const H = buildWorldSetup(gameData, 'jp_01', { hard: true });
 const N = buildWorldSetup(gameData, 'jp_01');
 const EXCERPT = 'WebSearch の抜粋のみ・本文未読';
-const OBJECTIVE = '大発3隻を浜まで護衛する。隼艇が後ろの岸側に付き、大発や隼艇を襲うPTと追ってくるPTを撃つ。自艇への赤い線は自分で全速転舵';
+// 自艇の仕事（寄って撃ち返す・赤い線は転舵）を残し、西へ向くと海側になる「岸側」は言わない（レビュー ux:ux-3）
+const OBJECTIVE = '大発3隻を浜まで護衛する。隼艇が後ろに付き、大発・隼艇を襲うPTと追ってくるPTを撃つ。大発が狙われたら自艇も寄って撃ち返し、赤い線は全速で転舵';
 const SUCCESS = '大発3隻とも浜に届けて帰投。1隻でも失えば達成の点は無い';
 const NOTE =
   '1942年12月、ガダルカナル島北岸では月明かりの夜の大発の輸送が米PTと夜間機に阻まれ、計画の半分も運べなかった。12月9日夜にはPT-44とPT-59がカミンボ沖で大発を襲った。魚雷艇や隼艇が大発を護衛してPTと戦った記録は見つかっておらず、この夜はゲーム上の想定（艇は1944年のT-38、隼艇は1943〜44年のH-38で代用）。';
@@ -51,6 +54,9 @@ describe('jp_01 のハードの data（v0_1_prototype.hard。v0.6.6）', () => {
     expect(src).toContain(`ja.wikipedia 隼艇。${EXCERPT}。high`);
     expect(src).toContain('抜粋に見つからない（medium。無いことの証拠ではない）');
     expect(src).toContain('模擬の値は CHANGELOG v0.6.6'); // repo に無い仕様の名を source に書かない（v0.6.5 レビュー F2）
+    // ×1.0 の主張は本物の模擬（HARD=1 GB_FACTOR=1）で測った自艇の沈没だけ。引き受けた攻撃の割合は試作（撃たれ強い PT と組んだ形）の値なので書かない（レビュー data:D3）
+    expect(src).toContain('1.0 倍だと隼艇が攻撃を多く引き受け、戦う遊び方はみなハードのほうが自艇が沈みにくかった（撃つだけで追う 3.5% 対 ノーマル 24.5% など＝模擬の値は CHANGELOG v0.6.6）');
+    expect(src).not.toMatch(/\d+〜\d+% を引き受け/);
     expect(src).not.toMatch(/ソロモンに隼艇はいない|隼艇はいない/);
     for (const t of strings(h)) {
       for (const name of PERSON_DENYLIST) expect(t, name).not.toContain(name);
@@ -92,6 +98,13 @@ describe('jp_01 のハードの世界（米PT 3 隻・ノルマ 3）', () => {
     expect(Array.from(p.startHeadingDeg)).toEqual([270, 270, 270]);
     expect([p.reactionDelayS, p.wingmanDelayS, p.reactionDelayS + 2 * p.wingmanDelayS]).toEqual([1.5, 3, 7.5]);
     expect(readFileSync('src/core/pt-boats.ts', 'utf8')).toContain('b.timerS = p.reactionDelayS + i * p.wingmanDelayS;'); // 隻目 i の遅れの式（core は変えない）
+    // core を 1 ステップ回す（レビュー data:D7）: 隊が捉えたステップに 3 隻とも警戒へ入り、遅れは 1.5・4.5・7.5 秒（3 隻目は 1 隻目の 6 秒後）
+    const q = createPtSection(p, 24);
+    const chk: PtCheck = { boat: { x: p.startX[0]!, y: p.startY[0]! + 50, headingDeg: 90, speedMps: 0 }, boatHalfLengthM: 9, boatHalfBeamM: 2, detectOpenM: 1e6, smokeFactor: 1, smoke: null, smokeParams: null, targetValid: true, visRange2: 1e12, dawn: false, timeS: p.detectFromS };
+    const ev: PtEvents = { onContact: () => {}, onCommit: () => {}, onFire: () => {}, onImpact: () => {}, onPassEnd: () => {}, onLeave: () => {}, onOut: () => {} };
+    stepPtSection(q, p, chk, new SeededRng(1), 1 / 60, 5 / 60, ev);
+    expect([q.detected, ...q.boats.map((b) => b.phase)]).toEqual([true, PT_ALERT, PT_ALERT, PT_ALERT]);
+    expect(q.boats.map((b) => b.timerS)).toEqual([1.5, 4.5, 7.5]);
     expect(N.ptBoats!.count).toBe(2);
     const c = H.convoy!.params;
     expect(c.quota).toBe(3);
@@ -130,6 +143,19 @@ describe('jp_01 のハードの世界（米PT 3 隻・ノルマ 3）', () => {
     const order = [s(3, true), s(2, true), s(1, true), s(0, true), s(3, false)];
     expect(order).toEqual([1458, 900, 800, 700, 580]);
     for (let i = 1; i < order.length; i++) expect(order[i - 1]!).toBeGreaterThan(order[i]!);
+  });
+  it('Result の輸送隊の 1 行目（ハードだけ）: ノルマを上陸の後ろに達成／未達で（「沈没 1（ノルマ 3）」が沈んでよい数に読めた。レビュー ux:ux-7）。verdict を渡さなければノーマルの行のまま。24 px で 1 行', () => {
+    const c = { total: 3, arrived: 2, sunk: 1, quota: H.convoy!.params.quota, hitsTaken: 3 };
+    expect(convoyResultLine(c, false)).toBe('大発 上陸 2/3（ノルマ 3 ・ 未達） ・ 沈没 1 ・ 大発の被弾 3 発');
+    expect(convoyResultLine({ ...c, arrived: 3, sunk: 0, hitsTaken: 0 }, true)).toBe('大発 上陸 3/3（ノルマ 3 ・ 達成） ・ 沈没 0 ・ 大発の被弾 0 発');
+    expect(convoyResultLine({ ...c, arrived: 1, sunk: 0 }, false)).toBe('大発 上陸 1/3（ノルマ 3 ・ 未達） ・ 沈没 0 ・ 大発の被弾 3 発 ・ 航行中 2');
+    expect(convoyResultLine(c)).toBe('大発 上陸 2/3 ・ 沈没 1（ノルマ 3） ・ 大発の被弾 3 発');
+    const worst = convoyResultLine({ total: 3, arrived: 0, sunk: 1, quota: 3, hitsTaken: 99 }, false);
+    expect(textWidthPx(worst, 24), worst).toBeLessThanOrEqual(1280 - 2 * 24);
+    // result-scene はハードの違いのある任務のハードだけ objectiveDone を渡す（見出しの「（ハード）」と同じ条件）
+    const rs = readFileSync('src/scenes/result-scene.ts', 'utf8');
+    expect(rs).toContain('const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);');
+    expect(rs).toContain('convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined)');
   });
 });
 

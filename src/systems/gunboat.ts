@@ -136,9 +136,10 @@ export class Gunboat {
     return this.gun.state.battery.shots;
   }
 
-  /** HUD のテレメトリへ（mission-telemetry が毎フレーム。平方根 1 回） */
+  /** HUD のテレメトリへ（mission-telemetry が毎フレーム。平方根 1 回）。絵が出ているか（updateVisuals の自艇の視程の判定）も */
   writeTelemetry(t: GunboatTelemetry, player: BoatState): void {
     writeGunboatTelemetry(t, this.state, this.p, player);
+    t.inSight = this.shown;
   }
 
   destroy(): void {

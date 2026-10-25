@@ -160,8 +160,9 @@ export class ResultScene extends Phaser.Scene {
       if (tx.width > maxW) tx.setScale(maxW / tx.width);
       y += size + RESULT_LINE_GAP;
     };
-    // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）
-    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId), r.sortie.historical), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
+    const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
+    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     if (h) {
       // 大発掃討（v0.4.2）: 撃破・上陸と、射撃・距離の記録（実機で数値を合わせる根拠）
@@ -173,7 +174,7 @@ export class ResultScene extends Phaser.Scene {
       // 味方の大発の輸送隊（v0.6.4。jp_01）はその上に 1 行目「大発 上陸 2/3 ・ 沈没 1（ノルマ 2） ・ 大発の被弾 9 発」（米PT の 1 行目は 20 px に）
       const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned, r.convoy !== null, r.gunboat);
       if (r.convoy) {
-        line(convoyResultLine(r.convoy), HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+        line(convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined), HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
         if (r.gunboat) line(gunboatResultLineJa(r.gunboat), HUD_FONT_HEADING_PX); // 隼艇（v0.6.6。jp_01 のハード）: 生還／沈没・25mm・狙われた回数（自艇の 25mm の行は自艇の分）
         y += RESULT_SECTION_GAP;
         line(a, HUD_FONT_HEADING_PX);

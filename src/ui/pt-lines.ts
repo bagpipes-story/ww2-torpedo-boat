@@ -111,8 +111,9 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0
   if (mode === MISSION_PT_CONTACT) {
     const sub = contactSub(t, flags);
     const rush = sub === C_RUSH_SEEN || sub === C_RUSH_HEARD;
-    // 今の標的が隼艇の突撃・追ってくる PT（v0.6.6）: 隼艇の印と自艇から隼艇への方角（追ってくる PT に射撃の勧めは付けない）
-    const gbAim = (rush || sub === C_CHASE) && p.targetKind === 2 ? K_TARGET_GUNBOAT | (dirIndex(t.gunboat.dx, t.gunboat.dy) << K_GB_DIR) : 0;
+    // 今の標的が隼艇の突撃・追ってくる PT（v0.6.6）: 隼艇の印と自艇から隼艇への方角（追ってくる PT に射撃の勧めは付けない）。隼艇が沈んだか決着の後は付けない（追撃中の PT は
+    // 最後に見た隼艇を detect_hold_s まで追うので標的は隼艇のまま。沈んだ隼艇を「狙う」と出さない。レビュー ai:gb-chase-stale-target）
+    const gbAim = (rush || sub === C_CHASE) && p.targetKind === 2 && !t.gunboat.sunk && !t.gunboat.resolved ? K_TARGET_GUNBOAT | (dirIndex(t.gunboat.dx, t.gunboat.dy) << K_GB_DIR) : 0;
     const hint = (sub === C_BREAK || sub === C_CHASE) && gbAim === 0 && p.gunEnabled && !p.gunEverFired ? K_FIRE_HINT : 0;
     if (sub === C_CHASE) return chaseKey(dirIndex(p.dx, p.dy), p.sighted ? distStep(p.dx, p.dy) : 0, hint) | gbAim;
     const result = sub === C_CLEAN || sub === C_HIT || sub === C_NOFIRE;

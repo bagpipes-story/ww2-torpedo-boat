@@ -196,10 +196,12 @@ export interface GunboatTelemetry {
   dx: number; dy: number; distM: number;
   /** HP・最大・受けた命中、沈んだ・決着の後・浜へ向かうか浜にいる・守りの砲を撃っている、名（data の label_ja。画面の外の矢印「隼艇 N m」） */
   hp: number; maxHp: number; hitsTaken: number; sunk: boolean; resolved: boolean; toBeach: boolean; held: boolean; labelJa: string;
+  /** 絵が出ている（自艇の視程の内。systems/gunboat が書く。画面の外の矢印は絵が画面の内に出ている間だけ隠す。レビュー ux:ux-1） */
+  inSight: boolean;
 }
 
 export function createGunboatTelemetry(): GunboatTelemetry {
-  return { enabled: false, dx: NaN, dy: NaN, distM: NaN, hp: 0, maxHp: 0, hitsTaken: 0, sunk: false, resolved: false, toBeach: false, held: false, labelJa: '' };
+  return { enabled: false, dx: NaN, dy: NaN, distM: NaN, hp: 0, maxHp: 0, hitsTaken: 0, sunk: false, resolved: false, toBeach: false, held: false, labelJa: '', inSight: false };
 }
 
 /** テレメトリへ写す（確保しない。平方根 1 回） */

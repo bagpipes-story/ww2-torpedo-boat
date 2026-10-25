@@ -53,7 +53,7 @@ describe('boats.json の jp_h38_hayabusa（v0.6.6）と jp_h2 の notes', () => 
   it('source: 史実の値は historical で抜粋の注と確度、T-38 と同じ船体の値・1 挺ぶんの砲・HP は design（3 挺を 1 挺に丸めたのはつり合いの選択）。notes の主張に確度。人物名なし', () => {
     const h = boatOf(gameData, 'jp_h38_hayabusa');
     const src = h['source'] as Rec;
-    for (const k of ['name', 'length_m', 'beam_m', 'displacement_t', 'speed_max_kt', 'crew', 'guns']) {
+    for (const k of ['name', 'length_m', 'beam_m', 'displacement_t', 'speed_max_kt', 'crew', 'torpedoes', 'guns']) {
       expect(String(src[k]).startsWith('historical ('), k).toBe(true);
       expect(String(src[k]), k).toContain(`${EXCERPT}。medium`);
     }
@@ -64,6 +64,8 @@ describe('boats.json の jp_h38_hayabusa（v0.6.6）と jp_h2 の notes', () => 
     expect(notes).toContain(`ja.wikipedia 隼艇。${EXCERPT}。high`);
     expect(notes).toContain('抜粋に見つからない（medium。無いことの証拠ではない）');
     expect(notes).toContain('jp_01 のハードでは自艇の後ろに付く僚艇');
+    // 隻数は資料で食い違う（docs/01 §3 の navypedia 約 24・ja 50）。番号の幅から数えた約 40 は推論で low（レビュー data:D5）
+    expect(notes).toContain('約 50 隻で隼艇の主力（ja.wikipedia。medium。隻数は資料で食い違う: docs/01 §3 の navypedia は約 24、navypedia の番号の幅を数えると約 40＝推論・low）');
     for (const s of strings(h)) {
       for (const name of PERSON_DENYLIST) expect(s, name).not.toContain(name);
       expect(s).not.toMatch(RANK_RE);

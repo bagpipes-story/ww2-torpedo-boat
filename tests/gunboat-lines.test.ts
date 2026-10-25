@@ -100,9 +100,12 @@ describe('隼艇を狙う米PT の 2 行目（spec-v066 §D.6・§N-3）', () =>
     expect(row(th({ ...EV_GB, gunEventByGunboat: false }), EVENT)[1]).toBe('米PT 撃退！ 死傷者が出て離脱 ・ 残り 2 隻');
     expect(keyAt(th(EV_GB), EVENT) & K_GUNBOAT_EVENT).toBe(K_GUNBOAT_EVENT);
     expect(keyAt(th({ ...EV_GB, gunEventByGunboat: false }), EVENT) & K_GUNBOAT_EVENT).toBe(0);
-    // 自艇への連射の結果を足した出来事（今の merge）
-    const merged = row(th(EV_GB), EVENT, mergeBurstBits(th({ lastPassFired: true, lastPassHits: 6 }).pt))[1];
-    expect(merged).toBe(`${NAME} 撃退！ 米PT 1 隻が離脱 ・ 連射 被弾 6 発（HP −24） ・ 残り 2 隻`);
+    // 自艇への連射の結果を足した出来事（今の merge）。隼艇の出来事では「自艇 被弾」（隼艇の被弾に読めた。レビュー ux:ux-2）、自艇の砲の出来事は今の「連射 被弾」
+    const mb = (hits: number, fired = true): number => mergeBurstBits(th({ lastPassFired: fired, lastPassHits: hits }).pt);
+    expect(row(th(EV_GB), EVENT, mb(6))[1]).toBe(`${NAME} 撃退！ 米PT 1 隻が離脱 ・ 自艇 被弾 6 発（HP −24） ・ 残り 2 隻`);
+    expect(row(th(EV_GB), EVENT, mb(0))[1]).toBe(`${NAME} 撃退！ 米PT 1 隻が離脱 ・ 自艇 被弾なし ・ 残り 2 隻`);
+    expect(row(th(EV_GB), EVENT, mb(0, false))[1]).toBe(`${NAME} 撃退！ 米PT 1 隻が離脱 ・ 連射を撃たせなかった ・ 残り 2 隻`);
+    expect(row(th({ ...EV_GB, gunEventByGunboat: false }), EVENT, mb(6))[1]).toBe('米PT 撃退！ 死傷者が出て離脱 ・ 連射 被弾 6 発（HP −24） ・ 残り 2 隻');
   });
 });
 

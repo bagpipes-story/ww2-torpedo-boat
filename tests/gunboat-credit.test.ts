@@ -28,7 +28,11 @@ function fixture(): { q: PtSection; cr: GunboatCredit; own: { hits: number; supp
   return { q, cr: createGunboatCredit(q.boats.length), own: { hits: 0, supp: 0 } };
 }
 
-/** 1 発（by の砲が生きた PT i に当てた）: PtSquadron と同じく、隼艇の砲は段の前後を noteGunboatGun、結末が変わった命中は fateBy に砲を書く */
+/**
+ * 1 発（by の砲が生きた PT i に当てた）: PtSquadron と同じく、隼艇の砲は段の前後を noteGunboatGun、結末が変わった命中は fateBy に砲を書く。
+ * 最後の行は本物の規則の写し（PtGun の「結末が変わったら onFate」→ PtSquadron.onFate が fateBy を書く）なので、下の 200 夜の和はこの写しの上では作りから成り立つ。
+ * 本物の配線はソースの検査（下の「配線（ソース）」）で見る（Phaser の組み立てを tests で動かさない作法。レビュー data:D7）
+ */
 function shot(f: ReturnType<typeof fixture>, by: number, i: number, u: number): void {
   const { q, cr, own } = f;
   const [h0, u0, e0, fate0] = [q.gunHits, q.suppressions, q.gunEventSeq, q.boats[i]!.fate];

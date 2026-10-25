@@ -4,7 +4,7 @@
 // 環境変数: MISSION（既定 jp_01）・N（夜の数。既定 400）・SEED（最初の seed。既定 1）・POL（既定 全部 14）・TABLE=1（較正の帯と ✓/✗）・
 //   上書き BHP（barge_hp）・DBAND（detect_band）・KEEP（target_keep_ratio）・HOLD（target_switch_hold_s）・FLASHHOLD（flash_hold_s）・GDMG（25mm の 1 発の被害）・GRPM・GMAG・GDISP（25mm）・ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）・GFLOOR（25mm の散布の最小半径 m）・FIRER（射撃ボタンを押す距離 m。近くまで待って撃つ人の型）・
 //   HARD=1（v0.6.6。難易度ハード: jp_01 は米PT 3 隻・隼艇・ノルマ 3。TABLE=1 とは組めない＝ノーマルの帯の ✓/✗ をハードの値に付けない）・TABLE=2（ハードの設計の帯と対の帯の ✓/✗・同じ物差し・W7。HARD=1 のときだけ。
-//   N 夜の組を BLOCKS 個（既定 2＝seed 1〜400 と 401〜800）回し、行の帯と不変は組ごと、対の帯は組を合わせた夜で判定する。N 400 の 1 組では 2 つの沈没 % の差の揺れが 3 点の余裕に近い）・
+//   N 夜の組を BLOCKS 個（既定 2＝seed 1〜400 と 401〜800）回し、行の帯と不変は組ごと、対の帯は組を合わせた夜で判定する。N 400 の 1 組では 2 つの沈没 % の差の揺れが 3 点の余裕に近い。✗ があれば終了コード 1）・
 //   GUNBOAT_OFF=1（隼艇を切る。見出しに出さない＝S1 の表と同じ）・PT3_OFF=1（3 本目の哨戒線なし）・GB_FACTOR（target_range_factor）・GB_CATCHUP（追い付きの候補 m）・GB_SLOW2=1（定位置の内の速さを自艇まで）。
 //   新しい鍵は env が無ければ undefined（見出しに出さない＝ノーマルの表は同じ）。隼艇の無い表は隼艇の列・凡例を出さない
 // 実行: npx esbuild scripts/convoy-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/convoy.mjs && node <scratch>/convoy.mjs
@@ -93,6 +93,7 @@ else if (hrs.length > 0) {
     }
   }
   console.log(`判定: 設計の行の帯と不変の ✗ ${rowMiss} 行（${blocks} 組 × ${CONVOY_HARD_CALIBRATION.length} 行）・対の帯の ✗ ${pairMiss} 項目（合わせた ${blocks * n} 夜）`);
+  if (rowMiss + pairMiss > 0) process.exitCode = 1;
 } else for (const pol of pols) console.log(line(run.cell(pol)));
 console.log(
   'arr/3 = 到達（3 隻中の平均） | a3%・a2+%・a0% = 3 隻／2 隻以上／0 隻の夜 | bSunk・bHit = 沈んだ大発・大発への命中 | pSunk%・home%・adrift%・dawn% = 自艇の沈没・帰投・漂流・夜明け後の帰投 | HP・pHit = 失った HP・被弾 | ' +

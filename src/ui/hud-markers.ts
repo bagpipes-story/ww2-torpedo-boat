@@ -2,6 +2,7 @@
 // 作る順と refresh の順は hud-scene にあったときと同じ（同じ depth の重なりを変えない）: hud-scene は燃料の目盛りの後に作り、update では燃料の後・夜明けの帯の前に refresh する。
 // v0.6.4（jp_01）: 5 本目＝味方の大発の輸送隊（最寄りの航行中の大発へ青い「大発 N m」）。「岸」の矢印は大発を狩る任務（barges）だけ（輸送隊の任務は大発が浜へ向かうので要らない）。
 // v0.6.6（jp_01 のハード）: 6 本目＝隼艇（生きていて決着の前の間に画面外なら僚艇の青い「隼艇 N m」。ラベルは矢印の下）。輸送隊の矢印の後に refresh し、縁で近ければ縁に沿ってずらす（ui/marker-separation。レビュー R6）。
+// 隼艇の矢印の「画面の内」は本当の画面の矩形で、隼艇の絵が出ている（自艇の視程の内）間だけ（hideMargin 0・drawn＝inSight。上の余白 293 px のままだと画面の上 4 割に見えている隼艇にも矢印が出た。レビュー ux:ux-1）。
 import Phaser from 'phaser';
 import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
 import { GAME_HEIGHT, GAME_WIDTH, TEXTURE_KEYS } from '../config/game-config';
@@ -53,7 +54,7 @@ export class HudMarkers {
     // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
     if (mission.coast && mission.barges) this.coastMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
     if (mission.convoy) this.convoyMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: CONVOY_MARKER_LABEL, stepM: CONVOY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
-    if (telemetry.gunboat.enabled) this.gunboatMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: telemetry.gunboat.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT });
+    if (telemetry.gunboat.enabled) this.gunboatMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: telemetry.gunboat.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 });
     if (telemetry.seaplaneEnabled || telemetry.dawn.strikeEnabled) this.planeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
   }
 
@@ -67,7 +68,7 @@ export class HudMarkers {
     const gb = telemetry.gunboat;
     const gm = this.gunboatMarker;
     if (!gm) return;
-    gm.refresh(gb.dx, gb.dy, !gb.sunk && !gb.resolved, telemetry, gb.distM); // 平方根は隼艇のテレメトリの 1 回
+    gm.refresh(gb.dx, gb.dy, !gb.sunk && !gb.resolved, telemetry, gb.distM, gb.inSight); // 平方根は隼艇のテレメトリの 1 回
     const cm = this.convoyMarker;
     if (cm && cm.isShown && gm.isShown) gm.nudge(separateMarker(cm.shownX, cm.shownY, gm.shownX, gm.shownY, CONVOY_MARKER_RECT, GUNBOAT_MARKER_SEP_PX, shift).dx, shift.dy);
   }

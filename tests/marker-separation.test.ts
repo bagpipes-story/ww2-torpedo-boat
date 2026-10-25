@@ -77,7 +77,8 @@ describe('separateMarker（ui/marker-separation）', () => {
     expect(cv).toBeLessThan(gb);
     expect(gb).toBeLessThan(nudge);
     // 隼艇の矢印は生きていて決着の前だけ・ラベルは矢印の下・僚艇の青（矢印の色は tint）
-    expect(hud).toContain('gm.refresh(gb.dx, gb.dy, !gb.sunk && !gb.resolved, telemetry, gb.distM);');
-    expect(hud).toMatch(/gunboatMarker = new EdgeMarker\(scene, \{ textureKey: TEXTURE_KEYS\.homeMarker, labelPrefix: telemetry\.gunboat\.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT \}\)/);
+    // 「画面の内」は本当の画面の矩形（hideMargin 0）で、隼艇の絵が出ている間だけ（drawn＝inSight。レビュー ux:ux-1。tests/edge-marker-screen）
+    expect(hud).toContain('gm.refresh(gb.dx, gb.dy, !gb.sunk && !gb.resolved, telemetry, gb.distM, gb.inSight);');
+    expect(hud).toMatch(/gunboatMarker = new EdgeMarker\(scene, \{ textureKey: TEXTURE_KEYS\.homeMarker, labelPrefix: telemetry\.gunboat\.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 \}\)/);
   });
 });

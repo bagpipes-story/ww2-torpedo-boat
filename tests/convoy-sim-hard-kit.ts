@@ -1,7 +1,9 @@
 // jp_01 のハード（v0.6.6「日本ハードモード⑤：隼艇」。米PT 3 隻・隼艇・3 隻とも上陸）の模擬の帯の検査の共通（spec-v066 §F.5。tests/convoy-sim-kit の写し）: N 200・seed 1〜200 の表を 1 ファイルに 1 回だけ回し、
 // 行の回帰の帯・設計の行の帯・隼艇の沈没 ≤ 1%・不変を外れた項目を返す（systems/convoy-hard-calibration の convoyHardRegressionMisses）。対の帯（隼艇なし・ノーマルとの差）は相手の表も要るので
-// scripts/convoy-sim の HARD=1 TABLE=2（N 400・seed 1 と 401 の 2 組を合わせた 800 夜。tests/convoy-hard-pool が合わせ方の算術）で見る（1 夜 25〜30 ms なので、N 400 の 3 つの表 × 2 組をテストで回すと 1 ファイル 20 秒に収まらない）。
-// 9 行を HARD_FILES の 5 ファイルに分ける（4 コアの VM で 1 行 N 200 が vitest 9〜10 秒。短い夜の dash_home は 3 秒。1 ファイル 20 秒ほどまで）。
+// scripts/convoy-sim の HARD=1 TABLE=2（N 400・seed 1 と 401 の 2 組を合わせた 800 夜。tests/convoy-hard-pool が合わせ方の算術。✗ があれば終了コード 1）で見る（1 夜 25〜30 ms なので、N 400 の 3 つの表 × 2 組を
+// テストで回すと 1 ファイル 15 秒に収まらない）。設計の帯と対の帯の値は tests/convoy-sim-hard が spec-v066 §F.5 の値で pin する。
+// 9 行を HARD_FILES の 8 ファイルに 1 行ずつ分ける（短い夜の dash_home だけ follow_dodge と同じ d）: 4 コアの VM で 1 行 N 200 が vitest 9〜10 秒・dash_home は 3 秒なので、spec-v066 §F.5 の
+// 「1 ファイル 15 秒以内」に収まる（v0.6.6 レビュー neutral:NP-2: 2 行ずつの 5 ファイルでは a・b・c が 20〜23 秒だった）。
 import { expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { ConvoyPolicy } from '../src/core/convoy-sim-policy';
@@ -10,13 +12,16 @@ import { CONVOY_HARD_CALIBRATION, convoyHardCalibrationRun, convoyHardRegression
 export const HARD_N = 200;
 export const HARD_SEED = 1;
 
-/** ファイルごとの行: a = HUD どおり・追うだけ（★★）、b = ユーザーの型・撃つだけで追う、c = 遠くから・寄って転舵だけ、d = 後ろで転舵だけ・見捨てる（短い夜）、e = 隠れる（★） */
+/** ファイルごとの行: a = HUD どおり（★）、b = ユーザーの型、c = 遠くから、d = 後ろで転舵だけ・見捨てる（短い夜）、e = 隠れる（★）、f = 追うだけ（★）、g = 撃つだけで追う、h = 寄って転舵だけ */
 export const HARD_FILES = {
-  a: ['shield_full', 'follow_full'],
-  b: ['shield_shoot', 'follow_shoot'],
-  c: ['far_full', 'shield_dodge'],
+  a: ['shield_full'],
+  b: ['shield_shoot'],
+  c: ['far_full'],
   d: ['follow_dodge', 'dash_home'],
   e: ['none'],
+  f: ['follow_full'],
+  g: ['follow_shoot'],
+  h: ['shield_dodge'],
 } as const satisfies Record<string, readonly ConvoyPolicy[]>;
 
 /** jp_01 のハードの表（N 200・seed 1〜200）。集計は初めて読んだときに回す（対の相手は読まない） */

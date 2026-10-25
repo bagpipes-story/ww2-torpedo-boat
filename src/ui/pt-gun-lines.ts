@@ -90,7 +90,7 @@ export function mergeBurstBits(p: PtTelemetry): number {
  * 出来事の行（味方の青）: 撃退（死傷・穴だらけ）・撃沈・制圧（追撃をやめて離れる。制圧された PT はまだ戦う数に入る）と、まだ戦う PT の数（0 なら「帰投せよ」、輸送隊の決着の前は「大発の上陸を待て」。
  * 連射の結果を足した行は「上陸を待て」）。
  * その PT の連射の結果を足した行は間に「連射 被弾 N 発（HP −x）」「連射 被弾なし」「連射を撃たせなかった」（damagePerHit は PT の 1 発の HP）。
- * 隼艇の砲が起こした出来事（v0.6.6）は頭が「隼艇 撃退！ 米PT 1 隻が離脱」など（gunboatJa は data の隼艇の名）
+ * 隼艇の砲が起こした出来事（v0.6.6）は頭が「隼艇 撃退！ 米PT 1 隻が離脱」など（gunboatJa は data の隼艇の名）で、足した連射の結果は「自艇 被弾 N 発（HP −x）」「自艇 被弾なし」
  */
 export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = ''): HudLine {
   const kind = key & 7;
@@ -100,7 +100,9 @@ export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = ''
       ? gunboatEventHeadJa(kind, gunboatJa)
       : kind === PT_GUN_EV_SUPPRESS ? '米PT 制圧！ 追撃をやめて離れる' : kind === PT_GUN_EV_SUNK ? '米PT 撃沈！ ガソリンに引火' : kind === PT_GUN_EV_CREW ? '米PT 撃退！ 死傷者が出て離脱' : '米PT 撃退！ 穴だらけで離脱';
   const h = (key >> K_MERGED_HITS) & 63;
-  const burst = (key & K_MERGED) === 0 ? '' : ` ・ ${(key & K_MERGED_FIRED) === 0 ? '連射を撃たせなかった' : h === 0 ? '連射 被弾なし' : `連射 被弾 ${h} 発（HP −${h * damagePerHit}）`}`;
+  // 足すのは自艇への連射の結果。隼艇の出来事の行では「自艇 被弾 N 発」（頭の「隼艇」と「連射 被弾」で隼艇の被弾に読めた。同じ 2 字で幅は同じ。レビュー ux:ux-2）
+  const who = (key & K_GUNBOAT_EVENT) !== 0 ? '自艇' : '連射';
+  const burst = (key & K_MERGED) === 0 ? '' : ` ・ ${(key & K_MERGED_FIRED) === 0 ? '連射を撃たせなかった' : h === 0 ? `${who} 被弾なし` : `${who} 被弾 ${h} 発（HP −${h * damagePerHit}）`}`;
   const wait = burst === '' ? CONVOY_WAIT_JA : CONVOY_WAIT_SHORT_JA;
   return { text: `${head}${burst} ・ ${n !== 0 ? `残り ${n} 隻` : (key & K_WAIT) !== 0 ? wait : '帰投せよ'}`, color: HOME_COLOR_TEXT };
 }

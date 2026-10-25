@@ -97,4 +97,17 @@ describe('2 行目のキーのビットの表: 隼艇の変種（v0.6.6。spec-v
     expect(keyOf(g, { fields: [], pt: { passSilenced: true } })).toBe(32);
     expect(keyOf(byName('pass-burst-gunboat'), { fields: [], pt: { passSilenced: true } })).toBe(2112);
   });
+
+  it('隼艇が沈んだか決着の後に隼艇を追い続ける PT（detect_hold_s の間）は隼艇の印も方角も立てず、自艇への追撃のキーと同じ（レビュー ai:gb-chase-stale-target）', () => {
+    const c = byName('contact-chase-gunboat');
+    const own = keyOf(c, { fields: [], pt: { targetKind: 0 } });
+    expect(keyOf(c, null) & bit(30)).not.toBe(0);
+    for (const o of [{ sunk: true }, { resolved: true }, { sunk: true, resolved: true }]) {
+      const k = keyOf(c, { fields: [], over: { gunboat: gbt(o) } as Partial<BoatTelemetry> });
+      expect(k & (bit(30) | bits(16, 18)), JSON.stringify(o)).toBe(0);
+      expect(k, JSON.stringify(o)).toBe(own);
+    }
+    const r = byName('contact-rush-gunboat');
+    expect(keyOf(r, { fields: [], over: { gunboat: gbt({ sunk: true }) } as Partial<BoatTelemetry> }) & bit(30)).toBe(0);
+  });
 });

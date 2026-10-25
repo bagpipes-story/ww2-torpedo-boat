@@ -2,11 +2,13 @@
 // v0.3.0 で target-marker を一般化: テクスチャ・ラベルの接頭辞・距離の刻み・ラベルの上下・上端の余白を指定する。
 // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
 // v0.6.6（隼艇の矢印）: 任意の矢印の色 tint、出ている間の点（読むだけ）と nudge（縁に沿ってずらす。ui/marker-separation。次の refresh が方位どおりに戻す）。
+// v0.6.6 レビュー ux:ux-1: 任意の hideMargin（「画面の内なら隠す」の余白。ui/edge-marker-screen）と refresh の drawn（目標の絵が出ていなければ画面の内でも縁へ）。省けば今のまま。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/game-config';
 import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_MARGIN, TARGET_MARKER_RIGHT_MARGIN, hudTextStyle } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { degToRad, radToDeg } from '../core/units';
+import { markerOnScreen } from './edge-marker-screen';
 
 export interface EdgeMarkerOptions {
   textureKey: string;
@@ -23,6 +25,8 @@ export interface EdgeMarkerOptions {
   color?: string;
   /** 矢印の絵に掛ける色（v0.6.6。隼艇の矢印。省略は絵の色のまま） */
   tint?: number;
+  /** 「画面の内なら隠す」の判定の余白 px（全辺。v0.6.6 レビュー ux:ux-1。隼艇は 0＝本当の画面の矩形）。省略は今の縁（上 topMargin・左右と下 TARGET_MARKER_MARGIN）。クランプの縁は変えない */
+  hideMargin?: number;
 }
 
 export class EdgeMarker {
@@ -49,9 +53,10 @@ export class EdgeMarker {
 
   /**
    * 毎フレーム。目標の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する。
-   * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）
+   * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）。
+   * drawn=false（目標の絵が出ていない。隼艇は自艇の視程の外）なら画面の内でも隠さず、方位どおり縁に置く（v0.6.6 レビュー ux:ux-1。既定 true＝今のまま）
    */
-  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number): void {
+  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true): void {
     if (!show || Number.isNaN(dx)) {
       this.setShown(false);
       return;
@@ -66,8 +71,8 @@ export class EdgeMarker {
     const halfW = cx - TARGET_MARKER_MARGIN;
     const downH = cy - TARGET_MARKER_MARGIN;
     const upH = cy - this.opts.topMargin;
-    // 「画面内なら隠す」は画面全体で判定する（ボタンの列の下に見えている目標にマーカーを出さない）
-    if (Math.abs(sx) < halfW && sy < downH && -sy < upH) {
+    // 「画面内なら隠す」は画面全体で判定する（ボタンの列の下に見えている目標にマーカーを出さない）。hideMargin のある矢印はその余白で（ui/edge-marker-screen）
+    if (drawn && markerOnScreen(sx, sy, cx, cy, this.opts.topMargin, TARGET_MARKER_MARGIN, this.opts.hideMargin)) {
       this.setShown(false);
       return;
     }

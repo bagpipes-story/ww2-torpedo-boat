@@ -111,10 +111,15 @@ export function convoyCallJa(c: ConvoyTelemetry): string {
   return c.arrived === 0 ? '大発 全滅 ・ ' : `大発 上陸 ${c.arrived}/${c.total} ・ `;
 }
 
-/** Result の本文 1 行目（24 px・強調）: 上陸・沈没・ノルマ・隊の被弾（data の barge_hp を合わせる根拠。CLAUDE.md §9）。まだ航行中の大発があれば「航行中 N」（ux-9: 上陸の前に終わった夜の達成 0 の訳） */
-export function convoyResultLine(c: ConvoyResult): string {
+/**
+ * Result の本文 1 行目（24 px・強調）: 上陸・沈没・ノルマ・隊の被弾（data の barge_hp を合わせる根拠。CLAUDE.md §9）。まだ航行中の大発があれば「航行中 N」（ux-9: 上陸の前に終わった夜の達成 0 の訳）。
+ * verdict（ハードの違いのある任務のハードだけ。result-scene が objectiveDone を渡す）があれば、ノルマを上陸の後ろに「（ノルマ 3 ・ 達成／未達）」（v0.6.6 レビュー ux:ux-7: ノルマ 3 では 1 隻の沈没で未達になり、
+ * 「沈没 1（ノルマ 3）」が沈んでよい数に読めた）。省けば今の行（ノーマルの pin）
+ */
+export function convoyResultLine(c: ConvoyResult, verdict?: boolean): string {
   const sailing = c.total - c.arrived - c.sunk;
-  return `大発 上陸 ${c.arrived}/${c.total} ・ 沈没 ${c.sunk}（ノルマ ${c.quota}） ・ 大発の被弾 ${c.hitsTaken} 発${sailing > 0 ? ` ・ 航行中 ${sailing}` : ''}`;
+  const head = verdict === undefined ? `大発 上陸 ${c.arrived}/${c.total} ・ 沈没 ${c.sunk}（ノルマ ${c.quota}）` : `大発 上陸 ${c.arrived}/${c.total}（ノルマ ${c.quota} ・ ${verdict ? '達成' : '未達'}） ・ 沈没 ${c.sunk}`;
+  return `${head} ・ 大発の被弾 ${c.hitsTaken} 発${sailing > 0 ? ` ・ 航行中 ${sailing}` : ''}`;
 }
 
 /** Result の状況の行の頭: 「大発 2/3 ・ 米PT: 撃退 1 ・ 健在 1 隻」（ptHead は ui/pt-lines の ptHeadJa。届けた／届かずは 1 行目の「（ノルマ 2）」が言う） */
