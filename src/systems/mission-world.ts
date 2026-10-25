@@ -30,6 +30,7 @@ import type { EscortBoat } from './escort-boat';
 import type { EnemySide } from './enemy-side';
 import type { EnemySeaplane } from './enemy-seaplane';
 import type { FriendlyFire } from './friendly-fire';
+import type { Gunboat } from './gunboat';
 import type { PtSquadron } from './pt-squadron';
 import { SmokeScreen } from './smoke-screen';
 import { SplashPool } from './splash-pool';
@@ -53,6 +54,7 @@ export class MissionWorld {
   readonly pts: PtSquadron | null; // 敵の米PT の隊（docs/02 §6.4、v0.6.3）。任務に pt_boats が無ければ null
   readonly convoy: Convoy | null; // 味方の大発の輸送隊（docs/02 §6.4、v0.6.4。jp_01）。任務に convoy が無ければ null。米PT の標的スロットの的
   readonly escort: EscortBoat | null; // 僚艇（docs/02 §6.4、v0.4.4。要人脱出）。任務に escort が無ければ null
+  readonly gunboat: Gunboat | null; // 隼艇（docs/02 §6.4、v0.6.6。jp_01 のハード）。WorldSetup.gunboat が無ければ null。米PT の隊が持ち（絵・25mm・破棄）、世界は判断と運動の段だけ呼ぶ
   readonly engine: EngineTrouble | null; // 機関の不調（docs/02 §6.8、v0.6.5。jp_05）。WorldSetup.engine が無い任務・?debug&engoff では null（world-boat は w.input をそのまま渡す）
   readonly enemy: EnemySide;
   readonly torpedoes: TorpedoPool;
@@ -123,6 +125,7 @@ export class MissionWorld {
     stepPlayerBoat(this, dt); // 自艇の運動（座礁・縁・浅瀬・燃料・輪。world-boat.ts。沈み始めたら何もしない）
     this.escort?.step(dt, boat, !this.boat.sinking); // 僚艇（v0.4.4）は自艇を動かした後・駆逐艦の前（同じステップの位置を駆逐艦が狙う）
     this.convoy?.step(dt); // 輸送隊（v0.6.4）も自艇の後・米PT の前（同じステップの大発の位置を米PT が狙う。模擬 core/convoy-sim と同じ順）
+    this.gunboat?.step(dt, this.pts?.targets ? this.pts.targets.set.current : 0, this.boat.sinking, this.visRange2); // 隼艇（v0.6.6）は輸送隊の直後（判断 → 運動 → 帯 → valid。模擬と同じ順）
     if (this.smoke && this.smokeParams) {
       updateSmoke(this.smoke, this.smokeParams, boat, c.boundsMarginM, feelDt);
       if (g) this.hiddenBySmoke = dn !== null && losBlocked(this.smoke, this.smokeParams, dn.state.x, dn.state.y, boat.x, boat.y);
@@ -188,6 +191,7 @@ export class MissionWorld {
     this.escort = en.escort;
     this.hunt = en.hunt;
     this.pts = en.pts;
+    this.gunboat = en.gunboat;
     this.enemy = en.enemy;
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
     this.torpedoEvents = torpedoEventsFor(this, events);

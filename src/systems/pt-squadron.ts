@@ -9,6 +9,8 @@
 // 輸送隊の無い任務（jp_05）は PtTargets を作らず、check の鍵も v0.6.3 のまま（core は targets 無しの枝＝ビット同一）。夜明けで切れた攻撃は onLeave で、受け継いだ接触は隊の後の afterStep で PtTargets が数える（レビュー ai:R1・R4）。
 // §7: PT count 枚・線 1 本・曳光弾 24 枚・水柱 24 枚・閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。check と events は 1 個だけ作る。
 // 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
+// v0.6.6（隼艇。jp_01 のハードだけ）: 隊の後に隼艇（systems/gunboat）を作って標的スロットの末尾に足し、自艇の 25mm の後に隼艇の 25mm（seed+22）と米PT が隼艇を見つける距離、標的が隼艇なら接触の閃光は隼艇から。
+// どちらの砲が PT の最後の結末を決めたかを onFate で覚える（手柄の分け。systems/gunboat-credit）。隼艇の無い任務は今のまま。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
@@ -24,6 +26,8 @@ import { ptContactFlashM, ptHeldFlashM } from '../core/pt-target';
 import { SeededRng } from '../core/rng';
 import type { SmokeParams, SmokeState } from '../core/smoke';
 import { radToDeg } from '../core/units';
+import { FATE_BY_GUNBOAT, FATE_BY_PLAYER } from './gunboat-credit';
+import type { Gunboat, GunboatGunKit } from './gunboat';
 import { PtGun } from './pt-gun';
 import { PtTargets, type PtTargetConvoy } from './pt-target';
 import { SplashPool } from './splash-pool';
@@ -54,6 +58,8 @@ export class PtSquadron {
   readonly gun: PtGun | null;
   /** 標的スロット（v0.6.4。味方の大発の輸送隊のある任務だけ。無ければ null で check.boat は自艇のまま） */
   readonly targets: PtTargets | null;
+  /** 隼艇（v0.6.6。jp_01 のハードだけ。無ければ null で seed+22 も作らない） */
+  readonly gunboat: Gunboat | null;
   private readonly check: PtCheck;
   /** 自艇（check.boat は標的に差し替わるので、絵の表示判定と閃光の位置は別に持つ） */
   private readonly player: BoatState;
@@ -117,14 +123,17 @@ export class PtSquadron {
     private readonly onSunk: (x: number, y: number) => void,
     /** 味方の大発の輸送隊（v0.6.4。systems/convoy。無い任務は null＝標的は自艇だけで v0.6.3 の枝） */
     convoy: PtTargetConvoy | null = null,
+    /** 隼艇を作る（v0.6.6。world-enemies。隊を作った後に呼ぶ＝判断が隊を読む。無い任務は null） */
+    makeGunboat: ((q: PtSection, kit: GunboatGunKit) => Gunboat) | null = null,
   ) {
     this.rng = new SeededRng((seed + PT_SEED_OFFSET) >>> 0);
     this.section = createPtSection(p, PT_SHELL_POOL_SIZE);
     this.player = boat;
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, targetValid: true, visRange2: 0, dawn: false, timeS: 0 };
-    this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section) : null;
-    if (this.targets) this.check.targets = this.targets.hulls;
     this.splashes = new SplashPool(scene, PT_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
+    this.gunboat = convoy && makeGunboat ? makeGunboat(this.section, { seed, pt: p, events: this.events, splashes: this.splashes, onFate: (i, fate) => this.onFate(scene, i, fate, FATE_BY_GUNBOAT) }) : null;
+    this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section, this.gunboat) : null;
+    if (this.targets) this.check.targets = this.targets.hulls;
     this.shown = new Uint8Array(p.count);
     for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
     for (let i = 0; i < PT_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
@@ -133,7 +142,7 @@ export class PtSquadron {
     this.lineScaleY = AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height;
     this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
     this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
-    this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(scene, i, fate)) : null;
+    this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(scene, i, fate, FATE_BY_PLAYER)) : null;
   }
 
   /**
@@ -158,10 +167,12 @@ export class PtSquadron {
       const g = this.gun ? this.gun.g : null;
       const fired = this.gun ? this.gun.step(w.band, held, afloat, w.visRange2, feelDt, dt) : false;
       if (fired) t.lastFireS = c.timeS;
+      const gbFired = this.gunboat ? this.gunboat.fire(t, q, c.timeS, w.visRange2, feelDt, dt) : false; // 隼艇の 25mm（v0.6.6。seed+22）→ 米PT が隼艇を見つける距離
       c.flashX = this.player.x;
       c.flashY = this.player.y;
       t.apply(q, c, g ? ptHeldFlashM(c.timeS, t.lastFireS, t.rule.flashHoldS, g.flashRevealM) : 0, c.timeS);
       c.flashM = ptContactFlashM(t.set.current, fired && g ? g.flashRevealM : 0);
+      if (this.gunboat && t.set.current === t.gunboatHull) this.gunboat.contactFlash(c, gbFired); // 標的が隼艇なら閃光は隼艇から（倍率なし）
     } else {
       c.detectOpenM = w.detectRangeM;
       c.targetValid = afloat;
@@ -184,8 +195,12 @@ export class PtSquadron {
     return i < 0 ? null : this.section.boats[i]!;
   }
 
-  /** 13mm の結末（PtGun の onFate）: 撃退は灰色に 1 回だけ、撃沈は沈み込みの tween と世界の onSunk（大発の撃破と同じ）。沈んだ PT の攻撃は core が閉じた（dropOwner）ので標的スロットの数えも閉じる */
-  private onFate(scene: Phaser.Scene, i: number, fate: number): void {
+  /**
+   * 13mm の結末（PtGun の onFate。by は結末を決めた砲＝自艇か隼艇）: 撃退は灰色に 1 回だけ、撃沈は沈み込みの tween と世界の onSunk（大発の撃破と同じ）。沈んだ PT の攻撃は core が閉じた（dropOwner）ので
+   * 標的スロットの数えも閉じる。隼艇のいる任務は最後の結末を決めた砲を覚える（撃退の後に別の砲が沈めたら上書き）
+   */
+  private onFate(scene: Phaser.Scene, i: number, fate: number, by: number): void {
+    if (this.gunboat) this.gunboat.credit.fateBy[i] = by;
     const img = this.sprites[i]!;
     if (fate !== PT_FATE_SUNK) {
       img.setTint(PT_RETIRED_TINT);
@@ -257,6 +272,7 @@ export class PtSquadron {
     }
     this.splashes.updateVisuals(realDt);
     this.gun?.updateVisuals(realDt);
+    this.gunboat?.updateVisuals(realDt, player, visRange2, this.targets ? this.targets.aimedGunboat : false); // 隼艇の絵・ラベル・25mm（v0.6.6）
   }
 
   destroy(): void {
@@ -266,5 +282,6 @@ export class PtSquadron {
     this.flash.destroy();
     this.splashes.destroy();
     this.gun?.destroy();
+    this.gunboat?.destroy();
   }
 }

@@ -3,6 +3,7 @@
 // 撃退・撃沈の PT の見た目（色・沈み込み・世界の命中スローと爆発）は PT の絵を持つ呼ぶ側（PtSquadron）へ onFate で知らせる。
 // §7: 曳光弾 PT_GUN_SHELL_POOL_SIZE 枚・閃光 1 枚・輪 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。events は 1 個だけ作る（閉包を毎ステップ作らない）。
 // 乱数: seed+20（PT_GUN_SEED_OFFSET）の 1 系列だけ（1 発 2 回・生きた PT への命中 1 回。模擬 core/pt-pass-sim と同じ）。艇に砲のある米PT の任務（jp_05）だけ PtSquadron が作る。押さなければ引かない。
+// v0.6.6（隼艇の 25mm。jp_01 のハード）: 任意の見た目 PtGunLook（系列 seed+22・曳光弾と閃光の色・標的の輪なし）と updateVisuals の shown（偽なら曳光弾・閃光・輪を隠す＝隼艇の絵が見えない間）。既定は自艇の砲のまま。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { GUN_FLASH_LIFETIME_S, GUN_FLASH_SCALE, GUN_TRACER_TINT, TARGET_RING_ALPHA, TARGET_RING_SCALE, TARGET_RING_TINT } from '../config/hunt-config';
@@ -16,6 +17,10 @@ import { SeededRng } from '../core/rng';
 import { syncShells } from './barge-hunt';
 import type { SplashPool } from './splash-pool';
 
+/** 砲の見た目と乱数の系列（v0.6.6）: 系列は seed + seedOffset、曳光弾と砲口の閃光の色、撃っている PT に標的の輪を重ねるか */
+export interface PtGunLook { seedOffset: number; tint: number; ring: boolean }
+const OWN_GUN_LOOK: PtGunLook = { seedOffset: PT_GUN_SEED_OFFSET, tint: GUN_TRACER_TINT, ring: true };
+
 export class PtGun {
   /** 砲の本体と弾倉（HUD・Result が読む） */
   readonly state: PtGunState;
@@ -23,7 +28,7 @@ export class PtGun {
   readonly rng: SeededRng;
   private readonly tracers: Phaser.GameObjects.Image[] = [];
   private readonly flash: Phaser.GameObjects.Image;
-  private readonly ring: Phaser.GameObjects.Image;
+  private readonly ring: Phaser.GameObjects.Image | null;
   private flashAge = Infinity;
 
   private readonly events: GunEvents = {
@@ -53,12 +58,14 @@ export class PtGun {
     private readonly splashes: SplashPool,
     /** PT i の結末が変わった（PT_FATE_*。撃退か撃沈） */
     private readonly onFate: (i: number, fate: number) => void,
+    /** 系列・色・輪（v0.6.6。省略は自艇の砲＝seed+20・黄・輪あり） */
+    look: PtGunLook = OWN_GUN_LOOK,
   ) {
-    this.rng = new SeededRng((seed + PT_GUN_SEED_OFFSET) >>> 0);
+    this.rng = new SeededRng((seed + look.seedOffset) >>> 0);
     this.state = createPtGun(g, PT_GUN_SHELL_POOL_SIZE);
-    for (let i = 0; i < PT_GUN_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(GUN_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
-    this.ring = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    for (let i = 0; i < PT_GUN_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(look.tint).setDepth(DEPTH.shell).setVisible(false));
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.ring = look.ring ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
   }
 
   /**
@@ -70,18 +77,20 @@ export class PtGun {
     return this.state.battery.fired;
   }
 
-  /** 毎フレーム: 曳光弾、閃光、標的の輪（撃っている間だけ。変わるものだけ触る） */
-  updateVisuals(realDt: number): void {
+  /** 毎フレーム: 曳光弾、閃光、標的の輪（撃っている間だけ。変わるものだけ触る）。shown が偽（隼艇の絵が自艇の視程の外。v0.6.6）なら曳光弾・閃光・輪を隠す */
+  updateVisuals(realDt: number, shown = true): void {
     const b = this.state.battery;
-    syncShells(b.shells, this.tracers, null);
+    if (shown) syncShells(b.shells, this.tracers, null);
+    else for (let i = 0; i < this.tracers.length; i++) if (this.tracers[i]!.visible) this.tracers[i]!.setVisible(false);
     if (this.flashAge !== Infinity) {
       this.flashAge += realDt;
-      if (this.flashAge >= GUN_FLASH_LIFETIME_S) {
+      if (this.flashAge >= GUN_FLASH_LIFETIME_S || !shown) {
         this.flashAge = Infinity;
         this.flash.setVisible(false);
       } else this.flash.setAlpha(1 - this.flashAge / GUN_FLASH_LIFETIME_S);
     }
-    const t = b.status === GUN_FIRING ? this.q.boats[b.target] : undefined;
+    if (!this.ring) return;
+    const t = shown && b.status === GUN_FIRING ? this.q.boats[b.target] : undefined;
     if (t) this.ring.setPosition(t.x, t.y);
     if (!!t !== this.ring.visible) this.ring.setVisible(!!t);
   }
@@ -89,6 +98,6 @@ export class PtGun {
   destroy(): void {
     for (const s of this.tracers) s.destroy();
     this.flash.destroy();
-    this.ring.destroy();
+    this.ring?.destroy();
   }
 }

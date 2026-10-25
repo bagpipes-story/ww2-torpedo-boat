@@ -43,6 +43,7 @@ import { getBargeParams } from '../config/game-data';
 import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
 import { getEngineParams } from '../config/engine-mission-data';
+import { getGunboatParams } from '../config/gunboat-mission-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -61,7 +62,7 @@ export class BootScene extends Phaser.Scene {
     const mission = getPrototypeMission(gameData, PROTOTYPE_MISSION_ID);
     const boat = getBoatRecord(gameData, mission.playerBoatId);
     const spriteScale = gameData.hitRateModel.world.sprite_scale;
-    // 艇の絵（v0.6.0）: v0_1_prototype を持つ任務の自艇と僚艇ごとに 1 枚（今は Elco 80ft・77ft・T-38 の 3 枚）
+    // 艇の絵（v0.6.0）: v0_1_prototype を持つ任務の自艇と僚艇ごとに 1 枚（今は Elco 80ft・77ft・T-38 の 3 枚。v0.6.6 からハードの隼艇 H-38 も）
     const boatIds = new Set<string>();
     for (const m of gameData.missionsSeed.missions as readonly Record<string, unknown>[]) {
       if (!m['v0_1_prototype'] || typeof m['id'] !== 'string') continue;
@@ -71,6 +72,8 @@ export class BootScene extends Phaser.Scene {
       getEngineParams(gameData, m['id']); // 機関の不調（v0.6.5）の data と同居の検査（壊れていれば Boot で止まる。不調の無い任務は null）
       const hm = hasHardVariant(gameData, m['id']) ? getPrototypeMission(gameData, m['id'], true) : null; // ハード（v0.6.6）も 1 回組んで米PT と輸送隊を検査（3 本目の哨戒線の出発点・ノルマ。壊れていれば Boot で止まる）
       if (hm) { getPtParams(gameData, hm, gameData.hitRateModel.world.time_scale); getConvoyParams(gameData, hm); }
+      const gb = hm ? getGunboatParams(gameData, hm) : null; // 隼艇（v0.6.6。jp_01 のハード）の data と同居の検査、艇の絵
+      if (gb) boatIds.add(gb.boatId);
     }
     for (const id of boatIds) {
       const b = getBoatRecord(gameData, id);

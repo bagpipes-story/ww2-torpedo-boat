@@ -194,12 +194,12 @@ export interface GunboatTelemetry {
   enabled: boolean;
   /** 自艇から隼艇へ m とその距離 m（行の方角・画面の外の矢印。平方根は 1 フレーム 1 回） */
   dx: number; dy: number; distM: number;
-  /** HP・最大・受けた命中、沈んだ・決着の後・浜へ向かうか浜にいる・守りの砲を撃っている */
-  hp: number; maxHp: number; hitsTaken: number; sunk: boolean; resolved: boolean; toBeach: boolean; held: boolean;
+  /** HP・最大・受けた命中、沈んだ・決着の後・浜へ向かうか浜にいる・守りの砲を撃っている、名（data の label_ja。画面の外の矢印「隼艇 N m」） */
+  hp: number; maxHp: number; hitsTaken: number; sunk: boolean; resolved: boolean; toBeach: boolean; held: boolean; labelJa: string;
 }
 
 export function createGunboatTelemetry(): GunboatTelemetry {
-  return { enabled: false, dx: NaN, dy: NaN, distM: NaN, hp: 0, maxHp: 0, hitsTaken: 0, sunk: false, resolved: false, toBeach: false, held: false };
+  return { enabled: false, dx: NaN, dy: NaN, distM: NaN, hp: 0, maxHp: 0, hitsTaken: 0, sunk: false, resolved: false, toBeach: false, held: false, labelJa: '' };
 }
 
 /** テレメトリへ写す（確保しない。平方根 1 回） */
@@ -209,5 +209,5 @@ export function writeGunboatTelemetry(t: GunboatTelemetry, g: GunboatState, p: G
   t.dy = g.boat.y - player.y;
   t.distM = Math.sqrt(t.dx * t.dx + t.dy * t.dy);
   t.hp = g.hp; t.maxHp = p.hullHp; t.hitsTaken = g.hitsTaken;
-  t.sunk = g.sunk; t.resolved = g.resolved; t.toBeach = g.toBeach; t.held = g.held;
+  t.sunk = g.sunk; t.resolved = g.resolved; t.toBeach = g.toBeach; t.held = g.held; t.labelJa = p.labelJa;
 }

@@ -1,12 +1,14 @@
 // 米PT の隊の標的スロットの世界側（v0.6.4。jp_01「夜の輸送護衛」。docs/02 §6.4、spec §C.2〜C.6・§E.2）: 自艇と味方の大発の船体（PtHull）の配列を出撃時に 1 回作り、
 // 毎ステップ valid と発見距離を書いて core/pt-target（pickPtTarget → applyPtTarget）で PtCheck の標的を差し替える。掃射の着弾（hull）を自艇の被害か輸送隊の命中へ分け、
-// 自艇だけの成績（被弾・自艇への攻撃のうち撃った／無傷・最後の攻撃の標的への命中）と HUD 用の標的の種類（0 自艇・1 大発）を持つ。隊の KPI（q.hits など）はどの船体への命中も数える（core。模擬と同じ）。
+// 自艇だけの成績（被弾・自艇への攻撃のうち撃った／無傷・最後の攻撃の標的への命中）と HUD 用の標的の種類（0 自艇・1 大発・2 隼艇）を持つ。隊の KPI（q.hits など）はどの船体への命中も数える（core。模擬と同じ）。
 // 大発が沈んだ・上陸した同じステップで valid（標的なら targetValid も）を落とす＝残りの弾が沈み始めた大発に当たらない（模擬 core/convoy-sim と同じ）。
 // Phaser を import しない（tests から読む）。§7: 確保は constructor だけ。乱数は引かない（大発への命中は HP だけ）。PtSquadron が輸送隊のある任務でだけ作る（jp_05 は作らない＝core は v0.6.3 の枝）。
 // v0.6.4 レビューの直し: 夜明けで切れた攻撃も閉じる（onLeave。ai:R1）、大発への航過は core が航過に数えたものだけ（ai:R2）、
 // 標的が沈んだ・上陸した・輪に入ったための切り替えで受け継いだ接触が切れたのは「見失わせた」から引く（inheritedLosses。ai:R4。core と模擬は変えない）。
 // v0.6.6 の準備: 船体の並びは [0] 自艇・[1..nb] 大発（nb は大発の数。隼艇を末尾 nb+1 に足せるように「[1..] はみな大発」と読まない）。着弾の振り分けは hullHit（PtSquadron.onImpact から移した）。
 // HUD（ux-2・ux-5・ux-7）: 3 行目の「発見された！」は自艇が見られているときだけ（playerSeen）、狙われている大発の印（aimedBarge）、撃つ前に 25mm で黙った大発への航過（lastPassSilenced）。
+// v0.6.6（隼艇。jp_01 のハード。spec-v066 §C.4）: 隼艇の船体を末尾 nb+1 に足す（valid は隼艇が書く。見つかる距離は PtSquadron が毎ステップ setGunboatDetect）。着弾は HP だけ（gunboatHit。乱数なし）、
+// 狙われている隼艇（aimedGunboat）・隼艇を狙った攻撃（attacksOnGunboat。航過＋連射を固めた数）・隼艇が標的の間に切れた接触（gunboatLosses。「見失わせた」から引く。レビュー R5）。隼艇の無い任務は今のまま。
 import type { BoatState } from '../core/boat-motion';
 import { CV_SAILING, type ConvoyParams, type ConvoyState } from '../core/convoy';
 import { PT_FATE_NONE, ptFighting, type PtCheck, type PtHull, type PtSection } from '../core/pt-boats';
@@ -21,16 +23,23 @@ export interface PtTargetConvoy {
   hit(i: number, damage: number, nowS: number): boolean;
 }
 
+/** 標的スロットが読む隼艇（v0.6.6。systems/gunboat の Gunboat がそのまま満たす）: 末尾の船体（valid は隼艇が書く）と、PT の弾の 1 命中（HP だけ・乱数なし。沈んだら true） */
+export interface PtTargetGunboat {
+  readonly hull: PtHull;
+  hit(damage: number, nowS: number): boolean;
+}
+
 export class PtTargets {
-  /** [0] は自艇、[1..nb] は大発（core の PtCheck.targets がこの配列を読む） */
+  /** [0] は自艇、[1..nb] は大発、[nb+1] は隼艇（あれば。core の PtCheck.targets がこの配列を読む） */
   readonly hulls: PtHull[];
-  /** 大発の数（hulls の [1..nb]） */
+  /** 大発の数（hulls の [1..nb]）、隼艇の船体の index（nb + 1。隼艇の無い任務は −1） */
   readonly nb: number;
+  readonly gunboatHull: number;
   readonly set: PtTargetSet;
   readonly rule: PtTargetRule;
   /**
    * 自艇への命中・大発への命中（隊の全命中は core の q.hits）、大発を狙った航過のうち core が航過に数えたもの（撃ったか open_fire_s 経った。Result の「航過 N 回（大発へ M）」の M。
-   * 連射は大発に起きない）、最初に捉えた標的（0 自艇・1 大発）
+   * 連射は大発に起きない）、最初に捉えた標的（0 自艇・1 大発・2 隼艇）
    */
   playerHits = 0;
   bargeHits = 0;
@@ -39,7 +48,7 @@ export class PtTargets {
   /** 自艇への攻撃（航過＋連射）のうち撃ったもの・自艇に 1 発も当たらなかったもの（Result の「かわした N/M」。大発への航過は分母に入らない） */
   firedPassesOnPlayer = 0;
   cleanPassesOnPlayer = 0;
-  /** 最後に終えた攻撃の標的の船体への命中（後から落ちた弾も。HUD の「被弾 N 発」「大発 被弾 N 発」）とその標的（0 自艇・1 大発） */
+  /** 最後に終えた攻撃の標的の船体への命中（後から落ちた弾も。HUD の「被弾 N 発」「大発 被弾 N 発」）とその標的（0 自艇・1 大発・2 隼艇） */
   lastAttackTargetHits = 0;
   lastPassTargetKind = 0;
   /** 最後に終えた攻撃は撃たずに終わり、その PT は 25mm で黙っていた（撃退・撃沈。大発への航過の結果「大発を守った！」） */
@@ -52,6 +61,9 @@ export class PtTargets {
   private attackHull = 0;
   /** 標的が valid でなくなったための切り替えで受け継いだ接触が、どの PT にも見られないまま切れた回数（core の q.lostContacts から引く。Result の「見失わせた」） */
   inheritedLosses = 0;
+  /** 隼艇（v0.6.6）: 隼艇を狙って固めた攻撃（航過＋連射。Result の「狙われ N 回」）、隼艇が標的の間に切れた接触（×0.5 の距離で隼艇を見失った＝自艇が見失わせたのではない。「見失わせた」から引く） */
+  attacksOnGunboat = 0;
+  gunboatLosses = 0;
   /**
    * 今の攻撃の PT と、攻撃が開いている（固めてから終わるまで。core が onPassEnd 無しで閉じる攻撃: 25mm で沈んだ PT（dropOwner）は PtSquadron の onFate が dropAttack で、
    * 夜明け（pt-boats の夜明けの latch）は onLeave で閉じる）
@@ -75,16 +87,20 @@ export class PtTargets {
     private readonly convoy: PtTargetConvoy,
     /** 米PT の隊（core が航過に数えたか・夜明けで切れた攻撃が撃ったか・見たかを読む。書かない） */
     private readonly section: PtSection,
+    /** 隼艇（v0.6.6。jp_01 のハードだけ。無い任務は null＝船体は自艇と大発だけ） */
+    private readonly gunboat: PtTargetGunboat | null = null,
   ) {
     this.rule = convoy.rule;
     this.hulls = [{ boat: player, halfLengthM: playerHalfLengthM, halfBeamM: playerHalfBeamM, valid: true }];
     for (const b of convoy.state.barges) this.hulls.push({ boat: b, halfLengthM: convoy.p.halfLengthM, halfBeamM: convoy.p.halfBeamM, valid: b.phase === CV_SAILING });
     this.nb = convoy.state.barges.length;
+    if (gunboat) this.hulls.push(gunboat.hull);
+    this.gunboatHull = gunboat ? this.nb + 1 : -1;
     this.set = createPtTargetSet(this.hulls);
     for (let k = 1; k <= this.nb; k++) this.set.detectM[k] = convoy.detectM;
   }
 
-  /** 今の標的の種類（0 自艇・1 大発（1..nb）・2 は末尾の船体（v0.6.6 の隼艇）。HUD の文の分岐） */
+  /** 今の標的の種類（0 自艇・1 大発（1..nb）・2 隼艇（nb + 1。v0.6.6）。HUD の文の分岐） */
   get targetKind(): number {
     const k = this.set.current;
     return k === 0 ? 0 : k <= this.nb ? 1 : 2;
@@ -121,7 +137,9 @@ export class PtTargets {
    */
   afterStep(lostBefore: number): void {
     const q = this.section;
-    if (this.inherited && q.lostContacts > lostBefore) this.inheritedLosses++;
+    const lost = q.lostContacts > lostBefore;
+    if (this.inherited && lost) this.inheritedLosses++;
+    else if (lost && this.set.current === this.gunboatHull) this.gunboatLosses++; // 隼艇が標的の間に切れた（受け継ぎで数えた分と重ねない。v0.6.6 レビュー R5）
     if (!q.detected) this.inherited = false;
     for (let i = 0; this.inherited && i < q.seen.length; i++) if (q.seen[i] === 1) this.inherited = false;
   }
@@ -151,6 +169,17 @@ export class PtTargets {
     return k > 0 && k <= this.nb && this.hulls[k]!.valid && (this.section.detected || this.section.owner >= 0) ? k - 1 : -1;
   }
 
+  /** 狙われている隼艇（v0.6.6。隼艇のラベル「隼艇／狙われている」）: 隊が捉えているか攻撃中で、標的が的になれる隼艇 */
+  get aimedGunboat(): boolean {
+    const k = this.set.current;
+    return k === this.gunboatHull && this.hulls[k]!.valid && (this.section.detected || this.section.owner >= 0);
+  }
+
+  /** 米PT が隼艇を見つける距離 m（v0.6.6。PtSquadron が隼艇の 25mm の後に毎ステップ: target_range_factor × max(帯, 閃光の記憶)。隼艇が標的の間の捉え続ける距離にもなる） */
+  setGunboatDetect(m: number): void {
+    if (this.gunboatHull > 0) this.set.detectM[this.gunboatHull] = m;
+  }
+
   /** 隊が捉えた立ち上がり（PtEvents.onContact）: 最初の 1 回だけ、そのときの標的を覚える */
   onContact(gained: boolean): void {
     if (!gained || this.contacted) return;
@@ -166,6 +195,7 @@ export class PtTargets {
     this.attackKind = this.targetKind;
     this.attackHits = 0;
     this.passesAtCommit = this.section.passes;
+    if (this.attackKind === 2) this.attacksOnGunboat++;
   }
 
   /** core が onPassEnd 無しで閉じた攻撃（25mm で沈んだ PT の dropOwner＝PtSquadron の onFate、夜明け＝onLeave）: 終わった攻撃として数える。開いていない・別の PT なら何もしない */
@@ -207,10 +237,21 @@ export class PtTargets {
     if (this.set.current === 0) c.targetValid = false;
   }
 
-  /** 着弾の船体の振り分け（PtSquadron.onImpact から移した）: 自艇（hull が無いか 0）は false（世界が自艇の被害を当てる）、大発（1..nb）は bargeHit して true。確保なし・乱数なし */
+  /** 着弾の船体の振り分け（PtSquadron.onImpact から移した）: 自艇（hull が無いか 0）は false（世界が自艇の被害を当てる）、大発（1..nb）は bargeHit、隼艇（nb+1）は gunboatHit して true。確保なし・乱数なし */
   hullHit(q: PtSection, c: PtCheck, hull: number | undefined, damage: number, nowS: number): boolean {
     if (hull === undefined || hull <= 0) return false;
     if (hull <= this.nb) this.bargeHit(q, c, hull, damage, nowS);
+    else if (hull === this.gunboatHull) this.gunboatHit(q, c, damage, nowS);
+    return true;
+  }
+
+  /** 隼艇への命中（v0.6.6。hull = nb + 1）: HP だけ（乱数なし）。沈んだら同じステップで valid（標的なら targetValid も）を落とし true */
+  gunboatHit(q: PtSection, c: PtCheck, damage: number, nowS: number): boolean {
+    const k = this.gunboatHull;
+    this.countHit(q, k);
+    if (!this.gunboat || !this.gunboat.hit(damage, nowS)) return false;
+    this.hulls[k]!.valid = false;
+    if (this.set.current === k) c.targetValid = false;
     return true;
   }
 

@@ -9,6 +9,7 @@ import {
   DEBUG_FIXED_NIGHT,
   DEBUG_FRIENDLY_FORCE,
   DEBUG_FUEL_ALLOTMENT_GAL,
+  DEBUG_GUNBOAT_OFF,
   DEBUG_SEAPLANE,
   DEBUG_SEAPLANE_OFF,
   DEBUG_SHIP_HIT_SCALE,
@@ -40,5 +41,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     strikeOff: DEBUG_STRIKE_OFF,
     engineOff: DEBUG_ENGINE_OFF, // ?debug&engoff（v0.6.5）
     engineHot: DEBUG_ENGINE_HOT, // ?debug&enghot（v0.6.5）
+    gunboatOff: DEBUG_GUNBOAT_OFF, // ?debug&nogunboat（v0.6.6）
   };
 }
