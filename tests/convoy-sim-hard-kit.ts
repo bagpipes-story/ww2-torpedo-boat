@@ -1,6 +1,6 @@
 // jp_01 のハード（v0.6.6「日本ハードモード⑤：隼艇」。米PT 3 隻・隼艇・3 隻とも上陸）の模擬の帯の検査の共通（spec-v066 §F.5。tests/convoy-sim-kit の写し）: N 200・seed 1〜200 の表を 1 ファイルに 1 回だけ回し、
 // 行の回帰の帯・設計の行の帯・隼艇の沈没 ≤ 1%・不変を外れた項目を返す（systems/convoy-hard-calibration の convoyHardRegressionMisses）。対の帯（隼艇なし・ノーマルとの差）は相手の表も要るので
-// scripts/convoy-sim の HARD=1 TABLE=2（N 400・seed 1 と 401 の 2 組）で見る（1 夜 25〜30 ms なので、N 400 の 3 つの表 × 2 組をテストで回すと 1 ファイル 20 秒に収まらない）。
+// scripts/convoy-sim の HARD=1 TABLE=2（N 400・seed 1 と 401 の 2 組を合わせた 800 夜。tests/convoy-hard-pool が合わせ方の算術）で見る（1 夜 25〜30 ms なので、N 400 の 3 つの表 × 2 組をテストで回すと 1 ファイル 20 秒に収まらない）。
 // 9 行を HARD_FILES の 5 ファイルに分ける（4 コアの VM で 1 行 N 200 が vitest 9〜10 秒。短い夜の dash_home は 3 秒。1 ファイル 20 秒ほどまで）。
 import { expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';

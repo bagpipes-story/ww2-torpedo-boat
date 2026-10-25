@@ -3,7 +3,8 @@
 // 1 回の攻撃の最大命中・健全な大発が 1 航過で沈んだ数・決着の秒・夜明け後の決着）を出す。中身は src/core/convoy-sim（tests/convoy-sim-*.test.ts と同じ）。値は data。
 // 環境変数: MISSION（既定 jp_01）・N（夜の数。既定 400）・SEED（最初の seed。既定 1）・POL（既定 全部 14）・TABLE=1（較正の帯と ✓/✗）・
 //   上書き BHP（barge_hp）・DBAND（detect_band）・KEEP（target_keep_ratio）・HOLD（target_switch_hold_s）・FLASHHOLD（flash_hold_s）・GDMG（25mm の 1 発の被害）・GRPM・GMAG・GDISP（25mm）・ALLOT（燃料 gal）・DAWN（夜明けまでの実秒）・GFLOOR（25mm の散布の最小半径 m）・FIRER（射撃ボタンを押す距離 m。近くまで待って撃つ人の型）・
-//   HARD=1（v0.6.6。難易度ハード: jp_01 は米PT 3 隻・隼艇・ノルマ 3。TABLE=1 とは組めない＝ノーマルの帯の ✓/✗ をハードの値に付けない）・TABLE=2（ハードの設計の帯と対の帯の ✓/✗・同じ物差し・W7。HARD=1 のときだけ）・
+//   HARD=1（v0.6.6。難易度ハード: jp_01 は米PT 3 隻・隼艇・ノルマ 3。TABLE=1 とは組めない＝ノーマルの帯の ✓/✗ をハードの値に付けない）・TABLE=2（ハードの設計の帯と対の帯の ✓/✗・同じ物差し・W7。HARD=1 のときだけ。
+//   N 夜の組を BLOCKS 個（既定 2＝seed 1〜400 と 401〜800）回し、行の帯と不変は組ごと、対の帯は組を合わせた夜で判定する。N 400 の 1 組では 2 つの沈没 % の差の揺れが 3 点の余裕に近い）・
 //   GUNBOAT_OFF=1（隼艇を切る。見出しに出さない＝S1 の表と同じ）・PT3_OFF=1（3 本目の哨戒線なし）・GB_FACTOR（target_range_factor）・GB_CATCHUP（追い付きの候補 m）・GB_SLOW2=1（定位置の内の速さを自艇まで）。
 //   新しい鍵は env が無ければ undefined（見出しに出さない＝ノーマルの表は同じ）。隼艇の無い表は隼艇の列・凡例を出さない
 // 実行: npx esbuild scripts/convoy-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/convoy.mjs && node <scratch>/convoy.mjs
@@ -13,7 +14,7 @@ import type { SpeedStep } from '../src/core/boat-motion';
 import type { ConvoyCell } from '../src/core/convoy-sim-cell';
 import { CONVOY_POLICIES, type ConvoyPolicy } from '../src/core/convoy-sim-policy';
 import { enemyDetectRangeM, speedFactorForBand } from '../src/core/visibility';
-import { CONVOY_HARD_CALIBRATION, CONVOY_HARD_OFFSCREEN, CONVOY_HARD_SAME_SCALE, convoyHardCalibrationRun, convoyHardDesignMisses } from '../src/systems/convoy-hard-calibration';
+import { CONVOY_HARD_CALIBRATION, CONVOY_HARD_OFFSCREEN, CONVOY_HARD_SAME_SCALE, convoyHardCalibrationRun, convoyHardDesignMisses, convoyHardPairChecks } from '../src/systems/convoy-hard-calibration';
 import { CONVOY_CALIBRATION, convoyCalibrationMisses, convoyCalibrationRun, type ConvoySimOverrides } from '../src/systems/convoy-sim-setup';
 
 const num = (k: string): number | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? Number(process.env[k]) : undefined);
@@ -34,8 +35,11 @@ if (table2 && (!o.hard || o.gunboatOff)) throw new Error('TABLE=2（ハードの
 const pols = (process.env['POL'] ?? CONVOY_POLICIES.join(',')).split(',').map((x) => x.trim()).filter((x) => x !== '') as ConvoyPolicy[];
 for (const p of pols) if (!(CONVOY_POLICIES as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は ${CONVOY_POLICIES.join(' / ')}`);
 
-const hr = table2 ? convoyHardCalibrationRun(gameData, mission, n, seed, o) : null;
-const run = hr ?? convoyCalibrationRun(gameData, mission, n, seed, o);
+const blocks = table2 ? (num('BLOCKS') ?? 2) : 1;
+if (!Number.isInteger(blocks) || blocks < 1) throw new Error('BLOCKS は 1 以上の整数');
+const hrs = table2 ? Array.from({ length: blocks }, (_, b) => convoyHardCalibrationRun(gameData, mission, n, seed + b * n, o)) : [];
+const run = hrs[0] ?? convoyCalibrationRun(gameData, mission, n, seed, o);
+const span = (b: number): string => `${seed + b * n}〜${seed + (b + 1) * n - 1}`;
 const s = run.setup;
 const gb = s.gunboat;
 const g = s.gun!;
@@ -44,7 +48,7 @@ const bargeDetectM = enemyDetectRangeM(s.pt.baseDetectM, speedFactorForBand(s.de
 const clearM = convoyStartClearM(s.pt, getPrototypeMission(gameData, mission, o.hard));
 const f = (x: number, d: number, w: number): string => (Number.isFinite(x) ? x.toFixed(d) : '-').padStart(w);
 const set = Object.entries(o).filter(([k, v]) => v !== undefined && k !== 'gunboatOff').map(([k, v]) => `${k}=${String(v)}`);
-console.log(`[${mission} ${s.pt.bounds.width}x${s.pt.bounds.height} N ${n} seed ${seed}〜${seed + n - 1}${set.length > 0 ? ` ${set.join(' ')}` : ''}]`);
+console.log(`[${mission} ${s.pt.bounds.width}x${s.pt.bounds.height} N ${n} seed ${Array.from({ length: blocks }, (_, b) => span(b)).join('・')}${set.length > 0 ? ` ${set.join(' ')}` : ''}]`);
 console.log(
   `大発 ${cv.count} 隻 HP ${cv.hp}・先頭 ${cv.leadX},${cv.leadY} → ${cv.beach ? `浜 ${cv.beach.x.join('/')}（y ${cv.beach.y}・転舵 ${cv.beach.turnX.map((x) => x.toFixed(0)).join('/')}・浜への道 ${cv.beach.runInM.toFixed(0)} m）` : `上陸線 ${cv.landingX}`}・間隔 ${cv.offsetsM.join('/')}・見つかる帯 ${s.detectBand}（${bargeDetectM.toFixed(0)} m）・標的 keep ${Math.sqrt(s.rule.keepRatio2).toFixed(2)} ロック ${s.rule.lockS} 秒 閃光の記憶 ${s.rule.flashHoldS} 秒 | ` +
     `自艇 ${s.start.x},${s.start.y} 輪 ${s.ring.x},${s.ring.y} 夜明け ${s.durationS} 秒 燃料 ${s.fuelGal} gal | 25mm ${g.groups[0]!.roundsPerMin} 発/分 × ${g.groups[0]!.damage}・散布 ${g.groups[0]!.dispersionM} m${g.minSpreadM !== undefined ? `（最小 ${g.minSpreadM} m）` : ''}・弾倉 ${g.magazine?.rounds ?? '-'}/${g.magazine?.reloadS ?? '-'} | PT の出発 → 船団 ≥ ${clearM.toFixed(0)} m（clamp 込み）`,
@@ -64,12 +68,31 @@ const line = (c: ConvoyCell): string =>
   `${f(c.minWarnS, 2, 4)} ${c.maxPassing} ${c.beyond} ${c.beyondPlayerSight} ${c.burstsBarge} ${c.worstBarge}/${c.worstPlayer} ${c.singlePassKills} ${f(c.resolvedMedS, 0, 6)} ${f(c.resolvedAfterDawnPct, 0, 5)}${gbCols(c)}`;
 const mark = (star: boolean, miss: string[]): string => `  ${star ? '★' : ' '} ${miss.length === 0 ? '✓' : `✗ ${miss.join('・')}`}`;
 if (process.env['TABLE'] === '1') for (const r of CONVOY_CALIBRATION) console.log(line(run.cell(r.policy)) + mark(r.star, convoyCalibrationMisses(r, run.cell, s)));
-else if (hr) {
-  for (const r of CONVOY_HARD_CALIBRATION) console.log(line(hr.cell(r.policy)) + mark(r.star, convoyHardDesignMisses(r, hr)));
+else if (hrs.length > 0) {
   const sc = (c: ConvoyCell): string => `${f(c.homeAllPct, 1, 5)}% ・ ${f(c.arrivedMean, 2, 4)}`;
-  console.log('同じ物差し（3 隻とも上陸して帰投 % ・ 到達）: ハード | ノーマル | 差');
-  for (const pol of CONVOY_HARD_SAME_SCALE) console.log(`  ${pol.padEnd(13)} ${sc(hr.cell(pol))} | ${sc(hr.partner('normal', pol))} | ${f(hr.cell(pol).homeAllPct - hr.partner('normal', pol).homeAllPct, 1, 5)}`);
-  console.log(`W7（決着の前に隼艇が自艇から 480 m の外にいた秒 % ・ 自艇から視程の外での隼艇の発射）: ${CONVOY_HARD_OFFSCREEN.map((pol) => `${pol} ${f(hr.cell(pol).gunboat!.offPct, 2, 0)}% ・ ${hr.cell(pol).gunboat!.beyondPlayer}`).join(' | ')}`);
+  let rowMiss = 0;
+  for (const [b, hr] of hrs.entries()) {
+    console.log(`組 ${b + 1}（seed ${span(b)}）: 設計の行の帯と不変（組ごと）`);
+    for (const r of CONVOY_HARD_CALIBRATION) {
+      const miss = convoyHardDesignMisses(r, hr);
+      if (miss.length > 0) rowMiss++;
+      console.log(line(hr.cell(r.policy)) + mark(r.star, miss));
+    }
+    console.log('同じ物差し（3 隻とも上陸して帰投 % ・ 到達）: ハード | ノーマル | 差');
+    for (const pol of CONVOY_HARD_SAME_SCALE) console.log(`  ${pol.padEnd(13)} ${sc(hr.cell(pol))} | ${sc(hr.partner('normal', pol))} | ${f(hr.cell(pol).homeAllPct - hr.partner('normal', pol).homeAllPct, 1, 5)}`);
+    console.log(`W7（決着の前に隼艇が自艇から 480 m の外にいた秒 % ・ 自艇から視程の外での隼艇の発射）: ${CONVOY_HARD_OFFSCREEN.map((pol) => `${pol} ${f(hr.cell(pol).gunboat!.offPct, 2, 0)}% ・ ${hr.cell(pol).gunboat!.beyondPlayer}`).join(' | ')}`);
+  }
+  const ends = (x: number): string => (Number.isFinite(x) ? String(x) : x > 0 ? '∞' : '−∞');
+  const vals = (xs: readonly number[], p: number): string => `${xs.map((x) => x.toFixed(1)).join('/')} → ${p.toFixed(1)}`;
+  console.log(`対の帯（${blocks} 組 ${Array.from({ length: blocks }, (_, b) => span(b)).join('・')} を合わせた ${blocks * n} 夜。相手は同じ seed）: 遊び方 列（相手） | ハード 組ごと → 合わせた | 相手 組ごと → 合わせた | 差（帯）`);
+  let pairMiss = 0;
+  for (const r of CONVOY_HARD_CALIBRATION) {
+    for (const c of convoyHardPairChecks(r, hrs)) {
+      if (!c.ok) pairMiss++;
+      console.log(`  ${r.policy.padEnd(13)} ${`${c.name}（${c.partnerName}）`.padEnd(14)} | ${vals(c.mine, c.minePooled)} | ${vals(c.other, c.otherPooled)} | ${f(c.diff, 1, 5)}（${ends(c.lo)}〜${ends(c.hi)}） ${c.ok ? '✓' : '✗'}`);
+    }
+  }
+  console.log(`判定: 設計の行の帯と不変の ✗ ${rowMiss} 行（${blocks} 組 × ${CONVOY_HARD_CALIBRATION.length} 行）・対の帯の ✗ ${pairMiss} 項目（合わせた ${blocks * n} 夜）`);
 } else for (const pol of pols) console.log(line(run.cell(pol)));
 console.log(
   'arr/3 = 到達（3 隻中の平均） | a3%・a2+%・a0% = 3 隻／2 隻以上／0 隻の夜 | bSunk・bHit = 沈んだ大発・大発への命中 | pSunk%・home%・adrift%・dawn% = 自艇の沈没・帰投・漂流・夜明け後の帰投 | HP・pHit = 失った HP・被弾 | ' +
