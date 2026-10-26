@@ -1,5 +1,5 @@
 // 夜の哨戒機の出撃（v0.6.7。core/air-sortie。spec-v067 §C.2・§G.1）: 発見の隊形から空襲の core（凍結）を 1 波だけ始め直す。
-// 受け渡し（方位 ± 10°・同じ距離・濃さ 1・位置 1 m 以内。PASS の 1,500 m と ORBIT の 900 m）・時間線（投下 6.94／9.14／11.34／13.54 秒、900 m から 0.97 秒で旋回）・
+// 受け渡し（方位 ± 10°・同じ距離・濃さ 1・位置 1 m 以内。PASS の 1,500 m と ORBIT の 900 m）・時間線（1 機 3 発＝投下 6.94／9.14／11.34／13.54／15.74／17.94 秒、900 m から 0.97 秒で旋回）・
 // 空中の爆弾 ≤ 1・F8（1 回の発見に 1 回の出撃・次の波は出ない）・R17（爆弾が空中なら false で何も変えない）・R5（SortieBase からの差はその出撃の分）・F6（乱数の回数）。
 // 値は jp_02 の世界（buildWorldSetup の patrolAir。門番の値は tests/patrol-air の fixture と同じ）。
 import { describe, expect, it, vi } from 'vitest';
@@ -95,7 +95,7 @@ describe('受け渡し: 発見の隊形と同じ方位・距離に濃さ 1 で�
 });
 
 describe('時間線（発見 = 0）と空中の爆弾', () => {
-  it('1,500 m から: 旋回に 2.92 秒・投下 6.94／9.14／11.34／13.54 秒（機 0・1・0・1）・空中の爆弾は 1 発まで・攻撃できる機は 2 機まで', () => {
+  it('1,500 m から: 旋回に 2.92 秒・投下 6.94／9.14／11.34／13.54／15.74／17.94 秒（機 0・1・0・1・0・1。1 機 3 発）・空中の爆弾は 1 発まで・攻撃できる機は 2 機まで', () => {
     const st = createAirStrike(SP);
     restartAirSortie(st, SP, still(), 56, 1500, createSortieBase());
     const releases: number[] = [];
@@ -113,16 +113,17 @@ describe('時間線（発見 = 0）と空中の爆弾', () => {
     });
     expect(orbitAt[0]).toBeCloseTo(900 / SP.flightMps, 1);
     expect(orbitAt[0]).toBeCloseTo(2.92, 1);
-    expect(releases.length).toBe(4);
-    const want = [6.94, 9.14, 11.34, 13.54];
-    for (let j = 0; j < 4; j++) {
+    expect(SP.bombsPerPlane).toBe(3);
+    expect(releases.length).toBe(6);
+    const want = [6.94, 9.14, 11.34, 13.54, 15.74, 17.94];
+    for (let j = 0; j < 6; j++) {
       expect(Math.abs(releases[j]! - want[j]!), `${j}`).toBeLessThan(0.03);
       expect(releases[j]).toBeCloseTo(SP.firstRunS + j * SP.runGapS + SP.runS, 1);
     }
     expect([SP.firstRunS + SP.runS, SP.runS]).toEqual([expect.closeTo(6.94, 2), expect.closeTo(1.94, 2)]);
-    expect(planes).toEqual([0, 1, 0, 1]);
+    expect(planes).toEqual([0, 1, 0, 1, 0, 1]);
     expect(airSortieComplete(st)).toBe(true);
-    expect(st.bombsDropped).toBe(4);
+    expect(st.bombsDropped).toBe(6);
   });
   it('900 m（付近の捜索の発見）から: 0.97 秒で旋回に着く', () => {
     const st = createAirStrike(SP);
@@ -159,7 +160,7 @@ describe('R17・R5: 再出撃の false の道とこの出撃の分', () => {
     spy.mockRestore();
     expect([st.planes[0]!.phase, st.planes[0]!.r, base.bombs0]).toEqual([AS_INBOUND, 1200, 1]);
   });
-  it('2 回の出撃: KPI は夜の累計、SortieBase からの差は 2 回目の分だけ（爆弾 4・命中・HP = 35 × 命中）', () => {
+  it('2 回の出撃: KPI は夜の累計、SortieBase からの差は 2 回目の分だけ（爆弾 6・命中・HP = 35 × 命中）', () => {
     const st = createAirStrike(SP);
     const base: SortieBase = createSortieBase();
     const rng = new SeededRng(5);
@@ -167,15 +168,15 @@ describe('R17・R5: 再出撃の false の道とこの出撃の分', () => {
     fly(st, still(), rng, 25);
     expect(airSortieComplete(st)).toBe(true);
     const hits1 = st.hitsPlayer;
-    expect([sortieBombs(st, base), sortieHits(st, base), sortieDamage(st, base)]).toEqual([4, hits1, 35 * hits1]);
+    expect([sortieBombs(st, base), sortieHits(st, base), sortieDamage(st, base)]).toEqual([6, hits1, 35 * hits1]);
     expect(restartAirSortie(st, SP, still(), 146, 900, base)).toBe(true);
     expect([sortieBombs(st, base), sortieHits(st, base), sortieDamage(st, base), airSortieComplete(st)]).toEqual([0, 0, 0, false]);
     fly(st, still(), rng, 25);
     expect(airSortieComplete(st)).toBe(true);
     const hits2 = st.hitsPlayer - hits1;
     expect(hits1 + hits2).toBeGreaterThan(0); // 止まった艇には当たる（1 発 47.6%）
-    expect([sortieBombs(st, base), sortieHits(st, base), sortieDamage(st, base)]).toEqual([4, hits2, 35 * hits2]);
-    expect([st.waves, st.bombsDropped, st.hitsPlayer, st.damagePlayer, st.dodgeCount]).toEqual([2, 8, hits1 + hits2, 35 * (hits1 + hits2), 8]);
+    expect([sortieBombs(st, base), sortieHits(st, base), sortieDamage(st, base)]).toEqual([6, hits2, 35 * hits2]);
+    expect([st.waves, st.bombsDropped, st.hitsPlayer, st.damagePlayer, st.dodgeCount]).toEqual([2, 12, hits1 + hits2, 35 * (hits1 + hits2), 12]);
   });
 });
 
@@ -209,20 +210,20 @@ describe('F8・F6: 世界の結び（門番 → 発見なら再出撃 → 出撃
     }
     return { g, st, rng, waveEv, releases, restartFalse, maxAttack };
   }
-  it('止まった艇（レーダーの 1 回だけ）: 60 秒で出撃は 1 波・投下 4・次の波は出ない（中断が立つ）・以後の捜索は見つけない', () => {
+  it('止まった艇（レーダーの 1 回だけ）: 60 秒で出撃は 1 波・投下 6・次の波は出ない（中断が立つ）・以後の捜索は見つけない', () => {
     const r = world(60, 'stop', 0);
-    expect([r.g.finds, r.st.waves, r.waveEv, r.releases, r.st.bombsDropped, r.restartFalse]).toEqual([1, 1, 1, 4, 4, 0]);
+    expect([r.g.finds, r.st.waves, r.waveEv, r.releases, r.st.bombsDropped, r.restartFalse]).toEqual([1, 1, 1, 6, 6, 0]);
     expect(r.st.cancelled).toBe(true);
     expect(r.g.k).toBeGreaterThanOrEqual(2);
     expect(r.maxAttack).toBeLessThanOrEqual(2);
     expect(r.rng.draws).toBe(2 * r.st.bombsDropped);
   });
-  it('全速で走り続ける艇（航跡）: 発見のたびに 1 波（来た波 = 発見）・投下は 1 波 4 発まで・再出撃は遅れない（F12）・+23 は投下ごとに 2 回', () => {
+  it('全速で走り続ける艇（航跡）: 発見のたびに 1 波（来た波 = 発見）・投下は 1 波 6 発まで・再出撃は遅れない（F12）・+23 は投下ごとに 2 回', () => {
     const r = world(180, 'full', 15);
     expect(r.g.finds).toBeGreaterThanOrEqual(4);
     expect([r.st.waves, r.waveEv]).toEqual([r.g.finds, r.g.finds]);
-    expect(r.st.bombsDropped).toBeLessThanOrEqual(4 * r.g.finds);
-    expect(r.st.bombsDropped).toBeGreaterThanOrEqual(4 * (r.g.finds - 1));
+    expect(r.st.bombsDropped).toBeLessThanOrEqual(6 * r.g.finds);
+    expect(r.st.bombsDropped).toBeGreaterThanOrEqual(6 * (r.g.finds - 1));
     expect([r.restartFalse, r.g.findsVisual]).toEqual([0, r.g.finds - 1]);
     expect(r.maxAttack).toBeLessThanOrEqual(2);
     expect(r.rng.draws).toBe(2 * r.st.bombsDropped);

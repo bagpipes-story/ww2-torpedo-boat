@@ -106,7 +106,7 @@ describe('再出撃の遅れ（R17・F12）と結果の行の秒', () => {
   it('出発時のテレメトリ（任務の値）と、哨戒の無い世界では enabled false のまま', () => {
     const k = makeKit(11);
     const d = initPatrolTelemetry(k.w);
-    expect([d.enabled, d.planes, d.quietKt, d.wakeDetectM, d.lockM, d.nearM, d.phase]).toEqual([true, 2, 14, 6000, 1500, 900, PA_HUNT]);
+    expect([d.enabled, d.planes, d.quietKt, d.wakeDetectM, d.lockM, d.nearM, d.phase]).toEqual([true, 2, 14, 4200, 1500, 900, PA_HUNT]);
     expect(initPatrolTelemetry({ patrol: null, band: 'stop' }).enabled).toBe(false);
     expect(patrolResult({ patrol: null, band: 'stop' })).toBeNull();
     expect([PA_ORBIT, PA_LEAVE]).toEqual([2, 3]);

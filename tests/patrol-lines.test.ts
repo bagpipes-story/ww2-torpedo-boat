@@ -18,8 +18,8 @@ import { PERSON_DENYLIST, RANK_RE } from './person-denylist';
 import { DT, driveUntil, makeKit } from './patrol-world-kit';
 import { LINE2_MAX_PX, tele, textWidthPx } from './pt-ui-kit';
 
-/** jp_02 の出撃時の t.patrol（機 2・静音の上限 14 kt・航跡 6,000・発見 1,500・動く船体 900 m）に o を重ねる */
-const P0: PatrolTelemetry = { ...createPatrolTelemetry(), enabled: true, planes: 2, quietKt: 14, wakeDetectM: 6000, lockM: 1500, nearM: 900, passes: 1, phase: PA_HUNT };
+/** jp_02 の出撃時の t.patrol（機 2・静音の上限 14 kt・航跡 4,200（v0.6.7 実機 1 回目に 6,000 から）・発見 1,500・動く船体 900 m）に o を重ねる */
+const P0: PatrolTelemetry = { ...createPatrolTelemetry(), enabled: true, planes: 2, quietKt: 14, wakeDetectM: 4200, lockM: 1500, nearM: 900, passes: 1, phase: PA_HUNT };
 const tp = (o: Partial<PatrolTelemetry>, band: SpeedStep = 'full', dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> = {}): BoatTelemetry =>
   tele({ enabled: false }, { targetStep: band, ...over, dawn: { ...createDawnTelemetry(), ...dawn }, patrol: { ...P0, ...o } });
 type Row = [number, string, string];
@@ -39,9 +39,9 @@ const CASES: [string, Partial<PatrolTelemetry>, SpeedStep, Row][] = [
   ['34 航跡の数えが減っている（静音）', { nextPassS: 8, wakeLeftS: 1.2, bearingDeg: 146 }, 'silent', [MISSION_PATROL, '敵機は捜索中 ・ 次の捜索まで 8 秒 ・ 14 kt を超えると航跡で早く来る', STRONG]],
   ['34 航跡の数えが減っている（停止）', { nextPassS: 8, wakeLeftS: 1.2, bearingDeg: 146 }, 'stop', [MISSION_PATROL, '敵機は捜索中 ・ 次の捜索まで 8 秒 ・ 14 kt を超えると航跡で早く来る', STRONG]],
   ['34 定時の捜索が先（全速）', { nextPassS: 1, wakeLeftS: 2.5, bearingDeg: 146 }, 'full', [MISSION_PATROL, '敵機は捜索中 ・ 次の捜索まで 1 秒 ・ 14 kt を超えると航跡で早く来る', STRONG]],
-  ['32 レーダーの捜索', { phase: PA_PASS, passes: 1, radar: true, bearingDeg: 56, distM: 6000, countdownS: 12 }, 'stop', [MISSION_PATROL_PASS, 'レーダーで捉えられた！ 敵機 2 機 ・ 北東 6000 m ・ 止まっても見つかる', WARN]],
-  ['32 航跡で来た', { phase: PA_PASS, passes: 2, viaWake: true, bearingDeg: 146, distM: 6000, countdownS: 12 }, 'full', [MISSION_PATROL_PASS, '航跡を見られた！ 敵機 南東 6000 m ・ あと 12 秒で止まれ', WARN]],
-  ['32 定時の捜索', { phase: PA_PASS, passes: 2, bearingDeg: 146, distM: 6000, countdownS: 12 }, 'silent', [MISSION_PATROL_PASS, '敵機の捜索 南東 6000 m ・ あと 12 秒で止まれ（止まれば見えない）', STRONG]],
+  ['32 レーダーの捜索', { phase: PA_PASS, passes: 1, radar: true, bearingDeg: 56, distM: 4200, countdownS: 6 }, 'stop', [MISSION_PATROL_PASS, 'レーダーで捉えられた！ 敵機 2 機 ・ 北東 4200 m ・ 止まっても見つかる', WARN]],
+  ['32 航跡で来た', { phase: PA_PASS, passes: 2, viaWake: true, bearingDeg: 146, distM: 4200, countdownS: 6 }, 'full', [MISSION_PATROL_PASS, '航跡を見られた！ 敵機 南東 4200 m ・ あと 6 秒で止まれ', WARN]],
+  ['32 定時の捜索', { phase: PA_PASS, passes: 2, bearingDeg: 146, distM: 4200, countdownS: 6 }, 'silent', [MISSION_PATROL_PASS, '敵機の捜索 南東 4200 m ・ あと 6 秒で止まれ（止まれば見えない）', STRONG]],
   ['32 今すぐ（航跡）', { phase: PA_PASS, passes: 2, viaWake: true, bearingDeg: 146, distM: 2350, countdownS: 0 }, 'full', [MISSION_PATROL_PASS, '今すぐ止まれ！ 敵機 南東 2400 m ・ 航跡は 1500 m で見つかる', WARN]],
   ['32 今すぐ（静音）', { phase: PA_PASS, passes: 2, viaWake: true, bearingDeg: 146, distM: 1150, countdownS: 0 }, 'silent', [MISSION_PATROL_PASS, '今すぐ止まれ！ 敵機 南東 1200 m ・ 動く船体は 900 m で見つかる', WARN]],
   ['32 止まって待つ', { phase: PA_PASS, passes: 2, viaWake: true, bearingDeg: 146, distM: 1800, countdownS: 0 }, 'stop', [MISSION_PATROL_PASS, '止まったまま待て ・ 敵機 南東 1800 m ・ 止まっていれば見えない', STRONG]],
@@ -53,11 +53,11 @@ const CASES: [string, Partial<PatrolTelemetry>, SpeedStep, Row][] = [
   ['31 落下', { phase: PA_SORTIE, threat: AS_T_FALLING, plane: 0 }, 'full', [MISSION_PATROL_ATTACK, strikeFallJa(false), WARN]],
   ['31 落下（旋回中）', { phase: PA_SORTIE, threat: AS_T_FALLING, plane: 1, fallingArc: true }, 'full', [MISSION_PATROL_ATTACK, strikeFallJa(true), WARN]],
   ['33 見つけられずに去る', { phase: PA_LEAVE, passes: 2, resultKind: 1, resultLeftS: 2 }, 'stop', [MISSION_PATROL_RESULT, '敵機は見つけられずに去る ・ また捜しに来る', HOME]],
-  ['33 出撃が去る', { phase: PA_SORTIE, threat: AS_T_REST, resultKind: 2, sortieBombs: 4, sortieHits: 1, sortieDamage: 35 }, 'full', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 4 発 命中 1（HP −35） ・ また捜しに来る', STRONG]],
-  ['33 出撃が去る（命中なし）', { phase: PA_HUNT, resultKind: 2, resultLeftS: 1, sortieBombs: 4 }, 'full', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 4 発 命中 0 ・ また捜しに来る', STRONG]],
+  ['33 出撃が去る', { phase: PA_SORTIE, threat: AS_T_REST, resultKind: 2, sortieBombs: 6, sortieHits: 1, sortieDamage: 35 }, 'full', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 6 発 命中 1（HP −35） ・ また捜しに来る', STRONG]],
+  ['33 出撃が去る（命中なし）', { phase: PA_HUNT, resultKind: 2, resultLeftS: 1, sortieBombs: 6 }, 'full', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 6 発 命中 0 ・ また捜しに来る', STRONG]],
   // レビュー ux:ux-4: 出撃の後の哨戒で航跡を数え始めたら、結果の残りより航跡の行（全速の人に 14 kt の選び方を 3 秒見せる）。減っている間・止まっている間は結果のまま
-  ['34 出撃の後に航跡', { phase: PA_HUNT, resultKind: 2, resultLeftS: 2, sortieBombs: 4, nextPassS: 11.6, wakeLeftS: 2.6 }, 'full', [MISSION_PATROL, '航跡が出ている ・ あと 3 秒で敵機が寄ってくる（14 kt 以下で消える）', WARN]],
-  ['33 出撃の後に航跡が減っている', { phase: PA_HUNT, resultKind: 2, resultLeftS: 2, sortieBombs: 4, nextPassS: 11.6, wakeLeftS: 2.6 }, 'silent', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 4 発 命中 0 ・ また捜しに来る', STRONG]],
+  ['34 出撃の後に航跡', { phase: PA_HUNT, resultKind: 2, resultLeftS: 2, sortieBombs: 6, nextPassS: 11.6, wakeLeftS: 2.6 }, 'full', [MISSION_PATROL, '航跡が出ている ・ あと 3 秒で敵機が寄ってくる（14 kt 以下で消える）', WARN]],
+  ['33 出撃の後に航跡が減っている', { phase: PA_HUNT, resultKind: 2, resultLeftS: 2, sortieBombs: 6, nextPassS: 11.6, wakeLeftS: 2.6 }, 'silent', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 6 発 命中 0 ・ また捜しに来る', STRONG]],
   ['33 つまみ 1 機 3 発', { phase: PA_SORTIE, threat: AS_T_REST, resultKind: 2, sortieBombs: 6, sortieHits: 2, sortieDamage: 70 }, 'full', [MISSION_PATROL_RESULT, '敵機 去る ・ 爆弾 6 発 命中 2（HP −70） ・ また捜しに来る', STRONG]],
 ];
 
@@ -126,10 +126,11 @@ describe('3 行目（空からの見え方。spec §D.3・R4）', () => {
   };
   it('出撃中 > レーダー（レーダーの前と、レーダーの捜索）> 帯。OFF（夜明けの後など）は今の 3 行目', () => {
     expect(status({ phase: PA_SORTIE }, 'full')).toEqual([PATROL_STATUS_SORTIE, '発見された ・ 全速で走り 投下で転舵', true]);
-    expect(status({ phase: PA_HUNT, passes: 0 }, 'stop')).toEqual([PATROL_STATUS_RADAR, '空から ・ レーダーで見えている（止まっても）', true]);
-    expect(status({ phase: PA_PASS, radar: true }, 'stop')).toEqual([PATROL_STATUS_RADAR, '空から ・ レーダーで見えている（止まっても）', true]);
-    expect(status({ phase: PA_PASS }, 'full')).toEqual([PATROL_STATUS_WAKE, '空から ・ 航跡は 6000 m で見える', true]);
-    expect(status({ phase: PA_HUNT }, 'cruise')).toEqual([PATROL_STATUS_WAKE, '空から ・ 航跡は 6000 m で見える', true]);
+    // v0.6.7 実機 1 回目: 「（止まっても）」は 2 行目の「止まっても見つかる」と被るので消した
+    expect(status({ phase: PA_HUNT, passes: 0 }, 'stop')).toEqual([PATROL_STATUS_RADAR, '空から ・ レーダーで見えている', true]);
+    expect(status({ phase: PA_PASS, radar: true }, 'stop')).toEqual([PATROL_STATUS_RADAR, '空から ・ レーダーで見えている', true]);
+    expect(status({ phase: PA_PASS }, 'full')).toEqual([PATROL_STATUS_WAKE, '空から ・ 航跡は 4200 m で見える', true]);
+    expect(status({ phase: PA_HUNT }, 'cruise')).toEqual([PATROL_STATUS_WAKE, '空から ・ 航跡は 4200 m で見える', true]);
     expect(status({ phase: PA_ORBIT }, 'silent')).toEqual([PATROL_STATUS_HULL, '空から ・ 動く船体は 900 m で見える', false]);
     expect(status({ phase: PA_LEAVE }, 'stop')).toEqual([PATROL_STATUS_HIDDEN, '空から ・ 止まっていて見えない', false]);
     expect(status({ phase: PA_OFF }, 'stop')[0]).toBe(-1);
@@ -143,7 +144,7 @@ describe('3 行目（空からの見え方。spec §D.3・R4）', () => {
     expect(status({ phase: PA_PASS }, 'full', true)[0]).toBe(PATROL_STATUS_WAKE);
   });
   it('出撃の機が爆弾を落とし切って去る間（脅威 REST）は帯の状態（2 行目「敵機 去る」の下で「全速で走り」と言わない。レビュー ux:ux-4）', () => {
-    expect(status({ phase: PA_SORTIE, threat: AS_T_REST }, 'full')).toEqual([PATROL_STATUS_WAKE, '空から ・ 航跡は 6000 m で見える', true]);
+    expect(status({ phase: PA_SORTIE, threat: AS_T_REST }, 'full')).toEqual([PATROL_STATUS_WAKE, '空から ・ 航跡は 4200 m で見える', true]);
     expect(status({ phase: PA_SORTIE, threat: AS_T_REST }, 'stop')).toEqual([PATROL_STATUS_HIDDEN, '空から ・ 止まっていて見えない', false]);
     for (const th of [AS_T_NONE, AS_T_INBOUND, AS_T_ORBIT, AS_T_RUN, AS_T_FALLING]) expect(status({ phase: PA_SORTIE, threat: th }, 'stop')[0]).toBe(PATROL_STATUS_SORTIE);
   });
@@ -162,7 +163,7 @@ describe('3 行目（空からの見え方。spec §D.3・R4）', () => {
 });
 
 describe('本物の門番と夜の出撃で回した jp_02 の夜（seed 11・HUD どおり。systems/patrol-air-step）', () => {
-  it('3 秒にレーダーの捜索、約 17.5 秒に「レーダーで発見！」、4 発の「爆弾投下！」、止まると「見つけられずに去る」、目の発見 0', () => {
+  it('3 秒にレーダーの捜索、約 11.8 秒に「レーダーで発見！」、6 発の「爆弾投下！」、止まると「見つけられずに去る」、目の発見 0（v0.6.7 実機 1 回目の 4,200 m・1 機 3 発）', () => {
     const k = makeKit(11);
     const seen: [number, string][] = [];
     let last = '';
@@ -173,14 +174,14 @@ describe('本物の門番と夜の出撃で回した jp_02 の夜（seed 11・HU
       return x.w.atHome;
     }, 'hud', 200);
     const first = (re: RegExp): number => seen.find(([, s]) => re.test(s))?.[0] ?? NaN;
-    expect(first(/^レーダーで捉えられた！ 敵機 2 機 ・ 北東 6000 m/)).toBeCloseTo(3, 1);
-    expect(first(/^レーダーで発見！ 敵機 2 機 ・ 北東 1500 m/)).toBeCloseTo(17.6, 0);
-    expect(seen.filter(([, s]) => s === '爆弾投下！ 転舵！' || s === '爆弾投下！ 旋回と逆へ転舵！').length).toBe(4);
-    expect(first(/^航跡を見られた！ 敵機 南東 6000 m ・ あと 12 秒で止まれ/)).toBeGreaterThan(35);
+    expect(first(/^レーダーで捉えられた！ 敵機 2 機 ・ 北東 4200 m/)).toBeCloseTo(3, 1);
+    expect(first(/^レーダーで発見！ 敵機 2 機 ・ 北東 1500 m/)).toBeCloseTo(11.8, 0);
+    expect(seen.filter(([, s]) => s === '爆弾投下！ 転舵！' || s === '爆弾投下！ 旋回と逆へ転舵！').length).toBe(6);
+    expect(first(/^航跡を見られた！ 敵機 南東 4200 m ・ あと 6 秒で止まれ/)).toBeGreaterThan(35);
     expect(first(/^敵機は見つけられずに去る/)).toBeGreaterThan(first(/^止まったまま待て/));
     expect(k.pa.state.findsVisual).toBe(0);
     expect(k.pa.state.hides).toBeGreaterThanOrEqual(1);
-    expect([k.flight.state.bombsDropped, k.flight.state.waves, k.pa.restartDelayed]).toEqual([4, 1, 0]);
+    expect([k.flight.state.bombsDropped, k.flight.state.waves, k.pa.restartDelayed]).toEqual([6, 1, 0]);
     expect(k.w.stepTimeS).toBeLessThan(k.w.setup.durationS);
     expect(DT).toBeCloseTo(1 / 60, 9);
     expect(missionMode(k.t, 0, 0)).not.toBe(MISSION_PATROL_ATTACK);

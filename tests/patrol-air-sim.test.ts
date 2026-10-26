@@ -17,19 +17,20 @@ describe('組み立て（systems/patrol-air-sim-setup）', () => {
     expect([SIM.boat, SIM.damage, SIM.crew, SIM.crewEffects, SIM.fuelCurve, SIM.fuelStartGal]).toEqual([w.boatParams, w.damageParams, w.crew, w.crewEffects, w.fuelCurve, w.fuelStartGal]);
     expect([SIM.start, SIM.bounds, SIM.boundsMarginM, SIM.durationS, SIM.timeScale]).toEqual([w.playerStart, w.mission.bounds, w.boundsMarginM, w.durationS, w.timeScale]);
     expect(SIM.ring).toEqual({ x: w.mission.returnPoint.x, y: w.mission.returnPoint.y, radiusM: w.mission.returnPoint.radiusM });
-    expect([SIM.sortie.planes, SIM.sortie.bombsPerPlane, SIM.dawn.planes, SIM.dawn.bombsPerPlane, SIM.durationS, SIM.fuelStartGal]).toEqual([2, 2, 4, 2, 220, 32]);
+    expect([SIM.sortie.planes, SIM.sortie.bombsPerPlane, SIM.dawn.planes, SIM.dawn.bombsPerPlane, SIM.durationS, SIM.fuelStartGal]).toEqual([2, 3, 4, 3, 220, 32]); // 1 機 3 発（v0.6.7 実機 1 回目に 2 から）
     // T-14（全速 31・巡航 20・静音の上限 14 kt）: 速さの指令は kt の比（試作と同じ 20/31・13.6/31）
     expect([SIM.cruise01, SIM.quiet01]).toEqual([20 / 31, 13.6 / 31]);
     expect([SIM.reactJitterS, SIM.holdS, SIM.stopJitterS, SIM.crewOn]).toEqual([PATROL_REACT_JITTER_S, PATROL_HOLD_S, null, true]);
     expect([PATROL_REACT_JITTER_S, PATROL_HOLD_S]).toEqual([[0.35, 0.9], [0.6, 1.4]]);
   });
   it('data の上書きは記録を写して起動時の検査を通す（1 機の爆弾と CEP は夜明けの空襲にも効く）。壊れた値は今の検査の例外', () => {
-    const k = patrolSimSetup(gameData, { bombs: 3, cepM: 24, sweepGapS: 16, orbitS: 12, marginS: 3.5, radarPasses: 2 });
-    expect([k.sortie.bombsPerPlane, k.dawn.bombsPerPlane, k.gate.sweepGapS, k.gate.orbitS, k.gate.hudStopMarginS, k.gate.radarPasses]).toEqual([3, 3, 16, 12, 3.5, 2]);
+    // bombs 2 は v0.6.7 実機 1 回目の前の値（「理不尽」のときの戻し）。marginS 3.5 は 4,200 m でも F1 を通る
+    const k = patrolSimSetup(gameData, { bombs: 2, cepM: 24, sweepGapS: 16, orbitS: 12, marginS: 3.5, radarPasses: 2 });
+    expect([k.sortie.bombsPerPlane, k.dawn.bombsPerPlane, k.gate.sweepGapS, k.gate.orbitS, k.gate.hudStopMarginS, k.gate.radarPasses]).toEqual([2, 2, 16, 12, 3.5, 2]);
     expect(k.sortie.scatterM).toBeCloseTo(24 * Math.SQRT2, 9);
     expect(k.dawn.scatterM).toBeCloseTo(24 * Math.SQRT2, 9);
     expect(patrolSimSetup(gameData, { bombs: 1 }).dawn.bombsPerPlane).toBe(1);
-    expect(gameData.enemies.enemies.find((e) => e.id === 'us_patrol_bomber')).toMatchObject({ strike: { bomb: { count: 2, accuracy_cep_m: 32 } } }); // 元の data は変えない
+    expect(gameData.enemies.enemies.find((e) => e.id === 'us_patrol_bomber')).toMatchObject({ strike: { bomb: { count: 3, accuracy_cep_m: 32 } } }); // 元の data は変えない
     expect(() => patrolSimSetup(gameData, { marginS: 2.66 })).toThrow(/F2/); // 航跡の限り 1.17 + 1.5
     expect(() => patrolSimSetup(gameData, { bombs: 4 })).toThrow(/C9/); // 1 回の出撃 2 × 4 = 8 > 7
     expect(() => patrolSimSetup(gameData, { radarPasses: 1.5 })).toThrow(/radar_passes/);
@@ -62,28 +63,28 @@ describe('台本（core/patrol-air-sim-policy）', () => {
 });
 
 describe('1 夜（core/patrol-air-sim）', () => {
-  it('同じ seed なら同じ夜・別の seed なら違う夜。HUD どおり（hud・seed 7）は 4 回の捜索（航跡 3）を 2 回隠れてやり過ごし、レーダーの 4 発をかわして 101.8 秒で帰投（spec §F.3 の時間線）', () => {
+  it('同じ seed なら同じ夜・別の seed なら違う夜。HUD どおり（hud・seed 7）は 5 回の捜索（航跡 4）を 3 回隠れてやり過ごし、レーダーの 6 発をかわして 116.5 秒で帰投（spec §F.3 の時間線。v0.6.7 実機 1 回目の 4,200 m・1 機 3 発）', () => {
     const pol = parsePatrolPolicy('hud~');
     expect(runPatrolTrial(SIM, pol, 3)).toEqual(runPatrolTrial(SIM, pol, 3));
     expect(runPatrolTrial(SIM, pol, 3)).not.toEqual(runPatrolTrial(SIM, pol, 4));
     const r = runPatrolTrial(SIM, parsePatrolPolicy('hud'), 7);
-    expect(r).toMatchObject({ home: true, homeBeforeDawn: true, sunk: false, passes: 4, passesWake: 3, hides: 2, finds: 1, findsVisual: 0, waves: 1, nightBombs: 4, nightHits: 0, dawnBombs: 0 });
-    expect(r.timeS).toBeCloseTo(101.77, 2);
+    expect(r).toMatchObject({ home: true, homeBeforeDawn: true, sunk: false, passes: 5, passesWake: 4, hides: 3, finds: 1, findsVisual: 0, waves: 1, nightBombs: 6, nightHits: 0, dawnBombs: 0 });
+    expect(r.timeS).toBeCloseTo(116.53, 2);
   });
-  it('F6・F12: +23 は 2 × 夜の投下 + 命中の抽選（hud~ seed 1: 4 発・命中 1 → 10 回、run~ seed 1: 11 発・命中 1 → 24 回）。再出撃は遅れない（50 夜 × 4 台本）', () => {
+  it('F6・F12: +23 は 2 × 夜の投下 + 命中の抽選（hud~ seed 1: 6 発・命中 1 → 14 回、run~ seed 1: 13 発・命中 2 → 28 回）。再出撃は遅れない（50 夜 × 4 台本）', () => {
     const a = runPatrolTrial(SIM, parsePatrolPolicy('hud~'), 1);
-    expect([a.nightBombs, a.nightHits, a.draws, a.expectedDraws]).toEqual([4, 1, 10, 10]);
+    expect([a.nightBombs, a.nightHits, a.draws, a.expectedDraws]).toEqual([6, 1, 14, 14]);
     const b = runPatrolTrial(SIM, parsePatrolPolicy('run~'), 1);
-    expect([b.nightBombs, b.nightHits, b.finds, b.findsVisual, b.draws, b.expectedDraws]).toEqual([11, 1, 3, 2, 24, 24]);
+    expect([b.nightBombs, b.nightHits, b.finds, b.findsVisual, b.draws, b.expectedDraws]).toEqual([13, 2, 3, 2, 28, 28]);
     for (const n of ['hud~', 'run~', 'quiet~', 'hide_wait']) {
       const c = runPatrolCell(SIM, parsePatrolPolicy(n), 50, 1);
       expect([c.restartFalse, c.drawMismatch, c.waveMismatch], n).toEqual([0, 0, 0]);
     }
   });
-  it('つまみ: 乗員の効きを切る（CREW=0）と hud~ は 9.0%（seed 1〜400）、戻す秒を 0.9 秒に決め打ちして乗員を切ると試作 v1 の規則（hud~ 12.0%・run~ 39.5%、seed 1〜200）', () => {
-    expect(runPatrolCell(patrolSimSetup(gameData, { crewOn: false }), parsePatrolPolicy('hud~'), 400, 1).sunkPct).toBeCloseTo(9.0, 9);
+  it('つまみ: 乗員の効きを切る（CREW=0）と hud~ は 17.5%（seed 1〜400）、戻す秒を 0.9 秒に決め打ちして乗員を切ると試作 v1 の規則（hud~ 27.0%・run~ 59.5%、seed 1〜200）', () => {
+    expect(runPatrolCell(patrolSimSetup(gameData, { crewOn: false }), parsePatrolPolicy('hud~'), 400, 1).sunkPct).toBeCloseTo(17.5, 9);
     const v1 = patrolSimSetup(gameData, { crewOn: false, holdS: [0.9, 0.9] });
-    expect(runPatrolCell(v1, parsePatrolPolicy('hud~'), 200, 1).sunkPct).toBeCloseTo(12.0, 9);
-    expect(runPatrolCell(v1, parsePatrolPolicy('run~'), 200, 1).sunkPct).toBeCloseTo(39.5, 9);
+    expect(runPatrolCell(v1, parsePatrolPolicy('hud~'), 200, 1).sunkPct).toBeCloseTo(27.0, 9);
+    expect(runPatrolCell(v1, parsePatrolPolicy('run~'), 200, 1).sunkPct).toBeCloseTo(59.5, 9);
   }, 30_000);
 });

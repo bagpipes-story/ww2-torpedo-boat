@@ -29,17 +29,18 @@ import {
 import { radToDeg, wrapDeg180 } from '../src/core/units';
 import { DT, P, P_EYE, V, hunting, run, runUntil, steps } from './patrol-air-kit';
 
-const PASS_TO_LOCK_S = (6000 - 1500) / V; // 14.58
-const PASS_TO_NEAR_S = (6000 - 900) / V; // 16.52
+// 接近の始まり P.wakeDetectM 4,200 m（v0.6.7 実機 1 回目に 6,000 m から。予告 14.58 → 8.75 秒）
+const PASS_TO_LOCK_S = (P.wakeDetectM - 1500) / V; // 8.75
+const PASS_TO_NEAR_S = (P.wakeDetectM - 900) / V; // 10.69
 
 describe('最初の捜索はレーダー（止まっていても見つかる）', () => {
-  it('first_pass_s 3 秒に北東 56° の 6,000 m から来て、止まったままでも 1,500 m で発見（予告 14.58 秒・目の発見には数えない）', () => {
+  it('first_pass_s 3 秒に北東 56° の 4,200 m から来て、止まったままでも 1,500 m で発見（予告 8.75 秒・目の発見には数えない）', () => {
     const s = createPatrolAir();
     expect(run(s, P, steps(3) - 1, 'stop')).toBe(0);
     expect([s.phase, s.k]).toEqual([PA_HUNT, 0]);
     const tPass = runUntil(s, P, PA_EV_PASS, 'stop', 1);
     expect(tPass).toBeCloseTo(3, 1);
-    expect([s.phase, s.radar, s.viaWake, s.bearingDeg, s.r, s.k]).toEqual([PA_PASS, true, false, 56, 6000, 1]);
+    expect([s.phase, s.radar, s.viaWake, s.bearingDeg, s.r, s.k]).toEqual([PA_PASS, true, false, 56, 4200, 1]);
     const tFind = runUntil(s, P, PA_EV_FIND, 'stop', 30);
     expect(tFind - tPass).toBeGreaterThanOrEqual(PASS_TO_LOCK_S - DT);
     expect(tFind - tPass).toBeLessThan(PASS_TO_LOCK_S + DT);
@@ -107,14 +108,14 @@ describe('見え方と発見の距離（目の捜索）', () => {
     ['full', 1500, PASS_TO_LOCK_S],
     ['cruise', 1500, PASS_TO_LOCK_S],
     ['silent', 900, PASS_TO_NEAR_S],
-  ] as const)('帯 %s: %i m で発見（予告 %f 秒 ≥ 14.5。F1）', (band, at, warn) => {
+  ] as const)('帯 %s: %i m で発見（予告 %f 秒 ≥ 8＝F1 の hud_stop_margin_s 3 + 5）', (band, at, warn) => {
     const s = hunting();
     const tPass = runUntil(s, P, PA_EV_PASS, band);
     const tFind = runUntil(s, P, PA_EV_FIND, band);
     expect(s.findR).toBeLessThanOrEqual(at);
     expect(s.findR).toBeGreaterThan(at - V * DT);
     expect(tFind - tPass).toBeCloseTo(warn, 1);
-    expect(tFind - tPass).toBeGreaterThanOrEqual(14.5);
+    expect(tFind - tPass).toBeGreaterThanOrEqual(8);
     expect(s.minVisualWarnS).toBeCloseTo(warn, 1);
     expect([s.findsVisual, s.finds, s.firstVisualFindT]).toEqual([1, 1, tFind]);
     expect(s.findPhase).toBe(band === 'silent' ? PA_ORBIT : PA_PASS);
@@ -185,7 +186,7 @@ describe('方角の回り・OFF・秒読み', () => {
   it.each([
     ['哨戒', PA_HUNT, 1],
     ['接近', PA_PASS, 5],
-    ['付近の捜索', PA_ORBIT, 21],
+    ['付近の捜索', PA_ORBIT, 17],
     ['出撃中', PA_SORTIE, -1],
   ] as const)('F4: %s で off（夜明け・沈没・輪・座礁）なら OFF。以後は off が消えても何もしない（発見も捜索も無い）', (_n, phase, atS) => {
     const s = createPatrolAir();
@@ -198,13 +199,13 @@ describe('方角の回り・OFF・秒読み', () => {
     expect(s).toEqual(frozen);
     expect(s.phase).toBe(PA_OFF);
   });
-  it('秒読み「あと N 秒で止まれ」は 6,000 m で 12、11.58 秒で 0（1,500 m の線の hud_stop_margin_s 3 秒前）。接近の間だけ', () => {
+  it('秒読み「あと N 秒で止まれ」は 4,200 m で 6、5.75 秒で 0（1,500 m の線の hud_stop_margin_s 3 秒前）。接近の間だけ', () => {
     const s = hunting();
     expect(patrolCountdownS(s, P)).toBeNaN();
     runUntil(s, P, PA_EV_PASS, 'stop');
-    expect([patrolCountdownS(s, P), patrolLockInS(s, P)]).toEqual([12, PASS_TO_LOCK_S]);
+    expect([patrolCountdownS(s, P), patrolLockInS(s, P)]).toEqual([6, PASS_TO_LOCK_S]);
     let zeroAt = Number.NaN;
-    let last = 12;
+    let last = 6;
     run(s, P, steps(14), 'stop', false, false, () => {
       const c = patrolCountdownS(s, P);
       if (!Number.isNaN(c)) {
@@ -214,7 +215,7 @@ describe('方角の回り・OFF・秒読み', () => {
       if (c === 0 && Number.isNaN(zeroAt)) zeroAt = s.t - s.passStartT;
     });
     expect(zeroAt).toBeCloseTo(PASS_TO_LOCK_S - 3, 1);
-    expect(PASS_TO_LOCK_S - 3).toBeCloseTo(11.58, 2);
+    expect(PASS_TO_LOCK_S - 3).toBeCloseTo(5.75, 2);
     expect(Object.is(patrolCountdownS({ ...s, phase: PA_PASS, r: 1000 }, P), 0)).toBe(true);
   });
 });

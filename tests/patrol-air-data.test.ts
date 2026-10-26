@@ -33,12 +33,15 @@ const build = (edit: (d: Data) => void): (() => unknown) => {
 };
 
 describe('3 つの記録の値と source（spec §B.1・§B.3・§B.5）', () => {
-  it('enemies.json の us_patrol_bomber: us_henderson_aircraft の直後・空襲の値は us_carrier_aircraft の写し・patrol 6000／1500・水上機の形ではない', () => {
+  it('enemies.json の us_patrol_bomber: us_henderson_aircraft の直後・空襲の値は us_carrier_aircraft の写し（1 機の爆弾だけ 3 発）・patrol 4200／1500・水上機の形ではない', () => {
     const ids = gameData.enemies.enemies.map((e) => e.id);
     expect(ids.indexOf('us_patrol_bomber')).toBe(ids.indexOf('us_henderson_aircraft') + 1);
     const b = enemyOf(gameData, 'us_patrol_bomber');
-    expect([b['faction'], b['name_ja'], b['patrol']]).toEqual(['USN', '米飛行艇（PB2Y 相当）', { wake_detect_m: 6000, lock_m: 1500 }]);
-    expect(b['strike']).toEqual(enemyOf(gameData, 'us_carrier_aircraft')['strike']);
+    expect([b['faction'], b['name_ja'], b['patrol']]).toEqual(['USN', '米飛行艇（PB2Y 相当）', { wake_detect_m: 4200, lock_m: 1500 }]);
+    // v0.6.7 実機 1 回目「簡単なので 1 機あたりの爆弾を 3 発に」: bomb.count だけ 2 → 3（ほかは us_carrier_aircraft の写しのまま）
+    const carrier = enemyOf(gameData, 'us_carrier_aircraft')['strike'] as Rec;
+    expect(b['strike']).toEqual({ ...carrier, bomb: { ...(carrier['bomb'] as Rec), count: 3 } });
+    expect((carrier['bomb'] as Rec)['count']).toBe(2);
     expect(isPatrolAircraftRecord(b)).toBe(true);
     expect(isSeaplaneDataRecord(b)).toBe(false);
     for (const k of ['guns', 'flare', 'detection']) expect(b[k], k).toBeUndefined();
@@ -94,15 +97,15 @@ describe('3 つの記録の値と source（spec §B.1・§B.3・§B.5）', () =>
 });
 
 describe('組み立て（config/patrol-air-mission-data。spec §C.1・§C.7）', () => {
-  it('jp_02 の門番と夜の出撃の値（月没後の視程 900 m・308.64 m/体感秒・付近の捜索 8 秒で 157.2°・2 機 × 2 発・北東から）', () => {
+  it('jp_02 の門番と夜の出撃の値（月没後の視程 900 m・308.64 m/体感秒・付近の捜索 8 秒で 157.2°・2 機 × 3 発・北東から）', () => {
     const p = getPatrolAirParams(gameData, 'jp_02')!;
     expect({ ...p.gate, orbitDegPerS: Number(p.gate.orbitDegPerS.toFixed(4)) }).toEqual({
-      planes: 2, flightMps: 308.64, wakeDetectM: 6000, lockM: 1500, nearM: 900, runRadiusM: 600, firstPassS: 3, wakeTriggerS: 3, sweepGapS: 12, orbitS: 8, leaveS: 2.5, hudStopMarginS: 3,
+      planes: 2, flightMps: 308.64, wakeDetectM: 4200, lockM: 1500, nearM: 900, runRadiusM: 600, firstPassS: 3, wakeTriggerS: 3, sweepGapS: 12, orbitS: 8, leaveS: 2.5, hudStopMarginS: 3,
       fromBearingDeg: 56, passRotateDeg: 90, radarPasses: 1, orbitDegPerS: 19.6486, quietKt: 14,
     });
     expect(p.gate.orbitDegPerS * p.gate.orbitS).toBeCloseTo(157.19, 2);
     const s = p.sortie;
-    expect([s.planes, s.bombsPerPlane, s.spawnM, s.runRadiusM, s.firstRunS, s.runGapS, s.spawnOffsetsDeg, s.fromJa, s.nameJa]).toEqual([2, 2, 1500, 600, 5, 2.2, [-10, 10], '北東', '米飛行艇（PB2Y 相当）']);
+    expect([s.planes, s.bombsPerPlane, s.spawnM, s.runRadiusM, s.firstRunS, s.runGapS, s.spawnOffsetsDeg, s.fromJa, s.nameJa]).toEqual([2, 3, 1500, 600, 5, 2.2, [-10, 10], '北東', '米飛行艇（PB2Y 相当）']);
     expect(s.firstRunS + s.runS).toBeCloseTo(6.944, 3);
   });
   it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa も jp_02 だけ', () => {
@@ -153,7 +156,7 @@ describe('起動時の検査の境の両側（壊れた data。spec §C.7）', (
   it('C4 0 < run_radius_m < 視程 < lock_m ≤ spawn_m < wake_detect_m（半月・満月は止まる）', () => {
     for (const moon of ['half', 'full']) expect(build((d) => (missionOf(d, 'jp_02')['moon'] = moon)), moon).toThrow(/自艇の視程（(1500|1950) m/);
     expect(build((d) => (sortieOf(d)['spawn_m'] = 1499))).toThrow(AT);
-    expect(build((d) => ((sortieOf(d)['spawn_m'] = 6000), ((enemyOf(d, 'us_patrol_bomber')['patrol'] as Rec)['lock_m'] = 6000)))).toThrow(/≤ sortie\.spawn_m（6000）< patrol\.wake_detect_m（6000）/);
+    expect(build((d) => ((sortieOf(d)['spawn_m'] = 4200), ((enemyOf(d, 'us_patrol_bomber')['patrol'] as Rec)['lock_m'] = 4200)))).toThrow(/≤ sortie\.spawn_m（4200）< patrol\.wake_detect_m（4200）/);
   });
   it('C5 秒は正（first_pass_s は 0 以上）', () => {
     expect(build((d) => (paramsOf(d)['orbit_s'] = 0))).toThrow(/params\.orbit_s は正の秒/);
@@ -176,9 +179,11 @@ describe('起動時の検査の境の両側（壊れた data。spec §C.7）', (
     expect(build((d) => ((missionOf(d, 'jp_02')['dawn_air'] as Rec)['play_as'] = 'own'))).toThrow(/dawn_air\.play_as が enemy/);
     expect(build((d) => delete protoOf(d, 'jp_02')['dawn_strike'])).toThrow(/dawn_strike（夜明けの空襲）のある任務だけ/);
   });
-  it('C7 F1（予告 ≥ 秒読みの余白 + 10 秒・発見から投下 ≥ 6.9 秒）・F2 の 2 つの限り・F9（1 発では沈まない）', () => {
-    expect(build((d) => (paramsOf(d)['hud_stop_margin_s'] = 4.58))).not.toThrow();
-    expect(build((d) => (paramsOf(d)['hud_stop_margin_s'] = 4.59))).toThrow(/予告から 1,500 m の線までの秒（14\.58）は hud_stop_margin_s \+ 10/);
+  it('C7 F1（予告 ≥ 秒読みの余白 + 5 秒・発見から投下 ≥ 6.9 秒）・F2 の 2 つの限り・F9（1 発では沈まない）', () => {
+    // 予告 (4,200 − 1,500)/308.64 = 8.748 秒（v0.6.7 実機 1 回目に 6,000 m の 14.58 秒から）。「理不尽」のつまみ 3.5 は通る
+    expect(build((d) => (paramsOf(d)['hud_stop_margin_s'] = 3.5))).not.toThrow();
+    expect(build((d) => (paramsOf(d)['hud_stop_margin_s'] = 3.74))).not.toThrow();
+    expect(build((d) => (paramsOf(d)['hud_stop_margin_s'] = 3.75))).toThrow(/予告から 1,500 m の線までの秒（8\.75）は hud_stop_margin_s \+ 5/);
     expect(build((d) => (sortieOf(d)['first_run_s'] = 4.96))).not.toThrow();
     expect(build((d) => (sortieOf(d)['first_run_s'] = 4.95))).toThrow(/発見から最初の投下までの秒.*6\.89）は 6\.9 以上/);
     expect(build((d) => (paramsOf(d)['hud_stop_margin_s'] = 2.67))).not.toThrow();
@@ -198,7 +203,8 @@ describe('起動時の検査の境の両側（壊れた data。spec §C.7）', (
   it('C9 2 行目のキーの欄に収まる（sweep_gap_s 31／32・1 回の出撃の爆弾 7／8）', () => {
     expect(build((d) => (paramsOf(d)['sweep_gap_s'] = 31))).not.toThrow();
     expect(build((d) => (paramsOf(d)['sweep_gap_s'] = 32))).toThrow(/sweep_gap_s の切り上げ（32）が 2 行目のキーの欄の上限 31 を超える/);
-    expect(build((d) => (((enemyOf(d, 'us_patrol_bomber')['strike'] as Rec)['bomb'] as Rec)['count'] = 3))).not.toThrow(); // §I.2 の「まだ簡単」のつまみ（出撃 6 発）
+    // §I.2 の「まだ簡単」のつまみ（出撃 6 発）は v0.6.7 実機 1 回目に入れた。2 機で 1 機 4 発（出撃 8 発）は欄に入らない
+    expect(build((d) => (((enemyOf(d, 'us_patrol_bomber')['strike'] as Rec)['bomb'] as Rec)['count'] = 4))).toThrow(/1 回の出撃の爆弾（count × strike\.bomb\.count）（8）が 2 行目のキーの欄の上限 7/);
     // 7／8 は 1 機の組で（2 機では偶数しか作れない）。夜明けの空襲の検査（C8）は機数 × 間隔で 1 機を止めるので core の関数で見る
     const plane = (n: number): PatrolAircraftRecord => ({ ...(enemyOf(gameData, 'us_patrol_bomber') as unknown as PatrolAircraftRecord), strike: { ...(enemyOf(gameData, 'us_patrol_bomber') as unknown as PatrolAircraftRecord).strike, bomb: { ...(enemyOf(gameData, 'us_patrol_bomber') as unknown as PatrolAircraftRecord).strike.bomb, count: n } } });
     const ev = patrolAirEventFromData({ ...eventOf(gameData, 'patrol_air'), params: { ...paramsOf(gameData), sortie: { ...sortieOf(gameData), spawn_offsets_deg: [0] } } }, 'テスト');

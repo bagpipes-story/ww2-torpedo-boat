@@ -29,7 +29,7 @@ describe('F2: 秒読みが 0 になってから 1.5 秒遅れて止め始めて�
     for (let kt = 0; kt <= 31; kt++) {
       const r = stopAfterCountdown(P_EYE, T14, TS, kt, lag);
       expect(r.found, `${kt} kt`).toBe(false);
-      expect(r.zeroAfterS).toBeCloseTo(11.58, 1);
+      expect(r.zeroAfterS).toBeCloseTo(5.75, 1); // 接近の始まり 4,200 m から 8.75 − 3 秒
     }
   });
   it('限りの外は見つかる（全速で 2.0 秒遅れ＝航跡が 1,500 m の線までに消えない。限りは 3.0 − 1.17 = 1.83 秒）', () => {

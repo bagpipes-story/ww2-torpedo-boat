@@ -1,5 +1,5 @@
 // jp_02 の夜を世界の順で回す（v0.6.7 S3。tests/patrol-night-kit。夜明けの空襲・燃料・乗員の効きは省く）で、spec-v067 §C.6 の不変を core の門番と出撃で確かめる:
-// F1（目の発見の予告 ≥ 14.5 秒）・F3（攻撃できる機 ≤ 2・空中の爆弾 ≤ 1）・F5（着弾点の輪から離れれば当たらない）・F6（+23 の回数）・F8（1 回の発見に 1 波）・
+// F1（目の発見の予告 ≥ 8 秒。v0.6.7 実機 1 回目の 4,200 m で 14.5 から）・F3（攻撃できる機 ≤ 2・空中の爆弾 ≤ 1）・F5（着弾点の輪から離れれば当たらない）・F6（+23 の回数）・F8（1 回の発見に 1 波）・
 // F9（1 発では沈まない・消火すれば火災でも沈まない）・F10（HUD どおりなら夜明け前に帰れる）・F12（再出撃は遅れない）。
 // 帯（N 400 × 2 組）と回帰は本物の模擬（S4。core/patrol-air-sim）。ここは seed 1〜100／200 の決まった夜で、帯より緩い線だけを置く。
 import { describe, expect, it } from 'vitest';
@@ -16,7 +16,9 @@ describe('F1・F3・F6・F8・F12: どの遊び方でも全夜で（seed 1〜100
     ['run~（逃げるだけ）', { pol: 'run', reactS: 'jitter' }],
     ['run_straight（転舵しない）', { pol: 'run_straight', reactS: 0.5 }],
     ['quiet~（14 kt と止まる）', { pol: 'quiet', reactS: 'jitter' }],
-  ] as [string, NightOptions][])('%s: 攻撃できる機 ≤ 2・空中の爆弾 ≤ 1・+23 = 2 × 投下 + 命中の抽選・来た波 = 発見・再出撃の false 0・目の発見の予告 ≥ 14.5 秒', (_n, o) => {
+  ] as [string, NightOptions][])('%s: 攻撃できる機 ≤ 2・空中の爆弾 ≤ 1・+23 = 2 × 投下 + 命中の抽選・来た波 = 発見・再出撃の false 0・目の発見の予告 ≥ 8 秒・1 波 6 発まで', (_n, o) => {
+    const perSortie = W.patrolAir!.sortie.planes * W.patrolAir!.sortie.bombsPerPlane;
+    expect(perSortie).toBe(6); // 2 機 × 3 発（v0.6.7 実機 1 回目に 1 機 2 → 3 発）
     const rs = nights(100, o);
     expect(sum(rs, (r) => r.finds)).toBeGreaterThanOrEqual(100); // 毎夜レーダーの 1 回は必ず
     for (const r of rs) {
@@ -26,8 +28,8 @@ describe('F1・F3・F6・F8・F12: どの遊び方でも全夜で（seed 1〜100
       expect(r.waves).toBe(r.finds);
       expect(r.restartFalse).toBe(0);
       expect(r.finds - r.findsVisual).toBe(1);
-      expect(r.minWarnS).toBeGreaterThanOrEqual(14.5);
-      expect(r.bombs).toBeLessThanOrEqual(4 * r.finds);
+      expect(r.minWarnS).toBeGreaterThanOrEqual(8); // 予告 (4,200 − 1,500)/308.64 = 8.75 秒・F1 の hud_stop_margin_s 3 + 5
+      expect(r.bombs).toBeLessThanOrEqual(perSortie * r.finds);
     }
   });
 });

@@ -1,5 +1,5 @@
 // 夜の哨戒機の門番（v0.6.7。core/patrol-air）のテストの固定の fixture と道具。data を読まない（数は jp_02 の data と同じ値を手で書いた:
-// 機 120 kt × time_scale 5・航跡 6,000 m・発見 1,500 m・月没後の視程 900 m・旋回の半径 600 m・秒は risk_events.json の patrol_air.params・方位 56°・90° ずつ・レーダー 1 回）。
+// 機 120 kt × time_scale 5・航跡 4,200 m（v0.6.7 実機 1 回目に 6,000 m から）・発見 1,500 m・月没後の視程 900 m・旋回の半径 600 m・秒は risk_events.json の patrol_air.params・方位 56°・90° ずつ・レーダー 1 回）。
 // 自艇は T-14 の運動の数（boats.json jp_t14 と同じ値の手書き）。data の値そのものは tests/patrol-air-data、jp_02 の世界との一致は tests/patrol-air.test.ts の 1 件。
 import { FIXED_STEP_S } from '../src/config/step-config';
 import { boatParamsFromData, nextSpeedBand, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from '../src/core/boat-motion';
@@ -15,7 +15,7 @@ export const steps = (s: number): number => Math.round(s / DT);
 export const P: PatrolParams = {
   planes: 2,
   flightMps: V,
-  wakeDetectM: 6000,
+  wakeDetectM: 4200,
   lockM: 1500,
   nearM: 900,
   runRadiusM: 600,

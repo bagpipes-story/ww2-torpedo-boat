@@ -907,7 +907,7 @@
           "us_patrol_bomber",
           "us_patrol_bomber"
         ],
-        "enemy_behavior": "ai (v0.6.7。米の飛行艇 2 機の夜の哨戒。レーダー → 捜索（航跡・動く船体・定時）→ 発見で 2 機 × 2 発の出撃。夜明けの後は 4 機の空襲)",
+        "enemy_behavior": "ai (v0.6.7。米の飛行艇 2 機の夜の哨戒。レーダー → 捜索（航跡・動く船体・定時）→ 発見で 2 機 × 3 発の出撃（v0.6.7 実機 1 回目に 1 機 2 → 3 発）。夜明けの後は 4 機の空襲)",
         "main_weapon": "none",
         "main_weapon_source": "design (v0.6.7。航空機だけの任務で撃つ相手がいない。T-14 の 13mm で機を撃つ仕組み（機の HP・撃墜・閃光で見つかる）は無いので候補へ。45cm 魚雷も積まない（torpedoCapacity 0）。史実の第一号型は 7.7mm ×2（high。WebSearch の抜粋のみ・本文未読）)",
         "duration_s": 220,
@@ -957,7 +957,7 @@
           "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
           "from_bearing_deg": 56,
           "escort_target_planes": [],
-          "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+          "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
         },
         "hazards": [
           "patrol_air",

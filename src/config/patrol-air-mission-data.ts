@@ -13,7 +13,7 @@ import type { PatrolParams } from '../core/patrol-air-state';
 
 export type { PatrolParams } from '../core/patrol-air-state';
 
-/** 夜の哨戒機の世界の値（WorldSetup.patrolAir）: 門番（core/patrol-air）と、発見のたびに 1 波だけ再出撃する夜の出撃（空襲の core。2 機 × 2 発） */
+/** 夜の哨戒機の世界の値（WorldSetup.patrolAir）: 門番（core/patrol-air）と、発見のたびに 1 波だけ再出撃する夜の出撃（空襲の core。2 機 × 3 発＝us_patrol_bomber の strike.bomb.count。v0.6.7 実機 1 回目に 1 機 2 → 3 発） */
 export interface PatrolAirSetup {
   gate: PatrolParams;
   sortie: AirStrikeParams;

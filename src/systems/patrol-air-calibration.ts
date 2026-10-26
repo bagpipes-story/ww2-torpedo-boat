@@ -1,7 +1,7 @@
 // 夜の哨戒機（v0.6.7。jp_02「孤島の哨戒」。spec-v067 §F.4・§C.6）の模擬の帯: PATROL_CALIBRATION・PATROL_PAIRS。Phaser 非依存・window を読まない。
 // 3 種の帯（v0.6.6 の systems/convoy-hard-calibration と同じ作法）: 設計の帯（design。意味のある閾値のまま。scripts/patrol-air-sim の TABLE=2 が N 400 × 2 組＝seed 1〜400・401〜800 の
 // 組ごとに、tests/patrol-air-sim-a〜e が N 200・seed 1 で検査）・対の帯（PATROL_PAIRS。2 組を合わせた 800 夜。TABLE=2）・回帰の帯（regPct。N 200・seed 1 の沈没 % ± 4 点。tests）。
-// 不変（spec C.6 の F1・F3・F6・F8・F9・F12・漂流 0・レーダーの発見 ≤ radar_passes）はどの台本も全夜で。掃き（F11）は TABLE=3（どの r も沈没 ≤ 20%・隣の r との差 ≤ 10 点）。
+// 不変（spec C.6 の F1・F3・F6・F8・F9・F12・漂流 0・レーダーの発見 ≤ radar_passes）はどの台本も全夜で。掃き（F11）は TABLE=3（どの r も沈没 ≤ 30%・隣の r との差 ≤ 10 点）。
 // 帯を外したら値を動かす前に模擬が spec §F.1 どおりかを確かめる（data は enemies.json の us_patrol_bomber・risk_events.json の patrol_air。動かしたら理由を source と CHANGELOG に）。
 import type { PatrolCell } from '../core/patrol-air-sim-cell';
 import type { PatrolSimSetup } from '../core/patrol-air-sim';
@@ -29,35 +29,41 @@ export interface PatrolCalibrationRow {
   regPct: number;
 }
 
-/** 回帰の帯の幅（点）・F1 の予告の最短（spec C.6。航跡 14.58・静音 16.53 秒）・F11 の掃きの上限と隣との差（点） */
+/**
+ * 回帰の帯の幅（点）・F1 の予告の最短（spec C.6。v0.6.7 実機 1 回目に wake_detect_m 6,000 → 4,200 m で航跡 14.58 → 8.75・静音 16.53 → 10.69 秒＝
+ * core/patrol-air-data の hud_stop_margin_s 3 + PATROL_MIN_COUNTDOWN_S 5 = 8 秒）・F11 の掃きの上限と隣との差（点）。
+ * 掃きの上限は実機 1 回目の 1 機 3 発で 20 → 30（4,200 m・1 機 3 発の N 400 × 2 組で、反応 0.30〜1.00 秒の沈没 0〜22.0%・0.05 秒の隣との差は最大 5.0 点。危険の水準をユーザーの「簡単」に合わせて上げた。崖の無さ＝隣との差 ≤ 10 点はそのまま）
+ */
 export const PATROL_REG_PTS = 4;
-export const PATROL_MIN_WARN_S = 14.5;
-export const PATROL_SWEEP_MAX_SUNK_PCT = 20;
+export const PATROL_MIN_WARN_S = 8;
+export const PATROL_SWEEP_MAX_SUNK_PCT = 30;
 export const PATROL_SWEEP_MAX_STEP_PTS = 10;
 
 const row = (policy: string, star: boolean, design: PatrolCalibrationRow['design'], regPct: number): PatrolCalibrationRow => ({ policy, star, design, regPct });
 
 /**
- * spec-v067 §F.4 の帯（行の順は §F.3 の表）。設計: HUD どおり（hud~ ★）は沈没 4〜16%・夜明け前の帰投 ≥ 80%・回避 ≥ 75%・帰投の中央値 90〜115 秒・目の発見 0、
- * 14 kt と止まる（quiet~ ★）は 6〜22%・夜明け前 70〜95%・中央値 180〜215 秒、秒読みに 2 秒遅れる（hud@2.0~）は 20〜42%・目の発見 ≥ 0.6/夜、逃げるだけ（run~）は 25〜50%・回避 0、
- * 14 kt で止まらない（quiet_dodge~）35〜65%、まっすぐ ≥ 80%（1 発 0.40〜0.55）、投下で減速 ≥ 75%、巡航で転舵 ≥ 70%、14 kt のまま ≥ 90%、輪から離れる理想 ≤ 3%（1 発 ≤ 0.02＝F5）、
- * 夜明けまで止まる ≥ 95%。回帰の中心は本物の模擬の N 200・seed 1（試作 v2 の proto/out/v2-reg-n200-s1.txt と同じ値）
+ * spec-v067 §F.4 の帯（行の順は §F.3 の表）。v0.6.7 実機 1 回目（「簡単なので 1 機あたりの爆弾を 3 発に」「飛行機がくるまでの時間が長すぎます」→ bomb.count 2 → 3・
+ * wake_detect_m 6,000 → 4,200 m）で設計の目標が上がったので、意味はそのままに測った値（N 400 × 2 組と N 200 × 4 組）へ置き直した（前の値は（ ））。
+ * 設計: HUD どおり（hud~ ★）は沈没 10〜26%（4〜16）・夜明け前の帰投 ≥ 70%（80）・回避 ≥ 70%（75）・帰投の中央値 100〜145 秒（90〜115。捜索が早く来て止まる秒が増えた。4,200 m で 116 秒・4,000 m だと 129 秒と捜索との噛み合わせで動く）・目の発見 0、
+ * 14 kt と止まる（quiet~ ★）は 12〜35%（6〜22）・夜明け前 60〜90%（70〜95）・中央値 180〜219 秒（215）、秒読みに 2 秒遅れる（hud@2.0~）は 25〜55%（20〜42）・目の発見 ≥ 0.6/夜、
+ * 逃げるだけ（run~）は 35〜65%（25〜50）・回避 0、14 kt で止まらない（quiet_dodge~）45〜85%（35〜65）、まっすぐ ≥ 80%（1 発 0.40〜0.55）、投下で減速 ≥ 75%、巡航で転舵 ≥ 70%、
+ * 14 kt のまま ≥ 90%、輪から離れる理想 ≤ 3%（1 発 ≤ 0.02＝F5）、夜明けまで止まる ≥ 95%。回帰の中心は本物の模擬の N 200・seed 1（実機 1 回目の値）
  */
 export const PATROL_CALIBRATION: readonly PatrolCalibrationRow[] = [
-  row('hud~', true, { sunkPct: [4, 16], homeBeforeDawnPct: [80, 100], evadePct: [75, 100], medHomeS: [90, 115], findsVisual: [0, 0] }, 11.5),
-  row('hud', false, {}, 8.5),
+  row('hud~', true, { sunkPct: [10, 26], homeBeforeDawnPct: [70, 100], evadePct: [70, 100], medHomeS: [100, 145], findsVisual: [0, 0] }, 21.0),
+  row('hud', false, {}, 14.0),
   row('hud/0.35', false, {}, 1.5),
-  row('hud/0.7', false, {}, 12.5),
-  row('hud@2.0~', false, { sunkPct: [20, 42], findsVisual: [0.6, I] }, 31.0),
-  row('quiet~', true, { sunkPct: [6, 22], homeBeforeDawnPct: [70, 95], medHomeS: [180, 215] }, 16.0),
-  row('quiet_dodge~', false, { sunkPct: [35, 65] }, 48.5),
-  row('quiet_nostop', false, { sunkPct: [90, 100] }, 98.0),
-  row('run~', false, { sunkPct: [25, 50], evadePct: [0, 0] }, 34.5),
-  row('run_straight', false, { sunkPct: [80, 100], hitsPerBomb: [0.4, 0.55] }, 97.0),
-  row('run_slow', false, { sunkPct: [75, 100] }, 88.5),
+  row('hud/0.7', false, {}, 19.0),
+  row('hud@2.0~', false, { sunkPct: [25, 55], findsVisual: [0.6, I] }, 47.5),
+  row('quiet~', true, { sunkPct: [12, 35], homeBeforeDawnPct: [60, 90], medHomeS: [180, 219] }, 24.5),
+  row('quiet_dodge~', false, { sunkPct: [45, 85] }, 65.5),
+  row('quiet_nostop', false, { sunkPct: [90, 100] }, 100.0),
+  row('run~', false, { sunkPct: [35, 65], evadePct: [0, 0] }, 54.0),
+  row('run_straight', false, { sunkPct: [80, 100], hitsPerBomb: [0.4, 0.55] }, 99.0),
+  row('run_slow', false, { sunkPct: [75, 100] }, 100.0),
   row('run_ring', false, { sunkPct: [0, 3], hitsPerBomb: [0, 0.02] }, 0.0),
-  row('cruise~', false, { sunkPct: [70, 100] }, 88.0),
-  row('pulse~', false, {}, 11.0),
+  row('cruise~', false, { sunkPct: [70, 100] }, 97.0),
+  row('pulse~', false, {}, 19.0),
   row('hide_wait', false, { sunkPct: [95, 100] }, 100),
 ];
 
@@ -131,7 +137,7 @@ export function patrolPairChecks(cellsOf: (policy: string) => readonly PatrolCel
   });
 }
 
-/** 掃き（F11。反応の秒の順の沈没 %）: どの r も ≤ 20%・隣との差 ≤ 10 点 */
+/** 掃き（F11。反応の秒の順の沈没 %）: どの r も ≤ PATROL_SWEEP_MAX_SUNK_PCT（30%）・隣との差 ≤ 10 点 */
 export function patrolSweepMisses(sunkPcts: readonly number[]): string[] {
   const out: string[] = [];
   sunkPcts.forEach((v, i) => {

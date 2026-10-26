@@ -6,7 +6,7 @@ import { AIR_STRIKE_FADE_S, allDone, bombInAir, startAirStrike, type AirStrikePa
 import type { BoatState } from './boat-motion';
 import { wrapDeg360 } from './units';
 
-/** この出撃の始めの夜の累計（モード 33「爆弾 4 発 命中 1（HP −35）」は差を出す） */
+/** この出撃の始めの夜の累計（モード 33「爆弾 6 発 命中 1（HP −35）」は差を出す） */
 export interface SortieBase {
   bombs0: number;
   hits0: number;

@@ -19,8 +19,12 @@ export const PATROL_SORTIE_KEYS = ['spawn_m', 'run_radius_m', 'first_run_s', 'ru
 
 /** F2（spec C.6）: 秒読みが 0 になってからこの秒だけ遅れて止め始めても見つからない */
 export const PATROL_LATE_STOP_S = 1.5;
-/** F1: 捜索の予告（6,000 m）から秒読み 0 までの最短の秒（(wake_detect_m − lock_m)/v ≥ hud_stop_margin_s + これ） */
-export const PATROL_MIN_COUNTDOWN_S = 10;
+/**
+ * F1: 捜索の予告（wake_detect_m）から秒読み 0 までの最短の秒（(wake_detect_m − lock_m)/v ≥ hud_stop_margin_s + これ）。
+ * v0.6.7 実機 1 回目「飛行機がくるまでの時間が長すぎます」で 10 → 5（wake_detect_m 6,000 → 4,200 m＝予告 14.58 → 8.75 秒・秒読みは「あと 6 秒」から。「理不尽」のつまみ hud_stop_margin_s 3.5 でも 8.5 秒で通る）。
+ * 止まる間に合いは F2（秒読み 0 の 1.5 秒後に止め始めても見つからない）が別に守る
+ */
+export const PATROL_MIN_COUNTDOWN_S = 5;
 /** F1: 発見から最初の投下までの最短の秒（sortie.first_run_s + 爆撃進路の秒 ≥ これ） */
 export const PATROL_MIN_FIND_TO_DROP_S = 6.9;
 const EPS_S = 1e-9; // 秒の比較の許し（境の値を丸めで割らない）
@@ -101,7 +105,7 @@ export function patrolAirBlockFromData(raw: unknown, label: string): PatrolAirBl
 /**
  * 門番の値を組む（spec C.7）。例外は label（任務）付き:
  * C3 count は 1〜4 の整数で sortie.spawn_offsets_deg と同じ数／C4 0 < sortie.run_radius_m < 自艇の視程 < lock_m ≤ sortie.spawn_m < wake_detect_m／
- * C5 秒は正（first_pass_s は 0 以上）／C7 F1（予告から秒読み 0 まで ≥ 10 秒・発見から最初の投下まで ≥ 6.9 秒）・F2（秒読み 0 の 1.5 秒後に止め始めても
+ * C5 秒は正（first_pass_s は 0 以上）／C7 F1（予告から秒読み 0 まで ≥ 5 秒・発見から最初の投下まで ≥ 6.9 秒）・F2（秒読み 0 の 1.5 秒後に止め始めても
  * 航跡は 1,500 m の線までに消え、動く船体は視程の線までに止まる）・F9（1 発では沈まない）／C9 2 行目のキーの欄に値が収まる
  */
 export function patrolAirParamsFromData(aircraft: PatrolAircraftRecord, event: PatrolAirEventRecord, block: PatrolAirBlock, boat: PatrolBoat, vis: VisibilityParams, timeScale: number, label: string): PatrolParams {

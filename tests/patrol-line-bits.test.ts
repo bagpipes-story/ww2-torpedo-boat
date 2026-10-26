@@ -10,7 +10,7 @@ import { patrolKey, patrolLine } from '../src/ui/patrol-lines';
 import { driveUntil, makeKit } from './patrol-world-kit';
 import { tele } from './pt-ui-kit';
 
-const P0: PatrolTelemetry = { ...createPatrolTelemetry(), enabled: true, planes: 2, quietKt: 14, wakeDetectM: 6000, lockM: 1500, nearM: 900, passes: 1, phase: PA_HUNT };
+const P0: PatrolTelemetry = { ...createPatrolTelemetry(), enabled: true, planes: 2, quietKt: 14, wakeDetectM: 4200, lockM: 1500, nearM: 900, passes: 1, phase: PA_HUNT };
 const key = (mode: number, o: Partial<PatrolTelemetry>, band: SpeedStep = 'full'): number => patrolKey(tele({ enabled: false }, { targetStep: band, patrol: { ...P0, ...o } }), mode);
 const bits = (lo: number, hi: number): number => {
   let m = 0;
@@ -32,9 +32,9 @@ const VARIANTS: Variant[] = [
   { name: '31 旋回', mode: MISSION_PATROL_ATTACK, band: 'full', base: { phase: PA_SORTIE, threat: AS_T_ORBIT, plane: 0, bombsLeft: 4 }, fields: F31, probes: [{ field: 'plane', o: { plane: 1 } }, { field: 'left', o: { bombsLeft: 3 } }, { field: 'plane', o: { plane: 3 } }] },
   { name: '31 進路', mode: MISSION_PATROL_ATTACK, band: 'full', base: { phase: PA_SORTIE, threat: AS_T_RUN, plane: 0 }, fields: F31, probes: [{ field: 'plane', o: { plane: 1 } }] },
   { name: '31 落下', mode: MISSION_PATROL_ATTACK, band: 'full', base: { phase: PA_SORTIE, threat: AS_T_FALLING, plane: 0 }, fields: F31, probes: [{ field: 'arc', o: { fallingArc: true } }] },
-  { name: '32 レーダー', mode: MISSION_PATROL_PASS, band: 'stop', base: { phase: PA_PASS, radar: true, bearingDeg: 56, distM: 6000, countdownS: 12 }, fields: F32, probes: [{ field: 'dist', o: { distM: 4100 } }] },
-  { name: '32 航跡', mode: MISSION_PATROL_PASS, band: 'full', base: { phase: PA_PASS, viaWake: true, bearingDeg: 146, distM: 6000, countdownS: 12 }, fields: F32, probes: [{ field: 'sec', o: { countdownS: 7 } }, { field: 'dist', o: { distM: 5000 } }, { field: 'dir', o: { bearingDeg: 236 } }] },
-  { name: '32 定時', mode: MISSION_PATROL_PASS, band: 'silent', base: { phase: PA_PASS, bearingDeg: 146, distM: 6000, countdownS: 12 }, fields: F32, probes: [{ field: 'sec', o: { countdownS: 3 } }] },
+  { name: '32 レーダー', mode: MISSION_PATROL_PASS, band: 'stop', base: { phase: PA_PASS, radar: true, bearingDeg: 56, distM: 4200, countdownS: 6 }, fields: F32, probes: [{ field: 'dist', o: { distM: 4100 } }] },
+  { name: '32 航跡', mode: MISSION_PATROL_PASS, band: 'full', base: { phase: PA_PASS, viaWake: true, bearingDeg: 146, distM: 4200, countdownS: 6 }, fields: F32, probes: [{ field: 'sec', o: { countdownS: 7 } }, { field: 'dist', o: { distM: 5000 } }, { field: 'dir', o: { bearingDeg: 236 } }] },
+  { name: '32 定時', mode: MISSION_PATROL_PASS, band: 'silent', base: { phase: PA_PASS, bearingDeg: 146, distM: 4200, countdownS: 6 }, fields: F32, probes: [{ field: 'sec', o: { countdownS: 3 } }] },
   { name: '32 今すぐ（航跡）', mode: MISSION_PATROL_PASS, band: 'full', base: { phase: PA_PASS, viaWake: true, bearingDeg: 146, distM: 2400, countdownS: 0 }, fields: F32, probes: [{ field: 'dist', o: { distM: 1900 } }] },
   { name: '32 今すぐ（静音）', mode: MISSION_PATROL_PASS, band: 'silent', base: { phase: PA_PASS, bearingDeg: 146, distM: 1200, countdownS: 0 }, fields: F32, probes: [{ field: 'dist', o: { distM: 1000 } }] },
   { name: '32 止まって待つ', mode: MISSION_PATROL_PASS, band: 'stop', base: { phase: PA_PASS, bearingDeg: 146, distM: 1800, countdownS: 0 }, fields: F32, probes: [{ field: 'dist', o: { distM: 1000 } }, { field: 'dir', o: { bearingDeg: 0 } }] },
@@ -100,16 +100,16 @@ describe('夜の哨戒機の 2 行目のキーの欄（ui/patrol-lines の patro
 });
 
 describe('2 回の出撃の 2 回目のモード 33（この出撃の分＝SortieBase からの差。R5）', () => {
-  it('止まらずに逃げる夜（run）: 2 回目の出撃が去るとき「爆弾 4 発」（夜の累計 8 発ではない）、キーも 2 回目の分', () => {
+  it('止まらずに逃げる夜（run）: 2 回目の出撃が去るとき「爆弾 6 発」（夜の累計 12 発ではない）、キーも 2 回目の分', () => {
     const k = makeKit(11);
     const result2 = (): boolean => k.flight.state.waves >= 2 && k.t.patrol.phase === PA_SORTIE && k.t.patrol.threat === AS_T_REST;
     expect(driveUntil(k, result2, 'run', 200)).toBe(true);
     const t: BoatTelemetry = k.t;
     expect(missionMode(t, 0, 0)).toBe(MISSION_PATROL_RESULT);
-    expect(k.flight.state.bombsDropped).toBe(8);
-    expect(t.patrol.sortieBombs).toBe(4);
+    expect(k.flight.state.bombsDropped).toBe(12);
+    expect(t.patrol.sortieBombs).toBe(6);
     expect(t.patrol.sortieHits).toBe(k.flight.state.hitsPlayer - k.pa.base.hits0);
-    expect(patrolLine(t, MISSION_PATROL_RESULT).text).toMatch(/^敵機 去る ・ 爆弾 4 発 命中 \d/);
-    expect((patrolKey(t, MISSION_PATROL_RESULT) & F33.bombs) >>> 2).toBe(4);
+    expect(patrolLine(t, MISSION_PATROL_RESULT).text).toMatch(/^敵機 去る ・ 爆弾 6 発 命中 \d/);
+    expect((patrolKey(t, MISSION_PATROL_RESULT) & F33.bombs) >>> 2).toBe(6);
   });
 });

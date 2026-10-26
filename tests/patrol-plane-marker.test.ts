@@ -1,5 +1,5 @@
 // v0.6.7 レビューの直し（ux:ux-2・ux:ux-5）: 夜の哨戒機の任務の「敵機 N m」の矢印。
-// ux-2: 付近の捜索の 900 m・接近の始まりの 6000 m・出撃の旋回の 600 m のちょうどの半径で hypot が 1 ulp 上に出て、切り上げのラベルが「1000 m」と行き来した（8 秒で 168 回の setText）→ µm に丸める。
+// ux-2: 付近の捜索の 900 m・接近の始まりの 4200 m（v0.6.7 実機 1 回目に 6000 m から）・出撃の旋回の 600 m のちょうどの半径で hypot が 1 ulp 上に出て、切り上げのラベルが「1000 m」と行き来した（8 秒で 168 回の setText）→ µm に丸める。
 // ux-5: 南東の捜索で矢印が下の縁の右寄り（右下の速力の HUD の上）に止まった → 下の縁なら左へ、右の縁なら上へ縁に沿ってずらす。どちらも夜の哨戒機の任務だけ（ほかの任務の矢印はソースで今のまま）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ const STEP = 100;
 const label = (d: number): number => Math.ceil(d / STEP) * STEP;
 
 describe('ラベルの距離（snappedDistM。ux:ux-2）', () => {
-  it('ちょうどの半径（900・6000・600 m）では、どの方位でもラベルは半径のまま（丸めない hypot は 1 ulp 上で 100 m 上に跳ぶ方位がある）', () => {
+  it('ちょうどの半径（900・4200・600 m）では、どの方位でもラベルは半径のまま（丸めない hypot は 1 ulp 上で 100 m 上に跳ぶ方位がある）', () => {
     for (const r of [G.nearM, G.wakeDetectM, S02.patrolAir!.sortie.runRadiusM]) {
       let raw = 0;
       for (let i = 0; i < 3600; i++) {
@@ -40,11 +40,11 @@ describe('ラベルの距離（snappedDistM。ux:ux-2）', () => {
       labels.add(label(snappedDistM(q.dx, q.dy)));
     }
     expect([...labels]).toEqual([900]);
-    // 接近の始まり（r ちょうど 6000）も 2 行目と同じ 6000 m
+    // 接近の始まり（r ちょうど 4200）も 2 行目と同じ 4200 m
     s.phase = PA_PASS;
     s.r = G.wakeDetectM;
     const q = patrolPose(s, G, -10, out);
-    expect(label(snappedDistM(q.dx, q.dy))).toBe(6000);
+    expect(label(snappedDistM(q.dx, q.dy))).toBe(4200);
     // 半径の内側の普通の距離は丸めても同じ刻み
     expect(label(snappedDistM(300, 400))).toBe(500);
     expect(label(snappedDistM(1234.5, 0))).toBe(1300);

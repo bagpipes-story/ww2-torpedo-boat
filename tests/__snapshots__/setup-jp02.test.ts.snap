@@ -4,7 +4,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -73,7 +73,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -225,7 +225,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -275,7 +275,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -293,7 +293,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -343,7 +343,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -412,7 +412,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -564,7 +564,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -614,7 +614,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -632,7 +632,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -682,7 +682,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -751,7 +751,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -903,7 +903,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -953,7 +953,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -971,7 +971,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -1021,7 +1021,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -1090,7 +1090,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -1242,7 +1242,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -1292,7 +1292,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -1310,7 +1310,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false �
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -1360,7 +1360,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -1429,7 +1429,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -1581,7 +1581,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -1631,7 +1631,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -1649,7 +1649,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -1699,7 +1699,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -1768,7 +1768,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -1920,7 +1920,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -1970,7 +1970,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -1988,7 +1988,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -2038,7 +2038,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -2107,7 +2107,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -2259,7 +2259,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -2309,7 +2309,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -2327,7 +2327,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,
@@ -2377,7 +2377,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
 [
   "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
   "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
-  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 6000 m／動く船体 900 m／停止は見えない",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
   "敵: 米飛行艇 ×2（北東から）",
   "危険: 夜の哨戒機、夜明けの空襲",
   "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
@@ -2446,7 +2446,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
    "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
    "from_bearing_deg": 56,
    "escort_target_planes": [],
-   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°)"
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
   }
  },
  "playerStart": {
@@ -2598,7 +2598,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
  },
  "airStrike": {
   "planes": 4,
-  "bombsPerPlane": 2,
+  "bombsPerPlane": 3,
   "flightMps": 308.64,
   "runRadiusM": 600,
   "orbitDegPerS": 29.472948981529548,
@@ -2648,7 +2648,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   "gate": {
    "planes": 2,
    "flightMps": 308.64,
-   "wakeDetectM": 6000,
+   "wakeDetectM": 4200,
    "lockM": 1500,
    "nearM": 900,
    "runRadiusM": 600,
@@ -2666,7 +2666,7 @@ exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史
   },
   "sortie": {
    "planes": 2,
-   "bombsPerPlane": 2,
+   "bombsPerPlane": 3,
    "flightMps": 308.64,
    "runRadiusM": 600,
    "orbitDegPerS": 29.472948981529548,

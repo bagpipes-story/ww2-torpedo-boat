@@ -130,7 +130,7 @@ export const PATROL_STATUS_HIDDEN = 44;
 export const PATROL_STATUS_DAWN = 45;
 
 /**
- * 3 行目の状態（優先: 出撃中 > レーダーの前とレーダーの捜索（帯より上。出撃は止まって始まる＝無いと最初の 17 秒に「止まっていて見えない」と嘘を言う。R4）> 帯）。
+ * 3 行目の状態（優先: 出撃中 > レーダーの前とレーダーの捜索（帯より上。出撃は止まって始まる＝無いと最初の約 12 秒に「止まっていて見えない」と嘘を言う。R4。「（止まっても）」は 2 行目の「止まっても見つかる」と被るので v0.6.7 実機 1 回目に消した）> 帯）。
  * 出撃中は機が爆弾を落とし切って去るまで（脅威が波の合間 REST の間は帯の状態。2 行目「敵機 去る」の下で古い「全速で走り」を出さない。レビュー ux:ux-4）。
  * dawnRaid（夜明けに達していて空襲がある）なら OFF の後は「夜明けの空襲（止まっても見える）」（2 行目の空襲と食い違わない。艦影の行の「未発見」を出さない。レビュー ai・ux:ux-3）
  */
@@ -146,7 +146,7 @@ export function patrolStatusOf(p: PatrolTelemetry, band: SpeedStep, dawnRaid = f
 /** 3 行目の文と警告色か（状態が変わったときだけ ui/boat-hud が書く。警告でなければ HUD の地の色） */
 export function patrolStatusLine(p: PatrolTelemetry, status: number): { text: string; warn: boolean } {
   if (status === PATROL_STATUS_SORTIE) return { text: '発見された ・ 全速で走り 投下で転舵', warn: true };
-  if (status === PATROL_STATUS_RADAR) return { text: '空から ・ レーダーで見えている（止まっても）', warn: true };
+  if (status === PATROL_STATUS_RADAR) return { text: '空から ・ レーダーで見えている', warn: true };
   if (status === PATROL_STATUS_WAKE) return { text: `空から ・ 航跡は ${p.wakeDetectM} m で見える`, warn: true };
   if (status === PATROL_STATUS_HULL) return { text: `空から ・ 動く船体は ${p.nearM} m で見える`, warn: false };
   if (status === PATROL_STATUS_DAWN) return { text: '空から ・ 夜明けの空襲（止まっても見える）', warn: true };
