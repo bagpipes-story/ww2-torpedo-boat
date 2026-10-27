@@ -99,10 +99,10 @@ describe('射撃を押さない夜（spec r1 §H・spec r2 §I.2）', () => {
       /^(かわした！ 被弾なし|被弾 \d+ 発（HP −\d+）|撃たせなかった！) ・ 航過 \d+\/8$/,
       /^米PT (追撃|連射)！ \S+から ・ 針路そのまま撃ち返せ$/,
       /^(連射 被弾なし|連射 被弾 \d+ 発（HP −\d+）|連射を撃たせなかった！) ・ 計 \d+ 回$/,
-      /^米PT \S+から追ってくる( \d+ m)? ・ (右下の射撃で撃ち返せ|撃ち返せ|600 m まで引きつけよ)$/,
+      /^米PT \S+から追ってくる( \d+ m)? ・ (右下の機銃で撃ち返せ|撃ち返せ|600 m まで引きつけよ)$/,
       /^米PT \S+から突撃 \d+ m ・ 赤い線で転舵$/,
       /^米PT のエンジン音 ・ \S+から突撃$/,
-      /^米PT 離脱 ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ)$/,
+      /^米PT 離脱 ・ (右下の機銃で撃ち返せ|次の赤い線に備えよ)$/,
       /^米PT \d+ m（\S+） ・ 気づかれていない ・ 静音でやり過ごせ$/,
       /^米PT \d+ m ・ 速い！ \d+ m で見つかる ・ 14 kt 以下に$/,
       /^米PT \d+ 隻が哨戒中 ・ 静音で抜けて帰投$/,
@@ -114,7 +114,7 @@ describe('射撃を押さない夜（spec r1 §H・spec r2 §I.2）', () => {
       const a = nightLines(seed, true);
       const b = nightLines(seed, false);
       // 末尾: 13mm を撃つ前の勧め（砲あり）と、砲の無い任務の離脱「次の赤い線に備えよ」・追ってくる PT「撃ち返せ」（連射の「針路そのまま撃ち返せ」はどちらも同じ）
-      const norm = (l: string): string => l.replace(/ ・ (右下の射撃で撃ち返せ|次の赤い線に備えよ|撃ち返せ|600 m まで引きつけよ)$/, ' ・ 〈末尾〉');
+      const norm = (l: string): string => l.replace(/ ・ (右下の機銃で撃ち返せ|次の赤い線に備えよ|撃ち返せ|600 m まで引きつけよ)$/, ' ・ 〈末尾〉');
       expect(a.lines.map(norm), `${seed}`).toEqual(b.lines.map(norm));
       expect(a.modes.has(MISSION_PT_GUN) || a.modes.has(MISSION_PT_GUN_EVENT), `${seed}`).toBe(false);
       expect([...a.maxPasses], `${seed}`).toEqual([8]);

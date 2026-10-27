@@ -67,11 +67,11 @@ export function chaseKey(dir: number, distStep: number, hint: number): number {
 
 /**
  * 追ってくる PT の接触の行（key は chaseKey、hint はその勧めのビットが立っている、rangeM は 13mm の射程。砲の無い任務は NaN）: 方角と距離（見えなければ距離なし）・
- * 13mm を撃つ前は「右下の射撃で撃ち返せ」、撃った後は「撃ち返せ」。見えている距離が射程の外なら「600 m まで引きつけよ」（ux-8: 射程外を言わずに「撃ち返せ」と言っていた）
+ * 13mm を撃つ前は「右下の機銃で撃ち返せ」、撃った後は「撃ち返せ」。見えている距離が射程の外なら「600 m まで引きつけよ」（ux-8: 射程外を言わずに「撃ち返せ」と言っていた）
  */
 export function chaseLine(key: number, hint: boolean, rangeM: number): HudLine {
   const d = ((key >> 6) & 63) * PT_DISTANCE_STEP_M;
-  const tail = d > rangeM ? `${rangeM} m まで引きつけよ` : hint ? '右下の射撃で撃ち返せ' : '撃ち返せ';
+  const tail = d > rangeM ? `${rangeM} m まで引きつけよ` : hint ? '右下の機銃で撃ち返せ' : '撃ち返せ';
   return { text: `米PT ${bearingJa(((key >> 3) & 7) * 45)}から追ってくる${d > 0 ? ` ${d} m` : ''} ・ ${tail}`, color: HUD_COLOR_WARN };
 }
 

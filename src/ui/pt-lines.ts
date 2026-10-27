@@ -29,7 +29,7 @@ import type { GunboatResult, PtResult } from './result-types';
 
 export { PT_DISTANCE_STEP_M }; // 今までの import のため（v0.6.3 実機 1 回目から config/pt-config に置く。13mm の行も同じ刻み）
 
-/** 航過のキーの「航過中の PT が被弾で黙った」、離脱・追ってくる PT のキーの「13mm を撃つ前（右下の射撃を勧める）」、平常のキーの去り方（夜明け・みな去った・みな沈めた）の位置 */
+/** 航過のキーの「航過中の PT が被弾で黙った」、離脱・追ってくる PT のキーの「13mm を撃つ前（右下の機銃を勧める）」、平常のキーの去り方（夜明け・みな去った・みな沈めた）の位置 */
 const K_SILENCED = 1 << 5;
 const K_FIRE_HINT = 1 << 26;
 const K_GONE = 21;
@@ -171,9 +171,9 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
     if (barge && (sub === C_RUSH_SEEN || sub === C_RUSH_HEARD)) return convoyRushLine(dir, d, sub === C_RUSH_SEEN);
     if (sub === C_RUSH_SEEN) return { text: `米PT ${dir}から突撃 ${d} m ・ 赤い線で転舵`, color: HUD_COLOR_WARN };
     if (sub === C_RUSH_HEARD) return { text: `米PT のエンジン音 ・ ${dir}から突撃`, color: HUD_COLOR_WARN };
-    // 末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の射撃を勧め、撃った後は次の赤い線（「静音で見失わせろ」は模擬で見失わせた夜が 0 で、本当でなかった）。
+    // 末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の機銃を勧め、撃った後は次の赤い線（「静音で見失わせろ」は模擬で見失わせた夜が 0 で、本当でなかった）。
     // 輸送隊（v0.6.4）: 最寄りの大発が遠ければ間に「大発のそばへ戻れ（N m）」（刻みは距離のビット。無ければ ''）
-    return { text: `米PT 離脱 ・ ${convoyBreakTailJa((key >> 6) & 63)}${(key & K_FIRE_HINT) !== 0 ? '右下の射撃で撃ち返せ' : '次の赤い線に備えよ'}`, color: HUD_COLOR_STRONG };
+    return { text: `米PT 離脱 ・ ${convoyBreakTailJa((key >> 6) & 63)}${(key & K_FIRE_HINT) !== 0 ? '右下の機銃で撃ち返せ' : '次の赤い線に備えよ'}`, color: HUD_COLOR_STRONG };
   }
   if (sub === N_SLOW) return t.convoy.enabled ? convoySlowLine(d, dir) : { text: `米PT ${d} m（${dir}） ・ 気づかれていない ・ 静音でやり過ごせ`, color: HUD_COLOR_STRONG };
   if (sub === N_FAST) return { text: `米PT ${d} m ・ 速い！ ${((key >> 12) & 63) * DETECT_RANGE_STEP_M} m で見つかる ・ ${p.silentMaxKt} kt 以下に`, color: HUD_COLOR_WARN };

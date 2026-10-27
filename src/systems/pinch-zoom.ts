@@ -1,5 +1,5 @@
 // ピンチズーム（docs/02 §5、v0.3.2）。右半分（ボタンの列を除く）で始まった 2 本の指の距離の変化を、カメラの論理ズームの要求（InputState.zoomRequest）に写す。
-// 左半分はスティック、右端の列はボタン（そこで始まった指は数えない。魚雷ボタンの誤発射を避ける）。
+// 左半分はスティック、右側の 2 列はボタン（W − 304 より右と、どのボタンの上で始まった指も数えない。魚雷・機銃ボタンの誤発射を避ける。v0.6.8 で over を見る）。
 // ここでも data の min〜max に収め、端に当たったら基準を取り直す（端で指を戻した瞬間から効く。戻しの空走りを作らない）。Mission も同じ範囲で clamp して保つ。確保しない。
 import Phaser from 'phaser';
 import { GAME_WIDTH } from '../config/game-config';
@@ -44,7 +44,9 @@ export class PinchZoom {
     return this.ids[0] === id ? 0 : this.ids[1] === id ? 1 : -1;
   }
 
-  private onDown(p: Phaser.Input.Pointer): void {
+  /** over: この指の下の対話できる物（Phaser の pointerdown が渡す。ボタンの上なら数えない） */
+  private onDown(p: Phaser.Input.Pointer, over: readonly Phaser.GameObjects.GameObject[]): void {
+    if (over.length > 0) return;
     const v = this.scene.cameras.main.getWorldPoint(p.x, p.y, this.tmp);
     if (v.x < GAME_WIDTH / 2 || v.x >= PINCH_BUTTON_COLUMN_X) return;
     const slot = this.ids[0] === -1 ? 0 : this.ids[1] === -1 ? 1 : -1;

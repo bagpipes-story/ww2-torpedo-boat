@@ -52,7 +52,7 @@ describe('ラベルの距離（snappedDistM。ux:ux-2）', () => {
 });
 
 describe('右下の速力の HUD を避ける（avoidCorner。ux:ux-5）', () => {
-  /** 論理 1280 × 720 の ui/edge-marker の縁（左 56・右 1280 − 180・上 300・下 720 − 56）と、速力の HUD の塊の左上（余白込み） */
+  /** 論理 1280 × 720 の ui/edge-marker の縁（左 56・右 1280 − 180・上 300・下 720 − 56）と、速力の HUD の塊の左上（余白込み）（v0.6.7 の値。純粋な関数の fixture。v0.6.8 の右 W − 348・左 W − 624 は tests/hud-layout） */
   const R: MarkerRect = { left: 56, top: 300, right: 1100, bottom: 664 };
   const KEEP_LEFT = 792;
   const KEEP_TOP = 534;
@@ -101,10 +101,10 @@ describe('配線（ui/hud-markers のソース）', () => {
     expect(order.every((i, j) => i > 0 && (j === 0 || i > order[j - 1]!)), order.join(' ')).toBe(true);
   });
   it('速力の HUD の塊は ui/boat-hud の置き方から（舵のバーの左端・針路の上端）と、ラベルの分の余白', () => {
-    expect(hud).toContain('const SPEED_HUD_KEEP_LEFT = GAME_WIDTH - HUD_MARGIN * 2 - TORPEDO_BUTTON_RADIUS * 2 - RUDDER_BAR_HALF_WIDTH * 2 - HUD_FONT_MARKER_PX * 4;');
+    expect(hud).toContain('const SPEED_HUD_KEEP_LEFT = SPEED_HUD_RIGHT_X - RUDDER_BAR_HALF_WIDTH * 2 - HUD_FONT_MARKER_PX * 4;');
     expect(hud).toContain('const SPEED_HUD_KEEP_TOP = GAME_HEIGHT - HUD_MARGIN - RUDDER_MARKER_HEIGHT - HUD_TEXT_GAP - HUD_HEADING_OFFSET_Y - HUD_FONT_HEADING_PX - HUD_FONT_MARKER_PX * 3;');
     const bh = strip(readFileSync('src/ui/boat-hud.ts', 'utf8'));
-    expect(bh).toContain('const right = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2 - HUD_MARGIN;');
+    expect(bh).toContain('const right = SPEED_HUD_RIGHT_X;');
     expect(bh).toContain('.image(right - RUDDER_BAR_HALF_WIDTH, bottom - RUDDER_MARKER_HEIGHT / 2, TEXTURE_KEYS.rudderBar)');
     expect(bh).toContain('const textBottom = this.rudderBar.y - RUDDER_MARKER_HEIGHT / 2 - HUD_TEXT_GAP;');
     expect(bh).toContain('.text(right, textBottom - HUD_HEADING_OFFSET_Y, \'\', hudTextStyle(HUD_FONT_HEADING_PX))');

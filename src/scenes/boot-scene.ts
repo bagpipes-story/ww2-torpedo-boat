@@ -35,6 +35,7 @@ import {
   generateUiTextures,
 } from '../assets/placeholders';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
+import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
 import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
@@ -100,6 +101,7 @@ export class BootScene extends Phaser.Scene {
     }
     generateSmokeTextures(this);
     generateTorpedoButtonTexture(this);
+    generateGunButtonTexture(this); // 機銃のボタン（v0.6.8。橙の輪と 4 つの目盛り。assets/weapon-textures）
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）

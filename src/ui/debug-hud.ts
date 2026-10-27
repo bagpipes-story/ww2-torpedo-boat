@@ -30,7 +30,7 @@ export class DebugHud {
     // 左上: FPS（値が変わったときだけ更新）
     this.fpsText = scene.add.text(HUD_MARGIN, HUD_MARGIN, 'FPS --', style).setDepth(DEPTH.hud);
 
-    // 上中央: ビルド番号とデータ版（固定文字列。1回だけ描く）。左下はスティック、右下は速力 HUD、右上は v0.2 の煙幕ボタンが使う（CLAUDE.md §3）
+    // 上中央: ビルド番号とデータ版（固定文字列。1回だけ描く）。左下はスティック、右下は兵装と速力 HUD、右の 2 列のボタンが中段から下を使う（CLAUDE.md §3。v0.6.8）
     this.infoText = scene.add
       .text(GAME_WIDTH / 2, HUD_MARGIN, `${options.buildLabel}  |  ${options.dataSummary}`, style)
       .setOrigin(0.5, 0)

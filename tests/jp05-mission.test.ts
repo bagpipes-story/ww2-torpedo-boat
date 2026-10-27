@@ -268,9 +268,9 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     const det = { detected: true, ...NE500 };
     expect(row(tele({ ...det, threatPhase: PT_ALERT, sighted: true }))).toEqual([MISSION_PT_CONTACT, '米PT 北東から突撃 500 m ・ 赤い線で転舵', HUD_COLOR_WARN]);
     expect(row(tele({ detected: true, threatPhase: PT_RUN_IN, dx: 0, dy: 1000 }))).toEqual([MISSION_PT_CONTACT, '米PT のエンジン音 ・ 南から突撃', HUD_COLOR_WARN]);
-    // 離脱の末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の射撃を勧める（前は「静音で見失わせろ」。模擬で見失わせた夜は 0 だった）。撃った後は tests/pt-gun-ui。
+    // 離脱の末尾（v0.6.3 実機 1 回目）: 13mm を撃つ前は右下の機銃を勧める（前は「静音で見失わせろ」。模擬で見失わせた夜は 0 だった）。撃った後は tests/pt-gun-ui。
     // 実機 2 回目: 「残り N 回」を外した（追撃の連射があるので航過の残りはもう次を言い当てない。spec r2 §F.1）
-    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
+    expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 1 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の機銃で撃ち返せ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...det, threatPhase: PT_ALERT, passes: 1, passSeq: 1, lastPassHits: 0, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, 'かわした！ 被弾なし ・ 航過 1/8', HOME_COLOR_TEXT]);
     expect(row(tele({ ...det, threatPhase: PT_BREAK, passes: 2, passSeq: 2, lastPassHits: 3, lastPassFired: true }), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '被弾 3 発（HP −12） ・ 航過 2/8', HUD_COLOR_STRONG]);
     // 結果の表示は見失った後・夜明けに去った後も出る（表示の秒が終われば平常へ）
@@ -288,7 +288,7 @@ describe('jp_05 の HUD の 2 行目（v0.6.3。spec §D.1）', () => {
     expect(row(tele(unfired), 0, RESULT)).toEqual([MISSION_PT_CONTACT, '撃たせなかった！ ・ 航過 1/8', HOME_COLOR_TEXT]);
     expect(row(tele({ ...unfired, passes: 8, passSeq: 8, alive: 0 }), 0, RESULT)[1]).toBe('撃たせなかった！ ・ 航過 8/8');
     // 表示の秒が過ぎればいつもの行
-    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 右下の射撃で撃ち返せ');
+    expect(row(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), 0, 0)[1]).toBe('米PT 離脱 ・ 右下の機銃で撃ち返せ');
     // キーは撃った航過の結果（被弾なし）と違う
     const k = (t: BoatTelemetry, flags: number): number => ptKey(t, missionMode(t, 0, flags), flags);
     expect(k(tele({ ...det, ...unfired, threatPhase: PT_BREAK }), RESULT)).not.toBe(k(tele({ ...det, ...unfired, lastPassFired: true, threatPhase: PT_BREAK }), RESULT));

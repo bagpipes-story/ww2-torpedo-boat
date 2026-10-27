@@ -19,7 +19,18 @@ export const ARMS_CUE_DOWN_MS = 2200;
 export const ARMS_CUE_LINGER_S = 0.6;
 /** 機銃のボタンの輪の色（橙。魚雷の黄と白黒でも分かる）・撃っている間の色・撃墜の文の色（金） */
 export const GUN_BUTTON_STROKE = 0xff9a5a;
+/** 機銃のボタンの塗り（魚雷のボタンと同じ HUD の灰青と濃さ）と、輪の内側の目盛り（上下左右に 4 本）の長さ px */
+export const GUN_BUTTON_FILL = 0x9fb3c8;
+export const GUN_BUTTON_FILL_ALPHA = 0.25;
+export const GUN_BUTTON_TICK_PX = 10;
 export const GUN_FIRING_TINT = 0xffd0a0;
 export const CUE_DOWN_COLOR = '#ffd27a';
-/** 副兵装（列 2）の大きさ（R56 / R64） */
+/** 副兵装（列 2）の大きさ（R56 / R64）と、そのボタンの文字 px（主兵装は HUD_FONT_BUTTON_PX 22） */
 export const SECONDARY_SCALE = 0.875;
+export const SECONDARY_FONT_PX = 20;
+/** 魚雷 0 本で魚雷ボタンを押したときの揺れ: 片側の px と全体のミリ秒（出来事のときだけ tween を作る） */
+export const TORPEDO_EMPTY_SHAKE_PX = 4;
+export const TORPEDO_EMPTY_SHAKE_MS = 150;
+/** 撃墜の文の飛び出し: 始まりの倍率とミリ秒（1.25 → 1） */
+export const CUE_POP_SCALE = 1.25;
+export const CUE_POP_MS = 200;

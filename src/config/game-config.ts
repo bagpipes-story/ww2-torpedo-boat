@@ -185,6 +185,8 @@ export const TEXTURE_KEYS = {
   torpedo: 'tex-torpedo',
   wakeDot: 'tex-wake-dot',
   torpedoButton: 'tex-torpedo-button',
+  /** 機銃のボタン（v0.6.8。橙の輪と 4 つの目盛り。assets/weapon-textures） */
+  gunButton: 'tex-gun-button',
   explosionRing: 'tex-explosion-ring',
   targetMarker: 'tex-target-marker',
   homeMarker: 'tex-home-marker',

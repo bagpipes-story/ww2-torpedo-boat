@@ -107,12 +107,12 @@ export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = ''
   return { text: `${head}${burst} ・ ${n !== 0 ? `残り ${n} 隻` : (key & K_WAIT) !== 0 ? wait : '帰投せよ'}`, color: HOME_COLOR_TEXT };
 }
 
-/** 射撃ボタンの弾倉交換の残り秒の整数（交換中でない・13mm の無い任務は 0）。HudScene はこれが変わったときだけボタンの文字と濃さを替える（レビュー ux-2: 赤い線の下で弾が止まる訳が見えなかった） */
+/** 機銃ボタン（v0.6.7 までは射撃ボタン）の弾倉交換の残り秒の整数（交換中でない・13mm の無い任務は 0）。HudScene はこれが変わったときだけボタンの文字と濃さを替える（レビュー ux-2: 赤い線の下で弾が止まる訳が見えなかった） */
 export function gunButtonReloadN(t: BoatTelemetry): number {
   return t.pt.gunEnabled && t.pt.reloadLeftS > 0 ? Math.ceil(t.pt.reloadLeftS) : 0;
 }
 
-/** 射撃ボタンの文字: 弾倉の交換中は「弾倉交換 N」（2 行目と同じ切り上げ）、ほかはいつもの「射撃 押し続け」 */
+/** 機銃ボタンの文字: 弾倉の交換中は「弾倉交換 N」（2 行目と同じ切り上げ）、ほかはいつもの「機銃 押し続け」 */
 export function gunButtonLabel(reloadN: number): string {
   return reloadN > 0 ? `弾倉交換\n${reloadN}` : GUN_BUTTON_LABEL;
 }
