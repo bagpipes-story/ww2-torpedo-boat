@@ -44,6 +44,7 @@ import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
 import { getEngineParams } from '../config/engine-mission-data';
 import { getGunboatParams } from '../config/gunboat-mission-data';
+import { getPatrolAirParams } from '../config/patrol-air-mission-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -70,6 +71,7 @@ export class BootScene extends Phaser.Scene {
       boatIds.add(pm.playerBoatId);
       if (pm.escort) boatIds.add(pm.escort.boat);
       getEngineParams(gameData, m['id']); // 機関の不調（v0.6.5）の data と同居の検査（壊れていれば Boot で止まる。不調の無い任務は null）
+      getPatrolAirParams(gameData, m['id']); // 夜の哨戒機（v0.6.7。jp_02）の data・置き場・夜の出撃の検査（壊れていれば Boot で止まる。無い任務は null）
       const hm = hasHardVariant(gameData, m['id']) ? getPrototypeMission(gameData, m['id'], true) : null; // ハード（v0.6.6）も 1 回組んで米PT と輸送隊を検査（3 本目の哨戒線の出発点・ノルマ。壊れていれば Boot で止まる）
       if (hm) { getPtParams(gameData, hm, gameData.hitRateModel.world.time_scale); getConvoyParams(gameData, hm); }
       const gb = hm ? getGunboatParams(gameData, hm) : null; // 隼艇（v0.6.6。jp_01 のハード）の data と同居の検査、艇の絵

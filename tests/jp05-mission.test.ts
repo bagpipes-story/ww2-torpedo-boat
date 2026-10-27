@@ -12,6 +12,8 @@ import { PT_ALERT, PT_BREAK, PT_LEAVE, PT_PASS, PT_PATROL, PT_RUN_IN, createPtTe
 import { initPtTelemetry, ptResult, refreshPtTelemetry } from '../src/systems/pt-telemetry';
 import { MISSION_ADRIFT, MISSION_CALL, MISSION_NORMAL, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_PASS, MODE_FLAG_PT_RESULT, missionMode, ptResultShown } from '../src/ui/mission-mode';
 import { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_PX } from '../src/config/title-hint-config';
+import { TITLE_ROW_W } from '../src/config/title-layout-config';
+import { TITLE_GRID_W } from '../src/ui/title-grid';
 import { PT_DISTANCE_STEP_M, ptHeadJa, ptKey, ptResultLines } from '../src/ui/pt-lines';
 import type { PtResult } from '../src/ui/result-types';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
@@ -479,14 +481,14 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
   });
 });
 
-/** Title の任務の行の幅（config/menu-config の TITLE_ROW_W。menu-config は game-config → DOM を読むので import しない） */
-const TITLE_ROW_W_PX = 960;
+/** Title の任務の行の幅: 米PT は 1 列の TITLE_ROW_W 960、日本は v0.6.7 から 2 列の格子の幅 TITLE_GRID_W 1,218（ui/title-grid。spec-v067 §D.6・R12） */
+const TITLE_HINT_MAX_PX: Readonly<Record<string, number>> = { us_pt: TITLE_ROW_W, jp_hard: TITLE_GRID_W };
 
 describe('Title の日本の操作の一言（v0.6.3）', () => {
-  it('魚雷のある任務（jp_06）と機銃の任務（jp_05「鹵獲艇の哨戒」の 13mm・jp_01「夜の輸送護衛」の 25mm。v0.6.4）のどれでも本当。煙幕なし。任務の行の幅（TITLE_ROW_W）の内', () => {
+  it('魚雷のある任務（jp_06）と機銃の任務（jp_05「鹵獲艇の哨戒」の 13mm・jp_01「夜の輸送護衛」の 25mm。v0.6.4）・撃たない任務（jp_02「孤島の哨戒」。v0.6.7）のどれでも本当。煙幕なし。幅はキャンペーンごと（米 960・日本 1,218）の内', () => {
     const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
     // 任務の名前で言う（「哨戒は撃たない」は米PT の哨戒が撃たないとも読めた。v0.6.3 レビュー）。口径は言わない（「13mm機銃」は jp_01 の 25mm で嘘になる。v0.6.4）
-    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（鹵獲艇の哨戒と輸送護衛は機銃）・ 煙幕なし（暗さと静音が頼り）');
+    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（鹵獲艇の哨戒と輸送護衛は機銃・孤島の哨戒は撃たない）・ 煙幕なし（暗さと静音が頼り）');
     expect(hint).toContain(getBriefingRecord(gameData, 'jp_05').titleJa); // 「鹵獲艇の哨戒」で指す任務
     expect(hint).toContain('輸送護衛'); // jp_01 の title_ja「夜の輸送護衛」の一部
     expect(getBriefingRecord(gameData, 'jp_01').titleJa).toContain('輸送護衛');
@@ -495,6 +497,10 @@ describe('Title の日本の操作の一言（v0.6.3）', () => {
     expect(hint).toContain('機銃'); // 「13mm機銃」「25mm機銃」（gun_battery.label_ja）のどちらにも本当
     for (const id of ['jp_05', 'jp_01']) expect(buildWorldSetup(gameData, id).guns!.label, id).toContain('機銃');
     expect(getPrototypeMission(gameData, 'jp_06').mainWeapon).not.toBe('none');
-    for (const [k, v] of Object.entries(TITLE_HINT_BY_CAMPAIGN_JA)) expect(textWidthPx(v, TITLE_HINT_PX), k).toBeLessThanOrEqual(TITLE_ROW_W_PX);
+    // v0.6.7: jp_02「孤島の哨戒」は撃たない（main_weapon none）
+    expect(hint).toContain(`${getBriefingRecord(gameData, 'jp_02').titleJa}は撃たない`);
+    expect(getPrototypeMission(gameData, 'jp_02').mainWeapon).toBe('none');
+    expect(Object.keys(TITLE_HINT_BY_CAMPAIGN_JA).sort()).toEqual(['jp_hard', 'us_pt']);
+    for (const [k, v] of Object.entries(TITLE_HINT_BY_CAMPAIGN_JA)) expect(textWidthPx(v, TITLE_HINT_PX), k).toBeLessThanOrEqual(TITLE_HINT_MAX_PX[k]!);
   });
 });

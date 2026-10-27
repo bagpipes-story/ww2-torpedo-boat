@@ -35,3 +35,16 @@ export function separateMarker(ax: number, ay: number, bx: number, by: number, r
   out.dx = Math.min(r.right, Math.max(r.left, x)) - bx;
   return out;
 }
+
+/**
+ * 縁に止まった矢印の点 (x, y) が角の HUD の矩形（keepLeft より右・keepTop より下。矢印とラベルの余白込み）に入っていれば、縁に沿って外へ出すずれを out に書いて返す（v0.6.7 レビュー ux:ux-5。
+ * 夜の哨戒機の矢印と右下の速力の HUD）: 下の縁なら左へ、右の縁なら上へ。矩形の外・縁でない点は 0（次の refresh が方位どおりに戻す）
+ */
+export function avoidCorner(x: number, y: number, r: MarkerRect, keepLeft: number, keepTop: number, out: MarkerShift): MarkerShift {
+  out.dx = 0;
+  out.dy = 0;
+  if (!(x > keepLeft && y > keepTop)) return out;
+  if (Math.abs(y - r.bottom) < EDGE_EPS_PX) out.dx = keepLeft - x;
+  else if (Math.abs(x - r.right) < EDGE_EPS_PX) out.dy = keepTop - y;
+  return out;
+}

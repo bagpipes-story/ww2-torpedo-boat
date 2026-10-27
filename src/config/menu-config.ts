@@ -1,6 +1,7 @@
 // Title・Briefing・Result のボタンと配置（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）と UI の語（v0.4.0、docs/02 §4）。ゲームの数値ではないので data/*.json には置かない。
 // ui-config.ts（HUD）が 270 行を超えたので分けた。ボタンの高さはどれも 96 px 以上（iPhone の表示倍率 0.483〜0.546 で 46 pt 以上）。
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN } from './game-config';
+import { TITLE_TOGGLE_GAP } from './title-layout-config';
 
 /** 画面ができてから押下を受けない ms（前の画面から押しっぱなしの指・2 度押しで進まない） */
 export const MENU_INPUT_DELAY_MS = 300;
@@ -23,7 +24,7 @@ export const MENU_PRIMARY_W = 320;
 export const MENU_PRIMARY_X = GAME_WIDTH - HUD_MARGIN - MENU_PRIMARY_W;
 
 /**
- * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（3 件）、操作の一言。
+ * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（米PT は 1 列 3 件。日本は v0.6.7 から 2 列の格子＝ui/title-grid）、操作の一言。
  * v0.6.0 でタブを入れた分、ロゴを縮め行を詰めた（行 104 → 96 px・間 16 → 12。3 行で 216〜528。ボタンの高さは 96 px 以上のまま）
  */
 export const TITLE_LOGO_TEXT = 'NIGHT HUNTERS';
@@ -40,15 +41,8 @@ export const TITLE_TAB_SELECTED_SUB_JA = '選択中';
 export function titleCampaignLockedSubJa(prereqName: string, done: number, total: number): string {
   return `未解放 ・ ${prereqName}の ${total} 任務を帰投で（済 ${done}/${total}）`;
 }
-export const TITLE_ROW_X = 160;
-export const TITLE_ROW_W = 960;
-export const TITLE_ROW_H = 96;
-export const TITLE_ROW_TOP = 216;
-export const TITLE_ROW_GAP = 12;
-export const TITLE_ROW_TITLE_PX = 30;
-export const TITLE_ROW_SUB_PX = 20;
-export const TITLE_ROW_STATUS_PX = 24;
-export const TITLE_HINT_Y = 560;
+// 任務の行・操作の一言の y・切り替えの間と、日本のタブの 2 列の格子（v0.6.7）は title-layout-config（DOM を読まないので ui/title-grid と tests が読める）。ここから出し直す
+export { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_GAP, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_TOP, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from './title-layout-config';
 // 操作の一言（文・字の大きさ・キャンペーンごと）は title-hint-config（v0.6.3。DOM を読まないのでテストが幅を測れる）。ここから出し直す
 export { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_JA, TITLE_HINT_PX } from './title-hint-config';
 /**
@@ -57,7 +51,6 @@ export { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_JA, TITLE_HINT_PX } from './title
  */
 export const TITLE_DIFF_W = 390;
 export const TITLE_DIFF_H = 88;
-export const TITLE_TOGGLE_GAP = 24;
 export const TITLE_DIFF_X = GAME_WIDTH / 2 - TITLE_TOGGLE_GAP - TITLE_DIFF_W * 1.5;
 export const TITLE_HIST_X = GAME_WIDTH / 2 - TITLE_DIFF_W / 2;
 export const TITLE_MARKER_X = GAME_WIDTH / 2 + TITLE_TOGGLE_GAP + TITLE_DIFF_W / 2;
@@ -88,10 +81,8 @@ export function titleMarkerLockedSubJa(sortiesLeft: number): string {
 }
 /** Briefing の 1 行目に足す印（Result の見出しの印「（史実）」は ui/result-heading の RESULT_HISTORICAL_TAG_JA） */
 export const BRIEF_HISTORICAL_JA = ' ・ 史実モード';
-/** Result: 史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠。CLAUDE.md §9） */
-export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
-/** Result: 米PT以外のキャンペーンの魚雷も通算に数えない（v0.6.0。hit_rate_model.kpi_measurement.campaigns） */
-export const RESULT_CAMPAIGN_KPI_JA = 'この任務の魚雷は通算の命中率に数えない（通算は米PTの調整の根拠）';
+/** Result: 史実モード・米PT以外のキャンペーンの魚雷は通算の命中率に数えない（文は v0.6.7 から result-text-config。ui/result-body が DOM 無しで読む） */
+export { RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from './result-text-config';
 
 /** Briefing: 日付 ・ 場所と任務名、右上の「← 任務一覧」 */
 export const BRIEF_X = 64;

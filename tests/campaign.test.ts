@@ -32,7 +32,7 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     expect(parseIdList('["us_01","us_01","",3]')).toEqual(['us_01']);
     for (const bad of [null, undefined, '', '{', '"us_01"', '{"a":1}']) expect(parseIdList(bad)).toEqual([]);
   });
-  it('data: 米PT（default）と日本ハードモード（complete_us_pt）。米PTの遊べる任務は us_01〜03、日本は jp_05・jp_06。短い名前', () => {
+  it('data: 米PT（default）と日本ハードモード（complete_us_pt）。米PTの遊べる任務は us_01〜03、日本は jp_01・jp_02・jp_05・jp_06。短い名前', () => {
     const cs = getCampaigns(gameData);
     expect(cs.map((c) => [c.id, c.shortJa, c.unlock])).toEqual([
       ['us_pt', '米PT', { kind: 'default' }],
@@ -40,7 +40,7 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     ]);
     expect(defaultCampaign(gameData).id).toBe('us_pt');
     expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03']);
-    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。配列順
+    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。v0.6.7: jp_02（孤島の哨戒）も。配列順
     expect(getMenuEntries(gameData, 'jp_hard').campaignName).toBe('日本ハードモード');
     expect(() => getMenuEntries(gameData, 'nope')).toThrow();
   });

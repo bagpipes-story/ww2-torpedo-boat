@@ -1,12 +1,12 @@
 // 敵の水上機の数値（v0.4.1）: enemies.json の ijn_seaplane_jake と risk_events.json の enemy_aircraft.params から SeaplaneParams を組む。検査はここ。
-// 段階と運動は seaplane.ts、照明弾と爆弾は seaplane-ordnance.ts。
+// 段階と運動は seaplane.ts、照明弾と爆弾は seaplane-ordnance.ts。航跡の閾値 kt は自艇の静音の上限（boats.json の speed_bands_kt.silent_max。v0.6.7 から data に持たない）。
 import type { HitSpec } from './gunnery';
 import { GRAVITY_MPS2, ktToMps, radToDeg } from './units';
 
 export interface SeaplaneParams {
   /** 画面上の飛行速度 m/体感秒（speed_kt × time_scale） */
   flightMps: number;
-  /** 現れる距離 m（= wake_detect_m）、航跡を見る距離、発見確定の線、航跡が見える速力 kt（検査用） */
+  /** 現れる距離 m（= wake_detect_m）、航跡を見る距離、発見確定の線、航跡が見える速力 kt（= 艇の静音の上限。HUD の「N kt 以下に減速！」） */
   spawnM: number;
   wakeDetectM: number;
   baseDetectM: number;
@@ -39,6 +39,7 @@ export interface SeaplaneParams {
 }
 
 export interface SeaplaneDataRecord {
+  id: string;
   speed_kt: number;
   altitude_m: number;
   flare: {
@@ -57,7 +58,6 @@ export interface SeaplaneDataRecord {
   };
   detection: {
     base_detect_m: number;
-    wake_speed_threshold_kt: number;
     wake_detect_m: number;
   };
 }
@@ -81,12 +81,12 @@ function hasNums(v: unknown, keys: readonly string[]): boolean {
 }
 
 export function isSeaplaneDataRecord(v: unknown): v is SeaplaneDataRecord {
-  if (!hasNums(v, ['speed_kt', 'altitude_m'])) return false;
+  if (!hasNums(v, ['speed_kt', 'altitude_m']) || typeof (v as Record<string, unknown>)['id'] !== 'string') return false;
   const r = v as Record<string, unknown>;
   return (
     hasNums(r['flare'], ['illum_radius_m', 'duration_s', 'cooldown_s', 'reveal_m']) &&
     hasNums(r['bomb'], ['count', 'damage', 'blast_radius_m', 'accuracy_cep_m', 'fire_chance', 'engine_damage_chance']) &&
-    hasNums(r['detection'], ['base_detect_m', 'wake_speed_threshold_kt', 'wake_detect_m'])
+    hasNums(r['detection'], ['base_detect_m', 'wake_detect_m'])
   );
 }
 
@@ -94,21 +94,20 @@ export function isEnemyAircraftEventRecord(v: unknown): v is EnemyAircraftEventR
   return typeof v === 'object' && v !== null && hasNums((v as Record<string, unknown>)['params'], ['patrol_from_s', 'wake_trigger_s', 'lose_s', 'run_radius_m', 'orbit_s', 'leave_s', 'patrol_cooldown_s']);
 }
 
-/** 設計値の検査込みで SeaplaneParams を作る。boat は艇の静音帯の上限 kt（航跡の速力と一致を検査）と船体の半長・半幅 */
+/** 設計値の検査込みで SeaplaneParams を作る。boat は艇の静音帯の上限 kt（＝航跡の閾値。Elco 18・T-14 14・T-38 13）と船体の半長・半幅 */
 export function seaplaneParamsFromData(plane: SeaplaneDataRecord, event: EnemyAircraftEventRecord, timeScale: number, boat: { silentMaxKt: number; halfLengthM: number; halfBeamM: number }): SeaplaneParams {
   const q = event.params;
   const bad = (msg: string): never => {
-    throw new Error(`enemies.json の ijn_seaplane_jake / risk_events.json の enemy_aircraft.params: ${msg}（docs/02 §6.8）`);
+    throw new Error(`enemies.json の ${plane.id} / risk_events.json の enemy_aircraft.params: ${msg}（docs/02 §6.8）`);
   };
   if (!(plane.speed_kt > 0) || !(plane.altitude_m > 0)) bad('speed_kt / altitude_m は正');
   if (!(q.run_radius_m > 0 && q.run_radius_m < plane.detection.base_detect_m && plane.detection.base_detect_m < plane.detection.wake_detect_m)) bad('0 < run_radius_m < base_detect_m < wake_detect_m');
-  if (plane.detection.wake_speed_threshold_kt !== boat.silentMaxKt) bad(`wake_speed_threshold_kt（${plane.detection.wake_speed_threshold_kt}）は艇の静音帯の上限（${boat.silentMaxKt} kt）と同じにする`);
   if (!Number.isInteger(plane.bomb.count) || plane.bomb.count < 1) bad('bomb.count は 1 以上の整数');
   if (!(plane.bomb.damage >= 0) || !(plane.bomb.blast_radius_m >= 0) || !(plane.bomb.accuracy_cep_m > 0)) bad('bomb.damage / blast_radius_m は 0 以上、accuracy_cep_m は正');
   if (!(plane.bomb.fire_chance >= 0 && plane.bomb.fire_chance <= 1) || !(plane.bomb.engine_damage_chance >= 0 && plane.bomb.engine_damage_chance <= 1)) bad('bomb.fire_chance / engine_damage_chance は 0〜1');
   if (!(plane.flare.illum_radius_m > 0) || !(plane.flare.duration_s > 0) || !(plane.flare.reveal_m >= plane.flare.illum_radius_m)) bad('flare.illum_radius_m / duration_s は正、reveal_m は illum_radius_m 以上');
   if (!(q.patrol_from_s >= 0) || !(q.wake_trigger_s >= 0) || !(q.lose_s >= 0) || !(q.orbit_s >= 0) || !(q.leave_s > 0) || !(q.patrol_cooldown_s >= 0)) bad('patrol_from_s / wake_trigger_s / lose_s / orbit_s / patrol_cooldown_s は 0 以上、leave_s は正');
-  if (!(timeScale > 0) || !(boat.halfLengthM > 0) || !(boat.halfBeamM >= 0)) throw new Error('seaplane: time_scale と艇の寸法が不正');
+  if (!(timeScale > 0) || !(boat.silentMaxKt > 0) || !(boat.halfLengthM > 0) || !(boat.halfBeamM >= 0)) throw new Error('seaplane: time_scale と艇の静音の上限・寸法が不正');
   const flightMps = ktToMps(plane.speed_kt) * timeScale;
   const overpassS = q.run_radius_m / flightMps;
   const bombFallGameS = Math.sqrt((2 * plane.altitude_m) / GRAVITY_MPS2);
@@ -117,7 +116,7 @@ export function seaplaneParamsFromData(plane: SeaplaneDataRecord, event: EnemyAi
     spawnM: plane.detection.wake_detect_m,
     wakeDetectM: plane.detection.wake_detect_m,
     baseDetectM: plane.detection.base_detect_m,
-    wakeThresholdKt: plane.detection.wake_speed_threshold_kt,
+    wakeThresholdKt: boat.silentMaxKt,
     patrolFromS: q.patrol_from_s,
     wakeTriggerS: q.wake_trigger_s,
     loseS: q.lose_s,

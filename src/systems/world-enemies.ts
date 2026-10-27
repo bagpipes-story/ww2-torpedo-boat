@@ -1,5 +1,5 @@
 // 敵の側（駆逐艦の隊・僚艇・大発の隊・米PT の隊）の生成（v0.6.3 で mission-world の constructor から切り出し。中身と生成の順はそのまま。米PT は大発の後）。
-// 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）、米PT と T-14 の 13mm は PtSquadron の中（seed+18・+20）。
+// 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）、米PT と T-14 の 13mm は PtSquadron の中（seed+18・+20）。夜の哨戒機の出撃の seed+23（v0.6.7）は敵の側ではなく危険の側（world-hazards）。
 // 被害はすべて世界の hitBoat を通り、撃破・僚艇の沈没は世界の onSunk（命中スロー＋Scene の爆発）。
 // v0.6.6: 隼艇（jp_01 のハードの WorldSetup.gunboat だけ。systems/gunboat）は米PT の隊が隊の後に作る（判断が隊を読む・標的スロットの末尾の船体・25mm は seed+22）。
 import type Phaser from 'phaser';

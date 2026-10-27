@@ -1,5 +1,5 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
-import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, ptGunBriefingJa, type BriefingNumbers } from '../core/briefing';
+import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, patrolAirDetectJa, patrolWeaponBriefingJa, ptGunBriefingJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
 import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
@@ -10,9 +10,11 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
   const f = s.vis.speedFactor;
   return {
     // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。米PT の任務（v0.6.3。魚雷を撃たない）はマーカーが無いので出さない
-    ...(aimAssistJa && !s.ptBoats ? { aimAssistJa } : {}),
+    ...(aimAssistJa && !s.ptBoats && !s.patrolAir ? { aimAssistJa } : {}),
     // 米PT の任務（v0.6.3）は条件の武器の句: 砲の名から（実機 1 回目から jp_05 は T-14 の 13mm、v0.6.4 の jp_01 は T-38 の 25mm）か撃たない（none）。他の任務は鍵ごと省く
     ...(s.ptBoats ? { weaponJa: s.guns ? ptGunBriefingJa(s.guns.label) : NO_WEAPON_BRIEFING_JA } : {}),
+    // 夜の哨戒機の任務（v0.6.7。jp_02）: 武器なしの句と航跡の出る速さ（静音の上限）、月の行の空からの見え方（航跡・動く船体・停止）。見越し点マーカーは出さない（魚雷が無い）。他の任務は鍵ごと省く
+    ...(s.patrolAir ? { weaponJa: patrolWeaponBriefingJa(s.patrolAir.gate.quietKt), airDetectJa: patrolAirDetectJa(s.patrolAir.gate.wakeDetectM, s.patrolAir.gate.nearM) } : {}),
     // 輸送隊の任務（v0.6.4 レビュー ux-6。jp_01）は帰投地点の方角を自艇の出発点から（中心からの「南東」は出発点からは東・上陸の先頭からは北東だった）。他の任務は鍵ごと省く
     ...(s.convoy ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {}),
     visM: playerVisRangeM(s.vis),
@@ -36,6 +38,7 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
  * （帰り道を東西に横切る線を哨戒するので、中心から見た「東から」は線のどちら寄りかでしかなく、出発点からは南にいた）
  */
 function enemyFromJa(s: WorldSetup): string {
+  if (s.patrolAir) return bearingJa(s.patrolAir.gate.fromBearingDeg); // 夜の哨戒機（v0.6.7）: 最初の捜索（レーダー）の来る方角
   const e = s.enemyFrom;
   if (!e) return '';
   if (s.ptBoats) return bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, e.x, e.y));

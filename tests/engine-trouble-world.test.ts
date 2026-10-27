@@ -225,13 +225,18 @@ describe('world-boat の入力（jp_05 の本物の値。spec §G.4 の秒の目
 
 describe('段の順（レビュー fair-2: 機関の段が米PT の段より先に回ると、同じステップに固めた赤い線を見ずに不調が始まる＝R1 の回帰。模擬の不変は core/pt-sim-engine の onCommit で数える）', () => {
   const code = (rel: string): string => readFileSync(join(__dirname, '..', 'src', ...rel.split('/')), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-  it('ソース: systems/mission-world の stepFn は 米PT の段（pts.step）→ 機関（engine.step）→ 火災（stepDamage）の順', () => {
+  it('ソース: 米PT の段（pts.step）→ 機関（engine.step）→ 火災（stepDamage）の順（v0.6.7 S0 から前の 2 つは systems/world-enemy-step の stepEnemySide の中。mission-world の stepFn はその段 → 火災）', () => {
+    const side = code('systems/world-enemy-step.ts');
+    const [pts, eng] = [side.indexOf('w.pts?.step('), side.indexOf('w.engine?.step(')];
+    expect([pts, eng].every((i) => i > 0), `${pts} ${eng}`).toBe(true);
+    expect(pts).toBeLessThan(eng);
     const src = code('systems/mission-world.ts');
     const fn = src.slice(src.indexOf('stepFn'));
-    const [pts, eng, dmg] = [fn.indexOf('this.pts?.step('), fn.indexOf('this.engine?.step('), fn.indexOf('stepDamage(')];
-    expect([pts, eng, dmg].every((i) => i > 0), `${pts} ${eng} ${dmg}`).toBe(true);
-    expect(pts).toBeLessThan(eng);
-    expect(eng).toBeLessThan(dmg);
+    const [enemy, dmg] = [fn.indexOf('stepEnemySide('), fn.indexOf('stepDamage(')];
+    expect([enemy, dmg].every((i) => i > 0), `${enemy} ${dmg}`).toBe(true);
+    expect(enemy).toBeLessThan(dmg);
+    expect(fn).not.toContain('this.pts?.step(');
+    expect(fn).not.toContain('this.engine?.step(');
   });
   it('ソース: core/pt-pass-sim の 1 ステップは 米PT の段（stepPtSection）→ 機関（simEngineStep）→ 火災（stepDamage）の順', () => {
     const src = code('core/pt-pass-sim.ts');

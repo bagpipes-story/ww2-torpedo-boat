@@ -11,6 +11,10 @@ export const HOME_MARKER_DISTANCE_STEP_M = 100;
 export const SHALLOW_WARN_STEP_M = 50;
 /** 敵機（夜の水上機・夜明けの空襲）までの距離の刻み m */
 export const PLANE_DISTANCE_STEP_M = 100;
+/** HUD の文字サイズ（論理 px。v0.6.7 で ui-config から移した。値は同じ）: 速力段・見出し（Result の小さい行も）・3 行目（敵影と発見状態。docs/02 §6.5。発見されたら警告色） */
+export const HUD_FONT_STEP_PX = 24;
+export const HUD_FONT_HEADING_PX = 20;
+export const HUD_FONT_STATUS_PX = 20;
 /**
  * 左上 2 段目（FPS の下）の夜明けの時計（v0.6.2 実機 1 回目「別のメッセージが出ると秒数が見えなくなる」）: 文字の大きさ px、いちばん長い文（「夜明けまで 999 秒」）の幅の見積もり px
  * （Menlo の半角 0.602 em・全角 1 em。tests/dawn-lines が検査）、上中央の 2 行目との隙間 px。2 行目はこの左の幅を左右対称に避ける（ui/dawn-lines の lineFitScale）

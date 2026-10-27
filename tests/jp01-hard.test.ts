@@ -152,10 +152,11 @@ describe('jp_01 のハードの世界（米PT 3 隻・ノルマ 3）', () => {
     expect(convoyResultLine(c)).toBe('大発 上陸 2/3 ・ 沈没 1（ノルマ 3） ・ 大発の被弾 3 発');
     const worst = convoyResultLine({ total: 3, arrived: 0, sunk: 1, quota: 3, hitsTaken: 99 }, false);
     expect(textWidthPx(worst, 24), worst).toBeLessThanOrEqual(1280 - 2 * 24);
-    // result-scene はハードの違いのある任務のハードだけ objectiveDone を渡す（見出しの「（ハード）」と同じ条件）
+    // result-scene はハードの違いのある任務のハードだけ objectiveDone を渡す（見出しの「（ハード）」と同じ条件。v0.6.7 S0 から本文の枝は ui/result-body）
     const rs = readFileSync('src/scenes/result-scene.ts', 'utf8');
     expect(rs).toContain('const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);');
-    expect(rs).toContain('convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined)');
+    expect(rs).toContain('resultBodyLines(r, hardV)');
+    expect(readFileSync('src/ui/result-body.ts', 'utf8')).toContain('convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined)');
   });
   it('Result の輸送隊の 1 行目（ハード）: 3 隻とも上陸したのに帰投しなかった夜（沈没・漂流）は「未達」ではなく「帰投なし」（v0.6.6 最終確認: 「上陸 3/3（ノルマ 3 ・ 未達）」が食い違って読めた）。24 px で 1 行', () => {
     const q = H.convoy!.params.quota;

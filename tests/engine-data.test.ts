@@ -154,7 +154,7 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
 
 describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の同居の検査）', () => {
   it('不調が入るのは v0_1_prototype.hazards に engine_failure がある jp_05 だけ（jp_01 の T-38 にも engine_reliability 0.85 があるが読まない）', () => {
-    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
+    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']); // v0.6.7: jp_02（夜の哨戒機。不調なし）
     for (const id of PROTO_IDS) expect(getEngineParams(gameData, id) !== null, id).toBe(id === 'jp_05');
     expect(getEngineParams(gameData, 'jp_05')).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, warnRearmHeat: 0.5, startHeat: 0 });
     expect(boatOf(gameData, 'jp_t38')['engine_reliability']).toBe(0.85);

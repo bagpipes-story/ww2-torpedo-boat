@@ -118,3 +118,13 @@ export interface GunboatResult {
   shots: number; hits: number; retired: number; ptSunk: number; suppressions: number;
   attacked: number;
 }
+
+/**
+ * 夜の哨戒機の記録（v0.6.7。jp_02。systems/patrol-telemetry の patrolResult）: 捜索の回数（航跡で来た回数）・隠れた（付近の捜索をやり過ごした）・発見（レーダー込み）と目の発見、
+ * 夜の出撃の爆弾・自艇への命中・失った HP、自艇を狙った爆弾ごとの投下から転舵までの秒（NaN は転舵なし）、再出撃の遅れ（F12。0 のはず）。Result の 2 行（ui/patrol-result-lines）
+ */
+export interface PatrolResult {
+  passes: number; passesWake: number; hides: number; finds: number; findsVisual: number;
+  bombs: number; hits: number; damage: number; dodgeS: number[];
+  restartDelayed: number;
+}

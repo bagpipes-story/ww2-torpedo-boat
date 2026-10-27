@@ -25,6 +25,7 @@ import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL
 import { shipsGoneStatusJa } from './dawn-lines';
 import { DawnClock } from './dawn-clock';
 import { MissionLine } from './mission-line';
+import { patrolStatusLine, patrolStatusOf } from './patrol-lines';
 import { STORM_INSIDE } from '../core/storm';
 import { SHALLOW_INSIDE } from '../core/shallows';
 import { SHALLOW_SPEED_WARN_MARGIN_KT } from '../config/hunt-config';
@@ -120,7 +121,9 @@ export class BoatHud {
     this.missionLine.refresh(t, nowMs);
     this.clock.refresh(t);
     // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」、夜明けに退いて狙う艦がいなくなった後（v0.6.2）は「東京急行は北へ去った ・ 狙う艦なし」に固定
-    const status = t.destroyerSunk ? STATUS_SUNK : t.dawn.shipsGone ? STATUS_GONE : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
+    // 夜の哨戒機の任務（v0.6.7。jp_02）は空からの見え方（40 番台。ui/patrol-lines。夜明けの後は空襲の行、空襲の無い OFF は今の行）
+    const pst = patrolStatusOf(t.patrol, t.targetStep, t.dawn.reached && t.dawn.strikeEnabled);
+    const status = pst >= 0 ? pst : t.destroyerSunk ? STATUS_SUNK : t.dawn.shipsGone ? STATUS_GONE : (t.enemySighted ? 1 : 0) | (t.playerDetected ? 2 : 0) | (t.illuminated ? 4 : 0) | (t.starLit ? 8 : 0) | (t.hiddenBySmoke ? 16 : 0);
     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
     // 雨: 艦と艇を結ぶ線が暴風の帯にかかっている（発見距離・視程が下がる。v0.3.4）
     const rain = t.stormLos && !t.destroyerSunk;
@@ -128,7 +131,10 @@ export class BoatHud {
       this.lastStatus = status;
       this.lastDetectStep = detectStep;
       this.lastRain = rain;
-      if (status === STATUS_SUNK) {
+      if (pst >= 0) {
+        const l = patrolStatusLine(t.patrol, pst);
+        this.statusText.setText(l.text).setColor(l.warn ? HUD_COLOR_WARN : HUD_COLOR);
+      } else if (status === STATUS_SUNK) {
         this.statusText.setText('駆逐艦を撃沈').setColor(HUD_COLOR_STRONG);
       } else if (status === STATUS_GONE) {
         this.statusText.setText(shipsGoneStatusJa(t.dawn)).setColor(HUD_COLOR_STRONG);

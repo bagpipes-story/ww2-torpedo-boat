@@ -1,0 +1,2713 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal seed 1 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 216,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal seed 12345 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 216,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal historical seed 1 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal historical seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 280.8,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal historical seed 12345 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード false 史実 true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 normal historical seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 280.8,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard seed 1 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 false seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 216,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard seed 12345 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 false seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 216,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard historical seed 1 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 true seed 1: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard historical seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 280.8,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard historical seed 12345 briefing 1`] = `
+[
+  "目的: 哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る",
+  "成功: 生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）",
+  "月: 月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない",
+  "敵: 米飛行艇 ×2（北東から）",
+  "危険: 夜の哨戒機、夜明けの空襲",
+  "条件: 夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・ 武器なし（止まって隠れ、投下で転舵） ・ 航跡は 14 kt 超",
+]
+`;
+
+exports[`jp_02 の setup の snapshot（v0.6.7 S5 の木） > ハード true 史実 true seed 12345: 世界の数値・Briefing の行・今夜の乱数の回数 > jp_02 hard historical seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_02",
+  "type": "patrol_and_evade",
+  "playerBoatId": "jp_t14",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_patrol_bomber",
+  "enemyCount": 2,
+  "bounds": {
+   "width": 6000,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 5700,
+   "y": 400,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 600,
+   "label": "ウェーク島"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 220,
+  "enemyHitsToSink": null,
+  "moon": "dark",
+  "returnPoint": {
+   "x": 800,
+   "y": 3600,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 32,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "patrol_air",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_patrol_bomber",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の『敵の制空下は 4 機』。昼に米機がいた抜粋は無い（low）)",
+   "from_bearing_deg": 56,
+   "escort_target_planes": [],
+   "source": "design (v0.6.7。来る方角はミッドウェー（計算 55.6°）。8 発ずつ・波ごとに 90°。v0.6.7 実機 1 回目に us_patrol_bomber の 1 機 3 発で 12 発ずつ)"
+  }
+ },
+ "playerStart": {
+  "x": 5700,
+  "y": 400,
+  "headingDeg": 225
+ },
+ "coastEdgeY": 4000,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 15.946399999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 7.201599999999999,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.1,
+  "decelMps2": 1.5,
+  "turnRateDegS": 30,
+  "lengthM": 15,
+  "beamM": 3.65
+ },
+ "boundsMarginM": 15,
+ "boatHalfLengthM": 7.5,
+ "boatHalfBeamM": 1.825,
+ "damageParams": {
+  "maxHp": 50,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.25,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 0.6,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 900,
+ "visRange2": 810000,
+ "detectRangeAtStartM": 280.8,
+ "durationS": 220,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 16.000000000000004,
+  "cruiseGph": 114.28571428571429,
+  "fullGph": 228.57142857142858,
+  "cruiseMps": 10.288,
+  "fullMps": 15.946399999999999,
+  "exponent": 1.7601613193962478,
+  "galPerMCruise": 0.0030857340344121057,
+  "galPerMFull": 0.0039815923024672335
+ },
+ "fuelAllotmentGal": 32,
+ "fuelStartGal": 32,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 1.825,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "patrol_air",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "low",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（米の飛行艇）",
+  "refs": [
+   {
+    "url": "https://en.wikipedia.org/wiki/VPB-4",
+    "claim": "米海軍の哨戒爆撃飛行隊（VPB-4）の記録。中部太平洋の日本の島々を哨戒・爆撃した米の飛行艇・哨戒機の部隊"
+   },
+   {
+    "url": "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+    "claim": "1944-01-30〜31 の夜、PB2Y コロナドがウェークを空襲した（確かめられたのは夜の空襲だけ）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 3,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 56,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 7.5,
+  "playerHitRadiusM": 26.825,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 6000,
+  "boundsH": 4000,
+  "playerMarginM": 15,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米飛行艇（PB2Y 相当）",
+  "fromJa": "北東"
+ },
+ "patrolAir": {
+  "gate": {
+   "planes": 2,
+   "flightMps": 308.64,
+   "wakeDetectM": 4200,
+   "lockM": 1500,
+   "nearM": 900,
+   "runRadiusM": 600,
+   "firstPassS": 3,
+   "wakeTriggerS": 3,
+   "sweepGapS": 12,
+   "orbitS": 8,
+   "leaveS": 2.5,
+   "hudStopMarginS": 3,
+   "fromBearingDeg": 56,
+   "passRotateDeg": 90,
+   "radarPasses": 1,
+   "orbitDegPerS": 19.64863265435303,
+   "quietKt": 14
+  },
+  "sortie": {
+   "planes": 2,
+   "bombsPerPlane": 3,
+   "flightMps": 308.64,
+   "runRadiusM": 600,
+   "orbitDegPerS": 29.472948981529548,
+   "runS": 1.944012441679627,
+   "spawnM": 1500,
+   "fromBearingDeg": 56,
+   "spawnOffsetsDeg": [
+    -10,
+    10
+   ],
+   "waveRotateDeg": 0,
+   "firstRunS": 5,
+   "runGapS": 2.2,
+   "waveRestS": 16,
+   "leaveS": 2.5,
+   "fallFeelS": 1.2771017136282017,
+   "fallGameS": 6.385508568141009,
+   "scatterM": 45.254833995939045,
+   "aimTurnMinDegS": 0.5,
+   "timeScale": 5,
+   "bombHit": {
+    "damage": 35,
+    "fireChance": 0.3,
+    "engineDamageChance": 0.2
+   },
+   "playerHalfLengthM": 7.5,
+   "playerHitRadiusM": 26.825,
+   "escortHalfLengthM": 0,
+   "escortHitRadiusM": 0,
+   "boundsW": 6000,
+   "boundsH": 4000,
+   "playerMarginM": 15,
+   "escortMarginM": 0,
+   "escortPlanes": [
+    false,
+    false
+   ],
+   "poolSize": 2,
+   "nameJa": "米飛行艇（PB2Y 相当）",
+   "fromJa": "北東"
+  }
+ }
+}"
+`;

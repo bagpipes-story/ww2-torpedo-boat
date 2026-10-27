@@ -1,5 +1,6 @@
 // Title: ゲーム名と任務一覧（米PTキャンペーンの playable_from を持つ任務を order 順。出撃できない任務は「準備中 ・ 版」で押せない）。docs/02 §4、v0.4.0。
 // v0.6.0: キャンペーンのタブ（米PT｜日本ハードモード）。日本側は米PTの遊べる任務を 1 回ずつ帰投で終えると開く（core/campaign。一度開いたら閉じない）。
+// v0.6.7: 任務が 4 つ以上のタブ（日本）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。米PT のタブは 1 列のまま。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
 import Phaser from 'phaser';
 import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
@@ -30,14 +31,10 @@ import {
   TITLE_MARKER_ON_JA,
   TITLE_MARKER_SUB_JA,
   TITLE_MARKER_X,
-  TITLE_ROW_GAP,
   TITLE_ROW_H,
   TITLE_ROW_STATUS_PX,
   TITLE_ROW_SUB_PX,
   TITLE_ROW_TITLE_PX,
-  TITLE_ROW_TOP,
-  TITLE_ROW_W,
-  TITLE_ROW_X,
   TITLE_TAB_GAP,
   TITLE_TAB_H,
   TITLE_TAB_PX,
@@ -50,11 +47,13 @@ import {
   titleMarkerLockedSubJa,
 } from '../config/menu-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+import { shortLabelJa } from '../core/briefing';
 import { campaignStatus, type CampaignStatus } from '../core/campaign';
 import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
 import { seedForBriefing, type BriefingInit } from '../core/sortie';
 import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLegacyUnlocks, setLeadMarkerEnabled, sortiesDone, unlockedCampaignIds } from '../systems/progress-storage';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
+import { titleGridOn, titleRowRect } from '../ui/title-grid';
 
 export class TitleScene extends Phaser.Scene {
   private rows: MenuButton[] = [];
@@ -97,17 +96,21 @@ export class TitleScene extends Phaser.Scene {
       tab.setSelected(c.id === selected.id);
       this.tabs.push(tab);
     });
+    // 任務の行（v0.6.7）: 4 行以上のタブ（日本）は 2 列の格子で、副題は最初の「（」の前まで（列 597 px に状態「出撃準備 →」と並べて収める）。米PT は 1 列のまま
+    const n = menu.entries.length;
+    const grid = titleGridOn(n);
     menu.entries.forEach((e, i) => {
+      const r = titleRowRect(i, n, GAME_WIDTH);
       const row = new MenuButton(
         this,
         {
-          x: TITLE_ROW_X,
-          y: TITLE_ROW_TOP + i * (TITLE_ROW_H + TITLE_ROW_GAP),
-          w: TITLE_ROW_W,
+          x: r.x,
+          y: r.y,
+          w: r.w,
           h: TITLE_ROW_H,
           title: e.title,
           titlePx: TITLE_ROW_TITLE_PX,
-          sub: e.sub,
+          sub: grid ? shortLabelJa(e.sub) : e.sub,
           subPx: TITLE_ROW_SUB_PX,
           right: e.status,
           rightPx: TITLE_ROW_STATUS_PX,

@@ -1,12 +1,13 @@
 // 上中央の 2 行目のモード（v0.6.1 で ui/mission-line.ts から切り出し。v0.6.0 のモードはそのまま、夜明けの空襲の 2 つを足した）: どの行を出すかの優先順だけを決める。
 // 文は ui/hud-lines.ts、setText のキャッシュは ui/mission-line.ts。テレメトリを読むだけで、毎フレーム呼んでも確保しない（§7）。
-// v0.6.5: 機関の不調（jp_05）の 3 つ（28〜30。文は ui/engine-lines）。
-import { AS_T_NONE, AS_T_REST } from '../core/air-strike';
+// v0.6.5: 機関の不調（jp_05）の 3 つ（28〜30。文は ui/engine-lines）。v0.6.7: 夜の哨戒機（jp_02）の 4 つ（31〜34。文は ui/patrol-lines。哨戒の無い任務は t.patrol.enabled が偽で 1 ビットも変わらない）。
+import { AS_T_FALLING, AS_T_INBOUND, AS_T_NONE, AS_T_ORBIT, AS_T_REST } from '../core/air-strike';
 import { CALL_DAWN } from '../core/mission-flow';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_FINAL } from '../core/engine-trouble';
 import { FF_CHALLENGE, FF_LEAVING, FF_OUT_GAVE_UP, FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { GUN_FIRING, GUN_OUT_OF_ARC, GUN_SAFE } from '../core/gun-battery';
+import { PA_HUNT, PA_ORBIT, PA_PASS, patrolWakeLine } from '../core/patrol-air';
 import { PT_ALERT, PT_CHASE, PT_RUN_IN } from '../core/pt-boats';
 import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { SHALLOW_GROUNDED } from '../core/shallows';
@@ -59,6 +60,14 @@ export const MISSION_CONVOY_EVENT = 27;
 export const MISSION_ENGINE_EVENT = 28;
 export const MISSION_ENGINE_FINAL = 29;
 export const MISSION_ENGINE_STATUS = 30;
+/**
+ * 夜の哨戒機（v0.6.7。jp_02。spec-v067 §D.1。文とキーは ui/patrol-lines）: 31 発見と夜の出撃（接近・旋回・爆撃進路・落下。夜明けの空襲の下、落下中だけは夜明けの接近・旋回より上）、
+ * 32 捜索（接近・付近の捜索）、33 結果（見つけられずに去る・出撃が去る）、34 平常（帰投せよの下・「命中 0」の平常の代わり）
+ */
+export const MISSION_PATROL_ATTACK = 31;
+export const MISSION_PATROL_PASS = 32;
+export const MISSION_PATROL_RESULT = 33;
+export const MISSION_PATROL = 34;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -119,13 +128,22 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲 > 米PT の航過（赤い線）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
- * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 機関の状態（不調・限界で冷やしている）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
+ * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 機関の状態（不調・限界で冷やしている）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   if (t.homeWaiting) return MISSION_WAITING;
   if (t.fuelEmpty) return MISSION_ADRIFT;
+  const pa = t.patrol;
+  // 夜明けのラッチの瞬間に落ちている夜の 1 発（最大 1.28 秒）は夜明けの 4 機の接近・旋回の行に隠さない（R6。夜明けの最初の進路はラッチから first_run_s 後で重ならない）
+  if (pa.enabled && pa.threat === AS_T_FALLING && (t.dawn.threat === AS_T_INBOUND || t.dawn.threat === AS_T_ORBIT)) return MISSION_PATROL_ATTACK;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
+  if (pa.enabled) {
+    // 夜の哨戒機（v0.6.7。jp_02 に他の敵はいない）: 発見と夜の出撃 > 捜索 > 結果（平常は下の帰投せよの下。出撃の後の哨戒で航跡の行が出るなら結果より航跡。レビュー ux:ux-4）
+    if (pa.threat !== AS_T_NONE && pa.threat !== AS_T_REST) return MISSION_PATROL_ATTACK;
+    if (pa.phase === PA_PASS || pa.phase === PA_ORBIT) return MISSION_PATROL_PASS;
+    if (pa.resultKind !== 0 && !(pa.phase === PA_HUNT && patrolWakeLine(pa, t.targetStep))) return MISSION_PATROL_RESULT;
+  }
   if (t.pt.enabled) {
     // 米PT（v0.6.3）: 赤い線（航過・連射。終わって弾が飛んでいる間も MODE_FLAG_PT_HOLD で保つ）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）
     // v0.6.4 レビュー ux-3: 航過中に標的の大発が沈んだ・上陸した（passTargetLost。jp_01 だけ）なら赤い線の行を降ろす（沈没・上陸の出来事がすぐ出る）
@@ -162,5 +180,6 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.pt.enabled && t.pt.alive === 0 && t.dawn.reached && call === CALL_DAWN) return MISSION_PT;
   if (call !== 0) return MISSION_CALL;
   if (t.pt.enabled) return MISSION_PT;
+  if (pa.enabled) return MISSION_PATROL;
   return MISSION_NORMAL;
 }
