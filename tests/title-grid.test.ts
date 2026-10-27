@@ -109,12 +109,12 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6）', 
     // 1 列（米PT）は副題を切らない: 960 − 64 の内に「出撃準備 →」と並ぶ（いちばん長い us_02）
     for (const e of US) expect(TITLE_ROW_W - 2 * MENU_PAD_X - textWidthPx(e.status, TITLE_ROW_STATUS_PX) - textWidthPx(e.sub, TITLE_ROW_SUB_PX), e.id).toBeGreaterThanOrEqual(16);
   });
-  it('操作の一言（18 px）: 日本は「右下で魚雷と機銃（隅の大きいボタンが主。…）」（v0.6.8。全任務で両方使える）で、格子の幅 1,218 px の内（1,170 px）。米PT は 1 列の 960 px の内（R12）', () => {
+  it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT は 1 列の 960 px の内（R12）', () => {
     const jp = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
-    expect(jp).toContain('魚雷と機銃');
-    expect(jp).toContain('隅の大きいボタン');
+    expect(jp).toContain('右下の角で魚雷');
+    expect(jp).toContain('その左で機銃');
     expect(getPrototypeMission(gameData, 'jp_02').mainWeapon).toBe('none');
-    expect(Math.round(textWidthPx(jp, TITLE_HINT_PX))).toBe(1170);
+    expect(Math.round(textWidthPx(jp, TITLE_HINT_PX))).toBe(1037);
     expect(textWidthPx(jp, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_GRID_W);
     expect(textWidthPx(TITLE_HINT_BY_CAMPAIGN_JA['us_pt']!, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_ROW_W);
   });

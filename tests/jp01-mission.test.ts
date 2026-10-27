@@ -288,7 +288,7 @@ describe('jp_01 の Briefing・Title（spec §D.1）', () => {
     const rec = getBriefingRecord(gameData, 'jp_01');
     expect(`${rec.titleJa} ・ 1942年12月9日 ・ ${rec.place}`).toBe('夜の輸送護衛 ・ 1942年12月9日 ・ ガダルカナル島北岸（カミンボ沖）');
     const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
-    expect(hint).toContain('魚雷と機銃'); // v0.6.8: 全任務で両方（v0.6.7 までは「輸送護衛は機銃」と任務の名で）
+    expect(hint).toContain('その左で機銃'); // v0.6.8: 全任務で両方・実機 1 回目から全任務で角が魚雷・その左が機銃（v0.6.7 までは「輸送護衛は機銃」と任務の名で）
     expect(hint).not.toContain('13mm');
     expect(textWidthPx(hint, TITLE_HINT_PX)).toBeLessThanOrEqual(1218); // ui/title-grid の TITLE_GRID_W（tests/title-grid）
   });

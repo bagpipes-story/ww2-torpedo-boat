@@ -248,7 +248,7 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
   g.destroy();
 }
 
-/** 右の 2 列の技能の丸ボタン（煙幕・消火・見張り・識別。一時停止も同じ絵）と、煙幕の煙（世界単位 × RENDER_SCALE。表示時に半径へ拡縮） */
+/** 技能の丸ボタン（煙幕・消火・見張り・識別。v0.6.8 実機 1 回目から右端の縦一列で R44 に縮めて使う。一時停止も同じ絵）と、煙幕の煙（世界単位 × RENDER_SCALE。表示時に半径へ拡縮） */
 export function generateSmokeTextures(scene: Phaser.Scene): void {
   const k = RENDER_SCALE;
   let d = Math.ceil(ROUND_BUTTON_RADIUS * 2 * k) + 4;

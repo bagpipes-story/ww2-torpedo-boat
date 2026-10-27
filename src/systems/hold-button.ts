@@ -14,7 +14,7 @@ export interface HoldButtonHandlers {
 export interface HoldButtonOptions {
   /** 作ってからこの ms は押下を受けない（機銃: Briefing の「出撃」・Result の「もう一度」の 2 度押し。TORPEDO_BUTTON_ARM_MS。無ければすぐ受ける） */
   armMs?: number;
-  /** 文字 px（無ければ HUD_FONT_BUTTON_PX。副兵装は小さく） */
+  /** 文字 px（無ければ HUD_FONT_BUTTON_PX。v0.6.8: 機銃と技能は小さく） */
   fontPx?: number;
 }
 
@@ -41,7 +41,7 @@ export class HoldButton {
     private readonly handlers: HoldButtonHandlers,
     /** 丸の大きさと色（v0.4.2: 主兵装が砲の任務の「射撃」は魚雷ボタンと同じ大きな黄色い輪。v0.6.8 から機銃は橙の tex-gun-button） */
     textureKey: string = TEXTURE_KEYS.roundButton,
-    /** 丸の倍率（v0.5.1: 「一時停止」は小さく。v0.6.8: 副兵装の機銃は SECONDARY_SCALE。当たりも絵といっしょに縮む） */
+    /** 丸の倍率（v0.5.1: 「一時停止」は小さく。v0.6.8: 機銃は GUN_BUTTON_SCALE、実機 1 回目から技能は R44 / R48。当たりも絵といっしょに縮む） */
     private readonly sizeScale: number = 1,
     opts: HoldButtonOptions = {},
   ) {

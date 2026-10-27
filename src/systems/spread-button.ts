@@ -53,7 +53,7 @@ export class SpreadButton {
     private readonly scene: Phaser.Scene,
     cx: number,
     cy: number,
-    /** 幅（魚雷ボタンの直径。主兵装 128・副兵装 112） */
+    /** 幅（魚雷ボタンの直径。v0.6.8 実機 1 回目から全任務で 128） */
     w: number,
     private readonly spread: SpreadConfig,
     private readonly defaultDeg: number,

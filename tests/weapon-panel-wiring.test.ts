@@ -1,7 +1,7 @@
-// 右側の 2 列のパネルの配線（v0.6.8 S4。spec-v068 §3.3・§4.1〜4.3）: Phaser の部分はソースで見る（ui-config・game-config は DOM を読むので node で import しない）。
-// パネルは config/hud-layout-config の panelLayout から作る（主兵装 = 右下の角。jp_02 の none は機銃）・魚雷は積んでいる本数と撃てるか・機銃は橙のテクスチャで 600 ms 待つ・
-// 扇の当たりは 638〜720・技能の中身は v0.6.7 のまま・一時停止の並び・速力と機関の表示の右端 W − 312・端の印の余白 352・つまむ帯 W − 304 とボタンの上を数えない・
-// Boot は魚雷のボタンの後に機銃のボタンを作る。値（列・段・矩形）は tests/hud-layout。
+// 右側のパネルの配線（v0.6.8 S4。spec-v068 §3.3・§4.1〜4.3、実機 1 回目の直し spec-ip1 D5〜D7）: Phaser の部分はソースで見る（ui-config・game-config は DOM を読むので node で import しない）。
+// パネルは config/hud-layout-config の panelLayout から作る（main_weapon を読まない＝全任務で角が魚雷 R64・その左が機銃 R56）・魚雷は積んでいる本数と撃てるか・機銃は橙のテクスチャで 600 ms 待つ・
+// 扇の当たりは 638〜720・技能は右端の縦一列で丸の絵を R44 に縮め文字 20 px（中身は v0.6.7 のまま）・一時停止の並び・速力と機関の表示の右端 W − 312・端の印の余白 352・
+// つまむ帯 W − 304 とボタンの上を数えない・Boot は魚雷のボタンの後に機銃のボタンを作る。値（列・段・矩形）は tests/hud-layout。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { GUN_FIRING_ALPHA } from '../src/config/arms-config';
@@ -12,21 +12,23 @@ const src = (p: string): string => strip(readFileSync(p, 'utf8'));
 
 describe('ui/weapon-panel', () => {
   const panel = src('src/ui/weapon-panel.ts');
-  it('置き方は panelLayout（主兵装が魚雷なら魚雷が角、ほか（guns・none）は機銃が角）・煙幕は艇・識別は今夜の味方機', () => {
-    expect(panel).toContain("const torpedoPrimary = mission.mainWeapon === 'torpedo';");
-    expect(panel).toContain("const L = panelLayout(GAME_WIDTH, torpedoPrimary ? 'torpedo' : 'guns', { smoke: hasSmoke, identify: telemetry.friendlyEnabled });");
+  it('置き方は panelLayout（main_weapon を読まない＝全任務で角が魚雷・その左が機銃。v0.6.8 実機 1 回目）・煙幕は艇・識別は今夜の味方機', () => {
+    expect(panel).toContain('const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled });');
     expect(panel).toContain('const hasSmoke = getBoatSmokeParams(data, mission.playerBoatId) !== null;');
+    expect(panel).not.toContain('mainWeapon');
+    expect(panel).not.toContain('torpedoPrimary');
   });
-  it('魚雷と扇は艇が積んでいれば（全任務）、機銃は艇に砲があれば（全任務）。副兵装は縮めて小さい文字', () => {
+  it('魚雷と扇は艇が積んでいれば（全任務）、機銃は艇に砲があれば（全任務）。魚雷は倍率 1・文字 22 px（既定）、機銃はいつも縮めて 20 px', () => {
     expect(panel).toContain('const loadout = getLoadout(data, mission);');
     expect(panel).toContain('if (loadout.torpedoes > 0) {');
-    expect(panel).toContain('new TorpedoButton(scene, input, spread, L.torpedo.x, L.torpedo.y, torpedoPrimary ? 1 : SECONDARY_SCALE, () => this.cue.local(EV_TORP_EMPTY, scene.time.now), torpedoPrimary ? HUD_FONT_BUTTON_PX : SECONDARY_FONT_PX);');
+    expect(panel).toContain('new TorpedoButton(scene, input, spread, L.torpedo.x, L.torpedo.y, 1, () => this.cue.local(EV_TORP_EMPTY, scene.time.now));');
     expect(panel).toContain('new SpreadButton(scene, L.spread.x, L.spread.y, L.spread.w, spread, launch.salvo_spacing_deg, launch.salvo_spacing_choices_deg);');
     expect(panel).toContain('if (loadout.gun !== null) {');
     expect(panel).toContain('TEXTURE_KEYS.gunButton,');
-    expect(panel).toContain('torpedoPrimary ? SECONDARY_SCALE : 1,');
-    expect(panel).toContain('{ armMs: TORPEDO_BUTTON_ARM_MS, fontPx: torpedoPrimary ? SECONDARY_FONT_PX : HUD_FONT_BUTTON_PX },');
+    expect(panel).toContain('GUN_BUTTON_SCALE,');
+    expect(panel).toContain('{ armMs: TORPEDO_BUTTON_ARM_MS, fontPx: GUN_BUTTON_FONT_PX },');
     expect(panel).toContain('{ onDown: () => (input.gunHeld = true), onUp: () => (input.gunHeld = false) },');
+    expect(panel).not.toContain('HUD_FONT_BUTTON_PX');
   });
   it('毎フレーム: 魚雷は積んでいる本数（torpedoesLeft ではない）と撃てるか、機銃は弾倉交換（主兵装と新しい道の大きい方）と撃っている間の色', () => {
     expect(panel).toContain('this.torpedoButton?.setRemaining(a.torpedoesAboard);');
@@ -41,11 +43,15 @@ describe('ui/weapon-panel', () => {
     expect(GUN_FIRING_ALPHA).toBeLessThanOrEqual(1);
     expect(panel).toContain('this.cue.update(a, nowMs, this.torpedoHeld);');
   });
-  it('技能の中身は v0.6.7 と同じ（煙幕は離すと・消火と見張りは押している間・識別は押下）。一時停止の並びも同じ', () => {
-    expect(panel).toContain("if (s.kind === 'smoke') this.smokeButton = new HoldButton(scene, s.x, s.y, s.label, { onUp: () => (input.smokeTap = true) });");
-    expect(panel).toContain("this.extinguishButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.extinguishHeld = true), onUp: () => (input.extinguishHeld = false) });");
-    expect(panel).toContain("this.lookoutButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.lookout = true), onUp: () => (input.lookout = false) });");
-    expect(panel).toContain('this.identifyButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.identifyTap = true) });');
+  it('技能の中身は v0.6.7 と同じ（煙幕は離すと・消火と見張りは押している間・識別は押下）。4 つとも丸の絵を R44 / R48 に縮め文字 20 px。一時停止の並びも同じ', () => {
+    const look = ', TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });';
+    expect(panel).toContain('const SKILL_BUTTON_SCALE = R_SKILL / ROUND_BUTTON_RADIUS;');
+    expect(panel).toContain(`if (s.kind === 'smoke') this.smokeButton = new HoldButton(scene, s.x, s.y, s.label, { onUp: () => (input.smokeTap = true) }${look}`);
+    expect(panel).toContain(`this.extinguishButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.extinguishHeld = true), onUp: () => (input.extinguishHeld = false) }${look}`);
+    expect(panel).toContain(`this.lookoutButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.lookout = true), onUp: () => (input.lookout = false) }${look}`);
+    expect(panel).toContain(`this.identifyButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.identifyTap = true) }${look}`);
+    expect(panel.split(look).length - 1).toBe(4);
+    expect(Number(/export const ROUND_BUTTON_RADIUS = (\d+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))?.[1])).toBe(48); // 丸の絵（assets/placeholders）の半径
     expect(panel).toContain('return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton];');
   });
 });
@@ -83,7 +89,7 @@ describe('ボタン', () => {
   });
 });
 
-describe('右側の 2 列に合わせた値（ui-config・速力・機関・端の印・Boot）', () => {
+describe('右側のパネルに合わせた値（ui-config・速力・機関・端の印・Boot）', () => {
   const ui = readFileSync('src/config/ui-config.ts', 'utf8');
   it('ui-config はパネルの関数から（W − 304・352・W − 312）。v0.6.7 の 1 列の y は消した。300 行台の前半のまま', () => {
     const s = strip(ui);

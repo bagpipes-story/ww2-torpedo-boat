@@ -26,9 +26,9 @@ export const GUN_BUTTON_TICK_PX = 10;
 /** 機銃のボタンの撃っている間の濃さ（いつもは ROUND_BUTTON_ALPHA 0.55。識別の点滅の上限 0.95 と同じ。色の掛け算（setTint）だと橙の輪が暗くなった＝レビュー ux-gun-firing-tint-darkens） */
 export const GUN_FIRING_ALPHA = 0.95;
 export const CUE_DOWN_COLOR = '#ffd27a';
-/** 副兵装（列 2）の大きさ（R56 / R64）と、そのボタンの文字 px（主兵装は HUD_FONT_BUTTON_PX 22） */
-export const SECONDARY_SCALE = 0.875;
-export const SECONDARY_FONT_PX = 20;
+/** 機銃のボタン（列 2。全任務で魚雷の左）の大きさ（R56 / R64＝魚雷と同じテクスチャを縮める）と文字 px（魚雷は HUD_FONT_BUTTON_PX 22） */
+export const GUN_BUTTON_SCALE = 0.875;
+export const GUN_BUTTON_FONT_PX = 20;
 /** 魚雷 0 本で魚雷ボタンを押したときの揺れ: 片側の px と全体のミリ秒（出来事のときだけ tween を作る） */
 export const TORPEDO_EMPTY_SHAKE_PX = 4;
 export const TORPEDO_EMPTY_SHAKE_MS = 150;

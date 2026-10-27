@@ -54,7 +54,7 @@ export class BoatHud {
   private lastRudderX = NaN;
 
   constructor(scene: Phaser.Scene) {
-    // 右側の 2 列の兵装・技能のパネル（v0.6.8。config/hud-layout-config）の左に置く（右端 W − 312。v0.6.7 までは右下の魚雷ボタンの左 W − 176）
+    // 右下の兵装（v0.6.8。機銃と魚雷が横に 2 つ。config/hud-layout-config）の左に置く（右端 W − 312。v0.6.7 までは右下の魚雷ボタンの左 W − 176）
     const right = SPEED_HUD_RIGHT_X;
     const bottom = GAME_HEIGHT - HUD_MARGIN;
 

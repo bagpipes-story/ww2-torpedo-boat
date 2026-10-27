@@ -1,6 +1,6 @@
 // 兵装のボタンのテクスチャ（v0.6.8。spec-v068 §3.2・§4.3）: 機銃のボタン＝魚雷のボタン（assets/placeholders の generateTorpedoButtonTexture）と同じ大きさ・塗りで、
 // 輪を橙（GUN_BUTTON_STROKE）にし、輪の内側の上下左右に 10 px の目盛りを 4 本（白黒でも魚雷の輪と見分けられる）。Boot で 1 回だけ作る（CLAUDE.md §7）。
-// 副兵装（列 2）は同じ 1 枚を SECONDARY_SCALE で縮めて使う（当たりも絵といっしょに縮む）。placeholders.ts は 300 行を超えているのでここに置く。
+// 機銃のボタン（列 2。全任務で魚雷の左）はこの 1 枚を GUN_BUTTON_SCALE で縮めて使う（当たりも絵といっしょに縮む）。placeholders.ts は 300 行を超えているのでここに置く。
 import Phaser from 'phaser';
 import { GUN_BUTTON_FILL, GUN_BUTTON_FILL_ALPHA, GUN_BUTTON_STROKE, GUN_BUTTON_TICK_PX } from '../config/arms-config';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';

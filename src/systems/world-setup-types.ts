@@ -33,7 +33,7 @@ export interface WorldSetup {
   playerStart: { x: number; y: number; headingDeg: number };
   /** 岸（南）に接する浅瀬の北の縁 y m（「岸 N m」の矢印の行き先。浅瀬が無ければ岸の線。岸の無い任務は NaN。v0.4.2） */
   coastEdgeY: number;
-  /** 主兵装（v0.4.2）。guns・none（v0.6.3）なら torpedoCapacity 0。v0.6.8 からは右下の角のボタン・「魚雷なし／大発なし」・Briefing の順だけを決め、魚雷と機銃は全任務で両方使える（config/loadout-data） */
+  /** 主兵装（v0.4.2）。guns・none（v0.6.3）なら torpedoCapacity 0。v0.6.8 からは「魚雷なし／大発なし」・Briefing の順だけを決め（右下のボタンの位置は実機 1 回目から全任務で同じ）、魚雷と機銃は全任務で両方使える（config/loadout-data） */
   mainWeapon: MainWeapon;
   boatParams: BoatParams;
   /** 境界から押し戻す余白 m（表示上の船体半分）。煙も同じ距離だけ後ろに置く */

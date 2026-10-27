@@ -209,19 +209,19 @@ describe('Briefing の「条件」のもう一つの兵装の一言（v0.6.8 S5�
 });
 
 describe('Title の操作の一言（v0.6.8 S5）', () => {
-  it('米PT は 1 列の 960 px の内（792 px）、日本は 1,170 px（格子の 1,218 px の内）。どちらも「魚雷と機銃」「隅の大きいボタン」', () => {
+  it('米PT は 1 列の 960 px の内（677 px）、日本は 1,037 px（格子の 1,218 px の内）。どちらも「右下の角で魚雷」「その左で機銃」（v0.6.8 実機 1 回目から全任務で同じ位置）', () => {
     const us = TITLE_HINT_BY_CAMPAIGN_JA['us_pt']!;
     const jp = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
     expect(textWidthPx(us, TITLE_HINT_PX)).toBeLessThanOrEqual(960);
-    expect(Math.round(textWidthPx(us, TITLE_HINT_PX))).toBe(792);
-    expect(Math.round(textWidthPx(jp, TITLE_HINT_PX))).toBe(1170);
+    expect(Math.round(textWidthPx(us, TITLE_HINT_PX))).toBe(677);
+    expect(Math.round(textWidthPx(jp, TITLE_HINT_PX))).toBe(1037);
     for (const h of [us, jp]) {
-      expect(h).toContain('魚雷と機銃');
-      expect(h).toContain('隅の大きいボタン');
+      expect(h).toContain('右下の角で魚雷');
+      expect(h).toContain('その左で機銃');
+      expect(h).not.toContain('隅の大きい'); // 「大きい方が主」は v0.6.8 の初めの 2 列のパネルの言い方（兵装の位置は main_weapon に関わらず同じになった）
       expect(h).not.toContain('角の大きい'); // 扇の角度のボタンと紛れる（レビュー F6）
     }
-    expect(us).toContain('その上で煙幕');
-    expect(us).not.toContain('右上');
+    expect(us).toBe('操作: 左下のスティックで進む ・ 右下の角で魚雷・その左で機銃 ・ 右上で煙幕'); // 煙幕は右端の縦一列のいちばん上
   });
 });
 

@@ -1,5 +1,5 @@
 // 機関の不調（v0.6.5。jp_05。spec-v065 §D.2・R3）の右下の熱の帯: 速力の表示の上（「針路」の文の上端から ENGINE_GAUGE_GAP_PX 上）に字（18 px）と帯（80 × 8 px）を 1 列に。
-// 右端は速力の表示と同じ（W − 312。v0.6.8 の右側の 2 列の左。v0.6.7 までは W − 176）。2 行目が何を出していても見える（予告がいつも 1 か所に出る）。入力は増えない（ボタンは無い）。
+// 右端は速力の表示と同じ（W − 312。v0.6.8 の右下の兵装（機銃と魚雷）の左。v0.6.7 までは W − 176）。2 行目が何を出していても見える（予告がいつも 1 か所に出る）。入力は増えない（ボタンは無い）。
 // §7: 帯は Boot で作った HP バーの白い矩形を setScale するだけ（熱を 1/50 に丸めた値が変わったときだけ）、色は段が変わったときだけ、字は段か不調の残りの秒の整数が変わったときだけ setText。
 // 限界と不調の間は識別ボタンと同じ速さ（IDENTIFY_PULSE_HZ）で帯の濃さだけ点滅する（字は点滅させない＝レビュー ux-4: 薄いときの字が読めなかった）。字・色・幅の刻みの写像は ui/engine-lines（Phaser 非依存でテストする）。
 import Phaser from 'phaser';
@@ -29,7 +29,7 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_OK, type EngineStage } from '../core/engine-trouble';
 import { engineGaugeLabel, engineGaugePulses, engineGaugeStep, engineGaugeTextColor, engineGaugeTint, engineStageKey } from './engine-lines';
 
-/** 帯の右端（速力の表示と同じ。右側は v0.6.8 の 2 列の兵装・技能のパネル）と、帯と字の縦の中心（「針路」の文の上端から ENGINE_GAUGE_GAP_PX 上の下端から、帯の高さの半分上） */
+/** 帯の右端（速力の表示と同じ。その右は v0.6.8 の右下の兵装（機銃・魚雷））と、帯と字の縦の中心（「針路」の文の上端から ENGINE_GAUGE_GAP_PX 上の下端から、帯の高さの半分上） */
 const GAUGE_RIGHT_X = SPEED_HUD_RIGHT_X;
 const GAUGE_BOTTOM_Y = GAME_HEIGHT - HUD_MARGIN - RUDDER_MARKER_HEIGHT - HUD_TEXT_GAP - HUD_HEADING_OFFSET_Y - HUD_FONT_HEADING_PX - ENGINE_GAUGE_GAP_PX;
 const GAUGE_CENTER_Y = GAUGE_BOTTOM_Y - ENGINE_FONT_PX / 2;

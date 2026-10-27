@@ -45,7 +45,7 @@ export class HudScene extends Phaser.Scene {
   private fuelGauge?: FuelGauge;
   private engineHud?: EngineHud; // 右下の機関の熱の帯（v0.6.5。機関の不調のある夜だけ。ui/engine-hud）
   private stick?: VirtualStick;
-  /** 右側の 2 列のパネル（魚雷・扇・機銃・煙幕・消火・見張り・識別と兵装の上の 1 行。v0.6.8。ui/weapon-panel・ui/weapon-cue。置き方は config/hud-layout-config） */
+  /** 右側のパネル（右下の魚雷・扇・機銃、右端の縦一列の煙幕・消火・見張り・識別、兵装の上の 1 行。v0.6.8。ui/weapon-panel・ui/weapon-cue。置き方は config/hud-layout-config） */
   private panel?: WeaponPanel;
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
@@ -83,7 +83,7 @@ export class HudScene extends Phaser.Scene {
 
     this.debugHud = new DebugHud(this, {
       buildLabel: import.meta.env.VITE_BUILD_LABEL,
-      // 短く保つ（長いブランチ名でも右の 2 列のボタンに掛からないよう、1 行目は約 80 文字以内）
+      // 短く保つ（長いブランチ名でも右端の縦一列の技能（いちばん上は煙幕）に掛からないよう、1 行目は約 80 文字以内）
       // ?debug&shiphit=N（v0.4.8）のときだけ「当たり xN」を足す（実機でどちらの当たり判定か分かるように）
       dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s${Number.isFinite(DEBUG_SHIP_HIT_SCALE) ? ` ・ 当たり x${DEBUG_SHIP_HIT_SCALE}` : ''}`,
     });
@@ -102,10 +102,10 @@ export class HudScene extends Phaser.Scene {
       holdStartS: launch.salvo_hold_start_s,
       countStepS: launch.salvo_count_step_s,
     };
-    // 右側の 2 列のパネル（作る順は v0.6.7 と同じ: スティックの後・キーボードの前。前回の値は panel が持つので再開で引きずらない）
+    // 右側のパネル（右下の兵装・右端の技能。作る順は v0.6.7 と同じ: スティックの後・キーボードの前。前回の値は panel が持つので再開で引きずらない）
     this.panel = new WeaponPanel(this, input, data, mission, this.telemetry, spread);
     this.keyboard = new KeyboardInput(this, input);
-    // ピンチズーム（右半分、右側の 2 列とボタンの上を除く）。見張りを離した後もその倍率を保つ
+    // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
     this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);
 

@@ -1,5 +1,5 @@
-// 兵装の data（v0.6.8。spec-v068 §1.1 D2・§2・§3.2）: 魚雷と機銃は全任務で両方（艇が積むもの）。主兵装（missions_seed の main_weapon）は右下の角のボタン・2 行目の
-// 「魚雷なし／大発なし」・Briefing の順だけを決める。ここは艇の魚雷の数・艇の砲（main_weapon に関わらず）・対空と閃光の値を読んで検査する。
+// 兵装の data（v0.6.8。spec-v068 §1.1 D2・§2・§3.2）: 魚雷と機銃は全任務で両方（艇が積むもの）。主兵装（missions_seed の main_weapon）は 2 行目の
+// 「魚雷なし／大発なし」・Briefing の順だけを決める（右下のボタンの位置は実機 1 回目から全任務で同じ）。ここは艇の魚雷の数・艇の砲（main_weapon に関わらず）・対空と閃光の値を読んで検査する。
 // WorldSetup（systems/world-setup）と模擬からは呼ばない（guns・torpedoCapacity・mainWeapon は主兵装だけのまま＝setup の snapshot と 17 の md5 は変わらない）。
 // window を読まない（tests と scripts の node から読める）。
 import { gunBatteryParamsFromData, isGunBatteryDataRecord, type GunBatteryParams } from '../core/gun-battery';
@@ -10,7 +10,7 @@ import { getPrototypeMission, hasHardVariant, type MainWeapon, type PrototypeMis
 /** 1 発の撃墜の確率の上限（起動時の検査。data の値はこれより十分小さい） */
 const AA_HIT_CHANCE_MAX = 0.02;
 
-/** 任務の艇が積むもの（主兵装は mission.mainWeapon。jp_02 の none は「主兵装なし」＝右下の角は機銃） */
+/** 任務の艇が積むもの（主兵装は mission.mainWeapon。jp_02 の none は「主兵装なし」。ボタンの位置は決めない） */
 export interface Loadout {
   primary: MainWeapon;
   torpedoes: number;

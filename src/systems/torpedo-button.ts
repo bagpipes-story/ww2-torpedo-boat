@@ -1,6 +1,6 @@
 // 魚雷ボタン（docs/02 §5: 右下。タップ=1本、長押し→離す=扇状に一斉発射。長押し時間で本数 2 → 3 → 4（v0.4.8。何秒で何本かは data の salvo_hold_start_s・salvo_count_step_s）。扇は隣どうしの間隔が固定）。
 // HUD シーンに置く。結果は共有 InputState に書き、Mission が消費する。
-// v0.6.8: 置き場所と大きさは呼ぶ側（ui/weapon-panel が config/hud-layout-config から。主兵装なら右下の角の R64、副兵装なら左の列の R56＝sizeScale 0.875。当たりも絵といっしょに縮む）。
+// v0.6.8: 置き場所と大きさは呼ぶ側（ui/weapon-panel が config/hud-layout-config から。実機 1 回目から全任務で右下の角の R64＝sizeScale 1。縮めれば当たりも絵といっしょに縮む）。
 // 撃てない間（輪の中・沈み始め・終わりの待ち。ArmsTelemetry.torpedoUsable）は薄くして押下を受けない。0 本で押すと揺れて onEmpty（「魚雷は撃ち尽くした」）。濃さは 1 か所（applyAlpha）で変わったときだけ書く（§7）。
 import Phaser from 'phaser';
 import { TORPEDO_EMPTY_SHAKE_MS, TORPEDO_EMPTY_SHAKE_PX } from '../config/arms-config';
@@ -43,7 +43,7 @@ export class TorpedoButton {
     private readonly spread: SpreadConfig,
     private readonly cx: number,
     cy: number,
-    /** 絵と当たりの倍率（主兵装 1・副兵装 SECONDARY_SCALE。v0.6.8） */
+    /** 絵と当たりの倍率（v0.6.8。実機 1 回目から全任務で 1） */
     private readonly sizeScale: number = 1,
     /** 0 本で押した（揺れの後。HUD の 1 行の文「魚雷は撃ち尽くした」） */
     private readonly onEmpty?: () => void,
@@ -56,7 +56,7 @@ export class TorpedoButton {
       .setDepth(DEPTH.hud)
       .setInteractive();
     this.label = scene.add.text(cx, cy, '', hudTextStyle(fontPx, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
-    // 「一斉 N 本」の下端は円の上端から TORPEDO_SPREAD_LABEL_GAP 上（副兵装は縮めた円の上端）
+    // 「一斉 N 本」の下端は円の上端から TORPEDO_SPREAD_LABEL_GAP 上（縮めたなら縮めた円の上端）
     this.spreadText = scene.add
       .text(cx, cy - TORPEDO_BUTTON_RADIUS * sizeScale - TORPEDO_SPREAD_LABEL_GAP, '', hudTextStyle(HUD_FONT_BUTTON_PX))
       .setOrigin(0.5, 1)

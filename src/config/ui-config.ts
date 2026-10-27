@@ -60,7 +60,7 @@ export const HUD_HIST_BADGE_JA = '［史実］';
 export const HUD_HIST_BADGE_X = HUD_MARGIN + 88;
 
 /** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった）。
- * 半径は魚雷・機銃のボタンのテクスチャの大きさ（主兵装の R64。副兵装は SECONDARY_SCALE で縮める）。置き場所は v0.6.8 から config/hud-layout-config の右側の 2 列 */
+ * 半径は魚雷・機銃のボタンのテクスチャの大きさ（魚雷の R64。機銃は GUN_BUTTON_SCALE で縮める）。置き場所は v0.6.8 から config/hud-layout-config（全任務で右下の角が魚雷・その左が機銃） */
 export const TORPEDO_BUTTON_RADIUS = 64;
 /** 扇の角度ボタン（v0.5.1 実機 1 回目）: 魚雷ボタンの下の小さな横長のボタン（幅は魚雷ボタンの直径・高さは hud-layout-config の SPREAD_H）。押すたびに 狭 → 中 → 広（data の salvo_spacing_choices_deg） */
 export const SPREAD_BUTTON_H = 40;
@@ -196,16 +196,16 @@ export const MUZZLE_FLASH_TINT = 0xfff0a0;
 export const BOAT_HIT_SHAKE_INTENSITY = 0.002;
 export const SMALL_HIT_DAMAGE_RATIO = 0.1;
 
-/** 技能の丸ボタン（煙幕・消火・見張り・識別。docs/02 §5。v0.6.8 から右側の 2 列の上の 2 段＝config/hud-layout-config の R_SKILL）。魚雷ボタンより小さい。タップ判定は魚雷ボタンと同じ閾値 */
+/** 技能の丸ボタン（煙幕・消火・見張り・識別。docs/02 §5）の絵の半径。v0.6.8 実機 1 回目から右端の縦一列で、この絵を config/hud-layout-config の R_SKILL 44 に縮める。魚雷ボタンより小さい。タップ判定は魚雷ボタンと同じ閾値 */
 export const ROUND_BUTTON_RADIUS = 48;
 export const ROUND_BUTTON_ALPHA = 0.55;
 export const ROUND_BUTTON_DISABLED_ALPHA_FACTOR = 0.4;
 export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
-/** ピンチズームが数える指の右端（v0.6.8: 右側の 2 列のパネルの左端 − 16 = W − 304。これより右と、ボタンの上で始まった指はズームに使わない） */
+/** ピンチズームが数える指の右端（v0.6.8: 右下の兵装の左端（機銃の円の左 W − 288）− 16 = W − 304。これより右と、ボタンの上で始まった指はズームに使わない） */
 export const PINCH_BUTTON_COLUMN_X = pinchMaxX(GAME_WIDTH);
 /** ピンチの基準距離の下限（論理 px）。指が重なって距離がほぼ 0 になったときに倍率が跳ねないように */
 export const PINCH_MIN_DIST_PX = 40;
-/** 画面外マーカーの右端の余白（v0.6.8: 352 = 右側の 2 列のパネルの幅 288・隙間 8・距離ラベル「帰投 9900 m」約 112 px の半分 56） */
+/** 画面外マーカーの右端の余白（v0.6.8: 352 = 右下の兵装の幅 288（機銃の円の左まで）・隙間 8・距離ラベル「帰投 9900 m」約 112 px の半分 56） */
 export const TARGET_MARKER_RIGHT_MARGIN = markerRightMargin(GAME_WIDTH);
 /** 右下の速力・舵・針路と機関の熱の帯の右端（v0.6.8: W − 312 = パネルの左端 − 24。v0.6.7 までは W − 176） */
 export const SPEED_HUD_RIGHT_X = speedHudRightX(GAME_WIDTH);
