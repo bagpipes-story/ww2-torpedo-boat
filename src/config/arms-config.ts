@@ -6,9 +6,13 @@ export const ARMS_SHELL_POOL_SIZE = 24;
 /** 対空の曳光弾の絵: プールの大きさと 1 本の体感秒 */
 export const AA_TRACER_POOL = 8;
 export const AA_TRACER_S = 0.12;
-/** 撃墜した機の落ちる絵: プールの大きさと体感秒（回りながら小さく薄くなり、最後に水柱） */
+/** 対空の曳光弾の行き先のずれ（機の位置からの m。[dx0, dy0, dx1, dy1, …] を順に使う＝乱数なし。まず当たらないのが見える） */
+export const AA_TRACER_OFFSETS_M: readonly number[] = [-18, 6, 12, -10, -6, -16, 20, 14, 4, 22, -22, -4, 16, -20, -10, 18];
+/** 撃墜した機の落ちる絵: プールの大きさと実秒（回りながら小さく薄くなり、最後に水柱）・回る角度・最後の大きさの倍率 */
 export const ARMS_WRECK_POOL = 2;
 export const ARMS_WRECK_S = 1.4;
+export const ARMS_WRECK_SPIN_DEG = 200;
+export const ARMS_WRECK_SCALE_TO = 0.5;
 /** 兵装の上の 1 行の文: 魚雷の出来事・撃墜の出来事を出すミリ秒、状態の文を撃ち終えてから残す体感秒 */
 export const ARMS_CUE_TORP_MS = 1600;
 export const ARMS_CUE_DOWN_MS = 2200;

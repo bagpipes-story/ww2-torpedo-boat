@@ -16,9 +16,13 @@ export function patrolWake(band: SpeedStep): boolean {
   return band === 'cruise' || band === 'full';
 }
 
-/** 今の捜索から自艇が見えるか: レーダーは常に、航跡は wake_detect_m 以内、静音（動いている）は自艇の視程以内、停止は見えない */
-export function patrolVisible(s: PatrolState, p: PatrolParams, band: SpeedStep): boolean {
+/**
+ * 今の捜索から自艇が見えるか: レーダーは常に、機銃の閃光（v0.6.8。flashM > 0 の間）は閃光の距離以内、航跡は wake_detect_m 以内、静音（動いている）は自艇の視程以内、停止は見えない。
+ * flashM は世界の兵装（systems/arms-step の flashM）が渡す scalar（模擬は渡さない＝0。17 の md5 は変わらない）
+ */
+export function patrolVisible(s: PatrolState, p: PatrolParams, band: SpeedStep, flashM = 0): boolean {
   if (s.radar) return true;
+  if (flashM > 0 && s.r <= flashM) return true;
   if (patrolWake(band)) return s.r <= p.wakeDetectM;
   if (band === 'silent') return s.r <= p.nearM;
   return false;
@@ -51,8 +55,9 @@ function toHunt(s: PatrolState): number {
  * off: 夜明けのラッチ済み・沈没中・輪の中・座礁中（最初の 1 回で OFF。以後は何もしない）。
  * sortieDone: 夜の出撃が終わった（core/air-sortie の airSortieComplete。出撃中だけ読む）。
  * PA_EV_FIND のとき呼び手は findBearingDeg・findR の隊形で出撃を始める（同じステップの中で）。
+ * flashM: 機銃の閃光の距離（v0.6.8。撃っていなければ 0。patrolVisible へ）
  */
-export function stepPatrolAir(s: PatrolState, p: PatrolParams, band: SpeedStep, off: boolean, sortieDone: boolean, feelDt: number): number {
+export function stepPatrolAir(s: PatrolState, p: PatrolParams, band: SpeedStep, off: boolean, sortieDone: boolean, feelDt: number, flashM = 0): number {
   if (s.phase === PA_OFF) return 0;
   s.t += feelDt;
   if (off) {
@@ -100,7 +105,7 @@ export function stepPatrolAir(s: PatrolState, p: PatrolParams, band: SpeedStep, 
     }
   }
   // 接近・付近の捜索: 見えていて run_radius_m ≤ 距離 ≤ lock_m なら発見（旋回の半径より近くでは発見しない＝受け渡しで機が跳ばない）
-  if (s.r > p.lockM || s.r < p.runRadiusM || !patrolVisible(s, p, band)) return 0;
+  if (s.r > p.lockM || s.r < p.runRadiusM || !patrolVisible(s, p, band, flashM)) return 0;
   s.finds++;
   if (!s.radar) {
     s.findsVisual++;

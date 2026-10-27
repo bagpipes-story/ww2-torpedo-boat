@@ -106,6 +106,7 @@ export function ptResultShown(t: BoatTelemetry, flags: number): boolean {
 export function ptGunShown(t: BoatTelemetry): boolean {
   const p = t.pt;
   if (!(p.enabled && p.gunEnabled && p.gunStatus !== GUN_SAFE && p.alive > 0)) return false;
+  if (t.aaFiring) return false; // 機銃で機を撃っている（v0.6.8。PT の標的が無いときだけ＝撃てるものが無い 13mm/25mm の行を出さない）
   if (p.gunStatus === GUN_FIRING || p.gunStatus === PT_GUN_RELOAD) return true;
   if (!p.detected) return false;
   return p.gunStatus === GUN_OUT_OF_ARC || (p.threatPhase !== PT_ALERT && p.threatPhase !== PT_RUN_IN && p.threatPhase !== PT_CHASE);
@@ -164,7 +165,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.shallowState === SHALLOW_GROUNDED) return MISSION_SHALLOWS;
   if ((flags & MODE_FLAG_ESCORT_HIT) !== 0) return MISSION_ESCORT_HIT;
   // 射撃（押している間）と大発の逃走は浅瀬の警告を後ろに付けて浅瀬より上（v0.4.2。浅瀬が狩り場）。座礁だけはその上
-  if (t.gunMission && t.gunStatus !== GUN_SAFE && t.bargesSunk + t.bargesBeached < t.bargesTotal) return MISSION_GUN;
+  if (t.gunMission && t.gunStatus !== GUN_SAFE && !t.aaFiring && t.bargesSunk + t.bargesBeached < t.bargesTotal) return MISSION_GUN; // 機を撃っている間（v0.6.8）は「射程に大発なし」を出さない
   if (bargeRunning(t)) return MISSION_BARGE_RUN;
   if (t.gunMission && t.gunStatus === GUN_SAFE && t.enemySighted) return MISSION_BARGE_SIGHTED;
   if (t.batteryInArc) return MISSION_BATTERY;

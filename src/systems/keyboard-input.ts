@@ -1,4 +1,4 @@
-// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（砲の任務では押している間 射撃。v0.4.2）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
+// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
 // 方向キーはスティックに触れている間は無視する。
 import Phaser from 'phaser';
 import type { InputState } from '../core/input-state';
@@ -22,6 +22,7 @@ interface Keys {
   x: Phaser.Input.Keyboard.Key;
   z: Phaser.Input.Keyboard.Key;
   f: Phaser.Input.Keyboard.Key;
+  g: Phaser.Input.Keyboard.Key;
 }
 
 export class KeyboardInput {
@@ -52,12 +53,13 @@ export class KeyboardInput {
           x: Phaser.Input.Keyboard.KeyCodes.X,
           z: Phaser.Input.Keyboard.KeyCodes.Z,
           f: Phaser.Input.Keyboard.KeyCodes.F,
+          g: Phaser.Input.Keyboard.KeyCodes.G,
         }) as Keys)
       : null;
   }
 
   /**
-   * 毎フレーム呼ぶ。Space は魚雷 1 本、Shift を離すと煙幕。X/Z は押した瞬間と離した瞬間だけ書く（毎フレーム isDown で上書きすると、
+   * 毎フレーム呼ぶ。Space は魚雷 1 本、G は機銃（押している間）、Shift を離すと煙幕。G/X/Z は押した瞬間と離した瞬間だけ書く（毎フレーム isDown で上書きすると、
    * 同じフラグを使う右側のタッチボタンの押下が次のフレームで消えてしまう）。
    * ウィンドウがフォーカスを失うと Phaser はキーを黙ってリセットし JustUp が来ないので、自分が立てたフラグはキーが上がっていれば戻す。
    * 矢印の合成方向が目標方位、押していなければ停止（針路は保つ）。C で全速
@@ -65,12 +67,12 @@ export class KeyboardInput {
   update(): void {
     if (!this.keys) return;
     const k = this.keys;
-    if (Phaser.Input.Keyboard.JustDown(k.space)) {
-      this.input.fireTap = true;
+    if (Phaser.Input.Keyboard.JustDown(k.space)) this.input.fireTap = true;
+    if (Phaser.Input.Keyboard.JustDown(k.g)) {
       this.input.gunHeld = true;
       this.kbGun = true;
     }
-    if ((Phaser.Input.Keyboard.JustUp(k.space) || !k.space.isDown) && this.kbGun) {
+    if ((Phaser.Input.Keyboard.JustUp(k.g) || !k.g.isDown) && this.kbGun) {
       this.input.gunHeld = false;
       this.kbGun = false;
     }
