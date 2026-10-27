@@ -185,9 +185,9 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     const a = getDawnAir(gameData, 'jp_05');
     expect([a.control, a.playAs, a.shipsAtDawn, a.labelJa]).toEqual(['contested', 'own', 'none', '昼の空はおおむね味方（ラバウルの零戦）']);
     expect(a.refs.length).toBe(3);
-    // 終わり際の魚雷待ちの理由は jp_06 の文をそのまま（jp_05 は魚雷を撃たないので効かない）
+    // 終わり際の魚雷待ちの理由は jp_06 の文をそのまま（v0.6.8 から jp_05 の魚雷は狙う艦が無いので発射の時に決着し、待たない）
     const src = String((protoOf('jp_05')['return_point'] as Rec)['torpedo_end_settle_s_source']);
-    expect(src).toBe(`${String((protoOf('jp_06')['return_point'] as Rec)['torpedo_end_settle_s_source'])}（jp_05 は魚雷を撃たないので効かない）`);
+    expect(src).toBe(`${String((protoOf('jp_06')['return_point'] as Rec)['torpedo_end_settle_s_source'])}（jp_05 の魚雷は狙う艦が無いので発射の時に決着し、待たない。v0.6.8）`);
     for (const k of ['main_weapon_source', 'duration_s_source', 'fuel_allotment_gal_source', 'hazards_source']) expect(String(protoOf('jp_05')[k]), k).toContain('design (v0.6.3');
   });
 });
@@ -485,20 +485,17 @@ describe('jp_05 の Result（v0.6.3。spec §D.4）', () => {
 const TITLE_HINT_MAX_PX: Readonly<Record<string, number>> = { us_pt: TITLE_ROW_W, jp_hard: TITLE_GRID_W };
 
 describe('Title の日本の操作の一言（v0.6.3）', () => {
-  it('魚雷のある任務（jp_06）と機銃の任務（jp_05「鹵獲艇の哨戒」の 13mm・jp_01「夜の輸送護衛」の 25mm。v0.6.4）・撃たない任務（jp_02「孤島の哨戒」。v0.6.7）のどれでも本当。煙幕なし。幅はキャンペーンごと（米 960・日本 1,218）の内', () => {
+  it('魚雷のある任務（jp_06）と機銃が主の任務（jp_05「鹵獲艇の哨戒」の 13mm・jp_01「夜の輸送護衛」の 25mm・jp_02「孤島の哨戒」の 13mm）のどれでも本当（v0.6.8 から全任務で魚雷と機銃の両方）。煙幕なし。幅はキャンペーンごと（米 960・日本 1,218）の内', () => {
     const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
-    // 任務の名前で言う（「哨戒は撃たない」は米PT の哨戒が撃たないとも読めた。v0.6.3 レビュー）。口径は言わない（「13mm機銃」は jp_01 の 25mm で嘘になる。v0.6.4）
-    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷（鹵獲艇の哨戒と輸送護衛は機銃・孤島の哨戒は撃たない）・ 煙幕なし（暗さと静音が頼り）');
-    expect(hint).toContain(getBriefingRecord(gameData, 'jp_05').titleJa); // 「鹵獲艇の哨戒」で指す任務
-    expect(hint).toContain('輸送護衛'); // jp_01 の title_ja「夜の輸送護衛」の一部
-    expect(getBriefingRecord(gameData, 'jp_01').titleJa).toContain('輸送護衛');
-    expect(getPrototypeMission(gameData, 'jp_05').mainWeapon).toBe('guns');
-    expect(getPrototypeMission(gameData, 'jp_01').mainWeapon).toBe('guns');
-    expect(hint).toContain('機銃'); // 「13mm機銃」「25mm機銃」（gun_battery.label_ja）のどちらにも本当
+    // v0.6.8: 魚雷と機銃は全任務で両方使えるので任務の名で言い分けない。口径は言わない（「13mm機銃」は jp_01 の 25mm で嘘になる。v0.6.4）。「隅の大きいボタン」（「角の大きい方」は扇の角度と紛れる。spec-v068 レビュー F6）
+    expect(hint).toBe('操作: 左下のスティックで進む ・ 右下で魚雷と機銃（隅の大きいボタンが主。魚雷が効くのは駆逐艦だけ）・ 煙幕なし（暗さと静音が頼り）');
+    expect(hint).toContain('魚雷と機銃');
+    expect(hint).toContain('駆逐艦'); // 魚雷が効くのは jp_06 の駆逐艦だけ（PT・機の任務の魚雷は狙う艦なし）
+    expect(hint).toContain('煙幕なし');
+    expect(hint).not.toContain('撃たない'); // v0.6.7 の「孤島の哨戒は撃たない」は嘘になった（13mm で機を撃てる）
+    expect(hint).not.toContain('13mm');
     for (const id of ['jp_05', 'jp_01']) expect(buildWorldSetup(gameData, id).guns!.label, id).toContain('機銃');
-    expect(getPrototypeMission(gameData, 'jp_06').mainWeapon).not.toBe('none');
-    // v0.6.7: jp_02「孤島の哨戒」は撃たない（main_weapon none）
-    expect(hint).toContain(`${getBriefingRecord(gameData, 'jp_02').titleJa}は撃たない`);
+    expect(getPrototypeMission(gameData, 'jp_06').mainWeapon).toBe('torpedo');
     expect(getPrototypeMission(gameData, 'jp_02').mainWeapon).toBe('none');
     expect(Object.keys(TITLE_HINT_BY_CAMPAIGN_JA).sort()).toEqual(['jp_hard', 'us_pt']);
     for (const [k, v] of Object.entries(TITLE_HINT_BY_CAMPAIGN_JA)) expect(textWidthPx(v, TITLE_HINT_PX), k).toBeLessThanOrEqual(TITLE_HINT_MAX_PX[k]!);

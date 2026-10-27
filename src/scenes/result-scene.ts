@@ -31,7 +31,7 @@ import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import type { BargeResult, ConvoyResult, EngineResult, EscortResult, GunboatResult, PatrolResult, PtResult } from '../ui/result-types';
+import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EscortResult, GunboatResult, PatrolResult, PtResult } from '../ui/result-types';
 import { resultBodyLines } from '../ui/result-body';
 
 export type { MissionEndReason } from '../core/mission-flow';
@@ -106,6 +106,8 @@ export interface MissionResult {
   seaplaneBombs: number;
   seaplaneBombHits: number;
   seaplaneDodgeS: number[];
+  /** 水上機を撃墜した（v0.6.8。「敵機: … 撃墜（…）」。落とさなかった夜は鍵ごと無い） */
+  seaplaneDowned?: boolean;
   /** 任務の目標を達した（駆逐艦の撃沈／大発のノルマ。v0.4.2 で destroyerSunk から分けた） */
   objectiveDone: boolean;
   /** 大発掃討（v0.4.2）の記録。任務に大発がいなければ null */
@@ -123,6 +125,7 @@ export interface MissionResult {
   raidLine: string;
   dawn: DawnResult; // 夜明け（v0.6.1。systems/dawn-telemetry の dawnResult）: ラッチ・輪の外・夜明け後の秒・空の持ち主・空襲の集計（見出し・帰投点 ×0.9・夜明けの行）
   patrol: PatrolResult | null; // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry の patrolResult）の記録。無い任務は null（本文の 2 行・得点の内訳に撃沈なし・頭の行なし）
+  arms?: ArmsResult; // 兵装の新しい道（v0.6.8。systems/arms-telemetry の armsResultPart）: 艦への機銃・対空・狙う艦の無い魚雷を使った夜だけ（本文の後ろに 1 行。点は無い）
 }
 
 export class ResultScene extends Phaser.Scene {

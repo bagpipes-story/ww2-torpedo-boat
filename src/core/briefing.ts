@@ -9,9 +9,12 @@ export const MENU_STATUS_PLAYABLE = '出撃準備 →';
 export const NO_WEAPON_BRIEFING_JA = '魚雷はPTの下を抜ける（撃たない）';
 /** 米PT の任務で主兵装が砲（v0.6.3 実機 1 回目。jp_05 の T-14 の 13mm）の「条件」の武器の句。和文の中に半角スペースを入れない（同じ理由）。v0.6.4 から ptGunBriefingJa('13mm機銃') と同じ文 */
 export const PT_GUN_BRIEFING_JA = '13mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）';
-/** 夜の哨戒機の任務（v0.6.7。jp_02。main_weapon none・魚雷なし）の「条件」の武器の句と、月の行の「見つかる…」の差し替え（空からの見え方。距離は門番の値から） */
-export const PATROL_WEAPON_BRIEFING_JA = '武器なし（止まって隠れ、投下で転舵）';
-/** 同じ任務の「条件」の武器の句の全体: 武器なしの句と、航跡が出る速さ（自艇の静音の上限。v0.6.7 レビュー ux:ux-7: 規則の 1 つ目「14 kt を超えると航跡」が出撃の前にどこにも無かった）。「・」の後はノーブレークスペース（weaponPartJa と同じ理由） */
+/**
+ * 夜の哨戒機の任務（v0.6.7。jp_02。main_weapon none）の「条件」の武器の句と、月の行の「見つかる…」の差し替え（空からの見え方。距離は門番の値から）。
+ * v0.6.8 から 13mm で機を撃てる（1 発 0.5%・速いほど下がる。hit_rate_model.anti_aircraft）ので「武器なし」ではなく「機銃は機にまず当たらない」（v0.6.7 は「武器なし（…）」）
+ */
+export const PATROL_WEAPON_BRIEFING_JA = '機銃は機にまず当たらない（止まって隠れ、投下で転舵）';
+/** 同じ任務の「条件」の武器の句の全体: 機銃の句と、航跡が出る速さ（自艇の静音の上限。v0.6.7 レビュー ux:ux-7: 規則の 1 つ目「14 kt を超えると航跡」が出撃の前にどこにも無かった）。「・」の後はノーブレークスペース（weaponPartJa と同じ理由） */
 export const patrolWeaponBriefingJa = (quietKt: number): string => `${PATROL_WEAPON_BRIEFING_JA} ・\u00a0航跡は ${Math.round(quietKt)} kt 超`;
 export const patrolAirDetectJa = (wakeM: number, nearM: number): string => `空から 航跡 ${Math.round(wakeM)} m／動く船体 ${Math.round(nearM)} m／停止は見えない`;
 
@@ -165,6 +168,11 @@ export interface BriefingNumbers {
   aimAssistJa?: string;
   /** 「条件」の武器の句の差し替え（v0.6.3。撃たない任務だけ。無ければ砲か魚雷の本数） */
   weaponJa?: string;
+  /**
+   * 「条件」の武器の句の後ろに足す、もう一つの兵装の一言（v0.6.8。魚雷と機銃は全任務で両方使える。ui/arms-lines の armsBriefingJa が WorldSetup だけから）:
+   * 魚雷が主兵装で艦の任務（us_01・us_02・jp_06）は「機銃は艦に効かない」、大発の任務（us_03）は「魚雷は大発の下を抜ける」。米PT の任務（武器の句が既に「魚雷はPTの下を抜ける」）と jp_02 は鍵ごと省く
+   */
+  secondaryJa?: string;
   /** 月の行の「見つかる 巡航 N m／静音 N m」の差し替え（v0.6.7。夜の哨戒機の任務だけ＝patrolAirDetectJa。無い任務では鍵ごと出ない） */
   airDetectJa?: string;
 }
@@ -181,11 +189,13 @@ export function absentJa(ids: readonly string[], labelOf: (id: string) => string
 
 /**
  * 条件の武器の句（区切りの「・」から）。撃たない任務（v0.6.3）の句は「・」の後をノーブレークスペースにする（v0.6.3 レビュー: 長い句が次の行へ送られ、
- * 「・」が行末に残った。区切りの前の半角スペースで折り返す）。ほかの任務は今までどおり「・ 」
+ * 「・」が行末に残った。区切りの前の半角スペースで折り返す）。ほかの任務は今までどおり「・ 」。
+ * もう一つの兵装の一言（v0.6.8。secondaryJa）は武器の句の後ろに「 ・」＋ノーブレークスペース（同じ理由）。無い任務は今までの文のまま
  */
 function weaponPartJa(n: BriefingNumbers): string {
-  if (n.weaponJa !== undefined) return `・\u00a0${n.weaponJa}`;
-  return `・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}`;
+  const sec = n.secondaryJa ? ` ・\u00a0${n.secondaryJa}` : '';
+  if (n.weaponJa !== undefined) return `・\u00a0${n.weaponJa}${sec}`;
+  return `・ ${n.gunsLabel ? `砲\u00a0${n.gunsLabel}` : `魚雷 ${n.torpedoes} 本`}${sec}`;
 }
 
 /**

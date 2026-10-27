@@ -44,14 +44,14 @@ describe('jp_02 の Briefing（spec §D.4）', () => {
   const rec = { ...getBriefingRecord(gameData, 'jp_02', false), hazardIds: S02.hazardsTonight, absentHazardIds: S02.absentHazards };
   const rows = briefingRows(rec, briefingNumbers(S02, '見越し点マーカー（解放済み）'), (e) => enemyNameJa(gameData, e), (h) => riskLabelJa(gameData, h));
   const NB = ' ';
-  it('目的・成功・月・敵・危険・条件の字（武器なし・空からの見え方・北東から。見越し点マーカーの句は出さない）', () => {
+  it('目的・成功・月・敵・危険・条件の字（機銃は機にまず当たらない（v0.6.8。v0.6.7 は武器なし）・空からの見え方・北東から。見越し点マーカーの句は出さない）', () => {
     expect(rows.map((r) => [r.label, r.text])).toEqual([
       ['目的', '哨戒の帰りに米の飛行艇2機のレーダーに捉えられた。最初の爆撃は全速で走り投下で転舵。その後も航跡と動く船体を捜しに何度も来る。来たら止まって隠れ、南西の礁湖へ帰る'],
       ['成功', '生還。レーダーの後に一度も見つからず夜明け前に帰れば回避の点（帰投地点は南西の青い輪）'],
       ['月', '月没後 ・ 見える 900 m ・ 空から 航跡 4200 m／動く船体 900 m／停止は見えない'],
       ['敵', '米飛行艇 ×2（北東から）'],
       ['危険', '夜の哨戒機、夜明けの空襲'],
-      ['条件', `夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・${NB}武器なし（止まって隠れ、投下で転舵） ・${NB}航跡は 14 kt 超`],
+      ['条件', `夜明けまで 220 秒（以後は空襲） ・ 燃料 32 gal ・${NB}機銃は機にまず当たらない（止まって隠れ、投下で転舵） ・${NB}航跡は 14 kt 超`],
     ]);
     expect(S02.hazardsTonight).toEqual(['patrol_air', 'dawn_air_strike']);
     expect(S02.absentHazards).toEqual([]);

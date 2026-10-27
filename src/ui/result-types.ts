@@ -1,7 +1,8 @@
 // Result の材料の型のうち任務ごとの部分（v0.6.3 で result-scene から切り出し。中身はそのまま。型だけ）。result-scene.ts が再 export する（今までの import のため）。
 // v0.6.3: 米PT の記録（PtResult）を足した。実機 1 回目: T-14 の 13mm の記録（射撃・命中・撃退・撃沈・閃光が最初）と enemies.json の id。実機 2 回目: 連射と制圧の数。
 // v0.6.4: 味方の大発の輸送隊の記録（ConvoyResult）と、米PT の標的スロットの欄（大発への航過・最初に捉えた標的・砲の名）。v0.6.5: 機関の不調の記録（EngineResult）。
-// v0.6.6: 隼艇の僚艇の記録（GunboatResult。jp_01 のハード）。
+// v0.6.6: 隼艇の僚艇の記録（GunboatResult。jp_01 のハード）。v0.6.8: 兵装の新しい道の記録（ArmsResult。使った夜だけ）。
+import type { BlindKind } from '../core/arms-cue';
 import type { SpeedStep } from '../core/boat-motion';
 
 /** 大発掃討の記録（v0.4.2）: 隻数・撃破・上陸・ノルマ、射撃の発射と命中、最初に撃った距離 m と速力帯、最初に目で気づかれた距離 m（NaN なら気づかれる前に撃った）、撃破の距離の最小・最大 m、13mm の命中数と被害 HP。実機で数値を合わせる根拠 */
@@ -127,4 +128,14 @@ export interface PatrolResult {
   passes: number; passesWake: number; hides: number; finds: number; findsVisual: number;
   bombs: number; hits: number; damage: number; dodgeS: number[];
   restartDelayed: number;
+}
+
+/**
+ * 兵装の新しい道の記録（v0.6.8。spec-v068 §4.7。systems/arms-telemetry の armsResultPart）: 艦へ撃った発数と命中（水柱だけ・効かない）、機へ撃った発数と撃墜（うち水上機・夜の出撃の哨戒機）、
+ * 狙う艦の無い魚雷の本数とその種類（大発の下・PT の下・艦なし）。艦への機銃・対空・狙う艦の無い魚雷をどれも使わなかった夜は鍵ごと無い（Result は今までの文のまま）
+ */
+export interface ArmsResult {
+  shipRounds: number; shipHits: number;
+  aaRounds: number; downs: number; downsSeaplane: number; downsSortie: number;
+  blindTorpedoes: number; blindKind: BlindKind;
 }

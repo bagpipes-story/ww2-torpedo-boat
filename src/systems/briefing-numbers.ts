@@ -3,6 +3,7 @@ import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, patrolAirDetectJa, patrolW
 import { dawnConditionJa } from '../core/dawn-air';
 import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
+import { armsBriefingJa } from '../ui/arms-lines';
 import type { WorldSetup } from './world-setup';
 
 /** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */
@@ -13,8 +14,10 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(aimAssistJa && !s.ptBoats && !s.patrolAir ? { aimAssistJa } : {}),
     // 米PT の任務（v0.6.3）は条件の武器の句: 砲の名から（実機 1 回目から jp_05 は T-14 の 13mm、v0.6.4 の jp_01 は T-38 の 25mm）か撃たない（none）。他の任務は鍵ごと省く
     ...(s.ptBoats ? { weaponJa: s.guns ? ptGunBriefingJa(s.guns.label) : NO_WEAPON_BRIEFING_JA } : {}),
-    // 夜の哨戒機の任務（v0.6.7。jp_02）: 武器なしの句と航跡の出る速さ（静音の上限）、月の行の空からの見え方（航跡・動く船体・停止）。見越し点マーカーは出さない（魚雷が無い）。他の任務は鍵ごと省く
+    // 夜の哨戒機の任務（v0.6.7。jp_02）: 機銃の句（v0.6.8。v0.6.7 は武器なし）と航跡の出る速さ（静音の上限）、月の行の空からの見え方（航跡・動く船体・停止）。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
     ...(s.patrolAir ? { weaponJa: patrolWeaponBriefingJa(s.patrolAir.gate.quietKt), airDetectJa: patrolAirDetectJa(s.patrolAir.gate.wakeDetectM, s.patrolAir.gate.nearM) } : {}),
+    // もう一つの兵装の一言（v0.6.8。魚雷と機銃は全任務で両方使える）: 艦の任務は「機銃は艦に効かない」、大発の任務は「魚雷は大発の下を抜ける」。WorldSetup だけから（ui/arms-lines）。無い任務は鍵ごと省く
+    ...secondaryPart(s),
     // 輸送隊の任務（v0.6.4 レビュー ux-6。jp_01）は帰投地点の方角を自艇の出発点から（中心からの「南東」は出発点からは東・上陸の先頭からは北東だった）。他の任務は鍵ごと省く
     ...(s.convoy ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {}),
     visM: playerVisRangeM(s.vis),
@@ -31,6 +34,12 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     boundsW: s.mission.bounds.width,
     boundsH: s.mission.bounds.height,
   };
+}
+
+/** Briefing を作るときの 1 回だけ（確保はここだけ） */
+function secondaryPart(s: WorldSetup): { secondaryJa?: string } {
+  const j = armsBriefingJa(s);
+  return j ? { secondaryJa: j } : {};
 }
 
 /**

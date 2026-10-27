@@ -13,7 +13,7 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
-import { refreshArmsTelemetry } from './arms-telemetry';
+import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
@@ -181,9 +181,11 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     extinguishHoldS: w.damageParams.extinguishHoldS * w.extinguishHoldScale,
     ...stormResultFields(w),
     ...seaplaneResultFields(w),
+    ...(w.arms?.seaplaneDowned ? { seaplaneDowned: true } : {}), // 水上機を撃墜した（v0.6.8）。落とさなかった夜は鍵ごと無い
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
     dawn: dawnResult(w),
     patrol: patrolResult(w), // 夜の哨戒機（v0.6.7。jp_02）の記録。無い任務は null
+    ...armsResultPart(w), // 兵装の新しい道（v0.6.8）: 使った夜だけ arms の鍵（本文の後ろに 1 行）
   };
 }

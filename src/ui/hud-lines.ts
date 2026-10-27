@@ -117,10 +117,12 @@ export function seaplaneLine(t: BoatTelemetry, distStep: number, shallowStep: nu
   return { text: withWarnings(text, t, shallowStep, stormWarn), color: HUD_COLOR_WARN };
 }
 
-/** Result の「敵機:」の行（任務に水上機がいるときだけ）: 来ず / 見失わせただけ / 攻撃を受けた（弾切れで去った）/ 発見確定の後に途中で終了 */
-export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[] }): string {
+/** Result の「敵機:」の行（任務に水上機がいるときだけ）: 来ず / 見失わせただけ / 撃墜した（v0.6.8。機銃の対空）/ 攻撃を受けた（弾切れで去った）/ 発見確定の後に途中で終了 */
+export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[]; seaplaneDowned?: boolean }): string {
   if (r.seaplaneSorties === 0) return '敵機: 来ず';
   const lostPart = r.seaplaneLost > 0 ? `見失わせた ${r.seaplaneLost} 回（減速まで ${Number.isNaN(r.seaplaneSlowReactS) ? '帯に隠れた' : `${r.seaplaneSlowReactS.toFixed(1)} 秒`}）` : '';
+  // 撃墜（v0.6.8）: 結果の鍵は「打ち切り」のまま（4 は使わない＝ui/mission-line-air の 2 ビットの鍵と重なる）なので、落とした印で先に分ける
+  if (r.seaplaneDowned) return `敵機: ${lostPart ? `${lostPart} → ` : ''}撃墜（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
   if (r.seaplaneOutcome === SP_OUT_BOMBED) {
     const dodge = r.seaplaneDodgeS.slice(0, r.seaplaneBombs).map((s) => (Number.isNaN(s) ? '—' : s.toFixed(1))).join('/');
     return `敵機: ${lostPart ? `${lostPart} → ` : ''}照明弾の下 ${r.seaplaneFlareLitS.toFixed(1)} 秒 ・ 砲撃 ${r.seaplaneShellsUnderFlare} 発 ・ 爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits} ・ 転舵 ${dodge} 秒`;
