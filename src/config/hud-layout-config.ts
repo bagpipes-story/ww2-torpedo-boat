@@ -1,7 +1,7 @@
 // 右側の 2 列の兵装パネルの置き方（v0.6.8。spec-v068 §1.2・§4.1・§4.2。論理 px、高さ 720・幅 W 1280〜1584）。spec の layout.mjs を 1 対 1 に写した（重なりの検査は tests/hud-layout）。
 // 右下の角（列 1）に主兵装（R64。v0.6.7 と同じ位置の類）、そのすぐ左（列 2）にもう一つの兵装（R56）、扇は魚雷の下（v0.5.1 のユーザーの要望「発射ボタンの下に小さく」。
 // 見た目はホームバーの帯 682〜720 より上）、技能（R48）はその上の 2 段（1 段目 y 400: 外 = 煙幕（米）／見張り（日）・内 = 消火、2 段目 y 280（米だけ）: 外 = 識別・内 = 見張り）。
-// 速力・機関の表示の右端は W − 312、端の印の右の余白 348、つまむ帯は W/2〜W − 304。何も import しない（tests が node で読んでも DOM を引かない。title-layout-config と同じ）。
+// 速力・機関の表示の右端は W − 312、端の印の右の余白 352、つまむ帯は W/2〜W − 304。何も import しない（tests が node で読んでも DOM を引かない。title-layout-config と同じ）。
 
 export const HUD_LAYOUT_H = 720;
 export const HUD_LAYOUT_M = 24;
@@ -27,8 +27,9 @@ export const TEXT_GAP = 8;
 export const HIT_PAD = 1.8;
 /** 当たりの最小（44 pt） */
 export const MIN_HIT = 81;
-/** 端の印の文の半幅・つまむ帯と兵装の間・舵の棒の半幅・端の印の文字 px（速力の表示の避ける角の左端） */
-export const MARKER_LABEL_HALF = 52;
+/** 端の印の文の半幅（4 桁の「帰投 9900 m」18 px の 111.85 px の半分を切り上げ。地図は 6 km 四方までなので 4 桁まで。52 だと文の右端がパネルの左 − 4 px＝レビュー ux-marker-cue-4px）・
+ * つまむ帯と兵装の間・舵の棒の半幅・端の印の文字 px（速力の表示の避ける角の左端） */
+export const MARKER_LABEL_HALF = 56;
 export const PINCH_GAP = 16;
 export const RUDDER_HALF = 120;
 export const MARKER_PX = 18;
@@ -93,7 +94,7 @@ export function speedHudRightX(W: number): number {
   return panelLeftX(W) - HUD_LAYOUT_M;
 }
 
-/** 端の印の右の余白（348。印の文の右端 ≤ パネルの左端 − 8） */
+/** 端の印の右の余白（352。印の文の右端 ≤ パネルの左端 − 8） */
 export function markerRightMargin(W: number): number {
   return W - panelLeftX(W) + TEXT_GAP + MARKER_LABEL_HALF;
 }

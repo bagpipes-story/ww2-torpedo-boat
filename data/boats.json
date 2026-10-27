@@ -189,7 +189,7 @@
         "hull_hp": "design (90。Elco 80ft の 100 より一回り小さい。v0.4.4: 僚艇（同型）の HP にも使う)",
         "damage.*": "design (v0.4.4。us_elco80 と同じ値。crew 12 なので casualties_per_hp 0.1 × 90 = 9 名まで死傷し、浮いている限り 3 名以上が残る)",
         "sea_state_limit": "design (4。us_01 の暴風は sea_state 5 なので、帯の中で安全速力を超えると叩きつけ)",
-        "gun_battery": "design (v0.6.8。ユーザー「魚雷ボタンと機銃ボタンは常に両方表示させ、両方常に使用できる仕様に」で us_01 の Elco 77ft にも艇の砲の値が要る。史実: .50 口径（12.7mm）連装銃座 ×2 だけ（docs/01 の米PT の砲の行「.50 連装 × 2」。high）。発射速度は docs/01 に無く design: us_elco80 の 20mm・12.7mm の組 480 発/分（5 門ぶん）を 4 門に比べて 400（ゲームの 1 発は曳光弾 1 本の束）。damage・shell_speed_mps・dispersion_m・splash_radius_m と range_m・effective_m・dead_cone_deg・muzzle_flash_reveal_m・spread_factor は us_elco80 の 20mm・12.7mm の組と同じ（elco80 の値は変えない）。艦には効かない（命中は水柱と「艦には効かない」だけ）。機への撃墜の確率は hit_rate_model.json の anti_aircraft)",
+        "gun_battery": "design (v0.6.8。ユーザー「魚雷ボタンと機銃ボタンは常に両方表示させ、両方常に使用できる仕様に」で us_01 の Elco 77ft にも艇の砲の値が要る。Elco 77ft の砲の行は docs/01 に無い（米PT 一般の行は「.50 連装 × 2 と 20mm…」）。77ft は .50 口径（12.7mm）連装 ×2 とした（design）。発射速度は us_elco80 の 20mm・12.7mm の組 480 発/分（5 門）の 4/5＝384 を丸めて 400（design。ゲームの 1 発は曳光弾 1 本の束）。damage・shell_speed_mps・dispersion_m・splash_radius_m と range_m・effective_m・dead_cone_deg・muzzle_flash_reveal_m・spread_factor は us_elco80 の 20mm・12.7mm の組と同じ（elco80 の値は変えない）。艦には効かない（命中は水柱と「艦に効かず閃光で見つかる」だけ）。機への撃墜の確率は hit_rate_model.json の anti_aircraft)",
         "others": "design"
       },
       "notes": "MTB Sqn 3（フィリピン 1941-42）の艇。v0.4.4 の要人脱出（us_01）で自艇と僚艇に使う。"

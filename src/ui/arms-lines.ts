@@ -1,6 +1,6 @@
 // 兵装の文（v0.6.8。spec-v068 §4.5〜§4.7）: 右の兵装の上の 1 行（ui/weapon-cue）の文と色。番号は core/arms-cue（世界の systems/arms-step が書く出来事・状態と、HUD だけの EV_TORP_EMPTY）。
 // DOM 無し（色は hud-text-config と arms-config。tests が node で読む）。どの文も 22 px で 264 px 以内（tests/arms-lines）。
-// 出来事: 狙う艦の無い魚雷（大発の下・PT の下・艦なし）・撃墜（空襲の機は「残り N 機」＝この波の生きている機）・0 本で魚雷を押した。状態（機銃を押している間）: 艦には効かない・対空・射界外・射程に敵なし・煙幕・弾倉交換。
+// 出来事: 狙う艦の無い魚雷（大発の下・PT の下・艦なし）・撃墜（空襲の機は「残り N 機」＝この波の生きている機）・0 本で魚雷を押した。状態（機銃を押している間）: 艦に効かず閃光で見つかる・対空・射界外・射程に敵なし・煙幕・弾倉交換。
 // S5: Briefing の「条件」のもう一つの兵装の一言（armsBriefingJa。WorldSetup だけから）と Result の 1 行（armsResultLineJa。使った夜だけ）。
 import { ARMS_CUE_DOWN_MS, ARMS_CUE_TORP_MS, CUE_DOWN_COLOR } from '../config/arms-config';
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
@@ -48,7 +48,7 @@ export function armsCueJa(code: number, n: number): ArmsCueLine {
     case EV_TORP_EMPTY:
       return { text: '魚雷は撃ち尽くした', color: HUD_COLOR_STRONG };
     case ST_SHIP:
-      return { text: '艦には効かない', color: HUD_COLOR_WARN };
+      return { text: '艦に効かず閃光で見つかる', color: HUD_COLOR_WARN }; // 撃てば閃光で 1 秒 1,200 m の敵に見つかる（レビュー ux-flash-undisclosed: Briefing は 2 行に収まらないので、撃っている間のこの文で言う。12 字 = 264 px）
     case ST_AA:
       return { text: '対空 ・ まず当たらない', color: HUD_COLOR_STRONG };
     case ST_ARC:

@@ -1,9 +1,10 @@
 // 右側の 2 列のパネルの配線（v0.6.8 S4。spec-v068 §3.3・§4.1〜4.3）: Phaser の部分はソースで見る（ui-config・game-config は DOM を読むので node で import しない）。
 // パネルは config/hud-layout-config の panelLayout から作る（主兵装 = 右下の角。jp_02 の none は機銃）・魚雷は積んでいる本数と撃てるか・機銃は橙のテクスチャで 600 ms 待つ・
-// 扇の当たりは 638〜720・技能の中身は v0.6.7 のまま・一時停止の並び・速力と機関の表示の右端 W − 312・端の印の余白 348・つまむ帯 W − 304 とボタンの上を数えない・
+// 扇の当たりは 638〜720・技能の中身は v0.6.7 のまま・一時停止の並び・速力と機関の表示の右端 W − 312・端の印の余白 352・つまむ帯 W − 304 とボタンの上を数えない・
 // Boot は魚雷のボタンの後に機銃のボタンを作る。値（列・段・矩形）は tests/hud-layout。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { GUN_FIRING_ALPHA } from '../src/config/arms-config';
 import { SPREAD_HIT_TOP_Y, SPREAD_TOP_Y } from '../src/config/hud-layout-config';
 
 const strip = (code: string): string => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
@@ -32,7 +33,12 @@ describe('ui/weapon-panel', () => {
     expect(panel).toContain('this.torpedoButton?.setUsable(a.torpedoUsable);');
     expect(panel).not.toContain('torpedoesLeft');
     expect(panel).toContain('const reloadN = Math.max(gunButtonReloadN(t), a.reloadN);');
-    expect(panel).toContain('this.gunButton.setTint(a.gunFiring ? GUN_FIRING_TINT : null);');
+    expect(panel).toContain('this.gunButton.setAlphaOverride(a.gunFiring ? GUN_FIRING_ALPHA : NaN);');
+    expect(panel).not.toContain('this.gunButton.setTint('); // 色の掛け算は橙の輪を暗くした（レビュー ux-gun-firing-tint-darkens）
+    // 撃っている間はいつもの濃さ（ROUND_BUTTON_ALPHA）より濃く＝明るく見える（掛け算の色と違って打ち消されない）
+    const roundAlpha = Number(/export const ROUND_BUTTON_ALPHA = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))?.[1]);
+    expect(GUN_FIRING_ALPHA).toBeGreaterThan(roundAlpha + 0.3);
+    expect(GUN_FIRING_ALPHA).toBeLessThanOrEqual(1);
     expect(panel).toContain('this.cue.update(a, nowMs, this.torpedoHeld);');
   });
   it('技能の中身は v0.6.7 と同じ（煙幕は離すと・消火と見張りは押している間・識別は押下）。一時停止の並びも同じ', () => {
@@ -79,7 +85,7 @@ describe('ボタン', () => {
 
 describe('右側の 2 列に合わせた値（ui-config・速力・機関・端の印・Boot）', () => {
   const ui = readFileSync('src/config/ui-config.ts', 'utf8');
-  it('ui-config はパネルの関数から（W − 304・348・W − 312）。v0.6.7 の 1 列の y は消した。300 行台の前半のまま', () => {
+  it('ui-config はパネルの関数から（W − 304・352・W − 312）。v0.6.7 の 1 列の y は消した。300 行台の前半のまま', () => {
     const s = strip(ui);
     expect(s).toContain('export const PINCH_BUTTON_COLUMN_X = pinchMaxX(GAME_WIDTH);');
     expect(s).toContain('export const TARGET_MARKER_RIGHT_MARGIN = markerRightMargin(GAME_WIDTH);');

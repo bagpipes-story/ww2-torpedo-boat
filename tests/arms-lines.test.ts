@@ -41,9 +41,9 @@ describe('文と色（spec-v068 §4.5）', () => {
     expect(EVENTS.map((c) => armsCueJa(c, 3).text)).toEqual(['大発の下を抜ける', 'PTの下を抜ける', '狙う艦がいない', '敵機 撃墜！ 残り 3 機', '水上機 撃墜！', '哨戒機 撃墜！', '魚雷は撃ち尽くした']);
   });
   it('状態の文（機銃を押している間）', () => {
-    expect(STATES.map((c) => armsCueJa(c, 4).text)).toEqual(['艦には効かない', '対空 ・ まず当たらない', '射界外 ・ 舷側に向けよ', '射程に敵なし', '煙幕で見えない', '弾倉交換 ・ あと 4 秒']);
+    expect(STATES.map((c) => armsCueJa(c, 4).text)).toEqual(['艦に効かず閃光で見つかる', '対空 ・ まず当たらない', '射界外 ・ 舷側に向けよ', '射程に敵なし', '煙幕で見えない', '弾倉交換 ・ あと 4 秒']);
   });
-  it('色: 撃墜は金・艦には効かないは警告・ほかはいつもの白', () => {
+  it('色: 撃墜は金・艦に効かず閃光で見つかるは警告・ほかはいつもの白', () => {
     for (const c of [...EVENTS, ...STATES]) {
       const want = armsCueIsDown(c) ? CUE_DOWN_COLOR : c === ST_SHIP ? HUD_COLOR_WARN : HUD_COLOR_STRONG;
       expect(armsCueJa(c, 1).color, String(c)).toBe(want);

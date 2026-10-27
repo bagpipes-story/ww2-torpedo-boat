@@ -81,3 +81,14 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
   if (r.arms) line(armsResultLineJa(r.arms), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 兵装の新しい道（v0.6.8）: どの枝の後ろにも。使わなかった夜は無い
   return out;
 }
+
+/**
+ * 本文を角のボタンの上に収める（v0.6.8 レビュー ux-result-height-arms: 暴風・味方機・水上機・KPI 4 帯・兵装の 1 行の us_02 で最後の行が 673 まで下り、暴風の行が両方のボタンに重なった）。
+ * n 行（0 行目は見出し）の最後の行の下端 lastBottom が limitY を超えた分を、i 行目は over·i/(n − 1) だけ上げる（見出しは動かさず、行の間がみな同じだけ縮む）。超えなければ 0（今までの位置のまま）。
+ * scene が作るときに 1 回だけ呼ぶ（毎フレームの処理は無い）
+ */
+export function resultFitLiftPx(i: number, n: number, lastBottom: number, limitY: number): number {
+  const over = lastBottom - limitY;
+  if (!(over > 0) || n < 2 || i <= 0) return 0;
+  return (over * Math.min(i, n - 1)) / (n - 1);
+}

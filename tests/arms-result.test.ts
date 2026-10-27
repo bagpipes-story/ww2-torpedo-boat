@@ -11,7 +11,7 @@ import { ArmsStep } from '../src/systems/arms-step';
 import { armsResultPart } from '../src/systems/arms-telemetry';
 import { armsResultLineJa } from '../src/ui/arms-lines';
 import { seaplaneResultLine } from '../src/ui/hud-lines';
-import { resultBodyLines, type ResultBodySource } from '../src/ui/result-body';
+import { resultBodyLines, resultFitLiftPx, type ResultBodySource } from '../src/ui/result-body';
 import type { ArmsResult, BargeResult, PatrolResult, PtResult } from '../src/ui/result-types';
 
 const bands = (shots: readonly number[]): BandSummary[] => ['<=400yd', '400-800yd', '800-1200yd', '1200-2000yd', '>=2000yd'].map((band, i) => ({ band, shots: shots[i]!, hits: 0, duds: 0 }));
@@ -100,5 +100,40 @@ describe('配線（ソース）', () => {
     expect(body).toContain('const unfired = r.capacity - fired - (r.arms?.blindTorpedoes ?? 0);');
     const scene = readFileSync(new URL('../src/scenes/result-scene.ts', import.meta.url), 'utf8');
     expect(scene).toContain('if (r.seaplaneEnabled) line(seaplaneResultLine(r), HUD_FONT_HEADING_PX);');
+  });
+});
+
+// レビュー ux-result-height-arms: 暴風・味方機・水上機・KPI 4 帯・兵装の 1 行の us_02 で本文の最後の行が 673 まで下り、角のボタン（y 600〜696）に重なった。
+// 作るときに 1 回だけ、最後の行の下端がボタンの上端 − 8（592）を超えた分を見出し以外の行へ等分に配って上げる。
+describe('Result の本文を角のボタンの上に収める（resultFitLiftPx）', () => {
+  const LIMIT = 720 - 24 - 96 - 8; // RESULT_BODY_MAX_Y（menu-config。game-config が DOM を読むので値で）
+  it('超えなければ 0（今までの位置のまま）', () => {
+    for (const i of [0, 1, 5, 16]) expect(resultFitLiftPx(i, 17, LIMIT, LIMIT)).toBe(0);
+    expect(resultFitLiftPx(3, 17, 541, LIMIT)).toBe(0);
+    expect(resultFitLiftPx(3, 17, NaN, LIMIT)).toBe(0);
+  });
+  it('超えれば見出しは動かさず、i 行目は over·i/(n − 1)。最後の行の下端はちょうど上限、行の間はみな同じだけ縮む', () => {
+    const n = 17;
+    const lastBottom = 673; // 検証の最悪の夜（W 1280・兵装の 1 行あり）
+    const lifts = Array.from({ length: n }, (_, i) => resultFitLiftPx(i, n, lastBottom, LIMIT));
+    expect(lifts[0]).toBe(0);
+    expect(lifts[n - 1]).toBeCloseTo(lastBottom - LIMIT, 9);
+    expect(lastBottom - lifts[n - 1]!).toBeCloseTo(LIMIT, 9);
+    for (let i = 1; i < n; i++) expect(lifts[i]! - lifts[i - 1]!).toBeCloseTo((lastBottom - LIMIT) / (n - 1), 9);
+    expect((lastBottom - LIMIT) / (n - 1)).toBeLessThan(12 / 2); // 行の間 12 px（RESULT_LINE_GAP）は半分より多く残る
+    expect([resultFitLiftPx(1, 1, 700, LIMIT), resultFitLiftPx(-1, n, 700, LIMIT)]).toEqual([0, 0]);
+  });
+  it('配線（ソース）: line() は作った行を集め、最後の行の後・seed の前に 1 回だけ上げる。上限はボタンの上端 − 8', () => {
+    const scene = readFileSync(new URL('../src/scenes/result-scene.ts', import.meta.url), 'utf8');
+    expect(scene).toContain('texts.push(tx);');
+    const fit = 'for (let i = 1; i < texts.length; i++) texts[i]!.y -= resultFitLiftPx(i, texts.length, lastBottom, RESULT_BODY_MAX_Y);';
+    expect(scene).toContain('const lastBottom = last.y + last.displayHeight;');
+    expect(scene.indexOf(fit)).toBeGreaterThan(scene.indexOf("line('帰投地点の輪の中で沈没（魚雷の決着待ち）', HUD_FONT_HEADING_PX);"));
+    expect(scene.indexOf(fit)).toBeLessThan(scene.indexOf('`seed ${r.seed}`'));
+    expect(scene.match(/resultFitLiftPx\(/g)?.length).toBe(1);
+    const menu = readFileSync(new URL('../src/config/menu-config.ts', import.meta.url), 'utf8');
+    expect(menu).toContain('export const RESULT_BODY_BUTTON_GAP = 8;');
+    expect(menu).toContain('export const RESULT_BODY_MAX_Y = RESULT_BUTTON_Y - RESULT_BODY_BUTTON_GAP;');
+    expect(menu).toContain('export const RESULT_BUTTON_Y = GAME_HEIGHT - HUD_MARGIN - RESULT_BUTTON_H;');
   });
 });

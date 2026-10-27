@@ -127,6 +127,9 @@ export const BRIEF_SORTIE_WAIT_JA = '先に 2 択を選ぶ';
 /** Result: 左下「任務一覧」と右下「もう一度」 */
 export const RESULT_BUTTON_H = 96;
 export const RESULT_BUTTON_Y = GAME_HEIGHT - HUD_MARGIN - RESULT_BUTTON_H;
+/** 本文の最後の行の下端の上限（ボタンの上端 − 8 = 592。超える夜は作るときに 1 回だけ行の間を縮める＝v0.6.8 レビュー ux-result-height-arms） */
+export const RESULT_BODY_BUTTON_GAP = 8;
+export const RESULT_BODY_MAX_Y = RESULT_BUTTON_Y - RESULT_BODY_BUTTON_GAP;
 export const RESULT_BUTTON_PX = 32;
 export const RESULT_LIST_X = HUD_MARGIN;
 export const RESULT_RETRY_JA = 'もう一度';

@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { DEBUG_DIRECT_MISSION, DEBUG_RAID_OVERRIDE, DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, REGISTRY_KEY_DATA, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
 import { getGameData, getScoringParams } from '../config/game-data';
 import { hasHardVariant } from '../config/mission-data';
-import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
+import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BODY_MAX_Y, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import type { DawnResult } from '../core/dawn-air';
 import {
@@ -32,7 +32,7 @@ import { ptHeadJa } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EscortResult, GunboatResult, PatrolResult, PtResult } from '../ui/result-types';
-import { resultBodyLines } from '../ui/result-body';
+import { resultBodyLines, resultFitLiftPx } from '../ui/result-body';
 
 export type { MissionEndReason } from '../core/mission-flow';
 export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
@@ -156,9 +156,11 @@ export class ResultScene extends Phaser.Scene {
     let y = RESULT_TOP_Y;
     // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）
     const maxW = GAME_WIDTH - 2 * HUD_MARGIN;
+    const texts: Phaser.GameObjects.Text[] = []; // 作った行（最後にボタンの上へ収める。v0.6.8 レビュー ux-result-height-arms）
     const line = (text: string, size: number, color?: string): void => {
       const tx = this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
       if (tx.width > maxW) tx.setScale(maxW / tx.width);
+      texts.push(tx);
       y += size + RESULT_LINE_GAP;
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
@@ -229,6 +231,10 @@ export class ResultScene extends Phaser.Scene {
       if (r.ringDistM > 0) line(`帰投地点まで あと ${Math.max(1, Math.ceil(r.ringDistM / HOME_MARKER_DISTANCE_STEP_M)) * HOME_MARKER_DISTANCE_STEP_M} m`, HUD_FONT_HEADING_PX);
       else line('帰投地点の輪の中で沈没（魚雷の決着待ち）', HUD_FONT_HEADING_PX);
     }
+    // 最後の行の下端がボタンの上端 − 8 を超える夜だけ、見出しを残して行の間を同じだけ縮める（作るときに 1 回。超えなければ位置は今まで通り）
+    const last = texts[texts.length - 1]!;
+    const lastBottom = last.y + last.displayHeight;
+    for (let i = 1; i < texts.length; i++) texts[i]!.y -= resultFitLiftPx(i, texts.length, lastBottom, RESULT_BODY_MAX_Y);
     this.add
       .text(cx, GAME_HEIGHT - RESULT_SEED_Y, `seed ${r.seed}`, hudTextStyle(HUD_FONT_HEADING_PX))
       .setOrigin(0.5, 1)

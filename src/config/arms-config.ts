@@ -17,13 +17,14 @@ export const ARMS_WRECK_SCALE_TO = 0.5;
 export const ARMS_CUE_TORP_MS = 1600;
 export const ARMS_CUE_DOWN_MS = 2200;
 export const ARMS_CUE_LINGER_S = 0.6;
-/** 機銃のボタンの輪の色（橙。魚雷の黄と白黒でも分かる）・撃っている間の色・撃墜の文の色（金） */
+/** 機銃のボタンの輪の色（橙。魚雷の黄と白黒でも分かる）・撃墜の文の色（金） */
 export const GUN_BUTTON_STROKE = 0xff9a5a;
 /** 機銃のボタンの塗り（魚雷のボタンと同じ HUD の灰青と濃さ）と、輪の内側の目盛り（上下左右に 4 本）の長さ px */
 export const GUN_BUTTON_FILL = 0x9fb3c8;
 export const GUN_BUTTON_FILL_ALPHA = 0.25;
 export const GUN_BUTTON_TICK_PX = 10;
-export const GUN_FIRING_TINT = 0xffd0a0;
+/** 機銃のボタンの撃っている間の濃さ（いつもは ROUND_BUTTON_ALPHA 0.55。識別の点滅の上限 0.95 と同じ。色の掛け算（setTint）だと橙の輪が暗くなった＝レビュー ux-gun-firing-tint-darkens） */
+export const GUN_FIRING_ALPHA = 0.95;
 export const CUE_DOWN_COLOR = '#ffd27a';
 /** 副兵装（列 2）の大きさ（R56 / R64）と、そのボタンの文字 px（主兵装は HUD_FONT_BUTTON_PX 22） */
 export const SECONDARY_SCALE = 0.875;

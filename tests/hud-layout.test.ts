@@ -1,7 +1,7 @@
 // 右側の 2 列の兵装パネル（v0.6.8。config/hud-layout-config。spec-v068 §4.1・§4.2・§6.1）: 論理幅 1280・1344・1560・1584 × 7 任務で、当たりが重ならない・当たりの間 ≥ 12 px・
 // 当たり ≥ 81 px・ビルド番号・2 行目・3 行目・スティック・一時停止・計器・速力（と機関）の表示・兵装の上の文・「一斉 N 本」・つまむ帯に触れない・端の印の文がパネルに届かない。
 // 検査は spec の layout.mjs の check() を写した（固定の箱の値はその写し）。値の pin: 列 W − 88 / W − 232、魚雷 560 / 568、機銃 632 / 589、扇 642〜682（当たり 638〜720）、
-// 技能の段 400 / 280、速力の右端 W − 312、端の印の余白 348、つまむ帯 W − 304、避ける角 W − 624。y ≥ 682（ホームバーの帯）に入るのは主の機銃と扇だけ。
+// 技能の段 400 / 280、速力の右端 W − 312、端の印の余白 352、つまむ帯 W − 304、避ける角 W − 624。y ≥ 682（ホームバーの帯）に入るのは主の機銃と扇だけ。
 import { describe, expect, it } from 'vitest';
 import {
   HIT_PAD,
@@ -25,6 +25,7 @@ import {
   type PanelRect,
 } from '../src/config/hud-layout-config';
 import { SECONDARY_SCALE } from '../src/config/arms-config';
+import { textWidthPx } from './pt-ui-kit';
 
 const H = 720;
 const M = 24;
@@ -133,9 +134,12 @@ describe('右側の 2 列の兵装パネル（config/hud-layout-config）', () =
       }
       expect(T.skills.map((s) => [s.kind, s.x, s.y])).toEqual([['smoke', W - 88, 400], ['extinguish', W - 232, 400], ['lookout', W - 232, 280], ['identify', W - 88, 280]]);
       expect(panelLayout(W, 'guns', { smoke: false, identify: false }).skills.map((s) => [s.kind, s.x, s.y])).toEqual([['extinguish', W - 232, 400], ['lookout', W - 88, 400]]);
-      expect([T.panelLeft, T.speedRight, speedHudRightX(W), markerRightMargin(W), pinchMaxX(W), speedHudKeepLeft(W)]).toEqual([W - 288, W - 312, W - 312, 348, W - 304, W - 624]);
+      expect([T.panelLeft, T.speedRight, speedHudRightX(W), markerRightMargin(W), pinchMaxX(W), speedHudKeepLeft(W)]).toEqual([W - 288, W - 312, W - 312, 352, W - 304, W - 624]);
     }
     expect(SECONDARY_SCALE).toBe(R_SECONDARY / R_PRIMARY);
+    // 端の印の文の半幅は 4 桁の距離の本当の幅から（レビュー ux-marker-cue-4px: 52 では「帰投 2800 m」の右端がパネルの左 − 4 px で、兵装の上の 1 行と 1 つの文に読めた）。地図は 6 km 四方までなので 4 桁まで
+    for (const label of ['帰投 9900 m', '敵機 9900 m', '大発 9900 m', '隼艇 9900 m', 'PT 9900 m']) expect(textWidthPx(label, 18) / 2, label).toBeLessThanOrEqual(MARKER_LABEL_HALF);
+    expect(MARKER_LABEL_HALF - textWidthPx('帰投 9900 m', 18) / 2).toBeLessThan(1);
     expect(H - M).toBe(696);
   });
 

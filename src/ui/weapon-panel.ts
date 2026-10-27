@@ -4,7 +4,7 @@
 // 魚雷・扇・機銃は出だしの 600 ms は受けない（Briefing の「出撃」・Result の「もう一度」の 2 度押し）。技能の中身（煙幕・消火・見張り・識別）は v0.6.7 の hud-scene のまま（S0 で移した）。
 // 値が変わったときだけ文字を組む（§7。前回の値はこのクラスが持つ。Hud を作り直すたびにこのクラスも作り直すので前回の値を引きずらない）。
 import Phaser from 'phaser';
-import { GUN_FIRING_TINT, SECONDARY_FONT_PX, SECONDARY_SCALE } from '../config/arms-config';
+import { GUN_FIRING_ALPHA, SECONDARY_FONT_PX, SECONDARY_SCALE } from '../config/arms-config';
 import { GAME_WIDTH, TEXTURE_KEYS } from '../config/game-config';
 import { getBoatSmokeParams, type GameData } from '../config/game-data';
 import { panelLayout, type PanelLayout } from '../config/hud-layout-config';
@@ -113,7 +113,7 @@ export class WeaponPanel {
         this.gunButton.setLabel(gunButtonLabel(reloadN));
         this.gunButton.setEnabled(reloadN === 0); // 薄く（押したままでよい。交換が済めば撃ち続ける）
       }
-      this.gunButton.setTint(a.gunFiring ? GUN_FIRING_TINT : null); // どれかの砲が標的を持って撃っている間だけ明るく（変わったときだけ書く）
+      this.gunButton.setAlphaOverride(a.gunFiring ? GUN_FIRING_ALPHA : NaN); // どれかの砲が標的を持って撃っている間だけ濃く明るく（変わったときだけ書く。弾倉交換の間は撃っていないので薄いまま）
     }
     this.cue.update(a, nowMs, this.torpedoHeld);
     if (this.smokeButton) {

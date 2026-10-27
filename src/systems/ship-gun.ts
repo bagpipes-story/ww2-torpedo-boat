@@ -1,6 +1,6 @@
 // 艦への機銃（v0.6.8。spec-v068 §1.1 D4・§3.2・§5.1。ユーザー「意味がなくても駆逐艦に機銃撃ったり」）: 駆逐艦の任務（us_01・us_02・jp_06）で艇の砲（boats.json の gun_battery）を
 // 駆逐艦・輸送船へ撃つ。本体は凍結の core/gun-battery の stepGunBatteryOf（大発・米PT と同じ: 見えていて射程内・射界内・煙幕に遮られていない最寄り、散布は速力帯の倍率、1 発 2 回の乱数）。
-// 艦には効かない: 当たっても水柱（命中は橙）と「艦には効かない」だけ（艦の被弾の数え・沈没の演出は呼ばない。tests/arms-world-order のソースの pin）。撃てば閃光（systems/arms-step）。
+// 艦には効かない: 当たっても水柱（命中は橙）と「艦に効かず閃光で見つかる」だけ（艦の被弾の数え・沈没の演出は呼ばない。tests/arms-world-order のソースの pin）。撃てば閃光（systems/arms-step）。
 // 艦は事前に作った写し（ShipProxy: 位置・向き・速さ・狙えるか・煙幕に遮られたか）で渡す（module の関数 shipLive・shipBlocked。毎ステップ閉包を作らない）。
 // 船体の大きさは隊の艦の最大（実寸 × ship_hit_scale の半分）。弾倉のある艇（jp_06 の T-38）は core/magazine（pt-gun と同じ: 交換中は押していない扱い・撃った数だけ減らす）。
 // 乱数は seed+25（core/arms-cue の SHIP_GUN_SEED_OFFSET）の 1 系列だけ（駆逐艦の任務だけで作る。押さなければ引かない）。Phaser 非依存・確保は constructor だけ。

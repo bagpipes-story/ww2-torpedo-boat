@@ -205,7 +205,7 @@ export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
 export const PINCH_BUTTON_COLUMN_X = pinchMaxX(GAME_WIDTH);
 /** ピンチの基準距離の下限（論理 px）。指が重なって距離がほぼ 0 になったときに倍率が跳ねないように */
 export const PINCH_MIN_DIST_PX = 40;
-/** 画面外マーカーの右端の余白（v0.6.8: 348 = 右側の 2 列のパネルの幅 288・隙間 8・距離ラベル「敵 1500 m」約 100 px の半分 52） */
+/** 画面外マーカーの右端の余白（v0.6.8: 352 = 右側の 2 列のパネルの幅 288・隙間 8・距離ラベル「帰投 9900 m」約 112 px の半分 56） */
 export const TARGET_MARKER_RIGHT_MARGIN = markerRightMargin(GAME_WIDTH);
 /** 右下の速力・舵・針路と機関の熱の帯の右端（v0.6.8: W − 312 = パネルの左端 − 24。v0.6.7 までは W − 176） */
 export const SPEED_HUD_RIGHT_X = speedHudRightX(GAME_WIDTH);
