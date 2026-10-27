@@ -1,13 +1,20 @@
 // 発射管制: タップ 1 本／扇状一斉を待ち行列にし、data の salvo_interval_s 間隔で 1 本ずつ発射する。
 // 発射位置は艇の両舷交互（docs/02 §6.2）。信頼性ロールはシード付き乱数で発射時に 1 回。確保はイベント時のみ。
 // KPI（v0.5.0）: 1 本ごとに、発射時の見越し角のずれ（目標が今の速さと針路のまま進むとしたときの命中針路との差）と、狙った目標が駆逐艦かを魚雷に書く。
+// v0.6.8: 狙える艦が無い発射（目標 null。駆逐艦のいない任務か、すべて出た後）は距離・見越しのずれが NaN・KPI に数えない。発射した魚雷を返す（呼ぶ側が発射の時に決着させる＝systems/torpedo-free）。乱数の順（不発 → 蛇行 → 偏差）は同じ。
 import type { BoatState } from '../core/boat-motion';
 import type { SeededRng } from '../core/rng';
 import { fillSalvoHeadings } from '../core/salvo';
-import type { TorpedoReliability } from '../core/torpedo';
+import type { TorpedoReliability, TorpedoState } from '../core/torpedo';
 import { interceptHeadingDeg, velocityFromHeading } from '../core/torpedo-solver';
 import { degToRad, wrapDeg180 } from '../core/units';
-import type { TorpedoPool } from './torpedo-pool';
+
+/** 発射管制が使うプールの部分（systems/torpedo-pool の TorpedoPool がそのまま満たす。v0.6.8: 構造の型にして、DOM を読む config を引かずに tests から作れるように） */
+export interface LauncherPool {
+  readonly capacity: number;
+  readonly remaining: number;
+  fire(x: number, y: number, headingDeg: number, dud: boolean, erratic: boolean, erraticBiasDeg: number, rangeAtLaunchM: number): TorpedoState | null;
+}
 
 export class TorpedoLauncher {
   private readonly headings: number[] = [];
@@ -19,7 +26,7 @@ export class TorpedoLauncher {
   private readonly targetVel = { x: 0, y: 0 };
 
   constructor(
-    private readonly pool: TorpedoPool,
+    private readonly pool: LauncherPool,
     private readonly rng: SeededRng,
     private readonly reliability: TorpedoReliability,
     /** 蛇行魚雷の偏差の最大（度、data の jitter_deg） */
@@ -54,19 +61,23 @@ export class TorpedoLauncher {
     this.cooldownS = 0;
   }
 
-  /** 毎フレーム。間隔が来ていれば 1 本発射する。target は最寄りの浮いている艦、kpiTarget はそれが駆逐艦か（KPI に数える。v0.5.0） */
-  update(realDt: number, boat: BoatState, target: BoatState, kpiTarget: boolean): void {
-    if (this.pending === 0) return;
+  /**
+   * 毎フレーム。間隔が来ていれば 1 本発射して、その魚雷を返す（発射しなければ null）。target は最寄りの浮いている艦、kpiTarget はそれが駆逐艦か（KPI に数える。v0.5.0）。
+   * target が null（v0.6.8: 狙える艦が無い）なら発射時の距離・見越し角のずれは NaN・kpiTarget は false（launchTorpedo の既定のまま）
+   */
+  update(realDt: number, boat: BoatState, target: BoatState | null, kpiTarget: boolean): TorpedoState | null {
+    if (this.pending === 0) return null;
     this.cooldownS -= realDt;
-    if (this.cooldownS > 0) return;
-    this.fireOne(this.headings[this.nextIndex]!, boat, target, kpiTarget);
+    if (this.cooldownS > 0) return null;
+    const s = this.fireOne(this.headings[this.nextIndex]!, boat, target, kpiTarget);
     this.nextIndex++;
     this.pending--;
     this.cooldownS = this.intervalS;
+    return s;
   }
 
-  private fireOne(headingDeg: number, boat: BoatState, target: BoatState, kpiTarget: boolean): void {
-    const rangeAtLaunch = Math.hypot(target.x - boat.x, target.y - boat.y);
+  private fireOne(headingDeg: number, boat: BoatState, target: BoatState | null, kpiTarget: boolean): TorpedoState | null {
+    const rangeAtLaunch = target ? Math.hypot(target.x - boat.x, target.y - boat.y) : Number.NaN;
     const h = degToRad(boat.headingDeg);
     const side = this.side;
     this.side = -this.side;
@@ -77,11 +88,12 @@ export class TorpedoLauncher {
     const erratic = this.rng.chance(this.reliability.erratic);
     const bias = erratic ? this.rng.nextRange(-this.jitterDeg, this.jitterDeg) : 0;
     const s = this.pool.fire(x, y, headingDeg, dud, erratic, bias, rangeAtLaunch);
-    if (!s) return;
+    if (!s || !target) return s; // 狙える艦が無い（v0.6.8）: leadErrDeg は NaN・kpiTarget は false のまま
     // 見越し角のずれ: 狙い（蛇行の偏差を除く発射針路）と、発射点から目標へ当たる針路の差
     velocityFromHeading(target.headingDeg, target.speedMps, this.targetVel);
     const aim = interceptHeadingDeg(x, y, this.torpedoSpeedMps, target.x, target.y, this.targetVel.x, this.targetVel.y);
     s.leadErrDeg = aim === null ? Number.NaN : wrapDeg180(headingDeg - aim);
     s.kpiTarget = kpiTarget;
+    return s;
   }
 }

@@ -13,6 +13,7 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
@@ -113,6 +114,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshPatrolTelemetry(t, w, scratchPose); // 夜の哨戒機（v0.6.7）: 機が画面にいるときだけ「敵機」の矢印を書く（水上機の後・夜明けの前。NaN は書かない）
   // 夜明け（v0.6.1）: ラッチ・夜明け後の秒・空襲の段。空襲の機が来ていれば「敵機」の矢印をその機で上書き（水上機の後）
   refreshDawnTelemetry(t, w, scratchPose);
+  refreshArmsTelemetry(t, w); // 兵装（v0.6.8）: 積んでいる魚雷・撃てるか・出来事の文（夜明けの後）
   refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
   refreshConvoyTelemetry(t.convoy, w); // 味方の大発の輸送隊（v0.6.4）: 上陸・沈没・浜まで・最寄りの大発
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事

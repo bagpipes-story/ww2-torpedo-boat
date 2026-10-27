@@ -24,6 +24,14 @@ export const ST_RELOAD = 15;
 /** HUD だけの出来事（魚雷 0 本で魚雷ボタンを押した。世界は書かない） */
 export const EV_TORP_EMPTY = 20;
 
+/** 狙う艦の無い魚雷の種類（v0.6.8 S2。任務の敵から）: 大発の下を抜ける（us_03）・PT の下を抜ける（jp_01・jp_05）・狙う艦がいない（jp_02・駆逐艦がすべて出た後） */
+export type BlindKind = 'barge' | 'pt' | 'noship';
+
+/** 狙う艦の無い魚雷の出来事の文の番号 */
+export function blindTorpedoCue(kind: BlindKind): number {
+  return kind === 'barge' ? EV_TORP_BARGE : kind === 'pt' ? EV_TORP_PT : EV_TORP_NOSHIP;
+}
+
 /** 世界 → HUD（BoatTelemetry.arms）。値だけ（毎フレーム書き換え、確保しない） */
 export interface ArmsTelemetry {
   /** 積んでいる魚雷（w.torpedoes.remaining） */

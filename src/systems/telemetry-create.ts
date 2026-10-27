@@ -1,5 +1,6 @@
 // 出発時の HUD 向けテレメトリを 1 個だけ作る（v0.6.8 S0 で systems/mission-telemetry から移した。中身は v0.6.7 のまま。mission-telemetry が re-export する）。
 // 毎フレームの書き換え（refreshTelemetry）と Result の組み立て（buildMissionResult）は mission-telemetry に残る（§7: ここは出撃時に 1 回だけ確保する）。
+import { createArmsTelemetry } from '../core/arms-cue';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { createEngineTelemetry } from '../core/engine-trouble';
 import { createGunboatTelemetry } from '../core/gunboat';
@@ -118,5 +119,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     engine: createEngineTelemetry(), // 機関の不調（v0.6.5。jp_05。無い任務は on false のまま。下の refreshTelemetry が毎フレーム写す）
     gunboat: createGunboatTelemetry(), // 隼艇（v0.6.6。jp_01 のハード。無い任務は enabled false のまま。下の refreshTelemetry が毎フレーム写す）
     patrol: initPatrolTelemetry(w), // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry。無い任務は enabled false）
+    aaFiring: false, // 機銃で機を撃っている（v0.6.8）
+    arms: createArmsTelemetry(), // 兵装（v0.6.8。systems/arms-telemetry が毎フレーム書く）
   };
 }

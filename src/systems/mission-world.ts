@@ -4,7 +4,7 @@
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
 import { debugSetupOptions } from '../config/debug-setup';
-import type { GameData } from '../config/game-data';
+import { getBoatTorpedoCount, type GameData } from '../config/game-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
 import { nextSpeedBand, setPerformance, type BoatParams, type SpeedStep } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
@@ -43,6 +43,7 @@ import { stepPlayerBoat } from './world-boat';
 import { buildEnemies } from './world-enemies';
 import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
+import { buildArms, type WorldArms } from './world-arms';
 import type { WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
@@ -67,6 +68,7 @@ export class MissionWorld {
   readonly seaplane: EnemySeaplane | null;
   readonly patrol: PatrolAir | null; // 夜の哨戒機（v0.6.7。jp_02。門番と夜の出撃。systems/patrol-air）。setup.patrolAir が無い任務・?debug&nopatrol では null
   readonly dawn: WorldDawn; // 夜明けのラッチと夜明けの空襲（v0.6.1。world-dawn.ts）。夜明けは任務の終わりではない
+  readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
   readonly returnPoint: ReturnPoint;
@@ -176,7 +178,7 @@ export class MissionWorld {
     this.boat = new PlayerBoat(scene, s.playerStart, 0, boatTextureKey(s.mission.playerBoatId));
     this.boatDamage = new BoatDamage(this.boat, this.damage, this.damageParams, this.params, events, SMALL_HIT_DAMAGE_RATIO);
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
-    this.torpedoes = new TorpedoPool(scene, s.torpedoParams, s.torpedoCapacity, mission.bounds);
+    this.torpedoes = new TorpedoPool(scene, s.torpedoParams, getBoatTorpedoCount(data, mission.playerBoatId), mission.bounds); // 艇が積む本数（v0.6.8。setup.torpedoCapacity は主兵装の本数のまま）
     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
     const onSunk = (x: number, y: number): void => { this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発
     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
@@ -202,6 +204,7 @@ export class MissionWorld {
     this.patrol = hz.patrol;
     this.dawn = new WorldDawn(scene, s, hz.strike); // 夜明けのラッチ・海の明るさ・夜明けの空襲（空襲の無い任務は null）
     this.engine = s.engine ? new EngineTrouble(s.engine) : null; // 機関の不調（v0.6.5。乱数なし＝生成の順と乱数の系列に触らない）
+    this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
     this.refreshShallowStatus();
   }
 
@@ -227,6 +230,7 @@ export class MissionWorld {
     this.seaplane?.updateVisuals(this.boat.state);
     this.patrol?.updateVisuals(this.boat.state, this.escort ? this.escort.state.boat : null);
     this.dawn.updateVisuals(this);
+    this.arms?.updateVisuals(realDt, this);
   }
 
   /** 水上機か夜明けの空襲の機体が来ている（味方機の開始条件が読む）。夜の哨戒機（v0.6.7）も（無い任務は false＝同じ値） */
@@ -260,6 +264,7 @@ export class MissionWorld {
     this.seaplane?.destroy();
     this.patrol?.destroy();
     this.dawn.destroy();
+    this.arms?.destroy();
     this.friendly?.destroy();
     this.torpedoes.destroy();
     this.hunt?.destroy();

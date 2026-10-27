@@ -3,6 +3,7 @@
 // 待つ間も世界は進む（魚雷・敵は動き、自艇は沈むか止まっている）。窓の前の世界は v0.6.2 と同じ（終わりが遅れるだけ）。§7: 確保は constructor だけ。
 // Phaser も config（DOM を読む game-config）も読まない（tests から作れる）。世界は構造の型 MissionEndWorld で受ける（MissionWorld がそのまま満たす）。
 // レビューの直し: 漂流の窓の間に敵艦隊がいなくなれば cleared に上げる（promoteAdriftToCleared）、窓（cleared・漂流・座礁）の間は新しい魚雷を撃たない（holdFire）。
+// v0.6.8: 窓の間は兵装の新しい道（systems/arms-step の hold）も止める（世界に arms が無ければ v0.6.7 のまま）。
 import { discardFireInput, type InputState } from '../core/input-state';
 import { createEndSettle, decideMissionEnd, promoteAdriftToCleared, stepEndSettle, type EndCheck, type EndParams, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 
@@ -69,10 +70,11 @@ export class MissionEnd {
    * 窓（cleared・漂流・座礁）が開いている間は新しい魚雷を撃たない（窓は延びないので、撃てば決着の前に外れで記録され、通算の命中率を汚す。帰投の輪の中と同じ）。
    * 残りの一斉発射も捨てる。毎フレーム、世界を進める（updateFrame の入力の消費）前に 1 回。窓が開くまでは何もしない（窓より前の世界は同じ）
    */
-  holdFire(w: { readonly input: InputState; readonly launcher: { clearQueue(): void } }): void {
+  holdFire(w: { readonly input: InputState; readonly launcher: { clearQueue(): void }; readonly arms?: { hold(): void } | null }): void {
     if (this.settle.reason === null) return;
     discardFireInput(w.input);
     w.launcher.clearQueue();
+    w.arms?.hold();
   }
 
   /** 自艇の沈没演出が終わった（WorldEvents.onBoatSunk）。魚雷がすべて決着しているか窓が過ぎていればその理由、待つなら null（後の step が返す） */

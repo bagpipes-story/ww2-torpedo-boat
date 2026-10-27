@@ -1,5 +1,6 @@
-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol を足した）。
+// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring を足した）。
 // Phaser 非依存。型だけ（実行時の値を持たない）。
+import type { ArmsTelemetry } from './arms-cue';
 import type { ConvoyTelemetry } from './convoy';
 import type { DawnTelemetry } from './dawn-air';
 import type { EngineTelemetry } from './engine-trouble';
@@ -140,4 +141,7 @@ export interface BoatTelemetry {
   engine: EngineTelemetry; // 機関の不調（v0.6.5。core/engine-trouble）: 熱・段・不調の残りの秒・出来事（systems/engine-trouble が毎フレーム書く。不調の無い任務は on false）
   gunboat: GunboatTelemetry; // 隼艇（v0.6.6。core/gunboat。jp_01 のハード）: 自艇からの位置・HP・沈没・決着・浜（systems/gunboat が毎フレーム書く。無い任務は enabled false）
   patrol: PatrolTelemetry; // 夜の哨戒機（v0.6.7。core/patrol-air-state。jp_02）: 門番の段・捜索の方位と距離・秒読み・夜の出撃の脅威（systems/patrol-telemetry が毎フレーム書く。無い任務は enabled false）
+  /** 機銃で機を撃っている（v0.6.8。2 行目の砲の行を出さない。mission-mode が読む。as BoatTelemetry の偽物では undefined＝偽） */
+  aaFiring: boolean;
+  arms: ArmsTelemetry; // 兵装（v0.6.8。core/arms-cue）: 積んでいる魚雷・撃てるか・出来事と状態の文（systems/arms-telemetry が毎フレーム書く）
 }
