@@ -15,38 +15,15 @@ import {
   REGISTRY_KEY_TELEMETRY,
   RENDER_SCALE,
   SCENE_KEYS,
-  TEXTURE_KEYS,
 } from '../config/game-config';
-import { effectiveFuelAllotmentGal, getBoatSmokeParams, getGameData, getPrototypeMission } from '../config/game-data';
+import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { isSortie } from '../core/sortie';
-import {
-  HOME_COLOR,
-  IDENTIFY_BUTTON_Y,
-  LOOKOUT_BUTTON_Y,
-  SPREAD_BUTTON_Y,
-  IDENTIFY_PULSE_ALPHA_MAX,
-  IDENTIFY_PULSE_HZ,
-  ROUND_BUTTON_ALPHA,
-  TORPEDO_BUTTON_ARM_MS,
-  TORPEDO_BUTTON_RADIUS,
-  ROUND_BUTTON_GAP,
-  ROUND_BUTTON_RADIUS,
-  HUD_COLOR_KPI,
-  HUD_FONT_DEBUG_PX,
-  HUD_HIST_BADGE_JA,
-  HUD_HIST_BADGE_X,
-  hudTextStyle,
-} from '../config/ui-config';
-import { FF_CHALLENGE, FF_STRAFE } from '../core/friendly';
-import { GUN_BUTTON_LABEL } from '../config/hunt-config';
-import { HoldButton } from '../systems/hold-button';
+import { HUD_COLOR_KPI, HUD_FONT_DEBUG_PX, HUD_HIST_BADGE_JA, HUD_HIST_BADGE_X, hudTextStyle } from '../config/ui-config';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PauseControl } from '../systems/pause-control';
 import { PinchZoom } from '../systems/pinch-zoom';
-import { SpreadButton } from '../systems/spread-button';
-import { TorpedoButton } from '../systems/torpedo-button';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
@@ -55,7 +32,7 @@ import { HpBar } from '../ui/hp-bar';
 import { HudMarkers } from '../ui/hud-markers';
 import { DawnBanner } from '../ui/dawn-banner';
 import { FuelGauge } from '../ui/fuel-gauge';
-import { gunButtonLabel, gunButtonReloadN } from '../ui/pt-gun-lines';
+import { WeaponPanel } from '../ui/weapon-panel';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
@@ -68,19 +45,8 @@ export class HudScene extends Phaser.Scene {
   private fuelGauge?: FuelGauge;
   private engineHud?: EngineHud; // 右下の機関の熱の帯（v0.6.5。機関の不調のある夜だけ。ui/engine-hud）
   private stick?: VirtualStick;
-  private torpedoButton?: TorpedoButton;
-  /** 扇の角度（v0.5.1 実機 1 回目）。魚雷ボタンの下。魚雷の任務だけ */
-  private spreadButton?: SpreadButton;
-  /** 「射撃」（主兵装が砲の任務。v0.4.2）: 右下の魚雷ボタンの場所。押している間 gunHeld。出だしの 0.6 秒は受けない（「出撃」の 2 度押し） */
-  private gunButton?: HoldButton;
-  private smokeButton?: HoldButton;
-  private extinguishButton?: HoldButton;
-  private lookoutButton?: HoldButton;
-  /** 「識別」（v0.3.3）。任務に味方機がいるときだけ作る。残り秒の整数が変わったときだけ文字を組む */
-  private identifyButton?: HoldButton;
-  private lastIdentifyN = -1;
-  private lastHoldTenths = -1;
-  private lastReloadN = 0; // 射撃ボタンの弾倉交換の残り秒（0 は交換中でない。v0.6.3 実機 1 回目のレビュー ux-2: 赤い線の下で弾が止まる訳が見えなかった）
+  /** 右側のボタン（魚雷・扇・射撃・煙幕・消火・見張り・識別。v0.6.8 S0 で ui/weapon-panel へ切り出し。中身はそのまま） */
+  private panel?: WeaponPanel;
   private keyboard?: KeyboardInput;
   private pinch?: PinchZoom;
   /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
@@ -106,9 +72,6 @@ export class HudScene extends Phaser.Scene {
   create(): void {
     // 論理座標 GAME_WIDTH×720 を canvas（GAME_WIDTH×RENDER_SCALE）に合わせる
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
-    this.lastIdentifyN = -1; // 再開で前回の値を引きずらない
-    this.lastHoldTenths = -1;
-    this.lastReloadN = 0;
 
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
@@ -139,66 +102,16 @@ export class HudScene extends Phaser.Scene {
       holdStartS: launch.salvo_hold_start_s,
       countStepS: launch.salvo_count_step_s,
     };
-    if (mission.mainWeapon === 'guns') {
-      let armed = false;
-      this.time.delayedCall(TORPEDO_BUTTON_ARM_MS, () => (armed = true));
-      const gx = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
-      const gy = GAME_HEIGHT - HUD_MARGIN - TORPEDO_BUTTON_RADIUS;
-      this.gunButton = new HoldButton(this, gx, gy, GUN_BUTTON_LABEL, { onDown: () => (input.gunHeld = armed), onUp: () => (input.gunHeld = false) }, TEXTURE_KEYS.torpedoButton);
-    } else if (mission.mainWeapon === 'torpedo') { // 主兵装 none（撃たない米PT の任務。v0.6.3 の最初の jp_05。実機 1 回目から jp_05 は guns）は魚雷・扇・射撃のボタンを作らない（発射の入力は世界が捨てる）
-      this.torpedoButton = new TorpedoButton(this, input, spread);
-      this.torpedoButton.setRemaining(this.telemetry.torpedoesLeft);
-      this.spreadButton = new SpreadButton(this, GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS, SPREAD_BUTTON_Y, spread, launch.salvo_spacing_deg, launch.salvo_spacing_choices_deg);
-    }
-    // 右上「煙幕」: 離すと展開。その下「消火」: 火災中に押し続けると消火（押している時間は Mission が数える。v0.3.1 実機の要望で煙幕と別ボタンに）。右中「見張り」: 押している間ズームアウト
-    const bx = GAME_WIDTH - HUD_MARGIN - ROUND_BUTTON_RADIUS;
-    // 煙幕発生器の無い艇（日本の魚雷艇。v0.6.0）は煙幕ボタンを作らない（消火・見張りの位置は変えない）
-    if (getBoatSmokeParams(data, mission.playerBoatId) !== null) {
-      this.smokeButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS, '煙幕', {
-        onUp: () => {
-          input.smokeTap = true;
-        },
-      });
-    }
-    this.extinguishButton = new HoldButton(this, bx, HUD_MARGIN + ROUND_BUTTON_RADIUS * 3 + ROUND_BUTTON_GAP, '消火', {
-      onDown: () => {
-        input.extinguishHeld = true;
-      },
-      onUp: () => {
-        input.extinguishHeld = false;
-      },
-    });
-    this.lookoutButton = new HoldButton(this, bx, LOOKOUT_BUTTON_Y, '見張り', {
-      onDown: () => {
-        input.lookout = true;
-      },
-      onUp: () => {
-        input.lookout = false;
-      },
-    });
-    // 「識別」: 見張りと魚雷の間。常に薄く出し、味方機が識別を求めている間だけ青く点滅して残り秒を出す（押下＝識別信号。離しは見ない）
-    // 今夜味方機がいるときだけ（v0.4.6。夜の揺らぎで来ない夜がある）
-    if (this.telemetry.friendlyEnabled) {
-      this.identifyButton = new HoldButton(this, bx, IDENTIFY_BUTTON_Y, '識別', {
-        onDown: () => {
-          input.identifyTap = true;
-        },
-      });
-      this.identifyButton.setEnabled(false);
-    }
+    // 右側のボタン（作る順は v0.6.7 と同じ: スティックの後・キーボードの前。前回の値は panel が持つので再開で引きずらない）
+    this.panel = new WeaponPanel(this, input, data, mission, this.telemetry, spread);
     this.keyboard = new KeyboardInput(this, input);
     // ピンチズーム（右半分、ボタンの列を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
-    this.pause = new PauseControl(this, input, () => [this.stick, this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton, this.pinch]);
+    this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stick?.destroy();
-      this.torpedoButton?.destroy();
-      this.gunButton?.destroy();
-      this.smokeButton?.destroy();
-      this.extinguishButton?.destroy();
-      this.lookoutButton?.destroy();
-      this.identifyButton?.destroy();
+      this.panel?.destroy();
       this.markers?.destroy();
       this.dawnBanner?.destroy();
       this.fuelGauge?.destroy();
@@ -208,12 +121,7 @@ export class HudScene extends Phaser.Scene {
       this.hpBar?.destroy();
       this.debugHud?.destroy();
       this.stick = undefined;
-      this.torpedoButton = undefined;
-      this.gunButton = undefined;
-      this.smokeButton = undefined;
-      this.extinguishButton = undefined;
-      this.lookoutButton = undefined;
-      this.identifyButton = undefined;
+      this.panel = undefined;
       this.markers = undefined;
       this.dawnBanner = undefined;
       this.fuelGauge = undefined;
@@ -225,8 +133,6 @@ export class HudScene extends Phaser.Scene {
       this.pinch = undefined;
       this.pause?.destroy();
       this.pause = undefined;
-      this.spreadButton?.destroy();
-      this.spreadButton = undefined;
     });
   }
 
@@ -238,42 +144,6 @@ export class HudScene extends Phaser.Scene {
     this.engineHud?.refresh(this.telemetry, this.time.now);
     this.markers?.refresh(this.telemetry);
     this.dawnBanner?.refresh(this.telemetry, this.time.now);
-    this.torpedoButton?.setRemaining(this.telemetry.torpedoesLeft);
-    this.torpedoButton?.update();
-    const t = this.telemetry;
-    const reloadN = this.gunButton ? gunButtonReloadN(t) : 0; // 米PT の任務の 13mm だけ（大発の任務は弾倉なしで 0 のまま）
-    if (reloadN !== this.lastReloadN) {
-      this.lastReloadN = reloadN;
-      this.gunButton?.setLabel(gunButtonLabel(reloadN));
-      this.gunButton?.setEnabled(reloadN === 0); // 薄く（押したままでよい。交換が済めば撃ち続ける）
-    }
-    if (this.smokeButton) {
-      // 展開中 / 冷却の残り秒 / 使える。整数が変わったときだけ文字が変わる
-      this.smokeButton.setLabel(t.smokeLeftS > 0 ? '煙幕\n展開中' : t.smokeCooldownS > 0 ? `煙幕\n${Math.ceil(t.smokeCooldownS)}` : '煙幕');
-      this.smokeButton.setEnabled(t.smokeLeftS <= 0 && t.smokeCooldownS <= 0);
-    }
-    // 消火は火災中だけ使える（押せるが Mission が無視する。薄く表示）。火災中は要する長押し秒を出す（乗員が減ると伸びる。v0.3.5）
-    if (this.extinguishButton) {
-      this.extinguishButton.setEnabled(t.onFire);
-      const tenths = t.onFire ? Math.round(t.extinguishHoldS * 10) : 0;
-      if (tenths !== this.lastHoldTenths) {
-        this.lastHoldTenths = tenths;
-        this.extinguishButton.setLabel(tenths > 0 ? `消火\n${(tenths / 10).toFixed(1)}s` : '消火');
-      }
-    }
-    if (this.identifyButton) {
-      // 識別を求めている間（航過中でも真上を過ぎてから押した後は除く）だけ有効。残り秒は 5,4,3,2,1 で 0 は出さない
-      const live = t.friendlyPhase === FF_CHALLENGE || (t.friendlyPhase === FF_STRAFE && !t.friendlyPending);
-      const n = t.friendlyPhase === FF_CHALLENGE ? Math.max(1, Math.ceil(t.friendlyLeftS)) : 0;
-      if (n !== this.lastIdentifyN) {
-        this.lastIdentifyN = n;
-        this.identifyButton.setLabel(n > 0 ? `識別\n${n}` : '識別');
-      }
-      this.identifyButton.setEnabled(live);
-      this.identifyButton.setTint(live ? HOME_COLOR : null);
-      this.identifyButton.setAlphaOverride(
-        live ? ROUND_BUTTON_ALPHA + (IDENTIFY_PULSE_ALPHA_MAX - ROUND_BUTTON_ALPHA) * (0.5 + 0.5 * Math.sin((2 * Math.PI * IDENTIFY_PULSE_HZ * this.time.now) / 1000)) : NaN,
-      );
-    }
+    this.panel?.update(this.telemetry, this.time.now);
   }
 }

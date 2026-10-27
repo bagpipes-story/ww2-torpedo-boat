@@ -3,6 +3,11 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.6.8（作業中）
+
+- 兵装パネル：魚雷と機銃をいつでも両方・右側 2 列（ユーザー「魚雷ボタンと機銃ボタンは常に両方表示させ、両方常に使用できる仕様に」）。目的・変更点・設計値の理由・中立性・既知の制約・実機テスト結果は段階 S5 で書く（CLAUDE.md §5: `package.json` の版と CHANGELOG の番号を合わせるため、S0 で見出しだけ置いた）。
+- S0（準備。挙動は変えない）: 凍結のファイル 12 本の sha256 を `tests/frozen-files.test.ts` で固定（main a9a8229 の値）。`createTelemetry` を `systems/mission-telemetry.ts` から `systems/telemetry-create.ts` へ（中身はそのまま。mission-telemetry が re-export）。右側のボタンの作成・更新・後始末を `scenes/hud-scene.ts` から `ui/weapon-panel.ts` へ（中身・作る順・更新の順はそのまま）。版 0.6.8。ロードマップに v0.6.8 の行を足し、前の v0.6.8（空襲下の分散退避・jp_03）を v0.6.10 へ。
+
 ## v0.6.7 — 2026-10-25（日本ハードモード⑥：航空機だけの任務）
 
 - 要約（5 行。細かい値と理由はこの下）:
