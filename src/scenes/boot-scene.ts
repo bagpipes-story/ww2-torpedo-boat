@@ -45,6 +45,7 @@ import { getConvoyParams } from '../config/convoy-mission-data';
 import { getEngineParams } from '../config/engine-mission-data';
 import { getGunboatParams } from '../config/gunboat-mission-data';
 import { getPatrolAirParams } from '../config/patrol-air-mission-data';
+import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -81,6 +82,7 @@ export class BootScene extends Phaser.Scene {
       const b = getBoatRecord(gameData, id);
       generatePlayerBoatTexture(this, { lengthUnits: b.length_m * spriteScale, beamUnits: b.beam_m * spriteScale }, boatTextureKey(id));
     }
+    validateLoadouts(gameData); // 兵装（v0.6.8）: 対空・閃光の data と全任務（ハードも）の艇の魚雷・砲の検査（壊れていれば Boot で止まる。上の輪の後）
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);

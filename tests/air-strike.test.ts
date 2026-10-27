@@ -29,7 +29,9 @@ import {
   type AirStrikeParams,
   type AirStrikeState,
 } from '../src/core/air-strike';
+import { AA_SEED_OFFSET } from '../src/core/aa-fire';
 import { airStrikeParamsFromData } from '../src/core/air-strike-data';
+import { SHIP_GUN_SEED_OFFSET } from '../src/core/arms-cue';
 import { clampToBounds, stepBoat, stepStraight, type BoatInput, type BoatState } from '../src/core/boat-motion';
 import type { AircraftPose } from '../src/core/friendly';
 import { NIGHT_SEED_OFFSET } from '../src/core/night';
@@ -479,7 +481,7 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     expect(s.dodgeCount).toBeGreaterThan(16); // 17 発目からは数だけ（配列は伸ばさない）
   });
 
-  it('乱数の系列は重ならない: seed+0〜7、沿岸砲 8〜8+門数−1、今夜 16、見張り 17、敵の米PT 18（v0.6.3）、空襲 19・T-14 の 13mm 20（v0.6.3。T-38 の 25mm も）。21 は大発の 13mm の予約、22 は隼艇の 25mm（v0.6.6）、23 は夜の哨戒機の出撃（v0.6.7）、機関と夜の哨戒機の門番は乱数なし。data の最大の門数は 8 以下', () => {
+  it('乱数の系列は重ならない: seed+0〜7、沿岸砲 8〜8+門数−1、今夜 16、見張り 17、敵の米PT 18（v0.6.3）、空襲 19・T-14 の 13mm 20（v0.6.3。T-38 の 25mm も）。21 は大発の 13mm の予約、22 は隼艇の 25mm（v0.6.6）、23 は夜の哨戒機の出撃（v0.6.7）、24 は対空（v0.6.8）・25 は艦への機銃（v0.6.8）、機関と夜の哨戒機の門番は乱数なし。data の最大の門数は 8 以下', () => {
     let maxBatteries = 0;
     for (const id of [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')])
       for (const hard of [false, true]) maxBatteries = Math.max(maxBatteries, buildWorldSetup(gameData, id, { hard }).shoreBatteries.length);
@@ -487,12 +489,14 @@ describe('夜明けの空襲の段階（core/air-strike。spec §4.2・§4.3）'
     expect(maxBatteries).toBeLessThanOrEqual(8);
     const offsets = [0, 1, 2, 3, RAID_SEED_OFFSET, 5, 6, 7];
     for (let i = 0; i < maxBatteries; i++) offsets.push(8 + i);
-    offsets.push(NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET, PT_SEED_OFFSET, AIR_STRIKE_SEED_OFFSET, PT_GUN_SEED_OFFSET, GUNBOAT_GUN_SEED_OFFSET, PATROL_AIR_SEED_OFFSET);
+    offsets.push(NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET, PT_SEED_OFFSET, AIR_STRIKE_SEED_OFFSET, PT_GUN_SEED_OFFSET, GUNBOAT_GUN_SEED_OFFSET, PATROL_AIR_SEED_OFFSET, AA_SEED_OFFSET, SHIP_GUN_SEED_OFFSET);
     expect(new Set(offsets).size).toBe(offsets.length);
     expect(AIR_STRIKE_SEED_OFFSET).toBe(19);
     expect(PT_GUN_SEED_OFFSET).toBe(20);
     expect(GUNBOAT_GUN_SEED_OFFSET).toBe(22);
     expect(PATROL_AIR_SEED_OFFSET).toBe(23);
+    expect(AA_SEED_OFFSET).toBe(24);
+    expect(SHIP_GUN_SEED_OFFSET).toBe(25);
     expect([RAID_SEED_OFFSET, NIGHT_SEED_OFFSET, LOOKOUT_SEED_OFFSET]).toEqual([4, 16, 17]);
   });
 });
