@@ -1,5 +1,5 @@
-// 停泊して揚陸する輸送船を守る模擬の組み立て（v0.6.9 S3・S4a。jp_04。spec-v069 §6 S3・§8・R1・R2・R4・R7・R12）: data（jp_04 の v0_1_prototype.landing・us_pt_enemy.torpedo_attack・jp_t38）から
-// core/landing-sim の設定を作り、較正の帯（LANDING_CALIBRATION・LANDING_PAIRS・LANDING_SALVO_BANDS）と不変（I1〜I6）を持つ。scripts/landing-sim.ts が N 400 × 2 組で表にする（S4 で調整）。
+// 停泊して揚陸する輸送船を守る模擬の組み立て（v0.6.9 S3・S4a・S4。jp_04。spec-v069 §6 S3・§8・R1・R2・R4・R7・R12・R13）: data（jp_04 の v0_1_prototype.landing・us_pt_enemy.torpedo_attack・jp_t38）から
+// core/landing-sim の設定を作り、較正の帯（LANDING_CALIBRATION・LANDING_PAIRS・LANDING_SALVO_BANDS）と不変（I1〜I6）を持つ。scripts/landing-sim.ts が N 400 × 2 組で表にする（S4 で調整済み。tests/landing-balance が N 60 で回帰を見る）。
 // Phaser 非依存・window を読まない。値は world-setup の buildWorldSetup と同じ（米PT・艇・燃料・視界は pt-pass-sim-setup の ptSimSetup を流用）。上書きは data の写しに当てて、世界と同じ検査
 // （config/landing-mission-data の V1〜V13・core/pt-torpedo-data の V11）を通す＝R7: V8・V10・V13 を破る組み合わせは例外で止まる。data は変えない。
 import { getPrototypeMission, type GameData } from '../config/game-data';
@@ -79,10 +79,11 @@ const obj = (c: LandingCell): number => c.objPct;
 const lost = (c: LandingCell): number => c.ownSunkPct + c.adriftPct;
 
 /**
- * 設計の帯（spec §8 の帯を R12 で置き換えたもの（R2 のノーマルの帯は捨てた）。ノーマル、N 400 × 2 組）: hide ≤ 15%（自艇の沈没 ≤ 3%）・lure 70〜88%（自艇の沈没 ≤ 18%・
+ * 設計の帯（spec §8 の帯を R12 で置き換え、R13 で対を 1 つ替えたもの（R2 のノーマルの帯は捨てた）。ノーマル、N 400 × 2 組）: hide ≤ 15%（自艇の沈没 ≤ 3%）・lure 70〜88%（自艇の沈没 ≤ 18%・
  * 漂流 ≤ 3%・夜明けの前の帰投 ≥ 80%・決着の前の燃料少 ≤ 10%・決着の前に輪 ≤ 10%（R4））。lure_noshoot は表だけ（25mm は T-38 の戦い方＝jp_01 と同じ）。
- * 対の帯: circle_start ≤ hide + 10（R1）・lure_away ≥ lure + 3（輸送船から離れて戦えば得）・lure_late ≤ lure − 10 かつ ≥ hide + 20（R2）・picket ≤ lure − 20・
- * kite ≤ lure + 5 で自艇の沈没 + 漂流 ≥ lure + 5（引きつけ続けが得にならない）。picket・shoot_near・circle_start は行の帯なし。S4a は今の data で測るだけ（帯に合わせるのは S4）
+ * 対の帯: circle_start ≤ hide + 10（R1）・lure ≥ lure_near + 10（R13: 輸送船から離れて戦えば得。輸送船のそばで戦う lure_near と比べる）・lure_late ≤ lure − 10 かつ ≥ hide + 20（R2）・
+ * picket ≤ lure − 20・kite ≤ lure + 5 で自艇の沈没 + 漂流 ≥ lure + 5（引きつけ続けが得にならない）。lure_away は表だけ（R13: S3 の lure がもう見つかっている間は輸送船から離れるので
+ * lure と同じに遊ぶ。R12 の lure_away ≥ lure + 3 は開かない）。picket・shoot_near・circle_start・lure_near は行の帯なし。S4 の値（engaged_error_factor 2.0）で全部 ✓
  */
 export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 15], ownSunkPct: [0, 3] } },
@@ -90,6 +91,7 @@ export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'picket', bands: {} },
   { policy: 'lure', bands: { objPct: [70, 88], ownSunkPct: [0, 18], adriftPct: [0, 3], homeBeforeDawnPct: [80, 100], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] } },
   { policy: 'lure_away', bands: {} },
+  { policy: 'lure_near', bands: {} },
   { policy: 'lure_noshoot', bands: {} },
   { policy: 'lure_late', bands: {} },
   { policy: 'kite', bands: {} },
@@ -97,7 +99,7 @@ export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
 ];
 export const LANDING_PAIRS: readonly LandingPairRow[] = [
   { policy: 'circle_start', other: 'hide', name: '達成 %', value: obj, lo: -Infinity, hi: 10 },
-  { policy: 'lure_away', other: 'lure', name: '達成 %', value: obj, lo: 3, hi: Infinity },
+  { policy: 'lure', other: 'lure_near', name: '達成 %', value: obj, lo: 10, hi: Infinity },
   { policy: 'lure_late', other: 'lure', name: '達成 %', value: obj, lo: -Infinity, hi: -10 },
   { policy: 'lure_late', other: 'hide', name: '達成 %', value: obj, lo: 20, hi: Infinity },
   { policy: 'picket', other: 'lure', name: '達成 %', value: obj, lo: -Infinity, hi: -20 },

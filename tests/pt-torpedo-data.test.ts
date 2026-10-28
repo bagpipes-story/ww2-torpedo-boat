@@ -1,4 +1,4 @@
-// 米PT の雷撃の数値（v0.6.9 S1・S4a。core/pt-torpedo-data。spec-v069 §3.3・§4.9 V11・R2・R8/F13e・R12）: ちょうど 11 鍵（R12 の engaged_error_factor）・V11 の例外の文すべて・torpedo_id が魚雷の記録と boat_ref の後期の型に一致・
+// 米PT の雷撃の数値（v0.6.9 S1・S4a・S4。core/pt-torpedo-data。spec-v069 §3.3・§4.9 V11・R2・R8/F13e・R12）: ちょうど 11 鍵（R12 の engaged_error_factor）・V11 の例外の文すべて・torpedo_id が魚雷の記録と boat_ref の後期の型に一致・
 // data（enemies.json の us_pt_enemy.torpedo_attack）の値・source と notes の pin。PtParams（core/pt-data）はこの block を読まない。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -32,10 +32,10 @@ const build = (over: Rec, ctx: Partial<PtTorpedoContext> = {}): (() => unknown) 
 };
 
 describe('torpedo_attack の data（enemies.json の us_pt_enemy。spec §3.3）', () => {
-  it('ちょうど 11 鍵（spec の順。R12 の engaged_error_factor は hurried_error_factor の次）・値は spec §3.3・R12 のまま（Mk 13・900 m・30°・3 本・8°・±10°・慌てて 1,300 m・2.5 倍・戦いながら 2.5 倍・10 秒・撃って去る）', () => {
+  it('ちょうど 11 鍵（spec の順。R12 の engaged_error_factor は hurried_error_factor の次）・値は spec §3.3・R12 のまま（Mk 13・900 m・30°・3 本・8°・±10°・慌てて 1,300 m・2.5 倍・10 秒・撃って去る）と S4 の戦いながら 2 倍（R13）', () => {
     expect(PT_TORPEDO_KEYS).toEqual(['torpedo_id', 'launch_range_m', 'launch_heading_tol_deg', 'salvo_count', 'salvo_spacing_deg', 'aim_error_deg', 'hurried_max_m', 'hurried_error_factor', 'engaged_error_factor', 'reacquire_s', 'retreat_after_salvo']);
     expect(Object.keys(RAW)).toEqual([...PT_TORPEDO_KEYS]);
-    expect(RAW).toEqual({ torpedo_id: 'us_mk13', launch_range_m: 900, launch_heading_tol_deg: 30, salvo_count: 3, salvo_spacing_deg: 8, aim_error_deg: 10, hurried_max_m: 1300, hurried_error_factor: 2.5, engaged_error_factor: 2.5, reacquire_s: 10, retreat_after_salvo: true });
+    expect(RAW).toEqual({ torpedo_id: 'us_mk13', launch_range_m: 900, launch_heading_tol_deg: 30, salvo_count: 3, salvo_spacing_deg: 8, aim_error_deg: 10, hurried_max_m: 1300, hurried_error_factor: 2.5, engaged_error_factor: 2, reacquire_s: 10, retreat_after_salvo: true });
     // torpedo_id は boats.json の us_elco80.torpedoes.type_late（R8/F13e）で、torpedoes.json にある
     expect((boat['torpedoes'] as Rec)['type_late']).toBe(RAW['torpedo_id']);
     expect(torpedoOf(RAW['torpedo_id'])).toBeDefined();
@@ -43,7 +43,7 @@ describe('torpedo_attack の data（enemies.json の us_pt_enemy。spec §3.3）
   it('組んだ値: 距離は二乗も・Mk 13 の 33.5 kt・射程 5,760 m・不発 3%・蛇行 2%・幅 2°（hit_rate_model の arming 100 m・蛇行の周期 6 秒）', () => {
     const p = ptTorpedoParamsFromData(RAW, ctxOf(RAW), LABEL);
     expect(p).toEqual({
-      torpedoId: 'us_mk13', launchM: 900, launch2: 810000, tolDeg: 30, n: 3, spacingDeg: 8, aimDeg: 10, hurriedM: 1300, hurried2: 1690000, hurriedFactor: 2.5, engagedFactor: 2.5, reacquireS: 10,
+      torpedoId: 'us_mk13', launchM: 900, launch2: 810000, tolDeg: 30, n: 3, spacingDeg: 8, aimDeg: 10, hurriedM: 1300, hurried2: 1690000, hurriedFactor: 2.5, engagedFactor: 2, reacquireS: 10,
       torpedo: { speedMps: 33.5 * 0.5144, rangeM: 5760, armingM: 100, jitterDeg: 2, erraticPeriodS: 6 },
       reliability: { dud: 0.03, erratic: 0.02 },
       jitterDeg: 2,
@@ -73,10 +73,17 @@ describe('torpedo_attack の data（enemies.json の us_pt_enemy。spec §3.3）
     expect(src).not.toContain('34 本で 2 本＝6%');
     expect(src).toContain('哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT はみな（見つけた PT だけでなく）'); // R2
     expect(src).toContain('hurried_max_m 0 で慌てた斉射なし');
-    // R12: 戦いながらの斉射（自艇と戦っている PT も撃つ・去らない・0 で無し・始めの値と S4 の範囲）
+    // R12: 戦いながらの斉射（自艇と戦っている PT も撃つ・去らない・0 で無し）と S4 の較正（R13: 2.5 から 1.5〜3.0 を回して 2.0。N 400 × 2 組の数）
     expect(src).toContain('戦いながらの斉射（spec R12: 早く引きつけても輸送船のそばで戦えば輸送船は危ない＝輸送船から離れて戦え）');
     expect(src).toContain('狙いの誤差を engaged_error_factor 倍にして撃ち、去らずに自艇と戦い続ける');
-    expect(src).toContain('engaged_error_factor 2.5 は慌てた斉射と同じ広がりから始める（S4 で 1.5〜3.0）。0 で戦いながらの斉射なし');
+    expect(src).toContain('engaged_error_factor 2.0 は S4 の模擬（scripts/landing-sim。N 400 × 2 組＝seed 1〜400 と 401〜800。数は 組 1 / 組 2）で慌てた斉射と同じ 2.5 から 1.5〜3.0 を回して決めた（spec R12・R13）');
+    expect(src).toContain('lure の達成 84.5 / 82.3%（帯 70〜88 の真ん中。1.5 は 79.8 / 78.5%・2.5 は 87.3 / 85.3% で上の端まで 0.7 点・3.0 は 87.8 / 88.3% で帯の外）');
+    expect(src).toContain('（lure − lure_near ＋55.3 点、帯 ≥ 10＝輸送船から離れて戦え）');
+    expect(src).toContain('ハードの lure 67.0 / 63.8%（帯 45〜70）');
+    expect(src).toContain('0 で戦いながらの斉射なし');
+    expect(src).toContain('S1 のまま S4 の帯に入ったので動かさない: 斉射の当たりうる 1 本（10 の遊び方を合わせて）気づかれていない 0.445 / 0.446（帯 0.30〜0.50）・慌てた 0.169 / 0.172（帯 0.08〜0.25）');
+    expect(src).not.toContain('S4 の模擬で決める');
+    expect(src).not.toContain('engaged_error_factor 2.5 は');
     expect(src).toContain('・engaged_error_factor・reacquire_s・retreat_after_salvo。');
     expect(src).toContain('landing.source（spec R7）');
     expect(src).toContain('us_elco80.torpedoes.type_late');

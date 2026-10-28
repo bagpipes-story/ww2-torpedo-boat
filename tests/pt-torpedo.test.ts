@@ -17,8 +17,8 @@ import { FEEL_DT, LP, TP, bench, CountingRng, place, stepTorp, type Bench } from
 const brgToShip = (b: Bench, i: number): number => bearingDeg(b.q.boats[i]!.x, b.q.boats[i]!.y, b.ld.x, b.ld.y);
 
 describe('雷撃の値（jp_04。data のまま）', () => {
-  it('Mk 13・900 m・30°・3 本・8°・±10°・1,300 m・2.5 倍・戦いながら 2.5 倍・10 秒、乱数は seed+26', () => {
-    expect([TP.torpedoId, TP.launchM, TP.tolDeg, TP.n, TP.spacingDeg, TP.aimDeg, TP.hurriedM, TP.hurriedFactor, TP.engagedFactor, TP.reacquireS]).toEqual(['us_mk13', 900, 30, 3, 8, 10, 1300, 2.5, 2.5, 10]);
+  it('Mk 13・900 m・30°・3 本・8°・±10°・1,300 m・2.5 倍・戦いながら 2 倍（S4 の較正。R13）・10 秒、乱数は seed+26', () => {
+    expect([TP.torpedoId, TP.launchM, TP.tolDeg, TP.n, TP.spacingDeg, TP.aimDeg, TP.hurriedM, TP.hurriedFactor, TP.engagedFactor, TP.reacquireS]).toEqual(['us_mk13', 900, 30, 3, 8, 10, 1300, 2.5, 2, 10]);
     expect(PT_TORPEDO_SEED_OFFSET).toBe(26);
   });
 });

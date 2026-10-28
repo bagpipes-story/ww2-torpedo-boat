@@ -1073,9 +1073,9 @@
         "main_weapon": "guns",
         "main_weapon_source": "design (v0.6.9。jp_01 と同じ T-38 の 25mm 単装（boats.json の jp_t38.gun_battery）。45cm 魚雷 2 本もいつでも撃てるが PT の下を抜ける（us_pt_enemy.torpedo_immune。味方の輸送船にも当たらない＝systems/torpedo-free）)",
         "duration_s": 200,
-        "duration_s_source": "design (v0.6.9。揚陸 landing.unload_s 140 秒＋泊地から輪の縁まで巡航 26 秒＋余裕。tests/dawn-clock: 出発から輪の縁 358 m＝巡航 7.0 秒 × call_margin 1.6 = 11 < 150。S4 の模擬で決める)",
+        "duration_s_source": "design (v0.6.9。揚陸 landing.unload_s 140 秒＋泊地から輪の縁まで巡航 26 秒＋余裕。tests/dawn-clock: 出発から輪の縁 358 m＝巡航 7.0 秒 × call_margin 1.6 = 11 < 150。S4 の模擬（N 400 × 2 組）で動かさなかった: どの遊び方も夜明けの前に揚陸が決着し（I6）、lure の夜明けの前の帰投 97.3 / 96.3%)",
         "fuel_allotment_gal": 19,
-        "fuel_allotment_gal_source": "design (v0.6.9。jp_01 と同じ。上限は tests/dawn-air『止まって待つと 1,500 秒未満で漂流』: 19 / 9.4118 × 720 = 1,453 秒。全速 0.28・巡航 0.13 gal/秒＝全速 約 68 秒・巡航 約 146 秒＝引きつけ続けると足りない（S4 の kite の帯）)",
+        "fuel_allotment_gal_source": "design (v0.6.9。jp_01 と同じ。上限は tests/dawn-air『止まって待つと 1,500 秒未満で漂流』: 19 / 9.4118 × 720 = 1,453 秒。全速 0.28・巡航 0.13 gal/秒＝全速 約 68 秒・巡航 約 146 秒＝引きつけ続けると足りない（S4 の kite の帯。N 400 × 2 組: kite の漂流 87.5 / 83.0%・自艇の沈没 + 漂流は lure より ＋92.1 点（帯 ≥ 5）・達成 3.3 / 3.5%（lure + 5 以下）、lure の決着の前の燃料少 0 / 0%）)",
         "shallows": [],
         "bounds_m": {
           "width": 6000,
@@ -1129,7 +1129,7 @@
           "torpedo_hits_to_sink": 2,
           "lookout_m": 1800,
           "mark_label_ja": "揚陸地点",
-          "source": "historical (停船して揚陸: 空知丸は12日にパロンポンで揚陸（medium）、卯月は止まっていて被雷（medium）。揚陸は湾内の約2時間のうち約1時間（low・推定）) / design (v0.6.9。空知丸（4,107 t）を ijn_transport（5,000t級・120 × 16 m）で代用。艇首 135°（浜へ斜め）は北と東の PT が同じくらいの角度で撃つため。unload_s 140 は時間圧縮（S4 の模擬で決める）。torpedo_hits_to_sink 2: 卯月は2本以上で沈んだ、1 回の慌てた斉射ではまず沈まない（試作 aspect-mc）。記録の 1（us_02 が読む）は変えない。lookout_m 1,800: 見張りの報告（ゲーム上の予告。史実の PT は気づかれずに寄った）から慌てる距離まで ≥ 24 秒・900 m まで ≥ 44 秒。S4 で動かせる範囲（spec R7。scripts の上書きもこの外は断る）: lookout_m ≥ max(hurried_max_m, launch_range_m) + 412（V10: 報告から 20 秒 × 8 kt の 20.58 m/秒）かつ < PT の出発点（揺らぎ込み）から泊地まで最短の 1,929 m（V8）＝hurried_max_m 1,300 なら lookout_m 1,712〜1,928、lookout_m 1,800 なら hurried_max_m ≤ 1,388。hurried_max_m ≥ 1,062 m（V13: 泊地から hurried_max_m より遠い線の部分を、player_start から巡航で見つかる 1,560 m の外に保つ）)"
+          "source": "historical (停船して揚陸: 空知丸は12日にパロンポンで揚陸（medium）、卯月は止まっていて被雷（medium）。揚陸は湾内の約2時間のうち約1時間（low・推定）) / design (v0.6.9。空知丸（4,107 t）を ijn_transport（5,000t級・120 × 16 m）で代用。艇首 135°（浜へ斜め）は北と東の PT が同じくらいの角度で撃つため。unload_s 140 は時間圧縮（S4 の模擬 N 400 × 2 組で動かさなかった: 120〜160 のどれでも lure の達成は同じ 87.3 / 85.3%（engaged_error_factor 2.5 の掃き。雷撃は揚陸の終わりの前に決まる）。2.0 の lure は決着の中央値 140 秒・夜明けの前の帰投 97.3 / 96.3%・決着の前の燃料少と輪 0 / 0%（R4 の帯 ≤ 10））。torpedo_hits_to_sink 2: 卯月は2本以上で沈んだ、1 回の慌てた斉射ではまず沈まない（試作 aspect-mc。S4: 慌てた斉射 1 回の後に輸送船が残るのは 97.1%。1 にすると lure 69.5 / 70.3%・lure_late 22.8 / 24.5%（2.5 の掃き）＝最後の手段で使わない）。記録の 1（us_02 が読む）は変えない。lookout_m 1,800: 見張りの報告（ゲーム上の予告。史実の PT は気づかれずに寄った）から慌てる距離まで ≥ 24 秒・900 m まで ≥ 44 秒（S4 で動かさなかった: 1,712 で lure 77.8 / 80.5%・1,928 で 85.8 / 89.3%（2.5 の掃き）。S4 の較正は engaged_error_factor 2.5 → 2.0 だけ＝spec R13）。S4 で動かせる範囲（spec R7。scripts の上書きもこの外は断る）: lookout_m ≥ max(hurried_max_m, launch_range_m) + 412（V10: 報告から 20 秒 × 8 kt の 20.58 m/秒）かつ < PT の出発点（揺らぎ込み）から泊地まで最短の 1,929 m（V8）＝hurried_max_m 1,300 なら lookout_m 1,712〜1,928、lookout_m 1,800 なら hurried_max_m ≤ 1,388。hurried_max_m ≥ 1,062 m（V13: 泊地から hurried_max_m より遠い線の部分を、player_start から巡航で見つかる 1,560 m の外に保つ）)"
         },
         "coast": {
           "side": "south",
@@ -1173,7 +1173,7 @@
           "objective_ja": "米PT\u00a03隻が北・東・北東から輸送船を狙う。気づかれていないPTは900\u00a0mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。輸送船から離れて戦え。生きて帰れ",
           "success_ja": "輸送船の揚陸完了を見届けて帰投",
           "note_ja": "1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月は、暗い岸を背に忍び寄った米PT 2隻に約900 mから魚雷6本を撃たれ、2本以上を受けて沈んだ。日本の魚雷艇がレイテにいた記録は見つかっておらず、この夜はゲーム上の想定（艇はT-38で代用、3隻目のPTも想定）。",
-          "source": "design (v0.6.9。3 隻目（北東の海から）はゲーム上の想定（史実の PT は 2 隻）。泊地の左舷の真横 89° から撃つので最も危ない。出発点（揺らぎ込み）から自艇の出発点まで 3,325 m・泊地まで 2,513 m、線の終わりは泊地から 576〜718 m。S4 の帯（§8）を満たさなければ hard block ごと外す（Briefing は『（この任務は同じ）』）)"
+          "source": "design (v0.6.9。3 隻目（北東の海から）はゲーム上の想定（史実の PT は 2 隻）。泊地の左舷の真横 89° から撃つので最も危ない。出発点（揺らぎ込み）から自艇の出発点まで 3,325 m・泊地まで 2,513 m、線の終わりは泊地から 576〜718 m。S4 の模擬（N 400 × 2 組・engaged_error_factor 2.0）でハードの帯（spec R12）を満たしたので残す: lure 67.0 / 63.8%（帯 45〜70）・自艇の沈没 19.0 / 20.8%（≤ 30）・hide 0 / 0%（≤ 8）、lure_late 47.8 / 45.0%・lure_near 4.8 / 3.8%)"
         }
       }
     },

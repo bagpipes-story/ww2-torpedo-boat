@@ -1,12 +1,15 @@
-// 停泊して揚陸する輸送船を守る模擬（v0.6.9 S3。core/landing-sim・landing-sim-cell・landing-trial・landing-sim-policy、systems/landing-sim-setup。spec-v069 §6 S3・§8・R1・R2・R4・R7）:
+// 停泊して揚陸する輸送船を守る模擬（v0.6.9 S3・S4。core/landing-sim・landing-sim-cell・landing-trial・landing-sim-policy、systems/landing-sim-setup。spec-v069 §6 S3・§8・R1・R2・R4・R7）:
 // 同じ seed なら同じ夜（決まった結果）、どの遊び方も I1〜I6、輸送船の被雷と斉射の数えが合う（浮いている間の命中の和 = 被雷・影の当たりうる本数 ≥ 本物）、上書きは data を変えず
 // 世界と同じ検査を通す（V8・V10・V13 を破る組み合わせは止まる＝R7）、R2 の期待値の畳み込み、出発点で巡航して回っても見つからない（R1・V13）。帯（S4 の較正）はここでは見ない。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
-import { LD_DONE, LD_SUNK } from '../src/core/landing';
+import type { BoatState } from '../src/core/boat-motion';
+import { LD_DONE, LD_SUNK, createLandingReport } from '../src/core/landing';
 import { OUT_ENGAGED, PT_SALVO_ENGAGED, runLandingTrial } from '../src/core/landing-sim';
 import { landingCell, salvoStats, surviveOf, type SalvoStats } from '../src/core/landing-sim-cell';
-import { LANDING_PLAY, LANDING_POLICIES, LANDING_POLICY_SPECS, landingPlayPoints } from '../src/core/landing-sim-policy';
+import { LANDING_PLAY, LANDING_POLICIES, LANDING_POLICY_SPECS, landingPlayPoints, landingSteer, type LandingSteer, type LandingSteerCtx } from '../src/core/landing-sim-policy';
+import type { PtSection } from '../src/core/pt-boats';
+import { bearingDeg } from '../src/core/ship-ai';
 import { landingCalibrationRun, landingInvariantMisses, landingSimSetup } from '../src/systems/landing-sim-setup';
 
 const S = landingSimSetup(gameData, 'jp_04');
@@ -23,7 +26,7 @@ describe('組み立て', () => {
   it('上書きは data の写しに当て、data は変えない（R12 の EFACTOR も。V11 を破る値は止まる）', () => {
     const o = landingSimSetup(gameData, 'jp_04', { unloadS: 120, lookoutM: 1850, hitsToSink: 1, aimDeg: 12, spacingDeg: 6, hurriedM: 1200, hurriedFactor: 2, engagedFactor: 1.5, reacquireS: 5, fuelGal: 17 });
     expect([o.landing.unloadS, o.landing.lookoutM, o.landing.hitsToSink, o.torpedo.aimDeg, o.torpedo.spacingDeg, o.torpedo.hurriedM, o.torpedo.hurriedFactor, o.torpedo.engagedFactor, o.torpedo.reacquireS, o.fuelGal]).toEqual([120, 1850, 1, 12, 6, 1200, 2, 1.5, 5, 17]);
-    expect([S.landing.unloadS, S.landing.lookoutM, S.torpedo.aimDeg, S.torpedo.engagedFactor, S.fuelGal]).toEqual([140, 1800, 10, 2.5, 19]);
+    expect([S.landing.unloadS, S.landing.lookoutM, S.torpedo.aimDeg, S.torpedo.engagedFactor, S.fuelGal]).toEqual([140, 1800, 10, 2, 19]);
     expect(landingSimSetup(gameData, 'jp_04', { engagedFactor: 0 }).torpedo.engagedFactor).toBe(0);
     expect(() => landingSimSetup(gameData, 'jp_04', { engagedFactor: 0.5 })).toThrow(/engaged_error_factor（0\.5）は 0（戦いながらの斉射なし）か 1 以上/);
     expect(landingSimSetup(gameData, 'jp_04').landing.unloadS).toBe(140);
@@ -98,10 +101,29 @@ describe('1 夜', () => {
     const off = landingSimSetup(gameData, 'jp_04', { engagedFactor: 0 });
     for (const pol of ['lure', 'lure_late', 'kite'] as const) for (let seed = 1; seed <= 6; seed++) expect(Array.from(runLandingTrial(off, pol, seed).kind)).not.toContain(PT_SALVO_ENGAGED);
   });
-  it('lure_away（R12）は lure と同じ台本に「一度見つかった後は輸送船から awayM の内へ戻らない」を足したもの', () => {
-    const [a, l] = [LANDING_POLICY_SPECS.lure_away, LANDING_POLICY_SPECS.lure];
-    expect({ ...a, away: false }).toEqual(l);
-    expect([a.away, l.away, LANDING_PLAY.awayM]).toEqual([true, false, 1200]);
+  it('lure_away（R12・表だけ）と lure_near（R13）は lure と同じ台本で、見つかっている間の戦い方だけが違う（stay_out: 一度見つかった後は awayM の内へ戻らない・near: 輸送船のそばへ戻る）', () => {
+    const [a, n, l] = [LANDING_POLICY_SPECS.lure_away, LANDING_POLICY_SPECS.lure_near, LANDING_POLICY_SPECS.lure];
+    expect({ ...a, fight: 'flee' }).toEqual(l);
+    expect({ ...n, fight: 'flee' }).toEqual(l);
+    expect([l.fight, a.fight, n.fight, LANDING_PLAY.awayM]).toEqual(['flee', 'stay_out', 'near', 1200]);
+  });
+  it('R13: 見つかっている間、lure は輸送船から離れる向きへ静音・lure_near は待つ点（泊地から 250 m＝400 m の内）へ静音で戻り、着けば止まる', () => {
+    const pts = landingPlayPoints(S.landing, S.start);
+    const steer = (pol: 'lure' | 'lure_near', x: number, y: number): LandingSteer => {
+      const boat = { x, y, headingDeg: 0 } as BoatState;
+      const ctx: LandingSteerCtx = { boat, q: { detected: true, boats: [] } as unknown as PtSection, report: createLandingReport(), start: S.start, anchor: S.landing, station: pts.station, picket: pts.picket, ring: S.ring, silentMps: 7, cruiseMps: 12 };
+      const out: LandingSteer = { headingDeg: NaN, wantMps: NaN };
+      landingSteer(LANDING_POLICY_SPECS[pol], ctx, false, { lured: false }, out);
+      return out;
+    };
+    const [ax, ay] = [S.landing.x, S.landing.y];
+    const far = { x: ax, y: ay - 1000 }; // 泊地の北 1,000 m
+    expect(steer('lure', far.x, far.y)).toEqual({ headingDeg: 0, wantMps: 7 }); // 北へ（泊地から離れる）
+    const back = steer('lure_near', far.x, far.y);
+    expect(back.headingDeg).toBeCloseTo(bearingDeg(far.x, far.y, pts.station.x, pts.station.y), 9);
+    expect(back.wantMps).toBe(7);
+    expect(steer('lure_near', pts.station.x, pts.station.y).wantMps).toBe(0);
+    expect(Math.hypot(pts.station.x - ax, pts.station.y - ay)).toBeLessThan(400);
   });
 });
 
