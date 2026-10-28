@@ -3,7 +3,7 @@
 // 移すために MissionWorld.smokeScreen を private readonly から readonly にした（ここが読む。ほかに private から出したものは無い）。
 import type { MissionWorld } from './mission-world';
 
-/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順） */
+/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9） */
 export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   const g = w.destroyers;
   w.storm?.updateVisuals(realDt, w.boat.state);
@@ -22,9 +22,10 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   w.patrol?.updateVisuals(w.boat.state, w.escort ? w.escort.state.boat : null);
   w.dawn.updateVisuals(w);
   w.arms?.updateVisuals(realDt, w);
+  w.landing?.updateVisuals(realDt); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）
 }
 
-/** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順） */
+/** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順。揚陸（v0.6.9）は最後） */
 export function destroyWorldVisuals(w: MissionWorld): void {
   w.storm?.destroy();
   w.seaplane?.destroy();
@@ -41,4 +42,5 @@ export function destroyWorldVisuals(w: MissionWorld): void {
   w.smokeScreen?.destroy();
   w.destroyers?.destroy();
   w.boat.destroy();
+  w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）
 }

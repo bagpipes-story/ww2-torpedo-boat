@@ -44,6 +44,7 @@ import { buildEnemies } from './world-enemies';
 import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
 import { buildArms, type WorldArms } from './world-arms';
+import { buildLanding, type WorldLanding } from './world-landing';
 import type { WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
@@ -70,6 +71,7 @@ export class MissionWorld {
   readonly patrol: PatrolAir | null; // 夜の哨戒機（v0.6.7。jp_02。門番と夜の出撃。systems/patrol-air）。setup.patrolAir が無い任務・?debug&nopatrol では null
   readonly dawn: WorldDawn; // 夜明けのラッチと夜明けの空襲（v0.6.1。world-dawn.ts）。夜明けは任務の終わりではない
   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
+  readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
   readonly returnPoint: ReturnPoint;
@@ -206,6 +208,7 @@ export class MissionWorld {
     this.dawn = new WorldDawn(scene, s, hz.strike); // 夜明けのラッチ・海の明るさ・夜明けの空襲（空襲の無い任務は null）
     this.engine = s.engine ? new EngineTrouble(s.engine) : null; // 機関の不調（v0.6.5。乱数なし＝生成の順と乱数の系列に触らない）
     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
+    this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
     this.refreshShallowStatus();
   }
 
@@ -233,11 +236,14 @@ export class MissionWorld {
     return this.torpedoes.unresolvedCount > 0 || this.launcher.queued > 0;
   }
 
-  /** 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標 */
-  get returnCallDone(): boolean { return this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
+  /**
+   * 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 揚陸の任務（v0.6.9。jp_04）は決着（揚陸完了か沈没）、
+   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標
+   */
+  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
 
-  /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。輸送隊の任務（v0.6.4）では立てない（大発は狩る相手ではない。決着は returnCallDone） */
-  get noTargetsLeft(): boolean { return this.convoy ? false : this.enemy.noTargetsLeft; }
+  /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。揚陸の任務（v0.6.9）と輸送隊の任務（v0.6.4）では立てない（PT・大発は狩る相手ではない。決着は returnCallDone） */
+  get noTargetsLeft(): boolean { return this.landing ? false : this.convoy ? false : this.enemy.noTargetsLeft; }
 
   /** 走っている魚雷を外れとして確定する（終了時。Result の集計から漏れないようにする） */
   resolveRemainingAsMisses(): void {

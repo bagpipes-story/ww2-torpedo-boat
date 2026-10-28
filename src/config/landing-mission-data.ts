@@ -1,11 +1,11 @@
 // 停泊して揚陸する味方の輸送船（v0.6.9。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §4.9）の任務の読み出し: 任務の v0_1_prototype.landing があれば、
 // 輸送船の記録（enemies.json の ship_id）・米PT の雷撃（us_pt_enemy.torpedo_attack。core/pt-torpedo-data の V11）・米PT の隊（揺らぎの前の ptBase と今夜の ptNight）から LandingSetup を組む。
-// 形の検査（V3 の形）は core/landing-data、線の幾何は core/landing-geometry。他の記録・任務を跨ぐ検査はここ（V1〜V10・V13。V12 は Boot）。
+// 形の検査（V3 の形）は core/landing-data、線の幾何は core/landing-geometry。他の記録・任務を跨ぐ検査はここ（V1〜V10・V13）。Boot は validateLandingMissions で全任務（ハードも）を 1 回組み、V12 も見る（v0.6.9 S5a）。
 // PrototypeMission に鍵は足さない（block は生の proto から読む。engine-mission-data・patrol-air-mission-data と同じ作法）。world-setup が組み立てのたびに呼ぶ（landingSetupPart）。
 import { getVisibilityParams, type GameData } from './game-data';
 import { LANDING_BEACH_CLEAR_M, LANDING_BEACH_MARGIN_M, LANDING_DAWN_MARGIN_S, LANDING_LAUNCH_INSIDE_M, LANDING_RING_CLEAR_M, LANDING_WARN_MIN_S } from './landing-config';
-import type { PrototypeMission } from './mission-data';
-import { nearestStartM } from './pt-mission-data';
+import { getPrototypeMission, hasHardVariant, type PrototypeMission } from './mission-data';
+import { getPtParams, nearestStartM } from './pt-mission-data';
 import { bearingJa } from '../core/briefing';
 import { isLandingShipRecord, landingParamsFromData, readLandingBlock, type LandingParams } from '../core/landing-data';
 import { farLegClearM, legEndBowErrDeg, legEndRangeM } from '../core/landing-geometry';
@@ -130,4 +130,27 @@ export function landingSetupPart(data: GameData, mission: PrototypeMission, ptBa
   const hitScale = o.shipHitScale !== undefined && o.shipHitScale > 0 ? o.shipHitScale : data.hitRateModel.world.ship_hit_scale;
   const p = getLandingSetup(data, mission, ptBase, ptNight, hitScale);
   return p ? { landing: p } : {};
+}
+
+/**
+ * Boot の検査（v0.6.9 S5a。spec §4.9 V12・§6 S5）: v0_1_prototype.landing のある任務ごとに、ノーマルとハード（あれば）の揚陸の値を 1 回組み（V1〜V11・V13。今夜の揺らぎの前の隊で。
+ * 壊れていれば Boot で止まる＝黒い画面で遊ばせない）、V12: その任務の艇は smoke_generator false（右上の揚陸の時計が煙幕の場所を使う。hud-layout-config）。
+ * 戻りは最初の揚陸の任務のノーマルの揚陸の値（輸送船の絵の寸法 lengthM・beamM）。揚陸の任務が無ければ null
+ */
+export function validateLandingMissions(data: GameData, timeScale: number): LandingParams | null {
+  let first: LandingParams | null = null;
+  for (const m of data.missionsSeed.missions as readonly Rec[]) {
+    const proto = m['v0_1_prototype'] as Rec | undefined;
+    const id = m['id'];
+    if (!proto || proto['landing'] === undefined || typeof id !== 'string') continue;
+    for (const hard of hasHardVariant(data, id) ? [false, true] : [false]) {
+      const pm = getPrototypeMission(data, id, hard);
+      const pt = pm.ptBoats ? getPtParams(data, pm, timeScale) : null;
+      const ld = getLandingSetup(data, pm, pt, pt, data.hitRateModel.world.ship_hit_scale)!;
+      const boat = (data.boats.boats as readonly Rec[]).find((b) => b['id'] === pm.playerBoatId);
+      if (boat?.['smoke_generator'] !== false) throw new Error(`${id}.v0_1_prototype.landing: 艇（${pm.playerBoatId}）は smoke_generator false（右上の揚陸の時計が煙幕の場所を使う。V12・docs/02 §6.11）`);
+      if (!first) first = ld.params;
+    }
+  }
+  return first;
 }

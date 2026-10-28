@@ -11,3 +11,16 @@ export const LANDING_WARN_MIN_S = 20;
 /** V4: 浜の線は海域の南の縁からこれ m（jp_01 の convoy.beach.margin_m 12 と同じ）、輸送船の当たりの円はどれも浜の線からこれ m 以上沖 */
 export const LANDING_BEACH_MARGIN_M = 12;
 export const LANDING_BEACH_CLEAR_M = 50;
+
+// 海の上の輸送船（v0.6.9 S5a。entities/ally-ship・ui/ally-ship-view。spec-v069 §5.4）。2 行目・時計・印の HUD の定数は S6 で足す
+/** 輸送船の状態の行の揚陸の % の刻み（「揚陸 45%」。1 夜に 20 回だけ setText。spec §3.5 の LANDING_PCT_LABEL_STEP） */
+export const LANDING_PCT_LABEL_STEP = 5;
+/** 「雷跡！ N 秒」の秒の上限（状態の行の鍵の 7 bit の内に収める。Mk 13 は泊地まで 1,300 m でも 16 秒弱） */
+export const LANDING_WAKE_S_MAX = 99;
+/** 状態の行（「揚陸 45%」）の字の大きさ px と、ラベル「輸送船」の上端からの下げ m（ラベルは ESCORT_LABEL_FONT_PX 22） */
+export const LANDING_STATUS_FONT_PX = 20;
+export const LANDING_STATUS_DY_M = 26;
+/** 沈んだ輸送船の状態の行の灰色（撃退された米PT の PT_RETIRED_TINT 0x8a8a8a と同じ色） */
+export const LANDING_SUNK_TEXT_COLOR = '#8a8a8a';
+/** 揚陸地点の帯の半分の長さ m（艇首の先が浜の線に届く点を中心に。帯の太さ・ラベルの下げは jp_01 の CONVOY_LANDING_MARK_*） */
+export const LANDING_MARK_HALF_M = 80;

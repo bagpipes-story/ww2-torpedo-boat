@@ -182,6 +182,7 @@ export function boatTextureKey(boatId: string): string {
 export const TEXTURE_KEYS = {
   destroyer: 'tex-destroyer',
   transport: 'tex-transport',
+  transportFriendly: 'tex-transport-friendly', // 味方の輸送船（v0.6.9。jp_04。assets/ally-ship-placeholder。灰色の tex-transport を tint しても青くならないので別の 1 枚）
   torpedo: 'tex-torpedo',
   wakeDot: 'tex-wake-dot',
   torpedoButton: 'tex-torpedo-button',
