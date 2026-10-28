@@ -1,9 +1,10 @@
-// 停泊して揚陸する味方の輸送船を守る模擬（core/landing-sim）の遊び方の台本（v0.6.9 S3。jp_04。spec-v069 §8・R1・R2）。pt-sim-policy・convoy-sim-policy と同じ考え: 艇長に見えるもの
+// 停泊して揚陸する味方の輸送船を守る模擬（core/landing-sim）の遊び方の台本（v0.6.9 S3・S4a。jp_04。spec-v069 §8・R1・R2・R12）。pt-sim-policy・convoy-sim-policy と同じ考え: 艇長に見えるもの
 // （見張りの報告＝遠い・近い・その PT の印、視程 900 m の内の PT、「発見された！」、赤い線、決着）だけを使う。Phaser 非依存・毎ステップ確保しない（書き先は 1 夜に 1 個）。
 // 動き（move）: hide 出発点で止まる / circle 出発点で巡航のまま回り続ける（R1: 出発点のそばで速く走っても引きつけられないか）/ picket 泊地の北東 1,000 m へ静音で行って止まる /
 //   station 輸送船のそば（泊地から出発点の側へ stationM）へ静音で行って止まる / lure 報告が出たらその PT へ巡航（react 1 は遠い報告から、2 は近い報告だけ）、見つかったら輸送船から離れる向きへ
 //   静音の上限（jp_05 の HUD の教え＝pt-sim-policy の slow: 見つかったら静音の上限で撃ち返す。kite は全速）、見失ったら輸送船のそばへ静音で戻り、次の報告でまた行く。kite は一度見つかったら PT がみな去るまで全速で
-//   見つかり続ける（見失えば最寄りの PT へ全速）。
+//   見つかり続ける（見失えば最寄りの PT へ全速）。lure_away（R12「輸送船から離れて戦え」）は lure と同じ（見つかっている間は輸送船から離れる向きへ静音の上限）で、そのうえ戦いを輸送船から
+//   awayM の外に保つ: 一度見つかった後は見失っても輸送船のそばへ戻らず、awayM の内なら静音で離れ、外なら止まって待つ（報告にはまた行く）。
 // 撃つ（shoot）: contact 見つかっている間に射程 600 m・視程の内の PT へ / eff 有効射程 300 m・視程の内の PT へ（見つかっていなくても）/ range 射程・視程の内の PT へ（見つかっていなくても）。
 // 決着（揚陸完了か沈没）の後は巡航で帰投（kite は PT がみな去ってから）。赤い線の転舵（dodge）は core/landing-sim で HUD どおり: 航過は線から離れる直角へ全速 4 秒（線の間は延ばす）、
 // 連射は針路そのまま（ui/pt-chase-lines の「針路そのまま撃ち返せ」。pt-pass-sim の既定 keep と同じ）。
@@ -14,8 +15,8 @@ import { allLeft } from './pt-sim-policy';
 import { bearingDeg } from './ship-ai';
 import { degToRad, wrapDeg360 } from './units';
 
-/** 遊び方（表の順。spec §8 の 7 と R1 の circle_start） */
-export const LANDING_POLICIES = ['hide', 'circle_start', 'picket', 'lure', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near'] as const;
+/** 遊び方（表の順。spec §8 の 7 と R1 の circle_start・R12 の lure_away） */
+export const LANDING_POLICIES = ['hide', 'circle_start', 'picket', 'lure', 'lure_away', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near'] as const;
 export type LandingPolicy = (typeof LANDING_POLICIES)[number];
 export type LandingMove = 'hide' | 'circle' | 'picket' | 'station' | 'lure';
 export type LandingShoot = 'none' | 'contact' | 'eff' | 'range';
@@ -27,22 +28,25 @@ export interface LandingPolicySpec {
   shoot: LandingShoot;
   dodge: boolean;
   kite: boolean;
+  /** 戦いを輸送船から離す（R12 の lure_away。lure の動きだけ）: 一度見つかった後は輸送船から LANDING_PLAY.awayM の内へ戻らない（見つかっている間は lure と同じく離れる向き） */
+  away: boolean;
 }
 
-const spec = (move: LandingMove, react: number, shoot: LandingShoot, dodge: boolean, kite = false): LandingPolicySpec => ({ move, react, shoot, dodge, kite });
+const spec = (move: LandingMove, react: number, shoot: LandingShoot, dodge: boolean, kite = false, away = false): LandingPolicySpec => ({ move, react, shoot, dodge, kite, away });
 export const LANDING_POLICY_SPECS: Readonly<Record<LandingPolicy, LandingPolicySpec>> = {
   hide: spec('hide', 0, 'none', false),
   circle_start: spec('circle', 0, 'none', true),
   picket: spec('picket', 0, 'eff', true),
   lure: spec('lure', LANDING_REPORT_FAR, 'contact', true),
+  lure_away: spec('lure', LANDING_REPORT_FAR, 'contact', true, false, true),
   lure_noshoot: spec('lure', LANDING_REPORT_FAR, 'none', true),
   lure_late: spec('lure', LANDING_REPORT_NEAR, 'contact', true),
   kite: spec('lure', LANDING_REPORT_FAR, 'contact', true, true),
   shoot_near: spec('station', 0, 'range', true),
 };
 
-/** 台本の距離 m（模擬の設定。ゲームの値ではない）: 輸送船のそばの待つ点（泊地から出発点の側へ）・picket の点（泊地から北東）・着いたとみなす */
-export const LANDING_PLAY = { stationM: 250, picketM: 1000, picketBrgDeg: 45, arriveM: 60 } as const;
+/** 台本の距離 m（模擬の設定。ゲームの値ではない）: 輸送船のそばの待つ点（泊地から出発点の側へ）・picket の点（泊地から北東）・着いたとみなす・lure_away が戦いを離す泊地からの距離（R12） */
+export const LANDING_PLAY = { stationM: 250, picketM: 1000, picketBrgDeg: 45, arriveM: 60, awayM: 1200 } as const;
 
 /** 台本の出力（1 夜に 1 個）: 針路 deg（NaN は保つ）と欲しい速さ（実 m/s。0 は止まる・Infinity は全速） */
 export interface LandingSteer {
@@ -145,6 +149,15 @@ export function landingSteer(sp: LandingPolicySpec, c: LandingSteerCtx, resolved
     const b = q.boats[r.i]!;
     out.headingDeg = bearingDeg(c.boat.x, c.boat.y, b.x, b.y);
     out.wantMps = c.cruiseMps;
+    return;
+  }
+  if (sp.away && mem.lured) {
+    // lure_away: 一度見つかった後は輸送船のそばへ戻らず、awayM の内なら静音で離れ、外なら止まって待つ
+    const ax = c.boat.x - c.anchor.x;
+    const ay = c.boat.y - c.anchor.y;
+    const inside = ax * ax + ay * ay < LANDING_PLAY.awayM * LANDING_PLAY.awayM;
+    out.headingDeg = inside ? bearingDeg(c.anchor.x, c.anchor.y, c.boat.x, c.boat.y) : NaN;
+    out.wantMps = inside ? c.silentMps : 0;
     return;
   }
   toward(c, c.station.x, c.station.y, c.silentMps, out);

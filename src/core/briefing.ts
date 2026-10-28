@@ -23,6 +23,16 @@ export function ptGunBriefingJa(label: string): string {
   return `${label}1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`;
 }
 
+/** 停泊して揚陸する輸送船の任務（v0.6.9。jp_04）の教え（spec R12: 自艇と戦っている PT も輸送船の近くで艇首が向けば撃つ）。目的（missions_seed の objective・hard の objective_ja）と「条件」が同じ句で言う */
+export const LANDING_FIGHT_AWAY_JA = '輸送船から離れて戦え';
+/**
+ * 同じ任務の「条件」の句（S7 で武器の句の後ろに「 ・」＋ノーブレークスペースで足す）: 揚陸の秒（landing.unload_s）・沈むまでの本数（torpedo_hits_to_sink）・R12 の教え・
+ * 米PT の魚雷は自艇の下を抜ける（D11）。句の中はノーブレークスペース（「魚雷 2⏎本」と割れない）。24 px・1,056 px で条件の行は 3 行（tests/jp04-mission）
+ */
+export function landingBriefingJa(unloadS: number, hitsToSink: number): string {
+  return `揚陸 ${Math.round(unloadS)} 秒（魚雷 ${hitsToSink} 本で沈む。${LANDING_FIGHT_AWAY_JA}。米PTの魚雷も自艇の下を抜ける）`;
+}
+
 export interface MenuEntry {
   id: string;
   title: string;

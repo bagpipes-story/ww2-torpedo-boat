@@ -31,7 +31,7 @@ import { wrapDeg360 } from './units';
 import { enemyDetectRangeM, speedFactorForBand } from './visibility';
 
 export type { LandingTrial } from './landing-trial';
-export { OUT_CALM, OUT_DAWN, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_HURRIED } from './pt-torpedo';
+export { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED } from './pt-torpedo';
 
 export interface LandingSimSetup extends PtSimSetup {
   /** 揚陸（world-setup の landing.params）と米PT の雷撃（landing.torpedo）。米PT・艇・燃料・視界・帰投の輪は PtSimSetup（systems/pt-pass-sim-setup の ptSimSetup） */
@@ -123,9 +123,9 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const watch = new LandingTrialWatch(p.count);
   const sink: PtTorpedoSink = {
     fire: (i, x, y, h, dud, err, bias, rangeM) => tor.fire(i, x, y, h, dud, err, bias, rangeM),
-    onSalvo: (i, hurried, rangeM, n) => {
-      tor.link.onSalvo(i, hurried, rangeM, n);
-      watch.salvo(out, i, hurried, rangeM, t, c.dawn);
+    onSalvo: (i, kind, rangeM, n) => {
+      tor.link.onSalvo(i, kind, rangeM, n);
+      watch.salvo(out, i, kind, rangeM, t, c.dawn);
     },
   };
   const report = createLandingReport();

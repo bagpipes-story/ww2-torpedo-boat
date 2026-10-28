@@ -14,9 +14,9 @@ import { wrapDeg180 } from './units';
 
 export type LandingTrialEnd = 'home' | 'sunk' | 'adrift' | 'timeout';
 
-/** 斉射の種類（core/pt-torpedo の PT_SALVO_CALM・PT_SALVO_HURRIED と同じ値。pt-torpedo を import するのは landing-sim だけ＝tests/landing-imports） */
+/** 斉射の種類（core/pt-torpedo の PT_SALVO_CALM・PT_SALVO_ENGAGED と同じ値。pt-torpedo を import するのは landing-sim だけ＝tests/landing-imports） */
 const SALVO_CALM = 1;
-const SALVO_HURRIED = 2;
+const SALVO_ENGAGED = 3;
 
 export interface LandingTrial {
   /** 終わり方（輪に入った・沈んだ・燃料 0 で止まった・夜明け + 打ち切りの秒）と秒、夜明けが来た */
@@ -37,7 +37,10 @@ export interface LandingTrial {
    */
   outcome: Uint8Array; kind: Uint8Array; launchS: Float64Array; launchM: Float64Array;
   arrived: Uint8Array; arrivedHits: Uint8Array; arrivedDuds: Uint8Array; potHits: Uint8Array; potDuds: Uint8Array; relevant: Uint8Array;
-  /** I1: 初めての接近の気づかれていない斉射の、その PT が報告の条件を満たし始めてからの最短秒（無ければ Infinity）。I2: 見失って哨戒に戻ってから斉射までの最短秒（無ければ Infinity） */
+  /**
+   * I1: 初めての接近の気づかれていない斉射の、その PT が報告の条件を満たし始めてからの最短秒（無ければ Infinity）。I2: 見失って哨戒に戻ってから気づかれていない・慌てた斉射までの
+   * 最短秒（無ければ Infinity。戦いながらの斉射（R12）は見失いの待ちを掛けないので数えない）
+   */
   i1LeadS: number; i2LeadS: number;
   /** I3: 夜明けの後の斉射・I4: 1 隻の斉射の最大・I5: seed+26 から引いた回数と斉射ごとの 1 + 2n + 蛇行の本数の和・I6: 夜明けに揚陸が決着していなかった */
   afterDawnSalvos: number; maxSalvosPerPt: number; draws26: number; drawsWant: number; unresolvedAtDawn: boolean;
@@ -76,17 +79,17 @@ export class LandingTrialWatch {
     }
   }
 
-  /** 斉射を撃ち終えた（PtTorpedoSink.onSalvo） */
-  salvo(out: LandingTrial, i: number, hurried: boolean, rangeM: number, t: number, dawn: boolean): void {
-    out.kind[i] = hurried ? SALVO_HURRIED : SALVO_CALM;
+  /** 斉射を撃ち終えた（PtTorpedoSink.onSalvo。kind は PT_SALVO_*） */
+  salvo(out: LandingTrial, i: number, kind: number, rangeM: number, t: number, dawn: boolean): void {
+    out.kind[i] = kind;
     out.launchS[i] = t;
     out.launchM[i] = rangeM;
     this.salvos[i]!++;
     if (this.salvos[i]! > out.maxSalvosPerPt) out.maxSalvosPerPt = this.salvos[i]!;
     if (dawn) out.afterDawnSalvos++;
     const e = this.eligibleS[i]!;
-    if (!hurried && this.everOut[i] === 0) out.i1LeadS = Math.min(out.i1LeadS, Number.isNaN(e) ? -Infinity : t - e);
-    if (!Number.isNaN(this.reenterS[i]!)) out.i2LeadS = Math.min(out.i2LeadS, t - this.reenterS[i]!);
+    if (kind === SALVO_CALM && this.everOut[i] === 0) out.i1LeadS = Math.min(out.i1LeadS, Number.isNaN(e) ? -Infinity : t - e);
+    if (kind !== SALVO_ENGAGED && !Number.isNaN(this.reenterS[i]!)) out.i2LeadS = Math.min(out.i2LeadS, t - this.reenterS[i]!);
   }
 
   /** ステップの終わり: 報告の条件を初めて満たした（I1。core/landing の landingReport の条件を PT ごとに） */

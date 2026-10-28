@@ -7,10 +7,10 @@
 import { readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
 import { describe, expect, it } from 'vitest';
-import { createLanding, tickLanding, LD_SUNK, LE_CALM, LE_DUD, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from '../src/core/landing';
+import { createLanding, tickLanding, LD_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from '../src/core/landing';
 import { LandingTorpedoLink, LandingTorpedoPool, stepLandingTorpedoes, type LandingHitHooks } from '../src/core/landing-torpedoes';
 import { PT_PATROL } from '../src/core/pt-boats';
-import { createPtTorpedoState, stepPtTorpedoes } from '../src/core/pt-torpedo';
+import { PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, createPtTorpedoState, stepPtTorpedoes } from '../src/core/pt-torpedo';
 import { SeededRng } from '../src/core/rng';
 import { consumeWakeMark, createTorpedoState, isArmed, launchTorpedo, markMissIfPassed, stepTorpedo, type TorpedoState } from '../src/core/torpedo';
 import { createTargetScan, scanTargets, type TorpedoEvents, type TorpedoTarget } from '../src/core/torpedo-targets';
@@ -137,17 +137,19 @@ function linkBench(done = false): { ld: LandingState; link: LandingTorpedoLink; 
   const link = new LandingTorpedoLink(ld, LP, st, pool, hooks);
   st.salvoLeft[1] = 3; // pt-torpedo の salvo() は撃つ前に本数を書く
   for (let k = 0; k < 3; k++) link.fire(1, 2000, 2000, 90 + k, false, false, 0, 1000);
-  link.onSalvo(1, false, 1000, 3);
+  link.onSalvo(1, PT_SALVO_CALM, 1000, 3);
   return { ld, link, pool, st, fx };
 }
 
 describe('(3) LandingTorpedoLink（斉射の数えと出来事。spec §4.3・F16）', () => {
-  it('fire はプールへ・onSalvo は「雷撃！」（気づかれていない・慌てた）の出来事（距離と本数）', () => {
+  it('fire はプールへ・onSalvo は「雷撃！」（気づかれていない・慌てた・戦いながら（R12））の出来事（距離と本数）', () => {
     const { ld, pool, link } = linkBench();
     expect(pool.remaining).toBe(3);
     expect([ld.eventKind, ld.eventBoat, ld.eventM, ld.eventCount, ld.eventSeq]).toEqual([LE_CALM, 1, 1000, 3, 1]);
-    link.onSalvo(0, true, 1250, 3);
+    link.onSalvo(0, PT_SALVO_HURRIED, 1250, 3);
     expect([ld.eventKind, ld.eventBoat, ld.eventM]).toEqual([LE_HURRIED, 0, 1250]);
+    link.onSalvo(1, PT_SALVO_ENGAGED, 820, 3);
+    expect([ld.eventKind, ld.eventBoat, ld.eventM, ld.eventCount, ld.eventSeq]).toEqual([LE_ENGAGED, 1, 820, 3, 3]);
   });
   it('3 本とも外れ: 最後の 1 本で「外れ」（途中は出さない）', () => {
     const { ld, link, pool, st } = linkBench();

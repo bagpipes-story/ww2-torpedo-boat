@@ -83,7 +83,7 @@ describe('V1〜V3・V11（任務の形・置き場・輸送船・雷撃の記録
   });
   it('V11 は任務と記録の名を頭に（core/pt-torpedo-data。文はすべて tests/pt-torpedo-data）', () => {
     expect(land((d) => ((ptOf(d)['torpedo_attack'] as Rec)['torpedo_id'] = 'us_mk8'))).toThrow(/^jp_04: enemies\.json の us_pt_enemy\.torpedo_attack: torpedo_id（us_mk8）は boats\.json の us_elco80\.torpedoes\.type_late（us_mk13）と同じ/);
-    expect(land((d) => delete ptOf(d)['torpedo_attack'])).toThrow(/^jp_04: enemies\.json の us_pt_enemy\.torpedo_attack: ちょうど 10 鍵/);
+    expect(land((d) => delete ptOf(d)['torpedo_attack'])).toThrow(/^jp_04: enemies\.json の us_pt_enemy\.torpedo_attack: ちょうど 11 鍵/);
   });
 });
 

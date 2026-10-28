@@ -4,13 +4,17 @@
 // → 命中 → 通り過ぎ）。雷跡の点は絵だけなので置かない（nextWakeAtM は他に読まれない）。プールは自艇の魚雷（w.torpedoes・KPI・終わりの待ち）に触らない。
 // Phaser 非依存・毎ステップ確保しない（状態・走査の書き先・PT の添字は組み立てで 1 回）。
 import type { SeaBounds } from './boat-motion';
-import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
+import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
 import type { LandingParams } from './landing-data';
 import { createTorpedoState, isArmed, launchTorpedo, markMissIfPassed, stepTorpedo, type TorpedoParams, type TorpedoState } from './torpedo';
 import { createTargetScan, scanTargets, type TorpedoEvents, type TorpedoTarget } from './torpedo-targets';
 
 /** 走査の書き先（module に 1 個。毎ステップ確保しない） */
 const SCAN = createTargetScan();
+
+/** 斉射の種類（core/pt-torpedo の PT_SALVO_HURRIED・PT_SALVO_ENGAGED と同じ値。ここは pt-torpedo を import しない＝tests/landing-imports。値の一致は tests/pt-torpedo） */
+const SALVO_HURRIED = 2;
+const SALVO_ENGAGED = 3;
 
 /**
  * 模擬の固定ステップ（TorpedoPool.step の写し。late hit は無し）。dt は time_scale 込みの秒、realDt は実時間（蛇行の位相）。hulls は輸送船（沈み始めれば out＝当たらず通り過ぎも見ない）、
@@ -126,9 +130,9 @@ export class LandingTorpedoLink implements TorpedoEvents {
     else this.settle(i);
   }
 
-  /** PtTorpedoSink: 斉射を撃ち終えた（出来事「米PT 雷撃！」「米PT 慌てて発射！」） */
-  onSalvo(i: number, hurried: boolean, rangeM: number, n: number): void {
-    landingEvent(this.ld, hurried ? LE_HURRIED : LE_CALM, i, rangeM, n);
+  /** PtTorpedoSink: 斉射を撃ち終えた（kind は PT_SALVO_*。出来事「米PT 雷撃！」「米PT 慌てて発射！」「米PT 戦いながら発射！」） */
+  onSalvo(i: number, kind: number, rangeM: number, n: number): void {
+    landingEvent(this.ld, kind === SALVO_HURRIED ? LE_HURRIED : kind === SALVO_ENGAGED ? LE_ENGAGED : LE_CALM, i, rangeM, n);
   }
 
   onHit(_target: number, x: number, y: number, s: TorpedoState): void {

@@ -84,6 +84,7 @@ describe('jp_04 の遊べる世界の data（v0_1_prototype。spec §3.2・R1）
     expect(start).toContain('前の (2700, 2450)');
     expect(start).toContain('最短 2,313 m');
     expect(String(P['enemy_behavior'])).toContain('PT がみな（見つけた PT だけでなく）慌てて撃って去る');
+    expect(String(P['enemy_behavior'])).toContain('狙いの誤差を engaged_error_factor 倍にして撃ち、去らずに戦い続ける（戦いながらの斉射。spec R12: 輸送船から離れて戦え'); // S4a
     expect(String(P['duration_s_source'])).toContain('出発から輪の縁 358 m＝巡航 7.0 秒 × call_margin 1.6 = 11 < 150');
     expect(String((P['pt_boats'] as Rec)['source'])).toContain(EXCERPT);
     expect(String((P['hard'] as Rec)['source'])).toContain('自艇の出発点まで 3,325 m・泊地まで 2,513 m');
@@ -184,11 +185,11 @@ describe('jp_04 の規則・文・夜明けの機', () => {
     const s = buildWorldSetup(gameData, 'jp_04');
     expect([s.friendly, s.seaplane, s.storm, s.raid]).toEqual([null, null, null, null]);
   });
-  it('文は data の数に合う（R8/F13c）: 目的（ノーマル・ハード）の「900 m」は launch_range_m、「近いPTは慌てて撃つ」は hurried_max_m > 0。PT の来る方角は今夜の揺らぎでも「北と東」「北・東・北東」', () => {
+  it('文は data の数に合う（R8/F13c）: 目的（ノーマル・ハード）の「900 m」（数と単位の間はノーブレークスペース。S4a）は launch_range_m、「近いPTは慌てて撃つ」は hurried_max_m > 0。PT の来る方角は今夜の揺らぎでも「北と東」「北・東・北東」', () => {
     const t = (enemies.find((e) => e['id'] === 'us_pt_enemy')!['torpedo_attack'] as Rec);
     const hard = P['hard'] as Rec;
     for (const obj of [String(M['objective']), String(hard['objective_ja'])]) {
-      expect(obj).toContain(`${t['launch_range_m'] as number} m`);
+      expect(obj).toContain(`${t['launch_range_m'] as number}\u00a0m`);
       expect(obj.includes('近いPTは慌てて撃つ')).toBe((t['hurried_max_m'] as number) > 0);
     }
     expect([M['success'], hard['success_ja']]).toEqual(['輸送船の揚陸完了を見届けて帰投', '輸送船の揚陸完了を見届けて帰投']);

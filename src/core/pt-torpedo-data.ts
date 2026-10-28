@@ -1,13 +1,13 @@
-// 米PT の雷撃の数値（v0.6.9。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §3.3・§4.2・§4.9 V11）: enemies.json の us_pt_enemy.torpedo_attack
-// （ちょうど 10 鍵。core/pt-chase-data の PT_CHASE_KEYS と同じ作法）の形と検査、魚雷の記録（torpedoes.json の torpedo_id）と hit_rate_model.torpedo_launch から PtTorpedoParams を組む。
+// 米PT の雷撃の数値（v0.6.9。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §3.3・§4.2・§4.9 V11・R12）: enemies.json の us_pt_enemy.torpedo_attack
+// （ちょうど 11 鍵。R12 で戦いながらの斉射の engaged_error_factor を足した。core/pt-chase-data の PT_CHASE_KEYS と同じ作法）の形と検査、魚雷の記録（torpedoes.json の torpedo_id）と hit_rate_model.torpedo_launch から PtTorpedoParams を組む。
 // core/pt-data の isPtDataRecord はこの block を読まない（PtParams は変わらない）。他の記録（boat_ref の torpedoes・魚雷の記録）は呼ぶ側（config/landing-mission-data）が渡す。
 // jp_04 だけが読む。Phaser 非依存・確保は出撃の組み立てのときだけ。距離の比較は二乗で持つ。
 import { isTorpedoDataRecord, torpedoParamsFromData, torpedoReliabilityFromData, type TorpedoParams, type TorpedoReliability } from './torpedo';
 
-/** torpedo_attack の鍵（ちょうどこの 10 個。打ち間違い・知らない鍵を止める） */
+/** torpedo_attack の鍵（ちょうどこの 11 個。打ち間違い・知らない鍵を止める。R12 で engaged_error_factor を足した） */
 export const PT_TORPEDO_KEYS = [
   'torpedo_id', 'launch_range_m', 'launch_heading_tol_deg', 'salvo_count', 'salvo_spacing_deg', 'aim_error_deg',
-  'hurried_max_m', 'hurried_error_factor', 'reacquire_s', 'retreat_after_salvo',
+  'hurried_max_m', 'hurried_error_factor', 'engaged_error_factor', 'reacquire_s', 'retreat_after_salvo',
 ] as const;
 export type PtTorpedoKey = (typeof PT_TORPEDO_KEYS)[number];
 
@@ -20,6 +20,7 @@ export interface PtTorpedoRecord {
   aim_error_deg: number;
   hurried_max_m: number;
   hurried_error_factor: number;
+  engaged_error_factor: number;
   reacquire_s: number;
   retreat_after_salvo: boolean;
 }
@@ -33,6 +34,8 @@ export interface PtTorpedoParams {
   n: number; spacingDeg: number; aimDeg: number;
   /** 慌てた斉射: 輸送船までの距離 m とその二乗（0 なら慌てた斉射なし）・狙いの誤差の倍率 */
   hurriedM: number; hurried2: number; hurriedFactor: number;
+  /** 戦いながらの斉射（R12）: 狙いの誤差の倍率（0 なら戦いながらの斉射なし） */
+  engagedFactor: number;
   /** 見失って哨戒に戻った PT が撃たない体感秒 */
   reacquireS: number;
   /** 魚雷（Mk 13）の運動と信頼性（不発・蛇行）・蛇行の一定偏差の幅 deg。史実モードでも変えない（jp の任務は reliability_campaigns に無い） */
@@ -48,7 +51,7 @@ export interface PtTorpedoContext {
   erraticPeriodS: number;
 }
 
-/** torpedo_attack の形: ちょうど PT_TORPEDO_KEYS の 10 鍵、torpedo_id は文字列・retreat_after_salvo は真偽・ほかは有限の数 */
+/** torpedo_attack の形: ちょうど PT_TORPEDO_KEYS の 11 鍵、torpedo_id は文字列・retreat_after_salvo は真偽・ほかは有限の数 */
 export function isPtTorpedoRecord(v: unknown): v is PtTorpedoRecord {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
   const r = v as Record<string, unknown>;
@@ -80,8 +83,9 @@ export function ptTorpedoParamsFromData(raw: unknown, ctx: PtTorpedoContext, lab
   if (!(a.aim_error_deg >= 0)) bad('aim_error_deg は 0 以上');
   if (!(a.hurried_max_m === 0 || a.hurried_max_m > a.launch_range_m)) bad(`hurried_max_m（${a.hurried_max_m}）は 0（慌てた斉射なし）か launch_range_m（${a.launch_range_m} m）より遠い`);
   if (!(a.hurried_error_factor >= 1)) bad('hurried_error_factor は 1 以上（慌てた斉射の狙いは粗い）');
+  if (!(a.engaged_error_factor === 0 || a.engaged_error_factor >= 1)) bad(`engaged_error_factor（${a.engaged_error_factor}）は 0（戦いながらの斉射なし）か 1 以上（戦いながらの斉射の狙いは粗い）`);
   if (!(a.reacquire_s >= 0)) bad('reacquire_s は 0 以上');
-  if (a.retreat_after_salvo !== true) bad('retreat_after_salvo は true（v0.6.9 は 1 隻 1 回の斉射で去る）');
+  if (a.retreat_after_salvo !== true) bad('retreat_after_salvo は true（v0.6.9 は気づかれていない・慌てた斉射の後に去る。戦いながらの斉射は去らない）');
   const torpedo = torpedoParamsFromData(rec, ctx.armingM, ctx.erraticPeriodS);
   const far = Math.max(a.launch_range_m, a.hurried_max_m);
   if (!(far < torpedo.rangeM)) bad(`撃つ距離（launch_range_m・hurried_max_m の遠い方 ${far} m）は魚雷の射程（${torpedo.rangeM} m）より近い`);
@@ -90,7 +94,7 @@ export function ptTorpedoParamsFromData(raw: unknown, ctx: PtTorpedoContext, lab
     torpedoId: a.torpedo_id,
     launchM: a.launch_range_m, launch2: sq(a.launch_range_m), tolDeg: a.launch_heading_tol_deg,
     n: a.salvo_count, spacingDeg: a.salvo_spacing_deg, aimDeg: a.aim_error_deg,
-    hurriedM: a.hurried_max_m, hurried2: sq(a.hurried_max_m), hurriedFactor: a.hurried_error_factor,
+    hurriedM: a.hurried_max_m, hurried2: sq(a.hurried_max_m), hurriedFactor: a.hurried_error_factor, engagedFactor: a.engaged_error_factor,
     reacquireS: a.reacquire_s,
     torpedo, reliability: torpedoReliabilityFromData(rec), jitterDeg: rec.reliability.jitter_deg,
   };

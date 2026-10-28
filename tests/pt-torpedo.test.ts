@@ -1,11 +1,12 @@
 // 米PT の雷撃の規則（v0.6.9 S2。core/pt-torpedo。spec-v069 §4.2・§9・R2・R8/F11）: 気づかれていない斉射（哨戒・900 m・艇首 30°・1 隻 1 回 → 去る）、
 // 慌てた斉射（接触の瞬間に哨戒から警戒になった PT はみな・1,300 m・見つけたかは問わない（R2）・hurried_max_m 0 で無し）、見失いの後の reacquire_s、夜明け、
 // 輸送船が沈めば哨戒の PT は去る（OUT_GOAL_GONE。F11）、乱数（斉射の無いステップは 0 回・斉射は 1 + 2n + 蛇行の本数を launcher と同じ順）、owner・held に触らない、結末の符号。
+// 戦いながらの斉射（R12）は tests/pt-torpedo-engaged。
 import { describe, expect, it } from 'vitest';
 import { hitLanding } from '../src/core/landing';
 import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN, PT_SUNK } from '../src/core/pt-boats';
 import {
-  OUT_CALM, OUT_DAWN, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_HURRIED, PT_TORPEDO_SEED_OFFSET, ptTorpedoOutcome,
+  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, PT_TORPEDO_SEED_OFFSET, ptTorpedoOutcome,
 } from '../src/core/pt-torpedo';
 import type { PtTorpedoParams } from '../src/core/pt-torpedo-data';
 import { SeededRng } from '../src/core/rng';
@@ -16,8 +17,8 @@ import { FEEL_DT, LP, TP, bench, CountingRng, place, stepTorp, type Bench } from
 const brgToShip = (b: Bench, i: number): number => bearingDeg(b.q.boats[i]!.x, b.q.boats[i]!.y, b.ld.x, b.ld.y);
 
 describe('雷撃の値（jp_04。data のまま）', () => {
-  it('Mk 13・900 m・30°・3 本・8°・±10°・1,300 m・2.5 倍・10 秒、乱数は seed+26', () => {
-    expect([TP.torpedoId, TP.launchM, TP.tolDeg, TP.n, TP.spacingDeg, TP.aimDeg, TP.hurriedM, TP.hurriedFactor, TP.reacquireS]).toEqual(['us_mk13', 900, 30, 3, 8, 10, 1300, 2.5, 10]);
+  it('Mk 13・900 m・30°・3 本・8°・±10°・1,300 m・2.5 倍・戦いながら 2.5 倍・10 秒、乱数は seed+26', () => {
+    expect([TP.torpedoId, TP.launchM, TP.tolDeg, TP.n, TP.spacingDeg, TP.aimDeg, TP.hurriedM, TP.hurriedFactor, TP.engagedFactor, TP.reacquireS]).toEqual(['us_mk13', 900, 30, 3, 8, 10, 1300, 2.5, 2.5, 10]);
     expect(PT_TORPEDO_SEED_OFFSET).toBe(26);
   });
 });
@@ -29,7 +30,7 @@ describe('気づかれていない斉射（哨戒の PT。spec §4.2）', () => 
     const rng = new CountingRng(5);
     stepTorp(b, rng, { nowS: 61.5 });
     expect(b.sink.shots.length).toBe(3);
-    expect(b.sink.salvos).toEqual([{ i: 0, hurried: false, m: expect.closeTo(850, 6), n: 3 }]);
+    expect(b.sink.salvos).toEqual([{ i: 0, kind: PT_SALVO_CALM, m: expect.closeTo(850, 6), n: 3 }]);
     const h = b.sink.shots.map((s) => s.h);
     expect(h[1]! - h[0]!).toBeCloseTo(8, 9);
     expect(h[2]! - h[1]!).toBeCloseTo(8, 9);
@@ -51,13 +52,18 @@ describe('気づかれていない斉射（哨戒の PT。spec §4.2）', () => 
       expect(b.sink.shots.length, `${d} m ${off}°`).toBe(fire ? 3 : 0);
     }
   });
-  it('哨戒の PT だけ: 警戒（続き）・突撃・航過・離脱・追撃・去るは 900 m の内でも撃たない', () => {
+  it('哨戒の PT だけ: 警戒（続き）・突撃・航過・離脱・追撃・去るは 900 m の内でも気づかれていない斉射を撃たない（戦いながらの斉射を切れば何も撃たない。R12 は tests/pt-torpedo-engaged）', () => {
+    const off: PtTorpedoParams = { ...TP, engagedFactor: 0 };
     for (const ph of [PT_ALERT, PT_RUN_IN, PT_PASS, PT_BREAK, PT_CHASE, PT_LEAVE]) {
       const b = bench();
       place(b, 0, 500, 0, 0, ph);
       const rng = new CountingRng(2);
-      stepTorp(b, rng);
+      stepTorp(b, rng, { tp: off });
       expect([b.sink.shots.length, rng.draws], `段階 ${ph}`).toEqual([0, 0]);
+      const c = bench();
+      place(c, 0, 500, 0, 0, ph);
+      stepTorp(c, new SeededRng(2));
+      expect(c.sink.salvos.map((x) => x.kind), `段階 ${ph}（data のまま）`).toEqual(ph === PT_PASS || ph === PT_LEAVE ? [] : [PT_SALVO_ENGAGED]);
     }
   });
   it('狙い: 中央の 1 本は輸送船の中心への方位 + 誤差（±aim_error_deg。1 斉射に 1 回）', () => {
@@ -82,7 +88,7 @@ describe('慌てた斉射（R2: 接触の瞬間に哨戒から警戒になった
       const brg = brgToShip(b, 0);
       stepTorp(b, new SeededRng(9));
       const err = new SeededRng(9).nextRange(-TP.aimDeg * TP.hurriedFactor, TP.aimDeg * TP.hurriedFactor);
-      expect(b.sink.salvos, `seen ${seen}`).toEqual([{ i: 0, hurried: true, m: expect.closeTo(1250, 6), n: 3 }]);
+      expect(b.sink.salvos, `seen ${seen}`).toEqual([{ i: 0, kind: PT_SALVO_HURRIED, m: expect.closeTo(1250, 6), n: 3 }]);
       expect(b.sink.shots[1]!.h).toBeCloseTo(brg + err, 9);
       expect([b.q.boats[0]!.phase, b.st.kind[0], b.st.hurriedFired, b.left]).toEqual([PT_LEAVE, PT_SALVO_HURRIED, 3, [0]]);
     }
@@ -93,7 +99,7 @@ describe('慌てた斉射（R2: 接触の瞬間に哨戒から警戒になった
     place(b, 1, 1290, 90, 10, PT_ALERT, PT_PATROL);
     b.q.seen[0] = 1;
     stepTorp(b, new SeededRng(3));
-    expect(b.sink.salvos.map((s) => [s.i, s.hurried])).toEqual([[0, true], [1, true]]);
+    expect(b.sink.salvos.map((s) => [s.i, s.kind])).toEqual([[0, PT_SALVO_HURRIED], [1, PT_SALVO_HURRIED]]);
     const c = bench();
     place(c, 0, 1310, 0, 0, PT_ALERT, PT_PATROL);
     place(c, 1, 1100, 90, 35, PT_ALERT, PT_PATROL);
@@ -223,7 +229,7 @@ describe('外から書くのは段階と timerS だけ（owner・held・追撃�
 });
 
 describe('PT ごとの結末（ptTorpedoOutcome。Result の雷撃の行）', () => {
-  it('気づかれていない・慌てた・25mm で撃退（死傷・穴）・撃沈・夜明け・輸送船が沈んで去った・引きつけて去らせた・撃たせず', () => {
+  it('気づかれていない・慌てた・25mm で撃退（死傷・穴）・撃沈・夜明け・輸送船が沈んで去った・引きつけて去らせた・撃たせず・戦いながら（R12）', () => {
     const b = bench();
     const set = (i: number, phase: number, fate: number): void => {
       b.q.boats[i]!.phase = phase;
@@ -245,6 +251,13 @@ describe('PT ごとの結末（ptTorpedoOutcome。Result の雷撃の行）', ()
     expect(ptTorpedoOutcome(b.st, b.q, 0)).toBe(OUT_CALM);
     b.st.kind[0] = PT_SALVO_HURRIED;
     expect(ptTorpedoOutcome(b.st, b.q, 0)).toBe(OUT_HURRIED);
-    expect([OUT_NONE, OUT_CALM, OUT_HURRIED, OUT_RETIRED, OUT_SUNK, OUT_DAWN, OUT_LEFT, OUT_GOAL_GONE]).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    // 戦いながら（R12）: 撃った後に 25mm で撃退・撃沈されても斉射が先（Result の「戦いながら」）
+    b.st.kind[0] = PT_SALVO_ENGAGED;
+    for (const [phase, fate] of [[PT_RUN_IN, 0], [PT_LEAVE, PT_FATE_CREW], [PT_SUNK, PT_FATE_SUNK]] as const) {
+      set(0, phase, fate);
+      expect(ptTorpedoOutcome(b.st, b.q, 0)).toBe(OUT_ENGAGED);
+    }
+    expect([OUT_NONE, OUT_CALM, OUT_HURRIED, OUT_RETIRED, OUT_SUNK, OUT_DAWN, OUT_LEFT, OUT_GOAL_GONE, OUT_ENGAGED]).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect([PT_SALVO_CALM, PT_SALVO_HURRIED, PT_SALVO_ENGAGED]).toEqual([1, 2, 3]);
   });
 });

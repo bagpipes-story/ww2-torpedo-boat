@@ -219,7 +219,7 @@ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の�
     expect(src).toContain(') / design (v0.6.9。');
     expect(src).toContain('jp_04 だけが読む（core/pt-torpedo-data）');
     expect(src).not.toContain('まで読まない');
-    expect(String(pt['notes']).endsWith('jp_04 では輸送船へ 1 隻 1 回だけ 3 本を撃って去る（気づかれていなければ 900 m で、隊が自艇を捉えた瞬間に近ければ慌てて。v0.6.9。core/pt-torpedo）。jp_01・jp_05 には狙う深い船体が無いので魚雷は使わない')).toBe(true);
+    expect(String(pt['notes']).endsWith('jp_04 では輸送船へ 1 隻 1 回だけ 3 本を撃つ（気づかれていなければ 900 m で撃って去り、隊が自艇を捉えた瞬間に近ければ慌てて撃って去り、自艇と戦いながら 900 m の内で艇首が向けば撃って戦い続ける。v0.6.9。core/pt-torpedo）。jp_01・jp_05 には狙う深い船体が無いので魚雷は使わない')).toBe(true);
     expect(String(pt['notes'])).not.toContain('v0.6.9 で雷撃');
     expect(JSON.stringify(gameData.enemies)).not.toMatch(/v0\.6\.8 (の PT の雷撃|で雷撃)/); // 空襲下の退避は v0.6.8 → v0.6.10 に繰り下げ（v0.6.8 は兵装パネル。その版の source は書いてよい。レビュー F7）
   });

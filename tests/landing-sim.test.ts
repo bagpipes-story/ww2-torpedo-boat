@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { LD_DONE, LD_SUNK } from '../src/core/landing';
-import { runLandingTrial } from '../src/core/landing-sim';
+import { OUT_ENGAGED, PT_SALVO_ENGAGED, runLandingTrial } from '../src/core/landing-sim';
 import { landingCell, salvoStats, surviveOf, type SalvoStats } from '../src/core/landing-sim-cell';
 import { LANDING_PLAY, LANDING_POLICIES, LANDING_POLICY_SPECS, landingPlayPoints } from '../src/core/landing-sim-policy';
 import { landingCalibrationRun, landingInvariantMisses, landingSimSetup } from '../src/systems/landing-sim-setup';
@@ -20,10 +20,12 @@ describe('組み立て', () => {
     expect([S.landing.unloadS, S.landing.hitsToSink, S.landing.lookoutM, S.torpedo.launchM, S.torpedo.hurriedM, S.pt.count, S.gun?.rangeM]).toEqual([140, 2, 1800, 900, 1300, 2, 600]);
     expect(landingSimSetup(gameData, 'jp_04', { hard: true }).pt.count).toBe(3);
   });
-  it('上書きは data の写しに当て、data は変えない', () => {
-    const o = landingSimSetup(gameData, 'jp_04', { unloadS: 120, lookoutM: 1850, hitsToSink: 1, aimDeg: 12, spacingDeg: 6, hurriedM: 1200, hurriedFactor: 2, reacquireS: 5, fuelGal: 17 });
-    expect([o.landing.unloadS, o.landing.lookoutM, o.landing.hitsToSink, o.torpedo.aimDeg, o.torpedo.spacingDeg, o.torpedo.hurriedM, o.torpedo.hurriedFactor, o.torpedo.reacquireS, o.fuelGal]).toEqual([120, 1850, 1, 12, 6, 1200, 2, 5, 17]);
-    expect([S.landing.unloadS, S.landing.lookoutM, S.torpedo.aimDeg, S.fuelGal]).toEqual([140, 1800, 10, 19]);
+  it('上書きは data の写しに当て、data は変えない（R12 の EFACTOR も。V11 を破る値は止まる）', () => {
+    const o = landingSimSetup(gameData, 'jp_04', { unloadS: 120, lookoutM: 1850, hitsToSink: 1, aimDeg: 12, spacingDeg: 6, hurriedM: 1200, hurriedFactor: 2, engagedFactor: 1.5, reacquireS: 5, fuelGal: 17 });
+    expect([o.landing.unloadS, o.landing.lookoutM, o.landing.hitsToSink, o.torpedo.aimDeg, o.torpedo.spacingDeg, o.torpedo.hurriedM, o.torpedo.hurriedFactor, o.torpedo.engagedFactor, o.torpedo.reacquireS, o.fuelGal]).toEqual([120, 1850, 1, 12, 6, 1200, 2, 1.5, 5, 17]);
+    expect([S.landing.unloadS, S.landing.lookoutM, S.torpedo.aimDeg, S.torpedo.engagedFactor, S.fuelGal]).toEqual([140, 1800, 10, 2.5, 19]);
+    expect(landingSimSetup(gameData, 'jp_04', { engagedFactor: 0 }).torpedo.engagedFactor).toBe(0);
+    expect(() => landingSimSetup(gameData, 'jp_04', { engagedFactor: 0.5 })).toThrow(/engaged_error_factor（0\.5）は 0（戦いながらの斉射なし）か 1 以上/);
     expect(landingSimSetup(gameData, 'jp_04').landing.unloadS).toBe(140);
   });
   it('R7: 世界と同じ検査を破る上書きは止まる（V8 出発点が見張りの内・V10 報告から 20 秒未満・V13 出発点のそばで引きつけられる・V6 夜明け）', () => {
@@ -80,10 +82,31 @@ describe('1 夜', () => {
   it('R1: 出発点で巡航のまま回っても見つからない（V13）＝隠れると同じ斉射', () => {
     for (const r of RUN.trials('circle_start', 0)) expect([Number.isNaN(r.detectS), Array.from(r.kind)]).toEqual([true, [1, 1]]);
   });
+  it('R12: 戦いながらの斉射（種類 3）は見つかった夜だけで、撃った PT は去らない（その斉射の結末は OUT_ENGAGED）。EFACTOR 0 ならどの夜にも無い', () => {
+    let engaged = 0;
+    for (const pol of LANDING_POLICIES) {
+      for (const r of RUN.trials(pol, 0)) {
+        for (let i = 0; i < r.kind.length; i++) {
+          if (r.kind[i] !== PT_SALVO_ENGAGED) continue;
+          engaged++;
+          expect(Number.isNaN(r.detectS), pol).toBe(false);
+          expect(r.outcome[i]).toBe(OUT_ENGAGED);
+        }
+      }
+    }
+    expect(engaged).toBeGreaterThan(0);
+    const off = landingSimSetup(gameData, 'jp_04', { engagedFactor: 0 });
+    for (const pol of ['lure', 'lure_late', 'kite'] as const) for (let seed = 1; seed <= 6; seed++) expect(Array.from(runLandingTrial(off, pol, seed).kind)).not.toContain(PT_SALVO_ENGAGED);
+  });
+  it('lure_away（R12）は lure と同じ台本に「一度見つかった後は輸送船から awayM の内へ戻らない」を足したもの', () => {
+    const [a, l] = [LANDING_POLICY_SPECS.lure_away, LANDING_POLICY_SPECS.lure];
+    expect({ ...a, away: false }).toEqual(l);
+    expect([a.away, l.away, LANDING_PLAY.awayM]).toEqual([true, false, 1200]);
+  });
 });
 
 describe('R2 の期待値', () => {
-  const st = (calm: number[], hurried: number[]): SalvoStats => ({ n: 3, calm: salvoStats([], 2, 3).calm, hurried: salvoStats([], 2, 3).hurried, byPt: [], dist: [[], [calm, calm], [hurried, hurried]] });
+  const st = (calm: number[], hurried: number[]): SalvoStats => ({ ...salvoStats([], 2, 3), byPt: [], dist: [[], [calm, calm], [hurried, hurried], [hurried, hurried]] });
   it('斉射の組の畳み込み: 沈むまで 2 本なら 気づかれていない 2 斉射の生き残りは p0² + 2 p0 p1、0 斉射は 1', () => {
     const s = st([1, 5, 4, 0], [6, 4, 0, 0]);
     const [p0, p1] = [0.1, 0.5];
@@ -92,9 +115,10 @@ describe('R2 の期待値', () => {
     expect(surviveOf([[2, -1]], s, 2)).toBeCloseTo(1, 12);
     expect(surviveOf([[1, 0]], s, 1)).toBeCloseTo(p0, 12);
   });
-  it('期待値は実測に近い（seed 1〜12・隠れると近い報告で寄る: ±20 点）', () => {
+  it('期待値は実測に近い（seed 1〜60・隠れると近い報告で寄る: ±20 点。R12 の戦いながらの斉射は数が少ないので 12 夜では分布が粗い＝60 夜）', () => {
+    const run = landingCalibrationRun(gameData, 'jp_04', ['hide', 'lure_late'], 60, 1, 1);
     for (const pol of ['hide', 'lure_late'] as const) {
-      const c = landingCell(S, pol, RUN.trials(pol, 0), RUN.pooledSalvo);
+      const c = landingCell(S, pol, run.trials(pol, 0), run.pooledSalvo);
       expect(Math.abs(c.expSurvivePct - c.survivePct), pol).toBeLessThan(20);
     }
   });

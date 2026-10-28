@@ -35,7 +35,8 @@ export class CountingRng extends SeededRng {
 }
 
 export interface Shot { i: number; x: number; y: number; h: number; dud: boolean; erratic: boolean; bias: number; m: number }
-export interface Salvo { i: number; hurried: boolean; m: number; n: number }
+/** 斉射（kind は core/pt-torpedo の PT_SALVO_*） */
+export interface Salvo { i: number; kind: number; m: number; n: number }
 
 /** 雷撃の入れ先の記録（撃った 1 本ずつと斉射） */
 export class RecSink implements PtTorpedoSink {
@@ -44,8 +45,8 @@ export class RecSink implements PtTorpedoSink {
   fire(i: number, x: number, y: number, h: number, dud: boolean, erratic: boolean, bias: number, m: number): void {
     this.shots.push({ i, x, y, h, dud, erratic, bias, m });
   }
-  onSalvo(i: number, hurried: boolean, m: number, n: number): void {
-    this.salvos.push({ i, hurried, m, n });
+  onSalvo(i: number, kind: number, m: number, n: number): void {
+    this.salvos.push({ i, kind, m, n });
   }
 }
 

@@ -22,7 +22,7 @@ export const LANDING_SUNK = 2;
 
 /**
  * 出来事（LandingState.eventKind。HUD の 2 行目のモード 35・ui/landing-lines が S6 で文にする）: 気づかれていない斉射・慌てた斉射・被雷・不発・斉射が外れた・
- * 揚陸の前に沈んだ・揚陸完了・揚陸の後に沈んだ。不発の文は eventHits（そのときの被雷の数）で分ける（F16: 被雷の後なら「不発！ 被雷 1 のまま」）
+ * 揚陸の前に沈んだ・揚陸完了・揚陸の後に沈んだ・戦いながらの斉射（R12。「米PT 戦いながら発射！」）。不発の文は eventHits（そのときの被雷の数）で分ける（F16: 被雷の後なら「不発！ 被雷 1 のまま」）
  */
 export const LE_NONE = 0;
 export const LE_CALM = 1;
@@ -33,6 +33,7 @@ export const LE_MISS = 5;
 export const LE_SUNK = 6;
 export const LE_DONE = 7;
 export const LE_SUNK_DONE = 8;
+export const LE_ENGAGED = 9;
 
 /** 見張りの報告（landingReport の sub）: 無し・遠い（慌てる距離の外か慌てた斉射なし）・近い（慌てる距離の内） */
 export const LANDING_REPORT_NONE = 0;
@@ -48,7 +49,7 @@ export interface LandingState {
   phase: number; pct: number; pctAtSink: number; hits: number; duds: number; sunkAfterDone: boolean; doneAtS: number;
   /** 魚雷の目標（TorpedoTarget）: 船体の円・中心・もう狙えない（沈み始めた）・沈んでいる（core では沈み始め＝沈没。絵の沈む演出は世界の AllyShip）・沈み始めた時計 */
   readonly circles: Circle[]; readonly state: { readonly x: number; readonly y: number }; out: boolean; sinking: boolean; sunk: boolean; sinkStartS: number;
-  /** 雷撃の船（PtTorpedoShip）: 中心（泊地。動かない）と浮いているか */
+  /** 雷撃の船（PtTorpedoShip）: 中心（泊地。動かない）と浮いているか（段階は上の phase。戦いながらの斉射は揚陸中だけ） */
   readonly x: number; readonly y: number; afloat: boolean;
   /** 出来事: 通し番号・種類（LE_*）・撃った PT（−1 は無し）・斉射の距離 m（斉射だけ。他は NaN）と本数・そのときの被雷の数・揚陸の割合（沈んだなら沈んだときの割合） */
   eventSeq: number; eventKind: number; eventBoat: number; eventM: number; eventCount: number; eventHits: number; eventPct: number;

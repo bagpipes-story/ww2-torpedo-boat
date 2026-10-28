@@ -1018,7 +1018,7 @@
       "type": "escort_convoy",
       "player_boat": "jp_t38",
       "torpedo_type": "jp_45cm",
-      "objective": "停泊して揚陸する輸送船を米PTの雷撃から守る。気づかれていないPTは900 mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。揚陸まで引きつけて生きて帰れ",
+      "objective": "停泊して揚陸する輸送船を米PTの雷撃から守る。気づかれていないPTは900\u00a0mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。輸送船から離れて戦え。生きて帰れ",
       "allies": [
         "ijn_transport"
       ],
@@ -1069,7 +1069,7 @@
           "us_pt_enemy",
           "us_pt_enemy"
         ],
-        "enemy_behavior": "ai (v0.6.9。v0.6.3 の米PT の隊を jp_05 と同じ形（標的スロットなし＝掃射は自艇だけ）で。哨戒の線の終わりは輸送船へ向かう（レーダーで見つけて寄る抽象）。隊が自艇を捉えていない間、哨戒中の PT は輸送船から us_pt_enemy.torpedo_attack.launch_range_m の内で艇首が launch_heading_tol_deg 以内なら 1 回だけ魚雷 3 本を撃って去る（気づかれていない斉射）。隊が自艇（か 25mm の閃光）を捉えたステップには、哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT がみな（見つけた PT だけでなく）慌てて撃って去る（慌てた斉射。早く引きつければ撃たせず、遅れると慌てて撃たれる）。隊が自艇を捉えれば残りの PT は自艇を撃ちに来る（core/pt-boats のまま）。見失って哨戒に戻った PT は reacquire_s の間は撃たない。core/pt-torpedo・seed+26)",
+        "enemy_behavior": "ai (v0.6.9。v0.6.3 の米PT の隊を jp_05 と同じ形（標的スロットなし＝掃射は自艇だけ）で。哨戒の線の終わりは輸送船へ向かう（レーダーで見つけて寄る抽象）。隊が自艇を捉えていない間、哨戒中の PT は輸送船から us_pt_enemy.torpedo_attack.launch_range_m の内で艇首が launch_heading_tol_deg 以内なら 1 回だけ魚雷 3 本を撃って去る（気づかれていない斉射）。隊が自艇（か 25mm の閃光）を捉えたステップには、哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT がみな（見つけた PT だけでなく）慌てて撃って去る（慌てた斉射。早く引きつければ撃たせず、遅れると慌てて撃たれる）。隊が自艇を捉えれば残りの PT は自艇を撃ちに来る（core/pt-boats のまま）。自艇と戦っている PT（警戒・突撃・追撃・離脱）も、揚陸中の輸送船から launch_range_m の内で艇首が launch_heading_tol_deg 以内なら狙いの誤差を engaged_error_factor 倍にして撃ち、去らずに戦い続ける（戦いながらの斉射。spec R12: 輸送船から離れて戦え。見失いの reacquire_s は掛けない）。見失って哨戒に戻った PT は reacquire_s の間は撃たない。core/pt-torpedo・seed+26)",
         "main_weapon": "guns",
         "main_weapon_source": "design (v0.6.9。jp_01 と同じ T-38 の 25mm 単装（boats.json の jp_t38.gun_battery）。45cm 魚雷 2 本もいつでも撃てるが PT の下を抜ける（us_pt_enemy.torpedo_immune。味方の輸送船にも当たらない＝systems/torpedo-free）)",
         "duration_s": 200,
@@ -1170,7 +1170,7 @@
               2300
             ]
           ],
-          "objective_ja": "米PT 3隻が北・東・北東から輸送船を狙う。気づかれていないPTは900 mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。揚陸まで引きつけて生きて帰れ",
+          "objective_ja": "米PT\u00a03隻が北・東・北東から輸送船を狙う。気づかれていないPTは900\u00a0mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。輸送船から離れて戦え。生きて帰れ",
           "success_ja": "輸送船の揚陸完了を見届けて帰投",
           "note_ja": "1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月は、暗い岸を背に忍び寄った米PT 2隻に約900 mから魚雷6本を撃たれ、2本以上を受けて沈んだ。日本の魚雷艇がレイテにいた記録は見つかっておらず、この夜はゲーム上の想定（艇はT-38で代用、3隻目のPTも想定）。",
           "source": "design (v0.6.9。3 隻目（北東の海から）はゲーム上の想定（史実の PT は 2 隻）。泊地の左舷の真横 89° から撃つので最も危ない。出発点（揺らぎ込み）から自艇の出発点まで 3,325 m・泊地まで 2,513 m、線の終わりは泊地から 576〜718 m。S4 の帯（§8）を満たさなければ hard block ごと外す（Briefing は『（この任務は同じ）』）)"
