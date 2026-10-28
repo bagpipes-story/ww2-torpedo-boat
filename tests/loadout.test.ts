@@ -45,7 +45,7 @@ describe('兵装の data（config/loadout-data）', () => {
     const { id: _c, roundsPerMin: _d, ...rest80 } = e80.groups[1]!;
     expect(rest).toEqual(rest80);
     expect([g.rangeM, g.effectiveM, g.deadConeDeg, g.flashRevealM, g.spreadFactor]).toEqual([e80.rangeM, e80.effectiveM, e80.deadConeDeg, e80.flashRevealM, e80.spreadFactor]);
-    expect('magazine' in g || 'minSpreadM' in g).toBe(false);
+    expect([g.magazine, 'minSpreadM' in g]).toEqual([{ rounds: 50, reloadS: 3.2 }, false]); // 弾倉は v0.6.8 実機 1 回目（tests/us-magazine）。最小散布は無い
     expect(String((boatOf(gameData, 'us_elco77')['source'] as Rec)['gun_battery']).startsWith('design (v0.6.8')).toBe(true);
   });
 

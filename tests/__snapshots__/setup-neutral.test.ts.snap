@@ -5570,6 +5570,10 @@ exports[`他任務の setup の中立性（v0.6.3 の米PT の前の snapshot）
    "silent": 1,
    "cruise": 1.6,
    "full": 2.5
+  },
+  "magazine": {
+   "rounds": 120,
+   "reloadS": 3.2
   }
  },
  "shoreBattery": {
@@ -6019,6 +6023,10 @@ exports[`他任務の setup の中立性（v0.6.3 の米PT の前の snapshot）
    "silent": 1,
    "cruise": 1.6,
    "full": 2.5
+  },
+  "magazine": {
+   "rounds": 120,
+   "reloadS": 3.2
   }
  },
  "shoreBattery": {
@@ -6469,6 +6477,10 @@ exports[`他任務の setup の中立性（v0.6.3 の米PT の前の snapshot）
    "silent": 1,
    "cruise": 1.6,
    "full": 2.5
+  },
+  "magazine": {
+   "rounds": 120,
+   "reloadS": 3.2
   }
  },
  "shoreBattery": {
@@ -6944,6 +6956,10 @@ exports[`他任務の setup の中立性（v0.6.3 の米PT の前の snapshot）
    "silent": 1,
    "cruise": 1.6,
    "full": 2.5
+  },
+  "magazine": {
+   "rounds": 120,
+   "reloadS": 3.2
   }
  },
  "shoreBattery": {

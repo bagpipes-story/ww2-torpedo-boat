@@ -108,7 +108,7 @@ export class WeaponPanel {
     this.torpedoButton?.setUsable(a.torpedoUsable);
     this.torpedoButton?.update();
     if (this.gunButton) {
-      // 弾倉交換: 主兵装の 13mm・25mm（米PT の任務）か v0.6.8 の新しい道（艦・機。自分か借りた弾倉）の残り秒の大きい方。大発の任務は弾倉なしで 0 のまま
+      // 弾倉交換: 主兵装の砲（米PT への 13mm・25mm、大発への砲＝v0.6.8 実機 1 回目）か v0.6.8 の新しい道（艦・機。自分か借りた弾倉）の残り秒の大きい方
       const reloadN = Math.max(gunButtonReloadN(t), a.reloadN);
       if (reloadN !== this.lastReloadN) {
         this.lastReloadN = reloadN;

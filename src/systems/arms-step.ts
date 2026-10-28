@@ -1,7 +1,8 @@
 // 兵装の新しい道の持ち主（v0.6.8。spec-v068 §3.2・§5.1）: 魚雷と機銃は全任務で両方使える。v0.6.7 から使えるようになった側の数・状態・出来事を持つ:
 // 狙う艦の無い魚雷（発射と決着は systems/torpedo-free。ここは数えて文を出す）・艦への機銃（systems/ship-gun。駆逐艦の任務だけ・seed+25）・
 // 対空（core/aa-fire。機の来る任務だけ・seed+24。艦艇の標的が無いときだけ＝砲は 1 つ）・撃墜（core/air-down）・閃光（撃ってから gun_flash.hold_s の間、敵の見つける距離を
-// gun_battery.muzzle_flash_reveal_m 以上に）・弾倉（jp_01 は米PT への 13mm/25mm の弾倉を借りる、jp_06・jp_02 は自分の弾倉）・終わりの待ちの間の停止。
+// gun_battery.muzzle_flash_reveal_m 以上に）・弾倉（jp_01 は米PT への 13mm/25mm の弾倉を、us_03 は大発への砲の弾倉を借りる。jp_06・jp_02・us_01・us_02 は自分の弾倉＝艦への機銃と対空で 1 つ。
+// 米の艇の弾倉は v0.6.8 実機 1 回目から）・終わりの待ちの間の停止。
 // 固定ステップの順（systems/world-enemy-step）: stepShips（自分の弾倉の交換・艦への機銃）→ applyFlash → 駆逐艦か大発 → 米PT → 機関 → stepAir（対空は最後＝艦艇が先）。
 // 撃墜が 1 機でもあれば stepAir の最初に毎ステップ順番を飛ばす（押していなくても。離したら波が止まる、を防ぐ。レビュー F2）。
 // Phaser 非依存（tests から作れる）。絵は systems/world-arms の WorldArms（これを継ぎ fx* を描く）。§7: 確保は constructor だけ。押さなければ何も変わらない
@@ -29,8 +30,8 @@ export interface ArmsWorld extends AaSlotWorld, ShipGunWorld {
   readonly stepTimeS: number;
   /** 敵が自艇を見つける距離（このステップの値。閃光の間は閃光の距離以上に書く） */
   detectRangeM: number;
-  /** 主兵装の砲（大発の任務・米PT の任務。撃っていれば対空は撃たない） */
-  readonly hunt: { readonly battery: { readonly status: number } } | null;
+  /** 主兵装の砲（大発の任務・米PT の任務。撃っているか弾倉交換中なら対空は撃たない）。大発の砲の弾倉（v0.6.8 実機 1 回目。無い砲は null）は対空が借りる */
+  readonly hunt: { readonly battery: { readonly status: number }; readonly mag: MagazineState | null } | null;
   readonly pts: { readonly gun: { readonly state: PtGunState } | null } | null;
   readonly destroyers: ArmsShipGroup | null;
 }
@@ -50,7 +51,7 @@ export class ArmsStep {
   readonly shipGun: ShipGun | null;
   /** 対空の砲の状態（aaRng と同じ任務だけ） */
   readonly aa: AaState | null;
-  /** 新しい道の弾倉（借りた米PT の砲の弾倉か自分の弾倉。弾倉の無い砲・新しい道の無い任務は null） */
+  /** 新しい道の弾倉（借りた米PT の砲か大発の砲の弾倉か、自分の弾倉。弾倉の無い砲・新しい道の無い任務は null） */
   readonly mag: MagazineState | null;
   /** 機へ撃った発数・撃墜（出どころごと: 夜明けの空襲・夜の出撃・夜の水上機）・水上機を落とした */
   aaRounds = 0;
@@ -104,7 +105,8 @@ export class ArmsStep {
     this.aaRng = gun && kit && w && hasAircraft(w) ? new SeededRng((kit.seed + AA_SEED_OFFSET) >>> 0) : null;
     this.aa = gun && this.aaRng ? createAaState(gun) : null;
     const used = this.shipGun !== null || this.aa !== null;
-    const borrowed = w && w.pts && w.pts.gun ? w.pts.gun.state : null;
+    // 借りる弾倉: 米PT の砲（jp_01）か大発の砲（us_03。v0.6.8 実機 1 回目）。借りたら交換は持ち主の段が進める（ownsMag は偽）
+    const borrowed = (w && w.pts && w.pts.gun ? w.pts.gun.state : null) ?? (w && w.hunt ? w.hunt.mag : null);
     this.magP = gun && gun.magazine ? gun.magazine : null;
     this.ownsMag = used && borrowed === null && this.magP !== null;
     this.mag = !used ? null : borrowed ?? (this.magP ? createMagazine(this.magP) : null);
@@ -176,7 +178,7 @@ export class ArmsStep {
 
   /**
    * 固定ステップの最後（米PT・機関の後。夜明けの空襲の段の前、夜の出撃は次のステップの前）: 撃墜の後なら順番を飛ばす（いつも）→ 主兵装の砲の状態 → 対空。
-   * 艦艇を撃っている（大発・米PT の砲が標的を持つか弾倉交換・艦への機銃が標的を持つ）なら撃たない（状態は AA_BUSY）
+   * 艦艇を撃っている（大発・米PT の砲が標的を持つか弾倉交換＝借りた弾倉の交換・艦への機銃が標的を持つ）なら撃たない（状態は AA_BUSY）
    */
   stepAir(w: ArmsWorld, _dt: number, feelDt: number): void {
     if (this.downs > 0) this.skipDowned(w);
@@ -186,7 +188,7 @@ export class ArmsStep {
     const canFire = this.canFire(w);
     const st = this.aa;
     if (st && this.gun && this.aaParams && this.aaRng) {
-      const busy = this.surfaceFiring || ptStatus === PT_GUN_RELOAD || (this.shipGun !== null && this.shipGun.battery.status === GUN_FIRING);
+      const busy = this.surfaceFiring || ptStatus === PT_GUN_RELOAD || (w.hunt !== null && w.hunt.battery.status === PT_GUN_RELOAD) || (this.shipGun !== null && this.shipGun.battery.status === GUN_FIRING);
       const t = this.slots;
       t.n = 0;
       if (held && canFire && !busy) fillAaSlots(t, w, this.pose);

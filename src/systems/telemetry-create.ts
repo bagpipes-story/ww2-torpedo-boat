@@ -86,6 +86,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     gunStatus: GUN_SAFE,
     gunFast: false,
     gunTargetM: 0,
+    gunReloadLeftS: 0, // 大発への砲の弾倉交換（v0.6.8 実機 1 回目。下の refreshTelemetry が w.hunt.mag から写す）
     gunRangeM: w.setup.guns ? w.setup.guns.rangeM : 0,
     gunEffectiveM: w.setup.guns ? w.setup.guns.effectiveM : 0,
     gunSteadyKt: Math.round(mpsToKt(w.params.silentMaxMps)),

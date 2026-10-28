@@ -87,6 +87,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.gunStatus = h.battery.status;
     t.gunFast = h.battery.fast && h.battery.status === GUN_FIRING;
     t.gunTargetM = h.battery.targetM;
+    t.gunReloadLeftS = h.mag ? h.mag.reloadLeftS : 0; // 弾倉交換の残り（v0.6.8 実機 1 回目。弾倉の無い砲は 0）
     t.bargesSunk = h.flotilla.sunk;
     t.bargesBeached = h.flotilla.beached;
     t.bargeEscapeS = h.flotilla.escapeLeftS;

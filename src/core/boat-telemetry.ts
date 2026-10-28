@@ -104,6 +104,8 @@ export interface BoatTelemetry {
   gunStatus: number;
   gunFast: boolean;
   gunTargetM: number;
+  /** 大発への砲の弾倉交換の残り体感秒（v0.6.8 実機 1 回目。0 は交換していない・弾倉の無い砲・大発の任務でない。2 行目の「弾倉交換 ・ あと N 秒」と機銃ボタン） */
+  gunReloadLeftS: number;
   gunRangeM: number;
   gunEffectiveM: number;
   gunSteadyKt: number;

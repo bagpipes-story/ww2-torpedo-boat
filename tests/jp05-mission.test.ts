@@ -60,8 +60,8 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect([g.label, g.rangeM, g.effectiveM, g.deadConeDeg, g.flashRevealM, g.magazine]).toEqual(['13mm機銃', 600, 300, 30, 1200, { rounds: 30, reloadS: 3.2 }]);
     expect(g.groups.map((x) => [x.id, x.roundsPerMin, x.damage, x.shellSpeedMps, x.dispersionM, x.splashRadiusM])).toEqual([['13mm_type93', 450, 2, 500, 56, 1]]); // 散布 64 → 56（v0.6.3 実機 2 回目）
     expect(g.spreadFactor).toEqual({ stop: 1, silent: 1, cruise: 1.6, full: 2.5 });
-    // 弾倉は jp_t14 だけ（us_03 の us_elco80 の砲には鍵ごと無い）
-    expect('magazine' in buildWorldSetup(gameData, 'us_03').guns!).toBe(false);
+    // us_03 の us_elco80 の砲も弾倉を持つ（v0.6.8 実機 1 回目。120 発・交換は jp_t14 と同じ 3.2 秒。tests/us-magazine）
+    expect(buildWorldSetup(gameData, 'us_03').guns!.magazine).toEqual({ rounds: 120, reloadS: 3.2 });
     expect(s.ptBoats!.count).toBe(2);
     expect(s.dawnAir.playAs).toBe('own');
     expect(s.dawnAir.shipsAtDawn).toBe('none');

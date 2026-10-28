@@ -1,6 +1,7 @@
 // 大発掃討（docs/02 §6.4、v0.4.2）の世界側: 艇の砲（core/gun-battery）→ 大発の隊（core/barges）の順に固定ステップで進め、撃破・被弾を世界に伝え、大発・曳光弾・砲口の閃光・標的の輪・小さい水柱を描く。
 // §7: 大発 count 枚・弾は両側のプール・閃光 1 枚・輪 1 枚・水柱 32 枚を起動時に作り、毎フレームは transform/alpha/visible だけ触る。撃破の沈み込みだけ発生時に 1 回 tween。
 // 乱数: 大発の 13mm（散布と命中の火災・機関）は seed+6、艇の砲は seed+7。ほかの系列（seed〜seed+5）は動かさない。
+// v0.6.8 実機 1 回目: 艇の砲に弾倉（boats.json の gun_battery.magazine。2 組の発を 1 つの弾倉で数える）。交換は core/pt-gun・systems/ship-gun と同じ順（下の step）。夜明けの対空（systems/arms-step）はこの弾倉を借りる。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -23,8 +24,10 @@ import {
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { BARGE_SUNK, createFlotilla, hitBarge, stepFlotilla, type BargeParams, type FlotillaCheck, type FlotillaEvents, type FlotillaState } from '../core/barges';
-import { GUN_FIRING, createGunBattery, stepGunBattery, type GunBatteryParams, type GunBatteryState, type GunEvents } from '../core/gun-battery';
+import { GUN_FIRING, GUN_SAFE, createGunBattery, stepGunBattery, type GunBatteryParams, type GunBatteryState, type GunEvents } from '../core/gun-battery';
 import type { HitSpec } from '../core/gunnery';
+import { createMagazine, magazineSpend, magazineTick, type MagazineParams, type MagazineState } from '../core/magazine';
+import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { SeededRng } from '../core/rng';
 import type { ShellState } from '../core/shells';
 import type { ShoreBatteryParams } from '../core/shore-battery';
@@ -48,6 +51,8 @@ export interface BargeHuntView {
 export class BargeHunt {
   readonly flotilla: FlotillaState;
   readonly battery: GunBatteryState;
+  /** 艇の砲の弾倉（v0.6.8 実機 1 回目。data に magazine の無い砲は null＝前のまま無限）。夜明けの対空が借りる（systems/arms-step） */
+  readonly mag: MagazineState | null;
   /** 沿岸砲（v0.4.3。任務に shore_battery が無ければ []。v0.4.5 からハードで 2 門以上）。乱数は seed+8（2 門目は seed+9、…） */
   readonly shores: ShoreBattery[] = [];
   /** KPI: 撃破したときの艇からの距離の最小・最大 m（撃破なしなら NaN） */
@@ -55,6 +60,7 @@ export class BargeHunt {
   killMaxM = NaN;
   /** 夜明け（v0.6.2。withdraw）の時点で上陸していた隻数（夜明けの後に岸へ隠れた数 = beached − これ） */
   private beachedAtDawn = 0;
+  private readonly magP: MagazineParams | null;
   private readonly bargeRng: SeededRng;
   private readonly gunRng: SeededRng;
   private readonly check: FlotillaCheck;
@@ -116,6 +122,8 @@ export class BargeHunt {
     if (worldSplashes) for (let i = 0; i < shores.length; i++) this.shores.push(new ShoreBattery(scene, shores[i]!, new SeededRng((seed + 8 + i) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, worldSplashes, (spec, rng, x, y) => onBoatHit(spec, rng, x, y, 'shore_battery')));
     this.flotilla = createFlotilla(p, MG_SHELL_POOL_SIZE);
     this.battery = createGunBattery(g, GUN_SHELL_POOL_SIZE);
+    this.magP = g.magazine ?? null;
+    this.mag = this.magP ? createMagazine(this.magP) : null;
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true, dawn: false };
     this.splashes = new SplashPool(scene, GUN_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
     this.shown = new Uint8Array(p.count);
@@ -149,11 +157,20 @@ export class BargeHunt {
     return this.check.dawn ? this.flotilla.running : 0;
   }
 
-  /** 固定ステップ: 艇の砲（押している間）→ 大発（撃ったら閃光の距離で気づく）。held は射撃ボタン */
+  /**
+   * 固定ステップ: 艇の砲（押している間）→ 大発（撃ったら閃光の距離で気づく）。held は射撃ボタン。弾倉は core/pt-gun・systems/ship-gun と同じ順: 交換（押していなくても毎ステップ。
+   * 終われば満たす）→ 交換中は砲に「押していない」と渡す（間隔の負の残りを溜めない）→ 押していて浮いていれば状態は PT_GUN_RELOAD → 撃った数だけ減らし、空なら交換を始める
+   */
   step(dt: number, feelDt: number, w: BargeHuntView, held: boolean): void {
     this.view = w;
     const afloat = !w.boat.sinking;
-    stepGunBattery(this.battery, this.g, this.boat, w.band, held, afloat, this.flotilla.barges, this.p.halfLengthM, this.p.halfBeamM, w.visRange2, this.gunRng, feelDt, dt, this.gunEvents);
+    const m = this.mag;
+    const mp = this.magP;
+    const reloading = m !== null && mp !== null && magazineTick(m, mp, feelDt);
+    const before = this.battery.shots;
+    stepGunBattery(this.battery, this.g, this.boat, w.band, held && !reloading, afloat, this.flotilla.barges, this.p.halfLengthM, this.p.halfBeamM, w.visRange2, this.gunRng, feelDt, dt, this.gunEvents);
+    if (reloading && held && afloat && this.battery.status === GUN_SAFE) this.battery.status = PT_GUN_RELOAD;
+    if (m !== null && mp !== null) magazineSpend(m, mp, this.battery.shots - before);
     const c = this.check;
     c.detectOpenM = w.detectRangeM;
     c.smokeFactor = w.vis.smokeFactor;

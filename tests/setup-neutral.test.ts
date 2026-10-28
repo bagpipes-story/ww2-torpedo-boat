@@ -2,6 +2,7 @@
 // snapshot は v0.6.2（8a9cd3c）の木で作った。以後 -u で書き換えない（違ったら他任務の挙動が変わったということ）。
 // 例外は v0.6.8 S5 の 1 回だけ（spec-v068 §6.3）: Briefing の「条件:」の 16 行の後ろに「 ・ 機銃は艦に効かない」（us_01・us_02・jp_06）／「 ・ 魚雷は大発の下を抜ける」（us_03）を足した。
 // ほかの行は 1 字も変えていない（変わった行がみな「条件:」で、元の文が新しい文の頭と同じことを scratchpad の差分の検査で確かめた。CHANGELOG v0.6.8）。
+// 2 つ目の例外は v0.6.8 実機 1 回目（spec-ip1 §4）: us_03 の 4 つの setup の guns の最後に magazine（120 発・3.2 秒）を足した（git diff は 4 か所 × 4 行の追加だけ。ほかの任務・行は同じ）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';

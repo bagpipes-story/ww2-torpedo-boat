@@ -157,11 +157,12 @@ describe('T-14 の 13mm（core/pt-gun）', () => {
     expect(hits).toBeGreaterThan(10);
   });
 
-  it(`弾倉は jp_t14 の 13mm（${G.label}・${MAG.rounds} 発・${MAG.reloadS} 秒・組 1 つ）だけ。us_03（us_elco80）の砲に magazine の鍵は無く、弾倉の無い砲では作れない`, () => {
+  it(`弾倉は jp_t14 の 13mm（${G.label}・${MAG.rounds} 発・${MAG.reloadS} 秒・組 1 つ）。us_03（us_elco80）の砲も v0.6.8 実機 1 回目から弾倉を持つ（組 2 つ・120 発）。弾倉の無い砲では作れない`, () => {
     expect([G.label, MAG.rounds, MAG.reloadS, G.groups.length, G.rangeM, G.effectiveM, G.deadConeDeg, G.flashRevealM]).toEqual(['13mm機銃', 30, 3.2, 1, 600, 300, 30, 1200]);
     const us03 = getGunBatteryParams(gameData, getPrototypeMission(gameData, 'us_03'))!;
-    expect('magazine' in us03).toBe(false);
-    expect(() => createPtGun(us03, 8)).toThrow(/magazine/);
+    expect([us03.magazine, us03.groups.length]).toEqual([{ rounds: 120, reloadS: 3.2 }, 2]);
+    const { magazine: _m, ...noMag } = us03;
+    expect(() => createPtGun(noMag, 8)).toThrow(/magazine/);
     const s = createPtGun(G, 8);
     expect([s.magLeft, s.reloadLeftS, s.battery.shells.length, s.battery.status]).toEqual([MAG.rounds, 0, 8, GUN_SAFE]);
   });

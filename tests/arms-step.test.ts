@@ -13,6 +13,7 @@ import { airSortieComplete } from '../src/core/air-sortie';
 import { CUE_NONE, EV_DOWN_SORTIE, EV_DOWN_STRIKE, SHIP_GUN_SEED_OFFSET, ST_AA, ST_SHIP, createArmsTelemetry } from '../src/core/arms-cue';
 import type { BoatState, BoatTelemetry, SpeedStep } from '../src/core/boat-motion';
 import { GUN_FIRING, GUN_NO_TARGET } from '../src/core/gun-battery';
+import { createMagazine, type MagazineState } from '../src/core/magazine';
 import { createInputState, type InputState } from '../src/core/input-state';
 import { PA_HUNT, PA_SORTIE } from '../src/core/patrol-air';
 import { createPtGun, type PtGunState } from '../src/core/pt-gun';
@@ -44,7 +45,7 @@ interface W extends ArmsWorld {
   grounded: boolean;
   stepTimeS: number;
   detectRangeM: number;
-  hunt: { battery: { status: number } } | null;
+  hunt: { battery: { status: number }; mag: MagazineState | null } | null;
   pts: { gun: { state: PtGunState } | null } | null;
   destroyers: { ships: FakeShip[] } | null;
   dawn: { reached: boolean; strike: { state: AirStrikeState; p: AirStrikeParams } | null };
@@ -79,7 +80,7 @@ function rig(id: string, o: { ship?: boolean; strike?: boolean; hunt?: boolean; 
     visRange2: 4000 * 4000,
     smoke: null,
     smokeParams: null,
-    hunt: o.hunt ? { battery: { status: GUN_NO_TARGET } } : null,
+    hunt: o.hunt ? { battery: { status: GUN_NO_TARGET }, mag: lo.gun!.magazine ? createMagazine(lo.gun!.magazine) : null } : null, // 大発の砲の弾倉（v0.6.8 実機 1 回目。交換は持ち主の BargeHunt が進める＝ここでは進めない）
     pts: o.pt ? { gun: { state: createPtGun(lo.gun!, 8) } } : null,
     destroyers: ship ? { ships: [ship] } : null,
     dawn: { reached: st !== null, strike: st && s.airStrike ? { state: st, p: s.airStrike } : null },

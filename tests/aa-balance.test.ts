@@ -1,5 +1,6 @@
 // 対空のつり合い（v0.6.8。core/aa-sim。spec-v068 ★R1・§5.2）: 1 発 0.5%（停止・静音。速力帯の spread_factor で割る）で夜明けの 1 波を機銃を押し続けて受けたとき、
-// 1 波の撃墜は Elco 80（us_03）の全速の直進でおよそ 0.45・止まって 1.06、T-38 の全速は 0.11（scripts/aa-sim の N 1000。hit_rate_model.json の anti_aircraft.source）。
+// 1 波の撃墜は Elco 80（us_03）の全速の直進でおよそ 0.37・止まって 0.87、T-38 の全速は 0.11（scripts/aa-sim の N 1000。hit_rate_model.json の anti_aircraft.source）。
+// v0.6.8 実機 1 回目に米の艇にも弾倉（Elco 80 は 120 発・3.2 秒）: 前は 0.45・1.06。ここの N 60 は全速の直進 0.372 → 0.306・止まって 0.967 → 0.822 で、帯は変えずに収まる。
 // ここは N 60（seed 1〜60）× 3 波で帯を見る（回帰の検出。帯は N 1000 の値の ± 余裕）。波は止まらず（打ち切り 0）、撃墜で波の間隔が延びることは無い（撃墜なしの周期 + 1 ステップ以内）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
