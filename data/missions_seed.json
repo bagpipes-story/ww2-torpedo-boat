@@ -1063,6 +1063,118 @@
           }
         ],
         "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は contested（敵寄り）、日本語の調査は enemy・high) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い) / design (v0.6.9。enemy_ships_at_dawn retire → none（ゲームの規則の都合で史実の値ではない: 米PT は core/pt-boats の夜明けのラッチで北へ去る＝jp_01・jp_05 と同じ。retire は駆逐艦（enemy_start）の規則で、無い任務には置けない: config/dawn-data の checkWithdraw・config/pt-mission-data）。昼の米機の攻撃は実際は12日15:10（夜明けではない）。夜明けの4機は全任務共通の規則（CLAUDE.md §2）)"
+      },
+      "v0_1_prototype": {
+        "enemies": [
+          "us_pt_enemy",
+          "us_pt_enemy"
+        ],
+        "enemy_behavior": "ai (v0.6.9。v0.6.3 の米PT の隊を jp_05 と同じ形（標的スロットなし＝掃射は自艇だけ）で。哨戒の線の終わりは輸送船へ向かう（レーダーで見つけて寄る抽象）。隊が自艇を捉えていない間、哨戒中の PT は輸送船から us_pt_enemy.torpedo_attack.launch_range_m の内で艇首が launch_heading_tol_deg 以内なら 1 回だけ魚雷 3 本を撃って去る（気づかれていない斉射）。隊が自艇（か 25mm の閃光）を捉えたステップには、哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT がみな（見つけた PT だけでなく）慌てて撃って去る（慌てた斉射。早く引きつければ撃たせず、遅れると慌てて撃たれる）。隊が自艇を捉えれば残りの PT は自艇を撃ちに来る（core/pt-boats のまま）。見失って哨戒に戻った PT は reacquire_s の間は撃たない。core/pt-torpedo・seed+26)",
+        "main_weapon": "guns",
+        "main_weapon_source": "design (v0.6.9。jp_01 と同じ T-38 の 25mm 単装（boats.json の jp_t38.gun_battery）。45cm 魚雷 2 本もいつでも撃てるが PT の下を抜ける（us_pt_enemy.torpedo_immune。味方の輸送船にも当たらない＝systems/torpedo-free）)",
+        "duration_s": 200,
+        "duration_s_source": "design (v0.6.9。揚陸 landing.unload_s 140 秒＋泊地から輪の縁まで巡航 26 秒＋余裕。tests/dawn-clock: 出発から輪の縁 358 m＝巡航 7.0 秒 × call_margin 1.6 = 11 < 150。S4 の模擬で決める)",
+        "fuel_allotment_gal": 19,
+        "fuel_allotment_gal_source": "design (v0.6.9。jp_01 と同じ。上限は tests/dawn-air『止まって待つと 1,500 秒未満で漂流』: 19 / 9.4118 × 720 = 1,453 秒。全速 0.28・巡航 0.13 gal/秒＝全速 約 68 秒・巡航 約 146 秒＝引きつけ続けると足りない（S4 の kite の帯）)",
+        "shallows": [],
+        "bounds_m": {
+          "width": 6000,
+          "height": 3000,
+          "source": "design (v0.6.9。jp_01 と同じ広さ。南の縁が岸（パロンポンの浜は本当は西向き＝模式図。岸は south だけ＝v0.4.2 の規則）)"
+        },
+        "player_start": {
+          "x_m": 2000,
+          "y_m": 2800,
+          "heading_deg": 90,
+          "source": "design (v0.6.9。spec R1（引きつけには航走が要る）: 輸送船の西 1,001 m・浜の線（y 2,988）の 188 m 沖・東向き（輸送船の方）・停止。帰投の輪の縁まで 358 m。米PT の線のうち泊地から hurried_max_m（1,300 m）より遠い部分（今夜の揺らぎ・端の押し戻し・ハードの線込み）まで最短 1,754 m ＞ 史実モードの巡航で見つかる 1,560 m（ノーマル 1,200 m）＝出発点のそばを巡航しても、慌てる距離の外の PT は引きつけられない（config/landing-mission-data の V13）。hurried_max_m を 1,100 m まで下げても 1,590 m で通る。前の (2700, 2450)（輸送船の北西 431 m）では、出発点のそばを巡航するだけで北の PT を泊地から 1,423〜1,429 m（慌てる距離の外）で引きつけられ、隊ごと去らせる『ただの囮』になった（spec の審査 F1）。米PT の出発点（揺らぎ込み）まで最短 2,313 m ≥ 史実モードの巡航 1,560 m（config/pt-mission-data の検査）。輸送船は出発時に画面の外になりうる（「輸送 N m」の矢印で示す）)"
+        },
+        "return_point": {
+          "x_m": 1400,
+          "y_m": 2700,
+          "radius_m": 250,
+          "call_margin": 1.6,
+          "torpedo_settle_max_s": 10,
+          "torpedo_end_settle_s": 5,
+          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。（jp_04 の自艇の魚雷は狙う艦が無いので発射の時に決着し、待たない。米PT の魚雷は待たない。v0.6.9）",
+          "source": "design (v0.6.9。西の湾口。泊地から 1,601 m（landing の検査 ≥ 800 m）、米PT の線（北・東）の反対の側。出発点から輪の縁まで 358 m（巡航 7.0 秒）。揚陸の前に輪に入ると帰投で終わり、揚陸を見届けられない（jp_01 と同じ）。call_margin 1.6 は jp_01・jp_06 と同じ（T-38 の全速/巡航の距離あたり消費比 1.545 を上回る）)"
+        },
+        "pt_boats": {
+          "legs_m": [
+            [
+              3300,
+              250,
+              3060,
+              2150
+            ],
+            [
+              5600,
+              2790,
+              3700,
+              2790
+            ]
+          ],
+          "start_along_m": 250,
+          "leave_heading_deg": 0,
+          "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+        },
+        "landing": {
+          "ship_id": "ijn_transport",
+          "label_ja": "輸送船",
+          "anchor": {
+            "x_m": 3000,
+            "y_m": 2760,
+            "heading_deg": 135
+          },
+          "unload_s": 140,
+          "torpedo_hits_to_sink": 2,
+          "lookout_m": 1800,
+          "mark_label_ja": "揚陸地点",
+          "source": "historical (停船して揚陸: 空知丸は12日にパロンポンで揚陸（medium）、卯月は止まっていて被雷（medium）。揚陸は湾内の約2時間のうち約1時間（low・推定）) / design (v0.6.9。空知丸（4,107 t）を ijn_transport（5,000t級・120 × 16 m）で代用。艇首 135°（浜へ斜め）は北と東の PT が同じくらいの角度で撃つため。unload_s 140 は時間圧縮（S4 の模擬で決める）。torpedo_hits_to_sink 2: 卯月は2本以上で沈んだ、1 回の慌てた斉射ではまず沈まない（試作 aspect-mc）。記録の 1（us_02 が読む）は変えない。lookout_m 1,800: 見張りの報告（ゲーム上の予告。史実の PT は気づかれずに寄った）から慌てる距離まで ≥ 24 秒・900 m まで ≥ 44 秒。S4 で動かせる範囲（spec R7。scripts の上書きもこの外は断る）: lookout_m ≥ max(hurried_max_m, launch_range_m) + 412（V10: 報告から 20 秒 × 8 kt の 20.58 m/秒）かつ < PT の出発点（揺らぎ込み）から泊地まで最短の 1,929 m（V8）＝hurried_max_m 1,300 なら lookout_m 1,712〜1,928、lookout_m 1,800 なら hurried_max_m ≤ 1,388。hurried_max_m ≥ 1,062 m（V13: 泊地から hurried_max_m より遠い線の部分を、player_start から巡航で見つかる 1,560 m の外に保つ）)"
+        },
+        "coast": {
+          "side": "south",
+          "land_m": 600,
+          "label_ja": "レイテ島（パロンポン）",
+          "source": "design (見た目だけ。南の縁が浜。揚陸地点の帯と字は systems/world-landing が描く（jp_01 の上陸地点の印と同じ形）)"
+        },
+        "night": {
+          "hazard_scale": 1,
+          "optional_hazards": [],
+          "enemy_jitter": {
+            "x_m": 250,
+            "y_m": 100,
+            "heading_deg": 0
+          },
+          "mirror_chance": 0,
+          "source": "design (v0.6.9。米PT の隊を 1 つの敵として揺らす（jp_05・jp_01 と同じ）: 線に沿って ±250 m（線の中に収める）・線ごと南北 ±100 m（縁の余白へ線ごと戻す）。泊地と帰投の輪は反転しないので mirror_chance 0。乱数は seed+16 の 5 回（隊 3・大発の先頭 1・反転 1）で jp_05・jp_01 と同じ回数)"
+        },
+        "hazards": [
+          "enemy_ship_gunfire_or_ram",
+          "dawn_air_strike"
+        ],
+        "hazards_source": "design (v0.6.9。遊べる世界で起きる危険は米PT の掃射（自艇）・米PT の魚雷（輸送船。enemy_ship_gunfire_or_ram の中）と夜明けの空襲。本体の hazards（enemy_aircraft・friendly_fire）は任務の設計として残す（us_03・jp_01 の作法）: その夜の米の夜間機の攻撃・味方撃ちの記録は見つからない（medium・不在）、味方機の仕組みは自艇の魚雷の発射が引き金（systems/friendly-fire）で jp_04 では出ない。候補は docs/03)",
+        "dawn_strike": {
+          "aircraft_id": "us_tacloban_aircraft",
+          "count": 4,
+          "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
+          "from_bearing_deg": 90,
+          "escort_target_planes": [],
+          "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+        },
+        "hard": {
+          "extra_pt_legs_m": [
+            [
+              5150,
+              550,
+              3450,
+              2300
+            ]
+          ],
+          "objective_ja": "米PT 3隻が北・東・北東から輸送船を狙う。気づかれていないPTは900 mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。揚陸まで引きつけて生きて帰れ",
+          "success_ja": "輸送船の揚陸完了を見届けて帰投",
+          "note_ja": "1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月は、暗い岸を背に忍び寄った米PT 2隻に約900 mから魚雷6本を撃たれ、2本以上を受けて沈んだ。日本の魚雷艇がレイテにいた記録は見つかっておらず、この夜はゲーム上の想定（艇はT-38で代用、3隻目のPTも想定）。",
+          "source": "design (v0.6.9。3 隻目（北東の海から）はゲーム上の想定（史実の PT は 2 隻）。泊地の左舷の真横 89° から撃つので最も危ない。出発点（揺らぎ込み）から自艇の出発点まで 3,325 m・泊地まで 2,513 m、線の終わりは泊地から 576〜718 m。S4 の帯（§8）を満たさなければ hard block ごと外す（Briefing は『（この任務は同じ）』）)"
+        }
       }
     },
     {
