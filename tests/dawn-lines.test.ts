@@ -94,7 +94,7 @@ function textWidthPx(s: string, px: number): number {
   for (const ch of s) w += (ch.charCodeAt(0) < 0x2000 ? 0.602 : 1) * px;
   return w;
 }
-/** 2 行目（上中央）の幅の上限: 論理幅の下限 1280 から左右の HUD_MARGIN 24 と右上の丸ボタン（直径 96）の列を引く */
+/** 2 行目（上中央）の幅の上限: 論理幅の下限 1280 から左右の HUD_MARGIN 24 と右上の丸ボタン（直径 96）の列を引く（上限は v0.6.7 の右上の丸ボタンの列から。v0.6.8 実機 1 回目から右端はまた縦一列の技能（R44。いちばん上の煙幕は y 24〜112・x W − 112〜W − 24）で、1280 の幅でこの上限の右端 1,160 はその左端 1,168 の左＝上限はそのまま効く） */
 const STRIKE_LINE_MAX_PX = 1280 - 2 * (24 + 96);
 
 /** 夜明けの後・敵の制空下（us_01 の値） */
@@ -195,7 +195,7 @@ describe('夜明けの空襲の行（spec §8.2）', () => {
     expect(escortHitLine(tele({ ...OWN }, vip)).text).toBe('僚艇 被弾！ HP 55 / 90 ・ 煙幕か光の外へ');
     expect(escortHitLine(tele({ ...ENEMY, strikeEnabled: false }, vip)).text).toBe('僚艇 被弾！ HP 55 / 90 ・ 煙幕か光の外へ');
   });
-  it('文の幅: 空襲の行は右上の丸ボタンの列にかからず（論理幅 1280）、夜明けの帯は画面に収まる（Menlo 0.602 em・全角 1 em の見積もり）', () => {
+  it('文の幅: 空襲の行は v0.6.7 の右上の丸ボタンの列の上限に収まり（論理幅 1280。v0.6.8 実機 1 回目から右上は米の艇の煙幕＝この上限がそのまま効く）、夜明けの帯は画面に収まる（Menlo 0.602 em・全角 1 em の見積もり）', () => {
     // 最悪の組: 僚艇の被弾の直後・浅瀬の警告（3 桁 m。先読み 6 秒）・2 桁の秒と残り・接近は出現の距離
     const vip: Partial<BoatTelemetry> = { escortEnabled: true, escortHp: 90, escortHpMax: 90, shallowState: SHALLOW_APPROACHING, shallowAheadM: 940 };
     const sl = (d: Partial<DawnTelemetry>): string => strikeLine(tele({ ...ENEMY, ...d }, vip), 19, false, true).text;

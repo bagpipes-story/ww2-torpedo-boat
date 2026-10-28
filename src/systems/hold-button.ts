@@ -1,4 +1,4 @@
-// 押している間と離したときを知らせる丸ボタン（右上「煙幕」・右中「見張り」。docs/02 §5）。HUD シーンに置く。
+// 押している間と離したときを知らせる丸ボタン（煙幕・消火・見張り・識別・機銃・一時停止。docs/02 §5）。HUD シーンに置く。
 // 押下はボタン上で、解放は同じ指ならどこで離しても拾う（指が滑っても確実に離しを検出する）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -8,6 +8,14 @@ export interface HoldButtonHandlers {
   onDown?: () => void;
   /** 押していた実秒を渡す */
   onUp?: (holdS: number) => void;
+}
+
+/** 見た目と受け付けの任意の設定（v0.6.8） */
+export interface HoldButtonOptions {
+  /** 作ってからこの ms は押下を受けない（機銃: Briefing の「出撃」・Result の「もう一度」の 2 度押し。TORPEDO_BUTTON_ARM_MS。無ければすぐ受ける） */
+  armMs?: number;
+  /** 文字 px（無ければ HUD_FONT_BUTTON_PX。v0.6.8: 機銃と技能は小さく） */
+  fontPx?: number;
 }
 
 export class HoldButton {
@@ -21,6 +29,9 @@ export class HoldButton {
   private tint: number | null = null;
   private alphaOverride = NaN;
   private lastAlpha = ROUND_BUTTON_ALPHA;
+  /** 押下を受ける（armMs が無ければ最初から）と、その待ちのタイマー */
+  private armed: boolean;
+  private readonly armTimer: Phaser.Time.TimerEvent | null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -28,13 +39,16 @@ export class HoldButton {
     cy: number,
     label: string,
     private readonly handlers: HoldButtonHandlers,
-    /** 丸の大きさと色（v0.4.2: 主兵装が砲の任務の「射撃」は魚雷ボタンと同じ大きな黄色い輪） */
+    /** 丸の大きさと色（v0.4.2: 主兵装が砲の任務の「射撃」は魚雷ボタンと同じ大きな黄色い輪。v0.6.8 から機銃は橙の tex-gun-button） */
     textureKey: string = TEXTURE_KEYS.roundButton,
-    /** 丸の倍率（v0.5.1: 「一時停止」は小さく） */
+    /** 丸の倍率（v0.5.1: 「一時停止」は小さく。v0.6.8: 機銃は GUN_BUTTON_SCALE、実機 1 回目から技能は R44 / R48。当たりも絵といっしょに縮む） */
     private readonly sizeScale: number = 1,
+    opts: HoldButtonOptions = {},
   ) {
     this.button = scene.add.image(cx, cy, textureKey).setScale(sizeScale / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud).setInteractive();
-    this.label = scene.add.text(cx, cy, '', hudTextStyle(HUD_FONT_BUTTON_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
+    this.label = scene.add.text(cx, cy, '', hudTextStyle(opts.fontPx ?? HUD_FONT_BUTTON_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
+    this.armed = opts.armMs === undefined;
+    this.armTimer = opts.armMs === undefined ? null : scene.time.delayedCall(opts.armMs, () => (this.armed = true));
     this.setLabel(label);
     this.button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.onDown, this);
     scene.input.on(Phaser.Input.Events.POINTER_UP, this.onUp, this);
@@ -81,7 +95,7 @@ export class HoldButton {
   }
 
   private onDown(p: Phaser.Input.Pointer): void {
-    if (this.pointerId !== -1) return;
+    if (!this.armed || this.pointerId !== -1) return;
     this.pointerId = p.id;
     this.pressedAt = this.scene.time.now;
     this.button.setScale((ROUND_BUTTON_PRESSED_SCALE * this.sizeScale) / RENDER_SCALE);
@@ -109,6 +123,7 @@ export class HoldButton {
     this.button.off(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.onDown, this);
     this.scene.input.off(Phaser.Input.Events.POINTER_UP, this.onUp, this);
     this.scene.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onUp, this);
+    this.armTimer?.remove(false);
     this.button.destroy();
     this.label.destroy();
   }

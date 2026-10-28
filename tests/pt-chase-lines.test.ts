@@ -50,15 +50,15 @@ describe('2 行目の文（spec r2 §F.1 のとおり）', () => {
     // 赤い線（連射も）は 13mm の出来事・結果・射撃より上
     expect(row(tele({ ...BURST, gunStatus: GUN_FIRING, gunEverFired: true, gunTargetM: 280 }), 0, EVENT | RESULT)[0]).toBe(MISSION_PT_PASS);
   });
-  it('追ってくる PT（撃つ権利なし）: 方角と距離（50 m 刻みの切り上げ。見えていなければ距離なし）・13mm を撃つ前は「右下の射撃で撃ち返せ」、撃った後は「撃ち返せ」', () => {
-    expect(row(tele(CHASE))).toEqual([MISSION_PT_CONTACT, '米PT 南東から追ってくる 300 m ・ 右下の射撃で撃ち返せ', HUD_COLOR_WARN]);
+  it('追ってくる PT（撃つ権利なし）: 方角と距離（50 m 刻みの切り上げ。見えていなければ距離なし）・13mm を撃つ前は「右下の機銃で撃ち返せ」、撃った後は「撃ち返せ」', () => {
+    expect(row(tele(CHASE))).toEqual([MISSION_PT_CONTACT, '米PT 南東から追ってくる 300 m ・ 右下の機銃で撃ち返せ', HUD_COLOR_WARN]);
     expect(row(tele({ ...CHASE, gunEverFired: true }))).toEqual([MISSION_PT_CONTACT, '米PT 南東から追ってくる 300 m ・ 撃ち返せ', HUD_COLOR_WARN]);
-    expect(row(tele({ ...CHASE, dx: -150, dy: 0 }))[1]).toBe('米PT 西から追ってくる 150 m ・ 右下の射撃で撃ち返せ');
-    expect(row(tele({ ...CHASE, sighted: false }))[1]).toBe('米PT 南東から追ってくる ・ 右下の射撃で撃ち返せ');
+    expect(row(tele({ ...CHASE, dx: -150, dy: 0 }))[1]).toBe('米PT 西から追ってくる 150 m ・ 右下の機銃で撃ち返せ');
+    expect(row(tele({ ...CHASE, sighted: false }))[1]).toBe('米PT 南東から追ってくる ・ 右下の機銃で撃ち返せ');
     // 13mm の射程（600 m）の外（ux-8）: 「撃ち返せ」の代わりに引きつけよ（押していても射程外の行は追ってくる PT の行に勝たない）
     expect(row(tele({ ...CHASE, dx: 0, dy: 640, gunEverFired: true, gunStatus: GUN_OUT_OF_RANGE }))[1]).toBe('米PT 南から追ってくる 650 m ・ 600 m まで引きつけよ');
     expect(row(tele({ ...CHASE, dx: 0, dy: 640 }))[1]).toBe('米PT 南から追ってくる 650 m ・ 600 m まで引きつけよ');
-    expect(row(tele({ ...CHASE, dx: 0, dy: 600 }))[1]).toBe('米PT 南から追ってくる 600 m ・ 右下の射撃で撃ち返せ');
+    expect(row(tele({ ...CHASE, dx: 0, dy: 600 }))[1]).toBe('米PT 南から追ってくる 600 m ・ 右下の機銃で撃ち返せ');
     // 何も撃てない射撃の行（射程外）は追ってくる PT の行に勝たない。撃っていれば射撃の行
     expect(row(tele({ ...CHASE, gunStatus: GUN_OUT_OF_RANGE }))[0]).toBe(MISSION_PT_CONTACT);
     expect(row(tele({ ...CHASE, gunStatus: GUN_FIRING, gunTargetM: 280, gunEverFired: true }))[0]).toBe(MISSION_PT_GUN);
@@ -83,7 +83,7 @@ describe('2 行目の文（spec r2 §F.1 のとおり）', () => {
     expect(ev({ gunEvent: PT_GUN_EV_SUPPRESS }, { lastPassFired: true, lastPassHits: 0 })[0]).toBe('米PT 制圧！ 追撃をやめて離れる ・ 連射 被弾なし ・ 残り 2 隻');
     expect(ev({ gunEvent: PT_GUN_EV_CREW, fighting: 1 }, { lastPassFired: true, lastPassHits: 2 })[0]).toBe('米PT 撃退！ 死傷者が出て離脱 ・ 連射 被弾 2 発（HP −8） ・ 残り 1 隻');
     expect(ev({ gunEvent: PT_GUN_EV_SUNK, fighting: 0 }, { lastPassFired: true, lastPassHits: 1 })[0]).toBe('米PT 撃沈！ ガソリンに引火 ・ 連射 被弾 1 発（HP −4） ・ 帰投せよ');
-    expect(row(tele({ ...CHASE, threatPhase: PT_BREAK }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の射撃で撃ち返せ', HUD_COLOR_STRONG]);
+    expect(row(tele({ ...CHASE, threatPhase: PT_BREAK }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の機銃で撃ち返せ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...CHASE, threatPhase: PT_BREAK, gunEverFired: true }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 次の赤い線に備えよ', HUD_COLOR_STRONG]);
     expect(row(tele({ ...CHASE, threatPhase: PT_RUN_IN }))[1]).toBe('米PT 南東から突撃 300 m ・ 赤い線で転舵'); // 突撃は今のまま
   });

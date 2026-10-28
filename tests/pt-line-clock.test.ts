@@ -58,7 +58,7 @@ describe('出来事は 1 度出たら出し直さない（R2）', () => {
     // 線が消えた → 残りの約 0.1 秒だけ出て、それで終わる（前は線の後にまた 2.5 秒出た）
     h.ms += F;
     expect(h.frame(ev)[0]).toBe(MISSION_PT_GUN_EVENT);
-    expect(h.until(shownAt + PT_RESULT_SHOW_MS + F, ev)).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の射撃で撃ち返せ', 0]);
+    expect(h.until(shownAt + PT_RESULT_SHOW_MS + F, ev)).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 右下の機銃で撃ち返せ', 0]);
     // 次の出来事は新しく線の下で待つ
     const ev2 = { ...line, gunEventSeq: 2 };
     h.ms += F;

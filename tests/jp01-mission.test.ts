@@ -109,7 +109,7 @@ describe('jp_01 の data（spec §B。すべて data/*.json。source は histori
     expect(beachSrc).toContain(`${EXCERPT}。medium`); // 要約 1 つだけ（レビュー D7: high は docs/01 の作法より上）
     for (const k of ['convoy', 'return_point']) expect(String((proto[k] as Rec)['source']), k).toContain('v0.6.4 実機 1 回目');
     expect(String(proto['enemy_behavior'])).toContain('core/pt-target');
-    expect(String((proto['return_point'] as Rec)['torpedo_end_settle_s_source'])).toContain('（jp_01 は魚雷を撃たないので効かない）');
+    expect(String((proto['return_point'] as Rec)['torpedo_end_settle_s_source'])).toContain('（jp_01 の魚雷は狙う艦が無いので発射の時に決着し、待たない。v0.6.8）');
   });
   it('T-38 の 25mm（boats.json の jp_t38.gun_battery）: 25mm機銃・射程 600／有効 300・死角 30°・閃光 1200・1 群 220 発/分・damage 4・散布 56・水柱 3・弾倉 15 発／交換 3.2 秒・最小散布 22 m（v0.6.4 実機 1 回目）。source は historical / design (v0.6.4 と抜粋の注。jp_06（魚雷の任務）では読まない', () => {
     const boat = (gameData.boats.boats as unknown as Rec[]).find((b) => b['id'] === 'jp_t38')!;
@@ -288,7 +288,7 @@ describe('jp_01 の Briefing・Title（spec §D.1）', () => {
     const rec = getBriefingRecord(gameData, 'jp_01');
     expect(`${rec.titleJa} ・ 1942年12月9日 ・ ${rec.place}`).toBe('夜の輸送護衛 ・ 1942年12月9日 ・ ガダルカナル島北岸（カミンボ沖）');
     const hint = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
-    expect(hint).toContain('輸送護衛は機銃');
+    expect(hint).toContain('その左で機銃'); // v0.6.8: 全任務で両方・実機 1 回目から全任務で角が魚雷・その左が機銃（v0.6.7 までは「輸送護衛は機銃」と任務の名で）
     expect(hint).not.toContain('13mm');
     expect(textWidthPx(hint, TITLE_HINT_PX)).toBeLessThanOrEqual(1218); // ui/title-grid の TITLE_GRID_W（tests/title-grid）
   });

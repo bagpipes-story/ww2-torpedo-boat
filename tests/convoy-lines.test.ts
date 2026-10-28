@@ -106,10 +106,10 @@ describe('赤い線・突撃・航過の結果・離脱（標的が大発。spec
     expect(row(t01(burst), 0, RESULT)[1]).toBe('連射 被弾 6 発（HP −24） ・ 計 3 回');
     expect(keyOf(t01(burst), 0, RESULT)).toBe(keyOf(t01({ ...burst, lastPassTargetKind: 1 }), 0, RESULT));
   });
-  it('離脱: 最寄りの航行中の大発が 500 m より遠ければ「大発のそばへ戻れ（600 m）」（100 m 刻みの切り上げ）を挟む。射撃を撃つ前は末尾が「右下の射撃で撃ち返せ」。刻みは ptKey の bit 6〜11', () => {
+  it('離脱: 最寄りの航行中の大発が 500 m より遠ければ「大発のそばへ戻れ（600 m）」（100 m 刻みの切り上げ）を挟む。機銃を撃つ前は末尾が「右下の機銃で撃ち返せ」。刻みは ptKey の bit 6〜11', () => {
     const brk: Partial<PtTelemetry> = { detected: true, threatPhase: PT_BREAK, gunEverFired: true };
     expect(row(t01(brk, { nearestM: 560 }))).toEqual([MISSION_PT_CONTACT, '米PT 離脱 ・ 大発のそばへ戻れ（600 m） ・ 次の赤い線に備えよ', HUD_COLOR_STRONG]);
-    expect(row(t01({ ...brk, gunEverFired: false }, { nearestM: 560 }))[1]).toBe('米PT 離脱 ・ 大発のそばへ戻れ（600 m） ・ 右下の射撃で撃ち返せ');
+    expect(row(t01({ ...brk, gunEverFired: false }, { nearestM: 560 }))[1]).toBe('米PT 離脱 ・ 大発のそばへ戻れ（600 m） ・ 右下の機銃で撃ち返せ');
     expect(row(t01(brk, { nearestM: 500 }))[1]).toBe('米PT 離脱 ・ 次の赤い線に備えよ');
     expect(row(t01(brk, { nearestM: NaN }))[1]).toBe('米PT 離脱 ・ 次の赤い線に備えよ'); // 航行中の大発が無い
     expect(row(tele(brk))[1]).toBe('米PT 離脱 ・ 次の赤い線に備えよ'); // jp_05 のまま

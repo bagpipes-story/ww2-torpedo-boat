@@ -24,7 +24,7 @@ export interface InputState {
   zoomRequest: number;
   /** 「識別」ボタンを押した（味方機への識別信号。v0.3.3）。Mission が消費して false に戻す。味方機がいなければ何も起きない */
   identifyTap: boolean;
-  /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。魚雷の任務では読まない */
+  /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。v0.6.8 から全任務で読む（艇の機銃は魚雷の任務でも艦と機を撃てる） */
   gunHeld: boolean;
 }
 

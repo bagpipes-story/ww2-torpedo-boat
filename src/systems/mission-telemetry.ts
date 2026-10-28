@@ -4,136 +4,28 @@ import type { GameData } from '../config/game-data';
 import { RUDDER_BAR_FULL_DEG } from '../config/ui-config';
 import { turnCommand, type BoatTelemetry } from '../core/boat-motion';
 import { crewAccelFactor, crewAlive, crewTurnFactor } from '../core/crew';
-import { createEngineTelemetry } from '../core/engine-trouble';
-import { createGunboatTelemetry } from '../core/gunboat';
 import { FF_CHALLENGE, FF_IDLE, FF_OUT_NONE } from '../core/friendly';
 import { countHits, summarizeShots } from '../core/hit-rate';
-import { bearingJa } from '../core/briefing';
-import { GUN_FIRING, GUN_SAFE } from '../core/gun-battery';
+import { GUN_FIRING } from '../core/gun-battery';
 import type { InputState } from '../core/input-state';
 import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
-import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
 import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
-import { STORM_NONE } from '../core/storm';
-import { mpsToKt } from '../core/units';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
-import { convoyResult, initConvoyTelemetry, refreshConvoyTelemetry } from './convoy-telemetry';
-import { dawnResult, initDawnTelemetry, refreshDawnTelemetry } from './dawn-telemetry';
+import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
+import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
+import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
-import { initPatrolTelemetry, patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
-import { initPtTelemetry, ptResult, refreshPtTelemetry } from './pt-telemetry';
+import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
+import { ptResult, refreshPtTelemetry } from './pt-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
 import type { MissionWorld } from './mission-world';
 
-const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
+/** 出発時のテレメトリ（v0.6.8 S0 で systems/telemetry-create へ移した。呼び出し側の import はここのまま） */
+export { createTelemetry } from './telemetry-create';
 
-/** 出発時のテレメトリ（帰投・燃料の値は直後の refreshReturnState と refreshTelemetry で埋まる） */
-export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number): BoatTelemetry {
-  return {
-    speedMps: w.boat.state.speedMps,
-    rudder: 0,
-    targetStep: 'stop',
-    headingDeg: w.boat.state.headingDeg,
-    torpedoesLeft: w.torpedoes.capacity,
-    hits: 0,
-    timeLeftS,
-    enemyDx: NaN,
-    enemyDy: NaN,
-    enemySighted: false,
-    playerDetected: false,
-    detectRangeM: w.detectRangeM,
-    illuminated: false,
-    starLit: false,
-    hp: w.damage.hp,
-    hpMax: w.damageParams.maxHp,
-    onFire: false,
-    engineDamaged: false,
-    smokeLeftS: 0,
-    smokeCooldownS: 0,
-    hiddenBySmoke: false,
-    cameraZoom: zoom,
-    fuel01: 1,
-    fuelNeed01: 0,
-    fuelEmpty: false,
-    homeDx: w.returnPoint.x - w.boat.state.x,
-    homeDy: w.returnPoint.y - w.boat.state.y,
-    homeDistM: 0,
-    homeEdgeM: 0,
-    callFlags: 0,
-    atHome: false,
-    homeWaiting: false,
-    destroyerSunk: false,
-    shallowState: 0,
-    shallowAheadM: 0,
-    shallowSafeKt: Math.round(mpsToKt(w.setup.grounding.safeSpeedMps)),
-    friendlyPhase: FF_IDLE,
-    friendlyLeftS: NaN,
-    friendlyPasses: 0,
-    friendlyOutcome: FF_OUT_NONE,
-    friendlyPending: false,
-    planePhase: SP_IDLE,
-    planeDistM: 0,
-    planeLocked: false,
-    planeWake: false,
-    planeWakeKt: w.setup.seaplane ? w.setup.seaplane.wakeThresholdKt : 0,
-    planeFlareOn: false,
-    planeBombsDropped: 0,
-    planeBombAir: false,
-    planeBombsHit: 0,
-    planeOutcome: SP_OUT_NONE,
-    planeDx: NaN,
-    planeDy: NaN,
-    stormState: w.storm ? w.storm.status.state : STORM_NONE,
-    stormGapM: w.storm ? w.storm.status.gapM : 0,
-    stormNorth: w.storm ? w.storm.status.north : true,
-    stormFast: w.storm ? w.storm.status.fast : false,
-    stormLos: false,
-    stormSafeKt: w.setup.storm ? w.setup.storm.safeSpeedKt : 0,
-    crewAlive: w.setup.crew.total,
-    crewTotal: w.setup.crew.total,
-    crewTurnFactor: 1,
-    extinguishHoldS: w.damageParams.extinguishHoldS,
-    gunMission: w.hunt !== null,
-    gunStatus: GUN_SAFE,
-    gunFast: false,
-    gunTargetM: 0,
-    gunRangeM: w.setup.guns ? w.setup.guns.rangeM : 0,
-    gunEffectiveM: w.setup.guns ? w.setup.guns.effectiveM : 0,
-    gunSteadyKt: Math.round(mpsToKt(w.params.silentMaxMps)),
-    bargesSunk: 0,
-    bargesBeached: 0,
-    bargesQuota: w.setup.barges ? w.setup.barges.quota : 0,
-    bargesTotal: w.setup.barges ? w.setup.barges.count : 0,
-    bargeEscapeS: NaN,
-    // v0.4.2 の岸は南だけ（mission-data の検査）。「大発は東から」だけでは出発点から南へ 1,900 m 行くことが伝わらなかった（実機）
-    bargeHint: w.setup.barges ? `大発は${bearingJa(180)}の岸沿いを${bearingJa(w.setup.barges.headingDeg + 180)}から` : '',
-    coastDx: NaN,
-    coastDy: NaN,
-    batteryEnabled: w.hunt !== null && w.hunt.shores.length > 0,
-    batteryInArc: false,
-    batteryAlerted: false,
-    escortEnabled: w.escort !== null,
-    escortHp: w.escort ? w.escort.state.hp : 0,
-    escortHpMax: w.escort ? w.escort.p.maxHp : 0,
-    escortDistM: 0,
-    escortSunk: false,
-    escortLagWarnM: w.escort ? w.escort.p.lagWarnM : 0,
-    shipsSunk: 0,
-    shipsTotal: w.destroyers ? w.destroyers.destroyerCount : 0,
-    friendlyEnabled: w.friendly !== null,
-    seaplaneEnabled: w.seaplane !== null,
-    transportEnabled: w.destroyers !== null && w.destroyers.hasTransport,
-    transportSunk: false,
-    dawn: initDawnTelemetry(w),
-    pt: initPtTelemetry(w), // 敵の米PT（v0.6.3。systems/pt-telemetry。無い任務は enabled false）
-    convoy: initConvoyTelemetry(w), // 味方の大発の輸送隊（v0.6.4。systems/convoy-telemetry。無い任務は enabled false）
-    engine: createEngineTelemetry(), // 機関の不調（v0.6.5。jp_05。無い任務は on false のまま。下の refreshTelemetry が毎フレーム写す）
-    gunboat: createGunboatTelemetry(), // 隼艇（v0.6.6。jp_01 のハード。無い任務は enabled false のまま。下の refreshTelemetry が毎フレーム写す）
-    patrol: initPatrolTelemetry(w), // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry。無い任務は enabled false）
-  };
-}
+const scratchPose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
 
 /**
  * 敵の相対位置、見える・見つかった、反撃、被害、煙幕、燃料、帰投、ズームを telemetry へ（毎フレーム）。
@@ -195,6 +87,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.gunStatus = h.battery.status;
     t.gunFast = h.battery.fast && h.battery.status === GUN_FIRING;
     t.gunTargetM = h.battery.targetM;
+    t.gunReloadLeftS = h.mag ? h.mag.reloadLeftS : 0; // 弾倉交換の残り（v0.6.8 実機 1 回目。弾倉の無い砲は 0）
     t.bargesSunk = h.flotilla.sunk;
     t.bargesBeached = h.flotilla.beached;
     t.bargeEscapeS = h.flotilla.escapeLeftS;
@@ -222,6 +115,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshPatrolTelemetry(t, w, scratchPose); // 夜の哨戒機（v0.6.7）: 機が画面にいるときだけ「敵機」の矢印を書く（水上機の後・夜明けの前。NaN は書かない）
   // 夜明け（v0.6.1）: ラッチ・夜明け後の秒・空襲の段。空襲の機が来ていれば「敵機」の矢印をその機で上書き（水上機の後）
   refreshDawnTelemetry(t, w, scratchPose);
+  refreshArmsTelemetry(t, w); // 兵装（v0.6.8）: 積んでいる魚雷・撃てるか・出来事の文（夜明けの後）
   refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
   refreshConvoyTelemetry(t.convoy, w); // 味方の大発の輸送隊（v0.6.4）: 上陸・沈没・浜まで・最寄りの大発
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
@@ -288,9 +182,11 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     extinguishHoldS: w.damageParams.extinguishHoldS * w.extinguishHoldScale,
     ...stormResultFields(w),
     ...seaplaneResultFields(w),
+    ...(w.arms?.seaplaneDowned ? { seaplaneDowned: true } : {}), // 水上機を撃墜した（v0.6.8）。落とさなかった夜は鍵ごと無い
     sortie: w.sortie,
     raidLine: raidResultLine(w.sortie, w.setup.raid, startFireS),
     dawn: dawnResult(w),
     patrol: patrolResult(w), // 夜の哨戒機（v0.6.7。jp_02）の記録。無い任務は null
+    ...armsResultPart(w), // 兵装の新しい道（v0.6.8）: 使った夜だけ arms の鍵（本文の後ろに 1 行）
   };
 }

@@ -32,8 +32,8 @@ export const COAST_TEXT_COLOR = '#a89868';
 export const BARGE_EVENT_SHOW_MS = 2500;
 /** ?debug&barges=near の出発点: 大発の隊の先頭からの差 m と向き（浅瀬の縁（航跡の 100 m 北）の 30 m 外、東向き＝南の舷側が航跡を向く。先頭まで約 468 m） */
 export const DEBUG_BARGES_NEAR_OFFSET = { dxM: -450, dyM: -130, headingDeg: 90 } as const;
-/** 右下の主ボタン（主兵装が砲の任務）。押している間撃つ */
-export const GUN_BUTTON_LABEL = '射撃\n押し続け';
+/** 機銃のボタン（v0.6.8 から全任務。実機 1 回目から全任務で右下の角の魚雷の左。ユーザーの言う「機銃ボタン」。v0.6.7 までは「射撃」）。押している間撃つ */
+export const GUN_BUTTON_LABEL = '機銃\n押し続け';
 /** 「岸 N m」の砂色の矢印（岸のある任務。南の岸沿いの浅瀬の縁が画面外の間。実機で「大発も浅瀬も出てこない」＝出発点からどこへ行くか分からなかった） */
 export const COAST_MARKER_LABEL = '岸';
 export const COAST_MARKER_COLOR = 0xd0b878;

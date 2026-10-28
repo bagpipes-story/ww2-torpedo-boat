@@ -41,7 +41,7 @@ export interface GunBatteryParams {
   flashRevealM: number;
   /** 艇の速力帯ごとの散布の倍率 */
   spreadFactor: SpeedFactorTable;
-  /** 弾倉（v0.6.3 実機 1 回目。T-14 の 13mm だけ。1 弾倉の発数と交換の体感秒）。無い砲は鍵ごと無い（us_03 の値は変わらない） */
+  /** 弾倉（v0.6.3 実機 1 回目。v0.6.8 実機 1 回目から米の艇も。1 弾倉の発数と交換の体感秒。組が 2 つ以上の砲は全部の組の発を 1 つの弾倉で数える）。無い砲は鍵ごと無い */
   magazine?: { rounds: number; reloadS: number };
   /** 散布の円の最小半径 m（v0.6.4 実機 1 回目。jp_t38 の 25mm だけ。速力帯の倍率の後に効く＝近くから撃つときだけ円が広がる）。無い砲は鍵ごと無い（us_03・jp_05 の式・弾・乱数は変わらない） */
   minSpreadM?: number;
@@ -226,7 +226,7 @@ export interface GunBatteryDataRecord {
   muzzle_flash_reveal_m: number;
   spread_factor: SpeedFactorTable;
   groups: Array<{ id: string; rounds_per_min: number; damage: number; shell_speed_mps: number; dispersion_m: number; splash_radius_m: number }>;
-  /** 弾倉（v0.6.3 実機 1 回目。jp_t14 の 13mm だけ。省略可） */
+  /** 弾倉（v0.6.3 実機 1 回目。v0.6.8 実機 1 回目から us_elco80・us_elco77 も。省略可） */
   magazine?: { rounds: number; reload_s: number };
   /** 散布の円の最小半径 m（v0.6.4 実機 1 回目。jp_t38 の 25mm だけ。省略可） */
   min_spread_m?: number;
@@ -246,7 +246,7 @@ export function isGunBatteryDataRecord(v: unknown): v is GunBatteryDataRecord {
   return typeof r['label_ja'] === 'string' && nums(r['spread_factor'], ['stop', 'silent', 'cruise', 'full']) && Array.isArray(groups) && groups.length > 0 && groups.every((g) => typeof (g as Record<string, unknown>)?.['id'] === 'string' && nums(g, ['rounds_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m'])) && (mag === undefined || nums(mag, ['rounds', 'reload_s'])) && (r['min_spread_m'] === undefined || nums(r, ['min_spread_m']));
 }
 
-/** 検査込み: 射程 > 0、0 < effective ≤ range、死角 0〜90°、閃光 ≥ 0、倍率 ≥ 1、組の値は正（splash は 0 以上）。弾倉があれば 1 以上の整数の発数・正の交換秒・組 1 つ。最小散布があれば 0 以上 */
+/** 検査込み: 射程 > 0、0 < effective ≤ range、死角 0〜90°、閃光 ≥ 0、倍率 ≥ 1、組の値は正（splash は 0 以上）。弾倉があれば 1 以上の整数の発数・正の交換秒（組の数は問わない）。最小散布があれば 0 以上 */
 export function gunBatteryParamsFromData(r: GunBatteryDataRecord): GunBatteryParams {
   const bad = (msg: string): never => {
     throw new Error(`boats.json の gun_battery: ${msg}（docs/02 §6.4）`);
@@ -257,7 +257,7 @@ export function gunBatteryParamsFromData(r: GunBatteryDataRecord): GunBatteryPar
   if (![f.stop, f.silent, f.cruise, f.full].every((x) => x >= 1)) bad('spread_factor は 1 以上（速いほど散る）');
   for (const g of r.groups) if (!(g.rounds_per_min > 0 && g.damage > 0 && g.shell_speed_mps > 0 && g.dispersion_m >= 0 && g.splash_radius_m >= 0)) bad(`${g.id}: rounds_per_min / damage / shell_speed_mps は正、dispersion_m / splash_radius_m は 0 以上`);
   const mag = r.magazine;
-  if (mag && !(Number.isInteger(mag.rounds) && mag.rounds >= 1 && mag.reload_s > 0 && r.groups.length === 1)) bad('magazine は rounds（1 以上の整数）・reload_s（正）、弾倉のある砲は組 1 つ（1 発＝1 弾）');
+  if (mag && !(Number.isInteger(mag.rounds) && mag.rounds >= 1 && mag.reload_s > 0)) bad('magazine は rounds（1 以上の整数）・reload_s（正）。組が 2 つ以上の砲も弾倉は 1 つ（全部の組の発を数える）');
   if (r.min_spread_m !== undefined && !(r.min_spread_m >= 0)) bad('min_spread_m は 0 以上');
   const c = Math.cos((r.dead_cone_deg * Math.PI) / 180);
   return {
@@ -269,7 +269,7 @@ export function gunBatteryParamsFromData(r: GunBatteryDataRecord): GunBatteryPar
     deadConeCos2: c * c,
     flashRevealM: r.muzzle_flash_reveal_m,
     spreadFactor: { stop: f.stop, silent: f.silent, cruise: f.cruise, full: f.full },
-    // 弾倉は最後に、あるときだけ鍵を足す（us_elco80 には無い＝us_03 の WorldSetup.guns の JSON は変わらない）
+    // 弾倉は最後に、あるときだけ鍵を足す（弾倉の無い砲の params の JSON は変わらない）
     ...(mag ? { magazine: { rounds: mag.rounds, reloadS: mag.reload_s } } : {}),
     // 最小散布も同じく、あるときだけ鍵を足す（jp_t38 だけ。jp_t14・us_elco80 の params は変わらない）
     ...(r.min_spread_m !== undefined ? { minSpreadM: r.min_spread_m } : {}),

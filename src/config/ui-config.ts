@@ -1,6 +1,7 @@
 // HUD・操作系の見た目の寸法（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）。ゲームの数値ではないので data/*.json には置かない。
 import type Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE } from './game-config';
+import { markerRightMargin, pinchMaxX, speedHudRightX } from './hud-layout-config';
 // 文の色と距離の刻みは hud-text-config（v0.6.1。DOM 無しで ui/hud-lines・ui/dawn-lines が読む）。速力段・見出し・3 行目の文字サイズも（v0.6.7。ui/result-body が読む）
 export { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from './hud-text-config';
 
@@ -58,21 +59,15 @@ export const HUD_STATUS_OFFSET_Y = HUD_DEBUG_LINE_HEIGHT + HUD_FONT_MISSION_PX +
 export const HUD_HIST_BADGE_JA = '［史実］';
 export const HUD_HIST_BADGE_X = HUD_MARGIN + 88;
 
-/** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった） */
+/** 魚雷ボタン（右下、docs/02 §5）。タップ=1本、長押し→離す=扇状一斉（タップと長押しの境目 salvo_hold_start_s・本数の刻み salvo_count_step_s は data の hit_rate_model.torpedo_launch。v0.4.8 実機 3 回目まではここに 0.3 秒の閾値があった）。
+ * 半径は魚雷・機銃のボタンのテクスチャの大きさ（魚雷の R64。機銃は GUN_BUTTON_SCALE で縮める）。置き場所は v0.6.8 から config/hud-layout-config（全任務で右下の角が魚雷・その左が機銃） */
 export const TORPEDO_BUTTON_RADIUS = 64;
-/**
- * 扇の角度ボタン（v0.5.1 実機 1 回目）: 魚雷ボタンの下の小さな横長のボタン（幅は魚雷ボタンと同じ）。押すたびに 狭 → 中 → 広（data の salvo_spacing_choices_deg）。
- * 魚雷ボタンはその分だけ上へ（中心 y 582。魚雷の任務だけ。砲の任務の「射撃」は従来どおり右下の角）
- */
-export const SPREAD_BUTTON_W = TORPEDO_BUTTON_RADIUS * 2;
+/** 扇の角度ボタン（v0.5.1 実機 1 回目）: 魚雷ボタンの下の小さな横長のボタン（幅は魚雷ボタンの直径・高さは hud-layout-config の SPREAD_H）。押すたびに 狭 → 中 → 広（data の salvo_spacing_choices_deg） */
 export const SPREAD_BUTTON_H = 40;
-export const SPREAD_BUTTON_GAP = 10;
 export const SPREAD_BUTTON_LABELS = ['狭', '中', '広'] as const;
 export const SPREAD_BUTTON_FONT_PX = 20;
 export const SPREAD_BUTTON_FILL_ALPHA = 0.22;
 export const SPREAD_BUTTON_PRESSED_ALPHA = 0.45;
-export const TORPEDO_BUTTON_Y = GAME_HEIGHT - HUD_MARGIN - SPREAD_BUTTON_H - SPREAD_BUTTON_GAP - TORPEDO_BUTTON_RADIUS;
-export const SPREAD_BUTTON_Y = GAME_HEIGHT - HUD_MARGIN - SPREAD_BUTTON_H / 2;
 export const TORPEDO_BUTTON_ALPHA = 0.55;
 export const TORPEDO_BUTTON_PRESSED_SCALE = 0.92;
 /** Mission が始まってから魚雷ボタンが押下を受けない ms（v0.4.0）。Briefing の「出撃」（?debug 直行では Result の「もう一度」）の右側が魚雷ボタンと重なるので、2 度押しの 2 回目で出だしに 1 本撃たない。出だしの 0.6 秒に撃つ場面は無い */
@@ -201,26 +196,20 @@ export const MUZZLE_FLASH_TINT = 0xfff0a0;
 export const BOAT_HIT_SHAKE_INTENSITY = 0.002;
 export const SMALL_HIT_DAMAGE_RATIO = 0.1;
 
-/** 右上「煙幕」・右中「見張り」の丸ボタン（docs/02 §5）。魚雷ボタンより小さい。タップ判定は魚雷ボタンと同じ閾値 */
+/** 技能の丸ボタン（煙幕・消火・見張り・識別。docs/02 §5）の絵の半径。v0.6.8 実機 1 回目から右端の縦一列で、この絵を config/hud-layout-config の R_SKILL 44 に縮める。魚雷ボタンより小さい。タップ判定は魚雷ボタンと同じ閾値 */
 export const ROUND_BUTTON_RADIUS = 48;
 export const ROUND_BUTTON_ALPHA = 0.55;
 export const ROUND_BUTTON_DISABLED_ALPHA_FACTOR = 0.4;
 export const ROUND_BUTTON_PRESSED_SCALE = 0.92;
-/** 右側の丸ボタンの列（煙幕・消火）の縦の間隔（縁と縁の間） */
-export const ROUND_BUTTON_GAP = 48;
-/** ピンチズームが数える指の右端（これより右は丸ボタンと魚雷ボタンの列。そこで始まった指はズームに使わない） */
-export const PINCH_BUTTON_COLUMN_X = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2 - 16;
+/** ピンチズームが数える指の右端（v0.6.8: 右下の兵装の左端（機銃の円の左 W − 288）− 16 = W − 304。これより右と、ボタンの上で始まった指はズームに使わない） */
+export const PINCH_BUTTON_COLUMN_X = pinchMaxX(GAME_WIDTH);
 /** ピンチの基準距離の下限（論理 px）。指が重なって距離がほぼ 0 になったときに倍率が跳ねないように */
 export const PINCH_MIN_DIST_PX = 40;
-/** 画面外マーカーの右端の余白: 右上「煙幕」・右中「見張り」の丸ボタンの列（直径）と距離ラベル（「敵 1500 m」約 100 px）の半分を避ける */
-export const TARGET_MARKER_RIGHT_MARGIN = HUD_MARGIN + ROUND_BUTTON_RADIUS * 2 + HUD_TEXT_GAP + 52;
-/** 「見張り」の中心 y（v0.5.1: 魚雷ボタンが扇の角度ボタンの分だけ上がったので、中央より 20 上げて識別の入る隙間を作る） */
-export const LOOKOUT_BUTTON_Y = GAME_HEIGHT / 2 - 20;
-/**
- * 「識別」ボタン（v0.3.3）: 右の見張りと魚雷の間の中点（v0.5.1 から: 見張りの下端 388 と魚雷の上端 518 の中点 453。上下に 17 px ずつ隙間）。
- * 味方機が識別を求めている間だけ青く点滅し、残り秒を出す
- */
-export const IDENTIFY_BUTTON_Y = (LOOKOUT_BUTTON_Y + ROUND_BUTTON_RADIUS + (TORPEDO_BUTTON_Y - TORPEDO_BUTTON_RADIUS)) / 2;
+/** 画面外マーカーの右端の余白（v0.6.8: 352 = 右下の兵装の幅 288（機銃の円の左まで）・隙間 8・距離ラベル「帰投 9900 m」約 112 px の半分 56） */
+export const TARGET_MARKER_RIGHT_MARGIN = markerRightMargin(GAME_WIDTH);
+/** 右下の速力・舵・針路と機関の熱の帯の右端（v0.6.8: W − 312 = パネルの左端 − 24。v0.6.7 までは W − 176） */
+export const SPEED_HUD_RIGHT_X = speedHudRightX(GAME_WIDTH);
+/** 「識別」ボタン（v0.3.3）: 味方機が識別を求めている間だけ青く点滅し、残り秒を出す */
 export const IDENTIFY_PULSE_HZ = 2.5;
 export const IDENTIFY_PULSE_ALPHA_MAX = 0.95;
 /**

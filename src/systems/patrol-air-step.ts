@@ -29,6 +29,8 @@ export interface PatrolWorldView extends SortieWorldView {
   readonly band: SpeedStep;
   /** 夜明けに達した（門番は OFF。夜明けの 4 機は world-dawn） */
   readonly dawn: { readonly reached: boolean };
+  /** 兵装（v0.6.8。systems/arms-step）: 機銃の閃光の距離（撃っていなければ 0）。無い世界（tests の kit）は閃光なし */
+  readonly arms?: { readonly flashM: number } | null;
 }
 
 /** 夜の出撃の口（AirStrikeFlight の state と step） */
@@ -88,7 +90,7 @@ export class PatrolAirStep implements PatrolView {
     const before = s.phase;
     const fl = this.flight.state;
     const off = w.dawn.reached || w.boat.sinking || w.atHome || w.grounded;
-    const ev = stepPatrolAir(s, this.gate, w.band, off, !this.pendingRestart && airSortieComplete(fl), feelDt);
+    const ev = stepPatrolAir(s, this.gate, w.band, off, !this.pendingRestart && airSortieComplete(fl), feelDt, w.arms ? w.arms.flashM : 0);
     if (ev & (PA_EV_PASS | PA_EV_FIND | PA_EV_OFF)) this.resultKind = 0;
     if (ev & PA_EV_LEAVE) this.showResult(1);
     if ((ev & PA_EV_HUNT) !== 0 && before === PA_SORTIE) this.showResult(2);

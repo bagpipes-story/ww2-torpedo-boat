@@ -450,10 +450,11 @@ describe('Briefing の条件と危険（v0.6.1。spec §8.4）', () => {
     return briefingRows(getBriefingRecord(gameData, id), briefingNumbers(s), (e) => enemyNameJa(gameData, e), (h) => riskLabelJa(gameData, h)).map((r) => r.text);
   };
   it('条件: 「夜明けまで N 秒」の後ろに（以後は空襲）／（昼の空は味方）と夜明けの敵艦（v0.6.2: us_02 は敵が北へ退く、us_03 は大発が岸へ隠れる）。危険の最後に「夜明けの空襲」（敵の制空下の任務だけ）', () => {
-    expect(rowsOf('us_01')[5]).toBe('夜明けまで 180 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本');
-    expect(rowsOf('jp_06')[5]).toBe('夜明けまで 160 秒（以後は空襲） ・ 燃料 16 gal ・ 魚雷 2 本');
-    expect(rowsOf('us_02')[5]).toBe('夜明けまで 150 秒（昼の空は味方・敵は北へ退く） ・ 燃料 38 gal ・ 魚雷 4 本');
-    expect(rowsOf('us_03')[5]).toBe('夜明けまで 160 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm');
+    // v0.6.8: 武器の句の後ろにもう一つの兵装の一言（「・」の後はノーブレークスペース。艦の任務は機銃、大発の任務は魚雷）
+    expect(rowsOf('us_01')[5]).toBe('夜明けまで 180 秒（以後は空襲） ・ 燃料 40 gal ・ 魚雷 4 本 ・\u00a0機銃は艦に効かない');
+    expect(rowsOf('jp_06')[5]).toBe('夜明けまで 160 秒（以後は空襲） ・ 燃料 16 gal ・ 魚雷 2 本 ・\u00a0機銃は艦に効かない');
+    expect(rowsOf('us_02')[5]).toBe('夜明けまで 150 秒（昼の空は味方・敵は北へ退く） ・ 燃料 38 gal ・ 魚雷 4 本 ・\u00a0機銃は艦に効かない');
+    expect(rowsOf('us_03')[5]).toBe('夜明けまで 160 秒（以後は空襲・大発は岸へ隠れる） ・ 燃料 36 gal ・ 砲\u00a040mm・37mm・20mm・12.7mm ・\u00a0魚雷は大発の下を抜ける');
     expect(rowsOf('us_01')[4]).toBe('暴風、敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('jp_06')[4]).toBe('敵艦艇の砲撃・衝突、座礁、夜明けの空襲');
     expect(rowsOf('us_02')[4]).not.toContain('夜明けの空襲');

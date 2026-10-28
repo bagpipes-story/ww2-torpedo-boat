@@ -1,5 +1,6 @@
 // v0.6.7 S5（spec-v067 §G.1・§H の N8・レビュー R19）: jp_02「孤島の哨戒」の世界の数値（JSON 全体）・Briefing の行・今夜の乱数の回数を snapshot に固める（ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。
-// snapshot は v0.6.7 S5 の木で作った。以後 -u で書き換えない（次の版の中立の関門）。史実モードの組は historical と視程（getVisibilityParams(…, historical)）の分だけが違い、
+// snapshot は v0.6.7 S5 の木で作った。以後 -u で書き換えない（次の版の中立の関門）。例外は v0.6.8 S5 の 1 回だけ（spec-v068 §6.3）: 「条件:」の 8 行の
+// 「武器なし（止まって隠れ、投下で転舵）」を「機銃は機にまず当たらない（止まって隠れ、投下で転舵）」に（13mm で機を撃てるようになった。ほかの行は 1 字も変えていない）。史実モードの組は historical と視程（getVisibilityParams(…, historical)）の分だけが違い、
 // 夜の哨戒（patrolAir）は史実モードなしと同じ（夜の哨戒は enemy_detection_multiplier を読まない＝§I.1）。ハードの違いは無い（Briefing「（この任務は同じ）」）。今夜の揺らぎ（+16）は 0 回。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';

@@ -17,7 +17,7 @@ import {
   HUD_TEXT_GAP,
   RUDDER_BAR_HALF_WIDTH,
   RUDDER_MARKER_HEIGHT,
-  TORPEDO_BUTTON_RADIUS,
+  SPEED_HUD_RIGHT_X,
   hudTextStyle,
 } from '../config/ui-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
@@ -54,8 +54,8 @@ export class BoatHud {
   private lastRudderX = NaN;
 
   constructor(scene: Phaser.Scene) {
-    // 右下の角は魚雷ボタンが使うので、その左に置く
-    const right = GAME_WIDTH - HUD_MARGIN - TORPEDO_BUTTON_RADIUS * 2 - HUD_MARGIN;
+    // 右下の兵装（v0.6.8。機銃と魚雷が横に 2 つ。config/hud-layout-config）の左に置く（右端 W − 312。v0.6.7 までは右下の魚雷ボタンの左 W − 176）
+    const right = SPEED_HUD_RIGHT_X;
     const bottom = GAME_HEIGHT - HUD_MARGIN;
 
     this.rudderBar = scene.add

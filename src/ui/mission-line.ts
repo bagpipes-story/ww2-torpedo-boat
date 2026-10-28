@@ -30,7 +30,7 @@ import { CALL_DAWN, CALL_FUEL, topCall } from '../core/mission-flow';
 import { STORM_AHEAD, STORM_NEAR } from '../core/storm';
 import {
   ADRIFT_LINE, DETECT_RANGE_STEP_M, ESCORT_DISTANCE_STEP_M, GUN_DISTANCE_STEP_M, WAITING_LINE, bargeEventLine, bargeRunLine, bargeSightedLine, batteryLine, escortHitLine, escortLagLine, escortLostLine, friendlyLine, friendlyResultLine, gunLine,
-  shallowsLine, sightedFast, stormLine,
+  gunReloadStep, shallowsLine, sightedFast, stormLine,
 } from './hud-lines';
 import { airRaidTagJa, bargeHideTagKey, callLineText, clockKey, lineFitScale } from './dawn-lines';
 import { airLine, planeKeyOf, planeModeOf, strikeKeyOf, strikeModeOf } from './mission-line-air';
@@ -64,7 +64,7 @@ export class MissionLine {
   private lastStormStep = -1;
   /** 水上機の 2 行目のキー（段階・確定・航跡・照明弾・爆弾・結果・撃沈・距離の刻みを 1 つの数に詰める） */
   private lastPlaneKey = -1;
-  /** 大発掃討の 2 行目のキー（射撃の状態・速すぎ・遠い・撃破・上陸・直後の出来事・上陸までの秒・距離の刻み。v0.4.2） */
+  /** 大発掃討の 2 行目のキー（射撃の状態・速すぎ・遠い・撃破・上陸・直後の出来事・上陸までの秒・距離の刻み。v0.4.2。沿岸砲・弾倉交換の秒） */
   private lastBargeKey = -1;
   /** 撃つ前の手引きのキー（気づかれた・速い・最寄りの大発までの 50 m 刻み・見つかる距離の刻み） */
   private lastSightKey = -1;
@@ -139,12 +139,12 @@ export class MissionLine {
     // 暴風の距離の刻み: 近いときは 50 m、予報は 100 m（それ以外は 0）
     const stormStep = t.stormState === STORM_NEAR ? Math.ceil(t.stormGapM / STORM_WARN_STEP_M) : t.stormState === STORM_AHEAD ? Math.ceil(t.stormGapM / STORM_AHEAD_STEP_M) : 0;
     const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);
-    // 大発掃討のキー（v0.4.2）: 射撃の状態・速すぎ・遠い・撃破・上陸・直後の出来事・上陸までの秒（31 まで）・距離の刻み（127 まで）。
+    // 大発掃討のキー（v0.4.2）: 射撃の状態・速すぎ・遠い・撃破・上陸・直後の出来事・上陸までの秒（31 まで）・距離の刻み（127 まで）・沿岸砲・弾倉交換の残り秒（bit 27〜29。v0.6.8 実機 1 回目）。
     // 距離は切り上げ（表示が実際より近くならない。「遠い」も表示の値で決める＝gunLine と同じ）
     const distStep = Math.min(127, Math.ceil(t.gunTargetM / GUN_DISTANCE_STEP_M));
     const escapeS = bargeRun ? Math.min(31, Math.ceil(t.bargeEscapeS)) : 0;
     const bargeKey = t.gunMission
-      ? t.gunStatus | (t.gunFast ? 8 : 0) | (distStep * GUN_DISTANCE_STEP_M > t.gunEffectiveM ? 16 : 0) | (t.bargesSunk << 5) | (t.bargesBeached << 8) | (event << 11) | (escapeS << 13) | (distStep << 18) | (t.batteryInArc ? 1 << 25 : 0) | (t.batteryAlerted ? 1 << 26 : 0)
+      ? t.gunStatus | (t.gunFast ? 8 : 0) | (distStep * GUN_DISTANCE_STEP_M > t.gunEffectiveM ? 16 : 0) | (t.bargesSunk << 5) | (t.bargesBeached << 8) | (event << 11) | (escapeS << 13) | (distStep << 18) | (t.batteryInArc ? 1 << 25 : 0) | (t.batteryAlerted ? 1 << 26 : 0) | (gunReloadStep(t) << 27)
       : 0;
     // 撃つ前の手引き: 最寄りの浮いている大発まで 50 m 刻みの切り上げ（「300 m で撃て」の 300 m は 300 m 以内。画面外の矢印も大発の任務は切り上げ。平方根はこのモードの間だけフレームに 1 回）
     const sightStep = mode === MISSION_BARGE_SIGHTED ? Math.ceil(Math.sqrt(t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy) / TARGET_MARKER_DISTANCE_STEP_M) : 0;

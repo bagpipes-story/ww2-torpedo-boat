@@ -35,6 +35,7 @@ import {
   generateUiTextures,
 } from '../assets/placeholders';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
+import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
 import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
@@ -45,6 +46,7 @@ import { getConvoyParams } from '../config/convoy-mission-data';
 import { getEngineParams } from '../config/engine-mission-data';
 import { getGunboatParams } from '../config/gunboat-mission-data';
 import { getPatrolAirParams } from '../config/patrol-air-mission-data';
+import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -81,6 +83,7 @@ export class BootScene extends Phaser.Scene {
       const b = getBoatRecord(gameData, id);
       generatePlayerBoatTexture(this, { lengthUnits: b.length_m * spriteScale, beamUnits: b.beam_m * spriteScale }, boatTextureKey(id));
     }
+    validateLoadouts(gameData); // 兵装（v0.6.8）: 対空・閃光の data と全任務（ハードも）の艇の魚雷・砲の検査（壊れていれば Boot で止まる。上の輪の後）
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
@@ -98,6 +101,7 @@ export class BootScene extends Phaser.Scene {
     }
     generateSmokeTextures(this);
     generateTorpedoButtonTexture(this);
+    generateGunButtonTexture(this); // 機銃のボタン（v0.6.8。橙の輪と 4 つの目盛り。assets/weapon-textures）
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）

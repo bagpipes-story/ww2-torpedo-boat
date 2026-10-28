@@ -82,7 +82,7 @@ const ROW2_Y = HUD_MARGIN + 18 + 8; // HUD_MARGIN + HUD_DEBUG_LINE_HEIGHT（FPS 
 const LINE2_PX = 22; // HUD_FONT_MISSION_PX
 /** 2 行目が避ける左の幅（mission-line と同じ式） */
 const RESERVE_PX = HUD_MARGIN + HUD_CLOCK_MAX_W_PX + HUD_CLOCK_GAP_PX;
-/** 空襲の行の上限（tests/dawn-lines: 論理幅 1280 から左右の HUD_MARGIN と右上の丸ボタンの列） */
+/** 空襲の行の上限（tests/dawn-lines: 論理幅 1280 から左右の HUD_MARGIN と右上の丸ボタンの列）（上限は v0.6.7 の右上の丸ボタンの列から。v0.6.8 実機 1 回目から右端はまた縦一列の技能（R44。いちばん上の煙幕は y 24〜112・x W − 112〜W − 24）で、1280 の幅でこの上限の右端 1,160 はその左端 1,168 の左＝上限はそのまま効く） */
 const STRIKE_LINE_MAX_PX = 1280 - 2 * (24 + 96);
 /** us_03 の夜明けの後（敵の制空下・空襲あり。最初の波は西から） */
 const US03: Partial<DawnTelemetry> = { reached: true, caughtOutside: true, air: DAWN_AIR_ENEMY, strikeEnabled: true, count: 4, fromJa: '西', ships: 'hide' };
@@ -186,7 +186,7 @@ describe('夜明けに岸へ逃げる大発の空襲の行（bargeHideTagJa。us
     expect(missionMode(tele({ ...US03, threat: AS_T_NONE, bargesRunning: 4 }, { gunMission: true, bargeEscapeS: 6 }), CALL_DAWN, 0)).toBe(MISSION_BARGE_RUN);
     expect(missionMode(tele({ ...US03, threat: AS_T_REST, restS: 10, bargesRunning: 4 }, { gunMission: true, bargeEscapeS: 6 }), CALL_DAWN, 0)).toBe(MISSION_BARGE_RUN);
   });
-  it('文の幅: us_03 の空襲の行＋大発＋沿岸砲＋浅瀬の警告は右上の丸ボタンの列にかからない（論理幅 1280。tests/dawn-lines の上限と同じ）', () => {
+  it('文の幅: us_03 の空襲の行＋大発＋沿岸砲＋浅瀬の警告は v0.6.7 の右上の丸ボタンの列の上限に収まる（論理幅 1280。tests/dawn-lines の上限と同じ。v0.6.8 実機 1 回目から右上は米の艇の煙幕＝この上限がそのまま効く）', () => {
     for (const shallowState of [SHALLOW_APPROACHING, SHALLOW_INSIDE]) {
       for (const [battery, alerted] of [[false, false], [true, false], [true, true]] as const) {
         const hunt: Partial<BoatTelemetry> = { gunMission: true, shallowState, shallowAheadM: 940, batteryInArc: battery, batteryAlerted: alerted };

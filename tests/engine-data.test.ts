@@ -216,7 +216,7 @@ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の�
     const pt = (gameData.enemies.enemies as unknown as Rec[]).find((e) => e['id'] === 'us_pt_enemy')!;
     expect((pt['source'] as Rec)['torpedo_attack']).toBe('design (v0.6.9 の PT の雷撃まで読まない)');
     expect(String(pt['notes']).endsWith('魚雷は使わない（v0.6.9 で雷撃）')).toBe(true);
-    expect(JSON.stringify(gameData.enemies)).not.toMatch(/v0\.6\.8 (の PT の雷撃|で雷撃)/); // v0.6.8 は今は空襲下の退避（その版の source は書いてよい。レビュー F7）
+    expect(JSON.stringify(gameData.enemies)).not.toMatch(/v0\.6\.8 (の PT の雷撃|で雷撃)/); // 空襲下の退避は v0.6.8 → v0.6.10 に繰り下げ（v0.6.8 は兵装パネル。その版の source は書いてよい。レビュー F7）
   });
 });
 

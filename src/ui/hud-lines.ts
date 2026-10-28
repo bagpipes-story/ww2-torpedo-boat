@@ -1,4 +1,4 @@
-// HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機・敵の水上機・暴風・浅瀬・魚雷の決着待ち・燃料切れ（v0.6.5 で mission-line から）・射撃と大発（v0.4.2）の 2 行目、Result の「敵機:」と大発の行。
+// HUD の文と表（v0.4.1 で boat-hud.ts から切り出し）: 速力段・3 行目の状態・「帰投せよ」の理由、味方機・敵の水上機・暴風・浅瀬・魚雷の決着待ち・燃料切れ（v0.6.5 で mission-line から）・射撃と大発（v0.4.2。v0.6.8 実機 1 回目に弾倉交換）の 2 行目、Result の「敵機:」と大発の行。
 // Phaser も DOM を読む config も使わない（文を組むだけ。色と刻みは config/hud-text-config）。2 行目の文は値が変わったときだけ組む（呼ぶ側がキャッシュする）。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
@@ -7,6 +7,7 @@ import { FF_OUT_IDENTIFIED, FF_STRAFE } from '../core/friendly';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK } from '../core/mission-flow';
 import { SP_APPROACH, SP_FLARE_PASS, SP_LEAVING, SP_ORBIT, SP_OUT_BOMBED, SP_OUT_LOST, SP_RUN } from '../core/seaplane';
 import { GUN_BLOCKED, GUN_FIRING, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE } from '../core/gun-battery';
+import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { SHALLOW_APPROACHING, SHALLOW_GROUNDED, SHALLOW_INSIDE } from '../core/shallows';
 import { STORM_NEAR } from '../core/storm';
 
@@ -117,10 +118,12 @@ export function seaplaneLine(t: BoatTelemetry, distStep: number, shallowStep: nu
   return { text: withWarnings(text, t, shallowStep, stormWarn), color: HUD_COLOR_WARN };
 }
 
-/** Result の「敵機:」の行（任務に水上機がいるときだけ）: 来ず / 見失わせただけ / 攻撃を受けた（弾切れで去った）/ 発見確定の後に途中で終了 */
-export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[] }): string {
+/** Result の「敵機:」の行（任務に水上機がいるときだけ）: 来ず / 見失わせただけ / 撃墜した（v0.6.8。機銃の対空）/ 攻撃を受けた（弾切れで去った）/ 発見確定の後に途中で終了 */
+export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[]; seaplaneDowned?: boolean }): string {
   if (r.seaplaneSorties === 0) return '敵機: 来ず';
   const lostPart = r.seaplaneLost > 0 ? `見失わせた ${r.seaplaneLost} 回（減速まで ${Number.isNaN(r.seaplaneSlowReactS) ? '帯に隠れた' : `${r.seaplaneSlowReactS.toFixed(1)} 秒`}）` : '';
+  // 撃墜（v0.6.8）: 結果の鍵は「打ち切り」のまま（4 は使わない＝ui/mission-line-air の 2 ビットの鍵と重なる）なので、落とした印で先に分ける
+  if (r.seaplaneDowned) return `敵機: ${lostPart ? `${lostPart} → ` : ''}撃墜（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
   if (r.seaplaneOutcome === SP_OUT_BOMBED) {
     const dodge = r.seaplaneDodgeS.slice(0, r.seaplaneBombs).map((s) => (Number.isNaN(s) ? '—' : s.toFixed(1))).join('/');
     return `敵機: ${lostPart ? `${lostPart} → ` : ''}照明弾の下 ${r.seaplaneFlareLitS.toFixed(1)} 秒 ・ 砲撃 ${r.seaplaneShellsUnderFlare} 発 ・ 爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits} ・ 転舵 ${dodge} 秒`;
@@ -156,8 +159,13 @@ function kills(t: BoatTelemetry): string {
   return `撃破 ${t.bargesSunk}/${t.bargesQuota}`;
 }
 
-/** 射撃ボタンを押している間の 2 行目: 撃っている（距離・速すぎ・遠い。大発が逃げていれば「上陸まで N 秒」を足す）か、撃てない理由（死角・射程外・煙幕・見えない）。浅瀬の警告は後ろに付ける。
- * distStep は GUN_DISTANCE_STEP_M 刻みの切り上げ。「遠い」は表示の距離で決める（「300 m ・ 遠い（300 m 以内で）」と矛盾させない） */
+/** 大発への砲の弾倉交換の残り秒（v0.6.8 実機 1 回目。2 行目の「あと N 秒」と ui/mission-line の bargeKey の bit 27〜29）: 状態が弾倉交換でなければ 0、交換中は切り上げを 1〜7 に */
+export function gunReloadStep(t: BoatTelemetry): number {
+  return t.gunStatus === PT_GUN_RELOAD ? Math.min(7, Math.max(1, Math.ceil(t.gunReloadLeftS))) : 0;
+}
+
+/** 射撃ボタンを押している間の 2 行目: 撃っている（距離・速すぎ・遠い。大発が逃げていれば「上陸まで N 秒」を足す）か、弾倉交換（v0.6.8 実機 1 回目。残り秒と撃破、逃げていれば上陸までの秒）か、
+ * 撃てない理由（死角・射程外・煙幕・見えない）。浅瀬の警告は後ろに付ける。distStep は GUN_DISTANCE_STEP_M 刻みの切り上げ。「遠い」は表示の距離で決める（「300 m ・ 遠い（300 m 以内で）」と矛盾させない） */
 export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, shallowStep: number): HudLine {
   let text: string;
   let warn = true;
@@ -170,6 +178,11 @@ export function gunLine(t: BoatTelemetry, distStep: number, escapeS: number, sha
       warn = false;
     }
     if (escapeS > 0) text += ` ・ 上陸まで ${escapeS} 秒`; // 撃ったら気づかれて逃げる、を押したまま読めるように（v0.4.2 の試作で、押し続けると「岸へ逃げる」の行が出なかった）
+  } else if (t.gunStatus === PT_GUN_RELOAD) {
+    // 押したままでよい（交換が済めば撃ち続ける）。jp の 13mm・25mm の「弾倉交換 ・ あと N 秒」と同じ頭と色
+    text = `弾倉交換 ・ あと ${gunReloadStep(t)} 秒 ・ ${kills(t)}`;
+    if (escapeS > 0) text += ` ・ 上陸まで ${escapeS} 秒`;
+    warn = false;
   } else if (t.gunStatus === GUN_OUT_OF_ARC) text = '射界外 ・ 舷側に向けよ（艇首・艇尾は撃てない）';
   else if (t.gunStatus === GUN_OUT_OF_RANGE) text = `射程外 ・ ${t.gunRangeM} m 以内へ寄れ`;
   else if (t.gunStatus === GUN_BLOCKED) text = '煙幕で見えない ・ 撃てない';

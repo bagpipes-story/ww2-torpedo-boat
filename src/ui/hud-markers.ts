@@ -29,7 +29,7 @@ import {
   TARGET_MARKER_TOP_MARGIN,
   RUDDER_BAR_HALF_WIDTH,
   RUDDER_MARKER_HEIGHT,
-  TORPEDO_BUTTON_RADIUS,
+  SPEED_HUD_RIGHT_X,
 } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { EdgeMarker } from './edge-marker';
@@ -43,7 +43,7 @@ const GUNBOAT_MARKER_SEP_PX = HUD_FONT_MARKER_PX * 2 + 8;
 const CONVOY_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: CONVOY_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
 const shift: MarkerShift = { dx: 0, dy: 0 };
 /** 夜の哨戒機の矢印（v0.6.7 レビュー ux:ux-5）が避ける右下の速力の HUD（ui/boat-hud の舵のバー・速力・段・針路の塊）の左と上。左はラベルの半分と矢印の分（字 4 つ）、上はラベルが矢印の下に出る分（字 3 行）の余白込み */
-const SPEED_HUD_KEEP_LEFT = GAME_WIDTH - HUD_MARGIN * 2 - TORPEDO_BUTTON_RADIUS * 2 - RUDDER_BAR_HALF_WIDTH * 2 - HUD_FONT_MARKER_PX * 4;
+const SPEED_HUD_KEEP_LEFT = SPEED_HUD_RIGHT_X - RUDDER_BAR_HALF_WIDTH * 2 - HUD_FONT_MARKER_PX * 4;
 const SPEED_HUD_KEEP_TOP = GAME_HEIGHT - HUD_MARGIN - RUDDER_MARKER_HEIGHT - HUD_TEXT_GAP - HUD_HEADING_OFFSET_Y - HUD_FONT_HEADING_PX - HUD_FONT_MARKER_PX * 3;
 const PLANE_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: PLANE_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
 

@@ -2,8 +2,11 @@
 // （data の salvo_spacing_choices_deg）。一斉の扇の隣どうしの間隔（魚雷ボタンと共有の SpreadConfig.spacingDeg）を書き換える。
 // 選んだ間隔は覚える（Registry と localStorage。次の任務・次に開いたときも同じ。読めない・書けなければ覚えないだけ）。
 // 作ってから TORPEDO_BUTTON_ARM_MS は押下を受けない（Briefing の「出撃」が右下にあり、2 度押しで間隔が変わらないように）。文字は変わったときだけ（§7）。
+// v0.6.8: 置き場所と幅は呼ぶ側（ui/weapon-panel が config/hud-layout-config から。魚雷ボタンの直径）。見た目は 642〜682、当たりは上へ 4 px と下は枠の下端 720 まで（SPREAD_HIT_TOP_Y。
+// 魚雷ボタンの当たりとは 12 px 空く。ホームバーの帯 682〜720 に入るのは当たりだけ）。
 import Phaser from 'phaser';
-import { DEPTH } from '../config/game-config';
+import { DEPTH, GAME_HEIGHT } from '../config/game-config';
+import { SPREAD_HIT_TOP_Y, SPREAD_TOP_Y } from '../config/hud-layout-config';
 import { MENU_FILL_COLOR, MENU_STROKE_ALPHA, MENU_STROKE_PX } from '../config/menu-config';
 import {
   HUD_COLOR_STRONG,
@@ -12,7 +15,6 @@ import {
   SPREAD_BUTTON_H,
   SPREAD_BUTTON_LABELS,
   SPREAD_BUTTON_PRESSED_ALPHA,
-  SPREAD_BUTTON_W,
   TORPEDO_BUTTON_ARM_MS,
   hudTextStyle,
 } from '../config/ui-config';
@@ -51,6 +53,8 @@ export class SpreadButton {
     private readonly scene: Phaser.Scene,
     cx: number,
     cy: number,
+    /** 幅（魚雷ボタンの直径。v0.6.8 実機 1 回目から全任務で 128） */
+    w: number,
     private readonly spread: SpreadConfig,
     private readonly defaultDeg: number,
     choices: readonly number[],
@@ -60,7 +64,13 @@ export class SpreadButton {
     const remembered = scene.registry.get(REGISTRY_KEY_SPREAD_DEG) as number | undefined;
     const start = [remembered ?? Number.NaN, loadStored()].find((d) => this.choices.includes(d)) ?? defaultDeg;
     this.spread.spacingDeg = start;
-    this.rect = scene.add.rectangle(cx, cy, SPREAD_BUTTON_W, SPREAD_BUTTON_H, MENU_FILL_COLOR, SPREAD_BUTTON_FILL_ALPHA).setStrokeStyle(MENU_STROKE_PX, MENU_FILL_COLOR, MENU_STROKE_ALPHA).setDepth(DEPTH.hud).setInteractive();
+    // 当たりは矩形の左上を原点にした局所の座標（見た目の上端 SPREAD_TOP_Y から上へ 4 px・下は枠の下端まで）
+    const hit = new Phaser.Geom.Rectangle(0, SPREAD_HIT_TOP_Y - SPREAD_TOP_Y, w, GAME_HEIGHT - SPREAD_HIT_TOP_Y);
+    this.rect = scene.add
+      .rectangle(cx, cy, w, SPREAD_BUTTON_H, MENU_FILL_COLOR, SPREAD_BUTTON_FILL_ALPHA)
+      .setStrokeStyle(MENU_STROKE_PX, MENU_FILL_COLOR, MENU_STROKE_ALPHA)
+      .setDepth(DEPTH.hud)
+      .setInteractive(hit, Phaser.Geom.Rectangle.Contains);
     this.text = scene.add.text(cx, cy, '', hudTextStyle(SPREAD_BUTTON_FONT_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setDepth(DEPTH.hud + 1);
     this.refreshLabel();
     this.armTimer = scene.time.delayedCall(TORPEDO_BUTTON_ARM_MS, () => {
