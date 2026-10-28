@@ -27,7 +27,7 @@ export const CUE_MAX_W = 264;
 export const TEXT_GAP = 8;
 /** TorpedoButton・HoldButton の当たり = テクスチャの枠 (ceil(2R·k)+4)/k ≒ 円 ± 1.8 */
 export const HIT_PAD = 1.8;
-/** 当たりの最小（44 pt） */
+/** 当たりの最小（iPhone 15 の縮尺で 44 pt。SE は約 42 pt） */
 export const MIN_HIT = 81;
 /** 端の印の文の半幅（4 桁の「帰投 9900 m」18 px の 111.85 px の半分を切り上げ。地図は 6 km 四方までなので 4 桁まで。52 だと文の右端がパネルの左 − 4 px＝レビュー ux-marker-cue-4px）・
  * つまむ帯と兵装の間・舵の棒の半幅・端の印の文字 px（速力の表示の避ける角の左端） */

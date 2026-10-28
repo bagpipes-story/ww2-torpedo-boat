@@ -186,7 +186,7 @@ describe('夜明けに岸へ逃げる大発の空襲の行（bargeHideTagJa。us
     expect(missionMode(tele({ ...US03, threat: AS_T_NONE, bargesRunning: 4 }, { gunMission: true, bargeEscapeS: 6 }), CALL_DAWN, 0)).toBe(MISSION_BARGE_RUN);
     expect(missionMode(tele({ ...US03, threat: AS_T_REST, restS: 10, bargesRunning: 4 }, { gunMission: true, bargeEscapeS: 6 }), CALL_DAWN, 0)).toBe(MISSION_BARGE_RUN);
   });
-  it('文の幅: us_03 の空襲の行＋大発＋沿岸砲＋浅瀬の警告は v0.6.7 の右上の丸ボタンの列の上限に収まる（論理幅 1280。tests/dawn-lines の上限と同じ。v0.6.8 で右上は空いた＝控えめな上限）', () => {
+  it('文の幅: us_03 の空襲の行＋大発＋沿岸砲＋浅瀬の警告は v0.6.7 の右上の丸ボタンの列の上限に収まる（論理幅 1280。tests/dawn-lines の上限と同じ。v0.6.8 実機 1 回目から右上は米の艇の煙幕＝この上限がそのまま効く）', () => {
     for (const shallowState of [SHALLOW_APPROACHING, SHALLOW_INSIDE]) {
       for (const [battery, alerted] of [[false, false], [true, false], [true, true]] as const) {
         const hunt: Partial<BoatTelemetry> = { gunMission: true, shallowState, shallowAheadM: 940, batteryInArc: battery, batteryAlerted: alerted };

@@ -233,11 +233,15 @@ describe('us_03 の 2 行目（gunLine・bargeKey）と機銃ボタン', () => {
   });
 });
 
-describe('ソースの pin（systems/arms-step）', () => {
+describe('ソースの pin（systems/arms-step・systems/mission-telemetry）', () => {
   it('借りる弾倉は米PT の砲か大発の砲（hunt.mag）。大発の砲の弾倉交換中は機へ撃たない（busy）', () => {
     const s = readFileSync(new URL('../src/systems/arms-step.ts', import.meta.url), 'utf8');
     expect(s).toContain('const borrowed = (w && w.pts && w.pts.gun ? w.pts.gun.state : null) ?? (w && w.hunt ? w.hunt.mag : null);');
     expect(s).toContain('(w.hunt !== null && w.hunt.battery.status === PT_GUN_RELOAD)');
     expect(s).toContain('this.ownsMag = used && borrowed === null && this.magP !== null;');
+  });
+  it('us_03 の交換の残り秒は大発の砲の弾倉から写す（無いと 2 行目が「あと 1 秒」のまま・bargeKey の bit 27〜29 が変わらない。レビュー mag-2）', () => {
+    const s = readFileSync(new URL('../src/systems/mission-telemetry.ts', import.meta.url), 'utf8');
+    expect(s).toContain('t.gunReloadLeftS = h.mag ? h.mag.reloadLeftS : 0;');
   });
 });

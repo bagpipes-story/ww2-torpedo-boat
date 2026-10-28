@@ -399,7 +399,7 @@
         ],
         "enemy_behavior": "barges (v0.4.2: 2 隻ずつ 2 組が岸沿いを 7 kt で西へ。艇に気づくとすぐ 13mm で撃ち返し、5 秒後に岸へ逃げて上陸。enemies.json の daihatsu_barge と下の barges)",
         "main_weapon": "guns",
-        "main_weapon_source": "design (v0.4.2。主兵装。guns なら右下の主ボタンが『機銃』（押している間撃つ。boats.json の gun_battery。v0.6.7 までは『射撃』）。大発は喫水約 1.5 m で Mk 13 の最小深度 2 m の下を抜ける（enemies.json の torpedo_immune）。torpedo_immune の敵がいる任務で guns でなければ起動時に例外。無ければ torpedo（us_02）。v0.6.8 から main_weapon は主兵装（右下の角のボタン・2 行目の『大発なし』・Briefing の順）。艇の魚雷 4 本も撃てるが大発の下を抜ける（狙う艦なし＝発射の時に決着）)",
+        "main_weapon_source": "design (v0.4.2。主兵装。guns なら砲のボタンを押している間撃つ（boats.json の gun_battery。v0.4.2〜v0.6.7 は右下の主ボタン『射撃』、v0.6.8 の初めは右下の角の『機銃』）。大発は喫水約 1.5 m で Mk 13 の最小深度 2 m の下を抜ける（enemies.json の torpedo_immune）。torpedo_immune の敵がいる任務で guns でなければ起動時に例外。無ければ torpedo（us_02）。v0.6.8 から main_weapon は主兵装（2 行目の『大発なし』・Briefing の順。右下の置き方は実機 1 回目から全任務で同じ＝角が魚雷・その左が機銃）。艇の魚雷 4 本も撃てるが大発の下を抜ける（狙う艦なし＝発射の時に決着）)",
         "barges": {
           "lead_start": {
             "x_m": 4250,
@@ -909,7 +909,7 @@
         ],
         "enemy_behavior": "ai (v0.6.7。米の飛行艇 2 機の夜の哨戒。レーダー → 捜索（航跡・動く船体・定時）→ 発見で 2 機 × 3 発の出撃（v0.6.7 実機 1 回目に 1 機 2 → 3 発）。夜明けの後は 4 機の空襲)",
         "main_weapon": "none",
-        "main_weapon_source": "design (v0.6.7。航空機だけの任務で艦艇はいない。main_weapon none（主兵装なし＝右下の角は機銃）。v0.6.8 から T-14 の 13mm で機を撃てる（1 発 0.5%・速いほど下がる。hit_rate_model.anti_aircraft）・45cm 魚雷 2 本も撃てるが狙う艦はいない。史実の第一号型は 7.7mm ×2（high。WebSearch の抜粋のみ・本文未読）)",
+        "main_weapon_source": "design (v0.6.7。航空機だけの任務で艦艇はいない。main_weapon none（主兵装なし。v0.6.8 の初めは右下の角が機銃、実機 1 回目から角は魚雷・機銃はその左）。v0.6.8 から T-14 の 13mm で機を撃てる（1 発 0.5%・速いほど下がる。hit_rate_model.anti_aircraft）・45cm 魚雷 2 本も撃てるが狙う艦はいない。史実の第一号型は 7.7mm ×2（high。WebSearch の抜粋のみ・本文未読）)",
         "duration_s": 220,
         "duration_s_source": "design (v0.6.7。夜明けまでの実秒。輪の縁まで 5,602 m: 全速 70.3・巡航 108.9・14 kt 155.6 秒。出発時に帰投せよが立たない検査（巡航 × call_margin 1.5 = 163.4 < 220 − 50）の下限 213.4 秒の上。模擬（scripts/patrol-air-sim.ts。試作 v2 と同じ）で HUD どおり（全速＋捜索で止まる）は帰投の中央値 101.4 秒、14 kt＋止まるは 197.3 秒（夜明け前 85%）)",
         "fuel_allotment_gal": 32,
@@ -1112,7 +1112,7 @@
         ],
         "enemy_behavior": "ai (v0.6.3。米PT 2 隻の隊。哨戒 → 発見 → 突撃 → 予告（赤い線）→ 掃射しながら航過（撃ち切ったか離れていけば線が消える）→ 逃げる艇（10 kt 以上）には離脱せずに追撃（艇の後ろ寄りの舷へ 39 kt で回り、PT から艇への赤い線の 2.5 秒後に 1 回 6 発の連射。待つ PT は反対の舷）。1 隻 航過 4 回・連射 6 回か夜明けで東へ去る。13mm を 3 発受けた追撃の PT は追撃をやめて離れる（制圧）。T-14 の 13mm の命中で死傷・損傷なら去り、ごくまれに炎上して沈む。core/pt-boats・pt-chase)",
         "main_weapon": "guns",
-        "main_weapon_source": "design (v0.6.3 実機 1 回目: ユーザー『T-14 の武装として 13mm または 25mm 機銃 ×1 挺があると思うので撃沈はかなり難しくてもプレイヤーに抵抗感を感じさせるために射撃ボタンを押せるように』。45cm 魚雷は PT の吃水の下を抜ける（最小深度 2 m。us_pt_enemy.torpedo_immune）。v0.6.8 から魚雷 2 本も積みいつでも撃てるが PT の下を抜ける。主兵装は T-14 の 13mm 機銃 1 挺（boats.json の jp_t14.gun_battery。右下の角の『機銃』を押している間撃つ。v0.6.7 までは『射撃』）。撃沈はかなり難しく、撃ち返しは PT を追い払うためのもの（us_pt_enemy.under_fire）。v0.6.3 の最初は none（撃たない）)",
+        "main_weapon_source": "design (v0.6.3 実機 1 回目: ユーザー『T-14 の武装として 13mm または 25mm 機銃 ×1 挺があると思うので撃沈はかなり難しくてもプレイヤーに抵抗感を感じさせるために射撃ボタンを押せるように』。45cm 魚雷は PT の吃水の下を抜ける（最小深度 2 m。us_pt_enemy.torpedo_immune）。v0.6.8 から魚雷 2 本も積みいつでも撃てるが PT の下を抜ける。主兵装は T-14 の 13mm 機銃 1 挺（boats.json の jp_t14.gun_battery。右下の魚雷の左の『機銃』を押している間撃つ。v0.6.8 の初めは右下の角、v0.6.7 までは『射撃』）。撃沈はかなり難しく、撃ち返しは PT を追い払うためのもの（us_pt_enemy.under_fire）。v0.6.3 の最初は none（撃たない）)",
         "duration_s": 170,
         "duration_s_source": "design (v0.6.3。夜明けまでの実秒。帰投地点の輪の縁まで 3,535 m（v0.6.3 レビューで出発点を 150 m 北へ。前は 3,427 m）: 静音 98 秒・巡航 69 秒・全速 44 秒。模擬（pt-pass-sim、400 夜。v0.6.3 レビューの直しの後）の帰投の中央値は 48〜141 秒（止まってやり過ごすと 141 秒・夜明け後の帰投 0%）。tests/dawn-clock『巡航で帰る秒 × call_margin < 夜明け − 50』: 68.7 × 1.5 = 103 < 120)",
         "fuel_allotment_gal": 32,

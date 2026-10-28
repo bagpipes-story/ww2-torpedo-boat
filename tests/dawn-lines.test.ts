@@ -195,7 +195,7 @@ describe('夜明けの空襲の行（spec §8.2）', () => {
     expect(escortHitLine(tele({ ...OWN }, vip)).text).toBe('僚艇 被弾！ HP 55 / 90 ・ 煙幕か光の外へ');
     expect(escortHitLine(tele({ ...ENEMY, strikeEnabled: false }, vip)).text).toBe('僚艇 被弾！ HP 55 / 90 ・ 煙幕か光の外へ');
   });
-  it('文の幅: 空襲の行は v0.6.7 の右上の丸ボタンの列の上限に収まり（論理幅 1280。v0.6.8 で右上は空いた＝控えめな上限）、夜明けの帯は画面に収まる（Menlo 0.602 em・全角 1 em の見積もり）', () => {
+  it('文の幅: 空襲の行は v0.6.7 の右上の丸ボタンの列の上限に収まり（論理幅 1280。v0.6.8 実機 1 回目から右上は米の艇の煙幕＝この上限がそのまま効く）、夜明けの帯は画面に収まる（Menlo 0.602 em・全角 1 em の見積もり）', () => {
     // 最悪の組: 僚艇の被弾の直後・浅瀬の警告（3 桁 m。先読み 6 秒）・2 桁の秒と残り・接近は出現の距離
     const vip: Partial<BoatTelemetry> = { escortEnabled: true, escortHp: 90, escortHpMax: 90, shallowState: SHALLOW_APPROACHING, shallowAheadM: 940 };
     const sl = (d: Partial<DawnTelemetry>): string => strikeLine(tele({ ...ENEMY, ...d }, vip), 19, false, true).text;
