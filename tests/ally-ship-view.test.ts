@@ -1,12 +1,13 @@
 // v0.6.9 S5a（spec-v069 §5.4・§4.9 V12）: 海の上の味方の輸送船の状態の行（ui/ally-ship-view の鍵・文・色の調子）と揚陸地点の帯の中心、Boot の揚陸の任務の検査（validateLandingMissions）。
 // 鍵が同じなら文と色も同じ（entities/ally-ship は鍵が変わったときだけ setText）。% は 5% 刻み（1 夜に 20 回）、雷跡の秒は切り上げ、沈んだときの % は 1% 刻み。
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { LANDING_PCT_LABEL_STEP, LANDING_WAKE_S_MAX } from '../src/config/landing-config';
 import { validateLandingMissions } from '../src/config/landing-mission-data';
 import { createLanding, createLandingWakes, hitLanding, tickLanding } from '../src/core/landing';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { SHIP_TONE_FRIENDLY, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, landingMarkX } from '../src/ui/ally-ship-view';
+import { SHIP_TONE_FRIENDLY, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, landingMarkX } from '../src/ui/ally-ship-view';
 
 const S = buildWorldSetup(gameData, 'jp_04', {});
 const P = S.landing!.params;
@@ -32,13 +33,15 @@ describe('輸送船の状態の行（ui/ally-ship-view）', () => {
     tickLanding(s2, P, P.unloadS);
     expect(view(allyShipStatusKey(s2, w))).toEqual(['揚陸完了', SHIP_TONE_FRIENDLY]);
   });
-  it('雷跡が走っている間（浮いている）は警告の「雷跡！ N 秒」（最接近までの体感秒の切り上げ。上限あり）', () => {
+  it('雷跡が走っている間（浮いている）は警告の「雷跡！ N 秒」（最接近までの体感秒の切り上げ。1 以上＝R14 A7・上限あり）', () => {
     const st = createLanding(P);
     tickLanding(st, P, 30);
     const w = { count: 3, cpaS: 11.2 };
     expect(view(allyShipStatusKey(st, w))).toEqual(['雷跡！ 12 秒', SHIP_TONE_WARN]);
     w.cpaS = 0;
-    expect(view(allyShipStatusKey(st, w))).toEqual(['雷跡！ 0 秒', SHIP_TONE_WARN]);
+    expect(view(allyShipStatusKey(st, w))).toEqual(['雷跡！ 1 秒', SHIP_TONE_WARN]);
+    w.cpaS = 0.3;
+    expect(allyShipStatusText(allyShipStatusKey(st, w))).toBe('雷跡！ 1 秒');
     w.cpaS = 1e6;
     expect(allyShipStatusText(allyShipStatusKey(st, w))).toBe(`雷跡！ ${LANDING_WAKE_S_MAX} 秒`);
   });
@@ -99,3 +102,19 @@ describe('揚陸地点の帯（landingMarkX）と Boot の検査（validateLandi
     expect(c).toBeGreaterThan(b);
   });
 });
+
+describe('ラベルと状態の行は船体の上（R14 A6: 浜は南。泊地は南の縁から 240 m で、下の字は画面の外や HUD の下に入った）', () => {
+  it('ラベルの下端は外接の箱の上端から offset 上、状態の行の下端はその上（どちらも船体の中心より北）', () => {
+    const ys = allyShipLabelYs(P.y, 40, 8, 26);
+    expect(ys).toEqual({ labelY: P.y - 48, statusY: P.y - 74 });
+    expect(ys.statusY).toBeLessThan(ys.labelY);
+    expect(ys.labelY).toBeLessThan(P.y - 40);
+  });
+  it('entities/ally-ship は allyShipLabelYs で置き、origin の y は 1（下端）', () => {
+    const src = readFileSync(new URL('../src/entities/ally-ship.ts', import.meta.url), 'utf8');
+    expect(src).toContain('allyShipLabelYs(p.y, halfY, ESCORT_LABEL_OFFSET_M, LANDING_STATUS_DY_M)');
+    expect(src.match(/\.setOrigin\(0\.5, 1\)/g)?.length).toBe(2);
+    expect(src).not.toContain('p.y + halfY');
+  });
+});
+

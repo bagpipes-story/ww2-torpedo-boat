@@ -1,7 +1,7 @@
 // 停泊して揚陸する輸送船を米PT の雷撃から守る模擬の表（v0.6.9 S3・S4a・S4。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §6 S3・§8・R1・R2・R4・R7・R12・R13）: 遊び方（台本）ごとに
 // 達成・揚陸・輸送船の沈没・自艇の沈没／漂流／帰投／夜明けの前の帰投・斉射・雷撃の結末・決着の前の燃料少と輪（R4）・期待値（R2）、斉射の命中（TABLE=2）、時刻（TABLE=3）を出す。
 // 中身は src/core/landing-sim（S4 の tests/landing-balance と同じ）。値は data。上書きは data の写しに当て、世界と同じ検査を通す（V8・V10・V13 を破る組み合わせは例外で止まる＝R7）。
-// 環境変数: MISSION（既定 jp_04）・N（1 組の夜。既定 400）・SEED（最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400 と 401〜800）・POL（既定 全部 10）・HARD=1（ハード）・
+// 環境変数: MISSION（既定 jp_04）・N（1 組の夜。既定 400）・SEED（最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400 と 401〜800）・POL（既定 全部 12。R14 の lure_cue・home_early は表だけ）・HARD=1（ハード）・
 //   TABLE（無し: 組ごとの表 / 1: 帯の ✓/✗・対の帯（組を合わせた夜）・R2 の期待値・不変 / 2: 斉射の命中と分布 / 3: 時刻。1・2 は ✗ があれば終了コード 1）・
 //   上書き UNLOAD（unload_s）・LOOKOUT（lookout_m）・HITS（torpedo_hits_to_sink）・AIM（aim_error_deg）・SPACING（salvo_spacing_deg）・HURRIED（hurried_max_m）・HFACTOR（hurried_error_factor）・
 //   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）

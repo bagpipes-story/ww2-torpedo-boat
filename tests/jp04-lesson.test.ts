@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { getBriefingRecord, enemyNameJa, riskLabelJa } from '../src/config/briefing-data';
 import { gameData } from '../src/config/game-data';
-import { LANDING_FIGHT_AWAY_JA, briefingRows, landingBriefingJa } from '../src/core/briefing';
+import { LANDING_FIGHT_AWAY_JA, LANDING_RING_WAIT_JA, briefingRows, landingBriefingJa } from '../src/core/briefing';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 import { textWidthPx } from './pt-ui-kit';
 
@@ -57,7 +57,8 @@ describe('R12 の教え「輸送船から離れて戦え」', () => {
   it('目的（ノーマル・ハード）と条件の句が同じ句を含む', () => {
     expect(LANDING_FIGHT_AWAY_JA).toBe('輸送船から離れて戦え');
     for (const obj of [String(M['objective']), String(HARD['objective_ja'])]) expect(obj).toContain(`${LANDING_FIGHT_AWAY_JA}。生きて帰れ`);
-    expect(landingBriefingJa(140, 2)).toBe('揚陸 140 秒（魚雷 2 本で沈む。輸送船から離れて戦え。米PTの魚雷も自艇の下を抜ける）');
+    expect(landingBriefingJa(140, 2)).toBe('帰投の輪で待てる ・ 揚陸 140 秒（魚雷 2 本で沈む。輸送船から離れて戦え。米PTの魚雷も自艇の下を抜ける）');
+    expect(LANDING_RING_WAIT_JA).toBe('帰投の輪で待てる'); // R14 A5: 揚陸の決着の前に輪に入っても終わらない（HUD の輪の中の行・燃料少の後ろと同じ事）
     expect(landingBriefingJa(139.6, 1)).toContain('揚陸 140 秒（魚雷 1 本で沈む。');
   });
   it('目的は半角スペースを含まず（数と単位の間はノーブレークスペース）、24 px・1,056 px で 2 行（S4a の前は「900 m」の半角スペースで折れて 3 行）', () => {
@@ -82,6 +83,7 @@ describe('R12 の教え「輸送船から離れて戦え」', () => {
       const lines = phaserWrap(line);
       expect(lines.length, lines.join('\n')).toBe(3);
       expect(lines[2]!.startsWith('・ 揚陸 140 秒')).toBe(true);
+      expect(lines[1]!.endsWith(`・ ${LANDING_RING_WAIT_JA}`), lines[1]).toBe(true); // R14 A5 の帰投の句は武器の句の行の後ろ（3 行のまま）
     }
   });
 });

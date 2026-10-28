@@ -1,6 +1,8 @@
 // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9 S6a。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §5.1〜§5.3・R4・R5・R8（F13d・F16）・R12）の HUD の文とキー:
 // 2 行目の平常（揚陸の % と狙う米PT）・見えている PT（静音／速い）・去った後の待ち・モード 36（見張りの報告・走っている雷跡）・モード 35（斉射・被雷・不発・外れ・沈没・揚陸完了）・
 // 呼びかけの語（決着「揚陸完了 ・ 」「輸送船 沈没 ・ 」、決着の前の夜明け近し・燃料少の待ち）と、右上の揚陸の時計（ui/landing-clock）。
+// R14（S6a-fix）: モード 37「米PT N m（方角） ・ 輸送船が射線に入る！ 離れて戦え」（A1。赤い線のすぐ下）、決着の前の帰投の輪の中「帰投の輪 ・ 揚陸を見届けるまで待て あと N 秒」（A5。モード 3）、
+// 慌てた・戦いながらの斉射は「輸送船の{方角} N m から」（A4）、同じステップの斉射は「米PT 2 隻が…輸送船へ 6 本」（A3）、雷跡の秒は 1 以上（A7）。35・36・37・輪の待ちの文は landingLine（A11）。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。どの文も t.landing.enabled の任務（jp_04）だけ: ほかの任務は landingKey 0・待ちは立たない。
 // 距離は 100 m 刻みの切り上げ（core/landing の LANDING_DIST_STEP_M。「1800 m」とカンマなし）、% は切り捨て、秒は切り上げ。方角は輸送船から見た 8 方位（見張りの報告）。
 // キーは行に出る値だけを詰める（行に出ない値は 0＝無駄に組み直さない）。文はキーと同じ丸めの関数でテレメトリから組む（ui/mission-line がキーでキャッシュする）。
@@ -13,7 +15,7 @@ import {
 import { LANDING_HITS_MAX, LANDING_UNLOAD_MAX_S } from '../core/landing-data';
 import { CALL_DAWN, CALL_FUEL } from '../core/mission-flow';
 import type { HudLine } from './hud-lines';
-import { MISSION_CALL, MISSION_LANDING_THREAT, MISSION_PT } from './mission-mode';
+import { MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_FIRE_LINE, MISSION_LANDING_THREAT, MISSION_PT, MISSION_WAITING, landingRingWaiting } from './mission-mode';
 
 /** 決着の前の「帰投せよ」の代わり（13mm／25mm の出来事で戦う PT が残っていない・みな去った・夜明け近し。spec §5.2 の K_WAIT の語。連射の結果を足した短い形も同じ 5 字） */
 export const LANDING_WAIT_JA = '揚陸を待て';
@@ -43,9 +45,22 @@ export function landingCallJa(l: LandingTelemetry): string {
   return l.phase === LD_SUNK ? '輸送船 沈没 ・ ' : '揚陸完了 ・ ';
 }
 
-/** 決着の前の呼びかけの後ろ（頭は dawnCallLabel の「夜明け近し 」「空襲下 」「燃料少 」）: 夜明けは「・ 揚陸を待て あと N 秒」、燃料少は「・ 揚陸まで あと N 秒 ・ 輪に入ると揚陸を見届けられない」（R4） */
+/**
+ * 決着の前の呼びかけの後ろ（頭は dawnCallLabel の「夜明け近し 」「空襲下 」「燃料少 」）: 夜明けは「・ 揚陸を待て あと N 秒」、燃料少は「・ 揚陸まで あと N 秒 ・ 帰投の輪で止まって待て」
+ * （R4。R14 A5: 決着の前に輪に入っても任務は終わらず、輪の中で揚陸を見届けられる）
+ */
 export function landingWaitCallJa(call: number, leftS: number): string {
-  return call === CALL_FUEL ? `・ 揚陸まで あと ${leftS} 秒 ・ 輪に入ると揚陸を見届けられない` : `・ ${landingWaitTailJa(leftS)}`;
+  return call === CALL_FUEL ? `・ 揚陸まで あと ${leftS} 秒 ・ 帰投の輪で止まって待て` : `・ ${landingWaitTailJa(leftS)}`;
+}
+
+/** 決着の前の帰投の輪の中（R14 A5。モード 3＝MISSION_WAITING の揚陸の任務の文。任務は揚陸の決着まで終わらない） */
+export function landingRingLine(l: LandingTelemetry): HudLine {
+  return { text: `帰投の輪 ・ 揚陸を見届けるまで待て あと ${landingLeftS(l)} 秒`, color: HUD_COLOR_STRONG };
+}
+
+/** 輸送船が射線に入る（R14 A1。モード 37。警告色）: 自艇から見たその PT の距離（100 m 刻み）と方角、教え「離れて戦え」 */
+export function landingFireLineLine(l: LandingTelemetry): HudLine {
+  return { text: `米PT ${Math.min(63, l.fireLineStep) * LANDING_DIST_STEP_M} m（${bearingJa(l.fireLineDirIdx * 45)}） ・ 輸送船が射線に入る！ 離れて戦え`, color: HUD_COLOR_WARN };
 }
 
 /** 呼びかけで待ちの形を使う（決着の前の夜明け近し・燃料少。jp_04 では撃ち尽くしの呼びかけは立たない＝noTargetsLeft が偽） */
@@ -74,9 +89,9 @@ export function landingFastLine(distM: number, dirJa: string): HudLine {
   return { text: `米PT ${distM} m（${dirJa}） ・ まもなく見つかる ・ 赤い線に備えよ`, color: HUD_COLOR_WARN };
 }
 
-/** 報告の 100 m 刻み（63 まで）・雷跡の最接近までの秒（切り上げ。63 まで）・雷跡の本数（127 まで） */
+/** 報告の 100 m 刻み（63 まで）・雷跡の最接近までの秒（切り上げ。1〜63＝R14 A7: 「あと 0 秒」と出さない）・雷跡の本数（127 まで） */
 const reportStepOf = (l: LandingTelemetry): number => Math.min(63, l.reportStep);
-const wakeSOf = (l: LandingTelemetry): number => (Number.isNaN(l.wakeCpaS) ? 0 : Math.min(63, Math.ceil(l.wakeCpaS)));
+const wakeSOf = (l: LandingTelemetry): number => (Number.isNaN(l.wakeCpaS) ? 0 : Math.min(63, Math.max(1, Math.ceil(l.wakeCpaS))));
 const wakesOf = (l: LandingTelemetry): number => Math.min(127, l.wakes);
 
 /** モード 36 の行（警告色）: 報告が先（遠い＝今なら引きつけられる・近い＝寄れば慌てて撃つ）、報告が無ければ走っている雷跡と最接近までの秒 */
@@ -88,13 +103,15 @@ export function landingThreatLine(t: BoatTelemetry): HudLine {
   return { text: `米PT 雷撃に来る！ ${where} ・ 今なら引きつけられる`, color: HUD_COLOR_WARN };
 }
 
-/** landingKey の副（bits 1〜3）: 平常・報告（遠い・近い）・雷跡・決着の前の待ち */
+/** landingKey の副（bits 1〜3）: 平常・報告（遠い・近い）・雷跡・決着の前の待ち・輸送船が射線に入る（R14 A1）・決着の前の帰投の輪の中（R14 A5） */
 export const LK_NORMAL = 0;
 export const LK_FAR = 1;
 export const LK_NEAR = 2;
 export const LK_WAKES = 3;
 export const LK_WAIT = 4;
-/** landingKey の欄の位置（spec §5.2）: 副 << 1（3）| 方角 << 4（3）| 刻み << 7（6: 報告の 100 m か雷跡の秒）| % か雷跡の本数 << 13（7）| 残りの秒 << 20（8: 待ちだけ）| 撃てる隻数 << 28（2: 平常だけ） */
+export const LK_FIRE = 5;
+export const LK_RING = 6;
+/** landingKey の欄の位置（spec §5.2）: 副 << 1（3）| 方角 << 4（3）| 刻み << 7（6: 報告・射線の PT の 100 m か雷跡の秒）| % か雷跡の本数 << 13（7）| 残りの秒 << 20（8: 待ち・輪の中だけ）| 撃てる隻数 << 28（2: 平常だけ） */
 export const LK_DIR = 4;
 export const LK_STEP = 7;
 export const LK_PCT = 13;
@@ -109,6 +126,8 @@ export const LK_ARMED = 28;
 export function landingKey(t: BoatTelemetry, mode: number): number {
   const l = t.landing;
   if (!l.enabled) return 0;
+  if (mode === MISSION_LANDING_FIRE_LINE) return 1 | (LK_FIRE << 1) | (l.fireLineDirIdx << LK_DIR) | (Math.min(63, l.fireLineStep) << LK_STEP);
+  if (mode === MISSION_WAITING) return landingRingWaiting(t) ? 1 | (LK_RING << 1) | (landingLeftS(l) << LK_LEFT) : 1;
   if (mode === MISSION_LANDING_THREAT) {
     if (l.reportSub === 0) return 1 | (LK_WAKES << 1) | (wakeSOf(l) << LK_STEP) | (wakesOf(l) << LK_PCT);
     return 1 | ((l.reportSub === LANDING_REPORT_NEAR ? LK_NEAR : LK_FAR) << 1) | (l.reportDirIdx << LK_DIR) | (reportStepOf(l) << LK_STEP);
@@ -126,24 +145,34 @@ const eventStepOf = (l: LandingTelemetry): number => (Number.isNaN(l.eventM) ? 0
 /** 沈むまであと何本（被雷・不発の出来事のときの被雷の数から） */
 const hitsLeftOf = (l: LandingTelemetry): number => Math.max(0, Math.min(LANDING_HITS_MAX, l.hitsToSink - l.eventHits));
 
-/** landingEventKey の欄の位置（spec §5.2）: 種類（4）| 方角 << 4（3）| 斉射の 100 m << 7（6）| 本数 << 13（4）| %（沈没）か揚陸の後（外れ）<< 17（7）| 沈むまであと何本 << 24（2） */
+/** landingEventKey の欄の位置（spec §5.2）: 種類（4）| 方角 << 4（3）| 斉射の 100 m << 7（6）| 本数 << 13（4）| %（沈没）か揚陸の後（外れ）<< 17（7）| 沈むまであと何本 << 24（2）| 足した斉射の隻数 << 26（2。R14 A3） */
 export const LEK_DIR = 4;
 export const LEK_STEP = 7;
 export const LEK_COUNT = 13;
 export const LEK_PCT = 17;
 export const LEK_LEFT = 24;
+export const LEK_BOATS = 26;
 
-/** モード 35 の行のキー（出来事の種類ごとに、その文に出る値だけ）: 斉射は方角と本数（慌てた・戦いながらは距離も）、被雷・不発は沈むまでの本数、沈没は %、外れは揚陸の後か */
+/** 足した斉射の隻数（2 以上なら「米PT N 隻が…輸送船へ N 本」。1 隻の斉射・斉射でない出来事は 0。3 まで） */
+const boatsOf = (l: LandingTelemetry): number => (l.eventBoats >= 2 ? Math.min(3, l.eventBoats) : 0);
+
+/** モード 35 の行のキー（出来事の種類ごとに、その文に出る値だけ）: 斉射は方角と本数（慌てた・戦いながらは距離も。足した斉射は隻数と本数だけ）、被雷・不発は沈むまでの本数、沈没は %、外れは揚陸の後か */
 export function landingEventKey(l: LandingTelemetry): number {
   const k = l.eventKind;
   const salvo = k === LE_CALM || k === LE_HURRIED || k === LE_ENGAGED;
-  const far = k === LE_HURRIED || k === LE_ENGAGED;
+  const boats = salvo ? boatsOf(l) : 0;
+  const one = salvo && boats === 0;
+  const far = one && (k === LE_HURRIED || k === LE_ENGAGED);
   const pct = k === LE_SUNK ? landingPct(l.eventPct) : k === LE_MISS && l.eventPct >= 1 ? 1 : 0;
-  return k | ((salvo ? l.eventDirIdx : 0) << LEK_DIR) | ((far ? eventStepOf(l) : 0) << LEK_STEP) | ((salvo ? Math.min(15, l.eventCount) : 0) << LEK_COUNT) | (pct << LEK_PCT) | ((k === LE_HIT || k === LE_DUD ? hitsLeftOf(l) : 0) << LEK_LEFT);
+  return (
+    k | ((one ? l.eventDirIdx : 0) << LEK_DIR) | ((far ? eventStepOf(l) : 0) << LEK_STEP) | ((salvo ? Math.min(15, l.eventCount) : 0) << LEK_COUNT) | (pct << LEK_PCT) |
+    ((k === LE_HIT || k === LE_DUD ? hitsLeftOf(l) : 0) << LEK_LEFT) | (boats << LEK_BOATS)
+  );
 }
 
 /**
- * モード 35 の行（LANDING_EVENT_SHOW_MS。ui/pt-line-clock の待ちの鎖）: 斉射（気づかれていない＝警告・慌てた＝強調・戦いながら＝警告。R12）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
+ * モード 35 の行（LANDING_EVENT_SHOW_MS。ui/pt-line-clock の待ちの鎖）: 斉射（気づかれていない＝警告・慌てた＝強調・戦いながら＝警告。R12。慌てた・戦いながらは輸送船から見た方角と距離＝R14 A4、
+ * 戦いながらの後ろは教え「離れて戦え」＝A1。同じステップに足した斉射は隻数と本数＝A3）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
  * 外れ（揚陸の後なら「揚陸を続ける」を付けない）、揚陸の前の沈没（%）、揚陸完了、揚陸の後の沈没
  */
 export function landingEventLine(t: BoatTelemetry): HudLine {
@@ -151,10 +180,12 @@ export function landingEventLine(t: BoatTelemetry): HudLine {
   const dir = bearingJa(l.eventDirIdx * 45);
   const n = Math.min(15, l.eventCount);
   const d = eventStepOf(l) * LANDING_DIST_STEP_M;
+  const boats = boatsOf(l);
+  const who = boats >= 2 ? `米PT ${boats} 隻が` : '米PT ';
   switch (l.eventKind) {
-    case LE_CALM: return { text: `米PT 雷撃！ ${dir}から輸送船へ ${n} 本`, color: HUD_COLOR_WARN };
-    case LE_HURRIED: return { text: `米PT 慌てて発射！ ${dir} ${d} m から ${n} 本 ・ 外れやすい`, color: HUD_COLOR_STRONG };
-    case LE_ENGAGED: return { text: `米PT 戦いながら発射！ ${dir} ${d} m から ${n} 本 ・ 外れやすい`, color: HUD_COLOR_WARN };
+    case LE_CALM: return { text: boats >= 2 ? `${who}雷撃！ 輸送船へ ${n} 本` : `米PT 雷撃！ ${dir}から輸送船へ ${n} 本`, color: HUD_COLOR_WARN };
+    case LE_HURRIED: return { text: `${who}慌てて発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ 外れやすい`, color: HUD_COLOR_STRONG };
+    case LE_ENGAGED: return { text: `${who}戦いながら発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ 離れて戦え`, color: HUD_COLOR_WARN };
     case LE_HIT: return { text: `輸送船 被雷！ あと ${hitsLeftOf(l)} 本で沈む`, color: HUD_COLOR_WARN };
     case LE_DUD: {
       const hits = l.hitsToSink - hitsLeftOf(l);
@@ -166,6 +197,19 @@ export function landingEventLine(t: BoatTelemetry): HudLine {
     case LE_SUNK_DONE: return { text: '輸送船 撃沈…（揚陸は済んでいた）', color: HUD_COLOR_STRONG };
     default: return { text: '', color: HUD_COLOR_STRONG };
   }
+}
+
+/**
+ * 揚陸の任務の 2 行目の文（A11: ui/mission-line の分岐をここへ移した）: 35 出来事・36 輸送船への脅威・37 輸送船が射線に入る・決着の前の帰投の輪の中（MISSION_WAITING）。
+ * それ以外（揚陸の無い任務・ほかのモード・決着の後の輪の中の魚雷待ち）は null＝mission-line のいつもの文
+ */
+export function landingLine(t: BoatTelemetry, mode: number): HudLine | null {
+  if (!t.landing.enabled) return null;
+  if (mode === MISSION_LANDING_EVENT) return landingEventLine(t);
+  if (mode === MISSION_LANDING_THREAT) return landingThreatLine(t);
+  if (mode === MISSION_LANDING_FIRE_LINE) return landingFireLineLine(t.landing);
+  if (mode === MISSION_WAITING && landingRingWaiting(t)) return landingRingLine(t.landing);
+  return null;
 }
 
 /** 右上の揚陸の時計（ui/landing-clock）のキー: 段階 | 揚陸の後に沈んだ << 2 | 揚陸中の残りの秒 << 3（1 秒に 1 回だけ変わる） */

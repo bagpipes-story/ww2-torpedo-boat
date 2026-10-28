@@ -2,6 +2,8 @@
 // 雷撃（core/pt-torpedo の入れ先）・魚雷の決着（TorpedoEvents）を輸送船（core/landing）と斉射の数え（PtTorpedoState の salvo*）へつなぐ LandingTorpedoLink（世界と模擬が同じものを使う）。
 // stepLandingTorpedoes は systems/torpedo-pool.ts:86-118 の TorpedoPool.step と 1 手ずつ同じ順（stepTorpedo → 射程か海域の外 → onMiss → scanTargets（終わり際の当たりは見ない＝NaN）
 // → 命中 → 通り過ぎ）。雷跡の点は絵だけなので置かない（nextWakeAtM は他に読まれない）。プールは自艇の魚雷（w.torpedoes・KPI・終わりの待ち）に触らない。
+// R14 A3（S6a-fix）: 同じステップの同じ種類の斉射は 1 つの出来事に足す（「米PT 2 隻が慌てて発射！ 輸送船へ 6 本」）、外れ・不発の出来事はプールにまだ決着していない魚雷が無いときだけ
+// （ほかの斉射が走っている間に「それた！ 輸送船は無事」と言わない。残りは雷跡の行が数える）。
 // Phaser 非依存・毎ステップ確保しない（状態・走査の書き先・PT の添字は組み立てで 1 回）。
 import type { SeaBounds } from './boat-motion';
 import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
@@ -103,14 +105,19 @@ export const NO_LANDING_HOOKS: LandingHitHooks = { onShipHit: () => {} };
 
 /**
  * 雷撃の入れ先（core/pt-torpedo の PtTorpedoSink）と敵の魚雷の決着（TorpedoEvents）を 1 つで（世界と模擬が同じ規則で輸送船と斉射を数える）。
- * 命中: 不発なら不発の出来事（そのときの被雷の数で文が変わる。F16）、そうでなければ hitLanding → 被雷・沈没・揚陸の後の沈没。外れ: 斉射の最後の 1 本が決着して命中が無ければ、
- * 不発の命中があれば不発・無ければ外れの出来事（spec §4.3）。沈み始めた後の外れは出来事にしない（沈んだ後に「それた！ 輸送船は無事」と出さない）。終わり際の当たりは無い（late hit を見ない）
+ * 斉射: 出来事（同じステップ＝同じ nowS の同じ種類の斉射が続けば、その出来事に本数と隻数を足す。R14 A3）。
+ * 命中: 不発なら不発の出来事（そのときの被雷の数で文が変わる。F16）、そうでなければ hitLanding → 被雷・沈没・揚陸の後の沈没。外れ: 斉射の最後の 1 本が決着して命中が無く、プールにほかの
+ * 決着していない魚雷が無ければ、不発の命中があれば不発・無ければ外れの出来事（spec §4.3・R14 A3）。沈み始めた後の外れは出来事にしない（沈んだ後に「それた！ 輸送船は無事」と出さない）。
+ * 終わり際の当たりは無い（late hit を見ない）
  */
 export class LandingTorpedoLink implements TorpedoEvents {
-  /** 時計（出撃からの体感秒）: 呼ぶ側がプールの step の前に書く（沈み始めた時計） */
+  /** 時計（出撃からの実秒＝世界の stepTimeS。命中スローで遅れない）: 呼ぶ側が雷撃（stepPtTorpedoes）の前に書く（足す斉射の同じステップ・沈み始めた時計） */
   nowS = 0;
   /** プールの魚雷ごとの撃った PT（−1 は撃っていない） */
   private readonly boatOf: Int8Array;
+  /** 最後の斉射の出来事の通し番号とその時計（同じステップの同じ種類の斉射を足す。A3） */
+  private salvoSeq = -1;
+  private salvoAtS = NaN;
 
   constructor(
     private readonly ld: LandingState,
@@ -130,9 +137,17 @@ export class LandingTorpedoLink implements TorpedoEvents {
     else this.settle(i);
   }
 
-  /** PtTorpedoSink: 斉射を撃ち終えた（kind は PT_SALVO_*。出来事「米PT 雷撃！」「米PT 慌てて発射！」「米PT 戦いながら発射！」） */
+  /**
+   * PtTorpedoSink: 斉射を撃ち終えた（kind は PT_SALVO_*。出来事「米PT 雷撃！」「米PT 慌てて発射！」「米PT 戦いながら発射！」）。同じステップ（nowS が同じ）に同じ種類の斉射の出来事が
+   * 最後の出来事なら、それに本数と隻数を足した出来事にする（A3: R2 の慌てた斉射は隊が捉えたステップにみな撃つ。前は最後の 1 隻の「3 本」だけが出た）
+   */
   onSalvo(i: number, kind: number, rangeM: number, n: number): void {
-    landingEvent(this.ld, kind === SALVO_HURRIED ? LE_HURRIED : kind === SALVO_ENGAGED ? LE_ENGAGED : LE_CALM, i, rangeM, n);
+    const ld = this.ld;
+    const k = kind === SALVO_HURRIED ? LE_HURRIED : kind === SALVO_ENGAGED ? LE_ENGAGED : LE_CALM;
+    const add = ld.eventSeq === this.salvoSeq && ld.eventKind === k && this.salvoAtS === this.nowS;
+    landingEvent(ld, k, i, rangeM, add ? ld.eventCount + n : n, add ? ld.eventBoats + 1 : 1);
+    this.salvoSeq = ld.eventSeq;
+    this.salvoAtS = this.nowS;
   }
 
   onHit(_target: number, x: number, y: number, s: TorpedoState): void {
@@ -160,7 +175,17 @@ export class LandingTorpedoLink implements TorpedoEvents {
     if (i < 0) return;
     this.settle(i);
     const b = this.book;
-    if (b.salvoLeft[i] === 0 && b.salvoHits[i] === 0 && !this.ld.sinking) landingEvent(this.ld, b.salvoDuds[i]! > 0 ? LE_DUD : LE_MISS, i, NaN, 0);
+    if (b.salvoLeft[i] === 0 && b.salvoHits[i] === 0 && !this.ld.sinking && !this.othersRunning(s)) landingEvent(this.ld, b.salvoDuds[i]! > 0 ? LE_DUD : LE_MISS, i, NaN, 0);
+  }
+
+  /** プールに s のほかの決着していない魚雷が走っている（≤ 9 本を走査。確保しない。A3） */
+  private othersRunning(s: TorpedoState): boolean {
+    const st = this.pool.states;
+    for (let k = 0; k < st.length; k++) {
+      const o = st[k]!;
+      if (o !== s && o.active && !o.resolved) return true;
+    }
+    return false;
   }
 
   /** i 隻目の斉射の 1 本が決着した */

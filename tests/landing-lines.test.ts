@@ -9,10 +9,11 @@ import { DAWN_AIR_ENEMY, createDawnTelemetry } from '../src/core/dawn-air';
 import { LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingTelemetry } from '../src/core/landing';
 import { CALL_DAWN, CALL_FUEL, CALL_SUNK } from '../src/core/mission-flow';
 import { PT_GUN_EV_CREW, PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
-import { LANDING_WAIT_JA, landingClockKey, landingClockLine, landingNormalLine } from '../src/ui/landing-lines';
+import { LANDING_WAIT_JA, landingClockKey, landingClockLine, landingLine, landingNormalLine } from '../src/ui/landing-lines';
 import {
-  MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_THREAT, MISSION_PT, MISSION_PT_GUN_EVENT, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT,
+  MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_FIRE_LINE, MISSION_LANDING_THREAT, MISSION_PT, MISSION_PT_GUN_EVENT, MISSION_WAITING, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT,
 } from '../src/ui/mission-mode';
+import { PT_CHASE } from '../src/core/pt-boats';
 import { mergeBurstBits } from '../src/ui/pt-gun-lines';
 import { L0, PT04, S04, frame, landing0, tl } from './landing-ui-kit';
 import { LINE2_MAX_PX, tele, textWidthPx } from './pt-ui-kit';
@@ -63,6 +64,7 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
     expect(row(frame(tl({ reportSub: 1, reportI: 0, reportStep: 18, reportDirIdx: 1 }, QUIET)))).toEqual([MISSION_LANDING_THREAT, '米PT 雷撃に来る！ 輸送船の北東 1800 m ・ 今なら引きつけられる', HUD_COLOR_WARN]);
     expect(row(frame(tl({ reportSub: 2, reportI: 1, reportStep: 13, reportDirIdx: 2 }, QUIET)))).toEqual([MISSION_LANDING_THREAT, '米PT 雷撃が近い！ 輸送船の東 1300 m ・ 寄れば慌てて撃つ（外れやすい）', HUD_COLOR_WARN]);
     expect(row(frame(tl({ wakes: 3, wakeCpaS: 11.2 }, QUIET)))).toEqual([MISSION_LANDING_THREAT, '雷跡 3 本が輸送船へ ・ あと 12 秒', HUD_COLOR_WARN]);
+    expect(frame(tl({ wakes: 1, wakeCpaS: 0.01 }, QUIET)).text).toBe('雷跡 1 本が輸送船へ ・ あと 1 秒'); // R14 A7: 0 秒と出さない
     // 報告と雷跡が両方あれば報告（打てる手がある方）
     expect(frame(tl({ reportSub: 1, reportStep: 18, reportDirIdx: 0, wakes: 3, wakeCpaS: 5 }, QUIET)).text).toBe('米PT 雷撃に来る！ 輸送船の北 1800 m ・ 今なら引きつけられる');
   });
@@ -70,8 +72,14 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
   it('モード 35（出来事）: 斉射（R12 の戦いながら）・被雷・不発（F16）・外れ・沈没・揚陸完了・揚陸の後の沈没', () => {
     const f = (o: Partial<LandingTelemetry>, pt = QUIET) => row(frame(tl(ev(o), pt), 0, EV));
     expect(f({ eventKind: LE_CALM, eventDirIdx: 0, eventM: 899 })).toEqual([MISSION_LANDING_EVENT, '米PT 雷撃！ 北から輸送船へ 3 本', HUD_COLOR_WARN]);
-    expect(f({ eventKind: LE_HURRIED, eventM: 1250 })).toEqual([MISSION_LANDING_EVENT, '米PT 慌てて発射！ 北東 1300 m から 3 本 ・ 外れやすい', HUD_COLOR_STRONG]);
-    expect(f({ eventKind: LE_ENGAGED, eventDirIdx: 2, eventM: 812 }, { ...QUIET, detected: true })).toEqual([MISSION_LANDING_EVENT, '米PT 戦いながら発射！ 東 900 m から 3 本 ・ 外れやすい', HUD_COLOR_WARN]);
+    // R14 A4: 慌てた・戦いながらは輸送船から見た方角と距離（「輸送船の」）。A1: 戦いながらの後ろは「離れて戦え」（「外れやすい」は慌てただけ）
+    expect(f({ eventKind: LE_HURRIED, eventM: 1250 })).toEqual([MISSION_LANDING_EVENT, '米PT 慌てて発射！ 輸送船の北東 1300 m から 3 本 ・ 外れやすい', HUD_COLOR_STRONG]);
+    expect(f({ eventKind: LE_ENGAGED, eventDirIdx: 2, eventM: 812 }, { ...QUIET, detected: true })).toEqual([MISSION_LANDING_EVENT, '米PT 戦いながら発射！ 輸送船の東 900 m から 3 本 ・ 離れて戦え', HUD_COLOR_WARN]);
+    // R14 A3: 同じステップに足した斉射は隻数と本数（方角・距離は言わない）
+    expect(f({ eventKind: LE_HURRIED, eventM: 1250, eventCount: 6, eventBoats: 2 })).toEqual([MISSION_LANDING_EVENT, '米PT 2 隻が慌てて発射！ 輸送船へ 6 本 ・ 外れやすい', HUD_COLOR_STRONG]);
+    expect(f({ eventKind: LE_ENGAGED, eventM: 812, eventCount: 6, eventBoats: 2 })).toEqual([MISSION_LANDING_EVENT, '米PT 2 隻が戦いながら発射！ 輸送船へ 6 本 ・ 離れて戦え', HUD_COLOR_WARN]);
+    expect(f({ eventKind: LE_CALM, eventM: 880, eventCount: 9, eventBoats: 3 })).toEqual([MISSION_LANDING_EVENT, '米PT 3 隻が雷撃！ 輸送船へ 9 本', HUD_COLOR_WARN]);
+    expect(f({ eventKind: LE_HURRIED, eventM: 1250, eventBoats: 1 })[1]).toBe('米PT 慌てて発射！ 輸送船の北東 1300 m から 3 本 ・ 外れやすい'); // 1 隻は前の形
     expect(f({ eventKind: LE_HIT, eventHits: 1 })).toEqual([MISSION_LANDING_EVENT, '輸送船 被雷！ あと 1 本で沈む', HUD_COLOR_WARN]);
     expect(f({ eventKind: LE_DUD, eventHits: 0 })).toEqual([MISSION_LANDING_EVENT, '輸送船に命中 ・ 不発！ 輸送船は無事', HOME_COLOR_TEXT]);
     expect(f({ eventKind: LE_DUD, eventHits: 1 })).toEqual([MISSION_LANDING_EVENT, '輸送船に命中 ・ 不発！ 被雷 1 のまま', HUD_COLOR_STRONG]);
@@ -82,14 +90,14 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
     expect(f({ eventKind: LE_SUNK_DONE, eventPct: 1, eventHits: 2 })).toEqual([MISSION_LANDING_EVENT, '輸送船 撃沈…（揚陸は済んでいた）', HUD_COLOR_STRONG]);
   });
 
-  it('呼びかけ（MISSION_CALL）: 決着は「揚陸完了 ・ 」「輸送船 沈没 ・ 」＋「帰投せよ  N m」、決着の前の夜明け近しは待ち、燃料少は「揚陸まで あと N 秒 ・ 輪に入ると…」（R4）', () => {
+  it('呼びかけ（MISSION_CALL）: 決着は「揚陸完了 ・ 」「輸送船 沈没 ・ 」＋「帰投せよ  N m」、決着の前の夜明け近しは待ち、燃料少は「揚陸まで あと N 秒 ・ 帰投の輪で止まって待て」（R4・R14 A5）', () => {
     const done = { resolved: true, phase: LD_DONE, pct: 1, leftS: 0 };
     expect(frame(tl(done, QUIET), CALL_SUNK)).toMatchObject({ mode: MISSION_CALL, text: '揚陸完了 ・ 帰投せよ  2000 m' });
     expect(frame(tl({ ...done, sunkAfterDone: true }, QUIET), CALL_SUNK).text).toBe('揚陸完了 ・ 帰投せよ  2000 m');
     expect(frame(tl({ resolved: true, phase: LD_SUNK, pct: 0.64, leftS: 0 }, QUIET), CALL_SUNK).text).toBe('輸送船 沈没 ・ 帰投せよ  2000 m');
     expect(frame(tl({ leftS: 61.2 }, QUIET), CALL_DAWN)).toMatchObject({ mode: MISSION_CALL, text: '夜明け近し ・ 揚陸を待て あと 62 秒' });
     expect(frame(tl({ leftS: 61.2 }, QUIET, { dawn: { ...createDawnTelemetry(), reached: true, air: DAWN_AIR_ENEMY } }), CALL_DAWN).text).toBe('空襲下 ・ 揚陸を待て あと 62 秒');
-    expect(frame(tl({ leftS: 61.2 }, QUIET), CALL_FUEL).text).toBe('燃料少 ・ 揚陸まで あと 62 秒 ・ 輪に入ると揚陸を見届けられない');
+    expect(frame(tl({ leftS: 61.2 }, QUIET), CALL_FUEL).text).toBe('燃料少 ・ 揚陸まで あと 62 秒 ・ 帰投の輪で止まって待て');
     expect(frame(tl(done, QUIET), CALL_FUEL).text).toBe('燃料少 帰投せよ  2000 m');
     expect(frame(tl(done, QUIET), CALL_DAWN).text).toBe('夜明け近し 帰投せよ  2000 m');
     // 揚陸の任務の決着の後は呼びかけが突撃・追撃・離脱の行に勝つ（jp_01 の ux-4 と同じ）。決着の前は接触の行
@@ -126,6 +134,32 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
   });
 });
 
+describe('R14 の行（S6a-fix）', () => {
+  it('A1 モード 37（警告色）: 自艇から見た射線の PT の距離（100 m 刻み）と方角・「輸送船が射線に入る！ 離れて戦え」', () => {
+    const fight = { ...QUIET, detected: true, threatPhase: PT_CHASE };
+    expect(row(frame(tl({ fireLineI: 0, fireLineDirIdx: 1, fireLineStep: 7 }, fight)))).toEqual([MISSION_LANDING_FIRE_LINE, '米PT 700 m（北東） ・ 輸送船が射線に入る！ 離れて戦え', HUD_COLOR_WARN]);
+    expect(frame(tl({ fireLineI: 1, fireLineDirIdx: 4, fireLineStep: 12 }, QUIET)).text).toBe('米PT 1200 m（南） ・ 輸送船が射線に入る！ 離れて戦え');
+  });
+  it('A5 帰投の輪の中（決着の前・強調色）: 「帰投の輪 ・ 揚陸を見届けるまで待て あと N 秒」（秒は切り上げ）。決着の後・輪の外・揚陸の無い任務は landingLine が null', () => {
+    expect(row(frame(tl({ leftS: 61.2 }, QUIET, { atHome: true })))).toEqual([MISSION_WAITING, '帰投の輪 ・ 揚陸を見届けるまで待て あと 62 秒', HUD_COLOR_STRONG]);
+    expect(landingLine(tl({ resolved: true, phase: LD_DONE, leftS: 0 }, QUIET, { atHome: true, homeWaiting: true }), MISSION_WAITING)).toBeNull();
+    expect(landingLine(tl({ leftS: 61.2 }, QUIET, { homeWaiting: true }), MISSION_WAITING)).toBeNull();
+    expect(landingLine(tele(QUIET, { atHome: true }), MISSION_WAITING)).toBeNull();
+    for (const m of [MISSION_LANDING_EVENT, MISSION_LANDING_THREAT, MISSION_LANDING_FIRE_LINE]) expect(landingLine(tele(QUIET), m)).toBeNull();
+    expect(landingLine(tl({}, QUIET), MISSION_PT)).toBeNull(); // 平常の行は ui/pt-lines
+  });
+  it('キーが変わる ⇔ 文が変わる（37 の方角と 100 m・輪の中の残りの秒）', () => {
+    const fire: Array<[number, string]> = [];
+    for (const dir of [0, 1, 6]) for (const step of [3, 7, 12]) fire.push(keyText(tl({ fireLineI: 0, fireLineDirIdx: dir, fireLineStep: step }, QUIET)));
+    const ring: Array<[number, string]> = [];
+    for (const leftS of [140, 139.5, 139, 61.2, 61.9, 0.4]) ring.push(keyText(tl({ leftS }, QUIET, { atHome: true })));
+    for (const rows of [fire, ring]) {
+      for (const r of rows) expect(r[1]).not.toBe('');
+      for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) expect(rows[i]![0] === rows[j]![0], `${rows[i]![1]} / ${rows[j]![1]}`).toBe(rows[i]![1] === rows[j]![1]);
+    }
+  });
+});
+
 describe('幅（22 px の 2 行目は 840 px・spec §5 の上限）', () => {
   it('どの行も最大の値（100%・ハードの 3 方角・4 桁の距離・255 秒・9 本）で 840 px の内', () => {
     const big = { ...QUIET, sighted: true, dx: 9000, dy: -9000 };
@@ -141,6 +175,9 @@ describe('幅（22 px の 2 行目は 840 px・spec §5 の上限）', () => {
       frame(tl({ reportSub: 2, reportStep: 63, reportDirIdx: 7 }, QUIET)).text,
       frame(tl({ wakes: 9, wakeCpaS: 62.5 }, QUIET)).text,
       ...[LE_CALM, LE_HURRIED, LE_ENGAGED, LE_HIT, LE_DUD, LE_MISS, LE_SUNK, LE_DONE, LE_SUNK_DONE].map((k) => frame(tl(ev({ eventKind: k, eventDirIdx: 7, eventCount: 15, eventM: 6300, eventHits: 1, eventPct: 0.99 }), QUIET), 0, EV).text),
+      ...[LE_CALM, LE_HURRIED, LE_ENGAGED].map((k) => frame(tl(ev({ eventKind: k, eventDirIdx: 7, eventCount: 15, eventBoats: 3, eventM: 6300 }), QUIET), 0, EV).text),
+      frame(tl({ fireLineI: 0, fireLineDirIdx: 7, fireLineStep: 63 }, QUIET)).text,
+      frame(tl({ leftS: 255 }, QUIET, { atHome: true })).text,
       frame(tl({ resolved: true, phase: LD_SUNK }, QUIET, { homeEdgeM: 9900 }), CALL_SUNK).text,
       frame(tl({ leftS: 255 }, QUIET), CALL_DAWN).text,
       frame(tl({ leftS: 255 }, QUIET), CALL_FUEL).text,
@@ -167,6 +204,8 @@ describe('キーが変わる ⇔ 文が変わる（landingKey・landingEventKey 
     const rows: Array<[number, string]> = [];
     for (const k of [LE_CALM, LE_HURRIED, LE_ENGAGED, LE_HIT, LE_DUD, LE_MISS, LE_SUNK, LE_DONE, LE_SUNK_DONE])
       for (const dir of [0, 3]) for (const m of [812, 899, 1250]) for (const hits of [0, 1]) for (const pct of [0.41, 0.649, 1]) rows.push(eventKeyText(tl(ev({ eventKind: k, eventDirIdx: dir, eventM: m, eventHits: hits, eventPct: pct }), QUIET)));
+    // R14 A3: 足した斉射は隻数と本数だけ（方角・距離は文に出ない＝キーにも入らない）
+    for (const k of [LE_CALM, LE_HURRIED, LE_ENGAGED]) for (const boats of [0, 1, 2, 3]) for (const dir of [0, 3]) for (const m of [812, 1250]) for (const n of [3, 6]) rows.push(eventKeyText(tl(ev({ eventKind: k, eventBoats: boats, eventDirIdx: dir, eventM: m, eventCount: n }), QUIET)));
     same(rows);
   });
   it('平常（% と撃てる隻数）・みな去った後の待ち・呼びかけの待ち（残りの秒）', () => {

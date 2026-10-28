@@ -14,9 +14,9 @@ import { initLandingTelemetry } from '../src/systems/landing-telemetry';
 import { initPtTelemetry } from '../src/systems/pt-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
 import { callLineText } from '../src/ui/dawn-lines';
-import { landingEventLine, landingThreatLine } from '../src/ui/landing-lines';
+import { landingLine } from '../src/ui/landing-lines';
 import { composeLineKeys, createLineKeys, type LineKeys } from '../src/ui/mission-line-keys';
-import { MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_THREAT, missionMode } from '../src/ui/mission-mode';
+import { MISSION_CALL, missionMode } from '../src/ui/mission-mode';
 import { ptLine } from '../src/ui/pt-lines';
 import { tele } from './pt-ui-kit';
 
@@ -57,13 +57,13 @@ export interface Frame { mode: number; text: string; color: string; keys: LineKe
 
 const KEYS = createLineKeys();
 
-/** ui/mission-line と同じ順でモード・キー・文（揚陸の 2 つ・米PT の 5 つ・呼びかけだけ。ほかのモードの文は ''）。call は topCall の値（省けば t.callFlags から） */
+/** ui/mission-line と同じ順でモード・キー・文（揚陸の landingLine（35・36・37・輪の中の待ち）・米PT の 5 つ・呼びかけだけ。ほかのモードの文は ''）。call は topCall の値（省けば t.callFlags から） */
 export function frame(t: BoatTelemetry, call = topCall(t.callFlags ?? 0), flags = 0, lastPtKey = 0, merge = 0): Frame {
   const mode = missionMode(t, call, flags);
   const keys = { ...composeLineKeys(KEYS, t, mode, flags, lastPtKey, merge, 0) };
   let l = { text: '', color: '' };
-  if (mode === MISSION_LANDING_EVENT) l = landingEventLine(t);
-  else if (mode === MISSION_LANDING_THREAT) l = landingThreatLine(t);
+  const landing = landingLine(t, mode);
+  if (landing) l = landing;
   else if (keys.ptMode) l = ptLine(t, mode, keys.pKey);
   else if (mode === MISSION_CALL) l = { text: callLineText(t, call, Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M)), color: '' };
   return { mode, text: l.text, color: l.color, keys };

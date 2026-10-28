@@ -1,7 +1,7 @@
 // 停泊して揚陸する輸送船を守る模擬（core/landing-sim）の n 夜の集計（v0.6.9 S3。spec-v069 §8 の TABLE=1〜3・I1〜I6・R2・R4。pt-sim-cell・convoy-sim-cell と同じ分け方）。
 // Phaser 非依存。集計は表に 1 回（毎ステップではない）なので配列を作ってよい。% は 0〜100、中央値・p10・p90 は小さい順の floor(q × n) 番目（convoy-sim-cell と同じ）。
 // R2 の期待値: 1 夜ごとに、揚陸に効く斉射（landing-trial の relevant）の種類と PT から、斉射の当たりうる本数（影のプール）の分布（種類 × PT。表の全部の夜を合わせた分布）を畳み込んで
-// 「沈むまでの本数に届かない」確率を出し、夜で平均する（生き残る期待値）。達成の期待値はそれに「決着の後に帰投した夜」を掛けて平均する（輸送船の運と自艇の運を別々とみなす）。
+// 「沈むまでの本数に届かない」確率を出し、夜で平均する（生き残る期待値）。達成の期待値はそれに「帰投した夜」（R14 A5 から模擬の帰投はいつも決着の後）を掛けて平均する（輸送船の運と自艇の運を別々とみなす）。
 import { LD_DONE, LD_SUNK } from './landing';
 import { OUT_GOAL_GONE, OUT_LEFT, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, runLandingTrial, type LandingSimSetup, type LandingTrial } from './landing-sim';
 import type { LandingPolicy } from './landing-sim-policy';
@@ -159,7 +159,7 @@ export function landingCell(s: LandingSimSetup, policy: LandingPolicy, rs: reado
     fuelCallPct: pct((r) => !Number.isNaN(r.fuelCallS)), ringEarlyPct: pct((r) => r.ringEarly),
     mix0Pct: pct((r) => kinds(r) === 0), mixCPct: pct((r) => only(r, PT_SALVO_CALM)), mixHPct: pct((r) => only(r, PT_SALVO_HURRIED)), mixEPct: pct((r) => only(r, PT_SALVO_ENGAGED)),
     mixMultiPct: pct((r) => kinds(r) >= 2), relCalm: mean((r) => rel(r, PT_SALVO_CALM)), relHurried: mean((r) => rel(r, PT_SALVO_HURRIED)), relEngaged: mean((r) => rel(r, PT_SALVO_ENGAGED)),
-    expSurvivePct: 100 * mean((r) => surviveP(r, st, hits)), survivePct: pct((r) => r.phase !== LD_SUNK), expObjPct: 100 * mean((r) => (r.end === 'home' && !r.ringEarly ? surviveP(r, st, hits) : 0)),
+    expSurvivePct: 100 * mean((r) => surviveP(r, st, hits)), survivePct: pct((r) => r.phase !== LD_SUNK), expObjPct: 100 * mean((r) => (r.end === 'home' ? surviveP(r, st, hits) : 0)),
     i1MinS: rs.reduce((a, r) => Math.min(a, r.i1LeadS), Infinity), i2MinS: rs.reduce((a, r) => Math.min(a, r.i2LeadS), Infinity), afterDawn: rs.reduce((a, r) => a + r.afterDawnSalvos, 0),
     maxSalvosPerPt: rs.reduce((a, r) => Math.max(a, r.maxSalvosPerPt), 0), drawMiss: rs.filter((r) => r.draws26 !== r.drawsWant).length, unresolvedAtDawn: rs.filter((r) => r.unresolvedAtDawn).length,
     tReport: timeCol(rs.map((r) => r.reportS), n), tNear: timeCol(rs.map((r) => r.nearReportS), n), tDetect: timeCol(rs.map((r) => r.detectS), n),

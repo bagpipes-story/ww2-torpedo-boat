@@ -4,6 +4,8 @@
 // Phaser も config（DOM を読む game-config）も読まない（tests から作れる）。世界は構造の型 MissionEndWorld で受ける（MissionWorld がそのまま満たす）。
 // レビューの直し: 漂流の窓の間に敵艦隊がいなくなれば cleared に上げる（promoteAdriftToCleared）、窓（cleared・漂流・座礁）の間は新しい魚雷を撃たない（holdFire）。
 // v0.6.8: 窓の間は兵装の新しい道（systems/arms-step の hold）も止める（世界に arms が無ければ v0.6.7 のまま）。
+// v0.6.9（jp_04。spec-v069 R14 A5 の (b)）: 停泊して揚陸する輸送船の任務は、揚陸の決着（揚陸完了か沈没）の前に帰投の輪に入っても終えない（輪の中で待つ。決着したらいつもどおり帰投）。
+//   揚陸の無い任務（landing が無い・null）は 1 字も変わらない終わり方（decideMissionEnd をそのまま）。
 import { discardFireInput, type InputState } from '../core/input-state';
 import { createEndSettle, decideMissionEnd, promoteAdriftToCleared, stepEndSettle, type EndCheck, type EndParams, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 
@@ -20,6 +22,8 @@ export interface MissionEndWorld {
   readonly band: string;
   /** 固定ステップで進んだ実秒（窓の時計） */
   readonly stepTimeS: number;
+  /** 停泊して揚陸する輸送船（v0.6.9。jp_04。systems/world-landing の決着）。揚陸の無い任務は null か無し */
+  readonly landing?: { readonly resolved: boolean } | null;
 }
 
 export class MissionEnd {
@@ -63,7 +67,7 @@ export class MissionEnd {
     c.grounded = w.grounded;
     c.fleetGone = this.fleetGoneClears && w.enemy.allOut;
     if (promoteAdriftToCleared(this.settle, w.stepTimeS, c.boatSinking, c.fleetGone, c.destroyerSinkPlaying)) return null;
-    return stepEndSettle(this.settle, w.stepTimeS, c.boatSinking, this.sunkReason, decideMissionEnd(c, this.params), running(w), this.params.endSettleS);
+    return stepEndSettle(this.settle, w.stepTimeS, c.boatSinking, this.sunkReason, landingHold(w) ? null : decideMissionEnd(c, this.params), running(w), this.params.endSettleS);
   }
 
   /**
@@ -82,6 +86,11 @@ export class MissionEnd {
     this.sunkReason = reason;
     return stepEndSettle(this.settle, w.stepTimeS, true, reason, null, running(w), this.params.endSettleS);
   }
+}
+
+/** 揚陸の決着の前に帰投の輪の中にいる（jp_04 だけ。R14 A5 の (b): 輪の中で待ち、帰投にも漂流にもしない。沈み始めた艇は沈没の窓のまま） */
+export function landingHold(w: MissionEndWorld): boolean {
+  return w.landing ? w.atHome && !w.landing.resolved && !w.boat.sinking : false;
 }
 
 /** 待つ魚雷: 決着していない魚雷。発射待ちは自艇が浮いている間だけ数える（沈み始めた艇からは撃たない＝待っても決着しない） */

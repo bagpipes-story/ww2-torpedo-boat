@@ -15,16 +15,19 @@
 // v0.6.9（jp_04。停泊して揚陸する輸送船。spec-v069 R5/F5）: 揚陸の出来事（斉射・被雷・不発・外れ・沈没・揚陸完了。通し番号の増えから LANDING_EVENT_SHOW_MS）も同じ鎖に入れる:
 //   赤い線・13mm の出来事・輸送隊の出来事の下では 1 度出るまで待ち、機関の出来事と航過の結果はその下でも待つ（赤い線の間に来た被雷は線が消えてから出る・揚陸の出来事の下で結果を失わない）。
 //   t.landing.enabled の任務だけが始める（ほかの任務は landingUntil 0 のまま＝旗も待ちも v0.6.8 と同じ）。
+//   R14 A2: 「出た」は機関の出来事と同じく 2 行目に出ていた ms の和が LANDING_EVENT_MIN_SHOWN_MS（2 秒）に届いたとき（届く前に隠れたら待って出し直す）。
+//   R14 A1: 輸送船が射線に入る（モード 37。赤い線のすぐ下）の間も、出来事（13mm・輸送隊・揚陸・機関）と航過の結果は待つ（揚陸の無い任務は立たない＝前と同じ）。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
 import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
-import { LANDING_EVENT_SHOW_MS } from '../config/landing-config';
+import { LANDING_EVENT_MIN_SHOWN_MS, LANDING_EVENT_SHOW_MS } from '../config/landing-config';
 import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_EV_WARN, ENGINE_WARN } from '../core/engine-trouble';
 import { CONVOY_EV_ARRIVED, CONVOY_EV_GB_BEACH, CONVOY_EV_GB_SUNK, CONVOY_EV_KIND, CONVOY_EV_SUNK } from './convoy-lines';
 import {
   MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_LANDING_EVENT, MISSION_PT_GUN_EVENT, MODE_FLAG_CONVOY_EVENT, MODE_FLAG_ENGINE_EVENT, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT,
+  landingFireLineShown,
 } from './mission-mode';
 import { ptHoldPass } from './pt-chase-lines';
 import { holdShowUntil, mergeBurstBits } from './pt-gun-lines';
@@ -54,10 +57,13 @@ export class PtLineClock {
   private engineOnMs = 0;
   private engineOnPrev = false;
   private prevShownMs = 0;
-  /** 揚陸の出来事（v0.6.9。jp_04）: 見た通し番号、表示の終わり ms、1 度でも 2 行目に出た（揚陸の無い任務は landingUntil 0 のまま） */
+  /** 揚陸の出来事（v0.6.9。jp_04）: 見た通し番号、表示の終わり ms、出た（2 行目に出ていた ms の和が LANDING_EVENT_MIN_SHOWN_MS に届いた。R14 A2）、出ていた ms の和、前のフレームに出ていた
+   * （揚陸の無い任務は landingUntil 0 のまま） */
   private seenLandingSeq = 0;
   private landingUntil = 0;
   private landingShown = false;
+  private landingOnMs = 0;
+  private landingOnPrev = false;
 
   /** 毎フレーム（2 行目のモードを決める前）: MODE_FLAG_PT_RESULT・MODE_FLAG_PT_GUN_EVENT・MODE_FLAG_PT_HOLD・MODE_FLAG_CONVOY_EVENT・MODE_FLAG_ENGINE_EVENT・MODE_FLAG_LANDING_EVENT。lastMode は前に組んだ 2 行目のモード。米PT の無い任務は 0 */
   flags(t: BoatTelemetry, nowMs: number, lastMode: number): number {
@@ -99,6 +105,8 @@ export class PtLineClock {
       this.seenLandingSeq = ld.eventSeq;
       this.landingUntil = nowMs + LANDING_EVENT_SHOW_MS;
       this.landingShown = false;
+      this.landingOnMs = 0;
+      this.landingOnPrev = false;
     }
     if (p.passSeq > this.seenPassSeq) {
       this.seenPassSeq = p.passSeq;
@@ -112,14 +120,17 @@ export class PtLineClock {
     // 攻撃が終わって弾がまだ飛んでいる間は赤い線の行を前のキーのまま保つ（ptHoldPass。結果の前に追ってくる PT・射撃中の行が一瞬出ない）
     const hold = ptHoldPass(t, lastMode);
     const passShown = (p.passing && !p.passTargetLost) || hold; // 標的の大発を失った航過は赤い線の行を出さない（mission-mode と同じ。v0.6.4 レビュー ux-3）
-    this.eventUntil = holdShowUntil(this.eventUntil, passShown && !this.eventShown, nowMs);
+    // 輸送船が射線に入る（v0.6.9 R14 A1。モード 37＝赤い線のすぐ下。揚陸の無い任務は偽）: 出来事と航過の結果はその下でも待つ
+    const fire = landingFireLineShown(t);
+    const above = passShown || fire;
+    this.eventUntil = holdShowUntil(this.eventUntil, above && !this.eventShown, nowMs);
     // 輸送隊の出来事は赤い線・13mm の出来事の下で 1 度出るまで待ち、航過の結果はそのどちらの下でも待つ（輸送隊の無い任務は convoyUntil 0 のまま＝v0.6.3 と同じ）
-    this.convoyUntil = holdShowUntil(this.convoyUntil, (passShown || nowMs < this.eventUntil) && !this.convoyShown, nowMs, CONVOY_EVENT_SHOW_MS);
-    // 揚陸の出来事は赤い線・13mm の出来事・輸送隊の出来事の下で 1 度出るまで待つ（v0.6.9。R5。揚陸の無い任務は landingUntil 0 のまま）
-    this.landingUntil = holdShowUntil(this.landingUntil, (passShown || nowMs < this.eventUntil || nowMs < this.convoyUntil) && !this.landingShown, nowMs, LANDING_EVENT_SHOW_MS);
+    this.convoyUntil = holdShowUntil(this.convoyUntil, (above || nowMs < this.eventUntil) && !this.convoyShown, nowMs, CONVOY_EVENT_SHOW_MS);
+    // 揚陸の出来事は赤い線・13mm の出来事・輸送隊の出来事の下で出たとみなすまで待つ（v0.6.9。R5・R14 A2。揚陸の無い任務は landingUntil 0 のまま）
+    this.landingUntil = holdShowUntil(this.landingUntil, (above || nowMs < this.eventUntil || nowMs < this.convoyUntil) && !this.landingShown, nowMs, LANDING_EVENT_SHOW_MS);
     // 機関の過熱の出来事は赤い線・13mm の出来事・輸送隊の出来事（・揚陸の出来事）の下で 1 度出るまで待ち、航過の結果はその下でも待つ（v0.6.5）
-    this.engineUntil = holdShowUntil(this.engineUntil, (passShown || nowMs < this.eventUntil || nowMs < this.convoyUntil || nowMs < this.landingUntil) && !this.engineShown, nowMs, ENGINE_EVENT_SHOW_MS);
-    this.resultUntil = holdShowUntil(this.resultUntil, !passShown && (nowMs < this.eventUntil || nowMs < this.convoyUntil || nowMs < this.landingUntil || nowMs < this.engineUntil), nowMs);
+    this.engineUntil = holdShowUntil(this.engineUntil, (above || nowMs < this.eventUntil || nowMs < this.convoyUntil || nowMs < this.landingUntil) && !this.engineShown, nowMs, ENGINE_EVENT_SHOW_MS);
+    this.resultUntil = holdShowUntil(this.resultUntil, !passShown && (fire || nowMs < this.eventUntil || nowMs < this.convoyUntil || nowMs < this.landingUntil || nowMs < this.engineUntil), nowMs);
     return (
       (nowMs < this.resultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.eventUntil ? MODE_FLAG_PT_GUN_EVENT : 0) | (hold ? MODE_FLAG_PT_HOLD : 0) | (nowMs < this.convoyUntil ? MODE_FLAG_CONVOY_EVENT : 0) |
       (nowMs < this.engineUntil ? MODE_FLAG_ENGINE_EVENT : 0) | (nowMs < this.landingUntil ? MODE_FLAG_LANDING_EVENT : 0)
@@ -135,15 +146,18 @@ export class PtLineClock {
 
   /**
    * そのフレームのモードが決まった後（nowMs は flags と同じ時刻）: 出来事の行が出たら、もう赤い線の下で待たない（R2。輸送隊の出来事も同じ）。
-   * 機関の過熱の出来事は、前のフレームから今までそれが出ていた ms を足し、和が ENGINE_EVENT_MIN_SHOWN_MS に届いたら出たとみなす（ux-2）
+   * 機関の過熱の出来事と揚陸の出来事（R14 A2）は、前のフレームから今までそれが出ていた ms を足し、和が ENGINE_EVENT_MIN_SHOWN_MS・LANDING_EVENT_MIN_SHOWN_MS に届いたら出たとみなす（ux-2）
    */
   shown(mode: number, nowMs: number): void {
     if (mode === MISSION_PT_GUN_EVENT) this.eventShown = true;
     if (mode === MISSION_CONVOY_EVENT) this.convoyShown = true;
-    if (mode === MISSION_LANDING_EVENT) this.landingShown = true;
-    if (this.engineOnPrev) this.engineOnMs += nowMs - this.prevShownMs;
+    const dMs = nowMs - this.prevShownMs;
+    if (this.engineOnPrev) this.engineOnMs += dMs;
+    if (this.landingOnPrev) this.landingOnMs += dMs;
     this.engineOnPrev = mode === MISSION_ENGINE_EVENT;
+    this.landingOnPrev = mode === MISSION_LANDING_EVENT;
     this.prevShownMs = nowMs;
     if (this.engineOnMs >= ENGINE_EVENT_MIN_SHOWN_MS) this.engineShown = true;
+    if (this.landingOnMs >= LANDING_EVENT_MIN_SHOWN_MS) this.landingShown = true;
   }
 }

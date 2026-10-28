@@ -22,22 +22,22 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     expectOrder(s, ['w.pts?.step(dt, feelDt, w, w.input.gunHeld);', 'w.landing?.stepAfterPts(w, dt, feelDt);', 'w.engine?.step(w, feelDt);', 'w.arms?.stepAir(']);
     expect(s.split('stepAfterPts').length).toBe(2);
   });
-  it('world-landing の stepAfterPts: 雷撃（seed+26・体感秒）→ 時計を書く → 敵の魚雷のプール（沈み始めたら的なし・終わり際の当たりなし）→ 揚陸の時計（stepTimeS）', () => {
+  it('world-landing の stepAfterPts: 時計を書く（R14 A3: 雷撃の前＝同じステップの斉射を足す）→ 雷撃（seed+26）→ 敵の魚雷のプール（沈み始めたら的なし・終わり際の当たりなし）→ 揚陸の時計（stepTimeS）', () => {
     const s = code('systems/world-landing.ts');
     const fn = s.slice(s.indexOf('  stepAfterPts(w: LandingWorldView'), s.indexOf('  get resolved()'));
     expectOrder(fn, [
       'const nowS = w.stepTimeS;',
-      'stepPtTorpedoes(this.tst, this.tp, q, this.state, this.rng, w.dawn.reached, nowS, feelDt, this.link, NO_LEAVE);',
       'this.link.nowS = nowS;',
+      'stepPtTorpedoes(this.tst, this.tp, q, this.state, this.rng, w.dawn.reached, nowS, feelDt, this.link, NO_LEAVE);',
       'this.pool.step(dt, feelDt, this.state.out ? NO_HULLS : this.hulls, this.p.passRadius2, this.link);',
       'tickLanding(this.state, this.p, nowS);',
     ]);
     // 終わり際の当たりは見ない（TorpedoPool.step の nowS・settleS を渡さない＝NaN・0）
     expect(fn).not.toMatch(/this\.pool\.step\([^)]*,[^)]*,[^)]*,[^)]*,[^)]*,/);
   });
-  it('模擬（core/landing-sim）も同じ順: 凍結の隊 → 雷撃 → 時計 → 敵の魚雷のプール（沈み始めたら的なし）→ 揚陸の時計', () => {
+  it('模擬（core/landing-sim）も同じ順: 凍結の隊 → 時計 → 雷撃 → 敵の魚雷のプール（沈み始めたら的なし）→ 揚陸の時計', () => {
     const s = code('core/landing-sim.ts');
-    expectOrder(s, ['stepPtSection(q, p, c, rng, realDt, dt, ev);', 'stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);', 'tor.link.nowS = t;', 'tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);', 'tickLanding(ld, lp, t);', 'stepDamage(d, s.damage, realDt)']);
+    expectOrder(s, ['stepPtSection(q, p, c, rng, realDt, dt, ev);', 'tor.link.nowS = t;', 'stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);', 'tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);', 'tickLanding(ld, lp, t);', 'stepDamage(d, s.damage, realDt)']);
   });
   it('mission-world: 揚陸の世界は兵装の後（最後）に作る。stepFn は敵の側の段 → 火災（揚陸の段は敵の側の段の中）', () => {
     const s = code('systems/mission-world.ts');

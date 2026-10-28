@@ -83,7 +83,8 @@ const lost = (c: LandingCell): number => c.ownSunkPct + c.adriftPct;
  * 漂流 ≤ 3%・夜明けの前の帰投 ≥ 80%・決着の前の燃料少 ≤ 10%・決着の前に輪 ≤ 10%（R4））。lure_noshoot は表だけ（25mm は T-38 の戦い方＝jp_01 と同じ）。
  * 対の帯: circle_start ≤ hide + 10（R1）・lure ≥ lure_near + 10（R13: 輸送船から離れて戦えば得。輸送船のそばで戦う lure_near と比べる）・lure_late ≤ lure − 10 かつ ≥ hide + 20（R2）・
  * picket ≤ lure − 20・kite ≤ lure + 5 で自艇の沈没 + 漂流 ≥ lure + 5（引きつけ続けが得にならない）。lure_away は表だけ（R13: S3 の lure がもう見つかっている間は輸送船から離れるので
- * lure と同じに遊ぶ。R12 の lure_away ≥ lure + 3 は開かない）。picket・shoot_near・circle_start・lure_near は行の帯なし。S4 の値（engaged_error_factor 2.0）で全部 ✓
+ * lure と同じに遊ぶ。R12 の lure_away ≥ lure + 3 は開かない）。picket・shoot_near・circle_start・lure_near は行の帯なし。S4 の値（engaged_error_factor 2.0）で全部 ✓。
+ * R14 の lure_cue（HUD の「輸送船が射線に入る！ 離れて戦え」の間だけ離れる）と home_early（すぐ帰投の輪へ行って待つ）は表だけ
  */
 export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 15], ownSunkPct: [0, 3] } },
@@ -92,10 +93,12 @@ export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'lure', bands: { objPct: [70, 88], ownSunkPct: [0, 18], adriftPct: [0, 3], homeBeforeDawnPct: [80, 100], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] } },
   { policy: 'lure_away', bands: {} },
   { policy: 'lure_near', bands: {} },
+  { policy: 'lure_cue', bands: {} },
   { policy: 'lure_noshoot', bands: {} },
   { policy: 'lure_late', bands: {} },
   { policy: 'kite', bands: {} },
   { policy: 'shoot_near', bands: {} },
+  { policy: 'home_early', bands: {} },
 ];
 export const LANDING_PAIRS: readonly LandingPairRow[] = [
   { policy: 'circle_start', other: 'hide', name: '達成 %', value: obj, lo: -Infinity, hi: 10 },

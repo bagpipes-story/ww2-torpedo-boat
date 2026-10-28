@@ -3,7 +3,7 @@
 // LandingTrialTorpedoes は敵の魚雷のプール（世界の写し）・LandingTorpedoLink・測るだけの影のプール（いつも浮いている同じ船体へ同じ魚雷。斉射の当たりうる本数）と、その決着を記録へ書く口。
 // 夜の終わりに finishLandingTrial が隊・輸送船・自艇の結果を写す。
 import type { SeaBounds } from './boat-motion';
-import { LANDING_REPORT_TOWARD_DEG, LD_UNLOADING, type LandingState } from './landing';
+import { LANDING_REPORT_TOWARD_DEG, type LandingState } from './landing';
 import type { LandingParams } from './landing-data';
 import { LandingTorpedoLink, LandingTorpedoPool, type SalvoBook } from './landing-torpedoes';
 import { PT_PATROL, type PtSection } from './pt-boats';
@@ -23,7 +23,7 @@ export interface LandingTrial {
   end: LandingTrialEnd; timeS: number; dawn: boolean;
   /** 輸送船（core/landing の LD_*・割合・被雷・不発の命中・揚陸の後に沈んだ）と決着の秒（揚陸完了か沈み始め。無ければ NaN） */
   phase: number; pct: number; hits: number; duds: number; sunkAfterDone: boolean; resolvedS: number;
-  /** R4: 決着の前に「燃料少」（巡航で輪の縁まで × call_margin）が立った秒（NaN は無し）・決着の前に輪に入った */
+  /** R4: 決着の前に「燃料少」（巡航で輪の縁まで × call_margin）が立った秒（NaN は無し）・決着の前に輪に入った（R14 A5: 世界も模擬も輪の中で決着を待つ。core/landing-sim が書く） */
   fuelCallS: number; ringEarly: boolean;
   /** 自艇: 失った HP・被弾・残りの燃料 %、見つかった秒（NaN は無し）・捉えられた回数・見失わせた回数 */
   hpLost: number; playerHits: number; fuelPct: number; detectS: number; contacts: number; lostContacts: number;
@@ -178,10 +178,10 @@ export class LandingTrialTorpedoes {
   }
 }
 
-/** 夜の終わり: 時刻・夜明け・輸送船（ld）・隊の KPI（q）・失った HP・残りの燃料 %・25mm の撃った数・seed+26 から引いた回数を写す */
+/** 夜の終わり: 時刻・夜明け・輸送船（ld）・隊の KPI（q）・失った HP・残りの燃料 %・25mm の撃った数・seed+26 から引いた回数を写す（決着の前に輪に入ったかは模擬がステップごとに書く） */
 export function finishLandingTrial(out: LandingTrial, q: PtSection, ld: LandingState, t: number, dawn: boolean, hpLost: number, fuelPct: number, gunShots: number, draws26: number): LandingTrial {
   Object.assign(out, {
-    timeS: t, dawn, phase: ld.phase, pct: ld.pct, hits: ld.hits, duds: ld.duds, sunkAfterDone: ld.sunkAfterDone, ringEarly: out.end === 'home' && ld.phase === LD_UNLOADING,
+    timeS: t, dawn, phase: ld.phase, pct: ld.pct, hits: ld.hits, duds: ld.duds, sunkAfterDone: ld.sunkAfterDone,
     hpLost, fuelPct, lostContacts: q.lostContacts, gunShots, gunHits: q.gunHits, ptRetired: q.retired, ptSunk: q.sunk, draws26,
   });
   return out;

@@ -1,6 +1,8 @@
 // v0.6.9 S6a（spec-v069 §5.1）: 揚陸の任務（jp_04）の 2 行目のモード 35（出来事）・36（輸送船への脅威）の優先順。
 // 赤い線 > 13mm の出来事 > 輸送隊の出来事 > 揚陸の出来事（35）> 機関の出来事 > 航過の結果 > 機関の限界 > 射撃 > 接触（決着の後で呼びかけがあれば呼びかけ）> 輸送船への脅威（36。決着の前だけ）> 機関の状態 > … > 呼びかけ > 米PT の平常。
 // 自艇の命（赤い線）がいつも勝ち、36 は自艇を狙う PT がいないときだけ。旗 128 は揚陸の任務だけがモードにする（ほかの任務は tests/landing-neutral）。
+// R14: 37（輸送船が射線に入る）は赤い線のすぐ下・13mm の出来事より上（A1）。決着の前の帰投の輪の中の「待ち」は米PT の段（赤い線・37・出来事・接触・36）の下、呼びかけ・平常の上で、
+// 魚雷待ち・漂流の行は立てない（任務は終わらない。A5）。
 import { describe, expect, it } from 'vitest';
 import { AS_T_INBOUND, AS_T_REST } from '../src/core/air-strike';
 import { createDawnTelemetry } from '../src/core/dawn-air';
@@ -8,11 +10,11 @@ import { ENGINE_FINAL, createEngineTelemetry } from '../src/core/engine-trouble'
 import { GUN_FIRING } from '../src/core/gun-battery';
 import { LD_DONE, LD_SUNK } from '../src/core/landing';
 import { CALL_DAWN, CALL_FUEL, CALL_SUNK } from '../src/core/mission-flow';
-import { PT_PASS, PT_RUN_IN } from '../src/core/pt-boats';
+import { PT_CHASE, PT_PASS, PT_RUN_IN } from '../src/core/pt-boats';
 import {
   MISSION_ADRIFT, MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_ENGINE_FINAL, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_LANDING_THREAT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN,
   MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_STRIKE, MISSION_STRIKE_REST, MISSION_WAITING, MODE_FLAG_CONVOY_EVENT, MODE_FLAG_ENGINE_EVENT, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD,
-  MODE_FLAG_PT_RESULT, landingThreatShown, missionMode,
+  MODE_FLAG_PT_RESULT, MISSION_LANDING_FIRE_LINE, landingFireLineShown, landingRingWaiting, landingThreatShown, missionMode,
 } from '../src/ui/mission-mode';
 import { tl } from './landing-ui-kit';
 import { tele } from './pt-ui-kit';
@@ -79,5 +81,45 @@ describe('揚陸の 2 行目のモードの優先順（ui/mission-mode。spec §
     expect(missionMode(tl(DONE, fight), 0, 0)).toBe(MISSION_PT_CONTACT);
     expect(missionMode(tl({ leftS: 30 }, fight), CALL_FUEL, 0)).toBe(MISSION_PT_CONTACT);
     expect(missionMode(tele(fight), CALL_SUNK, 0)).toBe(MISSION_PT_CONTACT); // 揚陸の無い jp_05 は前のまま
+  });
+
+  it('R14 A1: 37（輸送船が射線に入る）は赤い線（航過・保つ間）の下、13mm の出来事・揚陸の出来事・航過の結果・射撃・接触・36 の上。決着の後と揚陸の無い任務は出ない', () => {
+    const FIRE = { fireLineI: 1, fireLineDirIdx: 2, fireLineStep: 7 };
+    const fight = { ...QUIET, detected: true, threatPhase: PT_CHASE };
+    expect(missionMode(tl(FIRE, fight), 0, 0)).toBe(MISSION_LANDING_FIRE_LINE);
+    expect(missionMode(tl({ ...FIRE, ...REPORT }, QUIET), 0, 0)).toBe(MISSION_LANDING_FIRE_LINE);
+    expect(missionMode(tl(FIRE, { ...fight, passing: true, threatPhase: PT_PASS }), 0, 0)).toBe(MISSION_PT_PASS);
+    expect(missionMode(tl(FIRE, fight), 0, MODE_FLAG_PT_HOLD)).toBe(MISSION_PT_PASS);
+    for (const f of [MODE_FLAG_PT_GUN_EVENT, EV, MODE_FLAG_PT_RESULT, MODE_FLAG_CONVOY_EVENT, MODE_FLAG_ENGINE_EVENT]) expect(missionMode(tl(FIRE, fight), 0, f)).toBe(MISSION_LANDING_FIRE_LINE);
+    expect(missionMode(tl(FIRE, { ...fight, gunEnabled: true, gunStatus: GUN_FIRING }), 0, 0)).toBe(MISSION_LANDING_FIRE_LINE);
+    expect(missionMode(tl({ ...FIRE, ...DONE }, fight), CALL_SUNK, 0)).toBe(MISSION_CALL);
+    expect(landingFireLineShown(tl({ ...FIRE, ...DONE }))).toBe(false);
+    expect(missionMode(tele(fight, { landing: { ...tl().landing, ...FIRE, enabled: false } }), 0, 0)).toBe(MISSION_PT_CONTACT);
+    // 空襲・燃料切れ・魚雷待ちは上のまま
+    expect(missionMode(tl(FIRE, fight, { fuelEmpty: true }), 0, 0)).toBe(MISSION_ADRIFT);
+  });
+
+  it('R14 A5: 決着の前に帰投の輪の中は「待ち」（呼びかけ・平常の上。魚雷待ち・燃料切れの漂流の行は立てない）。赤い線・37・出来事・接触・36 は輪の中でも上。決着の後は前と同じ（魚雷が走っていれば魚雷待ち）', () => {
+    const home = { atHome: true };
+    const fight = { ...QUIET, detected: true, threatPhase: PT_CHASE };
+    expect(landingRingWaiting(tl({}, QUIET, home))).toBe(true);
+    expect(missionMode(tl({}, QUIET, home), 0, 0)).toBe(MISSION_WAITING);
+    expect(missionMode(tl({ leftS: 30 }, QUIET, home), CALL_FUEL, 0)).toBe(MISSION_WAITING); // 「燃料少 帰投せよ」より上（もう輪の中）
+    expect(missionMode(tl({}, QUIET, { ...home, fuelEmpty: true, homeWaiting: true }), 0, 0)).toBe(MISSION_WAITING); // 漂流・魚雷待ちで終わらない
+    // 自艇の命と輸送船の行は輪の中でも上（輪の中でも米PT は来る）
+    expect(missionMode(tl(REPORT, { ...QUIET, detected: true, passing: true, threatPhase: PT_PASS }, home), CALL_FUEL, 0)).toBe(MISSION_PT_PASS);
+    expect(missionMode(tl({}, fight, { ...home, fuelEmpty: true }), 0, MODE_FLAG_PT_HOLD)).toBe(MISSION_PT_PASS);
+    expect(missionMode(tl({ fireLineI: 0, fireLineDirIdx: 1, fireLineStep: 7 }, fight, home), 0, 0)).toBe(MISSION_LANDING_FIRE_LINE);
+    expect(missionMode(tl({}, QUIET, home), 0, EV)).toBe(MISSION_LANDING_EVENT);
+    expect(missionMode(tl({}, fight, home), 0, 0)).toBe(MISSION_PT_CONTACT);
+    expect(missionMode(tl(REPORT, QUIET, home), 0, 0)).toBe(MISSION_LANDING_THREAT);
+    expect(missionMode(tl(DONE, QUIET, home), CALL_SUNK, 0)).toBe(MISSION_CALL); // 決着の後は待たない（世界は帰投で終える）
+    expect(missionMode(tl(DONE, QUIET, { ...home, homeWaiting: true }), CALL_SUNK, 0)).toBe(MISSION_WAITING);
+    expect(missionMode(tl(DONE, QUIET, { ...home, fuelEmpty: true }), CALL_SUNK, 0)).toBe(MISSION_ADRIFT);
+    expect(landingRingWaiting(tl(DONE, QUIET, home))).toBe(false);
+    // 揚陸の無い任務（jp_05 の材料）は輪の中でも前と同じ
+    expect(missionMode(tele(QUIET, { atHome: true }), 0, EV)).toBe(MISSION_PT);
+    expect(missionMode(tele(QUIET, { atHome: true, homeWaiting: true }), 0, EV)).toBe(MISSION_WAITING);
+    expect(missionMode(tele(QUIET, { atHome: true, fuelEmpty: true }), 0, 0)).toBe(MISSION_ADRIFT);
   });
 });

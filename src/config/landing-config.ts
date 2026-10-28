@@ -26,5 +26,10 @@ export const LANDING_SUNK_TEXT_COLOR = '#8a8a8a';
 export const LANDING_MARK_HALF_M = 80;
 
 // 2 行目の揚陸の出来事（v0.6.9 S6a。ui/pt-line-clock・ui/landing-lines。spec-v069 §3.5・R5）
-/** 揚陸の出来事（モード 35「米PT 雷撃！」「輸送船 被雷！」「揚陸完了！」）を出す ms（赤い線・13mm・輸送隊の出来事の下では 1 度出るまで待つ）。jp_01 の CONVOY_EVENT_SHOW_MS と同じ値（tests/landing-lines が pin） */
+/** 揚陸の出来事（モード 35「米PT 雷撃！」「輸送船 被雷！」「揚陸完了！」）を出す ms（赤い線・13mm・輸送隊の出来事の下では出たとみなすまで待つ）。jp_01 の CONVOY_EVENT_SHOW_MS と同じ値（tests/landing-lines が pin） */
 export const LANDING_EVENT_SHOW_MS = 3500;
+/**
+ * 揚陸の出来事が「出た」とみなす 2 行目に出ていた ms の和（R14 A2。機関の出来事の ENGINE_EVENT_MIN_SHOWN_MS と同じ規則・同じ値）: 届く前に赤い線・13mm・輸送隊の出来事・輸送船が射線に入るの行に
+ * 隠れたら、隠れている間は待ち、消えた後にまた LANDING_EVENT_SHOW_MS 出す（前は 1 フレーム出たら出たとみなし、0.2 秒で赤い線に替わられた沈没の行が二度と出なかった）
+ */
+export const LANDING_EVENT_MIN_SHOWN_MS = 2000;

@@ -1,5 +1,5 @@
 // 味方の輸送船（v0.6.9 S5a。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §5.4・D3・D13）: 泊地に停泊して揚陸する輸送船の絵（assets/ally-ship-placeholder の
-// tex-transport-friendly。いつも見える）・ラベル「輸送船」・その下の状態の行（ui/ally-ship-view の鍵が変わったときだけ setText）・浜の揚陸地点の帯とラベル（起動時に 1 回描く。
+// tex-transport-friendly。いつも見える）・ラベル「輸送船」・その上の状態の行（ui/ally-ship-view の鍵が変わったときだけ setText。R14 A6: 字は船体の上＝北。浜は南）・浜の揚陸地点の帯とラベル（起動時に 1 回描く。
 // jp_01 の上陸地点の印と同じ形: CONVOY_LANDING_MARK_*・DEPTH.landingMark）・沈む tween（沈み始めた 1 回だけ。駆逐艦・大発と同じ）。状態は core/landing の LandingState を読むだけ。
 // 船は動かない: 絵・ラベルの位置と向きは起動時に 1 回だけ。§7: 毎フレームは鍵を比べるだけ（変わったときだけ setText・setColor）。
 import Phaser from 'phaser';
@@ -12,7 +12,7 @@ import type { SeaBounds } from '../core/boat-motion';
 import type { LandingState, LandingWakes } from '../core/landing';
 import type { LandingParams } from '../core/landing-data';
 import { degToRad } from '../core/units';
-import { SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, landingMarkX } from '../ui/ally-ship-view';
+import { SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, landingMarkX } from '../ui/ally-ship-view';
 
 export class AllyShip {
   private readonly sprite: Phaser.GameObjects.Image;
@@ -30,12 +30,13 @@ export class AllyShip {
     bounds: SeaBounds,
   ) {
     this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
-    // ラベルは回った絵の外接の箱の下（艇首の向きで決まる。動かないので 1 回だけ）
+    // ラベルは回った絵の外接の箱の上、状態の行はその上（艇首の向きで決まる。動かないので 1 回だけ。R14 A6: 泊地は南の縁から 240 m で、カメラは北の自艇を追うので、
+    // 下に置いた字は画面の外か右下の兵装・速力の HUD の下に入った）
     const h = degToRad(p.headingDeg);
     const halfY = (this.sprite.displayHeight / 2) * Math.abs(Math.cos(h)) + (this.sprite.displayWidth / 2) * Math.abs(Math.sin(h));
-    const ly = p.y + halfY + ESCORT_LABEL_OFFSET_M;
-    this.label = scene.add.text(p.x, ly, p.labelJa, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
-    this.status = scene.add.text(p.x, ly + LANDING_STATUS_DY_M, '', hudTextStyle(LANDING_STATUS_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
+    const ys = allyShipLabelYs(p.y, halfY, ESCORT_LABEL_OFFSET_M, LANDING_STATUS_DY_M);
+    this.label = scene.add.text(p.x, ys.labelY, p.labelJa, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 1).setDepth(DEPTH.destroyer);
+    this.status = scene.add.text(p.x, ys.statusY, '', hudTextStyle(LANDING_STATUS_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 1).setDepth(DEPTH.destroyer);
     // 揚陸地点: 艇首の先が浜の線（海域の南の縁）に届く点を中心に砂色の帯、陸の側にラベル（jp_01 の「上陸地点」と同じ帯の太さ・字・下げ）。ラベルは帯の西の端の外に右揃え
     // （jp_04 の出発点と帰投の輪は西＝画面の真ん中の側。帯の真ん中の下だと出発の画面で右下の兵装のボタンの下に入った。jp_01 のレビュー ux-4 と同じ考え）
     const shoreY = bounds.height;

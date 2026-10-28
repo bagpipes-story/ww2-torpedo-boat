@@ -1,6 +1,7 @@
 // v0.6.9 S5b（spec-v069 D15・§5・L6）: 揚陸のテレメトリ（systems/landing-telemetry）。jp_04 の値の世界（core の本物の状態: 揚陸・雷撃の数え・米PT の隊）で、
 // 出撃時の値・揚陸の時計・見張りの報告（遠い・近い・向き・斉射の残り・決着の後は無し）・雷跡・撃てる隻数・出来事（通し番号が変わったときだけ写す・8 方位）を見る。
 // 揚陸の無い世界（w.landing が null）は tests/landing-neutral。配線（createTelemetry・refreshTelemetry）の pin は tests/landing-step-order。
+// R14（S6a-fix）: 輸送船が射線に入る PT（landingFireLine。自艇からの 8 方位と 100 m）・足した斉射の隻数（eventBoats）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -9,7 +10,7 @@ import {
   createLanding, createLandingReport, createLandingTelemetry, createLandingWakes, hitLanding, landingDirIdx, landingEvent, landingReport, tickLanding,
   LANDING_REPORT_FAR, LANDING_REPORT_NEAR, LANDING_REPORT_NONE, LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_HIT, LE_NONE,
 } from '../src/core/landing';
-import { createPtSection, PT_ALERT, PT_FATE_SUNK, PT_LEAVE, PT_PATROL } from '../src/core/pt-boats';
+import { createPtSection, PT_ALERT, PT_CHASE, PT_FATE_SUNK, PT_LEAVE, PT_PATROL } from '../src/core/pt-boats';
 import { createPtTorpedoState } from '../src/core/pt-torpedo';
 import { degToRad } from '../src/core/units';
 import { initLandingTelemetry, refreshLandingTelemetry, type LandingTelemetryWorld } from '../src/systems/landing-telemetry';
@@ -61,7 +62,7 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     expect(Object.keys(t).sort()).toEqual(Object.keys(createLandingTelemetry()).sort());
   });
 
-  it('揚陸の時計: 残りの秒は unload_s − 出撃からの体感秒（揚陸中だけ）、割合は LandingState の写し。揚陸完了で残り 0・決着・出来事「揚陸完了」（PT なし＝方位 0）', () => {
+  it('揚陸の時計: 残りの秒は unload_s − 出撃からの実秒 stepTimeS（揚陸中だけ。R14 A8: 命中スローで遅れない）、割合は LandingState の写し。揚陸完了で残り 0・決着・出来事「揚陸完了」（PT なし＝方位 0）', () => {
     const w = world();
     const t = initLandingTelemetry(w);
     w.stepTimeS = 30.4;
@@ -183,6 +184,38 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     expect(initLandingTelemetry(w2).armed).toBe(1);
     w2.pts.section.boats[1]!.phase = PT_PATROL;
     expect(initLandingTelemetry(w2).armed).toBe(2);
+  });
+
+  it('R14 A1: 輸送船が射線に入る PT（自艇と戦う PT が 1,200 m の内で艇首を輸送船へ）と自艇からの 8 方位・100 m 刻み（切り上げ）。無ければ −1・0・0、engaged_error_factor 0 なら無し', () => {
+    const w = world();
+    const t = initLandingTelemetry(w);
+    expect([t.fireLineI, t.fireLineDirIdx, t.fireLineStep]).toEqual([-1, 0, 0]);
+    place(w, 1, 90, 1000, 270); // 輸送船の東 1,000 m で西（輸送船）へ
+    w.pts.section.boats[1]!.phase = PT_CHASE;
+    refreshLandingTelemetry(t, w);
+    const b = w.pts.section.boats[1]!;
+    const me = w.boat.state;
+    expect(t.fireLineI).toBe(1);
+    expect(t.fireLineDirIdx).toBe(landingDirIdx(me, b.x, b.y));
+    expect(t.fireLineStep).toBe(Math.ceil(Math.hypot(b.x - me.x, b.y - me.y) / 100));
+    b.headingDeg = 0; // 北へ（輸送船へ向いていない）
+    refreshLandingTelemetry(t, w);
+    expect([t.fireLineI, t.fireLineStep]).toEqual([-1, 0]);
+    b.headingDeg = 270;
+    const off = { ...w, landing: { ...w.landing, tp: { ...w.landing.tp, engagedFactor: 0 } } };
+    refreshLandingTelemetry(t, off);
+    expect(t.fireLineI).toBe(-1);
+  });
+
+  it('R14 A3: 出来事の斉射の隻数（eventBoats）を写す', () => {
+    const w = world();
+    const t = initLandingTelemetry(w);
+    landingEvent(w.landing.state, LE_CALM, 1, 880, 6, 2);
+    refreshLandingTelemetry(t, w);
+    expect([t.eventKind, t.eventCount, t.eventBoats]).toEqual([LE_CALM, 6, 2]);
+    landingEvent(w.landing.state, LE_HIT, 1, NaN, 0);
+    refreshLandingTelemetry(t, w);
+    expect(t.eventBoats).toBe(0);
   });
 
   it('§7: 毎フレームの refreshLandingTelemetry は確保しない（new・配列の写し・文字の組み立て・関数の生成が無い）', () => {

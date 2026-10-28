@@ -1,15 +1,15 @@
 // 停泊して揚陸する味方の輸送船（v0.6.9 S2。core/landing。spec-v069 §4.4・§9・R8/F14・F16）: 揚陸の時計（unload_s ちょうどで完了・夜明けが先でも数え続ける）、
 // 被雷 1 は続く・2 で沈む（揚陸の割合で止まる）・完了の後の沈没（sunkAfterDone）・決着、見張りの報告の選び方（哨戒・斉射が残る・1,800 m・向かう ≤ 90°・最寄り・遠い／近い）、
-// 走っている雷跡の数と最接近までの体感秒（平方根なし）、出来事の記録（そのときの被雷の数と揚陸の割合）。
+// 走っている雷跡の数と最接近までの体感秒（平方根なし。遠ざかる雷跡は数えない＝R14 A7）、出来事の記録（そのときの被雷の数と揚陸の割合）、輸送船が射線に入る PT（R14 A1 の landingFireLine）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
-  createLanding, createLandingReport, createLandingWakes, hitLanding, landingEvent, landingReport, landingResolved, landingWakes, tickLanding,
-  LANDING_DIST_STEP_M, LANDING_HIT, LANDING_REPORT_FAR, LANDING_REPORT_NEAR, LANDING_REPORT_NONE, LANDING_REPORT_TOWARD_DEG, LANDING_SUNK,
+  createLanding, createLandingReport, createLandingWakes, hitLanding, landingEvent, landingFireLine, landingReport, landingResolved, landingWakes, tickLanding,
+  LANDING_DIST_STEP_M, LANDING_FIRE_LINE_DEG, LANDING_FIRE_LINE_EXTRA_M, LANDING_HIT, LANDING_REPORT_FAR, LANDING_REPORT_NEAR, LANDING_REPORT_NONE, LANDING_REPORT_TOWARD_DEG, LANDING_SUNK,
   LD_DONE, LD_SUNK, LD_UNLOADING, LE_DONE, LE_DUD, LE_NONE,
 } from '../src/core/landing';
 import type { LandingParams } from '../src/core/landing-data';
-import { PT_ALERT, PT_LEAVE, PT_PATROL } from '../src/core/pt-boats';
+import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_LEAVE, PT_OUT, PT_PASS, PT_PATROL, PT_RUN_IN } from '../src/core/pt-boats';
 import { createTorpedoState, launchTorpedo } from '../src/core/torpedo';
 import { createCircles, fillHullCircles } from '../src/core/torpedo-solver';
 import { LP, TP, TS, bench, place } from './landing-kit';
@@ -154,7 +154,7 @@ describe('見張りの報告（landingReport）', () => {
 });
 
 describe('走っている雷跡（landingWakes）', () => {
-  it('決着していない魚雷の本数と、輸送船の中心への最接近までの最短の体感秒（遠ざかるのは 0・無ければ NaN）', () => {
+  it('決着していない・近づく魚雷の本数と、輸送船の中心への最接近までの最短の体感秒（遠ざかる・真横は数えない＝R14 A7。無ければ NaN）', () => {
     const ld = createLanding(LP);
     const w = createLandingWakes();
     const s = [createTorpedoState(), createTorpedoState(), createTorpedoState(), createTorpedoState()];
@@ -165,9 +165,18 @@ describe('走っている雷跡（landingWakes）', () => {
     landingWakes(s, MK13, TS, ld, w);
     expect(w.count).toBe(2);
     expect(w.cpaS).toBeCloseTo(860 / (MK13 * TS), 9);
-    launchTorpedo(s[2]!, LP.x + 100, LP.y, 90, false, false, 0, 100, 25); // 東へ遠ざかる: 0
+    launchTorpedo(s[2]!, LP.x + 100, LP.y, 90, false, false, 0, 100, 25); // 東へ遠ざかる（最接近を過ぎた）: 数えない
     landingWakes(s, MK13, TS, ld, w);
-    expect([w.count, w.cpaS]).toEqual([3, 0]);
+    expect(w.count).toBe(2);
+    expect(w.cpaS).toBeCloseTo(860 / (MK13 * TS), 9);
+    launchTorpedo(s[3]!, LP.x, LP.y + 400, 95, false, false, 0, 400, 25); // 真南 400 m を東南東へ（真横から少し離れていく）: 数えない
+    landingWakes(s, MK13, TS, ld, w);
+    expect(w.count).toBe(2);
+    s[3]!.headingDeg = 0; // 北へ向けば近づく
+    landingWakes(s, MK13, TS, ld, w);
+    expect(w.count).toBe(3);
+    expect(w.cpaS).toBeCloseTo(400 / (MK13 * TS), 9);
+    s[3]!.active = false;
     s[2]!.resolved = true; // 決着（外れ）した魚雷は数えない（走り続けても）
     s[0]!.active = false;
     landingWakes(s, MK13, TS, ld, w);
@@ -176,7 +185,49 @@ describe('走っている雷跡（landingWakes）', () => {
   });
   it('平方根を使わない（spec §4.4・§10）', () => {
     const src = readFileSync(new URL('../src/core/landing.ts', import.meta.url), 'utf8');
-    const fn = src.slice(src.indexOf('export function landingWakes'));
+    const fn = src.slice(src.indexOf('export function landingWakes'), src.indexOf('export function landingFireLine'));
     expect(fn).not.toMatch(/Math\.(sqrt|hypot)/);
+  });
+});
+
+describe('輸送船が射線に入る（landingFireLine。R14 A1）', () => {
+  const R2 = (TP.launchM + LANDING_FIRE_LINE_EXTRA_M) ** 2;
+  it('値: 戦いながらの斉射の距離 900 m + 300 m・艇首 45°', () => {
+    expect([TP.launchM, LANDING_FIRE_LINE_EXTRA_M, LANDING_FIRE_LINE_DEG]).toEqual([900, 300, 45]);
+  });
+  it('自艇と戦う PT（警戒・突撃・追撃・離脱）が 1,200 m の内で艇首が 45° 以内なら、その PT（最寄り）。航過・哨戒・去る・海域の外は数えない', () => {
+    for (const ph of [PT_ALERT, PT_RUN_IN, PT_CHASE, PT_BREAK]) {
+      const b = bench();
+      place(b, 0, 1150, 30, 40, ph);
+      expect(landingFireLine(b.ld, b.q, b.st.left, R2), `phase ${ph}`).toBe(0);
+    }
+    for (const ph of [PT_PATROL, PT_PASS, PT_LEAVE, PT_OUT]) {
+      const b = bench();
+      place(b, 0, 800, 30, 0, ph);
+      expect(landingFireLine(b.ld, b.q, b.st.left, R2), `phase ${ph}`).toBe(-1);
+    }
+    const b = bench();
+    place(b, 0, 1100, 30, 0, PT_CHASE);
+    place(b, 1, 700, 200, 10, PT_RUN_IN);
+    expect(landingFireLine(b.ld, b.q, b.st.left, R2)).toBe(1); // 最寄り
+  });
+  it('外れ: 1,200 m の外・艇首が 45° を超える・斉射が残っていない・結末あり（撃退）・決着の後・距離 0（engaged_error_factor 0）', () => {
+    const at = (dist: number, off: number): number => {
+      const b = bench();
+      place(b, 0, dist, 30, off, PT_RUN_IN);
+      return landingFireLine(b.ld, b.q, b.st.left, R2);
+    };
+    expect([at(1199, 44.9), at(1201, 0), at(1000, 45.5), at(1000, -44.5)]).toEqual([0, -1, -1, 0]);
+    const b = bench();
+    place(b, 0, 1000, 30, 0, PT_RUN_IN);
+    b.st.left[0] = 0;
+    expect(landingFireLine(b.ld, b.q, b.st.left, R2)).toBe(-1);
+    b.st.left[0] = 1;
+    b.q.boats[0]!.fate = PT_FATE_CREW;
+    expect(landingFireLine(b.ld, b.q, b.st.left, R2)).toBe(-1);
+    b.q.boats[0]!.fate = 0;
+    expect(landingFireLine(b.ld, b.q, b.st.left, 0)).toBe(-1);
+    tickLanding(b.ld, LP, LP.unloadS);
+    expect(landingFireLine(b.ld, b.q, b.st.left, R2)).toBe(-1);
   });
 });

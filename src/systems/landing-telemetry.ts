@@ -2,26 +2,29 @@
 // mission-telemetry から呼ぶ（convoy-telemetry・patrol-telemetry と同じ形）。テレメトリの landing は createTelemetry で 1 回だけ作り（initLandingTelemetry）、
 // refreshLandingTelemetry が毎フレーム 1 回だけ中身を書き換える（§7: 確保しない。報告の書き先は module に 1 個）。揚陸の無い任務（w.landing が null）は enabled false のまま何も書かない。
 // 読むのは揚陸の世界（systems/world-landing の WorldLanding）の状態だけ: 揚陸・雷撃の数え・走っている雷跡（updateVisuals が毎フレーム数える＝Scene は updateFrame の後にここを呼ぶ）。
-// 見張りの報告は core/landing の landingReport（模擬の方針と同じ関数）。平方根は報告の距離の 1 回と輸送船までの 1 回、atan2 は報告の候補と出来事が変わったフレームの 1 回だけ。
+// 見張りの報告は core/landing の landingReport（模擬の方針と同じ関数）、輸送船が射線に入る（R14 A1）は landingFireLine（模擬の lure_cue と同じ関数）。
+// 平方根は報告の距離の 1 回・輸送船までの 1 回・射線の PT までの 1 回（いるときだけ）、atan2 は報告と射線の候補・射線の PT・出来事が変わったフレームの 1 回だけ。
 // 世界は構造の型 LandingTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
 import type { BoatState } from '../core/boat-motion';
-import { createLandingReport, createLandingTelemetry, landingDirIdx, landingReport, landingResolved, LD_UNLOADING, type LandingState, type LandingTelemetry, type LandingWakes } from '../core/landing';
+import {
+  createLandingReport, createLandingTelemetry, LANDING_DIST_STEP_M, LANDING_FIRE_LINE_EXTRA_M, landingDirIdx, landingFireLine, landingReport, landingResolved, LD_UNLOADING, type LandingState, type LandingTelemetry, type LandingWakes,
+} from '../core/landing';
 import type { LandingParams } from '../core/landing-data';
 import { PT_FATE_NONE, PT_LEAVE, type PtSection } from '../core/pt-boats';
 
 /** テレメトリが読む世界の部分 */
 export interface LandingTelemetryWorld {
-  /** 揚陸の世界（systems/world-landing。揚陸の無い任務は null）: 揚陸・雷撃の数え（PtTorpedoState の一部）・走っている雷跡・値・雷撃の値（1 斉射の本数と慌てる距離） */
+  /** 揚陸の世界（systems/world-landing。揚陸の無い任務は null）: 揚陸・雷撃の数え（PtTorpedoState の一部）・走っている雷跡・値・雷撃の値（1 斉射の本数・慌てる距離・斉射の距離・戦いながらの倍率） */
   readonly landing: {
     readonly state: LandingState;
     readonly tst: { readonly left: Uint8Array; readonly salvos: number; readonly fired: number };
     readonly wakes: LandingWakes;
     readonly p: LandingParams;
-    readonly tp: { readonly n: number; readonly hurriedM: number };
+    readonly tp: { readonly n: number; readonly hurriedM: number; readonly launchM: number; readonly engagedFactor: number };
   } | null;
   readonly pts: { readonly section: PtSection } | null;
   readonly boat: { readonly state: BoatState };
-  /** 出撃からの体感秒（揚陸の時計・夜明けの時計と同じ） */
+  /** 出撃からの実秒（stepTimeS。揚陸の時計・夜明けの時計と同じ。命中スローで遅れない） */
   readonly stepTimeS: number;
   /** 自艇の視程の二乗（報告の PT が見えているか） */
   readonly visRange2: number;
@@ -46,7 +49,7 @@ export function initLandingTelemetry(w: LandingTelemetryWorld): LandingTelemetry
   return t;
 }
 
-/** 毎フレーム 1 回（世界の updateFrame の後）: 揚陸・米PT の撃てる隻数・見張りの報告・走っている雷跡・輸送船への相対位置・出来事（通し番号が変わったときだけ写す） */
+/** 毎フレーム 1 回（世界の updateFrame の後）: 揚陸・米PT の撃てる隻数・見張りの報告・輸送船が射線に入る PT・走っている雷跡・輸送船への相対位置・出来事（通し番号が変わったときだけ写す） */
 export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetryWorld): void {
   const ld = w.landing;
   const s = w.pts;
@@ -79,6 +82,18 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.reportDx = r ? r.x - me.x : NaN;
   t.reportDy = r ? r.y - me.y : NaN;
   t.reportSighted = r !== null && t.reportDx * t.reportDx + t.reportDy * t.reportDy <= w.visRange2;
+  // 輸送船が射線に入る（R14 A1。戦いながらの斉射が無い data＝engaged_error_factor 0 なら無し）: 自艇からその PT への 8 方位と 100 m 刻み
+  const fr = ld.tp.engagedFactor > 0 ? ld.tp.launchM + LANDING_FIRE_LINE_EXTRA_M : 0;
+  const fi = landingFireLine(st, q, ld.tst.left, fr * fr);
+  t.fireLineI = fi;
+  if (fi >= 0) {
+    const b = q.boats[fi]!;
+    t.fireLineDirIdx = landingDirIdx(me, b.x, b.y);
+    t.fireLineStep = Math.min(63, Math.ceil(Math.hypot(b.x - me.x, b.y - me.y) / LANDING_DIST_STEP_M));
+  } else {
+    t.fireLineDirIdx = 0;
+    t.fireLineStep = 0;
+  }
   t.wakes = ld.wakes.count;
   t.wakeCpaS = ld.wakes.cpaS;
   t.shipDx = st.x - me.x;
@@ -90,6 +105,7 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.eventBoat = st.eventBoat;
   t.eventM = st.eventM;
   t.eventCount = st.eventCount;
+  t.eventBoats = st.eventBoats;
   t.eventHits = st.eventHits;
   t.eventPct = st.eventPct;
   const e = st.eventBoat >= 0 ? q.boats[st.eventBoat] : undefined;

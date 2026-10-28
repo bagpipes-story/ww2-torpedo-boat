@@ -34,7 +34,7 @@ export interface LandingParams {
   x: number; y: number; headingDeg: number;
   /** 絵の元の寸法 m（記録の値。絵は sprite_scale 倍）と、魚雷の当たりの船体 m（記録 × ship_hit_scale）・円の数、通り過ぎの判定の半径の二乗（destroyer-setup と同じ式） */
   lengthM: number; beamM: number; hitLenM: number; hitBeamM: number; circles: number; passRadius2: number;
-  /** 沈むまでの命中（任務の上書き。記録の torpedo_hits_to_sink は読まない）・揚陸の秒（出撃からの体感秒） */
+  /** 沈むまでの命中（任務の上書き。記録の torpedo_hits_to_sink は読まない）・揚陸の秒（出撃からの実秒＝世界の stepTimeS。命中スローで遅れない） */
   hitsToSink: number; unloadS: number;
   /** 見張りの報告の距離 m とその二乗、慌てる距離の二乗（0 なら慌てた斉射なし）と気づかれていない斉射の距離 m（torpedo_attack の写し。報告の遠い・近い） */
   lookoutM: number; lookout2: number; hurried2: number; launchM: number;

@@ -1,6 +1,7 @@
 // 停泊して揚陸する輸送船を守る模擬（v0.6.9 S3・S4。core/landing-sim・landing-sim-cell・landing-trial・landing-sim-policy、systems/landing-sim-setup。spec-v069 §6 S3・§8・R1・R2・R4・R7）:
 // 同じ seed なら同じ夜（決まった結果）、どの遊び方も I1〜I6、輸送船の被雷と斉射の数えが合う（浮いている間の命中の和 = 被雷・影の当たりうる本数 ≥ 本物）、上書きは data を変えず
 // 世界と同じ検査を通す（V8・V10・V13 を破る組み合わせは止まる＝R7）、R2 の期待値の畳み込み、出発点で巡航して回っても見つからない（R1・V13）。帯（S4 の較正）はここでは見ない。
+// R14（S6a-fix）: 揚陸の決着の前に輪に入っても終わらない（A5。home_early は輪の中で待って決着の後に帰投）、lure_cue は警告（landingFireLine）の間だけ離れる（A1）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { BoatState } from '../src/core/boat-motion';
@@ -111,7 +112,7 @@ describe('1 夜', () => {
     const pts = landingPlayPoints(S.landing, S.start);
     const steer = (pol: 'lure' | 'lure_near', x: number, y: number): LandingSteer => {
       const boat = { x, y, headingDeg: 0 } as BoatState;
-      const ctx: LandingSteerCtx = { boat, q: { detected: true, boats: [] } as unknown as PtSection, report: createLandingReport(), start: S.start, anchor: S.landing, station: pts.station, picket: pts.picket, ring: S.ring, silentMps: 7, cruiseMps: 12 };
+      const ctx: LandingSteerCtx = { boat, q: { detected: true, boats: [] } as unknown as PtSection, report: createLandingReport(), start: S.start, anchor: S.landing, station: pts.station, picket: pts.picket, ring: S.ring, silentMps: 7, cruiseMps: 12, cue: false };
       const out: LandingSteer = { headingDeg: NaN, wantMps: NaN };
       landingSteer(LANDING_POLICY_SPECS[pol], ctx, false, { lured: false }, out);
       return out;
@@ -124,6 +125,46 @@ describe('1 夜', () => {
     expect(back.wantMps).toBe(7);
     expect(steer('lure_near', pts.station.x, pts.station.y).wantMps).toBe(0);
     expect(Math.hypot(pts.station.x - ax, pts.station.y - ay)).toBeLessThan(400);
+  });
+});
+
+describe('R14（S6a-fix）の遊び方と終わり方', () => {
+  const pts = landingPlayPoints(S.landing, S.start);
+  const steerAt = (pol: 'lure_cue' | 'lure_near' | 'home_early', x: number, y: number, detected: boolean, cue: boolean): LandingSteer => {
+    const boat = { x, y, headingDeg: 0 } as BoatState;
+    const ctx: LandingSteerCtx = { boat, q: { detected, boats: [] } as unknown as PtSection, report: createLandingReport(), start: S.start, anchor: S.landing, station: pts.station, picket: pts.picket, ring: S.ring, silentMps: 7, cruiseMps: 12, cue };
+    const out: LandingSteer = { headingDeg: NaN, wantMps: NaN };
+    landingSteer(LANDING_POLICY_SPECS[pol], ctx, false, { lured: false }, out);
+    return out;
+  };
+  it('台本: lure_cue は lure_near と同じ（fight cue）、home_early は撃たず転舵せず輪へ（表だけ。帯なし）', () => {
+    expect({ ...LANDING_POLICY_SPECS.lure_cue, fight: 'near' }).toEqual(LANDING_POLICY_SPECS.lure_near);
+    expect(LANDING_POLICY_SPECS.home_early).toEqual({ move: 'home', react: 0, shoot: 'none', dodge: false, kite: false, fight: 'flee' });
+    expect(LANDING_POLICIES).toEqual(['hide', 'circle_start', 'picket', 'lure', 'lure_away', 'lure_near', 'lure_cue', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near', 'home_early']);
+  });
+  it('lure_cue: 警告（射線）の間は輸送船から離れる向きへ静音、警告が無ければ見つかっていても lure_near と同じく輸送船のそばへ戻る', () => {
+    const far = { x: S.landing.x, y: S.landing.y - 1000 };
+    expect(steerAt('lure_cue', far.x, far.y, true, true)).toEqual({ headingDeg: 0, wantMps: 7 });
+    expect(steerAt('lure_cue', far.x, far.y, false, true)).toEqual({ headingDeg: 0, wantMps: 7 });
+    expect(steerAt('lure_cue', far.x, far.y, true, false)).toEqual(steerAt('lure_near', far.x, far.y, true, false));
+  });
+  it('home_early: 輪の中心へ巡航し、着けば止まる', () => {
+    const go = steerAt('home_early', S.start.x, S.start.y, false, false);
+    expect(go.headingDeg).toBeCloseTo(bearingDeg(S.start.x, S.start.y, S.ring.x, S.ring.y), 9);
+    expect(go.wantMps).toBe(12);
+    expect(steerAt('home_early', S.ring.x, S.ring.y, false, false).wantMps).toBe(0);
+  });
+  it('A5: home_early の夜は決着の前に輪に入り（ringEarly）、終わらずに待って、揚陸の決着の後に帰投で終わる（見つからない・撃たない）', () => {
+    for (const r of RUN.trials('home_early', 0)) {
+      expect(r.ringEarly).toBe(true);
+      expect(r.end).toBe('home');
+      expect([LD_DONE, LD_SUNK]).toContain(r.phase);
+      expect(r.timeS).toBeGreaterThanOrEqual(r.resolvedS);
+      expect(r.timeS - r.resolvedS).toBeLessThan(0.05); // 決着したステップに終わる（輪の中）
+      expect([Number.isNaN(r.detectS), r.gunShots]).toEqual([true, 0]);
+    }
+    // ほかの遊び方は決着の前に輪に入らない（R4 の帯 ≤ 10%: lure）
+    for (const pol of ['hide', 'lure', 'lure_near', 'lure_cue'] as const) for (const r of RUN.trials(pol, 0)) expect(r.ringEarly, pol).toBe(false);
   });
 });
 

@@ -1,6 +1,7 @@
 // 揚陸の仕組み（v0.6.9。jp_04）は他の任務で鍵ごと出ない（spec-v069 §9 の landing-neutral。engine・gunboat・patrolAir の optional part の作法）。
 // S1: WorldSetup（ノーマル・ハード・史実モード・今夜の揺らぎ）に "landing" が無い。S5b: テレメトリの landing は鍵がいつもあり enabled false（世界の揚陸は null＝buildLanding の
-// 最初の枝。tests/landing-step-order）、既存のテレメトリの組（tests/pt-ui-kit・dawn-lines・dawn-clock）の 2 行目のモードは 35・36 にならない。2 行目の鍵（landingKey が 0）は S6a で足す。
+// 最初の枝。tests/landing-step-order）、既存のテレメトリの組（tests/pt-ui-kit・dawn-lines・dawn-clock）の 2 行目のモードは 35・36・37 にならない。2 行目の鍵（landingKey が 0）は S6a で足す。
+// R14（S6a-fix）: 輪の中の待ち（A5）・輸送船が射線に入る（A1）も揚陸の任務だけ。終わり方（systems/mission-end の landingHold）は landing の無い世界で偽＝decideMissionEnd のまま。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -10,6 +11,7 @@ import { createPtSection } from '../src/core/pt-boats';
 import { directSortie } from '../src/core/sortie';
 import { initLandingTelemetry, refreshLandingTelemetry } from '../src/systems/landing-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
+import { landingHold, MissionEnd, type MissionEndWorld } from '../src/systems/mission-end';
 import { missionMode } from '../src/ui/mission-mode';
 import { tele } from './pt-ui-kit';
 
@@ -67,21 +69,30 @@ describe('landing-neutral のテレメトリ（S5b。他の 7 任務）', () => 
       }
     }
   });
-  it('既存のテレメトリの組（landing.enabled false）の 2 行目のモードは 35（揚陸の出来事）・36（揚陸の脅威）にならない（米PT の段階・接触・航過・呼びかけ・出来事の旗の全組み合わせ）', () => {
+  it('既存のテレメトリの組（landing.enabled false）の 2 行目のモードは 35（揚陸の出来事）・36（揚陸の脅威）・37（輸送船が射線に入る）にならない（米PT の段階・接触・航過・呼びかけ・出来事の旗・輪の中の全組み合わせ）', () => {
     const modes = new Set<number>();
     for (const detected of [false, true]) {
       for (const passing of [false, true]) {
         for (const alive of [0, 2]) {
           for (let threatPhase = -1; threatPhase <= 8; threatPhase++) {
-            const t = tele({ detected, passing, alive, threatPhase });
-            expect(t.landing.enabled).toBe(false);
-            for (let call = 0; call <= 8; call++) for (let flags = 0; flags < 256; flags++) modes.add(missionMode(t, call, flags));
+            for (const atHome of [false, true]) {
+              const t = tele({ detected, passing, alive, threatPhase }, { atHome, landing: { ...createLandingTelemetry(), fireLineI: 0 } });
+              expect(t.landing.enabled).toBe(false);
+              for (let call = 0; call <= 8; call++) for (let flags = 0; flags < 256; flags++) modes.add(missionMode(t, call, flags));
+            }
           }
         }
       }
     }
     expect(modes.size).toBeGreaterThan(3);
-    expect(modes.has(35)).toBe(false);
-    expect(modes.has(36)).toBe(false);
+    for (const m of [35, 36, 37]) expect(modes.has(m), String(m)).toBe(false);
+  });
+  it('終わり方（R14 A5）: landing の無い世界（null・無し）は輪の中でいつもどおり帰投（landingHold は偽）', () => {
+    const rp = buildWorldSetup(gameData, 'jp_05').mission.returnPoint;
+    const base: MissionEndWorld = { boat: { sinking: false }, atHome: true, grounded: false, torpedoesRunning: false, torpedoes: { unresolvedCount: 0 }, enemy: { sinkPlaying: false, allOut: false }, fuel: { empty: false }, band: 'stop', stepTimeS: 10 };
+    for (const w of [base, { ...base, landing: null }]) {
+      expect(landingHold(w)).toBe(false);
+      expect(new MissionEnd(rp, 1.5, false).step(w, 0, 60)).toBe('returned');
+    }
   });
 });

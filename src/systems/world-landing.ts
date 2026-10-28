@@ -1,7 +1,7 @@
 // 停泊して揚陸する味方の輸送船と米PT の雷撃の世界側（v0.6.9 S5a。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §4.1〜§4.4・D12・D13・D18・R12）。
 // 持つもの: 味方の輸送船（entities/ally-ship）・敵の魚雷の 2 つ目のプール（systems/torpedo-pool の TorpedoPool をそのまま。Mk 13・PT の隻数 × salvo_count 本。自艇の w.torpedoes・KPI・
 // 終わりの待ち・torpedoEventsFor には触らない）・雷撃の乱数 seed+26・雷撃の状態（core/pt-torpedo）・揚陸の状態（core/landing）・魚雷の決着をつなぐ LandingTorpedoLink（core/landing-torpedoes。模擬と同じもの）。
-// 固定ステップ（world-enemy-step が米PT の隊の段の直後に 1 回）: stepPtTorpedoes（凍結の stepPtSection の後。気づかれていない・慌てた・戦いながらの斉射。seed+26）→ 敵の魚雷のプール
+// 固定ステップ（world-enemy-step が米PT の隊の段の直後に 1 回）: 時計（実秒 stepTimeS）→ stepPtTorpedoes（凍結の stepPtSection の後。気づかれていない・慌てた・戦いながらの斉射。seed+26）→ 敵の魚雷のプール
 // （終わり際の当たりなし＝nowS NaN。沈み始めた輸送船は狙わない）→ tickLanding（揚陸の時計は世界の stepTimeS＝夜明けの時計）。模擬 core/landing-sim と同じ順（tests/landing-step-order）。
 // 命中: 被雷は Scene の爆発と揺れ（onTorpedoHit。命中スローなし）、不発は小さな爆発、沈没は世界の onSunk（命中スロー＋爆発。大発の撃破と同じ）と沈む tween。
 // 外から去らせた PT の知らせは何もしない（jp_04 は標的スロットが無い＝隊の targets?.onLeave と同じ。PtSquadron の private な events には触らない）。
@@ -65,13 +65,16 @@ export class WorldLanding {
     this.link = new LandingTorpedoLink(this.state, p, this.tst, pool, { onShipHit: (x, y, dud, sunk) => this.onShipHit(x, y, dud, sunk) });
   }
 
-  /** 固定ステップ（米PT の隊の段の直後。dt は time_scale 込み、feelDt は命中スロー込みの体感秒。spec §4.1）: 雷撃 → 敵の魚雷 → 揚陸の時計 */
+  /**
+   * 固定ステップ（米PT の隊の段の直後。dt は time_scale 込み、feelDt は命中スロー込みの体感秒、時計 nowS は出撃からの実秒 stepTimeS。spec §4.1）: 時計を書く → 雷撃 → 敵の魚雷 → 揚陸の時計
+   * （時計は雷撃の前に書く: 同じステップの同じ種類の斉射を 1 つの出来事に足す。R14 A3。値は前と同じ＝プールの沈み始めの時計）
+   */
   stepAfterPts(w: LandingWorldView, dt: number, feelDt: number): void {
     const q = w.pts?.section;
     if (!q) return;
     const nowS = w.stepTimeS;
-    stepPtTorpedoes(this.tst, this.tp, q, this.state, this.rng, w.dawn.reached, nowS, feelDt, this.link, NO_LEAVE);
     this.link.nowS = nowS;
+    stepPtTorpedoes(this.tst, this.tp, q, this.state, this.rng, w.dawn.reached, nowS, feelDt, this.link, NO_LEAVE);
     this.pool.step(dt, feelDt, this.state.out ? NO_HULLS : this.hulls, this.p.passRadius2, this.link);
     tickLanding(this.state, this.p, nowS);
   }

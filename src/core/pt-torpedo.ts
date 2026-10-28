@@ -43,7 +43,7 @@ export interface PtTorpedoState {
   prevPhase: Uint8Array;
   /** 見失って哨戒に戻ってから撃たない残りの体感秒 */
   holdS: Float64Array;
-  /** 撃った斉射（PT_SALVO_*）・そのときの輸送船までの m・時計（出撃からの体感秒） */
+  /** 撃った斉射（PT_SALVO_*）・そのときの輸送船までの m・時計（出撃からの実秒＝世界の stepTimeS。命中スローで遅れない） */
   kind: Uint8Array; launchM: Float64Array; launchS: Float64Array;
   /** 斉射の魚雷の決着（core/landing-torpedoes の LandingTorpedoLink が書く）: 命中・不発の命中・まだ決着していない本数 */
   salvoHits: Uint8Array; salvoDuds: Uint8Array; salvoLeft: Uint8Array;
@@ -85,7 +85,7 @@ export function createPtTorpedoState(count: number, salvoCount: number): PtTorpe
 }
 
 /**
- * 固定ステップに 1 回、凍結の stepPtSection の後（spec §4.1）。dawn は夜明けのラッチの後（凍結の隊と同じ値）、nowS は出撃からの体感秒、feelDt は体感秒。
+ * 固定ステップに 1 回、凍結の stepPtSection の後（spec §4.1）。dawn は夜明けのラッチの後（凍結の隊と同じ値）、nowS は出撃からの実秒（世界の stepTimeS。命中スローで遅れない。R14 A8）、feelDt は体感秒。
  * onLeave は外から去らせた PT（斉射・輸送船が沈んだ）の知らせ（世界は隊の onLeave と同じ扱い。jp_04 は何もしない）
  */
 export function stepPtTorpedoes(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, ship: PtTorpedoShip, rng: SeededRng, dawn: boolean, nowS: number, feelDt: number, sink: PtTorpedoSink, onLeave: (i: number) => void): void {

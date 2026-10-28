@@ -3,6 +3,7 @@
 //     同じ発射の並びで状態（雷跡の点の位置 nextWakeAtM を除く）と知らせの順が 1 手ずつ同じ。
 // (2) 決まった場面で 命中・通り過ぎの外れ・射程の外れ・海域の外・武装前・沈んだ船体（out）・終わり際の当たりなし。
 // (3) LandingTorpedoLink: 斉射の数え（salvo*）と出来事（被雷・不発（そのときの被雷の数）・外れ・沈没・揚陸の後の沈没。沈んだ後の外れは出さない）・演出の知らせ。
+//     R14 A3（同じステップの斉射を足す・ほかの魚雷が走っている間は外れを言わない）は tests/landing-salvo-events。
 // (4) 雷撃 → link → 写しのプール → 輸送船の通しで、気づかれていない斉射の 1 本の命中率が帯（spec §8: 0.30〜0.50）に入る（試作 aspect-mc の 0.44）。
 import { readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
@@ -126,6 +127,12 @@ describe('(2) 決まった場面', () => {
   });
 });
 
+/** プールが知らせの前に書く印（stepLandingTorpedoes: 命中は active false・resolved、通り過ぎは resolved。どちらも決着） */
+function settled(s: TorpedoState): TorpedoState {
+  s.resolved = true;
+  return s;
+}
+
 /** 斉射の n 本を link に入れ、知らせを手で順に出す場面 */
 function linkBench(done = false): { ld: LandingState; link: LandingTorpedoLink; pool: LandingTorpedoPool; st: ReturnType<typeof createPtTorpedoState>; fx: string[] } {
   const ld = createLanding(LP);
@@ -153,44 +160,44 @@ describe('(3) LandingTorpedoLink（斉射の数えと出来事。spec §4.3・F1
   });
   it('3 本とも外れ: 最後の 1 本で「外れ」（途中は出さない）', () => {
     const { ld, link, pool, st } = linkBench();
-    link.onMiss(pool.states[0]!);
-    link.onMiss(pool.states[1]!);
+    link.onMiss(settled(pool.states[0]!));
+    link.onMiss(settled(pool.states[1]!));
     expect(ld.eventSeq).toBe(1);
-    link.onMiss(pool.states[2]!);
+    link.onMiss(settled(pool.states[2]!));
     expect([ld.eventKind, ld.eventBoat, ld.eventSeq, st.salvoLeft[1]]).toEqual([LE_MISS, 1, 2, 0]);
   });
   it('不発 → 外れ → 外れ: 不発の命中で「不発」（被雷 0）、命中の無い斉射の終わりも「不発」（spec §4.3）', () => {
     const { ld, link, pool, st, fx } = linkBench();
     pool.states[0]!.dud = true;
-    link.onHit(0, 2950, 2760, pool.states[0]!);
+    link.onHit(0, 2950, 2760, settled(pool.states[0]!));
     expect([ld.eventKind, ld.eventHits, ld.duds, ld.hits, st.salvoDuds[1], fx]).toEqual([LE_DUD, 0, 1, 0, 1, ['2950,2760 dud']]);
-    link.onMiss(pool.states[1]!);
-    link.onMiss(pool.states[2]!);
+    link.onMiss(settled(pool.states[1]!));
+    link.onMiss(settled(pool.states[2]!));
     expect([ld.eventKind, ld.eventSeq]).toEqual([LE_DUD, 3]);
   });
   it('命中 → 不発 → 外れ: 「被雷」、不発は被雷 1 のまま（F16: eventHits 1）、斉射の終わりは出さない（命中がある）', () => {
     const { ld, link, pool, st } = linkBench();
-    link.onHit(0, 2950, 2760, pool.states[0]!);
+    link.onHit(0, 2950, 2760, settled(pool.states[0]!));
     expect([ld.eventKind, ld.eventHits, ld.hits, st.salvoHits[1], ld.phase]).toEqual([LE_HIT, 1, 1, 1, 0]);
     pool.states[1]!.dud = true;
-    link.onHit(0, 2950, 2760, pool.states[1]!);
+    link.onHit(0, 2950, 2760, settled(pool.states[1]!));
     expect([ld.eventKind, ld.eventHits]).toEqual([LE_DUD, 1]);
-    link.onMiss(pool.states[2]!);
+    link.onMiss(settled(pool.states[2]!));
     expect([ld.eventSeq, st.salvoLeft[1]]).toEqual([3, 0]);
   });
   it('2 本命中: 「撃沈」（演出は沈没）・沈み始めた時計は link.nowS。沈んだ後の外れは出来事にしない', () => {
     const { ld, link, pool, fx } = linkBench();
     link.nowS = 77.5;
-    link.onHit(0, 1, 2, pool.states[0]!);
-    link.onHit(0, 3, 4, pool.states[1]!);
+    link.onHit(0, 1, 2, settled(pool.states[0]!));
+    link.onHit(0, 3, 4, settled(pool.states[1]!));
     expect([ld.eventKind, ld.phase, ld.sinkStartS, fx]).toEqual([LE_SUNK, LD_SUNK, 77.5, ['1,2 hit', '3,4 hit sunk']]);
-    link.onMiss(pool.states[2]!);
+    link.onMiss(settled(pool.states[2]!));
     expect(ld.eventSeq).toBe(3);
   });
   it('揚陸完了の後の 2 本命中は「揚陸の後の沈没」', () => {
     const { ld, link, pool } = linkBench(true);
-    link.onHit(0, 0, 0, pool.states[0]!);
-    link.onHit(0, 0, 0, pool.states[1]!);
+    link.onHit(0, 0, 0, settled(pool.states[0]!));
+    link.onHit(0, 0, 0, settled(pool.states[1]!));
     expect([ld.eventKind, ld.sunkAfterDone]).toEqual([LE_SUNK_DONE, true]);
   });
   it('プールが受け取れない 1 本はその場で決着（斉射の残りが 0 に戻る）。知らない魚雷の知らせは無視', () => {

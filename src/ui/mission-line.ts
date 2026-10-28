@@ -8,7 +8,7 @@
 // v0.6.5: 機関の不調（jp_05）の 3 つのモード（文とキーは ui/engine-lines。過熱の出来事の時計は pt-line-clock）と、赤い線・結果・接触の行の末尾の札（engineTagKey で組み直す）。
 // v0.6.7: 夜の哨戒機（jp_02）の 4 つのモード（文とキーは ui/patrol-lines。lastPatrolKey）。
 // v0.6.9 S0: 米PT・輸送隊・機関・水上機の 4 つのキーの組み立ては ui/mission-line-keys（純粋な関数。tests/mission-line-keys が v0.6.8 の式の写しと比べる）。
-// v0.6.9 S6a: 停泊して揚陸する輸送船（jp_04）の 2 つのモード 35・36（文とキーは ui/landing-lines。出来事の時計は pt-line-clock）。平常・呼びかけは landingKey でも組み直す。
+// v0.6.9 S6a: 停泊して揚陸する輸送船（jp_04）のモード 35・36・37 と決着の前の輪の中の待ち（文とキーは ui/landing-lines の landingLine・landingKey。出来事の時計は pt-line-clock）。平常・呼びかけは landingKey でも組み直す。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
@@ -40,13 +40,13 @@ import { composeLineKeys, createLineKeys } from './mission-line-keys';
 import { patrolKey, patrolLine, patrolModeOf } from './patrol-lines';
 import { engineLine, engineTagJa } from './engine-lines';
 import { convoyEventLineGb } from './gunboat-lines';
-import { landingEventLine, landingThreatLine } from './landing-lines';
+import { landingLine } from './landing-lines';
 import { ptLine } from './pt-lines';
 import { PtLineClock } from './pt-line-clock';
 import {
   MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
   MISSION_NORMAL, MISSION_PLANE_ATTACK, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_WAITING,
-  MISSION_CONVOY_EVENT, MISSION_LANDING_EVENT, MISSION_LANDING_THREAT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
+  MISSION_CONVOY_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -229,14 +229,12 @@ export class MissionLine {
       this.lastPatrolKey = paKey;
       this.lastLandingKey = lKey;
       this.lastLandingEventKey = leKey;
-      if (patrolMode) {
-        const l = patrolLine(t, mode);
-        this.missionText.setText(l.text).setColor(l.color);
+      // 夜の哨戒機（v0.6.7）か、揚陸の出来事・輸送船への脅威・射線・輪の中の待ち（v0.6.9。ui/landing-lines の landingLine。揚陸の無い任務とほかのモードは null）。モードは重ならない
+      const special = patrolMode ? patrolLine(t, mode) : landingLine(t, mode);
+      if (special) {
+        this.missionText.setText(special.text).setColor(special.color);
       } else if (mode === MISSION_CONVOY_EVENT) {
         const l = convoyEventLineGb(t, this.ptClock.convoyEvent); // 大発の沈没・上陸と、隼艇の沈没・決着の末尾「隼艇は浜に残る」（v0.6.6。隼艇のいない任務は convoyEventLine と同じ）
-        this.missionText.setText(l.text).setColor(l.color);
-      } else if (mode === MISSION_LANDING_EVENT || mode === MISSION_LANDING_THREAT) {
-        const l = mode === MISSION_LANDING_EVENT ? landingEventLine(t) : landingThreatLine(t); // 揚陸の出来事・輸送船への脅威（v0.6.9。ui/landing-lines）
         this.missionText.setText(l.text).setColor(l.color);
       } else if (engineMode) {
         const l = engineLine(t, mode, eKey);
