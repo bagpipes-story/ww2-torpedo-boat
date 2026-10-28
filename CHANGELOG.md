@@ -3,6 +3,11 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.6.9（作業中）
+
+- 日本ハードモード⑧：PT の雷撃と輸送船（jp_04「多号作戦・オルモック湾へ」。停泊して揚陸する輸送船を、米PT の雷撃＝2 つ目の魚雷のプールから守る）。目的・変更点・設計値の理由・中立性・既知の制約・実機テスト結果は後の段で書く（CLAUDE.md §5: `package.json` の版と CHANGELOG の番号を合わせるため、S0 で見出しだけ置いた）。
+- S0（準備。挙動は変えない）: `systems/mission-world.ts` の updateFrame の見た目の同期と destroy() の中身を `systems/world-visuals.ts` へ（順と式はそのまま。`MissionWorld.smokeScreen` を private から readonly に）。`ui/mission-line.ts` の米PT・輸送隊・機関・水上機のキーの組み立てを `ui/mission-line-keys.ts` の純粋な関数へ（`tests/mission-line-keys` が v0.6.8 の式の写しと比べる）。凍結のファイルを 12 → 20 本（自艇の魚雷の道 4 本と米PT の AI 4 本。main 2ad122b の値）。jp_04 の種の上の欄（場所「パロンポン沖（レイテ島西岸）」・月 dark と「月没後」・味方は輸送船 1 隻・目的と成功・史実メモ・夜明けの敵艦 retire → none と出典 2 つ）。jp_04 はまだ出撃できない（playable_from は最後の段）。版 0.6.9。
+
 ## v0.6.8 — 2026-10-27（兵装パネル：魚雷と機銃をいつでも両方・右側 2 列）
 
 - 要約（5 行。細かい値と理由はこの下）:

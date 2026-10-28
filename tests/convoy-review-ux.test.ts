@@ -236,7 +236,8 @@ describe('ux-2・ux-5・ux-7: 標的スロットの HUD の読み（systems/pt-t
     state.barges[1]!.phase = CV_SUNK;
     t.set.current = 0;
     expect(t.aimedBarge).toBe(-1);
-    expect(readFileSync('src/systems/mission-world.ts', 'utf8')).toContain('this.convoy?.updateVisuals(this.boat.state, this.visRange2, this.pts?.targets ? this.pts.targets.aimedBarge : -1);');
+    // v0.6.9 S0: 見た目の同期は mission-world の updateFrame から systems/world-visuals へ移した（同じ行。this を w に）
+    expect(readFileSync('src/systems/world-visuals.ts', 'utf8')).toContain('w.convoy?.updateVisuals(w.boat.state, w.visRange2, w.pts?.targets ? w.pts.targets.aimedBarge : -1);');
   });
   it('ux-7: 撃たずに終わった大発への航過の PT が 25mm で黙っていれば「大発を守った！ 撃たせなかった」（接触のキーの bit 29）。黙っていなければ「撃たず」、自艇への航過と jp_05 は前のまま', () => {
     const { t, q } = targetsWorld();

@@ -1014,14 +1014,13 @@
       "order": 4,
       "title_ja": "多号作戦・オルモック湾へ",
       "date": "1944-12-11",
-      "place": "オルモック湾（レイテ島）",
+      "place": "パロンポン沖（レイテ島西岸）",
       "type": "escort_convoy",
       "player_boat": "jp_t38",
       "torpedo_type": "jp_45cm",
-      "objective": "PTが襲来する湾で輸送船に随伴し、揚陸完了まで守る",
+      "objective": "停泊して揚陸する輸送船を米PTの雷撃から守る。気づかれていないPTは900 mで魚雷を撃つ。速く走るか撃てばPTは自艇へ来る（近いPTは慌てて撃つ）。揚陸まで引きつけて生きて帰れ",
       "allies": [
-        "ijn_transport",
-        "ijn_destroyer"
+        "ijn_transport"
       ],
       "enemies": [
         "us_pt_enemy",
@@ -1032,28 +1031,38 @@
         "enemy_aircraft",
         "friendly_fire"
       ],
-      "moon": "half",
+      "moon": "dark",
+      "moon_label_ja": "月没後",
       "duration_min": 6,
-      "success": "輸送船の揚陸完了、自艇生還",
-      "historical_note": "同夜、駆逐艦卯月がPT-490・492に撃沈された。",
+      "success": "輸送船の揚陸完了を見届けて帰投",
+      "historical_note": "第九次多号作戦（1944-12-09 マニラ発）。11日の昼の空襲で輸送船2隻を失い、17:50に分離: 夕月・桐・第140号・第159号輸送艦はオルモックへ（22:00入泊・特二式内火艇10両を発進し8両が浜に着いた。第159号は陸の米軍の砲と駆逐艦Coghlanに撃たれて失われた）、卯月と駆潜艇2隻は空知丸をパロンポンへ。12日1時ごろ、パロンポン沖（11°03'N 124°23'E。オルモック湾内ではない）で止まっていた卯月がPT-490・PT-492の魚雷6本（約1,000 yd）のうち2本以上を受けて沈んだ（medium〜high）。夕月は12日15:10の空襲で沈んだ（夜ではない）。日本の魚雷艇がレイテで戦った記録は見つからない（medium・不在）。同夜の味方撃ち・米の夜間機の攻撃も見つからない（medium・不在）。月は11日14:11（現地）に沈み12日02:45に昇った＝戦いの間は月なし（計算2通り・high）。WebSearch の抜粋のみ・本文未読",
       "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
+      "briefing_note_ja": "1944年12月12日1時ごろ、第九次多号作戦の輸送船空知丸を導いた駆逐艦卯月は、パロンポン沖に止まっていたところを暗い岸を背に忍び寄った米PT 2隻に約900 mから魚雷6本を撃たれ、2本以上を受けて沈んだ。日本の魚雷艇がレイテにいた記録は見つかっておらず、この夜はゲーム上の想定（艇はT-38で代用、卯月の代わりに輸送船を守る）。",
       "dawn_air": {
         "control": "contested",
         "confidence": "medium",
         "play_as": "enemy",
-        "enemy_ships_at_dawn": "retire",
+        "enemy_ships_at_dawn": "none",
         "label_ja": "昼の空は敵（タクロバンのコルセア）",
         "refs": [
           {
             "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-            "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のオルモック湾で米 PT に撃沈された"
+            "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
           },
           {
             "url": "https://trafficnews.jp/post/117332",
             "claim": "多号作戦（レイテ島への輸送）の船団は米の陸上機の空襲を受け、昼の輸送・揚陸は危うかった"
+          },
+          {
+            "url": "https://pacificwrecks.com/date/1944/12/11.html",
+            "claim": "1944-12-11 タクロバンの海兵隊のコルセア約40機がレイテ西方の第九次多号作戦の船団を2度攻撃し、輸送船2隻を沈めた"
+          },
+          {
+            "url": "https://en.wikipedia.org/wiki/VMF-541",
+            "claim": "VMF(N)-541 の夜間戦闘機が1944-12-03 からタクロバンにいて、12日朝にオルモック湾へ向かう日本機33機を迎え撃った"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は contested（敵寄り）、日本語の調査は enemy・high) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語の調査は contested（敵寄り）、日本語の調査は enemy・high) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い) / design (v0.6.9。enemy_ships_at_dawn retire → none（ゲームの規則の都合で史実の値ではない: 米PT は core/pt-boats の夜明けのラッチで北へ去る＝jp_01・jp_05 と同じ。retire は駆逐艦（enemy_start）の規則で、無い任務には置けない: config/dawn-data の checkWithdraw・config/pt-mission-data）。昼の米機の攻撃は実際は12日15:10（夜明けではない）。夜明けの4機は全任務共通の規則（CLAUDE.md §2）)"
       }
     },
     {

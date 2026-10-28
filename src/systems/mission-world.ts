@@ -1,5 +1,5 @@
 // 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・敵（駆逐艦か大発の隊。v0.4.2。米PT の隊 v0.6.3）・魚雷・艇の砲・反撃・煙幕・被害・燃料（v0.3.0）・危険（味方機・暴風・水上機・夜の哨戒機 v0.6.7）・出撃（v0.4.0）を持ち、固定ステップで進める。
-// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
+// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、見た目の同期と破棄は world-visuals.ts（v0.6.9）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
@@ -47,6 +47,7 @@ import { buildArms, type WorldArms } from './world-arms';
 import type { WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
+import { destroyWorldVisuals, updateWorldVisuals } from './world-visuals';
 export type { WorldEvents } from './world-events';
 
 export class MissionWorld {
@@ -98,7 +99,7 @@ export class MissionWorld {
 
   readonly setup: WorldSetup; // data から組み立てた数値（world-setup.ts）。固定ステップはここから読み、Scene は crew / storm を読む
   readonly events: WorldEvents; // Scene への通知（world-events.ts）。world-boat の座礁も呼ぶ
-  private readonly smokeScreen: SmokeScreen | null;
+  readonly smokeScreen: SmokeScreen | null; // 煙幕の絵（world-visuals が同期と破棄に読む。v0.6.9 S0 で private から出した）
   readonly gunRng: SeededRng; // 砲撃のばらつき（seed+1。world-enemies が作る。ヘッドレスの再生が状態を読む）
   private readonly boatDamage: BoatDamage; // 命中の適用と沈没の開始（砲弾・機銃・掃射・爆弾はすべてここを通る。v0.4.1 で切り出し）
   /** 旋回率・加速の基準（暴風 × 乗員の倍率を掛けて毎ステップ書く） */
@@ -211,26 +212,10 @@ export class MissionWorld {
   /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
   updateFrame(realDt: number): void {
     consumeFrameInput(this, realDt); // 入力の消費（world-input.ts。v0.6.1 で切り出し）
-    const g = this.destroyers;
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
     this.refreshShallowStatus();
-    this.storm?.updateVisuals(realDt, this.boat.state);
-    this.boat.syncSprite(this.storm ? this.storm.rollDeg : 0);
-    this.escort?.syncSprite();
-    g?.syncSprites();
-    this.torpedoes.updateVisuals(realDt);
-    g?.updateVisuals(realDt);
-    this.hunt?.updateVisuals(realDt, this.visRange2);
-    this.pts?.updateVisuals(realDt, this.visRange2);
-    this.convoy?.updateVisuals(this.boat.state, this.visRange2, this.pts?.targets ? this.pts.targets.aimedBarge : -1);
-    this.splashes.updateVisuals(realDt);
-    if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
-    this.friendly?.updateVisuals(realDt, this);
-    this.seaplane?.updateVisuals(this.boat.state);
-    this.patrol?.updateVisuals(this.boat.state, this.escort ? this.escort.state.boat : null);
-    this.dawn.updateVisuals(this);
-    this.arms?.updateVisuals(realDt, this);
+    updateWorldVisuals(this, realDt); // 見た目の同期（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
   }
 
   /** 水上機か夜明けの空襲の機体が来ている（味方機の開始条件が読む）。夜の哨戒機（v0.6.7）も（無い任務は false＝同じ値） */
@@ -260,21 +245,7 @@ export class MissionWorld {
   }
 
   destroy(): void {
-    this.storm?.destroy();
-    this.seaplane?.destroy();
-    this.patrol?.destroy();
-    this.dawn.destroy();
-    this.arms?.destroy();
-    this.friendly?.destroy();
-    this.torpedoes.destroy();
-    this.hunt?.destroy();
-    this.pts?.destroy();
-    this.convoy?.destroy();
-    this.escort?.destroy();
-    this.splashes.destroy();
-    this.smokeScreen?.destroy();
-    this.destroyers?.destroy();
-    this.boat.destroy();
+    destroyWorldVisuals(this); // 破棄（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
   }
 
   /** 浅瀬の警告（接近中は縁までの距離）。平方根は使わない */

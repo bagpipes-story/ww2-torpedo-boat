@@ -7,6 +7,7 @@
 // v0.6.4: 味方の大発の輸送隊（jp_01）: 平常の行は ptKey と convoyKey の両方で組み直し、沈没・上陸の出来事（時計は pt-line-clock）、呼びかけの語「大発 上陸 2/3 ・ 」（ui/convoy-lines）。
 // v0.6.5: 機関の不調（jp_05）の 3 つのモード（文とキーは ui/engine-lines。過熱の出来事の時計は pt-line-clock）と、赤い線・結果・接触の行の末尾の札（engineTagKey で組み直す）。
 // v0.6.7: 夜の哨戒機（jp_02）の 4 つのモード（文とキーは ui/patrol-lines。lastPatrolKey）。
+// v0.6.9 S0: 米PT・輸送隊・機関・水上機の 4 つのキーの組み立ては ui/mission-line-keys（純粋な関数。tests/mission-line-keys が v0.6.8 の式の写しと比べる）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
@@ -33,17 +34,17 @@ import {
   gunReloadStep, shallowsLine, sightedFast, stormLine,
 } from './hud-lines';
 import { airRaidTagJa, bargeHideTagKey, callLineText, clockKey, lineFitScale } from './dawn-lines';
-import { airLine, planeKeyOf, planeModeOf, strikeKeyOf, strikeModeOf } from './mission-line-air';
+import { airLine, strikeKeyOf, strikeModeOf } from './mission-line-air';
+import { composeLineKeys, createLineKeys } from './mission-line-keys';
 import { patrolKey, patrolLine, patrolModeOf } from './patrol-lines';
-import { convoyKey, convoyWaiting } from './convoy-lines';
-import { engineKey, engineLine, engineTagJa, engineTagKey } from './engine-lines';
+import { engineLine, engineTagJa } from './engine-lines';
 import { convoyEventLineGb } from './gunboat-lines';
-import { ptKey, ptLine } from './pt-lines';
+import { ptLine } from './pt-lines';
 import { PtLineClock } from './pt-line-clock';
 import {
   MISSION_ADRIFT, MISSION_BARGE_EVENT, MISSION_BARGE_RUN, MISSION_BARGE_SIGHTED, MISSION_BATTERY, MISSION_CALL, MISSION_ESCORT_HIT, MISSION_ESCORT_LAG, MISSION_ESCORT_LOST, MISSION_FRIENDLY, MISSION_FRIENDLY_RESULT, MISSION_GUN,
-  MISSION_NORMAL, MISSION_PLANE_ATTACK, MISSION_PT_PASS, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_WAITING,
-  MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_ENGINE_STATUS, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
+  MISSION_NORMAL, MISSION_PLANE_ATTACK, MISSION_SHALLOWS, MISSION_STORM, MISSION_STORM_WARN, MISSION_WAITING,
+  MISSION_CONVOY_EVENT, MODE_FLAG_BARGE_EVENT, MODE_FLAG_ESCORT_HIT, bargeRunning, missionMode, stormWarning,
 } from './mission-mode';
 
 export class MissionLine {
@@ -87,6 +88,8 @@ export class MissionLine {
   /** 米PT（v0.6.3）: 2 行目のキー（ui/pt-lines の ptKey）と、攻撃の結果・13mm の出来事の時刻の旗（ui/pt-line-clock） */
   private lastPtKey = -1;
   private readonly ptClock = new PtLineClock();
+  /** 米PT・輸送隊・機関・水上機のキーの入れ物（v0.6.9 S0。ui/mission-line-keys。1 個だけ） */
+  private readonly keys = createLineKeys();
   /** 味方の大発の輸送隊（v0.6.4）: 2 行目のキー（ui/convoy-lines の convoyKey。平常の行の浜まで・出来事） */
   private lastConvoyKey = -1;
   /** 機関の不調（v0.6.5）: 2 行目のキー（ui/engine-lines の engineKey。モード 28〜30）と、米PT の行の末尾の札のキー（engineTagKey。0 なし・1 限界・2 不調） */
@@ -127,15 +130,8 @@ export class MissionLine {
     const flags = (event !== 0 ? MODE_FLAG_BARGE_EVENT : 0) | (escortHit ? MODE_FLAG_ESCORT_HIT : 0) | this.ptClock.flags(t, nowMs, this.lastMissionMode);
     const mode = missionMode(t, call, flags);
     this.ptClock.shown(mode, nowMs);
-    const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
-    const pKey = ptMode ? ptKey(t, mode, flags, this.lastPtKey, this.ptClock.merge) : 0;
-    // 輸送隊（v0.6.4）: 浜までの刻みは平常の行（米PT が見えていない）と決着の前の呼びかけ（「大発の上陸を待て  浜まで N m」。レビュー ux-1）のときだけ求める。出来事の種類は出来事の行のときだけ
-    const cKey = convoyKey(t.convoy, (mode === MISSION_PT && !t.pt.sighted) || (mode === MISSION_CALL && convoyWaiting(t.convoy)), mode === MISSION_CONVOY_EVENT ? this.ptClock.convoyEvent : 0);
-    const engineMode = mode >= MISSION_ENGINE_EVENT && mode <= MISSION_ENGINE_STATUS; // 機関の 3 つ（28〜30。v0.6.5）
-    const eKey = engineMode ? engineKey(t, mode) : 0;
-    const eTag = mode === MISSION_PT_PASS || mode === MISSION_PT_CONTACT ? engineTagKey(t.engine) : 0; // 札は赤い線・結果・接触の行だけ（13mm の行と平常には付けない）
-    const planeMode = planeModeOf(mode); // 水上機の 3 つ（9〜11）。キー（距離は接近中だけ 100 m 刻み）と文は ui/mission-line-air
-    const planeKey = planeKeyOf(t, planeMode);
+    // 米PT・輸送隊・機関・水上機のキー（ui/mission-line-keys。v0.6.9 S0 で切り出し。shown の後・同じ式と順）
+    const { ptMode, pKey, cKey, engineMode, eKey, eTag, planeMode, planeKey } = composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent);
     // 暴風の距離の刻み: 近いときは 50 m、予報は 100 m（それ以外は 0）
     const stormStep = t.stormState === STORM_NEAR ? Math.ceil(t.stormGapM / STORM_WARN_STEP_M) : t.stormState === STORM_AHEAD ? Math.ceil(t.stormGapM / STORM_AHEAD_STEP_M) : 0;
     const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);
