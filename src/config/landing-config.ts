@@ -1,5 +1,5 @@
 // 停泊して揚陸する味方の輸送船（v0.6.9。jp_04「多号作戦・オルモック湾へ」。spec-v069 §3.5）の検査の定数。ゲームの強さの値ではないので data/*.json には置かない（pt-config・convoy-config と同じ考え）。
-// 何も import しない（config/landing-mission-data・tests から型検査ごと読める）。HUD の定数は S6 で足す。core が要る上限（揚陸の秒・命中）は core/landing-data。
+// 何も import しない（config/landing-mission-data・tests から型検査ごと読める）。HUD の定数は下（S6）。core が要る上限（揚陸の秒・命中）は core/landing-data。
 /** V7: 線の終わりは泊地から launch_range_m − arrive_m − これ m の内（PT は折り返しの輪の 50 m 手前までに launch_range_m を越える） */
 export const LANDING_LAUNCH_INSIDE_M = 50;
 /** V5: 泊地と帰投の輪の中心の距離の下限 m（輸送船のそばで輪に入らない） */
@@ -24,3 +24,7 @@ export const LANDING_STATUS_DY_M = 26;
 export const LANDING_SUNK_TEXT_COLOR = '#8a8a8a';
 /** 揚陸地点の帯の半分の長さ m（艇首の先が浜の線に届く点を中心に。帯の太さ・ラベルの下げは jp_01 の CONVOY_LANDING_MARK_*） */
 export const LANDING_MARK_HALF_M = 80;
+
+// 2 行目の揚陸の出来事（v0.6.9 S6a。ui/pt-line-clock・ui/landing-lines。spec-v069 §3.5・R5）
+/** 揚陸の出来事（モード 35「米PT 雷撃！」「輸送船 被雷！」「揚陸完了！」）を出す ms（赤い線・13mm・輸送隊の出来事の下では 1 度出るまで待つ）。jp_01 の CONVOY_EVENT_SHOW_MS と同じ値（tests/landing-lines が pin） */
+export const LANDING_EVENT_SHOW_MS = 3500;

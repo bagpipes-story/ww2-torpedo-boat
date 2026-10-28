@@ -5,6 +5,7 @@
 // 距離は gun-battery が撃つときに求めた targetM を 50 m 刻みで切り上げる（平方根を足さない）。キーは行に出る値だけを詰める（50 m・命中 1 発・交換の 1 秒ごとにしか組み直さない）。
 // v0.6.4 レビュー ux-1: 輸送隊（jp_01）の決着の前に戦う PT が残らなければ「帰投せよ」ではなく「大発の上陸を待て」（キーの bit 14。jp_05 は立たない）。
 // v0.6.6（隼艇。jp_01 のハード）: 隼艇の砲が起こした出来事は頭を「隼艇 撃退！ 米PT 1 隻が離脱」など（キーの bit 15＝ui/gunboat-lines の K_GUNBOAT_EVENT）。ほかは同じ。
+// v0.6.9（jp_04）: 揚陸の決着の前に戦う PT が残らなければ「揚陸を待て」（同じ bit 14。連射の結果を足した行も同じ 5 字。t.landing.enabled の任務だけ）。
 import { GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_DISTANCE_STEP_M, PT_RESULT_SHOW_MS } from '../config/pt-config';
@@ -16,6 +17,7 @@ import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { CONVOY_WAIT_JA, CONVOY_WAIT_SHORT_JA, convoyWaiting } from './convoy-lines';
 import { K_GUNBOAT_EVENT, gunboatEventHeadJa } from './gunboat-lines';
 import type { HudLine } from './hud-lines';
+import { LANDING_WAIT_JA, landingWaiting } from './landing-lines';
 
 /** キーの詰め方（射撃）: 状態 3 ビット | 速くて散る | 遠い | 距離の刻み 6 ビット | 命中 6 ビット | 交換の残り秒 3 ビット */
 const K_FAST = 1 << 3;
@@ -73,7 +75,7 @@ const K_WAIT = 1 << 14;
 
 /** 出来事の行のキー（モード MISSION_PT_GUN_EVENT）: 種類（PT_GUN_EV_*）| まだ戦う PT の数 << 3 | 戦う PT が残らず輸送隊の決着を待つ << 14 | 隼艇の砲が起こした << 15（v0.6.6。足した連射の結果は ptKey が mergeBurstBits を足す） */
 export function ptGunEventKey(t: BoatTelemetry): number {
-  return t.pt.gunEvent | (Math.min(7, t.pt.fighting) << 3) | (t.pt.fighting === 0 && convoyWaiting(t.convoy) ? K_WAIT : 0) | (t.pt.gunEventByGunboat ? K_GUNBOAT_EVENT : 0);
+  return t.pt.gunEvent | (Math.min(7, t.pt.fighting) << 3) | (t.pt.fighting === 0 && (convoyWaiting(t.convoy) || landingWaiting(t.landing)) ? K_WAIT : 0) | (t.pt.gunEventByGunboat ? K_GUNBOAT_EVENT : 0);
 }
 
 /** 出来事のキーに足す連射の結果（レビュー ux-3）: 足した | 撃った << 7 | 被弾 << 8（63 まで） */
@@ -90,9 +92,10 @@ export function mergeBurstBits(p: PtTelemetry): number {
  * 出来事の行（味方の青）: 撃退（死傷・穴だらけ）・撃沈・制圧（追撃をやめて離れる。制圧された PT はまだ戦う数に入る）と、まだ戦う PT の数（0 なら「帰投せよ」、輸送隊の決着の前は「大発の上陸を待て」。
  * 連射の結果を足した行は「上陸を待て」）。
  * その PT の連射の結果を足した行は間に「連射 被弾 N 発（HP −x）」「連射 被弾なし」「連射を撃たせなかった」（damagePerHit は PT の 1 発の HP）。
- * 隼艇の砲が起こした出来事（v0.6.6）は頭が「隼艇 撃退！ 米PT 1 隻が離脱」など（gunboatJa は data の隼艇の名）で、足した連射の結果は「自艇 被弾 N 発（HP −x）」「自艇 被弾なし」
+ * 隼艇の砲が起こした出来事（v0.6.6）は頭が「隼艇 撃退！ 米PT 1 隻が離脱」など（gunboatJa は data の隼艇の名）で、足した連射の結果は「自艇 被弾 N 発（HP −x）」「自艇 被弾なし」。
+ * landing は揚陸の任務（v0.6.9。待ちの語は「揚陸を待て」）
  */
-export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = ''): HudLine {
+export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = '', landing = false): HudLine {
   const kind = key & 7;
   const n = (key >> 3) & 7;
   const head =
@@ -103,7 +106,7 @@ export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = ''
   // 足すのは自艇への連射の結果。隼艇の出来事の行では「自艇 被弾 N 発」（頭の「隼艇」と「連射 被弾」で隼艇の被弾に読めた。同じ 2 字で幅は同じ。レビュー ux:ux-2）
   const who = (key & K_GUNBOAT_EVENT) !== 0 ? '自艇' : '連射';
   const burst = (key & K_MERGED) === 0 ? '' : ` ・ ${(key & K_MERGED_FIRED) === 0 ? '連射を撃たせなかった' : h === 0 ? `${who} 被弾なし` : `${who} 被弾 ${h} 発（HP −${h * damagePerHit}）`}`;
-  const wait = burst === '' ? CONVOY_WAIT_JA : CONVOY_WAIT_SHORT_JA;
+  const wait = landing ? LANDING_WAIT_JA : burst === '' ? CONVOY_WAIT_JA : CONVOY_WAIT_SHORT_JA;
   return { text: `${head}${burst} ・ ${n !== 0 ? `残り ${n} 隻` : (key & K_WAIT) !== 0 ? wait : '帰投せよ'}`, color: HOME_COLOR_TEXT };
 }
 

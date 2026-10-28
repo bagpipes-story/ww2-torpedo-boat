@@ -11,6 +11,8 @@
 // 離脱の行に「大発のそばへ戻れ（N m）」（刻みは接触の距離のビット）。Result の砲の行の頭は砲の名（25mm／13mm）、航過の後に「（大発へ N）」、「米PT が捉えた」と最初に捉えたのが大発。
 // v0.6.4 レビュー: 輸送隊が決着する前にみな去ったら「帰投せよ  N m」の代わりに「大発の上陸を待て  浜まで N m」（平常のキーの bit 30。ux-1）、撃つ前に 25mm で黙らせた大発への航過の結果は
 // 「大発を守った！」（接触のキーの bit 29。ux-7）。どちらも jp_05 では立たない。
+// v0.6.9（jp_04。停泊して揚陸する輸送船。t.landing.enabled の任務だけ）: 平常は揚陸の行・見えている PT は「N m まで寄って撃つか速く走って引きつけよ」「まもなく見つかる」（速い行にも方角）、
+// 揚陸の決着の前にみな去ったら「揚陸を待て あと N 秒」（平常のキーの K_WAIT・浜までの刻みは 0。秒は ui/landing-lines の landingKey）。文は ui/landing-lines。
 // v0.6.6（隼艇。jp_01 のハード）: 標的が隼艇（PtTelemetry.targetKind / lastPassTargetKind が 2）の航過・連射・突撃・追ってくる PT・結果は ui/gunboat-lines の文（キーの bit 30 と方角 16〜18、
 // 被弾の結果は HP 6〜11）。大発は bit 28 のまま。Result の 4 行目は自艇の分（隼艇の分を引く）、最初に捉えたのが隼艇なら「隼艇」。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
@@ -25,6 +27,7 @@ import { C_CHASE, K_BURST, K_BURST_RESULT, burstKey, burstLine, burstResultLine,
 import { convoyBreakTailJa, convoyLeftStep, convoyNearStep, convoyNormalLine, convoyPassLine, convoyPassResultLine, convoyRushLine, convoySlowLine, convoyWaitShoreJa, convoyWaiting } from './convoy-lines';
 import { K_GB_DIR, K_TARGET_GUNBOAT, gunboatChaseLine, gunboatHpBits, gunboatPassKey, gunboatPassLine, gunboatResultLine, gunboatRushLine } from './gunboat-lines';
 import { ptGunEventKey, ptGunEventLine, ptGunKey, ptGunLine } from './pt-gun-lines';
+import { landingFastLine, landingLeftS, landingNormalLine, landingSlowLine, landingWaitTailJa, landingWaiting } from './landing-lines';
 import type { GunboatResult, PtResult } from './result-types';
 
 export { PT_DISTANCE_STEP_M }; // 今までの import のため（v0.6.3 実機 1 回目から config/pt-config に置く。13mm の行も同じ刻み）
@@ -137,16 +140,17 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0
   const gone = sub === N_GONE ? (t.dawn.reached ? 1 : 0) | (p.out + p.sunk >= p.total ? 2 : 0) | (p.sunk >= p.total ? 4 : 0) : 0;
   // みな去った後の帰投の距離（v0.6.3 レビュー: 夜明けの後は「夜明け 帰投せよ N m」の行の代わりに出るので、距離を消さない。切り上げで輪の外では 0 にならない）。
   // 輸送隊がまだ決着していなければ（v0.6.4 レビュー ux-1）帰投の距離の代わりに浜までの刻みと待ちの旗
-  const wait = sub === N_GONE && convoyWaiting(t.convoy);
-  const home = sub !== N_GONE ? 0 : wait ? convoyLeftStep(t.convoy) : Math.min(63, Math.max(0, Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M)));
-  return sub | ((sub === N_SLOW ? dirIndex(p.dx, p.dy) : 0) << 3) | (d << 6) | (det << 12) | ((sub === N_UNSEEN ? Math.min(7, p.alive) : 0) << 18) | (gone << K_GONE) | (home << K_HOME) | (wait ? K_WAIT : 0);
+  // 揚陸（v0.6.9）の決着の前も同じ旗（浜までの刻みは 0。残りの秒は landingKey）
+  const wait = sub === N_GONE && (convoyWaiting(t.convoy) || landingWaiting(t.landing));
+  const home = sub !== N_GONE ? 0 : wait ? (t.convoy.enabled ? convoyLeftStep(t.convoy) : 0) : Math.min(63, Math.max(0, Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M)));
+  return sub | ((sub === N_SLOW || (sub === N_FAST && t.landing.enabled) ? dirIndex(p.dx, p.dy) : 0) << 3) | (d << 6) | (det << 12) | ((sub === N_UNSEEN ? Math.min(7, p.alive) : 0) << 18) | (gone << K_GONE) | (home << K_HOME) | (wait ? K_WAIT : 0);
 }
 
 /** 2 行目の文と色（key は同じフレームの ptKey。距離・方角・見つかる距離はキーから、航過の数・被弾・隻数はテレメトリから） */
 export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   const p = t.pt;
   if (mode === MISSION_PT_GUN) return ptGunLine(t, key);
-  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key, p.damagePerHit, t.gunboat.labelJa);
+  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key, p.damagePerHit, t.gunboat.labelJa, t.landing.enabled);
   if (mode === MISSION_PT_PASS && (key & K_TARGET_GUNBOAT) !== 0) return gunboatPassLine(key, t.gunboat.labelJa); // 隼艇への航過・連射（v0.6.6）
   if (mode === MISSION_PT_PASS && (key & K_BURST) !== 0) return burstLine(key);
   if (mode === MISSION_PT_PASS && (key & K_SILENCED) !== 0) return { text: '米PT 被弾で沈黙！ もう撃ってこない', color: HOME_COLOR_TEXT };
@@ -175,15 +179,15 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
     // 輸送隊（v0.6.4）: 最寄りの大発が遠ければ間に「大発のそばへ戻れ（N m）」（刻みは距離のビット。無ければ ''）
     return { text: `米PT 離脱 ・ ${convoyBreakTailJa((key >> 6) & 63)}${(key & K_FIRE_HINT) !== 0 ? '右下の機銃で撃ち返せ' : '次の赤い線に備えよ'}`, color: HUD_COLOR_STRONG };
   }
-  if (sub === N_SLOW) return t.convoy.enabled ? convoySlowLine(d, dir) : { text: `米PT ${d} m（${dir}） ・ 気づかれていない ・ 静音でやり過ごせ`, color: HUD_COLOR_STRONG };
-  if (sub === N_FAST) return { text: `米PT ${d} m ・ 速い！ ${((key >> 12) & 63) * DETECT_RANGE_STEP_M} m で見つかる ・ ${p.silentMaxKt} kt 以下に`, color: HUD_COLOR_WARN };
-  if (sub === N_UNSEEN) return t.convoy.enabled ? convoyNormalLine(t) : { text: `米PT ${p.alive} 隻が哨戒中 ・ 静音で抜けて帰投`, color: HUD_COLOR_STRONG };
+  if (sub === N_SLOW) return t.landing.enabled ? landingSlowLine(d, dir, p.gunRangeM) : t.convoy.enabled ? convoySlowLine(d, dir) : { text: `米PT ${d} m（${dir}） ・ 気づかれていない ・ 静音でやり過ごせ`, color: HUD_COLOR_STRONG };
+  if (sub === N_FAST) return t.landing.enabled ? landingFastLine(d, dir) : { text: `米PT ${d} m ・ 速い！ ${((key >> 12) & 63) * DETECT_RANGE_STEP_M} m で見つかる ・ ${p.silentMaxKt} kt 以下に`, color: HUD_COLOR_WARN };
+  if (sub === N_UNSEEN) return t.landing.enabled ? landingNormalLine(t) : t.convoy.enabled ? convoyNormalLine(t) : { text: `米PT ${p.alive} 隻が哨戒中 ・ 静音で抜けて帰投`, color: HUD_COLOR_STRONG };
   // みな去る: 去る途中（海域の外へ出ていない PT がいる）は「去る」、みな出たか沈んだら「去った」、みな沈めたら「全隻撃沈」。後ろに帰投の輪の縁までの距離（帰投せよの行と同じ書き方）、
   // 輸送隊の決着の前は「大発の上陸を待て  浜まで N m」
   const gone = (key >> K_GONE) & 7;
   const what = (gone & 4) !== 0 ? '米PT は全隻撃沈' : `米PT は${p.leaveDirJa}へ${(gone & 2) !== 0 ? '去った' : '去る'}`;
   const step = (key >> K_HOME) & 63;
-  const tail = (key & K_WAIT) !== 0 ? convoyWaitShoreJa(step) : `帰投せよ  ${step * HOME_MARKER_DISTANCE_STEP_M} m`;
+  const tail = (key & K_WAIT) !== 0 ? (t.landing.enabled ? landingWaitTailJa(landingLeftS(t.landing)) : convoyWaitShoreJa(step)) : `帰投せよ  ${step * HOME_MARKER_DISTANCE_STEP_M} m`;
   return { text: `${(gone & 1) !== 0 ? '夜明け ・ ' : ''}${what} ・ ${tail}`, color: HUD_COLOR_STRONG };
 }
 

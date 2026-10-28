@@ -3,6 +3,8 @@
 // 検査は spec の layout.mjs の check() を写した（固定の箱の値はその写し）。値の pin: 魚雷は全任務で列 W − 88・y 560（R64）、機銃はその左の列 W − 232・y 589（R56）、扇 642〜682（当たり 638〜720）、
 // 技能は x W − 68 の縦一列（R44）で上から 煙幕 68・消火 180・見張り 292・識別 404（無いボタンの段は空く）、速力の右端 W − 312、端の印の余白 352、つまむ帯 W − 304、避ける角 W − 624。
 // y ≥ 682（ホームバーの帯）に入るのはどの任務も扇だけ。
+// v0.6.9 S6a: jp_04（煙幕なし・味方機なし）を足し、右上 2 段目の揚陸の時計（ui/landing-clock。左上の夜明けの時計の鏡）の箱が、jp_04 にあるどのボタンの当たり・2 行目・ビルド番号にも
+// 触れないこと（煙幕の段は空いている。煙幕があれば重なる＝Boot の V12）を確かめる。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -31,6 +33,9 @@ import {
   type PanelRect,
 } from '../src/config/hud-layout-config';
 import { GUN_BUTTON_FONT_PX, GUN_BUTTON_SCALE } from '../src/config/arms-config';
+import { gameData } from '../src/config/game-data';
+import { HUD_CLOCK_MAX_W_PX, HUD_FONT_CLOCK_PX } from '../src/config/hud-text-config';
+import { getPrototypeMission } from '../src/config/mission-data';
 import { textWidthPx } from './pt-ui-kit';
 
 const H = 720;
@@ -45,6 +50,7 @@ const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean }, { engine?
   jp_02: [{ smoke: false, identify: false }, {}],
   jp_05: [{ smoke: false, identify: false }, { engine: true }],
   jp_06: [{ smoke: false, identify: false }, {}],
+  jp_04: [{ smoke: false, identify: false }, {}],
 };
 
 const circleHit = (b: PanelCircle): PanelRect => ({ x0: b.x - b.r - HIT_PAD, y0: b.y - b.r - HIT_PAD, x1: b.x + b.r + HIT_PAD, y1: b.y + b.r + HIT_PAD });
@@ -206,5 +212,31 @@ describe('右下の兵装と右端の技能（config/hud-layout-config）', () =
     expect(cueAnchorX(T, 'gun', 246)).toBe(W - 288 + 123);
     expect(cueAnchorX(T, 'gun', 100)).toBe(W - 232);
     expect(cueAnchorX(T, 'gun', 9999)).toBe((W - 288 + W - 24) / 2);
+  });
+
+  it('jp_04: 右上 2 段目の揚陸の時計（W − 24 に右寄せ・幅 184・左上の時計と同じ y 50〜74）は、どの幅でも jp_04 のボタンの当たり・2 行目・ビルド番号に触れない（煙幕の段は空き）', () => {
+    // jp_04 の艇は煙幕発生器なし（Boot の V12）・危険に味方機なし（識別なし）＝MISSIONS の jp_04 の行
+    const pm = getPrototypeMission(gameData, 'jp_04');
+    const boat = (gameData.boats.boats as readonly Record<string, unknown>[]).find((b) => b['id'] === pm.playerBoatId);
+    expect(boat?.['smoke_generator']).toBe(false);
+    expect(MISSIONS['jp_04']![0]).toEqual({ smoke: false, identify: false });
+    for (const W of WIDTHS) {
+      const fb = fixedBoxes(W, false);
+      const clock: PanelRect = { x0: W - M - HUD_CLOCK_MAX_W_PX, y0: fb['clock']!.y0, x1: W - M, y1: fb['clock']!.y1 };
+      // 左上の夜明けの時計の箱と左右対称
+      expect([clock.x0, clock.x1, clock.y0, clock.y1]).toEqual([W - fb['clock']!.x1, W - fb['clock']!.x0, 50, 74]);
+      expect(clock.y1 - clock.y0).toBeGreaterThanOrEqual(HUD_FONT_CLOCK_PX);
+      const L = panelLayout(W, MISSIONS['jp_04']![0]);
+      const c = check(L, false);
+      for (const [n, r] of c.hits) expect(inter(r, clock), `${W} 揚陸の時計 × ${n}`).toBe(false);
+      for (const k of ['line2', 'line3', 'buildLabel', 'fps', 'hp', 'fuel', 'pause']) expect(inter(clock, fb[k]!), `${W} 揚陸の時計 × ${k}`).toBe(false);
+      expect(clock.x0 - fb['line2']!.x1).toBe(12); // 2 行目は時計の幅を左右対称に避ける（lineFitScale）
+      // 煙幕のボタンがある艇なら重なる（だから揚陸の任務の艇は smoke_generator false）
+      const smoke = panelLayout(W, { smoke: true, identify: false }).skills.find((sk) => sk.kind === 'smoke')!;
+      expect(inter(skillHit(smoke), clock)).toBe(true);
+      // 下の段（消火 180）の当たりの上端まで 60 px 以上
+      const ext = L.skills.find((sk) => sk.kind === 'extinguish')!;
+      expect(skillHit(ext).y0 - clock.y1).toBeGreaterThan(60);
+    }
   });
 });

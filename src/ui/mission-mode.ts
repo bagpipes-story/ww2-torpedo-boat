@@ -1,6 +1,7 @@
 // 上中央の 2 行目のモード（v0.6.1 で ui/mission-line.ts から切り出し。v0.6.0 のモードはそのまま、夜明けの空襲の 2 つを足した）: どの行を出すかの優先順だけを決める。
 // 文は ui/hud-lines.ts、setText のキャッシュは ui/mission-line.ts。テレメトリを読むだけで、毎フレーム呼んでも確保しない（§7）。
 // v0.6.5: 機関の不調（jp_05）の 3 つ（28〜30。文は ui/engine-lines）。v0.6.7: 夜の哨戒機（jp_02）の 4 つ（31〜34。文は ui/patrol-lines。哨戒の無い任務は t.patrol.enabled が偽で 1 ビットも変わらない）。
+// v0.6.9: 停泊して揚陸する輸送船（jp_04）の 2 つ（35・36。文は ui/landing-lines。揚陸の無い任務は t.landing.enabled が偽・旗 128 は立たず 1 ビットも変わらない）。
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_NONE, AS_T_ORBIT, AS_T_REST } from '../core/air-strike';
 import { CALL_DAWN } from '../core/mission-flow';
 import type { BoatTelemetry } from '../core/boat-motion';
@@ -68,6 +69,12 @@ export const MISSION_PATROL_ATTACK = 31;
 export const MISSION_PATROL_PASS = 32;
 export const MISSION_PATROL_RESULT = 33;
 export const MISSION_PATROL = 34;
+/**
+ * 停泊して揚陸する輸送船（v0.6.9。jp_04。spec-v069 §5.1。文とキーは ui/landing-lines）: 35 出来事（斉射・被雷・不発・外れ・沈没・揚陸完了の直後 LANDING_EVENT_SHOW_MS。輸送隊の出来事の下・機関の出来事の上）、
+ * 36 輸送船への脅威（見張りの報告・走っている雷跡。決着の前だけ。米PT との接触の下・機関の状態の上＝自艇が狙われている行がいつも勝つ）
+ */
+export const MISSION_LANDING_EVENT = 35;
+export const MISSION_LANDING_THREAT = 36;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -82,6 +89,8 @@ export const MODE_FLAG_PT_HOLD = 16;
 export const MODE_FLAG_CONVOY_EVENT = 32;
 /** 機関の過熱の出来事の表示中（v0.6.5。ui/pt-line-clock が機関の出来事の通し番号の増えで立てる。段が過熱のままの間だけ） */
 export const MODE_FLAG_ENGINE_EVENT = 64;
+/** 揚陸の出来事の表示中（v0.6.9。ui/pt-line-clock が揚陸の出来事の通し番号の増えで立て、赤い線・13mm・輸送隊の出来事の下で 1 度出るまで待つ。揚陸の無い任務は立たない） */
+export const MODE_FLAG_LANDING_EVENT = 128;
 
 /** 暴風の近く・中で安全速力を超えている（警告。ほかの行の末尾にも付く） */
 export function stormWarning(t: BoatTelemetry): boolean {
@@ -122,6 +131,12 @@ export function engineStatusShown(t: BoatTelemetry): boolean {
   return t.engine.on && t.engine.stage >= ENGINE_FINAL;
 }
 
+/** 輸送船への脅威の行（v0.6.9。モード 36）: 揚陸の任務で決着の前に、見張りの報告（輸送船へ向かう米PT）か輸送船へ走っている雷跡がある */
+export function landingThreatShown(t: BoatTelemetry): boolean {
+  const l = t.landing;
+  return l.enabled && !l.resolved && (l.reportSub > 0 || l.wakes > 0);
+}
+
 /** 大発が岸へ逃げている（大発の任務だけ） */
 export function bargeRunning(t: BoatTelemetry): boolean {
   return t.gunMission && !Number.isNaN(t.bargeEscapeS);
@@ -129,8 +144,8 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
- * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 機関の状態（不調・限界で冷やしている）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 優先順: 魚雷待ち > 燃料切れ > 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 揚陸の出来事（v0.6.9）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
+ * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   if (t.homeWaiting) return MISSION_WAITING;
@@ -151,12 +166,14 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
     if ((t.pt.passing && !t.pt.passTargetLost) || (flags & MODE_FLAG_PT_HOLD) !== 0) return MISSION_PT_PASS;
     if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
     if ((flags & MODE_FLAG_CONVOY_EVENT) !== 0) return MISSION_CONVOY_EVENT; // 大発の沈没・上陸（v0.6.4。沈んだ航過の結果より上）
+    if (t.landing.enabled && (flags & MODE_FLAG_LANDING_EVENT) !== 0) return MISSION_LANDING_EVENT; // 揚陸の出来事（v0.6.9。斉射・被雷・沈没・揚陸完了。揚陸の任務だけ＝旗だけでは出ない）
     if ((flags & MODE_FLAG_ENGINE_EVENT) !== 0) return MISSION_ENGINE_EVENT; // 機関の過熱（v0.6.5。13mm の出来事と同じ 1 回きり。接触の下だと追われている間ずっと出ない）
     if (ptResultShown(t, flags)) return MISSION_PT_CONTACT;
     if (engineFinalFull(t)) return MISSION_ENGINE_FINAL; // 機関の限界で全速の帯（v0.6.5）。冷やしている間・不調は接触の下（札で出る）
     if (ptGunShown(t)) return MISSION_PT_GUN;
-    // ux-4: 輸送隊が決着した後（jp_01 だけ）は、呼びかけ「大発 上陸 k/3 ・ 帰投せよ」が突撃・追撃・離脱の行に勝つ（赤い線・出来事・結果・射撃は上のまま）
-    if (t.pt.detected && t.pt.alive > 0 && !(t.convoy.resolved && call !== 0)) return MISSION_PT_CONTACT;
+    // ux-4: 輸送隊が決着した後（jp_01 だけ）は、呼びかけ「大発 上陸 k/3 ・ 帰投せよ」が突撃・追撃・離脱の行に勝つ（赤い線・出来事・結果・射撃は上のまま）。揚陸の決着の後（jp_04。v0.6.9）も同じ
+    if (t.pt.detected && t.pt.alive > 0 && !((t.convoy.resolved || t.landing.resolved) && call !== 0)) return MISSION_PT_CONTACT;
+    if (landingThreatShown(t)) return MISSION_LANDING_THREAT; // 輸送船への脅威（v0.6.9。報告と接触は同時に無い: 隊が自艇を捉えている間は哨戒の PT がいない）
     if (engineStatusShown(t)) return MISSION_ENGINE_STATUS;
   }
   if (t.escortEnabled && t.escortSunk) return MISSION_ESCORT_LOST;

@@ -1,5 +1,6 @@
 // 速力・速力段・舵の HUD（右下）と上中央の 3 行目（敵影と発見（雨））。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
 // 2 行目は ui/mission-line.ts（v0.4.2 で切り出し）、文と表は ui/hud-lines.ts（v0.4.1 で切り出し）。左上 2 段目の夜明けの時計は ui/dawn-clock.ts（v0.6.2 実機 1 回目）。
+// 右上 2 段目の揚陸の時計は ui/landing-clock.ts（v0.6.9。揚陸の任務だけ作る）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -24,6 +25,7 @@ import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
 import { shipsGoneStatusJa } from './dawn-lines';
 import { DawnClock } from './dawn-clock';
+import { LandingClock } from './landing-clock';
 import { MissionLine } from './mission-line';
 import { patrolStatusLine, patrolStatusOf } from './patrol-lines';
 import { STORM_INSIDE } from '../core/storm';
@@ -42,6 +44,8 @@ export class BoatHud {
   private readonly missionLine: MissionLine;
   /** 左上 2 段目の夜明けの時計（v0.6.2 実機 1 回目） */
   private readonly clock: DawnClock;
+  /** 右上 2 段目の揚陸の時計（v0.6.9。揚陸の任務だけ。ほかの任務は null） */
+  private readonly landingClock: LandingClock | null;
   private readonly statusText: Phaser.GameObjects.Text;
   private readonly barCenterX: number;
   private lastStatus = -1;
@@ -53,7 +57,8 @@ export class BoatHud {
   private lastHeading = -1;
   private lastRudderX = NaN;
 
-  constructor(scene: Phaser.Scene) {
+  /** landing は揚陸の任務（t.landing.enabled。v0.6.9）: 右上の揚陸の時計を作る */
+  constructor(scene: Phaser.Scene, landing = false) {
     // 右下の兵装（v0.6.8。機銃と魚雷が横に 2 つ。config/hud-layout-config）の左に置く（右端 W − 312。v0.6.7 までは右下の魚雷ボタンの左 W − 176）
     const right = SPEED_HUD_RIGHT_X;
     const bottom = GAME_HEIGHT - HUD_MARGIN;
@@ -84,6 +89,7 @@ export class BoatHud {
 
     this.missionLine = new MissionLine(scene);
     this.clock = new DawnClock(scene);
+    this.landingClock = landing ? new LandingClock(scene) : null;
     // 上中央 3 行目: 敵影と発見状態（docs/02 §6.5）
     this.statusText = scene.add
       .text(GAME_WIDTH / 2, HUD_MARGIN + HUD_STATUS_OFFSET_Y, '', hudTextStyle(HUD_FONT_STATUS_PX))
@@ -120,6 +126,7 @@ export class BoatHud {
     }
     this.missionLine.refresh(t, nowMs);
     this.clock.refresh(t);
+    this.landingClock?.refresh(t);
     // 3 行目: 敵影と発見。撃沈後は「駆逐艦を撃沈」、夜明けに退いて狙う艦がいなくなった後（v0.6.2）は「東京急行は北へ去った ・ 狙う艦なし」に固定
     // 夜の哨戒機の任務（v0.6.7。jp_02）は空からの見え方（40 番台。ui/patrol-lines。夜明けの後は空襲の行、空襲の無い OFF は今の行）
     const pst = patrolStatusOf(t.patrol, t.targetStep, t.dawn.reached && t.dawn.strikeEnabled);
@@ -154,6 +161,7 @@ export class BoatHud {
     this.rudderMarker.destroy();
     this.missionLine.destroy();
     this.clock.destroy();
+    this.landingClock?.destroy();
     this.statusText.destroy();
   }
 }

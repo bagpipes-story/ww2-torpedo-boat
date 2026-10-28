@@ -87,7 +87,7 @@ export class HudScene extends Phaser.Scene {
       // ?debug&shiphit=N（v0.4.8）のときだけ「当たり xN」を足す（実機でどちらの当たり判定か分かるように）
       dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s${Number.isFinite(DEBUG_SHIP_HIT_SCALE) ? ` ・ 当たり x${DEBUG_SHIP_HIT_SCALE}` : ''}`,
     });
-    this.boatHud = new BoatHud(this);
+    this.boatHud = new BoatHud(this, this.telemetry.landing.enabled); // 揚陸の任務（v0.6.9）は右上に揚陸の時計
     // 史実モードの印（v0.5.2 実機 1・2 回目）: 左上の FPS の右に黄色で［史実］とだけ。固定文字列なので 1 回だけ描く（§7）
     if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud);
     this.hpBar = new HpBar(this);

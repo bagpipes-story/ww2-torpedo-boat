@@ -11,6 +11,7 @@ import { DAWN_AIR_ENEMY, DAWN_AIR_NONE, DAWN_AIR_OWN, type DawnResult, type Dawn
 import { CALL_DAWN } from '../core/mission-flow';
 import { convoyCallJa, convoyLeftStep, convoyWaitShoreJa, convoyWaiting } from './convoy-lines';
 import { callLabel, withWarnings, type HudLine } from './hud-lines';
+import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa } from './landing-lines';
 import { stormWarning } from './mission-mode';
 
 /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
@@ -85,11 +86,14 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number, co
 /**
  * 呼びかけの行の文（ui/mission-line の MISSION_CALL。v0.6.4 レビュー ux-1 で切り出し。色は mission-line）: 理由の頭（dawnCallLabel）＋「帰投せよ  N m」（homeStep は輪の縁までの 100 m 刻み）。
  * 輸送隊（jp_01）が決着する前の夜明け近しは「夜明け近し 大発の上陸を待て  浜まで N m」（従うと上陸の前に輪で終わり、達成と上陸の点を失った）。
- * 燃料少は決着の前でも「帰投せよ」のまま（漂流すれば達成も帰投の点も失う）。輸送隊の無い任務の文は前と同じ
+ * 燃料少は決着の前でも「帰投せよ」のまま（漂流すれば達成も帰投の点も失う）。輸送隊の無い任務の文は前と同じ。
+ * 揚陸の任務（v0.6.9。jp_04）: 決着は「揚陸完了 ・ 」「輸送船 沈没 ・ 」、決着の前の夜明け近しは「夜明け近し ・ 揚陸を待て あと N 秒」、燃料少は「燃料少 ・ 揚陸まで あと N 秒 ・ 輪に入ると揚陸を見届けられない」（R4。
+ * 輪に入れば揚陸の前に帰投で終わる）。揚陸の無い任務の文は前と同じ
  */
 export function callLineText(t: BoatTelemetry, call: number, homeStep: number): string {
-  const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : '');
+  const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : t.landing.enabled ? landingCallJa(t.landing) : '');
   if (call === CALL_DAWN && convoyWaiting(t.convoy)) return `${head}${convoyWaitShoreJa(convoyLeftStep(t.convoy))}`;
+  if (landingCallWaits(t.landing, call)) return `${head}${landingWaitCallJa(call, landingLeftS(t.landing))}`;
   return `${head}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`;
 }
 
