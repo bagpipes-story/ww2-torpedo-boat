@@ -16,6 +16,7 @@ import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultF
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
+import { refreshLandingTelemetry } from './landing-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
 import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
 import { ptResult, refreshPtTelemetry } from './pt-telemetry';
@@ -118,6 +119,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshArmsTelemetry(t, w); // 兵装（v0.6.8）: 積んでいる魚雷・撃てるか・出来事の文（夜明けの後）
   refreshPtTelemetry(t.pt, w); // 米PT（v0.6.3）: 隊の段階・航過・脅威の PT（矢印・敵影は上の enemy.focus がその PT）
   refreshConvoyTelemetry(t.convoy, w); // 味方の大発の輸送隊（v0.6.4）: 上陸・沈没・浜まで・最寄りの大発
+  refreshLandingTelemetry(t.landing, w); // 停泊して揚陸する味方の輸送船（v0.6.9）: 揚陸・米PT の報告・走っている雷跡・出来事（雷跡は世界の updateFrame が数えた後）
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる

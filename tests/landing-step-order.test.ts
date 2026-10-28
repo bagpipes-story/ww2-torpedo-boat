@@ -60,6 +60,17 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     const o = code('systems/mission-objective.ts');
     expectOrder(o, ['if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;', 'return w.convoy ? convoyObjectiveDone(']);
   });
+  it('テレメトリ（S5b）: 出発時に 1 回（createTelemetry の landing）、毎フレームは Scene の updateFrame（固定ステップと雷跡の数え）の後の refreshTelemetry の中で米PT・輸送隊の後に 1 回', () => {
+    expectOrder(code('scenes/mission-scene.ts'), ['w.updateFrame(realDt);', 'this.refreshTelemetry();']);
+    const v = code('systems/world-visuals.ts');
+    expectOrder(v, ['w.landing?.updateVisuals(realDt);']);
+    const m = code('systems/mission-telemetry.ts');
+    expectOrder(m, ['refreshPtTelemetry(t.pt, w);', 'refreshConvoyTelemetry(t.convoy, w);', 'refreshLandingTelemetry(t.landing, w);', 'w.engine?.writeTelemetry(t.engine);']);
+    expect(m.split('refreshLandingTelemetry(').length).toBe(2);
+    const c = code('systems/telemetry-create.ts');
+    expectOrder(c, ['arms: createArmsTelemetry(),', 'landing: initLandingTelemetry(w),']);
+    expect(c.split('initLandingTelemetry(').length).toBe(2);
+  });
   it('見た目: 敵の魚雷のプールは自艇の w.torpedoes でない（KPI・終わりの待ち・torpedoEventsFor に入らない）。world-visuals は最後に揚陸の絵と破棄', () => {
     const s = code('systems/world-landing.ts');
     for (const bad of ['w.torpedoes', 'torpedoEventsFor', 'w.shots', 'w.hits', 'launcher', 'resolveRemainingAsMisses']) expect(s, bad).not.toContain(bad);

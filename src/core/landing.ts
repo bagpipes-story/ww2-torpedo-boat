@@ -67,6 +67,42 @@ export interface LandingWakes {
   cpaS: number;
 }
 
+/**
+ * HUD に渡す揚陸の状態（v0.6.9 S5b。spec D15・L6。systems/landing-telemetry が毎フレーム中身だけ書く）。揚陸の無い任務も鍵はいつもあり enabled false のまま
+ * （convoy・engine・gunboat・patrol の作法。tests/landing-neutral）。2 行目のモード 35・36 と揚陸の行・右上の揚陸の時計・端の「輸送」「雷撃」の印・▼（S6）が読む
+ */
+export interface LandingTelemetry {
+  enabled: boolean;
+  /** 出撃のときに 1 回: 揚陸の秒・沈むまでの本数・1 斉射の本数・米PT の隻数・今夜の来る方角（「北と東」）・慌てる距離 m（0 は慌てた斉射なし） */
+  unloadS: number; hitsToSink: number; salvoCount: number; total: number; fromDirsJa: string; hurriedM: number;
+  /** 揚陸（LandingState の写し）: LD_*・決着・割合 0〜1（沈んだら沈んだときの割合）・揚陸の残りの体感秒（揚陸中だけ。決着の後は 0）・被雷・不発の命中・揚陸の後に沈んだ・沈み始めた */
+  phase: number; resolved: boolean; pct: number; leftS: number; hits: number; duds: number; sunkAfterDone: boolean; sinking: boolean;
+  /** 米PT: まだ撃てる隻数（斉射が残り・結末なし・去っていない）、撃った斉射の数と本数 */
+  armed: number; salvos: number; fired: number;
+  /** 見張りの報告（landingReport）: LANDING_REPORT_*・その PT（−1 は無し）・輸送船からの 100 m 刻み・輸送船から PT への 8 方位、自艇からその PT へ（m。無ければ NaN）・見えている（視程の内） */
+  reportSub: number; reportI: number; reportStep: number; reportDirIdx: number; reportDx: number; reportDy: number; reportSighted: boolean;
+  /** 走っている敵の雷跡（landingWakes）: 本数・輸送船への最接近までの最短の体感秒（無ければ NaN） */
+  wakes: number; wakeCpaS: number;
+  /** 自艇から輸送船へ（m）とその距離 m（平方根は 1 フレーム 1 回。「輸送 N m」） */
+  shipDx: number; shipDy: number; shipDistM: number;
+  /** 出来事（LandingState の写し: 通し番号・LE_*・PT・斉射の m・本数・そのときの被雷・割合）と、その PT の輸送船からの 8 方位（通し番号が変わったフレームに 1 回。PT の無い出来事は 0） */
+  eventSeq: number; eventKind: number; eventBoat: number; eventM: number; eventCount: number; eventHits: number; eventPct: number; eventDirIdx: number;
+}
+
+export function createLandingTelemetry(): LandingTelemetry {
+  return {
+    enabled: false, unloadS: 0, hitsToSink: 0, salvoCount: 0, total: 0, fromDirsJa: '', hurriedM: 0,
+    phase: LD_UNLOADING, resolved: false, pct: 0, leftS: 0, hits: 0, duds: 0, sunkAfterDone: false, sinking: false, armed: 0, salvos: 0, fired: 0,
+    reportSub: LANDING_REPORT_NONE, reportI: -1, reportStep: 0, reportDirIdx: 0, reportDx: NaN, reportDy: NaN, reportSighted: false, wakes: 0, wakeCpaS: NaN,
+    shipDx: NaN, shipDy: NaN, shipDistM: NaN, eventSeq: 0, eventKind: LE_NONE, eventBoat: -1, eventM: NaN, eventCount: 0, eventHits: 0, eventPct: 0, eventDirIdx: 0,
+  };
+}
+
+/** 輸送船から (x, y) への 8 方位の添字（北 0・時計回り。landingReport の dirIdx と同じ式: (x, y) から輸送船への方位の逆） */
+export function landingDirIdx(st: { readonly x: number; readonly y: number }, x: number, y: number): number {
+  return Math.round(wrapDeg360(bearingDeg(x, y, st.x, st.y) + 180) / 45) % 8;
+}
+
 export function createLandingReport(): LandingReport {
   return { sub: LANDING_REPORT_NONE, i: -1, distStep: 0, dirIdx: 0 };
 }
