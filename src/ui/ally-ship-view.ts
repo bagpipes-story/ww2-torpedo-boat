@@ -2,9 +2,12 @@
 // 浜の揚陸地点の帯の中心（艇首の先が浜の線に届く点）、ラベルと状態の行の y（R14 A6: 船体の上＝北。浜は南で、南の縁に近い船の下の字は画面の外や HUD の下に入った）。entities/ally-ship が使う。Phaser 非依存（tests から読める）・確保しない（鍵は数、文は鍵が変わったときだけ作る）。
 // 鍵 = 種類（0〜5）+ 8 × 値（% か秒。0〜127）+ 1024 × 被雷（0〜3。文に出る「被雷 N」の行だけ）。鍵と文・色は 1 対 1（setText は鍵が変わったときだけ＝文が変わったときだけ）。色は調子（味方・警告・沈没）で返し、色の値は絵の側
 // （ui-config・game-config は DOM を読むので、ここは config/landing-config だけを読む）。
+// S6b（S6a-fix の報告: 南を向いて輸送船のそばにいると船が画面の上に来て、船体の上の字が 2・3 行目とビルド番号に重なった）: 字の置き場所は毎フレーム、上（いつも）→ 上が HUD に重なれば
+// 船体の下 → 下も重なれば出さない（allyShipTextPlace。状態は 2 行目と右上の揚陸の時計にも出ている）。
 import { LANDING_PCT_LABEL_STEP, LANDING_WAKE_S_MAX } from '../config/landing-config';
 import { LD_DONE, type LandingState, type LandingWakes } from '../core/landing';
 import { degToRad } from '../core/units';
+import { boxHitsRects, type ScreenRect } from './landing-markers';
 
 /** 状態の行の種類: 揚陸中（被雷なし）・揚陸中（被雷あり）・雷跡が走っている・揚陸完了・揚陸の前に沈んだ・揚陸の後に沈んだ */
 export const SHIP_ST_PCT = 0;
@@ -62,6 +65,27 @@ export function allyShipStatusTone(key: number): number {
 export function allyShipLabelYs(y: number, halfY: number, offsetM: number, statusDyM: number): { labelY: number; statusY: number } {
   const labelY = y - halfY - offsetM;
   return { labelY, statusY: labelY - statusDyM };
+}
+
+/** ラベルと状態の行を船体の下に置くとき（S6b）の上端の y（どちらも origin (0.5, 0)）: ラベルは外接の箱の下端（y + halfY）から offsetM 下、状態の行はラベルの上端から statusDyM 下（上の置き方の鏡） */
+export function allyShipLabelYsBelow(y: number, halfY: number, offsetM: number, statusDyM: number): { labelY: number; statusY: number } {
+  const labelY = y + halfY + offsetM;
+  return { labelY, statusY: labelY + statusDyM };
+}
+
+/** 字の置き場所: 船体の上・下・出さない */
+export const SHIP_TEXT_ABOVE = 0;
+export const SHIP_TEXT_BELOW = 1;
+export const SHIP_TEXT_HIDDEN = 2;
+
+/**
+ * 字の置き場所（毎フレーム。確保なし）: 上の箱（[x0, x1] × [aTop, aBottom]。論理画面の px）が HUD の矩形に重ならなければ上、重なり下の箱が重ならなければ下、どちらも重なれば出さない。
+ * 今より良い置き場所（上 > 下 > 出さない）へ移るには hyst px 余分の空きを求める（悪い方へは重なったらすぐ。境で行き来しない）
+ */
+export function allyShipTextPlace(prev: number, x0: number, x1: number, aTop: number, aBottom: number, bTop: number, bBottom: number, hud: readonly ScreenRect[], hyst: number): number {
+  if (!boxHitsRects(x0, aTop, x1, aBottom, hud, prev === SHIP_TEXT_ABOVE ? 0 : hyst)) return SHIP_TEXT_ABOVE;
+  if (!boxHitsRects(x0, bTop, x1, bBottom, hud, prev === SHIP_TEXT_HIDDEN ? hyst : 0)) return SHIP_TEXT_BELOW;
+  return SHIP_TEXT_HIDDEN;
 }
 
 /** 揚陸地点の帯の中心の x: 艇首の向きの先が浜の線（shoreY。南の縁）に届く点（艇首が浜を向いていなければ泊地の真南）。海域の幅に収める */

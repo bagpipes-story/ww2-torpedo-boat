@@ -6,10 +6,12 @@
 // 命中: 被雷は Scene の爆発と揺れ（onTorpedoHit。命中スローなし）、不発は小さな爆発、沈没は世界の onSunk（命中スロー＋爆発。大発の撃破と同じ）と沈む tween。
 // 外から去らせた PT の知らせは何もしない（jp_04 は標的スロットが無い＝隊の targets?.onLeave と同じ。PtSquadron の private な events には触らない）。
 // 揚陸の無い任務では buildLanding が null を返す（seed+26 も絵もプールも作らない＝ほかの任務の乱数・絵・順は変わらない）。MissionWorld が最後に作る（兵装の後）。
-// §7: 状態・プール・ハンドル・書き先は組み立てで 1 回。毎ステップ確保しない。毎フレームは雷跡の走査（≤ 9 本）と鍵の比較だけ。
+// S6b: 海の上の ▼「雷撃」（entities/landing-caret）。見張りの報告（core/landing の landingReport。テレメトリと同じ関数・同じ状態）の PT が自艇の視程の外なら、その真上に置く（ui/landing-markers。
+// 上の HUD の帯・技能のボタン・兵装に重なる所は端の印が受け持つ＝出したかを caretShown に書く）。輸送船の字は HUD の矩形（landingHudRects）を避ける（entities/ally-ship）。
+// §7: 状態・プール・ハンドル・書き先は組み立てで 1 回。毎ステップ確保しない。毎フレームは雷跡の走査（≤ 9 本）・報告（隊を 1 回）・鍵の比較と ▼ の位置だけ。
 import type Phaser from 'phaser';
-import type { SeaBounds } from '../core/boat-motion';
-import { createLanding, createLandingWakes, landingResolved, landingWakes, tickLanding, type LandingState, type LandingWakes } from '../core/landing';
+import type { BoatState, SeaBounds } from '../core/boat-motion';
+import { createLanding, createLandingReport, createLandingWakes, landingReport, landingResolved, landingWakes, tickLanding, type LandingReport, type LandingState, type LandingWakes } from '../core/landing';
 import type { LandingParams } from '../core/landing-data';
 import { LandingTorpedoLink } from '../core/landing-torpedoes';
 import type { PtSection } from '../core/pt-boats';
@@ -17,7 +19,14 @@ import { PT_TORPEDO_SEED_OFFSET, createPtTorpedoState, stepPtTorpedoes, type PtT
 import type { PtTorpedoParams } from '../core/pt-torpedo-data';
 import { SeededRng } from '../core/rng';
 import type { TorpedoTarget } from '../core/torpedo-targets';
+import { GAME_HEIGHT, GAME_WIDTH } from '../config/game-config';
+import {
+  HUD_TEXT_GAP, PAUSE_BUTTON_SIZE_SCALE, PAUSE_BUTTON_X, PAUSE_BUTTON_Y, ROUND_BUTTON_RADIUS, RUDDER_BAR_HALF_WIDTH, SPEED_HUD_RIGHT_X, STICK_FIXED_CENTER_X, STICK_FIXED_CENTER_Y, STICK_RADIUS,
+} from '../config/ui-config';
 import { AllyShip } from '../entities/ally-ship';
+import { LandingCaret } from '../entities/landing-caret';
+import { HUD_TOP_BAND_BOTTOM, SPEED_HUD_KEEP_TOP, SPEED_HUD_TOP } from '../ui/hud-markers';
+import { landingCaretRects, landingCaretShown, landingHudRects, type HudRectInputs, type ScreenRect } from '../ui/landing-markers';
 import { TorpedoPool } from './torpedo-pool';
 import type { WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup-types';
@@ -27,6 +36,13 @@ export interface LandingWorldView {
   readonly pts: { readonly section: PtSection } | null;
   readonly dawn: { readonly reached: boolean };
   readonly stepTimeS: number;
+}
+
+/** 毎フレームの絵で世界から読む部分（MissionWorld がそのまま満たす）: 米PT の隊・自艇・視程の二乗（▼ は視程の外の報告の PT だけ） */
+export interface LandingVisualsView {
+  readonly pts: { readonly section: PtSection } | null;
+  readonly boat: { readonly state: BoatState };
+  readonly visRange2: number;
 }
 
 /** 沈み始めた輸送船は的にしない（模擬 core/landing-sim と同じ式。out の船は scanTargets も飛ばすので [ship] でも同じ） */
@@ -41,7 +57,12 @@ export class WorldLanding {
   /** 走っている敵の雷跡の本数と最接近までの秒（毎フレーム。輸送船の「雷跡！ N 秒」） */
   readonly wakes: LandingWakes = createLandingWakes();
   readonly link: LandingTorpedoLink;
+  /** 見張りの報告（▼ の PT。毎フレーム updateVisuals が書く。HUD のテレメトリも同じ関数で同じ値を書く） */
+  readonly report: LandingReport = createLandingReport();
+  /** ▼ が出ている（毎フレーム updateVisuals が書く。テレメトリの caretShown＝出ていれば端の「雷撃 N m」は出さない） */
+  caretShown = false;
   private readonly ship: AllyShip;
+  private readonly caret: LandingCaret;
   private readonly hulls: readonly TorpedoTarget[];
 
   constructor(
@@ -57,10 +78,14 @@ export class WorldLanding {
     private readonly events: WorldEvents,
     /** 輸送船が沈み始めた（世界の命中スローと Scene の爆発。大発の撃破と同じ） */
     private readonly onSunk: (x: number, y: number) => void,
+    /** 輸送船の字が重なってはいけない HUD の矩形と、▼ が重なってはいけない矩形（その一部）（論理 px。buildLanding が 1 回作る。S6b） */
+    hud: readonly ScreenRect[],
+    caretRects: readonly ScreenRect[],
   ) {
     this.state = createLanding(p);
     this.tst = createPtTorpedoState(count, tp.n);
-    this.ship = new AllyShip(scene, p, bounds);
+    this.ship = new AllyShip(scene, p, bounds, hud);
+    this.caret = new LandingCaret(scene, caretRects);
     this.hulls = [this.state];
     this.link = new LandingTorpedoLink(this.state, p, this.tst, pool, { onShipHit: (x, y, dud, sunk) => this.onShipHit(x, y, dud, sunk) });
   }
@@ -84,16 +109,24 @@ export class WorldLanding {
     return landingResolved(this.state);
   }
 
-  /** 毎フレーム: 敵の魚雷の絵と雷跡（TorpedoPool のまま）、走っている雷跡の数え、輸送船の状態の行 */
-  updateVisuals(realDt: number): void {
+  /** 毎フレーム: 敵の魚雷の絵と雷跡（TorpedoPool のまま）、走っている雷跡の数え、輸送船の状態の行、▼「雷撃」（報告の PT が視程の外なら） */
+  updateVisuals(realDt: number, w: LandingVisualsView): void {
     this.pool.updateVisuals(realDt);
     landingWakes(this.pool.states, this.tp.torpedo.speedMps, this.timeScale, this.state, this.wakes);
     this.ship.update(this.state, this.wakes);
+    const q = w.pts?.section;
+    if (!q) return;
+    landingReport(this.state, this.p, q, this.tst, this.report);
+    const b = this.report.i >= 0 ? q.boats[this.report.i]! : null;
+    const me = w.boat.state;
+    const d2 = b ? (b.x - me.x) * (b.x - me.x) + (b.y - me.y) * (b.y - me.y) : 0;
+    this.caretShown = this.caret.update(b !== null && landingCaretShown(this.report.i, d2, w.visRange2), b ? b.x : 0, b ? b.y : 0);
   }
 
   destroy(): void {
     this.pool.destroy();
     this.ship.destroy();
+    this.caret.destroy();
   }
 
   /** 魚雷が輸送船に当たった（LandingTorpedoLink の hooks。固定ステップの中） */
@@ -117,5 +150,12 @@ export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: { readonly
   const count = pts.section.boats.length;
   const pool = new TorpedoPool(scene, ld.torpedo.torpedo, count * ld.torpedo.n, s.mission.bounds);
   const rng = new SeededRng((seed + PT_TORPEDO_SEED_OFFSET) >>> 0);
-  return new WorldLanding(scene, ld.params, ld.torpedo, count, pool, rng, s.mission.bounds, s.timeScale, events, onSunk);
+  // 字が重なってはいけない HUD の矩形（論理 px。S6b）: 輸送船の字は landingHudRects を、▼ はその一部 landingCaretRects（上の帯・兵装・技能のボタン）を避ける。技能の段は ui/weapon-panel と同じ決まり。
+  // 速力の表示は舵の棒の左端・針路の文の上端から（機関の帯のある任務は端の印の避ける角の上端から。端の印の避ける角 W − 624・534 は字 4 つ・3 行ぶん広く、画面の下の真ん中に見える船の字まで消した）
+  const k: HudRectInputs = {
+    W: GAME_WIDTH, H: GAME_HEIGHT, topBandBottom: HUD_TOP_BAND_BOTTOM, has: { smoke: s.smokeParams !== null, identify: s.friendly !== null },
+    pause: { x: PAUSE_BUTTON_X, y: PAUSE_BUTTON_Y, r: ROUND_BUTTON_RADIUS * PAUSE_BUTTON_SIZE_SCALE }, stick: { x: STICK_FIXED_CENTER_X, y: STICK_FIXED_CENTER_Y, r: STICK_RADIUS },
+    speedLeft: SPEED_HUD_RIGHT_X - 2 * RUDDER_BAR_HALF_WIDTH - HUD_TEXT_GAP, speedTop: s.engine ? SPEED_HUD_KEEP_TOP : SPEED_HUD_TOP - HUD_TEXT_GAP,
+  };
+  return new WorldLanding(scene, ld.params, ld.torpedo, count, pool, rng, s.mission.bounds, s.timeScale, events, onSunk, landingHudRects(k), landingCaretRects(k));
 }

@@ -77,7 +77,7 @@ export interface LandingWakes {
 
 /**
  * HUD に渡す揚陸の状態（v0.6.9 S5b。spec D15・L6。systems/landing-telemetry が毎フレーム中身だけ書く）。揚陸の無い任務も鍵はいつもあり enabled false のまま
- * （convoy・engine・gunboat・patrol の作法。tests/landing-neutral）。2 行目のモード 35・36 と揚陸の行・右上の揚陸の時計・端の「輸送」「雷撃」の印・▼（S6）が読む
+ * （convoy・engine・gunboat・patrol の作法。tests/landing-neutral）。2 行目のモード 35・36 と揚陸の行・右上の揚陸の時計・端の「輸送」「雷撃」の印（S6b。ui/landing-markers）が読む
  */
 export interface LandingTelemetry {
   enabled: boolean;
@@ -87,8 +87,12 @@ export interface LandingTelemetry {
   phase: number; resolved: boolean; pct: number; leftS: number; hits: number; duds: number; sunkAfterDone: boolean; sinking: boolean;
   /** 米PT: まだ撃てる隻数（斉射が残り・結末なし・去っていない）、撃った斉射の数と本数 */
   armed: number; salvos: number; fired: number;
-  /** 見張りの報告（landingReport）: LANDING_REPORT_*・その PT（−1 は無し）・輸送船からの 100 m 刻み・輸送船から PT への 8 方位、自艇からその PT へ（m。無ければ NaN）・見えている（視程の内） */
-  reportSub: number; reportI: number; reportStep: number; reportDirIdx: number; reportDx: number; reportDy: number; reportSighted: boolean;
+  /**
+   * 見張りの報告（landingReport）: LANDING_REPORT_*・その PT（−1 は無し）・輸送船からの 100 m 刻み・輸送船から PT への 8 方位、自艇からその PT へ（m。無ければ NaN）・見えている（視程の内）・
+   * 脅威の PT（core/pt-state の hudThreatIndex＝「PT N m」の印と敵影の PT）と同じか（S6b。R8/F12: 視程の内の脅威の PT なら「雷撃 N m」の印は出さない）・
+   * 海の上の ▼「雷撃」が出ている（S6b。systems/world-landing が本当のカメラで決める。出ていれば端の印は出さない）
+   */
+  reportSub: number; reportI: number; reportStep: number; reportDirIdx: number; reportDx: number; reportDy: number; reportSighted: boolean; reportIsThreat: boolean; caretShown: boolean;
   /** 走っている敵の雷跡（landingWakes。輸送船へ近づくものだけ）: 本数・輸送船への最接近までの最短の体感秒（無ければ NaN） */
   wakes: number; wakeCpaS: number;
   /** 輸送船が射線に入る（landingFireLine。R14 A1）: その PT（−1 は無し）、自艇からその PT への 8 方位（北 0）と 100 m 刻みの切り上げ（63 まで。PT が無ければ 0） */
@@ -103,7 +107,7 @@ export function createLandingTelemetry(): LandingTelemetry {
   return {
     enabled: false, unloadS: 0, hitsToSink: 0, salvoCount: 0, total: 0, fromDirsJa: '', hurriedM: 0,
     phase: LD_UNLOADING, resolved: false, pct: 0, leftS: 0, hits: 0, duds: 0, sunkAfterDone: false, sinking: false, armed: 0, salvos: 0, fired: 0,
-    reportSub: LANDING_REPORT_NONE, reportI: -1, reportStep: 0, reportDirIdx: 0, reportDx: NaN, reportDy: NaN, reportSighted: false, wakes: 0, wakeCpaS: NaN,
+    reportSub: LANDING_REPORT_NONE, reportI: -1, reportStep: 0, reportDirIdx: 0, reportDx: NaN, reportDy: NaN, reportSighted: false, reportIsThreat: false, caretShown: false, wakes: 0, wakeCpaS: NaN,
     fireLineI: -1, fireLineDirIdx: 0, fireLineStep: 0,
     shipDx: NaN, shipDy: NaN, shipDistM: NaN, eventSeq: 0, eventKind: LE_NONE, eventBoat: -1, eventM: NaN, eventCount: 0, eventBoats: 0, eventHits: 0, eventPct: 0, eventDirIdx: 0,
   };

@@ -22,7 +22,7 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   w.patrol?.updateVisuals(w.boat.state, w.escort ? w.escort.state.boat : null);
   w.dawn.updateVisuals(w);
   w.arms?.updateVisuals(realDt, w);
-  w.landing?.updateVisuals(realDt); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）
+  w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
 }
 
 /** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順。揚陸（v0.6.9）は最後） */

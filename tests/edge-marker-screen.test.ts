@@ -40,14 +40,16 @@ describe('markerOnScreen（ui/edge-marker-screen）', () => {
       }
     }
   });
-  it('配線: edge-marker は drawn のときだけ画面の内で隠し（既定 true）、hideMargin を渡すのは隼艇の矢印だけ（ほかの矢印は今のまま）', () => {
+  it('配線: edge-marker は drawn のときだけ画面の内で隠し（既定 true）、hideMargin を渡すのは隼艇の矢印と揚陸の 2 本だけ（ほかの矢印は今のまま）', () => {
     const strip = (code: string): string => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     const em = strip(readFileSync('src/ui/edge-marker.ts', 'utf8'));
     expect(em).toContain('refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true): void {');
     expect(em).toContain('if (drawn && markerOnScreen(sx, sy, cx, cy, this.opts.topMargin, TARGET_MARKER_MARGIN, this.opts.hideMargin)) {');
     const hud = strip(readFileSync('src/ui/hud-markers.ts', 'utf8'));
-    expect(hud.match(/hideMargin/g)?.length).toBe(1);
-    expect(hud).toContain('ESCORT_TINT, hideMargin: 0 })');
+    // v0.6.9 S6b: 揚陸の任務（jp_04）の 2 本も渡す（輸送 0・雷撃 TARGET_MARKER_MARGIN。tests/landing-markers）。ほかの任務の矢印は今のまま
+    expect(hud.match(/hideMargin/g)?.length).toBe(3);
+    expect(hud.match(/ESCORT_TINT, hideMargin: 0 \}\)/g)?.length).toBe(2);
+    expect(hud).toContain('color: HUD_COLOR_WARN, hideMargin: TARGET_MARKER_MARGIN })');
     const gb = strip(readFileSync('src/systems/gunboat.ts', 'utf8'));
     expect(gb).toContain('t.inSight = this.shown;');
   });

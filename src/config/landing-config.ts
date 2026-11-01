@@ -33,3 +33,23 @@ export const LANDING_EVENT_SHOW_MS = 3500;
  * 隠れたら、隠れている間は待ち、消えた後にまた LANDING_EVENT_SHOW_MS 出す（前は 1 フレーム出たら出たとみなし、0.2 秒で赤い線に替わられた沈没の行が二度と出なかった）
  */
 export const LANDING_EVENT_MIN_SHOWN_MS = 2000;
+
+// 画面の端の「輸送」「雷撃」の印と海の上の ▼（v0.6.9 S6b。ui/hud-markers・ui/landing-markers・entities/landing-caret。spec-v069 §5.4・D9・R8/F12）
+/** 輸送船の印のラベルの頭（「輸送 9900 m」は 18 px で 112 px＝ほかの印のラベルの幅の上限。「輸送船 9900 m」だと 130 px で入らない）と、報告の PT の印・▼ の字 */
+export const LANDING_SHIP_MARKER_LABEL = '輸送';
+export const LANDING_RUNNER_MARKER_LABEL = '雷撃';
+export const LANDING_CARET_LABEL = '雷撃';
+/**
+ * 2 本の印が近いときのずらし px（ui/landing-markers の separateLandingMarker）: 左右の縁では縦に字 4 行ぶん＋8（下にラベルの矢印を上へずらしても、そのラベルが上の矢印のラベルに重ならない）、
+ * 上下の縁では横にラベルの幅 112 + 8（同じ側のラベルどうしが重ならない）
+ */
+export const LANDING_MARKER_SEP_SIDE_PX = 80;
+export const LANDING_MARKER_SEP_EDGE_PX = 120;
+/** ▼ の中心・「雷撃」の下端の、報告の PT の中心からの上げ（画面の論理 px。世界ではズームで割る＝どのズームでも同じ大きさと間） */
+export const LANDING_CARET_DY_PX = 16;
+export const LANDING_CARET_LABEL_DY_PX = 28;
+/**
+ * 輸送船のラベルと状態の行・▼「雷撃」が HUD に重なるとき（S6b。S6a-fix の報告: 南を向いて輸送船のそばにいると船が画面の上に来て、船体の上の字が 2・3 行目とビルド番号に重なった）:
+ * 置き場所を移るときに求める余分の空き px（上 ↔ 下 ↔ 出さないを境で行き来しない。ui/ally-ship-view の allyShipTextPlace）
+ */
+export const LANDING_TEXT_HYST_PX = 24;

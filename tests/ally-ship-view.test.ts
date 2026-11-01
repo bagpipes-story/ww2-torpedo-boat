@@ -1,5 +1,6 @@
 // v0.6.9 S5a（spec-v069 §5.4・§4.9 V12）: 海の上の味方の輸送船の状態の行（ui/ally-ship-view の鍵・文・色の調子）と揚陸地点の帯の中心、Boot の揚陸の任務の検査（validateLandingMissions）。
 // 鍵が同じなら文と色も同じ（entities/ally-ship は鍵が変わったときだけ setText）。% は 5% 刻み（1 夜に 20 回）、雷跡の秒は切り上げ、沈んだときの % は 1% 刻み。
+// S6b: 字の置き場所（上 → 上が HUD に重なれば下 → 下も重なれば出さない・境で行き来しない）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -7,7 +8,11 @@ import { LANDING_PCT_LABEL_STEP, LANDING_WAKE_S_MAX } from '../src/config/landin
 import { validateLandingMissions } from '../src/config/landing-mission-data';
 import { createLanding, createLandingWakes, hitLanding, tickLanding } from '../src/core/landing';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { SHIP_TONE_FRIENDLY, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, landingMarkX } from '../src/ui/ally-ship-view';
+import {
+  SHIP_TEXT_ABOVE, SHIP_TEXT_BELOW, SHIP_TEXT_HIDDEN, SHIP_TONE_FRIENDLY, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipLabelYsBelow, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, allyShipTextPlace, landingMarkX,
+} from '../src/ui/ally-ship-view';
+import { landingHudRects } from '../src/ui/landing-markers';
+import { RUDDER_HALF, speedHudRightX } from '../src/config/hud-layout-config';
 
 const S = buildWorldSetup(gameData, 'jp_04', {});
 const P = S.landing!.params;
@@ -110,11 +115,61 @@ describe('ラベルと状態の行は船体の上（R14 A6: 浜は南。泊地�
     expect(ys.statusY).toBeLessThan(ys.labelY);
     expect(ys.labelY).toBeLessThan(P.y - 40);
   });
-  it('entities/ally-ship は allyShipLabelYs で置き、origin の y は 1（下端）', () => {
+  it('entities/ally-ship は allyShipLabelYs で置き、origin の y は 1（下端）。S6b: 上が HUD に重なるときだけ allyShipLabelYsBelow（origin の y 0）へ、下も重なれば出さない', () => {
     const src = readFileSync(new URL('../src/entities/ally-ship.ts', import.meta.url), 'utf8');
     expect(src).toContain('allyShipLabelYs(p.y, halfY, ESCORT_LABEL_OFFSET_M, LANDING_STATUS_DY_M)');
+    expect(src).toContain('allyShipLabelYsBelow(p.y, halfY, ESCORT_LABEL_OFFSET_M, LANDING_STATUS_DY_M)');
     expect(src.match(/\.setOrigin\(0\.5, 1\)/g)?.length).toBe(2);
     expect(src).not.toContain('p.y + halfY');
+    // 毎フレームは箱を写して比べるだけ（確保・setText なし）。置き場所が変わったときだけ動かす
+    const place = src.slice(src.indexOf('private placeText(): void {'), src.indexOf('/** 沈み始めた'));
+    expect(place.length).toBeGreaterThan(100);
+    for (const bad of ['new ', 'setText', 'scene.add', '`']) expect(place, bad).not.toContain(bad);
+    expect(place).toContain('if (at === this.place) return;');
+    expect(place).toContain('this.hud, LANDING_TEXT_HYST_PX,');
+  });
+});
+
+describe('字が HUD に重なるとき（S6b。S6a-fix の報告: 南を向いて輸送船のそばにいると船が画面の上に来て、字が 2・3 行目とビルド番号に重なった）', () => {
+  it('下に置くときは上の置き方の鏡: ラベルの上端は外接の箱の下端から offset 下、状態の行の上端はその statusDy 下', () => {
+    expect(allyShipLabelYsBelow(P.y, 40, 8, 26)).toEqual({ labelY: P.y + 48, statusY: P.y + 74 });
+  });
+  const HUD = landingHudRects({ W: 1560, H: 720, topBandBottom: 170, has: { smoke: false, identify: false }, pause: { x: 60, y: 270, r: 36 }, stick: { x: 174, y: 546, r: 110 }, speedLeft: speedHudRightX(1560) - 2 * RUDDER_HALF - 8, speedTop: 580 });
+  /** 船の中心の論理画面の y（ズーム z、外接の箱の半分 halfY m、字の高さ 24 px）から上・下の箱を作って置き場所を決める */
+  const placeAt = (prev: number, sx: number, sy: number, z = 0.75, halfY = 40, hyst = 24): number => {
+    const a = allyShipLabelYs(sy / z, halfY, 18, 26);
+    const b = allyShipLabelYsBelow(sy / z, halfY, 18, 26);
+    return allyShipTextPlace(prev, sx - 60, sx + 60, (a.statusY - 24) * z, a.labelY * z, b.labelY * z, (b.statusY + 24) * z, HUD, hyst);
+  };
+  it('海の真ん中は上、画面の上（S6a-fix の near-1: 船の中心 y ≈ 128）は下、船体が上の帯に入るほど上は出さない、右端の見張りのボタンの上と下は出さない', () => {
+    expect(placeAt(SHIP_TEXT_ABOVE, 700, 400)).toBe(SHIP_TEXT_ABOVE);
+    expect(placeAt(SHIP_TEXT_ABOVE, 1000, 128)).toBe(SHIP_TEXT_BELOW);
+    expect(placeAt(SHIP_TEXT_ABOVE, 1000, 20)).toBe(SHIP_TEXT_HIDDEN); // 下の字も帯に入る（上の字は画面の上の外でも「重なる」）
+    expect(placeAt(SHIP_TEXT_ABOVE, 1500, 300, 0.75, 20)).toBe(SHIP_TEXT_HIDDEN); // 上は消火、下は見張りのボタン
+    expect(placeAt(SHIP_TEXT_ABOVE, 1500, 380, 0.75, 20)).toBe(SHIP_TEXT_BELOW); // 下は空いた識別の段（jp_04 には無い）
+    expect(placeAt(SHIP_TEXT_ABOVE, 700, 760)).toBe(SHIP_TEXT_ABOVE); // 画面の下の外（見えない）は上のまま
+    expect(placeAt(SHIP_TEXT_ABOVE, 200, 500)).toBe(SHIP_TEXT_HIDDEN); // スティックの台座
+    expect(placeAt(SHIP_TEXT_ABOVE, 905, 700)).toBe(SHIP_TEXT_ABOVE); // 画面の下の真ん中（速力の表示の左。late-1 の t 48 は端の印の避ける角 W − 624 で消えていた）
+    expect(placeAt(SHIP_TEXT_ABOVE, 1000, 650)).toBe(SHIP_TEXT_HIDDEN); // 速力の表示の上（上の字の下端 606・下の字の上端 694 がどちらも 580〜720 に入る）
+    expect(placeAt(SHIP_TEXT_ABOVE, 1000, 620)).toBe(SHIP_TEXT_ABOVE); // 上の字の下端 576 は針路の文（588〜）の上 8 px より上
+  });
+  it('境で行き来しない: 良い方（上 > 下 > 出さない）へ移るのは hyst px 余分に空いてから、悪い方へは重なったらすぐ', () => {
+    // 上の箱の上端 = y − (40 + 18 + 26 + 24) × 0.75 = y − 81 → 帯の下端 170 に触れない最小の y は 251、余分 24 px なら 275
+    expect(placeAt(SHIP_TEXT_ABOVE, 700, 251)).toBe(SHIP_TEXT_ABOVE);
+    expect(placeAt(SHIP_TEXT_ABOVE, 700, 250)).toBe(SHIP_TEXT_BELOW);
+    expect(placeAt(SHIP_TEXT_BELOW, 700, 251)).toBe(SHIP_TEXT_BELOW);
+    expect(placeAt(SHIP_TEXT_BELOW, 700, 274)).toBe(SHIP_TEXT_BELOW);
+    expect(placeAt(SHIP_TEXT_BELOW, 700, 275)).toBe(SHIP_TEXT_ABOVE);
+    // 下の箱の上端 = y + (40 + 18) × 0.75 = y + 43.5 → 帯に触れない最小の y は 126.5、出さないからは 150.5
+    expect(placeAt(SHIP_TEXT_BELOW, 700, 127)).toBe(SHIP_TEXT_BELOW);
+    expect(placeAt(SHIP_TEXT_BELOW, 700, 126)).toBe(SHIP_TEXT_HIDDEN);
+    expect(placeAt(SHIP_TEXT_HIDDEN, 700, 150)).toBe(SHIP_TEXT_HIDDEN);
+    expect(placeAt(SHIP_TEXT_HIDDEN, 700, 151)).toBe(SHIP_TEXT_BELOW);
+    expect(placeAt(SHIP_TEXT_HIDDEN, 1500, 300, 0.75, 20)).toBe(SHIP_TEXT_HIDDEN);
+    for (let y = -200; y <= 900; y += 7) for (const prev of [SHIP_TEXT_ABOVE, SHIP_TEXT_BELOW, SHIP_TEXT_HIDDEN]) {
+      const at = placeAt(prev, 700, y);
+      expect(placeAt(at, 700, y), `${prev} ${y}`).toBe(at); // 同じ画面なら次のフレームも同じ
+    }
   });
 });
 
