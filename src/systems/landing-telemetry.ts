@@ -6,12 +6,17 @@
 // 報告の PT が脅威の PT（core の hudThreatIndex。「PT N m」の印）か（S6b。R8/F12。ui/landing-markers が「雷撃 N m」を隠す）と、海の上の ▼ が出ているか（世界が決めた値を写すだけ）。
 // 平方根は報告の距離の 1 回・輸送船までの 1 回・射線の PT までの 1 回（いるときだけ）、atan2 は報告と射線の候補・射線の PT・出来事が変わったフレームの 1 回だけ。
 // 世界は構造の型 LandingTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
+// S7: Result の材料 landingResultPart（終了時に 1 回。convoy-telemetry の convoyResult・patrol-telemetry の patrolResult と同じ形。構造の型 LandingResultWorld で読む）。
 import type { BoatState } from '../core/boat-motion';
 import {
   createLandingReport, createLandingTelemetry, LANDING_DIST_STEP_M, LANDING_FIRE_LINE_EXTRA_M, landingDirIdx, landingFireLine, landingReport, landingResolved, LD_UNLOADING, type LandingState, type LandingTelemetry, type LandingWakes,
 } from '../core/landing';
 import type { LandingParams } from '../core/landing-data';
+import type { MissionEndReason } from '../core/mission-flow';
 import { PT_FATE_NONE, PT_LEAVE, hudThreatIndex, type PtSection } from '../core/pt-boats';
+import { ptTorpedoOutcome } from '../core/pt-torpedo';
+import { landingEndKind } from '../ui/landing-result';
+import type { LandingResult } from '../ui/result-types';
 
 /** テレメトリが読む世界の部分 */
 export interface LandingTelemetryWorld {
@@ -115,4 +120,37 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.eventPct = st.eventPct;
   const e = st.eventBoat >= 0 ? q.boats[st.eventBoat] : undefined;
   t.eventDirIdx = e ? landingDirIdx(st, e.x, e.y) : 0;
+}
+
+/** Result の材料が読む世界の部分（MissionWorld がそのまま満たす）: 揚陸の状態・雷撃の状態（PtTorpedoState の Result が読む欄）・PT ごとの方角と、米PT の隊（結末の phase・fate） */
+export interface LandingResultWorld {
+  readonly landing: {
+    readonly state: LandingState;
+    readonly tst: Parameters<typeof ptTorpedoOutcome>[0];
+    readonly p: { readonly runDirJa: readonly string[] };
+  } | null;
+  readonly pts: { readonly section: PtSection } | null;
+}
+
+/**
+ * 終了時に 1 回だけ: MissionResult.landing（v0.6.9 S7。ui/landing-result の 3 行・状況の行の頭・揚陸 300 点）: 揚陸の段階と %・被雷と不発、決着の前に終わった終わり方、
+ * PT ごと（線の順）の方角・雷撃の結末（core/pt-torpedo の ptTorpedoOutcome）・斉射の距離・命中・不発・走っていた本数と撃った本数の和。揚陸の無い任務は {}（landing の鍵ごと無い）
+ */
+export function landingResultPart(w: LandingResultWorld, reason: MissionEndReason): { landing?: LandingResult } {
+  const ld = w.landing;
+  const q = w.pts ? w.pts.section : null;
+  if (!ld || !q) return {};
+  const st = ld.state;
+  const t = ld.tst;
+  const n = q.boats.length;
+  const outcome: number[] = [];
+  for (let i = 0; i < n; i++) outcome.push(ptTorpedoOutcome(t, q, i));
+  return {
+    landing: {
+      phase: st.phase, pct: st.pct, pctAtSink: st.pctAtSink, hits: st.hits, duds: st.duds, sunkAfterDone: st.sunkAfterDone,
+      endKind: landingEndKind(landingResolved(st), reason),
+      dirJa: ld.p.runDirJa.slice(0, n), outcome, launchM: Array.from(t.launchM), salvoHits: Array.from(t.salvoHits), salvoDuds: Array.from(t.salvoDuds), salvoLeft: Array.from(t.salvoLeft),
+      fired: t.fired, hurriedFired: t.hurriedFired, engagedFired: t.engagedFired,
+    },
+  };
 }

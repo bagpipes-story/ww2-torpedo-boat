@@ -220,8 +220,11 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
 
   it('§7: 毎フレームの refreshLandingTelemetry は確保しない（new・配列の写し・文字の組み立て・関数の生成が無い）', () => {
     const s = readFileSync(new URL('../src/systems/landing-telemetry.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-    const fn = s.slice(s.indexOf('export function refreshLandingTelemetry'));
+    const rest = s.slice(s.indexOf('export function refreshLandingTelemetry'));
+    const end = rest.indexOf('\nexport ', 1); // 後ろの Result の材料（S7 の landingResultPart。終了時に 1 回だけ＝確保してよい）は含めない
+    const fn = end > 0 ? rest.slice(0, end) : rest;
     expect(fn.length).toBeGreaterThan(100);
+    expect(rest.slice(end)).toMatch(/^\nexport interface LandingResultWorld/);
     for (const bad of [/\bnew\s/, /\.(map|filter|slice|concat)\(/, /`/, /=>/, /\[\s*\]/, /\{\s*\}/]) expect(fn, String(bad)).not.toMatch(bad);
   });
 });

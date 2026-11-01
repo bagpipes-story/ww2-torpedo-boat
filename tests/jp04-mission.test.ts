@@ -70,9 +70,9 @@ describe('jp_04 の遊べる世界の data（v0_1_prototype。spec §3.2・R1）
     expect((P['hard'] as Rec)['extra_pt_legs_m']).toEqual([[5150, 550, 3450, 2300]]);
     expect(Object.keys(P)).toEqual(['enemies', 'enemy_behavior', 'main_weapon', 'main_weapon_source', 'duration_s', 'duration_s_source', 'fuel_allotment_gal', 'fuel_allotment_gal_source', 'shallows', 'bounds_m', 'player_start', 'return_point', 'pt_boats', 'landing', 'coast', 'night', 'hazards', 'hazards_source', 'dawn_strike', 'hard']);
     expect(hasHardVariant(gameData, 'jp_04')).toBe(true);
-    // まだ遊べない（playable_from は S7）: Title・Briefing・snapshot は変わらない
-    expect(M['playable_from']).toBeUndefined();
-    expect(playableMissionIds(gameData, 'jp_hard')).not.toContain('jp_04');
+    // v0.6.9 S7 から遊べる（Title の日本のタブ・order 4）
+    expect(M['playable_from']).toBe('v0.6.9');
+    expect(playableMissionIds(gameData, 'jp_hard')).toContain('jp_04');
   });
   it('source: どの block も design (v0.6.9 か historical（抜粋）を持つ。出発点の source は R1 の理由と V13 の数・前の出発点の F1。慌てた斉射は R2 の規則（見つけた PT だけでなく）', () => {
     for (const k of ['main_weapon_source', 'duration_s_source', 'fuel_allotment_gal_source', 'hazards_source', 'enemy_behavior']) expect(String(P[k]), k).toMatch(/v0\.6\.9/);

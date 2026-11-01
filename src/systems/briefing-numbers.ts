@@ -1,5 +1,5 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
-import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, patrolAirDetectJa, patrolWeaponBriefingJa, ptGunBriefingJa, type BriefingNumbers } from '../core/briefing';
+import { NO_WEAPON_BRIEFING_JA, bearingJa, compassJa, landingBriefingJa, patrolAirDetectJa, patrolWeaponBriefingJa, ptGunBriefingJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
 import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
@@ -18,8 +18,10 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(s.patrolAir ? { weaponJa: patrolWeaponBriefingJa(s.patrolAir.gate.quietKt), airDetectJa: patrolAirDetectJa(s.patrolAir.gate.wakeDetectM, s.patrolAir.gate.nearM) } : {}),
     // もう一つの兵装の一言（v0.6.8。魚雷と機銃は全任務で両方使える）: 艦の任務は「機銃は艦に効かない」、大発の任務は「魚雷は大発の下を抜ける」。WorldSetup だけから（ui/arms-lines）。無い任務は鍵ごと省く
     ...secondaryPart(s),
-    // 輸送隊の任務（v0.6.4 レビュー ux-6。jp_01）は帰投地点の方角を自艇の出発点から（中心からの「南東」は出発点からは東・上陸の先頭からは北東だった）。他の任務は鍵ごと省く
-    ...(s.convoy ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {}),
+    // 輸送隊の任務（v0.6.4 レビュー ux-6。jp_01）と揚陸の任務（v0.6.9。jp_04。spec R8/F10）は帰投地点の方角を自艇の出発点から（中心からの「南東」は出発点からは東・上陸の先頭からは北東だった）。他の任務は鍵ごと省く
+    ...(s.convoy || s.landing ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {}),
+    // 停泊して揚陸する輸送船の任務（v0.6.9。jp_04）: 条件の最後の句（帰投の輪で待てる・揚陸の秒・沈むまでの本数・教え「輸送船から離れて戦え」・米PT の魚雷は自艇の下を抜ける）。他の任務は鍵ごと省く
+    ...(s.landing ? { landingJa: landingBriefingJa(s.landing.params.unloadS, s.landing.params.hitsToSink) } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
@@ -43,11 +45,12 @@ function secondaryPart(s: WorldSetup): { secondaryJa?: string } {
 }
 
 /**
- * 敵の来る方角（8 方位）: 海域の中心から見た敵の出発点（v0.4.6）。米PT（v0.6.3 レビュー）は自艇の出発点から見た 1 隻目の PT の出発点
+ * 敵の来る方角（8 方位）: 海域の中心から見た敵の出発点（v0.4.6）。米PT（v0.6.3 レビュー）は自艇の出発点から見た 1 隻目の PT の出発点、揚陸の任務（v0.6.9）は泊地から見た全隻の方角
  * （帰り道を東西に横切る線を哨戒するので、中心から見た「東から」は線のどちら寄りかでしかなく、出発点からは南にいた）
  */
 function enemyFromJa(s: WorldSetup): string {
   if (s.patrolAir) return bearingJa(s.patrolAir.gate.fromBearingDeg); // 夜の哨戒機（v0.6.7）: 最初の捜索（レーダー）の来る方角
+  if (s.landing) return s.landing.params.fromDirsJa; // 揚陸の任務（v0.6.9。jp_04）: 泊地から見た今夜の PT の出発点（線の順。「北と東」「北・東・北東」。2 行目の平常の行と同じ）
   const e = s.enemyFrom;
   if (!e) return '';
   if (s.ptBoats) return bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, e.x, e.y));

@@ -16,9 +16,15 @@ const subsetOf = (got: readonly string[], allowed: readonly string[]): void => {
 };
 
 describe('米PT の雷撃（core/pt-torpedo）を使う所', () => {
-  it('core/pt-torpedo を import するのは systems/world-landing と core/landing-sim だけ（今は無い。S3・S5 で足す）', () => {
+  it('core/pt-torpedo を import するのは systems/world-landing と core/landing-sim だけ（雷撃を回す所）。Result の 2 つ（S7）は結末の番号（OUT_*）と ptTorpedoOutcome だけを読む', () => {
+    const re = /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s+['"][./]*(?:core\/)?pt-torpedo['"]/;
     const got = using(/from\s+['"][./]*(?:core\/)?pt-torpedo['"]/);
-    subsetOf(got, ['systems/world-landing.ts', 'core/landing-sim.ts']);
+    const RESULT_READERS = ['systems/landing-telemetry.ts', 'ui/landing-result.ts'];
+    subsetOf(got, ['systems/world-landing.ts', 'core/landing-sim.ts', ...RESULT_READERS]);
+    for (const f of RESULT_READERS.filter((x) => got.includes(x))) {
+      const names = re.exec(code(f))![1]!.split(',').map((x) => x.trim()).filter((x) => x.length > 0);
+      for (const n of names) expect(/^OUT_[A-Z_]+$/.test(n) || n === 'ptTorpedoOutcome', `${f}: ${n}`).toBe(true);
+    }
   });
   it('PT_TORPEDO_SEED_OFFSET を使うのは core/pt-torpedo・systems/world-landing・core/landing-sim だけ', () => {
     const got = using(/\bPT_TORPEDO_SEED_OFFSET\b/);
