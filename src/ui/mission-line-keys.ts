@@ -6,7 +6,7 @@
 import type { BoatTelemetry } from '../core/boat-motion';
 import { convoyKey, convoyWaiting } from './convoy-lines';
 import { engineKey, engineTagKey } from './engine-lines';
-import { landingEventKey, landingKey } from './landing-lines';
+import { landingEventKey, landingKey, type LandingEventView } from './landing-lines';
 import { planeKeyOf, planeModeOf } from './mission-line-air';
 import { MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS } from './mission-mode';
 import { ptKey } from './pt-lines';
@@ -36,8 +36,11 @@ export function createLineKeys(): LineKeys {
   return { ptMode: false, pKey: 0, cKey: 0, engineMode: false, eKey: 0, eTag: 0, planeMode: false, planeKey: 0, lKey: 0, leKey: 0 };
 }
 
-/** そのフレームの 4 つのキーを out に書いて返す。lastPtKey は前回組み直したときの米PT のキー、merge・convoyEvent は pt-line-clock の同じ名の値 */
-export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, flags: number, lastPtKey: number, merge: number, convoyEvent: number): LineKeys {
+/**
+ * そのフレームの 4 つのキーを out に書いて返す。lastPtKey は前回組み直したときの米PT のキー、merge・convoyEvent・landingEv は pt-line-clock の同じ名の値
+ * （landingEv は 2 行目に出す揚陸の出来事の写し。省けばテレメトリの最後の出来事）
+ */
+export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, flags: number, lastPtKey: number, merge: number, convoyEvent: number, landingEv: LandingEventView = t.landing): LineKeys {
   const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
   out.ptMode = ptMode;
   out.pKey = ptMode ? ptKey(t, mode, flags, lastPtKey, merge) : 0;
@@ -51,6 +54,6 @@ export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, f
   out.planeMode = planeMode;
   out.planeKey = planeKeyOf(t, planeMode);
   out.lKey = landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0
-  out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(t.landing) : 0;
+  out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(landingEv) : 0;
   return out;
 }

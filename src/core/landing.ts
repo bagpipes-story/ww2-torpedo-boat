@@ -88,14 +88,14 @@ export interface LandingTelemetry {
   /** 米PT: まだ撃てる隻数（斉射が残り・結末なし・去っていない）、撃った斉射の数と本数 */
   armed: number; salvos: number; fired: number;
   /**
-   * 見張りの報告（landingReport）: LANDING_REPORT_*・その PT（−1 は無し）・輸送船からの 100 m 刻み・輸送船から PT への 8 方位、自艇からその PT へ（m。無ければ NaN）・見えている（視程の内）・
-   * 脅威の PT（core/pt-state の hudThreatIndex＝「PT N m」の印と敵影の PT）と同じか（S6b。R8/F12: 視程の内の脅威の PT なら「雷撃 N m」の印は出さない）・
-   * 海の上の ▼「雷撃」が出ている（S6b。systems/world-landing が本当のカメラで決める。出ていれば端の印は出さない）
+   * 見張りの報告（landingReport）: LANDING_REPORT_*・その PT（−1 は無し）・輸送船からの 100 m 刻み・輸送船から PT への 8 方位、「雷撃 N m」の印の PT（輸送船を狙う戦う PT＝fireLineI が
+   * あればそれ、無ければ報告の PT。S8 のレビュー game-1）へ自艇から（m。無ければ NaN）・見えている（視程の内）・脅威の PT（core/pt-state の hudThreatIndex＝「PT N m」の印と敵影の PT）と同じか
+   * （S6b。R8/F12: 視程の内の脅威の PT なら「雷撃 N m」の印は出さない）・報告の PT の海の上の ▼「雷撃」が出ている（S6b。systems/world-landing が本当のカメラで決める）
    */
   reportSub: number; reportI: number; reportStep: number; reportDirIdx: number; reportDx: number; reportDy: number; reportSighted: boolean; reportIsThreat: boolean; caretShown: boolean;
   /** 走っている敵の雷跡（landingWakes。輸送船へ近づくものだけ）: 本数・輸送船への最接近までの最短の体感秒（無ければ NaN） */
   wakes: number; wakeCpaS: number;
-  /** 輸送船が射線に入る（landingFireLine。R14 A1）: その PT（−1 は無し）、自艇からその PT への 8 方位（北 0）と 100 m 刻みの切り上げ（63 まで。PT が無ければ 0） */
+  /** 輸送船が射線に入る（landingFireLine。R14 A1）: その PT（−1 は無し）、輸送船からその PT への 8 方位（北 0）と 100 m 刻みの切り上げ（63 まで。PT が無ければ 0。S8 のレビュー game-1 で自艇からを輸送船からに） */
   fireLineI: number; fireLineDirIdx: number; fireLineStep: number;
   /** 自艇から輸送船へ（m）とその距離 m（平方根は 1 フレーム 1 回。「輸送 N m」） */
   shipDx: number; shipDy: number; shipDistM: number;
@@ -186,9 +186,10 @@ export function landingResolved(st: LandingState): boolean {
 
 /**
  * 見張りの報告（HUD の「米PT 雷撃に来る！」・模擬の方針）: 決着していなければ、哨戒中で斉射が残り（left[i] 1）、輸送船から lookout_m の内で輸送船へ向かう
- * （艇首と輸送船への方位の差 ≤ LANDING_REPORT_TOWARD_DEG）PT のうち最も近い 1 隻。遠い・近いは慌てる距離（hurried2。0 なら慌てた斉射なしでいつも遠い）。報告が無ければ sub 0・i −1
+ * （艇首と輸送船への方位の差 ≤ LANDING_REPORT_TOWARD_DEG）PT のうち最も近い 1 隻。遠い・近いは慌てる距離（hurried2。0 なら慌てた斉射なしでいつも遠い）。報告が無ければ sub 0・i −1。
+ * 見失いの後の待ち（holdS[i] > 0。D8: 気づかれていない・慌てた斉射を撃たない）の PT は慌てる距離の内でも遠い（S8 のレビュー game-6: 前は「寄れば慌てて撃つ」と言い、寄ると戦いながらの斉射だった）
  */
-export function landingReport(st: LandingState, p: LandingParams, q: PtSection, tst: { readonly left: Uint8Array }, out: LandingReport): void {
+export function landingReport(st: LandingState, p: LandingParams, q: PtSection, tst: { readonly left: Uint8Array; readonly holdS: Float64Array }, out: LandingReport): void {
   out.sub = LANDING_REPORT_NONE;
   out.i = -1;
   out.distStep = 0;
@@ -196,6 +197,7 @@ export function landingReport(st: LandingState, p: LandingParams, q: PtSection, 
   if (landingResolved(st)) return;
   let best2 = Infinity;
   let bestBrg = 0;
+  let held = false;
   for (let i = 0; i < q.boats.length; i++) {
     const b = q.boats[i]!;
     if (b.phase !== PT_PATROL || tst.left[i] !== 1) continue;
@@ -208,9 +210,10 @@ export function landingReport(st: LandingState, p: LandingParams, q: PtSection, 
     best2 = d2;
     bestBrg = brg;
     out.i = i;
+    held = tst.holdS[i]! > 0;
   }
   if (out.i < 0) return;
-  out.sub = p.hurried2 > 0 && best2 <= p.hurried2 ? LANDING_REPORT_NEAR : LANDING_REPORT_FAR;
+  out.sub = p.hurried2 > 0 && best2 <= p.hurried2 && !held ? LANDING_REPORT_NEAR : LANDING_REPORT_FAR;
   out.distStep = Math.ceil(Math.sqrt(best2) / LANDING_DIST_STEP_M);
   out.dirIdx = Math.round(wrapDeg360(bestBrg + 180) / 45) % 8; // 輸送船から PT（PT から輸送船の逆）
 }

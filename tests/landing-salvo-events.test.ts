@@ -3,13 +3,15 @@
 // R2 の慌てた斉射は隊が捉えたステップに哨戒の PT がみな撃つ（監査 A3: lure_late の夜は 2 隻が同じステップ）。知らせの前の印はプールと同じ（命中・通り過ぎは resolved）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { createLanding, LE_CALM, LE_DUD, LE_ENGAGED, LE_HURRIED, LE_MISS, type LandingState } from '../src/core/landing';
+import { createLanding, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, type LandingState } from '../src/core/landing';
 import { LandingTorpedoLink, LandingTorpedoPool } from '../src/core/landing-torpedoes';
 import { PT_ALERT, PT_PATROL } from '../src/core/pt-boats';
 import { PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, createPtTorpedoState, stepPtTorpedoes } from '../src/core/pt-torpedo';
 import { SeededRng } from '../src/core/rng';
 import type { TorpedoState } from '../src/core/torpedo';
+import { landingEventLine } from '../src/ui/landing-lines';
 import { FEEL_DT, LP, P, TP, bench, place } from './landing-kit';
+import { L0 } from './landing-ui-kit';
 
 const MK = TP.torpedo;
 const BOUNDS = P.bounds;
@@ -81,6 +83,20 @@ describe('R14 A3: 同じステップの斉射は 1 つの出来事・ほかの�
     expect(c.ld.eventKind).toBe(LE_DUD); // 不発の命中の出来事のまま（斉射の終わりの「不発」は 2 本目の斉射が走るので出さない）
     for (let k = 3; k < 6; k++) c.link.onMiss(settled(c.pool.states[k]!));
     expect([c.ld.eventKind, c.ld.eventBoat]).toEqual([LE_MISS, 1]);
+  });
+  it('S8 のレビュー code-1: 斉射 A が当てて A の残りが決着した後に斉射 B が外れきっても「輸送船は無事」と言わない（「雷跡 それた ・ 被雷 1 のまま」）', () => {
+    const b = twoSalvos();
+    salvo(b, 0, PT_SALVO_CALM, 900);
+    salvo(b, 1, PT_SALVO_CALM, 900);
+    b.link.onHit(0, 0, 0, settled(b.pool.states[0]!));
+    b.link.onMiss(settled(b.pool.states[1]!));
+    b.link.onMiss(settled(b.pool.states[2]!));
+    expect([b.ld.eventKind, b.ld.hits]).toEqual([LE_HIT, 1]);
+    for (let k = 3; k < 6; k++) b.link.onMiss(settled(b.pool.states[k]!));
+    expect([b.ld.eventKind, b.ld.eventBoat, b.ld.eventHits]).toEqual([LE_MISS, 1, 1]);
+    const t = { ...L0, eventKind: b.ld.eventKind, eventHits: b.ld.eventHits, eventPct: b.ld.eventPct };
+    expect(landingEventLine(t).text).toBe('雷跡 それた ・ 被雷 1 のまま');
+    expect(landingEventLine(t).text).not.toContain('輸送船は無事');
   });
   it('通し: 隊が自艇を捉えたステップに哨戒の 2 隻が慌てて撃つ（R2）→ 出来事は 1 つ「2 隻・6 本」（pt-torpedo の salvo の順のまま）', () => {
     const b = bench();

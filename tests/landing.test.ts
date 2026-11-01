@@ -144,6 +144,19 @@ describe('見張りの報告（landingReport）', () => {
     // 向かう角の境目（90° は報告する）
     expect(none((b) => place(b, 0, 1200, 0, LANDING_REPORT_TOWARD_DEG - 0.01, PT_PATROL))).toEqual([LANDING_REPORT_NEAR, 0]);
   });
+  it('S8 のレビュー game-6: 見失いの後の待ち（holdS > 0。気づかれていない・慌てた斉射を撃たない）の PT は慌てる距離の内でも遠い（「寄れば慌てて撃つ」と言わない）', () => {
+    const b = bench();
+    const r = createLandingReport();
+    place(b, 1, 1100, 90, 0, PT_PATROL);
+    landingReport(b.ld, LP, b.q, b.st, r);
+    expect([r.sub, r.i]).toEqual([LANDING_REPORT_NEAR, 1]);
+    b.st.holdS[1] = 4.2;
+    landingReport(b.ld, LP, b.q, b.st, r);
+    expect([r.sub, r.i, r.distStep]).toEqual([LANDING_REPORT_FAR, 1, 11]);
+    b.st.holdS[1] = 0;
+    landingReport(b.ld, LP, b.q, b.st, r);
+    expect(r.sub).toBe(LANDING_REPORT_NEAR);
+  });
   it('慌てた斉射なし（hurried_max_m 0）ならいつも遠い', () => {
     const b = bench();
     const r = createLandingReport();

@@ -9,11 +9,12 @@ import { DAWN_AIR_ENEMY, createDawnTelemetry } from '../src/core/dawn-air';
 import { LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingTelemetry } from '../src/core/landing';
 import { CALL_DAWN, CALL_FUEL, CALL_SUNK } from '../src/core/mission-flow';
 import { PT_GUN_EV_CREW, PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
-import { LANDING_WAIT_JA, landingClockKey, landingClockLine, landingLine, landingNormalLine } from '../src/ui/landing-lines';
+import { LANDING_PASS_TAIL_JA, LANDING_WAIT_JA, landingClockKey, landingClockLine, landingLine, landingNormalLine } from '../src/ui/landing-lines';
 import {
-  MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_FIRE_LINE, MISSION_LANDING_THREAT, MISSION_PT, MISSION_PT_GUN_EVENT, MISSION_WAITING, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT,
+  MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_FIRE_LINE, MISSION_LANDING_THREAT, MISSION_PT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_WAITING, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT,
 } from '../src/ui/mission-mode';
-import { PT_CHASE } from '../src/core/pt-boats';
+import { PT_CHASE, PT_PASS } from '../src/core/pt-boats';
+import { GUN_OUT_OF_ARC } from '../src/core/gun-battery';
 import { mergeBurstBits } from '../src/ui/pt-gun-lines';
 import { L0, PT04, S04, frame, landing0, tl } from './landing-ui-kit';
 import { LINE2_MAX_PX, tele, textWidthPx } from './pt-ui-kit';
@@ -85,6 +86,9 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
     expect(f({ eventKind: LE_DUD, eventHits: 1 })).toEqual([MISSION_LANDING_EVENT, '輸送船に命中 ・ 不発！ 被雷 1 のまま', HUD_COLOR_STRONG]);
     expect(f({ eventKind: LE_MISS, eventPct: 0.55 })).toEqual([MISSION_LANDING_EVENT, '雷跡 それた！ 輸送船は無事 ・ 揚陸を続ける', HOME_COLOR_TEXT]);
     expect(f({ eventKind: LE_MISS, eventPct: 1 })[1]).toBe('雷跡 それた！ 輸送船は無事'); // 揚陸の後の外れ（「揚陸を続ける」を言わない）
+    // S8 のレビュー code-1: 別の斉射が先に当てていれば「輸送船は無事」と言わない（揚陸の前も後も同じ文）
+    expect(f({ eventKind: LE_MISS, eventHits: 1, eventPct: 0.55 })).toEqual([MISSION_LANDING_EVENT, '雷跡 それた ・ 被雷 1 のまま', HUD_COLOR_STRONG]);
+    expect(f({ eventKind: LE_MISS, eventHits: 1, eventPct: 1 })[1]).toBe('雷跡 それた ・ 被雷 1 のまま');
     expect(f({ eventKind: LE_SUNK, eventPct: 0.649, eventHits: 2 })).toEqual([MISSION_LANDING_EVENT, '輸送船 撃沈… 揚陸は 64% で止まった ・ 帰投せよ', HUD_COLOR_WARN]);
     expect(f({ eventKind: LE_DONE, eventPct: 1 })).toEqual([MISSION_LANDING_EVENT, '揚陸完了！ あとは生きて帰れ', HOME_COLOR_TEXT]);
     expect(f({ eventKind: LE_SUNK_DONE, eventPct: 1, eventHits: 2 })).toEqual([MISSION_LANDING_EVENT, '輸送船 撃沈…（揚陸は済んでいた）', HUD_COLOR_STRONG]);
@@ -135,10 +139,23 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
 });
 
 describe('R14 の行（S6a-fix）', () => {
-  it('A1 モード 37（警告色）: 自艇から見た射線の PT の距離（100 m 刻み）と方角・「輸送船が射線に入る！ 離れて戦え」', () => {
+  it('A1 モード 37（警告色）: 輸送船から見た射線の PT の方角と距離（100 m 刻み）・「米PT が輸送船を狙う！ … 離れて戦え」（S8 のレビュー game-1）', () => {
     const fight = { ...QUIET, detected: true, threatPhase: PT_CHASE };
-    expect(row(frame(tl({ fireLineI: 0, fireLineDirIdx: 1, fireLineStep: 7 }, fight)))).toEqual([MISSION_LANDING_FIRE_LINE, '米PT 700 m（北東） ・ 輸送船が射線に入る！ 離れて戦え', HUD_COLOR_WARN]);
-    expect(frame(tl({ fireLineI: 1, fireLineDirIdx: 4, fireLineStep: 12 }, QUIET)).text).toBe('米PT 1200 m（南） ・ 輸送船が射線に入る！ 離れて戦え');
+    expect(row(frame(tl({ fireLineI: 0, fireLineDirIdx: 1, fireLineStep: 7 }, fight)))).toEqual([MISSION_LANDING_FIRE_LINE, '米PT が輸送船を狙う！ 輸送船の北東 700 m ・ 離れて戦え', HUD_COLOR_WARN]);
+    expect(frame(tl({ fireLineI: 1, fireLineDirIdx: 4, fireLineStep: 12 }, QUIET)).text).toBe('米PT が輸送船を狙う！ 輸送船の南 1200 m ・ 離れて戦え');
+  });
+  it('game-1: 赤い線の行（22）の間に射線の PT がいれば末尾「 ・ 輸送船が狙われる！」（警告色・キーが変わる）。決着の後・射線の PT が無ければ付かない', () => {
+    const line = { ...QUIET, detected: true, passing: true, threatPhase: PT_PASS, fired: true, dodge: 0 };
+    const plain = frame(tl({}, line));
+    const tail = frame(tl({ fireLineI: 1, fireLineDirIdx: 2, fireLineStep: 9 }, line));
+    expect(plain.mode).toBe(MISSION_PT_PASS);
+    expect(tail.mode).toBe(MISSION_PT_PASS);
+    expect(tail.text).toBe(plain.text + LANDING_PASS_TAIL_JA);
+    expect(tail.color).toBe(HUD_COLOR_WARN);
+    expect(tail.keys.lKey).not.toBe(plain.keys.lKey);
+    expect(tail.keys.pKey).toBe(plain.keys.pKey);
+    expect(frame(tl({ fireLineI: 1, resolved: true, phase: LD_DONE }, line)).text).toBe(plain.text);
+    expect(frame(tele(line)).text.endsWith(LANDING_PASS_TAIL_JA)).toBe(false); // 揚陸の無い任務
   });
   it('A5 帰投の輪の中（決着の前・強調色）: 「帰投の輪 ・ 揚陸を見届けるまで待て あと N 秒」（秒は切り上げ）。決着の後・輪の外・揚陸の無い任務は landingLine が null', () => {
     expect(row(frame(tl({ leftS: 61.2 }, QUIET, { atHome: true })))).toEqual([MISSION_WAITING, '帰投の輪 ・ 揚陸を見届けるまで待て あと 62 秒', HUD_COLOR_STRONG]);
@@ -177,6 +194,8 @@ describe('幅（22 px の 2 行目は 840 px・spec §5 の上限）', () => {
       ...[LE_CALM, LE_HURRIED, LE_ENGAGED, LE_HIT, LE_DUD, LE_MISS, LE_SUNK, LE_DONE, LE_SUNK_DONE].map((k) => frame(tl(ev({ eventKind: k, eventDirIdx: 7, eventCount: 15, eventM: 6300, eventHits: 1, eventPct: 0.99 }), QUIET), 0, EV).text),
       ...[LE_CALM, LE_HURRIED, LE_ENGAGED].map((k) => frame(tl(ev({ eventKind: k, eventDirIdx: 7, eventCount: 15, eventBoats: 3, eventM: 6300 }), QUIET), 0, EV).text),
       frame(tl({ fireLineI: 0, fireLineDirIdx: 7, fireLineStep: 63 }, QUIET)).text,
+      // 赤い線のいちばん長い行（連射・射界の外）＋末尾「輸送船が狙われる！」（game-1）
+      frame(tl({ fireLineI: 1 }, { ...QUIET, detected: true, passing: true, threatPhase: PT_PASS, burst: true, fired: true, gunStatus: GUN_OUT_OF_ARC, dx: -700, dy: -700 })).text,
       frame(tl({ leftS: 255 }, QUIET, { atHome: true })).text,
       frame(tl({ resolved: true, phase: LD_SUNK }, QUIET, { homeEdgeM: 9900 }), CALL_SUNK).text,
       frame(tl({ leftS: 255 }, QUIET), CALL_DAWN).text,

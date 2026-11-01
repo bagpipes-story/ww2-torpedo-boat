@@ -40,7 +40,7 @@ import { composeLineKeys, createLineKeys } from './mission-line-keys';
 import { patrolKey, patrolLine, patrolModeOf } from './patrol-lines';
 import { engineLine, engineTagJa } from './engine-lines';
 import { convoyEventLineGb } from './gunboat-lines';
-import { landingLine } from './landing-lines';
+import { landingLine, landingPassTailJa } from './landing-lines';
 import { ptLine } from './pt-lines';
 import { PtLineClock } from './pt-line-clock';
 import {
@@ -136,7 +136,7 @@ export class MissionLine {
     const mode = missionMode(t, call, flags);
     this.ptClock.shown(mode, nowMs);
     // 米PT・輸送隊・機関・水上機のキー（ui/mission-line-keys。v0.6.9 S0 で切り出し。shown の後・同じ式と順）
-    const { ptMode, pKey, cKey, engineMode, eKey, eTag, planeMode, planeKey, lKey, leKey } = composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent);
+    const { ptMode, pKey, cKey, engineMode, eKey, eTag, planeMode, planeKey, lKey, leKey } = composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent, this.ptClock.landingEv);
     // 暴風の距離の刻み: 近いときは 50 m、予報は 100 m（それ以外は 0）
     const stormStep = t.stormState === STORM_NEAR ? Math.ceil(t.stormGapM / STORM_WARN_STEP_M) : t.stormState === STORM_AHEAD ? Math.ceil(t.stormGapM / STORM_AHEAD_STEP_M) : 0;
     const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);
@@ -230,7 +230,7 @@ export class MissionLine {
       this.lastLandingKey = lKey;
       this.lastLandingEventKey = leKey;
       // 夜の哨戒機（v0.6.7）か、揚陸の出来事・輸送船への脅威・射線・輪の中の待ち（v0.6.9。ui/landing-lines の landingLine。揚陸の無い任務とほかのモードは null）。モードは重ならない
-      const special = patrolMode ? patrolLine(t, mode) : landingLine(t, mode);
+      const special = patrolMode ? patrolLine(t, mode) : landingLine(t, mode, this.ptClock.landingEv);
       if (special) {
         this.missionText.setText(special.text).setColor(special.color);
       } else if (mode === MISSION_CONVOY_EVENT) {
@@ -241,7 +241,8 @@ export class MissionLine {
         this.missionText.setText(l.text).setColor(l.color);
       } else if (ptMode) {
         const l = ptLine(t, mode, pKey);
-        this.missionText.setText(eTag === 0 ? l.text : l.text + engineTagJa(eTag)).setColor(l.color);
+        const tail = landingPassTailJa(t, mode); // 赤い線の間に輸送船を狙う PT（v0.6.9 S8 のレビュー game-1。揚陸の無い任務は ''）
+        this.missionText.setText((eTag === 0 ? l.text : l.text + engineTagJa(eTag)) + tail).setColor(tail === '' ? l.color : HUD_COLOR_WARN);
       } else if (strikeMode || planeMode) {
         const l = airLine(t, strikeMode, shallowStep, stormWarn, escortHit, landedShow); // 空襲（僚艇の HP と被弾は行の中）か水上機の行（ui/mission-line-air）
         this.missionText.setText(l.text).setColor(l.color);

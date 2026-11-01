@@ -186,7 +186,7 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     expect(initLandingTelemetry(w2).armed).toBe(2);
   });
 
-  it('R14 A1: 輸送船が射線に入る PT（自艇と戦う PT が 1,200 m の内で艇首を輸送船へ）と自艇からの 8 方位・100 m 刻み（切り上げ）。無ければ −1・0・0、engaged_error_factor 0 なら無し', () => {
+  it('R14 A1: 輸送船が射線に入る PT（自艇と戦う PT が 1,200 m の内で艇首を輸送船へ）と輸送船からの 8 方位・100 m 刻み（切り上げ。S8 のレビュー game-1）。無ければ −1・0・0、engaged_error_factor 0 なら無し', () => {
     const w = world();
     const t = initLandingTelemetry(w);
     expect([t.fireLineI, t.fireLineDirIdx, t.fireLineStep]).toEqual([-1, 0, 0]);
@@ -195,9 +195,13 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     refreshLandingTelemetry(t, w);
     const b = w.pts.section.boats[1]!;
     const me = w.boat.state;
+    const st = w.landing.state;
     expect(t.fireLineI).toBe(1);
-    expect(t.fireLineDirIdx).toBe(landingDirIdx(me, b.x, b.y));
-    expect(t.fireLineStep).toBe(Math.ceil(Math.hypot(b.x - me.x, b.y - me.y) / 100));
+    expect(t.fireLineDirIdx).toBe(2); // 輸送船の東
+    expect(t.fireLineDirIdx).toBe(landingDirIdx(st, b.x, b.y));
+    expect(t.fireLineStep).toBe(10);
+    // 「雷撃 N m」の印は射線の PT を指す（報告の PT が無くても。game-1）
+    expect([t.reportI, t.reportDx, t.reportDy]).toEqual([-1, b.x - me.x, b.y - me.y]);
     b.headingDeg = 0; // 北へ（輸送船へ向いていない）
     refreshLandingTelemetry(t, w);
     expect([t.fireLineI, t.fireLineStep]).toEqual([-1, 0]);

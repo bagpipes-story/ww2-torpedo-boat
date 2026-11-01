@@ -88,6 +88,14 @@ export function allyShipTextPlace(prev: number, x0: number, x1: number, aTop: nu
   return SHIP_TEXT_HIDDEN;
 }
 
+/**
+ * 浜の「揚陸地点」の字を出すか（毎フレーム。確保なし。S8 のレビュー game-4: 出撃の画面で右下の兵装のボタンの字に重なった）: 字の箱（論理画面の px）が HUD の矩形に重ならなければ出す。
+ * 隠れている字を出し直すには hyst px 余分の空きを求める（境で行き来しない）
+ */
+export function allyMarkLabelShown(prevShown: boolean, x0: number, y0: number, x1: number, y1: number, hud: readonly ScreenRect[], hyst: number): boolean {
+  return !boxHitsRects(x0, y0, x1, y1, hud, prevShown ? 0 : hyst);
+}
+
 /** 揚陸地点の帯の中心の x: 艇首の向きの先が浜の線（shoreY。南の縁）に届く点（艇首が浜を向いていなければ泊地の真南）。海域の幅に収める */
 export function landingMarkX(p: { readonly x: number; readonly y: number; readonly headingDeg: number }, shoreY: number, width: number): number {
   const h = degToRad(p.headingDeg);

@@ -26,7 +26,10 @@ import {
   HUD_HEADING_OFFSET_Y,
   HUD_TEXT_GAP,
   PLANE_DISTANCE_STEP_M,
+  PAUSE_BUTTON_SIZE_SCALE,
+  PAUSE_BUTTON_Y,
   PLANE_MARKER_TOP_MARGIN,
+  ROUND_BUTTON_RADIUS,
   TARGET_MARKER_DISTANCE_STEP_M,
   TARGET_MARKER_MARGIN,
   TARGET_MARKER_RIGHT_MARGIN,
@@ -40,7 +43,7 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { LANDING_DIST_STEP_M } from '../core/landing';
 import { EdgeMarker } from './edge-marker';
 import { snappedDistM } from './edge-marker-screen';
-import { landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from './landing-markers';
+import { avoidPauseButton, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from './landing-markers';
 import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
 
 /** 味方の大発の矢印「大発 N m」（v0.6.4）の上端の余白: 敵機の矢印の下（帰投の矢印と同じく上にラベル。ui-config は 300 行を超えているのでここに置く） */
@@ -63,6 +66,13 @@ export const HUD_TOP_BAND_BOTTOM = TARGET_MARKER_TOP_MARGIN - TARGET_MARKER_SIZE
 /** 揚陸の任務の 2 本（v0.6.9 S6b）が止まる縁の矩形: 「雷撃」は「PT」と同じ上端（ラベルは矢印の下）、「輸送」は輸送隊の矢印の段（jp_04 に輸送隊は無い。ラベルは矢印の下＝帰投のラベル（上）と逆の側） */
 const RUNNER_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: TARGET_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
 const SHIP_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: CONVOY_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
+/**
+ * 揚陸の任務の「帰投」の矢印（S8 のレビュー game-4）が避ける一時停止のボタン: 縁の矩形（上は HOME_MARKER_TOP_MARGIN）、ボタンの中心の y と半径、矢印の半分、矢印の上の字の上端までの px
+ * （edge-marker の字の隙間 TARGET_MARKER_MARGIN × 0.35 と字 1.5 行）。揚陸の無い任務はずらさない（v0.6.8 と同じ）
+ */
+const HOME_MARKER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: HOME_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
+const PAUSE_R = ROUND_BUTTON_RADIUS * PAUSE_BUTTON_SIZE_SCALE;
+const HOME_LABEL_ABOVE_PX = TARGET_MARKER_MARGIN * 0.35 + HUD_FONT_MARKER_PX * 1.5;
 
 export class HudMarkers {
   private targetMarker?: EdgeMarker;
@@ -114,13 +124,15 @@ export class HudMarkers {
   }
 
   /**
-   * 揚陸の任務の 2 本（v0.6.9 S6b）: 「雷撃」→ 角を避ける → 「PT」から離す、「輸送」→ 角を避ける → 「雷撃」から離す → 「帰投」から離す（距離の平方根は「輸送」は landing-telemetry の 1 回、
+   * 揚陸の任務の 2 本（v0.6.9 S6b）: 「帰投」を一時停止のボタンから離す（S8 のレビュー game-4）、「雷撃」→ 角を避ける → 「PT」から離す、「輸送」→ 角を避ける → 「雷撃」から離す → 「帰投」から離す（距離の平方根は「輸送」は landing-telemetry の 1 回、
    * 「雷撃」は出ている間だけ edge-marker の hypot 1 回）
    */
   private refreshLanding(t: BoatTelemetry): void {
     const l = t.landing;
     const rm = this.runnerMarker!;
     const sm = this.shipMarker!;
+    const hm = this.homeMarker;
+    if (hm && hm.isShown) hm.nudge(0, avoidPauseButton(hm.shownX, hm.shownY, HOME_MARKER_RECT, PAUSE_BUTTON_Y, PAUSE_R, TARGET_MARKER_SIZE / 2, HOME_LABEL_ABOVE_PX, shift).dy);
     rm.refresh(l.reportDx, l.reportDy, landingRunnerMarkerShown(l), t, undefined, l.reportSighted); // 視程の外（絵が無い）なら画面の内でも ▼ の立てない所は縁から指す
     if (rm.isShown) {
       rm.nudge(avoidCorner(rm.shownX, rm.shownY, RUNNER_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
@@ -131,7 +143,6 @@ export class HudMarkers {
     if (!sm.isShown) return;
     sm.nudge(avoidCorner(sm.shownX, sm.shownY, SHIP_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
     if (rm.isShown) sm.nudge(separateLandingMarker(rm.shownX, rm.shownY, sm.shownX, sm.shownY, SHIP_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
-    const hm = this.homeMarker;
     if (hm && hm.isShown) sm.nudge(separateLandingMarker(hm.shownX, hm.shownY, sm.shownX, sm.shownY, SHIP_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
   }
 

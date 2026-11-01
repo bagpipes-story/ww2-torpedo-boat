@@ -9,7 +9,7 @@ import { validateLandingMissions } from '../src/config/landing-mission-data';
 import { createLanding, createLandingWakes, hitLanding, tickLanding } from '../src/core/landing';
 import { buildWorldSetup } from '../src/systems/world-setup';
 import {
-  SHIP_TEXT_ABOVE, SHIP_TEXT_BELOW, SHIP_TEXT_HIDDEN, SHIP_TONE_FRIENDLY, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipLabelYsBelow, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, allyShipTextPlace, landingMarkX,
+  SHIP_TEXT_ABOVE, SHIP_TEXT_BELOW, SHIP_TEXT_HIDDEN, SHIP_TONE_FRIENDLY, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipLabelYsBelow, allyShipStatusKey, allyShipStatusText, allyMarkLabelShown, allyShipStatusTone, allyShipTextPlace, landingMarkX,
 } from '../src/ui/ally-ship-view';
 import { landingHudRects } from '../src/ui/landing-markers';
 import { RUDDER_HALF, speedHudRightX } from '../src/config/hud-layout-config';
@@ -173,3 +173,17 @@ describe('字が HUD に重なるとき（S6b。S6a-fix の報告: 南を向い�
   });
 });
 
+describe('浜の「揚陸地点」の字（S8 のレビュー game-4）', () => {
+  it('字の箱が HUD の矩形に重なれば出さない。隠れた字は hyst px 余分に空いてから出す', () => {
+    const hud = [{ x0: 1000, y0: 500, x1: 1280, y1: 720 }];
+    expect(allyMarkLabelShown(true, 900, 510, 990, 540, hud, 8)).toBe(true);
+    expect(allyMarkLabelShown(true, 900, 510, 1010, 540, hud, 8)).toBe(false);
+    expect(allyMarkLabelShown(false, 900, 510, 995, 540, hud, 8)).toBe(false); // 5 px しか空いていない
+    expect(allyMarkLabelShown(false, 900, 510, 990, 540, hud, 8)).toBe(true);
+  });
+  it('配線（ソース）: entities/ally-ship は毎フレーム字の箱を写して allyMarkLabelShown、変わったときだけ setVisible', () => {
+    const src = readFileSync(new URL('../src/entities/ally-ship.ts', import.meta.url), 'utf8');
+    expect(src).toContain('allyMarkLabelShown(this.markShown,');
+    expect(src).toContain('this.markLabel.setVisible(mark);');
+  });
+});

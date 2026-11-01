@@ -48,7 +48,8 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
   } else if (r.pt) {
     // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾、13mm の射撃・命中・撃退・撃沈（実機 1 回目。data を合わせる根拠。CLAUDE.md §9）。
     // 味方の大発の輸送隊（v0.6.4。jp_01）はその上に 1 行目「大発 上陸 2/3 ・ 沈没 1（ノルマ 2） ・ 大発の被弾 9 発」（米PT の 1 行目は 20 px に）
-    const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned, r.convoy !== null, r.gunboat);
+    // 揚陸の任務（jp_04）は見つかるのが仕事なので、一度も見つからずに帰っても「抜けた」とほめない（S8 のレビュー game-5。「米PT に一度も見つからなかった」）
+    const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned && !r.landing, r.convoy !== null, r.gunboat);
     if (r.convoy) {
       line(convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined), HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
       if (r.gunboat) line(gunboatResultLineJa(r.gunboat), HUD_FONT_HEADING_PX); // 隼艇（v0.6.6。jp_01 のハード）: 生還／沈没・25mm・狙われた回数（自艇の 25mm の行は自艇の分）

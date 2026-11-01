@@ -1,5 +1,5 @@
 // 揚陸の任務（v0.6.9 S6b。jp_04。spec-v069 §5.4・D9・R1・R8/F12）の画面の端の 2 本の印と海の上の ▼ の決まり（Phaser 非依存・確保なし。ui/hud-markers・systems/world-landing が使う）:
-// 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前。距離は輸送船の中心まで）・「雷撃 N m」（赤。見張りの報告の PT が画面の外。自艇からその PT へ）・
+// 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前。距離は輸送船の中心まで）・「雷撃 N m」（赤。輸送船を狙う戦う PT か見張りの報告の PT が画面の外。自艇からその PT へ）・
 // ▼「雷撃」（報告の PT が画面の内で視程の外＝PT の絵が出ていない間。海の上に置く＝systems/world-landing の entities/landing-caret）。
 // F12: 報告の PT が脅威の PT（「PT N m」の印・敵影が追う PT）で視程の内なら「雷撃」の印は出さない（同じ PT に 2 本の赤い印が重なる）。
 // 重なり: 2 本の印が近ければ縁に沿ってずらす（ui/marker-separation の separateMarker。左右の縁は字 4 行・上下の縁はラベルの幅＋8。ずらした先が右下の速力と兵装の HUD の角なら逆へ）。
@@ -16,11 +16,13 @@ export function landingShipMarkerShown(l: LandingTelemetry): boolean {
 }
 
 /**
- * 「雷撃 N m」を出すか（画面の内かどうかは ui/edge-marker が決める）: 見張りの報告の PT があり、それが視程の内の脅威の PT でなく（F12）、海の上の ▼ が出ていない（▼ が出ていれば ▼ が受け持つ）。
- * 視程の外の PT（絵が無い）は ui/hud-markers が drawn false で渡す＝画面の内でも ▼ の立てない所（上の HUD の帯・右端の技能のボタン・兵装の下）なら縁から指す
+ * 「雷撃 N m」を出すか（画面の内かどうかは ui/edge-marker が決める）: 印の PT（輸送船を狙う戦う PT＝モード 37 の PT があればそれ（S8 のレビュー game-1）、無ければ見張りの報告の PT。
+ * systems/landing-telemetry の reportDx 〜 reportIsThreat）があり、それが視程の内の脅威の PT でなく（F12）、報告の PT なら海の上の ▼ が出ていない（▼ が出ていれば ▼ が受け持つ）。
+ * 視程の外の PT（絵が無い）は ui/hud-markers が drawn false で渡す＝画面の内でも ▼ の立てない所（上の HUD の帯・右端の技能のボタン・兵装の下）か射線の PT（▼ は報告の PT だけ）なら縁から指す
  */
 export function landingRunnerMarkerShown(l: LandingTelemetry): boolean {
-  return l.enabled && l.reportI >= 0 && !Number.isNaN(l.reportDx) && !(l.reportIsThreat && l.reportSighted) && !l.caretShown;
+  const fire = !l.resolved && l.fireLineI >= 0;
+  return l.enabled && (fire || l.reportI >= 0) && !Number.isNaN(l.reportDx) && !(l.reportIsThreat && l.reportSighted) && !(l.caretShown && !fire);
 }
 
 /** 海の上の ▼「雷撃」を出すか: 報告の PT（i ≥ 0）が自艇の視程の外（d2 は自艇からの距離の二乗。PT の絵は視程の内だけ出る＝systems/pt-squadron）。どこに立てるかは landingCaretFits */
@@ -97,6 +99,25 @@ export function landingCaretRects(k: HudRectInputs): ScreenRect[] {
   const r = R_SKILL + TEXT_GAP;
   for (const b of L.skills) rs.push({ x0: b.x - r, y0: b.y - r, x1: b.x + r, y1: b.y + r });
   return rs;
+}
+
+/**
+ * 「帰投 N m」の矢印を左の縁の一時停止のボタンから縁に沿ってずらす（S8 のレビュー game-4: jp_04 は帰投の輪が出発点の真西で、矢印と字がボタンの高さに来て「一時停止」と重なった）。
+ * (x, y) が左の縁の点で、矢印（半分 arrowHalfPx）とその上の字（矢印から labelAbovePx 上まで）がボタンの縦の幅（pauseY ± pauseR）に重なれば、近い方（ボタンの上か下。
+ * 縁の矩形 r に収まる方）へ y をずらす。out に書いて返す（重ならなければ 0）
+ */
+export function avoidPauseButton(x: number, y: number, r: MarkerRect, pauseY: number, pauseR: number, arrowHalfPx: number, labelAbovePx: number, out: MarkerShift): MarkerShift {
+  out.dx = 0;
+  out.dy = 0;
+  if (Math.abs(x - r.left) >= EDGE_EPS_PX) return out;
+  const above = pauseY - pauseR - arrowHalfPx; // 矢印をここより上に置けば矢印の下端がボタンの上
+  const below = pauseY + pauseR + labelAbovePx; // ここより下に置けば字の上端がボタンの下
+  if (y <= above || y >= below) return out;
+  const upFits = above >= r.top;
+  const downFits = below <= r.bottom;
+  const ny = upFits && (!downFits || y - above <= below - y) ? above : below;
+  out.dy = Math.min(r.bottom, Math.max(r.top, ny)) - y;
+  return out;
 }
 
 /**

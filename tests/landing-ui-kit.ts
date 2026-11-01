@@ -3,7 +3,7 @@
 // ui-config・game-config は DOM を読むので使わない（色は hud-text-config）。
 import { gameData } from '../src/config/game-data';
 import { PT_GUN_SHELL_POOL_SIZE, PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
-import { HOME_MARKER_DISTANCE_STEP_M } from '../src/config/hud-text-config';
+import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_WARN } from '../src/config/hud-text-config';
 import type { BoatTelemetry } from '../src/core/boat-motion';
 import { createLanding, createLandingWakes, type LandingTelemetry } from '../src/core/landing';
 import { topCall } from '../src/core/mission-flow';
@@ -14,7 +14,7 @@ import { initLandingTelemetry } from '../src/systems/landing-telemetry';
 import { initPtTelemetry } from '../src/systems/pt-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
 import { callLineText } from '../src/ui/dawn-lines';
-import { landingLine } from '../src/ui/landing-lines';
+import { landingLine, landingPassTailJa, type LandingEventView } from '../src/ui/landing-lines';
 import { composeLineKeys, createLineKeys, type LineKeys } from '../src/ui/mission-line-keys';
 import { MISSION_CALL, missionMode } from '../src/ui/mission-mode';
 import { ptLine } from '../src/ui/pt-lines';
@@ -57,14 +57,21 @@ export interface Frame { mode: number; text: string; color: string; keys: LineKe
 
 const KEYS = createLineKeys();
 
-/** ui/mission-line と同じ順でモード・キー・文（揚陸の landingLine（35・36・37・輪の中の待ち）・米PT の 5 つ・呼びかけだけ。ほかのモードの文は ''）。call は topCall の値（省けば t.callFlags から） */
-export function frame(t: BoatTelemetry, call = topCall(t.callFlags ?? 0), flags = 0, lastPtKey = 0, merge = 0): Frame {
+/**
+ * ui/mission-line と同じ順でモード・キー・文（揚陸の landingLine（35・36・37・輪の中の待ち）・米PT の 5 つ（赤い線の末尾「輸送船が狙われる！」も）・呼びかけだけ。ほかのモードの文は ''）。
+ * call は topCall の値（省けば t.callFlags から）、ev は 35 の出来事（ui/pt-line-clock の landingEv。省けばテレメトリの最後の出来事）
+ */
+export function frame(t: BoatTelemetry, call = topCall(t.callFlags ?? 0), flags = 0, lastPtKey = 0, merge = 0, ev: LandingEventView = t.landing): Frame {
   const mode = missionMode(t, call, flags);
-  const keys = { ...composeLineKeys(KEYS, t, mode, flags, lastPtKey, merge, 0) };
+  const keys = { ...composeLineKeys(KEYS, t, mode, flags, lastPtKey, merge, 0, ev) };
   let l = { text: '', color: '' };
-  const landing = landingLine(t, mode);
+  const landing = landingLine(t, mode, ev);
   if (landing) l = landing;
-  else if (keys.ptMode) l = ptLine(t, mode, keys.pKey);
+  else if (keys.ptMode) {
+    l = ptLine(t, mode, keys.pKey);
+    const tail = landingPassTailJa(t, mode);
+    if (tail !== '') l = { text: l.text + tail, color: HUD_COLOR_WARN };
+  }
   else if (mode === MISSION_CALL) l = { text: callLineText(t, call, Math.ceil(t.homeEdgeM / HOME_MARKER_DISTANCE_STEP_M)), color: '' };
   return { mode, text: l.text, color: l.color, keys };
 }

@@ -170,6 +170,20 @@ describe('材料（systems/landing-telemetry の landingResultPart）と本文�
     expect(without[0]).toEqual([a, 24, STRONG, true]);
     expect(withL.slice(4)).toEqual(without.slice(1));
   });
+  it('S8 のレビュー game-5: 揚陸の任務で一度も見つからずに帰っても「米PT に一度も見つからずに抜けた」とほめない（「米PT に一度も見つからなかった」）。揚陸の無い任務は前のまま', () => {
+    const PT0: PtResult = {
+      enemyId: 'us_pt_enemy', total: 2, out: 2, alive: 0, leftAtDawn: false, passes: 0, maxPasses: 4, firedPasses: 0, cleanPasses: 0, shots: 0, hits: 0, damagePerHit: 6, hpMax: 60,
+      firstDetectM: NaN, firstDetectBand: '', lostContacts: 0, closestM: 1500, minWarnS: Infinity, gunEnabled: true, gunShots: 0, gunHits: 0, retired: 0, sunk: 0, flashFirst: false,
+      bursts: 0, suppressions: 0, passesOnBarges: 0, firstDetectKind: 0, gunLabel: '25mm',
+    };
+    const src = (o: Partial<ResultBodySource>): ResultBodySource => ({
+      hunt: null, pt: PT0, convoy: null, engine: null, gunboat: null, detections: 0, returned: true, objectiveDone: false, shots: [], capacity: 2, hits: 0, duds: 0, misses: 0, bands: [], kpi: null, sortie: { historical: false }, ...o,
+    });
+    const texts = (o: Partial<ResultBodySource>): string[] => resultBodyLines(src(o), false).map((l) => l.text);
+    expect(texts({ landing: L0 })).toContain('米PT に一度も見つからなかった');
+    expect(texts({ landing: L0 })).not.toContain('米PT に一度も見つからずに抜けた');
+    expect(texts({})).toContain('米PT に一度も見つからずに抜けた');
+  });
   it('配線（ソース）: buildMissionResult が landingResultPart を広げ、Result は揚陸 300 の項（達成の次）・状況の行の頭・landed を computeScore へ', () => {
     const read = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
     expect(read('systems/mission-telemetry.ts')).toContain('...landingResultPart(w, reason),');

@@ -1,7 +1,7 @@
 // 停泊して揚陸する輸送船を守る模擬のつり合い（v0.6.9 S4。jp_04。core/landing-sim、systems/landing-sim-setup の LANDING_CALIBRATION・LANDING_PAIRS・LANDING_HARD_CALIBRATION・
 // LANDING_SALVO_BANDS。spec-v069 §6 S4・§8・R12・R13）: 帯は N 400 × 2 組（scripts/landing-sim の TABLE=1・2）で決め、ここは N 60（seed 1〜60）の 1 組で同じ帯を広げて見る（回帰の検出）。
 // 広げ方: % の行の帯と対の帯は両側に MARGIN_PT 点（N 60 の 1 夜は 1.7 点・達成 85% の標準誤差 約 4.6 点）、斉射の 1 本の命中は両側に MARGIN_HIT。不変（I1〜I6）は広げない。
-// S4 の値（engaged_error_factor 2.0）の N 60 は lure 81.7%・lure_near 26.7%・lure_late − lure −10.0 点（帯の端。N 400 × 2 組は −20.5）・ハードの lure 66.7%。帯を外したら値を動かす前に
+// S4 の値（engaged_error_factor 2.0）の N 60 は lure 81.7%・lure_near 26.7%・lure_late − lure −20.0 点（S8 のレビュー game-6 の後。前は −10.0＝帯の端。N 400 × 2 組は −32.4）・ハードの lure 66.7%。帯を外したら値を動かす前に
 // scripts/landing-sim の N 400 × 2 組を回す（N 60 の外れは 1 組の揺れのことがある）。data の source に書いた S4 の値と理由もここで pin する。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';

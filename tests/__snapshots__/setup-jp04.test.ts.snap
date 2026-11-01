@@ -41,7 +41,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -89,7 +89,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -385,7 +385,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -549,7 +549,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -597,7 +597,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -893,7 +893,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -1057,7 +1057,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -1105,7 +1105,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -1401,7 +1401,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -1565,7 +1565,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -1613,7 +1613,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -1909,7 +1909,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -2079,7 +2079,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -2127,7 +2127,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -2430,7 +2430,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -2601,7 +2601,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -2649,7 +2649,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -2952,7 +2952,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -3123,7 +3123,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -3171,7 +3171,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -3474,7 +3474,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",
@@ -3645,7 +3645,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    ],
    "start_along_m": 250,
    "leave_heading_deg": 0,
-   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗い岸沿いに忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
+   "source": "historical (2 隻＝PT-490・PT-492（high）。レーダーで見つけ、暗いレイテの岸を背に忍び寄った（medium）。WebSearch の抜粋のみ・本文未読) / design (v0.6.9。北の湾口からの線と、浜の線の 190〜300 m 沖を東から岸沿いに来る線（史実の「岸を背に」のゲームでの当てはめ）。線の終わりは泊地から 514〜703 m（launch_range_m − arrive_m − 50 = 750 m の内。今夜の揺らぎ込み）、線の終わりでの艇首と泊地への方位の差は 2.0°・5.7°（900 m を越えるときは 1.5°・4.5°。V9 は launch_heading_tol_deg / 2 以下）。泊地の艇首 135° に対して北の PT は 49°・東の PT は 47° の角度から左舷へ撃つ（卯月の被雷は左舷。medium）。8 kt で見張りの報告まで 6〜39 秒、900 m まで 50〜83 秒（scratchpad v069/spec/geom-final.out）。去るのは北（カモテス海）)"
   },
   "convoy": null,
   "coast": {
@@ -3693,7 +3693,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    "count_source": "design (us_01〜03・jp_01・jp_02・jp_06 と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
    "from_bearing_deg": 90,
    "escort_target_planes": [],
-   "source": "historical (レイテの昼の空は MAG-12 のコルセア（タクロバン。high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
+   "source": "historical (レイテの昼の空はタクロバンの MAG-12 のコルセアが優勢（high は 1944-12-11 の 2 度の攻撃。制空は日本機の空襲もあり contested＝medium〜high）) / design (v0.6.9。東＝タクロバンの方角。狙うのは自艇だけ（海上の輸送船は爆撃しない＝jp_01 と同じ既知の制約）)"
   }
  },
  "playerStart": {
@@ -3996,7 +3996,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "refs": [
    {
     "url": "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
-    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 のパロンポン沖（オルモック湾の北西）で米 PT に撃沈された"
+    "claim": "駆逐艦卯月は多号作戦の輸送の護衛中、1944-12 に米 PT に撃沈された（2026-10-18 の抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03'N 124°23'E。historical_note・docs/01 §8）"
    },
    {
     "url": "https://trafficnews.jp/post/117332",

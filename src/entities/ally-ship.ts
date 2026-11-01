@@ -4,6 +4,7 @@
 // 船は動かない: 絵・ラベルの位置と向きは起動時に 1 回だけ。§7: 毎フレームは鍵を比べるだけ（変わったときだけ setText・setColor）。
 // S6b: 字が HUD（上の帯・右端の技能・一時停止・スティック・速力・兵装）に重なれば船体の下へ、下も重なれば出さない（ui/ally-ship-view の allyShipTextPlace。本当のカメラの worldView で
 // 毎フレーム箱を写して比べるだけ。置き場所が変わったときだけ setOrigin・setPosition・setVisible）。
+// S8 のレビュー game-4: 浜の「揚陸地点」の字も HUD の矩形に重なれば出さない（ui/ally-ship-view の allyMarkLabelShown。変わったときだけ setVisible）。
 import Phaser from 'phaser';
 import { CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_WIDTH } from '../config/convoy-config';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -15,7 +16,7 @@ import type { LandingState, LandingWakes } from '../core/landing';
 import type { LandingParams } from '../core/landing-data';
 import { degToRad } from '../core/units';
 import {
-  SHIP_TEXT_ABOVE, SHIP_TEXT_BELOW, SHIP_TEXT_HIDDEN, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyShipLabelYs, allyShipLabelYsBelow, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, allyShipTextPlace, landingMarkX,
+  SHIP_TEXT_ABOVE, SHIP_TEXT_BELOW, SHIP_TEXT_HIDDEN, SHIP_TONE_SUNK, SHIP_TONE_WARN, allyMarkLabelShown, allyShipLabelYs, allyShipLabelYsBelow, allyShipStatusKey, allyShipStatusText, allyShipStatusTone, allyShipTextPlace, landingMarkX,
 } from '../ui/ally-ship-view';
 import type { ScreenRect } from '../ui/landing-markers';
 
@@ -35,6 +36,10 @@ export class AllyShip {
   private readonly below: { labelY: number; statusY: number };
   /** 状態の行と「輸送船」の幅の大きい方の半分（文が変わったときだけ測る） */
   private halfW = 0;
+  /** 「揚陸地点」の字が出ている・字の右上の点（ワールド。動かない） */
+  private markShown = true;
+  private readonly markRight: number;
+  private readonly markTop: number;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -60,7 +65,9 @@ export class AllyShip {
     const mx = landingMarkX(p, shoreY, bounds.width);
     this.mark = scene.add.graphics().setDepth(DEPTH.landingMark);
     this.mark.lineStyle(CONVOY_LANDING_MARK_WIDTH, COAST_MARKER_COLOR, 1).lineBetween(mx - LANDING_MARK_HALF_M, shoreY, mx + LANDING_MARK_HALF_M, shoreY);
-    this.markLabel = scene.add.text(mx - LANDING_MARK_HALF_M, shoreY + CONVOY_LANDING_MARK_LABEL_OFFSET_M, p.markLabelJa, hudTextStyle(COAST_LABEL_FONT_PX, COAST_MARKER_TEXT_COLOR)).setOrigin(1, 0).setDepth(DEPTH.landingMark);
+    this.markRight = mx - LANDING_MARK_HALF_M;
+    this.markTop = shoreY + CONVOY_LANDING_MARK_LABEL_OFFSET_M;
+    this.markLabel = scene.add.text(this.markRight, this.markTop, p.markLabelJa, hudTextStyle(COAST_LABEL_FONT_PX, COAST_MARKER_TEXT_COLOR)).setOrigin(1, 0).setDepth(DEPTH.landingMark);
   }
 
   /** 毎フレーム: 状態の行の鍵が変わったときだけ文と色を書く（wakes はこのフレームの走っている雷跡。core/landing の landingWakes） */
@@ -75,12 +82,19 @@ export class AllyShip {
     this.placeText();
   }
 
-  /** 毎フレーム: 上・下の字の箱を本当のカメラで論理画面へ写し、置き場所が変わったときだけ字を動かす（最初の描画の前＝worldView が空なら何もしない） */
+  /** 毎フレーム: 上・下の字と「揚陸地点」の字の箱を本当のカメラで論理画面へ写し、置き場所・出す出さないが変わったときだけ字を動かす（最初の描画の前＝worldView が空なら何もしない） */
   private placeText(): void {
     const cam = this.scene.cameras.main;
     const v = cam.worldView;
     if (v.width <= 0) return;
     const z = cam.zoom / RENDER_SCALE;
+    const mr = (this.markRight - v.x) * z;
+    const mt = (this.markTop - v.y) * z;
+    const mark = allyMarkLabelShown(this.markShown, mr - this.markLabel.width * z, mt, mr, mt + this.markLabel.height * z, this.hud, LANDING_TEXT_HYST_PX);
+    if (mark !== this.markShown) {
+      this.markShown = mark;
+      this.markLabel.setVisible(mark);
+    }
     const sh = this.status.height;
     const at = allyShipTextPlace(
       this.place, (this.x - this.halfW - v.x) * z, (this.x + this.halfW - v.x) * z,

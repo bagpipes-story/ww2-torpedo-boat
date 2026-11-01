@@ -147,7 +147,7 @@ describe('ui/mission-line-keys（v0.6.9 S0: mission-line.ts:130-138 の切り出
     const src = readFileSync(join(__dirname, '..', 'src', 'ui', 'mission-line.ts'), 'utf8');
     const mode = src.indexOf('const mode = missionMode(t, call, flags);');
     const shown = src.indexOf('this.ptClock.shown(mode, nowMs);');
-    const keys = src.indexOf('composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent)');
+    const keys = src.indexOf('composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent, this.ptClock.landingEv)');
     expect(mode).toBeGreaterThan(0);
     expect(shown).toBeGreaterThan(mode);
     expect(keys).toBeGreaterThan(shown);

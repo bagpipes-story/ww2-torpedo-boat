@@ -17,7 +17,7 @@ import { createPtTorpedoState } from '../src/core/pt-torpedo';
 import { degToRad } from '../src/core/units';
 import { initLandingTelemetry, refreshLandingTelemetry, type LandingTelemetryWorld } from '../src/systems/landing-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { landingCaretFits, landingCaretRects, landingCaretShown, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from '../src/ui/landing-markers';
+import { avoidPauseButton, landingCaretFits, landingCaretRects, landingCaretShown, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from '../src/ui/landing-markers';
 import type { MarkerRect, MarkerShift } from '../src/ui/marker-separation';
 import { textWidthPx } from './pt-ui-kit';
 
@@ -77,6 +77,40 @@ describe('出す・出さないの決まり（ui/landing-markers）', () => {
     for (let k = 0; k < LD.params.hitsToSink; k++) hitLanding(w2.landing.state, LD.params, 10);
     refreshLandingTelemetry(t2, w2);
     expect([t2.resolved, landingShipMarkerShown(t2)]).toEqual([true, false]);
+  });
+  it('S8 のレビュー game-1: 「雷撃 N m」は輸送船を狙う戦う PT（射線。報告の PT より先）も指す。報告の PT の ▼ が出ていても射線の PT の印は出す。視程の内の脅威の PT なら出さない（F12）', () => {
+    const w = world();
+    const t = initLandingTelemetry(w);
+    place(w, 1, 90, 1000, 270); // 東の PT が輸送船の東 1,000 m で輸送船へ（自艇と戦っている）
+    w.pts.section.boats[1]!.phase = PT_ALERT;
+    place(w, 0, 0, 1500, 180); // 北の PT は哨戒で輸送船へ（報告）
+    refreshLandingTelemetry(t, { ...w, landing: { ...w.landing, caretShown: true } });
+    const b1 = w.pts.section.boats[1]!;
+    const me = w.boat.state;
+    expect([t.fireLineI, t.reportI, t.reportDx, t.reportDy, t.caretShown]).toEqual([1, 0, b1.x - me.x, b1.y - me.y, true]);
+    expect(landingRunnerMarkerShown(t)).toBe(true);
+    // 射線の PT が無くなれば報告の PT（▼ が出ていれば印は出さない）
+    b1.headingDeg = 0;
+    refreshLandingTelemetry(t, { ...w, landing: { ...w.landing, caretShown: true } });
+    expect([t.fireLineI, t.reportI, landingRunnerMarkerShown(t)]).toEqual([-1, 0, false]);
+    // 射線の PT が脅威の PT で視程の内なら出さない
+    b1.headingDeg = 270;
+    me.x = b1.x - 300;
+    me.y = b1.y;
+    refreshLandingTelemetry(t, w);
+    expect([t.fireLineI, t.reportIsThreat, t.reportSighted, landingRunnerMarkerShown(t)]).toEqual([1, true, true, false]);
+  });
+  it('S8 のレビュー game-4: 「帰投」の矢印は左の縁で一時停止のボタンの高さなら近い方（上か下）へずれる。縁の外・ボタンの高さの外・上に収まらなければ下', () => {
+    const R = { left: 56, top: 200, right: 1000, bottom: 600 };
+    const out = { dx: 0, dy: 0 };
+    // ボタン y 270・半径 36、矢印の半分 9、字の上端まで 46: 避ける帯は (225, 352)
+    expect(avoidPauseButton(56, 270, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: -45 }); // 上の方が近い（45 < 82）
+    expect(avoidPauseButton(56, 270, { ...R, top: 230 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 82 }); // 上（225）が縁の矩形に収まらなければ下
+    expect(avoidPauseButton(56, 240, { ...R, top: 100 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: -15 }); // 上の方が近い
+    expect(avoidPauseButton(56, 340, { ...R, top: 100 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 12 }); // 下の方が近い
+    expect(avoidPauseButton(56, 225, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 });
+    expect(avoidPauseButton(56, 352, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 });
+    expect(avoidPauseButton(300, 270, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 }); // 上の縁の点
   });
   it('「雷撃 N m」: 報告の PT があるときだけ。F12: それが脅威の PT（hudThreatIndex＝「PT N m」の印）で視程の内なら出さない。脅威でない・視程の外なら出す', () => {
     const w = world();
@@ -254,7 +288,7 @@ describe('配線（ソース）', () => {
     expect(s.split('new LandingCaret(').length - 1).toBe(1);
     expect(s.split('landingHudRects(').length - 1).toBe(1);
     expectOrder(s, ['updateVisuals(realDt: number, w: LandingVisualsView): void {', 'this.ship.update(this.state, this.wakes);', 'landingReport(this.state, this.p, q, this.tst, this.report);', 'this.caretShown = this.caret.update(b !== null && landingCaretShown(this.report.i, d2, w.visRange2), b ? b.x : 0, b ? b.y : 0);']);
-    expect(code('systems/landing-telemetry.ts')).toContain('t.caretShown = r !== null && ld.caretShown === true;');
+    expect(code('systems/landing-telemetry.ts')).toContain('t.caretShown = REPORT.i >= 0 && ld.caretShown === true;');
     expectOrder(s, ['this.ship.destroy();', 'this.caret.destroy();']);
     expect(code('systems/landing-telemetry.ts')).toContain('landingReport(st, ld.p, q, ld.tst, REPORT);');
     expect(code('systems/world-visuals.ts')).toContain('w.landing?.updateVisuals(realDt, w);');

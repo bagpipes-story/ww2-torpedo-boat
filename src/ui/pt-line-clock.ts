@@ -17,6 +17,9 @@
 //   t.landing.enabled の任務だけが始める（ほかの任務は landingUntil 0 のまま＝旗も待ちも v0.6.8 と同じ）。
 //   R14 A2: 「出た」は機関の出来事と同じく 2 行目に出ていた ms の和が LANDING_EVENT_MIN_SHOWN_MS（2 秒）に届いたとき（届く前に隠れたら待って出し直す）。
 //   R14 A1: 輸送船が射線に入る（モード 37。赤い線のすぐ下）の間も、出来事（13mm・輸送隊・揚陸・機関）と航過の結果は待つ（揚陸の無い任務は立たない＝前と同じ）。
+//   S8 のレビュー（game-2・docs-9）: 2 行目の揚陸の出来事はここが写して持つ（landingEv。文とキーはそれを読む）。出たとみなす前に次の出来事が来ても替えない: 同じ種類の斉射は足し
+//   （「米PT 2 隻が戦いながら発射！ 輸送船へ 6 本」）、ほかは後ろに 1 つ待たせ（新しい方が待っているものに替わる。ただし斉射は待っている外れ・被雷・沈没に替わらない）、今の出来事が
+//   出たとみなされたら（2 秒）すぐ次を出す（前は待っている斉射が次の斉射に、出て 1 秒の被雷が沈没に替わり、命中した斉射・被雷の行が出なかった）。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
 import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
@@ -24,7 +27,9 @@ import { LANDING_EVENT_MIN_SHOWN_MS, LANDING_EVENT_SHOW_MS } from '../config/lan
 import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_EV_WARN, ENGINE_WARN } from '../core/engine-trouble';
+import { LE_DONE, LE_DUD, LE_HIT, LE_MISS } from '../core/landing';
 import { CONVOY_EV_ARRIVED, CONVOY_EV_GB_BEACH, CONVOY_EV_GB_SUNK, CONVOY_EV_KIND, CONVOY_EV_SUNK } from './convoy-lines';
+import { copyLandingEvent, createLandingEventView, landingSalvoEvent, type LandingEventView } from './landing-lines';
 import {
   MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_LANDING_EVENT, MISSION_PT_GUN_EVENT, MODE_FLAG_CONVOY_EVENT, MODE_FLAG_ENGINE_EVENT, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT, MODE_FLAG_PT_HOLD, MODE_FLAG_PT_RESULT,
   landingFireLineShown,
@@ -64,6 +69,10 @@ export class PtLineClock {
   private landingShown = false;
   private landingOnMs = 0;
   private landingOnPrev = false;
+  /** 2 行目に出す揚陸の出来事（モード 35 の文とキーが読む写し）と、その後ろに 1 つ待つ出来事（S8 のレビュー game-2） */
+  readonly landingEv: LandingEventView = createLandingEventView();
+  private readonly landingNext: LandingEventView = createLandingEventView();
+  private landingNextSet = false;
 
   /** 毎フレーム（2 行目のモードを決める前）: MODE_FLAG_PT_RESULT・MODE_FLAG_PT_GUN_EVENT・MODE_FLAG_PT_HOLD・MODE_FLAG_CONVOY_EVENT・MODE_FLAG_ENGINE_EVENT・MODE_FLAG_LANDING_EVENT。lastMode は前に組んだ 2 行目のモード。米PT の無い任務は 0 */
   flags(t: BoatTelemetry, nowMs: number, lastMode: number): number {
@@ -100,13 +109,17 @@ export class PtLineClock {
     }
     if (e.stage !== ENGINE_WARN) this.engineUntil = 0; // 過熱の段のままの間だけ（機関の無い任務は 0 のまま）
     const ld = t.landing;
-    if (ld.enabled && ld.eventSeq > this.seenLandingSeq) {
-      // 新しい揚陸の出来事（v0.6.9）: 今から LANDING_EVENT_SHOW_MS、まだ出ていない（出ている・待っている前の出来事は替わる。文は今の出来事）
-      this.seenLandingSeq = ld.eventSeq;
-      this.landingUntil = nowMs + LANDING_EVENT_SHOW_MS;
-      this.landingShown = false;
-      this.landingOnMs = 0;
-      this.landingOnPrev = false;
+    if (ld.enabled) {
+      // 待っていた揚陸の出来事（game-2）: 今の出来事が出たとみなされたか、出ずに終わったら、今から LANDING_EVENT_SHOW_MS
+      if (this.landingNextSet && (this.landingShown || nowMs >= this.landingUntil)) {
+        copyLandingEvent(this.landingEv, this.landingNext);
+        this.landingNextSet = false;
+        this.startLandingEvent(nowMs);
+      }
+      if (ld.eventSeq > this.seenLandingSeq) {
+        this.seenLandingSeq = ld.eventSeq;
+        this.takeLandingEvent(ld, nowMs);
+      }
     }
     if (p.passSeq > this.seenPassSeq) {
       this.seenPassSeq = p.passSeq;
@@ -137,6 +150,39 @@ export class PtLineClock {
     );
   }
 
+  /**
+   * 新しい揚陸の出来事（v0.6.9。game-2）: 今の出来事が無いか出たとみなされていれば、それに替えて今から LANDING_EVENT_SHOW_MS。まだなら同じ種類の斉射は今の出来事に足し、
+   * ほかは後ろに 1 つ待たせる（待っている出来事に替わるのは同じかより重い出来事だけ＝斉射 < 外れ・不発 < 被雷 < 揚陸完了 < 沈没。同じ種類の斉射は足す）
+   */
+  private takeLandingEvent(ld: LandingEventView, nowMs: number): void {
+    const cur = this.landingEv;
+    if (nowMs >= this.landingUntil || this.landingShown) {
+      copyLandingEvent(cur, ld);
+      this.startLandingEvent(nowMs);
+      return;
+    }
+    if (addSalvo(cur, ld)) {
+      // 足した文は今から出したとみなすまで数え直す
+      this.landingUntil = Math.max(this.landingUntil, nowMs + LANDING_EVENT_SHOW_MS);
+      this.landingOnMs = 0;
+      return;
+    }
+    const next = this.landingNext;
+    if (this.landingNextSet && addSalvo(next, ld)) return;
+    if (!this.landingNextSet || eventRank(ld.eventKind) >= eventRank(next.eventKind)) {
+      copyLandingEvent(next, ld);
+      this.landingNextSet = true;
+    }
+  }
+
+  /** 揚陸の出来事を今から LANDING_EVENT_SHOW_MS、まだ出ていない */
+  private startLandingEvent(nowMs: number): void {
+    this.landingUntil = nowMs + LANDING_EVENT_SHOW_MS;
+    this.landingShown = false;
+    this.landingOnMs = 0;
+    this.landingOnPrev = false;
+  }
+
   /** 輸送隊の出来事を始める（種類 CONVOY_EV_*。今から CONVOY_EVENT_SHOW_MS、まだ出ていない） */
   private startConvoyEvent(kind: number, nowMs: number): void {
     this.convoyEvent = kind;
@@ -160,4 +206,20 @@ export class PtLineClock {
     if (this.engineOnMs >= ENGINE_EVENT_MIN_SHOWN_MS) this.engineShown = true;
     if (this.landingOnMs >= LANDING_EVENT_MIN_SHOWN_MS) this.landingShown = true;
   }
+}
+
+/** 揚陸の出来事の重さ（待っている出来事に替わってよいか）: 斉射 0・外れと不発 1・被雷 2・揚陸完了 3・沈没（揚陸の後も）4 */
+function eventRank(kind: number): number {
+  if (landingSalvoEvent(kind)) return 0;
+  if (kind === LE_MISS || kind === LE_DUD) return 1;
+  if (kind === LE_HIT) return 2;
+  return kind === LE_DONE ? 3 : 4;
+}
+
+/** 同じ種類の斉射なら dst に src の本数と隻数を足す（「米PT 2 隻が…輸送船へ 6 本」。core の同じステップの足し方 R14 A3 と同じ形）。足したら true */
+function addSalvo(dst: LandingEventView, src: Readonly<LandingEventView>): boolean {
+  if (!landingSalvoEvent(src.eventKind) || dst.eventKind !== src.eventKind) return false;
+  dst.eventCount += src.eventCount;
+  dst.eventBoats = Math.max(1, dst.eventBoats) + Math.max(1, src.eventBoats);
+  return true;
 }

@@ -166,8 +166,9 @@ describe('jp_04 の規則・文・夜明けの機', () => {
     expect([M['moon'], M['moon_label_ja'], getBriefingRecord(gameData, 'jp_04').moonLabelJa]).toEqual(['dark', '月没後', '月没後']);
     const a = getDawnAir(gameData, 'jp_04');
     expect([a.playAs, a.shipsAtDawn]).toEqual(['enemy', 'none']);
-    // R8/F13a（S0 で直した）: 卯月の場所は「パロンポン沖（オルモック湾の北西）」で、湾の中ではない
-    expect(a.refs[0]!.claim).toContain('パロンポン沖（オルモック湾の北西）');
+    // R8/F13a（S0 で直した）: 卯月の場所は「パロンポン沖」で、湾の中ではない。S8 のレビュー docs-4: ja.wikipedia の抜粋（2026-10-18 は場所を「オルモック湾」とした）に
+    // 読んでいない「パロンポン沖」を言わせず、場所は公式年表の座標（パロンポンの座標）の側に書く
+    expect(a.refs[0]!.claim).toContain('抜粋は場所を「オルモック湾」とした。沈んだ所はパロンポン沖＝公式年表の 11°03\'N 124°23\'E');
     for (const r of a.refs) expect(r.claim).not.toContain('オルモック湾で');
     const m = getPrototypeMission(gameData, 'jp_04');
     expect(m.dawnStrike !== null).toBe(true);

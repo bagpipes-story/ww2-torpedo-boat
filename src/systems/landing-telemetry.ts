@@ -4,7 +4,7 @@
 // 読むのは揚陸の世界（systems/world-landing の WorldLanding）の状態だけ: 揚陸・雷撃の数え・走っている雷跡（updateVisuals が毎フレーム数える＝Scene は updateFrame の後にここを呼ぶ）。
 // 見張りの報告は core/landing の landingReport（模擬の方針と同じ関数）、輸送船が射線に入る（R14 A1）は landingFireLine（模擬の lure_cue と同じ関数）。
 // 報告の PT が脅威の PT（core の hudThreatIndex。「PT N m」の印）か（S6b。R8/F12。ui/landing-markers が「雷撃 N m」を隠す）と、海の上の ▼ が出ているか（世界が決めた値を写すだけ）。
-// 平方根は報告の距離の 1 回・輸送船までの 1 回・射線の PT までの 1 回（いるときだけ）、atan2 は報告と射線の候補・射線の PT・出来事が変わったフレームの 1 回だけ。
+// 平方根は報告の距離の 1 回・輸送船までの 1 回・射線の PT から輸送船までの 1 回（いるときだけ）、atan2 は報告と射線の候補・射線の PT・出来事が変わったフレームの 1 回だけ。
 // 世界は構造の型 LandingTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
 // S7: Result の材料 landingResultPart（終了時に 1 回。convoy-telemetry の convoyResult・patrol-telemetry の patrolResult と同じ形。構造の型 LandingResultWorld で読む）。
 import type { BoatState } from '../core/boat-motion';
@@ -23,7 +23,7 @@ export interface LandingTelemetryWorld {
   /** 揚陸の世界（systems/world-landing。揚陸の無い任務は null）: 揚陸・雷撃の数え（PtTorpedoState の一部）・走っている雷跡・値・雷撃の値（1 斉射の本数・慌てる距離・斉射の距離・戦いながらの倍率） */
   readonly landing: {
     readonly state: LandingState;
-    readonly tst: { readonly left: Uint8Array; readonly salvos: number; readonly fired: number };
+    readonly tst: { readonly left: Uint8Array; readonly holdS: Float64Array; readonly salvos: number; readonly fired: number };
     readonly wakes: LandingWakes;
     readonly p: LandingParams;
     readonly tp: { readonly n: number; readonly hurriedM: number; readonly launchM: number; readonly engagedFactor: number };
@@ -86,24 +86,27 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.reportI = REPORT.i;
   t.reportStep = REPORT.distStep;
   t.reportDirIdx = REPORT.dirIdx;
-  const r = REPORT.i >= 0 ? q.boats[REPORT.i]! : null;
-  t.reportDx = r ? r.x - me.x : NaN;
-  t.reportDy = r ? r.y - me.y : NaN;
-  t.reportSighted = r !== null && t.reportDx * t.reportDx + t.reportDy * t.reportDy <= w.visRange2;
-  t.reportIsThreat = r !== null && REPORT.i === hudThreatIndex(q, me.x, me.y); // 「PT N m」の印の PT（S6b。R8/F12）。報告があるときだけ隊を 1 回なめる
-  t.caretShown = r !== null && ld.caretShown === true; // ▼ が出ていれば「雷撃 N m」は出さない（S6b）
-  // 輸送船が射線に入る（R14 A1。戦いながらの斉射が無い data＝engaged_error_factor 0 なら無し）: 自艇からその PT への 8 方位と 100 m 刻み
+  // 輸送船が射線に入る（R14 A1。戦いながらの斉射が無い data＝engaged_error_factor 0 なら無し）: 輸送船からその PT への 8 方位と 100 m 刻み（S8 のレビュー game-1: 戦いながらの斉射の行と同じ枠）
   const fr = ld.tp.engagedFactor > 0 ? ld.tp.launchM + LANDING_FIRE_LINE_EXTRA_M : 0;
   const fi = landingFireLine(st, q, ld.tst.left, fr * fr);
   t.fireLineI = fi;
   if (fi >= 0) {
     const b = q.boats[fi]!;
-    t.fireLineDirIdx = landingDirIdx(me, b.x, b.y);
-    t.fireLineStep = Math.min(63, Math.ceil(Math.hypot(b.x - me.x, b.y - me.y) / LANDING_DIST_STEP_M));
+    t.fireLineDirIdx = landingDirIdx(st, b.x, b.y);
+    t.fireLineStep = Math.min(63, Math.ceil(Math.hypot(b.x - st.x, b.y - st.y) / LANDING_DIST_STEP_M));
   } else {
     t.fireLineDirIdx = 0;
     t.fireLineStep = 0;
   }
+  // 赤い「雷撃 N m」の印の PT（reportDx 〜 reportIsThreat）: 輸送船を狙う戦う PT（射線）があればそれ（S8 のレビュー game-1: 前は報告の PT だけで、視程の外の射線の PT を何も指さなかった）、
+  // 無ければ見張りの報告の PT
+  const ri = fi >= 0 ? fi : REPORT.i;
+  const r = ri >= 0 ? q.boats[ri]! : null;
+  t.reportDx = r ? r.x - me.x : NaN;
+  t.reportDy = r ? r.y - me.y : NaN;
+  t.reportSighted = r !== null && t.reportDx * t.reportDx + t.reportDy * t.reportDy <= w.visRange2;
+  t.reportIsThreat = r !== null && ri === hudThreatIndex(q, me.x, me.y); // 「PT N m」の印の PT（S6b。R8/F12）。印の PT があるときだけ隊を 1 回なめる
+  t.caretShown = REPORT.i >= 0 && ld.caretShown === true; // 報告の PT の ▼ が出ている（S6b。印が報告の PT なら「雷撃 N m」は出さない）
   t.wakes = ld.wakes.count;
   t.wakeCpaS = ld.wakes.cpaS;
   t.shipDx = st.x - me.x;
