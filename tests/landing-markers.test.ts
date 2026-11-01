@@ -17,7 +17,7 @@ import { createPtTorpedoState } from '../src/core/pt-torpedo';
 import { degToRad } from '../src/core/units';
 import { initLandingTelemetry, refreshLandingTelemetry, type LandingTelemetryWorld } from '../src/systems/landing-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { avoidPauseButton, landingCaretFits, landingCaretRects, landingCaretShown, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from '../src/ui/landing-markers';
+import { landingCaretFits, landingCaretRects, landingCaretShown, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from '../src/ui/landing-markers';
 import type { MarkerRect, MarkerShift } from '../src/ui/marker-separation';
 import { textWidthPx } from './pt-ui-kit';
 
@@ -99,18 +99,6 @@ describe('出す・出さないの決まり（ui/landing-markers）', () => {
     me.y = b1.y;
     refreshLandingTelemetry(t, w);
     expect([t.fireLineI, t.reportIsThreat, t.reportSighted, landingRunnerMarkerShown(t)]).toEqual([1, true, true, false]);
-  });
-  it('S8 のレビュー game-4: 「帰投」の矢印は左の縁で一時停止のボタンの高さなら近い方（上か下）へずれる。縁の外・ボタンの高さの外・上に収まらなければ下', () => {
-    const R = { left: 56, top: 200, right: 1000, bottom: 600 };
-    const out = { dx: 0, dy: 0 };
-    // ボタン y 270・半径 36、矢印の半分 9、字の上端まで 46: 避ける帯は (225, 352)
-    expect(avoidPauseButton(56, 270, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: -45 }); // 上の方が近い（45 < 82）
-    expect(avoidPauseButton(56, 270, { ...R, top: 230 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 82 }); // 上（225）が縁の矩形に収まらなければ下
-    expect(avoidPauseButton(56, 240, { ...R, top: 100 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: -15 }); // 上の方が近い
-    expect(avoidPauseButton(56, 340, { ...R, top: 100 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 12 }); // 下の方が近い
-    expect(avoidPauseButton(56, 225, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 });
-    expect(avoidPauseButton(56, 352, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 });
-    expect(avoidPauseButton(300, 270, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 }); // 上の縁の点
   });
   it('「雷撃 N m」: 報告の PT があるときだけ。F12: それが脅威の PT（hudThreatIndex＝「PT N m」の印）で視程の内なら出さない。脅威でない・視程の外なら出す', () => {
     const w = world();

@@ -1,9 +1,9 @@
 // v0.6.9 S6b（S6a-fix の報告: 南を向いて輸送船のそばにいると船が画面の上に来て、船体の上の字が 2・3 行目とビルド番号に重なった）: 海の上の輸送船の字が重なってはいけない HUD の矩形
 // （ui/landing-markers の landingHudRects・boxHitsRects。entities/ally-ship が ui/ally-ship-view の allyShipTextPlace で上 → 下 → 出さないを決める）。tests/hud-layout の固定の箱と
-// ボタンの当たりをどれも含むこと、jp_04 にあるボタンの段だけ塞ぐこと、辺と pad の扱い。tests/landing-markers.test.ts（300 行を超えた）から分けた。
+// ボタンの当たりをどれも含むこと、jp_04 にあるボタンの段だけ塞ぐこと、辺と pad の扱い。tests/landing-markers.test.ts（300 行を超えた）から分けた（S8 の最終確認で、直し F の game-4 の avoidPauseButton＝jp_04 の「帰投」の矢印が一時停止のボタンを避ける、も移した）。
 import { describe, expect, it } from 'vitest';
 import { HIT_PAD, RUDDER_HALF, R_SKILL, panelLayout, speedHudRightX } from '../src/config/hud-layout-config';
-import { boxHitsRects, landingCaretRects, landingHudRects } from '../src/ui/landing-markers';
+import { avoidPauseButton, boxHitsRects, landingCaretRects, landingHudRects } from '../src/ui/landing-markers';
 
 describe('HUD に重ねない（landingHudRects・boxHitsRects。S6a-fix の報告: 画面の上に来た輸送船の字が 2・3 行目とビルド番号に重なった）', () => {
   /**
@@ -65,5 +65,17 @@ describe('HUD に重ねない（landingHudRects・boxHitsRects。S6a-fix の報�
     expect(boxHitsRects(0, 0, 91, 91, rs, 10)).toBe(true);
     expect(boxHitsRects(210, 150, 260, 160, rs, 0)).toBe(false);
     expect(boxHitsRects(210, 150, 260, 160, [], 100)).toBe(false);
+  });
+  it('S8 のレビュー game-4: 「帰投」の矢印は左の縁で一時停止のボタンの高さなら近い方（上か下）へずれる。縁の外・ボタンの高さの外・上に収まらなければ下', () => {
+    const R = { left: 56, top: 200, right: 1000, bottom: 600 };
+    const out = { dx: 0, dy: 0 };
+    // ボタン y 270・半径 36、矢印の半分 9、字の上端まで 46: 避ける帯は (225, 352)
+    expect(avoidPauseButton(56, 270, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: -45 }); // 上の方が近い（45 < 82）
+    expect(avoidPauseButton(56, 270, { ...R, top: 230 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 82 }); // 上（225）が縁の矩形に収まらなければ下
+    expect(avoidPauseButton(56, 240, { ...R, top: 100 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: -15 }); // 上の方が近い
+    expect(avoidPauseButton(56, 340, { ...R, top: 100 }, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 12 }); // 下の方が近い
+    expect(avoidPauseButton(56, 225, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 });
+    expect(avoidPauseButton(56, 352, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 });
+    expect(avoidPauseButton(300, 270, R, 270, 36, 9, 46, out)).toEqual({ dx: 0, dy: 0 }); // 上の縁の点
   });
 });
