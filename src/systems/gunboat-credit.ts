@@ -5,7 +5,7 @@
 import { FATE_BY_GUNBOAT } from '../core/convoy-sim-gunboat';
 import { PT_FATE_NONE, PT_FATE_SUNK, type PtSection } from '../core/pt-boats';
 
-export { FATE_BY_GUNBOAT, FATE_BY_PLAYER } from '../core/convoy-sim-gunboat';
+export { FATE_BY_ALLY, FATE_BY_GUNBOAT, FATE_BY_PLAYER } from '../core/convoy-sim-gunboat';
 
 export interface GunboatCredit {
   /** 隼艇の 25mm の PT への命中・制圧（砲の段の前後の q.gunHits・q.suppressions の差の和） */
@@ -13,7 +13,7 @@ export interface GunboatCredit {
   suppressions: number;
   /** 隼艇の砲が最後に起こした 13mm／25mm の出来事の q.gunEventSeq（0 は無し。2 行目の「隼艇 撃退！」の元） */
   eventSeq: number;
-  /** PT ごとに最後の結末を決めた砲（0 結末なし・FATE_BY_PLAYER 自艇・FATE_BY_GUNBOAT 隼艇。結末が変わった命中の砲が書く） */
+  /** PT ごとに最後の結末を決めた砲（0 結末なし・FATE_BY_PLAYER 自艇・FATE_BY_GUNBOAT 隼艇・FATE_BY_ALLY 卯月（v0.6.10）。結末が変わった命中の砲が書く） */
   readonly fateBy: Int8Array;
 }
 
@@ -29,12 +29,15 @@ export function noteGunboatGun(cr: GunboatCredit, q: PtSection, hits0: number, s
   if (q.gunEventSeq !== ev0) cr.eventSeq = q.gunEventSeq;
 }
 
-/** 隼艇の分の撃退・撃沈（終了時に 1 回）: 最後の結末を決めた砲が隼艇の PT を今の結末で（沈んでいれば撃沈、ほかの結末は撃退） */
-export function gunboatFates(q: PtSection, cr: GunboatCredit): { retired: number; sunk: number } {
+/**
+ * 隼艇の分の撃退・撃沈（終了時に 1 回）: 最後の結末を決めた砲が隼艇の PT を今の結末で（沈んでいれば撃沈、ほかの結末は撃退）。
+ * by は数える砲（既定は隼艇。v0.6.10 の卯月の手柄（core/ally-destroyer の credit。同じ形）は FATE_BY_ALLY で同じ数え方）
+ */
+export function gunboatFates(q: PtSection, cr: GunboatCredit, by: number = FATE_BY_GUNBOAT): { retired: number; sunk: number } {
   let retired = 0;
   let sunk = 0;
   for (let i = 0; i < q.boats.length; i++) {
-    if (cr.fateBy[i] !== FATE_BY_GUNBOAT) continue;
+    if (cr.fateBy[i] !== by) continue;
     const f = q.boats[i]!.fate;
     if (f === PT_FATE_SUNK) sunk++;
     else if (f !== PT_FATE_NONE) retired++;

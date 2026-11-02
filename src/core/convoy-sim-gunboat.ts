@@ -19,9 +19,10 @@ import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from './
 
 /** 画面の外の計測（W7。模擬の計測だけで遊びは変えない）: 自艇から m（画面の縦の半分＝論理の高さ 720 ÷ 既定のズーム 0.75 ÷ 2） */
 export const GUNBOAT_OFFSCREEN_M = 480;
-/** fateBy の値: 結末を決めた砲（0 は結末なし） */
+/** fateBy の値: 結末を決めた砲（0 は結末なし）。FATE_BY_ALLY は jp_04 の味方の駆逐艦 卯月の砲（v0.6.10。core/ally-destroyer だけが書く。リードの決定 LD8） */
 export const FATE_BY_PLAYER = 1;
 export const FATE_BY_GUNBOAT = 2;
+export const FATE_BY_ALLY = 3;
 
 /** 1 夜の隼艇の記録（ConvoyTrial.gunboat。隼艇の無い夜は鍵ごと無い） */
 export interface GunboatTrial {

@@ -9,15 +9,18 @@
 // 外から去らせても隊の欄（owner・held・相方・追撃の目標・連射）が宙に浮かないことは salvo の注（凍結のコードで確かめたこと）。
 // 乱数は seed+26 の系列（PT_TORPEDO_SEED_OFFSET。jp_04 だけ。systems/world-landing と core/landing-sim が最後に作る）: 斉射のときだけ 狙い 1 回 → 1 本ごとに 不発 → 蛇行 → [偏差]
 // （systems/torpedo-launcher と同じ順。3 種類とも同じ）。斉射の無いステップは引かない。Phaser 非依存・毎ステップ確保しない（状態は createPtTorpedoState で 1 回）。距離は二乗、atan2 は撃てる距離の内の PT だけ。
+// v0.6.10（spec-v0610 R-U5・LD5・レビュー M1）: 味方の駆逐艦 卯月（core/ally-destroyer）に照らされた PT の反応 ptLitReact（射点なら慌てた斉射で去る・ほかは撃たずに去る・航過は待つ）。
+// 慌てた斉射と分け合うのは距離と艇首の検査（hurriedReach・bowOn）だけで、照らされた斉射の条件（哨戒・斉射が残る・揚陸中・夜明けの前・見失いの待ちの外）は ptLitReact だけが見る。
+// stepPtTorpedoes は litSalvo・litAway を読まない（卯月の無い夜は前と 1 手ずつ同じ＝tests/pt-torpedo-lit の md5）。
 import { LD_UNLOADING } from './landing';
-import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_PATROL, PT_RUN_IN, type PtSection } from './pt-boats';
+import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_PATROL, PT_RUN_IN, type PtSection } from './pt-boats';
 import type { PtTorpedoParams } from './pt-torpedo-data';
 import type { SeededRng } from './rng';
 import { fillSalvoHeadings } from './salvo';
 import { bearingDeg } from './ship-ai';
 import { wrapDeg180 } from './units';
 
-/** 米PT の雷撃の乱数の系列（seed+26。v0.6.9。jp_04 だけ。0〜25 は使用済み（+21 は大発の 13mm に予約）、+27・+28 は味方の駆逐艦の見張り・砲に予約（v0.6.10）） */
+/** 米PT の雷撃の乱数の系列（seed+26。v0.6.9。jp_04 だけ。0〜25 は使用済み（+21 は大発の 13mm に予約）、+27・+28 は味方の駆逐艦 卯月の見張り・砲（v0.6.10。core/ally-destroyer）） */
 export const PT_TORPEDO_SEED_OFFSET = 26;
 
 /** 撃った斉射の種類（PtTorpedoState.kind・lastKind・PtTorpedoSink.onSalvo）: 撃っていない・気づかれていない・慌てた・戦いながら（R12） */
@@ -36,6 +39,14 @@ export const OUT_DAWN = 5;
 export const OUT_LEFT = 6;
 export const OUT_GOAL_GONE = 7;
 export const OUT_ENGAGED = 8;
+/** v0.6.10: 卯月に照らされて慌てて撃った（照らされた斉射。種類は慌てた斉射のまま・litSalvo）・照らされて撃たずに去った（litAway） */
+export const OUT_LIT_HURRIED = 9;
+export const OUT_LIT_AWAY = 10;
+
+/** ptLitReact の戻り: 航過中なので待つ（次のステップにまた）・照らされた斉射を撃って去った・撃たずに去った */
+export const LIT_WAIT = 0;
+export const LIT_SALVO = 1;
+export const LIT_AWAY = 2;
 
 export interface PtTorpedoState {
   /** 1 = 斉射が残っている（1 隻 1 回） */
@@ -50,6 +61,8 @@ export interface PtTorpedoState {
   salvoHits: Uint8Array; salvoDuds: Uint8Array; salvoLeft: Uint8Array;
   /** 夜明けのラッチで去った・輸送船が沈んで去った（F11） */
   leftAtDawn: Uint8Array; goalGone: Uint8Array;
+  /** v0.6.10: 卯月に照らされて撃った斉射（入れ先が LE_LIT_SALVO を選ぶ印。斉射の前に立つ）・照らされて撃たずに去った（ptLitReact だけが書く） */
+  litSalvo: Uint8Array; litAway: Uint8Array;
   /** 斉射の針路（使い回し。salvo_count 個） */
   headings: number[];
   /** 数え: 斉射・撃った本数・慌てて撃った本数・戦いながら撃った本数、斉射の通し番号・最後に撃った PT（−1 は無し）とその種類 */
@@ -80,7 +93,7 @@ export function createPtTorpedoState(count: number, salvoCount: number): PtTorpe
     left: new Uint8Array(count).fill(1), prevPhase: new Uint8Array(count).fill(PT_PATROL), holdS: new Float64Array(count),
     kind: new Uint8Array(count), launchM: new Float64Array(count).fill(NaN), launchS: new Float64Array(count).fill(NaN),
     salvoHits: new Uint8Array(count), salvoDuds: new Uint8Array(count), salvoLeft: new Uint8Array(count),
-    leftAtDawn: new Uint8Array(count), goalGone: new Uint8Array(count), headings,
+    leftAtDawn: new Uint8Array(count), goalGone: new Uint8Array(count), litSalvo: new Uint8Array(count), litAway: new Uint8Array(count), headings,
     salvos: 0, fired: 0, hurriedFired: 0, engagedFired: 0, seq: 0, lastBoat: -1, lastKind: PT_SALVO_NONE,
   };
 }
@@ -104,12 +117,12 @@ export function stepPtTorpedoes(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSe
       const free = st.holdS[i]! <= 0; // 見失いの後の待ち（D8）は気づかれていない・慌てた斉射だけ
       // 慌てた斉射（R2）: このステップに隊が捉えた（哨戒 → 警戒は接触の瞬間だけ起きる）PT はみな。気づかれていない斉射: 哨戒のまま launch_range_m の内。
       // 戦いながらの斉射（R12）: 自艇と戦っている PT が揚陸中の輸送船の launch_range_m の内（接触の瞬間に慌てた斉射の条件も満たせば慌てた斉射）
-      const hurried = free && prev === PT_PATROL && ph === PT_ALERT && tp.hurried2 > 0 && d2 <= tp.hurried2;
+      const hurried = free && prev === PT_PATROL && ph === PT_ALERT && hurriedReach(tp, d2);
       const calm = free && ph === PT_PATROL && d2 <= tp.launch2;
       const engaged = tp.engagedFactor > 0 && ptEngaged(ph) && b.fate === PT_FATE_NONE && ship.phase === LD_UNLOADING && d2 <= tp.launch2;
       if (hurried || calm || engaged) {
         const brg = bearingDeg(b.x, b.y, ship.x, ship.y);
-        if (Math.abs(wrapDeg180(b.headingDeg - brg)) <= tp.tolDeg) salvo(st, tp, q, i, hurried ? PT_SALVO_HURRIED : calm ? PT_SALVO_CALM : PT_SALVO_ENGAGED, brg, d2, rng, nowS, sink, onLeave);
+        if (bowOn(tp, b.headingDeg, brg)) salvo(st, tp, q, i, hurried ? PT_SALVO_HURRIED : calm ? PT_SALVO_CALM : PT_SALVO_ENGAGED, brg, d2, rng, nowS, sink, onLeave);
       }
     }
     if (!ship.afloat && b.phase === PT_PATROL && st.left[i] === 1) {
@@ -121,6 +134,46 @@ export function stepPtTorpedoes(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSe
     }
     st.prevPhase[i] = b.phase;
   }
+}
+
+/** 慌てた斉射の距離（輸送船までの二乗 d2 が hurried_max_m の内。0 なら慌てた斉射なし）。接触の慌てた斉射と照らされた斉射（ptLitReact）が分け合う（LD5） */
+function hurriedReach(tp: PtTorpedoParams, d2: number): boolean {
+  return tp.hurried2 > 0 && d2 <= tp.hurried2;
+}
+
+/** 艇首が輸送船への方位 brg から launch_heading_tol_deg の内（3 種類の斉射と照らされた斉射が分け合う） */
+function bowOn(tp: PtTorpedoParams, headingDeg: number, brg: number): boolean {
+  return Math.abs(wrapDeg180(headingDeg - brg)) <= tp.tolDeg;
+}
+
+/**
+ * 卯月に照らされて light_react_s 経った PT i の反応（v0.6.10。core/ally-destroyer だけが呼ぶ。spec-v0610 R-U5・LD5・レビュー M1）。戻りは LIT_*。航過（q.owner でもありうる）・去った PT は
+ * LIT_WAIT（何も書かない＝航過を外から去らせない）。哨戒で斉射が残り、輸送船が浮いて揚陸中・夜明けの前・見失いの待ちの外で、慌てた斉射の距離と艇首なら LIT_SALVO: litSalvo を立ててから
+ * 慌てた斉射（seed+26 から 1 + 2n + 蛇行の本数）→ 去る。ほかの生きた段階（射点の外・待ち・夜明けの後・警戒〜離脱・揚陸の後・沈んだ後）は LIT_AWAY: 撃たずに去る（引かない）。
+ * 揚陸の後に照らされた PT は撃たずに去るが、照らされていない PT は夜明けまで撃てる（わざとの非対称。M1）。去らせ方と隊の欄は salvo の注と同じ（航過でない PT）。
+ * prevPhase もこのステップの終わりの段階（去る）にする（stepPtTorpedoes の後に呼ばれるので、次のステップが夜明けのラッチで去ったと取り違えない）
+ */
+export function ptLitReact(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, ship: PtTorpedoShip, i: number, rng: SeededRng, nowS: number, dawn: boolean, sink: PtTorpedoSink, onLeave: (i: number) => void): number {
+  const b = q.boats[i]!;
+  if (b.phase === PT_PASS || b.phase >= PT_LEAVE) return LIT_WAIT;
+  if (b.phase === PT_PATROL && st.left[i] === 1 && ship.afloat && ship.phase === LD_UNLOADING && !dawn && st.holdS[i]! <= 0) {
+    const dx = ship.x - b.x;
+    const dy = ship.y - b.y;
+    const d2 = dx * dx + dy * dy;
+    const brg = hurriedReach(tp, d2) ? bearingDeg(b.x, b.y, ship.x, ship.y) : NaN; // atan2 は慌てる距離の内だけ（NaN は艇首の検査を通らない）
+    if (!Number.isNaN(brg) && bowOn(tp, b.headingDeg, brg)) {
+      st.litSalvo[i] = 1; // 入れ先（LandingTorpedoLink.onSalvo）が見る印: 斉射の前に立てる
+      salvo(st, tp, q, i, PT_SALVO_HURRIED, brg, d2, rng, nowS, sink, onLeave);
+      st.prevPhase[i] = b.phase;
+      return LIT_SALVO;
+    }
+  }
+  b.phase = PT_LEAVE;
+  b.timerS = 0;
+  st.litAway[i] = 1;
+  st.prevPhase[i] = b.phase;
+  onLeave(i);
+  return LIT_AWAY;
 }
 
 /** 自艇と戦っている段階（R12 の戦いながらの斉射。警戒・突撃・追撃・離脱。航過は固めた掃射の最中なので撃たない。哨戒は気づかれていない・慌てた斉射の規則） */
@@ -175,8 +228,9 @@ function salvo(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, i: number,
 export function ptTorpedoOutcome(st: PtTorpedoState, q: PtSection, i: number): number {
   const b = q.boats[i]!;
   if (st.kind[i] === PT_SALVO_CALM) return OUT_CALM;
-  if (st.kind[i] === PT_SALVO_HURRIED) return OUT_HURRIED;
+  if (st.kind[i] === PT_SALVO_HURRIED) return st.litSalvo[i] === 1 ? OUT_LIT_HURRIED : OUT_HURRIED;
   if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 斉射を先に（撃てば去るので、撃った後に 25mm の結末は付かない。b.fate は Result がそのまま読める）
+  if (st.litAway[i] === 1) return OUT_LIT_AWAY; // 撃たずに去った PT は生きていないので、後から結末は付かない（夜明け・去るより先）
   if (b.fate === PT_FATE_SUNK) return OUT_SUNK;
   if (b.fate === PT_FATE_CREW || b.fate === PT_FATE_HULL) return OUT_RETIRED;
   if (st.goalGone[i] === 1) return OUT_GOAL_GONE;

@@ -4,9 +4,11 @@
 // → 命中 → 通り過ぎ）。雷跡の点は絵だけなので置かない（nextWakeAtM は他に読まれない）。プールは自艇の魚雷（w.torpedoes・KPI・終わりの待ち）に触らない。
 // R14 A3（S6a-fix）: 同じステップの同じ種類の斉射は 1 つの出来事に足す（「米PT 2 隻が慌てて発射！ 輸送船へ 6 本」）、外れ・不発の出来事はプールにまだ決着していない魚雷が無いときだけ
 // （ほかの斉射が走っている間に「それた！ 輸送船は無事」と言わない。残りは雷跡の行が数える）。
+// v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の斉射（種類は慌てた斉射のまま・SalvoBook.litSalvo が立つ）は LE_LIT_SALVO、照らされて撃たずに去った PT は onLitAway → LE_LIT_AWAY
+// （世界と模擬が同じ 1 か所で出来事にする）。卯月の無い夜は litSalvo が立たないので出来事は前と同じ。
 // Phaser 非依存・毎ステップ確保しない（状態・走査の書き先・PT の添字は組み立てで 1 回）。
 import type { SeaBounds } from './boat-motion';
-import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
+import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_LIT_AWAY, LE_LIT_SALVO, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
 import type { LandingParams } from './landing-data';
 import { createTorpedoState, isArmed, launchTorpedo, markMissIfPassed, stepTorpedo, type TorpedoParams, type TorpedoState } from './torpedo';
 import { createTargetScan, scanTargets, type TorpedoEvents, type TorpedoTarget } from './torpedo-targets';
@@ -89,11 +91,12 @@ export class LandingTorpedoPool implements LandingFirePool {
   }
 }
 
-/** 斉射の魚雷の決着の数え（core/pt-torpedo の PtTorpedoState がそのまま満たす）: PT ごとの命中・不発の命中・まだ決着していない本数 */
+/** 斉射の魚雷の決着の数え（core/pt-torpedo の PtTorpedoState がそのまま満たす）: PT ごとの命中・不発の命中・まだ決着していない本数、卯月に照らされて撃った斉射の印（v0.6.10） */
 export interface SalvoBook {
   readonly salvoHits: Uint8Array;
   readonly salvoDuds: Uint8Array;
   readonly salvoLeft: Uint8Array;
+  readonly litSalvo: Uint8Array;
 }
 
 /** 世界の演出（模擬は NO_LANDING_HOOKS）: 魚雷が輸送船に当たった（不発も）。sunk はこの命中で沈み始めた（命中スロー・沈む演出） */
@@ -138,16 +141,21 @@ export class LandingTorpedoLink implements TorpedoEvents {
   }
 
   /**
-   * PtTorpedoSink: 斉射を撃ち終えた（kind は PT_SALVO_*。出来事「米PT 雷撃！」「米PT 慌てて発射！」「米PT 戦いながら発射！」）。同じステップ（nowS が同じ）に同じ種類の斉射の出来事が
-   * 最後の出来事なら、それに本数と隻数を足した出来事にする（A3: R2 の慌てた斉射は隊が捉えたステップにみな撃つ。前は最後の 1 隻の「3 本」だけが出た）
+   * PtTorpedoSink: 斉射を撃ち終えた（kind は PT_SALVO_*。出来事「米PT 雷撃！」「米PT 慌てて発射！」「米PT 戦いながら発射！」、卯月に照らされた慌てた斉射は LE_LIT_SALVO）。同じステップ（nowS が同じ）に
+   * 同じ種類の斉射の出来事が最後の出来事なら、それに本数と隻数を足した出来事にする（A3: R2 の慌てた斉射は隊が捉えたステップにみな撃つ。前は最後の 1 隻の「3 本」だけが出た）
    */
   onSalvo(i: number, kind: number, rangeM: number, n: number): void {
     const ld = this.ld;
-    const k = kind === SALVO_HURRIED ? LE_HURRIED : kind === SALVO_ENGAGED ? LE_ENGAGED : LE_CALM;
+    const k = kind === SALVO_HURRIED ? (this.book.litSalvo[i] === 1 ? LE_LIT_SALVO : LE_HURRIED) : kind === SALVO_ENGAGED ? LE_ENGAGED : LE_CALM;
     const add = ld.eventSeq === this.salvoSeq && ld.eventKind === k && this.salvoAtS === this.nowS;
     landingEvent(ld, k, i, rangeM, add ? ld.eventCount + n : n, add ? ld.eventBoats + 1 : 1);
     this.salvoSeq = ld.eventSeq;
     this.salvoAtS = this.nowS;
+  }
+
+  /** 卯月に照らされた i 隻目が撃たずに去った（core/ally-destroyer が ptLitReact の LIT_AWAY の後に呼ぶ。v0.6.10 R-U7）: 斉射でない出来事（距離 NaN・本数 0・隻数 0。レビュー L6） */
+  onLitAway(i: number): void {
+    landingEvent(this.ld, LE_LIT_AWAY, i, NaN, 0);
   }
 
   onHit(_target: number, x: number, y: number, s: TorpedoState): void {
