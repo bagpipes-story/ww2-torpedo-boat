@@ -1,6 +1,8 @@
 // 兵装の文（v0.6.8。spec-v068 §4.5〜§4.7）: 右の兵装の上の 1 行（ui/weapon-cue）の文と色。番号は core/arms-cue（世界の systems/arms-step が書く出来事・状態と、HUD だけの EV_TORP_EMPTY）。
 // DOM 無し（色は hud-text-config と arms-config。tests が node で読む）。どの文も 22 px で 264 px 以内（tests/arms-lines）。
-// 出来事: 狙う艦の無い魚雷（大発の下・PT の下・艦なし）・撃墜（空襲の機は「残り N 機」＝この波の生きている機）・0 本で魚雷を押した。状態（機銃を押している間）: 艦に効かず閃光で見つかる・対空・射界外・射程に敵なし・煙幕・弾倉交換。
+// 出来事: 狙う艦の無い魚雷（艦なし。大発の下・PT の下は文を出さない）・撃墜（空襲の機は「残り N 機」＝この波の生きている機）・0 本で魚雷を押した。状態（機銃を押している間）: 艦に効かず閃光で見つかる・射界外・射程に敵なし・煙幕・弾倉交換（対空は文を出さない）。
+// v0.6.10 S0（v0.6.9 実機 2 回目。ユーザー「魚雷を撃つとかならず「PTの下を抜けた」とでるのをやめてください。PTがいてもいなくても表示されます。（大発も同じ）」「航空機への射撃時の「ほとんど当たらない」もいらないです」）:
+// 大発の下・PT の下の出来事と対空の状態は黙る番号（armsCueSilent）。世界（core/arms-cue・systems/arms-step）は今までどおり番号を書き、HUD が出さないだけ。Result の魚雷の行き先も「（狙う艦なし）」だけ。
 // S5: Briefing の「条件」のもう一つの兵装の一言（armsBriefingJa。WorldSetup だけから）と Result の 1 行（armsResultLineJa。使った夜だけ）。
 import { ARMS_CUE_DOWN_MS, ARMS_CUE_TORP_MS, CUE_DOWN_COLOR } from '../config/arms-config';
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
@@ -33,10 +35,6 @@ export interface ArmsCueLine {
 /** 文の番号と数 → 文と色。知らない番号（CUE_NONE を含む）は空の文 */
 export function armsCueJa(code: number, n: number): ArmsCueLine {
   switch (code) {
-    case EV_TORP_BARGE:
-      return { text: '大発の下を抜ける', color: HUD_COLOR_STRONG };
-    case EV_TORP_PT:
-      return { text: 'PTの下を抜ける', color: HUD_COLOR_STRONG };
     case EV_TORP_NOSHIP:
       return { text: '狙う艦がいない', color: HUD_COLOR_STRONG };
     case EV_DOWN_STRIKE:
@@ -49,8 +47,6 @@ export function armsCueJa(code: number, n: number): ArmsCueLine {
       return { text: '魚雷は撃ち尽くした', color: HUD_COLOR_STRONG };
     case ST_SHIP:
       return { text: '艦に効かず閃光で見つかる', color: HUD_COLOR_WARN }; // 撃てば閃光で 1 秒 1,200 m の敵に見つかる（レビュー ux-flash-undisclosed: Briefing は 2 行に収まらないので、撃っている間のこの文で言う。12 字 = 264 px）
-    case ST_AA:
-      return { text: '対空 ・ まず当たらない', color: HUD_COLOR_STRONG };
     case ST_ARC:
       return { text: '射界外 ・ 舷側に向けよ', color: HUD_COLOR_STRONG };
     case ST_NONE:
@@ -62,6 +58,11 @@ export function armsCueJa(code: number, n: number): ArmsCueLine {
     default:
       return { text: '', color: HUD_COLOR_STRONG };
   }
+}
+
+/** 黙る番号（v0.6.10 S0）: 大発の下・PT の下を抜けた魚雷の出来事と、対空の状態。ArmsCuePicker が選ばない（ほかの状態・出来事を隠さない） */
+export function armsCueSilent(code: number): boolean {
+  return code === EV_TORP_BARGE || code === EV_TORP_PT || code === ST_AA;
 }
 
 /** 出来事の文が魚雷のもの（魚雷のボタンの上に出す。ほかの出来事と状態の文は機銃のボタンの上） */
@@ -106,7 +107,7 @@ export class ArmsCuePicker {
   pick(a: Readonly<Pick<ArmsTelemetry, 'evCode' | 'evN' | 'evSeq' | 'stCode' | 'stN'>>, nowMs: number, torpedoHeld: boolean): void {
     if (a.evSeq !== this.lastSeq) {
       this.lastSeq = a.evSeq;
-      if (a.evCode !== CUE_NONE) this.start(a.evCode, a.evN, nowMs);
+      if (a.evCode !== CUE_NONE && !armsCueSilent(a.evCode)) this.start(a.evCode, a.evN, nowMs);
     }
     let code = CUE_NONE;
     let n = 0;
@@ -114,7 +115,7 @@ export class ArmsCuePicker {
       if (nowMs < this.evUntilMs) {
         code = this.evCode;
         n = this.evN;
-      } else if (a.stCode !== CUE_NONE) {
+      } else if (a.stCode !== CUE_NONE && !armsCueSilent(a.stCode)) {
         code = a.stCode;
         n = a.stN;
       }
@@ -159,9 +160,9 @@ export function armsBriefingJa(s: ArmsBriefingSource): string {
 
 // ---------- Result の 1 行（S5。spec-v068 §4.7） ----------
 
-/** 狙う艦の無い魚雷の行き先（Result の「魚雷 N 本（…）」） */
+/** 狙う艦の無い魚雷の行き先（Result の「魚雷 N 本（…）」）。v0.6.10 S0: 大発の下・PT の下は言わない（''）、艦の無い任務だけ「狙う艦なし」 */
 export function blindKindJa(kind: BlindKind): string {
-  return kind === 'barge' ? '大発の下を抜けた' : kind === 'pt' ? 'PTの下を抜けた' : '狙う艦なし';
+  return kind === 'noship' ? '狙う艦なし' : '';
 }
 
 /** 撃墜の内訳（水上機だけ・哨戒機だけならその名、混ざれば「うち …」。空襲の機だけなら無し。jp_02 は夜の出撃と夜明けの空襲が 1 夜に混ざる＝レビュー F10） */
@@ -173,12 +174,15 @@ function downsSuffixJa(a: ArmsResult): string {
 
 /**
  * Result の兵装の 1 行（使った夜だけ。ui/result-body が本文のどの枝の後ろにも足す）。数が 0 の部分は出さず、この順で「 ・ 」でつなぐ:
- * 「機銃 艦へ N 発（命中 N・効かない）」「対空 N 発 撃墜 N 機（…）」「魚雷 N 本（大発の下を抜けた｜PTの下を抜けた｜狙う艦なし）」。20 px で W 1280 の 1,232 px に収まる（最長の例 1,041 px）
+ * 「機銃 艦へ N 発（命中 N・効かない）」「対空 N 発 撃墜 N 機（…）」「魚雷 N 本」（艦の無い任務は「魚雷 N 本（狙う艦なし）」。v0.6.10 S0）。20 px で W 1280 の 1,232 px に収まる（最長の例 1,041 px）
  */
 export function armsResultLineJa(a: ArmsResult): string {
   const parts: string[] = [];
   if (a.shipRounds > 0) parts.push(`機銃 艦へ ${a.shipRounds} 発（命中 ${a.shipHits}・効かない）`);
   if (a.aaRounds > 0) parts.push(`対空 ${a.aaRounds} 発 撃墜 ${a.downs} 機${downsSuffixJa(a)}`);
-  if (a.blindTorpedoes > 0) parts.push(`魚雷 ${a.blindTorpedoes} 本（${blindKindJa(a.blindKind)}）`);
+  if (a.blindTorpedoes > 0) {
+    const k = blindKindJa(a.blindKind);
+    parts.push(k === '' ? `魚雷 ${a.blindTorpedoes} 本` : `魚雷 ${a.blindTorpedoes} 本（${k}）`);
+  }
   return parts.join(' ・ ');
 }
