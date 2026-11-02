@@ -119,8 +119,8 @@ describe('卯月（core/ally-destroyer。v0.6.10 S2）を使う所', () => {
   });
 });
 
-describe('新しい core（pt-torpedo・landing・landing-torpedoes・ally-destroyer）', () => {
-  it.each(['core/pt-torpedo.ts', 'core/landing.ts', 'core/landing-torpedoes.ts', 'core/ally-destroyer.ts'])('%s は phaser・config・systems・ui を import しない', (f) => {
+describe('新しい core（pt-torpedo・landing・landing-torpedoes・ally-destroyer、v0.6.10 S3b の模擬の landing-sim-call・landing-ally-cell）', () => {
+  it.each(['core/pt-torpedo.ts', 'core/landing.ts', 'core/landing-torpedoes.ts', 'core/ally-destroyer.ts', 'core/landing-sim-call.ts', 'core/landing-ally-cell.ts'])('%s は phaser・config・systems・ui を import しない', (f) => {
     const imports = [...code(f).matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!);
     expect(imports.length).toBeGreaterThan(0);
     for (const m of imports) expect(m, `${f}: ${m}`).toMatch(/^\.\/[\w-]+$/);

@@ -2,11 +2,14 @@
 // 確保は 1 夜の始めに 1 回だけ（PT ごとの列は隻数の長さ）。記録の道具（landing-sim が 300 行を超えないため）: LandingTrialWatch は PT ごとの見張りの条件・哨戒の出入り・斉射（I1〜I4）、
 // LandingTrialTorpedoes は敵の魚雷のプール（世界の写し）・LandingTorpedoLink・測るだけの影のプール（いつも浮いている同じ船体へ同じ魚雷。斉射の当たりうる本数）と、その決着を記録へ書く口。
 // 夜の終わりに finishLandingTrial が隊・輸送船・自艇の結果を写す。v0.6.10 S3a（spec-v0610 §6.1・§6.2）: 卯月の欄（finishLandingAlly が写す・I7〜I11 の材料）と、卯月の船体の下を
-// 通る魚雷（LandingTrialTorpedoes.watchAlly。表だけ）、I9 の比べ方（landingTrialBase: 卯月の欄を除いた記録）。
+// 通る魚雷（LandingTrialTorpedoes.watchAlly。表だけ）、I9 の比べ方（landingTrialBase: 卯月の欄を除いた記録）。v0.6.10 S3b: PT ごとに卯月の砲が決めた結末（TABLE=4 の東の PT の
+// 結末の分け方）と、夜明け近しの帰投の輪の呼びかけ（core/landing-sim-call。卯月のいる夜の lure の動きだけ）の秒。
 import type { AllyDestroyer } from './ally-destroyer';
+import { FATE_BY_ALLY } from './convoy-sim-gunboat';
 import type { SeaBounds } from './boat-motion';
 import { LANDING_REPORT_TOWARD_DEG, type LandingState } from './landing';
 import type { LandingParams } from './landing-data';
+import type { LandingRingCall } from './landing-sim-call';
 import { LandingTorpedoLink, LandingTorpedoPool, type SalvoBook } from './landing-torpedoes';
 import { PT_PATROL, type PtSection } from './pt-boats';
 import { bearingDeg } from './ship-ai';
@@ -53,11 +56,17 @@ export interface LandingTrial {
    */
   allySpotted: number; allyLitPts: number; litSalvos: number; litAways: number; allyRetired: number; allySunk: number; allyShells: number; allyHits: number; chaseShells: number;
   candSteps: number; draws27: number; draws28: number; litSalvoBad: number; ownerViol: number; torpThroughAlly: Uint8Array;
+  /**
+   * v0.6.10 S3b（卯月のいる夜だけ。ほかは作ったときのまま）: PT ごとに卯月の砲が結末を決めた（1）、夜明け近しの帰投の輪の呼びかけ（core/landing-sim-call。lure の動きだけ）の
+   * 決着の前に立った秒・そのとき見えなかった（接触・報告・雷跡）・最初に見えた秒・最初に聞いた秒（NaN は無し）
+   */
+  allyFate: Uint8Array; ringCallS: number; ringCallHidden: boolean; ringShownS: number; ringObeyS: number;
 }
 
 /** 卯月の欄（I9: 卯月の効かない遊び方はこれを除いて卯月の無い夜と同じ記録） */
 export const LANDING_TRIAL_ALLY_KEYS: readonly (keyof LandingTrial)[] = [
   'allySpotted', 'allyLitPts', 'litSalvos', 'litAways', 'allyRetired', 'allySunk', 'allyShells', 'allyHits', 'chaseShells', 'candSteps', 'draws27', 'draws28', 'litSalvoBad', 'ownerViol', 'torpThroughAlly',
+  'allyFate', 'ringCallS', 'ringCallHidden', 'ringShownS', 'ringObeyS',
 ];
 
 export function createLandingTrial(count: number): LandingTrial {
@@ -69,6 +78,7 @@ export function createLandingTrial(count: number): LandingTrial {
     i1LeadS: Infinity, i2LeadS: Infinity, afterDawnSalvos: 0, maxSalvosPerPt: 0, draws26: 0, drawsWant: 0, unresolvedAtDawn: false,
     allySpotted: 0, allyLitPts: 0, litSalvos: 0, litAways: 0, allyRetired: 0, allySunk: 0, allyShells: 0, allyHits: 0, chaseShells: 0,
     candSteps: 0, draws27: 0, draws28: 0, litSalvoBad: 0, ownerViol: 0, torpThroughAlly: new Uint8Array(count),
+    allyFate: new Uint8Array(count), ringCallS: NaN, ringCallHidden: false, ringShownS: NaN, ringObeyS: NaN,
   };
 }
 
@@ -216,13 +226,18 @@ export class LandingTrialTorpedoes {
   }
 }
 
-/** 夜の終わり: 卯月の数えと seed+27・+28 から引いた回数を写す（卯月のいない夜は何もしない＝0 のまま。I11 と船体の下の魚雷は模擬がステップごと・発射ごとに書く） */
-export function finishLandingAlly(out: LandingTrial, a: AllyDestroyer | null, draws27: number, draws28: number): void {
+/**
+ * 夜の終わり: 卯月の数え・seed+27・+28 から引いた回数・卯月の砲が決めた結末と、帰投の輪の呼びかけ（聞く夜だけ）の秒を写す（卯月のいない夜は何もしない＝作ったときのまま。
+ * I11 と船体の下の魚雷は模擬がステップごと・発射ごとに書く）
+ */
+export function finishLandingAlly(out: LandingTrial, a: AllyDestroyer | null, draws27: number, draws28: number, call: LandingRingCall): void {
   if (!a) return;
   Object.assign(out, {
     allySpotted: a.spots, allyLitPts: a.litPts, litSalvos: a.litSalvos, litAways: a.litAways, allyRetired: a.retired, allySunk: a.sunk, allyShells: a.shells, allyHits: a.liveHits,
     chaseShells: a.chaseShells, candSteps: a.candSteps, draws27, draws28,
   });
+  for (let i = 0; i < out.allyFate.length; i++) out.allyFate[i] = a.credit.fateBy[i] === FATE_BY_ALLY ? 1 : 0;
+  if (call.on) Object.assign(out, { ringCallS: call.raisedS, ringCallHidden: call.raisedHidden, ringShownS: call.shownS, ringObeyS: call.obeyS });
 }
 
 /** 夜の終わり: 時刻・夜明け・輸送船（ld）・隊の KPI（q）・失った HP・残りの燃料 %・25mm の撃った数・seed+26 から引いた回数を写す（決着の前に輪に入ったかは模擬がステップごとに書く） */

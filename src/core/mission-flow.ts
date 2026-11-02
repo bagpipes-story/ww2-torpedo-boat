@@ -44,6 +44,11 @@ export function ringEdgeDistM(rp: ReturnPoint, x: number, y: number): number {
   return d > 0 ? d : 0;
 }
 
+/** 巡航で輪の縁まで直線で帰る実秒（「夜明け近し」の呼びかけの needS。Scene の refreshReturnState と模擬の夜明けの呼びかけ（core/landing-sim-call）が同じ式を使う。v0.6.10 S3b・レビュー L3） */
+export function dawnCallNeedS(edgeM: number, cruiseMps: number, timeScale: number): number {
+  return edgeM / (cruiseMps * timeScale);
+}
+
 /** 呼びかけのビット。一度立ったら任務中は消えない（ラッチ） */
 export const CALL_EXPENDED = 1;
 export const CALL_SUNK = 2;

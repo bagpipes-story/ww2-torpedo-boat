@@ -10,6 +10,7 @@
 // 台本は core/landing-sim-policy、1 夜の記録は core/landing-trial、集計は core/landing-sim-cell（convoy-sim と同じ分け方）。Phaser 非依存。確保は 1 夜の始めだけ。省いたもの: 命中スロー・消火の長押し・漂流の待ち。
 // v0.6.10 S3a（spec-v0610 R-U6・§6.1）: 味方の駆逐艦 卯月（s.allyDestroyer＝jp_04 で allyOff でなければ。core/ally-destroyer）を雷撃の直後・敵の魚雷のプールの前に回す（世界の world-landing と同じ順）。
 // 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO）・撃たずに去るは onLitAway。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
+// v0.6.10 S3b（R-U9・LD3）: 卯月のいる夜の lure の動きの遊び方は夜明け近しの帰投の輪の呼びかけを聞く（core/landing-sim-call。世界と同じ呼びかけの関数をステップの終わりに・見えている間だけ・人は遅れて）。
 import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET, createAllyDestroyer, stepAllyDestroyer, type AllyLink } from './ally-destroyer';
 import type { AllyDestroyerParams } from './ally-destroyer-data';
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
@@ -18,12 +19,15 @@ import { dawnReached } from './dawn-air';
 import { createFuelState, stepFuel } from './fuel';
 import type { GunEvents } from './gun-battery';
 import { applyShellHit, createDamageState, stepDamage, type HitOutcome } from './gunnery';
-import { LANDING_FIRE_LINE_EXTRA_M, LANDING_REPORT_NEAR, LD_UNLOADING, createLanding, createLandingReport, landingFireLine, landingReport, landingResolved, tickLanding } from './landing';
+import {
+  LANDING_FIRE_LINE_EXTRA_M, LANDING_REPORT_NEAR, LD_UNLOADING, createLanding, createLandingReport, createLandingWakes, landingFireLine, landingReport, landingResolved, landingWakes, tickLanding,
+} from './landing';
 import type { LandingParams } from './landing-data';
 import {
   LANDING_HUMAN, LANDING_HUMAN_SEED_ADD, LANDING_HUMAN_SEED_MUL, LANDING_POLICY_SPECS, humanGunOn, humanReactAt, humanSeesReport, landingGunHeld, landingPlayPoints, landingSteer,
   type LandingHumanPlay, type LandingPolicy, type LandingSteer, type LandingSteerCtx,
 } from './landing-sim-policy';
+import { createLandingRingCall, stepLandingRingCall } from './landing-sim-call';
 import { LandingTrialTorpedoes, LandingTrialWatch, createLandingTrial, finishLandingAlly, finishLandingTrial, type LandingTrial } from './landing-trial';
 import { insideRing } from './mission-flow';
 import { PT_GUN_SEED_OFFSET, PT_PASS, PT_PATROL, PT_SEED_OFFSET, createPtSection, stepPtSection, type PtCheck, type PtEvents } from './pt-boats';
@@ -40,7 +44,9 @@ import { wrapDeg360 } from './units';
 import { enemyDetectRangeM, speedFactorForBand } from './visibility';
 
 export type { LandingTrial } from './landing-trial';
-export { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED } from './pt-torpedo';
+export {
+  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED,
+} from './pt-torpedo';
 
 export interface LandingSimSetup extends PtSimSetup {
   /** 揚陸（world-setup の landing.params）と米PT の雷撃（landing.torpedo）。米PT・艇・燃料・視界・帰投の輪は PtSimSetup（systems/pt-pass-sim-setup の ptSimSetup） */
@@ -162,6 +168,9 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const cueM = sp.fight === 'cue' && tp.engagedFactor > 0 ? tp.launchM + LANDING_FIRE_LINE_EXTRA_M : 0;
   const steer: LandingSteer = { headingDeg: NaN, wantMps: 0 };
   const mem = { lured: false };
+  // 夜明け近しの帰投の輪の呼びかけ（卯月がいて ring_call_before_dawn の夜の lure の動きだけ聞く。人は最初に見えてから delayMinS 秒の後。乱数を引かない）と輸送船へ走る雷跡
+  const call = createLandingRingCall(s.allyDestroyer?.ringCallBeforeDawn === true && sp.move === 'lure', human ? hp.delayMinS : 0);
+  const wakes = createLandingWakes();
   for (;;) {
     // 台本（毎フレームの入力に当たる。固定ステップの前。報告は前のステップの終わりの値＝HUD）: 出発の遅れの間は止まる（home_early は t = 0 から。R14 A5）
     const t0 = t;
@@ -169,6 +178,7 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     steer.headingDeg = NaN;
     steer.wantMps = 0;
     if (human) ctx.report = humanSeesReport(t0, out.reportS, delayS) ? report : noReport; // 人: 最初の報告から delayS 秒は報告を見ない
+    ctx.ringCall = call.obey;
     if (t0 >= departS || sp.move === 'home') landingSteer(sp, ctx, resolved, mem, steer);
     // 赤い線への反応（HUD どおり。dodge の台本だけ）: 航過は固めた針路から離れる直角へ全速 4 秒（線の間は延ばす）、連射は針路そのまま（「針路そのまま撃ち返せ」）
     if (sp.dodge && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
@@ -236,6 +246,11 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     landingReport(ld, lp, q, st, report);
     if (report.sub > 0 && Number.isNaN(out.reportS)) out.reportS = t;
     if (report.sub === LANDING_REPORT_NEAR && Number.isNaN(out.nearReportS)) out.nearReportS = t;
+    if (call.on) {
+      // 帰投の輪の呼びかけ（世界の Scene と同じ updateReturnCalls・dawnCallNeedS。見えるのは接触・報告・輸送船へ走る雷跡が無い間）
+      landingWakes(tor.pool.states, tp.torpedo.speedMps, s.timeScale, ld, wakes);
+      stepLandingRingCall(call, t, s.durationS, s.ring, s.fuel, s.timeScale, boat.x, boat.y, fuel.gal, res, q.detected, report.sub, wakes.count);
+    }
     if (cueM > 0) ctx.cue = landingFireLine(ld, q, st.left, cueM * cueM) >= 0;
     watch.endStep(q, st.left, lp, t);
     if (atHome && !res) out.ringEarly = true; // R4: 決着の前に輪に入った（R14 A5: 終わらずに待つ）
@@ -249,6 +264,6 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     out.relevant[i] = out.kind[i]! > 0 && out.launchS[i]! + out.launchM[i]! / v < lp.unloadS ? 1 : 0;
   }
   out.drawsWant = st.salvos * (1 + 2 * tp.n) + tor.erratic;
-  finishLandingAlly(out, ally, a27.draws, a28.draws);
+  finishLandingAlly(out, ally, a27.draws, a28.draws, call);
   return finishLandingTrial(out, q, ld, t, c.dawn, sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, (fuel.gal / s.fuelGal) * 100, gun ? gun.battery.shots : 0, trng.draws);
 }

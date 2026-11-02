@@ -131,6 +131,8 @@ export interface LandingSteerCtx {
   cruiseMps: number;
   /** 輸送船が射線に入る（core/landing の landingFireLine が PT を返した。前のステップの終わりの値＝HUD の警告。lure_cue だけが読み、模擬はその遊び方のときだけ書く） */
   cue: boolean;
+  /** 夜明け近しの帰投の輪の呼びかけを聞く（v0.6.10 S3b。core/landing-sim-call の obey。前のステップの終わりの値。卯月の無い夜・lure の動きでない遊び方は書かない） */
+  ringCall?: boolean;
 }
 
 /** 待つ点（泊地から出発点の側へ stationM）と picket の点（泊地から picketBrgDeg の方位へ picketM） */
@@ -182,6 +184,8 @@ export function landingSteer(sp: LandingPolicySpec, c: LandingSteerCtx, resolved
     if (out.wantMps === 0) out.wantMps = c.cruiseMps; // 輪の中心のそばでも輪に入るまで進む
     return;
   }
+  // 夜明け近しの帰投の輪の呼びかけ（v0.6.10 S3b・R-U9。見えている間だけ）: 輪の中心へ巡航、着いたら止まって待つ（home_early と同じ。赤い線の転舵は呼ぶ側が上書き）
+  if (c.ringCall === true) return toward(c, c.ring.x, c.ring.y, c.cruiseMps, out);
   if (sp.move === 'hide') return;
   if (sp.move === 'home') return toward(c, c.ring.x, c.ring.y, c.cruiseMps, out); // home_early: 輪の中心へ巡航、着いたら止まって待つ（輪の半径の内）
   if (sp.move === 'circle') {

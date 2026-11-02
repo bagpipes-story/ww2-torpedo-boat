@@ -1,6 +1,6 @@
 // v0.6.9 S5a（spec-v069 §4.1・§9 の landing-step-order・D18）: 揚陸の任務（jp_04）の固定ステップの順のソースの pin。世界（systems/world-enemy-step）は 米PT の隊 → 揚陸の段 → 機関、
 // 揚陸の段の中（systems/world-landing の stepAfterPts）は 雷撃（stepPtTorpedoes。seed+26）→ 敵の魚雷のプール → 揚陸の時計（tickLanding）、模擬（core/landing-sim）も同じ順
-// （v0.6.10 S3a: 模擬は雷撃の直後に卯月。世界の卯月の行は S5a）。
+// （v0.6.10 S3a: 模擬は雷撃の直後に卯月。世界の卯月の行は S5a。S3b: 夜明け近しの帰投の輪の呼びかけはステップの終わりの報告の後に立て、次のステップの台本が読む）。
 // 揚陸の世界は MissionWorld の最後（兵装の後）に作り、seed+26 は buildLanding の中の setup.landing のある枝だけ（tests/landing-imports）。呼びかけ・撃ち尽くし・達成の配線も見る。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -48,6 +48,13 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     expectOrder(s, ['new CountingRng((seed + ALLY_LOOKOUT_SEED_OFFSET) >>> 0)', 'new CountingRng((seed + ALLY_GUN_SEED_OFFSET) >>> 0)', 'const ally = s.allyDestroyer ? createAllyDestroyer(s.allyDestroyer, p, a27, a28, null) : null;']);
     expect(s.split('ALLY_LOOKOUT_SEED_OFFSET) >>> 0)').length).toBe(2);
     expect(s.split('ALLY_GUN_SEED_OFFSET) >>> 0)').length).toBe(2);
+    // 帰投の輪の呼びかけ（S3b）: 台本の前に前のステップの終わりの値を渡し、ステップの終わり（報告の後）に世界と同じ関数で立てる
+    expectOrder(s, [
+      'ctx.ringCall = call.obey;', 'landingSteer(sp, ctx, resolved, mem, steer);', 'stepPtTorpedoes(', 'landingReport(ld, lp, q, st, report);',
+      'landingWakes(tor.pool.states, tp.torpedo.speedMps, s.timeScale, ld, wakes);', 'stepLandingRingCall(call, t, s.durationS, s.ring, s.fuel, s.timeScale, boat.x, boat.y, fuel.gal, res, q.detected, report.sub, wakes.count);',
+    ]);
+    expect(s.split('stepLandingRingCall(').length).toBe(2);
+    expect(s).toContain("const call = createLandingRingCall(s.allyDestroyer?.ringCallBeforeDawn === true && sp.move === 'lure', human ? hp.delayMinS : 0);");
   });
   it('mission-world: 揚陸の世界は兵装の後（最後）に作る。stepFn は敵の側の段 → 火災（揚陸の段は敵の側の段の中）', () => {
     const s = code('systems/mission-world.ts');

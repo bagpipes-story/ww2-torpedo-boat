@@ -4,17 +4,19 @@
 // （config/landing-mission-data の V1〜V13・core/pt-torpedo-data の V11）を通す＝R7: V8・V10・V13 を破る組み合わせは例外で止まる。data は変えない。
 // v0.6.10 S3a（spec-v0610 §6.1・LD9）: 卯月（world-setup の allyDestroyer）を模擬へ渡す。allyOff（scripts の ALLY_OFF=1）は鍵ごと渡さない＝S0b と同じ夜。不変に I7・I8・I10・I11、
 // I9（卯月の効かない遊び方は同じ seed の卯月の無い夜と同じ記録）は LandingRun.i9Misses。帯はまだ S0b のまま（卯月のいる帯と *_NO_ALLY は S4 の較正）。
+// v0.6.10 S3b: 卯月のつまみと夜明け（systems/ally-sim-knobs。範囲の外は例外・data の写しに当てて V-A1〜V-A6 を通す）。
 import { getPrototypeMission, type GameData } from '../config/game-data';
 import { LANDING_WARN_MIN_S } from '../config/landing-config';
 import { runLandingTrial, type LandingSimSetup } from '../core/landing-sim';
 import { landingCell, runLandingTrials, salvoStats, type LandingCell, type SalvoKindStats, type SalvoStats } from '../core/landing-sim-cell';
 import { LANDING_HUMAN_POLICIES, type LandingPolicy } from '../core/landing-sim-policy';
 import { landingTrialBase, type LandingTrial } from '../core/landing-trial';
+import { checkAllyKnobs, withAllyOverrides, withoutAllyKnobs, type AllySimOverrides } from './ally-sim-knobs';
 import { ptSimSetup } from './pt-pass-sim-setup';
 import { buildWorldSetup } from './world-setup';
 
-/** 感度を見る上書き（無ければ data の値。spec §6 S3 の UNLOAD・LOOKOUT・HITS・AIM・SPACING・HURRIED・HFACTOR・REACQ・ALLOT と R12 の EFACTOR）と難易度ハード */
-export interface LandingSimOverrides {
+/** 感度を見る上書き（無ければ data の値。spec §6 S3 の UNLOAD・LOOKOUT・HITS・AIM・SPACING・HURRIED・HFACTOR・REACQ・ALLOT と R12 の EFACTOR）と難易度ハード、卯月のつまみと夜明け（v0.6.10 S3b） */
+export interface LandingSimOverrides extends AllySimOverrides {
   unloadS?: number; lookoutM?: number; hitsToSink?: number;
   aimDeg?: number; spacingDeg?: number; hurriedM?: number; hurriedFactor?: number; engagedFactor?: number; reacquireS?: number;
   fuelGal?: number; hard?: boolean;
@@ -26,7 +28,8 @@ export interface LandingSimOverrides {
 export const LANDING_I9_POLICIES: readonly LandingPolicy[] = ['hide', 'circle_start', 'home_early'];
 
 export function landingSimSetup(data: GameData, missionId: string, o: LandingSimOverrides = {}): LandingSimSetup {
-  const d = withLandingOverrides(data, missionId, o);
+  checkAllyKnobs(o, o.allyOff === true);
+  const d = withAllyOverrides(withLandingOverrides(data, missionId, o), missionId, o);
   const base = ptSimSetup(d, missionId, { fuelGal: o.fuelGal, hard: o.hard });
   const w = buildWorldSetup(d, missionId, { hard: o.hard, fuelGal: o.fuelGal ?? NaN, allyOff: o.allyOff });
   if (!w.landing) throw new Error(`${missionId} に停泊して揚陸する輸送船（v0_1_prototype.landing）が無い`);
@@ -215,7 +218,7 @@ export function landingCalibrationRun(data: GameData, missionId: string, policie
     if (!setup.allyDestroyer || !LANDING_I9_POLICIES.includes(pol)) return 0;
     const key = `${pol}/${b}`;
     if (!i9.has(key)) {
-      const s0 = (off ??= landingSimSetup(data, missionId, { ...o, allyOff: true }));
+      const s0 = (off ??= landingSimSetup(data, missionId, { ...withoutAllyKnobs(o), allyOff: true }));
       i9.set(key, get(pol)[b]!.filter((r, k) => r.allyShells > 0 || landingTrialBase(r) !== landingTrialBase(runLandingTrial(s0, pol, seedBase + b * n + k))).length);
     }
     return i9.get(key)!;

@@ -30,7 +30,7 @@ import {
 import type { BoatTelemetry } from '../core/boat-motion';
 import { resetInput, type InputState } from '../core/input-state';
 import { AIM_ASSIST_LEAD_MARKER_TIME, AIM_ASSIST_NONE, aimAssistLevelFor } from '../core/progress';
-import { updateReturnCalls, type MissionEndReason } from '../core/mission-flow';
+import { dawnCallNeedS, updateReturnCalls, type MissionEndReason } from '../core/mission-flow';
 import { directSortie, isSortie, type Sortie } from '../core/sortie';
 import { clamp, degToRad } from '../core/units';
 import { ReturnPointView } from '../entities/return-point';
@@ -229,7 +229,7 @@ export class MissionScene extends Phaser.Scene {
     t.homeEdgeM = this.ringEdgeM;
     // 巡航で輪の縁まで直線で帰るのに要る燃料・実秒（迂回と敵は余裕 call_margin で吸収する）
     const needGal = this.ringEdgeM * w.fuelCurve.galPerMCruise;
-    const needS = this.ringEdgeM / (w.fuelCurve.cruiseMps * this.timeScale);
+    const needS = dawnCallNeedS(this.ringEdgeM, w.fuelCurve.cruiseMps, this.timeScale);
     // 撃ち尽くし: 魚雷の任務は残弾 0、砲の任務は狩る大発が残っていない（撃破か上陸。v0.4.2）。撃沈は任務の目標（駆逐艦の撃沈／大発のノルマ）
     const expended = w.setup.mainWeapon === 'torpedo' ? w.torpedoes.remaining === 0 && !w.torpedoesRunning : w.noTargetsLeft;
     const before = this.callFlags;

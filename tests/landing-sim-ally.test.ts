@@ -2,6 +2,7 @@
 // 卯月を切った夜（ALLY_OFF=1）は鍵を消した設定の夜と同じで卯月の欄はみな 0、I7〜I11（seed 1〜40・15 の遊び方・ノーマルとハード）、I9（卯月の効かない遊び方は同じ seed の
 // 卯月の無い夜と記録が同じ・撃たない・照らさない）、結末と数えが合う（撃たずに去らせた・照らされた斉射）、卯月の船体の下を通る魚雷の数え方（表だけ）、I9 の比べ方、
 // scripts の ALLY_OFF は見出しに出さない（LD9）。N 400 × 2 組の表と md5 は CHANGELOG v0.6.10 S3a（帯は S0b のまま。卯月のいる帯は S4）。
+// v0.6.10 S3b: 卯月の欄に PT ごとの卯月の砲の結末と帰投の輪の呼びかけの秒（呼びかけの規則は tests/landing-sim-call）。卯月を切った夜はどの欄も作ったときのまま。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -36,17 +37,16 @@ describe('組み立て', () => {
 });
 
 describe('卯月を切った夜（ALLY_OFF=1・LD9）', () => {
-  it.each(LANDING_POLICIES)('%s: 鍵を消した設定の夜と同じ（配列の中身まで）で、卯月の欄はみな 0（I11 も）', (pol) => {
+  it.each(LANDING_POLICIES)('%s: 鍵を消した設定の夜と同じ（配列の中身まで）で、卯月の欄はみな作ったときのまま（数は 0・秒は NaN・I11 も）', (pol) => {
     const bare: LandingSimSetup = { ...ON };
     delete bare.allyDestroyer;
+    const fresh = snap(Object.fromEntries(LANDING_TRIAL_ALLY_KEYS.map((k) => [k, createLandingTrial(OFF.pt.count)[k]])));
     for (let seed = 1; seed <= 3; seed++) {
       const r = runLandingTrial(OFF, pol, seed);
       expect(snap(r)).toBe(snap(runLandingTrial(bare, pol, seed)));
-      for (const k of LANDING_TRIAL_ALLY_KEYS) {
-        const v = r[k];
-        expect(typeof v === 'number' ? v : Array.from(v as Uint8Array).reduce((a, x) => a + x, 0), `${pol} ${seed} ${k}`).toBe(0);
-      }
+      expect(snap(Object.fromEntries(LANDING_TRIAL_ALLY_KEYS.map((k) => [k, r[k]]))), `${pol} ${seed}`).toBe(fresh);
     }
+    expect(fresh).toContain('"ownerViol":0');
   });
   it('scripts/landing-sim は ALLY_OFF を上書きの o の外で読む（見出しの set に出さない＝表のバイトが S0b と同じ。レビュー M5）', () => {
     const src = readFileSync(new URL('../scripts/landing-sim.ts', import.meta.url), 'utf8');
@@ -131,7 +131,8 @@ describe('I9（卯月の効かない遊び方: hide・circle_start・home_early�
     const c = createLandingTrial(2);
     c.kind[0] = 1;
     expect(landingTrialBase(a)).not.toBe(landingTrialBase(c));
-    expect(LANDING_TRIAL_ALLY_KEYS.length).toBe(15);
+    expect(LANDING_TRIAL_ALLY_KEYS.length).toBe(20);
+    expect(LANDING_TRIAL_ALLY_KEYS.slice(15)).toEqual(['allyFate', 'ringCallS', 'ringCallHidden', 'ringShownS', 'ringObeyS']);
     for (const k of LANDING_TRIAL_ALLY_KEYS) expect(k in a, k).toBe(true);
   });
 });
