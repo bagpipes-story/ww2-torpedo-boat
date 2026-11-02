@@ -3,9 +3,10 @@
 // 慌てた斉射（R2）: 隊が自艇（か 25mm の閃光）を捉えたステップに、哨戒から警戒になった PT はみな（見つけた PT だけでなく）、輸送船から hurried_max_m の内で艇首が向いていれば
 // 狙いの誤差 × hurried_error_factor で撃って去る（hurried_max_m 0 で無し）。見失って哨戒に戻った PT は reacquire_s の間は撃たない（D8）。輸送船が沈めば哨戒の PT は去る（F11）。
 // 戦いながらの斉射（R12）: 自艇と戦っている PT（警戒・突撃・追撃・離脱。哨戒・航過・去る・海域の外・沈んだ・撃退は除く）が、揚陸中（決着の前）の輸送船から launch_range_m の内で
-// 艇首が向いていれば狙いの誤差 × engaged_error_factor で撃ち、段階を変えない（自艇と戦い続ける。PT の欄は何も書かない。engaged_error_factor 0 で無し。見失いの reacquire_s は掛けない）。
-// 外から PT_LEAVE を書くのは（気づかれていない・慌てた斉射と輸送船の沈没だけ）pt-damage の hitPt と同じ書き方（phase と timerS、onLeave）。哨戒・警戒の PT は q.owner でなく（owner は突撃からの commitPass だけ）、追撃・連射の状態も無い。
-// q.held は哨戒・去るでは読まれない（HUD_THREAT が見るのは警戒〜突撃だけ。pt-boats:75 の見失いは held を消さないが害は無い。spec R8/F9）。去った PT は凍結の去るの枝が北へ出す。
+// 艇首が向いていれば狙いの誤差 × engaged_error_factor で撃つ（engaged_error_factor 0 で無し。見失いの reacquire_s は掛けない）。
+// 撃ったら去る（3 種類とも。v0.6.9 実機 1 回目。ユーザーの選択 A「引きつけて離す」: 前は戦いながら撃った PT が去らずに自艇につきまとい、外れた夜もクリアできなかった）。
+// 外から PT_LEAVE を書くのは斉射（3 種類）と輸送船の沈没だけで、pt-damage の hitPt が航過の外の PT に書くのと同じ（phase と timerS、onLeave）。去った PT は凍結の去るの枝が北へ出す。
+// 外から去らせても隊の欄（owner・held・相方・追撃の目標・連射）が宙に浮かないことは salvo の注（凍結のコードで確かめたこと）。
 // 乱数は seed+26 の系列（PT_TORPEDO_SEED_OFFSET。jp_04 だけ。systems/world-landing と core/landing-sim が最後に作る）: 斉射のときだけ 狙い 1 回 → 1 本ごとに 不発 → 蛇行 → [偏差]
 // （systems/torpedo-launcher と同じ順。3 種類とも同じ）。斉射の無いステップは引かない。Phaser 非依存・毎ステップ確保しない（状態は createPtTorpedoState で 1 回）。距離は二乗、atan2 は撃てる距離の内の PT だけ。
 import { LD_UNLOADING } from './landing';
@@ -153,8 +154,18 @@ function salvo(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, i: number,
   st.lastBoat = i;
   st.lastKind = kind;
   sink.onSalvo(i, kind, rangeM, n);
-  if (kind === PT_SALVO_ENGAGED) return; // R12: 段階を変えず自艇と戦い続ける（PT の欄は書かない。owner・held・航過・追撃の状態はそのまま）
-  // retreat_after_salvo（v0.6.9 は true だけ。core/pt-torpedo-data の V11）: 気づかれていない・慌てた斉射は撃ったら去る
+  // 撃ったら去る（3 種類とも。retreat_after_salvo は true だけ＝core/pt-torpedo-data の V11。戦いながらの斉射は v0.6.9 実機 1 回目から）。
+  // 凍結のコード（pt-boats・pt-state・pt-chase・pt-damage）と pt-pass-end・pt-fire で確かめたこと: 撃つ PT は哨戒・警戒・突撃・追撃・離脱で、航過（PT_PASS）ではない。
+  // ・q.owner: 立てるのは commitPass（pt-pass-end）と commitBurst（pt-chase）で、どちらも同時に航過にする。航過から出るのは owner も消す endPass・endBurst・dropOwner・
+  //   夜明け（pt-boats の 3）だけ（撃退・制圧の owner は航過のまま弾 0）＝owner なら航過。撃つ PT は owner でない（閉じる航過・赤い線（attackLineShown）は無い）。
+  //   tests/pt-torpedo-engaged の夜: 待つ突撃（held 1）・相方の航過中・離脱から撃っても、去った後は owner・脅威の PT にならない。
+  // ・burst: 立てるのは commitBurst（owner と同時）、消すのは endBurst・dropOwner・夜明け＝owner の航過だけが true。撃つ PT は false（閉じる・数える連射は無い）。
+  // ・q.held: 書くのは突撃の枝だけ、読むのは突撃の枝と hudThreatIndex（held を見る窓は警戒〜突撃）。去るは突撃へ戻らず（去る → 海域の外だけ）窓の外なので、残った 1 は読まれない
+  //   （hitPt の去る・pt-boats:75 の見失いも held を消さない。spec R8/F9）。
+  // ・相方・追撃の目標: partnerReady は毎回 ptFighting で隊をなめ（覚えない）、追撃の目標（pt-boats の TARGET）は自艇の推定で PT の添字を持たない。q.lastBurstBoat・selfGapLeftS は
+  //   その PT の次の連射だけを止め、q.lastPassBoat は後から落ちる弾の数え先（endPass・endBurst・pt-boats:148 の去るも残したまま）。
+  // ・25mm の標的は毎ステップ ptLive で選び直す（去った PT は選ばれず当たらない）。この雷撃の欄は left 0・prevPhase は去る（夜明けのラッチ・見失いの待ち・沈没の枝は通らない）。
+  // よって離す欄は無い（夜明けの枝・dropOwner の後始末は owner の航過のためのもの）。
   b.phase = PT_LEAVE;
   b.timerS = 0;
   onLeave(i);
@@ -165,7 +176,7 @@ export function ptTorpedoOutcome(st: PtTorpedoState, q: PtSection, i: number): n
   const b = q.boats[i]!;
   if (st.kind[i] === PT_SALVO_CALM) return OUT_CALM;
   if (st.kind[i] === PT_SALVO_HURRIED) return OUT_HURRIED;
-  if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 撃った後に 25mm で撃退・撃沈されても斉射を先に（b.fate は Result がそのまま読める）
+  if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 斉射を先に（撃てば去るので、撃った後に 25mm の結末は付かない。b.fate は Result がそのまま読める）
   if (b.fate === PT_FATE_SUNK) return OUT_SUNK;
   if (b.fate === PT_FATE_CREW || b.fate === PT_FATE_HULL) return OUT_RETIRED;
   if (st.goalGone[i] === 1) return OUT_GOAL_GONE;

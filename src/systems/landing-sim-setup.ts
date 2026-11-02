@@ -84,7 +84,8 @@ const lost = (c: LandingCell): number => c.ownSunkPct + c.adriftPct;
  * 対の帯: circle_start ≤ hide + 10（R1）・lure ≥ lure_near + 10（R13: 輸送船から離れて戦えば得。輸送船のそばで戦う lure_near と比べる）・lure_late ≤ lure − 10 かつ ≥ hide + 20（R2）・
  * picket ≤ lure − 20・kite ≤ lure + 5 で自艇の沈没 + 漂流 ≥ lure + 5（引きつけ続けが得にならない）。lure_away は表だけ（R13: S3 の lure がもう見つかっている間は輸送船から離れるので
  * lure と同じに遊ぶ。R12 の lure_away ≥ lure + 3 は開かない）。picket・shoot_near・circle_start・lure_near は行の帯なし。S4 の値（engaged_error_factor 2.0）で全部 ✓。
- * R14 の lure_cue（HUD の「輸送船が射線に入る！ 離れて戦え」の間だけ離れる）と home_early（すぐ帰投の輪へ行って待つ）は表だけ
+ * R14 の lure_cue（HUD の「輸送船が射線に入る！ 離れて戦え」の間だけ離れる）と home_early（すぐ帰投の輪へ行って待つ）は表だけ。
+ * v0.6.9 実機 1 回目（撃った PT は 3 種類の斉射とも去る）の後もノーマルは帯を変えずに全部 ✓（lure 87.3 / 87.0%・kite の沈没 + 漂流は lure より ＋31.4 点）
  */
 export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 15], ownSunkPct: [0, 3] } },
@@ -109,10 +110,14 @@ export const LANDING_PAIRS: readonly LandingPairRow[] = [
   { policy: 'kite', other: 'lure', name: '達成 %', value: obj, lo: -Infinity, hi: 5 },
   { policy: 'kite', other: 'lure', name: '沈没 + 漂流 %', value: lost, lo: 5, hi: Infinity },
 ];
-/** ハード（R12: lure 45〜70%・自艇の沈没 ≤ 30%、hide ≤ 8%。外れたら S4 で hard block ごと外す） */
+/**
+ * ハード（R12: lure 45〜70%・自艇の沈没 ≤ 30%、hide ≤ 8%。外れたら S4 で hard block ごと外す）。v0.6.9 実機 1 回目: lure は 45〜75%。撃った PT が（戦いながらの斉射でも）去るので
+ * +6.0 / +11.2 点（67.0 / 63.8% → 73.0 / 75.0%。N 400 × 2 組。組 2 は帯の端ちょうど＝端を含むので ✓）。数の合わせは味方の駆逐艦の後（v0.6.10）で人に近い遊び方の行も使う。
+ * PT は 3 隻のまま（ユーザー「ハードモードは敵PTが3隻に増えるようにしてください」＝もう 3 隻。tests/setup-jp04）
+ */
 export const LANDING_HARD_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 8] } },
-  { policy: 'lure', bands: { objPct: [45, 70], ownSunkPct: [0, 30] } },
+  { policy: 'lure', bands: { objPct: [45, 75], ownSunkPct: [0, 30] } },
 ];
 /**
  * 斉射の 1 本の命中率（spec §8: 気づかれていない 0.30〜0.50・慌てた 0.08〜0.25。戦いながら（R12）は帯なし＝表だけ）。帯は影の船体（いつも浮いている）への当たりうる本数あたり（不発を除く）: 撃った本数あたりは

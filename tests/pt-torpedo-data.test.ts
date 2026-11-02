@@ -73,9 +73,17 @@ describe('torpedo_attack の data（enemies.json の us_pt_enemy。spec §3.3）
     expect(src).not.toContain('34 本で 2 本＝6%');
     expect(src).toContain('哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT はみな（見つけた PT だけでなく）'); // R2
     expect(src).toContain('hurried_max_m 0 で慌てた斉射なし');
-    // R12: 戦いながらの斉射（自艇と戦っている PT も撃つ・去らない・0 で無し）と S4 の較正（R13: 2.5 から 1.5〜3.0 を回して 2.0。N 400 × 2 組の数）
+    // R12: 戦いながらの斉射（自艇と戦っている PT も撃つ・撃ったら去る＝v0.6.9 実機 1 回目・0 で無し）と S4 の較正（R13: 2.5 から 1.5〜3.0 を回して 2.0。N 400 × 2 組の数）
     expect(src).toContain('戦いながらの斉射（spec R12: 早く引きつけても輸送船のそばで戦えば輸送船は危ない＝輸送船から離れて戦え）');
-    expect(src).toContain('狙いの誤差を engaged_error_factor 倍にして撃ち、去らずに自艇と戦い続ける');
+    expect(src).toContain('狙いの誤差を engaged_error_factor 倍にして撃って去る（1 隻 1 回・見失いの reacquire_s は掛けない・揚陸の決着の後は撃たない。去るのは v0.6.9 実機 1 回目から＝下の retreat_after_salvo）');
+    expect(src).not.toContain('去らずに自艇と戦い続ける');
+    // v0.6.9 実機 1 回目: retreat_after_salvo は 3 種類とも（ユーザーの報告と選択 A・S1 の模擬の数。上の S4 の数は前の規則のとき）
+    expect(src).toContain('retreat_after_salvo は 3 種類の斉射とも（v0.6.9 実機 1 回目。上の S4 の数は戦いながら撃った PT が去らずに戦い続けた規則のとき）');
+    expect(src).toContain('「魚雷発射後、外れても敵が帰投せず、自機につきまとうため、ゲームクリアがかなりきつい」');
+    expect(src).toContain('ユーザーの選択 A「引きつけて離す」＝撃った PT は戦いながらの斉射でも去る');
+    expect(src).toContain('S1 の模擬（N 400 × 2 組。数は 組 1 / 組 2）: lure の達成 87.3 / 87.0%（帯 70〜88）');
+    expect(src).toContain('ハードの lure 73.0 / 75.0%（帯を 45〜70 から 45〜75 へ）');
+    expect(src).not.toContain('retreat_after_salvo は気づかれていない・慌てた斉射だけ');
     expect(src).toContain('engaged_error_factor 2.0 は S4 の模擬（scripts/landing-sim。N 400 × 2 組＝seed 1〜400 と 401〜800。数は 組 1 / 組 2）で慌てた斉射と同じ 2.5 から 1.5〜3.0 を回して決めた（spec R12・R13）');
     expect(src).toContain('lure の達成 84.5 / 82.3%（帯 70〜88 の真ん中。1.5 は 79.8 / 78.5%・2.5 は 87.3 / 85.3% で上の端まで 0.7 点・3.0 は 87.8 / 88.3% で帯の外）');
     expect(src).toContain('（lure − lure_near ＋55.3 点、帯 ≥ 10＝輸送船から離れて戦え）');
@@ -88,7 +96,7 @@ describe('torpedo_attack の data（enemies.json の us_pt_enemy。spec §3.3）
     expect(src).toContain('landing.source（spec R7）');
     expect(src).toContain('us_elco80.torpedoes.type_late');
     expect(String(PT['notes'])).toContain('jp_01・jp_05 には狙う深い船体が無いので魚雷は使わない');
-    expect(String(PT['notes'])).toContain('自艇と戦いながら 900 m の内で艇首が向けば撃って戦い続ける'); // R12
+    expect(String(PT['notes'])).toContain('自艇と戦いながらでも 900 m の内で艇首が向けば撃つ。v0.6.9。戦いながら撃った PT も去るのは実機 1 回目から'); // R12
     for (const t of [src, String(PT['notes'])]) {
       for (const name of PERSON_DENYLIST) expect(t, name).not.toContain(name);
       expect(RANK_RE.test(t)).toBe(false);
@@ -135,7 +143,7 @@ describe('V11（ptTorpedoParamsFromData の検査。例外の頭は任務と記�
   it('reacquire_s ≥ 0・retreat_after_salvo は true・撃つ距離 < 魚雷の射程', () => {
     expect(build({ reacquire_s: -1 })).toThrow(/reacquire_s は 0 以上/);
     expect(build({ reacquire_s: 0 })).not.toThrow();
-    expect(build({ retreat_after_salvo: false })).toThrow(/retreat_after_salvo は true（v0\.6\.9 は気づかれていない・慌てた斉射の後に去る。戦いながらの斉射は去らない）/);
+    expect(build({ retreat_after_salvo: false })).toThrow(/retreat_after_salvo は true（3 種類の斉射（気づかれていない・慌てた・戦いながら）とも撃ったら去る。戦いながらは v0\.6\.9 実機 1 回目から）/);
     expect(build({ hurried_max_m: 5760 })).toThrow(/撃つ距離（launch_range_m・hurried_max_m の遠い方 5760 m）は魚雷の射程（5760 m）より近い/);
     expect(build({ hurried_max_m: 5759 })).not.toThrow();
   });

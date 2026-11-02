@@ -3,6 +3,8 @@
 // 広げ方: % の行の帯と対の帯は両側に MARGIN_PT 点（N 60 の 1 夜は 1.7 点・達成 85% の標準誤差 約 4.6 点）、斉射の 1 本の命中は両側に MARGIN_HIT。不変（I1〜I6）は広げない。
 // S4 の値（engaged_error_factor 2.0）の N 60 は lure 81.7%・lure_near 26.7%・lure_late − lure −20.0 点（S8 のレビュー game-6 の後。前は −10.0＝帯の端。N 400 × 2 組は −32.4）・ハードの lure 66.7%。帯を外したら値を動かす前に
 // scripts/landing-sim の N 400 × 2 組を回す（N 60 の外れは 1 組の揺れのことがある）。data の source に書いた S4 の値と理由もここで pin する。
+// v0.6.9 実機 1 回目（撃った PT は戦いながらの斉射でも去る＝ユーザーの選択 A）の後の N 60 は lure 86.7%・lure_near 36.7%・lure_late − lure −25.0 点・kite 40.0%・ハードの lure 71.7%
+// （N 400 × 2 組は 73.0 / 75.0% で、ハードの lure の帯を 45〜70 から 45〜75 へ。ノーマルの帯は変えない）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { LandingCell } from '../src/core/landing-sim-cell';
@@ -77,10 +79,11 @@ describe(`揚陸を守る模擬のつり合い（jp_04、N ${N}・seed ${SEED}�
     expect(run.cell('lure_near', 0).engaged).toBeGreaterThan(run.cell('lure', 0).engaged + 1);
   }, SIM_TIMEOUT_MS);
 
-  it('ハード（PT 3 隻）: 行の帯（hide ≤ 8・lure 45〜70 で自艇の沈没 ≤ 30。± 8 点）とその 2 つの I1〜I6', () => {
+  it('ハード（PT 3 隻）: 行の帯（hide ≤ 8・lure 45〜75（v0.6.9 実機 1 回目に 70 → 75）で自艇の沈没 ≤ 30。± 8 点）とその 2 つの I1〜I6', () => {
     const run = hardRun();
     expect(run.setup.pt.count).toBe(3);
     expect(HARD_POLICIES).toEqual(['hide', 'lure']);
+    expect(LANDING_HARD_CALIBRATION[1]!.bands).toEqual({ objPct: [45, 75], ownSunkPct: [0, 30] });
     expect(rowMisses(run, LANDING_HARD_CALIBRATION, HARD_POLICIES)).toEqual([]);
   }, SIM_TIMEOUT_MS);
 
@@ -92,8 +95,11 @@ describe(`揚陸を守る模擬のつり合い（jp_04、N ${N}・seed ${SEED}�
     expect(land).toContain('S4 の較正は engaged_error_factor 2.5 → 2.0 だけ＝spec R13');
     expect(String(P['duration_s_source'])).toContain('S4 の模擬（N 400 × 2 組）で動かさなかった: どの遊び方も夜明けの前に揚陸が決着し（I6）');
     expect(String(P['fuel_allotment_gal_source'])).toContain('kite の漂流 87.5 / 83.0%・自艇の沈没 + 漂流は lure より ＋92.1 点（帯 ≥ 5）');
+    expect(String(P['fuel_allotment_gal_source'])).toContain('v0.6.9 実機 1 回目（撃った PT は戦いながらの斉射でも去る）の後: kite の漂流 28.3 / 27.5%・自艇の沈没 + 漂流は lure より ＋31.4 点（帯 ≥ 5）');
     const hardSrc = String((P['hard'] as Rec)['source']);
     expect(hardSrc).toContain('ハードの帯（spec R12）を満たしたので残す: lure 67.0 / 63.8%（帯 45〜70）・自艇の沈没 19.0 / 20.8%（≤ 30）・hide 0 / 0%（≤ 8）');
+    expect(hardSrc).toContain('v0.6.9 実機 1 回目（ユーザー「ハードモードは敵PTが3隻に増えるようにしてください」）: もう 3 隻なのでそのまま（tests/setup-jp04）');
+    expect(hardSrc).toContain('lure 73.0 / 75.0%（帯を 45〜75 に）');
     for (const t of [land, String(P['duration_s_source']), String(P['fuel_allotment_gal_source']), hardSrc]) {
       expect(t).not.toContain('S4 の模擬で決める');
       expect(t).not.toContain('hard block ごと外す');

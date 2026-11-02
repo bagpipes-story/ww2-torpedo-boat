@@ -86,7 +86,7 @@ describe('1 夜', () => {
   it('R1: 出発点で巡航のまま回っても見つからない（V13）＝隠れると同じ斉射', () => {
     for (const r of RUN.trials('circle_start', 0)) expect([Number.isNaN(r.detectS), Array.from(r.kind)]).toEqual([true, [1, 1]]);
   });
-  it('R12: 戦いながらの斉射（種類 3）は見つかった夜だけで、撃った PT は去らない（その斉射の結末は OUT_ENGAGED）。EFACTOR 0 ならどの夜にも無い', () => {
+  it('R12: 戦いながらの斉射（種類 3）は見つかった夜だけで、その斉射の結末は OUT_ENGAGED（撃った PT は去る＝v0.6.9 実機 1 回目。tests/pt-torpedo-engaged）。EFACTOR 0 ならどの夜にも無い', () => {
     let engaged = 0;
     for (const pol of LANDING_POLICIES) {
       for (const r of RUN.trials(pol, 0)) {
