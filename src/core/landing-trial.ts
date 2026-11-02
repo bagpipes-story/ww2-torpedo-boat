@@ -1,7 +1,9 @@
 // 停泊して揚陸する輸送船を守る模擬（core/landing-sim）の 1 夜の記録（v0.6.9 S3。spec-v069 §8 の表の列・I1〜I6・R2・R4。pt-trial・convoy-trial と同じ分け方）。Phaser 非依存。
 // 確保は 1 夜の始めに 1 回だけ（PT ごとの列は隻数の長さ）。記録の道具（landing-sim が 300 行を超えないため）: LandingTrialWatch は PT ごとの見張りの条件・哨戒の出入り・斉射（I1〜I4）、
 // LandingTrialTorpedoes は敵の魚雷のプール（世界の写し）・LandingTorpedoLink・測るだけの影のプール（いつも浮いている同じ船体へ同じ魚雷。斉射の当たりうる本数）と、その決着を記録へ書く口。
-// 夜の終わりに finishLandingTrial が隊・輸送船・自艇の結果を写す。
+// 夜の終わりに finishLandingTrial が隊・輸送船・自艇の結果を写す。v0.6.10 S3a（spec-v0610 §6.1・§6.2）: 卯月の欄（finishLandingAlly が写す・I7〜I11 の材料）と、卯月の船体の下を
+// 通る魚雷（LandingTrialTorpedoes.watchAlly。表だけ）、I9 の比べ方（landingTrialBase: 卯月の欄を除いた記録）。
+import type { AllyDestroyer } from './ally-destroyer';
 import type { SeaBounds } from './boat-motion';
 import { LANDING_REPORT_TOWARD_DEG, type LandingState } from './landing';
 import type { LandingParams } from './landing-data';
@@ -10,7 +12,7 @@ import { PT_PATROL, type PtSection } from './pt-boats';
 import { bearingDeg } from './ship-ai';
 import type { TorpedoParams, TorpedoState } from './torpedo';
 import type { TorpedoEvents, TorpedoTarget } from './torpedo-targets';
-import { wrapDeg180 } from './units';
+import { degToRad, wrapDeg180 } from './units';
 
 export type LandingTrialEnd = 'home' | 'sunk' | 'adrift' | 'timeout';
 
@@ -44,7 +46,19 @@ export interface LandingTrial {
   i1LeadS: number; i2LeadS: number;
   /** I3: 夜明けの後の斉射・I4: 1 隻の斉射の最大・I5: seed+26 から引いた回数と斉射ごとの 1 + 2n + 蛇行の本数の和・I6: 夜明けに揚陸が決着していなかった */
   afterDawnSalvos: number; maxSalvosPerPt: number; draws26: number; drawsWant: number; unresolvedAtDawn: boolean;
+  /**
+   * 卯月（v0.6.10。いない夜はみな 0）: 気づいた PT・照らした PT・照らされた斉射・撃たずに去らせた・砲の撃退・撃沈・撃った弾・生きた PT への命中（hitPt）・去る PT を追って撃った弾、
+   * 見張りの候補のステップ・seed+27・+28 から引いた回数（I7・I10）、I8 条件の外の照らされた斉射、I11 owner の PT が航過でないステップ（卯月がいなくても数える）、
+   * PT ごとの卯月の船体の下を通る魚雷（発射の針路のまっすぐな道が卯月の中心から半長の内。前方だけ・輸送船に当たる魚雷も数える上限。表だけ）
+   */
+  allySpotted: number; allyLitPts: number; litSalvos: number; litAways: number; allyRetired: number; allySunk: number; allyShells: number; allyHits: number; chaseShells: number;
+  candSteps: number; draws27: number; draws28: number; litSalvoBad: number; ownerViol: number; torpThroughAlly: Uint8Array;
 }
+
+/** 卯月の欄（I9: 卯月の効かない遊び方はこれを除いて卯月の無い夜と同じ記録） */
+export const LANDING_TRIAL_ALLY_KEYS: readonly (keyof LandingTrial)[] = [
+  'allySpotted', 'allyLitPts', 'litSalvos', 'litAways', 'allyRetired', 'allySunk', 'allyShells', 'allyHits', 'chaseShells', 'candSteps', 'draws27', 'draws28', 'litSalvoBad', 'ownerViol', 'torpThroughAlly',
+];
 
 export function createLandingTrial(count: number): LandingTrial {
   return {
@@ -53,7 +67,14 @@ export function createLandingTrial(count: number): LandingTrial {
     outcome: new Uint8Array(count), kind: new Uint8Array(count), launchS: new Float64Array(count).fill(NaN), launchM: new Float64Array(count).fill(NaN),
     arrived: new Uint8Array(count), arrivedHits: new Uint8Array(count), arrivedDuds: new Uint8Array(count), potHits: new Uint8Array(count), potDuds: new Uint8Array(count), relevant: new Uint8Array(count),
     i1LeadS: Infinity, i2LeadS: Infinity, afterDawnSalvos: 0, maxSalvosPerPt: 0, draws26: 0, drawsWant: 0, unresolvedAtDawn: false,
+    allySpotted: 0, allyLitPts: 0, litSalvos: 0, litAways: 0, allyRetired: 0, allySunk: 0, allyShells: 0, allyHits: 0, chaseShells: 0,
+    candSteps: 0, draws27: 0, draws28: 0, litSalvoBad: 0, ownerViol: 0, torpThroughAlly: new Uint8Array(count),
   };
+}
+
+/** I9 の比べ方: 卯月の欄を除いた 1 夜の記録の文字列（型付き配列は中身の配列に。表に 1 回） */
+export function landingTrialBase(t: LandingTrial): string {
+  return JSON.stringify(t, (k, v: unknown) => ((LANDING_TRIAL_ALLY_KEYS as readonly string[]).includes(k) ? undefined : ArrayBuffer.isView(v) ? Array.from(v as Uint8Array) : v));
 }
 
 /** PT ごとの見張りの条件・哨戒の出入り・斉射（I1〜I4 の材料。1 夜に 1 個） */
@@ -124,8 +145,10 @@ export class LandingTrialTorpedoes {
   /** 蛇行の本数（I5） */
   erratic = 0;
   private readonly boatOf: Int8Array;
+  /** 卯月の中心と半長の二乗（watchAlly。0 は数えない） */
+  private allyX = 0; private allyY = 0; private allyHalf2 = 0;
 
-  constructor(ld: LandingState, lp: LandingParams, book: SalvoBook, params: TorpedoParams, capacity: number, bounds: SeaBounds, out: LandingTrial) {
+  constructor(ld: LandingState, lp: LandingParams, book: SalvoBook, params: TorpedoParams, capacity: number, bounds: SeaBounds, private readonly out: LandingTrial) {
     this.pool = new LandingTorpedoPool(params, capacity, bounds);
     this.shadow = new LandingTorpedoPool(params, capacity, bounds);
     this.link = new LandingTorpedoLink(ld, lp, book, this.pool);
@@ -163,19 +186,43 @@ export class LandingTrialTorpedoes {
     };
   }
 
-  /** PtTorpedoSink.fire の中身: 本物のプール（link）と影へ同じ 1 本 */
+  /** 卯月の船体の下を通る魚雷を数える（v0.6.10。卯月のいる夜だけ。中心と半長 m） */
+  watchAlly(x: number, y: number, halfLenM: number): void {
+    this.allyX = x;
+    this.allyY = y;
+    this.allyHalf2 = halfLenM * halfLenM;
+  }
+
+  /** PtTorpedoSink.fire の中身: 本物のプール（link）と影へ同じ 1 本。卯月がいれば発射の針路のまっすぐな道（前方）が卯月の中心から半長の内か（torpThroughAlly） */
   fire(i: number, x: number, y: number, h: number, dud: boolean, erratic: boolean, bias: number, rangeM: number): void {
     const k = this.pool.capacity - this.pool.remaining;
     this.link.fire(i, x, y, h, dud, erratic, bias, rangeM);
     this.shadow.fire(x, y, h, dud, erratic, bias, rangeM);
     if (k < this.pool.capacity) this.boatOf[k] = i;
     if (erratic) this.erratic++;
+    if (this.allyHalf2 > 0) {
+      const ux = Math.sin(degToRad(h));
+      const uy = -Math.cos(degToRad(h));
+      const dx = this.allyX - x;
+      const dy = this.allyY - y;
+      const cross = dx * uy - dy * ux;
+      if (dx * ux + dy * uy > 0 && cross * cross < this.allyHalf2) this.out.torpThroughAlly[i]!++;
+    }
   }
 
   /** 夜の終わり: 影の魚雷がみな決着するまで（終わりに走っている斉射の当たりうる本数も数える。本物は捨てる＝世界と同じ） */
   settleShadow(dt: number, realDt: number, passRadius2: number, maxSteps: number): void {
     for (let k = 0; k < maxSteps && this.shadow.states.some((s) => s.active && !s.resolved); k++) this.shadow.step(dt, realDt, this.shadowHulls, passRadius2, this.shadowEv);
   }
+}
+
+/** 夜の終わり: 卯月の数えと seed+27・+28 から引いた回数を写す（卯月のいない夜は何もしない＝0 のまま。I11 と船体の下の魚雷は模擬がステップごと・発射ごとに書く） */
+export function finishLandingAlly(out: LandingTrial, a: AllyDestroyer | null, draws27: number, draws28: number): void {
+  if (!a) return;
+  Object.assign(out, {
+    allySpotted: a.spots, allyLitPts: a.litPts, litSalvos: a.litSalvos, litAways: a.litAways, allyRetired: a.retired, allySunk: a.sunk, allyShells: a.shells, allyHits: a.liveHits,
+    chaseShells: a.chaseShells, candSteps: a.candSteps, draws27, draws28,
+  });
 }
 
 /** 夜の終わり: 時刻・夜明け・輸送船（ld）・隊の KPI（q）・失った HP・残りの燃料 %・25mm の撃った数・seed+26 から引いた回数を写す（決着の前に輪に入ったかは模擬がステップごとに書く） */

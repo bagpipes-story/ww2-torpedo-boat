@@ -1,5 +1,6 @@
 // v0.6.9 S5a（spec-v069 §4.1・§9 の landing-step-order・D18）: 揚陸の任務（jp_04）の固定ステップの順のソースの pin。世界（systems/world-enemy-step）は 米PT の隊 → 揚陸の段 → 機関、
-// 揚陸の段の中（systems/world-landing の stepAfterPts）は 雷撃（stepPtTorpedoes。seed+26）→ 敵の魚雷のプール → 揚陸の時計（tickLanding）、模擬（core/landing-sim）も同じ順。
+// 揚陸の段の中（systems/world-landing の stepAfterPts）は 雷撃（stepPtTorpedoes。seed+26）→ 敵の魚雷のプール → 揚陸の時計（tickLanding）、模擬（core/landing-sim）も同じ順
+// （v0.6.10 S3a: 模擬は雷撃の直後に卯月。世界の卯月の行は S5a）。
 // 揚陸の世界は MissionWorld の最後（兵装の後）に作り、seed+26 は buildLanding の中の setup.landing のある枝だけ（tests/landing-imports）。呼びかけ・撃ち尽くし・達成の配線も見る。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -35,9 +36,18 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     // 終わり際の当たりは見ない（TorpedoPool.step の nowS・settleS を渡さない＝NaN・0）
     expect(fn).not.toMatch(/this\.pool\.step\([^)]*,[^)]*,[^)]*,[^)]*,[^)]*,/);
   });
-  it('模擬（core/landing-sim）も同じ順: 凍結の隊 → 時計 → 雷撃 → 敵の魚雷のプール（沈み始めたら的なし）→ 揚陸の時計', () => {
+  it('模擬（core/landing-sim）も同じ順: 凍結の隊 → 時計 → 雷撃 → 卯月（v0.6.10 S3a。R-U6 の順 (i)）→ I11 → 敵の魚雷のプール（沈み始めたら的なし）→ 揚陸の時計', () => {
     const s = code('core/landing-sim.ts');
-    expectOrder(s, ['stepPtSection(q, p, c, rng, realDt, dt, ev);', 'tor.link.nowS = t;', 'stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);', 'tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);', 'tickLanding(ld, lp, t);', 'stepDamage(d, s.damage, realDt)']);
+    expectOrder(s, [
+      'stepPtSection(q, p, c, rng, realDt, dt, ev);', 'tor.link.nowS = t;', 'stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);',
+      'if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev, NO_LEAVE);', 'if (q.owner >= 0 && q.boats[q.owner]!.phase !== PT_PASS) out.ownerViol++;',
+      'tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);', 'tickLanding(ld, lp, t);', 'stepDamage(d, s.damage, realDt)',
+    ]);
+    expect(s.split('stepAllyDestroyer(').length).toBe(2);
+    // 卯月は s.allyDestroyer のある夜だけ（allyOff は鍵ごと無い）。見張り seed+27・砲 seed+28 は数える乱数で 1 本ずつ、演出は null
+    expectOrder(s, ['new CountingRng((seed + ALLY_LOOKOUT_SEED_OFFSET) >>> 0)', 'new CountingRng((seed + ALLY_GUN_SEED_OFFSET) >>> 0)', 'const ally = s.allyDestroyer ? createAllyDestroyer(s.allyDestroyer, p, a27, a28, null) : null;']);
+    expect(s.split('ALLY_LOOKOUT_SEED_OFFSET) >>> 0)').length).toBe(2);
+    expect(s.split('ALLY_GUN_SEED_OFFSET) >>> 0)').length).toBe(2);
   });
   it('mission-world: 揚陸の世界は兵装の後（最後）に作る。stepFn は敵の側の段 → 火災（揚陸の段は敵の側の段の中）', () => {
     const s = code('systems/mission-world.ts');

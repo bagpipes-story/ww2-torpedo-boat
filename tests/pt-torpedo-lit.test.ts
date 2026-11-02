@@ -2,7 +2,7 @@
 // 射点（哨戒・斉射が残る・揚陸中で浮いている・夜明けの前・見失いの待ちの外・慌てる距離 1,300 m・艇首 30°）なら litSalvo を立ててから慌てた斉射（種類は慌てた斉射のまま → 入れ先が
 // LE_LIT_SALVO）で去る、ほかの生きた段階（射点の外・待ち・夜明け・揚陸の後・沈んだ後・斉射なし・警戒〜離脱）は撃たずに去る。乱数（斉射は 1 + 2n + 蛇行の本数・去るは 0）、書く PT の欄は
 // phase と timerS だけ、onLeave は 1 回、prevPhase は去る、結末（OUT_LIT_HURRIED・OUT_LIT_AWAY）。卯月の無い夜（stepPtTorpedoes・link・結末）は S1（1d5a680）と 1 手ずつ同じ＝模擬の 1 夜の
-// 記録（S0b からある 40 の鍵）の md5（ノーマル seed 1〜8・ハード 1〜4 × 15 の遊び方。3 種類の斉射・撃退・撃沈・夜明け・沈没で去るを含む）。S3 で模擬に卯月を入れたら卯月を切って回す。
+// 記録（S0b からある 40 の鍵）の md5（ノーマル seed 1〜8・ハード 1〜4 × 15 の遊び方。3 種類の斉射・撃退・撃沈・夜明け・沈没で去るを含む）。S3a で模擬に卯月を入れたので卯月を切って（allyOff）回す。
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -153,7 +153,8 @@ describe('卯月の無い夜は前と同じ（LD5・G6）', () => {
   ] as const;
   const snap = (r: object): string => JSON.stringify(r, (_k, v: unknown) => (ArrayBuffer.isView(v) ? Array.from(v as Uint8Array) : v));
   it.each([[false, 8, 'a11fd0e9f9e1cdde4b31be9134ed9acf'], [true, 4, '5782b0e6fe239555548deba23bbcf712']] as const)('ハード %s: seed 1〜%i × 15 の遊び方の 1 夜の記録の md5 は S1（1d5a680）の値', (hard, seeds, want) => {
-    const s = landingSimSetup(gameData, 'jp_04', hard ? { hard: true } : {});
+    const s = landingSimSetup(gameData, 'jp_04', { hard, allyOff: true });
+    expect('allyDestroyer' in s).toBe(false);
     const h = createHash('md5');
     const kinds = new Set<number>();
     for (let seed = 1; seed <= seeds; seed++) {

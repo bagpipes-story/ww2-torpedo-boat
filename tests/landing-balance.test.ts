@@ -5,6 +5,7 @@
 // scripts/landing-sim の N 400 × 2 組を回す（N 60 の外れは 1 組の揺れのことがある）。data の source に書いた S4 の値と理由もここで pin する。
 // v0.6.9 実機 1 回目（撃った PT は戦いながらの斉射でも去る＝ユーザーの選択 A）の後の N 60 は lure 86.7%・lure_near 36.7%・lure_late − lure −25.0 点・kite 40.0%・ハードの lure 71.7%
 // （N 400 × 2 組は 73.0 / 75.0% で、ハードの lure の帯を 45〜70 から 45〜75 へ。ノーマルの帯は変えない）。回すのは較正の 12 だけ（人に近い 3 つは表だけ＝tests/landing-sim-human）。
+// v0.6.10 S3a: 模擬に卯月が入った。ここの帯は S0b の帯＝卯月の無い夜の帯なので、卯月を切って（allyOff＝scripts の ALLY_OFF=1）回す。卯月のいる帯は S4 の較正で足す。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { LandingCell } from '../src/core/landing-sim-cell';
@@ -26,10 +27,10 @@ const SIM_TIMEOUT_MS = 60_000;
 type Rec = Record<string, unknown>;
 let normal: LandingRun | undefined;
 let hard: LandingRun | undefined;
-const normalRun = (): LandingRun => (normal ??= landingCalibrationRun(gameData, 'jp_04', LANDING_CALIBRATION_POLICIES, N, SEED, 1));
+const normalRun = (): LandingRun => (normal ??= landingCalibrationRun(gameData, 'jp_04', LANDING_CALIBRATION_POLICIES, N, SEED, 1, { allyOff: true }));
 /** ハードは帯のある遊び方だけ（hide・lure。全部の 10 だと N 60 で 15 秒ほど＝ファイルが 30 秒になる。全部の表は scripts/landing-sim の HARD=1） */
 const HARD_POLICIES = LANDING_HARD_CALIBRATION.map((r) => r.policy);
-const hardRun = (): LandingRun => (hard ??= landingCalibrationRun(gameData, 'jp_04', HARD_POLICIES, N, SEED, 1, { hard: true }));
+const hardRun = (): LandingRun => (hard ??= landingCalibrationRun(gameData, 'jp_04', HARD_POLICIES, N, SEED, 1, { hard: true, allyOff: true }));
 
 /** 行の帯を両側に MARGIN_PT 広げた写し */
 function widened(r: LandingBandRow): LandingBandRow {

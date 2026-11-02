@@ -5,11 +5,13 @@
 //   R14 の lure_cue・home_early は表だけ。v0.6.9 実機 1 回目の face・human・human_face は表だけで ✓/✗ も無く、斉射の数え・帯・R2 の期待値の分布に入れない＝TABLE=1 の期待値は -）・HARD=1（ハード）・
 //   TABLE（無し: 組ごとの表 / 1: 帯の ✓/✗・対の帯（組を合わせた夜）・R2 の期待値・不変 / 2: 斉射の命中と分布 / 3: 時刻。1・2 は ✗ があれば終了コード 1）・
 //   上書き UNLOAD（unload_s）・LOOKOUT（lookout_m）・HITS（torpedo_hits_to_sink）・AIM（aim_error_deg）・SPACING（salvo_spacing_deg）・HURRIED（hurried_max_m）・HFACTOR（hurried_error_factor）・
-//   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）
+//   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）・
+//   ALLY_OFF=1（v0.6.10 S3a: 味方の駆逐艦 卯月を切る＝S0b と同じ夜。見出しに出さず、表は S0b と同じバイト＝LD9・G6。卯月がいれば見出しの 3 行目に卯月の値、TABLE=1 の I9 の遊び方の行に I9）
 // 実行: npx esbuild scripts/landing-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/landing.mjs && node <scratch>/landing.mjs
 import { gameData } from '../src/config/game-data';
 import { quantile, salvoProbs, surviveOf, type LandingCell, type SalvoKindStats, type TimeCol } from '../src/core/landing-sim-cell';
 import { LANDING_HUMAN, LANDING_HUMAN_POLICIES, LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
+import { mpsToKt } from '../src/core/units';
 import { LANDING_CALIBRATION, LANDING_HARD_CALIBRATION, LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses, landingSalvoMisses, type LandingSimOverrides } from '../src/systems/landing-sim-setup';
 
 const num = (k: string): number | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? Number(process.env[k]) : undefined);
@@ -25,10 +27,11 @@ const o: LandingSimOverrides = {
   engagedFactor: num('EFACTOR'), reacquireS: num('REACQ'),
   fuelGal: num('ALLOT'), hard: process.env['HARD'] === '1' ? true : undefined,
 };
+const allyOff = process.env['ALLY_OFF'] === '1'; // o の外（見出しの set に出さない）
 const pols = (process.env['POL'] ?? LANDING_POLICIES.join(',')).split(',').map((x) => x.trim()).filter((x) => x !== '') as LandingPolicy[];
 for (const p of pols) if (!(LANDING_POLICIES as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は ${LANDING_POLICIES.join(' / ')}`);
 
-const run = landingCalibrationRun(gameData, mission, pols, n, seed, blocks, o);
+const run = landingCalibrationRun(gameData, mission, pols, n, seed, blocks, allyOff ? { ...o, allyOff: true } : o);
 const s = run.setup;
 const lp = s.landing;
 const tp = s.torpedo;
@@ -41,6 +44,13 @@ console.log(
     `慌てて ${tp.hurriedM} m ×${tp.hurriedFactor}・戦いながら ×${tp.engagedFactor}・見失い ${tp.reacquireS} 秒・不発 ${tp.reliability.dud}・蛇行 ${tp.reliability.erratic} | 自艇 ${s.start.x},${s.start.y} 輪 ${s.ring.x},${s.ring.y}（半径 ${s.ring.radiusM}）・夜明け ${s.durationS} 秒・燃料 ${s.fuelGal} gal | ` +
     `米PT ${s.pt.count} 隻（${Array.from({ length: s.pt.count }, (_, i) => `${lp.runDirJa[i] ?? '?'} ${s.pt.legs[4 * i]},${s.pt.legs[4 * i + 1]}→${s.pt.legs[4 * i + 2]},${s.pt.legs[4 * i + 3]}`).join('・')}）`,
 );
+const ad = s.allyDestroyer;
+if (ad) {
+  console.log(
+    `卯月 ${ad.x},${ad.y} 艇首 ${ad.headingDeg}・扇 ${ad.arc0Deg}〜${ad.arc1Deg}°（線 ${ad.guardLegs.join('・')}）・遅い PT ${ad.lookSlowM} m ${ad.rateSlow}/秒・速い PT（${f(mpsToKt(ad.fastMps), 1, 0)} kt 以上）${ad.lookFastM} m ` +
+      `${ad.rateFast}/秒・照らされて ${ad.lightReactS} 秒・去る PT を ${ad.chaseFireS} 秒追う・探照灯 ${ad.gunnery.searchlight.rangeM} m・砲 ${ad.gunnery.guns.map((g) => `${g.id} ×${g.count}`).join('・')}（沈める ${ad.ptSinkChance}）`,
+  );
+}
 
 const HEAD = 'policy         obj%  land% tSunk% unres% | own% adrift% home% preDawn% tout% | salv  calm  hurr   eng | left   gun  gone | fuel% ring% |   HP det%  detS cont lost shots';
 const line = (c: LandingCell): string =>
@@ -62,7 +72,8 @@ if (table === '' || table === '1') {
         continue;
       }
       const r = rows.find((x) => x.policy === pol);
-      const miss = [...(r ? landingBandMisses(r, c) : []), ...landingInvariantMisses(c, s)];
+      const i9 = run.i9Misses(pol, b);
+      const miss = [...(r ? landingBandMisses(r, c) : []), ...landingInvariantMisses(c, s), ...(i9 > 0 ? [`I9 卯月の無い夜と違う ${i9} 夜`] : [])];
       misses += miss.length;
       console.log(line(c) + mark(miss));
     }
