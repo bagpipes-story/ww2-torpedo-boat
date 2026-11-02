@@ -1,7 +1,9 @@
 // scripts/landing-sim の TABLE=4「卯月」（v0.6.10 S3b。spec-v0610 §6.2・レビュー H1・M2・L4・G-A7）の行を作る（scripts/landing-sim が 300 行を超えないため）。集計は src/core/landing-ally-cell。
 // 遊び方ごと・組ごとに 1 行と、組ごとの出来事の最初の seed（S5 の一致の夜を選ぶ）。卯月のいない表（ALLY_OFF=1）は卯月の列が 0、見張る線の列は -。
+// v0.6.10 S4: TABLE=1 の卯月の得の対・照らした夜・ハードの段の行（allyBandLines。帯は src/systems/ally-sim-bands）。
 import { ALLY_EAST_FATES, ALLY_FIRST_EVENTS, landingAllyCell, type LandingAllyCell } from '../src/core/landing-ally-cell';
 import type { LandingPolicy } from '../src/core/landing-sim-policy';
+import { ALLY_HARD_LADDER, allyGainChecks, allyLadderChecks, allyLitChecks, type AllyCheck } from '../src/systems/ally-sim-bands';
 import type { LandingRun } from '../src/systems/landing-sim-setup';
 
 const f = (x: number, d: number, w: number): string => (Number.isFinite(x) ? x.toFixed(d) : '-').padStart(w);
@@ -46,4 +48,33 @@ export function allyTableLines(run: LandingRun, pols: readonly LandingPolicy[], 
       'd27/n・d28/n = seed+27・+28 の 1 夜の回数 | call%・inCt%・shown%・obey% = 夜明け近しの帰投の輪の呼びかけ: 決着の前に立った・立ったとき接触・報告・雷跡があって見えなかった・見えた・聞いた夜（lure の動きだけ）',
   );
   return out;
+}
+
+/**
+ * TABLE=1 の卯月の行（卯月がいる表だけ）: ノーマルは得の対（卯月を切った同じ seed・夜明けの夜と比べ、組を合わせる）と照らした夜 %（組ごと）、ハードは段（normal はノーマルの同じ seed・
+ * つまみの表を回す口）。fmt は scripts/landing-sim の数の書き方。misses は ✗ の数
+ */
+export function allyBandLines(
+  run: LandingRun, pols: readonly LandingPolicy[], blocks: number, n: number, normal: ((ps: readonly LandingPolicy[]) => LandingRun) | null, fmt: (x: number, d: number, w: number) => string,
+): { lines: string[]; misses: number } {
+  const lines: string[] = [];
+  let misses = 0;
+  const put = (c: AllyCheck): void => {
+    if (!c.ok) misses++;
+    lines.push(`  ${fmt(c.value, 1, 6)}（${fmt(c.lo, 0, 0)}〜${fmt(c.hi, 0, 0)}） ${c.ok ? '✓' : '✗'} | ${c.name}`);
+  };
+  if (normal) {
+    const ps = ALLY_HARD_LADDER.map((r) => r.policy).filter((p) => pols.includes(p));
+    if (ps.length === 0) return { lines, misses };
+    lines.push(`ハードの段（${blocks} 組 ${blocks * n} 夜を合わせた達成 % の ハード − ノーマル。ノーマルは同じ seed・つまみ）: 差（帯） | 遊び方`);
+    for (const c of allyLadderChecks(run, normal(ps), ps)) put(c);
+    return { lines, misses };
+  }
+  const gains = allyGainChecks(run, pols);
+  if (gains.length > 0) lines.push(`卯月の得（${blocks} 組 ${blocks * n} 夜を合わせた達成 % の 卯月あり − 卯月なし（ALLY_OFF）。同じ seed・夜明け）の対: 得の差（帯） | 得`);
+  for (const c of gains) put(c);
+  const lit = allyLitChecks(run, pols, blocks);
+  if (lit.length > 0) lines.push('卯月が照らした夜 %（組ごと）: 夜 %（帯） | 遊び方');
+  for (const c of lit) put(c);
+  return { lines, misses };
 }

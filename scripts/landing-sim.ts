@@ -9,13 +9,15 @@
 //   ALLY_OFF=1（v0.6.10 S3a: 味方の駆逐艦 卯月を切る＝S0b と同じ夜。見出しに出さず、表は S0b と同じバイト＝LD9・G6。卯月がいれば見出しの 3 行目に卯月の値、TABLE=1 の I9 の遊び方の行に I9）・
 //   v0.6.10 S3b: TABLE=4（卯月の表。scripts/landing-sim-ally）、卯月のつまみ ALLY_STATION（x,y）・ALLY_ARC0・ALLY_SLOW_M・ALLY_SLOW_RATE・ALLY_FAST_M・ALLY_FAST_RATE・ALLY_REACT・ALLY_CHASE・
 //   ALLY_25OFF=1 と夜明け DAWN（duration_s）。範囲は systems/ally-sim-knobs（外は例外。ALLY_OFF=1 と卯月のつまみは一緒に使えない）。上書きは見出しに出る
+//   v0.6.10 S4: 卯月がいれば帯は systems/ally-sim-bands（人に近い遊び方も ✓/✗。TABLE=1 に得の対・照らした夜・ハードの段）、ALLY_OFF=1 は S0b の帯（*_NO_ALLY）
 // 実行: npx esbuild scripts/landing-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/landing.mjs && node <scratch>/landing.mjs
 import { gameData } from '../src/config/game-data';
 import { quantile, salvoProbs, surviveOf, type LandingCell, type SalvoKindStats, type TimeCol } from '../src/core/landing-sim-cell';
 import { LANDING_HUMAN, LANDING_HUMAN_POLICIES, LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
 import { mpsToKt } from '../src/core/units';
-import { allyTableLines } from './landing-sim-ally';
-import { LANDING_CALIBRATION, LANDING_HARD_CALIBRATION, LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses, landingSalvoMisses, type LandingSimOverrides } from '../src/systems/landing-sim-setup';
+import { allyBandLines, allyTableLines } from './landing-sim-ally';
+import { landingBandSet } from '../src/systems/ally-sim-bands';
+import { LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses, landingSalvoMisses, type LandingSimOverrides } from '../src/systems/landing-sim-setup';
 
 const num = (k: string): number | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? Number(process.env[k]) : undefined);
 const mission = process.env['MISSION'] ?? 'jp_04';
@@ -70,7 +72,9 @@ const line = (c: LandingCell): string =>
   `${f(c.salvos, 2, 4)} ${f(c.calm, 2, 5)} ${f(c.hurried, 2, 5)} ${f(c.engaged, 2, 5)} | ${f(c.leftByPass, 2, 4)} ${f(c.gunOff, 2, 5)} ${f(c.goalGone, 2, 5)} | ${f(c.fuelCallPct, 1, 5)} ${f(c.ringEarlyPct, 1, 5)} | ` +
   `${f(c.hpMean, 1, 4)} ${f(c.detectedPct, 0, 4)} ${f(c.detectMedS, 1, 5)} ${f(c.contacts, 2, 4)} ${f(c.lostContacts, 2, 4)} ${f(c.gunShots, 0, 5)}`;
 const mark = (miss: string[]): string => `  ${miss.length === 0 ? '✓' : `✗ ${miss.join('・')}`}`;
-const rows = (o.hard ? LANDING_HARD_CALIBRATION : LANDING_CALIBRATION).filter((r) => pols.includes(r.policy));
+// 帯の組（v0.6.10 S4・D9）: 卯月がいれば卯月の帯（人に近い遊び方も帯）、卯月を切った夜（ALLY_OFF=1）は S0b の帯（人に近い遊び方は表だけ＝表のバイトが S0b と同じ）
+const bandSet = landingBandSet(ad !== undefined, o.hard === true);
+const rows = bandSet.rows.filter((r) => pols.includes(r.policy));
 let misses = 0;
 
 if (table === '' || table === '1') {
@@ -79,7 +83,7 @@ if (table === '' || table === '1') {
     console.log(HEAD);
     for (const pol of pols) {
       const c = run.cell(pol, b);
-      if (table !== '1' || LANDING_HUMAN_POLICIES.includes(pol)) {
+      if (table !== '1' || (!bandSet.humanBanded && LANDING_HUMAN_POLICIES.includes(pol))) {
         console.log(line(c) + (table === '1' ? '  （表だけ）' : ''));
         continue;
       }
@@ -102,6 +106,13 @@ if (table === '1') {
       if (!ok) misses++;
       console.log(`  ${pr.policy.padEnd(13)} ${`${pr.name}（${pr.other}）`.padEnd(18)} | ${f(a, 1, 5)} | ${f(z, 1, 5)} | ${f(a - z, 1, 6)}（${f(pr.lo, 0, 0)}〜${f(pr.hi, 0, 0)}） ${ok ? '✓' : '✗'}`);
     }
+  }
+  // 卯月の得・照らした夜・ハードの段（v0.6.10 S4。卯月がいるときだけ＝卯月を切った表は S0b と同じバイト）。段はノーマルの同じ seed・つまみの表を回して比べる
+  if (ad) {
+    const normal = o.hard ? (ps: readonly LandingPolicy[]) => landingCalibrationRun(gameData, mission, ps, n, seed, blocks, { ...o, hard: undefined }) : null;
+    const al = allyBandLines(run, pols, blocks, n, normal, f);
+    for (const l of al.lines) console.log(l);
+    misses += al.misses;
   }
   // 分布は run.salvoPolicies（較正の遊び方）の夜だけ。分布に入れない行（人に近い遊び方）の期待値は -（v0.6.9 実機 1 回目のレビュー code-3: 前は較正の 12 の分布で 5〜25 点ずれた値を出し、
   // 見出しは「この表の全部の夜」と言っていた）。表の全部の行が分布に入っていれば前と同じ見出し（POL に較正の 12 なら S1 の木と同じバイト）
@@ -198,7 +209,7 @@ console.log(
 if (pols.some((p) => LANDING_HUMAN_POLICIES.includes(p))) {
   const h = LANDING_HUMAN;
   console.log(
-    `face・human・human_face = 人に近い遊び方（v0.6.9 実機 1 回目。表だけ: 帯・✓/✗ なし、斉射の数え・帯・R2 の期待値の分布に入れない）: face は lure で、見つかったら最寄りの PT へ巡航（割って入る） | ` +
+    `face・human・human_face = 人に近い遊び方（v0.6.9 実機 1 回目。${bandSet.humanBanded ? '卯月のいる表は行の帯あり（v0.6.10 S4）。' : '表だけ: 帯・✓/✗ なし、'}斉射の数え・帯・R2 の期待値の分布に入れない）: face は lure で、見つかったら最寄りの PT へ巡航（割って入る） | ` +
       `human は lure で、最初の報告に ${h.delayMinS}〜${h.delayMaxS} 秒遅れて反応・赤い線は ${h.dodgeP * 100}% だけかわす（反応 +0〜${h.reactExtraS} 秒）・機銃は ${h.gunCycleS} 秒ごとの初めの ${h.gunOnS} 秒だけ | human_face は両方`,
   );
 }

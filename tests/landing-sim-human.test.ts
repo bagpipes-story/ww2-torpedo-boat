@@ -14,7 +14,8 @@ import {
 import { PT_LEAVE, PT_RUN_IN, type PtSection } from '../src/core/pt-boats';
 import { SeededRng } from '../src/core/rng';
 import { bearingDeg } from '../src/core/ship-ai';
-import { LANDING_CALIBRATION, landingCalibrationRun, landingInvariantMisses, landingSimSetup } from '../src/systems/landing-sim-setup';
+import { LANDING_CALIBRATION_ALLY } from '../src/systems/ally-sim-bands';
+import { LANDING_CALIBRATION_NO_ALLY, landingCalibrationRun, landingInvariantMisses, landingSimSetup } from '../src/systems/landing-sim-setup';
 
 const S = landingSimSetup(gameData, 'jp_04');
 const H = landingSimSetup(gameData, 'jp_04', { hard: true });
@@ -27,12 +28,13 @@ const EXTREME: LandingHumanPlay = { delayMinS: 60, delayMaxS: 90, dodgeP: 0, rea
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 describe('遊び方の一覧と設定', () => {
-  it('15 = 較正の 12（LANDING_CALIBRATION の順）の後に人に近い 3 つ', () => {
+  it('15 = 較正の 12（LANDING_CALIBRATION_NO_ALLY の順）の後に人に近い 3 つ（卯月のいる帯 LANDING_CALIBRATION_ALLY は 15 の順。v0.6.10 S4）', () => {
     expect(LANDING_POLICIES.length).toBe(15);
     expect(LANDING_HUMAN_POLICIES).toEqual(['face', 'human', 'human_face']);
     expect(LANDING_POLICIES.slice(12)).toEqual(LANDING_HUMAN_POLICIES);
     expect(LANDING_CALIBRATION_POLICIES).toEqual(LANDING_POLICIES.slice(0, 12));
-    expect(LANDING_CALIBRATION_POLICIES).toEqual(LANDING_CALIBRATION.map((r) => r.policy));
+    expect(LANDING_CALIBRATION_POLICIES).toEqual(LANDING_CALIBRATION_NO_ALLY.map((r) => r.policy));
+    expect(LANDING_CALIBRATION_ALLY.map((r) => r.policy)).toEqual([...LANDING_POLICIES]);
   });
   it('台本: face は lure の戦い方を face に、human は lure に人の遅れと乱れ、human_face は両方。較正の 12 に人の鍵は無い', () => {
     const { lure, face, human, human_face: humanFace } = LANDING_POLICY_SPECS;
