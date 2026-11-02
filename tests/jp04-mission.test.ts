@@ -1,6 +1,7 @@
 // jp_04「多号作戦・オルモック湾へ」の data（v0.6.9 S1。spec-v069 §3・R1・R2・R7・R8）: 遊べる世界の値（v0_1_prototype。まだ playable_from は無い＝S7）、
 // §3.7 の幾何の数（出発点は R1 で (2700, 2450) → (2000, 2800)）・出発で見つからない（ノーマル・ハード・史実モード）・夜明けの時計・燃料・月・夜明けの敵・危険＝世界の block・
 // 夜明けの機（us_tacloban_aircraft）・文は data の数に合う（R8/F13c）・代用とゲーム上の想定・人物名なし。
+import { LANDING_DAWN_MARGIN_S } from '../src/config/landing-config';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
 import { playableMissionIds } from '../src/config/campaign-data';
@@ -57,8 +58,8 @@ function crossRange(p: PtParams, i: number, r: number): [number, number] {
 }
 
 describe('jp_04 の遊べる世界の data（v0_1_prototype。spec §3.2・R1）', () => {
-  it('米PT 2 隻・guns・夜明け 200 秒・燃料 19 gal・6000 × 3000・出発 (2000, 2800) 東向き（R1）・輪 (1400, 2700)・2 本の線・揚陸・岸・揺らぎ・危険・空襲 4 機東から・ハードの線', () => {
-    expect([P['enemies'], P['main_weapon'], P['duration_s'], P['fuel_allotment_gal'], P['shallows']]).toEqual([['us_pt_enemy', 'us_pt_enemy'], 'guns', 200, 19, []]);
+  it('米PT 2 隻・guns・夜明け 160 秒（v0.6.10 S0b。前は 200）・燃料 19 gal・6000 × 3000・出発 (2000, 2800) 東向き（R1）・輪 (1400, 2700)・2 本の線・揚陸・岸・揺らぎ・危険・空襲 4 機東から・ハードの線', () => {
+    expect([P['enemies'], P['main_weapon'], P['duration_s'], P['fuel_allotment_gal'], P['shallows']]).toEqual([['us_pt_enemy', 'us_pt_enemy'], 'guns', 160, 19, []]);
     expect(P['bounds_m']).toMatchObject({ width: 6000, height: 3000 });
     expect(P['player_start']).toMatchObject({ x_m: 2000, y_m: 2800, heading_deg: 90 });
     expect(P['return_point']).toMatchObject({ x_m: 1400, y_m: 2700, radius_m: 250, call_margin: 1.6, torpedo_settle_max_s: 10, torpedo_end_settle_s: 5 });
@@ -138,7 +139,7 @@ describe('§3.7 の幾何（R1 の出発点で計り直し。config/landing-miss
       expect(Math.round(nearestStartM(ptOf(hard), getPrototypeMission(gameData, 'jp_04', hard).night, 2000, 2800))).toBe(2313);
     }
   });
-  it('夜明けの時計（tests/dawn-clock と同じ式）: 出発から輪の縁 358 m＝巡航 7.0 秒 × 1.6 = 11.1 < 150・出発時に夜明け近し・燃料少が立たない。泊地 → 輪 1,601 m（V5）。unload 140 + 30 ≤ 200（V6）', () => {
+  it('夜明けの時計（tests/dawn-clock と同じ式）: 出発から輪の縁 358 m＝巡航 7.0 秒 × 1.6 = 11.1 < 150・出発時に夜明け近し・燃料少が立たない。泊地 → 輪 1,601 m（V5）。unload 140 + 20 ≤ 160（V6。v0.6.10 S0b）', () => {
     const s = buildWorldSetup(gameData, 'jp_04');
     const rp = s.mission.returnPoint;
     const edge = Math.hypot(s.playerStart.x - rp.x, s.playerStart.y - rp.y) - rp.radiusM;
@@ -148,10 +149,11 @@ describe('§3.7 の幾何（R1 の出発点で計り直し。config/landing-miss
     expect(updateReturnCalls(0, false, false, s.fuelAllotmentGal, edge * s.fuelCurve.galPerMCruise, s.durationS, needS, rp.callMargin) & (CALL_DAWN | CALL_FUEL)).toBe(0);
     const L = s.landing!.params;
     expect(Math.round(Math.hypot(L.x - rp.x, L.y - rp.y))).toBe(1601);
-    expect(L.unloadS + 30).toBeLessThanOrEqual(s.durationS);
+    expect(L.unloadS + LANDING_DAWN_MARGIN_S).toBeLessThanOrEqual(s.durationS);
+    expect([L.unloadS, LANDING_DAWN_MARGIN_S, s.durationS]).toEqual([140, 20, 160]);
     expect(Math.round(Math.hypot(s.playerStart.x - L.x, s.playerStart.y - L.y))).toBe(1001);
   });
-  it('燃料: 19 gal ≤ 上限 19.58（止まって 1,453 秒 < 1,500 秒で漂流・夜明け 200 秒より後）', () => {
+  it('燃料: 19 gal ≤ 上限 19.58（止まって 1,453 秒 < 1,500 秒で漂流・夜明け 160 秒より後）', () => {
     const s = buildWorldSetup(gameData, 'jp_04');
     const idleS = ((s.fuelAllotmentGal / s.fuelCurve.idleGph) * 3600) / s.timeScale;
     expect(Math.round(idleS)).toBe(1453);

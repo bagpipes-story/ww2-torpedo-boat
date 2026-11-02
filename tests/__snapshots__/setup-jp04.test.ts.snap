@@ -52,7 +52,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -142,7 +142,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 480,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -560,7 +560,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -650,7 +650,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 480,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -1068,7 +1068,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -1158,7 +1158,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 624,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -1576,7 +1576,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -1666,7 +1666,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 624,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -2090,7 +2090,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -2180,7 +2180,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 480,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -2612,7 +2612,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -2702,7 +2702,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 480,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -3134,7 +3134,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -3224,7 +3224,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 624,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,
@@ -3656,7 +3656,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
   "shoreBattery": null,
   "shoreBatteryXs": [],
   "escort": null,
-  "durationS": 200,
+  "durationS": 160,
   "enemyHitsToSink": null,
   "moon": "dark",
   "returnPoint": {
@@ -3746,7 +3746,7 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
  "baseDetectM": 2000,
  "visRange2": 810000,
  "detectRangeAtStartM": 624,
- "durationS": 200,
+ "durationS": 160,
  "fuelCurve": {
   "capacityGal": 800,
   "idleGph": 9.411764705882353,

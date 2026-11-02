@@ -79,11 +79,11 @@ describe(`揚陸を守る模擬のつり合い（jp_04、N ${N}・seed ${SEED}�
     expect(run.cell('lure_near', 0).engaged).toBeGreaterThan(run.cell('lure', 0).engaged + 1);
   }, SIM_TIMEOUT_MS);
 
-  it('ハード（PT 3 隻）: 行の帯（hide ≤ 8・lure 45〜75（v0.6.9 実機 1 回目に 70 → 75）で自艇の沈没 ≤ 30。± 8 点）とその 2 つの I1〜I6', () => {
+  it('ハード（PT 3 隻）: 行の帯（hide ≤ 8・lure 45〜78（v0.6.9 実機 1 回目に 70 → 75・v0.6.10 S0b に 75 → 78）で自艇の沈没 ≤ 30。± 8 点）とその 2 つの I1〜I6', () => {
     const run = hardRun();
     expect(run.setup.pt.count).toBe(3);
     expect(HARD_POLICIES).toEqual(['hide', 'lure']);
-    expect(LANDING_HARD_CALIBRATION[1]!.bands).toEqual({ objPct: [45, 75], ownSunkPct: [0, 30] });
+    expect(LANDING_HARD_CALIBRATION[1]!.bands).toEqual({ objPct: [45, 78], ownSunkPct: [0, 30] }); // v0.6.10 S0b: 夜明け 160 秒で 75 → 78
     expect(rowMisses(run, LANDING_HARD_CALIBRATION, HARD_POLICIES)).toEqual([]);
   }, SIM_TIMEOUT_MS);
 

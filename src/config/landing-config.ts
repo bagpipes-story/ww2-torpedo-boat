@@ -4,8 +4,11 @@
 export const LANDING_LAUNCH_INSIDE_M = 50;
 /** V5: 泊地と帰投の輪の中心の距離の下限 m（輸送船のそばで輪に入らない） */
 export const LANDING_RING_CLEAR_M = 800;
-/** V6: unload_s + これ ≤ duration_s（揚陸はいつも夜明けの前に決着する） */
-export const LANDING_DAWN_MARGIN_S = 30;
+/**
+ * V6: unload_s + これ ≤ duration_s（揚陸はいつも夜明けの前に決着する）。v0.6.10 S0b で 30 → 20（ユーザーの選択「jp_04 の夜明けだけ 160 秒」: 揚陸 140 + 20 = 160。
+ * 揚陸中に撃たれた米PT の魚雷は泊地まで 1,300 m でも 16 秒弱で決着する＝下の LANDING_WAKE_S_MAX の注）
+ */
+export const LANDING_DAWN_MARGIN_S = 20;
 /** V10: 見張りの報告から慌てる距離（無ければ気づかれていない斉射の距離）まで、哨戒の速さでこれ体感秒以上 */
 export const LANDING_WARN_MIN_S = 20;
 /** V4: 浜の線は海域の南の縁からこれ m（jp_01 の convoy.beach.margin_m 12 と同じ）、輸送船の当たりの円はどれも浜の線からこれ m 以上沖 */

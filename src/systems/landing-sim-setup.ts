@@ -92,7 +92,9 @@ export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 15], ownSunkPct: [0, 3] } },
   { policy: 'circle_start', bands: {} },
   { policy: 'picket', bands: {} },
-  { policy: 'lure', bands: { objPct: [70, 88], ownSunkPct: [0, 18], adriftPct: [0, 3], homeBeforeDawnPct: [80, 100], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] } },
+  // v0.6.10 S0b: 夜明けの前の帰投（homeBeforeDawnPct 80〜100）の帯を外した。ユーザーの選択「jp_04 の夜明けだけ 160 秒」で揚陸の 20 秒後に夜明けになり、ほとんどの夜は夜明けの後に帰る（手本 15.8%）。
+  // 模擬は夜明けの空襲を持たないので、達成 % は夜明けの後の帰投も数える（v0.6.10 の駆逐艦の較正で空襲の扱いを決める）
+  { policy: 'lure', bands: { objPct: [70, 88], ownSunkPct: [0, 18], adriftPct: [0, 3], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] } },
   { policy: 'lure_away', bands: {} },
   { policy: 'lure_near', bands: {} },
   { policy: 'lure_cue', bands: {} },
@@ -118,7 +120,8 @@ export const LANDING_PAIRS: readonly LandingPairRow[] = [
  */
 export const LANDING_HARD_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 8] } },
-  { policy: 'lure', bands: { objPct: [45, 75], ownSunkPct: [0, 30] } },
+  // v0.6.10 S0b: 45〜75 → 45〜78（ユーザーの選択「jp_04 の夜明けだけ 160 秒」で、夜明けのラッチが米PT を早く去らせ、組 2 が 75.0 → 75.3%。上に 2 点以上の余裕。数の合わせは駆逐艦の段）
+  { policy: 'lure', bands: { objPct: [45, 78], ownSunkPct: [0, 30] } },
 ];
 /**
  * 斉射の 1 本の命中率（spec §8: 気づかれていない 0.30〜0.50・慌てた 0.08〜0.25。戦いながら（R12）は帯なし＝表だけ）。帯は影の船体（いつも浮いている）への当たりうる本数あたり（不発を除く）: 撃った本数あたりは
