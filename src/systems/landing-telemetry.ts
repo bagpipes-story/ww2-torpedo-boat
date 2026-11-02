@@ -57,7 +57,7 @@ export function initLandingTelemetry(w: LandingTelemetryWorld): LandingTelemetry
   return t;
 }
 
-/** 毎フレーム 1 回（世界の updateFrame の後）: 揚陸・米PT の撃てる隻数・見張りの報告・輸送船が射線に入る PT・走っている雷跡・輸送船への相対位置・出来事（通し番号が変わったときだけ写す） */
+/** 毎フレーム 1 回（世界の updateFrame の後）: 揚陸・米PT の撃てる隻数・見張りの報告・輸送船が射線に入る PT・走っている雷跡・輸送船への相対位置・出来事（通し番号が変わったときだけ写す。そのときの撃てる隻数も） */
 export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetryWorld): void {
   const ld = w.landing;
   const s = w.pts;
@@ -123,6 +123,7 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.eventPct = st.eventPct;
   const e = st.eventBoat >= 0 ? q.boats[st.eventBoat] : undefined;
   t.eventDirIdx = e ? landingDirIdx(st, e.x, e.y) : 0;
+  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は同じステップに去った。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「米PT は去る」）
 }
 
 /** Result の材料が読む世界の部分（MissionWorld がそのまま満たす）: 揚陸の状態・雷撃の状態（PtTorpedoState の Result が読む欄）・PT ごとの方角と、米PT の隊（結末の phase・fate） */

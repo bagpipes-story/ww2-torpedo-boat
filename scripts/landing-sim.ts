@@ -2,7 +2,7 @@
 // 達成・揚陸・輸送船の沈没・自艇の沈没／漂流／帰投／夜明けの前の帰投・斉射・雷撃の結末・決着の前の燃料少と輪（R4）・期待値（R2）、斉射の命中（TABLE=2）、時刻（TABLE=3）を出す。
 // 中身は src/core/landing-sim（S4 の tests/landing-balance と同じ）。値は data。上書きは data の写しに当て、世界と同じ検査を通す（V8・V10・V13 を破る組み合わせは例外で止まる＝R7）。
 // 環境変数: MISSION（既定 jp_04）・N（1 組の夜。既定 400）・SEED（最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400 と 401〜800）・POL（既定 全部 15＝較正の 12 と人に近い 3 つ。
-//   R14 の lure_cue・home_early は表だけ。v0.6.9 実機 1 回目の face・human・human_face は表だけで ✓/✗ も無く、斉射の数え・帯・R2 の期待値の分布に入れない）・HARD=1（ハード）・
+//   R14 の lure_cue・home_early は表だけ。v0.6.9 実機 1 回目の face・human・human_face は表だけで ✓/✗ も無く、斉射の数え・帯・R2 の期待値の分布に入れない＝TABLE=1 の期待値は -）・HARD=1（ハード）・
 //   TABLE（無し: 組ごとの表 / 1: 帯の ✓/✗・対の帯（組を合わせた夜）・R2 の期待値・不変 / 2: 斉射の命中と分布 / 3: 時刻。1・2 は ✗ があれば終了コード 1）・
 //   上書き UNLOAD（unload_s）・LOOKOUT（lookout_m）・HITS（torpedo_hits_to_sink）・AIM（aim_error_deg）・SPACING（salvo_spacing_deg）・HURRIED（hurried_max_m）・HFACTOR（hurried_error_factor）・
 //   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）
@@ -80,15 +80,20 @@ if (table === '1') {
       console.log(`  ${pr.policy.padEnd(13)} ${`${pr.name}（${pr.other}）`.padEnd(18)} | ${f(a, 1, 5)} | ${f(z, 1, 5)} | ${f(a - z, 1, 6)}（${f(pr.lo, 0, 0)}〜${f(pr.hi, 0, 0)}） ${ok ? '✓' : '✗'}`);
     }
   }
-  console.log('R2 の期待値（1 夜の揚陸に効く斉射の組 × 種類と PT ごとの当たりうる本数の分布＝この表の全部の夜。輸送船が沈んで去った PT は気づかれていない斉射とみなす。輸送船の運と自艇の運は別とみなす）と実測: 組ごと');
+  // 分布は run.salvoPolicies（較正の遊び方）の夜だけ。分布に入れない行（人に近い遊び方）の期待値は -（v0.6.9 実機 1 回目のレビュー code-3: 前は較正の 12 の分布で 5〜25 点ずれた値を出し、
+  // 見出しは「この表の全部の夜」と言っていた）。表の全部の行が分布に入っていれば前と同じ見出し（POL に較正の 12 なら S1 の木と同じバイト）
+  const inPool = (p: LandingPolicy): boolean => run.salvoPolicies.includes(p);
+  const poolJa = pols.every(inPool) ? 'この表の全部の夜' : `較正の ${run.salvoPolicies.length} の遊び方の夜。人に近い遊び方の行は入れず、期待値は -`;
+  console.log(`R2 の期待値（1 夜の揚陸に効く斉射の組 × 種類と PT ごとの当たりうる本数の分布＝${poolJa}。輸送船が沈んで去った PT は気づかれていない斉射とみなす。輸送船の運と自艇の運は別とみなす）と実測: 組ごと`);
   console.log('policy        | mix 0%   C%   H%   E%  2+% | relC  relH  relE | expSurv% surv% | expObj%  obj%');
   for (let b = 0; b < blocks; b++) {
     console.log(`組 ${b + 1}（seed ${span(b)}）`);
     for (const pol of pols) {
       const c = run.cell(pol, b);
+      const exp = inPool(pol);
       console.log(
         `${pol.padEnd(13)} | ${f(c.mix0Pct, 1, 5)} ${f(c.mixCPct, 1, 4)} ${f(c.mixHPct, 1, 4)} ${f(c.mixEPct, 1, 4)} ${f(c.mixMultiPct, 1, 4)} | ${f(c.relCalm, 2, 4)} ${f(c.relHurried, 2, 5)} ${f(c.relEngaged, 2, 5)} | ` +
-          `${f(c.expSurvivePct, 1, 8)} ${f(c.survivePct, 1, 5)} | ${f(c.expObjPct, 1, 7)} ${f(c.objPct, 1, 5)}`,
+          `${f(exp ? c.expSurvivePct : NaN, 1, 8)} ${f(c.survivePct, 1, 5)} | ${f(exp ? c.expObjPct : NaN, 1, 7)} ${f(c.objPct, 1, 5)}`,
       );
     }
   }

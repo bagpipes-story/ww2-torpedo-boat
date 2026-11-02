@@ -1,10 +1,11 @@
 // v0.6.9 S6a（spec-v069 §5.2 のキー）: 揚陸の 2 行目のキー（ui/landing-lines の landingKey・landingEventKey）の欄が重ならず、1 つの値を動かすとその欄だけが変わり、
-// 欄の上限の値でもあふれない（landingKey < 2³⁰・landingEventKey < 2²⁸。どちらも 31 ビットの内）。同じモードの副・種類は副・種類の欄で区別できる。
+// 欄の上限の値でもあふれない（landingKey < 2³⁰・landingEventKey < 2²⁹。どちらも 31 ビットの内）。同じモードの副・種類は副・種類の欄で区別できる。
 // R14: モード 37（輸送船が射線に入る: 副 5・方角・100 m）と輪の中の待ち（副 6・残りの秒）、出来事の足した斉射の隻数（bit 26〜27）。
+// v0.6.9 実機 1 回目のレビュー code-2: 撃てる米PT が残らない戦いながらの斉射（bit 28。「米PT は去る」）。
 import { describe, expect, it } from 'vitest';
 import { LE_CALM, LE_DONE, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingTelemetry } from '../src/core/landing';
 import type { PtTelemetry } from '../src/core/pt-boats';
-import { LEK_BOATS, LEK_COUNT, LEK_DIR, LEK_LEFT, LEK_PCT, LEK_STEP, LK_ARMED, LK_DIR, LK_LEFT, LK_PCT, LK_STEP, landingEventKey, landingKey } from '../src/ui/landing-lines';
+import { LEK_BOATS, LEK_COUNT, LEK_DIR, LEK_GONE, LEK_LEFT, LEK_PCT, LEK_STEP, LK_ARMED, LK_DIR, LK_LEFT, LK_PCT, LK_STEP, landingEventKey, landingKey } from '../src/ui/landing-lines';
 import { MISSION_CALL, MISSION_LANDING_FIRE_LINE, MISSION_LANDING_THREAT, MISSION_PT, MISSION_WAITING } from '../src/ui/mission-mode';
 import { L0, tl } from './landing-ui-kit';
 
@@ -17,8 +18,11 @@ const all = (f: Record<string, number>): number => Object.values(f).reduce((a, b
 
 /** landingKey の欄（spec §5.2: 1 | 副 << 1 | 方角 << 4 | 刻み << 7 | % か雷跡の本数 << 13 | 残りの秒 << 20 | 撃てる隻数 << 28） */
 const FK = { tag: bits(0, 0), sub: bits(1, 3), dir: bits(LK_DIR, LK_DIR + 2), step: bits(LK_STEP, LK_STEP + 5), pct: bits(LK_PCT, LK_PCT + 6), left: bits(LK_LEFT, LK_LEFT + 7), armed: bits(LK_ARMED, LK_ARMED + 1) };
-/** landingEventKey の欄（種類 | 方角 << 4 | 斉射の 100 m << 7 | 本数 << 13 | % << 17 | 沈むまでの本数 << 24 | 足した斉射の隻数 << 26） */
-const FE = { kind: bits(0, 3), dir: bits(LEK_DIR, LEK_DIR + 2), step: bits(LEK_STEP, LEK_STEP + 5), count: bits(LEK_COUNT, LEK_COUNT + 3), pct: bits(LEK_PCT, LEK_PCT + 6), left: bits(LEK_LEFT, LEK_LEFT + 1), boats: bits(LEK_BOATS, LEK_BOATS + 1) };
+/** landingEventKey の欄（種類 | 方角 << 4 | 斉射の 100 m << 7 | 本数 << 13 | % << 17 | 沈むまでの本数 << 24 | 足した斉射の隻数 << 26 | 撃てる米PT が残らない戦いながらの斉射 << 28） */
+const FE = {
+  kind: bits(0, 3), dir: bits(LEK_DIR, LEK_DIR + 2), step: bits(LEK_STEP, LEK_STEP + 5), count: bits(LEK_COUNT, LEK_COUNT + 3), pct: bits(LEK_PCT, LEK_PCT + 6), left: bits(LEK_LEFT, LEK_LEFT + 1),
+  boats: bits(LEK_BOATS, LEK_BOATS + 1), gone: bits(LEK_GONE, LEK_GONE),
+};
 
 const QUIET: Partial<PtTelemetry> = { alive: 2, detected: false, sighted: false };
 const GONE: Partial<PtTelemetry> = { alive: 0, out: 2, detected: false, sighted: false };
@@ -37,17 +41,18 @@ const KV: KVariant[] = [
 ];
 
 interface EVariant { name: string; base: Partial<LandingTelemetry>; probes: Probe[] }
-const ev = (o: Partial<LandingTelemetry>): Partial<LandingTelemetry> => ({ eventSeq: 1, eventDirIdx: 1, eventCount: 3, eventM: 1250, eventHits: 0, eventPct: 0.5, ...o });
+const ev = (o: Partial<LandingTelemetry>): Partial<LandingTelemetry> => ({ eventSeq: 1, eventDirIdx: 1, eventCount: 3, eventM: 1250, eventHits: 0, eventPct: 0.5, eventArmed: 1, ...o });
 const EV: EVariant[] = [
   { name: '雷撃', base: ev({ eventKind: LE_CALM }), probes: [{ field: 'dir', o: { eventDirIdx: 7 } }, { field: 'count', o: { eventCount: 2 } }, { field: 'count', o: { eventCount: 40 } }] },
   { name: '慌てた', base: ev({ eventKind: LE_HURRIED }), probes: [{ field: 'dir', o: { eventDirIdx: 4 } }, { field: 'step', o: { eventM: 1150 } }, { field: 'step', o: { eventM: 99999 } }, { field: 'count', o: { eventCount: 4 } }] },
-  { name: '戦いながら', base: ev({ eventKind: LE_ENGAGED, eventM: 812 }), probes: [{ field: 'step', o: { eventM: 450 } }, { field: 'dir', o: { eventDirIdx: 2 } }] },
+  { name: '戦いながら', base: ev({ eventKind: LE_ENGAGED, eventM: 812 }), probes: [{ field: 'step', o: { eventM: 450 } }, { field: 'dir', o: { eventDirIdx: 2 } }, { field: 'gone', o: { eventArmed: 0 } }] },
   { name: '被雷', base: ev({ eventKind: LE_HIT, eventHits: 1 }), probes: [{ field: 'left', o: { eventHits: 0 } }] },
   { name: '不発', base: ev({ eventKind: LE_DUD, eventHits: 0 }), probes: [{ field: 'left', o: { eventHits: 1 } }] },
   { name: '外れ', base: ev({ eventKind: LE_MISS }), probes: [{ field: 'pct', o: { eventPct: 1 } }] },
   { name: '沈没', base: ev({ eventKind: LE_SUNK, eventPct: 0.64 }), probes: [{ field: 'pct', o: { eventPct: 0.99 } }] },
   { name: '揚陸完了', base: ev({ eventKind: LE_DONE, eventPct: 1 }), probes: [] },
   { name: '揚陸の後の沈没', base: ev({ eventKind: LE_SUNK_DONE, eventPct: 1 }), probes: [] },
+  { name: '足した戦いながら', base: ev({ eventKind: LE_ENGAGED, eventBoats: 2, eventCount: 6, eventM: 812 }), probes: [{ field: 'boats', o: { eventBoats: 3 } }, { field: 'gone', o: { eventArmed: 0 } }] },
   { name: '足した斉射', base: ev({ eventKind: LE_HURRIED, eventBoats: 2, eventCount: 6 }), probes: [{ field: 'boats', o: { eventBoats: 3 } }, { field: 'boats', o: { eventBoats: 9 } }, { field: 'count', o: { eventCount: 9 } }] },
 ];
 
@@ -61,7 +66,7 @@ describe('揚陸の 2 行目のキーの欄（ui/landing-lines。spec §5.2）',
       for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) expect((f[names[i]!] & f[names[j]!]) >>> 0, `${String(names[i])}×${String(names[j])}`).toBe(0);
     }
     expect(all(FK)).toBe(bits(0, 29));
-    expect(all(FE)).toBe(bits(0, 27));
+    expect(all(FE)).toBe(bits(0, 28));
   });
   it.each(KV.map((v) => [v.name, v] as const))('landingKey %s: 欄の内で 0 < key < 2³⁰、値を動かすとその欄だけが変わる', (_n, v) => {
     const base = kKey(v, {});
@@ -75,15 +80,15 @@ describe('揚陸の 2 行目のキーの欄（ui/landing-lines。spec §5.2）',
       expect(k).toBeLessThan(2 ** 30);
     }
   });
-  it.each(EV.map((v) => [v.name, v] as const))('landingEventKey %s: 欄の内で 0 < key < 2²⁸、値を動かすとその欄だけが変わる', (_n, v) => {
+  it.each(EV.map((v) => [v.name, v] as const))('landingEventKey %s: 欄の内で 0 < key < 2²⁹、値を動かすとその欄だけが変わる', (_n, v) => {
     const base = eKey(v.base);
     expect(base).toBeGreaterThan(0);
-    expect(base).toBeLessThan(2 ** 28);
+    expect(base).toBeLessThan(2 ** 29);
     for (const pr of v.probes) {
       const k = eKey({ ...v.base, ...pr.o });
       expect(k, `${v.name} ${pr.field}`).not.toBe(base);
       expect(((k ^ base) & ~FE[pr.field as keyof typeof FE]) >>> 0, `${v.name} ${pr.field} の欄の外が変わった`).toBe(0);
-      expect(k).toBeLessThan(2 ** 28);
+      expect(k).toBeLessThan(2 ** 29);
     }
   });
   it('同じモードの副（遠い・近い・雷跡・待ち・平常）と出来事の種類は副・種類の欄で区別できる。文に出ない値はキーに入らない', () => {
@@ -99,6 +104,10 @@ describe('揚陸の 2 行目のキーの欄（ui/landing-lines。spec §5.2）',
     // 気づかれていない斉射の距離・被雷の % は文に出ない（キーは同じ）
     expect(eKey(ev({ eventKind: LE_CALM, eventM: 899 }))).toBe(eKey(ev({ eventKind: LE_CALM, eventM: 650 })));
     expect(eKey(ev({ eventKind: LE_HIT, eventHits: 1, eventPct: 0.3 }))).toBe(eKey(ev({ eventKind: LE_HIT, eventHits: 1, eventPct: 0.6 })));
+    // code-2: まだ撃てる隻数は戦いながらの斉射の 0 か否かだけ（ほかの出来事と 1 隻以上の違いは文に出ない）
+    for (const k of [LE_CALM, LE_HURRIED, LE_HIT, LE_DUD, LE_MISS, LE_SUNK, LE_DONE]) expect(eKey(ev({ eventKind: k, eventArmed: 0 })), String(k)).toBe(eKey(ev({ eventKind: k, eventArmed: 2 })));
+    expect(eKey(ev({ eventKind: LE_ENGAGED, eventArmed: 1 }))).toBe(eKey(ev({ eventKind: LE_ENGAGED, eventArmed: 2 })));
+    expect(eKey(ev({ eventKind: LE_ENGAGED, eventArmed: 0 })) & FE.gone).toBe(FE.gone);
     // 見えている PT の行（距離と方角は ptKey）と決着の後の呼びかけは印だけ
     expect(landingKey(tl({ pct: 0.3 }, { ...QUIET, sighted: true }), MISSION_PT)).toBe(1);
     expect(landingKey(tl({ resolved: true, leftS: 0 }, QUIET), MISSION_CALL)).toBe(1);

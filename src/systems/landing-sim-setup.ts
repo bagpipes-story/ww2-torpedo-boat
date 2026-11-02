@@ -172,7 +172,7 @@ export interface LandingRun {
   pooled: (policy: LandingPolicy) => LandingCell;
 }
 
-/** 表を 1 回だけ回す口（tests と scripts）: policies を blocks 組ずつ回し、期待値の分布はその全部の夜から */
+/** 表を 1 回だけ回す口（tests と scripts）: policies を blocks 組ずつ回し、期待値の分布は salvoPolicies（回した中の較正の遊び方。人に近い遊び方は入れない）の全部の夜から */
 export function landingCalibrationRun(data: GameData, missionId: string, policies: readonly LandingPolicy[], n: number, seedBase: number, blocks: number, o: LandingSimOverrides = {}): LandingRun {
   const setup = landingSimSetup(data, missionId, o);
   const count = setup.pt.count;

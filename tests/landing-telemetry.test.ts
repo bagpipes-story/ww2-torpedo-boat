@@ -2,13 +2,14 @@
 // 出撃時の値・揚陸の時計・見張りの報告（遠い・近い・向き・斉射の残り・決着の後は無し）・雷跡・撃てる隻数・出来事（通し番号が変わったときだけ写す・8 方位）を見る。
 // 揚陸の無い世界（w.landing が null）は tests/landing-neutral。配線（createTelemetry・refreshTelemetry）の pin は tests/landing-step-order。
 // R14（S6a-fix）: 輸送船が射線に入る PT（landingFireLine。自艇からの 8 方位と 100 m）・足した斉射の隻数（eventBoats）。
+// v0.6.9 実機 1 回目のレビュー code-2: 出来事のフレームのまだ撃てる隻数（eventArmed。撃てる PT が残らない戦いながらの斉射は「米PT は去る」）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
 import {
   createLanding, createLandingReport, createLandingTelemetry, createLandingWakes, hitLanding, landingDirIdx, landingEvent, landingReport, tickLanding,
-  LANDING_REPORT_FAR, LANDING_REPORT_NEAR, LANDING_REPORT_NONE, LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_HIT, LE_NONE,
+  LANDING_REPORT_FAR, LANDING_REPORT_NEAR, LANDING_REPORT_NONE, LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_ENGAGED, LE_HIT, LE_NONE,
 } from '../src/core/landing';
 import { createPtSection, PT_ALERT, PT_CHASE, PT_FATE_SUNK, PT_LEAVE, PT_PATROL } from '../src/core/pt-boats';
 import { createPtTorpedoState } from '../src/core/pt-torpedo';
@@ -220,6 +221,26 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     landingEvent(w.landing.state, LE_HIT, 1, NaN, 0);
     refreshLandingTelemetry(t, w);
     expect(t.eventBoats).toBe(0);
+  });
+
+  it('code-2: 出来事のフレームのまだ撃てる隻数（eventArmed。撃った PT はもう去っている）を写し、次の出来事まで変えない', () => {
+    const w = world();
+    const t = initLandingTelemetry(w);
+    const q = w.pts.section;
+    expect(t.eventArmed).toBe(0); // 出来事の前（createLandingTelemetry の値）
+    // 東の PT が戦いながら撃って去った（core/pt-torpedo の salvo と同じ: 斉射 0・去る・出来事）
+    w.landing.tst.left[1] = 0;
+    q.boats[1]!.phase = PT_LEAVE;
+    landingEvent(w.landing.state, LE_ENGAGED, 1, 880, 3, 1);
+    refreshLandingTelemetry(t, w);
+    expect([t.eventKind, t.armed, t.eventArmed]).toEqual([LE_ENGAGED, 1, 1]);
+    // 北の PT が 25mm で沈んでも出来事の写しは同じ（2 行目の「離れて戦え」は出ている間に替わらない）。次の出来事で今の隻数
+    q.boats[0]!.fate = PT_FATE_SUNK;
+    refreshLandingTelemetry(t, w);
+    expect([t.armed, t.eventArmed]).toEqual([0, 1]);
+    landingEvent(w.landing.state, LE_HIT, 1, NaN, 0);
+    refreshLandingTelemetry(t, w);
+    expect([t.eventKind, t.eventArmed]).toEqual([LE_HIT, 0]);
   });
 
   it('§7: 毎フレームの refreshLandingTelemetry は確保しない（new・配列の写し・文字の組み立て・関数の生成が無い）', () => {

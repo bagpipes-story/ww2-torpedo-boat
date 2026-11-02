@@ -99,8 +99,11 @@ export interface LandingTelemetry {
   fireLineI: number; fireLineDirIdx: number; fireLineStep: number;
   /** 自艇から輸送船へ（m）とその距離 m（平方根は 1 フレーム 1 回。「輸送 N m」） */
   shipDx: number; shipDy: number; shipDistM: number;
-  /** 出来事（LandingState の写し: 通し番号・LE_*・PT・斉射の m・本数・隻数・そのときの被雷・割合）と、その PT の輸送船からの 8 方位（通し番号が変わったフレームに 1 回。PT の無い出来事は 0） */
-  eventSeq: number; eventKind: number; eventBoat: number; eventM: number; eventCount: number; eventBoats: number; eventHits: number; eventPct: number; eventDirIdx: number;
+  /**
+   * 出来事（LandingState の写し: 通し番号・LE_*・PT・斉射の m・本数・隻数・そのときの被雷・割合）と、その PT の輸送船からの 8 方位（PT の無い出来事は 0）・そのフレームのまだ撃てる隻数
+   * （armed の写し＝斉射の後。撃った PT はもう去っている。v0.6.9 実機 1 回目のレビュー code-2: 撃てる PT が残らない戦いながらの斉射は「米PT は去る」）。どちらも通し番号が変わったフレームに 1 回
+   */
+  eventSeq: number; eventKind: number; eventBoat: number; eventM: number; eventCount: number; eventBoats: number; eventHits: number; eventPct: number; eventDirIdx: number; eventArmed: number;
 }
 
 export function createLandingTelemetry(): LandingTelemetry {
@@ -109,7 +112,7 @@ export function createLandingTelemetry(): LandingTelemetry {
     phase: LD_UNLOADING, resolved: false, pct: 0, leftS: 0, hits: 0, duds: 0, sunkAfterDone: false, sinking: false, armed: 0, salvos: 0, fired: 0,
     reportSub: LANDING_REPORT_NONE, reportI: -1, reportStep: 0, reportDirIdx: 0, reportDx: NaN, reportDy: NaN, reportSighted: false, reportIsThreat: false, caretShown: false, wakes: 0, wakeCpaS: NaN,
     fireLineI: -1, fireLineDirIdx: 0, fireLineStep: 0,
-    shipDx: NaN, shipDy: NaN, shipDistM: NaN, eventSeq: 0, eventKind: LE_NONE, eventBoat: -1, eventM: NaN, eventCount: 0, eventBoats: 0, eventHits: 0, eventPct: 0, eventDirIdx: 0,
+    shipDx: NaN, shipDy: NaN, shipDistM: NaN, eventSeq: 0, eventKind: LE_NONE, eventBoat: -1, eventM: NaN, eventCount: 0, eventBoats: 0, eventHits: 0, eventPct: 0, eventDirIdx: 0, eventArmed: 0,
   };
 }
 

@@ -77,11 +77,11 @@ describe('torpedo_attack の data（enemies.json の us_pt_enemy。spec §3.3）
     expect(src).toContain('戦いながらの斉射（spec R12: 早く引きつけても輸送船のそばで戦えば輸送船は危ない＝輸送船から離れて戦え）');
     expect(src).toContain('狙いの誤差を engaged_error_factor 倍にして撃って去る（1 隻 1 回・見失いの reacquire_s は掛けない・揚陸の決着の後は撃たない。去るのは v0.6.9 実機 1 回目から＝下の retreat_after_salvo）');
     expect(src).not.toContain('去らずに自艇と戦い続ける');
-    // v0.6.9 実機 1 回目: retreat_after_salvo は 3 種類とも（ユーザーの報告と選択 A・S1 の模擬の数。上の S4 の数は前の規則のとき）
+    // v0.6.9 実機 1 回目: retreat_after_salvo は 3 種類とも（ユーザーの報告と選択 A・実機 1 回目 S1 の模擬の数。上の S4 の数は前の規則のとき。後ろの「S1 のまま」は v0.6.9 の S1＝data の段）
     expect(src).toContain('retreat_after_salvo は 3 種類の斉射とも（v0.6.9 実機 1 回目。上の S4 の数は戦いながら撃った PT が去らずに戦い続けた規則のとき）');
     expect(src).toContain('「魚雷発射後、外れても敵が帰投せず、自機につきまとうため、ゲームクリアがかなりきつい」');
     expect(src).toContain('ユーザーの選択 A「引きつけて離す」＝撃った PT は戦いながらの斉射でも去る');
-    expect(src).toContain('S1 の模擬（N 400 × 2 組。数は 組 1 / 組 2）: lure の達成 87.3 / 87.0%（帯 70〜88）');
+    expect(src).toContain('値は変えない）。実機 1 回目 S1 の模擬（N 400 × 2 組。数は 組 1 / 組 2）: lure の達成 87.3 / 87.0%（帯 70〜88）'); // レビュー docs-5: 「S1」だけでは v0.6.9 の S1（data の段）と読めた
     expect(src).toContain('ハードの lure 73.0 / 75.0%（帯を 45〜70 から 45〜75 へ）');
     expect(src).not.toContain('retreat_after_salvo は気づかれていない・慌てた斉射だけ');
     expect(src).toContain('engaged_error_factor 2.0 は S4 の模擬（scripts/landing-sim。N 400 × 2 組＝seed 1〜400 と 401〜800。数は 組 1 / 組 2）で慌てた斉射と同じ 2.5 から 1.5〜3.0 を回して決めた（spec R12・R13）');

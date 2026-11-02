@@ -216,10 +216,14 @@ function eventRank(kind: number): number {
   return kind === LE_DONE ? 3 : 4;
 }
 
-/** 同じ種類の斉射なら dst に src の本数と隻数を足す（「米PT 2 隻が…輸送船へ 6 本」。core の同じステップの足し方 R14 A3 と同じ形）。足したら true */
+/**
+ * 同じ種類の斉射なら dst に src の本数と隻数を足す（「米PT 2 隻が…輸送船へ 6 本」。core の同じステップの足し方 R14 A3 と同じ形）。まだ撃てる隻数は後の斉射の後の値
+ * （v0.6.9 実機 1 回目のレビュー code-2: 2 隻目が最後の撃てる PT なら「… ・ 米PT は去る」）。足したら true
+ */
 function addSalvo(dst: LandingEventView, src: Readonly<LandingEventView>): boolean {
   if (!landingSalvoEvent(src.eventKind) || dst.eventKind !== src.eventKind) return false;
   dst.eventCount += src.eventCount;
   dst.eventBoats = Math.max(1, dst.eventBoats) + Math.max(1, src.eventBoats);
+  dst.eventArmed = src.eventArmed;
   return true;
 }

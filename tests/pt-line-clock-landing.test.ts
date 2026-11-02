@@ -202,16 +202,19 @@ describe('揚陸の出来事は pt-line-clock の待ちの鎖の中（R5）', ()
   });
 
   it('S8 のレビュー game-2 (a): 37 の下で待っている戦いながらの斉射に別の PT の同じ種類の斉射が来たら、足した 1 つの行「米PT 2 隻が…輸送船へ 6 本」（前は後の斉射だけが出た）', () => {
-    const a: Partial<LandingTelemetry> = { eventSeq: 1, eventKind: LE_ENGAGED, eventDirIdx: 0, eventCount: 3, eventBoats: 1, eventM: 899 };
-    const b: Partial<LandingTelemetry> = { eventSeq: 2, eventKind: LE_ENGAGED, eventDirIdx: 2, eventCount: 3, eventBoats: 1, eventM: 900 };
-    const fire: Partial<LandingTelemetry> = { fireLineI: 1, fireLineDirIdx: 2, fireLineStep: 10 };
-    const h = new Hud();
-    const got = spans(h, 9000, (ms) => tl({ ...(ms < 2000 ? a : b), ...(ms < 5000 ? fire : {}) }, QUIET));
-    expect(got.map((x) => x[0]).filter((x) => x.includes('発射'))).toEqual(['米PT 2 隻が戦いながら発射！ 輸送船へ 6 本 ・ 離れて戦え']);
+    // 撃てる隻数（eventArmed）は後の斉射の後の値（v0.6.9 実機 1 回目のレビュー code-2: 2 隻目が最後の撃てる PT なら「米PT は去る」、ハードでまだ 1 隻いれば「離れて戦え」）
+    for (const [armedA, armedB, tail] of [[1, 0, '米PT は去る'], [2, 1, '離れて戦え']] as const) {
+      const a: Partial<LandingTelemetry> = { eventSeq: 1, eventKind: LE_ENGAGED, eventDirIdx: 0, eventCount: 3, eventBoats: 1, eventM: 899, eventArmed: armedA };
+      const b: Partial<LandingTelemetry> = { eventSeq: 2, eventKind: LE_ENGAGED, eventDirIdx: 2, eventCount: 3, eventBoats: 1, eventM: 900, eventArmed: armedB };
+      const fire: Partial<LandingTelemetry> = { fireLineI: 1, fireLineDirIdx: 2, fireLineStep: 10 };
+      const h = new Hud();
+      const got = spans(h, 9000, (ms) => tl({ ...(ms < 2000 ? a : b), ...(ms < 5000 ? fire : {}) }, QUIET));
+      expect(got.map((x) => x[0]).filter((x) => x.includes('発射'))).toEqual([`米PT 2 隻が戦いながら発射！ 輸送船へ 6 本 ・ ${tail}`]);
+    }
   });
 
   it('S8 のレビュー game-2 (b): 赤い線の下で待っている被雷に斉射が来ても被雷を替えない（被雷 → 斉射の順に出る）。被雷が出ているうちの次の被雷・沈没は 1 つだけ待つ（新しい方）', () => {
-    const salvo: Partial<LandingTelemetry> = { eventSeq: 2, eventKind: LE_ENGAGED, eventDirIdx: 2, eventCount: 3, eventBoats: 1, eventM: 900 };
+    const salvo: Partial<LandingTelemetry> = { eventSeq: 2, eventKind: LE_ENGAGED, eventDirIdx: 2, eventCount: 3, eventBoats: 1, eventM: 900, eventArmed: 1 };
     const h = new Hud();
     const got = spans(h, 12000, (ms) => tl(ms < 1500 ? HIT : salvo, ms < 3000 ? LINE : QUIET));
     const texts = got.map((x) => x[0]).filter((x) => !x.startsWith('米PT 航過') && !x.startsWith('米PT 掃射'));
