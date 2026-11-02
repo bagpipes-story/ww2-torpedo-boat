@@ -12,23 +12,33 @@
 // 撃つ（shoot）: contact 見つかっている間に射程 600 m・視程の内の PT へ / eff 有効射程 300 m・視程の内の PT へ（見つかっていなくても）/ range 射程・視程の内の PT へ（見つかっていなくても）。
 // 決着（揚陸完了か沈没）の後は巡航で帰投（kite は PT がみな去ってから）。赤い線の転舵（dodge）は core/landing-sim で HUD どおり: 航過は線から離れる直角へ全速 4 秒（線の間は延ばす）、
 // 連射は針路そのまま（ui/pt-chase-lines の「針路そのまま撃ち返せ」。pt-pass-sim の既定 keep と同じ）。
+// 人に近い遊び方（v0.6.9 実機 1 回目・表だけ。spec-ip1 §4。ユーザーの報告「１艇に対して惹きつけるまで近づくともう１艇が輸送船に近づいて撃沈される」）: face は lure と同じで、見つかっていて
+// 決着の前は最寄りの去っていない PT へ巡航（割って入る。fight face）。human は lure に人の遅れと乱れ（LANDING_HUMAN。core/landing-sim が「人の乱れ」の列で回す）、human_face は両方。
 import type { BoatState } from './boat-motion';
 import { LANDING_REPORT_FAR, LANDING_REPORT_NEAR, type LandingReport } from './landing';
 import { PT_LEAVE, type PtSection } from './pt-boats';
 import { allLeft } from './pt-sim-policy';
+import type { SeededRng } from './rng';
 import { bearingDeg } from './ship-ai';
 import { degToRad, wrapDeg360 } from './units';
 
-/** 遊び方（表の順。spec §8 の 7 と R1 の circle_start・R12 の lure_away・R13 の lure_near・R14 の lure_cue と home_early） */
-export const LANDING_POLICIES = ['hide', 'circle_start', 'picket', 'lure', 'lure_away', 'lure_near', 'lure_cue', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near', 'home_early'] as const;
+/**
+ * 遊び方（表の順）: 較正の 12（spec §8 の 7 と R1 の circle_start・R12 の lure_away・R13 の lure_near・R14 の lure_cue と home_early）の後に、人に近い 3 つ（v0.6.9 実機 1 回目の face・human・
+ * human_face。表だけ）
+ */
+export const LANDING_POLICIES = ['hide', 'circle_start', 'picket', 'lure', 'lure_away', 'lure_near', 'lure_cue', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near', 'home_early', 'face', 'human', 'human_face'] as const;
 export type LandingPolicy = (typeof LANDING_POLICIES)[number];
+/** 人に近い遊び方（表だけ: 帯も ✓/✗ も無く、斉射の数え・斉射の帯・R2 の期待値の分布に入れない＝較正の 12 の数を動かさない。systems/landing-sim-setup の landingCalibrationRun） */
+export const LANDING_HUMAN_POLICIES: readonly LandingPolicy[] = ['face', 'human', 'human_face'];
+/** 較正の 12（帯・斉射の数え・斉射の帯・R2 の期待値の分布） */
+export const LANDING_CALIBRATION_POLICIES: readonly LandingPolicy[] = LANDING_POLICIES.filter((p) => !LANDING_HUMAN_POLICIES.includes(p));
 export type LandingMove = 'hide' | 'circle' | 'picket' | 'station' | 'lure' | 'home';
 export type LandingShoot = 'none' | 'contact' | 'eff' | 'range';
 /**
  * 見つかっている間の戦い方（lure の動きだけ）: flee 輸送船から離れる向きへ（lure）/ stay_out flee に加えて一度見つかった後は awayM の内へ戻らない（lure_away）/ near 輸送船のそばへ戻る（lure_near）/
- * cue near と同じで、輸送船が射線に入る（HUD の警告）間だけ離れる向きへ（lure_cue）
+ * cue near と同じで、輸送船が射線に入る（HUD の警告）間だけ離れる向きへ（lure_cue）/ face 最寄りの去っていない PT へ巡航（割って入る。face・human_face。去っていない PT が無ければ flee）
  */
-export type LandingFight = 'flee' | 'stay_out' | 'near' | 'cue';
+export type LandingFight = 'flee' | 'stay_out' | 'near' | 'cue' | 'face';
 
 export interface LandingPolicySpec {
   move: LandingMove;
@@ -37,8 +47,10 @@ export interface LandingPolicySpec {
   shoot: LandingShoot;
   dodge: boolean;
   kite: boolean;
-  /** 見つかっている間の戦い方（R12 の lure_away は stay_out・R13 の lure_near は near・R14 の lure_cue は cue。ほかは flee） */
+  /** 見つかっている間の戦い方（R12 の lure_away は stay_out・R13 の lure_near は near・R14 の lure_cue は cue・face と human_face は face。ほかは flee） */
   fight: LandingFight;
+  /** 人の遅れと乱れ（human・human_face だけ true。ほかの遊び方は鍵が無い）: 最初の報告に遅れて反応・赤い線は dodgeP だけかわす・射撃ボタンは周期の前半だけ（LANDING_HUMAN） */
+  human?: boolean;
 }
 
 const spec = (move: LandingMove, react: number, shoot: LandingShoot, dodge: boolean, kite = false, fight: LandingFight = 'flee'): LandingPolicySpec => ({ move, react, shoot, dodge, kite, fight });
@@ -55,10 +67,44 @@ export const LANDING_POLICY_SPECS: Readonly<Record<LandingPolicy, LandingPolicyS
   kite: spec('lure', LANDING_REPORT_FAR, 'contact', true, true),
   shoot_near: spec('station', 0, 'range', true),
   home_early: spec('home', 0, 'none', false),
+  face: spec('lure', LANDING_REPORT_FAR, 'contact', true, false, 'face'),
+  human: { ...spec('lure', LANDING_REPORT_FAR, 'contact', true), human: true },
+  human_face: { ...spec('lure', LANDING_REPORT_FAR, 'contact', true, false, 'face'), human: true },
 };
 
 /** 台本の距離 m（模擬の設定。ゲームの値ではない）: 輸送船のそばの待つ点（泊地から出発点の側へ）・picket の点（泊地から北東）・着いたとみなす・lure_away が戦いを離す泊地からの距離（R12） */
 export const LANDING_PLAY = { stationM: 250, picketM: 1000, picketBrgDeg: 45, arriveM: 60, awayM: 1200 } as const;
+
+/** 人の遅れと乱れの設定（模擬の仮定。ゲームの値ではない）。core/landing-sim の runLandingTrial は既定でこれ（テストは中立の写しを渡して lure・face と同じ夜になるのを見る） */
+export interface LandingHumanPlay {
+  /** 最初の見張りの報告に反応するまでの遅れ U(delayMinS, delayMaxS) 秒（1 夜に 1 回引く。その前の報告は見ない） */
+  delayMinS: number; delayMaxS: number;
+  /** 赤い線ごとに dodgeP の確率でだけかわし、そのときの反応に U(0, reactExtraS) 秒を足す */
+  dodgeP: number; reactExtraS: number;
+  /** 射撃ボタン: 出撃からの秒の gunCycleS ごとの初めの gunOnS 秒だけ、lure が押す間に押す（乱数なし） */
+  gunOnS: number; gunCycleS: number;
+}
+/** v0.6.9 実機 1 回目の仮定（spec-ip1 §4: リードの写しの human＝遅れ 5〜12 秒・赤い線の半分・機銃の半分。機銃は乱数でなく 4 秒ごとの初め 2 秒） */
+export const LANDING_HUMAN: Readonly<LandingHumanPlay> = { delayMinS: 5, delayMaxS: 12, dodgeP: 0.5, reactExtraS: 1, gunOnS: 2, gunCycleS: 4 };
+/** 「人の乱れ」の乱数の列（1 夜ごと。seed × MUL + ADD。human・human_face だけが引く: 遅れ 1 回 → 赤い線ごとに humanReactAt の 2 回） */
+export const LANDING_HUMAN_SEED_MUL = 7907;
+export const LANDING_HUMAN_SEED_ADD = 31337;
+
+/** 人が見張りの報告を見るか: 最初の報告の秒 reportS（NaN は無し）から delayS 秒の後だけ（報告が無い間も見ない） */
+export function humanSeesReport(t0: number, reportS: number, delayS: number): boolean {
+  return t0 >= reportS + delayS;
+}
+
+/** 人の赤い線への反応の秒: 台本の反応の秒 at に人の乱れから U(0, reactExtraS) を足し、dodgeP の確率でだけかわす（かわさない線は NaN）。線ごとにいつも 2 回引く（足し → かわすか） */
+export function humanReactAt(at: number, hp: Readonly<LandingHumanPlay>, hr: SeededRng): number {
+  const late = at + hr.nextRange(0, hp.reactExtraS);
+  return hr.next() < hp.dodgeP ? late : NaN;
+}
+
+/** 人が射撃ボタンを押せる秒か: 出撃からの秒 t0 の gunCycleS ごとの初めの gunOnS 秒だけ（乱数なし。押すのは lure が押す間） */
+export function humanGunOn(t0: number, hp: Readonly<LandingHumanPlay>): boolean {
+  return t0 % hp.gunCycleS < hp.gunOnS;
+}
 
 /** 台本の出力（1 夜に 1 個）: 針路 deg（NaN は保つ）と欲しい速さ（実 m/s。0 は止まる・Infinity は全速） */
 export interface LandingSteer {
@@ -145,14 +191,20 @@ export function landingSteer(sp: LandingPolicySpec, c: LandingSteerCtx, resolved
   }
   if (sp.move === 'picket') return toward(c, c.picket.x, c.picket.y, c.silentMps, out);
   if (sp.move === 'station') return toward(c, c.station.x, c.station.y, c.silentMps, out);
-  // lure: 見つかっている間は輸送船から離れる向きへ（kite は全速。lure_near は輸送船のそばへ静音で戻って止まる。lure_cue は警告の間だけ離れ、ほかは lure_near と同じ）、
-  // kite は見失っても最寄りの PT へ全速、報告に反応して PT へ巡航、ほかは輸送船のそばへ静音
+  // lure: 見つかっている間は輸送船から離れる向きへ（kite は全速。lure_near は輸送船のそばへ静音で戻って止まる。lure_cue は警告の間だけ離れ、ほかは lure_near と同じ。face は最寄りの
+  // 去っていない PT へ巡航）、kite は見失っても最寄りの PT へ全速、報告に反応して PT へ巡航、ほかは輸送船のそばへ静音
   if (sp.fight === 'cue' && c.cue) {
     out.headingDeg = bearingDeg(c.anchor.x, c.anchor.y, c.boat.x, c.boat.y);
     out.wantMps = c.silentMps;
     return;
   }
   if (q.detected) {
+    const i = sp.fight === 'face' ? nearestLive(c) : -1;
+    if (i >= 0) {
+      out.headingDeg = bearingDeg(c.boat.x, c.boat.y, q.boats[i]!.x, q.boats[i]!.y);
+      out.wantMps = c.cruiseMps;
+      return;
+    }
     if (sp.fight === 'near' || sp.fight === 'cue') return toward(c, c.station.x, c.station.y, c.silentMps, out);
     out.headingDeg = bearingDeg(c.anchor.x, c.anchor.y, c.boat.x, c.boat.y);
     out.wantMps = sp.kite ? Infinity : c.silentMps;

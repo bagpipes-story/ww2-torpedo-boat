@@ -2,7 +2,8 @@
 // core/pt-pass-sim の runPtTrial と同じ固定ステップ・同じ順（夜明けのラッチ → 乗員 → 艇 → 燃料 → 輪 → 速力帯 → 発見距離 → 25mm → 閃光 → 米PT → 火災）に、spec §4.1 の
 // 米PT の段の直後の 3 つ（stepPtTorpedoes（seed+26）→ 敵の魚雷のプール（core/landing-torpedoes の写し。終わり際の当たりなし）→ tickLanding）を足す。本物の stepPtSection・stepBoat・
 // 燃料・被害・stepPtGun/hitPt（25mm は seed+20。撃つ台本だけ作る）を使う。米PT は標的スロットなし（jp_05 の形: 撃つのは自艇だけ）。
-// 乱数: 今夜 seed+16（rollNight。world-setup と同じ）、米PT seed+18、25mm seed+20、雷撃 seed+26（斉射のときだけ引く。数えて I5 を確かめる）、台本 seed×7919+1000（出発の遅れ・赤い線への反応）。
+// 乱数: 今夜 seed+16（rollNight。world-setup と同じ）、米PT seed+18、25mm seed+20、雷撃 seed+26（斉射のときだけ引く。数えて I5 を確かめる）、台本 seed×7919+1000（出発の遅れ・赤い線への反応）、
+// 人の乱れ seed×7907+31337（v0.6.9 実機 1 回目。human・human_face だけが引く: 最初の報告への遅れ → 赤い線ごとに台本の列の後で反応の足しとかわすか。ほかの遊び方は作るだけで引かない）。
 // 終わり: 自艇の沈没・漂流（燃料 0 で止まった）・揚陸の決着の後に輪の中（世界の returned。R14 A5 の (b): 決着の前に輪に入っても終わらず輪の中で待つ＝世界の mission-end の landingHold。
 // 輪の中は漂流にもしない。決着の前に輪に入った夜は R4 の列で数える）・夜明け + LANDING_SIM_AFTER_DAWN_S（打ち切り。夜明けの空襲は模擬しない）。
 // 測るだけの影のプール: 撃った魚雷をそのまま、いつも浮いている同じ船体へ走らせる（斉射の「当たりうる」本数。沈んだ後に着いた魚雷も数える＝TABLE=2 と R2 の期待値の材料）。乱数を引かず世界に触らない。
@@ -15,7 +16,10 @@ import type { GunEvents } from './gun-battery';
 import { applyShellHit, createDamageState, stepDamage, type HitOutcome } from './gunnery';
 import { LANDING_FIRE_LINE_EXTRA_M, LANDING_REPORT_NEAR, createLanding, createLandingReport, landingFireLine, landingReport, landingResolved, tickLanding } from './landing';
 import type { LandingParams } from './landing-data';
-import { LANDING_POLICY_SPECS, landingGunHeld, landingPlayPoints, landingSteer, type LandingPolicy, type LandingSteer, type LandingSteerCtx } from './landing-sim-policy';
+import {
+  LANDING_HUMAN, LANDING_HUMAN_SEED_ADD, LANDING_HUMAN_SEED_MUL, LANDING_POLICY_SPECS, humanGunOn, humanReactAt, humanSeesReport, landingGunHeld, landingPlayPoints, landingSteer,
+  type LandingHumanPlay, type LandingPolicy, type LandingSteer, type LandingSteerCtx,
+} from './landing-sim-policy';
 import { LandingTrialTorpedoes, LandingTrialWatch, createLandingTrial, finishLandingTrial, type LandingTrial } from './landing-trial';
 import { insideRing } from './mission-flow';
 import { PT_GUN_SEED_OFFSET, PT_SEED_OFFSET, createPtSection, stepPtSection, type PtCheck, type PtEvents } from './pt-boats';
@@ -59,8 +63,8 @@ class CountingRng extends SeededRng {
   }
 }
 
-/** 1 夜。艇は出発点で止まっていて、出発の遅れの後に台本どおり動く */
-export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed: number): LandingTrial {
+/** 1 夜。艇は出発点で止まっていて、出発の遅れの後に台本どおり動く。hp は人の遅れと乱れ（human・human_face だけが読む） */
+export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed: number, hp: Readonly<LandingHumanPlay> = LANDING_HUMAN): LandingTrial {
   const sp = LANDING_POLICY_SPECS[policy];
   if (sp.shoot !== 'none' && !s.gun) throw new Error(`遊び方 ${policy} は撃つが、この任務の艇に砲（guns）が無い`);
   const p = ptNightParams(s, seed);
@@ -89,6 +93,10 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   let band: SpeedStep = 'stop';
   const m = { reactBoat: -1, reactAt: NaN, dodgeUntil: -1, dodgeDeg: 0, dodgeBoat: -1, fireOutAt: NaN };
   const departS = pol.nextRange(0, PT_PLAY.departMaxS);
+  // 人の遅れと乱れ（human・human_face）: 最初の報告に反応するまでの遅れは 1 夜に 1 回
+  const human = sp.human === true;
+  const hr = new SeededRng((seed * LANDING_HUMAN_SEED_MUL + LANDING_HUMAN_SEED_ADD) >>> 0);
+  const delayS = human ? hr.nextRange(hp.delayMinS, hp.delayMaxS) : 0;
   const ev: PtEvents = {
     onContact: (gained) => {
       if (!gained) return;
@@ -96,10 +104,13 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
       if (Number.isNaN(out.detectS)) out.detectS = t;
     },
     onLeave: () => {}, onOut: () => {}, onPassEnd: () => {}, onFire: () => {},
-    // 赤い線: 反応の秒は毎回引く（台本どうしで同じ乱数の列。pt-pass-sim・convoy-sim と同じ）
+    // 赤い線: 反応の秒は毎回引く（台本どうしで同じ乱数の列。pt-pass-sim・convoy-sim と同じ）。人は台本の列の後に人の乱れから反応の足し → かわすか（かわさない線は覚えない）
     onCommit: (i) => {
+      const at = t + pol.nextRange(PT_PLAY.reactMinS, PT_PLAY.reactMaxS);
+      const reactAt = human ? humanReactAt(at, hp, hr) : at;
+      if (Number.isNaN(reactAt)) return;
       m.reactBoat = i;
-      m.reactAt = t + pol.nextRange(PT_PLAY.reactMinS, PT_PLAY.reactMaxS);
+      m.reactAt = reactAt;
     },
     // 命中は世界の hitBoat と同じ（seed+18 で火災・機関、沈み始めたら残りの弾は外れ）
     onImpact: (_x, _y, h) => {
@@ -130,6 +141,7 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     },
   };
   const report = createLandingReport();
+  const noReport = createLandingReport();
   const pts = landingPlayPoints(lp, s.start);
   const ctx: LandingSteerCtx = { boat, q, report, start: s.start, anchor: lp, station: pts.station, picket: pts.picket, ring: s.ring, silentMps: s.boat.silentMaxMps, cruiseMps: s.boat.speedCruiseMps, cue: false };
   // 輸送船が射線に入る（R14 A1。lure_cue だけが読む。世界の landing-telemetry と同じ距離: 戦いながらの斉射が無ければ無し）
@@ -142,6 +154,7 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     const resolved = landingResolved(ld);
     steer.headingDeg = NaN;
     steer.wantMps = 0;
+    if (human) ctx.report = humanSeesReport(t0, out.reportS, delayS) ? report : noReport; // 人: 最初の報告から delayS 秒は報告を見ない
     if (t0 >= departS || sp.move === 'home') landingSteer(sp, ctx, resolved, mem, steer);
     // 赤い線への反応（HUD どおり。dodge の台本だけ）: 航過は固めた針路から離れる直角へ全速 4 秒（線の間は延ばす）、連射は針路そのまま（「針路そのまま撃ち返せ」）
     if (sp.dodge && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
@@ -158,7 +171,8 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
       steer.headingDeg = m.dodgeDeg;
       steer.wantMps = Infinity;
     }
-    const held = g ? landingGunHeld(sp, ctx, g.rangeM, g.effectiveM, s.visRange2) : false;
+    // 射撃ボタン（人は出撃からの秒の gunCycleS ごとの初めの gunOnS 秒だけ。乱数なし）
+    const held = g ? landingGunHeld(sp, ctx, g.rangeM, g.effectiveM, s.visRange2) && (!human || humanGunOn(t0, hp)) : false;
     input.headingDeg = steer.headingDeg;
     input.speed01 = steer.wantMps > 0 ? Math.min(1, steer.wantMps / bp.speedMaxMps) : 0;
     if (t0 >= m.fireOutAt - TIME_EPS_S) {

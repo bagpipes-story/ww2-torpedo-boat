@@ -1,14 +1,15 @@
 // 停泊して揚陸する輸送船を米PT の雷撃から守る模擬の表（v0.6.9 S3・S4a・S4。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §6 S3・§8・R1・R2・R4・R7・R12・R13）: 遊び方（台本）ごとに
 // 達成・揚陸・輸送船の沈没・自艇の沈没／漂流／帰投／夜明けの前の帰投・斉射・雷撃の結末・決着の前の燃料少と輪（R4）・期待値（R2）、斉射の命中（TABLE=2）、時刻（TABLE=3）を出す。
 // 中身は src/core/landing-sim（S4 の tests/landing-balance と同じ）。値は data。上書きは data の写しに当て、世界と同じ検査を通す（V8・V10・V13 を破る組み合わせは例外で止まる＝R7）。
-// 環境変数: MISSION（既定 jp_04）・N（1 組の夜。既定 400）・SEED（最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400 と 401〜800）・POL（既定 全部 12。R14 の lure_cue・home_early は表だけ）・HARD=1（ハード）・
+// 環境変数: MISSION（既定 jp_04）・N（1 組の夜。既定 400）・SEED（最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400 と 401〜800）・POL（既定 全部 15＝較正の 12 と人に近い 3 つ。
+//   R14 の lure_cue・home_early は表だけ。v0.6.9 実機 1 回目の face・human・human_face は表だけで ✓/✗ も無く、斉射の数え・帯・R2 の期待値の分布に入れない）・HARD=1（ハード）・
 //   TABLE（無し: 組ごとの表 / 1: 帯の ✓/✗・対の帯（組を合わせた夜）・R2 の期待値・不変 / 2: 斉射の命中と分布 / 3: 時刻。1・2 は ✗ があれば終了コード 1）・
 //   上書き UNLOAD（unload_s）・LOOKOUT（lookout_m）・HITS（torpedo_hits_to_sink）・AIM（aim_error_deg）・SPACING（salvo_spacing_deg）・HURRIED（hurried_max_m）・HFACTOR（hurried_error_factor）・
 //   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）
 // 実行: npx esbuild scripts/landing-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/landing.mjs && node <scratch>/landing.mjs
 import { gameData } from '../src/config/game-data';
 import { quantile, salvoProbs, surviveOf, type LandingCell, type SalvoKindStats, type TimeCol } from '../src/core/landing-sim-cell';
-import { LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
+import { LANDING_HUMAN, LANDING_HUMAN_POLICIES, LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
 import { LANDING_CALIBRATION, LANDING_HARD_CALIBRATION, LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses, landingSalvoMisses, type LandingSimOverrides } from '../src/systems/landing-sim-setup';
 
 const num = (k: string): number | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? Number(process.env[k]) : undefined);
@@ -56,8 +57,8 @@ if (table === '' || table === '1') {
     console.log(HEAD);
     for (const pol of pols) {
       const c = run.cell(pol, b);
-      if (table !== '1') {
-        console.log(line(c));
+      if (table !== '1' || LANDING_HUMAN_POLICIES.includes(pol)) {
+        console.log(line(c) + (table === '1' ? '  （表だけ）' : ''));
         continue;
       }
       const r = rows.find((x) => x.policy === pol);
@@ -115,23 +116,25 @@ const kindLine = (name: string, k: SalvoKindStats, band: readonly [number, numbe
 };
 if (table === '2') {
   const SH = '  kind     salv  torp | all/t aflt/t  aflt dud% |  pot/t  pot≥1  pot≥2 pdud% | rng10 rng50 rng90';
+  // 斉射は較正の遊び方だけを合わせる（run.salvoPolicies）。人に近い遊び方だけを回したときは帯を見ない
+  const banded = run.salvoPolicies.some((p) => !LANDING_HUMAN_POLICIES.includes(p));
   for (let b = 0; b < blocks; b++) {
     const st = run.salvo(b);
-    console.log(`組 ${b + 1}（seed ${span(b)}）: 斉射（遊び方 ${pols.length} を合わせる）`);
+    console.log(`組 ${b + 1}（seed ${span(b)}）: 斉射（遊び方 ${run.salvoPolicies.length} を合わせる）`);
     console.log(SH);
-    console.log(kindLine('calm', st.calm, LANDING_SALVO_BANDS.calm));
-    console.log(kindLine('hurried', st.hurried, LANDING_SALVO_BANDS.hurried));
+    console.log(kindLine('calm', st.calm, banded ? LANDING_SALVO_BANDS.calm : null));
+    console.log(kindLine('hurried', st.hurried, banded ? LANDING_SALVO_BANDS.hurried : null));
     console.log(kindLine('engaged', st.engaged, null));
     for (let i = 0; i < s.pt.count; i++) {
       console.log(kindLine(`c PT${i}`, st.byPt[1]![i]!, null));
       console.log(kindLine(`h PT${i}`, st.byPt[2]![i]!, null));
       console.log(kindLine(`e PT${i}`, st.byPt[3]![i]!, null));
     }
-    const miss = landingSalvoMisses(st);
+    const miss = banded ? landingSalvoMisses(st) : [];
     misses += miss.length;
   }
   const ps = run.pooledSalvo;
-  console.log(`期待値の分布（${blocks} 組 × 遊び方 ${pols.length} を合わせた斉射。1 斉射の当たりうる本数 0〜${ps.n} の確率。斉射の無い組は種類の合計）`);
+  console.log(`期待値の分布（${blocks} 組 × 遊び方 ${run.salvoPolicies.length} を合わせた斉射。1 斉射の当たりうる本数 0〜${ps.n} の確率。斉射の無い組は種類の合計）`);
   for (const kind of [1, 2, 3]) {
     for (let i = 0; i < s.pt.count; i++) {
       const cnt = ps.dist[kind]![i]!.reduce((a, x) => a + x, 0);
@@ -162,3 +165,10 @@ console.log(
     'HP・det%・detS・cont・lost・shots = 失った HP・見つかった夜・最初の秒の中央値・1 夜の捉えられた回数・見失わせた回数・25mm の発射 | mix・relC・relH・relE = 揚陸に効く斉射（発射 + 距離 ÷ 魚雷の速さ < unload_s）の組と 1 夜の数 | ' +
     'expSurv%・expObj% = R2 の期待値 | all/t・aflt/t・pot/t = 1 本の命中（不発を除く）: 撃った本数あたり・輸送船が浮いている間に決着した本数あたり（aflt）・いつも浮いている影の船体へ（pot。帯はこれ） | pot≥1・pot≥2 = 当たりうる本数の斉射の割合',
 );
+if (pols.some((p) => LANDING_HUMAN_POLICIES.includes(p))) {
+  const h = LANDING_HUMAN;
+  console.log(
+    `face・human・human_face = 人に近い遊び方（v0.6.9 実機 1 回目。表だけ: 帯・✓/✗ なし、斉射の数え・帯・R2 の期待値の分布に入れない）: face は lure で、見つかったら最寄りの PT へ巡航（割って入る） | ` +
+      `human は lure で、最初の報告に ${h.delayMinS}〜${h.delayMaxS} 秒遅れて反応・赤い線は ${h.dodgeP * 100}% だけかわす（反応 +0〜${h.reactExtraS} 秒）・機銃は ${h.gunCycleS} 秒ごとの初めの ${h.gunOnS} 秒だけ | human_face は両方`,
+  );
+}

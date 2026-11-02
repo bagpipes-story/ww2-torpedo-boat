@@ -6,7 +6,7 @@ import { getPrototypeMission, type GameData } from '../config/game-data';
 import { LANDING_WARN_MIN_S } from '../config/landing-config';
 import type { LandingSimSetup } from '../core/landing-sim';
 import { landingCell, runLandingTrials, salvoStats, type LandingCell, type SalvoKindStats, type SalvoStats } from '../core/landing-sim-cell';
-import type { LandingPolicy } from '../core/landing-sim-policy';
+import { LANDING_HUMAN_POLICIES, type LandingPolicy } from '../core/landing-sim-policy';
 import type { LandingTrial } from '../core/landing-trial';
 import { ptSimSetup } from './pt-pass-sim-setup';
 import { buildWorldSetup } from './world-setup';
@@ -85,7 +85,8 @@ const lost = (c: LandingCell): number => c.ownSunkPct + c.adriftPct;
  * picket ≤ lure − 20・kite ≤ lure + 5 で自艇の沈没 + 漂流 ≥ lure + 5（引きつけ続けが得にならない）。lure_away は表だけ（R13: S3 の lure がもう見つかっている間は輸送船から離れるので
  * lure と同じに遊ぶ。R12 の lure_away ≥ lure + 3 は開かない）。picket・shoot_near・circle_start・lure_near は行の帯なし。S4 の値（engaged_error_factor 2.0）で全部 ✓。
  * R14 の lure_cue（HUD の「輸送船が射線に入る！ 離れて戦え」の間だけ離れる）と home_early（すぐ帰投の輪へ行って待つ）は表だけ。
- * v0.6.9 実機 1 回目（撃った PT は 3 種類の斉射とも去る）の後もノーマルは帯を変えずに全部 ✓（lure 87.3 / 87.0%・kite の沈没 + 漂流は lure より ＋31.4 点）
+ * v0.6.9 実機 1 回目（撃った PT は 3 種類の斉射とも去る）の後もノーマルは帯を変えずに全部 ✓（lure 87.3 / 87.0%・kite の沈没 + 漂流は lure より ＋31.4 点）。
+ * 人に近い遊び方（face・human・human_face。v0.6.9 実機 1 回目）はここに無い＝表だけ（帯も ✓/✗ も無い。数の合わせは味方の駆逐艦の後の v0.6.10 で使う物差し）
  */
 export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 15], ownSunkPct: [0, 3] } },
@@ -158,10 +159,14 @@ export function landingSalvoMisses(st: SalvoStats): string[] {
 
 export interface LandingRun {
   setup: LandingSimSetup;
-  /** 組ごとの夜（blocks 組。組 b は seed seedBase + b × n から n 夜）・その組の全部の遊び方の斉射・全部の組を合わせた斉射（期待値の分布） */
+  /**
+   * 組ごとの夜（blocks 組。組 b は seed seedBase + b × n から n 夜）・その組の斉射・全部の組を合わせた斉射（期待値の分布）。斉射を合わせる遊び方は salvoPolicies: 回した中の較正の遊び方だけ
+   * （v0.6.9 実機 1 回目: 人に近い遊び方（LANDING_HUMAN_POLICIES）は表だけで入れない＝斉射の数え・帯・R2 の期待値が動かない）。回したのが人に近い遊び方だけなら、それを合わせる（帯は見ない）
+   */
   trials: (policy: LandingPolicy, block: number) => readonly LandingTrial[];
   salvo: (block: number) => SalvoStats;
   pooledSalvo: SalvoStats;
+  salvoPolicies: readonly LandingPolicy[];
   /** 組ごとの集計と、組を合わせた集計（対の帯） */
   cell: (policy: LandingPolicy, block: number) => LandingCell;
   pooled: (policy: LandingPolicy) => LandingCell;
@@ -179,12 +184,14 @@ export function landingCalibrationRun(data: GameData, missionId: string, policie
     if (!r) throw new Error(`遊び方 ${pol} はこの表で回していない（POL）`);
     return r;
   };
-  const bySalvo = Array.from({ length: blocks }, (_, b) => salvoStats(policies.flatMap((p) => get(p)[b]!), count, nn));
-  const pooledSalvo = salvoStats(policies.flatMap((p) => get(p).flat()), count, nn);
+  const calibrated = policies.filter((p) => !LANDING_HUMAN_POLICIES.includes(p));
+  const salvoPolicies = calibrated.length > 0 ? calibrated : [...policies];
+  const bySalvo = Array.from({ length: blocks }, (_, b) => salvoStats(salvoPolicies.flatMap((p) => get(p)[b]!), count, nn));
+  const pooledSalvo = salvoStats(salvoPolicies.flatMap((p) => get(p).flat()), count, nn);
   const cells = new Map<string, LandingCell>();
   const memo = (key: string, make: () => LandingCell): LandingCell => cells.get(key) ?? cells.set(key, make()).get(key)!;
   return {
-    setup, pooledSalvo,
+    setup, pooledSalvo, salvoPolicies,
     trials: (pol, b) => get(pol)[b]!,
     salvo: (b) => bySalvo[b]!,
     cell: (pol, b) => memo(`${pol}/${b}`, () => landingCell(setup, pol, get(pol)[b]!, pooledSalvo)),

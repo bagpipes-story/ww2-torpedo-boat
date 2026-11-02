@@ -2,6 +2,7 @@
 // 同じ seed なら同じ夜（決まった結果）、どの遊び方も I1〜I6、輸送船の被雷と斉射の数えが合う（浮いている間の命中の和 = 被雷・影の当たりうる本数 ≥ 本物）、上書きは data を変えず
 // 世界と同じ検査を通す（V8・V10・V13 を破る組み合わせは止まる＝R7）、R2 の期待値の畳み込み、出発点で巡航して回っても見つからない（R1・V13）。帯（S4 の較正）はここでは見ない。
 // R14（S6a-fix）: 揚陸の決着の前に輪に入っても終わらない（A5。home_early は輪の中で待って決着の後に帰投）、lure_cue は警告（landingFireLine）の間だけ離れる（A1）。
+// v0.6.9 実機 1 回目: it.each は人に近い 3 つ（face・human・human_face。表だけ）も回す。その規則・ハード・較正の 12 との分け方は tests/landing-sim-human。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { BoatState } from '../src/core/boat-motion';
@@ -140,7 +141,7 @@ describe('R14（S6a-fix）の遊び方と終わり方', () => {
   it('台本: lure_cue は lure_near と同じ（fight cue）、home_early は撃たず転舵せず輪へ（表だけ。帯なし）', () => {
     expect({ ...LANDING_POLICY_SPECS.lure_cue, fight: 'near' }).toEqual(LANDING_POLICY_SPECS.lure_near);
     expect(LANDING_POLICY_SPECS.home_early).toEqual({ move: 'home', react: 0, shoot: 'none', dodge: false, kite: false, fight: 'flee' });
-    expect(LANDING_POLICIES).toEqual(['hide', 'circle_start', 'picket', 'lure', 'lure_away', 'lure_near', 'lure_cue', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near', 'home_early']);
+    expect(LANDING_POLICIES).toEqual(['hide', 'circle_start', 'picket', 'lure', 'lure_away', 'lure_near', 'lure_cue', 'lure_noshoot', 'lure_late', 'kite', 'shoot_near', 'home_early', 'face', 'human', 'human_face']);
   });
   it('lure_cue: 警告（射線）の間は輸送船から離れる向きへ静音、警告が無ければ見つかっていても lure_near と同じく輸送船のそばへ戻る', () => {
     const far = { x: S.landing.x, y: S.landing.y - 1000 };

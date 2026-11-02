@@ -4,11 +4,11 @@
 // S4 の値（engaged_error_factor 2.0）の N 60 は lure 81.7%・lure_near 26.7%・lure_late − lure −20.0 点（S8 のレビュー game-6 の後。前は −10.0＝帯の端。N 400 × 2 組は −32.4）・ハードの lure 66.7%。帯を外したら値を動かす前に
 // scripts/landing-sim の N 400 × 2 組を回す（N 60 の外れは 1 組の揺れのことがある）。data の source に書いた S4 の値と理由もここで pin する。
 // v0.6.9 実機 1 回目（撃った PT は戦いながらの斉射でも去る＝ユーザーの選択 A）の後の N 60 は lure 86.7%・lure_near 36.7%・lure_late − lure −25.0 点・kite 40.0%・ハードの lure 71.7%
-// （N 400 × 2 組は 73.0 / 75.0% で、ハードの lure の帯を 45〜70 から 45〜75 へ。ノーマルの帯は変えない）。
+// （N 400 × 2 組は 73.0 / 75.0% で、ハードの lure の帯を 45〜70 から 45〜75 へ。ノーマルの帯は変えない）。回すのは較正の 12 だけ（人に近い 3 つは表だけ＝tests/landing-sim-human）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { LandingCell } from '../src/core/landing-sim-cell';
-import { LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
+import { LANDING_CALIBRATION_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
 import {
   LANDING_CALIBRATION, LANDING_HARD_CALIBRATION, LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses,
   type LandingBandRow, type LandingRun,
@@ -26,7 +26,7 @@ const SIM_TIMEOUT_MS = 60_000;
 type Rec = Record<string, unknown>;
 let normal: LandingRun | undefined;
 let hard: LandingRun | undefined;
-const normalRun = (): LandingRun => (normal ??= landingCalibrationRun(gameData, 'jp_04', LANDING_POLICIES, N, SEED, 1));
+const normalRun = (): LandingRun => (normal ??= landingCalibrationRun(gameData, 'jp_04', LANDING_CALIBRATION_POLICIES, N, SEED, 1));
 /** ハードは帯のある遊び方だけ（hide・lure。全部の 10 だと N 60 で 15 秒ほど＝ファイルが 30 秒になる。全部の表は scripts/landing-sim の HARD=1） */
 const HARD_POLICIES = LANDING_HARD_CALIBRATION.map((r) => r.policy);
 const hardRun = (): LandingRun => (hard ??= landingCalibrationRun(gameData, 'jp_04', HARD_POLICIES, N, SEED, 1, { hard: true }));
@@ -49,7 +49,7 @@ function rowMisses(run: LandingRun, rows: readonly LandingBandRow[], policies: r
 
 describe(`揚陸を守る模擬のつり合い（jp_04、N ${N}・seed ${SEED}〜${SEED + N - 1}、帯 ± ${MARGIN_PT} 点）`, () => {
   it('ノーマル: 行の帯（hide ≤ 15・lure 70〜88 で自艇の沈没 ≤ 18・漂流 ≤ 3・夜明けの前の帰投 ≥ 80・決着の前の燃料少と輪 ≤ 10。± 8 点）と全部の遊び方の I1〜I6', () => {
-    expect(rowMisses(normalRun(), LANDING_CALIBRATION, LANDING_POLICIES)).toEqual([]);
+    expect(rowMisses(normalRun(), LANDING_CALIBRATION, LANDING_CALIBRATION_POLICIES)).toEqual([]);
   }, SIM_TIMEOUT_MS);
 
   it('ノーマル: 対の帯（R13: lure ≥ lure_near + 10・R2: lure_late ≤ lure − 10 かつ ≥ hide + 20・R1: circle_start ≤ hide + 10・picket ≤ lure − 20・kite は得にならない。± 8 点）', () => {
