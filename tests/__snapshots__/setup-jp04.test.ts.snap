@@ -504,6 +504,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -1012,6 +1079,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -1520,6 +1654,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -2028,6 +2229,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード false �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -2550,6 +2818,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -3072,6 +3407,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -3594,6 +3996,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;
@@ -4116,6 +4585,73 @@ exports[`jp_04 の setup の snapshot（v0.6.9 S5a の木） > ハード true �
    },
    "jitterDeg": 2
   }
+ },
+ "allyDestroyer": {
+  "shipId": "ijn_destroyer_mutsuki",
+  "labelJa": "卯月",
+  "x": 3620,
+  "y": 2380,
+  "headingDeg": 90,
+  "arc0Deg": 50,
+  "arc1Deg": 180,
+  "guardLegs": [
+   1
+  ],
+  "lookSlowM": 350,
+  "lookSlow2": 122500,
+  "rateSlow": 0.3,
+  "lookFastM": 800,
+  "lookFast2": 640000,
+  "rateFast": 0.4,
+  "fastMps": 7.715999999999999,
+  "lightReactS": 1,
+  "chaseFireS": 2.5,
+  "ringCallBeforeDawn": true,
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_120mm",
+     "count": 2,
+     "effectiveM": 3000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    },
+    {
+     "id": "aa_25mm",
+     "count": 1,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0,
+     "engineDamageChance": 0
+    }
+   ],
+   "searchlight": {
+    "rangeM": 1500,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 1.5
+   },
+   "starshell": {
+    "rangeM": 0,
+    "illumRadiusM": 0,
+    "durationS": 0,
+    "cooldownS": 0
+   }
+  },
+  "sinkGunIndex": 0,
+  "ptSinkChance": 0.1,
+  "lengthM": 102.7,
+  "beamM": 9.16,
+  "shellPoolSize": 16
  }
 }"
 `;

@@ -57,7 +57,7 @@ describe('兵装の data（config/loadout-data）', () => {
     expect(getGunBatteryParams(gameData, getPrototypeMission(gameData, 'us_01'))).toBeNull();
     for (const id of IDS) {
       const w = buildWorldSetup(gameData, id);
-      const extra = id === 'jp_02' ? ['patrolAir'] : id === 'jp_05' ? ['engine'] : id === 'jp_04' ? ['landing'] : [];
+      const extra = id === 'jp_02' ? ['patrolAir'] : id === 'jp_05' ? ['engine'] : id === 'jp_04' ? ['landing', 'allyDestroyer'] : []; // jp_04 の allyDestroyer は v0.6.10 S1（卯月。landing の後）
       expect(Object.keys(w), id).toEqual([...SETUP_KEYS, ...extra]);
       expect(w.guns === null, id).toBe(w.mainWeapon !== 'guns');
       expect(w.torpedoCapacity, id).toBe(w.mainWeapon === 'torpedo' ? TORPEDOES[id] : 0);

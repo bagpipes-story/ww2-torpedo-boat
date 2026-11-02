@@ -69,7 +69,7 @@ describe('jp_04 の遊べる世界の data（v0_1_prototype。spec §3.2・R1）
     expect(P['hazards']).toEqual(['enemy_ship_gunfire_or_ram', 'dawn_air_strike']);
     expect(P['dawn_strike']).toMatchObject({ aircraft_id: 'us_tacloban_aircraft', count: 4, from_bearing_deg: 90, escort_target_planes: [] });
     expect((P['hard'] as Rec)['extra_pt_legs_m']).toEqual([[5150, 550, 3450, 2300]]);
-    expect(Object.keys(P)).toEqual(['enemies', 'enemy_behavior', 'main_weapon', 'main_weapon_source', 'duration_s', 'duration_s_source', 'fuel_allotment_gal', 'fuel_allotment_gal_source', 'shallows', 'bounds_m', 'player_start', 'return_point', 'pt_boats', 'landing', 'coast', 'night', 'hazards', 'hazards_source', 'dawn_strike', 'hard']);
+    expect(Object.keys(P)).toEqual(['enemies', 'enemy_behavior', 'main_weapon', 'main_weapon_source', 'duration_s', 'duration_s_source', 'fuel_allotment_gal', 'fuel_allotment_gal_source', 'shallows', 'bounds_m', 'player_start', 'return_point', 'pt_boats', 'landing', 'ally_destroyer', 'coast', 'night', 'hazards', 'hazards_source', 'dawn_strike', 'hard']);
     expect(hasHardVariant(gameData, 'jp_04')).toBe(true);
     // v0.6.9 S7 から遊べる（Title の日本のタブ・order 4）
     expect(M['playable_from']).toBe('v0.6.9');
@@ -89,6 +89,58 @@ describe('jp_04 の遊べる世界の data（v0_1_prototype。spec §3.2・R1）
     expect(String(P['duration_s_source'])).toContain('出発から輪の縁 358 m＝巡航 7.0 秒 × call_margin 1.6 = 11 < 150');
     expect(String((P['pt_boats'] as Rec)['source'])).toContain(EXCERPT);
     expect(String((P['hard'] as Rec)['source'])).toContain('自艇の出発点まで 3,325 m・泊地まで 2,513 m');
+  });
+});
+
+describe('味方の駆逐艦 卯月の data（v0.6.10 S1。spec-v0610 §3.1・§3.2、リードの決定 LD7・LD12・LD16）', () => {
+  it('allies は輸送船と卯月、ally_destroyer は landing の直後（landing・escort の外。spec D11）で LD16 の値: station (3620, 2380) 艇首 90・扇 50〜180・東の線だけ・遅い 350 m 0.3・速い 800 m 0.4・15 kt・反応 1.0 秒・追って 2.5 秒・呼びかけあり', () => {
+    expect(M['allies']).toEqual(['ijn_transport', 'ijn_destroyer_mutsuki']);
+    const keys = Object.keys(P);
+    expect(keys.indexOf('ally_destroyer')).toBe(keys.indexOf('landing') + 1);
+    expect(P['escort']).toBeUndefined();
+    const { source: _s, ...vals } = P['ally_destroyer'] as Rec;
+    expect(vals).toEqual({
+      ship_id: 'ijn_destroyer_mutsuki', label_ja: '卯月', station: { x_m: 3620, y_m: 2380, heading_deg: 90 }, watch_arc_deg: [50, 180], guard_legs: [1],
+      lookout_slow_m: 350, spot_rate_slow_per_s: 0.3, lookout_fast_m: 800, spot_rate_fast_per_s: 0.4, fast_kt: 15, light_react_s: 1, chase_fire_s: 2.5, ring_call_before_dawn: true,
+    });
+  });
+  it('source: historical（抜粋）と design (v0.6.10 S1・LD16 の北東 727 m と検査の余裕・前の案が V-A5 で通らない・北東の PT の斉射の点は扇の外。LD12: 撃ち返した記録は「見つからない」（「無い」と言い切らない）', () => {
+    const src = String((P['ally_destroyer'] as Rec)['source']);
+    expect(src).toMatch(/^historical \(/);
+    expect(src).toContain(EXCERPT);
+    expect(src).toContain('design (v0.6.10 S1');
+    for (const t of ['泊地の北東 727 m（方位 58°）', 'LD16', '(3450, 2580) は斉射の外の魚雷を入れると V-A5 が −6.08° で通らない', '123 m 以上', '2.78° 以上', '364 m＝lookout_slow_m 350 はその内', '扇の外に 13.6° 以上', '北東の PT の斉射の点は卯月の北 221〜314 m']) expect(src, t).toContain(t);
+    const rec = enemies.find((e) => e['id'] === 'ijn_destroyer_mutsuki')!;
+    for (const t of [src, String(rec['notes'])]) {
+      expect(t).toContain('卯月が撃ち返した記録は見つからない（ゲーム上の想定）');
+      expect(t).not.toContain('撃ち返した記録は無い');
+      expect(t).not.toContain('撃ち返さずに沈んだ');
+    }
+    expect(src).not.toContain('輸送船の東');
+    // 日本の魚雷艇の記録の言い方は残す（LD12。Briefing の史実メモ）
+    for (const t of [String(M['briefing_note_ja']), String((P['hard'] as Rec)['note_ja'])]) expect(t).toContain('日本の魚雷艇がレイテにいた記録は見つから');
+  });
+  it('enemies.json の ijn_destroyer_mutsuki（ijn_transport の直後）: 睦月型の 102.7 × 9.16 m（出典の抜粋）・12 cm × 2（pt_sink_chance 0.10）・25 mm の組 1 つ・探照灯 1,500 m 12°・星弾なし・船体と AI の値なし。source は鍵ごと historical か design', () => {
+    const ids = enemies.map((e) => e['id']);
+    expect(ids.indexOf('ijn_destroyer_mutsuki')).toBe(ids.indexOf('ijn_transport') + 1);
+    const r = enemies.find((e) => e['id'] === 'ijn_destroyer_mutsuki')!;
+    expect([r['faction'], r['name_ja'], r['length_m'], r['beam_m'], r['speed_max_kt']]).toEqual(['IJN', '駆逐艦（睦月型・卯月）', 102.7, 9.16, 34]);
+    const g = r['guns'] as Rec[];
+    expect(g.map((x) => [x['id'], x['count'], x['rof_per_min'], x['damage'], x['pt_sink_chance']])).toEqual([['main_120mm', 2, 10, 40, 0.1], ['aa_25mm', 1, 120, 4, undefined]]);
+    expect(g.map((x) => [x['fire_chance'], x['engine_damage_chance']])).toEqual([[0, 0], [0, 0]]);
+    expect(r['searchlight']).toEqual({ range_m: 1500, cone_deg: 12, sweep_deg_s: 20, on_delay_s: 1.5 });
+    expect(r['starshell']).toBeNull();
+    for (const k of ['hull_hp', 'hull_circles', 'torpedo_hits_to_sink', 'detection', 'evasion', 'ram', 'patrol']) expect(k in r, k).toBe(false);
+    const src = r['source'] as Rec;
+    expect(Object.keys(src)).toEqual(['length_m・beam_m', 'speed_max_kt', 'guns', 'searchlight', 'starshell']);
+    for (const [k, v] of Object.entries(src)) expect(String(v), k).toMatch(/^(historical|design) \(/);
+    expect(String(src['length_m・beam_m'])).toContain('全長 102.72 m（垂線間 97.54 m）・幅 9.16 m');
+    expect(String(src['length_m・beam_m'])).toContain(EXCERPT);
+    expect(String(src['guns'])).toContain('12 cm 単装 2・25 mm 計 16 挺');
+    for (const s of strings(r)) {
+      for (const name of PERSON_DENYLIST) expect(s, name).not.toContain(name);
+      expect(RANK_RE.test(s), s.slice(0, 40)).toBe(false);
+    }
   });
 });
 

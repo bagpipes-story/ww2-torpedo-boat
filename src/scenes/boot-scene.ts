@@ -48,6 +48,7 @@ import { getEngineParams } from '../config/engine-mission-data';
 import { getGunboatParams } from '../config/gunboat-mission-data';
 import { getPatrolAirParams } from '../config/patrol-air-mission-data';
 import { validateLandingMissions } from '../config/landing-mission-data';
+import { validateAllyDestroyerMissions } from '../config/ally-destroyer-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -127,6 +128,8 @@ export class BootScene extends Phaser.Scene {
     // 味方の輸送船（v0.6.9。jp_04）: 揚陸の任務（ハードも）の data・置き場・幾何と V12（艇に煙幕なし）の検査（壊れていれば Boot で止まる）、最初の揚陸の任務の輸送船の絵（薄い青）
     const landing = validateLandingMissions(gameData, gameData.hitRateModel.world.time_scale);
     if (landing) generateFriendlyTransportTexture(this, { lengthUnits: landing.lengthM * spriteScale, beamUnits: landing.beamM * spriteScale });
+    // 味方の駆逐艦 卯月（v0.6.10。jp_04）: 置き場・値・位置（今夜の揺らぎ込みの V-A1〜V-A6・V-A8）と探照灯の絵の角（V-A7）の検査（壊れていれば Boot で止まる。絵は S5）
+    validateAllyDestroyerMissions(gameData, gameData.hitRateModel.world.time_scale, enemy.searchlight ? enemy.searchlight.cone_deg : 0);
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));
