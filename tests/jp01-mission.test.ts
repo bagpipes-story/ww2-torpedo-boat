@@ -189,7 +189,7 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     expect([S.mission.returnPoint.x, S.mission.returnPoint.y, S.mission.returnPoint.radiusM, S.mission.returnPoint.callMargin]).toEqual([4150, 2700, 250, 1.6]);
     expect(S.mission.bounds).toEqual({ width: 6000, height: 3000 });
     expect(hasHardVariant(gameData, 'jp_01')).toBe(true); // v0.6.6 から jp_01 にハードの違い（隼艇・米PT 3 隻・ノルマ 3）
-    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_05', 'jp_06']); // v0.6.7: jp_02（孤島の哨戒）も
+    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06']); // v0.6.7: jp_02（孤島の哨戒）も。v0.6.9: jp_04（多号作戦・オルモック湾へ）も
   });
   it('今夜（seed+16）: 引くのは 5 回（隊 3・大発の先頭 1・反転 1＝jp_05 と同じ）。反転しない。PT の出発点は自艇から ≥ 1,560 m・船団（先頭〜最後尾・揺らぎ込み）から ≥ 780 m（静音の帯 600 × 1.3。隅は約 1,464 m）。先頭は 1200 ± 250', () => {
     const spy = vi.spyOn(SeededRng.prototype, 'next');
@@ -239,9 +239,9 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     expect(`${dawnCallLabel(fuel, false, DAWN_AIR_NONE, convoyCallJa(t.convoy))}帰投せよ  3100 m`).toBe('燃料少 帰投せよ  3100 m');
     // 世界の配線（systems/mission-world の getter）: 呼びかけは決着の生の真偽、撃ち尽くしは輸送隊では偽
     const world = readFileSync('src/systems/mission-world.ts', 'utf8');
-    // 書き方の揺れ（空白・改行）では落ちない形で、配線（輸送隊なら決着／偽）だけを見る
-    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone;/);
-    expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
+    // 書き方の揺れ（空白・改行）では落ちない形で、配線（輸送隊なら決着／偽）だけを見る。v0.6.9 S5a: 揚陸の任務（jp_04。this.landing）の枝が先に付いた（揚陸の無い任務は null で輸送隊の枝へ）
+    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone;/);
+    expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.landing \? false : this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
   });
   it('達成（Result の objectiveDone。systems/mission-telemetry）は終了理由から: 帰投して上陸がノルマ以上。2/3 で沈めば達成でない（帰投 700 > 沈没 580）、3/3 決着でも帰投前は呼びかけだけ', () => {
     // 配線: 輸送隊の任務は core の convoyObjectiveDone（上陸数とノルマ）。中身は下で core の関数を直接見る。v0.6.7 S0 から式は systems/mission-objective（mission-telemetry はそれを呼ぶ）

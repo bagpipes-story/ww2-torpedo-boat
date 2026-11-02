@@ -8,6 +8,7 @@ import { createConvoyTelemetry } from '../src/core/convoy';
 import { createDawnTelemetry } from '../src/core/dawn-air';
 import { createEngineTelemetry } from '../src/core/engine-trouble';
 import { createGunboatTelemetry } from '../src/core/gunboat';
+import { createLandingTelemetry } from '../src/core/landing';
 import { createPatrolTelemetry } from '../src/core/patrol-air-state';
 import { createPtSection, type PtSection, type PtTelemetry } from '../src/core/pt-boats';
 import { createPtGun, type PtGunState } from '../src/core/pt-gun';
@@ -60,6 +61,7 @@ export function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry>
     engine: over.engine ?? createEngineTelemetry(), // 機関の不調はまだ起きていない（v0.6.5。on false）。機関の行のテストは over.engine で渡す
     gunboat: over.gunboat ?? createGunboatTelemetry(), // 隼艇のいない任務（v0.6.6。enabled false）。隼艇の行のテストは over.gunboat で渡す
     patrol: over.patrol ?? createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）。夜の哨戒の行のテストは over.patrol で渡す
+    landing: over.landing ?? createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）。jp_04 の行のテストは over.landing で渡す
   } as BoatTelemetry;
 }
 

@@ -1,5 +1,5 @@
 // 任務の「世界」（v0.2.2 で mission-scene から分割）: 自艇・敵（駆逐艦か大発の隊。v0.4.2。米PT の隊 v0.6.3）・魚雷・艇の砲・反撃・煙幕・被害・燃料（v0.3.0）・危険（味方機・暴風・水上機・夜の哨戒機 v0.6.7）・出撃（v0.4.0）を持ち、固定ステップで進める。
-// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
+// 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、見た目の同期と破棄は world-visuals.ts（v0.6.9）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
@@ -44,9 +44,11 @@ import { buildEnemies } from './world-enemies';
 import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
 import { buildArms, type WorldArms } from './world-arms';
+import { buildLanding, type WorldLanding } from './world-landing';
 import type { WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
+import { destroyWorldVisuals, updateWorldVisuals } from './world-visuals';
 export type { WorldEvents } from './world-events';
 
 export class MissionWorld {
@@ -69,6 +71,7 @@ export class MissionWorld {
   readonly patrol: PatrolAir | null; // 夜の哨戒機（v0.6.7。jp_02。門番と夜の出撃。systems/patrol-air）。setup.patrolAir が無い任務・?debug&nopatrol では null
   readonly dawn: WorldDawn; // 夜明けのラッチと夜明けの空襲（v0.6.1。world-dawn.ts）。夜明けは任務の終わりではない
   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
+  readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
   readonly returnPoint: ReturnPoint;
@@ -98,7 +101,7 @@ export class MissionWorld {
 
   readonly setup: WorldSetup; // data から組み立てた数値（world-setup.ts）。固定ステップはここから読み、Scene は crew / storm を読む
   readonly events: WorldEvents; // Scene への通知（world-events.ts）。world-boat の座礁も呼ぶ
-  private readonly smokeScreen: SmokeScreen | null;
+  readonly smokeScreen: SmokeScreen | null; // 煙幕の絵（world-visuals が同期と破棄に読む。v0.6.9 S0 で private から出した）
   readonly gunRng: SeededRng; // 砲撃のばらつき（seed+1。world-enemies が作る。ヘッドレスの再生が状態を読む）
   private readonly boatDamage: BoatDamage; // 命中の適用と沈没の開始（砲弾・機銃・掃射・爆弾はすべてここを通る。v0.4.1 で切り出し）
   /** 旋回率・加速の基準（暴風 × 乗員の倍率を掛けて毎ステップ書く） */
@@ -205,32 +208,17 @@ export class MissionWorld {
     this.dawn = new WorldDawn(scene, s, hz.strike); // 夜明けのラッチ・海の明るさ・夜明けの空襲（空襲の無い任務は null）
     this.engine = s.engine ? new EngineTrouble(s.engine) : null; // 機関の不調（v0.6.5。乱数なし＝生成の順と乱数の系列に触らない）
     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
+    this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
     this.refreshShallowStatus();
   }
 
   /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
   updateFrame(realDt: number): void {
     consumeFrameInput(this, realDt); // 入力の消費（world-input.ts。v0.6.1 で切り出し）
-    const g = this.destroyers;
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
     this.refreshShallowStatus();
-    this.storm?.updateVisuals(realDt, this.boat.state);
-    this.boat.syncSprite(this.storm ? this.storm.rollDeg : 0);
-    this.escort?.syncSprite();
-    g?.syncSprites();
-    this.torpedoes.updateVisuals(realDt);
-    g?.updateVisuals(realDt);
-    this.hunt?.updateVisuals(realDt, this.visRange2);
-    this.pts?.updateVisuals(realDt, this.visRange2);
-    this.convoy?.updateVisuals(this.boat.state, this.visRange2, this.pts?.targets ? this.pts.targets.aimedBarge : -1);
-    this.splashes.updateVisuals(realDt);
-    if (this.smokeScreen && this.smoke && this.smokeParams) this.smokeScreen.updateVisuals(this.smoke, this.smokeParams);
-    this.friendly?.updateVisuals(realDt, this);
-    this.seaplane?.updateVisuals(this.boat.state);
-    this.patrol?.updateVisuals(this.boat.state, this.escort ? this.escort.state.boat : null);
-    this.dawn.updateVisuals(this);
-    this.arms?.updateVisuals(realDt, this);
+    updateWorldVisuals(this, realDt); // 見た目の同期（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
   }
 
   /** 水上機か夜明けの空襲の機体が来ている（味方機の開始条件が読む）。夜の哨戒機（v0.6.7）も（無い任務は false＝同じ値） */
@@ -248,11 +236,14 @@ export class MissionWorld {
     return this.torpedoes.unresolvedCount > 0 || this.launcher.queued > 0;
   }
 
-  /** 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標 */
-  get returnCallDone(): boolean { return this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
+  /**
+   * 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 揚陸の任務（v0.6.9。jp_04）は決着（揚陸完了か沈没）、
+   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標
+   */
+  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
 
-  /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。輸送隊の任務（v0.6.4）では立てない（大発は狩る相手ではない。決着は returnCallDone） */
-  get noTargetsLeft(): boolean { return this.convoy ? false : this.enemy.noTargetsLeft; }
+  /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。揚陸の任務（v0.6.9）と輸送隊の任務（v0.6.4）では立てない（PT・大発は狩る相手ではない。決着は returnCallDone） */
+  get noTargetsLeft(): boolean { return this.landing ? false : this.convoy ? false : this.enemy.noTargetsLeft; }
 
   /** 走っている魚雷を外れとして確定する（終了時。Result の集計から漏れないようにする） */
   resolveRemainingAsMisses(): void {
@@ -260,21 +251,7 @@ export class MissionWorld {
   }
 
   destroy(): void {
-    this.storm?.destroy();
-    this.seaplane?.destroy();
-    this.patrol?.destroy();
-    this.dawn.destroy();
-    this.arms?.destroy();
-    this.friendly?.destroy();
-    this.torpedoes.destroy();
-    this.hunt?.destroy();
-    this.pts?.destroy();
-    this.convoy?.destroy();
-    this.escort?.destroy();
-    this.splashes.destroy();
-    this.smokeScreen?.destroy();
-    this.destroyers?.destroy();
-    this.boat.destroy();
+    destroyWorldVisuals(this); // 破棄（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
   }
 
   /** 浅瀬の警告（接近中は縁までの距離）。平方根は使わない */

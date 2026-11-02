@@ -108,10 +108,10 @@ describe('組み立て（config/patrol-air-mission-data。spec §C.1・§C.7）'
     expect([s.planes, s.bombsPerPlane, s.spawnM, s.runRadiusM, s.firstRunS, s.runGapS, s.spawnOffsetsDeg, s.fromJa, s.nameJa]).toEqual([2, 3, 1500, 600, 5, 2.2, [-10, 10], '北東', '米飛行艇（PB2Y 相当）']);
     expect(s.firstRunS + s.runS).toBeCloseTo(6.944, 3);
   });
-  it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa も jp_02 だけ', () => {
+  it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa は jp_02 と（v0.6.9 S0 から）jp_04 だけ', () => {
     for (const id of PROTO_IDS) {
       for (const hard of [false, true]) expect(Object.keys(buildWorldSetup(gameData, id, { hard })).includes('patrolAir'), `${id} ${hard}`).toBe(id === 'jp_02');
-      expect(Object.keys(getBriefingRecord(gameData, id)).includes('moonLabelJa'), id).toBe(id === 'jp_02');
+      expect(Object.keys(getBriefingRecord(gameData, id)).includes('moonLabelJa'), id).toBe(id === 'jp_02' || id === 'jp_04');
     }
     const s = buildWorldSetup(gameData, 'jp_02');
     expect(s.patrolAir).toEqual(getPatrolAirParams(gameData, 'jp_02'));
@@ -120,6 +120,7 @@ describe('組み立て（config/patrol-air-mission-data。spec §C.1・§C.7）'
     expect('patrolAir' in buildWorldSetup(gameData, 'jp_02', { patrolOff: true })).toBe(false);
     expect(patrolAirSetupPart(gameData, 'us_02', {})).toEqual({});
     expect(getBriefingRecord(gameData, 'jp_02').moonLabelJa).toBe('月没後');
+    expect(getBriefingRecord(gameData, 'jp_04').moonLabelJa).toBe('月没後'); // v0.6.9 S0（12 日 02:45 に月が昇る前）
     expect(() => getBriefingRecord(((d) => ((missionOf(d, 'jp_02')['moon_label_ja'] = ''), d))(clone()), 'jp_02')).toThrow(/jp_02\.moon_label_ja/);
   });
   it('今夜の乱数（spec §H の N5）: jp_02 の出撃は夜の揺らぎ（seed+16）を 1 回も引かない（night block が無い。ノーマル・ハード × seed 1・12345）', () => {

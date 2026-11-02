@@ -40,12 +40,14 @@ import { generateRainTexture } from '../assets/storm-placeholder';
 import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
+import { generateFriendlyTransportTexture } from '../assets/ally-ship-placeholder';
 import { getBargeParams } from '../config/game-data';
 import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
 import { getEngineParams } from '../config/engine-mission-data';
 import { getGunboatParams } from '../config/gunboat-mission-data';
 import { getPatrolAirParams } from '../config/patrol-air-mission-data';
+import { validateLandingMissions } from '../config/landing-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -122,6 +124,9 @@ export class BootScene extends Phaser.Scene {
     const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats']);
     const pt = ptMission ? getPtParams(gameData, getPrototypeMission(gameData, ptMission.id), gameData.hitRateModel.world.time_scale) : null;
     if (pt) generatePtBoatTexture(this, { lengthUnits: pt.spriteLengthUnits, beamUnits: pt.spriteBeamUnits });
+    // 味方の輸送船（v0.6.9。jp_04）: 揚陸の任務（ハードも）の data・置き場・幾何と V12（艇に煙幕なし）の検査（壊れていれば Boot で止まる）、最初の揚陸の任務の輸送船の絵（薄い青）
+    const landing = validateLandingMissions(gameData, gameData.hitRateModel.world.time_scale);
+    if (landing) generateFriendlyTransportTexture(this, { lengthUnits: landing.lengthM * spriteScale, beamUnits: landing.beamM * spriteScale });
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));

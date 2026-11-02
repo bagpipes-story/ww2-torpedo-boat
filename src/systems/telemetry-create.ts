@@ -12,6 +12,7 @@ import { STORM_NONE } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import { initConvoyTelemetry } from './convoy-telemetry';
 import { initDawnTelemetry } from './dawn-telemetry';
+import { initLandingTelemetry } from './landing-telemetry';
 import { initPatrolTelemetry } from './patrol-telemetry';
 import { initPtTelemetry } from './pt-telemetry';
 import type { MissionWorld } from './mission-world';
@@ -122,5 +123,6 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     patrol: initPatrolTelemetry(w), // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry。無い任務は enabled false）
     aaFiring: false, // 機銃で機を撃っている（v0.6.8）
     arms: createArmsTelemetry(), // 兵装（v0.6.8。systems/arms-telemetry が毎フレーム書く）
+    landing: initLandingTelemetry(w), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry。無い任務は enabled false）
   };
 }

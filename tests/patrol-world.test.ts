@@ -92,7 +92,7 @@ describe('jp_02 の回避の数え（systems/mission-objective。spec §C.5・D1
   /** 終了時の世界の読む部分だけ（艦・PT の検出の数と、夜の哨戒の発見・目の発見） */
   const w = (count: number, finds: number, findsVisual: number, patrol = true): ObjectiveWorld => {
     const state = { finds, findsVisual }; // 発見（レーダー込み）と目の発見（門番の PatrolState の 2 つ）
-    return { detect: { count }, patrol: patrol ? { state } : null, convoy: null, escort: null, pts: null, enemy: { objectiveDone: false } };
+    return { detect: { count }, patrol: patrol ? { state } : null, landing: null, convoy: null, escort: null, pts: null, enemy: { objectiveDone: false } };
   };
   it('最初のレーダーの発見は数えない（レーダーだけなら 0＝回避 300 が付く）、レーダーの後の目の発見は 1 回ずつ、哨戒の無い任務は艦・PT の数のまま', () => {
     expect(detectionsOf(w(0, 1, 0))).toBe(0);

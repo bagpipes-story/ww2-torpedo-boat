@@ -16,8 +16,8 @@ export interface MarkerShift {
   dy: number;
 }
 
-/** 縁にいるとみなす px（edge-marker は縁の座標へちょうど止める） */
-const EDGE_EPS_PX = 0.5;
+/** 縁にいるとみなす px（edge-marker は縁の座標へちょうど止める。v0.6.9 S6b から ui/landing-markers も読む） */
+export const EDGE_EPS_PX = 0.5;
 
 /** a（先に出ている矢印）と b（ずらす矢印）の点から b のずれを out に書いて返す（遠ければ 0）。b が左右の縁なら y を、上下の縁なら x を動かす */
 export function separateMarker(ax: number, ay: number, bx: number, by: number, r: MarkerRect, sepPx: number, out: MarkerShift): MarkerShift {

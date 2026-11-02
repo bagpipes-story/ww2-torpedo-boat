@@ -26,8 +26,8 @@ function bootLoop(id: string): void {
 }
 
 describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
-  it('遊べる世界のある任務は 7 つ（v0.6.7 の S2 で jp_02。playable_from は S6）', () => {
-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
+  it('遊べる世界のある任務は 8 つ（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7）', () => {
+    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
   });
   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
     expect(() => bootLoop(id)).not.toThrow();

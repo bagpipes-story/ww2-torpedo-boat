@@ -67,15 +67,17 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
     expect(s.dawnAir.shipsAtDawn).toBe('none');
     expect(s.boatParams.silentMaxMps).toBeGreaterThan(s.boatParams.speedSilentMps); // 静音の帯は 14 kt まで
   });
-  it('米PT は jp_05 と jp_01（v0.6.4。夜の輸送護衛）だけ: 他の遊べる任務の世界に ptBoats は無い（null）。輸送隊（convoy）は jp_01 だけ', () => {
+  it('米PT は jp_05 と jp_01（v0.6.4。夜の輸送護衛）と jp_04（v0.6.9。多号作戦）だけ: 他の遊べる任務の世界に ptBoats は無い（null）。輸送隊（convoy）は jp_01 だけ', () => {
     const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
     expect(ids).toContain('jp_05');
     expect(ids).toContain('jp_01');
+    expect(ids).toContain('jp_04');
+    const withPt = (id: string): boolean => id === 'jp_05' || id === 'jp_01' || id === 'jp_04';
     for (const id of ids) {
       for (const hard of [false, true]) {
         const s = buildWorldSetup(gameData, id, { hard });
-        expect(s.ptBoats === null, `${id} ${hard}`).toBe(id !== 'jp_05' && id !== 'jp_01');
-        expect(s.mission.ptBoats === null, `${id} ${hard}`).toBe(id !== 'jp_05' && id !== 'jp_01');
+        expect(s.ptBoats === null, `${id} ${hard}`).toBe(!withPt(id));
+        expect(s.mission.ptBoats === null, `${id} ${hard}`).toBe(!withPt(id));
         expect(s.convoy === null, `${id} ${hard}`).toBe(id !== 'jp_01');
         expect(s.mission.convoy === null, `${id} ${hard}`).toBe(id !== 'jp_01');
       }
@@ -193,9 +195,9 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
 });
 
 describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い任務に「ハード」と出していた）', () => {
-  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
+  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
     const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
-    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_06', 'us_01', 'us_02', 'us_03']);
+    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03']);
     expect(hasHardVariant(gameData, 'jp_05')).toBe(false);
     expect(difficultyJa(false, true)).toBe('');
     expect(difficultyJa(false, false)).toBe('');

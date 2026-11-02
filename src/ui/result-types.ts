@@ -139,3 +139,15 @@ export interface ArmsResult {
   aaRounds: number; downs: number; downsSeaplane: number; downsSortie: number;
   blindTorpedoes: number; blindKind: BlindKind;
 }
+
+/**
+ * 停泊して揚陸する味方の輸送船と米PT の雷撃の記録（v0.6.9。jp_04。spec-v069 §5.7。systems/landing-telemetry の landingResultPart）: 揚陸の段階（core/landing の LD_*）と終わりの %・沈んだときの %、
+ * 被雷（不発は数えない）と不発の命中・揚陸の後に沈んだか、決着の前に終わったときの終わり方（LR_END_*。決着していれば LR_END_NONE）、PT ごと（線の順）の方角（泊地から見た出発点）・
+ * 雷撃の結末（core/pt-torpedo の OUT_*）・斉射の距離 m（撃っていなければ NaN）・命中・不発・終わりに走っていた本数、撃った本数の和とうち慌てた・戦いながら。揚陸の無い任務は鍵ごと無い。Result の 3 行（ui/landing-result）
+ */
+export interface LandingResult {
+  phase: number; pct: number; pctAtSink: number; hits: number; duds: number; sunkAfterDone: boolean;
+  endKind: number;
+  dirJa: string[]; outcome: number[]; launchM: number[]; salvoHits: number[]; salvoDuds: number[]; salvoLeft: number[];
+  fired: number; hurriedFired: number; engagedFired: number;
+}

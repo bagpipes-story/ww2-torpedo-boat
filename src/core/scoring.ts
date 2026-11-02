@@ -2,6 +2,7 @@
 // 合計 = 帰投 + 任務達成（駆逐艦撃沈・大発のノルマ・僚艇の生還）+ 命中（不発を除く 1 本ごとに base × 発射距離の帯の倍率）+ 撃破（砲で沈めた敵 1 隻ごと。v0.4.2）+ 回避（v0.4.4。帰投して任務達成し、敵に一度も見つからなかったときだけ、任務の type の点）+ 燃料残（帰投して任務達成のときだけ、残り % × max/100）+ 乗員生存（v0.3.4。帰投して任務達成のときだけ、round(max × 生存/定員)。定員 0 なら 0）。乗員が定員 × crew_half_ratio 以下なら帰投点 × crew_half_factor（v0.3.5）。
 // 夜明けに輪の外だった帰投は帰投点 × after_dawn_factor、回避は付かない（v0.6.1）。
 // 上陸（v0.6.4。味方の大発の輸送隊）: 浜に届けた大発 1 隻ごとに convoy.points_per_arrival（帰投の有無に関わらず。砲の撃破点と同じ扱い。鍵が無ければ 0）。
+// 揚陸（v0.6.9。jp_04 の停泊する味方の輸送船）: 揚陸完了で landing.points_complete（帰投の有無・その後の沈没に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -21,6 +22,8 @@ export interface ScoringParams {
   evadeByType: Record<string, number>;
   /** 浜に届けた大発 1 隻の点（v0.6.4。scoring.json の convoy.points_per_arrival。鍵が無ければ 0） */
   convoyArrivalPoints: number;
+  /** 揚陸完了の点（v0.6.9。scoring.json の landing.points_complete。鍵が無ければ 0） */
+  landingPoints: number;
   fuelMax: number;
   fuelRequiresReturnedAndObjective: boolean;
   crewMax: number;
@@ -47,6 +50,8 @@ export interface ScoreInput {
   afterDawn?: boolean;
   /** 浜に届けた大発の数（v0.6.4。輸送隊の無い任務は省略＝0） */
   arrivals?: number;
+  /** 揚陸完了（v0.6.9。jp_04。その後に沈んでも true。揚陸の無い任務は省略＝0 点） */
+  landed?: boolean;
 }
 
 export interface ScoreBreakdown {
@@ -58,7 +63,7 @@ export interface ScoreBreakdown {
   evade: number;
   fuel: number;
   crew: number;
-  /** 上陸（v0.6.4。届けた大発 × convoyArrivalPoints。輸送隊の無い任務は 0） */
+  /** 上陸（v0.6.4。届けた大発 × convoyArrivalPoints。輸送隊の無い任務は 0）と揚陸（v0.6.9。揚陸完了なら landingPoints） */
   deliveries: number;
   /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
   crewHalf: boolean;
@@ -92,7 +97,7 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
   const crewAllowed = p.crewRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   out.crew = crewAllowed && inp.crewTotal > 0 ? Math.round((p.crewMax * Math.max(0, Math.min(inp.crewTotal, inp.crewAlive))) / inp.crewTotal) : 0;
-  out.deliveries = (inp.arrivals ?? 0) * p.convoyArrivalPoints;
+  out.deliveries = (inp.arrivals ?? 0) * p.convoyArrivalPoints + (inp.landed === true ? p.landingPoints : 0);
   out.total = out.survival + out.objective + out.hits + out.kills + out.evade + out.fuel + out.crew + out.deliveries;
   return out;
 }
@@ -109,6 +114,8 @@ export interface ScoringDataRecord {
   evade: { points_by_type: Record<string, number | string> };
   /** 上陸（v0.6.4）。省略可（無ければ 0 ＝ 既存の呼び手は不変） */
   convoy?: { points_per_arrival: number };
+  /** 揚陸（v0.6.9）。省略可（無ければ 0） */
+  landing?: { points_complete: number };
 }
 
 function isFiniteNum(v: unknown): v is number {
@@ -139,7 +146,10 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   if (!ev || typeof ev !== 'object' || !Object.values(ev).every((x) => typeof x === 'string' || (isFiniteNum(x) && x >= 0))) return false;
   // 上陸（v0.6.4）: 鍵があれば points_per_arrival は 0 以上の数
   const cv = r['convoy'] as Record<string, unknown> | undefined;
-  return cv === undefined || (typeof cv === 'object' && cv !== null && isFiniteNum(cv['points_per_arrival']) && cv['points_per_arrival'] >= 0);
+  if (!(cv === undefined || (typeof cv === 'object' && cv !== null && isFiniteNum(cv['points_per_arrival']) && cv['points_per_arrival'] >= 0))) return false;
+  // 揚陸（v0.6.9）: 鍵があれば points_complete は 0 以上の数
+  const ld = r['landing'] as Record<string, unknown> | undefined;
+  return ld === undefined || (typeof ld === 'object' && ld !== null && isFiniteNum(ld['points_complete']) && ld['points_complete'] >= 0);
 }
 
 /**
@@ -165,6 +175,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     killPoints: { ...r.kill.points_by_enemy },
     evadeByType: evade,
     convoyArrivalPoints: r.convoy ? r.convoy.points_per_arrival : 0,
+    landingPoints: r.landing ? r.landing.points_complete : 0,
     fuelMax: r.fuel.max,
     fuelRequiresReturnedAndObjective: r.fuel.requires_returned_and_objective,
     crewMax: r.crew.max,

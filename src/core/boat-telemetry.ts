@@ -1,10 +1,11 @@
-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring を足した）。
+// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing を足した）。
 // Phaser 非依存。型だけ（実行時の値を持たない）。
 import type { ArmsTelemetry } from './arms-cue';
 import type { ConvoyTelemetry } from './convoy';
 import type { DawnTelemetry } from './dawn-air';
 import type { EngineTelemetry } from './engine-trouble';
 import type { GunboatTelemetry } from './gunboat';
+import type { LandingTelemetry } from './landing';
 import type { PatrolTelemetry } from './patrol-air-state';
 import type { PtTelemetry } from './pt-boats';
 import type { SpeedStep } from './boat-motion';
@@ -146,4 +147,5 @@ export interface BoatTelemetry {
   /** 機銃で機を撃っている（v0.6.8。2 行目の砲の行を出さない。mission-mode が読む。as BoatTelemetry の偽物では undefined＝偽） */
   aaFiring: boolean;
   arms: ArmsTelemetry; // 兵装（v0.6.8。core/arms-cue）: 積んでいる魚雷・撃てるか・出来事と状態の文（systems/arms-telemetry が毎フレーム書く）
+  landing: LandingTelemetry; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。core/landing。jp_04）: 揚陸・報告・雷跡・出来事（systems/landing-telemetry が毎フレーム書く。無い任務は enabled false）
 }

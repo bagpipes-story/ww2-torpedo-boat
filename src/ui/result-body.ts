@@ -1,6 +1,7 @@
 // Result の本文の枝（v0.6.7 S0 で scenes/result-scene から移した。文・字の大きさ・色・後ろの間は v0.6.6 のまま。tests/result-body-neutral が pin）: 大発掃討／米PT／魚雷。
 // v0.6.7 S5: 夜の哨戒機（jp_02）の 2 行の枝（ui/patrol-result-lines）。ほかの枝は変えない。
 // v0.6.8 S5: 兵装の新しい道（艦への機銃・対空・狙う艦の無い魚雷）を使った夜だけ、どの枝の後ろにも 1 行（ui/arms-lines の armsResultLineJa）。魚雷の枝の「未発射」から狙う艦の無い魚雷を除く。使わなければ今までの行のまま。
+// v0.6.9 S7: 停泊して揚陸する輸送船（jp_04）は米PT の枝の頭に 3 行（ui/landing-result。輸送船の結末・PT ごとの雷撃・米PT の魚雷の和）。揚陸の無い任務は今までの行のまま。
 // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
 import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
@@ -9,10 +10,11 @@ import { armsResultLineJa } from './arms-lines';
 import { convoyResultLine } from './convoy-lines';
 import { engineResultLine } from './engine-lines';
 import { gunboatResultLineJa } from './gunboat-lines';
+import { landingResultLines } from './landing-result';
 import { bargeResultLines } from './hud-lines';
 import { patrolBombResultJa, patrolSearchResultJa } from './patrol-result-lines';
 import { ptResultLines } from './pt-lines';
-import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, GunboatResult, PatrolResult, PtResult } from './result-types';
+import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, GunboatResult, LandingResult, PatrolResult, PtResult } from './result-types';
 
 /** 本文の 1 行: 文・字の大きさ px・色（undefined なら hudTextStyle の既定の色）・後ろに節の間（RESULT_SECTION_GAP）を足すか（行の間 RESULT_LINE_GAP はいつも） */
 export interface ResultBodyLine { text: string; px: number; color: string | undefined; sectionAfter: boolean }
@@ -24,6 +26,8 @@ export interface ResultBodySource {
   patrol?: PatrolResult | null;
   /** 兵装の新しい道（v0.6.8）。使った夜だけ鍵がある（無ければ今までの行のまま） */
   arms?: ArmsResult;
+  /** 停泊して揚陸する輸送船と米PT の雷撃（v0.6.9。jp_04）。揚陸の任務だけ鍵がある */
+  landing?: LandingResult;
   detections: number; returned: boolean; objectiveDone: boolean;
   shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
@@ -44,10 +48,19 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
   } else if (r.pt) {
     // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾、13mm の射撃・命中・撃退・撃沈（実機 1 回目。data を合わせる根拠。CLAUDE.md §9）。
     // 味方の大発の輸送隊（v0.6.4。jp_01）はその上に 1 行目「大発 上陸 2/3 ・ 沈没 1（ノルマ 2） ・ 大発の被弾 9 発」（米PT の 1 行目は 20 px に）
-    const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned, r.convoy !== null, r.gunboat);
+    // 揚陸の任務（jp_04）は見つかるのが仕事なので、一度も見つからずに帰っても「抜けた」とほめない（S8 のレビュー game-5。「米PT に一度も見つからなかった」）
+    const [a, b, c, d] = ptResultLines(r.pt, r.detections, r.returned && !r.landing, r.convoy !== null, r.gunboat);
     if (r.convoy) {
       line(convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined), HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
       if (r.gunboat) line(gunboatResultLineJa(r.gunboat), HUD_FONT_HEADING_PX); // 隼艇（v0.6.6。jp_01 のハード）: 生還／沈没・25mm・狙われた回数（自艇の 25mm の行は自艇の分）
+      section();
+      line(a, HUD_FONT_HEADING_PX);
+    } else if (r.landing) {
+      // 停泊して揚陸する輸送船（v0.6.9。jp_04）: 輸送船の結末（24 px）・PT ごとの雷撃と米PT の魚雷の和（20 px・KPI の色。data を合わせる根拠）、その下に米PT の行（20 px）
+      const [l1, l2, l3] = landingResultLines(r.landing, r.pt.gunLabel);
+      line(l1, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+      line(l2, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+      line(l3, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
       section();
       line(a, HUD_FONT_HEADING_PX);
     } else {

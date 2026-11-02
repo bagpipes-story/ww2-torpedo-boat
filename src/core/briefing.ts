@@ -23,6 +23,19 @@ export function ptGunBriefingJa(label: string): string {
   return `${label}1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`;
 }
 
+/** 停泊して揚陸する輸送船の任務（v0.6.9。jp_04）の教え（spec R12: 自艇と戦っている PT も輸送船の近くで艇首が向けば撃つ）。目的（missions_seed の objective・hard の objective_ja）と「条件」が同じ句で言う */
+export const LANDING_FIGHT_AWAY_JA = '輸送船から離れて戦え';
+/** 同じ任務の帰投の句（spec R14 A5: 揚陸の決着の前に帰投の輪へ入っても任務は終わらず、輪の中で揚陸を見届けられる。HUD の「帰投の輪 ・ 揚陸を見届けるまで待て」「帰投の輪で止まって待て」と同じ事） */
+export const LANDING_RING_WAIT_JA = '帰投の輪で待てる';
+/**
+ * 同じ任務の「条件」の句（BriefingNumbers.landingJa。briefingRows が条件の最後に「 ・」＋ノーブレークスペースで足す）: 揚陸の秒（landing.unload_s）・沈むまでの本数（torpedo_hits_to_sink）・R12 の教え・
+ * 米PT の魚雷は自艇の下を抜ける（D11）。前に帰投の句（R14 A5）を半角スペースの「 ・」＋ノーブレークスペースで置く（武器の句の行の後ろに入り、揚陸の句は次の行の頭のまま）。
+ * 句の中はノーブレークスペース（「被雷 2⏎で」と割れない）。24 px・1,056 px で条件の行は 3 行（tests/jp04-lesson）。S7: 「魚雷 2 本で沈む」→「被雷 2 で沈む」（ヘッドレスの本当の折り返しで句が 1,056 px を 4 px 越え、「）」だけが 4 行目に落ちた。HUD の「被雷 1」と同じ語）
+ */
+export function landingBriefingJa(unloadS: number, hitsToSink: number): string {
+  return `${LANDING_RING_WAIT_JA} ・ 揚陸 ${Math.round(unloadS)} 秒（被雷 ${hitsToSink} で沈む。${LANDING_FIGHT_AWAY_JA}。米PTの魚雷も自艇の下を抜ける）`;
+}
+
 export interface MenuEntry {
   id: string;
   title: string;
@@ -175,6 +188,11 @@ export interface BriefingNumbers {
   secondaryJa?: string;
   /** 月の行の「見つかる 巡航 N m／静音 N m」の差し替え（v0.6.7。夜の哨戒機の任務だけ＝patrolAirDetectJa。無い任務では鍵ごと出ない） */
   airDetectJa?: string;
+  /**
+   * 「条件」の最後に足す揚陸の句（v0.6.9。停泊して揚陸する輸送船の任務だけ＝landingBriefingJa: 帰投の輪で待てる・揚陸の秒・沈むまでの本数・教え「輸送船から離れて戦え」・
+   * 米PT の魚雷は自艇の下を抜ける）。「 ・」＋ノーブレークスペースで足す（weaponPartJa と同じ理由）。無い任務では鍵ごと出ない（ほかの任務の文は変わらない）
+   */
+  landingJa?: string;
 }
 
 export interface BriefingRow {
@@ -210,6 +228,6 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}` },
     { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}` },
+    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}${n.landingJa ? ` ・\u00a0${n.landingJa}` : ''}` },
   ];
 }
