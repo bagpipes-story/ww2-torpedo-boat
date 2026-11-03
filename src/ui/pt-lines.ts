@@ -23,6 +23,7 @@ import { bearingJa } from '../core/briefing';
 import { PT_ALERT, PT_CHASE, PT_RUN_IN } from '../core/pt-boats';
 import { radToDeg, wrapDeg360 } from '../core/units';
 import { allyRingWaitJa } from './ally-lines';
+import { NO_ALLY_GUN_SHARE, type AllyGunShare } from './ally-result';
 import { DETECT_RANGE_STEP_M, STEP_LABEL, type HudLine } from './hud-lines';
 import { MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, ptResultShown } from './mission-mode';
 import { C_CHASE, K_BURST, K_BURST_RESULT, burstKey, burstLine, burstResultLine, burstsResultJa, chaseKey, chaseLine, suppressResultJa } from './pt-chase-lines';
@@ -207,16 +208,16 @@ function hitsJa(r: PtResult): string {
 
 /**
  * Result の 4 行目（v0.6.3 実機 1 回目。data/boats.json の gun_battery を合わせる根拠）: 砲の射撃・命中（率）・制圧（実機 2 回目。0 なら出さない）・撃退・撃沈。撃たなかった夜はそう言う。
- * 頭は砲の名（PtResult.gunLabel。jp_05 は「13mm」・jp_01 は「25mm」。v0.6.4）。砲の無い任務は ''（出さない）
+ * 頭は砲の名（PtResult.gunLabel。jp_05 は「13mm」・jp_01 は「25mm」。v0.6.4）。砲の無い任務は ''（出さない）。卯月の分（al。v0.6.10 S7）も隼艇と同じく引く（卯月の無い夜は 0）
  */
-function gunResultJa(r: PtResult, gb: GunboatResult | null): string {
+function gunResultJa(r: PtResult, gb: GunboatResult | null, al: AllyGunShare): string {
   if (!r.gunEnabled) return '';
   if (r.gunShots === 0) return `${r.gunLabel} は撃たなかった`;
   // 自艇の分（v0.6.6。隼艇のいる任務は隊の数から隼艇の分を引く。撃退・撃沈は最後の結末を決めた砲＝和が隊の数）
-  const hits = r.gunHits - (gb ? gb.hits : 0);
+  const hits = r.gunHits - (gb ? gb.hits : 0) - al.hits;
   // 当てたのに 0% と出さない（レビュー ux-4: 240 発で 1 発は「命中 1（0%）」と読めた）
   const pct = (100 * hits) / r.gunShots;
-  return `${r.gunLabel} 射撃 ${r.gunShots} 発 ・ 命中 ${hits}（${hits > 0 && pct < 1 ? '1% 未満' : `${Math.round(pct)}%`}）${suppressResultJa({ suppressions: r.suppressions - (gb ? gb.suppressions : 0) })} ・ 撃退 ${r.retired - (gb ? gb.retired : 0)} ・ 撃沈 ${r.sunk - (gb ? gb.ptSunk : 0)}`;
+  return `${r.gunLabel} 射撃 ${r.gunShots} 発 ・ 命中 ${hits}（${hits > 0 && pct < 1 ? '1% 未満' : `${Math.round(pct)}%`}）${suppressResultJa({ suppressions: r.suppressions - (gb ? gb.suppressions : 0) - al.suppressions })} ・ 撃退 ${r.retired - (gb ? gb.retired : 0) - al.retired} ・ 撃沈 ${r.sunk - (gb ? gb.ptSunk : 0) - al.sunk}`;
 }
 
 /**
@@ -224,9 +225,9 @@ function gunResultJa(r: PtResult, gb: GunboatResult | null): string {
  * （最初が 13mm の閃光なら「閃光」）・見失わせた回数（一度も見つからなければ PT の最接近）、3 行目 予告から初弾までの最短秒と撃たれた弾（data/enemies.json の調整の根拠。CLAUDE.md §9）、
  * 4 行目 砲の記録（砲の無い任務は ''）。detections は MissionResult.detections、returned は帰投した（見つからずに漂流で終わった夜を「抜けた」と言わない。揚陸の任務は ui/result-body が偽で渡す）。
  * 輸送隊の任務（convoy。v0.6.4 の jp_01）: 航過の後に「（大発へ N）」（0 なら出さない）、「見つかった」は「米PT が捉えた」（大発が見つかっても数える）、最初に捉えたのが大発なら帯の代わりに「大発」。
- * 隼艇（gb。v0.6.6 の jp_01 のハード）: 最初に捉えたのが隼艇なら「隼艇」、4 行目は自艇の分
+ * 隼艇（gb。v0.6.6 の jp_01 のハード）: 最初に捉えたのが隼艇なら「隼艇」、4 行目は自艇の分。卯月（al。v0.6.10 S7 の jp_04）の分も 4 行目から引く
  */
-export function ptResultLines(r: PtResult, detections: number, returned: boolean, convoy = false, gb: GunboatResult | null = null): [string, string, string, string] {
+export function ptResultLines(r: PtResult, detections: number, returned: boolean, convoy = false, gb: GunboatResult | null = null, al: AllyGunShare = NO_ALLY_GUN_SHARE): [string, string, string, string] {
   const seen = detections > 0;
   const band = r.firstDetectKind === 1 ? '大発' : r.firstDetectKind === 2 && gb ? gb.labelJa : r.flashFirst ? '閃光' : r.firstDetectBand === '' ? '—' : STEP_LABEL[r.firstDetectBand];
   const onBarges = r.passesOnBarges > 0 ? `（大発へ ${r.passesOnBarges}）` : '';
@@ -235,7 +236,7 @@ export function ptResultLines(r: PtResult, detections: number, returned: boolean
     seen ? `米PT 航過 ${r.passes} 回${onBarges}${burstsResultJa(r)}${dodged} ・ ${hitsJa(r)}` : returned ? '米PT に一度も見つからずに抜けた' : '米PT に一度も見つからなかった',
     seen ? `${convoy ? '米PT が捉えた' : '見つかった'} ${detections} 回（最初 ${Math.round(r.firstDetectM)} m ・ ${band}） ・ 見失わせた ${r.lostContacts} 回` : `見つからず ・ PT の最接近 ${Number.isFinite(r.closestM) ? Math.round(r.closestM) : '—'} m`,
     `予告から初弾まで 最短 ${Number.isFinite(r.minWarnS) ? r.minWarnS.toFixed(1) : '—'} 秒 ・ 撃たれた弾 ${r.shots} 発`,
-    gunResultJa(r, gb),
+    gunResultJa(r, gb, al),
   ];
 }
 

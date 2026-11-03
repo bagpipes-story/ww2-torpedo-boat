@@ -3,9 +3,12 @@
 // refreshAllyTelemetry は毎フレーム 1 回（最後の砲の出来事が卯月か。比べるだけ＝§7: 確保しない）。卯月の無い任務・?debug&noally（揚陸の世界の ally が null）は enabled false のまま何も書かない。
 // 世界は構造の型 AllyTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld・WorldAlly を import すると Phaser がテストの node 型検査に入るため）。
 // 卯月の手柄（core/ally-destroyer の AllyCredit）は core だけが書く（LD8）。ここは読むだけ。
+// v0.6.10 S7: Result の材料 allyResult（終了時に 1 回。systems/landing-telemetry の landingResultPart が LandingResult.ally に置く。構造の型 AllyResultWorld で読む）。
 import type { AllyCredit } from '../core/ally-destroyer';
 import { createAllyTelemetry, type AllyTelemetry } from '../core/ally-telemetry';
 import type { PtSection } from '../core/pt-boats';
+import type { AllyResult } from '../ui/result-types';
+import { FATE_BY_ALLY, gunboatFates } from './gunboat-credit';
 
 /** テレメトリが読む世界の部分 */
 export interface AllyTelemetryWorld {
@@ -14,6 +17,29 @@ export interface AllyTelemetryWorld {
   readonly pts: { readonly section: PtSection } | null;
   /** 難易度（LD4: ハードは平常の行の末尾を付けない） */
   readonly setup: { readonly hard: boolean };
+}
+
+/** Result の材料が読む卯月（systems/world-ally の WorldAlly。core の 1 夜の数えと手柄） */
+export interface AllyResultSource {
+  readonly a: {
+    readonly p: { readonly labelJa: string };
+    readonly litPts: number; readonly litAways: number; readonly litSalvos: number; readonly shells: number;
+    readonly credit: AllyCredit;
+  };
+}
+
+/**
+ * 終了時に 1 回だけ（v0.6.10 S7）: 卯月の Result の材料。撃退・撃沈は卯月の砲が結末を決めた PT（gunboatFates の FATE_BY_ALLY＝模擬 core/landing-trial の allyFate と同じ数え。隊の撃退・撃沈の内）、
+ * 命中・制圧は手柄（hitPt の前後の差）。卯月の無い夜（null）は null
+ */
+export function allyResult(al: AllyResultSource | null | undefined, q: PtSection): AllyResult | null {
+  if (!al) return null;
+  const a = al.a;
+  const cr = a.credit;
+  const f = gunboatFates(q, cr, FATE_BY_ALLY);
+  const byAlly: boolean[] = [];
+  for (let i = 0; i < q.boats.length; i++) byAlly.push(cr.fateBy[i] === FATE_BY_ALLY);
+  return { labelJa: a.p.labelJa, lit: a.litPts, litAway: a.litAways, litSalvo: a.litSalvos, shells: a.shells, hits: cr.hits, retired: f.retired, sunk: f.sunk, suppressions: cr.suppressions, byAlly };
 }
 
 /** 出撃時の ally（卯月の無い任務は enabled false のまま） */

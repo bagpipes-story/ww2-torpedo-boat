@@ -38,7 +38,7 @@ describe('Briefing（spec §5.5・R8/F10）', () => {
       const r = rowsOf('jp_04', hard);
       expect(r[1]).toBe('輸送船の揚陸完了を見届けて帰投（帰投地点は西の青い輪）');
       expect(r[2]).toBe('月没後 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m');
-      expect(r[3]).toBe(enemy);
+      expect(r[3]).toBe(`${enemy} ・${NBSP}味方の卯月は輸送船の北東で走るPTを照らして撃つ`); // v0.6.10 S7: 卯月の句（LD4・LD16。tests/ally-result）
       expect(r[4]).toBe('敵艦艇の砲撃・衝突、夜明けの空襲');
       expect(r[5]).toBe(`夜明けまで 160 秒（以後は空襲） ・ 燃料 19 gal ・${NBSP}25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける） ・${NBSP}${tail}`);
     }
@@ -48,6 +48,7 @@ describe('Briefing（spec §5.5・R8/F10）', () => {
       for (const hard of [false, true]) {
         const n = briefingNumbers(buildWorldSetup(gameData, id, { hard }));
         expect('landingJa' in n, id).toBe(id === 'jp_04');
+        expect('allyJa' in n, id).toBe(id === 'jp_04'); // v0.6.10 S7: 卯月の句も jp_04 だけ
         expect('homeFromJa' in n, id).toBe(id === 'jp_01' || id === 'jp_04');
         if (id !== 'jp_04') expect(rowsOf(id, hard)[5], id).not.toContain('揚陸');
       }
