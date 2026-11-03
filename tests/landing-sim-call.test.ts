@@ -132,7 +132,7 @@ describe('1 夜（seed 1〜12）', () => {
     }
     expect(obeyed).toBeGreaterThan(SEEDS * 4);
     expect(LURE_MOVE).toEqual(['lure', 'lure_away', 'lure_near', 'lure_cue', 'lure_noshoot', 'lure_late', 'kite', 'face', 'human', 'human_face']);
-  });
+    }, 60_000); // 遊び方 × 12 夜 × 3 設定＝重い（負荷のある機械で 5 秒の既定を超える）
   it('聞いた夜は旗 false の夜と違う夜になり、夜明けの前に帰る（lure）。立った秒 ≤ 見えた秒 ≤ 聞いた秒、決着の前', () => {
     let pre = 0;
     let changed = 0;
@@ -163,7 +163,7 @@ describe('1 夜（seed 1〜12）', () => {
       }
     }
     expect(humans).toBeGreaterThan(SEEDS);
-  });
+    }, 60_000); // 2 設定 × 10 遊び方 × 12 夜
   it('人の乱れの列は動かない: 中立の設定（遅れ 0）なら呼びかけを聞く夜も human は lure・human_face は face と同じ夜', () => {
     let obeyed = 0;
     for (let seed = 1; seed <= 6; seed++) {

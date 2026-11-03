@@ -215,16 +215,11 @@ export function ptTorpedoOutcome(st: PtTorpedoState, q: PtSection, i: number): n
   const b = q.boats[i]!;
   if (st.kind[i] === PT_SALVO_CALM) return OUT_CALM;
   if (st.kind[i] === PT_SALVO_HURRIED) return st.litSalvo[i] === 1 ? OUT_LIT_HURRIED : OUT_HURRIED;
-  if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 斉射を先に（撃った後の砲の結末は ptAfterSalvoFate）
+  if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 斉射を先に（撃った後の砲の結末は ui/pt-lines・ui/ally-result）
   if (b.fate === PT_FATE_SUNK) return OUT_SUNK;
   if (b.fate === PT_FATE_CREW || b.fate === PT_FATE_HULL) return OUT_RETIRED;
   if (st.goalGone[i] === 1) return OUT_GOAL_GONE;
   if (st.leftAtDawn[i] === 1) return OUT_DAWN;
   if (b.phase >= PT_LEAVE) return OUT_LEFT;
   return OUT_NONE;
-}
-
-/** 斉射の後の砲の結末（撃っても去らない＝v0.6.10 実機 1 回目。Result の雷撃の行の後ろ）: 撃った PT が後で撃退（PT_FATE_CREW・PT_FATE_HULL）か撃沈なら b.fate、ほかは PT_FATE_NONE */
-export function ptAfterSalvoFate(st: PtTorpedoState, q: PtSection, i: number): number {
-  return st.kind[i] === PT_SALVO_NONE ? PT_FATE_NONE : q.boats[i]!.fate;
 }
