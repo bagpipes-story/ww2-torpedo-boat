@@ -27,10 +27,14 @@ export const ALLY_LOOKOUT_SEED_OFFSET = 27;
 /** 卯月の砲の乱数の系列（seed+28。v0.6.10。jp_04 だけ。1 発 2 回・生きた PT への命中 1 回。撃たなければ引かない） */
 export const ALLY_GUN_SEED_OFFSET = 28;
 
-/** 世界の演出（模擬は null）: 砲口の閃光（x, y は卯月）・着弾（hit は生きた PT に当たって hitPt を呼んだ） */
+/**
+ * 世界の演出（模擬は null）: 砲口の閃光（x, y は卯月）・着弾（hit は生きた PT に当たって hitPt を呼んだ）・卯月の命中で PT i の結末が変わった（v0.6.10 S5b。見せるだけ＝
+ * PtSquadron.fateVisual の灰色・沈む絵。手柄の fateBy は呼ぶ前にここで書いた＝LD8）
+ */
 export interface AllyFx {
   onFire(gunIndex: number, x: number, y: number): void;
   onImpact(gunIndex: number, x: number, y: number, hit: boolean): void;
+  onFate(i: number, fate: number): void;
 }
 
 /** 卯月の砲の手柄（systems/gunboat-credit の GunboatCredit と同じ欄＝隼艇の作法。HUD の「命中 計 N」から引く・Result の卯月の行。S5〜S7） */
@@ -126,6 +130,7 @@ export class AllyDestroyer implements ShellEvents {
     cr.fateBy[t] = FATE_BY_ALLY;
     if (b.fate === PT_FATE_SUNK) this.sunk++;
     else if (f0 === PT_FATE_NONE) this.retired++;
+    if (this.fx) this.fx.onFate(t, b.fate);
   }
 }
 

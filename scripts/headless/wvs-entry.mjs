@@ -5,8 +5,10 @@
 //   同じ歩き方で平らにして比べる（数は |差| ≤ 1e-6、真偽と文字は同じ）。違ったステップを数え、最初の違いの欄を返す。
 // 模擬の値（data）は束ねた時の repo の data/*.json（比べる site は同じ木のビルドにする）。
 import { gameData } from '../../src/config/game-data';
+import { PT_RETIRED_TINT } from '../../src/config/pt-config';
+import { FATE_BY_ALLY } from '../../src/core/convoy-sim-gunboat';
 import { runLandingTrial } from '../../src/core/landing-sim';
-import { PT_LEAVE } from '../../src/core/pt-state';
+import { PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_SUNK } from '../../src/core/pt-state';
 import { landingSimSetup } from '../../src/systems/landing-sim-setup';
 
 /** 歩かない鍵（作る側の値・演出・他の根で見る物の参照）。nextWakeAtM は世界の雷跡の点の絵だけの値（core/landing-torpedoes の写しは置かない＝他に読まれない） */
@@ -202,18 +204,52 @@ export function runWorldVsSim(o) {
 }
 
 /**
+ * S5b の絵の検査（フレームの終わり＝固定ステップと world-visuals の後。ck に数える）: 自艇の視程の外で卯月が照らしている PT は見える（litFar・litFarHidden）、照らしていない PT は見えない
+ * （unlitFarShown）、撃退された PT（誰の砲でも）は灰色（notGrey）、沈んだ PT は最初に見たフレームで沈み込みの tween の中（sinkNoTween）、卯月が沈めた PT は命中スローの中（allySinkNoSlow）。
+ * 見た数: 撃退された PT（retiredN。うち卯月 allyRetiredN）・沈んだ PT（sunkN）
+ */
+function visualChecks(w, A, ck) {
+  const q = w.pts.section;
+  const sq = w.pts;
+  const b0 = w.boat.state;
+  const tweens = sq.scene.tweens;
+  for (let i = 0; i < q.boats.length; i++) {
+    const b = q.boats[i];
+    const img = sq.sprites[i];
+    if (b.fate !== PT_FATE_NONE && b.fate !== PT_FATE_SUNK) {
+      if (img.tintTopLeft !== PT_RETIRED_TINT) ck.notGrey++;
+      if (!ck.retiredSeen[i]) { ck.retiredSeen[i] = 1; ck.retiredN++; if (A && A.credit.fateBy[i] === FATE_BY_ALLY) ck.allyRetiredN++; }
+    }
+    if (b.phase === PT_SUNK) {
+      if (!ck.sunkSeen[i]) {
+        ck.sunkSeen[i] = 1;
+        ck.sunkN++;
+        if (!tweens.isTweening(img)) ck.sinkNoTween++;
+        if (A && A.credit.fateBy[i] === FATE_BY_ALLY) { ck.allySinks++; if (!(w.slowMoLeftS > 0)) ck.allySinkNoSlow++; }
+      }
+      continue;
+    }
+    if (b.phase >= PT_OUT) continue;
+    if (d2(b.x, b.y, b0.x, b0.y) <= w.visRange2) continue;
+    if (A && A.lit[i] === 1) { ck.litFar++; if (!img.visible) ck.litFarHidden++; } else if (img.visible) ck.unlitFarShown++;
+  }
+}
+
+/**
  * jp04-probe.mjs の 1 区切り: 台本で進め、まだ撮っていない出来事（卯月が気づく・探照灯・砲・撃たずに去らせた・卯月の命中・斉射・揚陸の決着）が起きたら止めて返す（撮るのは node）。
- * 2 行目のいちばん広い文（表示の幅 px）と出来事の秒も数える。o: { policy, maxSteps, frameMs }。st はページに持つ（__probe）
+ * 2 行目のいちばん広い文（表示の幅 px）と出来事の秒も数える。o: { policy, maxSteps, frameMs, forceSink }。st はページに持つ（__probe）。S5b: フレームごとに visualChecks（p.ck）。
+ * forceSink（道具だけの細工。門には使わない）: 卯月の 12 cm の 1 命中を必ず撃沈に（pHit.fireChance = 1）して、卯月が沈めた PT の絵・命中スローの道を通す
  */
 export function probeRun(o) {
   const hl = window.__hl;
   const w = hl.world();
   const pol = POLICIES[o.policy];
   if (!pol) throw new Error(`台本 ${o.policy} は無い`);
-  const p = (window.__probe ??= { steps: 0, events: {}, widest: { w: 0, text: '', t: 0 }, shot: {} });
+  const p = (window.__probe ??= { steps: 0, events: {}, widest: { w: 0, text: '', t: 0 }, shot: {}, ck: { litFar: 0, litFarHidden: 0, unlitFarShown: 0, notGrey: 0, sinkNoTween: 0, allySinks: 0, allySinkNoSlow: 0, retiredN: 0, allyRetiredN: 0, sunkN: 0, sunkSeen: [], retiredSeen: [] } });
   const hud = window.__game.scene.getScene('Hud');
   const line = hud && hud.boatHud ? hud.boatHud.missionLine.missionText : null;
   const A = w.landing && w.landing.ally ? w.landing.ally.a : null;
+  if (A && o.forceSink) A.pHit.fireChance = 1;
   const mark = (k, cond) => { if (cond && p.events[k] === undefined) p.events[k] = w.stepTimeS; };
   while (p.steps < o.maxSteps) {
     if (!hl.active('Mission')) return { done: true, reason: 'ended', p };
@@ -221,6 +257,7 @@ export function probeRun(o) {
     hl.frame(o.frameMs);
     p.steps++;
     if (line && line.visible && line.displayWidth > p.widest.w) p.widest = { w: line.displayWidth, text: line.text, t: w.stepTimeS };
+    if (hl.active('Mission')) visualChecks(w, A, p.ck);
     if (A) {
       mark('spotted', A.spots > 0); mark('beam', A.g.light.on); mark('shot', A.shells > 0); mark('litAway', A.litAways > 0);
       mark('hit', A.liveHits > 0); mark('retired', A.retired > 0); mark('sunkPt', A.sunk > 0); mark('litSalvo', A.litSalvos > 0);

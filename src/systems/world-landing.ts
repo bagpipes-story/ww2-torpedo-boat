@@ -16,7 +16,7 @@ import type { BoatState, SeaBounds } from '../core/boat-motion';
 import { createLanding, createLandingReport, createLandingWakes, landingReport, landingResolved, landingWakes, tickLanding, type LandingReport, type LandingState, type LandingWakes } from '../core/landing';
 import type { LandingParams } from '../core/landing-data';
 import { LandingTorpedoLink } from '../core/landing-torpedoes';
-import type { PtParams, PtSection } from '../core/pt-boats';
+import type { PtSection } from '../core/pt-boats';
 import { PT_TORPEDO_SEED_OFFSET, createPtTorpedoState, stepPtTorpedoes, type PtTorpedoState } from '../core/pt-torpedo';
 import type { PtTorpedoParams } from '../core/pt-torpedo-data';
 import { SeededRng } from '../core/rng';
@@ -30,7 +30,7 @@ import { LandingCaret } from '../entities/landing-caret';
 import { HUD_TOP_BAND_BOTTOM, SPEED_HUD_KEEP_TOP, SPEED_HUD_TOP } from '../ui/hud-markers';
 import { landingCaretRects, landingCaretShown, landingHudRects, type HudRectInputs, type ScreenRect } from '../ui/landing-markers';
 import { TorpedoPool } from './torpedo-pool';
-import { buildAlly, type WorldAlly } from './world-ally';
+import { buildAlly, type AllyPts, type WorldAlly } from './world-ally';
 import type { WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup-types';
 
@@ -150,7 +150,7 @@ export class WorldLanding {
  * 揚陸の世界を組み立てる（MissionWorld の最後。兵装の後）。setup.landing の無い任務（jp_04 以外）と米PT の隊の無い世界は null（seed+26・プール・絵を作らない）。
  * 敵の魚雷のプールは PT の隻数 × salvo_count 本（ノーマル 6・ハード 9。1 隻 1 回）、乱数は seed+26 を 1 本
  */
-export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: { readonly section: PtSection; readonly p: PtParams } | null, seed: number, events: WorldEvents, onSunk: (x: number, y: number) => void): WorldLanding | null {
+export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: (AllyPts & { readonly section: PtSection }) | null, seed: number, events: WorldEvents, onSunk: (x: number, y: number) => void): WorldLanding | null {
   if (!s.landing || !pts) return null;
   const ld = s.landing;
   const count = pts.section.boats.length;

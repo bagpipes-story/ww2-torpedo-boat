@@ -11,6 +11,9 @@
 // レビュー: 航過中に標的の大発を失った（passTargetLost。ux-3）・撃つ前に黙った大発への航過（lastPassSilenced。ux-7）。jp_05 はどちらも false のまま。
 // v0.6.6（隼艇。jp_01 のハード）: HUD の「命中 計 N」は自艇の分（隊の命中 − 隼艇の分。systems/gunboat-credit）、航過中に標的の隼艇を失ったときも赤い線の行を降ろす、
 // Result の「見失わせた」は隼艇が標的の間の見失いを引く。頭の行・得点の撃退・撃沈は隊の数のまま（自艇の分と隼艇の分は gunboat-credit の gunboatFates）。最後の出来事が隼艇の砲か（2 行目の頭）。
+// v0.6.10 S5b（卯月。jp_04）: HUD の「命中 計 N」は卯月の砲の命中も引く（PtSquadron.ally の手柄。core/ally-destroyer の credit）。頭の行・得点の撃退・撃沈は隼艇と同じく隊の数のまま
+// （卯月が沈めた PT も得点に入る。卯月の分は gunboatFates(q, credit, FATE_BY_ALLY)。Result の卯月の行は S7）。卯月の砲の出来事は隼艇の砲ではない（gunEventByGunboat は false のまま。名は S6）。
+import type { AllyCredit } from '../core/ally-destroyer';
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { GUN_FIRING, type GunBatteryParams } from '../core/gun-battery';
@@ -33,9 +36,10 @@ export interface PtTelemetryWorld {
     readonly firstDetectBand: SpeedStep | '';
     readonly enemyId: string;
     readonly gun: { readonly state: PtGunState; readonly g: GunBatteryParams } | null;
-    /** 標的スロット（v0.6.4。輸送隊の無い任務は null か省略）、隼艇（v0.6.6。手柄の分け。無い任務は null か省略） */
+    /** 標的スロット（v0.6.4。輸送隊の無い任務は null か省略）、隼艇（v0.6.6。手柄の分け。無い任務は null か省略）、卯月の手柄（v0.6.10 S5b。PtSquadron.ally。無い任務・&noally は null か省略） */
     readonly targets?: PtTargets | null;
     readonly gunboat?: { readonly credit: GunboatCredit } | null;
+    readonly ally?: { readonly credit: AllyCredit } | null;
   } | null;
   readonly boat: { readonly state: BoatState };
   /** 艇の静音の上限（2 行目の「14 kt 以下に」） */
@@ -106,7 +110,7 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.gunEvent = q.gunEvent;
   t.gunEventBoat = q.gunEventBoat;
   t.gunEventByGunboat = s.gunboat ? q.gunEventSeq > 0 && s.gunboat.credit.eventSeq === q.gunEventSeq : false; // 最後の出来事は隼艇の砲（v0.6.6。2 行目の「隼艇 撃退！」）
-  t.gunHits = q.gunHits - (s.gunboat ? s.gunboat.credit.hits : 0); // 自艇の 25mm の分（v0.6.6。隼艇の無い任務は隊の数）
+  t.gunHits = q.gunHits - (s.gunboat ? s.gunboat.credit.hits : 0) - (s.ally ? s.ally.credit.hits : 0); // 自艇の 25mm の分（v0.6.6 隼艇・v0.6.10 卯月の分を引く。どちらも無い任務は隊の数）
   const g = s.gun ? s.gun.state : null;
   if (g) {
     t.gunStatus = g.battery.status;

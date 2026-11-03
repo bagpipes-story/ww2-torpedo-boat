@@ -33,15 +33,19 @@ export class SeqRng extends SeededRng {
   }
 }
 
-/** 演出の記録（発射の砲・着弾の砲と当たり） */
+/** 演出の記録（発射の砲・着弾の砲と当たり・結末が変わった PT と結末（v0.6.10 S5b）） */
 export class RecFx implements AllyFx {
   readonly fires: [number, number, number][] = [];
   readonly impacts: [number, boolean][] = [];
+  readonly fates: [number, number][] = [];
   onFire(gi: number, x: number, y: number): void {
     this.fires.push([gi, x, y]);
   }
   onImpact(gi: number, _x: number, _y: number, hit: boolean): void {
     this.impacts.push([gi, hit]);
+  }
+  onFate(i: number, fate: number): void {
+    this.fates.push([i, fate]);
   }
 }
 

@@ -11,12 +11,15 @@
 // 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
 // v0.6.6（隼艇。jp_01 のハードだけ）: 隊の後に隼艇（systems/gunboat）を作って標的スロットの末尾に足し、自艇の 25mm の後に隼艇の 25mm（seed+22）と米PT が隼艇を見つける距離、標的が隼艇なら接触の閃光は隼艇から。
 // どちらの砲が PT の最後の結末を決めたかを onFate で覚える（手柄の分け。systems/gunboat-credit）。隼艇の無い任務は今のまま。
+// v0.6.10 S5b（卯月。jp_04）: 卯月が照らしている PT（setAlly で受けた印 lit）は自艇の視程の外でも描く。卯月の砲が決めた結末は world-ally が fateVisual（見せるだけ: 灰色・沈む絵・onSunk）を呼び、
+// 卯月の手柄（core の credit。FATE_BY_ALLY は core だけが書く）は ally で HUD・Result へ。onFate は卯月の手柄に書かない（LD8。模擬と同じ数え）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
 import { GUN_SPLASH_SCALE_HIT, GUN_SPLASH_SCALE_MISS, MG_TRACER_TINT } from '../config/hunt-config';
 import { PT_MUZZLE_FLASH_S, PT_MUZZLE_FLASH_SCALE, PT_MUZZLE_FLASH_TINT, PT_PASS_LINE_LEN_M, PT_RETIRED_TINT, PT_SHELL_POOL_SIZE, PT_SPLASH_POOL_SIZE } from '../config/pt-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+import type { AllyCredit } from '../core/ally-destroyer';
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import type { GunBatteryParams } from '../core/gun-battery';
 import type { HitSpec } from '../core/gunnery';
@@ -76,6 +79,8 @@ export class PtSquadron {
   private flashAge = Infinity;
   /** 固定ステップの世界（掃射の着弾で艇が沈み始めたかを読む。step で置くだけで確保しない） */
   private view: PtSquadronView | null = null;
+  /** 卯月（v0.6.10 S5b。jp_04。world-ally の組み立てで 1 回 setAlly だけが書く。無い任務・&noally は null）: 照らされている PT の印と卯月の手柄（HUD の「命中 計 N」から引く・Result） */
+  ally: { readonly lit: Uint8Array; readonly credit: AllyCredit } | null = null;
 
   private readonly events: PtEvents = {
     onContact: (gained) => this.targets?.onContact(gained),
@@ -107,7 +112,7 @@ export class PtSquadron {
   };
 
   constructor(
-    scene: Phaser.Scene,
+    private readonly scene: Phaser.Scene,
     readonly p: PtParams,
     seed: number,
     boat: BoatState,
@@ -131,7 +136,7 @@ export class PtSquadron {
     this.player = boat;
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, targetValid: true, visRange2: 0, dawn: false, timeS: 0 };
     this.splashes = new SplashPool(scene, PT_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
-    this.gunboat = convoy && makeGunboat ? makeGunboat(this.section, { seed, pt: p, events: this.events, splashes: this.splashes, onFate: (i, fate) => this.onFate(scene, i, fate, FATE_BY_GUNBOAT) }) : null;
+    this.gunboat = convoy && makeGunboat ? makeGunboat(this.section, { seed, pt: p, events: this.events, splashes: this.splashes, onFate: (i, fate) => this.onFate(i, fate, FATE_BY_GUNBOAT) }) : null;
     this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section, this.gunboat) : null;
     if (this.targets) this.check.targets = this.targets.hulls;
     this.shown = new Uint8Array(p.count);
@@ -142,7 +147,7 @@ export class PtSquadron {
     this.lineScaleY = AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height;
     this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
     this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
-    this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(scene, i, fate, FATE_BY_PLAYER)) : null;
+    this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(i, fate, FATE_BY_PLAYER)) : null;
   }
 
   /**
@@ -195,35 +200,43 @@ export class PtSquadron {
     return i < 0 ? null : this.section.boats[i]!;
   }
 
-  /**
-   * 13mm の結末（PtGun の onFate。by は結末を決めた砲＝自艇か隼艇）: 撃退は灰色に 1 回だけ、撃沈は沈み込みの tween と世界の onSunk（大発の撃破と同じ）。沈んだ PT の攻撃は core が閉じた（dropOwner）ので
-   * 標的スロットの数えも閉じる。隼艇のいる任務は最後の結末を決めた砲を覚える（撃退の後に別の砲が沈めたら上書き）
-   */
-  private onFate(scene: Phaser.Scene, i: number, fate: number, by: number): void {
+  /** 卯月の照らす印と手柄を受ける（v0.6.10 S5b。world-ally の組み立てで 1 回。core の AllyDestroyer がそのまま満たす） */
+  setAlly(a: { readonly lit: Uint8Array; readonly credit: AllyCredit }): void {
+    this.ally = a;
+  }
+
+  /** 13mm の結末（PtGun の onFate。by は結末を決めた砲＝自艇か隼艇）: 隼艇のいる任務は最後の結末を決めた砲を覚える（撃退の後に別の砲が沈めたら上書き）。沈んだ PT の攻撃は core が閉じた（dropOwner）ので標的スロットの数えも閉じる。絵は fateVisual。卯月の手柄には書かない（LD8） */
+  private onFate(i: number, fate: number, by: number): void {
     if (this.gunboat) this.gunboat.credit.fateBy[i] = by;
+    if (fate === PT_FATE_SUNK) this.targets?.dropAttack(i, this.section.lastPassFired);
+    this.fateVisual(i, fate);
+  }
+
+  /** 結末の絵（見せるだけ・手柄を書かない。onFate と卯月の砲＝world-ally が呼ぶ。LD8）: 撃退は灰色に 1 回だけ、撃沈は沈み込みの tween と世界の onSunk（命中スロー＋爆発。大発の撃破と同じ） */
+  fateVisual(i: number, fate: number): void {
     const img = this.sprites[i]!;
     if (fate !== PT_FATE_SUNK) {
       img.setTint(PT_RETIRED_TINT);
       return;
     }
-    this.targets?.dropAttack(i, this.section.lastPassFired);
     const b = this.section.boats[i]!;
     this.shown[i] = 1;
     img.setVisible(true).setPosition(b.x, b.y).setAngle(b.headingDeg);
-    scene.tweens.add({ targets: img, scaleX: img.scaleX * SINK_SCALE_TO, scaleY: img.scaleY * SINK_SCALE_TO, alpha: 0, angle: img.angle + SINK_TILT_DEG, duration: SINK_DURATION_MS, ease: 'Sine.easeIn' });
+    this.scene.tweens.add({ targets: img, scaleX: img.scaleX * SINK_SCALE_TO, scaleY: img.scaleY * SINK_SCALE_TO, alpha: 0, angle: img.angle + SINK_TILT_DEG, duration: SINK_DURATION_MS, ease: 'Sine.easeIn' });
     this.onSunk(b.x, b.y);
   }
 
-  /** 毎フレーム: PT（自艇の視程の内だけ表示。沈んだ PT は tween に任せる）、航過の赤い線（航過中の PT から固めた針路へ。連射は標的へ）、曳光弾、閃光、水柱、13mm（変わるものだけ触る） */
+  /** 毎フレーム: PT（自艇の視程の内か卯月が照らしている間だけ表示。沈んだ PT は tween に任せる）、航過の赤い線（航過中の PT から固めた針路へ。連射は標的へ）、曳光弾、閃光、水柱、13mm（変わるものだけ触る） */
   updateVisuals(realDt: number, visRange2: number): void {
     const q = this.section;
     const player = this.player;
     const boat = this.check.boat; // 今の標的（v0.6.4。輸送隊の無い任務は自艇）
+    const lit = this.ally ? this.ally.lit : null; // 卯月が照らしている PT（v0.6.10 S5b。固定ステップの終わりの印）
     for (let i = 0; i < this.sprites.length; i++) {
       const b = q.boats[i]!;
       if (b.phase === PT_SUNK) continue; // 沈み込みは tween に任せる
       const img = this.sprites[i]!;
-      const show = b.phase < PT_OUT && (b.x - player.x) * (b.x - player.x) + (b.y - player.y) * (b.y - player.y) <= visRange2;
+      const show = b.phase < PT_OUT && ((b.x - player.x) * (b.x - player.x) + (b.y - player.y) * (b.y - player.y) <= visRange2 || (lit !== null && lit[i] === 1));
       if (show !== (this.shown[i] === 1)) {
         this.shown[i] = show ? 1 : 0;
         img.setVisible(show);

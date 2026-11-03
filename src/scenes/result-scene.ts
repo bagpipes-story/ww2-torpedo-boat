@@ -179,7 +179,7 @@ export class ResultScene extends Phaser.Scene {
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     const score = computeScore(
-      // 撃破: 大発（砲）・13mm で沈めた米PT（v0.6.3 実機 1 回目。撃退は点なし）か輸送船（魚雷。v0.4.7）
+      // 撃破: 大発（砲）・13mm で沈めた米PT（v0.6.3 実機 1 回目。撃退は点なし）か輸送船（魚雷。v0.4.7）。米PT は隊の数（隼艇 v0.6.6・卯月 v0.6.10 S5b が沈めた PT も入る）
       // 上陸（v0.6.4。味方の大発の輸送隊。scoring.json の convoy.points_per_arrival）は帰投の有無に関わらず上陸した隻数ぶん
       // 揚陸（v0.6.9。jp_04。scoring.json の landing.points_complete）は帰投の有無・その後の沈没に関わらず揚陸完了なら。揚陸の無い任務は鍵ごと無い
       { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside, arrivals: r.convoy ? r.convoy.arrived : 0, ...(r.landing ? { landed: r.landing.phase === LD_DONE } : {}) },
