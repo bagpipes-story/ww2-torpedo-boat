@@ -24,3 +24,8 @@ export const ALLY_BEAM_FADE_S = 0.6;
 export const ALLY_FIRING_LABEL_S = 1.0;
 /** 卯月の曳光弾と砲口の閃光（隼艇と同じ薄い青。自艇の 25mm の黄・米PT の赤と見分ける） */
 export const ALLY_TRACER_TINT = GUNBOAT_TRACER_TINT;
+/** 海の上の見張りの扇のテクスチャ: 1 px の m（粗い 1 枚。ui/ally-fan）と弧の刻みの上限 deg（S5a） */
+export const ALLY_FAN_TEX_M_PER_PX = 4;
+export const ALLY_FAN_ARC_STEP_DEG = 5;
+/** 卯月の着弾の水柱のプール（世界の見た目だけ。砲弾のプール ALLY_SHELL_POOL_SIZE と同じ数＝飛んでいる弾がみな水柱になっても足りる） */
+export const ALLY_SPLASH_POOL_SIZE = ALLY_SHELL_POOL_SIZE;

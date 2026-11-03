@@ -1,6 +1,6 @@
 // v0.6.9 S5a（spec-v069 §4.1・§9 の landing-step-order・D18）: 揚陸の任務（jp_04）の固定ステップの順のソースの pin。世界（systems/world-enemy-step）は 米PT の隊 → 揚陸の段 → 機関、
 // 揚陸の段の中（systems/world-landing の stepAfterPts）は 雷撃（stepPtTorpedoes。seed+26）→ 敵の魚雷のプール → 揚陸の時計（tickLanding）、模擬（core/landing-sim）も同じ順
-// （v0.6.10 S3a: 模擬は雷撃の直後に卯月。世界の卯月の行は S5a。S3b: 夜明け近しの帰投の輪の呼びかけはステップの終わりの報告の後に立て、次のステップの台本が読む）。
+// （v0.6.10 S3a: 模擬は雷撃の直後に卯月。S5a: 世界も雷撃の直後・敵の魚雷のプールの前に卯月（systems/world-ally の step）。S3b: 夜明け近しの帰投の輪の呼びかけはステップの終わりの報告の後に立て、次のステップの台本が読む）。
 // 揚陸の世界は MissionWorld の最後（兵装の後）に作り、seed+26 は buildLanding の中の setup.landing のある枝だけ（tests/landing-imports）。呼びかけ・撃ち尽くし・達成の配線も見る。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -23,16 +23,22 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     expectOrder(s, ['w.pts?.step(dt, feelDt, w, w.input.gunHeld);', 'w.landing?.stepAfterPts(w, dt, feelDt);', 'w.engine?.step(w, feelDt);', 'w.arms?.stepAir(']);
     expect(s.split('stepAfterPts').length).toBe(2);
   });
-  it('world-landing の stepAfterPts: 時計を書く（R14 A3: 雷撃の前＝同じステップの斉射を足す）→ 雷撃（seed+26）→ 敵の魚雷のプール（沈み始めたら的なし・終わり際の当たりなし）→ 揚陸の時計（stepTimeS）', () => {
+  it('world-landing の stepAfterPts: 時計を書く（R14 A3: 雷撃の前＝同じステップの斉射を足す）→ 雷撃（seed+26）→ 卯月（v0.6.10 S5a。R-U6 の順 (i)・模擬と同じ引数）→ 敵の魚雷のプール（沈み始めたら的なし・終わり際の当たりなし）→ 揚陸の時計（stepTimeS）', () => {
     const s = code('systems/world-landing.ts');
     const fn = s.slice(s.indexOf('  stepAfterPts(w: LandingWorldView'), s.indexOf('  get resolved()'));
     expectOrder(fn, [
       'const nowS = w.stepTimeS;',
       'this.link.nowS = nowS;',
       'stepPtTorpedoes(this.tst, this.tp, q, this.state, this.rng, w.dawn.reached, nowS, feelDt, this.link, NO_LEAVE);',
+      'this.ally?.step(q, this.tst, this.tp, this.state, this.rng, w.dawn.reached, nowS, feelDt, dt, this.link);',
       'this.pool.step(dt, feelDt, this.state.out ? NO_HULLS : this.hulls, this.p.passRadius2, this.link);',
       'tickLanding(this.state, this.p, nowS);',
     ]);
+    expect(fn.split('this.ally?.step(').length).toBe(2);
+    // 世界の卯月の 1 ステップは模擬と同じ関数・同じ並びの引数（入れ先 link・hitPt の知らせ・外から去らせた PT の知らせ）
+    const a = code('systems/world-ally.ts');
+    expect(a).toContain('stepAllyDestroyer(this.a, q, st, tp, ship, rng26, dawn, nowS, feelDt, dt, link, NO_PT_EVENTS, NO_LEAVE);');
+    expect(a.split('stepAllyDestroyer(').length).toBe(2);
     // 終わり際の当たりは見ない（TorpedoPool.step の nowS・settleS を渡さない＝NaN・0）
     expect(fn).not.toMatch(/this\.pool\.step\([^)]*,[^)]*,[^)]*,[^)]*,[^)]*,/);
   });
@@ -92,6 +98,6 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     const s = code('systems/world-landing.ts');
     for (const bad of ['w.torpedoes', 'torpedoEventsFor', 'w.shots', 'w.hits', 'launcher', 'resolveRemainingAsMisses']) expect(s, bad).not.toContain(bad);
     const v = code('systems/world-visuals.ts');
-    expectOrder(v, ['w.arms?.updateVisuals(realDt, w);', 'w.landing?.updateVisuals(realDt, w);', 'w.boat.destroy();', 'w.landing?.destroy();']);
+    expectOrder(v, ['w.arms?.updateVisuals(realDt, w);', 'w.landing?.updateVisuals(realDt, w);', 'w.landing?.ally?.updateVisuals(realDt);', 'w.boat.destroy();', 'w.landing?.destroy();', 'w.landing?.ally?.destroy();']);
   });
 });

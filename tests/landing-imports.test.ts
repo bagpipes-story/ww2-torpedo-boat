@@ -2,6 +2,7 @@
 // 決まったファイルだけ、seed+26 は jp_04 の組み立てだけ（乱数の系列の番号は重ならない・+21 は予約）。新しい core は Phaser にも config にも依らない。
 // v0.6.10 S2（spec-v0610 §4 の RNG と import の pin・レビュー M6）: +27・+28 は卯月の見張り・砲（core/ally-destroyer の定数だけ）で、その SeededRng を作るのは systems/world-ally と
 // core/landing-sim だけ、ptLitReact を呼ぶのは core/ally-destroyer だけ、createAllyDestroyer・stepAllyDestroyer を使うのは systems/world-ally と core/landing-sim だけ（S3・S5 で配線）。
+// v0.6.10 S5a: core/pt-torpedo の型だけを読む systems/world-ally と core/landing-replay（記録した入力の再生の口）を足した（値の import はしない）。
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -23,7 +24,11 @@ describe('米PT の雷撃（core/pt-torpedo）を使う所', () => {
     const re = /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s+['"][./]*(?:core\/)?pt-torpedo['"]/;
     const got = using(/from\s+['"][./]*(?:core\/)?pt-torpedo['"]/);
     const RESULT_READERS = ['systems/landing-telemetry.ts', 'ui/landing-result.ts'];
-    subsetOf(got, ['systems/world-landing.ts', 'core/landing-sim.ts', 'core/ally-destroyer.ts', ...RESULT_READERS]);
+    // v0.6.10 S5a: 型だけを読む 2 つ（systems/world-ally は雷撃の状態を卯月へ渡すだけ・core/landing-replay は再生の口の型）。値は import しない
+    const TYPE_ONLY = ['systems/world-ally.ts', 'core/landing-replay.ts'];
+    subsetOf(got, ['systems/world-landing.ts', 'core/landing-sim.ts', 'core/ally-destroyer.ts', ...RESULT_READERS, ...TYPE_ONLY]);
+    for (const f of TYPE_ONLY.filter((x) => got.includes(x))) expect(code(f), f).toMatch(/import\s+type\s*\{[^}]*\}\s*from\s+['"][./]*(?:core\/)?pt-torpedo['"]/);
+    for (const f of TYPE_ONLY.filter((x) => got.includes(x))) expect(code(f), f).not.toMatch(/import\s*\{[^}]*\}\s*from\s+['"][./]*(?:core\/)?pt-torpedo['"]/);
     for (const f of RESULT_READERS.filter((x) => got.includes(x))) {
       const names = re.exec(code(f))![1]!.split(',').map((x) => x.trim()).filter((x) => x.length > 0);
       for (const n of names) expect(/^OUT_[A-Z_]+$/.test(n) || n === 'ptTorpedoOutcome', `${f}: ${n}`).toBe(true);
@@ -119,8 +124,8 @@ describe('卯月（core/ally-destroyer。v0.6.10 S2）を使う所', () => {
   });
 });
 
-describe('新しい core（pt-torpedo・landing・landing-torpedoes・ally-destroyer、v0.6.10 S3b の模擬の landing-sim-call・landing-ally-cell）', () => {
-  it.each(['core/pt-torpedo.ts', 'core/landing.ts', 'core/landing-torpedoes.ts', 'core/ally-destroyer.ts', 'core/landing-sim-call.ts', 'core/landing-ally-cell.ts'])('%s は phaser・config・systems・ui を import しない', (f) => {
+describe('新しい core（pt-torpedo・landing・landing-torpedoes・ally-destroyer、v0.6.10 S3b の模擬の landing-sim-call・landing-ally-cell、S5a の再生の口 landing-replay）', () => {
+  it.each(['core/pt-torpedo.ts', 'core/landing.ts', 'core/landing-torpedoes.ts', 'core/ally-destroyer.ts', 'core/landing-sim-call.ts', 'core/landing-ally-cell.ts', 'core/landing-replay.ts'])('%s は phaser・config・systems・ui を import しない', (f) => {
     const imports = [...code(f).matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!);
     expect(imports.length).toBeGreaterThan(0);
     for (const m of imports) expect(m, `${f}: ${m}`).toMatch(/^\.\/[\w-]+$/);

@@ -11,6 +11,7 @@
 // v0.6.10 S3a（spec-v0610 R-U6・§6.1）: 味方の駆逐艦 卯月（s.allyDestroyer＝jp_04 で allyOff でなければ。core/ally-destroyer）を雷撃の直後・敵の魚雷のプールの前に回す（世界の world-landing と同じ順）。
 // 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO）・撃たずに去るは onLitAway。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
 // v0.6.10 S3b（R-U9・LD3）: 卯月のいる夜の lure の動きの遊び方は夜明け近しの帰投の輪の呼びかけを聞く（core/landing-sim-call。世界と同じ呼びかけの関数をステップの終わりに・見えている間だけ・人は遅れて）。
+// v0.6.10 S5a（G7）: rp（core/landing-replay）を渡すと台本の代わりに世界のヘッドレスの夜の入力と命中スローを再生する（渡さなければ前と同じ。scripts/headless/world-vs-sim）。
 import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET, createAllyDestroyer, stepAllyDestroyer, type AllyLink } from './ally-destroyer';
 import type { AllyDestroyerParams } from './ally-destroyer-data';
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
@@ -28,6 +29,7 @@ import {
   type LandingHumanPlay, type LandingPolicy, type LandingSteer, type LandingSteerCtx,
 } from './landing-sim-policy';
 import { createLandingRingCall, stepLandingRingCall } from './landing-sim-call';
+import type { LandingReplay, LandingReplayStep } from './landing-replay';
 import { LandingTrialTorpedoes, LandingTrialWatch, createLandingTrial, finishLandingAlly, finishLandingTrial, type LandingTrial } from './landing-trial';
 import { insideRing } from './mission-flow';
 import { PT_GUN_SEED_OFFSET, PT_PASS, PT_PATROL, PT_SEED_OFFSET, createPtSection, stepPtSection, type PtCheck, type PtEvents } from './pt-boats';
@@ -76,7 +78,7 @@ class CountingRng extends SeededRng {
 }
 
 /** 1 夜。艇は出発点で止まっていて、出発の遅れの後に台本どおり動く。hp は人の遅れと乱れ（human・human_face だけが読む） */
-export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed: number, hp: Readonly<LandingHumanPlay> = LANDING_HUMAN): LandingTrial {
+export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed: number, hp: Readonly<LandingHumanPlay> = LANDING_HUMAN, rp: LandingReplay | null = null): LandingTrial {
   const sp = LANDING_POLICY_SPECS[policy];
   if (sp.shoot !== 'none' && !s.gun) throw new Error(`遊び方 ${policy} は撃つが、この任務の艇に砲（guns）が無い`);
   const p = ptNightParams(s, seed);
@@ -100,8 +102,9 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const hit: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
   const input: BoatInput = { headingDeg: NaN, speed01: 0 };
   const c: PtCheck = { boat, boatHalfLengthM: s.halfLengthM, boatHalfBeamM: s.halfBeamM, detectOpenM: 0, smokeFactor: s.vis.smokeFactor, smoke: null, smokeParams: null, targetValid: true, visRange2: s.visRange2, dawn: false, timeS: 0 };
-  const realDt = s.stepS;
-  const dt = realDt * s.timeScale;
+  // 体感の秒と time_scale 込みの秒（模擬に命中スローは無い。再生のときだけ世界の倍率を掛ける）
+  let realDt = s.stepS;
+  let dt = realDt * s.timeScale;
   const out = createLandingTrial(p.count);
   let t = 0;
   let sinking = false;
@@ -171,40 +174,51 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   // 夜明け近しの帰投の輪の呼びかけ（卯月がいて ring_call_before_dawn の夜の lure の動きだけ聞く。人は最初に見えてから delayMinS 秒の後。乱数を引かない）と輸送船へ走る雷跡
   const call = createLandingRingCall(s.allyDestroyer?.ringCallBeforeDawn === true && sp.move === 'lure', human ? hp.delayMinS : 0);
   const wakes = createLandingWakes();
-  for (;;) {
-    // 台本（毎フレームの入力に当たる。固定ステップの前。報告は前のステップの終わりの値＝HUD）: 出発の遅れの間は止まる（home_early は t = 0 から。R14 A5）
+  const ro: LandingReplayStep = { held: false, feel: 1 };
+  rp?.begin({ q, ld, st, torps: tor.pool.states, ally, boat, d, fuel, rng, gunRng, trng, a27, a28 });
+  for (let k = 0; ; k++) {
     const t0 = t;
-    const resolved = landingResolved(ld);
-    steer.headingDeg = NaN;
-    steer.wantMps = 0;
-    if (human) ctx.report = humanSeesReport(t0, out.reportS, delayS) ? report : noReport; // 人: 最初の報告から delayS 秒は報告を見ない
-    ctx.ringCall = call.obey;
-    if (t0 >= departS || sp.move === 'home') landingSteer(sp, ctx, resolved, mem, steer);
-    // 赤い線への反応（HUD どおり。dodge の台本だけ）: 航過は固めた針路から離れる直角へ全速 4 秒（線の間は延ばす）、連射は針路そのまま（「針路そのまま撃ち返せ」）
-    if (sp.dodge && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
-      const b = q.boats[m.reactBoat]!;
-      if (q.owner === m.reactBoat && !b.burst) {
-        m.dodgeDeg = wrapDeg360(b.lockDeg + targetSide(b.lockDeg, b.x, b.y, boat.x, boat.y) * PT_PLAY.dodgeDeg);
-        m.dodgeUntil = t0 + PT_PLAY.dodgeHoldS;
-        m.dodgeBoat = m.reactBoat;
+    let held = false;
+    if (rp !== null) {
+      // 再生（G7）: 世界の入力（針路・速力・射撃ボタン）と命中スローの倍率。台本・赤い線への反応・消火の台本は使わない
+      if (!rp.step(k, input, ro)) break;
+      held = g !== null && ro.held;
+      realDt = s.stepS * ro.feel;
+      dt = realDt * s.timeScale;
+    } else {
+      // 台本（毎フレームの入力に当たる。固定ステップの前。報告は前のステップの終わりの値＝HUD）: 出発の遅れの間は止まる（home_early は t = 0 から。R14 A5）
+      const resolved = landingResolved(ld);
+      steer.headingDeg = NaN;
+      steer.wantMps = 0;
+      if (human) ctx.report = humanSeesReport(t0, out.reportS, delayS) ? report : noReport; // 人: 最初の報告から delayS 秒は報告を見ない
+      ctx.ringCall = call.obey;
+      if (t0 >= departS || sp.move === 'home') landingSteer(sp, ctx, resolved, mem, steer);
+      // 赤い線への反応（HUD どおり。dodge の台本だけ）: 航過は固めた針路から離れる直角へ全速 4 秒（線の間は延ばす）、連射は針路そのまま（「針路そのまま撃ち返せ」）
+      if (sp.dodge && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
+        const b = q.boats[m.reactBoat]!;
+        if (q.owner === m.reactBoat && !b.burst) {
+          m.dodgeDeg = wrapDeg360(b.lockDeg + targetSide(b.lockDeg, b.x, b.y, boat.x, boat.y) * PT_PLAY.dodgeDeg);
+          m.dodgeUntil = t0 + PT_PLAY.dodgeHoldS;
+          m.dodgeBoat = m.reactBoat;
+        }
+        m.reactBoat = -1;
       }
-      m.reactBoat = -1;
+      if (sp.dodge && m.dodgeBoat >= 0 && q.owner === m.dodgeBoat && t0 < m.dodgeUntil + realDt && !q.boats[m.dodgeBoat]!.burst) m.dodgeUntil = t0 + HOLD_EXTEND_STEPS * realDt;
+      if (t0 < m.dodgeUntil - TIME_EPS_S) {
+        steer.headingDeg = m.dodgeDeg;
+        steer.wantMps = Infinity;
+      }
+      // 射撃ボタン（人は出撃からの秒の gunCycleS ごとの初めの gunOnS 秒だけ。乱数なし）
+      held = g ? landingGunHeld(sp, ctx, g.rangeM, g.effectiveM, s.visRange2) && (!human || humanGunOn(t0, hp)) : false;
+      input.headingDeg = steer.headingDeg;
+      input.speed01 = steer.wantMps > 0 ? Math.min(1, steer.wantMps / bp.speedMaxMps) : 0;
+      if (t0 >= m.fireOutAt - TIME_EPS_S) {
+        d.fireLeftS = 0;
+        m.fireOutAt = NaN;
+      }
     }
-    if (sp.dodge && m.dodgeBoat >= 0 && q.owner === m.dodgeBoat && t0 < m.dodgeUntil + realDt && !q.boats[m.dodgeBoat]!.burst) m.dodgeUntil = t0 + HOLD_EXTEND_STEPS * realDt;
-    if (t0 < m.dodgeUntil - TIME_EPS_S) {
-      steer.headingDeg = m.dodgeDeg;
-      steer.wantMps = Infinity;
-    }
-    // 射撃ボタン（人は出撃からの秒の gunCycleS ごとの初めの gunOnS 秒だけ。乱数なし）
-    const held = g ? landingGunHeld(sp, ctx, g.rangeM, g.effectiveM, s.visRange2) && (!human || humanGunOn(t0, hp)) : false;
-    input.headingDeg = steer.headingDeg;
-    input.speed01 = steer.wantMps > 0 ? Math.min(1, steer.wantMps / bp.speedMaxMps) : 0;
-    if (t0 >= m.fireOutAt - TIME_EPS_S) {
-      d.fireLeftS = 0;
-      m.fireOutAt = NaN;
-    }
-    // 固定ステップ（mission-world の順。spec §4.1）
-    t += realDt;
+    // 固定ステップ（mission-world の順。spec §4.1。時計は実秒）
+    t += s.stepS;
     if (!c.dawn && dawnReached(s.durationS, t)) {
       c.dawn = true;
       out.dawn = true;
@@ -254,6 +268,7 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     if (cueM > 0) ctx.cue = landingFireLine(ld, q, st.left, cueM * cueM) >= 0;
     watch.endStep(q, st.left, lp, t);
     if (atHome && !res) out.ringEarly = true; // R4: 決着の前に輪に入った（R14 A5: 終わらずに待つ）
+    rp?.after(k, t);
     out.end = sinking ? 'sunk' : atHome ? (res ? 'home' : 'timeout') : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout' || t >= s.durationS + LANDING_SIM_AFTER_DAWN_S - TIME_EPS_S) break;
   }

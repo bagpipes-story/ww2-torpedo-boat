@@ -185,6 +185,8 @@ export const TEXTURE_KEYS = {
   destroyer: 'tex-destroyer',
   transport: 'tex-transport',
   transportFriendly: 'tex-transport-friendly', // 味方の輸送船（v0.6.9。jp_04。assets/ally-ship-placeholder。灰色の tex-transport を tint しても青くならないので別の 1 枚）
+  destroyerFriendly: 'tex-destroyer-friendly', // 味方の駆逐艦 卯月（v0.6.10。jp_04。assets/ally-destroyer-placeholder。輸送船と同じ薄い青）
+  allyFan: 'tex-ally-fan', // 卯月の見張りの扇（v0.6.10。海の上の薄い一色・陸を切り落とした 1 枚。ui/ally-fan）
   torpedo: 'tex-torpedo',
   wakeDot: 'tex-wake-dot',
   torpedoButton: 'tex-torpedo-button',
