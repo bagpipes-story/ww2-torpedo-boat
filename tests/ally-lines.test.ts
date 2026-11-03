@@ -13,7 +13,7 @@ import { createAllyTelemetry } from '../src/core/ally-telemetry';
 import { DAWN_AIR_ENEMY, createDawnTelemetry } from '../src/core/dawn-air';
 import { LE_CALM, LE_HIT, LE_HURRIED, LE_LIT_AWAY, LE_LIT_SALVO, type LandingTelemetry } from '../src/core/landing';
 import { CALL_DAWN, CALL_FUEL } from '../src/core/mission-flow';
-import { createPtSection, type PtTelemetry } from '../src/core/pt-boats';
+import { PT_LEAVE, PT_OUT, PT_SUNK, createPtSection, type PtTelemetry } from '../src/core/pt-boats';
 import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
 import { initAllyTelemetry, refreshAllyTelemetry, type AllyTelemetryWorld } from '../src/systems/ally-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
@@ -39,19 +39,20 @@ const DAWN = { dawn: { ...createDawnTelemetry(), reached: true, air: DAWN_AIR_EN
 const code = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
 
 /** MissionWorld と同じ形の世界（揚陸の世界の卯月は data の値と手柄だけ。ally が null なら卯月の無い夜） */
-function allyWorld(id: string, o: { hard?: boolean; allyOff?: boolean } = {}): AllyTelemetryWorld & { section: ReturnType<typeof createPtSection>; credit: { eventSeq: number } | null } {
+function allyWorld(id: string, o: { hard?: boolean; allyOff?: boolean } = {}): AllyTelemetryWorld & { section: ReturnType<typeof createPtSection>; credit: { eventSeq: number } | null; lit: Uint8Array } {
   const s = buildWorldSetup(gameData, id, { hard: o.hard ?? false, allyOff: o.allyOff ?? false });
   const section = createPtSection(s.ptBoats!, PT_SHELL_POOL_SIZE);
   const credit = s.allyDestroyer ? { hits: 0, suppressions: 0, eventSeq: 0, fateBy: new Int8Array(section.boats.length) } : null;
-  const ally = s.allyDestroyer && credit ? { a: { p: s.allyDestroyer, credit } } : null;
-  return { landing: s.landing ? { ally } : null, pts: { section }, setup: { hard: s.hard }, section, credit };
+  const lit = new Uint8Array(section.boats.length);
+  const ally = s.allyDestroyer && credit ? { a: { p: s.allyDestroyer, credit, lit } } : null;
+  return { landing: s.landing ? { ally } : null, pts: { section }, setup: { hard: s.hard }, section, credit, lit };
 }
 
 describe('t.ally（systems/ally-telemetry）', () => {
   it('jp_04: ノーマルは呼び名「卯月」・帰投の輪の呼びかけ・平常の行の末尾あり、ハードは末尾なし（LD4）。&noally と卯月の無い任務は createAllyTelemetry のまま', () => {
-    expect(initAllyTelemetry(allyWorld('jp_04'))).toEqual({ enabled: true, labelJa: NAME, ringCall: true, runHint: true, gunEvent: false });
-    expect(initAllyTelemetry(allyWorld('jp_04', { hard: true }))).toEqual({ enabled: true, labelJa: NAME, ringCall: true, runHint: false, gunEvent: false });
-    expect(ally0()).toEqual({ enabled: true, labelJa: NAME, ringCall: true, runHint: true, gunEvent: false });
+    expect(initAllyTelemetry(allyWorld('jp_04'))).toEqual({ enabled: true, labelJa: NAME, ringCall: true, runHint: true, gunEvent: false, litShown: false });
+    expect(initAllyTelemetry(allyWorld('jp_04', { hard: true }))).toEqual({ enabled: true, labelJa: NAME, ringCall: true, runHint: false, gunEvent: false, litShown: false });
+    expect(ally0()).toEqual({ enabled: true, labelJa: NAME, ringCall: true, runHint: true, gunEvent: false, litShown: false });
     expect(ally0(true).runHint).toBe(false);
     expect(S04.allyDestroyer!.labelJa).toBe(NAME);
     expect(S04H.allyDestroyer!.ringCallBeforeDawn).toBe(true);
@@ -59,6 +60,7 @@ describe('t.ally（systems/ally-telemetry）', () => {
       const w = allyWorld('jp_04', { hard, allyOff: true });
       const t = initAllyTelemetry(w);
       w.section.gunEventSeq = 1;
+      w.lit[0] = 1;
       refreshAllyTelemetry(t, w);
       expect(t).toEqual(createAllyTelemetry());
     }
@@ -82,6 +84,33 @@ describe('t.ally（systems/ally-telemetry）', () => {
       refreshAllyTelemetry(t, w);
       expect(t.gunEvent, `${seq} ${cr}`).toBe(want);
     }
+  });
+
+  it('litShown（v0.6.10 F・レビュー docs-6）: 卯月が照らしていて海域の内（PT_OUT の前。沈んだ PT は除く）の PT がいる間だけ真＝PtSquadron が視程の外でも描く PT。3 行目の「敵影あり」に足す', () => {
+    for (const hard of [false, true]) {
+      const w = allyWorld('jp_04', { hard });
+      const t = initAllyTelemetry(w);
+      expect(t.litShown).toBe(false);
+      const n = w.section.boats.length;
+      w.lit[n - 1] = 1;
+      refreshAllyTelemetry(t, w);
+      expect(t.litShown).toBe(true);
+      for (const phase of [PT_OUT, PT_SUNK]) {
+        w.section.boats[n - 1]!.phase = phase;
+        refreshAllyTelemetry(t, w);
+        expect(t.litShown, `${phase}`).toBe(false);
+      }
+      w.section.boats[n - 1]!.phase = PT_LEAVE; // 去る PT を追って照らしている間も描く
+      refreshAllyTelemetry(t, w);
+      expect(t.litShown).toBe(true);
+      w.lit[n - 1] = 0;
+      refreshAllyTelemetry(t, w);
+      expect(t.litShown).toBe(false);
+    }
+    expect(code('systems/pt-squadron.ts')).toContain('const show = b.phase < PT_OUT && (');
+    expect(code('systems/pt-squadron.ts')).toContain('|| (lit !== null && lit[i] === 1));');
+    expect(code('ui/boat-hud.ts')).toContain('(t.enemySighted || t.ally.litShown ? 1 : 0) | (t.playerDetected ? 2 : 0)');
+    expect(code('systems/mission-telemetry.ts')).toContain('t.enemySighted = e !== null && t.enemyDx * t.enemyDx + t.enemyDy * t.enemyDy <= w.visRange2;'); // 画面の縁の「PT N m」は前のまま
   });
 
   it('配線: createTelemetry で 1 回・毎フレームは refreshPtTelemetry の後に 1 回。refresh は確保しない（比べるだけ）', () => {

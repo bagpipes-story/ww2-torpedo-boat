@@ -37,14 +37,15 @@ export function landingBriefingJa(unloadS: number, hitsToSink: number): string {
 }
 
 /**
- * 味方の駆逐艦 卯月の任務（v0.6.10 S7。jp_04）の「敵」の行の後ろの句（BriefingNumbers.allyJa。briefingRows が敵の行に「 ・」＋ノーブレークスペースで足す）: 呼び名（data の label_ja）と
- * 輸送船から見た方角（リードの決定 LD16:「輸送船の北東」）。卯月が照らして撃つのは走る PT だけ（LD4: 忍び寄る PT を見張るとは言わない）。句に半角スペースを入れない（ハードの敵の行は
- * 1 字の余白でも 1 行の 1,018 px。「米PT」は行の頭の「米PTボート」が言うので「PT」。「味方 卯月（輸送船の北東）は走る米PTを…」は 1,056 px を超えて 2 行になり、史実メモが出撃のボタンに
- * 重なる。tests/ally-result）
+ * 味方の駆逐艦 卯月の任務（v0.6.10 S7。jp_04）の「敵」の行の後ろの句（BriefingNumbers.allyJa。briefingRows が敵の行に「 ・」＋ノーブレークスペースで足す）: 輸送船から見た方角
+ * （リードの決定 LD16:「輸送船の北東」）・呼び名（data の label_ja）。卯月が照らして撃つのは走る PT だけ（LD4: 忍び寄る PT を見張るとは言わない）。v0.6.10 F（レビュー docs-1）:
+ * 「味方の卯月は輸送船の北東で走るPTを…」は「輸送船の北東で走るPT」と読め、ハードの「（北・東・北東から）」の北東の PT を卯月が受け持つように見えた（扇は東の線だけ）ので、
+ * 場所を卯月に付けて「。」で切る。句に半角スペースを入れない（ハードの敵の行は 1 字の余白でも 1 行。「米PT」は行の頭の「米PTボート」が言うので「PT」。
+ * 「味方 卯月（輸送船の北東）は走る米PTを…」は 1,056 px を超えて 2 行になり、史実メモが出撃のボタンに重なる。tests/ally-result）
  */
 export const ALLY_RUN_LIGHT_JA = '走るPTを照らして撃つ';
 export function allyBriefingJa(labelJa: string, fromShipJa: string): string {
-  return `味方の${labelJa}は輸送船の${fromShipJa}で${ALLY_RUN_LIGHT_JA}`;
+  return `輸送船の${fromShipJa}に味方の${labelJa}。${ALLY_RUN_LIGHT_JA}`;
 }
 
 export interface MenuEntry {

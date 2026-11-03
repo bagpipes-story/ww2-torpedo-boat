@@ -22,7 +22,7 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(s.convoy || s.landing ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {}),
     // 停泊して揚陸する輸送船の任務（v0.6.9。jp_04）: 条件の最後の句（帰投の輪で待てる・揚陸の秒・沈むまでの本数・教え「輸送船から離れて戦え」・米PT の魚雷は自艇の下を抜ける）。他の任務は鍵ごと省く
     ...(s.landing ? { landingJa: landingBriefingJa(s.landing.params.unloadS, s.landing.params.hitsToSink) } : {}),
-    // 味方の駆逐艦 卯月（v0.6.10 S7。jp_04。LD4・LD16）: 敵の行の後ろに「味方の卯月は輸送船の北東で走るPTを照らして撃つ」（方角は泊地から卯月へ。今夜の泊地の南北のずれでも北東）。無い任務・&noally は鍵ごと省く
+    // 味方の駆逐艦 卯月（v0.6.10 S7。jp_04。LD4・LD16）: 敵の行の後ろに「輸送船の北東に味方の卯月。走るPTを照らして撃つ」（方角は泊地から卯月へ。今夜の泊地の南北のずれでも北東）。無い任務・&noally は鍵ごと省く
     ...(s.landing && s.allyDestroyer ? { allyJa: allyBriefingJa(s.allyDestroyer.labelJa, bearingJa(bearingDeg(s.landing.params.x, s.landing.params.y, s.allyDestroyer.x, s.allyDestroyer.y))) } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),

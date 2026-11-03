@@ -14,9 +14,14 @@ export interface AllyTelemetry {
   runHint: boolean;
   /** 米PT の隊の最後の砲の出来事（撃退・撃沈・制圧）は卯月の砲（PtSquadron.ally の手柄の eventSeq ＝ 隊の gunEventSeq。2 行目の頭「卯月 撃退！」） */
   gunEvent: boolean;
+  /**
+   * 卯月が照らしていて海の上に描いている米PT がいる（v0.6.10 F・レビュー docs-6。PtSquadron は照らされた PT を自艇の視程の外でも描く＝S5b）。3 行目の「敵影あり」に足す
+   * （自艇の視程の内の脅威の PT＝enemySighted は前のまま。画面の縁の「PT N m」は enemySighted だけで出す）
+   */
+  litShown: boolean;
 }
 
 /** 卯月のいない形（ほかの任務・&noally・tests の中立のテレメトリ） */
 export function createAllyTelemetry(): AllyTelemetry {
-  return { enabled: false, labelJa: '', ringCall: false, runHint: false, gunEvent: false };
+  return { enabled: false, labelJa: '', ringCall: false, runHint: false, gunEvent: false, litShown: false };
 }

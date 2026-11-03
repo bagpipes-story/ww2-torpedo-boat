@@ -63,7 +63,7 @@ export function ally0(hard = false): AllyTelemetry {
   const s = hard ? S04H : S04;
   const section = createPtSection(s.ptBoats!, PT_SHELL_POOL_SIZE);
   const credit = { hits: 0, suppressions: 0, eventSeq: 0, fateBy: new Int8Array(section.boats.length) };
-  return initAllyTelemetry({ landing: { ally: { a: { p: s.allyDestroyer!, credit } } }, pts: { section }, setup: { hard } });
+  return initAllyTelemetry({ landing: { ally: { a: { p: s.allyDestroyer!, credit, lit: new Uint8Array(section.boats.length) } } }, pts: { section }, setup: { hard } });
 }
 
 /** 卯月のいる夜の jp_04 の 2 行目のテレメトリ（tl に ally0 を重ねる。over.ally で上書きできる） */
