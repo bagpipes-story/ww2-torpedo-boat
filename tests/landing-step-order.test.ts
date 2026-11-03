@@ -37,7 +37,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     expect(fn.split('this.ally?.step(').length).toBe(2);
     // 世界の卯月の 1 ステップは模擬と同じ関数・同じ並びの引数（入れ先 link・hitPt の知らせ・外から去らせた PT の知らせ）
     const a = code('systems/world-ally.ts');
-    expect(a).toContain('stepAllyDestroyer(this.a, q, st, tp, ship, rng26, dawn, nowS, feelDt, dt, link, NO_PT_EVENTS, NO_LEAVE);');
+    expect(a).toContain('stepAllyDestroyer(this.a, q, st, tp, ship, rng26, dawn, nowS, feelDt, dt, link, NO_PT_EVENTS);'); // onLeave は v0.6.10 実機 1 回目に外した（照らされても去らない）
     expect(a.split('stepAllyDestroyer(').length).toBe(2);
     // 終わり際の当たりは見ない（TorpedoPool.step の nowS・settleS を渡さない＝NaN・0）
     expect(fn).not.toMatch(/this\.pool\.step\([^)]*,[^)]*,[^)]*,[^)]*,[^)]*,/);
@@ -46,7 +46,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     const s = code('core/landing-sim.ts');
     expectOrder(s, [
       'stepPtSection(q, p, c, rng, realDt, dt, ev);', 'tor.link.nowS = t;', 'stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);',
-      'if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev, NO_LEAVE);', 'if (q.owner >= 0 && q.boats[q.owner]!.phase !== PT_PASS) out.ownerViol++;',
+      'if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev);', 'if (q.owner >= 0 && q.boats[q.owner]!.phase !== PT_PASS) out.ownerViol++;',
       'tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);', 'tickLanding(ld, lp, t);', 'stepDamage(d, s.damage, realDt)',
     ]);
     expect(s.split('stepAllyDestroyer(').length).toBe(2);

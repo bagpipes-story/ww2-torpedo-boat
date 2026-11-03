@@ -1,12 +1,12 @@
 // 卯月の砲・手柄・照らされた PT の反応（v0.6.10 S2。core/ally-destroyer。spec-v0610 R-U4・R-U5・R-U7・R-U8・リードの決定 LD5・LD8）: seed+28 は 1 発 2 回と生きた PT への命中 1 回だけ
 // （draws28 = 2 × 弾 + 生きた PT への命中）、生きていない PT への着弾は外れ（hitPt を呼ばない・引かない）、12 cm の 1 命中は u で決まる（u < 0.10 撃沈・その上の死傷・ほかは HP 60 で撃退）、
 // 25 mm は米PT の値のまま、手柄は隼艇の形（命中・出来事は hitPt の前後の差＝noteGunboatGun と同じ、結末が変わった PT だけ FATE_BY_ALLY。gunboatFates の by で数える）、
-// 照らされて light_react_s の後に 1 回だけ反応（射点の哨戒は LE_LIT_SALVO・ほかの生きた段階は LE_LIT_AWAY・航過は待って owner を去らせない・夜明けの後は撃たずに去る）。
+// 照らされて light_react_s の後に 1 回だけ反応（射点の哨戒は LE_LIT_SALVO で撃っても去らない・ほかの生きた段階は何もしない・航過は待って owner を去らせない。v0.6.10 実機 1 回目に撃たずに去る LE_LIT_AWAY を無くした）。
 import { describe, expect, it } from 'vitest';
-import { LE_LIT_AWAY, LE_LIT_SALVO } from '../src/core/landing';
+import { LE_LIT_SALVO } from '../src/core/landing';
 import { PT_BREAK, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_PATROL, PT_SUNK } from '../src/core/pt-boats';
 import { hitPt, PT_GUN_EV_SUNK } from '../src/core/pt-damage';
-import { OUT_LIT_AWAY, PT_SALVO_HURRIED, ptTorpedoOutcome } from '../src/core/pt-torpedo';
+import { OUT_NONE, PT_SALVO_HURRIED, ptTorpedoOutcome } from '../src/core/pt-torpedo';
 import { bearingDeg } from '../src/core/ship-ai';
 import { createGunboatCredit, FATE_BY_ALLY, FATE_BY_PLAYER, gunboatFates, noteGunboatGun, type GunboatCredit } from '../src/systems/gunboat-credit';
 import { A, allyBench, atAlly, EXACT, FixedRng, QUIET, stepAlly, stepUntil, type AllyBench } from './ally-kit';
@@ -112,39 +112,40 @@ describe('照らされた PT の反応（R-U5・R-U7）', () => {
     if (owner) b.q.owner = 0;
     return b;
   }
-  it('射点の哨戒: 照らされて 1.0 秒で照らされた斉射（LE_LIT_SALVO・3 本・seed+26 から 1 + 2n + 蛇行）→ 去って追われる。反応は 1 回', () => {
+  it('射点の哨戒: 照らされて 1.0 秒で照らされた斉射（LE_LIT_SALVO・3 本・seed+26 から 1 + 2n + 蛇行）→ 去らずに哨戒のまま（v0.6.10 実機 1 回目）。反応は 1 回', () => {
     const b = inPosition(PT_PATROL);
     const k = stepUntil(b, () => b.a.reacted[0] === 1);
     expect(k).toBeGreaterThan(Math.round((A.gunnery.searchlight.onDelayS + A.lightReactS) / FEEL_DT) - 2);
     expect(b.a.litS).toBeGreaterThanOrEqual(A.lightReactS);
     expect(b.a.litS).toBeLessThan(A.lightReactS + 1.5 * FEEL_DT);
-    expect([b.a.litSalvos, b.a.litAways, b.st.kind[0], b.st.litSalvo[0], b.ld.eventKind, b.ld.eventCount, b.q.boats[0]!.phase, b.left]).toEqual([1, 0, PT_SALVO_HURRIED, 1, LE_LIT_SALVO, TP.n, PT_LEAVE, [0]]);
+    expect([b.a.litSalvos, b.st.kind[0], b.st.litSalvo[0], b.st.left[0], b.ld.eventKind, b.ld.eventCount, b.q.boats[0]!.phase, b.left]).toEqual([1, PT_SALVO_HURRIED, 1, 0, LE_LIT_SALVO, TP.n, PT_PATROL, []]);
     expect(b.pool.states.filter((s) => s.active).length).toBe(TP.n);
     expect([1 + 2 * TP.n, 2 + 2 * TP.n]).toContain(b.rng26.draws);
     stepAlly(b);
-    expect([b.a.target, b.a.chasing]).toEqual([0, true]);
+    expect([b.a.target, b.a.chasing]).toEqual([0, false]); // 去らないので追い撃ちでなく生きた PT を照らし続ける
     stepAlly(b, 300);
-    expect([b.a.litSalvos, b.a.litAways, b.st.salvos]).toEqual([1, 0, 1]);
+    expect([b.a.litSalvos, b.st.salvos]).toEqual([1, 1]);
   });
-  it('戦っている PT（離脱）は撃たずに去る（LE_LIT_AWAY・引かない・onLeave 1 回・結末 OUT_LIT_AWAY）', () => {
+  it('戦っている PT（離脱）は照らされても何もしない（去らない・引かない・出来事なし・結末は付かない）。光と砲はその PT に', () => {
     const b = inPosition(PT_BREAK);
     stepUntil(b, () => b.a.reacted[0] === 1);
-    expect([b.a.litAways, b.a.litSalvos, b.ld.eventKind, b.ld.eventBoat, b.q.boats[0]!.phase, b.left, b.rng26.draws, b.st.litAway[0], ptTorpedoOutcome(b.st, b.q, 0)]).toEqual([1, 0, LE_LIT_AWAY, 0, PT_LEAVE, [0], 0, 1, OUT_LIT_AWAY]);
+    expect([b.a.litSalvos, b.ld.eventKind, b.q.boats[0]!.phase, b.left, b.rng26.draws, ptTorpedoOutcome(b.st, b.q, 0)]).toEqual([0, 0, PT_BREAK, [], 0, OUT_NONE]);
+    expect(b.a.target).toBe(0);
   });
-  it('夜明けの後の射点の哨戒も撃たずに去る', () => {
+  it('夜明けの後の射点の哨戒は撃たない（去らない・引かない）', () => {
     const b = inPosition(PT_PATROL);
     for (let k = 0; k < 600 && b.a.reacted[0] === 0; k++) stepAlly(b, 1, true);
-    expect([b.a.litAways, b.a.litSalvos, b.rng26.draws, b.ld.eventKind]).toEqual([1, 0, 0, LE_LIT_AWAY]);
+    expect([b.a.reacted[0], b.a.litSalvos, b.rng26.draws, b.ld.eventKind, b.q.boats[0]!.phase]).toEqual([1, 0, 0, 0, PT_PATROL]);
   });
-  it('航過（owner）は照らされても待つ（去らせない・引かない）。航過を抜けて離脱になった次のステップに撃たずに去る', () => {
+  it('航過（owner）は照らされても待つ（去らせない・引かない）。航過を抜けて離脱になった次のステップに反応済み（何もしない）', () => {
     const b = inPosition(PT_PASS, true);
     stepAlly(b, 300);
-    expect([b.a.reacted[0], b.q.boats[0]!.phase, b.q.owner, b.rng26.draws, b.a.litAways, b.a.litSalvos, b.left]).toEqual([0, PT_PASS, 0, 0, 0, 0, []]);
+    expect([b.a.reacted[0], b.q.boats[0]!.phase, b.q.owner, b.rng26.draws, b.a.litSalvos, b.left]).toEqual([0, PT_PASS, 0, 0, 0, []]);
     expect(b.a.litS).toBeGreaterThan(A.lightReactS);
     b.q.owner = -1;
     b.q.boats[0]!.phase = PT_BREAK;
     stepAlly(b);
-    expect([b.a.reacted[0], b.a.litAways, b.q.boats[0]!.phase, b.ld.eventKind]).toEqual([1, 1, PT_LEAVE, LE_LIT_AWAY]);
+    expect([b.a.reacted[0], b.q.boats[0]!.phase, b.ld.eventKind]).toEqual([1, PT_BREAK, 0]);
   });
   it('照らされていない間（点灯の遅れ）は照らされた秒が進まない・扇の外で気づいていない PT は照らさない', () => {
     const b = inPosition(PT_PATROL);

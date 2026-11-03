@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import type { LandingCell } from '../src/core/landing-sim-cell';
 import { LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
+import { allyFatedBeforeSalvo } from '../src/core/landing-trial';
 import {
   ALLY_GAIN_PAIRS, ALLY_HARD_LADDER, ALLY_LIT_BANDS, LANDING_CALIBRATION_ALLY, LANDING_HARD_CALIBRATION_ALLY, allyLadderChecks, landingBandSet, litNightPct,
 } from '../src/systems/ally-sim-bands';
@@ -57,18 +58,18 @@ function rowMisses(run: LandingRun, rows: readonly LandingBandRow[], policies: r
 }
 
 describe('卯月のいる帯の値（spec-v0610 §6.3。G-B4: 帯は広げない）', () => {
-  it('ノーマル: lure 88〜99（自艇の沈没 ≤ 10・漂流 ≤ 3・夜明けの前の帰投 ≥ 85・決着の前の燃料少と輪 ≤ 10）・hide ≤ 15（沈没 ≤ 3）・face 60〜85・human 72〜88・human_face 52〜70。ほかは S0b のまま帯なし', () => {
+  it('ノーマル: lure 88〜99（自艇の沈没 ≤ 10・漂流 ≤ 3・夜明けの前の帰投 ≥ 85・決着の前の燃料少と輪 ≤ 10）・hide ≤ 15（沈没 ≤ 3）・face 60〜85・human 62〜80（v0.6.10 実機 1 回目に 72〜88 から）・human_face 52〜70。ほかは S0b のまま帯なし', () => {
     expect(LANDING_CALIBRATION_ALLY.map((r) => r.policy)).toEqual([...LANDING_POLICIES]);
     const by = Object.fromEntries(LANDING_CALIBRATION_ALLY.map((r) => [r.policy, r.bands]));
     expect(by['lure']).toEqual({ objPct: [88, 99], ownSunkPct: [0, 10], adriftPct: [0, 3], homeBeforeDawnPct: [85, 100], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] });
     expect(by['hide']).toEqual({ objPct: [0, 15], ownSunkPct: [0, 3] });
-    expect([by['face'], by['human'], by['human_face']]).toEqual([{ objPct: [60, 85] }, { objPct: [72, 88] }, { objPct: [52, 70] }]);
+    expect([by['face'], by['human'], by['human_face']]).toEqual([{ objPct: [60, 85] }, { objPct: [62, 80] }, { objPct: [52, 70] }]);
     for (const r of LANDING_CALIBRATION_NO_ALLY) if (r.policy !== 'lure' && r.policy !== 'hide') expect(by[r.policy], r.policy).toEqual({});
   });
-  it('ハード: hide ≤ 8・lure 80〜97（沈没 ≤ 15）・face 38〜60・human 55〜75・human_face 20〜40。得の対・照らした夜・段', () => {
+  it('ハード: hide ≤ 8・lure 80〜97（沈没 ≤ 15）・face 18〜40・human 38〜58・human_face 0〜15（v0.6.10 実機 1 回目に 38〜60・55〜75・20〜40 から）。得の対・照らした夜・段', () => {
     expect(LANDING_HARD_CALIBRATION_ALLY).toEqual([
-      { policy: 'hide', bands: { objPct: [0, 8] } }, { policy: 'lure', bands: { objPct: [80, 97], ownSunkPct: [0, 15] } }, { policy: 'face', bands: { objPct: [38, 60] } },
-      { policy: 'human', bands: { objPct: [55, 75] } }, { policy: 'human_face', bands: { objPct: [20, 40] } },
+      { policy: 'hide', bands: { objPct: [0, 8] } }, { policy: 'lure', bands: { objPct: [80, 97], ownSunkPct: [0, 15] } }, { policy: 'face', bands: { objPct: [18, 40] } },
+      { policy: 'human', bands: { objPct: [38, 58] } }, { policy: 'human_face', bands: { objPct: [0, 15] } },
     ]);
     expect(ALLY_GAIN_PAIRS).toEqual([{ policy: 'human', other: 'lure', lo: 5 }, { policy: 'human_face', other: 'lure', lo: 10 }]);
     expect(ALLY_LIT_BANDS).toEqual([{ policy: 'lure', lo: 80 }, { policy: 'human', lo: 60 }]);
@@ -101,12 +102,17 @@ describe(`揚陸を守る模擬のつり合い（jp_04・卯月あり、N ${N}�
     expect(LANDING_PAIRS.some((p) => p.policy === 'lure_away' || p.other === 'lure_away')).toBe(false); // R13: lure_away は表だけ
   }, SIM_TIMEOUT_MS);
 
-  it('ノーマル: 卯月の得の弱い対（得(human_face) ≥ 得(lure)。得は同じ seed の卯月を切った夜と比べる）と照らした夜（lure ≥ 80・human ≥ 60。− 8 点）', () => {
+  it('ノーマル: 卯月の得の弱い対（得(human_face) ≥ 得(lure)。得は同じ seed の卯月を切った夜と比べる）と照らした夜（lure ≥ 80・human ≥ 60。− 8 点。I9 の遊び方は撃った後の PT だけ）', () => {
     const run = normalRun();
     expect(run.allyGain('human_face')).toBeGreaterThanOrEqual(run.allyGain('lure'));
     expect(run.allyGain('lure')).toBeGreaterThan(0);
     for (const b of ALLY_LIT_BANDS) expect(litNightPct(run.trials(b.policy, 0)), b.policy).toBeGreaterThanOrEqual(b.lo - MARGIN_PT);
-    for (const p of LANDING_I9_POLICIES) expect(litNightPct(run.trials(p, 0)), p).toBe(0);
+    // I9 の遊び方: 卯月は斉射の前の PT に効かない（照らされた斉射 0・撃つ前の PT の結末を決めない）。v0.6.10 実機 1 回目から撃っても去らない PT が泊地のそばに残り、
+    // 撃った後の PT を照らす夜がある（模擬 N 400 の hide で 2.8 / 0.8%）ので、照らした夜は 0 でなく小さい
+    for (const p of LANDING_I9_POLICIES) {
+      expect(run.trials(p, 0).every((r) => r.litSalvos === 0 && !allyFatedBeforeSalvo(r)), p).toBe(true);
+      expect(litNightPct(run.trials(p, 0)), p).toBeLessThan(10);
+    }
   }, SIM_TIMEOUT_MS);
 
   it('ノーマル: 斉射の当たりうる 1 本（気づかれていない 0.30〜0.50・慌てた 0.08〜0.25。± 0.05）。戦いながらの斉射は見つかった夜だけで、lure_near は lure より多い（輸送船のそばで戦う）', () => {

@@ -90,7 +90,7 @@ export function stepAlly(b: AllyBench, n = 1, dawn = false): void {
   for (let k = 0; k < n; k++) {
     b.t += FEEL_DT;
     b.link.nowS = b.t;
-    stepAllyDestroyer(b.a, b.q, b.st, TP, b.ld, b.rng26, dawn, b.t, FEEL_DT, DT, b.link, b.ev, (i) => b.left.push(i));
+    stepAllyDestroyer(b.a, b.q, b.st, TP, b.ld, b.rng26, dawn, b.t, FEEL_DT, DT, b.link, b.ev);
   }
 }
 

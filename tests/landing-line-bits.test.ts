@@ -1,7 +1,7 @@
 // v0.6.9 S6a（spec-v069 §5.2 のキー）: 揚陸の 2 行目のキー（ui/landing-lines の landingKey・landingEventKey）の欄が重ならず、1 つの値を動かすとその欄だけが変わり、
 // 欄の上限の値でもあふれない（landingKey < 2³⁰・landingEventKey < 2²⁹。どちらも 31 ビットの内）。同じモードの副・種類は副・種類の欄で区別できる。
 // R14: モード 37（輸送船が射線に入る: 副 5・方角・100 m）と輪の中の待ち（副 6・残りの秒）、出来事の足した斉射の隻数（bit 26〜27）。
-// v0.6.9 実機 1 回目のレビュー code-2: 撃てる米PT が残らない戦いながらの斉射（bit 28。「米PT は去る」）。
+// v0.6.9 実機 1 回目のレビュー code-2: 撃てる米PT が残らない戦いながらの斉射（bit 28。「魚雷は尽きた」。v0.6.10 実機 1 回目までは「米PT は去る」）。
 import { describe, expect, it } from 'vitest';
 import { LE_CALM, LE_DONE, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingTelemetry } from '../src/core/landing';
 import type { PtTelemetry } from '../src/core/pt-boats';

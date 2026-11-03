@@ -8,7 +8,7 @@ import { gameData } from '../../src/config/game-data';
 import { PT_RETIRED_TINT } from '../../src/config/pt-config';
 import { FATE_BY_ALLY } from '../../src/core/convoy-sim-gunboat';
 import { runLandingTrial } from '../../src/core/landing-sim';
-import { PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_SUNK } from '../../src/core/pt-state';
+import { PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_OUT, PT_PASS, PT_SUNK } from '../../src/core/pt-state';
 import { landingSimSetup } from '../../src/systems/landing-sim-setup';
 
 /** 歩かない鍵（作る側の値・演出・他の根で見る物の参照）。nextWakeAtM は世界の雷跡の点の絵だけの値（core/landing-torpedoes の写しは置かない＝他に読まれない） */
@@ -181,8 +181,11 @@ export function runWorldVsSim(o) {
       const b = flat(sv);
       let bad = a.paths.length !== b.paths.length;
       let at = -1;
+      // 自艇が沈み始めたステップ（模擬の最後のステップ）は、世界の沈没の絵（entities/player-boat の playSinking）が速さを 0 にする。模擬は沈没の動きを持たず、その
+      // ステップで夜を終えるので、速さだけは比べない（v0.6.10 実機 1 回目: 撃っても去らない PT に沈められる夜が出て見えた。ほかの欄は同じステップでも比べる）
+      const skip = w.boat.sinking ? 'boat.speedMps' : '';
       for (let i = 0; !bad && i < a.vals.length; i++) {
-        if (a.paths[i] !== b.paths[i] || !same(a.vals[i], b.vals[i])) { bad = true; at = i; }
+        if (a.paths[i] !== b.paths[i] || (a.paths[i] !== skip && !same(a.vals[i], b.vals[i]))) { bad = true; at = i; }
       }
       if (!bad) return;
       diffSteps++;
@@ -198,7 +201,7 @@ export function runWorldVsSim(o) {
   const A = w.landing.ally ? w.landing.ally.a : null;
   return {
     steps: compared, diffSteps, first, simEnd: tr.end, worldEnded, landing: w.landing.state.phase, hits: w.landing.state.hits,
-    ally: A ? { spots: A.spots, litPts: A.litPts, shells: A.shells, liveHits: A.liveHits, retired: A.retired, sunk: A.sunk, litSalvos: A.litSalvos, litAways: A.litAways, chaseShells: A.chaseShells } : null,
+    ally: A ? { spots: A.spots, litPts: A.litPts, shells: A.shells, liveHits: A.liveHits, retired: A.retired, sunk: A.sunk, litSalvos: A.litSalvos, chaseShells: A.chaseShells } : null,
     salvos: w.landing.tst.salvos, slowSteps, playerSunk: w.boat.sinking,
   };
 }
@@ -236,7 +239,7 @@ function visualChecks(w, A, ck) {
 }
 
 /**
- * jp04-probe.mjs の 1 区切り: 台本で進め、まだ撮っていない出来事（卯月が気づく・探照灯・砲・撃たずに去らせた・卯月の命中・斉射・揚陸の決着）が起きたら止めて返す（撮るのは node）。
+ * jp04-probe.mjs の 1 区切り: 台本で進め、まだ撮っていない出来事（卯月が気づく・探照灯・砲・卯月の命中・斉射・撃った PT の航過 strafeAfter・揚陸の決着）が起きたら止めて返す（撮るのは node）。
  * 2 行目のいちばん広い文（表示の幅 px）と出来事の秒も数える。o: { policy, maxSteps, frameMs, forceSink }。st はページに持つ（__probe）。S5b: フレームごとに visualChecks（p.ck）。
  * forceSink（道具だけの細工。門には使わない）: 卯月の 12 cm の 1 命中を必ず撃沈に（pHit.fireChance = 1）して、卯月が沈めた PT の絵・命中スローの道を通す。
  * S6: 2 行目の幅は縮める前の幅（Text.width。lineFitScale で縮んだ行も 840 px の門で測る）、卯月の文（「卯月」「帰投の輪で」を含む 2 行目）を出た順に集め（allyTexts。数だけ違う文は 1 つ・40 まで）、
@@ -268,13 +271,21 @@ export function probeRun(o) {
     mark('ringCall', lt.includes('帰投の輪で揚陸を待て')); mark('allyLine', lt.includes('卯月'));
     if (hl.active('Mission')) visualChecks(w, A, p.ck);
     if (A) {
-      mark('spotted', A.spots > 0); mark('beam', A.g.light.on); mark('shot', A.shells > 0); mark('litAway', A.litAways > 0);
+      mark('spotted', A.spots > 0); mark('beam', A.g.light.on); mark('shot', A.shells > 0);
       mark('hit', A.liveHits > 0); mark('retired', A.retired > 0); mark('sunkPt', A.sunk > 0); mark('litSalvo', A.litSalvos > 0);
     }
+    mark('strafeAfter', strafingAfterSalvo(w)); // v0.6.10 実機 1 回目: 斉射を撃った PT が去らずに自艇へ航過（掃射）している
     mark('salvo', w.landing.tst.salvos > 0); mark('resolved', w.landing.resolved); mark('dawn', w.dawn.reached);
     for (const k of o.shots) if (p.events[k] !== undefined && !p.shot[k]) { p.shot[k] = true; return { done: false, reason: k, p }; }
   }
   return { done: true, reason: 'maxSteps', p };
+}
+
+/** 斉射を撃った PT（tst.kind が 0 でない）が航過（PT_PASS＝自艇への掃射）の中か（v0.6.10 実機 1 回目: 撃っても去らない） */
+function strafingAfterSalvo(w) {
+  const q = w.pts.section;
+  for (let i = 0; i < q.boats.length; i++) if (w.landing.tst.kind[i] !== 0 && q.boats[i].phase === PT_PASS) return true;
+  return false;
 }
 
 window.__wvs = { runWorldVsSim, probeRun, POLICIES };

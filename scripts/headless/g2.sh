@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 模擬の表の md5 の門（v0.6.10 S5a で作り直した。spec-v0610 part 2 の「the 17 old sim md5s」。値は CHANGELOG v0.6.9「中立の証拠」と v0.6.10 S0b・S4）:
 #   既定: ほかの任務の模擬 17 本（pt-pass jp_05・convoy jp_01・dawn-strike・patrol-air jp_02）が v0.6.8 の md5 と同じ（OK 17・DIFF 0）。
-#   G6=1: jp_04 の卯月を切った表 8 本（ALLY_OFF=1。S0b の md5 の頭 8 桁）も。ALLY=1: 卯月のいる表 10 本（S4 の md5 の頭 8 桁）も。
+#   G6=1: jp_04 の卯月を切った表 8 本（ALLY_OFF=1）も。ALLY=1: 卯月のいる表 10 本も。どちらも v0.6.10 実機 1 回目（撃っても照らされても PT は去らない）の md5 の頭 8 桁
+#   （S0b・S4 の値は CHANGELOG v0.6.10 の S0b・S4）。
 # 模擬の scripts/*.ts を esbuild で束ねて node で回し、標準出力の md5 を比べる（並べて JOBS 本ずつ）。DIFF が 1 つでもあれば終了コード 1。
 # 実行: [G6=1] [ALLY=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
 set -u
@@ -33,14 +34,14 @@ CASES=(
 )
 if [ "${G6:-0}" = "1" ]; then
   CASES+=(
-    "g6|landing-sim|ALLY_OFF=1|d5dce87f" "g6t1|landing-sim|ALLY_OFF=1 TABLE=1|719749a2" "g6t2|landing-sim|ALLY_OFF=1 TABLE=2|6ed9e1df" "g6t3|landing-sim|ALLY_OFF=1 TABLE=3|03cc68ed"
-    "g6h|landing-sim|ALLY_OFF=1 HARD=1|fc31de21" "g6ht1|landing-sim|ALLY_OFF=1 HARD=1 TABLE=1|b1e245a5" "g6ht2|landing-sim|ALLY_OFF=1 HARD=1 TABLE=2|011274fd" "g6ht3|landing-sim|ALLY_OFF=1 HARD=1 TABLE=3|54fe5cc8"
+    "g6|landing-sim|ALLY_OFF=1|a4866aa0" "g6t1|landing-sim|ALLY_OFF=1 TABLE=1|130e9316" "g6t2|landing-sim|ALLY_OFF=1 TABLE=2|1a6ade0f" "g6t3|landing-sim|ALLY_OFF=1 TABLE=3|738843a3"
+    "g6h|landing-sim|ALLY_OFF=1 HARD=1|82d0595f" "g6ht1|landing-sim|ALLY_OFF=1 HARD=1 TABLE=1|48d7e4c3" "g6ht2|landing-sim|ALLY_OFF=1 HARD=1 TABLE=2|e98c295e" "g6ht3|landing-sim|ALLY_OFF=1 HARD=1 TABLE=3|30398fa7"
   )
 fi
 if [ "${ALLY:-0}" = "1" ]; then
   CASES+=(
-    "al|landing-sim||e5888679" "alt1|landing-sim|TABLE=1|2acc6689" "alt2|landing-sim|TABLE=2|cba21474" "alt3|landing-sim|TABLE=3|6383273f" "alt4|landing-sim|TABLE=4|b496dd1d"
-    "alh|landing-sim|HARD=1|523b66b0" "alht1|landing-sim|HARD=1 TABLE=1|5b9ba2f1" "alht2|landing-sim|HARD=1 TABLE=2|2613b600" "alht3|landing-sim|HARD=1 TABLE=3|2ccd8296" "alht4|landing-sim|HARD=1 TABLE=4|8208705b"
+    "al|landing-sim||d287ffe4" "alt1|landing-sim|TABLE=1|813c934e" "alt2|landing-sim|TABLE=2|e74c3f09" "alt3|landing-sim|TABLE=3|91018624" "alt4|landing-sim|TABLE=4|8c84bc30"
+    "alh|landing-sim|HARD=1|fa754830" "alht1|landing-sim|HARD=1 TABLE=1|94b79e34" "alht2|landing-sim|HARD=1 TABLE=2|63959ca2" "alht3|landing-sim|HARD=1 TABLE=3|9ff9b0d8" "alht4|landing-sim|HARD=1 TABLE=4|51e4e840"
   )
 fi
 run() {

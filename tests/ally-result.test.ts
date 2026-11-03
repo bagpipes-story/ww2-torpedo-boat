@@ -12,7 +12,7 @@ import { ALLY_RUN_LIGHT_JA, allyBriefingJa, briefingRows } from '../src/core/bri
 import { directSortie } from '../src/core/sortie';
 import { LD_DONE } from '../src/core/landing';
 import { PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, type PtSection } from '../src/core/pt-boats';
-import { OUT_CALM, OUT_HURRIED, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK, createPtTorpedoState } from '../src/core/pt-torpedo';
+import { OUT_CALM, OUT_HURRIED, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK, createPtTorpedoState } from '../src/core/pt-torpedo';
 import { allyResult, type AllyResultSource } from '../src/systems/ally-telemetry';
 import { FATE_BY_ALLY, FATE_BY_PLAYER } from '../src/systems/gunboat-credit';
 import { landingResultPart } from '../src/systems/landing-telemetry';
@@ -91,14 +91,14 @@ describe('史実メモ（LD12）', () => {
 });
 
 /** 卯月の 1 夜の数えの代わり（allyResult が読む欄だけ） */
-const src = (o: Partial<{ litPts: number; litAways: number; litSalvos: number; shells: number; chaseShells: number; hits: number; suppressions: number; fateBy: number[] }> = {}): AllyResultSource => ({
+const src = (o: Partial<{ litPts: number; litSalvos: number; shells: number; chaseShells: number; hits: number; suppressions: number; fateBy: number[] }> = {}): AllyResultSource => ({
   a: {
-    p: { labelJa: '卯月' }, litPts: o.litPts ?? 2, litAways: o.litAways ?? 1, litSalvos: o.litSalvos ?? 0, shells: o.shells ?? 24, chaseShells: o.chaseShells ?? 7,
+    p: { labelJa: '卯月' }, litPts: o.litPts ?? 2, litSalvos: o.litSalvos ?? 0, shells: o.shells ?? 24, chaseShells: o.chaseShells ?? 7,
     credit: { hits: o.hits ?? 2, suppressions: o.suppressions ?? 0, eventSeq: 0, fateBy: Int8Array.from(o.fateBy ?? [0, FATE_BY_ALLY]) },
   },
 });
 const section = (fates: number[]): PtSection => ({ boats: fates.map((fate) => ({ fate, phase: 0 })) }) as unknown as PtSection;
-const A0: AllyResult = { labelJa: '卯月', lit: 2, litAway: 1, litSalvo: 0, shells: 24, chase: 7, hits: 2, retired: 1, sunk: 0, suppressions: 0, byAlly: [false, true] };
+const A0: AllyResult = { labelJa: '卯月', lit: 2, litSalvo: 0, shells: 24, chase: 7, hits: 2, retired: 1, sunk: 0, suppressions: 0, byAlly: [false, true] };
 
 describe('材料（systems/ally-telemetry の allyResult・landingResultPart の ally）', () => {
   it('卯月の無い夜は null。撃退・撃沈は卯月の砲が結末を決めた PT（FATE_BY_ALLY）だけ、命中・制圧は手柄、PT ごとの byAlly', () => {
@@ -123,40 +123,40 @@ describe('材料（systems/ally-telemetry の allyResult・landingResultPart の
 
 const L0: LandingResult = {
   phase: LD_DONE, pct: 1, pctAtSink: NaN, hits: 0, duds: 0, sunkAfterDone: false, endKind: LR_END_NONE,
-  dirJa: ['北', '東'], outcome: [OUT_CALM, OUT_LIT_AWAY], launchM: [873.2, NaN], salvoHits: [0, 0], salvoDuds: [0, 0], salvoLeft: [0, 0],
+  dirJa: ['北', '東'], outcome: [OUT_CALM, OUT_RETIRED], launchM: [873.2, NaN], salvoHits: [0, 0], salvoDuds: [0, 0], salvoLeft: [0, 0],
   fired: 3, hurriedFired: 0, engagedFired: 0, ally: A0,
 };
 
 describe('Result の文（ui/ally-result・ui/landing-result）', () => {
-  it('卯月の 1 行: 照らした・撃たずに去らせた・命中/生きた PT へ撃った弾・撃退・撃沈（照らされた斉射と制圧は 1 以上だけ）・撃たなかった夜', () => {
-    expect(allyResultLineJa(A0)).toBe('卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 命中 2/17 発 ・ 撃退 1 ・ 撃沈 0');
-    expect(allyResultLineJa({ ...A0, litSalvo: 1, suppressions: 2, sunk: 1 })).toBe('卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 照らされて撃った 1 ・ 命中 2/17 発 ・ 撃退 1 ・ 撃沈 1 ・ 制圧 2');
-    expect(allyResultLineJa({ ...A0, lit: 0, litAway: 0, shells: 0, chase: 0, hits: 0, retired: 0 })).toBe('卯月: 照らした米PT 0 隻 ・ 撃たずに去らせた 0 ・ 撃たなかった');
-    const worst = allyResultLineJa({ ...A0, lit: 3, litAway: 3, litSalvo: 3, shells: 999, chase: 0, hits: 99, retired: 3, sunk: 3, suppressions: 9 }); // 弾 3 桁・命中 2 桁・制圧 1 桁（模擬の 1 夜は弾 7.7・追い撃ち 5.4・命中 0.67）
+  it('卯月の 1 行: 照らした・命中/生きた PT へ撃った弾・撃退・撃沈（照らされた斉射と制圧は 1 以上だけ）・撃たなかった夜', () => {
+    expect(allyResultLineJa(A0)).toBe('卯月: 照らした米PT 2 隻 ・ 命中 2/17 発 ・ 撃退 1 ・ 撃沈 0');
+    expect(allyResultLineJa({ ...A0, litSalvo: 1, suppressions: 2, sunk: 1 })).toBe('卯月: 照らした米PT 2 隻 ・ 照らされて撃った 1 ・ 命中 2/17 発 ・ 撃退 1 ・ 撃沈 1 ・ 制圧 2');
+    expect(allyResultLineJa({ ...A0, lit: 0, shells: 0, chase: 0, hits: 0, retired: 0 })).toBe('卯月: 照らした米PT 0 隻 ・ 撃たなかった');
+    const worst = allyResultLineJa({ ...A0, lit: 3, litSalvo: 3, shells: 999, chase: 0, hits: 99, retired: 3, sunk: 3, suppressions: 9 }); // 弾 3 桁・命中 2 桁・制圧 1 桁（模擬の 1 夜は弾 7.7・追い撃ち 5.4・命中 0.67）
     expect(textWidthPx(worst, 20)).toBeLessThanOrEqual(RESULT_MAX_W);
-    expect(textWidthPx(allyResultLineJa({ ...A0, lit: 3, litAway: 3, litSalvo: 3, shells: 999, chase: 999, hits: 0, retired: 3, sunk: 3, suppressions: 9 }), 20)).toBeLessThanOrEqual(RESULT_MAX_W);
+    expect(textWidthPx(allyResultLineJa({ ...A0, lit: 3, litSalvo: 3, shells: 999, chase: 999, hits: 0, retired: 3, sunk: 3, suppressions: 9 }), 20)).toBeLessThanOrEqual(RESULT_MAX_W);
   });
   it('v0.6.10 F（レビュー docs-5）: 追って撃った弾（去る PT には当たらない）は命中の分母から外す。生きた PT へ撃たなかった夜は「追い撃ち N 発」だけ', () => {
     const one = (shells: number, chase: number, hits: number): string => allyResultLineJa({ ...A0, shells, chase, hits, retired: 0 });
-    expect(one(10, 0, 1)).toBe('卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 命中 1/10 発 ・ 撃退 0 ・ 撃沈 0');
-    expect(one(10, 7, 0)).toBe('卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 命中 0/3 発 ・ 撃退 0 ・ 撃沈 0'); // S7 は「命中 0/10 発」
-    expect(one(7, 7, 0)).toBe('卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 追い撃ち 7 発 ・ 撃退 0 ・ 撃沈 0');
+    expect(one(10, 0, 1)).toBe('卯月: 照らした米PT 2 隻 ・ 命中 1/10 発 ・ 撃退 0 ・ 撃沈 0');
+    expect(one(10, 7, 0)).toBe('卯月: 照らした米PT 2 隻 ・ 命中 0/3 発 ・ 撃退 0 ・ 撃沈 0'); // S7 は「命中 0/10 発」
+    expect(one(7, 7, 0)).toBe('卯月: 照らした米PT 2 隻 ・ 追い撃ち 7 発 ・ 撃退 0 ・ 撃沈 0');
     // 飛んでいる間に生きた PT が割り込み、追って撃った弾が当たった（まれ）: 分母は命中を下回らない
-    expect(one(7, 6, 2)).toBe('卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 命中 2/2 発 ・ 撃退 0 ・ 撃沈 0');
+    expect(one(7, 6, 2)).toBe('卯月: 照らした米PT 2 隻 ・ 命中 2/2 発 ・ 撃退 0 ・ 撃沈 0');
     expect(allyResult(src({ shells: 10, chaseShells: 7, hits: 0 }), section([PT_FATE_NONE, PT_FATE_NONE]))!.chase).toBe(7);
   });
-  it('雷撃の語: 照らされた斉射「900 m 照らされて 外れ」・「卯月が照らして去らせた」・卯月の砲の「卯月が撃退」「卯月が撃沈」。自艇の砲は「25mm で撃退」のまま', () => {
+  it('雷撃の語: 照らされた斉射「900 m 照らされて 外れ」・卯月の砲の「卯月が撃退」「卯月が撃沈」。自艇の砲は「25mm で撃退」のまま', () => {
     const one = (o: number, al: AllyResult | undefined, h = 0): string => landingRunWordJa({ ...L0, outcome: [o], launchM: [873.2], salvoHits: [h], salvoDuds: [0], salvoLeft: [0], ...(al ? { ally: al } : { ally: undefined }) }, 0, '25mm');
     expect(one(OUT_LIT_HURRIED, A0)).toBe('900 m 照らされて 外れ');
     expect(one(OUT_LIT_HURRIED, A0, 1)).toBe('900 m 照らされて 命中 1');
-    expect(one(OUT_LIT_AWAY, A0)).toBe('卯月が照らして去らせた');
+    expect(one(10, A0)).not.toContain('去らせた'); // 前の OUT_LIT_AWAY（v0.6.10 実機 1 回目に無くした）
     expect(one(OUT_RETIRED, { ...A0, byAlly: [true] })).toBe('卯月が撃退');
     expect(one(OUT_SUNK, { ...A0, byAlly: [true] })).toBe('卯月が撃沈');
     expect(one(OUT_RETIRED, { ...A0, byAlly: [false] })).toBe('25mm で撃退');
     expect(one(OUT_SUNK, undefined)).toBe('25mm で撃沈');
     expect(one(OUT_HURRIED, A0)).toBe('900 m 慌てて 外れ');
-    expect(landingRunLogJa(L0, '25mm')).toBe('雷撃: 北 900 m 外れ ／ 東 卯月が照らして去らせた');
-    const hard = landingRunLogJa({ ...L0, dirJa: ['北東', '北東', '北東'], outcome: [OUT_LIT_AWAY, OUT_LIT_AWAY, OUT_LIT_HURRIED], launchM: [NaN, NaN, 9900], salvoHits: [0, 0, 3], salvoDuds: [0, 0, 0], salvoLeft: [0, 0, 0] }, '25mm');
+    expect(landingRunLogJa(L0, '25mm')).toBe('雷撃: 北 900 m 外れ ／ 東 卯月が撃退');
+    const hard = landingRunLogJa({ ...L0, dirJa: ['北東', '北東', '北東'], outcome: [OUT_RETIRED, OUT_SUNK, OUT_LIT_HURRIED], launchM: [NaN, NaN, 9900], salvoHits: [0, 0, 3], salvoDuds: [0, 0, 0], salvoLeft: [0, 0, 0] }, '25mm');
     expect(textWidthPx(hard, 20)).toBeLessThanOrEqual(RESULT_MAX_W);
   });
   it('自艇の砲の行（米PT の 4 行目）は卯月の命中・制圧・撃退・撃沈を引いた自艇の分（卯月の無い夜は前の文）', () => {

@@ -156,13 +156,13 @@ export interface LandingResult {
 
 /**
  * 味方の駆逐艦 卯月の記録（v0.6.10 S7。jp_04。systems/ally-telemetry の allyResult。core/ally-destroyer の 1 夜の数え）: 呼び名（data の label_ja）・照らした PT（一度でも）・
- * 照らされて撃たずに去った PT・照らされて撃った（照らされた斉射）・撃った弾（12 cm と 25 mm）とそのうち去る PT を追って撃った弾（v0.6.10 F。core の chaseShells＝模擬の TABLE=4 の chase。
+ * 照らされて撃った（照らされた斉射。照らされて撃たずに去った PT の数は v0.6.10 実機 1 回目に外した）・撃った弾（12 cm と 25 mm）とそのうち去る PT を追って撃った弾（v0.6.10 F。core の chaseShells＝模擬の TABLE=4 の chase。
  * 去る PT には当たらない）・PT への命中・撃退・撃沈（卯月の砲が結末を決めた PT＝fateBy が FATE_BY_ALLY。模擬の allyFate と同じ数え）・制圧、
  * PT ごと（線の順）に卯月の砲が結末を決めたか。Result の卯月の 1 行（ui/ally-result）・雷撃の行の「卯月が撃退」・自艇の砲の行から引く分
  */
 export interface AllyResult {
   labelJa: string;
-  lit: number; litAway: number; litSalvo: number;
+  lit: number; litSalvo: number;
   shells: number; chase: number; hits: number; retired: number; sunk: number; suppressions: number;
   byAlly: boolean[];
 }

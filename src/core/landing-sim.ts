@@ -9,7 +9,7 @@
 // 測るだけの影のプール: 撃った魚雷をそのまま、いつも浮いている同じ船体へ走らせる（斉射の「当たりうる」本数。沈んだ後に着いた魚雷も数える＝TABLE=2 と R2 の期待値の材料）。乱数を引かず世界に触らない。
 // 台本は core/landing-sim-policy、1 夜の記録は core/landing-trial、集計は core/landing-sim-cell（convoy-sim と同じ分け方）。Phaser 非依存。確保は 1 夜の始めだけ。省いたもの: 命中スロー・消火の長押し・漂流の待ち。
 // v0.6.10 S3a（spec-v0610 R-U6・§6.1）: 味方の駆逐艦 卯月（s.allyDestroyer＝jp_04 で allyOff でなければ。core/ally-destroyer）を雷撃の直後・敵の魚雷のプールの前に回す（世界の world-landing と同じ順）。
-// 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO）・撃たずに去るは onLitAway。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
+// 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO。照らされても撃っても PT は去らない＝v0.6.10 実機 1 回目）。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
 // v0.6.10 S3b（R-U9・LD3）: 卯月のいる夜の lure の動きの遊び方は夜明け近しの帰投の輪の呼びかけを聞く（core/landing-sim-call。世界と同じ呼びかけの関数をステップの終わりに・見えている間だけ・人は遅れて）。
 // v0.6.10 S5a（G7）: rp（core/landing-replay）を渡すと台本の代わりに世界のヘッドレスの夜の入力と命中スローを再生する（渡さなければ前と同じ。scripts/headless/world-vs-sim）。
 import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET, createAllyDestroyer, stepAllyDestroyer, type AllyLink } from './ally-destroyer';
@@ -47,7 +47,7 @@ import { enemyDetectRangeM, speedFactorForBand } from './visibility';
 
 export type { LandingTrial } from './landing-trial';
 export {
-  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED,
+  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_HURRIED, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED,
 } from './pt-torpedo';
 
 export interface LandingSimSetup extends PtSimSetup {
@@ -156,12 +156,11 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const sink: AllyLink = {
     fire: (i, x, y, h, dud, err, bias, rangeM) => tor.fire(i, x, y, h, dud, err, bias, rangeM),
     onSalvo: (i, kind, rangeM, n) => {
-      // I8: 照らされた斉射（litSalvo は斉射の前に立つ。PT はまだ去る前）は夜明けの前・見失いの待ちの外・揚陸中で浮いている・哨戒だけ
+      // I8: 照らされた斉射（litSalvo は斉射の前に立つ）は夜明けの前・見失いの待ちの外・揚陸中で浮いている・哨戒だけ
       if (st.litSalvo[i] === 1 && (c.dawn || st.holdS[i]! > 0 || ld.phase !== LD_UNLOADING || !ld.afloat || q.boats[i]!.phase !== PT_PATROL)) out.litSalvoBad++;
       tor.link.onSalvo(i, kind, rangeM, n);
       watch.salvo(out, i, kind, rangeM, t, c.dawn);
     },
-    onLitAway: (i) => tor.link.onLitAway(i),
   };
   const report = createLandingReport();
   const noReport = createLandingReport();
@@ -244,7 +243,7 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     // spec §4.1 の 3 つ: 時計（世界の world-landing と同じく雷撃の前に書く。R14 A3）→ 雷撃（seed+26）→ 敵の魚雷（沈み始めた輸送船は狙わない）→ 揚陸の時計。影のプールは測るだけ
     tor.link.nowS = t;
     stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);
-    if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev, NO_LEAVE); // 卯月（R-U6: 雷撃の後・敵の魚雷の前）
+    if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev); // 卯月（R-U6: 雷撃の後・敵の魚雷の前）
     if (q.owner >= 0 && q.boats[q.owner]!.phase !== PT_PASS) out.ownerViol++; // I11
     tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);
     tor.shadow.step(dt, realDt, tor.shadowHulls, lp.passRadius2, tor.shadowEv);

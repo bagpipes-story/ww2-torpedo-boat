@@ -125,7 +125,7 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.eventPct = st.eventPct;
   const e = st.eventBoat >= 0 ? q.boats[st.eventBoat] : undefined;
   t.eventDirIdx = e ? landingDirIdx(st, e.x, e.y) : 0;
-  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は同じステップに去った。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「米PT は去る」）
+  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は斉射が残らない。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「魚雷は尽きた」）
 }
 
 /** Result の材料が読む世界の部分（MissionWorld がそのまま満たす）: 揚陸の状態・雷撃の状態（PtTorpedoState の Result が読む欄）・PT ごとの方角と、米PT の隊（結末の phase・fate） */

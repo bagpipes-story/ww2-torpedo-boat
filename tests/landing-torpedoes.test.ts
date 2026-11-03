@@ -4,12 +4,12 @@
 // (2) 決まった場面で 命中・通り過ぎの外れ・射程の外れ・海域の外・武装前・沈んだ船体（out）・終わり際の当たりなし。
 // (3) LandingTorpedoLink: 斉射の数え（salvo*）と出来事（被雷・不発（そのときの被雷の数）・外れ・沈没・揚陸の後の沈没。沈んだ後の外れは出さない）・演出の知らせ。
 //     R14 A3（同じステップの斉射を足す・ほかの魚雷が走っている間は外れを言わない）は tests/landing-salvo-events。
-//     v0.6.10 S2（spec-v0610 R-U7）: 卯月に照らされた斉射（litSalvo の立った慌てた斉射）は LE_LIT_SALVO、撃たずに去った PT は onLitAway の LE_LIT_AWAY（斉射でない出来事）。
+//     v0.6.10 S2（spec-v0610 R-U7）: 卯月に照らされた斉射（litSalvo の立った慌てた斉射）は LE_LIT_SALVO（撃たずに去った PT の onLitAway・LE_LIT_AWAY は v0.6.10 実機 1 回目に無くした）。
 // (4) 雷撃 → link → 写しのプール → 輸送船の通しで、気づかれていない斉射の 1 本の命中率が帯（spec §8: 0.30〜0.50）に入る（試作 aspect-mc の 0.44）。
 import { readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
 import { describe, expect, it } from 'vitest';
-import { createLanding, tickLanding, LD_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_LIT_AWAY, LE_LIT_SALVO, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from '../src/core/landing';
+import { createLanding, tickLanding, LD_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_LIT_SALVO, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from '../src/core/landing';
 import { LandingTorpedoLink, LandingTorpedoPool, stepLandingTorpedoes, type LandingHitHooks } from '../src/core/landing-torpedoes';
 import { PT_PATROL } from '../src/core/pt-boats';
 import { PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, createPtTorpedoState, stepPtTorpedoes } from '../src/core/pt-torpedo';
@@ -174,18 +174,8 @@ describe('(3) LandingTorpedoLink（斉射の数えと出来事。spec §4.3・F1
     expect([ld.eventKind, ld.eventSeq]).toEqual([LE_CALM, 5]);
     link.onSalvo(1, PT_SALVO_ENGAGED, 820, 3);
     expect([ld.eventKind, ld.eventSeq]).toEqual([LE_ENGAGED, 6]);
-    expect([LE_LIT_SALVO, LE_LIT_AWAY]).toEqual([10, 11]);
-    expect(LE_LIT_AWAY).toBeLessThan(16); // 4 ビット
-  });
-  it('v0.6.10: onLitAway は斉射でない出来事 LE_LIT_AWAY（PT・距離 NaN・本数 0・隻数 0）で、次の同じステップの斉射を足さない', () => {
-    const { ld, link, st } = linkBench();
-    link.nowS = 7;
-    st.litSalvo[0] = 1;
-    link.onSalvo(0, PT_SALVO_HURRIED, 1200, 3);
-    link.onLitAway(1);
-    expect([ld.eventKind, ld.eventBoat, ld.eventM, ld.eventCount, ld.eventBoats, ld.eventSeq]).toEqual([LE_LIT_AWAY, 1, NaN, 0, 0, 3]);
-    link.onSalvo(0, PT_SALVO_HURRIED, 1200, 3);
-    expect([ld.eventKind, ld.eventCount, ld.eventBoats, ld.eventSeq]).toEqual([LE_LIT_SALVO, 3, 1, 4]);
+    expect(LE_LIT_SALVO).toBe(10); // 11（照らされて撃たずに去った）は v0.6.10 実機 1 回目に無くした
+    expect('onLitAway' in link).toBe(false);
   });
   it('3 本とも外れ: 最後の 1 本で「外れ」（途中は出さない）', () => {
     const { ld, link, pool, st } = linkBench();

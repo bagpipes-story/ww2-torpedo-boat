@@ -112,7 +112,7 @@ describe('卯月（core/ally-destroyer。v0.6.10 S2）を使う所', () => {
     subsetOf(using(/\b(?:createAllyDestroyer|stepAllyDestroyer)\b/), ['core/ally-destroyer.ts', 'systems/world-ally.ts', 'core/landing-sim.ts']);
     expect(using(/new\s+AllyDestroyer\b/)).toEqual(['core/ally-destroyer.ts']);
   });
-  it('stepPtTorpedoes は卯月の印（litSalvo・litAway）を読まない（卯月の無い夜は前のまま。LD5）', () => {
+  it('stepPtTorpedoes は卯月の印（litSalvo）を読まない（卯月の無い夜は前のまま。LD5）', () => {
     const s = code('core/pt-torpedo.ts');
     const body = s.slice(s.indexOf('export function stepPtTorpedoes'), s.indexOf('function hurriedReach'));
     expect(body.length).toBeGreaterThan(500);

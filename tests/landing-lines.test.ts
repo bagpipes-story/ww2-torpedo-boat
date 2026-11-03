@@ -24,7 +24,7 @@ const EV = MODE_FLAG_LANDING_EVENT;
 const QUIET = { alive: 2, detected: false, sighted: false, passing: false };
 /** みな去った（海域の外） */
 const GONE = { alive: 0, out: 2, sunk: 0, detected: false, sighted: false };
-/** 出来事（既定はまだ撃てる米PT が 1 隻残る＝戦いながらの後ろは「離れて戦え」。0 は v0.6.9 実機 1 回目のレビュー code-2 の「米PT は去る」） */
+/** 出来事（既定はまだ撃てる米PT が 1 隻残る＝戦いながらの後ろは「離れて戦え」。0 は v0.6.9 実機 1 回目のレビュー code-2 の「魚雷は尽きた」。v0.6.10 実機 1 回目までは「米PT は去る」） */
 const ev = (o: Partial<LandingTelemetry>): Partial<LandingTelemetry> => ({ eventSeq: 1, eventDirIdx: 1, eventCount: 3, eventM: NaN, eventHits: 0, eventPct: 0.5, eventArmed: 1, ...o });
 const row = (f: { mode: number; text: string; color: string }): [number, string, string] => [f.mode, f.text, f.color];
 
@@ -82,9 +82,10 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
     expect(f({ eventKind: LE_ENGAGED, eventM: 812, eventCount: 6, eventBoats: 2 })).toEqual([MISSION_LANDING_EVENT, '米PT 2 隻が戦いながら発射！ 輸送船へ 6 本 ・ 離れて戦え', HUD_COLOR_WARN]);
     expect(f({ eventKind: LE_CALM, eventM: 880, eventCount: 9, eventBoats: 3 })).toEqual([MISSION_LANDING_EVENT, '米PT 3 隻が雷撃！ 輸送船へ 9 本', HUD_COLOR_WARN]);
     expect(f({ eventKind: LE_HURRIED, eventM: 1250, eventBoats: 1 })[1]).toBe('米PT 慌てて発射！ 輸送船の北東 1300 m から 3 本 ・ 外れやすい'); // 1 隻は前の形
-    // v0.6.9 実機 1 回目のレビュー code-2: 撃った PT は去るので、撃てる米PT が残らない戦いながらの斉射の後ろは「米PT は去る」（足した斉射も。気づかれていない・慌てたは撃てる隻数を言わない）
-    expect(f({ eventKind: LE_ENGAGED, eventDirIdx: 2, eventM: 812, eventArmed: 0 }, { ...QUIET, detected: true })).toEqual([MISSION_LANDING_EVENT, '米PT 戦いながら発射！ 輸送船の東 900 m から 3 本 ・ 米PT は去る', HUD_COLOR_WARN]);
-    expect(f({ eventKind: LE_ENGAGED, eventM: 812, eventCount: 6, eventBoats: 2, eventArmed: 0 })[1]).toBe('米PT 2 隻が戦いながら発射！ 輸送船へ 6 本 ・ 米PT は去る');
+    // code-2: 撃てる米PT が残らない戦いながらの斉射の後ろは「魚雷は尽きた」（足した斉射も。気づかれていない・慌てたは撃てる隻数を言わない）。v0.6.10 実機 1 回目に撃った PT が去らなくなったので
+    // v0.6.9 実機 1 回目のレビューの「米PT は去る」から変えた（撃った PT は自艇と戦い続ける）
+    expect(f({ eventKind: LE_ENGAGED, eventDirIdx: 2, eventM: 812, eventArmed: 0 }, { ...QUIET, detected: true })).toEqual([MISSION_LANDING_EVENT, '米PT 戦いながら発射！ 輸送船の東 900 m から 3 本 ・ 魚雷は尽きた', HUD_COLOR_WARN]);
+    expect(f({ eventKind: LE_ENGAGED, eventM: 812, eventCount: 6, eventBoats: 2, eventArmed: 0 })[1]).toBe('米PT 2 隻が戦いながら発射！ 輸送船へ 6 本 ・ 魚雷は尽きた');
     expect(f({ eventKind: LE_ENGAGED, eventM: 812, eventArmed: 2 })[1]).toBe('米PT 戦いながら発射！ 輸送船の北東 900 m から 3 本 ・ 離れて戦え'); // ハードで 2 隻残る
     expect(f({ eventKind: LE_HURRIED, eventM: 1250, eventArmed: 0 })[1]).toBe('米PT 慌てて発射！ 輸送船の北東 1300 m から 3 本 ・ 外れやすい');
     expect(f({ eventKind: LE_CALM, eventDirIdx: 0, eventM: 899, eventArmed: 0 })[1]).toBe('米PT 雷撃！ 北から輸送船へ 3 本');
@@ -200,7 +201,7 @@ describe('幅（22 px の 2 行目は 840 px・spec §5 の上限）', () => {
       frame(tl({ wakes: 9, wakeCpaS: 62.5 }, QUIET)).text,
       ...[LE_CALM, LE_HURRIED, LE_ENGAGED, LE_HIT, LE_DUD, LE_MISS, LE_SUNK, LE_DONE, LE_SUNK_DONE].map((k) => frame(tl(ev({ eventKind: k, eventDirIdx: 7, eventCount: 15, eventM: 6300, eventHits: 1, eventPct: 0.99 }), QUIET), 0, EV).text),
       ...[LE_CALM, LE_HURRIED, LE_ENGAGED].map((k) => frame(tl(ev({ eventKind: k, eventDirIdx: 7, eventCount: 15, eventBoats: 3, eventM: 6300 }), QUIET), 0, EV).text),
-      // code-2: 撃てる米PT が残らない戦いながらの斉射（「米PT は去る」。1 隻と足した斉射）
+      // code-2: 撃てる米PT が残らない戦いながらの斉射（「魚雷は尽きた」。1 隻と足した斉射）
       ...[1, 3].map((boats) => frame(tl(ev({ eventKind: LE_ENGAGED, eventDirIdx: 7, eventCount: 15, eventBoats: boats, eventM: 6300, eventArmed: 0 }), QUIET), 0, EV).text),
       frame(tl({ fireLineI: 0, fireLineDirIdx: 7, fireLineStep: 63 }, QUIET)).text,
       // 赤い線のいちばん長い行（連射・射界の外）＋末尾「輸送船が狙われる！」（game-1）

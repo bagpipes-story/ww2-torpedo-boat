@@ -7,7 +7,8 @@
 //    撃つ（気づいた生きた PT が射程の内にいれば、すぐそちらへ）。ほかは気づいた生きた PT の最も近い 1 隻か無し。照らす PT が変われば照らされた秒を 0 に。
 // 3. 探照灯（core/gunnery の updateIllumination。星弾は射程 0 で撃たない）→ 4. 砲（updateGuns。seed+28 は 1 発 2 回。着弾が生きた PT に当たれば 1 回引いて凍結の hitPt。
 //    pt_sink_chance の砲（12 cm）は米PT の値の写しの fireChance をその値に。生きていない PT への着弾は外れで引かない）
-// → 5. 照らされて生きたまま light_react_s 経った PT は ptLitReact（航過は待つ・射点なら慌てた斉射＝LE_LIT_SALVO・ほかは撃たずに去る＝onLitAway の LE_LIT_AWAY）→ 6. 照らされている PT の印。
+// → 5. 照らされて生きたまま light_react_s 経った PT は ptLitReact（航過は待つ・射点なら慌てた斉射＝LE_LIT_SALVO・ほかは何もしない。撃っても照らされても PT は去らない＝v0.6.10 実機 1 回目。
+//    前は射点の外の PT を撃たずに去らせた）→ 6. 照らされている PT の印。
 // 砲の手柄は隼艇と同じ形（systems/gunboat-credit の GunboatCredit）: 命中・制圧・出来事は hitPt の前後の差、結末が変わった PT の fateBy は FATE_BY_ALLY（卯月だけが書く。LD8）。
 // 確保は createAllyDestroyer の 1 夜に 1 回だけ（毎ステップの関数は new・配列・オブジェクト・閉包を作らない）。乱数の系列は作る側（world-ally・landing-sim）が作って渡す。
 import type { AllyDestroyerParams } from './ally-destroyer-data';
@@ -17,7 +18,7 @@ import { createGunneryState, updateGuns, updateIllumination, type GunneryState, 
 import { PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, type PtBoatState, type PtEvents, type PtSection } from './pt-boats';
 import { hitPt, ptLive } from './pt-damage';
 import type { PtParams } from './pt-data';
-import { LIT_AWAY, LIT_SALVO, LIT_WAIT, ptLitReact, type PtTorpedoShip, type PtTorpedoSink, type PtTorpedoState } from './pt-torpedo';
+import { LIT_SALVO, LIT_WAIT, ptLitReact, type PtTorpedoShip, type PtTorpedoSink, type PtTorpedoState } from './pt-torpedo';
 import type { PtTorpedoParams } from './pt-torpedo-data';
 import type { SeededRng } from './rng';
 import { bearingDeg } from './ship-ai';
@@ -47,10 +48,8 @@ export interface AllyCredit {
   readonly fateBy: Int8Array;
 }
 
-/** 雷撃の入れ先と照らされて去った出来事（core/landing-torpedoes の LandingTorpedoLink がそのまま満たす） */
-export interface AllyLink extends PtTorpedoSink {
-  onLitAway(i: number): void;
-}
+/** 雷撃の入れ先（core/landing-torpedoes の LandingTorpedoLink がそのまま満たす。照らされて去った出来事は v0.6.10 実機 1 回目に無くした） */
+export type AllyLink = PtTorpedoSink;
 
 /** 1 夜の卯月（createAllyDestroyer で 1 回。updateGuns の着弾の知らせ ShellEvents を自分で受ける） */
 export class AllyDestroyer implements ShellEvents {
@@ -67,8 +66,8 @@ export class AllyDestroyer implements ShellEvents {
   /** 照らす PT（−1 は無し）・去った PT を追って撃っている・その残りの体感秒・今の PT が生きたまま照らされた体感秒 */
   target = -1; chasing = false; chaseLeftS = 0; litS = 0;
   readonly credit: AllyCredit;
-  /** 数え（模擬の不変 I7・I10 と表。S3）: 見張りの候補のステップ（= seed+27 の回数）・気づいた・照らした PT・撃った弾・追って撃った弾・生きた PT への命中（hitPt）・撃退・撃沈・照らされた斉射・撃たずに去った */
-  candSteps = 0; spots = 0; litPts = 0; shells = 0; chaseShells = 0; liveHits = 0; retired = 0; sunk = 0; litSalvos = 0; litAways = 0;
+  /** 数え（模擬の不変 I7・I10 と表。S3）: 見張りの候補のステップ（= seed+27 の回数）・気づいた・照らした PT・撃った弾・追って撃った弾・生きた PT への命中（hitPt）・撃退・撃沈・照らされた斉射 */
+  candSteps = 0; spots = 0; litPts = 0; shells = 0; chaseShells = 0; liveHits = 0; retired = 0; sunk = 0; litSalvos = 0;
   /** 今のステップの隊と hitPt の知らせ（stepAllyDestroyer が砲の前に書き、着弾の onImpact が読む） */
   q: PtSection | null = null;
   ptEv: PtEvents | null = null;
@@ -140,10 +139,10 @@ export function createAllyDestroyer(p: AllyDestroyerParams, pt: PtParams, rng27:
 }
 
 /**
- * 固定ステップに 1 回（stepPtTorpedoes の後・敵の魚雷のプールの前。R-U6）。st・tp・ship・rng26・dawn・nowS・link・onLeave は stepPtTorpedoes と同じもの（照らされた斉射は同じ雷撃の道）、
+ * 固定ステップに 1 回（stepPtTorpedoes の後・敵の魚雷のプールの前。R-U6）。st・tp・ship・rng26・dawn・nowS・link は stepPtTorpedoes と同じもの（照らされた斉射は同じ雷撃の道）、
  * feelDt は体感秒（見張り・照射・砲の間隔・照らされた秒・追う秒）、dt は time_scale 込みの秒（砲弾の飛行）、ptEv は hitPt の知らせ（jp_04 は何もしない）
  */
-export function stepAllyDestroyer(a: AllyDestroyer, q: PtSection, st: PtTorpedoState, tp: PtTorpedoParams, ship: PtTorpedoShip, rng26: SeededRng, dawn: boolean, nowS: number, feelDt: number, dt: number, link: AllyLink, ptEv: PtEvents, onLeave: (i: number) => void): void {
+export function stepAllyDestroyer(a: AllyDestroyer, q: PtSection, st: PtTorpedoState, tp: PtTorpedoParams, ship: PtTorpedoShip, rng26: SeededRng, dawn: boolean, nowS: number, feelDt: number, dt: number, link: AllyLink, ptEv: PtEvents): void {
   allyLookout(a, q, feelDt);
   allyTarget(a, q, feelDt);
   const t = a.target;
@@ -157,13 +156,9 @@ export function stepAllyDestroyer(a: AllyDestroyer, q: PtSection, st: PtTorpedoS
   if (lit && a.reacted[t] === 0 && ptLive(q.boats[t]!)) {
     a.litS += feelDt;
     if (a.litS >= a.p.lightReactS) {
-      const r = ptLitReact(st, tp, q, ship, t, rng26, nowS, dawn, link, onLeave);
+      const r = ptLitReact(st, tp, q, ship, t, rng26, nowS, dawn, link);
       if (r !== LIT_WAIT) a.reacted[t] = 1;
       if (r === LIT_SALVO) a.litSalvos++;
-      else if (r === LIT_AWAY) {
-        a.litAways++;
-        link.onLitAway(t);
-      }
     }
   }
   for (let i = 0; i < a.lit.length; i++) a.lit[i] = lit && i === t ? 1 : 0;

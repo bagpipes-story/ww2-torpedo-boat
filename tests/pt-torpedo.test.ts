@@ -1,4 +1,4 @@
-// 米PT の雷撃の規則（v0.6.9 S2。core/pt-torpedo。spec-v069 §4.2・§9・R2・R8/F11）: 気づかれていない斉射（哨戒・900 m・艇首 30°・1 隻 1 回 → 去る）、
+// 米PT の雷撃の規則（v0.6.9 S2。core/pt-torpedo。spec-v069 §4.2・§9・R2・R8/F11）: 気づかれていない斉射（哨戒・900 m・艇首 30°・1 隻 1 回。撃っても去らない＝v0.6.10 実機 1 回目。前は撃ったら去った）、
 // 慌てた斉射（接触の瞬間に哨戒から警戒になった PT はみな・1,300 m・見つけたかは問わない（R2）・hurried_max_m 0 で無し）、見失いの後の reacquire_s、夜明け、
 // 輸送船が沈めば哨戒の PT は去る（OUT_GOAL_GONE。F11）、乱数（斉射の無いステップは 0 回・斉射は 1 + 2n + 蛇行の本数を launcher と同じ順）、owner・held に触らない、結末の符号。
 // 戦いながらの斉射（R12）は tests/pt-torpedo-engaged。
@@ -24,10 +24,11 @@ describe('雷撃の値（jp_04。data のまま）', () => {
 });
 
 describe('気づかれていない斉射（哨戒の PT。spec §4.2）', () => {
-  it('900 m の内で艇首が輸送船へ: 3 本を 8° 間隔で撃ち、去る（PT_LEAVE・timerS 0・onLeave）。2 回目は無い（1 隻 1 回）', () => {
+  it('900 m の内で艇首が輸送船へ: 3 本を 8° 間隔で撃つ。去らない（哨戒のまま・timerS もそのまま・onLeave なし。v0.6.10 実機 1 回目）。2 回目は無い（1 隻 1 回）', () => {
     const b = bench();
     place(b, 0, 850, 0, 0, PT_PATROL);
     const rng = new CountingRng(5);
+    const timer0 = b.q.boats[0]!.timerS;
     stepTorp(b, rng, { nowS: 61.5 });
     expect(b.sink.shots.length).toBe(3);
     expect(b.sink.salvos).toEqual([{ i: 0, kind: PT_SALVO_CALM, m: expect.closeTo(850, 6), n: 3 }]);
@@ -35,7 +36,7 @@ describe('気づかれていない斉射（哨戒の PT。spec §4.2）', () => 
     expect(h[1]! - h[0]!).toBeCloseTo(8, 9);
     expect(h[2]! - h[1]!).toBeCloseTo(8, 9);
     for (const s of b.sink.shots) expect([s.i, s.x, s.y]).toEqual([0, b.q.boats[0]!.x, b.q.boats[0]!.y]);
-    expect([b.q.boats[0]!.phase, b.q.boats[0]!.timerS, b.left]).toEqual([PT_LEAVE, 0, [0]]);
+    expect([b.q.boats[0]!.phase, b.q.boats[0]!.timerS, b.left]).toEqual([PT_PATROL, timer0, []]);
     expect([b.st.left[0], b.st.kind[0], b.st.launchS[0], b.st.salvoLeft[0], b.st.salvos, b.st.fired, b.st.hurriedFired, b.st.seq, b.st.lastBoat, b.st.lastKind]).toEqual([0, PT_SALVO_CALM, 61.5, 3, 1, 3, 0, 1, 0, PT_SALVO_CALM]);
     expect(b.st.launchM[0]).toBeCloseTo(850, 6);
     // もう一度哨戒に戻しても撃たない（斉射は残っていない）
@@ -80,7 +81,7 @@ describe('気づかれていない斉射（哨戒の PT。spec §4.2）', () => 
 });
 
 describe('慌てた斉射（R2: 接触の瞬間に哨戒から警戒になった PT はみな）', () => {
-  it('哨戒 → 警戒のステップに 1,300 m の内・艇首が輸送船へ: 見つけたか（q.seen）を問わず撃って去る。狙いは ±aim × 2.5', () => {
+  it('哨戒 → 警戒のステップに 1,300 m の内・艇首が輸送船へ: 見つけたか（q.seen）を問わず撃つ（去らずに警戒のまま）。狙いは ±aim × 2.5', () => {
     for (const seen of [0, 1]) {
       const b = bench();
       place(b, 0, 1250, 20, -3, PT_ALERT, PT_PATROL);
@@ -90,7 +91,7 @@ describe('慌てた斉射（R2: 接触の瞬間に哨戒から警戒になった
       const err = new SeededRng(9).nextRange(-TP.aimDeg * TP.hurriedFactor, TP.aimDeg * TP.hurriedFactor);
       expect(b.sink.salvos, `seen ${seen}`).toEqual([{ i: 0, kind: PT_SALVO_HURRIED, m: expect.closeTo(1250, 6), n: 3 }]);
       expect(b.sink.shots[1]!.h).toBeCloseTo(brg + err, 9);
-      expect([b.q.boats[0]!.phase, b.st.kind[0], b.st.hurriedFired, b.left]).toEqual([PT_LEAVE, PT_SALVO_HURRIED, 3, [0]]);
+      expect([b.q.boats[0]!.phase, b.st.kind[0], b.st.hurriedFired, b.left]).toEqual([PT_ALERT, PT_SALVO_HURRIED, 3, []]);
     }
   });
   it('同じステップに 2 隻・3 隻とも慌てて撃つ（見つけた PT だけでなく）。1,300 m の外・艇首が外れた PT は撃たずに警戒のまま', () => {

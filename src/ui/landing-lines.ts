@@ -212,7 +212,7 @@ export const LEK_GONE = 28;
 
 /** 足した斉射の隻数（2 以上なら「米PT N 隻が…輸送船へ N 本」。1 隻の斉射・斉射でない出来事は 0。3 まで） */
 const boatsOf = (l: LandingEventView): number => (l.eventBoats >= 2 ? Math.min(3, l.eventBoats) : 0);
-/** 撃てる米PT が残らない戦いながらの斉射（撃った PT は去り、教え「離れて戦え」の相手がいない＝「米PT は去る」。code-2） */
+/** 撃てる米PT が残らない戦いながらの斉射（もう輸送船を撃てる米PT がいない＝「魚雷は尽きた」。code-2。v0.6.10 実機 1 回目までは撃った PT が去ったので「米PT は去る」） */
 const goneOf = (l: LandingEventView): boolean => l.eventKind === LE_ENGAGED && !(l.eventArmed > 0);
 
 /**
@@ -236,7 +236,7 @@ export function landingEventKey(l: LandingEventView): number {
 
 /**
  * モード 35 の行（LANDING_EVENT_SHOW_MS。ui/pt-line-clock の待ちの鎖）: 斉射（気づかれていない＝警告・慌てた＝強調・戦いながら＝警告。R12。慌てた・戦いながらは輸送船から見た方角と距離＝R14 A4、
- * 戦いながらの後ろは教え「離れて戦え」＝A1。撃てる米PT が残らなければ「米PT は去る」＝code-2。同じステップに足した斉射は隻数と本数＝A3）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
+ * 戦いながらの後ろは教え「離れて戦え」＝A1。撃てる米PT が残らなければ「魚雷は尽きた」＝code-2（撃った PT は去らずに自艇と戦う）。同じステップに足した斉射は隻数と本数＝A3）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
  * 外れ（被雷の後なら「被雷 N のまま」＝code-1。揚陸の後なら「揚陸を続ける」を付けない）、揚陸の前の沈没（%）、揚陸完了、揚陸の後の沈没。l は ui/pt-line-clock が写して持つ出来事
  */
 export function landingEventLine(l: LandingEventView, allyJa = ''): HudLine {
@@ -248,7 +248,7 @@ export function landingEventLine(l: LandingEventView, allyJa = ''): HudLine {
   switch (l.eventKind) {
     case LE_CALM: return { text: boats >= 2 ? `${who}雷撃！ 輸送船へ ${n} 本` : `米PT 雷撃！ ${dir}から輸送船へ ${n} 本`, color: HUD_COLOR_WARN };
     case LE_HURRIED: return { text: `${who}慌てて発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ 外れやすい`, color: HUD_COLOR_STRONG };
-    case LE_ENGAGED: return { text: `${who}戦いながら発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ ${goneOf(l) ? '米PT は去る' : '離れて戦え'}`, color: HUD_COLOR_WARN };
+    case LE_ENGAGED: return { text: `${who}戦いながら発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ ${goneOf(l) ? '魚雷は尽きた' : '離れて戦え'}`, color: HUD_COLOR_WARN };
     case LE_HIT: return { text: `輸送船 被雷！ あと ${hitsLeftOf(l)} 本で沈む`, color: HUD_COLOR_WARN };
     case LE_DUD: {
       const hits = l.hitsToSink - hitsLeftOf(l);

@@ -146,13 +146,16 @@ describe('1 夜', () => {
       for (const seed of [1, 2]) expect(snap(runLandingTrial(S, pol, seed, EXTREME)), `${pol} ${seed}`).toBe(snap(runLandingTrial(S, pol, seed)));
     }
   });
-  it('規則が効く（seed 1〜8）: 射撃ボタンを押せなければ 25mm を撃たない・報告に 8 秒遅れれば lure より遅く見つかり、報告を見なければ見つからない・赤い線をかわさない夜は lure と違う', () => {
+  it('規則が効く（seed 1〜8）: 射撃ボタンを押せなければ 25mm を撃たない・報告に 8 秒遅れれば lure より遅く見つかり、報告を見なければ寄らない（見つかるのは撃った後）・赤い線をかわさない夜は lure と違う', () => {
     for (const seed of SEEDS) {
       const lure = runLandingTrial(S, 'lure', seed);
       expect(lure.gunShots, `${seed}`).toBeGreaterThan(0);
       expect(runLandingTrial(S, 'human', seed, { ...NEUTRAL, gunOnS: 0 }).gunShots, `${seed}`).toBe(0);
       expect(runLandingTrial(S, 'human', seed, { ...NEUTRAL, delayMinS: 8, delayMaxS: 8 }).detectS, `${seed}`).toBeGreaterThan(lure.detectS);
-      expect(runLandingTrial(S, 'human', seed, { ...NEUTRAL, delayMinS: 1000, delayMaxS: 1000 }).detectS, `${seed}`).toBeNaN();
+      // 報告を見なければ自分からは寄らない: 見つからないか、lure より遅い（v0.6.10 実機 1 回目から撃っても去らない PT が哨戒を続け、止まった自艇に後で行き当たる夜がある。前は NaN だけ）
+      const blind = runLandingTrial(S, 'human', seed, { ...NEUTRAL, delayMinS: 1000, delayMaxS: 1000 });
+      expect(Number.isNaN(blind.detectS) || blind.detectS > lure.detectS, `${seed} ${blind.detectS}`).toBe(true);
+      expect(blind.kind.every((k) => k === 1), `${seed}`).toBe(true); // 斉射は気づかれていない斉射だけ（見つかるのは撃った後）
       expect(snap(runLandingTrial(S, 'human', seed, { ...NEUTRAL, dodgeP: 0 })), `${seed}`).not.toBe(snap(lure));
     }
   });

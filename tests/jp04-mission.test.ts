@@ -84,8 +84,10 @@ describe('jp_04 の遊べる世界の data（v0_1_prototype。spec §3.2・R1）
     expect(start).toContain('hurried_max_m を 1,100 m まで下げても 1,590 m で通る');
     expect(start).toContain('前の (2700, 2450)');
     expect(start).toContain('最短 2,313 m');
-    expect(String(P['enemy_behavior'])).toContain('PT がみな（見つけた PT だけでなく）慌てて撃って去る');
-    expect(String(P['enemy_behavior'])).toContain('狙いの誤差を engaged_error_factor 倍にして撃ったら去る（戦いながらの斉射。spec R12: 輸送船から離れて戦え'); // S4a・v0.6.9 実機 1 回目（撃ったら去る＝ユーザーの選択 A）
+    expect(String(P['enemy_behavior'])).toContain('PT がみな（見つけた PT だけでなく）慌てて撃つ（慌てた斉射');
+    expect(String(P['enemy_behavior'])).toContain('狙いの誤差を engaged_error_factor 倍にして撃つ（戦いながらの斉射。spec R12: 輸送船から離れて戦え'); // S4a
+    expect(String(P['enemy_behavior'])).toContain('3 種類とも撃っても去らずに自艇と戦い続ける（v0.6.10 実機 1 回目'); // v0.6.9 実機 1 回目〜v0.6.10 S8 は撃ったら去った
+    expect(String(P['enemy_behavior'])).not.toMatch(/撃って去る|撃ったら去る（戦いながら/);
     expect(String(P['duration_s_source'])).toContain('出発から輪の縁 358 m＝巡航 7.0 秒 × call_margin 1.6 = 11 < 150');
     expect(String((P['pt_boats'] as Rec)['source'])).toContain(EXCERPT);
     expect(String((P['hard'] as Rec)['source'])).toContain('自艇の出発点まで 3,325 m・泊地まで 2,513 m');

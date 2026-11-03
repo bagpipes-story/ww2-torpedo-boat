@@ -36,9 +36,8 @@ export const LE_SUNK = 6;
 export const LE_DONE = 7;
 export const LE_SUNK_DONE = 8;
 export const LE_ENGAGED = 9;
-/** v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の慌てた斉射（種類は慌てた斉射・PtTorpedoState.litSalvo）・照らされて撃たずに去った（斉射でない出来事＝距離 NaN・本数 0・隻数 0）。4 ビットに入る */
+/** v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の慌てた斉射（種類は慌てた斉射・PtTorpedoState.litSalvo）。4 ビットに入る。11（照らされて撃たずに去った）は v0.6.10 実機 1 回目に無くした */
 export const LE_LIT_SALVO = 10;
-export const LE_LIT_AWAY = 11;
 
 /** 見張りの報告（landingReport の sub）: 無し・遠い（慌てる距離の外か慌てた斉射なし）・近い（慌てる距離の内） */
 export const LANDING_REPORT_NONE = 0;

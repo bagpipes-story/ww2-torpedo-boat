@@ -1,10 +1,12 @@
 // 停泊して揚陸する味方の輸送船の任務（v0.6.9 S7。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §5.7・R8/F11・R12）の Result の文: 本文の頭の 3 行（輸送船の結末・PT ごとの雷撃の記録・
 // 米PT の魚雷の和）と、状況の行の頭「輸送船 揚陸完了 ・ 米PT: …」。材料は systems/landing-telemetry の landingResultPart（終わりに 1 回。mission-telemetry の buildMissionResult が広げる）。Result を作るときに 1 回だけ組む（毎フレームの処理は無い）。
 // Phaser も DOM を読む config も使わない（tests/landing-result が文と幅を確かめる）。距離は 100 m 刻みの切り上げ（HUD の出来事と同じ。core/landing の LANDING_DIST_STEP_M）、% は切り捨て。
-// v0.6.10 S7（味方の駆逐艦 卯月。卯月のいる夜だけ LandingResult.ally）: 雷撃の行に「900 m 照らされて 外れ」（照らされた斉射）・「卯月が照らして去らせた」・「卯月が撃退」「卯月が撃沈」（卯月の砲が結末を決めた PT）。
+// v0.6.10 S7（味方の駆逐艦 卯月。卯月のいる夜だけ LandingResult.ally）: 雷撃の行に「900 m 照らされて 外れ」（照らされた斉射）・「卯月が撃退」「卯月が撃沈」（卯月の砲が結末を決めた PT）。
+// v0.6.10 実機 1 回目: 撃っても照らされても PT は去らないので「卯月が照らして去らせた」は無くした。撃った後の撃退・撃沈は斉射の語の後ろに付けず（3 隻の最長の形が 1,232 px を超える）、
+// 自艇の砲の行（ui/pt-lines）と卯月の行（ui/ally-result）の撃退・撃沈の数に入る。
 // 卯月の無い夜（ほかの任務・?debug&noally）は前の文のまま。
 import { LANDING_DIST_STEP_M, LD_DONE, LD_SUNK } from '../core/landing';
-import { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK } from '../core/pt-torpedo';
+import { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK } from '../core/pt-torpedo';
 import type { MissionEndReason } from '../core/mission-flow';
 import { landingPct } from './landing-lines';
 import type { LandingResult } from './result-types';
@@ -45,7 +47,7 @@ const distJa = (m: number): string => `${Math.ceil(m / LANDING_DIST_STEP_M) * LA
 /**
  * PT 1 隻の雷撃の語（方角の後ろ）: 斉射は「900 m 命中 1」「1300 m 慌てて 外れ」「800 m 戦いながら 不発」（命中が無く不発だけ）「900 m 走行中」（終わりに走っていて当たっていない）、
  * 撃たなかった PT は「25mm で撃退」「25mm で撃沈」「引きつけて去らせた」「夜明けに去った」「輸送船が沈み去った」（R8/F11）「撃たせず」。
- * 卯月のいる夜（v0.6.10 S7）: 照らされた斉射は「900 m 照らされて 外れ」、照らされて撃たずに去った PT は「卯月が照らして去らせた」、卯月の砲が結末を決めた PT は「卯月が撃退」「卯月が撃沈」
+ * 卯月のいる夜（v0.6.10 S7）: 照らされた斉射は「900 m 照らされて 外れ」、撃つ前に卯月の砲が結末を決めた PT は「卯月が撃退」「卯月が撃沈」。斉射が先（撃った PT はその後も戦う）
  */
 export function landingRunWordJa(l: LandingResult, i: number, gunLabel: string): string {
   const o = l.outcome[i]!;
@@ -56,7 +58,6 @@ export function landingRunWordJa(l: LandingResult, i: number, gunLabel: string):
     return `${distJa(l.launchM[i]!)} ${how}${res}`;
   }
   const al = l.ally;
-  if (o === OUT_LIT_AWAY) return `${al ? al.labelJa : '味方'}が照らして去らせた`;
   if (al && al.byAlly[i] === true && (o === OUT_RETIRED || o === OUT_SUNK)) return `${al.labelJa}が${o === OUT_SUNK ? '撃沈' : '撃退'}`;
   const gun = gunLabel || '砲';
   if (o === OUT_RETIRED) return `${gun} で撃退`;

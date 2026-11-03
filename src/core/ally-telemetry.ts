@@ -1,6 +1,6 @@
 // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。docs/02 §6.11、spec-v0610 part 2 の S6・リードの決定 LD3・LD4）の HUD 向けテレメトリの形。BoatTelemetry.ally（core/boat-telemetry）。
 // createTelemetry が 1 回だけ作り（systems/ally-telemetry の initAllyTelemetry）、毎フレームは systems/ally-telemetry の refreshAllyTelemetry が中身だけ書く（§7: 確保しない）。
-// 卯月の無い任務・?debug&noally は enabled false のまま（文もキーも前と同じ）。照らされた斉射・撃たずに去った出来事は揚陸の出来事（LandingTelemetry の eventKind の LE_LIT_*）が運ぶ。
+// 卯月の無い任務・?debug&noally は enabled false のまま（文もキーも前と同じ）。照らされた斉射の出来事は揚陸の出来事（LandingTelemetry の eventKind の LE_LIT_SALVO）が運ぶ。
 // Phaser 非依存（型と作るだけ）。
 
 export interface AllyTelemetry {

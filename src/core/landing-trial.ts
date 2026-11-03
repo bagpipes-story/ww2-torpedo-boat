@@ -54,7 +54,7 @@ export interface LandingTrial {
    * 見張りの候補のステップ・seed+27・+28 から引いた回数（I7・I10）、I8 条件の外の照らされた斉射、I11 owner の PT が航過でないステップ（卯月がいなくても数える）、
    * PT ごとの卯月の船体の下を通る魚雷（発射の針路のまっすぐな道が卯月の中心から半長の内。前方だけ・輸送船に当たる魚雷も数える上限。表だけ）
    */
-  allySpotted: number; allyLitPts: number; litSalvos: number; litAways: number; allyRetired: number; allySunk: number; allyShells: number; allyHits: number; chaseShells: number;
+  allySpotted: number; allyLitPts: number; litSalvos: number; allyRetired: number; allySunk: number; allyShells: number; allyHits: number; chaseShells: number;
   candSteps: number; draws27: number; draws28: number; litSalvoBad: number; ownerViol: number; torpThroughAlly: Uint8Array;
   /**
    * v0.6.10 S3b（卯月のいる夜だけ。ほかは作ったときのまま）: PT ごとに卯月の砲が結末を決めた（1）、夜明け近しの帰投の輪の呼びかけ（core/landing-sim-call。lure の動きだけ）の
@@ -65,7 +65,7 @@ export interface LandingTrial {
 
 /** 卯月の欄（I9: 卯月の効かない遊び方はこれを除いて卯月の無い夜と同じ記録） */
 export const LANDING_TRIAL_ALLY_KEYS: readonly (keyof LandingTrial)[] = [
-  'allySpotted', 'allyLitPts', 'litSalvos', 'litAways', 'allyRetired', 'allySunk', 'allyShells', 'allyHits', 'chaseShells', 'candSteps', 'draws27', 'draws28', 'litSalvoBad', 'ownerViol', 'torpThroughAlly',
+  'allySpotted', 'allyLitPts', 'litSalvos', 'allyRetired', 'allySunk', 'allyShells', 'allyHits', 'chaseShells', 'candSteps', 'draws27', 'draws28', 'litSalvoBad', 'ownerViol', 'torpThroughAlly',
   'allyFate', 'ringCallS', 'ringCallHidden', 'ringShownS', 'ringObeyS',
 ];
 
@@ -76,15 +76,28 @@ export function createLandingTrial(count: number): LandingTrial {
     outcome: new Uint8Array(count), kind: new Uint8Array(count), launchS: new Float64Array(count).fill(NaN), launchM: new Float64Array(count).fill(NaN),
     arrived: new Uint8Array(count), arrivedHits: new Uint8Array(count), arrivedDuds: new Uint8Array(count), potHits: new Uint8Array(count), potDuds: new Uint8Array(count), relevant: new Uint8Array(count),
     i1LeadS: Infinity, i2LeadS: Infinity, afterDawnSalvos: 0, maxSalvosPerPt: 0, draws26: 0, drawsWant: 0, unresolvedAtDawn: false,
-    allySpotted: 0, allyLitPts: 0, litSalvos: 0, litAways: 0, allyRetired: 0, allySunk: 0, allyShells: 0, allyHits: 0, chaseShells: 0,
+    allySpotted: 0, allyLitPts: 0, litSalvos: 0, allyRetired: 0, allySunk: 0, allyShells: 0, allyHits: 0, chaseShells: 0,
     candSteps: 0, draws27: 0, draws28: 0, litSalvoBad: 0, ownerViol: 0, torpThroughAlly: new Uint8Array(count),
     allyFate: new Uint8Array(count), ringCallS: NaN, ringCallHidden: false, ringShownS: NaN, ringObeyS: NaN,
   };
 }
 
-/** I9 の比べ方: 卯月の欄を除いた 1 夜の記録の文字列（型付き配列は中身の配列に。表に 1 回） */
-export function landingTrialBase(t: LandingTrial): string {
-  return JSON.stringify(t, (k, v: unknown) => ((LANDING_TRIAL_ALLY_KEYS as readonly string[]).includes(k) ? undefined : ArrayBuffer.isView(v) ? Array.from(v as Uint8Array) : v));
+/**
+ * I9 で卯月の砲が動かしてよい隊の数え（v0.6.10 実機 1 回目: 撃っても PT は去らないので、気づかれていない斉射を撃った東の PT が泊地のそばに残り、卯月の遅い PT の見張りの内で
+ * 撃退・撃沈されうる。揚陸・斉射・自艇の記録は変わらない）
+ */
+export const LANDING_TRIAL_GUN_KEYS: readonly (keyof LandingTrial)[] = ['gunHits', 'ptRetired', 'ptSunk'];
+
+/** I9 の比べ方: 卯月の欄を除いた 1 夜の記録の文字列（型付き配列は中身の配列に。表に 1 回）。extra は ほかに除く鍵（I9 は LANDING_TRIAL_GUN_KEYS） */
+export function landingTrialBase(t: LandingTrial, extra: readonly (keyof LandingTrial)[] = []): string {
+  const skip = (k: string): boolean => (LANDING_TRIAL_ALLY_KEYS as readonly string[]).includes(k) || (extra as readonly string[]).includes(k);
+  return JSON.stringify(t, (k, v: unknown) => (skip(k) ? undefined : ArrayBuffer.isView(v) ? Array.from(v as Uint8Array) : v));
+}
+
+/** I9: 卯月の砲が、まだ斉射を撃っていない PT の結末を決めた（撃つ前の PT に卯月が効いた）か */
+export function allyFatedBeforeSalvo(t: LandingTrial): boolean {
+  for (let i = 0; i < t.allyFate.length; i++) if (t.allyFate[i] === 1 && t.kind[i] === 0) return true;
+  return false;
 }
 
 /** PT ごとの見張りの条件・哨戒の出入り・斉射（I1〜I4 の材料。1 夜に 1 個） */
@@ -233,7 +246,7 @@ export class LandingTrialTorpedoes {
 export function finishLandingAlly(out: LandingTrial, a: AllyDestroyer | null, draws27: number, draws28: number, call: LandingRingCall): void {
   if (!a) return;
   Object.assign(out, {
-    allySpotted: a.spots, allyLitPts: a.litPts, litSalvos: a.litSalvos, litAways: a.litAways, allyRetired: a.retired, allySunk: a.sunk, allyShells: a.shells, allyHits: a.liveHits,
+    allySpotted: a.spots, allyLitPts: a.litPts, litSalvos: a.litSalvos, allyRetired: a.retired, allySunk: a.sunk, allyShells: a.shells, allyHits: a.liveHits,
     chaseShells: a.chaseShells, candSteps: a.candSteps, draws27, draws28,
   });
   for (let i = 0; i < out.allyFate.length; i++) out.allyFate[i] = a.credit.fateBy[i] === FATE_BY_ALLY ? 1 : 0;

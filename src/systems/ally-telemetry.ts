@@ -23,7 +23,7 @@ export interface AllyTelemetryWorld {
 export interface AllyResultSource {
   readonly a: {
     readonly p: { readonly labelJa: string };
-    readonly litPts: number; readonly litAways: number; readonly litSalvos: number; readonly shells: number; readonly chaseShells: number;
+    readonly litPts: number; readonly litSalvos: number; readonly shells: number; readonly chaseShells: number;
     readonly credit: AllyCredit;
   };
 }
@@ -39,7 +39,7 @@ export function allyResult(al: AllyResultSource | null | undefined, q: PtSection
   const f = gunboatFates(q, cr, FATE_BY_ALLY);
   const byAlly: boolean[] = [];
   for (let i = 0; i < q.boats.length; i++) byAlly.push(cr.fateBy[i] === FATE_BY_ALLY);
-  return { labelJa: a.p.labelJa, lit: a.litPts, litAway: a.litAways, litSalvo: a.litSalvos, shells: a.shells, chase: a.chaseShells, hits: cr.hits, retired: f.retired, sunk: f.sunk, suppressions: cr.suppressions, byAlly };
+  return { labelJa: a.p.labelJa, lit: a.litPts, litSalvo: a.litSalvos, shells: a.shells, chase: a.chaseShells, hits: cr.hits, retired: f.retired, sunk: f.sunk, suppressions: cr.suppressions, byAlly };
 }
 
 /** 出撃時の ally（卯月の無い任務は enabled false のまま） */

@@ -1,6 +1,6 @@
 // 模擬（core/landing-sim）の味方の駆逐艦 卯月（v0.6.10 S3a。spec-v0610 §6.1・§8 の G6・リードの決定 LD9・LD11）: 設定（world-setup の allyDestroyer のまま・allyOff は鍵ごと無い）、
 // 卯月を切った夜（ALLY_OFF=1）は鍵を消した設定の夜と同じで卯月の欄はみな 0、I7〜I11（seed 1〜40・15 の遊び方・ノーマルとハード）、I9（卯月の効かない遊び方は同じ seed の
-// 卯月の無い夜と記録が同じ・撃たない・照らさない）、結末と数えが合う（撃たずに去らせた・照らされた斉射）、卯月の船体の下を通る魚雷の数え方（表だけ）、I9 の比べ方、
+// 卯月の無い夜と記録が同じ・斉射の前の PT に効かない。v0.6.10 実機 1 回目から、撃っても去らない PT を撃つ隊の砲の数えは除く）、結末と数えが合う（照らされた斉射）、卯月の船体の下を通る魚雷の数え方（表だけ）、I9 の比べ方、
 // scripts の ALLY_OFF は見出しに出さない（LD9）。N 400 × 2 組の表と md5 は CHANGELOG v0.6.10 S3a（帯は S0b のまま。卯月のいる帯は S4）。
 // v0.6.10 S3b: 卯月の欄に PT ごとの卯月の砲の結末と帰投の輪の呼びかけの秒（呼びかけの規則は tests/landing-sim-call）。卯月を切った夜はどの欄も作ったときのまま。
 import { readFileSync } from 'node:fs';
@@ -8,8 +8,8 @@ import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { runLandingTrial, type LandingSimSetup } from '../src/core/landing-sim';
 import { LANDING_POLICIES } from '../src/core/landing-sim-policy';
-import { LANDING_TRIAL_ALLY_KEYS, LandingTrialTorpedoes, createLandingTrial, landingTrialBase } from '../src/core/landing-trial';
-import { OUT_LIT_AWAY, OUT_LIT_HURRIED, PT_SALVO_CALM } from '../src/core/pt-torpedo';
+import { LANDING_TRIAL_ALLY_KEYS, LANDING_TRIAL_GUN_KEYS, LandingTrialTorpedoes, allyFatedBeforeSalvo, createLandingTrial, landingTrialBase } from '../src/core/landing-trial';
+import { OUT_LIT_HURRIED, PT_SALVO_CALM } from '../src/core/pt-torpedo';
 import { LANDING_I9_POLICIES, landingCalibrationRun, landingInvariantMisses, landingSimSetup, type LandingRun } from '../src/systems/landing-sim-setup';
 import { buildWorldSetup } from '../src/systems/world-setup';
 import { LP, P, TP, bench } from './landing-kit';
@@ -66,20 +66,18 @@ describe(`卯月のいる夜の不変（seed 1〜${SEEDS}・15 の遊び方）`,
     const miss = LANDING_POLICIES.flatMap((pol) => landingInvariantMisses(run.cell(pol, 0), run.setup).map((m) => `${pol}: ${m}`));
     expect(miss).toEqual([]);
   }, SIM_TIMEOUT_MS);
-  it.each([false, true])('ハード %s: 卯月は働く（照らす・撃たずに去らせる・撃つ・当てる夜がある）、結末の数え（OUT_LIT_AWAY = litAways・OUT_LIT_HURRIED = litSalvos）、1 隻に 1 回だけ反応', (hard) => {
+  it.each([false, true])('ハード %s: 卯月は働く（照らす・撃つ・当てる夜がある）、結末の数え（OUT_LIT_HURRIED = litSalvos）、1 隻に 1 回だけ反応', (hard) => {
     const run = runOf(hard);
-    const tot = { lit: 0, away: 0, shells: 0, hits: 0, cand: 0 };
+    const tot = { lit: 0, shells: 0, hits: 0, cand: 0 };
     for (const pol of LANDING_POLICIES) {
       for (const r of run.trials(pol, 0)) {
         const outs = Array.from(r.outcome);
-        expect(outs.filter((x) => x === OUT_LIT_AWAY).length, pol).toBe(r.litAways);
         expect(outs.filter((x) => x === OUT_LIT_HURRIED).length, pol).toBe(r.litSalvos);
-        expect(r.litAways + r.litSalvos, pol).toBeLessThanOrEqual(r.allyLitPts);
+        expect(r.litSalvos, pol).toBeLessThanOrEqual(r.allyLitPts);
         expect(r.allyLitPts, pol).toBeLessThanOrEqual(r.allySpotted);
         expect(r.chaseShells, pol).toBeLessThanOrEqual(r.allyShells);
         expect(r.allyRetired + r.allySunk, pol).toBeLessThanOrEqual(r.ptRetired + r.ptSunk);
         tot.lit += r.allyLitPts;
-        tot.away += r.litAways;
         tot.shells += r.allyShells;
         tot.hits += r.allyHits;
         tot.cand += r.candSteps;
@@ -104,15 +102,15 @@ describe(`卯月のいる夜の不変（seed 1〜${SEEDS}・15 の遊び方）`,
 });
 
 describe('I9（卯月の効かない遊び方: hide・circle_start・home_early）', () => {
-  it.each([false, true])(`ハード %s: seed 1〜${SEEDS} の夜はどれも同じ seed の卯月の無い夜と記録が同じ（卯月の欄を除く）で、卯月は撃たず照らさない`, (hard) => {
+  it.each([false, true])(`ハード %s: seed 1〜${SEEDS} の夜はどれも同じ seed の卯月の無い夜と記録が同じ（卯月の欄と隊の砲の数えを除く）で、卯月は斉射の前の PT に効かず照らした斉射も無い`, (hard) => {
     const run = runOf(hard);
     const off = landingSimSetup(gameData, 'jp_04', { hard, allyOff: true });
     expect(LANDING_I9_POLICIES).toEqual(['hide', 'circle_start', 'home_early']);
     for (const pol of LANDING_I9_POLICIES) {
       expect(run.i9Misses(pol, 0), pol).toBe(0);
       run.trials(pol, 0).forEach((r, k) => {
-        expect([r.allyShells, r.allyLitPts, r.litSalvos, r.litAways], `${pol} ${k + 1}`).toEqual([0, 0, 0, 0]);
-        expect(landingTrialBase(r), `${pol} ${k + 1}`).toBe(landingTrialBase(runLandingTrial(off, pol, k + 1)));
+        expect([r.litSalvos, allyFatedBeforeSalvo(r)], `${pol} ${k + 1}`).toEqual([0, false]);
+        expect(landingTrialBase(r, LANDING_TRIAL_GUN_KEYS), `${pol} ${k + 1}`).toBe(landingTrialBase(runLandingTrial(off, pol, k + 1), LANDING_TRIAL_GUN_KEYS));
       });
     }
     // ほかの遊び方と卯月のいない表は数えない（0）
@@ -131,8 +129,21 @@ describe('I9（卯月の効かない遊び方: hide・circle_start・home_early�
     const c = createLandingTrial(2);
     c.kind[0] = 1;
     expect(landingTrialBase(a)).not.toBe(landingTrialBase(c));
-    expect(LANDING_TRIAL_ALLY_KEYS.length).toBe(20);
-    expect(LANDING_TRIAL_ALLY_KEYS.slice(15)).toEqual(['allyFate', 'ringCallS', 'ringCallHidden', 'ringShownS', 'ringObeyS']);
+    expect(LANDING_TRIAL_GUN_KEYS).toEqual(['gunHits', 'ptRetired', 'ptSunk']);
+    b.ptRetired = 1;
+    expect(landingTrialBase(a, LANDING_TRIAL_GUN_KEYS)).not.toBe(landingTrialBase(b, LANDING_TRIAL_GUN_KEYS)); // hits は違う
+    expect(landingTrialBase(c, LANDING_TRIAL_GUN_KEYS)).not.toBe(landingTrialBase(a, LANDING_TRIAL_GUN_KEYS));
+    const d = createLandingTrial(2);
+    d.gunHits = 3;
+    d.ptSunk = 1;
+    expect(landingTrialBase(d, LANDING_TRIAL_GUN_KEYS)).toBe(landingTrialBase(a, LANDING_TRIAL_GUN_KEYS));
+    expect(landingTrialBase(d)).not.toBe(landingTrialBase(a));
+    d.allyFate[0] = 1;
+    expect(allyFatedBeforeSalvo(d)).toBe(true); // 撃つ前（kind 0）の PT を卯月が決めた
+    d.kind[0] = 1;
+    expect(allyFatedBeforeSalvo(d)).toBe(false);
+    expect(LANDING_TRIAL_ALLY_KEYS.length).toBe(19); // litAways は v0.6.10 実機 1 回目に外した
+    expect(LANDING_TRIAL_ALLY_KEYS.slice(14)).toEqual(['allyFate', 'ringCallS', 'ringCallHidden', 'ringShownS', 'ringObeyS']);
     for (const k of LANDING_TRIAL_ALLY_KEYS) expect(k in a, k).toBe(true);
   });
 });

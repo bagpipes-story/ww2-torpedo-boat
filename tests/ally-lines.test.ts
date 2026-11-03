@@ -1,7 +1,7 @@
 // v0.6.10 S6（spec-v0610 part 2 の S6・リードの決定 LD3・LD4・LD8）: 卯月のいる jp_04 の HUD の 2 行目。
 // t.ally（systems/ally-telemetry: 出撃で決まる呼び名・帰投の輪の呼びかけ・平常の行の末尾、毎フレームの「最後の砲の出来事は卯月」）、ui/ally-lines の文とキー
-// （照らされた斉射・撃たずに去った・平常の行の末尾「走らせれば卯月が照らす」はノーマルだけ・「帰投の輪で揚陸を待て」）、ui/pt-gun-lines の出来事の頭「卯月 撃退！」、
-// ui/pt-line-clock の重さ（撃たずに去ったは待っている斉射を消さない・照らされた斉射は足す）、22 px で 840 px の内、キーが同じ ⇔ 文が同じ、卯月の無い夜は前の文とキー。
+// （照らされた斉射（撃たずに去ったは v0.6.10 実機 1 回目に無くした）・平常の行の末尾「走らせれば卯月が照らす」はノーマルだけ・「帰投の輪で揚陸を待て」）、ui/pt-gun-lines の出来事の頭「卯月 撃退！」、
+// ui/pt-line-clock の重さ（照らされた斉射は足す）、22 px で 840 px の内、キーが同じ ⇔ 文が同じ、卯月の無い夜は前の文とキー。
 // mission-line と同じ順（モード → キー → 文。tests/landing-ui-kit の frame）。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,13 +11,13 @@ import { HOME_COLOR_TEXT, HUD_COLOR_STRONG } from '../src/config/hud-text-config
 import { PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
 import { createAllyTelemetry } from '../src/core/ally-telemetry';
 import { DAWN_AIR_ENEMY, createDawnTelemetry } from '../src/core/dawn-air';
-import { LE_CALM, LE_HIT, LE_HURRIED, LE_LIT_AWAY, LE_LIT_SALVO, type LandingTelemetry } from '../src/core/landing';
+import { LE_CALM, LE_HIT, LE_HURRIED, LE_LIT_SALVO, type LandingTelemetry } from '../src/core/landing';
 import { CALL_DAWN, CALL_FUEL } from '../src/core/mission-flow';
 import { PT_LEAVE, PT_OUT, PT_SUNK, createPtSection, type PtTelemetry } from '../src/core/pt-boats';
 import { PT_GUN_EV_CREW, PT_GUN_EV_HULL, PT_GUN_EV_SUNK, PT_GUN_EV_SUPPRESS } from '../src/core/pt-damage';
 import { initAllyTelemetry, refreshAllyTelemetry, type AllyTelemetryWorld } from '../src/systems/ally-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { ALLY_RING_JA, K_ALLY_EVENT, allyEventKey, allyEventLine, allyRunTailJa } from '../src/ui/ally-lines';
+import { ALLY_RING_JA, K_ALLY_EVENT, allyEventKey, allyEventLine, allyLandingEvent, allyRunTailJa } from '../src/ui/ally-lines';
 import { callLineText } from '../src/ui/dawn-lines';
 import { landingEventKey, landingEventLine, landingNormalLine } from '../src/ui/landing-lines';
 import { MISSION_CALL, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_GUN_EVENT, MODE_FLAG_LANDING_EVENT, MODE_FLAG_PT_GUN_EVENT } from '../src/ui/mission-mode';
@@ -209,40 +209,35 @@ describe('卯月の砲の出来事（13mm/25mm の出来事の行。頭の名）
   });
 });
 
-describe('モード 35 の卯月の出来事（照らされた斉射・撃たずに去った）', () => {
+describe('モード 35 の卯月の出来事（照らされた斉射）', () => {
   it('照らされた斉射: 1 隻は輸送船から見た方角と距離（100 m 切り上げ）と本数、足した斉射は隻数と本数（強調色・外れやすい）', () => {
     expect(frame(tla(ev({ eventKind: LE_LIT_SALVO, eventM: 812, eventDirIdx: 2 }), QUIET), 0, EV)).toMatchObject({ mode: MISSION_LANDING_EVENT, text: '米PT 照らされて発射！ 輸送船の東 900 m から 3 本 ・ 外れやすい', color: HUD_COLOR_STRONG });
     expect(frame(tla(ev({ eventKind: LE_LIT_SALVO, eventM: 812, eventBoats: 2, eventCount: 6 }), QUIET), 0, EV).text).toBe('米PT 2 隻が照らされて発射！ 輸送船へ 6 本 ・ 外れやすい');
   });
-  it('撃たずに去った（味方の青）: 揚陸の決着の前はまだ撃てる米PT の数か「撃てる米PT はもういない」、揚陸完了・沈没の後は句なし', () => {
-    expect(frame(tla(ev({ eventKind: LE_LIT_AWAY, eventArmed: 1 }), QUIET), 0, EV)).toMatchObject({ mode: MISSION_LANDING_EVENT, text: '卯月が照らした！ 米PT は撃たずに去る ・ 残り 1 隻が輸送船を狙う', color: HOME_COLOR_TEXT });
-    expect(frame(tla(ev({ eventKind: LE_LIT_AWAY, eventArmed: 0 }), QUIET), 0, EV).text).toBe('卯月が照らした！ 米PT は撃たずに去る ・ 撃てる米PT はもういない');
-    expect(frame(tla(ev({ eventKind: LE_LIT_AWAY, eventArmed: 2, eventPct: 1 }), QUIET), 0, EV).text).toBe('卯月が照らした！ 米PT は撃たずに去る');
-    expect(frame(tla(ev({ eventKind: LE_LIT_AWAY, eventArmed: 2, eventHits: L0.hitsToSink, eventPct: 0.4 }), QUIET), 0, EV).text).toBe('卯月が照らした！ 米PT は撃たずに去る');
+  it('撃たずに去った出来事（前の 11）は無い（v0.6.10 実機 1 回目: 照らされても PT は去らない）。種類 11 は卯月の出来事でなく文も出ない', () => {
+    expect(allyLandingEvent(11)).toBe(false);
+    expect(allyEventLine({ ...L0, ...ev({ eventKind: 11 }) }, NAME).text).toBe('');
+    expect(readFileSync(join(__dirname, '../src/ui/ally-lines.ts'), 'utf8')).not.toMatch(/撃たずに去る'|撃てる米PT はもういない'|輸送船を狙う`/);
   });
-  it('名は t.ally.labelJa（landingLine が渡す）。ほかの種類は ui/ally-lines では空', () => {
-    expect(allyEventLine({ ...L0, ...ev({ eventKind: LE_LIT_AWAY }) }, 'X').text).toBe('Xが照らした！ 米PT は撃たずに去る ・ 残り 1 隻が輸送船を狙う');
+  it('ほかの種類は ui/ally-lines では空', () => {
     expect(allyEventLine({ ...L0, ...ev({ eventKind: LE_HIT }) }, NAME).text).toBe('');
-    expect(landingEventLine({ ...L0, ...ev({ eventKind: LE_LIT_AWAY }) }, NAME).text).toContain('卯月が照らした！');
   });
-  it('キーが同じ ⇔ 文が同じ（照らされた斉射は方角・距離・本数・隻数、撃たずに去ったは句と撃てる隻数）。ほかの種類のキーとも重ならない', () => {
+  it('キーが同じ ⇔ 文が同じ（照らされた斉射は方角・距離・本数・隻数）。ほかの種類のキーとも重ならない', () => {
     const rows: Array<[number, string]> = [];
     const add = (o: Partial<LandingTelemetry>): void => {
       const l = { ...landing0(), ...ev(o) };
       rows.push([landingEventKey(l), landingEventLine(l, NAME).text]);
     };
     for (const dir of [0, 3]) for (const m of [812, 899, 1250]) for (const n of [3, 6]) for (const boats of [0, 1, 2, 3]) add({ eventKind: LE_LIT_SALVO, eventDirIdx: dir, eventM: m, eventCount: n, eventBoats: boats });
-    for (const armed of [0, 1, 2, 3]) for (const pct of [0.3, 1]) for (const hits of [0, 1, 2]) for (const dir of [0, 5]) add({ eventKind: LE_LIT_AWAY, eventArmed: armed, eventPct: pct, eventHits: hits, eventDirIdx: dir });
     for (const k of [LE_CALM, LE_HURRIED, LE_HIT]) for (const m of [812, 1250]) add({ eventKind: k, eventM: m });
     for (const r of rows) expect(r[1]).not.toBe('');
     for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) expect(rows[i]![0] === rows[j]![0], `${rows[i]![1]} / ${rows[j]![1]}`).toBe(rows[i]![1] === rows[j]![1]);
     expect(allyEventKey({ ...L0, ...ev({ eventKind: LE_LIT_SALVO, eventM: 812 }) })).toBe(landingEventKey({ ...L0, ...ev({ eventKind: LE_LIT_SALVO, eventM: 812 }) }));
   });
-  it('どの行も最大の値（63 の刻み・15 本・3 隻・撃てる 3 隻）で 22 px・840 px の内', () => {
+  it('どの行も最大の値（63 の刻み・15 本・3 隻）で 22 px・840 px の内', () => {
     const texts = [
       frame(tla(ev({ eventKind: LE_LIT_SALVO, eventM: 6300, eventDirIdx: 7, eventCount: 15 }), QUIET), 0, EV).text,
       frame(tla(ev({ eventKind: LE_LIT_SALVO, eventM: 6300, eventBoats: 3, eventCount: 15 }), QUIET), 0, EV).text,
-      ...[0, 3].map((armed) => frame(tla(ev({ eventKind: LE_LIT_AWAY, eventArmed: armed }), QUIET, {}, true), 0, EV).text),
     ];
     for (const s of texts) {
       expect(s).not.toBe('');
@@ -251,7 +246,7 @@ describe('モード 35 の卯月の出来事（照らされた斉射・撃たず
   });
 });
 
-describe('pt-line-clock の重さ（撃たずに去ったは待っている斉射を消さない・照らされた斉射は足す）', () => {
+describe('pt-line-clock の重さ（照らされた斉射は足す）', () => {
   const F = 1000 / 60;
   /** 1 フレームずつ mission-line と同じ順で進め、出た 2 行目の文を順に（同じ文が続けば 1 回） */
   function run(seq: Array<[number, Partial<LandingTelemetry>]>, endMs: number): string[] {
@@ -275,17 +270,10 @@ describe('pt-line-clock の重さ（撃たずに去ったは待っている斉�
   }
   const hit = { eventSeq: 1, eventKind: LE_HIT, eventHits: 1, eventBoat: 0, eventM: NaN, eventPct: 0.5, eventArmed: 1 };
   const calm = { eventSeq: 2, eventKind: LE_CALM, eventHits: 1, eventBoat: 1, eventM: 1800, eventCount: 3, eventBoats: 1, eventDirIdx: 0, eventPct: 0.5, eventArmed: 0 };
-  const away = (seq: number) => ({ eventSeq: seq, eventKind: LE_LIT_AWAY, eventHits: 1, eventBoat: 1, eventM: NaN, eventCount: 0, eventBoats: 0, eventPct: 0.5, eventArmed: 0 });
   const HIT_JA = '輸送船 被雷！ あと 1 本で沈む';
   const CALM_JA = '米PT 雷撃！ 北から輸送船へ 3 本';
-  it('待っている斉射の後に来た撃たずに去ったは斉射に替わらない（前は沈没と同じ重さで斉射を消した）', () => {
-    expect(run([[0, hit], [300, calm], [600, away(3)]], 9000)).toEqual([HIT_JA, CALM_JA]);
-  });
-  it('待っている撃たずに去ったは後から来た斉射に替わる', () => {
-    expect(run([[0, hit], [300, away(2)], [600, { ...calm, eventSeq: 3 }]], 9000)).toEqual([HIT_JA, CALM_JA]);
-  });
-  it('待つものが無ければ撃たずに去ったも出る', () => {
-    expect(run([[0, hit], [300, away(2)]], 9000)).toEqual([HIT_JA, '卯月が照らした！ 米PT は撃たずに去る ・ 撃てる米PT はもういない']);
+  it('待っている斉射は被雷の後に出る', () => {
+    expect(run([[0, hit], [300, calm]], 9000)).toEqual([HIT_JA, CALM_JA]);
   });
   it('出たとみなす前の照らされた斉射に次の照らされた斉射が来れば足す（同じ種類の斉射）', () => {
     const lit = (seq: number, i: number) => ({ eventSeq: seq, eventKind: LE_LIT_SALVO, eventHits: 0, eventBoat: i, eventM: 900, eventCount: 3, eventBoats: 1, eventDirIdx: 2, eventPct: 0.5, eventArmed: 0 });

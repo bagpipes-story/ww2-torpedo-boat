@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { ALLY_EAST_FATES, landingAllyCell } from '../src/core/landing-ally-cell';
-import { OUT_CALM, OUT_DAWN, OUT_HURRIED, OUT_LIT_AWAY, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_HURRIED } from '../src/core/landing-sim';
+import { OUT_CALM, OUT_DAWN, OUT_HURRIED, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_HURRIED } from '../src/core/landing-sim';
 import { createLandingTrial } from '../src/core/landing-trial';
 import { ALLY_KNOB_KEYS, ALLY_KNOB_RANGES, ALLY_KNOB_STATIONS, checkAllyKnobs, hasAllyKnobs, withoutAllyKnobs } from '../src/systems/ally-sim-knobs';
 import { landingCalibrationRun, landingSimSetup } from '../src/systems/landing-sim-setup';
@@ -72,10 +72,10 @@ describe('data の写しに当て、世界と同じ検査を通す（data は変
 describe('TABLE=4 の集計（core/landing-ally-cell）', () => {
   it('見張る線の PT の結末の分け方・船体の下の魚雷の種類ごとの %・呼びかけ・最初の seed', () => {
     const a = createLandingTrial(2);
-    a.outcome.set([OUT_CALM, OUT_LIT_AWAY]);
-    a.kind.set([PT_SALVO_CALM, 0]);
+    a.outcome.set([OUT_CALM, OUT_LIT_HURRIED]);
+    a.kind.set([PT_SALVO_CALM, PT_SALVO_HURRIED]);
     a.torpThroughAlly.set([1, 0]);
-    a.litAways = 1;
+    a.litSalvos = 1;
     a.allyLitPts = 1;
     a.ringCallS = 120;
     a.ringShownS = 121;
@@ -86,24 +86,26 @@ describe('TABLE=4 の集計（core/landing-ally-cell）', () => {
     b.kind.set([PT_SALVO_HURRIED, 0]);
     b.allyFate.set([0, 1]);
     b.allyRetired = 1;
+    b.ptRetired = 1; // 隊の数（卯月の分も入る）
     b.ringCallS = 100;
     b.ringCallHidden = true;
     b.end = 'sunk';
     const c = createLandingTrial(2);
     c.outcome.set([OUT_SUNK, OUT_DAWN]);
+    c.ptSunk = 1;
     c.dawn = true;
     c.end = 'home';
     const cell = landingAllyCell('lure', [a, b, c], 11, [1], 3);
-    expect(ALLY_EAST_FATES).toEqual(['calm', 'fight', 'litSalvo', 'litAway', 'ally', 't38', 'dawn', 'other']);
-    expect(cell.east.litAway).toBeCloseTo(100 / 3, 9);
+    expect(ALLY_EAST_FATES).toEqual(['calm', 'fight', 'litSalvo', 'ally', 't38', 'dawn', 'other']); // litAway は v0.6.10 実機 1 回目に外した
+    expect(cell.east.litSalvo).toBeCloseTo(100 / 3, 9);
     expect(cell.east.ally).toBeCloseTo(100 / 3, 9);
     expect(cell.east.dawn).toBeCloseTo(100 / 3, 9);
     expect([cell.east.calm, cell.east.fight, cell.east.t38]).toEqual([0, 0, 0]);
-    expect(cell.t38Off).toBeCloseTo(1 / 3, 9); // c の PT 0 の撃沈は自艇（allyFate 0）
+    expect(cell.t38Off).toBeCloseTo(1 / 3, 9); // 隊の撃退・撃沈 − 卯月の分（c の撃沈は自艇・b の撃退は卯月）
     expect([cell.thruCalmPct, cell.thruHurriedPct, Number.isNaN(cell.thruEngagedPct)]).toEqual([100 / 3, 0, true]);
     expect([cell.litNightPct, cell.ownSunkPct, cell.homeBeforeDawnPct]).toEqual([100 / 3, 100 / 3, 100 / 3]);
     expect([cell.callPct, cell.callHiddenPct, cell.callShownPct, cell.callObeyPct]).toEqual([200 / 3, 100 / 3, 100 / 3, 100 / 3]);
-    expect(cell.first).toEqual({ litAway: 11, retire: 12, sink: NaN, litSalvo: NaN, chase: NaN });
+    expect(cell.first).toEqual({ retire: 12, sink: NaN, litSalvo: 11, chase: NaN });
     // 見張る線が無い（卯月のいない表）なら結末の列は NaN
     expect(Object.values(landingAllyCell('lure', [a], 1, [], 3).east).every((v) => Number.isNaN(v))).toBe(true);
   });

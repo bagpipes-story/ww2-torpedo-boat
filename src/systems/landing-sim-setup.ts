@@ -11,7 +11,7 @@ import { LANDING_WARN_MIN_S } from '../config/landing-config';
 import type { LandingSimSetup } from '../core/landing-sim';
 import { landingCell, runLandingTrials, salvoStats, type LandingCell, type SalvoKindStats, type SalvoStats } from '../core/landing-sim-cell';
 import { LANDING_HUMAN_POLICIES, type LandingPolicy } from '../core/landing-sim-policy';
-import { landingTrialBase, type LandingTrial } from '../core/landing-trial';
+import { allyFatedBeforeSalvo, LANDING_TRIAL_GUN_KEYS, landingTrialBase, type LandingTrial } from '../core/landing-trial';
 import { checkAllyKnobs, withAllyOverrides, withoutAllyKnobs, type AllySimOverrides } from './ally-sim-knobs';
 import { ptSimSetup } from './pt-pass-sim-setup';
 import { buildWorldSetup } from './world-setup';
@@ -190,8 +190,9 @@ export interface LandingRun {
   cell: (policy: LandingPolicy, block: number) => LandingCell;
   pooled: (policy: LandingPolicy) => LandingCell;
   /**
-   * I9（v0.6.10）: LANDING_I9_POLICIES の組 b の夜のうち、同じ seed の卯月の無い夜（allyOff）と記録（卯月の欄を除く）が違うか卯月が撃った夜の数。卯月のいない表・ほかの遊び方は 0
-   * （初めて聞いたときに卯月の無い夜を回す）
+   * I9（v0.6.10）: LANDING_I9_POLICIES の組 b の夜のうち、同じ seed の卯月の無い夜（allyOff）と記録（卯月の欄と隊の砲の数え LANDING_TRIAL_GUN_KEYS を除く）が違うか、
+   * 卯月の砲が斉射の前の PT の結末を決めた夜の数。卯月のいない表・ほかの遊び方は 0（初めて聞いたときに卯月の無い夜を回す）。v0.6.10 実機 1 回目（撃っても去らない）までは
+   * 隊の砲の数えも比べ、卯月が 1 発でも撃てば外れだった（撃った PT は去ったので、この遊び方では卯月は撃たなかった）。今は撃った後に泊地のそばに残る東の PT を卯月が撃つ夜がある
    */
   i9Misses: (policy: LandingPolicy, block: number) => number;
   /** 卯月の得（v0.6.10 S4）: 組を合わせた夜の達成 % の 卯月あり − 同じ seed・夜明け・上書きの卯月の無い夜（つまみを除く）。卯月のいない表は 0（初めて聞いたときに卯月の無い夜を回す） */
@@ -231,7 +232,7 @@ export function landingCalibrationRun(data: GameData, missionId: string, policie
     const key = `${pol}/${b}`;
     if (!i9.has(key)) {
       const rs0 = offTrials(pol, b);
-      i9.set(key, get(pol)[b]!.filter((r, k) => r.allyShells > 0 || landingTrialBase(r) !== landingTrialBase(rs0[k]!)).length);
+      i9.set(key, get(pol)[b]!.filter((r, k) => allyFatedBeforeSalvo(r) || landingTrialBase(r, LANDING_TRIAL_GUN_KEYS) !== landingTrialBase(rs0[k]!, LANDING_TRIAL_GUN_KEYS)).length);
     }
     return i9.get(key)!;
   };

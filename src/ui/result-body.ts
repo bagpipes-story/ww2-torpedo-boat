@@ -63,7 +63,7 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
       line(l1, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
       line(l2, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
       line(l3, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
-      if (r.landing.ally) line(allyResultLineJa(r.landing.ally), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 卯月（v0.6.10 S7）: 照らした・撃たずに去らせた・砲（見張りと砲を合わせる根拠）
+      if (r.landing.ally) line(allyResultLineJa(r.landing.ally), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 卯月（v0.6.10 S7）: 照らした・照らされて撃った・砲（見張りと砲を合わせる根拠）
       section();
       line(a, HUD_FONT_HEADING_PX);
     } else {

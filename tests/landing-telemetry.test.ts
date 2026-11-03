@@ -2,7 +2,7 @@
 // 出撃時の値・揚陸の時計・見張りの報告（遠い・近い・向き・斉射の残り・決着の後は無し）・雷跡・撃てる隻数・出来事（通し番号が変わったときだけ写す・8 方位）を見る。
 // 揚陸の無い世界（w.landing が null）は tests/landing-neutral。配線（createTelemetry・refreshTelemetry）の pin は tests/landing-step-order。
 // R14（S6a-fix）: 輸送船が射線に入る PT（landingFireLine。自艇からの 8 方位と 100 m）・足した斉射の隻数（eventBoats）。
-// v0.6.9 実機 1 回目のレビュー code-2: 出来事のフレームのまだ撃てる隻数（eventArmed。撃てる PT が残らない戦いながらの斉射は「米PT は去る」）。
+// v0.6.9 実機 1 回目のレビュー code-2: 出来事のフレームのまだ撃てる隻数（eventArmed。撃てる PT が残らない戦いながらの斉射は「魚雷は尽きた」。v0.6.10 実機 1 回目までは「米PT は去る」）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';

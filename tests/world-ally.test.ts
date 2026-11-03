@@ -26,9 +26,9 @@ describe('systems/world-ally', () => {
     const fn = s.slice(s.indexOf('export function buildAlly'));
     expect(fn).toMatch(/const p = s\.allyDestroyer;\s*if \(!p \|\| !s\.landing \|\| !pts\) return null;\s*return new WorldAlly\(scene, p, pts, seed,/);
   });
-  it('hitPt の知らせと外から去らせた PT の知らせは何もしない（jp_04 の 25mm の隊の知らせと模擬の ev と同じ）', () => {
+  it('hitPt の知らせは何もしない（jp_04 の 25mm の隊の知らせと模擬の ev と同じ）。外から去らせた PT の知らせは無い（v0.6.10 実機 1 回目: 照らされても去らない）', () => {
     expect(s).toMatch(/const NO_PT_EVENTS: PtEvents = \{ onContact: \(\) => \{\}, onLeave: \(\) => \{\}, onOut: \(\) => \{\}, onPassEnd: \(\) => \{\}, onFire: \(\) => \{\}, onCommit: \(\) => \{\}, onImpact: \(\) => \{\} \};/);
-    expect(s).toContain('const NO_LEAVE = (): void => {};');
+    expect(s).not.toContain('NO_LEAVE');
   });
   it('演出（AllyFx）は絵の閃光と水柱と結末の絵（v0.6.10 S5b。隊の fateVisual）だけ（乱数・状態に触らない）', () => {
     expect(method(s, '  onFire(')).toMatch(/^[^;]*\{\s*this\.view\.fired\(x, y\);\s*\}\s*$/);

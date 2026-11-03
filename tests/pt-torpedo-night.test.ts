@@ -1,6 +1,6 @@
 // 米PT の雷撃を凍結の隊（core/pt-boats の stepPtSection）と回す（v0.6.9 S2。spec-v069 §4.1・§4.2・§3.7・§8 の I1〜I5・R2）: 世界と同じ順（隊 → 雷撃）で、
-// 隠れる夜（自艇は見つからない）に PT はみな線を来て 900 m で 1 回だけ撃つ（時刻は線の幾何どおり・報告の 1,800 m から 43 秒以上）、撃った PT は凍結の去るの枝で北へ出る（PT_OUT）、
-// 止まった自艇に 1,300 m の内で気づいた瞬間に慌てて撃つ（艇首はまだ哨戒の向き）、夜明けの後は撃たない（凍結のラッチが去らせ、去った PT は飛ばす）。
+// 隠れる夜（自艇は見つからない）に PT はみな線を来て 900 m で 1 回だけ撃つ（時刻は線の幾何どおり・報告の 1,800 m から 43 秒以上）、撃った PT は去らずに哨戒のまま（v0.6.10 実機 1 回目。
+// 前は凍結の去るの枝で北へ出た）、止まった自艇に 1,300 m の内で気づいた瞬間に慌てて撃つ（艇首はまだ哨戒の向き）、夜明けの後は撃たない（凍結のラッチが撃った PT も去らせる）。
 import { describe, expect, it } from 'vitest';
 import { PT_ALERT, PT_LEAVE, PT_OUT, PT_PATROL } from '../src/core/pt-boats';
 import type { PtParams } from '../src/core/pt-data';
@@ -60,7 +60,7 @@ function hideNight(seed: number, hard: boolean, endS: number, dawnS = Infinity, 
 describe('隠れる夜: PT はみな 900 m で 1 回だけ撃つ（凍結の隊のまま。spec §3.7）', () => {
   it.each([
     [1, false], [2, false], [3, false], [4, false], [5, false], [6, false], [7, false], [8, false], [1, true], [2, true], [3, true], [4, true],
-  ])('seed %i ハード %s: 気づかれていない斉射の時刻は線の幾何どおり・報告の距離から 43 秒以上・去って海域の外へ', (seed, hard) => {
+  ])('seed %i ハード %s: 気づかれていない斉射の時刻は線の幾何どおり・報告の距離から 43 秒以上・撃っても去らない（海域の外へ出ない）', (seed, hard) => {
     const n = hideNight(seed, hard, 140);
     const { b, p, tp } = n;
     expect(b.st.salvos).toBe(p.count); // I4: 1 隻 1 回
@@ -72,7 +72,7 @@ describe('隠れる夜: PT はみな 900 m で 1 回だけ撃つ（凍結の隊�
       expect(b.st.launchM[i]).toBeLessThanOrEqual(tp.launchM);
       expect(b.st.launchM[i]).toBeGreaterThan(tp.launchM - 2);
       expect(b.st.launchS[i]! - n.lookS[i]!).toBeGreaterThan(43); // I1: 報告（1,800 m）から 900 m まで ≥ (1,800 − 900) / 20.58 = 43.7 秒
-      expect(n.outS[i]! - b.st.launchS[i]!).toBeGreaterThan(0); // 撃った PT は凍結の去るの枝で北へ（PT_OUT）
+      expect([Number.isNaN(n.outS[i]!), b.q.boats[i]!.phase < PT_LEAVE], `PT ${i}`).toEqual([true, true]); // 撃っても去らない（v0.6.10 実機 1 回目。前は凍結の去るの枝で北へ PT_OUT）
       expect(ptTorpedoOutcome(b.st, b.q, i)).toBe(OUT_CALM);
     }
     // §3.7 の窓（今夜の揺らぎの両端込み。1 ステップの余裕）
@@ -86,12 +86,13 @@ describe('隠れる夜: PT はみな 900 m で 1 回だけ撃つ（凍結の隊�
     expect(n.rng.draws).toBe(p.count * (1 + 2 * tp.n) + erratic);
     expect(b.sink.shots.length).toBe(p.count * tp.n);
   });
-  it('撃って去った PT は北（leave_heading_deg 0）へ走り、owner にも待ちにもならない', () => {
-    const n = hideNight(3, false, 140);
-    for (const q of n.b.q.boats) expect(q.phase).toBe(PT_OUT);
+  it('撃っても去らない PT は隠れる夜なら哨戒のまま（owner にも待ちにもならない・onLeave なし。v0.6.10 実機 1 回目）', () => {
+    const leaves: number[] = [];
+    const n = hideNight(3, false, 140, Infinity, (i) => leaves.push(i));
+    for (const q of n.b.q.boats) expect(q.phase).toBe(PT_PATROL);
     expect(n.b.q.owner).toBe(-1);
     expect(Array.from(n.b.q.held)).toEqual([0, 0]);
-    for (let i = 0; i < n.p.count; i++) expect(n.outS[i]! - n.b.st.launchS[i]!).toBeLessThan(60);
+    expect([leaves, n.b.st.salvos]).toEqual([[], n.p.count]);
   });
 });
 
@@ -166,7 +167,7 @@ describe('夜明け（I3）', () => {
     expect([n.b.st.salvos, n.rng.draws]).toEqual([0, 0]);
     for (let i = 0; i < n.p.count; i++) expect([n.b.st.leftAtDawn[i], ptTorpedoOutcome(n.b.st, n.b.q, i)]).toEqual([1, OUT_DAWN]);
   });
-  it('先に撃って去った PT は凍結の夜明けの輪が飛ばす（onLeave はまだ哨戒の PT だけ）', () => {
+  it('先に撃った PT も去らずに哨戒にいるので、凍結の夜明けのラッチが 2 隻とも去らせる（onLeave 2 回・leftAtDawn 2 隻。撃った PT の結末は斉射が先＝OUT_CALM）', () => {
     const first = hideNight(5, false, 140);
     const t0 = Math.min(first.b.st.launchS[0]!, first.b.st.launchS[1]!);
     const early = first.b.st.launchS[0] === t0 ? 0 : 1;
@@ -174,9 +175,9 @@ describe('夜明け（I3）', () => {
     const n = hideNight(5, false, t0 + 2, t0 + 1, (i, t) => leaves.push([i, t]));
     expect(n.b.st.kind[early]).toBe(PT_SALVO_CALM);
     expect(n.b.st.kind[1 - early]).toBe(0);
-    expect(leaves.map(([i]) => i)).toEqual([1 - early]); // 凍結の夜明けのラッチの onLeave（撃って去った PT は飛ばす）
-    expect(n.b.st.leftAtDawn[early]).toBe(0);
-    expect(n.b.st.leftAtDawn[1 - early]).toBe(1);
+    expect(leaves.map(([i]) => i).sort()).toEqual([0, 1]); // 凍結の夜明けのラッチの onLeave（v0.6.10 実機 1 回目までは撃って去った PT を飛ばした）
+    expect([n.b.st.leftAtDawn[early], n.b.st.leftAtDawn[1 - early]]).toEqual([1, 1]);
+    expect(ptTorpedoOutcome(n.b.st, n.b.q, early)).toBe(OUT_CALM);
     expect(n.b.q.boats[1 - early]!.phase).toBeGreaterThanOrEqual(PT_LEAVE);
     expect(n.b.q.boats[1 - early]!.phase).not.toBe(PT_PATROL);
   });
