@@ -1,0 +1,972 @@
+diff --git a/data/enemies.json b/data/enemies.json
+index 72d8e7d..5230c4c 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -672,7 +672,7 @@
+         "hurried_error_factor": 2.5,
+         "engaged_error_factor": 2.0,
+         "reacquire_s": 10,
+-        "retreat_after_salvo": true
++        "retreat_after_salvo": false
+       },
+       "tactics": {
+         "station_m": 600,
+diff --git a/scripts/landing-sim-ally.ts b/scripts/landing-sim-ally.ts
+index 90144de..b50fe6d 100644
+--- a/scripts/landing-sim-ally.ts
++++ b/scripts/landing-sim-ally.ts
+@@ -8,11 +8,11 @@ import type { LandingRun } from '../src/systems/landing-sim-setup';
+ 
+ const f = (x: number, d: number, w: number): string => (Number.isFinite(x) ? x.toFixed(d) : '-').padStart(w);
+ const HEAD =
+-  'policy         lit%  litS  litA  aRet  aSnk | shell   hit chase |  calm fight  litS  litA  ally   t38  dawn other | t38off  own% preD% | thruC thruH thruE |  d27/n  d28/n | call% inCt% shown% obey%';
++  'policy         lit%  litS  aRet  aSnk | shell   hit chase |  calm fight  litS  ally   t38  dawn other | t38off  own% preD% | thruC thruH thruE |  d27/n  d28/n | call% inCt% shown% obey%';
+ 
+ function line(c: LandingAllyCell): string {
+   return (
+-    `${c.policy.padEnd(13)} ${f(c.litNightPct, 1, 5)} ${f(c.litSalvos, 2, 5)} ${f(c.litAways, 2, 5)} ${f(c.allyRetired, 2, 5)} ${f(c.allySunk, 2, 5)} | ${f(c.shells, 1, 5)} ${f(c.hits, 2, 5)} ${f(c.chaseShells, 1, 5)} | ` +
++    `${c.policy.padEnd(13)} ${f(c.litNightPct, 1, 5)} ${f(c.litSalvos, 2, 5)} ${f(c.allyRetired, 2, 5)} ${f(c.allySunk, 2, 5)} | ${f(c.shells, 1, 5)} ${f(c.hits, 2, 5)} ${f(c.chaseShells, 1, 5)} | ` +
+     `${ALLY_EAST_FATES.map((k) => f(c.east[k], 1, 5)).join(' ')} | ${f(c.t38Off, 2, 6)} ${f(c.ownSunkPct, 1, 5)} ${f(c.homeBeforeDawnPct, 1, 5)} | ` +
+     `${f(c.thruCalmPct, 1, 5)} ${f(c.thruHurriedPct, 1, 5)} ${f(c.thruEngagedPct, 1, 5)} | ${f(c.draws27, 0, 6)} ${f(c.draws28, 0, 6)} | ` +
+     `${f(c.callPct, 1, 5)} ${f(c.callHiddenPct, 1, 5)} ${f(c.callShownPct, 1, 6)} ${f(c.callObeyPct, 1, 5)}`
+@@ -42,9 +42,9 @@ export function allyTableLines(run: LandingRun, pols: readonly LandingPolicy[],
+     out.push(`${pols[k]!.padEnd(13)} ${cells.map((row) => ALLY_FIRST_EVENTS.map((e) => f(row[k]!.first[e], 0, 4)).join(' ')).join(' | ')}`);
+   }
+   out.push(
+-    'lit% = 卯月が PT を照らした夜 | litS・litA = 1 夜の照らされた斉射・撃たずに去らせた PT | aRet・aSnk = 卯月の砲の撃退・撃沈 | shell・hit・chase = 卯月の弾・生きた PT への命中・去る PT を追って撃った弾 | ' +
+-      'calm〜other = 見張る線の PT の結末: 気づかれていない斉射・自艇と戦って撃った（慌てた・戦いながら）・照らされた斉射・撃たずに去った・卯月の砲・自艇の 25mm・夜明け・ほか | ' +
+-      't38off = 自艇の 25mm が撃退か撃沈した PT（1 夜） | own%・preD% = 自艇の沈没・夜明けの前の帰投 | thruC・thruH・thruE = 卯月の船体の下を通る魚雷（気づかれていない・慌てた（照らされたも）・戦いながらの斉射の撃った本数あたり %。まっすぐな道の上限） | ' +
++    'lit% = 卯月が PT を照らした夜 | litS = 1 夜の照らされた斉射 | aRet・aSnk = 卯月の砲の撃退・撃沈 | shell・hit・chase = 卯月の弾・生きた PT への命中・去る PT を追って撃った弾 | ' +
++      'calm〜other = 見張る線の PT の結末（斉射が先）: 気づかれていない斉射・自艇と戦って撃った（慌てた・戦いながら）・照らされた斉射・卯月の砲・自艇の 25mm・夜明け・ほか | ' +
++      't38off = 自艇の 25mm が撃退か撃沈した PT（1 夜。撃った後の PT も） | own%・preD% = 自艇の沈没・夜明けの前の帰投 | thruC・thruH・thruE = 卯月の船体の下を通る魚雷（気づかれていない・慌てた（照らされたも）・戦いながらの斉射の撃った本数あたり %。まっすぐな道の上限） | ' +
+       'd27/n・d28/n = seed+27・+28 の 1 夜の回数 | call%・inCt%・shown%・obey% = 夜明け近しの帰投の輪の呼びかけ: 決着の前に立った・立ったとき接触・報告・雷跡があって見えなかった・見えた・聞いた夜（lure の動きだけ）',
+   );
+   return out;
+diff --git a/src/core/ally-destroyer.ts b/src/core/ally-destroyer.ts
+index c0a8156..8dc1478 100644
+--- a/src/core/ally-destroyer.ts
++++ b/src/core/ally-destroyer.ts
+@@ -7,7 +7,8 @@
+ //    撃つ（気づいた生きた PT が射程の内にいれば、すぐそちらへ）。ほかは気づいた生きた PT の最も近い 1 隻か無し。照らす PT が変われば照らされた秒を 0 に。
+ // 3. 探照灯（core/gunnery の updateIllumination。星弾は射程 0 で撃たない）→ 4. 砲（updateGuns。seed+28 は 1 発 2 回。着弾が生きた PT に当たれば 1 回引いて凍結の hitPt。
+ //    pt_sink_chance の砲（12 cm）は米PT の値の写しの fireChance をその値に。生きていない PT への着弾は外れで引かない）
+-// → 5. 照らされて生きたまま light_react_s 経った PT は ptLitReact（航過は待つ・射点なら慌てた斉射＝LE_LIT_SALVO・ほかは撃たずに去る＝onLitAway の LE_LIT_AWAY）→ 6. 照らされている PT の印。
++// → 5. 照らされて生きたまま light_react_s 経った PT は ptLitReact（航過は待つ・射点なら慌てた斉射＝LE_LIT_SALVO・ほかは何もしない。撃っても照らされても PT は去らない＝v0.6.10 実機 1 回目。
++//    前は射点の外の PT を撃たずに去らせた）→ 6. 照らされている PT の印。
+ // 砲の手柄は隼艇と同じ形（systems/gunboat-credit の GunboatCredit）: 命中・制圧・出来事は hitPt の前後の差、結末が変わった PT の fateBy は FATE_BY_ALLY（卯月だけが書く。LD8）。
+ // 確保は createAllyDestroyer の 1 夜に 1 回だけ（毎ステップの関数は new・配列・オブジェクト・閉包を作らない）。乱数の系列は作る側（world-ally・landing-sim）が作って渡す。
+ import type { AllyDestroyerParams } from './ally-destroyer-data';
+@@ -17,7 +18,7 @@ import { createGunneryState, updateGuns, updateIllumination, type GunneryState,
+ import { PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, type PtBoatState, type PtEvents, type PtSection } from './pt-boats';
+ import { hitPt, ptLive } from './pt-damage';
+ import type { PtParams } from './pt-data';
+-import { LIT_AWAY, LIT_SALVO, LIT_WAIT, ptLitReact, type PtTorpedoShip, type PtTorpedoSink, type PtTorpedoState } from './pt-torpedo';
++import { LIT_SALVO, LIT_WAIT, ptLitReact, type PtTorpedoShip, type PtTorpedoSink, type PtTorpedoState } from './pt-torpedo';
+ import type { PtTorpedoParams } from './pt-torpedo-data';
+ import type { SeededRng } from './rng';
+ import { bearingDeg } from './ship-ai';
+@@ -47,10 +48,8 @@ export interface AllyCredit {
+   readonly fateBy: Int8Array;
+ }
+ 
+-/** 雷撃の入れ先と照らされて去った出来事（core/landing-torpedoes の LandingTorpedoLink がそのまま満たす） */
+-export interface AllyLink extends PtTorpedoSink {
+-  onLitAway(i: number): void;
+-}
++/** 雷撃の入れ先（core/landing-torpedoes の LandingTorpedoLink がそのまま満たす。照らされて去った出来事は v0.6.10 実機 1 回目に無くした） */
++export type AllyLink = PtTorpedoSink;
+ 
+ /** 1 夜の卯月（createAllyDestroyer で 1 回。updateGuns の着弾の知らせ ShellEvents を自分で受ける） */
+ export class AllyDestroyer implements ShellEvents {
+@@ -67,8 +66,8 @@ export class AllyDestroyer implements ShellEvents {
+   /** 照らす PT（−1 は無し）・去った PT を追って撃っている・その残りの体感秒・今の PT が生きたまま照らされた体感秒 */
+   target = -1; chasing = false; chaseLeftS = 0; litS = 0;
+   readonly credit: AllyCredit;
+-  /** 数え（模擬の不変 I7・I10 と表。S3）: 見張りの候補のステップ（= seed+27 の回数）・気づいた・照らした PT・撃った弾・追って撃った弾・生きた PT への命中（hitPt）・撃退・撃沈・照らされた斉射・撃たずに去った */
+-  candSteps = 0; spots = 0; litPts = 0; shells = 0; chaseShells = 0; liveHits = 0; retired = 0; sunk = 0; litSalvos = 0; litAways = 0;
++  /** 数え（模擬の不変 I7・I10 と表。S3）: 見張りの候補のステップ（= seed+27 の回数）・気づいた・照らした PT・撃った弾・追って撃った弾・生きた PT への命中（hitPt）・撃退・撃沈・照らされた斉射 */
++  candSteps = 0; spots = 0; litPts = 0; shells = 0; chaseShells = 0; liveHits = 0; retired = 0; sunk = 0; litSalvos = 0;
+   /** 今のステップの隊と hitPt の知らせ（stepAllyDestroyer が砲の前に書き、着弾の onImpact が読む） */
+   q: PtSection | null = null;
+   ptEv: PtEvents | null = null;
+@@ -140,10 +139,10 @@ export function createAllyDestroyer(p: AllyDestroyerParams, pt: PtParams, rng27:
+ }
+ 
+ /**
+- * 固定ステップに 1 回（stepPtTorpedoes の後・敵の魚雷のプールの前。R-U6）。st・tp・ship・rng26・dawn・nowS・link・onLeave は stepPtTorpedoes と同じもの（照らされた斉射は同じ雷撃の道）、
++ * 固定ステップに 1 回（stepPtTorpedoes の後・敵の魚雷のプールの前。R-U6）。st・tp・ship・rng26・dawn・nowS・link は stepPtTorpedoes と同じもの（照らされた斉射は同じ雷撃の道）、
+  * feelDt は体感秒（見張り・照射・砲の間隔・照らされた秒・追う秒）、dt は time_scale 込みの秒（砲弾の飛行）、ptEv は hitPt の知らせ（jp_04 は何もしない）
+  */
+-export function stepAllyDestroyer(a: AllyDestroyer, q: PtSection, st: PtTorpedoState, tp: PtTorpedoParams, ship: PtTorpedoShip, rng26: SeededRng, dawn: boolean, nowS: number, feelDt: number, dt: number, link: AllyLink, ptEv: PtEvents, onLeave: (i: number) => void): void {
++export function stepAllyDestroyer(a: AllyDestroyer, q: PtSection, st: PtTorpedoState, tp: PtTorpedoParams, ship: PtTorpedoShip, rng26: SeededRng, dawn: boolean, nowS: number, feelDt: number, dt: number, link: AllyLink, ptEv: PtEvents): void {
+   allyLookout(a, q, feelDt);
+   allyTarget(a, q, feelDt);
+   const t = a.target;
+@@ -157,13 +156,9 @@ export function stepAllyDestroyer(a: AllyDestroyer, q: PtSection, st: PtTorpedoS
+   if (lit && a.reacted[t] === 0 && ptLive(q.boats[t]!)) {
+     a.litS += feelDt;
+     if (a.litS >= a.p.lightReactS) {
+-      const r = ptLitReact(st, tp, q, ship, t, rng26, nowS, dawn, link, onLeave);
++      const r = ptLitReact(st, tp, q, ship, t, rng26, nowS, dawn, link);
+       if (r !== LIT_WAIT) a.reacted[t] = 1;
+       if (r === LIT_SALVO) a.litSalvos++;
+-      else if (r === LIT_AWAY) {
+-        a.litAways++;
+-        link.onLitAway(t);
+-      }
+     }
+   }
+   for (let i = 0; i < a.lit.length; i++) a.lit[i] = lit && i === t ? 1 : 0;
+diff --git a/src/core/ally-telemetry.ts b/src/core/ally-telemetry.ts
+index e0e9254..28db55a 100644
+--- a/src/core/ally-telemetry.ts
++++ b/src/core/ally-telemetry.ts
+@@ -1,6 +1,6 @@
+ // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。docs/02 §6.11、spec-v0610 part 2 の S6・リードの決定 LD3・LD4）の HUD 向けテレメトリの形。BoatTelemetry.ally（core/boat-telemetry）。
+ // createTelemetry が 1 回だけ作り（systems/ally-telemetry の initAllyTelemetry）、毎フレームは systems/ally-telemetry の refreshAllyTelemetry が中身だけ書く（§7: 確保しない）。
+-// 卯月の無い任務・?debug&noally は enabled false のまま（文もキーも前と同じ）。照らされた斉射・撃たずに去った出来事は揚陸の出来事（LandingTelemetry の eventKind の LE_LIT_*）が運ぶ。
++// 卯月の無い任務・?debug&noally は enabled false のまま（文もキーも前と同じ）。照らされた斉射の出来事は揚陸の出来事（LandingTelemetry の eventKind の LE_LIT_SALVO）が運ぶ。
+ // Phaser 非依存（型と作るだけ）。
+ 
+ export interface AllyTelemetry {
+diff --git a/src/core/landing-ally-cell.ts b/src/core/landing-ally-cell.ts
+index 99e738f..30a1368 100644
+--- a/src/core/landing-ally-cell.ts
++++ b/src/core/landing-ally-cell.ts
+@@ -1,22 +1,22 @@
+ // 卯月の表（scripts/landing-sim の TABLE=4。v0.6.10 S3b。spec-v0610 §6.2・レビュー H1・M2・L4・G-A7）の n 夜の集計。Phaser 非依存。表に 1 回（毎ステップではない）なので配列を作ってよい。
+-// 遊び方ごとに: 照らした夜 %・1 夜の照らされた斉射・撃たずに去らせた・卯月の砲の撃退・撃沈・弾・命中・去る PT を追って撃った弾、卯月が見張る線（guard_legs＝東）の PT の結末の分け方
+-// （気づかれていない斉射・自艇と戦って撃った斉射（慌てた・戦いながら）・照らされた斉射・撃たずに去った・卯月の砲・自艇の 25mm・夜明け・ほか。その PT の数あたり %）、
+-// 自艇の 25mm が去らせた PT（1 夜。G-A7）・自艇の沈没 %・夜明けの前の帰投 %、卯月の船体の下を通る魚雷（斉射の種類ごとに撃った本数あたり %。照らされた斉射は慌てたに入る）、
++// 遊び方ごとに: 照らした夜 %・1 夜の照らされた斉射・卯月の砲の撃退・撃沈・弾・命中・去る PT を追って撃った弾、卯月が見張る線（guard_legs＝東）の PT の結末の分け方
++// （気づかれていない斉射・自艇と戦って撃った斉射（慌てた・戦いながら）・照らされた斉射・卯月の砲・自艇の 25mm・夜明け・ほか。その PT の数あたり %。斉射が先。v0.6.10 実機 1 回目に
++// 撃たずに去った（litAway）の列を外した＝照らされても PT は去らない）、自艇の 25mm が撃退か撃沈した PT（1 夜。撃った後の PT も数える＝隊の数 − 卯月の分。G-A7）・自艇の沈没 %・夜明けの前の帰投 %、卯月の船体の下を通る魚雷（斉射の種類ごとに撃った本数あたり %。照らされた斉射は慌てたに入る）、
+ // seed+27・+28 の 1 夜の回数、夜明け近しの帰投の輪の呼びかけ（決着の前に立った・そのとき見えなかった＝H1・見えた・聞いた夜 %）、出来事ごとの最初の seed（S5 の一致の夜を選ぶ。L4）。
+-import { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_HURRIED, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, type LandingTrial } from './landing-sim';
++import { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_HURRIED, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED, type LandingTrial } from './landing-sim';
+ import type { LandingPolicy } from './landing-sim-policy';
+ 
+ /** 見張る線の PT の結末の分け方（表の列の順） */
+-export const ALLY_EAST_FATES = ['calm', 'fight', 'litSalvo', 'litAway', 'ally', 't38', 'dawn', 'other'] as const;
++export const ALLY_EAST_FATES = ['calm', 'fight', 'litSalvo', 'ally', 't38', 'dawn', 'other'] as const;
+ export type AllyEastFate = (typeof ALLY_EAST_FATES)[number];
+ /** 最初の seed を見る出来事（S5 の一致の夜。spec §7） */
+-export const ALLY_FIRST_EVENTS = ['litAway', 'retire', 'sink', 'litSalvo', 'chase'] as const;
++export const ALLY_FIRST_EVENTS = ['retire', 'sink', 'litSalvo', 'chase'] as const;
+ export type AllyFirstEvent = (typeof ALLY_FIRST_EVENTS)[number];
+ 
+ export interface LandingAllyCell {
+   policy: LandingPolicy; trials: number;
+-  /** 照らした夜 %、1 夜の照らされた斉射・撃たずに去らせた・卯月の砲の撃退・撃沈・弾・生きた PT への命中・去る PT を追って撃った弾 */
+-  litNightPct: number; litSalvos: number; litAways: number; allyRetired: number; allySunk: number; shells: number; hits: number; chaseShells: number;
++  /** 照らした夜 %、1 夜の照らされた斉射・卯月の砲の撃退・撃沈・弾・生きた PT への命中・去る PT を追って撃った弾 */
++  litNightPct: number; litSalvos: number; allyRetired: number; allySunk: number; shells: number; hits: number; chaseShells: number;
+   /** 見張る線の PT の結末 %（その PT の数あたり。見張る線が無ければ NaN） */
+   east: Record<AllyEastFate, number>;
+   /** 自艇の 25mm が撃退か撃沈した PT（1 夜）・自艇の沈没 %・夜明けの前の帰投 % */
+@@ -37,7 +37,6 @@ function eastFate(r: LandingTrial, i: number): AllyEastFate {
+   if (o === OUT_CALM) return 'calm';
+   if (o === OUT_HURRIED || o === OUT_ENGAGED) return 'fight';
+   if (o === OUT_LIT_HURRIED) return 'litSalvo';
+-  if (o === OUT_LIT_AWAY) return 'litAway';
+   if (o === OUT_RETIRED || o === OUT_SUNK) return r.allyFate[i] === 1 ? 'ally' : 't38';
+   if (o === OUT_DAWN) return 'dawn';
+   return 'other';
+@@ -70,21 +69,21 @@ export function landingAllyCell(policy: LandingPolicy, rs: readonly LandingTrial
+     }
+     return fired > 0 ? (100 * through) / fired : NaN;
+   };
+-  const t38 = (r: LandingTrial): number => Array.from(r.outcome).filter((o, i) => (o === OUT_RETIRED || o === OUT_SUNK) && r.allyFate[i] !== 1).length;
++  const t38 = (r: LandingTrial): number => r.ptRetired + r.ptSunk - r.allyRetired - r.allySunk;
+   const firstOf = (fn: (r: LandingTrial) => boolean): number => {
+     const k = rs.findIndex(fn);
+     return k >= 0 ? seedBase + k : NaN;
+   };
+   return {
+     policy, trials: N,
+-    litNightPct: pct((r) => r.allyLitPts > 0), litSalvos: mean((r) => r.litSalvos), litAways: mean((r) => r.litAways), allyRetired: mean((r) => r.allyRetired), allySunk: mean((r) => r.allySunk),
++    litNightPct: pct((r) => r.allyLitPts > 0), litSalvos: mean((r) => r.litSalvos), allyRetired: mean((r) => r.allyRetired), allySunk: mean((r) => r.allySunk),
+     shells: mean((r) => r.allyShells), hits: mean((r) => r.allyHits), chaseShells: mean((r) => r.chaseShells),
+     east, t38Off: mean(t38), ownSunkPct: pct((r) => r.end === 'sunk'), homeBeforeDawnPct: pct((r) => r.end === 'home' && !r.dawn),
+     thruCalmPct: thru(PT_SALVO_CALM), thruHurriedPct: thru(PT_SALVO_HURRIED), thruEngagedPct: thru(PT_SALVO_ENGAGED),
+     draws27: mean((r) => r.draws27), draws28: mean((r) => r.draws28),
+     callPct: pct((r) => !Number.isNaN(r.ringCallS)), callHiddenPct: pct((r) => r.ringCallHidden), callShownPct: pct((r) => !Number.isNaN(r.ringShownS)), callObeyPct: pct((r) => !Number.isNaN(r.ringObeyS)),
+     first: {
+-      litAway: firstOf((r) => r.litAways > 0), retire: firstOf((r) => r.allyRetired > 0), sink: firstOf((r) => r.allySunk > 0), litSalvo: firstOf((r) => r.litSalvos > 0), chase: firstOf((r) => r.chaseShells > 0),
++      retire: firstOf((r) => r.allyRetired > 0), sink: firstOf((r) => r.allySunk > 0), litSalvo: firstOf((r) => r.litSalvos > 0), chase: firstOf((r) => r.chaseShells > 0),
+     },
+   };
+ }
+diff --git a/src/core/landing-sim.ts b/src/core/landing-sim.ts
+index afa7df1..483d6af 100644
+--- a/src/core/landing-sim.ts
++++ b/src/core/landing-sim.ts
+@@ -9,7 +9,7 @@
+ // 測るだけの影のプール: 撃った魚雷をそのまま、いつも浮いている同じ船体へ走らせる（斉射の「当たりうる」本数。沈んだ後に着いた魚雷も数える＝TABLE=2 と R2 の期待値の材料）。乱数を引かず世界に触らない。
+ // 台本は core/landing-sim-policy、1 夜の記録は core/landing-trial、集計は core/landing-sim-cell（convoy-sim と同じ分け方）。Phaser 非依存。確保は 1 夜の始めだけ。省いたもの: 命中スロー・消火の長押し・漂流の待ち。
+ // v0.6.10 S3a（spec-v0610 R-U6・§6.1）: 味方の駆逐艦 卯月（s.allyDestroyer＝jp_04 で allyOff でなければ。core/ally-destroyer）を雷撃の直後・敵の魚雷のプールの前に回す（世界の world-landing と同じ順）。
+-// 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO）・撃たずに去るは onLitAway。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
++// 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO。照らされても撃っても PT は去らない＝v0.6.10 実機 1 回目）。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
+ // v0.6.10 S3b（R-U9・LD3）: 卯月のいる夜の lure の動きの遊び方は夜明け近しの帰投の輪の呼びかけを聞く（core/landing-sim-call。世界と同じ呼びかけの関数をステップの終わりに・見えている間だけ・人は遅れて）。
+ // v0.6.10 S5a（G7）: rp（core/landing-replay）を渡すと台本の代わりに世界のヘッドレスの夜の入力と命中スローを再生する（渡さなければ前と同じ。scripts/headless/world-vs-sim）。
+ import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET, createAllyDestroyer, stepAllyDestroyer, type AllyLink } from './ally-destroyer';
+@@ -47,7 +47,7 @@ import { enemyDetectRangeM, speedFactorForBand } from './visibility';
+ 
+ export type { LandingTrial } from './landing-trial';
+ export {
+-  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED,
++  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_HURRIED, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED,
+ } from './pt-torpedo';
+ 
+ export interface LandingSimSetup extends PtSimSetup {
+@@ -156,12 +156,11 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
+   const sink: AllyLink = {
+     fire: (i, x, y, h, dud, err, bias, rangeM) => tor.fire(i, x, y, h, dud, err, bias, rangeM),
+     onSalvo: (i, kind, rangeM, n) => {
+-      // I8: 照らされた斉射（litSalvo は斉射の前に立つ。PT はまだ去る前）は夜明けの前・見失いの待ちの外・揚陸中で浮いている・哨戒だけ
++      // I8: 照らされた斉射（litSalvo は斉射の前に立つ）は夜明けの前・見失いの待ちの外・揚陸中で浮いている・哨戒だけ
+       if (st.litSalvo[i] === 1 && (c.dawn || st.holdS[i]! > 0 || ld.phase !== LD_UNLOADING || !ld.afloat || q.boats[i]!.phase !== PT_PATROL)) out.litSalvoBad++;
+       tor.link.onSalvo(i, kind, rangeM, n);
+       watch.salvo(out, i, kind, rangeM, t, c.dawn);
+     },
+-    onLitAway: (i) => tor.link.onLitAway(i),
+   };
+   const report = createLandingReport();
+   const noReport = createLandingReport();
+@@ -244,7 +243,7 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
+     // spec §4.1 の 3 つ: 時計（世界の world-landing と同じく雷撃の前に書く。R14 A3）→ 雷撃（seed+26）→ 敵の魚雷（沈み始めた輸送船は狙わない）→ 揚陸の時計。影のプールは測るだけ
+     tor.link.nowS = t;
+     stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);
+-    if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev, NO_LEAVE); // 卯月（R-U6: 雷撃の後・敵の魚雷の前）
++    if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev); // 卯月（R-U6: 雷撃の後・敵の魚雷の前）
+     if (q.owner >= 0 && q.boats[q.owner]!.phase !== PT_PASS) out.ownerViol++; // I11
+     tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);
+     tor.shadow.step(dt, realDt, tor.shadowHulls, lp.passRadius2, tor.shadowEv);
+diff --git a/src/core/landing-torpedoes.ts b/src/core/landing-torpedoes.ts
+index 55008d4..9e69f1c 100644
+--- a/src/core/landing-torpedoes.ts
++++ b/src/core/landing-torpedoes.ts
+@@ -4,11 +4,11 @@
+ // → 命中 → 通り過ぎ）。雷跡の点は絵だけなので置かない（nextWakeAtM は他に読まれない）。プールは自艇の魚雷（w.torpedoes・KPI・終わりの待ち）に触らない。
+ // R14 A3（S6a-fix）: 同じステップの同じ種類の斉射は 1 つの出来事に足す（「米PT 2 隻が慌てて発射！ 輸送船へ 6 本」）、外れ・不発の出来事はプールにまだ決着していない魚雷が無いときだけ
+ // （ほかの斉射が走っている間に「それた！ 輸送船は無事」と言わない。残りは雷跡の行が数える）。
+-// v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の斉射（種類は慌てた斉射のまま・SalvoBook.litSalvo が立つ）は LE_LIT_SALVO、照らされて撃たずに去った PT は onLitAway → LE_LIT_AWAY
+-// （世界と模擬が同じ 1 か所で出来事にする）。卯月の無い夜は litSalvo が立たないので出来事は前と同じ。
++// v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の斉射（種類は慌てた斉射のまま・SalvoBook.litSalvo が立つ）は LE_LIT_SALVO（世界と模擬が同じ 1 か所で出来事にする。
++// 照らされて撃たずに去る出来事は v0.6.10 実機 1 回目に無くした＝照らされても PT は去らない）。卯月の無い夜は litSalvo が立たないので出来事は前と同じ。
+ // Phaser 非依存・毎ステップ確保しない（状態・走査の書き先・PT の添字は組み立てで 1 回）。
+ import type { SeaBounds } from './boat-motion';
+-import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_LIT_AWAY, LE_LIT_SALVO, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
++import { hitLanding, landingEvent, LANDING_SUNK, LE_CALM, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_LIT_SALVO, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingState } from './landing';
+ import type { LandingParams } from './landing-data';
+ import { createTorpedoState, isArmed, launchTorpedo, markMissIfPassed, stepTorpedo, type TorpedoParams, type TorpedoState } from './torpedo';
+ import { createTargetScan, scanTargets, type TorpedoEvents, type TorpedoTarget } from './torpedo-targets';
+@@ -153,11 +153,6 @@ export class LandingTorpedoLink implements TorpedoEvents {
+     this.salvoAtS = this.nowS;
+   }
+ 
+-  /** 卯月に照らされた i 隻目が撃たずに去った（core/ally-destroyer が ptLitReact の LIT_AWAY の後に呼ぶ。v0.6.10 R-U7）: 斉射でない出来事（距離 NaN・本数 0・隻数 0。レビュー L6） */
+-  onLitAway(i: number): void {
+-    landingEvent(this.ld, LE_LIT_AWAY, i, NaN, 0);
+-  }
+-
+   onHit(_target: number, x: number, y: number, s: TorpedoState): void {
+     const i = this.boatOfState(s);
+     if (i < 0) return;
+diff --git a/src/core/landing-trial.ts b/src/core/landing-trial.ts
+index aaa2501..a892332 100644
+--- a/src/core/landing-trial.ts
++++ b/src/core/landing-trial.ts
+@@ -54,7 +54,7 @@ export interface LandingTrial {
+    * 見張りの候補のステップ・seed+27・+28 から引いた回数（I7・I10）、I8 条件の外の照らされた斉射、I11 owner の PT が航過でないステップ（卯月がいなくても数える）、
+    * PT ごとの卯月の船体の下を通る魚雷（発射の針路のまっすぐな道が卯月の中心から半長の内。前方だけ・輸送船に当たる魚雷も数える上限。表だけ）
+    */
+-  allySpotted: number; allyLitPts: number; litSalvos: number; litAways: number; allyRetired: number; allySunk: number; allyShells: number; allyHits: number; chaseShells: number;
++  allySpotted: number; allyLitPts: number; litSalvos: number; allyRetired: number; allySunk: number; allyShells: number; allyHits: number; chaseShells: number;
+   candSteps: number; draws27: number; draws28: number; litSalvoBad: number; ownerViol: number; torpThroughAlly: Uint8Array;
+   /**
+    * v0.6.10 S3b（卯月のいる夜だけ。ほかは作ったときのまま）: PT ごとに卯月の砲が結末を決めた（1）、夜明け近しの帰投の輪の呼びかけ（core/landing-sim-call。lure の動きだけ）の
+@@ -65,7 +65,7 @@ export interface LandingTrial {
+ 
+ /** 卯月の欄（I9: 卯月の効かない遊び方はこれを除いて卯月の無い夜と同じ記録） */
+ export const LANDING_TRIAL_ALLY_KEYS: readonly (keyof LandingTrial)[] = [
+-  'allySpotted', 'allyLitPts', 'litSalvos', 'litAways', 'allyRetired', 'allySunk', 'allyShells', 'allyHits', 'chaseShells', 'candSteps', 'draws27', 'draws28', 'litSalvoBad', 'ownerViol', 'torpThroughAlly',
++  'allySpotted', 'allyLitPts', 'litSalvos', 'allyRetired', 'allySunk', 'allyShells', 'allyHits', 'chaseShells', 'candSteps', 'draws27', 'draws28', 'litSalvoBad', 'ownerViol', 'torpThroughAlly',
+   'allyFate', 'ringCallS', 'ringCallHidden', 'ringShownS', 'ringObeyS',
+ ];
+ 
+@@ -76,15 +76,28 @@ export function createLandingTrial(count: number): LandingTrial {
+     outcome: new Uint8Array(count), kind: new Uint8Array(count), launchS: new Float64Array(count).fill(NaN), launchM: new Float64Array(count).fill(NaN),
+     arrived: new Uint8Array(count), arrivedHits: new Uint8Array(count), arrivedDuds: new Uint8Array(count), potHits: new Uint8Array(count), potDuds: new Uint8Array(count), relevant: new Uint8Array(count),
+     i1LeadS: Infinity, i2LeadS: Infinity, afterDawnSalvos: 0, maxSalvosPerPt: 0, draws26: 0, drawsWant: 0, unresolvedAtDawn: false,
+-    allySpotted: 0, allyLitPts: 0, litSalvos: 0, litAways: 0, allyRetired: 0, allySunk: 0, allyShells: 0, allyHits: 0, chaseShells: 0,
++    allySpotted: 0, allyLitPts: 0, litSalvos: 0, allyRetired: 0, allySunk: 0, allyShells: 0, allyHits: 0, chaseShells: 0,
+     candSteps: 0, draws27: 0, draws28: 0, litSalvoBad: 0, ownerViol: 0, torpThroughAlly: new Uint8Array(count),
+     allyFate: new Uint8Array(count), ringCallS: NaN, ringCallHidden: false, ringShownS: NaN, ringObeyS: NaN,
+   };
+ }
+ 
+-/** I9 の比べ方: 卯月の欄を除いた 1 夜の記録の文字列（型付き配列は中身の配列に。表に 1 回） */
+-export function landingTrialBase(t: LandingTrial): string {
+-  return JSON.stringify(t, (k, v: unknown) => ((LANDING_TRIAL_ALLY_KEYS as readonly string[]).includes(k) ? undefined : ArrayBuffer.isView(v) ? Array.from(v as Uint8Array) : v));
++/**
++ * I9 で卯月の砲が動かしてよい隊の数え（v0.6.10 実機 1 回目: 撃っても PT は去らないので、気づかれていない斉射を撃った東の PT が泊地のそばに残り、卯月の遅い PT の見張りの内で
++ * 撃退・撃沈されうる。揚陸・斉射・自艇の記録は変わらない）
++ */
++export const LANDING_TRIAL_GUN_KEYS: readonly (keyof LandingTrial)[] = ['gunHits', 'ptRetired', 'ptSunk'];
++
++/** I9 の比べ方: 卯月の欄を除いた 1 夜の記録の文字列（型付き配列は中身の配列に。表に 1 回）。extra は ほかに除く鍵（I9 は LANDING_TRIAL_GUN_KEYS） */
++export function landingTrialBase(t: LandingTrial, extra: readonly (keyof LandingTrial)[] = []): string {
++  const skip = (k: string): boolean => (LANDING_TRIAL_ALLY_KEYS as readonly string[]).includes(k) || (extra as readonly string[]).includes(k);
++  return JSON.stringify(t, (k, v: unknown) => (skip(k) ? undefined : ArrayBuffer.isView(v) ? Array.from(v as Uint8Array) : v));
++}
++
++/** I9: 卯月の砲が、まだ斉射を撃っていない PT の結末を決めた（撃つ前の PT に卯月が効いた）か */
++export function allyFatedBeforeSalvo(t: LandingTrial): boolean {
++  for (let i = 0; i < t.allyFate.length; i++) if (t.allyFate[i] === 1 && t.kind[i] === 0) return true;
++  return false;
+ }
+ 
+ /** PT ごとの見張りの条件・哨戒の出入り・斉射（I1〜I4 の材料。1 夜に 1 個） */
+@@ -233,7 +246,7 @@ export class LandingTrialTorpedoes {
+ export function finishLandingAlly(out: LandingTrial, a: AllyDestroyer | null, draws27: number, draws28: number, call: LandingRingCall): void {
+   if (!a) return;
+   Object.assign(out, {
+-    allySpotted: a.spots, allyLitPts: a.litPts, litSalvos: a.litSalvos, litAways: a.litAways, allyRetired: a.retired, allySunk: a.sunk, allyShells: a.shells, allyHits: a.liveHits,
++    allySpotted: a.spots, allyLitPts: a.litPts, litSalvos: a.litSalvos, allyRetired: a.retired, allySunk: a.sunk, allyShells: a.shells, allyHits: a.liveHits,
+     chaseShells: a.chaseShells, candSteps: a.candSteps, draws27, draws28,
+   });
+   for (let i = 0; i < out.allyFate.length; i++) out.allyFate[i] = a.credit.fateBy[i] === FATE_BY_ALLY ? 1 : 0;
+diff --git a/src/core/landing.ts b/src/core/landing.ts
+index c66e8f2..b9fadda 100644
+--- a/src/core/landing.ts
++++ b/src/core/landing.ts
+@@ -36,9 +36,8 @@ export const LE_SUNK = 6;
+ export const LE_DONE = 7;
+ export const LE_SUNK_DONE = 8;
+ export const LE_ENGAGED = 9;
+-/** v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の慌てた斉射（種類は慌てた斉射・PtTorpedoState.litSalvo）・照らされて撃たずに去った（斉射でない出来事＝距離 NaN・本数 0・隻数 0）。4 ビットに入る */
++/** v0.6.10（spec-v0610 R-U7）: 卯月に照らされた PT の慌てた斉射（種類は慌てた斉射・PtTorpedoState.litSalvo）。4 ビットに入る。11（照らされて撃たずに去った）は v0.6.10 実機 1 回目に無くした */
+ export const LE_LIT_SALVO = 10;
+-export const LE_LIT_AWAY = 11;
+ 
+ /** 見張りの報告（landingReport の sub）: 無し・遠い（慌てる距離の外か慌てた斉射なし）・近い（慌てる距離の内） */
+ export const LANDING_REPORT_NONE = 0;
+diff --git a/src/core/pt-torpedo-data.ts b/src/core/pt-torpedo-data.ts
+index fe333ea..df1ce63 100644
+--- a/src/core/pt-torpedo-data.ts
++++ b/src/core/pt-torpedo-data.ts
+@@ -22,7 +22,7 @@ export interface PtTorpedoRecord {
+   hurried_error_factor: number;
+   engaged_error_factor: number;
+   reacquire_s: number;
+-  /** 撃ったら去る（true だけ＝V11。3 種類の斉射とも。戦いながらの斉射は v0.6.9 実機 1 回目から＝ユーザーの選択 A） */
++  /** 撃ったら去るか（false だけ＝V11。3 種類の斉射とも撃っても去らない＝v0.6.10 実機 1 回目。v0.6.9 実機 1 回目〜v0.6.10 S8 は true だけ＝撃ったら去った） */
+   retreat_after_salvo: boolean;
+ }
+ 
+@@ -86,7 +86,7 @@ export function ptTorpedoParamsFromData(raw: unknown, ctx: PtTorpedoContext, lab
+   if (!(a.hurried_error_factor >= 1)) bad('hurried_error_factor は 1 以上（慌てた斉射の狙いは粗い）');
+   if (!(a.engaged_error_factor === 0 || a.engaged_error_factor >= 1)) bad(`engaged_error_factor（${a.engaged_error_factor}）は 0（戦いながらの斉射なし）か 1 以上（戦いながらの斉射の狙いは粗い）`);
+   if (!(a.reacquire_s >= 0)) bad('reacquire_s は 0 以上');
+-  if (a.retreat_after_salvo !== true) bad('retreat_after_salvo は true（3 種類の斉射（気づかれていない・慌てた・戦いながら）とも撃ったら去る。戦いながらは v0.6.9 実機 1 回目から）');
++  if (a.retreat_after_salvo !== false) bad('retreat_after_salvo は false（3 種類の斉射（気づかれていない・慌てた・戦いながら）とも撃っても去らずに戦い続ける。v0.6.10 実機 1 回目のユーザー「PTが発射後も去らずに銃撃してくる設計に戻してください」）');
+   const torpedo = torpedoParamsFromData(rec, ctx.armingM, ctx.erraticPeriodS);
+   const far = Math.max(a.launch_range_m, a.hurried_max_m);
+   if (!(far < torpedo.rangeM)) bad(`撃つ距離（launch_range_m・hurried_max_m の遠い方 ${far} m）は魚雷の射程（${torpedo.rangeM} m）より近い`);
+diff --git a/src/core/pt-torpedo.ts b/src/core/pt-torpedo.ts
+index b8e2fa1..da84c99 100644
+--- a/src/core/pt-torpedo.ts
++++ b/src/core/pt-torpedo.ts
+@@ -1,17 +1,19 @@
+ // 米PT の雷撃（v0.6.9。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §4.2・R2・R8・R12）: 凍結の core/pt-boats の stepPtSection の後に 1 回、停泊する味方の輸送船へ。
+-// 気づかれていない斉射: 哨戒（PT_PATROL）の PT が輸送船から launch_range_m の内で艇首が launch_heading_tol_deg 以内なら 1 回だけ salvo_count 本を撃って去る。
++// 気づかれていない斉射: 哨戒（PT_PATROL）の PT が輸送船から launch_range_m の内で艇首が launch_heading_tol_deg 以内なら 1 回だけ salvo_count 本を撃つ。
+ // 慌てた斉射（R2）: 隊が自艇（か 25mm の閃光）を捉えたステップに、哨戒から警戒になった PT はみな（見つけた PT だけでなく）、輸送船から hurried_max_m の内で艇首が向いていれば
+-// 狙いの誤差 × hurried_error_factor で撃って去る（hurried_max_m 0 で無し）。見失って哨戒に戻った PT は reacquire_s の間は撃たない（D8）。輸送船が沈めば哨戒の PT は去る（F11）。
++// 狙いの誤差 × hurried_error_factor で撃つ（hurried_max_m 0 で無し）。見失って哨戒に戻った PT は reacquire_s の間は撃たない（D8）。輸送船が沈めば哨戒の PT は去る（F11）。
+ // 戦いながらの斉射（R12）: 自艇と戦っている PT（警戒・突撃・追撃・離脱。哨戒・航過・去る・海域の外・沈んだ・撃退は除く）が、揚陸中（決着の前）の輸送船から launch_range_m の内で
+ // 艇首が向いていれば狙いの誤差 × engaged_error_factor で撃つ（engaged_error_factor 0 で無し。見失いの reacquire_s は掛けない）。
+-// 撃ったら去る（3 種類とも。v0.6.9 実機 1 回目。ユーザーの選択 A「引きつけて離す」: 前は戦いながら撃った PT が去らずに自艇につきまとい、外れた夜もクリアできなかった）。
+-// 外から PT_LEAVE を書くのは斉射（3 種類）と輸送船の沈没だけで、pt-damage の hitPt が航過の外の PT に書くのと同じ（phase と timerS、onLeave）。去った PT は凍結の去るの枝が北へ出す。
+-// 外から去らせても隊の欄（owner・held・相方・追撃の目標・連射）が宙に浮かないことは salvo の注（凍結のコードで確かめたこと）。
++// 撃っても去らない（3 種類とも。v0.6.10 実機 1 回目。ユーザー「当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→「A: 卯月は残し、PT を撃った後も去らない形に戻す」。
++// v0.6.9 実機 1 回目〜v0.6.10 S8 は撃ったら去った＝retreat_after_salvo true）。撃った PT は段階を変えず、凍結の AI のまま（哨戒・接触・追撃・自艇への掃射）。斉射は 1 隻 1 回のまま（left 0）。
++// 外から PT_LEAVE を書くのは輸送船の沈没（哨戒で斉射が残る PT）だけで、pt-damage の hitPt が航過の外の PT に書くのと同じ（phase と timerS、onLeave）。去った PT は凍結の去るの枝が北へ出す。
++// 外から去らせても隊の欄（owner・held・相方・追撃の目標・連射）が宙に浮かないことは stepPtTorpedoes の沈没の枝の注（凍結のコードで確かめたこと）。
+ // 乱数は seed+26 の系列（PT_TORPEDO_SEED_OFFSET。jp_04 だけ。systems/world-landing と core/landing-sim が最後に作る）: 斉射のときだけ 狙い 1 回 → 1 本ごとに 不発 → 蛇行 → [偏差]
+ // （systems/torpedo-launcher と同じ順。3 種類とも同じ）。斉射の無いステップは引かない。Phaser 非依存・毎ステップ確保しない（状態は createPtTorpedoState で 1 回）。距離は二乗、atan2 は撃てる距離の内の PT だけ。
+-// v0.6.10（spec-v0610 R-U5・LD5・レビュー M1）: 味方の駆逐艦 卯月（core/ally-destroyer）に照らされた PT の反応 ptLitReact（射点なら慌てた斉射で去る・ほかは撃たずに去る・航過は待つ）。
++// v0.6.10（spec-v0610 R-U5・LD5・レビュー M1）: 味方の駆逐艦 卯月（core/ally-destroyer）に照らされた PT の反応 ptLitReact（射点なら慌てた斉射・ほかは何もしない・航過は待つ。
++// v0.6.10 実機 1 回目から、照らされた PT も去らない＝撃たずに去る（LIT_AWAY・LE_LIT_AWAY）は無くした。卯月の光は砲の的のまま）。
+ // 慌てた斉射と分け合うのは距離と艇首の検査（hurriedReach・bowOn）だけで、照らされた斉射の条件（哨戒・斉射が残る・揚陸中・夜明けの前・見失いの待ちの外）は ptLitReact だけが見る。
+-// stepPtTorpedoes は litSalvo・litAway を読まない（卯月の無い夜は前と 1 手ずつ同じ＝tests/pt-torpedo-lit の md5）。
++// stepPtTorpedoes は litSalvo を読まない（卯月の無い夜の雷撃は照らされた斉射の印に関わらない）。
+ import { LD_UNLOADING } from './landing';
+ import { PT_ALERT, PT_BREAK, PT_CHASE, PT_FATE_CREW, PT_FATE_HULL, PT_FATE_NONE, PT_FATE_SUNK, PT_LEAVE, PT_PASS, PT_PATROL, PT_RUN_IN, type PtSection } from './pt-boats';
+ import type { PtTorpedoParams } from './pt-torpedo-data';
+@@ -29,7 +31,8 @@ export const PT_SALVO_CALM = 1;
+ export const PT_SALVO_HURRIED = 2;
+ export const PT_SALVO_ENGAGED = 3;
+ 
+-/** PT ごとの雷撃の結末（ptTorpedoOutcome。Result の雷撃の行）。OUT_GOAL_GONE は輸送船が沈んで去った（R8/F11。「引きつけて去らせた」と分ける）、OUT_ENGAGED は戦いながら撃った（R12。「戦いながら」） */
++/** PT ごとの雷撃の結末（ptTorpedoOutcome。Result の雷撃の行）。OUT_GOAL_GONE は輸送船が沈んで去った（R8/F11。「引きつけて去らせた」と分ける）、OUT_ENGAGED は戦いながら撃った（R12。「戦いながら」）。
++ * 斉射の後の砲の結末（撃退・撃沈）は ptAfterSalvoFate（撃っても去らない＝v0.6.10 実機 1 回目） */
+ export const OUT_NONE = 0;
+ export const OUT_CALM = 1;
+ export const OUT_HURRIED = 2;
+@@ -39,14 +42,13 @@ export const OUT_DAWN = 5;
+ export const OUT_LEFT = 6;
+ export const OUT_GOAL_GONE = 7;
+ export const OUT_ENGAGED = 8;
+-/** v0.6.10: 卯月に照らされて慌てて撃った（照らされた斉射。種類は慌てた斉射のまま・litSalvo）・照らされて撃たずに去った（litAway） */
++/** v0.6.10: 卯月に照らされて慌てて撃った（照らされた斉射。種類は慌てた斉射のまま・litSalvo）。10（照らされて撃たずに去った）は v0.6.10 実機 1 回目に無くした */
+ export const OUT_LIT_HURRIED = 9;
+-export const OUT_LIT_AWAY = 10;
+ 
+-/** ptLitReact の戻り: 航過中なので待つ（次のステップにまた）・照らされた斉射を撃って去った・撃たずに去った */
++/** ptLitReact の戻り: 航過中か去ったので待つ（次のステップにまた）・照らされた斉射を撃った・何もしない（射点の外。v0.6.10 実機 1 回目までは撃たずに去った） */
+ export const LIT_WAIT = 0;
+ export const LIT_SALVO = 1;
+-export const LIT_AWAY = 2;
++export const LIT_NONE = 2;
+ 
+ export interface PtTorpedoState {
+   /** 1 = 斉射が残っている（1 隻 1 回） */
+@@ -61,8 +63,8 @@ export interface PtTorpedoState {
+   salvoHits: Uint8Array; salvoDuds: Uint8Array; salvoLeft: Uint8Array;
+   /** 夜明けのラッチで去った・輸送船が沈んで去った（F11） */
+   leftAtDawn: Uint8Array; goalGone: Uint8Array;
+-  /** v0.6.10: 卯月に照らされて撃った斉射（入れ先が LE_LIT_SALVO を選ぶ印。斉射の前に立つ）・照らされて撃たずに去った（ptLitReact だけが書く） */
+-  litSalvo: Uint8Array; litAway: Uint8Array;
++  /** v0.6.10: 卯月に照らされて撃った斉射（入れ先が LE_LIT_SALVO を選ぶ印。斉射の前に立つ。ptLitReact だけが書く） */
++  litSalvo: Uint8Array;
+   /** 斉射の針路（使い回し。salvo_count 個） */
+   headings: number[];
+   /** 数え: 斉射・撃った本数・慌てて撃った本数・戦いながら撃った本数、斉射の通し番号・最後に撃った PT（−1 は無し）とその種類 */
+@@ -93,14 +95,14 @@ export function createPtTorpedoState(count: number, salvoCount: number): PtTorpe
+     left: new Uint8Array(count).fill(1), prevPhase: new Uint8Array(count).fill(PT_PATROL), holdS: new Float64Array(count),
+     kind: new Uint8Array(count), launchM: new Float64Array(count).fill(NaN), launchS: new Float64Array(count).fill(NaN),
+     salvoHits: new Uint8Array(count), salvoDuds: new Uint8Array(count), salvoLeft: new Uint8Array(count),
+-    leftAtDawn: new Uint8Array(count), goalGone: new Uint8Array(count), litSalvo: new Uint8Array(count), litAway: new Uint8Array(count), headings,
++    leftAtDawn: new Uint8Array(count), goalGone: new Uint8Array(count), litSalvo: new Uint8Array(count), headings,
+     salvos: 0, fired: 0, hurriedFired: 0, engagedFired: 0, seq: 0, lastBoat: -1, lastKind: PT_SALVO_NONE,
+   };
+ }
+ 
+ /**
+  * 固定ステップに 1 回、凍結の stepPtSection の後（spec §4.1）。dawn は夜明けのラッチの後（凍結の隊と同じ値）、nowS は出撃からの実秒（世界の stepTimeS。命中スローで遅れない。R14 A8）、feelDt は体感秒。
+- * onLeave は外から去らせた PT（斉射・輸送船が沈んだ）の知らせ（世界は隊の onLeave と同じ扱い。jp_04 は何もしない）
++ * onLeave は外から去らせた PT（輸送船が沈んだ）の知らせ（世界は隊の onLeave と同じ扱い。jp_04 は何もしない）
+  */
+ export function stepPtTorpedoes(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, ship: PtTorpedoShip, rng: SeededRng, dawn: boolean, nowS: number, feelDt: number, sink: PtTorpedoSink, onLeave: (i: number) => void): void {
+   for (let i = 0; i < q.boats.length; i++) {
+@@ -122,11 +124,16 @@ export function stepPtTorpedoes(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSe
+       const engaged = tp.engagedFactor > 0 && ptEngaged(ph) && b.fate === PT_FATE_NONE && ship.phase === LD_UNLOADING && d2 <= tp.launch2;
+       if (hurried || calm || engaged) {
+         const brg = bearingDeg(b.x, b.y, ship.x, ship.y);
+-        if (bowOn(tp, b.headingDeg, brg)) salvo(st, tp, q, i, hurried ? PT_SALVO_HURRIED : calm ? PT_SALVO_CALM : PT_SALVO_ENGAGED, brg, d2, rng, nowS, sink, onLeave);
++        if (bowOn(tp, b.headingDeg, brg)) salvo(st, tp, q, i, hurried ? PT_SALVO_HURRIED : calm ? PT_SALVO_CALM : PT_SALVO_ENGAGED, brg, d2, rng, nowS, sink);
+       }
+     }
+     if (!ship.afloat && b.phase === PT_PATROL && st.left[i] === 1) {
+-      // 狙う船が無い（沈み始めた・沈んだ）: 哨戒の PT は撃たずに去る（警戒・突撃などの PT は自艇と戦い続け、見失って哨戒に戻ればここで去る）
++      // 狙う船が無い（沈み始めた・沈んだ）: 哨戒の PT は撃たずに去る（警戒・突撃などの PT は自艇と戦い続け、見失って哨戒に戻ればここで去る。撃った PT（left 0）は去らない＝v0.6.10 実機 1 回目）。
++      // 凍結のコード（pt-boats・pt-state・pt-chase・pt-damage）と pt-pass-end・pt-fire で確かめたこと: ここで去らせるのは哨戒の PT で、航過（PT_PASS）ではない。
++      // ・q.owner: 立てるのは commitPass（pt-pass-end）と commitBurst（pt-chase）で、どちらも同時に航過にする。航過から出るのは owner も消す endPass・endBurst・dropOwner・
++      //   夜明け（pt-boats の 3）だけ＝owner なら航過。哨戒の PT は owner でない（閉じる航過・赤い線（attackLineShown）は無い）。
++      // ・burst: owner の航過だけが true。q.held: 読む窓は警戒〜突撃で、去るは突撃へ戻らない（hitPt の去る・pt-boats:75 の見失いも held を消さない。spec R8/F9）。
++      // ・相方・追撃の目標: partnerReady は毎回 ptFighting で隊をなめ、追撃の目標は自艇の推定で PT の添字を持たない。25mm の標的は毎ステップ ptLive で選び直す。よって離す欄は無い。
+       b.phase = PT_LEAVE;
+       b.timerS = 0;
+       st.goalGone[i] = 1;
+@@ -148,12 +155,11 @@ function bowOn(tp: PtTorpedoParams, headingDeg: number, brg: number): boolean {
+ 
+ /**
+  * 卯月に照らされて light_react_s 経った PT i の反応（v0.6.10。core/ally-destroyer だけが呼ぶ。spec-v0610 R-U5・LD5・レビュー M1）。戻りは LIT_*。航過（q.owner でもありうる）・去った PT は
+- * LIT_WAIT（何も書かない＝航過を外から去らせない）。哨戒で斉射が残り、輸送船が浮いて揚陸中・夜明けの前・見失いの待ちの外で、慌てた斉射の距離と艇首なら LIT_SALVO: litSalvo を立ててから
+- * 慌てた斉射（seed+26 から 1 + 2n + 蛇行の本数）→ 去る。ほかの生きた段階（射点の外・待ち・夜明けの後・警戒〜離脱・揚陸の後・沈んだ後）は LIT_AWAY: 撃たずに去る（引かない）。
+- * 揚陸の後に照らされた PT は撃たずに去るが、照らされていない PT は夜明けまで撃てる（わざとの非対称。M1）。去らせ方と隊の欄は salvo の注と同じ（航過でない PT）。
+- * prevPhase もこのステップの終わりの段階（去る）にする（stepPtTorpedoes の後に呼ばれるので、次のステップが夜明けのラッチで去ったと取り違えない）
++ * LIT_WAIT（何も書かない）。哨戒で斉射が残り、輸送船が浮いて揚陸中・夜明けの前・見失いの待ちの外で、慌てた斉射の距離と艇首なら LIT_SALVO: litSalvo を立ててから
++ * 慌てた斉射（seed+26 から 1 + 2n + 蛇行の本数）。撃った PT は去らない（段階はそのまま＝v0.6.10 実機 1 回目）。ほかの生きた段階（射点の外・待ち・夜明けの後・警戒〜離脱・揚陸の後・沈んだ後）は
++ * LIT_NONE: 何もしない（引かない・書かない。v0.6.10 S2〜S8 は撃たずに去らせた）。卯月の光と砲はその PT を狙い続ける
+  */
+-export function ptLitReact(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, ship: PtTorpedoShip, i: number, rng: SeededRng, nowS: number, dawn: boolean, sink: PtTorpedoSink, onLeave: (i: number) => void): number {
++export function ptLitReact(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, ship: PtTorpedoShip, i: number, rng: SeededRng, nowS: number, dawn: boolean, sink: PtTorpedoSink): number {
+   const b = q.boats[i]!;
+   if (b.phase === PT_PASS || b.phase >= PT_LEAVE) return LIT_WAIT;
+   if (b.phase === PT_PATROL && st.left[i] === 1 && ship.afloat && ship.phase === LD_UNLOADING && !dawn && st.holdS[i]! <= 0) {
+@@ -163,17 +169,11 @@ export function ptLitReact(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection
+     const brg = hurriedReach(tp, d2) ? bearingDeg(b.x, b.y, ship.x, ship.y) : NaN; // atan2 は慌てる距離の内だけ（NaN は艇首の検査を通らない）
+     if (!Number.isNaN(brg) && bowOn(tp, b.headingDeg, brg)) {
+       st.litSalvo[i] = 1; // 入れ先（LandingTorpedoLink.onSalvo）が見る印: 斉射の前に立てる
+-      salvo(st, tp, q, i, PT_SALVO_HURRIED, brg, d2, rng, nowS, sink, onLeave);
+-      st.prevPhase[i] = b.phase;
++      salvo(st, tp, q, i, PT_SALVO_HURRIED, brg, d2, rng, nowS, sink);
+       return LIT_SALVO;
+     }
+   }
+-  b.phase = PT_LEAVE;
+-  b.timerS = 0;
+-  st.litAway[i] = 1;
+-  st.prevPhase[i] = b.phase;
+-  onLeave(i);
+-  return LIT_AWAY;
++  return LIT_NONE;
+ }
+ 
+ /** 自艇と戦っている段階（R12 の戦いながらの斉射。警戒・突撃・追撃・離脱。航過は固めた掃射の最中なので撃たない。哨戒は気づかれていない・慌てた斉射の規則） */
+@@ -182,7 +182,7 @@ function ptEngaged(phase: number): boolean {
+ }
+ 
+ /** i 隻目の斉射（kind は PT_SALVO_*。brg は PT → 輸送船の中心の方位。停泊して動かないので見越しは要らない）。平方根は 1 回（発射の距離） */
+-function salvo(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, i: number, kind: number, brg: number, d2: number, rng: SeededRng, nowS: number, sink: PtTorpedoSink, onLeave: (i: number) => void): void {
++function salvo(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, i: number, kind: number, brg: number, d2: number, rng: SeededRng, nowS: number, sink: PtTorpedoSink): void {
+   const b = q.boats[i]!;
+   const a = tp.aimDeg * (kind === PT_SALVO_HURRIED ? tp.hurriedFactor : kind === PT_SALVO_ENGAGED ? tp.engagedFactor : 1);
+   const err = rng.nextRange(-a, a);
+@@ -207,21 +207,7 @@ function salvo(st: PtTorpedoState, tp: PtTorpedoParams, q: PtSection, i: number,
+   st.lastBoat = i;
+   st.lastKind = kind;
+   sink.onSalvo(i, kind, rangeM, n);
+-  // 撃ったら去る（3 種類とも。retreat_after_salvo は true だけ＝core/pt-torpedo-data の V11。戦いながらの斉射は v0.6.9 実機 1 回目から）。
+-  // 凍結のコード（pt-boats・pt-state・pt-chase・pt-damage）と pt-pass-end・pt-fire で確かめたこと: 撃つ PT は哨戒・警戒・突撃・追撃・離脱で、航過（PT_PASS）ではない。
+-  // ・q.owner: 立てるのは commitPass（pt-pass-end）と commitBurst（pt-chase）で、どちらも同時に航過にする。航過から出るのは owner も消す endPass・endBurst・dropOwner・
+-  //   夜明け（pt-boats の 3）だけ（撃退・制圧の owner は航過のまま弾 0）＝owner なら航過。撃つ PT は owner でない（閉じる航過・赤い線（attackLineShown）は無い）。
+-  //   tests/pt-torpedo-engaged の夜: 待つ突撃（held 1）・相方の航過中・離脱から撃っても、去った後は owner・脅威の PT にならない。
+-  // ・burst: 立てるのは commitBurst（owner と同時）、消すのは endBurst・dropOwner・夜明け＝owner の航過だけが true。撃つ PT は false（閉じる・数える連射は無い）。
+-  // ・q.held: 書くのは突撃の枝だけ、読むのは突撃の枝と hudThreatIndex（held を見る窓は警戒〜突撃）。去るは突撃へ戻らず（去る → 海域の外だけ）窓の外なので、残った 1 は読まれない
+-  //   （hitPt の去る・pt-boats:75 の見失いも held を消さない。spec R8/F9）。
+-  // ・相方・追撃の目標: partnerReady は毎回 ptFighting で隊をなめ（覚えない）、追撃の目標（pt-boats の TARGET）は自艇の推定で PT の添字を持たない。q.lastBurstBoat・selfGapLeftS は
+-  //   その PT の次の連射だけを止め、q.lastPassBoat は後から落ちる弾の数え先（endPass・endBurst・pt-boats:148 の去るも残したまま）。
+-  // ・25mm の標的は毎ステップ ptLive で選び直す（去った PT は選ばれず当たらない）。この雷撃の欄は left 0・prevPhase は去る（夜明けのラッチ・見失いの待ち・沈没の枝は通らない）。
+-  // よって離す欄は無い（夜明けの枝・dropOwner の後始末は owner の航過のためのもの）。
+-  b.phase = PT_LEAVE;
+-  b.timerS = 0;
+-  onLeave(i);
++  // 撃っても去らない（3 種類とも。retreat_after_salvo は false だけ＝core/pt-torpedo-data の V11。v0.6.10 実機 1 回目）: 段階・timerS は凍結の AI のまま
+ }
+ 
+ /** i 隻目の PT の雷撃の結末（Result の雷撃の行。出撃の終わりに 1 回） */
+@@ -229,8 +215,7 @@ export function ptTorpedoOutcome(st: PtTorpedoState, q: PtSection, i: number): n
+   const b = q.boats[i]!;
+   if (st.kind[i] === PT_SALVO_CALM) return OUT_CALM;
+   if (st.kind[i] === PT_SALVO_HURRIED) return st.litSalvo[i] === 1 ? OUT_LIT_HURRIED : OUT_HURRIED;
+-  if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 斉射を先に（撃てば去るので、撃った後に 25mm の結末は付かない。b.fate は Result がそのまま読める）
+-  if (st.litAway[i] === 1) return OUT_LIT_AWAY; // 撃たずに去った PT は生きていないので、後から結末は付かない（夜明け・去るより先）
++  if (st.kind[i] === PT_SALVO_ENGAGED) return OUT_ENGAGED; // 斉射を先に（撃った後の砲の結末は ptAfterSalvoFate）
+   if (b.fate === PT_FATE_SUNK) return OUT_SUNK;
+   if (b.fate === PT_FATE_CREW || b.fate === PT_FATE_HULL) return OUT_RETIRED;
+   if (st.goalGone[i] === 1) return OUT_GOAL_GONE;
+@@ -238,3 +223,8 @@ export function ptTorpedoOutcome(st: PtTorpedoState, q: PtSection, i: number): n
+   if (b.phase >= PT_LEAVE) return OUT_LEFT;
+   return OUT_NONE;
+ }
++
++/** 斉射の後の砲の結末（撃っても去らない＝v0.6.10 実機 1 回目。Result の雷撃の行の後ろ）: 撃った PT が後で撃退（PT_FATE_CREW・PT_FATE_HULL）か撃沈なら b.fate、ほかは PT_FATE_NONE */
++export function ptAfterSalvoFate(st: PtTorpedoState, q: PtSection, i: number): number {
++  return st.kind[i] === PT_SALVO_NONE ? PT_FATE_NONE : q.boats[i]!.fate;
++}
+diff --git a/src/systems/ally-sim-bands.ts b/src/systems/ally-sim-bands.ts
+index ee810da..9703ce2 100644
+--- a/src/systems/ally-sim-bands.ts
++++ b/src/systems/ally-sim-bands.ts
+@@ -1,14 +1,17 @@
+ // 卯月のいる jp_04 の模擬の帯（v0.6.10 S4。spec-v0610 §6.3・リードの決定 LD14・LD3・LD6・D9）: 行の帯（ノーマル・ハード。人に近い 3 つの遊び方も帯を持つ）、卯月の得の対
+ // （得 = 卯月あり − 卯月なし（ALLY_OFF）の達成 %、同じ seed と夜明け）、卯月が照らした夜 %（組ごと）、ハードの段（ハード − ノーマル。同じ seed とつまみ）。対・得・段は組を合わせた夜。
+ // 卯月を切った夜（ALLY_OFF=1）は S0b の帯（systems/landing-sim-setup の *_NO_ALLY）のまま＝表のバイトが S0b と同じ（G6）。7 つの対の帯（LANDING_PAIRS）と斉射の帯は両方で同じ。
+-// 帯は §6.3 のまま（G-B4: 帯を広げて通さない。S4 のつまみの掃きと値は CHANGELOG v0.6.10 S4）。Phaser 非依存・window を読まない。
++// 帯は §6.3（G-B4: 帯を広げて通さない。S4 のつまみの掃きと値は CHANGELOG v0.6.10 S4）。v0.6.10 実機 1 回目: ユーザーが規則を変えた（撃っても照らされても PT は去らない）ので、
++// 人に近い遊び方の行の帯とハードの lure の下の端を新しい規則の値へ動かした（data の値は変えない。旧 → 新と理由は各帯の注と CHANGELOG v0.6.10 実機 1 回目）。Phaser 非依存・window を読まない。
+ import type { LandingPolicy } from '../core/landing-sim-policy';
+ import type { LandingTrial } from '../core/landing-trial';
+ import { LANDING_CALIBRATION_NO_ALLY, LANDING_HARD_CALIBRATION_NO_ALLY, type LandingBandRow, type LandingRun } from './landing-sim-setup';
+ 
+ /**
+  * ノーマル（§6.3）: lure 88〜99%（自艇の沈没 ≤ 10・漂流 ≤ 3・夜明けの前の帰投 ≥ 85（S0b で外した帯を呼びかけで戻す）・決着の前の燃料少と輪 ≤ 10）、hide ≤ 15（自艇の沈没 ≤ 3。前のまま）、
+- * 人に近い遊び方（主な的＝LD14）: human 72〜88・human_face 52〜70・face 60〜85（組の差が大きいので広い）。ほかの 9 つは行の帯なし（対の帯と I9 だけ）
++ * 人に近い遊び方（主な的＝LD14）: human 62〜80・human_face 52〜70・face 60〜85（組の差が大きいので広い）。ほかの 9 つは行の帯なし（対の帯と I9 だけ）。
++ * v0.6.10 実機 1 回目（撃っても照らされても PT は去らない）: human 72〜88 → 62〜80（N 400 × 2 組で 82.0 / 81.0 → 71.5 / 69.0%。撃った PT が残って自艇を撃ち続け、
++ * 人の遅れで自艇の沈没 0.3 → 6.3%・帰投の前の終わりが増える。下の端まで 7 点）。lure 94.3 / 93.0%（前 95.3 / 96.0）・human_face 58.8 / 59.8%（64.0 / 64.8）・face 71.0 / 76.3%（75.3 / 82.0）は前の帯のまま
+  */
+ export const LANDING_CALIBRATION_ALLY: readonly LandingBandRow[] = [
+   ...LANDING_CALIBRATION_NO_ALLY.map((r): LandingBandRow => {
+@@ -16,16 +19,21 @@ export const LANDING_CALIBRATION_ALLY: readonly LandingBandRow[] = [
+     return r;
+   }),
+   { policy: 'face', bands: { objPct: [60, 85] } },
+-  { policy: 'human', bands: { objPct: [72, 88] } },
++  { policy: 'human', bands: { objPct: [62, 80] } },
+   { policy: 'human_face', bands: { objPct: [52, 70] } },
+ ];
+-/** ハード（PT 3 隻・卯月は同じ。§6.3）: hide ≤ 8・lure 80〜97（自艇の沈没 ≤ 15）・face 38〜60・human 55〜75・human_face 20〜40 */
++/**
++ * ハード（PT 3 隻・卯月は同じ。§6.3）: hide ≤ 8・lure 74〜97（自艇の沈没 ≤ 15）・face 18〜40・human 38〜58・human_face 0〜15。
++ * v0.6.10 実機 1 回目（撃っても照らされても PT は去らない。N 400 × 2 組）: 3 隻とも撃った後も自艇と戦い続けるので、ハードの人に近い遊び方がはっきり下がった
++ * （human 74.0 / 71.8 → 48.8 / 45.8%・face 52.0 / 54.3 → 29.8 / 25.8%・human_face 33.5 / 30.8 → 7.5 / 6.5%・lure 90.8 / 88.5 → 87.8 / 81.0%）。帯は新しい値の周りへ:
++ * lure 80〜97 → 74〜97・face 38〜60 → 18〜40・human 55〜75 → 38〜58・human_face 20〜40 → 0〜15。ハードはノーマルよりはっきり難しい（段 human −23.0・human_face −52.3 点）
++ */
+ export const LANDING_HARD_CALIBRATION_ALLY: readonly LandingBandRow[] = [
+   { policy: 'hide', bands: { objPct: [0, 8] } },
+-  { policy: 'lure', bands: { objPct: [80, 97], ownSunkPct: [0, 15] } },
+-  { policy: 'face', bands: { objPct: [38, 60] } },
+-  { policy: 'human', bands: { objPct: [55, 75] } },
+-  { policy: 'human_face', bands: { objPct: [20, 40] } },
++  { policy: 'lure', bands: { objPct: [74, 97], ownSunkPct: [0, 15] } },
++  { policy: 'face', bands: { objPct: [18, 40] } },
++  { policy: 'human', bands: { objPct: [38, 58] } },
++  { policy: 'human_face', bands: { objPct: [0, 15] } },
+ ];
+ 
+ /** 卯月の得の対: 得(policy) − 得(other) ≥ lo（ノーマル） */
+diff --git a/src/systems/ally-telemetry.ts b/src/systems/ally-telemetry.ts
+index c301d40..6e937ca 100644
+--- a/src/systems/ally-telemetry.ts
++++ b/src/systems/ally-telemetry.ts
+@@ -23,7 +23,7 @@ export interface AllyTelemetryWorld {
+ export interface AllyResultSource {
+   readonly a: {
+     readonly p: { readonly labelJa: string };
+-    readonly litPts: number; readonly litAways: number; readonly litSalvos: number; readonly shells: number; readonly chaseShells: number;
++    readonly litPts: number; readonly litSalvos: number; readonly shells: number; readonly chaseShells: number;
+     readonly credit: AllyCredit;
+   };
+ }
+@@ -39,7 +39,7 @@ export function allyResult(al: AllyResultSource | null | undefined, q: PtSection
+   const f = gunboatFates(q, cr, FATE_BY_ALLY);
+   const byAlly: boolean[] = [];
+   for (let i = 0; i < q.boats.length; i++) byAlly.push(cr.fateBy[i] === FATE_BY_ALLY);
+-  return { labelJa: a.p.labelJa, lit: a.litPts, litAway: a.litAways, litSalvo: a.litSalvos, shells: a.shells, chase: a.chaseShells, hits: cr.hits, retired: f.retired, sunk: f.sunk, suppressions: cr.suppressions, byAlly };
++  return { labelJa: a.p.labelJa, lit: a.litPts, litSalvo: a.litSalvos, shells: a.shells, chase: a.chaseShells, hits: cr.hits, retired: f.retired, sunk: f.sunk, suppressions: cr.suppressions, byAlly };
+ }
+ 
+ /** 出撃時の ally（卯月の無い任務は enabled false のまま） */
+diff --git a/src/systems/landing-sim-setup.ts b/src/systems/landing-sim-setup.ts
+index 9d3c135..7319a9b 100644
+--- a/src/systems/landing-sim-setup.ts
++++ b/src/systems/landing-sim-setup.ts
+@@ -11,7 +11,7 @@ import { LANDING_WARN_MIN_S } from '../config/landing-config';
+ import type { LandingSimSetup } from '../core/landing-sim';
+ import { landingCell, runLandingTrials, salvoStats, type LandingCell, type SalvoKindStats, type SalvoStats } from '../core/landing-sim-cell';
+ import { LANDING_HUMAN_POLICIES, type LandingPolicy } from '../core/landing-sim-policy';
+-import { landingTrialBase, type LandingTrial } from '../core/landing-trial';
++import { allyFatedBeforeSalvo, LANDING_TRIAL_GUN_KEYS, landingTrialBase, type LandingTrial } from '../core/landing-trial';
+ import { checkAllyKnobs, withAllyOverrides, withoutAllyKnobs, type AllySimOverrides } from './ally-sim-knobs';
+ import { ptSimSetup } from './pt-pass-sim-setup';
+ import { buildWorldSetup } from './world-setup';
+@@ -190,8 +190,9 @@ export interface LandingRun {
+   cell: (policy: LandingPolicy, block: number) => LandingCell;
+   pooled: (policy: LandingPolicy) => LandingCell;
+   /**
+-   * I9（v0.6.10）: LANDING_I9_POLICIES の組 b の夜のうち、同じ seed の卯月の無い夜（allyOff）と記録（卯月の欄を除く）が違うか卯月が撃った夜の数。卯月のいない表・ほかの遊び方は 0
+-   * （初めて聞いたときに卯月の無い夜を回す）
++   * I9（v0.6.10）: LANDING_I9_POLICIES の組 b の夜のうち、同じ seed の卯月の無い夜（allyOff）と記録（卯月の欄と隊の砲の数え LANDING_TRIAL_GUN_KEYS を除く）が違うか、
++   * 卯月の砲が斉射の前の PT の結末を決めた夜の数。卯月のいない表・ほかの遊び方は 0（初めて聞いたときに卯月の無い夜を回す）。v0.6.10 実機 1 回目（撃っても去らない）までは
++   * 隊の砲の数えも比べ、卯月が 1 発でも撃てば外れだった（撃った PT は去ったので、この遊び方では卯月は撃たなかった）。今は撃った後に泊地のそばに残る東の PT を卯月が撃つ夜がある
+    */
+   i9Misses: (policy: LandingPolicy, block: number) => number;
+   /** 卯月の得（v0.6.10 S4）: 組を合わせた夜の達成 % の 卯月あり − 同じ seed・夜明け・上書きの卯月の無い夜（つまみを除く）。卯月のいない表は 0（初めて聞いたときに卯月の無い夜を回す） */
+@@ -231,7 +232,7 @@ export function landingCalibrationRun(data: GameData, missionId: string, policie
+     const key = `${pol}/${b}`;
+     if (!i9.has(key)) {
+       const rs0 = offTrials(pol, b);
+-      i9.set(key, get(pol)[b]!.filter((r, k) => r.allyShells > 0 || landingTrialBase(r) !== landingTrialBase(rs0[k]!)).length);
++      i9.set(key, get(pol)[b]!.filter((r, k) => allyFatedBeforeSalvo(r) || landingTrialBase(r, LANDING_TRIAL_GUN_KEYS) !== landingTrialBase(rs0[k]!, LANDING_TRIAL_GUN_KEYS)).length);
+     }
+     return i9.get(key)!;
+   };
+diff --git a/src/systems/landing-telemetry.ts b/src/systems/landing-telemetry.ts
+index c58f93c..ee865d4 100644
+--- a/src/systems/landing-telemetry.ts
++++ b/src/systems/landing-telemetry.ts
+@@ -125,7 +125,7 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
+   t.eventPct = st.eventPct;
+   const e = st.eventBoat >= 0 ? q.boats[st.eventBoat] : undefined;
+   t.eventDirIdx = e ? landingDirIdx(st, e.x, e.y) : 0;
+-  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は同じステップに去った。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「米PT は去る」）
++  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は斉射が残らない。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「米PT の魚雷は尽きた」）
+ }
+ 
+ /** Result の材料が読む世界の部分（MissionWorld がそのまま満たす）: 揚陸の状態・雷撃の状態（PtTorpedoState の Result が読む欄）・PT ごとの方角と、米PT の隊（結末の phase・fate） */
+diff --git a/src/systems/world-ally.ts b/src/systems/world-ally.ts
+index 619e53e..af4babe 100644
+--- a/src/systems/world-ally.ts
++++ b/src/systems/world-ally.ts
+@@ -1,7 +1,7 @@
+ // 味方の駆逐艦 卯月の世界側（v0.6.10 S5a。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v0610 R-U1〜R-U8・リードの決定 LD8・LD15）: core/ally-destroyer の 1 夜の状態と、
+ // 見張りの乱数 seed+27・砲の乱数 seed+28（ここだけが作る。world-landing は作らない＝tests/landing-imports）・絵（entities/ally-destroyer）を持つ。
+ // 固定ステップは systems/world-landing の stepAfterPts が雷撃（stepPtTorpedoes）の直後・敵の魚雷のプールの前に step を 1 回呼ぶ（R-U6 の順 (i)。模擬 core/landing-sim と同じ順・同じ引数）。
+-// 照らされた斉射は同じ雷撃の入れ先（LandingTorpedoLink）と seed+26、撃たずに去るは link の onLitAway。hitPt の知らせは何もしない PtEvents（jp_04 の米PT の隊は標的スロットが無く、
++// 照らされた斉射は同じ雷撃の入れ先（LandingTorpedoLink）と seed+26（照らされても PT は去らない＝v0.6.10 実機 1 回目）。hitPt の知らせは何もしない PtEvents（jp_04 の米PT の隊は標的スロットが無く、
+ // 25mm の隊の知らせ PtSquadron.events の onLeave も何もしない＝模擬の ev と同じ）。演出（AllyFx）は砲口の閃光と水柱と結末の絵（S5b）だけ（乱数・状態に触らない）。
+ // 卯月の無い任務・?debug&noally（setup.allyDestroyer の鍵が無い）と米PT の隊の無い世界は buildAlly が null（seed+27・+28 も絵も作らない＝ほかの任務と noally の夜は前と同じ）。
+ // v0.6.10 S5b（リードの決定 LD8）: 組み立てで米PT の隊（PtSquadron）に照らされている印と卯月の手柄を setAlly で 1 回渡す（自艇の視程の外でも照らされた PT を描く・HUD と Result が手柄を読む）。
+@@ -20,8 +20,6 @@ import type { WorldSetup } from './world-setup-types';
+ 
+ /** hitPt の知らせ（jp_04 は標的スロットが無い＝何もしない。模擬 core/landing-sim の ev の onLeave と同じ） */
+ const NO_PT_EVENTS: PtEvents = { onContact: () => {}, onLeave: () => {}, onOut: () => {}, onPassEnd: () => {}, onFire: () => {}, onCommit: () => {}, onImpact: () => {} };
+-/** 外から去らせた PT の知らせ（jp_04 は標的スロットが無い＝何もしない。world-landing の NO_LEAVE と同じ） */
+-const NO_LEAVE = (): void => {};
+ 
+ /** 卯月が米PT の隊（systems/pt-squadron の PtSquadron がそのまま満たす）から使うもの: 今夜の米PT の値・照らす印と手柄を渡す口・結末の絵（見せるだけ） */
+ export interface AllyPts {
+@@ -66,7 +64,7 @@ export class WorldAlly implements AllyFx {
+    * feelDt は命中スロー込みの体感秒、dt は time_scale 込みの秒（砲弾の飛行）
+    */
+   step(q: PtSection, st: PtTorpedoState, tp: PtTorpedoParams, ship: PtTorpedoShip, rng26: SeededRng, dawn: boolean, nowS: number, feelDt: number, dt: number, link: AllyLink): void {
+-    stepAllyDestroyer(this.a, q, st, tp, ship, rng26, dawn, nowS, feelDt, dt, link, NO_PT_EVENTS, NO_LEAVE);
++    stepAllyDestroyer(this.a, q, st, tp, ship, rng26, dawn, nowS, feelDt, dt, link, NO_PT_EVENTS);
+   }
+ 
+   /** 毎フレーム（world-visuals。揚陸の絵の後）: 扇・探照灯・砲弾・閃光・水柱・ラベル */
+diff --git a/src/ui/ally-lines.ts b/src/ui/ally-lines.ts
+index 23c6f81..4e0738b 100644
+--- a/src/ui/ally-lines.ts
++++ b/src/ui/ally-lines.ts
+@@ -1,13 +1,13 @@
+ // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。docs/02 §6.11、spec-v0610 part 2 の S6・リードの決定 LD3・LD4・R-U5・R-U7）の HUD の 2 行目の文とキー:
+-// モード 35（揚陸の出来事。ui/landing-lines の landingEventLine・landingEventKey がここへ渡す）の照らされた斉射（LE_LIT_SALVO）と撃たずに去った（LE_LIT_AWAY）、
++// モード 35（揚陸の出来事。ui/landing-lines の landingEventLine・landingEventKey がここへ渡す）の照らされた斉射（LE_LIT_SALVO。撃たずに去った LE_LIT_AWAY は v0.6.10 実機 1 回目に無くした）、
+ // 13mm/25mm の出来事の行の「卯月の砲が起こした」印（K_ALLY_EVENT。ui/pt-gun-lines が頭を「卯月 撃退！」に）、平常の行の末尾（LD4）と帰投の輪の呼びかけの語（LD3。ui/dawn-lines・ui/pt-lines）。
+ // 卯月の無い夜（t.ally.enabled が偽・&noally）はどれも出ない（末尾・輪の語は ''・出来事は来ない）＝文とキーは前と同じ。呼び名は data の label_ja（t.ally.labelJa）。
+ // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。landing-lines からは型だけを読む（値は読まない＝循環しない）。
+ // キーは文に出る値だけを詰める（ui/mission-line がキーでキャッシュする）。距離は 100 m 刻みの切り上げ（core/landing の LANDING_DIST_STEP_M。斉射の行と同じ）。
+-import { HOME_COLOR_TEXT, HUD_COLOR_STRONG } from '../config/hud-text-config';
++import { HUD_COLOR_STRONG } from '../config/hud-text-config';
+ import type { AllyTelemetry } from '../core/ally-telemetry';
+ import { bearingJa } from '../core/briefing';
+-import { LANDING_DIST_STEP_M, LE_LIT_AWAY, LE_LIT_SALVO } from '../core/landing';
++import { LANDING_DIST_STEP_M, LE_LIT_SALVO } from '../core/landing';
+ import type { HudLine } from './hud-lines';
+ import type { LandingEventView } from './landing-lines';
+ 
+@@ -27,60 +27,33 @@ export function allyRunTailJa(a: AllyTelemetry, armed: number): string {
+   return a.enabled && a.runHint && armed > 0 ? ` ・ 走らせれば${a.labelJa}が照らす` : '';
+ }
+ 
+-/** 卯月の出来事（モード 35 の LE_LIT_SALVO・LE_LIT_AWAY。ui/landing-lines の landingEventKey・landingEventLine がここへ渡す） */
++/** 卯月の出来事（モード 35 の LE_LIT_SALVO。ui/landing-lines の landingEventKey・landingEventLine がここへ渡す。撃たずに去った LE_LIT_AWAY は v0.6.10 実機 1 回目に無くした） */
+ export function allyLandingEvent(kind: number): boolean {
+-  return kind === LE_LIT_SALVO || kind === LE_LIT_AWAY;
++  return kind === LE_LIT_SALVO;
+ }
+ 
+-/** 撃たずに去った後ろの句の種類: 0 なし（揚陸の決着の後＝輸送船を狙う PT の話は要らない）・1 まだ撃てる米PT が残る・2 もう撃てる米PT がいない */
+-const AWAY_NONE = 0;
+-const AWAY_ARMED = 1;
+-const AWAY_EMPTY = 2;
+-
+-/** 出来事のときに揚陸がまだ決着していない（沈むまでの本数に届いていない・揚陸が 100% でない。LandingEventView の写しから） */
+-function unresolvedAt(l: Readonly<LandingEventView>): boolean {
+-  return l.eventHits < l.hitsToSink && l.eventPct < 1;
+-}
+-
+-function awayKind(l: Readonly<LandingEventView>): number {
+-  if (!unresolvedAt(l)) return AWAY_NONE;
+-  return l.eventArmed > 0 ? AWAY_ARMED : AWAY_EMPTY;
+-}
+-
+-/** 照らされた斉射の 100 m 刻み（切り上げ。63 まで。距離が無ければ 0）・足した斉射の隻数（2 以上。1 隻は 0。3 まで）・本数（15 まで） */
++/** 照らされた斉射の 100 m 刻み（切り上げ。63 まで。距離が無ければ 0）・足した斉射の隻数（2 以上。1 隻は 0。3 まで） */
+ const stepOf = (l: Readonly<LandingEventView>): number => (Number.isNaN(l.eventM) ? 0 : Math.min(63, Math.ceil(l.eventM / LANDING_DIST_STEP_M)));
+ const boatsOf = (l: Readonly<LandingEventView>): number => (l.eventBoats >= 2 ? Math.min(3, l.eventBoats) : 0);
+ 
+-/** allyEventKey の欄（種類 4 ビットの上）: 照らされた斉射は 方角 << 4（3）| 100 m << 7（6）| 本数 << 13（4）| 足した隻数 << 26（2。ui/landing-lines の LEK_* と同じ位置）。撃たずに去ったは 句の種類 << 4（2）| 撃てる隻数 << 6（2） */
++/** allyEventKey の欄（種類 4 ビットの上）: 照らされた斉射は 方角 << 4（3）| 100 m << 7（6）| 本数 << 13（4）| 足した隻数 << 26（2。ui/landing-lines の LEK_* と同じ位置） */
+ export const AK_DIR = 4;
+ export const AK_STEP = 7;
+ export const AK_COUNT = 13;
+ export const AK_BOATS = 26;
+-export const AK_AWAY = 4;
+-export const AK_ARMED = 6;
+ 
+-/** モード 35 の卯月の出来事のキー（文に出る値だけ）: 照らされた斉射は 1 隻なら方角と距離と本数・足した斉射は隻数と本数、撃たずに去ったは後ろの句の種類と撃てる隻数（句があるときだけ） */
++/** モード 35 の卯月の出来事のキー（文に出る値だけ）: 照らされた斉射は 1 隻なら方角と距離と本数・足した斉射は隻数と本数 */
+ export function allyEventKey(l: Readonly<LandingEventView>): number {
+-  const k = l.eventKind;
+-  if (k === LE_LIT_AWAY) {
+-    const away = awayKind(l);
+-    return k | (away << AK_AWAY) | ((away === AWAY_ARMED ? Math.min(3, l.eventArmed) : 0) << AK_ARMED);
+-  }
+   const boats = boatsOf(l);
+   const one = boats === 0;
+-  return k | ((one ? l.eventDirIdx : 0) << AK_DIR) | ((one ? stepOf(l) : 0) << AK_STEP) | (Math.min(15, l.eventCount) << AK_COUNT) | (boats << AK_BOATS);
++  return l.eventKind | ((one ? l.eventDirIdx : 0) << AK_DIR) | ((one ? stepOf(l) : 0) << AK_STEP) | (Math.min(15, l.eventCount) << AK_COUNT) | (boats << AK_BOATS);
+ }
+ 
+ /**
+- * モード 35 の卯月の出来事の行: 照らされた斉射（R-U5: 射点の哨戒の PT が照らされて慌てて撃った＝狙い × 2.5。慌てた斉射と同じ強調色・輸送船から見た方角と距離。同じステップの斉射は隻数と本数）、
+- * 撃たずに去った（味方の青。揚陸の決着の前なら後ろにまだ撃てる米PT の数か「撃てる米PT はもういない」）。ほかの種類は ''（来ない）。name は卯月の呼び名
++ * モード 35 の卯月の出来事の行: 照らされた斉射（R-U5: 射点の哨戒の PT が照らされて慌てて撃った＝狙い × 2.5。慌てた斉射と同じ強調色・輸送船から見た方角と距離。同じステップの斉射は隻数と本数。
++ * 撃った PT は去らない＝v0.6.10 実機 1 回目）。ほかの種類は ''（来ない）。name は卯月の呼び名（今の文には出ない。呼ぶ側の形を変えないため受け取る）
+  */
+-export function allyEventLine(l: Readonly<LandingEventView>, name: string): HudLine {
+-  if (l.eventKind === LE_LIT_AWAY) {
+-    const away = awayKind(l);
+-    const tail = away === AWAY_ARMED ? ` ・ 残り ${Math.min(3, l.eventArmed)} 隻が輸送船を狙う` : away === AWAY_EMPTY ? ' ・ 撃てる米PT はもういない' : '';
+-    return { text: `${name}が照らした！ 米PT は撃たずに去る${tail}`, color: HOME_COLOR_TEXT };
+-  }
++export function allyEventLine(l: Readonly<LandingEventView>, _name: string): HudLine {
+   if (l.eventKind !== LE_LIT_SALVO) return { text: '', color: HUD_COLOR_STRONG };
+   const boats = boatsOf(l);
+   const n = Math.min(15, l.eventCount);
+diff --git a/src/ui/ally-result.ts b/src/ui/ally-result.ts
+index cd2c1cb..cc32ed0 100644
+--- a/src/ui/ally-result.ts
++++ b/src/ui/ally-result.ts
+@@ -4,8 +4,9 @@
+ import type { AllyResult } from './result-types';
+ 
+ /**
+- * 本文の卯月の 1 行（20 px・KPI の色。揚陸の 3 行の下）: 「卯月: 照らした米PT 2 隻 ・ 撃たずに去らせた 1 ・ 命中 2/17 発 ・ 撃退 1 ・ 撃沈 0」。照らされた斉射・制圧は 1 以上のときだけ
++ * 本文の卯月の 1 行（20 px・KPI の色。揚陸の 3 行の下）: 「卯月: 照らした米PT 2 隻 ・ 命中 2/17 発 ・ 撃退 1 ・ 撃沈 0」。照らされた斉射・制圧は 1 以上のときだけ。
+  * （「照らされて撃った 1」「制圧 1」）、撃たなかった夜は「撃たなかった」（隼艇の行と同じ）。数は data の見張り・砲を合わせる根拠（CLAUDE.md §9。模擬の TABLE=4 と同じ数え）。
++ * v0.6.10 実機 1 回目: 照らされても PT は去らないので「撃たずに去らせた N」を外した（撃退・撃沈は撃った後の PT も数える）。
+  * v0.6.10 F（レビュー docs-5）: 命中の分母は生きた PT へ撃った弾（撃った弾 − 去る PT を追って撃った弾＝core の chaseShells。追う弾は去る PT に当たらない＝S4）。S7 は全部の弾を分母にし、
+  * 模擬の 1 夜は弾 7.7 のうち追い撃ち 5.4 で、照らして 1 秒で去った夜は「命中 0/10 発」と全部外したように読めた。追い撃ちの数を「（追い撃ち N）」で足すと、いちばん長い形が
+  * 1,232 px を 150 px 超えるので出さない。飛んでいる間に生きた PT が割り込めば追って撃った弾も当たりうるので、分母は命中を下回らない。生きた PT へ 1 発も撃たなかった夜は「追い撃ち N 発」
+@@ -16,7 +17,7 @@ export function allyResultLineJa(a: AllyResult): string {
+   const aimed = Math.max(a.shells - a.chase, a.hits);
+   const shots = aimed === 0 ? `追い撃ち ${a.chase} 発` : `命中 ${a.hits}/${aimed} 発`;
+   const gun = a.shells === 0 ? '撃たなかった' : `${shots} ・ 撃退 ${a.retired} ・ 撃沈 ${a.sunk}${supp}`;
+-  return `${a.labelJa}: 照らした米PT ${a.lit} 隻 ・ 撃たずに去らせた ${a.litAway}${salvo} ・ ${gun}`;
++  return `${a.labelJa}: 照らした米PT ${a.lit} 隻${salvo} ・ ${gun}`;
+ }
+ 
+ /** 自艇の砲の行（ui/pt-lines の 4 行目）から引く卯月の分（隼艇の分と同じ引き方。卯月の無い夜は 0） */
+diff --git a/src/ui/landing-lines.ts b/src/ui/landing-lines.ts
+index 252d34a..c7dd76b 100644
+--- a/src/ui/landing-lines.ts
++++ b/src/ui/landing-lines.ts
+@@ -212,7 +212,7 @@ export const LEK_GONE = 28;
+ 
+ /** 足した斉射の隻数（2 以上なら「米PT N 隻が…輸送船へ N 本」。1 隻の斉射・斉射でない出来事は 0。3 まで） */
+ const boatsOf = (l: LandingEventView): number => (l.eventBoats >= 2 ? Math.min(3, l.eventBoats) : 0);
+-/** 撃てる米PT が残らない戦いながらの斉射（撃った PT は去り、教え「離れて戦え」の相手がいない＝「米PT は去る」。code-2） */
++/** 撃てる米PT が残らない戦いながらの斉射（もう輸送船を撃てる米PT がいない＝「米PT の魚雷は尽きた」。code-2。v0.6.10 実機 1 回目までは撃った PT が去ったので「米PT は去る」） */
+ const goneOf = (l: LandingEventView): boolean => l.eventKind === LE_ENGAGED && !(l.eventArmed > 0);
+ 
+ /**
+@@ -236,7 +236,7 @@ export function landingEventKey(l: LandingEventView): number {
+ 
+ /**
+  * モード 35 の行（LANDING_EVENT_SHOW_MS。ui/pt-line-clock の待ちの鎖）: 斉射（気づかれていない＝警告・慌てた＝強調・戦いながら＝警告。R12。慌てた・戦いながらは輸送船から見た方角と距離＝R14 A4、
+- * 戦いながらの後ろは教え「離れて戦え」＝A1。撃てる米PT が残らなければ「米PT は去る」＝code-2。同じステップに足した斉射は隻数と本数＝A3）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
++ * 戦いながらの後ろは教え「離れて戦え」＝A1。撃てる米PT が残らなければ「米PT の魚雷は尽きた」＝code-2（撃った PT は去らずに自艇と戦う）。同じステップに足した斉射は隻数と本数＝A3）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
+  * 外れ（被雷の後なら「被雷 N のまま」＝code-1。揚陸の後なら「揚陸を続ける」を付けない）、揚陸の前の沈没（%）、揚陸完了、揚陸の後の沈没。l は ui/pt-line-clock が写して持つ出来事
+  */
+ export function landingEventLine(l: LandingEventView, allyJa = ''): HudLine {
+@@ -248,7 +248,7 @@ export function landingEventLine(l: LandingEventView, allyJa = ''): HudLine {
+   switch (l.eventKind) {
+     case LE_CALM: return { text: boats >= 2 ? `${who}雷撃！ 輸送船へ ${n} 本` : `米PT 雷撃！ ${dir}から輸送船へ ${n} 本`, color: HUD_COLOR_WARN };
+     case LE_HURRIED: return { text: `${who}慌てて発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ 外れやすい`, color: HUD_COLOR_STRONG };
+-    case LE_ENGAGED: return { text: `${who}戦いながら発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ ${goneOf(l) ? '米PT は去る' : '離れて戦え'}`, color: HUD_COLOR_WARN };
++    case LE_ENGAGED: return { text: `${who}戦いながら発射！ ${boats >= 2 ? '輸送船へ' : `輸送船の${dir} ${d} m から`} ${n} 本 ・ ${goneOf(l) ? '米PT の魚雷は尽きた' : '離れて戦え'}`, color: HUD_COLOR_WARN };
+     case LE_HIT: return { text: `輸送船 被雷！ あと ${hitsLeftOf(l)} 本で沈む`, color: HUD_COLOR_WARN };
+     case LE_DUD: {
+       const hits = l.hitsToSink - hitsLeftOf(l);
+diff --git a/src/ui/landing-result.ts b/src/ui/landing-result.ts
+index b3745ed..5f49419 100644
+--- a/src/ui/landing-result.ts
++++ b/src/ui/landing-result.ts
+@@ -1,10 +1,12 @@
+ // 停泊して揚陸する味方の輸送船の任務（v0.6.9 S7。jp_04「多号作戦・オルモック湾へ」。docs/02 §6.11、spec-v069 §5.7・R8/F11・R12）の Result の文: 本文の頭の 3 行（輸送船の結末・PT ごとの雷撃の記録・
+ // 米PT の魚雷の和）と、状況の行の頭「輸送船 揚陸完了 ・ 米PT: …」。材料は systems/landing-telemetry の landingResultPart（終わりに 1 回。mission-telemetry の buildMissionResult が広げる）。Result を作るときに 1 回だけ組む（毎フレームの処理は無い）。
+ // Phaser も DOM を読む config も使わない（tests/landing-result が文と幅を確かめる）。距離は 100 m 刻みの切り上げ（HUD の出来事と同じ。core/landing の LANDING_DIST_STEP_M）、% は切り捨て。
+-// v0.6.10 S7（味方の駆逐艦 卯月。卯月のいる夜だけ LandingResult.ally）: 雷撃の行に「900 m 照らされて 外れ」（照らされた斉射）・「卯月が照らして去らせた」・「卯月が撃退」「卯月が撃沈」（卯月の砲が結末を決めた PT）。
++// v0.6.10 S7（味方の駆逐艦 卯月。卯月のいる夜だけ LandingResult.ally）: 雷撃の行に「900 m 照らされて 外れ」（照らされた斉射）・「卯月が撃退」「卯月が撃沈」（卯月の砲が結末を決めた PT）。
++// v0.6.10 実機 1 回目: 撃っても照らされても PT は去らないので「卯月が照らして去らせた」は無くした。撃った後の撃退・撃沈は斉射の語の後ろに付けず（3 隻の最長の形が 1,232 px を超える）、
++// 自艇の砲の行（ui/pt-lines）と卯月の行（ui/ally-result）の撃退・撃沈の数に入る。
+ // 卯月の無い夜（ほかの任務・?debug&noally）は前の文のまま。
+ import { LANDING_DIST_STEP_M, LD_DONE, LD_SUNK } from '../core/landing';
+-import { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_AWAY, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK } from '../core/pt-torpedo';
++import { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_HURRIED, OUT_RETIRED, OUT_SUNK } from '../core/pt-torpedo';
+ import type { MissionEndReason } from '../core/mission-flow';
+ import { landingPct } from './landing-lines';
+ import type { LandingResult } from './result-types';
+@@ -45,7 +47,7 @@ const distJa = (m: number): string => `${Math.ceil(m / LANDING_DIST_STEP_M) * LA
+ /**
+  * PT 1 隻の雷撃の語（方角の後ろ）: 斉射は「900 m 命中 1」「1300 m 慌てて 外れ」「800 m 戦いながら 不発」（命中が無く不発だけ）「900 m 走行中」（終わりに走っていて当たっていない）、
+  * 撃たなかった PT は「25mm で撃退」「25mm で撃沈」「引きつけて去らせた」「夜明けに去った」「輸送船が沈み去った」（R8/F11）「撃たせず」。
+- * 卯月のいる夜（v0.6.10 S7）: 照らされた斉射は「900 m 照らされて 外れ」、照らされて撃たずに去った PT は「卯月が照らして去らせた」、卯月の砲が結末を決めた PT は「卯月が撃退」「卯月が撃沈」
++ * 卯月のいる夜（v0.6.10 S7）: 照らされた斉射は「900 m 照らされて 外れ」、撃つ前に卯月の砲が結末を決めた PT は「卯月が撃退」「卯月が撃沈」。斉射が先（撃った PT はその後も戦う）
+  */
+ export function landingRunWordJa(l: LandingResult, i: number, gunLabel: string): string {
+   const o = l.outcome[i]!;
+@@ -56,7 +58,6 @@ export function landingRunWordJa(l: LandingResult, i: number, gunLabel: string):
+     return `${distJa(l.launchM[i]!)} ${how}${res}`;
+   }
+   const al = l.ally;
+-  if (o === OUT_LIT_AWAY) return `${al ? al.labelJa : '味方'}が照らして去らせた`;
+   if (al && al.byAlly[i] === true && (o === OUT_RETIRED || o === OUT_SUNK)) return `${al.labelJa}が${o === OUT_SUNK ? '撃沈' : '撃退'}`;
+   const gun = gunLabel || '砲';
+   if (o === OUT_RETIRED) return `${gun} で撃退`;
+diff --git a/src/ui/pt-line-clock.ts b/src/ui/pt-line-clock.ts
+index b95b1bc..d1056ca 100644
+--- a/src/ui/pt-line-clock.ts
++++ b/src/ui/pt-line-clock.ts
+@@ -20,7 +20,7 @@
+ //   S8 のレビュー（game-2・docs-9）: 2 行目の揚陸の出来事はここが写して持つ（landingEv。文とキーはそれを読む）。出たとみなす前に次の出来事が来ても替えない: 同じ種類の斉射は足し
+ //   （「米PT 2 隻が戦いながら発射！ 輸送船へ 6 本」）、ほかは後ろに 1 つ待たせ（新しい方が待っているものに替わる。ただし斉射は待っている外れ・被雷・沈没に替わらない）、今の出来事が
+ //   出たとみなされたら（2 秒）すぐ次を出す（前は待っている斉射が次の斉射に、出て 1 秒の被雷が沈没に替わり、命中した斉射・被雷の行が出なかった）。
+-// v0.6.10 S6（卯月）: 照らされた斉射（LE_LIT_SALVO）は斉射の重さで同じ種類は足す、撃たずに去った（LE_LIT_AWAY）はいちばん軽い（待っている斉射を消さない。前は種類の外で沈没と同じ重さだった）。
++// v0.6.10 S6（卯月）: 照らされた斉射（LE_LIT_SALVO）は斉射の重さで同じ種類は足す（撃たずに去った LE_LIT_AWAY の −1 は v0.6.10 実機 1 回目に出来事ごと無くした）。
+ // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
+ import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
+ import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
+@@ -28,7 +28,7 @@ import { LANDING_EVENT_MIN_SHOWN_MS, LANDING_EVENT_SHOW_MS } from '../config/lan
+ import { PT_RESULT_SHOW_MS } from '../config/pt-config';
+ import type { BoatTelemetry } from '../core/boat-motion';
+ import { ENGINE_EV_WARN, ENGINE_WARN } from '../core/engine-trouble';
+-import { LE_DONE, LE_DUD, LE_HIT, LE_LIT_AWAY, LE_MISS } from '../core/landing';
++import { LE_DONE, LE_DUD, LE_HIT, LE_MISS } from '../core/landing';
+ import { CONVOY_EV_ARRIVED, CONVOY_EV_GB_BEACH, CONVOY_EV_GB_SUNK, CONVOY_EV_KIND, CONVOY_EV_SUNK } from './convoy-lines';
+ import { copyLandingEvent, createLandingEventView, landingSalvoEvent, type LandingEventView } from './landing-lines';
+ import {
+@@ -210,11 +210,10 @@ export class PtLineClock {
+ }
+ 
+ /**
+- * 揚陸の出来事の重さ（待っている出来事に替わってよいか）: 卯月に照らされて撃たずに去った −1（v0.6.10 S6。待っている斉射に替わらない）・斉射 0（照らされた斉射も）・外れと不発 1・被雷 2・
++ * 揚陸の出来事の重さ（待っている出来事に替わってよいか）: 斉射 0（照らされた斉射も）・外れと不発 1・被雷 2・
+  * 揚陸完了 3・沈没（揚陸の後も）4
+  */
+ function eventRank(kind: number): number {
+-  if (kind === LE_LIT_AWAY) return -1;
+   if (landingSalvoEvent(kind)) return 0;
+   if (kind === LE_MISS || kind === LE_DUD) return 1;
+   if (kind === LE_HIT) return 2;
+diff --git a/src/ui/result-body.ts b/src/ui/result-body.ts
+index 4d96c29..fa2d504 100644
+--- a/src/ui/result-body.ts
++++ b/src/ui/result-body.ts
+@@ -63,7 +63,7 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
+       line(l1, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+       line(l2, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+       line(l3, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+-      if (r.landing.ally) line(allyResultLineJa(r.landing.ally), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 卯月（v0.6.10 S7）: 照らした・撃たずに去らせた・砲（見張りと砲を合わせる根拠）
++      if (r.landing.ally) line(allyResultLineJa(r.landing.ally), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 卯月（v0.6.10 S7）: 照らした・照らされて撃った・砲（見張りと砲を合わせる根拠）
+       section();
+       line(a, HUD_FONT_HEADING_PX);
+     } else {
+diff --git a/src/ui/result-types.ts b/src/ui/result-types.ts
+index 2585f73..860fb22 100644
+--- a/src/ui/result-types.ts
++++ b/src/ui/result-types.ts
+@@ -156,13 +156,13 @@ export interface LandingResult {
+ 
+ /**
+  * 味方の駆逐艦 卯月の記録（v0.6.10 S7。jp_04。systems/ally-telemetry の allyResult。core/ally-destroyer の 1 夜の数え）: 呼び名（data の label_ja）・照らした PT（一度でも）・
+- * 照らされて撃たずに去った PT・照らされて撃った（照らされた斉射）・撃った弾（12 cm と 25 mm）とそのうち去る PT を追って撃った弾（v0.6.10 F。core の chaseShells＝模擬の TABLE=4 の chase。
++ * 照らされて撃った（照らされた斉射。照らされて撃たずに去った PT の数は v0.6.10 実機 1 回目に外した）・撃った弾（12 cm と 25 mm）とそのうち去る PT を追って撃った弾（v0.6.10 F。core の chaseShells＝模擬の TABLE=4 の chase。
+  * 去る PT には当たらない）・PT への命中・撃退・撃沈（卯月の砲が結末を決めた PT＝fateBy が FATE_BY_ALLY。模擬の allyFate と同じ数え）・制圧、
+  * PT ごと（線の順）に卯月の砲が結末を決めたか。Result の卯月の 1 行（ui/ally-result）・雷撃の行の「卯月が撃退」・自艇の砲の行から引く分
+  */
+ export interface AllyResult {
+   labelJa: string;
+-  lit: number; litAway: number; litSalvo: number;
++  lit: number; litSalvo: number;
+   shells: number; chase: number; hits: number; retired: number; sunk: number; suppressions: number;
+   byAlly: boolean[];
+ }
