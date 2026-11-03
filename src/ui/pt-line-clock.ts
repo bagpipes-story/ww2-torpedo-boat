@@ -20,6 +20,7 @@
 //   S8 のレビュー（game-2・docs-9）: 2 行目の揚陸の出来事はここが写して持つ（landingEv。文とキーはそれを読む）。出たとみなす前に次の出来事が来ても替えない: 同じ種類の斉射は足し
 //   （「米PT 2 隻が戦いながら発射！ 輸送船へ 6 本」）、ほかは後ろに 1 つ待たせ（新しい方が待っているものに替わる。ただし斉射は待っている外れ・被雷・沈没に替わらない）、今の出来事が
 //   出たとみなされたら（2 秒）すぐ次を出す（前は待っている斉射が次の斉射に、出て 1 秒の被雷が沈没に替わり、命中した斉射・被雷の行が出なかった）。
+// v0.6.10 S6（卯月）: 照らされた斉射（LE_LIT_SALVO）は斉射の重さで同じ種類は足す、撃たずに去った（LE_LIT_AWAY）はいちばん軽い（待っている斉射を消さない。前は種類の外で沈没と同じ重さだった）。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
 import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
@@ -27,7 +28,7 @@ import { LANDING_EVENT_MIN_SHOWN_MS, LANDING_EVENT_SHOW_MS } from '../config/lan
 import { PT_RESULT_SHOW_MS } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { ENGINE_EV_WARN, ENGINE_WARN } from '../core/engine-trouble';
-import { LE_DONE, LE_DUD, LE_HIT, LE_MISS } from '../core/landing';
+import { LE_DONE, LE_DUD, LE_HIT, LE_LIT_AWAY, LE_MISS } from '../core/landing';
 import { CONVOY_EV_ARRIVED, CONVOY_EV_GB_BEACH, CONVOY_EV_GB_SUNK, CONVOY_EV_KIND, CONVOY_EV_SUNK } from './convoy-lines';
 import { copyLandingEvent, createLandingEventView, landingSalvoEvent, type LandingEventView } from './landing-lines';
 import {
@@ -208,8 +209,12 @@ export class PtLineClock {
   }
 }
 
-/** 揚陸の出来事の重さ（待っている出来事に替わってよいか）: 斉射 0・外れと不発 1・被雷 2・揚陸完了 3・沈没（揚陸の後も）4 */
+/**
+ * 揚陸の出来事の重さ（待っている出来事に替わってよいか）: 卯月に照らされて撃たずに去った −1（v0.6.10 S6。待っている斉射に替わらない）・斉射 0（照らされた斉射も）・外れと不発 1・被雷 2・
+ * 揚陸完了 3・沈没（揚陸の後も）4
+ */
 function eventRank(kind: number): number {
+  if (kind === LE_LIT_AWAY) return -1;
   if (landingSalvoEvent(kind)) return 0;
   if (kind === LE_MISS || kind === LE_DUD) return 1;
   if (kind === LE_HIT) return 2;

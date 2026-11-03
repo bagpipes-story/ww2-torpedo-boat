@@ -238,14 +238,16 @@ function visualChecks(w, A, ck) {
 /**
  * jp04-probe.mjs の 1 区切り: 台本で進め、まだ撮っていない出来事（卯月が気づく・探照灯・砲・撃たずに去らせた・卯月の命中・斉射・揚陸の決着）が起きたら止めて返す（撮るのは node）。
  * 2 行目のいちばん広い文（表示の幅 px）と出来事の秒も数える。o: { policy, maxSteps, frameMs, forceSink }。st はページに持つ（__probe）。S5b: フレームごとに visualChecks（p.ck）。
- * forceSink（道具だけの細工。門には使わない）: 卯月の 12 cm の 1 命中を必ず撃沈に（pHit.fireChance = 1）して、卯月が沈めた PT の絵・命中スローの道を通す
+ * forceSink（道具だけの細工。門には使わない）: 卯月の 12 cm の 1 命中を必ず撃沈に（pHit.fireChance = 1）して、卯月が沈めた PT の絵・命中スローの道を通す。
+ * S6: 2 行目の幅は縮める前の幅（Text.width。lineFitScale で縮んだ行も 840 px の門で測る）、卯月の文（「卯月」「帰投の輪で」を含む 2 行目）を出た順に集め（allyTexts。数だけ違う文は 1 つ・40 まで）、
+ * 出来事に ringCall（「帰投の輪で揚陸を待て」が 2 行目に出た）・allyLine（「卯月」を含む 2 行目が出た）を足す
  */
 export function probeRun(o) {
   const hl = window.__hl;
   const w = hl.world();
   const pol = POLICIES[o.policy];
   if (!pol) throw new Error(`台本 ${o.policy} は無い`);
-  const p = (window.__probe ??= { steps: 0, events: {}, widest: { w: 0, text: '', t: 0 }, shot: {}, ck: { litFar: 0, litFarHidden: 0, unlitFarShown: 0, notGrey: 0, sinkNoTween: 0, allySinks: 0, allySinkNoSlow: 0, retiredN: 0, allyRetiredN: 0, sunkN: 0, sunkSeen: [], retiredSeen: [] } });
+  const p = (window.__probe ??= { steps: 0, events: {}, widest: { w: 0, text: '', t: 0 }, allyTexts: [], allyKeys: [], shot: {}, ck: { litFar: 0, litFarHidden: 0, unlitFarShown: 0, notGrey: 0, sinkNoTween: 0, allySinks: 0, allySinkNoSlow: 0, retiredN: 0, allyRetiredN: 0, sunkN: 0, sunkSeen: [], retiredSeen: [] } });
   const hud = window.__game.scene.getScene('Hud');
   const line = hud && hud.boatHud ? hud.boatHud.missionLine.missionText : null;
   const A = w.landing && w.landing.ally ? w.landing.ally.a : null;
@@ -256,7 +258,14 @@ export function probeRun(o) {
     pol(hl, w);
     hl.frame(o.frameMs);
     p.steps++;
-    if (line && line.visible && line.displayWidth > p.widest.w) p.widest = { w: line.displayWidth, text: line.text, t: w.stepTimeS };
+    if (line && line.visible && line.width > p.widest.w) p.widest = { w: line.width, text: line.text, t: w.stepTimeS };
+    const lt = line && line.visible ? line.text : '';
+    const lk = lt.replace(/\d+/g, 'N'); // 数だけ違う文は 1 つ（揚陸の %・残りの秒）
+    if (/卯月|帰投の輪で/.test(lt) && p.allyTexts.length < 40 && !p.allyKeys.includes(lk)) {
+      p.allyKeys.push(lk);
+      p.allyTexts.push(lt);
+    }
+    mark('ringCall', lt.includes('帰投の輪で揚陸を待て')); mark('allyLine', lt.includes('卯月'));
     if (hl.active('Mission')) visualChecks(w, A, p.ck);
     if (A) {
       mark('spotted', A.spots > 0); mark('beam', A.g.light.on); mark('shot', A.shells > 0); mark('litAway', A.litAways > 0);

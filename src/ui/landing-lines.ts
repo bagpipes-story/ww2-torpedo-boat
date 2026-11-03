@@ -8,6 +8,7 @@
 // 外れは被雷の後なら「雷跡 それた ・ 被雷 N のまま」（前は「被雷！」の 2 秒後に「輸送船は無事」と出た。code-1）、モード 35 の文とキーは ui/pt-line-clock が写して持つ出来事（LandingEventView。game-2）。
 // v0.6.9 実機 1 回目のレビュー（code-2）: 撃った PT はみな去る（ユーザーの選択 A）ので、撃てる米PT が残らない戦いながらの斉射の後ろは「離れて戦え」でなく「米PT は去る」
 // （出来事のフレームのまだ撃てる隻数 eventArmed。まだ撃てる PT がいれば「離れて戦え」のまま）。
+// v0.6.10 S6（卯月）: 平常の行の末尾（LD4）とモード 35 の照らされた斉射・撃たずに去った（LE_LIT_*）の文とキーは ui/ally-lines（照らされた斉射も斉射＝足す・待つ重さは斉射）。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。どの文も t.landing.enabled の任務（jp_04）だけ: ほかの任務は landingKey 0・待ちは立たない。
 // 距離は 100 m 刻みの切り上げ（core/landing の LANDING_DIST_STEP_M。「1800 m」とカンマなし）、% は切り捨て、秒は切り上げ。方角は輸送船から見た 8 方位（見張りの報告）。
 // キーは行に出る値だけを詰める（行に出ない値は 0＝無駄に組み直さない）。文はキーと同じ丸めの関数でテレメトリから組む（ui/mission-line がキーでキャッシュする）。
@@ -15,10 +16,12 @@ import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud
 import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import {
-  LANDING_DIST_STEP_M, LANDING_REPORT_NEAR, LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_MISS, LE_SUNK, LE_SUNK_DONE, type LandingTelemetry,
+  LANDING_DIST_STEP_M, LANDING_REPORT_NEAR, LD_DONE, LD_SUNK, LD_UNLOADING, LE_CALM, LE_DONE, LE_DUD, LE_ENGAGED, LE_HIT, LE_HURRIED, LE_LIT_SALVO, LE_MISS, LE_SUNK, LE_SUNK_DONE,
+  type LandingTelemetry,
 } from '../core/landing';
 import { LANDING_HITS_MAX, LANDING_UNLOAD_MAX_S } from '../core/landing-data';
 import { CALL_DAWN, CALL_FUEL } from '../core/mission-flow';
+import { allyEventKey, allyEventLine, allyLandingEvent, allyRunTailJa } from './ally-lines';
 import type { HudLine } from './hud-lines';
 import { MISSION_CALL, MISSION_LANDING_EVENT, MISSION_LANDING_FIRE_LINE, MISSION_LANDING_THREAT, MISSION_PT, MISSION_PT_PASS, MISSION_WAITING, landingFireLineShown, landingRingWaiting } from './mission-mode';
 
@@ -84,12 +87,15 @@ export function landingCallWaits(l: LandingTelemetry, call: number): boolean {
   return landingWaiting(l) && (call === CALL_DAWN || call === CALL_FUEL);
 }
 
-/** 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中」の代わり）: 揚陸の %・まだ撃てる米PT（みな撃てれば来る方角、減れば残り、0 ならもう撃てない） */
+/**
+ * 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中」の代わり）: 揚陸の %・まだ撃てる米PT（みな撃てれば来る方角、減れば残り、0 ならもう撃てない）。
+ * v0.6.10 S6（LD4）: 卯月のいるノーマルの夜は撃てる米PT がいる間「 ・ 走らせれば卯月が照らす」（ui/ally-lines。ハードは 840 px に収まらないので付けない）
+ */
 export function landingNormalLine(t: BoatTelemetry): HudLine {
   const l = t.landing;
   const armed = Math.min(3, l.armed);
   const who = armed === 0 ? '米PT はもう魚雷を撃てない' : armed >= l.total ? `米PT ${armed} 隻が${l.fromDirsJa}から輸送船を狙う` : `米PT 残り ${armed} 隻が輸送船を狙う`;
-  return { text: `揚陸 ${landingPct(l.pct)}% ・ ${who}`, color: HUD_COLOR_STRONG };
+  return { text: `揚陸 ${landingPct(l.pct)}% ・ ${who}${allyRunTailJa(t.ally, armed)}`, color: HUD_COLOR_STRONG };
 }
 
 /**
@@ -182,9 +188,9 @@ export function copyLandingEvent(dst: LandingEventView, src: Readonly<LandingEve
   dst.hitsToSink = src.hitsToSink;
 }
 
-/** 斉射の出来事（気づかれていない・慌てた・戦いながら） */
+/** 斉射の出来事（気づかれていない・慌てた・戦いながら・卯月に照らされた＝v0.6.10 S6。同じ種類は足す・待つ重さは斉射） */
 export function landingSalvoEvent(kind: number): boolean {
-  return kind === LE_CALM || kind === LE_HURRIED || kind === LE_ENGAGED;
+  return kind === LE_CALM || kind === LE_HURRIED || kind === LE_ENGAGED || kind === LE_LIT_SALVO;
 }
 
 /** 出来事の距離の 100 m 刻み（切り上げ。63 まで。斉射の距離が無ければ 0） */
@@ -215,6 +221,7 @@ const goneOf = (l: LandingEventView): boolean => l.eventKind === LE_ENGAGED && !
  */
 export function landingEventKey(l: LandingEventView): number {
   const k = l.eventKind;
+  if (allyLandingEvent(k)) return allyEventKey(l); // 卯月に照らされた斉射・撃たずに去った（v0.6.10 S6。ui/ally-lines）
   const salvo = landingSalvoEvent(k);
   const boats = salvo ? boatsOf(l) : 0;
   const one = salvo && boats === 0;
@@ -232,7 +239,7 @@ export function landingEventKey(l: LandingEventView): number {
  * 戦いながらの後ろは教え「離れて戦え」＝A1。撃てる米PT が残らなければ「米PT は去る」＝code-2。同じステップに足した斉射は隻数と本数＝A3）、被雷（あと N 本）、不発（F16: 被雷の後なら「被雷 N のまま」）、
  * 外れ（被雷の後なら「被雷 N のまま」＝code-1。揚陸の後なら「揚陸を続ける」を付けない）、揚陸の前の沈没（%）、揚陸完了、揚陸の後の沈没。l は ui/pt-line-clock が写して持つ出来事
  */
-export function landingEventLine(l: LandingEventView): HudLine {
+export function landingEventLine(l: LandingEventView, allyJa = ''): HudLine {
   const dir = bearingJa(l.eventDirIdx * 45);
   const n = Math.min(15, l.eventCount);
   const d = eventStepOf(l) * LANDING_DIST_STEP_M;
@@ -256,7 +263,7 @@ export function landingEventLine(l: LandingEventView): HudLine {
     case LE_SUNK: return { text: `輸送船 撃沈… 揚陸は ${landingPct(l.eventPct)}% で止まった ・ 帰投せよ`, color: HUD_COLOR_WARN };
     case LE_DONE: return { text: '揚陸完了！ あとは生きて帰れ', color: HOME_COLOR_TEXT };
     case LE_SUNK_DONE: return { text: '輸送船 撃沈…（揚陸は済んでいた）', color: HUD_COLOR_STRONG };
-    default: return { text: '', color: HUD_COLOR_STRONG };
+    default: return allyEventLine(l, allyJa); // 卯月に照らされた斉射・撃たずに去った（v0.6.10 S6。allyJa は卯月の呼び名。ほかの種類は ''）
   }
 }
 
@@ -266,7 +273,7 @@ export function landingEventLine(l: LandingEventView): HudLine {
  */
 export function landingLine(t: BoatTelemetry, mode: number, ev: LandingEventView = t.landing): HudLine | null {
   if (!t.landing.enabled) return null;
-  if (mode === MISSION_LANDING_EVENT) return landingEventLine(ev);
+  if (mode === MISSION_LANDING_EVENT) return landingEventLine(ev, t.ally.labelJa);
   if (mode === MISSION_LANDING_THREAT) return landingThreatLine(t);
   if (mode === MISSION_LANDING_FIRE_LINE) return landingFireLineLine(t.landing);
   if (mode === MISSION_WAITING && landingRingWaiting(t)) return landingRingLine(t.landing);
