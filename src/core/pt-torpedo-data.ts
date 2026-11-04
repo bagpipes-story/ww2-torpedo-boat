@@ -22,7 +22,7 @@ export interface PtTorpedoRecord {
   hurried_error_factor: number;
   engaged_error_factor: number;
   reacquire_s: number;
-  /** 撃ったら去る（true だけ＝V11。3 種類の斉射とも。戦いながらの斉射は v0.6.9 実機 1 回目から＝ユーザーの選択 A） */
+  /** 撃ったら去るか（false だけ＝V11。3 種類の斉射とも撃っても去らない＝v0.6.10 実機 1 回目。v0.6.9 実機 1 回目〜v0.6.10 S8 は true だけ＝撃ったら去った） */
   retreat_after_salvo: boolean;
 }
 
@@ -86,7 +86,7 @@ export function ptTorpedoParamsFromData(raw: unknown, ctx: PtTorpedoContext, lab
   if (!(a.hurried_error_factor >= 1)) bad('hurried_error_factor は 1 以上（慌てた斉射の狙いは粗い）');
   if (!(a.engaged_error_factor === 0 || a.engaged_error_factor >= 1)) bad(`engaged_error_factor（${a.engaged_error_factor}）は 0（戦いながらの斉射なし）か 1 以上（戦いながらの斉射の狙いは粗い）`);
   if (!(a.reacquire_s >= 0)) bad('reacquire_s は 0 以上');
-  if (a.retreat_after_salvo !== true) bad('retreat_after_salvo は true（3 種類の斉射（気づかれていない・慌てた・戦いながら）とも撃ったら去る。戦いながらは v0.6.9 実機 1 回目から）');
+  if (a.retreat_after_salvo !== false) bad('retreat_after_salvo は false（3 種類の斉射（気づかれていない・慌てた・戦いながら）とも撃っても去らずに戦い続ける。v0.6.10 実機 1 回目のユーザー「PTが発射後も去らずに銃撃してくる設計に戻してください」）');
   const torpedo = torpedoParamsFromData(rec, ctx.armingM, ctx.erraticPeriodS);
   const far = Math.max(a.launch_range_m, a.hurried_max_m);
   if (!(far < torpedo.rangeM)) bad(`撃つ距離（launch_range_m・hurried_max_m の遠い方 ${far} m）は魚雷の射程（${torpedo.rangeM} m）より近い`);

@@ -41,6 +41,8 @@ import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
 import { generateFriendlyTransportTexture } from '../assets/ally-ship-placeholder';
+import { generateAllyDestroyerTextures } from '../assets/ally-destroyer-placeholder';
+import { allyFanFor } from '../ui/ally-fan';
 import { getBargeParams } from '../config/game-data';
 import { getPtParams } from '../config/pt-mission-data';
 import { getConvoyParams } from '../config/convoy-mission-data';
@@ -48,6 +50,7 @@ import { getEngineParams } from '../config/engine-mission-data';
 import { getGunboatParams } from '../config/gunboat-mission-data';
 import { getPatrolAirParams } from '../config/patrol-air-mission-data';
 import { validateLandingMissions } from '../config/landing-mission-data';
+import { validateAllyDestroyerMissions } from '../config/ally-destroyer-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -127,11 +130,26 @@ export class BootScene extends Phaser.Scene {
     // 味方の輸送船（v0.6.9。jp_04）: 揚陸の任務（ハードも）の data・置き場・幾何と V12（艇に煙幕なし）の検査（壊れていれば Boot で止まる）、最初の揚陸の任務の輸送船の絵（薄い青）
     const landing = validateLandingMissions(gameData, gameData.hitRateModel.world.time_scale);
     if (landing) generateFriendlyTransportTexture(this, { lengthUnits: landing.lengthM * spriteScale, beamUnits: landing.beamM * spriteScale });
+    // 味方の駆逐艦 卯月（v0.6.10。jp_04）: 置き場・値・位置（今夜の揺らぎ込みの V-A1〜V-A6・V-A8）と探照灯の絵の角（V-A7）の検査（壊れていれば Boot で止まる）、
+    // 艦の絵（薄い青）と見張りの扇（陸を切り落とした 1 枚。S5a）。探照灯の絵は us_02 の敵の駆逐艦の 1 枚を使う（V-A7 で同じ角）
+    const ally = validateAllyDestroyerMissions(gameData, gameData.hitRateModel.world.time_scale, enemy.searchlight ? enemy.searchlight.cone_deg : 0);
+    const allyMission = ally ? getPrototypeMission(gameData, allyMissionId(ally.shipId)) : null;
+    if (ally && allyMission) generateAllyDestroyerTextures(this, { lengthUnits: ally.lengthM * spriteScale, beamUnits: ally.beamM * spriteScale }, allyFanFor(ally, allyMission.coast !== null, allyMission.bounds.height));
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));
     else this.scene.start(SCENE_KEYS.title);
   }
+}
+
+/** 卯月の block を持つ任務の id（V-A8 で 1 任務だけ。validateAllyDestroyerMissions の後に呼ぶ） */
+function allyMissionId(shipId: string): string {
+  const m = (gameData.missionsSeed.missions as readonly Record<string, unknown>[]).find((x) => {
+    const proto = x['v0_1_prototype'] as Record<string, unknown> | undefined;
+    const a = proto?.['ally_destroyer'] as Record<string, unknown> | undefined;
+    return a !== undefined && a['ship_id'] === shipId;
+  });
+  return m ? String(m['id']) : '';
 }
 
 /** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない） */

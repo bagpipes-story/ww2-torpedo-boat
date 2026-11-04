@@ -9,6 +9,8 @@
 // S6b: 海の上の ▼「雷撃」（entities/landing-caret）。見張りの報告（core/landing の landingReport。テレメトリと同じ関数・同じ状態）の PT が自艇の視程の外なら、その真上に置く（ui/landing-markers。
 // 上の HUD の帯・技能のボタン・兵装に重なる所は端の印が受け持つ＝出したかを caretShown に書く）。輸送船の字は HUD の矩形（landingHudRects）を避ける（entities/ally-ship）。
 // §7: 状態・プール・ハンドル・書き先は組み立てで 1 回。毎ステップ確保しない。毎フレームは雷跡の走査（≤ 9 本）・報告（隊を 1 回）・鍵の比較と ▼ の位置だけ。
+// v0.6.10 S5a（spec-v0610 R-U6）: 味方の駆逐艦 卯月（systems/world-ally。seed+27・+28 はそこが作る）を雷撃の直後・敵の魚雷のプールの前に回す（模擬 core/landing-sim と同じ順・同じ引数）。
+// 卯月の世界は buildLanding が組み立てる（卯月の無い任務・?debug&noally は null）。絵の毎フレームと破棄は world-visuals（揚陸の絵の後）。
 import type Phaser from 'phaser';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
 import { createLanding, createLandingReport, createLandingWakes, landingReport, landingResolved, landingWakes, tickLanding, type LandingReport, type LandingState, type LandingWakes } from '../core/landing';
@@ -28,6 +30,7 @@ import { LandingCaret } from '../entities/landing-caret';
 import { HUD_TOP_BAND_BOTTOM, SPEED_HUD_KEEP_TOP, SPEED_HUD_TOP } from '../ui/hud-markers';
 import { landingCaretRects, landingCaretShown, landingHudRects, type HudRectInputs, type ScreenRect } from '../ui/landing-markers';
 import { TorpedoPool } from './torpedo-pool';
+import { buildAlly, type AllyPts, type WorldAlly } from './world-ally';
 import type { WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup-types';
 
@@ -81,6 +84,8 @@ export class WorldLanding {
     /** 輸送船の字が重なってはいけない HUD の矩形と、▼ が重なってはいけない矩形（その一部）（論理 px。buildLanding が 1 回作る。S6b） */
     hud: readonly ScreenRect[],
     caretRects: readonly ScreenRect[],
+    /** 味方の駆逐艦 卯月（v0.6.10。buildAlly。無い任務・?debug&noally は null） */
+    readonly ally: WorldAlly | null,
   ) {
     this.state = createLanding(p);
     this.tst = createPtTorpedoState(count, tp.n);
@@ -100,6 +105,7 @@ export class WorldLanding {
     const nowS = w.stepTimeS;
     this.link.nowS = nowS;
     stepPtTorpedoes(this.tst, this.tp, q, this.state, this.rng, w.dawn.reached, nowS, feelDt, this.link, NO_LEAVE);
+    this.ally?.step(q, this.tst, this.tp, this.state, this.rng, w.dawn.reached, nowS, feelDt, dt, this.link); // 卯月（v0.6.10。R-U6: 雷撃の後・敵の魚雷の前）
     this.pool.step(dt, feelDt, this.state.out ? NO_HULLS : this.hulls, this.p.passRadius2, this.link);
     tickLanding(this.state, this.p, nowS);
   }
@@ -144,7 +150,7 @@ export class WorldLanding {
  * 揚陸の世界を組み立てる（MissionWorld の最後。兵装の後）。setup.landing の無い任務（jp_04 以外）と米PT の隊の無い世界は null（seed+26・プール・絵を作らない）。
  * 敵の魚雷のプールは PT の隻数 × salvo_count 本（ノーマル 6・ハード 9。1 隻 1 回）、乱数は seed+26 を 1 本
  */
-export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: { readonly section: PtSection } | null, seed: number, events: WorldEvents, onSunk: (x: number, y: number) => void): WorldLanding | null {
+export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: (AllyPts & { readonly section: PtSection }) | null, seed: number, events: WorldEvents, onSunk: (x: number, y: number) => void): WorldLanding | null {
   if (!s.landing || !pts) return null;
   const ld = s.landing;
   const count = pts.section.boats.length;
@@ -157,5 +163,6 @@ export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: { readonly
     pause: { x: PAUSE_BUTTON_X, y: PAUSE_BUTTON_Y, r: ROUND_BUTTON_RADIUS * PAUSE_BUTTON_SIZE_SCALE }, stick: { x: STICK_FIXED_CENTER_X, y: STICK_FIXED_CENTER_Y, r: STICK_RADIUS },
     speedLeft: SPEED_HUD_RIGHT_X - 2 * RUDDER_BAR_HALF_WIDTH - HUD_TEXT_GAP, speedTop: s.engine ? SPEED_HUD_KEEP_TOP : SPEED_HUD_TOP - HUD_TEXT_GAP,
   };
-  return new WorldLanding(scene, ld.params, ld.torpedo, count, pool, rng, s.mission.bounds, s.timeScale, events, onSunk, landingHudRects(k), landingCaretRects(k));
+  const hud = landingHudRects(k);
+  return new WorldLanding(scene, ld.params, ld.torpedo, count, pool, rng, s.mission.bounds, s.timeScale, events, onSunk, hud, landingCaretRects(k), buildAlly(scene, s, pts, seed, hud));
 }

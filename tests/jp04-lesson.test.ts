@@ -7,51 +7,14 @@ import { gameData } from '../src/config/game-data';
 import { LANDING_FIGHT_AWAY_JA, LANDING_RING_WAIT_JA, briefingRows, landingBriefingJa } from '../src/core/briefing';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 import { textWidthPx } from './pt-ui-kit';
+import { BRIEF_ROW_PX, BRIEF_WRAP, phaserWrap } from './wrap-kit';
 
 type Rec = Record<string, unknown>;
-/** Briefing の値の行（menu-config の BRIEF_ROW_PX 24・BRIEF_VALUE_WRAP 1056。menu-config は DOM を読むので値で書く） */
-const ROW_PX = 24;
-const WRAP = 1056;
+/** Briefing の値の行（tests/wrap-kit。v0.6.10 S7 で折り返しの写しをそこへ移した） */
+const ROW_PX = BRIEF_ROW_PX;
+const WRAP = BRIEF_WRAP;
 const M = (gameData.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'jp_04')!;
 const HARD = (M['v0_1_prototype'] as Rec)['hard'] as Rec;
-
-/** Phaser 3 の Text.advancedWordWrap を幅の見積もりで写したもの（行の配列） */
-function phaserWrap(text: string, px = ROW_PX, width = WRAP): string[] {
-  const w = (s: string): number => textWidthPx(s, px);
-  const lines = [text.replace(/ +/g, ' ')];
-  const out: string[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!.replace(/^ *|\s*$/g, '');
-    if (w(line) < width) {
-      out.push(line);
-      continue;
-    }
-    let left = width;
-    const words = line.split(' ');
-    let o = '';
-    for (let j = 0; j < words.length; j++) {
-      const word = words[j]!;
-      if (w(`${word} `) > left) {
-        if (j === 0) {
-          let nw = `${word} `;
-          while (nw.length > 0) {
-            nw = nw.slice(0, -1);
-            if (w(nw) <= left) break;
-          }
-          words[j] = word.slice(nw.length);
-          o += nw;
-        }
-        const off = words[j]!.length > 0 ? j : j + 1;
-        lines.splice(i + 1, 0, words.slice(off).join(' ').replace(/[ \n]*$/g, ''));
-        break;
-      }
-      o += `${word} `;
-      left -= w(`${word} `);
-    }
-    out.push(o.replace(/[ \n]*$/g, ''));
-  }
-  return out.filter((l) => l.length > 0);
-}
 
 describe('R12 の教え「輸送船から離れて戦え」', () => {
   it('目的（ノーマル・ハード）と条件の句が同じ句を含む', () => {
@@ -89,7 +52,7 @@ describe('R12 の教え「輸送船から離れて戦え」', () => {
       expect(phaserWrap(now).length).toBe(2);
       const lines = phaserWrap(line);
       expect(lines.length, lines.join('\n')).toBe(3);
-      expect(lines[2]!.startsWith('・ 揚陸 140 秒')).toBe(true);
+      expect(lines[2]!.startsWith('・ 揚陸 110 秒')).toBe(true);
       expect(lines[1]!.endsWith(`・ ${LANDING_RING_WAIT_JA}`), lines[1]).toBe(true); // R14 A5 の帰投の句は武器の句の行の後ろ（3 行のまま）
       // S7: 1 字（24 px）の余白でも 3 行（ヘッドレスの本当の折り返しは見積もりより約 1% 広く、字で切る行は最大 1 字を余らせる。前の「魚雷 2 本で沈む」は句が 4 px 越えて「）」が 4 行目に落ちた）
       expect(phaserWrap(line, ROW_PX, WRAP - ROW_PX).length, line).toBe(3);

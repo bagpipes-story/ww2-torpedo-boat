@@ -13,6 +13,7 @@
 // 「大発を守った！」（接触のキーの bit 29。ux-7）。どちらも jp_05 では立たない。
 // v0.6.9（jp_04。停泊して揚陸する輸送船。t.landing.enabled の任務だけ）: 平常は揚陸の行・見えている PT は「N m まで寄って撃つか速く走って引きつけよ」「まもなく見つかる」（速い行にも方角）、
 // 揚陸の決着の前にみな去ったら「揚陸を待て あと N 秒」（平常のキーの K_WAIT・浜までの刻みは 0。秒は ui/landing-lines の landingKey）。文は ui/landing-lines。
+// v0.6.10 S6（卯月。jp_04）: 卯月の砲の出来事の頭「卯月 撃退！」（ui/pt-gun-lines の K_ALLY_EVENT・名は t.ally.labelJa）、夜明けの後の揚陸の待ちは「帰投の輪で揚陸を待て」（LD3。ui/ally-lines）。
 // v0.6.6（隼艇。jp_01 のハード）: 標的が隼艇（PtTelemetry.targetKind / lastPassTargetKind が 2）の航過・連射・突撃・追ってくる PT・結果は ui/gunboat-lines の文（キーの bit 30 と方角 16〜18、
 // 被弾の結果は HP 6〜11）。大発は bit 28 のまま。Result の 4 行目は自艇の分（隼艇の分を引く）、最初に捉えたのが隼艇なら「隼艇」。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
@@ -21,6 +22,8 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { PT_ALERT, PT_CHASE, PT_RUN_IN } from '../core/pt-boats';
 import { radToDeg, wrapDeg360 } from '../core/units';
+import { allyRingWaitJa } from './ally-lines';
+import { NO_ALLY_GUN_SHARE, type AllyGunShare } from './ally-result';
 import { DETECT_RANGE_STEP_M, STEP_LABEL, type HudLine } from './hud-lines';
 import { MISSION_PT_CONTACT, MISSION_PT_GUN, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, ptResultShown } from './mission-mode';
 import { C_CHASE, K_BURST, K_BURST_RESULT, burstKey, burstLine, burstResultLine, burstsResultJa, chaseKey, chaseLine, suppressResultJa } from './pt-chase-lines';
@@ -150,7 +153,7 @@ export function ptKey(t: BoatTelemetry, mode: number, flags: number, lastKey = 0
 export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   const p = t.pt;
   if (mode === MISSION_PT_GUN) return ptGunLine(t, key);
-  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key, p.damagePerHit, t.gunboat.labelJa, t.landing.enabled);
+  if (mode === MISSION_PT_GUN_EVENT) return ptGunEventLine(key, p.damagePerHit, t.gunboat.labelJa, t.landing.enabled, t.ally.labelJa); // 卯月の砲の出来事は頭が「卯月 撃退！」（v0.6.10 S6）
   if (mode === MISSION_PT_PASS && (key & K_TARGET_GUNBOAT) !== 0) return gunboatPassLine(key, t.gunboat.labelJa); // 隼艇への航過・連射（v0.6.6）
   if (mode === MISSION_PT_PASS && (key & K_BURST) !== 0) return burstLine(key);
   if (mode === MISSION_PT_PASS && (key & K_SILENCED) !== 0) return { text: '米PT 被弾で沈黙！ もう撃ってこない', color: HOME_COLOR_TEXT };
@@ -187,8 +190,15 @@ export function ptLine(t: BoatTelemetry, mode: number, key: number): HudLine {
   const gone = (key >> K_GONE) & 7;
   const what = (gone & 4) !== 0 ? '米PT は全隻撃沈' : `米PT は${p.leaveDirJa}へ${(gone & 2) !== 0 ? '去った' : '去る'}`;
   const step = (key >> K_HOME) & 63;
-  const tail = (key & K_WAIT) !== 0 ? (t.landing.enabled ? landingWaitTailJa(landingLeftS(t.landing)) : convoyWaitShoreJa(step)) : `帰投せよ  ${step * HOME_MARKER_DISTANCE_STEP_M} m`;
+  // 揚陸の待ち（v0.6.9）は、夜明けの後（夜明け近しの呼びかけが立っている）なら卯月のいる夜は「帰投の輪で揚陸を待て」（v0.6.10 S6・LD3。ui/ally-lines。卯月の無い夜は前の文）
+  const tail = (key & K_WAIT) === 0 ? `帰投せよ  ${step * HOME_MARKER_DISTANCE_STEP_M} m` : !t.landing.enabled ? convoyWaitShoreJa(step) : landingGoneWaitJa(t, (gone & 1) !== 0);
   return { text: `${(gone & 1) !== 0 ? '夜明け ・ ' : ''}${what} ・ ${tail}`, color: HUD_COLOR_STRONG };
+}
+
+/** みな去った後の揚陸の待ち（v0.6.9「揚陸を待て あと N 秒」）。夜明けの後（dawn。夜明け近しの呼びかけが立っている）は卯月のいる夜だけ前に「帰投の輪で」（v0.6.10 S6・LD3） */
+function landingGoneWaitJa(t: BoatTelemetry, dawn: boolean): string {
+  const w = landingWaitTailJa(landingLeftS(t.landing));
+  return dawn ? allyRingWaitJa(t.ally, w) : w;
 }
 
 /** Result の被弾の句: 0 発は「被弾なし」、ほかは「被弾 N 発（HP −x）」。x は最大 HP まで（沈めた 1 発は残りの HP を超えることがある） */
@@ -198,16 +208,16 @@ function hitsJa(r: PtResult): string {
 
 /**
  * Result の 4 行目（v0.6.3 実機 1 回目。data/boats.json の gun_battery を合わせる根拠）: 砲の射撃・命中（率）・制圧（実機 2 回目。0 なら出さない）・撃退・撃沈。撃たなかった夜はそう言う。
- * 頭は砲の名（PtResult.gunLabel。jp_05 は「13mm」・jp_01 は「25mm」。v0.6.4）。砲の無い任務は ''（出さない）
+ * 頭は砲の名（PtResult.gunLabel。jp_05 は「13mm」・jp_01 は「25mm」。v0.6.4）。砲の無い任務は ''（出さない）。卯月の分（al。v0.6.10 S7）も隼艇と同じく引く（卯月の無い夜は 0）
  */
-function gunResultJa(r: PtResult, gb: GunboatResult | null): string {
+function gunResultJa(r: PtResult, gb: GunboatResult | null, al: AllyGunShare): string {
   if (!r.gunEnabled) return '';
   if (r.gunShots === 0) return `${r.gunLabel} は撃たなかった`;
   // 自艇の分（v0.6.6。隼艇のいる任務は隊の数から隼艇の分を引く。撃退・撃沈は最後の結末を決めた砲＝和が隊の数）
-  const hits = r.gunHits - (gb ? gb.hits : 0);
+  const hits = r.gunHits - (gb ? gb.hits : 0) - al.hits;
   // 当てたのに 0% と出さない（レビュー ux-4: 240 発で 1 発は「命中 1（0%）」と読めた）
   const pct = (100 * hits) / r.gunShots;
-  return `${r.gunLabel} 射撃 ${r.gunShots} 発 ・ 命中 ${hits}（${hits > 0 && pct < 1 ? '1% 未満' : `${Math.round(pct)}%`}）${suppressResultJa({ suppressions: r.suppressions - (gb ? gb.suppressions : 0) })} ・ 撃退 ${r.retired - (gb ? gb.retired : 0)} ・ 撃沈 ${r.sunk - (gb ? gb.ptSunk : 0)}`;
+  return `${r.gunLabel} 射撃 ${r.gunShots} 発 ・ 命中 ${hits}（${hits > 0 && pct < 1 ? '1% 未満' : `${Math.round(pct)}%`}）${suppressResultJa({ suppressions: r.suppressions - (gb ? gb.suppressions : 0) - al.suppressions })} ・ 撃退 ${r.retired - (gb ? gb.retired : 0) - al.retired} ・ 撃沈 ${r.sunk - (gb ? gb.ptSunk : 0) - al.sunk}`;
 }
 
 /**
@@ -215,9 +225,9 @@ function gunResultJa(r: PtResult, gb: GunboatResult | null): string {
  * （最初が 13mm の閃光なら「閃光」）・見失わせた回数（一度も見つからなければ PT の最接近）、3 行目 予告から初弾までの最短秒と撃たれた弾（data/enemies.json の調整の根拠。CLAUDE.md §9）、
  * 4 行目 砲の記録（砲の無い任務は ''）。detections は MissionResult.detections、returned は帰投した（見つからずに漂流で終わった夜を「抜けた」と言わない。揚陸の任務は ui/result-body が偽で渡す）。
  * 輸送隊の任務（convoy。v0.6.4 の jp_01）: 航過の後に「（大発へ N）」（0 なら出さない）、「見つかった」は「米PT が捉えた」（大発が見つかっても数える）、最初に捉えたのが大発なら帯の代わりに「大発」。
- * 隼艇（gb。v0.6.6 の jp_01 のハード）: 最初に捉えたのが隼艇なら「隼艇」、4 行目は自艇の分
+ * 隼艇（gb。v0.6.6 の jp_01 のハード）: 最初に捉えたのが隼艇なら「隼艇」、4 行目は自艇の分。卯月（al。v0.6.10 S7 の jp_04）の分も 4 行目から引く
  */
-export function ptResultLines(r: PtResult, detections: number, returned: boolean, convoy = false, gb: GunboatResult | null = null): [string, string, string, string] {
+export function ptResultLines(r: PtResult, detections: number, returned: boolean, convoy = false, gb: GunboatResult | null = null, al: AllyGunShare = NO_ALLY_GUN_SHARE): [string, string, string, string] {
   const seen = detections > 0;
   const band = r.firstDetectKind === 1 ? '大発' : r.firstDetectKind === 2 && gb ? gb.labelJa : r.flashFirst ? '閃光' : r.firstDetectBand === '' ? '—' : STEP_LABEL[r.firstDetectBand];
   const onBarges = r.passesOnBarges > 0 ? `（大発へ ${r.passesOnBarges}）` : '';
@@ -226,7 +236,7 @@ export function ptResultLines(r: PtResult, detections: number, returned: boolean
     seen ? `米PT 航過 ${r.passes} 回${onBarges}${burstsResultJa(r)}${dodged} ・ ${hitsJa(r)}` : returned ? '米PT に一度も見つからずに抜けた' : '米PT に一度も見つからなかった',
     seen ? `${convoy ? '米PT が捉えた' : '見つかった'} ${detections} 回（最初 ${Math.round(r.firstDetectM)} m ・ ${band}） ・ 見失わせた ${r.lostContacts} 回` : `見つからず ・ PT の最接近 ${Number.isFinite(r.closestM) ? Math.round(r.closestM) : '—'} m`,
     `予告から初弾まで 最短 ${Number.isFinite(r.minWarnS) ? r.minWarnS.toFixed(1) : '—'} 秒 ・ 撃たれた弾 ${r.shots} 発`,
-    gunResultJa(r, gb),
+    gunResultJa(r, gb, al),
   ];
 }
 

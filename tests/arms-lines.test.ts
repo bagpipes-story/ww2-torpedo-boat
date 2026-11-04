@@ -30,7 +30,7 @@ import {
   ST_SMOKE,
   createArmsTelemetry,
 } from '../src/core/arms-cue';
-import { ArmsCuePicker, armsCueDurationMs, armsCueIsDown, armsCueJa, armsCueOverTorpedo } from '../src/ui/arms-lines';
+import { ArmsCuePicker, armsCueDurationMs, armsCueIsDown, armsCueJa, armsCueOverTorpedo, armsCueSilent } from '../src/ui/arms-lines';
 import { textWidthPx } from './pt-ui-kit';
 
 const EVENTS = [EV_TORP_BARGE, EV_TORP_PT, EV_TORP_NOSHIP, EV_DOWN_STRIKE, EV_DOWN_SEAPLANE, EV_DOWN_SORTIE, EV_TORP_EMPTY];
@@ -38,10 +38,12 @@ const STATES = [ST_SHIP, ST_AA, ST_ARC, ST_NONE, ST_SMOKE, ST_RELOAD];
 
 describe('文と色（spec-v068 §4.5）', () => {
   it('出来事の文', () => {
-    expect(EVENTS.map((c) => armsCueJa(c, 3).text)).toEqual(['大発の下を抜ける', 'PTの下を抜ける', '狙う艦がいない', '敵機 撃墜！ 残り 3 機', '水上機 撃墜！', '哨戒機 撃墜！', '魚雷は撃ち尽くした']);
+    // v0.6.10 S0: 大発の下・PT の下は文を出さない（v0.6.9 実機 2 回目「PTがいてもいなくても表示されます。（大発も同じ）」）
+    expect(EVENTS.map((c) => armsCueJa(c, 3).text)).toEqual(['', '', '狙う艦がいない', '敵機 撃墜！ 残り 3 機', '水上機 撃墜！', '哨戒機 撃墜！', '魚雷は撃ち尽くした']);
   });
   it('状態の文（機銃を押している間）', () => {
-    expect(STATES.map((c) => armsCueJa(c, 4).text)).toEqual(['艦に効かず閃光で見つかる', '対空 ・ まず当たらない', '射界外 ・ 舷側に向けよ', '射程に敵なし', '煙幕で見えない', '弾倉交換 ・ あと 4 秒']);
+    // v0.6.10 S0: 対空は文を出さない（v0.6.9 実機 2 回目「航空機への射撃時の「ほとんど当たらない」もいらないです」）
+    expect(STATES.map((c) => armsCueJa(c, 4).text)).toEqual(['艦に効かず閃光で見つかる', '', '射界外 ・ 舷側に向けよ', '射程に敵なし', '煙幕で見えない', '弾倉交換 ・ あと 4 秒']);
   });
   it('色: 撃墜は金・艦に効かず閃光で見つかるは警告・ほかはいつもの白', () => {
     for (const c of [...EVENTS, ...STATES]) {
@@ -80,9 +82,9 @@ describe('選び方（ArmsCuePicker）', () => {
   it('通し番号が変わったら出来事をその秒だけ出し、終われば状態へ（出来事 > 状態）', () => {
     const a = tele();
     const p = new ArmsCuePicker(0);
-    a.stCode = ST_AA;
+    a.stCode = ST_SHIP;
     p.pick(a, 1000, false);
-    expect(p.code).toBe(ST_AA);
+    expect(p.code).toBe(ST_SHIP);
     a.evCode = EV_DOWN_STRIKE;
     a.evN = 3;
     a.evSeq = 1;
@@ -92,7 +94,7 @@ describe('選び方（ArmsCuePicker）', () => {
     p.pick(a, 2000 + ARMS_CUE_DOWN_MS - 1, false);
     expect(p.code).toBe(EV_DOWN_STRIKE);
     p.pick(a, 2000 + ARMS_CUE_DOWN_MS, false);
-    expect(p.code).toBe(ST_AA);
+    expect(p.code).toBe(ST_SHIP);
     a.stCode = ST_RELOAD;
     a.stN = 2;
     p.pick(a, 5000, false);
@@ -101,15 +103,35 @@ describe('選び方（ArmsCuePicker）', () => {
   it('魚雷を押している間は何も出さない（「一斉 N 本」と重ねない）。離せば残りの秒だけ出来事', () => {
     const a = tele();
     const p = new ArmsCuePicker(0);
-    a.evCode = EV_TORP_BARGE;
+    a.evCode = EV_TORP_NOSHIP;
     a.evSeq = 1;
     a.stCode = ST_NONE;
     p.pick(a, 0, true);
     expect(p.code).toBe(CUE_NONE);
     p.pick(a, 500, false);
-    expect(p.code).toBe(EV_TORP_BARGE);
+    expect(p.code).toBe(EV_TORP_NOSHIP);
     p.pick(a, ARMS_CUE_TORP_MS, false);
     expect(p.code).toBe(ST_NONE);
+  });
+  it('黙る番号（v0.6.10 S0）: 大発の下・PT の下の魚雷は出来事を始めず、対空の状態は出さない。弾倉交換などほかの状態は隠さない', () => {
+    expect([EV_TORP_BARGE, EV_TORP_PT, ST_AA].every(armsCueSilent)).toBe(true);
+    expect([...EVENTS, ...STATES].filter(armsCueSilent)).toEqual([EV_TORP_BARGE, EV_TORP_PT, ST_AA]);
+    const a = tele();
+    const p = new ArmsCuePicker(0);
+    a.stCode = ST_AA;
+    p.pick(a, 0, false);
+    expect(p.code).toBe(CUE_NONE);
+    a.stCode = ST_RELOAD;
+    a.stN = 3;
+    a.evCode = EV_TORP_PT;
+    a.evSeq = 1;
+    p.pick(a, 100, false);
+    expect([p.code, p.n]).toEqual([ST_RELOAD, 3]);
+    a.evCode = EV_TORP_BARGE;
+    a.evSeq = 2;
+    a.stCode = CUE_NONE;
+    p.pick(a, 200, false);
+    expect(p.code).toBe(CUE_NONE);
   });
   it('HUD だけの出来事（0 本で魚雷）: local で始まり 1.6 秒。続く世界の出来事が上書きする', () => {
     const a = tele();
@@ -234,15 +256,15 @@ describe('Result の兵装の 1 行（v0.6.8 S5。spec-v068 §4.7）', () => {
     expect(armsResultLineJa({ ...NONE, shipRounds: 12, shipHits: 0 })).toBe('機銃 艦へ 12 発（命中 0・効かない）');
     expect(armsResultLineJa({ ...NONE, aaRounds: 45, downs: 0 })).toBe('対空 45 発 撃墜 0 機');
     expect(armsResultLineJa({ ...NONE, aaRounds: 90, downs: 2 })).toBe('対空 90 発 撃墜 2 機');
-    expect(armsResultLineJa({ ...NONE, blindTorpedoes: 2, blindKind: 'pt' })).toBe('魚雷 2 本（PTの下を抜けた）');
-    expect(armsResultLineJa({ ...NONE, blindTorpedoes: 4, blindKind: 'barge', aaRounds: 3 })).toBe('対空 3 発 撃墜 0 機 ・ 魚雷 4 本（大発の下を抜けた）');
+    expect(armsResultLineJa({ ...NONE, blindTorpedoes: 2, blindKind: 'pt' })).toBe('魚雷 2 本'); // v0.6.10 S0: 大発の下・PT の下は言わない
+    expect(armsResultLineJa({ ...NONE, blindTorpedoes: 4, blindKind: 'barge', aaRounds: 3 })).toBe('対空 3 発 撃墜 0 機 ・ 魚雷 4 本');
   });
   it('撃墜の内訳: 哨戒機だけなら「（哨戒機）」、夜明けの空襲と混ざれば「（うち哨戒機 N）」（jp_02。レビュー F10）', () => {
     expect(armsResultLineJa({ ...NONE, aaRounds: 120, downs: 2, downsSortie: 2, blindTorpedoes: 2 })).toBe('対空 120 発 撃墜 2 機（哨戒機） ・ 魚雷 2 本（狙う艦なし）');
     expect(armsResultLineJa({ ...NONE, aaRounds: 260, downs: 3, downsSortie: 1, blindTorpedoes: 2 })).toBe('対空 260 発 撃墜 3 機（うち哨戒機 1） ・ 魚雷 2 本（狙う艦なし）');
   });
   it('行き先の文と幅: 最長の例は 20 px で 1,041 px（W 1280 の 1,232 px に収まる）', () => {
-    expect(['barge', 'pt', 'noship'].map((k) => blindKindJa(k as ArmsResult['blindKind']))).toEqual(['大発の下を抜けた', 'PTの下を抜けた', '狙う艦なし']);
+    expect(['barge', 'pt', 'noship'].map((k) => blindKindJa(k as ArmsResult['blindKind']))).toEqual(['', '', '狙う艦なし']);
     const longest = armsResultLineJa({ ...NONE, shipRounds: 142, shipHits: 30, aaRounds: 218, downs: 1, downsSeaplane: 1, blindTorpedoes: 4 });
     expect(Math.round(textWidthPx(longest, 20))).toBe(1041);
     expect(textWidthPx(longest, 20)).toBeLessThanOrEqual(1280 - 48);

@@ -31,16 +31,16 @@ const rowsOf = (id: string, hard = false): string[] => {
 };
 
 describe('Briefing（spec §5.5・R8/F10）', () => {
-  it('jp_04: 成功は西の青い輪（自艇の出発点から）、月没後、敵は泊地から見た全隻の方角、条件の最後に揚陸の句（帰投の輪で待てる・140 秒・被雷 2 で沈む・離れて戦え・下を抜ける）', () => {
-    const tail = landingBriefingJa(140, 2);
-    expect(tail).toBe(`帰投の輪で待てる ・${NBSP}揚陸${NBSP}140${NBSP}秒（被雷${NBSP}2${NBSP}で沈む。輸送船から離れて戦え。米PTの魚雷も自艇の下を抜ける）`);
+  it('jp_04: 成功は西の青い輪（自艇の出発点から）、月没後、敵は泊地から見た全隻の方角、条件の最後に揚陸の句（帰投の輪で待てる・110 秒（v0.6.10 実機 2 回目）・被雷 2 で沈む・離れて戦え・下を抜ける）', () => {
+    const tail = landingBriefingJa(110, 2);
+    expect(tail).toBe(`帰投の輪で待てる ・${NBSP}揚陸${NBSP}110${NBSP}秒（被雷${NBSP}2${NBSP}で沈む。輸送船から離れて戦え。米PTの魚雷も自艇の下を抜ける）`);
     for (const [hard, enemy] of [[false, '米PTボート ×2（北と東から）'], [true, '米PTボート ×3（北・東・北東から）']] as const) {
       const r = rowsOf('jp_04', hard);
       expect(r[1]).toBe('輸送船の揚陸完了を見届けて帰投（帰投地点は西の青い輪）');
       expect(r[2]).toBe('月没後 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m');
-      expect(r[3]).toBe(enemy);
+      expect(r[3]).toBe(`${enemy} ・${NBSP}輸送船の北東に味方の卯月。走るPTを照らして撃つ`); // v0.6.10 S7: 卯月の句（LD4・LD16。tests/ally-result）
       expect(r[4]).toBe('敵艦艇の砲撃・衝突、夜明けの空襲');
-      expect(r[5]).toBe(`夜明けまで 200 秒（以後は空襲） ・ 燃料 19 gal ・${NBSP}25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける） ・${NBSP}${tail}`);
+      expect(r[5]).toBe(`夜明けまで 160 秒（以後は空襲） ・ 燃料 19 gal ・${NBSP}25mm機銃1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける） ・${NBSP}${tail}`);
     }
   });
   it('ほかの遊べる任務: 揚陸の句・帰投地点の差し替えは鍵ごと無い（jp_01 の帰投地点の差し替えは前から）', () => {
@@ -48,6 +48,7 @@ describe('Briefing（spec §5.5・R8/F10）', () => {
       for (const hard of [false, true]) {
         const n = briefingNumbers(buildWorldSetup(gameData, id, { hard }));
         expect('landingJa' in n, id).toBe(id === 'jp_04');
+        expect('allyJa' in n, id).toBe(id === 'jp_04'); // v0.6.10 S7: 卯月の句も jp_04 だけ
         expect('homeFromJa' in n, id).toBe(id === 'jp_01' || id === 'jp_04');
         if (id !== 'jp_04') expect(rowsOf(id, hard)[5], id).not.toContain('揚陸');
       }
@@ -138,7 +139,7 @@ describe('材料（systems/landing-telemetry の landingResultPart）と本文�
     q.boats[0]!.phase = PT_LEAVE;
     q.boats[1]!.fate = PT_FATE_HULL;
     hitLanding(st, p, 30);
-    tickLanding(st, p, 70);
+    tickLanding(st, p, 55);
     const world = (): never => ({ landing: { state: st, tst, p }, pts: { section: q } }) as never;
     const a = landingResultPart(world(), 'pt_fire').landing!;
     expect([a.phase, a.pct, a.hits, a.endKind, a.dirJa, a.outcome, a.fired]).toEqual([LD_UNLOADING, 0.5, 1, LR_END_SUNK, ['北', '東'], [OUT_CALM, OUT_RETIRED], 3]);

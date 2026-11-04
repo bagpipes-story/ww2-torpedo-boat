@@ -7,6 +7,7 @@
 // 平方根は報告の距離の 1 回・輸送船までの 1 回・射線の PT から輸送船までの 1 回（いるときだけ）、atan2 は報告と射線の候補・射線の PT・出来事が変わったフレームの 1 回だけ。
 // 世界は構造の型 LandingTelemetryWorld で読む（MissionWorld がそのまま満たす。MissionWorld を import すると Phaser がテストの node 型検査に入るため）。
 // S7: Result の材料 landingResultPart（終了時に 1 回。convoy-telemetry の convoyResult・patrol-telemetry の patrolResult と同じ形。構造の型 LandingResultWorld で読む）。
+// v0.6.10 S7: 卯月のいる夜は LandingResult.ally（systems/ally-telemetry の allyResult）。卯月の無い夜は鍵ごと無い（Result は前のまま）。
 import type { BoatState } from '../core/boat-motion';
 import {
   createLandingReport, createLandingTelemetry, LANDING_DIST_STEP_M, LANDING_FIRE_LINE_EXTRA_M, landingDirIdx, landingFireLine, landingReport, landingResolved, LD_UNLOADING, type LandingState, type LandingTelemetry, type LandingWakes,
@@ -17,6 +18,7 @@ import { PT_FATE_NONE, PT_LEAVE, hudThreatIndex, type PtSection } from '../core/
 import { ptTorpedoOutcome } from '../core/pt-torpedo';
 import { landingEndKind } from '../ui/landing-result';
 import type { LandingResult } from '../ui/result-types';
+import { allyResult, type AllyResultSource } from './ally-telemetry';
 
 /** テレメトリが読む世界の部分 */
 export interface LandingTelemetryWorld {
@@ -123,7 +125,7 @@ export function refreshLandingTelemetry(t: LandingTelemetry, w: LandingTelemetry
   t.eventPct = st.eventPct;
   const e = st.eventBoat >= 0 ? q.boats[st.eventBoat] : undefined;
   t.eventDirIdx = e ? landingDirIdx(st, e.x, e.y) : 0;
-  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は同じステップに去った。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「米PT は去る」）
+  t.eventArmed = armed; // 斉射の後のまだ撃てる隻数（撃った PT は斉射が残らない。v0.6.9 実機 1 回目のレビュー code-2: 0 なら「魚雷は尽きた」）
 }
 
 /** Result の材料が読む世界の部分（MissionWorld がそのまま満たす）: 揚陸の状態・雷撃の状態（PtTorpedoState の Result が読む欄）・PT ごとの方角と、米PT の隊（結末の phase・fate） */
@@ -132,6 +134,8 @@ export interface LandingResultWorld {
     readonly state: LandingState;
     readonly tst: Parameters<typeof ptTorpedoOutcome>[0];
     readonly p: { readonly runDirJa: readonly string[] };
+    /** 味方の駆逐艦 卯月（v0.6.10。systems/world-ally の WorldAlly）。無い任務・&noally は null（省けば無い） */
+    readonly ally?: AllyResultSource | null;
   } | null;
   readonly pts: { readonly section: PtSection } | null;
 }
@@ -149,12 +153,14 @@ export function landingResultPart(w: LandingResultWorld, reason: MissionEndReaso
   const n = q.boats.length;
   const outcome: number[] = [];
   for (let i = 0; i < n; i++) outcome.push(ptTorpedoOutcome(t, q, i));
+  const ally = allyResult(ld.ally, q);
   return {
     landing: {
       phase: st.phase, pct: st.pct, pctAtSink: st.pctAtSink, hits: st.hits, duds: st.duds, sunkAfterDone: st.sunkAfterDone,
       endKind: landingEndKind(landingResolved(st), reason),
       dirJa: ld.p.runDirJa.slice(0, n), outcome, launchM: Array.from(t.launchM), salvoHits: Array.from(t.salvoHits), salvoDuds: Array.from(t.salvoDuds), salvoLeft: Array.from(t.salvoLeft),
       fired: t.fired, hurriedFired: t.hurriedFired, engagedFired: t.engagedFired,
+      ...(ally ? { ally } : {}),
     },
   };
 }

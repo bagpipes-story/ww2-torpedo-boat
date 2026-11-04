@@ -1,6 +1,7 @@
 // v0.6.9 S5a（spec-v069 §7 の Setup snapshots・§9 の setup-jp04）: jp_04「多号作戦・オルモック湾へ」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
 // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.6.9 S5a の木で作った。以後 -u で書き換えない（揚陸の任務の data・組み立ての変化を見張る）。
 // Briefing の行は入れない（jp_04 の Briefing の「敵」の方角と「条件」の揚陸の句は S7 で変わる＝ここに固めると S7 で -u が要る。Briefing の行は S7 の tests/briefing が見る）。
+// v0.6.10: S0b で durationS だけ、S1 で味方の駆逐艦 卯月の allyDestroyer の鍵だけ（8 か所。ほかの値は同じ）を -u した（CHANGELOG v0.6.10）。卯月の組み立ては乱数を引かない（tests/ally-destroyer-data）。
 // 今夜の揺らぎ（+16）は 5 回（米PT の隊 3・大発の先頭 1・反転 1。jp_05・jp_01 と同じ回数。D18）。setup.landing は jp_04 にだけあり（tests/landing-neutral）、雷撃と揚陸の値は史実モードで変わらない。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';

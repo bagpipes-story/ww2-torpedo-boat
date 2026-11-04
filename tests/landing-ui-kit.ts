@@ -1,15 +1,18 @@
 // 揚陸の任務（v0.6.9 S6a。jp_04）の HUD のテストの共通の材料: jp_04 の世界の値の米PT（25mm あり）と揚陸の出撃時のテレメトリ（systems の本物の init）、
 // それを重ねた 2 行目のテレメトリ（tests/pt-ui-kit の tele の形）と、ui/mission-line と同じ順の 1 フレーム（旗 → モード → キー → 文）。
+// v0.6.10 S6: 卯月のいる夜の ally（ally0・tla）。
 // ui-config・game-config は DOM を読むので使わない（色は hud-text-config）。
 import { gameData } from '../src/config/game-data';
 import { PT_GUN_SHELL_POOL_SIZE, PT_SHELL_POOL_SIZE } from '../src/config/pt-config';
 import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_WARN } from '../src/config/hud-text-config';
+import type { AllyTelemetry } from '../src/core/ally-telemetry';
 import type { BoatTelemetry } from '../src/core/boat-motion';
 import { createLanding, createLandingWakes, type LandingTelemetry } from '../src/core/landing';
 import { topCall } from '../src/core/mission-flow';
 import { createPtSection, type PtTelemetry } from '../src/core/pt-boats';
 import { createPtGun } from '../src/core/pt-gun';
 import { createPtTorpedoState } from '../src/core/pt-torpedo';
+import { initAllyTelemetry } from '../src/systems/ally-telemetry';
 import { initLandingTelemetry } from '../src/systems/landing-telemetry';
 import { initPtTelemetry } from '../src/systems/pt-telemetry';
 import { buildWorldSetup } from '../src/systems/world-setup';
@@ -50,6 +53,22 @@ export const L0 = landing0();
 /** jp_04 の 2 行目のテレメトリ: 出撃時の揚陸に l を、jp_04 の米PT に pt を重ねる（over は tests/pt-ui-kit の tele と同じ） */
 export function tl(l: Partial<LandingTelemetry> = {}, pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry> = {}, hard = false): BoatTelemetry {
   return tele({ ...PT04, ...pt }, { ...over, landing: { ...(hard ? landing0(true) : L0), ...l } });
+}
+
+/**
+ * 卯月のいる夜の出撃時の ally（v0.6.10 S6。systems/ally-telemetry の本物の init。MissionWorld と同じ形の世界: 揚陸の世界の卯月は data の値と手柄（eventSeq 0）だけ）。
+ * hard なら平常の行の末尾なし（LD4）
+ */
+export function ally0(hard = false): AllyTelemetry {
+  const s = hard ? S04H : S04;
+  const section = createPtSection(s.ptBoats!, PT_SHELL_POOL_SIZE);
+  const credit = { hits: 0, suppressions: 0, eventSeq: 0, fateBy: new Int8Array(section.boats.length) };
+  return initAllyTelemetry({ landing: { ally: { a: { p: s.allyDestroyer!, credit, lit: new Uint8Array(section.boats.length) } } }, pts: { section }, setup: { hard } });
+}
+
+/** 卯月のいる夜の jp_04 の 2 行目のテレメトリ（tl に ally0 を重ねる。over.ally で上書きできる） */
+export function tla(l: Partial<LandingTelemetry> = {}, pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry> = {}, hard = false): BoatTelemetry {
+  return tl(l, pt, { ally: ally0(hard), ...over }, hard);
 }
 
 /** 1 フレームの結果（ui/mission-line と同じ: モード → キー → 文） */

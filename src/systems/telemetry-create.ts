@@ -10,6 +10,7 @@ import { GUN_SAFE } from '../core/gun-battery';
 import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
 import { STORM_NONE } from '../core/storm';
 import { mpsToKt } from '../core/units';
+import { initAllyTelemetry } from './ally-telemetry';
 import { initConvoyTelemetry } from './convoy-telemetry';
 import { initDawnTelemetry } from './dawn-telemetry';
 import { initLandingTelemetry } from './landing-telemetry';
@@ -124,5 +125,6 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     aaFiring: false, // 機銃で機を撃っている（v0.6.8）
     arms: createArmsTelemetry(), // 兵装（v0.6.8。systems/arms-telemetry が毎フレーム書く）
     landing: initLandingTelemetry(w), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry。無い任務は enabled false）
+    ally: initAllyTelemetry(w), // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。systems/ally-telemetry。無い任務・&noally は enabled false）
   };
 }

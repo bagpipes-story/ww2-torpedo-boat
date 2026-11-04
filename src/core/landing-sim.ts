@@ -8,27 +8,37 @@
 // 輪の中は漂流にもしない。決着の前に輪に入った夜は R4 の列で数える）・夜明け + LANDING_SIM_AFTER_DAWN_S（打ち切り。夜明けの空襲は模擬しない）。
 // 測るだけの影のプール: 撃った魚雷をそのまま、いつも浮いている同じ船体へ走らせる（斉射の「当たりうる」本数。沈んだ後に着いた魚雷も数える＝TABLE=2 と R2 の期待値の材料）。乱数を引かず世界に触らない。
 // 台本は core/landing-sim-policy、1 夜の記録は core/landing-trial、集計は core/landing-sim-cell（convoy-sim と同じ分け方）。Phaser 非依存。確保は 1 夜の始めだけ。省いたもの: 命中スロー・消火の長押し・漂流の待ち。
+// v0.6.10 S3a（spec-v0610 R-U6・§6.1）: 味方の駆逐艦 卯月（s.allyDestroyer＝jp_04 で allyOff でなければ。core/ally-destroyer）を雷撃の直後・敵の魚雷のプールの前に回す（世界の world-landing と同じ順）。
+// 見張り seed+27・砲 seed+28（数えて I7・I10）、照らされた斉射は同じ入れ先（LE_LIT_SALVO。照らされても撃っても PT は去らない＝v0.6.10 実機 1 回目）。I8 は照らされた斉射の条件、I11 は owner の PT がいつも航過（卯月がいなくても数える）。
+// v0.6.10 S3b（R-U9・LD3）: 卯月のいる夜の lure の動きの遊び方は夜明け近しの帰投の輪の呼びかけを聞く（core/landing-sim-call。世界と同じ呼びかけの関数をステップの終わりに・見えている間だけ・人は遅れて）。
+// v0.6.10 S5a（G7）: rp（core/landing-replay）を渡すと台本の代わりに世界のヘッドレスの夜の入力と命中スローを再生する（渡さなければ前と同じ。scripts/headless/world-vs-sim）。
+import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET, createAllyDestroyer, stepAllyDestroyer, type AllyLink } from './ally-destroyer';
+import type { AllyDestroyerParams } from './ally-destroyer-data';
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SpeedStep } from './boat-motion';
 import { crewAccelFactor, crewLost, crewTurnFactor } from './crew';
 import { dawnReached } from './dawn-air';
 import { createFuelState, stepFuel } from './fuel';
 import type { GunEvents } from './gun-battery';
 import { applyShellHit, createDamageState, stepDamage, type HitOutcome } from './gunnery';
-import { LANDING_FIRE_LINE_EXTRA_M, LANDING_REPORT_NEAR, createLanding, createLandingReport, landingFireLine, landingReport, landingResolved, tickLanding } from './landing';
+import {
+  LANDING_FIRE_LINE_EXTRA_M, LANDING_REPORT_NEAR, LD_UNLOADING, createLanding, createLandingReport, createLandingWakes, landingFireLine, landingReport, landingResolved, landingWakes, tickLanding,
+} from './landing';
 import type { LandingParams } from './landing-data';
 import {
   LANDING_HUMAN, LANDING_HUMAN_SEED_ADD, LANDING_HUMAN_SEED_MUL, LANDING_POLICY_SPECS, humanGunOn, humanReactAt, humanSeesReport, landingGunHeld, landingPlayPoints, landingSteer,
   type LandingHumanPlay, type LandingPolicy, type LandingSteer, type LandingSteerCtx,
 } from './landing-sim-policy';
-import { LandingTrialTorpedoes, LandingTrialWatch, createLandingTrial, finishLandingTrial, type LandingTrial } from './landing-trial';
+import { createLandingRingCall, stepLandingRingCall } from './landing-sim-call';
+import type { LandingReplay, LandingReplayStep } from './landing-replay';
+import { LandingTrialTorpedoes, LandingTrialWatch, createLandingTrial, finishLandingAlly, finishLandingTrial, type LandingTrial } from './landing-trial';
 import { insideRing } from './mission-flow';
-import { PT_GUN_SEED_OFFSET, PT_SEED_OFFSET, createPtSection, stepPtSection, type PtCheck, type PtEvents } from './pt-boats';
+import { PT_GUN_SEED_OFFSET, PT_PASS, PT_PATROL, PT_SEED_OFFSET, createPtSection, stepPtSection, type PtCheck, type PtEvents } from './pt-boats';
 import { hitPt } from './pt-damage';
 import { createPtGun, stepPtGun } from './pt-gun';
 import { targetSide } from './pt-pass';
 import { ptNightParams, type PtSimSetup } from './pt-pass-sim';
 import { PT_PLAY, PT_POLICY_SEED_ADD, PT_POLICY_SEED_MUL } from './pt-sim-policy';
-import { PT_TORPEDO_SEED_OFFSET, createPtTorpedoState, ptTorpedoOutcome, stepPtTorpedoes, type PtTorpedoSink } from './pt-torpedo';
+import { PT_TORPEDO_SEED_OFFSET, createPtTorpedoState, ptTorpedoOutcome, stepPtTorpedoes } from './pt-torpedo';
 import type { PtTorpedoParams } from './pt-torpedo-data';
 import { SeededRng } from './rng';
 import type { TorpedoTarget } from './torpedo-targets';
@@ -36,12 +46,16 @@ import { wrapDeg360 } from './units';
 import { enemyDetectRangeM, speedFactorForBand } from './visibility';
 
 export type { LandingTrial } from './landing-trial';
-export { OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED } from './pt-torpedo';
+export {
+  OUT_CALM, OUT_DAWN, OUT_ENGAGED, OUT_GOAL_GONE, OUT_HURRIED, OUT_LEFT, OUT_LIT_HURRIED, OUT_NONE, OUT_RETIRED, OUT_SUNK, PT_SALVO_CALM, PT_SALVO_ENGAGED, PT_SALVO_HURRIED,
+} from './pt-torpedo';
 
 export interface LandingSimSetup extends PtSimSetup {
   /** 揚陸（world-setup の landing.params）と米PT の雷撃（landing.torpedo）。米PT・艇・燃料・視界・帰投の輪は PtSimSetup（systems/pt-pass-sim-setup の ptSimSetup） */
   landing: LandingParams;
   torpedo: PtTorpedoParams;
+  /** 味方の駆逐艦 卯月（v0.6.10。world-setup の allyDestroyer＝jp_04 だけ。allyOff・ALLY_OFF=1 では鍵ごと無い＝S0b と同じ夜） */
+  allyDestroyer?: AllyDestroyerParams;
 }
 
 /** 夜明けの後の打ち切りの実秒（spec §6 S3: dawn + 40 s）、時刻の比較の丸めの余裕、赤い線の転舵を延ばすステップ数（convoy-sim と同じ）、終わった後に影の魚雷を走らせる上限のステップ */
@@ -64,7 +78,7 @@ class CountingRng extends SeededRng {
 }
 
 /** 1 夜。艇は出発点で止まっていて、出発の遅れの後に台本どおり動く。hp は人の遅れと乱れ（human・human_face だけが読む） */
-export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed: number, hp: Readonly<LandingHumanPlay> = LANDING_HUMAN): LandingTrial {
+export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed: number, hp: Readonly<LandingHumanPlay> = LANDING_HUMAN, rp: LandingReplay | null = null): LandingTrial {
   const sp = LANDING_POLICY_SPECS[policy];
   if (sp.shoot !== 'none' && !s.gun) throw new Error(`遊び方 ${policy} は撃つが、この任務の艇に砲（guns）が無い`);
   const p = ptNightParams(s, seed);
@@ -77,6 +91,10 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const gunRng = new SeededRng((seed + PT_GUN_SEED_OFFSET) >>> 0);
   const trng = new CountingRng((seed + PT_TORPEDO_SEED_OFFSET) >>> 0);
   const pol = new SeededRng((seed * PT_POLICY_SEED_MUL + PT_POLICY_SEED_ADD) >>> 0);
+  // 卯月（いる夜だけ。見張り seed+27・砲 seed+28 はほかの系列に触らない。演出なし）
+  const a27 = new CountingRng((seed + ALLY_LOOKOUT_SEED_OFFSET) >>> 0);
+  const a28 = new CountingRng((seed + ALLY_GUN_SEED_OFFSET) >>> 0);
+  const ally = s.allyDestroyer ? createAllyDestroyer(s.allyDestroyer, p, a27, a28, null) : null;
   const bp: BoatParams = { ...s.boat };
   const boat: BoatState = { x: s.start.x, y: s.start.y, headingDeg: s.start.headingDeg, speedMps: 0 };
   const d = createDamageState(s.damage);
@@ -84,8 +102,9 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const hit: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
   const input: BoatInput = { headingDeg: NaN, speed01: 0 };
   const c: PtCheck = { boat, boatHalfLengthM: s.halfLengthM, boatHalfBeamM: s.halfBeamM, detectOpenM: 0, smokeFactor: s.vis.smokeFactor, smoke: null, smokeParams: null, targetValid: true, visRange2: s.visRange2, dawn: false, timeS: 0 };
-  const realDt = s.stepS;
-  const dt = realDt * s.timeScale;
+  // 体感の秒と time_scale 込みの秒（模擬に命中スローは無い。再生のときだけ世界の倍率を掛ける）
+  let realDt = s.stepS;
+  let dt = realDt * s.timeScale;
   const out = createLandingTrial(p.count);
   let t = 0;
   let sinking = false;
@@ -133,9 +152,12 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   // 敵の魚雷（世界と同じプールの写し・LandingTorpedoLink・測るだけの影）と PT ごとの見張り・斉射の記録（core/landing-trial）
   const tor = new LandingTrialTorpedoes(ld, lp, st, tp.torpedo, p.count * tp.n, p.bounds, out);
   const watch = new LandingTrialWatch(p.count);
-  const sink: PtTorpedoSink = {
+  if (s.allyDestroyer) tor.watchAlly(s.allyDestroyer.x, s.allyDestroyer.y, s.allyDestroyer.lengthM / 2);
+  const sink: AllyLink = {
     fire: (i, x, y, h, dud, err, bias, rangeM) => tor.fire(i, x, y, h, dud, err, bias, rangeM),
     onSalvo: (i, kind, rangeM, n) => {
+      // I8: 照らされた斉射（litSalvo は斉射の前に立つ）は夜明けの前・見失いの待ちの外・揚陸中で浮いている・哨戒だけ
+      if (st.litSalvo[i] === 1 && (c.dawn || st.holdS[i]! > 0 || ld.phase !== LD_UNLOADING || !ld.afloat || q.boats[i]!.phase !== PT_PATROL)) out.litSalvoBad++;
       tor.link.onSalvo(i, kind, rangeM, n);
       watch.salvo(out, i, kind, rangeM, t, c.dawn);
     },
@@ -148,39 +170,54 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
   const cueM = sp.fight === 'cue' && tp.engagedFactor > 0 ? tp.launchM + LANDING_FIRE_LINE_EXTRA_M : 0;
   const steer: LandingSteer = { headingDeg: NaN, wantMps: 0 };
   const mem = { lured: false };
-  for (;;) {
-    // 台本（毎フレームの入力に当たる。固定ステップの前。報告は前のステップの終わりの値＝HUD）: 出発の遅れの間は止まる（home_early は t = 0 から。R14 A5）
+  // 夜明け近しの帰投の輪の呼びかけ（卯月がいて ring_call_before_dawn の夜の lure の動きだけ聞く。人は最初に見えてから delayMinS 秒の後。乱数を引かない）と輸送船へ走る雷跡
+  const call = createLandingRingCall(s.allyDestroyer?.ringCallBeforeDawn === true && sp.move === 'lure', human ? hp.delayMinS : 0);
+  const wakes = createLandingWakes();
+  const ro: LandingReplayStep = { held: false, feel: 1 };
+  rp?.begin({ q, ld, st, torps: tor.pool.states, ally, boat, d, fuel, rng, gunRng, trng, a27, a28 });
+  for (let k = 0; ; k++) {
     const t0 = t;
-    const resolved = landingResolved(ld);
-    steer.headingDeg = NaN;
-    steer.wantMps = 0;
-    if (human) ctx.report = humanSeesReport(t0, out.reportS, delayS) ? report : noReport; // 人: 最初の報告から delayS 秒は報告を見ない
-    if (t0 >= departS || sp.move === 'home') landingSteer(sp, ctx, resolved, mem, steer);
-    // 赤い線への反応（HUD どおり。dodge の台本だけ）: 航過は固めた針路から離れる直角へ全速 4 秒（線の間は延ばす）、連射は針路そのまま（「針路そのまま撃ち返せ」）
-    if (sp.dodge && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
-      const b = q.boats[m.reactBoat]!;
-      if (q.owner === m.reactBoat && !b.burst) {
-        m.dodgeDeg = wrapDeg360(b.lockDeg + targetSide(b.lockDeg, b.x, b.y, boat.x, boat.y) * PT_PLAY.dodgeDeg);
-        m.dodgeUntil = t0 + PT_PLAY.dodgeHoldS;
-        m.dodgeBoat = m.reactBoat;
+    let held = false;
+    if (rp !== null) {
+      // 再生（G7）: 世界の入力（針路・速力・射撃ボタン）と命中スローの倍率。台本・赤い線への反応・消火の台本は使わない
+      if (!rp.step(k, input, ro)) break;
+      held = g !== null && ro.held;
+      realDt = s.stepS * ro.feel;
+      dt = realDt * s.timeScale;
+    } else {
+      // 台本（毎フレームの入力に当たる。固定ステップの前。報告は前のステップの終わりの値＝HUD）: 出発の遅れの間は止まる（home_early は t = 0 から。R14 A5）
+      const resolved = landingResolved(ld);
+      steer.headingDeg = NaN;
+      steer.wantMps = 0;
+      if (human) ctx.report = humanSeesReport(t0, out.reportS, delayS) ? report : noReport; // 人: 最初の報告から delayS 秒は報告を見ない
+      ctx.ringCall = call.obey;
+      if (t0 >= departS || sp.move === 'home') landingSteer(sp, ctx, resolved, mem, steer);
+      // 赤い線への反応（HUD どおり。dodge の台本だけ）: 航過は固めた針路から離れる直角へ全速 4 秒（線の間は延ばす）、連射は針路そのまま（「針路そのまま撃ち返せ」）
+      if (sp.dodge && m.reactBoat >= 0 && t0 >= m.reactAt - TIME_EPS_S) {
+        const b = q.boats[m.reactBoat]!;
+        if (q.owner === m.reactBoat && !b.burst) {
+          m.dodgeDeg = wrapDeg360(b.lockDeg + targetSide(b.lockDeg, b.x, b.y, boat.x, boat.y) * PT_PLAY.dodgeDeg);
+          m.dodgeUntil = t0 + PT_PLAY.dodgeHoldS;
+          m.dodgeBoat = m.reactBoat;
+        }
+        m.reactBoat = -1;
       }
-      m.reactBoat = -1;
+      if (sp.dodge && m.dodgeBoat >= 0 && q.owner === m.dodgeBoat && t0 < m.dodgeUntil + realDt && !q.boats[m.dodgeBoat]!.burst) m.dodgeUntil = t0 + HOLD_EXTEND_STEPS * realDt;
+      if (t0 < m.dodgeUntil - TIME_EPS_S) {
+        steer.headingDeg = m.dodgeDeg;
+        steer.wantMps = Infinity;
+      }
+      // 射撃ボタン（人は出撃からの秒の gunCycleS ごとの初めの gunOnS 秒だけ。乱数なし）
+      held = g ? landingGunHeld(sp, ctx, g.rangeM, g.effectiveM, s.visRange2) && (!human || humanGunOn(t0, hp)) : false;
+      input.headingDeg = steer.headingDeg;
+      input.speed01 = steer.wantMps > 0 ? Math.min(1, steer.wantMps / bp.speedMaxMps) : 0;
+      if (t0 >= m.fireOutAt - TIME_EPS_S) {
+        d.fireLeftS = 0;
+        m.fireOutAt = NaN;
+      }
     }
-    if (sp.dodge && m.dodgeBoat >= 0 && q.owner === m.dodgeBoat && t0 < m.dodgeUntil + realDt && !q.boats[m.dodgeBoat]!.burst) m.dodgeUntil = t0 + HOLD_EXTEND_STEPS * realDt;
-    if (t0 < m.dodgeUntil - TIME_EPS_S) {
-      steer.headingDeg = m.dodgeDeg;
-      steer.wantMps = Infinity;
-    }
-    // 射撃ボタン（人は出撃からの秒の gunCycleS ごとの初めの gunOnS 秒だけ。乱数なし）
-    const held = g ? landingGunHeld(sp, ctx, g.rangeM, g.effectiveM, s.visRange2) && (!human || humanGunOn(t0, hp)) : false;
-    input.headingDeg = steer.headingDeg;
-    input.speed01 = steer.wantMps > 0 ? Math.min(1, steer.wantMps / bp.speedMaxMps) : 0;
-    if (t0 >= m.fireOutAt - TIME_EPS_S) {
-      d.fireLeftS = 0;
-      m.fireOutAt = NaN;
-    }
-    // 固定ステップ（mission-world の順。spec §4.1）
-    t += realDt;
+    // 固定ステップ（mission-world の順。spec §4.1。時計は実秒）
+    t += s.stepS;
     if (!c.dawn && dawnReached(s.durationS, t)) {
       c.dawn = true;
       out.dawn = true;
@@ -206,6 +243,8 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     // spec §4.1 の 3 つ: 時計（世界の world-landing と同じく雷撃の前に書く。R14 A3）→ 雷撃（seed+26）→ 敵の魚雷（沈み始めた輸送船は狙わない）→ 揚陸の時計。影のプールは測るだけ
     tor.link.nowS = t;
     stepPtTorpedoes(st, tp, q, ld, trng, c.dawn, t, realDt, sink, NO_LEAVE);
+    if (ally) stepAllyDestroyer(ally, q, st, tp, ld, trng, c.dawn, t, realDt, dt, sink, ev); // 卯月（R-U6: 雷撃の後・敵の魚雷の前）
+    if (q.owner >= 0 && q.boats[q.owner]!.phase !== PT_PASS) out.ownerViol++; // I11
     tor.pool.step(dt, realDt, ld.out ? NO_HULLS : tor.shipHulls, lp.passRadius2, tor.ev);
     tor.shadow.step(dt, realDt, tor.shadowHulls, lp.passRadius2, tor.shadowEv);
     tickLanding(ld, lp, t);
@@ -220,9 +259,15 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     landingReport(ld, lp, q, st, report);
     if (report.sub > 0 && Number.isNaN(out.reportS)) out.reportS = t;
     if (report.sub === LANDING_REPORT_NEAR && Number.isNaN(out.nearReportS)) out.nearReportS = t;
+    if (call.on) {
+      // 帰投の輪の呼びかけ（世界の Scene と同じ updateReturnCalls・dawnCallNeedS。見えるのは接触・報告・輸送船へ走る雷跡が無い間）
+      landingWakes(tor.pool.states, tp.torpedo.speedMps, s.timeScale, ld, wakes);
+      stepLandingRingCall(call, t, s.durationS, s.ring, s.fuel, s.timeScale, boat.x, boat.y, fuel.gal, res, q.detected, report.sub, wakes.count);
+    }
     if (cueM > 0) ctx.cue = landingFireLine(ld, q, st.left, cueM * cueM) >= 0;
     watch.endStep(q, st.left, lp, t);
     if (atHome && !res) out.ringEarly = true; // R4: 決着の前に輪に入った（R14 A5: 終わらずに待つ）
+    rp?.after(k, t);
     out.end = sinking ? 'sunk' : atHome ? (res ? 'home' : 'timeout') : fuel.empty && band === 'stop' ? 'adrift' : 'timeout';
     if (out.end !== 'timeout' || t >= s.durationS + LANDING_SIM_AFTER_DAWN_S - TIME_EPS_S) break;
   }
@@ -233,5 +278,6 @@ export function runLandingTrial(s: LandingSimSetup, policy: LandingPolicy, seed:
     out.relevant[i] = out.kind[i]! > 0 && out.launchS[i]! + out.launchM[i]! / v < lp.unloadS ? 1 : 0;
   }
   out.drawsWant = st.salvos * (1 + 2 * tp.n) + tor.erratic;
+  finishLandingAlly(out, ally, a27.draws, a28.draws, call);
   return finishLandingTrial(out, q, ld, t, c.dawn, sinking ? s.damage.maxHp : s.damage.maxHp - d.hp, (fuel.gal / s.fuelGal) * 100, gun ? gun.battery.shots : 0, trng.draws);
 }

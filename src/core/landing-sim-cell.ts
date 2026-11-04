@@ -127,6 +127,11 @@ export interface LandingCell {
   expSurvivePct: number; survivePct: number; expObjPct: number;
   /** 不変: I1 初めての接近の報告から気づかれていない斉射の最短秒・I2 見失いから斉射の最短秒・I3 夜明けの後の斉射・I4 1 隻の斉射の最大・I5 引いた回数が合わない夜・I6 夜明けに未決着の夜 */
   i1MinS: number; i2MinS: number; afterDawn: number; maxSalvosPerPt: number; drawMiss: number; unresolvedAtDawn: number;
+  /**
+   * 卯月の不変（v0.6.10 S3a。spec-v0610 §6.1。卯月のいない夜はみな 0）: I7 seed+27 の回数が見張りの候補のステップと合わない夜・I8 条件の外の照らされた斉射・
+   * I10 seed+28 の回数が 2 × 弾 + 生きた PT への命中と合わない夜・I11 owner の PT が航過でないステップ（I9 は卯月の無い夜と比べる＝systems/landing-sim-setup の landingCalibrationRun）
+   */
+  i7Miss: number; i8Bad: number; i10Miss: number; i11Viol: number;
   /** TABLE=3: 最初の報告・最初の近い報告・最初に見つかった・気づかれていない斉射・慌てた斉射・戦いながらの斉射・決着の秒 */
   tReport: TimeCol; tNear: TimeCol; tDetect: TimeCol; tCalm: TimeCol; tHurried: TimeCol; tEngaged: TimeCol; tResolved: TimeCol;
 }
@@ -162,6 +167,8 @@ export function landingCell(s: LandingSimSetup, policy: LandingPolicy, rs: reado
     expSurvivePct: 100 * mean((r) => surviveP(r, st, hits)), survivePct: pct((r) => r.phase !== LD_SUNK), expObjPct: 100 * mean((r) => (r.end === 'home' ? surviveP(r, st, hits) : 0)),
     i1MinS: rs.reduce((a, r) => Math.min(a, r.i1LeadS), Infinity), i2MinS: rs.reduce((a, r) => Math.min(a, r.i2LeadS), Infinity), afterDawn: rs.reduce((a, r) => a + r.afterDawnSalvos, 0),
     maxSalvosPerPt: rs.reduce((a, r) => Math.max(a, r.maxSalvosPerPt), 0), drawMiss: rs.filter((r) => r.draws26 !== r.drawsWant).length, unresolvedAtDawn: rs.filter((r) => r.unresolvedAtDawn).length,
+    i7Miss: rs.filter((r) => r.draws27 !== r.candSteps).length, i8Bad: rs.reduce((a, r) => a + r.litSalvoBad, 0),
+    i10Miss: rs.filter((r) => r.draws28 !== 2 * r.allyShells + r.allyHits).length, i11Viol: rs.reduce((a, r) => a + r.ownerViol, 0),
     tReport: timeCol(rs.map((r) => r.reportS), n), tNear: timeCol(rs.map((r) => r.nearReportS), n), tDetect: timeCol(rs.map((r) => r.detectS), n),
     tCalm: timeCol(launches(PT_SALVO_CALM), n), tHurried: timeCol(launches(PT_SALVO_HURRIED), n), tEngaged: timeCol(launches(PT_SALVO_ENGAGED), n), tResolved: timeCol(rs.map((r) => r.resolvedS), n),
   };

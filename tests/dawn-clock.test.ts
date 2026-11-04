@@ -11,6 +11,7 @@ import type { BoatTelemetry } from '../src/core/boat-motion';
 import { createPtTelemetry } from '../src/core/pt-boats';
 import { createConvoyTelemetry } from '../src/core/convoy';
 import { createEngineTelemetry } from '../src/core/engine-trouble';
+import { createAllyTelemetry } from '../src/core/ally-telemetry';
 import { createLandingTelemetry } from '../src/core/landing';
 import { createPatrolTelemetry } from '../src/core/patrol-air-state';
 import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, createDawnTelemetry, type DawnTelemetry } from '../src/core/dawn-air';
@@ -67,6 +68,7 @@ function tele(dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> = 
     engine: createEngineTelemetry(), // 機関の不調の無い任務（v0.6.5。on false）
     patrol: createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）
     landing: createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）
+    ally: createAllyTelemetry(), // 卯月のいない任務（v0.6.10 S6。enabled false）
     ...over,
     dawn: { ...createDawnTelemetry(), ...dawn },
   } as BoatTelemetry;

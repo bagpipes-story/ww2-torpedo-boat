@@ -3,7 +3,7 @@
 // 移すために MissionWorld.smokeScreen を private readonly から readonly にした（ここが読む。ほかに private から出したものは無い）。
 import type { MissionWorld } from './mission-world';
 
-/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9） */
+/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9）→ 卯月（v0.6.10） */
 export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   const g = w.destroyers;
   w.storm?.updateVisuals(realDt, w.boat.state);
@@ -23,9 +23,10 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   w.dawn.updateVisuals(w);
   w.arms?.updateVisuals(realDt, w);
   w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
+  w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）
 }
 
-/** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順。揚陸（v0.6.9）は最後） */
+/** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順。揚陸（v0.6.9）・卯月（v0.6.10）は最後） */
 export function destroyWorldVisuals(w: MissionWorld): void {
   w.storm?.destroy();
   w.seaplane?.destroy();
@@ -43,4 +44,5 @@ export function destroyWorldVisuals(w: MissionWorld): void {
   w.destroyers?.destroy();
   w.boat.destroy();
   w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）
+  w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
 }

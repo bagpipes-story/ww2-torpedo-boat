@@ -14,7 +14,8 @@ import {
 import { PT_LEAVE, PT_RUN_IN, type PtSection } from '../src/core/pt-boats';
 import { SeededRng } from '../src/core/rng';
 import { bearingDeg } from '../src/core/ship-ai';
-import { LANDING_CALIBRATION, landingCalibrationRun, landingInvariantMisses, landingSimSetup } from '../src/systems/landing-sim-setup';
+import { LANDING_CALIBRATION_ALLY } from '../src/systems/ally-sim-bands';
+import { LANDING_CALIBRATION_NO_ALLY, landingCalibrationRun, landingInvariantMisses, landingSimSetup } from '../src/systems/landing-sim-setup';
 
 const S = landingSimSetup(gameData, 'jp_04');
 const H = landingSimSetup(gameData, 'jp_04', { hard: true });
@@ -27,12 +28,13 @@ const EXTREME: LandingHumanPlay = { delayMinS: 60, delayMaxS: 90, dodgeP: 0, rea
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 describe('遊び方の一覧と設定', () => {
-  it('15 = 較正の 12（LANDING_CALIBRATION の順）の後に人に近い 3 つ', () => {
+  it('15 = 較正の 12（LANDING_CALIBRATION_NO_ALLY の順）の後に人に近い 3 つ（卯月のいる帯 LANDING_CALIBRATION_ALLY は 15 の順。v0.6.10 S4）', () => {
     expect(LANDING_POLICIES.length).toBe(15);
     expect(LANDING_HUMAN_POLICIES).toEqual(['face', 'human', 'human_face']);
     expect(LANDING_POLICIES.slice(12)).toEqual(LANDING_HUMAN_POLICIES);
     expect(LANDING_CALIBRATION_POLICIES).toEqual(LANDING_POLICIES.slice(0, 12));
-    expect(LANDING_CALIBRATION_POLICIES).toEqual(LANDING_CALIBRATION.map((r) => r.policy));
+    expect(LANDING_CALIBRATION_POLICIES).toEqual(LANDING_CALIBRATION_NO_ALLY.map((r) => r.policy));
+    expect(LANDING_CALIBRATION_ALLY.map((r) => r.policy)).toEqual([...LANDING_POLICIES]);
   });
   it('台本: face は lure の戦い方を face に、human は lure に人の遅れと乱れ、human_face は両方。較正の 12 に人の鍵は無い', () => {
     const { lure, face, human, human_face: humanFace } = LANDING_POLICY_SPECS;
@@ -144,13 +146,16 @@ describe('1 夜', () => {
       for (const seed of [1, 2]) expect(snap(runLandingTrial(S, pol, seed, EXTREME)), `${pol} ${seed}`).toBe(snap(runLandingTrial(S, pol, seed)));
     }
   });
-  it('規則が効く（seed 1〜8）: 射撃ボタンを押せなければ 25mm を撃たない・報告に 8 秒遅れれば lure より遅く見つかり、報告を見なければ見つからない・赤い線をかわさない夜は lure と違う', () => {
+  it('規則が効く（seed 1〜8）: 射撃ボタンを押せなければ 25mm を撃たない・報告に 8 秒遅れれば lure より遅く見つかり、報告を見なければ寄らない（見つかるのは撃った後）・赤い線をかわさない夜は lure と違う', () => {
     for (const seed of SEEDS) {
       const lure = runLandingTrial(S, 'lure', seed);
       expect(lure.gunShots, `${seed}`).toBeGreaterThan(0);
       expect(runLandingTrial(S, 'human', seed, { ...NEUTRAL, gunOnS: 0 }).gunShots, `${seed}`).toBe(0);
       expect(runLandingTrial(S, 'human', seed, { ...NEUTRAL, delayMinS: 8, delayMaxS: 8 }).detectS, `${seed}`).toBeGreaterThan(lure.detectS);
-      expect(runLandingTrial(S, 'human', seed, { ...NEUTRAL, delayMinS: 1000, delayMaxS: 1000 }).detectS, `${seed}`).toBeNaN();
+      // 報告を見なければ自分からは寄らない: 見つからないか、lure より遅い（v0.6.10 実機 1 回目から撃っても去らない PT が哨戒を続け、止まった自艇に後で行き当たる夜がある。前は NaN だけ）
+      const blind = runLandingTrial(S, 'human', seed, { ...NEUTRAL, delayMinS: 1000, delayMaxS: 1000 });
+      expect(Number.isNaN(blind.detectS) || blind.detectS > lure.detectS, `${seed} ${blind.detectS}`).toBe(true);
+      expect(blind.kind.every((k) => k === 1), `${seed}`).toBe(true); // 斉射は気づかれていない斉射だけ（見つかるのは撃った後）
       expect(snap(runLandingTrial(S, 'human', seed, { ...NEUTRAL, dodgeP: 0 })), `${seed}`).not.toBe(snap(lure));
     }
   });

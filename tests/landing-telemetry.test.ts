@@ -2,7 +2,7 @@
 // 出撃時の値・揚陸の時計・見張りの報告（遠い・近い・向き・斉射の残り・決着の後は無し）・雷跡・撃てる隻数・出来事（通し番号が変わったときだけ写す・8 方位）を見る。
 // 揚陸の無い世界（w.landing が null）は tests/landing-neutral。配線（createTelemetry・refreshTelemetry）の pin は tests/landing-step-order。
 // R14（S6a-fix）: 輸送船が射線に入る PT（landingFireLine。自艇からの 8 方位と 100 m）・足した斉射の隻数（eventBoats）。
-// v0.6.9 実機 1 回目のレビュー code-2: 出来事のフレームのまだ撃てる隻数（eventArmed。撃てる PT が残らない戦いながらの斉射は「米PT は去る」）。
+// v0.6.9 実機 1 回目のレビュー code-2: 出来事のフレームのまだ撃てる隻数（eventArmed。撃てる PT が残らない戦いながらの斉射は「魚雷は尽きた」。v0.6.10 実機 1 回目までは「米PT は去る」）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -46,13 +46,13 @@ function place(w: W, i: number, brg: number, d: number, hd: number): void {
 }
 
 describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
-  it('出撃時（initLandingTelemetry）: enabled・揚陸 140 秒・2 本で沈む・1 斉射 3 本・2 隻・北と東・慌てる 1300 m、揚陸中で報告なし（出発点は見張りの外）・輸送船への相対位置', () => {
+  it('出撃時（initLandingTelemetry）: enabled・揚陸 110 秒（v0.6.10 実機 2 回目）・2 本で沈む・1 斉射 3 本・2 隻・北と東・慌てる 1300 m、揚陸中で報告なし（出発点は見張りの外）・輸送船への相対位置', () => {
     const w = world();
     const t = initLandingTelemetry(w);
     expect(t.enabled).toBe(true);
     expect([t.unloadS, t.hitsToSink, t.salvoCount, t.total, t.fromDirsJa, t.hurriedM]).toEqual([LD.params.unloadS, LD.params.hitsToSink, LD.torpedo.n, 2, '北と東', LD.torpedo.hurriedM]);
-    expect([t.unloadS, t.hitsToSink, t.salvoCount, t.hurriedM]).toEqual([140, 2, 3, 1300]);
-    expect([t.phase, t.resolved, t.pct, t.leftS, t.hits, t.duds, t.sinking, t.sunkAfterDone, t.armed, t.salvos, t.fired]).toEqual([LD_UNLOADING, false, 0, 140, 0, 0, false, false, 2, 0, 0]);
+    expect([t.unloadS, t.hitsToSink, t.salvoCount, t.hurriedM]).toEqual([110, 2, 3, 1300]);
+    expect([t.phase, t.resolved, t.pct, t.leftS, t.hits, t.duds, t.sinking, t.sunkAfterDone, t.armed, t.salvos, t.fired]).toEqual([LD_UNLOADING, false, 0, 110, 0, 0, false, false, 2, 0, 0]);
     expect([t.reportSub, t.reportI, t.reportStep, t.reportSighted]).toEqual([LANDING_REPORT_NONE, -1, 0, false]);
     expect(t.reportDx).toBeNaN();
     expect([t.wakes, t.eventSeq, t.eventKind, t.eventBoat]).toEqual([0, 0, LE_NONE, -1]);
@@ -69,11 +69,11 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     w.stepTimeS = 30.4;
     tickLanding(w.landing.state, w.landing.p, w.stepTimeS);
     refreshLandingTelemetry(t, w);
-    expect(t.leftS).toBeCloseTo(140 - 30.4, 9);
-    expect(t.pct).toBeCloseTo(30.4 / 140, 12);
-    w.stepTimeS = 140;
+    expect(t.leftS).toBeCloseTo(110 - 30.4, 9);
+    expect(t.pct).toBeCloseTo(30.4 / 110, 12);
+    w.stepTimeS = 110;
     tickLanding(w.landing.state, w.landing.p, w.stepTimeS);
-    w.stepTimeS = 141;
+    w.stepTimeS = 111;
     refreshLandingTelemetry(t, w);
     expect([t.phase, t.resolved, t.pct, t.leftS, t.eventSeq, t.eventKind, t.eventBoat, t.eventDirIdx]).toEqual([LD_DONE, true, 1, 0, 1, LE_DONE, -1, 0]);
   });
@@ -146,7 +146,7 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     landingEvent(ld, LE_HIT, 1, NaN, 0);
     refreshLandingTelemetry(t, w);
     expect([t.eventSeq, t.eventKind, t.eventHits, t.hits, t.eventDirIdx]).toEqual([2, LE_HIT, 1, 1, 0]);
-    expect(t.eventPct).toBeCloseTo(77 / 140, 12);
+    expect(t.eventPct).toBeCloseTo(77 / 110, 12);
     expect(t.eventM).toBeNaN();
   });
 
@@ -154,18 +154,18 @@ describe('揚陸のテレメトリ（systems/landing-telemetry）', () => {
     const w = world();
     const t = initLandingTelemetry(w);
     const ld = w.landing.state;
-    w.stepTimeS = 70;
-    tickLanding(ld, w.landing.p, 70);
+    w.stepTimeS = 55;
+    tickLanding(ld, w.landing.p, 55);
     w.landing.wakes.count = 3;
     w.landing.wakes.cpaS = 9.5;
     w.landing.tst.salvos = 1;
     w.landing.tst.fired = 3;
     refreshLandingTelemetry(t, w);
     expect([t.wakes, t.wakeCpaS, t.salvos, t.fired]).toEqual([3, 9.5, 1, 3]);
-    hitLanding(ld, w.landing.p, 75);
-    hitLanding(ld, w.landing.p, 76);
-    w.stepTimeS = 80;
-    tickLanding(ld, w.landing.p, 80);
+    hitLanding(ld, w.landing.p, 56);
+    hitLanding(ld, w.landing.p, 57);
+    w.stepTimeS = 60;
+    tickLanding(ld, w.landing.p, 60);
     refreshLandingTelemetry(t, w);
     expect([t.phase, t.resolved, t.sinking, t.sunkAfterDone, t.hits, t.leftS, t.pct]).toEqual([LD_SUNK, true, true, false, 2, 0, 0.5]);
   });

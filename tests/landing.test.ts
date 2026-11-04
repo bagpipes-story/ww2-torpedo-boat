@@ -17,8 +17,8 @@ import { LP, TP, TS, bench, place } from './landing-kit';
 const MK13 = TP.torpedo.speedMps;
 
 describe('輸送船の値（jp_04。data のまま）', () => {
-  it('泊地 (3000, 2760) 艇首 135°・当たりの船体 240 × 32 m（5 円）・沈むまで 2 本・揚陸 140 秒・見張り 1,800 m・慌てる 1,300 m', () => {
-    expect([LP.x, LP.y, LP.headingDeg, LP.hitLenM, LP.hitBeamM, LP.circles, LP.hitsToSink, LP.unloadS, LP.lookoutM]).toEqual([3000, 2760, 135, 240, 32, 5, 2, 140, 1800]);
+  it('泊地 (3000, 2760) 艇首 135°・当たりの船体 240 × 32 m（5 円）・沈むまで 2 本・揚陸 110 秒（v0.6.10 実機 2 回目）・見張り 1,800 m・慌てる 1,300 m', () => {
+    expect([LP.x, LP.y, LP.headingDeg, LP.hitLenM, LP.hitBeamM, LP.circles, LP.hitsToSink, LP.unloadS, LP.lookoutM]).toEqual([3000, 2760, 135, 240, 32, 5, 2, 110, 1800]);
     expect([LP.lookout2, LP.hurried2, LP.passRadius2]).toEqual([1800 ** 2, 1300 ** 2, 152 ** 2]);
   });
   it('createLanding: 船体の円は fillHullCircles のまま（1 回だけ）・泊地に浮いて揚陸中・出来事なし', () => {
@@ -34,7 +34,7 @@ describe('輸送船の値（jp_04。data のまま）', () => {
 describe('揚陸の時計（tickLanding）', () => {
   it('unload_s ちょうどで揚陸完了（その前は揚陸中・割合 = 時計 / unload_s）。完了は 1 回だけ（出来事 LE_DONE）', () => {
     const ld = createLanding(LP);
-    expect(tickLanding(ld, LP, 70)).toBe(false);
+    expect(tickLanding(ld, LP, 55)).toBe(false);
     expect([ld.phase, ld.pct]).toEqual([LD_UNLOADING, 0.5]);
     expect(tickLanding(ld, LP, LP.unloadS - 1e-9)).toBe(false);
     expect(ld.phase).toBe(LD_UNLOADING);
@@ -63,19 +63,19 @@ describe('揚陸の時計（tickLanding）', () => {
 describe('被雷と沈没（hitLanding）', () => {
   it('1 本目は被雷（揚陸は続く）、2 本目で沈み始める（揚陸はそのときの割合で止まる・LD_SUNK・決着）', () => {
     const ld = createLanding(LP);
-    tickLanding(ld, LP, 42);
-    expect(hitLanding(ld, LP, 42)).toBe(LANDING_HIT);
+    tickLanding(ld, LP, 33);
+    expect(hitLanding(ld, LP, 33)).toBe(LANDING_HIT);
     expect([ld.hits, ld.afloat, ld.sinking, ld.phase]).toEqual([1, true, false, LD_UNLOADING]);
-    tickLanding(ld, LP, 84);
+    tickLanding(ld, LP, 66);
     expect(ld.pct).toBeCloseTo(0.6, 12);
-    expect(hitLanding(ld, LP, 84.5)).toBe(LANDING_SUNK);
-    expect([ld.hits, ld.afloat, ld.out, ld.sinking, ld.sunk, ld.sinkStartS, ld.phase, ld.sunkAfterDone, landingResolved(ld)]).toEqual([2, false, true, true, true, 84.5, LD_SUNK, false, true]);
+    expect(hitLanding(ld, LP, 66.5)).toBe(LANDING_SUNK);
+    expect([ld.hits, ld.afloat, ld.out, ld.sinking, ld.sunk, ld.sinkStartS, ld.phase, ld.sunkAfterDone, landingResolved(ld)]).toEqual([2, false, true, true, true, 66.5, LD_SUNK, false, true]);
     expect(ld.pctAtSink).toBeCloseTo(0.6, 12);
-    tickLanding(ld, LP, 140);
+    tickLanding(ld, LP, LP.unloadS);
     expect([ld.phase, ld.pct]).toEqual([LD_SUNK, ld.pctAtSink]);
     // 沈み始めた後の命中は何も変えない
     expect(hitLanding(ld, LP, 90)).toBe(LANDING_SUNK);
-    expect([ld.hits, ld.sinkStartS]).toEqual([2, 84.5]);
+    expect([ld.hits, ld.sinkStartS]).toEqual([2, 66.5]);
   });
   it('揚陸完了の後の沈没: LD_DONE のまま sunkAfterDone（目的には響かない）', () => {
     const ld = createLanding(LP);
@@ -95,14 +95,14 @@ describe('被雷と沈没（hitLanding）', () => {
 describe('出来事（landingEvent。HUD のモード 35 の材料。F16）', () => {
   it('種類・PT・距離・本数と、そのときの被雷の数・揚陸の割合（沈んでいれば沈んだときの割合）を記して通し番号を増やす', () => {
     const ld = createLanding(LP);
-    tickLanding(ld, LP, 35);
+    tickLanding(ld, LP, 27.5);
     landingEvent(ld, LE_DUD, 1, NaN, 0);
     expect([ld.eventSeq, ld.eventKind, ld.eventBoat, ld.eventCount, ld.eventHits, ld.eventPct]).toEqual([1, LE_DUD, 1, 0, 0, 0.25]);
-    hitLanding(ld, LP, 36);
+    hitLanding(ld, LP, 28);
     landingEvent(ld, LE_DUD, 0, NaN, 0);
     expect([ld.eventSeq, ld.eventHits]).toEqual([2, 1]); // 被雷の後の不発（「不発！ 被雷 1 のまま」）
-    tickLanding(ld, LP, 70);
-    hitLanding(ld, LP, 70);
+    tickLanding(ld, LP, 55);
+    hitLanding(ld, LP, 55);
     tickLanding(ld, LP, 100);
     landingEvent(ld, LE_DUD, 0, NaN, 0);
     expect(ld.eventPct).toBe(0.5);

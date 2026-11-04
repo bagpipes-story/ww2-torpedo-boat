@@ -1,4 +1,5 @@
 // 世界の初期化パラメータの型（v0.6.7 S0 で world-setup.ts から移した。中身は v0.6.6 のまま。world-setup.ts が出し直す＝今までの import のため）。型だけ（JS の出力は無い）。
+import type { AllyDestroyerParams, AllyDestroyerSetupOptions } from '../config/ally-destroyer-mission-data';
 import type { AirStrikeParams } from '../config/dawn-data';
 import type { EngineParams, EngineSetupOptions } from '../config/engine-mission-data';
 import type { PrototypeMission } from '../config/game-data';
@@ -112,10 +113,11 @@ export interface WorldSetup {
   gunboat?: GunboatParams; // 隼艇（v0.6.6。jp_01 のハードの hard.gunboat だけ。core/gunboat。無い任務・ノーマル・gunboatOff では鍵ごと出ない＝setup の snapshot を変えない）
   patrolAir?: PatrolAirSetup; // 夜の哨戒機（v0.6.7。v0_1_prototype.patrol_air のある任務＝jp_02 だけ。門番と夜の出撃の値。無い任務と patrolOff では鍵ごと出ない＝setup の snapshot を変えない）
   landing?: LandingSetup; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。v0_1_prototype.landing のある任務＝jp_04 だけ。config/landing-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
+  allyDestroyer?: AllyDestroyerParams; // 味方の駆逐艦 卯月（v0.6.10。v0_1_prototype.ally_destroyer のある任務＝jp_04 だけ。config/ally-destroyer-mission-data。無い任務と allyOff では鍵ごと出ない＝setup の snapshot を変えない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions {
+export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions {
   fuelGal?: number;
   dawnS?: number;
   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */

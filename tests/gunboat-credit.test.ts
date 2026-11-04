@@ -123,12 +123,12 @@ describe('手柄の分け（systems/gunboat-credit）', () => {
     refreshPtTelemetry(t, { ...w, pts: { ...w.pts!, gunboat: null } });
     expect(t.gunHits).toBe(3);
   });
-  it('配線（ソース）: PtSquadron の自艇の砲は FATE_BY_PLAYER、隼艇の砲は FATE_BY_GUNBOAT で onFate へ、onFate は最初に fateBy を書く。隼艇の fire は砲の段の前後で noteGunboatGun', () => {
+  it('配線（ソース）: PtSquadron の自艇の砲は FATE_BY_PLAYER、隼艇の砲は FATE_BY_GUNBOAT で onFate へ、onFate は最初に fateBy を書く（絵は v0.6.10 S5b の fateVisual）。隼艇の fire は砲の段の前後で noteGunboatGun', () => {
     const strip = (code: string): string => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     const sq = strip(readFileSync('src/systems/pt-squadron.ts', 'utf8'));
-    expect(sq).toContain('(i, fate) => this.onFate(scene, i, fate, FATE_BY_PLAYER)');
-    expect(sq).toContain('onFate: (i, fate) => this.onFate(scene, i, fate, FATE_BY_GUNBOAT)');
-    expect(sq).toMatch(/private onFate\(scene: Phaser\.Scene, i: number, fate: number, by: number\): void \{\s*if \(this\.gunboat\) this\.gunboat\.credit\.fateBy\[i\] = by;/);
+    expect(sq).toContain('(i, fate) => this.onFate(i, fate, FATE_BY_PLAYER)');
+    expect(sq).toContain('onFate: (i, fate) => this.onFate(i, fate, FATE_BY_GUNBOAT)');
+    expect(sq).toMatch(/private onFate\(i: number, fate: number, by: number\): void \{\s*if \(this\.gunboat\) this\.gunboat\.credit\.fateBy\[i\] = by;/);
     const gb = strip(readFileSync('src/systems/gunboat.ts', 'utf8'));
     const fire = gb.slice(gb.indexOf('fire(t: PtTargets'), gb.indexOf('contactFlash(c: PtCheck'));
     const [h0, step, note] = [fire.indexOf('const h0 = q.gunHits;'), fire.indexOf('this.gun.step(this.state.band, this.state.held, this.state.valid'), fire.indexOf('noteGunboatGun(this.credit, q, h0, u0, e0);')];

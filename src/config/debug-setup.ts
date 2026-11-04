@@ -1,6 +1,7 @@
 // ?debug の上書きを世界の組み立て（systems/world-setup の SetupOptions）にまとめる（v0.4.6）。Briefing と Mission が同じ値で組むために 1 か所に置く。
 // world-setup 自体は window を読まない（テストの tsconfig に DOM が無い）ので、URL を読む game-config の値はここで渡す。
 import {
+  DEBUG_ALLY_OFF,
   DEBUG_BARGES_NEAR,
   DEBUG_BATTERY_OFF,
   DEBUG_DAWN_S,
@@ -44,5 +45,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     engineHot: DEBUG_ENGINE_HOT, // ?debug&enghot（v0.6.5）
     gunboatOff: DEBUG_GUNBOAT_OFF, // ?debug&nogunboat（v0.6.6）
     patrolOff: DEBUG_PATROL_OFF, // ?debug&nopatrol（v0.6.7）
+    allyOff: DEBUG_ALLY_OFF, // ?debug&noally（v0.6.10）
   };
 }

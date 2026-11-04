@@ -34,6 +34,7 @@ import { engineSetupPart } from '../config/engine-mission-data';
 import { gunboatSetupPart } from '../config/gunboat-mission-data';
 import { patrolAirSetupPart } from '../config/patrol-air-mission-data';
 import { landingSetupPart } from '../config/landing-mission-data';
+import { allyDestroyerSetupPart } from '../config/ally-destroyer-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, type TransportSetup } from './destroyer-setup';
@@ -106,6 +107,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
 
   const raid = getRaidParams(data, mission);
   const start = sortie ? sortieConditions(sortie, raid) : NO_SORTIE_EFFECT;
+  const landingPart = landingSetupPart(data, mission, ptBase, ptBoats, o);
   return {
     mission,
     playerStart: o.bargesNear && lead ? lead : mission.playerStart,
@@ -163,7 +165,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...engineSetupPart(data, missionId, o),
     ...gunboatSetupPart(data, mission, o),
     ...patrolAirSetupPart(data, missionId, o),
-    ...landingSetupPart(data, mission, ptBase, ptBoats, o), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04 だけ。無い任務では鍵ごと出ない）
+    ...landingPart, // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04 だけ。無い任務では鍵ごと出ない）
+    ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o), // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
   };
 }
 

@@ -47,7 +47,7 @@ describe('jp_04 の揚陸の組み立て（通る data）', () => {
       expect(getLandingSetup(gameData, m, p, p, 2), id).toBeNull();
       expect(landingSetupPart(gameData, m, p, p, {}), id).toEqual({});
     }
-    expect([LANDING_LAUNCH_INSIDE_M, LANDING_RING_CLEAR_M, LANDING_DAWN_MARGIN_S, LANDING_WARN_MIN_S, LANDING_BEACH_MARGIN_M, LANDING_BEACH_CLEAR_M]).toEqual([50, 800, 30, 20, 12, 50]);
+    expect([LANDING_LAUNCH_INSIDE_M, LANDING_RING_CLEAR_M, LANDING_DAWN_MARGIN_S, LANDING_WARN_MIN_S, LANDING_BEACH_MARGIN_M, LANDING_BEACH_CLEAR_M]).toEqual([50, 800, 20, 20, 12, 50]); // v0.6.10 S0b: LANDING_DAWN_MARGIN_S 30 → 20
   });
   it('当たりの倍率: ?debug&shiphit の上書きは params の当たりだけを変え（V4 は data の 2 倍で見る）、正でない上書きは data の値', () => {
     const m = getPrototypeMission(gameData, 'jp_04');
@@ -98,10 +98,10 @@ describe('V4〜V10・V13（泊地・輪・夜明け・線の幾何・出発点�
     // 艇首 90°（浜と平行）なら円の南の縁は y 2,776
     expect(land((d) => ((landOf(d)['anchor'] as Rec)['heading_deg'] = 90))).not.toThrow();
   });
-  it('V5: 泊地と帰投の輪の中心 ≥ 800 m（今 1,601 m）・V6: unload_s + 30 ≤ duration_s（今 170 ≤ 200）', () => {
+  it('V5: 泊地と帰投の輪の中心 ≥ 800 m（今 1,601 m）・V6: unload_s + 20 ≤ duration_s（今 110 + 20 = 130 ≤ 160。v0.6.10 S0b・実機 2 回目）', () => {
     expect(land((d) => { const rp = protoOf(d, 'jp_04')['return_point'] as Rec; rp['x_m'] = 2400; rp['y_m'] = 2500; })).toThrow(/landing: 泊地と帰投の輪の中心は 800 m 以上（654 m）/);
-    expect(land((d) => (landOf(d)['unload_s'] = 171))).toThrow(/landing: unload_s \+ 30（201 秒）≤ duration_s（200 秒。揚陸は夜明けの前に決着する）/);
-    expect(land((d) => (landOf(d)['unload_s'] = 170))).not.toThrow();
+    expect(land((d) => (landOf(d)['unload_s'] = 141))).toThrow(/landing: unload_s \+ 20（161 秒）≤ duration_s（160 秒。揚陸は夜明けの前に決着する）/);
+    expect(land((d) => (landOf(d)['unload_s'] = 140))).not.toThrow();
   });
   it('V7: 線の終わりは泊地から 750 m（900 − 100 − 50）の内（揺らぎ込み）・V9: 線の向きと終わりから泊地への方位の差 ≤ 15°', () => {
     expect(land((d) => ((protoOf(d, 'jp_04')['pt_boats'] as Rec)['legs_m'] as number[][])[0]!.splice(0, 4, 3300, 250, 3060, 1900))).toThrow(/landing: pt_boats の線 0 の終わりは泊地から 750 m（launch_range_m − arrive_m − 50）の内（今夜の揺らぎで 912 m）/);

@@ -1,6 +1,7 @@
 // 揚陸の仕組み（v0.6.9。jp_04）は他の任務で鍵ごと出ない（spec-v069 §9 の landing-neutral。engine・gunboat・patrolAir の optional part の作法）。
 // S1: WorldSetup（ノーマル・ハード・史実モード・今夜の揺らぎ）に "landing" が無い。S5b: テレメトリの landing は鍵がいつもあり enabled false（世界の揚陸は null＝buildLanding の
 // 最初の枝。tests/landing-step-order）、既存のテレメトリの組（tests/pt-ui-kit・dawn-lines・dawn-clock）の 2 行目のモードは 35・36・37 にならない。2 行目の鍵（landingKey が 0）は S6a で足す。
+// v0.6.10 S1: 味方の駆逐艦 卯月（WorldSetup.allyDestroyer・v0_1_prototype.ally_destroyer）も jp_04 だけ（他の 7 任務の setup の JSON に "allyDestroyer" が無い）。
 // R14（S6a-fix）: 輪の中の待ち（A5）・輸送船が射線に入る（A1）も揚陸の任務だけ。終わり方（systems/mission-end の landingHold）は landing の無い世界で偽＝decideMissionEnd のまま。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -32,12 +33,22 @@ describe('landing-neutral（他の 7 任務）', () => {
         for (const s of builds) {
           expect('landing' in s, `${id} ${hard} ${historical}`).toBe(false);
           expect(JSON.stringify(s).includes('"landing"'), `${id} ${hard} ${historical}`).toBe(false);
+          // v0.6.10 S1: 味方の駆逐艦 卯月の鍵も出ない（spec-v0610 D11・G8）
+          expect('allyDestroyer' in s, `${id} ${hard} ${historical}`).toBe(false);
+          expect(JSON.stringify(s).includes('"allyDestroyer"'), `${id} ${hard} ${historical}`).toBe(false);
         }
       }
     }
   });
-  it('jp_04 だけが landing を持つ（ノーマル・ハード）', () => {
-    for (const hard of [false, true]) expect('landing' in buildWorldSetup(gameData, 'jp_04', { hard })).toBe(true);
+  it('jp_04 だけが landing を持つ（ノーマル・ハード）。卯月（v0.6.10 S1）も jp_04 だけで、allyOff（?debug&noally・模擬の ALLY_OFF）なら鍵ごと出ない（landing は残る）', () => {
+    for (const hard of [false, true]) {
+      expect('landing' in buildWorldSetup(gameData, 'jp_04', { hard })).toBe(true);
+      expect('allyDestroyer' in buildWorldSetup(gameData, 'jp_04', { hard })).toBe(true);
+      const off = buildWorldSetup(gameData, 'jp_04', { hard, allyOff: true });
+      expect(['allyDestroyer' in off, 'landing' in off]).toEqual([false, true]);
+    }
+    const withAlly = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['ally_destroyer'] !== undefined).map((m) => m['id']);
+    expect(withAlly).toEqual(['jp_04']);
   });
 });
 

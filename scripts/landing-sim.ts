@@ -5,12 +5,19 @@
 //   R14 の lure_cue・home_early は表だけ。v0.6.9 実機 1 回目の face・human・human_face は表だけで ✓/✗ も無く、斉射の数え・帯・R2 の期待値の分布に入れない＝TABLE=1 の期待値は -）・HARD=1（ハード）・
 //   TABLE（無し: 組ごとの表 / 1: 帯の ✓/✗・対の帯（組を合わせた夜）・R2 の期待値・不変 / 2: 斉射の命中と分布 / 3: 時刻。1・2 は ✗ があれば終了コード 1）・
 //   上書き UNLOAD（unload_s）・LOOKOUT（lookout_m）・HITS（torpedo_hits_to_sink）・AIM（aim_error_deg）・SPACING（salvo_spacing_deg）・HURRIED（hurried_max_m）・HFACTOR（hurried_error_factor）・
-//   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）
+//   EFACTOR（engaged_error_factor。R12）・REACQ（reacquire_s）・ALLOT（燃料 gal）。新しい鍵は env が無ければ undefined（見出しに出さない）・
+//   ALLY_OFF=1（v0.6.10 S3a: 味方の駆逐艦 卯月を切る＝S0b と同じ夜。見出しに出さず、表は S0b と同じバイト＝LD9・G6。卯月がいれば見出しの 3 行目に卯月の値、TABLE=1 の I9 の遊び方の行に I9）・
+//   v0.6.10 S3b: TABLE=4（卯月の表。scripts/landing-sim-ally）、卯月のつまみ ALLY_STATION（x,y）・ALLY_ARC0・ALLY_SLOW_M・ALLY_SLOW_RATE・ALLY_FAST_M・ALLY_FAST_RATE・ALLY_REACT・ALLY_CHASE・
+//   ALLY_25OFF=1 と夜明け DAWN（duration_s）。範囲は systems/ally-sim-knobs（外は例外。ALLY_OFF=1 と卯月のつまみは一緒に使えない）。上書きは見出しに出る
+//   v0.6.10 S4: 卯月がいれば帯は systems/ally-sim-bands（人に近い遊び方も ✓/✗。TABLE=1 に得の対・照らした夜・ハードの段）、ALLY_OFF=1 は S0b の帯（*_NO_ALLY）
 // 実行: npx esbuild scripts/landing-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/landing.mjs && node <scratch>/landing.mjs
 import { gameData } from '../src/config/game-data';
 import { quantile, salvoProbs, surviveOf, type LandingCell, type SalvoKindStats, type TimeCol } from '../src/core/landing-sim-cell';
 import { LANDING_HUMAN, LANDING_HUMAN_POLICIES, LANDING_POLICIES, type LandingPolicy } from '../src/core/landing-sim-policy';
-import { LANDING_CALIBRATION, LANDING_HARD_CALIBRATION, LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses, landingSalvoMisses, type LandingSimOverrides } from '../src/systems/landing-sim-setup';
+import { mpsToKt } from '../src/core/units';
+import { allyBandLines, allyTableLines } from './landing-sim-ally';
+import { landingBandSet } from '../src/systems/ally-sim-bands';
+import { LANDING_PAIRS, LANDING_SALVO_BANDS, landingBandMisses, landingCalibrationRun, landingInvariantMisses, landingSalvoMisses, type LandingSimOverrides } from '../src/systems/landing-sim-setup';
 
 const num = (k: string): number | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? Number(process.env[k]) : undefined);
 const mission = process.env['MISSION'] ?? 'jp_04';
@@ -19,16 +26,26 @@ const seed = num('SEED') ?? 1;
 const blocks = num('BLOCKS') ?? 2;
 if (!Number.isInteger(blocks) || blocks < 1) throw new Error('BLOCKS は 1 以上の整数');
 const table = process.env['TABLE'] ?? '';
-if (!['', '1', '2', '3'].includes(table)) throw new Error('TABLE は 1・2・3 か無し');
+if (!['', '1', '2', '3', '4'].includes(table)) throw new Error('TABLE は 1・2・3・4 か無し');
+const pair = (k: string): readonly [number, number] | undefined => {
+  const v = process.env[k];
+  if (v === undefined || v === '') return undefined;
+  const xs = v.split(',').map(Number);
+  if (xs.length !== 2 || !xs.every(Number.isFinite)) throw new Error(`${k} は x,y（2 つの数）`);
+  return [xs[0]!, xs[1]!];
+};
 const o: LandingSimOverrides = {
   unloadS: num('UNLOAD'), lookoutM: num('LOOKOUT'), hitsToSink: num('HITS'), aimDeg: num('AIM'), spacingDeg: num('SPACING'), hurriedM: num('HURRIED'), hurriedFactor: num('HFACTOR'),
   engagedFactor: num('EFACTOR'), reacquireS: num('REACQ'),
   fuelGal: num('ALLOT'), hard: process.env['HARD'] === '1' ? true : undefined,
+  allyStation: pair('ALLY_STATION'), allyArc0: num('ALLY_ARC0'), allyLookSlowM: num('ALLY_SLOW_M'), allyRateSlow: num('ALLY_SLOW_RATE'), allyLookFastM: num('ALLY_FAST_M'),
+  allyRateFast: num('ALLY_FAST_RATE'), allyReactS: num('ALLY_REACT'), allyChaseS: num('ALLY_CHASE'), ally25Off: process.env['ALLY_25OFF'] === '1' ? true : undefined, dawnS: num('DAWN'),
 };
+const allyOff = process.env['ALLY_OFF'] === '1'; // o の外（見出しの set に出さない）
 const pols = (process.env['POL'] ?? LANDING_POLICIES.join(',')).split(',').map((x) => x.trim()).filter((x) => x !== '') as LandingPolicy[];
 for (const p of pols) if (!(LANDING_POLICIES as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は ${LANDING_POLICIES.join(' / ')}`);
 
-const run = landingCalibrationRun(gameData, mission, pols, n, seed, blocks, o);
+const run = landingCalibrationRun(gameData, mission, pols, n, seed, blocks, allyOff ? { ...o, allyOff: true } : o);
 const s = run.setup;
 const lp = s.landing;
 const tp = s.torpedo;
@@ -41,6 +58,13 @@ console.log(
     `慌てて ${tp.hurriedM} m ×${tp.hurriedFactor}・戦いながら ×${tp.engagedFactor}・見失い ${tp.reacquireS} 秒・不発 ${tp.reliability.dud}・蛇行 ${tp.reliability.erratic} | 自艇 ${s.start.x},${s.start.y} 輪 ${s.ring.x},${s.ring.y}（半径 ${s.ring.radiusM}）・夜明け ${s.durationS} 秒・燃料 ${s.fuelGal} gal | ` +
     `米PT ${s.pt.count} 隻（${Array.from({ length: s.pt.count }, (_, i) => `${lp.runDirJa[i] ?? '?'} ${s.pt.legs[4 * i]},${s.pt.legs[4 * i + 1]}→${s.pt.legs[4 * i + 2]},${s.pt.legs[4 * i + 3]}`).join('・')}）`,
 );
+const ad = s.allyDestroyer;
+if (ad) {
+  console.log(
+    `卯月 ${ad.x},${ad.y} 艇首 ${ad.headingDeg}・扇 ${ad.arc0Deg}〜${ad.arc1Deg}°（線 ${ad.guardLegs.join('・')}）・遅い PT ${ad.lookSlowM} m ${ad.rateSlow}/秒・速い PT（${f(mpsToKt(ad.fastMps), 1, 0)} kt 以上）${ad.lookFastM} m ` +
+      `${ad.rateFast}/秒・照らされて ${ad.lightReactS} 秒・去る PT を ${ad.chaseFireS} 秒追う・探照灯 ${ad.gunnery.searchlight.rangeM} m・砲 ${ad.gunnery.guns.map((g) => `${g.id} ×${g.count}`).join('・')}（沈める ${ad.ptSinkChance}）`,
+  );
+}
 
 const HEAD = 'policy         obj%  land% tSunk% unres% | own% adrift% home% preDawn% tout% | salv  calm  hurr   eng | left   gun  gone | fuel% ring% |   HP det%  detS cont lost shots';
 const line = (c: LandingCell): string =>
@@ -48,7 +72,9 @@ const line = (c: LandingCell): string =>
   `${f(c.salvos, 2, 4)} ${f(c.calm, 2, 5)} ${f(c.hurried, 2, 5)} ${f(c.engaged, 2, 5)} | ${f(c.leftByPass, 2, 4)} ${f(c.gunOff, 2, 5)} ${f(c.goalGone, 2, 5)} | ${f(c.fuelCallPct, 1, 5)} ${f(c.ringEarlyPct, 1, 5)} | ` +
   `${f(c.hpMean, 1, 4)} ${f(c.detectedPct, 0, 4)} ${f(c.detectMedS, 1, 5)} ${f(c.contacts, 2, 4)} ${f(c.lostContacts, 2, 4)} ${f(c.gunShots, 0, 5)}`;
 const mark = (miss: string[]): string => `  ${miss.length === 0 ? '✓' : `✗ ${miss.join('・')}`}`;
-const rows = (o.hard ? LANDING_HARD_CALIBRATION : LANDING_CALIBRATION).filter((r) => pols.includes(r.policy));
+// 帯の組（v0.6.10 S4・D9）: 卯月がいれば卯月の帯（人に近い遊び方も帯）、卯月を切った夜（ALLY_OFF=1）は S0b の帯（人に近い遊び方は表だけ＝表のバイトが S0b と同じ）
+const bandSet = landingBandSet(ad !== undefined, o.hard === true);
+const rows = bandSet.rows.filter((r) => pols.includes(r.policy));
 let misses = 0;
 
 if (table === '' || table === '1') {
@@ -57,12 +83,13 @@ if (table === '' || table === '1') {
     console.log(HEAD);
     for (const pol of pols) {
       const c = run.cell(pol, b);
-      if (table !== '1' || LANDING_HUMAN_POLICIES.includes(pol)) {
+      if (table !== '1' || (!bandSet.humanBanded && LANDING_HUMAN_POLICIES.includes(pol))) {
         console.log(line(c) + (table === '1' ? '  （表だけ）' : ''));
         continue;
       }
       const r = rows.find((x) => x.policy === pol);
-      const miss = [...(r ? landingBandMisses(r, c) : []), ...landingInvariantMisses(c, s)];
+      const i9 = run.i9Misses(pol, b);
+      const miss = [...(r ? landingBandMisses(r, c) : []), ...landingInvariantMisses(c, s), ...(i9 > 0 ? [`I9 卯月の無い夜と違う ${i9} 夜`] : [])];
       misses += miss.length;
       console.log(line(c) + mark(miss));
     }
@@ -79,6 +106,13 @@ if (table === '1') {
       if (!ok) misses++;
       console.log(`  ${pr.policy.padEnd(13)} ${`${pr.name}（${pr.other}）`.padEnd(18)} | ${f(a, 1, 5)} | ${f(z, 1, 5)} | ${f(a - z, 1, 6)}（${f(pr.lo, 0, 0)}〜${f(pr.hi, 0, 0)}） ${ok ? '✓' : '✗'}`);
     }
+  }
+  // 卯月の得・照らした夜・ハードの段（v0.6.10 S4。卯月がいるときだけ＝卯月を切った表は S0b と同じバイト）。段はノーマルの同じ seed・つまみの表を回して比べる
+  if (ad) {
+    const normal = o.hard ? (ps: readonly LandingPolicy[]) => landingCalibrationRun(gameData, mission, ps, n, seed, blocks, { ...o, hard: undefined }) : null;
+    const al = allyBandLines(run, pols, blocks, n, normal, f);
+    for (const l of al.lines) console.log(l);
+    misses += al.misses;
   }
   // 分布は run.salvoPolicies（較正の遊び方）の夜だけ。分布に入れない行（人に近い遊び方）の期待値は -（v0.6.9 実機 1 回目のレビュー code-3: 前は較正の 12 の分布で 5〜25 点ずれた値を出し、
   // 見出しは「この表の全部の夜」と言っていた）。表の全部の行が分布に入っていれば前と同じ見出し（POL に較正の 12 なら S1 の木と同じバイト）
@@ -160,6 +194,8 @@ if (table === '3') {
   }
 }
 
+if (table === '4') for (const l of allyTableLines(run, pols, blocks, n, seed, span)) console.log(l);
+
 if (table === '1' || table === '2') {
   console.log(`判定: ✗ ${misses} 項目`);
   if (misses > 0) process.exitCode = 1;
@@ -173,7 +209,7 @@ console.log(
 if (pols.some((p) => LANDING_HUMAN_POLICIES.includes(p))) {
   const h = LANDING_HUMAN;
   console.log(
-    `face・human・human_face = 人に近い遊び方（v0.6.9 実機 1 回目。表だけ: 帯・✓/✗ なし、斉射の数え・帯・R2 の期待値の分布に入れない）: face は lure で、見つかったら最寄りの PT へ巡航（割って入る） | ` +
+    `face・human・human_face = 人に近い遊び方（v0.6.9 実機 1 回目。${bandSet.humanBanded ? '卯月のいる表は行の帯あり（v0.6.10 S4）。' : '表だけ: 帯・✓/✗ なし、'}斉射の数え・帯・R2 の期待値の分布に入れない）: face は lure で、見つかったら最寄りの PT へ巡航（割って入る） | ` +
       `human は lure で、最初の報告に ${h.delayMinS}〜${h.delayMaxS} 秒遅れて反応・赤い線は ${h.dodgeP * 100}% だけかわす（反応 +0〜${h.reactExtraS} 秒）・機銃は ${h.gunCycleS} 秒ごとの初めの ${h.gunOnS} 秒だけ | human_face は両方`,
   );
 }

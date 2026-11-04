@@ -2,28 +2,39 @@
 // core/landing-sim の設定を作り、較正の帯（LANDING_CALIBRATION・LANDING_PAIRS・LANDING_SALVO_BANDS）と不変（I1〜I6）を持つ。scripts/landing-sim.ts が N 400 × 2 組で表にする（S4 で調整済み。tests/landing-balance が N 60 で回帰を見る）。
 // Phaser 非依存・window を読まない。値は world-setup の buildWorldSetup と同じ（米PT・艇・燃料・視界は pt-pass-sim-setup の ptSimSetup を流用）。上書きは data の写しに当てて、世界と同じ検査
 // （config/landing-mission-data の V1〜V13・core/pt-torpedo-data の V11）を通す＝R7: V8・V10・V13 を破る組み合わせは例外で止まる。data は変えない。
+// v0.6.10 S3a（spec-v0610 §6.1・LD9）: 卯月（world-setup の allyDestroyer）を模擬へ渡す。allyOff（scripts の ALLY_OFF=1）は鍵ごと渡さない＝S0b と同じ夜。不変に I7・I8・I10・I11、
+// I9（卯月の効かない遊び方は同じ seed の卯月の無い夜と同じ記録）は LandingRun.i9Misses。
+// v0.6.10 S3b: 卯月のつまみと夜明け（systems/ally-sim-knobs。範囲の外は例外・data の写しに当てて V-A1〜V-A6 を通す）。
+// v0.6.10 S4（D9）: ここの行の帯は S0b の帯＝卯月を切った夜（ALLY_OFF=1）の *_NO_ALLY。卯月のいる帯・得の対・照らした夜・ハードの段は systems/ally-sim-bands（得は LandingRun.allyGain）。
 import { getPrototypeMission, type GameData } from '../config/game-data';
 import { LANDING_WARN_MIN_S } from '../config/landing-config';
 import type { LandingSimSetup } from '../core/landing-sim';
 import { landingCell, runLandingTrials, salvoStats, type LandingCell, type SalvoKindStats, type SalvoStats } from '../core/landing-sim-cell';
 import { LANDING_HUMAN_POLICIES, type LandingPolicy } from '../core/landing-sim-policy';
-import type { LandingTrial } from '../core/landing-trial';
+import { allyFatedBeforeSalvo, LANDING_TRIAL_GUN_KEYS, landingTrialBase, type LandingTrial } from '../core/landing-trial';
+import { checkAllyKnobs, withAllyOverrides, withoutAllyKnobs, type AllySimOverrides } from './ally-sim-knobs';
 import { ptSimSetup } from './pt-pass-sim-setup';
 import { buildWorldSetup } from './world-setup';
 
-/** 感度を見る上書き（無ければ data の値。spec §6 S3 の UNLOAD・LOOKOUT・HITS・AIM・SPACING・HURRIED・HFACTOR・REACQ・ALLOT と R12 の EFACTOR）と難易度ハード */
-export interface LandingSimOverrides {
+/** 感度を見る上書き（無ければ data の値。spec §6 S3 の UNLOAD・LOOKOUT・HITS・AIM・SPACING・HURRIED・HFACTOR・REACQ・ALLOT と R12 の EFACTOR）と難易度ハード、卯月のつまみと夜明け（v0.6.10 S3b） */
+export interface LandingSimOverrides extends AllySimOverrides {
   unloadS?: number; lookoutM?: number; hitsToSink?: number;
   aimDeg?: number; spacingDeg?: number; hurriedM?: number; hurriedFactor?: number; engagedFactor?: number; reacquireS?: number;
   fuelGal?: number; hard?: boolean;
+  /** 卯月を切る（v0.6.10。scripts の ALLY_OFF=1。見出しに出さない＝LD9） */
+  allyOff?: boolean;
 }
 
+/** I9 の遊び方（卯月の効かない遊び方: 動きが lure でなく見つからない＝走る PT が扇に入らない。spec-v0610 §6.1） */
+export const LANDING_I9_POLICIES: readonly LandingPolicy[] = ['hide', 'circle_start', 'home_early'];
+
 export function landingSimSetup(data: GameData, missionId: string, o: LandingSimOverrides = {}): LandingSimSetup {
-  const d = withLandingOverrides(data, missionId, o);
+  checkAllyKnobs(o, o.allyOff === true);
+  const d = withAllyOverrides(withLandingOverrides(data, missionId, o), missionId, o);
   const base = ptSimSetup(d, missionId, { fuelGal: o.fuelGal, hard: o.hard });
-  const w = buildWorldSetup(d, missionId, { hard: o.hard, fuelGal: o.fuelGal ?? NaN });
+  const w = buildWorldSetup(d, missionId, { hard: o.hard, fuelGal: o.fuelGal ?? NaN, allyOff: o.allyOff });
   if (!w.landing) throw new Error(`${missionId} に停泊して揚陸する輸送船（v0_1_prototype.landing）が無い`);
-  return { ...base, landing: w.landing.params, torpedo: w.landing.torpedo };
+  return { ...base, landing: w.landing.params, torpedo: w.landing.torpedo, ...(w.allyDestroyer ? { allyDestroyer: w.allyDestroyer } : {}) };
 }
 
 /** 揚陸と雷撃の上書きを当てた data の写し（上書きが無ければそのまま） */
@@ -86,13 +97,16 @@ const lost = (c: LandingCell): number => c.ownSunkPct + c.adriftPct;
  * lure と同じに遊ぶ。R12 の lure_away ≥ lure + 3 は開かない）。picket・shoot_near・circle_start・lure_near は行の帯なし。S4 の値（engaged_error_factor 2.0）で全部 ✓。
  * R14 の lure_cue（HUD の「輸送船が射線に入る！ 離れて戦え」の間だけ離れる）と home_early（すぐ帰投の輪へ行って待つ）は表だけ。
  * v0.6.9 実機 1 回目（撃った PT は 3 種類の斉射とも去る）の後もノーマルは帯を変えずに全部 ✓（lure 87.3 / 87.0%・kite の沈没 + 漂流は lure より ＋31.4 点）。
- * 人に近い遊び方（face・human・human_face。v0.6.9 実機 1 回目）はここに無い＝表だけ（帯も ✓/✗ も無い。数の合わせは味方の駆逐艦の後の v0.6.10 で使う物差し）
+ * 人に近い遊び方（face・human・human_face。v0.6.9 実機 1 回目）はここに無い＝表だけ（帯も ✓/✗ も無い。数の合わせは味方の駆逐艦の後の v0.6.10 で使う物差し）。
+ * v0.6.10 S4: 卯月を切った夜（ALLY_OFF=1）の帯（*_NO_ALLY＝S0b のまま。D9・G6）。卯月のいる夜の帯は systems/ally-sim-bands の LANDING_CALIBRATION_ALLY
  */
-export const LANDING_CALIBRATION: readonly LandingBandRow[] = [
+export const LANDING_CALIBRATION_NO_ALLY: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 15], ownSunkPct: [0, 3] } },
   { policy: 'circle_start', bands: {} },
   { policy: 'picket', bands: {} },
-  { policy: 'lure', bands: { objPct: [70, 88], ownSunkPct: [0, 18], adriftPct: [0, 3], homeBeforeDawnPct: [80, 100], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] } },
+  // v0.6.10 S0b: 夜明けの前の帰投（homeBeforeDawnPct 80〜100）の帯を外した。ユーザーの選択「jp_04 の夜明けだけ 160 秒」で揚陸の 20 秒後に夜明けになり、ほとんどの夜は夜明けの後に帰る（手本 15.8%）。
+  // 模擬は夜明けの空襲を持たないので、達成 % は夜明けの後の帰投も数える（v0.6.10 の駆逐艦の較正で空襲の扱いを決める）
+  { policy: 'lure', bands: { objPct: [70, 88], ownSunkPct: [0, 18], adriftPct: [0, 3], fuelCallPct: [0, 10], ringEarlyPct: [0, 10] } },
   { policy: 'lure_away', bands: {} },
   { policy: 'lure_near', bands: {} },
   { policy: 'lure_cue', bands: {} },
@@ -116,9 +130,12 @@ export const LANDING_PAIRS: readonly LandingPairRow[] = [
  * +6.0 / +11.2 点（67.0 / 63.8% → 73.0 / 75.0%。N 400 × 2 組。組 2 は帯の端ちょうど＝端を含むので ✓）。数の合わせは味方の駆逐艦の後（v0.6.10）で人に近い遊び方の行も使う。
  * PT は 3 隻のまま（ユーザー「ハードモードは敵PTが3隻に増えるようにしてください」＝もう 3 隻。tests/setup-jp04）
  */
-export const LANDING_HARD_CALIBRATION: readonly LandingBandRow[] = [
+export const LANDING_HARD_CALIBRATION_NO_ALLY: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 8] } },
-  { policy: 'lure', bands: { objPct: [45, 75], ownSunkPct: [0, 30] } },
+  // v0.6.10 S0b: 45〜75 → 45〜78（ユーザーの選択「jp_04 の夜明けだけ 160 秒」で、夜明けのラッチが米PT を早く去らせ、組 2 が 75.0 → 75.3%。上に 2 点以上の余裕。数の合わせは駆逐艦の段）
+  // v0.6.10 実機 2 回目: 自艇の沈没 0〜30 → 0〜35（ユーザー「揚陸完了までの時間を30秒短くしておいてください」＝揚陸 140 → 110 秒。卯月を切ったハードの lure は揚陸が早く
+  // 決着して夜明けの前に帰る道で戦い続ける PT に撃たれ、19.0 / 20.8 → 27.3 / 30.5%（組 2 が 0.5 点超えた）。ほかの帯は動かさない）
+  { policy: 'lure', bands: { objPct: [45, 78], ownSunkPct: [0, 35] } },
 ];
 /**
  * 斉射の 1 本の命中率（spec §8: 気づかれていない 0.30〜0.50・慌てた 0.08〜0.25。戦いながら（R12）は帯なし＝表だけ）。帯は影の船体（いつも浮いている）への当たりうる本数あたり（不発を除く）: 撃った本数あたりは
@@ -142,6 +159,10 @@ export function landingInvariantMisses(c: LandingCell, s: LandingSimSetup): stri
   if (c.maxSalvosPerPt > 1) out.push(`I4 1 隻の斉射 ${c.maxSalvosPerPt}`);
   if (c.drawMiss > 0) out.push(`I5 seed+26 の回数が合わない夜 ${c.drawMiss}`);
   if (c.unresolvedAtDawn > 0) out.push(`I6 夜明けに未決着 ${c.unresolvedAtDawn} 夜`);
+  if (c.i7Miss > 0) out.push(`I7 seed+27 の回数が卯月の見張りの候補と合わない夜 ${c.i7Miss}`);
+  if (c.i8Bad > 0) out.push(`I8 条件の外の照らされた斉射 ${c.i8Bad}`);
+  if (c.i10Miss > 0) out.push(`I10 seed+28 の回数が 2 × 弾 + 命中と合わない夜 ${c.i10Miss}`);
+  if (c.i11Viol > 0) out.push(`I11 owner の PT が航過でないステップ ${c.i11Viol}`);
   return out;
 }
 
@@ -170,6 +191,14 @@ export interface LandingRun {
   /** 組ごとの集計と、組を合わせた集計（対の帯） */
   cell: (policy: LandingPolicy, block: number) => LandingCell;
   pooled: (policy: LandingPolicy) => LandingCell;
+  /**
+   * I9（v0.6.10）: LANDING_I9_POLICIES の組 b の夜のうち、同じ seed の卯月の無い夜（allyOff）と記録（卯月の欄と隊の砲の数え LANDING_TRIAL_GUN_KEYS を除く）が違うか、
+   * 卯月の砲が斉射の前の PT の結末を決めた夜の数。卯月のいない表・ほかの遊び方は 0（初めて聞いたときに卯月の無い夜を回す）。v0.6.10 実機 1 回目（撃っても去らない）までは
+   * 隊の砲の数えも比べ、卯月が 1 発でも撃てば外れだった（撃った PT は去ったので、この遊び方では卯月は撃たなかった）。今は撃った後に泊地のそばに残る東の PT を卯月が撃つ夜がある
+   */
+  i9Misses: (policy: LandingPolicy, block: number) => number;
+  /** 卯月の得（v0.6.10 S4）: 組を合わせた夜の達成 % の 卯月あり − 同じ seed・夜明け・上書きの卯月の無い夜（つまみを除く）。卯月のいない表は 0（初めて聞いたときに卯月の無い夜を回す） */
+  allyGain: (policy: LandingPolicy) => number;
 }
 
 /** 表を 1 回だけ回す口（tests と scripts）: policies を blocks 組ずつ回し、期待値の分布は salvoPolicies（回した中の較正の遊び方。人に近い遊び方は入れない）の全部の夜から */
@@ -190,11 +219,36 @@ export function landingCalibrationRun(data: GameData, missionId: string, policie
   const pooledSalvo = salvoStats(salvoPolicies.flatMap((p) => get(p).flat()), count, nn);
   const cells = new Map<string, LandingCell>();
   const memo = (key: string, make: () => LandingCell): LandingCell => cells.get(key) ?? cells.set(key, make()).get(key)!;
+  const i9 = new Map<string, number>();
+  let off: LandingSimSetup | null = null;
+  const offSetup = (): LandingSimSetup => (off ??= landingSimSetup(data, missionId, { ...withoutAllyKnobs(o), allyOff: true }));
+  const offRuns = new Map<string, LandingTrial[]>();
+  /** 同じ seed の卯月の無い夜（組 b。I9 と得で同じ夜を使う） */
+  const offTrials = (pol: LandingPolicy, b: number): LandingTrial[] => {
+    const key = `${pol}/${b}`;
+    if (!offRuns.has(key)) offRuns.set(key, runLandingTrials(offSetup(), pol, n, seedBase + b * n));
+    return offRuns.get(key)!;
+  };
+  const i9Misses = (pol: LandingPolicy, b: number): number => {
+    if (!setup.allyDestroyer || !LANDING_I9_POLICIES.includes(pol)) return 0;
+    const key = `${pol}/${b}`;
+    if (!i9.has(key)) {
+      const rs0 = offTrials(pol, b);
+      i9.set(key, get(pol)[b]!.filter((r, k) => allyFatedBeforeSalvo(r) || landingTrialBase(r, LANDING_TRIAL_GUN_KEYS) !== landingTrialBase(rs0[k]!, LANDING_TRIAL_GUN_KEYS)).length);
+    }
+    return i9.get(key)!;
+  };
+  const pooled = (pol: LandingPolicy): LandingCell => memo(`${pol}/all`, () => landingCell(setup, pol, get(pol).flat(), pooledSalvo));
+  const allyGain = (pol: LandingPolicy): number => {
+    if (!setup.allyDestroyer) return 0;
+    const rs0 = Array.from({ length: blocks }, (_, b) => offTrials(pol, b)).flat();
+    return pooled(pol).objPct - landingCell(offSetup(), pol, rs0, pooledSalvo).objPct;
+  };
   return {
-    setup, pooledSalvo, salvoPolicies,
+    setup, pooledSalvo, salvoPolicies, i9Misses, allyGain,
     trials: (pol, b) => get(pol)[b]!,
     salvo: (b) => bySalvo[b]!,
     cell: (pol, b) => memo(`${pol}/${b}`, () => landingCell(setup, pol, get(pol)[b]!, pooledSalvo)),
-    pooled: (pol) => memo(`${pol}/all`, () => landingCell(setup, pol, get(pol).flat(), pooledSalvo)),
+    pooled,
   };
 }

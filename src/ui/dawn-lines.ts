@@ -2,6 +2,7 @@
 // v0.6.2: 夜明けに敵が退く任務（retire・hide）は帯の 2 行目と Result の行の後ろに付ける。
 // v0.6.2 実機 1 回目: 左上の時計の色、2 行目が時計を避ける倍率、空襲の行の後ろの「大発 岸へ N 隻」。
 // v0.6.2 実機 2 回目: 夜明けの秒数は左上の時計だけ（2 行目には出さない。ユーザー「メインメッセージの方に夜明けまでの秒数は不用」）。
+// v0.6.10 S6（卯月。jp_04）: 夜明け近しの帰投の輪の呼びかけ（LD3）「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（callLineText。卯月の無い夜は前の「揚陸を待て」）。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
@@ -9,9 +10,10 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { DAWN_AIR_ENEMY, DAWN_AIR_NONE, DAWN_AIR_OWN, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
 import { CALL_DAWN } from '../core/mission-flow';
+import { allyRingWaitJa } from './ally-lines';
 import { convoyCallJa, convoyLeftStep, convoyWaitShoreJa, convoyWaiting } from './convoy-lines';
 import { callLabel, withWarnings, type HudLine } from './hud-lines';
-import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa } from './landing-lines';
+import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landingWaitTailJa } from './landing-lines';
 import { stormWarning } from './mission-mode';
 
 /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
@@ -88,11 +90,13 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number, co
  * 輸送隊（jp_01）が決着する前の夜明け近しは「夜明け近し 大発の上陸を待て  浜まで N m」（従うと上陸の前に輪で終わり、達成と上陸の点を失った）。
  * 燃料少は決着の前でも「帰投せよ」のまま（漂流すれば達成も帰投の点も失う）。輸送隊の無い任務の文は前と同じ。
  * 揚陸の任務（v0.6.9。jp_04）: 決着は「揚陸完了 ・ 」「輸送船 沈没 ・ 」、決着の前の夜明け近しは「夜明け近し ・ 揚陸を待て あと N 秒」、燃料少は「燃料少 ・ 揚陸まで あと N 秒 ・ 帰投の輪で止まって待て」（R4。
- * R14 A5: 決着の前に輪に入っても任務は終わらず、輪の中で揚陸を見届けられる）。揚陸の無い任務の文は前と同じ
+ * R14 A5: 決着の前に輪に入っても任務は終わらず、輪の中で揚陸を見届けられる）。揚陸の無い任務の文は前と同じ。
+ * 卯月のいる夜（v0.6.10 S6・LD3。data の ring_call_before_dawn）の夜明け近しは「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（夜明けの後は頭が「空襲下 」。「卯月に任せて」とは言わない）
  */
 export function callLineText(t: BoatTelemetry, call: number, homeStep: number): string {
   const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : t.landing.enabled ? landingCallJa(t.landing) : '');
   if (call === CALL_DAWN && convoyWaiting(t.convoy)) return `${head}${convoyWaitShoreJa(convoyLeftStep(t.convoy))}`;
+  if (call === CALL_DAWN && landingCallWaits(t.landing, call)) return `${head}・ ${allyRingWaitJa(t.ally, landingWaitTailJa(landingLeftS(t.landing)))}`;
   if (landingCallWaits(t.landing, call)) return `${head}${landingWaitCallJa(call, landingLeftS(t.landing))}`;
   return `${head}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`;
 }
