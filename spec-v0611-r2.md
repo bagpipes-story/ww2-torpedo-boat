@@ -155,6 +155,8 @@ Briefing に書く史実は A1・A2・A7・A15・A16 の範囲だけ。実在の
 - **撃墜で命中スローを掛けない**（r2 M1）: evac のある世界だけ、`buildArms` に渡す `onSunk` を「爆発だけ（`slowMoLeftS` を立てない）」の関数にする（`systems/world-arms.ts` L83–90 の `fxDown` → `onSunk`、`mission-world.ts` L186・L210。ほかの任務は今の関数のまま＝中立）。これで「決着の前の jp_03 には命中スローが 1 回も無い」が本当になり、模擬に倍率の記録が要らない（`slowMoLeftS` は実フレームの秒で減る＝固定ステップの模擬で再現できない）。
 - 操作中の隊を狙う編隊の投下は、今の「爆弾投下！ 転舵！」を出す（`strikeThreat`（凍結の air-strike-pose。import だけ）を中心が座席の記録の編隊について読む。M7）。
 
+> **S3b の追記（U7。S4・S5 はこちらを優先）**: 編隊は済んだ後、次の波の始まりまでに 1 回の出撃が収まれば同じ枠の規則で予告し直して 2 回目を飛ぶ（`core/evac-repass`・`evac_raid.passes_max` 2）。世界（S4）の対空で evac の編隊の機を落とすのは **`core/evac-repass` の `evacDownPlane`**（`downStrikePlane` ＋ 落ちた印。`systems/aa-slots.ts` は今 `downStrikePlane` を直に呼ぶので evac の枝で替える。替えないと 2 回目に落ちた機が生き返る）。予告し直しは `plan.evWave` を立てない＝HUD（S5）の予告の文は `air.repass.ev`（編隊ごとのビット）も見る（赤い輪は `sq.targeted` で同じに出る）。S4 の tests に「passes_max 2 で世界の対空の撃墜が `fl.downed` を立てる」を入れる。world-vs-sim は 2 回目のある夜を必ず含める。
+
 ### 3.8 終わり方（U6。CLAUDE.md §2「夜明け」の読み替え。新しい終わり方は作らない）
 - **決着の前（0〜240 秒）は任務は終わらない**: 帰投・漂流・座礁で終えない（`evacHold`。jp_04 の `landingHold` の作法）。例外は 18 隻すべてが沈んだ時（最後の座席が今までどおり沈んで終わる）。
 - `atHome`（座席の帰投）＝決着の前は**操作中の隊が `G_HIDDEN`**（`stepPlayerBoat` の後で jp_03 だけ書き換える。輪の判定 `insideRing` は使わない＝H1 の穴は jp_03 で起きない）。
