@@ -22,16 +22,16 @@ const snap = (r: object): string => JSON.stringify(r, (_k, v: unknown) => (Array
 
 describe('組み立て', () => {
   it('jp_04 の値（world-setup の landing・米PT 2 隻・T-38 の 25mm）', () => {
-    expect([S.landing.unloadS, S.landing.hitsToSink, S.landing.lookoutM, S.torpedo.launchM, S.torpedo.hurriedM, S.pt.count, S.gun?.rangeM]).toEqual([140, 2, 1800, 900, 1300, 2, 600]);
+    expect([S.landing.unloadS, S.landing.hitsToSink, S.landing.lookoutM, S.torpedo.launchM, S.torpedo.hurriedM, S.pt.count, S.gun?.rangeM]).toEqual([110, 2, 1800, 900, 1300, 2, 600]);
     expect(landingSimSetup(gameData, 'jp_04', { hard: true }).pt.count).toBe(3);
   });
   it('上書きは data の写しに当て、data は変えない（R12 の EFACTOR も。V11 を破る値は止まる）', () => {
     const o = landingSimSetup(gameData, 'jp_04', { unloadS: 120, lookoutM: 1850, hitsToSink: 1, aimDeg: 12, spacingDeg: 6, hurriedM: 1200, hurriedFactor: 2, engagedFactor: 1.5, reacquireS: 5, fuelGal: 17 });
     expect([o.landing.unloadS, o.landing.lookoutM, o.landing.hitsToSink, o.torpedo.aimDeg, o.torpedo.spacingDeg, o.torpedo.hurriedM, o.torpedo.hurriedFactor, o.torpedo.engagedFactor, o.torpedo.reacquireS, o.fuelGal]).toEqual([120, 1850, 1, 12, 6, 1200, 2, 1.5, 5, 17]);
-    expect([S.landing.unloadS, S.landing.lookoutM, S.torpedo.aimDeg, S.torpedo.engagedFactor, S.fuelGal]).toEqual([140, 1800, 10, 2, 19]);
+    expect([S.landing.unloadS, S.landing.lookoutM, S.torpedo.aimDeg, S.torpedo.engagedFactor, S.fuelGal]).toEqual([110, 1800, 10, 2, 19]);
     expect(landingSimSetup(gameData, 'jp_04', { engagedFactor: 0 }).torpedo.engagedFactor).toBe(0);
     expect(() => landingSimSetup(gameData, 'jp_04', { engagedFactor: 0.5 })).toThrow(/engaged_error_factor（0\.5）は 0（戦いながらの斉射なし）か 1 以上/);
-    expect(landingSimSetup(gameData, 'jp_04').landing.unloadS).toBe(140);
+    expect(landingSimSetup(gameData, 'jp_04').landing.unloadS).toBe(110);
   });
   it('R7: 世界と同じ検査を破る上書きは止まる（V8 出発点が見張りの内・V10 報告から 20 秒未満・V13 出発点のそばで引きつけられる・V6 夜明け）', () => {
     expect(() => landingSimSetup(gameData, 'jp_04', { lookoutM: 1950 })).toThrow(/lookout_m/);

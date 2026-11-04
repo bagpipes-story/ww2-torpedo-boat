@@ -193,7 +193,7 @@ describe('§3.7 の幾何（R1 の出発点で計り直し。config/landing-miss
       expect(Math.round(nearestStartM(ptOf(hard), getPrototypeMission(gameData, 'jp_04', hard).night, 2000, 2800))).toBe(2313);
     }
   });
-  it('夜明けの時計（tests/dawn-clock と同じ式）: 出発から輪の縁 358 m＝巡航 7.0 秒 × 1.6 = 11.1 < 150・出発時に夜明け近し・燃料少が立たない。泊地 → 輪 1,601 m（V5）。unload 140 + 20 ≤ 160（V6。v0.6.10 S0b）', () => {
+  it('夜明けの時計（tests/dawn-clock と同じ式）: 出発から輪の縁 358 m＝巡航 7.0 秒 × 1.6 = 11.1 < 150・出発時に夜明け近し・燃料少が立たない。泊地 → 輪 1,601 m（V5）。unload 110 + 20 ≤ 160（V6。v0.6.10 S0b・実機 2 回目に揚陸 140 → 110）', () => {
     const s = buildWorldSetup(gameData, 'jp_04');
     const rp = s.mission.returnPoint;
     const edge = Math.hypot(s.playerStart.x - rp.x, s.playerStart.y - rp.y) - rp.radiusM;
@@ -204,7 +204,7 @@ describe('§3.7 の幾何（R1 の出発点で計り直し。config/landing-miss
     const L = s.landing!.params;
     expect(Math.round(Math.hypot(L.x - rp.x, L.y - rp.y))).toBe(1601);
     expect(L.unloadS + LANDING_DAWN_MARGIN_S).toBeLessThanOrEqual(s.durationS);
-    expect([L.unloadS, LANDING_DAWN_MARGIN_S, s.durationS]).toEqual([140, 20, 160]);
+    expect([L.unloadS, LANDING_DAWN_MARGIN_S, s.durationS]).toEqual([110, 20, 160]);
     expect(Math.round(Math.hypot(s.playerStart.x - L.x, s.playerStart.y - L.y))).toBe(1001);
   });
   it('燃料: 19 gal ≤ 上限 19.58（止まって 1,453 秒 < 1,500 秒で漂流・夜明け 160 秒より後）', () => {

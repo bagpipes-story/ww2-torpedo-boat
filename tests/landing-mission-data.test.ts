@@ -98,7 +98,7 @@ describe('V4〜V10・V13（泊地・輪・夜明け・線の幾何・出発点�
     // 艇首 90°（浜と平行）なら円の南の縁は y 2,776
     expect(land((d) => ((landOf(d)['anchor'] as Rec)['heading_deg'] = 90))).not.toThrow();
   });
-  it('V5: 泊地と帰投の輪の中心 ≥ 800 m（今 1,601 m）・V6: unload_s + 20 ≤ duration_s（今 160 ≤ 160。v0.6.10 S0b）', () => {
+  it('V5: 泊地と帰投の輪の中心 ≥ 800 m（今 1,601 m）・V6: unload_s + 20 ≤ duration_s（今 110 + 20 = 130 ≤ 160。v0.6.10 S0b・実機 2 回目）', () => {
     expect(land((d) => { const rp = protoOf(d, 'jp_04')['return_point'] as Rec; rp['x_m'] = 2400; rp['y_m'] = 2500; })).toThrow(/landing: 泊地と帰投の輪の中心は 800 m 以上（654 m）/);
     expect(land((d) => (landOf(d)['unload_s'] = 141))).toThrow(/landing: unload_s \+ 20（161 秒）≤ duration_s（160 秒。揚陸は夜明けの前に決着する）/);
     expect(land((d) => (landOf(d)['unload_s'] = 140))).not.toThrow();

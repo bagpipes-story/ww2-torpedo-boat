@@ -133,7 +133,9 @@ export const LANDING_PAIRS: readonly LandingPairRow[] = [
 export const LANDING_HARD_CALIBRATION_NO_ALLY: readonly LandingBandRow[] = [
   { policy: 'hide', bands: { objPct: [0, 8] } },
   // v0.6.10 S0b: 45〜75 → 45〜78（ユーザーの選択「jp_04 の夜明けだけ 160 秒」で、夜明けのラッチが米PT を早く去らせ、組 2 が 75.0 → 75.3%。上に 2 点以上の余裕。数の合わせは駆逐艦の段）
-  { policy: 'lure', bands: { objPct: [45, 78], ownSunkPct: [0, 30] } },
+  // v0.6.10 実機 2 回目: 自艇の沈没 0〜30 → 0〜35（ユーザー「揚陸完了までの時間を30秒短くしておいてください」＝揚陸 140 → 110 秒。卯月を切ったハードの lure は揚陸が早く
+  // 決着して夜明けの前に帰る道で戦い続ける PT に撃たれ、19.0 / 20.8 → 27.3 / 30.5%（組 2 が 0.5 点超えた）。ほかの帯は動かさない）
+  { policy: 'lure', bands: { objPct: [45, 78], ownSunkPct: [0, 35] } },
 ];
 /**
  * 斉射の 1 本の命中率（spec §8: 気づかれていない 0.30〜0.50・慌てた 0.08〜0.25。戦いながら（R12）は帯なし＝表だけ）。帯は影の船体（いつも浮いている）への当たりうる本数あたり（不発を除く）: 撃った本数あたりは

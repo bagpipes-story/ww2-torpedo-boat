@@ -30,7 +30,7 @@ const row = (f: { mode: number; text: string; color: string }): [number, string,
 
 describe('揚陸の 2 行目の文（spec §5.2）', () => {
   it('出撃時の値（jp_04 のノーマル・ハード）と、出来事の表示の秒は輸送隊と同じ 3.5 秒', () => {
-    expect([L0.enabled, L0.unloadS, L0.hitsToSink, L0.salvoCount, L0.total, L0.fromDirsJa, L0.hurriedM]).toEqual([true, 140, 2, 3, 2, '北と東', 1300]);
+    expect([L0.enabled, L0.unloadS, L0.hitsToSink, L0.salvoCount, L0.total, L0.fromDirsJa, L0.hurriedM]).toEqual([true, 110, 2, 3, 2, '北と東', 1300]);
     const h = landing0(true);
     expect([h.total, h.fromDirsJa]).toEqual([3, '北・東・北東']);
     expect(LANDING_EVENT_SHOW_MS).toBe(CONVOY_EVENT_SHOW_MS);

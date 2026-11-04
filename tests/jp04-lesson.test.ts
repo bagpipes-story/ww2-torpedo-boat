@@ -52,7 +52,7 @@ describe('R12 の教え「輸送船から離れて戦え」', () => {
       expect(phaserWrap(now).length).toBe(2);
       const lines = phaserWrap(line);
       expect(lines.length, lines.join('\n')).toBe(3);
-      expect(lines[2]!.startsWith('・ 揚陸 140 秒')).toBe(true);
+      expect(lines[2]!.startsWith('・ 揚陸 110 秒')).toBe(true);
       expect(lines[1]!.endsWith(`・ ${LANDING_RING_WAIT_JA}`), lines[1]).toBe(true); // R14 A5 の帰投の句は武器の句の行の後ろ（3 行のまま）
       // S7: 1 字（24 px）の余白でも 3 行（ヘッドレスの本当の折り返しは見積もりより約 1% 広く、字で切る行は最大 1 字を余らせる。前の「魚雷 2 本で沈む」は句が 4 px 越えて「）」が 4 行目に落ちた）
       expect(phaserWrap(line, ROW_PX, WRAP - ROW_PX).length, line).toBe(3);

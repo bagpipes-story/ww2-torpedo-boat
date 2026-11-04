@@ -13,11 +13,11 @@ const read = (over: Rec): (() => LandingBlock) => () => readLandingBlock({ ...RA
 const transport = (gameData.enemies.enemies as unknown as Rec[]).find((e) => e['id'] === 'ijn_transport')!;
 
 describe('v0_1_prototype.landing の形（V3 の形。core/landing-data）', () => {
-  it('jp_04 の値（spec §3.2）: 輸送船・泊地 (3000, 2760) 艇首 135°・揚陸 140 秒・2 本で沈む・見張り 1,800 m・揚陸地点', () => {
+  it('jp_04 の値（spec §3.2）: 輸送船・泊地 (3000, 2760) 艇首 135°・揚陸 110 秒（v0.6.10 実機 2 回目に 140 → 110）・2 本で沈む・見張り 1,800 m・揚陸地点', () => {
     expect(Object.keys(RAW)).toEqual([...LANDING_KEYS]);
     expect(Object.keys(RAW['anchor'] as Rec)).toEqual([...LANDING_ANCHOR_KEYS]);
     const b = readLandingBlock(RAW, LABEL);
-    expect([b.ship_id, b.label_ja, b.anchor, b.unload_s, b.torpedo_hits_to_sink, b.lookout_m, b.mark_label_ja]).toEqual(['ijn_transport', '輸送船', { x_m: 3000, y_m: 2760, heading_deg: 135 }, 140, 2, 1800, '揚陸地点']);
+    expect([b.ship_id, b.label_ja, b.anchor, b.unload_s, b.torpedo_hits_to_sink, b.lookout_m, b.mark_label_ja]).toEqual(['ijn_transport', '輸送船', { x_m: 3000, y_m: 2760, heading_deg: 135 }, 110, 2, 1800, '揚陸地点']);
     expect([LANDING_UNLOAD_MAX_S, LANDING_HITS_MAX]).toEqual([255, 3]);
   });
   it('鍵: 知らない鍵・欠けは名前を出して例外。anchor はちょうど 3 鍵の数・艇首は 0〜360 未満', () => {
@@ -45,7 +45,7 @@ describe('v0_1_prototype.landing の形（V3 の形。core/landing-data）', () 
     const p = landingParamsFromData(b, transport as never, { hitScale: 2, hurriedM: 1300, launchM: 900, runDirJa: ['北', '東'] });
     expect(p).toEqual({
       shipId: 'ijn_transport', x: 3000, y: 2760, headingDeg: 135, lengthM: 120, beamM: 16, hitLenM: 240, hitBeamM: 32, circles: 5, passRadius2: (120 + 32) ** 2,
-      hitsToSink: 2, unloadS: 140, lookoutM: 1800, lookout2: 1800 ** 2, hurried2: 1300 ** 2, launchM: 900, labelJa: '輸送船', markLabelJa: '揚陸地点', fromDirsJa: '北と東', runDirJa: ['北', '東'],
+      hitsToSink: 2, unloadS: 110, lookoutM: 1800, lookout2: 1800 ** 2, hurried2: 1300 ** 2, launchM: 900, labelJa: '輸送船', markLabelJa: '揚陸地点', fromDirsJa: '北と東', runDirJa: ['北', '東'],
     });
     expect(landingParamsFromData(b, transport as never, { hitScale: 1, hurriedM: 0, launchM: 900, runDirJa: ['北'] })).toMatchObject({ hitLenM: 120, hitBeamM: 16, hurried2: 0, fromDirsJa: '北' });
     expect([joinDirsJa(['北', '東', '北東']), joinDirsJa(['北', '北']), joinDirsJa(['東', '北', '東']), joinDirsJa([])]).toEqual(['北・東・北東', '北', '東と北', '']);

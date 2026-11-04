@@ -14,9 +14,12 @@ import type { PtSection } from '../src/core/pt-boats';
 import { bearingDeg } from '../src/core/ship-ai';
 import { landingSimSetup } from '../src/systems/landing-sim-setup';
 
-const ON = landingSimSetup(gameData, 'jp_04');
-const HARD = landingSimSetup(gameData, 'jp_04', { hard: true });
-const OFF = landingSimSetup(gameData, 'jp_04', { allyOff: true });
+// v0.6.10 実機 2 回目（揚陸 140 → 110 秒）: 110 秒では揚陸が夜明け近しの前にほとんど決着して呼びかけがまれ（seed 1〜40 の lure で 3 夜）なので、
+// 呼びかけの仕組みはここだけ揚陸 140 秒の上書き（UNLOAD。data は変えない）で確かめる
+const UNLOAD_CALL = { unloadS: 140 } as const;
+const ON = landingSimSetup(gameData, 'jp_04', UNLOAD_CALL);
+const HARD = landingSimSetup(gameData, 'jp_04', { ...UNLOAD_CALL, hard: true });
+const OFF = landingSimSetup(gameData, 'jp_04', { ...UNLOAD_CALL, allyOff: true });
 const NO_FLAG: LandingSimSetup = { ...ON, allyDestroyer: { ...ON.allyDestroyer!, ringCallBeforeDawn: false } };
 const SEEDS = 12;
 /** 人の乱れを消した設定（tests/landing-sim-human と同じ） */

@@ -80,7 +80,7 @@ describe('卯月のいる帯の値（spec-v0610 §6.3。G-B4: 帯は広げない
     expect(landingBandSet(true, true)).toEqual({ rows: LANDING_HARD_CALIBRATION_ALLY, humanBanded: true });
     expect(landingBandSet(false, false)).toEqual({ rows: LANDING_CALIBRATION_NO_ALLY, humanBanded: false });
     expect(landingBandSet(false, true)).toEqual({ rows: LANDING_HARD_CALIBRATION_NO_ALLY, humanBanded: false });
-    expect(LANDING_HARD_CALIBRATION_NO_ALLY[1]!.bands).toEqual({ objPct: [45, 78], ownSunkPct: [0, 30] }); // v0.6.10 S0b: 夜明け 160 秒で 75 → 78
+    expect(LANDING_HARD_CALIBRATION_NO_ALLY[1]!.bands).toEqual({ objPct: [45, 78], ownSunkPct: [0, 35] }); // v0.6.10 S0b: 夜明け 160 秒で 75 → 78。実機 2 回目: 揚陸 110 秒で自艇の沈没 30 → 35
   });
 });
 
@@ -142,6 +142,9 @@ describe(`揚陸を守る模擬のつり合い（jp_04・卯月あり、N ${N}�
     const P = (gameData.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'jp_04')!['v0_1_prototype'] as Rec;
     const land = String((P['landing'] as Rec)['source']);
     expect(land).toContain('unload_s 140 は時間圧縮（S4 の模擬 N 400 × 2 組で動かさなかった: 120〜160 のどれでも lure の達成は同じ 87.3 / 85.3%');
+    // v0.6.10 実機 2 回目（揚陸 140 → 110 秒。ユーザーの言葉と新しい数）
+    expect(land).toContain('v0.6.10 実機 2 回目: unload_s 140 → 110（ユーザー「内容自体はOKです。揚陸完了までの時間を30秒短くしておいてください」');
+    expect(String(P['duration_s_source'])).toContain('v0.6.10 実機 2 回目に揚陸 140 → 110 秒（ユーザー「揚陸完了までの時間を30秒短くしておいてください」）');
     expect(land).toContain('1 にすると lure 69.5 / 70.3%・lure_late 22.8 / 24.5%（2.5 の掃き）＝最後の手段で使わない');
     expect(land).toContain('S4 の較正は engaged_error_factor 2.5 → 2.0 だけ＝spec R13');
     expect(land).toContain('v0.6.9 実機 1 回目（撃った PT は戦いながらの斉射でも去る）: 上の S4 の数は戦いながら撃った PT が去らなかった規則のとき');

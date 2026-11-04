@@ -6,6 +6,7 @@ export const LANDING_LAUNCH_INSIDE_M = 50;
 export const LANDING_RING_CLEAR_M = 800;
 /**
  * V6: unload_s + これ ≤ duration_s（揚陸はいつも夜明けの前に決着する）。v0.6.10 S0b で 30 → 20（ユーザーの選択「jp_04 の夜明けだけ 160 秒」: 揚陸 140 + 20 = 160。
+ * v0.6.10 実機 2 回目に揚陸 140 → 110（110 + 20 = 130 ≤ 160。余裕は 20 のまま）。
  * 揚陸中に撃たれた米PT の魚雷は泊地まで 1,300 m でも 16 秒弱で決着する＝下の LANDING_WAKE_S_MAX の注）
  */
 export const LANDING_DAWN_MARGIN_S = 20;

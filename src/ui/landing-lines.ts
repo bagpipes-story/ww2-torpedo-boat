@@ -43,7 +43,7 @@ export function landingPct(pct01: number): number {
   return Math.min(100, Math.max(0, Math.floor(pct01 * 100)));
 }
 
-/** 「揚陸を待て あと 140 秒」（みな去った平常の行の後ろ・夜明け近しの呼びかけ） */
+/** 「揚陸を待て あと 110 秒」（みな去った平常の行の後ろ・夜明け近しの呼びかけ） */
 export function landingWaitTailJa(leftS: number): string {
   return `${LANDING_WAIT_JA} あと ${leftS} 秒`;
 }
