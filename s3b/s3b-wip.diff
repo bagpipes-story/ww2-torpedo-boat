@@ -1,0 +1,527 @@
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index 831a933..cea0d5e 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -1251,6 +1251,8 @@
+           ],
+           "cover_reveal_chance": 0.25,
+           "raid_source": "design (v0.6.11。spec-v0611-r2 §3.7。announce_lead_s 10: 予告（赤い輪）から編隊が始まるまでの実秒（予告から最初の投下まで約 21 秒が隠す・切り替えて逃がす時間）。from_bearing_deg 70: 機は東から（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読。70° は design）。flight_offsets_deg: 編隊ごとの現れる方位のずれ（港の中心から 70 ± 30°・spawn_m 2,500 m の点。狙いの順はこの点に近い順）。flights_per_group_max 1: 1 つの隊を狙う編隊は 1 波で 1 つまで。bearing_fix_deg: 凍結の spawn_offsets_deg の先頭 n 個の平均（−30・−20・−10・0）を戻して編隊の中心の方位を枠の方位にそろえる（機数 − 1 で引く。r2 L1）。cover_reveal_chance 0.25: 予告のたびに陰 1 か所が見つかる確率（seed+29 から陰ごとに 1 回。ハードは hard.evac_cover_reveal_chance）)",
++          "passes_max": 1,
++          "passes_max_source": "design (v0.6.11 S3b。spec-v0611-r2 §3.7・§12.5 の外の案。1 編隊が飛ぶ爆撃の回数の上限（最初の回を含む）。済み（airSortieComplete）になった編隊は、新しい回の全部（予告の先 announce_lead_s ＋ 1 回の長さの見積もり＝first_run_s ＋ 爆撃進路 ＋ (機数 × 2 発 − 1) × run_gap_s ＋ 落下 ＋ leave_s ＋ 濃さの秒）が次の波の始まり（次の波の announce_s ＋ announce_lead_s。最後の波は duration_s 240）までに収まる時だけ、同じ枠でもう一度予告して（狙いは波の最初の予告と同じ枠の決め・赤い輪。陰の発見 seed+29 は引かない＝波ではない）announce_lead_s の後にもう一度来る。機数・波の数・同時の編隊は変えない（ユーザーの U5）。撃墜した機は戻らない。1 は今の挙動（1 編隊 1 回）。S3 の表でノーマルの帯が揃わない理由（1 編隊は 1 つの隊を 1 回だけ襲う＝隠さず回避だけの遊びが勝つ）への案で、ユーザーの答えを待つ間は 1。ハードは hard.evac_passes_max（無ければこの値）。起動時の検査は 1〜3 の整数（V-E13）)",
+           "survivor_quota": 6,
+           "survivors_total": 18,
+           "historical_survivors": 5,
+diff --git a/scripts/evac-sim.ts b/scripts/evac-sim.ts
+index 7c3408d..a995e69 100644
+--- a/scripts/evac-sim.ts
++++ b/scripts/evac-sim.ts
+@@ -1,7 +1,8 @@
+ // 空襲下の退避の模擬の表（v0.6.11 S3。jp_03「運天港・空襲下の退避」。spec-v0611-r2 §12）。中身は src/core/evac-sim*.ts・src/systems/evac-sim-setup.ts・evac-calibration.ts（tests/evac-sim-* と同じ）。
+ // TABLE=1（既定）: 遊び方ごとの表（組ごと）。TABLE=2: 帯の ✓/✗（組を合わせた回で。✗ があれば終了コード 1）。PERF=1: ハードの stay で 1 ステップの計算の秒（node・ヘッドレスに依らない）。
+ // 環境変数: N（1 組の回。既定 400）・SEED（最初の組の最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400・1001〜1400）・HARD=1・POL（, 区切り。既定は spec §12.3 の 10 行）・
+-//   つまみ（spec §12.5）DODGE・PICK・HAUL・DROP（外す隠れ場所の id を , 区切り）・COVER・COVERH・LEAD・FIRST・GAP・FPG・FOLLOW・FULLP
++//   つまみ（spec §12.5）DODGE・PICK・HAUL・DROP（外す隠れ場所の id を , 区切り）・COVER・COVERH・LEAD・FIRST・GAP・FPG・FOLLOW・FULLP、
++//   S3b の案 PASSES・PASSESH（evac_raid.passes_max・hard.evac_passes_max。2 以上の時だけ表に「回数/編隊・2 回 %・波ごとの 2 回 %」の列を足す＝1 なら表は S3 とバイト同一）
+ // 実行: npx esbuild scripts/evac-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/evac-sim.mjs && TABLE=2 node <scratch>/evac-sim.mjs
+ import { gameData } from '../src/config/game-data';
+ import { runEvacTrial, type EvacTrial } from '../src/core/evac-sim';
+@@ -20,6 +21,7 @@ const hard = env('HARD') === '1';
+ const o: EvacSimOverrides = {
+   dodgeSuccess: num('DODGE'), pickS: num('PICK'), haulS: num('HAUL'), dropShelters: env('DROP')?.split(','), coverReveal: num('COVER'), coverRevealHard: num('COVERH'),
+   announceLeadS: num('LEAD'), firstRunS: num('FIRST'), runGapS: num('GAP'), flightsPerGroupMax: num('FPG'), followGapM: num('FOLLOW'), fullP: num('FULLP'),
++  passesMax: num('PASSES'), passesMaxHard: num('PASSESH'),
+ };
+ const pols = (env('POL')?.split(',').map((x) => x.trim()).filter((x) => x !== '') ?? [...EVAC_POLICIES]) as EvacPolicy[];
+ for (const p of pols) if (!(EVAC_POLICIES as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は無い（${EVAC_POLICIES.join(' / ')}）`);
+@@ -56,13 +58,15 @@ if (env('PERF') === '1') {
+ } else {
+   const s = evacSimSetup(gameData, hard, o);
+   const r = s.raid;
++  // もう一度来る編隊（S3b）の列は回数が 2 以上の時だけ（1 なら S3 の表と同じ文字）
++  const rep = r.passesMax > 1;
+   console.log(`[jp_03 ${hard ? 'ハード' : 'ノーマル'} N ${n} × ${blocks} 組（seed ${Array.from({ length: blocks }, (_, b) => `${seeds(b)}〜${seeds(b) + n - 1}`).join('・')}）${Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => ` ${k} ${String(v)}`).join('')}]`);
+-  console.log(`波: ${r.waves.map((w) => `${w.announceS}s×${w.planes}機`).join('・')}・同時 ${r.flights} 編隊・予告 ${r.announceLeadS} 秒・陰の発見 ${r.coverRevealChance}・1 隊 ${r.flightsPerGroupMax} 編隊・上げ ${s.params.haulS} 秒・隠れ場所 ${s.params.shelters.map((x) => `${x.id}(${x.slots})`).join(' ')}・回避 ${s.params.dodgeSuccess}・pick ${s.params.pickS} 秒・full_p ${s.params.fullP}・追従 ${s.params.followGapM} m`);
++  console.log(`波: ${r.waves.map((w) => `${w.announceS}s×${w.planes}機`).join('・')}・同時 ${r.flights} 編隊・予告 ${r.announceLeadS} 秒・陰の発見 ${r.coverRevealChance}・1 隊 ${r.flightsPerGroupMax} 編隊・上げ ${s.params.haulS} 秒・隠れ場所 ${s.params.shelters.map((x) => `${x.id}(${x.slots})`).join(' ')}・回避 ${s.params.dodgeSuccess}・pick ${s.params.pickS} 秒・full_p ${s.params.fullP}・追従 ${s.params.followGapM} m${rep ? `・回数 ${r.passesMax}` : ''}`);
+   const cells = new Map<EvacPolicy, EvacCell[]>();
+   const all = new Map<EvacPolicy, EvacTrial[]>();
+   for (let b = 0; b < blocks; b++) {
+     console.log(`-- seed ${seeds(b)}〜${seeds(b) + n - 1}`);
+-    console.log(`${'遊び方'.padEnd(13)}達成    帰投    沈没   漂流  外で  残存 中央(p10-p90) 決着 18隻  埋まる%(秒)   壕満  来た 見失(前) 目標なし 切替  交代 沈A/B      段A%  隻/編隊 撃墜  §2命中 引く✗`);
++    console.log(`${'遊び方'.padEnd(13)}達成    帰投    沈没   漂流  外で  残存 中央(p10-p90) 決着 18隻  埋まる%(秒)   壕満  来た 見失(前) 目標なし 切替  交代 沈A/B      段A%  隻/編隊 撃墜  §2命中 引く✗${rep ? '  回数/編隊 2回%   波ごとの2回%' : ''}`);
+     for (const pol of pols) {
+       const { cell: c, trials } = cellOf(s, pol, seeds(b), n);
+       cells.set(pol, [...(cells.get(pol) ?? []), c]);
+@@ -71,7 +75,8 @@ if (env('PERF') === '1') {
+         pol.padEnd(14) + pct(c.achievedPct).padEnd(8) + pct(c.homePct).padEnd(8) + pct(c.sunkPct).padEnd(7) + pct(c.adriftPct).padEnd(6) + pct(c.caughtPct).padEnd(7) +
+           `${fx(c.medSurv, 0)}(${fx(c.p10Surv, 0)}-${fx(c.p90Surv, 0)})`.padEnd(12) + fx(c.medSurvSettle, 0).padEnd(5) + pct(c.all18Pct).padEnd(6) + `${pct(c.fillPct)}(${fx(c.medFillS, 0)})`.padEnd(14) +
+           pct(c.cavesFullPct).padEnd(7) + fx(c.came, 2).padEnd(6) + `${fx(c.lostMid, 2)}(${fx(c.lostEarly, 2)})`.padEnd(11) + fx(c.noTarget, 2).padEnd(8) + fx(c.switches, 1).padEnd(6) + fx(c.promotions, 2).padEnd(5) +
+-          `${fx(c.sunkA, 2)}/${fx(c.sunkB, 2)}`.padEnd(11) + pct(c.tierAPct).padEnd(7) + fx(c.lossPerFlight, 2).padEnd(8) + fx(c.downs, 2).padEnd(6) + fx(c.dawnHits, 2).padEnd(7) + String(c.drawBad),
++          `${fx(c.sunkA, 2)}/${fx(c.sunkB, 2)}`.padEnd(11) + pct(c.tierAPct).padEnd(7) + fx(c.lossPerFlight, 2).padEnd(8) + fx(c.downs, 2).padEnd(6) + fx(c.dawnHits, 2).padEnd(7) + String(c.drawBad) +
++          (rep ? `  ${fx(c.passesPerFlight, 2).padEnd(9)}${pct(c.againPct).padEnd(8)}${c.againByWavePct.map(pct).join('/')}` : ''),
+       );
+     }
+   }
+diff --git a/src/config/evac-mission-data.ts b/src/config/evac-mission-data.ts
+index b2a3391..85b15b7 100644
+--- a/src/config/evac-mission-data.ts
++++ b/src/config/evac-mission-data.ts
+@@ -1,6 +1,6 @@
+ // 空襲下の退避（v0.6.11。日本ハードモード⑨・jp_03「運天港・空襲下の退避」。spec-v0611-r2 §4・§5）の任務の読み出し: 任務の v0_1_prototype.evac があれば、
+ // evac・evac_raid（形は core/evac-data）・risk_events.json の unten_air_raid・自艇（boats.json）・空襲の機体（enemies.json）から世界の値（EvacSetup）を組み、
+-// 起動時の検査 V-E1〜V-E12 をする（例外は鍵を名指す日本語）。1 編隊の値は機数ごとに凍結の airStrikeParamsFromData で組み、その例外は unten_air_raid.params.sortie を名指す文に包み直す（r2 L12）。
++// 起動時の検査 V-E1〜V-E13 をする（例外は鍵を名指す日本語）。1 編隊の値は機数ごとに凍結の airStrikeParamsFromData で組み、その例外は unten_air_raid.params.sortie を名指す文に包み直す（r2 L12）。
+ // PrototypeMission に鍵は足さない（block は生の proto から読む。patrol-air-mission-data と同じ作法）。world-setup が組み立てのたびに（evacSetupPart）、Boot が全任務（ハードも）を 1 回（validateEvacMissions）呼ぶ。
+ import { getBoatFuelCurve, getBoatRecord, getPrototypeMission, type GameData, type PrototypeMission } from './game-data';
+ import { hasHardVariant } from './mission-data';
+@@ -23,6 +23,8 @@ export const EVAC_CHECK_DRIFT_BY_S = 1500;
+ export const EVAC_CHECK_DRIFT_WAIT_S = 1.5;
+ /** V-E12: bearing_fix_deg が凍結の spawn_offsets_deg の先頭 n 個の平均を戻す許し（deg。r2 L1 の S2 の tests は ±1°） */
+ export const EVAC_CHECK_BEARING_FIX_TOL_DEG = 1;
++/** V-E13: 1 編隊が飛ぶ爆撃の回数の上限（evac_raid.passes_max・hard.evac_passes_max の最大。v0.6.11 S3b。2 回目より先は波の間に収まらない） */
++export const EVAC_CHECK_PASSES_MAX = 3;
+ /** V-E11: 空襲下の退避の任務と同居しない v0_1_prototype の鍵（艦艇・水上機・味方機（右端の段 3 を［切替］が使う）・暴風・ほかの航空機の任務） */
+ export const EVAC_EXCLUSIVE_KEYS = ['enemy_start', 'barges', 'pt_boats', 'convoy', 'escort', 'transport', 'shore_battery', 'enemy_aircraft', 'friendly_aircraft', 'storm', 'patrol_air', 'landing', 'ally_destroyer'] as const;
+ /** evac の任務だけが持つ v0_1_prototype の鍵（無い任務に置けば例外＝ほかの任務の setup に鍵が増えない） */
+@@ -88,6 +90,11 @@ export function getEvacParams(data: GameData, missionId: string, hard: boolean =
+   const hull: StrikeHull = { halfLengthM: halfLen, halfBeamM: ((boat['beam_m'] as number) * w.hit_scale) / 2, boundsMarginM: ((boat['length_m'] as number) * w.sprite_scale) / 2 };
+   const flights = readHardNum(proto, 'evac_flights', hard, r.flights, at);
+   const coverChance = readHardNum(proto, 'evac_cover_reveal_chance', hard, r.cover_reveal_chance, at);
++  const passesMax = readHardNum(proto, 'evac_passes_max', hard, r.passes_max, at);
++  // V-E13 もう一度来る回数（v0.6.11 S3b。core/evac-repass。1＝今の挙動）
++  for (const [k, v] of [['evac_raid.passes_max', r.passes_max], ['hard.evac_passes_max', passesMax]] as const) {
++    if (!isInt(v, 1, EVAC_CHECK_PASSES_MAX)) bad('V-E13', `${k} は 1〜${EVAC_CHECK_PASSES_MAX} の整数（1 編隊が飛ぶ爆撃の回数。1 は済みの後に来ない。${v}）`);
++  }
+   const home = checkPlaces(b, mission, hull.boundsMarginM, bad);
+   checkRaid(b, r, flights, coverChance, ev.params.sortie.run_radius_m, ev.params.sortie.spawn_m, plane.strike.bomb.blast_radius_m, halfLen, bad);
+   // 1 編隊の値（機数ごと）。凍結の検査（投下の間隔・最初の進路・機数 × 間隔・休み）を通す
+@@ -107,7 +114,7 @@ export function getEvacParams(data: GameData, missionId: string, hard: boolean =
+   if (!isNum(fuelFree) || fuelFree !== mission.durationS) bad('V-E10', `fuel_free_until_s（${String(fuelFree)}）は duration_s（${mission.durationS}）と同じ`);
+   const idleS = ((mission.fuelAllotmentGal / getBoatFuelCurve(data, b.boat).idleGph) * 3600) / w.time_scale;
+   if (!((fuelFree as number) + idleS + EVAC_CHECK_DRIFT_WAIT_S < EVAC_CHECK_DRIFT_BY_S)) bad('V-E10', `fuel_allotment_gal（${mission.fuelAllotmentGal}）: fuel_free_until_s ＋ アイドルで尽きる ${idleS.toFixed(1)} 秒 ＋ ${EVAC_CHECK_DRIFT_WAIT_S} は ${EVAC_CHECK_DRIFT_BY_S} 未満（止まって待つと漂流する）`);
+-  return { params: evacParamsFromData(b, home), raid: evacRaidParamsFromData(r, flights, coverChance, mission.bounds), sorties, fuelFreeUntilS: fuelFree as number, dayStart: dayStart as boolean };
++  return { params: evacParamsFromData(b, home), raid: evacRaidParamsFromData(r, flights, coverChance, passesMax, mission.bounds), sorties, fuelFreeUntilS: fuelFree as number, dayStart: dayStart as boolean };
+ }
+ 
+ /** hard.<key>（無ければノーマルの値）。鍵はハードでなくても検査する（数でなければ例外） */
+diff --git a/src/core/evac-air.ts b/src/core/evac-air.ts
+index 929cc4d..79dbd61 100644
+--- a/src/core/evac-air.ts
++++ b/src/core/evac-air.ts
+@@ -1,6 +1,7 @@
+ // 空襲下の退避（v0.6.11。jp_03。spec-v0611-r2 §8 の段 5）の 1 固定ステップの空襲（世界の evac.stepAir も模擬もこれを呼ぶ＝順が 1 つ）:
+ // 撃墜の後の順番を飛ばす（skipDownedRuns。r2 H6）→ 陰を見つける閃光（flash_reveal の時だけ）→ 決着のラッチ（dawnReached と同じ式）→ 予告（陰の発見 → 狙い）→
+-// 始まる編隊の restartAirSortie → 偽の view を書いて動く編隊を番号順に step（投下ごとに seed+31 を 1 回・着弾は core/evac-hits の走査。隊長艇の沈没は
++// 始まる編隊の restartAirSortie（始めたステップに回数と撃墜の落とし直し＝core/evac-repass）→ 偽の view を書いて（済みになったステップはもう一度来るか。passes_max）
++// 動く編隊を番号順に step（投下ごとに seed+31 を 1 回・着弾は core/evac-hits の走査。隊長艇の沈没は
+ // evacSinkLeader がその場で交代・付け替え・座席の振り替えまで）→ 操作していない隊長艇の火災 → 「狙われている」（r2 M13）→ 座席の被害を記録へ。
+ // 止まった編隊の絵を隠す 1 回は世界のフレームの絵（evacDrawPass。r2 M2）。Phaser 非依存・確保しない（作るのは createEvacAirStep・createEvacAirCore だけ）。
+ import type { AirStrikeParams } from './air-strike';
+@@ -12,18 +13,20 @@ import { evacOnRelease } from './evac-follow';
+ import { evacCoreFlight, evacImpact, type EvacAir, type EvacAirWorld } from './evac-hits';
+ import type { EvacRaidParams } from './evac-params';
+ import { EF_ANNOUNCED, EF_FLYING, createEvacPlan, evacFlightLive, evacPlanClock, evacPlanHooks, evacRefreshView, type EvacPlan } from './evac-plan';
++import { createEvacRepass, evacRepassOnComplete, evacRepassStarted, type EvacRepass } from './evac-repass';
+ import { evacSettle, evacStepFires, evacStoreSeatDamage, type EvacSeat, type EvacSeatHooks } from './evac-seat';
+ import type { EvacSquadron } from './evac-squadron';
+ import { SeededRng } from './rng';
+ 
+-/** 爆撃から逃げる乱数（seed+31。投下ごとに 1 回）を持つ空襲の段 */
++/** 爆撃から逃げる乱数（seed+31。投下ごとに 1 回）と、もう一度来る編隊（core/evac-repass）を持つ空襲の段 */
+ export interface EvacAirStep extends EvacAir {
+   readonly dodge: SeededRng;
++  readonly repass: EvacRepass;
+ }
+ 
+ /** 世界の作り方の材料（起動時。plan は世界が凍結の AirStrikeFlight を口にして作り、hooks は evacPlanHooks で包んだもの） */
+ export function createEvacAirStep(air: EvacAir, seed: number): EvacAirStep {
+-  return { ...air, dodge: new SeededRng((seed + EVAC_DODGE_SEED_OFFSET) >>> 0) };
++  return { ...air, dodge: new SeededRng((seed + EVAC_DODGE_SEED_OFFSET) >>> 0), repass: createEvacRepass(air.plan) };
+ }
+ 
+ /** 模擬・tests: 段取り・core の編隊の口・包んだ hooks・空襲の段を 1 か所で組む（世界は systems の側で同じ順に組む） */
+@@ -88,6 +91,7 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
+   plan.evStart = 0;
+   plan.evLost = 0;
+   plan.evSettle = false;
++  a.repass.ev = 0;
+   const fls = plan.flights;
+   // 撃墜の後の順番（撃墜が無ければ何もしない。凍結の core の「順番の機が旋回に着くまで待つ」で止まらない。r2 H6）
+   for (let i = 0; i < fls.length; i++) if (fls[i]!.phase === EF_FLYING) skipDownedRuns(fls[i]!.port.state, fls[i]!.p);
+@@ -97,10 +101,13 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
+     plan.evSettle = true;
+   }
+   evacPlanClock(plan, stepTimeS);
++  if (plan.evStart !== 0) evacRepassStarted(plan);
+   for (let i = 0; i < fls.length; i++) {
+     const fl = fls[i]!;
+     if (fl.phase !== EF_FLYING) continue;
++    const was = fl.complete;
+     evacRefreshView(plan, fl);
++    if (!was && fl.complete) evacRepassOnComplete(plan, a.repass, fl);
+     if (!evacFlightLive(fl)) continue;
+     const st = fl.port.state;
+     const dropped = st.bombsDropped;
+diff --git a/src/core/evac-data.ts b/src/core/evac-data.ts
+index f598b4e..1916e41 100644
+--- a/src/core/evac-data.ts
++++ b/src/core/evac-data.ts
+@@ -103,6 +103,8 @@ export interface EvacRaidBlock {
+   flights_per_group_max: number;
+   bearing_fix_deg: number[];
+   cover_reveal_chance: number;
++  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。1＝今の挙動。core/evac-repass） */
++  passes_max: number;
+   survivor_quota: number;
+   survivors_total: number;
+   historical_survivors: number;
+@@ -124,8 +126,8 @@ const FOLLOW_KEYS = ['gap_m', 'trail_step_m', 'catch_up_gain_per_s', 'heading_de
+ const AI_KEYS = ['cast_off_s', 'pick_s', 'turn_max_deg', 'full_p', 'wall_m', 'wall_turn_deg', 'look_m', 'found_react_s', 'dodge', 'source'] as const;
+ const AI_NUM_KEYS = ['pick_s', 'turn_max_deg', 'full_p', 'wall_m', 'wall_turn_deg', 'look_m', 'found_react_s'] as const;
+ const DODGE_KEYS = ['success', 'turn_deg', 'hold_s'] as const;
+-const RAID_KEYS = ['waves', 'flights', 'announce_lead_s', 'from_bearing_deg', 'flight_offsets_deg', 'spawn_m', 'flights_per_group_max', 'bearing_fix_deg', 'cover_reveal_chance', 'survivor_quota', 'survivors_total', 'historical_survivors', 'north_shore_label_ja', 'source'] as const;
+-const RAID_NUM_KEYS = ['flights', 'announce_lead_s', 'from_bearing_deg', 'spawn_m', 'flights_per_group_max', 'cover_reveal_chance', 'survivor_quota', 'survivors_total', 'historical_survivors'] as const;
++const RAID_KEYS = ['waves', 'flights', 'announce_lead_s', 'from_bearing_deg', 'flight_offsets_deg', 'spawn_m', 'flights_per_group_max', 'bearing_fix_deg', 'cover_reveal_chance', 'passes_max', 'survivor_quota', 'survivors_total', 'historical_survivors', 'north_shore_label_ja', 'source'] as const;
++const RAID_NUM_KEYS = ['flights', 'announce_lead_s', 'from_bearing_deg', 'spawn_m', 'flights_per_group_max', 'cover_reveal_chance', 'passes_max', 'survivor_quota', 'survivors_total', 'historical_survivors'] as const;
+ /** unten_air_raid.params.sortie の鍵（dawn_air_strike.params と同じ 9 個） */
+ export const EVAC_SORTIE_KEYS = ['spawn_m', 'run_radius_m', 'first_run_s', 'run_gap_s', 'wave_rest_s', 'leave_s', 'spawn_offsets_deg', 'wave_rotate_deg', 'aim_turn_min_deg_s'] as const;
+ 
+diff --git a/src/core/evac-params.ts b/src/core/evac-params.ts
+index 5f61788..2c39bd4 100644
+--- a/src/core/evac-params.ts
++++ b/src/core/evac-params.ts
+@@ -63,7 +63,7 @@ export interface EvacParams {
+   flashReveal: boolean;
+ }
+ 
+-/** 波・編隊・狙い・残存の値（flights と coverRevealChance はハードで替わる） */
++/** 波・編隊・狙い・残存の値（flights・coverRevealChance・passesMax はハードで替わる） */
+ export interface EvacRaidParams {
+   waves: { announceS: number; planes: number }[];
+   flights: number;
+@@ -74,6 +74,8 @@ export interface EvacRaidParams {
+   flightsPerGroupMax: number;
+   bearingFixDeg: number[];
+   coverRevealChance: number;
++  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。1＝今の挙動＝済みの後は来ない。core/evac-repass） */
++  passesMax: number;
+   survivorQuota: number;
+   survivorsTotal: number;
+   historicalSurvivors: number;
+@@ -126,8 +128,8 @@ export function evacParamsFromData(b: EvacBlock, homeShelter: number): EvacParam
+   };
+ }
+ 
+-/** 波・編隊の値を組む。flights・coverRevealChance はハードの値（無ければノーマル）を呼び手が渡す */
+-export function evacRaidParamsFromData(r: EvacRaidBlock, flights: number, coverRevealChance: number, bounds: { width: number; height: number }): EvacRaidParams {
++/** 波・編隊の値を組む。flights・coverRevealChance・passesMax はハードの値（無ければノーマル）を呼び手が渡す */
++export function evacRaidParamsFromData(r: EvacRaidBlock, flights: number, coverRevealChance: number, passesMax: number, bounds: { width: number; height: number }): EvacRaidParams {
+   return {
+     waves: r.waves.map((w) => ({ announceS: w.announce_s, planes: w.planes })),
+     flights,
+@@ -138,6 +140,7 @@ export function evacRaidParamsFromData(r: EvacRaidBlock, flights: number, coverR
+     flightsPerGroupMax: r.flights_per_group_max,
+     bearingFixDeg: r.bearing_fix_deg.slice(),
+     coverRevealChance,
++    passesMax,
+     survivorQuota: r.survivor_quota,
+     survivorsTotal: r.survivors_total,
+     historicalSurvivors: r.historical_survivors,
+diff --git a/src/core/evac-plan.ts b/src/core/evac-plan.ts
+index 7914428..c18095e 100644
+--- a/src/core/evac-plan.ts
++++ b/src/core/evac-plan.ts
+@@ -67,6 +67,10 @@ export interface EvacFlight {
+   complete: boolean;
+   /** 世界の絵: 前のフレームに描いた（止まった後に 1 回だけ updateVisuals を呼んで隠す。r2 M2） */
+   drawn: boolean;
++  /** 始める時計の秒（波の announce_s ＋ announce_lead_s。もう一度来る回は予告し直した秒 ＋ announce_lead_s＝core/evac-repass）・飛んだ回数・撃墜した機のビット（次の回に戻さない） */
++  startS: number;
++  passes: number;
++  downed: number;
+ }
+ 
+ export interface EvacPlan {
+@@ -108,7 +112,8 @@ export function createEvacPlan(sq: EvacSquadron, raid: EvacRaidParams, sorties:
+       const i = flights.length;
+       const rng = new SeededRng((seed + evacFlightSeedOffset(w, s)) >>> 0);
+       const view: EvacFlightView = { boat: { state: { x: 0, y: 0, headingDeg: 0, speedMps: 0 }, sinking: false }, atHome: false, grounded: false, escort: null };
+-      flights.push({ index: i, wave: w, slot: s, p, rng, base: createSortieBase(), view, port: makePort(i, p, rng), phase: EF_IDLE, outcome: EO_NONE, target: -1, complete: false, drawn: false });
++      const startS = raid.waves[w]!.announceS + raid.announceLeadS;
++      flights.push({ index: i, wave: w, slot: s, p, rng, base: createSortieBase(), view, port: makePort(i, p, rng), phase: EF_IDLE, outcome: EO_NONE, target: -1, complete: false, drawn: false, startS, passes: 0, downed: 0 });
+     }
+   }
+   return {
+@@ -124,7 +129,7 @@ export function evacFlightLive(fl: EvacFlight): boolean {
+ }
+ 
+ /** 狙いの候補（隠れていない・全滅していない隊） */
+-function candidate(sq: EvacSquadron, gi: number): boolean {
++export function candidate(sq: EvacSquadron, gi: number): boolean {
+   const g = sq.groups[gi]!;
+   return g.leader >= 0 && g.phase !== G_HIDDEN && g.phase !== G_GONE;
+ }
+@@ -133,7 +138,7 @@ function candidate(sq: EvacSquadron, gi: number): boolean {
+  * 枠 slot の狙い: 候補のうち、pass 0 は今の波でまだ狙われていない隊、pass 1 は狙われているが flights_per_group_max 未満の隊（操作中の隊を除く。r2 M7-5）。
+  * 走っている隊（段 B）を先、尽きたら止まっている隊（段 A）。同じ段はその枠の現れる点（港の中心から from ＋ offset[枠] の方位・spawn_m）に近い順（2 乗。同じなら隊番号の小さい順）
+  */
+-function pickTarget(plan: EvacPlan, slot: number, pass: number): number {
++export function pickTarget(plan: EvacPlan, slot: number, pass: number): number {
+   const { sq, raid } = plan;
+   const b = degToRad(raid.fromBearingDeg + raid.flightOffsetsDeg[slot]!);
+   const sx = raid.centerX + Math.sin(b) * raid.spawnM;
+@@ -214,7 +219,7 @@ export function evacPlanClock(plan: EvacPlan, stepTimeS: number): void {
+   if (!sq.settled && plan.nextWave < raid.waves.length && dawnReached(raid.waves[plan.nextWave]!.announceS, stepTimeS)) evacAnnounce(plan, plan.nextWave++);
+   for (let i = 0; i < plan.flights.length; i++) {
+     const fl = plan.flights[i]!;
+-    if (fl.phase === EF_ANNOUNCED && dawnReached(raid.waves[fl.wave]!.announceS + raid.announceLeadS, stepTimeS)) evacTryStart(plan, fl);
++    if (fl.phase === EF_ANNOUNCED && dawnReached(fl.startS, stepTimeS)) evacTryStart(plan, fl);
+   }
+ }
+ 
+diff --git a/src/core/evac-sim-aa.ts b/src/core/evac-sim-aa.ts
+index 5e74917..096d0b3 100644
+--- a/src/core/evac-sim-aa.ts
++++ b/src/core/evac-sim-aa.ts
+@@ -1,11 +1,12 @@
+ // 空襲下の退避（v0.6.11 S3。jp_03。spec-v0611-r2 §3.4・§3.7・§11）の模擬の対空（core/evac-sim が固定ステップの段 4 で呼ぶ。世界は S4 の systems/arms-step・aa-slots が同じ式）:
+ // 機銃は僚艇も撃つ（U2）＝砲の発の速さと弾倉を、操作中の隊の浮いていて上げていない隻数 n（1〜3）倍にした値（起動時に n = 1・2・3 を作って選ぶ。r2 L18）。
+ // 機の枠（AA_MAX_TARGETS 8 のまま）: 240 秒の後の §2 の 4 機が先、次に港の空襲の動く編隊を中心の 2 乗の距離の近い順（固定長の配列に挿入で並べる）。番号は 編隊 × 4 ＋ 機（r2 M8）。
+-// 撃墜は core/air-down の downStrikePlane（順番の飛ばしは core/evac-air の段の頭と、ここで撃墜したステップ）。乱数は seed+24 を 1 発 1 回（core/aa-fire のまま）。
++// 撃墜は core/air-down の downStrikePlane（港の空襲の機は core/evac-repass の evacDownPlane＝撃墜のビットも。順番の飛ばしは core/evac-air の段の頭と、ここで撃墜したステップ）。乱数は seed+24 を 1 発 1 回（core/aa-fire のまま）。
+ // Phaser 非依存・確保は createEvacSimAa だけ。
+ import { AA_MAX_TARGETS, AA_SRC_DAWN, addStrikePlanes, createAaState, createAaTargets, stepAaFire, type AaState, type AaTargets, type AntiAircraftParams } from './aa-fire';
+ import type { AirStrikeParams, AirStrikeState } from './air-strike';
+ import { downStrikePlane, skipDownedRuns } from './air-down';
++import { evacDownPlane } from './evac-repass';
+ import type { BoatState, SpeedStep } from './boat-motion';
+ import { evacFlightLive, type EvacPlan } from './evac-plan';
+ import type { AircraftPose } from './friendly';
+@@ -121,7 +122,7 @@ export function stepEvacSimAa(a: EvacSimAa, plan: EvacPlan, dawn: AirStrikeState
+       }
+     } else if (src === AA_SRC_EVAC) {
+       const fl = plan.flights[Math.floor(idx / EVAC_AA_PLANE_STRIDE)]!;
+-      if (downStrikePlane(fl.port.state, idx % EVAC_AA_PLANE_STRIDE)) {
++      if (evacDownPlane(fl, idx % EVAC_AA_PLANE_STRIDE)) {
+         a.downs++;
+         a.downsEvac++;
+         skipDownedRuns(fl.port.state, fl.p);
+diff --git a/src/core/evac-sim-cell.ts b/src/core/evac-sim-cell.ts
+index f612129..df2caeb 100644
+--- a/src/core/evac-sim-cell.ts
++++ b/src/core/evac-sim-cell.ts
+@@ -1,6 +1,6 @@
+ // 空襲下の退避の模擬（v0.6.11 S3。core/evac-sim）の 1 回の記録（EvacTrial）と、遊び方 1 つ × N 回の集計（EvacCell。spec-v0611-r2 §12.4 の表の列と監視の列）。
+ // Phaser 非依存・乱数なし。集計の配列は 1 つの表の行ごとに作る（模擬の外。ゲームは使わない）。
+-import { G_HIDDEN, SHELTER_CAVE } from './evac-data';
++import { EVAC_MAX_WAVES, G_HIDDEN, SHELTER_CAVE } from './evac-data';
+ import { EO_DONE, EO_GONE, EO_GONE_EARLY, EO_LOST, EO_LOST_EARLY, EO_NO_TARGET, EO_SETTLED, type EvacPlan } from './evac-plan';
+ import { evacSurvivors, type EvacSquadron } from './evac-squadron';
+ 
+@@ -62,6 +62,12 @@ export interface EvacTrial {
+   exp31: number;
+   /** 終わりの時の操作中の隊の浮いている隻数 */
+   afloatControl: number;
++  /** もう一度来る編隊（v0.6.11 S3b。passes_max。監視だけ）: 1 回以上飛んだ編隊・飛んだ回数の合計・2 回以上飛んだ編隊と、その波ごと（1 回以上・2 回以上） */
++  flew: number;
++  passes: number;
++  again: number;
++  flewByWave: number[];
++  againByWave: number[];
+ }
+ 
+ export function createEvacTrial(): EvacTrial {
+@@ -70,6 +76,7 @@ export function createEvacTrial(): EvacTrial {
+     announced: 0, came: 0, lostMid: 0, lostEarly: 0, noTarget: 0, gone: 0, settledFl: 0, done: 0, tierA: 0, tierB: 0, switches: 0, taps: 0, promotions: 0, autoSwitches: 0,
+     sunkA: 0, sunkB: 0, evacReleases: 0, impacts: 0, boatHits: 0, seatHits: 0, dawnBombs: 0, dawnHits: 0, downs: 0, downsAll: 0, rounds: 0, extinguished: 0,
+     draws29: 0, draws30: 0, draws31: 0, drawsFlights: 0, exp29: 0, exp30: 0, exp31: 0, afloatControl: 0,
++    flew: 0, passes: 0, again: 0, flewByWave: new Array<number>(EVAC_MAX_WAVES).fill(0), againByWave: new Array<number>(EVAC_MAX_WAVES).fill(0),
+   };
+ }
+ 
+@@ -106,6 +113,14 @@ export function finishEvacTrial(o: EvacTrial, sq: EvacSquadron, plan: EvacPlan,
+     else if (oc === EO_GONE || oc === EO_GONE_EARLY) o.gone++;
+     else if (oc === EO_SETTLED) o.settledFl++;
+     else if (oc === EO_DONE) o.done++;
++    const fl = plan.flights[i]!;
++    if (fl.passes < 1) continue;
++    o.flew++;
++    o.passes += fl.passes;
++    o.flewByWave[fl.wave]!++;
++    if (fl.passes < 2) continue;
++    o.again++;
++    o.againByWave[fl.wave]!++;
+   }
+   o.came = plan.came;
+   o.tierA = plan.tierA;
+@@ -163,6 +178,10 @@ export interface EvacCell {
+   lossPerFlight: number;
+   /** 引く回数が期待と違った回（+29・+30・+31）・編隊の系列が 2 × 投下 より少ない回（0 のはず） */
+   drawBad: number;
++  /** もう一度来る編隊（v0.6.11 S3b。監視だけ・帯ではない）: 飛んだ編隊 1 つあたりの回数の平均・2 回以上飛んだ編隊の %・その波ごとの %（飛んだ編隊の中） */
++  passesPerFlight: number;
++  againPct: number;
++  againByWavePct: number[];
+ }
+ 
+ function quantile(a: number[], q: number): number {
+@@ -181,6 +200,12 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
+   const lost = ts.reduce((a, t) => a + (18 - (Number.isNaN(t.survivorsAtSettle) ? t.survivors : t.survivorsAtSettle)), 0);
+   const tA = ts.reduce((a, t) => a + t.tierA, 0);
+   const tB = ts.reduce((a, t) => a + t.tierB, 0);
++  const flew = ts.reduce((a, t) => a + t.flew, 0);
++  const again = ts.reduce((a, t) => a + t.again, 0);
++  const byWave = (w: number): number => {
++    const f = ts.reduce((a, t) => a + t.flewByWave[w]!, 0);
++    return f > 0 ? (100 * ts.reduce((a, t) => a + t.againByWave[w]!, 0)) / f : NaN;
++  };
+   return {
+     n,
+     achievedPct: pct((t) => t.achieved),
+@@ -213,5 +238,8 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
+     tierAPct: tA + tB > 0 ? (100 * tA) / (tA + tB) : NaN,
+     lossPerFlight: came > 0 ? lost / came : NaN,
+     drawBad: ts.filter((t) => t.draws29 !== t.exp29 || t.draws30 !== t.exp30 || t.draws31 !== t.exp31 || t.drawsFlights < 2 * t.exp31).length,
++    passesPerFlight: flew > 0 ? ts.reduce((a, t) => a + t.passes, 0) / flew : NaN,
++    againPct: flew > 0 ? (100 * again) / flew : NaN,
++    againByWavePct: Array.from({ length: EVAC_MAX_WAVES }, (_, w) => byWave(w)),
+   };
+ }
+diff --git a/src/systems/evac-sim-setup.ts b/src/systems/evac-sim-setup.ts
+index 180aa04..66df90f 100644
+--- a/src/systems/evac-sim-setup.ts
++++ b/src/systems/evac-sim-setup.ts
+@@ -40,6 +40,9 @@ export interface EvacSimOverrides {
+   followGapM?: number;
+   /** 9: evac.ai.full_p */
+   fullP?: number;
++  /** S3b（§12.5 の外の案）: evac_raid.passes_max・hard.evac_passes_max（1 編隊が飛ぶ爆撃の回数。ハードは無ければノーマルの値＝core/evac-repass） */
++  passesMax?: number;
++  passesMaxHard?: number;
+ }
+ 
+ type Rec = Record<string, unknown>;
+@@ -73,8 +76,9 @@ export function withEvacOverrides(data: GameData, o: EvacSimOverrides, missionId
+           cover_reveal_chance: o.coverReveal ?? raid['cover_reveal_chance'],
+           announce_lead_s: o.announceLeadS ?? raid['announce_lead_s'],
+           flights_per_group_max: o.flightsPerGroupMax ?? raid['flights_per_group_max'],
++          passes_max: o.passesMax ?? raid['passes_max'],
+         },
+-        ...(hard ? { hard: { ...hard, evac_cover_reveal_chance: o.coverRevealHard ?? hard['evac_cover_reveal_chance'] } } : {}),
++        ...(hard ? { hard: { ...hard, evac_cover_reveal_chance: o.coverRevealHard ?? hard['evac_cover_reveal_chance'], ...(o.passesMaxHard !== undefined ? { evac_passes_max: o.passesMaxHard } : {}) } } : {}),
+       },
+     };
+   });
+diff --git a/tests/__snapshots__/setup-jp03.test.ts.snap b/tests/__snapshots__/setup-jp03.test.ts.snap
+index 9e4ea65..1460739 100644
+--- a/tests/__snapshots__/setup-jp03.test.ts.snap
++++ b/tests/__snapshots__/setup-jp03.test.ts.snap
+@@ -426,6 +426,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     0
+    ],
+    "coverRevealChance": 0.25,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -1008,6 +1009,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     0
+    ],
+    "coverRevealChance": 0.25,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -1590,6 +1592,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     0
+    ],
+    "coverRevealChance": 0.25,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -2172,6 +2175,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     0
+    ],
+    "coverRevealChance": 0.25,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -2754,6 +2758,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     0
+    ],
+    "coverRevealChance": 0.35,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -3336,6 +3341,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     0
+    ],
+    "coverRevealChance": 0.35,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -3918,6 +3924,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     0
+    ],
+    "coverRevealChance": 0.35,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+@@ -4500,6 +4507,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     0
+    ],
+    "coverRevealChance": 0.35,
++   "passesMax": 1,
+    "survivorQuota": 6,
+    "survivorsTotal": 18,
+    "historicalSurvivors": 5,
+diff --git a/tests/evac-mission-data.test.ts b/tests/evac-mission-data.test.ts
+index 9b0098c..0e09a2e 100644
+--- a/tests/evac-mission-data.test.ts
++++ b/tests/evac-mission-data.test.ts
+@@ -1,8 +1,8 @@
+-// v0.6.11 S0（spec-v0611-r2 §4・§5・§7）: 空襲下の退避（jp_03「運天港・空襲下の退避」）の data と起動時の検査（config/evac-mission-data の V-E1〜V-E12・
++// v0.6.11 S0（spec-v0611-r2 §4・§5・§7）: 空襲下の退避（jp_03「運天港・空襲下の退避」）の data と起動時の検査（config/evac-mission-data の V-E1〜V-E13（V-E13 は S3b）・
+ // core/evac-data の形の検査・core/evac-params の値）。既定の data が通り、壊した data は鍵を名指す日本語の文（V-En 付き）で止まる。ほかの任務は鍵ごと出ない。
+ import { describe, expect, it } from 'vitest';
+ import { gameData, type GameData } from '../src/config/game-data';
+-import { EVAC_CHECK_MOORED_CLEAR_M, EVAC_ONLY_KEYS, evacSetupPart, getEvacParams, validateEvacMissions } from '../src/config/evac-mission-data';
++import { EVAC_CHECK_MOORED_CLEAR_M, EVAC_CHECK_PASSES_MAX, EVAC_ONLY_KEYS, evacSetupPart, getEvacParams, validateEvacMissions } from '../src/config/evac-mission-data';
+ import { EVAC_AI_SEED_OFFSET, EVAC_DODGE_SEED_OFFSET, EVAC_EVENT_ID, EVAC_FLIGHT_SEED_OFFSET, EVAC_MAX_FLIGHTS, EVAC_MAX_WAVES, EVAC_SEED_OFFSET, SHELTER_CAVE, SHELTER_COVER, evacBlockFromData, evacEventFromData, evacFlightSeedOffset, evacRaidBlockFromData } from '../src/core/evac-data';
+ import { evacTrailLen } from '../src/core/evac-params';
+ import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET } from '../src/core/ally-destroyer';
+@@ -67,7 +67,7 @@ describe('既定の data（jp_03）', () => {
+   });
+ });
+ 
+-describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して止まる）', () => {
++describe('起動時の検査 V-E1〜V-E13（壊した data は鍵を名指して止まる）', () => {
+   it('V-E1: 隠れ場所・停泊の縦列・壕から出た縦列が海域の縁から艇の半分の長さ以上内', () => {
+     expect(build((d) => { ((evacOf(d)['shelters'] as Rec[])[3]!)['y_m'] = 10; })).toThrow(/evac\.shelters\[3\]（屋我地の陰（西）） は海域の縁から 18 m 以上内.*V-E1/);
+     expect(build((d) => { ((evacOf(d)['groups'] as Rec[])[4]!)['x_m'] = 30; })).toThrow(/evac\.groups\[4\]（第5隊） の停泊の縦列の 3 隻目.*V-E1/); // 2 隻目は x 18＝縁からちょうど 18 m で通る
+@@ -142,6 +142,21 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
+     expect(build((d) => { raidOf(d)['bearing_fix_deg'] = [30, 18, 10, 0]; })).toThrow(/bearing_fix_deg\[1\]（18）は sortie\.spawn_offsets_deg の先頭 2 個の平均（-20）を戻す値.*V-E12/);
+     expect(build((d) => { evacOf(d)['slot_arrive_m'] = 25; })).toThrow(/slot_arrive_m（25）は 0 より大きく slot_abeam_m（25）より小さい.*V-E12/);
+   });
++  it('V-E13（v0.6.11 S3b）: evac_raid.passes_max・hard.evac_passes_max は 1〜3 の整数（既定 1＝今の挙動。ハードは無ければノーマルの値）。鍵は要る', () => {
++    for (const hard of [false, true]) expect(getEvacParams(gameData, 'jp_03', hard)!.raid.passesMax).toBe(1);
++    expect(EVAC_CHECK_PASSES_MAX).toBe(3);
++    for (const v of [0, 4, 1.5]) expect(build((d) => { raidOf(d)['passes_max'] = v; })).toThrow(new RegExp(`evac_raid\\.passes_max は 1〜3 の整数.*${v}）（V-E13）`));
++    expect(build((d) => { raidOf(d)['passes_max'] = 3; })).not.toThrow();
++    expect(build((d) => { delete raidOf(d)['passes_max']; })).toThrow(/evac_raid: passes_max が無いか有限の数でない/);
++    expect(build((d) => { ((protoOf(d, 'jp_03')['hard'] as Rec))['evac_passes_max'] = 0; }, true)).toThrow(/hard\.evac_passes_max は 1〜3 の整数.*V-E13/);
++    expect(build((d) => { ((protoOf(d, 'jp_03')['hard'] as Rec))['evac_passes_max'] = 'x'; })).toThrow(/hard\.evac_passes_max は有限の数/);
++    const two = clone();
++    ((protoOf(two, 'jp_03')['hard'] as Rec))['evac_passes_max'] = 2;
++    expect([getEvacParams(two, 'jp_03', false)!.raid.passesMax, getEvacParams(two, 'jp_03', true)!.raid.passesMax]).toEqual([1, 2]);
++    const n2 = clone();
++    raidOf(n2)['passes_max'] = 2;
++    expect([getEvacParams(n2, 'jp_03', false)!.raid.passesMax, getEvacParams(n2, 'jp_03', true)!.raid.passesMax]).toEqual([2, 2]);
++  });
+ });
+ 
+ describe('共有の読みの例外の包み直し（r2 L12）・形の検査・evac だけの鍵', () => {
