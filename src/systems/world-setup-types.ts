@@ -7,6 +7,7 @@ import type { GunboatParams, GunboatSetupOptions } from '../config/gunboat-missi
 import type { LandingSetup } from '../config/landing-mission-data';
 import type { MainWeapon } from '../config/mission-data';
 import type { PatrolAirSetup, PatrolAirSetupOptions } from '../config/patrol-air-mission-data';
+import type { EvacSetup } from '../config/evac-mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -114,6 +115,7 @@ export interface WorldSetup {
   patrolAir?: PatrolAirSetup; // 夜の哨戒機（v0.6.7。v0_1_prototype.patrol_air のある任務＝jp_02 だけ。門番と夜の出撃の値。無い任務と patrolOff では鍵ごと出ない＝setup の snapshot を変えない）
   landing?: LandingSetup; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。v0_1_prototype.landing のある任務＝jp_04 だけ。config/landing-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
   allyDestroyer?: AllyDestroyerParams; // 味方の駆逐艦 卯月（v0.6.10。v0_1_prototype.ally_destroyer のある任務＝jp_04 だけ。config/ally-destroyer-mission-data。無い任務と allyOff では鍵ごと出ない＝setup の snapshot を変えない）
+  evac?: EvacSetup; // 空襲下の退避（v0.6.11。v0_1_prototype.evac のある任務＝jp_03 だけ。config/evac-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */

@@ -116,7 +116,7 @@ export function shortLabelJa(label: string): string {
 }
 
 export function moonLabelJa(m: MoonPhase): string {
-  return m === 'dark' ? '新月' : m === 'half' ? '半月' : '満月';
+  return m === 'dark' ? '新月' : m === 'half' ? '半月' : m === 'day' ? '昼' : '満月';
 }
 
 /** 出てきた順に、同じ id はまとめて「名前 ×N」、「、」でつなぐ。空なら 'なし' */

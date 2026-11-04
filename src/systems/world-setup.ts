@@ -35,6 +35,7 @@ import { gunboatSetupPart } from '../config/gunboat-mission-data';
 import { patrolAirSetupPart } from '../config/patrol-air-mission-data';
 import { landingSetupPart } from '../config/landing-mission-data';
 import { allyDestroyerSetupPart } from '../config/ally-destroyer-mission-data';
+import { evacSetupPart } from '../config/evac-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, type TransportSetup } from './destroyer-setup';
@@ -167,6 +168,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...patrolAirSetupPart(data, missionId, o),
     ...landingPart, // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04 だけ。無い任務では鍵ごと出ない）
     ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o), // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
+    ...evacSetupPart(data, missionId, hard), // 空襲下の退避（v0.6.11。jp_03 だけ。6 つの隊・隠れ場所・波と編隊・燃料を数えない秒・昼。無い任務では鍵ごと出ない）
   };
 }
 

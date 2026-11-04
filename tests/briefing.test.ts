@@ -86,6 +86,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(moonLabelJa('dark')).toBe('新月');
     expect(moonLabelJa('half')).toBe('半月');
     expect(moonLabelJa('full')).toBe('満月');
+    expect(moonLabelJa('day')).toBe('昼'); // v0.6.11（jp_03 は moon_label_ja「昼（07:00 空襲警報）」で差し替える）
   });
   it('敵の数: 出てきた順にまとめる。空なら なし', () => {
     expect(enemyCountsJa(['ijn_destroyer', 'ijn_destroyer', 'daihatsu_barge'], nameOf)).toBe('駆逐艦 ×2、大発動艇 ×1');

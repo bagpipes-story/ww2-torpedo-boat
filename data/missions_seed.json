@@ -985,10 +985,12 @@
         "grounding"
       ],
       "moon": "day",
+      "moon_label_ja": "昼（07:00 空襲警報）",
       "duration_min": 4,
       "success": "18隻中6隻以上を残す（史実は5隻）",
       "historical_note": "第27魚雷艇隊は10/10の空襲で18隻中13隻喪失。",
       "source_url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+      "briefing_note_ja": "1944年10月10日、米空母部隊の艦載機が朝から夕方まで沖縄を5回空襲した（延べ約1,400機）。運天港の第27魚雷艇隊は18隻のうち13隻を失った。港には艇を隠す壕と、海から壕へ上げるレールがあった。",
       "dawn_air": {
         "control": "enemy",
         "confidence": "high",
@@ -1005,7 +1007,262 @@
             "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界は v0.6.11 から（敵の制空下＝4 分の後の敵機 4 機も dawn_strike）)"
+      },
+      "v0_1_prototype": {
+        "enemies": [
+          "us_carrier_aircraft"
+        ],
+        "enemy_behavior": "ai (v0.6.11。昼の運天港の空襲。予告の後、2〜4 機の編隊が 2 つ（ハード 3 つ）同時に別々の隊を狙い、隊が隠れれば見失って引き返す。4 分の後は CLAUDE.md §2 の敵機 4 機が操作中の隊長艇を追う)",
+        "main_weapon": "none",
+        "main_weapon_source": "design (v0.6.11。艦艇のいない航空機だけの任務（jp_02 と同じ none）。v0.6.8 の兵装のとおり T-38 の 45cm 魚雷 2 本と 25mm は撃てるが、狙う艦はいない。魚雷は座席の 2 本を全部の隊長艇で分け合う。機銃は僚艇も撃つ（ユーザーの U2。1 発 0.5% は v0.6.8 のまま＝「友軍が応戦できなかった」A10 と合う）)",
+        "duration_s": 240,
+        "duration_s_source": "design (v0.6.11。4 分＝その日の第 1 次の来襲の圧縮（史実は朝から夕方まで 5 回・延べ約 1,400 機、運天は 07:00 過ぎから 15:30 ごろまで。WebSearch の抜粋のみ・本文未読）。240 秒（決着）で残存を確定し、操作中の隊が隠れていれば帰投で終わる。外なら CLAUDE.md §2 の敵機 4 機（dawn_strike）が座席を追い、どの隠れ場所でも輪の中で止まれば帰投（spec-v0611-r2 §3.8。ユーザーの U6）。第 4 波は約 220 秒で去り終わる（V-E6）)",
+        "fuel_allotment_gal": 16,
+        "fuel_allotment_gal_source": "design (v0.6.11。空襲の間は燃料を数えない（fuel_free_until_s。ユーザーの U4 の読み: T-38 の全速は 19 gal を約 68 秒で使い切る）。240 秒の後は 16 gal で全速 57.6 秒・巡航 122.4 秒＝港の端から端（全速 約 45 秒）のどの隠れ場所にも届く。止まって待つと 240 ＋ 1,224 ＝ 1,464 実秒で漂流（< 1,500。T-38 のアイドル 9.4118 gal/h。V-E10）)",
+        "fuel_free_until_s": 240,
+        "fuel_free_until_s_source": "design (v0.6.11。新しい opt-in の鍵（evac の任務だけ。無い任務は 0＝今と同じ）。stepTimeS がこの秒に届くまで燃料を減らさない＝空襲の間は燃料を数えない（spec-v0611-r2 §3.9。B2 の直し）。duration_s と同じ（V-E10）)",
+        "day_start": true,
+        "day_start_source": "design (v0.6.11。新しい opt-in の鍵（evac の任務だけ）。海の色は最初から昼、時計・中央の帯・Result・2 行目の言葉は「夜明け」でなく「空襲」（spec-v0611-r2 §10.3。H6）)",
+        "shallows": [],
+        "shallows_source": "design (v0.6.11。浅瀬は置かない＝jp_03 では座礁しない（北の縁 y 0 が屋我地島の岸で海域の縁で止まる。島の上を走らない）。種の hazards の grounding は設計の記録として残し、v0_1_prototype.hazards には入れない)",
+        "bounds_m": {
+          "width": 3200,
+          "height": 1250,
+          "source": "historical (運天港は屋我地島との狭い海峡にある＝位置関係。WebSearch の抜粋のみ・本文未読) / design (v0.6.11。幅 3,200 m・南北 1,250 m・向きは作り。北の縁＝屋我地島の岸、南の縁＝本部半島（運天）。見張り（ズーム 0.5）で港のほぼ全体が 1 画面。T-38 の全速 約 70.7 m/実秒で端から端まで約 45 秒)"
+        },
+        "player_start": {
+          "x_m": 1450,
+          "y_m": 1000,
+          "heading_deg": 90,
+          "source": "design (v0.6.11。第1隊の隊長艇の停泊地（岸壁・中）と同じ点・艇首。隊長艇の壕の輪の縁から 142 m 外)"
+        },
+        "return_point": {
+          "x_m": 1600,
+          "y_m": 1150,
+          "radius_m": 70,
+          "label_ja": "隊長艇の壕",
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "torpedo_end_settle_s": 5,
+          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。jp_03 の魚雷は狙う艦が無いので発射の時に決着し、待たない（v0.6.8）)",
+          "source": "historical (壕とレールの存在。WebSearch の抜粋のみ・本文未読) / design (v0.6.11。位置と半径は evac.shelters の隊長艇の壕と同じ（V-E8）。決着の前の帰投は「操作中の隊が隠れた」で、輪の判定は使わない（spec-v0611-r2 §3.8）。call_margin 1.5 は jp_02 と同じ)"
+        },
+        "coast": {
+          "side": "south",
+          "land_m": 400,
+          "label_ja": "本部半島（運天）",
+          "source": "historical (運天港は本部半島の北東の端・今帰仁村。位置関係のみ。WebSearch の抜粋のみ・本文未読) / design (v0.6.11。見た目だけ（海域の外の南に陸を描く）。寸法は作り)"
+        },
+        "hazards": [
+          "unten_air_raid",
+          "dawn_air_strike"
+        ],
+        "hazards_source": "design (v0.6.11。遊べる世界の危険は港の空襲（unten_air_raid）と 4 分の後の空襲（dawn_air_strike。CLAUDE.md §2）だけ。出撃前の港内空襲の 2 択（harbor_fire_explosion）は空襲の任務の前に空襲を重ねて紛らわしいので入れない。座礁（grounding）は浅瀬を置かないので入れない（種の hazards には設計の記録として残す）)",
+        "dawn_strike": {
+          "aircraft_id": "us_carrier_aircraft",
+          "count": 4,
+          "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+          "from_bearing_deg": 70,
+          "escort_target_planes": [],
+          "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+        },
+        "evac": {
+          "boat": "jp_t38",
+          "boat_source": "design (v0.6.11。第27魚雷艇隊の艇種（甲型・T-38 系・隼艇のどれか）は抜粋で特定できない（WebSearch の抜粋のみ・本文未読）。日本側の共通艇 T-38 で代用し、18 隻とも同じ艇。座席（操作中の隊長艇）は player_boat と同じ T-38)",
+          "label_ja": "第27魚雷艇隊",
+          "group_size": 3,
+          "start_group": 1,
+          "groups": [
+            {
+              "id": "g1",
+              "label_ja": "第1隊",
+              "place_ja": "岸壁・中",
+              "x_m": 1450,
+              "y_m": 1000,
+              "heading_deg": 90
+            },
+            {
+              "id": "g2",
+              "label_ja": "第2隊",
+              "place_ja": "岸壁・西",
+              "x_m": 900,
+              "y_m": 1000,
+              "heading_deg": 90
+            },
+            {
+              "id": "g3",
+              "label_ja": "第3隊",
+              "place_ja": "岸壁・東",
+              "x_m": 2100,
+              "y_m": 1000,
+              "heading_deg": 90
+            },
+            {
+              "id": "g4",
+              "label_ja": "第4隊",
+              "place_ja": "桟橋",
+              "x_m": 2850,
+              "y_m": 900,
+              "heading_deg": 0
+            },
+            {
+              "id": "g5",
+              "label_ja": "第5隊",
+              "place_ja": "浮標・西",
+              "x_m": 500,
+              "y_m": 550,
+              "heading_deg": 90
+            },
+            {
+              "id": "g6",
+              "label_ja": "第6隊",
+              "place_ja": "浮標・東",
+              "x_m": 2000,
+              "y_m": 500,
+              "heading_deg": 90
+            }
+          ],
+          "groups_source": "historical (18 隻: 第27魚雷艇隊の魚雷艇 18 隻のうち 13 隻が 1944-10-10 の空爆で失われた（総務省・今帰仁村の戦災の記録ほか。WebSearch の抜粋のみ・本文未読）) / design (v0.6.11。ユーザーの U1「3隻ごとに隊を組んで…先頭の一台を自機として残り2台は後ろをついて来させる」で 6 つの隊 × 3 隻。隊の分け方・停泊地・艇首は史料に無い（Briefing で史実として書かない）。第1隊（start_group 1。最初に操作）の隊長艇は隊長艇の壕の中心から 212 m＝輪の縁から 142 m 外（spec-v0611-r2 §3.1・H1。起動時の検査 V-E2 で停泊地のどの艇も輪の縁から 20 m 以上外）。第4隊は桟橋で北向き、ほかは東向き)",
+          "moored_gap_m": 12,
+          "moored_gap_m_source": "design (v0.6.11。停泊の縦列の隣の艇との中心の間隔 m（隊長艇の艇尾の方向。壕から出た時も同じ並び）。爆風 25 m の内（V-E7）＝1 発で 2〜3 隻（並んだ艇がまとめて燃える＝史実の停泊艦の炎上（A11・A12）からの推論）)",
+          "follow": {
+            "gap_m": 40,
+            "trail_step_m": 5,
+            "catch_up_gain_per_s": 0.08,
+            "heading_deadband_m": 15,
+            "source": "design (v0.6.11。僚艇 2 隻は隊長艇の航跡をたどる縦列（spec-v0611-r2 §3.4・r2 M4）。gap_m 40: 隊長艇から航跡の弧長で 40 m・80 m の点に付く（爆風 25 ＋ 半長 9 ＝ 34 m より広い＝隊長艇に真上から当たった 1 発は僚艇を巻き込まない。V-E7）。trail_step_m 5: 航跡の点を置く進んだ距離（時間ごとでは止まった時に弧を覆えない。gap_m の 1/4 以下＝V-E7）。catch_up_gain_per_s 0.08・heading_deadband_m 15 は us_01 の僚艇（escort）と同じ値)"
+          },
+          "shelter_ring_m": 70,
+          "hide_max_kt": 2,
+          "haul_s": 6,
+          "launch_stick": 0.3,
+          "slot_abeam_m": 25,
+          "slot_arrive_m": 5,
+          "shelter_rules_source": "design (v0.6.11。spec-v0611-r2 §3.4・§3.6。秒は実秒、速さは kt（core/units が変換）。shelter_ring_m 70: 隠れ場所の輪の半径（帰投の輪と同じ＝V-E8）。hide_max_kt 2: 操作中の隊長艇が輪の中でこれ以下になると入り始める（超えれば取りやめ）。haul_s 6: 壕のレール 1 本で 1 隻を上げる秒（僚艇の番号の大きい順・隊長艇は最後。3 隻で 18 秒）。launch_stick 0.3: 隠れている・上げている隊がスティックをこれ以上倒すと出る・下ろす。slot_abeam_m 25: 入る時の僚艇の枠の点（隊長艇の点から左右へ）。slot_arrive_m 5: 枠の点で止まる距離（< slot_abeam_m＝V-E12）)",
+          "shelters": [
+            {
+              "id": "home_cave",
+              "label_ja": "隊長艇の壕",
+              "kind": "cave",
+              "x_m": 1600,
+              "y_m": 1150,
+              "slots": 3,
+              "exit_heading_deg": 0
+            },
+            {
+              "id": "west_cave",
+              "label_ja": "西の壕",
+              "kind": "cave",
+              "x_m": 650,
+              "y_m": 1150,
+              "slots": 3,
+              "exit_heading_deg": 0
+            },
+            {
+              "id": "east_cave",
+              "label_ja": "東の壕",
+              "kind": "cave",
+              "x_m": 2550,
+              "y_m": 1150,
+              "slots": 3,
+              "exit_heading_deg": 0
+            },
+            {
+              "id": "west_cover",
+              "label_ja": "屋我地の陰（西）",
+              "kind": "cover",
+              "x_m": 1050,
+              "y_m": 100,
+              "slots": 3,
+              "exit_heading_deg": 180
+            },
+            {
+              "id": "east_cover",
+              "label_ja": "屋我地の陰（東）",
+              "kind": "cover",
+              "x_m": 2250,
+              "y_m": 100,
+              "slots": 3,
+              "exit_heading_deg": 180
+            }
+          ],
+          "cave_source": "historical (魚雷艇を格納する壕を掘り、壕から海へ艇を運ぶレールが敷かれていた（総務省・今帰仁村の戦災の記録）。運天の魚雷艇隊の壕が今帰仁村字上運天に残る（WebSearch の抜粋のみ・本文未読）) / design (v0.6.11。壕の数 3・枠 3 隻・位置（南の岸の際）・レール 1 本・1 隻ずつ上げる・壕は見つからないは作り。exit_heading_deg 0＝出る時の艇首は北（南の岸から港へ）)",
+          "cover_source": "design（史実の裏付け無し。v0.6.11。屋我地島の岸の際の陰 2 か所・枠 3 隻・止まれば隠れる・予告のたびに cover_reveal_chance で見つかることがあるは作り（狭い海峡そのものは historical）。exit_heading_deg 180 は使わない（陰はそのまま走り出す）が鍵をそろえる）",
+          "ai": {
+            "cast_off_s": [
+              5,
+              20
+            ],
+            "pick_s": 5,
+            "turn_max_deg": 120,
+            "full_p": 0.5,
+            "wall_m": 200,
+            "wall_turn_deg": 45,
+            "look_m": 400,
+            "found_react_s": 3,
+            "dodge": {
+              "success": 0.5,
+              "turn_deg": 90,
+              "hold_s": 2
+            },
+            "source": "design (v0.6.11。ユーザーの U3「自分が操作していない隊はランダムに回避行動をとりつつ爆撃から逃げる」。spec-v0611-r2 §3.5。秒は実秒・速さは kt。cast_off_s [5, 20]: 生成の時に 6 隊それぞれ seed+30 から 1 回引いた秒で岸を離れる（操作中の隊は離岸しない）。pick_s 5: 時計の 5 秒ごとに 6 隊すべてが隊番号の順に seed+30 から 2 回ずつ引く（引く回数は時計だけで決まる）。針路は今の針路 ± turn_max_deg 120°、look_m 400 m 先の点が縁から wall_m 200 m の内側の箱の外なら港の中心への方位 ± wall_turn_deg 45°。速さは狙われているか full_p 0.5 で全速、ほかは巡航。found_react_s 3: 見つかった陰の操作していない隊が陰を出るまでの秒。dodge: 投下ごとに seed+31 から 1 回引き、success 0.5 で今の旋回の逆へ turn_deg 90° 切って全速を hold_s 2 秒（回避の効きは S1 で測る。5 点未満ならつまみから外す）。隠れ場所には自分では入らない・撃たない（A10「友軍が応戦できなかった」）)"
+          },
+          "flash_reveal": false,
+          "flash_reveal_source": "design (v0.6.11。r2 M5: 閃光は v0.6.8 のまま（撃った艇の見つかる距離が gun_battery.muzzle_flash_reveal_m になるだけ）。閃光で陰の隊は見つからない。true（撃った隊から 1,200 m 内の陰の隊が見つかる）にするのはユーザーが決めた時だけ（CLAUDE.md §6.7）)",
+          "source": "design (v0.6.11。jp_03「運天港・空襲下の退避」。ユーザーの決め U1〜U6（6 つの隊を［切替］で操り、隊長艇の後ろに僚艇 2 隻が続く・操作していない隊はランダムに回避・隊長艇ごとに全部の状態・6 隻以上残れば達成）。spec-v0611-r2。形と値の検査は core/evac-data・config/evac-mission-data（V-E1〜V-E12）)"
+        },
+        "evac_raid": {
+          "waves": [
+            {
+              "announce_s": 15,
+              "planes": 2
+            },
+            {
+              "announce_s": 70,
+              "planes": 3
+            },
+            {
+              "announce_s": 125,
+              "planes": 3
+            },
+            {
+              "announce_s": 180,
+              "planes": 4
+            }
+          ],
+          "waves_source": "design (v0.6.11。ユーザーの U5「ノーマルは 4 波（2×2・3×2・3×2・4×2 編隊）」＝（1 編隊の機数）×（同時の編隊の数）。予告の実秒 15・70・125・180 と 1 編隊の機数 2・3・3・4。1 編隊＝凍結の AirStrikeFlight 1 つ（4 機まで）。1 機 2 発（us_carrier_aircraft）でノーマル延べ 24 機・48 発、ハード 36 機・72 発。予告の間隔 55 秒 ≥ 予告から 4 機の編隊が去るまで 39.8 秒 ＋ 余裕 5 秒（V-E6）、第 4 波は約 220 秒で去り終わる（< duration_s 240）。史実の来襲は朝から夕方まで 5 回・延べ約 1,400 機（historical。WebSearch の抜粋のみ・本文未読）。4 分の 4 波はその日の第 1 次の来襲の圧縮)",
+          "flights": 2,
+          "flights_source": "design (v0.6.11。ユーザーの U5: 同時に来る編隊の数。ノーマル 2・ハード 3（hard.evac_flights）。各波で 1 編隊は操作中の隊を、ほかの編隊はほかの隠れていない隊を狙う（「自身が操作している隊は敵の１編隊の攻撃をかわしつつ退避できますが、他の隊はランダム機動なので残りの敵編隊の攻撃に晒され続ける」）)",
+          "announce_lead_s": 10,
+          "from_bearing_deg": 70,
+          "flight_offsets_deg": [
+            -30,
+            0,
+            30
+          ],
+          "spawn_m": 2500,
+          "flights_per_group_max": 1,
+          "bearing_fix_deg": [
+            30,
+            20,
+            10,
+            0
+          ],
+          "cover_reveal_chance": 0.25,
+          "raid_source": "design (v0.6.11。spec-v0611-r2 §3.7。announce_lead_s 10: 予告（赤い輪）から編隊が始まるまでの実秒（予告から最初の投下まで約 21 秒が隠す・切り替えて逃がす時間）。from_bearing_deg 70: 機は東から（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読。70° は design）。flight_offsets_deg: 編隊ごとの現れる方位のずれ（港の中心から 70 ± 30°・spawn_m 2,500 m の点。狙いの順はこの点に近い順）。flights_per_group_max 1: 1 つの隊を狙う編隊は 1 波で 1 つまで。bearing_fix_deg: 凍結の spawn_offsets_deg の先頭 n 個の平均（−30・−20・−10・0）を戻して編隊の中心の方位を枠の方位にそろえる（機数 − 1 で引く。r2 L1）。cover_reveal_chance 0.25: 予告のたびに陰 1 か所が見つかる確率（seed+29 から陰ごとに 1 回。ハードは hard.evac_cover_reveal_chance）)",
+          "survivor_quota": 6,
+          "survivors_total": 18,
+          "historical_survivors": 5,
+          "survivors_source": "historical (18 隻中 13 隻を失った＝史実の残存 5（総務省・今帰仁村の戦災の記録・ja.wikipedia「十・十空襲」の魚雷艇 13 隻。米の戦果の主張は魚雷艇 12 隻で近い。WebSearch の抜粋のみ・本文未読）) / design (survivor_quota 6: 種の success「18隻中6隻以上を残す（史実は5隻）」。ユーザーの U6「六機残ればクリア」)",
+          "north_shore_label_ja": "屋我地島",
+          "source": "design (v0.6.11。jp_03 の港の空襲の波と狙い。編隊の段と時間は risk_events.json の unten_air_raid.params.sortie、機体の値は enemies.json の us_carrier_aircraft（6 任務で共有。変えない）。north_shore_label_ja: 北の縁の陸の名（狭い海峡の向こうの屋我地島＝historical の位置関係）)"
+        },
+        "hard": {
+          "evac_flights": 3,
+          "evac_cover_reveal_chance": 0.35,
+          "source": "design (v0.6.11。ユーザーの U5「ハードは×3とする」「ハードの第四波であれば四機編隊が３つ同時に襲ってくる」: 同時に来る編隊の数 2 → 3（3×2・3×3・3×3・4×3。同時の最大 12 機）。陰が見つかる確率 0.25 → 0.35。波の数・機数・隠れ場所はノーマルと同じ。ハードの Briefing の文（objective_ja・success_ja・note_ja）は Briefing の段（S6）で足す)"
+        }
       }
     },
     {

@@ -3,6 +3,24 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.6.11 — 2026-11-04（日本ハードモード⑨：運天港・空襲下の退避。作業中）
+
+- 目的: jp_03「運天港・空襲下の退避」を出撃可にする — 昼の運天港で、6 つの隊（各 3 隻）を［切替］で操りながら隊長艇を壕・陰へ運んで隠し、操作していない隊が逃げ回る間に次々来る複数の編隊から 18 隻のうち何隻残せるかを競う。ユーザーの決め（2026-11-04。旧計画の［隠れ］［散れ］の号令はやめた）: U1 隊は 3 隻（隊長艇の後ろに僚艇 2 隻が続く。［切替］で操る隊を替える）、U2 隊長艇が機銃を撃てば僚艇も撃つ、U3 操作していない隊はランダムに回避しながら爆撃から逃げる（自分では隠れない）、U4 隊長艇ごとに HP などの全部の状態、U5 ノーマルは 4 波（2×2・3×2・3×2・4×2 編隊＝2 機の編隊が 2 つ同時、…、4 機の編隊が 2 つ同時）・ハードは同じ機数の編隊が 3 つ同時（第 4 波は 4 機の編隊が 3 つ）。各波で 1 編隊は操作中の隊を、ほかの編隊はほかの隠れていない隊を狙う（「自身が操作している隊は敵の１編隊の攻撃をかわしつつ退避できますが、他の隊はランダム機動なので残りの敵編隊の攻撃に晒され続けることになります。なのでプレイヤーは急いで退避しつつ、他の隊の面倒も見なければいけなくなる」）、U6 6 隻以上残れば達成。
+- Done（予定）: Pages の jp_03 で (1) 出撃直後から予告（赤い輪）つきの波が来て、ノーマルは 2 編隊・ハードは 3 編隊が同時に別々の隊を狙い、(2) スティックで隊長艇を動かすと僚艇 2 隻が続き、［切替］で操る隊が替わり、壕・陰に隊ごと隠れると狙っていた編隊が「見失った！」で引き返し、(3) 4 分後に操作中の隊が隠れていれば Result に「残存 N／18（史実 5）」と達成／未達。ほかの 8 任務はビット同一（凍結 20 本・模擬 md5 35 本・setup の snapshot・再生 same:true）。iPhone の実機テスト 3 項目（docs/03 の v0.6.11）。
+- 変更点:
+  - S0（data と起動時の検査。ゲームの挙動は変えない＝jp_03 はまだ Title に出ない（`playable_from` は S6）・世界はまだ隊を知らない（S4））:
+    - `data/missions_seed.json` jp_03 に `v0_1_prototype`（敵は米艦載機・main_weapon none・240 秒・16 gal・`fuel_free_until_s` 240・`day_start`・海域 3,200 × 1,250 m・浅瀬なし・南の岸「本部半島（運天）」・危険は `unten_air_raid` と `dawn_air_strike`（出撃前の港内空襲の 2 択と座礁は入れない）・240 秒の後の敵機 4 機（東 70°）・`evac`（6 隊 × 3 隻の停泊地・停泊の縦列 12 m・航跡をたどる追従 40 m／点 5 m・隠れ場所 5（壕 3＝レール 1 本・陰 2＝史実の裏付け無し）・枠 3 ずつの計 15 < 18・輪 70 m・2 kt で入る・上げる 6 秒・操作していない隊の回避の値・閃光で陰は見つからない）・`evac_raid`（予告 15・70・125・180 秒・1 編隊 2・3・3・4 機・同時 2 編隊・予告の 10 秒後に始まる・東 70 ± 30°・2,500 m・1 隊 1 編隊・方位の戻し・陰の発見 0.25・ノルマ 6／18・史実 5）・`hard`（同時 3 編隊・陰の発見 0.35））と、Briefing の `moon_label_ja`「昼（07:00 空襲警報）」・`briefing_note_ja`（史実の範囲: 5 回・延べ約 1,400 機・18 隻中 13 隻・壕とレール）。値は spec-v0611-r2 §4 のまま（source に理由。史実は WebSearch の抜粋のみ・本文未読）。目的・成功の文とハードの Briefing の文は S6。
+    - `data/risk_events.json` に `unten_air_raid`（count 0・share 0＝合計は変えない。params.sortie は夜明けの空襲の core の値の形: 2,500 m・旋回 500 m・最初の進路 9 秒・間隔 2.2 秒・休み 16 秒・去る 2.5 秒・回さない。共有の `dawn_air_strike.params` は触らない＝jp_02 の `patrol_air` の前例）。`data/scoring.json` に `objective_by_type.evacuate_under_air_raid` 300 と `evac.points_per_survivor` 30（点は S6 から）。`data/hit_rate_model.json` に `visibility.moon_factor.day` 1.0（艦の無い任務なので発見の距離には効かない。setup の snapshot は選んだ値しか持たない＝中立）。
+    - 新しい `core/evac-data`（id・乱数の系列 +29 陰の発見・+30 操作していない隊・+31 爆撃から逃げる・+32〜+43 編隊ごと（`evacFlightSeedOffset`）・隊の段階 `G_*`・隠れ場所の種類・スティックの latch `SW_*`・data の型と形の検査（鍵の閉じた集合。`*_source` の文は許す））と `core/evac-params`（世界の値。kt → m/s・航跡の輪の長さ 18）。`core/night` の系列の一覧に +29〜+43。
+    - 新しい `config/evac-mission-data`（`getEvacParams`・`evacSetupPart`・`validateEvacMissions`）: 起動時の検査 V-E1〜V-E12（海域の内・停泊地は輪の縁から 20 m 以上外・隠れ場所の間 240 m 以上・枠の合計 < 18 でどの枠も 3 以上・1 編隊 1〜4 機・同時 ≤ 3・予告の間隔 ≥ 44.8 秒で最後の波は 219.8 秒に去る・追従 40 m > 爆風 ＋ 半長 34 m・帰投の輪＝隊長艇の壕・18 隻・燃料（240 ＋ 1,224 ＋ 1.5 < 1,500）・同居しない鍵と煙幕なし（右端の段 3 は［切替］）・確率と方位の戻し）。例外は鍵を名指す日本語（V-En 付き）。凍結の `airStrikeParamsFromData` の例外は「unten_air_raid.params.sortie の N 機の編隊」に包み直す（r2 L12）。1 編隊の値は機数 2・3・4 の 3 通り（`WorldSetup.evac.sorties`）。`evac_raid`・`fuel_free_until_s`・`day_start` は evac の任務だけ（ほかに置けば例外）。
+    - `config/mission-data`: moon `day` を通す（「昼は v0.6 で扱う」の例外を外した）・evac の任務は駆逐艦／大発の隊を持たず main_weapon none を許す（patrol_air と同じ扱い。PrototypeMission の鍵は増やさない）。`core/visibility` の MoonFactorTable に day、`core/briefing` の moonLabelJa に「昼」。`systems/world-setup` に `...evacSetupPart`（jp_03 だけ `evac` の鍵。ほかの任務は鍵ごと出ない）、Boot に `validateEvacMissions`。
+    - 版 0.6.11・CHANGELOG v0.6.11 を始めた。
+    - テスト: 新しい `tests/evac-mission-data`（既定の data が通る・V-E1〜V-E12 の文と境・包み直し・形・evac だけの鍵・系列）・新しい `tests/setup-jp03`（ノーマル／ハード × 史実 × seed 1・12345 の新しい snapshot。今夜の乱数 0 回）・`tests/boot-loop` と `tests/engine-data` の「遊べる世界のある任務」を 9 に（jp_03）・visibility／game-data／briefing の `day`。
+    - 門: npm test 230 ファイル・2,290 件・typecheck・lint・build が緑、凍結 20 本同じ、ほかの任務の setup の snapshot は `-u` なし（新しい setup-jp03 だけ）、`scripts/headless/g2.sh`（G6=1 ALLY=1）OK 35 DIFF 0（main 88c9f19 の木でも同じ 35 本）。
+- 既知の制約:
+  - jp_03 はまだ出撃できない（Title に出ない。S6）。`?debug&mission=jp_03` は今の世界（隊も空襲の波も無い）で開く（S4 まで）。
+  - 停泊の縦列の間隔 `moored_gap_m` 12 m は隣の艇との中心の間隔（spec-v0611-r2 §3.1 の値のまま）。T-38 の長さ 18 m より短いので、停泊の 3 隻の船体（当たり）と絵（sprite_scale 2 で 36 m）が重なる（r1 の「横並び」を r2 で「艇尾方向の縦列」にした時に値が残った）。S1（隊）・S4（絵）で見直す候補（V-E7 は爆風 25 m 未満だけを見る）。
+
 ## v0.6.10 — 2026-11-02（日本ハードモード⑧b：撃ち返す味方の駆逐艦）
 
 - 要約（5 行。細かい値と理由はこの下）:
