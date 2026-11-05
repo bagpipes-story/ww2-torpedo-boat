@@ -51,7 +51,7 @@ index d2fb21c..58fa6d0 100644
  export const EVAC_BANNER_MS = 2000;
  /** 近い隠れ場所の距離の刻み m（2 行目と端の矢印。変わったときだけ組み直す） */
 diff --git a/src/core/evac-telemetry.ts b/src/core/evac-telemetry.ts
-index 3005eab..57fd015 100644
+index 3005eab..0e51660 100644
 --- a/src/core/evac-telemetry.ts
 +++ b/src/core/evac-telemetry.ts
 @@ -3,7 +3,7 @@
@@ -84,7 +84,7 @@ index 3005eab..57fd015 100644
    gunShown: boolean;
    armsSeq: number;
    annUntilS: number;
-+  /** 座席へ入れた（seatSeq が変わった）時から EVAC_TAKE_HOLD_S の秒（引き継いだ行を予告の行より上に出す。v0.6.11 S8b） */
++  /** ほかの隊を座席へ入れた（seatSeq と操作中の隊が変わった）時から EVAC_TAKE_HOLD_S の秒（引き継いだ行を予告の行より上に出す。v0.6.11 S8b） */
 +  takeUntilS: number;
    readonly order: Int32Array;
  }
@@ -121,7 +121,7 @@ index 3005eab..57fd015 100644
    hiddenBoats: number;
    readonly hp: Float64Array;
 -  /** 次の波の予告までの秒（最後の波の後は NaN）・決着までの秒・［切替］で移る隊（−1 は灰色）・座席へ入れた回数（EvacFeed の写し） */
-+  /** 次の波の予告までの秒（最後の波の後は NaN）・決着までの秒・［切替］で移る隊（−1 は灰色）・座席へ入れた回数（EvacFeed の写し）・座席へ入れてから EVAC_TAKE_HOLD_S の内（S8b） */
++  /** 次の波の予告までの秒（最後の波の後は NaN）・決着までの秒・［切替］で移る隊（−1 は灰色）・座席へ入れた回数（EvacFeed の写し）・ほかの隊を座席へ入れてから EVAC_TAKE_HOLD_S の内（S8b） */
    nextWaveS: number;
    leftS: number;
    nextSwitch: number;
@@ -178,14 +178,14 @@ index a1338eb..e793c12 100644
  
    /** Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する。進行中の弱い揺れがあっても上書きする（force） */
 diff --git a/src/systems/evac-telemetry.ts b/src/systems/evac-telemetry.ts
-index 19028b5..ca89f39 100644
+index 19028b5..c313e9e 100644
 --- a/src/systems/evac-telemetry.ts
 +++ b/src/systems/evac-telemetry.ts
 @@ -3,11 +3,12 @@
  // 同じか重い出来事が来れば替える（EVE_* の数が重さ）。出す秒は世界の時計（一時停止で止まる。jp_03 の決着の前は命中スローが無い＝r2 M1）。
  // 予告の行は波の予告と、もう一度来る編隊の予告し直し（S3b の U7。plan.evWave は立たず repass.ev のビット）の両方で、予告から始まるまで（中央の帯は ui/dawn-banner が annSeq で 2 秒）。
  // ［切替］の先（ボタンの字）は sq.order を書かない並びで見る（core/evac-seat の evacNextSwitch に EvacFeed の並び）。world-vs-sim が比べる物は読むだけ。Phaser・DOM を読まない。
-+// S8b: 座席へ入れてから EVAC_TAKE_HOLD_S の間は takeHold（引き継いだ行が予告より上）・予告の狙いごとの機の数と、狙った隊がいま隠れている（見失う）ビット。
++// S8b: ほかの隊を座席へ入れてから EVAC_TAKE_HOLD_S の間は takeHold（引き継いだ行が予告より上）・予告の狙いごとの機の数と、狙った隊がいま隠れている（見失う）ビット。
  import { AS_T_FALLING, strikeThreat } from '../core/air-strike';
  import type { BoatState } from '../core/boat-motion';
  import { bearingJa } from '../core/briefing';
@@ -203,7 +203,7 @@ index 19028b5..ca89f39 100644
    t.annFlights = plan.raid.flights;
    if (t.annKind !== EVA_NONE) {
      for (let i = 0; i < plan.flights.length; i++) {
-@@ -122,13 +124,20 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
+@@ -122,13 +124,21 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
        if (fl.wave !== t.annWave) continue;
        if (t.annKind === EVA_WAVE && fl.outcome === EO_NO_TARGET) t.annNoTarget++;
        if (fl.phase !== EF_ANNOUNCED || (t.annKind === EVA_WAVE) !== (fl.passes === 0)) continue;
@@ -219,7 +219,8 @@ index 19028b5..ca89f39 100644
      if (t.annKind === EVA_WAVE) t.annPlanes = plan.raid.waves[t.annWave]!.planes;
    }
    clearEvacFeed(f);
-+  if (f.seatSeq !== t.seatSeq) f.takeUntilS = nowS + EVAC_TAKE_HOLD_S; // 座席へ入れた（切替・交代・自動の切替）: 引き継いだ行を予告より上に（S8b）
++  // ほかの隊を座席へ入れた（［切替］・全滅の後の自動の切替。同じ隊の交代は latch を置き直さないので数えない）: 引き継いだ行を予告より上に（S8b）
++  if (f.seatSeq !== t.seatSeq && sq.control !== t.control) f.takeUntilS = nowS + EVAC_TAKE_HOLD_S;
    t.seatSeq = f.seatSeq;
 +  t.takeHold = nowS < f.takeUntilS;
    // 操作中の隊と座席
