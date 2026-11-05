@@ -41,7 +41,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -615,7 +615,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -1189,7 +1189,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -1763,7 +1763,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -2337,7 +2337,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -2911,7 +2911,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -3485,7 +3485,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
@@ -4059,7 +4059,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "x": 1600,
    "y": 1150,
    "radiusM": 70,
-   "callMargin": 1.5,
+   "callMargin": 1.6,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },

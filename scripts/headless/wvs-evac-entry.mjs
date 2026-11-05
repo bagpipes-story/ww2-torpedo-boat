@@ -235,4 +235,33 @@ export function hudProbe(o) {
   };
 }
 
-window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe };
+/**
+ * Result の台（S6。brief-result.mjs の EVAC=1）: 模擬の台本の入力を世界へ写して模擬の終わりまで進める。模擬の終わり・残存を返す（Result が出るまでの残りは
+ * node が 30 フレームずつ・100 ms おきに回す＝沈む絵の tween は壁時計で進むので、ページの中で回し続けると偽の時計だけが進んで経過の秒が膨らむ）
+ */
+export function resultRun(o) {
+  const hl = window.__hl;
+  const w = hl.world();
+  if (!w.evac) throw new Error('空襲下の退避の任務ではない');
+  const s = evacSimSetup(gameData, o.hard);
+  const inp = w.input;
+  const mirror = {
+    begin() {},
+    frame(k, fo) {
+      if (!hl.active('Mission')) return;
+      if (k >= o.maxSteps) throw new Error(`maxSteps ${o.maxSteps} に達した`);
+      inp.stickActive = true;
+      inp.headingDeg = fo.headingDeg;
+      inp.speed01 = fo.speed01;
+      inp.gunHeld = fo.gunHeld;
+      inp.extinguishHeld = fo.extHeld;
+      if (fo.switchTap) pressSwitch();
+      hl.frame(o.frameMs);
+    },
+    after() {},
+  };
+  const tr = runEvacTrial(s, o.policy, o.seed, null, mirror);
+  return { simEnd: tr.end, simT: tr.timeS, survivors: tr.survivors, achieved: tr.achieved, t: w.stepTimeS };
+}
+
+window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe, resultRun };

@@ -13,6 +13,7 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { evacResultPart } from '../core/evac-result';
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
@@ -195,5 +196,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     patrol: patrolResult(w), // 夜の哨戒機（v0.6.7。jp_02）の記録。無い任務は null
     ...armsResultPart(w), // 兵装の新しい道（v0.6.8）: 使った夜だけ arms の鍵（本文の後ろに 1 行）
     ...landingResultPart(w, reason), // 揚陸と米PT の雷撃（v0.6.9。jp_04）: 揚陸の任務だけ landing の鍵（本文の頭の 3 行・状況の行の頭・揚陸 300 点）
+    ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
   };
 }

@@ -195,9 +195,9 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
 });
 
 describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い任務に「ハード」と出していた）', () => {
-  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
+  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）・jp_03（v0.6.11。同時の編隊 3）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
     const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
-    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03']);
+    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_03', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03']);
     expect(hasHardVariant(gameData, 'jp_05')).toBe(false);
     expect(difficultyJa(false, true)).toBe('');
     expect(difficultyJa(false, false)).toBe('');

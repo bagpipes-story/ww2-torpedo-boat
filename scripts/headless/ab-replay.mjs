@@ -6,7 +6,9 @@
 // 件の組（既定 SET=all）: base（16 件: 7 任務 us_01・us_02・us_03・jp_01・jp_02・jp_05・jp_06 とハード＝12、seed 2 の us_03・jp_01・jp_02・jp_05＝4。SECS 既定 90）・dawn20（同じ 16 件を
 // &dawn=20）・nodawn（同じ 16 件を &nostrike・SECS=200）・ptrun（jp_05 の seed 1・2 を全速で）・result（base の初めの 8 件を終わるまで回して Result の文も）＝58 件。
 // 1 件だけ: MISSION=us_02 [HARD=1] [SEED=1] [DAWN=20] [NODAWN=1] [SECS=200] [PTRUN=1] [RESULT=1]。jp_04 の卯月を切った夜（B の &noally）と A を比べるのは NOALLY=1（MISSION=jp_04 の組）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.6.11 S6: SET=jp03 で jp_03（空襲下の退避）のノーマル・ハード × seed 1・2 を 260 秒（決着の 240 秒の後まで）。A は jp_03 の世界のあるビルド（88c9f19 には無いので S5 の ae6af75）。
+//   all（88c9f19 と比べる 58 件）には入れない（元の件は今のまま）。jp_03 の写しは座席の自艇・HP・燃料・魚雷と HUD の文（隊の 18 隻は world-vs-sim が比べる）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp03] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 
@@ -94,6 +96,8 @@ export function abCases(set, input) {
     result: () => V.slice(0, 8).map((v) => ({ ...base, ...v, secs: envNum('SECS', 200), result: true, set: 'result' })),
     // jp_04 の卯月を切った夜（B は &noally）と A（6856840）: ノーマル・ハード × seed 1〜4（G6w。S5b の門）
     jp04: () => [false, true].flatMap((hard) => [1, 2, 3, 4].map((seed) => ({ ...base, mission: 'jp_04', hard, seed, secs: envNum('SECS', 170), noally: true, set: 'jp04' }))),
+    // jp_03 の空襲下の退避（v0.6.11 S6。Title に出た版）: 決着の 240 秒の後まで。A は S5（ae6af75）のビルド
+    jp03: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'jp_03', hard, seed, secs: envNum('SECS', 260), set: 'jp03' }))),
   };
   if (process.env.MISSION) {
     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];

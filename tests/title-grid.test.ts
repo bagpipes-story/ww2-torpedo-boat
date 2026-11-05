@@ -26,15 +26,18 @@ const JP = getMenuEntries(gameData, 'jp_hard').entries;
 const US = getMenuEntries(gameData, 'us_pt').entries;
 
 describe('Title の任務の行の矩形（ui/title-grid）', () => {
-  it('日本のタブは 5 任務（order 順 jp_01・jp_02・jp_04・jp_05・jp_06。v0.6.9 で jp_04）で 2 列 × 3 段（行優先）。米PT は 3 任務で 1 列', () => {
+  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は 3 任務で 1 列', () => {
     expect(JP.map((e) => [e.id, e.title, e.playable])).toEqual([
       ['jp_01', '夜の輸送護衛', true],
       ['jp_02', '孤島の哨戒', true],
+      ['jp_03', '運天港・空襲下の退避', true],
       ['jp_04', '多号作戦・オルモック湾へ', true],
       ['jp_05', '鹵獲艇の哨戒', true],
       ['jp_06', '慶良間の夜・最終出撃', true],
     ]);
     expect([TITLE_GRID_FROM, titleGridOn(JP.length), titleGridOn(US.length)]).toEqual([4, true, false]);
+    // v0.6.11 S6: 6 任務で 2 × TITLE_GRID_ROWS_MAX の格子が満杯（次の日本の任務は並べ方が要る＝CHANGELOG の既知の制約）
+    expect([JP.length, 2 * TITLE_GRID_ROWS_MAX]).toEqual([6, 6]);
     expect(US.map((e) => e.id)).toEqual(['us_01', 'us_02', 'us_03']);
   });
   it('3 つの論理幅の置き方: 列 597・間 24・計 1,218（下の 3 つの切り替えと同じ幅・同じ中心）、左 x = 幅/2 − 609・右 = 左 + 621、段 y 216・324', () => {
@@ -54,6 +57,11 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
     for (const [w, [l]] of Object.entries(want)) {
       expect(rects(5, Number(w)).slice(0, 4), w).toEqual(rects(4, Number(w)));
       expect(titleRowRect(4, 5, Number(w)), w).toEqual({ x: l, y: 432, w: 597 });
+    }
+    // v0.6.11 S6 の日本のタブ（6 任務）: 3 段目は左右とも（jp_05・jp_06。y 432・下端 528）。1〜5 番目は 5 任務と同じ所（jp_03 が 3 番目＝2 段目の左に入り、jp_04〜jp_06 が 1 つずつ後ろへ）
+    for (const [w, [l, r]] of Object.entries(want)) {
+      expect(rects(6, Number(w)).slice(0, 5), w).toEqual(rects(5, Number(w)));
+      expect(titleRowRect(5, 6, Number(w)), w).toEqual({ x: r, y: 432, w: 597 });
     }
   });
   it('論理幅 1,280〜1,584 の 8 刻みの全部・4〜6 任務: 画面の内、左右の余白が同じ、矩形が重ならない（間 ≥ 12 px）、下端は操作の一言（y 560）より上', () => {
@@ -92,12 +100,12 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
 });
 
 describe('格子の行の文（副題は「（」の前まで。spec §D.6）', () => {
-  it('副題は 5 つとも「（」の前まで（20 px で 368／288／320／288／368 px。jp_04 は「パロンポン沖（レイテ島西岸）」→「パロンポン沖」）', () => {
+  it('副題は 6 つとも「（」の前まで（20 px で 368／288／360／320／288／368 px。jp_04 は「パロンポン沖（レイテ島西岸）」→「パロンポン沖」、jp_03 は「（」が無いのでそのまま）', () => {
     const subs = JP.map((e) => shortLabelJa(e.sub));
-    expect(subs).toEqual(['1942年12月9日 ・ ガダルカナル島北岸', '1944年1月30日 ・ ウェーク島', '1944年12月11日 ・ パロンポン沖', '1944年2月18日 ・ ラバウル沖', '1945年3月28日 ・ 沖縄・慶良間列島沖']);
-    expect(subs.map((s) => Math.round(textWidthPx(s, TITLE_ROW_SUB_PX)))).toEqual([368, 288, 320, 288, 368]);
+    expect(subs).toEqual(['1942年12月9日 ・ ガダルカナル島北岸', '1944年1月30日 ・ ウェーク島', '1944年10月10日 ・ 沖縄本島・運天港', '1944年12月11日 ・ パロンポン沖', '1944年2月18日 ・ ラバウル沖', '1945年3月28日 ・ 沖縄・慶良間列島沖']);
+    expect(subs.map((s) => Math.round(textWidthPx(s, TITLE_ROW_SUB_PX)))).toEqual([368, 288, 360, 320, 288, 368]);
   });
-  it('状態（右寄せ 24 px「出撃準備 →」134 px）と副題・題が重ならない（すき間 ≥ 16 px。最悪は副題 30 px・題 39 px＝jp_04「多号作戦・オルモック湾へ」。v0.6.8 までは 99 px）', () => {
+  it('状態（右寄せ 24 px「出撃準備 →」134 px）と副題・題が重ならない（すき間 ≥ 16 px。最悪は副題 30 px・題 39 px＝jp_04「多号作戦・オルモック湾へ」。v0.6.8 までは 99 px。v0.6.11 S6 の jp_03 は副題 39・題 99 px）', () => {
     const inner = TITLE_GRID_COL_W - 2 * MENU_PAD_X;
     let worstSub = Infinity;
     let worstTitle = Infinity;

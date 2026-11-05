@@ -15,9 +15,10 @@ import { createEvacAirStep, stepEvacAir, type EvacAirStep } from '../core/evac-a
 import { stepEvacBoats } from '../core/evac-boats';
 import { EVAC_AI_SEED_OFFSET } from '../core/evac-data';
 import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
+import { createEvacSettleSnap, type EvacSettleSnap } from '../core/evac-result';
 import { createEvacPlan, evacPlanHooks, type EvacFlightPort, type EvacPlan } from '../core/evac-plan';
 import { evacFrameInput, evacLoadSeat, evacSeatCommand, evacSeatHome, evacSinkLeader, type EvacSeat, type EvacSeatHooks } from '../core/evac-seat';
-import { createEvacSquadron, type EvacBoat, type EvacSquadron } from '../core/evac-squadron';
+import { createEvacSquadron, evacSurvivors, type EvacBoat, type EvacSquadron } from '../core/evac-squadron';
 import { EVS_GONE, createEvacFeed, feedBoatSunk, feedSink, type EvacFeed } from '../core/evac-telemetry';
 import type { DamageState, HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
@@ -77,6 +78,8 @@ export class WorldEvac {
   /** カメラの本当の中心 m（S5。絵の view が毎フレーム書く。jp_03 の海は小さく、見張りのズームでカメラが海の縁で止まる＝自艇が画面の中心に無い。端の矢印はこの中心から。無ければ NaN） */
   camX = NaN;
   camY = NaN;
+  /** 決着の時の写し（S6。Result の時の行「空襲が去る時: 西の壕の中（第1隊）」。夜明けのラッチのステップに隊と段階、段 5 の決着のステップに残存を書く。世界の値は変えない） */
+  readonly settleSnap: EvacSettleSnap = createEvacSettleSnap();
   view: EvacView | null = null;
   private latchSeen = false;
   private readonly cmd: BoatInput = { headingDeg: NaN, speed01: 0 };
@@ -133,7 +136,13 @@ export class WorldEvac {
     this.aaOrder = new Int32Array(plan.flights.length);
     this.aaD2 = new Float64Array(plan.flights.length);
     damage.divert = () => evacSinkLeader(sq, seat, sq.control, w.stepTimeS, this.air.hooks);
-    w.dawn.homeAtLatch = () => evacSeatHome(sq, seat, true);
+    w.dawn.homeAtLatch = () => {
+      const g = sq.groups[sq.control]!;
+      this.settleSnap.group = sq.control;
+      this.settleSnap.phase = g.phase;
+      this.settleSnap.shelter = g.shelter;
+      return evacSeatHome(sq, seat, true);
+    };
   }
 
   get plan(): EvacPlan {
@@ -201,7 +210,10 @@ export class WorldEvac {
     f.found |= p.evFound;
     f.repass |= a.repass.ev;
     if (p.evWave >= 0) f.wave = p.evWave;
-    if (p.evSettle) f.settle = true;
+    if (p.evSettle) {
+      f.settle = true;
+      this.settleSnap.survivors = evacSurvivors(this.sq);
+    }
   }
 
   updateVisuals(realDt: number): void {

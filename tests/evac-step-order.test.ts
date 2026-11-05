@@ -34,7 +34,9 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）', 
     expect(we).toContain('new SeededRng((seed + EVAC_AI_SEED_OFFSET) >>> 0)');
     expect(we.split('new SeededRng(').length).toBe(2);
     expect(we).toContain('damage.divert = () => evacSinkLeader(sq, seat, sq.control, w.stepTimeS, this.air.hooks);');
-    expect(we).toContain('w.dawn.homeAtLatch = () => evacSeatHome(sq, seat, true);');
+    // S6: ラッチは決着の時の写し（Result の時の行。隊・段階・隠れ場所を読むだけ）を取ってから「中」を返す
+    const hl = we.slice(we.indexOf('w.dawn.homeAtLatch = () => {'));
+    expectOrder(hl, ['this.settleSnap.group = sq.control;', 'this.settleSnap.phase = g.phase;', 'this.settleSnap.shelter = g.shelter;', 'return evacSeatHome(sq, seat, true);']);
   });
   it('world-input: 沈没の確かめ → ［切替］と latch → 魚雷 → 消火（模擬のフレームの頭と同じ）', () => {
     const s = code('systems/world-input.ts');
@@ -51,7 +53,7 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）', 
     expect(we).toContain('stepEvacAir(a, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);');
     // S5: 段 5 の後にそのステップの出来事を HUD へ積む（plan と repass は読むだけ＝世界と模擬の突き合わせの物を書かない）
     const sa = we.slice(we.indexOf('  stepAir(feelDt: number)'), we.indexOf('  updateVisuals('));
-    expectOrder(sa, ['stepEvacAir(a,', 'f.lost |= p.evLost;', 'f.found |= p.evFound;', 'f.repass |= a.repass.ev;', 'if (p.evWave >= 0) f.wave = p.evWave;', 'if (p.evSettle) f.settle = true;']);
+    expectOrder(sa, ['stepEvacAir(a,', 'f.lost |= p.evLost;', 'f.found |= p.evFound;', 'f.repass |= a.repass.ev;', 'if (p.evWave >= 0) f.wave = p.evWave;', 'if (p.evSettle) {', 'f.settle = true;', 'this.settleSnap.survivors = evacSurvivors(this.sq);']);
     const wb = code('systems/world-boat.ts');
     expect(wb).toContain('w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input');
     expect(wb).toContain('if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);');
