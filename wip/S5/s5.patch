@@ -1,3 +1,99 @@
+diff --git a/scripts/headless/wvs-evac-entry.mjs b/scripts/headless/wvs-evac-entry.mjs
+index fef2306..8f2bec7 100644
+--- a/scripts/headless/wvs-evac-entry.mjs
++++ b/scripts/headless/wvs-evac-entry.mjs
+@@ -4,6 +4,7 @@
+ // after で両方の状態（18 隻の記録と隊・座席・編隊の段と終わり方と凍結の空襲の状態・もう一度来る編隊・§2 の 4 機・対空・燃料・乱数 +19・+24・+29・+30・+31・+32〜+43・
+ // 帰投・ラッチ・沈没・消火の長押し）を同じ歩き方で平らにして比べる（数は |差| ≤ 1e-6、真偽と文字は同じ）。違ったステップを数え、最初の違いの欄を返す。
+ // 模擬の値（data）は束ねた時の repo の data/*.json（比べる site は同じ木のビルドにする）。smokeRun は台本なしの 1 夜（S4 の煙の門: 240 秒 ＋ 落ち着くまでページのエラー 0）。
++// S5: ［切替］は HUD の右端の識別の段のボタン（ui/weapon-panel の switchButton。HoldButton の押下）を押して入れる（ボタンの道＝InputState.switchTap を直に書かない）。
+ import { gameData } from '../../src/config/game-data';
+ import { runEvacTrial } from '../../src/core/evac-sim';
+ import { evacSimSetup } from '../../src/systems/evac-sim-setup';
+@@ -29,6 +30,16 @@ function flat(roots) {
+   return { paths, vals };
+ }
+ 
++/** HUD の［切替］のボタンを 1 回押して離す（押下で InputState.switchTap。ポインタの番号は台本の指と重ならない 97） */
++function pressSwitch() {
++  const hud = window.__game.scene.getScene('Hud');
++  const b = hud && hud.panel ? hud.panel.switchButton : null;
++  if (!b) throw new Error('HUD に［切替］のボタンが無い');
++  const ptr = { id: 97 };
++  b.button.emit('pointerdown', ptr);
++  hud.input.emit('pointerup', ptr);
++}
++
+ function same(a, b) {
+   if (typeof a === 'number' && typeof b === 'number') return (Number.isNaN(a) && Number.isNaN(b)) || a === b || Math.abs(a - b) <= TOL;
+   return a === b;
+@@ -102,7 +113,7 @@ export function runEvacVsSim(o) {
+       inp.speed01 = fo.speed01;
+       inp.gunHeld = fo.gunHeld;
+       inp.extinguishHeld = fo.extHeld;
+-      inp.switchTap = fo.switchTap;
++      if (fo.switchTap) pressSwitch();
+       const before = steps;
+       hl.frame(o.frameMs);
+       if (steps !== before + 1) throw new Error(`フレーム ${k} の固定ステップが ${steps - before}（1 のはず）`);
+@@ -172,4 +183,56 @@ export function smokeRun(o) {
+   return { frames: k, t, mission: hl.active('Mission'), result: hl.active('Result'), resultLines: hl.texts('Result').length, survivors: alive, settled: sq.settled, came: plan.came, impacts: plan.impacts, children };
+ }
+ 
+-window.__wvsEvac = { runEvacVsSim, smokeRun };
++/**
++ * HUD の画面写しの台（S5。evac-hud.mjs）: 模擬の台本の入力を世界へ写して進め、テレメトリの予告し直し（t.evac.annKind 2）の始まりから afterS 秒のフレームで止める
++ * （終わりの lookS 秒は見張りを押したまま＝ズーム 0.5 へ。999 以上は始めからずっと）。止めた所の HUD の文・地図の上の字と輪の画面の大きさを返す（ページはそのまま＝node が撮る）
++ */
++export function hudProbe(o) {
++  const hl = window.__hl;
++  const w = hl.world();
++  if (!w.evac) throw new Error('空襲下の退避の任務ではない');
++  const tm = window.__game.registry.get('boatTelemetry');
++  const s = evacSimSetup(gameData, o.hard);
++  const inp = w.input;
++  let stopK = -1;
++  let found = -1;
++  const mirror = {
++    begin() {},
++    frame(k, fo) {
++      if (stopK >= 0 && k >= stopK) throw new Error('stop');
++      if (!hl.active('Mission')) throw new Error('mission-ended');
++      inp.stickActive = true;
++      inp.headingDeg = fo.headingDeg;
++      inp.speed01 = fo.speed01;
++      inp.gunHeld = fo.gunHeld;
++      inp.extinguishHeld = fo.extHeld;
++      inp.lookout = o.lookS > 0 && (o.lookS >= 999 || (stopK >= 0 && k >= stopK - Math.round(o.lookS * 60)));
++      if (fo.switchTap) pressSwitch();
++      hl.frame(o.frameMs);
++    },
++    after(k) {
++      if (found < 0 && tm.evac.annKind === 2) {
++        found = k;
++        stopK = k + Math.max(1, Math.round(o.afterS * 60));
++      }
++      if (found < 0 && k > o.maxSteps) throw new Error('予告し直しが来ない');
++    },
++  };
++  try {
++    runEvacTrial(s, o.policy, o.seed, null, mirror);
++  } catch (e) {
++    if (!(e instanceof Error) || e.message !== 'stop') throw e;
++  }
++  hl.render();
++  const m = hl.mission();
++  const z = m.cameras.main.zoom / window.__game.scene.getScene('Hud').cameras.main.zoom; // 論理ズーム（Hud のカメラのズームは RENDER_SCALE）
++  const world = m.children.list.filter((x) => x.visible && (x.type === 'Text' || (x.type === 'Image' && x.texture && x.texture.key === 'tex-evac-ring')));
++  return {
++    phases: w.evac.sq.groups.map((g) => g.phase), targeted: Array.from(w.evac.sq.targeted), control: w.evac.sq.control,
++    t: w.stepTimeS, zoom: z, repassAtS: (found + 1) / 60, annKind: tm.evac.annKind, event: tm.evac.event,
++    hud: hl.objects('Hud').filter((x) => x.type === 'Text' && x.v && x.text !== ''),
++    marks: world.map((x) => (x.type === 'Text' ? { text: x.text, px: parseFloat(x.style.fontSize) * x.scaleY * z, h: x.displayHeight * z, w: x.displayWidth * z, color: x.style.color, bold: x.style.fontStyle === 'bold' } : { ring: true, r: (x.displayWidth / 2) * z, tint: x.tintTopLeft })),
++  };
++}
++
++window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe };
 diff --git a/src/assets/impact-ring-placeholder.ts b/src/assets/impact-ring-placeholder.ts
 index 88eaafc..95dfe28 100644
 --- a/src/assets/impact-ring-placeholder.ts
@@ -310,7 +406,7 @@ index 2b2960c..0b898f7 100644
    return d;
  }
 diff --git a/src/systems/evac-flights.ts b/src/systems/evac-flights.ts
-index f99345d..31f6cb4 100644
+index f99345d..295442a 100644
 --- a/src/systems/evac-flights.ts
 +++ b/src/systems/evac-flights.ts
 @@ -1,15 +1,17 @@
@@ -333,7 +429,7 @@ index f99345d..31f6cb4 100644
  import { AirStrikeFlight } from './air-strike-flight';
  import type { BoatDamage } from './boat-damage';
  import { EvacBoatsView } from './evac-boats-view';
-@@ -41,15 +43,18 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
+@@ -41,15 +43,21 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
    );
    const terrain = new EvacTerrain(scene, ev, w.setup.mission.bounds);
    const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite);
@@ -343,7 +439,10 @@ index f99345d..31f6cb4 100644
      update: () => {
        evacDrawPass(evac.plan, draw);
        boats.update(w.stepTimeS);
-+      marks.update(w.stepTimeS, scene.cameras.main.zoom / RENDER_SCALE);
++      const cam = scene.cameras.main;
++      marks.update(w.stepTimeS, cam.zoom / RENDER_SCALE);
++      evac.camX = cam.midPoint.x; // 端の矢印（ui/evac-markers）はカメラの本当の中心から（海の縁でカメラが止まる）
++      evac.camY = cam.midPoint.y;
      },
      destroy: () => {
        for (const f of flights) f.destroy();
@@ -426,7 +525,7 @@ index 4c6ddd5..d8a2d50 100644
    };
  }
 diff --git a/src/systems/world-evac.ts b/src/systems/world-evac.ts
-index 7e5b9ee..480bd4f 100644
+index 7e5b9ee..2ac799d 100644
 --- a/src/systems/world-evac.ts
 +++ b/src/systems/world-evac.ts
 @@ -18,6 +18,7 @@ import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
@@ -437,7 +536,7 @@ index 7e5b9ee..480bd4f 100644
  import type { DamageState, HitSpec } from '../core/gunnery';
  import type { MissionEndReason } from '../core/mission-flow';
  import { SeededRng } from '../core/rng';
-@@ -69,8 +70,10 @@ export class WorldEvac {
+@@ -69,8 +70,13 @@ export class WorldEvac {
    readonly aaOrder: Int32Array;
    readonly aaD2: Float64Array;
    lastDownFlight = -1;
@@ -446,10 +545,13 @@ index 7e5b9ee..480bd4f 100644
    losses = 0;
 +  /** HUD の出来事（S5。座席の hooks と段 5 の後に積み、systems/evac-telemetry がフレームごとに読んで消す） */
 +  readonly feed: EvacFeed;
++  /** カメラの本当の中心 m（S5。絵の view が毎フレーム書く。jp_03 の海は小さく、見張りのズームでカメラが海の縁で止まる＝自艇が画面の中心に無い。端の矢印はこの中心から。無ければ NaN） */
++  camX = NaN;
++  camY = NaN;
    view: EvacView | null = null;
    private latchSeen = false;
    private readonly cmd: BoatInput = { headingDeg: NaN, speed01: 0 };
-@@ -105,16 +108,19 @@ export class WorldEvac {
+@@ -105,16 +111,19 @@ export class WorldEvac {
      };
      this.seat = seat;
      evacLoadSeat(sq, seat);
@@ -471,7 +573,7 @@ index 7e5b9ee..480bd4f 100644
        },
      };
      const ref: { air: EvacAirStep | null } = { air: null };
-@@ -183,7 +189,16 @@ export class WorldEvac {
+@@ -183,7 +192,16 @@ export class WorldEvac {
  
    /** 段 5（座席の火災の後・夜明けの空襲の前）。閃光の距離は兵装の閃光（flash_reveal の時だけ陰を見つける） */
    stepAir(feelDt: number): void {
@@ -900,7 +1002,7 @@ index 7e70a4f..46bec95 100644
    }
  }
 diff --git a/tests/dawn-clock.test.ts b/tests/dawn-clock.test.ts
-index 73c18d1..3187946 100644
+index 73c18d1..009c34e 100644
 --- a/tests/dawn-clock.test.ts
 +++ b/tests/dawn-clock.test.ts
 @@ -12,6 +12,7 @@ import { createPtTelemetry } from '../src/core/pt-boats';
@@ -919,6 +1021,16 @@ index 73c18d1..3187946 100644
      ...over,
      dawn: { ...createDawnTelemetry(), ...dawn },
    } as BoatTelemetry;
+@@ -120,6 +122,9 @@ describe('左上 2 段目の夜明けの時計（ui/dawn-clock。v0.6.2 実機 1
+     expect(HUD_FONT_CLOCK_PX).toBeGreaterThanOrEqual(18);
+     expect(HUD_FONT_CLOCK_PX).toBeLessThanOrEqual(22);
+     const longest = ['夜明けまで 999 秒', '夜明け後 9999 秒', ...PLAYABLE_IDS.map((id) => clockJa(tele({}, { timeLeftS: buildWorldSetup(gameData, id).durationS })))];
++    // 昼から始まる任務（v0.6.11 S5。day_start＝jp_03。r2 M9）: 「空襲 残り 4:00」「空襲後 20:24」（燃料が尽きる 1,224 秒）と 2 桁の分の最長
++    for (const [reached, s] of [[false, 240], [true, 1224.9], [true, 5999]] as const) longest.push(clockJa(tele({ dayStart: true, reached, daylightS: s }, { timeLeftS: reached ? 0 : s })));
++    expect(longest.slice(-3)).toEqual(['空襲 残り 4:00', '空襲後 20:24', '空襲後 99:59']);
+     for (const s of longest) expect(textWidthPx(s, HUD_FONT_CLOCK_PX), s).toBeLessThanOrEqual(HUD_CLOCK_MAX_W_PX);
+     // 縦: FPS の行（y 24、18 px、行の高さは文字の約 1.2 倍）の下端 < 時計の上端 < 時計の下端 < HP の行（HUD_MARGIN + HP_BAR_OFFSET_Y 58）
+     expect(HUD_MARGIN + 18 * 1.2).toBeLessThan(ROW2_Y);
 diff --git a/tests/dawn-lines.test.ts b/tests/dawn-lines.test.ts
 index c3bffe5..a8f367f 100644
 --- a/tests/dawn-lines.test.ts
@@ -955,6 +1067,67 @@ index cbe8982..b1c55f0 100644
      const wb = code('systems/world-boat.ts');
      expect(wb).toContain('w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input');
      expect(wb).toContain('if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);');
+diff --git a/tests/hud-layout.test.ts b/tests/hud-layout.test.ts
+index 926ad29..b459d9b 100644
+--- a/tests/hud-layout.test.ts
++++ b/tests/hud-layout.test.ts
+@@ -5,6 +5,8 @@
+ // y ≥ 682（ホームバーの帯）に入るのはどの任務も扇だけ。
+ // v0.6.9 S6a: jp_04（煙幕なし・味方機なし）を足し、右上 2 段目の揚陸の時計（ui/landing-clock。左上の夜明けの時計の鏡）の箱が、jp_04 にあるどのボタンの当たり・2 行目・ビルド番号にも
+ // 触れないこと（煙幕の段は空いている。煙幕があれば重なる＝Boot の V12）を確かめる。
++import { createEvacTelemetry } from '../src/core/evac-telemetry';
++import { evacStatusLine } from '../src/ui/evac-lines';
+ import { readFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+ import {
+@@ -42,7 +44,7 @@ const H = 720;
+ const M = 24;
+ const WIDTHS = [1280, 1344, 1560, 1584];
+ /** 任務ごとの技能のボタン（煙幕は艇の煙幕発生器・識別は今夜の味方機）と機関の表示。兵装の置き方は main_weapon に関わらず同じ（v0.6.8 実機 1 回目） */
+-const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean }, { engine?: boolean }]> = {
++const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean; switch?: boolean }, { engine?: boolean }]> = {
+   us_01: [{ smoke: true, identify: false }, {}],
+   us_02: [{ smoke: true, identify: true }, {}],
+   us_03: [{ smoke: true, identify: false }, {}],
+@@ -51,6 +53,7 @@ const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean }, { engine?
+   jp_05: [{ smoke: false, identify: false }, { engine: true }],
+   jp_06: [{ smoke: false, identify: false }, {}],
+   jp_04: [{ smoke: false, identify: false }, {}],
++  jp_03: [{ smoke: false, identify: false, switch: true }, {}], // v0.6.11 S5: 識別の段（y 404）に［切替］
+ };
+ 
+ const circleHit = (b: PanelCircle): PanelRect => ({ x0: b.x - b.r - HIT_PAD, y0: b.y - b.r - HIT_PAD, x1: b.x + b.r + HIT_PAD, y1: b.y + b.r + HIT_PAD });
+@@ -240,3 +243,30 @@ describe('右下の兵装と右端の技能（config/hud-layout-config）', () =
+     }
+   });
+ });
++
++describe('3 行目の箱と空襲下の退避の隊の行（v0.6.11 S5。spec-v0611-r2 §10.2・r2 H4）', () => {
++  it('隊の行のいちばん長い形（20 px）は line3 の箱（W/2 ± 300）に収まり、W 1280 でも左上の HP・燃料の箱（x ≤ 342）と右端の技能の当たり（［切替］を含む）に触れない', () => {
++    const e = createEvacTelemetry(6);
++    e.groupLabels = ['第1隊', '第2隊', '第3隊', '第4隊', '第5隊', '第6隊'];
++    e.total = 18;
++    let longest = '';
++    for (const hp of [[60, 60, 60], [1, 1, 1]])
++      for (const next of [239.9, NaN]) {
++        Object.assign(e, { control: 5, survivors: 18, hiddenBoats: 18, nextWaveS: next, settled: false });
++        e.hp.set(hp);
++        const s = evacStatusLine(e);
++        if (textW(s, 20) > textW(longest, 20)) longest = s;
++      }
++    expect(longest).toBe('第6隊 HP 60・60・60 ・ 残 18／18 ・ 隠 18 ・ 次 4:00');
++    for (const W of WIDTHS) {
++      const fb = fixedBoxes(W, false);
++      const w = textW(longest, 20);
++      const box: PanelRect = { x0: W / 2 - w / 2, y0: fb['line3']!.y0, x1: W / 2 + w / 2, y1: fb['line3']!.y1 };
++      expect(box.x0).toBeGreaterThanOrEqual(fb['line3']!.x0);
++      expect(box.x1).toBeLessThanOrEqual(fb['line3']!.x1);
++      for (const k of ['hp', 'fuel', 'clock']) expect(inter(box, fb[k]!), k).toBe(false);
++      for (const s of panelLayout(W, { smoke: false, identify: false, switch: true }).skills) expect(inter(box, skillHit(s)), s.kind).toBe(false);
++    }
++    expect(textW(longest, 20)).toBeLessThanOrEqual(2 * (640 - 342));
++  });
++});
 diff --git a/tests/landing-markers.test.ts b/tests/landing-markers.test.ts
 index 053bad2..1b8a252 100644
 --- a/tests/landing-markers.test.ts
