@@ -79,11 +79,11 @@ describe('起動時の検査 V-E1〜V-E14（壊した data は鍵を名指して
     expect(build((d) => { const c = (evacOf(d)['shelters'] as Rec[])[1]!; c['x_m'] = 30; c['exit_heading_deg'] = 90; })).toThrow(/evac\.shelters\[1\]（西の壕） から出た縦列（exit_heading_deg 90・moored_gap_m）の 3 隻目.*V-E1/); // 艇尾は西: x 30・18・6
   });
   it('V-E2: 停泊地のどの艇も輪の縁から 20 m 以上外（ちょうど 20 m は通る）', () => {
-    // 第1隊の隊長艇を隊長艇の壕の真北へ: 中心から 70 + 20 = 90 m は通り、89 m は止まる
+    // 第1隊の隊長艇を中の壕の真北へ: 中心から 70 + 20 = 90 m は通り、89 m は止まる
     const at = (dy: number) => build((d) => { const g = (evacOf(d)['groups'] as Rec[])[0]!; g['x_m'] = 1600; g['y_m'] = 1150 - dy; g['heading_deg'] = 0; const ps = protoOf(d, 'jp_03')['player_start'] as Rec; ps['x_m'] = 1600; ps['y_m'] = 1150 - dy; ps['heading_deg'] = 0; });
     expect(EVAC_CHECK_MOORED_CLEAR_M).toBe(20);
     expect(at(90 + 2 * 12)).not.toThrow(); // 3 隻目（艇尾の方向＝南へ 24 m）がちょうど 90 m
-    expect(at(89 + 2 * 12)).toThrow(/evac\.groups\[0\]（第1隊） の 3 隻目は 隊長艇の壕 の輪の縁から 20 m 以上外.*V-E2/);
+    expect(at(89 + 2 * 12)).toThrow(/evac\.groups\[0\]（第1隊） の 3 隻目は 中の壕 の輪の縁から 20 m 以上外.*V-E2/);
   });
   it('V-E3: 隠れ場所どうしの中心は 2 × 輪 ＋ 100 m 以上', () => {
     // 陰（東）を東の壕（2550, 1150）の西へ: 2550 − 240 ちょうどは通る（S3b で陰（西）を外したので相手は壕）

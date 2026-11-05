@@ -331,7 +331,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -905,7 +905,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -1479,7 +1479,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -2053,7 +2053,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -2627,7 +2627,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -3201,7 +3201,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -3775,7 +3775,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,
@@ -4349,7 +4349,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "shelters": [
     {
      "id": "home_cave",
-     "labelJa": "隊長艇の壕",
+     "labelJa": "中の壕",
      "kind": 0,
      "x": 1600,
      "y": 1150,

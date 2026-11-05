@@ -248,11 +248,14 @@ export function evacBannerLines(e: EvacTelemetry): readonly string[] {
   return [e.annKind === EVA_REPASS ? `第${e.annWave + 1}波 — 編隊が戻ってきた` : `第${e.annWave + 1}波 — 空襲 ${e.annPlanes}機×${e.annFlights}`];
 }
 
-/** 決着（240 秒）の中央の帯（ui/dawn-lines の dawnBannerLines が day_start の任務だけ呼ぶ）。strike は §2 の 4 機の説明（来ない夜は ''） */
+/**
+ * 決着（240 秒）の中央の帯（ui/dawn-lines の dawnBannerLines が day_start の任務だけ呼ぶ）。strike は §2 の 4 機の説明（来ない夜は ''）。
+ * 外の夜（strike あり）は「確定」と言わない（v0.6.11 S8: 外の座席が追撃で沈めば残存は 1 減る＝core/evac-seat の evacSinkLeader）
+ */
 export function evacSettleBannerLines(e: EvacTelemetry, strike: string): readonly string[] {
   const head = '第1次の空襲が去った';
-  const fixed = `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`;
-  return strike ? [head, fixed, `${strike} ・ 壕か陰へ`] : [head, fixed];
+  if (!strike) return [head, `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`];
+  return [head, `残存 ${e.survivors}／${e.total}（${e.quota} 隻以上で達成 ・ 隊長艇が沈めば 1 減る）`, `${strike} ・ 壕か陰へ`];
 }
 
 /** 地図の上の隊の番号の見え方（ui/evac-markers。変わったときだけ色と字を書く）: 0 停泊・1 走る・2 隠れた・3 見つかった・4 狙われている・5 全滅 */

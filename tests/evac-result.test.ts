@@ -52,7 +52,7 @@ function trial(hard: boolean, policy: EvacPolicy, seed: number): { e: EvacResult
 
 const E0: EvacResult = {
   total: 18, quota: 6, historical: 5, survivors: 8, seatAfloat: true, cave: 6, cover: 2, outside: 0, byGroup: [3, 2, 0, 1, 2, 0],
-  aimed: 9, again: 2, lost: 3, came: 6, downed: 1, bombs: 40, boatHits: 12, switches: 7, promotions: 2,
+  aimed: 9, again: 2, lost: 3, came: 6, downed: 1, chaseDowned: 0, bombs: 40, boatHits: 12, switches: 7, promotions: 2,
   settlePlace: EVR_HIDDEN, settleGroupJa: '第1隊', settleShelterJa: '西の壕', settleSurvivors: 8,
 };
 const dawn = (o: Partial<DawnResult> = {}): DawnResult => ({ ...createDawnResult(), reached: true, air: DAWN_AIR_ENEMY, ...o });
@@ -131,6 +131,8 @@ describe('Result の文（ui/evac-result）', () => {
     expect(evacHeadLineJa(E0, false)).toBe('残存 8／18（史実 5） ・ 未達（操作中の隊が隠れずに終わった）');
     expect(evacPlacesLineJa(E0)).toBe('壕 6 ・ 陰 2 ・ 外 0 ／ 沈没 10 ・ 隊ごと 3・2・0・1・2・0');
     expect(evacFlightsLineJa(E0)).toBe('見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 1 機');
+    // 240 秒の後の追撃の機も兵装の行と同じに数え、内訳を出す（v0.6.11 S8）
+    expect(evacFlightsLineJa({ ...E0, chaseDowned: 1 })).toBe('見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 2 機（うち追撃 1）');
     expect(evacRecordLineJa(E0)).toBe('爆撃 6 回 ・ 爆弾 40 発 ・ 艇に命中 12 ・ 切替 7 回 ・ 隊長艇の交代 2');
     expect(evacScorePartJa(E0, 300, 210, 30)).toBe('達成 300 ・ 残った艇 210（7 隻 × 30）');
     expect(evacScorePartJa({ ...E0, seatAfloat: false }, 0, 240, 30)).toBe('達成 0 ・ 残った艇 240（8 隻 × 30）');
@@ -148,7 +150,8 @@ describe('Result の文（ui/evac-result）', () => {
     const out = { ...E0, settlePlace: EVR_OUTSIDE, settleGroupJa: '第3隊', settleShelterJa: '' };
     const o = dawn({ caughtOutside: true, strike });
     expect(evacTimeLinesJa(out, o, 'returned', true)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた', '追撃: 1 波 ・ 爆弾 8 発 ・ 命中 0 ・ 転舵 0.6/— 秒']);
-    expect(evacTimeLinesJa(out, o, 'air_strike', false)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 隠れる前に沈没', '追撃: 1 波 ・ 爆弾 8 発 ・ 命中 0 ・ 転舵 0.6/— 秒']);
+    // 外の座席が追撃で沈むと残存は確定の後に 1 減る（頭の行は 7）。減った数を時の行に書く（v0.6.11 S8）
+    expect(evacTimeLinesJa({ ...out, survivors: 7 }, o, 'air_strike', false)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 隠れる前に沈没（隊長艇の分 −1 で 7）', '追撃: 1 波 ・ 爆弾 8 発 ・ 命中 0 ・ 転舵 0.6/— 秒']);
     expect(evacTimeLinesJa(out, dawn({ caughtOutside: true }), 'adrift', false)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 隠れる前に燃料切れで漂流', '']);
     // 味方の空（来ない任務の形）・中だった夜は追撃の行を出さない
     expect(evacStrikeLineJa(out, dawn({ caughtOutside: true, air: DAWN_AIR_OWN, strike }))).toBe('');
@@ -158,7 +161,7 @@ describe('Result の文（ui/evac-result）', () => {
     expect(evacTimeLineJa({ ...none, survivors: 3 }, createDawnResult(), 'air_strike', false)).toBe('空襲が去る時: 操作中の隊長艇が沈む途中');
   });
   it('幅（Result の行は 1,232 px の内。縮めない）: 数のいちばん長い形', () => {
-    const big: EvacResult = { ...E0, survivors: 18, cave: 18, cover: 18, outside: 18, byGroup: [3, 3, 3, 3, 3, 3], aimed: 99, again: 99, lost: 99, came: 99, downed: 36, bombs: 999, boatHits: 99, switches: 999, promotions: 18, settleShelterJa: '屋我地の陰（東）', settleSurvivors: 18 };
+    const big: EvacResult = { ...E0, survivors: 18, cave: 18, cover: 18, outside: 18, byGroup: [3, 3, 3, 3, 3, 3], aimed: 99, again: 99, lost: 99, came: 99, downed: 36, chaseDowned: 4, bombs: 999, boatHits: 99, switches: 999, promotions: 18, settleShelterJa: '屋我地の陰（東）', settleSurvivors: 18 };
     const lines: [string, number][] = [
       [evacHeadLineJa(big, false), 24],
       [evacHeadLineJa({ ...big, survivors: 5 }, false), 24],
@@ -166,9 +169,9 @@ describe('Result の文（ui/evac-result）', () => {
       [evacFlightsLineJa(big), 20],
       [evacRecordLineJa(big), 20],
       [evacTimeLineJa({ ...big, settlePlace: EVR_ENTERING }, dawn(), 'returned', true), 20],
-      [evacTimeLineJa({ ...big, settlePlace: EVR_OUTSIDE }, dawn({ caughtOutside: true }), 'adrift', false), 20],
+      [evacTimeLineJa({ ...big, settlePlace: EVR_OUTSIDE, survivors: 17 }, dawn({ caughtOutside: true }), 'adrift', false), 20],
       [evacStrikeLineJa({ ...big, settlePlace: EVR_OUTSIDE }, dawn({ caughtOutside: true, strike: { ...strike, waves: 99, bombs: 999, hitsPlayer: 99, dodgeS: new Array(12).fill(12.3) } })), 20],
-      [`帰投 630（空襲後 ×0.9） ・ ${evacScorePartJa(big, 300, 510, 30)} ・ 燃料 100 ・ 乗員 100`, 20],
+      [`退避 630（空襲後 ×0.9） ・ ${evacScorePartJa(big, 300, 510, 30)} ・ 燃料 100 ・ 乗員 100`, 20],
     ];
     for (const [t, px] of lines) expect(textWidthPx(t, px), t).toBeLessThanOrEqual(RESULT_MAX_W);
   });

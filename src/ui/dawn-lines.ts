@@ -115,8 +115,11 @@ export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boo
   let warn = true;
   if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : strikeFallJa(d.fallingArc);
   else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下で転舵` : strikeRunJa(d.plane);
-  else if (d.threat === AS_T_INBOUND) text = `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M} m ・ 帰投を急げ`;
-  else if (d.threat === AS_T_ORBIT) {
+  else if (d.threat === AS_T_INBOUND) {
+    // 昼の任務（v0.6.11 S8。jp_03 は「帰投」と言わない＝240 秒の後の §2 の 4 機は隠れ場所まで追う「追撃」）
+    const m = Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M;
+    text = d.dayStart ? `追撃！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${m} m ・ 壕か陰へ急げ` : `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${m} m ・ 帰投を急げ`;
+  } else if (d.threat === AS_T_ORBIT) {
     text = strikeOrbitJa(d.plane, d.bombsLeft);
     warn = false;
   } else {

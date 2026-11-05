@@ -17,14 +17,14 @@ import {
 } from '../src/core/evac-telemetry';
 import { evacSimSetup } from '../src/systems/evac-sim-setup';
 import { initEvacTelemetry, refreshEvacTelemetry } from '../src/systems/evac-telemetry';
-import { clockJa, dawnBannerLines } from '../src/ui/dawn-lines';
+import { clockJa, dawnBannerLines, strikeLine } from '../src/ui/dawn-lines';
 import {
   EVAC_LINE_MAX_PX, EVAC_STATUS_MAX_PX, EVL_ANNOUNCE, EVL_NORMAL, evacAnnounceJa, evacBannerLines, evacLine, evacLineKey, evacLineMode, evacSettleBannerLines, evacStatusKey, evacStatusLine, jaWidthPx, mssJa, shortPlaceJa,
 } from '../src/ui/evac-lines';
 import { composeLineKeys, createLineKeys } from '../src/ui/mission-line-keys';
-import { MISSION_ADRIFT, MISSION_EVAC, MISSION_STRIKE, missionMode } from '../src/ui/mission-mode';
+import { MISSION_ADRIFT, MISSION_EVAC, MISSION_STRIKE, MISSION_WAITING, missionMode } from '../src/ui/mission-mode';
 import { specialLine } from '../src/ui/special-line';
-import { AS_T_FALLING, AS_T_REST } from '../src/core/air-strike';
+import { AS_T_FALLING, AS_T_INBOUND, AS_T_REST } from '../src/core/air-strike';
 import { CALL_DAWN } from '../src/core/mission-flow';
 import { miniWorld, type MiniWorld } from './evac-world-kit';
 import { tele, textWidthPx } from './pt-ui-kit';
@@ -37,10 +37,10 @@ describe('文の見積もりと形', () => {
   it('jaWidthPx は tests/pt-ui-kit の textWidthPx と同じ・m:ss・長い場所の名だけ短く', () => {
     for (const s of ['第1隊 屋我地の陰（東）で待機', '爆弾投下！ 転舵！', 'HP 60・沈・60', '1420 m']) expect(jaWidthPx(s, 22)).toBeCloseTo(textWidthPx(s, 22), 9);
     expect([mssJa(0), mssJa(5.2), mssJa(65), mssJa(240), mssJa(1224)]).toEqual(['0:00', '0:06', '1:05', '4:00', '20:24']);
-    expect([shortPlaceJa('屋我地の陰（東）'), shortPlaceJa('西の壕'), shortPlaceJa('隊長艇の壕')]).toEqual(['陰（東）', '西の壕', '隊長艇の壕']);
+    expect([shortPlaceJa('屋我地の陰（東）'), shortPlaceJa('西の壕'), shortPlaceJa('中の壕')]).toEqual(['陰（東）', '西の壕', '中の壕']);
     const e = base();
     expect(e.enabled).toBe(true);
-    expect([e.groupLabels.length, e.shelterLabels, e.total, e.quota, e.historical, e.fromJa, e.dawnPlanes]).toEqual([6, ['隊長艇の壕', '西の壕', '東の壕', '屋我地の陰（東）'], 18, 6, 5, '東', 4]);
+    expect([e.groupLabels.length, e.shelterLabels, e.total, e.quota, e.historical, e.fromJa, e.dawnPlanes]).toEqual([6, ['中の壕', '西の壕', '東の壕', '屋我地の陰（東）'], 18, 6, 5, '東', 4]);
   });
 });
 
@@ -128,7 +128,7 @@ describe('2 行目（22 px で ≤ 840 px。spec §10.1）', () => {
     // 待機の行は陰（東）では「陰（東）」に縮む（840 px を超えるため。spec §18）、壕は名のまま
     const wait = (s: number, latch: number): string => evacLine(clone(e0, { phase: G_HIDDEN, shelter: s, latch, leftS: 65 })).text;
     expect(wait(3, SW_WAIT_NEUTRAL)).toBe('第1隊 陰（東）で待機 ・ 空襲が去るまで 1:05 ・ 離してから倒すと出る');
-    expect(wait(0, SW_WAIT_INPUT)).toBe('第1隊 隊長艇の壕で待機 ・ 空襲が去るまで 1:05 ・ 倒すと出る');
+    expect(wait(0, SW_WAIT_INPUT)).toBe('第1隊 中の壕で待機 ・ 空襲が去るまで 1:05 ・ 倒すと出る');
     expect(evacLine(clone(e0, { near: 3, nearFree: 3, nearEdgeM: 1407 })).text).toBe('第1隊を操作中 ・ 近い隠れ場所 屋我地の陰（東） 空き 3 ・ 1420 m');
     expect(evacLine(clone(e0, { event: EVE_SINK, eventSub: EVS_LEADER, eventGroup: 1, eventN: 14, eventTargeted: true })).text).toBe('第2隊の隊長艇 沈没 ・ 僚艇が隊長艇に（残存 14） ・ 編隊は第2隊を追う');
     expect(evacLine(clone(e0, { event: EVE_SINK, eventSub: EVS_SEAT, eventN: 14, eventTargeted: false })).text).toBe('隊長艇 沈没！ 僚艇に乗り移った（残存 14）');
@@ -198,7 +198,18 @@ describe('昼の言い方（day_start の任務だけ。spec §10.3・r2 M9）',
     const lines = dawnBannerLines(tele({}, { dawn: d, evac: e }));
     expect(lines).toEqual(evacSettleBannerLines(e, '米艦載機 4 機が東から来る ・ 投下で転舵（旋回中は逆へ）'));
     expect(lines[0]).toBe('第1次の空襲が去った');
+    // 外の夜は「確定」と言わない（外の座席が追撃で沈めば 1 減る。v0.6.11 S8）、中の夜は「確定」
+    expect(lines[1]).toBe('残存 8／18（6 隻以上で達成 ・ 隊長艇が沈めば 1 減る）');
+    expect(evacSettleBannerLines(e, '')).toEqual(['第1次の空襲が去った', '残存 8／18 で確定（6 隻以上で達成）']);
     for (const s of lines) expect(s).not.toContain('夜明け');
+  });
+  it('240 秒の後の §2 の 4 機の接近の行は「追撃！ … 壕か陰へ急げ」（jp_03 は「帰投」と言わない。v0.6.11 S8）。ほかの任務は「空襲！ … 帰投を急げ」のまま', () => {
+    const d = { ...createDawnTelemetry(), reached: true, air: DAWN_AIR_ENEMY, strikeEnabled: true, nameJa: '米艦載機', count: 4, fromJa: '東', threat: AS_T_INBOUND, inboundDistM: 2480 };
+    const day = strikeLine(tele({}, { dawn: { ...d, dayStart: true }, evac: base() }), 0, false, false).text;
+    expect(day).toBe('追撃！ 敵機 4 機 ・ 東から 2500 m ・ 壕か陰へ急げ');
+    expect(textWidthPx(day, 22)).toBeLessThanOrEqual(EVAC_LINE_MAX_PX);
+    for (const w of ['帰投', '夜明け']) expect(day).not.toContain(w);
+    expect(strikeLine(tele({}, { dawn: d }), 0, false, false).text).toBe('空襲！ 敵機 4 機 ・ 東から 2500 m ・ 帰投を急げ');
   });
 });
 
@@ -324,6 +335,10 @@ describe('2 行目のモード（ui/mission-mode の MISSION_EVAC・ui/special-l
     expect(missionMode(tele({}, { evac: e, dawn: { ...createDawnTelemetry(), reached: true, threat: AS_T_FALLING } }), 0, 0)).toBe(MISSION_STRIKE);
     expect(missionMode(tele({}, { evac: e, dawn: { ...createDawnTelemetry(), reached: true, threat: AS_T_REST } }), CALL_DAWN, 0)).toBe(MISSION_EVAC);
     expect(missionMode(tele({}, { evac: e, fuelEmpty: true }), 0, 0)).toBe(MISSION_ADRIFT);
+    // 決着の前に隠れて魚雷が走っている（v0.6.11 S8）: 任務は終わらない（evacHold）ので「帰投 — 魚雷の決着待ち」は出さない。決着の後と、ほかの任務は今までどおり待ち
+    expect(missionMode(tele({}, { evac: e, homeWaiting: true }), 0, 0)).toBe(MISSION_EVAC);
+    expect(missionMode(tele({}, { evac: clone(e, { settled: true }), homeWaiting: true }), 0, 0)).toBe(MISSION_WAITING);
+    expect(missionMode(tele({}, { homeWaiting: true }), 0, 0)).toBe(MISSION_WAITING);
     expect(missionMode(tele({}, {}), 0, 0)).not.toBe(MISSION_EVAC);
     expect(specialLine(t, MISSION_EVAC, { landingEv: t.landing })).toEqual(evacLine(e));
     expect(specialLine(tele({}, {}), MISSION_EVAC, { landingEv: t.landing })).toBeNull();

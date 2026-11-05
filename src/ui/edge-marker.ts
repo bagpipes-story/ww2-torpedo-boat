@@ -55,9 +55,11 @@ export class EdgeMarker {
   /**
    * 毎フレーム。目標の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する。
    * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）。
-   * drawn=false（目標の絵が出ていない。隼艇は自艇の視程の外）なら画面の内でも隠さず、方位どおり縁に置く（v0.6.6 レビュー ux:ux-1。既定 true＝今のまま）
+   * drawn=false（目標の絵が出ていない。隼艇は自艇の視程の外）なら画面の内でも隠さず、方位どおり縁に置く（v0.6.6 レビュー ux:ux-1。既定 true＝今のまま）。
+   * distOx/distOy は distM を渡さない時の距離の原点のずれ（距離 = |(dx + distOx, dy + distOy)|。v0.6.11 S8: 空襲下の退避の矢印はカメラの中心へ置き直した dx を渡し、
+   * 距離は座席から＝平方根は画面の外に出す矢印だけ。既定 0＝今のまま）
    */
-  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true): void {
+  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true, distOx = 0, distOy = 0): void {
     if (!show || Number.isNaN(dx)) {
       this.setShown(false);
       return;
@@ -85,7 +87,7 @@ export class EdgeMarker {
     this.arrow.setPosition(mx, my).setAngle(radToDeg(Math.atan2(sx, -sy)));
     const gap = TARGET_MARKER_MARGIN * 0.35;
     this.label.setPosition(mx, this.opts.labelAbove ? my - gap : my + gap);
-    const dist = distM ?? Math.hypot(dx, dy);
+    const dist = distM ?? Math.hypot(dx + distOx, dy + distOy);
     const step = this.opts.roundUp ? Math.ceil(dist / this.opts.stepM) : Math.round(dist / this.opts.stepM);
     if (step !== this.lastDistanceStep) {
       this.lastDistanceStep = step;

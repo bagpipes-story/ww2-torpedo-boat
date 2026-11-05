@@ -56,7 +56,7 @@ export function evacSinkWingman(sq: EvacSquadron, b: EvacBoat, nowS: number): vo
 
 /**
  * 隊長艇の記録が沈んだ後の交代（記録の側だけ。座席・編隊・HUD は core/evac-seat の evacSinkLeader）。新しい隊長艇＝浮いている最小の番号。
- * 隠れ場所の中（r2 M12）: (a) 上げている隊で浮いている艇がみな上がっていれば G_HIDDEN、(b) 入っている隊は枠を取り直し、新しい隊長艇が輪の外なら取りやめ。
+ * 隠れ場所の中（r2 M12）: (a) 上げている隊で浮いている艇がみな上がっていれば G_HIDDEN、(b) 入っている隊は枠を取り直し、新しい隊長艇が輪の外なら取りやめ・輪の中なら止める（入るのを続ける）。
  * 航跡は新しい隊長艇の艇尾方向で満たし直し、帯はその時の速さで決める。全滅なら枠を返して G_GONE。新しい隊長艇の番号（全滅は −1）を返す
  */
 export function evacPromote(sq: EvacSquadron, g: EvacGroup): number {
@@ -79,9 +79,11 @@ export function evacPromote(sq: EvacSquadron, g: EvacGroup): number {
   lead.band = nextSpeedBand(lead.band, lead.state.speedMps, lead.params);
   if (g.phase === G_HAULING) evacHaulAdvance(g, sq.p.haulS);
   if (g.phase === G_HAULING || g.phase === G_HIDDEN) evacSetHold(g);
-  else if (g.phase === G_ENTERING && !evacInRing(sq, g.shelter, lead.state.x, lead.state.y)) {
-    evacReleaseShelter(sq, g);
-    g.phase = G_UNDERWAY;
+  else if (g.phase === G_ENTERING) {
+    if (!evacInRing(sq, g.shelter, lead.state.x, lead.state.y)) {
+      evacReleaseShelter(sq, g);
+      g.phase = G_UNDERWAY;
+    } else lead.state.speedMps = 0; // 枠の点へ寄っていた僚艇の速さを持ち越さない（v0.6.11 S8。操作中なら次のステップに取りやめ、操作していなければ止まった艇の先を爆弾が狙った）
   }
   evacTrailReset(g, sq.p.trailStepM);
   return nl;
@@ -210,7 +212,8 @@ export function evacStepShelters(sq: EvacSquadron, realDt: number): void {
       }
     } else if (g.phase === G_FOUND) {
       if (gi === sq.control) {
-        if (lead.state.speedMps > p.hideMaxMps) leaveFound(sq, g);
+        // 動かせば出る: hide_max を超えた・輪の外へ出た（v0.6.11 S8。2 kt 以下で這い出ると僚艇を陰に残したまま G_FOUND で離れた）
+        if (lead.state.speedMps > p.hideMaxMps || !evacInRing(sq, g.shelter, lead.state.x, lead.state.y)) leaveFound(sq, g);
       } else {
         g.foundLeftS -= realDt;
         if (g.foundLeftS <= 0) leaveFound(sq, g);

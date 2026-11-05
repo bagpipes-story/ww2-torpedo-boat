@@ -131,7 +131,8 @@ export class WorldEvac {
     };
     const ref: { air: EvacAirStep | null } = { air: null };
     const plan = createEvacPlan(sq, ev.raid, ev.sorties, seed, (i, p, rng) => makePort(i, p, rng, (x, y) => void evacImpact(ref.air!, i, x, y)));
-    const world: EvacAirWorld = { hitSeat: (spec, rng, x, y) => hit(spec, rng, x, y), hitRecord: (_b, x, y) => splash(x, y, true), splash: (x, y) => splash(x, y, true) };
+    // 座席でない艇への命中の水柱はその艇の上に（v0.6.11 S8: 着弾の点に置くと 1 発で 2〜4 隻に当たった時に同じ点へ重なった。どの艇が当たったかも見える）
+    const world: EvacAirWorld = { hitSeat: (spec, rng, x, y) => hit(spec, rng, x, y), hitRecord: (b) => splash(b.state.x, b.state.y, true), splash: (x, y) => splash(x, y, true) };
     this.air = ref.air = createEvacAirStep({ plan, sq, seat, hooks: evacPlanHooks(plan, inner), world }, seed);
     this.aaOrder = new Int32Array(plan.flights.length);
     this.aaD2 = new Float64Array(plan.flights.length);

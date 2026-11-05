@@ -104,7 +104,7 @@ export class HudScene extends Phaser.Scene {
     };
     // 右側のパネル（右下の兵装・右端の技能。作る順は v0.6.7 と同じ: スティックの後・キーボードの前。前回の値は panel が持つので再開で引きずらない）
     this.panel = new WeaponPanel(this, input, data, mission, this.telemetry, spread);
-    this.keyboard = new KeyboardInput(this, input);
+    this.keyboard = new KeyboardInput(this, input, this.telemetry.evac.enabled); // Tab の［切替］は空襲下の退避の任務だけ（v0.6.11 S8）
     // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
     this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);

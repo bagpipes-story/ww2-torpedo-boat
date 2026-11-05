@@ -104,7 +104,7 @@ export function evacSwitchOrder(sq: EvacSquadron): number {
 
 /**
  * 押した時に移る隊: 並びの中で今の隊の次（末尾なら先頭。今の隊が並びに無ければ先頭）。移る先が無い・決着の後は −1（灰色の「切替」）。
- * out を渡せば並びをそこに作る（v0.6.11 S5。HUD のボタンの字「切替 4」を毎フレーム見る＝sq.order・orderLen を書かない。世界と模擬の突き合わせが sq を比べる）
+ * out を渡せば並びをそこに作る（v0.6.11 S5。HUD のボタンの字「切替」「第4隊」を毎フレーム見る＝sq.order・orderLen を書かない。世界と模擬の突き合わせが sq を比べる）
  */
 export function evacNextSwitch(sq: EvacSquadron, out: Int32Array = sq.order): number {
   if (sq.settled) return -1;

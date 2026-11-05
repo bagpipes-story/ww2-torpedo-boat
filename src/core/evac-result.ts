@@ -2,6 +2,7 @@
 // もう一度来る編隊（core/evac-repass）と決着の時の写し（systems/world-evac が夜明けのラッチのステップに取る）から数える。文は ui/evac-result、点は core/scoring。
 // 残存は座席の艇を含む 18 中（r2 L2）。編隊の数は 1 回ごと（S3b の U7: 予告し直した回も数える＝模擬の表 core/evac-sim-cell と同じ数え方。分母は「狙われた回」＝目標の無い編隊は数えない＝r2 L1）。
 // Phaser 非依存・乱数なし。配列は作る時の 1 回だけ（毎フレームの処理は無い）。
+import { AA_SRC_DAWN } from './aa-fire';
 import { G_ENTERING, G_HAULING, G_HIDDEN, SHELTER_COVER } from './evac-data';
 import { EO_LOST, EO_LOST_EARLY, EO_NO_TARGET, type EvacPlan } from './evac-plan';
 import type { EvacRepass } from './evac-repass';
@@ -49,6 +50,8 @@ export interface EvacResult {
   lost: number;
   came: number;
   downed: number;
+  /** 240 秒の後の追撃（§2 の敵機 4 機）で撃墜した機（v0.6.11 S8。兵装の行の「撃墜 N 機」は全部の機を数えるので、3 行目は downed ＋ これで同じ数にして内訳を出す） */
+  chaseDowned: number;
   /** 投下した爆弾・艇への命中（巻き添えを含む） */
   bombs: number;
   boatHits: number;
@@ -82,8 +85,8 @@ function settlePlaceOf(s: EvacSettleSnap): number {
   return s.phase === G_HIDDEN ? EVR_HIDDEN : s.phase === G_ENTERING ? EVR_ENTERING : s.phase === G_HAULING ? EVR_HAULING : EVR_OUTSIDE;
 }
 
-/** 任務の終わりに 1 回（mission-telemetry の buildMissionResult。systems/mission-result-extras の evacResultPart）。seatAfloat は座席が沈んでいない（世界の boat.sinking の逆） */
-export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean): EvacResult {
+/** 任務の終わりに 1 回（mission-telemetry の buildMissionResult。systems/mission-result-extras の evacResultPart）。seatAfloat は座席が沈んでいない（世界の boat.sinking の逆）、chaseDowned は追撃の撃墜 */
+export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean, chaseDowned = 0): EvacResult {
   const { sq, plan } = ev;
   const rp = ev.air.repass;
   const raid = plan.raid;
@@ -127,6 +130,7 @@ export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean): EvacRes
     lost,
     came: plan.came,
     downed,
+    chaseDowned,
     bombs: plan.releases,
     boatHits: plan.boatHits,
     switches: sq.switches,
@@ -142,8 +146,12 @@ export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean): EvacRes
  * 任務の終わりの材料（systems/mission-telemetry の buildMissionResult が広げる。jp_03 だけ evac の鍵＝本文の頭の 4 行・時の行・残った艇の点。無い任務は鍵ごと無い＝ほかの任務の Result は同じ）。
  * 世界は構造の型で読む（MissionWorld がそのまま満たす。systems/mission-result-extras に置くと、Result の型を読む tests の node の型検査に Phaser と DOM が入る＝systems/mission-objective の前例）
  */
-export function evacResultPart(w: { readonly evac: EvacResultSource | null; readonly boat: { readonly sinking: boolean } }): { evac?: EvacResult } {
-  return w.evac ? { evac: evacResultOf(w.evac, !w.boat.sinking) } : {};
+export function evacResultPart(w: {
+  readonly evac: EvacResultSource | null;
+  readonly boat: { readonly sinking: boolean };
+  readonly arms?: { readonly downsBy: readonly number[] } | null;
+}): { evac?: EvacResult } {
+  return w.evac ? { evac: evacResultOf(w.evac, !w.boat.sinking, w.arms?.downsBy[AA_SRC_DAWN] ?? 0) } : {};
 }
 
 /** 残った艇の点の隻数（座席の艇は帰投の 700 で数えるので除く。scoring.json の evac.points_per_survivor × これ。spec §3.10） */

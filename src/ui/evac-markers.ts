@@ -177,7 +177,7 @@ export class EvacEdgeMarkers {
       const dx = e.groupDx[gi]!;
       const dy = e.groupDy[gi]!;
       m.setPrefix(e.groupLabels[gi] ?? '');
-      m.refresh(dx - ox, dy - oy, true, t, Math.sqrt(dx * dx + dy * dy));
+      m.refresh(dx - ox, dy - oy, true, t, undefined, true, ox, oy); // 距離は座席から（EdgeMarker が画面の外の時だけ平方根。v0.6.11 S8）
       this.place(m, TARGET_RECT, k - 1);
     }
     for (; k < this.targets.length; k++) this.targets[k]!.refresh(NaN, NaN, false, t);

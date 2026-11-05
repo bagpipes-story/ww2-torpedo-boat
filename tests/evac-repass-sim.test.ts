@@ -1,5 +1,5 @@
 // v0.6.11 S3b（data evac_raid.passes_max 2＝U7・hard.evac_passes_max）: もう一度来る編隊（core/evac-repass）の模擬の側。tests/evac-repass（段取りの rig）の続き（300 行の内に分けた）。
-// passes_max 1（上書き）は S3 と同じ（模擬の 6 回の指紋が 333c8ec の木の core に S3b の data を入れたものと同じ・予告し直さない）。passes_max 2 の乱数（+29 は波ごとのまま・
+// passes_max 1（上書き）は S3 と同じ（模擬の 6 回の指紋が 333c8ec の木の core に S3b の data を入れたものと同じ。S8 の core の直しで 1 行だけ変わった・予告し直さない）。passes_max 2 の乱数（+29 は波ごとのまま・
 // +30 は時計だけ・+31 と編隊の系列は投下の数）・終わり方は 1 回ごとに足し合う（closed）・模擬の表の監視の列・つまみ（PASSES・PASSESH）・確保は作る時だけ。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -25,14 +25,16 @@ describe('passes_max 1（上書き＝S3 の挙動）は S3 の木と同じ', () 
       const t = runEvacTrial(s, pol as EvacPolicy, seed);
       return [t.end, t.survivors, t.survivorsAtSettle, Math.round(t.timeS * 1000), t.draws29, t.draws30, t.draws31, t.drawsFlights, t.came, t.done, t.boatHits, t.seatHits, t.downs, t.rounds, t.switches];
     });
-    // 333c8ec の木の core/evac-sim に S3b の data（missions_seed・risk_events。evac_raid の passes_max・passes_max_source を除く）を入れ、同じ式（使い捨ての束）から取った値
+    // 333c8ec の木の core/evac-sim に S3b の data（missions_seed・risk_events。evac_raid の passes_max・passes_max_source を除く）を入れ、同じ式（使い捨ての束）から取った値。
+    // v0.6.11 S8 の core の直し 2 つ（core/evac-shelter: 入っている隊の交代で新しい隊長艇を止める・見つかった陰の操作中の隊は輪の外へ出れば出る）で、ハードの bot seed 8 の 1 行だけ
+    // 変わった（残存 9 → 10・艇への命中 21 → 19・座席への命中 4 → 3。引く回数・来た・済みは同じ）。ほかの 5 行は S3 の木のまま
     expect(fp).toEqual([
       ['home', 8, 8, 240000, 4, 570, 41, 96, 8, 4, 24, 10, 0, 0, 12],
       ['home', 6, 6, 250600, 4, 570, 37, 90, 8, 5, 25, 16, 0, 0, 0],
       ['home', 11, 11, 249667, 4, 570, 28, 70, 8, 4, 21, 5, 2, 210, 19],
       ['home', 10, 10, 249983, 4, 570, 47, 110, 8, 6, 17, 12, 0, 0, 11],
       ['home', 7, 7, 240000, 4, 570, 43, 106, 10, 5, 27, 14, 0, 0, 10],
-      ['home', 9, 9, 240000, 4, 570, 41, 94, 9, 5, 21, 4, 0, 0, 6],
+      ['home', 10, 10, 240000, 4, 570, 41, 94, 9, 5, 19, 3, 0, 0, 6],
     ]);
   }, 60_000);
   it('予告し直さない・どの編隊も 1 回まで・済みは済みのまま（ノーマル・ハード）', () => {

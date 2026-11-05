@@ -322,7 +322,7 @@
         },
         "source": "design (v0.6.11。jp_03「運天港・空襲下の退避」の 1 編隊の段と時間（夜明けの空襲の core の値の形。凍結の core は変えない。dawn_air_strike.params は 6 任務で共有なので触らず、jp_03 専用の記録を作った＝jp_02 の patrol_air.params.sortie の前例）。編隊は（波 × 枠）ごとに 1 回だけ飛ぶ（core/air-sortie の restartAirSortie で狙った隊の隊長艇から方位 70 ± 30°・2,500 m に現れる）。spawn_m 2,500: 現れる距離の上限（restartAirSortie は [run_radius_m, spawn_m] に収める）。run_radius_m 500: 旋回の半径（爆撃進路 1.62 秒）。first_run_s 6.5: 始まりから最初の爆撃進路まで（旋回に着く 6.48 秒以上。予告の 10 秒と合わせて予告から最初の投下まで約 18.1 秒）。run_gap_s 1.7: 投下の間隔（落下 1.28 秒より長い＝空中の爆弾は 1 編隊 1 発。2 機 × 1.7 ＝ 3.4 秒 ≥ 爆撃進路の 2 倍 3.24 秒。2 機 4 発で最後の投下は始まりから 13.2 秒、4 機 8 発で 20.0 秒）。wave_rest_s 16 と wave_rotate_deg 0 は次の波を出さないので効かない（凍結の検査と V-E6 の「済みを 1 ステップ前に見る余裕」のため。16 ≥ 1.62 + 2.5 + 2 ステップ）。leave_s 2.5: 去る秒。spawn_offsets_deg: 凍結の core が先頭 n 個を使う（2 機は −30・−10＝平均 −20° に偏る分を evac_raid.bearing_fix_deg で戻す）。aim_turn_min_deg_s 0.5 は夜明けと同じ。値は spec-v0611-r2 §4。合わせは S3・S7 の模擬で（spec §12.5 の 6 番目のつまみ）) / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: first_run_s 9 → 6.5・run_gap_s 2.2 → 1.7（夜明けの 2.2 から離れた。どちらも検査の下限 6.48・1.62 の近く）。1 回が短いほど、済んだ編隊のもう一度（evac_raid.passes_max）が第 2・3 波にも収まる（9・2.2 では第 1 波だけ。6.5・1.7 で 2 回目は第 1 波 ≈ 89%・第 2 波 ≈ 62%・第 3 波 ≈ 32% の編隊（seq）。同じ短さで passes_max 1 なら seq 91%・dodge_only 84%（N 100・回避 0・陰（東）を外した点）＝帯を動かすのは 2 回目）)"
       },
-      "note": "design。史実の 1944-10-10 の運天港の損失（第27魚雷艇隊の 18 隻中 13 隻）は米PT の損失 69 隻の内訳（count・share）に入らないので count 0・share 0（total_losses などの合計は変えない）。"
+      "note": "design。史実の 1944-10-10 の運天港の損失（第27魚雷艇隊の 18 隻中 13 隻＝historical。docs/01 の史料 A2・A4。WebSearch の抜粋のみ・本文未読）は米PT の損失 69 隻の内訳（count・share）に入らないので count 0・share 0（total_losses などの合計は変えない）。"
     }
   ],
   "source": {

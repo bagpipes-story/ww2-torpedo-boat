@@ -5,7 +5,8 @@
 #   （実機 1 回目＝撃っても照らされても PT は去らない・揚陸 140 秒の値は CHANGELOG v0.6.10 実機 1 回目）
 #   （S0b・S4 の値は CHANGELOG v0.6.10 の S0b・S4）。
 #   EVAC=1（v0.6.11 S7）: jp_03 の帯の表 2 本（scripts/evac-sim の TABLE=2＝N 400 × 2 組・seed 1〜400・1001〜1400、ノーマル・ハード。spec-v0611-r2 §12.4 の帯の ✓/✗ の行を出す）も。
-#   md5 は S3b の点 G1 の表（CHANGELOG v0.6.11 S3b・S7）で、その出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 6 分ほど（tests/evac-sim-b は軽い組）。
+#   md5 は S3b の点 G1 の data で S8 の core の直し 2 つ（入っている隊の交代で止める・見つかった陰を輪の外へ出れば出る）の後の表（CHANGELOG v0.6.11 S8。S3b〜S7 は 0660589a・e6409b7a）で、
+#   その出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 6 分ほど（tests/evac-sim-b は軽い組）。
 # 模擬の scripts/*.ts を esbuild で束ねて node で回し、標準出力の md5 を比べる（並べて JOBS 本ずつ）。DIFF が 1 つでもあれば終了コード 1。
 # 実行: [G6=1] [ALLY=1] [EVAC=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
 set -u
@@ -50,7 +51,7 @@ fi
 if [ "${EVAC:-0}" = "1" ]; then
   # 名前が ev で始まる件は、出力に帯の行「帯: すべて ✓」も要る（scripts/evac-sim の TABLE=2）
   CASES+=(
-    "ev2|evac-sim|TABLE=2|0660589ae38abc0c7ca53f4e3a890a60" "ev2h|evac-sim|HARD=1 TABLE=2|e6409b7a3ed6b3833158275943ecc7bf"
+    "ev2|evac-sim|TABLE=2|1598061f01d60a9d1ab89a23c963f59e" "ev2h|evac-sim|HARD=1 TABLE=2|56212244b4306b144a9f4f47b5a67f85"
   )
 fi
 run() {

@@ -19,9 +19,13 @@ export function evacPlacesLineJa(e: EvacResult): string {
   return `壕 ${e.cave} ・ 陰 ${e.cover} ・ 外 ${e.outside} ／ 沈没 ${e.total - e.survivors} ・ 隊ごと ${e.byGroup.join('・')}`;
 }
 
-/** 本文の 3 行目（20 px）: 「見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 1 機」（分母は隊を狙った回＝目標の無い編隊は数えない。r2 L1） */
+/**
+ * 本文の 3 行目（20 px）: 「見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 1 機」（分母は隊を狙った回＝目標の無い編隊は数えない。r2 L1）。
+ * 撃墜は兵装の行と同じ全部の機（v0.6.11 S8）で、240 秒の後の追撃の機を落とした夜は「撃墜 2 機（うち追撃 1）」
+ */
 export function evacFlightsLineJa(e: EvacResult): string {
-  return `見失わせた ${e.lost}／狙われた ${e.aimed} 回（戻ってきた ${e.again} 回を含む） ・ 撃墜 ${e.downed} 機`;
+  const chase = e.chaseDowned > 0 ? `（うち追撃 ${e.chaseDowned}）` : '';
+  return `見失わせた ${e.lost}／狙われた ${e.aimed} 回（戻ってきた ${e.again} 回を含む） ・ 撃墜 ${e.downed + e.chaseDowned} 機${chase}`;
 }
 
 /** 本文の 4 行目（20 px・KPI の色。data を合わせる根拠＝CLAUDE.md §9）: 爆撃に来た回・爆弾・艇への命中・切替・隊長艇の交代 */
@@ -41,7 +45,7 @@ function afterJa(reason: MissionEndReason, returned: boolean): string {
 
 /**
  * 夜明けの行の代わりの時の行（spec §10.3。r2 L15）: 「空襲が去る時: 西の壕の中（第1隊） ・ 残存 8 で確定」／「…西の壕で上げている途中（第1隊）…」／
- * 「…屋我地の陰（東）に入っている途中…」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／決着の前に終わった夜（18 隻すべてが沈んだ）
+ * 「…屋我地の陰（東）に入っている途中…」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／「… ・ 隠れる前に沈没（隊長艇の分 −1 で 7）」／決着の前に終わった夜（18 隻すべてが沈んだ）
  */
 export function evacTimeLineJa(e: EvacResult, d: DawnResult, reason: MissionEndReason, returned: boolean): string {
   if (e.settlePlace === EVR_NONE) return e.survivors === 0 ? `空襲が去る前に ${e.total} 隻すべてが沈んだ（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）` : '空襲が去る時: 操作中の隊長艇が沈む途中';
@@ -50,7 +54,9 @@ export function evacTimeLineJa(e: EvacResult, d: DawnResult, reason: MissionEndR
   if (e.settlePlace === EVR_HIDDEN) return `空襲が去る時: ${e.settleShelterJa}の中（${g}）${sure}`;
   if (e.settlePlace === EVR_HAULING) return `空襲が去る時: ${e.settleShelterJa}で上げている途中（${g}）${sure}`;
   if (e.settlePlace === EVR_ENTERING) return `空襲が去る時: ${e.settleShelterJa}に入っている途中（${g}）${sure}`;
-  return `空襲が去る時: 外（${g}）${sure} ・ ${afterJa(reason, returned)}`;
+  // 確定の後に減るのは外の座席（操作中の隊長艇）が追撃・火災で沈んだ時だけ（core/evac-seat の evacSinkLeader。v0.6.11 S8: 頭の行の残存と食い違って見えないように減った数を書く）
+  const less = e.settleSurvivors - e.survivors;
+  return `空襲が去る時: 外（${g}）${sure} ・ ${afterJa(reason, returned)}${less > 0 ? `（隊長艇の分 −${less} で ${e.survivors}）` : ''}`;
 }
 
 /**

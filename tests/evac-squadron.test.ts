@@ -151,7 +151,7 @@ describe('僚艇が着いて隠れる・レールで上げる（spec §3.6）', 
     const r = makeRig();
     const g = r.sq.groups[0]!;
     const home = P.shelters[HOME]!;
-    // 北から南へ隊長艇の壕へ向かい（僚艇は航跡の縦列）、輪の手前でスティックを離して輪の中で止まる
+    // 北から南へ中の壕へ向かい（僚艇は航跡の縦列）、輪の手前でスティックを離して輪の中で止まる
     placeLeader(r, home.x, home.y - 600, 0, 180);
     let enteredAt = NaN;
     for (let i = 0; i < 40 / DT && g.phase !== G_HAULING; i++) {

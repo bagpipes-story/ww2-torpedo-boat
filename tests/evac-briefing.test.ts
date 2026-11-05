@@ -32,13 +32,13 @@ const rowsOf = (id: string, hard: boolean, seed = 1): { label: string; text: str
 };
 
 describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
-  it('行の文: 目的・成功（空襲が去る時に隊を壕か陰へ）・時（昼。壕 3 と陰 1）・敵（東から・4 波・同時の編隊）・危険（昼の言い方）・条件（空襲が去るまで・燃料は減らない・機銃は僚艇も・もう一度来る編隊）', () => {
+  it('行の文: 目的・成功（空襲が去る時に隊を壕か陰へ）・時（昼。壕 3 か所・陰 1 か所）・敵（東から・4 波・同時の編隊）・危険（昼の言い方）・条件（空襲が去るまで・燃料は減らない・機銃は僚艇も・もう一度来る編隊）', () => {
     for (const hard of [false, true]) {
       const f = hard ? 3 : 2;
       expect(rowsOf('jp_03', hard)).toEqual([
         { label: '目的', text: '空襲の下、3隻ずつ6つの隊を壕や陰へ隠せ（スティックで隊長艇、［切替］で隊を替える）' },
         { label: '成功', text: '18隻中6隻以上を残す（史実は5隻）（空襲が去る時に操作中の隊を壕か陰へ）' },
-        { label: '時', text: '昼（07:00 空襲警報） ・ 壕 3 と陰 1 の外の艇は見える ・ 陰は見つかることがある' },
+        { label: '時', text: '昼（07:00 空襲警報） ・ 壕 3 か所・陰 1 か所の外は丸見え ・ 陰は見つかることがある' },
         { label: '敵', text: `米艦載機（東から） ・ 4波（2機の編隊が${f}つ同時 → 3機×${f} → 3機×${f} → 4機×${f}）` },
         { label: '危険', text: '港の空襲（予告の後、編隊が別々の隊を狙う）、空襲が去った後の追撃（敵機 4 機）' },
         { label: '条件', text: `空襲が去るまで 240 秒 ・ 燃料 16 gal（空襲の間は減らない） ・${NBSP}機銃は僚艇も撃つ（機にまず当たらない） ・${NBSP}編隊は次の波までに間があればもう一度来る` },
@@ -51,8 +51,8 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
     expect(ev.params.shelters.length).toBe(4);
     expect(ev.params.shelters.filter((x) => x.kind === SHELTER_CAVE).length).toBe(3);
     expect(ev.params.shelters.map((x) => x.labelJa)).not.toContain('屋我地の陰（西）');
-    expect(evacDayRowJa(ev.params)).toBe('壕 3 と陰 1 の外の艇は見える ・ 陰は見つかることがある');
-    expect(evacDayRowJa({ shelters: ev.params.shelters.filter((x) => x.kind === SHELTER_CAVE) })).toBe('壕 3 の外の艇は見える');
+    expect(evacDayRowJa(ev.params)).toBe('壕 3 か所・陰 1 か所の外は丸見え ・ 陰は見つかることがある');
+    expect(evacDayRowJa({ shelters: ev.params.shelters.filter((x) => x.kind === SHELTER_CAVE) })).toBe('壕 3 か所の外は丸見え');
     expect(evacEnemyRowJa({ waves: [{ announceS: 0, planes: 2 }, { announceS: 0, planes: 4 }], flights: 3 })).toBe('2波（2機の編隊が3つ同時 → 4機×3）');
     expect([s.durationS, s.fuelAllotmentGal, s.mission.dawnStrike!.count, ev.raid.fromBearingDeg, ev.raid.passesMax]).toEqual([240, 16, 4, 70, 2]);
     const one = briefingNumbers({ ...s, evac: { ...ev, raid: { ...ev.raid, passesMax: 1 } } });
@@ -72,7 +72,7 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
     // 目的のボタンの名は HUD の［切替］と同じ字
     expect(String(M['objective'])).toContain('［切替］');
   });
-  it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 1・成功 1・時 1・敵 1・危険 1・条件 2、史実 3（20 px）。行の頭に「、」「。」「）」「・」が来ない（史実の幅 1,020〜1,070 px のどれでも）', () => {
+  it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 1・成功 1・時 1・敵 1・危険 1・条件 2、史実はノーマル 3・ハード 4（20 px。v0.6.11 S8 で作りの範囲を足した）。行の頭に「、」「。」「）」「・」が来ない（史実の幅 1,020〜1,070 px のどれでも）', () => {
     for (const hard of [false, true]) {
       const r = rowsOf('jp_03', hard).map((x) => x.text);
       for (const W of [BRIEF_WRAP, BRIEF_WRAP - BRIEF_ROW_PX]) expect(r.map((t) => phaserWrap(t, BRIEF_ROW_PX, W).length), `${hard} ${W}`).toEqual([1, 1, 1, 1, 1, 2]);
@@ -81,7 +81,7 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
       const note = getBriefingRecord(gameData, 'jp_03', hard).noteJa;
       for (let W = 1020; W <= 1070; W++) {
         const l = phaserWrap(note, BRIEF_NOTE_PX, W);
-        expect(l.length, `${hard} ${W}`).toBe(3);
+        expect(l.length, `${hard} ${W}`).toBe(hard ? 4 : 3);
         for (const x of l.slice(1)) expect(x, `${hard} ${W}`).not.toMatch(/^[、。）・]/);
       }
     }
@@ -89,8 +89,8 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
   it('下端 ≤ 出撃のボタンの上端 584 − 8（論理幅 1,280・1,584 で同じ置き方＝行の x・折り返し・ボタンの y は幅に依らない）。行の高さは字の大きさ × 1.25 で多めに（jp_04 で多めを確かめる）', () => {
     const lh = (px: number): number => Math.ceil(px * 1.25);
     const bottom = (rows: number[], note: number): number => 148 + rows.reduce((a, n) => a + n * lh(BRIEF_ROW_PX) + 10, 0) + 8 + note * lh(BRIEF_NOTE_PX);
-    for (const hard of [false, true]) expect(bottom([1, 1, 1, 1, 1, 2], 3), String(hard)).toBeLessThanOrEqual(584 - 8);
-    expect(bottom([1, 1, 1, 1, 1, 2], 3)).toBe(501);
+    for (const hard of [false, true]) expect(bottom([1, 1, 1, 1, 1, 2], hard ? 4 : 3), String(hard)).toBeLessThanOrEqual(584 - 8);
+    expect([bottom([1, 1, 1, 1, 1, 2], 3), bottom([1, 1, 1, 1, 1, 2], 4)]).toEqual([501, 526]);
     // jp_04（目的 2・成功 1・月 1・敵 1・危険 1・条件 3・史実 3）のヘッドレスの本当の下端は 549（v0.6.10 S7）＝この見積もりは多め
     expect(bottom([2, 1, 1, 1, 1, 3], 3)).toBeGreaterThanOrEqual(549);
     const menu = readFileSync(join(__dirname, '..', 'src', 'config', 'menu-config.ts'), 'utf8');

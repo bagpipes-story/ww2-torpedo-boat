@@ -8,7 +8,8 @@
 // 1 件だけ: MISSION=us_02 [HARD=1] [SEED=1] [DAWN=20] [NODAWN=1] [SECS=200] [PTRUN=1] [RESULT=1]。jp_04 の卯月を切った夜（B の &noally）と A を比べるのは NOALLY=1（MISSION=jp_04 の組）。
 // v0.6.11 S6: SET=jp03 で jp_03（空襲下の退避）のノーマル・ハード × seed 1・2 を 260 秒（決着の 240 秒の後まで）。A は jp_03 の世界のあるビルド（88c9f19 には無いので S5 の ae6af75）。
 //   all（88c9f19 と比べる 58 件）には入れない（元の件は今のまま）。jp_03 の写しは座席の自艇・HP・燃料・魚雷と HUD の文（隊の 18 隻は world-vs-sim が比べる）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp03] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.6.11 S8: SET=jp04base で jp_04（卯月あり）のノーマル・ハード × seed 1〜4 を 170 秒（A は 88c9f19。all には入れない）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 
@@ -96,6 +97,8 @@ export function abCases(set, input) {
     result: () => V.slice(0, 8).map((v) => ({ ...base, ...v, secs: envNum('SECS', 200), result: true, set: 'result' })),
     // jp_04 の卯月を切った夜（B は &noally）と A（6856840）: ノーマル・ハード × seed 1〜4（G6w。S5b の門）
     jp04: () => [false, true].flatMap((hard) => [1, 2, 3, 4].map((seed) => ({ ...base, mission: 'jp_04', hard, seed, secs: envNum('SECS', 170), noally: true, set: 'jp04' }))),
+    // jp_04 の卯月のいる夜を 88c9f19（v0.6.10）と比べる（v0.6.11 S8。ほかの 8 任務のビット同一の jp_04 の分。B に &noally は付けない）: ノーマル・ハード × seed 1〜4
+    jp04base: () => [false, true].flatMap((hard) => [1, 2, 3, 4].map((seed) => ({ ...base, mission: 'jp_04', hard, seed, secs: envNum('SECS', 170), set: 'jp04base' }))),
     // jp_03 の空襲下の退避（v0.6.11 S6。Title に出た版）: 決着の 240 秒の後まで。A は S5（ae6af75）のビルド
     jp03: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'jp_03', hard, seed, secs: envNum('SECS', 260), set: 'jp03' }))),
   };

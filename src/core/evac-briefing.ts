@@ -31,7 +31,8 @@ export function evacDayRowJa(p: Pick<EvacParams, 'shelters'>): string {
   let caves = 0;
   for (const s of p.shelters) if (s.kind === SHELTER_CAVE) caves++;
   const covers = p.shelters.length - caves;
-  return covers > 0 ? `壕 ${caves} と陰 ${covers} の外の艇は見える ・ 陰は見つかることがある` : `壕 ${caves} の外の艇は見える`;
+  // 「壕 3 か所・陰 1 か所」（v0.6.11 S8。「壕 3 と陰 1」は 3 番の壕と 1 番の陰とも読めた）
+  return covers > 0 ? `壕 ${caves} か所・陰 ${covers} か所の外は丸見え ・ 陰は見つかることがある` : `壕 ${caves} か所の外は丸見え`;
 }
 
 /** 敵の行の名前と方角の後ろ: 「4波（2機の編隊が2つ同時 → 3機×2 → 3機×2 → 4機×2）」（ユーザーの U5 の書き方。×は同時に来る編隊の数） */

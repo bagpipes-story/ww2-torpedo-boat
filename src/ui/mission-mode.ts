@@ -167,7 +167,8 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   // 揚陸の決着の前に帰投の輪の中（v0.6.9 R14 A5。jp_04 だけ。ほかの任務は偽で前のまま）: 任務は終わらない（systems/mission-end の landingHold）ので魚雷待ち・漂流の行は出さず、
   // 赤い線・射線・出来事・接触・輸送船への脅威はそのまま上に出す（輪の中でも米PT は来る）。待ちの行は米PT の段の下
   const ring = landingRingWaiting(t);
-  if (t.homeWaiting && !ring) return MISSION_WAITING;
+  // 空襲下の退避（v0.6.11 S8。jp_03）: 決着（240 秒）の前は隠れても終わらない（mission-end の evacHold）ので、走っている魚雷があっても待ちの行は出さない（2 行目は退避の行のまま）
+  if (t.homeWaiting && !ring && !(t.evac.enabled && !t.evac.settled)) return MISSION_WAITING;
   if (t.fuelEmpty && !ring) return MISSION_ADRIFT;
   const pa = t.patrol;
   // 夜明けのラッチの瞬間に落ちている夜の 1 発（最大 1.28 秒）は夜明けの 4 機の接近・旋回の行に隠さない（R6。夜明けの最初の進路はラッチから first_run_s 後で重ならない）
