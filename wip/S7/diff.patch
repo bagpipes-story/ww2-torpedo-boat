@@ -118,3 +118,41 @@ index e2f085a..097f148 100644
        res.end(body);
      } catch {
        res.writeHead(404);
+diff --git a/scripts/headless/wvs-evac-entry.mjs b/scripts/headless/wvs-evac-entry.mjs
+index 7b9fbbf..ccdd474 100644
+--- a/scripts/headless/wvs-evac-entry.mjs
++++ b/scripts/headless/wvs-evac-entry.mjs
+@@ -31,7 +31,7 @@ function flat(roots) {
+ }
+ 
+ /** HUD の［切替］のボタンを 1 回押して離す（押下で InputState.switchTap。ポインタの番号は台本の指と重ならない 97） */
+-function pressSwitch() {
++export function pressSwitch() {
+   const hud = window.__game.scene.getScene('Hud');
+   const b = hud && hud.panel ? hud.panel.switchButton : null;
+   if (!b) throw new Error('HUD に［切替］のボタンが無い');
+diff --git a/src/systems/evac-calibration.ts b/src/systems/evac-calibration.ts
+index 314b5f4..497ae19 100644
+--- a/src/systems/evac-calibration.ts
++++ b/src/systems/evac-calibration.ts
+@@ -1,6 +1,7 @@
+ // 空襲下の退避（v0.6.11。jp_03「運天港・空襲下の退避」。spec-v0611-r2 §12.4）の模擬の帯。帯の数はユーザーの決めの calibration targets（plan/user-decisions）から来るので動かさない。
+ // 合わせるのは data のつまみだけ（spec §12.5 の順。動かしたら理由を source と CHANGELOG に）。scripts/evac-sim の TABLE=2 が N 400 × 2 組（seed 1〜400・1001〜1400）を合わせた回で、
+-// S7 の tests/evac-sim-b が同じ帯を検査する。Phaser 非依存・window を読まない。
++// S7 から tests/evac-sim-b・c・d（N 50 × 2 組の軽い組＝tests/evac-sim-kit）と scripts/headless/g2.sh の EVAC=1（N 400 × 2 組の md5 と「帯: すべて ✓」）が同じ帯を検査する。
++// Phaser 非依存・window を読まない。
+ import type { EvacCell } from '../core/evac-sim-cell';
+ import type { EvacPolicy } from '../core/evac-sim-policy';
+ 
+diff --git a/tests/evac-sim-a.test.ts b/tests/evac-sim-a.test.ts
+index 821a8ad..b62606f 100644
+--- a/tests/evac-sim-a.test.ts
++++ b/tests/evac-sim-a.test.ts
+@@ -1,6 +1,6 @@
+ // 空襲下の退避の模擬（v0.6.11 S3。spec-v0611-r2 §12・§13 の S3）: 決定性（同じ seed で同じ 1 回・同じ表）、乱数の系列 +29〜+43 の引く回数
+ // （+29 は予告ごとに陰の数、+30 は生成の 6 回 ＋ pick の境ごとに 6 隊 × 2 回、+31 は投下ごとに 1 回、編隊の系列は投下ごとに 2 回 ＋ 隊長艇への命中の火災・機関）、
+-// 同時に動く編隊（ノーマル ≤ 2・ハード ≤ 3）と起動時の数（ノーマル 8・ハード 12）、終わりの形、遊び方の表、漂流の待ちが世界と同じ。帯は S7 の tests/evac-sim-b。
++// 同時に動く編隊（ノーマル ≤ 2・ハード ≤ 3）と起動時の数（ノーマル 8・ハード 12）、終わりの形、遊び方の表、漂流の待ちが世界と同じ。帯は tests/evac-sim-b・c・d（S7。N 50 × 2 組）と scripts/headless/g2.sh の EVAC=1（N 400 × 2 組）。
+ import { describe, expect, it } from 'vitest';
+ import { readFileSync } from 'node:fs';
+ import { gameData } from '../src/config/game-data';

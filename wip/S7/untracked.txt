@@ -1,4 +1,5 @@
 scripts/headless/evac-perf.mjs
+scripts/headless/perf-evac-entry.mjs
 tests/evac-sim-b.test.ts
 tests/evac-sim-c.test.ts
 tests/evac-sim-d.test.ts
