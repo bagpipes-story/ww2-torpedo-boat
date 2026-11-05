@@ -1,0 +1,842 @@
+diff --git a/scripts/headless/world-vs-sim.mjs b/scripts/headless/world-vs-sim.mjs
+index f376dc0..69c95f1 100644
+--- a/scripts/headless/world-vs-sim.mjs
++++ b/scripts/headless/world-vs-sim.mjs
+@@ -5,6 +5,8 @@
+ // 比べる site は今の木のビルド（模擬は束ねた時の repo の src と data）。夜明けの空襲は模擬に無いので &nostrike で回す（夜明けの後も比べる）。
+ // 実行: VITE_BASE=/ww2-torpedo-boat/ npm run build -- --outDir <site> の後
+ //   SITE=<site> [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [MODES=normal,hard] [NOALLY=1] [MAXS=200] [W=1560] [JOBS=3] [OUT=<json>] node scripts/headless/world-vs-sim.mjs
++// v0.6.11 S4（jp_03。spec-v0611-r2 §12.1）: EVAC=1 は wvs-evac-entry.mjs（模擬 core/evac-sim の台本の入力を世界へ写す。台本の組は POLS（既定 seq,seq_shoot,stay）× SEEDS（既定 1-3）× MODES）。
++//   夜ごとに steps・diffSteps・最初の違いと、切替・隊長艇の交代・撃墜・消火・予告し直し（2 回目の編隊）の数。SMOKE=1 は台本なしの jp_03 の煙（SECS 既定 240 ＋ 落ち着く 30 秒・ページのエラー 0）。
+ import { writeFileSync } from 'node:fs';
+ import { createRequire } from 'node:module';
+ import { dirname, join } from 'node:path';
+@@ -24,10 +26,10 @@ export function parseSeeds(s) {
+   return out;
+ }
+ 
+-/** wvs-entry.mjs を 1 本の IIFE に束ねる（src の TS と data の JSON ごと） */
+-export async function bundleEntry() {
++/** wvs-entry.mjs（EVAC は wvs-evac-entry.mjs）を 1 本の IIFE に束ねる（src の TS と data の JSON ごと） */
++export async function bundleEntry(entry = 'wvs-entry.mjs') {
+   const esbuild = require('esbuild');
+-  const r = await esbuild.build({ entryPoints: [join(here, 'wvs-entry.mjs')], bundle: true, format: 'iife', platform: 'browser', write: false, logLevel: 'silent' });
++  const r = await esbuild.build({ entryPoints: [join(here, entry)], bundle: true, format: 'iife', platform: 'browser', write: false, logLevel: 'silent' });
+   return r.outputFiles[0].text;
+ }
+ 
+@@ -46,9 +48,60 @@ export async function oneNight(browser, base, code, c) {
+   }
+ }
+ 
++/** jp_03 の 1 夜（EVAC=1）: 突き合わせか煙（c.smoke） */
++export async function oneEvacNight(browser, base, code, c) {
++  const q = `mission=jp_03&seed=${c.seed}${c.hard ? '&hard' : ''}`;
++  const { page, ctx, errors } = await openGame(browser, base, q, { width: c.width });
++  try {
++    await page.addScriptTag({ content: code });
++    const r = c.smoke
++      ? await page.evaluate((o) => window.__wvsEvac.smokeRun(o), { secs: c.secs, frameMs: FRAME_MS })
++      : await page.evaluate((o) => window.__wvsEvac.runEvacVsSim(o), { seed: c.seed, hard: c.hard, policy: c.policy, maxSteps: Math.round(c.maxS * 60), frameMs: FRAME_MS });
++    return { ...c, ...r, errors };
++  } catch (e) {
++    return { ...c, error: String(e && e.message ? e.message : e), errors };
++  } finally {
++    await ctx.close();
++  }
++}
++
++async function mainEvac(site) {
++  const seeds = parseSeeds(process.env.SEEDS ?? '1-3');
++  const pols = (process.env.POLS ?? 'seq,seq_shoot,stay').split(',');
++  const modes = (process.env.MODES ?? 'normal,hard').split(',');
++  const smoke = process.env.SMOKE === '1';
++  const cases = [];
++  for (const mode of modes) for (const seed of seeds) for (const policy of smoke ? ['-'] : pols) cases.push({ seed, hard: mode === 'hard', policy, smoke, secs: envNum('SECS', 240) + 30, maxS: envNum('MAXS', 600), width: envNum('W', 1560) });
++  const code = await bundleEntry('wvs-evac-entry.mjs');
++  const sv = await serve(site);
++  const browser = await chromium.launch();
++  const res = await pool(cases, envNum('JOBS', 3), (c) => oneEvacNight(browser, sv.base, code, c));
++  await browser.close();
++  await sv.close();
++  let bad = 0;
++  for (const r of res) {
++    const tag = `${r.hard ? 'hard  ' : 'normal'} seed ${String(r.seed).padStart(2)} ${r.policy.padEnd(9)}`;
++    if (r.error) { bad++; console.log(`${tag} ERROR ${r.error}${r.errors.length ? ` | page errors ${r.errors.length}: ${r.errors[0]}` : ''}`); continue; }
++    if (r.smoke) {
++      const ok = r.errors.length === 0 && r.t >= r.secs - 30 - 1e-6;
++      if (!ok) bad++;
++      console.log(`${tag} smoke frames ${r.frames} t ${r.t.toFixed(1)} Mission ${r.mission} Result ${r.result} 残存 ${r.survivors} 決着 ${r.settled} 来た ${r.came} 着弾 ${r.impacts} 物 ${r.children}${r.errors.length ? ` | page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
++      continue;
++    }
++    const ok = r.diffSteps === 0 && r.errors.length === 0 && !r.worldEnded;
++    if (!ok) bad++;
++    console.log(`${tag} steps ${r.steps} diffSteps ${r.diffSteps} 終わり ${r.simEnd}（${r.simT.toFixed(1)} 秒・残存 ${r.survivors}）${r.worldEnded ? ` 世界 ${r.worldEnded}` : ''} | 切替 ${r.switches}（自動 ${r.autoSwitches}）・交代 ${r.promotions}・撃墜 ${r.downsEvac}/${r.downs}・消火 ${r.extinguished}・予告し直し ${r.again}（2 回目 ${r.passes2} 編隊）・発 ${r.rounds}・座席に命中 ${r.seatHits}${r.errors.length ? ` | page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
++    if (r.first) console.log(`    最初の違い step ${r.first.step}（${r.first.t.toFixed(2)} s）: ${JSON.stringify(r.first.fields)}`);
++  }
++  console.log(`nights ${res.length} bad ${bad}`);
++  if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify(res, null, 1));
++  process.exitCode = bad === 0 ? 0 : 1;
++}
++
+ async function main() {
+   const site = process.env.SITE;
+   if (!site) throw new Error('SITE=<ビルドした site のディレクトリ> が要る');
++  if (process.env.EVAC === '1') return mainEvac(site);
+   const seeds = parseSeeds(process.env.SEEDS ?? '1-6');
+   const pols = (process.env.POLS ?? 'lure,near,late,east,hide,home').split(',');
+   const modes = (process.env.MODES ?? 'normal,hard').split(',');
+diff --git a/src/core/aa-fire.ts b/src/core/aa-fire.ts
+index d357451..de14d51 100644
+--- a/src/core/aa-fire.ts
++++ b/src/core/aa-fire.ts
+@@ -19,6 +19,8 @@ export const AA_MAX_TARGETS = 8;
+ export const AA_SRC_DAWN = 0;
+ export const AA_SRC_SORTIE = 1;
+ export const AA_SRC_SEAPLANE = 2;
++/** 港の空襲の編隊（v0.6.11 S4。jp_03。番号は 編隊 × 4 ＋ 機＝core/evac-sim-aa の EVAC_AA_PLANE_STRIDE。撃墜は core/evac-repass の evacDownPlane） */
++export const AA_SRC_EVAC = 3;
+ /** 状態: 押していない / 撃っている / 機がいない / 艇首・艇尾の死角 / 射程外 / 艦艇を撃っている（砲は 1 つ。呼ぶ側が書く）/ 弾倉交換 */
+ export const AA_SAFE = 0;
+ export const AA_FIRING = 1;
+diff --git a/src/core/arms-cue.ts b/src/core/arms-cue.ts
+index a95f0e4..e82566b 100644
+--- a/src/core/arms-cue.ts
++++ b/src/core/arms-cue.ts
+@@ -14,6 +14,8 @@ export const EV_TORP_NOSHIP = 3;
+ export const EV_DOWN_STRIKE = 4;
+ export const EV_DOWN_SEAPLANE = 5;
+ export const EV_DOWN_SORTIE = 6;
++/** 港の空襲の編隊の機（v0.6.11 S4。jp_03。数はその編隊の残りの機。2 行目の文は S5 の ui/evac-lines） */
++export const EV_DOWN_EVAC = 7;
+ /** 状態の文（機銃を押している間だけ）: 艦には効かない・対空・射界外・射程に敵なし・煙幕で見えない・弾倉交換 */
+ export const ST_SHIP = 10;
+ export const ST_AA = 11;
+diff --git a/src/core/evac-data.ts b/src/core/evac-data.ts
+index 27178ab..5fdba4c 100644
+--- a/src/core/evac-data.ts
++++ b/src/core/evac-data.ts
+@@ -26,6 +26,9 @@ export function evacFlightSeedOffset(wave: number, slot: number): number {
+   return EVAC_FLIGHT_SEED_OFFSET + wave * EVAC_MAX_FLIGHTS + slot;
+ }
+ 
++/** 時計の比べの丸めの余裕（1/60 秒の積み上げの誤差で 1 ステップずれないように）: 燃料を数え始める fuel_free_until_s（世界の systems/world-boat と模擬 core/evac-sim が同じ式。S4） */
++export const EVAC_TIME_EPS_S = 1e-6;
++
+ // ---------- 隊の段階（spec §3.2。隊ごと。艇ごとではない）・隠れ場所の種類・スティックの latch（spec §3.3） ----------
+ export const G_MOORED = 0; // 停泊（最初の全隊）
+ export const G_UNDERWAY = 1; // 走っている（操作中か、操作していない隊のランダム回避）
+diff --git a/src/core/evac-sim-aa.ts b/src/core/evac-sim-aa.ts
+index 096d0b3..3c0533d 100644
+--- a/src/core/evac-sim-aa.ts
++++ b/src/core/evac-sim-aa.ts
+@@ -3,7 +3,7 @@
+ // 機の枠（AA_MAX_TARGETS 8 のまま）: 240 秒の後の §2 の 4 機が先、次に港の空襲の動く編隊を中心の 2 乗の距離の近い順（固定長の配列に挿入で並べる）。番号は 編隊 × 4 ＋ 機（r2 M8）。
+ // 撃墜は core/air-down の downStrikePlane（港の空襲の機は core/evac-repass の evacDownPlane＝撃墜のビットも。順番の飛ばしは core/evac-air の段の頭と、ここで撃墜したステップ）。乱数は seed+24 を 1 発 1 回（core/aa-fire のまま）。
+ // Phaser 非依存・確保は createEvacSimAa だけ。
+-import { AA_MAX_TARGETS, AA_SRC_DAWN, addStrikePlanes, createAaState, createAaTargets, stepAaFire, type AaState, type AaTargets, type AntiAircraftParams } from './aa-fire';
++import { AA_MAX_TARGETS, AA_SRC_DAWN, AA_SRC_EVAC, addStrikePlanes, createAaState, createAaTargets, stepAaFire, type AaState, type AaTargets, type AntiAircraftParams } from './aa-fire';
+ import type { AirStrikeParams, AirStrikeState } from './air-strike';
+ import { downStrikePlane, skipDownedRuns } from './air-down';
+ import { evacDownPlane } from './evac-repass';
+@@ -14,10 +14,10 @@ import type { GunBatteryParams } from './gun-battery';
+ import { createMagazine, magazineTick, type MagazineState } from './magazine';
+ import type { SeededRng } from './rng';
+ 
+-/** 港の空襲の編隊の機の出どころ（夜明け 0・夜の出撃 1・水上機 2 の次。S4 の aa-fire にも同じ番号で足す） */
+-export const AA_SRC_EVAC = 3;
+-/** 1 編隊の機の番号の幅（凍結の core の上限 4） */
+-const EVAC_AA_PLANE_STRIDE = 4;
++/** 港の空襲の編隊の機の出どころ（夜明け 0・夜の出撃 1・水上機 2 の次。S4 から core/aa-fire が持つ＝世界の systems/aa-slots と同じ番号） */
++export { AA_SRC_EVAC };
++/** 1 編隊の機の番号の幅（凍結の core の上限 4。世界の systems/aa-slots の撃墜の振り分けも） */
++export const EVAC_AA_PLANE_STRIDE = 4;
+ 
+ /** 隊の砲（n = 1・2・3 隻ぶん）: 発の速さと弾倉の発数を n 倍（交換の秒・射程・死角・散布はそのまま） */
+ export function evacGunVariants(g: GunBatteryParams, maxN: number): GunBatteryParams[] {
+@@ -63,6 +63,14 @@ export function fillEvacAaSlots(a: EvacSimAa, plan: EvacPlan, dawn: AirStrikeSta
+   const t = a.slots;
+   t.n = 0;
+   if (dawn) addStrikePlanes(t, dawn, dawnP, boat, AA_SRC_DAWN, a.pose);
++  addEvacPlanes(t, plan, boat, a.order, a.d2, a.pose);
++}
++
++/**
++ * 港の空襲の動く編隊の機を枠に足す（模擬の fillEvacAaSlots と世界の systems/aa-slots が同じ式。S4 で切り出した）: 編隊の中心と艇の 2 乗の距離の近い順に
++ * order・d2（編隊の数の固定長）へ挿入で並べ、枠が尽きるまで機を足す。番号は 編隊 × 4 ＋ 機
++ */
++export function addEvacPlanes(t: AaTargets, plan: EvacPlan, boat: BoatState, order: Int32Array, d2s: Float64Array, pose: AircraftPose): void {
+   let n = 0;
+   for (let i = 0; i < plan.flights.length; i++) {
+     const fl = plan.flights[i]!;
+@@ -72,18 +80,18 @@ export function fillEvacAaSlots(a: EvacSimAa, plan: EvacPlan, dawn: AirStrikeSta
+     const dy = c.y - boat.y;
+     const d2 = dx * dx + dy * dy;
+     let k = n++;
+-    while (k > 0 && a.d2[k - 1]! > d2) {
+-      a.d2[k] = a.d2[k - 1]!;
+-      a.order[k] = a.order[k - 1]!;
++    while (k > 0 && d2s[k - 1]! > d2) {
++      d2s[k] = d2s[k - 1]!;
++      order[k] = order[k - 1]!;
+       k--;
+     }
+-    a.d2[k] = d2;
+-    a.order[k] = i;
++    d2s[k] = d2;
++    order[k] = i;
+   }
+   for (let k = 0; k < n && t.n < AA_MAX_TARGETS; k++) {
+-    const fl = plan.flights[a.order[k]!]!;
++    const fl = plan.flights[order[k]!]!;
+     const before = t.n;
+-    addStrikePlanes(t, fl.port.state, fl.p, fl.view.boat.state, AA_SRC_EVAC, a.pose);
++    addStrikePlanes(t, fl.port.state, fl.p, fl.view.boat.state, AA_SRC_EVAC, pose);
+     for (let j = before; j < t.n; j++) t.idx[j] = fl.index * EVAC_AA_PLANE_STRIDE + t.idx[j]!;
+   }
+ }
+diff --git a/src/core/evac-sim.ts b/src/core/evac-sim.ts
+index 6c26acc..1b0f9b7 100644
+--- a/src/core/evac-sim.ts
++++ b/src/core/evac-sim.ts
+@@ -13,9 +13,10 @@ import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor, type C
+ import { dawnReached } from './dawn-air';
+ import { createEvacAirCore, stepEvacAir } from './evac-air';
+ import { stepEvacBoats } from './evac-boats';
+-import { EVAC_AI_SEED_OFFSET, G_UNDERWAY } from './evac-data';
++import { EVAC_AI_SEED_OFFSET, EVAC_TIME_EPS_S, G_UNDERWAY } from './evac-data';
+ import type { EvacAirWorld } from './evac-hits';
+ import type { EvacParams, EvacRaidParams } from './evac-params';
++import type { EvacMirror, EvacMirrorFlags } from './evac-replay';
+ import { evacHitSeat, evacSeatCommand, evacSeatHome, evacSinkLeader, evacFrameInput, evacLoadSeat, type EvacSeat, type EvacSeatHooks } from './evac-seat';
+ import { createEvacSimAa, evacAaInRange, fillEvacAaSlots, stepEvacSimAa } from './evac-sim-aa';
+ import { createEvacTrial, evacTrialSettle, finishEvacTrial, type EvacTrial } from './evac-sim-cell';
+@@ -60,7 +61,7 @@ export interface EvacSimSetup {
+ export type EvacSimProbe = (t: number, sq: EvacSquadron, seat: EvacSeat, plan: EvacPlan) => void;
+ 
+ const DRIFT: BoatInput = { headingDeg: NaN, speed01: 0 };
+-const TIME_EPS_S = 1e-6;
++const TIME_EPS_S = EVAC_TIME_EPS_S;
+ 
+ /** next() を数える（作った後の乱数に被せる。1 回の始めにだけ確保） */
+ function counted(rng: SeededRng): { n: number } {
+@@ -73,8 +74,8 @@ function counted(rng: SeededRng): { n: number } {
+   return c;
+ }
+ 
+-/** 1 回（seed は任務の seed）。probe はステップごと（計測だけ。結果は変えない） */
+-export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, probe: EvacSimProbe | null = null): EvacTrial {
++/** 1 回（seed は任務の seed）。probe はステップごと（計測だけ。結果は変えない）。mirror は世界との突き合わせ（core/evac-replay。S4。結果は変えない） */
++export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, probe: EvacSimProbe | null = null, mirror: EvacMirror | null = null): EvacTrial {
+   const realDt = s.stepS;
+   const dt = realDt * s.timeScale;
+   const aiRng = new SeededRng((seed + EVAC_AI_SEED_OFFSET) >>> 0);
+@@ -124,10 +125,13 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number,
+   let atHome = false;
+   let adriftS = 0;
+   const base = s.boat;
+-  for (;;) {
++  const mf: EvacMirrorFlags = { t: 0, atHome: false, latched: false, sinking: false, caughtOutside: false, extHeldS: 0 };
++  mirror?.begin({ sq, seat, plan, repass: air.repass, dawn, aa, fuel, aiRng, dodge: air.dodge, dawnRng, flags: mf });
++  for (let k = 0; ; k++) {
+     const t0 = m.t;
+     // ---- フレームの入力（固定ステップの前。座席が沈み始めたら入力なし） ----
+     evacDriverFrame(drv, { sq, seat, plan, dawn, dawnLatched: latched, aa, t: t0 }, fo);
++    mirror?.frame(k, fo);
+     stick.headingDeg = fo.headingDeg;
+     stick.speed01 = fo.speed01;
+     if (!m.sinking) {
+@@ -193,6 +197,15 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number,
+       if (!atHome && !m.sinking) out.caughtOutside = true;
+     }
+     probe?.(t, sq, seat, plan);
++    if (mirror) {
++      mf.t = t;
++      mf.atHome = atHome;
++      mf.latched = latched;
++      mf.sinking = m.sinking;
++      mf.caughtOutside = out.caughtOutside;
++      mf.extHeldS = m.extHeldS;
++      mirror.after(k);
++    }
+     // ---- 終わり（フレームの終わり。決着の前は終えない＝evacHold） ----
+     if (m.sinking) out.end = 'sunk';
+     else if (latched && atHome) out.end = 'home';
+diff --git a/src/core/input-state.ts b/src/core/input-state.ts
+index d2c12bc..6479cb0 100644
+--- a/src/core/input-state.ts
++++ b/src/core/input-state.ts
+@@ -26,10 +26,12 @@ export interface InputState {
+   identifyTap: boolean;
+   /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。v0.6.8 から全任務で読む（艇の機銃は魚雷の任務でも艦と機を撃てる） */
+   gunHeld: boolean;
++  /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。ボタンとキーは S5）。ほかの任務では立たない */
++  switchTap: boolean;
+ }
+ 
+ export function createInputState(): InputState {
+-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false };
++  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false };
+ }
+ 
+ export function resetInput(s: InputState): void {
+@@ -45,6 +47,7 @@ export function resetInput(s: InputState): void {
+   s.zoomRequest = NaN;
+   s.identifyTap = false;
+   s.gunHeld = false;
++  s.switchTap = false;
+ }
+ 
+ /** 発射要求を捨てる（駆逐艦がすべて沈み始めたか退いた後・帰投地点の輪の中・終わり際の窓の間。v0.6.2 実機 1 回目で systems/world-input から移した） */
+diff --git a/src/systems/aa-slots.ts b/src/systems/aa-slots.ts
+index f52deaa..961f662 100644
+--- a/src/systems/aa-slots.ts
++++ b/src/systems/aa-slots.ts
+@@ -2,10 +2,15 @@
+ // 撃墜した枠を出どころの包み（core/air-down）へ振り分ける。入れる機: 夜明けの空襲の 4 機（待機・終わりでなく濃さ > 0）・jp_02 の夜の出撃の 2 機（同じ）・
+ // us_02 の夜の水上機（接近〜去る・濃さ > 0）。入れない機: 味方機・jp_02 の捜索の 2 機（900 m より近くへ来ない＝隠れるのが本筋）。
+ // Phaser 非依存・乱数なし・確保しない（姿勢は呼ぶ側の使い回し）。
+-import { AA_SRC_DAWN, AA_SRC_SEAPLANE, AA_SRC_SORTIE, addStrikePlanes, pushAaTarget, type AaTargets } from '../core/aa-fire';
+-import { downSeaplane, downStrikePlane } from '../core/air-down';
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.7・「S3b の追記」）: 港の空襲の動く編隊の機を §2 の 4 機の後に近い編隊の順で入れ（core/evac-sim-aa の addEvacPlanes＝模擬と同じ式・番号 編隊 × 4 ＋ 機）、
++// 撃墜は core/evac-repass の evacDownPlane（撃墜のビット＝2 回目に生き返らない）とその編隊の順番の飛ばし（模擬 stepEvacSimAa と同じステップ）。evac の無い任務は今のまま。
++import { AA_SRC_DAWN, AA_SRC_EVAC, AA_SRC_SEAPLANE, AA_SRC_SORTIE, addStrikePlanes, pushAaTarget, type AaTargets } from '../core/aa-fire';
++import { downSeaplane, downStrikePlane, skipDownedRuns } from '../core/air-down';
+ import { AS_INBOUND, AS_LEAVING, strikePose, type AirStrikeParams, type AirStrikeState } from '../core/air-strike';
+ import type { BoatState } from '../core/boat-motion';
++import type { EvacPlan } from '../core/evac-plan';
++import { evacDownPlane } from '../core/evac-repass';
++import { EVAC_AA_PLANE_STRIDE, addEvacPlanes } from '../core/evac-sim-aa';
+ import type { AircraftPose } from '../core/friendly';
+ import { seaplaneActive, seaplanePose, type SeaplaneParams, type SeaplaneState } from '../core/seaplane';
+ 
+@@ -15,12 +20,22 @@ export interface AaStrike {
+   readonly p: AirStrikeParams;
+ }
+ 
++/** 港の空襲（systems/world-evac がそのまま満たす）: 段取り・近い編隊の並べ替えの固定長の配列・最後に撃墜した編隊（撃墜の文の残りの機） */
++export interface AaEvac {
++  readonly plan: EvacPlan;
++  readonly aaOrder: Int32Array;
++  readonly aaD2: Float64Array;
++  lastDownFlight: number;
++}
++
+ /** 機の枠に読む世界の部分（MissionWorld がそのまま満たす） */
+ export interface AaSlotWorld {
+   readonly boat: { readonly state: BoatState };
+   readonly dawn: { readonly strike: AaStrike | null };
+   readonly patrol: { readonly flight: { readonly state: AirStrikeState }; readonly sortie: AirStrikeParams } | null;
+   readonly seaplane: { readonly state: SeaplaneState; readonly p: SeaplaneParams } | null;
++  /** 港の空襲（v0.6.11。jp_03。無い任務は null か無し） */
++  readonly evac?: AaEvac | null;
+ }
+ 
+ /** 機の来る任務か（夜明けの空襲・夜の出撃・夜の水上機のどれか。+24 の系列はこのときだけ作る） */
+@@ -41,6 +56,8 @@ export function fillAaSlots(t: AaTargets, w: AaSlotWorld, pose: AircraftPose): v
+     seaplanePose(sp.state, sp.p, pose);
+     if (pose.alpha > 0) pushAaTarget(t, boat.x + pose.dx, boat.y + pose.dy, AA_SRC_SEAPLANE, 0);
+   }
++  const ev = w.evac;
++  if (ev) addEvacPlanes(t, ev.plan, boat, ev.aaOrder, ev.aaD2, pose);
+ }
+ 
+ /**
+@@ -58,6 +75,16 @@ export function downSlot(t: AaTargets, k: number, w: AaSlotWorld, pose: Aircraft
+     const pa = w.patrol;
+     return pa ? downStrike(pa.flight.state, pa.sortie, i, pose, src) : -1;
+   }
++  if (src === AA_SRC_EVAC) {
++    const ev = w.evac;
++    const fl = ev ? ev.plan.flights[Math.floor(i / EVAC_AA_PLANE_STRIDE)] : undefined;
++    if (!ev || !fl) return -1;
++    strikePose(fl.port.state, fl.p, i % EVAC_AA_PLANE_STRIDE, pose);
++    if (!evacDownPlane(fl, i % EVAC_AA_PLANE_STRIDE)) return -1;
++    skipDownedRuns(fl.port.state, fl.p);
++    ev.lastDownFlight = fl.index;
++    return src;
++  }
+   const sp = w.seaplane;
+   if (!sp) return -1;
+   seaplanePose(sp.state, sp.p, pose);
+diff --git a/src/systems/arms-step.ts b/src/systems/arms-step.ts
+index b3b0a57..096afa5 100644
+--- a/src/systems/arms-step.ts
++++ b/src/systems/arms-step.ts
+@@ -7,17 +7,18 @@
+ // 撃墜が 1 機でもあれば stepAir の最初に毎ステップ順番を飛ばす（押していなくても。離したら波が止まる、を防ぐ。レビュー F2）。
+ // Phaser 非依存（tests から作れる）。絵は systems/world-arms の WorldArms（これを継ぎ fx* を描く）。§7: 確保は constructor だけ。押さなければ何も変わらない
+ // （新しい乱数は引かず、閃光も無く、世界の状態に触らない）。再生の道具（scratchpad の replay-v068）が読む公開の名: aaRng・shipRng・aaRounds・downs・shipRounds・blindTorpedoes。
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.4・§3.7）: 僚艇も撃つ＝隊の撃てる隻数 n の砲（kit.evacGuns＝模擬 core/evac-sim-aa と同じ）・港の空襲の機（aa-slots の evac の枝・AA_SRC_EVAC・EV_DOWN_EVAC）。
+ import { ARMS_CUE_LINGER_S } from '../config/arms-config';
+-import { AA_BUSY, AA_FIRING, AA_OUT_OF_ARC, AA_SEED_OFFSET, AA_SRC_DAWN, AA_SRC_SEAPLANE, AA_SRC_SORTIE, createAaState, createAaTargets, stepAaFire, type AaState, type AntiAircraftParams } from '../core/aa-fire';
++import { AA_BUSY, AA_FIRING, AA_OUT_OF_ARC, AA_SEED_OFFSET, AA_SRC_DAWN, AA_SRC_EVAC, AA_SRC_SEAPLANE, AA_SRC_SORTIE, createAaState, createAaTargets, stepAaFire, type AaState, type AntiAircraftParams } from '../core/aa-fire';
+ import { skipDownedRuns } from '../core/air-down';
+-import { CUE_NONE, EV_DOWN_SEAPLANE, EV_DOWN_SORTIE, EV_DOWN_STRIKE, ST_AA, ST_ARC, ST_NONE, ST_RELOAD, ST_SHIP, ST_SMOKE, blindTorpedoCue, type BlindKind } from '../core/arms-cue';
++import { CUE_NONE, EV_DOWN_EVAC, EV_DOWN_SEAPLANE, EV_DOWN_SORTIE, EV_DOWN_STRIKE, ST_AA, ST_ARC, ST_NONE, ST_RELOAD, ST_SHIP, ST_SMOKE, blindTorpedoCue, type BlindKind } from '../core/arms-cue';
+ import type { BoatState, SpeedStep } from '../core/boat-motion';
+ import type { AircraftPose } from '../core/friendly';
+ import { GUN_BLOCKED, GUN_FIRING, GUN_OUT_OF_ARC, GUN_SAFE, type GunBatteryParams, type GunEvents } from '../core/gun-battery';
+ import { createMagazine, magazineTick, type MagazineParams, type MagazineState } from '../core/magazine';
+ import { PT_GUN_RELOAD, type PtGunState } from '../core/pt-gun';
+ import { SeededRng } from '../core/rng';
+-import { downSlot, fillAaSlots, hasAircraft, liveStrikePlanes, type AaSlotWorld } from './aa-slots';
++import { downSlot, fillAaSlots, hasAircraft, liveStrikePlanes, type AaEvac, type AaSlotWorld } from './aa-slots';
+ import { ShipGun, type ArmsShipGroup, type ShipGunWorld } from './ship-gun';
+ 
+ /** 兵装が固定ステップで世界から読み書きする部分（MissionWorld がそのまま満たす。tests は偽物で組む） */
+@@ -34,6 +35,8 @@ export interface ArmsWorld extends AaSlotWorld, ShipGunWorld {
+   readonly hunt: { readonly battery: { readonly status: number }; readonly mag: MagazineState | null } | null;
+   readonly pts: { readonly gun: { readonly state: PtGunState } | null } | null;
+   readonly destroyers: ArmsShipGroup | null;
++  /** 港の空襲（jp_03。systems/world-evac）: 撃てる隻数（浮いていて上げていない操作中の隊の艇）と k 発目の曳光弾の出どころ */
++  readonly evac?: (AaEvac & { readonly gunN: number; shooter(k: number): BoatState }) | null;
+ }
+ 
+ /** 砲と対空の材料（systems/world-arms の buildArms が config/loadout-data から作る）。無ければ狙う艦の無い魚雷だけ（S2 の形） */
+@@ -42,6 +45,8 @@ export interface ArmsKit {
+   readonly aa: AntiAircraftParams;
+   readonly seed: number;
+   readonly world: ArmsWorld;
++  /** 隊の砲（jp_03。n = 1〜3 隻ぶん＝core/evac-sim-aa の evacGunVariants。無い任務は無し） */
++  readonly evacGuns?: readonly GunBatteryParams[] | null;
+ }
+ 
+ export class ArmsStep {
+@@ -56,7 +61,7 @@ export class ArmsStep {
+   /** 機へ撃った発数・撃墜（出どころごと: 夜明けの空襲・夜の出撃・夜の水上機）・水上機を落とした */
+   aaRounds = 0;
+   downs = 0;
+-  readonly downsBy: number[] = [0, 0, 0];
++  readonly downsBy: number[] = [0, 0, 0, 0];
+   seaplaneDowned = false;
+   /** 狙う艦の無い魚雷の本数（Result・初発射時の燃料から除く） */
+   blindTorpedoes = 0;
+@@ -73,6 +78,7 @@ export class ArmsStep {
+   flashActive = false;
+   flashUntilS = -Infinity;
+   protected readonly gun: GunBatteryParams | null;
++  private readonly evacGuns: readonly GunBatteryParams[] | null;
+   private readonly aaParams: AntiAircraftParams | null;
+   private readonly magP: MagazineParams | null;
+   private readonly ownsMag: boolean;
+@@ -100,6 +106,7 @@ export class ArmsStep {
+     const gun = kit ? kit.gun : null;
+     const w = kit ? kit.world : null;
+     this.gun = gun;
++    this.evacGuns = kit && kit.evacGuns ? kit.evacGuns : null;
+     this.aaParams = kit ? kit.aa : null;
+     this.shipGun = gun && kit && w && w.destroyers ? new ShipGun(gun, w.destroyers, kit.seed) : null;
+     this.aaRng = gun && kit && w && hasAircraft(w) ? new SeededRng((kit.seed + AA_SEED_OFFSET) >>> 0) : null;
+@@ -109,7 +116,7 @@ export class ArmsStep {
+     const borrowed = (w && w.pts && w.pts.gun ? w.pts.gun.state : null) ?? (w && w.hunt ? w.hunt.mag : null);
+     this.magP = gun && gun.magazine ? gun.magazine : null;
+     this.ownsMag = used && borrowed === null && this.magP !== null;
+-    this.mag = !used ? null : borrowed ?? (this.magP ? createMagazine(this.magP) : null);
++    this.mag = !used ? null : borrowed ?? (this.magP ? createMagazine((this.evacGuns ? this.evacGuns[this.evacGuns.length - 1]!.magazine : null) ?? this.magP) : null); // jp_03 は 3 隻ぶんで始める（模擬と同じ）
+     this.fullCues = w !== null && w.hunt === null && w.pts === null;
+     this.flashRevealM = gun ? gun.flashRevealM : 0;
+     this.flashHoldS = kit ? kit.aa.flashHoldS : 0;
+@@ -162,7 +169,7 @@ export class ArmsStep {
+ 
+   /** 固定ステップの最初（敵の側の最初）: 自分の弾倉の交換（押していなくても 1 回）→ 艦への機銃（駆逐艦の任務だけ）。撃てば閃光 */
+   stepShips(w: ArmsWorld, g: ArmsShipGroup | null, dt: number, feelDt: number): void {
+-    if (this.ownsMag) magazineTick(this.mag!, this.magP!, feelDt);
++    if (this.ownsMag) magazineTick(this.mag!, this.gunNow(w).magazine ?? this.magP!, feelDt);
+     const sg = this.shipGun;
+     if (!sg || !g) return;
+     sg.step(w, g, w.input.gunHeld, this.canFire(w), this.mag, this.magP, feelDt, dt, this.shipEvents);
+@@ -193,7 +200,8 @@ export class ArmsStep {
+       t.n = 0;
+       if (held && canFire && !busy) fillAaSlots(t, w, this.pose);
+       const before = st.rounds;
+-      const k = stepAaFire(st, this.gun, this.aaParams, this.mag, this.magP, held, canFire && !busy, w.band, w.boat.state, t, this.aaRng, feelDt);
++      const g = this.gunNow(w);
++      const k = stepAaFire(st, g, this.aaParams, this.mag, g.magazine ?? null, held, canFire && !busy, w.band, w.boat.state, t, this.aaRng, feelDt);
+       if (held && canFire && busy) st.status = AA_BUSY;
+       const n = st.rounds - before;
+       if (n > 0) {
+@@ -201,7 +209,7 @@ export class ArmsStep {
+         this.flash(w);
+         const b = w.boat.state;
+         this.fxMuzzle(b.x, b.y);
+-        for (let r = 0; r < n; r++) this.fxAaRound(b.x, b.y, t.x[st.target]!, t.y[st.target]!);
++        for (let r = 0; r < n; r++) this.fxAaRound(w.evac ? w.evac.shooter(this.aaRounds - n + r).x : b.x, w.evac ? w.evac.shooter(this.aaRounds - n + r).y : b.y, t.x[st.target]!, t.y[st.target]!); // jp_03 は隊の艇へ順に
+       }
+       if (k >= 0) this.down(w, k);
+       this.aaLingerS = st.status === AA_FIRING ? ARMS_CUE_LINGER_S : Math.max(0, this.aaLingerS - feelDt);
+@@ -217,7 +225,8 @@ export class ArmsStep {
+     this.downsBy[src] = this.downsBy[src]! + 1;
+     if (src === AA_SRC_SEAPLANE) this.seaplaneDowned = true;
+     const ds = w.dawn.strike;
+-    this.event(src === AA_SRC_DAWN ? EV_DOWN_STRIKE : src === AA_SRC_SORTIE ? EV_DOWN_SORTIE : EV_DOWN_SEAPLANE, src === AA_SRC_DAWN && ds ? liveStrikePlanes(ds.state) : 0);
++    const fl = src === AA_SRC_EVAC && w.evac ? w.evac.plan.flights[w.evac.lastDownFlight] : undefined;
++    this.event(src === AA_SRC_DAWN ? EV_DOWN_STRIKE : src === AA_SRC_SORTIE ? EV_DOWN_SORTIE : src === AA_SRC_EVAC ? EV_DOWN_EVAC : EV_DOWN_SEAPLANE, src === AA_SRC_DAWN && ds ? liveStrikePlanes(ds.state) : fl ? liveStrikePlanes(fl.port.state) : 0);
+     this.skipDowned(w);
+     this.fxDown(src, this.slots.x[k]!, this.slots.y[k]!, this.pose.headingDeg);
+   }
+@@ -230,6 +239,11 @@ export class ArmsStep {
+     if (pa) skipDownedRuns(pa.flight.state, pa.sortie);
+   }
+ 
++  /** 撃つ砲（jp_03 は隊の撃てる隻数 n の値。ほかの任務は艇の砲＝magazine は magP と同じ物） */
++  private gunNow(w: ArmsWorld): GunBatteryParams {
++    return this.evacGuns && w.evac ? this.evacGuns[Math.max(1, Math.min(this.evacGuns.length, w.evac.gunN)) - 1]! : this.gun!;
++  }
++
+   /** 新しい道が撃てる: 浮いている・帰投地点の輪の外・座礁していない・終わりの待ちでない */
+   private canFire(w: ArmsWorld): boolean {
+     return !w.boat.sinking && !w.atHome && !w.grounded && !this.endHold;
+diff --git a/src/systems/boat-damage.ts b/src/systems/boat-damage.ts
+index 56dc0b9..6d35bd5 100644
+--- a/src/systems/boat-damage.ts
++++ b/src/systems/boat-damage.ts
+@@ -1,5 +1,6 @@
+ // 自艇の被害の適用と沈没の開始（v0.4.1 で mission-world から切り出し。中身は v0.4.0 のまま）。
+ // 砲弾・掃射・爆弾の命中はすべてここを通る（docs/02 §6.6）。§7: 命中の結果は 1 個の HitOutcome に書き戻す（確保しない）。
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.3）: 沈没の振り替え divert（systems/world-evac が core/evac-seat の evacSinkLeader を置く。ほかの任務は null＝今のまま）。
+ import { applyShellHit, type DamageParams, type DamageState, type HitOutcome, type HitSpec } from '../core/gunnery';
+ import type { BoatParams } from '../core/boat-motion';
+ import type { MissionEndReason } from '../core/mission-flow';
+@@ -11,6 +12,8 @@ export class BoatDamage {
+   private readonly out: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
+   /** 火災で沈んだときの終了理由＝火災を起こした原因（砲撃か味方機の掃射か爆弾か） */
+   fireReason: MissionEndReason = 'destroyed';
++  /** 沈没の振り替え（jp_03 だけ。座席＝操作中の隊長艇が沈む時、ほかに浮いている艇があれば同期に僚艇・次の隊へ移して true＝沈めない・命中スローなし。r2 H5・M1） */
++  divert: (() => boolean) | null = null;
+   /** 無傷時の最大速力（機関損傷で boatParams.speedMaxMps を下げる） */
+   private readonly speedMaxBaseMps: number;
+ 
+@@ -41,6 +44,7 @@ export class BoatDamage {
+   /** 沈没の開始（体当たり・砲撃・掃射・爆弾・火災・荒波）。HP 0・火災なしにして演出、完了で onBoatSunk。すでに沈没中なら false */
+   sink(reason: MissionEndReason): boolean {
+     if (this.boat.sinking) return false;
++    if (this.divert && this.divert()) return false;
+     // 沈んだ艇の HP は 0、火災も消す（体当たりでも HUD と Result が 100 のままにならないように）
+     this.state.hp = 0;
+     this.state.fireLeftS = 0;
+diff --git a/src/systems/mission-end.ts b/src/systems/mission-end.ts
+index 5110942..37b12cf 100644
+--- a/src/systems/mission-end.ts
++++ b/src/systems/mission-end.ts
+@@ -6,6 +6,7 @@
+ // v0.6.8: 窓の間は兵装の新しい道（systems/arms-step の hold）も止める（世界に arms が無ければ v0.6.7 のまま）。
+ // v0.6.9（jp_04。spec-v069 R14 A5 の (b)）: 停泊して揚陸する輸送船の任務は、揚陸の決着（揚陸完了か沈没）の前に帰投の輪に入っても終えない（輪の中で待つ。決着したらいつもどおり帰投）。
+ //   揚陸の無い任務（landing が無い・null）は 1 字も変わらない終わり方（decideMissionEnd をそのまま）。
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.8）: 空襲下の退避の任務は決着（240 秒＝第 1 次の空襲が去る）の前は帰投・漂流・座礁で終えない（evacHold。landingHold の作法）。沈み始めた艇は沈没の窓のまま。
+ import { discardFireInput, type InputState } from '../core/input-state';
+ import { createEndSettle, decideMissionEnd, promoteAdriftToCleared, stepEndSettle, type EndCheck, type EndParams, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
+ 
+@@ -24,6 +25,8 @@ export interface MissionEndWorld {
+   readonly stepTimeS: number;
+   /** 停泊して揚陸する輸送船（v0.6.9。jp_04。systems/world-landing の決着）。揚陸の無い任務は null か無し */
+   readonly landing?: { readonly resolved: boolean } | null;
++  /** 空襲下の退避（v0.6.11。jp_03。systems/world-evac の決着）。無い任務は null か無し */
++  readonly evac?: { readonly settled: boolean } | null;
+ }
+ 
+ export class MissionEnd {
+@@ -67,7 +70,7 @@ export class MissionEnd {
+     c.grounded = w.grounded;
+     c.fleetGone = this.fleetGoneClears && w.enemy.allOut;
+     if (promoteAdriftToCleared(this.settle, w.stepTimeS, c.boatSinking, c.fleetGone, c.destroyerSinkPlaying)) return null;
+-    return stepEndSettle(this.settle, w.stepTimeS, c.boatSinking, this.sunkReason, landingHold(w) ? null : decideMissionEnd(c, this.params), running(w), this.params.endSettleS);
++    return stepEndSettle(this.settle, w.stepTimeS, c.boatSinking, this.sunkReason, landingHold(w) || evacHold(w) ? null : decideMissionEnd(c, this.params), running(w), this.params.endSettleS);
+   }
+ 
+   /**
+@@ -93,6 +96,11 @@ export function landingHold(w: MissionEndWorld): boolean {
+   return w.landing ? w.atHome && !w.landing.resolved && !w.boat.sinking : false;
+ }
+ 
++/** 空襲下の退避の決着（240 秒）の前（jp_03 だけ。spec §3.8: 隠れても・止まっても終えない＝模擬 core/evac-sim の「決着の前は終えない」。沈み始めた艇は沈没の窓のまま） */
++export function evacHold(w: MissionEndWorld): boolean {
++  return w.evac ? !w.evac.settled && !w.boat.sinking : false;
++}
++
+ /** 待つ魚雷: 決着していない魚雷。発射待ちは自艇が浮いている間だけ数える（沈み始めた艇からは撃たない＝待っても決着しない） */
+ function running(w: MissionEndWorld): boolean {
+   return w.boat.sinking ? w.torpedoes.unresolvedCount > 0 : w.torpedoesRunning;
+diff --git a/src/systems/mission-world.ts b/src/systems/mission-world.ts
+index 9eba75e..05e34d8 100644
+--- a/src/systems/mission-world.ts
++++ b/src/systems/mission-world.ts
+@@ -26,6 +26,7 @@ import { Convoy } from './convoy';
+ import { EngineTrouble } from './engine-trouble';
+ import type { DestroyerGroup } from './destroyer-group';
+ import type { EscortBoat } from './escort-boat';
++import { buildEvac, type WorldEvac } from './evac-flights';
+ import type { EnemySide } from './enemy-side';
+ import type { EnemySeaplane } from './enemy-seaplane';
+ import type { FriendlyFire } from './friendly-fire';
+@@ -72,6 +73,7 @@ export class MissionWorld {
+   readonly dawn: WorldDawn; // 夜明けのラッチと夜明けの空襲（v0.6.1。world-dawn.ts）。夜明けは任務の終わりではない
+   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
+   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
++  readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
+   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
+   readonly params: BoatParams;
+   readonly returnPoint: ReturnPoint;
+@@ -130,6 +132,7 @@ export class MissionWorld {
+     this.crewLostNow = crewLost(c.crew, this.damageParams.maxHp, this.damage.hp);
+     setPerformance(this.params, this.turnBaseDegS, this.accelBaseMps2, (this.storm ? this.storm.turnFactor : 1) * crewTurnFactor(c.crewEffects, this.crewLostNow), crewAccelFactor(c.crewEffects, this.crewLostNow));
+     stepPlayerBoat(this, dt); // 自艇の運動（座礁・縁・浅瀬・燃料・輪。world-boat.ts。沈み始めたら何もしない）
++    this.evac?.stepBoats(dt, feelDt); // 空襲下の退避（v0.6.11。jp_03）の隊の動きと帰投（spec-v0611-r2 §8 の段 3。模擬 core/evac-sim と同じ順）
+     this.escort?.step(dt, boat, !this.boat.sinking); // 僚艇（v0.4.4）は自艇を動かした後・駆逐艦の前（同じステップの位置を駆逐艦が狙う）
+     this.convoy?.step(dt); // 輸送隊（v0.6.4）も自艇の後・米PT の前（同じステップの大発の位置を米PT が狙う。模擬 core/convoy-sim と同じ順）
+     this.gunboat?.step(dt, this.pts?.targets ? this.pts.targets.set.current : 0, this.boat.sinking, this.visRange2); // 隼艇（v0.6.6）は輸送隊の直後（判断 → 運動 → 帯 → valid。模擬と同じ順）
+@@ -147,6 +150,7 @@ export class MissionWorld {
+     stepEnemySide(this, g, dt, feelDt, boat); // 駆逐艦の隊か大発の隊 → 米PT の隊 → 機関の不調（world-enemy-step.ts。v0.6.6 までここに書いていた段。同じ順）
+     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.boatDamage.fireReason);
+     this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
++    this.evac?.stepAir(feelDt); // 港の空襲の段（v0.6.11。jp_03。§8 の段 5: 予告・狙い・編隊・着弾・操作していない隊長艇の火災）は夜明けの空襲（240 秒の後の 4 機）の前
+     this.dawn.step(feelDt, this); // 夜明けの空襲は最後（夜明け前は何もしない＝夜の順序と乱数は v0.6.0 のまま）
+   };
+ 
+@@ -183,7 +187,7 @@ export class MissionWorld {
+     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
+     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, getBoatTorpedoCount(data, mission.playerBoatId), mission.bounds); // 艇が積む本数（v0.6.8。setup.torpedoCapacity は主兵装の本数のまま）
+     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
+-    const onSunk = (x: number, y: number): void => { this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発
++    const onSunk = (x: number, y: number): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発。jp_03（撃墜だけが届く）は爆発だけ（r2 M1）
+     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
+     // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）
+     const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy);
+@@ -209,6 +213,7 @@ export class MissionWorld {
+     this.engine = s.engine ? new EngineTrouble(s.engine) : null; // 機関の不調（v0.6.5。乱数なし＝生成の順と乱数の系列に触らない）
+     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
+     this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
++    this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
+     this.refreshShallowStatus();
+   }
+ 
+diff --git a/src/systems/world-arms.ts b/src/systems/world-arms.ts
+index e06ea24..3c954f3 100644
+--- a/src/systems/world-arms.ts
++++ b/src/systems/world-arms.ts
+@@ -10,6 +10,7 @@ import type { GameData } from '../config/game-data';
+ import { GUN_FLASH_LIFETIME_S, GUN_FLASH_SCALE, GUN_TRACER_TINT } from '../config/hunt-config';
+ import { getLoadout } from '../config/loadout-data';
+ import type { BlindKind } from '../core/arms-cue';
++import { evacGunVariants } from '../core/evac-sim-aa';
+ import { radToDeg } from '../core/units';
+ import { ArmsStep, type ArmsKit } from './arms-step';
+ import { syncShells } from './barge-hunt';
+@@ -140,12 +141,13 @@ export class WorldArms extends ArmsStep {
+ 
+ /**
+  * 任務の兵装を作る（艇が魚雷も砲も積まなければ null。遊べる任務ではいつも作る）。狙う艦の無い魚雷の文は任務の敵から: 大発の隊（us_03）・米PT の隊（jp_01・jp_05）・それ以外（艦なし）。
+- * 砲は艇の gun_battery（主兵装に関わらず）、対空と閃光は hit_rate_model.json（?debug&aa で 1 発の確率だけ上書き）
++ * 砲は艇の gun_battery（主兵装に関わらず）、対空と閃光は hit_rate_model.json（?debug&aa で 1 発の確率だけ上書き）。空襲下の退避（v0.6.11 S4。jp_03）は隊の砲（n = 1〜group_size 隻。模擬と同じ）
+  */
+ export function buildArms(scene: Phaser.Scene, w: MissionWorld, data: GameData, seed: number, onSunk: (x: number, y: number) => void): WorldArms | null {
+   const lo = getLoadout(data, w.setup.mission);
+   if (lo.torpedoes <= 0 && lo.gun === null) return null;
+   const kind: BlindKind = w.hunt ? 'barge' : w.pts ? 'pt' : 'noship';
+   const aa = Number.isFinite(DEBUG_AA_CHANCE) ? { ...lo.aa, hitChancePerRound: Math.min(1, DEBUG_AA_CHANCE) } : lo.aa;
+-  return new WorldArms(scene, kind, { gun: lo.gun, aa, seed, world: w }, w.splashes, onSunk);
++  const ev = w.setup.evac;
++  return new WorldArms(scene, kind, { gun: lo.gun, aa, seed, world: w, evacGuns: ev && lo.gun ? evacGunVariants(lo.gun, ev.params.groupSize) : null }, w.splashes, onSunk);
+ }
+diff --git a/src/systems/world-boat.ts b/src/systems/world-boat.ts
+index 701dff1..c205daa 100644
+--- a/src/systems/world-boat.ts
++++ b/src/systems/world-boat.ts
+@@ -1,9 +1,12 @@
+ // 自艇の運動の固定ステップ（v0.6.5 の準備で systems/mission-world.ts の stepFn から移した。順と式は 1 字も変えていない）: 座礁・stepBoat・海域の縁・浅瀬・燃料・帰投の輪。
+ // v0.6.5: stepBoat の入力だけ、機関の不調（systems/engine-trouble）の上限を通す（燃料切れの漂流が優先）。
+ // 沈み始めたら何もしない（乗員と setPerformance は沈み始めても回るので mission-world に残す）。§7: 確保しない。
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.3・§3.9）: 座席への入力は systems/world-evac の command（スティックの latch。core/evac-seat の evacSeatCommand）、燃料は stepTimeS が
++// fuel_free_until_s に届いてから（空襲の間は数えない。模擬 core/evac-sim と同じ式）。evac の無い任務は今のまま（stepTimeS ≥ 0 − ε はいつも真）。
+ import { clampToBounds, stepBoat, type BoatInput, type BoatParams, type BoatState } from '../core/boat-motion';
+ import { stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
+ import { insideRing, type ReturnPoint } from '../core/mission-flow';
++import { EVAC_TIME_EPS_S } from '../core/evac-data';
+ import { shallowIndexAt } from '../core/shallows';
+ import type { EngineTrouble } from './engine-trouble';
+ import { DRIFT_INPUT, type WorldEvents } from './world-events';
+@@ -21,6 +24,9 @@ export interface PlayerBoatWorld {
+   readonly events: Pick<WorldEvents, 'onGrounded'>;
+   /** 機関の不調（v0.6.5。jp_05）。無い任務・?debug&engoff は null */
+   readonly engine: EngineTrouble | null;
++  /** 固定ステップで進んだ実秒（燃料を数え始める秒と比べる）と空襲下の退避（jp_03。無い任務は null か無し） */
++  readonly stepTimeS: number;
++  readonly evac?: { command(input: BoatInput): BoatInput; readonly fuelFreeUntilS: number } | null;
+   grounded: boolean;
+   atHome: boolean;
+ }
+@@ -34,7 +40,7 @@ export function stepPlayerBoat(w: PlayerBoatWorld, dt: number): void {
+       boat.speedMps = 0;
+     } else {
+       // 燃料切れなら漂流（舵も速度指令も効かない）。機関の不調（v0.6.5）の間は速さの上限が艇の静音の上限（舵は残る。不調の無い任務は w.input そのもの）。燃料は運動と同じ game dt で積分する
+-      stepBoat(boat, w.fuel.empty ? DRIFT_INPUT : w.engine ? w.engine.input(w) : w.input, w.params, dt);
++      stepBoat(boat, w.fuel.empty ? DRIFT_INPUT : w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input, w.params, dt);
+       clampToBounds(boat, c.mission.bounds, c.boundsMarginM);
+       // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
+       if (boat.speedMps > c.grounding.safeSpeedMps && shallowIndexAt(c.mission.shallows, boat.x, boat.y) >= 0) {
+@@ -43,7 +49,7 @@ export function stepPlayerBoat(w: PlayerBoatWorld, dt: number): void {
+         w.events.onGrounded(boat.x, boat.y);
+       }
+     }
+-    stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);
++    if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);
+     w.atHome = insideRing(w.returnPoint, boat.x, boat.y);
+   }
+ }
+diff --git a/src/systems/world-dawn.ts b/src/systems/world-dawn.ts
+index 5404925..b54eff3 100644
+--- a/src/systems/world-dawn.ts
++++ b/src/systems/world-dawn.ts
+@@ -5,6 +5,8 @@
+ // hide なら大発が岸へ。どちらもラッチの 1 回だけ（enemy.withdraw）。stay・none は何もしない。
+ // §7: 確保は constructor だけ。毎ステップ・毎フレームは読み書きだけ。
+ // strike は構造の型 DawnStrike で持つ（AirStrikeFlight を import すると game-config → screen-fit の DOM がテストの node 型検査に入るため）。
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.8・§10.3）: day_start の任務は海を最初から昼の色に（段を最後に固定）。ラッチの「中」は homeAtLatch（systems/world-evac が
++// core/evac-seat の evacSeatHome(…, true) を置く＝入っている・上げている途中も中。r2 L15）。どちらも evac の無い任務では今のまま。
+ import type Phaser from 'phaser';
+ import { SEA_LIGHT_POST_S, SEA_LIGHT_PRE_S, SEA_LIGHT_STEPS } from '../config/dawn-config';
+ import type { AirStrikeParams, AirStrikeState } from '../core/air-strike';
+@@ -62,6 +64,10 @@ export class WorldDawn {
+   readonly retireJa: string;
+   private readonly durationS: number;
+   private readonly seaLight: SeaLight;
++  /** 海を最初から昼に（setup.evac.dayStart。jp_03） */
++  private readonly dayStart: boolean;
++  /** ラッチの瞬間の「中」（null なら atHome。jp_03 は world-evac が置く） */
++  homeAtLatch: (() => boolean) | null = null;
+ 
+   constructor(
+     scene: Phaser.Scene,
+@@ -76,6 +82,7 @@ export class WorldDawn {
+     this.retireHeadingDeg = edge ? retireHeadingDeg(edge, setup.night.mirrored) : NaN;
+     this.retireJa = edge ? retireDirJa(edge, setup.night.mirrored) : '';
+     this.seaLight = new SeaLight(scene.cameras.main);
++    this.dayStart = setup.evac ? setup.evac.dayStart : false;
+   }
+ 
+   /**
+@@ -85,7 +92,7 @@ export class WorldDawn {
+   latch(w: DawnWorldView): void {
+     if (this.reached || w.boat.sinking || w.grounded || !dawnReached(this.durationS, w.stepTimeS)) return;
+     this.reached = true;
+-    this.caughtOutside = !w.atHome;
++    this.caughtOutside = !(this.homeAtLatch ? this.homeAtLatch() : w.atHome);
+     this.strike?.start(w.boat.state);
+     // 艦はこの後の同じステップ（destroyer-step・barge-hunt）から退く。retire で縁が無い（遊べない任務の形）なら退かない
+     if ((this.ships === 'retire' && !Number.isNaN(this.retireHeadingDeg)) || this.ships === 'hide') w.enemy.withdraw(this.retireHeadingDeg);
+@@ -101,7 +108,7 @@ export class WorldDawn {
+ 
+   /** 毎フレーム: 海の明るさ（段が変わったときだけ背景色）と、空襲の機体・爆弾・着弾点の輪・爆撃進路の線 */
+   updateVisuals(w: DawnWorldView): void {
+-    this.seaLight.update(seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS));
++    this.seaLight.update(this.dayStart ? SEA_LIGHT_STEPS : seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS));
+     this.strike?.updateVisuals(w.boat.state, w.escort ? w.escort.state.boat : null);
+   }
+ 
+diff --git a/src/systems/world-input.ts b/src/systems/world-input.ts
+index ff189bf..60d3ee5 100644
+--- a/src/systems/world-input.ts
++++ b/src/systems/world-input.ts
+@@ -1,6 +1,7 @@
+ // HUD からの入力の消費（v0.3.3 で mission-world から切り出し。中身は v0.3.2 のまま、識別を追加）。毎フレーム 1 回、固定ステップの前に呼ぶ。
+ // v0.6.1: updateFrame の入力の段（consumeFrameInput）もここへ移した（中身は v0.6.0 のまま）。
+ // v0.6.8 S2: 魚雷の発射（要求の消費と発射管制）は systems/torpedo-free（どの任務でも撃てる。狙える艦がある間の文は同じ）。
++// v0.6.11 S4（jp_03。spec-v0611-r2 §3.3・§8）: ［切替］とスティックの latch は沈没の確かめの直後・消火の前（systems/world-evac の frameInput。模擬 core/evac-sim のフレームの頭と同じ順）。
+ import type { DamageState } from '../core/gunnery';
+ import { discardFireInput, type InputState } from '../core/input-state';
+ import { startSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
+@@ -40,6 +41,7 @@ export function consumeFrameInput(w: MissionWorld, realDt: number): void {
+   // 識別は沈没中でも消費する（フラグを残さない）。ステップの前なので、猶予が尽きるフレームの押下も間に合う
+   consumeIdentifyInput(w.input, w.friendly);
+   if (w.boat.sinking) return;
++  w.evac?.frameInput(); // 空襲下の退避（jp_03）: ［切替］・latch・消火の倍率の乗員（無い任務は null）
+   // 帰投地点の輪の中では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。v0.6.8 から輪の外ならどの任務でも撃てる（狙える艦が無ければ狙う艦の無い魚雷）。煙幕は漂流中でも使える
+   consumeTorpedoFire(w);
+   w.extinguishHeldS = consumeSmokeInput(w.input, w.smoke, w.smokeParams, w.damage, w.damageParams.extinguishHoldS, w.extinguishHeldS, realDt, w.extinguishHoldScale);
+diff --git a/src/systems/world-visuals.ts b/src/systems/world-visuals.ts
+index 464a2cf..13bd602 100644
+--- a/src/systems/world-visuals.ts
++++ b/src/systems/world-visuals.ts
+@@ -24,6 +24,7 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
+   w.arms?.updateVisuals(realDt, w);
+   w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
+   w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）
++  w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）
+ }
+ 
+ /** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順。揚陸（v0.6.9）・卯月（v0.6.10）は最後） */
+@@ -45,4 +46,5 @@ export function destroyWorldVisuals(w: MissionWorld): void {
+   w.boat.destroy();
+   w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）
+   w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
++  w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
+ }
+diff --git a/src/ui/arms-lines.ts b/src/ui/arms-lines.ts
+index 832778b..bfc5b85 100644
+--- a/src/ui/arms-lines.ts
++++ b/src/ui/arms-lines.ts
+@@ -8,6 +8,7 @@ import { ARMS_CUE_DOWN_MS, ARMS_CUE_TORP_MS, CUE_DOWN_COLOR } from '../config/ar
+ import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
+ import {
+   CUE_NONE,
++  EV_DOWN_EVAC,
+   EV_DOWN_SEAPLANE,
+   EV_DOWN_SORTIE,
+   EV_DOWN_STRIKE,
+@@ -38,6 +39,7 @@ export function armsCueJa(code: number, n: number): ArmsCueLine {
+     case EV_TORP_NOSHIP:
+       return { text: '狙う艦がいない', color: HUD_COLOR_STRONG };
+     case EV_DOWN_STRIKE:
++    case EV_DOWN_EVAC: // 港の空襲の編隊（v0.6.11 S4。n はその編隊の残り）
+       return { text: `敵機 撃墜！ 残り ${n} 機`, color: CUE_DOWN_COLOR };
+     case EV_DOWN_SEAPLANE:
+       return { text: '水上機 撃墜！', color: CUE_DOWN_COLOR };
+@@ -72,7 +74,7 @@ export function armsCueOverTorpedo(code: number): boolean {
+ 
+ /** 出来事の文が撃墜（金色で、出るときに少し大きく飛び出す） */
+ export function armsCueIsDown(code: number): boolean {
+-  return code === EV_DOWN_STRIKE || code === EV_DOWN_SEAPLANE || code === EV_DOWN_SORTIE;
++  return code === EV_DOWN_STRIKE || code === EV_DOWN_SEAPLANE || code === EV_DOWN_SORTIE || code === EV_DOWN_EVAC;
+ }
+ 
+ /** 出来事の文を出すミリ秒（撃墜は長め） */
+diff --git a/tests/input-state.test.ts b/tests/input-state.test.ts
+index 054194c..e04fb69 100644
+--- a/tests/input-state.test.ts
++++ b/tests/input-state.test.ts
+@@ -48,7 +48,7 @@ describe('stickToCommand（スティック → 目標方位・速度）', () =>
+ describe('InputState', () => {
+   it('初期値とリセット', () => {
+     const s = createInputState();
+-    const initial = { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false };
++    const initial = { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false };
+     expect(s).toEqual(initial);
+     s.headingDeg = 90;
+     s.speed01 = 1;
+@@ -60,6 +60,7 @@ describe('InputState', () => {
+     s.lookout = true;
+     s.identifyTap = true;
+     s.gunHeld = true;
++    s.switchTap = true; // v0.6.11 S4（jp_03 の［切替］）
+     resetInput(s);
+     expect(s).toEqual(initial);
+   });
+diff --git a/tests/world-visuals.test.ts b/tests/world-visuals.test.ts
+index 09ffe69..f248725 100644
+--- a/tests/world-visuals.test.ts
++++ b/tests/world-visuals.test.ts
+@@ -46,11 +46,12 @@ function bodyLines(src: string, name: string): string[] {
+ describe('systems/world-visuals（v0.6.9 S0: mission-world の見た目の同期と破棄の切り出し）', () => {
+   // v0.6.9 S5a: 揚陸（systems/world-landing。jp_04 だけ。ほかの任務は w.landing が null）の 1 行ずつを最後に足した。2ad122b の行とその順は変えない
+   // v0.6.10 S5a: その後に卯月（w.landing.ally。jp_04 だけ・?debug&noally は null）の 1 行ずつ
++  // v0.6.11 S4: その後に空襲下の退避（w.evac。jp_03 だけ。ほかの任務は null）の 1 行ずつ
+   it('updateWorldVisuals は 2ad122b の updateFrame の 16 行を同じ順で持つ（頭は const g = w.destroyers だけ）。最後に揚陸の 1 行（v0.6.9 S5a。S6b で世界を渡す）', () => {
+-    expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
++    expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）', 'w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
+   });
+   it('destroyWorldVisuals は 2ad122b の destroy() の 15 行を同じ順で持つ。最後に揚陸の 1 行（v0.6.9 S5a）', () => {
+-    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）']);
++    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）', 'w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）']);
+   });
+   it('mission-world の updateFrame は 入力 → 固定ステップ → 命中スローの残り → 浅瀬 → 見た目 の順、destroy は world-visuals だけ。見た目の同期・破棄はもう持たない', () => {
+     const src = read('mission-world.ts');
