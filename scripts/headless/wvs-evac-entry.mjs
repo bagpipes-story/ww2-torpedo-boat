@@ -31,7 +31,7 @@ function flat(roots) {
 }
 
 /** HUD の［切替］のボタンを 1 回押して離す（押下で InputState.switchTap。ポインタの番号は台本の指と重ならない 97） */
-function pressSwitch() {
+export function pressSwitch() {
   const hud = window.__game.scene.getScene('Hud');
   const b = hud && hud.panel ? hud.panel.switchButton : null;
   if (!b) throw new Error('HUD に［切替］のボタンが無い');

@@ -1,6 +1,7 @@
 // 空襲下の退避（v0.6.11。jp_03「運天港・空襲下の退避」。spec-v0611-r2 §12.4）の模擬の帯。帯の数はユーザーの決めの calibration targets（plan/user-decisions）から来るので動かさない。
 // 合わせるのは data のつまみだけ（spec §12.5 の順。動かしたら理由を source と CHANGELOG に）。scripts/evac-sim の TABLE=2 が N 400 × 2 組（seed 1〜400・1001〜1400）を合わせた回で、
-// S7 の tests/evac-sim-b が同じ帯を検査する。Phaser 非依存・window を読まない。
+// S7 から tests/evac-sim-b・c・d（N 50 × 2 組の軽い組＝tests/evac-sim-kit）と scripts/headless/g2.sh の EVAC=1（N 400 × 2 組の md5 と「帯: すべて ✓」）が同じ帯を検査する。
+// Phaser 非依存・window を読まない。
 import type { EvacCell } from '../core/evac-sim-cell';
 import type { EvacPolicy } from '../core/evac-sim-policy';
 

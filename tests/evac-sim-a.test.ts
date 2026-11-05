@@ -1,6 +1,6 @@
 // 空襲下の退避の模擬（v0.6.11 S3。spec-v0611-r2 §12・§13 の S3）: 決定性（同じ seed で同じ 1 回・同じ表）、乱数の系列 +29〜+43 の引く回数
 // （+29 は予告ごとに陰の数、+30 は生成の 6 回 ＋ pick の境ごとに 6 隊 × 2 回、+31 は投下ごとに 1 回、編隊の系列は投下ごとに 2 回 ＋ 隊長艇への命中の火災・機関）、
-// 同時に動く編隊（ノーマル ≤ 2・ハード ≤ 3）と起動時の数（ノーマル 8・ハード 12）、終わりの形、遊び方の表、漂流の待ちが世界と同じ。帯は S7 の tests/evac-sim-b。
+// 同時に動く編隊（ノーマル ≤ 2・ハード ≤ 3）と起動時の数（ノーマル 8・ハード 12）、終わりの形、遊び方の表、漂流の待ちが世界と同じ。帯は tests/evac-sim-b・c・d（S7。N 50 × 2 組）と scripts/headless/g2.sh の EVAC=1（N 400 × 2 組）。
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gameData } from '../src/config/game-data';
