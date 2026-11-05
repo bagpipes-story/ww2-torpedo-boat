@@ -3,7 +3,7 @@
 // 機の枠（AA_MAX_TARGETS 8 のまま）: 240 秒の後の §2 の 4 機が先、次に港の空襲の動く編隊を中心の 2 乗の距離の近い順（固定長の配列に挿入で並べる）。番号は 編隊 × 4 ＋ 機（r2 M8）。
 // 撃墜は core/air-down の downStrikePlane（港の空襲の機は core/evac-repass の evacDownPlane＝撃墜のビットも。順番の飛ばしは core/evac-air の段の頭と、ここで撃墜したステップ）。乱数は seed+24 を 1 発 1 回（core/aa-fire のまま）。
 // Phaser 非依存・確保は createEvacSimAa だけ。
-import { AA_MAX_TARGETS, AA_SRC_DAWN, addStrikePlanes, createAaState, createAaTargets, stepAaFire, type AaState, type AaTargets, type AntiAircraftParams } from './aa-fire';
+import { AA_MAX_TARGETS, AA_SRC_DAWN, AA_SRC_EVAC, addStrikePlanes, createAaState, createAaTargets, stepAaFire, type AaState, type AaTargets, type AntiAircraftParams } from './aa-fire';
 import type { AirStrikeParams, AirStrikeState } from './air-strike';
 import { downStrikePlane, skipDownedRuns } from './air-down';
 import { evacDownPlane } from './evac-repass';
@@ -14,10 +14,10 @@ import type { GunBatteryParams } from './gun-battery';
 import { createMagazine, magazineTick, type MagazineState } from './magazine';
 import type { SeededRng } from './rng';
 
-/** 港の空襲の編隊の機の出どころ（夜明け 0・夜の出撃 1・水上機 2 の次。S4 の aa-fire にも同じ番号で足す） */
-export const AA_SRC_EVAC = 3;
-/** 1 編隊の機の番号の幅（凍結の core の上限 4） */
-const EVAC_AA_PLANE_STRIDE = 4;
+/** 港の空襲の編隊の機の出どころ（夜明け 0・夜の出撃 1・水上機 2 の次。S4 から core/aa-fire が持つ＝世界の systems/aa-slots と同じ番号） */
+export { AA_SRC_EVAC };
+/** 1 編隊の機の番号の幅（凍結の core の上限 4。世界の systems/aa-slots の撃墜の振り分けも） */
+export const EVAC_AA_PLANE_STRIDE = 4;
 
 /** 隊の砲（n = 1・2・3 隻ぶん）: 発の速さと弾倉の発数を n 倍（交換の秒・射程・死角・散布はそのまま） */
 export function evacGunVariants(g: GunBatteryParams, maxN: number): GunBatteryParams[] {
@@ -63,6 +63,14 @@ export function fillEvacAaSlots(a: EvacSimAa, plan: EvacPlan, dawn: AirStrikeSta
   const t = a.slots;
   t.n = 0;
   if (dawn) addStrikePlanes(t, dawn, dawnP, boat, AA_SRC_DAWN, a.pose);
+  addEvacPlanes(t, plan, boat, a.order, a.d2, a.pose);
+}
+
+/**
+ * 港の空襲の動く編隊の機を枠に足す（模擬の fillEvacAaSlots と世界の systems/aa-slots が同じ式。S4 で切り出した）: 編隊の中心と艇の 2 乗の距離の近い順に
+ * order・d2（編隊の数の固定長）へ挿入で並べ、枠が尽きるまで機を足す。番号は 編隊 × 4 ＋ 機
+ */
+export function addEvacPlanes(t: AaTargets, plan: EvacPlan, boat: BoatState, order: Int32Array, d2s: Float64Array, pose: AircraftPose): void {
   let n = 0;
   for (let i = 0; i < plan.flights.length; i++) {
     const fl = plan.flights[i]!;
@@ -72,18 +80,18 @@ export function fillEvacAaSlots(a: EvacSimAa, plan: EvacPlan, dawn: AirStrikeSta
     const dy = c.y - boat.y;
     const d2 = dx * dx + dy * dy;
     let k = n++;
-    while (k > 0 && a.d2[k - 1]! > d2) {
-      a.d2[k] = a.d2[k - 1]!;
-      a.order[k] = a.order[k - 1]!;
+    while (k > 0 && d2s[k - 1]! > d2) {
+      d2s[k] = d2s[k - 1]!;
+      order[k] = order[k - 1]!;
       k--;
     }
-    a.d2[k] = d2;
-    a.order[k] = i;
+    d2s[k] = d2;
+    order[k] = i;
   }
   for (let k = 0; k < n && t.n < AA_MAX_TARGETS; k++) {
-    const fl = plan.flights[a.order[k]!]!;
+    const fl = plan.flights[order[k]!]!;
     const before = t.n;
-    addStrikePlanes(t, fl.port.state, fl.p, fl.view.boat.state, AA_SRC_EVAC, a.pose);
+    addStrikePlanes(t, fl.port.state, fl.p, fl.view.boat.state, AA_SRC_EVAC, pose);
     for (let j = before; j < t.n; j++) t.idx[j] = fl.index * EVAC_AA_PLANE_STRIDE + t.idx[j]!;
   }
 }

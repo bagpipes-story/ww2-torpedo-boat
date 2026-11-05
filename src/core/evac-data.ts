@@ -26,6 +26,9 @@ export function evacFlightSeedOffset(wave: number, slot: number): number {
   return EVAC_FLIGHT_SEED_OFFSET + wave * EVAC_MAX_FLIGHTS + slot;
 }
 
+/** 時計の比べの丸めの余裕（1/60 秒の積み上げの誤差で 1 ステップずれないように）: 燃料を数え始める fuel_free_until_s（世界の systems/world-boat と模擬 core/evac-sim が同じ式。S4） */
+export const EVAC_TIME_EPS_S = 1e-6;
+
 // ---------- 隊の段階（spec §3.2。隊ごと。艇ごとではない）・隠れ場所の種類・スティックの latch（spec §3.3） ----------
 export const G_MOORED = 0; // 停泊（最初の全隊）
 export const G_UNDERWAY = 1; // 走っている（操作中か、操作していない隊のランダム回避）

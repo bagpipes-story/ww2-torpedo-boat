@@ -13,9 +13,10 @@ import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor, type C
 import { dawnReached } from './dawn-air';
 import { createEvacAirCore, stepEvacAir } from './evac-air';
 import { stepEvacBoats } from './evac-boats';
-import { EVAC_AI_SEED_OFFSET, G_UNDERWAY } from './evac-data';
+import { EVAC_AI_SEED_OFFSET, EVAC_TIME_EPS_S, G_UNDERWAY } from './evac-data';
 import type { EvacAirWorld } from './evac-hits';
 import type { EvacParams, EvacRaidParams } from './evac-params';
+import type { EvacMirror, EvacMirrorFlags } from './evac-replay';
 import { evacHitSeat, evacSeatCommand, evacSeatHome, evacSinkLeader, evacFrameInput, evacLoadSeat, type EvacSeat, type EvacSeatHooks } from './evac-seat';
 import { createEvacSimAa, evacAaInRange, fillEvacAaSlots, stepEvacSimAa } from './evac-sim-aa';
 import { createEvacTrial, evacTrialSettle, finishEvacTrial, type EvacTrial } from './evac-sim-cell';
@@ -60,7 +61,7 @@ export interface EvacSimSetup {
 export type EvacSimProbe = (t: number, sq: EvacSquadron, seat: EvacSeat, plan: EvacPlan) => void;
 
 const DRIFT: BoatInput = { headingDeg: NaN, speed01: 0 };
-const TIME_EPS_S = 1e-6;
+const TIME_EPS_S = EVAC_TIME_EPS_S;
 
 /** next() を数える（作った後の乱数に被せる。1 回の始めにだけ確保） */
 function counted(rng: SeededRng): { n: number } {
@@ -73,8 +74,8 @@ function counted(rng: SeededRng): { n: number } {
   return c;
 }
 
-/** 1 回（seed は任務の seed）。probe はステップごと（計測だけ。結果は変えない） */
-export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, probe: EvacSimProbe | null = null): EvacTrial {
+/** 1 回（seed は任務の seed）。probe はステップごと（計測だけ。結果は変えない）。mirror は世界との突き合わせ（core/evac-replay。S4。結果は変えない） */
+export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, probe: EvacSimProbe | null = null, mirror: EvacMirror | null = null): EvacTrial {
   const realDt = s.stepS;
   const dt = realDt * s.timeScale;
   const aiRng = new SeededRng((seed + EVAC_AI_SEED_OFFSET) >>> 0);
@@ -124,10 +125,13 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, 
   let atHome = false;
   let adriftS = 0;
   const base = s.boat;
-  for (;;) {
+  const mf: EvacMirrorFlags = { t: 0, atHome: false, latched: false, sinking: false, caughtOutside: false, extHeldS: 0 };
+  mirror?.begin({ sq, seat, plan, repass: air.repass, dawn, aa, fuel, aiRng, dodge: air.dodge, dawnRng, flags: mf });
+  for (let k = 0; ; k++) {
     const t0 = m.t;
     // ---- フレームの入力（固定ステップの前。座席が沈み始めたら入力なし） ----
     evacDriverFrame(drv, { sq, seat, plan, dawn, dawnLatched: latched, aa, t: t0 }, fo);
+    mirror?.frame(k, fo);
     stick.headingDeg = fo.headingDeg;
     stick.speed01 = fo.speed01;
     if (!m.sinking) {
@@ -193,6 +197,15 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, 
       if (!atHome && !m.sinking) out.caughtOutside = true;
     }
     probe?.(t, sq, seat, plan);
+    if (mirror) {
+      mf.t = t;
+      mf.atHome = atHome;
+      mf.latched = latched;
+      mf.sinking = m.sinking;
+      mf.caughtOutside = out.caughtOutside;
+      mf.extHeldS = m.extHeldS;
+      mirror.after(k);
+    }
     // ---- 終わり（フレームの終わり。決着の前は終えない＝evacHold） ----
     if (m.sinking) out.end = 'sunk';
     else if (latched && atHome) out.end = 'home';
