@@ -1,8 +1,8 @@
 // 空襲下の退避（v0.6.11 S5。jp_03。spec-v0611-r2 §10.1・§10.2・§10.3）の HUD の文: 上中央の 2 行目（ui/mission-mode の MISSION_EVAC の中の行。上ほど優先＝evacLineMode）・
 // そのキャッシュのキー（evacLineKey。ui/mission-line-keys が lKey の欄で渡す＝mission-line は差し引き 0 行）・3 行目（evacStatusLine。ui/boat-hud の statusText の枝。20 px で ≤ 596 px）・
 // 予告の中央の帯と決着の帯の文（ui/dawn-banner・ui/dawn-lines）・地図の上の隊の番号の見え方（ui/evac-markers）。
-// 予告の尾の規則（r2 M10）: 操作中の隊が隠れている ＋ 目標の無い編隊がある（尾が 2 つ）の時は「東から」を落とす。ほかでも 840 px を超える時は落とす。
-// もう一度来る編隊の予告し直し（S3b の U7）は同じ形の行「第2波 3機 戻ってきた 東から ・ 狙い 第4隊」（赤い輪は sq.targeted で最初の予告と同じに出る）。
+// 予告の行・そのキー・中央の帯は ui/evac-announce（S8b で分けた。尾の規則 r2 M10・1 編隊ごとの機の数・始まる前に隠れた狙いは「第6隊を見失う」）。
+// S8b: スティックを倒したまま引き継いだ（latch SW_WAIT_NEUTRAL）直後の EVAC_TAKE_HOLD_S は「…を引き継いだ ・ 離してから倒すと操る」を予告・出来事より上に（落下の行の下）。
 // 文の幅は tests/pt-ui-kit の textWidthPx と同じ見積もり（22 px・U+2000 未満は 0.602 em）。長い場所の名は 840 px を超える時だけ短く（「屋我地の陰（東）」→「陰（東）」。spec §18）。
 // jp_03 の文に「夜明け」は無い（tests/evac-lines）。Phaser も DOM を読む config も使わない。毎フレームはキーだけ（数の足し算と掛け算。確保しない）、文は変わったときだけ組む。
 import { EVAC_DIST_STEP_M, EVAC_NUM_FOUND, EVAC_NUM_GONE, EVAC_NUM_HIDDEN, EVAC_NUM_MOORED, EVAC_NUM_TARGET, EVAC_NUM_UNDERWAY } from '../config/evac-config';
@@ -10,14 +10,15 @@ import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { G_ENTERING, G_FOUND, G_GONE, G_HAULING, G_HIDDEN, G_MOORED, G_UNDERWAY, SW_FREE, SW_WAIT_NEUTRAL } from '../core/evac-data';
 import { EVAC_HINT_FOUND, EVAC_HINT_FULL } from '../core/evac-squadron';
 import {
-  EVA_NONE, EVA_REPASS, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_SETTLE, EVE_SINK, EVS_GONE, EVS_LEADER, EVS_SEAT, type EvacTelemetry,
+  EVA_NONE, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_SETTLE, EVE_SINK, EVS_GONE, EVS_LEADER, EVS_SEAT, EVS_SEAT_END, type EvacTelemetry,
 } from '../core/evac-telemetry';
+import { evacAnnounceJa, evacAnnounceKey } from './evac-announce';
+import { EVAC_LINE_MAX_PX, EVAC_LINE_PX as LINE_PX, evacGroupJa as groupJa, evacPlaceJa as placeJa, jaWidthPx, mssJa, shortPlaceJa } from './evac-text';
 import type { HudLine } from './hud-lines';
 
-/** 2 行目の幅の上限（22 px。W 1280 で左上の時計を左右対称に避けた幅＝tests/pt-ui-kit の LINE2_MAX_PX）・3 行目の上限（20 px。W 1280 で左上の HP の箱 x ≤ 342 に触れない） */
-export const EVAC_LINE_MAX_PX = 840;
-export const EVAC_STATUS_MAX_PX = 596;
-const LINE_PX = 22;
+// S8b で分けた道具と予告の行（今までの名のまま出す）
+export { EVAC_LINE_MAX_PX, EVAC_STATUS_MAX_PX, jaWidthPx, mssJa, shortPlaceJa } from './evac-text';
+export { evacAnnounceJa, evacBannerLines } from './evac-announce';
 
 /** 2 行目の行（上ほど優先。evacLineMode） */
 export const EVL_FALL = 1;
@@ -40,29 +41,6 @@ export const EVL_WAIT = 17;
 export const EVL_NO_SHELTER = 18;
 export const EVL_NORMAL = 19;
 
-/** 文の幅の見積もり px（tests/pt-ui-kit の textWidthPx と同じ式） */
-export function jaWidthPx(s: string, px: number): number {
-  let w = 0;
-  for (const ch of s) w += (ch.charCodeAt(0) < 0x2000 ? 0.602 : 1) * px;
-  return w;
-}
-
-/** 秒を m:ss（切り上げの整数秒） */
-export function mssJa(s: number): string {
-  const n = Math.max(0, Math.ceil(s));
-  const m = Math.floor(n / 60);
-  const r = n - m * 60;
-  return `${m}:${r < 10 ? '0' : ''}${r}`;
-}
-
-/** 長い場所の名を短く（「屋我地の陰（東）」→「陰（東）」。最後の「の」の後ろ。840 px を超える行だけ） */
-export function shortPlaceJa(label: string): string {
-  const i = label.lastIndexOf('の');
-  return i >= 0 && label.length - i - 1 >= 2 ? label.slice(i + 1) : label;
-}
-
-const groupJa = (e: EvacTelemetry, gi: number): string => e.groupLabels[gi] ?? '';
-const placeJa = (e: EvacTelemetry, s: number): string => e.shelterLabels[s] ?? '';
 const distJa = (m: number): string => `${Math.ceil(m / EVAC_DIST_STEP_M) * EVAC_DIST_STEP_M} m`;
 
 /** 長い方が 840 px に収まればそれ、収まらなければ場所の名を短くした方 */
@@ -71,18 +49,26 @@ function fit(make: (place: string) => string, place: string): string {
   return jaWidthPx(full, LINE_PX) <= EVAC_LINE_MAX_PX ? full : make(shortPlaceJa(place));
 }
 
+/** 引き継いだ隊がまだ操れない段階（走る・停泊・見つかった陰。latch が SW_FREE でない間は前の動きか中立） */
+const takenPhase = (ph: number): boolean => ph === G_UNDERWAY || ph === G_MOORED || ph === G_FOUND;
+/** 引き継いだ行の頭に全滅を言う（全滅の後の自動の切替の直後。全滅の出来事より上に出る間） */
+const takenGone = (e: EvacTelemetry): boolean => e.event === EVE_SINK && e.eventSub === EVS_GONE && e.eventGroup !== e.control;
+
 /** 2 行目の行（上ほど優先。spec §10.1 の表の順。入っている途中の行は表に無い＝spec §18 の既定で足した） */
 export function evacLineMode(e: EvacTelemetry): number {
   const ph = e.phase;
   const k = e.event;
+  const taken = e.latch !== SW_FREE && takenPhase(ph);
   if (e.falling) return EVL_FALL;
+  // 倒したまま引き継いだ直後は、スティックが効かない理由を予告・出来事より先に（S8b。予告は赤い輪と端の矢印に出たまま、EVAC_TAKE_HOLD_S の後に戻る）
+  if (taken && e.takeHold && e.latch === SW_WAIT_NEUTRAL) return EVL_TAKEN;
   if (e.annKind !== EVA_NONE) return EVL_ANNOUNCE;
   if (k === EVE_SETTLE) return EVL_SETTLE;
   if (k === EVE_LOST) return EVL_LOST;
   if (k === EVE_SINK) return EVL_SINK;
   if (k === EVE_DOWN) return EVL_DOWN;
   if (e.settled) return EVL_OUTSIDE;
-  if (e.latch !== SW_FREE && (ph === G_UNDERWAY || ph === G_MOORED || ph === G_FOUND)) return EVL_TAKEN;
+  if (taken) return EVL_TAKEN;
   if (e.hint === EVAC_HINT_FOUND) return EVL_NO_ENTRY;
   if (k === EVE_FOUND || ph === G_FOUND) return EVL_FOUND;
   if (e.hint === EVAC_HINT_FULL) return EVL_FULL;
@@ -101,15 +87,11 @@ export function evacLineKey(e: EvacTelemetry): number {
   const m = evacLineMode(e);
   let k = 0;
   switch (m) {
+    case EVL_FALL:
+      k = e.latch === SW_WAIT_NEUTRAL ? 1 : 0;
+      break;
     case EVL_ANNOUNCE:
-      k = e.annKind;
-      k = k * 8 + e.annWave + 1;
-      k = k * 64 + e.annPlanes;
-      k = k * 4 + e.annCount;
-      for (let i = 0; i < 3; i++) k = k * 8 + (i < e.annCount ? e.annTargets[i]! + 1 : 0);
-      k = k * 4 + e.annNoTarget;
-      k = k * 2 + (e.phase === G_HIDDEN ? 1 : 0);
-      k = k * 8 + e.control;
+      k = evacAnnounceKey(e);
       break;
     case EVL_SETTLE: case EVL_LOST: case EVL_SINK: case EVL_DOWN: case EVL_HIDDEN: case EVL_GUN:
       k = e.eventSeq;
@@ -117,7 +99,10 @@ export function evacLineKey(e: EvacTelemetry): number {
     case EVL_OUTSIDE: case EVL_NORMAL:
       k = ((e.control * 8 + e.near + 1) * 8 + e.nearFree) * 1024 + Math.min(1023, Math.ceil(e.nearEdgeM / EVAC_DIST_STEP_M));
       break;
-    case EVL_TAKEN: case EVL_ENTERING:
+    case EVL_TAKEN:
+      k = ((((e.control * 8 + e.phase) * 8 + e.shelter + 1) * 4 + e.latch) * 2 + (takenGone(e) ? 1 : 0)) * 8 + (takenGone(e) ? e.eventGroup : 0);
+      break;
+    case EVL_ENTERING:
       k = (e.control * 8 + e.phase) * 8 + e.shelter + 1;
       break;
     case EVL_NO_ENTRY:
@@ -144,26 +129,14 @@ export function evacLineKey(e: EvacTelemetry): number {
   return m * 2 ** 40 + k;
 }
 
-/** 予告の行（波の予告・予告し直し）。尾が 2 つか 840 px を超えれば「東から」を落とす（r2 M10） */
-export function evacAnnounceJa(e: EvacTelemetry): string {
-  const repass = e.annKind === EVA_REPASS;
-  const head = repass ? `第${e.annWave + 1}波 ${e.annPlanes}機 戻ってきた` : `第${e.annWave + 1}波 ${e.annPlanes}機×${e.annFlights}`;
-  let targets = '';
-  for (let i = 0; i < e.annCount; i++) {
-    const gi = e.annTargets[i]!;
-    targets += `${i > 0 ? '、' : ''}${groupJa(e, gi)}${gi === e.control ? '（操作中）' : ''}`;
-  }
-  const aim = e.annCount > 0 ? ` ・ 狙い ${targets}` : ' ・ 目標なし';
-  const hidden = e.phase === G_HIDDEN ? ` ・ ${groupJa(e, e.control)}は隠れている` : '';
-  const none = !repass && e.annNoTarget > 0 && e.annCount > 0 ? ` ・ ${e.annNoTarget}編隊 目標なし` : '';
-  const full = `${head} ${e.fromJa}から${aim}${hidden}${none}`;
-  return (hidden !== '' && none !== '') || jaWidthPx(full, LINE_PX) > EVAC_LINE_MAX_PX ? `${head}${aim}${hidden}${none}` : full;
-}
-
-/** 沈没の行（spec §10.1。r2 H2: 狙われていなければ尾なし） */
+/**
+ * 沈没の行（spec §10.1。r2 H2: 狙われていなければ尾なし）。座席の隊長艇が乗り移らずに沈む（S8b の EVS_SEAT_END: 決着の後か浮いている艇がほかに無い＝任務は沈没で終わる）は
+ * 「空襲の後は乗り移れない」「全 18 隻が沈んだ」（今まで「僚艇に乗り移った」と出た）
+ */
 function sinkJa(e: EvacTelemetry): string {
   const g = groupJa(e, e.eventGroup);
   const n = e.eventN;
+  if (e.eventSub === EVS_SEAT_END) return n === 0 ? `隊長艇 沈没！ 全 ${e.total} 隻が沈んだ` : `隊長艇 沈没！ 空襲の後は乗り移れない（残存 ${n}）`;
   if (e.eventSub === EVS_GONE) return `${g} 全滅（残存 ${n}）${e.eventTargeted ? ` ・ ${g}を狙った編隊が去る` : ''}`;
   if (e.eventSub === EVS_SEAT) return `隊長艇 沈没！ 僚艇に乗り移った（残存 ${n}）${e.eventTargeted ? ' ・ 編隊はまだ追ってくる' : ''}`;
   if (e.eventSub === EVS_LEADER) return `${g}の隊長艇 沈没 ・ 僚艇が隊長艇に（残存 ${n}）${e.eventTargeted ? ` ・ 編隊は${g}を追う` : ''}`;
@@ -177,7 +150,7 @@ export function evacLine(e: EvacTelemetry): HudLine {
   const strong = (text: string): HudLine => ({ text, color: HUD_COLOR_STRONG });
   switch (evacLineMode(e)) {
     case EVL_FALL:
-      return warn('爆弾投下！ 転舵！');
+      return warn(e.latch === SW_WAIT_NEUTRAL ? '爆弾投下！ 一度離してから転舵！' : '爆弾投下！ 転舵！'); // 倒したまま引き継いだ直後はスティックが効かない（S8b）
     case EVL_ANNOUNCE:
       return warn(evacAnnounceJa(e));
     case EVL_SETTLE:
@@ -192,8 +165,14 @@ export function evacLine(e: EvacTelemetry): HudLine {
       const chase = e.dawnPlanes > 0 ? `（敵機 ${e.dawnPlanes} 機が追う）` : '';
       return warn(e.near >= 0 ? fit((p) => `${g}を壕か陰へ${chase} ・ ${p} ${distJa(e.nearEdgeM)}`, placeJa(e, e.near)) : `${g}を壕か陰へ${chase}`);
     }
-    case EVL_TAKEN:
-      return strong(e.phase === G_UNDERWAY ? `${g}を引き継いだ ・ 逃げる針路と速さのまま ・ 倒すと操る` : `${g}を引き継いだ ・ 倒すと操る`);
+    case EVL_TAKEN: {
+      // 倒したまま（SW_WAIT_NEUTRAL）はスティックが効かない＝「離してから」と警告の色で（S8b）。全滅の後の自動の切替の直後は頭に全滅（逃げる針路の句は 840 px に収めるため落とす）
+      const held = e.latch === SW_WAIT_NEUTRAL;
+      const gone = takenGone(e) ? `${groupJa(e, e.eventGroup)} 全滅 ・ ` : '';
+      const mid = e.phase === G_UNDERWAY && gone === '' ? ' ・ 逃げる針路と速さのまま' : '';
+      const text = `${gone}${g}を引き継いだ${mid} ・ ${held ? '離してから倒すと操る' : '倒すと操る'}`;
+      return held ? warn(text) : strong(text);
+    }
     case EVL_NO_ENTRY:
       return warn(fit((p) => `${p}は見つかった ・ 輪の外へ出てから入り直せ`, placeJa(e, e.hintShelter)));
     case EVL_FOUND: {
@@ -238,14 +217,6 @@ export function evacStatusLine(e: EvacTelemetry): string {
   for (let i = 0; i < 3; i++) hp += `${i > 0 ? '・' : ''}${e.hp[i]! < 0 ? '沈' : Math.ceil(e.hp[i]!)}`;
   const next = e.settled ? '確定' : Number.isNaN(e.nextWaveS) ? '波なし' : `次 ${mssJa(e.nextWaveS)}`;
   return `${groupJa(e, e.control)} HP ${hp} ・ 残 ${e.survivors}／${e.total} ・ 隠 ${e.hiddenBoats} ・ ${next}`;
-}
-
-/**
- * 予告の中央の帯（ui/dawn-banner に 2 秒。予告の通し番号が変わったとき）: 見出しだけ（狙いは 2 行目と赤い輪が言う。説明の行は地図の上の隠れ場所の札に重なった＝ヘッドレスの画面写し）。
- * 波の予告は「第2波 — 空襲 3機×2」、予告し直しは「第2波 — 編隊が戻ってきた」
- */
-export function evacBannerLines(e: EvacTelemetry): readonly string[] {
-  return [e.annKind === EVA_REPASS ? `第${e.annWave + 1}波 — 編隊が戻ってきた` : `第${e.annWave + 1}波 — 空襲 ${e.annPlanes}機×${e.annFlights}`];
 }
 
 /**

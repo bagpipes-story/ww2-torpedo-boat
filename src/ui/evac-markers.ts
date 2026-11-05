@@ -5,6 +5,7 @@
 //   （見張り 0.5 でも画面上 EVAC_NUMBER_PX）。Text は番号 6 ＋ 札 4＝10。
 // - EvacEdgeMarkers（ui/hud-markers が evac の任務だけ作る。帰投の印「帰投 N m」は出さない＝r2 L8）: 画面の外の狙われた隊（操作中の隊を除く）への赤い「第4隊 600 m」を ≤ EVAC_EDGE_TARGETS、
 //   近い空いた隠れ場所への青い「西の壕 800 m」1 本（入っている・上げている・隠れている間は出さない）。ラベルの名は替わったときだけ（EdgeMarker.setPrefix）。右下の速力の角を避け、近い矢印から縁に沿ってずらす。
+//   ラベルは画面の枠の左右 HUD_MARGIN の内（S8b の labelInset。左の縁の「西の壕 1200 m」が W 1280 で画面の外へ出た）。上下の縁で横に並ぶ矢印はラベルの幅で離す（S8b）。
 //   画面の点はカメラの本当の中心から（t.evac.camDx/Dy。jp_03 の海は 3,200 × 1,250 m と小さく、見張り 0.5 ではカメラが海の縁で止まって自艇が画面の中心に無い＝EdgeMarker の「自艇＋見越し」の見方では
 //   画面の内の隊にも矢印が出た。ヘッドレスの画面写しで見つけた）。「画面の内なら隠す」は本当の画面の矩形（hideMargin 0＝隼艇の矢印と同じ。上の HUD の帯の下に見えている隊の赤い輪と番号にも
 //   矢印を出さない）。距離は座席から（平方根は出す矢印だけ）。
@@ -14,7 +15,7 @@ import {
   EVAC_CONTROL_TINT, EVAC_EDGE_TARGETS, EVAC_FOUND_TINT, EVAC_GROUP_RING_M, EVAC_LABEL_PX, EVAC_NUMBER_OFFSET_PX, EVAC_NUMBER_PX, EVAC_RING_TEX_RADIUS_UNITS, EVAC_SHELTER_FULL_ALPHA,
   EVAC_SHELTER_RING_ALPHA, EVAC_SHELTER_TINT, EVAC_TARGET_ALPHA_MAX, EVAC_TARGET_ALPHA_MIN, EVAC_TARGET_PULSE_HZ, EVAC_TARGET_TINT,
 } from '../config/evac-config';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
   CAMERA_LOOK_AHEAD_M, HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HOME_MARKER_TOP_MARGIN, HUD_COLOR_WARN, HUD_FONT_MARKER_PX, PLANE_DISTANCE_STEP_M, TARGET_MARKER_MARGIN, TARGET_MARKER_RIGHT_MARGIN, TARGET_MARKER_TOP_MARGIN, hudTextStyle,
 } from '../config/ui-config';
@@ -24,7 +25,7 @@ import { G_FOUND, G_GONE, SHELTER_COVER } from '../core/evac-data';
 import { evacAfloat, evacLeader, type EvacSquadron } from '../core/evac-squadron';
 import { EdgeMarker } from './edge-marker';
 import { EVAC_NUMBER_COLORS, evacNumberLook } from './evac-lines';
-import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
+import { EDGE_EPS_PX, avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
 
 /** 輪の Image の倍率（半径 m へ） */
 const ringScale = (radiusM: number): number => radiusM / EVAC_RING_TEX_RADIUS_UNITS / RENDER_SCALE;
@@ -147,8 +148,9 @@ export class EvacMarks {
 /** 端の矢印が止まる縁の矩形（狙われた隊は「PT」と同じ上端・ラベルは矢印の下、隠れ場所は帰投と同じ上端・ラベルは矢印の上） */
 const TARGET_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: TARGET_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
 const SHELTER_RECT: MarkerRect = { left: TARGET_MARKER_MARGIN, top: HOME_MARKER_TOP_MARGIN, right: GAME_WIDTH - TARGET_MARKER_RIGHT_MARGIN, bottom: GAME_HEIGHT - TARGET_MARKER_MARGIN };
-/** 2 本の矢印を離す px（字 2 行ぶん。ui/hud-markers の隼艇と同じ） */
+/** 2 本の矢印を離す px（字 2 行ぶん。ui/hud-markers の隼艇と同じ）。上下の縁では横に並ぶラベルが重ならないよう、2 つのラベルの幅の半分ずつ ＋ この px（S8b） */
 const SEP_PX = HUD_FONT_MARKER_PX * 2 + 8;
+const LABEL_SEP_GAP_PX = 12;
 const shift: MarkerShift = { dx: 0, dy: 0 };
 
 export class EvacEdgeMarkers {
@@ -158,9 +160,9 @@ export class EvacEdgeMarkers {
   /** keepLeft・keepTop は右下の速力の HUD の角（ui/hud-markers の SPEED_HUD_KEEP_*） */
   constructor(scene: Phaser.Scene, private readonly keepLeft: number, private readonly keepTop: number) {
     for (let i = 0; i < EVAC_EDGE_TARGETS; i++) {
-      this.targets.push(new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN, hideMargin: 0 }));
+      this.targets.push(new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN, hideMargin: 0, labelInset: HUD_MARGIN }));
     }
-    this.shelter = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT, hideMargin: 0 });
+    this.shelter = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT, hideMargin: 0, labelInset: HUD_MARGIN });
   }
 
   /** 毎フレーム（ui/hud-markers の refresh から）。狙われた隊は隊の番号の順に（操作中の隊を除く） */
@@ -193,7 +195,11 @@ export class EvacEdgeMarkers {
     m.nudge(avoidCorner(m.shownX, m.shownY, r, this.keepLeft, this.keepTop, shift).dx, shift.dy);
     for (let j = 0; j < before; j++) {
       const a = this.targets[j]!;
-      if (a.isShown) m.nudge(separateMarker(a.shownX, a.shownY, m.shownX, m.shownY, r, SEP_PX, shift).dx, shift.dy);
+      if (!a.isShown) continue;
+      // 上下の縁（左右の縁でない）ではラベルが横に並ぶ: 字 2 行ぶんでは「第4隊 900 m」「第6隊 900 m」が重なった（S8b のヘッドレスの画面写し）
+      const side = Math.abs(m.shownX - r.left) < EDGE_EPS_PX || Math.abs(m.shownX - r.right) < EDGE_EPS_PX;
+      const sep = side ? SEP_PX : Math.max(SEP_PX, (a.labelWidth + m.labelWidth) / 2 + LABEL_SEP_GAP_PX);
+      m.nudge(separateMarker(a.shownX, a.shownY, m.shownX, m.shownY, r, sep, shift).dx, shift.dy);
     }
   }
 

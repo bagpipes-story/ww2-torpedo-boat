@@ -13,7 +13,7 @@ import { runEvacTrial } from '../src/core/evac-sim';
 import type { EvacPolicy } from '../src/core/evac-sim-policy';
 import { EVAC_HINT_FOUND, EVAC_HINT_FULL, EVAC_HINT_NONE } from '../src/core/evac-squadron';
 import {
-  EVA_NONE, EVA_REPASS, EVA_WAVE, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_NONE, EVE_SETTLE, EVE_SINK, EVS_GONE, EVS_LEADER, EVS_SEAT, EVS_WINGMAN, type EvacTelemetry,
+  EVA_NONE, EVA_REPASS, EVA_WAVE, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_NONE, EVE_SETTLE, EVE_SINK, EVS_GONE, EVS_LEADER, EVS_SEAT, EVS_SEAT_END, EVS_WINGMAN, type EvacTelemetry,
 } from '../src/core/evac-telemetry';
 import { evacSimSetup } from '../src/systems/evac-sim-setup';
 import { initEvacTelemetry, refreshEvacTelemetry } from '../src/systems/evac-telemetry';
@@ -31,7 +31,9 @@ import { tele, textWidthPx } from './pt-ui-kit';
 
 /** 実際の呼び名（data）の入ったテレメトリ（世界を作った直後） */
 const base = (): EvacTelemetry => initEvacTelemetry(miniWorld(1));
-const clone = (e: EvacTelemetry, over: Partial<EvacTelemetry> = {}): EvacTelemetry => ({ ...e, hp: Float64Array.from(e.hp), annTargets: Int32Array.from(e.annTargets), groupDx: Float64Array.from(e.groupDx), groupDy: Float64Array.from(e.groupDy), ...over });
+const clone = (e: EvacTelemetry, over: Partial<EvacTelemetry> = {}): EvacTelemetry => ({
+  ...e, hp: Float64Array.from(e.hp), annTargets: Int32Array.from(e.annTargets), annTargetPlanes: Int32Array.from(e.annTargetPlanes), groupDx: Float64Array.from(e.groupDx), groupDy: Float64Array.from(e.groupDy), ...over,
+});
 
 describe('文の見積もりと形', () => {
   it('jaWidthPx は tests/pt-ui-kit の textWidthPx と同じ・m:ss・長い場所の名だけ短く', () => {
@@ -44,18 +46,22 @@ describe('文の見積もりと形', () => {
   });
 });
 
-/** 予告の行の全部の組（波 × 機数 × 編隊 2／3 × 狙いの数 0〜3 × 操作中の隊が隠れている × 目標なしの編隊 0〜2 × 予告し直し） */
+/**
+ * 予告の行の全部の組（波 × 機数 × 編隊 2／3 × 狙いの数 0〜3 × 操作中の隊が隠れている × 目標なしの編隊 0〜2 × 予告し直し）。狙った隊が始まる前に隠れた組と、
+ * 予告し直しの編隊ごとの機数の違う組は tests/evac-lines-s8b（v0.6.11 S8b）
+ */
 function announceCases(e0: EvacTelemetry): EvacTelemetry[] {
   const out: EvacTelemetry[] = [];
   for (const kind of [EVA_WAVE, EVA_REPASS])
     for (let w = 0; w < 4; w++)
-      for (const planes of kind === EVA_WAVE ? [2, 3, 4] : [1, 4, 8, 12])
+      for (const planes of [2, 3, 4])
         for (const flights of [2, 3])
           for (let n = 0; n <= Math.min(3, flights); n++)
             for (const hidden of [false, true])
               for (let none = 0; none <= flights - n; none++)
                 for (const ctl of [0, 5]) {
-                  const e = clone(e0, { annKind: kind, annWave: w, annPlanes: planes, annFlights: flights, annCount: n, annNoTarget: none, phase: hidden ? G_HIDDEN : G_UNDERWAY, control: ctl });
+                  const e = clone(e0, { annKind: kind, annWave: w, annPlanes: kind === EVA_WAVE ? planes : planes * n, annFlights: flights, annCount: n, annNoTarget: none, phase: hidden ? G_HIDDEN : G_UNDERWAY, control: ctl });
+                  e.annTargetPlanes.fill(planes);
                   // 狙い: 操作中の隊（隠れていなければ枠 0）とほかの隊
                   for (let i = 0; i < n; i++) e.annTargets[i] = !hidden && i === 0 ? ctl : (ctl + 1 + i) % 6;
                   out.push(e);
@@ -87,6 +93,7 @@ describe('2 行目（22 px で ≤ 840 px。spec §10.1）', () => {
     expect(evacAnnounceJa(h)).toBe('第1波 2機×3 ・ 狙い 第2隊、第4隊 ・ 第1隊は隠れている ・ 1編隊 目標なし');
     const r = clone(e, { annKind: EVA_REPASS, annWave: 1, annPlanes: 3, annCount: 1, phase: G_UNDERWAY });
     r.annTargets.set([3, 0, 0]);
+    r.annTargetPlanes.set([3, 0, 0]);
     expect(evacAnnounceJa(r)).toBe('第2波 3機 戻ってきた 東から ・ 狙い 第4隊');
     expect(evacBannerLines(r)).toEqual(['第2波 — 編隊が戻ってきた']);
     expect(evacBannerLines(e)).toEqual(['第4波 — 空襲 4機×3']);
@@ -105,11 +112,13 @@ describe('2 行目（22 px で ≤ 840 px。spec §10.1）', () => {
     push({ falling: true });
     for (const ev of [EVE_SETTLE, EVE_LOST, EVE_DOWN, EVE_FOUND, EVE_HIDDEN, EVE_GUN]) push({ event: ev, eventN: ev === EVE_DOWN ? 3 : 18, eventSub: 4 });
     push({ event: EVE_DOWN, eventN: 0 });
-    for (const sub of [EVS_WINGMAN, EVS_LEADER, EVS_SEAT, EVS_GONE]) for (const tg of [false, true]) push({ event: EVE_SINK, eventSub: sub, eventN: 17, eventTargeted: tg });
+    for (const sub of [EVS_WINGMAN, EVS_LEADER, EVS_SEAT, EVS_GONE, EVS_SEAT_END]) for (const tg of [false, true]) push({ event: EVE_SINK, eventSub: sub, eventN: 17, eventTargeted: tg });
+    push({ event: EVE_SINK, eventSub: EVS_SEAT_END, eventN: 0 });
     push({ settled: true });
     push({ settled: true, near: -1 });
     push({ settled: true, dawnPlanes: 0 });
-    for (const ph of [G_UNDERWAY, G_MOORED, G_FOUND]) push({ latch: SW_WAIT_INPUT, phase: ph });
+    for (const ph of [G_UNDERWAY, G_MOORED, G_FOUND]) for (const latch of [SW_WAIT_INPUT, SW_WAIT_NEUTRAL]) push({ latch, phase: ph });
+    for (const ph of [G_UNDERWAY, G_MOORED]) push({ latch: SW_WAIT_NEUTRAL, phase: ph, takeHold: true, event: EVE_SINK, eventSub: EVS_GONE, eventN: 12 }); // 全滅の後の自動の切替（S8b）
     push({ hint: EVAC_HINT_FOUND });
     push({ phase: G_FOUND });
     push({ hint: EVAC_HINT_FULL });

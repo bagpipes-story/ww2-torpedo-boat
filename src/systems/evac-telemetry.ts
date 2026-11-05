@@ -3,11 +3,12 @@
 // 同じか重い出来事が来れば替える（EVE_* の数が重さ）。出す秒は世界の時計（一時停止で止まる。jp_03 の決着の前は命中スローが無い＝r2 M1）。
 // 予告の行は波の予告と、もう一度来る編隊の予告し直し（S3b の U7。plan.evWave は立たず repass.ev のビット）の両方で、予告から始まるまで（中央の帯は ui/dawn-banner が annSeq で 2 秒）。
 // ［切替］の先（ボタンの字）は sq.order を書かない並びで見る（core/evac-seat の evacNextSwitch に EvacFeed の並び）。world-vs-sim が比べる物は読むだけ。Phaser・DOM を読まない。
+// S8b: ほかの隊を座席へ入れてから EVAC_TAKE_HOLD_S の間は takeHold（引き継いだ行が予告より上）・予告の狙いごとの機の数と、狙った隊がいま隠れている（見失う）ビット。
 import { AS_T_FALLING, strikeThreat } from '../core/air-strike';
 import type { BoatState } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { EV_DOWN_EVAC } from '../core/arms-cue';
-import { EVAC_EVENT_SHOW_S, EVAC_SETTLE_SHOW_S } from '../config/evac-config';
+import { EVAC_EVENT_SHOW_S, EVAC_SETTLE_SHOW_S, EVAC_TAKE_HOLD_S } from '../config/evac-config';
 import { G_ENTERING, G_GONE, G_HAULING, G_HIDDEN, SHELTER_COVER } from '../core/evac-data';
 import { EF_ANNOUNCED, EO_NO_TARGET, evacFlightLive, type EvacFlight } from '../core/evac-plan';
 import { evacNextSwitch } from '../core/evac-seat';
@@ -115,6 +116,7 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
   t.annCount = 0;
   t.annPlanes = 0;
   t.annNoTarget = 0;
+  t.annLost = 0;
   t.annFlights = plan.raid.flights;
   if (t.annKind !== EVA_NONE) {
     for (let i = 0; i < plan.flights.length; i++) {
@@ -122,13 +124,21 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
       if (fl.wave !== t.annWave) continue;
       if (t.annKind === EVA_WAVE && fl.outcome === EO_NO_TARGET) t.annNoTarget++;
       if (fl.phase !== EF_ANNOUNCED || (t.annKind === EVA_WAVE) !== (fl.passes === 0)) continue;
-      if (t.annCount < EVAC_ANN_MAX) t.annTargets[t.annCount++] = fl.target;
+      if (t.annCount < EVAC_ANN_MAX) {
+        // 狙った隊がいま隠れていれば始める時に見失う（入っている・上げている途中に狙われて隠れた隊。S8b: 「狙い」に並べない）
+        if (sq.groups[fl.target]!.phase === G_HIDDEN) t.annLost |= 1 << t.annCount;
+        t.annTargetPlanes[t.annCount] = livePlanes(fl);
+        t.annTargets[t.annCount++] = fl.target;
+      }
       if (t.annKind === EVA_REPASS) t.annPlanes += livePlanes(fl);
     }
     if (t.annKind === EVA_WAVE) t.annPlanes = plan.raid.waves[t.annWave]!.planes;
   }
   clearEvacFeed(f);
+  // ほかの隊を座席へ入れた（［切替］・全滅の後の自動の切替。同じ隊の交代は latch を置き直さないので数えない）: 引き継いだ行を予告より上に（S8b）
+  if (f.seatSeq !== t.seatSeq && sq.control !== t.control) f.takeUntilS = nowS + EVAC_TAKE_HOLD_S;
   t.seatSeq = f.seatSeq;
+  t.takeHold = nowS < f.takeUntilS;
   // 操作中の隊と座席
   t.control = sq.control;
   t.latch = sq.latch;

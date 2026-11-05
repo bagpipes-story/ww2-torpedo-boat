@@ -3,7 +3,7 @@
 // EvacFeed は systems/world-evac が持ち、座席の hooks（沈没・交代・全滅・座席へ入れた）と段 5 の後（予告・予告し直し・見失い・陰の発見・決着）にステップごとに積み、
 // systems/evac-telemetry がフレームごとに読んで消す（フレームに固定ステップが 0 や 2 つあっても出来事を落とさない。plan.ev* は段 5 の頭で毎ステップ消える）。
 // 世界と模擬の突き合わせ（world-vs-sim）が比べる物（sq・plan・座席）は書き換えない。Phaser 非依存・乱数なし。
-import type { EvacBoat, EvacSquadron } from './evac-squadron';
+import { evacSurvivors, type EvacBoat, type EvacSquadron } from './evac-squadron';
 
 // ---------- 出来事（2 行目に EVAC_EVENT_SHOW_S だけ出す。上ほど重い＝新しい出来事は同じか重ければ今の出来事に替わる） ----------
 export const EVE_NONE = 0;
@@ -22,11 +22,15 @@ export const EVE_LOST = 6;
 /** 決着（240 秒。第 1 次の空襲が去り、残存が確定） */
 export const EVE_SETTLE = 7;
 
-/** 沈没の種類（重い順に数が大きい。1 フレームに 2 隻沈めば重い方）: 僚艇・操作していない隊長艇・座席の隊長艇（僚艇へ乗り移る）・隊の全滅 */
+/**
+ * 沈没の種類（重い順に数が大きい。1 フレームに 2 隻沈めば重い方）: 僚艇・操作していない隊長艇・座席の隊長艇（僚艇へ乗り移る）・隊の全滅・
+ * 座席の隊長艇が沈んで乗り移らずに終わる（v0.6.11 S8b: 決着の後か、浮いている艇がほかに無い＝core/evac-seat の evacSinkLeader が座席を沈める）
+ */
 export const EVS_WINGMAN = 1;
 export const EVS_LEADER = 2;
 export const EVS_SEAT = 3;
 export const EVS_GONE = 4;
+export const EVS_SEAT_END = 5;
 
 /** 予告の行の種類: なし・波の予告・もう一度来る編隊の予告し直し（S3b の U7） */
 export const EVA_NONE = 0;
@@ -60,13 +64,15 @@ export interface EvacFeed {
   gunShown: boolean;
   armsSeq: number;
   annUntilS: number;
+  /** ほかの隊を座席へ入れた（seatSeq と操作中の隊が変わった）時から EVAC_TAKE_HOLD_S の秒（引き継いだ行を予告の行より上に出す。v0.6.11 S8b） */
+  takeUntilS: number;
   readonly order: Int32Array;
 }
 
 export function createEvacFeed(groups: number): EvacFeed {
   return {
     lost: 0, found: 0, wave: -1, repass: 0, settle: false, sinkKind: 0, sinkGroup: -1, sinkTargeted: false, seatSeq: 0,
-    untilS: 0, prevControl: -1, prevPhase: -1, gunShown: false, armsSeq: -1, annUntilS: 0, order: new Int32Array(groups),
+    untilS: 0, prevControl: -1, prevPhase: -1, gunShown: false, armsSeq: -1, annUntilS: 0, takeUntilS: 0, order: new Int32Array(groups),
   };
 }
 
@@ -90,11 +96,15 @@ export function feedSink(f: EvacFeed, kind: number, group: number, targeted: boo
   f.sinkTargeted = targeted;
 }
 
-/** 座席の hooks の onBoatSunk から（hooks は交代の前に呼ぶ＝隊長艇かは今の leader で分かる） */
+/**
+ * 座席の hooks の onBoatSunk から（hooks は交代の前に呼ぶ＝隊長艇かは今の leader で分かる。記録は沈めた後＝残存はこの艇を除く）。
+ * 座席の隊長艇で、決着の後か浮いている艇がほかに無ければ乗り移らない（evacSinkLeader と同じ条件）ので EVS_SEAT_END
+ */
 export function feedBoatSunk(f: EvacFeed, sq: EvacSquadron, b: EvacBoat): void {
   const g = sq.groups[b.group]!;
-  const leader = b.slot === g.leader;
-  feedSink(f, leader ? (b.group === sq.control ? EVS_SEAT : EVS_LEADER) : EVS_WINGMAN, b.group, sq.targeted[b.group] !== 0);
+  const seat = b.slot === g.leader && b.group === sq.control;
+  const kind = seat ? (sq.settled || evacSurvivors(sq) === 0 ? EVS_SEAT_END : EVS_SEAT) : b.slot === g.leader ? EVS_LEADER : EVS_WINGMAN;
+  feedSink(f, kind, b.group, sq.targeted[b.group] !== 0);
 }
 
 /** HUD に渡す値（1 個だけ作る。evac の無い任務は enabled false・配列は長さ 0） */
@@ -128,11 +138,12 @@ export interface EvacTelemetry {
   survivors: number;
   hiddenBoats: number;
   readonly hp: Float64Array;
-  /** 次の波の予告までの秒（最後の波の後は NaN）・決着までの秒・［切替］で移る隊（−1 は灰色）・座席へ入れた回数（EvacFeed の写し） */
+  /** 次の波の予告までの秒（最後の波の後は NaN）・決着までの秒・［切替］で移る隊（−1 は灰色）・座席へ入れた回数（EvacFeed の写し）・ほかの隊を座席へ入れてから EVAC_TAKE_HOLD_S の内（S8b） */
   nextWaveS: number;
   leftS: number;
   nextSwitch: number;
   seatSeq: number;
+  takeHold: boolean;
   /** 近い隠れ場所（決着の前は空き枠 ≥ 浮いている隻数・見つかった陰でない。決着の後はどれでも。−1 は無し）・空き・輪の縁までの m・座席からの相対位置 m（端の矢印。要らない段階は NaN） */
   near: number;
   nearFree: number;
@@ -141,7 +152,8 @@ export interface EvacTelemetry {
   nearDy: number;
   /**
    * 予告の行（EVA_*。予告から始まるまで）・予告の通し番号（中央の帯）・その波（0 始まり）・機数（波の予告は 1 編隊の機数、予告し直しは戻ってくる機の和）・波の編隊の数・
-   * 狙い（隊の番号。EVAC_ANN_MAX まで）・その数・目標の無い編隊の数
+   * 狙い（隊の番号。EVAC_ANN_MAX まで）・その編隊の撃墜されていない機の数・その数・目標の無い編隊の数・
+   * 狙った隊がいま隠れている（始める時に見失う）狙いのビット（i 番目の狙い。v0.6.11 S8b: 入っている・上げている途中に狙われて、始まる前に隠れた隊）
    */
   annKind: number;
   annSeq: number;
@@ -149,8 +161,10 @@ export interface EvacTelemetry {
   annPlanes: number;
   annFlights: number;
   readonly annTargets: Int32Array;
+  readonly annTargetPlanes: Int32Array;
   annCount: number;
   annNoTarget: number;
+  annLost: number;
   /** 操作中の隊を狙う爆弾が落下中（隠れていない時だけ）・操作していない隊長艇が燃えている隊（いちばん小さい番号。−1） */
   falling: boolean;
   fireGroup: number;
@@ -175,9 +189,9 @@ export function createEvacTelemetry(groups = 0): EvacTelemetry {
   return {
     enabled: false, groupLabels: [], shelterLabels: [], shelterCover: [], total: 0, quota: 0, historical: 0, durationS: 0, leadS: 0, fromJa: '', dawnPlanes: 0,
     control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false,
-    survivors: 0, hiddenBoats: 0, hp: new Float64Array(3), nextWaveS: NaN, leftS: 0, nextSwitch: -1, seatSeq: 0,
+    survivors: 0, hiddenBoats: 0, hp: new Float64Array(3), nextWaveS: NaN, leftS: 0, nextSwitch: -1, seatSeq: 0, takeHold: false,
     near: -1, nearFree: 0, nearEdgeM: NaN, nearDx: NaN, nearDy: NaN,
-    annKind: EVA_NONE, annSeq: 0, annWave: -1, annPlanes: 0, annFlights: 0, annTargets: new Int32Array(EVAC_ANN_MAX), annCount: 0, annNoTarget: 0,
+    annKind: EVA_NONE, annSeq: 0, annWave: -1, annPlanes: 0, annFlights: 0, annTargets: new Int32Array(EVAC_ANN_MAX), annTargetPlanes: new Int32Array(EVAC_ANN_MAX), annCount: 0, annNoTarget: 0, annLost: 0,
     falling: false, fireGroup: -1, targetedMask: 0, groupDx: new Float64Array(groups), groupDy: new Float64Array(groups), camDx: NaN, camDy: NaN,
     event: EVE_NONE, eventSeq: 0, eventGroup: -1, eventN: 0, eventSub: 0, eventShelter: -1, eventTargeted: false,
   };

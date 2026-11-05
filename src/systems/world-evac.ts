@@ -13,7 +13,7 @@ import type { BoatInput, BoatParams, BoatState, SpeedStep } from '../core/boat-m
 import { crewLost } from '../core/crew';
 import { createEvacAirStep, stepEvacAir, type EvacAirStep } from '../core/evac-air';
 import { stepEvacBoats } from '../core/evac-boats';
-import { EVAC_AI_SEED_OFFSET } from '../core/evac-data';
+import { EVAC_AI_SEED_OFFSET, G_ENTERING, G_HAULING, G_HIDDEN } from '../core/evac-data';
 import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
 import { createEvacSettleSnap, type EvacSettleSnap } from '../core/evac-result';
 import { createEvacPlan, evacPlanHooks, type EvacFlightPort, type EvacPlan } from '../core/evac-plan';
@@ -153,6 +153,15 @@ export class WorldEvac {
   /** 決着（240 秒）の後（systems/mission-end の evacHold） */
   get settled(): boolean {
     return this.sq.settled;
+  }
+
+  /**
+   * カメラを隊長艇に寄せる（進行方向の見越しをしない）か（v0.6.11 S8b。scenes/mission-scene の updateLookAhead）: 操作中の隊が隠れ場所の中（入っている・上げている・隠れている）の間は
+   * 止まった隊長艇が見越しの 320 m で画面の端・上の HUD の下に寄った（既定のズーム 0.75。S6 の触る遊びの画面写し）。ほかの任務は evac が無い＝今までの見越し
+   */
+  get camCentred(): boolean {
+    const ph = this.sq.groups[this.sq.control]!.phase;
+    return ph === G_ENTERING || ph === G_HAULING || ph === G_HIDDEN;
   }
 
   /** 機銃を撃てる隻数（操作中の隊の浮いていて上げていない艇。systems/arms-step の隊の砲。模擬と同じ数え方） */

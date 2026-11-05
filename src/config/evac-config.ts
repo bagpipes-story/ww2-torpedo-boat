@@ -24,6 +24,11 @@ export const EVAC_COVER_ALPHA = 0.35;
 /** 2 行目の出来事（見失った・沈没・撃墜・陰が見つかった・隠れた・機銃）を出す秒（世界の時計。一時停止で止まる）と、決着（第 1 次の空襲が去った）を出す秒 */
 export const EVAC_EVENT_SHOW_S = 3;
 export const EVAC_SETTLE_SHOW_S = 4;
+/**
+ * ［切替］・全滅の後の自動の切替でスティックを倒したまま引き継いだ時（latch が SW_WAIT_NEUTRAL）、2 行目の「引き継いだ ・ 離してから倒すと操る」を予告の行より上に出す秒（世界の時計。v0.6.11 S8b）。
+ * カメラが新しい隊長艇へ流れる約 1 秒（CAMERA_FOLLOW_LERP）＋ 1 行を読む約 1 秒。予告は赤い輪と端の矢印で見えたままで、この後に 2 行目へ戻る（予告から始まるまで 10 秒の 2 割）
+ */
+export const EVAC_TAKE_HOLD_S = 2;
 /** 予告の中央の帯（ui/dawn-banner を借りる）を出す ms（spec §10.1「中央の帯 2 秒」） */
 export const EVAC_BANNER_MS = 2000;
 /** 近い隠れ場所の距離の刻み m（2 行目と端の矢印。変わったときだけ組み直す） */

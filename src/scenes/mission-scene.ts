@@ -270,7 +270,8 @@ export class MissionScene extends Phaser.Scene {
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
   private updateLookAhead(): void {
     const h = degToRad(this.world.boat.state.headingDeg);
-    this.cameras.main.setFollowOffset(-Math.sin(h) * CAMERA_LOOK_AHEAD_M, Math.cos(h) * CAMERA_LOOK_AHEAD_M);
+    const a = this.world.evac?.camCentred ? 0 : CAMERA_LOOK_AHEAD_M; // 空襲下の退避（jp_03）で操作中の隊が隠れ場所の中なら隊長艇を中心に（v0.6.11 S8b）
+    this.cameras.main.setFollowOffset(-Math.sin(h) * a, Math.cos(h) * a);
   }
 
   /** Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する。進行中の弱い揺れがあっても上書きする（force） */
