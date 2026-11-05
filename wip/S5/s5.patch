@@ -1,0 +1,1016 @@
+diff --git a/src/assets/impact-ring-placeholder.ts b/src/assets/impact-ring-placeholder.ts
+index 88eaafc..95dfe28 100644
+--- a/src/assets/impact-ring-placeholder.ts
++++ b/src/assets/impact-ring-placeholder.ts
+@@ -1,8 +1,10 @@
+ // 空襲の着弾点の輪のプレースホルダー（v0.6.1。docs/02 §6.8）: 白い太線の円と薄い塗り（表示時に tint・命中の半径へ setScale）。
+ // 帰投地点の輪（半径 128 に線 4）を流用すると約 28 m に縮めたとき線が 1 px 未満になるので、線の比を大きくした専用の 1 枚。起動時に 1 回だけテクスチャ化する。
++// v0.6.11 S5: 空襲下の退避（jp_03）の輪（塗りなしの白い太線の円。表示時に tint・半径へ setScale。ui/evac-markers）も同じ作り方の 1 枚。
+ import Phaser from 'phaser';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { AIR_STRIKE_RING_FILL_ALPHA, AIR_STRIKE_RING_LINE_UNITS, AIR_STRIKE_RING_TEX_RADIUS_UNITS } from '../config/dawn-config';
++import { EVAC_RING_LINE_UNITS, EVAC_RING_TEX_RADIUS_UNITS } from '../config/evac-config';
+ 
+ export function generateImpactRingTexture(scene: Phaser.Scene): void {
+   const k = RENDER_SCALE;
+@@ -17,3 +19,16 @@ export function generateImpactRingTexture(scene: Phaser.Scene): void {
+   g.generateTexture(TEXTURE_KEYS.impactRing, size, size);
+   g.destroy();
+ }
++
++/** 空襲下の退避の輪（v0.6.11 S5）: 半径 EVAC_RING_TEX_RADIUS_UNITS・線 EVAC_RING_LINE_UNITS（線の内側の縁が半径）。塗りなし */
++export function generateEvacRingTexture(scene: Phaser.Scene): void {
++  const k = RENDER_SCALE;
++  const r = EVAC_RING_TEX_RADIUS_UNITS * k;
++  const lw = EVAC_RING_LINE_UNITS * k;
++  const size = Math.ceil((r + lw) * 2);
++  const g = scene.make.graphics({ x: 0, y: 0 }, false);
++  g.lineStyle(lw, 0xffffff, 1);
++  g.strokeCircle(size / 2, size / 2, r);
++  g.generateTexture(TEXTURE_KEYS.evacRing, size, size);
++  g.destroy();
++}
+diff --git a/src/config/evac-config.ts b/src/config/evac-config.ts
+index 55ecc86..d2fb21c 100644
+--- a/src/config/evac-config.ts
++++ b/src/config/evac-config.ts
+@@ -1,5 +1,5 @@
+ // 空襲下の退避（v0.6.11。jp_03「運天港・空襲下の退避」）の絵の定数（S4。systems/evac-boats-view・systems/evac-terrain）。ゲームの強さの値ではないので data/*.json には置かない
+-// （landing-config・convoy-config と同じ考え）。何も import しない。HUD・輪・札の定数は S5（ui/evac-markers・ui/evac-lines）。
++// （landing-config・convoy-config と同じ考え）。何も import しない。S5 から HUD の出来事の秒・中央の帯・輪・隊の番号・札・端の矢印の定数（systems/evac-telemetry・ui/evac-markers・ui/evac-lines）。
+ 
+ /** 隊が陰に隠れている（G_HIDDEN）間の艇の絵と、操作中の隊が隠れている間の自艇の絵の濃さ（壕に上げ終えた艇は描かない） */
+ export const EVAC_HIDDEN_ALPHA = 0.45;
+@@ -19,3 +19,41 @@ export const EVAC_COVER_W_M = 300;
+ export const EVAC_COVER_H_M = 160;
+ export const EVAC_COVER_COLOR = 0x0e1a24;
+ export const EVAC_COVER_ALPHA = 0.35;
++
++// ---------- S5: HUD（2 行目の出来事・中央の帯）と地図の上の輪・番号・札（spec-v0611-r2 §10.1・§10.4・§11） ----------
++/** 2 行目の出来事（見失った・沈没・撃墜・陰が見つかった・隠れた・機銃）を出す秒（世界の時計。一時停止で止まる）と、決着（第 1 次の空襲が去った）を出す秒 */
++export const EVAC_EVENT_SHOW_S = 3;
++export const EVAC_SETTLE_SHOW_S = 4;
++/** 予告の中央の帯（ui/dawn-banner を借りる）を出す ms（spec §10.1「中央の帯 2 秒」） */
++export const EVAC_BANNER_MS = 2000;
++/** 近い隠れ場所の距離の刻み m（2 行目と端の矢印。変わったときだけ組み直す） */
++export const EVAC_DIST_STEP_M = 20;
++/** 輪の絵（assets の generateEvacRingTexture。Boot で 1 回）: 半径・線の太さ（単位 × RENDER_SCALE px）。線は半径の 1/8（隊の輪 50 m で 6 m＝見張り 0.5 で 3 px） */
++export const EVAC_RING_TEX_RADIUS_UNITS = 32;
++export const EVAC_RING_LINE_UNITS = 4;
++/** 隊の輪の半径 m（隊長艇を中心に。縦列 40 m × 2 の半ばを囲む）と隠れ場所の輪の濃さ（空き枠が隊の隻数より少ない＝満杯は薄く） */
++export const EVAC_GROUP_RING_M = 50;
++export const EVAC_SHELTER_RING_ALPHA = 0.55;
++export const EVAC_SHELTER_FULL_ALPHA = 0.22;
++/** 輪の色: 隠れ場所（味方の青）・操作中の隊（白）・狙われた隊（赤＝HUD の警告色）・見つかった陰（黄） */
++export const EVAC_SHELTER_TINT = 0x8fc8ff;
++export const EVAC_CONTROL_TINT = 0xffffff;
++export const EVAC_TARGET_TINT = 0xff8a7a;
++export const EVAC_FOUND_TINT = 0xffd166;
++/** 狙われた隊の赤い輪の点滅（tween なし。世界の秒から濃さを計算）: 回/秒と濃さの幅 */
++export const EVAC_TARGET_PULSE_HZ = 1.5;
++export const EVAC_TARGET_ALPHA_MIN = 0.45;
++export const EVAC_TARGET_ALPHA_MAX = 1;
++/** 隊の番号（隊長艇の上）と隠れ場所の札の字の大きさ（論理 px。ズームが変わった時だけ 1/zoom＝見張り 0.5 でも画面上この大きさ）・隊長艇からの上へのずれ（論理 px） */
++export const EVAC_NUMBER_PX = 26;
++export const EVAC_LABEL_PX = 20;
++export const EVAC_NUMBER_OFFSET_PX = 30;
++/** 隊の番号の色: 停泊（灰）・走る（白）・隠れた（暗い緑）・見つかった（黄）・狙われている（赤）・全滅（灰の ×） */
++export const EVAC_NUM_MOORED = '#9aa4ae';
++export const EVAC_NUM_UNDERWAY = '#e6eef7';
++export const EVAC_NUM_HIDDEN = '#3f7a4a';
++export const EVAC_NUM_FOUND = '#ffd166';
++export const EVAC_NUM_TARGET = '#ff8a7a';
++export const EVAC_NUM_GONE = '#6b7480';
++/** 画面の外の狙われた隊の端の矢印の数（同時の編隊の上限と同じ 3。spec §10.4） */
++export const EVAC_EDGE_TARGETS = 3;
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 628feee..1538bf6 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -198,6 +198,7 @@ export const TEXTURE_KEYS = {
+   returnRing: 'tex-return-ring',
+   /** 空襲の着弾点の輪（v0.6.1。線の太い専用の輪） */
+   impactRing: 'tex-impact-ring',
++  evacRing: 'tex-evac-ring', // 空襲下の退避の輪（v0.6.11 S5。jp_03。隠れ場所・操作中の隊・狙われた隊・見つかった陰。assets/impact-ring-placeholder の generateEvacRingTexture）
+   debugRing: 'tex-debug-ring',
+   shell: 'tex-shell',
+   tracer: 'tex-tracer',
+diff --git a/src/config/hud-layout-config.ts b/src/config/hud-layout-config.ts
+index 107b8ee..9ea3512 100644
+--- a/src/config/hud-layout-config.ts
++++ b/src/config/hud-layout-config.ts
+@@ -2,7 +2,8 @@
+ // 兵装は全任務で同じ位置（実機 1 回目「主兵装である魚雷が右側。機銃が魚雷の左側側に固定」）: 右下の角（列 1・R64）に魚雷、そのすぐ左（列 2・R56）に機銃、扇は魚雷の下（v0.5.1 のユーザーの要望
+ // 「発射ボタンの下に小さく」。見た目はホームバーの帯 682〜720 より上）。missions_seed の main_weapon は置き場所も大きさも決めない（Briefing の順と 2 行目の「魚雷なし／大発なし」だけ）。
+ // 技能（R44）は右端に縦一列（実機 1 回目「魚雷の上に並べていた変更前のように」。右端を魚雷の右端 W − 24 に揃えた x = W − 68）、上から 煙幕・消火・見張り・識別の決まった段（y 68・180・292・404）。
+-// 無いボタン（日本の艇の煙幕・味方機の来ない夜の識別）の段は空ける（v0.6.7 も位置を詰めなかった）。
++// 無いボタン（日本の艇の煙幕・味方機の来ない夜の識別）の段は空ける（v0.6.7 も位置を詰めなかった）。v0.6.11 S5: 空襲下の退避（jp_03。識別が無い＝V-E11）は識別の段に［切替］
++// （SKILL_ORDER は変えない＝ほかの任務の置き方は 1 px も変わらない。tests/evac-switch-ui）。
+ // 速力・機関の表示の右端は W − 312、端の印の右の余白 352、つまむ帯は W/2〜W − 304。何も import しない（tests が node で読んでも DOM を引かない。title-layout-config と同じ）。
+ 
+ export const HUD_LAYOUT_H = 720;
+@@ -38,10 +39,10 @@ export const MARKER_PX = 18;
+ /** ホームバーの帯の上端 */
+ export const HOME_BAND_Y = 682;
+ 
+-export type SkillKind = 'smoke' | 'extinguish' | 'lookout' | 'identify';
+-/** 技能の段の並び（上から。段 i の中心 y は skillSlotY(i)。無いボタンの段は空ける）とボタンの文字 */
++export type SkillKind = 'smoke' | 'extinguish' | 'lookout' | 'identify' | 'switch';
++/** 技能の段の並び（上から。段 i の中心 y は skillSlotY(i)。無いボタンの段は空ける）とボタンの文字。［切替］（v0.6.11 S5）は識別の段に入る（並びには足さない） */
+ export const SKILL_ORDER: readonly SkillKind[] = ['smoke', 'extinguish', 'lookout', 'identify'];
+-const SKILL_LABELS: Readonly<Record<SkillKind, string>> = { smoke: '煙幕', extinguish: '消火', lookout: '見張り', identify: '識別' };
++const SKILL_LABELS: Readonly<Record<SkillKind, string>> = { smoke: '煙幕', extinguish: '消火', lookout: '見張り', identify: '識別', switch: '切替' };
+ 
+ export interface PanelCircle {
+   x: number;
+@@ -124,10 +125,11 @@ export function skillSlotY(i: number): number {
+ }
+ 
+ /**
+- * パネルの置き方（HUD を作るとき 1 回）。has は煙幕・識別のボタンがあるか（消火と見張りはいつも）。どの任務も兵装の位置と大きさは同じ（v0.6.8 実機 1 回目）。
++ * パネルの置き方（HUD を作るとき 1 回）。has は煙幕・識別のボタンがあるか（消火と見張りはいつも）と、識別の無い段に［切替］を置くか（v0.6.11 S5。evac の任務だけ）。
++ * どの任務も兵装の位置と大きさは同じ（v0.6.8 実機 1 回目）。
+  * 魚雷の中心 y = 642 − 18 − 64 = 560、機銃の中心 y = round((魚雷の上端 496 + 扇の下端 682) / 2) = 589（v0.6.8 の us_02 で試した位置）
+  */
+-export function panelLayout(W: number, has: { smoke: boolean; identify: boolean }): PanelLayout {
++export function panelLayout(W: number, has: { smoke: boolean; identify: boolean; switch?: boolean }): PanelLayout {
+   const { c1, c2 } = panelColumns(W);
+   const torpY = SPREAD_TOP_Y - SPREAD_GAP - R_TORPEDO;
+   const gunY = Math.round((torpY - R_TORPEDO + SPREAD_TOP_Y + SPREAD_H) / 2);
+@@ -135,8 +137,9 @@ export function panelLayout(W: number, has: { smoke: boolean; identify: boolean
+   const skills: PanelSkill[] = [];
+   for (let i = 0; i < SKILL_ORDER.length; i++) {
+     const kind = SKILL_ORDER[i]!;
+-    if ((kind === 'smoke' && !has.smoke) || (kind === 'identify' && !has.identify)) continue;
+-    skills.push({ kind, label: SKILL_LABELS[kind], x: sx, y: skillSlotY(i) });
++    const k: SkillKind = kind === 'identify' && !has.identify && has.switch === true ? 'switch' : kind;
++    if ((k === 'smoke' && !has.smoke) || (k === 'identify' && !has.identify)) continue;
++    skills.push({ kind: k, label: SKILL_LABELS[k], x: sx, y: skillSlotY(i) });
+   }
+   const spreadW = 2 * R_TORPEDO;
+   return {
+diff --git a/src/core/boat-telemetry.ts b/src/core/boat-telemetry.ts
+index eb6bba1..24db0d3 100644
+--- a/src/core/boat-telemetry.ts
++++ b/src/core/boat-telemetry.ts
+@@ -1,10 +1,11 @@
+-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally を足した）。
++// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac を足した）。
+ // Phaser 非依存。型だけ（実行時の値を持たない）。
+ import type { AllyTelemetry } from './ally-telemetry';
+ import type { ArmsTelemetry } from './arms-cue';
+ import type { ConvoyTelemetry } from './convoy';
+ import type { DawnTelemetry } from './dawn-air';
+ import type { EngineTelemetry } from './engine-trouble';
++import type { EvacTelemetry } from './evac-telemetry';
+ import type { GunboatTelemetry } from './gunboat';
+ import type { LandingTelemetry } from './landing';
+ import type { PatrolTelemetry } from './patrol-air-state';
+@@ -150,4 +151,5 @@ export interface BoatTelemetry {
+   arms: ArmsTelemetry; // 兵装（v0.6.8。core/arms-cue）: 積んでいる魚雷・撃てるか・出来事と状態の文（systems/arms-telemetry が毎フレーム書く）
+   landing: LandingTelemetry; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。core/landing。jp_04）: 揚陸・報告・雷跡・出来事（systems/landing-telemetry が毎フレーム書く。無い任務は enabled false）
+   ally: AllyTelemetry; // 味方の駆逐艦 卯月（v0.6.10 S6。core/ally-telemetry。jp_04）: 呼び名・帰投の輪の呼びかけ・平常の行の末尾・最後の砲の出来事が卯月か（systems/ally-telemetry。無い任務は enabled false）
++  evac: EvacTelemetry; // 空襲下の退避（v0.6.11 S5。core/evac-telemetry。jp_03）: 操作中の隊・座席の隊の HP・予告・出来事・近い隠れ場所・狙われた隊（systems/evac-telemetry。無い任務は enabled false）
+ }
+diff --git a/src/core/dawn-air.ts b/src/core/dawn-air.ts
+index c58a7da..f7789f2 100644
+--- a/src/core/dawn-air.ts
++++ b/src/core/dawn-air.ts
+@@ -119,6 +119,8 @@ export interface DawnTelemetry {
+   /** 夜明けの後に岸へ逃げている大発の隻数と、夜明けの後に岸へ隠れた（上陸した）隻数（v0.6.2 実機 1 回目。空襲の行の後ろ。夜明け前・大発の無い任務は 0） */
+   bargesRunning: number;
+   bargesHidden: number;
++  /** 昼から始まる任務（v0.6.11 S5。missions_seed の day_start＝jp_03）: 時計・中央の帯の言葉を「夜明け」でなく「空襲」に（ui/dawn-lines）。ほかの任務は false */
++  dayStart: boolean;
+ }
+ 
+ export function createDawnTelemetry(): DawnTelemetry {
+@@ -146,6 +148,7 @@ export function createDawnTelemetry(): DawnTelemetry {
+     shipsGone: false,
+     bargesRunning: 0,
+     bargesHidden: 0,
++    dayStart: false,
+   };
+ }
+ 
+diff --git a/src/core/evac-seat.ts b/src/core/evac-seat.ts
+index 5dca46f..298c55e 100644
+--- a/src/core/evac-seat.ts
++++ b/src/core/evac-seat.ts
+@@ -88,22 +88,31 @@ function tierOf(sq: EvacSquadron, gi: number): number {
+   return 1;
+ }
+ 
+-/** ［切替］の並びを sq.order に作る（段の順・同じ段は隊番号の順。1 つの隊は 1 回だけ。乱数なし）。長さを返す */
+-export function evacSwitchOrder(sq: EvacSquadron): number {
++/** ［切替］の並びを out に作る（段の順・同じ段は隊番号の順。1 つの隊は 1 回だけ。乱数なし）。長さを返す */
++function fillSwitchOrder(sq: EvacSquadron, out: Int32Array): number {
+   let n = 0;
+-  for (let t = 0; t <= 3; t++) for (let gi = 0; gi < sq.groups.length; gi++) if (tierOf(sq, gi) === t) sq.order[n++] = gi;
++  for (let t = 0; t <= 3; t++) for (let gi = 0; gi < sq.groups.length; gi++) if (tierOf(sq, gi) === t) out[n++] = gi;
++  return n;
++}
++
++/** ［切替］の並びを sq.order に作る。長さを返す */
++export function evacSwitchOrder(sq: EvacSquadron): number {
++  const n = fillSwitchOrder(sq, sq.order);
+   sq.orderLen = n;
+   return n;
+ }
+ 
+-/** 押した時に移る隊: 並びの中で今の隊の次（末尾なら先頭。今の隊が並びに無ければ先頭）。移る先が無い・決着の後は −1（灰色の「切替」） */
+-export function evacNextSwitch(sq: EvacSquadron): number {
++/**
++ * 押した時に移る隊: 並びの中で今の隊の次（末尾なら先頭。今の隊が並びに無ければ先頭）。移る先が無い・決着の後は −1（灰色の「切替」）。
++ * out を渡せば並びをそこに作る（v0.6.11 S5。HUD のボタンの字「切替 4」を毎フレーム見る＝sq.order・orderLen を書かない。世界と模擬の突き合わせが sq を比べる）
++ */
++export function evacNextSwitch(sq: EvacSquadron, out: Int32Array = sq.order): number {
+   if (sq.settled) return -1;
+-  const n = evacSwitchOrder(sq);
++  const n = out === sq.order ? evacSwitchOrder(sq) : fillSwitchOrder(sq, out);
+   if (n === 0) return -1;
+   let i = -1;
+-  for (let k = 0; k < n; k++) if (sq.order[k] === sq.control) i = k;
+-  const next = sq.order[i < 0 ? 0 : (i + 1) % n]!;
++  for (let k = 0; k < n; k++) if (out[k] === sq.control) i = k;
++  const next = out[i < 0 ? 0 : (i + 1) % n]!;
+   return next === sq.control ? -1 : next;
+ }
+ 
+diff --git a/src/core/input-state.ts b/src/core/input-state.ts
+index 6479cb0..a1e3cb3 100644
+--- a/src/core/input-state.ts
++++ b/src/core/input-state.ts
+@@ -26,7 +26,7 @@ export interface InputState {
+   identifyTap: boolean;
+   /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。v0.6.8 から全任務で読む（艇の機銃は魚雷の任務でも艦と機を撃てる） */
+   gunHeld: boolean;
+-  /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。ボタンとキーは S5）。ほかの任務では立たない */
++  /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。S5 から右端の識別の段のボタン ui/weapon-panel と Tab キー）。ほかの任務では誰も読まない */
+   switchTap: boolean;
+ }
+ 
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index 6e7626b..7db58d2 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -37,7 +37,7 @@ import {
+ import { generateAircraftTexture } from '../assets/aircraft-placeholder';
+ import { generateGunButtonTexture } from '../assets/weapon-textures';
+ import { generateRainTexture } from '../assets/storm-placeholder';
+-import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
++import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
+ import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
+ import { generatePtBoatTexture } from '../assets/pt-placeholder';
+ import { generateFriendlyTransportTexture } from '../assets/ally-ship-placeholder';
+@@ -113,6 +113,7 @@ export class BootScene extends Phaser.Scene {
+     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
+     generateReturnTextures(this);
+     generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
++    generateEvacRingTexture(this); // 空襲下の退避の輪（v0.6.11 S5。jp_03）
+     generateAircraftTexture(this);
+     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
+     generateRainTexture(this);
+diff --git a/src/scenes/hud-scene.ts b/src/scenes/hud-scene.ts
+index 2b88688..774a88e 100644
+--- a/src/scenes/hud-scene.ts
++++ b/src/scenes/hud-scene.ts
+@@ -94,7 +94,7 @@ export class HudScene extends Phaser.Scene {
+     this.fuelGauge = new FuelGauge(this);
+     if (this.telemetry.engine.on) this.engineHud = new EngineHud(this); // Mission が launch の前にテレメトリを 1 回書く（?debug&engoff の夜は on false）
+     this.markers = new HudMarkers(this, mission, this.telemetry); // 画面外マーカー 4 本（敵・帰投・敵機・岸。ui/hud-markers。v0.6.4 で切り出し）
+-    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached);
++    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached, this.telemetry.evac.annSeq);
+     this.stick = new VirtualStick(this, input);
+     const launch = data.hitRateModel.torpedo_launch;
+     const spread: SpreadConfig = {
+diff --git a/src/scenes/mission-scene.ts b/src/scenes/mission-scene.ts
+index fba32d9..a1338eb 100644
+--- a/src/scenes/mission-scene.ts
++++ b/src/scenes/mission-scene.ts
+@@ -138,7 +138,7 @@ export class MissionScene extends Phaser.Scene {
+     const m = w.setup.mission;
+     drawSea(this, m.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
+     this.shallowsView = new ShallowsView(this, m.shallows, m.coast, m.bounds);
+-    this.returnView = new ReturnPointView(this, w.returnPoint);
++    this.returnView = w.evac ? undefined : new ReturnPointView(this, w.returnPoint); // 空襲下の退避（v0.6.11 S5）は隠れ場所の輪（ui/evac-markers）
+ 
+     this.timeScale = world.time_scale;
+     this.timeLeftS = w.setup.durationS;
+diff --git a/src/systems/dawn-telemetry.ts b/src/systems/dawn-telemetry.ts
+index 2b2960c..0b898f7 100644
+--- a/src/systems/dawn-telemetry.ts
++++ b/src/systems/dawn-telemetry.ts
+@@ -51,6 +51,7 @@ export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
+   d.ships = w.dawn.ships;
+   d.retireJa = w.dawn.retireJa;
+   d.forceJa = w.dawn.retireJa ? w.setup.dawnAir.retireForceJa : '';
++  d.dayStart = w.setup.evac ? w.setup.evac.dayStart : false; // 昼から始まる任務（v0.6.11 S5。jp_03）
+   fillDawn(d, w);
+   return d;
+ }
+diff --git a/src/systems/evac-flights.ts b/src/systems/evac-flights.ts
+index f99345d..31f6cb4 100644
+--- a/src/systems/evac-flights.ts
++++ b/src/systems/evac-flights.ts
+@@ -1,15 +1,17 @@
+ // 空襲下の退避（v0.6.11 S4。jp_03。spec-v0611-r2 §3.7・§11）の世界の組み立て（生成は 1 か所＝world-hazards の作法。r2 L11）: 編隊（波 × 枠＝ノーマル 8・ハード 12）を凍結の
+ // systems/air-strike-flight の AirStrikeFlight で起動時に全部作り（機・爆弾・着弾の輪・進路の線の Image は凍結の物が作るプール。r2 M8）、着弾（命中の onPlayerHit・外れの splash の両方）を
+ // core/evac-hits の走査へ、水柱は世界の SplashPool（共有 32）、座席への命中は世界の hitBoat（終わりの理由 air_strike）。毎フレームの絵は動く編隊と止まったフレームの 1 回だけ
+-// （core/evac-air の evacDrawPass。r2 M2）・18 隻の Image（evac-boats-view）・地形は起動時に 1 回描く静的な Graphics（evac-terrain。r2 L4）。evac の無い任務は null（何も作らない）。
++// （core/evac-air の evacDrawPass。r2 M2）・18 隻の Image（evac-boats-view）・地形は起動時に 1 回描く静的な Graphics（evac-terrain。r2 L4）・輪と隊の番号と札（S5。ui/evac-markers の EvacMarks）。
++// evac の無い任務は null（何も作らない）。
+ // AirStrikeFlight を import する（DOM の game-config を読む）のはこのファイルだけ。tests が読む面は systems/world-evac（構造の型）。
+ import type Phaser from 'phaser';
+-import { boatTextureKey } from '../config/game-config';
++import { RENDER_SCALE, boatTextureKey } from '../config/game-config';
+ import { evacDrawPass } from '../core/evac-air';
+ import type { BoatState } from '../core/boat-motion';
+ import type { HitSpec } from '../core/gunnery';
+ import type { MissionEndReason } from '../core/mission-flow';
+ import type { SeededRng } from '../core/rng';
++import { EvacMarks } from '../ui/evac-markers';
+ import { AirStrikeFlight } from './air-strike-flight';
+ import type { BoatDamage } from './boat-damage';
+ import { EvacBoatsView } from './evac-boats-view';
+@@ -41,15 +43,18 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
+   );
+   const terrain = new EvacTerrain(scene, ev, w.setup.mission.bounds);
+   const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite);
++  const marks = new EvacMarks(scene, evac.sq);
+   const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
+   evac.view = {
+     update: () => {
+       evacDrawPass(evac.plan, draw);
+       boats.update(w.stepTimeS);
++      marks.update(w.stepTimeS, scene.cameras.main.zoom / RENDER_SCALE);
+     },
+     destroy: () => {
+       for (const f of flights) f.destroy();
+       boats.destroy();
++      marks.destroy();
+       terrain.destroy();
+     },
+   };
+diff --git a/src/systems/keyboard-input.ts b/src/systems/keyboard-input.ts
+index c788ff3..3bfce58 100644
+--- a/src/systems/keyboard-input.ts
++++ b/src/systems/keyboard-input.ts
+@@ -1,4 +1,4 @@
+-// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
++// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3）、Tab = ［切替］（v0.6.11 S5。jp_03 だけが読む））。
+ // 方向キーはスティックに触れている間は無視する。
+ import Phaser from 'phaser';
+ import type { InputState } from '../core/input-state';
+@@ -23,6 +23,7 @@ interface Keys {
+   z: Phaser.Input.Keyboard.Key;
+   f: Phaser.Input.Keyboard.Key;
+   g: Phaser.Input.Keyboard.Key;
++  tab: Phaser.Input.Keyboard.Key;
+ }
+ 
+ export class KeyboardInput {
+@@ -54,6 +55,7 @@ export class KeyboardInput {
+           z: Phaser.Input.Keyboard.KeyCodes.Z,
+           f: Phaser.Input.Keyboard.KeyCodes.F,
+           g: Phaser.Input.Keyboard.KeyCodes.G,
++          tab: Phaser.Input.Keyboard.KeyCodes.TAB,
+         }) as Keys)
+       : null;
+   }
+@@ -78,6 +80,7 @@ export class KeyboardInput {
+     }
+     if (Phaser.Input.Keyboard.JustUp(k.shift)) this.input.smokeTap = true;
+     if (Phaser.Input.Keyboard.JustDown(k.f)) this.input.identifyTap = true;
++    if (Phaser.Input.Keyboard.JustDown(k.tab)) this.input.switchTap = true; // ［切替］（空襲下の退避の任務の世界だけが消費する。ほかの任務では誰も読まない）
+     if (Phaser.Input.Keyboard.JustDown(k.x)) {
+       this.input.extinguishHeld = true;
+       this.kbExtinguish = true;
+diff --git a/src/systems/mission-telemetry.ts b/src/systems/mission-telemetry.ts
+index 4799006..db20975 100644
+--- a/src/systems/mission-telemetry.ts
++++ b/src/systems/mission-telemetry.ts
+@@ -17,6 +17,7 @@ import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
+ import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
+ import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
+ import { refreshAllyTelemetry } from './ally-telemetry';
++import { refreshEvacTelemetry } from './evac-telemetry';
+ import { landingResultPart, refreshLandingTelemetry } from './landing-telemetry';
+ import { detectionsOf, objectiveDoneOf } from './mission-objective';
+ import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
+@@ -122,6 +123,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
+   refreshConvoyTelemetry(t.convoy, w); // 味方の大発の輸送隊（v0.6.4）: 上陸・沈没・浜まで・最寄りの大発
+   refreshLandingTelemetry(t.landing, w); // 停泊して揚陸する味方の輸送船（v0.6.9）: 揚陸・米PT の報告・走っている雷跡・出来事（雷跡は世界の updateFrame が数えた後）
+   refreshAllyTelemetry(t.ally, w); // 味方の駆逐艦 卯月（v0.6.10 S6）: 隊の最後の砲の出来事が卯月の砲か（2 行目の頭「卯月 撃退！」）
++  refreshEvacTelemetry(t.evac, w); // 空襲下の退避（v0.6.11 S5。jp_03）: 隊・座席・予告・出来事（兵装の後＝撃墜と機銃の出来事を読む）
+   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
+   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
+   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
+diff --git a/src/systems/telemetry-create.ts b/src/systems/telemetry-create.ts
+index 4c6ddd5..d8a2d50 100644
+--- a/src/systems/telemetry-create.ts
++++ b/src/systems/telemetry-create.ts
+@@ -13,6 +13,7 @@ import { mpsToKt } from '../core/units';
+ import { initAllyTelemetry } from './ally-telemetry';
+ import { initConvoyTelemetry } from './convoy-telemetry';
+ import { initDawnTelemetry } from './dawn-telemetry';
++import { initEvacTelemetry } from './evac-telemetry';
+ import { initLandingTelemetry } from './landing-telemetry';
+ import { initPatrolTelemetry } from './patrol-telemetry';
+ import { initPtTelemetry } from './pt-telemetry';
+@@ -126,5 +127,6 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
+     arms: createArmsTelemetry(), // 兵装（v0.6.8。systems/arms-telemetry が毎フレーム書く）
+     landing: initLandingTelemetry(w), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry。無い任務は enabled false）
+     ally: initAllyTelemetry(w), // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。systems/ally-telemetry。無い任務・&noally は enabled false）
++    evac: initEvacTelemetry(w), // 空襲下の退避（v0.6.11 S5。jp_03。systems/evac-telemetry。無い任務は enabled false）
+   };
+ }
+diff --git a/src/systems/world-evac.ts b/src/systems/world-evac.ts
+index 7e5b9ee..480bd4f 100644
+--- a/src/systems/world-evac.ts
++++ b/src/systems/world-evac.ts
+@@ -18,6 +18,7 @@ import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
+ import { createEvacPlan, evacPlanHooks, type EvacFlightPort, type EvacPlan } from '../core/evac-plan';
+ import { evacFrameInput, evacLoadSeat, evacSeatCommand, evacSeatHome, evacSinkLeader, type EvacSeat, type EvacSeatHooks } from '../core/evac-seat';
+ import { createEvacSquadron, type EvacBoat, type EvacSquadron } from '../core/evac-squadron';
++import { EVS_GONE, createEvacFeed, feedBoatSunk, feedSink, type EvacFeed } from '../core/evac-telemetry';
+ import type { DamageState, HitSpec } from '../core/gunnery';
+ import type { MissionEndReason } from '../core/mission-flow';
+ import { SeededRng } from '../core/rng';
+@@ -69,8 +70,10 @@ export class WorldEvac {
+   readonly aaOrder: Int32Array;
+   readonly aaD2: Float64Array;
+   lastDownFlight = -1;
+-  /** 沈んだ艇の数（座席でない艇も。HUD の出来事は S5） */
++  /** 沈んだ艇の数（座席でない艇も） */
+   losses = 0;
++  /** HUD の出来事（S5。座席の hooks と段 5 の後に積み、systems/evac-telemetry がフレームごとに読んで消す） */
++  readonly feed: EvacFeed;
+   view: EvacView | null = null;
+   private latchSeen = false;
+   private readonly cmd: BoatInput = { headingDeg: NaN, speed01: 0 };
+@@ -105,16 +108,19 @@ export class WorldEvac {
+     };
+     this.seat = seat;
+     evacLoadSeat(sq, seat);
++    const feed = (this.feed = createEvacFeed(sq.groups.length));
+     const inner: EvacSeatHooks = {
+       onSeatLoaded: () => {
+         w.extinguishHeldS = 0;
+         damage.fireReason = 'destroyed';
+         w.launcher.clearQueue();
++        feed.seatSeq++;
+       },
+       onLeaderChanged: noop,
+-      onGroupGone: noop,
+-      onBoatSunk: () => {
++      onGroupGone: (gi) => feedSink(feed, EVS_GONE, gi, sq.targeted[gi] !== 0),
++      onBoatSunk: (b) => {
+         this.losses++;
++        feedBoatSunk(feed, sq, b);
+       },
+     };
+     const ref: { air: EvacAirStep | null } = { air: null };
+@@ -183,7 +189,16 @@ export class WorldEvac {
+ 
+   /** 段 5（座席の火災の後・夜明けの空襲の前）。閃光の距離は兵装の閃光（flash_reveal の時だけ陰を見つける） */
+   stepAir(feelDt: number): void {
+-    stepEvacAir(this.air, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);
++    const a = this.air;
++    stepEvacAir(a, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);
++    // このステップの出来事を HUD へ積む（plan.ev*・repass.ev は次のステップの頭で消える）
++    const f = this.feed;
++    const p = a.plan;
++    f.lost |= p.evLost;
++    f.found |= p.evFound;
++    f.repass |= a.repass.ev;
++    if (p.evWave >= 0) f.wave = p.evWave;
++    if (p.evSettle) f.settle = true;
+   }
+ 
+   updateVisuals(realDt: number): void {
+diff --git a/src/ui/boat-hud.ts b/src/ui/boat-hud.ts
+index 1f75d1e..1844b69 100644
+--- a/src/ui/boat-hud.ts
++++ b/src/ui/boat-hud.ts
+@@ -1,6 +1,6 @@
+ // 速力・速力段・舵の HUD（右下）と上中央の 3 行目（敵影と発見（雨））。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
+ // 2 行目は ui/mission-line.ts（v0.4.2 で切り出し）、文と表は ui/hud-lines.ts（v0.4.1 で切り出し）。左上 2 段目の夜明けの時計は ui/dawn-clock.ts（v0.6.2 実機 1 回目）。
+-// 右上 2 段目の揚陸の時計は ui/landing-clock.ts（v0.6.9。揚陸の任務だけ作る）。
++// 右上 2 段目の揚陸の時計は ui/landing-clock.ts（v0.6.9。揚陸の任務だけ作る）。3 行目は空襲下の退避（v0.6.11 S5。jp_03）だけ隊の行（ui/evac-lines の evacStatusLine）。
+ import Phaser from 'phaser';
+ import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import {
+@@ -25,6 +25,7 @@ import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
+ import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
+ import { shipsGoneStatusJa } from './dawn-lines';
+ import { DawnClock } from './dawn-clock';
++import { evacStatusKey, evacStatusLine } from './evac-lines';
+ import { LandingClock } from './landing-clock';
+ import { MissionLine } from './mission-line';
+ import { patrolStatusLine, patrolStatusOf } from './patrol-lines';
+@@ -52,6 +53,8 @@ export class BoatHud {
+   private lastDetectStep = -1;
+   private lastSpeedWarn = false;
+   private lastRain = false;
++  /** 空襲下の退避（v0.6.11 S5。jp_03）の 3 行目のキー（ui/evac-lines の evacStatusKey。無い任務は −1 のまま） */
++  private lastEvacStatus = -1;
+   private lastSpeedKt = -1;
+   private lastStep: SpeedStep | '' = '';
+   private lastHeading = -1;
+@@ -134,11 +137,15 @@ export class BoatHud {
+     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
+     // 雨: 艦と艇を結ぶ線が暴風の帯にかかっている（発見距離・視程が下がる。v0.3.4）
+     const rain = t.stormLos && !t.destroyerSunk;
+-    if (status !== this.lastStatus || detectStep !== this.lastDetectStep || rain !== this.lastRain) {
++    const est = t.evac.enabled ? evacStatusKey(t.evac) : -1; // 空襲下の退避（v0.6.11 S5。r2 H4: 新しい Text は作らない。夜の見え方の文は出さない）
++    if (status !== this.lastStatus || detectStep !== this.lastDetectStep || rain !== this.lastRain || est !== this.lastEvacStatus) {
+       this.lastStatus = status;
+       this.lastDetectStep = detectStep;
+       this.lastRain = rain;
+-      if (pst >= 0) {
++      this.lastEvacStatus = est;
++      if (est >= 0) {
++        this.statusText.setText(evacStatusLine(t.evac)).setColor(HUD_COLOR);
++      } else if (pst >= 0) {
+         const l = patrolStatusLine(t.patrol, pst);
+         this.statusText.setText(l.text).setColor(l.warn ? HUD_COLOR_WARN : HUD_COLOR);
+       } else if (status === STATUS_SUNK) {
+diff --git a/src/ui/dawn-banner.ts b/src/ui/dawn-banner.ts
+index a0f1287..0aecfe2 100644
+--- a/src/ui/dawn-banner.ts
++++ b/src/ui/dawn-banner.ts
+@@ -1,13 +1,17 @@
+ // 夜明けの帯（v0.6.1。spec §8.3）: HUD 中央に「夜明け — 空襲」／「夜明け」と 2 行までの説明を DAWN_BANNER_MS だけ出す。夜明けのラッチで 1 回だけ。
+ // 高さは上の縁の印（帰投・敵機の矢印と距離）の帯より下（DAWN_BANNER_OFFSET_Y。帯の文字が矢印に重ならない）。
+ // §7: Text 3 つは HUD の create で 1 回だけ作る。文を組むのは出す瞬間の 1 回（ui/dawn-lines の dawnBannerLines）。毎フレームは濃さ（alpha）だけで、tween は使わない。
++// v0.6.11 S5（jp_03。spec-v0611-r2 §10.1「中央の帯 2 秒」）: 空襲下の退避の予告（波の予告と、もう一度来る編隊の予告し直し）も同じ帯に EVAC_BANNER_MS（ui/evac-lines の evacBannerLines。
++// 予告の通し番号 t.evac.annSeq が変わったとき）。240 秒の帯は dawnBannerLines が「第1次の空襲が去った」にする。evac の無い任務は今のまま。
+ import Phaser from 'phaser';
+ import { DAWN_BANNER_FADE_MS, DAWN_BANNER_LINE_GAP, DAWN_BANNER_MS, DAWN_BANNER_OFFSET_Y } from '../config/dawn-config';
+ import { DEPTH, GAME_HEIGHT, GAME_WIDTH } from '../config/game-config';
+ import { HUD_COLOR_STRONG, HUD_COLOR_WARN, HUD_FONT_MISSION_PX, HUD_FONT_SPEED_PX, hudTextStyle } from '../config/ui-config';
+ import type { BoatTelemetry } from '../core/boat-motion';
+ import { DAWN_AIR_ENEMY } from '../core/dawn-air';
++import { EVAC_BANNER_MS } from '../config/evac-config';
+ import { dawnBannerLines } from './dawn-lines';
++import { evacBannerLines } from './evac-lines';
+ 
+ export class DawnBanner {
+   /** 見出しと説明 2 行 */
+@@ -17,9 +21,12 @@ export class DawnBanner {
+   /** 消える時刻 ms（0 は出していない） */
+   private untilMs = 0;
+   private lastAlpha = -1;
++  /** 見た空襲下の退避の予告の通し番号（v0.6.11 S5。HUD を作った時点の予告は出さない） */
++  private seenAnn: number;
+ 
+-  constructor(scene: Phaser.Scene, alreadyReached: boolean) {
++  constructor(scene: Phaser.Scene, alreadyReached: boolean, annSeq = 0) {
+     this.shown = alreadyReached;
++    this.seenAnn = annSeq;
+     let y = GAME_HEIGHT / 2 + DAWN_BANNER_OFFSET_Y;
+     for (let i = 0; i < 3; i++) {
+       const px = i === 0 ? HUD_FONT_SPEED_PX : HUD_FONT_MISSION_PX;
+@@ -33,18 +40,21 @@ export class DawnBanner {
+     if (!this.shown && t.dawn.reached) {
+       this.shown = true;
+       this.show(dawnBannerLines(t), t.dawn.air === DAWN_AIR_ENEMY && t.dawn.strikeEnabled, nowMs);
++    } else if (t.evac.enabled && t.evac.annSeq !== this.seenAnn) {
++      this.seenAnn = t.evac.annSeq;
++      if (t.evac.annKind !== 0) this.show(evacBannerLines(t.evac), true, nowMs, EVAC_BANNER_MS);
+     }
+     this.update(nowMs);
+   }
+ 
+-  /** lines は [見出し, 説明…]（3 行まで）。warn なら見出しを警告色に */
+-  show(lines: readonly string[], warn: boolean, nowMs: number): void {
++  /** lines は [見出し, 説明…]（3 行まで）。warn なら見出しを警告色に。ms は出す長さ（既定は夜明けの帯の DAWN_BANNER_MS） */
++  show(lines: readonly string[], warn: boolean, nowMs: number, ms: number = DAWN_BANNER_MS): void {
+     for (let i = 0; i < this.texts.length; i++) {
+       const tx = this.texts[i]!;
+       tx.setText(lines[i] ?? '').setVisible(i < lines.length).setAlpha(1);
+       if (i === 0) tx.setColor(warn ? HUD_COLOR_WARN : HUD_COLOR_STRONG);
+     }
+-    this.untilMs = nowMs + DAWN_BANNER_MS;
++    this.untilMs = nowMs + ms;
+     this.lastAlpha = 1;
+   }
+ 
+diff --git a/src/ui/dawn-lines.ts b/src/ui/dawn-lines.ts
+index eb42fe0..b651397 100644
+--- a/src/ui/dawn-lines.ts
++++ b/src/ui/dawn-lines.ts
+@@ -3,6 +3,7 @@
+ // v0.6.2 実機 1 回目: 左上の時計の色、2 行目が時計を避ける倍率、空襲の行の後ろの「大発 岸へ N 隻」。
+ // v0.6.2 実機 2 回目: 夜明けの秒数は左上の時計だけ（2 行目には出さない。ユーザー「メインメッセージの方に夜明けまでの秒数は不用」）。
+ // v0.6.10 S6（卯月。jp_04）: 夜明け近しの帰投の輪の呼びかけ（LD3）「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（callLineText。卯月の無い夜は前の「揚陸を待て」）。
++// v0.6.11 S5（jp_03。day_start の任務だけ＝t.dawn.dayStart。spec-v0611-r2 §10.3）: 時計は「空襲 残り 1:35」「空襲後 0:12」（r2 M9）、240 秒の帯は「第1次の空襲が去った」（ui/evac-lines）。ほかの任務の文は 1 字も変わらない。
+ // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
+ import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
+ import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
+@@ -13,6 +14,7 @@ import { CALL_DAWN } from '../core/mission-flow';
+ import { allyRingWaitJa } from './ally-lines';
+ import { convoyCallJa, convoyLeftStep, convoyWaitShoreJa, convoyWaiting } from './convoy-lines';
+ import { callLabel, withWarnings, type HudLine } from './hud-lines';
++import { evacSettleBannerLines, mssJa } from './evac-lines';
+ import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landingWaitTailJa } from './landing-lines';
+ import { stormWarning } from './mission-mode';
+ 
+@@ -31,6 +33,7 @@ export const strikeFallJa = (arc: boolean): string => (arc ? '爆弾投下！ 
+ 
+ /** 左上の時計（ui/dawn-clock）の文: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む）。v0.6.2 実機 1 回目までは 2 行目にも出していた */
+ export function clockJa(t: BoatTelemetry): string {
++  if (t.dawn.dayStart) return t.dawn.reached ? `空襲後 ${mssJa(Math.floor(t.dawn.daylightS))}` : `空襲 残り ${mssJa(Math.max(0, Math.ceil(t.timeLeftS)))}`; // 昼の任務（v0.6.11 S5。キーは同じ秒）
+   return t.dawn.reached ? `夜明け後 ${Math.floor(t.dawn.daylightS)} 秒` : `夜明けまで ${Math.max(0, Math.ceil(t.timeLeftS))} 秒`;
+ }
+ 
+@@ -169,6 +172,8 @@ function withdrawBannerJa(t: BoatTelemetry): string {
+  */
+ export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
+   const d = t.dawn;
++  // 昼の任務（v0.6.11 S5。jp_03）: 「第1次の空襲が去った」と残存の確定・外なら §2 の 4 機（ui/evac-lines）
++  if (d.dayStart && t.evac.enabled) return evacSettleBannerLines(t.evac, d.air === DAWN_AIR_ENEMY && d.strikeEnabled ? `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}` : '');
+   const withdraw = withdrawBannerJa(t);
+   if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
+     const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;
+diff --git a/src/ui/edge-marker.ts b/src/ui/edge-marker.ts
+index 8d3bd54..93ea06b 100644
+--- a/src/ui/edge-marker.ts
++++ b/src/ui/edge-marker.ts
+@@ -3,6 +3,7 @@
+ // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
+ // v0.6.6（隼艇の矢印）: 任意の矢印の色 tint、出ている間の点（読むだけ）と nudge（縁に沿ってずらす。ui/marker-separation。次の refresh が方位どおりに戻す）。
+ // v0.6.6 レビュー ux:ux-1: 任意の hideMargin（「画面の内なら隠す」の余白。ui/edge-marker-screen）と refresh の drawn（目標の絵が出ていなければ画面の内でも縁へ）。省けば今のまま。
++// v0.6.11 S5: setPrefix（ラベルの名を替える。空襲下の退避の「第4隊 N m」「西の壕 N m」＝ui/evac-markers。替えたときだけ次の refresh で組み直す）。呼ばなければ今のまま。
+ import Phaser from 'phaser';
+ import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/game-config';
+ import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_MARGIN, TARGET_MARKER_RIGHT_MARGIN, hudTextStyle } from '../config/ui-config';
+@@ -93,6 +94,13 @@ export class EdgeMarker {
+     this.setShown(true);
+   }
+ 
++  /** ラベルの接頭辞を替える（v0.6.11 S5。同じなら何もしない。替えたら次の refresh で距離の字を組み直す） */
++  setPrefix(prefix: string): void {
++    if (prefix === this.opts.labelPrefix) return;
++    this.opts.labelPrefix = prefix;
++    this.lastDistanceStep = -1;
++  }
++
+   /** 出ているか・矢印の点（v0.6.6。ui/marker-separation が読む） */
+   get isShown(): boolean { return this.visible; }
+   get shownX(): number { return this.mx; }
+diff --git a/src/ui/hp-bar.ts b/src/ui/hp-bar.ts
+index 0078f81..66dd097 100644
+--- a/src/ui/hp-bar.ts
++++ b/src/ui/hp-bar.ts
+@@ -18,6 +18,8 @@ export class HpBar {
+   private lastFlashShown = -1;
+   private lastCrewWarn = false;
+   private lastCrewAlive = -1;
++  /** 座席へ入れた回数（v0.6.11 S5。jp_03 の［切替］・交代のフレームは乗員の前回値を今の値に合わせ「-N」を出さない＝r2 L6。ほかの任務は 0 のまま） */
++  private lastSeatSeq = 0;
+   private flashLost = 0;
+   private flashUntil = 0;
+   private lastHp = -1;
+@@ -54,7 +56,12 @@ export class HpBar {
+       this.lastFlags = flags;
+       this.flags.setText(flags === 0 ? '' : flags === 1 ? '火災！' : flags === 2 ? '機関損傷' : '火災！ 機関損傷');
+     }
+-    // 乗員: 減った瞬間から CREW_LOSS_FLASH_MS は「-N」を付ける（表示中にさらに減れば足す）
++    // 乗員: 減った瞬間から CREW_LOSS_FLASH_MS は「-N」を付ける（表示中にさらに減れば足す）。別の隊長艇を座席へ入れたフレームは減りでない（v0.6.11 S5）
++    if (t.evac.seatSeq !== this.lastSeatSeq) {
++      this.lastSeatSeq = t.evac.seatSeq;
++      this.lastCrewAlive = t.crewAlive;
++      this.flashUntil = 0;
++    }
+     if (this.lastCrewAlive >= 0 && t.crewAlive < this.lastCrewAlive) {
+       this.flashLost = (nowMs < this.flashUntil ? this.flashLost : 0) + (this.lastCrewAlive - t.crewAlive);
+       this.flashUntil = nowMs + CREW_LOSS_FLASH_MS;
+diff --git a/src/ui/hud-markers.ts b/src/ui/hud-markers.ts
+index 6db69df..4990f58 100644
+--- a/src/ui/hud-markers.ts
++++ b/src/ui/hud-markers.ts
+@@ -7,6 +7,7 @@
+ // v0.6.9 S6b（揚陸の任務 jp_04 だけ。ほかの任務は作らない＝矢印の数・作る順・refresh は今のまま）: 7・8 本目＝「雷撃 N m」（赤。見張りの報告の PT が画面の外か、視程の外で海の上の ▼ の立てない所＝
+ // 上の HUD の帯・右端の技能のボタン・兵装の下。▼ が出ていれば出さない。F12: 視程の内の脅威の PT なら出さない）と
+ // 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前）。決まりは ui/landing-markers。どちらも右下の速力と兵装の HUD の角を避け、近い印から縁に沿ってずらす（雷撃は「PT」から、輸送は雷撃と帰投から）。
++// v0.6.11 S5（空襲下の退避の任務 jp_03 だけ）: 帰投の印は作らず（隊長艇の壕だけを指す印は紛らわしい＝r2 L8）、画面の外の狙われた隊と近い空いた隠れ場所の矢印（ui/evac-markers の EvacEdgeMarkers）。
+ import Phaser from 'phaser';
+ import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
+ import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
+@@ -42,6 +43,7 @@ import {
+ import type { BoatTelemetry } from '../core/boat-motion';
+ import { LANDING_DIST_STEP_M } from '../core/landing';
+ import { EdgeMarker } from './edge-marker';
++import { EvacEdgeMarkers } from './evac-markers';
+ import { snappedDistM } from './edge-marker-screen';
+ import { avoidPauseButton, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from './landing-markers';
+ import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
+@@ -87,12 +89,15 @@ export class HudMarkers {
+   /** 揚陸の任務（v0.6.9 S6b。jp_04 だけ）: 見張りの報告の PT「雷撃 N m」（赤・100 m 刻み・切り上げ・矢印の下。海の上の ▼ が出ていれば出さない。視程の内の PT は画面の内か縁から TARGET_MARKER_MARGIN の内なら隠し、視程の外の PT は画面の内でも ▼ の立てない所＝上の HUD の帯・右端の技能のボタン・兵装の下なら縁から指す）と輸送船「輸送 N m」（味方の青・同じ刻み・矢印の下。本当の画面の矩形の内なら隠す＝大きな船体が見えている間は出さない。縁から 56 px にすると、右の縁のすぐ内に見えている船へ W − 352 の縁から矢印が向いた） */
+   private runnerMarker?: EdgeMarker;
+   private shipMarker?: EdgeMarker;
++  /** 空襲下の退避（v0.6.11 S5。jp_03 だけ）: 狙われた隊・近い隠れ場所の矢印 */
++  private evacMarkers?: EvacEdgeMarkers;
+ 
+   constructor(scene: Phaser.Scene, mission: PrototypeMission, telemetry: BoatTelemetry) {
+     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
+     const guns = mission.mainWeapon === 'guns';
+     this.targetMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: mission.ptBoats ? PT_MARKER_LABEL : guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns || mission.ptBoats !== null, topMargin: TARGET_MARKER_TOP_MARGIN });
+-    this.homeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
++    if (telemetry.evac.enabled) this.evacMarkers = new EvacEdgeMarkers(scene, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP); // 空襲下の退避（v0.6.11 S5）は帰投の印の代わり
++    else this.homeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+     // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
+     if (mission.coast && mission.barges) this.coastMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
+     if (mission.convoy) this.convoyMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: CONVOY_MARKER_LABEL, stepM: CONVOY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+@@ -113,6 +118,7 @@ export class HudMarkers {
+     pm?.refresh(pdx, telemetry.planeDy, !Number.isNaN(pdx), telemetry, patrol && !Number.isNaN(pdx) ? snappedDistM(pdx, telemetry.planeDy) : undefined);
+     if (pm && patrol && pm.isShown) pm.nudge(avoidCorner(pm.shownX, pm.shownY, PLANE_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
+     this.coastMarker?.refresh(telemetry.coastDx, telemetry.coastDy, !Number.isNaN(telemetry.coastDy), telemetry);
++    this.evacMarkers?.refresh(telemetry);
+     this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry, telemetry.convoy.nearestM); // 平方根は convoy-telemetry の 1 回（レビュー neutral:N2）
+     if (this.shipMarker) this.refreshLanding(telemetry); // 揚陸の任務だけ（v0.6.9 S6b）
+     const gb = telemetry.gunboat;
+@@ -155,6 +161,8 @@ export class HudMarkers {
+     this.gunboatMarker?.destroy();
+     this.runnerMarker?.destroy();
+     this.shipMarker?.destroy();
++    this.evacMarkers?.destroy();
++    this.evacMarkers = undefined;
+     this.targetMarker = undefined;
+     this.homeMarker = undefined;
+     this.planeMarker = undefined;
+diff --git a/src/ui/mission-line-keys.ts b/src/ui/mission-line-keys.ts
+index 0dc5e15..d88794e 100644
+--- a/src/ui/mission-line-keys.ts
++++ b/src/ui/mission-line-keys.ts
+@@ -3,12 +3,14 @@
+ // mission-line が 1 個だけ持つ入れ物に書く（§7: 毎フレーム確保しない）。mission-line はモードを決めて pt-line-clock の shown を呼んだ後に呼ぶ（v0.6.8 と同じ時点）。
+ // tests/mission-line-keys が v0.6.8（main 2ad122b）の mission-line.ts:130-138 の写しと、既存のテレメトリの材料のすべてで比べる。
+ // v0.6.9 S6a: 揚陸（jp_04）の 2 つのキー（ui/landing-lines の landingKey・landingEventKey）を cKey の隣に足した。揚陸の無い任務はどちらも 0（上の 8 つの値は変わらない）。
++// v0.6.11 S5: 空襲下の退避（jp_03）のモード 38 の行のキー（ui/evac-lines の evacLineKey）は lKey の欄で渡す（揚陸と同時に無い。mission-line は差し引き 0 行。ほかの任務の lKey は今のまま）。
+ import type { BoatTelemetry } from '../core/boat-motion';
+ import { convoyKey, convoyWaiting } from './convoy-lines';
+ import { engineKey, engineTagKey } from './engine-lines';
++import { evacLineKey } from './evac-lines';
+ import { landingEventKey, landingKey, type LandingEventView } from './landing-lines';
+ import { planeKeyOf, planeModeOf } from './mission-line-air';
+-import { MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS } from './mission-mode';
++import { MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS } from './mission-mode';
+ import { ptKey } from './pt-lines';
+ 
+ /** 4 つのキーと、文を選ぶモードの判定（米PT の 5 つ・機関の 3 つ・水上機の 3 つ） */
+@@ -53,7 +55,7 @@ export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, f
+   const planeMode = planeModeOf(mode); // 水上機の 3 つ（9〜11）。キー（距離は接近中だけ 100 m 刻み）と文は ui/mission-line-air
+   out.planeMode = planeMode;
+   out.planeKey = planeKeyOf(t, planeMode);
+-  out.lKey = landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0
++  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38 の行のキー
+   out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(landingEv) : 0;
+   return out;
+ }
+diff --git a/src/ui/mission-line.ts b/src/ui/mission-line.ts
+index bfd5cb0..7af000d 100644
+--- a/src/ui/mission-line.ts
++++ b/src/ui/mission-line.ts
+@@ -8,7 +8,7 @@
+ // v0.6.5: 機関の不調（jp_05）の 3 つのモード（文とキーは ui/engine-lines。過熱の出来事の時計は pt-line-clock）と、赤い線・結果・接触の行の末尾の札（engineTagKey で組み直す）。
+ // v0.6.7: 夜の哨戒機（jp_02）の 4 つのモード（文とキーは ui/patrol-lines。lastPatrolKey）。
+ // v0.6.9 S0: 米PT・輸送隊・機関・水上機の 4 つのキーの組み立ては ui/mission-line-keys（純粋な関数。tests/mission-line-keys が v0.6.8 の式の写しと比べる）。
+-// v0.6.9 S6a: 停泊して揚陸する輸送船（jp_04）のモード 35・36・37 と決着の前の輪の中の待ち（文とキーは ui/landing-lines の landingLine・landingKey。出来事の時計は pt-line-clock）。平常・呼びかけは landingKey でも組み直す。
++// v0.6.9 S6a: 停泊して揚陸する輸送船（jp_04）のモード 35・36・37 と決着の前の輪の中の待ち（文とキーは ui/landing-lines の landingLine・landingKey。出来事の時計は pt-line-clock）。平常・呼びかけは landingKey でも組み直す。v0.6.11 S5: jp_03 のモード 38（ui/special-line → ui/evac-lines。キーは lKey の欄）。
+ import Phaser from 'phaser';
+ import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
+ import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
+@@ -40,7 +40,7 @@ import { composeLineKeys, createLineKeys } from './mission-line-keys';
+ import { patrolKey, patrolLine, patrolModeOf } from './patrol-lines';
+ import { engineLine, engineTagJa } from './engine-lines';
+ import { convoyEventLineGb } from './gunboat-lines';
+-import { landingLine, landingPassTailJa } from './landing-lines';
++import { landingPassTailJa, specialLine } from './special-line';
+ import { ptLine } from './pt-lines';
+ import { PtLineClock } from './pt-line-clock';
+ import {
+@@ -230,7 +230,7 @@ export class MissionLine {
+       this.lastLandingKey = lKey;
+       this.lastLandingEventKey = leKey;
+       // 夜の哨戒機（v0.6.7）か、揚陸の出来事・輸送船への脅威・射線・輪の中の待ち（v0.6.9。ui/landing-lines の landingLine。揚陸の無い任務とほかのモードは null）。モードは重ならない
+-      const special = patrolMode ? patrolLine(t, mode) : landingLine(t, mode, this.ptClock.landingEv);
++      const special = patrolMode ? patrolLine(t, mode) : specialLine(t, mode, this.ptClock); // v0.6.11 S5: 空襲下の退避（jp_03）のモード 38 も（ui/special-line）
+       if (special) {
+         this.missionText.setText(special.text).setColor(special.color);
+       } else if (mode === MISSION_CONVOY_EVENT) {
+diff --git a/src/ui/mission-mode.ts b/src/ui/mission-mode.ts
+index dd88004..ced169b 100644
+--- a/src/ui/mission-mode.ts
++++ b/src/ui/mission-mode.ts
+@@ -77,6 +77,8 @@ export const MISSION_LANDING_EVENT = 35;
+ export const MISSION_LANDING_THREAT = 36;
+ /** 37 輸送船が射線に入る（v0.6.9 R14 A1。自艇と戦う PT が輸送船の近くで艇首を輸送船へ向けた＝戦いながらの斉射の前触れ。赤い線のすぐ下・13mm の出来事より上。文は ui/landing-lines） */
+ export const MISSION_LANDING_FIRE_LINE = 37;
++/** 38 空襲下の退避（v0.6.11 S5。jp_03。t.evac.enabled の任務だけ。夜明け（240 秒の後）の空襲の行の下・ほかの全部の上。中の行は ui/evac-lines の evacLineMode。ほかの任務は 1 ビットも変わらない） */
++export const MISSION_EVAC = 38;
+ 
+ /**
+  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
+@@ -171,6 +173,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
+   // 夜明けのラッチの瞬間に落ちている夜の 1 発（最大 1.28 秒）は夜明けの 4 機の接近・旋回の行に隠さない（R6。夜明けの最初の進路はラッチから first_run_s 後で重ならない）
+   if (pa.enabled && pa.threat === AS_T_FALLING && (t.dawn.threat === AS_T_INBOUND || t.dawn.threat === AS_T_ORBIT)) return MISSION_PATROL_ATTACK;
+   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
++  if (t.evac.enabled) return MISSION_EVAC; // 空襲下の退避（v0.6.11 S5。帰投の呼びかけ・平常の行は出ない＝jp_03 の 2 行目に「夜明け」は無い）
+   if (pa.enabled) {
+     // 夜の哨戒機（v0.6.7。jp_02 に他の敵はいない）: 発見と夜の出撃 > 捜索 > 結果（平常は下の帰投せよの下。出撃の後の哨戒で航跡の行が出るなら結果より航跡。レビュー ux:ux-4）
+     if (pa.threat !== AS_T_NONE && pa.threat !== AS_T_REST) return MISSION_PATROL_ATTACK;
+diff --git a/src/ui/weapon-panel.ts b/src/ui/weapon-panel.ts
+index 7e70a4f..46bec95 100644
+--- a/src/ui/weapon-panel.ts
++++ b/src/ui/weapon-panel.ts
+@@ -2,6 +2,7 @@
+ // 兵装は全任務で同じ位置（main_weapon に関わらず）: 右下の角（列 1・R64・文字 22 px）に魚雷、そのすぐ左（列 2・R56・文字 20 px）に機銃、扇は魚雷の下。
+ // 技能（R44・文字 20 px。R48 の丸の絵を縮める）は右端に縦一列（上から 煙幕（米）・消火・見張り・識別（味方機の夜）。無いボタンの段は空ける）。兵装の上の 1 行は ui/weapon-cue（このクラスが作って消す）。
+ // 魚雷・扇・機銃は出だしの 600 ms は受けない（Briefing の「出撃」・Result の「もう一度」の 2 度押し）。技能の中身（煙幕・消火・見張り・識別）は v0.6.7 の hud-scene のまま（S0 で移した）。
++// v0.6.11 S5（jp_03。spec-v0611-r2 §9・r2 L13）: 識別の段に［切替］（タップで InputState.switchTap。字は並びの次の隊「切替 4」、移る先が無い・決着の後は灰色の「切替」）。
+ // 値が変わったときだけ文字を組む（§7。前回の値はこのクラスが持つ。Hud を作り直すたびにこのクラスも作り直すので前回の値を引きずらない）。
+ import Phaser from 'phaser';
+ import { GUN_BUTTON_FONT_PX, GUN_BUTTON_SCALE, GUN_FIRING_ALPHA } from '../config/arms-config';
+@@ -40,6 +41,9 @@ export class WeaponPanel {
+   private lookoutButton?: HoldButton;
+   /** 「識別」（v0.3.3）。任務に味方機がいるときだけ作る。残り秒の整数が変わったときだけ文字を組む */
+   private identifyButton?: HoldButton;
++  /** 「切替」（v0.6.11 S5。空襲下の退避の任務だけ。識別の段）。移る先の隊が変わったときだけ字を組む */
++  private switchButton?: HoldButton;
++  private lastSwitch = -2;
+   private readonly cue: WeaponCue;
+   private lastIdentifyN = -1;
+   private lastHoldTenths = -1;
+@@ -50,7 +54,7 @@ export class WeaponPanel {
+     const loadout = getLoadout(data, mission);
+     // 煙幕発生器の無い艇（日本の魚雷艇。v0.6.0）は煙幕ボタンを作らない（いちばん上の段は空く）。識別は今夜味方機がいるときだけ（v0.4.6。夜の揺らぎで来ない夜がある）
+     const hasSmoke = getBoatSmokeParams(data, mission.playerBoatId) !== null;
+-    const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled });
++    const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled, switch: telemetry.evac.enabled });
+     this.layout = L;
+     this.cue = new WeaponCue(scene, L, telemetry.arms.evSeq);
+     // 魚雷（積んでいる本数。撃てない間は薄く受けない。0 本で押すと「魚雷は撃ち尽くした」）と、その下の扇
+@@ -79,6 +83,7 @@ export class WeaponPanel {
+       if (s.kind === 'smoke') this.smokeButton = new HoldButton(scene, s.x, s.y, s.label, { onUp: () => (input.smokeTap = true) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
+       else if (s.kind === 'extinguish') this.extinguishButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.extinguishHeld = true), onUp: () => (input.extinguishHeld = false) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
+       else if (s.kind === 'lookout') this.lookoutButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.lookout = true), onUp: () => (input.lookout = false) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
++      else if (s.kind === 'switch') this.switchButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.switchTap = true) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
+       else {
+         this.identifyButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.identifyTap = true) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
+         this.identifyButton.setEnabled(false);
+@@ -88,7 +93,7 @@ export class WeaponPanel {
+ 
+   /** 一時停止で押しかけを取り消す操作（PauseControl が止めるたびに集める。止めるときだけ確保する。並びは v0.6.7 と同じ） */
+   controls(): (Cancelable | undefined)[] {
+-    return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton];
++    return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton, this.switchButton];
+   }
+ 
+   /** 魚雷ボタンを押している（長押しの途中） */
+@@ -132,6 +137,12 @@ export class WeaponPanel {
+         this.extinguishButton.setLabel(tenths > 0 ? `消火\n${(tenths / 10).toFixed(1)}s` : '消火');
+       }
+     }
++    if (this.switchButton && t.evac.nextSwitch !== this.lastSwitch) {
++      // 「切替 4」（並びの次の隊の番号。押せば移る）。移る先が無い・決着の後は灰色の「切替」（押しても世界が無視する）
++      this.lastSwitch = t.evac.nextSwitch;
++      this.switchButton.setLabel(t.evac.nextSwitch >= 0 ? `切替 ${t.evac.nextSwitch + 1}` : '切替');
++      this.switchButton.setEnabled(t.evac.nextSwitch >= 0);
++    }
+     if (this.identifyButton) {
+       // 識別を求めている間（航過中でも真上を過ぎてから押した後は除く）だけ有効。残り秒は 5,4,3,2,1 で 0 は出さない
+       const live = t.friendlyPhase === FF_CHALLENGE || (t.friendlyPhase === FF_STRAFE && !t.friendlyPending);
+@@ -156,6 +167,7 @@ export class WeaponPanel {
+     this.extinguishButton?.destroy();
+     this.lookoutButton?.destroy();
+     this.identifyButton?.destroy();
++    this.switchButton?.destroy();
+     this.spreadButton?.destroy();
+     this.cue.destroy();
+     this.torpedoButton = undefined;
+@@ -164,6 +176,7 @@ export class WeaponPanel {
+     this.extinguishButton = undefined;
+     this.lookoutButton = undefined;
+     this.identifyButton = undefined;
++    this.switchButton = undefined;
+     this.spreadButton = undefined;
+   }
+ }
+diff --git a/tests/dawn-clock.test.ts b/tests/dawn-clock.test.ts
+index 73c18d1..3187946 100644
+--- a/tests/dawn-clock.test.ts
++++ b/tests/dawn-clock.test.ts
+@@ -12,6 +12,7 @@ import { createPtTelemetry } from '../src/core/pt-boats';
+ import { createConvoyTelemetry } from '../src/core/convoy';
+ import { createEngineTelemetry } from '../src/core/engine-trouble';
+ import { createAllyTelemetry } from '../src/core/ally-telemetry';
++import { createEvacTelemetry } from '../src/core/evac-telemetry';
+ import { createLandingTelemetry } from '../src/core/landing';
+ import { createPatrolTelemetry } from '../src/core/patrol-air-state';
+ import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, createDawnTelemetry, type DawnTelemetry } from '../src/core/dawn-air';
+@@ -69,6 +70,7 @@ function tele(dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> =
+     patrol: createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）
+     landing: createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）
+     ally: createAllyTelemetry(), // 卯月のいない任務（v0.6.10 S6。enabled false）
++    evac: createEvacTelemetry(), // 空襲下の退避の無い任務（v0.6.11 S5。enabled false）
+     ...over,
+     dawn: { ...createDawnTelemetry(), ...dawn },
+   } as BoatTelemetry;
+diff --git a/tests/dawn-lines.test.ts b/tests/dawn-lines.test.ts
+index c3bffe5..a8f367f 100644
+--- a/tests/dawn-lines.test.ts
++++ b/tests/dawn-lines.test.ts
+@@ -26,6 +26,7 @@ import { createPtTelemetry } from '../src/core/pt-boats';
+ import { createConvoyTelemetry } from '../src/core/convoy';
+ import { createEngineTelemetry } from '../src/core/engine-trouble';
+ import { createAllyTelemetry } from '../src/core/ally-telemetry';
++import { createEvacTelemetry } from '../src/core/evac-telemetry';
+ import { createLandingTelemetry } from '../src/core/landing';
+ import { createPatrolTelemetry } from '../src/core/patrol-air-state';
+ import { DAWN_AIR_ENEMY, DAWN_AIR_NONE, DAWN_AIR_OWN, createDawnResult, createDawnTelemetry, type DawnResult, type DawnTelemetry } from '../src/core/dawn-air';
+@@ -87,6 +88,7 @@ function tele(dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> =
+     patrol: createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）
+     landing: createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）
+     ally: createAllyTelemetry(), // 卯月のいない任務（v0.6.10 S6。enabled false）
++    evac: createEvacTelemetry(), // 空襲下の退避の無い任務（v0.6.11 S5。enabled false）
+     ...over,
+     dawn: { ...createDawnTelemetry(), ...dawn },
+   } as BoatTelemetry;
+diff --git a/tests/evac-step-order.test.ts b/tests/evac-step-order.test.ts
+index cbe8982..b1c55f0 100644
+--- a/tests/evac-step-order.test.ts
++++ b/tests/evac-step-order.test.ts
+@@ -48,7 +48,10 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）',
+     const we = code('systems/world-evac.ts');
+     const sb = we.slice(we.indexOf('  stepBoats(dt: number'), we.indexOf('  stepAir('));
+     expectOrder(sb, ['const latchStep = w.dawn.reached && !this.latchSeen;', 'if (w.boat.sinking) return;', 'stepEvacBoats(this.sq, this.seat, w.input, this.aiRng, w.stepTimeS, dt, realDt);', 'w.atHome = evacSeatHome(this.sq, this.seat, latchStep);']);
+-    expect(we).toContain('stepEvacAir(this.air, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);');
++    expect(we).toContain('stepEvacAir(a, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);');
++    // S5: 段 5 の後にそのステップの出来事を HUD へ積む（plan と repass は読むだけ＝世界と模擬の突き合わせの物を書かない）
++    const sa = we.slice(we.indexOf('  stepAir(feelDt: number)'), we.indexOf('  updateVisuals('));
++    expectOrder(sa, ['stepEvacAir(a,', 'f.lost |= p.evLost;', 'f.found |= p.evFound;', 'f.repass |= a.repass.ev;', 'if (p.evWave >= 0) f.wave = p.evWave;', 'if (p.evSettle) f.settle = true;']);
+     const wb = code('systems/world-boat.ts');
+     expect(wb).toContain('w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input');
+     expect(wb).toContain('if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);');
+diff --git a/tests/landing-markers.test.ts b/tests/landing-markers.test.ts
+index 053bad2..1b8a252 100644
+--- a/tests/landing-markers.test.ts
++++ b/tests/landing-markers.test.ts
+@@ -272,7 +272,7 @@ describe('配線（ソース）', () => {
+     const s = code('systems/world-landing.ts');
+     expectOrder(s, ['this.ship = new AllyShip(scene, p, bounds, hud);', 'this.caret = new LandingCaret(scene, caretRects);']);
+     expectOrder(s, ['export function buildLanding(', 'const k: HudRectInputs = {', 'has: { smoke: s.smokeParams !== null, identify: s.friendly !== null }', 'const hud = landingHudRects(k);', 'return new WorldLanding(scene, ld.params, ld.torpedo, count, pool, rng, s.mission.bounds, s.timeScale, events, onSunk, hud, landingCaretRects(k), buildAlly(scene, s, pts, seed, hud));']); // v0.6.10 S5a: 卯月のラベルも輸送船の字と同じ HUD の矩形
+-    expect(code('ui/weapon-panel.ts')).toContain('panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled })'); // 同じ決まり（煙幕発生器・今夜の味方機）
++    expect(code('ui/weapon-panel.ts')).toContain('panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled, switch: telemetry.evac.enabled })'); // 同じ決まり（煙幕発生器・今夜の味方機。［切替］は jp_03 だけ＝jp_04 は偽）
+     expect(s.split('new LandingCaret(').length - 1).toBe(1);
+     expect(s.split('landingHudRects(').length - 1).toBe(1);
+     expectOrder(s, ['updateVisuals(realDt: number, w: LandingVisualsView): void {', 'this.ship.update(this.state, this.wakes);', 'landingReport(this.state, this.p, q, this.tst, this.report);', 'this.caretShown = this.caret.update(b !== null && landingCaretShown(this.report.i, d2, w.visRange2), b ? b.x : 0, b ? b.y : 0);']);
+diff --git a/tests/pt-ui-kit.ts b/tests/pt-ui-kit.ts
+index 2539eb6..629348e 100644
+--- a/tests/pt-ui-kit.ts
++++ b/tests/pt-ui-kit.ts
+@@ -9,6 +9,7 @@ import { createDawnTelemetry } from '../src/core/dawn-air';
+ import { createEngineTelemetry } from '../src/core/engine-trouble';
+ import { createGunboatTelemetry } from '../src/core/gunboat';
+ import { createAllyTelemetry } from '../src/core/ally-telemetry';
++import { createEvacTelemetry } from '../src/core/evac-telemetry';
+ import { createLandingTelemetry } from '../src/core/landing';
+ import { createPatrolTelemetry } from '../src/core/patrol-air-state';
+ import { createPtSection, type PtSection, type PtTelemetry } from '../src/core/pt-boats';
+@@ -64,6 +65,7 @@ export function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry>
+     patrol: over.patrol ?? createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）。夜の哨戒の行のテストは over.patrol で渡す
+     landing: over.landing ?? createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）。jp_04 の行のテストは over.landing で渡す
+     ally: over.ally ?? createAllyTelemetry(), // 卯月のいない任務（v0.6.10 S6。enabled false）。卯月の行のテストは over.ally で渡す
++    evac: over.evac ?? createEvacTelemetry(), // 空襲下の退避の無い任務（v0.6.11 S5。enabled false）。jp_03 の行のテストは over.evac で渡す
+   } as BoatTelemetry;
+ }
+ 
+diff --git a/tests/weapon-panel-wiring.test.ts b/tests/weapon-panel-wiring.test.ts
+index d902d4d..3081c5b 100644
+--- a/tests/weapon-panel-wiring.test.ts
++++ b/tests/weapon-panel-wiring.test.ts
+@@ -13,7 +13,7 @@ const src = (p: string): string => strip(readFileSync(p, 'utf8'));
+ describe('ui/weapon-panel', () => {
+   const panel = src('src/ui/weapon-panel.ts');
+   it('置き方は panelLayout（main_weapon を読まない＝全任務で角が魚雷・その左が機銃。v0.6.8 実機 1 回目）・煙幕は艇・識別は今夜の味方機', () => {
+-    expect(panel).toContain('const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled });');
++    expect(panel).toContain('const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled, switch: telemetry.evac.enabled });'); // v0.6.11 S5: 識別の段に［切替］（evac の任務だけ）
+     expect(panel).toContain('const hasSmoke = getBoatSmokeParams(data, mission.playerBoatId) !== null;');
+     expect(panel).not.toContain('mainWeapon');
+     expect(panel).not.toContain('torpedoPrimary');
+@@ -50,9 +50,10 @@ describe('ui/weapon-panel', () => {
+     expect(panel).toContain(`this.extinguishButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.extinguishHeld = true), onUp: () => (input.extinguishHeld = false) }${look}`);
+     expect(panel).toContain(`this.lookoutButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.lookout = true), onUp: () => (input.lookout = false) }${look}`);
+     expect(panel).toContain(`this.identifyButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.identifyTap = true) }${look}`);
+-    expect(panel.split(look).length - 1).toBe(4);
++    expect(panel).toContain(`else if (s.kind === 'switch') this.switchButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.switchTap = true) }${look}`); // v0.6.11 S5（jp_03 の識別の段）
++    expect(panel.split(look).length - 1).toBe(5);
+     expect(Number(/export const ROUND_BUTTON_RADIUS = (\d+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))?.[1])).toBe(48); // 丸の絵（assets/placeholders）の半径
+-    expect(panel).toContain('return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton];');
++    expect(panel).toContain('return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton, this.switchButton];');
+   });
+ });
+ 
