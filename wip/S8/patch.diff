@@ -1,0 +1,907 @@
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index e0b4f87..fd4e096 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -991,7 +991,7 @@
+       "success": "18隻中6隻以上を残す（史実は5隻）",
+       "historical_note": "第27魚雷艇隊は10/10の空襲で18隻中13隻喪失。",
+       "source_url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+-      "briefing_note_ja": "1944年10月10日、米空母部隊の艦載機が朝から夕方まで沖縄を5回空襲した（延べ約1,400機）。運天港の第27魚雷艇隊は18隻のうち13隻を失った。港には艇を隠す壕と、海から壕へ上げるレールがあった。屋我地の陰と隊の分け方と壕の数と枠、波と編隊の数は作り（史料に無い）。",
++      "briefing_note_ja": "1944年10月10日、米空母部隊の艦載機が朝から夕方まで沖縄を5回空襲した（延べ約1,400機）。運天港の第27魚雷艇隊は18隻のうち13隻を失った。港には艇を隠す壕と、壕から海へ艇を運ぶレールがあった。屋我地の陰と隊の分け方と、壕の数と枠と1隻ずつ上げること、波と編隊の数、4分に縮めた空襲は作り（史料に無い）。",
+       "dawn_air": {
+         "control": "enemy",
+         "confidence": "high",
+@@ -1016,9 +1016,9 @@
+         ],
+         "enemy_behavior": "ai (v0.6.11。昼の運天港の空襲。予告の後、2〜4 機の編隊が 2 つ（ハード 3 つ）同時に別々の隊を狙い、隊が隠れれば見失って引き返す。4 分の後は CLAUDE.md §2 の敵機 4 機が操作中の隊長艇を追う)",
+         "main_weapon": "none",
+-        "main_weapon_source": "design (v0.6.11。艦艇のいない航空機だけの任務（jp_02 と同じ none）。v0.6.8 の兵装のとおり T-38 の 45cm 魚雷 2 本と 25mm は撃てるが、狙う艦はいない。魚雷は座席の 2 本を全部の隊長艇で分け合う。機銃は僚艇も撃つ（ユーザーの U2。1 発 0.5% は v0.6.8 のまま＝「友軍が応戦できなかった」A10 と合う）)",
++        "main_weapon_source": "design (v0.6.11。艦艇のいない航空機だけの任務（jp_02 と同じ none）。v0.6.8 の兵装のとおり T-38 の 45cm 魚雷 2 本と 25mm は撃てるが、狙う艦はいない。魚雷は座席の 2 本を全部の隊長艇で分け合う。機銃は僚艇も撃つ（ユーザーの U2。1 発 0.5% は v0.6.8 のまま＝本部の証言「友軍が応戦できなかった」（琉球新報。docs/01 の史料 A10。WebSearch の抜粋のみ・本文未読）と合う）)",
+         "duration_s": 240,
+-        "duration_s_source": "design (v0.6.11。4 分＝その日の第 1 次の来襲の圧縮（史実は朝から夕方まで 5 回・延べ約 1,400 機、運天は 07:00 過ぎから 15:30 ごろまで。WebSearch の抜粋のみ・本文未読）。240 秒（決着）で残存を確定し、操作中の隊が隠れていれば帰投で終わる。外なら CLAUDE.md §2 の敵機 4 機（dawn_strike）が座席を追い、どの隠れ場所でも輪の中で止まれば帰投（spec-v0611-r2 §3.8。ユーザーの U6）。第 4 波は約 220 秒で去り終わる（V-E6）)",
++        "duration_s_source": "design (v0.6.11。4 分＝その日の第 1 次の来襲の圧縮（史実は朝から夕方まで 5 回・延べ約 1,400 機、運天は 07:00 過ぎから 15:30 ごろまで。WebSearch の抜粋のみ・本文未読）。240 秒（決着）で残存を確定し、操作中の隊が隠れていれば帰投で終わる。外なら CLAUDE.md §2 の敵機 4 機（dawn_strike）が座席を追い、どの隠れ場所でも輪の中で止まれば帰投（spec-v0611-r2 §3.8。ユーザーの U6）。第 4 波は約 214 秒で去り終わる（V-E6。S0 の 219.8 秒は S3b の first_run_s 6.5・run_gap_s 1.7 で短くなった）)",
+         "fuel_allotment_gal": 16,
+         "fuel_allotment_gal_source": "design (v0.6.11。空襲の間は燃料を数えない（fuel_free_until_s。ユーザーの U4 の読み: T-38 の全速は 19 gal を約 68 秒で使い切る）。240 秒の後は 16 gal で全速 57.6 秒・巡航 122.4 秒＝港の端から端（全速 約 45 秒）のどの隠れ場所にも届く。止まって待つと 240 ＋ 1,224 ＝ 1,464 実秒で漂流（< 1,500。T-38 のアイドル 9.4118 gal/h。V-E10）)",
+         "fuel_free_until_s": 240,
+@@ -1036,18 +1036,18 @@
+           "x_m": 1450,
+           "y_m": 1000,
+           "heading_deg": 90,
+-          "source": "design (v0.6.11。第1隊の隊長艇の停泊地（岸壁・中）と同じ点・艇首。隊長艇の壕の輪の縁から 142 m 外)"
++          "source": "design (v0.6.11。第1隊の隊長艇の停泊地（岸壁・中）と同じ点・艇首。中の壕の輪の縁から 142 m 外)"
+         },
+         "return_point": {
+           "x_m": 1600,
+           "y_m": 1150,
+           "radius_m": 70,
+-          "label_ja": "隊長艇の壕",
++          "label_ja": "中の壕",
+           "call_margin": 1.6,
+           "torpedo_settle_max_s": 10,
+           "torpedo_end_settle_s": 5,
+           "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。（jp_03 の魚雷は狙う艦が無いので発射の時に決着し、待たない。v0.6.8）)",
+-          "source": "historical (壕とレールの存在。WebSearch の抜粋のみ・本文未読) / design (v0.6.11。位置と半径は evac.shelters の隊長艇の壕と同じ（V-E8）。決着の前の帰投は「操作中の隊が隠れた」で、輪の判定は使わない（spec-v0611-r2 §3.8）。call_margin 1.6 は同じ T-38 の jp_01・jp_04・jp_06 と同じ（v0.6.11 S6。S0〜S5 の 1.5 は T-38 の全速/巡航の距離あたりの燃料の比 1.545 より小さく、呼びかけの時に全速で帰ると帰り道の燃料が足りない＝遊べる任務すべての不変条件（tests/game-data）が立たなかった。呼びかけは 240 秒の後の燃料計の印だけに効く＝2 行目は jp_03 の行が上）)"
++          "source": "historical (壕とレールの存在。WebSearch の抜粋のみ・本文未読) / design (v0.6.11。位置と半径は evac.shelters の中の壕（home_cave。v0.6.11 S8 で「隊長艇の壕」から改名＝隊長艇は 6 つの隊それぞれの先頭の艇なので、名が隊長艇だけの壕に読めた）と同じ（V-E8）。決着の前の帰投は「操作中の隊が隠れた」で、輪の判定は使わない（spec-v0611-r2 §3.8）。call_margin 1.6 は同じ T-38 の jp_01・jp_04・jp_06 と同じ（v0.6.11 S6。S0〜S5 の 1.5 は T-38 の全速/巡航の距離あたりの燃料の比 1.545 より小さく、呼びかけの時に全速で帰ると帰り道の燃料が足りない＝遊べる任務すべての不変条件（tests/game-data）が立たなかった。呼びかけは 240 秒の後の燃料計の印だけに効く＝2 行目は jp_03 の行が上）)"
+         },
+         "coast": {
+           "side": "south",
+@@ -1124,9 +1124,9 @@
+               "heading_deg": 90
+             }
+           ],
+-          "groups_source": "historical (18 隻: 第27魚雷艇隊の魚雷艇 18 隻のうち 13 隻が 1944-10-10 の空爆で失われた（総務省・今帰仁村の戦災の記録ほか。WebSearch の抜粋のみ・本文未読）) / design (v0.6.11。ユーザーの U1「3隻ごとに隊を組んで…先頭の一台を自機として残り2台は後ろをついて来させる」で 6 つの隊 × 3 隻。隊の分け方・停泊地・艇首は史料に無い（Briefing で史実として書かない）。第1隊（start_group 1。最初に操作）の隊長艇は隊長艇の壕の中心から 212 m＝輪の縁から 142 m 外（spec-v0611-r2 §3.1・H1。起動時の検査 V-E2 で停泊地のどの艇も輪の縁から 20 m 以上外）。第4隊は桟橋で北向き、ほかは東向き)",
++          "groups_source": "historical (18 隻: 第27魚雷艇隊の魚雷艇 18 隻のうち 13 隻が 1944-10-10 の空爆で失われた（総務省・今帰仁村の戦災の記録ほか。WebSearch の抜粋のみ・本文未読）) / design (v0.6.11。ユーザーの U1「3隻ごとに隊を組んで…先頭の一台を自機として残り2台は後ろをついて来させる」で 6 つの隊 × 3 隻。隊の分け方・停泊地・艇首は史料に無い（Briefing で史実として書かない）。第1隊（start_group 1。最初に操作）の隊長艇は中の壕の中心から 212 m＝輪の縁から 142 m 外（spec-v0611-r2 §3.1・H1。起動時の検査 V-E2 で停泊地のどの艇も輪の縁から 20 m 以上外）。第4隊は桟橋で北向き、ほかは東向き)",
+           "moored_gap_m": 12,
+-          "moored_gap_m_source": "design (v0.6.11。停泊の縦列の隣の艇との中心の間隔 m（隊長艇の艇尾の方向。壕から出た時も同じ並び）。爆風 25 m の内（V-E7）＝1 発で 2〜3 隻（並んだ艇がまとめて燃える＝史実の停泊艦の炎上（A11・A12）からの推論）)",
++          "moored_gap_m_source": "design (v0.6.11。停泊の縦列の隣の艇との中心の間隔 m（隊長艇の艇尾の方向。壕から出た時も同じ並び）。爆風 25 m の内（V-E7）＝1 発で 2〜3 隻（並んだ艇がまとめて燃える＝潜水母艦 迅鯨が 5 日燃えた・運天港の停泊艦の炎上の写真説明（docs/01 の史料 A11・A12。WebSearch の抜粋のみ・本文未読）からの推論）)",
+           "follow": {
+             "gap_m": 40,
+             "trail_step_m": 5,
+@@ -1144,7 +1144,7 @@
+           "shelters": [
+             {
+               "id": "home_cave",
+-              "label_ja": "隊長艇の壕",
++              "label_ja": "中の壕",
+               "kind": "cave",
+               "x_m": 1600,
+               "y_m": 1150,
+@@ -1180,7 +1180,7 @@
+             }
+           ],
+           "cave_source": "historical (魚雷艇を格納する壕を掘り、壕から海へ艇を運ぶレールが敷かれていた（総務省・今帰仁村の戦災の記録）。運天の魚雷艇隊の壕が今帰仁村字上運天に残る（WebSearch の抜粋のみ・本文未読）) / design (v0.6.11。壕の数 3・枠 3 隻・位置（南の岸の際）・レール 1 本・1 隻ずつ上げる・壕は見つからないは作り。exit_heading_deg 0＝出る時の艇首は北（南の岸から港へ）)",
+-          "cover_source": "design（史実の裏付け無し。v0.6.11。屋我地島の岸の際の陰 1 か所（東）・枠 3 隻・止まれば隠れる・予告のたびに cover_reveal_chance で見つかることがあるは作り（狭い海峡そのものは historical）。exit_heading_deg 180 は使わない（陰はそのまま走り出す）が鍵をそろえる） / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: 陰（西）west_cover「屋我地の陰（西）」（1,050, 100・枠 3）を外した（隠れ場所 5 → 4＝壕 3・陰 1、枠の合計 15 → 12 < 18）。史実の裏付けの無い陰が 2 か所あると隠す遊び方が帯より易しい（S3）。壕 3 か所は historical なので外さない。陰（東）を外す点 G2 も帯に入ったが、seq の上限 70% とハードの seq の上限 45% への余裕が薄い（2.4・0.7 点。G1 は 5.7・3.0 点）)",
++          "cover_source": "design（史実の裏付け無し。v0.6.11。屋我地島の岸の際の陰 1 か所（東）・枠 3 隻・止まれば隠れる・予告のたびに cover_reveal_chance で見つかることがあるは作り（屋我地島との狭い海峡そのものは historical。docs/01 の史料 A15。WebSearch の抜粋のみ・本文未読）。exit_heading_deg 180 は使わない（陰はそのまま走り出す）が鍵をそろえる） / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: 陰（西）west_cover「屋我地の陰（西）」（1,050, 100・枠 3）を外した（隠れ場所 5 → 4＝壕 3・陰 1、枠の合計 15 → 12 < 18）。史実の裏付けの無い陰が 2 か所あると隠す遊び方が帯より易しい（S3）。壕 3 か所は historical なので外さない。陰（東）を外す点 G2 も帯に入ったが、seq の上限 70% とハードの seq の上限 45% への余裕が薄い（2.4・0.7 点。G1 は 5.7・3.0 点）)",
+           "ai": {
+             "cast_off_s": [
+               5,
+@@ -1198,7 +1198,7 @@
+               "turn_deg": 90,
+               "hold_s": 2
+             },
+-            "source": "design (v0.6.11。ユーザーの U3「自分が操作していない隊はランダムに回避行動をとりつつ爆撃から逃げる」。spec-v0611-r2 §3.5。秒は実秒・速さは kt。cast_off_s [5, 20]: 生成の時に 6 隊それぞれ seed+30 から 1 回引いた秒で岸を離れる（操作中の隊は離岸しない）。pick_s 5: 時計の 5 秒ごとに 6 隊すべてが隊番号の順に seed+30 から 2 回ずつ引く（引く回数は時計だけで決まる）。針路は今の針路 ± turn_max_deg 120°、look_m 400 m 先の点が縁から wall_m 200 m の内側の箱の外なら港の中心への方位 ± wall_turn_deg 45°。速さは狙われているか full_p 0.5 で全速、ほかは巡航。found_react_s 3: 見つかった陰の操作していない隊が陰を出るまでの秒。dodge: 投下ごとに seed+31 から 1 回引き、success 0.2 で今の旋回の逆へ turn_deg 90° 切って全速を hold_s 2 秒（回避の効きは S1 で測った: 1 発の命中率 0.41〜0.45 → 0.24（0.5）→ 0.004（必ず））。隠れ場所には自分では入らない・撃たない（A10「友軍が応戦できなかった」）) / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: dodge.success 0.5 → 0.2。0.5 では操作していない隊のランダム回避が編隊の見越しをよく外し、隠さず走って避けるだけの遊び方（dodge_only）が隠す遊び方より勝った（S3）。0 では外の隊が早く沈み過ぎて own_only の残存の中央値 2（帯 3〜6）、0.3 では own_only の達成 26.8%（帯 ≤ 25%）。帯の窓は狭い)"
++            "source": "design (v0.6.11。ユーザーの U3「自分が操作していない隊はランダムに回避行動をとりつつ爆撃から逃げる」。spec-v0611-r2 §3.5。秒は実秒・速さは kt。cast_off_s [5, 20]: 生成の時に 6 隊それぞれ seed+30 から 1 回引いた秒で岸を離れる（操作中の隊は離岸しない）。pick_s 5: 時計の 5 秒ごとに 6 隊すべてが隊番号の順に seed+30 から 2 回ずつ引く（引く回数は時計だけで決まる）。針路は今の針路 ± turn_max_deg 120°、look_m 400 m 先の点が縁から wall_m 200 m の内側の箱の外なら港の中心への方位 ± wall_turn_deg 45°。速さは狙われているか full_p 0.5 で全速、ほかは巡航。found_react_s 3: 見つかった陰の操作していない隊が陰を出るまでの秒。dodge: 投下ごとに seed+31 から 1 回引き、success 0.2 で今の旋回の逆へ turn_deg 90° 切って全速を hold_s 2 秒（回避の効きは S1 で測った: 1 発の命中率 0.41〜0.45 → 0.24（0.5）→ 0.004（必ず））。隠れ場所には自分では入らない・撃たない（本部の証言「友軍が応戦できなかった」＝琉球新報。docs/01 の史料 A10。WebSearch の抜粋のみ・本文未読）) / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: dodge.success 0.5 → 0.2。0.5 では操作していない隊のランダム回避が編隊の見越しをよく外し、隠さず走って避けるだけの遊び方（dodge_only）が隠す遊び方より勝った（S3）。0 では外の隊が早く沈み過ぎて own_only の残存の中央値 2（帯 3〜6）、0.3 では own_only の達成 26.8%（帯 ≤ 25%）。帯の窓は狭い)"
+           },
+           "flash_reveal": false,
+           "flash_reveal_source": "design (v0.6.11。r2 M5: 閃光は v0.6.8 のまま（撃った艇の見つかる距離が gun_battery.muzzle_flash_reveal_m になるだけ）。閃光で陰の隊は見つからない。true（撃った隊から 1,200 m 内の陰の隊が見つかる）にするのはユーザーが決めた時だけ（CLAUDE.md §6.7）)",
+@@ -1250,14 +1250,14 @@
+           "historical_survivors": 5,
+           "survivors_source": "historical (18 隻中 13 隻を失った＝史実の残存 5（総務省・今帰仁村の戦災の記録・ja.wikipedia「十・十空襲」の魚雷艇 13 隻。米の戦果の主張は魚雷艇 12 隻で近い。WebSearch の抜粋のみ・本文未読）) / design (survivor_quota 6: 種の success「18隻中6隻以上を残す（史実は5隻）」。ユーザーの U6「六機残ればクリア」)",
+           "north_shore_label_ja": "屋我地島",
+-          "source": "design (v0.6.11。jp_03 の港の空襲の波と狙い。編隊の段と時間は risk_events.json の unten_air_raid.params.sortie、機体の値は enemies.json の us_carrier_aircraft（6 任務で共有。変えない）。north_shore_label_ja: 北の縁の陸の名（狭い海峡の向こうの屋我地島＝historical の位置関係）)"
++          "source": "design (v0.6.11。jp_03 の港の空襲の波と狙い。編隊の段と時間は risk_events.json の unten_air_raid.params.sortie、機体の値は enemies.json の us_carrier_aircraft（6 任務で共有。変えない）。north_shore_label_ja: 北の縁の陸の名（狭い海峡の向こうの屋我地島＝historical の位置関係。docs/01 の史料 A15。WebSearch の抜粋のみ・本文未読）)"
+         },
+         "hard": {
+           "evac_flights": 3,
+           "evac_cover_reveal_chance": 0.5,
+           "objective_ja": "空襲の下、3隻ずつ6つの隊を壕や陰へ隠せ（スティックで隊長艇、［切替］で隊を替える）",
+           "success_ja": "18隻中6隻以上を残す（史実は5隻）",
+-          "note_ja": "1944年10月10日、米空母部隊の艦載機が朝から夕方まで沖縄を5回空襲した（延べ約1,400機）。運天港の第27魚雷艇隊は18隻のうち13隻を失った。港には艇を隠す壕と、海から壕へ上げるレールがあった。屋我地の陰と隊の分け方と壕の数と枠、波と編隊の数（ハードは同時に3つ）は作り（史料に無い）。",
++          "note_ja": "1944年10月10日、米空母部隊の艦載機が朝から夕方まで沖縄を5回空襲した（延べ約1,400機）。運天港の第27魚雷艇隊は18隻のうち13隻を失った。港には艇を隠す壕と、壕から海へ艇を運ぶレールがあった。屋我地の陰と隊の分け方と、壕の数と枠と1隻ずつ上げること、波と編隊の数（ハードは同時に3つ）、空襲を4分に縮めたことは作り（史料に無い）。",
+           "source": "design (v0.6.11。ユーザーの U5「ハードは×3とする」「ハードの第四波であれば四機編隊が３つ同時に襲ってくる」: 同時に来る編隊の数 2 → 3（3×2・3×3・3×3・4×3。同時の最大 12 機）。陰が見つかる確率はノーマルと同じ 0.5（v0.6.11 S3b。S0〜S3 はノーマル 0.25 → ハード 0.35。S3b の点 G1 でノーマルを 0.5 に上げたので、0.35 のままではハードの方が見つかりにくく「ハードは難しい」と食い違う。0.5 を N 400 × 2 組（seed 1〜400・1001〜1400）で測り、spec-v0611-r2 §12.4 のハードの帯 5 つがすべて ✓（seq 34.8%・seq_slow 17.3%・stay 0.0%・bot 89.1%。0.35 では seq 42.0%）なので 0.5 にした）。波の数・機数・隠れ場所はノーマルと同じ。ハードの Briefing の文（v0.6.11 S6）: objective_ja・success_ja はノーマルと同じ（3 つ同時は敵の行の「2機の編隊が3つ同時」が data から言う）、note_ja は同時に来る編隊の数も作りと書く（史料に無い）)"
+         }
+       }
+diff --git a/data/risk_events.json b/data/risk_events.json
+index b66e689..62169fd 100644
+--- a/data/risk_events.json
++++ b/data/risk_events.json
+@@ -322,7 +322,7 @@
+         },
+         "source": "design (v0.6.11。jp_03「運天港・空襲下の退避」の 1 編隊の段と時間（夜明けの空襲の core の値の形。凍結の core は変えない。dawn_air_strike.params は 6 任務で共有なので触らず、jp_03 専用の記録を作った＝jp_02 の patrol_air.params.sortie の前例）。編隊は（波 × 枠）ごとに 1 回だけ飛ぶ（core/air-sortie の restartAirSortie で狙った隊の隊長艇から方位 70 ± 30°・2,500 m に現れる）。spawn_m 2,500: 現れる距離の上限（restartAirSortie は [run_radius_m, spawn_m] に収める）。run_radius_m 500: 旋回の半径（爆撃進路 1.62 秒）。first_run_s 6.5: 始まりから最初の爆撃進路まで（旋回に着く 6.48 秒以上。予告の 10 秒と合わせて予告から最初の投下まで約 18.1 秒）。run_gap_s 1.7: 投下の間隔（落下 1.28 秒より長い＝空中の爆弾は 1 編隊 1 発。2 機 × 1.7 ＝ 3.4 秒 ≥ 爆撃進路の 2 倍 3.24 秒。2 機 4 発で最後の投下は始まりから 13.2 秒、4 機 8 発で 20.0 秒）。wave_rest_s 16 と wave_rotate_deg 0 は次の波を出さないので効かない（凍結の検査と V-E6 の「済みを 1 ステップ前に見る余裕」のため。16 ≥ 1.62 + 2.5 + 2 ステップ）。leave_s 2.5: 去る秒。spawn_offsets_deg: 凍結の core が先頭 n 個を使う（2 機は −30・−10＝平均 −20° に偏る分を evac_raid.bearing_fix_deg で戻す）。aim_turn_min_deg_s 0.5 は夜明けと同じ。値は spec-v0611-r2 §4。合わせは S3・S7 の模擬で（spec §12.5 の 6 番目のつまみ）) / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: first_run_s 9 → 6.5・run_gap_s 2.2 → 1.7（夜明けの 2.2 から離れた。どちらも検査の下限 6.48・1.62 の近く）。1 回が短いほど、済んだ編隊のもう一度（evac_raid.passes_max）が第 2・3 波にも収まる（9・2.2 では第 1 波だけ。6.5・1.7 で 2 回目は第 1 波 ≈ 89%・第 2 波 ≈ 62%・第 3 波 ≈ 32% の編隊（seq）。同じ短さで passes_max 1 なら seq 91%・dodge_only 84%（N 100・回避 0・陰（東）を外した点）＝帯を動かすのは 2 回目）)"
+       },
+-      "note": "design。史実の 1944-10-10 の運天港の損失（第27魚雷艇隊の 18 隻中 13 隻）は米PT の損失 69 隻の内訳（count・share）に入らないので count 0・share 0（total_losses などの合計は変えない）。"
++      "note": "design。史実の 1944-10-10 の運天港の損失（第27魚雷艇隊の 18 隻中 13 隻＝historical。docs/01 の史料 A2・A4。WebSearch の抜粋のみ・本文未読）は米PT の損失 69 隻の内訳（count・share）に入らないので count 0・share 0（total_losses などの合計は変えない）。"
+     }
+   ],
+   "source": {
+diff --git a/scripts/headless/g2.sh b/scripts/headless/g2.sh
+index 11980e8..4683a70 100755
+--- a/scripts/headless/g2.sh
++++ b/scripts/headless/g2.sh
+@@ -5,7 +5,8 @@
+ #   （実機 1 回目＝撃っても照らされても PT は去らない・揚陸 140 秒の値は CHANGELOG v0.6.10 実機 1 回目）
+ #   （S0b・S4 の値は CHANGELOG v0.6.10 の S0b・S4）。
+ #   EVAC=1（v0.6.11 S7）: jp_03 の帯の表 2 本（scripts/evac-sim の TABLE=2＝N 400 × 2 組・seed 1〜400・1001〜1400、ノーマル・ハード。spec-v0611-r2 §12.4 の帯の ✓/✗ の行を出す）も。
+-#   md5 は S3b の点 G1 の表（CHANGELOG v0.6.11 S3b・S7）で、その出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 6 分ほど（tests/evac-sim-b は軽い組）。
++#   md5 は S3b の点 G1 の data で S8 の core の直し 2 つ（入っている隊の交代で止める・見つかった陰を輪の外へ出れば出る）の後の表（CHANGELOG v0.6.11 S8。S3b〜S7 は 0660589a・e6409b7a）で、
++#   その出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 6 分ほど（tests/evac-sim-b は軽い組）。
+ # 模擬の scripts/*.ts を esbuild で束ねて node で回し、標準出力の md5 を比べる（並べて JOBS 本ずつ）。DIFF が 1 つでもあれば終了コード 1。
+ # 実行: [G6=1] [ALLY=1] [EVAC=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
+ set -u
+@@ -50,7 +51,7 @@ fi
+ if [ "${EVAC:-0}" = "1" ]; then
+   # 名前が ev で始まる件は、出力に帯の行「帯: すべて ✓」も要る（scripts/evac-sim の TABLE=2）
+   CASES+=(
+-    "ev2|evac-sim|TABLE=2|0660589ae38abc0c7ca53f4e3a890a60" "ev2h|evac-sim|HARD=1 TABLE=2|e6409b7a3ed6b3833158275943ecc7bf"
++    "ev2|evac-sim|TABLE=2|1598061f01d60a9d1ab89a23c963f59e" "ev2h|evac-sim|HARD=1 TABLE=2|56212244b4306b144a9f4f47b5a67f85"
+   )
+ fi
+ run() {
+diff --git a/src/core/evac-briefing.ts b/src/core/evac-briefing.ts
+index 5a15310..57200ff 100644
+--- a/src/core/evac-briefing.ts
++++ b/src/core/evac-briefing.ts
+@@ -31,7 +31,8 @@ export function evacDayRowJa(p: Pick<EvacParams, 'shelters'>): string {
+   let caves = 0;
+   for (const s of p.shelters) if (s.kind === SHELTER_CAVE) caves++;
+   const covers = p.shelters.length - caves;
+-  return covers > 0 ? `壕 ${caves} と陰 ${covers} の外の艇は見える ・ 陰は見つかることがある` : `壕 ${caves} の外の艇は見える`;
++  // 「壕 3 か所・陰 1 か所」（v0.6.11 S8。「壕 3 と陰 1」は 3 番の壕と 1 番の陰とも読めた）
++  return covers > 0 ? `壕 ${caves} か所・陰 ${covers} か所の外は丸見え ・ 陰は見つかることがある` : `壕 ${caves} か所の外は丸見え`;
+ }
+ 
+ /** 敵の行の名前と方角の後ろ: 「4波（2機の編隊が2つ同時 → 3機×2 → 3機×2 → 4機×2）」（ユーザーの U5 の書き方。×は同時に来る編隊の数） */
+diff --git a/src/core/evac-result.ts b/src/core/evac-result.ts
+index e4d940f..a31003d 100644
+--- a/src/core/evac-result.ts
++++ b/src/core/evac-result.ts
+@@ -2,6 +2,7 @@
+ // もう一度来る編隊（core/evac-repass）と決着の時の写し（systems/world-evac が夜明けのラッチのステップに取る）から数える。文は ui/evac-result、点は core/scoring。
+ // 残存は座席の艇を含む 18 中（r2 L2）。編隊の数は 1 回ごと（S3b の U7: 予告し直した回も数える＝模擬の表 core/evac-sim-cell と同じ数え方。分母は「狙われた回」＝目標の無い編隊は数えない＝r2 L1）。
+ // Phaser 非依存・乱数なし。配列は作る時の 1 回だけ（毎フレームの処理は無い）。
++import { AA_SRC_DAWN } from './aa-fire';
+ import { G_ENTERING, G_HAULING, G_HIDDEN, SHELTER_COVER } from './evac-data';
+ import { EO_LOST, EO_LOST_EARLY, EO_NO_TARGET, type EvacPlan } from './evac-plan';
+ import type { EvacRepass } from './evac-repass';
+@@ -49,6 +50,8 @@ export interface EvacResult {
+   lost: number;
+   came: number;
+   downed: number;
++  /** 240 秒の後の追撃（§2 の敵機 4 機）で撃墜した機（v0.6.11 S8。兵装の行の「撃墜 N 機」は全部の機を数えるので、3 行目は downed ＋ これで同じ数にして内訳を出す） */
++  chaseDowned: number;
+   /** 投下した爆弾・艇への命中（巻き添えを含む） */
+   bombs: number;
+   boatHits: number;
+@@ -82,8 +85,8 @@ function settlePlaceOf(s: EvacSettleSnap): number {
+   return s.phase === G_HIDDEN ? EVR_HIDDEN : s.phase === G_ENTERING ? EVR_ENTERING : s.phase === G_HAULING ? EVR_HAULING : EVR_OUTSIDE;
+ }
+ 
+-/** 任務の終わりに 1 回（mission-telemetry の buildMissionResult。systems/mission-result-extras の evacResultPart）。seatAfloat は座席が沈んでいない（世界の boat.sinking の逆） */
+-export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean): EvacResult {
++/** 任務の終わりに 1 回（mission-telemetry の buildMissionResult。systems/mission-result-extras の evacResultPart）。seatAfloat は座席が沈んでいない（世界の boat.sinking の逆）、chaseDowned は追撃の撃墜 */
++export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean, chaseDowned = 0): EvacResult {
+   const { sq, plan } = ev;
+   const rp = ev.air.repass;
+   const raid = plan.raid;
+@@ -127,6 +130,7 @@ export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean): EvacRes
+     lost,
+     came: plan.came,
+     downed,
++    chaseDowned,
+     bombs: plan.releases,
+     boatHits: plan.boatHits,
+     switches: sq.switches,
+@@ -142,8 +146,12 @@ export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean): EvacRes
+  * 任務の終わりの材料（systems/mission-telemetry の buildMissionResult が広げる。jp_03 だけ evac の鍵＝本文の頭の 4 行・時の行・残った艇の点。無い任務は鍵ごと無い＝ほかの任務の Result は同じ）。
+  * 世界は構造の型で読む（MissionWorld がそのまま満たす。systems/mission-result-extras に置くと、Result の型を読む tests の node の型検査に Phaser と DOM が入る＝systems/mission-objective の前例）
+  */
+-export function evacResultPart(w: { readonly evac: EvacResultSource | null; readonly boat: { readonly sinking: boolean } }): { evac?: EvacResult } {
+-  return w.evac ? { evac: evacResultOf(w.evac, !w.boat.sinking) } : {};
++export function evacResultPart(w: {
++  readonly evac: EvacResultSource | null;
++  readonly boat: { readonly sinking: boolean };
++  readonly arms?: { readonly downsBy: readonly number[] } | null;
++}): { evac?: EvacResult } {
++  return w.evac ? { evac: evacResultOf(w.evac, !w.boat.sinking, w.arms?.downsBy[AA_SRC_DAWN] ?? 0) } : {};
+ }
+ 
+ /** 残った艇の点の隻数（座席の艇は帰投の 700 で数えるので除く。scoring.json の evac.points_per_survivor × これ。spec §3.10） */
+diff --git a/src/core/evac-seat.ts b/src/core/evac-seat.ts
+index 298c55e..4af04bc 100644
+--- a/src/core/evac-seat.ts
++++ b/src/core/evac-seat.ts
+@@ -104,7 +104,7 @@ export function evacSwitchOrder(sq: EvacSquadron): number {
+ 
+ /**
+  * 押した時に移る隊: 並びの中で今の隊の次（末尾なら先頭。今の隊が並びに無ければ先頭）。移る先が無い・決着の後は −1（灰色の「切替」）。
+- * out を渡せば並びをそこに作る（v0.6.11 S5。HUD のボタンの字「切替 4」を毎フレーム見る＝sq.order・orderLen を書かない。世界と模擬の突き合わせが sq を比べる）
++ * out を渡せば並びをそこに作る（v0.6.11 S5。HUD のボタンの字「切替」「第4隊」を毎フレーム見る＝sq.order・orderLen を書かない。世界と模擬の突き合わせが sq を比べる）
+  */
+ export function evacNextSwitch(sq: EvacSquadron, out: Int32Array = sq.order): number {
+   if (sq.settled) return -1;
+diff --git a/src/core/evac-shelter.ts b/src/core/evac-shelter.ts
+index a04a2d1..385bc81 100644
+--- a/src/core/evac-shelter.ts
++++ b/src/core/evac-shelter.ts
+@@ -56,7 +56,7 @@ export function evacSinkWingman(sq: EvacSquadron, b: EvacBoat, nowS: number): vo
+ 
+ /**
+  * 隊長艇の記録が沈んだ後の交代（記録の側だけ。座席・編隊・HUD は core/evac-seat の evacSinkLeader）。新しい隊長艇＝浮いている最小の番号。
+- * 隠れ場所の中（r2 M12）: (a) 上げている隊で浮いている艇がみな上がっていれば G_HIDDEN、(b) 入っている隊は枠を取り直し、新しい隊長艇が輪の外なら取りやめ。
++ * 隠れ場所の中（r2 M12）: (a) 上げている隊で浮いている艇がみな上がっていれば G_HIDDEN、(b) 入っている隊は枠を取り直し、新しい隊長艇が輪の外なら取りやめ・輪の中なら止める（入るのを続ける）。
+  * 航跡は新しい隊長艇の艇尾方向で満たし直し、帯はその時の速さで決める。全滅なら枠を返して G_GONE。新しい隊長艇の番号（全滅は −1）を返す
+  */
+ export function evacPromote(sq: EvacSquadron, g: EvacGroup): number {
+@@ -79,9 +79,11 @@ export function evacPromote(sq: EvacSquadron, g: EvacGroup): number {
+   lead.band = nextSpeedBand(lead.band, lead.state.speedMps, lead.params);
+   if (g.phase === G_HAULING) evacHaulAdvance(g, sq.p.haulS);
+   if (g.phase === G_HAULING || g.phase === G_HIDDEN) evacSetHold(g);
+-  else if (g.phase === G_ENTERING && !evacInRing(sq, g.shelter, lead.state.x, lead.state.y)) {
+-    evacReleaseShelter(sq, g);
+-    g.phase = G_UNDERWAY;
++  else if (g.phase === G_ENTERING) {
++    if (!evacInRing(sq, g.shelter, lead.state.x, lead.state.y)) {
++      evacReleaseShelter(sq, g);
++      g.phase = G_UNDERWAY;
++    } else lead.state.speedMps = 0; // 枠の点へ寄っていた僚艇の速さを持ち越さない（v0.6.11 S8。操作中なら次のステップに取りやめ、操作していなければ止まった艇の先を爆弾が狙った）
+   }
+   evacTrailReset(g, sq.p.trailStepM);
+   return nl;
+@@ -210,7 +212,8 @@ export function evacStepShelters(sq: EvacSquadron, realDt: number): void {
+       }
+     } else if (g.phase === G_FOUND) {
+       if (gi === sq.control) {
+-        if (lead.state.speedMps > p.hideMaxMps) leaveFound(sq, g);
++        // 動かせば出る: hide_max を超えた・輪の外へ出た（v0.6.11 S8。2 kt 以下で這い出ると僚艇を陰に残したまま G_FOUND で離れた）
++        if (lead.state.speedMps > p.hideMaxMps || !evacInRing(sq, g.shelter, lead.state.x, lead.state.y)) leaveFound(sq, g);
+       } else {
+         g.foundLeftS -= realDt;
+         if (g.foundLeftS <= 0) leaveFound(sq, g);
+diff --git a/src/scenes/hud-scene.ts b/src/scenes/hud-scene.ts
+index 774a88e..347e03e 100644
+--- a/src/scenes/hud-scene.ts
++++ b/src/scenes/hud-scene.ts
+@@ -104,7 +104,7 @@ export class HudScene extends Phaser.Scene {
+     };
+     // 右側のパネル（右下の兵装・右端の技能。作る順は v0.6.7 と同じ: スティックの後・キーボードの前。前回の値は panel が持つので再開で引きずらない）
+     this.panel = new WeaponPanel(this, input, data, mission, this.telemetry, spread);
+-    this.keyboard = new KeyboardInput(this, input);
++    this.keyboard = new KeyboardInput(this, input, this.telemetry.evac.enabled); // Tab の［切替］は空襲下の退避の任務だけ（v0.6.11 S8）
+     // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
+     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
+     this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);
+diff --git a/src/scenes/result-scene.ts b/src/scenes/result-scene.ts
+index d968377..cde3da8 100644
+--- a/src/scenes/result-scene.ts
++++ b/src/scenes/result-scene.ts
+@@ -197,13 +197,14 @@ export class ResultScene extends Phaser.Scene {
+     const convoyPart = r.convoy ? ` ・ 上陸 ${score.deliveries}` : r.landing ? ` ・ 揚陸 ${score.deliveries}` : ''; // 上陸した大発の点（v0.6.4。輸送隊の任務だけ）・揚陸の点（v0.6.9。jp_04）。達成の次
+     // 夜の哨戒機の任務（v0.6.7。jp_02）は撃沈・命中の項を出さない（撃つ相手がいない）: 「帰投 · 達成 · 回避 · 燃料 · 乗員」
+     const objPart = r.evac ? evacScorePartJa(r.evac, score.objective, score.deliveries, scoringParams.evacBoatPoints) : h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${convoyPart}${ptKillPart}${evadePart}` : r.patrol ? `達成 ${score.objective}${evadePart}` : `${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart}`;
+-    line(`帰投 ${score.survival}${r.returned && r.dawn.caughtOutside ? `（${r.evac ? '空襲後' : '夜明け後'} ×${scoringParams.afterDawnFactor}）` : ''} ・ ${objPart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
++    const homeJa = r.evac ? '退避' : '帰投'; // jp_03 は「帰投」と言わない（v0.6.11 S8。Briefing・HUD は「壕か陰へ」「隠れた」）。点は同じ帰投の 700
++    line(`${homeJa} ${score.survival}${r.returned && r.dawn.caughtOutside ? `（${r.evac ? '空襲後' : '夜明け後'} ×${scoringParams.afterDawnFactor}）` : ''} ・ ${objPart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+     y += RESULT_SECTION_GAP;
+     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
+     const ships = resultShipsJa(r); // 夜明けに退いた艦（v0.6.2）は「退いた」。1 隻の任務は駆逐艦の撃沈数で（輸送船が沈まなくても「撃沈」）
+     // 輸送隊（v0.6.4）の頭は「大発 2/3 ・ 米PT: …」（届けた／届かずは本文 1 行目の「（ノルマ 2）」が言う）
+     const head = h ? `大発: ${r.objectiveDone ? 'ノルマ達成' : 'ノルマ未達'}` : r.escort ? `要人: ${r.objectiveDone ? '送り届けた' : r.escort.sunk ? '失った' : '届かず'}` : r.pt ? (r.convoy ? convoyHeadJa(r.convoy, ptHeadJa(r.pt)) : r.landing ? landingHeadJa(r.landing, ptHeadJa(r.pt)) : ptHeadJa(r.pt)) : r.patrol || r.evac ? '' : ships;
+-    line(`${resultHeadPrefixJa(head)}帰投: ${resultReturnJa(r.reason, r.returned)}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
++    line(`${resultHeadPrefixJa(head)}${homeJa}: ${resultReturnJa(r.reason, r.returned)}   艇 HP ${Math.ceil(r.hpLeft)} / ${r.hpMax}   乗員 ${r.crewAlive}/${r.crewTotal}   燃料 ${r.fuelLeftPct}%${firstLaunch}   ${Math.round(r.elapsedS)} 秒`, HUD_FONT_HEADING_PX);
+     // 「出撃前」と夜明け（v0.6.1）の行。無ければ出さない。空襲下の退避（v0.6.11 S6）は夜明けの行の代わりに時の行「空襲が去る時: 西の壕の中（第1隊）」と外だった夜の追撃の行
+     for (const l of [r.raidLine, ...(r.evac ? evacTimeLinesJa(r.evac, r.dawn, r.reason, r.returned) : [dawnResultLine(r.dawn, r.returned, r.reason === 'cleared')])]) if (l) line(l, HUD_FONT_HEADING_PX);
+     if (r.escort) line(escortResultLine(r.escort, r.detections, r.destroyerSunk), HUD_FONT_HEADING_PX);
+diff --git a/src/systems/keyboard-input.ts b/src/systems/keyboard-input.ts
+index 3bfce58..88740f1 100644
+--- a/src/systems/keyboard-input.ts
++++ b/src/systems/keyboard-input.ts
+@@ -1,4 +1,4 @@
+-// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3）、Tab = ［切替］（v0.6.11 S5。jp_03 だけが読む））。
++// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3）、Tab = ［切替］（v0.6.11 S5。jp_03 だけ。v0.6.11 S8: Tab は空襲下の退避の任務だけ登録する＝addKeys はキーを捕まえる（ブラウザの Tab を止める）ので、ほかの任務の捕まえるキーは v0.6.10 のまま））。
+ // 方向キーはスティックに触れている間は無視する。
+ import Phaser from 'phaser';
+ import type { InputState } from '../core/input-state';
+@@ -23,11 +23,12 @@ interface Keys {
+   z: Phaser.Input.Keyboard.Key;
+   f: Phaser.Input.Keyboard.Key;
+   g: Phaser.Input.Keyboard.Key;
+-  tab: Phaser.Input.Keyboard.Key;
+ }
+ 
+ export class KeyboardInput {
+   private readonly keys: Keys | null;
++  /** ［切替］の Tab（空襲下の退避の任務だけ。ほかの任務は null） */
++  private readonly tab: Phaser.Input.Keyboard.Key | null;
+   /** キーボードが extinguishHeld / lookout を true にした（キーが上がったら自分で戻す。タッチが立てたフラグには触らない） */
+   private kbExtinguish = false;
+   private kbLookout = false;
+@@ -36,6 +37,7 @@ export class KeyboardInput {
+   constructor(
+     scene: Phaser.Scene,
+     private readonly input: InputState,
++    withSwitch = false,
+   ) {
+     const kb = scene.input.keyboard;
+     this.keys = kb
+@@ -55,9 +57,9 @@ export class KeyboardInput {
+           z: Phaser.Input.Keyboard.KeyCodes.Z,
+           f: Phaser.Input.Keyboard.KeyCodes.F,
+           g: Phaser.Input.Keyboard.KeyCodes.G,
+-          tab: Phaser.Input.Keyboard.KeyCodes.TAB,
+         }) as Keys)
+       : null;
++    this.tab = kb && withSwitch ? kb.addKey(Phaser.Input.Keyboard.KeyCodes.TAB) : null;
+   }
+ 
+   /**
+@@ -80,7 +82,7 @@ export class KeyboardInput {
+     }
+     if (Phaser.Input.Keyboard.JustUp(k.shift)) this.input.smokeTap = true;
+     if (Phaser.Input.Keyboard.JustDown(k.f)) this.input.identifyTap = true;
+-    if (Phaser.Input.Keyboard.JustDown(k.tab)) this.input.switchTap = true; // ［切替］（空襲下の退避の任務の世界だけが消費する。ほかの任務では誰も読まない）
++    if (this.tab && Phaser.Input.Keyboard.JustDown(this.tab)) this.input.switchTap = true; // ［切替］（空襲下の退避の任務の世界だけが消費する）
+     if (Phaser.Input.Keyboard.JustDown(k.x)) {
+       this.input.extinguishHeld = true;
+       this.kbExtinguish = true;
+diff --git a/src/systems/world-evac.ts b/src/systems/world-evac.ts
+index 2aa00b5..9b58128 100644
+--- a/src/systems/world-evac.ts
++++ b/src/systems/world-evac.ts
+@@ -131,7 +131,8 @@ export class WorldEvac {
+     };
+     const ref: { air: EvacAirStep | null } = { air: null };
+     const plan = createEvacPlan(sq, ev.raid, ev.sorties, seed, (i, p, rng) => makePort(i, p, rng, (x, y) => void evacImpact(ref.air!, i, x, y)));
+-    const world: EvacAirWorld = { hitSeat: (spec, rng, x, y) => hit(spec, rng, x, y), hitRecord: (_b, x, y) => splash(x, y, true), splash: (x, y) => splash(x, y, true) };
++    // 座席でない艇への命中の水柱はその艇の上に（v0.6.11 S8: 着弾の点に置くと 1 発で 2〜4 隻に当たった時に同じ点へ重なった。どの艇が当たったかも見える）
++    const world: EvacAirWorld = { hitSeat: (spec, rng, x, y) => hit(spec, rng, x, y), hitRecord: (b) => splash(b.state.x, b.state.y, true), splash: (x, y) => splash(x, y, true) };
+     this.air = ref.air = createEvacAirStep({ plan, sq, seat, hooks: evacPlanHooks(plan, inner), world }, seed);
+     this.aaOrder = new Int32Array(plan.flights.length);
+     this.aaD2 = new Float64Array(plan.flights.length);
+diff --git a/src/ui/dawn-lines.ts b/src/ui/dawn-lines.ts
+index b651397..5e1e2aa 100644
+--- a/src/ui/dawn-lines.ts
++++ b/src/ui/dawn-lines.ts
+@@ -115,8 +115,11 @@ export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boo
+   let warn = true;
+   if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : strikeFallJa(d.fallingArc);
+   else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下で転舵` : strikeRunJa(d.plane);
+-  else if (d.threat === AS_T_INBOUND) text = `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M} m ・ 帰投を急げ`;
+-  else if (d.threat === AS_T_ORBIT) {
++  else if (d.threat === AS_T_INBOUND) {
++    // 昼の任務（v0.6.11 S8。jp_03 は「帰投」と言わない＝240 秒の後の §2 の 4 機は隠れ場所まで追う「追撃」）
++    const m = Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M;
++    text = d.dayStart ? `追撃！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${m} m ・ 壕か陰へ急げ` : `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${m} m ・ 帰投を急げ`;
++  } else if (d.threat === AS_T_ORBIT) {
+     text = strikeOrbitJa(d.plane, d.bombsLeft);
+     warn = false;
+   } else {
+diff --git a/src/ui/edge-marker.ts b/src/ui/edge-marker.ts
+index 93ea06b..0280c1f 100644
+--- a/src/ui/edge-marker.ts
++++ b/src/ui/edge-marker.ts
+@@ -55,9 +55,11 @@ export class EdgeMarker {
+   /**
+    * 毎フレーム。目標の相対位置（m）を論理画面座標に写し、画面内なら隠し、画面外なら端にクランプして表示する。
+    * show=false（視程外・沈没後）なら隠す。カメラの向き・ズームは telemetry から。distM を渡せばラベルの距離にそれを使う（帰投地点は輪の縁まで）。
+-   * drawn=false（目標の絵が出ていない。隼艇は自艇の視程の外）なら画面の内でも隠さず、方位どおり縁に置く（v0.6.6 レビュー ux:ux-1。既定 true＝今のまま）
++   * drawn=false（目標の絵が出ていない。隼艇は自艇の視程の外）なら画面の内でも隠さず、方位どおり縁に置く（v0.6.6 レビュー ux:ux-1。既定 true＝今のまま）。
++   * distOx/distOy は distM を渡さない時の距離の原点のずれ（距離 = |(dx + distOx, dy + distOy)|。v0.6.11 S8: 空襲下の退避の矢印はカメラの中心へ置き直した dx を渡し、
++   * 距離は座席から＝平方根は画面の外に出す矢印だけ。既定 0＝今のまま）
+    */
+-  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true): void {
++  refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true, distOx = 0, distOy = 0): void {
+     if (!show || Number.isNaN(dx)) {
+       this.setShown(false);
+       return;
+@@ -85,7 +87,7 @@ export class EdgeMarker {
+     this.arrow.setPosition(mx, my).setAngle(radToDeg(Math.atan2(sx, -sy)));
+     const gap = TARGET_MARKER_MARGIN * 0.35;
+     this.label.setPosition(mx, this.opts.labelAbove ? my - gap : my + gap);
+-    const dist = distM ?? Math.hypot(dx, dy);
++    const dist = distM ?? Math.hypot(dx + distOx, dy + distOy);
+     const step = this.opts.roundUp ? Math.ceil(dist / this.opts.stepM) : Math.round(dist / this.opts.stepM);
+     if (step !== this.lastDistanceStep) {
+       this.lastDistanceStep = step;
+diff --git a/src/ui/evac-lines.ts b/src/ui/evac-lines.ts
+index c8b7cd8..dfddc0e 100644
+--- a/src/ui/evac-lines.ts
++++ b/src/ui/evac-lines.ts
+@@ -248,11 +248,14 @@ export function evacBannerLines(e: EvacTelemetry): readonly string[] {
+   return [e.annKind === EVA_REPASS ? `第${e.annWave + 1}波 — 編隊が戻ってきた` : `第${e.annWave + 1}波 — 空襲 ${e.annPlanes}機×${e.annFlights}`];
+ }
+ 
+-/** 決着（240 秒）の中央の帯（ui/dawn-lines の dawnBannerLines が day_start の任務だけ呼ぶ）。strike は §2 の 4 機の説明（来ない夜は ''） */
++/**
++ * 決着（240 秒）の中央の帯（ui/dawn-lines の dawnBannerLines が day_start の任務だけ呼ぶ）。strike は §2 の 4 機の説明（来ない夜は ''）。
++ * 外の夜（strike あり）は「確定」と言わない（v0.6.11 S8: 外の座席が追撃で沈めば残存は 1 減る＝core/evac-seat の evacSinkLeader）
++ */
+ export function evacSettleBannerLines(e: EvacTelemetry, strike: string): readonly string[] {
+   const head = '第1次の空襲が去った';
+-  const fixed = `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`;
+-  return strike ? [head, fixed, `${strike} ・ 壕か陰へ`] : [head, fixed];
++  if (!strike) return [head, `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`];
++  return [head, `残存 ${e.survivors}／${e.total}（${e.quota} 隻以上で達成 ・ 隊長艇が沈めば 1 減る）`, `${strike} ・ 壕か陰へ`];
+ }
+ 
+ /** 地図の上の隊の番号の見え方（ui/evac-markers。変わったときだけ色と字を書く）: 0 停泊・1 走る・2 隠れた・3 見つかった・4 狙われている・5 全滅 */
+diff --git a/src/ui/evac-markers.ts b/src/ui/evac-markers.ts
+index 558022a..023b412 100644
+--- a/src/ui/evac-markers.ts
++++ b/src/ui/evac-markers.ts
+@@ -177,7 +177,7 @@ export class EvacEdgeMarkers {
+       const dx = e.groupDx[gi]!;
+       const dy = e.groupDy[gi]!;
+       m.setPrefix(e.groupLabels[gi] ?? '');
+-      m.refresh(dx - ox, dy - oy, true, t, Math.sqrt(dx * dx + dy * dy));
++      m.refresh(dx - ox, dy - oy, true, t, undefined, true, ox, oy); // 距離は座席から（EdgeMarker が画面の外の時だけ平方根。v0.6.11 S8）
+       this.place(m, TARGET_RECT, k - 1);
+     }
+     for (; k < this.targets.length; k++) this.targets[k]!.refresh(NaN, NaN, false, t);
+diff --git a/src/ui/evac-result.ts b/src/ui/evac-result.ts
+index 9313fa3..5966186 100644
+--- a/src/ui/evac-result.ts
++++ b/src/ui/evac-result.ts
+@@ -19,9 +19,13 @@ export function evacPlacesLineJa(e: EvacResult): string {
+   return `壕 ${e.cave} ・ 陰 ${e.cover} ・ 外 ${e.outside} ／ 沈没 ${e.total - e.survivors} ・ 隊ごと ${e.byGroup.join('・')}`;
+ }
+ 
+-/** 本文の 3 行目（20 px）: 「見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 1 機」（分母は隊を狙った回＝目標の無い編隊は数えない。r2 L1） */
++/**
++ * 本文の 3 行目（20 px）: 「見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 1 機」（分母は隊を狙った回＝目標の無い編隊は数えない。r2 L1）。
++ * 撃墜は兵装の行と同じ全部の機（v0.6.11 S8）で、240 秒の後の追撃の機を落とした夜は「撃墜 2 機（うち追撃 1）」
++ */
+ export function evacFlightsLineJa(e: EvacResult): string {
+-  return `見失わせた ${e.lost}／狙われた ${e.aimed} 回（戻ってきた ${e.again} 回を含む） ・ 撃墜 ${e.downed} 機`;
++  const chase = e.chaseDowned > 0 ? `（うち追撃 ${e.chaseDowned}）` : '';
++  return `見失わせた ${e.lost}／狙われた ${e.aimed} 回（戻ってきた ${e.again} 回を含む） ・ 撃墜 ${e.downed + e.chaseDowned} 機${chase}`;
+ }
+ 
+ /** 本文の 4 行目（20 px・KPI の色。data を合わせる根拠＝CLAUDE.md §9）: 爆撃に来た回・爆弾・艇への命中・切替・隊長艇の交代 */
+@@ -41,7 +45,7 @@ function afterJa(reason: MissionEndReason, returned: boolean): string {
+ 
+ /**
+  * 夜明けの行の代わりの時の行（spec §10.3。r2 L15）: 「空襲が去る時: 西の壕の中（第1隊） ・ 残存 8 で確定」／「…西の壕で上げている途中（第1隊）…」／
+- * 「…屋我地の陰（東）に入っている途中…」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／決着の前に終わった夜（18 隻すべてが沈んだ）
++ * 「…屋我地の陰（東）に入っている途中…」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／「… ・ 隠れる前に沈没（隊長艇の分 −1 で 7）」／決着の前に終わった夜（18 隻すべてが沈んだ）
+  */
+ export function evacTimeLineJa(e: EvacResult, d: DawnResult, reason: MissionEndReason, returned: boolean): string {
+   if (e.settlePlace === EVR_NONE) return e.survivors === 0 ? `空襲が去る前に ${e.total} 隻すべてが沈んだ（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）` : '空襲が去る時: 操作中の隊長艇が沈む途中';
+@@ -50,7 +54,9 @@ export function evacTimeLineJa(e: EvacResult, d: DawnResult, reason: MissionEndR
+   if (e.settlePlace === EVR_HIDDEN) return `空襲が去る時: ${e.settleShelterJa}の中（${g}）${sure}`;
+   if (e.settlePlace === EVR_HAULING) return `空襲が去る時: ${e.settleShelterJa}で上げている途中（${g}）${sure}`;
+   if (e.settlePlace === EVR_ENTERING) return `空襲が去る時: ${e.settleShelterJa}に入っている途中（${g}）${sure}`;
+-  return `空襲が去る時: 外（${g}）${sure} ・ ${afterJa(reason, returned)}`;
++  // 確定の後に減るのは外の座席（操作中の隊長艇）が追撃・火災で沈んだ時だけ（core/evac-seat の evacSinkLeader。v0.6.11 S8: 頭の行の残存と食い違って見えないように減った数を書く）
++  const less = e.settleSurvivors - e.survivors;
++  return `空襲が去る時: 外（${g}）${sure} ・ ${afterJa(reason, returned)}${less > 0 ? `（隊長艇の分 −${less} で ${e.survivors}）` : ''}`;
+ }
+ 
+ /**
+diff --git a/src/ui/hud-markers.ts b/src/ui/hud-markers.ts
+index 4990f58..3c94b8c 100644
+--- a/src/ui/hud-markers.ts
++++ b/src/ui/hud-markers.ts
+@@ -7,7 +7,7 @@
+ // v0.6.9 S6b（揚陸の任務 jp_04 だけ。ほかの任務は作らない＝矢印の数・作る順・refresh は今のまま）: 7・8 本目＝「雷撃 N m」（赤。見張りの報告の PT が画面の外か、視程の外で海の上の ▼ の立てない所＝
+ // 上の HUD の帯・右端の技能のボタン・兵装の下。▼ が出ていれば出さない。F12: 視程の内の脅威の PT なら出さない）と
+ // 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前）。決まりは ui/landing-markers。どちらも右下の速力と兵装の HUD の角を避け、近い印から縁に沿ってずらす（雷撃は「PT」から、輸送は雷撃と帰投から）。
+-// v0.6.11 S5（空襲下の退避の任務 jp_03 だけ）: 帰投の印は作らず（隊長艇の壕だけを指す印は紛らわしい＝r2 L8）、画面の外の狙われた隊と近い空いた隠れ場所の矢印（ui/evac-markers の EvacEdgeMarkers）。
++// v0.6.11 S5（空襲下の退避の任務 jp_03 だけ）: 帰投の印は作らず（中の壕＝帰投地点だけを指す印は紛らわしい＝r2 L8）、画面の外の狙われた隊と近い空いた隠れ場所の矢印（ui/evac-markers の EvacEdgeMarkers）。
+ import Phaser from 'phaser';
+ import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
+ import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
+diff --git a/src/ui/mission-mode.ts b/src/ui/mission-mode.ts
+index ced169b..5173367 100644
+--- a/src/ui/mission-mode.ts
++++ b/src/ui/mission-mode.ts
+@@ -167,7 +167,8 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
+   // 揚陸の決着の前に帰投の輪の中（v0.6.9 R14 A5。jp_04 だけ。ほかの任務は偽で前のまま）: 任務は終わらない（systems/mission-end の landingHold）ので魚雷待ち・漂流の行は出さず、
+   // 赤い線・射線・出来事・接触・輸送船への脅威はそのまま上に出す（輪の中でも米PT は来る）。待ちの行は米PT の段の下
+   const ring = landingRingWaiting(t);
+-  if (t.homeWaiting && !ring) return MISSION_WAITING;
++  // 空襲下の退避（v0.6.11 S8。jp_03）: 決着（240 秒）の前は隠れても終わらない（mission-end の evacHold）ので、走っている魚雷があっても待ちの行は出さない（2 行目は退避の行のまま）
++  if (t.homeWaiting && !ring && !(t.evac.enabled && !t.evac.settled)) return MISSION_WAITING;
+   if (t.fuelEmpty && !ring) return MISSION_ADRIFT;
+   const pa = t.patrol;
+   // 夜明けのラッチの瞬間に落ちている夜の 1 発（最大 1.28 秒）は夜明けの 4 機の接近・旋回の行に隠さない（R6。夜明けの最初の進路はラッチから first_run_s 後で重ならない）
+diff --git a/src/ui/weapon-panel.ts b/src/ui/weapon-panel.ts
+index 46bec95..66c2ace 100644
+--- a/src/ui/weapon-panel.ts
++++ b/src/ui/weapon-panel.ts
+@@ -2,7 +2,7 @@
+ // 兵装は全任務で同じ位置（main_weapon に関わらず）: 右下の角（列 1・R64・文字 22 px）に魚雷、そのすぐ左（列 2・R56・文字 20 px）に機銃、扇は魚雷の下。
+ // 技能（R44・文字 20 px。R48 の丸の絵を縮める）は右端に縦一列（上から 煙幕（米）・消火・見張り・識別（味方機の夜）。無いボタンの段は空ける）。兵装の上の 1 行は ui/weapon-cue（このクラスが作って消す）。
+ // 魚雷・扇・機銃は出だしの 600 ms は受けない（Briefing の「出撃」・Result の「もう一度」の 2 度押し）。技能の中身（煙幕・消火・見張り・識別）は v0.6.7 の hud-scene のまま（S0 で移した）。
+-// v0.6.11 S5（jp_03。spec-v0611-r2 §9・r2 L13）: 識別の段に［切替］（タップで InputState.switchTap。字は並びの次の隊「切替 4」、移る先が無い・決着の後は灰色の「切替」）。
++// v0.6.11 S5（jp_03。spec-v0611-r2 §9・r2 L13）: 識別の段に［切替］（タップで InputState.switchTap。字は並びの次の隊「切替」「第4隊」の 2 行（v0.6.11 S8: 「切替 4」はほかのボタンの残りの秒・回数に読めた）、移る先が無い・決着の後は灰色の「切替」）。
+ // 値が変わったときだけ文字を組む（§7。前回の値はこのクラスが持つ。Hud を作り直すたびにこのクラスも作り直すので前回の値を引きずらない）。
+ import Phaser from 'phaser';
+ import { GUN_BUTTON_FONT_PX, GUN_BUTTON_SCALE, GUN_FIRING_ALPHA } from '../config/arms-config';
+@@ -138,9 +138,9 @@ export class WeaponPanel {
+       }
+     }
+     if (this.switchButton && t.evac.nextSwitch !== this.lastSwitch) {
+-      // 「切替 4」（並びの次の隊の番号。押せば移る）。移る先が無い・決着の後は灰色の「切替」（押しても世界が無視する）
++      // 「切替」「第4隊」（並びの次の隊の呼び名＝data。押せば移る）。移る先が無い・決着の後は灰色の「切替」（押しても世界が無視する）
+       this.lastSwitch = t.evac.nextSwitch;
+-      this.switchButton.setLabel(t.evac.nextSwitch >= 0 ? `切替 ${t.evac.nextSwitch + 1}` : '切替');
++      this.switchButton.setLabel(t.evac.nextSwitch >= 0 ? `切替\n${t.evac.groupLabels[t.evac.nextSwitch]}` : '切替');
+       this.switchButton.setEnabled(t.evac.nextSwitch >= 0);
+     }
+     if (this.identifyButton) {
+diff --git a/tests/__snapshots__/setup-jp03.test.ts.snap b/tests/__snapshots__/setup-jp03.test.ts.snap
+index b6b40fc..d894bf6 100644
+--- a/tests/__snapshots__/setup-jp03.test.ts.snap
++++ b/tests/__snapshots__/setup-jp03.test.ts.snap
+@@ -331,7 +331,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -905,7 +905,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -1479,7 +1479,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -2053,7 +2053,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -2627,7 +2627,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -3201,7 +3201,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -3775,7 +3775,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+@@ -4349,7 +4349,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "shelters": [
+     {
+      "id": "home_cave",
+-     "labelJa": "隊長艇の壕",
++     "labelJa": "中の壕",
+      "kind": 0,
+      "x": 1600,
+      "y": 1150,
+diff --git a/tests/evac-briefing.test.ts b/tests/evac-briefing.test.ts
+index 93252ac..3a3996f 100644
+--- a/tests/evac-briefing.test.ts
++++ b/tests/evac-briefing.test.ts
+@@ -32,13 +32,13 @@ const rowsOf = (id: string, hard: boolean, seed = 1): { label: string; text: str
+ };
+ 
+ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
+-  it('行の文: 目的・成功（空襲が去る時に隊を壕か陰へ）・時（昼。壕 3 と陰 1）・敵（東から・4 波・同時の編隊）・危険（昼の言い方）・条件（空襲が去るまで・燃料は減らない・機銃は僚艇も・もう一度来る編隊）', () => {
++  it('行の文: 目的・成功（空襲が去る時に隊を壕か陰へ）・時（昼。壕 3 か所・陰 1 か所）・敵（東から・4 波・同時の編隊）・危険（昼の言い方）・条件（空襲が去るまで・燃料は減らない・機銃は僚艇も・もう一度来る編隊）', () => {
+     for (const hard of [false, true]) {
+       const f = hard ? 3 : 2;
+       expect(rowsOf('jp_03', hard)).toEqual([
+         { label: '目的', text: '空襲の下、3隻ずつ6つの隊を壕や陰へ隠せ（スティックで隊長艇、［切替］で隊を替える）' },
+         { label: '成功', text: '18隻中6隻以上を残す（史実は5隻）（空襲が去る時に操作中の隊を壕か陰へ）' },
+-        { label: '時', text: '昼（07:00 空襲警報） ・ 壕 3 と陰 1 の外の艇は見える ・ 陰は見つかることがある' },
++        { label: '時', text: '昼（07:00 空襲警報） ・ 壕 3 か所・陰 1 か所の外は丸見え ・ 陰は見つかることがある' },
+         { label: '敵', text: `米艦載機（東から） ・ 4波（2機の編隊が${f}つ同時 → 3機×${f} → 3機×${f} → 4機×${f}）` },
+         { label: '危険', text: '港の空襲（予告の後、編隊が別々の隊を狙う）、空襲が去った後の追撃（敵機 4 機）' },
+         { label: '条件', text: `空襲が去るまで 240 秒 ・ 燃料 16 gal（空襲の間は減らない） ・${NBSP}機銃は僚艇も撃つ（機にまず当たらない） ・${NBSP}編隊は次の波までに間があればもう一度来る` },
+@@ -51,8 +51,8 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
+     expect(ev.params.shelters.length).toBe(4);
+     expect(ev.params.shelters.filter((x) => x.kind === SHELTER_CAVE).length).toBe(3);
+     expect(ev.params.shelters.map((x) => x.labelJa)).not.toContain('屋我地の陰（西）');
+-    expect(evacDayRowJa(ev.params)).toBe('壕 3 と陰 1 の外の艇は見える ・ 陰は見つかることがある');
+-    expect(evacDayRowJa({ shelters: ev.params.shelters.filter((x) => x.kind === SHELTER_CAVE) })).toBe('壕 3 の外の艇は見える');
++    expect(evacDayRowJa(ev.params)).toBe('壕 3 か所・陰 1 か所の外は丸見え ・ 陰は見つかることがある');
++    expect(evacDayRowJa({ shelters: ev.params.shelters.filter((x) => x.kind === SHELTER_CAVE) })).toBe('壕 3 か所の外は丸見え');
+     expect(evacEnemyRowJa({ waves: [{ announceS: 0, planes: 2 }, { announceS: 0, planes: 4 }], flights: 3 })).toBe('2波（2機の編隊が3つ同時 → 4機×3）');
+     expect([s.durationS, s.fuelAllotmentGal, s.mission.dawnStrike!.count, ev.raid.fromBearingDeg, ev.raid.passesMax]).toEqual([240, 16, 4, 70, 2]);
+     const one = briefingNumbers({ ...s, evac: { ...ev, raid: { ...ev.raid, passesMax: 1 } } });
+@@ -72,7 +72,7 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
+     // 目的のボタンの名は HUD の［切替］と同じ字
+     expect(String(M['objective'])).toContain('［切替］');
+   });
+-  it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 1・成功 1・時 1・敵 1・危険 1・条件 2、史実 3（20 px）。行の頭に「、」「。」「）」「・」が来ない（史実の幅 1,020〜1,070 px のどれでも）', () => {
++  it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 1・成功 1・時 1・敵 1・危険 1・条件 2、史実はノーマル 3・ハード 4（20 px。v0.6.11 S8 で作りの範囲を足した）。行の頭に「、」「。」「）」「・」が来ない（史実の幅 1,020〜1,070 px のどれでも）', () => {
+     for (const hard of [false, true]) {
+       const r = rowsOf('jp_03', hard).map((x) => x.text);
+       for (const W of [BRIEF_WRAP, BRIEF_WRAP - BRIEF_ROW_PX]) expect(r.map((t) => phaserWrap(t, BRIEF_ROW_PX, W).length), `${hard} ${W}`).toEqual([1, 1, 1, 1, 1, 2]);
+@@ -81,7 +81,7 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
+       const note = getBriefingRecord(gameData, 'jp_03', hard).noteJa;
+       for (let W = 1020; W <= 1070; W++) {
+         const l = phaserWrap(note, BRIEF_NOTE_PX, W);
+-        expect(l.length, `${hard} ${W}`).toBe(3);
++        expect(l.length, `${hard} ${W}`).toBe(hard ? 4 : 3);
+         for (const x of l.slice(1)) expect(x, `${hard} ${W}`).not.toMatch(/^[、。）・]/);
+       }
+     }
+@@ -89,8 +89,8 @@ describe('jp_03 の 6 行と史実（ノーマル・ハード）', () => {
+   it('下端 ≤ 出撃のボタンの上端 584 − 8（論理幅 1,280・1,584 で同じ置き方＝行の x・折り返し・ボタンの y は幅に依らない）。行の高さは字の大きさ × 1.25 で多めに（jp_04 で多めを確かめる）', () => {
+     const lh = (px: number): number => Math.ceil(px * 1.25);
+     const bottom = (rows: number[], note: number): number => 148 + rows.reduce((a, n) => a + n * lh(BRIEF_ROW_PX) + 10, 0) + 8 + note * lh(BRIEF_NOTE_PX);
+-    for (const hard of [false, true]) expect(bottom([1, 1, 1, 1, 1, 2], 3), String(hard)).toBeLessThanOrEqual(584 - 8);
+-    expect(bottom([1, 1, 1, 1, 1, 2], 3)).toBe(501);
++    for (const hard of [false, true]) expect(bottom([1, 1, 1, 1, 1, 2], hard ? 4 : 3), String(hard)).toBeLessThanOrEqual(584 - 8);
++    expect([bottom([1, 1, 1, 1, 1, 2], 3), bottom([1, 1, 1, 1, 1, 2], 4)]).toEqual([501, 526]);
+     // jp_04（目的 2・成功 1・月 1・敵 1・危険 1・条件 3・史実 3）のヘッドレスの本当の下端は 549（v0.6.10 S7）＝この見積もりは多め
+     expect(bottom([2, 1, 1, 1, 1, 3], 3)).toBeGreaterThanOrEqual(549);
+     const menu = readFileSync(join(__dirname, '..', 'src', 'config', 'menu-config.ts'), 'utf8');
+diff --git a/tests/evac-lines.test.ts b/tests/evac-lines.test.ts
+index 4b97926..10ab9ca 100644
+--- a/tests/evac-lines.test.ts
++++ b/tests/evac-lines.test.ts
+@@ -17,14 +17,14 @@ import {
+ } from '../src/core/evac-telemetry';
+ import { evacSimSetup } from '../src/systems/evac-sim-setup';
+ import { initEvacTelemetry, refreshEvacTelemetry } from '../src/systems/evac-telemetry';
+-import { clockJa, dawnBannerLines } from '../src/ui/dawn-lines';
++import { clockJa, dawnBannerLines, strikeLine } from '../src/ui/dawn-lines';
+ import {
+   EVAC_LINE_MAX_PX, EVAC_STATUS_MAX_PX, EVL_ANNOUNCE, EVL_NORMAL, evacAnnounceJa, evacBannerLines, evacLine, evacLineKey, evacLineMode, evacSettleBannerLines, evacStatusKey, evacStatusLine, jaWidthPx, mssJa, shortPlaceJa,
+ } from '../src/ui/evac-lines';
+ import { composeLineKeys, createLineKeys } from '../src/ui/mission-line-keys';
+-import { MISSION_ADRIFT, MISSION_EVAC, MISSION_STRIKE, missionMode } from '../src/ui/mission-mode';
++import { MISSION_ADRIFT, MISSION_EVAC, MISSION_STRIKE, MISSION_WAITING, missionMode } from '../src/ui/mission-mode';
+ import { specialLine } from '../src/ui/special-line';
+-import { AS_T_FALLING, AS_T_REST } from '../src/core/air-strike';
++import { AS_T_FALLING, AS_T_INBOUND, AS_T_REST } from '../src/core/air-strike';
+ import { CALL_DAWN } from '../src/core/mission-flow';
+ import { miniWorld, type MiniWorld } from './evac-world-kit';
+ import { tele, textWidthPx } from './pt-ui-kit';
+@@ -37,10 +37,10 @@ describe('文の見積もりと形', () => {
+   it('jaWidthPx は tests/pt-ui-kit の textWidthPx と同じ・m:ss・長い場所の名だけ短く', () => {
+     for (const s of ['第1隊 屋我地の陰（東）で待機', '爆弾投下！ 転舵！', 'HP 60・沈・60', '1420 m']) expect(jaWidthPx(s, 22)).toBeCloseTo(textWidthPx(s, 22), 9);
+     expect([mssJa(0), mssJa(5.2), mssJa(65), mssJa(240), mssJa(1224)]).toEqual(['0:00', '0:06', '1:05', '4:00', '20:24']);
+-    expect([shortPlaceJa('屋我地の陰（東）'), shortPlaceJa('西の壕'), shortPlaceJa('隊長艇の壕')]).toEqual(['陰（東）', '西の壕', '隊長艇の壕']);
++    expect([shortPlaceJa('屋我地の陰（東）'), shortPlaceJa('西の壕'), shortPlaceJa('中の壕')]).toEqual(['陰（東）', '西の壕', '中の壕']);
+     const e = base();
+     expect(e.enabled).toBe(true);
+-    expect([e.groupLabels.length, e.shelterLabels, e.total, e.quota, e.historical, e.fromJa, e.dawnPlanes]).toEqual([6, ['隊長艇の壕', '西の壕', '東の壕', '屋我地の陰（東）'], 18, 6, 5, '東', 4]);
++    expect([e.groupLabels.length, e.shelterLabels, e.total, e.quota, e.historical, e.fromJa, e.dawnPlanes]).toEqual([6, ['中の壕', '西の壕', '東の壕', '屋我地の陰（東）'], 18, 6, 5, '東', 4]);
+   });
+ });
+ 
+@@ -128,7 +128,7 @@ describe('2 行目（22 px で ≤ 840 px。spec §10.1）', () => {
+     // 待機の行は陰（東）では「陰（東）」に縮む（840 px を超えるため。spec §18）、壕は名のまま
+     const wait = (s: number, latch: number): string => evacLine(clone(e0, { phase: G_HIDDEN, shelter: s, latch, leftS: 65 })).text;
+     expect(wait(3, SW_WAIT_NEUTRAL)).toBe('第1隊 陰（東）で待機 ・ 空襲が去るまで 1:05 ・ 離してから倒すと出る');
+-    expect(wait(0, SW_WAIT_INPUT)).toBe('第1隊 隊長艇の壕で待機 ・ 空襲が去るまで 1:05 ・ 倒すと出る');
++    expect(wait(0, SW_WAIT_INPUT)).toBe('第1隊 中の壕で待機 ・ 空襲が去るまで 1:05 ・ 倒すと出る');
+     expect(evacLine(clone(e0, { near: 3, nearFree: 3, nearEdgeM: 1407 })).text).toBe('第1隊を操作中 ・ 近い隠れ場所 屋我地の陰（東） 空き 3 ・ 1420 m');
+     expect(evacLine(clone(e0, { event: EVE_SINK, eventSub: EVS_LEADER, eventGroup: 1, eventN: 14, eventTargeted: true })).text).toBe('第2隊の隊長艇 沈没 ・ 僚艇が隊長艇に（残存 14） ・ 編隊は第2隊を追う');
+     expect(evacLine(clone(e0, { event: EVE_SINK, eventSub: EVS_SEAT, eventN: 14, eventTargeted: false })).text).toBe('隊長艇 沈没！ 僚艇に乗り移った（残存 14）');
+@@ -198,8 +198,19 @@ describe('昼の言い方（day_start の任務だけ。spec §10.3・r2 M9）',
+     const lines = dawnBannerLines(tele({}, { dawn: d, evac: e }));
+     expect(lines).toEqual(evacSettleBannerLines(e, '米艦載機 4 機が東から来る ・ 投下で転舵（旋回中は逆へ）'));
+     expect(lines[0]).toBe('第1次の空襲が去った');
++    // 外の夜は「確定」と言わない（外の座席が追撃で沈めば 1 減る。v0.6.11 S8）、中の夜は「確定」
++    expect(lines[1]).toBe('残存 8／18（6 隻以上で達成 ・ 隊長艇が沈めば 1 減る）');
++    expect(evacSettleBannerLines(e, '')).toEqual(['第1次の空襲が去った', '残存 8／18 で確定（6 隻以上で達成）']);
+     for (const s of lines) expect(s).not.toContain('夜明け');
+   });
++  it('240 秒の後の §2 の 4 機の接近の行は「追撃！ … 壕か陰へ急げ」（jp_03 は「帰投」と言わない。v0.6.11 S8）。ほかの任務は「空襲！ … 帰投を急げ」のまま', () => {
++    const d = { ...createDawnTelemetry(), reached: true, air: DAWN_AIR_ENEMY, strikeEnabled: true, nameJa: '米艦載機', count: 4, fromJa: '東', threat: AS_T_INBOUND, inboundDistM: 2480 };
++    const day = strikeLine(tele({}, { dawn: { ...d, dayStart: true }, evac: base() }), 0, false, false).text;
++    expect(day).toBe('追撃！ 敵機 4 機 ・ 東から 2500 m ・ 壕か陰へ急げ');
++    expect(textWidthPx(day, 22)).toBeLessThanOrEqual(EVAC_LINE_MAX_PX);
++    for (const w of ['帰投', '夜明け']) expect(day).not.toContain(w);
++    expect(strikeLine(tele({}, { dawn: d }), 0, false, false).text).toBe('空襲！ 敵機 4 機 ・ 東から 2500 m ・ 帰投を急げ');
++  });
+ });
+ 
+ interface Seen {
+@@ -324,6 +335,10 @@ describe('2 行目のモード（ui/mission-mode の MISSION_EVAC・ui/special-l
+     expect(missionMode(tele({}, { evac: e, dawn: { ...createDawnTelemetry(), reached: true, threat: AS_T_FALLING } }), 0, 0)).toBe(MISSION_STRIKE);
+     expect(missionMode(tele({}, { evac: e, dawn: { ...createDawnTelemetry(), reached: true, threat: AS_T_REST } }), CALL_DAWN, 0)).toBe(MISSION_EVAC);
+     expect(missionMode(tele({}, { evac: e, fuelEmpty: true }), 0, 0)).toBe(MISSION_ADRIFT);
++    // 決着の前に隠れて魚雷が走っている（v0.6.11 S8）: 任務は終わらない（evacHold）ので「帰投 — 魚雷の決着待ち」は出さない。決着の後と、ほかの任務は今までどおり待ち
++    expect(missionMode(tele({}, { evac: e, homeWaiting: true }), 0, 0)).toBe(MISSION_EVAC);
++    expect(missionMode(tele({}, { evac: clone(e, { settled: true }), homeWaiting: true }), 0, 0)).toBe(MISSION_WAITING);
++    expect(missionMode(tele({}, { homeWaiting: true }), 0, 0)).toBe(MISSION_WAITING);
+     expect(missionMode(tele({}, {}), 0, 0)).not.toBe(MISSION_EVAC);
+     expect(specialLine(t, MISSION_EVAC, { landingEv: t.landing })).toEqual(evacLine(e));
+     expect(specialLine(tele({}, {}), MISSION_EVAC, { landingEv: t.landing })).toBeNull();
+diff --git a/tests/evac-mission-data.test.ts b/tests/evac-mission-data.test.ts
+index ea4b9f0..143c04b 100644
+--- a/tests/evac-mission-data.test.ts
++++ b/tests/evac-mission-data.test.ts
+@@ -79,11 +79,11 @@ describe('起動時の検査 V-E1〜V-E14（壊した data は鍵を名指して
+     expect(build((d) => { const c = (evacOf(d)['shelters'] as Rec[])[1]!; c['x_m'] = 30; c['exit_heading_deg'] = 90; })).toThrow(/evac\.shelters\[1\]（西の壕） から出た縦列（exit_heading_deg 90・moored_gap_m）の 3 隻目.*V-E1/); // 艇尾は西: x 30・18・6
+   });
+   it('V-E2: 停泊地のどの艇も輪の縁から 20 m 以上外（ちょうど 20 m は通る）', () => {
+-    // 第1隊の隊長艇を隊長艇の壕の真北へ: 中心から 70 + 20 = 90 m は通り、89 m は止まる
++    // 第1隊の隊長艇を中の壕の真北へ: 中心から 70 + 20 = 90 m は通り、89 m は止まる
+     const at = (dy: number) => build((d) => { const g = (evacOf(d)['groups'] as Rec[])[0]!; g['x_m'] = 1600; g['y_m'] = 1150 - dy; g['heading_deg'] = 0; const ps = protoOf(d, 'jp_03')['player_start'] as Rec; ps['x_m'] = 1600; ps['y_m'] = 1150 - dy; ps['heading_deg'] = 0; });
+     expect(EVAC_CHECK_MOORED_CLEAR_M).toBe(20);
+     expect(at(90 + 2 * 12)).not.toThrow(); // 3 隻目（艇尾の方向＝南へ 24 m）がちょうど 90 m
+-    expect(at(89 + 2 * 12)).toThrow(/evac\.groups\[0\]（第1隊） の 3 隻目は 隊長艇の壕 の輪の縁から 20 m 以上外.*V-E2/);
++    expect(at(89 + 2 * 12)).toThrow(/evac\.groups\[0\]（第1隊） の 3 隻目は 中の壕 の輪の縁から 20 m 以上外.*V-E2/);
+   });
+   it('V-E3: 隠れ場所どうしの中心は 2 × 輪 ＋ 100 m 以上', () => {
+     // 陰（東）を東の壕（2550, 1150）の西へ: 2550 − 240 ちょうどは通る（S3b で陰（西）を外したので相手は壕）
+diff --git a/tests/evac-result.test.ts b/tests/evac-result.test.ts
+index 0ff0760..b72c418 100644
+--- a/tests/evac-result.test.ts
++++ b/tests/evac-result.test.ts
+@@ -52,7 +52,7 @@ function trial(hard: boolean, policy: EvacPolicy, seed: number): { e: EvacResult
+ 
+ const E0: EvacResult = {
+   total: 18, quota: 6, historical: 5, survivors: 8, seatAfloat: true, cave: 6, cover: 2, outside: 0, byGroup: [3, 2, 0, 1, 2, 0],
+-  aimed: 9, again: 2, lost: 3, came: 6, downed: 1, bombs: 40, boatHits: 12, switches: 7, promotions: 2,
++  aimed: 9, again: 2, lost: 3, came: 6, downed: 1, chaseDowned: 0, bombs: 40, boatHits: 12, switches: 7, promotions: 2,
+   settlePlace: EVR_HIDDEN, settleGroupJa: '第1隊', settleShelterJa: '西の壕', settleSurvivors: 8,
+ };
+ const dawn = (o: Partial<DawnResult> = {}): DawnResult => ({ ...createDawnResult(), reached: true, air: DAWN_AIR_ENEMY, ...o });
+@@ -131,6 +131,8 @@ describe('Result の文（ui/evac-result）', () => {
+     expect(evacHeadLineJa(E0, false)).toBe('残存 8／18（史実 5） ・ 未達（操作中の隊が隠れずに終わった）');
+     expect(evacPlacesLineJa(E0)).toBe('壕 6 ・ 陰 2 ・ 外 0 ／ 沈没 10 ・ 隊ごと 3・2・0・1・2・0');
+     expect(evacFlightsLineJa(E0)).toBe('見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 1 機');
++    // 240 秒の後の追撃の機も兵装の行と同じに数え、内訳を出す（v0.6.11 S8）
++    expect(evacFlightsLineJa({ ...E0, chaseDowned: 1 })).toBe('見失わせた 3／狙われた 9 回（戻ってきた 2 回を含む） ・ 撃墜 2 機（うち追撃 1）');
+     expect(evacRecordLineJa(E0)).toBe('爆撃 6 回 ・ 爆弾 40 発 ・ 艇に命中 12 ・ 切替 7 回 ・ 隊長艇の交代 2');
+     expect(evacScorePartJa(E0, 300, 210, 30)).toBe('達成 300 ・ 残った艇 210（7 隻 × 30）');
+     expect(evacScorePartJa({ ...E0, seatAfloat: false }, 0, 240, 30)).toBe('達成 0 ・ 残った艇 240（8 隻 × 30）');
+@@ -148,7 +150,8 @@ describe('Result の文（ui/evac-result）', () => {
+     const out = { ...E0, settlePlace: EVR_OUTSIDE, settleGroupJa: '第3隊', settleShelterJa: '' };
+     const o = dawn({ caughtOutside: true, strike });
+     expect(evacTimeLinesJa(out, o, 'returned', true)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた', '追撃: 1 波 ・ 爆弾 8 発 ・ 命中 0 ・ 転舵 0.6/— 秒']);
+-    expect(evacTimeLinesJa(out, o, 'air_strike', false)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 隠れる前に沈没', '追撃: 1 波 ・ 爆弾 8 発 ・ 命中 0 ・ 転舵 0.6/— 秒']);
++    // 外の座席が追撃で沈むと残存は確定の後に 1 減る（頭の行は 7）。減った数を時の行に書く（v0.6.11 S8）
++    expect(evacTimeLinesJa({ ...out, survivors: 7 }, o, 'air_strike', false)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 隠れる前に沈没（隊長艇の分 −1 で 7）', '追撃: 1 波 ・ 爆弾 8 発 ・ 命中 0 ・ 転舵 0.6/— 秒']);
+     expect(evacTimeLinesJa(out, dawn({ caughtOutside: true }), 'adrift', false)).toEqual(['空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 隠れる前に燃料切れで漂流', '']);
+     // 味方の空（来ない任務の形）・中だった夜は追撃の行を出さない
+     expect(evacStrikeLineJa(out, dawn({ caughtOutside: true, air: DAWN_AIR_OWN, strike }))).toBe('');
+@@ -158,7 +161,7 @@ describe('Result の文（ui/evac-result）', () => {
+     expect(evacTimeLineJa({ ...none, survivors: 3 }, createDawnResult(), 'air_strike', false)).toBe('空襲が去る時: 操作中の隊長艇が沈む途中');
+   });
+   it('幅（Result の行は 1,232 px の内。縮めない）: 数のいちばん長い形', () => {
+-    const big: EvacResult = { ...E0, survivors: 18, cave: 18, cover: 18, outside: 18, byGroup: [3, 3, 3, 3, 3, 3], aimed: 99, again: 99, lost: 99, came: 99, downed: 36, bombs: 999, boatHits: 99, switches: 999, promotions: 18, settleShelterJa: '屋我地の陰（東）', settleSurvivors: 18 };
++    const big: EvacResult = { ...E0, survivors: 18, cave: 18, cover: 18, outside: 18, byGroup: [3, 3, 3, 3, 3, 3], aimed: 99, again: 99, lost: 99, came: 99, downed: 36, chaseDowned: 4, bombs: 999, boatHits: 99, switches: 999, promotions: 18, settleShelterJa: '屋我地の陰（東）', settleSurvivors: 18 };
+     const lines: [string, number][] = [
+       [evacHeadLineJa(big, false), 24],
+       [evacHeadLineJa({ ...big, survivors: 5 }, false), 24],
+@@ -166,9 +169,9 @@ describe('Result の文（ui/evac-result）', () => {
+       [evacFlightsLineJa(big), 20],
+       [evacRecordLineJa(big), 20],
+       [evacTimeLineJa({ ...big, settlePlace: EVR_ENTERING }, dawn(), 'returned', true), 20],
+-      [evacTimeLineJa({ ...big, settlePlace: EVR_OUTSIDE }, dawn({ caughtOutside: true }), 'adrift', false), 20],
++      [evacTimeLineJa({ ...big, settlePlace: EVR_OUTSIDE, survivors: 17 }, dawn({ caughtOutside: true }), 'adrift', false), 20],
+       [evacStrikeLineJa({ ...big, settlePlace: EVR_OUTSIDE }, dawn({ caughtOutside: true, strike: { ...strike, waves: 99, bombs: 999, hitsPlayer: 99, dodgeS: new Array(12).fill(12.3) } })), 20],
+-      [`帰投 630（空襲後 ×0.9） ・ ${evacScorePartJa(big, 300, 510, 30)} ・ 燃料 100 ・ 乗員 100`, 20],
++      [`退避 630（空襲後 ×0.9） ・ ${evacScorePartJa(big, 300, 510, 30)} ・ 燃料 100 ・ 乗員 100`, 20],
+     ];
+     for (const [t, px] of lines) expect(textWidthPx(t, px), t).toBeLessThanOrEqual(RESULT_MAX_W);
+   });
+diff --git a/tests/evac-squadron.test.ts b/tests/evac-squadron.test.ts
+index 7cf6fee..65aee3d 100644
+--- a/tests/evac-squadron.test.ts
++++ b/tests/evac-squadron.test.ts
+@@ -151,7 +151,7 @@ describe('僚艇が着いて隠れる・レールで上げる（spec §3.6）',
+     const r = makeRig();
+     const g = r.sq.groups[0]!;
+     const home = P.shelters[HOME]!;
+-    // 北から南へ隊長艇の壕へ向かい（僚艇は航跡の縦列）、輪の手前でスティックを離して輪の中で止まる
++    // 北から南へ中の壕へ向かい（僚艇は航跡の縦列）、輪の手前でスティックを離して輪の中で止まる
+     placeLeader(r, home.x, home.y - 600, 0, 180);
+     let enteredAt = NaN;
+     for (let i = 0; i < 40 / DT && g.phase !== G_HAULING; i++) {
+diff --git a/tests/evac-switch-ui.test.ts b/tests/evac-switch-ui.test.ts
+index 301e01a..3bf7d20 100644
+--- a/tests/evac-switch-ui.test.ts
++++ b/tests/evac-switch-ui.test.ts
+@@ -1,5 +1,5 @@
+ // v0.6.11 S5（spec-v0611-r2 §9・§10.4・r2 L6・L8・L13）: ［切替］のボタンとキー・端の印・左上の乗員の「-N」・帰投の輪（ソースの pin と config/hud-layout-config の値）。
+-// ［切替］は右端の縦一列の識別の段（y 404）に jp_03 だけ（SKILL_ORDER は変えない＝ほかの任務の置き方は 1 px も変わらない）、字は並びの次の隊「切替 4」、移る先が無い・決着の後は灰色の「切替」。
++// ［切替］は右端の縦一列の識別の段（y 404）に jp_03 だけ（SKILL_ORDER は変えない＝ほかの任務の置き方は 1 px も変わらない）、字は並びの次の隊「切替」「第4隊」の 2 行（v0.6.11 S8。S5〜S7 は「切替 4」）、移る先が無い・決着の後は灰色の「切替」。
+ // ボタンの押下とキー（Tab）は InputState.switchTap を立てるだけ（世界が消費する。世界と模擬の突き合わせの world-vs-sim はこのボタンを押して入れる）。
+ import { readFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+@@ -49,19 +49,21 @@ describe('置き方（config/hud-layout-config）', () => {
+ });
+ 
+ describe('ボタン・キー・HUD の配線（ソース）', () => {
+-  it('ui/weapon-panel: 識別の段の種類 switch だけ［切替］を作り、押下で switchTap。字は移る先が変わったときだけ「切替 N」／灰色の「切替」。一時停止の取り消しと破棄にも入る', () => {
++  it('ui/weapon-panel: 識別の段の種類 switch だけ［切替］を作り、押下で switchTap。字は移る先が変わったときだけ「切替」「第N隊」／灰色の「切替」。一時停止の取り消しと破棄にも入る', () => {
+     const p = src('src/ui/weapon-panel.ts');
+     expect(p).toContain("else if (s.kind === 'switch') this.switchButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.switchTap = true) }");
+     expect(p).toContain('if (this.switchButton && t.evac.nextSwitch !== this.lastSwitch) {');
+-    expect(p).toContain("this.switchButton.setLabel(t.evac.nextSwitch >= 0 ? `切替 ${t.evac.nextSwitch + 1}` : '切替');");
++    expect(p).toContain("this.switchButton.setLabel(t.evac.nextSwitch >= 0 ? `切替\\n${t.evac.groupLabels[t.evac.nextSwitch]}` : '切替');");
+     expect(p).toContain('this.switchButton.setEnabled(t.evac.nextSwitch >= 0);');
+     expect(p).toContain('this.identifyButton, this.switchButton];');
+     expect(p).toContain('this.switchButton?.destroy();');
+   });
+-  it('systems/keyboard-input: Tab で switchTap（押した瞬間だけ）', () => {
++  it('systems/keyboard-input: Tab で switchTap（押した瞬間だけ）。Tab は空襲下の退避の任務だけ登録する（v0.6.11 S8: ほかの任務はブラウザの Tab を捕まえない）', () => {
+     const k = src('src/systems/keyboard-input.ts');
+-    expect(k).toContain('tab: Phaser.Input.Keyboard.KeyCodes.TAB,');
+-    expect(k).toContain('if (Phaser.Input.Keyboard.JustDown(k.tab)) this.input.switchTap = true;');
++    expect(k).not.toContain('tab: Phaser.Input.Keyboard.KeyCodes.TAB,');
++    expect(k).toContain('this.tab = kb && withSwitch ? kb.addKey(Phaser.Input.Keyboard.KeyCodes.TAB) : null;');
++    expect(k).toContain('if (this.tab && Phaser.Input.Keyboard.JustDown(this.tab)) this.input.switchTap = true;');
++    expect(src('src/scenes/hud-scene.ts')).toContain('this.keyboard = new KeyboardInput(this, input, this.telemetry.evac.enabled);');
+   });
+   it('ui/hud-markers: evac の任務は帰投の印を作らず端の矢印（ui/evac-markers）。scenes/mission-scene: 帰投地点の輪と「帰投地点」の字も作らない（隠れ場所の輪が代わり。r2 L8）', () => {
+     const h = src('src/ui/hud-markers.ts');
+@@ -74,7 +76,10 @@ describe('ボタン・キー・HUD の配線（ソース）', () => {
+     // 端の矢印はカメラの本当の中心から（jp_03 の小さな海は見張りのズームでカメラが縁に止まる。ヘッドレスの画面写しで見つけた）
+     expect(f).toContain('evac.camX = cam.midPoint.x;');
+     expect(src('src/systems/evac-telemetry.ts')).toContain('t.camDx = ev.camX - seat.x;');
+-    expect(src('src/ui/evac-markers.ts')).toContain('m.refresh(dx - ox, dy - oy, true, t, Math.sqrt(dx * dx + dy * dy));');
++    // 距離は座席から（原点のずれ ox・oy を渡し、EdgeMarker が画面の外に出す時だけ平方根。v0.6.11 S8）
++    expect(src('src/ui/evac-markers.ts')).toContain('m.refresh(dx - ox, dy - oy, true, t, undefined, true, ox, oy);');
++    expect(src('src/ui/evac-markers.ts')).not.toMatch(/Math\.(sqrt|hypot)/);
++    expect(src('src/ui/edge-marker.ts')).toContain('const dist = distM ?? Math.hypot(dx + distOx, dy + distOy);');
+   });
+   it('ui/hp-bar: 座席へ入れたフレーム（切替・交代・自動の切替）は乗員の前回値を今の値に合わせ「-N」を出さない（r2 L6）。減りの判定より先', () => {
+     const h = src('src/ui/hp-bar.ts');
+diff --git a/tests/landing-neutral.test.ts b/tests/landing-neutral.test.ts
+index 9d9e4ce..d592147 100644
+--- a/tests/landing-neutral.test.ts
++++ b/tests/landing-neutral.test.ts
+@@ -1,7 +1,7 @@
+ // 揚陸の仕組み（v0.6.9。jp_04）は他の任務で鍵ごと出ない（spec-v069 §9 の landing-neutral。engine・gunboat・patrolAir の optional part の作法）。
+ // S1: WorldSetup（ノーマル・ハード・史実モード・今夜の揺らぎ）に "landing" が無い。S5b: テレメトリの landing は鍵がいつもあり enabled false（世界の揚陸は null＝buildLanding の
+ // 最初の枝。tests/landing-step-order）、既存のテレメトリの組（tests/pt-ui-kit・dawn-lines・dawn-clock）の 2 行目のモードは 35・36・37 にならない。2 行目の鍵（landingKey が 0）は S6a で足す。
+-// v0.6.10 S1: 味方の駆逐艦 卯月（WorldSetup.allyDestroyer・v0_1_prototype.ally_destroyer）も jp_04 だけ（他の 7 任務の setup の JSON に "allyDestroyer" が無い）。
++// v0.6.10 S1: 味方の駆逐艦 卯月（WorldSetup.allyDestroyer・v0_1_prototype.ally_destroyer）も jp_04 だけ（他の 7 任務の setup の JSON に "allyDestroyer" が無い。v0.6.11 S0 から jp_03 を足して 8 任務）。
+ // R14（S6a-fix）: 輪の中の待ち（A5）・輸送船が射線に入る（A1）も揚陸の任務だけ。終わり方（systems/mission-end の landingHold）は landing の無い世界で偽＝decideMissionEnd のまま。
+ import { readFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+@@ -19,7 +19,7 @@ import { tele } from './pt-ui-kit';
+ type Rec = Record<string, unknown>;
+ const OTHERS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）
+ 
+-describe('landing-neutral（他の 7 任務）', () => {
++describe('landing-neutral（他の 8 任務）', () => {
+   it('v0_1_prototype を持つのは 8 任務（v0.6.11 S0 の jp_03 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
+     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
+     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
+@@ -55,7 +55,7 @@ describe('landing-neutral（他の 7 任務）', () => {
+ /** コメントを除いたソース */
+ const code = (p: string): string => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+ 
+-describe('landing-neutral のテレメトリ（S5b。他の 7 任務）', () => {
++describe('landing-neutral のテレメトリ（S5b。他の 8 任務）', () => {
+   it('配線: 揚陸の世界は setup.landing の無い任務で null（buildLanding の最初の枝）、出発時のテレメトリはいつも landing の鍵を持ち、毎フレームの書き換えは null の世界で何もしない', () => {
+     expect(code('systems/world-landing.ts')).toContain('if (!s.landing || !pts) return null;');
+     expect(code('systems/telemetry-create.ts')).toContain('landing: initLandingTelemetry(w),');
