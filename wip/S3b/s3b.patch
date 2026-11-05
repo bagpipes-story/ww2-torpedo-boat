@@ -1,5 +1,43 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 936791c..a0c3d82 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -45,13 +45,31 @@
+     - 1 ステップの計算（`PERF=1`。node の `performance.now`・ヘッドレスのブラウザと描画に依らない。ハードの stay＝全部の隊が外で第 4 波に 3 編隊・12 機、t 190〜225 秒の 36,390 ステップ × 20 回）: 模擬の 1 ステップの全部（台本・18 隻・編隊 ≤ 3・着弾の走査・対空の枠・§2）が平均 3.2〜3.6 μs・p50 2.9〜3.1・p95 5.4〜5.6・p99 8.4〜9.7 μs（最大 0.9〜1.1 ms は GC と JIT）＝1 フレーム 16.7 ms の 0.03%（固定ステップは 1 フレームに最大 4）。ハードの seq は p95 4.1 μs。世界の描画（機 ≤ 12・爆弾・18 隻の Image）の分は S7 のヘッドレス（`evac-perf.mjs`）と iPhone の FPS で測る。
+     - テスト: 新しい `tests/evac-sim-a`（同じ seed で同じ 1 回と同じ表・seed が違えば変わる・+29（予告ごとに陰 2 回）・+30（6 隊 × (1 ＋ 2 × 47)・遊び方によらない）・+31（投下ごとに 1 回）・編隊の系列（2 × 投下 ＋ 命中の分）がノーマル・ハードで期待どおり・起動時の編隊 8／12・同時に動く ≤ 2／3（ハードの stay は第 4 波で 3）・どの遊び方も終わる・決着の前に帰投で終わらない・達成の定義・stay と own_only は切り替えない・漂流の待ちが `MISSION_END_DELAY_MS` と同じ・つまみが起動時の検査を通る）。
+     - 門: npm test 237 ファイル・2,372 件・typecheck・lint・build が緑、凍結 20 本同じ、setup の snapshot は `-u` なし（setup-jp03 も変わらない）、`scripts/headless/g2.sh`（G6=1 ALLY=1）OK 35 DIFF 0。
++  - S3b（ユーザーの U7「編隊が戻ってくる」と模擬の点 G1。**data と setup を変えた**（jp_03 だけ。tests/setup-jp03 の snapshot は `-u`、ほかの任務の snapshot は `-u` なし）。ゲームの世界はまだ隊も編隊も使わない（S4）。spec-v0611-r2 §3.7 の前の「S3b の追記」）:
++    - S3 で揃わなかった理由（構造）: 1 編隊は 1 つの隊を 1 回だけ襲って去る。人が 50% だけ転舵する操作していない隊は 1 編隊に 1 隻ほどしか沈まず、編隊は現れる点（東）に近い隊を狙い続けるので、隠さずに狙われた隊へ切り替えて走って避けるだけ（dodge_only）がどのつまみでも 73〜87% 勝ち、隠す遊び方より有利になる（「dodge_only ≤ seq − 15 点」と「seq ≤ 70%」が同時に立たない）。
++    - ユーザーへの問い（2026-11-04。原文）:「jp_03（運天港の空襲）ノーマルの難しさについて。今の作りは、1 つの編隊が 1 つの隊を 1 回だけ爆撃して去ります。このため模擬では、数値をどう調整しても「隠さずに、狙われた隊へ切り替えて避けるだけ」が約 8 割勝ち、隠す遊び方より有利になります。「急いで退避しつつ他の隊の面倒も見る」を成り立たせるため、爆弾を落とし終えた編隊が、次の波の前に間に合えば赤い輪の予告つきでもう一度爆撃に来る形にしてよいですか？（機数・編隊数 2×2・3×2・3×2・4×2 は変えません）」→ 答え「編隊が戻ってくる（推奨）」（選択肢 A。その説明に点 G1 のつまみ＝陰（西）を外す・上げ 6 → 12 秒・陰の発見 0.25 → 0.5・操作していない隊の回避 0.5 → 0.2・最初の投下を約 2.5 秒早く（first_run_s 9 → 6.5・run_gap_s 2.2 → 1.7））。
++    - 新しい `core/evac-repass`（もう一度来る編隊）: 済み（`airSortieComplete`）になったステップに、飛んだ回数が `evac_raid.passes_max`（2）未満で、新しい回の全部（予告の先 `announce_lead_s` ＋ 1 回の長さの見積もり `evacPassS`＝V-E6 の長さ ＋ 濃さ 0.5 秒）が次の波の始まり（次の波の `announce_s` ＋ `announce_lead_s`。最後の波は `duration_s` 240）までに収まれば、同じ枠の決めで予告し直す（枠 0＝操作中の隊が隠れていなければ・ほかの枠は `pickTarget`＝走っている隊を先・枠の現れる点に近い順・この波でいま狙っている編隊で 1 隊 1 編隊・枠 ≥ 1 は操作中の隊を狙わない。`EF_ANNOUNCED` なので赤い輪・「狙われている」・模擬の方針は最初の予告と同じに読む）。始めるのは今までの `evacPlanClock` → `evacTryStart`（始める前に隠れれば見失う・決着の後は来ない）。陰の発見（seed+29）は予告し直しで引かない（波ごとのまま）、散布の系列（+32+波×3+枠）はそのまま続く。撃墜した機は戻らない（`evacDownPlane`＝`downStrikePlane` ＋ 撃墜のビット。凍結の `spawnWave` が全機を戻すので、始めたステップに落とし直して `skipDownedRuns`）。全機を落とした編隊・決着の後・収まらない・狙いの無い済みは来ない。予告し直しは `plan.evWave` を立てない（HUD は `air.repass.ev`＝編隊ごとのビット。S5）。世界・模擬の配線: `core/evac-plan`（`EvacFlight` に `startS`・`passes`・`downed`。`evacPlanClock` は `fl.startS`。`candidate`・`pickTarget` を export）・`core/evac-air`（段に `repass`。始めたステップに `evacRepassStarted`、済みになったステップに `evacRepassOnComplete`）・`core/evac-sim-aa`（撃墜は `evacDownPlane`）・`core/evac-data`・`evac-params`（`passes_max` は要る鍵・`passesMax`）・`config/evac-mission-data`（V-E13: `evac_raid.passes_max`・`hard.evac_passes_max` は 1〜3 の整数）・`systems/evac-sim-setup` と `scripts/evac-sim.ts`（`PASSES`・`PASSESH`。2 以上の時だけ表に「回数/編隊・2回%・波ごとの2回%」の列）・`core/evac-sim-cell`（監視の列）。
++    - レビューの指摘と扱い（遊びは測った時のまま）: (a) 最後の爆撃進路を始めた後に狙った隊が隠れた（`EO_LOST`）・全滅した（`EO_GONE`）回も済みになればもう一度来る＝**意図どおり**（自分の隊を隠すと、その編隊はほかの隠れていない隊へ向かう＝U5・U7。最後の進路の前に隠れた回は凍結の core が中断して済みにならない＝来ない）。module の頭・`passes_max_source`・`core/evac-plan` の `EO_*` の注（「最初に決まった 1 つ」→ 回ごと。予告し直すと未定に戻る）を直した。編隊に残るのは最後の回の終わり方だけなので、予告し直す前に閉じる回の終わり方を `EvacRepass.closed`（`EO_*` ごとの回数）に数え、`finishEvacTrial` が足す（telemetry だけ。表の「見失(前)」の列が 1 回ごとになり、予告した ＝ 目標なし ＋ 見失い（前・途中）＋ 全滅 ＋ 決着 ＋ 済み が決着まで来た回で足し合う。G1 の seq で 1.65 → 2.47。ほかの列は同じ＝遊びは同じ）。tests に「最後の進路を始めた後に隠す → 収まればほかの隠れていない隊へ予告し直し、closed の `EO_LOST` が 1 増える」。(b) 起動時の検査 **V-E14**: 見積もりが実際の 1 回より短くない＝凍結の core では最後の投下 A（始まりから `firstRunS` ＋ (機数 × 発 − 1) × `runGapS` ＋ `runS`）の後、爆弾は落下 `fallFeelS` で着き、機は離脱 `runS` ＋ `leaveS` で済む＝実際の済み A ＋ max(`fallFeelS`, `runS` ＋ `leaveS`)、見積もり A ＋ `fallFeelS` ＋ `leaveS` ＋ 0.5 がそれ以上なのは `fallFeelS` ＋ `AIR_STRIKE_FADE_S` ≥ `runS` の時（既定 1.277 ＋ 0.5 ≥ 1.620＝余り 0.157 秒。文は enemies.json の strike.release_altitude_m と risk_events.json の unten_air_raid.params.sortie.run_radius_m ÷ strike.run_speed_kt を名指す。値は変えない）。(c) 第 k 波の 2 回目は次の波の予告の後も ≈ 8 秒飛んでいることがある＝1 つの隊が爆撃中の編隊と新しく予告された編隊を同時に持ちうる（1 隊 1 編隊は波の中だけで数える）。動く編隊は ≤ 2／3・機は ≤ 8／12 のまま（2 回目は次の波が始まる前に済む。tests/evac-sim-a に機の数を足した）。module の頭と下の既知の制約に書いた。(d) tests/evac-repass・evac-repass-sim の重い it に 60_000 の時間切れ（ほかの模擬の tests と同じ）。
++    - data（点 G1。source にそれぞれ「design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1 …: 前の値 → 今の値。理由)」）: `evac_raid.passes_max` 1 → 2・`evac.ai.dodge.success` 0.5 → 0.2・risk_events.json の `unten_air_raid.params.sortie` `first_run_s` 9 → 6.5・`run_gap_s` 2.2 → 1.7（予告から最初の投下まで約 20.6 → 18.1 秒・4 機の編隊が予告から去るまで 39.8 → 33.8 秒・第 4 波は約 214 秒で去り終わる）・`evac.haul_s` 6 → 12（3 隻で 36 秒）・`evac_raid.cover_reveal_chance` 0.25 → 0.5・隠れ場所 `west_cover`「屋我地の陰（西）」（1,050, 100・枠 3。史実の裏付け無し）を外した（壕 3 × 3 ＋ 陰 1 × 3 ＝ 枠 12 < 18。V-E1〜V-E4 は通る）・`hard.evac_cover_reveal_chance` 0.35 → 0.5（下）。動かしていない: `pick_s` 5・`full_p` 0.5・`announce_lead_s` 10・`flights_per_group_max` 1・`follow.gap_m`・U5 の機数と編隊数・ノルマ 6・`us_carrier_aircraft`・凍結 20 本・帯。
++    - 点を選んだ測り（N 400 × 2 組＝seed 1〜400・1001〜1400、つまみは env。表は notes の s3b/tables）: **G1**（上の 7 つ）がノーマル 19・ハード 5 の帯をすべて ✓。G2（陰（東）を外す）も全部 ✓ だが seq 67.6%（上限 70 へ 2.4 点）・ハードの seq 44.3%（上限 45 へ 0.7 点）で余裕が薄い（G1 は 5.7・3.0 点）。外れた近い点: 回避 0（F1 陰（東）・F2 陰（西）・F4 上げ 15 秒で外さない）は own_only の残存の中央値 2（帯 3〜6）、F3（回避 0・東の壕を外す）は ＋ seq_shoot 70.3%、G4（回避 0.3）は own_only 26.8%（≤ 25）、H1（陰の発見 0.25 のまま・上げ 15 秒）は bot の残存の中央値 9（≥ 10）、H2（何も外さず上げ 18 秒）は seq_shoot 61.6%（上限 61.1）・bot 89.8%。どの点もハードは全部 ✓。同じ短い時間で `passes_max` 1（N 100・回避 0・陰（東）を外した点）なら seq 91%・dodge_only 84%・own_only 74%・stay 27%＝外の隊の帯を動かすのは 2 回目。`passes_max` 3 は測ったどの点（N 100 の 9 組・G1 の N 400 × 2 のノーマルとハード・ハードの陰の発見 0.5 の最後の表）でも表の本体が 2 とバイト同一（2 回と予告の先で波の間 55 秒を使い切り 3 回目は収まらない。第 4 波は `duration_s` に近く 2 回目も来ない）。2 回目が来る編隊は seq で第 1 波 ≈ 89%・第 2 波 ≈ 62%・第 3 波 ≈ 32%・第 4 波 0%（回数/編隊 1.53〜1.54）。陰を見つける閃光（`flash_reveal` true）は G1 で seq_shoot だけを 68.8 → 56.6% に下げ、ほかの行は同じ（帯は全部 ✓。true にするのはユーザーが決めた時だけ＝変えていない）。
++    - ハードの陰の発見: ノーマルを 0.5 に上げたので 0.35 のままではハードの方が見つかりにくい。0.5 を N 400 × 2 組で測り spec §12.4 のハードの帯 5 つがすべて ✓（seq 34.8%・seq_slow 17.3%・stay 0.0%・bot 89.1%。0.35 では seq 42.0%・seq_slow 21.3%・bot 91.0%）なので **0.5 にした**（ノーマルと同じ。ハードの難しさは同時 3 編隊）。
++    - 最後の表（data の既定。`TABLE=2`・N 400 × 2 組・md5 は標準出力の全部）: ノーマル `0660589ae38abc0c7ca53f4e3a890a60`・ハード `e6409b7a3ed6b3833158275943ecc7bf`。ノーマル（800 回）: seq 64.3%（64.0／64.5。残存の中央値 6（4〜9））・seq_slow 49.4%・seq_cover 71.6%・follow_ring 64.9%・seq_shoot 68.8%（撃墜 0.9/回）・own_only 15.0%（中央値 3）・dodge_only 22.8%（中央値 4）・fight 1.4%・stay 0.1%（中央値 0）・bot 91.6%（中央値 10・18 隻残る 0.0%）、来た 1 編隊（1 回）あたりに沈む隻数 seq 1.16・stay 1.47、引く回数の ✗ 0。**帯 19 がすべて ✓**（［余裕］: seq 50〜70 ［5.7］・seq の中央値 6〜9 ［0＝縁］・seq の漂流 ≤ 2% ［2］・seq_slow 30〜60 かつ ≤ seq ［10.6］・その中央値 5〜8 ［1］・その漂流 ［2］・seq_cover seq ± 15 ［7.7］・follow_ring seq − 10〜＋ 20 ［10.6］・その漂流 ［2］・seq_shoot seq − 25〜＋ 5 ＝ 69.3 ［0.5］・own_only ≤ 25 ［10.0］・その中央値 3〜6 ［0＝縁］・dodge_only ≤ seq − 15 ＝ 49.3 ［26.5］・fight ≤ 15 ［13.6］・stay ≤ 10 ［9.9］・その中央値 ≤ 4 ［4］・bot ≥ 90 ［1.6］・その中央値 ≥ 10 ［0＝縁］・18 隻 ≤ 10% ［10］）。ハード（800 回）: seq 34.8%（35.3／34.3。中央値 5）・seq_slow 17.3%・seq_cover 40.5%・follow_ring 32.4%・seq_shoot 38.0%・own_only 0.1%・dodge_only 0.0%・fight 0.0%・stay 0.0%・bot 89.1%（中央値 9）。**帯 5 がすべて ✓**（seq 20〜45 ［10.2］・seq ≤ ノーマルの seq − 15 ＝ 49.3 ［14.5］・seq_slow ≤ seq ［17.5］・stay ≤ 3 ［3］・bot ≥ 60 ［29.1］）。この表の本体は env の点 G1（`DROP=west_cover` ほか）の表と「見失(前)」の列のほかバイト同一（data に入れても遊びは測った点のまま）。
++    - 新しい seed の確かめ（点 G1・seed 2001〜2400・3001〜3400）: ノーマル 18／19 ✓ — ✗ は seq_shoot 69.9% ＞ 上限 seq 64.1 ＋ 5 ＝ 69.1（対空で撃つと seq より ≈ 5〜6 点高い＝帯の縁。seed 1〜1400 では 68.8 ≤ 69.3）。ハード 5／5 ✓（陰の発見 0.35 で seq 42.5%、0.5 で seq 33.9%・seq_slow 14.4%・stay 0.0%・bot 89.6%（ノーマルの seq は同じ seed で 64.1%））。
++    - `passes_max` 1 は S3 の挙動のまま: 333c8ec（S3）の木の core に S3b の data（missions_seed・risk_events。evac_raid の `passes_max`・`passes_max_source` を除く）を入れた `TABLE=2` の表と、この木の `PASSES=1` の表の本体（1 行目の条件の行を除く）がノーマル・ハードともバイト同一。tests の 6 回の指紋（終わり・残存・秒・引く回数・来た・済み・命中・撃墜・発・切替）も同じ。
++    - テスト: 新しい `tests/evac-repass`（段取りの rig: 見積もりは実際の 1 回より長い・済みのステップにだけ予告し直し・始めるのは予告の 10 秒後・新しい回は波の終わりまでに済む・閉じた回の終わり方（closed）の合計が予告し直しの数で、済み・途中で見失った・全滅だけ・狙いは最初の予告と同じ枠の決め（書き直しと比べる）・最後の進路の後に隠しても来る・始める前に隠れたら見失う・決着の後は来ない・撃墜した機は戻らない・全機を落とした編隊は来ない）と `tests/evac-repass-sim`（`passes_max` 1 の指紋・予告し直さない・+29 は波ごとのまま・+30 は時計だけ・+31 と編隊の系列は投下の数・終わり方が 1 回ごとに足し合う・`PASSESH`・確保は作る時だけ）、V-E13・V-E14 の tests。data に合わせた tests: `evac-mission-data`（隠れ場所 4・陰の発見 0.5／0.5・回数 2・1 編隊の長さ 18.1／33.8 秒・V-E1／V-E3／V-E4 の陰（東）・V-E6 の 38.80 秒・213.80 秒）・`evac-squadron`（陰は屋我地の陰（東）・上げ 36 秒・陰の発見は予告ごとに 1 回）・`evac-follow`（回避の u は `dodge.success` − 0.01）・`evac-plan`（S2 の段取りの file なので rig を `passes_max` 1 に・+29 は陰の数）・`evac-sim-a`（+29 は陰 1・つまみ・同時に動く編隊 ≤ 2／3 と機 ≤ 8／12）・`setup-jp03`（ハードは同時の編隊だけが違う。snapshot を `-u`: `passesMax` 2・`haulS` 12・`dodgeSuccess` 0.2・陰（西）の 7 行・`coverRevealChance` 0.5・`firstRunS` 6.5・`runGapS` 1.7 の 8 ケース）。壊し方 2 つ（closed を足さない・済みでない回を来させない）で tests が拾うことを確かめた。
++    - 門: npm test 239 ファイル・2,386 件・typecheck・lint・build が緑、凍結 20 本同じ、setup の snapshot は tests/setup-jp03 だけ `-u`（S3b の data と鍵）、`scripts/headless/g2.sh`（G6=1 ALLY=1）OK 35 DIFF 0（ほかの任務は変わらない）。300 行の内（触った src の最大は `core/evac-plan` 291）。
+ - 既知の制約:
+   - jp_03 はまだ出撃できない（Title に出ない。S6）。`?debug&mission=jp_03` は今の世界（隊も空襲の波も無い）で開く（S4 まで）。
+   - 停泊の縦列の間隔 `moored_gap_m` 12 m は隣の艇との中心の間隔（spec-v0611-r2 §3.1 の値のまま）。T-38 の長さ 18 m より短いので、停泊の 3 隻の船体（当たり）と絵（sprite_scale 2 で 36 m）が重なる（r1 の「横並び」を r2 で「艇尾方向の縦列」にした時に値が残った）。S1（隊）・S4（絵）で見直す候補（V-E7 は爆風 25 m 未満だけを見る）。S1 では変えていない（損害の表の停泊の行は 12 m。同じ台で間隔だけ替えると、1 編隊が停泊の隊から沈める隻数（2・3・4 機、去る／追う）は 12 m 1.79〜2.25／2.10〜2.90、18 m 1.58〜2.02／1.93〜2.81、24 m 1.33〜1.73／1.74〜2.74＝船体が重ならない 18 m でも 0.2 隻ほど減るだけ）。絵の重なりと合わせて S4（絵）・S3／S7（つまみ）で見る。
+   - 僚艇は航跡をたどるので、止まってその場で反転してから戻ると隊長艇が縦列の中を通る（当たり判定は艇どうしに無い）。走りながらの 180° 反転は最小 30 m 前後で崩れない（tests）。
+   - 凍結の空襲の core の `hitsPlayer`（中心の真上に落ちた数）は、落下中に中心の隊が隠れても数える（当たり・被害は evac の走査だけが決める）。Result・模擬の表の命中は走査の数（`plan.boatHits`）を使う（S3・S6）。
+-
+-  - 模擬（S3）の帯はノーマルで揃っていない（上の S3。data は既定のまま。ユーザーの答えの後に S3 の続き（つまみ）か S7 で入れる）。模擬は世界より先に作った（S4 の世界は `core/evac-sim` の順・対空の枠・ラッチの「中」に合わせ、`world-vs-sim` で差 0 を確かめる）。
++  - 模擬（S3）の帯がノーマルで揃わなかったのは、S3b で U7（もう一度来る編隊）と点 G1 の data で揃えた（上の S3b。S3 の表は記録として残す）。模擬は世界より先に作った（S4 の世界は `core/evac-sim` の順・対空の枠・ラッチの「中」に合わせ、`world-vs-sim` で差 0 を確かめる）。
++  - 点 G1 の余裕は薄い: seq_shoot は seed 1〜1400 で 68.8%（上限 seq ＋ 5 ＝ 69.3 へ 0.5 点）、新しい seed 2001〜3400 では 69.9%（上限 69.1 を 0.8 点越える＝✗ 1）。対空で撃つと seq より ≈ 5〜6 点高くなり、帯の縁にいる。own_only の残存の中央値 3（帯 3〜6）・bot の残存の中央値 10（≥ 10）は縁ちょうど、bot の達成 91.6%（≥ 90）。S4 の世界・S7 の模擬・実機の感想で data か AI が少し動けばどれかが外れうる（直す候補: 対空の当たり・閃光で陰が見つかる `flash_reveal`（G1 で seq_shoot 56.6%。ユーザーが決める時だけ））。帯は動かしていない。
++  - 隠れ場所の陰（西）「屋我地の陰（西）」（史実の裏付け無し）を data から外した（隠れ場所 4＝壕 3・陰 1、枠 12 < 18）。S4 の絵・S6 の Briefing は 4 か所で作る。陰は 1 か所なので予告ごとの陰の発見（seed+29）は 1 回。
++  - もう一度来る編隊の重なり: 第 k 波の 2 回目は次の波の始まりまでに済むが、次の波の予告の後も ≈ 8 秒飛んでいることがある。その間は 1 つの隊が爆撃中の編隊と新しく予告された編隊（赤い輪）を同時に持ちうる（1 隊 1 編隊は波の中だけで数える）。動く編隊は ≤ 2／3・機は ≤ 8／12 のまま。最後の進路を始めた後に隠した隊の編隊も、済めばほかの隠れていない隊へもう一度来る（意図どおり＝U5・U7）。
++  - ハードの陰の発見は S3b からノーマルと同じ 0.5（0.35 のままではハードの方が見つかりにくい。0.5 でハードの帯 5 つが ✓。ハードの難しさは同時 3 編隊）。
++  - 模擬の表の「来た」「見失(前)」などの終わり方は S3b から 1 回ごと（予告し直した回も数える）。S3 の表の同じ列とは数え方が違う。
++  - S4 への引き継ぎ（spec の「S3b の追記」）: 世界の対空で evac の編隊の機を落とすのは `evacDownPlane`（`systems/aa-slots.ts` の `downStrikePlane` を evac の枝で替える。替えないと 2 回目に落ちた機が生き返る）。HUD の予告し直しの文は `air.repass.ev` を見る（`plan.evWave` は立たない）。world-vs-sim は 2 回目のある夜を必ず含める。
+   - 模擬の人の行は台本（spec §12.2 の幅）。［切替］は欲しい隊に着くまで 0.25 秒ごとに押す・輪の中心 25 m で離す、は人の手の作り（実機の感想で直す候補）。
+ ## v0.6.10 — 2026-11-02（日本ハードモード⑧b：撃ち返す味方の駆逐艦）
+ 
 diff --git a/data/missions_seed.json b/data/missions_seed.json
-index 831a933..1bc8bd2 100644
+index 831a933..06e988b 100644
 --- a/data/missions_seed.json
 +++ b/data/missions_seed.json
 @@ -1135,11 +1135,11 @@
@@ -82,6 +120,17 @@ index 831a933..1bc8bd2 100644
            "survivor_quota": 6,
            "survivors_total": 18,
            "historical_survivors": 5,
+@@ -1260,8 +1253,8 @@
+         },
+         "hard": {
+           "evac_flights": 3,
+-          "evac_cover_reveal_chance": 0.35,
+-          "source": "design (v0.6.11。ユーザーの U5「ハードは×3とする」「ハードの第四波であれば四機編隊が３つ同時に襲ってくる」: 同時に来る編隊の数 2 → 3（3×2・3×3・3×3・4×3。同時の最大 12 機）。陰が見つかる確率 0.25 → 0.35。波の数・機数・隠れ場所はノーマルと同じ。ハードの Briefing の文（objective_ja・success_ja・note_ja）は Briefing の段（S6）で足す)"
++          "evac_cover_reveal_chance": 0.5,
++          "source": "design (v0.6.11。ユーザーの U5「ハードは×3とする」「ハードの第四波であれば四機編隊が３つ同時に襲ってくる」: 同時に来る編隊の数 2 → 3（3×2・3×3・3×3・4×3。同時の最大 12 機）。陰が見つかる確率はノーマルと同じ 0.5（v0.6.11 S3b。S0〜S3 はノーマル 0.25 → ハード 0.35。S3b の点 G1 でノーマルを 0.5 に上げたので、0.35 のままではハードの方が見つかりにくく「ハードは難しい」と食い違う。0.5 を N 400 × 2 組（seed 1〜400・1001〜1400）で測り、spec-v0611-r2 §12.4 のハードの帯 5 つがすべて ✓（seq 34.8%・seq_slow 17.3%・stay 0.0%・bot 89.1%。0.35 では seq 42.0%）なので 0.5 にした）。波の数・機数・隠れ場所はノーマルと同じ。ハードの Briefing の文（objective_ja・success_ja・note_ja）は Briefing の段（S6）で足す)"
+         }
+       }
+     },
 diff --git a/data/risk_events.json b/data/risk_events.json
 index 3f38e2f..b66e689 100644
 --- a/data/risk_events.json
@@ -107,20 +156,21 @@ index 3f38e2f..b66e689 100644
        "note": "design。史実の 1944-10-10 の運天港の損失（第27魚雷艇隊の 18 隻中 13 隻）は米PT の損失 69 隻の内訳（count・share）に入らないので count 0・share 0（total_losses などの合計は変えない）。"
      }
 diff --git a/scripts/evac-sim.ts b/scripts/evac-sim.ts
-index 7c3408d..a995e69 100644
+index 7c3408d..42bbf4b 100644
 --- a/scripts/evac-sim.ts
 +++ b/scripts/evac-sim.ts
-@@ -1,7 +1,8 @@
+@@ -1,7 +1,9 @@
  // 空襲下の退避の模擬の表（v0.6.11 S3。jp_03「運天港・空襲下の退避」。spec-v0611-r2 §12）。中身は src/core/evac-sim*.ts・src/systems/evac-sim-setup.ts・evac-calibration.ts（tests/evac-sim-* と同じ）。
  // TABLE=1（既定）: 遊び方ごとの表（組ごと）。TABLE=2: 帯の ✓/✗（組を合わせた回で。✗ があれば終了コード 1）。PERF=1: ハードの stay で 1 ステップの計算の秒（node・ヘッドレスに依らない）。
  // 環境変数: N（1 組の回。既定 400）・SEED（最初の組の最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400・1001〜1400）・HARD=1・POL（, 区切り。既定は spec §12.3 の 10 行）・
 -//   つまみ（spec §12.5）DODGE・PICK・HAUL・DROP（外す隠れ場所の id を , 区切り）・COVER・COVERH・LEAD・FIRST・GAP・FPG・FOLLOW・FULLP
 +//   つまみ（spec §12.5）DODGE・PICK・HAUL・DROP（外す隠れ場所の id を , 区切り）・COVER・COVERH・LEAD・FIRST・GAP・FPG・FOLLOW・FULLP、
-+//   S3b の案 PASSES・PASSESH（evac_raid.passes_max・hard.evac_passes_max。2 以上の時だけ表に「回数/編隊・2 回 %・波ごとの 2 回 %」の列を足す＝1 なら表は S3 とバイト同一）
++//   S3b（U7）の PASSES・PASSESH（evac_raid.passes_max・hard.evac_passes_max。data 2。2 以上の時だけ表に「回数/編隊・2 回 %・波ごとの 2 回 %」の列を足す＝PASSES=1 なら表の列は S3 と同じ。
++//   「見失(前)」などの終わり方は S3b から 1 回ごと（予告し直して閉じた回も数える＝core/evac-repass の closed）
  // 実行: npx esbuild scripts/evac-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/evac-sim.mjs && TABLE=2 node <scratch>/evac-sim.mjs
  import { gameData } from '../src/config/game-data';
  import { runEvacTrial, type EvacTrial } from '../src/core/evac-sim';
-@@ -20,6 +21,7 @@ const hard = env('HARD') === '1';
+@@ -20,6 +22,7 @@ const hard = env('HARD') === '1';
  const o: EvacSimOverrides = {
    dodgeSuccess: num('DODGE'), pickS: num('PICK'), haulS: num('HAUL'), dropShelters: env('DROP')?.split(','), coverReveal: num('COVER'), coverRevealHard: num('COVERH'),
    announceLeadS: num('LEAD'), firstRunS: num('FIRST'), runGapS: num('GAP'), flightsPerGroupMax: num('FPG'), followGapM: num('FOLLOW'), fullP: num('FULLP'),
@@ -128,11 +178,11 @@ index 7c3408d..a995e69 100644
  };
  const pols = (env('POL')?.split(',').map((x) => x.trim()).filter((x) => x !== '') ?? [...EVAC_POLICIES]) as EvacPolicy[];
  for (const p of pols) if (!(EVAC_POLICIES as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は無い（${EVAC_POLICIES.join(' / ')}）`);
-@@ -56,13 +58,15 @@ if (env('PERF') === '1') {
+@@ -56,13 +59,15 @@ if (env('PERF') === '1') {
  } else {
    const s = evacSimSetup(gameData, hard, o);
    const r = s.raid;
-+  // もう一度来る編隊（S3b）の列は回数が 2 以上の時だけ（1 なら S3 の表と同じ文字）
++  // もう一度来る編隊（S3b）の列は回数が 2 以上の時だけ（1 なら S3 の表と同じ列）
 +  const rep = r.passesMax > 1;
    console.log(`[jp_03 ${hard ? 'ハード' : 'ノーマル'} N ${n} × ${blocks} 組（seed ${Array.from({ length: blocks }, (_, b) => `${seeds(b)}〜${seeds(b) + n - 1}`).join('・')}）${Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => ` ${k} ${String(v)}`).join('')}]`);
 -  console.log(`波: ${r.waves.map((w) => `${w.announceS}s×${w.planes}機`).join('・')}・同時 ${r.flights} 編隊・予告 ${r.announceLeadS} 秒・陰の発見 ${r.coverRevealChance}・1 隊 ${r.flightsPerGroupMax} 編隊・上げ ${s.params.haulS} 秒・隠れ場所 ${s.params.shelters.map((x) => `${x.id}(${x.slots})`).join(' ')}・回避 ${s.params.dodgeSuccess}・pick ${s.params.pickS} 秒・full_p ${s.params.fullP}・追従 ${s.params.followGapM} m`);
@@ -146,7 +196,7 @@ index 7c3408d..a995e69 100644
      for (const pol of pols) {
        const { cell: c, trials } = cellOf(s, pol, seeds(b), n);
        cells.set(pol, [...(cells.get(pol) ?? []), c]);
-@@ -71,7 +75,8 @@ if (env('PERF') === '1') {
+@@ -71,7 +76,8 @@ if (env('PERF') === '1') {
          pol.padEnd(14) + pct(c.achievedPct).padEnd(8) + pct(c.homePct).padEnd(8) + pct(c.sunkPct).padEnd(7) + pct(c.adriftPct).padEnd(6) + pct(c.caughtPct).padEnd(7) +
            `${fx(c.medSurv, 0)}(${fx(c.p10Surv, 0)}-${fx(c.p90Surv, 0)})`.padEnd(12) + fx(c.medSurvSettle, 0).padEnd(5) + pct(c.all18Pct).padEnd(6) + `${pct(c.fillPct)}(${fx(c.medFillS, 0)})`.padEnd(14) +
            pct(c.cavesFullPct).padEnd(7) + fx(c.came, 2).padEnd(6) + `${fx(c.lostMid, 2)}(${fx(c.lostEarly, 2)})`.padEnd(11) + fx(c.noTarget, 2).padEnd(8) + fx(c.switches, 1).padEnd(6) + fx(c.promotions, 2).padEnd(5) +
@@ -283,14 +333,14 @@ index 929cc4d..79dbd61 100644
      const st = fl.port.state;
      const dropped = st.bombsDropped;
 diff --git a/src/core/evac-data.ts b/src/core/evac-data.ts
-index f598b4e..1916e41 100644
+index f598b4e..27178ab 100644
 --- a/src/core/evac-data.ts
 +++ b/src/core/evac-data.ts
 @@ -103,6 +103,8 @@ export interface EvacRaidBlock {
    flights_per_group_max: number;
    bearing_fix_deg: number[];
    cover_reveal_chance: number;
-+  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。1＝今の挙動。core/evac-repass） */
++  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。data 2＝U7。1＝S3 の挙動。core/evac-repass） */
 +  passes_max: number;
    survivor_quota: number;
    survivors_total: number;
@@ -307,7 +357,7 @@ index f598b4e..1916e41 100644
  export const EVAC_SORTIE_KEYS = ['spawn_m', 'run_radius_m', 'first_run_s', 'run_gap_s', 'wave_rest_s', 'leave_s', 'spawn_offsets_deg', 'wave_rotate_deg', 'aim_turn_min_deg_s'] as const;
  
 diff --git a/src/core/evac-params.ts b/src/core/evac-params.ts
-index 5f61788..2c39bd4 100644
+index 5f61788..aa3786a 100644
 --- a/src/core/evac-params.ts
 +++ b/src/core/evac-params.ts
 @@ -63,7 +63,7 @@ export interface EvacParams {
@@ -323,7 +373,7 @@ index 5f61788..2c39bd4 100644
    flightsPerGroupMax: number;
    bearingFixDeg: number[];
    coverRevealChance: number;
-+  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。1＝今の挙動＝済みの後は来ない。core/evac-repass） */
++  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。data 2＝U7「編隊が戻ってくる」。1＝S3 の挙動＝済みの後は来ない。core/evac-repass） */
 +  passesMax: number;
    survivorQuota: number;
    survivorsTotal: number;
@@ -574,14 +624,14 @@ index 65483d5..6c26acc 100644
  }
  
 diff --git a/src/systems/evac-sim-setup.ts b/src/systems/evac-sim-setup.ts
-index 180aa04..66df90f 100644
+index 180aa04..822b9dd 100644
 --- a/src/systems/evac-sim-setup.ts
 +++ b/src/systems/evac-sim-setup.ts
 @@ -40,6 +40,9 @@ export interface EvacSimOverrides {
    followGapM?: number;
    /** 9: evac.ai.full_p */
    fullP?: number;
-+  /** S3b（§12.5 の外の案）: evac_raid.passes_max・hard.evac_passes_max（1 編隊が飛ぶ爆撃の回数。ハードは無ければノーマルの値＝core/evac-repass） */
++  /** S3b（U7）: evac_raid.passes_max・hard.evac_passes_max（1 編隊が飛ぶ爆撃の回数。data 2・1 は S3 の挙動。ハードは無ければノーマルの値＝core/evac-repass） */
 +  passesMax?: number;
 +  passesMaxHard?: number;
  }
@@ -599,75 +649,640 @@ index 180aa04..66df90f 100644
      };
    });
 diff --git a/tests/__snapshots__/setup-jp03.test.ts.snap b/tests/__snapshots__/setup-jp03.test.ts.snap
-index 9e4ea65..1460739 100644
+index 9e4ea65..f450f0b 100644
 --- a/tests/__snapshots__/setup-jp03.test.ts.snap
 +++ b/tests/__snapshots__/setup-jp03.test.ts.snap
-@@ -426,6 +426,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+@@ -324,7 +324,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -356,15 +356,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -385,7 +376,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -425,7 +416,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     10,
      0
     ],
-    "coverRevealChance": 0.25,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.25,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -1008,6 +1009,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+@@ -450,8 +442,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -496,8 +488,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -543,8 +535,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -906,7 +898,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -938,15 +930,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -967,7 +950,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -1007,7 +990,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     10,
      0
     ],
-    "coverRevealChance": 0.25,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.25,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -1590,6 +1592,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+@@ -1032,8 +1016,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -1078,8 +1062,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -1125,8 +1109,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -1488,7 +1472,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -1520,15 +1504,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -1549,7 +1524,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -1589,7 +1564,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     10,
      0
     ],
-    "coverRevealChance": 0.25,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.25,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -2172,6 +2175,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+@@ -1614,8 +1590,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -1660,8 +1636,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -1707,8 +1683,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -2070,7 +2046,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -2102,15 +2078,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -2131,7 +2098,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -2171,7 +2138,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+     10,
      0
     ],
-    "coverRevealChance": 0.25,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.25,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -2754,6 +2758,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+@@ -2196,8 +2164,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -2242,8 +2210,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -2289,8 +2257,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -2652,7 +2620,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -2684,15 +2652,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -2713,7 +2672,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -2753,7 +2712,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     10,
      0
     ],
-    "coverRevealChance": 0.35,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.35,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -3336,6 +3341,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+@@ -2778,8 +2738,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -2824,8 +2784,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -2871,8 +2831,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -3234,7 +3194,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -3266,15 +3226,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -3295,7 +3246,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -3335,7 +3286,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     10,
      0
     ],
-    "coverRevealChance": 0.35,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.35,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -3918,6 +3924,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+@@ -3360,8 +3312,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -3406,8 +3358,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -3453,8 +3405,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -3816,7 +3768,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -3848,15 +3800,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -3877,7 +3820,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -3917,7 +3860,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     10,
      0
     ],
-    "coverRevealChance": 0.35,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.35,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
-@@ -4500,6 +4507,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+@@ -3942,8 +3886,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -3988,8 +3932,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -4035,8 +3979,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -4398,7 +4342,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "trailLen": 18,
+    "shelterRingM": 70,
+    "hideMaxMps": 1.0288,
+-   "haulS": 6,
++   "haulS": 12,
+    "launchStick": 0.3,
+    "slotAbeamM": 25,
+    "slotArriveM": 5,
+@@ -4430,15 +4374,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      "slots": 3,
+      "exitHeadingDeg": 0
+     },
+-    {
+-     "id": "west_cover",
+-     "labelJa": "屋我地の陰（西）",
+-     "kind": 1,
+-     "x": 1050,
+-     "y": 100,
+-     "slots": 3,
+-     "exitHeadingDeg": 180
+-    },
+     {
+      "id": "east_cover",
+      "labelJa": "屋我地の陰（東）",
+@@ -4459,7 +4394,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+    "wallTurnDeg": 45,
+    "lookM": 400,
+    "foundReactS": 3,
+-   "dodgeSuccess": 0.5,
++   "dodgeSuccess": 0.2,
+    "dodgeTurnDeg": 90,
+    "dodgeHoldS": 2,
+    "flashReveal": false
+@@ -4499,7 +4434,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+     10,
      0
     ],
-    "coverRevealChance": 0.35,
-+   "passesMax": 1,
+-   "coverRevealChance": 0.35,
++   "coverRevealChance": 0.5,
++   "passesMax": 2,
     "survivorQuota": 6,
     "survivorsTotal": 18,
     "historicalSurvivors": 5,
+@@ -4524,8 +4460,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -4570,8 +4506,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+@@ -4617,8 +4553,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 
+      30
+     ],
+     "waveRotateDeg": 0,
+-    "firstRunS": 9,
+-    "runGapS": 2.2,
++    "firstRunS": 6.5,
++    "runGapS": 1.7,
+     "waveRestS": 16,
+     "leaveS": 2.5,
+     "fallFeelS": 1.2771017136282017,
+diff --git a/tests/evac-follow.test.ts b/tests/evac-follow.test.ts
+index d603ebf..12799ef 100644
+--- a/tests/evac-follow.test.ts
++++ b/tests/evac-follow.test.ts
+@@ -117,7 +117,7 @@ describe('操作していない隊の乱数（seed+30・+31。M3・r2 M13）', (
+     const r = makeRig();
+     stepRigFor(r, NEUTRAL, 25);
+     let n = 0;
+-    const rng = { next: () => (n++, 0.3) } as unknown as SeededRng;
++    const rng = { next: () => (n++, P.dodgeSuccess - 0.01) } as unknown as SeededRng; // u < success（S3b の 0.2 で 0.19）
+     r.sq.groups[2]!.phase = G_HIDDEN;
+     expect([evacOnRelease(r.sq, rng, -1), evacOnRelease(r.sq, rng, 0), evacOnRelease(r.sq, rng, 2), evacOnRelease(r.sq, rng, 1)]).toEqual([false, false, false, true]);
+     expect(n).toBe(4);
 diff --git a/tests/evac-mission-data.test.ts b/tests/evac-mission-data.test.ts
-index 9b0098c..60f8ba7 100644
+index 9b0098c..ea4b9f0 100644
 --- a/tests/evac-mission-data.test.ts
 +++ b/tests/evac-mission-data.test.ts
 @@ -1,10 +1,12 @@
@@ -685,17 +1300,12 @@ index 9b0098c..60f8ba7 100644
  import { ALLY_GUN_SEED_OFFSET, ALLY_LOOKOUT_SEED_OFFSET } from '../src/core/ally-destroyer';
  import { PATROL_AIR_SEED_OFFSET } from '../src/core/patrol-air-state';
  import { ktToMps } from '../src/core/units';
-@@ -23,33 +25,38 @@ const build = (f: (d: GameData) => void, hard = false): (() => unknown) => {
-   f(d);
-   return () => getEvacParams(d, 'jp_03', hard);
- };
-+/** ハードの陰の発見（hard.evac_cover_reveal_chance。S3b で測って決めた値） */
-+const HARD_REVEAL = 0.5;
+@@ -26,30 +28,33 @@ const build = (f: (d: GameData) => void, hard = false): (() => unknown) => {
  const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
  
  describe('既定の data（jp_03）', () => {
 -  it('ノーマル・ハードとも組める。6 隊 × 3 隻・隠れ場所 5（壕 3・陰 2・枠 15）・4 波 2/3/3/4 機・同時 2／3 編隊・陰の発見 0.25／0.35', () => {
-+  it('ノーマル・ハードとも組める。6 隊 × 3 隻・隠れ場所 4（壕 3・陰 1・枠 12。S3b で陰（西）を外した）・4 波 2/3/3/4 機・同時 2／3 編隊・陰の発見 0.5／HARD_REVEAL・回数 2', () => {
++  it('ノーマル・ハードとも組める。6 隊 × 3 隻・隠れ場所 4（壕 3・陰 1・枠 12。S3b で陰（西）を外した）・4 波 2/3/3/4 機・同時 2／3 編隊・陰の発見 0.5／0.5（S3b でハードもノーマルと同じに）・回数 2', () => {
      for (const hard of [false, true]) {
        const s = getEvacParams(gameData, 'jp_03', hard)!;
        expect(s).not.toBeNull();
@@ -709,7 +1319,7 @@ index 9b0098c..60f8ba7 100644
        expect(p.flashReveal).toBe(false);
        expect(s.raid.waves).toEqual([{ announceS: 15, planes: 2 }, { announceS: 70, planes: 3 }, { announceS: 125, planes: 3 }, { announceS: 180, planes: 4 }]);
 -      expect([s.raid.flights, s.raid.coverRevealChance, s.raid.survivorQuota, s.raid.survivorsTotal, s.raid.historicalSurvivors]).toEqual(hard ? [3, 0.35, 6, 18, 5] : [2, 0.25, 6, 18, 5]);
-+      expect([s.raid.flights, s.raid.coverRevealChance, s.raid.passesMax, s.raid.survivorQuota, s.raid.survivorsTotal, s.raid.historicalSurvivors]).toEqual(hard ? [3, HARD_REVEAL, 2, 6, 18, 5] : [2, 0.5, 2, 6, 18, 5]);
++      expect([s.raid.flights, s.raid.coverRevealChance, s.raid.passesMax, s.raid.survivorQuota, s.raid.survivorsTotal, s.raid.historicalSurvivors]).toEqual(hard ? [3, 0.5, 2, 6, 18, 5] : [2, 0.5, 2, 6, 18, 5]);
 +      expect([p.haulS, p.dodgeSuccess]).toEqual([12, 0.2]);
        expect([s.raid.centerX, s.raid.centerY]).toEqual([1600, 625]);
        expect(s.sorties.map((x) => [x.planes, x.bombsPerPlane, x.spawnM, x.runRadiusM, x.fromBearingDeg, x.waveRotateDeg])).toEqual([[2, 2, 2500, 500, 70, 0], [3, 2, 2500, 500, 70, 0], [4, 2, 2500, 500, 70, 0]]);
@@ -730,7 +1340,7 @@ index 9b0098c..60f8ba7 100644
    });
    it('ほかの任務は null・evacSetupPart は {}（setup に鍵が増えない）。Boot の検査は jp_03 の値を返す', () => {
      for (const id of PROTO_IDS.filter((x) => x !== 'jp_03')) {
-@@ -67,9 +74,9 @@ describe('既定の data（jp_03）', () => {
+@@ -67,9 +72,9 @@ describe('既定の data（jp_03）', () => {
    });
  });
  
@@ -742,7 +1352,7 @@ index 9b0098c..60f8ba7 100644
      expect(build((d) => { ((evacOf(d)['groups'] as Rec[])[4]!)['x_m'] = 30; })).toThrow(/evac\.groups\[4\]（第5隊） の停泊の縦列の 3 隻目.*V-E1/); // 2 隻目は x 18＝縁からちょうど 18 m で通る
      expect(build((d) => { const c = (evacOf(d)['shelters'] as Rec[])[1]!; c['x_m'] = 30; c['exit_heading_deg'] = 90; })).toThrow(/evac\.shelters\[1\]（西の壕） から出た縦列（exit_heading_deg 90・moored_gap_m）の 3 隻目.*V-E1/); // 艇尾は西: x 30・18・6
    });
-@@ -81,12 +88,15 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
+@@ -81,12 +86,15 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
      expect(at(89 + 2 * 12)).toThrow(/evac\.groups\[0\]（第1隊） の 3 隻目は 隊長艇の壕 の輪の縁から 20 m 以上外.*V-E2/);
    });
    it('V-E3: 隠れ場所どうしの中心は 2 × 輪 ＋ 100 m 以上', () => {
@@ -762,7 +1372,7 @@ index 9b0098c..60f8ba7 100644
    });
    it('V-E5: 1 編隊 1〜4 機・同時の編隊 ≤ 3 ≤ flight_offsets_deg の長さ・flights_per_group_max ≥ 1・波 ≤ 4・spawn_m は sortie の範囲', () => {
      expect(build((d) => { ((raidOf(d)['waves'] as Rec[])[3]!)['planes'] = 5; })).toThrow(/evac_raid\.waves\[3\]\.planes は 1〜4.*V-E5/);
-@@ -98,9 +108,9 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
+@@ -98,9 +106,9 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
      expect(build((d) => { delete protoOf(d, 'jp_03')['evac_raid']; })).toThrow(/evac_raid（波と編隊）が無い.*V-E5/);
    });
    it('V-E6: 予告の間隔・最後の波の終わり < duration_s・休みは爆撃進路 ＋ leave_s ＋ 2 ステップ以上', () => {
@@ -775,7 +1385,7 @@ index 9b0098c..60f8ba7 100644
      expect(build((d) => { sortieOf(d)['wave_rest_s'] = 4.13; })).toThrow(/wave_rest_s（4\.13）は爆撃進路 ＋ leave_s ＋ 2 ステップ.*V-E6/);
    });
    it('V-E7: 追従の間隔 > 爆風 ＋ 半長（34 m）・停泊の間隔 < 爆風・航跡の点の間隔 ≤ gap_m / 4', () => {
-@@ -142,6 +152,31 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
+@@ -142,6 +150,31 @@ describe('起動時の検査 V-E1〜V-E12（壊した data は鍵を名指して
      expect(build((d) => { raidOf(d)['bearing_fix_deg'] = [30, 18, 10, 0]; })).toThrow(/bearing_fix_deg\[1\]（18）は sortie\.spawn_offsets_deg の先頭 2 個の平均（-20）を戻す値.*V-E12/);
      expect(build((d) => { evacOf(d)['slot_arrive_m'] = 25; })).toThrow(/slot_arrive_m（25）は 0 より大きく slot_abeam_m（25）より小さい.*V-E12/);
    });
@@ -807,6 +1417,300 @@ index 9b0098c..60f8ba7 100644
  });
  
  describe('共有の読みの例外の包み直し（r2 L12）・形の検査・evac だけの鍵', () => {
+diff --git a/tests/evac-plan.test.ts b/tests/evac-plan.test.ts
+index a1ea50e..24b049b 100644
+--- a/tests/evac-plan.test.ts
++++ b/tests/evac-plan.test.ts
+@@ -2,21 +2,27 @@
+ // 狙いの順（枠 0＝操作中の隊・段 B を先・現れる点に近い順・1 隊 1 編隊・候補が尽きた枠は来ない・2 つ目は操作中の隊に付けない＝r2 M6・M7-5）・方位の戻し（r2 L1）・
+ // 1 回だけ飛ぶ（B1）・始まる前に隠れたら始めない・試し直し・旋回率が跳ばない・隊を追う付け替えと全滅（r2 H2）・中断の後も爆弾は落ち、止めた後に絵が残らない（r2 M2）・
+ // 撃墜の後も済みになる（r2 H6）・決着のラッチ・「狙われている」（r2 M13）・乱数の引く回数（+29・+31）・決定性。
++// この file は S2 の段取り（1 編隊 1 回）なので rig は passes_max 1。data の既定 2（S3b・U7）の 2 回目は tests/evac-repass・evac-repass-sim。
+ import { describe, expect, it } from 'vitest';
+ import { downStrikePlane } from '../src/core/air-down';
+ import { AS_DONE, AS_IDLE, AS_RUN, bombInAir, createAirStrike, stepAirStrike, type AirStrikeCheck } from '../src/core/air-strike';
+ import { airSortieComplete, createSortieBase, restartAirSortie } from '../src/core/air-sortie';
+ import { dawnReached } from '../src/core/dawn-air';
+ import { evacDrawPass } from '../src/core/evac-air';
+-import { G_GONE, G_HIDDEN, G_UNDERWAY } from '../src/core/evac-data';
++import { G_GONE, G_HIDDEN, G_UNDERWAY, SHELTER_COVER } from '../src/core/evac-data';
+ import { EF_ANNOUNCED, EF_FLYING, EF_OFF, EO_DONE, EO_GONE, EO_LOST, EO_LOST_EARLY, EO_NO_TARGET, evacAnnounce, evacFlightLive, evacRefreshView, evacTryStart, type EvacFlight } from '../src/core/evac-plan';
+ import { evacSinkLeader } from '../src/core/evac-seat';
+ import { evacLeader, evacSurvivors } from '../src/core/evac-squadron';
++import type { EvacRaidParams } from '../src/core/evac-params';
+ import { wrapDeg180 } from '../src/core/units';
+ import { DT, NEUTRAL } from './evac-kit';
+ import { HARD, NORMAL, countDraws, forceHidden, makeAirRig, runAir, runAirUntil, type AirRig } from './evac-air-kit';
+ 
+ const RAID = NORMAL.evac!.raid;
++/** 陰の数（+29 は予告ごとに陰ごとに 1 回。S3b で陰（西）を外して 1） */
++const COVERS = NORMAL.evac!.params.shelters.filter((x) => x.kind === SHELTER_COVER).length;
++/** S2 の段取りの rig（passes_max 1＝済みの後に来ない） */
++const rig = (seed = 1, hard = false, raid: Partial<EvacRaidParams> = {}): AirRig => makeAirRig(seed, hard, {}, undefined, { passesMax: 1, ...raid });
+ const TURN = NORMAL.boatParams.turnRateDegS;
+ const targets = (r: AirRig, w: number): number[] => r.air.plan.flights.filter((f) => f.wave === w).map((f) => f.target);
+ const flight = (r: AirRig, i: number): EvacFlight => r.air.plan.flights[i]!;
+@@ -25,19 +31,19 @@ const aiFlight = (r: AirRig, w = 0): EvacFlight => r.air.plan.flights.find((f) =
+ 
+ describe('狙い（予告の瞬間。乱数なし）', () => {
+   it('枠 0 は操作中の隊、ほかの枠は走っている隊（段 B）を先・その枠の現れる点に近い順、尽きたら止まっている隊（段 A）', () => {
+-    const r = makeAirRig(1, true);
++    const r = rig(1, true);
+     for (const gi of [1, 2, 3, 4, 5]) r.sq.groups[gi]!.phase = G_UNDERWAY;
+     evacAnnounce(r.air.plan, 0);
+     // 枠 1 の点（70°）に近い走る隊は第4隊、枠 2（100°）は第3隊（第4隊は狙い済み）
+     expect(targets(r, 0)).toEqual([0, 3, 2]);
+-    const s = makeAirRig(1, true);
++    const s = rig(1, true);
+     s.sq.groups[5]!.phase = G_UNDERWAY;
+     s.sq.groups[1]!.phase = G_UNDERWAY;
+     evacAnnounce(s.air.plan, 0);
+     // 第4隊（止まっている）は枠 1 の点にいちばん近いが、走っている第6隊・第2隊が先（r2 M6）
+     expect(targets(s, 0)).toEqual([0, 5, 1]);
+     expect([s.air.plan.tierB, s.air.plan.tierA]).toEqual([2, 0]);
+-    const u = makeAirRig(1, true);
++    const u = rig(1, true);
+     u.sq.groups[5]!.phase = G_UNDERWAY;
+     evacAnnounce(u.air.plan, 0);
+     expect(targets(u, 0)).toEqual([0, 5, 3]);
+@@ -46,7 +52,7 @@ describe('狙い（予告の瞬間。乱数なし）', () => {
+ 
+   it('同じ隊を 2 編隊が狙わない（1 隊 1 編隊は段をまたぐ）。予告の全部で（ハード・seed 1〜12）', () => {
+     for (let seed = 1; seed <= 12; seed++) {
+-      const r = makeAirRig(seed, true);
++      const r = rig(seed, true);
+       runAir(r, NEUTRAL, 200);
+       for (let w = 0; w < RAID.waves.length; w++) {
+         const t = targets(r, w).filter((g) => g >= 0);
+@@ -56,24 +62,24 @@ describe('狙い（予告の瞬間。乱数なし）', () => {
+   });
+ 
+   it('候補が尽きた枠の編隊は来ない。flights_per_group_max 2 でも 2 つ目は候補が尽きた枠だけ・操作中の隊には付けない（r2 M7-5）', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     for (const gi of [1, 2, 3, 4, 5]) forceHidden(r, gi);
+     evacAnnounce(r.air.plan, 0);
+     expect(targets(r, 0)).toEqual([0, -1]);
+     expect([flight(r, 1).phase, flight(r, 1).outcome]).toEqual([EF_OFF, EO_NO_TARGET]);
+-    const h = makeAirRig(1, true, {}, undefined, { flightsPerGroupMax: 2 });
++    const h = rig(1, true, { flightsPerGroupMax: 2 });
+     for (const gi of [1, 2, 4, 5]) forceHidden(h, gi);
+     h.sq.groups[3]!.phase = G_UNDERWAY;
+     evacAnnounce(h.air.plan, 0);
+     expect(targets(h, 0)).toEqual([0, 3, 3]);
+-    const c = makeAirRig(1, true, {}, undefined, { flightsPerGroupMax: 2 });
++    const c = rig(1, true, { flightsPerGroupMax: 2 });
+     for (const gi of [1, 2, 3, 4, 5]) forceHidden(c, gi);
+     evacAnnounce(c.air.plan, 0);
+     expect(targets(c, 0)).toEqual([0, -1, -1]);
+   });
+ 
+   it('操作中の隊が隠れていれば、枠 0 もほかの枠と同じ選び方（段 B を先・枠 0 の点に近い順）', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     forceHidden(r, 0);
+     r.sq.groups[2]!.phase = G_UNDERWAY;
+     r.sq.groups[4]!.phase = G_UNDERWAY;
+@@ -83,7 +89,7 @@ describe('狙い（予告の瞬間。乱数なし）', () => {
+ 
+   it('始めると機の平均の方位が枠の方位 ±1°（bearing_fix_deg が凍結の spawn_offsets_deg の偏りを戻す。r2 L1）・距離は spawn_m', () => {
+     for (const w of [0, 1, 3]) {
+-      const r = makeAirRig(1, true);
++      const r = rig(1, true);
+       evacAnnounce(r.air.plan, w);
+       for (const fl of r.air.plan.flights.filter((f) => f.wave === w)) {
+         evacTryStart(r.air.plan, fl);
+@@ -104,7 +110,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
+   it('1 予告で state.waves が 1 だけ増え、済みの後 60 秒ステップし続けても 2 波目が出ない（atHome を真のまま。外せば出る）', () => {
+     let checked = 0;
+     for (let seed = 1; seed <= 8 && checked < 3; seed++) {
+-      const r = makeAirRig(seed);
++      const r = rig(seed);
+       runAirUntil(r, NEUTRAL, 65);
+       for (const fl of r.air.plan.flights.filter((f) => f.wave === 0 && f.outcome === EO_DONE)) {
+         checked++;
+@@ -126,7 +132,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
+   });
+ 
+   it('予告から始まる前に狙った隊が隠れたら始めない（見失った・引き返す）。「狙われている」は予告から始まりまで真で、見失えば偽', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     runAirUntil(r, NEUTRAL, 16);
+     const fl = aiFlight(r);
+     expect([fl.phase, r.sq.targeted[fl.target]]).toEqual([EF_ANNOUNCED, 1]);
+@@ -138,7 +144,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
+   });
+ 
+   it('restartAirSortie が false（空中に爆弾）なら次のステップで試し直す。その間も「狙われている」', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     runAirUntil(r, NEUTRAL, 16);
+     const fl = aiFlight(r);
+     fl.port.state.bombs[0]!.active = true;
+@@ -153,7 +159,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
+   });
+ 
+   it('始め直しの最初のステップから旋回率が跳ばない（restartAirSortie が中心の針路を前の針路に書く）', () => {
+-    const r = makeAirRig(2);
++    const r = rig(2);
+     runAirUntil(r, NEUTRAL, 24.9);
+     const fl = aiFlight(r);
+     const g = r.sq.groups[fl.target]!;
+@@ -171,7 +177,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
+ 
+ describe('隊を追う（r2 H2）・全滅で去る', () => {
+   it('隊長艇が沈むと編隊の中心は次の隊長艇へ（次の投下はその艇の上から）・付け替えの次のステップの旋回率は跳ばない・全滅で cancel', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     for (const b of r.sq.boats) b.damage.hp = 1e9;
+     r.seat.damage.hp = 1e9;
+     runAirUntil(r, NEUTRAL, 24);
+@@ -213,7 +219,7 @@ describe('隊を追う（r2 H2）・全滅で去る', () => {
+ 
+ describe('動く編隊（r2 M2）と撃墜の後（r2 H6）', () => {
+   it('中断の後も空中の爆弾は着弾まで step され、止まったフレームに 1 回だけ描いて機・線・爆弾が見えなくなる（Phaser なしの偽物）', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     const shown = new Map<number, { calls: number; planes: number; line: boolean; bombs: number }>();
+     const draw = (i: number): void => {
+       const st = r.air.plan.flights[i]!.port.state;
+@@ -249,7 +255,7 @@ describe('動く編隊（r2 M2）と撃墜の後（r2 H6）', () => {
+   });
+ 
+   it('evac の編隊の機を 1 機落としても残りの爆弾が落ちて済みになる（skipDownedRuns）。落とさない編隊は全部落とす', () => {
+-    const r = makeAirRig(1);
++    const r = rig(1);
+     for (const b of r.sq.boats) b.damage.hp = 1e9;
+     r.seat.damage.hp = 1e9;
+     const w1 = r.air.plan.flights.filter((f) => f.wave === 1);
+@@ -272,7 +278,7 @@ describe('動く編隊（r2 M2）と撃墜の後（r2 H6）', () => {
+ 
+ describe('決着・「狙われている」・乱数・決定性', () => {
+   it('決着のラッチは dawnReached(duration_s) と同じステップ。決着の後は予告しない', () => {
+-    const r = makeAirRig(3);
++    const r = rig(3);
+     let at = -1;
+     runAir(r, NEUTRAL, 241, () => {
+       expect(r.sq.settled).toBe(dawnReached(NORMAL.durationS, r.t));
+@@ -282,7 +288,7 @@ describe('決着・「狙われている」・乱数・決定性', () => {
+   });
+ 
+   it('「狙われている」は予告から（始まる前も）、始まった後は動いていて中断していない間だけ', () => {
+-    const r = makeAirRig(4);
++    const r = rig(4);
+     runAir(r, NEUTRAL, 240, () => {
+       const p = r.air.plan;
+       for (let gi = 0; gi < r.sq.groups.length; gi++) {
+@@ -293,16 +299,17 @@ describe('決着・「狙われている」・乱数・決定性', () => {
+     });
+   });
+ 
+-  it('+29 は予告ごとに 2 回（陰 2 か所）、+31 は投下ごとに 1 回。同じ seed なら同じ結果（ノーマル・ハード）', () => {
++  it('+29 は予告ごとに陰の数だけ（S3b から 1 か所）、+31 は投下ごとに 1 回。同じ seed なら同じ結果（ノーマル・ハード）', () => {
+     for (const hard of [false, true]) {
+-      const r = makeAirRig(7, hard);
++      const r = rig(7, hard);
+       const reveal = countDraws(r.air.plan.reveal);
+       const dodge = countDraws(r.air.dodge);
+       runAir(r, NEUTRAL, 240);
+-      expect(reveal()).toBe(2 * RAID.waves.length);
++      expect(COVERS).toBe(1);
++      expect(reveal()).toBe(COVERS * RAID.waves.length);
+       expect(dodge()).toBe(r.air.plan.releases);
+       expect(r.air.plan.releases).toBe(r.air.plan.flights.reduce((a, f) => a + f.port.state.bombsDropped, 0));
+-      const s = makeAirRig(7, hard);
++      const s = rig(7, hard);
+       runAir(s, NEUTRAL, 240);
+       const key = (x: AirRig): string => `${evacSurvivors(x.sq)}|${x.air.plan.flights.map((f) => `${f.outcome}${f.target}${f.port.state.bombsDropped}`).join(',')}|${x.log.recordHits.join(',')}`;
+       expect(key(s)).toBe(key(r));
+@@ -312,7 +319,7 @@ describe('決着・「狙われている」・乱数・決定性', () => {
+   });
+ 
+   it('確保は作る時だけ（編隊・view・状態・爆弾のプールの物が 240 秒で同じ）', () => {
+-    const r = makeAirRig(5, true);
++    const r = rig(5, true);
+     const before = r.air.plan.flights.map((f) => [f, f.view, f.view.boat, f.port, f.port.state, f.port.state.planes, f.port.state.bombs, f.rng, f.base] as const);
+     runAir(r, NEUTRAL, 240);
+     r.air.plan.flights.forEach((f, i) => [f, f.view, f.view.boat, f.port, f.port.state, f.port.state.planes, f.port.state.bombs, f.rng, f.base].forEach((x, k) => expect(x).toBe(before[i]![k])));
+diff --git a/tests/evac-sim-a.test.ts b/tests/evac-sim-a.test.ts
+index 7fb774d..821a8ad 100644
+--- a/tests/evac-sim-a.test.ts
++++ b/tests/evac-sim-a.test.ts
+@@ -38,12 +38,12 @@ describe('空襲下の退避の模擬の決定性', () => {
+ });
+ 
+ describe('乱数の系列 +29〜+43 の引く回数', () => {
+-  it.each(['seq', 'stay', 'dodge_only', 'bot', 'seq_shoot'] as EvacPolicy[])('ノーマル %s: 予告ごとに陰 2 回・6 隊 × (1 ＋ 2 × 47)・投下ごとに 1 回・編隊は 2 × 投下 ＋ 命中の分', (p) => {
++  it.each(['seq', 'stay', 'dodge_only', 'bot', 'seq_shoot'] as EvacPolicy[])('ノーマル %s: 予告ごとに陰の数（S3b から 1）・6 隊 × (1 ＋ 2 × 47)・投下ごとに 1 回・編隊は 2 × 投下 ＋ 命中の分', (p) => {
+     for (const seed of [1, 2, 3]) {
+       const t = runEvacTrial(NORMAL, p, seed);
+       drawsOk(t);
+       if (t.timeS >= NORMAL.durationS) {
+-        expect(t.exp29).toBe(2 * NORMAL.raid.waves.length);
++        expect(t.exp29).toBe(1 * NORMAL.raid.waves.length); // 陰は屋我地の陰（東）の 1 か所
+         expect(t.exp30).toBe(6 * (1 + 2 * 47));
+       }
+     }
+@@ -64,26 +64,32 @@ describe('乱数の系列 +29〜+43 の引く回数', () => {
+ });
+ 
+ describe('編隊の数と同時に動く編隊', () => {
+-  const peak = (s: typeof NORMAL, p: EvacPolicy, seed: number): { flights: number; live: number } => {
++  const peak = (s: typeof NORMAL, p: EvacPolicy, seed: number): { flights: number; live: number; planes: number } => {
+     let flights = 0;
+     let live = 0;
++    let planes = 0;
+     runEvacTrial(s, p, seed, (_t, _sq, _seat, plan) => {
+       flights = plan.flights.length;
+       let n = 0;
+-      for (const fl of plan.flights) if (evacFlightLive(fl)) n++;
++      let m = 0;
++      for (const fl of plan.flights) if (evacFlightLive(fl)) (n++, (m += fl.p.planes));
+       if (n > live) live = n;
++      if (m > planes) planes = m;
+     });
+-    return { flights, live };
++    return { flights, live, planes };
+   };
+ 
+-  it('ノーマルは起動時に 8 編隊・同時に ≤ 2、ハードは 12 編隊・同時に ≤ 3（stay＝全部の隊が外。第 4 波で 3 編隊）', () => {
+-    const n = peak(NORMAL, 'stay', 2);
+-    expect(n.flights).toBe(8);
+-    expect(n.live).toBeLessThanOrEqual(2);
+-    const h = peak(HARD, 'stay', 2);
+-    expect(h.flights).toBe(12);
+-    expect(h.live).toBe(3);
+-  });
++  it('ノーマルは起動時に 8 編隊・同時に ≤ 2（機 ≤ 8）、ハードは 12 編隊・同時に ≤ 3（機 ≤ 12）。S3b の 2 回目（passes_max 2）があっても（stay＝全部の隊が外。第 4 波で 3 編隊）', () => {
++    for (const seed of [2, 3]) {
++      const n = peak(NORMAL, 'stay', seed);
++      expect(n.flights).toBe(8);
++      expect([n.live <= 2, n.planes <= 8]).toEqual([true, true]);
++      const h = peak(HARD, 'stay', seed);
++      expect(h.flights).toBe(12);
++      expect(h.live).toBe(3);
++      expect(h.planes).toBeLessThanOrEqual(12);
++    }
++  }, 60_000);
+ });
+ 
+ describe('終わりと表の形', () => {
+@@ -121,11 +127,11 @@ describe('終わりと表の形', () => {
+   });
+ 
+   it('つまみ（spec §12.5）は data の写しを通って起動時の検査を受ける（haul_s・隠れ場所を外す・陰の発見）', () => {
+-    const s = evacSimSetup(gameData, false, { haulS: 12, dropShelters: ['east_cave'], coverReveal: 0.5 });
+-    expect(s.params.haulS).toBe(12);
++    const s = evacSimSetup(gameData, false, { haulS: 18, dropShelters: ['east_cave'], coverReveal: 0.25 });
++    expect(s.params.haulS).toBe(18);
+     expect(s.params.shelters.map((x) => x.id)).not.toContain('east_cave');
+-    expect(s.raid.coverRevealChance).toBe(0.5);
+-    expect(NORMAL.params.haulS).toBe(6);
++    expect(s.raid.coverRevealChance).toBe(0.25);
++    expect([NORMAL.params.haulS, NORMAL.raid.coverRevealChance]).toEqual([12, 0.5]); // S3b の data
+     expect(() => evacSimSetup(gameData, false, { firstRunS: 1 })).toThrow(/first_run_s/);
+   });
+ });
 diff --git a/tests/evac-squadron.test.ts b/tests/evac-squadron.test.ts
 index e7f8825..7cf6fee 100644
 --- a/tests/evac-squadron.test.ts
@@ -914,3 +1818,36 @@ index e7f8825..7cf6fee 100644
    });
  });
  
+diff --git a/tests/setup-jp03.test.ts b/tests/setup-jp03.test.ts
+index 4dd975a..2161c0a 100644
+--- a/tests/setup-jp03.test.ts
++++ b/tests/setup-jp03.test.ts
+@@ -1,7 +1,8 @@
+ // v0.6.11 S0（spec-v0611-r2 §13 の S0）: jp_03「運天港・空襲下の退避」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
+ // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.6.11 S0 の木で作った。jp_03 の setup は S1〜S7 で鍵が増えうるので、
+ // 書き換える時は CHANGELOG に段と理由を書く（ほかの任務の setup の snapshot は -u しない）。Briefing の行は入れない（S6 で変わる）。
+-// 今夜の揺らぎ（+16）は 0 回（night block なし）。空襲下の退避の値（setup.evac）は史実モードで変わらず、ハードは同時の編隊 3・陰の発見 0.35 だけが違う。
++// 今夜の揺らぎ（+16）は 0 回（night block なし）。空襲下の退避の値（setup.evac）は史実モードで変わらず、ハードは同時の編隊 3 だけが違う（陰の発見は S3b からノーマルと同じ 0.5）。
++// snapshot の書き換え: S3b（passes_max の鍵・U7 の点 G1 の data（陰（西）を外す・上げ 12 秒・回避 0.2・陰の発見 0.5・first_run_s 6.5・run_gap_s 1.7））。
+ import { afterEach, describe, expect, it, vi } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+ import { SeededRng } from '../src/core/rng';
+@@ -36,7 +37,7 @@ describe('jp_03 の setup の snapshot（v0.6.11 S0 の木）', () => {
+     expect(s.patrolAir).toBeUndefined();
+     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));
+   });
+-  it('空襲下の退避の値は史実モードで変わらない。ハードは同時の編隊と陰の発見の確率だけが違う', () => {
++  it('空襲下の退避の値は史実モードで変わらない。ハードは同時の編隊だけが違う（陰の発見の確率は S3b からノーマルと同じ）', () => {
+     const plain = build(false, false, 1).s;
+     for (const [hard, historical] of [[false, true], [true, false], [true, true]] as const) {
+       const s = build(hard, historical, 1).s;
+@@ -45,7 +46,8 @@ describe('jp_03 の setup の snapshot（v0.6.11 S0 の木）', () => {
+       const { flights: f, coverRevealChance: c, ...rest } = s.evac!.raid;
+       const { flights: f0, coverRevealChance: c0, ...rest0 } = plain.evac!.raid;
+       expect(rest).toEqual(rest0);
+-      expect([f, c]).toEqual(hard ? [3, 0.35] : [f0, c0]);
++      expect([f, c]).toEqual(hard ? [3, 0.5] : [f0, c0]);
++      expect(c).toBe(c0);
+       expect(s.hard).toBe(hard);
+       expect(s.historical).toBe(historical);
+     }
