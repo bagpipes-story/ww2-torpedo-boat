@@ -37,7 +37,7 @@ import {
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
-import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
+import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
 import { generateFriendlyTransportTexture } from '../assets/ally-ship-placeholder';
@@ -113,6 +113,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
     generateReturnTextures(this);
     generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
+    generateEvacRingTexture(this); // 空襲下の退避の輪（v0.6.11 S5。jp_03）
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);

@@ -26,7 +26,7 @@ export interface InputState {
   identifyTap: boolean;
   /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。v0.6.8 から全任務で読む（艇の機銃は魚雷の任務でも艦と機を撃てる） */
   gunHeld: boolean;
-  /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。ボタンとキーは S5）。ほかの任務では立たない */
+  /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。S5 から右端の識別の段のボタン ui/weapon-panel と Tab キー）。ほかの任務では誰も読まない */
   switchTap: boolean;
 }
 

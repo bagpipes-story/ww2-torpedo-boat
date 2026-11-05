@@ -77,6 +77,8 @@ export const MISSION_LANDING_EVENT = 35;
 export const MISSION_LANDING_THREAT = 36;
 /** 37 輸送船が射線に入る（v0.6.9 R14 A1。自艇と戦う PT が輸送船の近くで艇首を輸送船へ向けた＝戦いながらの斉射の前触れ。赤い線のすぐ下・13mm の出来事より上。文は ui/landing-lines） */
 export const MISSION_LANDING_FIRE_LINE = 37;
+/** 38 空襲下の退避（v0.6.11 S5。jp_03。t.evac.enabled の任務だけ。夜明け（240 秒の後）の空襲の行の下・ほかの全部の上。中の行は ui/evac-lines の evacLineMode。ほかの任務は 1 ビットも変わらない） */
+export const MISSION_EVAC = 38;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -171,6 +173,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   // 夜明けのラッチの瞬間に落ちている夜の 1 発（最大 1.28 秒）は夜明けの 4 機の接近・旋回の行に隠さない（R6。夜明けの最初の進路はラッチから first_run_s 後で重ならない）
   if (pa.enabled && pa.threat === AS_T_FALLING && (t.dawn.threat === AS_T_INBOUND || t.dawn.threat === AS_T_ORBIT)) return MISSION_PATROL_ATTACK;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
+  if (t.evac.enabled) return MISSION_EVAC; // 空襲下の退避（v0.6.11 S5。帰投の呼びかけ・平常の行は出ない＝jp_03 の 2 行目に「夜明け」は無い）
   if (pa.enabled) {
     // 夜の哨戒機（v0.6.7。jp_02 に他の敵はいない）: 発見と夜の出撃 > 捜索 > 結果（平常は下の帰投せよの下。出撃の後の哨戒で航跡の行が出るなら結果より航跡。レビュー ux:ux-4）
     if (pa.threat !== AS_T_NONE && pa.threat !== AS_T_REST) return MISSION_PATROL_ATTACK;

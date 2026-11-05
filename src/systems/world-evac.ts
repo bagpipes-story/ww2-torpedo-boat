@@ -18,6 +18,7 @@ import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
 import { createEvacPlan, evacPlanHooks, type EvacFlightPort, type EvacPlan } from '../core/evac-plan';
 import { evacFrameInput, evacLoadSeat, evacSeatCommand, evacSeatHome, evacSinkLeader, type EvacSeat, type EvacSeatHooks } from '../core/evac-seat';
 import { createEvacSquadron, type EvacBoat, type EvacSquadron } from '../core/evac-squadron';
+import { EVS_GONE, createEvacFeed, feedBoatSunk, feedSink, type EvacFeed } from '../core/evac-telemetry';
 import type { DamageState, HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
@@ -69,8 +70,13 @@ export class WorldEvac {
   readonly aaOrder: Int32Array;
   readonly aaD2: Float64Array;
   lastDownFlight = -1;
-  /** 沈んだ艇の数（座席でない艇も。HUD の出来事は S5） */
+  /** 沈んだ艇の数（座席でない艇も） */
   losses = 0;
+  /** HUD の出来事（S5。座席の hooks と段 5 の後に積み、systems/evac-telemetry がフレームごとに読んで消す） */
+  readonly feed: EvacFeed;
+  /** カメラの本当の中心 m（S5。絵の view が毎フレーム書く。jp_03 の海は小さく、見張りのズームでカメラが海の縁で止まる＝自艇が画面の中心に無い。端の矢印はこの中心から。無ければ NaN） */
+  camX = NaN;
+  camY = NaN;
   view: EvacView | null = null;
   private latchSeen = false;
   private readonly cmd: BoatInput = { headingDeg: NaN, speed01: 0 };
@@ -105,16 +111,19 @@ export class WorldEvac {
     };
     this.seat = seat;
     evacLoadSeat(sq, seat);
+    const feed = (this.feed = createEvacFeed(sq.groups.length));
     const inner: EvacSeatHooks = {
       onSeatLoaded: () => {
         w.extinguishHeldS = 0;
         damage.fireReason = 'destroyed';
         w.launcher.clearQueue();
+        feed.seatSeq++;
       },
       onLeaderChanged: noop,
-      onGroupGone: noop,
-      onBoatSunk: () => {
+      onGroupGone: (gi) => feedSink(feed, EVS_GONE, gi, sq.targeted[gi] !== 0),
+      onBoatSunk: (b) => {
         this.losses++;
+        feedBoatSunk(feed, sq, b);
       },
     };
     const ref: { air: EvacAirStep | null } = { air: null };
@@ -183,7 +192,16 @@ export class WorldEvac {
 
   /** 段 5（座席の火災の後・夜明けの空襲の前）。閃光の距離は兵装の閃光（flash_reveal の時だけ陰を見つける） */
   stepAir(feelDt: number): void {
-    stepEvacAir(this.air, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);
+    const a = this.air;
+    stepEvacAir(a, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);
+    // このステップの出来事を HUD へ積む（plan.ev*・repass.ev は次のステップの頭で消える）
+    const f = this.feed;
+    const p = a.plan;
+    f.lost |= p.evLost;
+    f.found |= p.evFound;
+    f.repass |= a.repass.ev;
+    if (p.evWave >= 0) f.wave = p.evWave;
+    if (p.evSettle) f.settle = true;
   }
 
   updateVisuals(realDt: number): void {

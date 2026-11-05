@@ -4,6 +4,7 @@
 // after で両方の状態（18 隻の記録と隊・座席・編隊の段と終わり方と凍結の空襲の状態・もう一度来る編隊・§2 の 4 機・対空・燃料・乱数 +19・+24・+29・+30・+31・+32〜+43・
 // 帰投・ラッチ・沈没・消火の長押し）を同じ歩き方で平らにして比べる（数は |差| ≤ 1e-6、真偽と文字は同じ）。違ったステップを数え、最初の違いの欄を返す。
 // 模擬の値（data）は束ねた時の repo の data/*.json（比べる site は同じ木のビルドにする）。smokeRun は台本なしの 1 夜（S4 の煙の門: 240 秒 ＋ 落ち着くまでページのエラー 0）。
+// S5: ［切替］は HUD の右端の識別の段のボタン（ui/weapon-panel の switchButton。HoldButton の押下）を押して入れる（ボタンの道＝InputState.switchTap を直に書かない）。
 import { gameData } from '../../src/config/game-data';
 import { runEvacTrial } from '../../src/core/evac-sim';
 import { evacSimSetup } from '../../src/systems/evac-sim-setup';
@@ -27,6 +28,16 @@ function flat(roots) {
   };
   for (const [k, v] of roots) walk(v, k, 0);
   return { paths, vals };
+}
+
+/** HUD の［切替］のボタンを 1 回押して離す（押下で InputState.switchTap。ポインタの番号は台本の指と重ならない 97） */
+function pressSwitch() {
+  const hud = window.__game.scene.getScene('Hud');
+  const b = hud && hud.panel ? hud.panel.switchButton : null;
+  if (!b) throw new Error('HUD に［切替］のボタンが無い');
+  const ptr = { id: 97 };
+  b.button.emit('pointerdown', ptr);
+  hud.input.emit('pointerup', ptr);
 }
 
 function same(a, b) {
@@ -102,7 +113,7 @@ export function runEvacVsSim(o) {
       inp.speed01 = fo.speed01;
       inp.gunHeld = fo.gunHeld;
       inp.extinguishHeld = fo.extHeld;
-      inp.switchTap = fo.switchTap;
+      if (fo.switchTap) pressSwitch();
       const before = steps;
       hl.frame(o.frameMs);
       if (steps !== before + 1) throw new Error(`フレーム ${k} の固定ステップが ${steps - before}（1 のはず）`);
@@ -172,4 +183,56 @@ export function smokeRun(o) {
   return { frames: k, t, mission: hl.active('Mission'), result: hl.active('Result'), resultLines: hl.texts('Result').length, survivors: alive, settled: sq.settled, came: plan.came, impacts: plan.impacts, children };
 }
 
-window.__wvsEvac = { runEvacVsSim, smokeRun };
+/**
+ * HUD の画面写しの台（S5。evac-hud.mjs）: 模擬の台本の入力を世界へ写して進め、テレメトリの予告し直し（t.evac.annKind 2）の始まりから afterS 秒のフレームで止める
+ * （終わりの lookS 秒は見張りを押したまま＝ズーム 0.5 へ。999 以上は始めからずっと）。止めた所の HUD の文・地図の上の字と輪の画面の大きさを返す（ページはそのまま＝node が撮る）
+ */
+export function hudProbe(o) {
+  const hl = window.__hl;
+  const w = hl.world();
+  if (!w.evac) throw new Error('空襲下の退避の任務ではない');
+  const tm = window.__game.registry.get('boatTelemetry');
+  const s = evacSimSetup(gameData, o.hard);
+  const inp = w.input;
+  let stopK = -1;
+  let found = -1;
+  const mirror = {
+    begin() {},
+    frame(k, fo) {
+      if (stopK >= 0 && k >= stopK) throw new Error('stop');
+      if (!hl.active('Mission')) throw new Error('mission-ended');
+      inp.stickActive = true;
+      inp.headingDeg = fo.headingDeg;
+      inp.speed01 = fo.speed01;
+      inp.gunHeld = fo.gunHeld;
+      inp.extinguishHeld = fo.extHeld;
+      inp.lookout = o.lookS > 0 && (o.lookS >= 999 || (stopK >= 0 && k >= stopK - Math.round(o.lookS * 60)));
+      if (fo.switchTap) pressSwitch();
+      hl.frame(o.frameMs);
+    },
+    after(k) {
+      if (found < 0 && tm.evac.annKind === 2) {
+        found = k;
+        stopK = k + Math.max(1, Math.round(o.afterS * 60));
+      }
+      if (found < 0 && k > o.maxSteps) throw new Error('予告し直しが来ない');
+    },
+  };
+  try {
+    runEvacTrial(s, o.policy, o.seed, null, mirror);
+  } catch (e) {
+    if (!(e instanceof Error) || e.message !== 'stop') throw e;
+  }
+  hl.render();
+  const m = hl.mission();
+  const z = m.cameras.main.zoom / window.__game.scene.getScene('Hud').cameras.main.zoom; // 論理ズーム（Hud のカメラのズームは RENDER_SCALE）
+  const world = m.children.list.filter((x) => x.visible && (x.type === 'Text' || (x.type === 'Image' && x.texture && x.texture.key === 'tex-evac-ring')));
+  return {
+    phases: w.evac.sq.groups.map((g) => g.phase), targeted: Array.from(w.evac.sq.targeted), control: w.evac.sq.control,
+    t: w.stepTimeS, zoom: z, repassAtS: (found + 1) / 60, annKind: tm.evac.annKind, event: tm.evac.event,
+    hud: hl.objects('Hud').filter((x) => x.type === 'Text' && x.v && x.text !== ''),
+    marks: world.map((x) => (x.type === 'Text' ? { text: x.text, px: parseFloat(x.style.fontSize) * x.scaleY * z, h: x.displayHeight * z, w: x.displayWidth * z, color: x.style.color, bold: x.style.fontStyle === 'bold' } : { ring: true, r: (x.displayWidth / 2) * z, tint: x.tintTopLeft })),
+  };
+}
+
+window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe };

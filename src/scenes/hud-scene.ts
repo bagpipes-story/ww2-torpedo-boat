@@ -94,7 +94,7 @@ export class HudScene extends Phaser.Scene {
     this.fuelGauge = new FuelGauge(this);
     if (this.telemetry.engine.on) this.engineHud = new EngineHud(this); // Mission が launch の前にテレメトリを 1 回書く（?debug&engoff の夜は on false）
     this.markers = new HudMarkers(this, mission, this.telemetry); // 画面外マーカー 4 本（敵・帰投・敵機・岸。ui/hud-markers。v0.6.4 で切り出し）
-    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached);
+    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached, this.telemetry.evac.annSeq);
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {

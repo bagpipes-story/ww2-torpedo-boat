@@ -119,6 +119,8 @@ export interface DawnTelemetry {
   /** 夜明けの後に岸へ逃げている大発の隻数と、夜明けの後に岸へ隠れた（上陸した）隻数（v0.6.2 実機 1 回目。空襲の行の後ろ。夜明け前・大発の無い任務は 0） */
   bargesRunning: number;
   bargesHidden: number;
+  /** 昼から始まる任務（v0.6.11 S5。missions_seed の day_start＝jp_03）: 時計・中央の帯の言葉を「夜明け」でなく「空襲」に（ui/dawn-lines）。ほかの任務は false */
+  dayStart: boolean;
 }
 
 export function createDawnTelemetry(): DawnTelemetry {
@@ -146,6 +148,7 @@ export function createDawnTelemetry(): DawnTelemetry {
     shipsGone: false,
     bargesRunning: 0,
     bargesHidden: 0,
+    dayStart: false,
   };
 }
 

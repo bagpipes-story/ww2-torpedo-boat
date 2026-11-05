@@ -138,7 +138,7 @@ export class MissionScene extends Phaser.Scene {
     const m = w.setup.mission;
     drawSea(this, m.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
     this.shallowsView = new ShallowsView(this, m.shallows, m.coast, m.bounds);
-    this.returnView = new ReturnPointView(this, w.returnPoint);
+    this.returnView = w.evac ? undefined : new ReturnPointView(this, w.returnPoint); // 空襲下の退避（v0.6.11 S5）は隠れ場所の輪（ui/evac-markers）
 
     this.timeScale = world.time_scale;
     this.timeLeftS = w.setup.durationS;

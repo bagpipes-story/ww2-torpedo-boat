@@ -3,6 +3,7 @@
 // §7: 位置は transform だけ動かし、距離テキストは刻みが変わったときだけ setText。
 // v0.6.6（隼艇の矢印）: 任意の矢印の色 tint、出ている間の点（読むだけ）と nudge（縁に沿ってずらす。ui/marker-separation。次の refresh が方位どおりに戻す）。
 // v0.6.6 レビュー ux:ux-1: 任意の hideMargin（「画面の内なら隠す」の余白。ui/edge-marker-screen）と refresh の drawn（目標の絵が出ていなければ画面の内でも縁へ）。省けば今のまま。
+// v0.6.11 S5: setPrefix（ラベルの名を替える。空襲下の退避の「第4隊 N m」「西の壕 N m」＝ui/evac-markers。替えたときだけ次の refresh で組み直す）。呼ばなければ今のまま。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/game-config';
 import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_MARGIN, TARGET_MARKER_RIGHT_MARGIN, hudTextStyle } from '../config/ui-config';
@@ -91,6 +92,13 @@ export class EdgeMarker {
       this.label.setText(`${this.opts.labelPrefix} ${step * this.opts.stepM} m`);
     }
     this.setShown(true);
+  }
+
+  /** ラベルの接頭辞を替える（v0.6.11 S5。同じなら何もしない。替えたら次の refresh で距離の字を組み直す） */
+  setPrefix(prefix: string): void {
+    if (prefix === this.opts.labelPrefix) return;
+    this.opts.labelPrefix = prefix;
+    this.lastDistanceStep = -1;
   }
 
   /** 出ているか・矢印の点（v0.6.6。ui/marker-separation が読む） */

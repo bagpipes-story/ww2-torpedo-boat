@@ -88,22 +88,31 @@ function tierOf(sq: EvacSquadron, gi: number): number {
   return 1;
 }
 
-/** ［切替］の並びを sq.order に作る（段の順・同じ段は隊番号の順。1 つの隊は 1 回だけ。乱数なし）。長さを返す */
-export function evacSwitchOrder(sq: EvacSquadron): number {
+/** ［切替］の並びを out に作る（段の順・同じ段は隊番号の順。1 つの隊は 1 回だけ。乱数なし）。長さを返す */
+function fillSwitchOrder(sq: EvacSquadron, out: Int32Array): number {
   let n = 0;
-  for (let t = 0; t <= 3; t++) for (let gi = 0; gi < sq.groups.length; gi++) if (tierOf(sq, gi) === t) sq.order[n++] = gi;
+  for (let t = 0; t <= 3; t++) for (let gi = 0; gi < sq.groups.length; gi++) if (tierOf(sq, gi) === t) out[n++] = gi;
+  return n;
+}
+
+/** ［切替］の並びを sq.order に作る。長さを返す */
+export function evacSwitchOrder(sq: EvacSquadron): number {
+  const n = fillSwitchOrder(sq, sq.order);
   sq.orderLen = n;
   return n;
 }
 
-/** 押した時に移る隊: 並びの中で今の隊の次（末尾なら先頭。今の隊が並びに無ければ先頭）。移る先が無い・決着の後は −1（灰色の「切替」） */
-export function evacNextSwitch(sq: EvacSquadron): number {
+/**
+ * 押した時に移る隊: 並びの中で今の隊の次（末尾なら先頭。今の隊が並びに無ければ先頭）。移る先が無い・決着の後は −1（灰色の「切替」）。
+ * out を渡せば並びをそこに作る（v0.6.11 S5。HUD のボタンの字「切替 4」を毎フレーム見る＝sq.order・orderLen を書かない。世界と模擬の突き合わせが sq を比べる）
+ */
+export function evacNextSwitch(sq: EvacSquadron, out: Int32Array = sq.order): number {
   if (sq.settled) return -1;
-  const n = evacSwitchOrder(sq);
+  const n = out === sq.order ? evacSwitchOrder(sq) : fillSwitchOrder(sq, out);
   if (n === 0) return -1;
   let i = -1;
-  for (let k = 0; k < n; k++) if (sq.order[k] === sq.control) i = k;
-  const next = sq.order[i < 0 ? 0 : (i + 1) % n]!;
+  for (let k = 0; k < n; k++) if (out[k] === sq.control) i = k;
+  const next = out[i < 0 ? 0 : (i + 1) % n]!;
   return next === sq.control ? -1 : next;
 }
 

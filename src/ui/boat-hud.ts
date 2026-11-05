@@ -1,6 +1,6 @@
 // 速力・速力段・舵の HUD（右下）と上中央の 3 行目（敵影と発見（雨））。§7: setText は値が変わったときだけ。舵は静的バー＋マーカーの位置だけ動かす。
 // 2 行目は ui/mission-line.ts（v0.4.2 で切り出し）、文と表は ui/hud-lines.ts（v0.4.1 で切り出し）。左上 2 段目の夜明けの時計は ui/dawn-clock.ts（v0.6.2 実機 1 回目）。
-// 右上 2 段目の揚陸の時計は ui/landing-clock.ts（v0.6.9。揚陸の任務だけ作る）。
+// 右上 2 段目の揚陸の時計は ui/landing-clock.ts（v0.6.9。揚陸の任務だけ作る）。3 行目は空襲下の退避（v0.6.11 S5。jp_03）だけ隊の行（ui/evac-lines の evacStatusLine）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -25,6 +25,7 @@ import type { BoatTelemetry, SpeedStep } from '../core/boat-motion';
 import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL } from './hud-lines';
 import { shipsGoneStatusJa } from './dawn-lines';
 import { DawnClock } from './dawn-clock';
+import { evacStatusKey, evacStatusLine } from './evac-lines';
 import { LandingClock } from './landing-clock';
 import { MissionLine } from './mission-line';
 import { patrolStatusLine, patrolStatusOf } from './patrol-lines';
@@ -52,6 +53,8 @@ export class BoatHud {
   private lastDetectStep = -1;
   private lastSpeedWarn = false;
   private lastRain = false;
+  /** 空襲下の退避（v0.6.11 S5。jp_03）の 3 行目のキー（ui/evac-lines の evacStatusKey。無い任務は −1 のまま） */
+  private lastEvacStatus = -1;
   private lastSpeedKt = -1;
   private lastStep: SpeedStep | '' = '';
   private lastHeading = -1;
@@ -134,11 +137,15 @@ export class BoatHud {
     const detectStep = Math.round(t.detectRangeM / DETECT_RANGE_STEP_M);
     // 雨: 艦と艇を結ぶ線が暴風の帯にかかっている（発見距離・視程が下がる。v0.3.4）
     const rain = t.stormLos && !t.destroyerSunk;
-    if (status !== this.lastStatus || detectStep !== this.lastDetectStep || rain !== this.lastRain) {
+    const est = t.evac.enabled ? evacStatusKey(t.evac) : -1; // 空襲下の退避（v0.6.11 S5。r2 H4: 新しい Text は作らない。夜の見え方の文は出さない）
+    if (status !== this.lastStatus || detectStep !== this.lastDetectStep || rain !== this.lastRain || est !== this.lastEvacStatus) {
       this.lastStatus = status;
       this.lastDetectStep = detectStep;
       this.lastRain = rain;
-      if (pst >= 0) {
+      this.lastEvacStatus = est;
+      if (est >= 0) {
+        this.statusText.setText(evacStatusLine(t.evac)).setColor(HUD_COLOR);
+      } else if (pst >= 0) {
         const l = patrolStatusLine(t.patrol, pst);
         this.statusText.setText(l.text).setColor(l.warn ? HUD_COLOR_WARN : HUD_COLOR);
       } else if (status === STATUS_SUNK) {

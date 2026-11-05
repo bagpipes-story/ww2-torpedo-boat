@@ -7,6 +7,7 @@
 // v0.6.9 S6b（揚陸の任務 jp_04 だけ。ほかの任務は作らない＝矢印の数・作る順・refresh は今のまま）: 7・8 本目＝「雷撃 N m」（赤。見張りの報告の PT が画面の外か、視程の外で海の上の ▼ の立てない所＝
 // 上の HUD の帯・右端の技能のボタン・兵装の下。▼ が出ていれば出さない。F12: 視程の内の脅威の PT なら出さない）と
 // 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前）。決まりは ui/landing-markers。どちらも右下の速力と兵装の HUD の角を避け、近い印から縁に沿ってずらす（雷撃は「PT」から、輸送は雷撃と帰投から）。
+// v0.6.11 S5（空襲下の退避の任務 jp_03 だけ）: 帰投の印は作らず（隊長艇の壕だけを指す印は紛らわしい＝r2 L8）、画面の外の狙われた隊と近い空いた隠れ場所の矢印（ui/evac-markers の EvacEdgeMarkers）。
 import Phaser from 'phaser';
 import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
@@ -42,6 +43,7 @@ import {
 import type { BoatTelemetry } from '../core/boat-motion';
 import { LANDING_DIST_STEP_M } from '../core/landing';
 import { EdgeMarker } from './edge-marker';
+import { EvacEdgeMarkers } from './evac-markers';
 import { snappedDistM } from './edge-marker-screen';
 import { avoidPauseButton, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from './landing-markers';
 import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
@@ -87,12 +89,15 @@ export class HudMarkers {
   /** 揚陸の任務（v0.6.9 S6b。jp_04 だけ）: 見張りの報告の PT「雷撃 N m」（赤・100 m 刻み・切り上げ・矢印の下。海の上の ▼ が出ていれば出さない。視程の内の PT は画面の内か縁から TARGET_MARKER_MARGIN の内なら隠し、視程の外の PT は画面の内でも ▼ の立てない所＝上の HUD の帯・右端の技能のボタン・兵装の下なら縁から指す）と輸送船「輸送 N m」（味方の青・同じ刻み・矢印の下。本当の画面の矩形の内なら隠す＝大きな船体が見えている間は出さない。縁から 56 px にすると、右の縁のすぐ内に見えている船へ W − 352 の縁から矢印が向いた） */
   private runnerMarker?: EdgeMarker;
   private shipMarker?: EdgeMarker;
+  /** 空襲下の退避（v0.6.11 S5。jp_03 だけ）: 狙われた隊・近い隠れ場所の矢印 */
+  private evacMarkers?: EvacEdgeMarkers;
 
   constructor(scene: Phaser.Scene, mission: PrototypeMission, telemetry: BoatTelemetry) {
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
     const guns = mission.mainWeapon === 'guns';
     this.targetMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: mission.ptBoats ? PT_MARKER_LABEL : guns ? BARGE_MARKER_LABEL : '敵', stepM: TARGET_MARKER_DISTANCE_STEP_M, labelAbove: false, roundUp: guns || mission.ptBoats !== null, topMargin: TARGET_MARKER_TOP_MARGIN });
-    this.homeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
+    if (telemetry.evac.enabled) this.evacMarkers = new EvacEdgeMarkers(scene, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP); // 空襲下の退避（v0.6.11 S5）は帰投の印の代わり
+    else this.homeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: '帰投', stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     // 岸のある任務（大発）: 砂色の「岸 N m」（浅瀬の縁が画面外の間。出発点から南へ 1,900 m。v0.4.2 の実機で、どこへ行けばよいか分からなかった）
     if (mission.coast && mission.barges) this.coastMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: COAST_MARKER_LABEL, stepM: HOME_MARKER_DISTANCE_STEP_M, labelAbove: true, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: COAST_MARKER_TEXT_COLOR });
     if (mission.convoy) this.convoyMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: CONVOY_MARKER_LABEL, stepM: CONVOY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
@@ -113,6 +118,7 @@ export class HudMarkers {
     pm?.refresh(pdx, telemetry.planeDy, !Number.isNaN(pdx), telemetry, patrol && !Number.isNaN(pdx) ? snappedDistM(pdx, telemetry.planeDy) : undefined);
     if (pm && patrol && pm.isShown) pm.nudge(avoidCorner(pm.shownX, pm.shownY, PLANE_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
     this.coastMarker?.refresh(telemetry.coastDx, telemetry.coastDy, !Number.isNaN(telemetry.coastDy), telemetry);
+    this.evacMarkers?.refresh(telemetry);
     this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry, telemetry.convoy.nearestM); // 平方根は convoy-telemetry の 1 回（レビュー neutral:N2）
     if (this.shipMarker) this.refreshLanding(telemetry); // 揚陸の任務だけ（v0.6.9 S6b）
     const gb = telemetry.gunboat;
@@ -155,6 +161,8 @@ export class HudMarkers {
     this.gunboatMarker?.destroy();
     this.runnerMarker?.destroy();
     this.shipMarker?.destroy();
+    this.evacMarkers?.destroy();
+    this.evacMarkers = undefined;
     this.targetMarker = undefined;
     this.homeMarker = undefined;
     this.planeMarker = undefined;

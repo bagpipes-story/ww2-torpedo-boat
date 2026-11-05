@@ -2,7 +2,8 @@
 // 兵装は全任務で同じ位置（実機 1 回目「主兵装である魚雷が右側。機銃が魚雷の左側側に固定」）: 右下の角（列 1・R64）に魚雷、そのすぐ左（列 2・R56）に機銃、扇は魚雷の下（v0.5.1 のユーザーの要望
 // 「発射ボタンの下に小さく」。見た目はホームバーの帯 682〜720 より上）。missions_seed の main_weapon は置き場所も大きさも決めない（Briefing の順と 2 行目の「魚雷なし／大発なし」だけ）。
 // 技能（R44）は右端に縦一列（実機 1 回目「魚雷の上に並べていた変更前のように」。右端を魚雷の右端 W − 24 に揃えた x = W − 68）、上から 煙幕・消火・見張り・識別の決まった段（y 68・180・292・404）。
-// 無いボタン（日本の艇の煙幕・味方機の来ない夜の識別）の段は空ける（v0.6.7 も位置を詰めなかった）。
+// 無いボタン（日本の艇の煙幕・味方機の来ない夜の識別）の段は空ける（v0.6.7 も位置を詰めなかった）。v0.6.11 S5: 空襲下の退避（jp_03。識別が無い＝V-E11）は識別の段に［切替］
+// （SKILL_ORDER は変えない＝ほかの任務の置き方は 1 px も変わらない。tests/evac-switch-ui）。
 // 速力・機関の表示の右端は W − 312、端の印の右の余白 352、つまむ帯は W/2〜W − 304。何も import しない（tests が node で読んでも DOM を引かない。title-layout-config と同じ）。
 
 export const HUD_LAYOUT_H = 720;
@@ -38,10 +39,10 @@ export const MARKER_PX = 18;
 /** ホームバーの帯の上端 */
 export const HOME_BAND_Y = 682;
 
-export type SkillKind = 'smoke' | 'extinguish' | 'lookout' | 'identify';
-/** 技能の段の並び（上から。段 i の中心 y は skillSlotY(i)。無いボタンの段は空ける）とボタンの文字 */
+export type SkillKind = 'smoke' | 'extinguish' | 'lookout' | 'identify' | 'switch';
+/** 技能の段の並び（上から。段 i の中心 y は skillSlotY(i)。無いボタンの段は空ける）とボタンの文字。［切替］（v0.6.11 S5）は識別の段に入る（並びには足さない） */
 export const SKILL_ORDER: readonly SkillKind[] = ['smoke', 'extinguish', 'lookout', 'identify'];
-const SKILL_LABELS: Readonly<Record<SkillKind, string>> = { smoke: '煙幕', extinguish: '消火', lookout: '見張り', identify: '識別' };
+const SKILL_LABELS: Readonly<Record<SkillKind, string>> = { smoke: '煙幕', extinguish: '消火', lookout: '見張り', identify: '識別', switch: '切替' };
 
 export interface PanelCircle {
   x: number;
@@ -124,10 +125,11 @@ export function skillSlotY(i: number): number {
 }
 
 /**
- * パネルの置き方（HUD を作るとき 1 回）。has は煙幕・識別のボタンがあるか（消火と見張りはいつも）。どの任務も兵装の位置と大きさは同じ（v0.6.8 実機 1 回目）。
+ * パネルの置き方（HUD を作るとき 1 回）。has は煙幕・識別のボタンがあるか（消火と見張りはいつも）と、識別の無い段に［切替］を置くか（v0.6.11 S5。evac の任務だけ）。
+ * どの任務も兵装の位置と大きさは同じ（v0.6.8 実機 1 回目）。
  * 魚雷の中心 y = 642 − 18 − 64 = 560、機銃の中心 y = round((魚雷の上端 496 + 扇の下端 682) / 2) = 589（v0.6.8 の us_02 で試した位置）
  */
-export function panelLayout(W: number, has: { smoke: boolean; identify: boolean }): PanelLayout {
+export function panelLayout(W: number, has: { smoke: boolean; identify: boolean; switch?: boolean }): PanelLayout {
   const { c1, c2 } = panelColumns(W);
   const torpY = SPREAD_TOP_Y - SPREAD_GAP - R_TORPEDO;
   const gunY = Math.round((torpY - R_TORPEDO + SPREAD_TOP_Y + SPREAD_H) / 2);
@@ -135,8 +137,9 @@ export function panelLayout(W: number, has: { smoke: boolean; identify: boolean 
   const skills: PanelSkill[] = [];
   for (let i = 0; i < SKILL_ORDER.length; i++) {
     const kind = SKILL_ORDER[i]!;
-    if ((kind === 'smoke' && !has.smoke) || (kind === 'identify' && !has.identify)) continue;
-    skills.push({ kind, label: SKILL_LABELS[kind], x: sx, y: skillSlotY(i) });
+    const k: SkillKind = kind === 'identify' && !has.identify && has.switch === true ? 'switch' : kind;
+    if ((k === 'smoke' && !has.smoke) || (k === 'identify' && !has.identify)) continue;
+    skills.push({ kind: k, label: SKILL_LABELS[k], x: sx, y: skillSlotY(i) });
   }
   const spreadW = 2 * R_TORPEDO;
   return {

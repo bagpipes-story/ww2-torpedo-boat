@@ -12,6 +12,7 @@ import { createPtTelemetry } from '../src/core/pt-boats';
 import { createConvoyTelemetry } from '../src/core/convoy';
 import { createEngineTelemetry } from '../src/core/engine-trouble';
 import { createAllyTelemetry } from '../src/core/ally-telemetry';
+import { createEvacTelemetry } from '../src/core/evac-telemetry';
 import { createLandingTelemetry } from '../src/core/landing';
 import { createPatrolTelemetry } from '../src/core/patrol-air-state';
 import { DAWN_AIR_ENEMY, DAWN_AIR_OWN, createDawnTelemetry, type DawnTelemetry } from '../src/core/dawn-air';
@@ -69,6 +70,7 @@ function tele(dawn: Partial<DawnTelemetry> = {}, over: Partial<BoatTelemetry> = 
     patrol: createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）
     landing: createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）
     ally: createAllyTelemetry(), // 卯月のいない任務（v0.6.10 S6。enabled false）
+    evac: createEvacTelemetry(), // 空襲下の退避の無い任務（v0.6.11 S5。enabled false）
     ...over,
     dawn: { ...createDawnTelemetry(), ...dawn },
   } as BoatTelemetry;
@@ -120,6 +122,9 @@ describe('左上 2 段目の夜明けの時計（ui/dawn-clock。v0.6.2 実機 1
     expect(HUD_FONT_CLOCK_PX).toBeGreaterThanOrEqual(18);
     expect(HUD_FONT_CLOCK_PX).toBeLessThanOrEqual(22);
     const longest = ['夜明けまで 999 秒', '夜明け後 9999 秒', ...PLAYABLE_IDS.map((id) => clockJa(tele({}, { timeLeftS: buildWorldSetup(gameData, id).durationS })))];
+    // 昼から始まる任務（v0.6.11 S5。day_start＝jp_03。r2 M9）: 「空襲 残り 4:00」「空襲後 20:24」（燃料が尽きる 1,224 秒）と 2 桁の分の最長
+    for (const [reached, s] of [[false, 240], [true, 1224.9], [true, 5999]] as const) longest.push(clockJa(tele({ dayStart: true, reached, daylightS: s }, { timeLeftS: reached ? 0 : s })));
+    expect(longest.slice(-3)).toEqual(['空襲 残り 4:00', '空襲後 20:24', '空襲後 99:59']);
     for (const s of longest) expect(textWidthPx(s, HUD_FONT_CLOCK_PX), s).toBeLessThanOrEqual(HUD_CLOCK_MAX_W_PX);
     // 縦: FPS の行（y 24、18 px、行の高さは文字の約 1.2 倍）の下端 < 時計の上端 < 時計の下端 < HP の行（HUD_MARGIN + HP_BAR_OFFSET_Y 58）
     expect(HUD_MARGIN + 18 * 1.2).toBeLessThan(ROW2_Y);

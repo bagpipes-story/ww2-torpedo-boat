@@ -198,6 +198,7 @@ export const TEXTURE_KEYS = {
   returnRing: 'tex-return-ring',
   /** 空襲の着弾点の輪（v0.6.1。線の太い専用の輪） */
   impactRing: 'tex-impact-ring',
+  evacRing: 'tex-evac-ring', // 空襲下の退避の輪（v0.6.11 S5。jp_03。隠れ場所・操作中の隊・狙われた隊・見つかった陰。assets/impact-ring-placeholder の generateEvacRingTexture）
   debugRing: 'tex-debug-ring',
   shell: 'tex-shell',
   tracer: 'tex-tracer',

@@ -9,6 +9,7 @@ import { createDawnTelemetry } from '../src/core/dawn-air';
 import { createEngineTelemetry } from '../src/core/engine-trouble';
 import { createGunboatTelemetry } from '../src/core/gunboat';
 import { createAllyTelemetry } from '../src/core/ally-telemetry';
+import { createEvacTelemetry } from '../src/core/evac-telemetry';
 import { createLandingTelemetry } from '../src/core/landing';
 import { createPatrolTelemetry } from '../src/core/patrol-air-state';
 import { createPtSection, type PtSection, type PtTelemetry } from '../src/core/pt-boats';
@@ -64,6 +65,7 @@ export function tele(pt: Partial<PtTelemetry> = {}, over: Partial<BoatTelemetry>
     patrol: over.patrol ?? createPatrolTelemetry(), // 夜の哨戒機の無い任務（v0.6.7。enabled false）。夜の哨戒の行のテストは over.patrol で渡す
     landing: over.landing ?? createLandingTelemetry(), // 揚陸の無い任務（v0.6.9。enabled false）。jp_04 の行のテストは over.landing で渡す
     ally: over.ally ?? createAllyTelemetry(), // 卯月のいない任務（v0.6.10 S6。enabled false）。卯月の行のテストは over.ally で渡す
+    evac: over.evac ?? createEvacTelemetry(), // 空襲下の退避の無い任務（v0.6.11 S5。enabled false）。jp_03 の行のテストは over.evac で渡す
   } as BoatTelemetry;
 }
 

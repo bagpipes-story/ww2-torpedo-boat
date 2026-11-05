@@ -1,15 +1,17 @@
 // 空襲下の退避（v0.6.11 S4。jp_03。spec-v0611-r2 §3.7・§11）の世界の組み立て（生成は 1 か所＝world-hazards の作法。r2 L11）: 編隊（波 × 枠＝ノーマル 8・ハード 12）を凍結の
 // systems/air-strike-flight の AirStrikeFlight で起動時に全部作り（機・爆弾・着弾の輪・進路の線の Image は凍結の物が作るプール。r2 M8）、着弾（命中の onPlayerHit・外れの splash の両方）を
 // core/evac-hits の走査へ、水柱は世界の SplashPool（共有 32）、座席への命中は世界の hitBoat（終わりの理由 air_strike）。毎フレームの絵は動く編隊と止まったフレームの 1 回だけ
-// （core/evac-air の evacDrawPass。r2 M2）・18 隻の Image（evac-boats-view）・地形は起動時に 1 回描く静的な Graphics（evac-terrain。r2 L4）。evac の無い任務は null（何も作らない）。
+// （core/evac-air の evacDrawPass。r2 M2）・18 隻の Image（evac-boats-view）・地形は起動時に 1 回描く静的な Graphics（evac-terrain。r2 L4）・輪と隊の番号と札（S5。ui/evac-markers の EvacMarks）。
+// evac の無い任務は null（何も作らない）。
 // AirStrikeFlight を import する（DOM の game-config を読む）のはこのファイルだけ。tests が読む面は systems/world-evac（構造の型）。
 import type Phaser from 'phaser';
-import { boatTextureKey } from '../config/game-config';
+import { RENDER_SCALE, boatTextureKey } from '../config/game-config';
 import { evacDrawPass } from '../core/evac-air';
 import type { BoatState } from '../core/boat-motion';
 import type { HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
 import type { SeededRng } from '../core/rng';
+import { EvacMarks } from '../ui/evac-markers';
 import { AirStrikeFlight } from './air-strike-flight';
 import type { BoatDamage } from './boat-damage';
 import { EvacBoatsView } from './evac-boats-view';
@@ -41,15 +43,21 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
   );
   const terrain = new EvacTerrain(scene, ev, w.setup.mission.bounds);
   const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite);
+  const marks = new EvacMarks(scene, evac.sq);
   const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
   evac.view = {
     update: () => {
       evacDrawPass(evac.plan, draw);
       boats.update(w.stepTimeS);
+      const cam = scene.cameras.main;
+      marks.update(w.stepTimeS, cam.zoom / RENDER_SCALE);
+      evac.camX = cam.midPoint.x; // 端の矢印（ui/evac-markers）はカメラの本当の中心から（海の縁でカメラが止まる）
+      evac.camY = cam.midPoint.y;
     },
     destroy: () => {
       for (const f of flights) f.destroy();
       boats.destroy();
+      marks.destroy();
       terrain.destroy();
     },
   };

@@ -48,7 +48,10 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）', 
     const we = code('systems/world-evac.ts');
     const sb = we.slice(we.indexOf('  stepBoats(dt: number'), we.indexOf('  stepAir('));
     expectOrder(sb, ['const latchStep = w.dawn.reached && !this.latchSeen;', 'if (w.boat.sinking) return;', 'stepEvacBoats(this.sq, this.seat, w.input, this.aiRng, w.stepTimeS, dt, realDt);', 'w.atHome = evacSeatHome(this.sq, this.seat, latchStep);']);
-    expect(we).toContain('stepEvacAir(this.air, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);');
+    expect(we).toContain('stepEvacAir(a, this.w.stepTimeS, feelDt, feelDt, this.w.arms ? this.w.arms.flashM : 0);');
+    // S5: 段 5 の後にそのステップの出来事を HUD へ積む（plan と repass は読むだけ＝世界と模擬の突き合わせの物を書かない）
+    const sa = we.slice(we.indexOf('  stepAir(feelDt: number)'), we.indexOf('  updateVisuals('));
+    expectOrder(sa, ['stepEvacAir(a,', 'f.lost |= p.evLost;', 'f.found |= p.evFound;', 'f.repass |= a.repass.ev;', 'if (p.evWave >= 0) f.wave = p.evWave;', 'if (p.evSettle) f.settle = true;']);
     const wb = code('systems/world-boat.ts');
     expect(wb).toContain('w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input');
     expect(wb).toContain('if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);');
