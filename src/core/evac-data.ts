@@ -103,6 +103,8 @@ export interface EvacRaidBlock {
   flights_per_group_max: number;
   bearing_fix_deg: number[];
   cover_reveal_chance: number;
+  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。data 2＝U7。1＝S3 の挙動。core/evac-repass） */
+  passes_max: number;
   survivor_quota: number;
   survivors_total: number;
   historical_survivors: number;
@@ -124,8 +126,8 @@ const FOLLOW_KEYS = ['gap_m', 'trail_step_m', 'catch_up_gain_per_s', 'heading_de
 const AI_KEYS = ['cast_off_s', 'pick_s', 'turn_max_deg', 'full_p', 'wall_m', 'wall_turn_deg', 'look_m', 'found_react_s', 'dodge', 'source'] as const;
 const AI_NUM_KEYS = ['pick_s', 'turn_max_deg', 'full_p', 'wall_m', 'wall_turn_deg', 'look_m', 'found_react_s'] as const;
 const DODGE_KEYS = ['success', 'turn_deg', 'hold_s'] as const;
-const RAID_KEYS = ['waves', 'flights', 'announce_lead_s', 'from_bearing_deg', 'flight_offsets_deg', 'spawn_m', 'flights_per_group_max', 'bearing_fix_deg', 'cover_reveal_chance', 'survivor_quota', 'survivors_total', 'historical_survivors', 'north_shore_label_ja', 'source'] as const;
-const RAID_NUM_KEYS = ['flights', 'announce_lead_s', 'from_bearing_deg', 'spawn_m', 'flights_per_group_max', 'cover_reveal_chance', 'survivor_quota', 'survivors_total', 'historical_survivors'] as const;
+const RAID_KEYS = ['waves', 'flights', 'announce_lead_s', 'from_bearing_deg', 'flight_offsets_deg', 'spawn_m', 'flights_per_group_max', 'bearing_fix_deg', 'cover_reveal_chance', 'passes_max', 'survivor_quota', 'survivors_total', 'historical_survivors', 'north_shore_label_ja', 'source'] as const;
+const RAID_NUM_KEYS = ['flights', 'announce_lead_s', 'from_bearing_deg', 'spawn_m', 'flights_per_group_max', 'cover_reveal_chance', 'passes_max', 'survivor_quota', 'survivors_total', 'historical_survivors'] as const;
 /** unten_air_raid.params.sortie の鍵（dawn_air_strike.params と同じ 9 個） */
 export const EVAC_SORTIE_KEYS = ['spawn_m', 'run_radius_m', 'first_run_s', 'run_gap_s', 'wave_rest_s', 'leave_s', 'spawn_offsets_deg', 'wave_rotate_deg', 'aim_turn_min_deg_s'] as const;
 

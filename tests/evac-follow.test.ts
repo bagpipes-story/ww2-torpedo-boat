@@ -117,7 +117,7 @@ describe('操作していない隊の乱数（seed+30・+31。M3・r2 M13）', (
     const r = makeRig();
     stepRigFor(r, NEUTRAL, 25);
     let n = 0;
-    const rng = { next: () => (n++, 0.3) } as unknown as SeededRng;
+    const rng = { next: () => (n++, P.dodgeSuccess - 0.01) } as unknown as SeededRng; // u < success（S3b の 0.2 で 0.19）
     r.sq.groups[2]!.phase = G_HIDDEN;
     expect([evacOnRelease(r.sq, rng, -1), evacOnRelease(r.sq, rng, 0), evacOnRelease(r.sq, rng, 2), evacOnRelease(r.sq, rng, 1)]).toEqual([false, false, false, true]);
     expect(n).toBe(4);

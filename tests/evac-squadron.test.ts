@@ -1,5 +1,5 @@
 // v0.6.11 S1（spec-v0611-r2 §3.2・§3.6・§13 の S1）: 隊の記録と隠れ場所の段（core/evac-squadron・core/evac-shelter・core/evac-boats）。
-// 入る境（輪の縁ちょうど・2 kt ちょうど・枠が 1 足りない）・取りやめで枠を返す・上げる順と 18 秒・隠れる前は全員が見えている・上げた艇は安全・
+// 入る境（輪の縁ちょうど・2 kt ちょうど・枠が 1 足りない）・取りやめで枠を返す・上げる順と 36 秒（S3b の haul_s 12）・隠れる前は全員が見えている・上げた艇は安全・
 // 交代で番号最小・残存・隠れ場所の中の交代（r2 M12）・上げている隊を下ろす・見つかった陰（r2 M14）・壕から出る縦列（r2 L2）・上げている間の座席（r2 L14）・確保なし。
 import { describe, expect, it } from 'vitest';
 import { G_ENTERING, G_FOUND, G_GONE, G_HAULING, G_HIDDEN, G_MOORED, G_UNDERWAY, SW_FREE, SW_WAIT_NEUTRAL } from '../src/core/evac-data';
@@ -11,7 +11,8 @@ import { SeededRng } from '../src/core/rng';
 import { DT, NEUTRAL, P, SETUP, evacConfig, input, makeRig, stepRig, stepRigFor, type EvacRig } from './evac-kit';
 
 const HOME = P.homeShelter;
-const WEST_COVER = P.shelters.findIndex((s) => s.id === 'west_cover');
+// 陰は v0.6.11 S3b から屋我地の陰（東）の 1 か所（陰（西）は data から外した）
+const COVER = P.shelters.findIndex((s) => s.id === 'east_cover');
 const pt: EvacTrailPoint = { x: 0, y: 0, ux: 0, uy: 0 };
 
 /** 操作中の隊の隊長艇（座席と記録）を点 (x, y) に置き、速さ speed で走っている隊にする */
@@ -121,14 +122,14 @@ describe('入る（操作中の隊。spec §3.6）', () => {
 });
 
 describe('僚艇が着いて隠れる・レールで上げる（spec §3.6）', () => {
-  it('壕: 僚艇の番号の大きい順に 1 隻 haul_s ずつ、隊長艇は最後。3 隻で 18 秒で隠れる。それまで上げていない艇は見えている', () => {
+  it('壕: 僚艇の番号の大きい順に 1 隻 haul_s ずつ、隊長艇は最後。3 隻で 36 秒（haul_s 12）で隠れる。それまで上げていない艇は見えている', () => {
     const r = makeRig();
     const g = r.sq.groups[0]!;
     park(r, HOME);
     expect([g.phase, g.hauling]).toEqual([G_HAULING, 2]);
     const upAt: number[] = [NaN, NaN, NaN];
     const t0 = r.t;
-    for (let i = 0; i < 20 / DT && g.phase !== G_HIDDEN; i++) {
+    for (let i = 0; i < (3 * P.haulS + 2) / DT && g.phase !== G_HIDDEN; i++) {
       for (const b of g.boats) expect(evacExposed(r.sq, b)).toBe(!b.up);
       stepRig(r, NEUTRAL);
       for (const b of g.boats) if (b.up && Number.isNaN(upAt[b.slot]!)) upAt[b.slot] = r.t - t0;
@@ -137,12 +138,12 @@ describe('僚艇が着いて隠れる・レールで上げる（spec §3.6）', 
     expect(upAt[2]).toBeCloseTo(P.haulS, 1);
     expect(upAt[1]).toBeCloseTo(2 * P.haulS, 1);
     expect(upAt[0]).toBeCloseTo(3 * P.haulS, 1);
-    expect(upAt[0]).toBeCloseTo(18, 1);
+    expect(upAt[0]).toBeCloseTo(36, 1);
     for (const b of g.boats) expect(evacExposed(r.sq, b)).toBe(false);
   });
   it('陰: 僚艇が枠の点に着いて止まればすぐ隠れる（上げない）', () => {
     const r = makeRig();
-    park(r, WEST_COVER);
+    park(r, COVER);
     expect(r.sq.groups[0]!.phase).toBe(G_HIDDEN);
     expect(r.sq.groups[0]!.boats.every((b) => !b.up)).toBe(true);
   });
@@ -252,9 +253,9 @@ describe('出る・下ろす（r2 L2・M12 (c)）・上げている間の座席�
   it('陰から出るとその場から走る（枠は空く）', () => {
     const r = makeRig();
     const g = r.sq.groups[0]!;
-    park(r, WEST_COVER);
+    park(r, COVER);
     evacLaunch(r.sq, g);
-    expect([g.phase, r.sq.shelterUsed[WEST_COVER], g.launched]).toEqual([G_UNDERWAY, 0, true]);
+    expect([g.phase, r.sq.shelterUsed[COVER], g.launched]).toEqual([G_UNDERWAY, 0, true]);
   });
 });
 
@@ -265,34 +266,34 @@ describe('陰の発見（予告ごとに陰の順に seed+29 から 1 回ずつ�
     let draws = 0;
     const always = { next: () => (draws++, 0) } as unknown as SeededRng;
     expect(evacRevealCovers(r.sq, always, 0.25)).toBe(0);
-    expect(draws).toBe(2);
-    park(r, WEST_COVER);
+    expect(draws).toBe(1);
+    park(r, COVER);
     expect(evacRevealCovers(r.sq, always, 0.25)).toBe(1);
-    expect([g.phase, g.foundCover]).toEqual([G_FOUND, WEST_COVER]);
+    expect([g.phase, g.foundCover]).toEqual([G_FOUND, COVER]);
     for (const b of g.boats) expect(evacExposed(r.sq, b)).toBe(true);
     // 操作中: 動かせば陰を出る。止まっても同じ陰には入れない（札「見つかった」）
     stepRigFor(r, input(180, 0.5), 0.6);
     expect(g.phase).toBe(G_UNDERWAY);
     stepRigFor(r, NEUTRAL, 3);
-    expect([g.phase, r.sq.hint, r.sq.hintShelter]).toEqual([G_UNDERWAY, EVAC_HINT_FOUND, WEST_COVER]);
+    expect([g.phase, r.sq.hint, r.sq.hintShelter]).toEqual([G_UNDERWAY, EVAC_HINT_FOUND, COVER]);
     // 輪の外へ出れば印が消え、戻って止まれば入れる
     stepRigFor(r, input(180, 1), 3);
     expect(g.foundCover).toBe(-1);
-    const c = P.shelters[WEST_COVER]!;
+    const c = P.shelters[COVER]!;
     placeLeader(r, c.x, c.y, 0);
     stepRig(r, NEUTRAL);
     expect(g.phase).toBe(G_ENTERING);
   });
   it('操作していない見つかった隊は found_react_s で陰を出て走る（枠は空く）', () => {
     const r = makeRig();
-    park(r, WEST_COVER);
+    park(r, COVER);
     r.sq.control = 1;
     const g = r.sq.groups[0]!;
     evacRevealCovers(r.sq, { next: () => 0 } as unknown as SeededRng, 1);
     stepRigFor(r, NEUTRAL, P.foundReactS - 0.1);
     expect(g.phase).toBe(G_FOUND);
     stepRigFor(r, NEUTRAL, 0.2);
-    expect([g.phase, r.sq.shelterUsed[WEST_COVER], g.aiSpeed01]).toEqual([G_UNDERWAY, 0, 1]);
+    expect([g.phase, r.sq.shelterUsed[COVER], g.aiSpeed01]).toEqual([G_UNDERWAY, 0, 1]);
   });
 });
 

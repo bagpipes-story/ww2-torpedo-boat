@@ -1,6 +1,7 @@
 // 空襲下の退避（v0.6.11。jp_03。spec-v0611-r2 §8 の段 5）の 1 固定ステップの空襲（世界の evac.stepAir も模擬もこれを呼ぶ＝順が 1 つ）:
 // 撃墜の後の順番を飛ばす（skipDownedRuns。r2 H6）→ 陰を見つける閃光（flash_reveal の時だけ）→ 決着のラッチ（dawnReached と同じ式）→ 予告（陰の発見 → 狙い）→
-// 始まる編隊の restartAirSortie → 偽の view を書いて動く編隊を番号順に step（投下ごとに seed+31 を 1 回・着弾は core/evac-hits の走査。隊長艇の沈没は
+// 始まる編隊の restartAirSortie（始めたステップに回数と撃墜の落とし直し＝core/evac-repass）→ 偽の view を書いて（済みになったステップはもう一度来るか。passes_max）
+// 動く編隊を番号順に step（投下ごとに seed+31 を 1 回・着弾は core/evac-hits の走査。隊長艇の沈没は
 // evacSinkLeader がその場で交代・付け替え・座席の振り替えまで）→ 操作していない隊長艇の火災 → 「狙われている」（r2 M13）→ 座席の被害を記録へ。
 // 止まった編隊の絵を隠す 1 回は世界のフレームの絵（evacDrawPass。r2 M2）。Phaser 非依存・確保しない（作るのは createEvacAirStep・createEvacAirCore だけ）。
 import type { AirStrikeParams } from './air-strike';
@@ -12,18 +13,20 @@ import { evacOnRelease } from './evac-follow';
 import { evacCoreFlight, evacImpact, type EvacAir, type EvacAirWorld } from './evac-hits';
 import type { EvacRaidParams } from './evac-params';
 import { EF_ANNOUNCED, EF_FLYING, createEvacPlan, evacFlightLive, evacPlanClock, evacPlanHooks, evacRefreshView, type EvacPlan } from './evac-plan';
+import { createEvacRepass, evacRepassOnComplete, evacRepassStarted, type EvacRepass } from './evac-repass';
 import { evacSettle, evacStepFires, evacStoreSeatDamage, type EvacSeat, type EvacSeatHooks } from './evac-seat';
 import type { EvacSquadron } from './evac-squadron';
 import { SeededRng } from './rng';
 
-/** 爆撃から逃げる乱数（seed+31。投下ごとに 1 回）を持つ空襲の段 */
+/** 爆撃から逃げる乱数（seed+31。投下ごとに 1 回）と、もう一度来る編隊（core/evac-repass）を持つ空襲の段 */
 export interface EvacAirStep extends EvacAir {
   readonly dodge: SeededRng;
+  readonly repass: EvacRepass;
 }
 
 /** 世界の作り方の材料（起動時。plan は世界が凍結の AirStrikeFlight を口にして作り、hooks は evacPlanHooks で包んだもの） */
 export function createEvacAirStep(air: EvacAir, seed: number): EvacAirStep {
-  return { ...air, dodge: new SeededRng((seed + EVAC_DODGE_SEED_OFFSET) >>> 0) };
+  return { ...air, dodge: new SeededRng((seed + EVAC_DODGE_SEED_OFFSET) >>> 0), repass: createEvacRepass(air.plan) };
 }
 
 /** 模擬・tests: 段取り・core の編隊の口・包んだ hooks・空襲の段を 1 か所で組む（世界は systems の側で同じ順に組む） */
@@ -88,6 +91,7 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
   plan.evStart = 0;
   plan.evLost = 0;
   plan.evSettle = false;
+  a.repass.ev = 0;
   const fls = plan.flights;
   // 撃墜の後の順番（撃墜が無ければ何もしない。凍結の core の「順番の機が旋回に着くまで待つ」で止まらない。r2 H6）
   for (let i = 0; i < fls.length; i++) if (fls[i]!.phase === EF_FLYING) skipDownedRuns(fls[i]!.port.state, fls[i]!.p);
@@ -97,10 +101,13 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
     plan.evSettle = true;
   }
   evacPlanClock(plan, stepTimeS);
+  if (plan.evStart !== 0) evacRepassStarted(plan);
   for (let i = 0; i < fls.length; i++) {
     const fl = fls[i]!;
     if (fl.phase !== EF_FLYING) continue;
+    const was = fl.complete;
     evacRefreshView(plan, fl);
+    if (!was && fl.complete) evacRepassOnComplete(plan, a.repass, fl);
     if (!evacFlightLive(fl)) continue;
     const st = fl.port.state;
     const dropped = st.bombsDropped;

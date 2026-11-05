@@ -1,7 +1,8 @@
 // v0.6.11 S0（spec-v0611-r2 §13 の S0）: jp_03「運天港・空襲下の退避」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
 // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.6.11 S0 の木で作った。jp_03 の setup は S1〜S7 で鍵が増えうるので、
 // 書き換える時は CHANGELOG に段と理由を書く（ほかの任務の setup の snapshot は -u しない）。Briefing の行は入れない（S6 で変わる）。
-// 今夜の揺らぎ（+16）は 0 回（night block なし）。空襲下の退避の値（setup.evac）は史実モードで変わらず、ハードは同時の編隊 3・陰の発見 0.35 だけが違う。
+// 今夜の揺らぎ（+16）は 0 回（night block なし）。空襲下の退避の値（setup.evac）は史実モードで変わらず、ハードは同時の編隊 3 だけが違う（陰の発見は S3b からノーマルと同じ 0.5）。
+// snapshot の書き換え: S3b（passes_max の鍵・U7 の点 G1 の data（陰（西）を外す・上げ 12 秒・回避 0.2・陰の発見 0.5・first_run_s 6.5・run_gap_s 1.7））。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { SeededRng } from '../src/core/rng';
@@ -36,7 +37,7 @@ describe('jp_03 の setup の snapshot（v0.6.11 S0 の木）', () => {
     expect(s.patrolAir).toBeUndefined();
     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));
   });
-  it('空襲下の退避の値は史実モードで変わらない。ハードは同時の編隊と陰の発見の確率だけが違う', () => {
+  it('空襲下の退避の値は史実モードで変わらない。ハードは同時の編隊だけが違う（陰の発見の確率は S3b からノーマルと同じ）', () => {
     const plain = build(false, false, 1).s;
     for (const [hard, historical] of [[false, true], [true, false], [true, true]] as const) {
       const s = build(hard, historical, 1).s;
@@ -45,7 +46,8 @@ describe('jp_03 の setup の snapshot（v0.6.11 S0 の木）', () => {
       const { flights: f, coverRevealChance: c, ...rest } = s.evac!.raid;
       const { flights: f0, coverRevealChance: c0, ...rest0 } = plain.evac!.raid;
       expect(rest).toEqual(rest0);
-      expect([f, c]).toEqual(hard ? [3, 0.35] : [f0, c0]);
+      expect([f, c]).toEqual(hard ? [3, 0.5] : [f0, c0]);
+      expect(c).toBe(c0);
       expect(s.hard).toBe(hard);
       expect(s.historical).toBe(historical);
     }

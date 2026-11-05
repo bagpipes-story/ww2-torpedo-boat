@@ -324,7 +324,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -357,15 +357,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -385,7 +376,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -425,7 +416,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
     10,
     0
    ],
-   "coverRevealChance": 0.25,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -450,8 +442,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -496,8 +488,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -543,8 +535,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -906,7 +898,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -939,15 +931,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -967,7 +950,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -1007,7 +990,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
     10,
     0
    ],
-   "coverRevealChance": 0.25,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -1032,8 +1016,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -1078,8 +1062,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -1125,8 +1109,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -1488,7 +1472,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -1521,15 +1505,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -1549,7 +1524,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -1589,7 +1564,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
     10,
     0
    ],
-   "coverRevealChance": 0.25,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -1614,8 +1590,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -1660,8 +1636,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -1707,8 +1683,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -2070,7 +2046,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -2103,15 +2079,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -2131,7 +2098,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -2171,7 +2138,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
     10,
     0
    ],
-   "coverRevealChance": 0.25,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -2196,8 +2164,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -2242,8 +2210,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -2289,8 +2257,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -2652,7 +2620,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -2685,15 +2653,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -2713,7 +2672,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -2753,7 +2712,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
     10,
     0
    ],
-   "coverRevealChance": 0.35,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -2778,8 +2738,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -2824,8 +2784,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -2871,8 +2831,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -3234,7 +3194,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -3267,15 +3227,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -3295,7 +3246,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -3335,7 +3286,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
     10,
     0
    ],
-   "coverRevealChance": 0.35,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -3360,8 +3312,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -3406,8 +3358,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -3453,8 +3405,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -3816,7 +3768,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -3849,15 +3801,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -3877,7 +3820,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -3917,7 +3860,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
     10,
     0
    ],
-   "coverRevealChance": 0.35,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -3942,8 +3886,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -3988,8 +3932,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -4035,8 +3979,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -4398,7 +4342,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "trailLen": 18,
    "shelterRingM": 70,
    "hideMaxMps": 1.0288,
-   "haulS": 6,
+   "haulS": 12,
    "launchStick": 0.3,
    "slotAbeamM": 25,
    "slotArriveM": 5,
@@ -4431,15 +4375,6 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      "exitHeadingDeg": 0
     },
     {
-     "id": "west_cover",
-     "labelJa": "屋我地の陰（西）",
-     "kind": 1,
-     "x": 1050,
-     "y": 100,
-     "slots": 3,
-     "exitHeadingDeg": 180
-    },
-    {
      "id": "east_cover",
      "labelJa": "屋我地の陰（東）",
      "kind": 1,
@@ -4459,7 +4394,7 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
    "wallTurnDeg": 45,
    "lookM": 400,
    "foundReactS": 3,
-   "dodgeSuccess": 0.5,
+   "dodgeSuccess": 0.2,
    "dodgeTurnDeg": 90,
    "dodgeHoldS": 2,
    "flashReveal": false
@@ -4499,7 +4434,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
     10,
     0
    ],
-   "coverRevealChance": 0.35,
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
    "survivorQuota": 6,
    "survivorsTotal": 18,
    "historicalSurvivors": 5,
@@ -4524,8 +4460,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -4570,8 +4506,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,
@@ -4617,8 +4553,8 @@ exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true �
      30
     ],
     "waveRotateDeg": 0,
-    "firstRunS": 9,
-    "runGapS": 2.2,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
     "waveRestS": 16,
     "leaveS": 2.5,
     "fallFeelS": 1.2771017136282017,

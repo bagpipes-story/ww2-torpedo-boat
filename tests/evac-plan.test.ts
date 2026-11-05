@@ -2,21 +2,27 @@
 // 狙いの順（枠 0＝操作中の隊・段 B を先・現れる点に近い順・1 隊 1 編隊・候補が尽きた枠は来ない・2 つ目は操作中の隊に付けない＝r2 M6・M7-5）・方位の戻し（r2 L1）・
 // 1 回だけ飛ぶ（B1）・始まる前に隠れたら始めない・試し直し・旋回率が跳ばない・隊を追う付け替えと全滅（r2 H2）・中断の後も爆弾は落ち、止めた後に絵が残らない（r2 M2）・
 // 撃墜の後も済みになる（r2 H6）・決着のラッチ・「狙われている」（r2 M13）・乱数の引く回数（+29・+31）・決定性。
+// この file は S2 の段取り（1 編隊 1 回）なので rig は passes_max 1。data の既定 2（S3b・U7）の 2 回目は tests/evac-repass・evac-repass-sim。
 import { describe, expect, it } from 'vitest';
 import { downStrikePlane } from '../src/core/air-down';
 import { AS_DONE, AS_IDLE, AS_RUN, bombInAir, createAirStrike, stepAirStrike, type AirStrikeCheck } from '../src/core/air-strike';
 import { airSortieComplete, createSortieBase, restartAirSortie } from '../src/core/air-sortie';
 import { dawnReached } from '../src/core/dawn-air';
 import { evacDrawPass } from '../src/core/evac-air';
-import { G_GONE, G_HIDDEN, G_UNDERWAY } from '../src/core/evac-data';
+import { G_GONE, G_HIDDEN, G_UNDERWAY, SHELTER_COVER } from '../src/core/evac-data';
 import { EF_ANNOUNCED, EF_FLYING, EF_OFF, EO_DONE, EO_GONE, EO_LOST, EO_LOST_EARLY, EO_NO_TARGET, evacAnnounce, evacFlightLive, evacRefreshView, evacTryStart, type EvacFlight } from '../src/core/evac-plan';
 import { evacSinkLeader } from '../src/core/evac-seat';
 import { evacLeader, evacSurvivors } from '../src/core/evac-squadron';
+import type { EvacRaidParams } from '../src/core/evac-params';
 import { wrapDeg180 } from '../src/core/units';
 import { DT, NEUTRAL } from './evac-kit';
 import { HARD, NORMAL, countDraws, forceHidden, makeAirRig, runAir, runAirUntil, type AirRig } from './evac-air-kit';
 
 const RAID = NORMAL.evac!.raid;
+/** 陰の数（+29 は予告ごとに陰ごとに 1 回。S3b で陰（西）を外して 1） */
+const COVERS = NORMAL.evac!.params.shelters.filter((x) => x.kind === SHELTER_COVER).length;
+/** S2 の段取りの rig（passes_max 1＝済みの後に来ない） */
+const rig = (seed = 1, hard = false, raid: Partial<EvacRaidParams> = {}): AirRig => makeAirRig(seed, hard, {}, undefined, { passesMax: 1, ...raid });
 const TURN = NORMAL.boatParams.turnRateDegS;
 const targets = (r: AirRig, w: number): number[] => r.air.plan.flights.filter((f) => f.wave === w).map((f) => f.target);
 const flight = (r: AirRig, i: number): EvacFlight => r.air.plan.flights[i]!;
@@ -25,19 +31,19 @@ const aiFlight = (r: AirRig, w = 0): EvacFlight => r.air.plan.flights.find((f) =
 
 describe('狙い（予告の瞬間。乱数なし）', () => {
   it('枠 0 は操作中の隊、ほかの枠は走っている隊（段 B）を先・その枠の現れる点に近い順、尽きたら止まっている隊（段 A）', () => {
-    const r = makeAirRig(1, true);
+    const r = rig(1, true);
     for (const gi of [1, 2, 3, 4, 5]) r.sq.groups[gi]!.phase = G_UNDERWAY;
     evacAnnounce(r.air.plan, 0);
     // 枠 1 の点（70°）に近い走る隊は第4隊、枠 2（100°）は第3隊（第4隊は狙い済み）
     expect(targets(r, 0)).toEqual([0, 3, 2]);
-    const s = makeAirRig(1, true);
+    const s = rig(1, true);
     s.sq.groups[5]!.phase = G_UNDERWAY;
     s.sq.groups[1]!.phase = G_UNDERWAY;
     evacAnnounce(s.air.plan, 0);
     // 第4隊（止まっている）は枠 1 の点にいちばん近いが、走っている第6隊・第2隊が先（r2 M6）
     expect(targets(s, 0)).toEqual([0, 5, 1]);
     expect([s.air.plan.tierB, s.air.plan.tierA]).toEqual([2, 0]);
-    const u = makeAirRig(1, true);
+    const u = rig(1, true);
     u.sq.groups[5]!.phase = G_UNDERWAY;
     evacAnnounce(u.air.plan, 0);
     expect(targets(u, 0)).toEqual([0, 5, 3]);
@@ -46,7 +52,7 @@ describe('狙い（予告の瞬間。乱数なし）', () => {
 
   it('同じ隊を 2 編隊が狙わない（1 隊 1 編隊は段をまたぐ）。予告の全部で（ハード・seed 1〜12）', () => {
     for (let seed = 1; seed <= 12; seed++) {
-      const r = makeAirRig(seed, true);
+      const r = rig(seed, true);
       runAir(r, NEUTRAL, 200);
       for (let w = 0; w < RAID.waves.length; w++) {
         const t = targets(r, w).filter((g) => g >= 0);
@@ -56,24 +62,24 @@ describe('狙い（予告の瞬間。乱数なし）', () => {
   });
 
   it('候補が尽きた枠の編隊は来ない。flights_per_group_max 2 でも 2 つ目は候補が尽きた枠だけ・操作中の隊には付けない（r2 M7-5）', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     for (const gi of [1, 2, 3, 4, 5]) forceHidden(r, gi);
     evacAnnounce(r.air.plan, 0);
     expect(targets(r, 0)).toEqual([0, -1]);
     expect([flight(r, 1).phase, flight(r, 1).outcome]).toEqual([EF_OFF, EO_NO_TARGET]);
-    const h = makeAirRig(1, true, {}, undefined, { flightsPerGroupMax: 2 });
+    const h = rig(1, true, { flightsPerGroupMax: 2 });
     for (const gi of [1, 2, 4, 5]) forceHidden(h, gi);
     h.sq.groups[3]!.phase = G_UNDERWAY;
     evacAnnounce(h.air.plan, 0);
     expect(targets(h, 0)).toEqual([0, 3, 3]);
-    const c = makeAirRig(1, true, {}, undefined, { flightsPerGroupMax: 2 });
+    const c = rig(1, true, { flightsPerGroupMax: 2 });
     for (const gi of [1, 2, 3, 4, 5]) forceHidden(c, gi);
     evacAnnounce(c.air.plan, 0);
     expect(targets(c, 0)).toEqual([0, -1, -1]);
   });
 
   it('操作中の隊が隠れていれば、枠 0 もほかの枠と同じ選び方（段 B を先・枠 0 の点に近い順）', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     forceHidden(r, 0);
     r.sq.groups[2]!.phase = G_UNDERWAY;
     r.sq.groups[4]!.phase = G_UNDERWAY;
@@ -83,7 +89,7 @@ describe('狙い（予告の瞬間。乱数なし）', () => {
 
   it('始めると機の平均の方位が枠の方位 ±1°（bearing_fix_deg が凍結の spawn_offsets_deg の偏りを戻す。r2 L1）・距離は spawn_m', () => {
     for (const w of [0, 1, 3]) {
-      const r = makeAirRig(1, true);
+      const r = rig(1, true);
       evacAnnounce(r.air.plan, w);
       for (const fl of r.air.plan.flights.filter((f) => f.wave === w)) {
         evacTryStart(r.air.plan, fl);
@@ -104,7 +110,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
   it('1 予告で state.waves が 1 だけ増え、済みの後 60 秒ステップし続けても 2 波目が出ない（atHome を真のまま。外せば出る）', () => {
     let checked = 0;
     for (let seed = 1; seed <= 8 && checked < 3; seed++) {
-      const r = makeAirRig(seed);
+      const r = rig(seed);
       runAirUntil(r, NEUTRAL, 65);
       for (const fl of r.air.plan.flights.filter((f) => f.wave === 0 && f.outcome === EO_DONE)) {
         checked++;
@@ -126,7 +132,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
   });
 
   it('予告から始まる前に狙った隊が隠れたら始めない（見失った・引き返す）。「狙われている」は予告から始まりまで真で、見失えば偽', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     runAirUntil(r, NEUTRAL, 16);
     const fl = aiFlight(r);
     expect([fl.phase, r.sq.targeted[fl.target]]).toEqual([EF_ANNOUNCED, 1]);
@@ -138,7 +144,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
   });
 
   it('restartAirSortie が false（空中に爆弾）なら次のステップで試し直す。その間も「狙われている」', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     runAirUntil(r, NEUTRAL, 16);
     const fl = aiFlight(r);
     fl.port.state.bombs[0]!.active = true;
@@ -153,7 +159,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
   });
 
   it('始め直しの最初のステップから旋回率が跳ばない（restartAirSortie が中心の針路を前の針路に書く）', () => {
-    const r = makeAirRig(2);
+    const r = rig(2);
     runAirUntil(r, NEUTRAL, 24.9);
     const fl = aiFlight(r);
     const g = r.sq.groups[fl.target]!;
@@ -171,7 +177,7 @@ describe('始める・1 回だけ飛ぶ（B1）', () => {
 
 describe('隊を追う（r2 H2）・全滅で去る', () => {
   it('隊長艇が沈むと編隊の中心は次の隊長艇へ（次の投下はその艇の上から）・付け替えの次のステップの旋回率は跳ばない・全滅で cancel', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     for (const b of r.sq.boats) b.damage.hp = 1e9;
     r.seat.damage.hp = 1e9;
     runAirUntil(r, NEUTRAL, 24);
@@ -213,7 +219,7 @@ describe('隊を追う（r2 H2）・全滅で去る', () => {
 
 describe('動く編隊（r2 M2）と撃墜の後（r2 H6）', () => {
   it('中断の後も空中の爆弾は着弾まで step され、止まったフレームに 1 回だけ描いて機・線・爆弾が見えなくなる（Phaser なしの偽物）', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     const shown = new Map<number, { calls: number; planes: number; line: boolean; bombs: number }>();
     const draw = (i: number): void => {
       const st = r.air.plan.flights[i]!.port.state;
@@ -249,7 +255,7 @@ describe('動く編隊（r2 M2）と撃墜の後（r2 H6）', () => {
   });
 
   it('evac の編隊の機を 1 機落としても残りの爆弾が落ちて済みになる（skipDownedRuns）。落とさない編隊は全部落とす', () => {
-    const r = makeAirRig(1);
+    const r = rig(1);
     for (const b of r.sq.boats) b.damage.hp = 1e9;
     r.seat.damage.hp = 1e9;
     const w1 = r.air.plan.flights.filter((f) => f.wave === 1);
@@ -272,7 +278,7 @@ describe('動く編隊（r2 M2）と撃墜の後（r2 H6）', () => {
 
 describe('決着・「狙われている」・乱数・決定性', () => {
   it('決着のラッチは dawnReached(duration_s) と同じステップ。決着の後は予告しない', () => {
-    const r = makeAirRig(3);
+    const r = rig(3);
     let at = -1;
     runAir(r, NEUTRAL, 241, () => {
       expect(r.sq.settled).toBe(dawnReached(NORMAL.durationS, r.t));
@@ -282,7 +288,7 @@ describe('決着・「狙われている」・乱数・決定性', () => {
   });
 
   it('「狙われている」は予告から（始まる前も）、始まった後は動いていて中断していない間だけ', () => {
-    const r = makeAirRig(4);
+    const r = rig(4);
     runAir(r, NEUTRAL, 240, () => {
       const p = r.air.plan;
       for (let gi = 0; gi < r.sq.groups.length; gi++) {
@@ -293,16 +299,17 @@ describe('決着・「狙われている」・乱数・決定性', () => {
     });
   });
 
-  it('+29 は予告ごとに 2 回（陰 2 か所）、+31 は投下ごとに 1 回。同じ seed なら同じ結果（ノーマル・ハード）', () => {
+  it('+29 は予告ごとに陰の数だけ（S3b から 1 か所）、+31 は投下ごとに 1 回。同じ seed なら同じ結果（ノーマル・ハード）', () => {
     for (const hard of [false, true]) {
-      const r = makeAirRig(7, hard);
+      const r = rig(7, hard);
       const reveal = countDraws(r.air.plan.reveal);
       const dodge = countDraws(r.air.dodge);
       runAir(r, NEUTRAL, 240);
-      expect(reveal()).toBe(2 * RAID.waves.length);
+      expect(COVERS).toBe(1);
+      expect(reveal()).toBe(COVERS * RAID.waves.length);
       expect(dodge()).toBe(r.air.plan.releases);
       expect(r.air.plan.releases).toBe(r.air.plan.flights.reduce((a, f) => a + f.port.state.bombsDropped, 0));
-      const s = makeAirRig(7, hard);
+      const s = rig(7, hard);
       runAir(s, NEUTRAL, 240);
       const key = (x: AirRig): string => `${evacSurvivors(x.sq)}|${x.air.plan.flights.map((f) => `${f.outcome}${f.target}${f.port.state.bombsDropped}`).join(',')}|${x.log.recordHits.join(',')}`;
       expect(key(s)).toBe(key(r));
@@ -312,7 +319,7 @@ describe('決着・「狙われている」・乱数・決定性', () => {
   });
 
   it('確保は作る時だけ（編隊・view・状態・爆弾のプールの物が 240 秒で同じ）', () => {
-    const r = makeAirRig(5, true);
+    const r = rig(5, true);
     const before = r.air.plan.flights.map((f) => [f, f.view, f.view.boat, f.port, f.port.state, f.port.state.planes, f.port.state.bombs, f.rng, f.base] as const);
     runAir(r, NEUTRAL, 240);
     r.air.plan.flights.forEach((f, i) => [f, f.view, f.view.boat, f.port, f.port.state, f.port.state.planes, f.port.state.bombs, f.rng, f.base].forEach((x, k) => expect(x).toBe(before[i]![k])));

@@ -1,11 +1,12 @@
 // 空襲下の退避（v0.6.11 S3。jp_03。spec-v0611-r2 §3.4・§3.7・§11）の模擬の対空（core/evac-sim が固定ステップの段 4 で呼ぶ。世界は S4 の systems/arms-step・aa-slots が同じ式）:
 // 機銃は僚艇も撃つ（U2）＝砲の発の速さと弾倉を、操作中の隊の浮いていて上げていない隻数 n（1〜3）倍にした値（起動時に n = 1・2・3 を作って選ぶ。r2 L18）。
 // 機の枠（AA_MAX_TARGETS 8 のまま）: 240 秒の後の §2 の 4 機が先、次に港の空襲の動く編隊を中心の 2 乗の距離の近い順（固定長の配列に挿入で並べる）。番号は 編隊 × 4 ＋ 機（r2 M8）。
-// 撃墜は core/air-down の downStrikePlane（順番の飛ばしは core/evac-air の段の頭と、ここで撃墜したステップ）。乱数は seed+24 を 1 発 1 回（core/aa-fire のまま）。
+// 撃墜は core/air-down の downStrikePlane（港の空襲の機は core/evac-repass の evacDownPlane＝撃墜のビットも。順番の飛ばしは core/evac-air の段の頭と、ここで撃墜したステップ）。乱数は seed+24 を 1 発 1 回（core/aa-fire のまま）。
 // Phaser 非依存・確保は createEvacSimAa だけ。
 import { AA_MAX_TARGETS, AA_SRC_DAWN, addStrikePlanes, createAaState, createAaTargets, stepAaFire, type AaState, type AaTargets, type AntiAircraftParams } from './aa-fire';
 import type { AirStrikeParams, AirStrikeState } from './air-strike';
 import { downStrikePlane, skipDownedRuns } from './air-down';
+import { evacDownPlane } from './evac-repass';
 import type { BoatState, SpeedStep } from './boat-motion';
 import { evacFlightLive, type EvacPlan } from './evac-plan';
 import type { AircraftPose } from './friendly';
@@ -121,7 +122,7 @@ export function stepEvacSimAa(a: EvacSimAa, plan: EvacPlan, dawn: AirStrikeState
       }
     } else if (src === AA_SRC_EVAC) {
       const fl = plan.flights[Math.floor(idx / EVAC_AA_PLANE_STRIDE)]!;
-      if (downStrikePlane(fl.port.state, idx % EVAC_AA_PLANE_STRIDE)) {
+      if (evacDownPlane(fl, idx % EVAC_AA_PLANE_STRIDE)) {
         a.downs++;
         a.downsEvac++;
         skipDownedRuns(fl.port.state, fl.p);

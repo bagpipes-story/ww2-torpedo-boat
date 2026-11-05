@@ -220,7 +220,7 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, 
   out.downs = aa ? aa.downsEvac : 0;
   out.downsAll = aa ? aa.downs : 0;
   out.rounds = aa ? aa.rounds : 0;
-  finishEvacTrial(out, sq, plan, s.raid.survivorQuota, s.durationS, s.params.pickS);
+  finishEvacTrial(out, sq, plan, air.repass, s.raid.survivorQuota, s.durationS, s.params.pickS);
   return out;
 }
 

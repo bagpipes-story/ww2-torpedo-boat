@@ -63,7 +63,7 @@ export interface EvacParams {
   flashReveal: boolean;
 }
 
-/** 波・編隊・狙い・残存の値（flights と coverRevealChance はハードで替わる） */
+/** 波・編隊・狙い・残存の値（flights・coverRevealChance・passesMax はハードで替わる） */
 export interface EvacRaidParams {
   waves: { announceS: number; planes: number }[];
   flights: number;
@@ -74,6 +74,8 @@ export interface EvacRaidParams {
   flightsPerGroupMax: number;
   bearingFixDeg: number[];
   coverRevealChance: number;
+  /** 1 編隊が飛ぶ爆撃の回数の上限（v0.6.11 S3b。data 2＝U7「編隊が戻ってくる」。1＝S3 の挙動＝済みの後は来ない。core/evac-repass） */
+  passesMax: number;
   survivorQuota: number;
   survivorsTotal: number;
   historicalSurvivors: number;
@@ -126,8 +128,8 @@ export function evacParamsFromData(b: EvacBlock, homeShelter: number): EvacParam
   };
 }
 
-/** 波・編隊の値を組む。flights・coverRevealChance はハードの値（無ければノーマル）を呼び手が渡す */
-export function evacRaidParamsFromData(r: EvacRaidBlock, flights: number, coverRevealChance: number, bounds: { width: number; height: number }): EvacRaidParams {
+/** 波・編隊の値を組む。flights・coverRevealChance・passesMax はハードの値（無ければノーマル）を呼び手が渡す */
+export function evacRaidParamsFromData(r: EvacRaidBlock, flights: number, coverRevealChance: number, passesMax: number, bounds: { width: number; height: number }): EvacRaidParams {
   return {
     waves: r.waves.map((w) => ({ announceS: w.announce_s, planes: w.planes })),
     flights,
@@ -138,6 +140,7 @@ export function evacRaidParamsFromData(r: EvacRaidBlock, flights: number, coverR
     flightsPerGroupMax: r.flights_per_group_max,
     bearingFixDeg: r.bearing_fix_deg.slice(),
     coverRevealChance,
+    passesMax,
     survivorQuota: r.survivor_quota,
     survivorsTotal: r.survivors_total,
     historicalSurvivors: r.historical_survivors,

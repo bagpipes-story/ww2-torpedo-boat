@@ -40,6 +40,9 @@ export interface EvacSimOverrides {
   followGapM?: number;
   /** 9: evac.ai.full_p */
   fullP?: number;
+  /** S3b（U7）: evac_raid.passes_max・hard.evac_passes_max（1 編隊が飛ぶ爆撃の回数。data 2・1 は S3 の挙動。ハードは無ければノーマルの値＝core/evac-repass） */
+  passesMax?: number;
+  passesMaxHard?: number;
 }
 
 type Rec = Record<string, unknown>;
@@ -73,8 +76,9 @@ export function withEvacOverrides(data: GameData, o: EvacSimOverrides, missionId
           cover_reveal_chance: o.coverReveal ?? raid['cover_reveal_chance'],
           announce_lead_s: o.announceLeadS ?? raid['announce_lead_s'],
           flights_per_group_max: o.flightsPerGroupMax ?? raid['flights_per_group_max'],
+          passes_max: o.passesMax ?? raid['passes_max'],
         },
-        ...(hard ? { hard: { ...hard, evac_cover_reveal_chance: o.coverRevealHard ?? hard['evac_cover_reveal_chance'] } } : {}),
+        ...(hard ? { hard: { ...hard, evac_cover_reveal_chance: o.coverRevealHard ?? hard['evac_cover_reveal_chance'], ...(o.passesMaxHard !== undefined ? { evac_passes_max: o.passesMaxHard } : {}) } } : {}),
       },
     };
   });

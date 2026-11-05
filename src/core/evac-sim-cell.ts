@@ -1,7 +1,8 @@
 // 空襲下の退避の模擬（v0.6.11 S3。core/evac-sim）の 1 回の記録（EvacTrial）と、遊び方 1 つ × N 回の集計（EvacCell。spec-v0611-r2 §12.4 の表の列と監視の列）。
 // Phaser 非依存・乱数なし。集計の配列は 1 つの表の行ごとに作る（模擬の外。ゲームは使わない）。
-import { G_HIDDEN, SHELTER_CAVE } from './evac-data';
+import { EVAC_MAX_WAVES, G_HIDDEN, SHELTER_CAVE } from './evac-data';
 import { EO_DONE, EO_GONE, EO_GONE_EARLY, EO_LOST, EO_LOST_EARLY, EO_NO_TARGET, EO_SETTLED, type EvacPlan } from './evac-plan';
+import type { EvacRepass } from './evac-repass';
 import { evacSurvivors, type EvacSquadron } from './evac-squadron';
 
 export type EvacEnd = '' | 'home' | 'sunk' | 'adrift' | 'timeout';
@@ -22,7 +23,7 @@ export interface EvacTrial {
   cavesFull: boolean;
   upAtSettle: number;
   hiddenAtSettle: number;
-  /** 編隊の終わり方（来た＝始めた、途中で見失った、始める前に見失った、目標なし、全滅（前・途中）、決着、済み）と、枠 ≥ 1 の狙いの段 */
+  /** 編隊の終わり方（1 回ごと＝予告し直した回も数える（S3b）。予告した、来た＝始めた、途中で見失った、始める前に見失った、目標なし、全滅（前・途中）、決着、済み）と、枠 ≥ 1 の狙いの段 */
   announced: number;
   came: number;
   lostMid: number;
@@ -62,6 +63,12 @@ export interface EvacTrial {
   exp31: number;
   /** 終わりの時の操作中の隊の浮いている隻数 */
   afloatControl: number;
+  /** もう一度来る編隊（v0.6.11 S3b。passes_max。監視だけ）: 1 回以上飛んだ編隊・飛んだ回数の合計・2 回以上飛んだ編隊と、その波ごと（1 回以上・2 回以上） */
+  flew: number;
+  passes: number;
+  again: number;
+  flewByWave: number[];
+  againByWave: number[];
 }
 
 export function createEvacTrial(): EvacTrial {
@@ -70,6 +77,7 @@ export function createEvacTrial(): EvacTrial {
     announced: 0, came: 0, lostMid: 0, lostEarly: 0, noTarget: 0, gone: 0, settledFl: 0, done: 0, tierA: 0, tierB: 0, switches: 0, taps: 0, promotions: 0, autoSwitches: 0,
     sunkA: 0, sunkB: 0, evacReleases: 0, impacts: 0, boatHits: 0, seatHits: 0, dawnBombs: 0, dawnHits: 0, downs: 0, downsAll: 0, rounds: 0, extinguished: 0,
     draws29: 0, draws30: 0, draws31: 0, drawsFlights: 0, exp29: 0, exp30: 0, exp31: 0, afloatControl: 0,
+    flew: 0, passes: 0, again: 0, flewByWave: new Array<number>(EVAC_MAX_WAVES).fill(0), againByWave: new Array<number>(EVAC_MAX_WAVES).fill(0),
   };
 }
 
@@ -95,17 +103,31 @@ export function evacTrialSettle(o: EvacTrial, sq: EvacSquadron, _t: number): voi
   }
 }
 
-/** 終わりの集計（編隊の終わり方・段・期待の引く回数・達成） */
-export function finishEvacTrial(o: EvacTrial, sq: EvacSquadron, plan: EvacPlan, quota: number, durationS: number, pickS: number): void {
+/** 終わり方 oc を n 回だけ記録の列へ */
+function countOutcome(o: EvacTrial, oc: number, n: number): void {
+  if (oc === EO_LOST) o.lostMid += n;
+  else if (oc === EO_LOST_EARLY) o.lostEarly += n;
+  else if (oc === EO_NO_TARGET) o.noTarget += n;
+  else if (oc === EO_GONE || oc === EO_GONE_EARLY) o.gone += n;
+  else if (oc === EO_SETTLED) o.settledFl += n;
+  else if (oc === EO_DONE) o.done += n;
+}
+
+/** 終わりの集計（編隊の終わり方は 1 回ごと＝最後の回は編隊に残る終わり方、予告し直して閉じた回は rp.closed（S3b）・段・期待の引く回数・達成） */
+export function finishEvacTrial(o: EvacTrial, sq: EvacSquadron, plan: EvacPlan, rp: EvacRepass, quota: number, durationS: number, pickS: number): void {
+  o.announced += rp.again;
+  for (let oc = 0; oc < rp.closed.length; oc++) countOutcome(o, oc, rp.closed[oc]!);
   for (let i = 0; i < plan.flights.length; i++) {
-    const oc = plan.flights[i]!.outcome;
-    if (plan.flights[i]!.wave < plan.nextWave) o.announced++;
-    if (oc === EO_LOST) o.lostMid++;
-    else if (oc === EO_LOST_EARLY) o.lostEarly++;
-    else if (oc === EO_NO_TARGET) o.noTarget++;
-    else if (oc === EO_GONE || oc === EO_GONE_EARLY) o.gone++;
-    else if (oc === EO_SETTLED) o.settledFl++;
-    else if (oc === EO_DONE) o.done++;
+    const fl = plan.flights[i]!;
+    if (fl.wave < plan.nextWave) o.announced++;
+    countOutcome(o, fl.outcome, 1);
+    if (fl.passes < 1) continue;
+    o.flew++;
+    o.passes += fl.passes;
+    o.flewByWave[fl.wave]!++;
+    if (fl.passes < 2) continue;
+    o.again++;
+    o.againByWave[fl.wave]!++;
   }
   o.came = plan.came;
   o.tierA = plan.tierA;
@@ -163,6 +185,10 @@ export interface EvacCell {
   lossPerFlight: number;
   /** 引く回数が期待と違った回（+29・+30・+31）・編隊の系列が 2 × 投下 より少ない回（0 のはず） */
   drawBad: number;
+  /** もう一度来る編隊（v0.6.11 S3b。監視だけ・帯ではない）: 飛んだ編隊 1 つあたりの回数の平均・2 回以上飛んだ編隊の %・その波ごとの %（飛んだ編隊の中） */
+  passesPerFlight: number;
+  againPct: number;
+  againByWavePct: number[];
 }
 
 function quantile(a: number[], q: number): number {
@@ -181,6 +207,12 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
   const lost = ts.reduce((a, t) => a + (18 - (Number.isNaN(t.survivorsAtSettle) ? t.survivors : t.survivorsAtSettle)), 0);
   const tA = ts.reduce((a, t) => a + t.tierA, 0);
   const tB = ts.reduce((a, t) => a + t.tierB, 0);
+  const flew = ts.reduce((a, t) => a + t.flew, 0);
+  const again = ts.reduce((a, t) => a + t.again, 0);
+  const byWave = (w: number): number => {
+    const f = ts.reduce((a, t) => a + t.flewByWave[w]!, 0);
+    return f > 0 ? (100 * ts.reduce((a, t) => a + t.againByWave[w]!, 0)) / f : NaN;
+  };
   return {
     n,
     achievedPct: pct((t) => t.achieved),
@@ -213,5 +245,8 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
     tierAPct: tA + tB > 0 ? (100 * tA) / (tA + tB) : NaN,
     lossPerFlight: came > 0 ? lost / came : NaN,
     drawBad: ts.filter((t) => t.draws29 !== t.exp29 || t.draws30 !== t.exp30 || t.draws31 !== t.exp31 || t.drawsFlights < 2 * t.exp31).length,
+    passesPerFlight: flew > 0 ? ts.reduce((a, t) => a + t.passes, 0) / flew : NaN,
+    againPct: flew > 0 ? (100 * again) / flew : NaN,
+    againByWavePct: Array.from({ length: EVAC_MAX_WAVES }, (_, w) => byWave(w)),
   };
 }

@@ -1,11 +1,11 @@
 // 空襲下の退避（v0.6.11。日本ハードモード⑨・jp_03「運天港・空襲下の退避」。spec-v0611-r2 §4・§5）の任務の読み出し: 任務の v0_1_prototype.evac があれば、
 // evac・evac_raid（形は core/evac-data）・risk_events.json の unten_air_raid・自艇（boats.json）・空襲の機体（enemies.json）から世界の値（EvacSetup）を組み、
-// 起動時の検査 V-E1〜V-E12 をする（例外は鍵を名指す日本語）。1 編隊の値は機数ごとに凍結の airStrikeParamsFromData で組み、その例外は unten_air_raid.params.sortie を名指す文に包み直す（r2 L12）。
+// 起動時の検査 V-E1〜V-E14 をする（例外は鍵を名指す日本語）。1 編隊の値は機数ごとに凍結の airStrikeParamsFromData で組み、その例外は unten_air_raid.params.sortie を名指す文に包み直す（r2 L12）。
 // PrototypeMission に鍵は足さない（block は生の proto から読む。patrol-air-mission-data と同じ作法）。world-setup が組み立てのたびに（evacSetupPart）、Boot が全任務（ハードも）を 1 回（validateEvacMissions）呼ぶ。
 import { getBoatFuelCurve, getBoatRecord, getPrototypeMission, type GameData, type PrototypeMission } from './game-data';
 import { hasHardVariant } from './mission-data';
 import { FIXED_STEP_S } from './step-config';
-import type { AirStrikeParams } from '../core/air-strike';
+import { AIR_STRIKE_FADE_S, type AirStrikeParams } from '../core/air-strike';
 import { airStrikeParamsFromData, isStrikeAircraftRecord, type StrikeHull } from '../core/air-strike-data';
 import { AIR_STRIKE_MAX_PLANES } from '../core/air-strike-state';
 import { bearingJa } from '../core/briefing';
@@ -23,6 +23,8 @@ export const EVAC_CHECK_DRIFT_BY_S = 1500;
 export const EVAC_CHECK_DRIFT_WAIT_S = 1.5;
 /** V-E12: bearing_fix_deg が凍結の spawn_offsets_deg の先頭 n 個の平均を戻す許し（deg。r2 L1 の S2 の tests は ±1°） */
 export const EVAC_CHECK_BEARING_FIX_TOL_DEG = 1;
+/** V-E13: 1 編隊が飛ぶ爆撃の回数の上限（evac_raid.passes_max・hard.evac_passes_max の最大。v0.6.11 S3b。2 回目より先は波の間に収まらない） */
+export const EVAC_CHECK_PASSES_MAX = 3;
 /** V-E11: 空襲下の退避の任務と同居しない v0_1_prototype の鍵（艦艇・水上機・味方機（右端の段 3 を［切替］が使う）・暴風・ほかの航空機の任務） */
 export const EVAC_EXCLUSIVE_KEYS = ['enemy_start', 'barges', 'pt_boats', 'convoy', 'escort', 'transport', 'shore_battery', 'enemy_aircraft', 'friendly_aircraft', 'storm', 'patrol_air', 'landing', 'ally_destroyer'] as const;
 /** evac の任務だけが持つ v0_1_prototype の鍵（無い任務に置けば例外＝ほかの任務の setup に鍵が増えない） */
@@ -88,6 +90,11 @@ export function getEvacParams(data: GameData, missionId: string, hard: boolean =
   const hull: StrikeHull = { halfLengthM: halfLen, halfBeamM: ((boat['beam_m'] as number) * w.hit_scale) / 2, boundsMarginM: ((boat['length_m'] as number) * w.sprite_scale) / 2 };
   const flights = readHardNum(proto, 'evac_flights', hard, r.flights, at);
   const coverChance = readHardNum(proto, 'evac_cover_reveal_chance', hard, r.cover_reveal_chance, at);
+  const passesMax = readHardNum(proto, 'evac_passes_max', hard, r.passes_max, at);
+  // V-E13 もう一度来る回数（v0.6.11 S3b。core/evac-repass。1＝今の挙動）
+  for (const [k, v] of [['evac_raid.passes_max', r.passes_max], ['hard.evac_passes_max', passesMax]] as const) {
+    if (!isInt(v, 1, EVAC_CHECK_PASSES_MAX)) bad('V-E13', `${k} は 1〜${EVAC_CHECK_PASSES_MAX} の整数（1 編隊が飛ぶ爆撃の回数。1 は済みの後に来ない。${v}）`);
+  }
   const home = checkPlaces(b, mission, hull.boundsMarginM, bad);
   checkRaid(b, r, flights, coverChance, ev.params.sortie.run_radius_m, ev.params.sortie.spawn_m, plane.strike.bomb.blast_radius_m, halfLen, bad);
   // 1 編隊の値（機数ごと）。凍結の検査（投下の間隔・最初の進路・機数 × 間隔・休み）を通す
@@ -107,7 +114,7 @@ export function getEvacParams(data: GameData, missionId: string, hard: boolean =
   if (!isNum(fuelFree) || fuelFree !== mission.durationS) bad('V-E10', `fuel_free_until_s（${String(fuelFree)}）は duration_s（${mission.durationS}）と同じ`);
   const idleS = ((mission.fuelAllotmentGal / getBoatFuelCurve(data, b.boat).idleGph) * 3600) / w.time_scale;
   if (!((fuelFree as number) + idleS + EVAC_CHECK_DRIFT_WAIT_S < EVAC_CHECK_DRIFT_BY_S)) bad('V-E10', `fuel_allotment_gal（${mission.fuelAllotmentGal}）: fuel_free_until_s ＋ アイドルで尽きる ${idleS.toFixed(1)} 秒 ＋ ${EVAC_CHECK_DRIFT_WAIT_S} は ${EVAC_CHECK_DRIFT_BY_S} 未満（止まって待つと漂流する）`);
-  return { params: evacParamsFromData(b, home), raid: evacRaidParamsFromData(r, flights, coverChance, mission.bounds), sorties, fuelFreeUntilS: fuelFree as number, dayStart: dayStart as boolean };
+  return { params: evacParamsFromData(b, home), raid: evacRaidParamsFromData(r, flights, coverChance, passesMax, mission.bounds), sorties, fuelFreeUntilS: fuelFree as number, dayStart: dayStart as boolean };
 }
 
 /** hard.<key>（無ければノーマルの値）。鍵はハードでなくても検査する（数でなければ例外） */
@@ -206,7 +213,7 @@ function checkRaid(b: EvacBlock, r: EvacRaidBlock, flights: number, coverChance:
   if (!(b.slot_arrive_m > 0 && b.slot_arrive_m < b.slot_abeam_m)) bad('V-E12', `evac.slot_arrive_m（${b.slot_arrive_m}）は 0 より大きく slot_abeam_m（${b.slot_abeam_m}）より小さい`);
 }
 
-/** V-E6・V-E12: 予告の間隔・最後の波の終わり・休みの余裕・方位の戻し（凍結の spawn_offsets_deg の先頭 n 個の平均を戻す） */
+/** V-E6・V-E12・V-E14: 予告の間隔・最後の波の終わり・休みの余裕・方位の戻し（凍結の spawn_offsets_deg の先頭 n 個の平均を戻す）・もう一度来る回の見積もり */
 function checkTiming(r: EvacRaidBlock, sorties: readonly AirStrikeParams[], durationS: number, bad: (v: string, msg: string) => never): void {
   const lenS = (p: AirStrikeParams): number => p.firstRunS + p.runS + (p.planes * p.bombsPerPlane - 1) * p.runGapS + p.fallFeelS + p.leaveS;
   const longest = sorties[sorties.length - 1]!;
@@ -220,6 +227,10 @@ function checkTiming(r: EvacRaidBlock, sorties: readonly AirStrikeParams[], dura
   const end = last.announce_s + r.announce_lead_s + lenS(sorties.find((p) => p.planes === last.planes)!);
   if (!(end < durationS)) bad('V-E6', `evac_raid.waves[${r.waves.length - 1}]: 最後の波の終わり（${end.toFixed(2)} 秒）は duration_s（${durationS}）より前（決着の時に港の空襲の爆弾が空中に無い）`);
   for (const p of sorties) {
+    // V-E14（v0.6.11 S3b。core/evac-repass の evacPassS）: 凍結の core では最後の投下 A（始まりから firstRunS ＋ (機数 × 発 − 1) × runGapS ＋ runS）の後、爆弾は落下 fallFeelS で着き、
+    // 機は離脱 runS ＋ 去る leaveS で済む＝実際の済み A ＋ max(fallFeelS, runS ＋ leaveS)。見積もり A ＋ fallFeelS ＋ leaveS ＋ 濃さ AIR_STRIKE_FADE_S がそれより短くないのは
+    // fallFeelS ＋ AIR_STRIKE_FADE_S ≥ runS の時（短ければ 2 回目が次の波の始まりを越えて飛ぶ）
+    if (!(p.fallFeelS + AIR_STRIKE_FADE_S >= p.runS)) bad('V-E14', `evac_raid.passes_max の 1 回の見積もり: enemies.json の空襲の機体の strike.release_altitude_m の落下（${p.fallFeelS.toFixed(3)} 秒）＋ 濃さ ${AIR_STRIKE_FADE_S} 秒は risk_events.json の ${EVAC_EVENT_ID}.params.sortie.run_radius_m ÷ strike.run_speed_kt の爆撃進路（${p.runS.toFixed(3)} 秒）以上（見積もりが実際の 1 回より短くならない）`);
     if (!(p.waveRestS >= p.runS + p.leaveS + 2 * FIXED_STEP_S)) bad('V-E6', `evac_raid: risk_events.json の unten_air_raid.params.sortie.wave_rest_s（${p.waveRestS}）は爆撃進路 ＋ leave_s ＋ 2 ステップ（${(p.runS + p.leaveS + 2 * FIXED_STEP_S).toFixed(3)}）以上（済みを見てから 2 波目が出ない）`);
     const fix = r.bearing_fix_deg[p.planes - 1];
     if (fix === undefined) return bad('V-E12', `evac_raid.bearing_fix_deg の長さ（${r.bearing_fix_deg.length}）は最大機数（${longest.planes}）以上`);

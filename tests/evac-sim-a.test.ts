@@ -38,12 +38,12 @@ describe('空襲下の退避の模擬の決定性', () => {
 });
 
 describe('乱数の系列 +29〜+43 の引く回数', () => {
-  it.each(['seq', 'stay', 'dodge_only', 'bot', 'seq_shoot'] as EvacPolicy[])('ノーマル %s: 予告ごとに陰 2 回・6 隊 × (1 ＋ 2 × 47)・投下ごとに 1 回・編隊は 2 × 投下 ＋ 命中の分', (p) => {
+  it.each(['seq', 'stay', 'dodge_only', 'bot', 'seq_shoot'] as EvacPolicy[])('ノーマル %s: 予告ごとに陰の数（S3b から 1）・6 隊 × (1 ＋ 2 × 47)・投下ごとに 1 回・編隊は 2 × 投下 ＋ 命中の分', (p) => {
     for (const seed of [1, 2, 3]) {
       const t = runEvacTrial(NORMAL, p, seed);
       drawsOk(t);
       if (t.timeS >= NORMAL.durationS) {
-        expect(t.exp29).toBe(2 * NORMAL.raid.waves.length);
+        expect(t.exp29).toBe(1 * NORMAL.raid.waves.length); // 陰は屋我地の陰（東）の 1 か所
         expect(t.exp30).toBe(6 * (1 + 2 * 47));
       }
     }
@@ -64,26 +64,32 @@ describe('乱数の系列 +29〜+43 の引く回数', () => {
 });
 
 describe('編隊の数と同時に動く編隊', () => {
-  const peak = (s: typeof NORMAL, p: EvacPolicy, seed: number): { flights: number; live: number } => {
+  const peak = (s: typeof NORMAL, p: EvacPolicy, seed: number): { flights: number; live: number; planes: number } => {
     let flights = 0;
     let live = 0;
+    let planes = 0;
     runEvacTrial(s, p, seed, (_t, _sq, _seat, plan) => {
       flights = plan.flights.length;
       let n = 0;
-      for (const fl of plan.flights) if (evacFlightLive(fl)) n++;
+      let m = 0;
+      for (const fl of plan.flights) if (evacFlightLive(fl)) (n++, (m += fl.p.planes));
       if (n > live) live = n;
+      if (m > planes) planes = m;
     });
-    return { flights, live };
+    return { flights, live, planes };
   };
 
-  it('ノーマルは起動時に 8 編隊・同時に ≤ 2、ハードは 12 編隊・同時に ≤ 3（stay＝全部の隊が外。第 4 波で 3 編隊）', () => {
-    const n = peak(NORMAL, 'stay', 2);
-    expect(n.flights).toBe(8);
-    expect(n.live).toBeLessThanOrEqual(2);
-    const h = peak(HARD, 'stay', 2);
-    expect(h.flights).toBe(12);
-    expect(h.live).toBe(3);
-  });
+  it('ノーマルは起動時に 8 編隊・同時に ≤ 2（機 ≤ 8）、ハードは 12 編隊・同時に ≤ 3（機 ≤ 12）。S3b の 2 回目（passes_max 2）があっても（stay＝全部の隊が外。第 4 波で 3 編隊）', () => {
+    for (const seed of [2, 3]) {
+      const n = peak(NORMAL, 'stay', seed);
+      expect(n.flights).toBe(8);
+      expect([n.live <= 2, n.planes <= 8]).toEqual([true, true]);
+      const h = peak(HARD, 'stay', seed);
+      expect(h.flights).toBe(12);
+      expect(h.live).toBe(3);
+      expect(h.planes).toBeLessThanOrEqual(12);
+    }
+  }, 60_000);
 });
 
 describe('終わりと表の形', () => {
@@ -121,11 +127,11 @@ describe('終わりと表の形', () => {
   });
 
   it('つまみ（spec §12.5）は data の写しを通って起動時の検査を受ける（haul_s・隠れ場所を外す・陰の発見）', () => {
-    const s = evacSimSetup(gameData, false, { haulS: 12, dropShelters: ['east_cave'], coverReveal: 0.5 });
-    expect(s.params.haulS).toBe(12);
+    const s = evacSimSetup(gameData, false, { haulS: 18, dropShelters: ['east_cave'], coverReveal: 0.25 });
+    expect(s.params.haulS).toBe(18);
     expect(s.params.shelters.map((x) => x.id)).not.toContain('east_cave');
-    expect(s.raid.coverRevealChance).toBe(0.5);
-    expect(NORMAL.params.haulS).toBe(6);
+    expect(s.raid.coverRevealChance).toBe(0.25);
+    expect([NORMAL.params.haulS, NORMAL.raid.coverRevealChance]).toEqual([12, 0.5]); // S3b の data
     expect(() => evacSimSetup(gameData, false, { firstRunS: 1 })).toThrow(/first_run_s/);
   });
 });

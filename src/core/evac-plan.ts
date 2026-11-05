@@ -1,4 +1,4 @@
-// 空襲下の退避（v0.6.11。jp_03。spec-v0611-r2 §3.7）の空襲の段取り: 波 × 枠の編隊（凍結の AirStrikeState 1 つずつ。1 つは 1 回だけ飛ぶ）・予告（陰の発見 → 狙い）・
+// 空襲下の退避（v0.6.11。jp_03。spec-v0611-r2 §3.7）の空襲の段取り: 波 × 枠の編隊（凍結の AirStrikeState 1 つずつ。済みの後に収まればもう一度＝core/evac-repass）・予告（陰の発見 → 狙い）・
 // 狙い（枠 0＝操作中の隊、ほかの枠は走っている隊（段 B）を先・その枠の現れる点に近い順・1 隊 1 編隊まで。乱数なし）・始まる時の見失い・始める（restartAirSortie。
 // 方位は枠の方位 ＋ bearing_fix_deg）・偽の view（中心＝狙った隊の隊長艇の記録・全滅・隠れた／決着／済み＝atHome）・隊を追う付け替え（r2 H2）・
 // 動く編隊（r2 M2）。1 ステップの順・「狙われている」（r2 M13）・陰を見つける閃光・フレームの絵は core/evac-air、着弾の走査は core/evac-hits。
@@ -21,7 +21,7 @@ export const EF_IDLE = 0;
 export const EF_ANNOUNCED = 1;
 export const EF_FLYING = 2;
 export const EF_OFF = 3;
-/** 編隊の終わり方（Result・HUD。最初に決まった 1 つ）: 未定・目標なし・始める前に見失った・始める前に全滅・途中で見失った（cancel）・隊の全滅・決着・済み */
+/** 編隊の今の回の終わり方（Result・HUD。回ごとに最初に決まった 1 つ。済みの後に予告し直すと未定に戻る＝閉じた回は core/evac-repass の closed）: 未定・目標なし・始める前に見失った・始める前に全滅・途中で見失った（cancel）・隊の全滅・決着・済み */
 export const EO_NONE = 0;
 export const EO_NO_TARGET = 1;
 export const EO_LOST_EARLY = 2;
@@ -67,6 +67,10 @@ export interface EvacFlight {
   complete: boolean;
   /** 世界の絵: 前のフレームに描いた（止まった後に 1 回だけ updateVisuals を呼んで隠す。r2 M2） */
   drawn: boolean;
+  /** 始める時計の秒（波の announce_s ＋ announce_lead_s。もう一度来る回は予告し直した秒 ＋ announce_lead_s＝core/evac-repass）・飛んだ回数・撃墜した機のビット（次の回に戻さない） */
+  startS: number;
+  passes: number;
+  downed: number;
 }
 
 export interface EvacPlan {
@@ -108,7 +112,8 @@ export function createEvacPlan(sq: EvacSquadron, raid: EvacRaidParams, sorties: 
       const i = flights.length;
       const rng = new SeededRng((seed + evacFlightSeedOffset(w, s)) >>> 0);
       const view: EvacFlightView = { boat: { state: { x: 0, y: 0, headingDeg: 0, speedMps: 0 }, sinking: false }, atHome: false, grounded: false, escort: null };
-      flights.push({ index: i, wave: w, slot: s, p, rng, base: createSortieBase(), view, port: makePort(i, p, rng), phase: EF_IDLE, outcome: EO_NONE, target: -1, complete: false, drawn: false });
+      const startS = raid.waves[w]!.announceS + raid.announceLeadS;
+      flights.push({ index: i, wave: w, slot: s, p, rng, base: createSortieBase(), view, port: makePort(i, p, rng), phase: EF_IDLE, outcome: EO_NONE, target: -1, complete: false, drawn: false, startS, passes: 0, downed: 0 });
     }
   }
   return {
@@ -124,7 +129,7 @@ export function evacFlightLive(fl: EvacFlight): boolean {
 }
 
 /** 狙いの候補（隠れていない・全滅していない隊） */
-function candidate(sq: EvacSquadron, gi: number): boolean {
+export function candidate(sq: EvacSquadron, gi: number): boolean {
   const g = sq.groups[gi]!;
   return g.leader >= 0 && g.phase !== G_HIDDEN && g.phase !== G_GONE;
 }
@@ -133,7 +138,7 @@ function candidate(sq: EvacSquadron, gi: number): boolean {
  * 枠 slot の狙い: 候補のうち、pass 0 は今の波でまだ狙われていない隊、pass 1 は狙われているが flights_per_group_max 未満の隊（操作中の隊を除く。r2 M7-5）。
  * 走っている隊（段 B）を先、尽きたら止まっている隊（段 A）。同じ段はその枠の現れる点（港の中心から from ＋ offset[枠] の方位・spawn_m）に近い順（2 乗。同じなら隊番号の小さい順）
  */
-function pickTarget(plan: EvacPlan, slot: number, pass: number): number {
+export function pickTarget(plan: EvacPlan, slot: number, pass: number): number {
   const { sq, raid } = plan;
   const b = degToRad(raid.fromBearingDeg + raid.flightOffsetsDeg[slot]!);
   const sx = raid.centerX + Math.sin(b) * raid.spawnM;
@@ -214,7 +219,7 @@ export function evacPlanClock(plan: EvacPlan, stepTimeS: number): void {
   if (!sq.settled && plan.nextWave < raid.waves.length && dawnReached(raid.waves[plan.nextWave]!.announceS, stepTimeS)) evacAnnounce(plan, plan.nextWave++);
   for (let i = 0; i < plan.flights.length; i++) {
     const fl = plan.flights[i]!;
-    if (fl.phase === EF_ANNOUNCED && dawnReached(raid.waves[fl.wave]!.announceS + raid.announceLeadS, stepTimeS)) evacTryStart(plan, fl);
+    if (fl.phase === EF_ANNOUNCED && dawnReached(fl.startS, stepTimeS)) evacTryStart(plan, fl);
   }
 }
 
