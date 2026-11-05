@@ -1,0 +1,6 @@
+src/core/evac-briefing.ts
+src/core/evac-result.ts
+src/ui/evac-result.ts
+tests/evac-briefing.test.ts
+tests/evac-result.test.ts
+tests/evac-score.test.ts
