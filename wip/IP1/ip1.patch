@@ -360,25 +360,27 @@ index b84c87f..0dfcb52 100644
  }
  
 diff --git a/src/core/evac-telemetry.ts b/src/core/evac-telemetry.ts
-index 0e51660..de248de 100644
+index 0e51660..28e7441 100644
 --- a/src/core/evac-telemetry.ts
 +++ b/src/core/evac-telemetry.ts
-@@ -134,6 +134,9 @@ export interface EvacTelemetry {
+@@ -134,6 +134,11 @@ export interface EvacTelemetry {
    /** 札の隠れ場所の空き枠（「満杯（空き 1 ・ …）」） */
    hintFree: number;
    settled: boolean;
 +  /** 全艇が隠れて 240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early）・レールの上の艇の進み（整数の %。上げていなければ −1。IP1 の U9） */
 +  early: boolean;
 +  haulPct: number;
++  /** 全艇が隠れて空も空いたが陰に隠れた隊があり予告が残る間は、最後の波の番号（1 始まり。それ以外は 0。IP1 の案 B。2 行目の待機の行が早く終わらない訳を言う） */
++  coverHold: number;
    /** 残存（18 中・座席を含む）・隠れている艇（上げ終えた艇と隠れた隊の艇）・操作中の隊の 3 隻の HP（座席は座席の HP。沈んだ艇は −1） */
    survivors: number;
    hiddenBoats: number;
-@@ -188,7 +191,7 @@ export interface EvacTelemetry {
+@@ -188,7 +193,7 @@ export interface EvacTelemetry {
  export function createEvacTelemetry(groups = 0): EvacTelemetry {
    return {
      enabled: false, groupLabels: [], shelterLabels: [], shelterCover: [], total: 0, quota: 0, historical: 0, durationS: 0, leadS: 0, fromJa: '', dawnPlanes: 0,
 -    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false,
-+    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false, early: false, haulPct: -1,
++    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false, early: false, haulPct: -1, coverHold: 0,
      survivors: 0, hiddenBoats: 0, hp: new Float64Array(3), nextWaveS: NaN, leftS: 0, nextSwitch: -1, seatSeq: 0, takeHold: false,
      near: -1, nearFree: 0, nearEdgeM: NaN, nearDx: NaN, nearDy: NaN,
      annKind: EVA_NONE, annSeq: 0, annWave: -1, annPlanes: 0, annFlights: 0, annTargets: new Int32Array(EVAC_ANN_MAX), annTargetPlanes: new Int32Array(EVAC_ANN_MAX), annCount: 0, annNoTarget: 0, annLost: 0,
@@ -464,14 +466,14 @@ index 295442a..49ed65b 100644
    const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
    evac.view = {
 diff --git a/src/systems/evac-telemetry.ts b/src/systems/evac-telemetry.ts
-index c313e9e..474c5f7 100644
+index c313e9e..7e15b4c 100644
 --- a/src/systems/evac-telemetry.ts
 +++ b/src/systems/evac-telemetry.ts
 @@ -9,9 +9,11 @@ import type { BoatState } from '../core/boat-motion';
  import { bearingJa } from '../core/briefing';
  import { EV_DOWN_EVAC } from '../core/arms-cue';
  import { EVAC_EVENT_SHOW_S, EVAC_SETTLE_SHOW_S, EVAC_TAKE_HOLD_S } from '../config/evac-config';
-+import { evacSettledEarly } from '../core/evac-early';
++import { evacAllHidden, evacCoverAtRisk, evacSettledEarly, evacSkyClear } from '../core/evac-early';
  import { G_ENTERING, G_GONE, G_HAULING, G_HIDDEN, SHELTER_COVER } from '../core/evac-data';
  import { EF_ANNOUNCED, EO_NO_TARGET, evacFlightLive, type EvacFlight } from '../core/evac-plan';
  import { evacNextSwitch } from '../core/evac-seat';
@@ -479,12 +481,13 @@ index c313e9e..474c5f7 100644
  import { evacAfloat, evacLeader, evacSurvivors } from '../core/evac-squadron';
  import {
    EVA_NONE, EVA_REPASS, EVA_WAVE, EVAC_ANN_MAX, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_NONE, EVE_SETTLE, EVE_SINK, clearEvacFeed, createEvacTelemetry, type EvacTelemetry,
-@@ -150,6 +152,8 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
+@@ -150,6 +152,9 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
    t.hintFree = sq.hintShelter >= 0 ? sq.p.shelters[sq.hintShelter]!.slots - sq.shelterUsed[sq.hintShelter]! : 0;
    t.settled = sq.settled;
    t.hauling = g.phase === G_HAULING && g.hauling >= 0;
 +  t.haulPct = evacHaulPct(g, sq.p.haulS);
 +  t.early = evacSettledEarly(sq);
++  t.coverHold = !sq.settled && evacAllHidden(sq) && evacSkyClear(plan) && evacCoverAtRisk(plan) ? plan.raid.waves.length : 0;
    let up = 0;
    for (let k = 0; k < t.hp.length; k++) {
      const b = g.boats[k];
@@ -623,10 +626,10 @@ index 0d527a5..c882fa0 100644
  
    get plan(): EvacPlan {
 diff --git a/src/ui/evac-lines.ts b/src/ui/evac-lines.ts
-index 6bfe141..6757c4e 100644
+index 6bfe141..f5d9b7b 100644
 --- a/src/ui/evac-lines.ts
 +++ b/src/ui/evac-lines.ts
-@@ -115,7 +115,7 @@ export function evacLineKey(e: EvacTelemetry): number {
+@@ -115,13 +115,13 @@ export function evacLineKey(e: EvacTelemetry): number {
        k = ((e.hintShelter + 1) * 8 + e.hintFree) * 8 * 8 + e.control * 8 + e.afloat;
        break;
      case EVL_HAULING:
@@ -635,6 +638,13 @@ index 6bfe141..6757c4e 100644
        break;
      case EVL_FIRE:
        k = e.fireGroup;
+       break;
+     case EVL_WAIT:
+-      k = (((e.control * 8 + e.shelter + 1) * 4 + e.latch) * 512) + Math.min(511, Math.ceil(e.leftS));
++      k = e.coverHold > 0 ? -e.coverHold : (((e.control * 8 + e.shelter + 1) * 4 + e.latch) * 512) + Math.min(511, Math.ceil(e.leftS));
+       break;
+     default:
+       k = 0;
 @@ -154,7 +154,8 @@ export function evacLine(e: EvacTelemetry): HudLine {
      case EVL_ANNOUNCE:
        return warn(evacAnnounceJa(e));
@@ -666,7 +676,16 @@ index 6bfe141..6757c4e 100644
      case EVL_ENTERING:
        return strong(fit((p) => `${g} ${p}に入る ・ 僚艇が寄るまで止まれ`, placeJa(e, e.shelter)));
      case EVL_HIDDEN:
-@@ -224,6 +235,7 @@ export function evacStatusLine(e: EvacTelemetry): string {
+@@ -192,6 +203,8 @@ export function evacLine(e: EvacTelemetry): HudLine {
+     case EVL_GUN:
+       return strong(`機銃は僚艇も撃つ（${e.eventN}隻で対空）`);
+     case EVL_WAIT: {
++      // 全艇が隠れたが陰の隊が予告で見つかりうる間（IP1 の案 B）は、早く終わらない訳と終わる時を言う
++      if (e.coverHold > 0) return strong(`陰の隊は予告で見つかることがある ・ 第${e.coverHold}波の予告の後に退避完了`);
+       const tail = e.latch === SW_WAIT_NEUTRAL ? '離してから倒すと出る' : '倒すと出る';
+       return strong(fit((p) => `${g} ${p}で待機 ・ 空襲が去るまで ${mssJa(e.leftS)} ・ ${tail}`, placeJa(e, e.shelter)));
+     }
+@@ -224,6 +237,7 @@ export function evacStatusLine(e: EvacTelemetry): string {
   * 外の夜（strike あり）は「確定」と言わない（v0.6.11 S8: 外の座席が追撃で沈めば残存は 1 減る＝core/evac-seat の evacSinkLeader）
   */
  export function evacSettleBannerLines(e: EvacTelemetry, strike: string): readonly string[] {
