@@ -8,13 +8,12 @@ export const EVAC_ISLAND_LAND_M = 400;
 /** 屋我地島の名の字の大きさ px（南の岸の COAST_LABEL_FONT_PX と同じ） */
 export const EVAC_ISLAND_LABEL_PX = 36;
 /**
- * 壕の口（v0.6.11 IP1 の U10「レールの画面での描写が線一本で何がなんだかわかりません」）: 南の岸の陸に掘った口。岩の縁（楕円）の中に暗い口（楕円）。
+ * 壕の口（v0.6.11 IP1 の U10「レールの画面での描写が線一本で何がなんだかわかりません」）: 南の岸の陸に掘った口。岩の縁の中に暗い口（楕円）。
  * 中心は岸の線 y（海域の高さ）から陸へ EVAC_CAVE_DEPTH_M。幅・高さ m と色
  */
 export const EVAC_CAVE_DEPTH_M = 40;
-export const EVAC_CAVE_ROCK_W_M = 110;
+/** 岩の縁の高さ m（% の札の位置。岩の縁の絵は v0.6.11 IP2 から assets/evac-terrain-art＝config/evac-art-config） */
 export const EVAC_CAVE_ROCK_H_M = 90;
-export const EVAC_CAVE_ROCK_COLOR = 0x6b6550;
 export const EVAC_CAVE_MOUTH_W_M = 66;
 export const EVAC_CAVE_MOUTH_H_M = 64;
 export const EVAC_CAVE_COLOR = 0x0b0f0a;
@@ -44,11 +43,6 @@ export const EVAC_TIE_COLOR = 0x5a4128;
 export const EVAC_HAUL_LABEL_PX = 22;
 export const EVAC_HAUL_LABEL_GAP_M = -10;
 export const EVAC_HAUL_LABEL_COLOR = '#ffe08a';
-/** 陰（北の岸の際の暗い海）の楕円の幅・高さ m と色・濃さ（史実の裏付け無しの design） */
-export const EVAC_COVER_W_M = 300;
-export const EVAC_COVER_H_M = 160;
-export const EVAC_COVER_COLOR = 0x0e1a24;
-export const EVAC_COVER_ALPHA = 0.35;
 
 // ---------- S5: HUD（2 行目の出来事・中央の帯）と地図の上の輪・番号・札（spec-v0611-r2 §10.1・§10.4・§11） ----------
 /** 2 行目の出来事（見失った・沈没・撃墜・陰が見つかった・隠れた・機銃）を出す秒（世界の時計。一時停止で止まる）と、決着（第 1 次の空襲が去った）を出す秒 */
