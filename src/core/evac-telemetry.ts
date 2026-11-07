@@ -134,6 +134,11 @@ export interface EvacTelemetry {
   /** 札の隠れ場所の空き枠（「満杯（空き 1 ・ …）」） */
   hintFree: number;
   settled: boolean;
+  /** 全艇が隠れて 240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early）・レールの上の艇の進み（整数の %。上げていなければ −1。IP1 の U9） */
+  early: boolean;
+  haulPct: number;
+  /** 全艇が隠れて空も空いたが陰に隠れた隊があり予告が残る間は、最後の波の番号（1 始まり。それ以外は 0。IP1 の案 B。2 行目の待機の行が早く終わらない訳を言う） */
+  coverHold: number;
   /** 残存（18 中・座席を含む）・隠れている艇（上げ終えた艇と隠れた隊の艇）・操作中の隊の 3 隻の HP（座席は座席の HP。沈んだ艇は −1） */
   survivors: number;
   hiddenBoats: number;
@@ -188,7 +193,7 @@ export interface EvacTelemetry {
 export function createEvacTelemetry(groups = 0): EvacTelemetry {
   return {
     enabled: false, groupLabels: [], shelterLabels: [], shelterCover: [], total: 0, quota: 0, historical: 0, durationS: 0, leadS: 0, fromJa: '', dawnPlanes: 0,
-    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false,
+    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false, early: false, haulPct: -1, coverHold: 0,
     survivors: 0, hiddenBoats: 0, hp: new Float64Array(3), nextWaveS: NaN, leftS: 0, nextSwitch: -1, seatSeq: 0, takeHold: false,
     near: -1, nearFree: 0, nearEdgeM: NaN, nearDx: NaN, nearDy: NaN,
     annKind: EVA_NONE, annSeq: 0, annWave: -1, annPlanes: 0, annFlights: 0, annTargets: new Int32Array(EVAC_ANN_MAX), annTargetPlanes: new Int32Array(EVAC_ANN_MAX), annCount: 0, annNoTarget: 0, annLost: 0,

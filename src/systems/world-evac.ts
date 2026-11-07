@@ -13,6 +13,7 @@ import type { BoatInput, BoatParams, BoatState, SpeedStep } from '../core/boat-m
 import { crewLost } from '../core/crew';
 import { createEvacAirStep, stepEvacAir, type EvacAirStep } from '../core/evac-air';
 import { stepEvacBoats } from '../core/evac-boats';
+import { evacSettleDue, evacSettledEarly } from '../core/evac-early';
 import { EVAC_AI_SEED_OFFSET, G_ENTERING, G_HAULING, G_HIDDEN } from '../core/evac-data';
 import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
 import { createEvacSettleSnap, type EvacSettleSnap } from '../core/evac-result';
@@ -37,7 +38,7 @@ export interface EvacWorldView {
   extinguishHeldS: number;
   crewLostNow: number;
   readonly setup: Pick<WorldSetup, 'crew' | 'crewEffects' | 'damageParams' | 'boatParams' | 'mission' | 'boundsMarginM' | 'durationS'>;
-  readonly dawn: { readonly reached: boolean; homeAtLatch: (() => boolean) | null };
+  readonly dawn: { readonly reached: boolean; homeAtLatch: (() => boolean) | null; settleDue: ((stepTimeS: number) => boolean) | null };
   readonly launcher: { clearQueue(): void };
   readonly arms: { readonly flashM: number } | null;
 }
@@ -142,8 +143,10 @@ export class WorldEvac {
       this.settleSnap.group = sq.control;
       this.settleSnap.phase = g.phase;
       this.settleSnap.shelter = g.shelter;
+      this.settleSnap.early = evacSettledEarly(sq);
       return evacSeatHome(sq, seat, true);
     };
+    w.dawn.settleDue = (t) => evacSettleDue(sq, t); // 240 秒か、全艇が隠れて空が空いた次のステップ（v0.6.11 IP1 の U8。模擬と同じ式）
   }
 
   get plan(): EvacPlan {

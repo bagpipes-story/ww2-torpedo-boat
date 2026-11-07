@@ -264,4 +264,60 @@ export function resultRun(o) {
   return { simEnd: tr.end, simT: tr.timeS, survivors: tr.survivors, achieved: tr.achieved, t: w.stepTimeS };
 }
 
-window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe, resultRun };
+/**
+ * レールの画面写しの台（v0.6.11 IP1 の U9・U10。evac-haul.mjs）: 模擬の台本の入力を世界へ写して進め、操作中の隊が壕で上げていて（G_HAULING）
+ * 上げ終えた艇が up 隻以上・レールの上の艇が pct% 以上のフレームで止める（lookS は hudProbe と同じ）。地図の上の字（％の札を含む）と輪を返す
+ */
+export function haulProbe(o) {
+  const hl = window.__hl;
+  const w = hl.world();
+  if (!w.evac) throw new Error('空襲下の退避の任務ではない');
+  const tm = window.__game.registry.get('boatTelemetry');
+  const s = evacSimSetup(gameData, o.hard);
+  const inp = w.input;
+  let stop = false;
+  let seenMax = 0;
+  let ctl = -1;
+  let ctlK = 0;
+  const mirror = {
+    begin() {},
+    frame(k, fo) {
+      if (stop) throw new Error('stop');
+      if (!hl.active('Mission')) throw new Error('mission-ended');
+      if (k > o.maxSteps) throw new Error('上げている所が来ない');
+      inp.stickActive = true;
+      inp.headingDeg = fo.headingDeg;
+      inp.speed01 = fo.speed01;
+      inp.gunHeld = fo.gunHeld;
+      inp.extinguishHeld = fo.extHeld;
+      inp.lookout = o.lookS >= 999;
+      if (fo.switchTap) pressSwitch();
+      hl.frame(o.frameMs);
+    },
+    after(k) {
+      const e = tm.evac;
+      if (e.control !== ctl) [ctl, ctlK] = [e.control, k]; // 切り替えた後はカメラが流れ着くまで（2 秒）待つ
+      if (k - ctlK < 120) return;
+      if (e.phase === 3) seenMax = Math.max(seenMax, e.upCount * 100 + e.haulPct);
+      if (e.phase === 3 && e.upCount >= o.up && e.haulPct >= o.pct && e.annKind === 0 && !e.falling) stop = true; // 2 行目が上げている行（予告・落下の行が上でない）
+    },
+  };
+  try {
+    runEvacTrial(s, o.policy, o.seed, null, mirror);
+  } catch (e) {
+    if (!(e instanceof Error) || e.message !== 'stop') throw e;
+  }
+  if (!stop) throw new Error(`上げている所が来ないまま終わった（上げ済 × 100 ＋ % の最大 ${seenMax}）`);
+  for (let i = 0; i < 90; i++) hl.render(); // カメラの追従（lerp）は描く時だけ進む＝固定ステップだけ回した後は前に描いた所に残る
+  const m = hl.mission();
+  const z = m.cameras.main.zoom / window.__game.scene.getScene('Hud').cameras.main.zoom;
+  const cam = m.cameras.main;
+  const world = m.children.list.filter((x) => x.visible && x.type === 'Text');
+  return {
+    t: w.stepTimeS, zoom: z, control: w.evac.sq.control, shelter: tm.evac.shelter, haulPct: tm.evac.haulPct, upCount: tm.evac.upCount,
+    hud: hl.objects('Hud').filter((x) => x.type === 'Text' && x.v && x.text !== ''),
+    marks: world.map((x) => ({ text: x.text, px: parseFloat(x.style.fontSize) * x.scaleY * z, sx: (x.x - cam.worldView.x) * z, sy: (x.y - cam.worldView.y) * z, w: x.displayWidth * z, h: x.displayHeight * z })),
+  };
+}
+
+window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe, resultRun, haulProbe };

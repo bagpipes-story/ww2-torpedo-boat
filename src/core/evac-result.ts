@@ -22,10 +22,12 @@ export interface EvacSettleSnap {
   shelter: number;
   /** 決着の時の残存（第 1 次の空襲が去って確定した数。2 行目の「残存 8 で確定」と同じ。決着の前に終われば NaN） */
   survivors: number;
+  /** 全艇が隠れて 240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early） */
+  early: boolean;
 }
 
 export function createEvacSettleSnap(): EvacSettleSnap {
-  return { group: -1, phase: -1, shelter: -1, survivors: NaN };
+  return { group: -1, phase: -1, shelter: -1, survivors: NaN, early: false };
 }
 
 /** Result の材料（MissionResult.evac。jp_03 だけ） */
@@ -63,6 +65,8 @@ export interface EvacResult {
   settleGroupJa: string;
   settleShelterJa: string;
   settleSurvivors: number;
+  /** 全艇が隠れて空襲を待たずに決着した（v0.6.11 IP1 の U8。時の行は「全艇が隠れた ・ 空襲を待たずに退避完了（残り M:SS）」） */
+  settleEarly: boolean;
 }
 
 /** 読む物（systems/world-evac の WorldEvac がそのまま満たす。tests は core の部品で組む） */
@@ -139,6 +143,7 @@ export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean, chaseDow
     settleGroupJa: s.group >= 0 ? sq.p.groups[s.group]!.labelJa : '',
     settleShelterJa: place !== EVR_NONE && place !== EVR_OUTSIDE && s.shelter >= 0 ? shelters[s.shelter]!.labelJa : '',
     settleSurvivors: s.survivors,
+    settleEarly: s.early && place !== EVR_NONE,
   };
 }
 

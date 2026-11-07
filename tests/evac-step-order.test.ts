@@ -61,7 +61,7 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）', 
   it('模擬（core/evac-sim）も同じ順: 台本 → ［切替］と latch → 消火 → 時計とラッチ → 乗員 → 座席の運動 → 燃料 → 隊 → 帰投 → 帯 → 対空 → 座席の火災 → 港の空襲 → §2 の 4 機', () => {
     const s = code('core/evac-sim.ts');
     const fn = s.slice(s.indexOf('export function runEvacTrial'));
-    expectOrder(fn, ['evacDriverFrame(', 'evacFrameInput(sq, seat, stick, fo.switchTap, air.hooks)', 'crewExtinguishFactor(', 'm.t += realDt;', 'dawnReached(s.durationS, t)', 'setPerformance(', 'evacSeatCommand(sq, stick, cmd);', 'stepBoat(seat.state,', 'stepFuel(', 'stepEvacBoats(', 'atHome = evacSeatHome(sq, seat, latchStep);', 'nextSpeedBand(', 'stepEvacSimAa(', 'stepDamage(seat.damage', 'stepEvacAir(', 'stepAirStrike(dawn,']);
+    expectOrder(fn, ['evacDriverFrame(', 'evacFrameInput(sq, seat, stick, fo.switchTap, air.hooks)', 'crewExtinguishFactor(', 'm.t += realDt;', 'evacSettleDue(sq, t)', 'setPerformance(', 'evacSeatCommand(sq, stick, cmd);', 'stepBoat(seat.state,', 'stepFuel(', 'stepEvacBoats(', 'atHome = evacSeatHome(sq, seat, latchStep);', 'nextSpeedBand(', 'stepEvacSimAa(', 'stepDamage(seat.damage', 'stepEvacAir(', 'stepAirStrike(dawn,']);
     expect(fn).toContain('if (t >= s.fuelFreeUntilS - TIME_EPS_S) stepFuel(');
     expect(s).toContain('const TIME_EPS_S = EVAC_TIME_EPS_S;');
   });

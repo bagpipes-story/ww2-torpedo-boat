@@ -68,6 +68,8 @@ export class WorldDawn {
   private readonly dayStart: boolean;
   /** ラッチの瞬間の「中」（null なら atHome。jp_03 は world-evac が置く） */
   homeAtLatch: (() => boolean) | null = null;
+  /** 決着のラッチが立つか（null なら dawnReached だけ。jp_03 は world-evac が core/evac-early の evacSettleDue＝240 秒か早い決着（v0.6.11 IP1 の U8）を置く） */
+  settleDue: ((stepTimeS: number) => boolean) | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -90,7 +92,7 @@ export class WorldDawn {
    * 自艇が沈没中か座礁中ならラッチしない（どちらも任務が終わる途中。夜明け後の終わり・空襲の 1 行・夜明けの帯にしない）
    */
   latch(w: DawnWorldView): void {
-    if (this.reached || w.boat.sinking || w.grounded || !dawnReached(this.durationS, w.stepTimeS)) return;
+    if (this.reached || w.boat.sinking || w.grounded || !(this.settleDue ? this.settleDue(w.stepTimeS) : dawnReached(this.durationS, w.stepTimeS))) return;
     this.reached = true;
     this.caughtOutside = !(this.homeAtLatch ? this.homeAtLatch() : w.atHome);
     this.strike?.start(w.boat.state);

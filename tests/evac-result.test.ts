@@ -40,7 +40,7 @@ function trial(hard: boolean, policy: EvacPolicy, seed: number): { e: EvacResult
       if (!latched && m.flags.latched) {
         latched = true;
         const g = m.sq.groups[m.sq.control]!;
-        [snap.group, snap.phase, snap.shelter] = [m.sq.control, g.phase, g.shelter];
+        [snap.group, snap.phase, snap.shelter, snap.early] = [m.sq.control, g.phase, g.shelter, !Number.isNaN(m.sq.earlyS)];
       }
       if (m.plan.evSettle) snap.survivors = evacSurvivors(m.sq);
     },
@@ -53,7 +53,7 @@ function trial(hard: boolean, policy: EvacPolicy, seed: number): { e: EvacResult
 const E0: EvacResult = {
   total: 18, quota: 6, historical: 5, survivors: 8, seatAfloat: true, cave: 6, cover: 2, outside: 0, byGroup: [3, 2, 0, 1, 2, 0],
   aimed: 9, again: 2, lost: 3, came: 6, downed: 1, chaseDowned: 0, bombs: 40, boatHits: 12, switches: 7, promotions: 2,
-  settlePlace: EVR_HIDDEN, settleGroupJa: '第1隊', settleShelterJa: '西の壕', settleSurvivors: 8,
+  settlePlace: EVR_HIDDEN, settleGroupJa: '第1隊', settleShelterJa: '西の壕', settleSurvivors: 8, settleEarly: false,
 };
 const dawn = (o: Partial<DawnResult> = {}): DawnResult => ({ ...createDawnResult(), reached: true, air: DAWN_AIR_ENEMY, ...o });
 const strike = { waves: 1, bombs: 8, bombsAtEscort: 0, hitsPlayer: 0, hitsEscort: 0, damagePlayer: 0, dodgeS: [0.6, NaN], vip: false };
@@ -93,7 +93,7 @@ describe('材料（core/evac-result の evacResultOf）: 模擬の 1 回と同�
   });
   it('決着の段階 → 時の行の種類（中・入っている途中・上げている途中・外・決着の前に終わった）。隠れ場所の名は中と途中だけ', () => {
     const { src, afloat } = trial(false, 'seq', 1);
-    const at = (phase: number, group = 0): EvacResult => evacResultOf({ ...src, settleSnap: { group, phase, shelter: 1, survivors: 8 } as EvacSettleSnap }, afloat);
+    const at = (phase: number, group = 0): EvacResult => evacResultOf({ ...src, settleSnap: { group, phase, shelter: 1, survivors: 8, early: false } }, afloat);
     expect([G_HIDDEN, G_ENTERING, G_HAULING, G_UNDERWAY, G_MOORED, G_FOUND].map((p) => at(p).settlePlace)).toEqual([EVR_HIDDEN, EVR_ENTERING, EVR_HAULING, EVR_OUTSIDE, EVR_OUTSIDE, EVR_OUTSIDE]);
     expect(at(G_HIDDEN, -1).settlePlace).toBe(EVR_NONE);
     expect([at(G_HIDDEN).settleGroupJa, at(G_HIDDEN).settleShelterJa, at(G_UNDERWAY).settleShelterJa]).toEqual(['第1隊', '西の壕', '']);

@@ -51,7 +51,7 @@ fi
 if [ "${EVAC:-0}" = "1" ]; then
   # 名前が ev で始まる件は、出力に帯の行「帯: すべて ✓」も要る（scripts/evac-sim の TABLE=2）
   CASES+=(
-    "ev2|evac-sim|TABLE=2|1598061f01d60a9d1ab89a23c963f59e" "ev2h|evac-sim|HARD=1 TABLE=2|56212244b4306b144a9f4f47b5a67f85"
+    "ev2|evac-sim|TABLE=2|01b151af66bb4f5bf5832ac1f1adc65d" "ev2h|evac-sim|HARD=1 TABLE=2|b428c5b1ce4e0684831cb764f139e019"
   )
 fi
 run() {

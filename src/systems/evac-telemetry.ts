@@ -9,9 +9,11 @@ import type { BoatState } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { EV_DOWN_EVAC } from '../core/arms-cue';
 import { EVAC_EVENT_SHOW_S, EVAC_SETTLE_SHOW_S, EVAC_TAKE_HOLD_S } from '../config/evac-config';
+import { evacAllHidden, evacCoverAtRisk, evacSettledEarly, evacSkyClear } from '../core/evac-early';
 import { G_ENTERING, G_GONE, G_HAULING, G_HIDDEN, SHELTER_COVER } from '../core/evac-data';
 import { EF_ANNOUNCED, EO_NO_TARGET, evacFlightLive, type EvacFlight } from '../core/evac-plan';
 import { evacNextSwitch } from '../core/evac-seat';
+import { evacHaulPct } from '../core/evac-shelter';
 import { evacAfloat, evacLeader, evacSurvivors } from '../core/evac-squadron';
 import {
   EVA_NONE, EVA_REPASS, EVA_WAVE, EVAC_ANN_MAX, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_NONE, EVE_SETTLE, EVE_SINK, clearEvacFeed, createEvacTelemetry, type EvacTelemetry,
@@ -150,6 +152,9 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
   t.hintFree = sq.hintShelter >= 0 ? sq.p.shelters[sq.hintShelter]!.slots - sq.shelterUsed[sq.hintShelter]! : 0;
   t.settled = sq.settled;
   t.hauling = g.phase === G_HAULING && g.hauling >= 0;
+  t.haulPct = evacHaulPct(g, sq.p.haulS);
+  t.early = evacSettledEarly(sq);
+  t.coverHold = !sq.settled && evacAllHidden(sq) && evacSkyClear(plan) && evacCoverAtRisk(plan) ? plan.raid.waves.length : 0;
   let up = 0;
   for (let k = 0; k < t.hp.length; k++) {
     const b = g.boats[k];

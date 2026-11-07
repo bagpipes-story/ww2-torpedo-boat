@@ -93,11 +93,13 @@ describe('編隊の数と同時に動く編隊', () => {
 });
 
 describe('終わりと表の形', () => {
-  it('どの遊び方も終わる（帰投・沈没・漂流・打ち切りのどれか）・決着の前には帰投で終わらない・残存は 0〜18', () => {
+  it('どの遊び方も終わる（帰投・沈没・漂流・打ち切りのどれか）・決着の前の帰投は早い決着（IP1 の U8）だけ・残存は 0〜18', () => {
     for (const p of EVAC_POLICIES) {
       const t = runEvacTrial(NORMAL, p, 21);
       expect(['home', 'sunk', 'adrift', 'timeout']).toContain(t.end);
-      if (t.end === 'home') expect(t.timeS).toBeGreaterThanOrEqual(NORMAL.durationS);
+      // 240 秒の前の帰投は早い決着（v0.6.11 IP1 の U8。全艇が隠れて空が空いた次のステップ）だけ
+      if (t.end === 'home' && t.timeS < NORMAL.durationS) expect(t.timeS).toBeCloseTo(t.earlyS + NORMAL.stepS, 6);
+      else if (t.end === 'home') expect(Number.isNaN(t.earlyS)).toBe(true);
       expect(t.survivors).toBeGreaterThanOrEqual(0);
       expect(t.survivors).toBeLessThanOrEqual(18);
       expect(t.achieved).toBe(t.end === 'home' && t.survivors >= NORMAL.raid.survivorQuota);

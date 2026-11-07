@@ -5,6 +5,7 @@
 // evac の無い任務は null（何も作らない）。
 // AirStrikeFlight を import する（DOM の game-config を読む）のはこのファイルだけ。tests が読む面は systems/world-evac（構造の型）。
 import type Phaser from 'phaser';
+import { evacCaveMouthY } from '../config/evac-config';
 import { RENDER_SCALE, boatTextureKey } from '../config/game-config';
 import { evacDrawPass } from '../core/evac-air';
 import type { BoatState } from '../core/boat-motion';
@@ -42,7 +43,7 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
     damage,
   );
   const terrain = new EvacTerrain(scene, ev, w.setup.mission.bounds);
-  const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite);
+  const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite, evacCaveMouthY(w.setup.mission.bounds.height), w.boat.state);
   const marks = new EvacMarks(scene, evac.sq);
   const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
   evac.view = {

@@ -3,7 +3,8 @@
 // 環境変数: N（1 組の回。既定 400）・SEED（最初の組の最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400・1001〜1400）・HARD=1・POL（, 区切り。既定は spec §12.3 の 10 行）・
 //   つまみ（spec §12.5）DODGE・PICK・HAUL・DROP（外す隠れ場所の id を , 区切り）・COVER・COVERH・LEAD・FIRST・GAP・FPG・FOLLOW・FULLP、
 //   S3b（U7）の PASSES・PASSESH（evac_raid.passes_max・hard.evac_passes_max。data 2。2 以上の時だけ表に「回数/編隊・2 回 %・波ごとの 2 回 %」の列を足す＝PASSES=1 なら表の列は S3 と同じ。
-//   「見失(前)」などの終わり方は S3b から 1 回ごと（予告し直して閉じた回も数える＝core/evac-repass の closed）
+//   「見失(前)」などの終わり方は S3b から 1 回ごと（予告し直して閉じた回も数える＝core/evac-repass の closed）。
+//   IP1（U8）から「早い決着%(秒)」＝全艇が隠れて 240 秒を待たずに決着した回の % とその秒の中央値（core/evac-early）
 // 実行: npx esbuild scripts/evac-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/evac-sim.mjs && TABLE=2 node <scratch>/evac-sim.mjs
 import { gameData } from '../src/config/game-data';
 import { runEvacTrial, type EvacTrial } from '../src/core/evac-sim';
@@ -67,7 +68,7 @@ if (env('PERF') === '1') {
   const all = new Map<EvacPolicy, EvacTrial[]>();
   for (let b = 0; b < blocks; b++) {
     console.log(`-- seed ${seeds(b)}〜${seeds(b) + n - 1}`);
-    console.log(`${'遊び方'.padEnd(13)}達成    帰投    沈没   漂流  外で  残存 中央(p10-p90) 決着 18隻  埋まる%(秒)   壕満  来た 見失(前) 目標なし 切替  交代 沈A/B      段A%  隻/編隊 撃墜  §2命中 引く✗${rep ? '  回数/編隊 2回%   波ごとの2回%' : ''}`);
+    console.log(`${'遊び方'.padEnd(13)}達成    帰投    沈没   漂流  外で  残存 中央(p10-p90) 決着 18隻  埋まる%(秒)   壕満  来た 見失(前) 目標なし 切替  交代 沈A/B      段A%  隻/編隊 撃墜  §2命中 引く✗ 早い決着%(秒)${rep ? '  回数/編隊 2回%   波ごとの2回%' : ''}`);
     for (const pol of pols) {
       const { cell: c, trials } = cellOf(s, pol, seeds(b), n);
       cells.set(pol, [...(cells.get(pol) ?? []), c]);
@@ -76,7 +77,7 @@ if (env('PERF') === '1') {
         pol.padEnd(14) + pct(c.achievedPct).padEnd(8) + pct(c.homePct).padEnd(8) + pct(c.sunkPct).padEnd(7) + pct(c.adriftPct).padEnd(6) + pct(c.caughtPct).padEnd(7) +
           `${fx(c.medSurv, 0)}(${fx(c.p10Surv, 0)}-${fx(c.p90Surv, 0)})`.padEnd(12) + fx(c.medSurvSettle, 0).padEnd(5) + pct(c.all18Pct).padEnd(6) + `${pct(c.fillPct)}(${fx(c.medFillS, 0)})`.padEnd(14) +
           pct(c.cavesFullPct).padEnd(7) + fx(c.came, 2).padEnd(6) + `${fx(c.lostMid, 2)}(${fx(c.lostEarly, 2)})`.padEnd(11) + fx(c.noTarget, 2).padEnd(8) + fx(c.switches, 1).padEnd(6) + fx(c.promotions, 2).padEnd(5) +
-          `${fx(c.sunkA, 2)}/${fx(c.sunkB, 2)}`.padEnd(11) + pct(c.tierAPct).padEnd(7) + fx(c.lossPerFlight, 2).padEnd(8) + fx(c.downs, 2).padEnd(6) + fx(c.dawnHits, 2).padEnd(7) + String(c.drawBad) +
+          `${fx(c.sunkA, 2)}/${fx(c.sunkB, 2)}`.padEnd(11) + pct(c.tierAPct).padEnd(7) + fx(c.lossPerFlight, 2).padEnd(8) + fx(c.downs, 2).padEnd(6) + fx(c.dawnHits, 2).padEnd(7) + String(c.drawBad).padEnd(5) + `${pct(c.earlyPct)}(${fx(c.medEarlyS, 0)})`.padEnd(13) +
           (rep ? `  ${fx(c.passesPerFlight, 2).padEnd(9)}${pct(c.againPct).padEnd(8)}${c.againByWavePct.map(pct).join('/')}` : ''),
       );
     }

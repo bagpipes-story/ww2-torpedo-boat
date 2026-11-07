@@ -17,6 +17,8 @@ export interface EvacTrial {
   /** 決着の時に操作中の隊が外だった（入っている・上げている途中は中＝r2 L15）か、その後に外で終わる途中 */
   caughtOutside: boolean;
   timeS: number;
+  /** 全艇が隠れて 240 秒を待たずに決着した時計の秒（v0.6.11 IP1 の U8。core/evac-early。無ければ NaN） */
+  earlyS: number;
   /** 枠が全部埋まった時計の秒（埋まらなければ NaN。M10） */
   slotsFullS: number;
   /** 決着の時に 3 つの壕に 3 隻ずつ上げ切った（構造の下限。r2 H1 (5)）・上げ終えた艇の数・隠れた隊の艇の数 */
@@ -73,7 +75,7 @@ export interface EvacTrial {
 
 export function createEvacTrial(): EvacTrial {
   return {
-    end: '', achieved: false, survivors: 0, survivorsAtSettle: NaN, caughtOutside: false, timeS: 0, slotsFullS: NaN, cavesFull: false, upAtSettle: 0, hiddenAtSettle: 0,
+    end: '', achieved: false, survivors: 0, survivorsAtSettle: NaN, caughtOutside: false, timeS: 0, earlyS: NaN, slotsFullS: NaN, cavesFull: false, upAtSettle: 0, hiddenAtSettle: 0,
     announced: 0, came: 0, lostMid: 0, lostEarly: 0, noTarget: 0, gone: 0, settledFl: 0, done: 0, tierA: 0, tierB: 0, switches: 0, taps: 0, promotions: 0, autoSwitches: 0,
     sunkA: 0, sunkB: 0, evacReleases: 0, impacts: 0, boatHits: 0, seatHits: 0, dawnBombs: 0, dawnHits: 0, downs: 0, downsAll: 0, rounds: 0, extinguished: 0,
     draws29: 0, draws30: 0, draws31: 0, drawsFlights: 0, exp29: 0, exp30: 0, exp31: 0, afloatControl: 0,
@@ -143,6 +145,7 @@ export function finishEvacTrial(o: EvacTrial, sq: EvacSquadron, plan: EvacPlan, 
   // pick の境（k × pick_s < 決着の秒）のうち終わりまでに来たもの（18 隻が決着の前に沈めば途中で終わる）
   o.exp30 = sq.groups.length * (1 + 2 * Math.min(Math.ceil(durationS / pickS) - 1, Math.floor(o.timeS / pickS + 1e-9)));
   o.exp31 = plan.releases;
+  o.earlyS = sq.earlyS;
   o.achieved = o.end === 'home' && o.survivors >= quota;
 }
 
@@ -166,6 +169,9 @@ export interface EvacCell {
   fillPct: number;
   medFillS: number;
   cavesFullPct: number;
+  /** 全艇が隠れて 240 秒を待たずに決着した回の %・その秒の中央値（v0.6.11 IP1 の U8） */
+  earlyPct: number;
+  medEarlyS: number;
   /** 1 回の平均: 来た編隊・途中で見失った・始める前に見失った・目標なし・切替・押した回数・交代・沈没（段 A／B）・撃墜・発・決着の後の §2 の命中 */
   came: number;
   lostMid: number;
@@ -203,6 +209,7 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
   const mean = (f: (t: EvacTrial) => number): number => ts.reduce((a, t) => a + f(t), 0) / n;
   const surv = ts.map((t) => t.survivors);
   const fills = ts.filter((t) => !Number.isNaN(t.slotsFullS)).map((t) => t.slotsFullS);
+  const earlies = ts.filter((t) => !Number.isNaN(t.earlyS)).map((t) => t.earlyS);
   const came = ts.reduce((a, t) => a + t.came, 0);
   const lost = ts.reduce((a, t) => a + (18 - (Number.isNaN(t.survivorsAtSettle) ? t.survivors : t.survivorsAtSettle)), 0);
   const tA = ts.reduce((a, t) => a + t.tierA, 0);
@@ -230,6 +237,8 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
     fillPct: (100 * fills.length) / n,
     medFillS: quantile(fills, 0.5),
     cavesFullPct: pct((t) => t.cavesFull),
+    earlyPct: (100 * earlies.length) / n,
+    medEarlyS: quantile(earlies, 0.5),
     came: came / n,
     lostMid: mean((t) => t.lostMid),
     lostEarly: mean((t) => t.lostEarly),

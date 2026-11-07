@@ -4,6 +4,7 @@
 import { DAWN_AIR_ENEMY, type DawnResult } from '../core/dawn-air';
 import { EVR_ENTERING, EVR_HAULING, EVR_HIDDEN, EVR_NONE, EVR_OUTSIDE, evacScoredBoats, type EvacResult } from '../core/evac-result';
 import type { MissionEndReason } from '../core/mission-flow';
+import { mssJa } from './evac-text';
 
 /** 時の行の追撃の転舵を出す数（ui/dawn-lines の夜明けの行と同じ 8 発） */
 const EVAC_DODGE_SHOWN = 8;
@@ -45,12 +46,14 @@ function afterJa(reason: MissionEndReason, returned: boolean): string {
 
 /**
  * 夜明けの行の代わりの時の行（spec §10.3。r2 L15）: 「空襲が去る時: 西の壕の中（第1隊） ・ 残存 8 で確定」／「…西の壕で上げている途中（第1隊）…」／
- * 「…屋我地の陰（東）に入っている途中…」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／「… ・ 隠れる前に沈没（隊長艇の分 −1 で 7）」／決着の前に終わった夜（18 隻すべてが沈んだ）
+ * 「…屋我地の陰（東）に入っている途中…」／早い決着（IP1 の U8）「全艇が隠れた ・ 空襲を待たずに退避完了（残り 1:23） ・ 西の壕の中（第1隊） ・ 残存 8 で確定」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／「… ・ 隠れる前に沈没（隊長艇の分 −1 で 7）」／決着の前に終わった夜（18 隻すべてが沈んだ）
  */
 export function evacTimeLineJa(e: EvacResult, d: DawnResult, reason: MissionEndReason, returned: boolean): string {
   if (e.settlePlace === EVR_NONE) return e.survivors === 0 ? `空襲が去る前に ${e.total} 隻すべてが沈んだ（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）` : '空襲が去る時: 操作中の隊長艇が沈む途中';
   const sure = ` ・ 残存 ${e.settleSurvivors} で確定`;
   const g = e.settleGroupJa;
+  // 全艇が隠れて空が空き、240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early。操作中の隊はいつも隠れている）
+  if (e.settleEarly) return `全艇が隠れた ・ 空襲を待たずに退避完了（残り ${mssJa(d.timeLeftAtEndS)}） ・ ${e.settleShelterJa}の中（${g}）${sure}`;
   if (e.settlePlace === EVR_HIDDEN) return `空襲が去る時: ${e.settleShelterJa}の中（${g}）${sure}`;
   if (e.settlePlace === EVR_HAULING) return `空襲が去る時: ${e.settleShelterJa}で上げている途中（${g}）${sure}`;
   if (e.settlePlace === EVR_ENTERING) return `空襲が去る時: ${e.settleShelterJa}に入っている途中（${g}）${sure}`;

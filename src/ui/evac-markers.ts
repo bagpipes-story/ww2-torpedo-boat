@@ -2,7 +2,8 @@
 // - EvacMarks（systems/evac-flights の buildEvac が作り、世界のフレームの絵で毎フレーム）: 隠れ場所の輪（Boot の tex-evac-ring。満杯は薄く）と札「西の壕 空き 3/3」（4 つ。空きが変わったときだけ）、
 //   操作中の隊の白い輪 1・狙われた隊の赤い輪（隊ごとに 1 つ＝6。点滅は tween なしで世界の秒から濃さ）・見つかった陰の黄の輪（陰ごと）、隊の番号「1」〜「6」（隊長艇の上。位置は毎フレーム、
 //   色と字は見え方が変わったときだけ＝灰 停泊・白 走る・暗い緑 隠れた・黄 見つかった・赤 狙われている・灰の × 全滅、操作中は太字）。字はズームが変わった時だけ setScale(1/zoom)
-//   （見張り 0.5 でも画面上 EVAC_NUMBER_PX）。Text は番号 6 ＋ 札 4＝10。
+//   （見張り 0.5 でも画面上 EVAC_NUMBER_PX）。Text は番号 6 ＋ 札 4 ＋ レールの札（壕ごと 3）＝13。
+//   v0.6.11 IP1 の U9: 壕で上げている隊がある間だけ、その壕の口の下（陸）に「2隻目 45%」（レールの上の艇の番目と進み＝core/evac-shelter の evacHaulPct。整数の % が変わったときだけ setText）。
 // - EvacEdgeMarkers（ui/hud-markers が evac の任務だけ作る。帰投の印「帰投 N m」は出さない＝r2 L8）: 画面の外の狙われた隊（操作中の隊を除く）への赤い「第4隊 600 m」を ≤ EVAC_EDGE_TARGETS、
 //   近い空いた隠れ場所への青い「西の壕 800 m」1 本（入っている・上げている・隠れている間は出さない）。ラベルの名は替わったときだけ（EdgeMarker.setPrefix）。右下の速力の角を避け、近い矢印から縁に沿ってずらす。
 //   ラベルは画面の枠の左右 HUD_MARGIN の内（S8b の labelInset。左の縁の「西の壕 1200 m」が W 1280 で画面の外へ出た）。上下の縁で横に並ぶ矢印はラベルの幅で離す（S8b）。
@@ -12,6 +13,7 @@
 // §7: 物は constructor だけで作る（Image 4 ＋ 1 ＋ 6 ＋ 陰の数・Text 10・端の矢印 4）。毎フレームは位置と濃さ、字は変わったときだけ。
 import Phaser from 'phaser';
 import {
+  EVAC_CAVE_ROCK_H_M, EVAC_HAUL_LABEL_COLOR, EVAC_HAUL_LABEL_GAP_M, EVAC_HAUL_LABEL_PX, evacCaveMouthY,
   EVAC_CONTROL_TINT, EVAC_EDGE_TARGETS, EVAC_FOUND_TINT, EVAC_GROUP_RING_M, EVAC_LABEL_PX, EVAC_NUMBER_OFFSET_PX, EVAC_NUMBER_PX, EVAC_RING_TEX_RADIUS_UNITS, EVAC_SHELTER_FULL_ALPHA,
   EVAC_SHELTER_RING_ALPHA, EVAC_SHELTER_TINT, EVAC_TARGET_ALPHA_MAX, EVAC_TARGET_ALPHA_MIN, EVAC_TARGET_PULSE_HZ, EVAC_TARGET_TINT,
 } from '../config/evac-config';
@@ -21,7 +23,8 @@ import {
 } from '../config/ui-config';
 import { degToRad } from '../core/units';
 import type { BoatTelemetry } from '../core/boat-motion';
-import { G_FOUND, G_GONE, SHELTER_COVER } from '../core/evac-data';
+import { G_FOUND, G_GONE, G_HAULING, SHELTER_CAVE, SHELTER_COVER } from '../core/evac-data';
+import { evacHaulPct } from '../core/evac-shelter';
 import { evacAfloat, evacLeader, type EvacSquadron } from '../core/evac-squadron';
 import { EdgeMarker } from './edge-marker';
 import { EVAC_NUMBER_COLORS, evacNumberLook } from './evac-lines';
@@ -44,6 +47,9 @@ export class EvacMarks {
   private readonly targetRings: Phaser.GameObjects.Image[] = [];
   private readonly controlRing: Phaser.GameObjects.Image;
   private readonly numbers: Phaser.GameObjects.Text[] = [];
+  /** 壕ごとのレールの札（陰は null）と前回の中身（番目 × 128 ＋ %。出していなければ −1） */
+  private readonly haulLabels: (Phaser.GameObjects.Text | null)[] = [];
+  private readonly lastHaul: Int32Array;
   /** 前回の空き（札）・見え方（番号）・操作中の隊・ズーム・黄の輪・赤の輪 */
   private readonly lastFree: Int32Array;
   private readonly lastLook: Int8Array;
@@ -63,6 +69,11 @@ export class EvacMarks {
       this.shelterLabels.push(
         scene.add.text(sh.x, above ? sh.y - p.shelterRingM - LABEL_GAP_M : sh.y + p.shelterRingM + LABEL_GAP_M, '', hudTextStyle(EVAC_LABEL_PX, HOME_COLOR_TEXT)).setOrigin(0.5, above ? 1 : 0).setDepth(DEPTH.impactRing),
       );
+      this.haulLabels.push(
+        sh.kind === SHELTER_CAVE
+          ? scene.add.text(sh.x, evacCaveMouthY(sq.cfg.bounds.height) + EVAC_CAVE_ROCK_H_M / 2 + EVAC_HAUL_LABEL_GAP_M, '', hudTextStyle(EVAC_HAUL_LABEL_PX, EVAC_HAUL_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.impactRing).setVisible(false)
+          : null,
+      );
       this.foundRings.push(sh.kind === SHELTER_COVER ? scene.add.image(sh.x, sh.y, TEXTURE_KEYS.evacRing).setScale(ringScale(p.shelterRingM * FOUND_RING_K)).setTint(EVAC_FOUND_TINT).setDepth(DEPTH.returnRing).setVisible(false) : null);
     }
     for (let gi = 0; gi < sq.groups.length; gi++) {
@@ -71,6 +82,7 @@ export class EvacMarks {
     }
     this.controlRing = scene.add.image(0, 0, TEXTURE_KEYS.evacRing).setScale(ringScale(EVAC_GROUP_RING_M)).setTint(EVAC_CONTROL_TINT).setDepth(DEPTH.returnRing);
     this.lastFree = new Int32Array(p.shelters.length).fill(-1);
+    this.lastHaul = new Int32Array(p.shelters.length).fill(-1);
     this.lastLook = new Int8Array(sq.groups.length).fill(-1);
     this.lastFound = new Uint8Array(p.shelters.length);
     this.lastTarget = new Uint8Array(sq.groups.length);
@@ -85,7 +97,9 @@ export class EvacMarks {
       this.lastZoom = zoom;
       for (const tx of this.numbers) tx.setScale(1 / zoom);
       for (const tx of this.shelterLabels) tx.setScale(1 / zoom);
+      for (const tx of this.haulLabels) tx?.setScale(1 / zoom);
     }
+    this.updateHaul();
     // 隠れ場所の札と輪（空き＝枠 − 取られた枠。操作中の隊が入れない＝空きが隊の隻数より少なければ薄く）
     const need = evacAfloat(sq.groups[sq.control]!);
     for (let s = 0; s < p.shelters.length; s++) {
@@ -135,7 +149,31 @@ export class EvacMarks {
     if (cl) this.controlRing.setPosition(cl.state.x, cl.state.y);
   }
 
+  /** レールの札（壕で上げている隊がある壕だけ。中身が変わったときだけ setText・出し入れ） */
+  private updateHaul(): void {
+    const sq = this.sq;
+    for (let s = 0; s < this.haulLabels.length; s++) {
+      const tx = this.haulLabels[s];
+      if (!tx) continue;
+      let key = -1;
+      for (let gi = 0; gi < sq.groups.length && key < 0; gi++) {
+        const g = sq.groups[gi]!;
+        if (g.phase !== G_HAULING || g.shelter !== s) continue;
+        const pct = evacHaulPct(g, sq.p.haulS);
+        if (pct < 0) continue;
+        let up = 0;
+        for (let k = 0; k < g.boats.length; k++) if (g.boats[k]!.up && !g.boats[k]!.sunk) up++;
+        key = (up + 1) * 128 + pct;
+      }
+      if (key === this.lastHaul[s]) continue;
+      this.lastHaul[s] = key;
+      if (key < 0) tx.setVisible(false);
+      else tx.setText(`${key >> 7}隻目 ${key & 127}%`).setVisible(true);
+    }
+  }
+
   destroy(): void {
+    for (const o of this.haulLabels) o?.destroy();
     for (const o of this.shelterRings) o.destroy();
     for (const o of this.shelterLabels) o.destroy();
     for (const o of this.foundRings) o?.destroy();

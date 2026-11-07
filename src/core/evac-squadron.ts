@@ -101,6 +101,11 @@ export interface EvacSquadron {
   stickOut: boolean;
   /** 決着（240 秒）の後（残存は確定・切替なし・枠を数えない） */
   settled: boolean;
+  /**
+   * 全艇が隠れて敵機が誰も捕まえられなくなった時計の秒（v0.6.11 IP1 の U8。core/evac-early。まだなら NaN）。次のステップで 240 秒を待たずに決着する
+   * （夜明けのラッチも同じステップ＝世界の WorldDawn と模擬が evacSettleDue で読む）
+   */
+  earlyS: number;
   /** 次の pick の時計の秒（dawnReached と同じ形。r2 M13） */
   nextPickS: number;
   /** HUD の札（EVAC_HINT_*）とその隠れ場所（毎ステップ書き直す） */
@@ -150,7 +155,7 @@ export function createEvacSquadron(cfg: EvacSquadronConfig, aiRng: SeededRng): E
   }
   return {
     cfg, p, groups, boats, shelterUsed: new Int32Array(p.shelters.length), targeted: new Uint8Array(groups.length), order: new Int32Array(groups.length), orderLen: 0,
-    control: p.startGroup, latch: SW_FREE, stickOut: false, settled: false, nextPickS: p.pickS, hint: EVAC_HINT_NONE, hintShelter: -1, switches: 0, promotions: 0, autoSwitches: 0,
+    control: p.startGroup, latch: SW_FREE, stickOut: false, settled: false, earlyS: NaN, nextPickS: p.pickS, hint: EVAC_HINT_NONE, hintShelter: -1, switches: 0, promotions: 0, autoSwitches: 0,
   };
 }
 

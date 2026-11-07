@@ -7,13 +7,43 @@ export const EVAC_HIDDEN_ALPHA = 0.45;
 export const EVAC_ISLAND_LAND_M = 400;
 /** 屋我地島の名の字の大きさ px（南の岸の COAST_LABEL_FONT_PX と同じ） */
 export const EVAC_ISLAND_LABEL_PX = 36;
-/** 壕の口（南の岸の陸の側に掘った暗い四角）の幅・奥行き m と色 */
-export const EVAC_CAVE_MOUTH_W_M = 70;
-export const EVAC_CAVE_MOUTH_D_M = 60;
+/**
+ * 壕の口（v0.6.11 IP1 の U10「レールの画面での描写が線一本で何がなんだかわかりません」）: 南の岸の陸に掘った口。岩の縁（楕円）の中に暗い口（楕円）。
+ * 中心は岸の線 y（海域の高さ）から陸へ EVAC_CAVE_DEPTH_M。幅・高さ m と色
+ */
+export const EVAC_CAVE_DEPTH_M = 40;
+export const EVAC_CAVE_ROCK_W_M = 110;
+export const EVAC_CAVE_ROCK_H_M = 90;
+export const EVAC_CAVE_ROCK_COLOR = 0x6b6550;
+export const EVAC_CAVE_MOUTH_W_M = 66;
+export const EVAC_CAVE_MOUTH_H_M = 64;
 export const EVAC_CAVE_COLOR = 0x0b0f0a;
-/** 壕から海へ下ろすレール（1 本）の線の太さ m と色（壕の口から隠れ場所の点まで） */
-export const EVAC_RAIL_WIDTH_M = 4;
-export const EVAC_RAIL_COLOR = 0x7a6a48;
+/** 壕の口の中心の y（岸の線 bounds.height から陸へ。systems/evac-terrain が描き、上げている艇はここへ入る＝systems/evac-boats-view、% の札はその下＝ui/evac-markers） */
+export function evacCaveMouthY(boundsHeight: number): number {
+  return boundsHeight + EVAC_CAVE_DEPTH_M;
+}
+/**
+ * 引き上げの斜路（スリップウェイ。U10）: 隠れ場所の点の少し海側から壕の口までのコンクリートの斜路（海の中は薄く＝水に沈んだ部分）、2 本のレール、枕木。
+ * 斜路の幅・海の側へ出す長さ m・色・海の中の濃さ、レールの間隔（中心から左右）・太さ m・色、枕木の幅・厚さ・間隔 m・色
+ */
+export const EVAC_RAMP_W_M = 36;
+export const EVAC_RAMP_SEA_M = 30;
+export const EVAC_RAMP_COLOR = 0xa29c8a;
+export const EVAC_RAMP_SEA_ALPHA = 0.45;
+export const EVAC_RAIL_GAUGE_M = 8;
+export const EVAC_RAIL_WIDTH_M = 3;
+export const EVAC_RAIL_COLOR = 0x2a2a2a;
+export const EVAC_TIE_W_M = 28;
+export const EVAC_TIE_H_M = 3;
+export const EVAC_TIE_STEP_M = 9;
+export const EVAC_TIE_COLOR = 0x5a4128;
+/**
+ * レールで上げている艇の進み（U9「一艇ずつレールで引き上げている進捗（一艇ごと）をレールの下部にでも%で表示」）: 壕の口の下（陸）の札「2隻目 45%」の字の大きさ（論理 px。
+ * 隠れ場所の札と同じくズームが変わった時だけ 1/zoom＝見張り 0.5 でも画面上この大きさ）・岩の縁の下端からの間 m（負は岩の縁に少し重ねる＝W 1280 の既定のズームで右下の速力の HUD「停止」から離す）・色
+ */
+export const EVAC_HAUL_LABEL_PX = 22;
+export const EVAC_HAUL_LABEL_GAP_M = -10;
+export const EVAC_HAUL_LABEL_COLOR = '#ffe08a';
 /** 陰（北の岸の際の暗い海）の楕円の幅・高さ m と色・濃さ（史実の裏付け無しの design） */
 export const EVAC_COVER_W_M = 300;
 export const EVAC_COVER_H_M = 160;

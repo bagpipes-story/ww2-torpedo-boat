@@ -222,3 +222,18 @@ export function evacStepShelters(sq: EvacSquadron, realDt: number): void {
     if (g.foundCover >= 0 && g.phase !== G_FOUND && !evacInRing(sq, g.foundCover, lead.state.x, lead.state.y)) g.foundCover = -1;
   }
 }
+
+/**
+ * レールの上の艇の進み（v0.6.11 IP1 の U9。地図の上の札・HUD の 2 行目・レールの上の艇の絵）: 0〜1（上げていなければ NaN）と整数の %（0〜99。上げていなければ −1）。
+ * 進みは haul_s の残りから（core の値は変えない＝絵と文だけ）
+ */
+export function evacHaulProgress(g: EvacGroup, haulS: number): number {
+  if (g.phase !== G_HAULING || g.hauling < 0 || !(haulS > 0)) return NaN;
+  const k = 1 - g.haulLeftS / haulS;
+  return k < 0 ? 0 : k > 1 ? 1 : k;
+}
+
+export function evacHaulPct(g: EvacGroup, haulS: number): number {
+  const k = evacHaulProgress(g, haulS);
+  return Number.isNaN(k) ? -1 : Math.min(99, Math.floor(k * 100));
+}

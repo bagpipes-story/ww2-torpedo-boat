@@ -332,7 +332,9 @@ describe('小さな世界の夜の HUD（台本 seq・seq_shoot・stay。キー�
   it('4 夜を合わせると、出来事の行（隠れた・沈没の 3 種以上・見失った・決着）と平常・予告の行がどれも出た（重い出来事が出ている間の軽い出来事は出さない＝隠れた・機銃は夜によっては出ない）', () => {
     for (const k of [EVE_HIDDEN * 10, EVE_SETTLE * 10, EVE_LOST * 10]) expect(all.has(k), String(k)).toBe(true);
     expect([EVS_WINGMAN, EVS_LEADER, EVS_SEAT, EVS_GONE].filter((v) => all.has(EVE_SINK * 10 + v)).length).toBeGreaterThanOrEqual(3);
-    for (const w of ['を操作中 ・ 近い隠れ場所', '第1波 2機×', 'に隠れた ・ ［切替］で次の隊へ', '第1次の空襲が去った']) expect([...allLines].some((x) => x.includes(w)), w).toBe(true);
+    for (const w of ['を操作中 ・ 近い隠れ場所', '第1波 2機×', 'に隠れた ・ ［切替］で次の隊へ']) expect([...allLines].some((x) => x.includes(w)), w).toBe(true);
+    // 決着の行は 240 秒か、全艇が隠れて空襲を待たずに（v0.6.11 IP1 の U8）
+    expect([...allLines].some((x) => x.includes('第1次の空襲が去った') || x.includes('全艇が隠れた ・ 空襲を待たずに退避完了'))).toBe(true);
   });
 });
 

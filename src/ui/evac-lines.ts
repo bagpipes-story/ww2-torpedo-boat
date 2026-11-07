@@ -115,13 +115,13 @@ export function evacLineKey(e: EvacTelemetry): number {
       k = ((e.hintShelter + 1) * 8 + e.hintFree) * 8 * 8 + e.control * 8 + e.afloat;
       break;
     case EVL_HAULING:
-      k = ((e.shelter + 1) * 8 + e.upCount) * 16 + e.afloat * 2 + (e.hauling ? 1 : 0);
+      k = (((e.shelter + 1) * 8 + e.upCount) * 16 + e.afloat * 2 + (e.hauling ? 1 : 0)) * 128 + e.haulPct + 1;
       break;
     case EVL_FIRE:
       k = e.fireGroup;
       break;
     case EVL_WAIT:
-      k = (((e.control * 8 + e.shelter + 1) * 4 + e.latch) * 512) + Math.min(511, Math.ceil(e.leftS));
+      k = e.coverHold > 0 ? -e.coverHold : (((e.control * 8 + e.shelter + 1) * 4 + e.latch) * 512) + Math.min(511, Math.ceil(e.leftS));
       break;
     default:
       k = 0;
@@ -154,7 +154,8 @@ export function evacLine(e: EvacTelemetry): HudLine {
     case EVL_ANNOUNCE:
       return warn(evacAnnounceJa(e));
     case EVL_SETTLE:
-      return strong(`第1次の空襲が去った ・ 残存 ${e.eventN} で確定`);
+      // 全艇が隠れて空襲を待たずに決着（v0.6.11 IP1 の U8。この後すぐ Result）
+      return strong(e.early ? `全艇が隠れた ・ 空襲を待たずに退避完了（残存 ${e.eventN}）` : `第1次の空襲が去った ・ 残存 ${e.eventN} で確定`);
     case EVL_LOST:
       return strong(`${groupJa(e, e.eventGroup)}を見失った！ ${e.eventSub}機が引き返す`);
     case EVL_SINK:
@@ -181,8 +182,18 @@ export function evacLine(e: EvacTelemetry): HudLine {
     }
     case EVL_FULL:
       return warn(fit((p) => `${p}は満杯（空き ${e.hintFree} ・ ${g}は ${e.afloat} 隻）`, placeJa(e, e.hintShelter)));
-    case EVL_HAULING:
-      return strong(fit((p) => `${p} レールで上げている ${Math.min(e.afloat, e.upCount + (e.hauling ? 1 : 0))}/${e.afloat} ・ 隊長艇は最後 ・ 倒すとやめて下ろす`, placeJa(e, e.shelter)));
+    case EVL_HAULING: {
+      // レールの上の艇の進み %（v0.6.11 IP1 の U9。地図の上のレールの下の札と同じ数）。840 px を超えれば尾を「倒すと下ろす」に、まだ超えれば % を落とす
+      const n = `${Math.min(e.afloat, e.upCount + (e.hauling ? 1 : 0))}/${e.afloat}`;
+      const pct = e.haulPct >= 0 ? `（${e.haulPct}%）` : '';
+      const make = (tail: string, k: string) => (p: string): string => `${p} レールで上げている ${n}${k} ・ 隊長艇は最後 ・ ${tail}`;
+      const place = placeJa(e, e.shelter);
+      for (const [tail, k] of [['倒すとやめて下ろす', pct], ['倒すと下ろす', pct]] as const) {
+        const text = fit(make(tail, k), place);
+        if (jaWidthPx(text, LINE_PX) <= EVAC_LINE_MAX_PX) return strong(text);
+      }
+      return strong(fit(make('倒すとやめて下ろす', ''), place));
+    }
     case EVL_ENTERING:
       return strong(fit((p) => `${g} ${p}に入る ・ 僚艇が寄るまで止まれ`, placeJa(e, e.shelter)));
     case EVL_HIDDEN:
@@ -192,6 +203,8 @@ export function evacLine(e: EvacTelemetry): HudLine {
     case EVL_GUN:
       return strong(`機銃は僚艇も撃つ（${e.eventN}隻で対空）`);
     case EVL_WAIT: {
+      // 全艇が隠れたが陰の隊が予告で見つかりうる間（IP1 の案 B）は、早く終わらない訳と終わる時を言う
+      if (e.coverHold > 0) return strong(`陰の隊は予告で見つかることがある ・ 第${e.coverHold}波の予告の後に退避完了`);
       const tail = e.latch === SW_WAIT_NEUTRAL ? '離してから倒すと出る' : '倒すと出る';
       return strong(fit((p) => `${g} ${p}で待機 ・ 空襲が去るまで ${mssJa(e.leftS)} ・ ${tail}`, placeJa(e, e.shelter)));
     }
@@ -224,6 +237,7 @@ export function evacStatusLine(e: EvacTelemetry): string {
  * 外の夜（strike あり）は「確定」と言わない（v0.6.11 S8: 外の座席が追撃で沈めば残存は 1 減る＝core/evac-seat の evacSinkLeader）
  */
 export function evacSettleBannerLines(e: EvacTelemetry, strike: string): readonly string[] {
+  if (e.early) return ['全艇が隠れた ・ 空襲を待たずに退避完了', `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`]; // v0.6.11 IP1 の U8（操作中の隊は隠れている＝追撃なし）
   const head = '第1次の空襲が去った';
   if (!strike) return [head, `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`];
   return [head, `残存 ${e.survivors}／${e.total}（${e.quota} 隻以上で達成 ・ 隊長艇が沈めば 1 減る）`, `${strike} ・ 壕か陰へ`];

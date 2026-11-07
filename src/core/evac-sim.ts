@@ -1,6 +1,6 @@
 // 空襲下の退避の模擬（v0.6.11 S3。jp_03「運天港・空襲下の退避」。spec-v0611-r2 §8・§12）。Phaser 非依存。ゲームは使わない（tests/evac-sim-*・scripts/evac-sim.ts）。
 // 1 回: 第1隊を操る座席から台本（core/evac-sim-policy の人の行）で 6 つの隊を隠し、240 秒の決着の後は帰投・沈没・漂流・打ち切りまで。世界と同じ順（spec §8。S4 の世界はこれに合わせる）:
-// フレームの入力（台本 → evacFrameInput の［切替］と latch・消火の長押し）→ 固定ステップ: 時計 → 夜明けのラッチ（決着のラッチと同じ式。中かどうかはラッチの点の evacSeatHome(…, true)）→
+// フレームの入力（台本 → evacFrameInput の［切替］と latch・消火の長押し）→ 固定ステップ: 時計 → 夜明けのラッチ（決着のラッチと同じ式＝240 秒か前のステップの早い決着（IP1 の U8。core/evac-early）。中かどうかはラッチの点の evacSeatHome(…, true)）→
 // 乗員の倍率 → 座席の運動（evacSeatCommand・燃料は fuel_free_until_s から）→ stepEvacBoats → 帰投（evacSeatHome）→ 帯 → 対空（core/evac-sim-aa。seed+24）→
 // 座席の火災（沈めば evacSinkLeader）→ stepEvacAir（予告・狙い・編隊・着弾・操作していない隊長艇の火災）→ §2 の 4 機（seed+19。座席だけを狙う）。
 // 命中スローは無い（決着の前の jp_03 に命中スローは無い＝r2 M1。決着の後の §2 の 4 機の撃墜の爆発もスローなし＝S4 の evac の世界の onSunk）。
@@ -10,9 +10,9 @@ import { AA_SEED_OFFSET, type AntiAircraftParams } from './aa-fire';
 import { AIR_STRIKE_SEED_OFFSET, AS_EV_IMPACT, AS_EV_RELEASE, createAirStrike, startAirStrike, stepAirStrike, type AirStrikeCheck, type AirStrikeParams } from './air-strike';
 import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type SeaBounds } from './boat-motion';
 import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor, type CrewEffects, type CrewParams } from './crew';
-import { dawnReached } from './dawn-air';
 import { createEvacAirCore, stepEvacAir } from './evac-air';
 import { stepEvacBoats } from './evac-boats';
+import { evacSettleDue } from './evac-early';
 import { EVAC_AI_SEED_OFFSET, EVAC_TIME_EPS_S, G_UNDERWAY } from './evac-data';
 import type { EvacAirWorld } from './evac-hits';
 import type { EvacParams, EvacRaidParams } from './evac-params';
@@ -150,7 +150,7 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number, 
     m.t += realDt;
     const t = m.t;
     latchStep = false;
-    if (!latched && !m.sinking && dawnReached(s.durationS, t)) {
+    if (!latched && !m.sinking && evacSettleDue(sq, t)) {
       latched = true;
       latchStep = true;
       out.caughtOutside = !evacSeatHome(sq, seat, true);

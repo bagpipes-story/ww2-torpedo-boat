@@ -1,13 +1,13 @@
 // 空襲下の退避（v0.6.11。jp_03。spec-v0611-r2 §8 の段 5）の 1 固定ステップの空襲（世界の evac.stepAir も模擬もこれを呼ぶ＝順が 1 つ）:
-// 撃墜の後の順番を飛ばす（skipDownedRuns。r2 H6）→ 陰を見つける閃光（flash_reveal の時だけ）→ 決着のラッチ（dawnReached と同じ式）→ 予告（陰の発見 → 狙い）→
+// 撃墜の後の順番を飛ばす（skipDownedRuns。r2 H6）→ 陰を見つける閃光（flash_reveal の時だけ）→ 決着のラッチ（dawnReached と同じ式か、前のステップの早い決着＝core/evac-early の evacSettleDue）→ 予告（陰の発見 → 狙い）→
 // 始まる編隊の restartAirSortie（始めたステップに回数と撃墜の落とし直し＝core/evac-repass）→ 偽の view を書いて（済みになったステップはもう一度来るか。passes_max）
 // 動く編隊を番号順に step（投下ごとに seed+31 を 1 回・着弾は core/evac-hits の走査。隊長艇の沈没は
-// evacSinkLeader がその場で交代・付け替え・座席の振り替えまで）→ 操作していない隊長艇の火災 → 「狙われている」（r2 M13）→ 座席の被害を記録へ。
+// evacSinkLeader がその場で交代・付け替え・座席の振り替えまで）→ 操作していない隊長艇の火災 → 「狙われている」（r2 M13）→ 座席の被害を記録へ → 早い決着の確かめ（IP1 の U8）。
 // 止まった編隊の絵を隠す 1 回は世界のフレームの絵（evacDrawPass。r2 M2）。Phaser 非依存・確保しない（作るのは createEvacAirStep・createEvacAirCore だけ）。
 import type { AirStrikeParams } from './air-strike';
 import { skipDownedRuns } from './air-down';
 import type { BoatState } from './boat-motion';
-import { dawnReached } from './dawn-air';
+import { evacEarlyCheck, evacSettleDue } from './evac-early';
 import { EVAC_DODGE_SEED_OFFSET, G_FOUND, G_HIDDEN, SHELTER_COVER } from './evac-data';
 import { evacOnRelease } from './evac-follow';
 import { evacCoreFlight, evacImpact, type EvacAir, type EvacAirWorld } from './evac-hits';
@@ -96,7 +96,7 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
   // 撃墜の後の順番（撃墜が無ければ何もしない。凍結の core の「順番の機が旋回に着くまで待つ」で止まらない。r2 H6）
   for (let i = 0; i < fls.length; i++) if (fls[i]!.phase === EF_FLYING) skipDownedRuns(fls[i]!.port.state, fls[i]!.p);
   if (sq.p.flashReveal && flashM > 0 && !sq.settled) plan.evFound |= evacFlashReveal(sq, seat.state.x, seat.state.y, flashM);
-  if (!sq.settled && dawnReached(sq.cfg.durationS, stepTimeS)) {
+  if (!sq.settled && evacSettleDue(sq, stepTimeS)) {
     evacSettle(sq);
     plan.evSettle = true;
   }
@@ -121,4 +121,6 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
   evacStepFires(sq, seat, realDt, stepTimeS, a.hooks);
   evacPlanTargeted(plan);
   evacStoreSeatDamage(sq, seat);
+  // 全艇が隠れて空が空いた（v0.6.11 IP1 の U8）: 次のステップに 240 秒を待たずに決着する（core/evac-early）
+  evacEarlyCheck(plan, stepTimeS);
 }
