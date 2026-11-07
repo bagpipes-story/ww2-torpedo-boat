@@ -26,10 +26,12 @@ export interface InputState {
   identifyTap: boolean;
   /** 「射撃」ボタン（主兵装が砲の任務。v0.4.2）を押している間 true。v0.6.8 から全任務で読む（艇の機銃は魚雷の任務でも艦と機を撃てる） */
   gunHeld: boolean;
+  /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。S5 から右端の識別の段のボタン ui/weapon-panel と Tab キー）。ほかの任務では誰も読まない */
+  switchTap: boolean;
 }
 
 export function createInputState(): InputState {
-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false };
 }
 
 export function resetInput(s: InputState): void {
@@ -45,6 +47,7 @@ export function resetInput(s: InputState): void {
   s.zoomRequest = NaN;
   s.identifyTap = false;
   s.gunHeld = false;
+  s.switchTap = false;
 }
 
 /** 発射要求を捨てる（駆逐艦がすべて沈み始めたか退いた後・帰投地点の輪の中・終わり際の窓の間。v0.6.2 実機 1 回目で systems/world-input から移した） */

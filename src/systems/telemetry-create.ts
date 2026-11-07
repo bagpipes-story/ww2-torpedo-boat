@@ -13,6 +13,7 @@ import { mpsToKt } from '../core/units';
 import { initAllyTelemetry } from './ally-telemetry';
 import { initConvoyTelemetry } from './convoy-telemetry';
 import { initDawnTelemetry } from './dawn-telemetry';
+import { initEvacTelemetry } from './evac-telemetry';
 import { initLandingTelemetry } from './landing-telemetry';
 import { initPatrolTelemetry } from './patrol-telemetry';
 import { initPtTelemetry } from './pt-telemetry';
@@ -126,5 +127,6 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     arms: createArmsTelemetry(), // 兵装（v0.6.8。systems/arms-telemetry が毎フレーム書く）
     landing: initLandingTelemetry(w), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry。無い任務は enabled false）
     ally: initAllyTelemetry(w), // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。systems/ally-telemetry。無い任務・&noally は enabled false）
+    evac: initEvacTelemetry(w), // 空襲下の退避（v0.6.11 S5。jp_03。systems/evac-telemetry。無い任務は enabled false）
   };
 }

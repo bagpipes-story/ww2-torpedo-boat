@@ -14,6 +14,8 @@ export const EV_TORP_NOSHIP = 3;
 export const EV_DOWN_STRIKE = 4;
 export const EV_DOWN_SEAPLANE = 5;
 export const EV_DOWN_SORTIE = 6;
+/** 港の空襲の編隊の機（v0.6.11 S4。jp_03。数はその編隊の残りの機。2 行目の文は S5 の ui/evac-lines） */
+export const EV_DOWN_EVAC = 7;
 /** 状態の文（機銃を押している間だけ）: 艦には効かない・対空・射界外・射程に敵なし・煙幕で見えない・弾倉交換 */
 export const ST_SHIP = 10;
 export const ST_AA = 11;

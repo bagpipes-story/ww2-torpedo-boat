@@ -3,6 +3,7 @@
 // v0.6.2 実機 1 回目: 左上の時計の色、2 行目が時計を避ける倍率、空襲の行の後ろの「大発 岸へ N 隻」。
 // v0.6.2 実機 2 回目: 夜明けの秒数は左上の時計だけ（2 行目には出さない。ユーザー「メインメッセージの方に夜明けまでの秒数は不用」）。
 // v0.6.10 S6（卯月。jp_04）: 夜明け近しの帰投の輪の呼びかけ（LD3）「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（callLineText。卯月の無い夜は前の「揚陸を待て」）。
+// v0.6.11 S5（jp_03。day_start の任務だけ＝t.dawn.dayStart。spec-v0611-r2 §10.3）: 時計は「空襲 残り 1:35」「空襲後 0:12」（r2 M9）、240 秒の帯は「第1次の空襲が去った」（ui/evac-lines）。ほかの任務の文は 1 字も変わらない。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
@@ -13,6 +14,7 @@ import { CALL_DAWN } from '../core/mission-flow';
 import { allyRingWaitJa } from './ally-lines';
 import { convoyCallJa, convoyLeftStep, convoyWaitShoreJa, convoyWaiting } from './convoy-lines';
 import { callLabel, withWarnings, type HudLine } from './hud-lines';
+import { evacSettleBannerLines, mssJa } from './evac-lines';
 import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landingWaitTailJa } from './landing-lines';
 import { stormWarning } from './mission-mode';
 
@@ -31,6 +33,7 @@ export const strikeFallJa = (arc: boolean): string => (arc ? '爆弾投下！ �
 
 /** 左上の時計（ui/dawn-clock）の文: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む）。v0.6.2 実機 1 回目までは 2 行目にも出していた */
 export function clockJa(t: BoatTelemetry): string {
+  if (t.dawn.dayStart) return t.dawn.reached ? `空襲後 ${mssJa(Math.floor(t.dawn.daylightS))}` : `空襲 残り ${mssJa(Math.max(0, Math.ceil(t.timeLeftS)))}`; // 昼の任務（v0.6.11 S5。キーは同じ秒）
   return t.dawn.reached ? `夜明け後 ${Math.floor(t.dawn.daylightS)} 秒` : `夜明けまで ${Math.max(0, Math.ceil(t.timeLeftS))} 秒`;
 }
 
@@ -112,8 +115,11 @@ export function strikeLine(t: BoatTelemetry, shallowStep: number, stormWarn: boo
   let warn = true;
   if (d.threat === AS_T_FALLING) text = d.toEscort ? '爆弾投下（僚艇へ）！ 転舵して連れて逃げよ' : strikeFallJa(d.fallingArc);
   else if (d.threat === AS_T_RUN) text = d.toEscort ? `爆撃進路（僚艇へ） ・ ${d.plane + 1} 番機 ・ 投下で転舵` : strikeRunJa(d.plane);
-  else if (d.threat === AS_T_INBOUND) text = `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M} m ・ 帰投を急げ`;
-  else if (d.threat === AS_T_ORBIT) {
+  else if (d.threat === AS_T_INBOUND) {
+    // 昼の任務（v0.6.11 S8。jp_03 は「帰投」と言わない＝240 秒の後の §2 の 4 機は隠れ場所まで追う「追撃」）
+    const m = Math.ceil(d.inboundDistM / PLANE_DISTANCE_STEP_M) * PLANE_DISTANCE_STEP_M;
+    text = d.dayStart ? `追撃！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${m} m ・ 壕か陰へ急げ` : `空襲！ 敵機 ${d.count} 機 ・ ${d.fromJa}から ${m} m ・ 帰投を急げ`;
+  } else if (d.threat === AS_T_ORBIT) {
     text = strikeOrbitJa(d.plane, d.bombsLeft);
     warn = false;
   } else {
@@ -169,6 +175,8 @@ function withdrawBannerJa(t: BoatTelemetry): string {
  */
 export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
   const d = t.dawn;
+  // 昼の任務（v0.6.11 S5。jp_03）: 「第1次の空襲が去った」と残存の確定・外なら §2 の 4 機（ui/evac-lines）
+  if (d.dayStart && t.evac.enabled) return evacSettleBannerLines(t.evac, d.air === DAWN_AIR_ENEMY && d.strikeEnabled ? `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}` : '');
   const withdraw = withdrawBannerJa(t);
   if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
     const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;

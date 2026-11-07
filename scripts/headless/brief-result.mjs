@@ -5,7 +5,10 @@
 // - Result: jp_04 を台本（wvs-entry の POLICIES）で終わるまで遊び、Result の本文の行（見出し〜最後の行。原点 (0.5, 0) で y が 50〜600）の最後の下端が 592（ボタンの上端 − 8）以下で、
 //   行が前の行に重ならないかを見る。さらにその夜の材料を写して行のいちばん多い形（帰投せず・輪まで 800 m・乗員 3 名死傷・夜明けの後）に書き換えて Result を作り直し、同じ検査をする。
 //   卯月の行（「卯月:」）と雷撃の行を出す。台本の秒（SECS）で終わらない夜は帰投の台本（home）に替えて終わるまで回す。SHOTDIR を渡せば jp_04 の Briefing を撮る。
-// 実行: SITE=<B の site> [A=<A の site>] [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [W=1560,1280] [SECS=200] [SHOTDIR=<dir>] [TEXTS=1] [JOBS=3] node scripts/headless/brief-result.mjs
+// v0.6.11 S6: EVAC=1 は jp_03（空襲下の退避）だけ: Briefing（ノーマル・ハード × W）の行の数（目的 1・成功 1・時 1・敵 1・危険 1・条件 2・史実 3）と史実の下端 ≤ 584 − 8・「夜明け」なし、
+//   Result は POLS（既定 bot,stay＝達成の夜と未達の夜）× SEEDS（既定 1）× ノーマル・ハード × W を wvs-evac-entry の resultRun（模擬の台本を世界へ）で終わるまで遊び、本文の下端 ≤ 592・
+//   重なりなし・「夜明け」なし・「（西）」なし。多い形（外で追撃・乗員の死傷・沈没）に作り直しても同じ。SHOTDIR に Briefing と Result（と多い形）を撮る。A は使わない。
+// 実行: SITE=<B の site> [A=<A の site>] [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [W=1560,1280] [SECS=200] [SHOTDIR=<dir>] [TEXTS=1] [JOBS=3] [EVAC=1] node scripts/headless/brief-result.mjs
 import { mkdirSync } from 'node:fs';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { bundleEntry, parseSeeds } from './world-vs-sim.mjs';
@@ -14,6 +17,8 @@ const SORTIE_TOP = 720 - 24 - 112;
 const BODY_MAX_Y = 592;
 const OTHER = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_05', 'jp_06'];
 const JP04_LINES = [2, 1, 1, 1, 1, 3];
+const JP03_LINES = [1, 1, 1, 1, 1, 2];
+const BRIEF_BODY_MAX_Y = SORTIE_TOP - 8;
 
 /** ページの中: Briefing を開き直して値の行を読む（ラベル・文・本当の折り返しの行の数・上端・下端） */
 function readBriefing(o) {
@@ -105,8 +110,115 @@ async function resultCase(browser, base, code, c) {
   }
 }
 
+/** ページの中: jp_03 の Result を行のいちばん多い形（外で追撃・乗員 3 名死傷・沈没）に書き換えて作り直す */
+function worstEvac() {
+  const g = window.__game;
+  const s = g.scene.getScene('Result');
+  const r = structuredClone(s.result);
+  r.returned = false;
+  r.reason = 'air_strike';
+  r.objectiveDone = false;
+  r.crewAlive = Math.max(1, r.crewTotal - 3);
+  r.hpLeft = Math.max(1, r.hpLeft);
+  r.dawn.reached = true;
+  r.dawn.caughtOutside = true;
+  r.dawn.daylightS = Math.max(30, r.dawn.daylightS || 0);
+  if (!r.dawn.strike || r.dawn.strike.waves === 0) r.dawn.strike = { waves: 3, bombs: 24, bombsAtEscort: 0, hitsPlayer: 2, hitsEscort: 0, damagePlayer: 40, dodgeS: [0.6, NaN, 1.2, 0.8, NaN, 0.5, 0.9, 1.1], vip: false };
+  r.evac.settlePlace = 4;
+  if (!r.evac.settleGroupJa) r.evac.settleGroupJa = '第1隊';
+  if (Number.isNaN(r.evac.settleSurvivors)) r.evac.settleSurvivors = r.evac.survivors;
+  g.scene.start('Result', r);
+  for (let i = 0; i < 5; i++) window.__hl.frame(0);
+  window.__hl.render();
+}
+
+async function evacResultCase(browser, base, code, c) {
+  const { page, ctx, errors } = await openGame(browser, base, `mission=jp_03&seed=${c.seed}${c.hard ? '&hard' : ''}`, { width: c.width });
+  try {
+    await page.addScriptTag({ content: code });
+    const r = await page.evaluate((o) => window.__wvsEvac.resultRun(o), { seed: c.seed, hard: c.hard, policy: c.policy, maxSteps: 600 * 60, frameMs: FRAME_MS });
+    // 模擬の後は中立のまま Result まで（jp_04 の resultCase と同じ: 30 フレームずつ・100 ms おき＝沈む絵の tween の壁時計に合わせる。最大 60 秒）
+    let ok = false;
+    for (let k = 0; k < 600 && !ok; k++) {
+      ok = await page.evaluate((ms) => {
+        for (let i = 0; i < 30 && !window.__hl.active('Result'); i++) { if (window.__hl.active('Mission')) window.__hl.steer(NaN, 0); window.__hl.frame(ms); }
+        if (!window.__hl.active('Result')) return false;
+        for (let i = 0; i < 5; i++) window.__hl.frame(ms);
+        window.__hl.render();
+        return true;
+      }, FRAME_MS);
+      if (!ok) await page.waitForTimeout(100);
+    }
+    if (!ok) return { error: `Result が出ない（${JSON.stringify(r)}）`, errors };
+    const tag = `jp03-${c.hard ? 'hard' : 'normal'}-${c.policy}-s${c.seed}-w${c.width}`;
+    const real = await page.evaluate(bodyRows);
+    const texts = await page.evaluate(() => window.__hl.texts('Result'));
+    if (c.shotDir) await page.screenshot({ path: `${c.shotDir}/result-${tag}.png` });
+    await page.evaluate(worstEvac);
+    const worst = await page.evaluate(bodyRows);
+    const worstTexts = await page.evaluate(() => window.__hl.texts('Result'));
+    if (c.shotDir) await page.screenshot({ path: `${c.shotDir}/result-${tag}-worst.png` });
+    return { r, real, worst, texts, worstTexts, errors };
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function mainEvac(siteB) {
+  const widths = (process.env.W ?? '1560,1280').split(',').map(Number);
+  const seeds = parseSeeds(process.env.SEEDS ?? '1');
+  const pols = (process.env.POLS ?? 'bot,stay').split(',');
+  const shotDir = process.env.SHOTDIR ?? '';
+  if (shotDir) mkdirSync(shotDir, { recursive: true });
+  const sB = await serve(siteB);
+  const browser = await chromium.launch();
+  let bad = 0;
+  let errs = 0;
+  const bc = [];
+  for (const width of widths) for (const hard of [false, true]) bc.push({ mission: 'jp_03', hard, seed: 1, width, noally: false, shotDir });
+  const bres = await pool(bc, envNum('JOBS', 3), async (c) => ({ c, b: await briefingCase(browser, sB.base, c) }));
+  for (const { c, b } of bres) {
+    errs += b.errors.length;
+    const lines = b.rows.map((r) => r.lines);
+    const note = b.rows[b.rows.length - 1];
+    let v = '';
+    if (JSON.stringify(lines.slice(0, 6)) !== JSON.stringify(JP03_LINES)) v += ' 行の数が違う';
+    if (note.lines !== 3) v += ' 史実が 3 行でない';
+    if (note.bottom > BRIEF_BODY_MAX_Y) v += ` 史実の下端 ${note.bottom.toFixed(1)} > ${BRIEF_BODY_MAX_Y}`;
+    if (b.rows.some((r) => r.text.includes('夜明け') || r.text.includes('（西）'))) v += ' 「夜明け」か「（西）」がある';
+    if (v) bad++;
+    console.log(`Briefing W ${c.width} jp_03${c.hard ? '&hard' : ''} 行 [${lines.join(',')}] 史実の下端 ${note.bottom.toFixed(1)}（上限 ${BRIEF_BODY_MAX_Y}・ボタン ${SORTIE_TOP}）${v ? ` 違反${v}` : ''} | page errors ${b.errors.length}`);
+    if (process.env.TEXTS === '1') for (const r of b.rows) console.log(`    [${r.lines}] ${r.text.replace(/\n/g, '⏎')}`);
+  }
+  const code = await bundleEntry('wvs-evac-entry.mjs');
+  const rc = [];
+  for (const width of widths) for (const hard of [false, true]) for (const seed of seeds) for (const policy of pols) rc.push({ width, hard, seed, policy, shotDir });
+  const rres = await pool(rc, envNum('JOBS', 3), async (c) => ({ c, r: await evacResultCase(browser, sB.base, code, c) }));
+  let maxB = 0;
+  let maxW = 0;
+  for (const { c, r } of rres) {
+    const tag = `Result W ${c.width} jp_03 ${c.hard ? 'hard  ' : 'normal'} seed ${c.seed} ${c.policy.padEnd(5)}`;
+    errs += r.errors.length;
+    if (r.error) { bad++; console.log(`${tag} ERROR ${r.error}`); continue; }
+    const a = checkRows(r.real);
+    const w = checkRows(r.worst);
+    maxB = Math.max(maxB, a.lastBottom);
+    maxW = Math.max(maxW, w.lastBottom);
+    const word = [...r.texts, ...r.worstTexts].filter((t) => t.includes('夜明け') || t.includes('（西）'));
+    const scaled = [...r.real, ...r.worst].filter((x) => Math.abs(x.sy - 1) > 1e-9).length;
+    if (!a.ok || !w.ok || word.length > 0) bad++;
+    console.log(`${tag} 模擬 ${r.r.simEnd} ${r.r.simT.toFixed(1)} 秒 残存 ${r.r.survivors} 達成 ${r.r.achieved} | 行 ${a.n} 下端 ${a.lastBottom.toFixed(1)} 重なり ${a.overlap} | 多い形 ${w.n} 行 下端 ${w.lastBottom.toFixed(1)} 重なり ${w.overlap} | 縮めた行 ${scaled} | 「夜明け」「（西）」 ${word.length} | page errors ${r.errors.length}`);
+    for (const x of r.real) console.log(`    ${x.text}`);
+  }
+  await browser.close();
+  await sB.close();
+  console.log(`jp_03: Briefing ${bres.length} 件・Result ${rres.length} 夜（多い形も）: 本文の下端の最大 ${maxB.toFixed(1)}・多い形 ${maxW.toFixed(1)}（上限 ${BODY_MAX_Y}）・page errors ${errs}・違反 ${bad}`);
+  process.exitCode = errs === 0 && bad === 0 ? 0 : 1;
+}
+
 async function main() {
   const siteB = process.env.SITE;
+  if (siteB && process.env.EVAC === '1') return mainEvac(siteB);
   if (!siteB) throw new Error('SITE=<ビルドした site> が要る');
   const siteA = process.env.A ?? '';
   const widths = (process.env.W ?? '1560,1280').split(',').map(Number);

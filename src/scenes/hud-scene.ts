@@ -94,7 +94,7 @@ export class HudScene extends Phaser.Scene {
     this.fuelGauge = new FuelGauge(this);
     if (this.telemetry.engine.on) this.engineHud = new EngineHud(this); // Mission が launch の前にテレメトリを 1 回書く（?debug&engoff の夜は on false）
     this.markers = new HudMarkers(this, mission, this.telemetry); // 画面外マーカー 4 本（敵・帰投・敵機・岸。ui/hud-markers。v0.6.4 で切り出し）
-    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached);
+    this.dawnBanner = new DawnBanner(this, this.telemetry.dawn.reached, this.telemetry.evac.annSeq);
     this.stick = new VirtualStick(this, input);
     const launch = data.hitRateModel.torpedo_launch;
     const spread: SpreadConfig = {
@@ -104,7 +104,7 @@ export class HudScene extends Phaser.Scene {
     };
     // 右側のパネル（右下の兵装・右端の技能。作る順は v0.6.7 と同じ: スティックの後・キーボードの前。前回の値は panel が持つので再開で引きずらない）
     this.panel = new WeaponPanel(this, input, data, mission, this.telemetry, spread);
-    this.keyboard = new KeyboardInput(this, input);
+    this.keyboard = new KeyboardInput(this, input, this.telemetry.evac.enabled); // Tab の［切替］は空襲下の退避の任務だけ（v0.6.11 S8）
     // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
     this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);

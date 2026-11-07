@@ -3,6 +3,8 @@
 // 夜明けに輪の外だった帰投は帰投点 × after_dawn_factor、回避は付かない（v0.6.1）。
 // 上陸（v0.6.4。味方の大発の輸送隊）: 浜に届けた大発 1 隻ごとに convoy.points_per_arrival（帰投の有無に関わらず。砲の撃破点と同じ扱い。鍵が無ければ 0）。
 // 揚陸（v0.6.9。jp_04 の停泊する味方の輸送船）: 揚陸完了で landing.points_complete（帰投の有無・その後の沈没に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。
+// 空襲下の退避（v0.6.11 S6。jp_03）: 残った艇 1 隻ごとに evac.points_per_survivor（座席＝操作中の隊長艇は帰投の 700 で数えるので除く＝core/evac-result の evacScoredBoats。
+// 帰投の有無に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。最大 17 × 30 ＝ 510 < 帰投 700（spec-v0611-r2 §3.10。tests/evac-score）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -24,6 +26,8 @@ export interface ScoringParams {
   convoyArrivalPoints: number;
   /** 揚陸完了の点（v0.6.9。scoring.json の landing.points_complete。鍵が無ければ 0） */
   landingPoints: number;
+  /** 空襲下の退避の残った艇 1 隻の点（v0.6.11 S6。scoring.json の evac.points_per_survivor。鍵が無ければ 0） */
+  evacBoatPoints: number;
   fuelMax: number;
   fuelRequiresReturnedAndObjective: boolean;
   crewMax: number;
@@ -52,6 +56,8 @@ export interface ScoreInput {
   arrivals?: number;
   /** 揚陸完了（v0.6.9。jp_04。その後に沈んでも true。揚陸の無い任務は省略＝0 点） */
   landed?: boolean;
+  /** 空襲下の退避の残った艇（v0.6.11 S6。jp_03。座席の艇を除く＝evacScoredBoats。退避の無い任務は省略＝0） */
+  evacBoats?: number;
 }
 
 export interface ScoreBreakdown {
@@ -63,7 +69,7 @@ export interface ScoreBreakdown {
   evade: number;
   fuel: number;
   crew: number;
-  /** 上陸（v0.6.4。届けた大発 × convoyArrivalPoints。輸送隊の無い任務は 0）と揚陸（v0.6.9。揚陸完了なら landingPoints） */
+  /** 上陸（v0.6.4。届けた大発 × convoyArrivalPoints。輸送隊の無い任務は 0）と揚陸（v0.6.9。揚陸完了なら landingPoints）と残った艇（v0.6.11 S6。× evacBoatPoints） */
   deliveries: number;
   /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
   crewHalf: boolean;
@@ -97,7 +103,7 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
   const crewAllowed = p.crewRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   out.crew = crewAllowed && inp.crewTotal > 0 ? Math.round((p.crewMax * Math.max(0, Math.min(inp.crewTotal, inp.crewAlive))) / inp.crewTotal) : 0;
-  out.deliveries = (inp.arrivals ?? 0) * p.convoyArrivalPoints + (inp.landed === true ? p.landingPoints : 0);
+  out.deliveries = (inp.arrivals ?? 0) * p.convoyArrivalPoints + (inp.landed === true ? p.landingPoints : 0) + Math.max(0, inp.evacBoats ?? 0) * p.evacBoatPoints;
   out.total = out.survival + out.objective + out.hits + out.kills + out.evade + out.fuel + out.crew + out.deliveries;
   return out;
 }
@@ -116,6 +122,8 @@ export interface ScoringDataRecord {
   convoy?: { points_per_arrival: number };
   /** 揚陸（v0.6.9）。省略可（無ければ 0） */
   landing?: { points_complete: number };
+  /** 空襲下の退避（v0.6.11 S6）。省略可（無ければ 0） */
+  evac?: { points_per_survivor: number };
 }
 
 function isFiniteNum(v: unknown): v is number {
@@ -149,7 +157,10 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   if (!(cv === undefined || (typeof cv === 'object' && cv !== null && isFiniteNum(cv['points_per_arrival']) && cv['points_per_arrival'] >= 0))) return false;
   // 揚陸（v0.6.9）: 鍵があれば points_complete は 0 以上の数
   const ld = r['landing'] as Record<string, unknown> | undefined;
-  return ld === undefined || (typeof ld === 'object' && ld !== null && isFiniteNum(ld['points_complete']) && ld['points_complete'] >= 0);
+  if (!(ld === undefined || (typeof ld === 'object' && ld !== null && isFiniteNum(ld['points_complete']) && ld['points_complete'] >= 0))) return false;
+  // 空襲下の退避（v0.6.11 S6）: 鍵があれば points_per_survivor は 0 以上の数
+  const ev2 = r['evac'] as Record<string, unknown> | undefined;
+  return ev2 === undefined || (typeof ev2 === 'object' && ev2 !== null && isFiniteNum(ev2['points_per_survivor']) && ev2['points_per_survivor'] >= 0);
 }
 
 /**
@@ -176,6 +187,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     evadeByType: evade,
     convoyArrivalPoints: r.convoy ? r.convoy.points_per_arrival : 0,
     landingPoints: r.landing ? r.landing.points_complete : 0,
+    evacBoatPoints: r.evac ? r.evac.points_per_survivor : 0,
     fuelMax: r.fuel.max,
     fuelRequiresReturnedAndObjective: r.fuel.requires_returned_and_objective,
     crewMax: r.crew.max,

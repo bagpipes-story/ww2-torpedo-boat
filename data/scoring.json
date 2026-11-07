@@ -12,10 +12,11 @@
     "intercept_destroyer": 300,
     "barge_hunt": 300,
     "escort_vip": 300,
-    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない。patrol_and_evade（v0.6.3。jp_05）は帰投（輪に入って終わる）で 300＝達成。撃つ相手のいない任務なので『沈めて死ぬ』は無く、帰投 700 ＞ 沈没 0 は崩れない。escort_convoy（v0.6.4。jp_01）は帰投地点の輪で任務が終わった時点で上陸した大発が convoy.arrive_quota（2）隻以上（帰投が要る。escort_vip と同じ）)",
+    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない。patrol_and_evade（v0.6.3。jp_05）は帰投（輪に入って終わる）で 300＝達成。撃つ相手のいない任務なので『沈めて死ぬ』は無く、帰投 700 ＞ 沈没 0 は崩れない。escort_convoy（v0.6.4。jp_01）は帰投地点の輪で任務が終わった時点で上陸した大発が convoy.arrive_quota（2）隻以上（帰投が要る。escort_vip と同じ）。evacuate_under_air_raid（v0.6.11。jp_03）は帰投（空襲が去る 240 秒に操作中の隊が隠れているか、その後に隠れ場所で止まる）と同じに数える終わりで、残存（座席の艇を含む 18 隻中）が evac_raid.survivor_quota（6）隻以上。帰投の 700 ＞ 残して沈む（残った艇の点 最大 510）は崩れない)",
     "attack_and_survive": 300,
     "patrol_and_evade": 300,
-    "escort_convoy": 300
+    "escort_convoy": 300,
+    "evacuate_under_air_raid": 300
   },
   "hit": {
     "base": 100,
@@ -60,5 +61,9 @@
   "landing": {
     "points_complete": 300,
     "source": "design (v0.6.9。jp_04「多号作戦・オルモック湾へ」。停泊する味方の輸送船の揚陸完了で 300（帰投の有無とその後の沈没に関わらず＝大発の上陸 convoy.points_per_arrival と同じ扱い。core/scoring の deliveries に足す）。jp_01 の大発 3 隻の上陸 100 × 3 と同じ大きさ。揚陸を見届けて帰投 700 ＋ 達成 300（escort_convoy。揚陸完了して帰投）＋ 揚陸 300 ＋ 燃料 ＋ 乗員 ≈ 1,450、揚陸を見届けて沈没 300（＋ PT 2 隻撃沈 280 = 580）＜ 帰投 700、輸送船が沈んで帰投 700（揚陸の決着の前に帰投の輪へ入っても任務は終わらない＝R14 A5。輪で待って沈めば帰投 700。輸送船を見捨てて先に帰る終わり方は無い）。帰投 700 ＞ 300 で『生きて帰る方が上』は崩れない。回避の点（evade）は付けない（輸送船を守るのに見つからないことは手柄にならない）)"
+  },
+  "evac": {
+    "points_per_survivor": 30,
+    "source": "design (v0.6.11。jp_03「運天港・空襲下の退避」。残った艇（決着の 240 秒で浮いている艇。座席＝操作中の隊長艇は帰投の 700 で数えるので除く）1 隻ごとに 30 点（帰投の有無に関わらず＝大発の上陸 convoy.points_per_arrival の作法）。最大 17 × 30 ＝ 510 < 帰投 700＝『残して死ぬより隠れて帰る方が上』（S6 の tests で固定）。見失わせた編隊・撃墜に点は付けない（文だけ）。燃料・乗員の点は今までどおり)"
   }
 }

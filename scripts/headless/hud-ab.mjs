@@ -2,12 +2,14 @@
 // 位置・原点・α・見えるか・倍率・深さ、絵は鍵・色・角度）を 1 秒ごとに写して比べる。16 件（ab-replay の base の組＝ほかの 7 任務とハード・seed 2 の 4 件）× SECS（既定 62）秒。
 // 違えば same:false と最初に違った秒と欄。ページのエラーも数える。
 // v0.6.10 S5b: SET=jp04 で ab-replay の jp04 の組（jp_04 の B は &noally・ノーマルとハード × seed 1〜4＝G6w）。既定は base。
-// 実行: A=<site A> B=<site B> [SET=base|jp04] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+// v0.6.11 S6: SET=jp03 で ab-replay の jp03 の組（jp_03 のノーマル・ハード × seed 1・2。既定の秒は 260＝決着の後まで。A は S5 の ae6af75）。
+// v0.6.11 S8: SET=jp04base で jp_04（卯月あり）を 88c9f19 と（ab-replay の jp04base の組。秒は 170）。
+// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
 import { abCases, oneCase } from './ab-replay.mjs';
 import { chromium, envNum, pool, serve } from './lib.mjs';
 
 if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', 62), hudEvery: 60, set: 'hud' }));
+const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' ? 260 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
 const sa = await serve(process.env.A);
 const sb = await serve(process.env.B);
 const browser = await chromium.launch();

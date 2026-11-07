@@ -1,4 +1,4 @@
-// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3））。
+// PC デバッグ用キー操作（docs/02 §5: 矢印/WASD = 進む方向、C = 全速、Space = 魚雷（1 本）、G = 機銃（押している間。v0.6.8 で Space から分けた＝魚雷と機銃は全任務で両方）、Shift = 煙幕（離せば展開）、X = 消火（押し続け）、Z = 見張り、F = 識別（v0.3.3）、Tab = ［切替］（v0.6.11 S5。jp_03 だけ。v0.6.11 S8: Tab は空襲下の退避の任務だけ登録する＝addKeys はキーを捕まえる（ブラウザの Tab を止める）ので、ほかの任務の捕まえるキーは v0.6.10 のまま））。
 // 方向キーはスティックに触れている間は無視する。
 import Phaser from 'phaser';
 import type { InputState } from '../core/input-state';
@@ -27,6 +27,8 @@ interface Keys {
 
 export class KeyboardInput {
   private readonly keys: Keys | null;
+  /** ［切替］の Tab（空襲下の退避の任務だけ。ほかの任務は null） */
+  private readonly tab: Phaser.Input.Keyboard.Key | null;
   /** キーボードが extinguishHeld / lookout を true にした（キーが上がったら自分で戻す。タッチが立てたフラグには触らない） */
   private kbExtinguish = false;
   private kbLookout = false;
@@ -35,6 +37,7 @@ export class KeyboardInput {
   constructor(
     scene: Phaser.Scene,
     private readonly input: InputState,
+    withSwitch = false,
   ) {
     const kb = scene.input.keyboard;
     this.keys = kb
@@ -56,6 +59,7 @@ export class KeyboardInput {
           g: Phaser.Input.Keyboard.KeyCodes.G,
         }) as Keys)
       : null;
+    this.tab = kb && withSwitch ? kb.addKey(Phaser.Input.Keyboard.KeyCodes.TAB) : null;
   }
 
   /**
@@ -78,6 +82,7 @@ export class KeyboardInput {
     }
     if (Phaser.Input.Keyboard.JustUp(k.shift)) this.input.smokeTap = true;
     if (Phaser.Input.Keyboard.JustDown(k.f)) this.input.identifyTap = true;
+    if (this.tab && Phaser.Input.Keyboard.JustDown(this.tab)) this.input.switchTap = true; // ［切替］（空襲下の退避の任務の世界だけが消費する）
     if (Phaser.Input.Keyboard.JustDown(k.x)) {
       this.input.extinguishHeld = true;
       this.kbExtinguish = true;

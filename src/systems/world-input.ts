@@ -1,6 +1,7 @@
 // HUD からの入力の消費（v0.3.3 で mission-world から切り出し。中身は v0.3.2 のまま、識別を追加）。毎フレーム 1 回、固定ステップの前に呼ぶ。
 // v0.6.1: updateFrame の入力の段（consumeFrameInput）もここへ移した（中身は v0.6.0 のまま）。
 // v0.6.8 S2: 魚雷の発射（要求の消費と発射管制）は systems/torpedo-free（どの任務でも撃てる。狙える艦がある間の文は同じ）。
+// v0.6.11 S4（jp_03。spec-v0611-r2 §3.3・§8）: ［切替］とスティックの latch は沈没の確かめの直後・消火の前（systems/world-evac の frameInput。模擬 core/evac-sim のフレームの頭と同じ順）。
 import type { DamageState } from '../core/gunnery';
 import { discardFireInput, type InputState } from '../core/input-state';
 import { startSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
@@ -40,6 +41,7 @@ export function consumeFrameInput(w: MissionWorld, realDt: number): void {
   // 識別は沈没中でも消費する（フラグを残さない）。ステップの前なので、猶予が尽きるフレームの押下も間に合う
   consumeIdentifyInput(w.input, w.friendly);
   if (w.boat.sinking) return;
+  w.evac?.frameInput(); // 空襲下の退避（jp_03）: ［切替］・latch・消火の倍率の乗員（無い任務は null）
   // 帰投地点の輪の中では発射しない（フラグは消す。輪の中で撃った魚雷が「帰投したので外れ」と記録されないように）。v0.6.8 から輪の外ならどの任務でも撃てる（狙える艦が無ければ狙う艦の無い魚雷）。煙幕は漂流中でも使える
   consumeTorpedoFire(w);
   w.extinguishHeldS = consumeSmokeInput(w.input, w.smoke, w.smokeParams, w.damage, w.damageParams.extinguishHoldS, w.extinguishHeldS, realDt, w.extinguishHoldScale);

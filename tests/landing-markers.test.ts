@@ -272,7 +272,7 @@ describe('配線（ソース）', () => {
     const s = code('systems/world-landing.ts');
     expectOrder(s, ['this.ship = new AllyShip(scene, p, bounds, hud);', 'this.caret = new LandingCaret(scene, caretRects);']);
     expectOrder(s, ['export function buildLanding(', 'const k: HudRectInputs = {', 'has: { smoke: s.smokeParams !== null, identify: s.friendly !== null }', 'const hud = landingHudRects(k);', 'return new WorldLanding(scene, ld.params, ld.torpedo, count, pool, rng, s.mission.bounds, s.timeScale, events, onSunk, hud, landingCaretRects(k), buildAlly(scene, s, pts, seed, hud));']); // v0.6.10 S5a: 卯月のラベルも輸送船の字と同じ HUD の矩形
-    expect(code('ui/weapon-panel.ts')).toContain('panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled })'); // 同じ決まり（煙幕発生器・今夜の味方機）
+    expect(code('ui/weapon-panel.ts')).toContain('panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled, switch: telemetry.evac.enabled })'); // 同じ決まり（煙幕発生器・今夜の味方機。［切替］は jp_03 だけ＝jp_04 は偽）
     expect(s.split('new LandingCaret(').length - 1).toBe(1);
     expect(s.split('landingHudRects(').length - 1).toBe(1);
     expectOrder(s, ['updateVisuals(realDt: number, w: LandingVisualsView): void {', 'this.ship.update(this.state, this.wakes);', 'landingReport(this.state, this.p, q, this.tst, this.report);', 'this.caretShown = this.caret.update(b !== null && landingCaretShown(this.report.i, d2, w.visRange2), b ? b.x : 0, b ? b.y : 0);']);

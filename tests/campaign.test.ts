@@ -40,7 +40,7 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     ]);
     expect(defaultCampaign(gameData).id).toBe('us_pt');
     expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03']);
-    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。v0.6.7: jp_02（孤島の哨戒）も。v0.6.9: jp_04（多号作戦・オルモック湾へ）も。配列順
+    expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。v0.6.7: jp_02（孤島の哨戒）も。v0.6.9: jp_04（多号作戦・オルモック湾へ）も。v0.6.11 S6: jp_03（運天港・空襲下の退避）も。配列順
     expect(getMenuEntries(gameData, 'jp_hard').campaignName).toBe('日本ハードモード');
     expect(() => getMenuEntries(gameData, 'nope')).toThrow();
   });

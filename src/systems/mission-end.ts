@@ -6,6 +6,7 @@
 // v0.6.8: 窓の間は兵装の新しい道（systems/arms-step の hold）も止める（世界に arms が無ければ v0.6.7 のまま）。
 // v0.6.9（jp_04。spec-v069 R14 A5 の (b)）: 停泊して揚陸する輸送船の任務は、揚陸の決着（揚陸完了か沈没）の前に帰投の輪に入っても終えない（輪の中で待つ。決着したらいつもどおり帰投）。
 //   揚陸の無い任務（landing が無い・null）は 1 字も変わらない終わり方（decideMissionEnd をそのまま）。
+// v0.6.11 S4（jp_03。spec-v0611-r2 §3.8）: 空襲下の退避の任務は決着（240 秒＝第 1 次の空襲が去る）の前は帰投・漂流・座礁で終えない（evacHold。landingHold の作法）。沈み始めた艇は沈没の窓のまま。
 import { discardFireInput, type InputState } from '../core/input-state';
 import { createEndSettle, decideMissionEnd, promoteAdriftToCleared, stepEndSettle, type EndCheck, type EndParams, type MissionEndReason, type ReturnPoint } from '../core/mission-flow';
 
@@ -24,6 +25,8 @@ export interface MissionEndWorld {
   readonly stepTimeS: number;
   /** 停泊して揚陸する輸送船（v0.6.9。jp_04。systems/world-landing の決着）。揚陸の無い任務は null か無し */
   readonly landing?: { readonly resolved: boolean } | null;
+  /** 空襲下の退避（v0.6.11。jp_03。systems/world-evac の決着）。無い任務は null か無し */
+  readonly evac?: { readonly settled: boolean } | null;
 }
 
 export class MissionEnd {
@@ -67,7 +70,7 @@ export class MissionEnd {
     c.grounded = w.grounded;
     c.fleetGone = this.fleetGoneClears && w.enemy.allOut;
     if (promoteAdriftToCleared(this.settle, w.stepTimeS, c.boatSinking, c.fleetGone, c.destroyerSinkPlaying)) return null;
-    return stepEndSettle(this.settle, w.stepTimeS, c.boatSinking, this.sunkReason, landingHold(w) ? null : decideMissionEnd(c, this.params), running(w), this.params.endSettleS);
+    return stepEndSettle(this.settle, w.stepTimeS, c.boatSinking, this.sunkReason, landingHold(w) || evacHold(w) ? null : decideMissionEnd(c, this.params), running(w), this.params.endSettleS);
   }
 
   /**
@@ -91,6 +94,11 @@ export class MissionEnd {
 /** 揚陸の決着の前に帰投の輪の中にいる（jp_04 だけ。R14 A5 の (b): 輪の中で待ち、帰投にも漂流にもしない。沈み始めた艇は沈没の窓のまま） */
 export function landingHold(w: MissionEndWorld): boolean {
   return w.landing ? w.atHome && !w.landing.resolved && !w.boat.sinking : false;
+}
+
+/** 空襲下の退避の決着（240 秒）の前（jp_03 だけ。spec §3.8: 隠れても・止まっても終えない＝模擬 core/evac-sim の「決着の前は終えない」。沈み始めた艇は沈没の窓のまま） */
+export function evacHold(w: MissionEndWorld): boolean {
+  return w.evac ? !w.evac.settled && !w.boat.sinking : false;
 }
 
 /** 待つ魚雷: 決着していない魚雷。発射待ちは自艇が浮いている間だけ数える（沈み始めた艇からは撃たない＝待っても決着しない） */

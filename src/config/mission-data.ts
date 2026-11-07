@@ -102,7 +102,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const torpedoId = m['torpedo_type'];
   if (typeof torpedoId !== 'string') throw new Error(`${missionId}.torpedo_type が無い`);
   const moon = m['moon'];
-  if (!isMoonPhase(moon)) throw new Error(`${missionId}.moon が dark/half/full のどれでもない（${String(moon)}。昼は v0.6 で扱う）`);
+  if (!isMoonPhase(moon)) throw new Error(`${missionId}.moon が dark/half/full/day のどれでもない（${String(moon)}。day は v0.6.11 の昼の任務）`);
   const b = { width: bounds['width'], height: bounds['height'] };
   const playerStart = readStart(proto['player_start'], `${missionId}.v0_1_prototype.player_start`);
   const rp = proto['return_point'];
@@ -150,7 +150,10 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   // 夜の哨戒機（v0.6.7。jp_02）: 艦艇のいない航空機だけの任務。block の中身と他の置き場の検査は config/patrol-air-mission-data（Boot と world-setup が組むたびに）
   const patrolAir = proto['patrol_air'] !== undefined;
   if (patrolAir && (proto['enemy_start'] !== undefined || barges || ptBoats)) throw new Error(`${missionId}.v0_1_prototype: patrol_air（夜の哨戒機）は enemy_start・barges・pt_boats と一緒に置けない（航空機だけの任務。v0.6.7）`);
-  if (!ptBoats && !patrolAir && (proto['enemy_start'] === undefined) === (barges === null)) throw new Error(`${missionId}.v0_1_prototype は enemy_start（駆逐艦）か barges（大発の隊）のどちらか一方を持つ（米PT の隊（pt_boats）か夜の哨戒機（patrol_air）の任務はどちらも持たない）`);
+  // 空襲下の退避（v0.6.11。jp_03）も艦艇のいない航空機だけの任務。block の中身と他の置き場の検査は config/evac-mission-data（V-E1〜V-E12）
+  const evac = proto['evac'] !== undefined;
+  if (evac && (proto['enemy_start'] !== undefined || barges || ptBoats || patrolAir)) throw new Error(`${missionId}.v0_1_prototype: evac（空襲下の退避）は enemy_start・barges・pt_boats・patrol_air と一緒に置けない（航空機だけの任務。v0.6.11）`);
+  if (!ptBoats && !patrolAir && !evac && (proto['enemy_start'] === undefined) === (barges === null)) throw new Error(`${missionId}.v0_1_prototype は enemy_start（駆逐艦）か barges（大発の隊）のどちらか一方を持つ（米PT の隊（pt_boats）・夜の哨戒機（patrol_air）・空襲下の退避（evac）の任務はどちらも持たない）`);
   const mainWeapon = proto['main_weapon'] ?? 'torpedo';
   if (mainWeapon !== 'torpedo' && mainWeapon !== 'guns' && mainWeapon !== 'none') throw new Error(`${missionId}.v0_1_prototype.main_weapon は torpedo・guns・none のどれか`);
   const ids = enemies as unknown[];
@@ -158,7 +161,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   const immune = ids.some((e) => (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === e)?.['torpedo_immune'] === true);
   if (immune && mainWeapon === 'torpedo') throw new Error(`${missionId}: 魚雷が当たらない敵（enemies.json の torpedo_immune）がいるので main_weapon は guns か none`);
   if (barges && mainWeapon !== 'guns') throw new Error(`${missionId}: 大発の隊（barges）の任務の main_weapon は guns`);
-  if (mainWeapon === 'none' && ptBoats === null && !patrolAir) throw new Error(`${missionId}: main_weapon none は米PT の隊（pt_boats）か夜の哨戒機（patrol_air）の任務だけ`);
+  if (mainWeapon === 'none' && ptBoats === null && !patrolAir && !evac) throw new Error(`${missionId}: main_weapon none は米PT の隊（pt_boats）・夜の哨戒機（patrol_air）・空襲下の退避（evac）の任務だけ`);
   const coastRaw = proto['coast'] as Record<string, unknown> | undefined;
   let coast: CoastBlock | null = null;
   if (coastRaw !== undefined) {
@@ -180,7 +183,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
   if (escort && (barges || ptBoats)) throw new Error(`${missionId}.v0_1_prototype: 僚艇（escort）は駆逐艦（enemy_start）の任務だけ`);
   if (type === 'escort_vip' && !escort) throw new Error(`${missionId}: type が escort_vip なのに v0_1_prototype.escort が無い`);
   if (escort && !(data.boats.boats as readonly Record<string, unknown>[]).some((x) => x['id'] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat（${escort.boat}）が boats.json に無い`);
-  const enemyStart = barges || ptBoats || patrolAir ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
+  const enemyStart = barges || ptBoats || patrolAir || evac ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
   // 難易度ハード（v0.4.5。config/mission-hard-data。v0.6.4 で切り出し）: 全隻の出発点・全門の沿岸砲・撃沈の達成の隻数、v0.6.6 から米PT の哨戒線・上陸のノルマ（ハードなら hard block の分を足す）
   const { enemyStarts, shoreBatteryXs, objectiveSinkCount, ptLegs, convoyQuota } = readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b, { ptBoats: ptBoats !== null, convoy: proto['convoy'] !== undefined });
   // 輸送船（v0.4.7）: 駆逐艦の任務だけ（隊の 1 隻として同じ AI で動く）

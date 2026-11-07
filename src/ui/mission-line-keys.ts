@@ -3,12 +3,14 @@
 // mission-line が 1 個だけ持つ入れ物に書く（§7: 毎フレーム確保しない）。mission-line はモードを決めて pt-line-clock の shown を呼んだ後に呼ぶ（v0.6.8 と同じ時点）。
 // tests/mission-line-keys が v0.6.8（main 2ad122b）の mission-line.ts:130-138 の写しと、既存のテレメトリの材料のすべてで比べる。
 // v0.6.9 S6a: 揚陸（jp_04）の 2 つのキー（ui/landing-lines の landingKey・landingEventKey）を cKey の隣に足した。揚陸の無い任務はどちらも 0（上の 8 つの値は変わらない）。
+// v0.6.11 S5: 空襲下の退避（jp_03）のモード 38 の行のキー（ui/evac-lines の evacLineKey）は lKey の欄で渡す（揚陸と同時に無い。mission-line は差し引き 0 行。ほかの任務の lKey は今のまま）。
 import type { BoatTelemetry } from '../core/boat-motion';
 import { convoyKey, convoyWaiting } from './convoy-lines';
 import { engineKey, engineTagKey } from './engine-lines';
+import { evacLineKey } from './evac-lines';
 import { landingEventKey, landingKey, type LandingEventView } from './landing-lines';
 import { planeKeyOf, planeModeOf } from './mission-line-air';
-import { MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS } from './mission-mode';
+import { MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS } from './mission-mode';
 import { ptKey } from './pt-lines';
 
 /** 4 つのキーと、文を選ぶモードの判定（米PT の 5 つ・機関の 3 つ・水上機の 3 つ） */
@@ -53,7 +55,7 @@ export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, f
   const planeMode = planeModeOf(mode); // 水上機の 3 つ（9〜11）。キー（距離は接近中だけ 100 m 刻み）と文は ui/mission-line-air
   out.planeMode = planeMode;
   out.planeKey = planeKeyOf(t, planeMode);
-  out.lKey = landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0
+  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38 の行のキー
   out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(landingEv) : 0;
   return out;
 }

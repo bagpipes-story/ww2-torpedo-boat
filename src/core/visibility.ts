@@ -13,6 +13,8 @@ export interface MoonFactorTable {
   dark: number;
   half: number;
   full: number;
+  /** 昼（v0.6.11。jp_03。艦艇のいない航空機だけの任務なので発見の距離には効かない。視程は半月と同じ） */
+  day: number;
 }
 
 export type MoonPhase = keyof MoonFactorTable;
@@ -28,7 +30,7 @@ export interface VisibilityParams {
 }
 
 export function isMoonPhase(v: unknown): v is MoonPhase {
-  return v === 'dark' || v === 'half' || v === 'full';
+  return v === 'dark' || v === 'half' || v === 'full' || v === 'day';
 }
 
 /**

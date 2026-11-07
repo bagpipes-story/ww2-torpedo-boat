@@ -8,6 +8,7 @@ import { ARMS_CUE_DOWN_MS, ARMS_CUE_TORP_MS, CUE_DOWN_COLOR } from '../config/ar
 import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import {
   CUE_NONE,
+  EV_DOWN_EVAC,
   EV_DOWN_SEAPLANE,
   EV_DOWN_SORTIE,
   EV_DOWN_STRIKE,
@@ -38,6 +39,7 @@ export function armsCueJa(code: number, n: number): ArmsCueLine {
     case EV_TORP_NOSHIP:
       return { text: '狙う艦がいない', color: HUD_COLOR_STRONG };
     case EV_DOWN_STRIKE:
+    case EV_DOWN_EVAC: // 港の空襲の編隊（v0.6.11 S4。n はその編隊の残り）
       return { text: `敵機 撃墜！ 残り ${n} 機`, color: CUE_DOWN_COLOR };
     case EV_DOWN_SEAPLANE:
       return { text: '水上機 撃墜！', color: CUE_DOWN_COLOR };
@@ -72,7 +74,7 @@ export function armsCueOverTorpedo(code: number): boolean {
 
 /** 出来事の文が撃墜（金色で、出るときに少し大きく飛び出す） */
 export function armsCueIsDown(code: number): boolean {
-  return code === EV_DOWN_STRIKE || code === EV_DOWN_SEAPLANE || code === EV_DOWN_SORTIE;
+  return code === EV_DOWN_STRIKE || code === EV_DOWN_SEAPLANE || code === EV_DOWN_SORTIE || code === EV_DOWN_EVAC;
 }
 
 /** 出来事の文を出すミリ秒（撃墜は長め） */
