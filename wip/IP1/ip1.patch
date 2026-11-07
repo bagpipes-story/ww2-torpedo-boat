@@ -30,6 +30,126 @@ index 42bbf4b..d5e0b20 100644
            (rep ? `  ${fx(c.passesPerFlight, 2).padEnd(9)}${pct(c.againPct).padEnd(8)}${c.againByWavePct.map(pct).join('/')}` : ''),
        );
      }
+diff --git a/scripts/headless/wvs-evac-entry.mjs b/scripts/headless/wvs-evac-entry.mjs
+index ccdd474..2bcb5ad 100644
+--- a/scripts/headless/wvs-evac-entry.mjs
++++ b/scripts/headless/wvs-evac-entry.mjs
+@@ -264,4 +264,60 @@ export function resultRun(o) {
+   return { simEnd: tr.end, simT: tr.timeS, survivors: tr.survivors, achieved: tr.achieved, t: w.stepTimeS };
+ }
+ 
+-window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe, resultRun };
++/**
++ * レールの画面写しの台（v0.6.11 IP1 の U9・U10。evac-haul.mjs）: 模擬の台本の入力を世界へ写して進め、操作中の隊が壕で上げていて（G_HAULING）
++ * 上げ終えた艇が up 隻以上・レールの上の艇が pct% 以上のフレームで止める（lookS は hudProbe と同じ）。地図の上の字（％の札を含む）と輪を返す
++ */
++export function haulProbe(o) {
++  const hl = window.__hl;
++  const w = hl.world();
++  if (!w.evac) throw new Error('空襲下の退避の任務ではない');
++  const tm = window.__game.registry.get('boatTelemetry');
++  const s = evacSimSetup(gameData, o.hard);
++  const inp = w.input;
++  let stop = false;
++  let seenMax = 0;
++  let ctl = -1;
++  let ctlK = 0;
++  const mirror = {
++    begin() {},
++    frame(k, fo) {
++      if (stop) throw new Error('stop');
++      if (!hl.active('Mission')) throw new Error('mission-ended');
++      if (k > o.maxSteps) throw new Error('上げている所が来ない');
++      inp.stickActive = true;
++      inp.headingDeg = fo.headingDeg;
++      inp.speed01 = fo.speed01;
++      inp.gunHeld = fo.gunHeld;
++      inp.extinguishHeld = fo.extHeld;
++      inp.lookout = o.lookS >= 999;
++      if (fo.switchTap) pressSwitch();
++      hl.frame(o.frameMs);
++    },
++    after(k) {
++      const e = tm.evac;
++      if (e.control !== ctl) [ctl, ctlK] = [e.control, k]; // 切り替えた後はカメラが流れ着くまで（2 秒）待つ
++      if (k - ctlK < 120) return;
++      if (e.phase === 3) seenMax = Math.max(seenMax, e.upCount * 100 + e.haulPct);
++      if (e.phase === 3 && e.upCount >= o.up && e.haulPct >= o.pct && e.annKind === 0 && !e.falling) stop = true; // 2 行目が上げている行（予告・落下の行が上でない）
++    },
++  };
++  try {
++    runEvacTrial(s, o.policy, o.seed, null, mirror);
++  } catch (e) {
++    if (!(e instanceof Error) || e.message !== 'stop') throw e;
++  }
++  if (!stop) throw new Error(`上げている所が来ないまま終わった（上げ済 × 100 ＋ % の最大 ${seenMax}）`);
++  for (let i = 0; i < 90; i++) hl.render(); // カメラの追従（lerp）は描く時だけ進む＝固定ステップだけ回した後は前に描いた所に残る
++  const m = hl.mission();
++  const z = m.cameras.main.zoom / window.__game.scene.getScene('Hud').cameras.main.zoom;
++  const cam = m.cameras.main;
++  const world = m.children.list.filter((x) => x.visible && x.type === 'Text');
++  return {
++    t: w.stepTimeS, zoom: z, control: w.evac.sq.control, shelter: tm.evac.shelter, haulPct: tm.evac.haulPct, upCount: tm.evac.upCount,
++    hud: hl.objects('Hud').filter((x) => x.type === 'Text' && x.v && x.text !== ''),
++    marks: world.map((x) => ({ text: x.text, px: parseFloat(x.style.fontSize) * x.scaleY * z, sx: (x.x - cam.worldView.x) * z, sy: (x.y - cam.worldView.y) * z, w: x.displayWidth * z, h: x.displayHeight * z })),
++  };
++}
++
++window.__wvsEvac = { runEvacVsSim, smokeRun, hudProbe, resultRun, haulProbe };
+diff --git a/src/config/evac-config.ts b/src/config/evac-config.ts
+index 58fa6d0..f4c0cd3 100644
+--- a/src/config/evac-config.ts
++++ b/src/config/evac-config.ts
+@@ -7,13 +7,43 @@ export const EVAC_HIDDEN_ALPHA = 0.45;
+ export const EVAC_ISLAND_LAND_M = 400;
+ /** 屋我地島の名の字の大きさ px（南の岸の COAST_LABEL_FONT_PX と同じ） */
+ export const EVAC_ISLAND_LABEL_PX = 36;
+-/** 壕の口（南の岸の陸の側に掘った暗い四角）の幅・奥行き m と色 */
+-export const EVAC_CAVE_MOUTH_W_M = 70;
+-export const EVAC_CAVE_MOUTH_D_M = 60;
++/**
++ * 壕の口（v0.6.11 IP1 の U10「レールの画面での描写が線一本で何がなんだかわかりません」）: 南の岸の陸に掘った口。岩の縁（楕円）の中に暗い口（楕円）。
++ * 中心は岸の線 y（海域の高さ）から陸へ EVAC_CAVE_DEPTH_M。幅・高さ m と色
++ */
++export const EVAC_CAVE_DEPTH_M = 40;
++export const EVAC_CAVE_ROCK_W_M = 110;
++export const EVAC_CAVE_ROCK_H_M = 90;
++export const EVAC_CAVE_ROCK_COLOR = 0x6b6550;
++export const EVAC_CAVE_MOUTH_W_M = 66;
++export const EVAC_CAVE_MOUTH_H_M = 64;
+ export const EVAC_CAVE_COLOR = 0x0b0f0a;
+-/** 壕から海へ下ろすレール（1 本）の線の太さ m と色（壕の口から隠れ場所の点まで） */
+-export const EVAC_RAIL_WIDTH_M = 4;
+-export const EVAC_RAIL_COLOR = 0x7a6a48;
++/** 壕の口の中心の y（岸の線 bounds.height から陸へ。systems/evac-terrain が描き、上げている艇はここへ入る＝systems/evac-boats-view、% の札はその下＝ui/evac-markers） */
++export function evacCaveMouthY(boundsHeight: number): number {
++  return boundsHeight + EVAC_CAVE_DEPTH_M;
++}
++/**
++ * 引き上げの斜路（スリップウェイ。U10）: 隠れ場所の点の少し海側から壕の口までのコンクリートの斜路（海の中は薄く＝水に沈んだ部分）、2 本のレール、枕木。
++ * 斜路の幅・海の側へ出す長さ m・色・海の中の濃さ、レールの間隔（中心から左右）・太さ m・色、枕木の幅・厚さ・間隔 m・色
++ */
++export const EVAC_RAMP_W_M = 36;
++export const EVAC_RAMP_SEA_M = 30;
++export const EVAC_RAMP_COLOR = 0xa29c8a;
++export const EVAC_RAMP_SEA_ALPHA = 0.45;
++export const EVAC_RAIL_GAUGE_M = 8;
++export const EVAC_RAIL_WIDTH_M = 3;
++export const EVAC_RAIL_COLOR = 0x2a2a2a;
++export const EVAC_TIE_W_M = 28;
++export const EVAC_TIE_H_M = 3;
++export const EVAC_TIE_STEP_M = 9;
++export const EVAC_TIE_COLOR = 0x5a4128;
++/**
++ * レールで上げている艇の進み（U9「一艇ずつレールで引き上げている進捗（一艇ごと）をレールの下部にでも%で表示」）: 壕の口の下（陸）の札「2隻目 45%」の字の大きさ（論理 px。
++ * 隠れ場所の札と同じくズームが変わった時だけ 1/zoom＝見張り 0.5 でも画面上この大きさ）・岩の縁の下端からの間 m（負は岩の縁に少し重ねる＝W 1280 の既定のズームで右下の速力の HUD「停止」から離す）・色
++ */
++export const EVAC_HAUL_LABEL_PX = 22;
++export const EVAC_HAUL_LABEL_GAP_M = -10;
++export const EVAC_HAUL_LABEL_COLOR = '#ffe08a';
+ /** 陰（北の岸の際の暗い海）の楕円の幅・高さ m と色・濃さ（史実の裏付け無しの design） */
+ export const EVAC_COVER_W_M = 300;
+ export const EVAC_COVER_H_M = 160;
 diff --git a/src/core/evac-air.ts b/src/core/evac-air.ts
 index 79dbd61..a14eb1b 100644
 --- a/src/core/evac-air.ts
@@ -262,6 +382,87 @@ index 0e51660..de248de 100644
      survivors: 0, hiddenBoats: 0, hp: new Float64Array(3), nextWaveS: NaN, leftS: 0, nextSwitch: -1, seatSeq: 0, takeHold: false,
      near: -1, nearFree: 0, nearEdgeM: NaN, nearDx: NaN, nearDy: NaN,
      annKind: EVA_NONE, annSeq: 0, annWave: -1, annPlanes: 0, annFlights: 0, annTargets: new Int32Array(EVAC_ANN_MAX), annTargetPlanes: new Int32Array(EVAC_ANN_MAX), annCount: 0, annNoTarget: 0, annLost: 0,
+diff --git a/src/systems/evac-boats-view.ts b/src/systems/evac-boats-view.ts
+index a6c3672..aec34ee 100644
+--- a/src/systems/evac-boats-view.ts
++++ b/src/systems/evac-boats-view.ts
+@@ -1,18 +1,24 @@
+ // 空襲下の退避（v0.6.11 S4。jp_03）の 18 隻の絵（spec-v0611-r2 §11）: 起動時に 18 枚の Image（艇の絵は Boot が作った boatTextureKey(艇)）。毎フレーム位置と向きだけ、
+ // 見え方（描かない・ふつう・陰に隠れて薄い・沈む途中）は変わったときだけ setVisible・setAlpha。座席に入った艇（操作中の隊長艇）の Image は描かない（世界の自艇 PlayerBoat が描く。
+ // 操作中の隊が隠れている間は自艇の絵も薄く）。壕に上げ終えた艇は描かない。沈む絵は tween を使わず記録の沈んだ秒から縮み・薄く・傾く（毎フレームの計算だけ）。§7: 確保は constructor だけ。
++// v0.6.11 IP1 の U9・U10: レールで上げている艇（隊の hauling）の絵は、その艇の点から壕の口（systems/evac-terrain の evacCaveMouthY）まで進み（core/evac-shelter の evacHaulProgress）に
++// 合わせて斜路を上がる（艇首は壕の向き）。座席の隊長艇なら世界の自艇の絵を動かす（world-visuals の syncSprite の後に呼ばれる＝次のフレームで記録の点へ戻る）。絵だけ（記録は変えない）。
+ import type Phaser from 'phaser';
+ import { EVAC_HIDDEN_ALPHA } from '../config/evac-config';
+ import { DEPTH, RENDER_SCALE } from '../config/game-config';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+-import { G_HIDDEN } from '../core/evac-data';
++import { G_HAULING, G_HIDDEN } from '../core/evac-data';
++import { evacHaulProgress } from '../core/evac-shelter';
+ import type { EvacSquadron } from '../core/evac-squadron';
++import type { BoatState } from '../core/boat-motion';
+ 
+ /** 見え方（変わったときだけ表示と濃さを書く） */
+ const V_NONE = 0;
+ const V_SHOWN = 1;
+ const V_DIM = 2;
+ const V_SINKING = 3;
++/** 斜路を上がる艇首（北 0・時計回り。壕は南の岸＝南向き） */
++const HAUL_HEADING_DEG = 180;
+ 
+ export class EvacBoatsView {
+   private readonly imgs: Phaser.GameObjects.Image[] = [];
+@@ -25,6 +31,10 @@ export class EvacBoatsView {
+     textureKey: string,
+     /** 世界の自艇の絵（座席＝操作中の隊長艇） */
+     private readonly seatSprite: Phaser.GameObjects.Image,
++    /** 壕の口の中心の y（systems/evac-terrain の evacCaveMouthY） */
++    private readonly mouthY: number,
++    /** 座席の記録（世界の自艇の state） */
++    private readonly seat: BoatState,
+   ) {
+     for (let i = 0; i < sq.boats.length; i++) this.imgs.push(scene.add.image(0, 0, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat).setVisible(false));
+     this.look = new Uint8Array(sq.boats.length);
+@@ -48,6 +58,18 @@ export class EvacBoatsView {
+       img.setPosition(b.state.x, b.state.y).setAngle(b.state.headingDeg + SINK_TILT_DEG * k);
+       if (look === V_SINKING) img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE).setAlpha(1 - k);
+     }
++    // レールの上の艇（壕で上げている隊ごとに 1 隻）を斜路の上へ
++    for (let gi = 0; gi < sq.groups.length; gi++) {
++      const g = sq.groups[gi]!;
++      if (g.phase !== G_HAULING || g.hauling < 0) continue;
++      const k = evacHaulProgress(g, sq.p.haulS);
++      const sh = sq.p.shelters[g.shelter];
++      if (Number.isNaN(k) || !sh) continue;
++      const seatBoat = gi === sq.control && g.hauling === g.leader;
++      const from = seatBoat ? this.seat : g.boats[g.hauling]!.state;
++      const img = seatBoat ? this.seatSprite : this.imgs[g.boats[g.hauling]!.index]!;
++      img.setPosition(from.x + (sh.x - from.x) * k, from.y + (this.mouthY - from.y) * k).setAngle(HAUL_HEADING_DEG);
++    }
+     const dim = sq.groups[sq.control]!.phase === G_HIDDEN;
+     if (dim !== this.seatDim) {
+       this.seatDim = dim;
+diff --git a/src/systems/evac-flights.ts b/src/systems/evac-flights.ts
+index 295442a..49ed65b 100644
+--- a/src/systems/evac-flights.ts
++++ b/src/systems/evac-flights.ts
+@@ -5,6 +5,7 @@
+ // evac の無い任務は null（何も作らない）。
+ // AirStrikeFlight を import する（DOM の game-config を読む）のはこのファイルだけ。tests が読む面は systems/world-evac（構造の型）。
+ import type Phaser from 'phaser';
++import { evacCaveMouthY } from '../config/evac-config';
+ import { RENDER_SCALE, boatTextureKey } from '../config/game-config';
+ import { evacDrawPass } from '../core/evac-air';
+ import type { BoatState } from '../core/boat-motion';
+@@ -42,7 +43,7 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
+     damage,
+   );
+   const terrain = new EvacTerrain(scene, ev, w.setup.mission.bounds);
+-  const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite);
++  const boats = new EvacBoatsView(scene, evac.sq, boatTextureKey(ev.params.boatId), w.boat.sprite, evacCaveMouthY(w.setup.mission.bounds.height), w.boat.state);
+   const marks = new EvacMarks(scene, evac.sq);
+   const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
+   evac.view = {
 diff --git a/src/systems/evac-telemetry.ts b/src/systems/evac-telemetry.ts
 index c313e9e..474c5f7 100644
 --- a/src/systems/evac-telemetry.ts
@@ -287,6 +488,86 @@ index c313e9e..474c5f7 100644
    let up = 0;
    for (let k = 0; k < t.hp.length; k++) {
      const b = g.boats[k];
+diff --git a/src/systems/evac-terrain.ts b/src/systems/evac-terrain.ts
+index 78080bc..1d79429 100644
+--- a/src/systems/evac-terrain.ts
++++ b/src/systems/evac-terrain.ts
+@@ -1,16 +1,33 @@
+-// 空襲下の退避（v0.6.11 S4。jp_03）の地形の絵（spec-v0611-r2 §3.1・§11 の r2 L4）: 北の縁 y 0 の外の屋我地島（陸・浜の線・名）、南の岸の壕の口とレール（1 本ずつ）、
+-// 北の岸の際の陰（暗い海）。1 つの Graphics に起動時 1 回だけ記録し、毎フレーム触らない（entities/shallows の作法。世界の大きさのテクスチャにしない＝3,200 m は
++// 空襲下の退避（v0.6.11 S4。jp_03）の地形の絵（spec-v0611-r2 §3.1・§11 の r2 L4）: 北の縁 y 0 の外の屋我地島（陸・浜の線・名）、南の岸の壕と引き上げの斜路、
++// 北の岸の際の陰（暗い海）。起動時 1 回だけ Graphics に記録し、毎フレーム触らない（entities/shallows の作法。世界の大きさのテクスチャにしない＝3,200 m は
+ // RENDER_SCALE 2 で 6,400 px になり古い iPhone の最大テクスチャを越えうる）。南の岸（本部半島（運天））は entities/shallows が mission.coast で描く。隠れ場所の輪と札は S5（ui/evac-markers）。
++// v0.6.11 IP1 の U10（ユーザー「レールの画面での描写が線一本で何がなんだかわかりません。もう少し視覚的にレール（ドッグ）であることがわかるように」）: 壕ごとに
++// コンクリートの斜路（海の中は薄く）・枕木・2 本のレールが隠れ場所の点の少し海側から陸の岩の口（暗い楕円）へ入る。海の中の部分は陸の塗りより下（shallows。隠れ場所の輪が上に重なる）、
++// 陸の部分と口は陸の塗りの上（landingMark＝entities/shallows の陸に隠れない）。上げている艇の絵の動きは systems/evac-boats-view、% の札は ui/evac-markers。
+ import type Phaser from 'phaser';
+-import { EVAC_CAVE_COLOR, EVAC_CAVE_MOUTH_D_M, EVAC_CAVE_MOUTH_W_M, EVAC_COVER_ALPHA, EVAC_COVER_COLOR, EVAC_COVER_H_M, EVAC_COVER_W_M, EVAC_ISLAND_LABEL_PX, EVAC_ISLAND_LAND_M, EVAC_RAIL_COLOR, EVAC_RAIL_WIDTH_M } from '../config/evac-config';
++import {
++  EVAC_CAVE_COLOR, EVAC_CAVE_MOUTH_H_M, EVAC_CAVE_MOUTH_W_M, EVAC_CAVE_ROCK_COLOR, EVAC_CAVE_ROCK_H_M, EVAC_CAVE_ROCK_W_M, EVAC_COVER_ALPHA, EVAC_COVER_COLOR,
++  EVAC_COVER_H_M, EVAC_COVER_W_M, EVAC_ISLAND_LABEL_PX, EVAC_ISLAND_LAND_M, EVAC_RAIL_COLOR, EVAC_RAIL_GAUGE_M, EVAC_RAIL_WIDTH_M, EVAC_RAMP_COLOR, EVAC_RAMP_SEA_ALPHA, EVAC_RAMP_SEA_M,
++  EVAC_RAMP_W_M, EVAC_TIE_COLOR, EVAC_TIE_H_M, EVAC_TIE_STEP_M, EVAC_TIE_W_M, evacCaveMouthY,
++} from '../config/evac-config';
+ import type { EvacSetup } from '../config/evac-mission-data';
+ import { DEPTH } from '../config/game-config';
+ import { COAST_LAND_COLOR, COAST_LINE_COLOR, COAST_LINE_WIDTH, COAST_TEXT_COLOR } from '../config/hunt-config';
+ import { hudTextStyle } from '../config/ui-config';
+ import { SHELTER_CAVE } from '../core/evac-data';
+ 
++/** 斜路の y0〜y1 の区間に枕木とレールを描く（y0 < y1） */
++function railsBetween(g: Phaser.GameObjects.Graphics, x: number, y0: number, y1: number, alpha: number): void {
++  g.fillStyle(EVAC_TIE_COLOR, alpha);
++  for (let y = y0 + EVAC_TIE_STEP_M / 2; y < y1; y += EVAC_TIE_STEP_M) g.fillRect(x - EVAC_TIE_W_M / 2, y - EVAC_TIE_H_M / 2, EVAC_TIE_W_M, EVAC_TIE_H_M);
++  g.lineStyle(EVAC_RAIL_WIDTH_M, EVAC_RAIL_COLOR, alpha);
++  g.lineBetween(x - EVAC_RAIL_GAUGE_M, y0, x - EVAC_RAIL_GAUGE_M, y1);
++  g.lineBetween(x + EVAC_RAIL_GAUGE_M, y0, x + EVAC_RAIL_GAUGE_M, y1);
++}
++
+ export class EvacTerrain {
+   private readonly graphics: Phaser.GameObjects.Graphics;
++  private readonly slips: Phaser.GameObjects.Graphics;
+   private readonly label: Phaser.GameObjects.Text;
+ 
+   constructor(scene: Phaser.Scene, ev: EvacSetup, bounds: { readonly width: number; readonly height: number }) {
+@@ -24,20 +41,33 @@ export class EvacTerrain {
+     g.fillRect(-land, -land, bounds.width + land * 2, land);
+     g.lineStyle(COAST_LINE_WIDTH, COAST_LINE_COLOR, 1);
+     g.lineBetween(-land, 0, bounds.width + land, 0);
+-    // 壕: 南の縁の陸の側の口と、口から隠れ場所の点までのレール 1 本（壕は南の岸の際＝spec §3.1）
++    // 壕と引き上げの斜路（壕は南の岸の際＝spec §3.1）: 海の中（隠れ場所の点の少し海側〜岸の線）は薄く g に、陸の上（岸の線〜口）と岩の口は陸の塗りの上の slip に
++    const slip = scene.add.graphics().setDepth(DEPTH.landingMark);
++    const h = bounds.height;
++    const mouthY = evacCaveMouthY(h);
+     for (const s of ev.params.shelters) {
+       if (s.kind !== SHELTER_CAVE) continue;
+-      g.lineStyle(EVAC_RAIL_WIDTH_M, EVAC_RAIL_COLOR, 1);
+-      g.lineBetween(s.x, s.y, s.x, bounds.height + EVAC_CAVE_MOUTH_D_M / 2);
+-      g.fillStyle(EVAC_CAVE_COLOR, 1);
+-      g.fillRect(s.x - EVAC_CAVE_MOUTH_W_M / 2, bounds.height, EVAC_CAVE_MOUTH_W_M, EVAC_CAVE_MOUTH_D_M);
++      const y0 = s.y - EVAC_RAMP_SEA_M;
++      g.fillStyle(EVAC_RAMP_COLOR, EVAC_RAMP_SEA_ALPHA);
++      g.fillRect(s.x - EVAC_RAMP_W_M / 2, y0, EVAC_RAMP_W_M, h - y0);
++      railsBetween(g, s.x, y0, h, EVAC_RAMP_SEA_ALPHA + (1 - EVAC_RAMP_SEA_ALPHA) / 2);
++      // 岩の縁 → 斜路の陸の部分 → 暗い口（斜路とレールは口の中へ消える）
++      slip.fillStyle(EVAC_CAVE_ROCK_COLOR, 1);
++      slip.fillEllipse(s.x, mouthY, EVAC_CAVE_ROCK_W_M, EVAC_CAVE_ROCK_H_M);
++      slip.fillStyle(EVAC_RAMP_COLOR, 1);
++      slip.fillRect(s.x - EVAC_RAMP_W_M / 2, h, EVAC_RAMP_W_M, mouthY - h);
++      railsBetween(slip, s.x, h, mouthY, 1);
++      slip.fillStyle(EVAC_CAVE_COLOR, 1);
++      slip.fillEllipse(s.x, mouthY + EVAC_CAVE_MOUTH_H_M / 4, EVAC_CAVE_MOUTH_W_M, EVAC_CAVE_MOUTH_H_M);
+     }
+     this.graphics = g;
++    this.slips = slip;
+     this.label = scene.add.text(bounds.width / 2, -land / 2, ev.raid.northShoreLabelJa, hudTextStyle(EVAC_ISLAND_LABEL_PX, COAST_TEXT_COLOR)).setOrigin(0.5).setDepth(DEPTH.shallows);
+   }
+ 
+   destroy(): void {
+     this.graphics.destroy();
++    this.slips.destroy();
+     this.label.destroy();
+   }
+ }
 diff --git a/src/systems/world-dawn.ts b/src/systems/world-dawn.ts
 index b54eff3..a290f2b 100644
 --- a/src/systems/world-dawn.ts
@@ -393,6 +674,110 @@ index 6bfe141..6757c4e 100644
    const head = '第1次の空襲が去った';
    if (!strike) return [head, `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`];
    return [head, `残存 ${e.survivors}／${e.total}（${e.quota} 隻以上で達成 ・ 隊長艇が沈めば 1 減る）`, `${strike} ・ 壕か陰へ`];
+diff --git a/src/ui/evac-markers.ts b/src/ui/evac-markers.ts
+index 4699708..7f42cb0 100644
+--- a/src/ui/evac-markers.ts
++++ b/src/ui/evac-markers.ts
+@@ -2,7 +2,8 @@
+ // - EvacMarks（systems/evac-flights の buildEvac が作り、世界のフレームの絵で毎フレーム）: 隠れ場所の輪（Boot の tex-evac-ring。満杯は薄く）と札「西の壕 空き 3/3」（4 つ。空きが変わったときだけ）、
+ //   操作中の隊の白い輪 1・狙われた隊の赤い輪（隊ごとに 1 つ＝6。点滅は tween なしで世界の秒から濃さ）・見つかった陰の黄の輪（陰ごと）、隊の番号「1」〜「6」（隊長艇の上。位置は毎フレーム、
+ //   色と字は見え方が変わったときだけ＝灰 停泊・白 走る・暗い緑 隠れた・黄 見つかった・赤 狙われている・灰の × 全滅、操作中は太字）。字はズームが変わった時だけ setScale(1/zoom)
+-//   （見張り 0.5 でも画面上 EVAC_NUMBER_PX）。Text は番号 6 ＋ 札 4＝10。
++//   （見張り 0.5 でも画面上 EVAC_NUMBER_PX）。Text は番号 6 ＋ 札 4 ＋ レールの札（壕ごと 3）＝13。
++//   v0.6.11 IP1 の U9: 壕で上げている隊がある間だけ、その壕の口の下（陸）に「2隻目 45%」（レールの上の艇の番目と進み＝core/evac-shelter の evacHaulPct。整数の % が変わったときだけ setText）。
+ // - EvacEdgeMarkers（ui/hud-markers が evac の任務だけ作る。帰投の印「帰投 N m」は出さない＝r2 L8）: 画面の外の狙われた隊（操作中の隊を除く）への赤い「第4隊 600 m」を ≤ EVAC_EDGE_TARGETS、
+ //   近い空いた隠れ場所への青い「西の壕 800 m」1 本（入っている・上げている・隠れている間は出さない）。ラベルの名は替わったときだけ（EdgeMarker.setPrefix）。右下の速力の角を避け、近い矢印から縁に沿ってずらす。
+ //   ラベルは画面の枠の左右 HUD_MARGIN の内（S8b の labelInset。左の縁の「西の壕 1200 m」が W 1280 で画面の外へ出た）。上下の縁で横に並ぶ矢印はラベルの幅で離す（S8b）。
+@@ -12,6 +13,7 @@
+ // §7: 物は constructor だけで作る（Image 4 ＋ 1 ＋ 6 ＋ 陰の数・Text 10・端の矢印 4）。毎フレームは位置と濃さ、字は変わったときだけ。
+ import Phaser from 'phaser';
+ import {
++  EVAC_CAVE_ROCK_H_M, EVAC_HAUL_LABEL_COLOR, EVAC_HAUL_LABEL_GAP_M, EVAC_HAUL_LABEL_PX, evacCaveMouthY,
+   EVAC_CONTROL_TINT, EVAC_EDGE_TARGETS, EVAC_FOUND_TINT, EVAC_GROUP_RING_M, EVAC_LABEL_PX, EVAC_NUMBER_OFFSET_PX, EVAC_NUMBER_PX, EVAC_RING_TEX_RADIUS_UNITS, EVAC_SHELTER_FULL_ALPHA,
+   EVAC_SHELTER_RING_ALPHA, EVAC_SHELTER_TINT, EVAC_TARGET_ALPHA_MAX, EVAC_TARGET_ALPHA_MIN, EVAC_TARGET_PULSE_HZ, EVAC_TARGET_TINT,
+ } from '../config/evac-config';
+@@ -21,7 +23,8 @@ import {
+ } from '../config/ui-config';
+ import { degToRad } from '../core/units';
+ import type { BoatTelemetry } from '../core/boat-motion';
+-import { G_FOUND, G_GONE, SHELTER_COVER } from '../core/evac-data';
++import { G_FOUND, G_GONE, G_HAULING, SHELTER_CAVE, SHELTER_COVER } from '../core/evac-data';
++import { evacHaulPct } from '../core/evac-shelter';
+ import { evacAfloat, evacLeader, type EvacSquadron } from '../core/evac-squadron';
+ import { EdgeMarker } from './edge-marker';
+ import { EVAC_NUMBER_COLORS, evacNumberLook } from './evac-lines';
+@@ -44,6 +47,9 @@ export class EvacMarks {
+   private readonly targetRings: Phaser.GameObjects.Image[] = [];
+   private readonly controlRing: Phaser.GameObjects.Image;
+   private readonly numbers: Phaser.GameObjects.Text[] = [];
++  /** 壕ごとのレールの札（陰は null）と前回の中身（番目 × 128 ＋ %。出していなければ −1） */
++  private readonly haulLabels: (Phaser.GameObjects.Text | null)[] = [];
++  private readonly lastHaul: Int32Array;
+   /** 前回の空き（札）・見え方（番号）・操作中の隊・ズーム・黄の輪・赤の輪 */
+   private readonly lastFree: Int32Array;
+   private readonly lastLook: Int8Array;
+@@ -63,6 +69,11 @@ export class EvacMarks {
+       this.shelterLabels.push(
+         scene.add.text(sh.x, above ? sh.y - p.shelterRingM - LABEL_GAP_M : sh.y + p.shelterRingM + LABEL_GAP_M, '', hudTextStyle(EVAC_LABEL_PX, HOME_COLOR_TEXT)).setOrigin(0.5, above ? 1 : 0).setDepth(DEPTH.impactRing),
+       );
++      this.haulLabels.push(
++        sh.kind === SHELTER_CAVE
++          ? scene.add.text(sh.x, evacCaveMouthY(sq.cfg.bounds.height) + EVAC_CAVE_ROCK_H_M / 2 + EVAC_HAUL_LABEL_GAP_M, '', hudTextStyle(EVAC_HAUL_LABEL_PX, EVAC_HAUL_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.impactRing).setVisible(false)
++          : null,
++      );
+       this.foundRings.push(sh.kind === SHELTER_COVER ? scene.add.image(sh.x, sh.y, TEXTURE_KEYS.evacRing).setScale(ringScale(p.shelterRingM * FOUND_RING_K)).setTint(EVAC_FOUND_TINT).setDepth(DEPTH.returnRing).setVisible(false) : null);
+     }
+     for (let gi = 0; gi < sq.groups.length; gi++) {
+@@ -71,6 +82,7 @@ export class EvacMarks {
+     }
+     this.controlRing = scene.add.image(0, 0, TEXTURE_KEYS.evacRing).setScale(ringScale(EVAC_GROUP_RING_M)).setTint(EVAC_CONTROL_TINT).setDepth(DEPTH.returnRing);
+     this.lastFree = new Int32Array(p.shelters.length).fill(-1);
++    this.lastHaul = new Int32Array(p.shelters.length).fill(-1);
+     this.lastLook = new Int8Array(sq.groups.length).fill(-1);
+     this.lastFound = new Uint8Array(p.shelters.length);
+     this.lastTarget = new Uint8Array(sq.groups.length);
+@@ -85,7 +97,9 @@ export class EvacMarks {
+       this.lastZoom = zoom;
+       for (const tx of this.numbers) tx.setScale(1 / zoom);
+       for (const tx of this.shelterLabels) tx.setScale(1 / zoom);
++      for (const tx of this.haulLabels) tx?.setScale(1 / zoom);
+     }
++    this.updateHaul();
+     // 隠れ場所の札と輪（空き＝枠 − 取られた枠。操作中の隊が入れない＝空きが隊の隻数より少なければ薄く）
+     const need = evacAfloat(sq.groups[sq.control]!);
+     for (let s = 0; s < p.shelters.length; s++) {
+@@ -135,7 +149,31 @@ export class EvacMarks {
+     if (cl) this.controlRing.setPosition(cl.state.x, cl.state.y);
+   }
+ 
++  /** レールの札（壕で上げている隊がある壕だけ。中身が変わったときだけ setText・出し入れ） */
++  private updateHaul(): void {
++    const sq = this.sq;
++    for (let s = 0; s < this.haulLabels.length; s++) {
++      const tx = this.haulLabels[s];
++      if (!tx) continue;
++      let key = -1;
++      for (let gi = 0; gi < sq.groups.length && key < 0; gi++) {
++        const g = sq.groups[gi]!;
++        if (g.phase !== G_HAULING || g.shelter !== s) continue;
++        const pct = evacHaulPct(g, sq.p.haulS);
++        if (pct < 0) continue;
++        let up = 0;
++        for (let k = 0; k < g.boats.length; k++) if (g.boats[k]!.up && !g.boats[k]!.sunk) up++;
++        key = (up + 1) * 128 + pct;
++      }
++      if (key === this.lastHaul[s]) continue;
++      this.lastHaul[s] = key;
++      if (key < 0) tx.setVisible(false);
++      else tx.setText(`${key >> 7}隻目 ${key & 127}%`).setVisible(true);
++    }
++  }
++
+   destroy(): void {
++    for (const o of this.haulLabels) o?.destroy();
+     for (const o of this.shelterRings) o.destroy();
+     for (const o of this.shelterLabels) o.destroy();
+     for (const o of this.foundRings) o?.destroy();
 diff --git a/src/ui/evac-result.ts b/src/ui/evac-result.ts
 index 5966186..14abb78 100644
 --- a/src/ui/evac-result.ts
