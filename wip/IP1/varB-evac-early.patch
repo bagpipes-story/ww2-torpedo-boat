@@ -1,0 +1,4 @@
+Variant B (cover-reveal aware early end) — replace in src/core/evac-early.ts:
+  import { G_GONE, G_HIDDEN, SHELTER_COVER } from './evac-data';
+  ... if (evacAllHidden(sq) && evacSkyClear(plan) && !coverAtRisk(plan)) sq.earlyS = stepTimeS;
+  function coverAtRisk(plan): a hidden group in a cover while plan.nextWave < waves.length and coverRevealChance > 0
