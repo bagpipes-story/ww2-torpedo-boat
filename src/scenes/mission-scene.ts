@@ -138,7 +138,7 @@ export class MissionScene extends Phaser.Scene {
     const m = w.setup.mission;
     drawSea(this, m.bounds); // 世界の表示物より後に作るが、depth（sea=0）で下に描かれる
     this.shallowsView = new ShallowsView(this, m.shallows, m.coast, m.bounds);
-    this.returnView = new ReturnPointView(this, w.returnPoint);
+    this.returnView = w.evac ? undefined : new ReturnPointView(this, w.returnPoint); // 空襲下の退避（v0.6.11 S5）は隠れ場所の輪（ui/evac-markers）
 
     this.timeScale = world.time_scale;
     this.timeLeftS = w.setup.durationS;
@@ -270,7 +270,8 @@ export class MissionScene extends Phaser.Scene {
   /** 進行方向に CAMERA_LOOK_AHEAD_M だけ視点をずらす（followOffset は「ターゲットから引く」向き） */
   private updateLookAhead(): void {
     const h = degToRad(this.world.boat.state.headingDeg);
-    this.cameras.main.setFollowOffset(-Math.sin(h) * CAMERA_LOOK_AHEAD_M, Math.cos(h) * CAMERA_LOOK_AHEAD_M);
+    const a = this.world.evac?.camCentred ? 0 : CAMERA_LOOK_AHEAD_M; // 空襲下の退避（jp_03）で操作中の隊が隠れ場所の中なら隊長艇を中心に（v0.6.11 S8b）
+    this.cameras.main.setFollowOffset(-Math.sin(h) * a, Math.cos(h) * a);
   }
 
   /** Phaser の shake はズームの 2 乗で弱まるので、見た目の揺れ幅が端末で揃うよう補正する。進行中の弱い揺れがあっても上書きする（force） */

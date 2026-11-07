@@ -39,9 +39,11 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     // v0.6.4: jp_01 も出撃できる（味方の大発の輸送隊）。3 つの世界をみな消すと例外
     // v0.6.7: jp_02「孤島の哨戒」も出撃できる（米の飛行艇の夜の哨戒。order 2 なので 2 番目＝Title の格子の右上）
     // v0.6.9: jp_04「多号作戦・オルモック湾へ」も出撃できる（停泊して揚陸する輸送船を米PT の雷撃から守る。order 4 なので 3 番目＝格子の 2 段目の左）
+    // v0.6.11 S6: jp_03「運天港・空襲下の退避」も出撃できる（order 3 なので 3 番目＝格子の 2 段目の左。jp_04 は 2 段目の右へ）。6 件＝2 列 × 3 段で満杯
     expect(menuEntries(gameData.missionsSeed.missions, 'jp_hard').map((e) => [e.id, e.playable, e.status])).toEqual([
       ['jp_01', true, '出撃準備 →'],
       ['jp_02', true, '出撃準備 →'],
+      ['jp_03', true, '出撃準備 →'],
       ['jp_04', true, '出撃準備 →'],
       ['jp_05', true, '出撃準備 →'],
       ['jp_06', true, '出撃準備 →'],
@@ -51,6 +53,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     delete byId(jpNone, 'jp_01')['v0_1_prototype'];
     delete byId(jpNone, 'jp_02')['v0_1_prototype'];
     delete byId(jpNone, 'jp_04')['v0_1_prototype'];
+    delete byId(jpNone, 'jp_03')['v0_1_prototype'];
     expect(() => menuEntries(jpNone.missionsSeed.missions, 'jp_hard')).not.toThrow(); // jp_05 が残る
     delete byId(jpNone, 'jp_05')['v0_1_prototype'];
     expect(() => menuEntries(jpNone.missionsSeed.missions, 'jp_hard')).toThrow(/出撃できる任務/);
@@ -86,6 +89,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(moonLabelJa('dark')).toBe('新月');
     expect(moonLabelJa('half')).toBe('半月');
     expect(moonLabelJa('full')).toBe('満月');
+    expect(moonLabelJa('day')).toBe('昼'); // v0.6.11（jp_03 は moon_label_ja「昼（07:00 空襲警報）」で差し替える）
   });
   it('敵の数: 出てきた順にまとめる。空なら なし', () => {
     expect(enemyCountsJa(['ijn_destroyer', 'ijn_destroyer', 'daihatsu_barge'], nameOf)).toBe('駆逐艦 ×2、大発動艇 ×1');
@@ -150,7 +154,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       expect(code.includes('historical_note'), f).toBe(false);
     }
   });
-  it.each(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
+  it.each(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'])('data の整合: %s の hazards は世界の block に一致し（us_02 の港内空襲は実機で外した）、id はすべて risk_events に、敵は enemies にある', (id) => {
     const m = getPrototypeMission(gameData, id);
     const proto = (byId(gameData, id)['v0_1_prototype'] as Record<string, unknown>);
     const enemyIds = proto['enemies'] as string[];
@@ -168,6 +172,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     if (m.dawnStrike) expected.add('dawn_air_strike'); // 夜明けの空襲（v0.6.1。敵の制空下の任務だけ）
     if (getEngineParams(gameData, id)) expected.add('engine_failure'); // 機関の不調（v0.6.5。jp_05 だけ）
     if (proto['patrol_air'] !== undefined) expected.add('patrol_air'); // 夜の哨戒機（v0.6.7。jp_02 だけ）
+    if (proto['evac_raid'] !== undefined) expected.add('unten_air_raid'); // 港の空襲（v0.6.11。jp_03 だけ）
     expect(new Set(m.hazards)).toEqual(expected);
     for (const h of m.hazards) expect(gameData.riskEvents.events.some((e) => e.id === h)).toBe(true);
     for (const id of enemyIds) expect(gameData.enemies.enemies.some((e) => e.id === id)).toBe(true);

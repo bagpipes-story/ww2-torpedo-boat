@@ -2,6 +2,7 @@
 // 兵装は全任務で同じ位置（main_weapon に関わらず）: 右下の角（列 1・R64・文字 22 px）に魚雷、そのすぐ左（列 2・R56・文字 20 px）に機銃、扇は魚雷の下。
 // 技能（R44・文字 20 px。R48 の丸の絵を縮める）は右端に縦一列（上から 煙幕（米）・消火・見張り・識別（味方機の夜）。無いボタンの段は空ける）。兵装の上の 1 行は ui/weapon-cue（このクラスが作って消す）。
 // 魚雷・扇・機銃は出だしの 600 ms は受けない（Briefing の「出撃」・Result の「もう一度」の 2 度押し）。技能の中身（煙幕・消火・見張り・識別）は v0.6.7 の hud-scene のまま（S0 で移した）。
+// v0.6.11 S5（jp_03。spec-v0611-r2 §9・r2 L13）: 識別の段に［切替］（タップで InputState.switchTap。字は並びの次の隊「切替」「第4隊」の 2 行（v0.6.11 S8: 「切替 4」はほかのボタンの残りの秒・回数に読めた）、移る先が無い・決着の後は灰色の「切替」）。
 // 値が変わったときだけ文字を組む（§7。前回の値はこのクラスが持つ。Hud を作り直すたびにこのクラスも作り直すので前回の値を引きずらない）。
 import Phaser from 'phaser';
 import { GUN_BUTTON_FONT_PX, GUN_BUTTON_SCALE, GUN_FIRING_ALPHA } from '../config/arms-config';
@@ -40,6 +41,9 @@ export class WeaponPanel {
   private lookoutButton?: HoldButton;
   /** 「識別」（v0.3.3）。任務に味方機がいるときだけ作る。残り秒の整数が変わったときだけ文字を組む */
   private identifyButton?: HoldButton;
+  /** 「切替」（v0.6.11 S5。空襲下の退避の任務だけ。識別の段）。移る先の隊が変わったときだけ字を組む */
+  private switchButton?: HoldButton;
+  private lastSwitch = -2;
   private readonly cue: WeaponCue;
   private lastIdentifyN = -1;
   private lastHoldTenths = -1;
@@ -50,7 +54,7 @@ export class WeaponPanel {
     const loadout = getLoadout(data, mission);
     // 煙幕発生器の無い艇（日本の魚雷艇。v0.6.0）は煙幕ボタンを作らない（いちばん上の段は空く）。識別は今夜味方機がいるときだけ（v0.4.6。夜の揺らぎで来ない夜がある）
     const hasSmoke = getBoatSmokeParams(data, mission.playerBoatId) !== null;
-    const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled });
+    const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled, switch: telemetry.evac.enabled });
     this.layout = L;
     this.cue = new WeaponCue(scene, L, telemetry.arms.evSeq);
     // 魚雷（積んでいる本数。撃てない間は薄く受けない。0 本で押すと「魚雷は撃ち尽くした」）と、その下の扇
@@ -79,6 +83,7 @@ export class WeaponPanel {
       if (s.kind === 'smoke') this.smokeButton = new HoldButton(scene, s.x, s.y, s.label, { onUp: () => (input.smokeTap = true) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
       else if (s.kind === 'extinguish') this.extinguishButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.extinguishHeld = true), onUp: () => (input.extinguishHeld = false) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
       else if (s.kind === 'lookout') this.lookoutButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.lookout = true), onUp: () => (input.lookout = false) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
+      else if (s.kind === 'switch') this.switchButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.switchTap = true) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
       else {
         this.identifyButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.identifyTap = true) }, TEXTURE_KEYS.roundButton, SKILL_BUTTON_SCALE, { fontPx: SKILL_FONT_PX });
         this.identifyButton.setEnabled(false);
@@ -88,7 +93,7 @@ export class WeaponPanel {
 
   /** 一時停止で押しかけを取り消す操作（PauseControl が止めるたびに集める。止めるときだけ確保する。並びは v0.6.7 と同じ） */
   controls(): (Cancelable | undefined)[] {
-    return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton];
+    return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton, this.switchButton];
   }
 
   /** 魚雷ボタンを押している（長押しの途中） */
@@ -132,6 +137,12 @@ export class WeaponPanel {
         this.extinguishButton.setLabel(tenths > 0 ? `消火\n${(tenths / 10).toFixed(1)}s` : '消火');
       }
     }
+    if (this.switchButton && t.evac.nextSwitch !== this.lastSwitch) {
+      // 「切替」「第4隊」（並びの次の隊の呼び名＝data。押せば移る）。移る先が無い・決着の後は灰色の「切替」（押しても世界が無視する）
+      this.lastSwitch = t.evac.nextSwitch;
+      this.switchButton.setLabel(t.evac.nextSwitch >= 0 ? `切替\n${t.evac.groupLabels[t.evac.nextSwitch]}` : '切替');
+      this.switchButton.setEnabled(t.evac.nextSwitch >= 0);
+    }
     if (this.identifyButton) {
       // 識別を求めている間（航過中でも真上を過ぎてから押した後は除く）だけ有効。残り秒は 5,4,3,2,1 で 0 は出さない
       const live = t.friendlyPhase === FF_CHALLENGE || (t.friendlyPhase === FF_STRAFE && !t.friendlyPending);
@@ -156,6 +167,7 @@ export class WeaponPanel {
     this.extinguishButton?.destroy();
     this.lookoutButton?.destroy();
     this.identifyButton?.destroy();
+    this.switchButton?.destroy();
     this.spreadButton?.destroy();
     this.cue.destroy();
     this.torpedoButton = undefined;
@@ -164,6 +176,7 @@ export class WeaponPanel {
     this.extinguishButton = undefined;
     this.lookoutButton = undefined;
     this.identifyButton = undefined;
+    this.switchButton = undefined;
     this.spreadButton = undefined;
   }
 }

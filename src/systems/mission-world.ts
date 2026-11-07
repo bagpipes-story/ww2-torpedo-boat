@@ -26,6 +26,7 @@ import { Convoy } from './convoy';
 import { EngineTrouble } from './engine-trouble';
 import type { DestroyerGroup } from './destroyer-group';
 import type { EscortBoat } from './escort-boat';
+import { buildEvac, type WorldEvac } from './evac-flights';
 import type { EnemySide } from './enemy-side';
 import type { EnemySeaplane } from './enemy-seaplane';
 import type { FriendlyFire } from './friendly-fire';
@@ -72,6 +73,7 @@ export class MissionWorld {
   readonly dawn: WorldDawn; // 夜明けのラッチと夜明けの空襲（v0.6.1。world-dawn.ts）。夜明けは任務の終わりではない
   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
+  readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
   readonly returnPoint: ReturnPoint;
@@ -130,6 +132,7 @@ export class MissionWorld {
     this.crewLostNow = crewLost(c.crew, this.damageParams.maxHp, this.damage.hp);
     setPerformance(this.params, this.turnBaseDegS, this.accelBaseMps2, (this.storm ? this.storm.turnFactor : 1) * crewTurnFactor(c.crewEffects, this.crewLostNow), crewAccelFactor(c.crewEffects, this.crewLostNow));
     stepPlayerBoat(this, dt); // 自艇の運動（座礁・縁・浅瀬・燃料・輪。world-boat.ts。沈み始めたら何もしない）
+    this.evac?.stepBoats(dt, feelDt); // 空襲下の退避（v0.6.11。jp_03）の隊の動きと帰投（spec-v0611-r2 §8 の段 3。模擬 core/evac-sim と同じ順）
     this.escort?.step(dt, boat, !this.boat.sinking); // 僚艇（v0.4.4）は自艇を動かした後・駆逐艦の前（同じステップの位置を駆逐艦が狙う）
     this.convoy?.step(dt); // 輸送隊（v0.6.4）も自艇の後・米PT の前（同じステップの大発の位置を米PT が狙う。模擬 core/convoy-sim と同じ順）
     this.gunboat?.step(dt, this.pts?.targets ? this.pts.targets.set.current : 0, this.boat.sinking, this.visRange2); // 隼艇（v0.6.6）は輸送隊の直後（判断 → 運動 → 帯 → valid。模擬と同じ順）
@@ -147,6 +150,7 @@ export class MissionWorld {
     stepEnemySide(this, g, dt, feelDt, boat); // 駆逐艦の隊か大発の隊 → 米PT の隊 → 機関の不調（world-enemy-step.ts。v0.6.6 までここに書いていた段。同じ順）
     if (!this.boat.sinking && stepDamage(this.damage, this.damageParams, feelDt)) this.sinkBoat(this.boatDamage.fireReason);
     this.friendly?.step(feelDt, this); // 味方機は敵の処理の後（v0.3.2 までの順序と乱数の系列を変えない）
+    this.evac?.stepAir(feelDt); // 港の空襲の段（v0.6.11。jp_03。§8 の段 5: 予告・狙い・編隊・着弾・操作していない隊長艇の火災）は夜明けの空襲（240 秒の後の 4 機）の前
     this.dawn.step(feelDt, this); // 夜明けの空襲は最後（夜明け前は何もしない＝夜の順序と乱数は v0.6.0 のまま）
   };
 
@@ -183,7 +187,7 @@ export class MissionWorld {
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, getBoatTorpedoCount(data, mission.playerBoatId), mission.bounds); // 艇が積む本数（v0.6.8。setup.torpedoCapacity は主兵装の本数のまま）
     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
-    const onSunk = (x: number, y: number): void => { this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発
+    const onSunk = (x: number, y: number): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発。jp_03（撃墜だけが届く）は爆発だけ（r2 M1）
     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
     // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）
     const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy);
@@ -209,6 +213,7 @@ export class MissionWorld {
     this.engine = s.engine ? new EngineTrouble(s.engine) : null; // 機関の不調（v0.6.5。乱数なし＝生成の順と乱数の系列に触らない）
     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
     this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
+    this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
     this.refreshShallowStatus();
   }
 

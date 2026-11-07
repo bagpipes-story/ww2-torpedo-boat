@@ -1,8 +1,10 @@
 // 空襲の着弾点の輪のプレースホルダー（v0.6.1。docs/02 §6.8）: 白い太線の円と薄い塗り（表示時に tint・命中の半径へ setScale）。
 // 帰投地点の輪（半径 128 に線 4）を流用すると約 28 m に縮めたとき線が 1 px 未満になるので、線の比を大きくした専用の 1 枚。起動時に 1 回だけテクスチャ化する。
+// v0.6.11 S5: 空襲下の退避（jp_03）の輪（塗りなしの白い太線の円。表示時に tint・半径へ setScale。ui/evac-markers）も同じ作り方の 1 枚。
 import Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { AIR_STRIKE_RING_FILL_ALPHA, AIR_STRIKE_RING_LINE_UNITS, AIR_STRIKE_RING_TEX_RADIUS_UNITS } from '../config/dawn-config';
+import { EVAC_RING_LINE_UNITS, EVAC_RING_TEX_RADIUS_UNITS } from '../config/evac-config';
 
 export function generateImpactRingTexture(scene: Phaser.Scene): void {
   const k = RENDER_SCALE;
@@ -15,5 +17,18 @@ export function generateImpactRingTexture(scene: Phaser.Scene): void {
   g.lineStyle(lw, 0xffffff, 1);
   g.strokeCircle(size / 2, size / 2, r);
   g.generateTexture(TEXTURE_KEYS.impactRing, size, size);
+  g.destroy();
+}
+
+/** 空襲下の退避の輪（v0.6.11 S5）: 半径 EVAC_RING_TEX_RADIUS_UNITS・線 EVAC_RING_LINE_UNITS（線の内側の縁が半径）。塗りなし */
+export function generateEvacRingTexture(scene: Phaser.Scene): void {
+  const k = RENDER_SCALE;
+  const r = EVAC_RING_TEX_RADIUS_UNITS * k;
+  const lw = EVAC_RING_LINE_UNITS * k;
+  const size = Math.ceil((r + lw) * 2);
+  const g = scene.make.graphics({ x: 0, y: 0 }, false);
+  g.lineStyle(lw, 0xffffff, 1);
+  g.strokeCircle(size / 2, size / 2, r);
+  g.generateTexture(TEXTURE_KEYS.evacRing, size, size);
   g.destroy();
 }

@@ -19,6 +19,8 @@ export const AA_MAX_TARGETS = 8;
 export const AA_SRC_DAWN = 0;
 export const AA_SRC_SORTIE = 1;
 export const AA_SRC_SEAPLANE = 2;
+/** 港の空襲の編隊（v0.6.11 S4。jp_03。番号は 編隊 × 4 ＋ 機＝core/evac-sim-aa の EVAC_AA_PLANE_STRIDE。撃墜は core/evac-repass の evacDownPlane） */
+export const AA_SRC_EVAC = 3;
 /** 状態: 押していない / 撃っている / 機がいない / 艇首・艇尾の死角 / 射程外 / 艦艇を撃っている（砲は 1 つ。呼ぶ側が書く）/ 弾倉交換 */
 export const AA_SAFE = 0;
 export const AA_FIRING = 1;

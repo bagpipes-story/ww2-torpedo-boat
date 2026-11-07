@@ -10,6 +10,7 @@ import type { GameData } from '../config/game-data';
 import { GUN_FLASH_LIFETIME_S, GUN_FLASH_SCALE, GUN_TRACER_TINT } from '../config/hunt-config';
 import { getLoadout } from '../config/loadout-data';
 import type { BlindKind } from '../core/arms-cue';
+import { evacGunVariants } from '../core/evac-sim-aa';
 import { radToDeg } from '../core/units';
 import { ArmsStep, type ArmsKit } from './arms-step';
 import { syncShells } from './barge-hunt';
@@ -140,12 +141,13 @@ export class WorldArms extends ArmsStep {
 
 /**
  * 任務の兵装を作る（艇が魚雷も砲も積まなければ null。遊べる任務ではいつも作る）。狙う艦の無い魚雷の文は任務の敵から: 大発の隊（us_03）・米PT の隊（jp_01・jp_05）・それ以外（艦なし）。
- * 砲は艇の gun_battery（主兵装に関わらず）、対空と閃光は hit_rate_model.json（?debug&aa で 1 発の確率だけ上書き）
+ * 砲は艇の gun_battery（主兵装に関わらず）、対空と閃光は hit_rate_model.json（?debug&aa で 1 発の確率だけ上書き）。空襲下の退避（v0.6.11 S4。jp_03）は隊の砲（n = 1〜group_size 隻。模擬と同じ）
  */
 export function buildArms(scene: Phaser.Scene, w: MissionWorld, data: GameData, seed: number, onSunk: (x: number, y: number) => void): WorldArms | null {
   const lo = getLoadout(data, w.setup.mission);
   if (lo.torpedoes <= 0 && lo.gun === null) return null;
   const kind: BlindKind = w.hunt ? 'barge' : w.pts ? 'pt' : 'noship';
   const aa = Number.isFinite(DEBUG_AA_CHANCE) ? { ...lo.aa, hitChancePerRound: Math.min(1, DEBUG_AA_CHANCE) } : lo.aa;
-  return new WorldArms(scene, kind, { gun: lo.gun, aa, seed, world: w }, w.splashes, onSunk);
+  const ev = w.setup.evac;
+  return new WorldArms(scene, kind, { gun: lo.gun, aa, seed, world: w, evacGuns: ev && lo.gun ? evacGunVariants(lo.gun, ev.params.groupSize) : null }, w.splashes, onSunk);
 }

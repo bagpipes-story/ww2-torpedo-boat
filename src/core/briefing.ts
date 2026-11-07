@@ -116,7 +116,7 @@ export function shortLabelJa(label: string): string {
 }
 
 export function moonLabelJa(m: MoonPhase): string {
-  return m === 'dark' ? '新月' : m === 'half' ? '半月' : '満月';
+  return m === 'dark' ? '新月' : m === 'half' ? '半月' : m === 'day' ? '昼' : '満月';
 }
 
 /** 出てきた順に、同じ id はまとめて「名前 ×N」、「、」でつなぐ。空なら 'なし' */
@@ -207,6 +207,19 @@ export interface BriefingNumbers {
   landingJa?: string;
   /** 「敵」の行の後ろの味方の駆逐艦の句（v0.6.10 S7。卯月のいる jp_04 だけ＝allyBriefingJa。「 ・」＋ノーブレークスペースで足す）。無い任務・?debug&noally では鍵ごと出ない（ほかの任務の文は変わらない） */
   allyJa?: string;
+  /**
+   * 空襲下の退避（v0.6.11 S6。jp_03。core/evac-briefing。spec-v0611-r2 §10.5・r2 M11: 行は足さず 6 行の中身だけ差し替える）。無い任務では鍵ごと出ない（ほかの任務の文は変わらない）:
+   * successTailJa＝成功の「（帰投地点は…の青い輪）」の代わり、dayRowJa＝月の行の「見える N m ・ 見つかる…」の代わり（この時だけラベルは「時」）、
+   * enemyRowJa＝敵の行の「名前 ×N（方角から）」の「 ×N」を落として後ろに「 ・ 」で（波と編隊の数）、clockJa＝条件の「夜明けまで N 秒（…）」の代わり、
+   * fuelNoteJa＝条件の「燃料 N gal」の後ろ、repassJa＝条件の最後（「 ・」＋ノーブレークスペース。もう一度来る編隊）、hazardLabelsJa＝危険の行の名前の差し替え（昼の言い方）
+   */
+  successTailJa?: string;
+  dayRowJa?: string;
+  enemyRowJa?: string;
+  clockJa?: string;
+  fuelNoteJa?: string;
+  repassJa?: string;
+  hazardLabelsJa?: Readonly<Record<string, string>>;
 }
 
 export interface BriefingRow {
@@ -232,16 +245,26 @@ function weaponPartJa(n: BriefingNumbers): string {
 
 /**
  * Briefing の 6 行（目的・成功・月・敵・危険・条件）。距離・秒は Math.round、燃料は整数ならそのまま・違えば小数 1 桁。危険から港内空襲を除く（2 択の欄に出す）。
+ * 空襲下の退避（v0.6.11 S6。jp_03）は月の行が「時」（昼）で、成功の尾・敵の波・危険の名前・条件の時計と燃料と最後の句を BriefingNumbers の任意の鍵で差し替える（行の数は 6 のまま）。
  * 条件の「砲」と砲の名前の間はノーブレークスペース（v0.6.2 レビュー: Phaser の折り返しは半角スペースだけで切るので、us_03 で「砲」が行末に 1 字だけ残った）
  */
 export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: string) => string, labelOf: (id: string) => string): BriefingRow[] {
   const gal = Number.isInteger(n.fuelGal) ? String(n.fuelGal) : n.fuelGal.toFixed(1);
+  const hl = n.hazardLabelsJa;
+  const hazardOf = hl ? (id: string): string => hl[id] ?? labelOf(id) : labelOf; // 昼の任務（v0.6.11 S6）だけ名前を差し替える
+  // 敵の行（v0.6.11 S6）: 波と編隊の数がある任務は「名前（方角から） ・ 4波（…）」（同じ id の「 ×N」は機の数でないので出さない）
+  const enemy = n.enemyRowJa !== undefined ? [...new Set(t.enemyIds)].map(nameOf).join('、') : enemyCountsJa(t.enemyIds, nameOf);
   return [
     { label: '目的', text: t.objective },
-    { label: '成功', text: `${t.success}（帰投地点は${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）` },
-    { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}` },
-    { label: '敵', text: `${enemyCountsJa(t.enemyIds, nameOf)}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
-    { label: '危険', text: `${hazardsJa(t.hazardIds, labelOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], labelOf)}` },
-    { label: '条件', text: `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa} ・ 燃料 ${gal} gal ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}${n.landingJa ? ` ・\u00a0${n.landingJa}` : ''}` },
+    { label: '成功', text: `${t.success}${n.successTailJa ?? `（帰投地点は${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）`}` },
+    n.dayRowJa !== undefined
+      ? { label: '時', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ ${n.dayRowJa}` }
+      : { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}` },
+    { label: '敵', text: `${enemy}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.enemyRowJa !== undefined ? ` ・ ${n.enemyRowJa}` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
+    { label: '危険', text: `${hazardsJa(t.hazardIds, hazardOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], hazardOf)}` },
+    {
+      label: '条件',
+      text: `${n.clockJa ?? `夜明けまで ${Math.round(n.durationS)} 秒${n.dawnJa}`} ・ 燃料 ${gal} gal${n.fuelNoteJa ?? ''} ${weaponPartJa(n)}${n.aimAssistJa ? ` ・ ${n.aimAssistJa}` : ''}${n.landingJa ? ` ・\u00a0${n.landingJa}` : ''}${n.repassJa ? ` ・\u00a0${n.repassJa}` : ''}`,
+    },
   ];
 }

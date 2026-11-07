@@ -46,11 +46,12 @@ function bodyLines(src: string, name: string): string[] {
 describe('systems/world-visuals（v0.6.9 S0: mission-world の見た目の同期と破棄の切り出し）', () => {
   // v0.6.9 S5a: 揚陸（systems/world-landing。jp_04 だけ。ほかの任務は w.landing が null）の 1 行ずつを最後に足した。2ad122b の行とその順は変えない
   // v0.6.10 S5a: その後に卯月（w.landing.ally。jp_04 だけ・?debug&noally は null）の 1 行ずつ
+  // v0.6.11 S4: その後に空襲下の退避（w.evac。jp_03 だけ。ほかの任務は null）の 1 行ずつ
   it('updateWorldVisuals は 2ad122b の updateFrame の 16 行を同じ順で持つ（頭は const g = w.destroyers だけ）。最後に揚陸の 1 行（v0.6.9 S5a。S6b で世界を渡す）', () => {
-    expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
+    expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）', 'w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
   });
   it('destroyWorldVisuals は 2ad122b の destroy() の 15 行を同じ順で持つ。最後に揚陸の 1 行（v0.6.9 S5a）', () => {
-    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）']);
+    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）', 'w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）']);
   });
   it('mission-world の updateFrame は 入力 → 固定ステップ → 命中スローの残り → 浅瀬 → 見た目 の順、destroy は world-visuals だけ。見た目の同期・破棄はもう持たない', () => {
     const src = read('mission-world.ts');

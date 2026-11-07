@@ -9,8 +9,8 @@ import { getBoatGunParams, getLoadout, validateLoadouts } from '../src/config/lo
 import { buildWorldSetup } from '../src/systems/world-setup';
 
 type Rec = Record<string, unknown>;
-const IDS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06'] as const;
-const TORPEDOES: Record<(typeof IDS)[number], number> = { us_01: 4, us_02: 4, us_03: 4, jp_01: 2, jp_02: 2, jp_04: 2, jp_05: 2, jp_06: 2 };
+const IDS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'] as const; // v0.6.11 S6: jp_03（T-38 の 2 本を全部の隊長艇で分け合う＝座席の 1 組）
+const TORPEDOES: Record<(typeof IDS)[number], number> = { us_01: 4, us_02: 4, us_03: 4, jp_01: 2, jp_02: 2, jp_03: 2, jp_04: 2, jp_05: 2, jp_06: 2 };
 const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
 const boatOf = (d: typeof gameData, id: string): Rec => (d.boats.boats as unknown as Rec[]).find((b) => b['id'] === id)!;
 /** WorldSetup の鍵（v0.6.7 の a9a8229 と同じ。jp_02 は patrolAir・jp_05 は engine・jp_04 は landing（v0.6.9）が後ろに付く） */
@@ -31,8 +31,8 @@ describe('兵装の data（config/loadout-data）', () => {
     expect(lo.aa.hitChancePerRound).toBe(gameData.hitRateModel.anti_aircraft.hit_chance_per_round);
   });
 
-  it('主兵装は us_01・us_02・jp_06 魚雷、us_03・jp_01・jp_05 機銃（v0.6.9 の jp_04 も機銃）、jp_02 なし（v0.6.7 のまま）', () => {
-    expect(IDS.map((id) => getPrototypeMission(gameData, id).mainWeapon)).toEqual(['torpedo', 'torpedo', 'guns', 'guns', 'none', 'guns', 'guns', 'torpedo']);
+  it('主兵装は us_01・us_02・jp_06 魚雷、us_03・jp_01・jp_05 機銃（v0.6.9 の jp_04 も機銃）、jp_02 なし（v0.6.7 のまま。v0.6.11 の jp_03 もなし）', () => {
+    expect(IDS.map((id) => getPrototypeMission(gameData, id).mainWeapon)).toEqual(['torpedo', 'torpedo', 'guns', 'guns', 'none', 'none', 'guns', 'guns', 'torpedo']);
   });
 
   it('us_elco77（us_01）の砲: 12.7mm連装×2・1 組 400 発/分。残りの値は us_elco80 の 20mm・12.7mm の組と同じ・射界の値も同じ', () => {
@@ -57,7 +57,7 @@ describe('兵装の data（config/loadout-data）', () => {
     expect(getGunBatteryParams(gameData, getPrototypeMission(gameData, 'us_01'))).toBeNull();
     for (const id of IDS) {
       const w = buildWorldSetup(gameData, id);
-      const extra = id === 'jp_02' ? ['patrolAir'] : id === 'jp_05' ? ['engine'] : id === 'jp_04' ? ['landing', 'allyDestroyer'] : []; // jp_04 の allyDestroyer は v0.6.10 S1（卯月。landing の後）
+      const extra = id === 'jp_02' ? ['patrolAir'] : id === 'jp_05' ? ['engine'] : id === 'jp_04' ? ['landing', 'allyDestroyer'] : id === 'jp_03' ? ['evac'] : []; // jp_04 の allyDestroyer は v0.6.10 S1（卯月。landing の後）。jp_03 の evac は v0.6.11 S0
       expect(Object.keys(w), id).toEqual([...SETUP_KEYS, ...extra]);
       expect(w.guns === null, id).toBe(w.mainWeapon !== 'guns');
       expect(w.torpedoCapacity, id).toBe(w.mainWeapon === 'torpedo' ? TORPEDOES[id] : 0);

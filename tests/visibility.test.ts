@@ -29,6 +29,9 @@ describe('visibility data', () => {
     expect(V.smoke_factor).toBeLessThan(1);
     expect(isMoonPhase('half')).toBe(true);
     expect(isMoonPhase('new')).toBe(false);
+    // 昼（v0.6.11。jp_03）: 半月と同じ 1.0
+    expect(V.moon_factor.day).toBe(1);
+    expect(isMoonPhase('day')).toBe(true);
   });
 });
 

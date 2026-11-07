@@ -18,6 +18,8 @@ export class HpBar {
   private lastFlashShown = -1;
   private lastCrewWarn = false;
   private lastCrewAlive = -1;
+  /** 座席へ入れた回数（v0.6.11 S5。jp_03 の［切替］・交代のフレームは乗員の前回値を今の値に合わせ「-N」を出さない＝r2 L6。ほかの任務は 0 のまま） */
+  private lastSeatSeq = 0;
   private flashLost = 0;
   private flashUntil = 0;
   private lastHp = -1;
@@ -54,7 +56,12 @@ export class HpBar {
       this.lastFlags = flags;
       this.flags.setText(flags === 0 ? '' : flags === 1 ? '火災！' : flags === 2 ? '機関損傷' : '火災！ 機関損傷');
     }
-    // 乗員: 減った瞬間から CREW_LOSS_FLASH_MS は「-N」を付ける（表示中にさらに減れば足す）
+    // 乗員: 減った瞬間から CREW_LOSS_FLASH_MS は「-N」を付ける（表示中にさらに減れば足す）。別の隊長艇を座席へ入れたフレームは減りでない（v0.6.11 S5）
+    if (t.evac.seatSeq !== this.lastSeatSeq) {
+      this.lastSeatSeq = t.evac.seatSeq;
+      this.lastCrewAlive = t.crewAlive;
+      this.flashUntil = 0;
+    }
     if (this.lastCrewAlive >= 0 && t.crewAlive < this.lastCrewAlive) {
       this.flashLost = (nowMs < this.flashUntil ? this.flashLost : 0) + (this.lastCrewAlive - t.crewAlive);
       this.flashUntil = nowMs + CREW_LOSS_FLASH_MS;

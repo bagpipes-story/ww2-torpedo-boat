@@ -4,13 +4,16 @@
 #   G6=1: jp_04 の卯月を切った表 8 本（ALLY_OFF=1）も。ALLY=1: 卯月のいる表 10 本も。どちらも v0.6.10 実機 2 回目（揚陸 140 → 110 秒）の md5 の頭 8 桁
 #   （実機 1 回目＝撃っても照らされても PT は去らない・揚陸 140 秒の値は CHANGELOG v0.6.10 実機 1 回目）
 #   （S0b・S4 の値は CHANGELOG v0.6.10 の S0b・S4）。
+#   EVAC=1（v0.6.11 S7）: jp_03 の帯の表 2 本（scripts/evac-sim の TABLE=2＝N 400 × 2 組・seed 1〜400・1001〜1400、ノーマル・ハード。spec-v0611-r2 §12.4 の帯の ✓/✗ の行を出す）も。
+#   md5 は S3b の点 G1 の data で S8 の core の直し 2 つ（入っている隊の交代で止める・見つかった陰を輪の外へ出れば出る）の後の表（CHANGELOG v0.6.11 S8。S3b〜S7 は 0660589a・e6409b7a）で、
+#   その出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 6 分ほど（tests/evac-sim-b は軽い組）。
 # 模擬の scripts/*.ts を esbuild で束ねて node で回し、標準出力の md5 を比べる（並べて JOBS 本ずつ）。DIFF が 1 つでもあれば終了コード 1。
-# 実行: [G6=1] [ALLY=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
+# 実行: [G6=1] [ALLY=1] [EVAC=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
 set -u
 cd "$(dirname "$0")/../.."
 OUT="${OUTDIR:-$(mktemp -d)}"
 mkdir -p "$OUT"
-for s in pt-pass-sim convoy-sim dawn-strike-sim patrol-air-sim landing-sim; do
+for s in pt-pass-sim convoy-sim dawn-strike-sim patrol-air-sim landing-sim evac-sim; do
   npx esbuild "scripts/$s.ts" --bundle --platform=node --format=esm --log-level=warning --outfile="$OUT/$s.mjs" || exit 2
 done
 # 名前|束ねた模擬|env|期待する md5（頭だけでもよい）
@@ -45,12 +48,20 @@ if [ "${ALLY:-0}" = "1" ]; then
     "alh|landing-sim|HARD=1|babb3cfe" "alht1|landing-sim|HARD=1 TABLE=1|4078c0bd" "alht2|landing-sim|HARD=1 TABLE=2|8ef8f2ec" "alht3|landing-sim|HARD=1 TABLE=3|87ade449" "alht4|landing-sim|HARD=1 TABLE=4|e25f1d37"
   )
 fi
+if [ "${EVAC:-0}" = "1" ]; then
+  # 名前が ev で始まる件は、出力に帯の行「帯: すべて ✓」も要る（scripts/evac-sim の TABLE=2）
+  CASES+=(
+    "ev2|evac-sim|TABLE=2|01b151af66bb4f5bf5832ac1f1adc65d" "ev2h|evac-sim|HARD=1 TABLE=2|b428c5b1ce4e0684831cb764f139e019"
+  )
+fi
 run() {
   IFS='|' read -r name sim envs want <<<"$1"
   # shellcheck disable=SC2086
   env $envs node "$OUT/$sim.mjs" > "$OUT/$name.txt" 2> "$OUT/$name.err"
   got=$(md5sum < "$OUT/$name.txt" | cut -c1-32)
-  if [ "${got:0:${#want}}" = "$want" ]; then echo "OK   $name $got"; else echo "DIFF $name $got（期待 $want）"; fi
+  band=""
+  if [ "${name:0:2}" = "ev" ] && ! grep -q '^帯: すべて ✓' "$OUT/$name.txt"; then band="・帯に ✗"; fi
+  if [ "${got:0:${#want}}" = "$want" ] && [ -z "$band" ]; then echo "OK   $name $got"; else echo "DIFF $name $got（期待 $want$band）"; fi
 }
 export -f run
 export OUT

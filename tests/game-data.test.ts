@@ -179,4 +179,10 @@ describe('game-data（data/*.json の読み出し）', () => {
     const dark = getVisibilityParams(gameData, 'dark');
     expect(playerVisRangeM(dark)).toBe(900);
   });
+  it('昼（v0.6.11。jp_03 の moon day）: 月明係数 1.0＝視程は半月と同じ 1,500 m（艦艇のいない任務なので発見の距離には効かない）', () => {
+    const day = getVisibilityParams(gameData, 'day');
+    expect(day.moonFactor).toBe(1);
+    expect(playerVisRangeM(day)).toBe(1500);
+    expect(getPrototypeMission(gameData, 'jp_03').moon).toBe('day');
+  });
 });

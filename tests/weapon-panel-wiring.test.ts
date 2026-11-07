@@ -13,7 +13,7 @@ const src = (p: string): string => strip(readFileSync(p, 'utf8'));
 describe('ui/weapon-panel', () => {
   const panel = src('src/ui/weapon-panel.ts');
   it('置き方は panelLayout（main_weapon を読まない＝全任務で角が魚雷・その左が機銃。v0.6.8 実機 1 回目）・煙幕は艇・識別は今夜の味方機', () => {
-    expect(panel).toContain('const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled });');
+    expect(panel).toContain('const L = panelLayout(GAME_WIDTH, { smoke: hasSmoke, identify: telemetry.friendlyEnabled, switch: telemetry.evac.enabled });'); // v0.6.11 S5: 識別の段に［切替］（evac の任務だけ）
     expect(panel).toContain('const hasSmoke = getBoatSmokeParams(data, mission.playerBoatId) !== null;');
     expect(panel).not.toContain('mainWeapon');
     expect(panel).not.toContain('torpedoPrimary');
@@ -50,9 +50,10 @@ describe('ui/weapon-panel', () => {
     expect(panel).toContain(`this.extinguishButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.extinguishHeld = true), onUp: () => (input.extinguishHeld = false) }${look}`);
     expect(panel).toContain(`this.lookoutButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.lookout = true), onUp: () => (input.lookout = false) }${look}`);
     expect(panel).toContain(`this.identifyButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.identifyTap = true) }${look}`);
-    expect(panel.split(look).length - 1).toBe(4);
+    expect(panel).toContain(`else if (s.kind === 'switch') this.switchButton = new HoldButton(scene, s.x, s.y, s.label, { onDown: () => (input.switchTap = true) }${look}`); // v0.6.11 S5（jp_03 の識別の段）
+    expect(panel.split(look).length - 1).toBe(5);
     expect(Number(/export const ROUND_BUTTON_RADIUS = (\d+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))?.[1])).toBe(48); // 丸の絵（assets/placeholders）の半径
-    expect(panel).toContain('return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton];');
+    expect(panel).toContain('return [this.torpedoButton, this.spreadButton, this.gunButton, this.smokeButton, this.extinguishButton, this.lookoutButton, this.identifyButton, this.switchButton];');
   });
 });
 

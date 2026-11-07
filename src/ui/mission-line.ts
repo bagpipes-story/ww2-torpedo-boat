@@ -8,7 +8,7 @@
 // v0.6.5: 機関の不調（jp_05）の 3 つのモード（文とキーは ui/engine-lines。過熱の出来事の時計は pt-line-clock）と、赤い線・結果・接触の行の末尾の札（engineTagKey で組み直す）。
 // v0.6.7: 夜の哨戒機（jp_02）の 4 つのモード（文とキーは ui/patrol-lines。lastPatrolKey）。
 // v0.6.9 S0: 米PT・輸送隊・機関・水上機の 4 つのキーの組み立ては ui/mission-line-keys（純粋な関数。tests/mission-line-keys が v0.6.8 の式の写しと比べる）。
-// v0.6.9 S6a: 停泊して揚陸する輸送船（jp_04）のモード 35・36・37 と決着の前の輪の中の待ち（文とキーは ui/landing-lines の landingLine・landingKey。出来事の時計は pt-line-clock）。平常・呼びかけは landingKey でも組み直す。
+// v0.6.9 S6a: 停泊して揚陸する輸送船（jp_04）のモード 35・36・37 と決着の前の輪の中の待ち（文とキーは ui/landing-lines の landingLine・landingKey。出来事の時計は pt-line-clock）。平常・呼びかけは landingKey でも組み直す。v0.6.11 S5: jp_03 のモード 38（ui/special-line → ui/evac-lines。キーは lKey の欄）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, HUD_MARGIN } from '../config/game-config';
 import { HUD_CLOCK_GAP_PX, HUD_CLOCK_MAX_W_PX } from '../config/hud-text-config';
@@ -40,7 +40,7 @@ import { composeLineKeys, createLineKeys } from './mission-line-keys';
 import { patrolKey, patrolLine, patrolModeOf } from './patrol-lines';
 import { engineLine, engineTagJa } from './engine-lines';
 import { convoyEventLineGb } from './gunboat-lines';
-import { landingLine, landingPassTailJa } from './landing-lines';
+import { landingPassTailJa, specialLine } from './special-line';
 import { ptLine } from './pt-lines';
 import { PtLineClock } from './pt-line-clock';
 import {
@@ -230,7 +230,7 @@ export class MissionLine {
       this.lastLandingKey = lKey;
       this.lastLandingEventKey = leKey;
       // 夜の哨戒機（v0.6.7）か、揚陸の出来事・輸送船への脅威・射線・輪の中の待ち（v0.6.9。ui/landing-lines の landingLine。揚陸の無い任務とほかのモードは null）。モードは重ならない
-      const special = patrolMode ? patrolLine(t, mode) : landingLine(t, mode, this.ptClock.landingEv);
+      const special = patrolMode ? patrolLine(t, mode) : specialLine(t, mode, this.ptClock); // v0.6.11 S5: 空襲下の退避（jp_03）のモード 38 も（ui/special-line）
       if (special) {
         this.missionText.setText(special.text).setColor(special.color);
       } else if (mode === MISSION_CONVOY_EVENT) {

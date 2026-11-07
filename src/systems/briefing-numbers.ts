@@ -1,6 +1,9 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
 import { NO_WEAPON_BRIEFING_JA, allyBriefingJa, bearingJa, compassJa, landingBriefingJa, patrolAirDetectJa, patrolWeaponBriefingJa, ptGunBriefingJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
+import { EVAC_FUEL_NOTE_JA, EVAC_RAID_HAZARD_JA, EVAC_REPASS_JA, EVAC_SUCCESS_TAIL_JA, EVAC_WEAPON_JA, evacAfterRaidHazardJa, evacClockJa, evacDayRowJa, evacEnemyRowJa } from '../core/evac-briefing';
+import { DAWN_STRIKE_EVENT_ID } from '../core/air-strike-data';
+import { EVAC_EVENT_ID } from '../core/evac-data';
 import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
 import { armsBriefingJa } from '../ui/arms-lines';
@@ -11,7 +14,7 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
   const f = s.vis.speedFactor;
   return {
     // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。米PT の任務（v0.6.3。魚雷を撃たない）はマーカーが無いので出さない
-    ...(aimAssistJa && !s.ptBoats && !s.patrolAir ? { aimAssistJa } : {}),
+    ...(aimAssistJa && !s.ptBoats && !s.patrolAir && !s.evac ? { aimAssistJa } : {}),
     // 米PT の任務（v0.6.3）は条件の武器の句: 砲の名から（実機 1 回目から jp_05 は T-14 の 13mm、v0.6.4 の jp_01 は T-38 の 25mm）か撃たない（none）。他の任務は鍵ごと省く
     ...(s.ptBoats ? { weaponJa: s.guns ? ptGunBriefingJa(s.guns.label) : NO_WEAPON_BRIEFING_JA } : {}),
     // 夜の哨戒機の任務（v0.6.7。jp_02）: 機銃の句（v0.6.8。v0.6.7 は武器なし）と航跡の出る速さ（静音の上限）、月の行の空からの見え方（航跡・動く船体・停止）。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
@@ -24,6 +27,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(s.landing ? { landingJa: landingBriefingJa(s.landing.params.unloadS, s.landing.params.hitsToSink) } : {}),
     // 味方の駆逐艦 卯月（v0.6.10 S7。jp_04。LD4・LD16）: 敵の行の後ろに「輸送船の北東に味方の卯月。走るPTを照らして撃つ」（方角は泊地から卯月へ。今夜の泊地の南北のずれでも北東）。無い任務・&noally は鍵ごと省く
     ...(s.landing && s.allyDestroyer ? { allyJa: allyBriefingJa(s.allyDestroyer.labelJa, bearingJa(bearingDeg(s.landing.params.x, s.landing.params.y, s.allyDestroyer.x, s.allyDestroyer.y))) } : {}),
+    // 空襲下の退避（v0.6.11 S6。jp_03。spec-v0611-r2 §10.5）: 成功の尾・時の行・敵の波・危険の名前（昼の言い方）・条件の時計と燃料と機銃ともう一度来る編隊。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
+    ...evacPart(s),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
@@ -40,6 +45,23 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
   };
 }
 
+/** 空襲下の退避の差し替えの鍵（v0.6.11 S6。setup.evac の任務だけ。Briefing を作るときの 1 回だけ）。§2 の敵機の数は dawn_strike の count（?debug&nostrike でも危険の行は同じ文） */
+function evacPart(s: WorldSetup): Partial<BriefingNumbers> {
+  const ev = s.evac;
+  if (!ev) return {};
+  const planes = s.mission.dawnStrike ? s.mission.dawnStrike.count : 0;
+  return {
+    successTailJa: EVAC_SUCCESS_TAIL_JA,
+    dayRowJa: evacDayRowJa(ev.params),
+    enemyRowJa: evacEnemyRowJa(ev.raid),
+    clockJa: evacClockJa(s.durationS),
+    fuelNoteJa: EVAC_FUEL_NOTE_JA,
+    weaponJa: EVAC_WEAPON_JA,
+    ...(ev.raid.passesMax > 1 ? { repassJa: EVAC_REPASS_JA } : {}),
+    hazardLabelsJa: { [EVAC_EVENT_ID]: EVAC_RAID_HAZARD_JA, [DAWN_STRIKE_EVENT_ID]: evacAfterRaidHazardJa(planes) },
+  };
+}
+
 /** Briefing を作るときの 1 回だけ（確保はここだけ） */
 function secondaryPart(s: WorldSetup): { secondaryJa?: string } {
   const j = armsBriefingJa(s);
@@ -52,6 +74,7 @@ function secondaryPart(s: WorldSetup): { secondaryJa?: string } {
  */
 function enemyFromJa(s: WorldSetup): string {
   if (s.patrolAir) return bearingJa(s.patrolAir.gate.fromBearingDeg); // 夜の哨戒機（v0.6.7）: 最初の捜索（レーダー）の来る方角
+  if (s.evac) return bearingJa(s.evac.raid.fromBearingDeg); // 空襲下の退避（v0.6.11 S6。jp_03）: 港の空襲の来る方角（予告の行の「東から」と同じ）
   if (s.landing) return s.landing.params.fromDirsJa; // 揚陸の任務（v0.6.9。jp_04）: 泊地から見た今夜の PT の出発点（線の順。「北と東」「北・東・北東」。2 行目の平常の行と同じ）
   const e = s.enemyFrom;
   if (!e) return '';

@@ -37,7 +37,7 @@ import {
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
-import { generateImpactRingTexture } from '../assets/impact-ring-placeholder';
+import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
 import { generateFriendlyTransportTexture } from '../assets/ally-ship-placeholder';
@@ -51,6 +51,7 @@ import { getGunboatParams } from '../config/gunboat-mission-data';
 import { getPatrolAirParams } from '../config/patrol-air-mission-data';
 import { validateLandingMissions } from '../config/landing-mission-data';
 import { validateAllyDestroyerMissions } from '../config/ally-destroyer-mission-data';
+import { validateEvacMissions } from '../config/evac-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -112,6 +113,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
     generateReturnTextures(this);
     generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
+    generateEvacRingTexture(this); // 空襲下の退避の輪（v0.6.11 S5。jp_03）
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);
@@ -135,6 +137,7 @@ export class BootScene extends Phaser.Scene {
     const ally = validateAllyDestroyerMissions(gameData, gameData.hitRateModel.world.time_scale, enemy.searchlight ? enemy.searchlight.cone_deg : 0);
     const allyMission = ally ? getPrototypeMission(gameData, allyMissionId(ally.shipId)) : null;
     if (ally && allyMission) generateAllyDestroyerTextures(this, { lengthUnits: ally.lengthM * spriteScale, beamUnits: ally.beamM * spriteScale }, allyFanFor(ally, allyMission.coast !== null, allyMission.bounds.height));
+    validateEvacMissions(gameData); // 空襲下の退避（v0.6.11。jp_03）: 隊・隠れ場所・波と編隊・燃料の V-E1〜V-E12（ハードも。壊れていれば Boot で止まる。絵は S4）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
     if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));

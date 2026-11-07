@@ -43,7 +43,7 @@ describe('markerOnScreen（ui/edge-marker-screen）', () => {
   it('配線: edge-marker は drawn のときだけ画面の内で隠し（既定 true）、hideMargin を渡すのは隼艇の矢印と揚陸の 2 本だけ（ほかの矢印は今のまま）', () => {
     const strip = (code: string): string => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     const em = strip(readFileSync('src/ui/edge-marker.ts', 'utf8'));
-    expect(em).toContain('refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true): void {');
+    expect(em).toContain('refresh(dx: number, dy: number, show: boolean, t: BoatTelemetry, distM?: number, drawn = true, distOx = 0, distOy = 0): void {'); // v0.6.11 S8: 距離の原点のずれ（既定 0）
     expect(em).toContain('if (drawn && markerOnScreen(sx, sy, cx, cy, this.opts.topMargin, TARGET_MARKER_MARGIN, this.opts.hideMargin)) {');
     const hud = strip(readFileSync('src/ui/hud-markers.ts', 'utf8'));
     // v0.6.9 S6b: 揚陸の任務（jp_04）の 2 本も渡す（輸送 0・雷撃 TARGET_MARKER_MARGIN。tests/landing-markers）。ほかの任務の矢印は今のまま

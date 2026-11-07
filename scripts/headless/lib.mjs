@@ -20,8 +20,12 @@ export const FRAME_MS = 1000 / 60;
 /** iPhone 15（論理幅 1560）・iPhone SE（1280）の横向きの CSS px */
 export const VIEWPORTS = { 1560: { width: 852, height: 393 }, 1280: { width: 667, height: 375 } };
 
-/** site を配る（戻りは base の URL と close） */
-export async function serve(dir) {
+/**
+ * site を配る（戻りは base の URL と close）。opts.isolate は COOP・COEP の見出しを付ける（v0.6.11 S7 の evac-perf。crossOriginIsolated で performance.now が
+ * 100 μs ではなく 5 μs 刻みになる。省けば今のまま）
+ */
+export async function serve(dir, opts = {}) {
+  const iso = opts.isolate ? { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'require-corp' } : {};
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://x');
@@ -31,7 +35,7 @@ export async function serve(dir) {
       const file = normalize(join(dir, p));
       if (!file.startsWith(normalize(dir))) { res.writeHead(403); res.end(); return; }
       const body = await readFile(file);
-      res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
+      res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-store', ...iso });
       res.end(body);
     } catch {
       res.writeHead(404);

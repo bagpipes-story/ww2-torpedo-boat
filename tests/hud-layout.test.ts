@@ -5,6 +5,8 @@
 // y ≥ 682（ホームバーの帯）に入るのはどの任務も扇だけ。
 // v0.6.9 S6a: jp_04（煙幕なし・味方機なし）を足し、右上 2 段目の揚陸の時計（ui/landing-clock。左上の夜明けの時計の鏡）の箱が、jp_04 にあるどのボタンの当たり・2 行目・ビルド番号にも
 // 触れないこと（煙幕の段は空いている。煙幕があれば重なる＝Boot の V12）を確かめる。
+import { createEvacTelemetry } from '../src/core/evac-telemetry';
+import { evacStatusLine } from '../src/ui/evac-lines';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -42,7 +44,7 @@ const H = 720;
 const M = 24;
 const WIDTHS = [1280, 1344, 1560, 1584];
 /** 任務ごとの技能のボタン（煙幕は艇の煙幕発生器・識別は今夜の味方機）と機関の表示。兵装の置き方は main_weapon に関わらず同じ（v0.6.8 実機 1 回目） */
-const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean }, { engine?: boolean }]> = {
+const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean; switch?: boolean }, { engine?: boolean }]> = {
   us_01: [{ smoke: true, identify: false }, {}],
   us_02: [{ smoke: true, identify: true }, {}],
   us_03: [{ smoke: true, identify: false }, {}],
@@ -51,6 +53,7 @@ const MISSIONS: Record<string, [{ smoke: boolean; identify: boolean }, { engine?
   jp_05: [{ smoke: false, identify: false }, { engine: true }],
   jp_06: [{ smoke: false, identify: false }, {}],
   jp_04: [{ smoke: false, identify: false }, {}],
+  jp_03: [{ smoke: false, identify: false, switch: true }, {}], // v0.6.11 S5: 識別の段（y 404）に［切替］
 };
 
 const circleHit = (b: PanelCircle): PanelRect => ({ x0: b.x - b.r - HIT_PAD, y0: b.y - b.r - HIT_PAD, x1: b.x + b.r + HIT_PAD, y1: b.y + b.r + HIT_PAD });
@@ -238,5 +241,32 @@ describe('右下の兵装と右端の技能（config/hud-layout-config）', () =
       const ext = L.skills.find((sk) => sk.kind === 'extinguish')!;
       expect(skillHit(ext).y0 - clock.y1).toBeGreaterThan(60);
     }
+  });
+});
+
+describe('3 行目の箱と空襲下の退避の隊の行（v0.6.11 S5。spec-v0611-r2 §10.2・r2 H4）', () => {
+  it('隊の行のいちばん長い形（20 px）は line3 の箱（W/2 ± 300）に収まり、W 1280 でも左上の HP・燃料の箱（x ≤ 342）と右端の技能の当たり（［切替］を含む）に触れない', () => {
+    const e = createEvacTelemetry(6);
+    e.groupLabels = ['第1隊', '第2隊', '第3隊', '第4隊', '第5隊', '第6隊'];
+    e.total = 18;
+    let longest = '';
+    for (const hp of [[60, 60, 60], [1, 1, 1]])
+      for (const next of [239.9, NaN]) {
+        Object.assign(e, { control: 5, survivors: 18, hiddenBoats: 18, nextWaveS: next, settled: false });
+        e.hp.set(hp);
+        const s = evacStatusLine(e);
+        if (textW(s, 20) > textW(longest, 20)) longest = s;
+      }
+    expect(longest).toBe('第6隊 HP 60・60・60 ・ 残 18／18 ・ 隠 18 ・ 次 4:00');
+    for (const W of WIDTHS) {
+      const fb = fixedBoxes(W, false);
+      const w = textW(longest, 20);
+      const box: PanelRect = { x0: W / 2 - w / 2, y0: fb['line3']!.y0, x1: W / 2 + w / 2, y1: fb['line3']!.y1 };
+      expect(box.x0).toBeGreaterThanOrEqual(fb['line3']!.x0);
+      expect(box.x1).toBeLessThanOrEqual(fb['line3']!.x1);
+      for (const k of ['hp', 'fuel', 'clock']) expect(inter(box, fb[k]!), k).toBe(false);
+      for (const s of panelLayout(W, { smoke: false, identify: false, switch: true }).skills) expect(inter(box, skillHit(s)), s.kind).toBe(false);
+    }
+    expect(textW(longest, 20)).toBeLessThanOrEqual(2 * (640 - 342));
   });
 });

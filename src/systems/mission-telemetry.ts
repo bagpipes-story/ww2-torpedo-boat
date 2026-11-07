@@ -13,10 +13,12 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { evacResultPart } from '../core/evac-result';
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
 import { refreshAllyTelemetry } from './ally-telemetry';
+import { refreshEvacTelemetry } from './evac-telemetry';
 import { landingResultPart, refreshLandingTelemetry } from './landing-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
 import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
@@ -122,6 +124,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshConvoyTelemetry(t.convoy, w); // 味方の大発の輸送隊（v0.6.4）: 上陸・沈没・浜まで・最寄りの大発
   refreshLandingTelemetry(t.landing, w); // 停泊して揚陸する味方の輸送船（v0.6.9）: 揚陸・米PT の報告・走っている雷跡・出来事（雷跡は世界の updateFrame が数えた後）
   refreshAllyTelemetry(t.ally, w); // 味方の駆逐艦 卯月（v0.6.10 S6）: 隊の最後の砲の出来事が卯月の砲か（2 行目の頭「卯月 撃退！」）
+  refreshEvacTelemetry(t.evac, w); // 空襲下の退避（v0.6.11 S5。jp_03）: 隊・座席・予告・出来事（兵装の後＝撃墜と機銃の出来事を読む）
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
@@ -193,5 +196,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     patrol: patrolResult(w), // 夜の哨戒機（v0.6.7。jp_02）の記録。無い任務は null
     ...armsResultPart(w), // 兵装の新しい道（v0.6.8）: 使った夜だけ arms の鍵（本文の後ろに 1 行）
     ...landingResultPart(w, reason), // 揚陸と米PT の雷撃（v0.6.9。jp_04）: 揚陸の任務だけ landing の鍵（本文の頭の 3 行・状況の行の頭・揚陸 300 点）
+    ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
   };
 }

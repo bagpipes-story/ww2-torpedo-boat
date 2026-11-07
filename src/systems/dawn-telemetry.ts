@@ -51,6 +51,7 @@ export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
   d.ships = w.dawn.ships;
   d.retireJa = w.dawn.retireJa;
   d.forceJa = w.dawn.retireJa ? w.setup.dawnAir.retireForceJa : '';
+  d.dayStart = w.setup.evac ? w.setup.evac.dayStart : false; // 昼から始まる任務（v0.6.11 S5。jp_03）
   fillDawn(d, w);
   return d;
 }

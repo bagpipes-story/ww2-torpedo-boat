@@ -11,6 +11,7 @@ import { getPtParams } from '../src/config/pt-mission-data';
 import { getConvoyParams } from '../src/config/convoy-mission-data';
 import { getGunboatParams } from '../src/config/gunboat-mission-data';
 import { getPatrolAirParams } from '../src/config/patrol-air-mission-data';
+import { validateEvacMissions } from '../src/config/evac-mission-data';
 
 type Rec = Record<string, unknown>;
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype'] && typeof m['id'] === 'string').map((m) => m['id'] as string);
@@ -26,8 +27,8 @@ function bootLoop(id: string): void {
 }
 
 describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
-  it('遊べる世界のある任務は 8 つ（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7）', () => {
-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
+  it('遊べる世界のある任務は 9 つ（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6）', () => {
+    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
   });
   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
     expect(() => bootLoop(id)).not.toThrow();
@@ -38,6 +39,11 @@ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）',
       expect([m.enemyStart, m.enemyStarts.length, m.enemyCount, m.mainWeapon, m.barges, m.ptBoats, m.hard]).toEqual([null, 0, 2, 'none', null, null, hard]);
     }
     expect(hasHardVariant(gameData, 'jp_02')).toBe(false);
+  });
+  it('空襲下の退避（v0.6.11 S0。jp_03）: Boot の validateEvacMissions は投げず jp_03 の値を返す（ソースの pin: 輪の後で 1 回）', () => {
+    expect(validateEvacMissions(gameData)?.params.groups.length).toBe(6);
+    const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
+    expect(src.indexOf('validateEvacMissions(gameData)')).toBeGreaterThan(src.indexOf('for (const id of boatIds)'));
   });
   it('ソースの pin: boot-scene の輪は getPrototypeMission → getEngineParams → getPatrolAirParams → ハード（getPtParams・getConvoyParams）→ getGunboatParams の順', () => {
     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');

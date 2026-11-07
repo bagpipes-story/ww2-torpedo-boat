@@ -1,6 +1,8 @@
 // Result の見出し（v0.6.1 で scenes/result-scene.ts から切り出し）: 終了理由の文と「任務終了 — …」の 1 行、得点の行の「回避 N」、艦の行（v0.6.2）。
 // v0.6.1: 夜明けは終了理由でなくなり（dawn を削除）、夜明けの後に終わった任務は見出しに「（夜明け後 N 秒）」を付ける。
 // v0.6.2 実機 1 回目: 制空権下で敵艦隊がいなくなって終えた任務（cleared）は「敵艦隊なし（制空権下・帰投不要）」。帰投と同じに数える（returned が true）。
+// v0.6.11 S6（jp_03。空襲下の退避＝昼の任務）: 帰投は「退避完了」、空襲の沈没は「空襲で沈没」、火災は「火災で沈没」（jp_03 に砲撃は無い＝座席へ入れた時の火災の理由の既定 destroyed）、
+// 後ろの秒は「（空襲後 N 秒）」（evac の引数。ほかの任務の見出しは 1 字も変わらない）。
 // Phaser も config（DOM を読む game-config）も使わない（文を組むだけ。tests から型検査ごと読める）。終了理由の型は core/mission-flow。
 import type { MissionEndReason } from '../core/mission-flow';
 
@@ -23,6 +25,13 @@ export const REASON_LABEL: Record<MissionEndReason, string> = {
   pt_fire: 'PTの掃射で沈没',
 };
 
+/** 空襲下の退避（v0.6.11 S6。jp_03）の理由の言い換え（昼の任務に「夜明け」と言わない＝H6）。ここに無い理由は REASON_LABEL のまま */
+export const EVAC_REASON_LABEL: Partial<Record<MissionEndReason, string>> = {
+  returned: '退避完了',
+  air_strike: '空襲で沈没',
+  destroyed: '火災で沈没',
+};
+
 /** Result の「帰投: あり／なし」の値（v0.6.2 実機 1 回目: 敵艦隊なしで終えた任務は「不要」。輪に入っていないので「あり」と出さない） */
 export function resultReturnJa(reason: MissionEndReason, returned: boolean): string {
   return reason === 'cleared' ? '不要' : returned ? 'あり' : 'なし';
@@ -36,10 +45,13 @@ export function resultDawnSuffixS(returned: boolean, d: { readonly reached: bool
   return !d.reached || (returned && !d.caughtOutside) ? NaN : d.daylightS;
 }
 
-/** 「任務終了 — 理由」の見出し。dawnSuffixS は夜明け後の秒（NaN なら付けない。付けるときは「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に。resultDawnSuffixS） */
-export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean): string {
-  const dawn = Number.isNaN(dawnSuffixS) ? '' : `（夜明け後 ${Math.round(dawnSuffixS)} 秒）`;
-  return `任務終了 — ${REASON_LABEL[reason]}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
+/**
+ * 「任務終了 — 理由」の見出し。dawnSuffixS は夜明け後の秒（NaN なら付けない。付けるときは「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に。resultDawnSuffixS）。
+ * evac（v0.6.11 S6。空襲下の退避の任務）は理由を EVAC_REASON_LABEL で言い換え、後ろの秒は「（空襲後 N 秒）」
+ */
+export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false): string {
+  const dawn = Number.isNaN(dawnSuffixS) ? '' : `（${evac ? '空襲後' : '夜明け後'} ${Math.round(dawnSuffixS)} 秒）`;
+  return `任務終了 — ${(evac ? EVAC_REASON_LABEL[reason] : undefined) ?? REASON_LABEL[reason]}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
 }
 
 /**

@@ -7,17 +7,18 @@
 // 撃墜が 1 機でもあれば stepAir の最初に毎ステップ順番を飛ばす（押していなくても。離したら波が止まる、を防ぐ。レビュー F2）。
 // Phaser 非依存（tests から作れる）。絵は systems/world-arms の WorldArms（これを継ぎ fx* を描く）。§7: 確保は constructor だけ。押さなければ何も変わらない
 // （新しい乱数は引かず、閃光も無く、世界の状態に触らない）。再生の道具（scratchpad の replay-v068）が読む公開の名: aaRng・shipRng・aaRounds・downs・shipRounds・blindTorpedoes。
+// v0.6.11 S4（jp_03。spec-v0611-r2 §3.4・§3.7）: 僚艇も撃つ＝隊の撃てる隻数 n の砲（kit.evacGuns＝模擬 core/evac-sim-aa と同じ）・港の空襲の機（aa-slots の evac の枝・AA_SRC_EVAC・EV_DOWN_EVAC）。
 import { ARMS_CUE_LINGER_S } from '../config/arms-config';
-import { AA_BUSY, AA_FIRING, AA_OUT_OF_ARC, AA_SEED_OFFSET, AA_SRC_DAWN, AA_SRC_SEAPLANE, AA_SRC_SORTIE, createAaState, createAaTargets, stepAaFire, type AaState, type AntiAircraftParams } from '../core/aa-fire';
+import { AA_BUSY, AA_FIRING, AA_OUT_OF_ARC, AA_SEED_OFFSET, AA_SRC_DAWN, AA_SRC_EVAC, AA_SRC_SEAPLANE, AA_SRC_SORTIE, createAaState, createAaTargets, stepAaFire, type AaState, type AntiAircraftParams } from '../core/aa-fire';
 import { skipDownedRuns } from '../core/air-down';
-import { CUE_NONE, EV_DOWN_SEAPLANE, EV_DOWN_SORTIE, EV_DOWN_STRIKE, ST_AA, ST_ARC, ST_NONE, ST_RELOAD, ST_SHIP, ST_SMOKE, blindTorpedoCue, type BlindKind } from '../core/arms-cue';
+import { CUE_NONE, EV_DOWN_EVAC, EV_DOWN_SEAPLANE, EV_DOWN_SORTIE, EV_DOWN_STRIKE, ST_AA, ST_ARC, ST_NONE, ST_RELOAD, ST_SHIP, ST_SMOKE, blindTorpedoCue, type BlindKind } from '../core/arms-cue';
 import type { BoatState, SpeedStep } from '../core/boat-motion';
 import type { AircraftPose } from '../core/friendly';
 import { GUN_BLOCKED, GUN_FIRING, GUN_OUT_OF_ARC, GUN_SAFE, type GunBatteryParams, type GunEvents } from '../core/gun-battery';
 import { createMagazine, magazineTick, type MagazineParams, type MagazineState } from '../core/magazine';
 import { PT_GUN_RELOAD, type PtGunState } from '../core/pt-gun';
 import { SeededRng } from '../core/rng';
-import { downSlot, fillAaSlots, hasAircraft, liveStrikePlanes, type AaSlotWorld } from './aa-slots';
+import { downSlot, fillAaSlots, hasAircraft, liveStrikePlanes, type AaEvac, type AaSlotWorld } from './aa-slots';
 import { ShipGun, type ArmsShipGroup, type ShipGunWorld } from './ship-gun';
 
 /** 兵装が固定ステップで世界から読み書きする部分（MissionWorld がそのまま満たす。tests は偽物で組む） */
@@ -34,6 +35,8 @@ export interface ArmsWorld extends AaSlotWorld, ShipGunWorld {
   readonly hunt: { readonly battery: { readonly status: number }; readonly mag: MagazineState | null } | null;
   readonly pts: { readonly gun: { readonly state: PtGunState } | null } | null;
   readonly destroyers: ArmsShipGroup | null;
+  /** 港の空襲（jp_03。systems/world-evac）: 撃てる隻数（浮いていて上げていない操作中の隊の艇）と k 発目の曳光弾の出どころ */
+  readonly evac?: (AaEvac & { readonly gunN: number; shooter(k: number): BoatState }) | null;
 }
 
 /** 砲と対空の材料（systems/world-arms の buildArms が config/loadout-data から作る）。無ければ狙う艦の無い魚雷だけ（S2 の形） */
@@ -42,6 +45,8 @@ export interface ArmsKit {
   readonly aa: AntiAircraftParams;
   readonly seed: number;
   readonly world: ArmsWorld;
+  /** 隊の砲（jp_03。n = 1〜3 隻ぶん＝core/evac-sim-aa の evacGunVariants。無い任務は無し） */
+  readonly evacGuns?: readonly GunBatteryParams[] | null;
 }
 
 export class ArmsStep {
@@ -56,7 +61,7 @@ export class ArmsStep {
   /** 機へ撃った発数・撃墜（出どころごと: 夜明けの空襲・夜の出撃・夜の水上機）・水上機を落とした */
   aaRounds = 0;
   downs = 0;
-  readonly downsBy: number[] = [0, 0, 0];
+  readonly downsBy: number[] = [0, 0, 0, 0];
   seaplaneDowned = false;
   /** 狙う艦の無い魚雷の本数（Result・初発射時の燃料から除く） */
   blindTorpedoes = 0;
@@ -73,6 +78,7 @@ export class ArmsStep {
   flashActive = false;
   flashUntilS = -Infinity;
   protected readonly gun: GunBatteryParams | null;
+  private readonly evacGuns: readonly GunBatteryParams[] | null;
   private readonly aaParams: AntiAircraftParams | null;
   private readonly magP: MagazineParams | null;
   private readonly ownsMag: boolean;
@@ -100,6 +106,7 @@ export class ArmsStep {
     const gun = kit ? kit.gun : null;
     const w = kit ? kit.world : null;
     this.gun = gun;
+    this.evacGuns = kit && kit.evacGuns ? kit.evacGuns : null;
     this.aaParams = kit ? kit.aa : null;
     this.shipGun = gun && kit && w && w.destroyers ? new ShipGun(gun, w.destroyers, kit.seed) : null;
     this.aaRng = gun && kit && w && hasAircraft(w) ? new SeededRng((kit.seed + AA_SEED_OFFSET) >>> 0) : null;
@@ -109,7 +116,7 @@ export class ArmsStep {
     const borrowed = (w && w.pts && w.pts.gun ? w.pts.gun.state : null) ?? (w && w.hunt ? w.hunt.mag : null);
     this.magP = gun && gun.magazine ? gun.magazine : null;
     this.ownsMag = used && borrowed === null && this.magP !== null;
-    this.mag = !used ? null : borrowed ?? (this.magP ? createMagazine(this.magP) : null);
+    this.mag = !used ? null : borrowed ?? (this.magP ? createMagazine((this.evacGuns ? this.evacGuns[this.evacGuns.length - 1]!.magazine : null) ?? this.magP) : null); // jp_03 は 3 隻ぶんで始める（模擬と同じ）
     this.fullCues = w !== null && w.hunt === null && w.pts === null;
     this.flashRevealM = gun ? gun.flashRevealM : 0;
     this.flashHoldS = kit ? kit.aa.flashHoldS : 0;
@@ -162,7 +169,7 @@ export class ArmsStep {
 
   /** 固定ステップの最初（敵の側の最初）: 自分の弾倉の交換（押していなくても 1 回）→ 艦への機銃（駆逐艦の任務だけ）。撃てば閃光 */
   stepShips(w: ArmsWorld, g: ArmsShipGroup | null, dt: number, feelDt: number): void {
-    if (this.ownsMag) magazineTick(this.mag!, this.magP!, feelDt);
+    if (this.ownsMag) magazineTick(this.mag!, this.gunNow(w).magazine ?? this.magP!, feelDt);
     const sg = this.shipGun;
     if (!sg || !g) return;
     sg.step(w, g, w.input.gunHeld, this.canFire(w), this.mag, this.magP, feelDt, dt, this.shipEvents);
@@ -193,7 +200,8 @@ export class ArmsStep {
       t.n = 0;
       if (held && canFire && !busy) fillAaSlots(t, w, this.pose);
       const before = st.rounds;
-      const k = stepAaFire(st, this.gun, this.aaParams, this.mag, this.magP, held, canFire && !busy, w.band, w.boat.state, t, this.aaRng, feelDt);
+      const g = this.gunNow(w);
+      const k = stepAaFire(st, g, this.aaParams, this.mag, g.magazine ?? null, held, canFire && !busy, w.band, w.boat.state, t, this.aaRng, feelDt);
       if (held && canFire && busy) st.status = AA_BUSY;
       const n = st.rounds - before;
       if (n > 0) {
@@ -201,7 +209,7 @@ export class ArmsStep {
         this.flash(w);
         const b = w.boat.state;
         this.fxMuzzle(b.x, b.y);
-        for (let r = 0; r < n; r++) this.fxAaRound(b.x, b.y, t.x[st.target]!, t.y[st.target]!);
+        for (let r = 0; r < n; r++) this.fxAaRound(w.evac ? w.evac.shooter(this.aaRounds - n + r).x : b.x, w.evac ? w.evac.shooter(this.aaRounds - n + r).y : b.y, t.x[st.target]!, t.y[st.target]!); // jp_03 は隊の艇へ順に
       }
       if (k >= 0) this.down(w, k);
       this.aaLingerS = st.status === AA_FIRING ? ARMS_CUE_LINGER_S : Math.max(0, this.aaLingerS - feelDt);
@@ -217,7 +225,8 @@ export class ArmsStep {
     this.downsBy[src] = this.downsBy[src]! + 1;
     if (src === AA_SRC_SEAPLANE) this.seaplaneDowned = true;
     const ds = w.dawn.strike;
-    this.event(src === AA_SRC_DAWN ? EV_DOWN_STRIKE : src === AA_SRC_SORTIE ? EV_DOWN_SORTIE : EV_DOWN_SEAPLANE, src === AA_SRC_DAWN && ds ? liveStrikePlanes(ds.state) : 0);
+    const fl = src === AA_SRC_EVAC && w.evac ? w.evac.plan.flights[w.evac.lastDownFlight] : undefined;
+    this.event(src === AA_SRC_DAWN ? EV_DOWN_STRIKE : src === AA_SRC_SORTIE ? EV_DOWN_SORTIE : src === AA_SRC_EVAC ? EV_DOWN_EVAC : EV_DOWN_SEAPLANE, src === AA_SRC_DAWN && ds ? liveStrikePlanes(ds.state) : fl ? liveStrikePlanes(fl.port.state) : 0);
     this.skipDowned(w);
     this.fxDown(src, this.slots.x[k]!, this.slots.y[k]!, this.pose.headingDeg);
   }
@@ -228,6 +237,11 @@ export class ArmsStep {
     if (ds) skipDownedRuns(ds.state, ds.p);
     const pa = w.patrol;
     if (pa) skipDownedRuns(pa.flight.state, pa.sortie);
+  }
+
+  /** 撃つ砲（jp_03 は隊の撃てる隻数 n の値。ほかの任務は艇の砲＝magazine は magP と同じ物） */
+  private gunNow(w: ArmsWorld): GunBatteryParams {
+    return this.evacGuns && w.evac ? this.evacGuns[Math.max(1, Math.min(this.evacGuns.length, w.evac.gunN)) - 1]! : this.gun!;
   }
 
   /** 新しい道が撃てる: 浮いている・帰投地点の輪の外・座礁していない・終わりの待ちでない */

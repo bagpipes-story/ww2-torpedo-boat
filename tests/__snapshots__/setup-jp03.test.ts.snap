@@ -1,0 +1,4593 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 史実 false seed 1: 世界の数値・今夜の乱数の回数 > jp_03 normal seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 600,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 2,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 史実 false seed 12345: 世界の数値・今夜の乱数の回数 > jp_03 normal seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 600,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 2,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 史実 true seed 1: 世界の数値・今夜の乱数の回数 > jp_03 normal historical seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 780,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 2,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード false 史実 true seed 12345: 世界の数値・今夜の乱数の回数 > jp_03 normal historical seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 780,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 2,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 史実 false seed 1: 世界の数値・今夜の乱数の回数 > jp_03 hard seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 600,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 3,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 史実 false seed 12345: 世界の数値・今夜の乱数の回数 > jp_03 hard seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 600,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 3,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 史実 true seed 1: 世界の数値・今夜の乱数の回数 > jp_03 hard historical seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 780,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 3,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;
+
+exports[`jp_03 の setup の snapshot（v0.6.11 S0 の木） > ハード true 史実 true seed 12345: 世界の数値・今夜の乱数の回数 > jp_03 hard historical seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "jp_03",
+  "type": "evacuate_under_air_raid",
+  "playerBoatId": "jp_t38",
+  "torpedoId": "jp_45cm",
+  "enemyId": "us_carrier_aircraft",
+  "enemyCount": 1,
+  "bounds": {
+   "width": 3200,
+   "height": 1250
+  },
+  "playerStart": {
+   "x": 1450,
+   "y": 1000,
+   "headingDeg": 90
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "none",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": {
+   "side": "south",
+   "landM": 400,
+   "label": "本部半島（運天）"
+  },
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 240,
+  "enemyHitsToSink": null,
+  "moon": "day",
+  "returnPoint": {
+   "x": 1600,
+   "y": 1150,
+   "radiusM": 70,
+   "callMargin": 1.6,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 16,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "unten_air_raid",
+   "dawn_air_strike"
+  ],
+  "enemyAircraft": null,
+  "night": null,
+  "transport": null,
+  "dawnStrike": {
+   "aircraft_id": "us_carrier_aircraft",
+   "count": 4,
+   "count_source": "design (CLAUDE.md §2 の「敵の制空下は 4 機」)",
+   "from_bearing_deg": 70,
+   "escort_target_planes": [],
+   "source": "design (v0.6.11。240 秒の後、操作中の隊が隠れていなければ敵機 4 機が座席だけを追う（seed+19。既存の夜明けの空襲の core）。来る方角は港の空襲と同じ東（第38任務部隊は沖縄の東＝historical。WebSearch の抜粋のみ・本文未読）)"
+  }
+ },
+ "playerStart": {
+  "x": 1450,
+  "y": 1000,
+  "headingDeg": 90
+ },
+ "coastEdgeY": 1250,
+ "mainWeapon": "none",
+ "boatParams": {
+  "speedMaxMps": 14.145999999999999,
+  "speedCruiseMps": 10.288,
+  "speedSilentMps": 3.6007999999999996,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 6.6872,
+  "cruiseMaxMps": 10.288,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1,
+  "decelMps2": 1.4,
+  "turnRateDegS": 26,
+  "lengthM": 18,
+  "beamM": 4.3
+ },
+ "boundsMarginM": 18,
+ "boatHalfLengthM": 9,
+ "boatHalfBeamM": 2.15,
+ "damageParams": {
+  "maxHp": 60,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 1.5,
+  "fireDurationS": 16,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 1500,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 780,
+ "durationS": 240,
+ "fuelCurve": {
+  "capacityGal": 800,
+  "idleGph": 9.411764705882353,
+  "cruiseGph": 94.11764705882354,
+  "fullGph": 200,
+  "cruiseMps": 10.288,
+  "fullMps": 14.145999999999999,
+  "exponent": 2.546461658238462,
+  "galPerMCruise": 0.0025411927342217345,
+  "galPerMFull": 0.003927297861979044
+ },
+ "fuelAllotmentGal": 16,
+ "fuelStartGal": 16,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 7,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": null,
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 0,
+ "torpedoParams": {
+  "speedMps": 18.003999999999998,
+  "rangeM": 3000,
+  "armingM": 100,
+  "jitterDeg": 3,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.05,
+  "erratic": 0.05
+ },
+ "torpedoJitterDeg": 3,
+ "launchOffsetM": 2.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": null,
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "unten_air_raid",
+  "dawn_air_strike"
+ ],
+ "absentHazards": [],
+ "enemyFrom": null,
+ "dawnAir": {
+  "control": "enemy",
+  "confidence": "high",
+  "playAs": "enemy",
+  "shipsAtDawn": "none",
+  "labelJa": "昼の空は敵（第38任務部隊）",
+  "refs": [
+   {
+    "url": "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+    "claim": "1944-10-10、米空母部隊（第38任務部隊）の艦載機が朝から夕方まで沖縄を繰り返し空襲した（十・十空襲）"
+   },
+   {
+    "url": "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+    "claim": "総務省の沖縄県の戦災の記録（1944-10-10 の空襲の被害）"
+   }
+  ],
+  "retireEdge": null,
+  "retireForceJa": "",
+  "fleetGoneClears": false
+ },
+ "airStrike": {
+  "planes": 4,
+  "bombsPerPlane": 2,
+  "flightMps": 308.64,
+  "runRadiusM": 600,
+  "orbitDegPerS": 29.472948981529548,
+  "runS": 1.944012441679627,
+  "spawnM": 3000,
+  "fromBearingDeg": 70,
+  "spawnOffsetsDeg": [
+   -30,
+   -10,
+   10,
+   30
+  ],
+  "waveRotateDeg": 90,
+  "firstRunS": 9,
+  "runGapS": 2.2,
+  "waveRestS": 16,
+  "leaveS": 2.5,
+  "fallFeelS": 1.2771017136282017,
+  "fallGameS": 6.385508568141009,
+  "scatterM": 45.254833995939045,
+  "aimTurnMinDegS": 0.5,
+  "timeScale": 5,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "playerHalfLengthM": 9,
+  "playerHitRadiusM": 27.15,
+  "escortHalfLengthM": 0,
+  "escortHitRadiusM": 0,
+  "boundsW": 3200,
+  "boundsH": 1250,
+  "playerMarginM": 18,
+  "escortMarginM": 0,
+  "escortPlanes": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "poolSize": 2,
+  "nameJa": "米艦載機（F6F 相当）",
+  "fromJa": "東"
+ },
+ "evac": {
+  "params": {
+   "boatId": "jp_t38",
+   "labelJa": "第27魚雷艇隊",
+   "groupSize": 3,
+   "startGroup": 0,
+   "groups": [
+    {
+     "id": "g1",
+     "labelJa": "第1隊",
+     "placeJa": "岸壁・中",
+     "x": 1450,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g2",
+     "labelJa": "第2隊",
+     "placeJa": "岸壁・西",
+     "x": 900,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g3",
+     "labelJa": "第3隊",
+     "placeJa": "岸壁・東",
+     "x": 2100,
+     "y": 1000,
+     "headingDeg": 90
+    },
+    {
+     "id": "g4",
+     "labelJa": "第4隊",
+     "placeJa": "桟橋",
+     "x": 2850,
+     "y": 900,
+     "headingDeg": 0
+    },
+    {
+     "id": "g5",
+     "labelJa": "第5隊",
+     "placeJa": "浮標・西",
+     "x": 500,
+     "y": 550,
+     "headingDeg": 90
+    },
+    {
+     "id": "g6",
+     "labelJa": "第6隊",
+     "placeJa": "浮標・東",
+     "x": 2000,
+     "y": 500,
+     "headingDeg": 90
+    }
+   ],
+   "mooredGapM": 12,
+   "followGapM": 40,
+   "trailStepM": 5,
+   "catchUpGainPerS": 0.08,
+   "headingDeadbandM": 15,
+   "trailLen": 18,
+   "shelterRingM": 70,
+   "hideMaxMps": 1.0288,
+   "haulS": 12,
+   "launchStick": 0.3,
+   "slotAbeamM": 25,
+   "slotArriveM": 5,
+   "shelters": [
+    {
+     "id": "home_cave",
+     "labelJa": "中の壕",
+     "kind": 0,
+     "x": 1600,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "west_cave",
+     "labelJa": "西の壕",
+     "kind": 0,
+     "x": 650,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cave",
+     "labelJa": "東の壕",
+     "kind": 0,
+     "x": 2550,
+     "y": 1150,
+     "slots": 3,
+     "exitHeadingDeg": 0
+    },
+    {
+     "id": "east_cover",
+     "labelJa": "屋我地の陰（東）",
+     "kind": 1,
+     "x": 2250,
+     "y": 100,
+     "slots": 3,
+     "exitHeadingDeg": 180
+    }
+   ],
+   "homeShelter": 0,
+   "castOffMinS": 5,
+   "castOffMaxS": 20,
+   "pickS": 5,
+   "turnMaxDeg": 120,
+   "fullP": 0.5,
+   "wallM": 200,
+   "wallTurnDeg": 45,
+   "lookM": 400,
+   "foundReactS": 3,
+   "dodgeSuccess": 0.2,
+   "dodgeTurnDeg": 90,
+   "dodgeHoldS": 2,
+   "flashReveal": false
+  },
+  "raid": {
+   "waves": [
+    {
+     "announceS": 15,
+     "planes": 2
+    },
+    {
+     "announceS": 70,
+     "planes": 3
+    },
+    {
+     "announceS": 125,
+     "planes": 3
+    },
+    {
+     "announceS": 180,
+     "planes": 4
+    }
+   ],
+   "flights": 3,
+   "announceLeadS": 10,
+   "fromBearingDeg": 70,
+   "flightOffsetsDeg": [
+    -30,
+    0,
+    30
+   ],
+   "spawnM": 2500,
+   "flightsPerGroupMax": 1,
+   "bearingFixDeg": [
+    30,
+    20,
+    10,
+    0
+   ],
+   "coverRevealChance": 0.5,
+   "passesMax": 2,
+   "survivorQuota": 6,
+   "survivorsTotal": 18,
+   "historicalSurvivors": 5,
+   "northShoreLabelJa": "屋我地島",
+   "centerX": 1600,
+   "centerY": 625
+  },
+  "sorties": [
+   {
+    "planes": 2,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 3,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   },
+   {
+    "planes": 4,
+    "bombsPerPlane": 2,
+    "flightMps": 308.64,
+    "runRadiusM": 500,
+    "orbitDegPerS": 35.36753877783545,
+    "runS": 1.6200103680663558,
+    "spawnM": 2500,
+    "fromBearingDeg": 70,
+    "spawnOffsetsDeg": [
+     -30,
+     -10,
+     10,
+     30
+    ],
+    "waveRotateDeg": 0,
+    "firstRunS": 6.5,
+    "runGapS": 1.7,
+    "waveRestS": 16,
+    "leaveS": 2.5,
+    "fallFeelS": 1.2771017136282017,
+    "fallGameS": 6.385508568141009,
+    "scatterM": 45.254833995939045,
+    "aimTurnMinDegS": 0.5,
+    "timeScale": 5,
+    "bombHit": {
+     "damage": 35,
+     "fireChance": 0.3,
+     "engineDamageChance": 0.2
+    },
+    "playerHalfLengthM": 9,
+    "playerHitRadiusM": 27.15,
+    "escortHalfLengthM": 0,
+    "escortHitRadiusM": 0,
+    "boundsW": 3200,
+    "boundsH": 1250,
+    "playerMarginM": 18,
+    "escortMarginM": 0,
+    "escortPlanes": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "poolSize": 2,
+    "nameJa": "米艦載機（F6F 相当）",
+    "fromJa": "東"
+   }
+  ],
+  "fuelFreeUntilS": 240,
+  "dayStart": true
+ }
+}"
+`;

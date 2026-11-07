@@ -1,7 +1,7 @@
 // 揚陸の仕組み（v0.6.9。jp_04）は他の任務で鍵ごと出ない（spec-v069 §9 の landing-neutral。engine・gunboat・patrolAir の optional part の作法）。
 // S1: WorldSetup（ノーマル・ハード・史実モード・今夜の揺らぎ）に "landing" が無い。S5b: テレメトリの landing は鍵がいつもあり enabled false（世界の揚陸は null＝buildLanding の
 // 最初の枝。tests/landing-step-order）、既存のテレメトリの組（tests/pt-ui-kit・dawn-lines・dawn-clock）の 2 行目のモードは 35・36・37 にならない。2 行目の鍵（landingKey が 0）は S6a で足す。
-// v0.6.10 S1: 味方の駆逐艦 卯月（WorldSetup.allyDestroyer・v0_1_prototype.ally_destroyer）も jp_04 だけ（他の 7 任務の setup の JSON に "allyDestroyer" が無い）。
+// v0.6.10 S1: 味方の駆逐艦 卯月（WorldSetup.allyDestroyer・v0_1_prototype.ally_destroyer）も jp_04 だけ（他の 7 任務の setup の JSON に "allyDestroyer" が無い。v0.6.11 S0 から jp_03 を足して 8 任務）。
 // R14（S6a-fix）: 輪の中の待ち（A5）・輸送船が射線に入る（A1）も揚陸の任務だけ。終わり方（systems/mission-end の landingHold）は landing の無い世界で偽＝decideMissionEnd のまま。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -17,10 +17,10 @@ import { missionMode } from '../src/ui/mission-mode';
 import { tele } from './pt-ui-kit';
 
 type Rec = Record<string, unknown>;
-const OTHERS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_05', 'jp_06'] as const;
+const OTHERS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）
 
-describe('landing-neutral（他の 7 任務）', () => {
-  it('v0_1_prototype を持つのは 7 任務と jp_04 で、landing の block は jp_04 だけ', () => {
+describe('landing-neutral（他の 8 任務）', () => {
+  it('v0_1_prototype を持つのは 8 任務（v0.6.11 S0 の jp_03 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
     const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);
@@ -55,7 +55,7 @@ describe('landing-neutral（他の 7 任務）', () => {
 /** コメントを除いたソース */
 const code = (p: string): string => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
-describe('landing-neutral のテレメトリ（S5b。他の 7 任務）', () => {
+describe('landing-neutral のテレメトリ（S5b。他の 8 任務）', () => {
   it('配線: 揚陸の世界は setup.landing の無い任務で null（buildLanding の最初の枝）、出発時のテレメトリはいつも landing の鍵を持ち、毎フレームの書き換えは null の世界で何もしない', () => {
     expect(code('systems/world-landing.ts')).toContain('if (!s.landing || !pts) return null;');
     expect(code('systems/telemetry-create.ts')).toContain('landing: initLandingTelemetry(w),');

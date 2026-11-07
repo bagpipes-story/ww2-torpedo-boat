@@ -5,6 +5,8 @@
 // hide なら大発が岸へ。どちらもラッチの 1 回だけ（enemy.withdraw）。stay・none は何もしない。
 // §7: 確保は constructor だけ。毎ステップ・毎フレームは読み書きだけ。
 // strike は構造の型 DawnStrike で持つ（AirStrikeFlight を import すると game-config → screen-fit の DOM がテストの node 型検査に入るため）。
+// v0.6.11 S4（jp_03。spec-v0611-r2 §3.8・§10.3）: day_start の任務は海を最初から昼の色に（段を最後に固定）。ラッチの「中」は homeAtLatch（systems/world-evac が
+// core/evac-seat の evacSeatHome(…, true) を置く＝入っている・上げている途中も中。r2 L15）。どちらも evac の無い任務では今のまま。
 import type Phaser from 'phaser';
 import { SEA_LIGHT_POST_S, SEA_LIGHT_PRE_S, SEA_LIGHT_STEPS } from '../config/dawn-config';
 import type { AirStrikeParams, AirStrikeState } from '../core/air-strike';
@@ -62,6 +64,12 @@ export class WorldDawn {
   readonly retireJa: string;
   private readonly durationS: number;
   private readonly seaLight: SeaLight;
+  /** 海を最初から昼に（setup.evac.dayStart。jp_03） */
+  private readonly dayStart: boolean;
+  /** ラッチの瞬間の「中」（null なら atHome。jp_03 は world-evac が置く） */
+  homeAtLatch: (() => boolean) | null = null;
+  /** 決着のラッチが立つか（null なら dawnReached だけ。jp_03 は world-evac が core/evac-early の evacSettleDue＝240 秒か早い決着（v0.6.11 IP1 の U8）を置く） */
+  settleDue: ((stepTimeS: number) => boolean) | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -76,6 +84,7 @@ export class WorldDawn {
     this.retireHeadingDeg = edge ? retireHeadingDeg(edge, setup.night.mirrored) : NaN;
     this.retireJa = edge ? retireDirJa(edge, setup.night.mirrored) : '';
     this.seaLight = new SeaLight(scene.cameras.main);
+    this.dayStart = setup.evac ? setup.evac.dayStart : false;
   }
 
   /**
@@ -83,9 +92,9 @@ export class WorldDawn {
    * 自艇が沈没中か座礁中ならラッチしない（どちらも任務が終わる途中。夜明け後の終わり・空襲の 1 行・夜明けの帯にしない）
    */
   latch(w: DawnWorldView): void {
-    if (this.reached || w.boat.sinking || w.grounded || !dawnReached(this.durationS, w.stepTimeS)) return;
+    if (this.reached || w.boat.sinking || w.grounded || !(this.settleDue ? this.settleDue(w.stepTimeS) : dawnReached(this.durationS, w.stepTimeS))) return;
     this.reached = true;
-    this.caughtOutside = !w.atHome;
+    this.caughtOutside = !(this.homeAtLatch ? this.homeAtLatch() : w.atHome);
     this.strike?.start(w.boat.state);
     // 艦はこの後の同じステップ（destroyer-step・barge-hunt）から退く。retire で縁が無い（遊べない任務の形）なら退かない
     if ((this.ships === 'retire' && !Number.isNaN(this.retireHeadingDeg)) || this.ships === 'hide') w.enemy.withdraw(this.retireHeadingDeg);
@@ -101,7 +110,7 @@ export class WorldDawn {
 
   /** 毎フレーム: 海の明るさ（段が変わったときだけ背景色）と、空襲の機体・爆弾・着弾点の輪・爆撃進路の線 */
   updateVisuals(w: DawnWorldView): void {
-    this.seaLight.update(seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS));
+    this.seaLight.update(this.dayStart ? SEA_LIGHT_STEPS : seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS));
     this.strike?.updateVisuals(w.boat.state, w.escort ? w.escort.state.boat : null);
   }
 
