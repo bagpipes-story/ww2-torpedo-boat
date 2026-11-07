@@ -1,0 +1,526 @@
+diff --git a/scripts/evac-sim.ts b/scripts/evac-sim.ts
+index 42bbf4b..d5e0b20 100644
+--- a/scripts/evac-sim.ts
++++ b/scripts/evac-sim.ts
+@@ -3,7 +3,8 @@
+ // 環境変数: N（1 組の回。既定 400）・SEED（最初の組の最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400・1001〜1400）・HARD=1・POL（, 区切り。既定は spec §12.3 の 10 行）・
+ //   つまみ（spec §12.5）DODGE・PICK・HAUL・DROP（外す隠れ場所の id を , 区切り）・COVER・COVERH・LEAD・FIRST・GAP・FPG・FOLLOW・FULLP、
+ //   S3b（U7）の PASSES・PASSESH（evac_raid.passes_max・hard.evac_passes_max。data 2。2 以上の時だけ表に「回数/編隊・2 回 %・波ごとの 2 回 %」の列を足す＝PASSES=1 なら表の列は S3 と同じ。
+-//   「見失(前)」などの終わり方は S3b から 1 回ごと（予告し直して閉じた回も数える＝core/evac-repass の closed）
++//   「見失(前)」などの終わり方は S3b から 1 回ごと（予告し直して閉じた回も数える＝core/evac-repass の closed）。
++//   IP1（U8）から「早い決着%(秒)」＝全艇が隠れて 240 秒を待たずに決着した回の % とその秒の中央値（core/evac-early）
+ // 実行: npx esbuild scripts/evac-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/evac-sim.mjs && TABLE=2 node <scratch>/evac-sim.mjs
+ import { gameData } from '../src/config/game-data';
+ import { runEvacTrial, type EvacTrial } from '../src/core/evac-sim';
+@@ -67,7 +68,7 @@ if (env('PERF') === '1') {
+   const all = new Map<EvacPolicy, EvacTrial[]>();
+   for (let b = 0; b < blocks; b++) {
+     console.log(`-- seed ${seeds(b)}〜${seeds(b) + n - 1}`);
+-    console.log(`${'遊び方'.padEnd(13)}達成    帰投    沈没   漂流  外で  残存 中央(p10-p90) 決着 18隻  埋まる%(秒)   壕満  来た 見失(前) 目標なし 切替  交代 沈A/B      段A%  隻/編隊 撃墜  §2命中 引く✗${rep ? '  回数/編隊 2回%   波ごとの2回%' : ''}`);
++    console.log(`${'遊び方'.padEnd(13)}達成    帰投    沈没   漂流  外で  残存 中央(p10-p90) 決着 18隻  埋まる%(秒)   壕満  来た 見失(前) 目標なし 切替  交代 沈A/B      段A%  隻/編隊 撃墜  §2命中 引く✗ 早い決着%(秒)${rep ? '  回数/編隊 2回%   波ごとの2回%' : ''}`);
+     for (const pol of pols) {
+       const { cell: c, trials } = cellOf(s, pol, seeds(b), n);
+       cells.set(pol, [...(cells.get(pol) ?? []), c]);
+@@ -76,7 +77,7 @@ if (env('PERF') === '1') {
+         pol.padEnd(14) + pct(c.achievedPct).padEnd(8) + pct(c.homePct).padEnd(8) + pct(c.sunkPct).padEnd(7) + pct(c.adriftPct).padEnd(6) + pct(c.caughtPct).padEnd(7) +
+           `${fx(c.medSurv, 0)}(${fx(c.p10Surv, 0)}-${fx(c.p90Surv, 0)})`.padEnd(12) + fx(c.medSurvSettle, 0).padEnd(5) + pct(c.all18Pct).padEnd(6) + `${pct(c.fillPct)}(${fx(c.medFillS, 0)})`.padEnd(14) +
+           pct(c.cavesFullPct).padEnd(7) + fx(c.came, 2).padEnd(6) + `${fx(c.lostMid, 2)}(${fx(c.lostEarly, 2)})`.padEnd(11) + fx(c.noTarget, 2).padEnd(8) + fx(c.switches, 1).padEnd(6) + fx(c.promotions, 2).padEnd(5) +
+-          `${fx(c.sunkA, 2)}/${fx(c.sunkB, 2)}`.padEnd(11) + pct(c.tierAPct).padEnd(7) + fx(c.lossPerFlight, 2).padEnd(8) + fx(c.downs, 2).padEnd(6) + fx(c.dawnHits, 2).padEnd(7) + String(c.drawBad) +
++          `${fx(c.sunkA, 2)}/${fx(c.sunkB, 2)}`.padEnd(11) + pct(c.tierAPct).padEnd(7) + fx(c.lossPerFlight, 2).padEnd(8) + fx(c.downs, 2).padEnd(6) + fx(c.dawnHits, 2).padEnd(7) + String(c.drawBad).padEnd(5) + `${pct(c.earlyPct)}(${fx(c.medEarlyS, 0)})`.padEnd(13) +
+           (rep ? `  ${fx(c.passesPerFlight, 2).padEnd(9)}${pct(c.againPct).padEnd(8)}${c.againByWavePct.map(pct).join('/')}` : ''),
+       );
+     }
+diff --git a/src/core/evac-air.ts b/src/core/evac-air.ts
+index 79dbd61..a14eb1b 100644
+--- a/src/core/evac-air.ts
++++ b/src/core/evac-air.ts
+@@ -1,13 +1,13 @@
+ // 空襲下の退避（v0.6.11。jp_03。spec-v0611-r2 §8 の段 5）の 1 固定ステップの空襲（世界の evac.stepAir も模擬もこれを呼ぶ＝順が 1 つ）:
+-// 撃墜の後の順番を飛ばす（skipDownedRuns。r2 H6）→ 陰を見つける閃光（flash_reveal の時だけ）→ 決着のラッチ（dawnReached と同じ式）→ 予告（陰の発見 → 狙い）→
++// 撃墜の後の順番を飛ばす（skipDownedRuns。r2 H6）→ 陰を見つける閃光（flash_reveal の時だけ）→ 決着のラッチ（dawnReached と同じ式か、前のステップの早い決着＝core/evac-early の evacSettleDue）→ 予告（陰の発見 → 狙い）→
+ // 始まる編隊の restartAirSortie（始めたステップに回数と撃墜の落とし直し＝core/evac-repass）→ 偽の view を書いて（済みになったステップはもう一度来るか。passes_max）
+ // 動く編隊を番号順に step（投下ごとに seed+31 を 1 回・着弾は core/evac-hits の走査。隊長艇の沈没は
+-// evacSinkLeader がその場で交代・付け替え・座席の振り替えまで）→ 操作していない隊長艇の火災 → 「狙われている」（r2 M13）→ 座席の被害を記録へ。
++// evacSinkLeader がその場で交代・付け替え・座席の振り替えまで）→ 操作していない隊長艇の火災 → 「狙われている」（r2 M13）→ 座席の被害を記録へ → 早い決着の確かめ（IP1 の U8）。
+ // 止まった編隊の絵を隠す 1 回は世界のフレームの絵（evacDrawPass。r2 M2）。Phaser 非依存・確保しない（作るのは createEvacAirStep・createEvacAirCore だけ）。
+ import type { AirStrikeParams } from './air-strike';
+ import { skipDownedRuns } from './air-down';
+ import type { BoatState } from './boat-motion';
+-import { dawnReached } from './dawn-air';
++import { evacEarlyCheck, evacSettleDue } from './evac-early';
+ import { EVAC_DODGE_SEED_OFFSET, G_FOUND, G_HIDDEN, SHELTER_COVER } from './evac-data';
+ import { evacOnRelease } from './evac-follow';
+ import { evacCoreFlight, evacImpact, type EvacAir, type EvacAirWorld } from './evac-hits';
+@@ -96,7 +96,7 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
+   // 撃墜の後の順番（撃墜が無ければ何もしない。凍結の core の「順番の機が旋回に着くまで待つ」で止まらない。r2 H6）
+   for (let i = 0; i < fls.length; i++) if (fls[i]!.phase === EF_FLYING) skipDownedRuns(fls[i]!.port.state, fls[i]!.p);
+   if (sq.p.flashReveal && flashM > 0 && !sq.settled) plan.evFound |= evacFlashReveal(sq, seat.state.x, seat.state.y, flashM);
+-  if (!sq.settled && dawnReached(sq.cfg.durationS, stepTimeS)) {
++  if (!sq.settled && evacSettleDue(sq, stepTimeS)) {
+     evacSettle(sq);
+     plan.evSettle = true;
+   }
+@@ -121,4 +121,6 @@ export function stepEvacAir(a: EvacAirStep, stepTimeS: number, feelDt: number, r
+   evacStepFires(sq, seat, realDt, stepTimeS, a.hooks);
+   evacPlanTargeted(plan);
+   evacStoreSeatDamage(sq, seat);
++  // 全艇が隠れて空が空いた（v0.6.11 IP1 の U8）: 次のステップに 240 秒を待たずに決着する（core/evac-early）
++  evacEarlyCheck(plan, stepTimeS);
+ }
+diff --git a/src/core/evac-result.ts b/src/core/evac-result.ts
+index a31003d..7fb78b0 100644
+--- a/src/core/evac-result.ts
++++ b/src/core/evac-result.ts
+@@ -22,10 +22,12 @@ export interface EvacSettleSnap {
+   shelter: number;
+   /** 決着の時の残存（第 1 次の空襲が去って確定した数。2 行目の「残存 8 で確定」と同じ。決着の前に終われば NaN） */
+   survivors: number;
++  /** 全艇が隠れて 240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early） */
++  early: boolean;
+ }
+ 
+ export function createEvacSettleSnap(): EvacSettleSnap {
+-  return { group: -1, phase: -1, shelter: -1, survivors: NaN };
++  return { group: -1, phase: -1, shelter: -1, survivors: NaN, early: false };
+ }
+ 
+ /** Result の材料（MissionResult.evac。jp_03 だけ） */
+@@ -63,6 +65,8 @@ export interface EvacResult {
+   settleGroupJa: string;
+   settleShelterJa: string;
+   settleSurvivors: number;
++  /** 全艇が隠れて空襲を待たずに決着した（v0.6.11 IP1 の U8。時の行は「全艇が隠れた ・ 空襲を待たずに退避完了（残り M:SS）」） */
++  settleEarly: boolean;
+ }
+ 
+ /** 読む物（systems/world-evac の WorldEvac がそのまま満たす。tests は core の部品で組む） */
+@@ -139,6 +143,7 @@ export function evacResultOf(ev: EvacResultSource, seatAfloat: boolean, chaseDow
+     settleGroupJa: s.group >= 0 ? sq.p.groups[s.group]!.labelJa : '',
+     settleShelterJa: place !== EVR_NONE && place !== EVR_OUTSIDE && s.shelter >= 0 ? shelters[s.shelter]!.labelJa : '',
+     settleSurvivors: s.survivors,
++    settleEarly: s.early && place !== EVR_NONE,
+   };
+ }
+ 
+diff --git a/src/core/evac-shelter.ts b/src/core/evac-shelter.ts
+index 385bc81..2cc742c 100644
+--- a/src/core/evac-shelter.ts
++++ b/src/core/evac-shelter.ts
+@@ -222,3 +222,18 @@ export function evacStepShelters(sq: EvacSquadron, realDt: number): void {
+     if (g.foundCover >= 0 && g.phase !== G_FOUND && !evacInRing(sq, g.foundCover, lead.state.x, lead.state.y)) g.foundCover = -1;
+   }
+ }
++
++/**
++ * レールの上の艇の進み（v0.6.11 IP1 の U9。地図の上の札・HUD の 2 行目・レールの上の艇の絵）: 0〜1（上げていなければ NaN）と整数の %（0〜99。上げていなければ −1）。
++ * 進みは haul_s の残りから（core の値は変えない＝絵と文だけ）
++ */
++export function evacHaulProgress(g: EvacGroup, haulS: number): number {
++  if (g.phase !== G_HAULING || g.hauling < 0 || !(haulS > 0)) return NaN;
++  const k = 1 - g.haulLeftS / haulS;
++  return k < 0 ? 0 : k > 1 ? 1 : k;
++}
++
++export function evacHaulPct(g: EvacGroup, haulS: number): number {
++  const k = evacHaulProgress(g, haulS);
++  return Number.isNaN(k) ? -1 : Math.min(99, Math.floor(k * 100));
++}
+diff --git a/src/core/evac-sim-cell.ts b/src/core/evac-sim-cell.ts
+index eafb878..ae95398 100644
+--- a/src/core/evac-sim-cell.ts
++++ b/src/core/evac-sim-cell.ts
+@@ -17,6 +17,8 @@ export interface EvacTrial {
+   /** 決着の時に操作中の隊が外だった（入っている・上げている途中は中＝r2 L15）か、その後に外で終わる途中 */
+   caughtOutside: boolean;
+   timeS: number;
++  /** 全艇が隠れて 240 秒を待たずに決着した時計の秒（v0.6.11 IP1 の U8。core/evac-early。無ければ NaN） */
++  earlyS: number;
+   /** 枠が全部埋まった時計の秒（埋まらなければ NaN。M10） */
+   slotsFullS: number;
+   /** 決着の時に 3 つの壕に 3 隻ずつ上げ切った（構造の下限。r2 H1 (5)）・上げ終えた艇の数・隠れた隊の艇の数 */
+@@ -73,7 +75,7 @@ export interface EvacTrial {
+ 
+ export function createEvacTrial(): EvacTrial {
+   return {
+-    end: '', achieved: false, survivors: 0, survivorsAtSettle: NaN, caughtOutside: false, timeS: 0, slotsFullS: NaN, cavesFull: false, upAtSettle: 0, hiddenAtSettle: 0,
++    end: '', achieved: false, survivors: 0, survivorsAtSettle: NaN, caughtOutside: false, timeS: 0, earlyS: NaN, slotsFullS: NaN, cavesFull: false, upAtSettle: 0, hiddenAtSettle: 0,
+     announced: 0, came: 0, lostMid: 0, lostEarly: 0, noTarget: 0, gone: 0, settledFl: 0, done: 0, tierA: 0, tierB: 0, switches: 0, taps: 0, promotions: 0, autoSwitches: 0,
+     sunkA: 0, sunkB: 0, evacReleases: 0, impacts: 0, boatHits: 0, seatHits: 0, dawnBombs: 0, dawnHits: 0, downs: 0, downsAll: 0, rounds: 0, extinguished: 0,
+     draws29: 0, draws30: 0, draws31: 0, drawsFlights: 0, exp29: 0, exp30: 0, exp31: 0, afloatControl: 0,
+@@ -143,6 +145,7 @@ export function finishEvacTrial(o: EvacTrial, sq: EvacSquadron, plan: EvacPlan,
+   // pick の境（k × pick_s < 決着の秒）のうち終わりまでに来たもの（18 隻が決着の前に沈めば途中で終わる）
+   o.exp30 = sq.groups.length * (1 + 2 * Math.min(Math.ceil(durationS / pickS) - 1, Math.floor(o.timeS / pickS + 1e-9)));
+   o.exp31 = plan.releases;
++  o.earlyS = sq.earlyS;
+   o.achieved = o.end === 'home' && o.survivors >= quota;
+ }
+ 
+@@ -166,6 +169,9 @@ export interface EvacCell {
+   fillPct: number;
+   medFillS: number;
+   cavesFullPct: number;
++  /** 全艇が隠れて 240 秒を待たずに決着した回の %・その秒の中央値（v0.6.11 IP1 の U8） */
++  earlyPct: number;
++  medEarlyS: number;
+   /** 1 回の平均: 来た編隊・途中で見失った・始める前に見失った・目標なし・切替・押した回数・交代・沈没（段 A／B）・撃墜・発・決着の後の §2 の命中 */
+   came: number;
+   lostMid: number;
+@@ -203,6 +209,7 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
+   const mean = (f: (t: EvacTrial) => number): number => ts.reduce((a, t) => a + f(t), 0) / n;
+   const surv = ts.map((t) => t.survivors);
+   const fills = ts.filter((t) => !Number.isNaN(t.slotsFullS)).map((t) => t.slotsFullS);
++  const earlies = ts.filter((t) => !Number.isNaN(t.earlyS)).map((t) => t.earlyS);
+   const came = ts.reduce((a, t) => a + t.came, 0);
+   const lost = ts.reduce((a, t) => a + (18 - (Number.isNaN(t.survivorsAtSettle) ? t.survivors : t.survivorsAtSettle)), 0);
+   const tA = ts.reduce((a, t) => a + t.tierA, 0);
+@@ -230,6 +237,8 @@ export function evacCellOf(ts: readonly EvacTrial[]): EvacCell {
+     fillPct: (100 * fills.length) / n,
+     medFillS: quantile(fills, 0.5),
+     cavesFullPct: pct((t) => t.cavesFull),
++    earlyPct: (100 * earlies.length) / n,
++    medEarlyS: quantile(earlies, 0.5),
+     came: came / n,
+     lostMid: mean((t) => t.lostMid),
+     lostEarly: mean((t) => t.lostEarly),
+diff --git a/src/core/evac-sim.ts b/src/core/evac-sim.ts
+index 1b0f9b7..820cf62 100644
+--- a/src/core/evac-sim.ts
++++ b/src/core/evac-sim.ts
+@@ -1,6 +1,6 @@
+ // 空襲下の退避の模擬（v0.6.11 S3。jp_03「運天港・空襲下の退避」。spec-v0611-r2 §8・§12）。Phaser 非依存。ゲームは使わない（tests/evac-sim-*・scripts/evac-sim.ts）。
+ // 1 回: 第1隊を操る座席から台本（core/evac-sim-policy の人の行）で 6 つの隊を隠し、240 秒の決着の後は帰投・沈没・漂流・打ち切りまで。世界と同じ順（spec §8。S4 の世界はこれに合わせる）:
+-// フレームの入力（台本 → evacFrameInput の［切替］と latch・消火の長押し）→ 固定ステップ: 時計 → 夜明けのラッチ（決着のラッチと同じ式。中かどうかはラッチの点の evacSeatHome(…, true)）→
++// フレームの入力（台本 → evacFrameInput の［切替］と latch・消火の長押し）→ 固定ステップ: 時計 → 夜明けのラッチ（決着のラッチと同じ式＝240 秒か前のステップの早い決着（IP1 の U8。core/evac-early）。中かどうかはラッチの点の evacSeatHome(…, true)）→
+ // 乗員の倍率 → 座席の運動（evacSeatCommand・燃料は fuel_free_until_s から）→ stepEvacBoats → 帰投（evacSeatHome）→ 帯 → 対空（core/evac-sim-aa。seed+24）→
+ // 座席の火災（沈めば evacSinkLeader）→ stepEvacAir（予告・狙い・編隊・着弾・操作していない隊長艇の火災）→ §2 の 4 機（seed+19。座席だけを狙う）。
+ // 命中スローは無い（決着の前の jp_03 に命中スローは無い＝r2 M1。決着の後の §2 の 4 機の撃墜の爆発もスローなし＝S4 の evac の世界の onSunk）。
+@@ -10,9 +10,9 @@ import { AA_SEED_OFFSET, type AntiAircraftParams } from './aa-fire';
+ import { AIR_STRIKE_SEED_OFFSET, AS_EV_IMPACT, AS_EV_RELEASE, createAirStrike, startAirStrike, stepAirStrike, type AirStrikeCheck, type AirStrikeParams } from './air-strike';
+ import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type SeaBounds } from './boat-motion';
+ import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor, type CrewEffects, type CrewParams } from './crew';
+-import { dawnReached } from './dawn-air';
+ import { createEvacAirCore, stepEvacAir } from './evac-air';
+ import { stepEvacBoats } from './evac-boats';
++import { evacSettleDue } from './evac-early';
+ import { EVAC_AI_SEED_OFFSET, EVAC_TIME_EPS_S, G_UNDERWAY } from './evac-data';
+ import type { EvacAirWorld } from './evac-hits';
+ import type { EvacParams, EvacRaidParams } from './evac-params';
+@@ -150,7 +150,7 @@ export function runEvacTrial(s: EvacSimSetup, policy: EvacPolicy, seed: number,
+     m.t += realDt;
+     const t = m.t;
+     latchStep = false;
+-    if (!latched && !m.sinking && dawnReached(s.durationS, t)) {
++    if (!latched && !m.sinking && evacSettleDue(sq, t)) {
+       latched = true;
+       latchStep = true;
+       out.caughtOutside = !evacSeatHome(sq, seat, true);
+diff --git a/src/core/evac-squadron.ts b/src/core/evac-squadron.ts
+index b84c87f..0dfcb52 100644
+--- a/src/core/evac-squadron.ts
++++ b/src/core/evac-squadron.ts
+@@ -101,6 +101,11 @@ export interface EvacSquadron {
+   stickOut: boolean;
+   /** 決着（240 秒）の後（残存は確定・切替なし・枠を数えない） */
+   settled: boolean;
++  /**
++   * 全艇が隠れて敵機が誰も捕まえられなくなった時計の秒（v0.6.11 IP1 の U8。core/evac-early。まだなら NaN）。次のステップで 240 秒を待たずに決着する
++   * （夜明けのラッチも同じステップ＝世界の WorldDawn と模擬が evacSettleDue で読む）
++   */
++  earlyS: number;
+   /** 次の pick の時計の秒（dawnReached と同じ形。r2 M13） */
+   nextPickS: number;
+   /** HUD の札（EVAC_HINT_*）とその隠れ場所（毎ステップ書き直す） */
+@@ -150,7 +155,7 @@ export function createEvacSquadron(cfg: EvacSquadronConfig, aiRng: SeededRng): E
+   }
+   return {
+     cfg, p, groups, boats, shelterUsed: new Int32Array(p.shelters.length), targeted: new Uint8Array(groups.length), order: new Int32Array(groups.length), orderLen: 0,
+-    control: p.startGroup, latch: SW_FREE, stickOut: false, settled: false, nextPickS: p.pickS, hint: EVAC_HINT_NONE, hintShelter: -1, switches: 0, promotions: 0, autoSwitches: 0,
++    control: p.startGroup, latch: SW_FREE, stickOut: false, settled: false, earlyS: NaN, nextPickS: p.pickS, hint: EVAC_HINT_NONE, hintShelter: -1, switches: 0, promotions: 0, autoSwitches: 0,
+   };
+ }
+ 
+diff --git a/src/core/evac-telemetry.ts b/src/core/evac-telemetry.ts
+index 0e51660..de248de 100644
+--- a/src/core/evac-telemetry.ts
++++ b/src/core/evac-telemetry.ts
+@@ -134,6 +134,9 @@ export interface EvacTelemetry {
+   /** 札の隠れ場所の空き枠（「満杯（空き 1 ・ …）」） */
+   hintFree: number;
+   settled: boolean;
++  /** 全艇が隠れて 240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early）・レールの上の艇の進み（整数の %。上げていなければ −1。IP1 の U9） */
++  early: boolean;
++  haulPct: number;
+   /** 残存（18 中・座席を含む）・隠れている艇（上げ終えた艇と隠れた隊の艇）・操作中の隊の 3 隻の HP（座席は座席の HP。沈んだ艇は −1） */
+   survivors: number;
+   hiddenBoats: number;
+@@ -188,7 +191,7 @@ export interface EvacTelemetry {
+ export function createEvacTelemetry(groups = 0): EvacTelemetry {
+   return {
+     enabled: false, groupLabels: [], shelterLabels: [], shelterCover: [], total: 0, quota: 0, historical: 0, durationS: 0, leadS: 0, fromJa: '', dawnPlanes: 0,
+-    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false,
++    control: 0, latch: 0, phase: 0, shelter: -1, afloat: 0, upCount: 0, hauling: false, hint: 0, hintShelter: -1, hintFree: 0, settled: false, early: false, haulPct: -1,
+     survivors: 0, hiddenBoats: 0, hp: new Float64Array(3), nextWaveS: NaN, leftS: 0, nextSwitch: -1, seatSeq: 0, takeHold: false,
+     near: -1, nearFree: 0, nearEdgeM: NaN, nearDx: NaN, nearDy: NaN,
+     annKind: EVA_NONE, annSeq: 0, annWave: -1, annPlanes: 0, annFlights: 0, annTargets: new Int32Array(EVAC_ANN_MAX), annTargetPlanes: new Int32Array(EVAC_ANN_MAX), annCount: 0, annNoTarget: 0, annLost: 0,
+diff --git a/src/systems/evac-telemetry.ts b/src/systems/evac-telemetry.ts
+index c313e9e..474c5f7 100644
+--- a/src/systems/evac-telemetry.ts
++++ b/src/systems/evac-telemetry.ts
+@@ -9,9 +9,11 @@ import type { BoatState } from '../core/boat-motion';
+ import { bearingJa } from '../core/briefing';
+ import { EV_DOWN_EVAC } from '../core/arms-cue';
+ import { EVAC_EVENT_SHOW_S, EVAC_SETTLE_SHOW_S, EVAC_TAKE_HOLD_S } from '../config/evac-config';
++import { evacSettledEarly } from '../core/evac-early';
+ import { G_ENTERING, G_GONE, G_HAULING, G_HIDDEN, SHELTER_COVER } from '../core/evac-data';
+ import { EF_ANNOUNCED, EO_NO_TARGET, evacFlightLive, type EvacFlight } from '../core/evac-plan';
+ import { evacNextSwitch } from '../core/evac-seat';
++import { evacHaulPct } from '../core/evac-shelter';
+ import { evacAfloat, evacLeader, evacSurvivors } from '../core/evac-squadron';
+ import {
+   EVA_NONE, EVA_REPASS, EVA_WAVE, EVAC_ANN_MAX, EVE_DOWN, EVE_FOUND, EVE_GUN, EVE_HIDDEN, EVE_LOST, EVE_NONE, EVE_SETTLE, EVE_SINK, clearEvacFeed, createEvacTelemetry, type EvacTelemetry,
+@@ -150,6 +152,8 @@ export function refreshEvacTelemetry(t: EvacTelemetry, w: EvacTelemetryWorld): v
+   t.hintFree = sq.hintShelter >= 0 ? sq.p.shelters[sq.hintShelter]!.slots - sq.shelterUsed[sq.hintShelter]! : 0;
+   t.settled = sq.settled;
+   t.hauling = g.phase === G_HAULING && g.hauling >= 0;
++  t.haulPct = evacHaulPct(g, sq.p.haulS);
++  t.early = evacSettledEarly(sq);
+   let up = 0;
+   for (let k = 0; k < t.hp.length; k++) {
+     const b = g.boats[k];
+diff --git a/src/systems/world-dawn.ts b/src/systems/world-dawn.ts
+index b54eff3..a290f2b 100644
+--- a/src/systems/world-dawn.ts
++++ b/src/systems/world-dawn.ts
+@@ -68,6 +68,8 @@ export class WorldDawn {
+   private readonly dayStart: boolean;
+   /** ラッチの瞬間の「中」（null なら atHome。jp_03 は world-evac が置く） */
+   homeAtLatch: (() => boolean) | null = null;
++  /** 決着のラッチが立つか（null なら dawnReached だけ。jp_03 は world-evac が core/evac-early の evacSettleDue＝240 秒か早い決着（v0.6.11 IP1 の U8）を置く） */
++  settleDue: ((stepTimeS: number) => boolean) | null = null;
+ 
+   constructor(
+     scene: Phaser.Scene,
+@@ -90,7 +92,7 @@ export class WorldDawn {
+    * 自艇が沈没中か座礁中ならラッチしない（どちらも任務が終わる途中。夜明け後の終わり・空襲の 1 行・夜明けの帯にしない）
+    */
+   latch(w: DawnWorldView): void {
+-    if (this.reached || w.boat.sinking || w.grounded || !dawnReached(this.durationS, w.stepTimeS)) return;
++    if (this.reached || w.boat.sinking || w.grounded || !(this.settleDue ? this.settleDue(w.stepTimeS) : dawnReached(this.durationS, w.stepTimeS))) return;
+     this.reached = true;
+     this.caughtOutside = !(this.homeAtLatch ? this.homeAtLatch() : w.atHome);
+     this.strike?.start(w.boat.state);
+diff --git a/src/systems/world-evac.ts b/src/systems/world-evac.ts
+index 0d527a5..c882fa0 100644
+--- a/src/systems/world-evac.ts
++++ b/src/systems/world-evac.ts
+@@ -13,6 +13,7 @@ import type { BoatInput, BoatParams, BoatState, SpeedStep } from '../core/boat-m
+ import { crewLost } from '../core/crew';
+ import { createEvacAirStep, stepEvacAir, type EvacAirStep } from '../core/evac-air';
+ import { stepEvacBoats } from '../core/evac-boats';
++import { evacSettleDue, evacSettledEarly } from '../core/evac-early';
+ import { EVAC_AI_SEED_OFFSET, G_ENTERING, G_HAULING, G_HIDDEN } from '../core/evac-data';
+ import { evacImpact, type EvacAirWorld } from '../core/evac-hits';
+ import { createEvacSettleSnap, type EvacSettleSnap } from '../core/evac-result';
+@@ -37,7 +38,7 @@ export interface EvacWorldView {
+   extinguishHeldS: number;
+   crewLostNow: number;
+   readonly setup: Pick<WorldSetup, 'crew' | 'crewEffects' | 'damageParams' | 'boatParams' | 'mission' | 'boundsMarginM' | 'durationS'>;
+-  readonly dawn: { readonly reached: boolean; homeAtLatch: (() => boolean) | null };
++  readonly dawn: { readonly reached: boolean; homeAtLatch: (() => boolean) | null; settleDue: ((stepTimeS: number) => boolean) | null };
+   readonly launcher: { clearQueue(): void };
+   readonly arms: { readonly flashM: number } | null;
+ }
+@@ -142,8 +143,10 @@ export class WorldEvac {
+       this.settleSnap.group = sq.control;
+       this.settleSnap.phase = g.phase;
+       this.settleSnap.shelter = g.shelter;
++      this.settleSnap.early = evacSettledEarly(sq);
+       return evacSeatHome(sq, seat, true);
+     };
++    w.dawn.settleDue = (t) => evacSettleDue(sq, t); // 240 秒か、全艇が隠れて空が空いた次のステップ（v0.6.11 IP1 の U8。模擬と同じ式）
+   }
+ 
+   get plan(): EvacPlan {
+diff --git a/src/ui/evac-lines.ts b/src/ui/evac-lines.ts
+index 6bfe141..6757c4e 100644
+--- a/src/ui/evac-lines.ts
++++ b/src/ui/evac-lines.ts
+@@ -115,7 +115,7 @@ export function evacLineKey(e: EvacTelemetry): number {
+       k = ((e.hintShelter + 1) * 8 + e.hintFree) * 8 * 8 + e.control * 8 + e.afloat;
+       break;
+     case EVL_HAULING:
+-      k = ((e.shelter + 1) * 8 + e.upCount) * 16 + e.afloat * 2 + (e.hauling ? 1 : 0);
++      k = (((e.shelter + 1) * 8 + e.upCount) * 16 + e.afloat * 2 + (e.hauling ? 1 : 0)) * 128 + e.haulPct + 1;
+       break;
+     case EVL_FIRE:
+       k = e.fireGroup;
+@@ -154,7 +154,8 @@ export function evacLine(e: EvacTelemetry): HudLine {
+     case EVL_ANNOUNCE:
+       return warn(evacAnnounceJa(e));
+     case EVL_SETTLE:
+-      return strong(`第1次の空襲が去った ・ 残存 ${e.eventN} で確定`);
++      // 全艇が隠れて空襲を待たずに決着（v0.6.11 IP1 の U8。この後すぐ Result）
++      return strong(e.early ? `全艇が隠れた ・ 空襲を待たずに退避完了（残存 ${e.eventN}）` : `第1次の空襲が去った ・ 残存 ${e.eventN} で確定`);
+     case EVL_LOST:
+       return strong(`${groupJa(e, e.eventGroup)}を見失った！ ${e.eventSub}機が引き返す`);
+     case EVL_SINK:
+@@ -181,8 +182,18 @@ export function evacLine(e: EvacTelemetry): HudLine {
+     }
+     case EVL_FULL:
+       return warn(fit((p) => `${p}は満杯（空き ${e.hintFree} ・ ${g}は ${e.afloat} 隻）`, placeJa(e, e.hintShelter)));
+-    case EVL_HAULING:
+-      return strong(fit((p) => `${p} レールで上げている ${Math.min(e.afloat, e.upCount + (e.hauling ? 1 : 0))}/${e.afloat} ・ 隊長艇は最後 ・ 倒すとやめて下ろす`, placeJa(e, e.shelter)));
++    case EVL_HAULING: {
++      // レールの上の艇の進み %（v0.6.11 IP1 の U9。地図の上のレールの下の札と同じ数）。840 px を超えれば尾を「倒すと下ろす」に、まだ超えれば % を落とす
++      const n = `${Math.min(e.afloat, e.upCount + (e.hauling ? 1 : 0))}/${e.afloat}`;
++      const pct = e.haulPct >= 0 ? `（${e.haulPct}%）` : '';
++      const make = (tail: string, k: string) => (p: string): string => `${p} レールで上げている ${n}${k} ・ 隊長艇は最後 ・ ${tail}`;
++      const place = placeJa(e, e.shelter);
++      for (const [tail, k] of [['倒すとやめて下ろす', pct], ['倒すと下ろす', pct]] as const) {
++        const text = fit(make(tail, k), place);
++        if (jaWidthPx(text, LINE_PX) <= EVAC_LINE_MAX_PX) return strong(text);
++      }
++      return strong(fit(make('倒すとやめて下ろす', ''), place));
++    }
+     case EVL_ENTERING:
+       return strong(fit((p) => `${g} ${p}に入る ・ 僚艇が寄るまで止まれ`, placeJa(e, e.shelter)));
+     case EVL_HIDDEN:
+@@ -224,6 +235,7 @@ export function evacStatusLine(e: EvacTelemetry): string {
+  * 外の夜（strike あり）は「確定」と言わない（v0.6.11 S8: 外の座席が追撃で沈めば残存は 1 減る＝core/evac-seat の evacSinkLeader）
+  */
+ export function evacSettleBannerLines(e: EvacTelemetry, strike: string): readonly string[] {
++  if (e.early) return ['全艇が隠れた ・ 空襲を待たずに退避完了', `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`]; // v0.6.11 IP1 の U8（操作中の隊は隠れている＝追撃なし）
+   const head = '第1次の空襲が去った';
+   if (!strike) return [head, `残存 ${e.survivors}／${e.total} で確定（${e.quota} 隻以上で達成）`];
+   return [head, `残存 ${e.survivors}／${e.total}（${e.quota} 隻以上で達成 ・ 隊長艇が沈めば 1 減る）`, `${strike} ・ 壕か陰へ`];
+diff --git a/src/ui/evac-result.ts b/src/ui/evac-result.ts
+index 5966186..14abb78 100644
+--- a/src/ui/evac-result.ts
++++ b/src/ui/evac-result.ts
+@@ -4,6 +4,7 @@
+ import { DAWN_AIR_ENEMY, type DawnResult } from '../core/dawn-air';
+ import { EVR_ENTERING, EVR_HAULING, EVR_HIDDEN, EVR_NONE, EVR_OUTSIDE, evacScoredBoats, type EvacResult } from '../core/evac-result';
+ import type { MissionEndReason } from '../core/mission-flow';
++import { mssJa } from './evac-text';
+ 
+ /** 時の行の追撃の転舵を出す数（ui/dawn-lines の夜明けの行と同じ 8 発） */
+ const EVAC_DODGE_SHOWN = 8;
+@@ -45,12 +46,14 @@ function afterJa(reason: MissionEndReason, returned: boolean): string {
+ 
+ /**
+  * 夜明けの行の代わりの時の行（spec §10.3。r2 L15）: 「空襲が去る時: 西の壕の中（第1隊） ・ 残存 8 で確定」／「…西の壕で上げている途中（第1隊）…」／
+- * 「…屋我地の陰（東）に入っている途中…」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／「… ・ 隠れる前に沈没（隊長艇の分 −1 で 7）」／決着の前に終わった夜（18 隻すべてが沈んだ）
++ * 「…屋我地の陰（東）に入っている途中…」／早い決着（IP1 の U8）「全艇が隠れた ・ 空襲を待たずに退避完了（残り 1:23） ・ 西の壕の中（第1隊） ・ 残存 8 で確定」／「空襲が去る時: 外（第3隊） ・ 残存 8 で確定 ・ 後で隠れた」／「… ・ 隠れる前に沈没（隊長艇の分 −1 で 7）」／決着の前に終わった夜（18 隻すべてが沈んだ）
+  */
+ export function evacTimeLineJa(e: EvacResult, d: DawnResult, reason: MissionEndReason, returned: boolean): string {
+   if (e.settlePlace === EVR_NONE) return e.survivors === 0 ? `空襲が去る前に ${e.total} 隻すべてが沈んだ（残り ${Math.ceil(d.timeLeftAtEndS)} 秒）` : '空襲が去る時: 操作中の隊長艇が沈む途中';
+   const sure = ` ・ 残存 ${e.settleSurvivors} で確定`;
+   const g = e.settleGroupJa;
++  // 全艇が隠れて空が空き、240 秒を待たずに決着した（v0.6.11 IP1 の U8。core/evac-early。操作中の隊はいつも隠れている）
++  if (e.settleEarly) return `全艇が隠れた ・ 空襲を待たずに退避完了（残り ${mssJa(d.timeLeftAtEndS)}） ・ ${e.settleShelterJa}の中（${g}）${sure}`;
+   if (e.settlePlace === EVR_HIDDEN) return `空襲が去る時: ${e.settleShelterJa}の中（${g}）${sure}`;
+   if (e.settlePlace === EVR_HAULING) return `空襲が去る時: ${e.settleShelterJa}で上げている途中（${g}）${sure}`;
+   if (e.settlePlace === EVR_ENTERING) return `空襲が去る時: ${e.settleShelterJa}に入っている途中（${g}）${sure}`;
+diff --git a/tests/evac-lines.test.ts b/tests/evac-lines.test.ts
+index a59363c..3ed3cba 100644
+--- a/tests/evac-lines.test.ts
++++ b/tests/evac-lines.test.ts
+@@ -332,7 +332,9 @@ describe('小さな世界の夜の HUD（台本 seq・seq_shoot・stay。キー
+   it('4 夜を合わせると、出来事の行（隠れた・沈没の 3 種以上・見失った・決着）と平常・予告の行がどれも出た（重い出来事が出ている間の軽い出来事は出さない＝隠れた・機銃は夜によっては出ない）', () => {
+     for (const k of [EVE_HIDDEN * 10, EVE_SETTLE * 10, EVE_LOST * 10]) expect(all.has(k), String(k)).toBe(true);
+     expect([EVS_WINGMAN, EVS_LEADER, EVS_SEAT, EVS_GONE].filter((v) => all.has(EVE_SINK * 10 + v)).length).toBeGreaterThanOrEqual(3);
+-    for (const w of ['を操作中 ・ 近い隠れ場所', '第1波 2機×', 'に隠れた ・ ［切替］で次の隊へ', '第1次の空襲が去った']) expect([...allLines].some((x) => x.includes(w)), w).toBe(true);
++    for (const w of ['を操作中 ・ 近い隠れ場所', '第1波 2機×', 'に隠れた ・ ［切替］で次の隊へ']) expect([...allLines].some((x) => x.includes(w)), w).toBe(true);
++    // 決着の行は 240 秒か、全艇が隠れて空襲を待たずに（v0.6.11 IP1 の U8）
++    expect([...allLines].some((x) => x.includes('第1次の空襲が去った') || x.includes('全艇が隠れた ・ 空襲を待たずに退避完了'))).toBe(true);
+   });
+ });
+ 
+diff --git a/tests/evac-repass-sim.test.ts b/tests/evac-repass-sim.test.ts
+index 983a5d8..aee8e3f 100644
+--- a/tests/evac-repass-sim.test.ts
++++ b/tests/evac-repass-sim.test.ts
+@@ -27,14 +27,16 @@ describe('passes_max 1（上書き＝S3 の挙動）は S3 の木と同じ', ()
+     });
+     // 333c8ec の木の core/evac-sim に S3b の data（missions_seed・risk_events。evac_raid の passes_max・passes_max_source を除く）を入れ、同じ式（使い捨ての束）から取った値。
+     // v0.6.11 S8 の core の直し 2 つ（core/evac-shelter: 入っている隊の交代で新しい隊長艇を止める・見つかった陰の操作中の隊は輪の外へ出れば出る）で、ハードの bot seed 8 の 1 行だけ
+-    // 変わった（残存 9 → 10・艇への命中 21 → 19・座席への命中 4 → 3。引く回数・来た・済みは同じ）。ほかの 5 行は S3 の木のまま
++    // 変わった（残存 9 → 10・艇への命中 21 → 19・座席への命中 4 → 3。引く回数・来た・済みは同じ）。ほかの 5 行は S3 の木のまま。
++    // v0.6.11 IP1 の U8（全艇が隠れて空が空けば 240 秒を待たずに決着＝core/evac-early）でハードの 2 行は秒（240 → 214.15・204.217）と +30（pick の境が減る 570 → 510・486）だけ
++    // 変わった（残存・+29・+31・編隊・来た・済み・命中・撃墜・切替は同じ＝決着の前に誰も爆撃されない時間が切れただけ）
+     expect(fp).toEqual([
+       ['home', 8, 8, 240000, 4, 570, 41, 96, 8, 4, 24, 10, 0, 0, 12],
+       ['home', 6, 6, 250600, 4, 570, 37, 90, 8, 5, 25, 16, 0, 0, 0],
+       ['home', 11, 11, 249667, 4, 570, 28, 70, 8, 4, 21, 5, 2, 210, 19],
+       ['home', 10, 10, 249983, 4, 570, 47, 110, 8, 6, 17, 12, 0, 0, 11],
+-      ['home', 7, 7, 240000, 4, 570, 43, 106, 10, 5, 27, 14, 0, 0, 10],
+-      ['home', 10, 10, 240000, 4, 570, 41, 94, 9, 5, 19, 3, 0, 0, 6],
++      ['home', 7, 7, 214150, 4, 510, 43, 106, 10, 5, 27, 14, 0, 0, 10],
++      ['home', 10, 10, 204217, 4, 486, 41, 94, 9, 5, 19, 3, 0, 0, 6],
+     ]);
+   }, 60_000);
+   it('予告し直さない・どの編隊も 1 回まで・済みは済みのまま（ノーマル・ハード）', () => {
+diff --git a/tests/evac-result.test.ts b/tests/evac-result.test.ts
+index b72c418..103e2e3 100644
+--- a/tests/evac-result.test.ts
++++ b/tests/evac-result.test.ts
+@@ -40,7 +40,7 @@ function trial(hard: boolean, policy: EvacPolicy, seed: number): { e: EvacResult
+       if (!latched && m.flags.latched) {
+         latched = true;
+         const g = m.sq.groups[m.sq.control]!;
+-        [snap.group, snap.phase, snap.shelter] = [m.sq.control, g.phase, g.shelter];
++        [snap.group, snap.phase, snap.shelter, snap.early] = [m.sq.control, g.phase, g.shelter, !Number.isNaN(m.sq.earlyS)];
+       }
+       if (m.plan.evSettle) snap.survivors = evacSurvivors(m.sq);
+     },
+@@ -53,7 +53,7 @@ function trial(hard: boolean, policy: EvacPolicy, seed: number): { e: EvacResult
+ const E0: EvacResult = {
+   total: 18, quota: 6, historical: 5, survivors: 8, seatAfloat: true, cave: 6, cover: 2, outside: 0, byGroup: [3, 2, 0, 1, 2, 0],
+   aimed: 9, again: 2, lost: 3, came: 6, downed: 1, chaseDowned: 0, bombs: 40, boatHits: 12, switches: 7, promotions: 2,
+-  settlePlace: EVR_HIDDEN, settleGroupJa: '第1隊', settleShelterJa: '西の壕', settleSurvivors: 8,
++  settlePlace: EVR_HIDDEN, settleGroupJa: '第1隊', settleShelterJa: '西の壕', settleSurvivors: 8, settleEarly: false,
+ };
+ const dawn = (o: Partial<DawnResult> = {}): DawnResult => ({ ...createDawnResult(), reached: true, air: DAWN_AIR_ENEMY, ...o });
+ const strike = { waves: 1, bombs: 8, bombsAtEscort: 0, hitsPlayer: 0, hitsEscort: 0, damagePlayer: 0, dodgeS: [0.6, NaN], vip: false };
+@@ -93,7 +93,7 @@ describe('材料（core/evac-result の evacResultOf）: 模擬の 1 回と同
+   });
+   it('決着の段階 → 時の行の種類（中・入っている途中・上げている途中・外・決着の前に終わった）。隠れ場所の名は中と途中だけ', () => {
+     const { src, afloat } = trial(false, 'seq', 1);
+-    const at = (phase: number, group = 0): EvacResult => evacResultOf({ ...src, settleSnap: { group, phase, shelter: 1, survivors: 8 } as EvacSettleSnap }, afloat);
++    const at = (phase: number, group = 0): EvacResult => evacResultOf({ ...src, settleSnap: { group, phase, shelter: 1, survivors: 8, early: false } }, afloat);
+     expect([G_HIDDEN, G_ENTERING, G_HAULING, G_UNDERWAY, G_MOORED, G_FOUND].map((p) => at(p).settlePlace)).toEqual([EVR_HIDDEN, EVR_ENTERING, EVR_HAULING, EVR_OUTSIDE, EVR_OUTSIDE, EVR_OUTSIDE]);
+     expect(at(G_HIDDEN, -1).settlePlace).toBe(EVR_NONE);
+     expect([at(G_HIDDEN).settleGroupJa, at(G_HIDDEN).settleShelterJa, at(G_UNDERWAY).settleShelterJa]).toEqual(['第1隊', '西の壕', '']);
+diff --git a/tests/evac-sim-a.test.ts b/tests/evac-sim-a.test.ts
+index b62606f..90540f7 100644
+--- a/tests/evac-sim-a.test.ts
++++ b/tests/evac-sim-a.test.ts
+@@ -93,11 +93,13 @@ describe('編隊の数と同時に動く編隊', () => {
+ });
+ 
+ describe('終わりと表の形', () => {
+-  it('どの遊び方も終わる（帰投・沈没・漂流・打ち切りのどれか）・決着の前には帰投で終わらない・残存は 0〜18', () => {
++  it('どの遊び方も終わる（帰投・沈没・漂流・打ち切りのどれか）・決着の前の帰投は早い決着（IP1 の U8）だけ・残存は 0〜18', () => {
+     for (const p of EVAC_POLICIES) {
+       const t = runEvacTrial(NORMAL, p, 21);
+       expect(['home', 'sunk', 'adrift', 'timeout']).toContain(t.end);
+-      if (t.end === 'home') expect(t.timeS).toBeGreaterThanOrEqual(NORMAL.durationS);
++      // 240 秒の前の帰投は早い決着（v0.6.11 IP1 の U8。全艇が隠れて空が空いた次のステップ）だけ
++      if (t.end === 'home' && t.timeS < NORMAL.durationS) expect(t.timeS).toBeCloseTo(t.earlyS + NORMAL.stepS, 6);
++      else if (t.end === 'home') expect(Number.isNaN(t.earlyS)).toBe(true);
+       expect(t.survivors).toBeGreaterThanOrEqual(0);
+       expect(t.survivors).toBeLessThanOrEqual(18);
+       expect(t.achieved).toBe(t.end === 'home' && t.survivors >= NORMAL.raid.survivorQuota);
+diff --git a/tests/evac-step-order.test.ts b/tests/evac-step-order.test.ts
+index f2da84c..b9c61c3 100644
+--- a/tests/evac-step-order.test.ts
++++ b/tests/evac-step-order.test.ts
+@@ -61,7 +61,7 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）',
+   it('模擬（core/evac-sim）も同じ順: 台本 → ［切替］と latch → 消火 → 時計とラッチ → 乗員 → 座席の運動 → 燃料 → 隊 → 帰投 → 帯 → 対空 → 座席の火災 → 港の空襲 → §2 の 4 機', () => {
+     const s = code('core/evac-sim.ts');
+     const fn = s.slice(s.indexOf('export function runEvacTrial'));
+-    expectOrder(fn, ['evacDriverFrame(', 'evacFrameInput(sq, seat, stick, fo.switchTap, air.hooks)', 'crewExtinguishFactor(', 'm.t += realDt;', 'dawnReached(s.durationS, t)', 'setPerformance(', 'evacSeatCommand(sq, stick, cmd);', 'stepBoat(seat.state,', 'stepFuel(', 'stepEvacBoats(', 'atHome = evacSeatHome(sq, seat, latchStep);', 'nextSpeedBand(', 'stepEvacSimAa(', 'stepDamage(seat.damage', 'stepEvacAir(', 'stepAirStrike(dawn,']);
++    expectOrder(fn, ['evacDriverFrame(', 'evacFrameInput(sq, seat, stick, fo.switchTap, air.hooks)', 'crewExtinguishFactor(', 'm.t += realDt;', 'evacSettleDue(sq, t)', 'setPerformance(', 'evacSeatCommand(sq, stick, cmd);', 'stepBoat(seat.state,', 'stepFuel(', 'stepEvacBoats(', 'atHome = evacSeatHome(sq, seat, latchStep);', 'nextSpeedBand(', 'stepEvacSimAa(', 'stepDamage(seat.damage', 'stepEvacAir(', 'stepAirStrike(dawn,']);
+     expect(fn).toContain('if (t >= s.fuelFreeUntilS - TIME_EPS_S) stepFuel(');
+     expect(s).toContain('const TIME_EPS_S = EVAC_TIME_EPS_S;');
+   });
