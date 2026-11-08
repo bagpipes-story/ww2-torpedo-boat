@@ -4,15 +4,18 @@
 import type Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { TORPEDO_ART, TORPEDO_TAIL_UNITS, TORPEDO_TIP_UNITS } from '../config/boat-art-config';
-import { TORPEDO_WIDTH_UNITS, torpedoTexSize } from './art-dims';
+import { torpedoTexSize } from './art-dims';
 import { paintTexture } from './art-pen';
 
 /** 魚雷（先端が上。原点はテクスチャ中央） */
 export function paintTorpedoTexture(scene: Phaser.Scene, lengthUnits: number): void {
-  const w = TORPEDO_WIDTH_UNITS;
-  paintTexture(scene, TEXTURE_KEYS.torpedo, torpedoTexSize(lengthUnits, RENDER_SCALE), RENDER_SCALE, (pen) => {
-    pen.rect(0, 0, w, lengthUnits, 0, TORPEDO_ART.body, 1);
+  const size = torpedoTexSize(lengthUnits, RENDER_SCALE);
+  // placeholder は切り上げた px の矩形を全部塗っていた（4 × 14 px）。同じ覆いになるよう、px の矩形いっぱいを世界単位に戻して塗る（3.27 単位で止めると端の列が半透明になり覆いが 75% に落ちる）
+  const w = size.w / RENDER_SCALE;
+  const l = size.h / RENDER_SCALE;
+  paintTexture(scene, TEXTURE_KEYS.torpedo, size, RENDER_SCALE, (pen) => {
+    pen.rect(0, 0, w, l, 0, TORPEDO_ART.body, 1);
     pen.rect(0, 0, w, TORPEDO_TIP_UNITS, 0, TORPEDO_ART.tip, 1);
-    pen.rect(0, lengthUnits - TORPEDO_TAIL_UNITS, w, TORPEDO_TAIL_UNITS, 0, TORPEDO_ART.tail, 1);
+    pen.rect(0, l - TORPEDO_TAIL_UNITS, w, TORPEDO_TAIL_UNITS, 0, TORPEDO_ART.tail, 1);
   });
 }
