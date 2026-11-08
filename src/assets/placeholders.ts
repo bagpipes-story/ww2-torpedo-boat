@@ -1,5 +1,6 @@
 // プレースホルダー図形を起動時に 1 回だけテクスチャ化する（CLAUDE.md §7: 毎フレーム Graphics を描き直さない）。
 // 世界座標のテクスチャは RENDER_SCALE 倍の解像度で作り、表示側で 1/RENDER_SCALE に縮めて高 DPI でも滲まないようにする。
+// v0.7.0 S1: 自艇・僚艇・隼艇の絵（generatePlayerBoatTexture）は assets/boat-art へ移した（鍵・寸法・原点は同じ）。
 import Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -30,6 +31,7 @@ import {
   RETURN_RING_LINE_WIDTH,
   RETURN_RING_TEX_RADIUS_UNITS,
 } from '../config/ui-config';
+import type { BoatTextureSpec } from './art-dims';
 
 /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
 const COLOR_PLAYER = 0xf2f5f8;
@@ -45,37 +47,6 @@ const TORPEDO_WIDTH_UNITS = 3;
 const WAKE_DOT_RADIUS_UNITS = 2.5;
 /** 爆発リングの半径（世界単位）。tween で拡大する */
 const EXPLOSION_RING_RADIUS_UNITS = 40;
-
-export interface BoatTextureSpec {
-  /** 表示上の全長（m × sprite_scale） */
-  lengthUnits: number;
-  beamUnits: number;
-}
-
-/** 自艇・僚艇: 船首を上にした船形ポリゴン。原点はテクスチャ中央。key は艇ごと（boatTextureKey。v0.6.0） */
-export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void {
-  const k = RENDER_SCALE;
-  const L = spec.lengthUnits * k;
-  const B = spec.beamUnits * k;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_PLAYER, 1);
-  g.beginPath();
-  g.moveTo(B / 2, 0);
-  g.lineTo(B, L * 0.3);
-  g.lineTo(B * 0.92, L);
-  g.lineTo(B * 0.08, L);
-  g.lineTo(0, L * 0.3);
-  g.closePath();
-  g.fillPath();
-  // 船首側を示す暗い線（進行方向が一目で分かるように）
-  g.lineStyle(Math.max(1, k), 0x0b1020, 0.9);
-  g.beginPath();
-  g.moveTo(B / 2, L * 0.08);
-  g.lineTo(B / 2, L * 0.45);
-  g.strokePath();
-  g.generateTexture(key, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
 
 /**
  * スティックの台座（輪）とノブ（円）、舵バーとマーカー。HUD 座標（論理 px）× RENDER_SCALE で作る。

@@ -3,6 +3,13 @@
 // 探照灯・星弾・煙幕の scale は射程・半径 / テクスチャの単位から決まる）。tests/art-inventory が v0.6.11 の式と k ∈ {1, 375/360, 393/360, 2} で同じことを確かめる。
 // k は RENDER_SCALE（テクスチャの 1 世界単位の px。iPhone 15 で 393/360・iPhone SE で 375/360）。
 
+/** 船形のテクスチャの指定（表示上の全長・幅＝m × sprite_scale。v0.6.11 の placeholders の BoatTextureSpec をここへ移した） */
+export interface BoatTextureSpec {
+  /** 表示上の全長（m × sprite_scale） */
+  lengthUnits: number;
+  beamUnits: number;
+}
+
 /** テクスチャの幅・高さ（px） */
 export interface TexSize {
   readonly w: number;

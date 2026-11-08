@@ -27,13 +27,13 @@ import {
   generateTransportTexture,
   generateGunneryTextures,
   generateSmokeTextures,
-  generatePlayerBoatTexture,
   generateReturnTextures,
   generateTargetMarkerTexture,
   generateTorpedoButtonTexture,
   generateTorpedoTextures,
   generateUiTextures,
 } from '../assets/placeholders';
+import { generatePlayerBoatTexture } from '../assets/boat-art';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
