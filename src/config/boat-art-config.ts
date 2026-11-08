@@ -22,7 +22,10 @@ export const PALETTE_TRANSPORT: HullPalette = { deck: 0xb89a9a, rim: 0xccb2b2, s
 /** 味方（薄い青。ESCORT_TINT の系統）: 味方の輸送船・卯月・味方の大発 */
 export const PALETTE_ALLY: HullPalette = { deck: 0x9ad0ff, rim: 0xb8e0ff, side: 0x5f8fb8, superstructure: 0x7fb3df, detail: 0x2f4a66, highlight: 0xdff1ff };
 /** 魚雷（黄）: 胴・尾の 1 単位（やや暗い）・先端（明るい）。黄の面積 ≥ 85%・平均の明るさ ≥ placeholder × 0.95（R8） */
-export const TORPEDO_ART = { body: 0xffe066, tail: 0xc9a630, tip: 0xfff6c8 } as const;
+export const TORPEDO_ART = { body: 0xffe066, tail: 0xc9a630, tip: 0xfff0a0 } as const;
+/** 魚雷の先端（明るい）と尾（やや暗い）の長さ（世界単位。幅 3 単位の絵なので尾は 1 単位＝spec §4.2。先端は黄の内（彩度 0.37）で黄の面積は 100%） */
+export const TORPEDO_TIP_UNITS = 1.5;
+export const TORPEDO_TAIL_UNITS = 1;
 
 /** 縁の明るい帯（リム）の幅（世界単位）。暗い細部はこれより内に置く（夜の海で輪郭が欠けない） */
 export const ART_RIM_UNITS = 1.5;
@@ -42,6 +45,9 @@ export const ART_SEED_BOAT = 7001;
 /** 小艇の中間の色（発射管・架台・銃座の台。地より暗く暗い細部より明るい。小艇は平均の明るさを placeholder の −10% に保つため暗い detail は面で使わない） */
 export const PALETTE_PLAYER_MID = 0x909aa3;
 export const PALETTE_ENEMY_MID = 0xa66e6b;
+/** 艦の中間の色（発射管の台・単装砲の丸い台・機銃の台。S2a）: 敵の輸送船・味方 */
+export const PALETTE_TRANSPORT_MID = 0x9e8484;
+export const PALETTE_ALLY_MID = 0x6fa0cc;
 
 /** 艇の絵の形の種類（S1。spec §4.1）。boatTextureKey の id → 形。表に無い id（遊べない任務の艇）は既定 */
 export type BoatArtKind = 'elco80' | 'elco77' | 't38' | 't14' | 'h38';

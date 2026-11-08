@@ -22,9 +22,13 @@ export class DestroyerGroup {
   /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。既定は全隻。jp_06 のハードは 2 隻中 1 隻） */
   readonly objectiveSinks: number;
 
-  constructor(scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool) {
+  constructor(
+    scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
+    /** 駆逐艦の絵の鍵（v0.7.0 S2a。world-enemies が ship-art-config の shipArtKey(敵の id) を渡す＝D3・R15。絵だけ。当たりは ds.spec のまま） */
+    destroyerTextureKey: string = TEXTURE_KEYS.destroyer,
+  ) {
     for (const st of ds.starts) {
-      this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng));
+      this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey));
       this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, st.headingDeg, splashes));
     }
     this.destroyerCount = this.ships.length;

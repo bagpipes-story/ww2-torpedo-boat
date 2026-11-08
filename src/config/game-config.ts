@@ -183,6 +183,7 @@ export function boatTextureKey(boatId: string): string {
 
 export const TEXTURE_KEYS = {
   destroyer: 'tex-destroyer',
+  destroyerUs: 'tex-destroyer-us', // 米駆逐艦（v0.7.0 S2a。jp_06。フレッチャー級の絵。assets/destroyer-art。鍵は ship-art-config の shipArtKey(敵の id)＝D3）
   transport: 'tex-transport',
   transportFriendly: 'tex-transport-friendly', // 味方の輸送船（v0.6.9。jp_04。assets/ally-ship-placeholder。灰色の tex-transport を tint しても青くならないので別の 1 枚）
   destroyerFriendly: 'tex-destroyer-friendly', // 味方の駆逐艦 卯月（v0.6.10。jp_04。assets/ally-destroyer-placeholder。輸送船と同じ薄い青）

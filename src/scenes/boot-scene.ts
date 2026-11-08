@@ -23,8 +23,6 @@ import { directSortie } from '../core/sortie';
 import { migrateLegacyUnlocks } from '../systems/progress-storage';
 import {
   generateDebugRingTexture,
-  generateDestroyerTexture,
-  generateTransportTexture,
   generateGunneryTextures,
   generateSmokeTextures,
   generateReturnTextures,
@@ -34,6 +32,8 @@ import {
   generateUiTextures,
 } from '../assets/placeholders';
 import { generatePlayerBoatTexture } from '../assets/boat-art';
+import { generateDestroyerTexture, generateExtraDestroyerTextures } from '../assets/destroyer-art';
+import { generateTransportTexture } from '../assets/transport-art';
 import { generateAircraftTexture } from '../assets/aircraft-placeholder';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
@@ -92,6 +92,7 @@ export class BootScene extends Phaser.Scene {
     validateLoadouts(gameData); // 兵装（v0.6.8）: 対空・閃光の data と全任務（ハードも）の艇の魚雷・砲の検査（壊れていれば Boot で止まる。上の輪の後）
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
+    generateExtraDestroyerTextures(this, gameData, spriteScale); // 米駆逐艦 tex-destroyer-us（v0.7.0 S2a。jp_06。遊べる任務の駆逐艦の id から 1 枚ずつ＝D3）
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
     // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける

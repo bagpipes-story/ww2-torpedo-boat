@@ -1,6 +1,6 @@
 // プレースホルダー図形を起動時に 1 回だけテクスチャ化する（CLAUDE.md §7: 毎フレーム Graphics を描き直さない）。
 // 世界座標のテクスチャは RENDER_SCALE 倍の解像度で作り、表示側で 1/RENDER_SCALE に縮めて高 DPI でも滲まないようにする。
-// v0.7.0 S1: 自艇・僚艇・隼艇の絵（generatePlayerBoatTexture）は assets/boat-art へ移した（鍵・寸法・原点は同じ）。
+// v0.7.0 S1: 自艇・僚艇・隼艇の絵（generatePlayerBoatTexture）は assets/boat-art へ移した（鍵・寸法・原点は同じ）。S2a: 駆逐艦・輸送船は assets/destroyer-art・transport-art、魚雷は torpedo-art へ。
 import Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -31,18 +31,13 @@ import {
   RETURN_RING_LINE_WIDTH,
   RETURN_RING_TEX_RADIUS_UNITS,
 } from '../config/ui-config';
-import type { BoatTextureSpec } from './art-dims';
+import { paintTorpedoTexture } from './torpedo-art';
 
 /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
 const COLOR_PLAYER = 0xf2f5f8;
-const COLOR_ENEMY = 0xe08a8a;
-/** 輸送船（v0.4.7）: 敵だが砲台ではないことが分かる灰色がかった赤 */
-const COLOR_TRANSPORT = 0xb89a9a;
 const COLOR_TORPEDO = 0xffe066;
 const COLOR_WAKE = 0xdfe8f2;
 const COLOR_UI = 0x9fb3c8;
-/** 魚雷のプレースホルダーの幅（世界単位）。実寸 0.5 m では見えないので太らせる */
-const TORPEDO_WIDTH_UNITS = 3;
 /** 雷跡の点の半径（世界単位） */
 const WAKE_DOT_RADIUS_UNITS = 2.5;
 /** 爆発リングの半径（世界単位）。tween で拡大する */
@@ -90,65 +85,13 @@ export function generateUiTextures(scene: Phaser.Scene, silentRingRatio: number)
   g.destroy();
 }
 
-/** 輸送船（v0.4.7）: 幅広い船形（灰色）＋後ろ寄りの船橋。原点はテクスチャ中央 */
-export function generateTransportTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
-  const k = RENDER_SCALE;
-  const L = spec.lengthUnits * k;
-  const B = spec.beamUnits * k;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_TRANSPORT, 1);
-  g.beginPath();
-  g.moveTo(B / 2, 0);
-  g.lineTo(B, L * 0.22);
-  g.lineTo(B, L * 0.92);
-  g.lineTo(B * 0.7, L);
-  g.lineTo(B * 0.3, L);
-  g.lineTo(0, L * 0.92);
-  g.lineTo(0, L * 0.22);
-  g.closePath();
-  g.fillPath();
-  g.fillStyle(0x0b1020, 0.8);
-  g.fillRect(B * 0.25, L * 0.62, B * 0.5, L * 0.18);
-  g.generateTexture(TEXTURE_KEYS.transport, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
-
-/** 敵艦: 船首を上にした細長い船形（薄い赤）＋中央の艦橋。原点はテクスチャ中央 */
-export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
-  const k = RENDER_SCALE;
-  const L = spec.lengthUnits * k;
-  const B = spec.beamUnits * k;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_ENEMY, 1);
-  g.beginPath();
-  g.moveTo(B / 2, 0);
-  g.lineTo(B, L * 0.18);
-  g.lineTo(B, L * 0.9);
-  g.lineTo(B * 0.75, L);
-  g.lineTo(B * 0.25, L);
-  g.lineTo(0, L * 0.9);
-  g.lineTo(0, L * 0.18);
-  g.closePath();
-  g.fillPath();
-  g.fillStyle(0x0b1020, 0.8);
-  g.fillRect(B * 0.3, L * 0.35, B * 0.4, L * 0.25);
-  g.generateTexture(TEXTURE_KEYS.destroyer, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
-
-/** 魚雷（黄の細長い矩形、先端を上）と雷跡の点、爆発リング */
+/** 魚雷（v0.7.0 S2a から assets/torpedo-art。黄の胴・明るい先端・暗い尾。寸法は同じ）と雷跡の点（変えない＝R8）、爆発リング（変えない＝D2） */
 export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits: number): void {
   const k = RENDER_SCALE;
-  const w = Math.ceil(TORPEDO_WIDTH_UNITS * k);
-  const l = Math.ceil(torpedoLengthUnits * k);
-  let g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_TORPEDO, 1);
-  g.fillRect(0, 0, w, l);
-  g.generateTexture(TEXTURE_KEYS.torpedo, w, l);
-  g.destroy();
+  paintTorpedoTexture(scene, torpedoLengthUnits);
 
   const d = Math.ceil(WAKE_DOT_RADIUS_UNITS * 2 * k) + 2;
-  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  let g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(COLOR_WAKE, 1);
   g.fillCircle(d / 2, d / 2, WAKE_DOT_RADIUS_UNITS * k);
   g.generateTexture(TEXTURE_KEYS.wakeDot, d, d);
