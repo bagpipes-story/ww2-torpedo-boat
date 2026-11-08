@@ -1,0 +1,270 @@
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 26091e0..5a46339 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -111,6 +111,8 @@ export const DEBUG_AA_CHANCE = debugNumber('aa');
+ export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nopatrol'); // ?debug&nopatrol: 夜の哨戒機なし（v0.6.7。jp_02 の夜の 2 機が来ない。夜明けの 4 機は残る）
+ /** ?debug&noally: 味方の駆逐艦 卯月なし（v0.6.10。jp_04 が v0.6.10 S0b と同じ世界。模擬の ALLY_OFF=1 と同じ。比較用） */
+ export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
++/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。波の模様があれば格子を消してよいかを実機テスト ② で比べる。既定は config/sea-art-config の SEA_GRID_ON＝残す） */
++export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
+ /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
+ export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
+ /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
+@@ -221,4 +223,7 @@ export const TEXTURE_KEYS = {
+   gunTracer: 'tex-gun-tracer',
+   coastMarker: 'tex-coast-marker',
+   ptBoat: 'tex-pt-boat', // 敵の米PT（v0.6.3。assets/pt-placeholder）
++  seaTile: 'tex-sea-tile', // 海の模様のタイル 512×512（v0.7.0 S3a。assets/sea-art。systems/sea-fx の TileSprite が世界の座標に貼る）
++  dawnGlow: 'tex-dawn-glow', // 夜明けの東の光の横のグラデーション 256×64（v0.7.0 S3a。画面へ拡大・深さは海の模様の直上）
++  glint: 'tex-glint', // 月のきらめき・昼の白波の筋 16×8（v0.7.0 S3a）
+ } as const;
+diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
+index 861310c..014360c 100644
+--- a/src/config/sea-art-config.ts
++++ b/src/config/sea-art-config.ts
+@@ -1,4 +1,4 @@
+-// v0.7.0（アートと音①：コードで描く絵）の海の面・夜明けの光・月のきらめき・岸の帯の定数（S3a・S3c の assets/sea-art と systems/sea-fx・coast-fx）。
++// v0.7.0（アートと音①：コードで描く絵）の海の面・夜明けの光・月のきらめき・岸の帯の定数（S3a の assets/sea-shape・sea-art と systems/sea-fx・world-art、S3c の coast-fx）。
+ // ゲームの強さの値ではないので data/*.json には置かない（evac-art-config と同じ考え）。海の色（SEA_COLOR・DAY_SEA_COLOR）と夜明けの 16 段は dawn-config・ui/sea-light のまま。何も import しない。
+ 
+ /** 海の格子の線（100 m ごと。entities/sea）を出すか（R6・決め D5: 既定は残す。消すのはユーザー未確認。?debug&title&nogrid で比べ、実機テストで聞いて次の版で決める） */
+@@ -11,7 +11,12 @@ export const SEA_TILE_PERIOD_M = 1024;
+ export const SEA_TILE_LOCAL_W = 128;
+ export const SEA_TILE_LOCAL_H = 64;
+ 
+-/** 光（data の moon: dark・half・full・day）ごとの波頭の色・α・月のきらめきの数（spec-v0700 §3.2。夜は α ≤ 0.12） */
++/**
++ * 光（data の moon: dark・half・full・day）ごとの海の模様の色と α（spec-v0700 §3.2。S3a）: 模様のテクスチャは白で描き、TileSprite の tint × α で色を付ける。
++ * crest は tint（白寄り。背景の上に α で重なった結果が spec の「#1c2a46 相当」「#2a3c60 相当」「#8fb0c8 相当」になる＝tint を暗い色にすると夜の海に溶けて見えない）。
++ * 夜は α ≤ 0.12（格子の線 0x1a2540 と同じくらいの薄さ）。夜明けは段（0〜16）で day の値へ線形に（段が変わった時だけ書く）。
++ * glints は筋の数（月のきらめき。dark は 0。day は白波＝whitecaps が true なら同じプールを白い泡の色・α にする＝全面の層を足さずに「疎らな白波」を出す）
++ */
+ export interface SeaLightArt {
+   readonly crest: number;
+   readonly crestAlpha: number;
+@@ -19,11 +24,39 @@ export interface SeaLightArt {
+   readonly whitecaps: boolean;
+ }
+ export const SEA_LIGHT_ART: Readonly<Record<'dark' | 'half' | 'full' | 'day', SeaLightArt>> = {
+-  dark: { crest: 0x1c2a46, crestAlpha: 0.1, glints: 0, whitecaps: false },
+-  half: { crest: 0x2a3c60, crestAlpha: 0.12, glints: 12, whitecaps: false },
+-  full: { crest: 0x2a3c60, crestAlpha: 0.12, glints: 16, whitecaps: false },
+-  day: { crest: 0x8fb0c8, crestAlpha: 0.3, glints: 0, whitecaps: true },
++  dark: { crest: 0x9fb4d8, crestAlpha: 0.1, glints: 0, whitecaps: false },
++  half: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 12, whitecaps: false },
++  full: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 16, whitecaps: false },
++  day: { crest: 0xdce9f2, crestAlpha: 0.4, glints: 16, whitecaps: true },
+ };
++/** 夜の模様の α の上限（spec §3.2「夜は α ≤ 0.12」。tests/sea-art） */
++export const SEA_NIGHT_ALPHA_MAX = 0.12;
++
++/**
++ * 海の模様のテクスチャ（tex-sea-tile。SEA_TILE_PERIOD_M × SEA_ART_PX_PER_M ＝ 512 px の正方形。絵だけの乱数 ART_SEED_SEA・周期の縁で折り返す）の中身:
++ * 波頭の短い弧（本数・長さ px・向き＝波の来る向き −12° に ±28° の乱れ・たわみ＝長さの割合・太い下塗り 4 px α 0.32 と芯 2 px α 0.8＝細部は 2 px 以上 R17）、
++ * 疎らな白波（短く太い点描。弧の上に。昼の α で見える）、ごく薄いうねり（大きな丸の濃淡）。点を一直線に並べた形は描かない（雷跡と紛れない。R7）
++ */
++export const SEA_CREST_COUNT = 260;
++export const SEA_CREST_LEN_PX: readonly [number, number] = [14, 34];
++export const SEA_CREST_BASE_DEG = -12;
++export const SEA_CREST_JITTER_DEG = 28;
++export const SEA_CREST_SAG: readonly [number, number] = [0.08, 0.18];
++export const SEA_CREST_WIDE_PX = 4;
++export const SEA_CREST_WIDE_ALPHA = 0.32;
++export const SEA_CREST_CORE_PX = 2;
++export const SEA_CREST_CORE_ALPHA = 0.8;
++export const SEA_CAP_COUNT = 28;
++export const SEA_CAP_LEN_PX: readonly [number, number] = [5, 9];
++export const SEA_CAP_PX = 3;
++export const SEA_CAP_ALPHA = 1;
++export const SEA_SWELL_COUNT = 10;
++export const SEA_SWELL_R_PX: readonly [number, number] = [60, 130];
++export const SEA_SWELL_ALPHA = 0.1;
++/** 海の TileSprite が camera.worldView の外へ持つ余白 m（1 周期。升が変わるのは縁が周期の線を越えた時だけ＝全速でも数秒に 1 回。R5） */
++export const SEA_VIEW_MARGIN_M = 1024;
++/** Phaser.WEBGL（CONST.WEBGL ＝ 2）。sea-fx が phaser の値の import を避けて renderer.type と比べる（Canvas レンダラーでは海の模様を出さない。spec §5.1） */
++export const RENDERER_WEBGL = 2;
+ 
+ /** 夜明けの光（東＝画面の右端の橙。α ＝ 最大 × sin(π × 段/16)＝夜 0・移り変わりの中ほどで最大・昼 0。昼から始まる任務は 0。R3・R4）。テクスチャの px と画面からはみ出す割合 */
+ export const DAWN_GLOW_COLOR = 0xff9a4a;
+@@ -32,13 +65,21 @@ export const DAWN_GLOW_TEX_W = 256;
+ export const DAWN_GLOW_TEX_H = 64;
+ export const DAWN_GLOW_OVERSCAN = 0.03;
+ 
+-/** 月のきらめき（R9: 砲口炎の星と見分ける＝横に細長い筋・冷たい青白・α ≤ 0.3・ゆっくりした明滅） */
++/**
++ * 月のきらめき（R9: 砲口炎の星と見分ける＝横に細長い筋・冷たい青白・α ≤ 0.3・ゆっくりした明滅（周期 ≥ 2 秒・振れ幅は α の 0.5 倍まで））。
++ * tex-glint 16 × 8 px を世界の GLINT_W_M × GLINT_H_M m で置く。明滅の周期は [MIN, MIN × 2) 秒・位相は絵だけの乱数（ART_SEED_GLINT）。
++ * 画面（worldView ＋ GLINT_W_M）の外へ出たら反対側へ置き直す（置き直しの横ずれは乱数）。昼（whitecaps）は同じプールを白波の色と α で
++ */
+ export const GLINT_COLOR = 0xcfe4ff;
+ export const GLINT_ALPHA_MAX = 0.3;
+ export const GLINT_TEX_W = 16;
+ export const GLINT_TEX_H = 8;
++export const GLINT_W_M = 14;
++export const GLINT_H_M = 6;
+ export const GLINT_PERIOD_MIN_S = 2;
+ export const GLINT_SWING_MAX = 0.5;
++export const WHITECAP_COLOR = 0xf4f8fb;
++export const WHITECAP_ALPHA_MAX = 0.55;
+ 
+ /** 岸の帯（S3c。砂浜・寄せ波・陸の際の木々）: 1 m あたりの px・1 枚の長さ m・陸の側の幅 m・海の側の寄せ波の幅 m・jp_03 の陰と壕の絵をよける端の透明の幅 m（R16・R24） */
+ export const COAST_ART_PX_PER_M = 1.0;
+diff --git a/src/entities/sea.ts b/src/entities/sea.ts
+index 0e13a0b..c3bc26d 100644
+--- a/src/entities/sea.ts
++++ b/src/entities/sea.ts
+@@ -1,25 +1,29 @@
+-// 海の格子と海域境界。1 つの Graphics に起動時 1 回だけ記録する（毎フレーム clear/再描画しない）。
++// 海の格子と海域境界。1 つの Graphics に起動時 1 回だけ記録する（毎フレーム clear/再描画しない）。波の模様は systems/sea-fx の TileSprite（v0.7.0 S3a。深さ 0.05＝この上）。
+ // TileSprite は表示サイズ分の canvas を内部に作るため、海域全体（6,000×4,000 m = 24M px）に使うと iOS Safari の canvas 上限を超える。
+ // 線は 100 本程度なので Graphics の毎フレーム描画コストは無視できる。
+ import Phaser from 'phaser';
+-import { DEPTH } from '../config/game-config';
++import { DEBUG_GRID_OFF, DEPTH } from '../config/game-config';
++import { SEA_GRID_ON } from '../config/sea-art-config';
+ import { SEA_BORDER_COLOR, SEA_BORDER_WIDTH, SEA_GRID_CELL_M, SEA_GRID_COLOR, SEA_GRID_LINE_WIDTH } from '../config/ui-config';
+ import type { SeaBounds } from '../core/boat-motion';
+ 
+ export function drawSea(scene: Phaser.Scene, bounds: SeaBounds): Phaser.GameObjects.Graphics {
+   const { width, height } = bounds;
+   const g = scene.add.graphics().setDepth(DEPTH.sea);
+-  g.lineStyle(SEA_GRID_LINE_WIDTH, SEA_GRID_COLOR, 1);
+-  g.beginPath();
+-  for (let x = SEA_GRID_CELL_M; x < width; x += SEA_GRID_CELL_M) {
+-    g.moveTo(x, 0);
+-    g.lineTo(x, height);
++  // 格子の線（100 m）は既定で残す（v0.7.0 S3a。R6・D5: 海の模様 systems/sea-fx があっても消すのはユーザー未確認。?debug&nogrid で比べる）。海域の縁はいつも
++  if (SEA_GRID_ON && !DEBUG_GRID_OFF) {
++    g.lineStyle(SEA_GRID_LINE_WIDTH, SEA_GRID_COLOR, 1);
++    g.beginPath();
++    for (let x = SEA_GRID_CELL_M; x < width; x += SEA_GRID_CELL_M) {
++      g.moveTo(x, 0);
++      g.lineTo(x, height);
++    }
++    for (let y = SEA_GRID_CELL_M; y < height; y += SEA_GRID_CELL_M) {
++      g.moveTo(0, y);
++      g.lineTo(width, y);
++    }
++    g.strokePath();
+   }
+-  for (let y = SEA_GRID_CELL_M; y < height; y += SEA_GRID_CELL_M) {
+-    g.moveTo(0, y);
+-    g.lineTo(width, y);
+-  }
+-  g.strokePath();
+   g.lineStyle(SEA_BORDER_WIDTH, SEA_BORDER_COLOR, 1);
+   g.strokeRect(0, 0, width, height);
+   return g;
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index 386e286..a7cd211 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -37,6 +37,7 @@ import { generateTransportTexture } from '../assets/transport-art';
+ import { generateAircraftTexture } from '../assets/aircraft-art';
+ import { generateGunButtonTexture } from '../assets/weapon-textures';
+ import { generateRainTexture } from '../assets/storm-placeholder';
++import { generateSeaTextures } from '../assets/sea-art';
+ import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
+ import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
+ import { generatePtBoatTexture } from '../assets/pt-placeholder';
+@@ -118,6 +119,7 @@ export class BootScene extends Phaser.Scene {
+     generateAircraftTexture(this);
+     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
+     generateRainTexture(this);
++    generateSeaTextures(this); // 海の模様のタイル・夜明けの光・きらめき（v0.7.0 S3a。assets/sea-art。Canvas の 2D に 1 回。systems/sea-fx が使う）
+     // 大発（v0.4.2）: 大発の隊を持つ最初の任務の値から（遊べる任務は Boot ですべて読める）
+     const bargeMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['barges']);
+     const barge = bargeMission ? getBargeParams(gameData, getPrototypeMission(gameData, bargeMission.id)) : null;
+diff --git a/src/systems/mission-world.ts b/src/systems/mission-world.ts
+index 96394b4..95d2552 100644
+--- a/src/systems/mission-world.ts
++++ b/src/systems/mission-world.ts
+@@ -51,6 +51,7 @@ import type { WorldEvents } from './world-events';
+ import { consumeFrameInput } from './world-input';
+ import { buildWorldSetup, type WorldSetup } from './world-setup';
+ import { destroyWorldVisuals, updateWorldVisuals } from './world-visuals';
++import { WorldArt } from './world-art';
+ export type { WorldEvents } from './world-events';
+ 
+ export class MissionWorld {
+@@ -75,6 +76,7 @@ export class MissionWorld {
+   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
+   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
+   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
++  readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
+   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
+   readonly params: BoatParams;
+   readonly returnPoint: ReturnPoint;
+@@ -216,6 +218,7 @@ export class MissionWorld {
+     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
+     this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
+     this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
++    this.art = new WorldArt(scene, this); // 世界の絵（v0.7.0 S3a。絵だけ＝ゲームの乱数の系列も生成の順も触らない）は論理の全部の後
+     this.refreshShallowStatus();
+   }
+ 
+diff --git a/src/systems/world-dawn.ts b/src/systems/world-dawn.ts
+index a290f2b..c322562 100644
+--- a/src/systems/world-dawn.ts
++++ b/src/systems/world-dawn.ts
+@@ -64,8 +64,10 @@ export class WorldDawn {
+   readonly retireJa: string;
+   private readonly durationS: number;
+   private readonly seaLight: SeaLight;
+-  /** 海を最初から昼に（setup.evac.dayStart。jp_03） */
+-  private readonly dayStart: boolean;
++  /** 海を最初から昼に（setup.evac.dayStart。jp_03）。systems/sea-fx が夜明けの光を 0 にするのに読む（v0.7.0 S3a。R4） */
++  readonly dayStart: boolean;
++  /** 直近のフレームの海の明るさの段（0〜SEA_LIGHT_STEPS。updateVisuals が書く）。海の模様の色と夜明けの光（systems/sea-fx）が同じ段で変わる（v0.7.0 S3a。spec §5.6） */
++  lightStep = 0;
+   /** ラッチの瞬間の「中」（null なら atHome。jp_03 は world-evac が置く） */
+   homeAtLatch: (() => boolean) | null = null;
+   /** 決着のラッチが立つか（null なら dawnReached だけ。jp_03 は world-evac が core/evac-early の evacSettleDue＝240 秒か早い決着（v0.6.11 IP1 の U8）を置く） */
+@@ -110,7 +112,8 @@ export class WorldDawn {
+ 
+   /** 毎フレーム: 海の明るさ（段が変わったときだけ背景色）と、空襲の機体・爆弾・着弾点の輪・爆撃進路の線 */
+   updateVisuals(w: DawnWorldView): void {
+-    this.seaLight.update(this.dayStart ? SEA_LIGHT_STEPS : seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS));
++    this.lightStep = this.dayStart ? SEA_LIGHT_STEPS : seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS);
++    this.seaLight.update(this.lightStep);
+     this.strike?.updateVisuals(w.boat.state, w.escort ? w.escort.state.boat : null);
+   }
+ 
+diff --git a/src/systems/world-visuals.ts b/src/systems/world-visuals.ts
+index 13bd602..6eb3df5 100644
+--- a/src/systems/world-visuals.ts
++++ b/src/systems/world-visuals.ts
+@@ -25,6 +25,7 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
+   w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
+   w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）
+   w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）
++  w.art.update(realDt, w); // 世界の絵＝海の模様・夜明けの光・きらめき（v0.7.0 S3a。systems/world-art。全任務。夜明けの段の後＝最後）
+ }
+ 
+ /** 任務の終わり: 世界の絵と物をみな破棄する（v0.6.8 の MissionWorld.destroy() と同じ順。揚陸（v0.6.9）・卯月（v0.6.10）は最後） */
+@@ -47,4 +48,5 @@ export function destroyWorldVisuals(w: MissionWorld): void {
+   w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）
+   w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
+   w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
++  w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）
+ }
+diff --git a/tests/world-visuals.test.ts b/tests/world-visuals.test.ts
+index f248725..809626f 100644
+--- a/tests/world-visuals.test.ts
++++ b/tests/world-visuals.test.ts
+@@ -47,11 +47,12 @@ describe('systems/world-visuals（v0.6.9 S0: mission-world の見た目の同期
+   // v0.6.9 S5a: 揚陸（systems/world-landing。jp_04 だけ。ほかの任務は w.landing が null）の 1 行ずつを最後に足した。2ad122b の行とその順は変えない
+   // v0.6.10 S5a: その後に卯月（w.landing.ally。jp_04 だけ・?debug&noally は null）の 1 行ずつ
+   // v0.6.11 S4: その後に空襲下の退避（w.evac。jp_03 だけ。ほかの任務は null）の 1 行ずつ
++  // v0.7.0 S3a: その後に世界の絵（w.art。systems/world-art。全任務）の 1 行ずつ（spec-v0700 R13）
+   it('updateWorldVisuals は 2ad122b の updateFrame の 16 行を同じ順で持つ（頭は const g = w.destroyers だけ）。最後に揚陸の 1 行（v0.6.9 S5a。S6b で世界を渡す）', () => {
+-    expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）', 'w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
++    expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）', 'w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）', 'w.art.update(realDt, w); // 世界の絵＝海の模様・夜明けの光・きらめき（v0.7.0 S3a。systems/world-art。全任務。夜明けの段の後＝最後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
+   });
+   it('destroyWorldVisuals は 2ad122b の destroy() の 15 行を同じ順で持つ。最後に揚陸の 1 行（v0.6.9 S5a）', () => {
+-    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）', 'w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）']);
++    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）', 'w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）', 'w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）']);
+   });
+   it('mission-world の updateFrame は 入力 → 固定ステップ → 命中スローの残り → 浅瀬 → 見た目 の順、destroy は world-visuals だけ。見た目の同期・破棄はもう持たない', () => {
+     const src = read('mission-world.ts');
