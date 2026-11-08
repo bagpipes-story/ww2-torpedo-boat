@@ -46,7 +46,7 @@ function recorder(o) {
     const m = hl.mission();
     if (!inWin && startNow(o, w, m)) {
       inWin = true; k0 = k; wall0 = performance.now(); out.t0 = w.stepTimeS;
-      out.reason = w.stepTimeS >= o.maxWarm ? `maxWarm ${o.maxWarm}` : String(o.start);
+      out.reason = typeof o.start !== 'number' && w.stepTimeS >= o.maxWarm ? `${o.start} が来ない・maxWarm ${o.maxWarm}` : String(o.start);
     }
     if (inWin) {
       const kk = k - k0;

@@ -29,6 +29,8 @@ function readKeys(): Record<string, string> {
   if (!m) throw new Error('TEXTURE_KEYS が見つからない');
   const out: Record<string, string> = {};
   for (const x of m[1]!.matchAll(/^\s*(\w+): '([^']+)',/gm)) out[x[1]!] = x[2]!;
+  const lines = m[1]!.split('\n').filter((l) => /^\s*\w+:/.test(l)).length;
+  if (lines !== Object.keys(out).length) throw new Error(`TEXTURE_KEYS の ${lines} 行のうち ${Object.keys(out).length} 行しか読めない（鍵: '値', の形で書く）`);
   return out;
 }
 function uiNum(name: string): number {
