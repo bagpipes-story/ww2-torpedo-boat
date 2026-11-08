@@ -1,3 +1,56 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index f3e3159..4e1142a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -53,6 +53,25 @@
+       既定ズームでは 8 種とも「翼と胴のある機」に読め、十字の placeholder より機首の向きが分かる（たとえば `jp_04-dawn-planes-w1560.png` の F4U は翼の折れの切り欠きまで、`jp_02-planes-w1560.png` の PB2Y はナセル 4 と双垂直尾翼、`us_02-planes-w1560.png` の Jake は胴の左右の 2 本のフロートが読める）。見張り（0.5）では spec §3.5 のとおり輪郭と色だけになり、どれも十字＝機として読める（`*-planes-lookout-w1560.png`）。見分けが要る所: 水上機（Pete・Rufe・Jake）は機首の前のフロートの出っ張りか胴の脇の 2 本で艦載機と区別でき、4 発の PB2Y は見張りでも胴の太い・幅の広い十字で単発機と別に見える。敵の赤と味方の青（us_02 の `-planes` の SBD）は既定ズームでも見張りでも混ざらない。夜の海（jp_02）・昼の海（夜明け後・jp_03）・陸の上（jp_01・jp_03 の壕の辺り）のどこでも浮く。向きの崩れ・ずれ・切れは 45° ごとの `-planes` の並びに無い。
+       正直な弱み（直すなら別の PATCH）: (1) Pete の複葉は上翼と下翼が重なって 1 枚の太い帯に見える（シートでも継ぎ目の線 1 本。既定ズームでは「翼の太い単葉」。複葉と読める大きさではないので、見分けは機首の前のフロートに頼る）。(2) generic と SBD はほぼ同じ形（generic は遊べる任務で機が出る所には出ない＝jp_05 と表に無い id だけ）。(3) 主の写しは機が HUD の字の後ろや画面の端にかかる件がある（us_01-dawn・jp_02・jp_03 ハード。台本の止め方の問題で絵ではない）、us_02 の主の写しは水上機がまだ見えていない（`-planes` で確認）、`-planes` の並びは自艇が画面の上寄りだと上に切れる（jp_01・jp_03・jp_04・jp_06。道具の置き方）。
+     - 門（lead がまとめて回した `run-gates`。scratchpad の `v0700/impl/S2b/SUMMARY.txt`）: npm test 258 ファイル・2,593 件（フロートの色の直しの後に回し直し）・typecheck・lint・build（`VITE_BASE=/ww2-torpedo-boat/`）が緑、凍結 20 本同じ、setup の snapshot は `-u` なし、g2 `G6=1 ALLY=1 EVAC=1` OK 37（1 回目は pt3 だけ DIFF＝前の担当が残した g2 と同じフォルダに同時に書いて出力が混ざったもの。単独で回し直して md5 e7482e1a が一致）、ab-replay all 58・jp04base 8・jp03 4 と hud-ab base 16・jp04base 8・jp03 4 が same:true（CAM=1）、tex-ab CHECK=1 ✓（1 回目は Jake・PB2Y の昼の海との比が ✗ → フロートとナセルをリムの色にして 2 回目 ✓。既存の鍵の寸法・原点はすべて同じ、GPU の差の最大 0.03 MB）、art-perf p95 ×0.96〜1.10（≤ 1.15。6 件・2 組）。
++  - S3a（海の面・夜明けの光・月のきらめき・格子の切り替え。spec §5.1・§5.6・§7.6。全面の層の計測の段。遊びは変えない＝カメラ・世界・HUD の値に触らない・乱数は絵だけ）:
++    - 新しいファイル: `assets/sea-shape`（Phaser に依らない: タイルの置き方・升の式・夜明けの光の α・きらめきの明滅と置き直し）・`assets/sea-art`（`generateSeaTextures`＝Boot で 1 回、Canvas の 2D に描いて `refresh()`。鍵が既にあれば描かない）・`systems/sea-fx`（海の模様の TileSprite・夜明けの光・きらめき）・`systems/world-art`（世界の絵の持ち主。S3b・S3c はここに足す）・`tests/sea-art`。Boot は `generateSeaTextures(this)` の 1 行、MissionWorld は論理の全部の後に `this.art = new WorldArt(scene, this)` の 1 行、world-visuals は最後に `w.art.update(realDt, w)`・`w.art.destroy()` の 1 行ずつ（R13。`tests/world-visuals` の期待にも足した）。`WorldDawn` に段の読み口 `lightStep`（updateVisuals が書く）と `dayStart` を public に。新しい鍵は D2 の 3 つ `tex-sea-tile` 512×512・`tex-dawn-glow` 256×64・`tex-glint` 16×8（art-inventory の PLANNED_NEW の内）。
++    - 海の模様（第 1 案＝世界の座標の TileSprite 1 枚。R5）: タイルは 0.5 px/m・1,024 m 周期（512 px＝2 の累乗で WebGL の REPEAT）。中身は白で描き（絵だけの乱数 `ART_SEED_SEA`。周期の縁をまたぐ弧は反対側にも描く＝継ぎ目なし）、光ごとに TileSprite の tint × α で色を付ける: 波頭の短い弧 150（長さ 16〜44 px＝32〜88 m・波の来る向き −12° ± 28°・たわみ 8〜18%・太い下塗り 4 px α 0.25 と芯 2 px α 0.7＝細部 2 px 以上）を 12 の「うねる波の列」（振幅 14 px・タイル 1 辺に山 2＝周期に合う）に沿って ±16 px 散らし（一様な網目にしない）、白波の短い点描 20（弧の上・3 px・α 1）、ごく薄いうねり 10（半径 60〜130 px の丸の濃淡 α 0.1）。1 回目は弧 260 本・夜 α 0.10〜0.12・一様に散らしたら「網目の毛羽」で明るすぎた（写し `impl/S3a/shots1/`。弧の峰の明るさ 54/255 ＝ 格子の線より明るい）ので 150 本・列に沿わせ・夜 α を下げた。
++    - 光の表（`SEA_LIGHT_ART`。tint は白寄りで、背景の上に α で重なった結果が spec の「#1c2a46 相当」などになる＝tint を暗い色にすると夜の海に溶けて見えない）: dark 0x9fb4d8 α 0.08・きらめき 0、half 0xb8ccec α 0.10・12、full 同 α 0.10・16、day 0xdce9f2 α 0.32・白波 16。夜は α ≤ 0.12（§3.2）。夜明けは `WorldDawn.lightStep`（0〜16。`sea-light` と同じ段）で tint と α を day へ線形に、段が変わった時だけ書く。jp_03（dayStart）は最初から day。
++    - 置き方（R5・R21）: TileSprite の局所は 128 × 64 px のまま `setScale` で広げ（その canvas と GPU の写しは 32 KB）、位置は周期の倍数・大きさは `camera.worldView` ＋ 余白 1 周期を覆う升の数 × 周期（W 1560 の既定のズームで 4〜5 × 3〜4 升・見張りで 5〜6 × 4〜5 升）、`tileScale` で模様の周期を世界で 1,024 m に。升が変わった時（縁が周期の線を越えた時＝全速でも数秒に 1 回）とズームが変わった時だけ `setPosition`・`setScale`・`setTileScale`（WebGL の TileSprite はこれらで canvas を描き直さない。`setSize` は呼ばない＝canvas を作り直す）。`tilePosition` は触らない＝模様は世界に固定（速さの手掛かり）。カメラ（スクロール・ズーム・揺れ）には触らない（ab-replay `CAM=1` が同じ）。Canvas レンダラー（`renderer.type !== WEBGL`）では作らない（毎フレーム描き直すため）。深さ 0.05（格子・海域の縁の上、浅瀬・輪 1 の下）。
++    - 夜明けの光（R3・R4）: `tex-dawn-glow`（右＝東の橙 0xff9a4a から 45% の所まで透明の横のグラデーション）を `setScrollFactor(0)` の Image で画面＋各辺 3% に広げ（scrollFactor 0 の物は (x − 幅/2) × zoom ＋ 幅/2 に出るので中心に置いて 1/zoom 倍。ズームが変わった時だけ）、深さ 0.1＝海の模様の直上・陸（1）・艇・艦・字の下。α ＝ 0.22 × sin(π × 段/16)（夜 0・段 8 で最大・昼 0。dayStart は 0）。α 0 の間は `visible` false（描かれず・art-perf の見える物にも入らない）。Mission のシーンに置く（Hud に足すと hud-ab が変わる）。
++    - 月のきらめき（R9）: `tex-glint`（柔らかい横長の筋 16 × 8 px を 14 × 6 m で）を half 12・full 16 個、世界の座標に置き、画面＋余白の外へ出たら反対側へ（横切った軸と直交する向きは画面の内で引き直す。絵だけの `new SeededRng(ART_SEED_GLINT)` を世界の絵を作る時に＝R30）。冷たい青白 0xcfe4ff・α ≤ 0.3・明滅は 1 − 0.5 × (0.5 + 0.5 sin) で周期 2〜4 秒（砲口炎の星とは形・色・速さで別）。夜明けの段で α × (1 − 段/16)＝昼へ向けて消える。昼（jp_03・whitecaps）は同じプール 16 を白 0xf4f8fb・α 0.55 で「疎らな白波」に（全面の層を 2 枚目にしない）。
++    - 格子の線（R6・D5）: 既定で残す（`SEA_GRID_ON` true）。`?debug&nogrid`（game-config の `DEBUG_GRID_OFF`）で 100 m の線だけ消して比べる（海域の縁はいつも）。実機テスト ② で聞いて次の版で決める。
++    - 定数は `config/sea-art-config`（上の表と数。`RENDERER_WEBGL` 2＝sea-fx が phaser の値の import を避ける）。`scripts/headless/art-shots.mjs` に `CASE=名前|query|秒|見張り|stopM|slowM`（表に無い 1 件）と `EXTRA=`（全件の query の末尾）を足した（夜明けの移り変わりの途中・`&nogrid` の写し用）。
++    - テスト `tests/sea-art`（17 件: タイル 512＝2 の累乗・同じ種なら同じ置き方・弧の本数と長さと向きとたわみ・細部 2 px 以上・白波は弧の上・縁をまたぐ物の写し（内 1・縁 2・角 4）・夜の α ≤ 0.12・きらめき α ≤ 0.3 と 2:1 と明滅の下限 0.5 と周期 ≥ 2 秒・夜明けの光の式と dayStart 0 と深さの順・升が周期の倍数で view ＋ 余白を覆い少し動いても同じ・置き直しは反対側へ・source の pin（Boot の 1 行・world-visuals の最後の 1 行ずつ・mission-world は論理の後に 1 つ・TileSprite は世界の座標で原点 (0,0)・setSize と tilePosition を使わない・段とズームと升が変わった時だけ書く・鍵 3 つ・`?debug&nogrid`・WorldDawn の lightStep））。`tests/art-rules` に sea-art・sea-fx・world-art が自動で入る（update の本体に new・リテラル・tween なし、乱数は ART_SEED だけ、論理への代入なし）。
++    - 計測（art-perf。A＝f5563ab・B＝S3a。2 組・窓 15 秒・W 1560。描いたフレームの p95）: __PERF__
++    - 写し（`art-shots` W 1280・1560。scratchpad の `v0700/impl/S3a/shots2/`（1 回目の明るすぎた版は `shots1/`）と `shots2x/`（CASE の 2 件）。基準は `v0700/before/`。ページのエラー 0）: 
++      - 夜・月あり（us_02 half。`shots2/us_02-w1560.png`・`-w1280`）: 格子の線と同じくらいの薄さの青灰の弧が、うねる横の列に沿って疎らに並び、「暗い海」が「夜の海面」に読める。自艇（白）・曳光弾・探照灯・見越し点の輪・HUD の字の読みは前と同じ（弧の峰は格子より少し明るい程度で、艇や字の明るさには届かない）。月のきらめき 12 は青白い短い筋で、ゆっくり明滅＝砲口炎とは混ざらない。見張り（`us_02-lookout-w1560.png`）では弧が細かい粒になり、縞やモアレは出ない。格子の繰り返し（1,024 m）は既定のズームで横に 2 周期入るが、列がうねるので継ぎ目も繰り返しも目で追えない。
++      - 夜・月なし（jp_06 dark。`shots2/jp_06-w1560.png`）: us_02 より一段薄く（α 0.08）、米駆逐艦・探照灯・T-38 の読みは前と同じ。「ほぼ黒の海」より海らしいが、注意して見ないと分からない程度＝夜の読みやすさを優先した。
++      - 夜明けの移り変わり（us_01 `&dawn=20` を t 13 秒＝段 5 で止めた `shots2x/us_01-dawnmid-w1560.png`）: 背景が段の色になり、右（東）へ行くほど橙が乗る（画素で左 (26,38,57) → 右端 (64,57,60)。段 8 ではこの約 1.3 倍）。正直に言えば**控えめ**（spec の α 0.22 のとおり。艇・艦・字の上には乗らない＝R3）。夜明けの後（`shots2/us_01-dawn-w1560.png`。段 16）は光 0 で昼の海＝白波の筋 16 が乗った昼の模様。
++      - 昼（jp_03。`shots2/jp_03-w1560.png`・`jp_03-lookout-w1280.png`）: 昼の海 0x3b5670 の上に白っぽい弧（α 0.32）と白波の筋 16 で「昼の海面」に読め、陰と壕の岩の絵・18 隻・輪・札・敵機の読みは前と同じ（jp_03 の陰と壕の絵は触っていない）。1 回目の α 0.4・260 本は海が白っぽく騒がしかったので下げた。弧が 12 の列に沿うので「波の列」が少し規則的に見える（列のうねりと ±16 px の散らしで和らげた。もっと崩すなら列の数と散らしの定数）。
++      - 格子なし（`shots2x/us_02-nogrid-w1560.png`・`-lookout`）: 線が無くても模様だけで海面に読める＝実機テスト ② で「格子を消してよいか」を比べる版。
++      - 気になる点（直すなら S4 か次の版）: (1) 夜の模様は意図して薄いので、明るい画面の iPhone では見えても暗い設定では消えるかもしれない（実機テスト ②）。(2) 月のきらめきと昼の白波は同じ筋の絵（色と α だけ違う）。(3) 夜明けの光は 26 秒の移り変わりの間だけ・右の 1/3 だけなので見逃しやすい。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
+ - 既知の制約:
+   - （S0）art config と art-dims はまだどこからも使われない（S1〜S3c で使う）。tests/art-inventory の予定の鍵（PLANNED_NEW）は spec D2 の 11。段で鍵を足す・やめる時はこの表も直す。
+   - （S0）tex-check の絶対の門（夜の海との比 ≥ 4.5・昼 ≥ 3・艦の幅 ≥ 0.92）は placeholder がもともと満たさない所（敵機の赤の昼の海との比 2.97・輸送船の 20% の行の幅 0.89）を「A 以上」で読む。
+diff --git a/scripts/headless/art-shots.mjs b/scripts/headless/art-shots.mjs
+index 3f98d93..3c88b5a 100644
+--- a/scripts/headless/art-shots.mjs
++++ b/scripts/headless/art-shots.mjs
+@@ -7,7 +7,7 @@
+ // 名前: <件>-w<幅>.png・<件>-lookout-w<幅>.png・<件>-reveal-w<幅>.png（・<件>-lookout-rot<角>-w<幅>.png）。shots.json に各件の止めた t・ズーム・見えていた絵の鍵の数・ページのエラー。
+ // PLANES=1（S2b。機の 8 種）: 件を機の件（夜明けの空襲 &dawn=25 の 5 任務＋jp_02 の哨戒機＋jp_03 ハード＋us_02）に替え、敵の艦でなく機の絵が画面に入るまで走る。
+ //   主の写しの後、見えていない機の絵（水上機・味方機・残骸＝同じ鍵）を自艇の上に並べて出した -planes と、その見張り -planes-lookout も撮る（参考。遊びの画面ではない）。
+-// 実行: SITE=<site> SHOTDIR=<dir> [W=1280,1560] [ONLY=us_02,jp_03] [ROT8=1] [PLANES=1] node scripts/headless/art-shots.mjs
++// 実行: SITE=<site> SHOTDIR=<dir> [W=1280,1560] [ONLY=us_02,jp_03] [ROT8=1] [PLANES=1] [CASE=名前|query|秒|見張り|stopM|slowM] [EXTRA=nogrid] node scripts/headless/art-shots.mjs
+ import { mkdirSync, writeFileSync } from 'node:fs';
+ import { FRAME_MS, chromium, openGame, serve } from './lib.mjs';
+ 
+@@ -46,6 +46,9 @@ const PLANE_CASES = [
+ const PLANES = process.env.PLANES === '1';
+ if (PLANES) CASES = PLANE_CASES;
+ if (process.env.ONLY) { const only = process.env.ONLY.split(','); CASES = CASES.filter((c) => only.includes(c[0])); }
++// CASE=名前|query|最大秒|見張りも(1/0)|stopM|slowM（S3a。夜明けの移り変わりの途中 &dawn=20 を t 13 秒で止める・&nogrid の比較など、表に無い 1 件を足す）。EXTRA=…: 全件の query の末尾に足す
++if (process.env.CASE) { const c = process.env.CASE.split('|'); CASES.push([c[0], c[1], Number(c[2]), c[3] === '1', Number(c[4] ?? 800), Number(c[5] ?? 1500)]); }
++if (process.env.EXTRA) CASES = CASES.map((c) => [c[0], `${c[1]}&${process.env.EXTRA}`, ...c.slice(2)]);
+ 
+ function drive(o) {
+   window.hideDebug = (m) => { for (const c of m.children.list) if (c.texture && c.texture.key === 'tex-debug-ring') { c.setVisible(false); c.setVisible = () => c; } };
 diff --git a/src/config/game-config.ts b/src/config/game-config.ts
 index 26091e0..5a46339 100644
 --- a/src/config/game-config.ts
@@ -20,7 +73,7 @@ index 26091e0..5a46339 100644
 +  glint: 'tex-glint', // 月のきらめき・昼の白波の筋 16×8（v0.7.0 S3a）
  } as const;
 diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
-index 861310c..014360c 100644
+index 861310c..c8ed172 100644
 --- a/src/config/sea-art-config.ts
 +++ b/src/config/sea-art-config.ts
 @@ -1,4 +1,4 @@
@@ -43,7 +96,7 @@ index 861310c..014360c 100644
  export interface SeaLightArt {
    readonly crest: number;
    readonly crestAlpha: number;
-@@ -19,11 +24,39 @@ export interface SeaLightArt {
+@@ -19,11 +24,44 @@ export interface SeaLightArt {
    readonly whitecaps: boolean;
  }
  export const SEA_LIGHT_ART: Readonly<Record<'dark' | 'half' | 'full' | 'day', SeaLightArt>> = {
@@ -51,10 +104,10 @@ index 861310c..014360c 100644
 -  half: { crest: 0x2a3c60, crestAlpha: 0.12, glints: 12, whitecaps: false },
 -  full: { crest: 0x2a3c60, crestAlpha: 0.12, glints: 16, whitecaps: false },
 -  day: { crest: 0x8fb0c8, crestAlpha: 0.3, glints: 0, whitecaps: true },
-+  dark: { crest: 0x9fb4d8, crestAlpha: 0.1, glints: 0, whitecaps: false },
-+  half: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 12, whitecaps: false },
-+  full: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 16, whitecaps: false },
-+  day: { crest: 0xdce9f2, crestAlpha: 0.4, glints: 16, whitecaps: true },
++  dark: { crest: 0x9fb4d8, crestAlpha: 0.08, glints: 0, whitecaps: false },
++  half: { crest: 0xb8ccec, crestAlpha: 0.1, glints: 12, whitecaps: false },
++  full: { crest: 0xb8ccec, crestAlpha: 0.1, glints: 16, whitecaps: false },
++  day: { crest: 0xdce9f2, crestAlpha: 0.32, glints: 16, whitecaps: true },
  };
 +/** 夜の模様の α の上限（spec §3.2「夜は α ≤ 0.12」。tests/sea-art） */
 +export const SEA_NIGHT_ALPHA_MAX = 0.12;
@@ -64,16 +117,21 @@ index 861310c..014360c 100644
 + * 波頭の短い弧（本数・長さ px・向き＝波の来る向き −12° に ±28° の乱れ・たわみ＝長さの割合・太い下塗り 4 px α 0.32 と芯 2 px α 0.8＝細部は 2 px 以上 R17）、
 + * 疎らな白波（短く太い点描。弧の上に。昼の α で見える）、ごく薄いうねり（大きな丸の濃淡）。点を一直線に並べた形は描かない（雷跡と紛れない。R7）
 + */
-+export const SEA_CREST_COUNT = 260;
-+export const SEA_CREST_LEN_PX: readonly [number, number] = [14, 34];
++export const SEA_CREST_COUNT = 150;
++export const SEA_CREST_LEN_PX: readonly [number, number] = [16, 44];
++/** 弧は波の列に沿って置く（一様な網目にしない）: 列の数（タイルの高さを等分）・列のうねり（振幅 px・タイル 1 辺あたりの山の数＝整数で周期に合う）・列からの散らばり px */
++export const SEA_CREST_ROWS = 12;
++export const SEA_ROW_WAVE_PX = 14;
++export const SEA_ROW_WAVES_PER_TILE = 2;
++export const SEA_ROW_SCATTER_PX = 16;
 +export const SEA_CREST_BASE_DEG = -12;
 +export const SEA_CREST_JITTER_DEG = 28;
 +export const SEA_CREST_SAG: readonly [number, number] = [0.08, 0.18];
 +export const SEA_CREST_WIDE_PX = 4;
-+export const SEA_CREST_WIDE_ALPHA = 0.32;
++export const SEA_CREST_WIDE_ALPHA = 0.25;
 +export const SEA_CREST_CORE_PX = 2;
-+export const SEA_CREST_CORE_ALPHA = 0.8;
-+export const SEA_CAP_COUNT = 28;
++export const SEA_CREST_CORE_ALPHA = 0.7;
++export const SEA_CAP_COUNT = 20;
 +export const SEA_CAP_LEN_PX: readonly [number, number] = [5, 9];
 +export const SEA_CAP_PX = 3;
 +export const SEA_CAP_ALPHA = 1;
@@ -87,7 +145,7 @@ index 861310c..014360c 100644
  
  /** 夜明けの光（東＝画面の右端の橙。α ＝ 最大 × sin(π × 段/16)＝夜 0・移り変わりの中ほどで最大・昼 0。昼から始まる任務は 0。R3・R4）。テクスチャの px と画面からはみ出す割合 */
  export const DAWN_GLOW_COLOR = 0xff9a4a;
-@@ -32,13 +65,21 @@ export const DAWN_GLOW_TEX_W = 256;
+@@ -32,13 +70,21 @@ export const DAWN_GLOW_TEX_W = 256;
  export const DAWN_GLOW_TEX_H = 64;
  export const DAWN_GLOW_OVERSCAN = 0.03;
  
