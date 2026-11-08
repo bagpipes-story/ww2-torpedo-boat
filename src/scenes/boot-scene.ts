@@ -34,7 +34,7 @@ import {
 import { generatePlayerBoatTexture } from '../assets/boat-art';
 import { generateDestroyerTexture, generateExtraDestroyerTextures } from '../assets/destroyer-art';
 import { generateTransportTexture } from '../assets/transport-art';
-import { generateAircraftTexture } from '../assets/aircraft-placeholder';
+import { generateAircraftTexture } from '../assets/aircraft-art';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
 import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';

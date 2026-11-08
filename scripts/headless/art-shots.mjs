@@ -5,7 +5,9 @@
 // ROT8=1（S1・S2a。R17）: 見張りの写しの後、画面の艇・艦・機・大発の絵の角度を 0〜315° の 45° ごとに書き換えて 8 枚（-rot<角>）。絵だけ（世界の状態は読むだけ）。
 // 基準（v0.7.0 の前＝main f5563ab）: .../v0700/before/（索引 INDEX.md）。13 件＝9 任務＋ハード 3＋夜明け 1（遊べない us_04〜us_07 は ?debug&mission= が us_02 に落ちるので撮らない）。
 // 名前: <件>-w<幅>.png・<件>-lookout-w<幅>.png・<件>-reveal-w<幅>.png（・<件>-lookout-rot<角>-w<幅>.png）。shots.json に各件の止めた t・ズーム・見えていた絵の鍵の数・ページのエラー。
-// 実行: SITE=<site> SHOTDIR=<dir> [W=1280,1560] [ONLY=us_02,jp_03] [ROT8=1] node scripts/headless/art-shots.mjs
+// PLANES=1（S2b。機の 8 種）: 件を機の件（夜明けの空襲 &dawn=25 の 5 任務＋jp_02 の哨戒機＋jp_03 ハード＋us_02）に替え、敵の艦でなく機の絵が画面に入るまで走る。
+//   主の写しの後、見えていない機の絵（水上機・味方機・残骸＝同じ鍵）を自艇の上に並べて出した -planes と、その見張り -planes-lookout も撮る（参考。遊びの画面ではない）。
+// 実行: SITE=<site> SHOTDIR=<dir> [W=1280,1560] [ONLY=us_02,jp_03] [ROT8=1] [PLANES=1] node scripts/headless/art-shots.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { FRAME_MS, chromium, openGame, serve } from './lib.mjs';
 
@@ -30,6 +32,19 @@ let CASES = [
   ['jp_05', 'mission=jp_05&seed=1', 110, true, 600, 400],
   ['jp_06', 'mission=jp_06&seed=1', 110, true, 800, 500],
 ];
+// [名前, query, 最大秒, 見張りも, stopM, slowM, 機だけ＝敵の艦が見えても止めず機の絵が入るまで]
+const PLANE_CASES = [
+  ['us_01-dawn', 'mission=us_01&seed=1&dawn=25', 60, true, 0, 1500, true],
+  ['us_02', 'mission=us_02&seed=1', 40, true, 800, 1500, false],
+  ['us_03-dawn', 'mission=us_03&seed=1&dawn=25', 60, true, 0, 1500, true],
+  ['jp_01-dawn', 'mission=jp_01&seed=1&dawn=25', 60, true, 0, 1500, true],
+  ['jp_02', 'mission=jp_02&seed=1', 90, true, 0, 1500, true],
+  ['jp_03-hard', 'mission=jp_03&seed=1&hard', 75, true, 0, 1500, true],
+  ['jp_04-dawn', 'mission=jp_04&seed=2&dawn=25', 60, true, 0, 1500, true],
+  ['jp_06-dawn', 'mission=jp_06&seed=1&dawn=25', 60, true, 0, 1500, true],
+];
+const PLANES = process.env.PLANES === '1';
+if (PLANES) CASES = PLANE_CASES;
 if (process.env.ONLY) { const only = process.env.ONLY.split(','); CASES = CASES.filter((c) => only.includes(c[0])); }
 
 function drive(o) {
@@ -62,12 +77,12 @@ function drive(o) {
     for (const c of m.children.list) {
       if (!c.visible || c.alpha < 0.3 || (c.type !== 'Image' && c.type !== 'Sprite')) continue;
       const key = c.texture ? c.texture.key : '';
-      if (!/destroyer|transport|barge|pt-boat|aircraft/.test(key) || /friendly/.test(key)) continue;
+      if (!(o.air ? /aircraft/ : /destroyer|transport|barge|pt-boat|aircraft/).test(key) || /friendly/.test(key)) continue;
       if (c.x > v.x + v.width * 0.08 && c.x < v.right - v.width * 0.08 && c.y > v.y + v.height * 0.1 && c.y < v.bottom - v.height * 0.1) { seen = true; break; }
     }
     inView = seen ? inView + 1 : 0;
     if (k % 120 === 0) trace.push([Math.round(t), Math.round(dist), seen, Math.round(w.damage.hp)]);
-    if (t > o.minS && (inView > 6 || dist < o.stopM)) break;
+    if (t > o.minS && (inView > 6 || (o.stopM > 0 && dist < o.stopM))) break;
   }
   hideDebug(m);
   for (let i = 0; i < 70; i++) hl.render();
@@ -92,6 +107,29 @@ function reveal() {
     c.setVisible(true);
     c.setVisible = () => c;
     if (c.alpha < 0.5) c.setAlpha(1);
+    n++;
+  }
+  window.hideDebug(m);
+  for (let i = 0; i < 3; i++) hl.render();
+  return n;
+}
+
+/** 見えていない機の絵（水上機・味方機・残骸・待機中の編隊＝同じ鍵）を自艇の上に 45° ずつ回して並べる（参考の写し。世界の状態は読むだけ） */
+function revealPlanes() {
+  const hl = window.__hl;
+  const w = hl.world();
+  const m = hl.mission();
+  const b = w.boat.state;
+  let n = 0;
+  const seen = {};
+  for (const c of m.children.list) {
+    if ((c.type !== 'Image' && c.type !== 'Sprite') || c.visible) continue;
+    const key = c.texture ? c.texture.key : '';
+    if (!/aircraft/.test(key)) continue;
+    seen[key] = (seen[key] ?? 0) + 1;
+    if (seen[key] > 4) continue;
+    c.setPosition(b.x - 240 + n * 120, b.y - 170 - (key === 'tex-aircraft' ? 110 : 0)).setAngle(n * 45).setAlpha(1).setVisible(true);
+    c.setVisible = () => c; c.setAlpha = () => c; c.setPosition = () => c; c.setAngle = () => c;
     n++;
   }
   window.hideDebug(m);
@@ -127,19 +165,23 @@ const browser = await chromium.launch();
 const out = [];
 let bad = 0;
 for (const width of widths) {
-  for (const [name, q, secs, look, stopM = 800, slowM = 1500] of CASES) {
+  for (const [name, q, secs, look, stopM = 800, slowM = 1500, air = false] of CASES) {
     const { page, ctx, errors } = await openGame(browser, sv.base, q, { width, dpr: 2 });
     try {
-      const r = await page.evaluate(drive, { secs, minS: 8, slowM, stopM: stopM, frameMs: FRAME_MS, trace: process.env.TRACE === '1' });
+      const r = await page.evaluate(drive, { secs, minS: 8, slowM, stopM: stopM, frameMs: FRAME_MS, trace: process.env.TRACE === '1', air });
       const shot = `${dir}/${name}-w${width}.png`;
       await page.screenshot({ path: shot });
       const nRev = r.ended ? 0 : await page.evaluate(reveal);
       if (nRev > 0) await page.screenshot({ path: `${dir}/${name}-reveal-w${width}.png` });
       r.revealed = nRev;
+      if (PLANES && !r.ended) {
+        r.planes = await page.evaluate(revealPlanes);
+        if (r.planes > 0) await page.screenshot({ path: `${dir}/${name}-planes-w${width}.png` });
+      }
       let lk = null;
       if (look && !r.ended) {
         lk = await page.evaluate(lookout, { frameMs: FRAME_MS });
-        await page.screenshot({ path: `${dir}/${name}-lookout-w${width}.png` });
+        await page.screenshot({ path: `${dir}/${name}-${PLANES && r.planes > 0 ? 'planes-lookout' : 'lookout'}-w${width}.png` });
         if (process.env.ROT8 === '1') {
           for (let a = 0; a < 360; a += 45) {
             await page.evaluate(rot8, a);

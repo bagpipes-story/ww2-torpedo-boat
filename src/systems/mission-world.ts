@@ -2,6 +2,7 @@
 // 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、見た目の同期と破棄は world-visuals.ts（v0.6.9）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
+import { missionAircraftId, paintMissionAircraft } from '../assets/aircraft-art';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
 import { debugSetupOptions } from '../config/debug-setup';
 import { getBoatTorpedoCount, type GameData } from '../config/game-data';
@@ -167,6 +168,7 @@ export class MissionWorld {
     const s = buildWorldSetup(data, sortie.missionId, debugSetupOptions(sortie, sortie.hard));
     this.setup = s;
     const mission = s.mission;
+    paintMissionAircraft(scene, missionAircraftId(mission)); // 敵機の絵をこの任務の機の種類で描き直す（v0.7.0 S2b。D4。絵だけ・乱数も状態も触らない）
     this.params = s.boatParams;
     this.returnPoint = mission.returnPoint;
     this.fuelCurve = s.fuelCurve;
