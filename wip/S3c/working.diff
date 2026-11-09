@@ -1,0 +1,444 @@
+diff --git a/src/assets/fx-art.ts b/src/assets/fx-art.ts
+index 4716ed4..d46129b 100644
+--- a/src/assets/fx-art.ts
++++ b/src/assets/fx-art.ts
+@@ -2,13 +2,15 @@
+ // 鍵が既にあれば描かない＝sea-art の paintCanvas）。色は付けず白で描き、表示側の tint で色を付ける（水柱 外れ 青白・命中 橙、砲口炎 各所の tint、閃光・火球は fx-art-config の tint）。
+ // - tex-splash・tex-muzzle-flash・tex-fireball: 爆発の輪と同じ寸法（art-dims の discTexSize(40, k, 8)＝96×96 at k 1.09）＝SplashPool と砲口炎 7 か所の今の scale 定数で同じ世界の大きさ。
+ //   水柱＝明るい芯（置いた所が読める）＋放射の飛沫の筋＋薄い外の輪、砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
++// - tex-flame（S3c）: 真上から見た炎（回らない向きの陰影なし）＝白黄の芯・橙の舌 7 本・赤い縁。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
+ // - tex-wake-boat・tex-wake-ship: 艇尾を頂点にした V（半角 19.5°。R7: 腕が主・中央の泡は短く薄い）。frame p0＝V、p1＝泡だけ（自艇の静音＝R1）。k に依らない固定の px（96×128）。
+ import type Phaser from 'phaser';
+ import { EXPLOSION_RING_RADIUS_UNITS, discTexSize } from './art-dims';
++import { flameTongues } from './fire-shape';
+ import { muzzleRays, splashDroplets } from './fx-shape';
+ import { paintCanvas } from './sea-art';
+ import {
+-  ART_SEED_FX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, SPLASH_CORE_R, SPLASH_RING_R, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
++  ART_SEED_FX, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, SPLASH_CORE_R, SPLASH_RING_R, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
+   WAKE_CENTER_WIDTH_PX, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SHIP_CENTER_WIDTH_PX, WAKE_TEX_H, WAKE_TEX_W,
+ } from '../config/fx-art-config';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+@@ -121,7 +123,45 @@ function paintWake(scene: Phaser.Scene, key: string, ship: boolean): void {
+   }, 2);
+ }
+ 
+-/** Boot で 1 回: 水柱・砲口炎・火球（爆発の輪と同じ寸法）・航跡 2 枚 */
++/** 炎の 1 frame（top から 64 px）: 赤い外の光 → 橙の舌（中心から外へ細る三角に近い楕円）→ 白黄の芯 */
++function paintFlameFrame(ctx: CanvasRenderingContext2D, top: number, frame: number): void {
++  const S = FLAME_TEX_PX;
++  const c = S / 2;
++  const cy = top + c;
++  const R = c - 1;
++  const glow = ctx.createRadialGradient(c, cy, 0, c, cy, R);
++  glow.addColorStop(0, 'rgba(255,120,40,0.55)');
++  glow.addColorStop(0.6, 'rgba(220,60,20,0.25)');
++  glow.addColorStop(1, 'rgba(200,40,10,0)');
++  ctx.fillStyle = glow;
++  ctx.fillRect(0, top, S, S);
++  for (const t of flameTongues(ART_SEED_FX, frame)) {
++    ctx.save();
++    ctx.translate(c, cy);
++    ctx.rotate(t.ang);
++    const L = t.len * R;
++    const g = ctx.createLinearGradient(0, 0, L, 0);
++    g.addColorStop(0, 'rgba(255,200,90,0.95)');
++    g.addColorStop(0.6, 'rgba(255,130,40,0.7)');
++    g.addColorStop(1, 'rgba(230,70,20,0)');
++    ctx.fillStyle = g;
++    ctx.beginPath();
++    ctx.moveTo(0, -t.w * R);
++    ctx.quadraticCurveTo(L * 0.55, -t.w * R * 0.9, L, 0);
++    ctx.quadraticCurveTo(L * 0.55, t.w * R * 0.9, 0, t.w * R);
++    ctx.closePath();
++    ctx.fill();
++    ctx.restore();
++  }
++  const core = ctx.createRadialGradient(c, cy, 0, c, cy, R * 0.38);
++  core.addColorStop(0, 'rgba(255,250,225,1)');
++  core.addColorStop(0.5, 'rgba(255,220,120,0.9)');
++  core.addColorStop(1, 'rgba(255,160,60,0)');
++  ctx.fillStyle = core;
++  ctx.fillRect(0, top, S, S);
++}
++
++/** Boot で 1 回: 水柱・砲口炎・火球（爆発の輪と同じ寸法）・航跡 2 枚・炎（S3c） */
+ export function generateFxTextures(scene: Phaser.Scene): void {
+   const k = RENDER_SCALE;
+   const d = discTexSize(EXPLOSION_RING_RADIUS_UNITS, k, 8).w;
+@@ -131,4 +171,8 @@ export function generateFxTextures(scene: Phaser.Scene): void {
+   paintFireball(scene, d, R);
+   paintWake(scene, TEXTURE_KEYS.wakeBoat, false);
+   paintWake(scene, TEXTURE_KEYS.wakeShip, true);
++  paintCanvas(scene, TEXTURE_KEYS.flame, FLAME_TEX_PX, FLAME_TEX_PX, (ctx) => {
++    paintFlameFrame(ctx, 0, 0);
++    paintFlameFrame(ctx, FLAME_TEX_PX, 1);
++  }, 2);
+ }
+diff --git a/src/assets/placeholders.ts b/src/assets/placeholders.ts
+index 3cd1d5b..71b3e82 100644
+--- a/src/assets/placeholders.ts
++++ b/src/assets/placeholders.ts
+@@ -1,6 +1,6 @@
+ // プレースホルダー図形を起動時に 1 回だけテクスチャ化する（CLAUDE.md §7: 毎フレーム Graphics を描き直さない）。
+ // 世界座標のテクスチャは RENDER_SCALE 倍の解像度で作り、表示側で 1/RENDER_SCALE に縮めて高 DPI でも滲まないようにする。
+-// v0.7.0 S1: 自艇・僚艇・隼艇の絵（generatePlayerBoatTexture）は assets/boat-art へ移した（鍵・寸法・原点は同じ）。S2a: 駆逐艦・輸送船は assets/destroyer-art・transport-art、魚雷は torpedo-art へ。
++// v0.7.0 S3c: 探照灯・星弾・煙幕の絵は assets/light-art（名前と UI の部分はここのまま＝R14）。S1: 自艇・僚艇・隼艇の絵（generatePlayerBoatTexture）は assets/boat-art へ移した（鍵・寸法・原点は同じ）。S2a: 駆逐艦・輸送船は assets/destroyer-art・transport-art、魚雷は torpedo-art へ。
+ import Phaser from 'phaser';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import {
+@@ -9,14 +9,8 @@ import {
+   HP_BAR_HEIGHT,
+   HP_BAR_WIDTH,
+   ROUND_BUTTON_RADIUS,
+-  SMOKE_PUFF_COLOR,
+-  SMOKE_PUFF_TEX_RADIUS_UNITS,
+-  SEARCHLIGHT_COLOR,
+-  SEARCHLIGHT_TEX_LENGTH_UNITS,
+   SHELL_COLOR,
+   SHELL_DOT_UNITS,
+-  STARSHELL_COLOR,
+-  STARSHELL_TEX_RADIUS_UNITS,
+   TRACER_COLOR,
+   TRACER_LENGTH_UNITS,
+   TRACER_WIDTH_UNITS,
+@@ -31,6 +25,7 @@ import {
+   RETURN_RING_LINE_WIDTH,
+   RETURN_RING_TEX_RADIUS_UNITS,
+ } from '../config/ui-config';
++import { paintSearchlightTexture, paintSmokePuffTexture, paintStarshellTexture } from './light-art';
+ import { paintTorpedoTexture } from './torpedo-art';
+ 
+ /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
+@@ -111,7 +106,7 @@ export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits:
+ /** 反撃（v0.2.1）: 砲弾の点、曳光弾、探照灯の扇（光源を下端に・光は上へ。原点は光源）、星弾の照明円、HP バー */
+ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg: number): void {
+   const k = RENDER_SCALE;
+-  let d = Math.ceil(SHELL_DOT_UNITS * k) + 2;
++  const d = Math.ceil(SHELL_DOT_UNITS * k) + 2;
+   let g = scene.make.graphics({ x: 0, y: 0 }, false);
+   g.fillStyle(SHELL_COLOR, 1);
+   g.fillCircle(d / 2, d / 2, (SHELL_DOT_UNITS * k) / 2);
+@@ -126,27 +121,9 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
+   g.generateTexture(TEXTURE_KEYS.tracer, tw, tl);
+   g.destroy();
+ 
+-  // 探照灯: 長さ L の二等辺三角形。先端（光源）は下端、光は上（北 = 方位 0）へ伸びる。幅は cone_deg から。表示時に射程/L 倍に拡大する
+-  const L = SEARCHLIGHT_TEX_LENGTH_UNITS * k;
+-  const halfW = Math.tan(((searchlightConeDeg / 2) * Math.PI) / 180) * L;
+-  const W = Math.ceil(halfW * 2) + 2;
+-  g = scene.make.graphics({ x: 0, y: 0 }, false);
+-  g.fillStyle(SEARCHLIGHT_COLOR, 1);
+-  g.beginPath();
+-  g.moveTo(W / 2, L);
+-  g.lineTo(W, 0);
+-  g.lineTo(0, 0);
+-  g.closePath();
+-  g.fillPath();
+-  g.generateTexture(TEXTURE_KEYS.searchlight, W, Math.ceil(L));
+-  g.destroy();
+-
+-  d = Math.ceil(STARSHELL_TEX_RADIUS_UNITS * 2 * k) + 2;
+-  g = scene.make.graphics({ x: 0, y: 0 }, false);
+-  g.fillStyle(STARSHELL_COLOR, 1);
+-  g.fillCircle(d / 2, d / 2, STARSHELL_TEX_RADIUS_UNITS * k);
+-  g.generateTexture(TEXTURE_KEYS.starshell, d, d);
+-  g.destroy();
++  // 探照灯の扇・星弾の照明円（v0.7.0 S3c から assets/light-art の画素の式。鍵・寸法・原点は同じ）
++  paintSearchlightTexture(scene, searchlightConeDeg);
++  paintStarshellTexture(scene);
+ 
+   const bw = Math.ceil(HP_BAR_WIDTH * k);
+   const bh = Math.ceil(HP_BAR_HEIGHT * k);
+@@ -165,8 +142,8 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
+ /** 技能の丸ボタン（煙幕・消火・見張り・識別。v0.6.8 実機 1 回目から右端の縦一列で R44 に縮めて使う。一時停止も同じ絵）と、煙幕の煙（世界単位 × RENDER_SCALE。表示時に半径へ拡縮） */
+ export function generateSmokeTextures(scene: Phaser.Scene): void {
+   const k = RENDER_SCALE;
+-  let d = Math.ceil(ROUND_BUTTON_RADIUS * 2 * k) + 4;
+-  let g = scene.make.graphics({ x: 0, y: 0 }, false);
++  const d = Math.ceil(ROUND_BUTTON_RADIUS * 2 * k) + 4;
++  const g = scene.make.graphics({ x: 0, y: 0 }, false);
+   g.fillStyle(COLOR_UI, 0.25);
+   g.fillCircle(d / 2, d / 2, ROUND_BUTTON_RADIUS * k);
+   g.lineStyle(Math.max(2, 3 * k), COLOR_UI, 1);
+@@ -174,17 +151,8 @@ export function generateSmokeTextures(scene: Phaser.Scene): void {
+   g.generateTexture(TEXTURE_KEYS.roundButton, d, d);
+   g.destroy();
+ 
+-  d = Math.ceil(SMOKE_PUFF_TEX_RADIUS_UNITS * 2 * k) + 2;
+-  g = scene.make.graphics({ x: 0, y: 0 }, false);
+-  // 中心ほど濃い 3 重の円（柔らかい煙に見せる。表示時の alpha で全体の濃さを決める）
+-  g.fillStyle(SMOKE_PUFF_COLOR, 0.35);
+-  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k);
+-  g.fillStyle(SMOKE_PUFF_COLOR, 0.35);
+-  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k * 0.7);
+-  g.fillStyle(SMOKE_PUFF_COLOR, 0.3);
+-  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k * 0.4);
+-  g.generateTexture(TEXTURE_KEYS.smokePuff, d, d);
+-  g.destroy();
++  // 煙幕の煙（v0.7.0 S3c から assets/light-art の柔らかい塊。鍵・寸法は同じ。表示時の alpha で全体の濃さを決める）
++  paintSmokePuffTexture(scene);
+ }
+ 
+ /** デバッグ用の距離の円（世界単位 × RENDER_SCALE）。?debug のときだけ作る。白で作って tint で色を付ける */
+diff --git a/src/assets/sea-art.ts b/src/assets/sea-art.ts
+index 6037f6a..722e75f 100644
+--- a/src/assets/sea-art.ts
++++ b/src/assets/sea-art.ts
+@@ -3,9 +3,15 @@
+ //   周期の縁をまたぐ弧は反対側にも描く（継ぎ目なし）。色は付けない（systems/sea-fx が光ごとに TileSprite の tint × α で付ける）。
+ // - tex-dawn-glow 256 × 64 px: 右（東）の橙から左の透明への横のグラデーション（画面へ拡大。α は sea-fx が段ごとに）。
+ // - tex-glint 16 × 8 px: 横に細長い柔らかい筋（月のきらめき・昼の白波。R9）。
++// - tex-coast-strip 512 × 120 px の frame 2 枚（S3c。1.0 px/m。初めて使う時に 1 回＝ensureCoastStripTexture）: 上 8 m は海の寄せ波の白、波打ち際から砂浜と陸の際の樹冠、奥へ透明。
++//   x は周期 512 で折り返す（帯の端は隣と同じ画素）。frame p1 は右端の 16 m を透明へ（jp_03 の陰・壕の絵をよけた端＝R16）。回らない絵だが南北で反転して貼るので向きの光は焼かない。
+ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+-import { ART_SEED_SEA, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_TEX_H, GLINT_TEX_W, SEA_LAYER_MODE } from '../config/sea-art-config';
++import {
++  ART_SEED_COAST, ART_SEED_SEA, COAST_CROWN_COLORS, COAST_CROWN_LIGHT_COLOR, COAST_DRY_SAND_COLOR, COAST_EDGE_SHADE_COLOR, COAST_SAND_COLOR, COAST_STRIP_FADE_M, COAST_STRIP_LAND_M,
++  COAST_STRIP_LEN_M, COAST_STRIP_SEA_M, COAST_SURF_ALPHA, COAST_SURF_PX, COAST_WET_SAND_COLOR, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_TEX_H, GLINT_TEX_W, SEA_LAYER_MODE,
++} from '../config/sea-art-config';
++import { coastPlan } from './coast-shape';
+ import { SEA_TILE_TEX_PX, seaPatchPlan, seaTilePlan, wrapOffsets, type SeaStroke } from './sea-shape';
+ 
+ /** Canvas のテクスチャを 1 枚作って draw で描き、GPU へ上げる（鍵が既にあれば何もしない＝「もう一度」でも描かない）。frames があれば同じ鍵に縦に並んだ frame を足す */
+@@ -115,3 +121,78 @@ export function generateSeaTextures(scene: Phaser.Scene): void {
+   paintDawnGlow(scene);
+   paintGlint(scene);
+ }
++
++function rgba(c: number, a: number): string {
++  return `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`;
++}
++
++/** 岸の帯の 1 行（top から高さ SEA + LAND）: 砂浜（濡れた暗い縁 → 砂 → 乾いた砂）→ 陸の際の陰 → 樹冠（奥へ薄く）→ 寄せ波の白（2 本）。樹冠と寄せ波は周期の写しも描く */
++function paintCoastRow(ctx: CanvasRenderingContext2D, top: number): void {
++  const P = COAST_STRIP_LEN_M;
++  const H = COAST_STRIP_SEA_M + COAST_STRIP_LAND_M;
++  const plan = coastPlan(ART_SEED_COAST);
++  const wl = top + COAST_STRIP_SEA_M;
++  const g = ctx.createLinearGradient(0, wl, 0, wl + 30);
++  g.addColorStop(0, rgba(COAST_WET_SAND_COLOR, 1));
++  g.addColorStop(0.18, rgba(COAST_SAND_COLOR, 1));
++  g.addColorStop(1, rgba(COAST_DRY_SAND_COLOR, 1));
++  ctx.fillStyle = g;
++  ctx.beginPath();
++  ctx.moveTo(0, wl);
++  for (let x = 0; x <= P; x++) ctx.lineTo(x, wl + plan.sand[x]!);
++  ctx.lineTo(P, wl);
++  ctx.closePath();
++  ctx.fill();
++  ctx.lineWidth = 3;
++  ctx.strokeStyle = rgba(COAST_EDGE_SHADE_COLOR, 0.7);
++  ctx.beginPath();
++  for (let x = 0; x <= P; x++) ctx.lineTo(x, wl + plan.sand[x]! + 1.5);
++  ctx.stroke();
++  for (const c of plan.crowns) {
++    const fade = Math.max(0, 1 - Math.max(0, c.y - (COAST_STRIP_SEA_M + 40)) / (H - COAST_STRIP_SEA_M - 40));
++    if (fade <= 0) continue;
++    const col = COAST_CROWN_COLORS[Math.min(COAST_CROWN_COLORS.length - 1, Math.floor(c.shade * COAST_CROWN_COLORS.length))]!;
++    for (const dx of c.x < c.r ? [0, P] : c.x > P - c.r ? [0, -P] : [0]) {
++      const cx = c.x + dx;
++      const cy = top + c.y;
++      const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, c.r);
++      rg.addColorStop(0, rgba(COAST_CROWN_LIGHT_COLOR, fade));
++      rg.addColorStop(0.55, rgba(col, fade));
++      rg.addColorStop(0.9, rgba(col, fade * 0.9));
++      rg.addColorStop(1, rgba(col, 0));
++      ctx.fillStyle = rg;
++      ctx.fillRect(cx - c.r, cy - c.r, c.r * 2, c.r * 2);
++    }
++  }
++  ctx.lineCap = 'round';
++  for (const [off, a, w] of [[-1, COAST_SURF_ALPHA, COAST_SURF_PX], [-4.5, COAST_SURF_ALPHA * 0.4, 2]] as const) {
++    ctx.lineWidth = w;
++    ctx.strokeStyle = white(a);
++    ctx.beginPath();
++    for (let x = 0; x <= P; x += 2) ctx.lineTo(x, wl + off + plan.surf[x]! * (off < -2 ? 1.2 : 0.5));
++    ctx.stroke();
++  }
++}
++
++/** 岸の帯（初めて使う時に 1 回。jp_03 で陰の絵と同じく世界の作成の時。鍵が既にあれば描かない）: frame p0 そのまま・p1 右端の 16 m を透明へ */
++export function ensureCoastStripTexture(scene: Phaser.Scene): void {
++  const P = COAST_STRIP_LEN_M;
++  const H = COAST_STRIP_SEA_M + COAST_STRIP_LAND_M;
++  paintCanvas(scene, TEXTURE_KEYS.coastStrip, P, H, (ctx) => {
++    for (const top of [0, H]) {
++      ctx.save();
++      ctx.beginPath();
++      ctx.rect(0, top, P, H);
++      ctx.clip(); // 行の外（隣の行）へはみ出さない
++      paintCoastRow(ctx, top);
++      ctx.restore();
++    }
++    const fade = ctx.createLinearGradient(P - COAST_STRIP_FADE_M, 0, P, 0);
++    fade.addColorStop(0, 'rgba(0,0,0,0)');
++    fade.addColorStop(1, 'rgba(0,0,0,1)');
++    ctx.globalCompositeOperation = 'destination-out';
++    ctx.fillStyle = fade;
++    ctx.fillRect(P - COAST_STRIP_FADE_M, H, COAST_STRIP_FADE_M, H);
++    ctx.globalCompositeOperation = 'source-over';
++  }, 2);
++}
+diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
+index f4f5890..87827db 100644
+--- a/src/config/fx-art-config.ts
++++ b/src/config/fx-art-config.ts
+@@ -85,6 +85,33 @@ export const FIRE_SMOKE_MAX_RADIUS_M = 15;
+ export const FIRE_SMOKE_MAX_ALPHA = 0.5;
+ export const FIRE_SMOKE_TINT = 0x3a3430;
+ export const FIRE_HIDE_AFTER_S = 0.3;
++/** 炎（tex-flame。k に依らない固定 px の frame 2 枚・ADD）: 1 frame の px・炎の直径＝船幅 × 割合（小艇で船体の色を覆わない）と上限 m・ちらつき（α の帯・大きさの振れ・周期 秒・frame を替える秒）・舌の数 */
++export const FLAME_TEX_PX = 64;
++export const FLAME_BEAM_SHARE = 0.8;
++export const FLAME_MAX_DIAMETER_M = 16;
++export const FLAME_ALPHA: readonly [number, number] = [0.6, 0.95];
++export const FLAME_SCALE_SWING = 0.15;
++export const FLAME_FLICKER_S = 0.37;
++export const FLAME_FRAME_S = 0.11;
++export const FLAME_TONGUES = 7;
++/** 火災の煙の玉: 出す間隔 秒・寿命 秒・膨らみの始まりの割合・小艇の玉の半径の上限 m（艦は FIRE_SMOKE_MAX_RADIUS_M）・風下へ流れる向き（方位 度）と速さ m/実秒・出す所の散らばり（船幅の割合） */
++export const FIRE_PUFF_INTERVAL_S = 0.25;
++export const FIRE_PUFF_LIFE_S = 2.5;
++export const FIRE_PUFF_GROW_FROM = 0.35;
++export const FIRE_PUFF_BOAT_RADIUS_M = 9;
++export const FIRE_DRIFT_DEG = 65;
++export const FIRE_DRIFT_MPS = 9;
++export const FIRE_PUFF_JITTER_SHARE = 0.25;
++/** 沈没の始まり（R: spec §5.4）: 泡と油の輪（tex-splash を大きく薄く）の数・寿命 秒・α・tint・半径 m（艦・小艇）と、煙の玉を出し続ける秒 */
++export const SINK_RINGS = 2;
++export const SINK_RING_S = 3;
++export const SINK_RING_ALPHA = 0.35;
++export const SINK_RING_TINT = 0xb8c4cc;
++export const SINK_RING_RADIUS_M: readonly [number, number] = [110, 30];
++export const SINK_PLUME_S = 4;
++export const SINK_RING_DEPTH = 3.45;
++/** 味方の輸送船（jp_04。絵は entities/ally-ship の私的な Image）の炎の船幅 m（輸送船の絵の幅 32 単位） */
++export const FIRE_ALLY_SHIP_BEAM_M = 32;
+ 
+ /** 深さ（game-config の DEPTH は変えない）: 航跡（暴風の帯 3 の上・雷跡 4 の下）・火災の煙・炎（煙幕 11 の上・砲弾 12 の下）。ADD の物は同じ系統の ＋ADD_DEPTH_STEP にまとめる（R25） */
+ export const WAKE_DEPTH = 3.5;
+@@ -93,5 +120,25 @@ export const ADD_DEPTH_STEP = 0.01;
+ /** Phaser.BlendModes.ADD（＝1）。explosion-fx が phaser の値の import を避ける */
+ export const BLEND_ADD = 1;
+ 
++/**
++ * 探照灯・星弾・煙幕の絵（S3c。R2・R32。鍵・寸法・原点は v0.6.11 のまま＝scale は論理の射程・照明半径・煙の半径から）。どれも画素ごとの式（assets/light-shape）で 1 回描く。
++ * 探照灯: 光源から長さの SL_FULL_TO までは α 1、そこから先端へ SL_TIP_ALPHA に下がる。横は半幅の外側 SL_SOFT_SHARE だけ柔らかく、扇の縁で SL_EDGE_ALPHA（縁は論理の角のまま見える）。
++ *   光源の近く（長さの SL_HOT_TO まで）は白へ寄せる（色だけ。α は 1 のまま）。
++ * 星弾: 芯（半径の SS_CORE_R まで α 1 → 面）・半径の SS_RIM_FROM まで平らな面 SS_PLATEAU・そこから縁へ明るい細い縁（山 SS_RIM_PEAK）・半径で 1 px の縁取りで 0。
++ * 煙幕: 半径ごとの α の折れ線（SMOKE_PROFILE。今の 3 重の円の帯の α 0.70・0.58・0.35 に合わせる）× 角度の塊（3 つと 5 つの山。輪ごとの平均は 1＝帯の α は変わらない・半径の SMOKE_LUMP_TO の内だけ＝輪郭は丸のまま）
++ */
++export const SL_FULL_TO = 0.5;
++export const SL_TIP_ALPHA = 0.8;
++export const SL_SOFT_SHARE = 0.1;
++export const SL_EDGE_ALPHA = 0.6;
++export const SL_HOT_TO = 0.12;
++export const SS_CORE_R = 0.28;
++export const SS_PLATEAU = 0.72;
++export const SS_RIM_FROM = 0.92;
++export const SS_RIM_PEAK = 1;
++export const SMOKE_PROFILE: readonly (readonly [number, number])[] = [[0, 0.78], [0.3, 0.71], [0.45, 0.6], [0.6, 0.56], [0.7, 0.56], [0.75, 0.42], [0.85, 0.37], [0.95, 0.34], [1, 0]];
++export const SMOKE_LUMP = 0.22;
++export const SMOKE_LUMP_TO = 0.93;
++
+ /** 演出の絵の乱れの乱数の種（絵だけ。ゲームの乱数とは別。毎フレーム使う煙の揺れは世界の絵を作る時に new SeededRng(ART_SEED_FX)＝R30） */
+ export const ART_SEED_FX = 7301;
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 88a197b..32982f5 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -231,4 +231,6 @@ export const TEXTURE_KEYS = {
+   fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
+   wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
+   wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
++  flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
++  coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
+ } as const;
+diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
+index 2d554dc..463fbf5 100644
+--- a/src/config/sea-art-config.ts
++++ b/src/config/sea-art-config.ts
+@@ -114,6 +114,19 @@ export const COAST_STRIP_LEN_M = 512;
+ export const COAST_STRIP_LAND_M = 112;
+ export const COAST_STRIP_SEA_M = 8;
+ export const COAST_STRIP_FADE_M = 16;
++/** 岸の帯の中身（px＝m）: 砂浜の幅の平均と揺れ（周期で続く）・樹冠の数と半径・色（夜の陸 0x26301e・浜の線 0x8a7a48 と同じ系統。浜の線より明るくしない）・寄せ波の白の α と太さ */
++export const COAST_SAND_M = 18;
++export const COAST_SAND_WAVE_M = 6;
++export const COAST_CROWNS = 150;
++export const COAST_CROWN_R_M: readonly [number, number] = [4, 9];
++export const COAST_WET_SAND_COLOR = 0x5e5434;
++export const COAST_SAND_COLOR = 0x7e7044;
++export const COAST_DRY_SAND_COLOR = 0x8a7a4a;
++export const COAST_EDGE_SHADE_COLOR = 0x1c2416;
++export const COAST_CROWN_COLORS: readonly number[] = [0x2b3a21, 0x324428, 0x3a4c2c];
++export const COAST_CROWN_LIGHT_COLOR = 0x4a5e36;
++export const COAST_SURF_ALPHA = 0.6;
++export const COAST_SURF_PX = 2.5;
+ 
+ /** 深さ（game-config の DEPTH は変えない。ここに絶対値で）: 海の模様・夜明けの光（海の模様の直上＝陸・艇・艦・字の下。R3）・月のきらめき・岸の帯 */
+ export const SEA_ART_DEPTH = 0.05;
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 1205f66..7d3d0b3 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -1,29 +1,36 @@
+ // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5）: 世界の絵（演出）の持ち主。MissionWorld が世界を作る最後に 1 つ作り、world-visuals の最後の 1 行で更新・破棄する（R13）。
+ // S3a は海の面（systems/sea-fx: 海の模様・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
+-// S3c の炎と煙・岸の帯はここに足す。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
++// S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
+ import type Phaser from 'phaser';
++import { CoastFx } from './coast-fx';
+ import { ExplosionFx } from './explosion-fx';
++import { FireFx, type FireWorldView } from './fire-fx';
+ import { registerExplosionFx } from './mission-effects';
+ import { SeaFx } from './sea-fx';
+ import { WakeFx, type WakeWorldView } from './wake-fx';
+ import type { WorldSetup } from './world-setup';
+ 
+ /** 世界から読む物（MissionWorld がそのまま満たす） */
+-export interface ArtWorldView extends WakeWorldView {
+-  readonly setup: WorldSetup;
+-  readonly dawn: { readonly lightStep: number };
+-}
++export type ArtWorldView = WakeWorldView &
++  FireWorldView & {
++    readonly setup: WorldSetup;
++    readonly dawn: { readonly lightStep: number };
++  };
+ 
+ export class WorldArt {
+   private readonly sea: SeaFx;
+   private readonly wake: WakeFx;
+   private readonly explosions: ExplosionFx;
++  private readonly fire: FireFx;
++  private readonly coast: CoastFx;
+ 
+   constructor(scene: Phaser.Scene, w: ArtWorldView) {
+     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false);
+     this.wake = new WakeFx(scene, w);
+     this.explosions = new ExplosionFx(scene);
+     registerExplosionFx(this.explosions); // 世界の作成前・破棄後の playExplosion は何もしない（R12）
++    this.fire = new FireFx(scene, w);
++    this.coast = new CoastFx(scene, w.setup);
+   }
+ 
+   /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
+@@ -31,6 +38,7 @@ export class WorldArt {
+     this.sea.update(realDt, w.dawn.lightStep);
+     this.wake.update(w);
+     this.explosions.update(realDt);
++    this.fire.update(realDt);
+   }
+ 
+   destroy(): void {
+@@ -38,5 +46,7 @@ export class WorldArt {
+     this.sea.destroy();
+     this.wake.destroy();
+     this.explosions.destroy();
++    this.fire.destroy();
++    this.coast.destroy();
+   }
+ }
