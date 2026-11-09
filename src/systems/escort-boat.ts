@@ -8,7 +8,7 @@ import { createEscort, hitEscort, stepEscort, type EscortParams, type EscortStat
 
 export class EscortBoat {
   readonly state: EscortState;
-  private readonly sprite: Phaser.GameObjects.Image;
+  readonly sprite: Phaser.GameObjects.Image; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly label: Phaser.GameObjects.Text;
 
   constructor(

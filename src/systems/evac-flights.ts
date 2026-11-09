@@ -47,6 +47,7 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
   const marks = new EvacMarks(scene, evac.sq);
   const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
   evac.view = {
+    boats, // 18 隻の絵（航跡の絵が読む。v0.7.0 S3b）
     update: () => {
       evacDrawPass(evac.plan, draw);
       boats.update(w.stepTimeS);

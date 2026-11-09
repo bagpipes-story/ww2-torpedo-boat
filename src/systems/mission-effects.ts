@@ -1,4 +1,4 @@
-// 任務中の演出と補助表示: 爆発リング（発生時に 1 回だけ tween）、見越し点マーカー（v0.5.2 から解放制。?debug では常に）と距離の円（?debug のときだけ）。
+// 任務中の演出と補助表示: 爆発（v0.7.0 S3b から世界の絵のプール systems/explosion-fx。ここは登録と呼び出しの口だけ＝R12）、見越し点マーカー（v0.5.2 から解放制。?debug では常に）と距離の円（?debug のときだけ）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -6,12 +6,6 @@ import {
   DEBUG_RING_RADIUS_UNITS,
   DEBUG_RING_TINT_DETECT,
   DEBUG_RING_TINT_VIS,
-  EXPLOSION_DURATION_MS,
-  EXPLOSION_SCALE_DUD,
-  EXPLOSION_SCALE_FROM,
-  EXPLOSION_SCALE_HIT,
-  EXPLOSION_TINT_DUD,
-  EXPLOSION_TINT_HIT,
   LEAD_MARKER_ALPHA,
   LEAD_MARKER_SCALE,
   LEAD_MARKER_TIME_COLOR,
@@ -23,24 +17,18 @@ import {
 import type { BoatState } from '../core/boat-motion';
 import { interceptHeadingDeg, velocityFromHeading } from '../core/torpedo-solver';
 import { degToRad } from '../core/units';
+import type { ExplosionFx } from './explosion-fx';
 
-/** 爆発リング。不発は小さく灰色。tween 完了で破棄する */
+/** 今の世界の爆発のプール（world-art が世界の作成時に登録し、破棄で null に。R12: 静的な取り出しは使わない＝やり直しで破棄済みの Image を握らない） */
+let explosions: ExplosionFx | null = null;
+export function registerExplosionFx(fx: ExplosionFx | null): void {
+  explosions = fx;
+}
+
+/** 爆発（名前と引数は v0.4 のまま。mission-scene の 5 か所から）。中身は世界の絵のプール（閃光・火球・水柱・輪。dud は小さい版＝水柱なし）。登録の無い間は何もしない */
 export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean): void {
-  const ring = scene.add
-    .image(x, y, TEXTURE_KEYS.explosionRing)
-    .setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE)
-    .setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT)
-    .setDepth(DEPTH.effects);
-  const to = (dud ? EXPLOSION_SCALE_DUD : EXPLOSION_SCALE_HIT) / RENDER_SCALE;
-  scene.tweens.add({
-    targets: ring,
-    scaleX: to,
-    scaleY: to,
-    alpha: 0,
-    duration: EXPLOSION_DURATION_MS,
-    ease: 'Cubic.easeOut',
-    onComplete: () => ring.destroy(),
-  });
+  void scene;
+  explosions?.play(x, y, dud);
 }
 
 /**

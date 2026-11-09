@@ -62,7 +62,7 @@ export class AllyDestroyerView {
       .setDepth(DEPTH.light)
       .setScale(p.gunnery.searchlight.rangeM / SEARCHLIGHT_TEX_LENGTH_UNITS / RENDER_SCALE)
       .setVisible(false);
-    this.flash = scene.add.image(p.x, p.y, TEXTURE_KEYS.explosionRing).setTint(ALLY_TRACER_TINT).setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(p.x, p.y, TEXTURE_KEYS.muzzleFlash).setTint(ALLY_TRACER_TINT).setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.shellGun = new Int8Array(p.shellPoolSize).fill(-1);
     for (let i = 0; i < p.shellPoolSize; i++) this.shells.push(scene.add.image(0, 0, TEXTURE_KEYS.tracer).setScale(1 / RENDER_SCALE).setTint(ALLY_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
     this.splashes = new SplashPool(scene, ALLY_SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);

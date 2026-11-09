@@ -67,7 +67,7 @@ export class PtSquadron {
   /** 自艇（check.boat は標的に差し替わるので、絵の表示判定と閃光の位置は別に持つ） */
   private readonly player: BoatState;
   private readonly splashes: SplashPool;
-  private readonly sprites: Phaser.GameObjects.Image[] = [];
+  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b）
   private readonly shown: Uint8Array;
   private readonly tracers: Phaser.GameObjects.Image[] = [];
   private readonly line: Phaser.GameObjects.Image;
@@ -146,7 +146,7 @@ export class PtSquadron {
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
     this.lineScaleY = AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height;
     this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(i, fate, FATE_BY_PLAYER)) : null;
   }
 

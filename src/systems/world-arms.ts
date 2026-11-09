@@ -53,7 +53,7 @@ export class WorldArms extends ArmsStep {
       for (let i = 0; i < AA_TRACER_POOL; i++) this.aaImgs.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(GUN_TRACER_TINT).setDepth(DEPTH.aircraft).setVisible(false));
       for (let i = 0; i < ARMS_WRECK_POOL; i++) this.wrecks.push(scene.add.image(0, 0, TEXTURE_KEYS.enemyAircraft).setScale(1 / RENDER_SCALE).setDepth(DEPTH.aircraft).setVisible(false));
     }
-    this.flashImg = this.shipGun || aa ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
+    this.flashImg = this.shipGun || aa ? scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
   }
 
   protected override fxMuzzle(x: number, y: number): void {

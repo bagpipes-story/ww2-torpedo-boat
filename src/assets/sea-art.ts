@@ -9,7 +9,7 @@ import { ART_SEED_SEA, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_
 import { SEA_TILE_TEX_PX, seaPatchPlan, seaTilePlan, wrapOffsets, type SeaStroke } from './sea-shape';
 
 /** Canvas のテクスチャを 1 枚作って draw で描き、GPU へ上げる（鍵が既にあれば何もしない＝「もう一度」でも描かない）。frames があれば同じ鍵に縦に並んだ frame を足す */
-function paintCanvas(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, frames = 0): void {
+export function paintCanvas(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, frames = 0): void {
   if (scene.textures.exists(key)) return;
   const tex = scene.textures.createCanvas(key, w, h * (frames > 0 ? frames : 1));
   if (!tex) return;

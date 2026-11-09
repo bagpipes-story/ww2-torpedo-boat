@@ -1,4 +1,4 @@
-// 水柱（着弾の輪）のプール（v0.4.2 で EnemyFire から切り出し。中身は v0.4.1 のまま）: 砲弾・掃射・爆弾・波の叩きつけ・大発の機銃・艇の砲が借りる。
+// 水柱のプール（v0.4.2 で EnemyFire から切り出し。中身は v0.4.1 のまま。v0.7.0 S3b: 絵を輪から tex-splash＝飛沫の絵に。数・寿命・tint・scale はそのまま）: 砲弾・掃射・爆弾・波の叩きつけ・大発の機銃・艇の砲が借りる。
 // §7: 起動時に size 枚作り、置くときは古いものから使い回し、毎フレームは alpha だけ触る。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -16,7 +16,7 @@ export class SplashPool {
     private readonly scaleHit: number,
   ) {
     this.ages = new Float32Array(size).fill(Infinity);
-    for (let i = 0; i < size; i++) this.images.push(scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setDepth(DEPTH.effects).setVisible(false));
+    for (let i = 0; i < size; i++) this.images.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setDepth(DEPTH.effects).setVisible(false)); // 水柱の絵（v0.7.0 S3b。輪と同じ寸法＝scale はそのまま）
   }
 
   /** 水柱を置く（hit なら橙で大きく） */

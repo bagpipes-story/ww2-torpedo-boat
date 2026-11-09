@@ -37,7 +37,7 @@ export class Gunboat {
   private readonly gun: PtGun;
   /** 隼艇の 25mm を最後に撃った体感秒（閃光の記憶。撃っていなければ −Infinity） */
   private lastFireS = -Infinity;
-  private readonly sprite: Phaser.GameObjects.Image;
+  readonly sprite: Phaser.GameObjects.Image; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly label: Phaser.GameObjects.Text;
   private shown = false;
   /** ラベルの字の元（変わったときだけ setText）: HP・狙われている・浜 */

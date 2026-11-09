@@ -64,7 +64,7 @@ export class PtGun {
     this.rng = new SeededRng((seed + look.seedOffset) >>> 0);
     this.state = createPtGun(g, PT_GUN_SHELL_POOL_SIZE);
     for (let i = 0; i < PT_GUN_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(look.tint).setDepth(DEPTH.shell).setVisible(false));
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.ring = look.ring ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
   }
 

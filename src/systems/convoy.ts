@@ -28,7 +28,7 @@ export class Convoy {
   /** 米PT の標的の規則（keep・ロック・閃光の記憶）と、大発が見つかる距離 m（detect_band の帯。月明込み。出撃時に 1 回） */
   readonly rule: PtTargetRule;
   readonly detectM: number;
-  private readonly sprites: Phaser.GameObjects.Image[] = [];
+  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly labels: Phaser.GameObjects.Text[] = [];
   private readonly shown: Uint8Array;
   /** ラベルを絵の上に置いている（convoyLabelAbove。原点 (0.5, 1)。0 は絵の下＝原点 (0.5, 0)） */

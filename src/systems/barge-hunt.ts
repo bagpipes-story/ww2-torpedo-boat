@@ -65,7 +65,7 @@ export class BargeHunt {
   private readonly gunRng: SeededRng;
   private readonly check: FlotillaCheck;
   private readonly splashes: SplashPool;
-  private readonly sprites: Phaser.GameObjects.Image[] = [];
+  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly shown: Uint8Array;
   private readonly gunSprites: Phaser.GameObjects.Image[] = [];
   private readonly gunTex: Int8Array;
@@ -131,7 +131,7 @@ export class BargeHunt {
     this.gunTex = new Int8Array(GUN_SHELL_POOL_SIZE).fill(-1);
     for (let i = 0; i < GUN_SHELL_POOL_SIZE; i++) this.gunSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
     for (let i = 0; i < MG_SHELL_POOL_SIZE; i++) this.mgSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.ring = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
   }
 

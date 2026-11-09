@@ -226,4 +226,9 @@ export const TEXTURE_KEYS = {
   seaTile: 'tex-sea-tile', // 海の模様のタイル 512×512（v0.7.0 S3a。assets/sea-art。systems/sea-fx の TileSprite が世界の座標に貼る）
   dawnGlow: 'tex-dawn-glow', // 夜明けの東の光の横のグラデーション 256×64（v0.7.0 S3a。画面へ拡大・深さは海の模様の直上）
   glint: 'tex-glint', // 月のきらめき・昼の白波の筋 16×8（v0.7.0 S3a）
+  splash: 'tex-splash', // 水柱（v0.7.0 S3b。assets/fx-art。爆発の輪と同じ寸法＝SplashPool の scale 定数はそのまま。外れ 青白・命中 橙の tint）
+  muzzleFlash: 'tex-muzzle-flash', // 砲口炎の星（v0.7.0 S3b。輪と同じ寸法。enemy-fire・shore-battery・pt-gun・world-arms・barge-hunt・pt-squadron・ally-destroyer の閃光と爆発の閃光）
+  fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
+  wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
+  wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
 } as const;

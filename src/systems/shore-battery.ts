@@ -84,7 +84,7 @@ export class ShoreBattery {
     this.graphics = g;
     this.label = scene.add.text(p.x, p.y + half + BATTERY_LABEL_GAP_M, BATTERY_LABEL, hudTextStyle(BATTERY_LABEL_FONT_PX, BATTERY_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
     for (let i = 0; i < BATTERY_SHELL_POOL_SIZE; i++) this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.shell).setTint(BATTERY_SHELL_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
   }
 
   /** 固定ステップ（大発の後。大発の気づきと艇の射撃の閃光を読む） */

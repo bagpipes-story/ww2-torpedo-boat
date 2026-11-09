@@ -25,7 +25,7 @@ const HAUL_HEADING_DEG = 180;
 const NO_TINT = 0xffffff;
 
 export class EvacBoatsView {
-  private readonly imgs: Phaser.GameObjects.Image[] = [];
+  readonly imgs: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly look: Uint8Array;
   private seatDim = false;
 

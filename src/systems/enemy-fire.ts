@@ -91,7 +91,7 @@ export class EnemyFire {
       .setScale(params.starshell.illumRadiusM / STARSHELL_TEX_RADIUS_UNITS / RENDER_SCALE)
       .setVisible(false);
     this.flash = scene.add
-      .image(0, 0, TEXTURE_KEYS.explosionRing)
+      .image(0, 0, TEXTURE_KEYS.muzzleFlash)
       .setTint(MUZZLE_FLASH_TINT)
       .setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE)
       .setDepth(DEPTH.effects)
