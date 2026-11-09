@@ -1,0 +1,457 @@
+diff --git a/src/assets/sea-art.ts b/src/assets/sea-art.ts
+index fb6a9a7..6037f6a 100644
+--- a/src/assets/sea-art.ts
++++ b/src/assets/sea-art.ts
+@@ -9,7 +9,7 @@ import { ART_SEED_SEA, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_
+ import { SEA_TILE_TEX_PX, seaPatchPlan, seaTilePlan, wrapOffsets, type SeaStroke } from './sea-shape';
+ 
+ /** Canvas のテクスチャを 1 枚作って draw で描き、GPU へ上げる（鍵が既にあれば何もしない＝「もう一度」でも描かない）。frames があれば同じ鍵に縦に並んだ frame を足す */
+-function paintCanvas(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, frames = 0): void {
++export function paintCanvas(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, frames = 0): void {
+   if (scene.textures.exists(key)) return;
+   const tex = scene.textures.createCanvas(key, w, h * (frames > 0 ? frames : 1));
+   if (!tex) return;
+diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
+index dfad42a..f4f5890 100644
+--- a/src/config/fx-art-config.ts
++++ b/src/config/fx-art-config.ts
+@@ -1,4 +1,4 @@
+-// v0.7.0（アートと音①：コードで描く絵）の演出（航跡・水柱・砲口炎・爆発・炎と煙）の定数と数の上限（S3b・S3c の assets/fx-art と systems/*-fx）。
++// v0.7.0（アートと音①：コードで描く絵）の演出（航跡・水柱・砲口炎・爆発・炎と煙）の定数と数の上限（S3b の assets/fx-art・fx-shape と systems/wake-fx・explosion-fx、S3c の fire-fx）。
+ // ゲームの強さの値ではないので data/*.json には置かない（evac-art-config と同じ考え）。演出は見た目だけ（論理の状態を読むだけで書かない＝R30）。何も import しない。
+ // 数はすべて世界の作成時に確保するプールの大きさ（update の中で new しない＝CLAUDE.md §7）。
+ 
+@@ -8,10 +8,75 @@ export const WAKE_CENTER_LENGTH_SHARE = 0.5;
+ export const WAKE_ALPHA_MAX = 0.35;
+ export const WAKE_SILENT_ALPHA_MAX = 0.12;
+ export const WAKE_HIDE_BELOW_MPS = 0.5;
++/** 航跡のテクスチャ px（頂点＝艇尾が上端の中央・原点 (0.5, 0)。幅/2 ≥ 高さ × tan(半角)＝腕が枠に収まる）。frame p0＝V の腕＋短い中央の泡、p1＝艇尾の泡だけ（sea-art の paintCanvas の frame の名前）（自艇の静音＝R1） */
++export const WAKE_TEX_W = 96;
++export const WAKE_TEX_H = 128;
++export const WAKE_FRAME_V = 'p0';
++export const WAKE_FRAME_BUBBLE = 'p1';
++/**
++ * 船体の種類ごとの航跡（絵の値。速さは論理の状態を読むだけ）: refMps＝α が上限になる速さ（上限で止める）、lenHulls＝航跡の長さの上限（船体の長さの倍）、
++ * lenPerHullPerMps＝速さ 1 m/s あたりの長さ（船体の長さの倍）、key＝絵の鍵の名前（tex-wake-boat は小艇の鋭い V・tex-wake-ship は艦の太い泡立った V）。
++ * 中央の泡はテクスチャの高さの WAKE_CENTER_LENGTH_SHARE / lenHulls（上限の長さで船体の 0.5 倍＝R7。短い航跡ではもっと短い）
++ */
++export interface WakeKindArt {
++  readonly refMps: number;
++  readonly lenHulls: number;
++  readonly lenPerHullPerMps: number;
++  readonly ship: boolean;
++}
++export const WAKE_KIND_ART: Readonly<Record<'boat' | 'barge' | 'ship', WakeKindArt>> = {
++  boat: { refMps: 20, lenHulls: 2.5, lenPerHullPerMps: 0.125, ship: false },
++  barge: { refMps: 5, lenHulls: 1.5, lenPerHullPerMps: 0.3, ship: false },
++  ship: { refMps: 15, lenHulls: 1.0, lenPerHullPerMps: 0.07, ship: true },
++};
++/** 自艇の速力帯ごとの α の割合（上限に掛ける。R1: 巡航は V・全速は長く明るい V）と、静音の泡の長さ（船体の長さの倍） */
++export const WAKE_CRUISE_ALPHA_SHARE = 0.7;
++export const WAKE_SILENT_LEN_HULLS = 0.35;
++/** 船体の絵の α がこれ未満なら航跡を出さない（jp_03 の陰に隠れた隊 0.45・沈没の tween の終わり。見えない船体の航跡を出さない） */
++export const WAKE_HULL_ALPHA_MIN = 0.5;
++/** jp_03 の 18 隻は隊長艇だけ航跡を出す（spec §5.7「+40 を超えそうなら僚艇の航跡を隠す」。S3b の計測で最初から true＝見える物 +6） */
++export const WAKE_EVAC_LEADERS_ONLY = true;
++/** 航跡の腕の絵（白。太い下塗り＋細い芯。遠い端へ向けて細く薄く）: 腕の根元と端の幅 px・α、中央の泡の幅 px・α（R7: 腕が主・泡は薄く短い） */
++export const WAKE_ARM_WIDTH_PX: readonly [number, number] = [4, 10];
++export const WAKE_ARM_ALPHA: readonly [number, number] = [1.0, 0.0];
++export const WAKE_CENTER_WIDTH_PX = 10;
++export const WAKE_CENTER_ALPHA = 0.55;
++export const WAKE_SHIP_ARM_WIDTH_PX: readonly [number, number] = [5, 16];
++export const WAKE_SHIP_CENTER_WIDTH_PX = 22;
+ 
+-/** 爆発（R11・R12）: 枠の数 × 1 枠の物（閃光・火球・水柱・輪）。5 つ目は一番古い枠を使い回す */
++/** 爆発（R11・R12）: 枠の数 × 1 枠の物（閃光・火球・水柱／暗い玉・輪）。5 つ目は一番古い枠を使い回す */
+ export const EXPLOSION_SLOTS = 4;
+ export const EXPLOSION_PARTS = 4;
++/** 爆発の部品の寿命 秒（輪は ui-config の EXPLOSION_DURATION_MS のまま）: 大きい版の閃光・小さい版の閃光（R11）・火球・水柱・小さい版の暗い玉 */
++export const EXPLOSION_FLASH_S = 0.15;
++export const EXPLOSION_SMALL_FLASH_S = 0.1;
++export const EXPLOSION_FIRE_S = 0.5;
++export const EXPLOSION_SPLASH_S = 0.8;
++export const EXPLOSION_PUFF_S = 0.6;
++/** 爆発の部品の世界の半径 m（テクスチャの半径 40 単位＝爆発の輪と同じ寸法に対する scale に直す）: 閃光（大・小）・火球（膨らみの始まりの割合つき）・水柱（同）・暗い玉（≤ 煙の玉の上限 15 m） */
++export const EXPLOSION_FLASH_RADIUS_M = 70;
++export const EXPLOSION_SMALL_FLASH_RADIUS_M = 30;
++export const EXPLOSION_FIRE_RADIUS_M = 36;
++export const EXPLOSION_FIRE_GROW_FROM = 0.35;
++export const EXPLOSION_SPLASH_RADIUS_M = 44;
++export const EXPLOSION_SPLASH_GROW_FROM = 0.5;
++export const EXPLOSION_SPLASH_ALPHA = 0.9;
++export const EXPLOSION_PUFF_RADIUS_M = 14;
++export const EXPLOSION_PUFF_GROW_FROM = 0.6;
++/** 閃光と火球の tint（ADD で重ねる＝暖かい黄白と橙）、水柱は白のまま */
++export const EXPLOSION_FLASH_TINT = 0xfff2c0;
++export const EXPLOSION_FIRE_TINT = 0xffb060;
++
++/** 演出の絵（Boot で 1 回。tex-splash・tex-muzzle-flash・tex-fireball＝爆発の輪と同じ寸法 96×96 at k 1.09）: 水柱の飛沫の筋の数・端の半径の帯・太さの帯・芯と外の輪の半径、砲口炎の光芒の数と長さの比 */
++export const SPLASH_DROPLETS = 14;
++export const SPLASH_DROPLET_R: readonly [number, number] = [0.08, 0.16];
++export const SPLASH_DROPLET_RING: readonly [number, number] = [0.55, 0.9];
++export const SPLASH_CORE_R = 0.45;
++export const SPLASH_RING_R = 0.82;
++export const MUZZLE_RAYS = 8;
++export const MUZZLE_RAY_LEN: readonly [number, number] = [1.0, 0.55];
++export const MUZZLE_RAY_HALF_W = 0.07;
++export const MUZZLE_CORE_R = 0.3;
+ 
+ /** 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒 */
+ export const FIRE_SOURCES = 6;
+@@ -25,6 +90,8 @@ export const FIRE_HIDE_AFTER_S = 0.3;
+ export const WAKE_DEPTH = 3.5;
+ export const FIRE_SMOKE_DEPTH = 11.5;
+ export const ADD_DEPTH_STEP = 0.01;
++/** Phaser.BlendModes.ADD（＝1）。explosion-fx が phaser の値の import を避ける */
++export const BLEND_ADD = 1;
+ 
+ /** 演出の絵の乱れの乱数の種（絵だけ。ゲームの乱数とは別。毎フレーム使う煙の揺れは世界の絵を作る時に new SeededRng(ART_SEED_FX)＝R30） */
+ export const ART_SEED_FX = 7301;
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 5a46339..88a197b 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -226,4 +226,9 @@ export const TEXTURE_KEYS = {
+   seaTile: 'tex-sea-tile', // 海の模様のタイル 512×512（v0.7.0 S3a。assets/sea-art。systems/sea-fx の TileSprite が世界の座標に貼る）
+   dawnGlow: 'tex-dawn-glow', // 夜明けの東の光の横のグラデーション 256×64（v0.7.0 S3a。画面へ拡大・深さは海の模様の直上）
+   glint: 'tex-glint', // 月のきらめき・昼の白波の筋 16×8（v0.7.0 S3a）
++  splash: 'tex-splash', // 水柱（v0.7.0 S3b。assets/fx-art。爆発の輪と同じ寸法＝SplashPool の scale 定数はそのまま。外れ 青白・命中 橙の tint）
++  muzzleFlash: 'tex-muzzle-flash', // 砲口炎の星（v0.7.0 S3b。輪と同じ寸法。enemy-fire・shore-battery・pt-gun・world-arms・barge-hunt・pt-squadron・ally-destroyer の閃光と爆発の閃光）
++  fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
++  wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
++  wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
+ } as const;
+diff --git a/src/entities/ally-destroyer.ts b/src/entities/ally-destroyer.ts
+index 306e405..c6826c6 100644
+--- a/src/entities/ally-destroyer.ts
++++ b/src/entities/ally-destroyer.ts
+@@ -62,7 +62,7 @@ export class AllyDestroyerView {
+       .setDepth(DEPTH.light)
+       .setScale(p.gunnery.searchlight.rangeM / SEARCHLIGHT_TEX_LENGTH_UNITS / RENDER_SCALE)
+       .setVisible(false);
+-    this.flash = scene.add.image(p.x, p.y, TEXTURE_KEYS.explosionRing).setTint(ALLY_TRACER_TINT).setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
++    this.flash = scene.add.image(p.x, p.y, TEXTURE_KEYS.muzzleFlash).setTint(ALLY_TRACER_TINT).setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+     this.shellGun = new Int8Array(p.shellPoolSize).fill(-1);
+     for (let i = 0; i < p.shellPoolSize; i++) this.shells.push(scene.add.image(0, 0, TEXTURE_KEYS.tracer).setScale(1 / RENDER_SCALE).setTint(ALLY_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
+     this.splashes = new SplashPool(scene, ALLY_SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index a7cd211..20b6fea 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -38,6 +38,7 @@ import { generateAircraftTexture } from '../assets/aircraft-art';
+ import { generateGunButtonTexture } from '../assets/weapon-textures';
+ import { generateRainTexture } from '../assets/storm-placeholder';
+ import { generateSeaTextures } from '../assets/sea-art';
++import { generateFxTextures } from '../assets/fx-art';
+ import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
+ import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
+ import { generatePtBoatTexture } from '../assets/pt-placeholder';
+@@ -120,6 +121,7 @@ export class BootScene extends Phaser.Scene {
+     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
+     generateRainTexture(this);
+     generateSeaTextures(this); // 海の模様のタイル・夜明けの光・きらめき（v0.7.0 S3a。assets/sea-art。Canvas の 2D に 1 回。systems/sea-fx が使う）
++    generateFxTextures(this); // 水柱・砲口炎・火球・航跡 2 枚（v0.7.0 S3b。assets/fx-art。Canvas の 2D に 1 回。SplashPool・閃光 7 か所・systems/explosion-fx・wake-fx が使う）
+     // 大発（v0.4.2）: 大発の隊を持つ最初の任務の値から（遊べる任務は Boot ですべて読める）
+     const bargeMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['barges']);
+     const barge = bargeMission ? getBargeParams(gameData, getPrototypeMission(gameData, bargeMission.id)) : null;
+diff --git a/src/systems/barge-hunt.ts b/src/systems/barge-hunt.ts
+index c9078ae..4418d36 100644
+--- a/src/systems/barge-hunt.ts
++++ b/src/systems/barge-hunt.ts
+@@ -65,7 +65,7 @@ export class BargeHunt {
+   private readonly gunRng: SeededRng;
+   private readonly check: FlotillaCheck;
+   private readonly splashes: SplashPool;
+-  private readonly sprites: Phaser.GameObjects.Image[] = [];
++  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
+   private readonly shown: Uint8Array;
+   private readonly gunSprites: Phaser.GameObjects.Image[] = [];
+   private readonly gunTex: Int8Array;
+@@ -131,7 +131,7 @@ export class BargeHunt {
+     this.gunTex = new Int8Array(GUN_SHELL_POOL_SIZE).fill(-1);
+     for (let i = 0; i < GUN_SHELL_POOL_SIZE; i++) this.gunSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
+     for (let i = 0; i < MG_SHELL_POOL_SIZE; i++) this.mgSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
+-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
++    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+     this.ring = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+   }
+ 
+diff --git a/src/systems/convoy.ts b/src/systems/convoy.ts
+index d93530b..e6888a5 100644
+--- a/src/systems/convoy.ts
++++ b/src/systems/convoy.ts
+@@ -28,7 +28,7 @@ export class Convoy {
+   /** 米PT の標的の規則（keep・ロック・閃光の記憶）と、大発が見つかる距離 m（detect_band の帯。月明込み。出撃時に 1 回） */
+   readonly rule: PtTargetRule;
+   readonly detectM: number;
+-  private readonly sprites: Phaser.GameObjects.Image[] = [];
++  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
+   private readonly labels: Phaser.GameObjects.Text[] = [];
+   private readonly shown: Uint8Array;
+   /** ラベルを絵の上に置いている（convoyLabelAbove。原点 (0.5, 1)。0 は絵の下＝原点 (0.5, 0)） */
+diff --git a/src/systems/enemy-fire.ts b/src/systems/enemy-fire.ts
+index 3b814ac..b38975e 100644
+--- a/src/systems/enemy-fire.ts
++++ b/src/systems/enemy-fire.ts
+@@ -91,7 +91,7 @@ export class EnemyFire {
+       .setScale(params.starshell.illumRadiusM / STARSHELL_TEX_RADIUS_UNITS / RENDER_SCALE)
+       .setVisible(false);
+     this.flash = scene.add
+-      .image(0, 0, TEXTURE_KEYS.explosionRing)
++      .image(0, 0, TEXTURE_KEYS.muzzleFlash)
+       .setTint(MUZZLE_FLASH_TINT)
+       .setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE)
+       .setDepth(DEPTH.effects)
+diff --git a/src/systems/escort-boat.ts b/src/systems/escort-boat.ts
+index 4fbc79c..860c715 100644
+--- a/src/systems/escort-boat.ts
++++ b/src/systems/escort-boat.ts
+@@ -8,7 +8,7 @@ import { createEscort, hitEscort, stepEscort, type EscortParams, type EscortStat
+ 
+ export class EscortBoat {
+   readonly state: EscortState;
+-  private readonly sprite: Phaser.GameObjects.Image;
++  readonly sprite: Phaser.GameObjects.Image; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
+   private readonly label: Phaser.GameObjects.Text;
+ 
+   constructor(
+diff --git a/src/systems/evac-boats-view.ts b/src/systems/evac-boats-view.ts
+index c6af90f..3c38416 100644
+--- a/src/systems/evac-boats-view.ts
++++ b/src/systems/evac-boats-view.ts
+@@ -25,7 +25,7 @@ const HAUL_HEADING_DEG = 180;
+ const NO_TINT = 0xffffff;
+ 
+ export class EvacBoatsView {
+-  private readonly imgs: Phaser.GameObjects.Image[] = [];
++  readonly imgs: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
+   private readonly look: Uint8Array;
+   private seatDim = false;
+ 
+diff --git a/src/systems/evac-flights.ts b/src/systems/evac-flights.ts
+index 49ed65b..62ea444 100644
+--- a/src/systems/evac-flights.ts
++++ b/src/systems/evac-flights.ts
+@@ -47,6 +47,7 @@ export function buildEvac(scene: Phaser.Scene, w: MissionWorld, seed: number, hi
+   const marks = new EvacMarks(scene, evac.sq);
+   const draw = (i: number, center: BoatState): void => flights[i]!.updateVisuals(center, null);
+   evac.view = {
++    boats, // 18 隻の絵（航跡の絵が読む。v0.7.0 S3b）
+     update: () => {
+       evacDrawPass(evac.plan, draw);
+       boats.update(w.stepTimeS);
+diff --git a/src/systems/gunboat.ts b/src/systems/gunboat.ts
+index 947f9a3..27e4770 100644
+--- a/src/systems/gunboat.ts
++++ b/src/systems/gunboat.ts
+@@ -37,7 +37,7 @@ export class Gunboat {
+   private readonly gun: PtGun;
+   /** 隼艇の 25mm を最後に撃った体感秒（閃光の記憶。撃っていなければ −Infinity） */
+   private lastFireS = -Infinity;
+-  private readonly sprite: Phaser.GameObjects.Image;
++  readonly sprite: Phaser.GameObjects.Image; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
+   private readonly label: Phaser.GameObjects.Text;
+   private shown = false;
+   /** ラベルの字の元（変わったときだけ setText）: HP・狙われている・浜 */
+diff --git a/src/systems/mission-effects.ts b/src/systems/mission-effects.ts
+index fe8f299..9f3e3a4 100644
+--- a/src/systems/mission-effects.ts
++++ b/src/systems/mission-effects.ts
+@@ -1,4 +1,4 @@
+-// 任務中の演出と補助表示: 爆発リング（発生時に 1 回だけ tween）、見越し点マーカー（v0.5.2 から解放制。?debug では常に）と距離の円（?debug のときだけ）。
++// 任務中の演出と補助表示: 爆発（v0.7.0 S3b から世界の絵のプール systems/explosion-fx。ここは登録と呼び出しの口だけ＝R12）、見越し点マーカー（v0.5.2 から解放制。?debug では常に）と距離の円（?debug のときだけ）。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import {
+@@ -6,12 +6,6 @@ import {
+   DEBUG_RING_RADIUS_UNITS,
+   DEBUG_RING_TINT_DETECT,
+   DEBUG_RING_TINT_VIS,
+-  EXPLOSION_DURATION_MS,
+-  EXPLOSION_SCALE_DUD,
+-  EXPLOSION_SCALE_FROM,
+-  EXPLOSION_SCALE_HIT,
+-  EXPLOSION_TINT_DUD,
+-  EXPLOSION_TINT_HIT,
+   LEAD_MARKER_ALPHA,
+   LEAD_MARKER_SCALE,
+   LEAD_MARKER_TIME_COLOR,
+@@ -23,24 +17,18 @@ import {
+ import type { BoatState } from '../core/boat-motion';
+ import { interceptHeadingDeg, velocityFromHeading } from '../core/torpedo-solver';
+ import { degToRad } from '../core/units';
++import type { ExplosionFx } from './explosion-fx';
+ 
+-/** 爆発リング。不発は小さく灰色。tween 完了で破棄する */
++/** 今の世界の爆発のプール（world-art が世界の作成時に登録し、破棄で null に。R12: 静的な取り出しは使わない＝やり直しで破棄済みの Image を握らない） */
++let explosions: ExplosionFx | null = null;
++export function registerExplosionFx(fx: ExplosionFx | null): void {
++  explosions = fx;
++}
++
++/** 爆発（名前と引数は v0.4 のまま。mission-scene の 5 か所から）。中身は世界の絵のプール（閃光・火球・水柱・輪。dud は小さい版＝水柱なし）。登録の無い間は何もしない */
+ export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean): void {
+-  const ring = scene.add
+-    .image(x, y, TEXTURE_KEYS.explosionRing)
+-    .setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE)
+-    .setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT)
+-    .setDepth(DEPTH.effects);
+-  const to = (dud ? EXPLOSION_SCALE_DUD : EXPLOSION_SCALE_HIT) / RENDER_SCALE;
+-  scene.tweens.add({
+-    targets: ring,
+-    scaleX: to,
+-    scaleY: to,
+-    alpha: 0,
+-    duration: EXPLOSION_DURATION_MS,
+-    ease: 'Cubic.easeOut',
+-    onComplete: () => ring.destroy(),
+-  });
++  void scene;
++  explosions?.play(x, y, dud);
+ }
+ 
+ /**
+diff --git a/src/systems/pt-gun.ts b/src/systems/pt-gun.ts
+index 3a3ec98..31d89ec 100644
+--- a/src/systems/pt-gun.ts
++++ b/src/systems/pt-gun.ts
+@@ -64,7 +64,7 @@ export class PtGun {
+     this.rng = new SeededRng((seed + look.seedOffset) >>> 0);
+     this.state = createPtGun(g, PT_GUN_SHELL_POOL_SIZE);
+     for (let i = 0; i < PT_GUN_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(look.tint).setDepth(DEPTH.shell).setVisible(false));
+-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
++    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+     this.ring = look.ring ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
+   }
+ 
+diff --git a/src/systems/pt-squadron.ts b/src/systems/pt-squadron.ts
+index bc6a527..44d572f 100644
+--- a/src/systems/pt-squadron.ts
++++ b/src/systems/pt-squadron.ts
+@@ -67,7 +67,7 @@ export class PtSquadron {
+   /** 自艇（check.boat は標的に差し替わるので、絵の表示判定と閃光の位置は別に持つ） */
+   private readonly player: BoatState;
+   private readonly splashes: SplashPool;
+-  private readonly sprites: Phaser.GameObjects.Image[] = [];
++  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b）
+   private readonly shown: Uint8Array;
+   private readonly tracers: Phaser.GameObjects.Image[] = [];
+   private readonly line: Phaser.GameObjects.Image;
+@@ -146,7 +146,7 @@ export class PtSquadron {
+     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
+     this.lineScaleY = AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height;
+     this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
+-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
++    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+     this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(i, fate, FATE_BY_PLAYER)) : null;
+   }
+ 
+diff --git a/src/systems/shore-battery.ts b/src/systems/shore-battery.ts
+index a99273e..0567f29 100644
+--- a/src/systems/shore-battery.ts
++++ b/src/systems/shore-battery.ts
+@@ -84,7 +84,7 @@ export class ShoreBattery {
+     this.graphics = g;
+     this.label = scene.add.text(p.x, p.y + half + BATTERY_LABEL_GAP_M, BATTERY_LABEL, hudTextStyle(BATTERY_LABEL_FONT_PX, BATTERY_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
+     for (let i = 0; i < BATTERY_SHELL_POOL_SIZE; i++) this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.shell).setTint(BATTERY_SHELL_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
+-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
++    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+   }
+ 
+   /** 固定ステップ（大発の後。大発の気づきと艇の射撃の閃光を読む） */
+diff --git a/src/systems/splash-pool.ts b/src/systems/splash-pool.ts
+index 5cfe167..e004a35 100644
+--- a/src/systems/splash-pool.ts
++++ b/src/systems/splash-pool.ts
+@@ -1,4 +1,4 @@
+-// 水柱（着弾の輪）のプール（v0.4.2 で EnemyFire から切り出し。中身は v0.4.1 のまま）: 砲弾・掃射・爆弾・波の叩きつけ・大発の機銃・艇の砲が借りる。
++// 水柱のプール（v0.4.2 で EnemyFire から切り出し。中身は v0.4.1 のまま。v0.7.0 S3b: 絵を輪から tex-splash＝飛沫の絵に。数・寿命・tint・scale はそのまま）: 砲弾・掃射・爆弾・波の叩きつけ・大発の機銃・艇の砲が借りる。
+ // §7: 起動時に size 枚作り、置くときは古いものから使い回し、毎フレームは alpha だけ触る。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+@@ -16,7 +16,7 @@ export class SplashPool {
+     private readonly scaleHit: number,
+   ) {
+     this.ages = new Float32Array(size).fill(Infinity);
+-    for (let i = 0; i < size; i++) this.images.push(scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setDepth(DEPTH.effects).setVisible(false));
++    for (let i = 0; i < size; i++) this.images.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setDepth(DEPTH.effects).setVisible(false)); // 水柱の絵（v0.7.0 S3b。輪と同じ寸法＝scale はそのまま）
+   }
+ 
+   /** 水柱を置く（hit なら橙で大きく） */
+diff --git a/src/systems/world-arms.ts b/src/systems/world-arms.ts
+index 3c954f3..bc5f52b 100644
+--- a/src/systems/world-arms.ts
++++ b/src/systems/world-arms.ts
+@@ -53,7 +53,7 @@ export class WorldArms extends ArmsStep {
+       for (let i = 0; i < AA_TRACER_POOL; i++) this.aaImgs.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(GUN_TRACER_TINT).setDepth(DEPTH.aircraft).setVisible(false));
+       for (let i = 0; i < ARMS_WRECK_POOL; i++) this.wrecks.push(scene.add.image(0, 0, TEXTURE_KEYS.enemyAircraft).setScale(1 / RENDER_SCALE).setDepth(DEPTH.aircraft).setVisible(false));
+     }
+-    this.flashImg = this.shipGun || aa ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
++    this.flashImg = this.shipGun || aa ? scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
+   }
+ 
+   protected override fxMuzzle(x: number, y: number): void {
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 16e3749..1205f66 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -1,29 +1,42 @@
+ // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5）: 世界の絵（演出）の持ち主。MissionWorld が世界を作る最後に 1 つ作り、world-visuals の最後の 1 行で更新・破棄する（R13）。
+-// S3a は海の面（systems/sea-fx: 海の模様・夜明けの光・月のきらめき）。S3b の航跡・爆発、S3c の炎と煙・岸の帯はここに足す。
+-// 世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
++// S3a は海の面（systems/sea-fx: 海の模様・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
++// S3c の炎と煙・岸の帯はここに足す。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
+ import type Phaser from 'phaser';
++import { ExplosionFx } from './explosion-fx';
++import { registerExplosionFx } from './mission-effects';
+ import { SeaFx } from './sea-fx';
++import { WakeFx, type WakeWorldView } from './wake-fx';
+ import type { WorldSetup } from './world-setup';
+ 
+ /** 世界から読む物（MissionWorld がそのまま満たす） */
+-export interface ArtWorldView {
++export interface ArtWorldView extends WakeWorldView {
+   readonly setup: WorldSetup;
+   readonly dawn: { readonly lightStep: number };
+ }
+ 
+ export class WorldArt {
+   private readonly sea: SeaFx;
++  private readonly wake: WakeFx;
++  private readonly explosions: ExplosionFx;
+ 
+   constructor(scene: Phaser.Scene, w: ArtWorldView) {
+     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false);
++    this.wake = new WakeFx(scene, w);
++    this.explosions = new ExplosionFx(scene);
++    registerExplosionFx(this.explosions); // 世界の作成前・破棄後の playExplosion は何もしない（R12）
+   }
+ 
+-  /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値） */
++  /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
+   update(realDt: number, w: ArtWorldView): void {
+     this.sea.update(realDt, w.dawn.lightStep);
++    this.wake.update(w);
++    this.explosions.update(realDt);
+   }
+ 
+   destroy(): void {
++    registerExplosionFx(null);
+     this.sea.destroy();
++    this.wake.destroy();
++    this.explosions.destroy();
+   }
+ }
+diff --git a/src/systems/world-evac.ts b/src/systems/world-evac.ts
+index c882fa0..4e2e9b9 100644
+--- a/src/systems/world-evac.ts
++++ b/src/systems/world-evac.ts
+@@ -56,6 +56,8 @@ export type EvacWorldPortFactory = (i: number, p: AirStrikeParams, rng: SeededRn
+ export interface EvacView {
+   update(realDt: number): void;
+   destroy(): void;
++  /** 18 隻の絵（航跡の絵が読む。v0.7.0 S3b。systems/wake-fx） */
++  readonly boats: { readonly imgs: readonly { readonly visible: boolean; readonly alpha: number; readonly displayHeight: number }[] };
+ }
+ 
+ const noop = (): void => {};
