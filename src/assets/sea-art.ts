@@ -3,9 +3,15 @@
 //   周期の縁をまたぐ弧は反対側にも描く（継ぎ目なし）。色は付けない（systems/sea-fx が光ごとに TileSprite の tint × α で付ける）。
 // - tex-dawn-glow 256 × 64 px: 右（東）の橙から左の透明への横のグラデーション（画面へ拡大。α は sea-fx が段ごとに）。
 // - tex-glint 16 × 8 px: 横に細長い柔らかい筋（月のきらめき・昼の白波。R9）。
+// - tex-coast-strip 512 × 120 px の frame 2 枚（S3c。1.0 px/m。初めて使う時に 1 回＝ensureCoastStripTexture）: 上 8 m は海の寄せ波の白、波打ち際から砂浜と陸の際の樹冠、奥へ透明。
+//   x は周期 512 で折り返す（帯の端は隣と同じ画素）。frame p1 は右端の 16 m を透明へ（jp_03 の陰・壕の絵をよけた端＝R16）。回らない絵だが南北で反転して貼るので向きの光は焼かない。
 import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
-import { ART_SEED_SEA, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_TEX_H, GLINT_TEX_W, SEA_LAYER_MODE } from '../config/sea-art-config';
+import {
+  ART_SEED_COAST, ART_SEED_SEA, COAST_CROWN_COLORS, COAST_CROWN_LIGHT_COLOR, COAST_DRY_SAND_COLOR, COAST_EDGE_SHADE_COLOR, COAST_SAND_COLOR, COAST_STRIP_FADE_M, COAST_STRIP_LAND_M,
+  COAST_STRIP_LEN_M, COAST_STRIP_SEA_M, COAST_SURF_ALPHA, COAST_SURF_PX, COAST_WET_SAND_COLOR, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_TEX_H, GLINT_TEX_W, SEA_LAYER_MODE,
+} from '../config/sea-art-config';
+import { coastPlan } from './coast-shape';
 import { SEA_TILE_TEX_PX, seaPatchPlan, seaTilePlan, wrapOffsets, type SeaStroke } from './sea-shape';
 
 /** Canvas のテクスチャを 1 枚作って draw で描き、GPU へ上げる（鍵が既にあれば何もしない＝「もう一度」でも描かない）。frames があれば同じ鍵に縦に並んだ frame を足す */
@@ -114,4 +120,79 @@ export function generateSeaTextures(scene: Phaser.Scene): void {
   else paintSeaPatches(scene);
   paintDawnGlow(scene);
   paintGlint(scene);
+}
+
+function rgba(c: number, a: number): string {
+  return `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`;
+}
+
+/** 岸の帯の 1 行（top から高さ SEA + LAND）: 砂浜（濡れた暗い縁 → 砂 → 乾いた砂）→ 陸の際の陰 → 樹冠（奥へ薄く）→ 寄せ波の白（2 本）。樹冠と寄せ波は周期の写しも描く */
+function paintCoastRow(ctx: CanvasRenderingContext2D, top: number): void {
+  const P = COAST_STRIP_LEN_M;
+  const H = COAST_STRIP_SEA_M + COAST_STRIP_LAND_M;
+  const plan = coastPlan(ART_SEED_COAST);
+  const wl = top + COAST_STRIP_SEA_M;
+  const g = ctx.createLinearGradient(0, wl, 0, wl + 30);
+  g.addColorStop(0, rgba(COAST_WET_SAND_COLOR, 1));
+  g.addColorStop(0.18, rgba(COAST_SAND_COLOR, 1));
+  g.addColorStop(1, rgba(COAST_DRY_SAND_COLOR, 1));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0, wl);
+  for (let x = 0; x <= P; x++) ctx.lineTo(x, wl + plan.sand[x]!);
+  ctx.lineTo(P, wl);
+  ctx.closePath();
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = rgba(COAST_EDGE_SHADE_COLOR, 0.7);
+  ctx.beginPath();
+  for (let x = 0; x <= P; x++) ctx.lineTo(x, wl + plan.sand[x]! + 1.5);
+  ctx.stroke();
+  for (const c of plan.crowns) {
+    const fade = Math.max(0, 1 - Math.max(0, c.y - (COAST_STRIP_SEA_M + 40)) / (H - COAST_STRIP_SEA_M - 40));
+    if (fade <= 0) continue;
+    const col = COAST_CROWN_COLORS[Math.min(COAST_CROWN_COLORS.length - 1, Math.floor(c.shade * COAST_CROWN_COLORS.length))]!;
+    for (const dx of c.x < c.r ? [0, P] : c.x > P - c.r ? [0, -P] : [0]) {
+      const cx = c.x + dx;
+      const cy = top + c.y;
+      const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, c.r);
+      rg.addColorStop(0, rgba(COAST_CROWN_LIGHT_COLOR, fade));
+      rg.addColorStop(0.55, rgba(col, fade));
+      rg.addColorStop(0.9, rgba(col, fade * 0.9));
+      rg.addColorStop(1, rgba(col, 0));
+      ctx.fillStyle = rg;
+      ctx.fillRect(cx - c.r, cy - c.r, c.r * 2, c.r * 2);
+    }
+  }
+  ctx.lineCap = 'round';
+  for (const [off, a, w] of [[-1, COAST_SURF_ALPHA, COAST_SURF_PX], [-4.5, COAST_SURF_ALPHA * 0.4, 2]] as const) {
+    ctx.lineWidth = w;
+    ctx.strokeStyle = white(a);
+    ctx.beginPath();
+    for (let x = 0; x <= P; x += 2) ctx.lineTo(x, wl + off + plan.surf[x]! * (off < -2 ? 1.2 : 0.5));
+    ctx.stroke();
+  }
+}
+
+/** 岸の帯（初めて使う時に 1 回。jp_03 で陰の絵と同じく世界の作成の時。鍵が既にあれば描かない）: frame p0 そのまま・p1 右端の 16 m を透明へ */
+export function ensureCoastStripTexture(scene: Phaser.Scene): void {
+  const P = COAST_STRIP_LEN_M;
+  const H = COAST_STRIP_SEA_M + COAST_STRIP_LAND_M;
+  paintCanvas(scene, TEXTURE_KEYS.coastStrip, P, H, (ctx) => {
+    for (const top of [0, H]) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, top, P, H);
+      ctx.clip(); // 行の外（隣の行）へはみ出さない
+      paintCoastRow(ctx, top);
+      ctx.restore();
+    }
+    const fade = ctx.createLinearGradient(P - COAST_STRIP_FADE_M, 0, P, 0);
+    fade.addColorStop(0, 'rgba(0,0,0,0)');
+    fade.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = fade;
+    ctx.fillRect(P - COAST_STRIP_FADE_M, H, COAST_STRIP_FADE_M, H);
+    ctx.globalCompositeOperation = 'source-over';
+  }, 2);
 }

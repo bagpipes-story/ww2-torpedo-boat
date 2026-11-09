@@ -231,4 +231,6 @@ export const TEXTURE_KEYS = {
   fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
   wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
   wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
+  flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
+  coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
 } as const;

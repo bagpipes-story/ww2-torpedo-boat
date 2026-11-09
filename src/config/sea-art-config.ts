@@ -114,6 +114,19 @@ export const COAST_STRIP_LEN_M = 512;
 export const COAST_STRIP_LAND_M = 112;
 export const COAST_STRIP_SEA_M = 8;
 export const COAST_STRIP_FADE_M = 16;
+/** 岸の帯の中身（px＝m）: 砂浜の幅の平均と揺れ（周期で続く）・樹冠の数と半径・色（夜の陸 0x26301e・浜の線 0x8a7a48 と同じ系統。浜の線より明るくしない）・寄せ波の白の α と太さ */
+export const COAST_SAND_M = 18;
+export const COAST_SAND_WAVE_M = 6;
+export const COAST_CROWNS = 240;
+export const COAST_CROWN_R_M: readonly [number, number] = [5, 10];
+export const COAST_WET_SAND_COLOR = 0x5e5434;
+export const COAST_SAND_COLOR = 0x7e7044;
+export const COAST_DRY_SAND_COLOR = 0x8a7a4a;
+export const COAST_EDGE_SHADE_COLOR = 0x1c2416;
+export const COAST_CROWN_COLORS: readonly number[] = [0x2b3a21, 0x324428, 0x3a4c2c];
+export const COAST_CROWN_LIGHT_COLOR = 0x41542f;
+export const COAST_SURF_ALPHA = 0.6;
+export const COAST_SURF_PX = 2.5;
 
 /** 深さ（game-config の DEPTH は変えない。ここに絶対値で）: 海の模様・夜明けの光（海の模様の直上＝陸・艇・艦・字の下。R3）・月のきらめき・岸の帯 */
 export const SEA_ART_DEPTH = 0.05;
