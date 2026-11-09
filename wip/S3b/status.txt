@@ -1,3 +1,4 @@
+ M CHANGELOG.md
  M src/assets/sea-art.ts
  M src/config/fx-art-config.ts
  M src/config/game-config.ts
