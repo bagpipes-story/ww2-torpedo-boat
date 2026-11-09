@@ -1,2 +1,0 @@
-src/assets/splash-shape.ts
-tests/fx-art-s4.test.ts
