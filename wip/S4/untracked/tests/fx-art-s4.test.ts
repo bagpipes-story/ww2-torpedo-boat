@@ -127,12 +127,13 @@ describe('航跡・星弾・昼の海・岸の帯（S4）', () => {
     expect(fx.split('ctx.clip();').length - 1).toBe(1);
     expect(fx).not.toMatch(/const N = 8;/);
   });
-  it('星弾の光は白に近い（彩度 < 0.06。照明弾の tint は掛け算のまま）、light-art は SS_LIGHT_COLOR で描く', () => {
+  it('星弾の光は白に近い（彩度 < 0.06。照明弾の tint は掛け算のまま）、light-art は SS_LIGHT_COLOR・探照灯は SL_LIGHT_COLOR で描く', () => {
     const r = (SS_LIGHT_COLOR >> 16) & 255;
     const g = (SS_LIGHT_COLOR >> 8) & 255;
     const b = SS_LIGHT_COLOR & 255;
     expect((Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(r, g, b)).toBeLessThan(0.06);
     expect(read('src/assets/light-art.ts')).toContain('starshellPixels(d, R, SS_LIGHT_COLOR)');
+    expect(read('src/assets/light-art.ts')).toContain('searchlightPixels(W, H, halfW, SL_LIGHT_COLOR)');
   });
   it('昼の波頭は控えめ（α ≤ 0.25・白波 ≤ 0.4）、波頭の群れ・きらめきは世界の内に収まる所だけ出す（見え方が変わった時だけ setVisible）', () => {
     expect(SEA_LIGHT_ART.day.crestAlpha).toBeLessThanOrEqual(0.25);

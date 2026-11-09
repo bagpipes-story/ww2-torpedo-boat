@@ -1,9 +1,9 @@
 // v0.7.0 S4（アートと音①：コードで描く絵。spec-v0700 §5.3・§5.4）: 水柱と沈没の油の輪の Phaser に依らない画素の式（assets/fx-art が Boot で 1 回 ImageData に書く）。tests/fx-art-s4 が確かめる。
-// 水柱＝真上から見た水柱の飛沫: 柔らかい不揃いな白い塊（輪郭を 3・5・7 つの山で揺らす）＋外の薄い霧＋少しの水滴（S3b の放射の筋は雪の結晶・ウニに見えた）。白で描き、表示側の tint で色（外れ 青白・命中 橙）。
+// 水柱＝真上から見た水柱の飛沫: 柔らかい不揃いな白い塊（輪郭を 2・3・5 つの山で揺らし、脇にこぶ）＋外の薄い霧＋少しの水滴（向きは乱数）（S3b の放射の筋は雪の結晶・ウニに見えた）。白で描き、表示側の tint で色（外れ 青白・命中 橙）。
 // 油の輪＝暗い不揃いな油膜（2・3・6 つの山）＋縁の鈍い光（夜の海 #0b1020 でも形が読める）＋中の泡の小さな輪。色は焼く（tint しない）。乱れは絵だけの SeededRng（種は呼ぶ側の ART_SEED_FX）。
 import {
   SLICK_ALPHA, SLICK_BUBBLE_ALPHA, SLICK_BUBBLE_R, SLICK_BUBBLE_SPREAD, SLICK_BUBBLES, SLICK_COLOR, SLICK_LOBES, SLICK_R, SLICK_SHEEN_ALPHA, SLICK_SHEEN_BAND, SLICK_SHEEN_COLOR,
-  SPLASH_CORE_ALPHA, SPLASH_CORE_R, SPLASH_DROPLET_ALPHA, SPLASH_HAZE_ALPHA, SPLASH_HAZE_R, SPLASH_LOBES,
+  SPLASH_CORE_ALPHA, SPLASH_CORE_R, SPLASH_DROPLET_ALPHA, SPLASH_HAZE_ALPHA, SPLASH_HAZE_R, SPLASH_LOBES, SPLASH_LUMP_D, SPLASH_LUMP_R, SPLASH_LUMPS,
 } from '../config/fx-art-config';
 import { SeededRng } from '../core/rng';
 import { splashDroplets } from './fx-shape';
@@ -29,12 +29,27 @@ function phases(rng: SeededRng, n: number): number[] {
   return out;
 }
 
-/** 水柱の α（u, v はテクスチャの半径を 1 にした座標）。塊・霧・水滴を重ねた α（0〜1） */
-export function splashAlphaAt(u: number, v: number, ph: readonly number[], drops: readonly { x: number; y: number; r: number }[]): number {
+type Disc = { readonly x: number; readonly y: number; readonly r: number };
+
+/** 塊の脇のこぶ（中心からの向きは乱数・距離と半径は帯の内） */
+export function splashLumps(seed: number): Disc[] {
+  const rng = new SeededRng(seed + 151);
+  const out: Disc[] = [];
+  for (let i = 0; i < SPLASH_LUMPS; i++) {
+    const a = rng.nextRange(0, Math.PI * 2);
+    const d = rng.nextRange(SPLASH_LUMP_D[0], SPLASH_LUMP_D[1]);
+    out.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, r: rng.nextRange(SPLASH_LUMP_R[0], SPLASH_LUMP_R[1]) });
+  }
+  return out;
+}
+
+/** 水柱の α（u, v はテクスチャの半径を 1 にした座標）。塊・こぶ・霧・水滴を重ねた α（0〜1） */
+export function splashAlphaAt(u: number, v: number, ph: readonly number[], drops: readonly Disc[], lumps: readonly Disc[] = []): number {
   const rho = Math.hypot(u, v);
   if (rho >= 1) return 0;
   const th = Math.atan2(v, u);
-  const core = SPLASH_CORE_ALPHA * (1 - smooth(0.45, 1, rho / (SPLASH_CORE_R * lobe(th, SPLASH_LOBES, [3, 5, 7], ph))));
+  let core = SPLASH_CORE_ALPHA * (1 - smooth(0.45, 1, rho / (SPLASH_CORE_R * lobe(th, SPLASH_LOBES, [2, 3, 5], ph))));
+  for (const l of lumps) core = Math.max(core, SPLASH_CORE_ALPHA * 0.85 * (1 - smooth(0.3, 1, Math.hypot(u - l.x, v - l.y) / l.r)));
   const haze = SPLASH_HAZE_ALPHA * (1 - smooth(0.35, 1, rho / (SPLASH_HAZE_R * lobe(th, SPLASH_LOBES, [2, 4, 6], ph.slice(3)))));
   let keep = (1 - core) * (1 - haze);
   for (const d of drops) keep *= 1 - SPLASH_DROPLET_ALPHA * (1 - smooth(0.55, 1, Math.hypot(u - d.x, v - d.y) / d.r));
@@ -45,6 +60,7 @@ export function splashAlphaAt(u: number, v: number, ph: readonly number[], drops
 export function splashPixels(d: number, R: number, seed: number): Uint8ClampedArray {
   const ph = phases(new SeededRng(seed + 101), 6);
   const drops = splashDroplets(seed);
+  const lumps = splashLumps(seed);
   const px = new Uint8ClampedArray(d * d * 4);
   const c = d / 2;
   for (let y = 0; y < d; y++) {
@@ -53,7 +69,7 @@ export function splashPixels(d: number, R: number, seed: number): Uint8ClampedAr
       px[i] = 255;
       px[i + 1] = 255;
       px[i + 2] = 255;
-      px[i + 3] = Math.round(255 * splashAlphaAt((x + 0.5 - c) / R, (y + 0.5 - c) / R, ph, drops));
+      px[i + 3] = Math.round(255 * splashAlphaAt((x + 0.5 - c) / R, (y + 0.5 - c) / R, ph, drops, lumps));
     }
   }
   return px;

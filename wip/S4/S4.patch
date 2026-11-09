@@ -1,3 +1,113 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3bec768..4599c24 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -6,7 +6,7 @@
+ ## v0.7.0 — 2026-11-08（アートと音①：コードで描く絵）
+ 
+ - 目的: 全任務の艇・艦・機・大発と夜の海（波・航跡・水柱・爆発・火災と煙・探照灯・星弾・月光・夜明け）を、v0.6.11 の屋我地の陰（`assets/evac-terrain-art`）と同じ「起動時に 1 回コードで描くテクスチャ」に置き換え、遊びは 1 ビットも変えずに見た目で損をしないようにする。ユーザーの決め（v0.7.0 の U1。2026-11-07。問い「次は v0.7.0「アートと音」（艇・艦の絵、夜の海の演出、効果音・BGM）です。CLAUDE.md には「画像・音の制作にセッションを使わない」とあります。素材の出どころをどうしますか？」への答え「コードで描く・鳴らす（推奨）」＝絵と音はコードで描く・合成する、外部の画像・音のファイルを使わない。CLAUDE.md §2「アート」）。v0.7.0 は絵だけ。合成の効果音は v0.7.1、BGM と命中スローは v0.7.2（docs/03）。
+-- Done: 段 S0・S1・S2a・S2b・S3a・S3b・S3c・S4 の門（npm test・typecheck・lint・build、凍結 20 本、模擬 `scripts/headless/g2.sh`（`G6=1 ALLY=1 EVAC=1`）OK 37 DIFF 0、f5563ab との再生 `ab-replay`（all 58・jp04base 8・jp03 4。`CAM=1`）と HUD の A/B `hud-ab`（base 16・jp04base 8・jp03 4）が same:true、テクスチャの鍵・寸法・原点が基準と同じ（`tex-ab`）、GPU のテクスチャ ≤ +12 MB、画面に見える Mission の物 ≤ +40、描いたフレームの p95 ≤ +15%（`art-perf`））が通り、Pages で実機テスト 3 項目（docs/03 の v0.7.0。S4 で書く）を確かめた。
++- Done: 段 S0・S1・S2a・S2b・S3a・S3b・S3c・S4 の門（npm test・typecheck・lint・build、凍結 20 本、模擬 `scripts/headless/g2.sh`（`G6=1 ALLY=1 EVAC=1`）OK 37 DIFF 0、f5563ab との再生 `ab-replay`（all 58・jp04base 8・jp03 4。`CAM=1`）と HUD の A/B `hud-ab`（base 16・jp04base 8・jp03 4）が same:true、テクスチャの鍵・寸法・原点が基準と同じ（`tex-ab`）、GPU のテクスチャ ≤ +12 MB、画面に見える Mission の物 ≤ +40、描いたフレームの p95 ≤ +15%（`art-perf`））が通り、Pages で実機テスト 3 項目（docs/03 の v0.7.0）を確かめた。
+ - 変更点:
+   - S0（棚卸しの道具と骨組み。見た目もゲームの挙動も変えない＝絵はまだ何も描き直さない・Boot も世界も触らない）:
+     - 版 0.7.0（package.json・package-lock.json）。CLAUDE.md §2「アート」の行を U1 に（v0.6 まではプレースホルダー図形。v0.7 からは絵と音をコードで描く・合成する・外部の画像・音のファイルを使わない。「制作にセッションを使わない」はこの形に限って解く。手本は屋我地の陰）と変更履歴の 1 行。docs/03 の v0.7.0 の行を「アートと音①：コードで描く絵」（U1・段 S0〜S4）にし、v0.7.1（合成の効果音）・v0.7.2（BGM と命中スロー）の行を足した。
+@@ -164,14 +164,52 @@
+         沿岸砲の砲台・射界、浅瀬、岸の名の字は帯の上か外のまま。
+       - jp_03（`fx3/jp_03-w1560.png`・`-lookout`）: 本部半島の岸に帯、壕の岩の絵・斜路・レールは前と同じ（帯は壕の x ± 150 m をよけ、よけた端は透明へ）。北の屋我地島の岸は陰の絵（x ± 460 m）をよけて上下反転の帯。
+     - 門（lead がまとめて回した `run-gates`。scratchpad の `v0700/impl/S3c/SUMMARY.txt`）: npm test 261 ファイル・2,677 件・typecheck・lint・build（`VITE_BASE=/ww2-torpedo-boat/`）が緑、凍結 20 本同じ、setup の snapshot は `-u` なし、g2 `G6=1 ALLY=1 EVAC=1` OK 37 DIFF 0、ab-replay all 58（us_02 の result の最後のフレームの既知の揺れ 1 件は単独で回し直して same）・jp04base 8・jp03 4 と hud-ab base 16・jp04base 8・jp03 4 が same:true（CAM=1）、tex-ab CHECK=1 ✓（既存の鍵の寸法・原点はすべて同じ。新しい鍵 tex-flame・tex-coast-strip。GPU の差の最大 +0.97 MB・Boot の create の中央値 +69.5 ms（+200 以内））、art-perf p95 us_02h ×1.01・us_01d ×1.04・us_03 ×1.09・jp_04h ×1.08・jp_02 ×1.06・jp_03h ×1.04（≤ 1.15。2 組・W 1560）。
++  - S4（仕上げ。独立の見え方の検査＝13 任務の写しと計測（scratchpad の `v0700/impl/vcheck/`）の指摘の直し・docs。遊びは変えない＝鍵・寸法・原点は同じ（新しい鍵は `tex-oil-slick` だけ）・探照灯・星弾・煙幕の α と形は同じ・論理の状態は読むだけ）:
++    - 見える物の門（MAJOR 1）: jp_03 ハードで隊長艇が燃えると、炎 1 ＋煙の玉 10 で見える物が基準の +43（p95）／+44（最大）になった（門 ≤ +40。火災なしは +32）。1 つの火災の物を炎 1 ＋玉 5 ＝ 6 まで（`FIRE_OBJECTS_PER_SOURCE`）:
++      玉の間隔 0.25 → 0.5 秒・寿命 2.5 → 2.4 秒（ceil(2.4/0.5)＝5）、玉のプール 16 → 12（艦が 2〜3 隻燃えても炎 3 ＋玉 12）。玉が減った分は尾が読めるように、膨らみの始まり 0.35 → 0.5・濃いまま保つ割合 0.4 → 0.7・流れ 24 → 20 m/実秒・
++      tint 0xb09c88 → 0xd8c8b4（結果 約 #82807c の茶灰。煙幕の青灰 0x9aa4b0 より暗い・半径 ≤ 15 m・α ≤ 0.5 の R10 の上限はそのまま。爆発の小さい版の暗い玉も同じ定数）。
++      計測（vcheck の火災の台本 `vcheck/tools/fire-count.mjs`＝jp_03 ハード dodge_only seed 20・t 190 に座席の隊長艇へ火災・窓 t 180〜230。`impl/S4/fire-count-final.log`）: 基準との差 火災なし p95 +31 最大 +31、火災あり p95 +33 最大 +35（火災の間 p95 +34 最大 +35。玉は最大 5）＝≤ +40 ✓。
++    - jp_03 の岸の帯（MAJOR 2）: S3c は帯を壕の絵（± 150 m）と陰の絵（± 460 m）の幅でよけていて、よけた所に何も無い暗緑の矩形が見えた。帯を切らずに岸の端から端まで通す（`coast-shape` の区間をよける式 `coastSegments` はやめた）。
++      壕の岩の絵と斜路の陸の部分はもともと深さ 1.5（帯 1.2 の上）＝帯は岩の下を通り、斜路の海の部分（深さ 1）には寄せ波の白が掛かる（波打ち際の波）。陰の絵は同じテクスチャの Image 2 枚に分けた（`systems/evac-terrain` の `coverImages`・`setCrop`。
++      岸の線から海へ 8 m までの陸の側は帯の上の深さ `EVAC_COVER_LAND_DEPTH` 1.25、海の側は今の shallows 1＝隠れ場所の輪と爆撃進路の線の下のまま）＝崖と岸の岩が砂浜の上に乗る。jp_03 の見える物は陰の絵の 1 枚ぶん +1。
++    - 水柱と沈没の輪（MAJOR 3）: `tex-splash` を描き直し（`assets/splash-shape` の画素の式。fx-art が ImageData に書く）＝柔らかい不揃いな白い塊（輪郭を 2・3・5 つの山で揺らす＋脇のこぶ 3）＋外の薄い霧＋水滴 5（向きは乱数）。放射の筋は描かない
++      （S3b の星形は雪の結晶・ウニに見えた。S4 の 1 回目の等間隔の水滴 8 個は線香花火に見えたので向きを乱数・数を減らした）。寸法・tint（外れ 青白・命中 橙）・scale は同じ。沈没の始まりの輪は新しい鍵 `tex-oil-slick`（爆発の輪と同じ 96×96・色を焼く・tint しない）:
++      暗い不揃いな油膜（α 0.7）＋縁の鈍い光（#6a7888。夜の海で形が読める）＋中の泡の小さな輪 7。寿命 3 → 5 秒・α 0.9 で寿命の 4 割まで保ち薄れる（`SINK_RING_*`。`SINK_RING_TINT` は消した）。art-inventory の PLANNED_NEW に足した。
++      命中・火災の煙は上の tint と濃さで一段見やすくした（夜の艦の煙は尾が航跡に重なると薄い＝既知の制約）。
++    - 小さい直し（MINOR）: 航跡の腕は 8 区切りの線（丸い端が重なって玉の列に見え、端で切れていた）をやめ、1 枚の細る台形を長さ方向のグラデーション（端は α 0）で塗る・frame ごとに枠で切る（p1 の泡が p0 の端に漏れて見張りで離れた点に見えた）。
++      昼の波頭は控えめに（day の crestAlpha 0.4 → 0.16・白波 0.55 → 0.4。夜明けの後の us_01 で波頭の筆の山の明るさ R 118 → 83、海 59）、波頭の群れ・きらめきは世界の内（0〜幅 × 0〜高さ）に収まる所だけ出す（`sea-fx` の DriftPool。見え方が変わった時だけ setVisible）。
++      星弾の光は白に近い冷たい色 `SS_LIGHT_COLOR` 0xf2f5ff、探照灯はわずかに暖かい白 `SL_LIGHT_COLOR` 0xfff8ea で焼く（ui-config の 0xfff0b0・0xfff2c0 は α 0.14・0.2 で夜の海に重なり画面をカーキ色に・探照灯を茶色に見せた。α・形・ui-config の値は同じ。照明弾の tint は掛け算のまま）。
++      沿岸砲の平らな赤い四角は R27 のまま変えない（既知の制約）。
++    - テスト `tests/fx-art-s4`（11 件: 1 つの火災の物 ≤ 6 を 60 fps の積み上げで・玉は煙幕より暗い、水柱の芯 α ≥ 0.9・半径 0.55〜0.9 の輪で α ≥ 0.5 の画素 ≤ 15%（放射の筋なし）・塊の輪郭の揺れ ≥ 1.15・白、油の輪の暗い中・明るい縁・泡・縁で 0、source の pin（画素の式・tint しない輪・
++      航跡のグラデーションと枠・星弾と探照灯の色・昼の α と世界の内・陰の絵の 2 枚と深さ）、300 行）。`tests/fx-art-s3c`（玉 12・jp_03 の帯は切らない）・`tests/fx-art`（水滴の帯 0.5〜0.8）・`tests/art-inventory`（`tex-oil-slick`）を直した。
++    - 計測（S4 の木。A＝f5563ab・3 組・窓 15 秒・W 1560・何も同時に回さない。`impl/S4/art-perf-final.log`）: 描いたフレームの p95 us_01 の夜明けの空襲 87.8 → 96.4 ms（×1.10）・jp_03 ハードの第 4 波 92.2 → 99.0（×1.07）＝≤ ×1.15 ✓。
++      見える物の p95 us_01 +16・jp_03 ハード +31（S3c の +33 から。世界の外の昼の波頭を出さない分が減り、陰の絵の 2 枚目が +1）＝≤ +40 ✓。ページのエラー 0。
++    - 写し（scratchpad の道具 `impl/S4/tools/s4-shots.mjs`（S3c の fx3-shots を写した。jp_03 の壕と陰へカメラを向ける・水柱を w.splashes で自艇の近くに置く・駆逐艦の命中と沈没・自艇の火災。写しのための書き込みは道具の側）・vcheck の `action-shots.mjs`・`scripts/headless/art-shots.mjs`。
++      W 1280・1560。最終は `impl/S4/shots/`・`act/`・`art/`・`crops/`。ページのエラー 0）:
++      - jp_03（`shots/jp_03-cave-mid-`・`-cover-`・`-lookout-cave-`・`crops/jp03-cave1280.png`・`jp03-cover1560.png`）: 南の岸は壕の岩の脇まで砂浜と樹冠が続き、岩と斜路が帯の上に乗る。北の陰は崖と岸の岩が砂浜の上に乗り、左右へ帯が続く。暗緑の矩形は無い。陰の絵の 2 枚の切れ目は見えない。
++      - 水柱（`shots/splash-detail-`・`crops/splash-detail-x3.png`・`act/us_02-aim-c1-`）: 外れは青白の柔らかい塊に水滴が少し、命中は橙の大きい塊。雪の結晶・ウニには見えない。沈む駆逐艦（`crops/us02-c1.png`・`shots/us_02h-sink-t25-detail-`）は船体の下に暗い不揃いな油膜と縁の光と泡の輪。
++      - 火災（`crops/us_01-fire-detail-x3.png`・`us_02h-burn-detail-x3.png`）: 自艇の後ろに灰茶の玉の尾。駆逐艦の煙は艦尾の航跡に重なると薄い。
++      - 星弾（`act/us_02-hard-star2-`・`shots/us_02h-lights-lookout-`）: 照らされた海は中立の灰青、探照灯は淡い白の帯（カーキ・茶色ではない）。航跡（`crops/jp06-wake.png`）: 艦の V は滑らかに細って消え、離れた点は無い。昼の海（`art/us_01-dawn-`）: 波頭は控えめ。
++    - docs: docs/02 §7 を「アート方針（v0.7 から）」に（描き方・定数の置き場・スタイル・遊びの手掛かり・予算）。docs/03 の v0.7.0 の行に S0〜S4 済みと実機テスト 3 項目（v0.7.1 合成の効果音・v0.7.2 BGM と命中スローの行はそのまま）。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
+ - 既知の制約:
+-  - （S0）art config と art-dims はまだどこからも使われない（S1〜S3c で使う）。tests/art-inventory の予定の鍵（PLANNED_NEW）は spec D2 の 11。段で鍵を足す・やめる時はこの表も直す。
++  - （S0）art config と art-dims はまだどこからも使われない（S1〜S3c で使う）。tests/art-inventory の予定の鍵（PLANNED_NEW）は spec D2 の 11（S4 で `tex-oil-slick` を足して 12）。段で鍵を足す・やめる時はこの表も直す。
+   - （S0）tex-check の絶対の門（夜の海との比 ≥ 4.5・昼 ≥ 3・艦の幅 ≥ 0.92）は placeholder がもともと満たさない所（敵機の赤の昼の海との比 2.97・輸送船の 20% の行の幅 0.89）を「A 以上」で読む。
+   - （S0）art-perf の数はヘッドレスの相対値（SwiftShader の CPU のラスタ。描いた後に 1 画素を読んで待つので塗りの秒も入る）。iPhone の FPS は実機テスト ③。
+   - （S2b）Pete の複葉は 1 枚の太い翼に見える・generic と SBD はほぼ同じ形（上の写しの「正直な弱み」）。敵機の鍵は 1 つなので、1 任務に 2 種類の敵機は出せない（data もそうなっている）。
+-  - （S3b）航跡は船体ごとに Image 1 枚の直線の V（曲がった航跡の点は作らない＝D8）。jp_03 の 18 隻は隊長艇だけ（`WAKE_EVAC_LEADERS_ONLY`）。卯月・味方の輸送船は停泊で航跡なし。水柱は星形の飛沫（柱の高さは出ない）。Canvas レンダラーでは爆発の閃光・火球を ADD でなく通常の重ねで描く。
+-  - （S3c）火災の煙は夜の海では控えめ（暗い茶灰・α ≤ 0.5・半径 ≤ 15 m＝煙幕と見分ける上限）。沈没の泡と油の輪は水柱の絵の流用で星形に見える。卯月・隼艇は炎の発生源にしない。岸の帯は 512 m の繰り返し（1 枚おきの反転）で、見張りのズームでは繰り返しが分かる。1 か所の火災で見える物が最大 +11（台本の窓では出ない）。
+-- 実機テスト結果: （未。S4 の後）
++  - （S3b）航跡は船体ごとに Image 1 枚の直線の V（曲がった航跡の点は作らない＝D8）。jp_03 の 18 隻は隊長艇だけ（`WAKE_EVAC_LEADERS_ONLY`）。卯月・味方の輸送船は停泊で航跡なし。水柱は真上から見た白い塊（S4。柱の高さは出ない）。Canvas レンダラーでは爆発の閃光・火球を ADD でなく通常の重ねで描く。
++  - （S3c）火災の煙は夜の海では控えめ（暗い茶灰・α ≤ 0.5・半径 ≤ 15 m＝煙幕と見分ける上限）。卯月・隼艇は炎の発生源にしない。岸の帯は 512 m の繰り返し（1 枚おきの反転）で、見張りのズームでは繰り返しが分かる。（沈没の輪の星形・1 か所の火災の +11 は S4 で直した）
++  - （S4。spec §9 の残り＋正直な弱み）爆弾（灰の円が縮む）と爆撃進路の線は今のまま（凍結の air-strike-flight。水上機の爆弾も揃えた）。機は全種が同じ大きさのアイコン（翼幅 60 単位・PB2Y も戦闘機と同じ）で国籍の標識なし。
++    テクスチャの密度は約 1.1 px/単位＝砲塔・発射管はズーム 0.75 以上でそれらしく、見張りでは形と色だけ。船体の壊れた絵・影は無い（昼の jp_03 の機の影も無し）。海の模様は WebGL だけ（Canvas レンダラーは格子だけ）、格子の線は残した（実機テスト ② で聞く）、ビネットなし。
++    浅瀬・沿岸砲（平らな赤い四角＝R27。描いた岸の帯の上で浮いて見える）・暴風の帯と雨・砲弾と曳光弾・雷跡の点・輪・扇・HUD・Title・Briefing・Result は変えていない。遊べない us_04〜us_07 の艇は描いていない。jp_06 の米駆逐艦は絵の大きさ 236 × 21.6 → 229.6 × 24（当たりは同じ）。
++    航跡は直線の V で、艦の夜の航跡は薄く、jp_03 の僚艇 12 隻は航跡なし（予算）。夜の火災の煙は控えめ（1 つの火災で玉 5・α ≤ 0.5）で、艦の煙は航跡に重なると薄い＝炎の光のほうが「燃えている」の手掛かり。jp_03 の岸の帯は斜路の海の部分に寄せ波の白を掛ける。
++    星弾と探照灯の絵の色は ui-config の色から白へ寄せた（照明弾の tint は掛け算で少し純色に見える）。jp_03 ハードで火災が出ると見える物は最大 +35（門 +40 の内だが余裕は小さい）。音は無い（v0.7.1 合成の効果音・v0.7.2 BGM と命中スロー）。
++- 計測（v0.7.0 全体。独立の見え方の検査が S3c の木（S4 の前）で回した `v0700/impl/vcheck/`。S4 の差は上の S4 の計測）:
++  - art-perf（A＝f5563ab・窓 15 秒・W 1560。描いたフレームの p95 と見える物の p95）: us_02 ハードの星弾 137.7 → 141.9 ms（×1.03・+25）・us_01 の夜明けの空襲 86.2 → 93.6（×1.09・+16。3 組。2 組の回では ×1.22 だったが A 対 A の揺れ ×1.15 の回）・
++    us_03 105.5 → 106.7（×1.01・+16）・jp_04 ハード 96.5 → 106.2（×1.10・+17）・jp_02 の哨戒機 56.4 → 60.3（×1.07・+14）・jp_03 ハードの第 4 波 115.0 → 120.3（×1.05・+33）＝全件 ≤ ×1.15・≤ +40。ページのエラー 0。
++  - tex-ab（k 1.09・9 任務）: 既存の鍵の寸法・原点はすべて同じ、B に無い鍵なし。GPU のテクスチャの差の最大 +0.97 MB（岸の任務。≤ +12 MB。S4 の `tex-oil-slick` 96×96 で +0.04 MB）・Boot の create の中央値 67.2 → 134.1 ms（+66.9。+200 以内が目安）。
++  - heap（jp_03 ハード・240 秒・still）: 終わりの JS ヒープ 9,516 → 10,446 KB、後半（60〜240 秒）の増え方 −0.5 → +1.3 KB/秒（漏れの形ではない）。ページのエラー 0。
++- 実機テスト結果: （未。Pages で docs/03 の v0.7.0 の 3 項目を確かめた後に書く）
+ 
+ ## v0.6.11 — 2026-11-04（日本ハードモード⑨：運天港・空襲下の退避）
+ 
+diff --git "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md" "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+index 619609a..53ed463 100644
+--- "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
++++ "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+@@ -431,12 +431,17 @@
+ - 時間圧縮: 移動・魚雷・敵の回避はすべて `time_scale`（既定5）倍で積分する。史実の「1,500mで1〜2分」が「15〜20秒」になる。
+ - 見た目: 艇・艦のスプライトは `sprite_scale`（既定2）倍で描く。当たり判定は自艇・僚艇・大発は実寸（`hit_scale` 1）、魚雷の目標の駆逐艦・輸送船は絵と同じ（`ship_hit_scale` 2。v0.4.8。実機「後部に当たったはずが当たらない」→ 実寸だと絵の艦首・艦尾の 1/4 ずつが当たらなかった。体当たりも同じ船体）。戻し方: `ship_hit_scale` を 1.0 にすれば v0.4.7 の実寸（テストはどちらの値でも通る）。`?debug&shiphit=N` で実機で比べられる（`&title` で通し。1 行目に「当たり xN」）。
+ 
+-## 7. アート方針（v0.6まで）
++## 7. アート方針（v0.7 から）
+ 
+-- 夜の海: 背景色 `#0b1020`、波はパララックスの薄いノイズ1枚。
+-- 艇・艦: 明るい灰色の船形ポリゴン。魚雷は白い線分。雷跡は薄い点。探照灯は半透明の扇形。
+-- 色の意味を固定: 自艇＝白、敵＝薄い赤、味方＝薄い青、魚雷＝黄。
+-- 画像・音の制作にセッションを使わない。
++v0.6 までは図形のプレースホルダー（夜の海 `#0b1020`・明るい灰色の船形・探照灯は半透明の扇形）。v0.7.0 から絵と音はコードで描く・合成する（ユーザーの決め v0.7.0 の U1。外部の画像・音のファイルを使わない。CLAUDE.md §2「アート」）。手本は v0.6.11 の屋我地の陰（`assets/evac-terrain-art`）。段ごとの経緯・計測・既知の制約は CHANGELOG の v0.7.0。
++
++- **描き方**: 起動時（Boot）か任務の開始時に 1 回だけテクスチャにする（Canvas の 2D・画素の式は ImageData、岩の絵は Graphics の `generateTexture`）。毎フレームは Image・Sprite・Blitter を動かすだけで描き直さない（§7 のガードレール）。演出は数の上限つきのプールで、update で new しない（`tests/art-rules` が `*-art.ts`・`*-fx.ts` を自動で検査）。
++  - 艇・艦・機・大発・魚雷: `assets/*-art`（形の式は Phaser に依らない `assets/*-shape`）。**鍵・寸法・原点は v0.6.11 の placeholder と同じ**（`tests/art-inventory`・`scripts/headless/tex-ab.mjs`）＝当たり・字の位置・遊びは変わらない。新しい鍵は新しい物だけ（米駆逐艦 `tex-destroyer-us`・水柱・砲口炎・火球・炎・航跡 2・海の模様・夜明けの光・きらめき・岸の帯・油の輪）。
++  - 海と演出: 海の模様・夜明けの光・月のきらめき（`systems/sea-fx`）、航跡（`wake-fx`）、爆発（`explosion-fx`）、炎と煙・沈没の油の輪（`fire-fx`）、岸の帯（`coast-fx`）。持ち主は `systems/world-art`（MissionWorld の最後に 1 つ作り、world-visuals の最後の 1 行で更新・破棄）。どれも論理の状態を読むだけで書かない。
++- **定数の置き場**: 絵の値は `config/*-art-config`（boat・ship・aircraft・sea・fx・evac）。ゲームの強さの値（射程・照明半径・煙の半径・当たり・tint の意味）は `data/*.json` と ui-config のまま。乱れは絵だけの `SeededRng`（種は `ART_SEED_*`）で、ゲームの乱数の系列は 1 つも使わない（同じ種なら同じ画素）。
++- **スタイル**: 真上から見た絵・艇首と機首が上。色の意味は固定（自艇＝白、敵＝薄い赤、味方＝薄い青、魚雷＝黄）で、船体の地の色がこの系統。陰影は回転に依らない（中心線を明るく・縁を一段暗く。北西の光は回らない地形だけ）。縁の明るい帯（夜の海で輪郭が欠けない）・細部は 2 単位以上（見張りの縮小でちらつかない）。日本と米の違いは色でなく形。tint される鍵（艇・大発・米PT・敵機）は無彩色に近く描く。被害は壊れた絵でなく炎と煙で見せる。
++- **遊びの手掛かりを崩さない**: 光と煙は論理の範囲の縁を見せる（星弾は照明半径まで平らに明るく縁が光る・探照灯の先端 α ≥ 0.6・煙幕の帯の α は v0.6.11 の ±10%）。火災の煙は煙幕と見分ける（玉の半径 ≤ 15 m・茶灰・α ≤ 0.5）。自艇の航跡は速力帯で決める（静音は V なし）。雷跡の点・砲弾・輪・扇・HUD は変えない。
++- **予算（v0.7.0 の門）**: GPU のテクスチャ ≤ +12 MB（k 1.09。k 2 は ≤ +24 MB を報告）、画面に見える Mission の物 ≤ +40（v0.6.11 比・台本の夜の p95。jp_03 ハードの最後の空襲と us_02 ハードの星弾を必ず含む）、描いたフレームの p95 ≤ +15%（ヘッドレスの `scripts/headless/art-perf.mjs`。SwiftShader の CPU のラスタなので iPhone の GPU は安全側）。新しく足す全面の層は無い（海の模様は小さな波頭の群れ・ビネットは作らない）。v0.7.0 の実績は CHANGELOG の S4。
+ 
+ ## 8. v0.1 の非目標
+ 
+diff --git "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md" "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+index 9d5eb12..0848d79 100644
+--- "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
++++ "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+@@ -49,7 +49,7 @@
+ | v0.6.10 | 日本ハードモード⑧b：撃ち返す味方の駆逐艦（jp_04） | v0.6.9 の計画の質問（「味方の駆逐艦（卯月）は出さず、T-38 が卯月の代わりに輸送船を守る夜にしました。撃ち返す味方の駆逐艦も出したいですか？（出すなら次の版）」）へのユーザーの答え「撃ち返す味方の駆逐艦も出したいです」（2026-10-28）と、v0.6.9 実機 1 回目の選択「おすすめのAで進めてください」（A＝引きつけて離す: T-38 が 1 隻を引きつけて離し、もう 1 隻を駆逐艦が受け持つ）。jp_04 に味方の駆逐艦 卯月（`ijn_destroyer_mutsuki`＝睦月型 102.7 × 9.16 m・12 cm × 2・25 mm・探照灯 1,500 m。卯月が撃ち返した記録は見つからない＝ゲーム上の想定）: 輸送船の北東 727 m（(3620, 2380)）に止まったまま沈まず、海の上の薄い扇（50〜180°＝東の線。浜の線の南は陸なので切る）の内で 15 kt 以上で走る米PT を 800 m で見つけ（乱数 seed+27）、照らして 12 cm と 25 mm で撃つ（seed+28。12 cm の 1 命中で撃退か 10% で撃沈）。照らされて 1.0 秒たった PT は、射点の哨戒なら慌てて撃ち（照らされた斉射。模擬の 800 夜では 0）、ほかは何もしない（照らされても撃っても PT は去らない＝実機 1 回目から）。去る PT（撃退・夜明け）は 2.5 秒追って撃つ。忍び寄る PT はその斉射の前に照らされない（検査 V-A3）＝卯月は走らせた PT を受け持ち、北と北東の PT は T-38 の仕事のまま。HUD の 2 行目に「卯月 撃退！ 米PT 1 隻が離脱」・平常の行の末尾「 ・ 走らせれば卯月が照らす」（ノーマルだけ）・夜明け近しの「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」、Briefing の敵の行に「輸送船の北東に味方の卯月。走るPTを照らして撃つ」、Result に卯月の 1 行（照らした・命中/生きた PT へ撃った弾・撃退・撃沈）と雷撃の行の「卯月が撃退」、自艇の 25mm の行は自艇の分。模擬（N 400 × 2 組・`scripts/landing-sim.ts`・帯 `systems/ally-sim-bands`。data の値のまま。実機 1 回目の撃っても去らない規則）: ノーマル lure 94.3／93.0%・人に近い human 71.5／69.0%（卯月なし 49.3／51.8）・human_face 58.8／59.8%（8.5／5.3）・PT へ割って入る face 71.0／76.3%（17.3／19.8）・夜明けの前の帰投 lure 98.5／98.3%、ハード lure 87.8／81.0%・human 48.8／45.8%・human_face 7.5／6.5%・段（human のハード − ノーマル）−23.0 点（実機 1 回目の前＝撃ったら去った規則: ノーマル human 82.0／81.0%・ハード human 74.0／71.8%・段 −8.6 点）。世界と模擬は記録した入力の再生で 120 夜の差 0。ほかの 7 任務とそのハードはビット同一（模擬の md5 17 本・凍結 20 本・再生 58 件・HUD の A/B 16 件・Briefing の文）。`?debug&noally` で卯月を切った jp_04 は v0.6.10 S0b（6856840）と同じ。先に v0.6.9 実機 2 回目の軽微な修正 3 点（S0a・S0b）: 狙う艦の無い魚雷の「PTの下を抜ける」「大発の下を抜ける」と機を撃つ間の「対空 ・ まず当たらない」を出さない（全任務の HUD と Result の文だけ）、jp_04 の夜明け 200 → 160 秒（ユーザーの選択「A: jp_04 の夜明けだけ 160 秒」）。1 つの版を段 S0a〜S7 で作り、S8 でレビュー・直し・出荷。値と理由は CHANGELOG v0.6.10。実機 1 回目（2026-11-03）「卯月が強すぎてPTが瞬殺される。卯月を弱めたところであまり意味がないので、当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→ 卯月を残すかの問いにユーザーの選択「A: 卯月は残し、PT を撃った後も去らない形に戻す」: 3 種類の斉射とも撃った PT は去らずに自艇と戦い続ける・照らされた PT も去らない・卯月の値はそのまま、人に近い遊び方の帯を新しい規則の値へ（CHANGELOG v0.6.10 の「実機 1 回目」） | （1 回目（2026-11-03）は卯月が強すぎて PT が瞬殺される → 撃った PT も照らされた PT も去らない形に戻した＝ユーザーの選択 A）実機 2 回目（Title の「日本」→「多号作戦・オルモック湾へ」→ ノーマル）: ①米PT が魚雷を撃った後も去らずに自艇へ寄って撃ってくるか（「米PT 戦いながら発射！ …」や「米PT 雷撃！ …」の後もその PT が残り、赤い線から掃射してくる） ②卯月は東の走る PT を照らして撃つまま。卯月の強さと PT の手応えを一言、ノーマルで何回中何回クリアしたかも（模擬: 人に近い遊び方で 10 夜に 7 夜、PT へ割って入っても 10 夜に 7 夜。ハードの人に近い遊び方は 2 夜に 1 夜より少ない） ③「夜明け近し ・ 帰投の輪で揚陸を待て」が出たら輪へ戻って待ち、揚陸完了でそのまま終われるか。すぐ見たいときだけ `…/ww2-torpedo-boat/?debug&mission=jp_04`（ハードは `&hard`・卯月なしは `&noally`）。2 回目（2026-11-04）「内容自体はOKです。揚陸完了までの時間を30秒短くしておいてください」→ 実機 2 回目: 揚陸 `unload_s` 140 → 110 秒（ノーマル・ハード。夜明け 160 秒・卯月・米PT の規則はそのまま。値と理由は CHANGELOG v0.6.10 実機 2 回目）。3 回目（ノーマル）: ①揚陸完了が早く来るか（Briefing の条件「揚陸 110 秒」・HUD の「揚陸 あと N 秒」が 110 から減り、輸送船の「揚陸完了」から夜明けまで約 50 秒。夜明け近しの帰投の輪の呼びかけはほとんど出ない） ②ノーマルで何回中何回クリアしたか（模擬: 人に近い遊び方で 10 夜に 7 夜・PT へ割って入って 10 夜に 6 夜。夜明けの前に帰れる夜がほとんど） | 1 |
+ | v0.6.11 | 日本ハードモード⑨：運天港・空襲下の退避（jp_03） | jp_03「運天港・空襲下の退避」（1944-10-10 十・十空襲・昼）を出撃可に（Title の日本のタブの 3 番目。日本のタブは 6 任務＝2 × 3 で満杯）。ユーザーの決め（2026-11-04。旧計画の［隠れ］［散れ］の号令と散開はやめた）: U1 18 隻＝3 隻ずつ 6 つの隊。スティックで操作中の隊の隊長艇を動かし、僚艇 2 隻が後ろに続く。［切替］（右端の識別の段。字は「切替」「第4隊」）で操る隊を替える／U2 隊長艇が機銃を撃てば僚艇も撃つ／U3 操作していない隊は自分では隠れず、ランダムに回避しながら逃げる／U4 隊長艇ごとに HP・乗員・火災・機関の状態／U5 ノーマルは 4 波 2×2・3×2・3×2・4×2 編隊（（1 編隊の機数）×（同時の編隊の数））、ハードは同じ機数の編隊が 3 つ同時（第 4 波は 4 機の編隊が 3 つ＝12 機）。各波で 1 編隊は操作中の隊を、ほかの編隊はほかの隠れていない隊を狙う（予告と赤い輪の 10 秒後に始まる）／U6 6 隻以上残れば達成（史実 5）／U7（S3 の表の後の問いへの答え「編隊が戻ってくる」）爆弾を落とし終えた編隊は、次の波の前に間に合えば赤い輪の予告つきでもう一度来る（1 編隊 2 回まで・第 4 波は 2 回目なし）。隠れ場所は中の壕・西の壕・東の壕（レール 1 本で 1 隻 12 秒ずつ上げる）と屋我地の陰（東。予告ごとに 50% で見つかる）、枠は 3 隻ずつ計 12 < 18。240 秒（第 1 次の空襲が去る）が決着で残存が決まり、操作中の隊が隠れていれば終わる。外なら敵機 4 機が追い、どの隠れ場所でも止まれば帰投（CLAUDE.md §2「夜明け」の読み替え。画面の言葉は「空襲」「退避」）。模擬（N 400 × 2 組・`scripts/evac-sim.ts`・帯 `systems/evac-calibration`）: ノーマルの人に近い遊び方 seq 65.0%（遅い人 seq_slow 49.4%・陰を使う seq_cover 72.5%・機銃も撃つ seq_shoot 69.5%）・自分の隊だけ隠す own_only 15.0%・何もしない stay 0.1%、ハードの seq 35.4%（stay 0.0%）。世界と模擬は記録した入力の再生で差 0（world-vs-sim）。ほかの 8 任務はビット同一。1 つの版を段 S0〜S7（S3b は U7）で作り、S8 でレビュー・直し・出荷。値と理由は CHANGELOG v0.6.11 | 実機 1 回目（Title の「日本」→「運天港・空襲下の退避」→ ノーマル）: ①［切替］で操る隊（3 隻）が替わり、後ろの 2 隻が続くか。壕の輪の中で止まると 1 隻ずつ上がり、隊が全部隠れると「第N隊を見失った！」で編隊が引き返すか ②爆撃を終えた編隊が「第2波 3機 戻ってきた」と赤い輪で別の隊へもう一度来るのが分かるか。「第1次の空襲が去った」の時に操作中の隊が隠れていて 6 隻以上なら Result に「残存 N／18（史実 5） ・ 6 隻以上を残して隠れた」が出るか。ノーマルで何回中何回クリアしたかも（模擬: 人に近い遊び方で 10 回に 6〜7 回・ハードは 10 回に 3〜4 回） ③ハード（Title の「日本」→「運天港・空襲下の退避」→ ハード）で「第4波 4機×3」の予告（左上の時計「空襲 残り 1:00」のころ）を迎え、見張りで港全体を見ながら左上の FPS のいちばん低い数字はいくつか（12 機が来るのは外の隊が 3 つ以上残っている時だけ）。実機 2 回目（IP1。1 回目のユーザーの直し U8〜U10）: ①残った隊をみな壕に隠し、空の編隊が去ると 240 秒を待たずに「全艇が隠れた ・ 空襲を待たずに退避完了」で Result（時の行に「残り M:SS」）へ進むか。陰（屋我地の陰（東））に隊を残すと、2 行目が「陰の隊は予告で見つかることがある ・ 第4波の予告の後に退避完了」と言い、第 4 波の予告の後（か陰の隊を壕へ移すと）に終わるか ②本部半島側の壕に入ると、レールの下に「2隻目 45%」のような 1 艇ごとの % が出て進み、艇がレールを上っていくのが分かるか。壕がコンクリートの斜路・枕木・2 本のレール・岩の口（ドック）に見えるか（既定のズームと見張りの両方で）。実機 3 回目（IP2。2 回目のユーザーの直し U11）: ①屋我地の陰（東）が、張り出した岩の崖の入り江（崖の上の木々・口の外の岩・岩に当たる白い波・崖の下の海の暗い陰）に見え、隊を陰の輪で止めて隠すと艇が暗く薄くなって「崖の陰の下」に見えるか（既定のズームと見張りの両方で）。予告で見つかると黄色の輪が岩の絵の上に出て、艇がふつうの色に戻るか ②壕の口の周りの岩と木々が陰と同じ絵柄に見え、レールを上げている時の「2隻目 45%」の札が木や岩に隠れず読めるか | 1 |
+ | 候補（実機の感想しだい） | 夜明け③：昼の海 | 機銃掃射・昼の見張り（駆逐艦が遠くから見る、探照灯なし）・煙幕と対空・争奪（敵機 → 遅れて味方戦闘機） | 昼が昼らしいか | 1 |
+-| v0.7.0 | アートと音①：コードで描く絵 | 絵と音はコードで描く・合成する（ユーザーの決め v0.7.0 の U1（2026-11-07）「コードで描く・鳴らす」。外部の画像・音のファイルを使わない。手本は v0.6.11 の屋我地の陰）。全任務の艇・艦・機・大発（トップダウン・起動時に 1 回描くテクスチャ。鍵・寸法・原点は今のまま）と夜の海の演出（波の面・航跡・水柱・砲口炎・爆発・火災と煙・探照灯・星弾・煙幕・月のきらめき・夜明けの光・岸の帯）。遊びは 1 ビットも変えない（模擬の md5・f5563ab との再生と HUD の A/B・テクスチャの寸法の A/B）。段 S0〜S4（S0 棚卸しの道具と骨組み・S1 自艇と僚艇・S2a 艦と大発と米PT と魚雷・S2b 機の種類・S3a 海の面と夜明けの光・S3b 航跡と水柱と爆発・S3c 炎と煙と光と岸・S4 仕上げ） | （S4 で実機テスト 3 項目を書く）見た目で損していないか: 自艇・敵・味方が夜の海で一目で分かるか・見張りでも形の違いが分かるか／演出が敵・弾・雷跡を見落とす邪魔にならないか／重い場面でカクつかないか | 2〜3 |
++| v0.7.0 | アートと音①：コードで描く絵 | 絵と音はコードで描く・合成する（ユーザーの決め v0.7.0 の U1（2026-11-07）「コードで描く・鳴らす」。外部の画像・音のファイルを使わない。手本は v0.6.11 の屋我地の陰）。全任務の艇・艦・機・大発（トップダウン・起動時に 1 回描くテクスチャ。鍵・寸法・原点は今のまま）と夜の海の演出（波の面・航跡・水柱・砲口炎・爆発・火災と煙・探照灯・星弾・煙幕・月のきらめき・夜明けの光・岸の帯）。遊びは 1 ビットも変えない（模擬の md5・f5563ab との再生と HUD の A/B・テクスチャの寸法の A/B）。段 S0〜S4（S0 棚卸しの道具と骨組み・S1 自艇と僚艇・S2a 艦と大発と米PT と魚雷・S2b 機の種類・S3a 海の面と夜明けの光・S3b 航跡と水柱と爆発・S3c 炎と煙と光と岸・S4 仕上げ）。段 S0〜S4 済み（2026-11-09。門と計測は CHANGELOG の v0.7.0） | ① どの任務でも、自艇（白）・敵（赤）・味方（青）が夜の海で一目で分かるか。「見張り」で引いても、魚雷艇・大発・駆逐艦・輸送船・飛行機の形の違いが分かるか ② 航跡・水柱・爆発・火災の煙・沈む艦の油の輪・探照灯・星弾が、敵や弾・雷跡を見落とす邪魔になっていないか（星弾と探照灯の照らす範囲の縁が分かるか・静音で自艇の白い航跡が出ないか）。波の模様があれば格子の線は要らないか（URL の末尾に `?debug&title&nogrid` で格子なし） ③ 撃ち合いや空襲が重なる場面（us_02 ハードの星弾と探照灯、jp_03 ハードの最後の空襲）で、左上の FPS が 55 以上か・カクつかないか | 2〜3 |
+ | v0.7.1 | アートと音②：合成の効果音 | 機銃・砲・爆発・エンジン・波などを音のファイルを使わず合成（Web Audio）。最初のタッチで鳴らし始める（iOS）・消音の切り替え | 音が遊びの手掛かりになるか・うるさくないか | 1〜2 |
+ | v0.7.2 | アートと音③：BGM と命中スロー | 合成の単純な BGM・命中の瞬間のスロー演出 | 気分が出るか・スローが操作の邪魔にならないか | 1〜2 |
+ | v0.8.0 | iOSビルド | Capacitor導入／GitHub Actions（macOSランナー）でipa／TestFlight配信／アイコン・スプラッシュ | TestFlightで起動、PWA版と同じ挙動 | 2 |
 diff --git a/src/assets/coast-shape.ts b/src/assets/coast-shape.ts
 index 5e977f2..7682f25 100644
 --- a/src/assets/coast-shape.ts
@@ -169,8 +279,30 @@ index a895abd..151d0e0 100644
    paintMuzzleFlash(scene, d, R);
    paintFireball(scene, d, R);
    paintWake(scene, TEXTURE_KEYS.wakeBoat, false);
+diff --git a/src/assets/fx-shape.ts b/src/assets/fx-shape.ts
+index b3f4d74..2bfde91 100644
+--- a/src/assets/fx-shape.ts
++++ b/src/assets/fx-shape.ts
+@@ -83,7 +83,7 @@ export const FIRE_GROW = { life: EXPLOSION_FIRE_S, from: EXPLOSION_FIRE_GROW_FRO
+ export const SPLASH_GROW = { life: EXPLOSION_SPLASH_S, from: EXPLOSION_SPLASH_GROW_FROM, alpha0: EXPLOSION_SPLASH_ALPHA } as const;
+ export const PUFF_GROW = { life: EXPLOSION_PUFF_S, from: EXPLOSION_PUFF_GROW_FROM, alpha0: 0.5 } as const;
+ 
+-/** 水柱の飛沫（半径 1 の円の中。角は等分＋乱れ、距離は帯の内、大きさは帯の内）。同じ種なら同じ */
++/** 水柱の水滴（半径 1 の円の中。角は乱数、距離は帯の内、大きさは帯の内）。同じ種なら同じ */
+ export interface Droplet {
+   readonly x: number;
+   readonly y: number;
+@@ -93,7 +93,7 @@ export function splashDroplets(seed: number): Droplet[] {
+   const rng = new SeededRng(seed);
+   const out: Droplet[] = [];
+   for (let i = 0; i < SPLASH_DROPLETS; i++) {
+-    const a = ((i + rng.nextRange(-0.35, 0.35)) / SPLASH_DROPLETS) * Math.PI * 2;
++    const a = rng.nextRange(0, Math.PI * 2); // 等分にしない（S4。等間隔の輪は線香花火・歯車に見えた）
+     const d = rng.nextRange(SPLASH_DROPLET_RING[0], SPLASH_DROPLET_RING[1]);
+     out.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, r: rng.nextRange(SPLASH_DROPLET_R[0], SPLASH_DROPLET_R[1]) });
+   }
 diff --git a/src/assets/light-art.ts b/src/assets/light-art.ts
-index be1c0ea..927e933 100644
+index be1c0ea..b8826e1 100644
 --- a/src/assets/light-art.ts
 +++ b/src/assets/light-art.ts
 @@ -1,10 +1,12 @@
@@ -178,17 +310,25 @@ index be1c0ea..927e933 100644
  // （Graphics の fillGradientStyle は WebGL だけで generateTexture の Canvas では効かない＝画素の式で描く。式は assets/light-shape）。鍵・寸法・原点は v0.6.11 の placeholder と同じ
  // （探照灯 W＝ceil(2·半幅)+2 × ceil(L)・光源 (0.5, 1)、星弾と煙は ceil(2·R·k)+2 の正方形）＝scale は論理の射程・照明半径・煙の半径から（見える広さ＝論理の広さ）。
 -// 呼び出しは placeholders の generateGunneryTextures・generateSmokeTextures（名前と UI の部分はそのまま＝R14）。色は v0.6.11 と同じ（照明弾・暗い煙の tint は掛け算のまま同じ意味）。
-+// 呼び出しは placeholders の generateGunneryTextures・generateSmokeTextures（名前と UI の部分はそのまま＝R14）。探照灯と煙の色は v0.6.11 と同じ（照明弾・暗い煙の tint は掛け算のまま同じ意味）。
-+// S4: 星弾だけ白に近い冷たい色（fx-art-config の SS_LIGHT_COLOR）。v0.6.11 の暖かい 0xfff0b0 は夜の海の上で画面をカーキ色にし、探照灯を茶色に見せた。
++// 呼び出しは placeholders の generateGunneryTextures・generateSmokeTextures（名前と UI の部分はそのまま＝R14）。煙の色は v0.6.11 と同じ（照明弾・暗い煙の tint は掛け算のまま同じ意味）。
++// S4: 星弾は白に近い冷たい色・探照灯はわずかに暖かい白（fx-art-config の SS_LIGHT_COLOR・SL_LIGHT_COLOR）。v0.6.11 の暖かい 0xfff0b0・0xfff2c0 は夜の海の上で画面をカーキ色にし、探照灯を茶色に見せた。
  import type Phaser from 'phaser';
  import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 -import { SEARCHLIGHT_COLOR, SEARCHLIGHT_TEX_LENGTH_UNITS, SMOKE_PUFF_COLOR, SMOKE_PUFF_TEX_RADIUS_UNITS, STARSHELL_COLOR, STARSHELL_TEX_RADIUS_UNITS } from '../config/ui-config';
-+import { SS_LIGHT_COLOR } from '../config/fx-art-config';
-+import { SEARCHLIGHT_COLOR, SEARCHLIGHT_TEX_LENGTH_UNITS, SMOKE_PUFF_COLOR, SMOKE_PUFF_TEX_RADIUS_UNITS, STARSHELL_TEX_RADIUS_UNITS } from '../config/ui-config';
++import { SL_LIGHT_COLOR, SS_LIGHT_COLOR } from '../config/fx-art-config';
++import { SEARCHLIGHT_TEX_LENGTH_UNITS, SMOKE_PUFF_COLOR, SMOKE_PUFF_TEX_RADIUS_UNITS, STARSHELL_TEX_RADIUS_UNITS } from '../config/ui-config';
  import { searchlightPixels, smokePixels, starshellPixels } from './light-shape';
  import { paintCanvas } from './sea-art';
  
-@@ -27,7 +29,7 @@ export function paintSearchlightTexture(scene: Phaser.Scene, coneDeg: number): v
+@@ -20,14 +22,14 @@ export function paintSearchlightTexture(scene: Phaser.Scene, coneDeg: number): v
+   const halfW = Math.tan(((coneDeg / 2) * Math.PI) / 180) * L;
+   const W = Math.ceil(halfW * 2) + 2;
+   const H = Math.ceil(L);
+-  paintCanvas(scene, TEXTURE_KEYS.searchlight, W, H, (ctx) => put(ctx, W, H, searchlightPixels(W, H, halfW, SEARCHLIGHT_COLOR)));
++  paintCanvas(scene, TEXTURE_KEYS.searchlight, W, H, (ctx) => put(ctx, W, H, searchlightPixels(W, H, halfW, SL_LIGHT_COLOR)));
+ }
+ 
+ /** 星弾の照明円（半径 128 単位 × k＝照明半径の絵。照明弾も tint で同じ絵） */
  export function paintStarshellTexture(scene: Phaser.Scene): void {
    const R = STARSHELL_TEX_RADIUS_UNITS * RENDER_SCALE;
    const d = Math.ceil(R * 2) + 2;
@@ -198,10 +338,10 @@ index be1c0ea..927e933 100644
  
  /** 煙幕の煙の玉（半径 64 単位 × k。火災の煙・爆発の暗い玉も tint で同じ絵） */
 diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
-index e6d2fd0..39f7d41 100644
+index e6d2fd0..de97929 100644
 --- a/src/config/fx-art-config.ts
 +++ b/src/config/fx-art-config.ts
-@@ -67,24 +67,53 @@ export const EXPLOSION_PUFF_GROW_FROM = 0.6;
+@@ -67,24 +67,57 @@ export const EXPLOSION_PUFF_GROW_FROM = 0.6;
  export const EXPLOSION_FLASH_TINT = 0xfff2c0;
  export const EXPLOSION_FIRE_TINT = 0xffb060;
  
@@ -214,17 +354,21 @@ index e6d2fd0..39f7d41 100644
 +/**
 + * 演出の絵（Boot で 1 回。tex-splash・tex-muzzle-flash・tex-fireball・tex-oil-slick＝爆発の輪と同じ寸法 96×96 at k 1.09）。
 + * 水柱（S4 で描き直し。真上から見た水柱の飛沫＝柔らかい不揃いな白い塊＋少しの水滴。放射の筋は描かない＝S3b の星形は雪の結晶・ウニに見えた）:
-+ *   塊の半径（テクスチャの半径に対して）と輪郭の揺れ（3・5・7 つの山の振れ）、芯の α、外の薄い霧の半径と α、水滴の数・中心からの距離の帯・半径の帯・α。
++ *   塊の半径（テクスチャの半径に対して）と輪郭の揺れ（2・3・5 つの山の振れ）、芯の α、塊の脇のこぶ（数・中心からの距離・半径）、外の薄い霧の半径と α、
++ *   水滴の数・中心からの距離の帯・半径の帯・α（向きは乱数のまま＝等間隔の輪にしない。1 回目の等間隔の 8 個は線香花火に見えた）。
 + * 砲口炎の光芒の数と長さの比
 + */
-+export const SPLASH_CORE_R = 0.42;
++export const SPLASH_CORE_R = 0.46;
 +export const SPLASH_CORE_ALPHA = 0.95;
-+export const SPLASH_LOBES: readonly number[] = [0.16, 0.1, 0.06];
-+export const SPLASH_HAZE_R = 0.72;
-+export const SPLASH_HAZE_ALPHA = 0.3;
-+export const SPLASH_DROPLETS = 8;
-+export const SPLASH_DROPLET_R: readonly [number, number] = [0.05, 0.09];
-+export const SPLASH_DROPLET_RING: readonly [number, number] = [0.55, 0.88];
++export const SPLASH_LOBES: readonly number[] = [0.12, 0.07, 0.04];
++export const SPLASH_LUMPS = 3;
++export const SPLASH_LUMP_D: readonly [number, number] = [0.18, 0.3];
++export const SPLASH_LUMP_R: readonly [number, number] = [0.16, 0.24];
++export const SPLASH_HAZE_R = 0.74;
++export const SPLASH_HAZE_ALPHA = 0.32;
++export const SPLASH_DROPLETS = 5;
++export const SPLASH_DROPLET_R: readonly [number, number] = [0.05, 0.08];
++export const SPLASH_DROPLET_RING: readonly [number, number] = [0.5, 0.8];
 +export const SPLASH_DROPLET_ALPHA = 0.85;
 +/**
 + * 沈没の油の輪（S4。tex-oil-slick。水柱の絵の流用は星形に見えた）: 広がる暗い不揃いな油膜＋縁の鈍い光（夜の海でも形が読める）＋中の泡。色はテクスチャに焼く（tint しない）。
@@ -260,12 +404,12 @@ index e6d2fd0..39f7d41 100644
  export const FIRE_SMOKE_MAX_ALPHA = 0.5;
 -/** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #6a645e＝暗い茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し） */
 -export const FIRE_SMOKE_TINT = 0xb09c88;
-+/** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #79746e＝茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し。S4 で一段明るく＝玉を減らした分、尾が読めるように） */
-+export const FIRE_SMOKE_TINT = 0xc8b4a0;
++/** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #82807c＝茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し。S4 で一段明るく＝玉を減らした分、尾が読めるように） */
++export const FIRE_SMOKE_TINT = 0xd8c8b4;
  export const FIRE_HIDE_AFTER_S = 0.3;
  /** 炎（tex-flame。k に依らない固定 px の frame 2 枚・ADD）: 1 frame の px・炎の体（芯と舌）はテクスチャの半径の FLAME_BODY_SHARE まで、外は薄い赤い光の暈（ADD＝夜に炎が読める）・
   * 炎の体の直径＝船幅 × 割合（小艇で船体の色を覆わない）と上限 m・ちらつき（α の帯・大きさの振れ・周期 秒・frame を替える秒）・舌の数 */
-@@ -98,20 +127,20 @@ export const FLAME_FLICKER_S = 0.37;
+@@ -98,20 +131,20 @@ export const FLAME_FLICKER_S = 0.37;
  export const FLAME_FRAME_S = 0.11;
  export const FLAME_TONGUES = 7;
  /** 火災の煙の玉: 出す間隔 秒・寿命 秒・膨らみの始まりの割合・小艇の玉の半径の上限 m（艦は FIRE_SMOKE_MAX_RADIUS_M）・風下へ流れる向き（方位 度）と速さ m/実秒・出す所の散らばり（船幅の割合） */
@@ -277,8 +421,8 @@ index e6d2fd0..39f7d41 100644
 +export const FIRE_PUFF_INTERVAL_S = 0.5;
 +export const FIRE_PUFF_LIFE_S = 2.4;
 +export const FIRE_PUFF_GROW_FROM = 0.5;
-+/** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる。S4 で 0.4 → 0.6＝玉が少なくても尾が濃い） */
-+export const FIRE_PUFF_HOLD_SHARE = 0.6;
++/** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる。S4 で 0.4 → 0.7＝玉が少なくても尾が濃い） */
++export const FIRE_PUFF_HOLD_SHARE = 0.7;
  export const FIRE_PUFF_BOAT_RADIUS_M = 9;
  export const FIRE_DRIFT_DEG = 65;
 -export const FIRE_DRIFT_MPS = 24;
@@ -296,12 +440,14 @@ index e6d2fd0..39f7d41 100644
  export const SINK_RING_RADIUS_M: readonly [number, number] = [110, 30];
  export const SINK_PLUME_S = 4;
  export const SINK_RING_DEPTH = 3.45;
-@@ -141,6 +170,8 @@ export const SS_CORE_R = 0.28;
+@@ -141,6 +174,10 @@ export const SS_CORE_R = 0.28;
  export const SS_PLATEAU = 0.72;
  export const SS_RIM_FROM = 0.92;
  export const SS_RIM_PEAK = 1;
 +/** 星弾の光の色（S4。ui-config の STARSHELL_COLOR 0xfff0b0 は暖かく、夜の海の上で画面がカーキ色になり探照灯が茶色に見えた＝白に近い冷たい色を焼く。照明弾の tint はこの上に掛かる） */
 +export const SS_LIGHT_COLOR = 0xf2f5ff;
++/** 探照灯の光の色（S4。ui-config の SEARCHLIGHT_COLOR 0xfff2c0 は α 0.2 で夜の海に重なると茶色に見えた＝わずかに暖かい白。α・形は v0.6.11 のまま） */
++export const SL_LIGHT_COLOR = 0xfff8ea;
  export const SMOKE_PROFILE: readonly (readonly [number, number])[] = [[0, 0.78], [0.3, 0.71], [0.45, 0.6], [0.6, 0.56], [0.7, 0.56], [0.75, 0.42], [0.85, 0.37], [0.95, 0.34], [1, 0]];
  export const SMOKE_LUMP = 0.22;
  export const SMOKE_LUMP_TO = 0.93;
@@ -316,7 +462,7 @@ index 32982f5..726b05a 100644
 +  oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
  } as const;
 diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
-index b16e0b1..d5559c4 100644
+index b16e0b1..82c55b9 100644
 --- a/src/config/sea-art-config.ts
 +++ b/src/config/sea-art-config.ts
 @@ -27,7 +27,7 @@ export const SEA_LIGHT_ART: Readonly<Record<'dark' | 'half' | 'full' | 'day', Se
@@ -324,7 +470,7 @@ index b16e0b1..d5559c4 100644
    half: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 12, whitecaps: false },
    full: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 16, whitecaps: false },
 -  day: { crest: 0xdce9f2, crestAlpha: 0.4, glints: 16, whitecaps: true },
-+  day: { crest: 0xdce9f2, crestAlpha: 0.22, glints: 16, whitecaps: true },
++  day: { crest: 0xdce9f2, crestAlpha: 0.16, glints: 16, whitecaps: true },
  };
  /** 夜の模様の α の上限（spec §3.2「夜は α ≤ 0.12」。tests/sea-art） */
  export const SEA_NIGHT_ALPHA_MAX = 0.12;
@@ -681,3 +827,18 @@ index ebdcc9c..3eb6dcf 100644
    });
    it('帯の中身は絵だけの乱数で同じ種なら同じ・周期で続く（x 0 と 512）・樹冠は陸の側 112 m の内・波打ち際は海の側 8 m', () => {
      const p = coastPlan(ART_SEED_COAST);
+diff --git a/tests/fx-art.test.ts b/tests/fx-art.test.ts
+index 80079a0..f6ec9fc 100644
+--- a/tests/fx-art.test.ts
++++ b/tests/fx-art.test.ts
+@@ -130,8 +130,8 @@ describe('爆発のプール（R11・R12・D7）と絵の置き方', () => {
+     expect(a.length).toBe(SPLASH_DROPLETS);
+     for (const d of a) {
+       const r = Math.hypot(d.x, d.y);
+-      expect(r).toBeGreaterThanOrEqual(0.55 - 1e-9);
+-      expect(r).toBeLessThanOrEqual(0.9 + 1e-9);
++      expect(r).toBeGreaterThanOrEqual(0.5 - 1e-9); // S4: 帯 0.55〜0.9 → 0.5〜0.8（tests/fx-art-s4）
++      expect(r).toBeLessThanOrEqual(0.8 + 1e-9);
+       expect(d.r).toBeGreaterThan(0);
+       expect(r + d.r).toBeLessThanOrEqual(1.1);
+     }
