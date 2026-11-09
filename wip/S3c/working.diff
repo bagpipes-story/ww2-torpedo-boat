@@ -1,12 +1,69 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d332124..90bdda2 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -125,12 +125,52 @@
+       - 重なり: 航跡（3.5）は海の模様・探照灯（2）の上・雷跡（4）と艇の下で、探照灯の中でも白い V が見える。爆発（20・ADD 20.01）はすべての上。夜明け（`shots2/us_01-dawn-w1560.png`）・jp_03（`shots1/jp_03-w1560.png`）に新しい重なりの問題は無い。
+       - 正直な弱み（直すなら S4 か次の版）: (1) 航跡の腕は細い直線 2 本で泡立ちが無い。(2) 水柱は星形の飛沫で「柱」には見えない。(3) 艦の夜の航跡は薄い。(4) jp_03 の僚艇 12 隻に航跡は無い（予算）。(5) 卯月・味方の輸送船は停泊なので航跡なし（意図）。
+     - 門（lead がまとめて回した `run-gates`。scratchpad の `v0700/impl/S3b/SUMMARY.txt`）: npm test 260 ファイル・2,644 件・typecheck・lint・build（`VITE_BASE=/ww2-torpedo-boat/`）が緑、凍結 20 本同じ、setup の snapshot は `-u` なし、g2 `G6=1 ALLY=1 EVAC=1` OK 37 DIFF 0、ab-replay all 58・jp04base 8・jp03 4 と hud-ab base 16・jp04base 8・jp03 4 が same:true（CAM=1）、tex-ab CHECK=1 ✓（既存の鍵の寸法・原点はすべて同じ。新しい鍵 tex-splash・tex-muzzle-flash・tex-fireball 96×96、tex-wake-boat・tex-wake-ship 96×256（2 frame）。GPU の差の最大 +0.47 MB・Boot の create の中央値 +7.1 ms）、art-perf p95 us_02h ×1.06・us_01d ×1.02・us_03 ×1.08・jp_04h ×1.03・jp_02 ×1.04・jp_03h ×1.01（≤ 1.15。2 組・W 1560）。
++  - S3c（炎と煙・探照灯・星弾・煙幕・岸の帯。spec §5.4・§5.5・§4.4・§7.8。遊びは変えない＝探照灯・星弾・煙幕の鍵・寸法・原点と呼び出しの α・scale はそのまま、論理の状態は読むだけ・乱数は絵だけ・mission-scene と凍結の 20 本は触らない）:
++    - 新しいファイル: `assets/light-shape`（Phaser に依らない画素ごとの α と色の式）・`assets/light-art`（探照灯・星弾・煙幕を Boot で 1 回 ImageData に書く。sea-art の `paintCanvas`）・`assets/fire-shape`（枠の選び方・炎のちらつきと直径・煙の玉の半径と α・炎の舌）・
++      `assets/coast-shape`（岸の帯の区間・並べ方・中身）・`systems/fire-fx`（炎と煙）・`systems/coast-fx`（岸の帯）・`tests/fx-art-s3c`（24 件）。placeholders の `generateGunneryTextures`・`generateSmokeTextures` は名前・引数・UI の部分のまま、
++      探照灯・星弾・煙の 3 つの Graphics の塊を light-art の 1 行ずつに替えた（243 → 211 行。Boot は 1 字も変えない＝R14）。world-art が FireFx と CoastFx を作って持つ（update は fire だけ・destroy は両方）。world-visuals・mission-world は触っていない。
++      新しい鍵は D2 の残り 2 つ `tex-flame`（64 × 64 の frame 2 枚＝canvas 64 × 128。fx-art の `generateFxTextures` に足した・k に依らない）と `tex-coast-strip`（512 × 120 の frame 2 枚＝canvas 512 × 240・1.0 px/m。岸のある任務の世界の作成の時に 1 回）。art-inventory の PLANNED_NEW はこれで全部使った。
++    - 探照灯（R2）: 光源から長さの 0.5 まで α 1・先端で 0.8、横は半幅の外側 10% だけ 1 → 0.6（扇の縁＝論理の角が見える）・扇の外は 1 px で 0、光源の近く（長さの 12%）は白へ寄せる（色だけ）。CHECK の数え方で先端の行の α 0.78・扇の内 0.90（k 1.09。≥ 0.6・≥ 0.85）。
++      星弾: 芯（半径の 0.28 まで α 1 → 白寄り）→ 平らな面 α 0.72 → 半径の 92〜100% に明るい細い縁（山 1.0・照明半径の所で 0.88）→ 1 px で 0。半径 92% の内の α 0.73（≥ 0.6）。照明弾の tint も同じ絵。
++      煙幕（R32）: 半径の折れ線の α（0.78 → 0.71（0.3）→ 0.6 → 0.56（0.6〜0.7）→ 0.42 → 0.37 → 0.34（0.95）→ 0）× 角度の塊（3 つと 5 つの山・振れ 0.22・輪ごとの平均 1＝帯の α は変わらない・半径の 93% の外は山なし＝輪郭は丸）。
++      帯の α 0.704・0.574・0.322（v0.6.11 の 3 重の円 0.701・0.566・0.327 の ±2%）・覆い 98%。色はどれも v0.6.11 と同じ（照明弾・暗い玉の tint の意味も同じ）。
++    - 炎と煙（`systems/fire-fx`。R10・R26）: 発生源＝自艇（jp_03 は座席の隊長艇。`damage.fireLeftS > 0` かつ HP > 0）・被弾して沈んでいない僚艇・命中して沈んでいない駆逐艦と輸送船・被弾して浮いている米PT・被雷して沈んでいない味方の輸送船（jp_04）。
++      卯月は撃たれないので入れない。隼艇も入れない（spec の一覧に無い）。枠 6（決まった順・続く発生源は同じ枠＝炎が飛ばない）× 炎 1 枚（`tex-flame`・ADD・深さ 11.51・frame 2 枚を 0.11 秒で替え α 0.75〜1・大きさ ±15% を実秒の正弦で）。
++      炎の体（白黄の芯と橙の舌 7 本）はテクスチャの半径の 0.5 まで＝船幅の 0.8 倍（小艇で船体の色を覆わない）、外は薄い赤い光の暈（ADD）。煙の玉は共有の 16（`tex-smoke-puff` を tint 0xb09c88＝約 #6a645e の暗い茶灰・深さ 11.5・0.25 秒ごと・
++      2.5 秒で 0.35 → 1 に膨らみ α ≤ 0.5（寿命の 4 割まで濃いまま）・風下（方位 65°）へ 24 m/実秒・尽きたら一番古い玉）。玉の半径は艦 15 m・小艇 9 m まで（煙幕の 60 m の 1/4 以下）。玉は持ち主の番号（Int16Array）を持ち、持ち主が見えなくなる（visible false・α < 0.1＝夜の sighted でない）と 0.3 秒で消える。
++      沈没の始まり（見えていた発生源の sinking が立ったフレーム）: 泡と油の輪（`tex-splash` を青灰 0xb8c4cc・α 0.35 → 0・半径 艦 110 m／小艇 30 m へ 3 秒・深さ 3.45＝航跡の下）と、沈み始めた所から煙の玉 4 秒（絵が薄れても続ける）。輪のプールは 2。
++      1 回目は tint を spec の目安の 0x3a3430 のまま掛けたら（結果 #232220）夜の海 #0b1020 に沈んで煙が見えず、流れも 9 m/実秒では尾が 22 m で船体の下に重なったので、結果の色が暗い茶灰になる tint・24 m/実秒・濃いまま保つ割合にした（S3b の爆発の小さい版の暗い玉も同じ定数＝少し明るくなった）。
++    - 岸の帯（`systems/coast-fx`。R16・R24）: 南の岸（us_03・jp_01・jp_02・jp_03・jp_04。−陸の幅〜幅＋陸の幅）と jp_03 の北の島（上下を反転）の波打ち際（＝論理の縁）に沿って `tex-coast-strip` を並べる。帯の中身: 海の側 8 m に寄せ波の白 2 本、
++      波打ち際から砂浜（濡れた暗い縁 → 砂 → 乾いた砂・幅 18 ± 6 m を周期で揺らす）・陸の際の陰・樹冠 240 個（陸の際に多く奥へ疎ら・奥 40 m から透明へ）。陸の側 112 m まで＝岸の名の字（陸の中 200〜300 m）・沿岸砲の砲台（深さ 9）にかからない。深さ 1.2（陸の塗り 1 の上・上陸地点の帯 1.5 の下）。
++      1 本の岸の線は Blitter 1 つ（Bob は画面の物に数えない＝見える物は岸 1 本で +1）。Bob は拡大できないので長さは frame の幅で合わせる: 区間の左は反転の帯（左端に x 512 の列）・右は反転なしの帯・真ん中に部分の帯 2 つ（同じ列で鏡に続く）、満帯は 1 枚おきに反転（R24）、
++      中身の x は周期 512 で折り返す＝どの継ぎ目も同じ列。区間の両端は frame の行 1（右端の 16 m を透明へ）。jp_03 は陰の絵（陰の x ± 460 m）と壕の絵・斜路（壕の x ± 150 m）の幅をよける（R16。北 2 区間・南 4 区間）。毎フレームは何もしない（動かない絵）。
++    - 定数は `config/fx-art-config`（炎・煙・沈没の輪・探照灯と星弾と煙幕の式の値）と `config/sea-art-config`（岸の帯の中身と色）。ゲームの強さの値（SEARCHLIGHT_ALPHA・STARSHELL_ALPHA・SMOKE_PUFF_ALPHA・半径・射程）は ui-config と data のまま。
++    - テスト `tests/fx-art-s3c`: 探照灯・星弾・煙幕を tex-ab の CHECK と同じ数え方で k ∈ {1, 1.04, 1.09, 2}・探照灯は data の cone_deg と 8°・16°（先端の行・扇の内・覆い・扇の外は 0）、星弾の 92% と縁、煙幕の帯 ±7%・輪郭が丸・最後の 5% で 0、寸法の式と Boot の行、
++      枠の選び方・玉の半径と α の上限・持ち主が見えなくなって 0.3 秒・炎の体 ≤ 船幅 0.8・同じ種なら同じ舌、fire-fx の update に確保なし・ADD は炎だけ・深さ、岸の帯が区間を隙間なく覆い継ぎ目の列が続き両端が透明・jp_03 の陰と壕の幅をよける・中身が周期で続き陸 112 m・海 8 m、coast-fx は Blitter 1 つで update なし、300 行。
++      game-config・ui-config は window を読むので tests から import せず source から数を読む。`tests/art-rules` に light-art・fire-fx・coast-fx が自動で入る。
++    - 計測（art-perf。A＝f5563ab・B＝S3c の木。2 組・窓 15 秒・W 1560・何も同時に回さない。scratchpad の `v0700/impl/S3c/art-perf-1.log`＝us_02h・jp_03h、`art-perf-2.log`＝全 6 件）: 描いたフレームの p95
++      us_02 ハードの星弾の窓 132.4 → 133.6 ms（×1.01）・us_01 の夜明けの空襲 88.9 → 93.1（×1.05）・us_03 86.5 → 88.0（×1.02）・jp_04 ハード 81.5 → 87.6（×1.07）・jp_02 の哨戒機 48.0 → 51.1（×1.06）・jp_03 ハードの第 4 波 93.8 → 97.0（×1.03）＝全件 ≤ ×1.15
++      （A 対 A の揺れ ×1.02〜1.07）。見える物の p95（S3a・S3b と合わせた累計）us_02 ハード +25・us_01 +16・us_03 +16・jp_04 ハード +17・jp_02 +14・jp_03 ハード +33（S3b の +31 に岸の Blitter 2）＝全件 ≤ +40。
++      台本の窓では火災が起きない（炎と煙の物は出ていない）。最悪の見込みは 1 か所の火災で炎 1 ＋玉 10＝+11（jp_03 ハードで +44 になりうる）。測ったのは煙の tint・流れ・濃さの最後の調整の前（定数だけ・物の数とプールは同じ）。ページのエラー 0。
++      `tex-ab CHECK=1`（us_02・us_03・jp_01・k 1.09 だけの下見）: 探照灯 覆い 8288/8537・先端の行 0.78・扇の内 0.90、煙幕 帯 0.70・0.57・0.32／0.70・0.56・0.33、星弾 92% の内 0.73 で ✓。既存の鍵の寸法は同じ。GPU の差の最大 +0.97 MB（岸の任務。tex-coast-strip 0.47 MB を含む）。
++    - 写し（scratchpad の道具 `impl/S3c/tools/fx3-shots.mjs`。写しのために道具の側で fireLeftS・takeHit・playSinking・smokeTap を書き、星弾は us_02 ハードの星弾の Image を自艇の近くへ置いて撮った（遊びの画面ではない）。最終は `impl/S3c/fx3/`、
++      1 回目は `fx1/`・`fx2/`。W 1280・1560。ページのエラー 0）:
++      - 探照灯（`fx1/us_02h-lights-lookout-w1560.png`）: 光源の近くが明るく白っぽく、先へ少し薄れ、扇の縁は柔らかいが論理の角の線で読める。呼び出しの α 0.2 は同じなので、前（一様な三角）とほぼ同じ明るさ。
++      - 星弾（`fx3/us_02h-lights-lookout-w1560.png`）: 照らす円の内は平らに明るく、縁に明るい細い輪＝照らされる範囲の境目が分かる（既定のズームでは円が画面より大きく縁は画面の外）。
++      - 煙幕（`fx3/us_01-smoke-fire-w1560.png`・`us_02-smoke-`）: 3 重の同心円から、柔らかい塊の連なりに。広さと濃さは前と同じで、艇は煙の中で薄く見える。
++      - 火災（`fx3/us_01-fire-detail-w1560.png`・`us_02h-burn-detail-`）: 艇の中ほどに橙の炎の光（船体の色は残る）と、後ろに暗い灰の小さな玉の尾。駆逐艦は舷の中ほどに炎、煙は風下へ。正直に言えば夜の煙はまだ控えめで（α ≤ 0.5・暗い色・小さい＝spec の R10 の上限どおり）、
++        炎の光のほうが「燃えている」の手掛かりになる。沈む駆逐艦（`us_02h-sink-t10-detail-`）は泡と油の輪（水柱の絵を青灰で大きく薄く）が星形に見え、油の輪には見えにくい。
++      - 岸の帯（`fx3/us_03-coast-`・`jp_01-coast-`・`jp_02-coast-`・`jp_04-coast-`＋`-lookout`）: 波打ち際に白い寄せ波、暗い砂浜、陸の際に暗緑の樹冠が密に並び、奥は今の一様な陸の塗りへ溶ける。継ぎ目は見えない（512 m の繰り返しは見張りでよく見れば分かる）。
++        沿岸砲の砲台・射界、浅瀬、岸の名の字は帯の上か外のまま。
++      - jp_03（`fx3/jp_03-w1560.png`・`-lookout`）: 本部半島の岸に帯、壕の岩の絵・斜路・レールは前と同じ（帯は壕の x ± 150 m をよけ、よけた端は透明へ）。北の屋我地島の岸は陰の絵（x ± 460 m）をよけて上下反転の帯。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
+ - 既知の制約:
+   - （S0）art config と art-dims はまだどこからも使われない（S1〜S3c で使う）。tests/art-inventory の予定の鍵（PLANNED_NEW）は spec D2 の 11。段で鍵を足す・やめる時はこの表も直す。
+   - （S0）tex-check の絶対の門（夜の海との比 ≥ 4.5・昼 ≥ 3・艦の幅 ≥ 0.92）は placeholder がもともと満たさない所（敵機の赤の昼の海との比 2.97・輸送船の 20% の行の幅 0.89）を「A 以上」で読む。
+   - （S0）art-perf の数はヘッドレスの相対値（SwiftShader の CPU のラスタ。描いた後に 1 画素を読んで待つので塗りの秒も入る）。iPhone の FPS は実機テスト ③。
+   - （S2b）Pete の複葉は 1 枚の太い翼に見える・generic と SBD はほぼ同じ形（上の写しの「正直な弱み」）。敵機の鍵は 1 つなので、1 任務に 2 種類の敵機は出せない（data もそうなっている）。
+   - （S3b）航跡は船体ごとに Image 1 枚の直線の V（曲がった航跡の点は作らない＝D8）。jp_03 の 18 隻は隊長艇だけ（`WAKE_EVAC_LEADERS_ONLY`）。卯月・味方の輸送船は停泊で航跡なし。水柱は星形の飛沫（柱の高さは出ない）。Canvas レンダラーでは爆発の閃光・火球を ADD でなく通常の重ねで描く。
++  - （S3c）火災の煙は夜の海では控えめ（暗い茶灰・α ≤ 0.5・半径 ≤ 15 m＝煙幕と見分ける上限）。沈没の泡と油の輪は水柱の絵の流用で星形に見える。卯月・隼艇は炎の発生源にしない。岸の帯は 512 m の繰り返し（1 枚おきの反転）で、見張りのズームでは繰り返しが分かる。1 か所の火災で見える物が最大 +11（台本の窓では出ない）。
+ - 実機テスト結果: （未。S4 の後）
+ 
+ ## v0.6.11 — 2026-11-04（日本ハードモード⑨：運天港・空襲下の退避）
 diff --git a/src/assets/fx-art.ts b/src/assets/fx-art.ts
-index 4716ed4..d46129b 100644
+index 4716ed4..a895abd 100644
 --- a/src/assets/fx-art.ts
 +++ b/src/assets/fx-art.ts
 @@ -2,13 +2,15 @@
  // 鍵が既にあれば描かない＝sea-art の paintCanvas）。色は付けず白で描き、表示側の tint で色を付ける（水柱 外れ 青白・命中 橙、砲口炎 各所の tint、閃光・火球は fx-art-config の tint）。
  // - tex-splash・tex-muzzle-flash・tex-fireball: 爆発の輪と同じ寸法（art-dims の discTexSize(40, k, 8)＝96×96 at k 1.09）＝SplashPool と砲口炎 7 か所の今の scale 定数で同じ世界の大きさ。
  //   水柱＝明るい芯（置いた所が読める）＋放射の飛沫の筋＋薄い外の輪、砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
-+// - tex-flame（S3c）: 真上から見た炎（回らない向きの陰影なし）＝白黄の芯・橙の舌 7 本・赤い縁。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
++// - tex-flame（S3c）: 真上から見た炎（向きの陰影なし）＝白黄の芯・橙の舌 7 本（半径の 0.5 まで）・外へ薄い赤い光の暈。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
  // - tex-wake-boat・tex-wake-ship: 艇尾を頂点にした V（半角 19.5°。R7: 腕が主・中央の泡は短く薄い）。frame p0＝V、p1＝泡だけ（自艇の静音＝R1）。k に依らない固定の px（96×128）。
  import type Phaser from 'phaser';
  import { EXPLOSION_RING_RADIUS_UNITS, discTexSize } from './art-dims';
@@ -15,7 +72,7 @@ index 4716ed4..d46129b 100644
  import { paintCanvas } from './sea-art';
  import {
 -  ART_SEED_FX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, SPLASH_CORE_R, SPLASH_RING_R, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
-+  ART_SEED_FX, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, SPLASH_CORE_R, SPLASH_RING_R, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
++  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, SPLASH_CORE_R, SPLASH_RING_R, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
    WAKE_CENTER_WIDTH_PX, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SHIP_CENTER_WIDTH_PX, WAKE_TEX_H, WAKE_TEX_W,
  } from '../config/fx-art-config';
  import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -29,11 +86,11 @@ index 4716ed4..d46129b 100644
 +  const S = FLAME_TEX_PX;
 +  const c = S / 2;
 +  const cy = top + c;
-+  const R = c - 1;
-+  const glow = ctx.createRadialGradient(c, cy, 0, c, cy, R);
-+  glow.addColorStop(0, 'rgba(255,120,40,0.55)');
-+  glow.addColorStop(0.6, 'rgba(220,60,20,0.25)');
++  const glow = ctx.createRadialGradient(c, cy, 0, c, cy, c - 1);
++  glow.addColorStop(0, 'rgba(255,140,50,0.8)');
++  glow.addColorStop(FLAME_BODY_SHARE, 'rgba(235,80,25,0.4)');
 +  glow.addColorStop(1, 'rgba(200,40,10,0)');
++  const R = (c - 1) * FLAME_BODY_SHARE; // 炎の体（舌と芯）の半径
 +  ctx.fillStyle = glow;
 +  ctx.fillRect(0, top, S, S);
 +  for (const t of flameTongues(ART_SEED_FX, frame)) {
@@ -282,18 +339,24 @@ index 6037f6a..722e75f 100644
 +  }, 2);
 +}
 diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
-index f4f5890..87827db 100644
+index f4f5890..e6d2fd0 100644
 --- a/src/config/fx-art-config.ts
 +++ b/src/config/fx-art-config.ts
-@@ -85,6 +85,33 @@ export const FIRE_SMOKE_MAX_RADIUS_M = 15;
+@@ -83,8 +83,40 @@ export const FIRE_SOURCES = 6;
+ export const FIRE_PUFFS = 16;
+ export const FIRE_SMOKE_MAX_RADIUS_M = 15;
  export const FIRE_SMOKE_MAX_ALPHA = 0.5;
- export const FIRE_SMOKE_TINT = 0x3a3430;
+-export const FIRE_SMOKE_TINT = 0x3a3430;
++/** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #6a645e＝暗い茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し） */
++export const FIRE_SMOKE_TINT = 0xb09c88;
  export const FIRE_HIDE_AFTER_S = 0.3;
-+/** 炎（tex-flame。k に依らない固定 px の frame 2 枚・ADD）: 1 frame の px・炎の直径＝船幅 × 割合（小艇で船体の色を覆わない）と上限 m・ちらつき（α の帯・大きさの振れ・周期 秒・frame を替える秒）・舌の数 */
++/** 炎（tex-flame。k に依らない固定 px の frame 2 枚・ADD）: 1 frame の px・炎の体（芯と舌）はテクスチャの半径の FLAME_BODY_SHARE まで、外は薄い赤い光の暈（ADD＝夜に炎が読める）・
++ * 炎の体の直径＝船幅 × 割合（小艇で船体の色を覆わない）と上限 m・ちらつき（α の帯・大きさの振れ・周期 秒・frame を替える秒）・舌の数 */
 +export const FLAME_TEX_PX = 64;
++export const FLAME_BODY_SHARE = 0.5;
 +export const FLAME_BEAM_SHARE = 0.8;
 +export const FLAME_MAX_DIAMETER_M = 16;
-+export const FLAME_ALPHA: readonly [number, number] = [0.6, 0.95];
++export const FLAME_ALPHA: readonly [number, number] = [0.75, 1];
 +export const FLAME_SCALE_SWING = 0.15;
 +export const FLAME_FLICKER_S = 0.37;
 +export const FLAME_FRAME_S = 0.11;
@@ -302,9 +365,11 @@ index f4f5890..87827db 100644
 +export const FIRE_PUFF_INTERVAL_S = 0.25;
 +export const FIRE_PUFF_LIFE_S = 2.5;
 +export const FIRE_PUFF_GROW_FROM = 0.35;
++/** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる） */
++export const FIRE_PUFF_HOLD_SHARE = 0.4;
 +export const FIRE_PUFF_BOAT_RADIUS_M = 9;
 +export const FIRE_DRIFT_DEG = 65;
-+export const FIRE_DRIFT_MPS = 9;
++export const FIRE_DRIFT_MPS = 24;
 +export const FIRE_PUFF_JITTER_SHARE = 0.25;
 +/** 沈没の始まり（R: spec §5.4）: 泡と油の輪（tex-splash を大きく薄く）の数・寿命 秒・α・tint・半径 m（艦・小艇）と、煙の玉を出し続ける秒 */
 +export const SINK_RINGS = 2;
@@ -319,7 +384,7 @@ index f4f5890..87827db 100644
  
  /** 深さ（game-config の DEPTH は変えない）: 航跡（暴風の帯 3 の上・雷跡 4 の下）・火災の煙・炎（煙幕 11 の上・砲弾 12 の下）。ADD の物は同じ系統の ＋ADD_DEPTH_STEP にまとめる（R25） */
  export const WAKE_DEPTH = 3.5;
-@@ -93,5 +120,25 @@ export const ADD_DEPTH_STEP = 0.01;
+@@ -93,5 +125,25 @@ export const ADD_DEPTH_STEP = 0.01;
  /** Phaser.BlendModes.ADD（＝1）。explosion-fx が phaser の値の import を避ける */
  export const BLEND_ADD = 1;
  
@@ -357,7 +422,7 @@ index 88a197b..32982f5 100644
 +  coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
  } as const;
 diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
-index 2d554dc..463fbf5 100644
+index 2d554dc..b16e0b1 100644
 --- a/src/config/sea-art-config.ts
 +++ b/src/config/sea-art-config.ts
 @@ -114,6 +114,19 @@ export const COAST_STRIP_LEN_M = 512;
@@ -367,14 +432,14 @@ index 2d554dc..463fbf5 100644
 +/** 岸の帯の中身（px＝m）: 砂浜の幅の平均と揺れ（周期で続く）・樹冠の数と半径・色（夜の陸 0x26301e・浜の線 0x8a7a48 と同じ系統。浜の線より明るくしない）・寄せ波の白の α と太さ */
 +export const COAST_SAND_M = 18;
 +export const COAST_SAND_WAVE_M = 6;
-+export const COAST_CROWNS = 150;
-+export const COAST_CROWN_R_M: readonly [number, number] = [4, 9];
++export const COAST_CROWNS = 240;
++export const COAST_CROWN_R_M: readonly [number, number] = [5, 10];
 +export const COAST_WET_SAND_COLOR = 0x5e5434;
 +export const COAST_SAND_COLOR = 0x7e7044;
 +export const COAST_DRY_SAND_COLOR = 0x8a7a4a;
 +export const COAST_EDGE_SHADE_COLOR = 0x1c2416;
 +export const COAST_CROWN_COLORS: readonly number[] = [0x2b3a21, 0x324428, 0x3a4c2c];
-+export const COAST_CROWN_LIGHT_COLOR = 0x4a5e36;
++export const COAST_CROWN_LIGHT_COLOR = 0x41542f;
 +export const COAST_SURF_ALPHA = 0.6;
 +export const COAST_SURF_PX = 2.5;
  
