@@ -37,6 +37,7 @@ import { generateTransportTexture } from '../assets/transport-art';
 import { generateAircraftTexture } from '../assets/aircraft-art';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
+import { generateSeaTextures } from '../assets/sea-art';
 import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
@@ -118,6 +119,7 @@ export class BootScene extends Phaser.Scene {
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);
+    generateSeaTextures(this); // 海の模様のタイル・夜明けの光・きらめき（v0.7.0 S3a。assets/sea-art。Canvas の 2D に 1 回。systems/sea-fx が使う）
     // 大発（v0.4.2）: 大発の隊を持つ最初の任務の値から（遊べる任務は Boot ですべて読める）
     const bargeMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['barges']);
     const barge = bargeMission ? getBargeParams(gameData, getPrototypeMission(gameData, bargeMission.id)) : null;

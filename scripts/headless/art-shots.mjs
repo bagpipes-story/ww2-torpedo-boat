@@ -7,7 +7,7 @@
 // 名前: <件>-w<幅>.png・<件>-lookout-w<幅>.png・<件>-reveal-w<幅>.png（・<件>-lookout-rot<角>-w<幅>.png）。shots.json に各件の止めた t・ズーム・見えていた絵の鍵の数・ページのエラー。
 // PLANES=1（S2b。機の 8 種）: 件を機の件（夜明けの空襲 &dawn=25 の 5 任務＋jp_02 の哨戒機＋jp_03 ハード＋us_02）に替え、敵の艦でなく機の絵が画面に入るまで走る。
 //   主の写しの後、見えていない機の絵（水上機・味方機・残骸＝同じ鍵）を自艇の上に並べて出した -planes と、その見張り -planes-lookout も撮る（参考。遊びの画面ではない）。
-// 実行: SITE=<site> SHOTDIR=<dir> [W=1280,1560] [ONLY=us_02,jp_03] [ROT8=1] [PLANES=1] node scripts/headless/art-shots.mjs
+// 実行: SITE=<site> SHOTDIR=<dir> [W=1280,1560] [ONLY=us_02,jp_03] [ROT8=1] [PLANES=1] [CASE=名前|query|秒|見張り|stopM|slowM] [EXTRA=nogrid] node scripts/headless/art-shots.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { FRAME_MS, chromium, openGame, serve } from './lib.mjs';
 
@@ -46,6 +46,9 @@ const PLANE_CASES = [
 const PLANES = process.env.PLANES === '1';
 if (PLANES) CASES = PLANE_CASES;
 if (process.env.ONLY) { const only = process.env.ONLY.split(','); CASES = CASES.filter((c) => only.includes(c[0])); }
+// CASE=名前|query|最大秒|見張りも(1/0)|stopM|slowM（S3a。夜明けの移り変わりの途中 &dawn=20 を t 13 秒で止める・&nogrid の比較など、表に無い 1 件を足す）。EXTRA=…: 全件の query の末尾に足す
+if (process.env.CASE) { const c = process.env.CASE.split('|'); CASES.push([c[0], c[1], Number(c[2]), c[3] === '1', Number(c[4] ?? 800), Number(c[5] ?? 1500)]); }
+if (process.env.EXTRA) CASES = CASES.map((c) => [c[0], `${c[1]}&${process.env.EXTRA}`, ...c.slice(2)]);
 
 function drive(o) {
   window.hideDebug = (m) => { for (const c of m.children.list) if (c.texture && c.texture.key === 'tex-debug-ring') { c.setVisible(false); c.setVisible = () => c; } };

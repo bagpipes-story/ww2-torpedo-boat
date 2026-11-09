@@ -64,8 +64,10 @@ export class WorldDawn {
   readonly retireJa: string;
   private readonly durationS: number;
   private readonly seaLight: SeaLight;
-  /** 海を最初から昼に（setup.evac.dayStart。jp_03） */
-  private readonly dayStart: boolean;
+  /** 海を最初から昼に（setup.evac.dayStart。jp_03）。systems/sea-fx が夜明けの光を 0 にするのに読む（v0.7.0 S3a。R4） */
+  readonly dayStart: boolean;
+  /** 直近のフレームの海の明るさの段（0〜SEA_LIGHT_STEPS。updateVisuals が書く）。海の模様の色と夜明けの光（systems/sea-fx）が同じ段で変わる（v0.7.0 S3a。spec §5.6） */
+  lightStep = 0;
   /** ラッチの瞬間の「中」（null なら atHome。jp_03 は world-evac が置く） */
   homeAtLatch: (() => boolean) | null = null;
   /** 決着のラッチが立つか（null なら dawnReached だけ。jp_03 は world-evac が core/evac-early の evacSettleDue＝240 秒か早い決着（v0.6.11 IP1 の U8）を置く） */
@@ -110,7 +112,8 @@ export class WorldDawn {
 
   /** 毎フレーム: 海の明るさ（段が変わったときだけ背景色）と、空襲の機体・爆弾・着弾点の輪・爆撃進路の線 */
   updateVisuals(w: DawnWorldView): void {
-    this.seaLight.update(this.dayStart ? SEA_LIGHT_STEPS : seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS));
+    this.lightStep = this.dayStart ? SEA_LIGHT_STEPS : seaLightStep(w.stepTimeS, this.durationS, SEA_LIGHT_PRE_S, SEA_LIGHT_POST_S, SEA_LIGHT_STEPS);
+    this.seaLight.update(this.lightStep);
     this.strike?.updateVisuals(w.boat.state, w.escort ? w.escort.state.boat : null);
   }
 

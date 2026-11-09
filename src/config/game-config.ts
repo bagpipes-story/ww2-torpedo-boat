@@ -111,6 +111,8 @@ export const DEBUG_AA_CHANCE = debugNumber('aa');
 export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nopatrol'); // ?debug&nopatrol: 夜の哨戒機なし（v0.6.7。jp_02 の夜の 2 機が来ない。夜明けの 4 機は残る）
 /** ?debug&noally: 味方の駆逐艦 卯月なし（v0.6.10。jp_04 が v0.6.10 S0b と同じ世界。模擬の ALLY_OFF=1 と同じ。比較用） */
 export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
+/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。波の模様があれば格子を消してよいかを実機テスト ② で比べる。既定は config/sea-art-config の SEA_GRID_ON＝残す） */
+export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
@@ -221,4 +223,7 @@ export const TEXTURE_KEYS = {
   gunTracer: 'tex-gun-tracer',
   coastMarker: 'tex-coast-marker',
   ptBoat: 'tex-pt-boat', // 敵の米PT（v0.6.3。assets/pt-placeholder）
+  seaTile: 'tex-sea-tile', // 海の模様のタイル 512×512（v0.7.0 S3a。assets/sea-art。systems/sea-fx の TileSprite が世界の座標に貼る）
+  dawnGlow: 'tex-dawn-glow', // 夜明けの東の光の横のグラデーション 256×64（v0.7.0 S3a。画面へ拡大・深さは海の模様の直上）
+  glint: 'tex-glint', // 月のきらめき・昼の白波の筋 16×8（v0.7.0 S3a）
 } as const;
