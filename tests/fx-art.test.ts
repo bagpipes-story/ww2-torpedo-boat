@@ -130,8 +130,8 @@ describe('爆発のプール（R11・R12・D7）と絵の置き方', () => {
     expect(a.length).toBe(SPLASH_DROPLETS);
     for (const d of a) {
       const r = Math.hypot(d.x, d.y);
-      expect(r).toBeGreaterThanOrEqual(0.55 - 1e-9);
-      expect(r).toBeLessThanOrEqual(0.9 + 1e-9);
+      expect(r).toBeGreaterThanOrEqual(0.5 - 1e-9); // S4: 帯 0.55〜0.9 → 0.5〜0.8（tests/fx-art-s4）
+      expect(r).toBeLessThanOrEqual(0.8 + 1e-9);
       expect(d.r).toBeGreaterThan(0);
       expect(r + d.r).toBeLessThanOrEqual(1.1);
     }

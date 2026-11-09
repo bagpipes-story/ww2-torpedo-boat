@@ -233,4 +233,5 @@ export const TEXTURE_KEYS = {
   wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
   flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
   coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
+  oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
 } as const;

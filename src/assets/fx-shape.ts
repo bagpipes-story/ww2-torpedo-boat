@@ -83,7 +83,7 @@ export const FIRE_GROW = { life: EXPLOSION_FIRE_S, from: EXPLOSION_FIRE_GROW_FRO
 export const SPLASH_GROW = { life: EXPLOSION_SPLASH_S, from: EXPLOSION_SPLASH_GROW_FROM, alpha0: EXPLOSION_SPLASH_ALPHA } as const;
 export const PUFF_GROW = { life: EXPLOSION_PUFF_S, from: EXPLOSION_PUFF_GROW_FROM, alpha0: 0.5 } as const;
 
-/** 水柱の飛沫（半径 1 の円の中。角は等分＋乱れ、距離は帯の内、大きさは帯の内）。同じ種なら同じ */
+/** 水柱の水滴（半径 1 の円の中。角は乱数、距離は帯の内、大きさは帯の内）。同じ種なら同じ */
 export interface Droplet {
   readonly x: number;
   readonly y: number;
@@ -93,7 +93,7 @@ export function splashDroplets(seed: number): Droplet[] {
   const rng = new SeededRng(seed);
   const out: Droplet[] = [];
   for (let i = 0; i < SPLASH_DROPLETS; i++) {
-    const a = ((i + rng.nextRange(-0.35, 0.35)) / SPLASH_DROPLETS) * Math.PI * 2;
+    const a = rng.nextRange(0, Math.PI * 2); // 等分にしない（S4。等間隔の輪は線香花火・歯車に見えた）
     const d = rng.nextRange(SPLASH_DROPLET_RING[0], SPLASH_DROPLET_RING[1]);
     out.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, r: rng.nextRange(SPLASH_DROPLET_R[0], SPLASH_DROPLET_R[1]) });
   }

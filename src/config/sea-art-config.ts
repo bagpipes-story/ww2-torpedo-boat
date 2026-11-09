@@ -27,7 +27,7 @@ export const SEA_LIGHT_ART: Readonly<Record<'dark' | 'half' | 'full' | 'day', Se
   dark: { crest: 0x9fb4d8, crestAlpha: 0.1, glints: 0, whitecaps: false },
   half: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 12, whitecaps: false },
   full: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 16, whitecaps: false },
-  day: { crest: 0xdce9f2, crestAlpha: 0.4, glints: 16, whitecaps: true },
+  day: { crest: 0xdce9f2, crestAlpha: 0.16, glints: 16, whitecaps: true },
 };
 /** 夜の模様の α の上限（spec §3.2「夜は α ≤ 0.12」。tests/sea-art） */
 export const SEA_NIGHT_ALPHA_MAX = 0.12;
@@ -106,9 +106,9 @@ export const GLINT_H_M = 6;
 export const GLINT_PERIOD_MIN_S = 2;
 export const GLINT_SWING_MAX = 0.5;
 export const WHITECAP_COLOR = 0xf4f8fb;
-export const WHITECAP_ALPHA_MAX = 0.55;
+export const WHITECAP_ALPHA_MAX = 0.4;
 
-/** 岸の帯（S3c。砂浜・寄せ波・陸の際の木々）: 1 m あたりの px・1 枚の長さ m・陸の側の幅 m・海の側の寄せ波の幅 m・jp_03 の陰と壕の絵をよける端の透明の幅 m（R16・R24） */
+/** 岸の帯（S3c。砂浜・寄せ波・陸の際の木々）: 1 m あたりの px・1 枚の長さ m・陸の側の幅 m・海の側の寄せ波の幅 m・陸の端（−陸の幅・幅＋陸の幅）で透明へ落とす幅 m（R24。S4 から jp_03 も帯を切らない） */
 export const COAST_ART_PX_PER_M = 1.0;
 export const COAST_STRIP_LEN_M = 512;
 export const COAST_STRIP_LAND_M = 112;
@@ -133,6 +133,8 @@ export const SEA_ART_DEPTH = 0.05;
 export const DAWN_GLOW_DEPTH = 0.1;
 export const GLINT_DEPTH = 0.2;
 export const COAST_STRIP_DEPTH = 1.2;
+/** jp_03 の陰の絵の陸の側（岸の線から海へ COAST_STRIP_SEA_M まで）の深さ（S4）: 岸の帯 1.2 の上・上陸地点の帯と壕の岩の絵 1.5 の下＝帯が崖と岩の下を通る。海の側は今の 1（輪・爆撃進路の線の下）のまま */
+export const EVAC_COVER_LAND_DEPTH = 1.25;
 
 /** 海の絵の乱れの乱数の種（絵だけ。ゲームの乱数とは別。毎フレーム使うきらめきの置き直しは世界の絵を作る時に new SeededRng(ART_SEED_GLINT)＝R30） */
 export const ART_SEED_SEA = 7401;

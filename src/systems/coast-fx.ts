@@ -1,19 +1,18 @@
 // v0.7.0 S3c（アートと音①：コードで描く絵。spec-v0700 §4.4・R16・R24）: 岸の帯（砂浜・寄せ波・陸の際の樹冠）。岸のある任務（us_03・jp_01・jp_02・jp_03・jp_04）の南の岸と、
 // jp_03 の北の島（屋我地島）の岸の線に沿って、tex-coast-strip（512 m × 120 m・1.0 px/m。初めて使う時に 1 回）を並べる。波打ち際＝論理の縁（南は y＝海域の高さ、北は y 0）。
-// 海の側は寄せ波の白だけ 8 m、砂浜と木々は陸の側 112 m（岸の名の字＝陸の中 200〜300 m・沿岸砲の砲台（深さ 9）にかからない）。jp_03 は陰の絵（隠れ場所の x ± COVER_ART_HALF_W_M）と
-// 壕の絵・斜路（壕の x ± CAVE_ART_HALF_W_M）の幅に置かない（深さ 1.2 が深さ 1 の陰の絵と斜路の海の部分に乗るため）。よけた端は帯の端の 16 m を透明へ（frame の行 1）。
+// 海の側は寄せ波の白だけ 8 m、砂浜と木々は陸の側 112 m（岸の名の字＝陸の中 200〜300 m・沿岸砲の砲台（深さ 9）にかからない）。
+// S4: jp_03 も帯を切らずに岸の端から端まで通す（S3c は壕の絵 ± 150 m・陰の絵 ± 460 m をよけて、よけた所に何も無い暗緑の矩形が見えた）。壕の岩の絵・斜路の陸の部分は深さ 1.5（帯の上）、
+// 陰の絵は陸の側を帯の上の深さに分けて置く（systems/evac-terrain）＝帯は岩・崖の下を通る。斜路の海の部分（深さ 1）には寄せ波の白が掛かる（波打ち際の波）。
 // 1 本の岸の線は Blitter 1 つ（Bob は画面の物に数えない＝見える物 +1。並べ方は assets/coast-shape）。陸の内側は今の一様な塗り（entities/shallows・systems/evac-terrain）のまま。
 // §7: 確保は constructor だけで、毎フレームは何もしない（動かない絵）。論理の状態は読むだけ。
 import type Phaser from 'phaser';
-import { coastBobs, coastSegments } from '../assets/coast-shape';
+import { coastBobs } from '../assets/coast-shape';
 import { ensureCoastStripTexture } from '../assets/sea-art';
-import { CAVE_ART_HALF_W_M, COVER_ART_HALF_W_M } from '../config/evac-art-config';
 import { EVAC_ISLAND_LAND_M } from '../config/evac-config';
 import type { EvacSetup } from '../config/evac-mission-data';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { CoastBlock } from '../config/mission-data';
 import { COAST_ART_PX_PER_M, COAST_STRIP_DEPTH, COAST_STRIP_LAND_M, COAST_STRIP_LEN_M, COAST_STRIP_SEA_M } from '../config/sea-art-config';
-import { SHELTER_CAVE } from '../core/evac-data';
 
 /** 世界から読む物（WorldSetup の一部） */
 export interface CoastSetupView {
@@ -29,26 +28,20 @@ export class CoastFx {
     if (!coast) return;
     ensureCoastStripTexture(scene);
     const { width, height } = s.mission.bounds;
-    const shelters = s.evac ? s.evac.params.shelters : [];
-    const caves: [number, number][] = [];
-    const covers: [number, number][] = [];
-    for (const sh of shelters) (sh.kind === SHELTER_CAVE ? caves : covers).push([sh.x, sh.kind === SHELTER_CAVE ? CAVE_ART_HALF_W_M : COVER_ART_HALF_W_M]);
     // 南の岸（陸は y > 高さ）: 帯の上端の海 8 m が波打ち際の外
-    this.line(scene, height - COAST_STRIP_SEA_M, -coast.landM, width + coast.landM, caves, false);
+    this.line(scene, height - COAST_STRIP_SEA_M, -coast.landM, width + coast.landM, false);
     // jp_03 の北の島（陸は y < 0）: 上下を反転して、海 8 m が y 0〜8
-    if (s.evac) this.line(scene, -COAST_STRIP_LAND_M, -EVAC_ISLAND_LAND_M, width + EVAC_ISLAND_LAND_M, covers, true);
+    if (s.evac) this.line(scene, -COAST_STRIP_LAND_M, -EVAC_ISLAND_LAND_M, width + EVAC_ISLAND_LAND_M, true);
   }
 
-  private line(scene: Phaser.Scene, y: number, x0: number, x1: number, cuts: readonly (readonly [number, number])[], flipY: boolean): void {
+  private line(scene: Phaser.Scene, y: number, x0: number, x1: number, flipY: boolean): void {
     const tex = scene.textures.get(TEXTURE_KEYS.coastStrip);
     const H = COAST_STRIP_SEA_M + COAST_STRIP_LAND_M;
     const bl = scene.add.blitter(0, y, TEXTURE_KEYS.coastStrip).setDepth(COAST_STRIP_DEPTH).setScale(1 / COAST_ART_PX_PER_M);
-    for (const [a, b] of coastSegments(x0, x1, cuts)) {
-      for (const bob of coastBobs(a, b)) {
-        const name = bob.w === COAST_STRIP_LEN_M ? `p${bob.row}` : `c${bob.row}-${bob.cut}`;
-        if (!tex.has(name)) tex.add(name, 0, bob.cut, bob.row * H, bob.w, H);
-        bl.create(bob.x, 0, name).setFlip(bob.flipX, flipY);
-      }
+    for (const bob of coastBobs(x0, x1)) {
+      const name = bob.w === COAST_STRIP_LEN_M ? `p${bob.row}` : `c${bob.row}-${bob.cut}`;
+      if (!tex.has(name)) tex.add(name, 0, bob.cut, bob.row * H, bob.w, H);
+      bl.create(bob.x, 0, name).setFlip(bob.flipX, flipY);
     }
     this.lines.push(bl);
   }

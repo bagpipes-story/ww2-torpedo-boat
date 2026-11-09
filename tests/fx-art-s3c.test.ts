@@ -3,14 +3,13 @@
 //   煙幕の半径の帯（0〜0.4・0.4〜0.7・0.7〜1.0）の α が v0.6.11 の 3 重の円の ±10%（R2・R32）、覆い（α ≥ 0.5）≥ placeholder の 85%、寸法の式は placeholder と同じ（鍵・寸法・原点はそのまま）。
 // - 炎と煙（assets/fire-shape・systems/fire-fx）: 枠の選び方（決まった順・続く枠は保つ・上限 6）、玉の半径 ≤ 15 m（小艇 9）・α ≤ 0.5・持ち主が見えなくなれば 0.3 秒で 0（R10・R26）、
 //   炎の体 ≤ 船幅 0.8、同じ種なら同じ舌、確保は constructor だけ、ADD は炎だけ・深さ。
-// - 岸の帯（assets/coast-shape・systems/coast-fx）: jp_03 の陰と壕の絵の幅をよける（R16）、区間を隙間なく覆い・帯の端の列が続き・区間の端は透明へ落とした列（R24 の 1 枚おきの反転）、
+// - 岸の帯（assets/coast-shape・systems/coast-fx）: jp_03 の陰と壕の絵の幅をよける（R16。S4 でやめて帯を通す＝tests/fx-art-s4）、区間を隙間なく覆い・帯の端の列が続き・区間の端は透明へ落とした列（R24 の 1 枚おきの反転）、
 //   中身は周期で続き・陸の側 112 m・海の側 8 m、毎フレームは何もしない。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { coastBobs, coastPlan, coastSegments, type CoastBob } from '../src/assets/coast-shape';
+import { coastBobs, coastPlan, type CoastBob } from '../src/assets/coast-shape';
 import { assignFireSlots, flameDiameterM, flameFlicker, flameTongues, puffAlpha, puffMaxRadiusM, puffRadiusM } from '../src/assets/fire-shape';
 import { searchlightPixels, smokeAlphaAt, smokePixels, starshellAlphaAt, starshellPixels } from '../src/assets/light-shape';
-import { CAVE_ART_HALF_W_M, COVER_ART_HALF_W_M } from '../src/config/evac-art-config';
 import {
   ADD_DEPTH_STEP, ART_SEED_FX, FIRE_HIDE_AFTER_S, FIRE_PUFF_LIFE_S, FIRE_PUFFS, FIRE_SMOKE_DEPTH, FIRE_SMOKE_MAX_ALPHA, FIRE_SMOKE_MAX_RADIUS_M, FIRE_SOURCES, FLAME_ALPHA, FLAME_BEAM_SHARE,
   SINK_RING_DEPTH, WAKE_DEPTH,
@@ -157,7 +156,7 @@ describe('探照灯・星弾・煙幕の絵（S3c。R2・R32。鍵・寸法・�
 describe('炎と煙（S3c。R10・R26）', () => {
   it('枠の選び方: 燃えている発生源を決まった順で空いた枠へ、続く発生源は同じ枠、上限 FIRE_SOURCES、消えたら空ける', () => {
     expect(FIRE_SOURCES).toBe(6);
-    expect(FIRE_PUFFS).toBe(16);
+    expect(FIRE_PUFFS).toBe(12); // S4: 16 → 12（tests/fx-art-s4）
     const n = 9;
     const active = new Uint8Array(n);
     const slotOf = new Int16Array(n).fill(-1);
@@ -258,22 +257,11 @@ describe('岸の帯（S3c。R16・R24）', () => {
   it('南の岸の全幅（例 us_03 −600〜6,600）と色々な長さを隙間なく覆い、帯の継ぎ目の列が続く', () => {
     for (const [a, b] of [[-600, 6600], [-400, 3600], [800, 1450], [-400, 500], [2710, 3600], [0, 100], [0, 1024], [0, 1500]] as const) bobsOk(a, b, coastBobs(a, b));
   });
-  it('jp_03: 帯は陰の絵（陰の x ± COVER_ART_HALF_W_M）と壕の絵・斜路（壕の x ± CAVE_ART_HALF_W_M）の幅に置かない', () => {
-    const ev = (gameData.missionsSeed.missions as unknown as { id: string; v0_1_prototype: { evac?: { shelters: { kind: string; x_m: number }[] }; bounds_m: { width: number } } }[]).find((m) => m.id === 'jp_03')!;
-    const W = ev.v0_1_prototype.bounds_m.width;
-    const sh = ev.v0_1_prototype.evac!.shelters;
-    const caves = sh.filter((s) => s.kind === 'cave').map((s) => [s.x_m, CAVE_ART_HALF_W_M] as const);
-    const covers = sh.filter((s) => s.kind !== 'cave').map((s) => [s.x_m, COVER_ART_HALF_W_M] as const);
-    expect(caves.length).toBe(3);
-    expect(covers.length).toBe(1);
-    for (const [cuts, land] of [[caves, 400], [covers, 400]] as const) {
-      const segs = coastSegments(-land, W + land, cuts);
-      expect(segs.length).toBe(cuts.length + 1);
-      for (const [a, b] of segs) {
-        for (const [c, h] of cuts) expect(b <= c - h || a >= c + h, `${a}〜${b} と ${c}±${h}`).toBe(true);
-        bobsOk(a, b, coastBobs(a, b));
-      }
-    }
+  it('jp_03（S4）: 帯は陰の絵・壕の絵をよけずに岸の端から端まで通す（よけた所の暗緑の矩形をやめた）。壕の岩の絵は帯の上 1.5、陰の絵の陸の側は帯の上（tests/fx-art-s4）', () => {
+    const s = read('src/systems/coast-fx.ts').replace(/\/\/[^\n]*/g, '');
+    expect(s).not.toMatch(/coastSegments|CAVE_ART_HALF_W_M|COVER_ART_HALF_W_M|shelters/);
+    expect(s).toContain('for (const bob of coastBobs(x0, x1)) {');
+    for (const [a, b] of [[-400, 3600], [-600, 3800]] as const) bobsOk(a, b, coastBobs(a, b));
   });
   it('帯の中身は絵だけの乱数で同じ種なら同じ・周期で続く（x 0 と 512）・樹冠は陸の側 112 m の内・波打ち際は海の側 8 m', () => {
     const p = coastPlan(ART_SEED_COAST);

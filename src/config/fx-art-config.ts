@@ -67,24 +67,57 @@ export const EXPLOSION_PUFF_GROW_FROM = 0.6;
 export const EXPLOSION_FLASH_TINT = 0xfff2c0;
 export const EXPLOSION_FIRE_TINT = 0xffb060;
 
-/** 演出の絵（Boot で 1 回。tex-splash・tex-muzzle-flash・tex-fireball＝爆発の輪と同じ寸法 96×96 at k 1.09）: 水柱の飛沫の筋の数・端の半径の帯・太さの帯・芯と外の輪の半径、砲口炎の光芒の数と長さの比 */
-export const SPLASH_DROPLETS = 14;
-export const SPLASH_DROPLET_R: readonly [number, number] = [0.08, 0.16];
-export const SPLASH_DROPLET_RING: readonly [number, number] = [0.55, 0.9];
-export const SPLASH_CORE_R = 0.45;
-export const SPLASH_RING_R = 0.82;
+/**
+ * 演出の絵（Boot で 1 回。tex-splash・tex-muzzle-flash・tex-fireball・tex-oil-slick＝爆発の輪と同じ寸法 96×96 at k 1.09）。
+ * 水柱（S4 で描き直し。真上から見た水柱の飛沫＝柔らかい不揃いな白い塊＋少しの水滴。放射の筋は描かない＝S3b の星形は雪の結晶・ウニに見えた）:
+ *   塊の半径（テクスチャの半径に対して）と輪郭の揺れ（2・3・5 つの山の振れ）、芯の α、塊の脇のこぶ（数・中心からの距離・半径）、外の薄い霧の半径と α、
+ *   水滴の数・中心からの距離の帯・半径の帯・α（向きは乱数のまま＝等間隔の輪にしない。1 回目の等間隔の 8 個は線香花火に見えた）。
+ * 砲口炎の光芒の数と長さの比
+ */
+export const SPLASH_CORE_R = 0.46;
+export const SPLASH_CORE_ALPHA = 0.95;
+export const SPLASH_LOBES: readonly number[] = [0.12, 0.07, 0.04];
+export const SPLASH_LUMPS = 3;
+export const SPLASH_LUMP_D: readonly [number, number] = [0.18, 0.3];
+export const SPLASH_LUMP_R: readonly [number, number] = [0.16, 0.24];
+export const SPLASH_HAZE_R = 0.74;
+export const SPLASH_HAZE_ALPHA = 0.32;
+export const SPLASH_DROPLETS = 5;
+export const SPLASH_DROPLET_R: readonly [number, number] = [0.05, 0.08];
+export const SPLASH_DROPLET_RING: readonly [number, number] = [0.5, 0.8];
+export const SPLASH_DROPLET_ALPHA = 0.85;
+/**
+ * 沈没の油の輪（S4。tex-oil-slick。水柱の絵の流用は星形に見えた）: 広がる暗い不揃いな油膜＋縁の鈍い光（夜の海でも形が読める）＋中の泡。色はテクスチャに焼く（tint しない）。
+ * 輪郭の半径と揺れ（2・3・6 つの山）、油膜の色と α、縁の光の色と α・帯（輪郭の半径に対する割合）、泡の数・置く半径・泡の半径の帯（テクスチャの半径に対して）・α
+ */
+export const SLICK_R = 0.72;
+export const SLICK_LOBES: readonly number[] = [0.14, 0.1, 0.06];
+export const SLICK_COLOR = 0x05070b;
+export const SLICK_ALPHA = 0.7;
+export const SLICK_SHEEN_COLOR = 0x6a7888;
+export const SLICK_SHEEN_ALPHA = 0.4;
+export const SLICK_SHEEN_BAND: readonly [number, number] = [0.72, 0.98];
+export const SLICK_BUBBLES = 7;
+export const SLICK_BUBBLE_SPREAD = 0.5;
+export const SLICK_BUBBLE_R: readonly [number, number] = [0.05, 0.08];
+export const SLICK_BUBBLE_ALPHA = 0.7;
 export const MUZZLE_RAYS = 8;
 export const MUZZLE_RAY_LEN: readonly [number, number] = [1.0, 0.55];
 export const MUZZLE_RAY_HALF_W = 0.07;
 export const MUZZLE_CORE_R = 0.3;
 
-/** 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒 */
+/**
+ * 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒。
+ * S4: 玉のプールは 16 → 12（艦が 2〜3 隻燃えても見える物は炎 3 ＋ 玉 12）。1 つの火災の物は炎 1 ＋ 玉 ceil(寿命/間隔)＝5 ＝ 6 まで（FIRE_OBJECTS_PER_SOURCE。
+ * jp_03 ハードの第 4 波で隊長艇が燃えると、S3c の炎 1 ＋ 玉 10 では見える物が基準 +44 になった＝門 ≤ +40 の外）
+ */
 export const FIRE_SOURCES = 6;
-export const FIRE_PUFFS = 16;
+export const FIRE_PUFFS = 12;
+export const FIRE_OBJECTS_PER_SOURCE = 6;
 export const FIRE_SMOKE_MAX_RADIUS_M = 15;
 export const FIRE_SMOKE_MAX_ALPHA = 0.5;
-/** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #6a645e＝暗い茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し） */
-export const FIRE_SMOKE_TINT = 0xb09c88;
+/** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #82807c＝茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し。S4 で一段明るく＝玉を減らした分、尾が読めるように） */
+export const FIRE_SMOKE_TINT = 0xd8c8b4;
 export const FIRE_HIDE_AFTER_S = 0.3;
 /** 炎（tex-flame。k に依らない固定 px の frame 2 枚・ADD）: 1 frame の px・炎の体（芯と舌）はテクスチャの半径の FLAME_BODY_SHARE まで、外は薄い赤い光の暈（ADD＝夜に炎が読める）・
  * 炎の体の直径＝船幅 × 割合（小艇で船体の色を覆わない）と上限 m・ちらつき（α の帯・大きさの振れ・周期 秒・frame を替える秒）・舌の数 */
@@ -98,20 +131,20 @@ export const FLAME_FLICKER_S = 0.37;
 export const FLAME_FRAME_S = 0.11;
 export const FLAME_TONGUES = 7;
 /** 火災の煙の玉: 出す間隔 秒・寿命 秒・膨らみの始まりの割合・小艇の玉の半径の上限 m（艦は FIRE_SMOKE_MAX_RADIUS_M）・風下へ流れる向き（方位 度）と速さ m/実秒・出す所の散らばり（船幅の割合） */
-export const FIRE_PUFF_INTERVAL_S = 0.25;
-export const FIRE_PUFF_LIFE_S = 2.5;
-export const FIRE_PUFF_GROW_FROM = 0.35;
-/** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる） */
-export const FIRE_PUFF_HOLD_SHARE = 0.4;
+export const FIRE_PUFF_INTERVAL_S = 0.5;
+export const FIRE_PUFF_LIFE_S = 2.4;
+export const FIRE_PUFF_GROW_FROM = 0.5;
+/** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる。S4 で 0.4 → 0.7＝玉が少なくても尾が濃い） */
+export const FIRE_PUFF_HOLD_SHARE = 0.7;
 export const FIRE_PUFF_BOAT_RADIUS_M = 9;
 export const FIRE_DRIFT_DEG = 65;
-export const FIRE_DRIFT_MPS = 24;
+export const FIRE_DRIFT_MPS = 20;
 export const FIRE_PUFF_JITTER_SHARE = 0.25;
-/** 沈没の始まり（R: spec §5.4）: 泡と油の輪（tex-splash を大きく薄く）の数・寿命 秒・α・tint・半径 m（艦・小艇）と、煙の玉を出し続ける秒 */
+/** 沈没の始まり（R: spec §5.4）: 泡と油の輪（S4 から tex-oil-slick。tint しない）の数・寿命 秒・α（寿命の SINK_RING_HOLD_SHARE まで保ち、そこから薄れる）・半径 m（艦・小艇）と、煙の玉を出し続ける秒 */
 export const SINK_RINGS = 2;
-export const SINK_RING_S = 3;
-export const SINK_RING_ALPHA = 0.35;
-export const SINK_RING_TINT = 0xb8c4cc;
+export const SINK_RING_S = 5;
+export const SINK_RING_ALPHA = 0.9;
+export const SINK_RING_HOLD_SHARE = 0.4;
 export const SINK_RING_RADIUS_M: readonly [number, number] = [110, 30];
 export const SINK_PLUME_S = 4;
 export const SINK_RING_DEPTH = 3.45;
@@ -141,6 +174,10 @@ export const SS_CORE_R = 0.28;
 export const SS_PLATEAU = 0.72;
 export const SS_RIM_FROM = 0.92;
 export const SS_RIM_PEAK = 1;
+/** 星弾の光の色（S4。ui-config の STARSHELL_COLOR 0xfff0b0 は暖かく、夜の海の上で画面がカーキ色になり探照灯が茶色に見えた＝白に近い冷たい色を焼く。照明弾の tint はこの上に掛かる） */
+export const SS_LIGHT_COLOR = 0xf2f5ff;
+/** 探照灯の光の色（S4。ui-config の SEARCHLIGHT_COLOR 0xfff2c0 は α 0.2 で夜の海に重なると茶色に見えた＝わずかに暖かい白。α・形は v0.6.11 のまま） */
+export const SL_LIGHT_COLOR = 0xfff8ea;
 export const SMOKE_PROFILE: readonly (readonly [number, number])[] = [[0, 0.78], [0.3, 0.71], [0.45, 0.6], [0.6, 0.56], [0.7, 0.56], [0.75, 0.42], [0.85, 0.37], [0.95, 0.34], [1, 0]];
 export const SMOKE_LUMP = 0.22;
 export const SMOKE_LUMP_TO = 0.93;

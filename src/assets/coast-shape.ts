@@ -1,26 +1,11 @@
-// v0.7.0 S3c（アートと音①：コードで描く絵。spec-v0700 §4.4・R16・R24）: 岸の帯の Phaser に依らない式。帯の区間（陰・壕の絵の幅をよける）、区間を 512 px の帯で継ぎ目なく覆う並べ方、
+// v0.7.0 S3c（アートと音①：コードで描く絵。spec-v0700 §4.4・R16・R24）: 岸の帯の Phaser に依らない式。区間を 512 px の帯で継ぎ目なく覆う並べ方（S4 で jp_03 も切らない＝区間をよける式はやめた）、
 // 帯の中身（砂浜の幅・寄せ波・陸の際の木々の樹冠。絵だけの乱数・x は周期 COAST_STRIP_LEN_M で折り返す＝どの帯の端も隣と同じ画素）。tests/fx-art-s3c が確かめる。
 // 並べ方（Blitter の Bob は拡大できない＝長さは frame の幅で合わせる）: 区間の左は左右反転の帯（左端に x 512 の列＝透明へ落とした端が来る）、右は反転しない帯（右端に x 512）。
 // 真ん中に部分の帯を 2 つ（反転と反転なし・どちらも x c〜512）＝鏡の継ぎ目は同じ列 c で続く。帯の間は 0 ≡ 512（周期）で続く。全部の帯で 1 枚おきに反転（R24）。
 import {
-  COAST_CROWNS, COAST_CROWN_R_M, COAST_SAND_M, COAST_SAND_WAVE_M, COAST_STRIP_FADE_M, COAST_STRIP_LAND_M, COAST_STRIP_LEN_M, COAST_STRIP_SEA_M,
+  COAST_CROWNS, COAST_CROWN_R_M, COAST_SAND_M, COAST_SAND_WAVE_M, COAST_STRIP_LAND_M, COAST_STRIP_LEN_M, COAST_STRIP_SEA_M,
 } from '../config/sea-art-config';
 import { SeededRng } from '../core/rng';
-
-/** 区間 [x0, x1] から cuts（中心 ± 半幅）を除いた区間（短すぎる区間は捨てる） */
-export function coastSegments(x0: number, x1: number, cuts: readonly (readonly [number, number])[]): [number, number][] {
-  const sorted = cuts.map(([c, h]) => [c - h, c + h] as const).sort((a, b) => a[0] - b[0]);
-  const out: [number, number][] = [];
-  let a = x0;
-  for (const [l, r] of sorted) {
-    if (r <= a) continue;
-    if (l > a) out.push([a, Math.min(l, x1)]);
-    a = Math.max(a, r);
-    if (a >= x1) break;
-  }
-  if (a < x1) out.push([a, x1]);
-  return out.filter(([l, r]) => r - l >= COAST_STRIP_FADE_M * 4);
-}
 
 /** 帯 1 つ（Bob）: 左端の x m・frame の行（0 そのまま・1 右端の COAST_STRIP_FADE_M を透明へ）・frame の x の始まり px・幅 px・左右反転 */
 export interface CoastBob {

@@ -6,6 +6,8 @@
 // 陸の部分と口は陸の塗りの上（landingMark＝entities/shallows の陸に隠れない）。上げている艇の絵の動きは systems/evac-boats-view、% の札は ui/evac-markers。
 // v0.6.11 IP2 の U11（ユーザー「屋我地の陰の方も視覚的に何がなんだかよくわからないので岩などを描画したりしてビジュアルのクオリティを上げてください」）: 陰は張り出した崖・入り江の腕・
 // 海の暗い陰・口の外の岩・波・崖の上の木々の 1 枚の画像、壕の口の岩の縁と脇の岩・木々も 1 枚の画像（assets/evac-terrain-art が初回だけテクスチャに描く）。足した表示物は陰 1・壕 3 の 4 枚。
+// v0.7.0 S4: 陰の絵は同じテクスチャの Image 2 枚に分けて置く（setCrop。陸の側＝岸の線から海へ 8 m までは岸の帯 1.2 の上 EVAC_COVER_LAND_DEPTH、海の側は今の shallows＝隠れ場所の輪と
+// 爆撃進路の線の下）。岸の帯（systems/coast-fx）が陰の絵をよけずに崖と岩の下を通る（S3c はよけた ± 460 m に何も無い暗緑の矩形が見えた）。表示物は陰 2・壕 3 の 5 枚。
 import type Phaser from 'phaser';
 import { ensureEvacCaveArt, ensureEvacCoverArt, type EvacArtPlacement } from '../assets/evac-terrain-art';
 import {
@@ -15,6 +17,7 @@ import {
 import type { EvacSetup } from '../config/evac-mission-data';
 import { DEPTH } from '../config/game-config';
 import { COAST_LAND_COLOR, COAST_LINE_COLOR, COAST_LINE_WIDTH, COAST_TEXT_COLOR } from '../config/hunt-config';
+import { COAST_STRIP_SEA_M, EVAC_COVER_LAND_DEPTH } from '../config/sea-art-config';
 import { hudTextStyle } from '../config/ui-config';
 import { SHELTER_CAVE } from '../core/evac-data';
 
@@ -24,6 +27,16 @@ const CAVE_ART_KEY = 'tex-evac-cave-art';
 
 function artImage(scene: Phaser.Scene, a: EvacArtPlacement, depth: number): Phaser.GameObjects.Image {
   return scene.add.image(a.x, a.y, a.key).setOrigin(0, 0).setScale(a.scale).setDepth(depth);
+}
+
+/** 陰の絵を 2 枚（陸の側は岸の帯の上・海の側は輪の下。切れ目は世界の y＝COAST_STRIP_SEA_M＝帯の海の側の端） */
+function coverImages(scene: Phaser.Scene, a: EvacArtPlacement, out: Phaser.GameObjects.Image[]): void {
+  const land = artImage(scene, a, EVAC_COVER_LAND_DEPTH);
+  const sea = artImage(scene, a, DEPTH.shallows);
+  const cut = Math.round((COAST_STRIP_SEA_M - a.y) / a.scale);
+  land.setCrop(0, 0, land.width, cut);
+  sea.setCrop(0, cut, sea.width, sea.height - cut);
+  out.push(land, sea);
 }
 
 /** 斜路の y0〜y1 の区間に枕木とレールを描く（y0 < y1） */
@@ -50,7 +63,7 @@ export class EvacTerrain {
     g.lineStyle(COAST_LINE_WIDTH, COAST_LINE_COLOR, 1);
     g.lineBetween(-land, 0, bounds.width + land, 0);
     // 陰の崖と岩と海の暗い陰（陸の塗りの上・隠れ場所の輪と艇の下）
-    for (const s of ev.params.shelters) if (s.kind !== SHELTER_CAVE) this.art.push(artImage(scene, ensureEvacCoverArt(scene, COVER_ART_KEY + s.id, s.x, s.y), DEPTH.shallows));
+    for (const s of ev.params.shelters) if (s.kind !== SHELTER_CAVE) coverImages(scene, ensureEvacCoverArt(scene, COVER_ART_KEY + s.id, s.x, s.y), this.art);
     // 壕と引き上げの斜路（壕は南の岸の際＝spec §3.1）: 海の中（隠れ場所の点の少し海側〜岸の線）は薄く g に、陸の上（岸の線〜口）と岩の口は陸の塗りの上の slip に
     const h = bounds.height;
     const mouthY = evacCaveMouthY(h);

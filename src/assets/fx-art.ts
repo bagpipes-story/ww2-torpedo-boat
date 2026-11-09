@@ -1,16 +1,20 @@
 // v0.7.0 S3b（アートと音①：コードで描く絵。spec-v0700 §5.2・§5.3・D2）: 演出の絵を Boot で 1 回だけ Canvas の 2D に描いてテクスチャにする（CLAUDE.md §7。毎フレームは描かない。
 // 鍵が既にあれば描かない＝sea-art の paintCanvas）。色は付けず白で描き、表示側の tint で色を付ける（水柱 外れ 青白・命中 橙、砲口炎 各所の tint、閃光・火球は fx-art-config の tint）。
 // - tex-splash・tex-muzzle-flash・tex-fireball: 爆発の輪と同じ寸法（art-dims の discTexSize(40, k, 8)＝96×96 at k 1.09）＝SplashPool と砲口炎 7 か所の今の scale 定数で同じ世界の大きさ。
-//   水柱＝明るい芯（置いた所が読める）＋放射の飛沫の筋＋薄い外の輪、砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
+//   水柱＝柔らかい不揃いな白い塊（置いた所が読める）＋外の薄い霧＋少しの水滴（S4。画素の式は assets/splash-shape。S3b の放射の筋は雪の結晶・ウニに見えた）、
+//   砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
+// - tex-oil-slick（S4）: 沈没の油の輪＝暗い不揃いな油膜＋縁の鈍い光＋中の泡（色を焼く・tint しない。splash-shape）。爆発の輪と同じ寸法。
 // - tex-flame（S3c）: 真上から見た炎（向きの陰影なし）＝白黄の芯・橙の舌 7 本（半径の 0.5 まで）・外へ薄い赤い光の暈。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
 // - tex-wake-boat・tex-wake-ship: 艇尾を頂点にした V（半角 19.5°。R7: 腕が主・中央の泡は短く薄い）。frame p0＝V、p1＝泡だけ（自艇の静音＝R1）。k に依らない固定の px（96×128）。
+//   S4: 腕は 1 枚の細る台形を長さ方向のグラデーションで塗る（8 区切りの線の丸い端が重なって玉の列に見え、端で切れていた）・frame ごとに枠で切る（p1 の泡が p0 の端に漏れて離れた点に見えた）。
 import type Phaser from 'phaser';
 import { EXPLOSION_RING_RADIUS_UNITS, discTexSize } from './art-dims';
 import { flameTongues } from './fire-shape';
-import { muzzleRays, splashDroplets } from './fx-shape';
+import { muzzleRays } from './fx-shape';
 import { paintCanvas } from './sea-art';
+import { slickPixels, splashPixels } from './splash-shape';
 import {
-  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, SPLASH_CORE_R, SPLASH_RING_R, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
+  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
   WAKE_CENTER_WIDTH_PX, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SHIP_CENTER_WIDTH_PX, WAKE_TEX_H, WAKE_TEX_W,
 } from '../config/fx-art-config';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -27,28 +31,12 @@ function radial(ctx: CanvasRenderingContext2D, cx: number, cy: number, R: number
   ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 }
 
-/** 水柱: 芯（α 0.95 → SPLASH_CORE_R で 0.55 → 0）＋放射の飛沫の筋（芯から SPLASH_RING_R へ。玉の列にすると小さい scale で歯車に見えた）＋薄い外の輪（置いた所の広がりが読める） */
-function paintSplash(scene: Phaser.Scene, d: number, R: number): void {
-  paintCanvas(scene, TEXTURE_KEYS.splash, d, d, (ctx) => {
-    const c = d / 2;
-    radial(ctx, c, c, R, [[0, 0.95], [SPLASH_CORE_R * 0.6, 0.75], [SPLASH_CORE_R, 0.4], [SPLASH_CORE_R + 0.25, 0.1], [1, 0]]);
-    ctx.lineCap = 'round';
-    for (const p of splashDroplets(ART_SEED_FX)) {
-      const len = Math.hypot(p.x, p.y);
-      const ux = p.x / len;
-      const uy = p.y / len;
-      ctx.lineWidth = Math.max(2, p.r * R * 0.9);
-      ctx.strokeStyle = white(0.8);
-      ctx.beginPath();
-      ctx.moveTo(c + ux * R * SPLASH_CORE_R * 0.5, c + uy * R * SPLASH_CORE_R * 0.5);
-      ctx.lineTo(c + ux * R * len, c + uy * R * len);
-      ctx.stroke();
-    }
-    ctx.lineWidth = Math.max(1.5, R * 0.05);
-    ctx.strokeStyle = white(0.3);
-    ctx.beginPath();
-    ctx.arc(c, c, R * SPLASH_RING_R, 0, Math.PI * 2);
-    ctx.stroke();
+/** 画素の式（splash-shape）で描いた 1 枚 */
+function paintPixels(scene: Phaser.Scene, key: string, d: number, px: Uint8ClampedArray): void {
+  paintCanvas(scene, key, d, d, (ctx) => {
+    const img = ctx.createImageData(d, d);
+    img.data.set(px);
+    ctx.putImageData(img, 0, 0);
   });
 }
 
@@ -78,20 +66,24 @@ function paintFireball(scene: Phaser.Scene, d: number, R: number): void {
   paintCanvas(scene, TEXTURE_KEYS.fireball, d, d, (ctx) => radial(ctx, d / 2, d / 2, R, [[0, 1], [0.35, 0.9], [0.7, 0.4], [1, 0]]));
 }
 
-/** 腕 1 本（頂点から向き (ux, uy) へ長さ L。根元 → 端で幅と α を線形に。8 区切りの線＝細部は 2 px 以上） */
+/** 腕 1 本（頂点から向き (ux, uy) へ長さ L）: 根元 → 端で幅 w[0] → w[1] に太る台形を、α a[0] → a[1] の長さ方向のグラデーションで 1 回塗る（継ぎ目・玉の列なし。端は α 0 で溶ける） */
 function arm(ctx: CanvasRenderingContext2D, x0: number, y0: number, ux: number, uy: number, L: number, w: readonly [number, number], a: readonly [number, number]): void {
-  const N = 8;
-  for (let i = 0; i < N; i++) {
-    const t0 = i / N;
-    const t1 = (i + 1) / N;
-    const tm = (t0 + t1) / 2;
-    ctx.lineWidth = Math.max(2, w[0] + (w[1] - w[0]) * tm);
-    ctx.strokeStyle = white(a[0] + (a[1] - a[0]) * tm);
-    ctx.beginPath();
-    ctx.moveTo(x0 + ux * L * t0, y0 + uy * L * t0);
-    ctx.lineTo(x0 + ux * L * t1, y0 + uy * L * t1);
-    ctx.stroke();
-  }
+  const x1 = x0 + ux * L;
+  const y1 = y0 + uy * L;
+  const g = ctx.createLinearGradient(x0, y0, x1, y1);
+  g.addColorStop(0, white(a[0]));
+  g.addColorStop(0.55, white(a[0] + (a[1] - a[0]) * 0.45));
+  g.addColorStop(1, white(a[1]));
+  const h0 = Math.max(2, w[0]) / 2;
+  const h1 = Math.max(2, w[1]) / 2;
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x0 - uy * h0, y0 + ux * h0);
+  ctx.lineTo(x1 - uy * h1, y1 + ux * h1);
+  ctx.lineTo(x1 + uy * h1, y1 - ux * h1);
+  ctx.lineTo(x0 + uy * h0, y0 - ux * h0);
+  ctx.closePath();
+  ctx.fill();
 }
 
 /** 航跡の 1 枚（frame v・b を縦に並べる）: 頂点は上端の中央。V の腕は下へ半角で開き、中央の泡は高さの WAKE_CENTER_LENGTH_SHARE / lenHulls まで */
@@ -105,7 +97,10 @@ function paintWake(scene: Phaser.Scene, key: string, ship: boolean): void {
   const kind = ship ? WAKE_KIND_ART.ship : WAKE_KIND_ART.boat;
   const centerLen = H * Math.min(1, WAKE_CENTER_LENGTH_SHARE / kind.lenHulls);
   const draw = (ctx: CanvasRenderingContext2D, top: number, withArms: boolean): void => {
-    ctx.lineCap = 'round';
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, top, W, H);
+    ctx.clip(); // frame の外（隣の frame）へ漏らさない
     const x0 = W / 2;
     const y0 = top + armW[0];
     if (withArms) {
@@ -116,6 +111,7 @@ function paintWake(scene: Phaser.Scene, key: string, ship: boolean): void {
       arm(ctx, x0, y0, 0, 1, centerLen * 0.6, [centerW, centerW * 0.4], [WAKE_CENTER_ALPHA, 0]);
     }
     radial(ctx, x0, y0, centerW * 0.9, [[0, 0.9], [1, 0]]);
+    ctx.restore();
   };
   paintCanvas(scene, key, W, H, (ctx) => {
     draw(ctx, 0, true); // frame p0（WAKE_FRAME_V）
@@ -161,12 +157,13 @@ function paintFlameFrame(ctx: CanvasRenderingContext2D, top: number, frame: numb
   ctx.fillRect(0, top, S, S);
 }
 
-/** Boot で 1 回: 水柱・砲口炎・火球（爆発の輪と同じ寸法）・航跡 2 枚・炎（S3c） */
+/** Boot で 1 回: 水柱・砲口炎・火球・油の輪（S4）（爆発の輪と同じ寸法）・航跡 2 枚・炎（S3c） */
 export function generateFxTextures(scene: Phaser.Scene): void {
   const k = RENDER_SCALE;
   const d = discTexSize(EXPLOSION_RING_RADIUS_UNITS, k, 8).w;
   const R = EXPLOSION_RING_RADIUS_UNITS * k;
-  paintSplash(scene, d, R);
+  paintPixels(scene, TEXTURE_KEYS.splash, d, splashPixels(d, R, ART_SEED_FX));
+  paintPixels(scene, TEXTURE_KEYS.oilSlick, d, slickPixels(d, R, ART_SEED_FX));
   paintMuzzleFlash(scene, d, R);
   paintFireball(scene, d, R);
   paintWake(scene, TEXTURE_KEYS.wakeBoat, false);

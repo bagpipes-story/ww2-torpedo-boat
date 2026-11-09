@@ -2,13 +2,14 @@
 // 被弾して沈んでいない僚艇、命中して沈んでいない駆逐艦・輸送船、被弾して浮いている米PT、被雷して沈んでいない味方の輸送船）。枠ごとに炎 1 枚（tex-flame・ADD・実秒の正弦でちらつく・
 // 小艇は船幅の 0.8 倍まで）と、共有の煙の玉 FIRE_PUFFS（tex-smoke-puff を暗く tint・風下へ流れて膨らみ 2.5 秒で消える・0.25 秒ごと・尽きたら一番古い玉）。
 // 煙幕と見分ける（R10）: 玉は半径 ≤ 15 m（小艇 9 m）・黒に近い茶灰・α ≤ 0.5。見えない発生源（visible false・α < 0.1）は出さない。玉は持ち主の番号を持ち、持ち主が見えなくなれば
-// 0.3 秒で消す（隠れた敵の位置を指さない＝R26）。沈没の始まり（見えていた発生源の sinking が立ったフレーム）: 泡と油の輪（tex-splash を大きく薄く・3 秒）と、沈んだ所から煙の玉 4 秒。
+// 0.3 秒で消す（隠れた敵の位置を指さない＝R26）。沈没の始まり（見えていた発生源の sinking が立ったフレーム）: 泡と油の輪（S4 から tex-oil-slick＝暗い油膜と縁の光と泡・5 秒）と、沈んだ所から煙の玉 4 秒。
+// S4: 1 つの火災の物は炎 1 ＋ 玉 5（間隔 0.5 秒・寿命 2.4 秒）＝6 まで・玉のプール 12（jp_03 ハードの見える物の門 ≤ +40）。
 // §7: 確保は constructor だけ（Image・型付き配列・発生源の読み口）。update は読んで書くだけ。論理の状態には書かない（art-rules）。乱数は絵だけ（ART_SEED_FX + 1）。
 import type Phaser from 'phaser';
 import { assignFireSlots, flameDiameterM, flameFlicker, puffAlpha, puffMaxRadiusM, puffRadiusM } from '../assets/fire-shape';
 import {
   ADD_DEPTH_STEP, ART_SEED_FX, BLEND_ADD, FIRE_ALLY_SHIP_BEAM_M, FIRE_DRIFT_DEG, FIRE_DRIFT_MPS, FIRE_PUFF_INTERVAL_S, FIRE_PUFF_JITTER_SHARE, FIRE_PUFF_LIFE_S, FIRE_PUFFS, FIRE_SMOKE_DEPTH, FIRE_SMOKE_TINT,
-  FIRE_SOURCES, FLAME_BODY_SHARE, FLAME_FRAME_S, FLAME_TEX_PX, SINK_PLUME_S, SINK_RING_ALPHA, SINK_RING_DEPTH, SINK_RING_RADIUS_M, SINK_RING_S, SINK_RING_TINT, SINK_RINGS,
+  FIRE_SOURCES, FLAME_BODY_SHARE, FLAME_FRAME_S, FLAME_TEX_PX, SINK_PLUME_S, SINK_RING_ALPHA, SINK_RING_DEPTH, SINK_RING_HOLD_SHARE, SINK_RING_RADIUS_M, SINK_RING_S, SINK_RINGS,
 } from '../config/fx-art-config';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { RENDERER_WEBGL } from '../config/sea-art-config';
@@ -105,7 +106,7 @@ export class FireFx {
       this.phase[s] = this.rng.nextRange(0, Math.PI * 2);
     }
     for (let i = 0; i < FIRE_PUFFS; i++) this.puffs.push(scene.add.image(0, 0, TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT).setDepth(FIRE_SMOKE_DEPTH).setVisible(false));
-    for (let i = 0; i < SINK_RINGS; i++) this.rings.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setTint(SINK_RING_TINT).setDepth(SINK_RING_DEPTH).setVisible(false));
+    for (let i = 0; i < SINK_RINGS; i++) this.rings.push(scene.add.image(0, 0, TEXTURE_KEYS.oilSlick).setDepth(SINK_RING_DEPTH).setVisible(false));
   }
 
   /** 毎フレーム（world-art から。船体の絵の同期の後＝このフレームの位置と見え方） */
@@ -205,7 +206,7 @@ export class FireFx {
         img.setVisible(false);
         continue;
       }
-      img.setScale(this.ringR[r]! * (0.4 + 0.6 * (1 - (1 - t) * (1 - t))) * this.ringPerM).setAlpha(SINK_RING_ALPHA * (1 - t));
+      img.setScale(this.ringR[r]! * (0.4 + 0.6 * (1 - (1 - t) * (1 - t))) * this.ringPerM).setAlpha(SINK_RING_ALPHA * Math.min(1, (1 - t) / (1 - SINK_RING_HOLD_SHARE)));
     }
   }
 

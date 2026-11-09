@@ -25,7 +25,7 @@ export class WorldArt {
   private readonly coast: CoastFx;
 
   constructor(scene: Phaser.Scene, w: ArtWorldView) {
-    this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false);
+    this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
     this.wake = new WakeFx(scene, w);
     this.explosions = new ExplosionFx(scene);
     registerExplosionFx(this.explosions); // 世界の作成前・破棄後の playExplosion は何もしない（R12）

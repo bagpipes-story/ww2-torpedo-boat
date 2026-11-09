@@ -8,6 +8,7 @@
 // - 光（dark・half・full・day）の tint と α、夜明けの段（WorldDawn.lightStep。0〜16）で昼の値へ。段が変わった時だけ書く。
 // - 夜明けの光: setScrollFactor(0) の Image を画面より各辺 3% 大きく（揺れの縁）、深さは海の模様の直上＝陸・艇・艦・字の下（R3）。α ＝ 0.22 × sin(π × 段/16)（R4）。ズームが変わった時だけ大きさを書く。
 // - きらめき: 世界の座標に N 個。画面＋余白の外へ出たら反対側へ（横ずれは絵だけの乱数 ART_SEED_GLINT＝世界の絵を作る時に new。R30）。ゆっくり明滅（R9）。昼（whitecaps）は白い泡の色。
+// - S4: 波頭の群れ・きらめき（白波）は世界の内（0〜幅 × 0〜高さ）に収まる所だけ出す（S3c までは世界の縁の外の、格子の無い海にも出ていた）。
 // §7: 確保は constructor だけ。update は読んで書くだけ（配列・オブジェクトを作らない）。論理の状態には書かない（art-rules）。
 import type Phaser from 'phaser';
 import { dawnGlowAlpha, glintBlink, mixRgb, SEA_TILE_TEX_PX, seaCellInto, wrapInto } from '../assets/sea-shape';
@@ -24,18 +25,28 @@ import type { MoonPhase } from '../core/visibility';
 
 type View = { readonly x: number; readonly y: number; readonly width: number; readonly height: number; readonly right: number; readonly bottom: number };
 
+/** 世界の大きさ m と、絵 1 つの半分の幅・高さ m（世界の内に収まる所だけ出す） */
+interface DriftBox {
+  readonly bw: number;
+  readonly bh: number;
+  readonly hw: number;
+  readonly hh: number;
+}
+
 /**
  * 世界の座標に置いた Image の輪（きらめき・波頭の群れ）: 画面を cols × rows の升に分け、i 番は升 (i % cols, floor(i / cols)) の中の乱数の位置に置く（偏らない）。
- * 画面＋余白の外へ出たら反対側へ。横切った軸と直交する向きは自分の行（列）の帯の内で引き直す＝動き回ってもおおむね升に 1 つ
+ * 画面＋余白の外へ出たら反対側へ。横切った軸と直交する向きは自分の行（列）の帯の内で引き直す＝動き回ってもおおむね升に 1 つ。
+ * 置いた所が世界の内に収まらなければ隠す（S4。見え方が変わった時だけ setVisible）
  */
 class DriftPool {
   readonly imgs: Phaser.GameObjects.Image[] = [];
   private readonly xs: Float32Array;
   private readonly ys: Float32Array;
   private readonly rows: number;
+  private on = false;
   placed = false;
 
-  constructor(n: number, private readonly cols: number, private readonly marginM: number, make: (i: number) => Phaser.GameObjects.Image) {
+  constructor(n: number, private readonly cols: number, private readonly marginM: number, private readonly box: DriftBox, make: (i: number) => Phaser.GameObjects.Image) {
     this.xs = new Float32Array(n);
     this.ys = new Float32Array(n);
     this.rows = Math.max(1, Math.ceil(n / cols));
@@ -57,6 +68,7 @@ class DriftPool {
         this.xs[i] = this.stratX(i, v, rng);
         this.ys[i] = this.stratY(i, v, rng);
         this.imgs[i]!.setPosition(this.xs[i]!, this.ys[i]!);
+        this.apply(i);
       }
       return;
     }
@@ -70,11 +82,23 @@ class DriftPool {
       this.xs[i] = x1 !== x0 ? x1 : this.stratX(i, v, rng);
       this.ys[i] = y1 !== y0 ? y1 : this.stratY(i, v, rng);
       this.imgs[i]!.setPosition(this.xs[i]!, this.ys[i]!);
+      this.apply(i);
     }
   }
 
+  /** i 番の見え方: 出す時（on）で、置いた所が世界の内に収まる時だけ */
+  private apply(i: number): void {
+    const b = this.box;
+    const x = this.xs[i]!;
+    const y = this.ys[i]!;
+    const v = this.on && x - b.hw >= 0 && x + b.hw <= b.bw && y - b.hh >= 0 && y + b.hh <= b.bh;
+    const img = this.imgs[i]!;
+    if (img.visible !== v) img.setVisible(v);
+  }
+
   setVisibleAll(on: boolean): void {
-    for (const g of this.imgs) g.setVisible(on);
+    this.on = on;
+    for (let i = 0; i < this.imgs.length; i++) this.apply(i);
   }
 
   destroy(): void {
@@ -105,7 +129,7 @@ export class SeaFx {
   private t = 0;
   private glintBase = 0;
 
-  constructor(scene: Phaser.Scene, moon: MoonPhase, dayStart: boolean) {
+  constructor(scene: Phaser.Scene, moon: MoonPhase, dayStart: boolean, bounds: { readonly width: number; readonly height: number }) {
     this.cam = scene.cameras.main;
     this.light = SEA_LIGHT_ART[moon];
     this.dayStart = dayStart;
@@ -115,13 +139,13 @@ export class SeaFx {
     const k = 1 / SEA_ART_PX_PER_M;
     this.patches = tileMode
       ? null
-      : new DriftPool(SEA_PATCH_COUNT, SEA_PATCH_COLS, (SEA_PATCH_W_PX * k) / 2, (i) =>
+      : new DriftPool(SEA_PATCH_COUNT, SEA_PATCH_COLS, (SEA_PATCH_W_PX * k) / 2, { bw: bounds.width, bh: bounds.height, hw: (SEA_PATCH_W_PX * k) / 2, hh: (SEA_PATCH_H_PX * k) / 2 }, (i) =>
           scene.add.image(0, 0, TEXTURE_KEYS.seaTile, `p${i % SEA_PATCH_FRAMES}`).setDepth(SEA_ART_DEPTH).setScale(k).setFlipX(i % 2 === 1).setVisible(false),
         );
     this.glow = scene.add.image(0, 0, TEXTURE_KEYS.dawnGlow).setScrollFactor(0).setOrigin(1, 0.5).setDepth(DAWN_GLOW_DEPTH).setVisible(false);
     const n = this.light.glints;
     const color = this.light.whitecaps ? WHITECAP_COLOR : GLINT_COLOR;
-    this.glints = new DriftPool(n, GLINT_COLS, GLINT_W_M, () => scene.add.image(0, 0, TEXTURE_KEYS.glint).setDepth(GLINT_DEPTH).setScale(GLINT_W_M / GLINT_TEX_W, GLINT_H_M / GLINT_TEX_H).setTint(color).setVisible(false));
+    this.glints = new DriftPool(n, GLINT_COLS, GLINT_W_M, { bw: bounds.width, bh: bounds.height, hw: GLINT_W_M / 2, hh: GLINT_H_M / 2 }, () => scene.add.image(0, 0, TEXTURE_KEYS.glint).setDepth(GLINT_DEPTH).setScale(GLINT_W_M / GLINT_TEX_W, GLINT_H_M / GLINT_TEX_H).setTint(color).setVisible(false));
     this.gPeriod = new Float32Array(n);
     this.gPhase = new Float32Array(n);
     for (let i = 0; i < n; i++) {
