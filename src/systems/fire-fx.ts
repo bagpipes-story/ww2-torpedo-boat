@@ -5,6 +5,7 @@
 // 0.3 秒で消す（隠れた敵の位置を指さない＝R26）。沈没の始まり（見えていた発生源の sinking が立ったフレーム）: 泡と油の輪（S4 から tex-oil-slick＝暗い油膜と縁の光と泡・5 秒）と、沈んだ所から煙の玉 4 秒。
 // S4: 1 つの火災の物は炎 1 ＋ 玉 5（間隔 0.5 秒・寿命 2.4 秒）＝6 まで・玉のプール 12（jp_03 ハードの見える物の門 ≤ +40）。
 // §7: 確保は constructor だけ（Image・型付き配列・発生源の読み口）。update は読んで書くだけ。論理の状態には書かない（art-rules）。乱数は絵だけ（ART_SEED_FX + 1）。
+// IP1b（U3）: 玉 12 → 30（1 つの火災は炎 1 ＋ 玉 11）・煙の柱 4 → 7 秒・燃えている間の火の粉（fx-bus → spark-fx）・沈没の始まりで沈没の段（systems/sink-fx: 2 次の爆発・艦の上の炎・泡）。
 import type Phaser from 'phaser';
 import { assignFireSlots, flameDiameterM, flameFlicker, puffAlpha, puffMaxRadiusM, puffRadiusM } from '../assets/fire-shape';
 import {
@@ -17,8 +18,11 @@ import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
 import { SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
 import { PT_FATE_SUNK } from '../core/pt-state';
 import { SeededRng } from '../core/rng';
+import { EMBER_INTERVAL_S } from '../config/blast-art-config';
+import { emitEmber } from './fx-bus';
+import type { SinkFx } from './sink-fx';
 
-type Img = { readonly visible: boolean; readonly alpha: number; readonly displayWidth: number };
+type Img = { readonly visible: boolean; readonly alpha: number; readonly displayWidth: number; readonly displayHeight: number; readonly rotation: number };
 type Pos = { readonly x: number; readonly y: number };
 
 /** 世界から読む物（MissionWorld がそのまま満たす。world-art の ArtWorldView に入る） */
@@ -38,6 +42,9 @@ interface Probe {
   visible: boolean;
   x: number;
   y: number;
+  /** 艇首の向き（絵の rotation・ラジアン）と船体の長さ m（沈没の段の置く所。IP1b） */
+  rot: number;
+  lenM: number;
   readonly beamM: number;
   readonly ship: boolean;
   read(): void;
@@ -54,6 +61,7 @@ export class FireFx {
   private readonly slotOf: Int16Array;
   private readonly probeOf = new Int16Array(FIRE_SOURCES).fill(-1);
   private readonly emitIn = new Float32Array(FIRE_SOURCES);
+  private readonly emberIn = new Float32Array(FIRE_SOURCES);
   private readonly phase = new Float32Array(FIRE_SOURCES);
   private readonly prevSink: Uint8Array;
   private readonly prevVis: Uint8Array;
@@ -78,18 +86,18 @@ export class FireFx {
   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
   private readonly ringPerM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
 
-  constructor(scene: Phaser.Scene, w: FireWorldView) {
+  constructor(scene: Phaser.Scene, w: FireWorldView, private readonly sink: SinkFx) {
     const P = this.probes;
     const b = w.boat;
     const d = w.damage;
-    P.push(probe(b.sprite.displayWidth, false, (p) => set(p, d.fireLeftS > 0 && d.hp > 0, b.sinking, shown(b.sprite), b.state)));
+    P.push(probe(b.sprite.displayWidth, false, (p) => set(p, d.fireLeftS > 0 && d.hp > 0, b.sinking, shown(b.sprite), b.state, b.sprite)));
     const e = w.escort;
-    if (e) P.push(probe(e.sprite.displayWidth, false, (p) => set(p, e.state.hits > 0 && !e.state.sunk, e.state.sunk, shown(e.sprite), e.state.boat)));
-    if (w.destroyers) for (const s of w.destroyers.ships) P.push(probe(s.sprite.displayWidth, true, (p) => set(p, s.hitsTaken > 0 && !s.sinking, s.sinking, shown(s.sprite), s.state)));
+    if (e) P.push(probe(e.sprite.displayWidth, false, (p) => set(p, e.state.hits > 0 && !e.state.sunk, e.state.sunk, shown(e.sprite), e.state.boat, e.sprite)));
+    if (w.destroyers) for (const s of w.destroyers.ships) P.push(probe(s.sprite.displayWidth, true, (p) => set(p, s.hitsTaken > 0 && !s.sinking, s.sinking, shown(s.sprite), s.state, s.sprite)));
     const pts = w.pts;
-    if (pts) pts.section.boats.forEach((pb, i) => P.push(probe(pts.sprites[i]!.displayWidth, false, (p) => set(p, pb.hitsTaken > 0 && pb.hp > 0 && pb.fate !== PT_FATE_SUNK, false, shown(pts.sprites[i]!), pb))));
+    if (pts) pts.section.boats.forEach((pb, i) => P.push(probe(pts.sprites[i]!.displayWidth, false, (p) => set(p, pb.hitsTaken > 0 && pb.hp > 0 && pb.fate !== PT_FATE_SUNK, false, shown(pts.sprites[i]!), pb, pts.sprites[i]!))));
     const ld = w.landing;
-    if (ld) P.push(probe(FIRE_ALLY_SHIP_BEAM_M, true, (p) => set(p, ld.state.hits > 0 && !ld.state.sinking, ld.state.sinking, true, ld.state)));
+    if (ld) P.push(probe(FIRE_ALLY_SHIP_BEAM_M, true, (p) => set(p, ld.state.hits > 0 && !ld.state.sinking, ld.state.sinking, true, ld.state, null)));
     const n = P.length;
     this.active = new Uint8Array(n);
     this.slotOf = new Int16Array(n).fill(-1);
@@ -137,6 +145,7 @@ export class FireFx {
     this.ringAge[r] = 0;
     this.ringR[r] = SINK_RING_RADIUS_M[p.ship ? 0 : 1];
     this.rings[r]!.setPosition(p.x, p.y).setAlpha(SINK_RING_ALPHA).setVisible(true);
+    this.sink.start(p.x, p.y, p.rot, p.lenM, p.beamM, p.ship);
   }
 
   private updateSlot(s: number, dt: number): void {
@@ -156,6 +165,11 @@ export class FireFx {
       if (f.frame.name !== frame) f.setFrame(frame);
       f.setPosition(x, y).setScale((flameDiameterM(p.beamM) / FLAME_BODY_SHARE / FLAME_TEX_PX) * this.flick[1]!).setAlpha(this.flick[0]!).setAngle((this.phase[s]! * 180) / Math.PI);
       if (!f.visible) f.setVisible(true);
+      this.emberIn[s] = this.emberIn[s]! - dt;
+      if (p.visible && this.emberIn[s]! <= 0) {
+        this.emberIn[s] = EMBER_INTERVAL_S;
+        emitEmber(x, y);
+      }
     } else if (f.visible) f.setVisible(false);
     this.emitIn[s] = this.emitIn[s]! - dt;
     if (this.emitIn[s]! > 0) return;
@@ -221,14 +235,18 @@ export class FireFx {
 }
 
 function probe(beamM: number, ship: boolean, read: (p: Probe) => void): Probe {
-  const p: Probe = { burning: false, sink: false, visible: false, x: 0, y: 0, beamM, ship, read: () => read(p) };
+  const p: Probe = { burning: false, sink: false, visible: false, x: 0, y: 0, rot: 0, lenM: beamM * 4, beamM, ship, read: () => read(p) };
   return p;
 }
 
-function set(p: Probe, burning: boolean, sink: boolean, visible: boolean, at: Pos): void {
+function set(p: Probe, burning: boolean, sink: boolean, visible: boolean, at: Pos, img: Img | null): void {
   p.burning = burning;
   p.sink = sink;
   p.visible = visible;
   p.x = at.x;
   p.y = at.y;
+  if (img && !sink) {
+    p.rot = img.rotation;
+    p.lenM = img.displayHeight;
+  }
 }

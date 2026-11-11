@@ -72,6 +72,7 @@ export class AllyDestroyerView {
   fired(x: number, y: number): void {
     this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
     this.flashAge = 0;
+    this.splashes.muzzle(x, y, true); // 砲口の火花と硝煙（v0.7.0 IP1b。見た目だけ）
   }
 
   /** 着弾（core の AllyFx。固定ステップの中）: 水柱（生きた PT に当たれば橙で大きく） */

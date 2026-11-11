@@ -156,7 +156,7 @@ describe('探照灯・星弾・煙幕の絵（S3c。R2・R32。鍵・寸法・�
 describe('炎と煙（S3c。R10・R26）', () => {
   it('枠の選び方: 燃えている発生源を決まった順で空いた枠へ、続く発生源は同じ枠、上限 FIRE_SOURCES、消えたら空ける', () => {
     expect(FIRE_SOURCES).toBe(6);
-    expect(FIRE_PUFFS).toBe(12); // S4: 16 → 12（tests/fx-art-s4）
+    expect(FIRE_PUFFS).toBe(30); // S4: 16 → 12（tests/fx-art-s4）・IP1b: 12 → 30（U3。tests/fx-art-ip1b）
     const n = 9;
     const active = new Uint8Array(n);
     const slotOf = new Int16Array(n).fill(-1);
@@ -287,7 +287,8 @@ describe('岸の帯（S3c。R16・R24）', () => {
     expect(s).toContain('.setFlip(bob.flipX, flipY)');
     expect(s).toContain('ensureCoastStripTexture(scene);');
     const wa = read('src/systems/world-art.ts');
-    for (const line of ['this.fire = new FireFx(scene, w);', 'this.coast = new CoastFx(scene, w.setup);', 'this.fire.update(realDt);', 'this.fire.destroy();', 'this.coast.destroy();']) expect(wa).toContain(line);
+    for (const line of ['this.fire = new FireFx(scene, w, this.sink);', // IP1b: 沈没の段（sink-fx）を渡す
+       'this.coast = new CoastFx(scene, w.setup);', 'this.fire.update(realDt);', 'this.fire.destroy();', 'this.coast.destroy();']) expect(wa).toContain(line);
   });
   it('新しい・触ったファイルは 300 行以下', () => {
     for (const f of ['src/assets/light-shape.ts', 'src/assets/light-art.ts', 'src/assets/fire-shape.ts', 'src/assets/coast-shape.ts', 'src/systems/fire-fx.ts', 'src/systems/coast-fx.ts', 'src/systems/world-art.ts', 'src/assets/fx-art.ts', 'src/assets/sea-art.ts', 'src/assets/placeholders.ts', 'src/config/fx-art-config.ts', 'src/config/sea-art-config.ts', 'src/config/game-config.ts']) {

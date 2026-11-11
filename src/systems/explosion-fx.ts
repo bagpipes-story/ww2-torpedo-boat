@@ -4,6 +4,8 @@
 // 小さい版（dud＝魚雷の不発・自艇の小さな被弾・僚艇の被弾・座礁）: 小さな閃光（0.1 秒）＋灰の輪（0.2 → 0.6）＋暗い玉 1 つ（tex-smoke-puff を暗く・半径 ≤ 15 m）。水柱は出さない（R11）。
 // 5 つ目は一番古い枠を使い回す。毎回の new と tween をやめた（§7）。ADD の 2 部品は深さ ＋0.01 にまとめる（R25）。Canvas レンダラーでは ADD を使わない（通常の重ね）。
 // 持ち主は world-art（世界の作成時に作り、mission-effects に登録し、破棄で外す＝R12）。§7: 確保は constructor だけ。update は読んで書くだけ。
+// IP1b（U3「もっと派手な演出、数でも大丈夫」）: 枠 4 → 6・閃光と火球と水柱を大きく長く、同じ枠の番号で 2 段目（systems/blast-fx: 2 つ目の閃光・2 つ目の火球・水柱の柱・水面の衝撃波・
+//   爆発の煙）と破片の火花・水滴（systems/spark-fx）を出す。沈没の段の 2 次の爆発（sink-fx から secondary）は 2 段目だけ（輪なし＝結果の印にしない）。
 import type Phaser from 'phaser';
 import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, partFade, partGrow, slotLifeS } from '../assets/fx-shape';
 import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
@@ -12,6 +14,8 @@ import {
   EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, FIRE_SMOKE_TINT,
 } from '../config/fx-art-config';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { BlastFx } from './blast-fx';
+import type { SparkFx } from './spark-fx';
 import { RENDERER_WEBGL } from '../config/sea-art-config';
 import { EXPLOSION_DURATION_MS, EXPLOSION_SCALE_DUD, EXPLOSION_SCALE_FROM, EXPLOSION_SCALE_HIT, EXPLOSION_TINT_DUD, EXPLOSION_TINT_HIT, SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
 
@@ -31,8 +35,11 @@ export class ExplosionFx {
   /** テクスチャの半径（爆発の輪と同じ 40 単位）→ 世界の半径 m の scale */
   private readonly perM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
+  /** 2 段目（IP1b。同じ枠の番号） */
+  private readonly blast: BlastFx;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, sparks: SparkFx) {
+    this.blast = new BlastFx(scene, sparks);
     const add = scene.sys.game.renderer.type === RENDERER_WEBGL;
     const light = DEPTH.effects + ADD_DEPTH_STEP;
     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
@@ -64,10 +71,17 @@ export class ExplosionFx {
     else wet.setTexture(TEXTURE_KEYS.splash).setTint(NO_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
     wet.setVisible(true);
     this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
+    this.blast.play(i, x, y, dud);
+  }
+
+  /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
+  secondary(x: number, y: number): void {
+    this.blast.secondary(x, y);
   }
 
   /** 毎フレーム（world-art から。realDt は見た目の時計）: 部品ごとに膨らみと薄れ、寿命が尽きた部品から隠す。枠の寿命で枠を閉じる */
   update(realDt: number): void {
+    this.blast.update(realDt);
     const pm = this.perM;
     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
       const a0 = this.age[i]!;
@@ -117,5 +131,6 @@ export class ExplosionFx {
       this.wet[i]!.destroy();
       this.ring[i]!.destroy();
     }
+    this.blast.destroy();
   }
 }

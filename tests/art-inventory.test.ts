@@ -69,6 +69,8 @@ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
   'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx', 'tex-wake-puff': 'fx',
   'tex-sea-tile': 'fx', 'tex-dawn-glow': 'fx', 'tex-glint': 'fx', 'tex-coast-strip': 'fx',
   'tex-oil-slick': 'fx', // S4（spec の D2 の外。沈没の油の輪が水柱の絵の流用で星形に見えた＝独立の見え方の検査の指摘）
+  'tex-spark': 'fx', 'tex-shockwave': 'fx', // IP1b（U3「もっと派手な演出」: 火花・水滴と水面の衝撃波）
+  'tex-shore-battery': 'redraw-new', 'tex-shore-gun': 'redraw-new', // IP1b（U4「沿岸砲もリメイク」: 平らな赤い四角＝Graphics の塗りを絵に。鍵は新しい＝v0.6.11 は Graphics で鍵なし）
 };
 /** 艇の絵の鍵（Boot が遊べる任務の自艇・僚艇・隼艇から作る 5 枚） */
 const BOAT_IDS = ['jp_h38_hayabusa', 'jp_t14', 'jp_t38', 'us_elco77', 'us_elco80'];

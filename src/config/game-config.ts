@@ -235,4 +235,8 @@ export const TEXTURE_KEYS = {
   flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
   coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
   oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
+  spark: 'tex-spark', // 火花と水滴 32×12 の frame 2 枚（v0.7.0 IP1b。p0＝火の筋・p1＝丸い水滴。assets/fx-art・systems/spark-fx）
+  shockwave: 'tex-shockwave', // 水面の衝撃波の輪 128×128（v0.7.0 IP1b。systems/blast-fx）
+  shoreBattery: 'tex-shore-battery', // 沿岸砲の砲台（真上から。v0.7.0 IP1b＝U4。assets/battery-art が初めて使う時に 1 回。systems/shore-battery）
+  shoreGun: 'tex-shore-gun', // 沿岸砲の砲（防盾と砲身。回る。v0.7.0 IP1b）
 } as const;

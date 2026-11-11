@@ -60,6 +60,7 @@ export class WorldArms extends ArmsStep {
     if (!this.flashImg) return;
     this.flashImg.setPosition(x, y).setAlpha(1).setVisible(true);
     this.flashAge = 0;
+    this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
   }
 
   protected override fxSplash(x: number, y: number, hit: boolean): void {

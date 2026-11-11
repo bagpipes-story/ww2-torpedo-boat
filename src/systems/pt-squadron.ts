@@ -87,7 +87,7 @@ export class PtSquadron {
     onCommit: (i) => this.targets?.onCommit(i),
     onFire: (_i, x, y) => {
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
-      this.flashAge = 0;
+      this.flashAge = 0; this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ。300 行のまま）
     },
     onImpact: (x, y, hit, hull) => {
       if (!hit) {

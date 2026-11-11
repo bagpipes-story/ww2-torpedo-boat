@@ -57,6 +57,7 @@ export class EnemyFire {
       this.shotsFired++;
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
       this.flashAge = 0;
+      this.splashes.muzzle(x, y, true); // 砲口の火花と硝煙（v0.7.0 IP1b。見た目だけ）
     },
     onImpact: (gunIndex, x, y, hit) => {
       this.splashes.splash(x, y, hit);

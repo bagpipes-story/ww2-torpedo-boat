@@ -35,6 +35,7 @@ export class PtGun {
     onFire: (x, y) => {
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
       this.flashAge = 0;
+      this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
     },
     // 生きた PT に当たった（gun-battery は ptLive の PT にだけ当てる）: 1 回引いて撃退・撃沈を決め、結末が変わったら絵を持つ側へ
     onHit: (i, group, x, y) => {

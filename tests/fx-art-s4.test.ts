@@ -28,7 +28,7 @@ const D = Math.ceil(40 * 2 * K) + 8;
 
 describe('火災の物の上限（S4。jp_03 ハードの見える物 ≤ +40）', () => {
   it('1 つの火災は炎 1 ＋ 玉 5 ＝ 6 まで（fire-fx と同じ順: 出す → 年を足す → 寿命で消す。60 fps で 10 秒）、玉のプール 12', () => {
-    expect(FIRE_PUFFS).toBe(12);
+    expect(FIRE_PUFFS).toBe(30); // IP1b（U3）: 12 → 30・1 つの火災は炎 1 ＋ 玉 11 ＝ 12（FIRE_OBJECTS_PER_SOURCE。tests/fx-art-ip1b）
     expect(1 + Math.ceil(FIRE_PUFF_LIFE_S / FIRE_PUFF_INTERVAL_S)).toBeLessThanOrEqual(FIRE_OBJECTS_PER_SOURCE);
     const dt = 1 / 60;
     const ages: number[] = [];

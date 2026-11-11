@@ -5,11 +5,14 @@
 //   砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
 // - tex-oil-slick（S4）: 沈没の油の輪＝暗い不揃いな油膜＋縁の鈍い光＋中の泡（色を焼く・tint しない。splash-shape）。爆発の輪と同じ寸法。
 // - tex-wake-puff（IP1a）: 航跡の尾の泡＝横の断面が中央は薄く両側が白い帯（広がると両側が分かれて V の腕に見える）・縦は両端へ柔らかい。p1＝静音の小さな泡。画素の式は assets/wake-shape。
+// - tex-spark・tex-shockwave（IP1b。U3「もっと派手な演出」）: 火花の筋と丸い水滴（32×12 の frame 2 枚）・水面の衝撃波の白い輪（128×128）。画素の式は assets/blast-shape。k に依らない固定の px。
+//   砲口炎は IP1b で光芒 8 → 12 本・芯を大きく（明るく）。
 // - tex-flame（S3c）: 真上から見た炎（向きの陰影なし）＝白黄の芯・橙の舌 7 本（半径の 0.5 まで）・外へ薄い赤い光の暈。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
 // - tex-wake-boat・tex-wake-ship: 艇尾を頂点にした V（半角 19.5°。R7: 腕が主・中央の泡は短く薄い）。frame p0＝V、p1＝泡だけ（自艇の静音＝R1）。k に依らない固定の px（96×128）。
 //   S4: 腕は 1 枚の細る台形を長さ方向のグラデーションで塗る（8 区切りの線の丸い端が重なって玉の列に見え、端で切れていた）・frame ごとに枠で切る（p1 の泡が p0 の端に漏れて離れた点に見えた）。
 import type Phaser from 'phaser';
 import { EXPLOSION_RING_RADIUS_UNITS, discTexSize } from './art-dims';
+import { shockwavePixels, sparkPixels } from './blast-shape';
 import { flameTongues } from './fire-shape';
 import { muzzleRays } from './fx-shape';
 import { paintCanvas } from './sea-art';
@@ -21,6 +24,7 @@ import {
 } from '../config/fx-art-config';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { ART_SEED_WAKE, WAKE_PUFF_TEX_H, WAKE_PUFF_TEX_W } from '../config/wake-art-config';
+import { SHOCK_TEX_PX, SHOCK_TEX_RING_PX, SHOCK_TEX_WIDTH_PX, SPARK_TEX_H, SPARK_TEX_W } from '../config/blast-art-config';
 
 function white(a: number): string {
   return `rgba(255,255,255,${a})`;
@@ -47,8 +51,8 @@ function paintPixels(scene: Phaser.Scene, key: string, d: number, px: Uint8Clamp
 function paintMuzzleFlash(scene: Phaser.Scene, d: number, R: number): void {
   paintCanvas(scene, TEXTURE_KEYS.muzzleFlash, d, d, (ctx) => {
     const c = d / 2;
-    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.6, [[0, 1], [0.5, 0.8], [1, 0]]);
-    ctx.fillStyle = white(0.9);
+    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.7, [[0, 1], [0.35, 0.95], [0.6, 0.6], [1, 0]]);
+    ctx.fillStyle = white(0.95);
     for (const r of muzzleRays()) {
       const L = r.len * R;
       const hw = MUZZLE_RAY_HALF_W * R;
@@ -180,4 +184,10 @@ export function generateFxTextures(scene: Phaser.Scene): void {
     paintFlameFrame(ctx, 0, 0);
     paintFlameFrame(ctx, FLAME_TEX_PX, 1);
   }, 2);
+  paintCanvas(scene, TEXTURE_KEYS.spark, SPARK_TEX_W, SPARK_TEX_H, (ctx) => {
+    const img = ctx.createImageData(SPARK_TEX_W, SPARK_TEX_H * 2);
+    img.data.set(sparkPixels(SPARK_TEX_W, SPARK_TEX_H));
+    ctx.putImageData(img, 0, 0);
+  }, 2);
+  paintPixels(scene, TEXTURE_KEYS.shockwave, SHOCK_TEX_PX, shockwavePixels(SHOCK_TEX_PX, SHOCK_TEX_RING_PX, SHOCK_TEX_WIDTH_PX));
 }

@@ -91,7 +91,7 @@ describe('航跡の式（assets/fx-shape。R1・R7）', () => {
 
 describe('爆発のプール（R11・R12・D7）と絵の置き方', () => {
   it('枠 4 × 部品 4 ＝ 16、小さい版は水柱なし（暗い玉 ≤ 15 m）、閃光 0.15／0.1 秒、火球 0.5 秒、水柱 0.8 秒、枠の寿命は部品の最大', () => {
-    expect(EXPLOSION_SLOTS * EXPLOSION_PARTS).toBe(16);
+    expect(EXPLOSION_SLOTS * EXPLOSION_PARTS).toBe(24); // IP1b（U3）: 枠 4 → 6（2 段目の部品は blast-fx＝tests/fx-art-ip1b）
     expect(EXPLOSION_PUFF_RADIUS_M).toBeLessThanOrEqual(FIRE_SMOKE_MAX_RADIUS_M);
     expect(flashLifeS(false)).toBe(EXPLOSION_FLASH_S);
     expect(flashLifeS(true)).toBe(EXPLOSION_SMALL_FLASH_S);

@@ -80,6 +80,7 @@ export class BargeHunt {
     onFire: (x, y) => {
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
       this.flashAge = 0;
+      this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
     },
     onHit: (i, group, x, y) => {
       this.splashes.splash(x, y, true);

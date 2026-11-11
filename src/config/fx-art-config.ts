@@ -43,21 +43,21 @@ export const WAKE_CENTER_ALPHA = 0.55;
 export const WAKE_SHIP_ARM_WIDTH_PX: readonly [number, number] = [5, 16];
 export const WAKE_SHIP_CENTER_WIDTH_PX = 22;
 
-/** 爆発（R11・R12）: 枠の数 × 1 枠の物（閃光・火球・水柱／暗い玉・輪）。5 つ目は一番古い枠を使い回す */
-export const EXPLOSION_SLOTS = 4;
+/** 爆発（R11・R12）: 枠の数 × 1 枠の物（閃光・火球・水柱／暗い玉・輪）。尽きたら一番古い枠を使い回す。IP1b（U3）: 枠 4 → 6・閃光 70 → 100 m／0.15 → 0.2 秒・火球 36 → 64 m／0.5 → 1.1 秒・水柱 44 → 58 m／0.8 → 1.05 秒・小さい閃光 30 → 40 m（2 段目は config/blast-art-config） */
+export const EXPLOSION_SLOTS = 6;
 export const EXPLOSION_PARTS = 4;
 /** 爆発の部品の寿命 秒（輪は ui-config の EXPLOSION_DURATION_MS のまま）: 大きい版の閃光・小さい版の閃光（R11）・火球・水柱・小さい版の暗い玉 */
-export const EXPLOSION_FLASH_S = 0.15;
-export const EXPLOSION_SMALL_FLASH_S = 0.1;
-export const EXPLOSION_FIRE_S = 0.5;
-export const EXPLOSION_SPLASH_S = 0.8;
+export const EXPLOSION_FLASH_S = 0.2;
+export const EXPLOSION_SMALL_FLASH_S = 0.12;
+export const EXPLOSION_FIRE_S = 1.1;
+export const EXPLOSION_SPLASH_S = 1.05;
 export const EXPLOSION_PUFF_S = 0.6;
 /** 爆発の部品の世界の半径 m（テクスチャの半径 40 単位＝爆発の輪と同じ寸法に対する scale に直す）: 閃光（大・小）・火球（膨らみの始まりの割合つき）・水柱（同）・暗い玉（≤ 煙の玉の上限 15 m） */
-export const EXPLOSION_FLASH_RADIUS_M = 70;
-export const EXPLOSION_SMALL_FLASH_RADIUS_M = 30;
-export const EXPLOSION_FIRE_RADIUS_M = 36;
+export const EXPLOSION_FLASH_RADIUS_M = 100;
+export const EXPLOSION_SMALL_FLASH_RADIUS_M = 40;
+export const EXPLOSION_FIRE_RADIUS_M = 64;
 export const EXPLOSION_FIRE_GROW_FROM = 0.35;
-export const EXPLOSION_SPLASH_RADIUS_M = 44;
+export const EXPLOSION_SPLASH_RADIUS_M = 58;
 export const EXPLOSION_SPLASH_GROW_FROM = 0.5;
 export const EXPLOSION_SPLASH_ALPHA = 0.9;
 export const EXPLOSION_PUFF_RADIUS_M = 14;
@@ -100,19 +100,20 @@ export const SLICK_BUBBLES = 7;
 export const SLICK_BUBBLE_SPREAD = 0.5;
 export const SLICK_BUBBLE_R: readonly [number, number] = [0.05, 0.08];
 export const SLICK_BUBBLE_ALPHA = 0.7;
-export const MUZZLE_RAYS = 8;
+export const MUZZLE_RAYS = 12; // IP1b（U3）: 8 → 12 本・芯 0.3 → 0.36・幅 0.07 → 0.08（明るく派手に）
 export const MUZZLE_RAY_LEN: readonly [number, number] = [1.0, 0.55];
-export const MUZZLE_RAY_HALF_W = 0.07;
-export const MUZZLE_CORE_R = 0.3;
+export const MUZZLE_RAY_HALF_W = 0.08;
+export const MUZZLE_CORE_R = 0.36;
 
 /**
  * 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒。
  * S4: 玉のプールは 16 → 12（艦が 2〜3 隻燃えても見える物は炎 3 ＋ 玉 12）。1 つの火災の物は炎 1 ＋ 玉 ceil(寿命/間隔)＝5 ＝ 6 まで（FIRE_OBJECTS_PER_SOURCE。
- * jp_03 ハードの第 4 波で隊長艇が燃えると、S3c の炎 1 ＋ 玉 10 では見える物が基準 +44 になった＝門 ≤ +40 の外）
+ * jp_03 ハードの第 4 波で隊長艇が燃えると、S3c の炎 1 ＋ 玉 10 では見える物が基準 +44 になった＝門 ≤ +40 の外）。
+ * IP1b（U3。門 +150）: 玉のプール 12 → 30・間隔 0.5 → 0.35 秒・寿命 2.4 → 3.6 秒＝1 つの火災は炎 1 ＋ 玉 11 ＝ 12 まで（長く濃い煙の柱）。沈没の煙の柱 4 → 7 秒。半径・α・色は R10 のまま
  */
 export const FIRE_SOURCES = 6;
-export const FIRE_PUFFS = 12;
-export const FIRE_OBJECTS_PER_SOURCE = 6;
+export const FIRE_PUFFS = 30;
+export const FIRE_OBJECTS_PER_SOURCE = 12;
 export const FIRE_SMOKE_MAX_RADIUS_M = 15;
 export const FIRE_SMOKE_MAX_ALPHA = 0.5;
 /** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #82807c＝茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し。S4 で一段明るく＝玉を減らした分、尾が読めるように） */
@@ -130,8 +131,8 @@ export const FLAME_FLICKER_S = 0.37;
 export const FLAME_FRAME_S = 0.11;
 export const FLAME_TONGUES = 7;
 /** 火災の煙の玉: 出す間隔 秒・寿命 秒・膨らみの始まりの割合・小艇の玉の半径の上限 m（艦は FIRE_SMOKE_MAX_RADIUS_M）・風下へ流れる向き（方位 度）と速さ m/実秒・出す所の散らばり（船幅の割合） */
-export const FIRE_PUFF_INTERVAL_S = 0.5;
-export const FIRE_PUFF_LIFE_S = 2.4;
+export const FIRE_PUFF_INTERVAL_S = 0.35;
+export const FIRE_PUFF_LIFE_S = 3.6;
 export const FIRE_PUFF_GROW_FROM = 0.5;
 /** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる。S4 で 0.4 → 0.7＝玉が少なくても尾が濃い） */
 export const FIRE_PUFF_HOLD_SHARE = 0.7;
@@ -145,7 +146,7 @@ export const SINK_RING_S = 5;
 export const SINK_RING_ALPHA = 0.9;
 export const SINK_RING_HOLD_SHARE = 0.4;
 export const SINK_RING_RADIUS_M: readonly [number, number] = [110, 30];
-export const SINK_PLUME_S = 4;
+export const SINK_PLUME_S = 7;
 export const SINK_RING_DEPTH = 3.45;
 /** 味方の輸送船（jp_04。絵は entities/ally-ship の私的な Image）の炎の船幅 m（輸送船の絵の幅 32 単位） */
 export const FIRE_ALLY_SHIP_BEAM_M = 32;

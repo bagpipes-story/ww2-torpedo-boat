@@ -1,8 +1,10 @@
 // 水柱のプール（v0.4.2 で EnemyFire から切り出し。中身は v0.4.1 のまま。v0.7.0 S3b: 絵を輪から tex-splash＝飛沫の絵に。数・寿命・tint・scale はそのまま）: 砲弾・掃射・爆弾・波の叩きつけ・大発の機銃・艇の砲が借りる。
 // §7: 起動時に size 枚作り、置くときは古いものから使い回し、毎フレームは alpha だけ触る。
+// v0.7.0 IP1b（U3「もっと派手な演出」）: 置くたびに飛沫の水滴（外れ 3 粒・命中 6 粒）を、muzzle で砲口の火花（7 か所の閃光の所から）を世界の火花のプール（fx-bus → spark-fx）へ。数・寿命・tint・scale はそのまま。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { SPLASH_LIFETIME_S, SPLASH_TINT_HIT, SPLASH_TINT_MISS } from '../config/ui-config';
+import { emitMuzzle, emitSpray } from './fx-bus';
 
 export class SplashPool {
   private readonly images: Phaser.GameObjects.Image[] = [];
@@ -30,6 +32,12 @@ export class SplashPool {
       .setTint(hit ? SPLASH_TINT_HIT : SPLASH_TINT_MISS)
       .setAlpha(1)
       .setVisible(true);
+    emitSpray(x, y, hit);
+  }
+
+  /** 砲口の火花（見た目だけ。閃光を出す 7 か所から。big＝大砲は火花 4 本と硝煙・機銃は 2 本） */
+  muzzle(x: number, y: number, big: boolean): void {
+    emitMuzzle(x, y, big);
   }
 
   /** 毎フレーム: 寿命で薄くして消す */
