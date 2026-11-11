@@ -1,0 +1,666 @@
+diff --git a/src/assets/fx-art.ts b/src/assets/fx-art.ts
+index 39e2b2a..9b037f0 100644
+--- a/src/assets/fx-art.ts
++++ b/src/assets/fx-art.ts
+@@ -5,11 +5,14 @@
+ //   砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
+ // - tex-oil-slick（S4）: 沈没の油の輪＝暗い不揃いな油膜＋縁の鈍い光＋中の泡（色を焼く・tint しない。splash-shape）。爆発の輪と同じ寸法。
+ // - tex-wake-puff（IP1a）: 航跡の尾の泡＝横の断面が中央は薄く両側が白い帯（広がると両側が分かれて V の腕に見える）・縦は両端へ柔らかい。p1＝静音の小さな泡。画素の式は assets/wake-shape。
++// - tex-spark・tex-shockwave（IP1b。U3「もっと派手な演出」）: 火花の筋と丸い水滴（32×12 の frame 2 枚）・水面の衝撃波の白い輪（128×128）。画素の式は assets/blast-shape。k に依らない固定の px。
++//   砲口炎は IP1b で光芒 8 → 12 本・芯を大きく（明るく）。
+ // - tex-flame（S3c）: 真上から見た炎（向きの陰影なし）＝白黄の芯・橙の舌 7 本（半径の 0.5 まで）・外へ薄い赤い光の暈。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
+ // - tex-wake-boat・tex-wake-ship: 艇尾を頂点にした V（半角 19.5°。R7: 腕が主・中央の泡は短く薄い）。frame p0＝V、p1＝泡だけ（自艇の静音＝R1）。k に依らない固定の px（96×128）。
+ //   S4: 腕は 1 枚の細る台形を長さ方向のグラデーションで塗る（8 区切りの線の丸い端が重なって玉の列に見え、端で切れていた）・frame ごとに枠で切る（p1 の泡が p0 の端に漏れて離れた点に見えた）。
+ import type Phaser from 'phaser';
+ import { EXPLOSION_RING_RADIUS_UNITS, discTexSize } from './art-dims';
++import { shockwavePixels, sparkPixels } from './blast-shape';
+ import { flameTongues } from './fire-shape';
+ import { muzzleRays } from './fx-shape';
+ import { paintCanvas } from './sea-art';
+@@ -21,6 +24,7 @@ import {
+ } from '../config/fx-art-config';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { ART_SEED_WAKE, WAKE_PUFF_TEX_H, WAKE_PUFF_TEX_W } from '../config/wake-art-config';
++import { SHOCK_TEX_PX, SHOCK_TEX_RING_PX, SHOCK_TEX_WIDTH_PX, SPARK_TEX_H, SPARK_TEX_W } from '../config/blast-art-config';
+ 
+ function white(a: number): string {
+   return `rgba(255,255,255,${a})`;
+@@ -47,8 +51,8 @@ function paintPixels(scene: Phaser.Scene, key: string, d: number, px: Uint8Clamp
+ function paintMuzzleFlash(scene: Phaser.Scene, d: number, R: number): void {
+   paintCanvas(scene, TEXTURE_KEYS.muzzleFlash, d, d, (ctx) => {
+     const c = d / 2;
+-    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.6, [[0, 1], [0.5, 0.8], [1, 0]]);
+-    ctx.fillStyle = white(0.9);
++    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.7, [[0, 1], [0.35, 0.95], [0.6, 0.6], [1, 0]]);
++    ctx.fillStyle = white(0.95);
+     for (const r of muzzleRays()) {
+       const L = r.len * R;
+       const hw = MUZZLE_RAY_HALF_W * R;
+@@ -180,4 +184,10 @@ export function generateFxTextures(scene: Phaser.Scene): void {
+     paintFlameFrame(ctx, 0, 0);
+     paintFlameFrame(ctx, FLAME_TEX_PX, 1);
+   }, 2);
++  paintCanvas(scene, TEXTURE_KEYS.spark, SPARK_TEX_W, SPARK_TEX_H, (ctx) => {
++    const img = ctx.createImageData(SPARK_TEX_W, SPARK_TEX_H * 2);
++    img.data.set(sparkPixels(SPARK_TEX_W, SPARK_TEX_H));
++    ctx.putImageData(img, 0, 0);
++  }, 2);
++  paintPixels(scene, TEXTURE_KEYS.shockwave, SHOCK_TEX_PX, shockwavePixels(SHOCK_TEX_PX, SHOCK_TEX_RING_PX, SHOCK_TEX_WIDTH_PX));
+ }
+diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
+index 8326ec9..bd79ad3 100644
+--- a/src/config/fx-art-config.ts
++++ b/src/config/fx-art-config.ts
+@@ -43,21 +43,21 @@ export const WAKE_CENTER_ALPHA = 0.55;
+ export const WAKE_SHIP_ARM_WIDTH_PX: readonly [number, number] = [5, 16];
+ export const WAKE_SHIP_CENTER_WIDTH_PX = 22;
+ 
+-/** 爆発（R11・R12）: 枠の数 × 1 枠の物（閃光・火球・水柱／暗い玉・輪）。5 つ目は一番古い枠を使い回す */
+-export const EXPLOSION_SLOTS = 4;
++/** 爆発（R11・R12）: 枠の数 × 1 枠の物（閃光・火球・水柱／暗い玉・輪）。尽きたら一番古い枠を使い回す。IP1b（U3）: 枠 4 → 6・閃光 70 → 100 m／0.15 → 0.2 秒・火球 36 → 64 m／0.5 → 1.1 秒・水柱 44 → 58 m／0.8 → 1.05 秒・小さい閃光 30 → 40 m（2 段目は config/blast-art-config） */
++export const EXPLOSION_SLOTS = 6;
+ export const EXPLOSION_PARTS = 4;
+ /** 爆発の部品の寿命 秒（輪は ui-config の EXPLOSION_DURATION_MS のまま）: 大きい版の閃光・小さい版の閃光（R11）・火球・水柱・小さい版の暗い玉 */
+-export const EXPLOSION_FLASH_S = 0.15;
+-export const EXPLOSION_SMALL_FLASH_S = 0.1;
+-export const EXPLOSION_FIRE_S = 0.5;
+-export const EXPLOSION_SPLASH_S = 0.8;
++export const EXPLOSION_FLASH_S = 0.2;
++export const EXPLOSION_SMALL_FLASH_S = 0.12;
++export const EXPLOSION_FIRE_S = 1.1;
++export const EXPLOSION_SPLASH_S = 1.05;
+ export const EXPLOSION_PUFF_S = 0.6;
+ /** 爆発の部品の世界の半径 m（テクスチャの半径 40 単位＝爆発の輪と同じ寸法に対する scale に直す）: 閃光（大・小）・火球（膨らみの始まりの割合つき）・水柱（同）・暗い玉（≤ 煙の玉の上限 15 m） */
+-export const EXPLOSION_FLASH_RADIUS_M = 70;
+-export const EXPLOSION_SMALL_FLASH_RADIUS_M = 30;
+-export const EXPLOSION_FIRE_RADIUS_M = 36;
++export const EXPLOSION_FLASH_RADIUS_M = 100;
++export const EXPLOSION_SMALL_FLASH_RADIUS_M = 40;
++export const EXPLOSION_FIRE_RADIUS_M = 64;
+ export const EXPLOSION_FIRE_GROW_FROM = 0.35;
+-export const EXPLOSION_SPLASH_RADIUS_M = 44;
++export const EXPLOSION_SPLASH_RADIUS_M = 58;
+ export const EXPLOSION_SPLASH_GROW_FROM = 0.5;
+ export const EXPLOSION_SPLASH_ALPHA = 0.9;
+ export const EXPLOSION_PUFF_RADIUS_M = 14;
+@@ -100,19 +100,20 @@ export const SLICK_BUBBLES = 7;
+ export const SLICK_BUBBLE_SPREAD = 0.5;
+ export const SLICK_BUBBLE_R: readonly [number, number] = [0.05, 0.08];
+ export const SLICK_BUBBLE_ALPHA = 0.7;
+-export const MUZZLE_RAYS = 8;
++export const MUZZLE_RAYS = 12; // IP1b（U3）: 8 → 12 本・芯 0.3 → 0.36・幅 0.07 → 0.08（明るく派手に）
+ export const MUZZLE_RAY_LEN: readonly [number, number] = [1.0, 0.55];
+-export const MUZZLE_RAY_HALF_W = 0.07;
+-export const MUZZLE_CORE_R = 0.3;
++export const MUZZLE_RAY_HALF_W = 0.08;
++export const MUZZLE_CORE_R = 0.36;
+ 
+ /**
+  * 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒。
+  * S4: 玉のプールは 16 → 12（艦が 2〜3 隻燃えても見える物は炎 3 ＋ 玉 12）。1 つの火災の物は炎 1 ＋ 玉 ceil(寿命/間隔)＝5 ＝ 6 まで（FIRE_OBJECTS_PER_SOURCE。
+- * jp_03 ハードの第 4 波で隊長艇が燃えると、S3c の炎 1 ＋ 玉 10 では見える物が基準 +44 になった＝門 ≤ +40 の外）
++ * jp_03 ハードの第 4 波で隊長艇が燃えると、S3c の炎 1 ＋ 玉 10 では見える物が基準 +44 になった＝門 ≤ +40 の外）。
++ * IP1b（U3。門 +150）: 玉のプール 12 → 40・間隔 0.5 → 0.3 秒・寿命 2.4 → 3.6 秒＝1 つの火災は炎 1 ＋ 玉 12 ＝ 13 まで（長く濃い煙の柱）。沈没の煙の柱 4 → 7 秒。半径・α・色は R10 のまま
+  */
+ export const FIRE_SOURCES = 6;
+-export const FIRE_PUFFS = 12;
+-export const FIRE_OBJECTS_PER_SOURCE = 6;
++export const FIRE_PUFFS = 40;
++export const FIRE_OBJECTS_PER_SOURCE = 13;
+ export const FIRE_SMOKE_MAX_RADIUS_M = 15;
+ export const FIRE_SMOKE_MAX_ALPHA = 0.5;
+ /** 煙の玉の tint（tex-smoke-puff の地 0x9aa4b0 に掛けて約 #82807c＝茶灰（煙幕の青灰 0x9aa4b0 より暗く小さい）。#3a3430 そのままの tint だと夜の海 #0b1020 に沈んで見えなかった＝S3c の写し。S4 で一段明るく＝玉を減らした分、尾が読めるように） */
+@@ -130,8 +131,8 @@ export const FLAME_FLICKER_S = 0.37;
+ export const FLAME_FRAME_S = 0.11;
+ export const FLAME_TONGUES = 7;
+ /** 火災の煙の玉: 出す間隔 秒・寿命 秒・膨らみの始まりの割合・小艇の玉の半径の上限 m（艦は FIRE_SMOKE_MAX_RADIUS_M）・風下へ流れる向き（方位 度）と速さ m/実秒・出す所の散らばり（船幅の割合） */
+-export const FIRE_PUFF_INTERVAL_S = 0.5;
+-export const FIRE_PUFF_LIFE_S = 2.4;
++export const FIRE_PUFF_INTERVAL_S = 0.3;
++export const FIRE_PUFF_LIFE_S = 3.6;
+ export const FIRE_PUFF_GROW_FROM = 0.5;
+ /** 煙の玉が濃いまま保つ寿命の割合（その後に薄れる。S4 で 0.4 → 0.7＝玉が少なくても尾が濃い） */
+ export const FIRE_PUFF_HOLD_SHARE = 0.7;
+@@ -145,7 +146,7 @@ export const SINK_RING_S = 5;
+ export const SINK_RING_ALPHA = 0.9;
+ export const SINK_RING_HOLD_SHARE = 0.4;
+ export const SINK_RING_RADIUS_M: readonly [number, number] = [110, 30];
+-export const SINK_PLUME_S = 4;
++export const SINK_PLUME_S = 7;
+ export const SINK_RING_DEPTH = 3.45;
+ /** 味方の輸送船（jp_04。絵は entities/ally-ship の私的な Image）の炎の船幅 m（輸送船の絵の幅 32 単位） */
+ export const FIRE_ALLY_SHIP_BEAM_M = 32;
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 25e2a64..00b8480 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -235,4 +235,8 @@ export const TEXTURE_KEYS = {
+   flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
+   coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
+   oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
++  spark: 'tex-spark', // 火花と水滴 32×12 の frame 2 枚（v0.7.0 IP1b。p0＝火の筋・p1＝丸い水滴。assets/fx-art・systems/spark-fx）
++  shockwave: 'tex-shockwave', // 水面の衝撃波の輪 128×128（v0.7.0 IP1b。systems/blast-fx）
++  shoreBattery: 'tex-shore-battery', // 沿岸砲の砲台（真上から。v0.7.0 IP1b＝U4。assets/battery-art が初めて使う時に 1 回。systems/shore-battery）
++  shoreGun: 'tex-shore-gun', // 沿岸砲の砲（防盾と砲身。回る。v0.7.0 IP1b）
+ } as const;
+diff --git a/src/entities/ally-destroyer.ts b/src/entities/ally-destroyer.ts
+index c6826c6..47bec46 100644
+--- a/src/entities/ally-destroyer.ts
++++ b/src/entities/ally-destroyer.ts
+@@ -72,6 +72,7 @@ export class AllyDestroyerView {
+   fired(x: number, y: number): void {
+     this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
+     this.flashAge = 0;
++    this.splashes.muzzle(x, y, true); // 砲口の火花と硝煙（v0.7.0 IP1b。見た目だけ）
+   }
+ 
+   /** 着弾（core の AllyFx。固定ステップの中）: 水柱（生きた PT に当たれば橙で大きく） */
+diff --git a/src/systems/barge-hunt.ts b/src/systems/barge-hunt.ts
+index 4418d36..4727a57 100644
+--- a/src/systems/barge-hunt.ts
++++ b/src/systems/barge-hunt.ts
+@@ -80,6 +80,7 @@ export class BargeHunt {
+     onFire: (x, y) => {
+       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
+       this.flashAge = 0;
++      this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
+     },
+     onHit: (i, group, x, y) => {
+       this.splashes.splash(x, y, true);
+diff --git a/src/systems/enemy-fire.ts b/src/systems/enemy-fire.ts
+index b38975e..2547101 100644
+--- a/src/systems/enemy-fire.ts
++++ b/src/systems/enemy-fire.ts
+@@ -57,6 +57,7 @@ export class EnemyFire {
+       this.shotsFired++;
+       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
+       this.flashAge = 0;
++      this.splashes.muzzle(x, y, true); // 砲口の火花と硝煙（v0.7.0 IP1b。見た目だけ）
+     },
+     onImpact: (gunIndex, x, y, hit) => {
+       this.splashes.splash(x, y, hit);
+diff --git a/src/systems/explosion-fx.ts b/src/systems/explosion-fx.ts
+index fab8354..92d15e8 100644
+--- a/src/systems/explosion-fx.ts
++++ b/src/systems/explosion-fx.ts
+@@ -4,6 +4,8 @@
+ // 小さい版（dud＝魚雷の不発・自艇の小さな被弾・僚艇の被弾・座礁）: 小さな閃光（0.1 秒）＋灰の輪（0.2 → 0.6）＋暗い玉 1 つ（tex-smoke-puff を暗く・半径 ≤ 15 m）。水柱は出さない（R11）。
+ // 5 つ目は一番古い枠を使い回す。毎回の new と tween をやめた（§7）。ADD の 2 部品は深さ ＋0.01 にまとめる（R25）。Canvas レンダラーでは ADD を使わない（通常の重ね）。
+ // 持ち主は world-art（世界の作成時に作り、mission-effects に登録し、破棄で外す＝R12）。§7: 確保は constructor だけ。update は読んで書くだけ。
++// IP1b（U3「もっと派手な演出、数でも大丈夫」）: 枠 4 → 6・閃光と火球と水柱を大きく長く、同じ枠の番号で 2 段目（systems/blast-fx: 2 つ目の閃光・2 つ目の火球・水柱の柱・水面の衝撃波・
++//   爆発の煙）と破片の火花・水滴（systems/spark-fx）を出す。沈没の段の 2 次の爆発（sink-fx から secondary）は 2 段目だけ（輪なし＝結果の印にしない）。
+ import type Phaser from 'phaser';
+ import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, partFade, partGrow, slotLifeS } from '../assets/fx-shape';
+ import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
+@@ -12,6 +14,8 @@ import {
+   EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, FIRE_SMOKE_TINT,
+ } from '../config/fx-art-config';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { BlastFx } from './blast-fx';
++import type { SparkFx } from './spark-fx';
+ import { RENDERER_WEBGL } from '../config/sea-art-config';
+ import { EXPLOSION_DURATION_MS, EXPLOSION_SCALE_DUD, EXPLOSION_SCALE_FROM, EXPLOSION_SCALE_HIT, EXPLOSION_TINT_DUD, EXPLOSION_TINT_HIT, SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
+ 
+@@ -31,8 +35,11 @@ export class ExplosionFx {
+   /** テクスチャの半径（爆発の輪と同じ 40 単位）→ 世界の半径 m の scale */
+   private readonly perM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
+   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
++  /** 2 段目（IP1b。同じ枠の番号） */
++  private readonly blast: BlastFx;
+ 
+-  constructor(scene: Phaser.Scene) {
++  constructor(scene: Phaser.Scene, sparks: SparkFx) {
++    this.blast = new BlastFx(scene, sparks);
+     const add = scene.sys.game.renderer.type === RENDERER_WEBGL;
+     const light = DEPTH.effects + ADD_DEPTH_STEP;
+     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
+@@ -64,10 +71,17 @@ export class ExplosionFx {
+     else wet.setTexture(TEXTURE_KEYS.splash).setTint(NO_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
+     wet.setVisible(true);
+     this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
++    this.blast.play(i, x, y, dud);
++  }
++
++  /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
++  secondary(x: number, y: number): void {
++    this.blast.secondary(x, y);
+   }
+ 
+   /** 毎フレーム（world-art から。realDt は見た目の時計）: 部品ごとに膨らみと薄れ、寿命が尽きた部品から隠す。枠の寿命で枠を閉じる */
+   update(realDt: number): void {
++    this.blast.update(realDt);
+     const pm = this.perM;
+     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
+       const a0 = this.age[i]!;
+@@ -117,5 +131,6 @@ export class ExplosionFx {
+       this.wet[i]!.destroy();
+       this.ring[i]!.destroy();
+     }
++    this.blast.destroy();
+   }
+ }
+diff --git a/src/systems/fire-fx.ts b/src/systems/fire-fx.ts
+index 91a7e19..b665661 100644
+--- a/src/systems/fire-fx.ts
++++ b/src/systems/fire-fx.ts
+@@ -5,6 +5,7 @@
+ // 0.3 秒で消す（隠れた敵の位置を指さない＝R26）。沈没の始まり（見えていた発生源の sinking が立ったフレーム）: 泡と油の輪（S4 から tex-oil-slick＝暗い油膜と縁の光と泡・5 秒）と、沈んだ所から煙の玉 4 秒。
+ // S4: 1 つの火災の物は炎 1 ＋ 玉 5（間隔 0.5 秒・寿命 2.4 秒）＝6 まで・玉のプール 12（jp_03 ハードの見える物の門 ≤ +40）。
+ // §7: 確保は constructor だけ（Image・型付き配列・発生源の読み口）。update は読んで書くだけ。論理の状態には書かない（art-rules）。乱数は絵だけ（ART_SEED_FX + 1）。
++// IP1b（U3）: 玉 12 → 40（1 つの火災は炎 1 ＋ 玉 12）・煙の柱 4 → 7 秒・燃えている間の火の粉（fx-bus → spark-fx）・沈没の始まりで沈没の段（systems/sink-fx: 2 次の爆発・艦の上の炎・泡）。
+ import type Phaser from 'phaser';
+ import { assignFireSlots, flameDiameterM, flameFlicker, puffAlpha, puffMaxRadiusM, puffRadiusM } from '../assets/fire-shape';
+ import {
+@@ -17,8 +18,11 @@ import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
+ import { SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
+ import { PT_FATE_SUNK } from '../core/pt-state';
+ import { SeededRng } from '../core/rng';
++import { EMBER_INTERVAL_S } from '../config/blast-art-config';
++import { emitEmber } from './fx-bus';
++import type { SinkFx } from './sink-fx';
+ 
+-type Img = { readonly visible: boolean; readonly alpha: number; readonly displayWidth: number };
++type Img = { readonly visible: boolean; readonly alpha: number; readonly displayWidth: number; readonly displayHeight: number; readonly rotation: number };
+ type Pos = { readonly x: number; readonly y: number };
+ 
+ /** 世界から読む物（MissionWorld がそのまま満たす。world-art の ArtWorldView に入る） */
+@@ -38,6 +42,9 @@ interface Probe {
+   visible: boolean;
+   x: number;
+   y: number;
++  /** 艇首の向き（絵の rotation・ラジアン）と船体の長さ m（沈没の段の置く所。IP1b） */
++  rot: number;
++  lenM: number;
+   readonly beamM: number;
+   readonly ship: boolean;
+   read(): void;
+@@ -54,6 +61,7 @@ export class FireFx {
+   private readonly slotOf: Int16Array;
+   private readonly probeOf = new Int16Array(FIRE_SOURCES).fill(-1);
+   private readonly emitIn = new Float32Array(FIRE_SOURCES);
++  private readonly emberIn = new Float32Array(FIRE_SOURCES);
+   private readonly phase = new Float32Array(FIRE_SOURCES);
+   private readonly prevSink: Uint8Array;
+   private readonly prevVis: Uint8Array;
+@@ -78,18 +86,18 @@ export class FireFx {
+   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
+   private readonly ringPerM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
+ 
+-  constructor(scene: Phaser.Scene, w: FireWorldView) {
++  constructor(scene: Phaser.Scene, w: FireWorldView, private readonly sink: SinkFx) {
+     const P = this.probes;
+     const b = w.boat;
+     const d = w.damage;
+-    P.push(probe(b.sprite.displayWidth, false, (p) => set(p, d.fireLeftS > 0 && d.hp > 0, b.sinking, shown(b.sprite), b.state)));
++    P.push(probe(b.sprite.displayWidth, false, (p) => set(p, d.fireLeftS > 0 && d.hp > 0, b.sinking, shown(b.sprite), b.state, b.sprite)));
+     const e = w.escort;
+-    if (e) P.push(probe(e.sprite.displayWidth, false, (p) => set(p, e.state.hits > 0 && !e.state.sunk, e.state.sunk, shown(e.sprite), e.state.boat)));
+-    if (w.destroyers) for (const s of w.destroyers.ships) P.push(probe(s.sprite.displayWidth, true, (p) => set(p, s.hitsTaken > 0 && !s.sinking, s.sinking, shown(s.sprite), s.state)));
++    if (e) P.push(probe(e.sprite.displayWidth, false, (p) => set(p, e.state.hits > 0 && !e.state.sunk, e.state.sunk, shown(e.sprite), e.state.boat, e.sprite)));
++    if (w.destroyers) for (const s of w.destroyers.ships) P.push(probe(s.sprite.displayWidth, true, (p) => set(p, s.hitsTaken > 0 && !s.sinking, s.sinking, shown(s.sprite), s.state, s.sprite)));
+     const pts = w.pts;
+-    if (pts) pts.section.boats.forEach((pb, i) => P.push(probe(pts.sprites[i]!.displayWidth, false, (p) => set(p, pb.hitsTaken > 0 && pb.hp > 0 && pb.fate !== PT_FATE_SUNK, false, shown(pts.sprites[i]!), pb))));
++    if (pts) pts.section.boats.forEach((pb, i) => P.push(probe(pts.sprites[i]!.displayWidth, false, (p) => set(p, pb.hitsTaken > 0 && pb.hp > 0 && pb.fate !== PT_FATE_SUNK, false, shown(pts.sprites[i]!), pb, pts.sprites[i]!))));
+     const ld = w.landing;
+-    if (ld) P.push(probe(FIRE_ALLY_SHIP_BEAM_M, true, (p) => set(p, ld.state.hits > 0 && !ld.state.sinking, ld.state.sinking, true, ld.state)));
++    if (ld) P.push(probe(FIRE_ALLY_SHIP_BEAM_M, true, (p) => set(p, ld.state.hits > 0 && !ld.state.sinking, ld.state.sinking, true, ld.state, null)));
+     const n = P.length;
+     this.active = new Uint8Array(n);
+     this.slotOf = new Int16Array(n).fill(-1);
+@@ -137,6 +145,7 @@ export class FireFx {
+     this.ringAge[r] = 0;
+     this.ringR[r] = SINK_RING_RADIUS_M[p.ship ? 0 : 1];
+     this.rings[r]!.setPosition(p.x, p.y).setAlpha(SINK_RING_ALPHA).setVisible(true);
++    this.sink.start(p.x, p.y, p.rot, p.lenM, p.beamM, p.ship);
+   }
+ 
+   private updateSlot(s: number, dt: number): void {
+@@ -156,6 +165,11 @@ export class FireFx {
+       if (f.frame.name !== frame) f.setFrame(frame);
+       f.setPosition(x, y).setScale((flameDiameterM(p.beamM) / FLAME_BODY_SHARE / FLAME_TEX_PX) * this.flick[1]!).setAlpha(this.flick[0]!).setAngle((this.phase[s]! * 180) / Math.PI);
+       if (!f.visible) f.setVisible(true);
++      this.emberIn[s] = this.emberIn[s]! - dt;
++      if (p.visible && this.emberIn[s]! <= 0) {
++        this.emberIn[s] = EMBER_INTERVAL_S;
++        emitEmber(x, y);
++      }
+     } else if (f.visible) f.setVisible(false);
+     this.emitIn[s] = this.emitIn[s]! - dt;
+     if (this.emitIn[s]! > 0) return;
+@@ -221,14 +235,18 @@ export class FireFx {
+ }
+ 
+ function probe(beamM: number, ship: boolean, read: (p: Probe) => void): Probe {
+-  const p: Probe = { burning: false, sink: false, visible: false, x: 0, y: 0, beamM, ship, read: () => read(p) };
++  const p: Probe = { burning: false, sink: false, visible: false, x: 0, y: 0, rot: 0, lenM: beamM * 4, beamM, ship, read: () => read(p) };
+   return p;
+ }
+ 
+-function set(p: Probe, burning: boolean, sink: boolean, visible: boolean, at: Pos): void {
++function set(p: Probe, burning: boolean, sink: boolean, visible: boolean, at: Pos, img: Img | null): void {
+   p.burning = burning;
+   p.sink = sink;
+   p.visible = visible;
+   p.x = at.x;
+   p.y = at.y;
++  if (img && !sink) {
++    p.rot = img.rotation;
++    p.lenM = img.displayHeight;
++  }
+ }
+diff --git a/src/systems/pt-gun.ts b/src/systems/pt-gun.ts
+index 31d89ec..556f637 100644
+--- a/src/systems/pt-gun.ts
++++ b/src/systems/pt-gun.ts
+@@ -35,6 +35,7 @@ export class PtGun {
+     onFire: (x, y) => {
+       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
+       this.flashAge = 0;
++      this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
+     },
+     // 生きた PT に当たった（gun-battery は ptLive の PT にだけ当てる）: 1 回引いて撃退・撃沈を決め、結末が変わったら絵を持つ側へ
+     onHit: (i, group, x, y) => {
+diff --git a/src/systems/pt-squadron.ts b/src/systems/pt-squadron.ts
+index 44d572f..7fa9e3f 100644
+--- a/src/systems/pt-squadron.ts
++++ b/src/systems/pt-squadron.ts
+@@ -87,7 +87,7 @@ export class PtSquadron {
+     onCommit: (i) => this.targets?.onCommit(i),
+     onFire: (_i, x, y) => {
+       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
+-      this.flashAge = 0;
++      this.flashAge = 0; this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ。300 行のまま）
+     },
+     onImpact: (x, y, hit, hull) => {
+       if (!hit) {
+diff --git a/src/systems/shore-battery.ts b/src/systems/shore-battery.ts
+index 0567f29..457f9d0 100644
+--- a/src/systems/shore-battery.ts
++++ b/src/systems/shore-battery.ts
+@@ -1,24 +1,24 @@
+ // 沿岸砲の世界側（docs/02 §6.8、v0.4.3）: core/shore-battery を固定ステップで進め、砲台・射界の半円（起動時 1 回の Graphics）・砲弾・砲口の閃光を描く。
+ // 着弾の水柱は世界の SplashPool（駆逐艦の砲と同じ大きさ）。被害は世界の hitBoat（終了理由 shore_battery）。§7: 砲弾 6 枚と閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ。
++// v0.7.0 IP1b（U4「沿岸砲もリメイク」）: 平らな赤い四角と線の砲身をやめ、真上から見た砲台の絵（assets/battery-art: 擬装・土嚢・床・敵の赤の輪と印）と回る砲の絵に。砲は気づいて射界の中なら艇へ向き、
++//   ふだんは海へゆっくり首を振る（assets/battery-shape。論理の状態は読むだけ）。撃つと砲身が反動で下がり、閃光は砲口に、火花と硝煙（SplashPool の muzzle）。射界の半円・ラベルはそのまま。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { gunOriginY, ensureShoreBatteryTextures } from '../assets/battery-art';
++import { batteryAimDeg, turnToward } from '../assets/battery-shape';
++import { BATTERY_ART_FLASH_RADIUS_M, BATTERY_ART_FLASH_S, BATTERY_ART_SIZE_M, BATTERY_GUN_LEN_M, BATTERY_RECOIL_M, BATTERY_RECOIL_S, BATTERY_TURN_DPS } from '../config/blast-art-config';
++import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
++import { ADD_DEPTH_STEP } from '../config/fx-art-config';
+ import { hudTextStyle } from '../config/ui-config';
+ import {
+   BATTERY_ARC_COLOR,
+   BATTERY_ARC_FILL_ALPHA,
+   BATTERY_ARC_LINE_ALPHA,
+   BATTERY_ARC_LINE_WIDTH,
+-  BATTERY_BARREL_COLOR,
+-  BATTERY_BARREL_WIDTH,
+-  BATTERY_COLOR,
+   BATTERY_LABEL,
+   BATTERY_LABEL_COLOR,
+   BATTERY_LABEL_FONT_PX,
+   BATTERY_LABEL_GAP_M,
+-  BATTERY_OUTLINE_COLOR,
+-  BATTERY_OUTLINE_WIDTH,
+-  BATTERY_FLASH_LIFETIME_S,
+-  BATTERY_FLASH_SCALE,
+   BATTERY_SHELL_POOL_SIZE,
+   BATTERY_SHELL_TINT,
+   BATTERY_SIZE_M,
+@@ -39,10 +39,21 @@ export class ShoreBattery {
+   private readonly shellSprites: Phaser.GameObjects.Image[] = [];
+   private readonly flash: Phaser.GameObjects.Image;
+   private flashAge = Infinity;
++  /** 砲台と回る砲の絵（IP1b）・砲の向き（度・0＝北）・反動の年・見た目の時計 */
++  private readonly base: Phaser.GameObjects.Image;
++  private readonly gun: Phaser.GameObjects.Image;
++  private gunDeg = 0;
++  private recoilAge = Infinity;
++  private t = 0;
+   private readonly events: ShoreBatteryEvents = {
+     onFire: (x, y) => {
+-      this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
++      const r = (this.gunDeg * Math.PI) / 180;
++      const mx = x + Math.sin(r) * BATTERY_GUN_LEN_M;
++      const my = y - Math.cos(r) * BATTERY_GUN_LEN_M;
++      this.flash.setPosition(mx, my).setAlpha(1).setVisible(true);
+       this.flashAge = 0;
++      this.recoilAge = 0;
++      this.splashes.muzzle(mx, my, true); // 砲口の火花と硝煙（見た目だけ）
+     },
+     onImpact: (x, y, hit) => {
+       if (hit) this.onBoatHit(this.p.hit, this.rng, x, y);
+@@ -73,18 +84,15 @@ export class ShoreBattery {
+     g.beginPath();
+     g.arc(p.x, p.y, r, Math.PI, 2 * Math.PI, false);
+     g.strokePath();
+-    // 砲台: 陸（暗い緑）に紛れない赤い四角＋明るい縁、砲身は海（北）へ。下にラベル（実機 1 回目「見えづらい」）
++    // 砲台（IP1b: 描いた砲台と回る砲。v0.6.11 までは赤い四角＋明るい縁＋線の砲身）。下にラベル（実機 1 回目「見えづらい」。位置は BATTERY_SIZE_M のまま）
+     const half = BATTERY_SIZE_M / 2;
+-    g.fillStyle(BATTERY_COLOR, 1);
+-    g.fillRect(p.x - half, p.y - half, BATTERY_SIZE_M, BATTERY_SIZE_M);
+-    g.lineStyle(BATTERY_OUTLINE_WIDTH, BATTERY_OUTLINE_COLOR, 1);
+-    g.strokeRect(p.x - half, p.y - half, BATTERY_SIZE_M, BATTERY_SIZE_M);
+-    g.lineStyle(BATTERY_BARREL_WIDTH, BATTERY_BARREL_COLOR, 1);
+-    g.lineBetween(p.x, p.y, p.x, p.y - BATTERY_SIZE_M);
++    const perPx = ensureShoreBatteryTextures(scene);
++    this.base = scene.add.image(p.x, p.y, TEXTURE_KEYS.shoreBattery).setDisplaySize(BATTERY_ART_SIZE_M, BATTERY_ART_SIZE_M).setDepth(DEPTH.destroyer);
++    this.gun = scene.add.image(p.x, p.y, TEXTURE_KEYS.shoreGun).setOrigin(0.5, gunOriginY).setScale(perPx).setDepth(DEPTH.destroyer + ADD_DEPTH_STEP);
+     this.graphics = g;
+     this.label = scene.add.text(p.x, p.y + half + BATTERY_LABEL_GAP_M, BATTERY_LABEL, hudTextStyle(BATTERY_LABEL_FONT_PX, BATTERY_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
+     for (let i = 0; i < BATTERY_SHELL_POOL_SIZE; i++) this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.shell).setTint(BATTERY_SHELL_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
+-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
++    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_ART_FLASH_RADIUS_M / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false); // IP1b: 24 → 62 m・0.12 → 0.24 秒
+   }
+ 
+   /** 固定ステップ（大発の後。大発の気づきと艇の射撃の閃光を読む） */
+@@ -101,6 +109,7 @@ export class ShoreBattery {
+   }
+ 
+   updateVisuals(realDt: number): void {
++    this.aimGun(realDt);
+     const shells = this.state.shells;
+     for (let i = 0; i < shells.length; i++) {
+       const s = shells[i]!;
+@@ -114,14 +123,32 @@ export class ShoreBattery {
+     }
+     if (this.flashAge !== Infinity) {
+       this.flashAge += realDt;
+-      if (this.flashAge >= BATTERY_FLASH_LIFETIME_S) {
++      if (this.flashAge >= BATTERY_ART_FLASH_S) {
+         this.flashAge = Infinity;
+         this.flash.setVisible(false);
+-      } else this.flash.setAlpha(1 - this.flashAge / BATTERY_FLASH_LIFETIME_S);
++      } else this.flash.setAlpha(1 - this.flashAge / BATTERY_ART_FLASH_S);
+     }
+   }
+ 
++  /** 砲の向き（気づいて射界の中なら艇へ・ふだんは海へ首振り）と反動（見た目だけ。論理の状態は読むだけ） */
++  private aimGun(realDt: number): void {
++    this.t += realDt;
++    const b = this.check.boat;
++    const target = batteryAimDeg(this.state.alerted && this.state.inArc, b.x - this.p.x, b.y - this.p.y, this.t);
++    this.gunDeg = turnToward(this.gunDeg, target, BATTERY_TURN_DPS * realDt);
++    let back = 0;
++    if (this.recoilAge !== Infinity) {
++      this.recoilAge += realDt;
++      if (this.recoilAge >= BATTERY_RECOIL_S) this.recoilAge = Infinity;
++      else back = BATTERY_RECOIL_M * (1 - this.recoilAge / BATTERY_RECOIL_S) ** 2;
++    }
++    const r = (this.gunDeg * Math.PI) / 180;
++    this.gun.setPosition(this.p.x - Math.sin(r) * back, this.p.y + Math.cos(r) * back).setAngle(this.gunDeg);
++  }
++
+   destroy(): void {
++    this.base.destroy();
++    this.gun.destroy();
+     this.graphics.destroy();
+     this.label.destroy();
+     for (const s of this.shellSprites) s.destroy();
+diff --git a/src/systems/splash-pool.ts b/src/systems/splash-pool.ts
+index e004a35..98b236c 100644
+--- a/src/systems/splash-pool.ts
++++ b/src/systems/splash-pool.ts
+@@ -1,8 +1,10 @@
+ // 水柱のプール（v0.4.2 で EnemyFire から切り出し。中身は v0.4.1 のまま。v0.7.0 S3b: 絵を輪から tex-splash＝飛沫の絵に。数・寿命・tint・scale はそのまま）: 砲弾・掃射・爆弾・波の叩きつけ・大発の機銃・艇の砲が借りる。
+ // §7: 起動時に size 枚作り、置くときは古いものから使い回し、毎フレームは alpha だけ触る。
++// v0.7.0 IP1b（U3「もっと派手な演出」）: 置くたびに飛沫の水滴（外れ 3 粒・命中 6 粒）を、muzzle で砲口の火花（7 か所の閃光の所から）を世界の火花のプール（fx-bus → spark-fx）へ。数・寿命・tint・scale はそのまま。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { SPLASH_LIFETIME_S, SPLASH_TINT_HIT, SPLASH_TINT_MISS } from '../config/ui-config';
++import { emitMuzzle, emitSpray } from './fx-bus';
+ 
+ export class SplashPool {
+   private readonly images: Phaser.GameObjects.Image[] = [];
+@@ -30,6 +32,12 @@ export class SplashPool {
+       .setTint(hit ? SPLASH_TINT_HIT : SPLASH_TINT_MISS)
+       .setAlpha(1)
+       .setVisible(true);
++    emitSpray(x, y, hit);
++  }
++
++  /** 砲口の火花（見た目だけ。閃光を出す 7 か所から。big＝大砲は火花 4 本と硝煙・機銃は 2 本） */
++  muzzle(x: number, y: number, big: boolean): void {
++    emitMuzzle(x, y, big);
+   }
+ 
+   /** 毎フレーム: 寿命で薄くして消す */
+diff --git a/src/systems/world-arms.ts b/src/systems/world-arms.ts
+index bc5f52b..d3ff2c3 100644
+--- a/src/systems/world-arms.ts
++++ b/src/systems/world-arms.ts
+@@ -60,6 +60,7 @@ export class WorldArms extends ArmsStep {
+     if (!this.flashImg) return;
+     this.flashImg.setPosition(x, y).setAlpha(1).setVisible(true);
+     this.flashAge = 0;
++    this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
+   }
+ 
+   protected override fxSplash(x: number, y: number, hit: boolean): void {
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 7f8aa0c..38e4984 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -1,12 +1,16 @@
+ // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5）: 世界の絵（演出）の持ち主。MissionWorld が世界を作る最後に 1 つ作り、world-visuals の最後の 1 行で更新・破棄する（R13）。
+ // S3a は海の面（systems/sea-fx: 海の面・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx。IP1a で道のりに沿う泡の尾）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
+ // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
++// IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
+ import type Phaser from 'phaser';
+ import { CoastFx } from './coast-fx';
+ import { ExplosionFx } from './explosion-fx';
+ import { FireFx, type FireWorldView } from './fire-fx';
++import { registerSparkFx } from './fx-bus';
+ import { registerExplosionFx } from './mission-effects';
+ import { SeaFx } from './sea-fx';
++import { SinkFx } from './sink-fx';
++import { SparkFx } from './spark-fx';
+ import { WakeFx, type WakeWorldView } from './wake-fx';
+ import type { WorldSetup } from './world-setup';
+ 
+@@ -22,14 +26,19 @@ export class WorldArt {
+   private readonly wake: WakeFx;
+   private readonly explosions: ExplosionFx;
+   private readonly fire: FireFx;
++  private readonly sparks: SparkFx;
++  private readonly sink: SinkFx;
+   private readonly coast: CoastFx;
+ 
+   constructor(scene: Phaser.Scene, w: ArtWorldView) {
+     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
+     this.wake = new WakeFx(scene, w);
+-    this.explosions = new ExplosionFx(scene);
++    this.sparks = new SparkFx(scene);
++    registerSparkFx(this.sparks); // 世界の作成前・破棄後の水柱・砲口・火の粉の火花は何もしない（R12 と同じ）
++    this.explosions = new ExplosionFx(scene, this.sparks);
+     registerExplosionFx(this.explosions); // 世界の作成前・破棄後の playExplosion は何もしない（R12）
+-    this.fire = new FireFx(scene, w);
++    this.sink = new SinkFx(scene, this.explosions, this.sparks);
++    this.fire = new FireFx(scene, w, this.sink);
+     this.coast = new CoastFx(scene, w.setup);
+   }
+ 
+@@ -39,14 +48,19 @@ export class WorldArt {
+     this.wake.update(realDt, w);
+     this.explosions.update(realDt);
+     this.fire.update(realDt);
++    this.sink.update(realDt);
++    this.sparks.update(realDt);
+   }
+ 
+   destroy(): void {
+     registerExplosionFx(null);
++    registerSparkFx(null);
+     this.sea.destroy();
+     this.wake.destroy();
+     this.explosions.destroy();
+     this.fire.destroy();
++    this.sink.destroy();
++    this.sparks.destroy();
+     this.coast.destroy();
+   }
+ }
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index 886bca6..2b7fb98 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -69,6 +69,8 @@ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
+   'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx', 'tex-wake-puff': 'fx',
+   'tex-sea-tile': 'fx', 'tex-dawn-glow': 'fx', 'tex-glint': 'fx', 'tex-coast-strip': 'fx',
+   'tex-oil-slick': 'fx', // S4（spec の D2 の外。沈没の油の輪が水柱の絵の流用で星形に見えた＝独立の見え方の検査の指摘）
++  'tex-spark': 'fx', 'tex-shockwave': 'fx', // IP1b（U3「もっと派手な演出」: 火花・水滴と水面の衝撃波）
++  'tex-shore-battery': 'redraw-new', 'tex-shore-gun': 'redraw-new', // IP1b（U4「沿岸砲もリメイク」: 平らな赤い四角＝Graphics の塗りを絵に。鍵は新しい＝v0.6.11 は Graphics で鍵なし）
+ };
+ /** 艇の絵の鍵（Boot が遊べる任務の自艇・僚艇・隼艇から作る 5 枚） */
+ const BOAT_IDS = ['jp_h38_hayabusa', 'jp_t14', 'jp_t38', 'us_elco77', 'us_elco80'];
+diff --git a/tests/fx-art-s3c.test.ts b/tests/fx-art-s3c.test.ts
+index 3eb6dcf..31eef15 100644
+--- a/tests/fx-art-s3c.test.ts
++++ b/tests/fx-art-s3c.test.ts
+@@ -156,7 +156,7 @@ describe('探照灯・星弾・煙幕の絵（S3c。R2・R32。鍵・寸法・
+ describe('炎と煙（S3c。R10・R26）', () => {
+   it('枠の選び方: 燃えている発生源を決まった順で空いた枠へ、続く発生源は同じ枠、上限 FIRE_SOURCES、消えたら空ける', () => {
+     expect(FIRE_SOURCES).toBe(6);
+-    expect(FIRE_PUFFS).toBe(12); // S4: 16 → 12（tests/fx-art-s4）
++    expect(FIRE_PUFFS).toBe(40); // S4: 16 → 12（tests/fx-art-s4）・IP1b: 12 → 40（U3。tests/fx-art-ip1b）
+     const n = 9;
+     const active = new Uint8Array(n);
+     const slotOf = new Int16Array(n).fill(-1);
+@@ -287,7 +287,8 @@ describe('岸の帯（S3c。R16・R24）', () => {
+     expect(s).toContain('.setFlip(bob.flipX, flipY)');
+     expect(s).toContain('ensureCoastStripTexture(scene);');
+     const wa = read('src/systems/world-art.ts');
+-    for (const line of ['this.fire = new FireFx(scene, w);', 'this.coast = new CoastFx(scene, w.setup);', 'this.fire.update(realDt);', 'this.fire.destroy();', 'this.coast.destroy();']) expect(wa).toContain(line);
++    for (const line of ['this.fire = new FireFx(scene, w, this.sink);', // IP1b: 沈没の段（sink-fx）を渡す
++       'this.coast = new CoastFx(scene, w.setup);', 'this.fire.update(realDt);', 'this.fire.destroy();', 'this.coast.destroy();']) expect(wa).toContain(line);
+   });
+   it('新しい・触ったファイルは 300 行以下', () => {
+     for (const f of ['src/assets/light-shape.ts', 'src/assets/light-art.ts', 'src/assets/fire-shape.ts', 'src/assets/coast-shape.ts', 'src/systems/fire-fx.ts', 'src/systems/coast-fx.ts', 'src/systems/world-art.ts', 'src/assets/fx-art.ts', 'src/assets/sea-art.ts', 'src/assets/placeholders.ts', 'src/config/fx-art-config.ts', 'src/config/sea-art-config.ts', 'src/config/game-config.ts']) {
+diff --git a/tests/fx-art-s4.test.ts b/tests/fx-art-s4.test.ts
+index bf5f7b9..09e47e3 100644
+--- a/tests/fx-art-s4.test.ts
++++ b/tests/fx-art-s4.test.ts
+@@ -28,7 +28,7 @@ const D = Math.ceil(40 * 2 * K) + 8;
+ 
+ describe('火災の物の上限（S4。jp_03 ハードの見える物 ≤ +40）', () => {
+   it('1 つの火災は炎 1 ＋ 玉 5 ＝ 6 まで（fire-fx と同じ順: 出す → 年を足す → 寿命で消す。60 fps で 10 秒）、玉のプール 12', () => {
+-    expect(FIRE_PUFFS).toBe(12);
++    expect(FIRE_PUFFS).toBe(40); // IP1b（U3）: 12 → 40・1 つの火災は炎 1 ＋ 玉 12 ＝ 13（FIRE_OBJECTS_PER_SOURCE。tests/fx-art-ip1b）
+     expect(1 + Math.ceil(FIRE_PUFF_LIFE_S / FIRE_PUFF_INTERVAL_S)).toBeLessThanOrEqual(FIRE_OBJECTS_PER_SOURCE);
+     const dt = 1 / 60;
+     const ages: number[] = [];
+diff --git a/tests/fx-art.test.ts b/tests/fx-art.test.ts
+index 1827e11..1f9449a 100644
+--- a/tests/fx-art.test.ts
++++ b/tests/fx-art.test.ts
+@@ -91,7 +91,7 @@ describe('航跡の式（assets/fx-shape。R1・R7）', () => {
+ 
+ describe('爆発のプール（R11・R12・D7）と絵の置き方', () => {
+   it('枠 4 × 部品 4 ＝ 16、小さい版は水柱なし（暗い玉 ≤ 15 m）、閃光 0.15／0.1 秒、火球 0.5 秒、水柱 0.8 秒、枠の寿命は部品の最大', () => {
+-    expect(EXPLOSION_SLOTS * EXPLOSION_PARTS).toBe(16);
++    expect(EXPLOSION_SLOTS * EXPLOSION_PARTS).toBe(24); // IP1b（U3）: 枠 4 → 6（2 段目の部品は blast-fx＝tests/fx-art-ip1b）
+     expect(EXPLOSION_PUFF_RADIUS_M).toBeLessThanOrEqual(FIRE_SMOKE_MAX_RADIUS_M);
+     expect(flashLifeS(false)).toBe(EXPLOSION_FLASH_S);
+     expect(flashLifeS(true)).toBe(EXPLOSION_SMALL_FLASH_S);
