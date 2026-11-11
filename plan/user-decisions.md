@@ -6,3 +6,13 @@ U1 (the user's choice in the question dialog, verbatim): question 「次は v0.7
 U0 context: the user praised the procedurally drawn 屋我地の陰 (v0.6.11 IP2): 「いいグラフィックです。それでは次へ進めてください」.
 
 Lead plan (not user decisions): v0.7.0 = ship/boat/plane art + night-sea effects (this version); v0.7.1 = synthesized SFX (unlock on first touch, mute toggle); v0.7.2 = synthesized BGM + hit slow-mo polish.
+
+## U2–U5 (v0.7.0 iPhone round 1, 2026-11-11, the user's words verbatim)
+「波の模様が波に見えずにゴミのように見えます。いい方法があれば改良して欲しいです。また、波があったとしても格子の線はあった方がいいです。
+また、たびたびFPSを気にしますが、全く問題なく動くのでもっと派手な演出、数でも大丈夫だと思います。
+沿岸砲もリメイクお願いします。
+航跡が直線すぎるので少し揺らぎを出してください。」
+- U2 sea pattern reads as garbage → redraw as a sea surface (lead: full-screen tiled sea, smooth swell + slowly drifting crests). Grid lines stay ON (the user's decision).
+- U3 FPS is fine on the user's iPhone → more flashy effects and higher counts are OK. Lead budget: frame p95 ≤ ×1.40 vs base (was ×1.15), visible objects ≤ +150 (was +40), GPU ≤ +24 MB; §7 structure rules unchanged (pools, draw once, no per-frame alloc).
+- U4 shore battery remade (no more red square).
+- U5 wakes too straight → trail along the real path with sway (lead: pooled foam puffs laid at the stern positions).
