@@ -1,2 +1,3 @@
 src/assets/wake-shape.ts
 src/config/wake-art-config.ts
+tests/wake-trail.test.ts

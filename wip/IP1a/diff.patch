@@ -1,3 +1,138 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 28c5d57..eda0316 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -192,17 +192,55 @@
+       - 星弾（`act/us_02-hard-star2-`・`shots/us_02h-lights-lookout-`）: 照らされた海は中立の灰青、探照灯は淡い白の帯（カーキ・茶色ではない）。航跡（`crops/jp06-wake.png`）: 艦の V は滑らかに細って消え、離れた点は無い。昼の海（`art/us_01-dawn-`）: 波頭は控えめ。
+     - docs: docs/02 §7 を「アート方針（v0.7 から）」に（描き方・定数の置き場・スタイル・遊びの手掛かり・予算）。docs/03 の v0.7.0 の行に S0〜S4 済みと実機テスト 3 項目（v0.7.1 合成の効果音・v0.7.2 BGM と命中スローの行はそのまま）。
+     - 門（lead がまとめて回した `run-gates`。scratchpad の `v0700/impl/S4/SUMMARY.txt`）: npm test 262 ファイル・2,688 件・typecheck・lint・build（`VITE_BASE=/ww2-torpedo-boat/`）が緑、凍結 20 本同じ、setup の snapshot は `-u` なし、g2 `G6=1 ALLY=1 EVAC=1` OK 37 DIFF 0、ab-replay all 58（us_02 の result の最後のフレームの既知の揺れ 1 件は単独で回し直して same）・jp04base 8・jp03 4 と hud-ab base 16・jp04base 8・jp03 4 が same:true（CAM=1）、tex-ab CHECK=1 ✓（既存の鍵の寸法・原点はすべて同じ。新しい鍵 tex-oil-slick。GPU の差の最大 +1.00 MB）、art-perf p95 us_02h ×1.05・us_01d ×1.07・us_03 ×1.06・jp_04h ×1.03・jp_02 ×1.07・jp_03h ×1.07（≤ 1.15。2 組・W 1560）。
++- 実機 1 回目の直し（IP1。2026-11-11。ビルドは PR #36 の f08ed2b）: ユーザーの感想（そのまま）「波の模様が波に見えずにゴミのように見えます。いい方法があれば改良して欲しいです。また、波があったとしても格子の線はあった方がいいです。
++  また、たびたびFPSを気にしますが、全く問題なく動くのでもっと派手な演出、数でも大丈夫だと思います。
++  沿岸砲もリメイクお願いします。
++  航跡が直線すぎるので少し揺らぎを出してください。」（lead の読み: U2＝海の模様を描き直す・格子は残す、U3＝予算を広げる、U4＝沿岸砲の描き直し（別の段）、U5＝航跡に揺らぎ。scratchpad の `v0700/plan/user-decisions.md`）
++  - IP1a（海の面と航跡の尾。U2・U3・U5。絵だけ＝遊びはビット同一の見込み（論理の状態は読むだけ・乱数は絵だけ・カメラ・HUD は触らない）。lead の run-gates で確かめる）:
++    - 予算（U3。lead の決め）: 描いたフレームの p95 ≤ ×1.40（S0〜S4 は ×1.15）・画面に見える Mission の物 ≤ 基準 +150（同 +40）・GPU のテクスチャ ≤ +24 MB（同 +12）。§7 の構造の決まり（プール・1 回だけ描く・update で確保しない）は同じ。
++      `scripts/headless/art-perf.mjs` の門を `P95_RATIO_MAX` 1.4・`VIS_DELTA_MAX` 150 に、`tex-ab.mjs` の GPU の門を 24 MB に（どちらも U3 を注に）。この項の上の S0〜S4 と「Done」の ×1.15・+40・+12 MB はその段の門（IP1 から上の値）。
++    - 海の面（U2）: S3a の「波頭の群れ」（短い弧を散らした小さな Image 12 枚＝`patches`）は「ゴミ」に見えたのでやめ、S3a の第 1 案の世界の座標の全面の TileSprite 1 枚に（`SEA_LAYER_MODE` と patches の定数・式は消した）。
++      テクスチャ `tex-sea-tile` 512 × 512（0.5 px/m・1,024 m 周期。鍵・寸法は S3a と同じ）は新しい画素の式 `assets/sea-shape` の `seaTilePixels`（ImageData に書く）: 周期の縁で合う正弦の和（山の数が整数＝継ぎ目なし）で、
++      長いうねり 6（波長 96〜256 m・波の進む向き 78° ± 20°）・波 12（24〜64 m・± 28°）・さざ波 10（10〜20 m・± 50°）を重ね、座標を緩くゆがめ（山 1〜2 つ・56 m）て筋をうねらせる。
++      明るさ＝下地 0.1 ＋ うねりの帯 0.3 ＋ 波頭（うねりの山を尖らせた筋 ＋ 波 ＋ さざ波）0.5 ＋ 泡（高い所だけ）0.3 を白で、谷を黒（0.3）で＝光の tint × α で色（`SEA_TEX`・`SEA_LIGHT_ART`）。短く硬い筆の線は描かない（隣の画素との差 ≤ 64/255。S3a の弧は 178）。
++      光ごとの α: dark 0.2・half 0.26・full 0.28・day 0.42（tint 0xb0d8ff＝昼は明るく青く。平均 (71, 99, 126)＝昼の海 #3b5670 より明るい）。夜の上限 `SEA_NIGHT_ALPHA_MAX` 0.12 → 0.3（S3a の値は散らした弧の値。今の面は画素の α の平均が約 0.33）。
++      夜の画面の明るさ（輝度）: dark の中央値 24.4・p95 30.0（背景 16.1）、half 29.0・37.7＝明るい 1% の画素も格子の線（54）より暗い。波はゆっくり流れる（`SEA_DRIFT_MPS` 1.6 m/秒を tilePosition で毎フレーム＝WebGL では uv のずれだけ）。
++      面は世界の内（0〜幅 × 0〜高さ）に切る（S4 のきらめきと同じ＝世界の縁の外の格子の無い海は無地）。Boot で描く時間は node で約 60〜90 ms（512² × 28 波を sin の表で）。
++    - 格子の線（U2「あった方がいい」）: `SEA_GRID_ON` は true のまま（ユーザーの決め）。海の面を格子の下（深さ −0.1。格子は `DEPTH.sea` 0）へ、色を `SEA_GRID_LINE_COLOR` 0x26375c に（ui-config の 0x1a2540 は夜の波頭に溶けた。昼の海より暗い＝昼は暗い線）。
++      docs/03 の v0.7.0 の実機テスト ② から「格子は要らないか（`?debug&title&nogrid`）」を消した（`?debug&nogrid` は比べる道具のまま）。
++    - 月のきらめき・昼の白波（U3）: 数を倍に（half 12 → 24・full 16 → 32・昼の白波 16 → 24）。置く時は升の内の候補 6 か所から波頭の高い所（`seaCrestScore`）を選び、波の筋の向き（± 10°）に傾け、大きさ 0.6〜1.3 倍、波と一緒に流す。
++      きらめき 20 × 5 m（14 × 6 から）、昼の白波は 34 × 6 m の長い筋（短いと白い点に見えた）・α 0.4 → 0.32。R9（α ≤ 0.3・周期 ≥ 2 秒・横長）はそのまま。
++    - 航跡の尾（U5）: 新しい鍵 `tex-wake-puff`（48 × 64 の frame 2 枚。横の断面は両側が白く中央が薄い＝広がると両側が分かれて V の腕に見える・縦は両端へ柔らかい・p1 は静音の小さな泡。`assets/wake-shape` の画素の式）。
++      `systems/wake-fx` が船体ごとに泡の輪を持ち、艇尾が間隔（艇 12 m・艦 18 m・大発 7 m）進むごとに艇尾に 1 つ置く（2 乗で比べる。遠すぎる跳びはつながない）。泡は置いた時の針路の向きで、寿命（艇 2.6〜2.8 秒・艦 5 秒）の間に
++      船幅の 0.7 → 3 倍ほどに広がり（easeOut）薄れる＝道のりのとおりに曲がる尾。置く所は横に揺らす（2 つの正弦の和の位相を泡ごとに 0.45〜0.8 rad 進める＋小さな乱れ。船幅の 0.2〜0.32 倍・向き ± 7°。絵だけの乱数 `ART_SEED_WAKE`）。
++      濃さ: 自艇は速力帯（停止 なし・静音 薄い泡 α 0.1・巡航 0.18・全速 0.24。R1・D9）、ほかは 上限 × (0.4 ＋ 0.6 × 速さ/基準) × 船体の α、艦は × 1.15。重なった帯の α は 自艇 0.48・艦 0.54（雷跡の点 0.55 より薄い。R7）。
++      船体の絵が見えない・薄い（夜の sighted・陰の隊・沈む途中）なら置かず、その船体の泡はすぐ消す。S3b の V は艇尾の近くだけに（長さ × 0.45・α × 0.8。静音は V なし）。輪の大きさ: 自艇 22・僚艇／隼艇／米PT 16・艦 16・大発 8・jp_03 の隊長艇 8・僚艇 3
++      （`WAKE_EVAC_LEADERS_ONLY` はやめた＝僚艇にも短い尾）。定数は新しい `config/wake-art-config`。world-art は `this.wake.update(realDt, w)`。`world-evac` の EvacView の型に `displayWidth`（船幅を読む）。
++    - テスト: `tests/sea-art`（画素の式＝同じ種で同じ md5・波は整数の山の数で帯の内・周期で同じ・縁の差 ≤ 内側の差・隣の差 ≤ 64・夜の明るい 1% が格子より暗い・昼が明るく青い・流れの折り返し・patches が無い・格子が面の上・きらめきの置き方の pin）、
++      新しい `tests/wake-trail`（置く・置かない・間隔・曲線・揺れの有界・重なりの α < 0.55・泡の絵・jp_03 の輪の和 ＋ V ＋ 白波 ＋ 面 ≤ 150・source の pin・300 行）、`tests/fx-art`（wake-fx の pin を距離の 2 乗に）・`tests/fx-art-s4`（昼の α ≤ 0.5）・`tests/art-inventory`（`tex-wake-puff`）。
++    - 計測（art-perf。A＝f5563ab・B＝IP1a の木。2 組・窓 15 秒・W 1560・何も同時に回さない。scratchpad の `v0700/impl/IP1a/art-perf.log`）: 描いたフレームの p95 us_02 ハードの星弾 173.1 → 180.7 ms（×1.04）・
++      us_01 の夜明けの空襲 104.2 → 146.0（×1.40＝門の縁。3 組で測り直して 107.7 → 149.2＝×1.39 ✓。`art-perf-us01d.log`）・us_03 100.5 → 136.0（×1.35）・jp_04 ハード 98.9 → 132.4（×1.34）・jp_02 の哨戒機 56.0 → 69.9（×1.25）・jp_03 ハードの第 4 波 117.6 → 146.2（×1.24）。
++      A 対 A の揺れ ×1.00〜1.08。見える物の p95 us_02 ハード +27・us_01 +16・us_03 +31・jp_04 ハード +47・jp_02 +11・jp_03 ハード +57（≤ +150）。ページのエラー 0。
++      正直に: フレームの増えのほとんどは全面の海の面 1 枚の塗り（p50 で約 +25〜30 ms＝S3a の計測と同じ。ヘッドレスの SwiftShader＝CPU のラスタは塗りに厳しい）で、us_01 の夜明け（面＋右端の夜明けの光）は ×1.40 の門に余裕がない。
++      足りなくなった時の最初の手は夜明けの光の帯（右端 22%）を細くすること（面や光の α を下げても塗りの量は変わらない）。iPhone の GPU では全面の層 1 枚は軽い（spec §5.7。U3「全く問題なく動く」）。
++    - 写し（W 1280・1560。ページのエラー 0。scratchpad の `v0700/impl/IP1a/`。道具は `tools/wake-shots.mjs`（全速の旋回・巡航の旋回・静音・カメラを駆逐艦の絵に付けた艦の航跡＝写しのための書き込みは道具の側）と `tools/preview.ts`（オフラインの面の見本））:
++      - 夜の海（`shots2/us_02-w1560.png`・`-lookout-`・`jp_06-lookout-w1280.png`）: 斜めのうねりの帯と細かい波頭の筋が一面にあり、水面に見える（散らばったゴミには見えない）。格子は波の上にはっきり。月のきらめきは波頭に沿う小さな筋で控えめ（R9 の α ≤ 0.3 なので目立たない）。白い自艇・赤い艦・字は読める。
++      - 昼（`wake3/jp_03-day-full-turn-w1560.png`・`shots2/us_01-dawn-w1560.png`）: 明るい青の面にうねりの濃淡、白波は波頭の向きの長い筋。夜明けの後の us_01 も同じ面（赤い機は読める）。世界の縁の外（jp_03 の陸の南）は無地。
++      - 航跡（`wake3/us_01-turn-full-turn-crop-w1280.png`・`-w1560.png`・`us_01-turn-full-crop-`）: 全速の旋回で尾が弧を描き、後ろほど広く薄い。直進でも尾は小さく揺らぐ（まっすぐの棒ではない）。巡航は短く曲がる尾、静音はほとんど見えない（R1）。
++        艦（`wake3/us_02-dd-dd-ship-w1560.png`・`jp_06-dd-dd-w1560.png`）は太く泡立った尾が艇尾の V から続く（ゆっくりの艦は短い）。jp_03 の僚艇は短い尾。
++      - 弱み: 尾は泡を重ねた帯なので、急な旋回（1 秒に 70°）の内側で泡の向きの差が少し角張って見えることがある。静音の泡はほとんど見えない（R1 どおり）。白波・きらめきは R9 の上限のまま控えめ。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
+ - 既知の制約:
+   - （S0）art config と art-dims はまだどこからも使われない（S1〜S3c で使う）。tests/art-inventory の予定の鍵（PLANNED_NEW）は spec D2 の 11（S4 で `tex-oil-slick` を足して 12）。段で鍵を足す・やめる時はこの表も直す。
+   - （S0）tex-check の絶対の門（夜の海との比 ≥ 4.5・昼 ≥ 3・艦の幅 ≥ 0.92）は placeholder がもともと満たさない所（敵機の赤の昼の海との比 2.97・輸送船の 20% の行の幅 0.89）を「A 以上」で読む。
+   - （S0）art-perf の数はヘッドレスの相対値（SwiftShader の CPU のラスタ。描いた後に 1 画素を読んで待つので塗りの秒も入る）。iPhone の FPS は実機テスト ③。
+   - （S2b）Pete の複葉は 1 枚の太い翼に見える・generic と SBD はほぼ同じ形（上の写しの「正直な弱み」）。敵機の鍵は 1 つなので、1 任務に 2 種類の敵機は出せない（data もそうなっている）。
+-  - （S3b）航跡は船体ごとに Image 1 枚の直線の V（曲がった航跡の点は作らない＝D8）。jp_03 の 18 隻は隊長艇だけ（`WAKE_EVAC_LEADERS_ONLY`）。卯月・味方の輸送船は停泊で航跡なし。水柱は真上から見た白い塊（S4。柱の高さは出ない）。Canvas レンダラーでは爆発の閃光・火球を ADD でなく通常の重ねで描く。
++  - （S3b）航跡は船体ごとに Image 1 枚の直線の V（曲がった航跡の点は作らない＝D8）。jp_03 の 18 隻は隊長艇だけ（`WAKE_EVAC_LEADERS_ONLY`）。（IP1a で道のりに沿う泡の尾を足し、V は艇尾の近くだけに。僚艇にも短い尾。`WAKE_EVAC_LEADERS_ONLY` はやめた）卯月・味方の輸送船は停泊で航跡なし。水柱は真上から見た白い塊（S4。柱の高さは出ない）。Canvas レンダラーでは爆発の閃光・火球を ADD でなく通常の重ねで描く。
+   - （S3c）火災の煙は夜の海では控えめ（暗い茶灰・α ≤ 0.5・半径 ≤ 15 m＝煙幕と見分ける上限）。卯月・隼艇は炎の発生源にしない。岸の帯は 512 m の繰り返し（1 枚おきの反転）で、見張りのズームでは繰り返しが分かる。（沈没の輪の星形・1 か所の火災の +11 は S4 で直した）
+   - （S4。spec §9 の残り＋正直な弱み）爆弾（灰の円が縮む）と爆撃進路の線は今のまま（凍結の air-strike-flight。水上機の爆弾も揃えた）。機は全種が同じ大きさのアイコン（翼幅 60 単位・PB2Y も戦闘機と同じ）で国籍の標識なし。
+-    テクスチャの密度は約 1.1 px/単位＝砲塔・発射管はズーム 0.75 以上でそれらしく、見張りでは形と色だけ。船体の壊れた絵・影は無い（昼の jp_03 の機の影も無し）。海の模様は WebGL だけ（Canvas レンダラーは格子だけ）、格子の線は残した（実機テスト ② で聞く）、ビネットなし。
++    テクスチャの密度は約 1.1 px/単位＝砲塔・発射管はズーム 0.75 以上でそれらしく、見張りでは形と色だけ。船体の壊れた絵・影は無い（昼の jp_03 の機の影も無し）。海の模様は WebGL だけ（Canvas レンダラーは格子だけ）、格子の線は残した（IP1a でユーザーの決め U2「格子の線はあった方がいい」＝残すに確定）、ビネットなし。
+     浅瀬・沿岸砲（平らな赤い四角＝R27。描いた岸の帯の上で浮いて見える）・暴風の帯と雨・砲弾と曳光弾・雷跡の点・輪・扇・HUD・Title・Briefing・Result は変えていない。遊べない us_04〜us_07 の艇は描いていない。jp_06 の米駆逐艦は絵の大きさ 236 × 21.6 → 229.6 × 24（当たりは同じ）。
+-    航跡は直線の V で、艦の夜の航跡は薄く、jp_03 の僚艇 12 隻は航跡なし（予算）。夜の火災の煙は控えめ（1 つの火災で玉 5・α ≤ 0.5）で、艦の煙は航跡に重なると薄い＝炎の光のほうが「燃えている」の手掛かり。jp_03 の岸の帯は斜路の海の部分に寄せ波の白を掛ける。
++    航跡は直線の V で、艦の夜の航跡は薄く、jp_03 の僚艇 12 隻は航跡なし（予算）（IP1a で道のりに沿う尾に・艦は濃く・僚艇にも短い尾）。夜の火災の煙は控えめ（1 つの火災で玉 5・α ≤ 0.5）で、艦の煙は航跡に重なると薄い＝炎の光のほうが「燃えている」の手掛かり。jp_03 の岸の帯は斜路の海の部分に寄せ波の白を掛ける。
+     星弾と探照灯の絵の色は ui-config の色から白へ寄せた（照明弾の tint は掛け算で少し純色に見える）。jp_03 ハードで火災が出ると見える物は最大 +35（門 +40 の内だが余裕は小さい）。音は無い（v0.7.1 合成の効果音・v0.7.2 BGM と命中スロー）。
+ - 計測（v0.7.0 全体。独立の見え方の検査が S3c の木（S4 の前）で回した `v0700/impl/vcheck/`。S4 の差は上の S4 の計測）:
+   - art-perf（A＝f5563ab・窓 15 秒・W 1560。描いたフレームの p95 と見える物の p95）: us_02 ハードの星弾 137.7 → 141.9 ms（×1.03・+25）・us_01 の夜明けの空襲 86.2 → 93.6（×1.09・+16。3 組。2 組の回では ×1.22 だったが A 対 A の揺れ ×1.15 の回）・
+diff --git "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md" "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+index 0848d79..2ade87f 100644
+--- "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
++++ "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+@@ -49,7 +49,7 @@
+ | v0.6.10 | 日本ハードモード⑧b：撃ち返す味方の駆逐艦（jp_04） | v0.6.9 の計画の質問（「味方の駆逐艦（卯月）は出さず、T-38 が卯月の代わりに輸送船を守る夜にしました。撃ち返す味方の駆逐艦も出したいですか？（出すなら次の版）」）へのユーザーの答え「撃ち返す味方の駆逐艦も出したいです」（2026-10-28）と、v0.6.9 実機 1 回目の選択「おすすめのAで進めてください」（A＝引きつけて離す: T-38 が 1 隻を引きつけて離し、もう 1 隻を駆逐艦が受け持つ）。jp_04 に味方の駆逐艦 卯月（`ijn_destroyer_mutsuki`＝睦月型 102.7 × 9.16 m・12 cm × 2・25 mm・探照灯 1,500 m。卯月が撃ち返した記録は見つからない＝ゲーム上の想定）: 輸送船の北東 727 m（(3620, 2380)）に止まったまま沈まず、海の上の薄い扇（50〜180°＝東の線。浜の線の南は陸なので切る）の内で 15 kt 以上で走る米PT を 800 m で見つけ（乱数 seed+27）、照らして 12 cm と 25 mm で撃つ（seed+28。12 cm の 1 命中で撃退か 10% で撃沈）。照らされて 1.0 秒たった PT は、射点の哨戒なら慌てて撃ち（照らされた斉射。模擬の 800 夜では 0）、ほかは何もしない（照らされても撃っても PT は去らない＝実機 1 回目から）。去る PT（撃退・夜明け）は 2.5 秒追って撃つ。忍び寄る PT はその斉射の前に照らされない（検査 V-A3）＝卯月は走らせた PT を受け持ち、北と北東の PT は T-38 の仕事のまま。HUD の 2 行目に「卯月 撃退！ 米PT 1 隻が離脱」・平常の行の末尾「 ・ 走らせれば卯月が照らす」（ノーマルだけ）・夜明け近しの「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」、Briefing の敵の行に「輸送船の北東に味方の卯月。走るPTを照らして撃つ」、Result に卯月の 1 行（照らした・命中/生きた PT へ撃った弾・撃退・撃沈）と雷撃の行の「卯月が撃退」、自艇の 25mm の行は自艇の分。模擬（N 400 × 2 組・`scripts/landing-sim.ts`・帯 `systems/ally-sim-bands`。data の値のまま。実機 1 回目の撃っても去らない規則）: ノーマル lure 94.3／93.0%・人に近い human 71.5／69.0%（卯月なし 49.3／51.8）・human_face 58.8／59.8%（8.5／5.3）・PT へ割って入る face 71.0／76.3%（17.3／19.8）・夜明けの前の帰投 lure 98.5／98.3%、ハード lure 87.8／81.0%・human 48.8／45.8%・human_face 7.5／6.5%・段（human のハード − ノーマル）−23.0 点（実機 1 回目の前＝撃ったら去った規則: ノーマル human 82.0／81.0%・ハード human 74.0／71.8%・段 −8.6 点）。世界と模擬は記録した入力の再生で 120 夜の差 0。ほかの 7 任務とそのハードはビット同一（模擬の md5 17 本・凍結 20 本・再生 58 件・HUD の A/B 16 件・Briefing の文）。`?debug&noally` で卯月を切った jp_04 は v0.6.10 S0b（6856840）と同じ。先に v0.6.9 実機 2 回目の軽微な修正 3 点（S0a・S0b）: 狙う艦の無い魚雷の「PTの下を抜ける」「大発の下を抜ける」と機を撃つ間の「対空 ・ まず当たらない」を出さない（全任務の HUD と Result の文だけ）、jp_04 の夜明け 200 → 160 秒（ユーザーの選択「A: jp_04 の夜明けだけ 160 秒」）。1 つの版を段 S0a〜S7 で作り、S8 でレビュー・直し・出荷。値と理由は CHANGELOG v0.6.10。実機 1 回目（2026-11-03）「卯月が強すぎてPTが瞬殺される。卯月を弱めたところであまり意味がないので、当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→ 卯月を残すかの問いにユーザーの選択「A: 卯月は残し、PT を撃った後も去らない形に戻す」: 3 種類の斉射とも撃った PT は去らずに自艇と戦い続ける・照らされた PT も去らない・卯月の値はそのまま、人に近い遊び方の帯を新しい規則の値へ（CHANGELOG v0.6.10 の「実機 1 回目」） | （1 回目（2026-11-03）は卯月が強すぎて PT が瞬殺される → 撃った PT も照らされた PT も去らない形に戻した＝ユーザーの選択 A）実機 2 回目（Title の「日本」→「多号作戦・オルモック湾へ」→ ノーマル）: ①米PT が魚雷を撃った後も去らずに自艇へ寄って撃ってくるか（「米PT 戦いながら発射！ …」や「米PT 雷撃！ …」の後もその PT が残り、赤い線から掃射してくる） ②卯月は東の走る PT を照らして撃つまま。卯月の強さと PT の手応えを一言、ノーマルで何回中何回クリアしたかも（模擬: 人に近い遊び方で 10 夜に 7 夜、PT へ割って入っても 10 夜に 7 夜。ハードの人に近い遊び方は 2 夜に 1 夜より少ない） ③「夜明け近し ・ 帰投の輪で揚陸を待て」が出たら輪へ戻って待ち、揚陸完了でそのまま終われるか。すぐ見たいときだけ `…/ww2-torpedo-boat/?debug&mission=jp_04`（ハードは `&hard`・卯月なしは `&noally`）。2 回目（2026-11-04）「内容自体はOKです。揚陸完了までの時間を30秒短くしておいてください」→ 実機 2 回目: 揚陸 `unload_s` 140 → 110 秒（ノーマル・ハード。夜明け 160 秒・卯月・米PT の規則はそのまま。値と理由は CHANGELOG v0.6.10 実機 2 回目）。3 回目（ノーマル）: ①揚陸完了が早く来るか（Briefing の条件「揚陸 110 秒」・HUD の「揚陸 あと N 秒」が 110 から減り、輸送船の「揚陸完了」から夜明けまで約 50 秒。夜明け近しの帰投の輪の呼びかけはほとんど出ない） ②ノーマルで何回中何回クリアしたか（模擬: 人に近い遊び方で 10 夜に 7 夜・PT へ割って入って 10 夜に 6 夜。夜明けの前に帰れる夜がほとんど） | 1 |
+ | v0.6.11 | 日本ハードモード⑨：運天港・空襲下の退避（jp_03） | jp_03「運天港・空襲下の退避」（1944-10-10 十・十空襲・昼）を出撃可に（Title の日本のタブの 3 番目。日本のタブは 6 任務＝2 × 3 で満杯）。ユーザーの決め（2026-11-04。旧計画の［隠れ］［散れ］の号令と散開はやめた）: U1 18 隻＝3 隻ずつ 6 つの隊。スティックで操作中の隊の隊長艇を動かし、僚艇 2 隻が後ろに続く。［切替］（右端の識別の段。字は「切替」「第4隊」）で操る隊を替える／U2 隊長艇が機銃を撃てば僚艇も撃つ／U3 操作していない隊は自分では隠れず、ランダムに回避しながら逃げる／U4 隊長艇ごとに HP・乗員・火災・機関の状態／U5 ノーマルは 4 波 2×2・3×2・3×2・4×2 編隊（（1 編隊の機数）×（同時の編隊の数））、ハードは同じ機数の編隊が 3 つ同時（第 4 波は 4 機の編隊が 3 つ＝12 機）。各波で 1 編隊は操作中の隊を、ほかの編隊はほかの隠れていない隊を狙う（予告と赤い輪の 10 秒後に始まる）／U6 6 隻以上残れば達成（史実 5）／U7（S3 の表の後の問いへの答え「編隊が戻ってくる」）爆弾を落とし終えた編隊は、次の波の前に間に合えば赤い輪の予告つきでもう一度来る（1 編隊 2 回まで・第 4 波は 2 回目なし）。隠れ場所は中の壕・西の壕・東の壕（レール 1 本で 1 隻 12 秒ずつ上げる）と屋我地の陰（東。予告ごとに 50% で見つかる）、枠は 3 隻ずつ計 12 < 18。240 秒（第 1 次の空襲が去る）が決着で残存が決まり、操作中の隊が隠れていれば終わる。外なら敵機 4 機が追い、どの隠れ場所でも止まれば帰投（CLAUDE.md §2「夜明け」の読み替え。画面の言葉は「空襲」「退避」）。模擬（N 400 × 2 組・`scripts/evac-sim.ts`・帯 `systems/evac-calibration`）: ノーマルの人に近い遊び方 seq 65.0%（遅い人 seq_slow 49.4%・陰を使う seq_cover 72.5%・機銃も撃つ seq_shoot 69.5%）・自分の隊だけ隠す own_only 15.0%・何もしない stay 0.1%、ハードの seq 35.4%（stay 0.0%）。世界と模擬は記録した入力の再生で差 0（world-vs-sim）。ほかの 8 任務はビット同一。1 つの版を段 S0〜S7（S3b は U7）で作り、S8 でレビュー・直し・出荷。値と理由は CHANGELOG v0.6.11 | 実機 1 回目（Title の「日本」→「運天港・空襲下の退避」→ ノーマル）: ①［切替］で操る隊（3 隻）が替わり、後ろの 2 隻が続くか。壕の輪の中で止まると 1 隻ずつ上がり、隊が全部隠れると「第N隊を見失った！」で編隊が引き返すか ②爆撃を終えた編隊が「第2波 3機 戻ってきた」と赤い輪で別の隊へもう一度来るのが分かるか。「第1次の空襲が去った」の時に操作中の隊が隠れていて 6 隻以上なら Result に「残存 N／18（史実 5） ・ 6 隻以上を残して隠れた」が出るか。ノーマルで何回中何回クリアしたかも（模擬: 人に近い遊び方で 10 回に 6〜7 回・ハードは 10 回に 3〜4 回） ③ハード（Title の「日本」→「運天港・空襲下の退避」→ ハード）で「第4波 4機×3」の予告（左上の時計「空襲 残り 1:00」のころ）を迎え、見張りで港全体を見ながら左上の FPS のいちばん低い数字はいくつか（12 機が来るのは外の隊が 3 つ以上残っている時だけ）。実機 2 回目（IP1。1 回目のユーザーの直し U8〜U10）: ①残った隊をみな壕に隠し、空の編隊が去ると 240 秒を待たずに「全艇が隠れた ・ 空襲を待たずに退避完了」で Result（時の行に「残り M:SS」）へ進むか。陰（屋我地の陰（東））に隊を残すと、2 行目が「陰の隊は予告で見つかることがある ・ 第4波の予告の後に退避完了」と言い、第 4 波の予告の後（か陰の隊を壕へ移すと）に終わるか ②本部半島側の壕に入ると、レールの下に「2隻目 45%」のような 1 艇ごとの % が出て進み、艇がレールを上っていくのが分かるか。壕がコンクリートの斜路・枕木・2 本のレール・岩の口（ドック）に見えるか（既定のズームと見張りの両方で）。実機 3 回目（IP2。2 回目のユーザーの直し U11）: ①屋我地の陰（東）が、張り出した岩の崖の入り江（崖の上の木々・口の外の岩・岩に当たる白い波・崖の下の海の暗い陰）に見え、隊を陰の輪で止めて隠すと艇が暗く薄くなって「崖の陰の下」に見えるか（既定のズームと見張りの両方で）。予告で見つかると黄色の輪が岩の絵の上に出て、艇がふつうの色に戻るか ②壕の口の周りの岩と木々が陰と同じ絵柄に見え、レールを上げている時の「2隻目 45%」の札が木や岩に隠れず読めるか | 1 |
+ | 候補（実機の感想しだい） | 夜明け③：昼の海 | 機銃掃射・昼の見張り（駆逐艦が遠くから見る、探照灯なし）・煙幕と対空・争奪（敵機 → 遅れて味方戦闘機） | 昼が昼らしいか | 1 |
+-| v0.7.0 | アートと音①：コードで描く絵 | 絵と音はコードで描く・合成する（ユーザーの決め v0.7.0 の U1（2026-11-07）「コードで描く・鳴らす」。外部の画像・音のファイルを使わない。手本は v0.6.11 の屋我地の陰）。全任務の艇・艦・機・大発（トップダウン・起動時に 1 回描くテクスチャ。鍵・寸法・原点は今のまま）と夜の海の演出（波の面・航跡・水柱・砲口炎・爆発・火災と煙・探照灯・星弾・煙幕・月のきらめき・夜明けの光・岸の帯）。遊びは 1 ビットも変えない（模擬の md5・f5563ab との再生と HUD の A/B・テクスチャの寸法の A/B）。段 S0〜S4（S0 棚卸しの道具と骨組み・S1 自艇と僚艇・S2a 艦と大発と米PT と魚雷・S2b 機の種類・S3a 海の面と夜明けの光・S3b 航跡と水柱と爆発・S3c 炎と煙と光と岸・S4 仕上げ）。段 S0〜S4 済み（2026-11-09。門と計測は CHANGELOG の v0.7.0） | ① どの任務でも、自艇（白）・敵（赤）・味方（青）が夜の海で一目で分かるか。「見張り」で引いても、魚雷艇・大発・駆逐艦・輸送船・飛行機の形の違いが分かるか ② 航跡・水柱・爆発・火災の煙・沈む艦の油の輪・探照灯・星弾が、敵や弾・雷跡を見落とす邪魔になっていないか（星弾と探照灯の照らす範囲の縁が分かるか・静音で自艇の白い航跡が出ないか）。波の模様があれば格子の線は要らないか（URL の末尾に `?debug&title&nogrid` で格子なし） ③ 撃ち合いや空襲が重なる場面（us_02 ハードの星弾と探照灯、jp_03 ハードの最後の空襲）で、左上の FPS が 55 以上か・カクつかないか | 2〜3 |
++| v0.7.0 | アートと音①：コードで描く絵 | 絵と音はコードで描く・合成する（ユーザーの決め v0.7.0 の U1（2026-11-07）「コードで描く・鳴らす」。外部の画像・音のファイルを使わない。手本は v0.6.11 の屋我地の陰）。全任務の艇・艦・機・大発（トップダウン・起動時に 1 回描くテクスチャ。鍵・寸法・原点は今のまま）と夜の海の演出（波の面・航跡・水柱・砲口炎・爆発・火災と煙・探照灯・星弾・煙幕・月のきらめき・夜明けの光・岸の帯）。遊びは 1 ビットも変えない（模擬の md5・f5563ab との再生と HUD の A/B・テクスチャの寸法の A/B）。段 S0〜S4（S0 棚卸しの道具と骨組み・S1 自艇と僚艇・S2a 艦と大発と米PT と魚雷・S2b 機の種類・S3a 海の面と夜明けの光・S3b 航跡と水柱と爆発・S3c 炎と煙と光と岸・S4 仕上げ）。段 S0〜S4 済み（2026-11-09。門と計測は CHANGELOG の v0.7.0） | ① どの任務でも、自艇（白）・敵（赤）・味方（青）が夜の海で一目で分かるか。「見張り」で引いても、魚雷艇・大発・駆逐艦・輸送船・飛行機の形の違いが分かるか ② 航跡・水柱・爆発・火災の煙・沈む艦の油の輪・探照灯・星弾が、敵や弾・雷跡を見落とす邪魔になっていないか（星弾と探照灯の照らす範囲の縁が分かるか・静音で自艇の白い航跡が出ないか） ③ 撃ち合いや空襲が重なる場面（us_02 ハードの星弾と探照灯、jp_03 ハードの最後の空襲）で、左上の FPS が 55 以上か・カクつかないか | 2〜3 |
+ | v0.7.1 | アートと音②：合成の効果音 | 機銃・砲・爆発・エンジン・波などを音のファイルを使わず合成（Web Audio）。最初のタッチで鳴らし始める（iOS）・消音の切り替え | 音が遊びの手掛かりになるか・うるさくないか | 1〜2 |
+ | v0.7.2 | アートと音③：BGM と命中スロー | 合成の単純な BGM・命中の瞬間のスロー演出 | 気分が出るか・スローが操作の邪魔にならないか | 1〜2 |
+ | v0.8.0 | iOSビルド | Capacitor導入／GitHub Actions（macOSランナー）でipa／TestFlight配信／アイコン・スプラッシュ | TestFlightで起動、PWA版と同じ挙動 | 2 |
+diff --git a/scripts/headless/art-perf.mjs b/scripts/headless/art-perf.mjs
+index 07ab3ae..74673fa 100644
+--- a/scripts/headless/art-perf.mjs
++++ b/scripts/headless/art-perf.mjs
+@@ -1,4 +1,5 @@
+-// 絵の性能の A/B（v0.7.0 S0。spec-v0700 §5.7・§7.2「art-perf」。門はフレーム p95 ≤ +15%・画面に見える Mission の物 ≤ +40）: ビルド A（基準 main f5563ab）と B（今の木）を
++// 絵の性能の A/B（v0.7.0 S0。spec-v0700 §5.7・§7.2「art-perf」。門はフレーム p95 ≤ ×1.40・画面に見える Mission の物 ≤ +150＝IP1a でユーザーの U3
++// 「たびたびFPSを気にしますが、全く問題なく動くのでもっと派手な演出、数でも大丈夫だと思います」から lead が決めた予算（S0〜S4 は ×1.15・+40））: ビルド A（基準 main f5563ab）と B（今の木）を
+ // 同じ台本・同じ窓で交互に回し（A → B を 1 組、ROUNDS 組。夜ごとに新しいブラウザ）、窓の間 EVERY フレーム（既定 2）に 1 回描いて、描いたフレームの（進める＋描く）の壁時計の p95 と、
+ // そのフレームで見えている Mission の物の数（visible で α > 0）の p95 を出す。組ごとの良い方（p95 の小さい方）で比べ、A 対 A（組の間の揺れ）も出す。
+ // ヘッドレスの WebGL は CPU のラスタ（SwiftShader）で塗りに厳しい＝ここで +15% に収まれば iPhone の GPU は安全側（spec §5.7）。数はヘッドレスの相対値（iPhone の FPS は実機テスト ③）。
+@@ -10,6 +11,10 @@ import { writeFileSync } from 'node:fs';
+ import { FRAME_MS, chromium, envNum, openGame, serve } from './lib.mjs';
+ import { bundleEntry } from './world-vs-sim.mjs';
+ 
++/** 門（v0.7.0 IP1a。U3 の予算: フレーム p95 の比・見える物の差） */
++const P95_RATIO_MAX = 1.4;
++const VIS_DELTA_MAX = 150;
++
+ const CASES = [
+   { id: 'us_02h', query: 'mission=us_02&seed=1&hard', kind: 'script', script: 'standoff', start: 'starshell', maxWarm: 60 },
+   { id: 'us_01d', query: 'mission=us_01&seed=1&dawn=20', kind: 'script', start: 'planes', maxWarm: 60 },
+@@ -68,11 +73,11 @@ async function main() {
+     const dVis = B.vis95 - A.vis95;
+     const aa = res[i].a.length > 1 ? Math.max(...res[i].a.map((x) => x.p95)) / Math.min(...res[i].a.map((x) => x.p95)) : NaN;
+     const errs = [...res[i].a, ...res[i].b].reduce((s, x) => s + x.errors.length, 0);
+-    const ok = ratio <= 1.15 && dVis <= 40 && errs === 0;
++    const ok = ratio <= P95_RATIO_MAX && dVis <= VIS_DELTA_MAX && errs === 0;
+     if (!ok) bad++;
+     const win = (x) => `t ${f2(x.t0)}〜${f2(x.t1)}（${x.reason}${x.ended ? `・${x.ended}` : ''}）`;
+-    console.log(`${c.id.padEnd(7)} ${c.query}: 描いたフレーム（進める＋描く）の p95 A ${f2(A.p95)} → B ${f2(B.p95)} ms（×${f2(ratio)}・≤ 1.15 ${ratio <= 1.15 ? '✓' : '✗'}）・p50 ${f2(A.p50)} → ${f2(B.p50)}・`
+-      + `見える物の p95 ${A.vis95} → ${B.vis95}（${dVis >= 0 ? '+' : ''}${dVis}・≤ +40 ${dVis <= 40 ? '✓' : '✗'}）・全部の物 ${A.all95} → ${B.all95}・A 対 A の揺れ ×${f2(aa)}・描いた ${A.n}/${B.n} 枚・窓 A ${win(A)} B ${win(B)}・page errors ${errs}`);
++    console.log(`${c.id.padEnd(7)} ${c.query}: 描いたフレーム（進める＋描く）の p95 A ${f2(A.p95)} → B ${f2(B.p95)} ms（×${f2(ratio)}・≤ ${P95_RATIO_MAX} ${ratio <= P95_RATIO_MAX ? '✓' : '✗'}）・p50 ${f2(A.p50)} → ${f2(B.p50)}・`
++      + `見える物の p95 ${A.vis95} → ${B.vis95}（${dVis >= 0 ? '+' : ''}${dVis}・≤ +${VIS_DELTA_MAX} ${dVis <= VIS_DELTA_MAX ? '✓' : '✗'}）・全部の物 ${A.all95} → ${B.all95}・A 対 A の揺れ ×${f2(aa)}・描いた ${A.n}/${B.n} 枚・窓 A ${win(A)} B ${win(B)}・page errors ${errs}`);
+     rows.push({ ...c, A, B, ratio, dVis, aa, runs: res[i] });
+   }
+   console.log(`art-perf ${bad === 0 ? 'OK' : `NG ${bad}`}（${rounds} 組・窓 ${o.win} 秒・${o.every} フレームに 1 回描く・W ${o.width}）`);
+diff --git a/scripts/headless/tex-ab.mjs b/scripts/headless/tex-ab.mjs
+index 5c39bee..44d6251 100644
+--- a/scripts/headless/tex-ab.mjs
++++ b/scripts/headless/tex-ab.mjs
+@@ -2,7 +2,7 @@
+ // GPU（幅×高さ×4 B）と CPU の canvas（generateTexture・createCanvas の絵）の MB、Mission の Image・Sprite の鍵ごとの原点、Boot の create の壁時計を比べる。
+ // - 既存の鍵（A にある鍵）の幅・高さが B で同じ＝門（違えば ✗）。A にあって B に無い鍵も ✗。B だけの鍵は「新しい鍵」として並べる。
+ // - TileSprite・Text の UUID の形の鍵と、__ で始まる Phaser の鍵は除く（R21）。tex-aircraft-enemy は S2b から任務ごとに描き直すので任務ごとに読む（鍵×任務で比べる）。
+-// - k 1.09（W 1560 の横持ち 852×393 CSS・dpr 2）と k 2（1560×720 CSS・dpr 2＝iPad・PC の大画面）。MB の差の門は k 1.09 で ≤ +12 MB（k 2 は ≤ +24 MB を報告）。
++// - k 1.09（W 1560 の横持ち 852×393 CSS・dpr 2）と k 2（1560×720 CSS・dpr 2＝iPad・PC の大画面）。MB の差の門は k 1.09 で ≤ +24 MB（IP1a の U3 の予算。S0〜S4 は +12。k 2 は報告）。
+ //   tex-debug-ring（?debug だけ。4.6 MB）は合計から外して別に出す。jp_03 の岩の絵（初めて使う時に 1 回）は jp_03 の行に入る。
+ // - Boot の create の壁時計（SceneManager.create を init script で包む）: 任務ごとの中央値を A/B で（+200 ms 以内を目安・報告。R28）。
+ // CHECK=1（spec §3.5 の tex-check）: 描き直す鍵の canvas の画素から、覆い（α ≥ 0.5 の画素）・平均の明るさ（α で重みを付けた luma）・平均の色の色相と彩度・夜の海 #0b1020 と
+@@ -233,7 +233,7 @@ async function main() {
+     console.log(`  B に無い鍵: ${missing.length === 0 ? '✓ なし' : `✗ ${missing.join(' / ')}`}`);
+     console.log(`  新しい鍵（B だけ）: ${added.size === 0 ? 'なし' : [...added].sort().join(' / ')}`);
+     console.log(`  Mission の絵の原点: ${originBad.length === 0 ? '✓ 鍵ごとに同じ' : `✗ ${originBad.join(' / ')}`}`);
+-    const gate = sc.name === 'k1.09' ? 12 : 24;
++    const gate = 24; // v0.7.0 IP1a: U3（「もっと派手な演出、数でも大丈夫」）で lead が GPU ≤ +24 MB に（S0〜S4 は k 1.09 で ≤ +12・k 2 は報告だけ）
+     const dGpu = Math.max(...rows.map((_, i) => mb.b.gpu[i] - mb.a.gpu[i]));
+     const dCpu = Math.max(...rows.map((_, i) => mb.b.cpu[i] - mb.a.cpu[i]));
+     for (let i = 0; i < rows.length; i++) console.log(`    ${rows[i].m}: GPU ${f2(mb.a.gpu[i])} → ${f2(mb.b.gpu[i])} MB・CPU の canvas ${f2(mb.a.cpu[i])} → ${f2(mb.b.cpu[i])} MB（tex-debug-ring を除く）・Boot の create ${f2(rows[i].a.createMs.Boot)} → ${f2(rows[i].b.createMs.Boot)} ms・Mission の create ${f2(rows[i].a.createMs.Mission)} → ${f2(rows[i].b.createMs.Mission)} ms`);
 diff --git a/src/assets/fx-art.ts b/src/assets/fx-art.ts
 index 151d0e0..39e2b2a 100644
 --- a/src/assets/fx-art.ts
@@ -474,10 +609,33 @@ index 7cb4bb8..babdd00 100644
  /** 夜明けの光の α: 夜 0・移り変わりの中ほどで最大・昼 0（R4）。昼から始まる任務（dayStart）は 0。段は 0〜steps */
  export function dawnGlowAlpha(step: number, steps: number, dayStart: boolean): number {
    if (dayStart || step <= 0 || step >= steps) return 0;
+diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
+index de97929..8326ec9 100644
+--- a/src/config/fx-art-config.ts
++++ b/src/config/fx-art-config.ts
+@@ -34,8 +34,7 @@ export const WAKE_CRUISE_ALPHA_SHARE = 0.7;
+ export const WAKE_SILENT_LEN_HULLS = 0.35;
+ /** 船体の絵の α がこれ未満なら航跡を出さない（jp_03 の陰に隠れた隊 0.45・沈没の tween の終わり。見えない船体の航跡を出さない） */
+ export const WAKE_HULL_ALPHA_MIN = 0.5;
+-/** jp_03 の 18 隻は隊長艇だけ航跡を出す（spec §5.7「+40 を超えそうなら僚艇の航跡を隠す」。S3b の計測で最初から true＝見える物 +6） */
+-export const WAKE_EVAC_LEADERS_ONLY = true;
++/** （IP1a で WAKE_EVAC_LEADERS_ONLY をやめた: U3「数でも大丈夫」で jp_03 の僚艇にも短い尾。輪の大きさは config/wake-art-config の evacFollower） */
+ /** 航跡の腕の絵（白。太い下塗り＋細い芯。遠い端へ向けて細く薄く）: 腕の根元と端の幅 px・α、中央の泡の幅 px・α（R7: 腕が主・泡は薄く短い） */
+ export const WAKE_ARM_WIDTH_PX: readonly [number, number] = [4, 10];
+ export const WAKE_ARM_ALPHA: readonly [number, number] = [1.0, 0.0];
 diff --git a/src/config/game-config.ts b/src/config/game-config.ts
-index 726b05a..ec9dff1 100644
+index 726b05a..25e2a64 100644
 --- a/src/config/game-config.ts
 +++ b/src/config/game-config.ts
+@@ -111,7 +111,7 @@ export const DEBUG_AA_CHANCE = debugNumber('aa');
+ export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nopatrol'); // ?debug&nopatrol: 夜の哨戒機なし（v0.6.7。jp_02 の夜の 2 機が来ない。夜明けの 4 機は残る）
+ /** ?debug&noally: 味方の駆逐艦 卯月なし（v0.6.10。jp_04 が v0.6.10 S0b と同じ世界。模擬の ALLY_OFF=1 と同じ。比較用） */
+ export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
+-/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。波の模様があれば格子を消してよいかを実機テスト ② で比べる。既定は config/sea-art-config の SEA_GRID_ON＝残す） */
++/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
+ export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
+ /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
+ export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 @@ -231,6 +231,7 @@ export const TEXTURE_KEYS = {
    fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
    wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
@@ -487,7 +645,7 @@ index 726b05a..ec9dff1 100644
    coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
    oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
 diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
-index 82c55b9..bc1625f 100644
+index 82c55b9..a237d6c 100644
 --- a/src/config/sea-art-config.ts
 +++ b/src/config/sea-art-config.ts
 @@ -1,8 +1,13 @@
@@ -577,7 +735,7 @@ index 82c55b9..bc1625f 100644
 - * iPhone の GPU では全面の層 1 枚は軽い（spec §5.7）ので、実機で見比べたければここを 'tile' にして試す（ほかは同じ・遊びは変わらない）
 + * 海の面のテクスチャ（tex-sea-tile。512 px の正方形＝0.5 px/m × 1,024 m。IP1a でユーザーの U2「波の模様が波に見えずにゴミのように見えます」から描き直し）:
 + * 周期の縁で合う正弦の和（assets/sea-shape の seaTilePixels）。dirDeg＝波の進む向き（画面の x から時計回り。波頭の筋は −12° 前後＝S3a の向き）、
-+ * swell＝長いうねり（96〜256 m）・chop＝波（24〜60 m）・ripple＝さざ波（10〜20 m）・warp＝座標のゆがみ（山 1〜2 つ・warpM m ずらす＝筋がまっすぐにならない）、
++ * swell＝長いうねり（96〜256 m）・chop＝波（24〜64 m）・ripple＝さざ波（10〜20 m）・warp＝座標のゆがみ（山 1〜2 つ・warpM m ずらす＝筋がまっすぐにならない）、
 + * swellGain・chopGain＝正規化した和の強さ（和は ±1 にほぼ届かないので 1 より大きく）、mix＝明暗に混ぜる割合（うねり・波・さざ波）、crestBend＝うねりの山を尖らせる割合（0＝そのまま・1＝2 乗）、
 + * foam＝泡が出始めて満ちる高さ（smoothstep）、画素の α: base＝一面の下地・light＝山・dark＝谷（黒）・foamAlpha＝泡（白）。表示は SEA_LIGHT_ART の tint × α
   */
@@ -971,7 +1129,7 @@ index 8f87883..c9f3434 100644
      this.glints.destroy();
    }
 diff --git a/src/systems/wake-fx.ts b/src/systems/wake-fx.ts
-index e627b20..855eb4c 100644
+index e627b20..e6ef7d6 100644
 --- a/src/systems/wake-fx.ts
 +++ b/src/systems/wake-fx.ts
 @@ -1,18 +1,28 @@
@@ -986,7 +1144,7 @@ index e627b20..855eb4c 100644
 +//   輪がいっぱいなら一番古い泡を使い回す。船体の絵が見えない・薄くなったら、その船体の泡はすぐ消す（敵の位置をばらさない）。
 +// - V の印（S3b の tex-wake-boat／tex-wake-ship。頂点＝艇尾・原点 (0.5, 0)）は艇尾の近くだけに短く（WAKE_V_LEN_SHARE）。
 +// 自艇（jp_03 は座席の隊長艇）だけ世界の速力帯 w.band で段を決める（停止 なし・静音 薄い泡だけ（V なし）・巡航・全速＝R1・D9）。濃さは船体の状態の速さ（読むだけ）から。
-+// 対象: 自艇・僚艇・隼艇・駆逐艦と輸送船（destroyers.ships）・大発（敵 hunt・味方 convoy）・米PT・jp_03 の 18 隻（IP1a から僚艇も。U3「数でも大丈夫」。輪は隊長艇 9・僚艇 4）。
++// 対象: 自艇・僚艇・隼艇・駆逐艦と輸送船（destroyers.ships）・大発（敵 hunt・味方 convoy）・米PT・jp_03 の 18 隻（IP1a から僚艇も。U3「数でも大丈夫」。輪は隊長艇 8・僚艇 3）。
 +// 卯月と味方の輸送船は動かない（停泊）ので対象にしない。式は assets/fx-shape・wake-shape。§7: 確保は constructor だけ。update は読んで書くだけ（配列・オブジェクトを作らない）。論理の状態には書かない（art-rules）。
  import type Phaser from 'phaser';
  import { playerWakePose, sternOffsetInto, wakePose, type SpeedBand, type WakePose } from '../assets/fx-shape';
@@ -1031,7 +1189,7 @@ index e627b20..855eb4c 100644
 +  private readonly ringCur: Int32Array;
 +  private readonly lastX: Float32Array;
 +  private readonly lastY: Float32Array;
-+  private readonly phase: Float32Array;
++  private readonly swayPh: Float32Array;
 +  private readonly hasLast: Uint8Array;
 +  /** 泡ごと（全部の輪を 1 列に）: 絵・位置・幅（始め・終わり）・長さ・α の上限・年齢・寿命（0 なら空き） */
 +  private readonly puffs: Phaser.GameObjects.Image[] = [];
@@ -1092,7 +1250,7 @@ index e627b20..855eb4c 100644
 +    this.ringCur = new Int32Array(n);
 +    this.lastX = new Float32Array(n);
 +    this.lastY = new Float32Array(n);
-+    this.phase = new Float32Array(n);
++    this.swayPh = new Float32Array(n);
 +    this.hasLast = new Uint8Array(n);
 +    let total = 0;
 +    for (let i = 0; i < n; i++) {
@@ -1100,7 +1258,7 @@ index e627b20..855eb4c 100644
 +      this.beam[i] = this.hulls[i]!.displayWidth;
 +      this.ringAt[i] = total;
 +      this.ringN[i] = this.trails[i]!.cap;
-+      this.phase[i] = this.rng.next() * Math.PI * 2;
++      this.swayPh[i] = this.rng.next() * Math.PI * 2;
 +      total += this.trails[i]!.cap;
 +    }
 +    this.pW0 = new Float32Array(total);
@@ -1171,8 +1329,8 @@ index e627b20..855eb4c 100644
 +    if (step === 2) return;
 +    const rng = this.rng;
 +    const beam = this.beam[i]!;
-+    this.phase[i] = this.phase[i]! + rng.nextRange(WAKE_SWAY_STEP[0], WAKE_SWAY_STEP[1]);
-+    const side = beam * (tr.swayBeams * swayAt(this.phase[i]!) + rng.nextRange(-WAKE_SWAY_JITTER_BEAMS, WAKE_SWAY_JITTER_BEAMS));
++    this.swayPh[i] = this.swayPh[i]! + rng.nextRange(WAKE_SWAY_STEP[0], WAKE_SWAY_STEP[1]);
++    const side = beam * (tr.swayBeams * swayAt(this.swayPh[i]!) + rng.nextRange(-WAKE_SWAY_JITTER_BEAMS, WAKE_SWAY_JITTER_BEAMS));
 +    const r = headingDeg * DEG;
 +    const j = this.ringAt[i]! + this.ringCur[i]!;
 +    this.ringCur[i] = (this.ringCur[i]! + 1) % this.ringN[i]!;
@@ -1258,3 +1416,358 @@ index 4e2e9b9..c23902b 100644
  }
  
  const noop = (): void => {};
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index 9773423..886bca6 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -66,7 +66,7 @@ const KEEP = [
+ /** v0.7.0 で足す予定の鍵（spec D2）と分類。TEXTURE_KEYS に足した鍵はここに無ければならない（無い鍵を足すならここにも足す） */
+ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
+   'tex-destroyer-us': 'redraw-new',
+-  'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx',
++  'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx', 'tex-wake-puff': 'fx',
+   'tex-sea-tile': 'fx', 'tex-dawn-glow': 'fx', 'tex-glint': 'fx', 'tex-coast-strip': 'fx',
+   'tex-oil-slick': 'fx', // S4（spec の D2 の外。沈没の油の輪が水柱の絵の流用で星形に見えた＝独立の見え方の検査の指摘）
+ };
+diff --git a/tests/fx-art-s4.test.ts b/tests/fx-art-s4.test.ts
+index 9d70818..bf5f7b9 100644
+--- a/tests/fx-art-s4.test.ts
++++ b/tests/fx-art-s4.test.ts
+@@ -135,8 +135,8 @@ describe('航跡・星弾・昼の海・岸の帯（S4）', () => {
+     expect(read('src/assets/light-art.ts')).toContain('starshellPixels(d, R, SS_LIGHT_COLOR)');
+     expect(read('src/assets/light-art.ts')).toContain('searchlightPixels(W, H, halfW, SL_LIGHT_COLOR)');
+   });
+-  it('昼の波頭は控えめ（α ≤ 0.25・白波 ≤ 0.4）、波頭の群れ・きらめきは世界の内に収まる所だけ出す（見え方が変わった時だけ setVisible）', () => {
+-    expect(SEA_LIGHT_ART.day.crestAlpha).toBeLessThanOrEqual(0.25);
++  it('昼の海の面の α ≤ 0.5（IP1a: U2・U3 で昼は明るく青い面に。S4 の「控えめ ≤ 0.25」は散らした波頭の値）・白波 ≤ 0.4、きらめき（白波）は世界の内に収まる所だけ出す（見え方が変わった時だけ setVisible）', () => {
++    expect(SEA_LIGHT_ART.day.crestAlpha).toBeLessThanOrEqual(0.5);
+     expect(WHITECAP_ALPHA_MAX).toBeLessThanOrEqual(0.4);
+     const fx = read('src/systems/sea-fx.ts');
+     expect(fx).toContain('const v = this.on && x - b.hw >= 0 && x + b.hw <= b.bw && y - b.hh >= 0 && y + b.hh <= b.bh;');
+diff --git a/tests/fx-art.test.ts b/tests/fx-art.test.ts
+index f6ec9fc..1827e11 100644
+--- a/tests/fx-art.test.ts
++++ b/tests/fx-art.test.ts
+@@ -12,7 +12,7 @@ import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, muzzleRays
+ import {
+   ART_SEED_FX, BLEND_ADD, EXPLOSION_FIRE_S, EXPLOSION_FLASH_S, EXPLOSION_PARTS, EXPLOSION_PUFF_RADIUS_M, EXPLOSION_PUFF_S, EXPLOSION_SLOTS, EXPLOSION_SMALL_FLASH_S, EXPLOSION_SPLASH_S,
+   FIRE_SMOKE_MAX_RADIUS_M, MUZZLE_RAYS, SPLASH_DROPLETS, WAKE_ALPHA_MAX, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_LENGTH_SHARE, WAKE_CRUISE_ALPHA_SHARE, WAKE_DEPTH,
+-  WAKE_EVAC_LEADERS_ONLY, WAKE_FRAME_BUBBLE, WAKE_FRAME_V, WAKE_HIDE_BELOW_MPS, WAKE_HULL_ALPHA_MIN, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SILENT_ALPHA_MAX, WAKE_TEX_H, WAKE_TEX_W,
++  WAKE_FRAME_BUBBLE, WAKE_FRAME_V, WAKE_HIDE_BELOW_MPS, WAKE_HULL_ALPHA_MIN, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SILENT_ALPHA_MAX, WAKE_TEX_H, WAKE_TEX_W,
+ } from '../src/config/fx-art-config';
+ 
+ const read = (f: string): string => readFileSync(f, 'utf8');
+@@ -75,7 +75,6 @@ describe('航跡の式（assets/fx-shape。R1・R7）', () => {
+     expect(Math.min(...WAKE_ARM_WIDTH_PX, ...WAKE_SHIP_ARM_WIDTH_PX)).toBeGreaterThanOrEqual(2);
+     expect(WAKE_DEPTH).toBeGreaterThan(3);
+     expect(WAKE_DEPTH).toBeLessThan(4);
+-    expect(WAKE_EVAC_LEADERS_ONLY).toBe(true);
+   });
+   it('艇尾の位置: 中心から艇首の逆へ半長（北 0＝上・時計回り）', () => {
+     const o = new Float32Array(2);
+@@ -199,14 +198,14 @@ describe('作法の pin（S3b）', () => {
+     expect(rest).toContain('if (dud) wet.setTexture(TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT)');
+     expect(rest).toContain('else wet.setTexture(TEXTURE_KEYS.splash)');
+   });
+-  it('wake-fx: 確保は constructor だけ、原点 (0.5, 0)・深さ WAKE_DEPTH、速さは状態から（絵の位置の差からではない）、自艇は w.band、見えない絵は隠す。私的な絵のプールは readonly で出した（行数はそのまま）', () => {
++  it('wake-fx: 確保は constructor だけ、原点 (0.5, 0)・深さ WAKE_DEPTH、濃さは状態の速さから、自艇は w.band、見えない絵は隠す。尾の泡は艇尾の進んだ距離の 2 乗で置く（IP1a）。私的な絵のプールは readonly で出した', () => {
+     const s = read('src/systems/wake-fx.ts').replace(/\/\/[^\n]*/g, '');
+     const upd = s.slice(s.indexOf('  update('), s.indexOf('  destroy('));
+     expect(upd).not.toMatch(/\bnew\s|scene\.add\.|\.push\(/);
+     expect(s).toContain('.setOrigin(0.5, 0).setDepth(WAKE_DEPTH).setVisible(false)');
+     expect(upd).toContain('playerWakePose(w.band,');
+     expect(upd).toContain('st.speedMps');
+-    expect(upd).not.toMatch(/prevX|lastX|\.x - /);
++    expect(s).toContain('const step = trailStep(sx - this.lastX[i]!, sy - this.lastY[i]!, tr.spacingM);'); // IP1a: 泡の間隔は距離（2 乗で比べる）。濃さは速さの状態から
+     expect(s).not.toMatch(/Math\.(sqrt|hypot)/);
+     for (const [f, line] of [
+       ['src/systems/escort-boat.ts', '  readonly sprite: Phaser.GameObjects.Image;'],
+diff --git a/tests/sea-art.test.ts b/tests/sea-art.test.ts
+index c798bdd..a4e0a76 100644
+--- a/tests/sea-art.test.ts
++++ b/tests/sea-art.test.ts
+@@ -1,114 +1,164 @@
+-// v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5.1・§5.6・§7.6）: 海の面の Phaser に依らない規則と、作法の pin。
+-// - タイルの置き方（assets/sea-shape）: 同じ種なら同じ・大きさ 512（2 の累乗・0.5 px/m × 1,024 m）・弧の本数と長さ・向きは波の来る向き ± 乱れ・細部は 2 px 以上（R17）・
+-//   周期の縁をまたぐ物は反対側にも描く（継ぎ目なし）・白波は弧の上。
+-// - 光の表（config/sea-art-config）: 夜の α ≤ 0.12（§3.2）、きらめきの α ≤ 0.3・明滅の周期 ≥ 2 秒・振れ幅 ≤ 0.5（R9）、夜明けの光の α は 0.22 × sin(π × 段/16) で夜と昼は 0・dayStart は 0（R4）。
+-// - 升（R5）: 周期の倍数に揃い worldView ＋ 余白を覆う。きらめきの置き直しは反対側へ。
++// v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5.1・§5.6・§7.6）＋ IP1a（ユーザーの U2「波の模様が波に見えずにゴミのように見えます」「格子の線はあった方がいい」）: 海の面の Phaser に依らない規則と、作法の pin。
++// - 海の面のタイル（assets/sea-shape の seaTilePixels）: 同じ種なら同じ画素・大きさ 512（2 の累乗・0.5 px/m × 1,024 m）・波は整数の山の数（周期の縁で合う＝継ぎ目なし）・
++//   帯（波長と向き）の内・隣の画素との差が小さい（S3a の短く硬い筆の線＝差が大きい物を描かない）・夜の明るさは格子の線より暗い（格子が見える）・昼は昼の海より明るく青い。
++// - 光の表（config/sea-art-config）: 夜の α ≤ SEA_NIGHT_ALPHA_MAX、きらめきの α ≤ 0.3・明滅の周期 ≥ 2 秒・振れ幅 ≤ 0.5（R9）、夜明けの光の α は 0.22 × sin(π × 段/16) で夜と昼は 0・dayStart は 0（R4）。
++// - 升（R5）: 周期の倍数に揃い worldView ＋ 余白を覆う。きらめきの置き直しは反対側へ。波の流れは周期で折り返す。
+ // - source の pin: Boot の 1 行・world-visuals の最後の 1 行ずつ（R13）・mission-world は論理の後に 1 つ作るだけ・sea-fx は TileSprite を世界の座標に置き setSize を呼ばない・
+-//   texture の鍵は D2 の 3 つ。描画の規則（update で確保しない・絵だけの乱数）は tests/art-rules が sea-art・sea-fx・world-art に自動で効く。
++//   格子の線は海の面の上・texture の鍵は D2 の 3 つ。描画の規則（update で確保しない・絵だけの乱数）は tests/art-rules が sea-art・sea-fx・world-art に自動で効く。
+ import { readFileSync } from 'node:fs';
++import { createHash } from 'node:crypto';
+ import { describe, expect, it } from 'vitest';
+-import { dawnGlowAlpha, glintBlink, mixRgb, patchEdgeFade, SEA_TILE_TEX_PX, seaCellInto, seaPatchPlan, seaTilePlan, wrapInto, wrapOffsets } from '../src/assets/sea-shape';
+-import { SEA_LIGHT_STEPS } from '../src/config/dawn-config';
++import { dawnGlowAlpha, dirDiffDeg, glintBlink, mixRgb, SEA_TILE_TEX_PX, seaCellInto, seaCrestScore, seaDriftInto, seaField, seaPixel, seaShadeInto, seaTilePixels, seaWaveSet, wrapInto } from '../src/assets/sea-shape';
++import { DAY_SEA_COLOR, SEA_COLOR, SEA_LIGHT_STEPS } from '../src/config/dawn-config';
+ import {
+   ART_SEED_GLINT, ART_SEED_SEA, DAWN_GLOW_ALPHA_MAX, DAWN_GLOW_DEPTH, DAWN_GLOW_OVERSCAN, GLINT_ALPHA_MAX, GLINT_DEPTH, GLINT_H_M, GLINT_PERIOD_MIN_S, GLINT_SWING_MAX, GLINT_W_M,
+-  SEA_ART_DEPTH, SEA_ART_PX_PER_M, SEA_CAP_COUNT, SEA_CREST_BASE_DEG, SEA_CREST_COUNT, SEA_CREST_JITTER_DEG, SEA_CREST_LEN_PX, SEA_LAYER_MODE, SEA_LIGHT_ART, SEA_NIGHT_ALPHA_MAX,
+-  SEA_PATCH_ARCS, SEA_PATCH_COUNT, SEA_PATCH_EDGE_FADE_PX, SEA_PATCH_FRAMES, SEA_PATCH_H_PX, SEA_PATCH_W_PX, SEA_TILE_LOCAL_H, SEA_TILE_LOCAL_W, SEA_TILE_PERIOD_M, SEA_VIEW_MARGIN_M, WHITECAP_ALPHA_MAX,
++  SEA_ART_DEPTH, SEA_ART_PX_PER_M, SEA_DRIFT_MPS, SEA_GRID_LINE_COLOR, SEA_LIGHT_ART, SEA_NIGHT_ALPHA_MAX, SEA_TEX, SEA_TILE_LOCAL_H, SEA_TILE_LOCAL_W, SEA_TILE_PERIOD_M, SEA_VIEW_MARGIN_M,
++  WHITECAP_ALPHA_MAX, WHITECAP_H_M, WHITECAP_W_M,
+ } from '../src/config/sea-art-config';
+ 
+ const read = (f: string): string => readFileSync(f, 'utf8');
+-const DEG = Math.PI / 180;
++const hex = (s: string): number => parseInt(s.slice(1), 16);
++const lum = (c: number): number => 0.2126 * ((c >> 16) & 255) + 0.7152 * ((c >> 8) & 255) + 0.0722 * (c & 255);
++const PX = seaTilePixels(ART_SEED_SEA);
++const S = SEA_TILE_TEX_PX;
+ 
+-describe('海の模様のタイルの置き方（assets/sea-shape。絵だけの乱数 ART_SEED_SEA）', () => {
+-  const plan = seaTilePlan(ART_SEED_SEA);
+-  it('大きさは 512 px（周期 1,024 m × 0.5 px/m）＝2 の累乗（WebGL の REPEAT）', () => {
+-    expect(SEA_TILE_TEX_PX).toBe(512);
+-    expect(SEA_TILE_TEX_PX).toBe(SEA_TILE_PERIOD_M * SEA_ART_PX_PER_M);
+-    expect(Math.log2(SEA_TILE_TEX_PX) % 1).toBe(0);
+-    expect(plan.size).toBe(SEA_TILE_TEX_PX);
+-  });
+-  it('同じ種なら同じ置き方、種が違えば違う（描く順を固定＝同じ画素）', () => {
+-    expect(seaTilePlan(ART_SEED_SEA)).toEqual(plan);
+-    expect(seaTilePlan(ART_SEED_SEA + 1)).not.toEqual(plan);
+-  });
+-  it('弧は本数 × 2（下塗りと芯）、中心はタイルの内、長さは表の範囲、向きは波の来る向き ± 乱れ、たわみは弧（真っ直ぐな点の列ではない）', () => {
+-    expect(plan.crests.length).toBe(SEA_CREST_COUNT * 2);
+-    for (const c of plan.crests) {
+-      expect(c.x).toBeGreaterThanOrEqual(0);
+-      expect(c.x).toBeLessThan(plan.size);
+-      expect(c.y).toBeGreaterThanOrEqual(0);
+-      expect(c.y).toBeLessThan(plan.size);
+-      expect(c.len).toBeGreaterThanOrEqual(SEA_CREST_LEN_PX[0]);
+-      expect(c.len).toBeLessThanOrEqual(SEA_CREST_LEN_PX[1]);
+-      expect(Math.abs(c.ang - SEA_CREST_BASE_DEG * DEG)).toBeLessThanOrEqual(SEA_CREST_JITTER_DEG * DEG + 1e-9);
+-      expect(c.sag).toBeGreaterThan(0);
++/** 光の tint × α を背景 bg の上に重ねた画面の色（画素ごと）: 明るさの並び（昇順）と平均の RGB */
++function composite(light: keyof typeof SEA_LIGHT_ART, bg: number): { lums: number[]; mean: [number, number, number] } {
++  const L = SEA_LIGHT_ART[light];
++  const lums: number[] = [];
++  const m = [0, 0, 0];
++  for (let i = 0; i < S * S; i++) {
++    const a = (PX[i * 4 + 3]! / 255) * L.crestAlpha;
++    const g = PX[i * 4]! / 255;
++    const c = [16, 8, 0].map((sh) => ((bg >> sh) & 255) * (1 - a) + ((L.crest >> sh) & 255) * g * a);
++    for (let k = 0; k < 3; k++) m[k]! += c[k]!;
++    lums.push(0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!);
++  }
++  lums.sort((p, q) => p - q);
++  return { lums, mean: [m[0]! / (S * S), m[1]! / (S * S), m[2]! / (S * S)] };
++}
++
++describe('海の面のタイル（assets/sea-shape の seaTilePixels。IP1a。絵だけの乱数 ART_SEED_SEA）', () => {
++  it('大きさは 512 px（周期 1,024 m × 0.5 px/m）＝2 の累乗（WebGL の REPEAT）、RGBA', () => {
++    expect(S).toBe(512);
++    expect(S).toBe(SEA_TILE_PERIOD_M * SEA_ART_PX_PER_M);
++    expect(Math.log2(S) % 1).toBe(0);
++    expect(PX.length).toBe(S * S * 4);
++  });
++  it('同じ種なら同じ画素、種が違えば違う', () => {
++    const h = (a: Uint8ClampedArray): string => createHash('md5').update(a).digest('hex');
++    expect(h(seaTilePixels(ART_SEED_SEA))).toBe(h(PX));
++    expect(h(seaTilePixels(ART_SEED_SEA + 1))).not.toBe(h(PX));
++  });
++  it('波は整数の山の数（周期の縁で合う）で、帯の波長・向きの内。うねり・波・さざ波・ゆがみの数は表のとおり、振幅の和は 1', () => {
++    const set = seaWaveSet(ART_SEED_SEA);
++    for (const [name, ws, b, dir] of [['swell', set.swell, SEA_TEX.swell, SEA_TEX.dirDeg], ['chop', set.chop, SEA_TEX.chop, SEA_TEX.dirDeg], ['ripple', set.ripple, SEA_TEX.ripple, SEA_TEX.dirDeg]] as const) {
++      expect(ws.length, name).toBe(b.count);
++      let sum = 0;
++      for (const w of ws) {
++        expect(Number.isInteger(w.n) && Number.isInteger(w.m), name).toBe(true);
++        expect(w.kx).toBeCloseTo((2 * Math.PI * w.n) / SEA_TILE_PERIOD_M, 12);
++        const lam = SEA_TILE_PERIOD_M / Math.hypot(w.n, w.m);
++        expect(lam, name).toBeGreaterThanOrEqual(b.lamM[0]);
++        expect(lam, name).toBeLessThanOrEqual(b.lamM[1]);
++        expect(Math.abs(dirDiffDeg((Math.atan2(w.m, w.n) * 180) / Math.PI, dir)), name).toBeLessThanOrEqual(b.spreadDeg + 1e-9);
++        sum += w.amp;
++      }
++      expect(sum, name).toBeCloseTo(1, 9);
++      expect(new Set(ws.map((w) => `${w.n},${w.m}`)).size, name).toBe(ws.length); // 同じ波を 2 度選ばない
++    }
++    expect(set.warpX.length + set.warpY.length).toBe(SEA_TEX.warp.count * 2);
++  });
++  it('継ぎ目なし: 明るさの式は周期 1,024 m で同じ（表の誤差の内）、タイルの縁をまたぐ画素の差は内側の差より大きくない', () => {
++    const f = seaField(ART_SEED_SEA);
++    const a = new Float32Array(3);
++    const b = new Float32Array(3);
++    for (let k = 0; k < 100; k++) {
++      seaShadeInto(a, f, k * 13.7, k * 7.3);
++      seaShadeInto(b, f, k * 13.7 + SEA_TILE_PERIOD_M, k * 7.3 - 2 * SEA_TILE_PERIOD_M);
++      for (let j = 0; j < 3; j++) expect(Math.abs(a[j]! - b[j]!)).toBeLessThan(0.005);
++    }
++    let inner = 0;
++    let seam = 0;
++    const white = (q: number): number => (PX[q + 3]! * PX[q]!) / 255;
++    for (let y = 0; y < S; y++) {
++      for (let x = 0; x < S; x++) {
++        const i = (y * S + x) * 4;
++        const d = Math.max(Math.abs(white(i) - white((y * S + ((x + 1) % S)) * 4)), Math.abs(white(i) - white((((y + 1) % S) * S + x) * 4)));
++        if (x === S - 1 || y === S - 1) seam = Math.max(seam, d);
++        else inner = Math.max(inner, d);
++      }
+     }
+-    const angles = new Set(plan.crests.map((c) => Math.round(c.ang / DEG)));
+-    expect(angles.size).toBeGreaterThan(20); // 一方向にそろった縞にしない
+-  });
+-  it('細部は 2 px 以上（R17）、α は 0〜1', () => {
+-    for (const s of [...plan.crests, ...plan.caps]) {
+-      expect(s.w).toBeGreaterThanOrEqual(2);
+-      expect(s.a).toBeGreaterThan(0);
+-      expect(s.a).toBeLessThanOrEqual(1);
++    expect(seam).toBeLessThanOrEqual(inner);
++    expect(inner).toBeLessThanOrEqual(64); // 隣の画素との差（白の量）は 1/4 以下（S3a の 2 px の芯 α 0.7 の筆の線は 1 画素で 178 変わった）
++  });
++  it('画素: 下地があり（どこも透明でない）、山は白・谷は黒の α（seaPixel と同じ式）。泡は高い所だけ', () => {
++    let minA = 255;
++    for (let i = 0; i < S * S; i++) minA = Math.min(minA, PX[i * 4 + 3]!);
++    expect(minA).toBeGreaterThan(0);
++    const [[g0, a0], [g1, a1]] = [seaPixel(-1, 0, 0), seaPixel(1, 1, 1)];
++    expect(g0 < g1 && g1 === 1 && a0 > 0 && a1 > a0).toBe(true);
++    const f = seaField(ART_SEED_SEA);
++    const o = new Float32Array(3);
++    let foamy = 0;
++    for (let k = 0; k < 2000; k++) {
++      seaShadeInto(o, f, (k * 37.1) % 1024, (k * 91.7) % 1024);
++      if (o[2]! > 0.5) foamy++;
++      expect(seaCrestScore(o, f, (k * 37.1) % 1024, (k * 91.7) % 1024)).toBeCloseTo(o[1]! + o[2]!, 9);
+     }
+-    for (const s of plan.swells) expect(s.a).toBeLessThanOrEqual(0.15); // うねりはごく薄い
++    expect(foamy).toBeGreaterThan(0);
++    expect(foamy / 2000).toBeLessThan(0.15); // 泡は疎ら
+   });
+-  it('白波は本数どおりで、どれかの弧の上（中心から長さの 0.3 以内・同じ向き）', () => {
+-    expect(plan.caps.length).toBe(SEA_CAP_COUNT);
+-    for (const cap of plan.caps) {
+-      const near = plan.crests.some((c) => c.ang === cap.ang && Math.hypot(c.x - cap.x, c.y - cap.y) <= c.len * 0.3 + 1e-9);
+-      expect(near).toBe(true);
++  it('読みやすさ（夜）: α ≤ SEA_NIGHT_ALPHA_MAX、明るい 1% の画素も格子の線より暗い（格子が波の上に見える）、平均は海の色より少し明るいだけ（白い艇・雷跡と比べて暗い）', () => {
++    for (const m of ['dark', 'half', 'full'] as const) {
++      expect(SEA_LIGHT_ART[m].crestAlpha).toBeLessThanOrEqual(SEA_NIGHT_ALPHA_MAX);
++      const { lums } = composite(m, hex(SEA_COLOR));
++      expect(lums[Math.floor(lums.length * 0.99)]!, m).toBeLessThan(lum(SEA_GRID_LINE_COLOR));
++      expect(lums[Math.floor(lums.length * 0.5)]!, m).toBeLessThan(lum(hex(SEA_COLOR)) + 16);
++      expect(lums[lums.length - 1]!, m).toBeLessThan(255 / 3); // 一番明るい所でも白（雷跡の点・自艇）の 1/3 未満
+     }
+   });
+-  it('周期の縁をまたぐ物は反対側にも描く（継ぎ目なし）: 内側は 1 か所、縁は 2、角は 4', () => {
+-    expect(wrapOffsets(256, 256, 20, 512)).toEqual([[0, 0]]);
+-    expect(wrapOffsets(5, 256, 20, 512).map((o) => o[0]).sort()).toEqual([0, 512]);
+-    expect(wrapOffsets(510, 256, 20, 512).map((o) => o[0]).sort()).toEqual([-512, 0]);
+-    expect(wrapOffsets(5, 5, 20, 512)).toHaveLength(4);
+-    let crossing = 0;
+-    for (const c of plan.crests) if (wrapOffsets(c.x, c.y, c.len / 2 + c.w, plan.size).length > 1) crossing++;
+-    expect(crossing).toBeGreaterThan(0);
++  it('昼: 平均は昼の海の色より明るく青い（U2「海らしく」・U3）、格子の線は昼の海より暗い（昼は暗い線）', () => {
++    const day = hex(DAY_SEA_COLOR);
++    const { mean } = composite('day', day);
++    expect(lum((Math.round(mean[0]) << 16) | (Math.round(mean[1]) << 8) | Math.round(mean[2]))).toBeGreaterThan(lum(day) + 8);
++    expect(mean[2] - mean[0]).toBeGreaterThan((day & 255) - ((day >> 16) & 255));
++    expect(lum(SEA_GRID_LINE_COLOR)).toBeLessThan(lum(day) - 20);
++    expect(lum(SEA_GRID_LINE_COLOR)).toBeGreaterThan(lum(hex(SEA_COLOR)) + 20);
++  });
++  it('波の流れ: 向き dirDeg へ m/秒（tilePosition は逆へ）、周期の px で折り返す', () => {
++    const d = new Float32Array(2);
++    seaDriftInto(d, 1, 0, 2, 0.5, 512);
++    expect(d[0]).toBeCloseTo(511, 4); // 0 − 1 px → 折り返して 511
++    expect(d[1]).toBeCloseTo(0, 4);
++    for (let k = 0; k < 10000; k++) seaDriftInto(d, 1 / 60, SEA_TEX.dirDeg, SEA_DRIFT_MPS, SEA_ART_PX_PER_M, 512);
++    expect(d[0]).toBeGreaterThanOrEqual(0);
++    expect(d[0]).toBeLessThan(512);
++    expect(d[1]).toBeGreaterThanOrEqual(0);
++    expect(d[1]).toBeLessThan(512);
++    expect(SEA_DRIFT_MPS > 0 && SEA_DRIFT_MPS < 5).toBe(true); // ゆっくり（艇の静音より遅い）
+   });
+ });
+ 
+-describe('波頭の群れ（patches 方式＝S3a の計測で既定。spec §5.1 の第 2 案）', () => {
+-  const plan = seaPatchPlan(ART_SEED_SEA);
+-  it('既定は patches（全面の層を塗らない）。個数 ＋ きらめきの最大 ≤ 画面に見える物の門 +40、1 枚は 0.5 px/m で 320 × 96 m', () => {
+-    expect(SEA_LAYER_MODE).toBe('patches');
+-    const maxGlints = Math.max(...Object.values(SEA_LIGHT_ART).map((l) => l.glints));
+-    expect(SEA_PATCH_COUNT + maxGlints + 1).toBeLessThanOrEqual(40); // +1 は夜明けの光（移り変わりの間だけ見える）
+-    expect(SEA_PATCH_W_PX / SEA_ART_PX_PER_M).toBe(320);
+-    expect(SEA_PATCH_H_PX / SEA_ART_PX_PER_M).toBe(96);
+-  });
+-  it('同じ種なら同じ。frame は FRAMES 枚で弧 ARCS × 2、弧は枠の内（長さの半分 ＋ 2 px 以上内）、縁へ向けて α が落ちる、細部 2 px 以上', () => {
+-    expect(seaPatchPlan(ART_SEED_SEA)).toEqual(plan);
+-    expect(plan.frames.length).toBe(SEA_PATCH_FRAMES);
+-    for (const f of plan.frames) {
+-      expect(f.length).toBe(SEA_PATCH_ARCS * 2);
+-      for (const c of f) {
+-        expect(c.x - c.len / 2).toBeGreaterThanOrEqual(2 - 1e-9);
+-        expect(c.x + c.len / 2).toBeLessThanOrEqual(plan.w - 2 + 1e-9);
+-        expect(c.y).toBeGreaterThan(0);
+-        expect(c.y).toBeLessThan(plan.h);
+-        expect(c.w).toBeGreaterThanOrEqual(2);
+-        expect(c.a).toBeLessThanOrEqual(patchEdgeFade(c.x, c.y, plan.w, plan.h) + 1e-9);
+-      }
+-    }
+-    expect(patchEdgeFade(plan.w / 2, plan.h / 2, plan.w, plan.h)).toBe(1);
+-    expect(patchEdgeFade(SEA_PATCH_EDGE_FADE_PX / 2, plan.h / 2, plan.w, plan.h)).toBeCloseTo(0.5, 9);
+-    expect(patchEdgeFade(0, plan.h / 2, plan.w, plan.h)).toBe(0);
+-    expect(new Set(plan.frames.map((f) => JSON.stringify(f))).size).toBe(SEA_PATCH_FRAMES); // 3 枚は違う絵
++describe('海の面は全面の層 1 枚（IP1a。S3a の波頭の群れ patches はやめた）', () => {
++  it('sea-fx: WebGL なら TileSprite を 1 枚、patches の輪は無い。深さは格子の線（DEPTH.sea 0）の下、夜明けの光ときらめきはその上', () => {
++    const fx = read('src/systems/sea-fx.ts');
++    expect(fx).toContain('this.tile = webgl ? scene.add.tileSprite(');
++    expect(fx.replace(/\/\/[^\n]*/g, '')).not.toMatch(/patches|SEA_PATCH|SEA_LAYER_MODE/);
++    expect(SEA_ART_DEPTH).toBeLessThan(0);
++    expect(read('src/config/game-config.ts')).toContain('  sea: 0,');
++    expect(read('src/entities/sea.ts')).toContain('g.lineStyle(SEA_GRID_LINE_WIDTH, SEA_GRID_LINE_COLOR, 1);');
+   });
+-  it('sea-fx: patches は同じ鍵の frame p0〜を 1/0.5 倍（1 px ＝ 2 m）で置き、奇数番は左右反転、tint と α は段が変わった時だけ', () => {
++  it('きらめき・白波は升の内の候補から波頭の高い所を選び、波の筋の向きに傾け、波と一緒に流す', () => {
+     const fx = read('src/systems/sea-fx.ts');
+-    expect(fx).toContain("scene.add.image(0, 0, TEXTURE_KEYS.seaTile, `p${i % SEA_PATCH_FRAMES}`).setDepth(SEA_ART_DEPTH).setScale(k).setFlipX(i % 2 === 1)");
+-    expect(fx).toContain('if (this.patches) for (const g of this.patches.imgs) g.setTint(tint).setAlpha(alpha);');
+-    expect(fx).toContain("const tileMode = SEA_LAYER_MODE === 'tile';");
++    expect(fx).toContain('const crestDeg = SEA_TEX.dirDeg - 90;');
++    expect(fx).toContain('this.glints.update(v, this.rng, this.vx * realDt, this.vy * realDt);');
++    expect(fx).toContain('return seaCrestScore(this.shade, this.field, x + this.drift[0]! / SEA_ART_PX_PER_M, y + this.drift[1]! / SEA_ART_PX_PER_M);');
+   });
+ });
+ 
+ describe('光の表と夜明けの光・きらめき（spec §3.2・§5.6。R4・R9）', () => {
+-  it('夜（dark・half・full）の模様の α ≤ 0.12、昼はそれより濃い。dark にきらめきは無く、half < full、昼は白波（同じプール）', () => {
++  it('夜（dark・half・full）の面の α ≤ SEA_NIGHT_ALPHA_MAX、昼はそれより濃い。dark にきらめきは無く、half < full、昼は白波（同じプール）', () => {
+     for (const m of ['dark', 'half', 'full'] as const) expect(SEA_LIGHT_ART[m].crestAlpha).toBeLessThanOrEqual(SEA_NIGHT_ALPHA_MAX);
+     expect(SEA_LIGHT_ART.day.crestAlpha).toBeGreaterThan(SEA_NIGHT_ALPHA_MAX);
+     expect(SEA_LIGHT_ART.dark.glints).toBe(0);
+@@ -130,6 +180,10 @@ describe('光の表と夜明けの光・きらめき（spec §3.2・§5.6。R4
+     expect(DAWN_GLOW_DEPTH).toBeLessThan(GLINT_DEPTH);
+     expect(GLINT_DEPTH).toBeLessThan(1);
+   });
++  it('昼の白波は波頭に沿って長い筋（月のきらめきより長く、横長 4:1 以上。IP1a: 短いと白い点に見えた）', () => {
++    expect(WHITECAP_W_M / WHITECAP_H_M).toBeGreaterThanOrEqual(4);
++    expect(WHITECAP_W_M).toBeGreaterThan(GLINT_W_M);
++  });
+   it('きらめき: α ≤ 0.3・横長（2:1 以上）・明滅は 1 − 0.5 〜 1 で周期 ≥ 2 秒（短い周期を頼んでも 2 秒に）、白波の α は 1 より小さい', () => {
+     expect(GLINT_ALPHA_MAX).toBeLessThanOrEqual(0.3);
+     expect(GLINT_W_M / GLINT_H_M).toBeGreaterThanOrEqual(2);
+@@ -195,7 +249,8 @@ describe('作法の pin（Boot・world-visuals・mission-world・sea-fx・鍵）
+     const art = read('src/assets/sea-art.ts');
+     expect(art).toContain('if (scene.textures.exists(key)) return;');
+     expect(art).toContain('scene.textures.createCanvas(key, w, h * (frames > 0 ? frames : 1))');
+-    expect(art).toContain("if (SEA_LAYER_MODE === 'tile') paintSeaTile(scene);\n  else paintSeaPatches(scene);");
++    expect(art).toContain('export function generateSeaTextures(scene: Phaser.Scene): void {\n  paintSeaTile(scene);');
++    expect(art).toContain('img.data.set(seaTilePixels(ART_SEED_SEA));');
+     expect(art).toContain('tex.refresh();');
+     expect(art).not.toMatch(/generateTexture|setSize\(/);
+   });
+@@ -214,7 +269,9 @@ describe('作法の pin（Boot・world-visuals・mission-world・sea-fx・鍵）
+     expect(fx).toContain('scene.add.tileSprite(0, 0, SEA_TILE_LOCAL_W, SEA_TILE_LOCAL_H, TEXTURE_KEYS.seaTile).setOrigin(0, 0)');
+     expect(fx).toContain('renderer.type === RENDERER_WEBGL');
+     expect(fx).not.toMatch(/\.setSize\(/);
+-    expect(fx).not.toMatch(/\.tilePosition|setTilePosition/);
++    // 波の流れ: tilePosition は毎フレーム（WebGL では uv のずれだけ＝描き直さない。IP1a）。升が変わった時だけ setPosition・setScale・setTileScale
++    expect(fx).toContain('this.tile.setTilePosition(this.drift[0]!, this.drift[1]!);');
++    expect(fx.split('setTilePosition(').length - 1).toBe(1);
+     expect(fx.split(').setScrollFactor(0)').length - 1).toBe(1);
+     expect(fx).toMatch(/scene\.add\.image\(0, 0, TEXTURE_KEYS\.dawnGlow\)\.setScrollFactor\(0\)\.setOrigin\(1, 0\.5\)/);
+     expect(fx).toContain('(W * (DAWN_GLOW_SCREEN_SHARE + DAWN_GLOW_OVERSCAN)) / zoom / DAWN_GLOW_TEX_W'); // 右端の帯だけ（全面の層にしない）
