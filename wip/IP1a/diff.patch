@@ -1,0 +1,1260 @@
+diff --git a/src/assets/fx-art.ts b/src/assets/fx-art.ts
+index 151d0e0..39e2b2a 100644
+--- a/src/assets/fx-art.ts
++++ b/src/assets/fx-art.ts
+@@ -4,6 +4,7 @@
+ //   水柱＝柔らかい不揃いな白い塊（置いた所が読める）＋外の薄い霧＋少しの水滴（S4。画素の式は assets/splash-shape。S3b の放射の筋は雪の結晶・ウニに見えた）、
+ //   砲口炎＝8 本の光芒（長い十字と短い斜め）と丸い芯、火球＝放射のグラデーション（ADD で重ねる）。
+ // - tex-oil-slick（S4）: 沈没の油の輪＝暗い不揃いな油膜＋縁の鈍い光＋中の泡（色を焼く・tint しない。splash-shape）。爆発の輪と同じ寸法。
++// - tex-wake-puff（IP1a）: 航跡の尾の泡＝横の断面が中央は薄く両側が白い帯（広がると両側が分かれて V の腕に見える）・縦は両端へ柔らかい。p1＝静音の小さな泡。画素の式は assets/wake-shape。
+ // - tex-flame（S3c）: 真上から見た炎（向きの陰影なし）＝白黄の芯・橙の舌 7 本（半径の 0.5 まで）・外へ薄い赤い光の暈。frame p0・p1 で舌の置き方が違う（替えて揺らぐ）。色つき・ADD。k に依らない 64 px。
+ // - tex-wake-boat・tex-wake-ship: 艇尾を頂点にした V（半角 19.5°。R7: 腕が主・中央の泡は短く薄い）。frame p0＝V、p1＝泡だけ（自艇の静音＝R1）。k に依らない固定の px（96×128）。
+ //   S4: 腕は 1 枚の細る台形を長さ方向のグラデーションで塗る（8 区切りの線の丸い端が重なって玉の列に見え、端で切れていた）・frame ごとに枠で切る（p1 の泡が p0 の端に漏れて離れた点に見えた）。
+@@ -13,11 +14,13 @@ import { flameTongues } from './fire-shape';
+ import { muzzleRays } from './fx-shape';
+ import { paintCanvas } from './sea-art';
+ import { slickPixels, splashPixels } from './splash-shape';
++import { wakePuffPixels } from './wake-shape';
+ import {
+   ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
+   WAKE_CENTER_WIDTH_PX, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SHIP_CENTER_WIDTH_PX, WAKE_TEX_H, WAKE_TEX_W,
+ } from '../config/fx-art-config';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { ART_SEED_WAKE, WAKE_PUFF_TEX_H, WAKE_PUFF_TEX_W } from '../config/wake-art-config';
+ 
+ function white(a: number): string {
+   return `rgba(255,255,255,${a})`;
+@@ -157,7 +160,7 @@ function paintFlameFrame(ctx: CanvasRenderingContext2D, top: number, frame: numb
+   ctx.fillRect(0, top, S, S);
+ }
+ 
+-/** Boot で 1 回: 水柱・砲口炎・火球・油の輪（S4）（爆発の輪と同じ寸法）・航跡 2 枚・炎（S3c） */
++/** Boot で 1 回: 水柱・砲口炎・火球・油の輪（S4）（爆発の輪と同じ寸法）・航跡 2 枚・航跡の尾の泡（IP1a。frame p0・p1）・炎（S3c） */
+ export function generateFxTextures(scene: Phaser.Scene): void {
+   const k = RENDER_SCALE;
+   const d = discTexSize(EXPLOSION_RING_RADIUS_UNITS, k, 8).w;
+@@ -168,6 +171,11 @@ export function generateFxTextures(scene: Phaser.Scene): void {
+   paintFireball(scene, d, R);
+   paintWake(scene, TEXTURE_KEYS.wakeBoat, false);
+   paintWake(scene, TEXTURE_KEYS.wakeShip, true);
++  paintCanvas(scene, TEXTURE_KEYS.wakePuff, WAKE_PUFF_TEX_W, WAKE_PUFF_TEX_H, (ctx) => {
++    const img = ctx.createImageData(WAKE_PUFF_TEX_W, WAKE_PUFF_TEX_H * 2);
++    img.data.set(wakePuffPixels(WAKE_PUFF_TEX_W, WAKE_PUFF_TEX_H, ART_SEED_WAKE));
++    ctx.putImageData(img, 0, 0);
++  }, 2);
+   paintCanvas(scene, TEXTURE_KEYS.flame, FLAME_TEX_PX, FLAME_TEX_PX, (ctx) => {
+     paintFlameFrame(ctx, 0, 0);
+     paintFlameFrame(ctx, FLAME_TEX_PX, 1);
+diff --git a/src/assets/sea-art.ts b/src/assets/sea-art.ts
+index 722e75f..0cfa250 100644
+--- a/src/assets/sea-art.ts
++++ b/src/assets/sea-art.ts
+@@ -1,6 +1,6 @@
+ // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5.1・§5.6）: 海の面の絵を Boot で 1 回だけ Canvas の 2D に描いてテクスチャにする（CLAUDE.md §7。毎フレームは描かない）。
+-// - tex-sea-tile 512 × 512 px（0.5 px/m ＝ 1,024 m 周期。2 の累乗＝WebGL の TileSprite が REPEAT で貼る）: 白い波頭の弧・白波・うねり。置き方は assets/sea-shape（絵だけの乱数 ART_SEED_SEA）。
+-//   周期の縁をまたぐ弧は反対側にも描く（継ぎ目なし）。色は付けない（systems/sea-fx が光ごとに TileSprite の tint × α で付ける）。
++// - tex-sea-tile 512 × 512 px（0.5 px/m ＝ 1,024 m 周期。2 の累乗＝WebGL の TileSprite が REPEAT で貼る）: 海の面（IP1a。うねりの明暗の帯・波頭・泡＝周期の縁で合う正弦の和）。
++//   画素の式は assets/sea-shape の seaTilePixels（絵だけの乱数 ART_SEED_SEA）を ImageData に書く。白と黒の α だけ（systems/sea-fx が光ごとに TileSprite の tint × α で色を付ける）。
+ // - tex-dawn-glow 256 × 64 px: 右（東）の橙から左の透明への横のグラデーション（画面へ拡大。α は sea-fx が段ごとに）。
+ // - tex-glint 16 × 8 px: 横に細長い柔らかい筋（月のきらめき・昼の白波。R9）。
+ // - tex-coast-strip 512 × 120 px の frame 2 枚（S3c。1.0 px/m。初めて使う時に 1 回＝ensureCoastStripTexture）: 上 8 m は海の寄せ波の白、波打ち際から砂浜と陸の際の樹冠、奥へ透明。
+@@ -9,10 +9,10 @@ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import {
+   ART_SEED_COAST, ART_SEED_SEA, COAST_CROWN_COLORS, COAST_CROWN_LIGHT_COLOR, COAST_DRY_SAND_COLOR, COAST_EDGE_SHADE_COLOR, COAST_SAND_COLOR, COAST_STRIP_FADE_M, COAST_STRIP_LAND_M,
+-  COAST_STRIP_LEN_M, COAST_STRIP_SEA_M, COAST_SURF_ALPHA, COAST_SURF_PX, COAST_WET_SAND_COLOR, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_TEX_H, GLINT_TEX_W, SEA_LAYER_MODE,
++  COAST_STRIP_LEN_M, COAST_STRIP_SEA_M, COAST_SURF_ALPHA, COAST_SURF_PX, COAST_WET_SAND_COLOR, DAWN_GLOW_COLOR, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_TEX_H, GLINT_TEX_W,
+ } from '../config/sea-art-config';
+ import { coastPlan } from './coast-shape';
+-import { SEA_TILE_TEX_PX, seaPatchPlan, seaTilePlan, wrapOffsets, type SeaStroke } from './sea-shape';
++import { SEA_TILE_TEX_PX, seaTilePixels } from './sea-shape';
+ 
+ /** Canvas のテクスチャを 1 枚作って draw で描き、GPU へ上げる（鍵が既にあれば何もしない＝「もう一度」でも描かない）。frames があれば同じ鍵に縦に並んだ frame を足す */
+ export function paintCanvas(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, frames = 0): void {
+@@ -24,58 +24,17 @@ export function paintCanvas(scene: Phaser.Scene, key: string, w: number, h: numb
+   tex.refresh();
+ }
+ 
+-/** 波頭の群れ（patches 方式）: 1 つの canvas に frame p0〜 を縦に並べる（鍵は tex-sea-tile のまま＝D2） */
+-function paintSeaPatches(scene: Phaser.Scene): void {
+-  const plan = seaPatchPlan(ART_SEED_SEA);
+-  paintCanvas(scene, TEXTURE_KEYS.seaTile, plan.w, plan.h, (ctx) => {
+-    ctx.lineCap = 'round';
+-    for (let f = 0; f < plan.frames.length; f++) {
+-      ctx.save();
+-      ctx.translate(0, f * plan.h);
+-      for (const c of plan.frames[f]!) stroke(ctx, c, Number.POSITIVE_INFINITY);
+-      ctx.restore();
+-    }
+-  }, plan.frames.length);
+-}
+-
+-const NO_WRAP: readonly (readonly [number, number])[] = [[0, 0]];
+-
+ function white(a: number): string {
+   return `rgba(255,255,255,${a})`;
+ }
+ 
+-/** 弧 1 本（中心から ±len/2・たわみ sag × len の二次曲線。縁をまたげば写しも。size が Infinity なら写しなし） */
+-function stroke(ctx: CanvasRenderingContext2D, s: SeaStroke, size: number): void {
+-  const hx = Math.cos(s.ang) * s.len * 0.5;
+-  const hy = Math.sin(s.ang) * s.len * 0.5;
+-  const nx = -Math.sin(s.ang) * s.sag * s.len;
+-  const ny = Math.cos(s.ang) * s.sag * s.len;
+-  ctx.lineWidth = s.w;
+-  ctx.strokeStyle = white(s.a);
+-  for (const [dx, dy] of Number.isFinite(size) ? wrapOffsets(s.x, s.y, s.len * 0.5 + s.w, size) : NO_WRAP) {
+-    ctx.beginPath();
+-    ctx.moveTo(s.x + dx - hx, s.y + dy - hy);
+-    ctx.quadraticCurveTo(s.x + dx + nx, s.y + dy + ny, s.x + dx + hx, s.y + dy + hy);
+-    ctx.stroke();
+-  }
+-}
+-
+-/** 海の模様のタイル（白・透明。うねり → 弧の下塗りと芯 → 白波の順） */
++/** 海の面のタイル（白と黒の α。画素の式は sea-shape） */
+ function paintSeaTile(scene: Phaser.Scene): void {
+-  const plan = seaTilePlan(ART_SEED_SEA);
+-  paintCanvas(scene, TEXTURE_KEYS.seaTile, SEA_TILE_TEX_PX, SEA_TILE_TEX_PX, (ctx) => {
+-    ctx.lineCap = 'round';
+-    for (const sw of plan.swells) {
+-      for (const [dx, dy] of wrapOffsets(sw.x, sw.y, sw.r, plan.size)) {
+-        const g = ctx.createRadialGradient(sw.x + dx, sw.y + dy, 0, sw.x + dx, sw.y + dy, sw.r);
+-        g.addColorStop(0, white(sw.a));
+-        g.addColorStop(1, white(0));
+-        ctx.fillStyle = g;
+-        ctx.fillRect(sw.x + dx - sw.r, sw.y + dy - sw.r, sw.r * 2, sw.r * 2);
+-      }
+-    }
+-    for (const c of plan.crests) stroke(ctx, c, plan.size);
+-    for (const c of plan.caps) stroke(ctx, c, plan.size);
++  const S = SEA_TILE_TEX_PX;
++  paintCanvas(scene, TEXTURE_KEYS.seaTile, S, S, (ctx) => {
++    const img = ctx.createImageData(S, S);
++    img.data.set(seaTilePixels(ART_SEED_SEA));
++    ctx.putImageData(img, 0, 0);
+   });
+ }
+ 
+@@ -114,10 +73,9 @@ function paintGlint(scene: Phaser.Scene): void {
+   });
+ }
+ 
+-/** Boot で 1 回: 海の模様・夜明けの光・きらめき（鍵は TEXTURE_KEYS.seaTile・dawnGlow・glint） */
++/** Boot で 1 回: 海の面・夜明けの光・きらめき（鍵は TEXTURE_KEYS.seaTile・dawnGlow・glint） */
+ export function generateSeaTextures(scene: Phaser.Scene): void {
+-  if (SEA_LAYER_MODE === 'tile') paintSeaTile(scene);
+-  else paintSeaPatches(scene);
++  paintSeaTile(scene);
+   paintDawnGlow(scene);
+   paintGlint(scene);
+ }
+diff --git a/src/assets/sea-shape.ts b/src/assets/sea-shape.ts
+index 7cb4bb8..babdd00 100644
+--- a/src/assets/sea-shape.ts
++++ b/src/assets/sea-shape.ts
+@@ -1,128 +1,202 @@
+ // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5.1・§5.6）: 海の面の Phaser に依らない部分。
+-// - 海の模様のタイル（tex-sea-tile）の中身の「置き方」: 絵だけの SeededRng（ART_SEED_SEA）で波頭の弧・白波・うねりを決め、周期の縁をまたぐ物は折り返しの写しの位置も返す
+-//   （assets/sea-art が Canvas の 2D で白で描く。同じ種なら同じ画素）。
++// - 海の面のタイル（tex-sea-tile 512 × 512 px）の画素（IP1a。ユーザーの U2「波の模様が波に見えずにゴミのように見えます」）: 散らした波頭の弧（S3a）をやめ、
++//   周期の縁で合う正弦の波の和（整数の山の数＝継ぎ目なし）で、長いうねり・中くらいの波・細かいさざ波を重ね、ゆるい座標のゆがみで波の筋をうねらせる。
++//   明るさは うねりの山（尖らせる）＋波の山の泡（高い所だけ柔らかく）、谷は暗く（昼の海で効く）。白と黒の α で描き、表示側の tint × α で色（assets/sea-art が ImageData に書く）。
++//   波の選び方は絵だけの SeededRng（ART_SEED_SEA）。同じ種なら同じ画素。短く硬い筆の線は描かない。
+ // - 海の TileSprite の升（世界の座標。周期の倍数に揃え、camera.worldView ＋ 余白を覆う。R5）、夜明けの光の α（0.22 × sin(π × 段/16)。R4）、きらめきの明滅と置き直し（R9）。
+ // systems/sea-fx が毎フレーム使う式はここ（tests/sea-art で検査）。
+-import {
+-  DAWN_GLOW_ALPHA_MAX, GLINT_PERIOD_MIN_S, GLINT_SWING_MAX, SEA_ART_PX_PER_M, SEA_CAP_ALPHA, SEA_CAP_COUNT, SEA_CAP_LEN_PX, SEA_CAP_PX, SEA_CREST_BASE_DEG, SEA_CREST_CORE_ALPHA,
+-  SEA_CREST_CORE_PX, SEA_CREST_COUNT, SEA_CREST_JITTER_DEG, SEA_CREST_LEN_PX, SEA_CREST_ROWS, SEA_CREST_SAG, SEA_CREST_WIDE_ALPHA, SEA_CREST_WIDE_PX, SEA_PATCH_ARCS, SEA_PATCH_EDGE_FADE_PX,
+-  SEA_PATCH_FRAMES, SEA_PATCH_H_PX, SEA_PATCH_SCATTER_PX, SEA_PATCH_W_PX, SEA_PATCH_WAVE_PX, SEA_ROW_SCATTER_PX, SEA_ROW_WAVES_PER_TILE, SEA_ROW_WAVE_PX, SEA_SWELL_ALPHA, SEA_SWELL_COUNT,
+-  SEA_SWELL_R_PX, SEA_TILE_PERIOD_M,
+-} from '../config/sea-art-config';
++import { DAWN_GLOW_ALPHA_MAX, GLINT_PERIOD_MIN_S, GLINT_SWING_MAX, SEA_ART_PX_PER_M, SEA_TEX, SEA_TILE_PERIOD_M, type SeaBandArt, type SeaTexArt } from '../config/sea-art-config';
+ import { SeededRng } from '../core/rng';
+ 
+ /** タイルの 1 辺 px（512＝2 の累乗。WebGL の REPEAT で貼れる） */
+ export const SEA_TILE_TEX_PX = SEA_TILE_PERIOD_M * SEA_ART_PX_PER_M;
+ 
+-/** 波頭の弧・白波の点描（px。中心・長さ・向き rad・たわみ＝長さの割合・太さ・α） */
+-export interface SeaStroke {
+-  readonly x: number;
+-  readonly y: number;
+-  readonly len: number;
+-  readonly ang: number;
+-  readonly sag: number;
+-  readonly w: number;
+-  readonly a: number;
++/** 波 1 つ: sin(kx·x ＋ ky·y ＋ phase) × amp（x・y は px。k は 2π × 整数 / タイルの px＝タイルの縁で合う）。n・m は整数の山の数 */
++export interface SeaWave {
++  readonly n: number;
++  readonly m: number;
++  readonly kx: number;
++  readonly ky: number;
++  readonly amp: number;
++  readonly phase: number;
+ }
+-/** うねりの丸（px。中心・半径・中心の α） */
+-export interface SeaSwell {
+-  readonly x: number;
+-  readonly y: number;
+-  readonly r: number;
+-  readonly a: number;
++/** 波の組（うねり・波・さざ波・座標のゆがみ x と y）。振幅は組ごとに和が 1 */
++export interface SeaWaveSet {
++  readonly swell: readonly SeaWave[];
++  readonly chop: readonly SeaWave[];
++  readonly ripple: readonly SeaWave[];
++  readonly warpX: readonly SeaWave[];
++  readonly warpY: readonly SeaWave[];
+ }
+-export interface SeaTilePlan {
+-  readonly size: number;
+-  readonly swells: readonly SeaSwell[];
+-  /** 下塗り（太い）と芯（細い）の 2 本で 1 つの弧 */
+-  readonly crests: readonly SeaStroke[];
+-  readonly caps: readonly SeaStroke[];
+-}
+-
+-const DEG = Math.PI / 180;
+ 
+-/** 波の列 r（0〜ROWS−1）の、x での y（うねる列。山の数が整数なので周期の縁で合う） */
+-export function seaRowY(r: number, x: number, size: number): number {
+-  return ((r + 0.5) * size) / SEA_CREST_ROWS + SEA_ROW_WAVE_PX * Math.sin((2 * Math.PI * SEA_ROW_WAVES_PER_TILE * x) / size + r);
++const TAU = Math.PI * 2;
++/** 向きの差（180° の周期＝波の向きは ±k で同じ。−90〜90） */
++export function dirDiffDeg(a: number, b: number): number {
++  const d = (((a - b) % 180) + 180) % 180;
++  return d > 90 ? d - 180 : d;
+ }
+ 
+-/** タイルの置き方（同じ seed なら同じ）。弧は波の列（うねる横の列）に沿って散らばり、向きは波の来る向き ± 乱れ、白波は弧の上に短く太く */
+-export function seaTilePlan(seed: number): SeaTilePlan {
+-  const rng = new SeededRng(seed);
+-  const S = SEA_TILE_TEX_PX;
+-  const swells: SeaSwell[] = [];
+-  for (let i = 0; i < SEA_SWELL_COUNT; i++) swells.push({ x: rng.next() * S, y: rng.next() * S, r: rng.nextRange(SEA_SWELL_R_PX[0], SEA_SWELL_R_PX[1]), a: SEA_SWELL_ALPHA });
+-  const crests: SeaStroke[] = [];
+-  for (let i = 0; i < SEA_CREST_COUNT; i++) {
+-    const x = rng.next() * S;
+-    const y0 = seaRowY(i % SEA_CREST_ROWS, x, S) + rng.nextRange(-SEA_ROW_SCATTER_PX, SEA_ROW_SCATTER_PX);
+-    const y = ((y0 % S) + S) % S;
+-    const len = rng.nextRange(SEA_CREST_LEN_PX[0], SEA_CREST_LEN_PX[1]);
+-    const ang = (SEA_CREST_BASE_DEG + rng.nextRange(-SEA_CREST_JITTER_DEG, SEA_CREST_JITTER_DEG)) * DEG;
+-    const sag = rng.nextRange(SEA_CREST_SAG[0], SEA_CREST_SAG[1]);
+-    crests.push({ x, y, len, ang, sag, w: SEA_CREST_WIDE_PX, a: SEA_CREST_WIDE_ALPHA });
+-    crests.push({ x, y, len, ang, sag, w: SEA_CREST_CORE_PX, a: SEA_CREST_CORE_ALPHA });
++/** 帯（波長 m・向き ± 広がり）に入る整数の山の組から n 個を乱数で（重ならない）。振幅 ∝ (波長/上限)^pow × 乱れ、和を 1 に。size は周期 m（k は m あたり） */
++function pickWaves(rng: SeededRng, b: SeaBandArt, dirDeg: number, size: number): SeaWave[] {
++  const cands: [number, number][] = [];
++  const top = Math.ceil(size / b.lamM[0]);
++  for (let m = 0; m <= top; m++) {
++    for (let n = -top; n <= top; n++) {
++      if (m === 0 && n <= 0) continue; // 半分の面（±k は同じ波）
++      const lam = size / Math.hypot(n, m);
++      if (lam < b.lamM[0] || lam > b.lamM[1]) continue;
++      if (Math.abs(dirDiffDeg((Math.atan2(m, n) * 180) / Math.PI, dirDeg)) > b.spreadDeg) continue;
++      cands.push([n, m]);
++    }
+   }
+-  const caps: SeaStroke[] = [];
+-  for (let i = 0; i < SEA_CAP_COUNT; i++) {
+-    const c = crests[2 * Math.floor(rng.next() * SEA_CREST_COUNT)]!;
+-    const along = rng.nextRange(-0.3, 0.3) * c.len;
+-    caps.push({ x: c.x + Math.cos(c.ang) * along, y: c.y + Math.sin(c.ang) * along, len: rng.nextRange(SEA_CAP_LEN_PX[0], SEA_CAP_LEN_PX[1]), ang: c.ang, sag: 0, w: SEA_CAP_PX, a: SEA_CAP_ALPHA });
++  const out: SeaWave[] = [];
++  let sum = 0;
++  for (let i = 0; i < b.count && cands.length > 0; i++) {
++    const [n, m] = cands.splice(Math.floor(rng.next() * cands.length), 1)[0]!;
++    const amp = ((size / Math.hypot(n, m)) / b.lamM[1]) ** b.ampPow * rng.nextRange(0.7, 1);
++    sum += amp;
++    out.push({ n, m, kx: (TAU * n) / size, ky: (TAU * m) / size, amp, phase: rng.next() * TAU });
+   }
+-  return { size: S, swells, crests, caps };
++  return out.map((w) => ({ ...w, amp: w.amp / sum }));
+ }
+ 
+-/** 波頭の群れ（patches 方式）の絵: 同じ鍵の frame p0〜p(FRAMES−1)。1 枚は W × H px、弧はうねる 1 本の列に沿い、縁へ向けて α を落とす（矩形に見せない） */
+-export interface SeaPatchPlan {
+-  readonly w: number;
+-  readonly h: number;
+-  readonly frames: readonly (readonly SeaStroke[])[];
++/** 波の組（同じ seed なら同じ。座標は m＝周期 SEA_TILE_PERIOD_M）。うねりは波の進む向き ± 狭く、波・さざ波は広く。ゆがみは山 1〜2 つの緩い波 */
++export function seaWaveSet(seed: number, t: SeaTexArt = SEA_TEX, size = SEA_TILE_PERIOD_M): SeaWaveSet {
++  const rng = new SeededRng(seed);
++  return {
++    swell: pickWaves(rng, t.swell, t.dirDeg, size),
++    chop: pickWaves(rng, t.chop, t.dirDeg, size),
++    ripple: pickWaves(rng, t.ripple, t.dirDeg, size),
++    warpX: pickWaves(rng, t.warp, t.dirDeg + 90, size),
++    warpY: pickWaves(rng, t.warp, t.dirDeg, size),
++  };
++}
++
++/** sin の表（タイルを描く 1M 画素 × 約 30 の波を速く。誤差 ≤ 0.0016＝画素の 1/255 未満） */
++const LUT_N = 4096;
++const LUT_MASK = LUT_N - 1;
++const LUT_K = LUT_N / TAU;
++const SIN_LUT = new Float32Array(LUT_N);
++for (let i = 0; i < LUT_N; i++) SIN_LUT[i] = Math.sin(i / LUT_K);
++
++/** 波の組を表の引数の形に（[kx, ky, phase] × 表の倍率・amp × gain の 4 つずつ） */
++function packWaves(ws: readonly SeaWave[], gain: number): Float32Array {
++  const p = new Float32Array(ws.length * 4);
++  ws.forEach((w, i) => p.set([w.kx * LUT_K, w.ky * LUT_K, w.phase * LUT_K, w.amp * gain], i * 4));
++  return p;
++}
++function sumPacked(p: Float32Array, x: number, y: number): number {
++  let s = 0;
++  for (let i = 0; i < p.length; i += 4) s += p[i + 3]! * SIN_LUT[(p[i]! * x + p[i + 1]! * y + p[i + 2]!) & LUT_MASK]!;
++  return s;
++}
++function sumExact(ws: readonly SeaWave[], x: number, y: number): number {
++  let s = 0;
++  for (let i = 0; i < ws.length; i++) s += ws[i]!.amp * Math.sin(ws[i]!.kx * x + ws[i]!.ky * y + ws[i]!.phase);
++  return s;
+ }
+ 
+-/** 縁からの距離で α を落とす係数（0〜1。SEA_PATCH_EDGE_FADE_PX より内は 1） */
+-export function patchEdgeFade(x: number, y: number, w: number, h: number): number {
+-  const d = Math.min(x, w - x, y, h - y);
+-  return d <= 0 ? 0 : d >= SEA_PATCH_EDGE_FADE_PX ? 1 : d / SEA_PATCH_EDGE_FADE_PX;
++/** 滑らかな段（e0 → e1 で 0 → 1） */
++export function smoothstep(e0: number, e1: number, x: number): number {
++  const u = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
++  return u * u * (3 - 2 * u);
+ }
++const clamp1 = (v: number): number => (v < -1 ? -1 : v > 1 ? 1 : v);
+ 
+-/** 波頭の群れの置き方（同じ seed なら同じ。frame ごとに弧 SEA_PATCH_ARCS 本＝下塗りと芯の 2 本ずつ） */
+-export function seaPatchPlan(seed: number): SeaPatchPlan {
+-  const rng = new SeededRng(seed);
+-  const w = SEA_PATCH_W_PX;
+-  const h = SEA_PATCH_H_PX;
+-  const frames: SeaStroke[][] = [];
+-  for (let f = 0; f < SEA_PATCH_FRAMES; f++) {
+-    const arcs: SeaStroke[] = [];
+-    const phase = rng.next() * Math.PI * 2;
+-    for (let i = 0; i < SEA_PATCH_ARCS; i++) {
+-      const len = rng.nextRange(SEA_CREST_LEN_PX[0], SEA_CREST_LEN_PX[1] * 0.8);
+-      const lo = len / 2 + 2;
+-      const xr = lo + ((i + 0.5) / SEA_PATCH_ARCS) * (w - 2 * lo) + rng.nextRange(-10, 10);
+-      const x = xr < lo ? lo : xr > w - lo ? w - lo : xr;
+-      const y0 = h / 2 + SEA_PATCH_WAVE_PX * Math.sin((2 * Math.PI * x) / w + phase) + rng.nextRange(-SEA_PATCH_SCATTER_PX, SEA_PATCH_SCATTER_PX) * (i % 2 === 0 ? 1 : 2.2);
+-      const y = y0 < 4 ? 4 : y0 > h - 4 ? h - 4 : y0;
+-      const ang = (SEA_CREST_BASE_DEG + rng.nextRange(-SEA_CREST_JITTER_DEG, SEA_CREST_JITTER_DEG) * 0.6) * DEG;
+-      const sag = rng.nextRange(SEA_CREST_SAG[0], SEA_CREST_SAG[1]);
+-      const fade = patchEdgeFade(x, y, w, h);
+-      arcs.push({ x, y, len, ang, sag, w: SEA_CREST_WIDE_PX, a: SEA_CREST_WIDE_ALPHA * fade });
+-      arcs.push({ x, y, len, ang, sag, w: SEA_CREST_CORE_PX, a: SEA_CREST_CORE_ALPHA * fade });
+-    }
+-    frames.push(arcs);
+-  }
+-  return { w, h, frames };
++/** 表の形にした波の組（タイルを描く時・世界の絵を作る時に 1 回） */
++interface PackedSet {
++  readonly swell: Float32Array;
++  readonly chop: Float32Array;
++  readonly ripple: Float32Array;
++}
++function pack(set: SeaWaveSet, t: SeaTexArt): PackedSet {
++  return { swell: packWaves(set.swell, t.swellGain), chop: packWaves(set.chop, t.chopGain), ripple: packWaves(set.ripple, 1) };
++}
++/** 海の面の式（波の組と表の形。systems/sea-fx が世界の絵を作る時に 1 回作り、きらめきを波頭に置く時に seaShadeInto で読む） */
++export interface SeaField {
++  readonly set: SeaWaveSet;
++  readonly packed: PackedSet;
++  readonly t: SeaTexArt;
++}
++export function seaField(seed: number, t: SeaTexArt = SEA_TEX): SeaField {
++  const set = seaWaveSet(seed, t);
++  return { set, packed: pack(set, t), t };
+ }
+ 
+-/** 周期の縁をまたぐ物（中心 x, y から reach px まで届く）を描く位置: 本体と、はみ出す側の反対の写し（最大 4 か所） */
+-export function wrapOffsets(x: number, y: number, reach: number, size: number): readonly (readonly [number, number])[] {
+-  const xs: number[] = [0];
+-  const ys: number[] = [0];
+-  if (x - reach < 0) xs.push(size);
+-  if (x + reach > size) xs.push(-size);
+-  if (y - reach < 0) ys.push(size);
+-  if (y + reach > size) ys.push(-size);
+-  const out: (readonly [number, number])[] = [];
+-  for (const dx of xs) for (const dy of ys) out.push([dx, dy]);
+-  return out;
++/**
++ * ゆがめた座標 (qx, qy) の明るさを out へ: [0]＝うねりの明暗（−1〜1。緩い帯）・[1]＝波頭（0〜1。うねりの山を尖らせた筋 ＋ 波 ＋ さざ波）・[2]＝泡（0〜1。高い所だけ）
++ */
++function shadeAt(out: Float32Array, p: PackedSet, qx: number, qy: number, t: SeaTexArt): void {
++  const sw = clamp1(sumPacked(p.swell, qx, qy));
++  const ch = clamp1(sumPacked(p.chop, qx, qy));
++  const rp = sumPacked(p.ripple, qx, qy);
++  const u = (sw + 1) / 2;
++  const crest = 2 * u * (1 - t.crestBend + t.crestBend * u) - 1; // u と u² の間（山は細く谷は広い）。冪（**）は 1 画素に重い
++  const lift = 1 - t.chopOnSwell + t.chopOnSwell * (sw > 0 ? sw : 0);
++  const v = t.mix[0] * crest + t.mix[1] * ch * lift + t.mix[2] * rp;
++  out[0] = sw;
++  out[1] = v > 0 ? (v > 1 ? 1 : v) : 0;
++  out[2] = smoothstep(t.foam[0], t.foam[1], 0.55 * sw + 0.45 * ch + 0.15 * rp);
++}
++
++/** タイルの (x, y) m の明るさ（out は 3 つ。確保しない＝きらめきを波頭に置き直す時に update から呼ぶ）。ゆがみはそのまま計算する */
++export function seaShadeInto(out: Float32Array, f: SeaField, x: number, y: number): void {
++  const t = f.t;
++  shadeAt(out, f.packed, x + t.warpM * sumExact(f.set.warpX, x, y), y + t.warpM * sumExact(f.set.warpY, x, y), t);
++}
++
++/** きらめき・白波を置く所の点（波頭 ＋ 泡。0〜2） */
++export function seaCrestScore(out: Float32Array, f: SeaField, x: number, y: number): number {
++  seaShadeInto(out, f, x, y);
++  return out[1]! + out[2]!;
++}
++
++/** 1 画素の (灰 0〜1, α 0〜1): 白＝下地 ＋ うねりの帯（明るい側）＋ 波頭 ＋ 泡、黒＝うねりの谷（α だけ。昼の海で効く）。表示は tint × α */
++export function seaPixel(sw: number, crest: number, foam: number, t: SeaTexArt = SEA_TEX): [number, number] {
++  const L = t.base + t.band * (0.5 + 0.5 * sw) + t.light * crest + t.foamAlpha * foam;
++  const D = t.dark * (sw < 0 ? -sw : 0);
++  const a = Math.min(1, L + D);
++  return [a > 0 ? Math.min(1, L / a) : 1, a];
++}
++
++/** ゆがみの粗い格子の間隔 px（ゆがみの波は山 1〜2 つ＝格子の 1 次の補間で十分） */
++const WARP_STEP = 16;
++
++/** タイルの画素（RGBA・size × size px＝周期 SEA_TILE_PERIOD_M を size px に。同じ seed なら同じ。縁は周期で合う＝波の山の数が整数・ゆがみも周期） */
++export function seaTilePixels(seed: number, t: SeaTexArt = SEA_TEX, size = SEA_TILE_TEX_PX): Uint8ClampedArray {
++  const set = seaWaveSet(seed, t);
++  const m = SEA_TILE_PERIOD_M / size; // 1 px の m
++  const p = pack(set, t);
++  const g = size / WARP_STEP + 1;
++  const wx = new Float32Array(g * g);
++  const wy = new Float32Array(g * g);
++  for (let j = 0; j < g; j++) {
++    for (let i = 0; i < g; i++) {
++      wx[j * g + i] = t.warpM * sumExact(set.warpX, i * WARP_STEP * m, j * WARP_STEP * m);
++      wy[j * g + i] = t.warpM * sumExact(set.warpY, i * WARP_STEP * m, j * WARP_STEP * m);
++    }
++  }
++  const px = new Uint8ClampedArray(size * size * 4);
++  const o = new Float32Array(3);
++  for (let y = 0; y < size; y++) {
++    const j = Math.floor(y / WARP_STEP);
++    const fy = (y - j * WARP_STEP) / WARP_STEP;
++    for (let x = 0; x < size; x++) {
++      const i = Math.floor(x / WARP_STEP);
++      const fx = (x - i * WARP_STEP) / WARP_STEP;
++      const k = j * g + i;
++      const dx = (wx[k]! * (1 - fx) + wx[k + 1]! * fx) * (1 - fy) + (wx[k + g]! * (1 - fx) + wx[k + g + 1]! * fx) * fy;
++      const dy = (wy[k]! * (1 - fx) + wy[k + 1]! * fx) * (1 - fy) + (wy[k + g]! * (1 - fx) + wy[k + g + 1]! * fx) * fy;
++      shadeAt(o, p, x * m + dx, y * m + dy, t);
++      const sw = o[0]!;
++      const L = t.base + t.band * (0.5 + 0.5 * sw) + t.light * o[1]! + t.foamAlpha * o[2]!;
++      const a = Math.min(1, L + (sw < 0 ? -sw * t.dark : 0));
++      const q = (y * size + x) * 4;
++      px[q] = px[q + 1] = px[q + 2] = Math.round(255 * (a > 0 ? Math.min(1, L / a) : 1));
++      px[q + 3] = Math.round(255 * a);
++    }
++  }
++  return px;
+ }
+ 
+ /** 海の TileSprite の升（周期の単位。out に [左, 上, 横の数, 縦の数] を書く＝毎フレーム呼んでも確保しない）: 左上は view − margin を含む period の倍数、数は view ＋ margin を覆うだけ */
+@@ -135,6 +209,15 @@ export function seaCellInto(out: Int32Array, viewX: number, viewY: number, viewW
+   out[3] = Math.ceil((viewY + viewH + margin) / period) - cy;
+ }
+ 
++/** 波の流れ（tilePosition の px。周期 size で折り返す＝浮動小数の桁を保つ）: 模様が向き dirDeg へ mps m/秒で動くように、tile の位置を逆へ */
++export function seaDriftInto(out: Float32Array, dtS: number, dirDeg: number, mps: number, pxPerM: number, size: number): void {
++  const r = (dirDeg * Math.PI) / 180;
++  const nx = out[0]! - Math.cos(r) * mps * pxPerM * dtS;
++  const ny = out[1]! - Math.sin(r) * mps * pxPerM * dtS;
++  out[0] = ((nx % size) + size) % size;
++  out[1] = ((ny % size) + size) % size;
++}
++
+ /** 夜明けの光の α: 夜 0・移り変わりの中ほどで最大・昼 0（R4）。昼から始まる任務（dayStart）は 0。段は 0〜steps */
+ export function dawnGlowAlpha(step: number, steps: number, dayStart: boolean): number {
+   if (dayStart || step <= 0 || step >= steps) return 0;
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 726b05a..ec9dff1 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -231,6 +231,7 @@ export const TEXTURE_KEYS = {
+   fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
+   wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
+   wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
++  wakePuff: 'tex-wake-puff', // 航跡の尾の泡 48×64 の frame 2 枚（v0.7.0 IP1a。p0＝泡の帯・p1＝静音の泡。systems/wake-fx）
+   flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
+   coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
+   oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
+diff --git a/src/config/sea-art-config.ts b/src/config/sea-art-config.ts
+index 82c55b9..bc1625f 100644
+--- a/src/config/sea-art-config.ts
++++ b/src/config/sea-art-config.ts
+@@ -1,8 +1,13 @@
+ // v0.7.0（アートと音①：コードで描く絵）の海の面・夜明けの光・月のきらめき・岸の帯の定数（S3a の assets/sea-shape・sea-art と systems/sea-fx・world-art、S3c の coast-fx）。
+ // ゲームの強さの値ではないので data/*.json には置かない（evac-art-config と同じ考え）。海の色（SEA_COLOR・DAY_SEA_COLOR）と夜明けの 16 段は dawn-config・ui/sea-light のまま。何も import しない。
+ 
+-/** 海の格子の線（100 m ごと。entities/sea）を出すか（R6・決め D5: 既定は残す。消すのはユーザー未確認。?debug&title&nogrid で比べ、実機テストで聞いて次の版で決める） */
++/** 海の格子の線（100 m ごと。entities/sea）を出すか（ユーザーの決め（v0.7.0 実機 1 回目の U2）「波があったとしても格子の線はあった方がいいです」＝残す。?debug&nogrid は比べる道具のまま） */
+ export const SEA_GRID_ON = true;
++/**
++ * 格子の線の色（IP1a。ui-config の SEA_GRID_COLOR 0x1a2540 は、海の面の夜の波頭（約 #20283a）に溶けた＝少し明るく青く。昼の海 #3b5670 より暗い＝昼は暗い線のまま）。
++ * 格子は海の面の上（深さ DEPTH.sea 0 ＞ SEA_ART_DEPTH）
++ */
++export const SEA_GRID_LINE_COLOR = 0x26375c;
+ 
+ /** 海の模様のテクスチャの 1 m あたりの px（k に依らない固定。陰の 1.5 px/m の先例）と模様の周期（m。512 px の 2 の累乗＝REPEAT で貼れる） */
+ export const SEA_ART_PX_PER_M = 0.5;
+@@ -12,10 +17,10 @@ export const SEA_TILE_LOCAL_W = 128;
+ export const SEA_TILE_LOCAL_H = 64;
+ 
+ /**
+- * 光（data の moon: dark・half・full・day）ごとの海の模様の色と α（spec-v0700 §3.2。S3a）: 模様のテクスチャは白で描き、TileSprite の tint × α で色を付ける。
+- * crest は tint（白寄り。背景の上に α で重なった結果が spec の「#1c2a46 相当」「#2a3c60 相当」「#8fb0c8 相当」になる＝tint を暗い色にすると夜の海に溶けて見えない）。
+- * 夜は α ≤ 0.12（格子の線 0x1a2540 と同じくらいの薄さ）。夜明けは段（0〜16）で day の値へ線形に（段が変わった時だけ書く）。
+- * glints は筋の数（月のきらめき。dark は 0。day は白波＝whitecaps が true なら同じプールを白い泡の色・α にする＝全面の層を足さずに「疎らな白波」を出す）
++ * 光（data の moon: dark・half・full・day）ごとの海の面の色と α（spec-v0700 §3.2。IP1a で描き直し）: 海の面のテクスチャは白と黒の α で描き、TileSprite の tint × α で色を付ける。
++ * crest は tint（白寄り。背景の上に α で重なる。tint を暗い色にすると夜の海に溶けて見えない）。夜は α ≤ SEA_NIGHT_ALPHA_MAX（艇・雷跡・字が読める）、昼は明るく青く（U2・U3）。
++ * 夜明けは段（0〜16）で day の値へ線形に（段が変わった時だけ書く）。
++ * glints は筋の数（月のきらめき。dark は 0。day は白波＝whitecaps が true なら同じプールを白い泡の色・α にする）。IP1a で U3「もっと派手な演出、数でも大丈夫」から倍に
+  */
+ export interface SeaLightArt {
+   readonly crest: number;
+@@ -24,58 +29,68 @@ export interface SeaLightArt {
+   readonly whitecaps: boolean;
+ }
+ export const SEA_LIGHT_ART: Readonly<Record<'dark' | 'half' | 'full' | 'day', SeaLightArt>> = {
+-  dark: { crest: 0x9fb4d8, crestAlpha: 0.1, glints: 0, whitecaps: false },
+-  half: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 12, whitecaps: false },
+-  full: { crest: 0xb8ccec, crestAlpha: 0.12, glints: 16, whitecaps: false },
+-  day: { crest: 0xdce9f2, crestAlpha: 0.16, glints: 16, whitecaps: true },
++  dark: { crest: 0x90b0d8, crestAlpha: 0.2, glints: 0, whitecaps: false },
++  half: { crest: 0xb8ccec, crestAlpha: 0.26, glints: 24, whitecaps: false },
++  full: { crest: 0xb8ccec, crestAlpha: 0.28, glints: 32, whitecaps: false },
++  day: { crest: 0xb0d8ff, crestAlpha: 0.42, glints: 24, whitecaps: true },
+ };
+-/** 夜の模様の α の上限（spec §3.2「夜は α ≤ 0.12」。tests/sea-art） */
+-export const SEA_NIGHT_ALPHA_MAX = 0.12;
++/** 夜の海の面の α の上限（S3a は spec §3.2「夜は α ≤ 0.12」＝散らした弧の値。IP1a の面は画素の α が平均 約 0.3 なので層の α を上げた。tests/sea-art が画面の明るさで確かめる） */
++export const SEA_NIGHT_ALPHA_MAX = 0.3;
+ 
++/** 波の帯（波長 m・数・波の進む向きからの広がり 度・振幅 ∝ (波長/上限)^ampPow） */
++export interface SeaBandArt {
++  readonly count: number;
++  readonly lamM: readonly [number, number];
++  readonly spreadDeg: number;
++  readonly ampPow: number;
++}
+ /**
+- * 海の模様のテクスチャ（tex-sea-tile。SEA_TILE_PERIOD_M × SEA_ART_PX_PER_M ＝ 512 px の正方形。絵だけの乱数 ART_SEED_SEA・周期の縁で折り返す）の中身:
+- * 波頭の短い弧（本数・長さ px・向き＝波の来る向き −12° に ±28° の乱れ・たわみ＝長さの割合・太い下塗り 4 px α 0.32 と芯 2 px α 0.8＝細部は 2 px 以上 R17）、
+- * 疎らな白波（短く太い点描。弧の上に。昼の α で見える）、ごく薄いうねり（大きな丸の濃淡）。点を一直線に並べた形は描かない（雷跡と紛れない。R7）
+- */
+-export const SEA_CREST_COUNT = 150;
+-export const SEA_CREST_LEN_PX: readonly [number, number] = [16, 44];
+-/** 弧は波の列に沿って置く（一様な網目にしない）: 列の数（タイルの高さを等分）・列のうねり（振幅 px・タイル 1 辺あたりの山の数＝整数で周期に合う）・列からの散らばり px */
+-export const SEA_CREST_ROWS = 12;
+-export const SEA_ROW_WAVE_PX = 14;
+-export const SEA_ROW_WAVES_PER_TILE = 2;
+-export const SEA_ROW_SCATTER_PX = 16;
+-export const SEA_CREST_BASE_DEG = -12;
+-export const SEA_CREST_JITTER_DEG = 28;
+-export const SEA_CREST_SAG: readonly [number, number] = [0.08, 0.18];
+-export const SEA_CREST_WIDE_PX = 4;
+-export const SEA_CREST_WIDE_ALPHA = 0.25;
+-export const SEA_CREST_CORE_PX = 2;
+-export const SEA_CREST_CORE_ALPHA = 0.7;
+-export const SEA_CAP_COUNT = 20;
+-export const SEA_CAP_LEN_PX: readonly [number, number] = [5, 9];
+-export const SEA_CAP_PX = 3;
+-export const SEA_CAP_ALPHA = 1;
+-export const SEA_SWELL_COUNT = 10;
+-export const SEA_SWELL_R_PX: readonly [number, number] = [60, 130];
+-export const SEA_SWELL_ALPHA = 0.1;
+-/**
+- * 海の模様の出し方（S3a の計測で決めた。spec §5.1）: 'patches'＝波頭の群れの小さな Image を SEA_PATCH_COUNT 個、カメラの周りの世界の座標に置き回す（第 2 案。既定）。
+- * 'tile'＝世界の座標の TileSprite 1 枚（第 1 案）。ヘッドレス（SwiftShader＝CPU のラスタ）では全面の層 1 枚が jp_03 ハードの第 4 波で p95 ×1.27（門 ≤ 1.15）だったので既定にしない。
+- * iPhone の GPU では全面の層 1 枚は軽い（spec §5.7）ので、実機で見比べたければここを 'tile' にして試す（ほかは同じ・遊びは変わらない）
++ * 海の面のテクスチャ（tex-sea-tile。512 px の正方形＝0.5 px/m × 1,024 m。IP1a でユーザーの U2「波の模様が波に見えずにゴミのように見えます」から描き直し）:
++ * 周期の縁で合う正弦の和（assets/sea-shape の seaTilePixels）。dirDeg＝波の進む向き（画面の x から時計回り。波頭の筋は −12° 前後＝S3a の向き）、
++ * swell＝長いうねり（96〜256 m）・chop＝波（24〜60 m）・ripple＝さざ波（10〜20 m）・warp＝座標のゆがみ（山 1〜2 つ・warpM m ずらす＝筋がまっすぐにならない）、
++ * swellGain・chopGain＝正規化した和の強さ（和は ±1 にほぼ届かないので 1 より大きく）、mix＝明暗に混ぜる割合（うねり・波・さざ波）、crestBend＝うねりの山を尖らせる割合（0＝そのまま・1＝2 乗）、
++ * foam＝泡が出始めて満ちる高さ（smoothstep）、画素の α: base＝一面の下地・light＝山・dark＝谷（黒）・foamAlpha＝泡（白）。表示は SEA_LIGHT_ART の tint × α
+  */
+-export const SEA_LAYER_MODE: 'patches' | 'tile' = 'patches';
+-/** 波頭の群れ（patches）: 個数・1 枚の px（0.5 px/m ＝ 320 × 96 m）・絵の種類（同じ鍵の frame p0〜）・1 枚の弧の数・縁へ向けて薄くする幅 px（矩形の縁を見せない）・列のうねり px・散らし px */
+-export const SEA_PATCH_COUNT = 12;
+-/** 輪の置き方の列の数（画面を cols × rows の升に分けて 1 升に 1 つ＝偏らない。置き直しても同じ行・列の帯の内に戻す） */
+-export const SEA_PATCH_COLS = 4;
+-export const GLINT_COLS = 4;
+-export const SEA_PATCH_W_PX = 160;
+-export const SEA_PATCH_H_PX = 48;
+-export const SEA_PATCH_FRAMES = 3;
+-export const SEA_PATCH_ARCS = 12;
+-export const SEA_PATCH_EDGE_FADE_PX = 12;
+-export const SEA_PATCH_WAVE_PX = 7;
+-export const SEA_PATCH_SCATTER_PX = 5;
++export interface SeaTexArt {
++  readonly dirDeg: number;
++  readonly swell: SeaBandArt;
++  readonly chop: SeaBandArt;
++  readonly ripple: SeaBandArt;
++  readonly warp: SeaBandArt;
++  readonly warpM: number;
++  readonly swellGain: number;
++  readonly chopGain: number;
++  readonly chopOnSwell: number;
++  readonly mix: readonly [number, number, number];
++  readonly crestBend: number;
++  readonly foam: readonly [number, number];
++  readonly base: number;
++  readonly band: number;
++  readonly light: number;
++  readonly dark: number;
++  readonly foamAlpha: number;
++}
++export const SEA_TEX: SeaTexArt = {
++  dirDeg: 78,
++  swell: { count: 6, lamM: [96, 256], spreadDeg: 20, ampPow: 1 },
++  chop: { count: 12, lamM: [24, 64], spreadDeg: 28, ampPow: 0.8 },
++  ripple: { count: 10, lamM: [10, 20], spreadDeg: 50, ampPow: 0.5 },
++  warp: { count: 3, lamM: [512, 1024], spreadDeg: 90, ampPow: 0 },
++  warpM: 56,
++  swellGain: 1.3,
++  chopGain: 1.8,
++  chopOnSwell: 0.4,
++  mix: [0.25, 0.55, 0.2],
++  crestBend: 0.5,
++  foam: [0.6, 0.95],
++  base: 0.1,
++  band: 0.3,
++  light: 0.5,
++  dark: 0.3,
++  foamAlpha: 0.3,
++};
++/** 波の流れ（m/秒。波の進む向き SEA_TEX.dirDeg へ。tilePosition を毎フレーム＝WebGL では描き直さない。きらめきも一緒に流す） */
++export const SEA_DRIFT_MPS = 1.6;
+ /** 海の TileSprite が camera.worldView の外へ持つ余白 m（1 周期。升が変わるのは縁が周期の線を越えた時だけ＝全速でも数秒に 1 回。R5） */
+ export const SEA_VIEW_MARGIN_M = 1024;
+ /** Phaser.WEBGL（CONST.WEBGL ＝ 2）。sea-fx が phaser の値の import を避けて renderer.type と比べる（Canvas レンダラーでは海の模様を出さない。spec §5.1） */
+@@ -101,12 +116,20 @@ export const GLINT_COLOR = 0xcfe4ff;
+ export const GLINT_ALPHA_MAX = 0.3;
+ export const GLINT_TEX_W = 16;
+ export const GLINT_TEX_H = 8;
+-export const GLINT_W_M = 14;
+-export const GLINT_H_M = 6;
++export const GLINT_W_M = 20;
++export const GLINT_H_M = 5;
+ export const GLINT_PERIOD_MIN_S = 2;
++/** IP1a: 輪の置き方の列の数（画面を cols × rows の升に分けて 1 升に 1 つ）・置く時に升の内で比べる候補の数（波頭の高い所を選ぶ）・筋の向きの乱れ 度・大きさの倍率の帯 */
++export const GLINT_COLS = 6;
++export const GLINT_TRIES = 6;
++export const GLINT_ANGLE_JITTER_DEG = 10;
++export const GLINT_SIZE_RANGE: readonly [number, number] = [0.6, 1.3];
+ export const GLINT_SWING_MAX = 0.5;
+ export const WHITECAP_COLOR = 0xf4f8fb;
+-export const WHITECAP_ALPHA_MAX = 0.4;
++/** 昼の白波の筋の大きさ m（IP1a。月のきらめきの 20 × 5 m では白い点に見えた＝波頭に沿って長く） */
++export const WHITECAP_W_M = 34;
++export const WHITECAP_H_M = 6;
++export const WHITECAP_ALPHA_MAX = 0.32;
+ 
+ /** 岸の帯（S3c。砂浜・寄せ波・陸の際の木々）: 1 m あたりの px・1 枚の長さ m・陸の側の幅 m・海の側の寄せ波の幅 m・陸の端（−陸の幅・幅＋陸の幅）で透明へ落とす幅 m（R24。S4 から jp_03 も帯を切らない） */
+ export const COAST_ART_PX_PER_M = 1.0;
+@@ -128,8 +151,8 @@ export const COAST_CROWN_LIGHT_COLOR = 0x41542f;
+ export const COAST_SURF_ALPHA = 0.6;
+ export const COAST_SURF_PX = 2.5;
+ 
+-/** 深さ（game-config の DEPTH は変えない。ここに絶対値で）: 海の模様・夜明けの光（海の模様の直上＝陸・艇・艦・字の下。R3）・月のきらめき・岸の帯 */
+-export const SEA_ART_DEPTH = 0.05;
++/** 深さ（game-config の DEPTH は変えない。ここに絶対値で）: 海の面（IP1a で格子の線 DEPTH.sea 0 の下へ）・夜明けの光（格子の上＝陸・艇・艦・字の下。R3）・月のきらめき・岸の帯 */
++export const SEA_ART_DEPTH = -0.1;
+ export const DAWN_GLOW_DEPTH = 0.1;
+ export const GLINT_DEPTH = 0.2;
+ export const COAST_STRIP_DEPTH = 1.2;
+diff --git a/src/entities/sea.ts b/src/entities/sea.ts
+index c3bc26d..128e48c 100644
+--- a/src/entities/sea.ts
++++ b/src/entities/sea.ts
+@@ -1,18 +1,18 @@
+-// 海の格子と海域境界。1 つの Graphics に起動時 1 回だけ記録する（毎フレーム clear/再描画しない）。波の模様は systems/sea-fx の TileSprite（v0.7.0 S3a。深さ 0.05＝この上）。
++// 海の格子と海域境界。1 つの Graphics に起動時 1 回だけ記録する（毎フレーム clear/再描画しない）。海の面は systems/sea-fx の TileSprite（v0.7.0 IP1a。深さ −0.1＝この下＝格子は波の上に見える）。
+ // TileSprite は表示サイズ分の canvas を内部に作るため、海域全体（6,000×4,000 m = 24M px）に使うと iOS Safari の canvas 上限を超える。
+ // 線は 100 本程度なので Graphics の毎フレーム描画コストは無視できる。
+ import Phaser from 'phaser';
+ import { DEBUG_GRID_OFF, DEPTH } from '../config/game-config';
+-import { SEA_GRID_ON } from '../config/sea-art-config';
+-import { SEA_BORDER_COLOR, SEA_BORDER_WIDTH, SEA_GRID_CELL_M, SEA_GRID_COLOR, SEA_GRID_LINE_WIDTH } from '../config/ui-config';
++import { SEA_GRID_LINE_COLOR, SEA_GRID_ON } from '../config/sea-art-config';
++import { SEA_BORDER_COLOR, SEA_BORDER_WIDTH, SEA_GRID_CELL_M, SEA_GRID_LINE_WIDTH } from '../config/ui-config';
+ import type { SeaBounds } from '../core/boat-motion';
+ 
+ export function drawSea(scene: Phaser.Scene, bounds: SeaBounds): Phaser.GameObjects.Graphics {
+   const { width, height } = bounds;
+   const g = scene.add.graphics().setDepth(DEPTH.sea);
+-  // 格子の線（100 m）は既定で残す（v0.7.0 S3a。R6・D5: 海の模様 systems/sea-fx があっても消すのはユーザー未確認。?debug&nogrid で比べる）。海域の縁はいつも
++  // 格子の線（100 m）は残す（ユーザーの決め v0.7.0 実機 1 回目の U2「波があったとしても格子の線はあった方がいいです」。色は sea-art-config。?debug&nogrid は比べる道具）。海域の縁はいつも
+   if (SEA_GRID_ON && !DEBUG_GRID_OFF) {
+-    g.lineStyle(SEA_GRID_LINE_WIDTH, SEA_GRID_COLOR, 1);
++    g.lineStyle(SEA_GRID_LINE_WIDTH, SEA_GRID_LINE_COLOR, 1);
+     g.beginPath();
+     for (let x = SEA_GRID_CELL_M; x < width; x += SEA_GRID_CELL_M) {
+       g.moveTo(x, 0);
+diff --git a/src/systems/sea-fx.ts b/src/systems/sea-fx.ts
+index 8f87883..c9f3434 100644
+--- a/src/systems/sea-fx.ts
++++ b/src/systems/sea-fx.ts
+@@ -1,24 +1,22 @@
+-// v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5.1・§5.6・R3・R4・R5・R9）: 海の面の演出＝海の模様・夜明けの光の Image 1 枚・月のきらめき（昼は白波）の Image の輪。
+-// - 海の模様は 2 つの出し方（config の SEA_LAYER_MODE。S3a の計測で 'patches' を既定にした）:
+-//   'patches'（第 2 案）: 波頭の群れの小さな Image（tex-sea-tile の frame p0〜）を SEA_PATCH_COUNT 個、世界の座標に置き、画面＋余白の外へ出たら反対側へ置き直す（きらめきと同じ輪）。
+-//     全面の層を塗らない（ヘッドレスの SwiftShader で全面の層 1 枚は jp_03 ハードの p95 ×1.27 だった）。
+-//   'tile'（第 1 案）: 世界の座標の TileSprite 1 枚（R5。画面に貼るとカメラの追従の 1 フレーム遅れで陸・航跡に対して泳ぐ）: 位置は周期（1,024 m）の倍数、camera.worldView ＋ 余白を覆う大きさ。
+-//     動かすのは揃えた升が変わった時だけ（setPosition・setScale・setTileScale。WebGL の TileSprite はこれらで canvas を描き直さない）。局所 128 × 64 px のまま setScale で広げる（R21）。
+-//     Canvas レンダラーでは出さない（毎フレーム描き直すため。spec §5.1）。
++// v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5.1・§5.6・R3・R4・R5・R9）: 海の面の演出＝海の面の TileSprite 1 枚・夜明けの光の Image 1 枚・月のきらめき（昼は白波）の Image の輪。
++// - 海の面（IP1a。ユーザーの U2「波の模様が波に見えずにゴミのように見えます」で S3a の波頭の群れ（patches）をやめ、第 1 案の全面の層に。U3「FPS は問題なく動く」で全面の層 1 枚の塗りを許す）:
++//   世界の座標の TileSprite 1 枚（R5。画面に貼るとカメラの追従の 1 フレーム遅れで陸・航跡に対して泳ぐ）: 位置は周期（1,024 m）の倍数、camera.worldView ＋ 余白を覆う大きさ。
++//   動かすのは揃えた升が変わった時だけ（setPosition・setScale・setTileScale。WebGL の TileSprite はこれらで canvas を描き直さない）。局所 128 × 64 px のまま setScale で広げる（R21）。
++//   波はゆっくり流れる（tilePosition を毎フレーム。WebGL では uv のずれだけ＝描き直さない）。深さは格子の線（DEPTH.sea）の下＝格子は波の上に見える（ユーザーの決め「格子の線はあった方がいい」）。
++//   Canvas レンダラーでは出さない（毎フレーム描き直すため。spec §5.1）。
+ // - 光（dark・half・full・day）の tint と α、夜明けの段（WorldDawn.lightStep。0〜16）で昼の値へ。段が変わった時だけ書く。
+ // - 夜明けの光: setScrollFactor(0) の Image を画面より各辺 3% 大きく（揺れの縁）、深さは海の模様の直上＝陸・艇・艦・字の下（R3）。α ＝ 0.22 × sin(π × 段/16)（R4）。ズームが変わった時だけ大きさを書く。
+-// - きらめき: 世界の座標に N 個。画面＋余白の外へ出たら反対側へ（横ずれは絵だけの乱数 ART_SEED_GLINT＝世界の絵を作る時に new。R30）。ゆっくり明滅（R9）。昼（whitecaps）は白い泡の色。
+-// - S4: 波頭の群れ・きらめき（白波）は世界の内（0〜幅 × 0〜高さ）に収まる所だけ出す（S3c までは世界の縁の外の、格子の無い海にも出ていた）。
++// - きらめき: 世界の座標に N 個。置く時は升の内の候補 GLINT_TRIES か所から波頭の高い所（assets/sea-shape の seaCrestScore）を選び、波の筋の向きに傾け、波と一緒に流す。
++//   画面＋余白の外へ出たら反対側へ（横ずれは絵だけの乱数 ART_SEED_GLINT＝世界の絵を作る時に new。R30）。ゆっくり明滅（R9）。昼（whitecaps）は白い泡の色。世界の内に収まる所だけ出す（S4）。
+ // §7: 確保は constructor だけ。update は読んで書くだけ（配列・オブジェクトを作らない）。論理の状態には書かない（art-rules）。
+ import type Phaser from 'phaser';
+-import { dawnGlowAlpha, glintBlink, mixRgb, SEA_TILE_TEX_PX, seaCellInto, wrapInto } from '../assets/sea-shape';
++import { dawnGlowAlpha, glintBlink, mixRgb, SEA_TILE_TEX_PX, seaCellInto, seaCrestScore, seaDriftInto, seaField, wrapInto, type SeaField } from '../assets/sea-shape';
+ import { SEA_LIGHT_STEPS } from '../config/dawn-config';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import {
+-  ART_SEED_GLINT, DAWN_GLOW_DEPTH, DAWN_GLOW_OVERSCAN, DAWN_GLOW_SCREEN_SHARE, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_ALPHA_MAX, GLINT_COLOR, GLINT_DEPTH, GLINT_H_M, GLINT_PERIOD_MIN_S, GLINT_TEX_H, GLINT_TEX_W,
+-  GLINT_COLS, GLINT_W_M, RENDERER_WEBGL, SEA_ART_DEPTH, SEA_ART_PX_PER_M, SEA_LAYER_MODE, SEA_LIGHT_ART, SEA_PATCH_COLS, SEA_PATCH_COUNT, SEA_PATCH_FRAMES, SEA_PATCH_H_PX, SEA_PATCH_W_PX,
+-  SEA_TILE_LOCAL_H, SEA_TILE_LOCAL_W,
+-  SEA_TILE_PERIOD_M, SEA_VIEW_MARGIN_M, WHITECAP_ALPHA_MAX, WHITECAP_COLOR, type SeaLightArt,
++  ART_SEED_GLINT, ART_SEED_SEA, DAWN_GLOW_DEPTH, DAWN_GLOW_OVERSCAN, DAWN_GLOW_SCREEN_SHARE, DAWN_GLOW_TEX_H, DAWN_GLOW_TEX_W, GLINT_ALPHA_MAX, GLINT_ANGLE_JITTER_DEG, GLINT_COLOR, GLINT_COLS,
++  GLINT_DEPTH, GLINT_H_M, GLINT_PERIOD_MIN_S, GLINT_SIZE_RANGE, GLINT_TEX_H, GLINT_TEX_W, GLINT_TRIES, GLINT_W_M, RENDERER_WEBGL, SEA_ART_DEPTH, SEA_ART_PX_PER_M, SEA_DRIFT_MPS, SEA_LIGHT_ART, SEA_TEX,
++  SEA_TILE_LOCAL_H, SEA_TILE_LOCAL_W, SEA_TILE_PERIOD_M, SEA_VIEW_MARGIN_M, WHITECAP_ALPHA_MAX, WHITECAP_COLOR, WHITECAP_H_M, WHITECAP_W_M, type SeaLightArt,
+ } from '../config/sea-art-config';
+ import { SeededRng } from '../core/rng';
+ import type { MoonPhase } from '../core/visibility';
+@@ -33,10 +31,13 @@ interface DriftBox {
+   readonly hh: number;
+ }
+ 
++/** 置く所の点（大きいほど良い。候補から選ぶ） */
++type Score = (x: number, y: number) => number;
++
+ /**
+- * 世界の座標に置いた Image の輪（きらめき・波頭の群れ）: 画面を cols × rows の升に分け、i 番は升 (i % cols, floor(i / cols)) の中の乱数の位置に置く（偏らない）。
+- * 画面＋余白の外へ出たら反対側へ。横切った軸と直交する向きは自分の行（列）の帯の内で引き直す＝動き回ってもおおむね升に 1 つ。
+- * 置いた所が世界の内に収まらなければ隠す（S4。見え方が変わった時だけ setVisible）
++ * 世界の座標に置いた Image の輪（きらめき）: 画面を cols × rows の升に分け、i 番は升 (i % cols, floor(i / cols)) の中の点に置く（偏らない）。
++ * 置く点は升の内の候補 tries か所から score の高い所。画面＋余白の外へ出たら反対側へ（横切った軸と直交する向きは自分の行（列）の帯の内で引き直す）。
++ * 置いた所が世界の内に収まらなければ隠す（S4。見え方が変わった時だけ setVisible）。shift で全部を流す（波と一緒に）
+  */
+ class DriftPool {
+   readonly imgs: Phaser.GameObjects.Image[] = [];
+@@ -46,7 +47,7 @@ class DriftPool {
+   private on = false;
+   placed = false;
+ 
+-  constructor(n: number, private readonly cols: number, private readonly marginM: number, private readonly box: DriftBox, make: (i: number) => Phaser.GameObjects.Image) {
++  constructor(n: number, private readonly cols: number, private readonly marginM: number, private readonly box: DriftBox, private readonly tries: number, private readonly score: Score, make: (i: number) => Phaser.GameObjects.Image) {
+     this.xs = new Float32Array(n);
+     this.ys = new Float32Array(n);
+     this.rows = Math.max(1, Math.ceil(n / cols));
+@@ -60,13 +61,31 @@ class DriftPool {
+     return v.y + ((Math.floor(i / this.cols) + rng.next()) / this.rows) * v.height;
+   }
+ 
+-  update(v: View, rng: SeededRng): void {
++  /** i 番を升の内（keepX・keepY なら その軸は今の値のまま）の候補から波頭の高い所へ */
++  private pick(i: number, v: View, rng: SeededRng, keepX: boolean, keepY: boolean): void {
++    let bx = keepX ? this.xs[i]! : this.stratX(i, v, rng);
++    let by = keepY ? this.ys[i]! : this.stratY(i, v, rng);
++    let best = this.score(bx, by);
++    for (let k = 1; k < this.tries; k++) {
++      const x = keepX ? bx : this.stratX(i, v, rng);
++      const y = keepY ? by : this.stratY(i, v, rng);
++      const s = this.score(x, y);
++      if (s > best) {
++        best = s;
++        bx = x;
++        by = y;
++      }
++    }
++    this.xs[i] = bx;
++    this.ys[i] = by;
++  }
++
++  update(v: View, rng: SeededRng, dx: number, dy: number): void {
+     const n = this.imgs.length;
+     if (!this.placed) {
+       this.placed = true;
+       for (let i = 0; i < n; i++) {
+-        this.xs[i] = this.stratX(i, v, rng);
+-        this.ys[i] = this.stratY(i, v, rng);
++        this.pick(i, v, rng, false, false);
+         this.imgs[i]!.setPosition(this.xs[i]!, this.ys[i]!);
+         this.apply(i);
+       }
+@@ -74,15 +93,17 @@ class DriftPool {
+     }
+     const m = this.marginM;
+     for (let i = 0; i < n; i++) {
+-      const x0 = this.xs[i]!;
+-      const y0 = this.ys[i]!;
++      const x0 = this.xs[i]! + dx;
++      const y0 = this.ys[i]! + dy;
+       const x1 = wrapInto(x0, v.x, v.right, m);
+       const y1 = wrapInto(y0, v.y, v.bottom, m);
+-      if (x1 === x0 && y1 === y0) continue;
+-      this.xs[i] = x1 !== x0 ? x1 : this.stratX(i, v, rng);
+-      this.ys[i] = y1 !== y0 ? y1 : this.stratY(i, v, rng);
++      this.xs[i] = x1;
++      this.ys[i] = y1;
++      if (x1 !== x0 || y1 !== y0) {
++        this.pick(i, v, rng, x1 !== x0, y1 !== y0); // 横切った軸は反対側の点のまま、直交の軸を自分の帯の内で引き直す
++        this.apply(i);
++      }
+       this.imgs[i]!.setPosition(this.xs[i]!, this.ys[i]!);
+-      this.apply(i);
+     }
+   }
+ 
+@@ -110,16 +131,22 @@ class DriftPool {
+ export class SeaFx {
+   private readonly cam: Phaser.Cameras.Scene2D.Camera;
+   private readonly tile: Phaser.GameObjects.TileSprite | null;
+-  private readonly patches: DriftPool | null;
+   private readonly glow: Phaser.GameObjects.Image;
+   private readonly glints: DriftPool;
+   private readonly gPeriod: Float32Array;
+   private readonly gPhase: Float32Array;
+   /** 升の [左, 上, 横の数, 縦の数]（周期の単位）。前の値と比べて変わった時だけ TileSprite を動かす */
+   private readonly cell = new Int32Array(4);
++  /** 波の流れ（tilePosition の px。[x, y]）と、波頭の点を読む式・その出力 */
++  private readonly drift = new Float32Array(2);
++  private readonly field: SeaField;
++  private readonly shade = new Float32Array(3);
+   private readonly rng = new SeededRng(ART_SEED_GLINT);
+   private readonly light: SeaLightArt;
+   private readonly dayStart: boolean;
++  /** 模様の流れ m/秒（x, y） */
++  private readonly vx: number;
++  private readonly vy: number;
+   private step = -1;
+   private zoom = NaN;
+   private cx = NaN;
+@@ -128,24 +155,35 @@ export class SeaFx {
+   private ny = 0;
+   private t = 0;
+   private glintBase = 0;
++  /** 世界の幅・高さ m（海の面を世界の内に切る） */
++  private readonly bw: number;
++  private readonly bh: number;
+ 
+   constructor(scene: Phaser.Scene, moon: MoonPhase, dayStart: boolean, bounds: { readonly width: number; readonly height: number }) {
+     this.cam = scene.cameras.main;
+     this.light = SEA_LIGHT_ART[moon];
+     this.dayStart = dayStart;
++    this.bw = bounds.width;
++    this.bh = bounds.height;
++    const r = (SEA_TEX.dirDeg * Math.PI) / 180;
++    this.vx = Math.cos(r) * SEA_DRIFT_MPS;
++    this.vy = Math.sin(r) * SEA_DRIFT_MPS;
++    this.field = seaField(ART_SEED_SEA);
+     const webgl = scene.sys.game.renderer.type === RENDERER_WEBGL;
+-    const tileMode = SEA_LAYER_MODE === 'tile';
+-    this.tile = tileMode && webgl ? scene.add.tileSprite(0, 0, SEA_TILE_LOCAL_W, SEA_TILE_LOCAL_H, TEXTURE_KEYS.seaTile).setOrigin(0, 0).setDepth(SEA_ART_DEPTH).setVisible(false) : null;
+-    const k = 1 / SEA_ART_PX_PER_M;
+-    this.patches = tileMode
+-      ? null
+-      : new DriftPool(SEA_PATCH_COUNT, SEA_PATCH_COLS, (SEA_PATCH_W_PX * k) / 2, { bw: bounds.width, bh: bounds.height, hw: (SEA_PATCH_W_PX * k) / 2, hh: (SEA_PATCH_H_PX * k) / 2 }, (i) =>
+-          scene.add.image(0, 0, TEXTURE_KEYS.seaTile, `p${i % SEA_PATCH_FRAMES}`).setDepth(SEA_ART_DEPTH).setScale(k).setFlipX(i % 2 === 1).setVisible(false),
+-        );
++    this.tile = webgl ? scene.add.tileSprite(0, 0, SEA_TILE_LOCAL_W, SEA_TILE_LOCAL_H, TEXTURE_KEYS.seaTile).setOrigin(0, 0).setDepth(SEA_ART_DEPTH).setVisible(false) : null;
+     this.glow = scene.add.image(0, 0, TEXTURE_KEYS.dawnGlow).setScrollFactor(0).setOrigin(1, 0.5).setDepth(DAWN_GLOW_DEPTH).setVisible(false);
+     const n = this.light.glints;
+     const color = this.light.whitecaps ? WHITECAP_COLOR : GLINT_COLOR;
+-    this.glints = new DriftPool(n, GLINT_COLS, GLINT_W_M, { bw: bounds.width, bh: bounds.height, hw: GLINT_W_M / 2, hh: GLINT_H_M / 2 }, () => scene.add.image(0, 0, TEXTURE_KEYS.glint).setDepth(GLINT_DEPTH).setScale(GLINT_W_M / GLINT_TEX_W, GLINT_H_M / GLINT_TEX_H).setTint(color).setVisible(false));
++    const crestDeg = SEA_TEX.dirDeg - 90; // 波の筋の向き（波の進む向きに直交）
++    const score: Score = (x, y) => this.crestAt(x, y);
++    const gw = this.light.whitecaps ? WHITECAP_W_M : GLINT_W_M;
++    const gh = this.light.whitecaps ? WHITECAP_H_M : GLINT_H_M;
++    const box = { bw: bounds.width, bh: bounds.height, hw: gw / 2, hh: gw / 2 };
++    this.glints = new DriftPool(n, GLINT_COLS, gw, box, GLINT_TRIES, score, () => {
++      const sz = this.rng.nextRange(GLINT_SIZE_RANGE[0], GLINT_SIZE_RANGE[1]);
++      const ang = crestDeg + this.rng.nextRange(-GLINT_ANGLE_JITTER_DEG, GLINT_ANGLE_JITTER_DEG);
++      return scene.add.image(0, 0, TEXTURE_KEYS.glint).setDepth(GLINT_DEPTH).setScale((gw * sz) / GLINT_TEX_W, (gh * sz) / GLINT_TEX_H).setAngle(ang).setTint(color).setVisible(false);
++    });
+     this.gPeriod = new Float32Array(n);
+     this.gPhase = new Float32Array(n);
+     for (let i = 0; i < n; i++) {
+@@ -154,6 +192,11 @@ export class SeaFx {
+     }
+   }
+ 
++  /** 世界の (x, y) m の波頭の点（今の流れの分だけずらしてタイルの式を読む。確保しない） */
++  private crestAt(x: number, y: number): number {
++    return seaCrestScore(this.shade, this.field, x + this.drift[0]! / SEA_ART_PX_PER_M, y + this.drift[1]! / SEA_ART_PX_PER_M);
++  }
++
+   /** 毎フレーム（world-art から。realDt は見た目の時計、step は WorldDawn.lightStep） */
+   update(realDt: number, step: number): void {
+     const cam = this.cam;
+@@ -163,29 +206,38 @@ export class SeaFx {
+     const first = !this.glints.placed;
+     if (step !== this.step) this.applyStep(step);
+     if (cam.zoom !== this.zoom) this.applyZoom(cam.zoom);
++    seaDriftInto(this.drift, realDt, SEA_TEX.dirDeg, SEA_DRIFT_MPS, SEA_ART_PX_PER_M, SEA_TILE_TEX_PX);
+     if (this.tile) {
+       const c = this.cell;
+       seaCellInto(c, v.x, v.y, v.width, v.height, SEA_TILE_PERIOD_M, SEA_VIEW_MARGIN_M);
+       if (c[0] !== this.cx || c[1] !== this.cy || c[2] !== this.nx || c[3] !== this.ny) this.moveTile(c[0]!, c[1]!, c[2]!, c[3]!);
++      this.tile.setTilePosition(this.drift[0]!, this.drift[1]!);
+     }
+-    if (this.patches) this.patches.update(v, this.rng);
+-    this.glints.update(v, this.rng);
+-    if (first) {
+-      this.patches?.setVisibleAll(true);
+-      this.glints.setVisibleAll(this.glintBase > 0);
+-    }
++    this.glints.update(v, this.rng, this.vx * realDt, this.vy * realDt);
++    if (first) this.glints.setVisibleAll(this.glintBase > 0);
+     const imgs = this.glints.imgs;
+     for (let i = 0; i < imgs.length; i++) imgs[i]!.setAlpha(this.glintBase * glintBlink(this.t, this.gPeriod[i]!, this.gPhase[i]!));
+   }
+ 
+-  /** 升が変わった時だけ: 位置は周期の倍数、大きさは升の数 × 周期、模様の周期は世界で 1,024 m のまま */
++  /**
++   * 升が変わった時だけ: 升（周期の倍数）を世界の内（0〜幅 × 0〜高さ。S4 のきらめきと同じ＝世界の縁の外の格子の無い海は無地のまま）に切った矩形に置き、模様の周期は世界で 1,024 m のまま。
++   * 左上は 0 か周期の倍数なので模様の位置は升が変わってもずれない
++   */
+   private moveTile(cx: number, cy: number, nx: number, ny: number): void {
+     this.cx = cx;
+     this.cy = cy;
+     this.nx = nx;
+     this.ny = ny;
+     const P = SEA_TILE_PERIOD_M;
+-    this.tile!.setPosition(cx * P, cy * P).setScale((nx * P) / SEA_TILE_LOCAL_W, (ny * P) / SEA_TILE_LOCAL_H).setTileScale(SEA_TILE_LOCAL_W / (SEA_TILE_TEX_PX * nx), SEA_TILE_LOCAL_H / (SEA_TILE_TEX_PX * ny)).setVisible(true);
++    const x0 = Math.max(0, cx * P);
++    const y0 = Math.max(0, cy * P);
++    const w = Math.min(this.bw, (cx + nx) * P) - x0;
++    const h = Math.min(this.bh, (cy + ny) * P) - y0;
++    if (!(w > 0 && h > 0)) {
++      this.tile!.setVisible(false);
++      return;
++    }
++    this.tile!.setPosition(x0, y0).setScale(w / SEA_TILE_LOCAL_W, h / SEA_TILE_LOCAL_H).setTileScale((SEA_TILE_LOCAL_W * P) / (SEA_TILE_TEX_PX * w), (SEA_TILE_LOCAL_H * P) / (SEA_TILE_TEX_PX * h)).setVisible(true);
+   }
+ 
+   /** 段が変わった時だけ: 模様の tint と α（光 → 昼）、夜明けの光の α、きらめきの α の上限（月のきらめきは昼へ向けて薄く。白波はそのまま） */
+@@ -197,7 +249,6 @@ export class SeaFx {
+     const tint = mixRgb(L.crest, day.crest, f);
+     const alpha = L.crestAlpha + (day.crestAlpha - L.crestAlpha) * f;
+     this.tile?.setTint(tint).setAlpha(alpha);
+-    if (this.patches) for (const g of this.patches.imgs) g.setTint(tint).setAlpha(alpha);
+     const a = dawnGlowAlpha(step, SEA_LIGHT_STEPS, this.dayStart);
+     this.glow.setAlpha(a).setVisible(a > 0);
+     this.glintBase = L.whitecaps ? WHITECAP_ALPHA_MAX : GLINT_ALPHA_MAX * (1 - f);
+@@ -220,7 +271,6 @@ export class SeaFx {
+ 
+   destroy(): void {
+     this.tile?.destroy();
+-    this.patches?.destroy();
+     this.glow.destroy();
+     this.glints.destroy();
+   }
+diff --git a/src/systems/wake-fx.ts b/src/systems/wake-fx.ts
+index e627b20..855eb4c 100644
+--- a/src/systems/wake-fx.ts
++++ b/src/systems/wake-fx.ts
+@@ -1,18 +1,28 @@
+-// v0.7.0 S3b（アートと音①：コードで描く絵。spec-v0700 §5.2・R1・R7）: 船体の航跡＝船体 1 つに Image 1 枚（tex-wake-boat／tex-wake-ship。頂点＝艇尾・原点 (0.5, 0)）。
+-// 位置＝艇尾（中心から艇首の逆へ半長）、角度＝針路、scale ∝ 速さ（上限）、α ∝ 速さ/基準 × WAKE_ALPHA_MAX × 船体の α。0.5 m/s 未満・船体の絵が見えない（夜の sighted・jp_03 の隠れた隊・沈没の tween）なら隠す。
+-// 自艇（jp_03 は座席の隊長艇）だけ世界の速力帯 w.band で段を決める（停止 なし・静音 泡だけ・巡航 V・全速 長く明るい V＝R1・D9）。速さは船体の状態（読むだけ）から。
+-// 対象: 自艇・僚艇・隼艇・駆逐艦と輸送船（destroyers.ships）・大発（敵 hunt・味方 convoy）・米PT・jp_03 の 18 隻（WAKE_EVAC_LEADERS_ONLY なら隊長艇だけ＝見える物 +6）。
+-// 卯月と味方の輸送船は動かない（停泊）ので対象にしない。式は assets/fx-shape。§7: 確保は constructor だけ。update は読んで書くだけ（配列・オブジェクトを作らない）。論理の状態には書かない（art-rules）。
++// v0.7.0 S3b（アートと音①：コードで描く絵。spec-v0700 §5.2・R1・R7）＋ IP1a（ユーザーの U5「航跡が直線すぎるので少し揺らぎを出してください」）: 船体の航跡。
++// - 尾（IP1a）: 船体ごとに泡（tex-wake-puff）の輪を持ち、艇尾が spacingM 進むごとに艇尾に 1 つ置く（距離は 2 乗で比べる）。泡は置いた時の針路の向きで、
++//   寿命の間に広がり（w0 → w1）薄れて消える＝道のりのとおりに曲がる尾。置く所は横に揺らす（2 つの正弦の和の位相を泡ごとに進める・絵だけの乱数 ART_SEED_WAKE）。
++//   輪がいっぱいなら一番古い泡を使い回す。船体の絵が見えない・薄くなったら、その船体の泡はすぐ消す（敵の位置をばらさない）。
++// - V の印（S3b の tex-wake-boat／tex-wake-ship。頂点＝艇尾・原点 (0.5, 0)）は艇尾の近くだけに短く（WAKE_V_LEN_SHARE）。
++// 自艇（jp_03 は座席の隊長艇）だけ世界の速力帯 w.band で段を決める（停止 なし・静音 薄い泡だけ（V なし）・巡航・全速＝R1・D9）。濃さは船体の状態の速さ（読むだけ）から。
++// 対象: 自艇・僚艇・隼艇・駆逐艦と輸送船（destroyers.ships）・大発（敵 hunt・味方 convoy）・米PT・jp_03 の 18 隻（IP1a から僚艇も。U3「数でも大丈夫」。輪は隊長艇 9・僚艇 4）。
++// 卯月と味方の輸送船は動かない（停泊）ので対象にしない。式は assets/fx-shape・wake-shape。§7: 確保は constructor だけ。update は読んで書くだけ（配列・オブジェクトを作らない）。論理の状態には書かない（art-rules）。
+ import type Phaser from 'phaser';
+ import { playerWakePose, sternOffsetInto, wakePose, type SpeedBand, type WakePose } from '../assets/fx-shape';
+-import { WAKE_DEPTH, WAKE_EVAC_LEADERS_ONLY, WAKE_FRAME_V, WAKE_KIND_ART, WAKE_TEX_H, type WakeKindArt } from '../config/fx-art-config';
++import { puffAlpha, puffWidth, swayAt, trailEmit, trailStep, type TrailEmit } from '../assets/wake-shape';
++import { WAKE_DEPTH, WAKE_FRAME_V, WAKE_KIND_ART, WAKE_TEX_H, type WakeKindArt } from '../config/fx-art-config';
+ import { TEXTURE_KEYS } from '../config/game-config';
++import {
++  ART_SEED_WAKE, WAKE_PUFF_ANGLE_JITTER_DEG, WAKE_PUFF_FRAME_BUBBLE, WAKE_PUFF_FRAME_FOAM, WAKE_PUFF_TEX_H, WAKE_PUFF_TEX_W, WAKE_SWAY_JITTER_BEAMS, WAKE_SWAY_STEP, WAKE_TRAIL_ART,
++  WAKE_V_ALPHA_SHARE, WAKE_V_LEN_SHARE, type WakeTrailArt,
++} from '../config/wake-art-config';
++import { SeededRng } from '../core/rng';
+ 
+ /** 船体の絵から読む物（Phaser の Image が満たす） */
+ export interface HullImg {
+   readonly visible: boolean;
+   readonly alpha: number;
+   readonly displayHeight: number;
++  readonly displayWidth: number;
+ }
+ /** 船体の状態から読む物（core の BoatState が満たす） */
+ export interface HullState {
+@@ -37,69 +47,185 @@ export interface WakeWorldView {
+   readonly evac: { readonly sq: EvacSq; readonly view: { readonly boats: { readonly imgs: readonly HullImg[] } } | null } | null;
+ }
+ 
++const DEG = Math.PI / 180;
++
+ export class WakeFx {
+   private readonly imgs: Phaser.GameObjects.Image[] = [];
+   private readonly hulls: HullImg[] = [];
+   private readonly states: HullState[] = [];
+   private readonly kinds: WakeKindArt[] = [];
+-  /** jp_03 の 18 隻の番号（隊長艇だけ出す判定に読む）。ほかは −1 */
+-  private readonly evacIdx: Int16Array;
++  private readonly trails: WakeTrailArt[] = [];
++  /** 船体ごと: 船体の半長・船幅（作った時の絵から 1 回）、泡の輪の始まりと数と次の番、前に泡を置いた艇尾の点、揺れの位相、点があるか */
+   private readonly halfLen: Float32Array;
++  private readonly beam: Float32Array;
++  private readonly ringAt: Int32Array;
++  private readonly ringN: Int32Array;
++  private readonly ringCur: Int32Array;
++  private readonly lastX: Float32Array;
++  private readonly lastY: Float32Array;
++  private readonly phase: Float32Array;
++  private readonly hasLast: Uint8Array;
++  /** 泡ごと（全部の輪を 1 列に）: 絵・位置・幅（始め・終わり）・長さ・α の上限・年齢・寿命（0 なら空き） */
++  private readonly puffs: Phaser.GameObjects.Image[] = [];
++  private readonly pW0: Float32Array;
++  private readonly pW1: Float32Array;
++  private readonly pLen: Float32Array;
++  private readonly pA0: Float32Array;
++  private readonly pAge: Float32Array;
++  private readonly pLife: Float32Array;
+   private readonly tmp = new Float32Array(2);
+   private readonly pose: WakePose = { visible: false, lengthM: 0, alpha: 0, frame: WAKE_FRAME_V };
+-  private readonly sq: EvacSq | null;
++  private readonly emit: TrailEmit = { on: false, a0: 0, lifeShare: 1, widthShare: 1, bubble: false };
++  private readonly rng = new SeededRng(ART_SEED_WAKE);
+ 
+   constructor(scene: Phaser.Scene, w: WakeWorldView) {
+-    const ev: number[] = [];
+-    const add = (hull: HullImg, st: HullState, kind: WakeKindArt, evacI: number): void => {
++    const T = WAKE_TRAIL_ART;
++    const K = WAKE_KIND_ART;
++    const add = (hull: HullImg, st: HullState, kind: WakeKindArt, trail: WakeTrailArt): void => {
+       this.hulls.push(hull);
+       this.states.push(st);
+       this.kinds.push(kind);
++      this.trails.push(trail);
+       this.imgs.push(scene.add.image(0, 0, kind.ship ? TEXTURE_KEYS.wakeShip : TEXTURE_KEYS.wakeBoat, WAKE_FRAME_V).setOrigin(0.5, 0).setDepth(WAKE_DEPTH).setVisible(false));
+-      ev.push(evacI);
+     };
+-    const K = WAKE_KIND_ART;
+-    add(w.boat.sprite, w.boat.state, K.boat, -1); // 0 番＝自艇（速力帯）
+-    if (w.escort) add(w.escort.sprite, w.escort.state.boat, K.boat, -1);
+-    if (w.gunboat) add(w.gunboat.sprite, w.gunboat.state.boat, K.boat, -1);
+-    if (w.destroyers) for (const s of w.destroyers.ships) add(s.sprite, s.state, K.ship, -1);
+-    if (w.hunt) for (let i = 0; i < w.hunt.sprites.length; i++) add(w.hunt.sprites[i]!, w.hunt.flotilla.barges[i]!, K.barge, -1);
+-    if (w.convoy) for (let i = 0; i < w.convoy.sprites.length; i++) add(w.convoy.sprites[i]!, w.convoy.state.barges[i]!, K.barge, -1);
+-    if (w.pts) for (let i = 0; i < w.pts.sprites.length; i++) add(w.pts.sprites[i]!, w.pts.section.boats[i]!, K.boat, -1);
+-    this.sq = w.evac ? w.evac.sq : null;
+-    if (w.evac && w.evac.view) for (let i = 0; i < w.evac.view.boats.imgs.length; i++) add(w.evac.view.boats.imgs[i]!, w.evac.sq.boats[i]!.state, K.boat, i);
++    add(w.boat.sprite, w.boat.state, K.boat, T.player); // 0 番＝自艇（速力帯）
++    if (w.escort) add(w.escort.sprite, w.escort.state.boat, K.boat, T.boat);
++    if (w.gunboat) add(w.gunboat.sprite, w.gunboat.state.boat, K.boat, T.boat);
++    if (w.destroyers) for (const s of w.destroyers.ships) add(s.sprite, s.state, K.ship, T.ship);
++    if (w.hunt) for (let i = 0; i < w.hunt.sprites.length; i++) add(w.hunt.sprites[i]!, w.hunt.flotilla.barges[i]!, K.barge, T.barge);
++    if (w.convoy) for (let i = 0; i < w.convoy.sprites.length; i++) add(w.convoy.sprites[i]!, w.convoy.state.barges[i]!, K.barge, T.barge);
++    if (w.pts) for (let i = 0; i < w.pts.sprites.length; i++) add(w.pts.sprites[i]!, w.pts.section.boats[i]!, K.boat, T.boat);
++    const sq = w.evac ? w.evac.sq : null;
++    if (sq && w.evac!.view) {
++      const imgs = w.evac!.view.boats.imgs;
++      for (let i = 0; i < imgs.length; i++) add(imgs[i]!, sq.boats[i]!.state, K.boat, sq.groups[sq.boats[i]!.group]!.leader === sq.boats[i]!.slot ? T.evacLeader : T.evacFollower);
++    }
+     const n = this.imgs.length;
+-    this.evacIdx = Int16Array.from(ev);
+     this.halfLen = new Float32Array(n);
+-    for (let i = 0; i < n; i++) this.halfLen[i] = this.hulls[i]!.displayHeight / 2; // 船体の長さ（世界単位）は作った時の絵から 1 回（沈没の tween で縮む前）
++    this.beam = new Float32Array(n);
++    this.ringAt = new Int32Array(n);
++    this.ringN = new Int32Array(n);
++    this.ringCur = new Int32Array(n);
++    this.lastX = new Float32Array(n);
++    this.lastY = new Float32Array(n);
++    this.phase = new Float32Array(n);
++    this.hasLast = new Uint8Array(n);
++    let total = 0;
++    for (let i = 0; i < n; i++) {
++      this.halfLen[i] = this.hulls[i]!.displayHeight / 2; // 船体の長さ・幅（世界単位）は作った時の絵から 1 回（沈没の tween で縮む前）
++      this.beam[i] = this.hulls[i]!.displayWidth;
++      this.ringAt[i] = total;
++      this.ringN[i] = this.trails[i]!.cap;
++      this.phase[i] = this.rng.next() * Math.PI * 2;
++      total += this.trails[i]!.cap;
++    }
++    this.pW0 = new Float32Array(total);
++    this.pW1 = new Float32Array(total);
++    this.pLen = new Float32Array(total);
++    this.pA0 = new Float32Array(total);
++    this.pAge = new Float32Array(total);
++    this.pLife = new Float32Array(total);
++    for (let j = 0; j < total; j++) this.puffs.push(scene.add.image(0, 0, TEXTURE_KEYS.wakePuff, WAKE_PUFF_FRAME_FOAM).setDepth(WAKE_DEPTH).setVisible(false));
+   }
+ 
+-  /** 毎フレーム（world-art から。船体の絵の同期の後＝このフレームの位置） */
+-  update(w: WakeWorldView): void {
++  /** 毎フレーム（world-art から。船体の絵の同期の後＝このフレームの位置。realDt は見た目の時計） */
++  update(realDt: number, w: WakeWorldView): void {
+     const pose = this.pose;
+-    const sq = this.sq;
++    const em = this.emit;
+     for (let i = 0; i < this.imgs.length; i++) {
+       const hull = this.hulls[i]!;
+       const st = this.states[i]!;
+       const len = this.halfLen[i]! * 2;
+-      const ei = this.evacIdx[i]!;
++      const band = i === 0 ? w.band : null;
++      trailEmit(band, this.kinds[i]!, st.speedMps, hull.visible, hull.alpha, em);
+       if (i === 0) playerWakePose(w.band, this.kinds[0]!, st.speedMps, len, hull.visible, hull.alpha, pose);
+-      else if (ei >= 0 && WAKE_EVAC_LEADERS_ONLY && sq && sq.groups[sq.boats[ei]!.group]!.leader !== sq.boats[ei]!.slot) pose.visible = false;
+       else wakePose(this.kinds[i]!, st.speedMps, len, hull.visible, hull.alpha, pose);
++      sternOffsetInto(this.tmp, st.headingDeg, this.halfLen[i]!);
++      const sx = st.x + this.tmp[0]!;
++      const sy = st.y + this.tmp[1]!;
++      this.stepTrail(i, sx, sy, st.headingDeg, hull);
+       const img = this.imgs[i]!;
+-      if (!pose.visible) {
+-        if (img.visible) img.setVisible(false);
++      if (!pose.visible || pose.frame !== WAKE_FRAME_V) {
++        if (img.visible) img.setVisible(false); // 静音は V を出さない（薄い泡の尾だけ）
+         continue;
+       }
+-      sternOffsetInto(this.tmp, st.headingDeg, this.halfLen[i]!);
+-      img.setPosition(st.x + this.tmp[0]!, st.y + this.tmp[1]!).setAngle(st.headingDeg).setScale(pose.lengthM / WAKE_TEX_H).setAlpha(pose.alpha);
+-      if (img.frame.name !== pose.frame) img.setFrame(pose.frame);
++      img.setPosition(sx, sy).setAngle(st.headingDeg).setScale((pose.lengthM * WAKE_V_LEN_SHARE) / WAKE_TEX_H).setAlpha(pose.alpha * WAKE_V_ALPHA_SHARE);
+       if (!img.visible) img.setVisible(true);
+     }
++    this.agePuffs(realDt);
++  }
++
++  /** 船体 i の尾: 見えない船体はその泡を消す。艇尾が間隔だけ進んだら泡を 1 つ置く（遠すぎれば置かずに点だけ直す） */
++  private stepTrail(i: number, sx: number, sy: number, headingDeg: number, hull: HullImg): void {
++    const em = this.emit;
++    if (!hull.visible || hull.alpha <= 0) this.clearHull(i);
++    if (!em.on) {
++      this.hasLast[i] = 0;
++      return;
++    }
++    const tr = this.trails[i]!;
++    if (this.hasLast[i] === 0) {
++      this.lastX[i] = sx;
++      this.lastY[i] = sy;
++      this.hasLast[i] = 1;
++      return;
++    }
++    const step = trailStep(sx - this.lastX[i]!, sy - this.lastY[i]!, tr.spacingM);
++    if (step === 0) return;
++    this.lastX[i] = sx;
++    this.lastY[i] = sy;
++    if (step === 2) return;
++    const rng = this.rng;
++    const beam = this.beam[i]!;
++    this.phase[i] = this.phase[i]! + rng.nextRange(WAKE_SWAY_STEP[0], WAKE_SWAY_STEP[1]);
++    const side = beam * (tr.swayBeams * swayAt(this.phase[i]!) + rng.nextRange(-WAKE_SWAY_JITTER_BEAMS, WAKE_SWAY_JITTER_BEAMS));
++    const r = headingDeg * DEG;
++    const j = this.ringAt[i]! + this.ringCur[i]!;
++    this.ringCur[i] = (this.ringCur[i]! + 1) % this.ringN[i]!;
++    const p = this.puffs[j]!;
++    p.setPosition(sx + Math.cos(r) * side, sy + Math.sin(r) * side).setAngle(headingDeg + rng.nextRange(-WAKE_PUFF_ANGLE_JITTER_DEG, WAKE_PUFF_ANGLE_JITTER_DEG)).setAlpha(0);
++    const frame = em.bubble ? WAKE_PUFF_FRAME_BUBBLE : WAKE_PUFF_FRAME_FOAM;
++    if (p.frame.name !== frame) p.setFrame(frame);
++    if (!p.visible) p.setVisible(true);
++    this.pW0[j] = beam * tr.w0Beams * em.widthShare;
++    this.pW1[j] = beam * tr.w1Beams * em.widthShare;
++    this.pLen[j] = tr.spacingM * tr.lenShare;
++    this.pA0[j] = em.a0 * tr.alphaMul;
++    this.pAge[j] = 0;
++    this.pLife[j] = tr.lifeS * em.lifeShare;
++  }
++
++  /** 船体 i の泡を全部消す */
++  private clearHull(i: number): void {
++    const a = this.ringAt[i]!;
++    for (let j = a; j < a + this.ringN[i]!; j++) {
++      if (this.pLife[j]! <= 0) continue;
++      this.pLife[j] = 0;
++      this.puffs[j]!.setVisible(false);
++    }
++  }
++
++  /** 泡の年齢を進め、α と広がりを書く。寿命が来たら隠して空きに */
++  private agePuffs(dt: number): void {
++    for (let j = 0; j < this.puffs.length; j++) {
++      const life = this.pLife[j]!;
++      if (life <= 0) continue;
++      const age = this.pAge[j]! + dt;
++      const p = this.puffs[j]!;
++      if (age >= life) {
++        this.pLife[j] = 0;
++        p.setVisible(false);
++        continue;
++      }
++      this.pAge[j] = age;
++      p.setAlpha(puffAlpha(age, life, this.pA0[j]!)).setScale(puffWidth(age, life, this.pW0[j]!, this.pW1[j]!) / WAKE_PUFF_TEX_W, (this.pLen[j]! * (1 + 0.4 * (age / life))) / WAKE_PUFF_TEX_H);
++    }
+   }
+ 
+   destroy(): void {
+     for (const g of this.imgs) g.destroy();
++    for (const g of this.puffs) g.destroy();
+     this.imgs.length = 0;
++    this.puffs.length = 0;
+   }
+ }
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index c17f777..7f8aa0c 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -1,5 +1,5 @@
+ // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5）: 世界の絵（演出）の持ち主。MissionWorld が世界を作る最後に 1 つ作り、world-visuals の最後の 1 行で更新・破棄する（R13）。
+-// S3a は海の面（systems/sea-fx: 海の模様・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
++// S3a は海の面（systems/sea-fx: 海の面・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx。IP1a で道のりに沿う泡の尾）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
+ // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
+ import type Phaser from 'phaser';
+ import { CoastFx } from './coast-fx';
+@@ -36,7 +36,7 @@ export class WorldArt {
+   /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
+   update(realDt: number, w: ArtWorldView): void {
+     this.sea.update(realDt, w.dawn.lightStep);
+-    this.wake.update(w);
++    this.wake.update(realDt, w);
+     this.explosions.update(realDt);
+     this.fire.update(realDt);
+   }
+diff --git a/src/systems/world-evac.ts b/src/systems/world-evac.ts
+index 4e2e9b9..c23902b 100644
+--- a/src/systems/world-evac.ts
++++ b/src/systems/world-evac.ts
+@@ -56,8 +56,8 @@ export type EvacWorldPortFactory = (i: number, p: AirStrikeParams, rng: SeededRn
+ export interface EvacView {
+   update(realDt: number): void;
+   destroy(): void;
+-  /** 18 隻の絵（航跡の絵が読む。v0.7.0 S3b。systems/wake-fx） */
+-  readonly boats: { readonly imgs: readonly { readonly visible: boolean; readonly alpha: number; readonly displayHeight: number }[] };
++  /** 18 隻の絵（航跡の絵が読む。v0.7.0 S3b。IP1a で船幅も。systems/wake-fx） */
++  readonly boats: { readonly imgs: readonly { readonly visible: boolean; readonly alpha: number; readonly displayHeight: number; readonly displayWidth: number }[] };
+ }
+ 
+ const noop = (): void => {};
