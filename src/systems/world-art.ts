@@ -1,5 +1,5 @@
 // v0.7.0 S3a（アートと音①：コードで描く絵。spec-v0700 §5）: 世界の絵（演出）の持ち主。MissionWorld が世界を作る最後に 1 つ作り、world-visuals の最後の 1 行で更新・破棄する（R13）。
-// S3a は海の面（systems/sea-fx: 海の模様・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
+// S3a は海の面（systems/sea-fx: 海の面・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx。IP1a で道のりに沿う泡の尾）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
 // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
 import type Phaser from 'phaser';
 import { CoastFx } from './coast-fx';
@@ -36,7 +36,7 @@ export class WorldArt {
   /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
   update(realDt: number, w: ArtWorldView): void {
     this.sea.update(realDt, w.dawn.lightStep);
-    this.wake.update(w);
+    this.wake.update(realDt, w);
     this.explosions.update(realDt);
     this.fire.update(realDt);
   }

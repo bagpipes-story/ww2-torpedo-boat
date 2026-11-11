@@ -111,7 +111,7 @@ export const DEBUG_AA_CHANCE = debugNumber('aa');
 export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nopatrol'); // ?debug&nopatrol: 夜の哨戒機なし（v0.6.7。jp_02 の夜の 2 機が来ない。夜明けの 4 機は残る）
 /** ?debug&noally: 味方の駆逐艦 卯月なし（v0.6.10。jp_04 が v0.6.10 S0b と同じ世界。模擬の ALLY_OFF=1 と同じ。比較用） */
 export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
-/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。波の模様があれば格子を消してよいかを実機テスト ② で比べる。既定は config/sea-art-config の SEA_GRID_ON＝残す） */
+/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
 export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
@@ -231,6 +231,7 @@ export const TEXTURE_KEYS = {
   fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
   wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
   wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
+  wakePuff: 'tex-wake-puff', // 航跡の尾の泡 48×64 の frame 2 枚（v0.7.0 IP1a。p0＝泡の帯・p1＝静音の泡。systems/wake-fx）
   flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
   coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
   oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）

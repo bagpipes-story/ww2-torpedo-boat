@@ -34,8 +34,7 @@ export const WAKE_CRUISE_ALPHA_SHARE = 0.7;
 export const WAKE_SILENT_LEN_HULLS = 0.35;
 /** 船体の絵の α がこれ未満なら航跡を出さない（jp_03 の陰に隠れた隊 0.45・沈没の tween の終わり。見えない船体の航跡を出さない） */
 export const WAKE_HULL_ALPHA_MIN = 0.5;
-/** jp_03 の 18 隻は隊長艇だけ航跡を出す（spec §5.7「+40 を超えそうなら僚艇の航跡を隠す」。S3b の計測で最初から true＝見える物 +6） */
-export const WAKE_EVAC_LEADERS_ONLY = true;
+/** （IP1a で WAKE_EVAC_LEADERS_ONLY をやめた: U3「数でも大丈夫」で jp_03 の僚艇にも短い尾。輪の大きさは config/wake-art-config の evacFollower） */
 /** 航跡の腕の絵（白。太い下塗り＋細い芯。遠い端へ向けて細く薄く）: 腕の根元と端の幅 px・α、中央の泡の幅 px・α（R7: 腕が主・泡は薄く短い） */
 export const WAKE_ARM_WIDTH_PX: readonly [number, number] = [4, 10];
 export const WAKE_ARM_ALPHA: readonly [number, number] = [1.0, 0.0];

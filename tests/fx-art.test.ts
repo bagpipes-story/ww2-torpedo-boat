@@ -12,7 +12,7 @@ import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, muzzleRays
 import {
   ART_SEED_FX, BLEND_ADD, EXPLOSION_FIRE_S, EXPLOSION_FLASH_S, EXPLOSION_PARTS, EXPLOSION_PUFF_RADIUS_M, EXPLOSION_PUFF_S, EXPLOSION_SLOTS, EXPLOSION_SMALL_FLASH_S, EXPLOSION_SPLASH_S,
   FIRE_SMOKE_MAX_RADIUS_M, MUZZLE_RAYS, SPLASH_DROPLETS, WAKE_ALPHA_MAX, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_LENGTH_SHARE, WAKE_CRUISE_ALPHA_SHARE, WAKE_DEPTH,
-  WAKE_EVAC_LEADERS_ONLY, WAKE_FRAME_BUBBLE, WAKE_FRAME_V, WAKE_HIDE_BELOW_MPS, WAKE_HULL_ALPHA_MIN, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SILENT_ALPHA_MAX, WAKE_TEX_H, WAKE_TEX_W,
+  WAKE_FRAME_BUBBLE, WAKE_FRAME_V, WAKE_HIDE_BELOW_MPS, WAKE_HULL_ALPHA_MIN, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SILENT_ALPHA_MAX, WAKE_TEX_H, WAKE_TEX_W,
 } from '../src/config/fx-art-config';
 
 const read = (f: string): string => readFileSync(f, 'utf8');
@@ -75,7 +75,6 @@ describe('航跡の式（assets/fx-shape。R1・R7）', () => {
     expect(Math.min(...WAKE_ARM_WIDTH_PX, ...WAKE_SHIP_ARM_WIDTH_PX)).toBeGreaterThanOrEqual(2);
     expect(WAKE_DEPTH).toBeGreaterThan(3);
     expect(WAKE_DEPTH).toBeLessThan(4);
-    expect(WAKE_EVAC_LEADERS_ONLY).toBe(true);
   });
   it('艇尾の位置: 中心から艇首の逆へ半長（北 0＝上・時計回り）', () => {
     const o = new Float32Array(2);
@@ -199,14 +198,14 @@ describe('作法の pin（S3b）', () => {
     expect(rest).toContain('if (dud) wet.setTexture(TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT)');
     expect(rest).toContain('else wet.setTexture(TEXTURE_KEYS.splash)');
   });
-  it('wake-fx: 確保は constructor だけ、原点 (0.5, 0)・深さ WAKE_DEPTH、速さは状態から（絵の位置の差からではない）、自艇は w.band、見えない絵は隠す。私的な絵のプールは readonly で出した（行数はそのまま）', () => {
+  it('wake-fx: 確保は constructor だけ、原点 (0.5, 0)・深さ WAKE_DEPTH、濃さは状態の速さから、自艇は w.band、見えない絵は隠す。尾の泡は艇尾の進んだ距離の 2 乗で置く（IP1a）。私的な絵のプールは readonly で出した', () => {
     const s = read('src/systems/wake-fx.ts').replace(/\/\/[^\n]*/g, '');
     const upd = s.slice(s.indexOf('  update('), s.indexOf('  destroy('));
     expect(upd).not.toMatch(/\bnew\s|scene\.add\.|\.push\(/);
     expect(s).toContain('.setOrigin(0.5, 0).setDepth(WAKE_DEPTH).setVisible(false)');
     expect(upd).toContain('playerWakePose(w.band,');
     expect(upd).toContain('st.speedMps');
-    expect(upd).not.toMatch(/prevX|lastX|\.x - /);
+    expect(s).toContain('const step = trailStep(sx - this.lastX[i]!, sy - this.lastY[i]!, tr.spacingM);'); // IP1a: 泡の間隔は距離（2 乗で比べる）。濃さは速さの状態から
     expect(s).not.toMatch(/Math\.(sqrt|hypot)/);
     for (const [f, line] of [
       ['src/systems/escort-boat.ts', '  readonly sprite: Phaser.GameObjects.Image;'],

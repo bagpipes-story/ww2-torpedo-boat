@@ -135,8 +135,8 @@ describe('航跡・星弾・昼の海・岸の帯（S4）', () => {
     expect(read('src/assets/light-art.ts')).toContain('starshellPixels(d, R, SS_LIGHT_COLOR)');
     expect(read('src/assets/light-art.ts')).toContain('searchlightPixels(W, H, halfW, SL_LIGHT_COLOR)');
   });
-  it('昼の波頭は控えめ（α ≤ 0.25・白波 ≤ 0.4）、波頭の群れ・きらめきは世界の内に収まる所だけ出す（見え方が変わった時だけ setVisible）', () => {
-    expect(SEA_LIGHT_ART.day.crestAlpha).toBeLessThanOrEqual(0.25);
+  it('昼の海の面の α ≤ 0.5（IP1a: U2・U3 で昼は明るく青い面に。S4 の「控えめ ≤ 0.25」は散らした波頭の値）・白波 ≤ 0.4、きらめき（白波）は世界の内に収まる所だけ出す（見え方が変わった時だけ setVisible）', () => {
+    expect(SEA_LIGHT_ART.day.crestAlpha).toBeLessThanOrEqual(0.5);
     expect(WHITECAP_ALPHA_MAX).toBeLessThanOrEqual(0.4);
     const fx = read('src/systems/sea-fx.ts');
     expect(fx).toContain('const v = this.on && x - b.hw >= 0 && x + b.hw <= b.bw && y - b.hh >= 0 && y + b.hh <= b.bh;');

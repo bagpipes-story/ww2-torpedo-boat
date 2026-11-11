@@ -2,7 +2,7 @@
 // GPU（幅×高さ×4 B）と CPU の canvas（generateTexture・createCanvas の絵）の MB、Mission の Image・Sprite の鍵ごとの原点、Boot の create の壁時計を比べる。
 // - 既存の鍵（A にある鍵）の幅・高さが B で同じ＝門（違えば ✗）。A にあって B に無い鍵も ✗。B だけの鍵は「新しい鍵」として並べる。
 // - TileSprite・Text の UUID の形の鍵と、__ で始まる Phaser の鍵は除く（R21）。tex-aircraft-enemy は S2b から任務ごとに描き直すので任務ごとに読む（鍵×任務で比べる）。
-// - k 1.09（W 1560 の横持ち 852×393 CSS・dpr 2）と k 2（1560×720 CSS・dpr 2＝iPad・PC の大画面）。MB の差の門は k 1.09 で ≤ +12 MB（k 2 は ≤ +24 MB を報告）。
+// - k 1.09（W 1560 の横持ち 852×393 CSS・dpr 2）と k 2（1560×720 CSS・dpr 2＝iPad・PC の大画面）。MB の差の門は k 1.09 で ≤ +24 MB（IP1a の U3 の予算。S0〜S4 は +12。k 2 は報告）。
 //   tex-debug-ring（?debug だけ。4.6 MB）は合計から外して別に出す。jp_03 の岩の絵（初めて使う時に 1 回）は jp_03 の行に入る。
 // - Boot の create の壁時計（SceneManager.create を init script で包む）: 任務ごとの中央値を A/B で（+200 ms 以内を目安・報告。R28）。
 // CHECK=1（spec §3.5 の tex-check）: 描き直す鍵の canvas の画素から、覆い（α ≥ 0.5 の画素）・平均の明るさ（α で重みを付けた luma）・平均の色の色相と彩度・夜の海 #0b1020 と
@@ -233,7 +233,7 @@ async function main() {
     console.log(`  B に無い鍵: ${missing.length === 0 ? '✓ なし' : `✗ ${missing.join(' / ')}`}`);
     console.log(`  新しい鍵（B だけ）: ${added.size === 0 ? 'なし' : [...added].sort().join(' / ')}`);
     console.log(`  Mission の絵の原点: ${originBad.length === 0 ? '✓ 鍵ごとに同じ' : `✗ ${originBad.join(' / ')}`}`);
-    const gate = sc.name === 'k1.09' ? 12 : 24;
+    const gate = 24; // v0.7.0 IP1a: U3（「もっと派手な演出、数でも大丈夫」）で lead が GPU ≤ +24 MB に（S0〜S4 は k 1.09 で ≤ +12・k 2 は報告だけ）
     const dGpu = Math.max(...rows.map((_, i) => mb.b.gpu[i] - mb.a.gpu[i]));
     const dCpu = Math.max(...rows.map((_, i) => mb.b.cpu[i] - mb.a.cpu[i]));
     for (let i = 0; i < rows.length; i++) console.log(`    ${rows[i].m}: GPU ${f2(mb.a.gpu[i])} → ${f2(mb.b.gpu[i])} MB・CPU の canvas ${f2(mb.a.cpu[i])} → ${f2(mb.b.cpu[i])} MB（tex-debug-ring を除く）・Boot の create ${f2(rows[i].a.createMs.Boot)} → ${f2(rows[i].b.createMs.Boot)} ms・Mission の create ${f2(rows[i].a.createMs.Mission)} → ${f2(rows[i].b.createMs.Mission)} ms`);

@@ -1,4 +1,5 @@
-// 絵の性能の A/B（v0.7.0 S0。spec-v0700 §5.7・§7.2「art-perf」。門はフレーム p95 ≤ +15%・画面に見える Mission の物 ≤ +40）: ビルド A（基準 main f5563ab）と B（今の木）を
+// 絵の性能の A/B（v0.7.0 S0。spec-v0700 §5.7・§7.2「art-perf」。門はフレーム p95 ≤ ×1.40・画面に見える Mission の物 ≤ +150＝IP1a でユーザーの U3
+// 「たびたびFPSを気にしますが、全く問題なく動くのでもっと派手な演出、数でも大丈夫だと思います」から lead が決めた予算（S0〜S4 は ×1.15・+40））: ビルド A（基準 main f5563ab）と B（今の木）を
 // 同じ台本・同じ窓で交互に回し（A → B を 1 組、ROUNDS 組。夜ごとに新しいブラウザ）、窓の間 EVERY フレーム（既定 2）に 1 回描いて、描いたフレームの（進める＋描く）の壁時計の p95 と、
 // そのフレームで見えている Mission の物の数（visible で α > 0）の p95 を出す。組ごとの良い方（p95 の小さい方）で比べ、A 対 A（組の間の揺れ）も出す。
 // ヘッドレスの WebGL は CPU のラスタ（SwiftShader）で塗りに厳しい＝ここで +15% に収まれば iPhone の GPU は安全側（spec §5.7）。数はヘッドレスの相対値（iPhone の FPS は実機テスト ③）。
@@ -9,6 +10,10 @@
 import { writeFileSync } from 'node:fs';
 import { FRAME_MS, chromium, envNum, openGame, serve } from './lib.mjs';
 import { bundleEntry } from './world-vs-sim.mjs';
+
+/** 門（v0.7.0 IP1a。U3 の予算: フレーム p95 の比・見える物の差） */
+const P95_RATIO_MAX = 1.4;
+const VIS_DELTA_MAX = 150;
 
 const CASES = [
   { id: 'us_02h', query: 'mission=us_02&seed=1&hard', kind: 'script', script: 'standoff', start: 'starshell', maxWarm: 60 },
@@ -68,11 +73,11 @@ async function main() {
     const dVis = B.vis95 - A.vis95;
     const aa = res[i].a.length > 1 ? Math.max(...res[i].a.map((x) => x.p95)) / Math.min(...res[i].a.map((x) => x.p95)) : NaN;
     const errs = [...res[i].a, ...res[i].b].reduce((s, x) => s + x.errors.length, 0);
-    const ok = ratio <= 1.15 && dVis <= 40 && errs === 0;
+    const ok = ratio <= P95_RATIO_MAX && dVis <= VIS_DELTA_MAX && errs === 0;
     if (!ok) bad++;
     const win = (x) => `t ${f2(x.t0)}〜${f2(x.t1)}（${x.reason}${x.ended ? `・${x.ended}` : ''}）`;
-    console.log(`${c.id.padEnd(7)} ${c.query}: 描いたフレーム（進める＋描く）の p95 A ${f2(A.p95)} → B ${f2(B.p95)} ms（×${f2(ratio)}・≤ 1.15 ${ratio <= 1.15 ? '✓' : '✗'}）・p50 ${f2(A.p50)} → ${f2(B.p50)}・`
-      + `見える物の p95 ${A.vis95} → ${B.vis95}（${dVis >= 0 ? '+' : ''}${dVis}・≤ +40 ${dVis <= 40 ? '✓' : '✗'}）・全部の物 ${A.all95} → ${B.all95}・A 対 A の揺れ ×${f2(aa)}・描いた ${A.n}/${B.n} 枚・窓 A ${win(A)} B ${win(B)}・page errors ${errs}`);
+    console.log(`${c.id.padEnd(7)} ${c.query}: 描いたフレーム（進める＋描く）の p95 A ${f2(A.p95)} → B ${f2(B.p95)} ms（×${f2(ratio)}・≤ ${P95_RATIO_MAX} ${ratio <= P95_RATIO_MAX ? '✓' : '✗'}）・p50 ${f2(A.p50)} → ${f2(B.p50)}・`
+      + `見える物の p95 ${A.vis95} → ${B.vis95}（${dVis >= 0 ? '+' : ''}${dVis}・≤ +${VIS_DELTA_MAX} ${dVis <= VIS_DELTA_MAX ? '✓' : '✗'}）・全部の物 ${A.all95} → ${B.all95}・A 対 A の揺れ ×${f2(aa)}・描いた ${A.n}/${B.n} 枚・窓 A ${win(A)} B ${win(B)}・page errors ${errs}`);
     rows.push({ ...c, A, B, ratio, dVis, aa, runs: res[i] });
   }
   console.log(`art-perf ${bad === 0 ? 'OK' : `NG ${bad}`}（${rounds} 組・窓 ${o.win} 秒・${o.every} フレームに 1 回描く・W ${o.width}）`);
