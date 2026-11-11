@@ -72,15 +72,15 @@ describe('火花と水滴・2 段目の爆発の式（IP1b。U3）', () => {
     sinkBlastAtInto(o, 0, 0, Math.PI / 2, 100, 10, -0.5, 0); // 東向き・艦尾の側
     expect(o[0]).toBeCloseTo(-42);
   });
-  it('数（U3 の予算: 見える物 ≤ 基準 +150）: 大きい版 1 回 ≤ 50・2 回が重なっても ≤ 100、プールは固定（枠 6・火花 64・水滴 56・煙 24・硝煙 12・沈没 2 × 炎 3）、1 つの火災は炎 1 ＋ 玉 12', () => {
+  it('数（U3 の予算: 見える物 ≤ 基準 +150）: 大きい版 1 回 ≤ 50・2 回が重なっても ≤ 100、プールは固定（枠 6・火花 48・水滴 40・煙 18・硝煙 12・沈没 2 × 炎 3）、1 つの火災は炎 1 ＋ 玉 11', () => {
     expect(blastObjects('big')).toBeLessThanOrEqual(50);
     expect(2 * blastObjects('big')).toBeLessThanOrEqual(100);
     expect(blastObjects('small')).toBeLessThanOrEqual(12);
     expect(blastObjects('secondary')).toBeLessThanOrEqual(14);
-    expect([EXPLOSION_SLOTS, EXPLOSION_PARTS, SPARK_HOT_POOL, SPARK_DROP_POOL, BLAST_SMOKE_POOL, GUN_SMOKE_POOL, SINK_SLOTS, SINK_FLAMES_PER_SLOT]).toEqual([6, 4, 64, 56, 24, 12, 2, 3]);
-    expect(FIRE_PUFFS).toBe(40);
+    expect([EXPLOSION_SLOTS, EXPLOSION_PARTS, SPARK_HOT_POOL, SPARK_DROP_POOL, BLAST_SMOKE_POOL, GUN_SMOKE_POOL, SINK_SLOTS, SINK_FLAMES_PER_SLOT]).toEqual([6, 4, 48, 40, 18, 12, 2, 3]);
+    expect(FIRE_PUFFS).toBe(30);
     expect(1 + Math.ceil(FIRE_PUFF_LIFE_S / FIRE_PUFF_INTERVAL_S)).toBeLessThanOrEqual(FIRE_OBJECTS_PER_SOURCE);
-    expect(FIRE_OBJECTS_PER_SOURCE).toBe(13);
+    expect(FIRE_OBJECTS_PER_SOURCE).toBe(12);
   });
   it('煙は煙幕と見分けられる（R10）: 火災の玉は半径 ≤ 15 m・α ≤ 0.5 のまま、爆発の煙は半径 ≤ 30 m（煙幕 60 m の半分）・α ≤ 0.6 で 4.5 秒で消える', () => {
     expect(FIRE_SMOKE_MAX_RADIUS_M).toBeLessThanOrEqual(15);
@@ -107,9 +107,10 @@ describe('火花と衝撃波の絵（IP1b）', () => {
     const d = SHOCK_TEX_PX;
     const px = shockwavePixels(d, SHOCK_TEX_RING_PX, SHOCK_TEX_WIDTH_PX);
     const c = (d - 1) / 2;
-    const a = (r: number): number => px[(Math.round(c) * d + Math.round(c + r)) * 4 + 3]!;
+    const a = (r: number): number => px[(Math.round(c) * d + Math.round(c - r)) * 4 + 3]!; // 左へ（右は枠の外へ出る）
     expect(a(SHOCK_TEX_RING_PX)).toBeGreaterThan(230);
-    expect(a(SHOCK_TEX_RING_PX + SHOCK_TEX_WIDTH_PX + 1)).toBe(0);
+    expect(SHOCK_TEX_RING_PX + SHOCK_TEX_WIDTH_PX).toBeLessThan(SHOCK_TEX_PX / 2 - 1); // 輪は枠の内
+    expect(a(SHOCK_TEX_RING_PX + SHOCK_TEX_WIDTH_PX + 0.5)).toBe(0);
     expect(a(SHOCK_TEX_RING_PX * 0.5)).toBeLessThan(40);
     expect(px[3]).toBe(0);
   });

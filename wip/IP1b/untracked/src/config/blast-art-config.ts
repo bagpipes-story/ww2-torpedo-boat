@@ -29,11 +29,11 @@ export const BLAST_SHOCK_ALPHA = 0.8;
 export const BLAST_SHOCK_DEPTH = 3.6;
 /** 衝撃波の絵（tex-shockwave。k に依らない固定 px）: 一辺・輪の半径・輪の柔らかい幅 */
 export const SHOCK_TEX_PX = 128;
-export const SHOCK_TEX_RING_PX = 58;
+export const SHOCK_TEX_RING_PX = 56;
 export const SHOCK_TEX_WIDTH_PX = 6;
 /** 爆発の煙（tex-smoke-puff を暗く。煙幕の 60 m より小さく暗い＝R10）: 玉のプール・大きい版の玉の数・小さい版・2 次の爆発・遅れの帯 秒・寿命・半径の始まりと上限 m・α・tint・流れ m/実秒 */
-export const BLAST_SMOKE_POOL = 24;
-export const BLAST_SMOKE_BIG = 6;
+export const BLAST_SMOKE_POOL = 18;
+export const BLAST_SMOKE_BIG = 5;
 export const BLAST_SMOKE_SMALL = 1;
 export const BLAST_SMOKE_SECONDARY = 2;
 export const BLAST_SMOKE_DELAY_S: readonly [number, number] = [0.12, 0.55];
@@ -48,14 +48,14 @@ export const BLAST_SMOKE_SPREAD_M = 16;
  * 火花と水滴（systems/spark-fx。tex-spark の frame p0＝細長い火の筋・p1＝丸い水滴）。ADD の火花と通常の水滴は別のプール（尽きたら一番古いもの）。
  * 1 回の数: 爆発の破片（大きい版・小さい版・2 次の爆発）、爆発の水滴、水柱の飛沫（外れ・命中）、砲口の火花（大砲・機銃）、火災の火の粉
  */
-export const SPARK_HOT_POOL = 64;
-export const SPARK_DROP_POOL = 56;
-export const SPARK_DEBRIS_BIG = 16;
+export const SPARK_HOT_POOL = 48;
+export const SPARK_DROP_POOL = 40;
+export const SPARK_DEBRIS_BIG = 12;
 export const SPARK_DEBRIS_SMALL = 5;
 export const SPARK_DEBRIS_SECONDARY = 8;
-export const SPARK_DROPS_BIG = 12;
-export const SPARK_SPRAY_MISS = 3;
-export const SPARK_SPRAY_HIT = 6;
+export const SPARK_DROPS_BIG = 8;
+export const SPARK_SPRAY_MISS = 2;
+export const SPARK_SPRAY_HIT = 4;
 export const SPARK_MUZZLE_BIG = 4;
 export const SPARK_MUZZLE_SMALL = 2;
 /** 種類ごとの動き（速さ m/秒の帯・寿命 秒の帯・上へ跳ぶ初速 m/秒の帯・筋の長さ m（水滴は半径）・tint）。重さ（下へ）と空気の抵抗は共通 */
