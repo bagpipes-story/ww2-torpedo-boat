@@ -1,0 +1,618 @@
+diff --git a/src/assets/barge-art.ts b/src/assets/barge-art.ts
+index ef39260..8804995 100644
+--- a/src/assets/barge-art.ts
++++ b/src/assets/barge-art.ts
+@@ -1,16 +1,16 @@
+ // v0.7.0 S2a（アートと音①：コードで描く絵。spec-v0700 §4.2）: 大発の絵。敵の大発（tex-barge。us_03。座礁すれば BARGE_BEACHED_TINT の掛け算で灰）と味方の大発（tex-barge-friendly。
+ // jp_01 の輸送隊。薄い青）は同じ形で色だけ違う。輪郭は v0.4.2 の placeholder のまま（平たい艇首の道板 0.76B が見分けの鍵）。幅 7.3 単位の小艇なので側の暗い帯は描かない（R17）。
++// v0.7.0 IP3（U10）: Canvas の 2D に陰影つきで描く（assets/barge-paint: 道板の桁と蝶番・舷の縁と防舷の縄・荷台の窪みと荷・機関の覆い・艇長の台）。画素は 2 倍の密度。
+ // barge-placeholder の generateBargeTextures・generateFriendlyBargeTexture（Boot の呼び出しの行は変えない＝R14）が船形にこれを呼ぶ。機銃の曳光弾の絵はそのまま。
+ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+-import { PALETTE_ALLY, PALETTE_ALLY_MID, PALETTE_ENEMY, PALETTE_ENEMY_MID } from '../config/boat-art-config';
++import { PALETTE_ALLY, PALETTE_ENEMY } from '../config/boat-art-config';
+ import type { BoatTextureSpec } from './art-dims';
+-import { paintShipTexture } from './ship-art';
+-import { bargeShape } from './ship-shape';
++import { paintBarge } from './barge-paint';
++import { paintHullCanvas } from './ship-art';
+ 
+ /** 大発（敵は薄い赤・味方は薄い青）。原点はテクスチャ中央・艇首が上 */
+ export function paintBargeTexture(scene: Phaser.Scene, spec: BoatTextureSpec, friendly: boolean): void {
+-  const shape = bargeShape(spec.lengthUnits, spec.beamUnits);
+-  if (friendly) paintShipTexture(scene, TEXTURE_KEYS.bargeFriendly, spec, shape, PALETTE_ALLY, PALETTE_ALLY_MID);
+-  else paintShipTexture(scene, TEXTURE_KEYS.barge, spec, shape, PALETTE_ENEMY, PALETTE_ENEMY_MID);
++  const base = friendly ? PALETTE_ALLY.deck : PALETTE_ENEMY.deck;
++  paintHullCanvas(scene, friendly ? TEXTURE_KEYS.bargeFriendly : TEXTURE_KEYS.barge, spec, (ctx) => paintBarge(ctx, spec.lengthUnits, spec.beamUnits, base));
+ }
+diff --git a/src/assets/boat-art.ts b/src/assets/boat-art.ts
+index 5ec7567..f5a82c2 100644
+--- a/src/assets/boat-art.ts
++++ b/src/assets/boat-art.ts
+@@ -1,15 +1,16 @@
+ // v0.7.0 S1（アートと音①：コードで描く絵。spec-v0700 §4.1）: 自艇・僚艇・隼艇の絵（boatTextureKey の 5 枚: Elco 80・Elco 77・T-38・T-14・H-38）。S2a で敵の米PT（同じ形を敵の色で）も。
+ // placeholders の generatePlayerBoatTexture と同じ名前・引数・鍵・寸法（art-dims の式。D1）で、Boot の呼び出しの行は変えない（R14）。
+-// 真上から見た絵・艇首が上・回転に依らない枕の陰影（縁の明るいリム 1.5 単位・中心線の明るい筋）。無彩色に近い白で描き、僚艇・隼艇の ESCORT_TINT・jp_03 の EVAC_HIDDEN_TINT の
+-// 掛け算で薄い青・暗い灰になる。細部は 2 単位以上（R17）・幅 10 単位未満の艇なので側の暗い帯は描かない。被害・沈没の絵は作らない（§3.6: 炎と煙は S3c・沈没は今の tween）。
++// 真上から見た絵・艇首が上。無彩色に近い灰で描き、僚艇・隼艇の ESCORT_TINT・jp_03 の EVAC_HIDDEN_TINT の掛け算で薄い青・暗い灰になる。被害・沈没の絵は作らない（§3.6）。
++// v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: Graphics の平たい部品から、Canvas の 2D に陰影つきで描く形へ（assets/boat-paint。
++//   喫水の縁・舷の帯・甲板の陰影と板の筋・船室の風防と操舵の窪み・発射管や魚雷・銃座と砲身・煙幕の発生機・高い物の陰・艇首の光）。画素は 2 倍の密度（ship-art-config の
++//   ART_TEX_DENSITY）。鍵・論理の寸法（hullTexSize）・原点（中央）は同じ。色は地の色 1 つの明るさだけ（自艇の灰の彩度はそのまま＝tint が今までどおり効く）。
+ import type Phaser from 'phaser';
+-import { RENDER_SCALE, TEXTURE_KEYS, boatTextureKey } from '../config/game-config';
+-import {
+-  BOAT_ART_DEFAULT_KIND, BOAT_ART_KIND_BY_ID, BOAT_ART_LAYOUTS, PALETTE_ENEMY, PALETTE_ENEMY_MID, PALETTE_PLAYER, PALETTE_PLAYER_MID, type BoatArtKind, type HullPalette,
+-} from '../config/boat-art-config';
+-import { hullTexSize, type BoatTextureSpec } from './art-dims';
+-import { paintTexture, type ArtPen } from './art-pen';
+-import { boatShape, type BoatShape, type BoatTone } from './boat-shape';
++import { TEXTURE_KEYS, boatTextureKey } from '../config/game-config';
++import { BOAT_ART_DEFAULT_KIND, BOAT_ART_KIND_BY_ID, BOAT_ART_LAYOUTS, PALETTE_ENEMY, PALETTE_PLAYER, type BoatArtKind } from '../config/boat-art-config';
++import { BOAT_PAINT_DETAILS } from '../config/boat-paint-config';
++import type { BoatTextureSpec } from './art-dims';
++import { paintSmallBoat } from './boat-paint';
++import { paintHullCanvas } from './ship-art';
+ 
+ /** 鍵（boatTextureKey(id)）→ 形の種類。表に無い艇は既定 */
+ export function boatArtKindForKey(key: string): BoatArtKind {
+@@ -17,35 +18,17 @@ export function boatArtKindForKey(key: string): BoatArtKind {
+   return BOAT_ART_DEFAULT_KIND;
+ }
+ 
+-function toneColor(tone: BoatTone, pal: HullPalette, mid: number): number {
+-  switch (tone) {
+-    case 'rim': return pal.rim;
+-    case 'deck': return pal.deck;
+-    case 'super': return pal.superstructure;
+-    case 'mid': return mid;
+-    default: return pal.highlight;
+-  }
++/** 形の種類 kind を地の色 base で key に（論理の寸法は placeholder と同じ ceil(B·k) × ceil(L·k)・画素は密度の倍） */
++function paintBoatKind(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, kind: BoatArtKind, base: number): void {
++  paintHullCanvas(scene, key, spec, (ctx) => paintSmallBoat(ctx, BOAT_ART_LAYOUTS[kind], BOAT_PAINT_DETAILS[kind], spec.lengthUnits, spec.beamUnits, base));
+ }
+ 
+-/** 形をパレットで描く（S2a の米PT は同じ形を敵のパレットで） */
+-export function paintBoat(pen: ArtPen, shape: BoatShape, pal: HullPalette, mid: number): void {
+-  pen.poly(shape.outline, pal.rim, 1);
+-  for (const p of shape.parts) {
+-    const c = toneColor(p.tone, pal, mid);
+-    if (p.kind === 'poly') pen.poly(p.pts, c, p.alpha);
+-    else if (p.kind === 'rect') pen.rect(p.x, p.y, p.w, p.h, p.r, c, p.alpha);
+-    else pen.disc(p.cx, p.cy, p.r, c, p.alpha);
+-  }
+-}
+-
+-/** 自艇・僚艇・隼艇: 艇首を上にした絵。原点はテクスチャ中央。key は艇ごと（boatTextureKey。v0.6.0）。寸法は placeholder と同じ ceil(B·k) × ceil(L·k) */
++/** 自艇・僚艇・隼艇: 艇首を上にした絵。原点はテクスチャ中央。key は艇ごと（boatTextureKey。v0.6.0） */
+ export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void {
+-  const shape = boatShape(BOAT_ART_LAYOUTS[boatArtKindForKey(key)], spec.lengthUnits, spec.beamUnits);
+-  paintTexture(scene, key, hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE), RENDER_SCALE, (pen) => paintBoat(pen, shape, PALETTE_PLAYER, PALETTE_PLAYER_MID));
++  paintBoatKind(scene, key, spec, boatArtKindForKey(key), PALETTE_PLAYER.rim); // 地は白に近いリムの色（陰影で暗くなる分、平均の明るさを placeholder の近くに保つ）
+ }
+ 
+-/** 敵の米PT（S2a。tex-pt-boat。jp_01・jp_04・jp_05）: Elco 80 と同じ形を敵のパレットで（形は自艇と同じ＝史実。色で敵。去れば PT_RETIRED_TINT の掛け算で灰）。pt-placeholder の generatePtBoatTexture が呼ぶ */
++/** 敵の米PT（S2a。tex-pt-boat。jp_01・jp_04・jp_05）: Elco 80 と同じ形を敵の色で（形は自艇と同じ＝史実。色で敵。去れば PT_RETIRED_TINT の掛け算で灰）。pt-placeholder の generatePtBoatTexture が呼ぶ */
+ export function paintPtBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
+-  const shape = boatShape(BOAT_ART_LAYOUTS.elco80, spec.lengthUnits, spec.beamUnits);
+-  paintTexture(scene, TEXTURE_KEYS.ptBoat, hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE), RENDER_SCALE, (pen) => paintBoat(pen, shape, PALETTE_ENEMY, PALETTE_ENEMY_MID));
++  paintBoatKind(scene, TEXTURE_KEYS.ptBoat, spec, 'elco80', PALETTE_ENEMY.deck);
+ }
+diff --git a/src/assets/ship-art.ts b/src/assets/ship-art.ts
+index 133a627..64ce0bf 100644
+--- a/src/assets/ship-art.ts
++++ b/src/assets/ship-art.ts
+@@ -7,6 +7,8 @@ import type { HullPalette } from '../config/boat-art-config';
+ import { artTexDensity } from '../config/ship-art-config';
+ import { hullTexSize, type BoatTextureSpec } from './art-dims';
+ import { paintTexture, type ArtPen } from './art-pen';
++import type { C } from './destroyer-pen';
++import { paintCanvas } from './sea-art';
+ import type { ShipShape, ShipTone } from './ship-shape';
+ 
+ /** 色の役 → パレットの色（mid は台の中間の色） */
+@@ -38,3 +40,18 @@ export function paintShipTexture(scene: Phaser.Scene, key: string, spec: BoatTex
+   paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) => paintShip(pen, shape, pal, mid));
+   if (S !== 1) Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
+ }
++
++/**
++ * v0.7.0 IP3: 船形の絵を Canvas の 2D で key のテクスチャに（艇・米PT・大発。IP2 の駆逐艦の destroyer-art と同じ作り）。論理の寸法は hullTexSize（placeholder と同じ）、
++ * 画素はその S 倍（S＝artTexDensity(key)。2 の冪）、ctx は世界単位（k·S 倍）。表示は config/art-scale の artImageScale(key)＝1 / (k·S)
++ */
++export function paintHullCanvas(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, draw: (ctx: C) => void): void {
++  const k = RENDER_SCALE;
++  const S = artTexDensity(key);
++  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);
++  paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {
++    ctx.scale(k * S, k * S);
++    draw(ctx);
++  });
++  Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
++}
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 00b8480..ad37d82 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -1,5 +1,5 @@
+ // Phaser 設定と画面定数（docs/02 §2）。数値はここだけに置く。
+-import { logicalWidthFor } from '../core/screen';
++import { logicalWidthFor, renderScaleFor } from '../core/screen';
+ import { parseRaidOverride, type RaidOverride } from '../core/sortie';
+ import { startScreenFit } from './screen-fit';
+ 
+@@ -37,20 +37,23 @@ export const REGISTRY_KEY_HISTORICAL = 'historicalMode';
+ /** Title で選んでいるキャンペーンのタブ（v0.6.0。'us_pt' / 'jp_hard'）。Result の「任務一覧」から戻っても同じタブ。無ければ default のキャンペーン */
+ export const REGISTRY_KEY_CAMPAIGN = 'campaign';
+ 
+-/** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
+-export const DPR_CAP = 2;
+ /**
+- * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, 2)。
++ * 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 3)）。v0.6.11 までは 2。v0.7.0 実機 3 回目のユーザーの決め U9（2026-11-12）
++ * 「描画の解像度の上限を上げてみましょうか」（実機 2 回目で撃沈時も FPS 61 のまま＝余裕がある）で 3 に。iPhone 15 の横持ち（枠 734 × 393・dpr 3）は 1.09 → 1.64（canvas 2,201 × 1,179 px）
++ */
++export const DPR_CAP = 3;
++/** canvas の画素の上限（iOS Safari の canvas の面積の上限 4,096 × 4,096。v0.7.0 IP3。iPhone は 3.6 M px 以下で届かない。大きな画面の dpr 3 の保険） */
++export const MAX_CANVAS_PIXELS = 16_777_216;
++/**
++ * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, DPR_CAP)（式は core/screen の renderScaleFor）。
+  * Phaser 3 には resolution 設定が無いので、ゲームサイズをこの倍率で作り、各シーンのカメラを同じ倍率でズームして論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） を保つ。
+  * 論理 px に DPR を掛けると、FIT で縮む分だけ画面の物理画素より大きな canvas を塗ることになる（§7「フル解像度のCanvas」）ので、
+  * 表示サイズ基準にする。横持ち前提なので起動時の向きに関わらず長辺を幅として計算する。下限 1（生成テクスチャの線幅を 1px 以上に保つ）。
+- * Text は style.resolution に同じ値を渡す。
++ * Text は style.resolution に同じ値を渡す。論理の座標・HUD の位置・文字の大きさ（論理 px）・カメラの論理ズーム・タッチの座標は RENDER_SCALE に依らない（画素の密度だけが上がる）
+  */
+ function computeRenderScale(): number {
+   if (typeof window === 'undefined' || !SCREEN) return 1;
+-  const fit = Math.min(SCREEN.width / GAME_WIDTH, SCREEN.height / GAME_HEIGHT);
+-  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+-  return Math.max(1, fit * dpr);
++  return renderScaleFor(SCREEN.width, SCREEN.height, GAME_WIDTH, GAME_HEIGHT, window.devicePixelRatio || 1, DPR_CAP, MAX_CANVAS_PIXELS);
+ }
+ export const RENDER_SCALE = computeRenderScale();
+ 
+diff --git a/src/config/phaser-config.ts b/src/config/phaser-config.ts
+index bf94565..74d39fc 100644
+--- a/src/config/phaser-config.ts
++++ b/src/config/phaser-config.ts
+@@ -12,7 +12,7 @@ import { ACTIVE_TOUCH_POINTERS, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SEA_COLOR
+ export const phaserConfig: Phaser.Types.Core.GameConfig = {
+   type: Phaser.AUTO,
+   parent: 'game',
+-  // 描画解像度 = 論理解像度 × RENDER_SCALE（表示 CSS px × min(DPR,2) 相当。game-config.ts 参照）。各シーンのカメラが同倍率でズームして論理座標を保つ
++  // 描画解像度 = 論理解像度 × RENDER_SCALE（表示 CSS px × min(DPR, DPR_CAP 3) 相当。v0.7.0 IP3 の U9 で 2 → 3。game-config.ts 参照）。各シーンのカメラが同倍率でズームして論理座標を保つ
+   width: GAME_WIDTH * RENDER_SCALE,
+   height: GAME_HEIGHT * RENDER_SCALE,
+   input: {
+diff --git a/src/config/ship-art-config.ts b/src/config/ship-art-config.ts
+index 81a444f..8a7f3dd 100644
+--- a/src/config/ship-art-config.ts
++++ b/src/config/ship-art-config.ts
+@@ -20,6 +20,8 @@ export function shipArtKey(enemyId: string): string {
+  */
+ export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
+   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
++  // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は config/art-scale の artImageScale
++  'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
+ };
+ export function artTexDensity(key: string): number {
+   return ART_TEX_DENSITY[key] ?? 1;
+diff --git a/src/core/screen.ts b/src/core/screen.ts
+index fe36fca..6a20116 100644
+--- a/src/core/screen.ts
++++ b/src/core/screen.ts
+@@ -53,3 +53,15 @@ export function logicalWidthFor(width: number, height: number, logicalHeight: nu
+   const raw = Math.floor((logicalHeight * long) / short / step) * step;
+   return Math.min(maxWidth, Math.max(minWidth, raw));
+ }
++
++/**
++ * 描画スケール（v0.7.0 IP3。game-config の RENDER_SCALE の式を純粋な関数に）: 「FIT で表示される CSS px / 論理 px」× min(dpr, dprCap)。下限 1。
++ * canvas の画素（論理 × スケールの 2 乗）が maxPixels を超えるなら超えない所まで下げる（iOS Safari の canvas の面積の上限 16,777,216 px。下限 1 が優先）。
++ * dpr ≤ 2 の端末は v0.6.11 までの式（max(1, fit × dpr)）とビット同一（下げるのは上限を超える時だけ）
++ */
++export function renderScaleFor(fitW: number, fitH: number, logicalW: number, logicalH: number, dpr: number, dprCap: number, maxPixels: number): number {
++  const fit = Math.min(fitW / logicalW, fitH / logicalH);
++  const k = Math.max(1, fit * Math.min(dpr || 1, dprCap));
++  if (logicalW * logicalH * k * k <= maxPixels) return k;
++  return Math.max(1, Math.sqrt(maxPixels / (logicalW * logicalH)));
++}
+diff --git a/src/entities/ally-destroyer.ts b/src/entities/ally-destroyer.ts
+index afae6e3..dab7703 100644
+--- a/src/entities/ally-destroyer.ts
++++ b/src/entities/ally-destroyer.ts
+@@ -6,8 +6,8 @@
+ import Phaser from 'phaser';
+ import { ALLY_BEAM_FADE_S, ALLY_FAN_ALPHA, ALLY_FAN_ALPHA_ACTIVE, ALLY_SPLASH_POOL_SIZE, ALLY_TRACER_TINT } from '../config/ally-config';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { LANDING_TEXT_HYST_PX } from '../config/landing-config';
+-import { artTexDensity } from '../config/ship-art-config';
+ import {
+   ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, MUZZLE_FLASH_LIFETIME_S, MUZZLE_FLASH_SCALE, SEARCHLIGHT_ALPHA, SEARCHLIGHT_TEX_LENGTH_UNITS, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS, hudTextStyle,
+ } from '../config/ui-config';
+@@ -49,7 +49,7 @@ export class AllyDestroyerView {
+   ) {
+     const fan = allyFanFor(p, hasCoast, boundsHeight);
+     this.fan = scene.add.image(p.x, p.y, TEXTURE_KEYS.allyFan).setOrigin(fan.originX, fan.originY).setScale(fan.mPerPx).setAlpha(ALLY_FAN_ALPHA).setDepth(DEPTH.returnRing);
+-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
++    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(artImageScale(TEXTURE_KEYS.destroyerFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+     const h = degToRad(p.headingDeg);
+     const halfY = (this.sprite.displayHeight / 2) * Math.abs(Math.cos(h)) + (this.sprite.displayWidth / 2) * Math.abs(Math.sin(h));
+     this.labelX = p.x;
+diff --git a/src/entities/ally-ship.ts b/src/entities/ally-ship.ts
+index b1c1e86..3a38f6c 100644
+--- a/src/entities/ally-ship.ts
++++ b/src/entities/ally-ship.ts
+@@ -8,9 +8,9 @@
+ import Phaser from 'phaser';
+ import { CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_WIDTH } from '../config/convoy-config';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { COAST_LABEL_FONT_PX, COAST_MARKER_COLOR, COAST_MARKER_TEXT_COLOR } from '../config/hunt-config';
+ import { LANDING_MARK_HALF_M, LANDING_STATUS_DY_M, LANDING_STATUS_FONT_PX, LANDING_SUNK_TEXT_COLOR, LANDING_TEXT_HYST_PX } from '../config/landing-config';
+-import { artTexDensity } from '../config/ship-art-config';
+ import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
+ import type { SeaBounds } from '../core/boat-motion';
+ import type { LandingState, LandingWakes } from '../core/landing';
+@@ -49,7 +49,7 @@ export class AllyShip {
+     /** 字が重なってはいけない HUD の矩形（論理 px。ui/landing-markers の landingHudRects） */
+     private readonly hud: readonly ScreenRect[],
+   ) {
+-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
++    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(artImageScale(TEXTURE_KEYS.transportFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+     // ラベルは回った絵の外接の箱の上、状態の行はその上（艇首の向きで決まる。動かないので 1 回だけ。R14 A6: 泊地は南の縁から 240 m で、カメラは北の自艇を追うので、
+     // 下に置いた字は画面の外か右下の兵装・速力の HUD の下に入った）
+     const h = degToRad(p.headingDeg);
+diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
+index 7e7c693..49b7789 100644
+--- a/src/entities/destroyer.ts
++++ b/src/entities/destroyer.ts
+@@ -2,8 +2,8 @@
+ // 夜明けに退く（v0.6.2）: ai.retiring の間は海域の縁で止めず、縁の外へ boundsMarginM より出たら withdrawn（スプライトを 1 回だけ隠す）。
+ // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
+ import Phaser from 'phaser';
+-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+-import { artTexDensity } from '../config/ship-art-config';
++import { DEPTH, TEXTURE_KEYS } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+ import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
+ import { beyondBounds } from '../core/dawn-withdraw';
+@@ -45,7 +45,7 @@ export class Destroyer {
+     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: aiParams.cruiseSpeedMps };
+     this.ai = createShipAiState(start.headingDeg, aiParams.cruiseSpeedMps);
+     this.circles = createCircles(spec.hullCircles);
+-    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey)).setDepth(DEPTH.destroyer); // 絵の密度（v0.7.0 IP2b。2 の冪＝大きさはビット同一）
++    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(artImageScale(textureKey)).setDepth(DEPTH.destroyer); // 絵の密度（v0.7.0 IP2b。2 の冪＝大きさはビット同一）
+     this.refreshHull();
+     this.syncSprite();
+   }
+diff --git a/src/entities/player-boat.ts b/src/entities/player-boat.ts
+index c8a8dad..0fd61d8 100644
+--- a/src/entities/player-boat.ts
++++ b/src/entities/player-boat.ts
+@@ -1,6 +1,7 @@
+ // 自艇。core の BoatState を持ち、スプライトへ位置・角度を反映するだけ。運動は src/core/boat-motion.ts。
+ import Phaser from 'phaser';
+-import { DEPTH, RENDER_SCALE } from '../config/game-config';
++import { DEPTH } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+ import type { BoatState } from '../core/boat-motion';
+ 
+@@ -19,7 +20,7 @@ export class PlayerBoat {
+   ) {
+     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: initialSpeedMps };
+     // テクスチャは RENDER_SCALE 倍で作ってあるので、世界単位に戻す
+-    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat);
++    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(artImageScale(textureKey)).setDepth(DEPTH.playerBoat);
+     this.syncSprite();
+   }
+ 
+diff --git a/src/systems/barge-hunt.ts b/src/systems/barge-hunt.ts
+index 4727a57..0f8c675 100644
+--- a/src/systems/barge-hunt.ts
++++ b/src/systems/barge-hunt.ts
+@@ -4,6 +4,7 @@
+ // v0.6.8 実機 1 回目: 艇の砲に弾倉（boats.json の gun_battery.magazine。2 組の発を 1 つの弾倉で数える）。交換は core/pt-gun・systems/ship-gun と同じ順（下の step）。夜明けの対空（systems/arms-step）はこの弾倉を借りる。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import {
+   BARGE_BEACHED_ALPHA,
+   BARGE_BEACHED_TINT,
+@@ -128,7 +129,7 @@ export class BargeHunt {
+     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true, dawn: false };
+     this.splashes = new SplashPool(scene, GUN_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
+     this.shown = new Uint8Array(p.count);
+-    for (const b of this.flotilla.barges) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
++    for (const b of this.flotilla.barges) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(artImageScale(TEXTURE_KEYS.barge)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+     this.gunTex = new Int8Array(GUN_SHELL_POOL_SIZE).fill(-1);
+     for (let i = 0; i < GUN_SHELL_POOL_SIZE; i++) this.gunSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
+     for (let i = 0; i < MG_SHELL_POOL_SIZE; i++) this.mgSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
+diff --git a/src/systems/convoy.ts b/src/systems/convoy.ts
+index e6888a5..4c26b5f 100644
+--- a/src/systems/convoy.ts
++++ b/src/systems/convoy.ts
+@@ -7,7 +7,8 @@
+ // v0.6.4 レビュー ux-5: 米PT の隊が狙っている大発のラベルを 2 行の「大発／狙われている」の警告色に（狙いが替わったときだけ setText。systems/pt-target の aimedBarge。1 行目は隣と同じ幅＝重ならない。config/convoy-config）。
+ // 実機 1 回目のレビュー R1: 浜へ向かっている（leg 1）大発が狙われている間は、そのラベルを絵の上に置く（core/convoy の convoyLabelAbove。原点は替わったときだけ。placeLabel）。
+ import Phaser from 'phaser';
+-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { DEPTH, TEXTURE_KEYS } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import {
+   CONVOY_BEACHED_ALPHA, CONVOY_BEACHED_LABEL, CONVOY_BEACHED_TINT, CONVOY_LANDING_MARK_LABEL, CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_PAD_M, CONVOY_LANDING_MARK_WIDTH,
+   CONVOY_MARKER_LABEL, CONVOY_TARGET_LABEL,
+@@ -86,7 +87,7 @@ export class Convoy {
+       this.markLabel = scene.add.text(mk.labelX, mk.labelY, CONVOY_LANDING_MARK_LABEL, hudTextStyle(COAST_LABEL_FONT_PX, COAST_MARKER_TEXT_COLOR)).setOrigin(mk.labelOriginX, 0).setDepth(DEPTH.landingMark);
+     }
+     for (const b of this.state.barges) {
+-      this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
++      this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(artImageScale(TEXTURE_KEYS.bargeFriendly)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+       // 中央揃え: 狙われている大発の 2 行のラベル（CONVOY_TARGET_LABEL）の 1 行目「大発」を絵の真下に置く（絵の上に置くときは 2 行目が絵の真上。1 行のラベルには効かない）
+       this.labels.push(scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, CONVOY_MARKER_LABEL, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setAlign('center').setDepth(DEPTH.destroyer).setVisible(false));
+     }
+diff --git a/src/systems/escort-boat.ts b/src/systems/escort-boat.ts
+index 860c715..418dae0 100644
+--- a/src/systems/escort-boat.ts
++++ b/src/systems/escort-boat.ts
+@@ -1,7 +1,8 @@
+ // 僚艇の世界側（docs/02 §6.4、v0.4.4）: core/escort を固定ステップで進め、自艇と同じ船形（薄い青）とラベル「僚艇」を描く。被弾は世界の SplashPool と Scene の演出、沈没は駆逐艦と同じ tween。
+ // §7: スプライト 1 枚とラベル 1 つを起動時に作り、毎フレームは位置と角度だけ。沈没の tween は発生時に 1 回。
+ import Phaser from 'phaser';
+-import { DEPTH, RENDER_SCALE } from '../config/game-config';
++import { DEPTH } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { ESCORT_LABEL, ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, ESCORT_TINT, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
+ import type { BoatState, SeaBounds } from '../core/boat-motion';
+ import { createEscort, hitEscort, stepEscort, type EscortParams, type EscortState } from '../core/escort';
+@@ -21,7 +22,7 @@ export class EscortBoat {
+   ) {
+     this.state = createEscort(p, player);
+     const b = this.state.boat;
+-    this.sprite = scene.add.image(b.x, b.y, textureKey).setTint(ESCORT_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat);
++    this.sprite = scene.add.image(b.x, b.y, textureKey).setTint(ESCORT_TINT).setScale(artImageScale(textureKey)).setDepth(DEPTH.playerBoat);
+     this.label = scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, ESCORT_LABEL, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.playerBoat);
+     this.syncSprite();
+   }
+diff --git a/src/systems/evac-boats-view.ts b/src/systems/evac-boats-view.ts
+index 3c38416..5059a2f 100644
+--- a/src/systems/evac-boats-view.ts
++++ b/src/systems/evac-boats-view.ts
+@@ -8,6 +8,8 @@ import type Phaser from 'phaser';
+ import { EVAC_HIDDEN_TINT } from '../config/evac-art-config';
+ import { EVAC_HIDDEN_ALPHA } from '../config/evac-config';
+ import { DEPTH, RENDER_SCALE } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
++import { artTexDensity } from '../config/ship-art-config';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+ import { G_HAULING, G_HIDDEN } from '../core/evac-data';
+ import { evacHaulProgress } from '../core/evac-shelter';
+@@ -28,6 +30,9 @@ export class EvacBoatsView {
+   readonly imgs: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
+   private readonly look: Uint8Array;
+   private seatDim = false;
++  /** 絵の密度（v0.7.0 IP3。2 の冪）と Image の倍率（config/art-scale） */
++  private readonly density: number;
++  private readonly scale: number;
+ 
+   constructor(
+     scene: Phaser.Scene,
+@@ -40,7 +45,9 @@ export class EvacBoatsView {
+     /** 座席の記録（世界の自艇の state） */
+     private readonly seat: BoatState,
+   ) {
+-    for (let i = 0; i < sq.boats.length; i++) this.imgs.push(scene.add.image(0, 0, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat).setVisible(false));
++    this.density = artTexDensity(textureKey);
++    this.scale = artImageScale(textureKey);
++    for (let i = 0; i < sq.boats.length; i++) this.imgs.push(scene.add.image(0, 0, textureKey).setScale(this.scale).setDepth(DEPTH.playerBoat).setVisible(false));
+     this.look = new Uint8Array(sq.boats.length);
+   }
+ 
+@@ -56,11 +63,11 @@ export class EvacBoatsView {
+       if (look !== this.look[i]) {
+         this.look[i] = look;
+         img.setVisible(look !== V_NONE).setAlpha(look === V_DIM ? EVAC_HIDDEN_ALPHA : 1).setTint(look === V_DIM ? EVAC_HIDDEN_TINT : NO_TINT);
+-        if (look !== V_SINKING) img.setScale(1 / RENDER_SCALE);
++        if (look !== V_SINKING) img.setScale(this.scale);
+       }
+       if (look === V_NONE) continue;
+       img.setPosition(b.state.x, b.state.y).setAngle(b.state.headingDeg + SINK_TILT_DEG * k);
+-      if (look === V_SINKING) img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE).setAlpha(1 - k);
++      if (look === V_SINKING) img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE / this.density).setAlpha(1 - k); // IP3: (x / k) / 密度＝密度 1 とビット同一の表示の大きさ
+     }
+     // レールの上の艇（壕で上げている隊ごとに 1 隻）を斜路の上へ
+     for (let gi = 0; gi < sq.groups.length; gi++) {
+diff --git a/src/systems/gunboat.ts b/src/systems/gunboat.ts
+index 27e4770..e6fbaa3 100644
+--- a/src/systems/gunboat.ts
++++ b/src/systems/gunboat.ts
+@@ -6,7 +6,8 @@
+ // 決着の後に浜へ向かう・浜にいる間は「隼艇（浜）」）。表示は自艇の視程の内だけ（大発と同じ）。隠れている間は曳光弾と閃光も出さない（誰が撃っているか分からない。レビュー R13）。
+ // §7: 絵 1 枚・ラベル 1 つ・砲（曳光弾 24・閃光 1）を起動時に作り、毎フレームは位置・角度・表示だけ（字は HP・狙い・浜が変わったときだけ setText）。ctx と credit は 1 個だけ。
+ import Phaser from 'phaser';
+-import { DEPTH, RENDER_SCALE, boatTextureKey } from '../config/game-config';
++import { DEPTH, boatTextureKey } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { GUNBOAT_AIMED_SUFFIX, GUNBOAT_BEACH_SUFFIX, GUNBOAT_HP_PREFIX, GUNBOAT_TRACER_TINT } from '../config/gunboat-config';
+ import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, ESCORT_TINT, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
+ import type { BoatState } from '../core/boat-motion';
+@@ -62,7 +63,7 @@ export class Gunboat {
+     this.hull = { boat: b, halfLengthM: p.halfLengthM, halfBeamM: p.halfBeamM, valid: this.state.valid };
+     this.credit = createGunboatCredit(ctx.pts.boats.length);
+     this.labelHp = this.state.hp;
+-    this.sprite = scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.playerBoat).setVisible(false);
++    this.sprite = scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(artImageScale(boatTextureKey(p.boatId))).setAngle(b.headingDeg).setDepth(DEPTH.playerBoat).setVisible(false);
+     this.label = scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, p.labelJa, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setAlign('center').setDepth(DEPTH.playerBoat).setVisible(false);
+     this.gun = new PtGun(scene, p.gun, kit.seed, b, ctx.pts, kit.pt, kit.events, kit.splashes, kit.onFate, { seedOffset: GUNBOAT_GUN_SEED_OFFSET, tint: GUNBOAT_TRACER_TINT, ring: false });
+   }
+diff --git a/src/systems/pt-squadron.ts b/src/systems/pt-squadron.ts
+index 7fa9e3f..44dcfee 100644
+--- a/src/systems/pt-squadron.ts
++++ b/src/systems/pt-squadron.ts
+@@ -15,6 +15,7 @@
+ // 卯月の手柄（core の credit。FATE_BY_ALLY は core だけが書く）は ally で HUD・Result へ。onFate は卯月の手柄に書かない（LD8。模擬と同じ数え）。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { artImageScale } from '../config/art-scale';
+ import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
+ import { GUN_SPLASH_SCALE_HIT, GUN_SPLASH_SCALE_MISS, MG_TRACER_TINT } from '../config/hunt-config';
+ import { PT_MUZZLE_FLASH_S, PT_MUZZLE_FLASH_SCALE, PT_MUZZLE_FLASH_TINT, PT_PASS_LINE_LEN_M, PT_RETIRED_TINT, PT_SHELL_POOL_SIZE, PT_SPLASH_POOL_SIZE } from '../config/pt-config';
+@@ -140,7 +141,7 @@ export class PtSquadron {
+     this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section, this.gunboat) : null;
+     if (this.targets) this.check.targets = this.targets.hulls;
+     this.shown = new Uint8Array(p.count);
+-    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
++    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+     for (let i = 0; i < PT_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
+     // 航過の赤い線: 夜明けの空襲の爆撃進路の線と同じ絵・色・濃さ・太さ（ユーザーが知っている「この線から離れる」）。長さは一定なので倍率は 1 回だけ
+     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index ca37d7c..8631aa5 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -189,14 +189,18 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）',
+       'tex-aircraft': '66x53', 'tex-starshell': '282x282', 'tex-smoke-puff': '142x142', 'tex-searchlight': '61x280',
+     });
+   });
+-  it('IP2b の密度: 艦の 5 つの鍵だけ・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も）', () => {
+-    expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual(['tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-transport', 'tex-transport-friendly']);
++  it('IP2b・IP3 の密度: 艦の 5 つの鍵（IP2b）と艇 5・米PT・大発 2 の 8 つの鍵（IP3 の U10）・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も。k は U9 の上限 3 まで）', () => {
++    expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
++      'tex-barge', 'tex-barge-friendly', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
++      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
++    ]);
+     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
+-    expect([artTexDensity('tex-barge'), artTexDensity('tex-boat-us_elco80')]).toEqual([1, 1]);
++    expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
+     const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24] };
+     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
+     const ks = [...KS];
+-    for (let i = 0; i <= 360; i++) ks.push(1 + i / 360); // k 1〜2 を 1/360 刻み
++    for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
++    ks.push((393 / 720) * 3, Math.min(852 / 1560, 393 / 720) * 3, Math.min(667 / 1280, 375 / 720) * 3);
+     for (const key of Object.keys(ART_TEX_DENSITY)) {
+       const [[L, B], S] = [hulls[key]!, artTexDensity(key)];
+       for (const k of ks) {
+@@ -207,12 +211,29 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）',
+       }
+     }
+   });
+-  it('IP2b の密度の通り道: 描く 2 か所が S 倍の画素、艦の Image を作る 3 か所が 1 / RENDER_SCALE / artTexDensity（ほかに 5 つの鍵の Image は無い）', () => {
++  it('IP2b・IP3 の密度の通り道: 描く 3 か所が S 倍の画素、密度のある鍵の Image を作る所はみな config/art-scale の artImageScale（1 / RENDER_SCALE / 密度）', () => {
+     for (const line of ['paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(readFileSync('src/assets/destroyer-art.ts', 'utf8')).toContain(line);
+-    expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) =>');
+-    expect(readFileSync('src/entities/destroyer.ts', 'utf8')).toContain('scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey))');
+-    expect(readFileSync('src/entities/ally-destroyer.ts', 'utf8')).toContain('TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly))');
+-    expect(readFileSync('src/entities/ally-ship.ts', 'utf8')).toContain('TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly))');
++    const ship = readFileSync('src/assets/ship-art.ts', 'utf8');
++    expect(ship).toContain('paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) =>');
++    for (const line of ['export function paintHullCanvas(', 'paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(ship).toContain(line);
++    expect(readFileSync('src/config/art-scale.ts', 'utf8')).toContain('return 1 / RENDER_SCALE / artTexDensity(key);');
++    const sites: Record<string, string> = {
++      'entities/destroyer.ts': 'scene.add.image(start.x, start.y, textureKey).setScale(artImageScale(textureKey))',
++      'entities/ally-destroyer.ts': 'TEXTURE_KEYS.destroyerFriendly).setScale(artImageScale(TEXTURE_KEYS.destroyerFriendly))',
++      'entities/ally-ship.ts': 'TEXTURE_KEYS.transportFriendly).setScale(artImageScale(TEXTURE_KEYS.transportFriendly))',
++      'entities/player-boat.ts': 'scene.add.image(start.x, start.y, textureKey).setScale(artImageScale(textureKey))',
++      'systems/escort-boat.ts': 'scene.add.image(b.x, b.y, textureKey).setTint(ESCORT_TINT).setScale(artImageScale(textureKey))',
++      'systems/gunboat.ts': 'scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(artImageScale(boatTextureKey(p.boatId)))',
++      'systems/evac-boats-view.ts': 'scene.add.image(0, 0, textureKey).setScale(this.scale)',
++      'systems/barge-hunt.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(artImageScale(TEXTURE_KEYS.barge))',
++      'systems/pt-squadron.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat))',
++      'systems/convoy.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(artImageScale(TEXTURE_KEYS.bargeFriendly))',
++    };
++    for (const [f, line] of Object.entries(sites)) expect(readFileSync(join('src', f), 'utf8'), f).toContain(line);
++    const evac = readFileSync('src/systems/evac-boats-view.ts', 'utf8');
++    expect(evac).toContain('this.scale = artImageScale(textureKey);');
++    expect(evac).toContain('img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE / this.density)'); // 沈む途中も (x / k) / 密度
++    expect(evac).not.toContain('setScale(1 / RENDER_SCALE)');
+     const users: string[] = [];
+     for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
+       for (const f of readdirSync(join('src', dir))) {
+@@ -221,6 +242,15 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）',
+       }
+     }
+     expect(users.sort()).toEqual(['entities/ally-destroyer.ts', 'entities/ally-ship.ts', 'entities/destroyer.ts', 'systems/destroyer-group.ts']); // destroyer-group は鍵を Destroyer へ渡すだけ
++    // IP3: 艇・米PT・大発の鍵の Image を作る所は上の表だけ（textureKey を受け取る 3 つ＝自艇・僚艇・jp_03 の 18 隻と、鍵を直に書く 4 つ）
++    const boatUsers: string[] = [];
++    for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
++      for (const f of readdirSync(join('src', dir))) {
++        const src = readFileSync(join('src', dir, f), 'utf8');
++        if (/add\.(?:image|sprite)\([^;]*(?:TEXTURE_KEYS\.(?:barge|bargeFriendly|ptBoat)\b|boatTextureKey\()/.test(src)) boatUsers.push(`${dir}/${f}`);
++      }
++    }
++    expect(boatUsers.sort()).toEqual(['systems/barge-hunt.ts', 'systems/convoy.ts', 'systems/gunboat.ts', 'systems/pt-squadron.ts']);
+   });
+   it('placeholders.ts の私的な値（魚雷の幅・雷跡の点・爆発の輪）は art-dims と同じ', () => {
+     const src = readFileSync('src/assets/placeholders.ts', 'utf8');
+diff --git a/tests/boat-art.test.ts b/tests/boat-art.test.ts
+index a1df964..9c307c6 100644
+--- a/tests/boat-art.test.ts
++++ b/tests/boat-art.test.ts
+@@ -78,9 +78,10 @@ describe('艇の絵の形（v0.7.0 S1）', () => {
+   it('自艇のパレット（tint される鍵）は彩度 ≤ 0.12・中間の色も', () => {
+     for (const c of [PALETTE_PLAYER.deck, PALETTE_PLAYER.rim, PALETTE_PLAYER.superstructure, PALETTE_PLAYER.highlight, PALETTE_PLAYER_MID]) expect(sat(c)).toBeLessThanOrEqual(ART_TINTED_SATURATION_MAX);
+   });
+-  it('source の pin: boat-art は寸法を art-dims の hullTexSize から・Boot の呼び出しの行は同じ（import だけ boat-art）・placeholders.ts は 300 行以下で艇の絵を持たない', () => {
++  it('source の pin: boat-art は寸法を art-dims の hullTexSize から（IP3: ship-art の paintHullCanvas 経由）・Boot の呼び出しの行は同じ（import だけ boat-art）・placeholders.ts は 300 行以下で艇の絵を持たない', () => {
+     const art = readFileSync('src/assets/boat-art.ts', 'utf8');
+-    expect(art).toContain('hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE)');
++    expect(art).toContain('paintHullCanvas(scene, key, spec, (ctx) => paintSmallBoat(');
++    expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);');
+     expect(art).toContain('export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void');
+     const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
+     expect(boot).toContain("import { generatePlayerBoatTexture } from '../assets/boat-art';");
+diff --git a/tests/screen.test.ts b/tests/screen.test.ts
+index 44e0c69..f292070 100644
+--- a/tests/screen.test.ts
++++ b/tests/screen.test.ts
+@@ -1,5 +1,6 @@
++import { readFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+-import { landscapeSize, logicalWidthFor, screenBoxFor } from '../src/core/screen';
++import { landscapeSize, logicalWidthFor, renderScaleFor, screenBoxFor } from '../src/core/screen';
+ 
+ // iPhone 15 の CSS px（横 852 × 393）と safe-area（横: 左右 59・下 21、縦: 上 59・下 34）
+ const LAND = { top: 0, right: 59, bottom: 21, left: 59 };
+@@ -26,3 +27,38 @@ describe('画面の枠と論理幅（v0.5.1 実機 1 回目。core/screen）', (
+     expect(W(393, 734)).toBe(1344); // 縦の値を渡しても長辺を幅にする
+   });
+ });
++
++describe('描画スケールの上限（v0.7.0 IP3。ユーザーの決め U9「描画の解像度の上限を上げてみましょうか」。core/screen の renderScaleFor）', () => {
++  const src = readFileSync('src/config/game-config.ts', 'utf8');
++  const CAP = Number(/export const DPR_CAP = (\d+);/.exec(src)![1]); // game-config は DOM を読むので字で読む
++  const MAXPX = Number(/export const MAX_CANVAS_PIXELS = ([0-9_]+);/.exec(src)![1]!.replace(/_/g, ''));
++  const old = (fw: number, fh: number, gw: number, dpr: number): number => Math.max(1, Math.min(fw / gw, fh / 720) * Math.min(dpr || 1, 2)); // v0.6.11 の式
++  it('上限は 3（名前の付いた定数・U9 の理由つき）・canvas の画素の上限は iOS の 16,777,216 px・RENDER_SCALE はこの関数から', () => {
++    expect(CAP).toBe(3);
++    expect(MAXPX).toBe(16777216);
++    expect(src).toContain('U9');
++    expect(src).toContain('return renderScaleFor(SCREEN.width, SCREEN.height, GAME_WIDTH, GAME_HEIGHT, window.devicePixelRatio || 1, DPR_CAP, MAX_CANVAS_PIXELS);');
++  });
++  it('dpr ≤ 2 の端末は v0.6.11 の式とビット同一（iPhone SE・iPhone 15 の dpr 2 の模擬・iPad・PC）', () => {
++    for (const [fw, fh] of [[734, 393], [852, 393], [667, 375], [1560, 720], [1194, 834], [1366, 1024], [1920, 1080]] as const) {
++      const gw = W(fw, fh);
++      for (const dpr of [0, 1, 1.25, 1.5, 2]) expect(renderScaleFor(fw, fh, gw, 720, dpr, CAP, MAXPX), `${fw}x${fh}@${dpr}`).toBe(old(fw, fh, gw, dpr));
++    }
++  });
++  it('iPhone 15 の横持ち（枠 734 × 393・dpr 3）は 1.09 → 1.64（canvas 2,201 × 1,179＝2.6 M px）。論理の大きさ（論理幅・高さ 720）は同じ', () => {
++    const gw = W(734, 393);
++    expect(gw).toBe(1344);
++    const k = renderScaleFor(734, 393, gw, 720, 3, CAP, MAXPX);
++    expect(k).toBeCloseTo((393 / 720) * 3, 12);
++    expect(old(734, 393, gw, 3)).toBeCloseTo((393 / 720) * 2, 12);
++    expect(gw * 720 * k * k).toBeLessThan(3.6e6);
++    expect(renderScaleFor(852, 393, W(852, 393), 720, 3, CAP, MAXPX) * W(852, 393)).toBeLessThanOrEqual(852 * 3); // 画面の物理画素を超えない
++  });
++  it('dpr 3 より上は 3 で止まり、canvas の画素は 16,777,216 px を超えない（下限 1 が優先）', () => {
++    expect(renderScaleFor(734, 393, 1344, 720, 4, CAP, MAXPX)).toBe(renderScaleFor(734, 393, 1344, 720, 3, CAP, MAXPX));
++    const big = renderScaleFor(3000, 1500, 1440, 720, 3, CAP, MAXPX);
++    expect(1440 * 720 * big * big).toBeLessThanOrEqual(MAXPX * (1 + 1e-12));
++    expect(big).toBeLessThan(Math.min(3000 / 1440, 1500 / 720) * 3);
++    expect(renderScaleFor(100, 50, 1280, 720, 3, CAP, 1)).toBe(1);
++  });
++});
