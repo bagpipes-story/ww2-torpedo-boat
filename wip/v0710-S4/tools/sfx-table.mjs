@@ -518,7 +518,7 @@ var UI_TAP = { fromHz: 880, toHz: 660, glideS: 0.06, attackS: 2e-3, decayS: 0.04
 function uiTap(n) {
   return mul(sine(n, UI_TAP.fromHz, UI_TAP.toHz, UI_TAP.glideS), envelope(n, UI_TAP.attackS, UI_TAP.decayS));
 }
-var ALARM = { toneHz: [400, 520], toneS: 0.3, drive: 1.1, lowPassHz: 2e3, lowPassPoles: 2, attackS: 6e-3, releaseS: 0.03, sag: 0.5 };
+var ALARM = { toneHz: [400, 520], toneS: 0.3, amps: [1, 0.45, 0.3, 0.15, 0.1, 0.05], lowPassHz: 2e3, attackS: 6e-3, releaseS: 0.03, sag: 0.5 };
 function alarm(n) {
   const c = ALARM;
   const out = new Float32Array(n);
@@ -527,14 +527,14 @@ function alarm(n) {
   const rn = sfxSamples(c.releaseS);
   for (let k = 0; k < c.toneHz.length; k++) {
     const len = Math.min(tn, n - k * tn);
-    const tone = saturate(sine(len, c.toneHz[k]), c.drive);
+    const tone = harmonics(len, Math.round(c.toneHz[k] * c.toneS), c.amps);
     for (let i = 0; i < len; i++) {
       const edge = Math.min(1, i / an, Math.max(0, (len - rn - i) / an));
       tone[i] = tone[i] * edge * (1 - c.sag * i / len);
     }
     mixInto(out, tone, 1, k * c.toneS);
   }
-  return lowPass(out, c.lowPassHz, c.lowPassHz, 0, c.lowPassPoles);
+  return lowPass(out, c.lowPassHz);
 }
 var BELL = { carrierHz: 660, ratio: 2.76, index: 3.2, indexDecayS: 0.5, attackS: 2e-3, decayS: 1.2, strikeRatio: 2, strikeDecayS: 0.15, strikeGain: 0.35, tailFadeS: 0.15 };
 function bell(n) {
@@ -1135,9 +1135,9 @@ for (const k of SFX_KEYS) {
 }
 console.log("key           centroid  head50ms  zc/2(Hz)  >400Hz  RMS     -20dB(s)  \u9802(s)");
 for (const r of rows) console.log(`${r.k.padEnd(13)} ${r.cen.toFixed(0).padStart(8)}  ${r.head.toFixed(0).padStart(8)}  ${r.zc.toFixed(0).padStart(8)}  ${(r.hi * 100).toFixed(0).padStart(5)}%  ${r.rms.toFixed(3)}   ${r.l20.toFixed(2)}     ${r.pk.toFixed(3)}`);
-var d = (a, b) => Math.abs(Math.log2(a.cen / b.cen)) + Math.abs(Math.log2(a.zc / b.zc)) + Math.abs(Math.log2(a.head / b.head)) + Math.abs(Math.log2((a.l20 + 0.05) / (b.l20 + 0.05))) + Math.abs(Math.log2((a.pk + 0.02) / (b.pk + 0.02)));
+var d = (a, b) => Math.abs(Math.log2(a.cen / b.cen)) + Math.abs(Math.log2(a.zc / b.zc)) + Math.abs(Math.log2(a.head / b.head)) + Math.abs(Math.log2((a.l20 + 0.05) / (b.l20 + 0.05))) + Math.abs(Math.log2((a.pk + 0.02) / (b.pk + 0.02))) + Math.abs(Math.log2(a.rms / b.rms));
 var pairs = [];
 for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) pairs.push([rows[i].k, rows[j].k, d(rows[i], rows[j])]);
 pairs.sort((a, b) => a[2] - b[2]);
-console.log("\u4E00\u756A\u8FD1\u3044 10 \u7D44\uFF08\u8DDD\u96E2\uFF1Dlog2 \u306E\u5DEE\u306E\u548C: \u91CD\u5FC3\u30FB\u96F6\u4EA4\u5DEE\u30FB\u982D\u306E\u91CD\u5FC3\u30FB-20dB \u306E\u9577\u3055\u30FB\u9802\u306E\u4F4D\u7F6E\uFF09");
+console.log("\u4E00\u756A\u8FD1\u3044 10 \u7D44\uFF08\u8DDD\u96E2\uFF1Dlog2 \u306E\u5DEE\u306E\u548C: \u91CD\u5FC3\u30FB\u96F6\u4EA4\u5DEE\u30FB\u982D\u306E\u91CD\u5FC3\u30FB-20dB \u306E\u9577\u3055\u30FB\u9802\u306E\u4F4D\u7F6E\u30FBRMS\uFF09");
 for (const p of pairs.slice(0, 10)) console.log(`  ${p[0]} ~ ${p[1]}: ${p[2].toFixed(2)}`);

@@ -14,8 +14,8 @@ for (const k of SFX_KEYS) {
 console.log('key           centroid  head50ms  zc/2(Hz)  >400Hz  RMS     -20dB(s)  頂(s)');
 for (const r of rows) console.log(`${r.k.padEnd(13)} ${r.cen.toFixed(0).padStart(8)}  ${r.head.toFixed(0).padStart(8)}  ${r.zc.toFixed(0).padStart(8)}  ${(r.hi * 100).toFixed(0).padStart(5)}%  ${r.rms.toFixed(3)}   ${r.l20.toFixed(2)}     ${r.pk.toFixed(3)}`);
 // 距離: log 重心・log 零交差・-20dB の長さ・頭の重心 の差の和（目安）
-const d = (a: typeof rows[0], b: typeof rows[0]): number => Math.abs(Math.log2(a.cen / b.cen)) + Math.abs(Math.log2(a.zc / b.zc)) + Math.abs(Math.log2(a.head / b.head)) + Math.abs(Math.log2((a.l20 + 0.05) / (b.l20 + 0.05))) + Math.abs(Math.log2((a.pk + 0.02) / (b.pk + 0.02)));
+const d = (a: typeof rows[0], b: typeof rows[0]): number => Math.abs(Math.log2(a.cen / b.cen)) + Math.abs(Math.log2(a.zc / b.zc)) + Math.abs(Math.log2(a.head / b.head)) + Math.abs(Math.log2((a.l20 + 0.05) / (b.l20 + 0.05))) + Math.abs(Math.log2((a.pk + 0.02) / (b.pk + 0.02))) + Math.abs(Math.log2(a.rms / b.rms));
 const pairs: [string, string, number][] = [];
 for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) pairs.push([rows[i]!.k, rows[j]!.k, d(rows[i]!, rows[j]!)]);
 pairs.sort((a, b) => a[2] - b[2]);
-console.log('一番近い 10 組（距離＝log2 の差の和: 重心・零交差・頭の重心・-20dB の長さ・頂の位置）'); for (const p of pairs.slice(0, 10)) console.log(`  ${p[0]} ~ ${p[1]}: ${p[2].toFixed(2)}`);
+console.log('一番近い 10 組（距離＝log2 の差の和: 重心・零交差・頭の重心・-20dB の長さ・頂の位置・RMS）'); for (const p of pairs.slice(0, 10)) console.log(`  ${p[0]} ~ ${p[1]}: ${p[2].toFixed(2)}`);

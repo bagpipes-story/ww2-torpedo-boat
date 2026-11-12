@@ -9,7 +9,7 @@ blast_l            263      1549       513     45%  0.250   0.91     0.006
 torp_hit           560      1401      1054     28%  0.283   1.66     0.024
 torp_launch       2556      2043      2161     86%  0.095   0.39     0.020
 hull_hit           348       715       403     55%  0.159   0.12     0.002
-alarm              487       403       415     76%  0.495   0.57     0.007
+alarm              623       523       415     82%  0.396   0.57     0.007
 light_on           923       935      1310     77%  0.247   0.48     0.017
 flare_pop         6746       640      6113     55%  0.106   0.69     0.004
 bomb_fall          933      1787      1073    100%  0.278   1.19     1.136
@@ -19,14 +19,14 @@ ui_tap             792       802       767    100%  0.248   0.04     0.002
 bell               773      3229       969    100%  0.215   1.07     0.007
 engine_cough       737       790       419     35%  0.104   0.55     0.004
 sink               631       703       688     46%  0.138   2.34     0.806
-一番近い 10 組（距離＝log2 の差の和: 重心・零交差・頭の重心・-20dB の長さ・頂の位置）
-  alarm ~ engine_cough: 1.78
-  gun_near ~ blast_s: 2.00
-  splash_l ~ torp_launch: 2.05
-  gun_near ~ bell: 2.46
-  splash_l ~ light_on: 2.47
-  blast_s ~ light_on: 2.71
-  splash_s ~ torp_launch: 2.90
-  light_on ~ engine_cough: 2.99
-  torp_hit ~ bell: 3.07
-  mg ~ torp_launch: 3.12
+一番近い 10 組（距離＝log2 の差の和: 重心・零交差・頭の重心・-20dB の長さ・頂の位置・RMS）
+  gun_near ~ blast_s: 2.20
+  splash_l ~ torp_launch: 2.46
+  gun_near ~ bell: 2.62
+  blast_s ~ light_on: 2.87
+  alarm ~ engine_cough: 2.99
+  splash_s ~ torp_launch: 3.05
+  blast_s ~ torp_hit: 3.20
+  splash_l ~ light_on: 3.44
+  torp_hit ~ bell: 3.47
+  gun_near ~ light_on: 3.63

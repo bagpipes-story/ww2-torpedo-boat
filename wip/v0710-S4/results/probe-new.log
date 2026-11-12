@@ -1,0 +1,54 @@
+us_02-ff     150 秒  頼まれた   191  声の最大 13（上限なしなら 13）  奪った 0  一番混む 1 秒 18 発  alarm 2/2  gun_far 1/1  gun_near 37/78（間隔 41）  light_on 4/4  splash_s 61/65（間隔 4）  splash_l 11/14（間隔 3）  blast_s 11/13（間隔 2）  hull_hit 9/9  blast_l 2/3（間隔 1）  sink 1/1  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）191・標本がまだ無い 0・標本 25 本
+             合図: alarm 2  light_on 4  hull_hit 9  bell 1
+✓ us_02-ff: ページのエラー 0
+✓ us_02-ff: 同時の声 ≤ 16（13）
+             ループ: engine 18% 最大 0.38 変化 4  sea 100% 最大 0.17 変化 8  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.1/0.16/0.38  書いた 36 回（一番混む 1 秒 14）
+✓ us_02-ff: エンジンと海のループが鳴る（最大 0.38・0.1747）
+✓ us_02-ff: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+✗ us_02-ff: この任務で鳴るはずのループが鳴る（drone ＝鳴らない: drone）
+us_02-ground  25 秒  頼まれた    29  声の最大 4（上限なしなら 4）  奪った 0  一番混む 1 秒 4 発  alarm 1/1  gun_far 11/12（間隔 1）  light_on 1/1  splash_s 12/12  blast_s 2/2  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）29・標本がまだ無い 0・標本 25 本
+             合図: alarm 1  light_on 1  blast_s 1  bell 1
+✓ us_02-ground: ページのエラー 0
+✓ us_02-ground: 同時の声 ≤ 16（4）
+             ループ: engine 100% 最大 0.60 変化 5  sea 100% 最大 0.24 変化 13  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 2% 最大 0.10 変化 2  engine の段 0.1/0.16/0.38/0.6  書いた 59 回（一番混む 1 秒 14）
+✓ us_02-ground: エンジンと海のループが鳴る（最大 0.6・0.2375）
+✓ us_02-ground: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+us_02-fuel   150 秒  頼まれた   160  声の最大 10（上限なしなら 10）  奪った 0  一番混む 1 秒 15 発  alarm 2/2  gun_far 5/6（間隔 1）  light_on 3/3  splash_s 63/65（間隔 2）  gun_near 31/64（間隔 33）  splash_l 5/5  blast_s 4/4  hull_hit 5/5  blast_l 3/4（間隔 1）  sink 1/1  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）160・標本がまだ無い 0・標本 25 本
+             合図: alarm 2  light_on 3  hull_hit 5  bell 1
+✓ us_02-fuel: ページのエラー 0
+✓ us_02-fuel: 同時の声 ≤ 16（10）
+             ループ: engine 17% 最大 0.60 変化 5  sea 100% 最大 0.24 変化 13  fire 2% 最大 0.35 変化 9  rain 0% 最大 0.00 変化 0  drone 2% 最大 0.10 変化 2  engine の段 0/0.1/0.16/0.38/0.6  書いた 68 回（一番混む 1 秒 14）
+✓ us_02-fuel: エンジンと海のループが鳴る（最大 0.6・0.2375）
+✓ us_02-fuel: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+us_01-chores 200 秒  頼まれた    97  声の最大 11（上限なしなら 11）  奪った 0  一番混む 1 秒 16 発  torp_launch 3/3  smoke 1/1  alarm 1/1  gun_near 18/38（間隔 20）  light_on 2/2  splash_s 32/33（間隔 1）  splash_l 4/5（間隔 1）  blast_s 4/5（間隔 1）  hull_hit 4/4  blast_l 2/3（間隔 1）  sink 1/1  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）97・標本がまだ無い 0・標本 25 本
+             合図: torp_launch 3  smoke 1  alarm 1  light_on 2  hull_hit 4  bell 1
+✓ us_01-chores: ページのエラー 0
+✓ us_01-chores: 同時の声 ≤ 16（11）
+             ループ: engine 18% 最大 0.38 変化 4  sea 100% 最大 0.17 変化 8  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.1/0.16/0.38  書いた 36 回（一番混む 1 秒 14）
+✓ us_01-chores: エンジンと海のループが鳴る（最大 0.38・0.1747）
+✓ us_01-chores: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+✗ us_01-chores: この任務で鳴るはずのループが鳴る（fire ＝鳴らない: fire）
+jp_05-hot    200 秒  頼まれた    84  声の最大 6（上限なしなら 6）  奪った 0  一番混む 1 秒 10 発  engine_cough 21/21  alarm 1/1  torp_launch 2/2  mg 20/20  blast_s 9/9  hull_hit 9/9  splash_s 11/11  ui_tap 9/9  bell 2/2
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）83・標本がまだ無い 1・標本 25 本
+             合図: engine_cough 21  alarm 1  torp_launch 2  hull_hit 9  ui_tap 9  bell 2
+✓ jp_05-hot: ページのエラー 0
+✓ jp_05-hot: 同時の声 ≤ 16（6）
+             ループ: engine 100% 最大 0.60 変化 40  sea 100% 最大 0.24 変化 54  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0.1/0.16/0.38/0.6  書いた 2091 回（一番混む 1 秒 15）
+✓ jp_05-hot: エンジンと海のループが鳴る（最大 0.6・0.24）
+✓ jp_05-hot: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 15）
+jp_03-switch 120 秒  頼まれた   173  声の最大 5（上限なしなら 5）  奪った 0  一番混む 1 秒 12 発  alarm 4/4  ui_tap 8/8  mg 128/128  splash_l 14/25（間隔 11）  reload 4/4  bomb_fall 2/2  blast_l 1/2（間隔 1）
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）173・標本がまだ無い 0・標本 25 本
+             合図: alarm 4  ui_tap 8  reload 4  bomb_fall 2
+✓ jp_03-switch: ページのエラー 0
+✓ jp_03-switch: 同時の声 ≤ 16（5）
+             ループ: engine 100% 最大 0.60 変化 6  sea 100% 最大 0.24 変化 12  fire 1% 最大 0.35 変化 10  rain 0% 最大 0.00 変化 0  drone 87% 最大 0.45 変化 11  engine の段 0.1/0.16/0.38/0.6  書いた 80 回（一番混む 1 秒 16）
+✓ jp_03-switch: エンジンと海のループが鳴る（最大 0.6・0.24）
+✓ jp_03-switch: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 16）
+✓ jp_03-switch: この任務で鳴るはずのループが鳴る（drone）
+全部の件の合計（鳴らした数）: mg 148  gun_near 86  gun_far 17  splash_s 179  splash_l 34  blast_s 30  blast_l 8  torp_hit 0  sink 3
+25 本の鍵（全部の件を通して）: mg 148  gun_near 86  gun_far 17  splash_s 179  splash_l 34  blast_s 30  blast_l 8  torp_hit 0  sink 3  torp_launch 5  hull_hit 27  alarm 11  light_on 10  flare_pop 0  bomb_fall 2  reload 4  smoke 1  ui_tap 17  bell 6  engine_cough 21  engine 6  sea 6  fire 2  rain 0  drone 3
+sfx-probe NG 2（6 件）
