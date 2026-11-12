@@ -1,0 +1,323 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index f465adf..cfa2bfc 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -302,6 +302,25 @@
+         平たい鮭色の板に暗い点から、明るい砲塔と陰・暗い煙突の口・明るい短艇と艦橋の段・筒の並んだ発射管が既定のズームでも読める艦になった。陽炎型（連装 3・船首楼の段）・フレッチャー級（単装 5・平甲板・Mk37 の四角）・睦月型（盾つきの単装 4・切れ込み）の形の違いは S2a のまま。
+         判定: 「クオリティを上げて」に応える（単系統のまま）。弱み: iPhone の k ≈ 1.09 では艦は幅 20〜27 px のテクスチャ＝細部は 1〜2 px で、既定のズームでは砲塔・煙突・艦橋の塊の明暗が主な違い（細かい継ぎ目・錨鎖・弾薬箱は寄りでしか見えない）。見張りのズームでは今までどおり色と輪郭（細い鮭色・青の艦）。
+     - 門（lead がまとめて回した `run-gates`。scratchpad の `v0700/impl/IP2/SUMMARY.txt`）: npm test 2,748 件・typecheck・lint・build が緑、凍結 20 本同じ、setup の snapshot は `-u` なし、g2 `G6=1 ALLY=1 EVAC=1` OK 37 DIFF 0、ab-replay all 58・jp04base 8・jp03 4 と hud-ab base 16・jp04base 8・jp03 4 が same:true（CAM=1）、tex-ab CHECK=1 ✓（既存の鍵の寸法・原点は同じ、GPU の差の最大 +2.08 MB）、art-perf p95（2 組）us_02h ×1.00・jp_04h ×1.35・jp_02 ×1.24・jp_03h ×1.28、us_01d ×1.42・us_03 ×1.51 は A の基準がこの回だけ速く出た（B は IP1b と同じ 135〜147 ms）→ 3 組で回し直して us_01d ×1.39・us_03 ×1.36（U3 の門 ≤ ×1.40 の内。ヘッドレスの CPU の描画で境目に近い＝実機は撮沈時も FPS 61 のまま＝ユーザーの 2 回目の報告）。
++  - IP2b（U8 の続き。絵だけ＝遊びはビット同一の見込み。lead の run-gates で確かめる）: 艦の絵のテクスチャを 2 倍の画素で描き、表示を 1/2 に縮める（世界の大きさは同じ）。
++    - なぜ: IP2 の駆逐艦の細部（砲塔・煙突・発射管・艦橋の段）が iPhone の大きさでは明暗の塊にぼける（IP2 の写しの弱み）。lead の見立て「テクスチャ k ≈ 1.09 px/単位を拡大して表示している」は調べると違った:
++      Mission のカメラのズームは 0.75（data の camera_zoom_default。ピンチで 0.5〜1.0）× RENDER_SCALE なので、画面の canvas は 1 単位 ≈ 0.82 px・テクスチャは 1.09 px＝いつも 1.33 倍に縮めて表示している（拡大ではない。iPhone 15 の dpr 3 との差 1.5 倍はブラウザが canvas を広げる分＝§7 の min(dpr, 2)）。
++      ぼけの元は、canvas の画素と同じくらいの目のテクスチャ（描く時の Canvas の縁のぼかし）を、回った艦でもう一度 bilinear で取り直す二重のぼかし。2 倍で描くと 2 回目の取り直しが細部をより正しく拾う（細部の大きさ自体は画面の画素で決まるので、増えるのは輪郭と小物の切れ）。
++    - 方法: `config/ship-art-config` に鍵 → 密度の表 `ART_TEX_DENSITY`（tex-destroyer・tex-destroyer-us・tex-destroyer-friendly・tex-transport・tex-transport-friendly が 2、ほかは 1）と `artTexDensity(key)`。
++      描く側は画素を S 倍（`assets/destroyer-art` の paintCanvas と `assets/ship-art` の paintShipTexture。大発は同じ道具で S 1＝変わらない）、表示する側は 3 か所の Image だけ `setScale(1 / RENDER_SCALE / artTexDensity(鍵))`（entities/destroyer＝敵の駆逐艦と us_02 の輸送船・ally-destroyer＝卯月・ally-ship＝jp_04 の輸送船）。
++      鍵・原点・論理の寸法（hullTexSize）は同じ。S は 2 の冪に限る: (1/k)/S と w·S は丸めが変わらないので displayWidth・displayHeight（卯月と輸送船の名前・状態の行の y、航跡の長さと幅、火災の大きさが読む）と沈む tween の倍率は S 1 とビット同一。
++      S 3 は試していない（3 は丸めが変わり得る＝ビット同一を示せない）。艇（自艇・米PT・僚艇・jp_03 の 18 隻）は Image を作る所が多く、tint と沈む・隠れる見た目の道も多いので今回は入れない（駆逐艦が主。艇は幅 8〜14 px でもっと小さい）。
++      テクスチャの customData に density を残し、道具の `scripts/headless/tex-ab` は寸法の門と CHECK の覆い・艦首の行を「画素 / 密度」＝論理の px で比べる（明るさ・色相・海との比・幅の割合はもともと密度に依らない。MB は画素のまま）。
++    - メモリ（tex-ab。scratchpad の `v0700/impl/IP2b/tex-ab.log`・`tex-ab-vs-head.log`）: IP2 の木（HEAD）との差 +0.41 MB（k 1.09。5 枚の画素が 4 倍）、f5563ab との差 +2.42 MB（k 2 は +3.72 MB。U3 の ≤ +24 MB の内）。Boot の create は HEAD 234.1 → 219.8 ms（中央値。揺れの内）。
++    - テスト: tests/art-inventory に 2 件（密度は艦の 5 つの鍵だけで 2 の冪・k 1／SE／15／2 と k 1〜2 の 1/360 刻みで displayWidth/Height と沈む倍率が S 1 とビット同一、描く 2 か所と Image の 3 か所の source の pin・ほかに 5 つの鍵の Image を作る所が無い）。tests/destroyer-art の paintCanvas の pin を S 倍の行に。f5563ab の px の pin（論理の寸法）はそのまま。
++    - 写し（W 1280・1560・dpr 2・既定ズーム 0.75 と見張り。ページのエラー 0。scratchpad の `v0700/impl/IP2b/`。道具は IP2 の `tools/ip2-shots.mjs` に輸送船 2 件を足した物。HEAD は `shots-head/`、S 2 は `shots/`（＝`shots-s2/`）、S 4 は `shots-s4/`。並べた物は `cmp/`）:
++      - `cmp/kagero-zoom-head-s2-s4-w1560.png`（斜めに走る陽炎型。左から HEAD・S 2・S 4 を 6 倍）: S 2 は砲塔の丸と砲身・発射管の筒の列・煙突の口・艦橋の段の縁がはっきりし、HEAD の全体のぼけが取れた。判定: 一番効く場面（艦はたいてい斜めに走る）で「くっきり」に近づいた。
++      - `cmp/fletcher-ship-head-s2-s4-w1280.png`・`cmp/mutsuki-ship-head-s2-s4-w1280.png`（真横の艦。上から HEAD・S 2・S 4 を 7 倍）: 軸に沿った艦は差が小さい（縁と小物が少し締まる程度）。睦月型の小さな部品は S 2 でも 1〜2 px のまま。
++      - `cmp/kagero-lookout-head-s2-s4-w1560.png`・`cmp/fletcher-lookout-head-s2-s4-w1280.png`（見張りへ引き始め）: S 2 は輪郭がわずかに段になるが細部の切れは上がる。S 4 は船体の縁の段と小物のざらつき（縮めすぎの折り返し）が目立ち、S 2 より良くならない → S 2 に決めた。
++      - `cmp/transports-head-vs-s2-w1560-small.png`（us_02 の敵・jp_04 の味方の輸送船。左 HEAD・右 S 2）: ハッチと船橋の縁が少し締まる程度（平たい形なので差は小さい）。
++      - 正直に: 細部の大きさは画面の画素（既定ズームで 1 単位 ≈ 0.82 canvas px）で決まるので、2 倍にしても継ぎ目・錨鎖・弾薬箱のような 1 単位未満の物は見えるようにならない。もっと上げるなら §7 の min(dpr, 2) を変える（ユーザーの判断）か、既定ズームを上げる（遊びの見え方が変わる）か、部品を太く少なく描く（絵の作り直し）。
++    - 再生の A/B（f5563ab と、同じビルド番号の IP2b のビルド。`ab-replay SET=jp04base CAM=1`。scratchpad の `v0700/impl/IP2b/ab-jp04base.log`）: 8 件 same:true。tex-ab `CHECK=1 MISSIONS=us_01,us_02,jp_04,jp_06`: 寸法（論理）・原点 ✓、新しい鍵は今までどおり、CHECK は全部 ✓（tex-destroyer 明るさ 0.56・tex-destroyer-us 0.57・tex-destroyer-friendly 0.66＝IP2 と同じ）。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
+ - 既知の制約:
+   - （S0）art config と art-dims はまだどこからも使われない（S1〜S3c で使う）。tests/art-inventory の予定の鍵（PLANNED_NEW）は spec D2 の 11（S4 で `tex-oil-slick` を足して 12）。段で鍵を足す・やめる時はこの表も直す。
+   - （S0）tex-check の絶対の門（夜の海との比 ≥ 4.5・昼 ≥ 3・艦の幅 ≥ 0.92）は placeholder がもともと満たさない所（敵機の赤の昼の海との比 2.97・輸送船の 20% の行の幅 0.89）を「A 以上」で読む。
+diff --git a/scripts/headless/tex-ab.mjs b/scripts/headless/tex-ab.mjs
+index 44d6251..723e3dc 100644
+--- a/scripts/headless/tex-ab.mjs
++++ b/scripts/headless/tex-ab.mjs
+@@ -9,6 +9,7 @@
+ //   昼の海 #3b5670 との明るさの比（WCAG）・tint を掛けた版の比（僚艇と隼艇 ESCORT_TINT・jp_03 の隠れた艇 EVAC_HIDDEN_TINT α 0.45・去った米PT・座礁の大発）・
+ //   艦の幅（長さの 20〜85% で ≥ 0.92 × 幅）と艦首の 0 行目・艦尾の 98%（R22）・魚雷の黄の面積・煙幕の半径の帯の α（R32）・星弾の 92% の内の α・探照灯の先端の行と扇の内の α（R2）・
+ //   機の翼幅（≥ 箱の 0.8）。A（placeholder）と比べる門と、色の意味の絶対の門。B だけの鍵（例 tex-destroyer-us）は A の対の鍵（PAIR）と比べる。
++// v0.7.0 IP2b: 艦の 5 つの鍵は画素を S 倍（テクスチャの customData.density）で描く。寸法の門と CHECK の覆い・艦首の行は画素 / S＝論理の px で比べる（MB は画素のまま）。
+ // 実行: A=<site A> B=<site B> [MISSIONS=us_01,...] [K2=0] [CHECK=1] [JOBS=3] [OUT=<json>] node scripts/headless/tex-ab.mjs
+ import { writeFileSync } from 'node:fs';
+ import { chromium, envNum, openGame, pool, serve } from './lib.mjs';
+@@ -134,7 +135,8 @@ function collect(o) {
+     const src = g.textures.get(key).source[0];
+     const img = src.image;
+     const isCanvas = typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement;
+-    tex[key] = { w: src.width, h: src.height, canvas: isCanvas };
++    const density = g.textures.get(key).customData?.density ?? 1; // v0.7.0 IP2b: 画素を S 倍で描いた艦の鍵（論理の寸法＝画素 / S。GPU・CPU の MB は画素のまま）
++    tex[key] = { w: src.width, h: src.height, canvas: isCanvas, density };
+     if (o.check && isCanvas && o.spec[key]) tex[key].m = metrics(img, o.spec[key]);
+   }
+   const origins = {};
+@@ -164,11 +166,13 @@ async function oneSide(browser, base, mission, sc) {
+ const f2 = (x) => (Number.isFinite(x) ? x.toFixed(2) : '—');
+ const med = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
+ /** 鍵ごとの検査の門（B の数を A＝placeholder の数と比べる。B だけの鍵は A の対の鍵と） */
+-function checkKey(key, a, b) {
++function checkKey(key, a, b, ta = {}, tb = {}) {
+   const sp = SPEC[key];
+   const out = [];
+   const ok = (cond, msg) => out.push(`${cond ? '✓' : '✗'} ${msg}`);
+-  ok(b.opaque >= a.opaque * 0.85, `覆い ${b.opaque}/${a.opaque} px（≥ 85%）`);
++  const sa = ta.density ?? 1; const sb = tb.density ?? 1; // IP2b: 画素の数と行は密度で割って論理の px に（比・明るさ・色相は密度に依らない）
++  const bo = b.opaque / (sb * sb); const ao = a.opaque / (sa * sa);
++  ok(bo >= ao * 0.85, `覆い ${bo.toFixed(0)}/${ao.toFixed(0)} 論理 px（≥ 85%）`);
+   if (sp.kind === undefined) ok(b.luma >= a.luma * 0.9 && b.luma <= a.luma * 1.15, `明るさ ${f2(b.luma)}／${f2(a.luma)}（−10%〜+15%）`);
+   if (sp.side === 'player') ok(b.sat < 0.12, `彩度 ${f2(b.sat)}（< 0.12）`);
+   if (sp.side === 'enemy') ok(b.hue >= 330 || b.hue <= 20, `色相 ${b.hue.toFixed(0)}°（330〜20）`);
+@@ -178,7 +182,7 @@ function checkKey(key, a, b) {
+   for (const [name] of sp.tints ?? []) ok(b.tints[name] >= a.tints[name] * 0.85, `${name} の tint の比 ${f2(b.tints[name])}／${f2(a.tints[name])}（≥ 0.85 倍）`);
+   if (sp.ship) {
+     ok(b.midMinShare >= 0.92 || b.midMinShare >= a.midMinShare, `長さの 20〜85% の最小の幅 ${f2(b.midMinShare)}（≥ 0.92 か A ${f2(a.midMinShare)} 以上）`);
+-    ok(b.firstRow <= Math.max(0, a.firstRow), `艦首の先の行 ${b.firstRow}（A ${a.firstRow}）`);
++    ok(Math.floor(b.firstRow / sb) <= Math.max(0, Math.floor(a.firstRow / sa)), `艦首の先の行 ${b.firstRow}/${sb}（A ${a.firstRow}/${sa}。論理の行）`);
+     ok(b.lastRowShare >= 0.98, `艦尾 ${f2(b.lastRowShare)}（≥ 0.98）`);
+   }
+   if (sp.plane) ok(b.spanShare >= 0.8, `翼幅 ${f2(b.spanShare)}（≥ 0.8）`);
+@@ -215,9 +219,9 @@ async function main() {
+       for (const [key, ta] of Object.entries(r.a.tex)) {
+         const tb = r.b.tex[key];
+         if (!tb) missing.push(`${key}@${r.m}`);
+-        else if (ta.w !== tb.w || ta.h !== tb.h) dimsBad.push(`${key}@${r.m} ${ta.w}x${ta.h} → ${tb.w}x${tb.h}`);
++        else if (ta.w / ta.density !== tb.w / tb.density || ta.h / ta.density !== tb.h / tb.density) dimsBad.push(`${key}@${r.m} ${ta.w}x${ta.h}/${ta.density} → ${tb.w}x${tb.h}/${tb.density}`);
+       }
+-      for (const key of Object.keys(r.b.tex)) if (!r.a.tex[key]) added.add(`${key} ${r.b.tex[key].w}x${r.b.tex[key].h}`);
++      for (const key of Object.keys(r.b.tex)) if (!r.a.tex[key]) added.add(`${key} ${r.b.tex[key].w}x${r.b.tex[key].h}${r.b.tex[key].density > 1 ? `/${r.b.tex[key].density}` : ''}`);
+       for (const [key, oa] of Object.entries(r.a.origins)) if (r.b.origins[key] && JSON.stringify(oa) !== JSON.stringify(r.b.origins[key])) originBad.push(`${key}@${r.m} ${oa} → ${r.b.origins[key]}`);
+       for (const side of ['a', 'b']) {
+         let gpu = 0;
+@@ -253,7 +257,7 @@ async function main() {
+         const b = r.b.tex[key]?.m;
+         const a = r.a.tex[SPEC[key].pair ?? key]?.m;
+         if (!a || !b) continue;
+-        const lines = checkKey(key, a, b);
++        const lines = checkKey(key, a, b, r.a.tex[SPEC[key].pair ?? key], r.b.tex[key]);
+         if (lines.some((l) => l.startsWith('✗'))) bad++;
+         console.log(`  ${key}${per.length > 1 ? `@${r.m}` : ''}: ${lines.join('・')}`);
+       }
+diff --git a/src/assets/destroyer-art.ts b/src/assets/destroyer-art.ts
+index cd653b7..05fdc19 100644
+--- a/src/assets/destroyer-art.ts
++++ b/src/assets/destroyer-art.ts
+@@ -7,7 +7,7 @@
+ import type Phaser from 'phaser';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { PALETTE_ALLY, PALETTE_ENEMY } from '../config/boat-art-config';
+-import { SHIP_ART_DEFAULT_KEY, shipArtKey, shipArtKind } from '../config/ship-art-config';
++import { SHIP_ART_DEFAULT_KEY, artTexDensity, shipArtKey, shipArtKind } from '../config/ship-art-config';
+ import { getEnemyRecord, getPrototypeMission, type GameData } from '../config/game-data';
+ import { hasHardVariant } from '../config/mission-data';
+ import { hullTexSize, type BoatTextureSpec } from './art-dims';
+@@ -15,14 +15,19 @@ import { destroyerPlan, type DestroyerKind } from './destroyer-plan';
+ import { paintDestroyer } from './destroyer-paint';
+ import { paintCanvas } from './sea-art';
+ 
+-/** 1 枚を key のテクスチャに（寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央） */
++/**
++ * 1 枚を key のテクスチャに（論理の寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央）。IP2b: 画素はその S 倍（S＝artTexDensity(key)。2 の冪）で描き、
++ * 表示は Destroyer・AllyDestroyer が 1 / (k·S) に縮める（世界の大きさと displayWidth/Height は今のまま）
++ */
+ function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, kind: DestroyerKind, base: number): void {
+   const k = RENDER_SCALE;
++  const S = artTexDensity(key);
+   const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);
+-  paintCanvas(scene, key, size.w, size.h, (ctx) => {
+-    ctx.scale(k, k);
++  paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {
++    ctx.scale(k * S, k * S);
+     paintDestroyer(ctx, destroyerPlan(kind, spec.lengthUnits, spec.beamUnits), base);
+   });
++  Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
+ }
+ 
+ /** 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級） */
+diff --git a/src/assets/ship-art.ts b/src/assets/ship-art.ts
+index f768bbf..133a627 100644
+--- a/src/assets/ship-art.ts
++++ b/src/assets/ship-art.ts
+@@ -4,6 +4,7 @@
+ import type Phaser from 'phaser';
+ import { RENDER_SCALE } from '../config/game-config';
+ import type { HullPalette } from '../config/boat-art-config';
++import { artTexDensity } from '../config/ship-art-config';
+ import { hullTexSize, type BoatTextureSpec } from './art-dims';
+ import { paintTexture, type ArtPen } from './art-pen';
+ import type { ShipShape, ShipTone } from './ship-shape';
+@@ -27,7 +28,13 @@ export function paintShip(pen: ArtPen, shape: ShipShape, pal: HullPalette, mid:
+   pen.parts(shape.parts, (t) => shipToneColor(t, pal, mid));
+ }
+ 
+-/** 形を key のテクスチャに（寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央） */
++/**
++ * 形を key のテクスチャに（論理の寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央）。IP2b: 画素はその S 倍（S＝artTexDensity(key)。輸送船 2・大発 1）で描き、
++ * 表示は Destroyer・AllyShip が 1 / (k·S) に縮める（世界の大きさと displayWidth/Height は今のまま）
++ */
+ export function paintShipTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, shape: ShipShape, pal: HullPalette, mid: number): void {
+-  paintTexture(scene, key, hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE), RENDER_SCALE, (pen) => paintShip(pen, shape, pal, mid));
++  const S = artTexDensity(key);
++  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE);
++  paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) => paintShip(pen, shape, pal, mid));
++  if (S !== 1) Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
+ }
+diff --git a/src/config/ship-art-config.ts b/src/config/ship-art-config.ts
+index 2924146..81a444f 100644
+--- a/src/config/ship-art-config.ts
++++ b/src/config/ship-art-config.ts
+@@ -14,6 +14,17 @@ export function shipArtKey(enemyId: string): string {
+   return SHIP_ART_KEY_BY_ENEMY[enemyId] ?? SHIP_ART_DEFAULT_KEY;
+ }
+ 
++/**
++ * v0.7.0 IP2b: 艦の絵のテクスチャの密度（1 世界単位の px ＝ RENDER_SCALE × これ。表に無い鍵は 1）。絵は ART_TEX_DENSITY 倍の画素で描き、スプライトは 1 / (RENDER_SCALE × これ) で表示する
++ * （世界の大きさは今のまま）。2 の冪に限る: (1/k)/S と w·S は丸めが変わらないので displayWidth・displayHeight（卯月の名前の y・航跡・火災が読む）は S = 1 とビット同一（tests/art-inventory）
++ */
++export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
++  'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
++};
++export function artTexDensity(key: string): number {
++  return ART_TEX_DENSITY[key] ?? 1;
++}
++
+ /**
+  * 艦の当たりの形（R22）: 当たりは船幅の円を軸に並べたカプセル（core/torpedo-solver。艦首・艦尾まで船幅いっぱい）。絵の輪郭が当たりより痩せないよう、
+  * 長さの SHIP_FULL_BEAM_FROM〜TO の間は幅 ≥ SHIP_FULL_BEAM_SHARE × B、艦首の先は画素の 0 行目、艦尾は長さの SHIP_STERN_MIN_SHARE 以上まで描く
+diff --git a/src/entities/ally-destroyer.ts b/src/entities/ally-destroyer.ts
+index 47bec46..afae6e3 100644
+--- a/src/entities/ally-destroyer.ts
++++ b/src/entities/ally-destroyer.ts
+@@ -7,6 +7,7 @@ import Phaser from 'phaser';
+ import { ALLY_BEAM_FADE_S, ALLY_FAN_ALPHA, ALLY_FAN_ALPHA_ACTIVE, ALLY_SPLASH_POOL_SIZE, ALLY_TRACER_TINT } from '../config/ally-config';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { LANDING_TEXT_HYST_PX } from '../config/landing-config';
++import { artTexDensity } from '../config/ship-art-config';
+ import {
+   ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, MUZZLE_FLASH_LIFETIME_S, MUZZLE_FLASH_SCALE, SEARCHLIGHT_ALPHA, SEARCHLIGHT_TEX_LENGTH_UNITS, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS, hudTextStyle,
+ } from '../config/ui-config';
+@@ -48,7 +49,7 @@ export class AllyDestroyerView {
+   ) {
+     const fan = allyFanFor(p, hasCoast, boundsHeight);
+     this.fan = scene.add.image(p.x, p.y, TEXTURE_KEYS.allyFan).setOrigin(fan.originX, fan.originY).setScale(fan.mPerPx).setAlpha(ALLY_FAN_ALPHA).setDepth(DEPTH.returnRing);
+-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
++    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+     const h = degToRad(p.headingDeg);
+     const halfY = (this.sprite.displayHeight / 2) * Math.abs(Math.cos(h)) + (this.sprite.displayWidth / 2) * Math.abs(Math.sin(h));
+     this.labelX = p.x;
+diff --git a/src/entities/ally-ship.ts b/src/entities/ally-ship.ts
+index 34553f6..b1c1e86 100644
+--- a/src/entities/ally-ship.ts
++++ b/src/entities/ally-ship.ts
+@@ -10,6 +10,7 @@ import { CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_WIDTH } from '.
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { COAST_LABEL_FONT_PX, COAST_MARKER_COLOR, COAST_MARKER_TEXT_COLOR } from '../config/hunt-config';
+ import { LANDING_MARK_HALF_M, LANDING_STATUS_DY_M, LANDING_STATUS_FONT_PX, LANDING_SUNK_TEXT_COLOR, LANDING_TEXT_HYST_PX } from '../config/landing-config';
++import { artTexDensity } from '../config/ship-art-config';
+ import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
+ import type { SeaBounds } from '../core/boat-motion';
+ import type { LandingState, LandingWakes } from '../core/landing';
+@@ -48,7 +49,7 @@ export class AllyShip {
+     /** 字が重なってはいけない HUD の矩形（論理 px。ui/landing-markers の landingHudRects） */
+     private readonly hud: readonly ScreenRect[],
+   ) {
+-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
++    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+     // ラベルは回った絵の外接の箱の上、状態の行はその上（艇首の向きで決まる。動かないので 1 回だけ。R14 A6: 泊地は南の縁から 240 m で、カメラは北の自艇を追うので、
+     // 下に置いた字は画面の外か右下の兵装・速力の HUD の下に入った）
+     const h = degToRad(p.headingDeg);
+diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
+index 89ea754..7e7c693 100644
+--- a/src/entities/destroyer.ts
++++ b/src/entities/destroyer.ts
+@@ -3,6 +3,7 @@
+ // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
+ import Phaser from 'phaser';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { artTexDensity } from '../config/ship-art-config';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+ import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
+ import { beyondBounds } from '../core/dawn-withdraw';
+@@ -44,7 +45,7 @@ export class Destroyer {
+     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: aiParams.cruiseSpeedMps };
+     this.ai = createShipAiState(start.headingDeg, aiParams.cruiseSpeedMps);
+     this.circles = createCircles(spec.hullCircles);
+-    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.destroyer);
++    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey)).setDepth(DEPTH.destroyer); // 絵の密度（v0.7.0 IP2b。2 の冪＝大きさはビット同一）
+     this.refreshHull();
+     this.syncSprite();
+   }
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index 2b7fb98..ca37d7c 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -3,7 +3,8 @@
+ // - 各鍵を「描き直す世界の絵」「変えない（spec §2.2 の変えない物＝R27）」に分ける（新しい鍵は「描き直す（新しい物）」か「演出」）。
+ // - assets/art-dims の式は v0.6.11 の placeholder の式と k ∈ {1, iPhone SE, iPhone 15, 2} で同じ。iPhone 15 の k で data から作る寸法は f5563ab のヘッドレスの実物と同じ px。
+ // - 世界の絵の原点（setOrigin）は鍵ごとに今のまま（探照灯は光源 (0.5, 1)・爆撃進路の線は (0, 0.5)・ほかは中央）。
+-// 実物の寸法の A/B（全任務の game.textures）は scripts/headless/tex-ab.mjs が見る（門）。
++// - IP2b: 艦の 5 つの鍵（駆逐艦 3・輸送船 2）は画素を ART_TEX_DENSITY 倍（2 の冪）で描き、表示を 1/(k·S) にする。論理の寸法（hullTexSize）・displayWidth/Height はビット同一。
++// 実物の寸法の A/B（全任務の game.textures）は scripts/headless/tex-ab.mjs が見る（門。IP2b から密度で割った論理の寸法で比べる）。
+ import { readFileSync, readdirSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+@@ -15,7 +16,7 @@ import { getGunboatParams } from '../src/config/gunboat-mission-data';
+ import { validateLandingMissions } from '../src/config/landing-mission-data';
+ import { validateAllyDestroyerMissions } from '../src/config/ally-destroyer-mission-data';
+ import { EXPLOSION_RING_RADIUS_UNITS, TORPEDO_WIDTH_UNITS, WAKE_DOT_RADIUS_UNITS, aircraftTexSize, discTexSize, hullTexSize, searchlightTexSize, torpedoTexSize, type TexSize } from '../src/assets/art-dims';
+-import { SHIP_ART_DEFAULT_KEY, SHIP_ART_KEY_BY_ENEMY, shipArtKey } from '../src/config/ship-art-config';
++import { ART_TEX_DENSITY, SHIP_ART_DEFAULT_KEY, SHIP_ART_KEY_BY_ENEMY, artTexDensity, shipArtKey } from '../src/config/ship-art-config';
+ import { AIRCRAFT_ART_BY_ID, AIRCRAFT_ART_DEFAULT, AIRCRAFT_ART_SHAPES, FRIENDLY_AIRCRAFT_ART, aircraftArtShape } from '../src/config/aircraft-art-config';
+ import { SEA_GRID_ON, SEA_LIGHT_ART } from '../src/config/sea-art-config';
+ 
+@@ -188,6 +189,39 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）',
+       'tex-aircraft': '66x53', 'tex-starshell': '282x282', 'tex-smoke-puff': '142x142', 'tex-searchlight': '61x280',
+     });
+   });
++  it('IP2b の密度: 艦の 5 つの鍵だけ・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も）', () => {
++    expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual(['tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-transport', 'tex-transport-friendly']);
++    for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
++    expect([artTexDensity('tex-barge'), artTexDensity('tex-boat-us_elco80')]).toEqual([1, 1]);
++    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24] };
++    const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
++    const ks = [...KS];
++    for (let i = 0; i <= 360; i++) ks.push(1 + i / 360); // k 1〜2 を 1/360 刻み
++    for (const key of Object.keys(ART_TEX_DENSITY)) {
++      const [[L, B], S] = [hulls[key]!, artTexDensity(key)];
++      for (const k of ks) {
++        const [t, a, b] = [hullTexSize(L, B, k), 1 / k, 1 / k / S];
++        expect(b * (t.w * S), `${key} k ${k}`).toBe(a * t.w);
++        expect(b * (t.h * S), `${key} k ${k}`).toBe(a * t.h);
++        expect(b * SINK_SCALE_TO * (t.w * S), `${key} k ${k} sink`).toBe(a * SINK_SCALE_TO * t.w);
++      }
++    }
++  });
++  it('IP2b の密度の通り道: 描く 2 か所が S 倍の画素、艦の Image を作る 3 か所が 1 / RENDER_SCALE / artTexDensity（ほかに 5 つの鍵の Image は無い）', () => {
++    for (const line of ['paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(readFileSync('src/assets/destroyer-art.ts', 'utf8')).toContain(line);
++    expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) =>');
++    expect(readFileSync('src/entities/destroyer.ts', 'utf8')).toContain('scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey))');
++    expect(readFileSync('src/entities/ally-destroyer.ts', 'utf8')).toContain('TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly))');
++    expect(readFileSync('src/entities/ally-ship.ts', 'utf8')).toContain('TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly))');
++    const users: string[] = [];
++    for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
++      for (const f of readdirSync(join('src', dir))) {
++        const src = readFileSync(join('src', dir, f), 'utf8');
++        if (/TEXTURE_KEYS\.(?:destroyer|destroyerUs|destroyerFriendly|transport|transportFriendly)\b(?!Pool)/.test(src) || /'tex-(?:destroyer|transport)/.test(src)) users.push(`${dir}/${f}`);
++      }
++    }
++    expect(users.sort()).toEqual(['entities/ally-destroyer.ts', 'entities/ally-ship.ts', 'entities/destroyer.ts', 'systems/destroyer-group.ts']); // destroyer-group は鍵を Destroyer へ渡すだけ
++  });
+   it('placeholders.ts の私的な値（魚雷の幅・雷跡の点・爆発の輪）は art-dims と同じ', () => {
+     const src = readFileSync('src/assets/placeholders.ts', 'utf8');
+     for (const [name, v] of [['TORPEDO_WIDTH_UNITS', TORPEDO_WIDTH_UNITS], ['WAKE_DOT_RADIUS_UNITS', WAKE_DOT_RADIUS_UNITS], ['EXPLOSION_RING_RADIUS_UNITS', EXPLOSION_RING_RADIUS_UNITS]] as const) {
+diff --git a/tests/destroyer-art.test.ts b/tests/destroyer-art.test.ts
+index de8f464..cc822b3 100644
+--- a/tests/destroyer-art.test.ts
++++ b/tests/destroyer-art.test.ts
+@@ -117,7 +117,7 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
+   it('source の pin: 鍵・寸法（hullTexSize）・paintCanvas で 1 回、Math.random なし、300 行以下', () => {
+     const art = readFileSync('src/assets/destroyer-art.ts', 'utf8');
+     expect(art).toContain('const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);');
+-    expect(art).toContain('paintCanvas(scene, key, size.w, size.h, (ctx) => {');
++    expect(art).toContain('paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {'); // IP2b: 画素は論理の寸法の S 倍（S＝artTexDensity。tests/art-inventory）
+     expect(art).toContain("paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);");
+     for (const f of ['destroyer-art', 'destroyer-plan', 'destroyer-paint', 'destroyer-part-paint', 'destroyer-pen']) {
+       const s = readFileSync(`src/assets/${f}.ts`, 'utf8');
