@@ -26,3 +26,9 @@ Lead plan (not user decisions): v0.7.0 = ship/boat/plane art + night-sea effects
 - U7 torpedo hits: a much bigger, dramatic water column (「轟沈感」).
 - U8 destroyer art quality up, same single-hue palette (enemy red family / ally blue family).
 - Round-2 iPhone result: sea, wakes, shore battery very good; FPS steady 61 even during sinkings.
+
+## U9–U10 (v0.7.0 iPhone round 3, 2026-11-12, verbatim)
+「描画の解像度の上限を上げてみましょうか。また、自機（魚雷艇）と大発も視覚的なクオリティを上げてください。」
+(answering the lead's round-3 report, which offered raising the render-resolution cap min(dpr, 2) since FPS has headroom)
+- U9 raise the render resolution cap (CLAUDE.md §7 row 「フル解像度のCanvas」: min(dpr, 2) → min(dpr, 3); the user's decision → CLAUDE.md §7 and its change history).
+- U10 player torpedo boats and Daihatsu barges: higher visual quality (like the destroyers in IP2/IP2b).
