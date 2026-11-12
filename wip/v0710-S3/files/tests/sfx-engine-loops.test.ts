@@ -6,10 +6,7 @@
 // - 一時停止はループの束を 0 へ・再開で戻す。MissionSfx は Hud の PAUSE・RESUME・SHUTDOWN を聞き、SHUTDOWN で口を外す。
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  SFX_KEYS, SFX_LOOP_BUS_GAIN, SFX_LOOP_ENGINE, SFX_LOOP_GAIN_EPS, SFX_LOOP_PAUSE_FADE_S, SFX_LOOP_RATE_EPS, SFX_LOOP_RATE_MAX, SFX_LOOP_RATE_MIN, SFX_LOOP_SEA, SFX_LOOP_STOP_FADE_S,
-  SFX_LOOP_TIME_CONSTANT_S, SFX_LOOP_UPDATE_HZ,
-} from '../src/config/sfx-config';
+import { SFX_KEYS, SFX_LOOP_BUS_GAIN, SFX_LOOP_ENGINE, SFX_LOOP_GAIN_EPS, SFX_LOOP_PAUSE_FADE_S, SFX_LOOP_RATE_EPS, SFX_LOOP_RATE_MAX, SFX_LOOP_RATE_MIN, SFX_LOOP_SEA, SFX_LOOP_STOP_FADE_S, SFX_LOOP_TIME_CONSTANT_S, SFX_LOOP_UPDATE_HZ } from '../src/config/sfx-config';
 import { LOOP_DRONE, LOOP_ENGINE, LOOP_SEA, SFX_LOOP_COUNT, SFX_LOOP_IDS, createSfxLoopTargets, type SfxLoopTargets } from '../src/core/sfx-loops';
 import { ktToMps } from '../src/core/units';
 import { registerSfxEngine, registerSfxListener, sfxLoops, sfxLoopsPaused, sfxLoopsStop } from '../src/systems/sfx-bus';
@@ -18,8 +15,7 @@ import { MissionSfx, SFX_SCENE_EV_PAUSE, SFX_SCENE_EV_RESUME, SFX_SCENE_EV_SHUTD
 import { FakeCtx, FakeSource, fakeSamples, graph, setup } from './sfx-engine-kit';
 import { tel } from './sfx-loops-kit';
 
-const FRAME_S = 1 / 60;
-const TICK_S = 1 / SFX_LOOP_UPDATE_HZ;
+const FRAME_S = 1 / 60, TICK_S = 1 / SFX_LOOP_UPDATE_HZ;
 /** ループ 5 本の標本つきのエンジン */
 function loopSetup(state = 'running'): { ctx: FakeCtx; e: SfxEngine } {
   const x = setup(state);
@@ -34,7 +30,7 @@ function targets(): SfxLoopTargets {
   t.gain[LOOP_SEA] = 0.2;
   return t;
 }
-/** frames フレーム進める（再生の時計も進める）。戻りは ctx */
+/** frames フレーム進める（再生の時計も進める） */
 function run(x: { ctx: FakeCtx; e: SfxEngine }, t: SfxLoopTargets, frames: number, muted = false): void {
   for (let i = 0; i < frames; i++) { x.ctx.currentTime += FRAME_S; x.e.loops.update(t, FRAME_S, muted); }
 }
