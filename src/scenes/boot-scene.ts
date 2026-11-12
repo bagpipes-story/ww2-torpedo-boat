@@ -23,20 +23,22 @@ import { directSortie } from '../core/sortie';
 import { migrateLegacyUnlocks } from '../systems/progress-storage';
 import {
   generateDebugRingTexture,
-  generateDestroyerTexture,
-  generateTransportTexture,
   generateGunneryTextures,
   generateSmokeTextures,
-  generatePlayerBoatTexture,
   generateReturnTextures,
   generateTargetMarkerTexture,
   generateTorpedoButtonTexture,
   generateTorpedoTextures,
   generateUiTextures,
 } from '../assets/placeholders';
-import { generateAircraftTexture } from '../assets/aircraft-placeholder';
+import { generatePlayerBoatTexture } from '../assets/boat-art';
+import { generateDestroyerTexture, generateExtraDestroyerTextures } from '../assets/destroyer-art';
+import { generateTransportTexture } from '../assets/transport-art';
+import { generateAircraftTexture } from '../assets/aircraft-art';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
 import { generateRainTexture } from '../assets/storm-placeholder';
+import { generateSeaTextures } from '../assets/sea-art';
+import { generateFxTextures } from '../assets/fx-art';
 import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
@@ -92,6 +94,7 @@ export class BootScene extends Phaser.Scene {
     validateLoadouts(gameData); // 兵装（v0.6.8）: 対空・閃光の data と全任務（ハードも）の艇の魚雷・砲の検査（壊れていれば Boot で止まる。上の輪の後）
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
+    generateExtraDestroyerTextures(this, gameData, spriteScale); // 米駆逐艦 tex-destroyer-us（v0.7.0 S2a。jp_06。遊べる任務の駆逐艦の id から 1 枚ずつ＝D3）
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
     // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける
@@ -117,6 +120,8 @@ export class BootScene extends Phaser.Scene {
     generateAircraftTexture(this);
     generateAircraftTexture(this, TEXTURE_KEYS.enemyAircraft, TARGET_MARKER_COLOR); // 敵の水上機（v0.4.1）
     generateRainTexture(this);
+    generateSeaTextures(this); // 海の模様のタイル・夜明けの光・きらめき（v0.7.0 S3a。assets/sea-art。Canvas の 2D に 1 回。systems/sea-fx が使う）
+    generateFxTextures(this); // 水柱・砲口炎・火球・航跡 2 枚（v0.7.0 S3b。assets/fx-art。Canvas の 2D に 1 回。SplashPool・閃光 7 か所・systems/explosion-fx・wake-fx が使う）
     // 大発（v0.4.2）: 大発の隊を持つ最初の任務の値から（遊べる任務は Boot ですべて読める）
     const bargeMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['barges']);
     const barge = bargeMission ? getBargeParams(gameData, getPrototypeMission(gameData, bargeMission.id)) : null;

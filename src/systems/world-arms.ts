@@ -53,13 +53,14 @@ export class WorldArms extends ArmsStep {
       for (let i = 0; i < AA_TRACER_POOL; i++) this.aaImgs.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(GUN_TRACER_TINT).setDepth(DEPTH.aircraft).setVisible(false));
       for (let i = 0; i < ARMS_WRECK_POOL; i++) this.wrecks.push(scene.add.image(0, 0, TEXTURE_KEYS.enemyAircraft).setScale(1 / RENDER_SCALE).setDepth(DEPTH.aircraft).setVisible(false));
     }
-    this.flashImg = this.shipGun || aa ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
+    this.flashImg = this.shipGun || aa ? scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(GUN_TRACER_TINT).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
   }
 
   protected override fxMuzzle(x: number, y: number): void {
     if (!this.flashImg) return;
     this.flashImg.setPosition(x, y).setAlpha(1).setVisible(true);
     this.flashAge = 0;
+    this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
   }
 
   protected override fxSplash(x: number, y: number, hit: boolean): void {

@@ -14,7 +14,7 @@
 // v0.6.10 S5b（卯月。jp_04）: 卯月が照らしている PT（setAlly で受けた印 lit）は自艇の視程の外でも描く。卯月の砲が決めた結末は world-ally が fateVisual（見せるだけ: 灰色・沈む絵・onSunk）を呼び、
 // 卯月の手柄（core の credit。FATE_BY_ALLY は core だけが書く）は ally で HUD・Result へ。onFate は卯月の手柄に書かない（LD8。模擬と同じ数え）。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
 import { GUN_SPLASH_SCALE_HIT, GUN_SPLASH_SCALE_MISS, MG_TRACER_TINT } from '../config/hunt-config';
 import { PT_MUZZLE_FLASH_S, PT_MUZZLE_FLASH_SCALE, PT_MUZZLE_FLASH_TINT, PT_PASS_LINE_LEN_M, PT_RETIRED_TINT, PT_SHELL_POOL_SIZE, PT_SPLASH_POOL_SIZE } from '../config/pt-config';
@@ -67,7 +67,7 @@ export class PtSquadron {
   /** 自艇（check.boat は標的に差し替わるので、絵の表示判定と閃光の位置は別に持つ） */
   private readonly player: BoatState;
   private readonly splashes: SplashPool;
-  private readonly sprites: Phaser.GameObjects.Image[] = [];
+  readonly sprites: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b）
   private readonly shown: Uint8Array;
   private readonly tracers: Phaser.GameObjects.Image[] = [];
   private readonly line: Phaser.GameObjects.Image;
@@ -87,7 +87,7 @@ export class PtSquadron {
     onCommit: (i) => this.targets?.onCommit(i),
     onFire: (_i, x, y) => {
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
-      this.flashAge = 0;
+      this.flashAge = 0; this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ。300 行のまま）
     },
     onImpact: (x, y, hit, hull) => {
       if (!hit) {
@@ -140,13 +140,13 @@ export class PtSquadron {
     this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section, this.gunboat) : null;
     if (this.targets) this.check.targets = this.targets.hulls;
     this.shown = new Uint8Array(p.count);
-    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
     for (let i = 0; i < PT_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
     // 航過の赤い線: 夜明けの空襲の爆撃進路の線と同じ絵・色・濃さ・太さ（ユーザーが知っている「この線から離れる」）。長さは一定なので倍率は 1 回だけ
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);
     this.lineScaleY = AIR_STRIKE_RUN_LINE_WIDTH_M / this.line.height;
     this.line.setScale(PT_PASS_LINE_LEN_M / this.line.width, this.lineScaleY);
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(PT_MUZZLE_FLASH_TINT).setScale(PT_MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.gun = guns ? new PtGun(scene, guns, seed, boat, this.section, p, this.events, this.splashes, (i, fate) => this.onFate(i, fate, FATE_BY_PLAYER)) : null;
   }
 

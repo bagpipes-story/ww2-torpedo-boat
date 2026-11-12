@@ -7,7 +7,8 @@
 import type Phaser from 'phaser';
 import { EVAC_HIDDEN_TINT } from '../config/evac-art-config';
 import { EVAC_HIDDEN_ALPHA } from '../config/evac-config';
-import { DEPTH, RENDER_SCALE } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, artImageScale } from '../config/game-config';
+import { artTexDensity } from '../config/ship-art-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import { G_HAULING, G_HIDDEN } from '../core/evac-data';
 import { evacHaulProgress } from '../core/evac-shelter';
@@ -25,9 +26,12 @@ const HAUL_HEADING_DEG = 180;
 const NO_TINT = 0xffffff;
 
 export class EvacBoatsView {
-  private readonly imgs: Phaser.GameObjects.Image[] = [];
+  readonly imgs: Phaser.GameObjects.Image[] = []; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly look: Uint8Array;
   private seatDim = false;
+  /** 絵の密度（v0.7.0 IP3。2 の冪）と Image の倍率（game-config の artImageScale） */
+  private readonly density: number;
+  private readonly scale: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -40,7 +44,9 @@ export class EvacBoatsView {
     /** 座席の記録（世界の自艇の state） */
     private readonly seat: BoatState,
   ) {
-    for (let i = 0; i < sq.boats.length; i++) this.imgs.push(scene.add.image(0, 0, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.playerBoat).setVisible(false));
+    this.density = artTexDensity(textureKey);
+    this.scale = artImageScale(textureKey);
+    for (let i = 0; i < sq.boats.length; i++) this.imgs.push(scene.add.image(0, 0, textureKey).setScale(this.scale).setDepth(DEPTH.playerBoat).setVisible(false));
     this.look = new Uint8Array(sq.boats.length);
   }
 
@@ -56,11 +62,11 @@ export class EvacBoatsView {
       if (look !== this.look[i]) {
         this.look[i] = look;
         img.setVisible(look !== V_NONE).setAlpha(look === V_DIM ? EVAC_HIDDEN_ALPHA : 1).setTint(look === V_DIM ? EVAC_HIDDEN_TINT : NO_TINT);
-        if (look !== V_SINKING) img.setScale(1 / RENDER_SCALE);
+        if (look !== V_SINKING) img.setScale(this.scale);
       }
       if (look === V_NONE) continue;
       img.setPosition(b.state.x, b.state.y).setAngle(b.state.headingDeg + SINK_TILT_DEG * k);
-      if (look === V_SINKING) img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE).setAlpha(1 - k);
+      if (look === V_SINKING) img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE / this.density).setAlpha(1 - k); // IP3: (x / k) / 密度＝密度 1 とビット同一の表示の大きさ
     }
     // レールの上の艇（壕で上げている隊ごとに 1 隻）を斜路の上へ
     for (let gi = 0; gi < sq.groups.length; gi++) {

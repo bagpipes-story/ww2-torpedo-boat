@@ -2,6 +2,7 @@
 // 数値は world-setup.ts、Scene への通知は world-events.ts、入力の消費は world-input.ts、自艇の運動は world-boat.ts（v0.6.5）、固定ステップの敵の側の段は world-enemy-step.ts（v0.6.7）、見た目の同期と破棄は world-visuals.ts（v0.6.9）、機関の不調は engine-trouble.ts（v0.6.5。jp_05）、危険の生成は world-hazards.ts、敵の側の生成は world-enemies.ts（v0.6.3）、敵の側の読み口は enemy-side.ts、大発と艇の砲は barge-hunt.ts、米PT は pt-squadron.ts、駆逐艦側の固定ステップは destroyer-step.ts（v0.4.4）、僚艇は escort-boat.ts（v0.4.4）。
 // カメラ・テレメトリ・終了判定・Result は MissionScene が持つ。§7: 毎ステップ確保しない。発射・命中・終了のときだけ確保する。
 import type Phaser from 'phaser';
+import { missionAircraftId, paintMissionAircraft } from '../assets/aircraft-art';
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
 import { debugSetupOptions } from '../config/debug-setup';
 import { getBoatTorpedoCount, type GameData } from '../config/game-data';
@@ -46,10 +47,11 @@ import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
 import { buildArms, type WorldArms } from './world-arms';
 import { buildLanding, type WorldLanding } from './world-landing';
-import type { WorldEvents } from './world-events';
+import type { ExplosionLook, WorldEvents } from './world-events';
 import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
 import { destroyWorldVisuals, updateWorldVisuals } from './world-visuals';
+import { WorldArt } from './world-art';
 export type { WorldEvents } from './world-events';
 
 export class MissionWorld {
@@ -74,6 +76,7 @@ export class MissionWorld {
   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
+  readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
   readonly returnPoint: ReturnPoint;
@@ -167,6 +170,7 @@ export class MissionWorld {
     const s = buildWorldSetup(data, sortie.missionId, debugSetupOptions(sortie, sortie.hard));
     this.setup = s;
     const mission = s.mission;
+    paintMissionAircraft(scene, missionAircraftId(mission)); // 敵機の絵をこの任務の機の種類で描き直す（v0.7.0 S2b。D4。絵だけ・乱数も状態も触らない）
     this.params = s.boatParams;
     this.returnPoint = mission.returnPoint;
     this.fuelCurve = s.fuelCurve;
@@ -187,7 +191,7 @@ export class MissionWorld {
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, getBoatTorpedoCount(data, mission.playerBoatId), mission.bounds); // 艇が積む本数（v0.6.8。setup.torpedoCapacity は主兵装の本数のまま）
     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
-    const onSunk = (x: number, y: number): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発。jp_03（撃墜だけが届く）は爆発だけ（r2 M1）
+    const onSunk = (x: number, y: number, look: ExplosionLook = 'blast'): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y, look); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発。jp_03（撃墜だけが届く）は爆発だけ（r2 M1）。look は見た目だけ（IP4: 魚雷で沈んだ輸送船は 'torpedo'）
     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
     // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）
     const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy);
@@ -214,6 +218,7 @@ export class MissionWorld {
     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
     this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
     this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
+    this.art = new WorldArt(scene, this); // 世界の絵（v0.7.0 S3a。絵だけ＝ゲームの乱数の系列も生成の順も触らない）は論理の全部の後
     this.refreshShallowStatus();
   }
 

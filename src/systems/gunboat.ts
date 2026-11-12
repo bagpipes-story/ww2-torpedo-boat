@@ -6,7 +6,7 @@
 // 決着の後に浜へ向かう・浜にいる間は「隼艇（浜）」）。表示は自艇の視程の内だけ（大発と同じ）。隠れている間は曳光弾と閃光も出さない（誰が撃っているか分からない。レビュー R13）。
 // §7: 絵 1 枚・ラベル 1 つ・砲（曳光弾 24・閃光 1）を起動時に作り、毎フレームは位置・角度・表示だけ（字は HP・狙い・浜が変わったときだけ setText）。ctx と credit は 1 個だけ。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, boatTextureKey } from '../config/game-config';
+import { DEPTH, artImageScale, boatTextureKey } from '../config/game-config';
 import { GUNBOAT_AIMED_SUFFIX, GUNBOAT_BEACH_SUFFIX, GUNBOAT_HP_PREFIX, GUNBOAT_TRACER_TINT } from '../config/gunboat-config';
 import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, ESCORT_TINT, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
 import type { BoatState } from '../core/boat-motion';
@@ -37,7 +37,7 @@ export class Gunboat {
   private readonly gun: PtGun;
   /** 隼艇の 25mm を最後に撃った体感秒（閃光の記憶。撃っていなければ −Infinity） */
   private lastFireS = -Infinity;
-  private readonly sprite: Phaser.GameObjects.Image;
+  readonly sprite: Phaser.GameObjects.Image; // 航跡の絵が読む（v0.7.0 S3b。systems/wake-fx）
   private readonly label: Phaser.GameObjects.Text;
   private shown = false;
   /** ラベルの字の元（変わったときだけ setText）: HP・狙われている・浜 */
@@ -62,7 +62,7 @@ export class Gunboat {
     this.hull = { boat: b, halfLengthM: p.halfLengthM, halfBeamM: p.halfBeamM, valid: this.state.valid };
     this.credit = createGunboatCredit(ctx.pts.boats.length);
     this.labelHp = this.state.hp;
-    this.sprite = scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.playerBoat).setVisible(false);
+    this.sprite = scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(artImageScale(boatTextureKey(p.boatId))).setAngle(b.headingDeg).setDepth(DEPTH.playerBoat).setVisible(false);
     this.label = scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, p.labelJa, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setAlign('center').setDepth(DEPTH.playerBoat).setVisible(false);
     this.gun = new PtGun(scene, p.gun, kit.seed, b, ctx.pts, kit.pt, kit.events, kit.splashes, kit.onFate, { seedOffset: GUNBOAT_GUN_SEED_OFFSET, tint: GUNBOAT_TRACER_TINT, ring: false });
   }

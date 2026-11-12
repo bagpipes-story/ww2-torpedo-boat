@@ -11,6 +11,7 @@ import type { MissionEndReason } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
 import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
 import { BargeHunt } from './barge-hunt';
+import { shipArtKey } from '../config/ship-art-config';
 import { DestroyerGroup } from './destroyer-group';
 import { EnemySide } from './enemy-side';
 import { EscortBoat } from './escort-boat';
@@ -54,7 +55,8 @@ export function buildEnemies(
   // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
   const gunRng = new SeededRng((seed + 1) >>> 0);
   // 見張り（雷跡に気づく抽選。v0.5.0）も別系列（seed+17。seed+16 は今夜の揺らぎ）。気づくまで 1 ステップ 1 回だけ引く
-  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes) : null;
+  // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）
+  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）
   destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）

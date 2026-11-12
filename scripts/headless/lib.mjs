@@ -82,15 +82,19 @@ function pageInit() {
   window.__hl = hl;
 }
 
-/** ゲームを開く: query は ?debug の後ろ（例 'mission=jp_04&seed=3&hard'）。opts.width（論理幅 1560 か 1280）。戻りは { page, errors } */
+/**
+ * ゲームを開く: query は ?debug の後ろ（例 'mission=jp_04&seed=3&hard'）。opts.width（論理幅 1560 か 1280）。戻りは { page, errors }。
+ * v0.7.0 S0（tex-ab）: opts.viewport（CSS px の { width, height }。VIEWPORTS の代わり。例 1560×720 dpr 2＝RENDER_SCALE 2）・opts.init（pageInit の後に入れる init script の関数）
+ */
 export async function openGame(browser, base, query, opts = {}) {
-  const vp = VIEWPORTS[opts.width ?? 1560];
+  const vp = opts.viewport ?? VIEWPORTS[opts.width ?? 1560];
   const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: opts.dpr ?? 1, hasTouch: true, isMobile: false });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e && e.message ? e.message : e)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
   await page.addInitScript(pageInit);
+  if (opts.init) await page.addInitScript(opts.init);
   await page.goto(`${base}?debug&nosw${query ? `&${query}` : ''}`);
   await page.waitForFunction(() => window.__game && window.__game.isBooted, null, { timeout: 60000 });
   // delta 0 のフレームで Boot → Mission（と Hud）まで（固定ステップは回らない）

@@ -5,6 +5,7 @@ import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
 import { allShipsOut, allShipsSettled, sinkingCount, withdrawnCount } from '../core/dawn-withdraw';
+import { litByOwnLight } from '../core/own-light';
 import type { SeededRng } from '../core/rng';
 import { startRetire } from '../core/ship-ai';
 import { Destroyer } from '../entities/destroyer';
@@ -22,9 +23,13 @@ export class DestroyerGroup {
   /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。既定は全隻。jp_06 のハードは 2 隻中 1 隻） */
   readonly objectiveSinks: number;
 
-  constructor(scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool) {
+  constructor(
+    scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
+    /** 駆逐艦の絵の鍵（v0.7.0 S2a。world-enemies が ship-art-config の shipArtKey(敵の id) を渡す＝D3・R15。絵だけ。当たりは ds.spec のまま） */
+    destroyerTextureKey: string = TEXTURE_KEYS.destroyer,
+  ) {
     for (const st of ds.starts) {
-      this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng));
+      this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey));
       this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, st.headingDeg, splashes));
     }
     this.destroyerCount = this.ships.length;
@@ -110,9 +115,9 @@ export class DestroyerGroup {
     return false;
   }
 
-  /** i 以外の浮いている艦の光に照らされている（輸送船は自分では照らせず、駆逐艦の光の下で撃つ。v0.4.7） */
-  othersIlluminated(i: number): boolean {
-    for (let k = 0; k < this.ships.length; k++) if (k !== i && !this.ships[k]!.out && this.fires[k]!.illuminated) return true;
+  /** i 以外の浮いている艦が自分の光（探照灯・星弾）で照らしている（輸送船は自分では照らせず、駆逐艦の光の下で撃つ。v0.4.7）。他の艦の illuminated は読まない（互いを照らし続ける輪。v0.7.0 IP4） */
+  othersOwnLit(i: number): boolean {
+    for (let k = 0; k < this.ships.length; k++) if (k !== i && !this.ships[k]!.out && litByOwnLight(this.fires[k]!.state)) return true;
     return false;
   }
 

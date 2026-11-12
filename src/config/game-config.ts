@@ -1,7 +1,8 @@
 // Phaser 設定と画面定数（docs/02 §2）。数値はここだけに置く。
-import { logicalWidthFor } from '../core/screen';
+import { logicalWidthFor, renderScaleFor } from '../core/screen';
 import { parseRaidOverride, type RaidOverride } from '../core/sortie';
 import { startScreenFit } from './screen-fit';
+import { artTexDensity } from './ship-art-config';
 
 /** 論理座標の高さ（固定）。幅は起動時の横持ちの縦横比で決める（v0.5.1 実機 1 回目） */
 export const GAME_HEIGHT = 720;
@@ -37,22 +38,33 @@ export const REGISTRY_KEY_HISTORICAL = 'historicalMode';
 /** Title で選んでいるキャンペーンのタブ（v0.6.0。'us_pt' / 'jp_hard'）。Result の「任務一覧」から戻っても同じタブ。無ければ default のキャンペーン */
 export const REGISTRY_KEY_CAMPAIGN = 'campaign';
 
-/** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
-export const DPR_CAP = 2;
 /**
- * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, 2)。
+ * 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 3)）。v0.6.11 までは 2。v0.7.0 実機 3 回目のユーザーの決め U9（2026-11-12）
+ * 「描画の解像度の上限を上げてみましょうか」（実機 2 回目で撃沈時も FPS 61 のまま＝余裕がある）で 3 に。iPhone 15 の横持ち（枠 734 × 393・dpr 3）は 1.09 → 1.64（canvas 2,201 × 1,179 px）
+ */
+export const DPR_CAP = 3;
+/** canvas の画素の上限（iOS Safari の canvas の面積の上限 4,096 × 4,096。v0.7.0 IP3。iPhone は 3.6 M px 以下で届かない。大きな画面の dpr 3 の保険） */
+export const MAX_CANVAS_PIXELS = 16_777_216;
+/**
+ * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, DPR_CAP)（式は core/screen の renderScaleFor）。
  * Phaser 3 には resolution 設定が無いので、ゲームサイズをこの倍率で作り、各シーンのカメラを同じ倍率でズームして論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） を保つ。
  * 論理 px に DPR を掛けると、FIT で縮む分だけ画面の物理画素より大きな canvas を塗ることになる（§7「フル解像度のCanvas」）ので、
  * 表示サイズ基準にする。横持ち前提なので起動時の向きに関わらず長辺を幅として計算する。下限 1（生成テクスチャの線幅を 1px 以上に保つ）。
- * Text は style.resolution に同じ値を渡す。
+ * Text は style.resolution に同じ値を渡す。論理の座標・HUD の位置・文字の大きさ（論理 px）・カメラの論理ズーム・タッチの座標は RENDER_SCALE に依らない（画素の密度だけが上がる）
  */
 function computeRenderScale(): number {
   if (typeof window === 'undefined' || !SCREEN) return 1;
-  const fit = Math.min(SCREEN.width / GAME_WIDTH, SCREEN.height / GAME_HEIGHT);
-  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-  return Math.max(1, fit * dpr);
+  return renderScaleFor(SCREEN.width, SCREEN.height, GAME_WIDTH, GAME_HEIGHT, window.devicePixelRatio || 1, DPR_CAP, MAX_CANVAS_PIXELS);
 }
 export const RENDER_SCALE = computeRenderScale();
+/**
+ * 船形の絵の Image の倍率（v0.7.0 IP3。U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」で艇・米PT・大発も密度 2 に＝表示の倍率を 1 か所に）。
+ * 絵は 1 世界単位 ＝ RENDER_SCALE × artTexDensity(鍵) px（ship-art-config の ART_TEX_DENSITY）で描くので、Image は 1 / (RENDER_SCALE × 密度)。計算の順は IP2b と同じ (1 / RENDER_SCALE) / 密度
+ * （密度は 2 の冪＝displayWidth・displayHeight と沈む tween の倍率は密度 1 とビット同一。tests/art-inventory）
+ */
+export function artImageScale(key: string): number {
+  return 1 / RENDER_SCALE / artTexDensity(key);
+}
 
 /** URL に ?debug があるときだけ true。window.__game の公開、見越し点マーカー、発見距離・視程の円を出す（通常の Pages URL では何もしない） */
 export const DEBUG_ENABLED = typeof window !== 'undefined' && window.location.search.includes('debug');
@@ -111,6 +123,8 @@ export const DEBUG_AA_CHANCE = debugNumber('aa');
 export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nopatrol'); // ?debug&nopatrol: 夜の哨戒機なし（v0.6.7。jp_02 の夜の 2 機が来ない。夜明けの 4 機は残る）
 /** ?debug&noally: 味方の駆逐艦 卯月なし（v0.6.10。jp_04 が v0.6.10 S0b と同じ世界。模擬の ALLY_OFF=1 と同じ。比較用） */
 export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
+/** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
+export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
 export const DEBUG_DIRECT_MISSION = DEBUG_ENABLED && !new URLSearchParams(window.location.search).has('title');
 /** 港内空襲の上書き（docs/02 §6.8）。通し（&title）: &raid＝必ず起こす、&noraid＝起こさない、&raid=disperse|stay|hit＝起こす（hit は至近弾、stay は無傷に固定。選ぶのは Briefing）。直行: &raid=disperse|stay|hit だけが効き、その結果で出撃する（直行は空襲を振らないので、他は空襲なし） */
@@ -183,6 +197,7 @@ export function boatTextureKey(boatId: string): string {
 
 export const TEXTURE_KEYS = {
   destroyer: 'tex-destroyer',
+  destroyerUs: 'tex-destroyer-us', // 米駆逐艦（v0.7.0 S2a。jp_06。フレッチャー級の絵。assets/destroyer-art。鍵は ship-art-config の shipArtKey(敵の id)＝D3）
   transport: 'tex-transport',
   transportFriendly: 'tex-transport-friendly', // 味方の輸送船（v0.6.9。jp_04。assets/ally-ship-placeholder。灰色の tex-transport を tint しても青くならないので別の 1 枚）
   destroyerFriendly: 'tex-destroyer-friendly', // 味方の駆逐艦 卯月（v0.6.10。jp_04。assets/ally-destroyer-placeholder。輸送船と同じ薄い青）
@@ -220,4 +235,20 @@ export const TEXTURE_KEYS = {
   gunTracer: 'tex-gun-tracer',
   coastMarker: 'tex-coast-marker',
   ptBoat: 'tex-pt-boat', // 敵の米PT（v0.6.3。assets/pt-placeholder）
+  seaTile: 'tex-sea-tile', // 海の模様のタイル 512×512（v0.7.0 S3a。assets/sea-art。systems/sea-fx の TileSprite が世界の座標に貼る）
+  dawnGlow: 'tex-dawn-glow', // 夜明けの東の光の横のグラデーション 256×64（v0.7.0 S3a。画面へ拡大・深さは海の模様の直上）
+  glint: 'tex-glint', // 月のきらめき・昼の白波の筋 16×8（v0.7.0 S3a）
+  splash: 'tex-splash', // 水柱（v0.7.0 S3b。assets/fx-art。爆発の輪と同じ寸法＝SplashPool の scale 定数はそのまま。外れ 青白・命中 橙の tint）
+  muzzleFlash: 'tex-muzzle-flash', // 砲口炎の星（v0.7.0 S3b。輪と同じ寸法。enemy-fire・shore-battery・pt-gun・world-arms・barge-hunt・pt-squadron・ally-destroyer の閃光と爆発の閃光）
+  fireball: 'tex-fireball', // 爆発の火球（v0.7.0 S3b。輪と同じ寸法。ADD で重ねる。systems/explosion-fx）
+  wakeBoat: 'tex-wake-boat', // 小艇の航跡の V 96×128（v0.7.0 S3b。frame p0＝V・p1＝泡。systems/wake-fx）
+  wakeShip: 'tex-wake-ship', // 艦の航跡の V 96×128（v0.7.0 S3b）
+  wakePuff: 'tex-wake-puff', // 航跡の尾の泡 48×64 の frame 2 枚（v0.7.0 IP1a。p0＝泡の帯・p1＝静音の泡。systems/wake-fx）
+  flame: 'tex-flame', // 火災の炎のちらつき 64×64 の frame 2 枚（v0.7.0 S3c。assets/fx-art。ADD・systems/fire-fx）
+  coastStrip: 'tex-coast-strip', // 岸の帯 512×120 の frame 2 枚（v0.7.0 S3c。assets/sea-art が初めて使う時に 1 回。systems/coast-fx の Blitter）
+  oilSlick: 'tex-oil-slick', // 沈没の油の輪（v0.7.0 S4。assets/fx-art。爆発の輪と同じ寸法・色は焼く。systems/fire-fx の沈没の始まり）
+  spark: 'tex-spark', // 火花と水滴 32×12 の frame 2 枚（v0.7.0 IP1b。p0＝火の筋・p1＝丸い水滴。assets/fx-art・systems/spark-fx）
+  shockwave: 'tex-shockwave', // 水面の衝撃波の輪 128×128（v0.7.0 IP1b。systems/blast-fx）
+  shoreBattery: 'tex-shore-battery', // 沿岸砲の砲台（真上から。v0.7.0 IP1b＝U4。assets/battery-art が初めて使う時に 1 回。systems/shore-battery）
+  shoreGun: 'tex-shore-gun', // 沿岸砲の砲（防盾と砲身。回る。v0.7.0 IP1b）
 } as const;

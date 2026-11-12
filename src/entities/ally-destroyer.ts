@@ -5,7 +5,7 @@
 // 艦は動かない: 艦・ラベル・扇・探照灯の位置は起動時に 1 回。§7: 絵はみな起動時に作り、毎フレームは位置・角度・alpha・visible のうち変わるものだけ触る（Graphics.clear も setText もしない）。
 import Phaser from 'phaser';
 import { ALLY_BEAM_FADE_S, ALLY_FAN_ALPHA, ALLY_FAN_ALPHA_ACTIVE, ALLY_SPLASH_POOL_SIZE, ALLY_TRACER_TINT } from '../config/ally-config';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { LANDING_TEXT_HYST_PX } from '../config/landing-config';
 import {
   ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, MUZZLE_FLASH_LIFETIME_S, MUZZLE_FLASH_SCALE, SEARCHLIGHT_ALPHA, SEARCHLIGHT_TEX_LENGTH_UNITS, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS, hudTextStyle,
@@ -48,7 +48,7 @@ export class AllyDestroyerView {
   ) {
     const fan = allyFanFor(p, hasCoast, boundsHeight);
     this.fan = scene.add.image(p.x, p.y, TEXTURE_KEYS.allyFan).setOrigin(fan.originX, fan.originY).setScale(fan.mPerPx).setAlpha(ALLY_FAN_ALPHA).setDepth(DEPTH.returnRing);
-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(artImageScale(TEXTURE_KEYS.destroyerFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
     const h = degToRad(p.headingDeg);
     const halfY = (this.sprite.displayHeight / 2) * Math.abs(Math.cos(h)) + (this.sprite.displayWidth / 2) * Math.abs(Math.sin(h));
     this.labelX = p.x;
@@ -62,7 +62,7 @@ export class AllyDestroyerView {
       .setDepth(DEPTH.light)
       .setScale(p.gunnery.searchlight.rangeM / SEARCHLIGHT_TEX_LENGTH_UNITS / RENDER_SCALE)
       .setVisible(false);
-    this.flash = scene.add.image(p.x, p.y, TEXTURE_KEYS.explosionRing).setTint(ALLY_TRACER_TINT).setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(p.x, p.y, TEXTURE_KEYS.muzzleFlash).setTint(ALLY_TRACER_TINT).setScale(MUZZLE_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.shellGun = new Int8Array(p.shellPoolSize).fill(-1);
     for (let i = 0; i < p.shellPoolSize; i++) this.shells.push(scene.add.image(0, 0, TEXTURE_KEYS.tracer).setScale(1 / RENDER_SCALE).setTint(ALLY_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
     this.splashes = new SplashPool(scene, ALLY_SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
@@ -72,6 +72,7 @@ export class AllyDestroyerView {
   fired(x: number, y: number): void {
     this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
     this.flashAge = 0;
+    this.splashes.muzzle(x, y, true); // 砲口の火花と硝煙（v0.7.0 IP1b。見た目だけ）
   }
 
   /** 着弾（core の AllyFx。固定ステップの中）: 水柱（生きた PT に当たれば橙で大きく） */

@@ -56,6 +56,8 @@ export type EvacWorldPortFactory = (i: number, p: AirStrikeParams, rng: SeededRn
 export interface EvacView {
   update(realDt: number): void;
   destroy(): void;
+  /** 18 隻の絵（航跡の絵が読む。v0.7.0 S3b。IP1a で船幅も。systems/wake-fx） */
+  readonly boats: { readonly imgs: readonly { readonly visible: boolean; readonly alpha: number; readonly displayHeight: number; readonly displayWidth: number }[] };
 }
 
 const noop = (): void => {};

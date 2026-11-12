@@ -1,5 +1,6 @@
 // プレースホルダー図形を起動時に 1 回だけテクスチャ化する（CLAUDE.md §7: 毎フレーム Graphics を描き直さない）。
 // 世界座標のテクスチャは RENDER_SCALE 倍の解像度で作り、表示側で 1/RENDER_SCALE に縮めて高 DPI でも滲まないようにする。
+// v0.7.0 S3c: 探照灯・星弾・煙幕の絵は assets/light-art（名前と UI の部分はここのまま＝R14）。S1: 自艇・僚艇・隼艇の絵（generatePlayerBoatTexture）は assets/boat-art へ移した（鍵・寸法・原点は同じ）。S2a: 駆逐艦・輸送船は assets/destroyer-art・transport-art、魚雷は torpedo-art へ。
 import Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -8,14 +9,8 @@ import {
   HP_BAR_HEIGHT,
   HP_BAR_WIDTH,
   ROUND_BUTTON_RADIUS,
-  SMOKE_PUFF_COLOR,
-  SMOKE_PUFF_TEX_RADIUS_UNITS,
-  SEARCHLIGHT_COLOR,
-  SEARCHLIGHT_TEX_LENGTH_UNITS,
   SHELL_COLOR,
   SHELL_DOT_UNITS,
-  STARSHELL_COLOR,
-  STARSHELL_TEX_RADIUS_UNITS,
   TRACER_COLOR,
   TRACER_LENGTH_UNITS,
   TRACER_WIDTH_UNITS,
@@ -30,52 +25,18 @@ import {
   RETURN_RING_LINE_WIDTH,
   RETURN_RING_TEX_RADIUS_UNITS,
 } from '../config/ui-config';
+import { paintSearchlightTexture, paintSmokePuffTexture, paintStarshellTexture } from './light-art';
+import { paintTorpedoTexture } from './torpedo-art';
 
 /** 色の意味は固定（docs/02 §7）: 自艇=白、敵=薄い赤、味方=薄い青、魚雷=黄 */
 const COLOR_PLAYER = 0xf2f5f8;
-const COLOR_ENEMY = 0xe08a8a;
-/** 輸送船（v0.4.7）: 敵だが砲台ではないことが分かる灰色がかった赤 */
-const COLOR_TRANSPORT = 0xb89a9a;
 const COLOR_TORPEDO = 0xffe066;
 const COLOR_WAKE = 0xdfe8f2;
 const COLOR_UI = 0x9fb3c8;
-/** 魚雷のプレースホルダーの幅（世界単位）。実寸 0.5 m では見えないので太らせる */
-const TORPEDO_WIDTH_UNITS = 3;
 /** 雷跡の点の半径（世界単位） */
 const WAKE_DOT_RADIUS_UNITS = 2.5;
 /** 爆発リングの半径（世界単位）。tween で拡大する */
 const EXPLOSION_RING_RADIUS_UNITS = 40;
-
-export interface BoatTextureSpec {
-  /** 表示上の全長（m × sprite_scale） */
-  lengthUnits: number;
-  beamUnits: number;
-}
-
-/** 自艇・僚艇: 船首を上にした船形ポリゴン。原点はテクスチャ中央。key は艇ごと（boatTextureKey。v0.6.0） */
-export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void {
-  const k = RENDER_SCALE;
-  const L = spec.lengthUnits * k;
-  const B = spec.beamUnits * k;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_PLAYER, 1);
-  g.beginPath();
-  g.moveTo(B / 2, 0);
-  g.lineTo(B, L * 0.3);
-  g.lineTo(B * 0.92, L);
-  g.lineTo(B * 0.08, L);
-  g.lineTo(0, L * 0.3);
-  g.closePath();
-  g.fillPath();
-  // 船首側を示す暗い線（進行方向が一目で分かるように）
-  g.lineStyle(Math.max(1, k), 0x0b1020, 0.9);
-  g.beginPath();
-  g.moveTo(B / 2, L * 0.08);
-  g.lineTo(B / 2, L * 0.45);
-  g.strokePath();
-  g.generateTexture(key, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
 
 /**
  * スティックの台座（輪）とノブ（円）、舵バーとマーカー。HUD 座標（論理 px）× RENDER_SCALE で作る。
@@ -119,65 +80,13 @@ export function generateUiTextures(scene: Phaser.Scene, silentRingRatio: number)
   g.destroy();
 }
 
-/** 輸送船（v0.4.7）: 幅広い船形（灰色）＋後ろ寄りの船橋。原点はテクスチャ中央 */
-export function generateTransportTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
-  const k = RENDER_SCALE;
-  const L = spec.lengthUnits * k;
-  const B = spec.beamUnits * k;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_TRANSPORT, 1);
-  g.beginPath();
-  g.moveTo(B / 2, 0);
-  g.lineTo(B, L * 0.22);
-  g.lineTo(B, L * 0.92);
-  g.lineTo(B * 0.7, L);
-  g.lineTo(B * 0.3, L);
-  g.lineTo(0, L * 0.92);
-  g.lineTo(0, L * 0.22);
-  g.closePath();
-  g.fillPath();
-  g.fillStyle(0x0b1020, 0.8);
-  g.fillRect(B * 0.25, L * 0.62, B * 0.5, L * 0.18);
-  g.generateTexture(TEXTURE_KEYS.transport, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
-
-/** 敵艦: 船首を上にした細長い船形（薄い赤）＋中央の艦橋。原点はテクスチャ中央 */
-export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
-  const k = RENDER_SCALE;
-  const L = spec.lengthUnits * k;
-  const B = spec.beamUnits * k;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_ENEMY, 1);
-  g.beginPath();
-  g.moveTo(B / 2, 0);
-  g.lineTo(B, L * 0.18);
-  g.lineTo(B, L * 0.9);
-  g.lineTo(B * 0.75, L);
-  g.lineTo(B * 0.25, L);
-  g.lineTo(0, L * 0.9);
-  g.lineTo(0, L * 0.18);
-  g.closePath();
-  g.fillPath();
-  g.fillStyle(0x0b1020, 0.8);
-  g.fillRect(B * 0.3, L * 0.35, B * 0.4, L * 0.25);
-  g.generateTexture(TEXTURE_KEYS.destroyer, Math.ceil(B), Math.ceil(L));
-  g.destroy();
-}
-
-/** 魚雷（黄の細長い矩形、先端を上）と雷跡の点、爆発リング */
+/** 魚雷（v0.7.0 S2a から assets/torpedo-art。黄の胴・明るい先端・暗い尾。寸法は同じ）と雷跡の点（変えない＝R8）、爆発リング（変えない＝D2） */
 export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits: number): void {
   const k = RENDER_SCALE;
-  const w = Math.ceil(TORPEDO_WIDTH_UNITS * k);
-  const l = Math.ceil(torpedoLengthUnits * k);
-  let g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(COLOR_TORPEDO, 1);
-  g.fillRect(0, 0, w, l);
-  g.generateTexture(TEXTURE_KEYS.torpedo, w, l);
-  g.destroy();
+  paintTorpedoTexture(scene, torpedoLengthUnits);
 
   const d = Math.ceil(WAKE_DOT_RADIUS_UNITS * 2 * k) + 2;
-  g = scene.make.graphics({ x: 0, y: 0 }, false);
+  let g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(COLOR_WAKE, 1);
   g.fillCircle(d / 2, d / 2, WAKE_DOT_RADIUS_UNITS * k);
   g.generateTexture(TEXTURE_KEYS.wakeDot, d, d);
@@ -197,7 +106,7 @@ export function generateTorpedoTextures(scene: Phaser.Scene, torpedoLengthUnits:
 /** 反撃（v0.2.1）: 砲弾の点、曳光弾、探照灯の扇（光源を下端に・光は上へ。原点は光源）、星弾の照明円、HP バー */
 export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg: number): void {
   const k = RENDER_SCALE;
-  let d = Math.ceil(SHELL_DOT_UNITS * k) + 2;
+  const d = Math.ceil(SHELL_DOT_UNITS * k) + 2;
   let g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(SHELL_COLOR, 1);
   g.fillCircle(d / 2, d / 2, (SHELL_DOT_UNITS * k) / 2);
@@ -212,27 +121,9 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
   g.generateTexture(TEXTURE_KEYS.tracer, tw, tl);
   g.destroy();
 
-  // 探照灯: 長さ L の二等辺三角形。先端（光源）は下端、光は上（北 = 方位 0）へ伸びる。幅は cone_deg から。表示時に射程/L 倍に拡大する
-  const L = SEARCHLIGHT_TEX_LENGTH_UNITS * k;
-  const halfW = Math.tan(((searchlightConeDeg / 2) * Math.PI) / 180) * L;
-  const W = Math.ceil(halfW * 2) + 2;
-  g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(SEARCHLIGHT_COLOR, 1);
-  g.beginPath();
-  g.moveTo(W / 2, L);
-  g.lineTo(W, 0);
-  g.lineTo(0, 0);
-  g.closePath();
-  g.fillPath();
-  g.generateTexture(TEXTURE_KEYS.searchlight, W, Math.ceil(L));
-  g.destroy();
-
-  d = Math.ceil(STARSHELL_TEX_RADIUS_UNITS * 2 * k) + 2;
-  g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.fillStyle(STARSHELL_COLOR, 1);
-  g.fillCircle(d / 2, d / 2, STARSHELL_TEX_RADIUS_UNITS * k);
-  g.generateTexture(TEXTURE_KEYS.starshell, d, d);
-  g.destroy();
+  // 探照灯の扇・星弾の照明円（v0.7.0 S3c から assets/light-art の画素の式。鍵・寸法・原点は同じ）
+  paintSearchlightTexture(scene, searchlightConeDeg);
+  paintStarshellTexture(scene);
 
   const bw = Math.ceil(HP_BAR_WIDTH * k);
   const bh = Math.ceil(HP_BAR_HEIGHT * k);
@@ -251,8 +142,8 @@ export function generateGunneryTextures(scene: Phaser.Scene, searchlightConeDeg:
 /** 技能の丸ボタン（煙幕・消火・見張り・識別。v0.6.8 実機 1 回目から右端の縦一列で R44 に縮めて使う。一時停止も同じ絵）と、煙幕の煙（世界単位 × RENDER_SCALE。表示時に半径へ拡縮） */
 export function generateSmokeTextures(scene: Phaser.Scene): void {
   const k = RENDER_SCALE;
-  let d = Math.ceil(ROUND_BUTTON_RADIUS * 2 * k) + 4;
-  let g = scene.make.graphics({ x: 0, y: 0 }, false);
+  const d = Math.ceil(ROUND_BUTTON_RADIUS * 2 * k) + 4;
+  const g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(COLOR_UI, 0.25);
   g.fillCircle(d / 2, d / 2, ROUND_BUTTON_RADIUS * k);
   g.lineStyle(Math.max(2, 3 * k), COLOR_UI, 1);
@@ -260,17 +151,8 @@ export function generateSmokeTextures(scene: Phaser.Scene): void {
   g.generateTexture(TEXTURE_KEYS.roundButton, d, d);
   g.destroy();
 
-  d = Math.ceil(SMOKE_PUFF_TEX_RADIUS_UNITS * 2 * k) + 2;
-  g = scene.make.graphics({ x: 0, y: 0 }, false);
-  // 中心ほど濃い 3 重の円（柔らかい煙に見せる。表示時の alpha で全体の濃さを決める）
-  g.fillStyle(SMOKE_PUFF_COLOR, 0.35);
-  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k);
-  g.fillStyle(SMOKE_PUFF_COLOR, 0.35);
-  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k * 0.7);
-  g.fillStyle(SMOKE_PUFF_COLOR, 0.3);
-  g.fillCircle(d / 2, d / 2, SMOKE_PUFF_TEX_RADIUS_UNITS * k * 0.4);
-  g.generateTexture(TEXTURE_KEYS.smokePuff, d, d);
-  g.destroy();
+  // 煙幕の煙（v0.7.0 S3c から assets/light-art の柔らかい塊。鍵・寸法は同じ。表示時の alpha で全体の濃さを決める）
+  paintSmokePuffTexture(scene);
 }
 
 /** デバッグ用の距離の円（世界単位 × RENDER_SCALE）。?debug のときだけ作る。白で作って tint で色を付ける */

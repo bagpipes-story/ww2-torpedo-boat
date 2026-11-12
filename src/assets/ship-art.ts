@@ -1,0 +1,57 @@
+// v0.7.0 S2a（アートと音①：コードで描く絵。spec-v0700 §4.2）: 艦と大発の絵を描く共通の道具。形は ship-shape（Phaser に依らない）、色は boat-art-config のパレット、
+// 寸法は art-dims の式（placeholder と同じ＝D1）。起動時に 1 回だけ Graphics に描いて generateTexture し、Graphics は捨てる（CLAUDE.md §7）。
+// 駆逐艦は destroyer-art、輸送船は transport-art、大発は barge-art がここを呼ぶ（R18: 1 つの ship-art.ts だと 300 行を超えるので分けた）。
+import type Phaser from 'phaser';
+import { RENDER_SCALE } from '../config/game-config';
+import type { HullPalette } from '../config/boat-art-config';
+import { artTexDensity } from '../config/ship-art-config';
+import { hullTexSize, type BoatTextureSpec } from './art-dims';
+import { paintTexture, type ArtPen } from './art-pen';
+import type { C } from './destroyer-pen';
+import { paintCanvas } from './sea-art';
+import type { ShipShape, ShipTone } from './ship-shape';
+
+/** 色の役 → パレットの色（mid は台の中間の色） */
+export function shipToneColor(tone: ShipTone, pal: HullPalette, mid: number): number {
+  switch (tone) {
+    case 'rim': return pal.rim;
+    case 'deck': return pal.deck;
+    case 'side': return pal.side;
+    case 'super': return pal.superstructure;
+    case 'detail': return pal.detail;
+    case 'mid': return mid;
+    default: return pal.highlight;
+  }
+}
+
+/** 形をパレットで描く（輪郭はリムの色・その上に部品を順に） */
+export function paintShip(pen: ArtPen, shape: ShipShape, pal: HullPalette, mid: number): void {
+  pen.poly(shape.outline, pal.rim, 1);
+  pen.parts(shape.parts, (t) => shipToneColor(t, pal, mid));
+}
+
+/**
+ * 形を key のテクスチャに（論理の寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央）。IP2b: 画素はその S 倍（S＝artTexDensity(key)。輸送船 2・大発 1）で描き、
+ * 表示は Destroyer・AllyShip が 1 / (k·S) に縮める（世界の大きさと displayWidth/Height は今のまま）
+ */
+export function paintShipTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, shape: ShipShape, pal: HullPalette, mid: number): void {
+  const S = artTexDensity(key);
+  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE);
+  paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) => paintShip(pen, shape, pal, mid));
+  if (S !== 1) Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
+}
+
+/**
+ * v0.7.0 IP3: 船形の絵を Canvas の 2D で key のテクスチャに（艇・米PT・大発。IP2 の駆逐艦の destroyer-art と同じ作り）。論理の寸法は hullTexSize（placeholder と同じ）、
+ * 画素はその S 倍（S＝artTexDensity(key)。2 の冪）、ctx は世界単位（k·S 倍）。表示は game-config の artImageScale(key)＝1 / (k·S)
+ */
+export function paintHullCanvas(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, draw: (ctx: C) => void): void {
+  const k = RENDER_SCALE;
+  const S = artTexDensity(key);
+  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);
+  paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {
+    ctx.scale(k * S, k * S);
+    draw(ctx);
+  });
+  Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
+}

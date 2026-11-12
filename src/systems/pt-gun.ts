@@ -35,6 +35,7 @@ export class PtGun {
     onFire: (x, y) => {
       this.flash.setPosition(x, y).setAlpha(1).setVisible(true);
       this.flashAge = 0;
+      this.splashes.muzzle(x, y, false); // 砲口の火花（v0.7.0 IP1b。見た目だけ）
     },
     // 生きた PT に当たった（gun-battery は ptLive の PT にだけ当てる）: 1 回引いて撃退・撃沈を決め、結末が変わったら絵を持つ側へ
     onHit: (i, group, x, y) => {
@@ -64,7 +65,7 @@ export class PtGun {
     this.rng = new SeededRng((seed + look.seedOffset) >>> 0);
     this.state = createPtGun(g, PT_GUN_SHELL_POOL_SIZE);
     for (let i = 0; i < PT_GUN_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(look.tint).setDepth(DEPTH.shell).setVisible(false));
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(look.tint).setScale(GUN_FLASH_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false);
     this.ring = look.ring ? scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(TARGET_RING_TINT).setAlpha(TARGET_RING_ALPHA).setScale(TARGET_RING_SCALE / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false) : null;
   }
 

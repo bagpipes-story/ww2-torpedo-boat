@@ -28,8 +28,9 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
     const fire = g.fires[i]!;
     const alive = !d.out && !w.boat.sinking;
     const detected = d.ai.playerDetected && !d.out;
-    // 他の艦の光（輸送船は自分では照らせない。v0.4.7）か水上機の照明弾の下なら、自分の探照灯が無くても撃てる（1 隻の隊では自分以外がいないので v0.4.6 と同じ）
-    const lit = w.flareLit || g.othersIlluminated(i);
+    // 他の艦の光（輸送船は自分では照らせない。v0.4.7）か水上機の照明弾の下なら、自分の探照灯が無くても撃てる（1 隻の隊では自分以外がいないので v0.4.6 と同じ）。
+    // 他の艦の光はその艦が自分で点けた光だけ（v0.7.0 IP4: illuminated を読むと 2 隻が互いを照らし続け、灯りが消えて見失っても撃ち続けた）
+    const lit = w.flareLit || g.othersOwnLit(i);
     if (!e) {
       fire.step(dt, feelDt, d.state, boat, detected, alive, c.boatHalfLengthM, c.boatHalfBeamM, w.hiddenBySmoke, lit);
       continue;

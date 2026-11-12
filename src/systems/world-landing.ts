@@ -31,7 +31,7 @@ import { HUD_TOP_BAND_BOTTOM, SPEED_HUD_KEEP_TOP, SPEED_HUD_TOP } from '../ui/hu
 import { landingCaretRects, landingCaretShown, landingHudRects, type HudRectInputs, type ScreenRect } from '../ui/landing-markers';
 import { TorpedoPool } from './torpedo-pool';
 import { buildAlly, type AllyPts, type WorldAlly } from './world-ally';
-import type { WorldEvents } from './world-events';
+import type { ExplosionLook, WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup-types';
 
 /** 固定ステップで世界から読む部分（MissionWorld がそのまま満たす）: 米PT の隊・夜明けのラッチ・出撃からの時計 */
@@ -79,8 +79,8 @@ export class WorldLanding {
     bounds: SeaBounds,
     private readonly timeScale: number,
     private readonly events: WorldEvents,
-    /** 輸送船が沈み始めた（世界の命中スローと Scene の爆発。大発の撃破と同じ） */
-    private readonly onSunk: (x: number, y: number) => void,
+    /** 輸送船が沈み始めた（世界の命中スローと Scene の爆発。大発の撃破と同じ。魚雷で沈むので見た目は 'torpedo'＝大きな水柱。v0.7.0 IP4） */
+    private readonly onSunk: (x: number, y: number, look?: ExplosionLook) => void,
     /** 輸送船の字が重なってはいけない HUD の矩形と、▼ が重なってはいけない矩形（その一部）（論理 px。buildLanding が 1 回作る。S6b） */
     hud: readonly ScreenRect[],
     caretRects: readonly ScreenRect[],
@@ -142,7 +142,7 @@ export class WorldLanding {
       return;
     }
     this.ship.sink();
-    this.onSunk(x, y);
+    this.onSunk(x, y, 'torpedo'); // 見た目だけ（IP4。命中スロー・揺れ・呼ぶ順は今のまま）
   }
 }
 
@@ -150,7 +150,7 @@ export class WorldLanding {
  * 揚陸の世界を組み立てる（MissionWorld の最後。兵装の後）。setup.landing の無い任務（jp_04 以外）と米PT の隊の無い世界は null（seed+26・プール・絵を作らない）。
  * 敵の魚雷のプールは PT の隻数 × salvo_count 本（ノーマル 6・ハード 9。1 隻 1 回）、乱数は seed+26 を 1 本
  */
-export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: (AllyPts & { readonly section: PtSection }) | null, seed: number, events: WorldEvents, onSunk: (x: number, y: number) => void): WorldLanding | null {
+export function buildLanding(scene: Phaser.Scene, s: WorldSetup, pts: (AllyPts & { readonly section: PtSection }) | null, seed: number, events: WorldEvents, onSunk: (x: number, y: number, look?: ExplosionLook) => void): WorldLanding | null {
   if (!s.landing || !pts) return null;
   const ld = s.landing;
   const count = pts.section.boats.length;
