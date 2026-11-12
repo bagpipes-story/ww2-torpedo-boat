@@ -20,6 +20,8 @@ export function shipArtKey(enemyId: string): string {
  */
 export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
+  // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
+  'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
 };
 export function artTexDensity(key: string): number {
   return ART_TEX_DENSITY[key] ?? 1;

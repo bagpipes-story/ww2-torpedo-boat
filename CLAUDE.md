@@ -110,7 +110,7 @@ iPhone SafariのWebGL/Canvasで60fpsを守るための構造ルール。守れ�
 | 距離計算で `Math.sqrt` を多用 | 大発・弾が増えると支配的になる | `Phaser.Math.Distance.Squared` で比較。本当に必要なときだけ平方根 |
 | 全オブジェクト×全オブジェクトの衝突判定 | O(n²) | Arcade Physics の group overlap のみ。魚雷×艦、砲弾×艇 のペアに限定 |
 | 可変タイムステップに依存した物理 | 端末ごとに挙動が変わる | `physics.arcade.fixedStep = true`、速度は m/s をdtで積分 |
-| フル解像度のCanvas | iPhoneの高DPIで描画負荷4倍 | `resolution` は `Math.min(window.devicePixelRatio, 2)`、`Scale.FIT` |
+| フル解像度のCanvas | iPhoneの高DPIで描画負荷4倍 | `resolution` は `Math.min(window.devicePixelRatio, 3)`、`Scale.FIT`、canvas は 16,777,216 px まで（`config/game-config` の `DPR_CAP`・`MAX_CANVAS_PIXELS`。v0.6.11 までは 2。ユーザーの決め v0.7.0 の U9（2026-11-12）「描画の解像度の上限を上げてみましょうか」＝実機 2 回目で撃沈時も FPS 61 のまま。iPhone 15 の横持ちで描画倍率 1.09 → 1.64・canvas は 2.25 倍の画素。論理の座標・HUD・タッチは同じ） |
 | JSONを毎シーンfetch | 無駄なI/O | `data/*.json` は Boot で1回ロードし、Registryに置く |
 | 乱数に `Math.random` | 再現テストができない | `src/core/rng.ts` のシード付き乱数のみ使う |
 | 外部CDNからの読み込み | オフラインPWAで壊れる | 依存はnpmでバンドル |
@@ -171,3 +171,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
 - 2026-11-05 v0.6.11 §2 に「空襲下の退避（jp_03）」を追記（ユーザーの決め U1〜U7・240 秒の決着の読み替え・魚雷と弾倉を全部の隊長艇で分け合う＝「兵装」とのずれ。ユーザーの決めと設計の既定を書き分けた）
 - 2026-11-07 v0.6.11 実機1回目 §2「空襲下の退避（jp_03）」の「それまでは隠れても任務は終わらない」を、ユーザーの U8（全艇が隠れて敵機が捕捉しなくなれば早く決着）と設計の既定（陰の隊は最後の予告まで待つ＝案 B・6 隻未満は未達）に替えた
 - 2026-11-08 v0.7.0 §2「アート」に v0.7.0 の U1（v0.7 からの絵と音はコードで描く・合成する。外部の画像・音のファイルを使わない。「制作にセッションを使わない」はこの形に限って解く）
+- 2026-11-12 v0.7.0 実機3回目 §7「フル解像度のCanvas」の上限を min(dpr, 2) → min(dpr, 3)（ユーザーの決め U9「描画の解像度の上限を上げてみましょうか」。canvas の画素の上限 16,777,216 px を足した）

@@ -1,7 +1,8 @@
 // Phaser 設定と画面定数（docs/02 §2）。数値はここだけに置く。
-import { logicalWidthFor } from '../core/screen';
+import { logicalWidthFor, renderScaleFor } from '../core/screen';
 import { parseRaidOverride, type RaidOverride } from '../core/sortie';
 import { startScreenFit } from './screen-fit';
+import { artTexDensity } from './ship-art-config';
 
 /** 論理座標の高さ（固定）。幅は起動時の横持ちの縦横比で決める（v0.5.1 実機 1 回目） */
 export const GAME_HEIGHT = 720;
@@ -37,22 +38,33 @@ export const REGISTRY_KEY_HISTORICAL = 'historicalMode';
 /** Title で選んでいるキャンペーンのタブ（v0.6.0。'us_pt' / 'jp_hard'）。Result の「任務一覧」から戻っても同じタブ。無ければ default のキャンペーン */
 export const REGISTRY_KEY_CAMPAIGN = 'campaign';
 
-/** 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 2)） */
-export const DPR_CAP = 2;
 /**
- * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, 2)。
+ * 描画スケールの上限（CLAUDE.md §7: resolution は min(devicePixelRatio, 3)）。v0.6.11 までは 2。v0.7.0 実機 3 回目のユーザーの決め U9（2026-11-12）
+ * 「描画の解像度の上限を上げてみましょうか」（実機 2 回目で撃沈時も FPS 61 のまま＝余裕がある）で 3 に。iPhone 15 の横持ち（枠 734 × 393・dpr 3）は 1.09 → 1.64（canvas 2,201 × 1,179 px）
+ */
+export const DPR_CAP = 3;
+/** canvas の画素の上限（iOS Safari の canvas の面積の上限 4,096 × 4,096。v0.7.0 IP3。iPhone は 3.6 M px 以下で届かない。大きな画面の dpr 3 の保険） */
+export const MAX_CANVAS_PIXELS = 16_777_216;
+/**
+ * 描画スケール = 「FIT で実際に表示される CSS px / 論理 px」× min(DPR, DPR_CAP)（式は core/screen の renderScaleFor）。
  * Phaser 3 には resolution 設定が無いので、ゲームサイズをこの倍率で作り、各シーンのカメラを同じ倍率でズームして論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） を保つ。
  * 論理 px に DPR を掛けると、FIT で縮む分だけ画面の物理画素より大きな canvas を塗ることになる（§7「フル解像度のCanvas」）ので、
  * 表示サイズ基準にする。横持ち前提なので起動時の向きに関わらず長辺を幅として計算する。下限 1（生成テクスチャの線幅を 1px 以上に保つ）。
- * Text は style.resolution に同じ値を渡す。
+ * Text は style.resolution に同じ値を渡す。論理の座標・HUD の位置・文字の大きさ（論理 px）・カメラの論理ズーム・タッチの座標は RENDER_SCALE に依らない（画素の密度だけが上がる）
  */
 function computeRenderScale(): number {
   if (typeof window === 'undefined' || !SCREEN) return 1;
-  const fit = Math.min(SCREEN.width / GAME_WIDTH, SCREEN.height / GAME_HEIGHT);
-  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-  return Math.max(1, fit * dpr);
+  return renderScaleFor(SCREEN.width, SCREEN.height, GAME_WIDTH, GAME_HEIGHT, window.devicePixelRatio || 1, DPR_CAP, MAX_CANVAS_PIXELS);
 }
 export const RENDER_SCALE = computeRenderScale();
+/**
+ * 船形の絵の Image の倍率（v0.7.0 IP3。U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」で艇・米PT・大発も密度 2 に＝表示の倍率を 1 か所に）。
+ * 絵は 1 世界単位 ＝ RENDER_SCALE × artTexDensity(鍵) px（ship-art-config の ART_TEX_DENSITY）で描くので、Image は 1 / (RENDER_SCALE × 密度)。計算の順は IP2b と同じ (1 / RENDER_SCALE) / 密度
+ * （密度は 2 の冪＝displayWidth・displayHeight と沈む tween の倍率は密度 1 とビット同一。tests/art-inventory）
+ */
+export function artImageScale(key: string): number {
+  return 1 / RENDER_SCALE / artTexDensity(key);
+}
 
 /** URL に ?debug があるときだけ true。window.__game の公開、見越し点マーカー、発見距離・視程の円を出す（通常の Pages URL では何もしない） */
 export const DEBUG_ENABLED = typeof window !== 'undefined' && window.location.search.includes('debug');

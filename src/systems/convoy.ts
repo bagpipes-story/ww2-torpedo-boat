@@ -7,7 +7,7 @@
 // v0.6.4 レビュー ux-5: 米PT の隊が狙っている大発のラベルを 2 行の「大発／狙われている」の警告色に（狙いが替わったときだけ setText。systems/pt-target の aimedBarge。1 行目は隣と同じ幅＝重ならない。config/convoy-config）。
 // 実機 1 回目のレビュー R1: 浜へ向かっている（leg 1）大発が狙われている間は、そのラベルを絵の上に置く（core/convoy の convoyLabelAbove。原点は替わったときだけ。placeLabel）。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import {
   CONVOY_BEACHED_ALPHA, CONVOY_BEACHED_LABEL, CONVOY_BEACHED_TINT, CONVOY_LANDING_MARK_LABEL, CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_PAD_M, CONVOY_LANDING_MARK_WIDTH,
   CONVOY_MARKER_LABEL, CONVOY_TARGET_LABEL,
@@ -86,7 +86,7 @@ export class Convoy {
       this.markLabel = scene.add.text(mk.labelX, mk.labelY, CONVOY_LANDING_MARK_LABEL, hudTextStyle(COAST_LABEL_FONT_PX, COAST_MARKER_TEXT_COLOR)).setOrigin(mk.labelOriginX, 0).setDepth(DEPTH.landingMark);
     }
     for (const b of this.state.barges) {
-      this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+      this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(artImageScale(TEXTURE_KEYS.bargeFriendly)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
       // 中央揃え: 狙われている大発の 2 行のラベル（CONVOY_TARGET_LABEL）の 1 行目「大発」を絵の真下に置く（絵の上に置くときは 2 行目が絵の真上。1 行のラベルには効かない）
       this.labels.push(scene.add.text(b.x, b.y + ESCORT_LABEL_OFFSET_M, CONVOY_MARKER_LABEL, hudTextStyle(ESCORT_LABEL_FONT_PX, ESCORT_TEXT_COLOR)).setOrigin(0.5, 0).setAlign('center').setDepth(DEPTH.destroyer).setVisible(false));
     }

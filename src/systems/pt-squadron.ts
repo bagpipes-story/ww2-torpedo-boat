@@ -14,7 +14,7 @@
 // v0.6.10 S5b（卯月。jp_04）: 卯月が照らしている PT（setAlly で受けた印 lit）は自艇の視程の外でも描く。卯月の砲が決めた結末は world-ally が fateVisual（見せるだけ: 灰色・沈む絵・onSunk）を呼び、
 // 卯月の手柄（core の credit。FATE_BY_ALLY は core だけが書く）は ally で HUD・Result へ。onFate は卯月の手柄に書かない（LD8。模擬と同じ数え）。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
 import { GUN_SPLASH_SCALE_HIT, GUN_SPLASH_SCALE_MISS, MG_TRACER_TINT } from '../config/hunt-config';
 import { PT_MUZZLE_FLASH_S, PT_MUZZLE_FLASH_SCALE, PT_MUZZLE_FLASH_TINT, PT_PASS_LINE_LEN_M, PT_RETIRED_TINT, PT_SHELL_POOL_SIZE, PT_SPLASH_POOL_SIZE } from '../config/pt-config';
@@ -140,7 +140,7 @@ export class PtSquadron {
     this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section, this.gunboat) : null;
     if (this.targets) this.check.targets = this.targets.hulls;
     this.shown = new Uint8Array(p.count);
-    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
     for (let i = 0; i < PT_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
     // 航過の赤い線: 夜明けの空襲の爆撃進路の線と同じ絵・色・濃さ・太さ（ユーザーが知っている「この線から離れる」）。長さは一定なので倍率は 1 回だけ
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);

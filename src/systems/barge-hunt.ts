@@ -3,7 +3,7 @@
 // 乱数: 大発の 13mm（散布と命中の火災・機関）は seed+6、艇の砲は seed+7。ほかの系列（seed〜seed+5）は動かさない。
 // v0.6.8 実機 1 回目: 艇の砲に弾倉（boats.json の gun_battery.magazine。2 組の発を 1 つの弾倉で数える）。交換は core/pt-gun・systems/ship-gun と同じ順（下の step）。夜明けの対空（systems/arms-step）はこの弾倉を借りる。
 import Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import {
   BARGE_BEACHED_ALPHA,
   BARGE_BEACHED_TINT,
@@ -128,7 +128,7 @@ export class BargeHunt {
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, flashM: 0, boatAfloat: true, dawn: false };
     this.splashes = new SplashPool(scene, GUN_SPLASH_POOL_SIZE, GUN_SPLASH_SCALE_MISS, GUN_SPLASH_SCALE_HIT);
     this.shown = new Uint8Array(p.count);
-    for (const b of this.flotilla.barges) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(1 / RENDER_SCALE).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+    for (const b of this.flotilla.barges) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(artImageScale(TEXTURE_KEYS.barge)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
     this.gunTex = new Int8Array(GUN_SHELL_POOL_SIZE).fill(-1);
     for (let i = 0; i < GUN_SHELL_POOL_SIZE; i++) this.gunSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
     for (let i = 0; i < MG_SHELL_POOL_SIZE; i++) this.mgSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));

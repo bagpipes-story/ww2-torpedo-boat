@@ -53,3 +53,15 @@ export function logicalWidthFor(width: number, height: number, logicalHeight: nu
   const raw = Math.floor((logicalHeight * long) / short / step) * step;
   return Math.min(maxWidth, Math.max(minWidth, raw));
 }
+
+/**
+ * 描画スケール（v0.7.0 IP3。game-config の RENDER_SCALE の式を純粋な関数に）: 「FIT で表示される CSS px / 論理 px」× min(dpr, dprCap)。下限 1。
+ * canvas の画素（論理 × スケールの 2 乗）が maxPixels を超えるなら超えない所まで下げる（iOS Safari の canvas の面積の上限 16,777,216 px。下限 1 が優先）。
+ * dpr ≤ 2 の端末は v0.6.11 までの式（max(1, fit × dpr)）とビット同一（下げるのは上限を超える時だけ）
+ */
+export function renderScaleFor(fitW: number, fitH: number, logicalW: number, logicalH: number, dpr: number, dprCap: number, maxPixels: number): number {
+  const fit = Math.min(fitW / logicalW, fitH / logicalH);
+  const k = Math.max(1, fit * Math.min(dpr || 1, dprCap));
+  if (logicalW * logicalH * k * k <= maxPixels) return k;
+  return Math.max(1, Math.sqrt(maxPixels / (logicalW * logicalH)));
+}

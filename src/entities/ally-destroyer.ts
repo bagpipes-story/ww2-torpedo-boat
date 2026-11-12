@@ -5,9 +5,8 @@
 // 艦は動かない: 艦・ラベル・扇・探照灯の位置は起動時に 1 回。§7: 絵はみな起動時に作り、毎フレームは位置・角度・alpha・visible のうち変わるものだけ触る（Graphics.clear も setText もしない）。
 import Phaser from 'phaser';
 import { ALLY_BEAM_FADE_S, ALLY_FAN_ALPHA, ALLY_FAN_ALPHA_ACTIVE, ALLY_SPLASH_POOL_SIZE, ALLY_TRACER_TINT } from '../config/ally-config';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { LANDING_TEXT_HYST_PX } from '../config/landing-config';
-import { artTexDensity } from '../config/ship-art-config';
 import {
   ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, MUZZLE_FLASH_LIFETIME_S, MUZZLE_FLASH_SCALE, SEARCHLIGHT_ALPHA, SEARCHLIGHT_TEX_LENGTH_UNITS, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS, hudTextStyle,
 } from '../config/ui-config';
@@ -49,7 +48,7 @@ export class AllyDestroyerView {
   ) {
     const fan = allyFanFor(p, hasCoast, boundsHeight);
     this.fan = scene.add.image(p.x, p.y, TEXTURE_KEYS.allyFan).setOrigin(fan.originX, fan.originY).setScale(fan.mPerPx).setAlpha(ALLY_FAN_ALPHA).setDepth(DEPTH.returnRing);
-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.destroyerFriendly).setScale(artImageScale(TEXTURE_KEYS.destroyerFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
     const h = degToRad(p.headingDeg);
     const halfY = (this.sprite.displayHeight / 2) * Math.abs(Math.cos(h)) + (this.sprite.displayWidth / 2) * Math.abs(Math.sin(h));
     this.labelX = p.x;

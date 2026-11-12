@@ -78,9 +78,10 @@ describe('艇の絵の形（v0.7.0 S1）', () => {
   it('自艇のパレット（tint される鍵）は彩度 ≤ 0.12・中間の色も', () => {
     for (const c of [PALETTE_PLAYER.deck, PALETTE_PLAYER.rim, PALETTE_PLAYER.superstructure, PALETTE_PLAYER.highlight, PALETTE_PLAYER_MID]) expect(sat(c)).toBeLessThanOrEqual(ART_TINTED_SATURATION_MAX);
   });
-  it('source の pin: boat-art は寸法を art-dims の hullTexSize から・Boot の呼び出しの行は同じ（import だけ boat-art）・placeholders.ts は 300 行以下で艇の絵を持たない', () => {
+  it('source の pin: boat-art は寸法を art-dims の hullTexSize から（IP3: ship-art の paintHullCanvas 経由）・Boot の呼び出しの行は同じ（import だけ boat-art）・placeholders.ts は 300 行以下で艇の絵を持たない', () => {
     const art = readFileSync('src/assets/boat-art.ts', 'utf8');
-    expect(art).toContain('hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE)');
+    expect(art).toContain('paintHullCanvas(scene, key, spec, (ctx) => paintSmallBoat(');
+    expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);');
     expect(art).toContain('export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void');
     const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
     expect(boot).toContain("import { generatePlayerBoatTexture } from '../assets/boat-art';");

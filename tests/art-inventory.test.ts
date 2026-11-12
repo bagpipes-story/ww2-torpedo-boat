@@ -189,14 +189,18 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
       'tex-aircraft': '66x53', 'tex-starshell': '282x282', 'tex-smoke-puff': '142x142', 'tex-searchlight': '61x280',
     });
   });
-  it('IP2b の密度: 艦の 5 つの鍵だけ・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も）', () => {
-    expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual(['tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-transport', 'tex-transport-friendly']);
+  it('IP2b・IP3 の密度: 艦の 5 つの鍵（IP2b）と艇 5・米PT・大発 2 の 8 つの鍵（IP3 の U10）・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も。k は U9 の上限 3 まで）', () => {
+    expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
+      'tex-barge', 'tex-barge-friendly', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
+      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
+    ]);
     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
-    expect([artTexDensity('tex-barge'), artTexDensity('tex-boat-us_elco80')]).toEqual([1, 1]);
+    expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
     const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24] };
     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
     const ks = [...KS];
-    for (let i = 0; i <= 360; i++) ks.push(1 + i / 360); // k 1〜2 を 1/360 刻み
+    for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
+    ks.push((393 / 720) * 3, Math.min(852 / 1560, 393 / 720) * 3, Math.min(667 / 1280, 375 / 720) * 3);
     for (const key of Object.keys(ART_TEX_DENSITY)) {
       const [[L, B], S] = [hulls[key]!, artTexDensity(key)];
       for (const k of ks) {
@@ -207,21 +211,7 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
       }
     }
   });
-  it('IP2b の密度の通り道: 描く 2 か所が S 倍の画素、艦の Image を作る 3 か所が 1 / RENDER_SCALE / artTexDensity（ほかに 5 つの鍵の Image は無い）', () => {
-    for (const line of ['paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(readFileSync('src/assets/destroyer-art.ts', 'utf8')).toContain(line);
-    expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) =>');
-    expect(readFileSync('src/entities/destroyer.ts', 'utf8')).toContain('scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey))');
-    expect(readFileSync('src/entities/ally-destroyer.ts', 'utf8')).toContain('TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly))');
-    expect(readFileSync('src/entities/ally-ship.ts', 'utf8')).toContain('TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly))');
-    const users: string[] = [];
-    for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
-      for (const f of readdirSync(join('src', dir))) {
-        const src = readFileSync(join('src', dir, f), 'utf8');
-        if (/TEXTURE_KEYS\.(?:destroyer|destroyerUs|destroyerFriendly|transport|transportFriendly)\b(?!Pool)/.test(src) || /'tex-(?:destroyer|transport)/.test(src)) users.push(`${dir}/${f}`);
-      }
-    }
-    expect(users.sort()).toEqual(['entities/ally-destroyer.ts', 'entities/ally-ship.ts', 'entities/destroyer.ts', 'systems/destroyer-group.ts']); // destroyer-group は鍵を Destroyer へ渡すだけ
-  });
+  // IP2b・IP3 の密度の通り道（描く所と Image を作る所の source の pin）は tests/boat-paint（このファイルを 300 行に保つ）
   it('placeholders.ts の私的な値（魚雷の幅・雷跡の点・爆発の輪）は art-dims と同じ', () => {
     const src = readFileSync('src/assets/placeholders.ts', 'utf8');
     for (const [name, v] of [['TORPEDO_WIDTH_UNITS', TORPEDO_WIDTH_UNITS], ['WAKE_DOT_RADIUS_UNITS', WAKE_DOT_RADIUS_UNITS], ['EXPLOSION_RING_RADIUS_UNITS', EXPLOSION_RING_RADIUS_UNITS]] as const) {
