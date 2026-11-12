@@ -132,6 +132,28 @@ export const SFX_PAN_CENTER_M = 30;
 export const SFX_LIMITER = { thresholdDb: -10, ratio: 12, attackS: 0.003, releaseS: 0.25, kneeDb: 6 } as const;
 export const SFX_MASTER_GAIN = 0.8;
 
+// S1（鳴る縦切り。spec §7.2・§8・§11 の R11・§14 L1〜L4）: 再生のエンジン（systems/sfx-engine）と起動（systems/sfx-boot）の定数。どれも聞かせ方で、遊びには効かない
+/** 最初に鳴る音の立ち上がり（R11「イヤホンで大きすぎる」）: 束ねの音量をこの割合から seconds 秒で 1 へ。0 からにしない（最初のタップの 0.06 秒の音が聞こえなくなる） */
+export const SFX_FIRST_FADE = { fromShare: 0.3, seconds: 0.3 } as const;
+/**
+ * S1 だけの代わりの音: 小さい爆発（魚雷の不発・機銃の被弾・座礁＝ExplosionFx.play の dud）は、blast_s の作り方ができる S2 まで blast_l を小さく速く鳴らす
+ * （速さ 1.8 倍＝約 0.9 秒。rate は 0.5〜2 の内＝L6）。S2 で blast_s に替えたら消す
+ */
+export const SFX_S1_SMALL_BLAST = { gain: 0.45, rate: 1.8 } as const;
+/** 消音は master の音量を 0 へ（context は止めない＝L4）。ぷつっと切れないようにこの時定数（秒）で絞る。解く時はすぐ戻す */
+export const SFX_MUTE_TIME_CONSTANT_S = 0.015;
+/** 最初のタップ: context がまだ動き出していない間に頼まれた UI の音は 1 つだけ覚え、この秒の内に動き出せば鳴らす（止まっている context には積まない＝R2。古くなれば捨てる） */
+export const SFX_UI_PENDING_S = 0.5;
+/**
+ * 見張り（L3c）: context が running なのに再生の時計が実時間 frozenMs 進まなければ、止めてすぐ再開を 1 回（checkMs ごとに見る＝10 Hz。次は throttleMs の後）。
+ * 1 回の見る間は capMs まで数える（裏から戻った最初の 1 回で誤って動かさない）。時計が進まないまま maxTries 回動かしたら、進むのを見るまでやめる（効かない再開を繰り返さない）
+ */
+export const SFX_WATCHDOG = { checkMs: 100, frozenMs: 500, throttleMs: 5000, capMs: 200, maxTries: 3 } as const;
+/** 消音の保存（localStorage の鍵。'0' で消音・無い／読めなければ音オン＝D6。Safari とホーム画面のアプリは保存が別） */
+export const SFX_STORAGE_KEY = 'night-hunters.sound';
+/** iOS の Audio Session の種類（L1: 本体の消音スイッチに従い、ほかのアプリの音楽を止めない。無い端末では何もしない） */
+export const SFX_AUDIO_SESSION_TYPE = 'ambient';
+
 /** ループの更新（spec §5・§14 L6）: ノードへ書くのは 10 Hz・目標が変わった時だけ（setTargetAtTime の時定数 0.08 秒）。一時停止は 0.15 秒で 0 へ。rate は 0.5〜2 の内 */
 export const SFX_LOOP_UPDATE_HZ = 10;
 export const SFX_LOOP_TIME_CONSTANT_S = 0.08;

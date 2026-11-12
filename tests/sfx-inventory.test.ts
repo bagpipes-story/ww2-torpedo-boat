@@ -94,6 +94,14 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect([cfg.SFX_PAN_HALF_WIDTH_M, cfg.SFX_PAN_MAX, cfg.SFX_PAN_CENTER_M]).toEqual([900, 0.7, 30]);
     expect(cfg.SFX_LIMITER).toMatchObject({ thresholdDb: -10, ratio: 12, attackS: 0.003, releaseS: 0.25 });
     expect(cfg.SFX_MASTER_GAIN).toBe(0.8);
+    // S1: 最初の音の立ち上がり（R11。0 からではない＝最初のタップが聞こえる）・消音の絞り・最初のタップを覚える秒・見張り（L3c）・保存の鍵・Audio Session（L1）
+    expect(cfg.SFX_FIRST_FADE).toEqual({ fromShare: 0.3, seconds: 0.3 });
+    expect(cfg.SFX_MUTE_TIME_CONSTANT_S).toBe(0.015);
+    expect(cfg.SFX_S1_SMALL_BLAST).toEqual({ gain: 0.45, rate: 1.8 }); // S2 で blast_s に替えたら消す
+    expect(cfg.SFX_S1_SMALL_BLAST.rate).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
+    expect(cfg.SFX_UI_PENDING_S).toBe(0.5);
+    expect(cfg.SFX_WATCHDOG).toEqual({ checkMs: 100, frozenMs: 500, throttleMs: 5000, capMs: 200, maxTries: 3 });
+    expect([cfg.SFX_STORAGE_KEY, cfg.SFX_AUDIO_SESSION_TYPE]).toEqual(['night-hunters.sound', 'ambient']);
     expect([cfg.SFX_LOOP_UPDATE_HZ, cfg.SFX_LOOP_TIME_CONSTANT_S, cfg.SFX_LOOP_GAIN_EPS, cfg.SFX_LOOP_RATE_EPS, cfg.SFX_LOOP_PAUSE_FADE_S]).toEqual([10, 0.08, 0.01, 0.005, 0.15]);
     expect([cfg.SFX_LOOP_RATE_MIN, cfg.SFX_LOOP_RATE_MAX]).toEqual([0.5, 2]);
     expect(cfg.SFX_LOOP_ENGINE).toMatchObject({ gainStop: 0.1, gainSilent: 0.16, gainCruise: 0.38, gainFull: 0.6, rateBase: 0.75, rateSpan: 0.75 });

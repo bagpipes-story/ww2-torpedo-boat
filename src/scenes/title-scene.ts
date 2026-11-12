@@ -35,6 +35,16 @@ import {
   TITLE_ROW_STATUS_PX,
   TITLE_ROW_SUB_PX,
   TITLE_ROW_TITLE_PX,
+  TITLE_SOUND_H,
+  TITLE_SOUND_HINT_GAP,
+  TITLE_SOUND_HINT_JA,
+  TITLE_SOUND_HINT_PX,
+  TITLE_SOUND_OFF_JA,
+  TITLE_SOUND_ON_JA,
+  TITLE_SOUND_PX,
+  TITLE_SOUND_W,
+  TITLE_SOUND_X,
+  TITLE_SOUND_Y,
   TITLE_TAB_GAP,
   TITLE_TAB_H,
   TITLE_TAB_PX,
@@ -52,6 +62,7 @@ import { campaignStatus, type CampaignStatus } from '../core/campaign';
 import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
 import { seedForBriefing, type BriefingInit } from '../core/sortie';
 import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLegacyUnlocks, setLeadMarkerEnabled, sortiesDone, unlockedCampaignIds } from '../systems/progress-storage';
+import { setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 import { titleGridOn, titleRowRect } from '../ui/title-grid';
 
@@ -64,6 +75,8 @@ export class TitleScene extends Phaser.Scene {
   /** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目。localStorage に覚える。解放前は押せない） */
   private marker?: MenuButton;
   private diff?: MenuButton;
+  /** 音のオン／オフ（v0.7.1 S1。右上。localStorage に覚える） */
+  private soundBtn?: MenuButton;
   /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
   private leaving = false;
 
@@ -158,6 +171,13 @@ export class TitleScene extends Phaser.Scene {
     });
     this.marker.setEnabled(unlocked);
     this.marker.setSelected(unlocked && leadMarkerEnabled());
+    // 音（v0.7.1 S1）: 右上。タップで オン ⇄ オフ（覚える。オンにした時はボタンの音が鳴る）。左の一言は本体の消音スイッチ（ページからは読めない）
+    const soundTitle = (): string => (soundEnabled() ? TITLE_SOUND_ON_JA : TITLE_SOUND_OFF_JA);
+    this.soundBtn = new MenuButton(this, { x: TITLE_SOUND_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: soundTitle(), titlePx: TITLE_SOUND_PX, align: 'center' }, () => {
+      setSoundEnabled(!soundEnabled());
+      this.soundBtn?.setTitle(soundTitle());
+    });
+    this.add.text(TITLE_SOUND_X - TITLE_SOUND_HINT_GAP, TITLE_SOUND_Y + TITLE_SOUND_H / 2, TITLE_SOUND_HINT_JA, hudTextStyle(TITLE_SOUND_HINT_PX, HUD_COLOR)).setOrigin(1, 0.5).setAlign('right').setDepth(DEPTH.hud);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const r of this.rows) r.destroy();
@@ -170,6 +190,8 @@ export class TitleScene extends Phaser.Scene {
       this.hist = undefined;
       this.marker?.destroy();
       this.marker = undefined;
+      this.soundBtn?.destroy();
+      this.soundBtn = undefined;
     });
   }
 

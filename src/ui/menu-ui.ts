@@ -18,6 +18,7 @@ import {
   MENU_TWO_LINE_DY,
 } from '../config/menu-config';
 import { HUD_COLOR, HUD_COLOR_STRONG, HUD_FONT_DEBUG_PX, hudTextStyle } from '../config/ui-config';
+import { sfxUi } from '../systems/sfx-bus';
 
 export interface MenuButtonSpec {
   /** 左上と大きさ */
@@ -147,7 +148,9 @@ export class MenuButton {
     if (p.id !== this.pointerId) return;
     this.release();
     // touchcancel（コントロールセンター・着信など）も Phaser は離した扱いで GO の up を出すので、決定にしない
-    if (this.enabled && !p.wasCanceled) this.onTap();
+    if (!this.enabled || p.wasCanceled) return;
+    sfxUi('ui_tap'); // ボタンの音（v0.7.1 S1。決定の時だけ＝無効・取り消しは鳴らない）
+    this.onTap();
   }
 
   private onRelease(p: Phaser.Input.Pointer): void {

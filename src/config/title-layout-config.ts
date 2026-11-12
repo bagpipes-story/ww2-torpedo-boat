@@ -22,3 +22,18 @@ export const TITLE_GRID_FROM = 4;
 export const TITLE_GRID_ROWS_MAX = 3;
 /** 格子の列の幅: 2 × 597 + 24 = 1,218（下の 3 つの切り替え 3 × 390 + 2 × 24 と同じ幅・同じ中心。論理幅 1280 でも左右に 31 px 余る）。597 × 96 px ≈ 326 × 52 pt（iPhone 15 横） */
 export const TITLE_GRID_COL_W = 597;
+/**
+ * v0.7.1 S1: 右上の「音」ボタン（音: オン ⇄ 音: オフ。覚える＝systems/sfx-settings）。右端は画面の右 − HUD_MARGIN、上端 20・下端 100（タブの上端 108 の上）。
+ * 200 × 80 px ≈ 109 × 44 pt（iPhone 15 横）。左に小さい字の一言（本体の消音スイッチはページから読めない）を 2 行・右寄せで置く。ボタンの下はタブまで 8 px しか無く、
+ * 論理幅 1280 ではタブ（右端 1112）とボタン（左端 1056）の x が重なるので下には置けない。左なら 1280 でもロゴ（右端 約 812）まで 52 px 空く（tests/title-sound）
+ */
+export const TITLE_SOUND_W = 200;
+export const TITLE_SOUND_H = 80;
+export const TITLE_SOUND_Y = 20;
+export const TITLE_SOUND_PX = 26;
+export const TITLE_SOUND_ON_JA = '音: オン';
+export const TITLE_SOUND_OFF_JA = '音: オフ';
+export const TITLE_SOUND_HINT_JA = '音が出ない時は\n本体の消音を確かめる';
+export const TITLE_SOUND_HINT_PX = 18;
+/** 一言の右端とボタンの左端の間 */
+export const TITLE_SOUND_HINT_GAP = 12;

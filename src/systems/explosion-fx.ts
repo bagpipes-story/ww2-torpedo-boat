@@ -16,7 +16,9 @@ import {
   EXPLOSION_SLOTS, EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, EXPLOSION_SPLASH_TINT, FIRE_SMOKE_TINT,
 } from '../config/fx-art-config';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { SFX_S1_SMALL_BLAST } from '../config/sfx-config';
 import { BlastFx } from './blast-fx';
+import { sfxAt } from './sfx-bus';
 import type { SparkFx } from './spark-fx';
 import { TorpedoColumnFx } from './torpedo-column-fx';
 import { RENDERER_WEBGL } from '../config/sea-art-config';
@@ -80,6 +82,7 @@ export class ExplosionFx {
     this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
     this.blast.play(i, x, y, dud, torpedo);
     if (torpedo && !dud) this.column.play(x, y);
+    sfxAt('blast_l', x, y, dud ? SFX_S1_SMALL_BLAST.gain : 1, dud ? SFX_S1_SMALL_BLAST.rate : 1); // 爆発音（v0.7.1 S1。小さい版は小さく速く。魚雷の命中の音・小さい版の音は S2）
   }
 
   /** 昼の割合（0＝夜・1＝昼。world-art が夜明けの段 lightStep / 16 を毎フレーム渡す）: 明るい海に ADD の光を足すと白く飛ぶので α を下げる（U6） */
