@@ -1,0 +1,500 @@
+diff --git a/src/assets/destroyer-art.ts b/src/assets/destroyer-art.ts
+index 79669fa..cd653b7 100644
+--- a/src/assets/destroyer-art.ts
++++ b/src/assets/destroyer-art.ts
+@@ -2,19 +2,33 @@
+ // jp_06。決め D3: 鍵は ship-art-config の shipArtKey(敵の id)）・味方の駆逐艦 卯月（睦月型。tex-destroyer-friendly。jp_04。寸法は厳守＝名前の y は displayWidth/Height から）。
+ // generateDestroyerTexture は placeholders と同じ名前・引数・鍵・寸法（Boot の呼び出しの行は変えない＝R14。import の行だけこのファイルに）。
+ // 米駆逐艦の見た目は 236 × 21.6 → 229.6 × 24 単位に変わり、前からの当たりの大きさ（data の us_destroyer）に揃う（R23。当たりは変えない）。
++// IP2（実機 2 回目。U8「駆逐艦のグラフィックを見直してクオリティを上げてください。でも、色は現在と同じ単系統のままで」）: Graphics の平たい部品から、Canvas の 2D に陰影つきで描く形へ
++//   （assets/destroyer-plan の置き方・destroyer-paint の描き方。色は陣営のパレットの地の色の明るさだけを変える）。鍵・寸法（hullTexSize）・原点（中央）は同じ。起動時に 1 回だけ。
+ import type Phaser from 'phaser';
+-import { TEXTURE_KEYS } from '../config/game-config';
+-import { PALETTE_ALLY, PALETTE_ALLY_MID, PALETTE_ENEMY, PALETTE_ENEMY_MID } from '../config/boat-art-config';
+-import { SHIP_ART_DEFAULT_KEY, SHIP_ART_LAYOUTS, shipArtKey, shipArtKind } from '../config/ship-art-config';
++import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
++import { PALETTE_ALLY, PALETTE_ENEMY } from '../config/boat-art-config';
++import { SHIP_ART_DEFAULT_KEY, shipArtKey, shipArtKind } from '../config/ship-art-config';
+ import { getEnemyRecord, getPrototypeMission, type GameData } from '../config/game-data';
+ import { hasHardVariant } from '../config/mission-data';
+-import type { BoatTextureSpec } from './art-dims';
+-import { paintShipTexture } from './ship-art';
+-import { shipShape } from './ship-shape';
++import { hullTexSize, type BoatTextureSpec } from './art-dims';
++import { destroyerPlan, type DestroyerKind } from './destroyer-plan';
++import { paintDestroyer } from './destroyer-paint';
++import { paintCanvas } from './sea-art';
++
++/** 1 枚を key のテクスチャに（寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央） */
++function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, kind: DestroyerKind, base: number): void {
++  const k = RENDER_SCALE;
++  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);
++  paintCanvas(scene, key, size.w, size.h, (ctx) => {
++    ctx.scale(k, k);
++    paintDestroyer(ctx, destroyerPlan(kind, spec.lengthUnits, spec.beamUnits), base);
++  });
++}
+ 
+ /** 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級） */
+ export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string = TEXTURE_KEYS.destroyer): void {
+-  paintShipTexture(scene, key, spec, shipShape(SHIP_ART_LAYOUTS[shipArtKind(key)], spec.lengthUnits, spec.beamUnits), PALETTE_ENEMY, PALETTE_ENEMY_MID);
++  const kind = shipArtKind(key);
++  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' ? 'fletcher' : 'kagero', PALETTE_ENEMY.deck);
+ }
+ 
+ /**
+@@ -38,5 +52,5 @@ export function generateExtraDestroyerTextures(scene: Phaser.Scene, data: GameDa
+ 
+ /** 味方の駆逐艦 卯月（睦月型）を薄い青で（ally-destroyer-placeholder の generateAllyDestroyerTextures が艦の 1 枚にこれを呼ぶ。扇は今のまま） */
+ export function paintAllyDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
+-  paintShipTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, shipShape(SHIP_ART_LAYOUTS.mutsuki, spec.lengthUnits, spec.beamUnits), PALETTE_ALLY, PALETTE_ALLY_MID);
++  paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);
+ }
+diff --git a/src/assets/fx-art.ts b/src/assets/fx-art.ts
+index 9b037f0..1adac6e 100644
+--- a/src/assets/fx-art.ts
++++ b/src/assets/fx-art.ts
+@@ -19,7 +19,7 @@ import { paintCanvas } from './sea-art';
+ import { slickPixels, splashPixels } from './splash-shape';
+ import { wakePuffPixels } from './wake-shape';
+ import {
+-  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
++  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_ALPHA, MUZZLE_CORE_R, MUZZLE_RAY_ALPHA, MUZZLE_RAY_HALF_W, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
+   WAKE_CENTER_WIDTH_PX, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SHIP_CENTER_WIDTH_PX, WAKE_TEX_H, WAKE_TEX_W,
+ } from '../config/fx-art-config';
+ import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+@@ -51,8 +51,8 @@ function paintPixels(scene: Phaser.Scene, key: string, d: number, px: Uint8Clamp
+ function paintMuzzleFlash(scene: Phaser.Scene, d: number, R: number): void {
+   paintCanvas(scene, TEXTURE_KEYS.muzzleFlash, d, d, (ctx) => {
+     const c = d / 2;
+-    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.7, [[0, 1], [0.35, 0.95], [0.6, 0.6], [1, 0]]);
+-    ctx.fillStyle = white(0.95);
++    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.7, [[0, MUZZLE_CORE_ALPHA[0]], [0.35, MUZZLE_CORE_ALPHA[1]], [0.6, MUZZLE_CORE_ALPHA[2]], [1, 0]]);
++    ctx.fillStyle = white(MUZZLE_RAY_ALPHA);
+     for (const r of muzzleRays()) {
+       const L = r.len * R;
+       const hw = MUZZLE_RAY_HALF_W * R;
+diff --git a/src/assets/fx-shape.ts b/src/assets/fx-shape.ts
+index 2bfde91..b946238 100644
+--- a/src/assets/fx-shape.ts
++++ b/src/assets/fx-shape.ts
+@@ -1,7 +1,7 @@
+ // v0.7.0 S3b（アートと音①：コードで描く絵。spec-v0700 §5.2・§5.3）: 演出の Phaser に依らない式。航跡の姿勢（長さ・α・frame）と艇尾の位置、爆発の部品の膨らみと薄れの曲線、
+ // 水柱の飛沫と砲口炎の光芒の置き方（絵だけの乱数＝種は呼ぶ側の ART_SEED_FX）。tests/fx-art が確かめる。update で使う式は out へ書くだけ（確保しない＝CLAUDE.md §7）。
+ import {
+-  EXPLOSION_PUFF_GROW_FROM, EXPLOSION_PUFF_S, EXPLOSION_SPLASH_ALPHA, EXPLOSION_SPLASH_GROW_FROM, EXPLOSION_SPLASH_S, EXPLOSION_FIRE_GROW_FROM, EXPLOSION_FIRE_S,
++  EXPLOSION_PUFF_GROW_FROM, EXPLOSION_PUFF_S, EXPLOSION_SPLASH_ALPHA, EXPLOSION_SPLASH_GROW_FROM, EXPLOSION_SPLASH_S, EXPLOSION_FIRE_ALPHA, EXPLOSION_FIRE_GROW_FROM, EXPLOSION_FIRE_S,
+   EXPLOSION_FLASH_S, EXPLOSION_SMALL_FLASH_S, MUZZLE_RAY_LEN, MUZZLE_RAYS, SPLASH_DROPLET_R, SPLASH_DROPLET_RING, SPLASH_DROPLETS,
+   WAKE_ALPHA_MAX, WAKE_CRUISE_ALPHA_SHARE, WAKE_FRAME_BUBBLE, WAKE_FRAME_V, WAKE_HIDE_BELOW_MPS, WAKE_HULL_ALPHA_MIN, WAKE_KIND_ART, WAKE_SILENT_ALPHA_MAX, WAKE_SILENT_LEN_HULLS, type WakeKindArt,
+ } from '../config/fx-art-config';
+@@ -79,7 +79,7 @@ export function flashLifeS(small: boolean): number {
+ export function slotLifeS(small: boolean, ringS: number): number {
+   return Math.max(ringS, small ? Math.max(EXPLOSION_SMALL_FLASH_S, EXPLOSION_PUFF_S) : Math.max(EXPLOSION_FLASH_S, EXPLOSION_FIRE_S, EXPLOSION_SPLASH_S));
+ }
+-export const FIRE_GROW = { life: EXPLOSION_FIRE_S, from: EXPLOSION_FIRE_GROW_FROM, alpha0: 1 } as const;
++export const FIRE_GROW = { life: EXPLOSION_FIRE_S, from: EXPLOSION_FIRE_GROW_FROM, alpha0: EXPLOSION_FIRE_ALPHA } as const;
+ export const SPLASH_GROW = { life: EXPLOSION_SPLASH_S, from: EXPLOSION_SPLASH_GROW_FROM, alpha0: EXPLOSION_SPLASH_ALPHA } as const;
+ export const PUFF_GROW = { life: EXPLOSION_PUFF_S, from: EXPLOSION_PUFF_GROW_FROM, alpha0: 0.5 } as const;
+ 
+diff --git a/src/config/blast-art-config.ts b/src/config/blast-art-config.ts
+index 1ddb75f..f74d44f 100644
+--- a/src/config/blast-art-config.ts
++++ b/src/config/blast-art-config.ts
+@@ -9,6 +9,9 @@ export const BLAST_FLASH2_DELAY_S = 0.12;
+ export const BLAST_FLASH2_S = 0.24;
+ export const BLAST_FLASH2_RADIUS_M = 85;
+ export const BLAST_OFFSET_M = 12;
++/** IP2（U6「眩しい」）: 2 つ目の閃光は ADD をやめて通常の重ね・橙・頂の α（IP1b は ADD・暖かい黄白・α 1） */
++export const BLAST_FLASH2_TINT = 0xff8a3a;
++export const BLAST_FLASH2_ALPHA = 0.5;
+ /** 2 つ目の火球（遅れ・寿命・半径・膨らみの始まり） */
+ export const BLAST_FIRE2_DELAY_S = 0.1;
+ export const BLAST_FIRE2_S = 1.0;
+@@ -20,12 +23,13 @@ export const BLAST_COLUMN_S = 1.6;
+ export const BLAST_COLUMN_RADIUS_M = 40;
+ export const BLAST_COLUMN_STRETCH = 1.9;
+ export const BLAST_COLUMN_RISE_M = 55;
+-export const BLAST_COLUMN_ALPHA = 0.95;
++export const BLAST_COLUMN_ALPHA = 0.7; // IP2（U6）: 0.95 → 0.7・白 → 薄い灰青（BLAST_COLUMN_TINT）。魚雷の命中はこの柱でなく column-art-config の水柱（U7）
++export const BLAST_COLUMN_TINT = 0xd2dce4;
+ /** 水面の衝撃波（tex-shockwave の白い輪。艦艇の下＝航跡の上）: 寿命・終わりの半径・始まりの割合・α・深さ */
+ export const BLAST_SHOCK_S = 0.7;
+ export const BLAST_SHOCK_RADIUS_M = 150;
+ export const BLAST_SHOCK_FROM = 0.12;
+-export const BLAST_SHOCK_ALPHA = 0.8;
++export const BLAST_SHOCK_ALPHA = 0.5; // IP2（U6）: 0.8 → 0.5
+ export const BLAST_SHOCK_DEPTH = 3.6;
+ /** 衝撃波の絵（tex-shockwave。k に依らない固定 px）: 一辺・輪の半径・輪の柔らかい幅 */
+ export const SHOCK_TEX_PX = 128;
+diff --git a/src/config/fx-art-config.ts b/src/config/fx-art-config.ts
+index 1393d10..11c7e81 100644
+--- a/src/config/fx-art-config.ts
++++ b/src/config/fx-art-config.ts
+@@ -59,12 +59,20 @@ export const EXPLOSION_FIRE_RADIUS_M = 64;
+ export const EXPLOSION_FIRE_GROW_FROM = 0.35;
+ export const EXPLOSION_SPLASH_RADIUS_M = 58;
+ export const EXPLOSION_SPLASH_GROW_FROM = 0.5;
+-export const EXPLOSION_SPLASH_ALPHA = 0.9;
++export const EXPLOSION_SPLASH_ALPHA = 0.7; // IP2（U6「眩しい」）: 0.9 → 0.7・白 → 薄い灰青（EXPLOSION_SPLASH_TINT）
+ export const EXPLOSION_PUFF_RADIUS_M = 14;
+ export const EXPLOSION_PUFF_GROW_FROM = 0.6;
+-/** 閃光と火球の tint（ADD で重ねる＝暖かい黄白と橙）、水柱は白のまま */
+-export const EXPLOSION_FLASH_TINT = 0xfff2c0;
+-export const EXPLOSION_FIRE_TINT = 0xffb060;
++/**
++ * 閃光と火球の tint（ADD で重ねる）と頂の α、水柱の tint。IP2（実機 2 回目。ユーザーの U6「フラッシュのような白色や輝度は落ち着かせてください」。大きさと長さは変えない）:
++ * 閃光 暖かい黄白 0xfff2c0・α 1 → 琥珀 0xffa04a・α 0.55、火球 0xffb060・α 1 → 0xff9440・α 0.8、水柱 白 → 0xd2dce4（α は EXPLOSION_SPLASH_ALPHA）。
++ * 昼の海（夜明けの段 lightStep / 16）では ADD の閃光と火球の α を最大 EXPLOSION_DAY_ADD_DIM だけ下げる（明るい海に足すと白く飛ぶ）
++ */
++export const EXPLOSION_FLASH_TINT = 0xffa04a;
++export const EXPLOSION_FLASH_ALPHA = 0.55;
++export const EXPLOSION_FIRE_TINT = 0xff9440;
++export const EXPLOSION_FIRE_ALPHA = 0.8;
++export const EXPLOSION_SPLASH_TINT = 0xd2dce4;
++export const EXPLOSION_DAY_ADD_DIM = 0.35;
+ 
+ /**
+  * 演出の絵（Boot で 1 回。tex-splash・tex-muzzle-flash・tex-fireball・tex-oil-slick＝爆発の輪と同じ寸法 96×96 at k 1.09）。
+@@ -100,10 +108,13 @@ export const SLICK_BUBBLES = 7;
+ export const SLICK_BUBBLE_SPREAD = 0.5;
+ export const SLICK_BUBBLE_R: readonly [number, number] = [0.05, 0.08];
+ export const SLICK_BUBBLE_ALPHA = 0.7;
+-export const MUZZLE_RAYS = 12; // IP1b（U3）: 8 → 12 本・芯 0.3 → 0.36・幅 0.07 → 0.08（明るく派手に）
++export const MUZZLE_RAYS = 12; // IP1b（U3）: 8 → 12 本・芯 0.3 → 0.36・幅 0.07 → 0.08（明るく派手に）。IP2（U6）: 芯と光芒の α を下げた（MUZZLE_CORE_ALPHA・MUZZLE_RAY_ALPHA）
+ export const MUZZLE_RAY_LEN: readonly [number, number] = [1.0, 0.55];
+ export const MUZZLE_RAY_HALF_W = 0.08;
+ export const MUZZLE_CORE_R = 0.36;
++/** 砲口炎の絵の芯の α（中心・0.35・0.6 の所。IP1b は 1・0.95・0.6）と光芒の α（IP1b は 0.95）。爆発の閃光も同じ絵（IP2・U6） */
++export const MUZZLE_CORE_ALPHA: readonly [number, number, number] = [0.82, 0.7, 0.42];
++export const MUZZLE_RAY_ALPHA = 0.8;
+ 
+ /**
+  * 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒。
+diff --git a/src/scenes/mission-scene.ts b/src/scenes/mission-scene.ts
+index e793c12..5079e1b 100644
+--- a/src/scenes/mission-scene.ts
++++ b/src/scenes/mission-scene.ts
+@@ -78,7 +78,7 @@ export class MissionScene extends Phaser.Scene {
+ 
+   private readonly worldEvents: WorldEvents = {
+     onTorpedoHit: (x, y, dud) => {
+-      playExplosion(this, x, y, dud);
++      playExplosion(this, x, y, dud, 'torpedo');
+       if (!dud) this.shakeCamera();
+     },
+     // 撃沈では終わらない（帰投が目標。制空権下で敵艦隊がいなくなれば cleared）。終了判定は update の MissionEnd（systems/mission-end）
+diff --git a/src/systems/blast-fx.ts b/src/systems/blast-fx.ts
+index c2dfab8..cfe7b77 100644
+--- a/src/systems/blast-fx.ts
++++ b/src/systems/blast-fx.ts
+@@ -2,17 +2,19 @@
+ // 共有の爆発の煙のプール（暗い玉が遅れて湧き、風下へ流れて膨らむ）。破片の火花と水滴は spark-fx。
+ // 大きい版（命中・撃破・沈没）: 2 つ目の閃光（0.12 秒遅れ・少しずれた所）＋2 つ目の火球＋水柱の柱（上がって落ちる白い柱）＋衝撃波（艦艇の下の白い輪が 150 m へ）＋煙 5＋破片 16＋水滴 12。
+ // 小さい版（dud）: 煙 1＋破片 5（柱・衝撃波なし＝艇に当たった弾が水柱に見えない＝R11）。2 次の爆発（沈没の段）: 2 つ目の閃光と火球だけ＋煙 2＋破片 8（輪・柱・衝撃波なし）。
++// IP2（U6「眩しい」）: 2 つ目の閃光は通常の重ね（ADD をやめた）・橙・α 0.5、水柱の柱は薄い灰青・α 0.7、衝撃波 α 0.5。昼の海は ADD の火球の α を下げる（setAddMul）。
++//   魚雷の命中（torpedo）は水柱の柱と爆発の水滴を出さない（torpedo-column-fx の大きな水柱が代わり＝U7）。
+ // §7: 確保は constructor だけ。play・update は書くだけ。乱数は絵だけ（ART_SEED_BLAST）。
+ import type Phaser from 'phaser';
+ import { columnPoseInto, shockPoseInto } from '../assets/blast-shape';
+ import { partFade, partGrow } from '../assets/fx-shape';
+ import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
+ import {
+-  ART_SEED_BLAST, BLAST_COLUMN_RADIUS_M, BLAST_COLUMN_S, BLAST_FIRE2_DELAY_S, BLAST_FIRE2_FROM, BLAST_FIRE2_RADIUS_M, BLAST_FIRE2_S, BLAST_FIRE2_TINT, BLAST_FLASH2_DELAY_S, BLAST_FLASH2_RADIUS_M,
+-  BLAST_FLASH2_S, BLAST_OFFSET_M, BLAST_SHOCK_DEPTH, BLAST_SHOCK_RADIUS_M, BLAST_SHOCK_S, BLAST_SMOKE_ALPHA, BLAST_SMOKE_BIG, BLAST_SMOKE_DELAY_S, BLAST_SMOKE_DRIFT_MPS, BLAST_SMOKE_POOL,
++  ART_SEED_BLAST, BLAST_COLUMN_RADIUS_M, BLAST_COLUMN_S, BLAST_COLUMN_TINT, BLAST_FIRE2_DELAY_S, BLAST_FIRE2_FROM, BLAST_FIRE2_RADIUS_M, BLAST_FIRE2_S, BLAST_FIRE2_TINT, BLAST_FLASH2_ALPHA, BLAST_FLASH2_DELAY_S, BLAST_FLASH2_RADIUS_M,
++  BLAST_FLASH2_S, BLAST_FLASH2_TINT, BLAST_OFFSET_M, BLAST_SHOCK_DEPTH, BLAST_SHOCK_RADIUS_M, BLAST_SHOCK_S, BLAST_SMOKE_ALPHA, BLAST_SMOKE_BIG, BLAST_SMOKE_DELAY_S, BLAST_SMOKE_DRIFT_MPS, BLAST_SMOKE_POOL,
+   BLAST_SMOKE_RADIUS_M, BLAST_SMOKE_S, BLAST_SMOKE_SECONDARY, BLAST_SMOKE_SMALL, BLAST_SMOKE_SPREAD_M, BLAST_SMOKE_TINT, SHOCK_TEX_RING_PX, SPARK_DEBRIS_BIG, SPARK_DEBRIS_SECONDARY, SPARK_DEBRIS_SMALL, SPARK_DROPS_BIG,
+ } from '../config/blast-art-config';
+-import { ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_FLASH_TINT, EXPLOSION_SLOTS, FIRE_DRIFT_DEG, FIRE_SMOKE_DEPTH } from '../config/fx-art-config';
++import { ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_SLOTS, FIRE_DRIFT_DEG, FIRE_SMOKE_DEPTH } from '../config/fx-art-config';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { RENDERER_WEBGL } from '../config/sea-art-config';
+ import { SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
+@@ -22,6 +24,8 @@ import type { SparkFx } from './spark-fx';
+ const KIND_BIG = 0;
+ const KIND_SMALL = 1;
+ const KIND_SECONDARY = 2;
++/** 魚雷の命中の大きい版（柱なし。IP2） */
++const KIND_TORPEDO = 3;
+ 
+ export class BlastFx {
+   private readonly flash2: Phaser.GameObjects.Image[] = [];
+@@ -43,6 +47,8 @@ export class BlastFx {
+   private readonly pose = new Float32Array(4);
+   private nextSmoke = 0;
+   private nextSecondary = 0;
++  /** 昼の海で ADD の火球の α に掛ける（explosion-fx の setDaylight から。夜は 1） */
++  private addMul = 1;
+   private readonly perM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
+   private readonly shockPerM = 1 / SHOCK_TEX_RING_PX;
+   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
+@@ -53,23 +59,20 @@ export class BlastFx {
+     const add = scene.sys.game.renderer.type === RENDERER_WEBGL;
+     const light = DEPTH.effects + ADD_DEPTH_STEP;
+     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
+-      const fl = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(EXPLOSION_FLASH_TINT).setDepth(light).setVisible(false);
++      const fl = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BLAST_FLASH2_TINT).setDepth(DEPTH.effects).setVisible(false);
+       const fi = scene.add.image(0, 0, TEXTURE_KEYS.fireball).setTint(BLAST_FIRE2_TINT).setDepth(light).setVisible(false);
+-      if (add) {
+-        fl.setBlendMode(BLEND_ADD);
+-        fi.setBlendMode(BLEND_ADD);
+-      }
++      if (add) fi.setBlendMode(BLEND_ADD);
+       this.flash2.push(fl);
+       this.fire2.push(fi);
+-      this.column.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setDepth(DEPTH.effects - ADD_DEPTH_STEP).setVisible(false));
++      this.column.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setTint(BLAST_COLUMN_TINT).setDepth(DEPTH.effects - ADD_DEPTH_STEP).setVisible(false));
+       this.shock.push(scene.add.image(0, 0, TEXTURE_KEYS.shockwave).setDepth(BLAST_SHOCK_DEPTH).setVisible(false));
+     }
+     for (let i = 0; i < BLAST_SMOKE_POOL; i++) this.smoke.push(scene.add.image(0, 0, TEXTURE_KEYS.smokePuff).setTint(BLAST_SMOKE_TINT).setDepth(FIRE_SMOKE_DEPTH).setVisible(false));
+   }
+ 
+-  /** explosion-fx の play から（同じ枠の番号 i）。dud は小さい版 */
+-  play(i: number, x: number, y: number, dud: boolean): void {
+-    this.open(i, x, y, dud ? KIND_SMALL : KIND_BIG);
++  /** explosion-fx の play から（同じ枠の番号 i）。dud は小さい版、torpedo は魚雷の命中（柱と水滴は水柱の演出が出す＝IP2） */
++  play(i: number, x: number, y: number, dud: boolean, torpedo: boolean): void {
++    this.open(i, x, y, dud ? KIND_SMALL : torpedo ? KIND_TORPEDO : KIND_BIG);
+     if (dud) {
+       this.puffs(x, y, BLAST_SMOKE_SMALL, 0.5);
+       this.sparks.debris(x, y, SPARK_DEBRIS_SMALL);
+@@ -77,14 +80,19 @@ export class BlastFx {
+     }
+     this.puffs(x, y, BLAST_SMOKE_BIG, 1);
+     this.sparks.debris(x, y, SPARK_DEBRIS_BIG);
+-    this.sparks.drops(x, y, SPARK_DROPS_BIG);
++    if (!torpedo) this.sparks.drops(x, y, SPARK_DROPS_BIG);
++  }
++
++  /** 昼の海の ADD の α の掛け（explosion-fx の setDaylight から） */
++  setAddMul(m: number): void {
++    this.addMul = m;
+   }
+ 
+   /** 沈没の段の 2 次の爆発（sink-fx から。輪・柱・衝撃波なし＝結果の印ではない）。枠は 2 次の爆発の番の枠（大きい版の枠と別の番を回す） */
+   secondary(x: number, y: number): void {
+     const i = this.nextSecondary;
+     this.nextSecondary = (i + 1) % EXPLOSION_SLOTS;
+-    if (this.age[i] !== Infinity && this.kind[i] === KIND_BIG) return; // 大きい版の途中は上書きしない
++    if (this.age[i] !== Infinity && (this.kind[i] === KIND_BIG || this.kind[i] === KIND_TORPEDO)) return; // 大きい版の途中は上書きしない
+     this.open(i, x, y, KIND_SECONDARY);
+     this.age[i] = BLAST_FLASH2_DELAY_S; // 閃光と火球を遅れなしで（2 段目の遅れの分だけ年を進めて始める）
+     this.puffs(x, y, BLAST_SMOKE_SECONDARY, 0.8);
+@@ -126,12 +134,12 @@ export class BlastFx {
+       const k = this.kind[i]!;
+       const fa = a - BLAST_FLASH2_DELAY_S;
+       const fl = this.flash2[i]!;
+-      if (fa >= 0 && fa < BLAST_FLASH2_S && k !== KIND_SMALL) fl.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FLASH2_RADIUS_M * this.perM).setAlpha(1 - fa / BLAST_FLASH2_S).setVisible(true);
++      if (fa >= 0 && fa < BLAST_FLASH2_S && k !== KIND_SMALL) fl.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FLASH2_RADIUS_M * this.perM).setAlpha(BLAST_FLASH2_ALPHA * (1 - fa / BLAST_FLASH2_S)).setVisible(true);
+       else if (fl.visible) fl.setVisible(false);
+       const ga = a - BLAST_FIRE2_DELAY_S;
+       const fi = this.fire2[i]!;
+       if (ga >= 0 && ga < BLAST_FIRE2_S && k !== KIND_SMALL) {
+-        fi.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FIRE2_RADIUS_M * this.perM * partGrow(ga, BLAST_FIRE2_S, BLAST_FIRE2_FROM)).setAlpha(partFade(ga, BLAST_FIRE2_S, 1)).setVisible(true);
++        fi.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FIRE2_RADIUS_M * this.perM * partGrow(ga, BLAST_FIRE2_S, BLAST_FIRE2_FROM)).setAlpha(partFade(ga, BLAST_FIRE2_S, this.addMul)).setVisible(true);
+       } else if (fi.visible) fi.setVisible(false);
+       const col = this.column[i]!;
+       const sh = this.shock[i]!;
+@@ -140,7 +148,7 @@ export class BlastFx {
+         const s = BLAST_COLUMN_RADIUS_M * this.perM;
+         col.setPosition(this.cx[i]!, this.cy[i]! - o[2]!).setScale(s * o[0]!, s * o[1]!).setAlpha(o[3]!).setVisible(true);
+       } else if (col.visible) col.setVisible(false);
+-      if (k === KIND_BIG && a < BLAST_SHOCK_S) {
++      if ((k === KIND_BIG || k === KIND_TORPEDO) && a < BLAST_SHOCK_S) {
+         shockPoseInto(o, a);
+         sh.setScale(BLAST_SHOCK_RADIUS_M * this.shockPerM * o[0]!).setAlpha(o[1]!).setVisible(true);
+       } else if (sh.visible) sh.setVisible(false);
+diff --git a/src/systems/explosion-fx.ts b/src/systems/explosion-fx.ts
+index 92d15e8..55c3511 100644
+--- a/src/systems/explosion-fx.ts
++++ b/src/systems/explosion-fx.ts
+@@ -6,20 +6,22 @@
+ // 持ち主は world-art（世界の作成時に作り、mission-effects に登録し、破棄で外す＝R12）。§7: 確保は constructor だけ。update は読んで書くだけ。
+ // IP1b（U3「もっと派手な演出、数でも大丈夫」）: 枠 4 → 6・閃光と火球と水柱を大きく長く、同じ枠の番号で 2 段目（systems/blast-fx: 2 つ目の閃光・2 つ目の火球・水柱の柱・水面の衝撃波・
+ //   爆発の煙）と破片の火花・水滴（systems/spark-fx）を出す。沈没の段の 2 次の爆発（sink-fx から secondary）は 2 段目だけ（輪なし＝結果の印にしない）。
++// IP2（実機 2 回目。U6「フラッシュのような白色や輝度は落ち着かせてください」・U7「魚雷の爆発は…派手に水柱を立たせてください」）: 閃光は琥珀・α 0.55、火球は α 0.8、水柱は薄い灰青・α 0.7
++//   （大きさと長さは IP1b のまま）。昼の海（夜明けの段）は ADD の閃光と火球の α を下げる（setDaylight）。魚雷の命中（play の torpedo）は白い水柱の代わりに大きな水柱（torpedo-column-fx）。
+ import type Phaser from 'phaser';
+ import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, partFade, partGrow, slotLifeS } from '../assets/fx-shape';
+ import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
+ import {
+-  ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_FIRE_RADIUS_M, EXPLOSION_FIRE_TINT, EXPLOSION_FLASH_RADIUS_M, EXPLOSION_FLASH_TINT, EXPLOSION_PUFF_RADIUS_M, EXPLOSION_SLOTS,
+-  EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, FIRE_SMOKE_TINT,
++  ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_DAY_ADD_DIM, EXPLOSION_FIRE_RADIUS_M, EXPLOSION_FIRE_TINT, EXPLOSION_FLASH_ALPHA, EXPLOSION_FLASH_RADIUS_M, EXPLOSION_FLASH_TINT, EXPLOSION_PUFF_RADIUS_M,
++  EXPLOSION_SLOTS, EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, EXPLOSION_SPLASH_TINT, FIRE_SMOKE_TINT,
+ } from '../config/fx-art-config';
+ import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { BlastFx } from './blast-fx';
+ import type { SparkFx } from './spark-fx';
++import { TorpedoColumnFx } from './torpedo-column-fx';
+ import { RENDERER_WEBGL } from '../config/sea-art-config';
+ import { EXPLOSION_DURATION_MS, EXPLOSION_SCALE_DUD, EXPLOSION_SCALE_FROM, EXPLOSION_SCALE_HIT, EXPLOSION_TINT_DUD, EXPLOSION_TINT_HIT, SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
+ 
+-const NO_TINT = 0xffffff;
+ const RING_S = EXPLOSION_DURATION_MS / 1000;
+ 
+ export class ExplosionFx {
+@@ -37,9 +39,14 @@ export class ExplosionFx {
+   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
+   /** 2 段目（IP1b。同じ枠の番号） */
+   private readonly blast: BlastFx;
++  /** 魚雷の命中の水柱（IP2） */
++  private readonly column: TorpedoColumnFx;
++  /** 昼の海で ADD の閃光と火球の α に掛ける（夜は 1） */
++  private addMul = 1;
+ 
+   constructor(scene: Phaser.Scene, sparks: SparkFx) {
+     this.blast = new BlastFx(scene, sparks);
++    this.column = new TorpedoColumnFx(scene);
+     const add = scene.sys.game.renderer.type === RENDERER_WEBGL;
+     const light = DEPTH.effects + ADD_DEPTH_STEP;
+     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
+@@ -56,22 +63,31 @@ export class ExplosionFx {
+     }
+   }
+ 
+-  /** 爆発を置く（mission-effects の playExplosion から。dud は小さい版） */
+-  play(x: number, y: number, dud: boolean): void {
++  /** 爆発を置く（mission-effects の playExplosion から。dud は小さい版、torpedo は魚雷の命中＝見た目だけの印（IP2）） */
++  play(x: number, y: number, dud: boolean, torpedo = false): void {
+     const i = this.next;
+     this.next = (this.next + 1) % EXPLOSION_SLOTS;
+     this.age[i] = 0;
+     this.small[i] = dud ? 1 : 0;
+     this.life[i] = slotLifeS(dud, RING_S);
+     const pm = this.perM;
+-    this.flash[i]!.setPosition(x, y).setScale((dud ? EXPLOSION_SMALL_FLASH_RADIUS_M : EXPLOSION_FLASH_RADIUS_M) * pm).setAlpha(1).setVisible(true);
+-    this.fire[i]!.setPosition(x, y).setScale(EXPLOSION_FIRE_RADIUS_M * pm * FIRE_GROW.from).setAlpha(1).setVisible(!dud);
++    this.flash[i]!.setPosition(x, y).setScale((dud ? EXPLOSION_SMALL_FLASH_RADIUS_M : EXPLOSION_FLASH_RADIUS_M) * pm).setAlpha(EXPLOSION_FLASH_ALPHA * this.addMul).setVisible(true);
++    this.fire[i]!.setPosition(x, y).setScale(EXPLOSION_FIRE_RADIUS_M * pm * FIRE_GROW.from).setAlpha(FIRE_GROW.alpha0 * this.addMul).setVisible(!dud);
+     const wet = this.wet[i]!.setPosition(x, y);
+     if (dud) wet.setTexture(TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT).setScale(EXPLOSION_PUFF_RADIUS_M * this.puffPerM * PUFF_GROW.from).setAlpha(PUFF_GROW.alpha0);
+-    else wet.setTexture(TEXTURE_KEYS.splash).setTint(NO_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
+-    wet.setVisible(true);
++    else wet.setTexture(TEXTURE_KEYS.splash).setTint(EXPLOSION_SPLASH_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
++    wet.setVisible(!(torpedo && !dud)); // 魚雷の命中は水柱の根元の飛沫が代わり
+     this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
+-    this.blast.play(i, x, y, dud);
++    this.blast.play(i, x, y, dud, torpedo);
++    if (torpedo && !dud) this.column.play(x, y);
++  }
++
++  /** 昼の割合（0＝夜・1＝昼。world-art が夜明けの段 lightStep / 16 を毎フレーム渡す）: 明るい海に ADD の光を足すと白く飛ぶので α を下げる（U6） */
++  setDaylight(f: number): void {
++    const m = 1 - EXPLOSION_DAY_ADD_DIM * Math.min(1, Math.max(0, f));
++    if (m === this.addMul) return;
++    this.addMul = m;
++    this.blast.setAddMul(m);
+   }
+ 
+   /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
+@@ -82,6 +98,7 @@ export class ExplosionFx {
+   /** 毎フレーム（world-art から。realDt は見た目の時計）: 部品ごとに膨らみと薄れ、寿命が尽きた部品から隠す。枠の寿命で枠を閉じる */
+   update(realDt: number): void {
+     this.blast.update(realDt);
++    this.column.update(realDt);
+     const pm = this.perM;
+     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
+       const a0 = this.age[i]!;
+@@ -101,18 +118,19 @@ export class ExplosionFx {
+       const fs = flashLifeS(dud);
+       if (a >= fs) {
+         if (fl.visible) fl.setVisible(false);
+-      } else fl.setAlpha(1 - a / fs);
++      } else fl.setAlpha(EXPLOSION_FLASH_ALPHA * this.addMul * (1 - a / fs));
+       if (!dud) {
+         const fi = this.fire[i]!;
+         if (a >= FIRE_GROW.life) {
+           if (fi.visible) fi.setVisible(false);
+-        } else fi.setScale(EXPLOSION_FIRE_RADIUS_M * pm * partGrow(a, FIRE_GROW.life, FIRE_GROW.from)).setAlpha(partFade(a, FIRE_GROW.life, FIRE_GROW.alpha0));
++        } else fi.setScale(EXPLOSION_FIRE_RADIUS_M * pm * partGrow(a, FIRE_GROW.life, FIRE_GROW.from)).setAlpha(partFade(a, FIRE_GROW.life, FIRE_GROW.alpha0 * this.addMul));
+       }
+       const wet = this.wet[i]!;
+       const g = dud ? PUFF_GROW : SPLASH_GROW;
+-      if (a >= g.life) {
+-        if (wet.visible) wet.setVisible(false);
+-      } else wet.setScale((dud ? EXPLOSION_PUFF_RADIUS_M * this.puffPerM : EXPLOSION_SPLASH_RADIUS_M * pm) * partGrow(a, g.life, g.from)).setAlpha(partFade(a, g.life, g.alpha0));
++      if (wet.visible) { // 魚雷の命中は play で隠した（水柱が代わり）
++        if (a >= g.life) wet.setVisible(false);
++        else wet.setScale((dud ? EXPLOSION_PUFF_RADIUS_M * this.puffPerM : EXPLOSION_SPLASH_RADIUS_M * pm) * partGrow(a, g.life, g.from)).setAlpha(partFade(a, g.life, g.alpha0));
++      }
+       const ring = this.ring[i]!;
+       if (a >= RING_S) {
+         if (ring.visible) ring.setVisible(false);
+@@ -132,5 +150,6 @@ export class ExplosionFx {
+       this.ring[i]!.destroy();
+     }
+     this.blast.destroy();
++    this.column.destroy();
+   }
+ }
+diff --git a/src/systems/mission-effects.ts b/src/systems/mission-effects.ts
+index 9f3e3a4..acb2432 100644
+--- a/src/systems/mission-effects.ts
++++ b/src/systems/mission-effects.ts
+@@ -25,10 +25,13 @@ export function registerExplosionFx(fx: ExplosionFx | null): void {
+   explosions = fx;
+ }
+ 
+-/** 爆発（名前と引数は v0.4 のまま。mission-scene の 5 か所から）。中身は世界の絵のプール（閃光・火球・水柱・輪。dud は小さい版＝水柱なし）。登録の無い間は何もしない */
+-export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean): void {
++/** 爆発の見た目の種類（v0.7.0 IP2。見た目だけ＝論理・呼ぶ順は変えない）: 'torpedo' は魚雷の命中（大きな水柱。U7）、'blast' はそれ以外（砲弾・爆弾・撃破・沈没・座礁） */
++export type ExplosionLook = 'blast' | 'torpedo';
++
++/** 爆発（名前と最初の 4 つの引数は v0.4 のまま。mission-scene の 5 か所から。onTorpedoHit だけ 'torpedo'）。中身は世界の絵のプール（閃光・火球・水柱・輪。dud は小さい版＝水柱なし）。登録の無い間は何もしない */
++export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean, look: ExplosionLook = 'blast'): void {
+   void scene;
+-  explosions?.play(x, y, dud);
++  explosions?.play(x, y, dud, look === 'torpedo');
+ }
+ 
+ /**
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 38e4984..b22a31c 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -2,7 +2,9 @@
+ // S3a は海の面（systems/sea-fx: 海の面・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx。IP1a で道のりに沿う泡の尾）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
+ // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
+ // IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
++// IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
+ import type Phaser from 'phaser';
++import { SEA_LIGHT_STEPS } from '../config/dawn-config';
+ import { CoastFx } from './coast-fx';
+ import { ExplosionFx } from './explosion-fx';
+ import { FireFx, type FireWorldView } from './fire-fx';
+@@ -46,6 +48,7 @@ export class WorldArt {
+   update(realDt: number, w: ArtWorldView): void {
+     this.sea.update(realDt, w.dawn.lightStep);
+     this.wake.update(realDt, w);
++    this.explosions.setDaylight(w.dawn.lightStep / SEA_LIGHT_STEPS);
+     this.explosions.update(realDt);
+     this.fire.update(realDt);
+     this.sink.update(realDt);
+diff --git a/tests/fx-art.test.ts b/tests/fx-art.test.ts
+index 1f9449a..56e478a 100644
+--- a/tests/fx-art.test.ts
++++ b/tests/fx-art.test.ts
+@@ -170,10 +170,10 @@ describe('作法の pin（S3b）', () => {
+     expect(read('src/systems/enemy-seaplane.ts')).toContain('TEXTURE_KEYS.explosionRing');
+     expect(read('src/systems/mission-effects.ts')).toContain('.image(0, 0, TEXTURE_KEYS.explosionRing)'); // 見越し点
+   });
+-  it('mission-effects の playExplosion は名前と引数のまま登録先へ渡すだけ（new も tween も無い）。world-art が作って登録し、破棄で外す（R12）。mission-scene は触らない', () => {
++  it('mission-effects の playExplosion は名前と引数のまま登録先へ渡すだけ（new も tween も無い）。world-art が作って登録し、破棄で外す（R12）。mission-scene は onTorpedoHit の 1 行に見た目の印だけ（IP2）', () => {
+     const me = read('src/systems/mission-effects.ts');
+-    expect(me).toContain('export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean): void {');
+-    expect(me).toContain('explosions?.play(x, y, dud);');
++    expect(me).toContain("export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean, look: ExplosionLook = 'blast'): void {");
++    expect(me).toContain("explosions?.play(x, y, dud, look === 'torpedo');");
+     expect(me).toContain('export function registerExplosionFx(fx: ExplosionFx | null): void {');
+     expect(me).not.toMatch(/tweens\.add/);
+     expect(me).not.toMatch(/forScene/);
+@@ -183,6 +183,8 @@ describe('作法の pin（S3b）', () => {
+     expect(wa.indexOf('registerExplosionFx(null);')).toBeLessThan(wa.indexOf('this.explosions.destroy();'));
+     const ms = read('src/scenes/mission-scene.ts');
+     expect(ms.split('playExplosion(this, ').length - 1).toBe(5);
++    expect(ms.split("'torpedo')").length - 1).toBe(1); // IP2: 魚雷の命中だけ（論理と呼ぶ順は同じ）
++    expect(ms).toContain("onTorpedoHit: (x, y, dud) => {\n      playExplosion(this, x, y, dud, 'torpedo');");
+     expect(ms).toContain("import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';");
+   });
+   it('explosion-fx: 確保は constructor だけ（play・update に new・tween・add.image が無い）、ADD は閃光と火球だけで深さ ＋0.01（R25）、小さい版は火球なし・暗い玉', () => {
