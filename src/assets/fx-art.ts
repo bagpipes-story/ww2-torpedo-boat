@@ -19,7 +19,7 @@ import { paintCanvas } from './sea-art';
 import { slickPixels, splashPixels } from './splash-shape';
 import { wakePuffPixels } from './wake-shape';
 import {
-  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_R, MUZZLE_RAY_HALF_W, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
+  ART_SEED_FX, FLAME_BODY_SHARE, FLAME_TEX_PX, MUZZLE_CORE_ALPHA, MUZZLE_CORE_R, MUZZLE_RAY_ALPHA, MUZZLE_RAY_HALF_W, WAKE_ARM_ALPHA, WAKE_ARM_HALF_ANGLE_DEG, WAKE_ARM_WIDTH_PX, WAKE_CENTER_ALPHA, WAKE_CENTER_LENGTH_SHARE,
   WAKE_CENTER_WIDTH_PX, WAKE_KIND_ART, WAKE_SHIP_ARM_WIDTH_PX, WAKE_SHIP_CENTER_WIDTH_PX, WAKE_TEX_H, WAKE_TEX_W,
 } from '../config/fx-art-config';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
@@ -51,8 +51,8 @@ function paintPixels(scene: Phaser.Scene, key: string, d: number, px: Uint8Clamp
 function paintMuzzleFlash(scene: Phaser.Scene, d: number, R: number): void {
   paintCanvas(scene, TEXTURE_KEYS.muzzleFlash, d, d, (ctx) => {
     const c = d / 2;
-    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.7, [[0, 1], [0.35, 0.95], [0.6, 0.6], [1, 0]]);
-    ctx.fillStyle = white(0.95);
+    radial(ctx, c, c, R * MUZZLE_CORE_R * 1.7, [[0, MUZZLE_CORE_ALPHA[0]], [0.35, MUZZLE_CORE_ALPHA[1]], [0.6, MUZZLE_CORE_ALPHA[2]], [1, 0]]);
+    ctx.fillStyle = white(MUZZLE_RAY_ALPHA);
     for (const r of muzzleRays()) {
       const L = r.len * R;
       const hw = MUZZLE_RAY_HALF_W * R;

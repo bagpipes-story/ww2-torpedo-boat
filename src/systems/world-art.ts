@@ -2,7 +2,9 @@
 // S3a は海の面（systems/sea-fx: 海の面・夜明けの光・月のきらめき）。S3b は航跡（systems/wake-fx。IP1a で道のりに沿う泡の尾）と爆発のプール（systems/explosion-fx。mission-effects の playExplosion に登録＝R12）。
 // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
 // IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
+// IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
 import type Phaser from 'phaser';
+import { SEA_LIGHT_STEPS } from '../config/dawn-config';
 import { CoastFx } from './coast-fx';
 import { ExplosionFx } from './explosion-fx';
 import { FireFx, type FireWorldView } from './fire-fx';
@@ -46,6 +48,7 @@ export class WorldArt {
   update(realDt: number, w: ArtWorldView): void {
     this.sea.update(realDt, w.dawn.lightStep);
     this.wake.update(realDt, w);
+    this.explosions.setDaylight(w.dawn.lightStep / SEA_LIGHT_STEPS);
     this.explosions.update(realDt);
     this.fire.update(realDt);
     this.sink.update(realDt);

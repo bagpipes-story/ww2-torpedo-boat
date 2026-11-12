@@ -2,19 +2,33 @@
 // jp_06。決め D3: 鍵は ship-art-config の shipArtKey(敵の id)）・味方の駆逐艦 卯月（睦月型。tex-destroyer-friendly。jp_04。寸法は厳守＝名前の y は displayWidth/Height から）。
 // generateDestroyerTexture は placeholders と同じ名前・引数・鍵・寸法（Boot の呼び出しの行は変えない＝R14。import の行だけこのファイルに）。
 // 米駆逐艦の見た目は 236 × 21.6 → 229.6 × 24 単位に変わり、前からの当たりの大きさ（data の us_destroyer）に揃う（R23。当たりは変えない）。
+// IP2（実機 2 回目。U8「駆逐艦のグラフィックを見直してクオリティを上げてください。でも、色は現在と同じ単系統のままで」）: Graphics の平たい部品から、Canvas の 2D に陰影つきで描く形へ
+//   （assets/destroyer-plan の置き方・destroyer-paint の描き方。色は陣営のパレットの地の色の明るさだけを変える）。鍵・寸法（hullTexSize）・原点（中央）は同じ。起動時に 1 回だけ。
 import type Phaser from 'phaser';
-import { TEXTURE_KEYS } from '../config/game-config';
-import { PALETTE_ALLY, PALETTE_ALLY_MID, PALETTE_ENEMY, PALETTE_ENEMY_MID } from '../config/boat-art-config';
-import { SHIP_ART_DEFAULT_KEY, SHIP_ART_LAYOUTS, shipArtKey, shipArtKind } from '../config/ship-art-config';
+import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { PALETTE_ALLY, PALETTE_ENEMY } from '../config/boat-art-config';
+import { SHIP_ART_DEFAULT_KEY, shipArtKey, shipArtKind } from '../config/ship-art-config';
 import { getEnemyRecord, getPrototypeMission, type GameData } from '../config/game-data';
 import { hasHardVariant } from '../config/mission-data';
-import type { BoatTextureSpec } from './art-dims';
-import { paintShipTexture } from './ship-art';
-import { shipShape } from './ship-shape';
+import { hullTexSize, type BoatTextureSpec } from './art-dims';
+import { destroyerPlan, type DestroyerKind } from './destroyer-plan';
+import { paintDestroyer } from './destroyer-paint';
+import { paintCanvas } from './sea-art';
+
+/** 1 枚を key のテクスチャに（寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央） */
+function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, kind: DestroyerKind, base: number): void {
+  const k = RENDER_SCALE;
+  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);
+  paintCanvas(scene, key, size.w, size.h, (ctx) => {
+    ctx.scale(k, k);
+    paintDestroyer(ctx, destroyerPlan(kind, spec.lengthUnits, spec.beamUnits), base);
+  });
+}
 
 /** 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級） */
 export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string = TEXTURE_KEYS.destroyer): void {
-  paintShipTexture(scene, key, spec, shipShape(SHIP_ART_LAYOUTS[shipArtKind(key)], spec.lengthUnits, spec.beamUnits), PALETTE_ENEMY, PALETTE_ENEMY_MID);
+  const kind = shipArtKind(key);
+  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' ? 'fletcher' : 'kagero', PALETTE_ENEMY.deck);
 }
 
 /**
@@ -38,5 +52,5 @@ export function generateExtraDestroyerTextures(scene: Phaser.Scene, data: GameDa
 
 /** 味方の駆逐艦 卯月（睦月型）を薄い青で（ally-destroyer-placeholder の generateAllyDestroyerTextures が艦の 1 枚にこれを呼ぶ。扇は今のまま） */
 export function paintAllyDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
-  paintShipTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, shipShape(SHIP_ART_LAYOUTS.mutsuki, spec.lengthUnits, spec.beamUnits), PALETTE_ALLY, PALETTE_ALLY_MID);
+  paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);
 }

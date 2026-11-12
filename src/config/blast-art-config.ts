@@ -9,6 +9,9 @@ export const BLAST_FLASH2_DELAY_S = 0.12;
 export const BLAST_FLASH2_S = 0.24;
 export const BLAST_FLASH2_RADIUS_M = 85;
 export const BLAST_OFFSET_M = 12;
+/** IP2（U6「眩しい」）: 2 つ目の閃光は ADD をやめて通常の重ね・橙・頂の α（IP1b は ADD・暖かい黄白・α 1） */
+export const BLAST_FLASH2_TINT = 0xff8a3a;
+export const BLAST_FLASH2_ALPHA = 0.5;
 /** 2 つ目の火球（遅れ・寿命・半径・膨らみの始まり） */
 export const BLAST_FIRE2_DELAY_S = 0.1;
 export const BLAST_FIRE2_S = 1.0;
@@ -20,12 +23,13 @@ export const BLAST_COLUMN_S = 1.6;
 export const BLAST_COLUMN_RADIUS_M = 40;
 export const BLAST_COLUMN_STRETCH = 1.9;
 export const BLAST_COLUMN_RISE_M = 55;
-export const BLAST_COLUMN_ALPHA = 0.95;
+export const BLAST_COLUMN_ALPHA = 0.7; // IP2（U6）: 0.95 → 0.7・白 → 薄い灰青（BLAST_COLUMN_TINT）。魚雷の命中はこの柱でなく column-art-config の水柱（U7）
+export const BLAST_COLUMN_TINT = 0xd2dce4;
 /** 水面の衝撃波（tex-shockwave の白い輪。艦艇の下＝航跡の上）: 寿命・終わりの半径・始まりの割合・α・深さ */
 export const BLAST_SHOCK_S = 0.7;
 export const BLAST_SHOCK_RADIUS_M = 150;
 export const BLAST_SHOCK_FROM = 0.12;
-export const BLAST_SHOCK_ALPHA = 0.8;
+export const BLAST_SHOCK_ALPHA = 0.5; // IP2（U6）: 0.8 → 0.5
 export const BLAST_SHOCK_DEPTH = 3.6;
 /** 衝撃波の絵（tex-shockwave。k に依らない固定 px）: 一辺・輪の半径・輪の柔らかい幅 */
 export const SHOCK_TEX_PX = 128;

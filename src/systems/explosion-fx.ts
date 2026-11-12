@@ -6,20 +6,22 @@
 // 持ち主は world-art（世界の作成時に作り、mission-effects に登録し、破棄で外す＝R12）。§7: 確保は constructor だけ。update は読んで書くだけ。
 // IP1b（U3「もっと派手な演出、数でも大丈夫」）: 枠 4 → 6・閃光と火球と水柱を大きく長く、同じ枠の番号で 2 段目（systems/blast-fx: 2 つ目の閃光・2 つ目の火球・水柱の柱・水面の衝撃波・
 //   爆発の煙）と破片の火花・水滴（systems/spark-fx）を出す。沈没の段の 2 次の爆発（sink-fx から secondary）は 2 段目だけ（輪なし＝結果の印にしない）。
+// IP2（実機 2 回目。U6「フラッシュのような白色や輝度は落ち着かせてください」・U7「魚雷の爆発は…派手に水柱を立たせてください」）: 閃光は琥珀・α 0.55、火球は α 0.8、水柱は薄い灰青・α 0.7
+//   （大きさと長さは IP1b のまま）。昼の海（夜明けの段）は ADD の閃光と火球の α を下げる（setDaylight）。魚雷の命中（play の torpedo）は白い水柱の代わりに大きな水柱（torpedo-column-fx）。
 import type Phaser from 'phaser';
 import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, partFade, partGrow, slotLifeS } from '../assets/fx-shape';
 import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
 import {
-  ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_FIRE_RADIUS_M, EXPLOSION_FIRE_TINT, EXPLOSION_FLASH_RADIUS_M, EXPLOSION_FLASH_TINT, EXPLOSION_PUFF_RADIUS_M, EXPLOSION_SLOTS,
-  EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, FIRE_SMOKE_TINT,
+  ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_DAY_ADD_DIM, EXPLOSION_FIRE_RADIUS_M, EXPLOSION_FIRE_TINT, EXPLOSION_FLASH_ALPHA, EXPLOSION_FLASH_RADIUS_M, EXPLOSION_FLASH_TINT, EXPLOSION_PUFF_RADIUS_M,
+  EXPLOSION_SLOTS, EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, EXPLOSION_SPLASH_TINT, FIRE_SMOKE_TINT,
 } from '../config/fx-art-config';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { BlastFx } from './blast-fx';
 import type { SparkFx } from './spark-fx';
+import { TorpedoColumnFx } from './torpedo-column-fx';
 import { RENDERER_WEBGL } from '../config/sea-art-config';
 import { EXPLOSION_DURATION_MS, EXPLOSION_SCALE_DUD, EXPLOSION_SCALE_FROM, EXPLOSION_SCALE_HIT, EXPLOSION_TINT_DUD, EXPLOSION_TINT_HIT, SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
 
-const NO_TINT = 0xffffff;
 const RING_S = EXPLOSION_DURATION_MS / 1000;
 
 export class ExplosionFx {
@@ -37,9 +39,14 @@ export class ExplosionFx {
   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
   /** 2 段目（IP1b。同じ枠の番号） */
   private readonly blast: BlastFx;
+  /** 魚雷の命中の水柱（IP2） */
+  private readonly column: TorpedoColumnFx;
+  /** 昼の海で ADD の閃光と火球の α に掛ける（夜は 1） */
+  private addMul = 1;
 
   constructor(scene: Phaser.Scene, sparks: SparkFx) {
     this.blast = new BlastFx(scene, sparks);
+    this.column = new TorpedoColumnFx(scene);
     const add = scene.sys.game.renderer.type === RENDERER_WEBGL;
     const light = DEPTH.effects + ADD_DEPTH_STEP;
     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
@@ -56,22 +63,31 @@ export class ExplosionFx {
     }
   }
 
-  /** 爆発を置く（mission-effects の playExplosion から。dud は小さい版） */
-  play(x: number, y: number, dud: boolean): void {
+  /** 爆発を置く（mission-effects の playExplosion から。dud は小さい版、torpedo は魚雷の命中＝見た目だけの印（IP2）） */
+  play(x: number, y: number, dud: boolean, torpedo = false): void {
     const i = this.next;
     this.next = (this.next + 1) % EXPLOSION_SLOTS;
     this.age[i] = 0;
     this.small[i] = dud ? 1 : 0;
     this.life[i] = slotLifeS(dud, RING_S);
     const pm = this.perM;
-    this.flash[i]!.setPosition(x, y).setScale((dud ? EXPLOSION_SMALL_FLASH_RADIUS_M : EXPLOSION_FLASH_RADIUS_M) * pm).setAlpha(1).setVisible(true);
-    this.fire[i]!.setPosition(x, y).setScale(EXPLOSION_FIRE_RADIUS_M * pm * FIRE_GROW.from).setAlpha(1).setVisible(!dud);
+    this.flash[i]!.setPosition(x, y).setScale((dud ? EXPLOSION_SMALL_FLASH_RADIUS_M : EXPLOSION_FLASH_RADIUS_M) * pm).setAlpha(EXPLOSION_FLASH_ALPHA * this.addMul).setVisible(true);
+    this.fire[i]!.setPosition(x, y).setScale(EXPLOSION_FIRE_RADIUS_M * pm * FIRE_GROW.from).setAlpha(FIRE_GROW.alpha0 * this.addMul).setVisible(!dud);
     const wet = this.wet[i]!.setPosition(x, y);
     if (dud) wet.setTexture(TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT).setScale(EXPLOSION_PUFF_RADIUS_M * this.puffPerM * PUFF_GROW.from).setAlpha(PUFF_GROW.alpha0);
-    else wet.setTexture(TEXTURE_KEYS.splash).setTint(NO_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
-    wet.setVisible(true);
+    else wet.setTexture(TEXTURE_KEYS.splash).setTint(EXPLOSION_SPLASH_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
+    wet.setVisible(!(torpedo && !dud)); // 魚雷の命中は水柱の根元の飛沫が代わり
     this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
-    this.blast.play(i, x, y, dud);
+    this.blast.play(i, x, y, dud, torpedo);
+    if (torpedo && !dud) this.column.play(x, y);
+  }
+
+  /** 昼の割合（0＝夜・1＝昼。world-art が夜明けの段 lightStep / 16 を毎フレーム渡す）: 明るい海に ADD の光を足すと白く飛ぶので α を下げる（U6） */
+  setDaylight(f: number): void {
+    const m = 1 - EXPLOSION_DAY_ADD_DIM * Math.min(1, Math.max(0, f));
+    if (m === this.addMul) return;
+    this.addMul = m;
+    this.blast.setAddMul(m);
   }
 
   /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
@@ -82,6 +98,7 @@ export class ExplosionFx {
   /** 毎フレーム（world-art から。realDt は見た目の時計）: 部品ごとに膨らみと薄れ、寿命が尽きた部品から隠す。枠の寿命で枠を閉じる */
   update(realDt: number): void {
     this.blast.update(realDt);
+    this.column.update(realDt);
     const pm = this.perM;
     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
       const a0 = this.age[i]!;
@@ -101,18 +118,19 @@ export class ExplosionFx {
       const fs = flashLifeS(dud);
       if (a >= fs) {
         if (fl.visible) fl.setVisible(false);
-      } else fl.setAlpha(1 - a / fs);
+      } else fl.setAlpha(EXPLOSION_FLASH_ALPHA * this.addMul * (1 - a / fs));
       if (!dud) {
         const fi = this.fire[i]!;
         if (a >= FIRE_GROW.life) {
           if (fi.visible) fi.setVisible(false);
-        } else fi.setScale(EXPLOSION_FIRE_RADIUS_M * pm * partGrow(a, FIRE_GROW.life, FIRE_GROW.from)).setAlpha(partFade(a, FIRE_GROW.life, FIRE_GROW.alpha0));
+        } else fi.setScale(EXPLOSION_FIRE_RADIUS_M * pm * partGrow(a, FIRE_GROW.life, FIRE_GROW.from)).setAlpha(partFade(a, FIRE_GROW.life, FIRE_GROW.alpha0 * this.addMul));
       }
       const wet = this.wet[i]!;
       const g = dud ? PUFF_GROW : SPLASH_GROW;
-      if (a >= g.life) {
-        if (wet.visible) wet.setVisible(false);
-      } else wet.setScale((dud ? EXPLOSION_PUFF_RADIUS_M * this.puffPerM : EXPLOSION_SPLASH_RADIUS_M * pm) * partGrow(a, g.life, g.from)).setAlpha(partFade(a, g.life, g.alpha0));
+      if (wet.visible) { // 魚雷の命中は play で隠した（水柱が代わり）
+        if (a >= g.life) wet.setVisible(false);
+        else wet.setScale((dud ? EXPLOSION_PUFF_RADIUS_M * this.puffPerM : EXPLOSION_SPLASH_RADIUS_M * pm) * partGrow(a, g.life, g.from)).setAlpha(partFade(a, g.life, g.alpha0));
+      }
       const ring = this.ring[i]!;
       if (a >= RING_S) {
         if (ring.visible) ring.setVisible(false);
@@ -132,5 +150,6 @@ export class ExplosionFx {
       this.ring[i]!.destroy();
     }
     this.blast.destroy();
+    this.column.destroy();
   }
 }

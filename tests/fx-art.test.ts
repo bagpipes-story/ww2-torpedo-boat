@@ -170,10 +170,10 @@ describe('作法の pin（S3b）', () => {
     expect(read('src/systems/enemy-seaplane.ts')).toContain('TEXTURE_KEYS.explosionRing');
     expect(read('src/systems/mission-effects.ts')).toContain('.image(0, 0, TEXTURE_KEYS.explosionRing)'); // 見越し点
   });
-  it('mission-effects の playExplosion は名前と引数のまま登録先へ渡すだけ（new も tween も無い）。world-art が作って登録し、破棄で外す（R12）。mission-scene は触らない', () => {
+  it('mission-effects の playExplosion は名前と引数のまま登録先へ渡すだけ（new も tween も無い）。world-art が作って登録し、破棄で外す（R12）。mission-scene は onTorpedoHit の 1 行に見た目の印だけ（IP2）', () => {
     const me = read('src/systems/mission-effects.ts');
-    expect(me).toContain('export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean): void {');
-    expect(me).toContain('explosions?.play(x, y, dud);');
+    expect(me).toContain("export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean, look: ExplosionLook = 'blast'): void {");
+    expect(me).toContain("explosions?.play(x, y, dud, look === 'torpedo');");
     expect(me).toContain('export function registerExplosionFx(fx: ExplosionFx | null): void {');
     expect(me).not.toMatch(/tweens\.add/);
     expect(me).not.toMatch(/forScene/);
@@ -183,6 +183,8 @@ describe('作法の pin（S3b）', () => {
     expect(wa.indexOf('registerExplosionFx(null);')).toBeLessThan(wa.indexOf('this.explosions.destroy();'));
     const ms = read('src/scenes/mission-scene.ts');
     expect(ms.split('playExplosion(this, ').length - 1).toBe(5);
+    expect(ms.split("'torpedo')").length - 1).toBe(1); // IP2: 魚雷の命中だけ（論理と呼ぶ順は同じ）
+    expect(ms).toContain("onTorpedoHit: (x, y, dud) => {\n      playExplosion(this, x, y, dud, 'torpedo');");
     expect(ms).toContain("import { DebugRanges, LeadMarker, playExplosion } from '../systems/mission-effects';");
   });
   it('explosion-fx: 確保は constructor だけ（play・update に new・tween・add.image が無い）、ADD は閃光と火球だけで深さ ＋0.01（R25）、小さい版は火球なし・暗い玉', () => {

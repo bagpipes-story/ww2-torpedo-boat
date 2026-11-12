@@ -59,12 +59,20 @@ export const EXPLOSION_FIRE_RADIUS_M = 64;
 export const EXPLOSION_FIRE_GROW_FROM = 0.35;
 export const EXPLOSION_SPLASH_RADIUS_M = 58;
 export const EXPLOSION_SPLASH_GROW_FROM = 0.5;
-export const EXPLOSION_SPLASH_ALPHA = 0.9;
+export const EXPLOSION_SPLASH_ALPHA = 0.7; // IP2（U6「眩しい」）: 0.9 → 0.7・白 → 薄い灰青（EXPLOSION_SPLASH_TINT）
 export const EXPLOSION_PUFF_RADIUS_M = 14;
 export const EXPLOSION_PUFF_GROW_FROM = 0.6;
-/** 閃光と火球の tint（ADD で重ねる＝暖かい黄白と橙）、水柱は白のまま */
-export const EXPLOSION_FLASH_TINT = 0xfff2c0;
-export const EXPLOSION_FIRE_TINT = 0xffb060;
+/**
+ * 閃光と火球の tint（ADD で重ねる）と頂の α、水柱の tint。IP2（実機 2 回目。ユーザーの U6「フラッシュのような白色や輝度は落ち着かせてください」。大きさと長さは変えない）:
+ * 閃光 暖かい黄白 0xfff2c0・α 1 → 琥珀 0xffa04a・α 0.55、火球 0xffb060・α 1 → 0xff9440・α 0.8、水柱 白 → 0xd2dce4（α は EXPLOSION_SPLASH_ALPHA）。
+ * 昼の海（夜明けの段 lightStep / 16）では ADD の閃光と火球の α を最大 EXPLOSION_DAY_ADD_DIM だけ下げる（明るい海に足すと白く飛ぶ）
+ */
+export const EXPLOSION_FLASH_TINT = 0xffa04a;
+export const EXPLOSION_FLASH_ALPHA = 0.55;
+export const EXPLOSION_FIRE_TINT = 0xff9440;
+export const EXPLOSION_FIRE_ALPHA = 0.8;
+export const EXPLOSION_SPLASH_TINT = 0xd2dce4;
+export const EXPLOSION_DAY_ADD_DIM = 0.35;
 
 /**
  * 演出の絵（Boot で 1 回。tex-splash・tex-muzzle-flash・tex-fireball・tex-oil-slick＝爆発の輪と同じ寸法 96×96 at k 1.09）。
@@ -100,10 +108,13 @@ export const SLICK_BUBBLES = 7;
 export const SLICK_BUBBLE_SPREAD = 0.5;
 export const SLICK_BUBBLE_R: readonly [number, number] = [0.05, 0.08];
 export const SLICK_BUBBLE_ALPHA = 0.7;
-export const MUZZLE_RAYS = 12; // IP1b（U3）: 8 → 12 本・芯 0.3 → 0.36・幅 0.07 → 0.08（明るく派手に）
+export const MUZZLE_RAYS = 12; // IP1b（U3）: 8 → 12 本・芯 0.3 → 0.36・幅 0.07 → 0.08（明るく派手に）。IP2（U6）: 芯と光芒の α を下げた（MUZZLE_CORE_ALPHA・MUZZLE_RAY_ALPHA）
 export const MUZZLE_RAY_LEN: readonly [number, number] = [1.0, 0.55];
 export const MUZZLE_RAY_HALF_W = 0.08;
 export const MUZZLE_CORE_R = 0.36;
+/** 砲口炎の絵の芯の α（中心・0.35・0.6 の所。IP1b は 1・0.95・0.6）と光芒の α（IP1b は 0.95）。爆発の閃光も同じ絵（IP2・U6） */
+export const MUZZLE_CORE_ALPHA: readonly [number, number, number] = [0.82, 0.7, 0.42];
+export const MUZZLE_RAY_ALPHA = 0.8;
 
 /**
  * 炎と煙（R10・R26）: 発生源の枠・煙の玉のプール・玉の半径の上限 m（煙幕の 60 m の 1/4）・α の上限・持ち主が見えなくなってから消すまでの秒。

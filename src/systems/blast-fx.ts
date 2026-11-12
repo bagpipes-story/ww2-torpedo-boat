@@ -2,17 +2,19 @@
 // 共有の爆発の煙のプール（暗い玉が遅れて湧き、風下へ流れて膨らむ）。破片の火花と水滴は spark-fx。
 // 大きい版（命中・撃破・沈没）: 2 つ目の閃光（0.12 秒遅れ・少しずれた所）＋2 つ目の火球＋水柱の柱（上がって落ちる白い柱）＋衝撃波（艦艇の下の白い輪が 150 m へ）＋煙 5＋破片 16＋水滴 12。
 // 小さい版（dud）: 煙 1＋破片 5（柱・衝撃波なし＝艇に当たった弾が水柱に見えない＝R11）。2 次の爆発（沈没の段）: 2 つ目の閃光と火球だけ＋煙 2＋破片 8（輪・柱・衝撃波なし）。
+// IP2（U6「眩しい」）: 2 つ目の閃光は通常の重ね（ADD をやめた）・橙・α 0.5、水柱の柱は薄い灰青・α 0.7、衝撃波 α 0.5。昼の海は ADD の火球の α を下げる（setAddMul）。
+//   魚雷の命中（torpedo）は水柱の柱と爆発の水滴を出さない（torpedo-column-fx の大きな水柱が代わり＝U7）。
 // §7: 確保は constructor だけ。play・update は書くだけ。乱数は絵だけ（ART_SEED_BLAST）。
 import type Phaser from 'phaser';
 import { columnPoseInto, shockPoseInto } from '../assets/blast-shape';
 import { partFade, partGrow } from '../assets/fx-shape';
 import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
 import {
-  ART_SEED_BLAST, BLAST_COLUMN_RADIUS_M, BLAST_COLUMN_S, BLAST_FIRE2_DELAY_S, BLAST_FIRE2_FROM, BLAST_FIRE2_RADIUS_M, BLAST_FIRE2_S, BLAST_FIRE2_TINT, BLAST_FLASH2_DELAY_S, BLAST_FLASH2_RADIUS_M,
-  BLAST_FLASH2_S, BLAST_OFFSET_M, BLAST_SHOCK_DEPTH, BLAST_SHOCK_RADIUS_M, BLAST_SHOCK_S, BLAST_SMOKE_ALPHA, BLAST_SMOKE_BIG, BLAST_SMOKE_DELAY_S, BLAST_SMOKE_DRIFT_MPS, BLAST_SMOKE_POOL,
+  ART_SEED_BLAST, BLAST_COLUMN_RADIUS_M, BLAST_COLUMN_S, BLAST_COLUMN_TINT, BLAST_FIRE2_DELAY_S, BLAST_FIRE2_FROM, BLAST_FIRE2_RADIUS_M, BLAST_FIRE2_S, BLAST_FIRE2_TINT, BLAST_FLASH2_ALPHA, BLAST_FLASH2_DELAY_S, BLAST_FLASH2_RADIUS_M,
+  BLAST_FLASH2_S, BLAST_FLASH2_TINT, BLAST_OFFSET_M, BLAST_SHOCK_DEPTH, BLAST_SHOCK_RADIUS_M, BLAST_SHOCK_S, BLAST_SMOKE_ALPHA, BLAST_SMOKE_BIG, BLAST_SMOKE_DELAY_S, BLAST_SMOKE_DRIFT_MPS, BLAST_SMOKE_POOL,
   BLAST_SMOKE_RADIUS_M, BLAST_SMOKE_S, BLAST_SMOKE_SECONDARY, BLAST_SMOKE_SMALL, BLAST_SMOKE_SPREAD_M, BLAST_SMOKE_TINT, SHOCK_TEX_RING_PX, SPARK_DEBRIS_BIG, SPARK_DEBRIS_SECONDARY, SPARK_DEBRIS_SMALL, SPARK_DROPS_BIG,
 } from '../config/blast-art-config';
-import { ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_FLASH_TINT, EXPLOSION_SLOTS, FIRE_DRIFT_DEG, FIRE_SMOKE_DEPTH } from '../config/fx-art-config';
+import { ADD_DEPTH_STEP, BLEND_ADD, EXPLOSION_SLOTS, FIRE_DRIFT_DEG, FIRE_SMOKE_DEPTH } from '../config/fx-art-config';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { RENDERER_WEBGL } from '../config/sea-art-config';
 import { SMOKE_PUFF_TEX_RADIUS_UNITS } from '../config/ui-config';
@@ -22,6 +24,8 @@ import type { SparkFx } from './spark-fx';
 const KIND_BIG = 0;
 const KIND_SMALL = 1;
 const KIND_SECONDARY = 2;
+/** 魚雷の命中の大きい版（柱なし。IP2） */
+const KIND_TORPEDO = 3;
 
 export class BlastFx {
   private readonly flash2: Phaser.GameObjects.Image[] = [];
@@ -43,6 +47,8 @@ export class BlastFx {
   private readonly pose = new Float32Array(4);
   private nextSmoke = 0;
   private nextSecondary = 0;
+  /** 昼の海で ADD の火球の α に掛ける（explosion-fx の setDaylight から。夜は 1） */
+  private addMul = 1;
   private readonly perM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
   private readonly shockPerM = 1 / SHOCK_TEX_RING_PX;
   private readonly puffPerM = 1 / SMOKE_PUFF_TEX_RADIUS_UNITS / RENDER_SCALE;
@@ -53,23 +59,20 @@ export class BlastFx {
     const add = scene.sys.game.renderer.type === RENDERER_WEBGL;
     const light = DEPTH.effects + ADD_DEPTH_STEP;
     for (let i = 0; i < EXPLOSION_SLOTS; i++) {
-      const fl = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(EXPLOSION_FLASH_TINT).setDepth(light).setVisible(false);
+      const fl = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BLAST_FLASH2_TINT).setDepth(DEPTH.effects).setVisible(false);
       const fi = scene.add.image(0, 0, TEXTURE_KEYS.fireball).setTint(BLAST_FIRE2_TINT).setDepth(light).setVisible(false);
-      if (add) {
-        fl.setBlendMode(BLEND_ADD);
-        fi.setBlendMode(BLEND_ADD);
-      }
+      if (add) fi.setBlendMode(BLEND_ADD);
       this.flash2.push(fl);
       this.fire2.push(fi);
-      this.column.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setDepth(DEPTH.effects - ADD_DEPTH_STEP).setVisible(false));
+      this.column.push(scene.add.image(0, 0, TEXTURE_KEYS.splash).setTint(BLAST_COLUMN_TINT).setDepth(DEPTH.effects - ADD_DEPTH_STEP).setVisible(false));
       this.shock.push(scene.add.image(0, 0, TEXTURE_KEYS.shockwave).setDepth(BLAST_SHOCK_DEPTH).setVisible(false));
     }
     for (let i = 0; i < BLAST_SMOKE_POOL; i++) this.smoke.push(scene.add.image(0, 0, TEXTURE_KEYS.smokePuff).setTint(BLAST_SMOKE_TINT).setDepth(FIRE_SMOKE_DEPTH).setVisible(false));
   }
 
-  /** explosion-fx の play から（同じ枠の番号 i）。dud は小さい版 */
-  play(i: number, x: number, y: number, dud: boolean): void {
-    this.open(i, x, y, dud ? KIND_SMALL : KIND_BIG);
+  /** explosion-fx の play から（同じ枠の番号 i）。dud は小さい版、torpedo は魚雷の命中（柱と水滴は水柱の演出が出す＝IP2） */
+  play(i: number, x: number, y: number, dud: boolean, torpedo: boolean): void {
+    this.open(i, x, y, dud ? KIND_SMALL : torpedo ? KIND_TORPEDO : KIND_BIG);
     if (dud) {
       this.puffs(x, y, BLAST_SMOKE_SMALL, 0.5);
       this.sparks.debris(x, y, SPARK_DEBRIS_SMALL);
@@ -77,14 +80,19 @@ export class BlastFx {
     }
     this.puffs(x, y, BLAST_SMOKE_BIG, 1);
     this.sparks.debris(x, y, SPARK_DEBRIS_BIG);
-    this.sparks.drops(x, y, SPARK_DROPS_BIG);
+    if (!torpedo) this.sparks.drops(x, y, SPARK_DROPS_BIG);
+  }
+
+  /** 昼の海の ADD の α の掛け（explosion-fx の setDaylight から） */
+  setAddMul(m: number): void {
+    this.addMul = m;
   }
 
   /** 沈没の段の 2 次の爆発（sink-fx から。輪・柱・衝撃波なし＝結果の印ではない）。枠は 2 次の爆発の番の枠（大きい版の枠と別の番を回す） */
   secondary(x: number, y: number): void {
     const i = this.nextSecondary;
     this.nextSecondary = (i + 1) % EXPLOSION_SLOTS;
-    if (this.age[i] !== Infinity && this.kind[i] === KIND_BIG) return; // 大きい版の途中は上書きしない
+    if (this.age[i] !== Infinity && (this.kind[i] === KIND_BIG || this.kind[i] === KIND_TORPEDO)) return; // 大きい版の途中は上書きしない
     this.open(i, x, y, KIND_SECONDARY);
     this.age[i] = BLAST_FLASH2_DELAY_S; // 閃光と火球を遅れなしで（2 段目の遅れの分だけ年を進めて始める）
     this.puffs(x, y, BLAST_SMOKE_SECONDARY, 0.8);
@@ -126,12 +134,12 @@ export class BlastFx {
       const k = this.kind[i]!;
       const fa = a - BLAST_FLASH2_DELAY_S;
       const fl = this.flash2[i]!;
-      if (fa >= 0 && fa < BLAST_FLASH2_S && k !== KIND_SMALL) fl.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FLASH2_RADIUS_M * this.perM).setAlpha(1 - fa / BLAST_FLASH2_S).setVisible(true);
+      if (fa >= 0 && fa < BLAST_FLASH2_S && k !== KIND_SMALL) fl.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FLASH2_RADIUS_M * this.perM).setAlpha(BLAST_FLASH2_ALPHA * (1 - fa / BLAST_FLASH2_S)).setVisible(true);
       else if (fl.visible) fl.setVisible(false);
       const ga = a - BLAST_FIRE2_DELAY_S;
       const fi = this.fire2[i]!;
       if (ga >= 0 && ga < BLAST_FIRE2_S && k !== KIND_SMALL) {
-        fi.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FIRE2_RADIUS_M * this.perM * partGrow(ga, BLAST_FIRE2_S, BLAST_FIRE2_FROM)).setAlpha(partFade(ga, BLAST_FIRE2_S, 1)).setVisible(true);
+        fi.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FIRE2_RADIUS_M * this.perM * partGrow(ga, BLAST_FIRE2_S, BLAST_FIRE2_FROM)).setAlpha(partFade(ga, BLAST_FIRE2_S, this.addMul)).setVisible(true);
       } else if (fi.visible) fi.setVisible(false);
       const col = this.column[i]!;
       const sh = this.shock[i]!;
@@ -140,7 +148,7 @@ export class BlastFx {
         const s = BLAST_COLUMN_RADIUS_M * this.perM;
         col.setPosition(this.cx[i]!, this.cy[i]! - o[2]!).setScale(s * o[0]!, s * o[1]!).setAlpha(o[3]!).setVisible(true);
       } else if (col.visible) col.setVisible(false);
-      if (k === KIND_BIG && a < BLAST_SHOCK_S) {
+      if ((k === KIND_BIG || k === KIND_TORPEDO) && a < BLAST_SHOCK_S) {
         shockPoseInto(o, a);
         sh.setScale(BLAST_SHOCK_RADIUS_M * this.shockPerM * o[0]!).setAlpha(o[1]!).setVisible(true);
       } else if (sh.visible) sh.setVisible(false);

@@ -78,7 +78,7 @@ export class MissionScene extends Phaser.Scene {
 
   private readonly worldEvents: WorldEvents = {
     onTorpedoHit: (x, y, dud) => {
-      playExplosion(this, x, y, dud);
+      playExplosion(this, x, y, dud, 'torpedo');
       if (!dud) this.shakeCamera();
     },
     // 撃沈では終わらない（帰投が目標。制空権下で敵艦隊がいなくなれば cleared）。終了判定は update の MissionEnd（systems/mission-end）
