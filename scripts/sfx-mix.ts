@@ -5,14 +5,18 @@
 // S2: PROBE=<json>（scripts/headless/sfx-probe.mjs の OUT）を渡すと、鍵ごとの数の代わりに、任務の記録を波形に直して（scripts/sfx-mixdown.ts。リミッタの前の束）
 // 件ごとに 全体と一番混む 10 秒の 頂（モノの和＝パンの無い端末。かっこは左右に振った時）・1.0 を超える標本の割合（目標 < 1%）・RMS・爆発の頭 0.3 秒が
 // ほかの音（機銃・砲・水柱）より何 dB 大きいか（中央値と一番悪い件）を出す。WAV=1 で一番混む 10 秒を <出力先>/mix-<件>.wav（16 bit・ステレオ）に書く（MIXCASES=<名前,…> で件を選ぶ）。
+// S3: 記録にループの行があれば、ループの束も波形に直し、つなぎの 2 つの案（ループをリミッタに通す＝束の音量 1 と SFX_LOOP_BUS_GAIN／リミッタの後で足す＝S3 の決め）を
+// 同じ模型で比べる: ループだけの時にリミッタが下げている量・単発が鳴っている時にループが沈む量・出口（自動の補正の音量と master の後）の頂と 1.0 超え・爆発の飛び出し。
+// WAV=1 の mix-<件>.wav は S3 の決めの出口（リミッタの模型の後＋ループ）になる。
+// RAW=1（S3）: 一番混む 10 秒（＋前 1 秒）の単発の束（左右）とループの束を <出力先>/raw-<件>.json に書く（scripts/headless/sfx-offline.mjs が本物の DynamicsCompressor に通す）。
 // 実行: npx esbuild scripts/sfx-mix.ts --bundle --platform=node --format=esm --outfile=<scratch>/sfx-mix.mjs && [WAV=1] [PNG=1] [ONLY=mg,ui_tap] [PROBE=<json>] node <scratch>/sfx-mix.mjs [<出力先>]
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { SFX_KEYS, SFX_MAX_TOTAL_SAMPLES, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
+import { SFX_KEYS, SFX_LOOP_BUS_GAIN, SFX_MASTER_GAIN, SFX_MAX_TOTAL_SAMPLES, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
 import { meanOf, peakOf, rmsOf, zeroCrossings } from '../src/assets/sfx-dsp';
 import { STRIP_H, STRIP_W, centroidHz, drawStrip, pngBytes, spectrum, wavBytes, wavStereoBytes } from './sfx-files';
-import { blastMargins, blastPops, busiestWindow, limiterGain, limiterStats, mixStats, mixdown, type ProbeCase } from './sfx-mixdown';
+import { LIMITER_MAKEUP, blastMargins, blastPops, busiestWindow, limiterGain, limiterStats, loopStem, mixStats, mixdown, routeStats, type ProbeCase } from './sfx-mixdown';
 
 const SR = SFX_SAMPLE_RATE;
 const db = (v: number): string => (v > 0 ? `${(20 * Math.log10(v)).toFixed(1)} dB` : '-inf dB');
@@ -66,7 +70,7 @@ function describe(key: SfxKey, x: Float32Array): string[] {
 const outDir = process.argv[2] ?? '';
 const wav = process.env.WAV === '1';
 const png = process.env.PNG === '1';
-if ((wav || png) && !outDir) throw new Error('WAV=1・PNG=1 は出力先（scratchpad のディレクトリ）が要る: node sfx-mix.mjs <出力先>');
+if ((wav || png || process.env.RAW === '1') && !outDir) throw new Error('WAV=1・PNG=1・RAW=1 は出力先（scratchpad のディレクトリ）が要る: node sfx-mix.mjs <出力先>');
 const only = process.env.ONLY ? process.env.ONLY.split(',') : null;
 const keys = sfxImplementedKeys().filter((k) => !only || only.includes(k));
 if (outDir) mkdirSync(outDir, { recursive: true });
@@ -77,7 +81,7 @@ function probeReport(file: string): void {
   const data = JSON.parse(readFileSync(file, 'utf8')) as { cases: ProbeCase[] };
   const pick = process.env.MIXCASES ? process.env.MIXCASES.split(',') : null;
   const pct = (v: number): string => `${(v * 100).toFixed(2)}%`;
-  let worstOver = 0;
+  let worstOver = 0, worstOut = 0;
   for (const c of data.cases) {
     if (pick && !pick.includes(c.name)) continue;
     const m = mixdown(c);
@@ -93,9 +97,33 @@ function probeReport(file: string): void {
     worstOver = Math.max(worstOver, busy.overShare);
     console.log(`${c.name.padEnd(12)} 鳴らした ${String(m.played).padStart(4)}  全体: 頂 ${all.peak.toFixed(2)}（左右 ${all.peakStereo.toFixed(2)}）・1.0 超え ${pct(all.overShare)}・RMS ${db(all.rms)}  一番混む ${WINDOW_S} 秒（${(w.from / SR).toFixed(0)} 秒から・${w.count} 発）: 頂 ${busy.peak.toFixed(2)}（左右 ${busy.peakStereo.toFixed(2)}）・1.0 超え ${pct(busy.overShare)}（一番ひどい 1 秒 ${pct(busy.worstSecOver)}）・RMS ${db(busy.rms)}・リミッタ（模型）が 3 dB より多く下げる ${pct(lim.over3Share)}・最大 ${lim.maxDb.toFixed(1)} dB`);
     console.log(`${''.padEnd(12)} 爆発 ${margins.length} 回: 頭 0.3 秒 − ほかの音 中央値 ${mid(margins)}・一番悪い ${margins.length ? `${margins[0]!.toFixed(1)} dB` : '-'}・埋もれた（< 0 dB）${margins.filter((v) => v < 0).length} 回  飛び出し（頭 0.3 秒 − 直前 1 秒。リミッタの後）中央値 ${mid(pops)}・一番悪い ${pops.length ? `${pops[0]!.toFixed(1)} dB` : '-'}・< 3 dB ${pops.filter((v) => v < 3).length} 回`);
-    if (wav) writeFileSync(join(outDir, `mix-${c.name}.wav`), wavStereoBytes(m.left.subarray(w.from, to), m.right.subarray(w.from, to), SR));
+    if (c.loops && c.loops.length > 0) {
+      // S3: ループの束と、つなぎの 3 つの案
+      const lp = loopStem(c, m.mono.length);
+      const lpAll = { peak: peakOf(lp.subarray(0, Math.round((c.t1 - c.t0) * SR))), rms: rmsOf(lp, 0, Math.round((c.t1 - c.t0) * SR)), busyPeak: peakOf(lp.subarray(w.from, to)), busyRms: rmsOf(lp, w.from, to) };
+      console.log(`${''.padEnd(12)} ループの束（束の音量 1）: 全体 頂 ${lpAll.peak.toFixed(2)}・RMS ${db(lpAll.rms)}  混む 10 秒 頂 ${lpAll.busyPeak.toFixed(2)}・RMS ${db(lpAll.busyRms)}`);
+      const routes: [string, number, boolean][] = [['通す×1.0', 1, true], [`通す×${SFX_LOOP_BUS_GAIN}`, SFX_LOOP_BUS_GAIN, true], [`後×${SFX_LOOP_BUS_GAIN}`, SFX_LOOP_BUS_GAIN, false]];
+      for (const [name, bus, through] of routes) {
+        const r = routeStats(m, lp, bus, through, w.from, to);
+        const all = routeStats(m, lp, bus, through);
+        worstOut = Math.max(worstOut, through ? 0 : all.outPeak);
+        console.log(`${''.padEnd(12)}   ${name.padEnd(8)} 混む 10 秒: ループだけの時 リミッタ −${r.quietDb.toFixed(1)} dB・出口のループ RMS ${db(r.quietLoopRms)}  単発の間にループが沈む 中央値 ${r.duckDb.toFixed(1)} dB・95% ${r.duck95Db.toFixed(1)} dB  出口の頂 ${r.outPeak.toFixed(2)}（全体 ${all.outPeak.toFixed(2)}）・1.0 超え ${pct(all.outOver)}  飛び出し 中央値 ${mid(r.pops)}・一番悪い ${r.pops.length ? `${r.pops[0]!.toFixed(1)} dB` : '-'}（全体の中央値 ${mid(all.pops)}・< 3 dB ${all.pops.filter((v) => v < 3).length}/${all.pops.length} 回）`);
+      }
+      if (process.env.RAW === '1') {
+        const a = Math.max(0, w.from - SR);
+        const b64 = (x: Float32Array): string => Buffer.from(new Float32Array(x.subarray(a, to)).buffer).toString('base64');
+        writeFileSync(join(outDir, `raw-${c.name}.json`), JSON.stringify({ name: c.name, sr: SR, pre: w.from - a, blastAt: m.blastAt.filter((v) => v >= w.from && v < to).map((v) => v - a), left: b64(m.left), right: b64(m.right), loops: b64(lp) }));
+      }
+      if (wav) {
+        const k = SFX_MASTER_GAIN;
+        const l = new Float32Array(to - w.from), rr = new Float32Array(to - w.from);
+        for (let i = w.from; i < to; i++) { l[i - w.from] = (m.left[i]! * g[i]! * LIMITER_MAKEUP + lp[i]! * SFX_LOOP_BUS_GAIN) * k; rr[i - w.from] = (m.right[i]! * g[i]! * LIMITER_MAKEUP + lp[i]! * SFX_LOOP_BUS_GAIN) * k; }
+        writeFileSync(join(outDir, `mix-${c.name}.wav`), wavStereoBytes(l, rr, SR));
+      }
+    } else if (wav) writeFileSync(join(outDir, `mix-${c.name}.wav`), wavStereoBytes(m.left.subarray(w.from, to), m.right.subarray(w.from, to), SR));
   }
-  console.log(`一番混む ${WINDOW_S} 秒の 1.0 超えの割合の最大 ${pct(worstOver)}（目標 < 1%）${wav ? `  書いた先: ${outDir}/mix-<件>.wav（リミッタの前。1.0 を超えた所は WAV では頭打ち）` : ''}`);
+  if (worstOut > 0) console.log(`S3 の決め（ループはリミッタの後）の出口の頂の最大 ${worstOut.toFixed(2)}（模型。自動の補正の音量 ×${LIMITER_MAKEUP.toFixed(2)}・master ×${SFX_MASTER_GAIN}。1 未満が目標）`);
+  console.log(`一番混む ${WINDOW_S} 秒の 1.0 超えの割合の最大 ${pct(worstOver)}（目標 < 1%）${wav ? `  書いた先: ${outDir}/mix-<件>.wav（ループの行のある記録は S3 の出口＝リミッタの模型の後＋ループ × 束の音量 × master。無い記録はリミッタの前。1.0 を超えた所は WAV では頭打ち）` : ''}`);
 }
 if (process.env.PROBE) {
   probeReport(process.env.PROBE);

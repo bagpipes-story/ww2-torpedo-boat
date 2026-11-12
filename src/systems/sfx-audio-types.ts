@@ -30,6 +30,8 @@ export interface SfxBuffer {
 }
 export interface SfxSource extends SfxNode {
   buffer: SfxBuffer | null;
+  /** buffer 全体を繰り返す（S3 のループ 5 本だけ true。単発は触らない） */
+  loop: boolean;
   readonly playbackRate: SfxParam;
   start(whenS?: number): void;
   stop(whenS?: number): void;

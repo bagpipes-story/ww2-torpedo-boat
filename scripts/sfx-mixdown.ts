@@ -7,13 +7,19 @@
 // - リミッタの模型（limiterGain）: エンジンの DynamicsCompressor（config の閾値・knee・比・立ち上がり・戻り）を、頂の追従（立ち上がり／戻りの 1 極）＋静的な曲線で真似た目安
 //   （本物は先読みと戻りの自動調整がある＝数は目安。自動の補正の音量は入れない＝全体に同じ倍率）。閾値 −10 dB・比 12 は 0.32 より上をほぼ頭打ちにするので、リミッタの後では
 //   大きい音どうしの頂の差が消える＝爆発が「飛び出して聞こえるか」は、爆発の頭 0.3 秒の出力の RMS と、その直前 1 秒の出力の RMS の差（blastPops）で見る。
-import { SFX_LIMITER, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
+// S3（ループ）: probe の記録のループの行（10 Hz で「ノードへ書く」時の 5 本の音量と engine・drone の rate）を、ループの標本でそのまま鳴らした束（loopStem。束の音量 1）。
+//   つなぎの 2 つの案を同じ模型で比べる（routeStats）: 「リミッタを通す」＝単発＋ループをリミッタへ（計画の元の形）／「リミッタの後」＝ループは master へ直に（S3 の決め）。
+//   出口の数は master の音量と、DynamicsCompressor の自動の補正の音量（模型の曲線の 0 dB の出力の逆数の 0.6 乗＝WebAudio の決め）を掛け、リミッタの先読み（6 ms＝
+//   Chromium・WebKit の DynamicsCompressor の既定の遅れ。頭の鋭い音がリミッタの立ち上がりをすり抜けない）を入れる。S2 の数（limiterStats・blastPops）は先読みなしのまま。
+import { SFX_LIMITER, SFX_LOOP_TIME_CONSTANT_S, SFX_MASTER_GAIN, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx } from '../src/assets/sfx-bank';
 
 const SR = SFX_SAMPLE_RATE;
 /** probe の記録の 1 行（scripts/headless/sfx-probe.mjs の install の並び） */
 export type ProbeRow = [t: number, key: SfxKey, dx: number, dy: number, rate: number, mul: number, voice: number, drop: number, gain: number, pan: number, band: number, stole: number, flat: number];
-export interface ProbeCase { name: string; q: string; secs: number; mode: string; t0: number; t1: number; steals: number; maxVoices: number; demand: number; log: ProbeRow[] }
+/** ループの記録の 1 行（sfx-probe の install）: [時刻, 音量 engine・sea・fire・rain・drone, engine の rate, drone の rate, 書いた数] */
+export type LoopRow = [t: number, g0: number, g1: number, g2: number, g3: number, g4: number, rEngine: number, rDrone: number, writes: number];
+export interface ProbeCase { name: string; q: string; secs: number; mode: string; t0: number; t1: number; steals: number; maxVoices: number; demand: number; log: ProbeRow[]; loops?: LoopRow[] }
 
 export interface Mixdown {
   /** モノの和（パンなし）・左・右・爆発の束・ほかの束（どれも長さは同じ。時刻 0 は記録の t0） */
@@ -109,20 +115,28 @@ export function blastMargins(m: Mixdown, headS = 0.3): number[] {
   return out.sort((x, y) => x - y);
 }
 
-/** リミッタの模型: 標本ごとの倍率（1 以下）。左右の大きい方の頂を追い、閾値＋knee の曲線で下げる */
-export function limiterGain(m: Mixdown): Float32Array {
-  const { thresholdDb: T, kneeDb: K, ratio: R, attackS, releaseS } = SFX_LIMITER;
+/** リミッタの静的な曲線（入力 dB → 出力 dB。閾値＋knee） */
+function limiterCurveDb(x: number): number {
+  const { thresholdDb: T, kneeDb: K, ratio: R } = SFX_LIMITER;
+  const over = x - T;
+  return over <= 0 ? x : over < K ? x + ((1 / R - 1) * over * over) / (2 * K) : T + K + ((1 / R - 1) * K) / 2 + (over - K) / R;
+}
+/** 自動の補正の音量（WebAudio の決め: 曲線の 0 dB の出力の逆数の 0.6 乗。模型の曲線で約 1.56 倍） */
+export const LIMITER_MAKEUP = Math.pow(10, (-limiterCurveDb(0) * 0.6) / 20);
+
+/** リミッタの模型: 標本ごとの倍率（1 以下）。左右の大きい方の頂を追い、閾値＋knee の曲線で下げる。add はリミッタに一緒に入る束（S3 の比べ: ループを通す案。左右に同じだけ足す） */
+export function limiterGain(m: Mixdown, add?: Float32Array, addGain = 1): Float32Array {
+  const { attackS, releaseS } = SFX_LIMITER;
   const up = 1 - Math.exp(-1 / (attackS * SR));
   const down = 1 - Math.exp(-1 / (releaseS * SR));
   const out = new Float32Array(m.mono.length);
   let env = 0;
   for (let i = 0; i < out.length; i++) {
-    const a = Math.max(Math.abs(m.left[i]!), Math.abs(m.right[i]!));
+    const e = add ? add[i]! * addGain : 0;
+    const a = Math.max(Math.abs(m.left[i]! + e), Math.abs(m.right[i]! + e));
     env += (a > env ? up : down) * (a - env);
     const x = 20 * Math.log10(env + 1e-9);
-    const over = x - T;
-    const y = over <= 0 ? x : over < K ? x + ((1 / R - 1) * over * over) / (2 * K) : T + K + ((1 / R - 1) * K) / 2 + (over - K) / R;
-    out[i] = Math.pow(10, (y - x) / 20);
+    out[i] = Math.pow(10, (limiterCurveDb(x) - x) / 20);
   }
   return out;
 }
@@ -148,4 +162,78 @@ export function blastPops(m: Mixdown, g: Float32Array, headS = 0.3, beforeS = 1)
   };
   const h = Math.round(headS * SR), p = Math.round(beforeS * SR);
   return m.blastAt.map((at) => 10 * Math.log10((power(at, at + h) + 1e-9) / (power(at - p, at) + 1e-9))).sort((x, y) => x - y);
+}
+
+const loopCache = new Map<string, Float32Array>();
+const LOOP_KEYS: readonly SfxKey[] = ['engine', 'sea', 'fire', 'rain', 'drone'];
+
+/** ループの束（S3。束の音量 1・モノ＝左右に同じだけ出る）: 記録の行の目標へ時定数 0.08 秒で寄る音量と rate（engine・drone）で、ループの標本を回す（直線の補間）。長さは n */
+export function loopStem(c: ProbeCase, n: number): Float32Array {
+  const out = new Float32Array(n);
+  const rows = c.loops ?? [];
+  const k = 1 - Math.exp(-1 / (SFX_LOOP_TIME_CONSTANT_S * SR));
+  for (let li = 0; li < LOOP_KEYS.length; li++) {
+    const key = LOOP_KEYS[li]!;
+    let x = loopCache.get(key);
+    if (!x) { x = renderSfx(key); loopCache.set(key, x); }
+    const len = x.length;
+    let g = 0, r = 1, gT = 0, rT = 1, ph = 0, ri = 0;
+    for (let i = 0; i < n; i++) {
+      const t = c.t0 + i / SR;
+      while (ri < rows.length && rows[ri]![0] <= t) { const row = rows[ri++]!; gT = row[1 + li]!; rT = li === 0 ? row[6] : li === 4 ? row[7] : 1; }
+      g += (gT - g) * k;
+      r += (rT - r) * k;
+      const j = Math.floor(ph);
+      const a = x[j]!, b = x[j + 1 < len ? j + 1 : 0]!;
+      out[i] = out[i]! + (a + (b - a) * (ph - j)) * g;
+      ph += r;
+      if (ph >= len) ph -= len;
+    }
+  }
+  return out;
+}
+
+export interface RouteStats {
+  /** ループだけの時（単発が鳴っていない標本）: 出口でのループの RMS・リミッタが下げている量の中央値 dB */
+  quietLoopRms: number; quietDb: number;
+  /** 単発が鳴っている時にループが下げられる量 dB（中央値・95%）＝砲声のたびにエンジンの音が沈む量 */
+  duckDb: number; duck95Db: number;
+  /** 出口（master と自動の補正の音量の後）の頂・|出口| > 1 の割合・爆発の飛び出し（頭 0.3 秒 − 直前 1 秒。昇順） */
+  outPeak: number; outOver: number; pops: number[];
+}
+
+/** リミッタの先読み（秒。出口の数だけに使う） */
+const LOOKAHEAD_S = 0.006;
+
+/**
+ * つなぎの案の数（区間 [from, to)）: through＝ループの束（× bus）を単発と一緒にリミッタへ通す／偽＝リミッタは単発だけで、ループの束（× bus）は後で足す。
+ * 出口＝（リミッタの後 × 自動の補正の音量 ＋ 後で足すループ）× master
+ */
+export function routeStats(m: Mixdown, loops: Float32Array, bus: number, through: boolean, from = 0, to = m.mono.length): RouteStats {
+  const g0 = through ? limiterGain(m, loops, bus) : limiterGain(m);
+  const n = m.mono.length;
+  const la = Math.round(LOOKAHEAD_S * SR);
+  const g = new Float32Array(n);
+  for (let i = 0; i < n; i++) g[i] = g0[i + la < n ? i + la : n - 1]!;
+  const outL = new Float32Array(n), outR = new Float32Array(n);
+  const quiet: number[] = [], duck: number[] = [];
+  let peak = 0, over = 0, qs = 0, qn = 0;
+  for (let i = 0; i < n; i++) {
+    const lp = loops[i]! * bus;
+    const lg = through ? g[i]! * LIMITER_MAKEUP : 1;
+    outL[i] = (m.left[i]! * g[i]! * LIMITER_MAKEUP + lp * lg) * SFX_MASTER_GAIN;
+    outR[i] = (m.right[i]! * g[i]! * LIMITER_MAKEUP + lp * lg) * SFX_MASTER_GAIN;
+    if (i < from || i >= to) continue;
+    const a = Math.max(Math.abs(outL[i]!), Math.abs(outR[i]!));
+    if (a > peak) peak = a;
+    if (a > 1) over++;
+    const shot = Math.max(Math.abs(m.left[i]!), Math.abs(m.right[i]!));
+    const red = through ? -20 * Math.log10(g[i]!) : 0;
+    if (shot < 0.003) { qs += (lp * lg * SFX_MASTER_GAIN) ** 2; qn++; if (i % 64 === 0) quiet.push(red); } else if (shot > 0.05 && i % 64 === 0) duck.push(red);
+  }
+  const mid = (a: number[], q: number): number => (a.length ? a.sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * q))]! : 0);
+  const power = (a: number, b: number): number => { let s2 = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s2 += outL[i]! * outL[i]! + outR[i]! * outR[i]!; return s2 / Math.max(1, b - a); };
+  const h = Math.round(0.3 * SR), p = SR;
+  const pops = m.blastAt.filter((at) => at >= from && at < to).map((at) => 10 * Math.log10((power(at, at + h) + 1e-9) / (power(at - p, at) + 1e-9))).sort((x, y) => x - y);
+  return { quietLoopRms: Math.sqrt(qs / Math.max(1, qn)), quietDb: mid(quiet, 0.5), duckDb: mid(duck, 0.5), duck95Db: mid(duck, 0.95), outPeak: peak, outOver: over / Math.max(1, to - from), pops };
 }

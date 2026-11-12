@@ -12,7 +12,10 @@
 // 門（✓/✗ を出し、✗ があれば終了コード 1）:
 //   鳴る場合（title、または AUDIO=1 の direct）: context は running・音源 > 0・mg と blast_l と（title は）ui_tap を鳴らした・波形の頂が 0 より大きく 1 未満・同時の声 ≤ 16・ページのエラー 0。
 //   鳴らない場合（既定の direct）: context は suspended のまま・音源 0・捨てた数 > 0・ページのエラー 0。 NOAUDIO=1: __sfx なし・任務が進む・ページのエラー 0。
-// 実行: SITE=<site> [FLOW=title|direct] [SECS=10] [MISSION=us_02（direct）] [ROW=<任務の行の題>（title）] [W=1560] [MUTE=0] [MUZZLE=0] [Q=<direct の追加の query>] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-live.mjs
+// S3（ループ。LOOPS=0 で省く）: 台本の後、鳴る場合は続けて ループ 5 本が鳴っているか（単発の無い窓の波形の頂 > 0）→ Hud の一時停止で無音になるか（音源は止めない）→
+//   一時停止の「音」ボタンで消音 → 解く →「再開」で戻るか → 任務のやり直しを 3 回して、鳴っている繰り返しの音源が 5 個のままか（エンジンの数と、ページの中で
+//   AudioBufferSourceNode の start・stop を数えた数の両方）→「任務をやめる」で Title へ戻ると 0 個・無音か。鳴らない場合（既定の direct）はループを 1 つも作らないこと。
+// 実行: SITE=<site> [FLOW=title|direct] [SECS=10] [MISSION=us_02（direct）] [ROW=<任務の行の題>（title）] [W=1560] [MUTE=0] [MUZZLE=0] [LOOPS=0] [Q=<direct の追加の query>] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-live.mjs
 import { writeFileSync } from 'node:fs';
 import { VIEWPORTS, chromium, envNum, serve } from './lib.mjs';
 
@@ -31,7 +34,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function startMeter() {
   const sfx = window.__sfx;
   const s = window.__game.sound;
-  const m = { peak: 0, over: 0, polls: 0, timeline: [] };
+  const m = { peak: 0, over: 0, polls: 0, timeline: [], win: 0 };
   window.__meter = m;
   if (!sfx || !('context' in s) || !s.context) return false;
   const an = s.context.createAnalyser();
@@ -43,6 +46,7 @@ function startMeter() {
     let p = 0;
     for (let i = 0; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > p) p = a; }
     if (p > m.peak) m.peak = p;
+    if (p > m.win) m.win = p;
     if (p >= 1) m.over++;
     m.polls++;
     if (m.polls % 10 === 0) m.timeline.push(Math.round(p * 1000) / 1000);
@@ -88,6 +92,15 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(String(e && e.message ? e.message : e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
 if (NO_AUDIO) await page.addInitScript(() => { delete window.AudioContext; delete window.webkitAudioContext; });
+// S3: 繰り返す音源（ループ）の start・stop をページの中で数える（エンジンの数とは別の証）
+else await page.addInitScript(() => {
+  const P = window.AudioBufferSourceNode && window.AudioBufferSourceNode.prototype;
+  if (!P) return;
+  const c = (window.__loopSrc = { started: 0, stopped: 0 });
+  const start = P.start, stop = P.stop;
+  P.start = function (...a) { if (this.loop) c.started++; return start.apply(this, a); };
+  P.stop = function (...a) { if (this.loop) c.stopped++; return stop.apply(this, a); };
+});
 const log = [];
 const note = (name, st) => { log.push({ name, ...st }); return st; };
 const tap = async (scene, text) => {
@@ -145,6 +158,42 @@ await sleep(Math.min(3000, SECS * 300));
 await boom(-2000);
 await sleep(Math.max(0, SECS * 1000 - Math.min(2000, SECS * 200) - Math.min(3000, SECS * 300)));
 const end = note('Mission（終わり）', await page.evaluate(readState));
+// S3: ループの確かめ（頭の注）。window はその間の波形の頂（測り始めを 0 に戻してから ms 待つ）
+const loops = { ran: false, rows: [] };
+const windowPeak = async (ms) => { await page.evaluate(() => { window.__meter.win = 0; }); await sleep(ms); return page.evaluate(() => window.__meter.win); };
+const loopState = async (name, ms = 500) => { const peak = await windowPeak(ms); const st = await page.evaluate(readState); const src = await page.evaluate(() => window.__loopSrc ?? null); const row = { name, peak, loops: st.sfx.loops, starts: st.sfx.loopStarts, stops: st.sfx.loopStops, writes: st.sfx.loopWrites, live: src ? src.started - src.stopped : null, scenes: st.scenes }; loops.rows.push(row); return row; };
+if (process.env.LOOPS !== '0' && !NO_AUDIO && (FLOW === 'title' || AUDIO)) {
+  loops.ran = true;
+  await page.evaluate(() => { const g = window.__game; g.events.off('prestep'); g.scene.getScene('Mission').world.input.gunHeld = false; }); // 台本を外す（単発を止める）
+  await sleep(3000); // 最後の爆発（1.6 秒）と砲声が鳴り終わるまで
+  loops.playing = await loopState('任務の中（単発なし）');
+  await page.evaluate(() => window.__game.scene.getScene('Hud').pause.open());
+  await page.waitForFunction(() => window.__game.scene.isActive('Pause'), null, { timeout: 5000 });
+  await sleep(900); // 開いた合図の音と、束を絞る 0.15 秒
+  loops.paused = await loopState('一時停止');
+  await tap('Pause', '音: オン');
+  await sleep(300);
+  loops.mutedTitle = await page.evaluate(() => window.__game.scene.getScene('Pause').children.list.some((x) => x.type === 'Text' && x.text === '音: オフ'));
+  loops.muted = (await page.evaluate(readState)).sfx.muted;
+  await tap('Pause', '音: オフ');
+  await sleep(500);
+  await tap('Pause', '再開');
+  await page.waitForFunction(() => window.__game.scene.isActive('Hud') && !window.__game.scene.isActive('Pause'), null, { timeout: 5000 });
+  await sleep(700);
+  loops.resumed = await loopState('再開の後');
+  for (let i = 1; i <= 3; i++) {
+    await page.evaluate(() => { const m = window.__game.scene.getScene('Mission'); m.scene.restart(m.sortie); });
+    await sleep(1200);
+    loops.retry = await loopState(`やり直し ${i} 回目`, 300);
+  }
+  await page.evaluate(() => window.__game.scene.getScene('Hud').pause.open());
+  await page.waitForFunction(() => window.__game.scene.isActive('Pause'), null, { timeout: 5000 });
+  await sleep(400);
+  await page.evaluate(() => window.__game.scene.getScene('Pause').leave(true)); // 「任務をやめる」の長押しの後と同じ口
+  await page.waitForFunction(() => window.__game.scene.isActive('Title'), null, { timeout: 5000 });
+  await sleep(900);
+  loops.quit = await loopState('任務をやめる → Title');
+}
 await ctx.close();
 await browser.close();
 await sv.close();
@@ -177,6 +226,19 @@ if (NO_AUDIO) {
   check(s.maxBusy <= VOICES && s.busy <= VOICES, `${label}: 同時の声は ${VOICES} 以下（最大 ${s.maxBusy}・今 ${s.busy}）`);
   check(s.watchdogKicks === 0, `${label}: 見張りは動かない（${s.watchdogKicks}）`);
 }
-if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ label, errors, log }, null, 1));
+if (loops.ran) {
+  for (const r of loops.rows) console.log(`  ループ ${r.name}: 窓の頂 ${r.peak.toFixed(4)} ・ 鳴っている音源 ${r.loops}（ページの数え ${r.live}）・ 作った ${r.starts} 止めた ${r.stops} ・ 書いた ${r.writes} ・ ${r.scenes.join('+')}`);
+  const { playing, paused, resumed, retry, quit } = loops;
+  check(playing.loops === 5 && playing.live === 5, `${label}: ループ 5 本が鳴っている（エンジン ${playing.loops}・ページの数え ${playing.live}）`);
+  check(playing.peak > 0.002 && playing.peak < 1, `${label}: 単発の無い窓でも波形がある＝ループの音（頂 ${playing.peak.toFixed(4)}）`);
+  check(paused.peak < playing.peak * 0.05 && paused.loops === 5, `${label}: 一時停止で無音（頂 ${paused.peak.toFixed(5)}。音源は止めない＝${paused.loops}）`);
+  check(loops.muted === true && loops.mutedTitle === true, `${label}: 一時停止の「音」ボタンで消音（消音 ${loops.muted}・題「音: オフ」${loops.mutedTitle}）`);
+  check(resumed.peak > playing.peak * 0.3 && resumed.loops === 5 && resumed.live === 5, `${label}: 「音: オン」に戻して再開するとループが戻る（頂 ${resumed.peak.toFixed(4)}・音源 ${resumed.loops}）`);
+  check(retry.loops === 5 && retry.live === 5 && retry.starts - retry.stops === 5, `${label}: やり直し 3 回の後も鳴っている音源は 5 個（エンジン ${retry.loops}・ページの数え ${retry.live}・作った ${retry.starts} − 止めた ${retry.stops}）`);
+  check(quit.loops === 0 && quit.live === 0 && quit.peak < playing.peak * 0.05, `${label}: 任務をやめると 0 個・無音（エンジン ${quit.loops}・ページの数え ${quit.live}・頂 ${quit.peak.toFixed(5)}）`);
+} else if (!NO_AUDIO && end.sfx) {
+  check(end.sfx.loops === 0 && end.sfx.loopStarts === 0, `${label}: 止まっている context ではループを 1 つも作らない（${end.sfx.loopStarts}）`);
+}
+if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ label, errors, log, loops }, null, 1));
 console.log(`sfx-live ${label} ${bad === 0 ? 'OK' : `NG ${bad}`}`);
 process.exitCode = bad === 0 ? 0 : 1;

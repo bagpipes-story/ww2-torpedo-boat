@@ -227,5 +227,54 @@ export function crossfadeLoop(x: Float32Array, n: number, overlapS: number): Flo
   return out;
 }
 
+/**
+ * 整数周期の倍音の和（ループ用。engine・drone）: cycles は長さ n の中の基音の周期の数（整数）＝終わりの次が頭に続く。amps[h − 1] は h 倍音の大きさ。
+ * 位相は標本の番号から直に計算する（積まない＝丸めがたまらない）
+ */
+export function harmonics(n: number, cycles: number, amps: readonly number[]): Float32Array {
+  const out = new Float32Array(n);
+  for (let h = 1; h <= amps.length; h++) {
+    const a = amps[h - 1]!;
+    if (a === 0) continue;
+    const w = (TAU * cycles * h) / n;
+    for (let i = 0; i < n; i++) out[i] = out[i]! + a * Math.sin(w * i);
+  }
+  return out;
+}
+
+/** ループのゆっくりした揺れ: x × (1 + depth × cos(2π × cycles × i / n))。cycles は整数＝継ぎ目で続き、cos なので継ぎ目の前後で対称（depth が負なら継ぎ目が谷）。x を書き換えて返す */
+export function loopSway(x: Float32Array, cycles: number, depth: number): Float32Array {
+  const w = (TAU * cycles) / x.length;
+  for (let i = 0; i < x.length; i++) x[i] = x[i]! * (1 + depth * Math.cos(w * i));
+  return x;
+}
+
+/** dst に src × gain を標本 at から足す。はみ出す分は頭へ回す（ループの中の粒＝fire のぱちぱち）。dst を返す */
+export function mixWrap(dst: Float32Array, src: Float32Array, gain: number, at: number): Float32Array {
+  const n = dst.length;
+  for (let i = 0; i < src.length; i++) { const j = (at + i) % n; dst[j] = dst[j]! + src[i]! * gain; }
+  return dst;
+}
+
+/**
+ * ループを少し回して、継ぎ目を近くの一番静かな所へ移す（今の継ぎ目の前後 windowS 秒の内で |x[i − 1]| + |x[i]| が最小の i を頭に）。ループは輪なので中身は同じ＝
+ * 鳴らし始めと継ぎ目の標本の差が小さくなる（明るい雑音は隣の標本どうしが大きく飛ぶので、作ったままでは頭と末尾の差が 0.05 を超える）。回すのは少しだけ＝
+ * ゆっくりした揺れ（loopSway）の継ぎ目の前後の対称は崩れない。新しい配列を返す
+ */
+export function rotateToQuietSeam(x: Float32Array, windowS: number): Float32Array {
+  const n = x.length;
+  const w = Math.min(sfxSamples(windowS), n >> 1);
+  let best = 0, bestV = Infinity;
+  for (let k = -w; k <= w; k++) {
+    const i = (k + n) % n;
+    const v = Math.abs(x[i]!) + Math.abs(x[(i + n - 1) % n]!);
+    if (v < bestV) { bestV = v; best = i; }
+  }
+  const out = new Float32Array(n);
+  out.set(x.subarray(best), 0);
+  out.set(x.subarray(0, best), n - best);
+  return out;
+}
+
 /** 鍵 1 本の作り方: 標本の数 n（表の秒 × SFX_SAMPLE_RATE）を受けて長さ n の標本を返す。直流・端の fade・頂の正規化は assets/sfx-bank がそろえる */
 export type SfxRecipe = (n: number) => Float32Array;

@@ -8,9 +8,10 @@ import { fadeEdges, normalizePeak, removeDc, sfxSamples, type SfxRecipe } from '
 import { BLAST_RECIPES } from './sfx-recipes-blasts';
 import { CUE_RECIPES } from './sfx-recipes-cues';
 import { GUN_RECIPES } from './sfx-recipes-guns';
+import { LOOP_RECIPES } from './sfx-recipes-loops';
 import { SPLASH_RECIPES } from './sfx-recipes-splashes';
 
-const RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { ...GUN_RECIPES, ...SPLASH_RECIPES, ...BLAST_RECIPES, ...CUE_RECIPES };
+const RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { ...GUN_RECIPES, ...SPLASH_RECIPES, ...BLAST_RECIPES, ...CUE_RECIPES, ...LOOP_RECIPES };
 
 /** 作り方のある鍵（SFX_KEYS の順）。起動時の合成・tests・scripts/sfx-mix はこの鍵だけを回す */
 export function sfxImplementedKeys(): SfxKey[] {

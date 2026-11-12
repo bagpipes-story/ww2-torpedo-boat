@@ -159,5 +159,11 @@ export const PAUSE_QUIT_BAR_COLOR = 0xff8a7a;
 export const PAUSE_QUIT_BAR_H = 8;
 /** 下の HUD が透けて読みにくい所（上中央のビルド番号の行・2 つのボタン）に暗幕の上から敷く黒の濃さ（ヘッドレス確認: 「再開」の下に速力と魚雷ボタンが透けた） */
 export const PAUSE_BACKING_ALPHA = 0.85;
+/**
+ * 一時停止の「音」ボタン（v0.7.1 S3。spec-v0710 §8）: 下の段の中央（左「任務をやめる」と右「再開」の間）。題は Title の「音」ボタンと同じ「音: オン」⇄「音: オフ」で、
+ * 選んだ値も同じ（systems/sfx-settings）。論理幅 1280 で左右のボタンとの間は 136 px（tests/pause-sound）
+ */
+export const PAUSE_SOUND_W = MENU_PRIMARY_W;
+export const PAUSE_SOUND_X = GAME_WIDTH / 2 - PAUSE_SOUND_W / 2;
 /** 再開してから Hud が押下を受けない ms（右下の「再開」の 2 度押しが、下にある魚雷・扇のボタンに入らないように） */
 export const PAUSE_RESUME_GUARD_MS = 300;

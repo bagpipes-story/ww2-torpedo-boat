@@ -1,7 +1,7 @@
 // v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §4・§6.2・§7.3・§9.1）: 音の棚卸しを固定する（tests/art-inventory の型）。
 // - 鍵は 25 本（単発 20・ループ 5）。足す・消すは config/sfx-config の表とここを一緒に直す。
 // - 表の欄がそろう（秒は spec §4・最小間隔は §7.3・届く帯は §6.2・優先は系統から）。種は SFX_SEED_<鍵> で重ならず、絵の種（ART_SEED_*）とも重ならない。合計 ≤ 70 万標本。
-// - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本。残りは PLANNED の段（S3〜S4）で足す＝足した段は IMPLEMENTED_NOW へ移す。25 本そろったら PLANNED は空。
+// - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本。残りは PLANNED の段（S4）で足す＝足した段は IMPLEMENTED_NOW へ移す。25 本そろったら PLANNED は空。
 // - 音量の順（S2 の mix の詰め）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱（機銃・水柱が爆発を埋めない）。
 // - 音を足しても TEXTURE_KEYS とシーンの並びは今のまま（v0.7.0 の 53 鍵・7 シーン）。
 // S4 で足す検査: core/sfx-cues の合図の表の鍵は全部ここにある・どこからも鳴らさない鍵は無い（下の it.todo）。
@@ -40,9 +40,8 @@ const REACH: Readonly<Record<string, number>> = { splash_s: 1, mg: 2, splash_l: 
 const JITTER: Readonly<Record<string, number>> = { mg: 0.08, splash_s: 0.12 };
 
 /** 今の段で作り方のある鍵（SFX_KEYS の順）と、残りを足す段（spec §10） */
-const IMPLEMENTED_NOW: readonly string[] = ['mg', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'blast_l', 'torp_hit', 'ui_tap', 'sink'];
-const PLANNED: Readonly<Record<string, 'S3' | 'S4'>> = {
-  engine: 'S3', sea: 'S3', fire: 'S3', rain: 'S3', drone: 'S3',
+const IMPLEMENTED_NOW: readonly string[] = ['mg', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'blast_l', 'torp_hit', 'ui_tap', 'sink', 'engine', 'sea', 'fire', 'rain', 'drone'];
+const PLANNED: Readonly<Record<string, 'S4'>> = {
   torp_launch: 'S4', hull_hit: 'S4', alarm: 'S4', light_on: 'S4', flare_pop: 'S4', bomb_fall: 'S4', reload: 'S4', smoke: 'S4', bell: 'S4', engine_cough: 'S4',
 };
 
@@ -119,6 +118,16 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     // 全速のエンジン ≤ 0.6（R11）・rate は 0.5〜2 の内（§14 L6）
     expect(cfg.SFX_LOOP_ENGINE.rateBase * (1 - cfg.SFX_LOOP_ENGINE.stageWobble[2])).toBeGreaterThanOrEqual(cfg.SFX_LOOP_RATE_MIN);
     expect((cfg.SFX_LOOP_ENGINE.rateBase + cfg.SFX_LOOP_ENGINE.rateSpan) * (1 + cfg.SFX_LOOP_ENGINE.stageWobble[2])).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
+    // S3: ループの目標の表は spec §5 のまま（比）。束の音量（リミッタの後へつなぐ時の全体の倍率）・止める時の絞り・一時停止を開いた合図・機の爆音の帯と jp_03
+    expect(cfg.SFX_LOOP_ENGINE).toMatchObject({ damagedWobble: 0.06, wobbleHz: 3, stageWobble: [0.04, 0.08, 0.12] });
+    expect([cfg.SFX_LOOP_SEA, cfg.SFX_LOOP_FIRE, cfg.SFX_LOOP_RAIN]).toEqual([{ gainBase: 0.1, gainSpeed: 0.14, gainStorm: 0.1 }, { gain: 0.35, riseS: 0.3, fallS: 0.5 }, { gainInside: 0.4, gainNear: 0.15 }]);
+    expect(cfg.SFX_LOOP_DRONE).toEqual({ gainFar: 0.1, gainNear: 0.4, gainByBand: [0.4, 0.3, 0.2], gainFriendly: 0.4, gainFriendlyLeaving: 0.2, gainAttack: 0.45, gainRest: 0.1, gainEvacOther: 0.25, rateMin: 0.9, rateMax: 1.15 });
+    expect(cfg.SFX_LOOP_DRONE.gainByBand.length).toBe(SFX_BAND_MAX_M.length - 1);
+    expect([cfg.SFX_LOOP_BUS_GAIN, cfg.SFX_LOOP_STOP_FADE_S]).toEqual([0.5, 0.15]);
+    expect(cfg.SFX_PAUSE_OPEN).toEqual({ gain: 0.7, rate: 0.7 });
+    // ループの和の一番大きい目標（全速・暴風の中・火災・空襲）× 束の音量 ≤ 1（頂 0.9 の標本 5 本の頂が全部そろっても、束の出口で 1 を超えない）
+    const worst = cfg.SFX_LOOP_ENGINE.gainFull + cfg.SFX_LOOP_SEA.gainBase + cfg.SFX_LOOP_SEA.gainSpeed + cfg.SFX_LOOP_SEA.gainStorm + cfg.SFX_LOOP_FIRE.gain + cfg.SFX_LOOP_RAIN.gainInside + cfg.SFX_LOOP_DRONE.gainAttack;
+    expect(worst * cfg.SFX_PEAK * cfg.SFX_LOOP_BUS_GAIN).toBeLessThanOrEqual(1);
   });
   it('音量の順（S2）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱。帯 0 の機銃は帯 1 の大きい爆発より小さい', () => {
     const g = (k: SfxKey): number => SFX_TABLE[k].gain;
@@ -133,7 +142,7 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
   });
 });
 
-describe('段ごとの作り方（S0: 3 本・S2: 7 本。残りは S3〜S4）', () => {
+describe('段ごとの作り方（S0: 3 本・S2: 7 本・S3: ループ 5 本。残りは S4）', () => {
   it('作り方のある鍵は今の段の表と同じ・残りは予定の段にあり、合わせて 25 本', () => {
     expect(sfxImplementedKeys()).toEqual(SFX_KEYS.filter((k) => IMPLEMENTED_NOW.includes(k)));
     expect(sfxImplementedKeys().length).toBe(IMPLEMENTED_NOW.length);

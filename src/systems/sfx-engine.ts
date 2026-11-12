@@ -1,5 +1,6 @@
 // v0.7.1 S1（アートと音②：合成の効果音。spec-v0710 §7・§11 の R1・R2・R11・§14 L2〜L5）: 再生の薄い層。Phaser が既に作っている再生の context（D3）の上に自前のつなぎを作る:
-//   声 16 本（音量 → 左右のパン（ある端末だけ）→ 単発の束）／ループの束（S3 から）→ リミッタ → 最初の音の立ち上がり → master（消音は 0）→ context の出口。
+//   声 16 本（音量 → 左右のパン（ある端末だけ）→ 単発の束）→ リミッタ → 最初の音の立ち上がり → master（消音は 0）→ context の出口。
+//   S3: ループ 5 本（systems/sfx-loop-player）→ ループの束 → master（リミッタと最初の音の立ち上がりは通さない＝config/sfx-config の SFX_LOOP_BUS_GAIN の注）。
 // 構造の型（systems/sfx-audio-types の SfxCtx など）で書き、ブラウザの型の名前も DOM も使わない＝node の型検査で通り、偽の context でテストできる（tests/sfx-engine）。DOM に触るのは systems/sfx-boot だけ。
 // §7（R1）: 確保は作る時だけ（声・束・リミッタ・標本）。1 発ごとに作るのは使い捨ての音源 1 個だけ（仕様で使い捨て。閉包・終わりの通知・物は作らない）。
 // 落とす順（spec §7.3）: 標本がまだ無い鍵（作り方が後の段の鍵・起動の直後でまだ作り終えていない鍵＝S2 から標本は 1 フレームに 1 本ずつ作る）→ 消音か context が動いていない
@@ -14,6 +15,7 @@ import {
 import { SeededRng } from '../core/rng';
 import { SfxMixer, sfxKeyIndex } from '../core/sfx-mix';
 import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource, SfxThenable } from './sfx-audio-types';
+import { SfxLoopPlayer } from './sfx-loop-player';
 
 const RUNNING = 'running';
 function noop(): void {}
@@ -40,6 +42,11 @@ export interface SfxStats {
   watchdogKicks: number;
   played: number[];
   dropped: number[];
+  /** S3: ループの鳴っている音源（0 か 5）・作った数・止めた数・ノードへ書いた回数 */
+  loops: number;
+  loopStarts: number;
+  loopStops: number;
+  loopWrites: number;
 }
 
 /** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし） */
@@ -51,8 +58,9 @@ export class SfxEngine {
   tap: SfxTap | null = null;
   /** 束ねの出口（消音の音量）。scripts/headless/sfx-live が波形の頂を測るのにつなぐ */
   readonly master: SfxGainNode;
-  /** ループの束（S3 の systems/sfx-mission がつなぐ。S1 は何もつながない） */
+  /** ループの束（master へ直につなぐ）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
   readonly loopBus: SfxGainNode;
+  readonly loops: SfxLoopPlayer;
   private readonly fade: SfxGainNode;
   private readonly voiceGain: SfxGainNode[] = [];
   private readonly voicePan: (SfxPanNode | null)[] = [];
@@ -93,7 +101,7 @@ export class SfxEngine {
     const shots = ctx.createGain();
     shots.connect(limiter);
     this.loopBus = ctx.createGain();
-    this.loopBus.connect(limiter);
+    this.loopBus.connect(this.master);
     for (let i = 0; i < SFX_VOICES; i++) {
       const g = ctx.createGain();
       const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
@@ -105,6 +113,7 @@ export class SfxEngine {
       this.voicePan.push(p);
       this.voiceSrc.push(null);
     }
+    this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);
   }
 
   /** 鍵ごとに 1 回ずつ（Boot と、その後の数フレーム）: 合成した標本（22,050 Hz・モノ）を再生の buffer に写す（context が止まっていても作れる。投げたら呼ぶ側がやめる＝R7） */
@@ -229,6 +238,7 @@ export class SfxEngine {
       sources: this.sources, busy: this.mixer.busyVoices(this.ctx.currentTime), maxBusy: this.mixer.maxBusy,
       idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdogKicks,
       played: Array.from(this.mixer.played), dropped: Array.from(this.mixer.dropped),
+      loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes,
     };
   }
 

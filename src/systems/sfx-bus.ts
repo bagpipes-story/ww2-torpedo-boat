@@ -3,8 +3,10 @@
 // エンジンは systems/sfx-boot が Boot で 1 回登録する（再生の context が無い端末・NOAUDIO は登録なし＝どの口も何もしない）。聞き手（自艇の位置。読むだけ）は world-art が
 // 世界の作成時に登録し、破棄で null に（世界の作成前・破棄後の位置つきの音は鳴らさない。エンジンは世界の物を握らない）。
 // §7: どの口も確保しない（引数は数と鍵だけ。結果は返さない）。DOM にも Phaser にも触らない。
-// 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。sfxCue の遅らせ（S4）と sfxLoop（S3）はまだ何もしない。
+// 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
+// （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。sfxCue の遅らせ（S4）はまだ何もしない。
 import type { SfxKey } from '../config/sfx-config';
+import type { SfxLoopTargets } from '../core/sfx-loops';
 import { sfxBand, sfxGunKey } from '../core/sfx-mix';
 import type { SfxEngine } from './sfx-engine';
 
@@ -57,8 +59,20 @@ export function sfxCue(key: SfxKey, gain = 1, delayS = 0, rate = 1): void {
   engine.playFlat(key, rate, gain);
 }
 
-/** ループの目標（音量・速さ）。S3 から（systems/sfx-mission）＝今は何もしない */
-export function sfxLoop(_id: SfxKey, _gain: number, _rate: number): void {}
+/** ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player） */
+export function sfxLoops(targets: SfxLoopTargets, dtS: number): void {
+  if (engine !== null) engine.loops.update(targets, dtS, engine.muted);
+}
+
+/** 一時停止でループの束を 0 へ・再開で戻す（Hud の PAUSE・RESUME） */
+export function sfxLoopsPaused(v: boolean): void {
+  if (engine !== null) engine.loops.setPaused(v);
+}
+
+/** ループを止める（Hud の SHUTDOWN＝任務の終わり・やり直し・任務をやめる） */
+export function sfxLoopsStop(): void {
+  if (engine !== null) engine.loops.stop();
+}
 
 /** 消音（Title・一時停止の「音」ボタン、起動時の保存の値）。解く時は止まっている context を起こす */
 export function sfxSetMuted(v: boolean): void {

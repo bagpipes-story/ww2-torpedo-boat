@@ -4,10 +4,14 @@
 // - 毎フレーム・1 発ごとに通る口（update・step・tick・play・emit・cue・alloc・sfxAt など）の本体で new・.map(・.filter(・オブジェクトのリテラルを作らない（CLAUDE.md §7）。
 // - 音は論理の状態を読むだけで書かない。
 // - config・assets・core の sfx は再生の API・DOM・Phaser に触らない（node の型検査とテストで回る）。import は sfx-* どうしと core/rng だけ。
+//   S3: core の sfx（core/sfx-loops＝テレメトリの観測器）だけは、同じ core の中のファイル（テレメトリの型と段の定数）も import してよい（core は Phaser を引かない＝tests/core-no-phaser）。
 // - import の許可表: sfx-* を import してよいのは sfx-* と、絵の層の口・シーン・UI の 10 本だけ（論理から音へ届く道が無いことの証＝R14）。
-//   今の段で実際に import しているゲーム側のファイルは GAME_IMPORTERS_NOW（S0 は 0 本＝束ねが変わらない。S1 は 6 本、S2 は sink-fx を足して 7 本。hook を足すたびにここと HOOK_PINS を直す）。
+//   今の段で実際に import しているゲーム側のファイルは GAME_IMPORTERS_NOW（S0 は 0 本＝束ねが変わらない。S1 は 6 本、S2 は sink-fx を足して 7 本、S3 は hud-scene・pause-scene を足して 9 本。
+//   hook を足すたびにここと HOOK_PINS を直す）。
 //   S2 の「既知の穴」（大発の 13mm の発砲は絵の層を通らない）: barge-hunt は音を import しない＝着弾音だけ（絵の無い所で音だけ鳴らさない＝D5）。
 // - S1 から: 再生の層（systems/sfx-*）のうち DOM に触るのは sfx-boot だけ（エンジン・口は偽の context で回る。保存は globalThis.localStorage だけ）。
+// - S3: ループの再生（systems/sfx-loop-player）は、音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所だけ・buffer 全体を繰り返す（start の位置・長さを使わない＝L6）。
+//   任務の音（systems/sfx-mission）は Phaser を import しない（出来事の口は構造の型）。
 // - sfx-* と、音のために触った既存のファイルは 300 行以下。
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -55,9 +59,10 @@ const ALLOWED_IMPORTERS = [
   'src/scenes/boot-scene.ts', 'src/systems/world-art.ts', 'src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts',
   'src/ui/menu-ui.ts', 'src/scenes/hud-scene.ts', 'src/scenes/title-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts',
 ];
-/** 今の段で sfx-* を import しているゲーム側のファイル（S1: Boot・聞き手の登録・砲と水柱の口・爆発の口・ボタン・Title の「音」ボタン。S2: 沈没の口 sink-fx。S3 で hud-scene・pause-scene、S4 で result-scene） */
+/** 今の段で sfx-* を import しているゲーム側のファイル（S1: Boot・聞き手の登録・砲と水柱の口・爆発の口・ボタン・Title の「音」ボタン。S2: 沈没の口 sink-fx。S3: hud-scene（任務の音）・pause-scene（「音」ボタン）。S4 で result-scene） */
 const GAME_IMPORTERS_NOW: readonly string[] = [
   'src/scenes/boot-scene.ts', 'src/systems/world-art.ts', 'src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts', 'src/ui/menu-ui.ts', 'src/scenes/title-scene.ts',
+  'src/scenes/hud-scene.ts', 'src/scenes/pause-scene.ts',
 ];
 /** hook の行の pin（S1 から: ファイルとその中に在るべき 1 行。spec §2 の「触る既存ファイル」） */
 const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
@@ -72,6 +77,11 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   { file: 'src/systems/sink-fx.ts', line: "    sfxAt('sink', x, y, 1, ship ? 1 : SFX_SINK_SMALL_RATE); //" },
   { file: 'src/ui/menu-ui.ts', line: "    if (!this.enabled || p.wasCanceled) return;\n    sfxUi('ui_tap'); //" },
   { file: 'src/scenes/title-scene.ts', line: '      setSoundEnabled(!soundEnabled());\n' },
+  // S3: Hud が任務の音を作り（艇の最大速力を 1 回渡す）、update の最後に 1 回呼ぶ。一時停止の画面の「音」ボタンと、開いた合図
+  { file: 'src/scenes/hud-scene.ts', line: '    this.sfx = new MissionSfx(this.events, getBoatRecord(data, mission.playerBoatId).speed_max_kt);\n' },
+  { file: 'src/scenes/hud-scene.ts', line: '    this.panel?.update(this.telemetry, this.time.now);\n    this.sfx?.update(this.telemetry, delta); //' },
+  { file: 'src/scenes/pause-scene.ts', line: '      setSoundEnabled(!soundEnabled());\n      this.soundBtn?.setTitle(soundTitle());\n' },
+  { file: 'src/scenes/pause-scene.ts', line: "    sfxCue('ui_tap', SFX_PAUSE_OPEN.gain, 0, SFX_PAUSE_OPEN.rate);\n" },
 ];
 /** 音のために触った既存の src のファイル（300 行以下を見る） */
 const TOUCHED: readonly string[] = [...GAME_IMPORTERS_NOW, 'src/config/menu-config.ts', 'src/config/title-layout-config.ts'];
@@ -83,12 +93,15 @@ function sfxImporters(): string[] {
 }
 
 describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
-  it('対象のファイルがある（S0 の 7 本・S2 の水柱の作り方・S1 の再生の層 5 本。空の検査にしない）', () => {
+  it('対象のファイルがある（S0 の 7 本・S2 の水柱の作り方・S3 のループの作り方と観測器・再生の層 7 本。空の検査にしない）', () => {
     for (const f of ['src/config/sfx-config.ts', 'src/assets/sfx-dsp.ts', 'src/assets/sfx-bank.ts', 'src/assets/sfx-recipes-guns.ts', 'src/assets/sfx-recipes-splashes.ts', 'src/assets/sfx-recipes-blasts.ts', 'src/assets/sfx-recipes-cues.ts', 'src/core/sfx-mix.ts']) {
       expect(SFX).toContain(f);
       expect(PURE).toContain(f);
     }
-    expect(PLAYBACK).toEqual(['src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-settings.ts']);
+    for (const f of ['src/assets/sfx-recipes-loops.ts', 'src/core/sfx-loops.ts']) expect(PURE).toContain(f);
+    expect(PLAYBACK).toEqual([
+      'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-loop-player.ts', 'src/systems/sfx-mission.ts', 'src/systems/sfx-settings.ts',
+    ]);
   });
   it.each(PLAYBACK)('%s: DOM・ブラウザの再生の型の名前・Phaser に触るのは sfx-boot だけ（エンジンと口は構造の型。保存は globalThis.localStorage だけ）', (f) => {
     const s = code(f);
@@ -124,6 +137,28 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(s.match(/\.suspend\(\)/g)!.length).toBe(1);
     expect(s).not.toMatch(/onended|addEventListener|setTimeout|setInterval|\.then\(/);
   });
+  it('ループの再生（S3）: 音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所・buffer 全体を繰り返す（start は 0 だけ）・context は止めない。エンジンはループの束を master へつなぐ', () => {
+    const s = code('src/systems/sfx-loop-player.ts');
+    expect(s.match(/\.createBufferSource\(/g)!.length).toBe(1);
+    expect(s.match(/\.createGain\(/g)!.length).toBe(1);
+    const ctorEnd = s.indexOf('get liveSources()');
+    const begin = s.indexOf('private begin(): void');
+    expect(ctorEnd).toBeGreaterThan(0);
+    expect(begin).toBeGreaterThan(ctorEnd);
+    expect(s.indexOf('.createGain(')).toBeLessThan(ctorEnd);
+    expect(s.indexOf('.createBufferSource(')).toBeGreaterThan(begin);
+    expect(s).toContain('      src.loop = true;\n');
+    expect(s.match(/\.start\(([^)]*)\)/g)).toEqual(['.start(0)']);
+    expect(s).not.toMatch(/loopStart|loopEnd|\.suspend\(|\.resume\(|onended|addEventListener|setTimeout|setInterval|\.then\(|\.value\b(?!\s*=)/); // 値は読み返さない（L6）
+    expect(s.match(/setTargetAtTime\(/g)!.length).toBe(4); // 音量・rate・一時停止の束・止める時の絞り
+    const e = code('src/systems/sfx-engine.ts');
+    expect(e).toContain('    this.loopBus.connect(this.master);\n');
+    expect(e).toContain('    this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);\n');
+    expect(e).not.toContain('this.loopBus.connect(limiter)');
+    // 任務の音は Phaser を import せず、ループの口 3 つだけを呼ぶ（S4 で合図が増える）
+    const m = code('src/systems/sfx-mission.ts');
+    expect(imports(m).sort()).toEqual(['../core/boat-telemetry', '../core/sfx-loops', '../core/units', './sfx-bus']);
+  });
   it.each(SFX)('%s: 乱数は音だけの SeededRng（種は SFX_SEED_*）で、Math.random もゲームの乱数の系列も使わない', (f) => {
     const s = code(f);
     expect(s).not.toMatch(/Math\.random/);
@@ -145,10 +180,19 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(s).not.toMatch(/\.(speedMps|headingDeg|hp|phase|fireLeftS|sinking|sighted)\s*[-+*/]?=(?!=)/);
     expect(s).not.toMatch(/\b(state|boat|ship|hull|barge|leader)\.(x|y)\s*[-+*/]?=(?!=)/);
   });
-  it.each(PURE)('%s: 再生の API・DOM・Phaser に触らず、import は sfx-* どうしと core/rng だけ', (f) => {
+  it.each(PURE)('%s: 再生の API・DOM・Phaser に触らず、import は sfx-* どうしと core/rng だけ（core の sfx は同じ core の中のファイルも）', (f) => {
     const s = code(f);
     expect(s).not.toMatch(/\b(AudioContext|webkitAudioContext|AudioBuffer|window|document|navigator|localStorage|Phaser|globalThis)\b/);
-    for (const p of imports(s)) expect(p, f).toMatch(/^\.\.?\/(?:(?:config|assets|core)\/)?(?:sfx-[\w-]+|rng)$/);
+    const inCore = f.startsWith('src/core/');
+    for (const p of imports(s)) {
+      if (inCore && /^\.\/[\w-]+$/.test(p)) continue; // 同じ core の中（テレメトリの型・段の定数）
+      expect(p, f).toMatch(/^\.\.?\/(?:(?:config|assets|core)\/)?(?:sfx-[\w-]+|rng)$/);
+    }
+  });
+  it('core/sfx-loops（S3 の観測器）が import する core のファイルは、テレメトリの型と段の定数だけ（世界・模擬・乱数を引かない）', () => {
+    expect(imports(code('src/core/sfx-loops.ts')).sort()).toEqual([
+      '../config/sfx-config', './air-strike-state', './boat-telemetry', './engine-trouble', './evac-telemetry', './friendly', './patrol-air-state', './seaplane', './storm',
+    ]);
   });
   it.each(SFX)('%s: 300 行以下', (f) => {
     expect(readFileSync(f, 'utf8').split('\n').length).toBeLessThanOrEqual(301);
@@ -166,14 +210,14 @@ describe('音へ届く道は許可表の口だけ（import の許可表。R14）
     }
     for (const f of ['src/scenes/mission-scene.ts', 'src/systems/mission-world.ts', 'src/systems/world-visuals.ts', 'src/systems/mission-effects.ts']) expect(ALLOWED_IMPORTERS).not.toContain(f);
   });
-  it('今の段で import しているゲーム側のファイルは表のとおり（S2: 7 本。大発の 13mm の発砲＝barge-hunt は入れない）', () => {
+  it('今の段で import しているゲーム側のファイルは表のとおり（S3: 9 本。大発の 13mm の発砲＝barge-hunt は入れない）', () => {
     expect(sfxImporters()).toEqual([...GAME_IMPORTERS_NOW].sort());
     expect(GAME_IMPORTERS_NOW).not.toContain('src/systems/barge-hunt.ts');
     expect(readFileSync('src/systems/barge-hunt.ts', 'utf8')).toContain('    onFire: () => {},\n');
   });
-  it('hook の行の pin（S2: 7 本に 10 行。絵の層の口は 5 行）と、触った既存のファイルは 300 行以下', () => {
+  it('hook の行の pin（S3: 9 本に 14 行。絵の層の口は 5 行）と、触った既存のファイルは 300 行以下', () => {
     for (const p of HOOK_PINS) expect(readFileSync(p.file, 'utf8'), p.file).toContain(p.line);
-    expect(HOOK_PINS.length).toBe(10);
+    expect(HOOK_PINS.length).toBe(14);
     // 絵の層の口から呼ぶ位置つきの音は 6 か所だけ（水柱・大砲・機銃・爆発・2 次の爆発・沈み始め）。S1 の代わりの音は残っていない
     const calls = ['src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts'].map((f) => (code(f).match(/\bsfx(?:Gun)?At\(/g) ?? []).length);
     expect(calls).toEqual([3, 2, 1]);

@@ -1,6 +1,7 @@
 // 一時停止の画面（v0.5.1 実機 1 回目。docs/02 §5）: Hud の「一時停止」かアプリが裏に回ったときに、止めた Mission と Hud の上に重ねる。
 // 右下「再開」で Mission と Hud を動かし直す。左下「任務をやめる」は 1 秒長押しで Mission を終わらせて任務一覧（Title）へ（Result は出さない・通算の命中率に数えない）。
 // 画面ができてから 0.3 秒は押下を受けない（一時停止を押した指の 2 度押しで再開しない）。作るのは 1 回だけ（§7）。
+// v0.7.1 S3: 下の段の中央に「音」ボタン（音: オン ⇄ 音: オフ。Title のボタンと同じ値＝systems/sfx-settings）。開いた時に低いボタンの音。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
 import {
@@ -17,6 +18,8 @@ import {
   PAUSE_QUIT_JA,
   PAUSE_QUIT_SUB_JA,
   PAUSE_RESUME_JA,
+  PAUSE_SOUND_W,
+  PAUSE_SOUND_X,
   PAUSE_TITLE_JA,
   PAUSE_TITLE_PX,
   PAUSE_TITLE_Y,
@@ -24,14 +27,20 @@ import {
   RESULT_BUTTON_PX,
   RESULT_BUTTON_Y,
   RESULT_LIST_X,
+  TITLE_SOUND_OFF_JA,
+  TITLE_SOUND_ON_JA,
 } from '../config/menu-config';
+import { SFX_PAUSE_OPEN } from '../config/sfx-config';
 import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+import { sfxCue } from '../systems/sfx-bus';
+import { setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
 import { HoldConfirmButton } from '../ui/hold-confirm-button';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 
 export class PauseScene extends Phaser.Scene {
   private resume?: MenuButton;
   private quit?: HoldConfirmButton;
+  private soundBtn?: MenuButton;
   /** 二重遷移の防止 */
   private leaving = false;
 
@@ -49,6 +58,7 @@ export class PauseScene extends Phaser.Scene {
     this.back(0, 0, GAME_WIDTH, label.y + label.height);
     this.back(MENU_PRIMARY_X, RESULT_BUTTON_Y, MENU_PRIMARY_W, RESULT_BUTTON_H);
     this.back(RESULT_LIST_X, RESULT_BUTTON_Y, MENU_PRIMARY_W, RESULT_BUTTON_H);
+    this.back(PAUSE_SOUND_X, RESULT_BUTTON_Y, PAUSE_SOUND_W, RESULT_BUTTON_H);
     this.add.text(GAME_WIDTH / 2, PAUSE_TITLE_Y, PAUSE_TITLE_JA, hudTextStyle(PAUSE_TITLE_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setDepth(DEPTH.hud);
     this.add.text(GAME_WIDTH / 2, PAUSE_NOTE_Y, PAUSE_NOTE_JA, hudTextStyle(PAUSE_NOTE_PX, HUD_COLOR)).setOrigin(0.5).setDepth(DEPTH.hud);
     this.resume = new MenuButton(this, { x: MENU_PRIMARY_X, y: RESULT_BUTTON_Y, w: MENU_PRIMARY_W, h: RESULT_BUTTON_H, title: PAUSE_RESUME_JA, titlePx: RESULT_BUTTON_PX, align: 'center' }, () => this.leave(false));
@@ -57,11 +67,20 @@ export class PauseScene extends Phaser.Scene {
       { x: RESULT_LIST_X, y: RESULT_BUTTON_Y, w: MENU_PRIMARY_W, h: RESULT_BUTTON_H, title: PAUSE_QUIT_JA, titlePx: RESULT_BUTTON_PX, sub: PAUSE_QUIT_SUB_JA, holdMs: PAUSE_QUIT_HOLD_MS, barColor: PAUSE_QUIT_BAR_COLOR, barH: PAUSE_QUIT_BAR_H },
       () => this.leave(true),
     );
+    // 「音」ボタン（v0.7.1 S3）: 押すたびに切り替えて覚える（オンにした時はボタンの音が鳴る）。一時停止を開いた合図は低いボタンの音（消音なら鳴らない）
+    const soundTitle = (): string => (soundEnabled() ? TITLE_SOUND_ON_JA : TITLE_SOUND_OFF_JA);
+    this.soundBtn = new MenuButton(this, { x: PAUSE_SOUND_X, y: RESULT_BUTTON_Y, w: PAUSE_SOUND_W, h: RESULT_BUTTON_H, title: soundTitle(), titlePx: RESULT_BUTTON_PX, align: 'center' }, () => {
+      setSoundEnabled(!soundEnabled());
+      this.soundBtn?.setTitle(soundTitle());
+    });
+    sfxCue('ui_tap', SFX_PAUSE_OPEN.gain, 0, SFX_PAUSE_OPEN.rate);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.resume?.destroy();
       this.quit?.destroy();
+      this.soundBtn?.destroy();
       this.resume = undefined;
       this.quit = undefined;
+      this.soundBtn = undefined;
     });
   }
 

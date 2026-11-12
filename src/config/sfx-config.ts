@@ -177,10 +177,23 @@ export const SFX_LOOP_SEA = { gainBase: 0.1, gainSpeed: 0.14, gainStorm: 0.1 } a
 export const SFX_LOOP_FIRE = { gain: 0.35, riseS: 0.3, fallS: 0.5 } as const;
 export const SFX_LOOP_RAIN = { gainInside: 0.4, gainNear: 0.15 } as const;
 export const SFX_LOOP_DRONE = {
-  /** 距離の帯で 0.10〜0.40（水上機・夜明けの空襲の接近・哨戒機） */
-  gainFar: 0.1, gainNear: 0.4,
-  /** 味方機: 識別の要求・掃射 0.40、去る 0.20。空襲: 旋回・突入・投下 0.45、休み 0.10 */
+  /** 距離の帯で 0.10〜0.40（水上機・夜明けの空襲の接近・哨戒機）。S3: 帯は単発と同じ SFX_BAND_MAX_M（400・1,500・4,000 m。それより遠くは gainFar）＝帯の境でだけ変わる */
+  gainFar: 0.1, gainNear: 0.4, gainByBand: [0.4, 0.3, 0.2],
+  /** 味方機: 識別の要求・掃射 0.40、去る 0.20（水上機・哨戒機の去る間も）。空襲: 旋回・突入・投下 0.45、休み 0.10 */
   gainFriendly: 0.4, gainFriendlyLeaving: 0.2, gainAttack: 0.45, gainRest: 0.1,
-  /** rate 0.9〜1.15（突入・投下で上げる） */
+  /** S3（jp_03。設計の既定）: 港の空襲の編隊がほかの隊だけを狙っている間（操作中の隊を狙う編隊は gainAttack・波の予告だけの間は gainFar） */
+  gainEvacOther: 0.25,
+  /** rate 0.9〜1.15（突入・投下で上げる）。S3: 音量に比例（gainAttack で rateMax＝近い・突っ込んでくるほど高い） */
   rateMin: 0.9, rateMax: 1.15,
 } as const;
+/**
+ * S3（ループのつなぎ。systems/sfx-loop-player）: ループの束はリミッタを通さず master へ直につなぐ（リミッタは単発の重なりを抑える物。鳴り続けるループを通すと、
+ * 出口がループで埋まって爆発の飛び出しが 3 dB 前後まで縮み、砲声のたびにエンジンの音が沈む＝数は CHANGELOG の v0.7.1 S3）。束の音量 SFX_LOOP_BUS_GAIN は上の表（spec §5 の比）に
+ * 掛ける全体の倍率（5 本の目標の一番大きい和 2.14 × 頂 0.9 × 0.5 ≤ 1＝束の出口で 1 を超えない。本物のリミッタで測った出口の頂は 0.74。S5 で実機の耳で詰める）。
+ * 一時停止は束を 0 へ、再開で戻す
+ */
+export const SFX_LOOP_BUS_GAIN = 0.5;
+/** S3: 任務の終わり・消音でループを止める時は、この秒で絞ってから音源を止める（ぷつっと切らない） */
+export const SFX_LOOP_STOP_FADE_S = 0.15;
+/** S3（spec §3.3）: 一時停止の画面を開いた合図＝ボタンの音を低く・小さく */
+export const SFX_PAUSE_OPEN = { gain: 0.7, rate: 0.7 } as const;
