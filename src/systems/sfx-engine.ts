@@ -2,9 +2,11 @@
 //   声 16 本（音量 → 左右のパン（ある端末だけ）→ 単発の束）／ループの束（S3 から）→ リミッタ → 最初の音の立ち上がり → master（消音は 0）→ context の出口。
 // 構造の型（systems/sfx-audio-types の SfxCtx など）で書き、ブラウザの型の名前も DOM も使わない＝node の型検査で通り、偽の context でテストできる（tests/sfx-engine）。DOM に触るのは systems/sfx-boot だけ。
 // §7（R1）: 確保は作る時だけ（声・束・リミッタ・標本）。1 発ごとに作るのは使い捨ての音源 1 個だけ（仕様で使い捨て。閉包・終わりの通知・物は作らない）。
-// 落とす順（spec §7.3）: 標本がまだ無い鍵 → 消音か context が動いていない（数えるだけ＝止まっている context に積まない。R2）→ core/sfx-mix の最小間隔・距離の帯・声。
+// 落とす順（spec §7.3）: 標本がまだ無い鍵（作り方が後の段の鍵・起動の直後でまだ作り終えていない鍵＝S2 から標本は 1 フレームに 1 本ずつ作る）→ 消音か context が動いていない
+// （数えるだけ＝止まっている context に積まない。R2）→ core/sfx-mix の最小間隔・距離の帯・声。
 // 最初のタップだけの例外: context がまだ動き出していない間の UI の音は 1 つだけ覚え、SFX_UI_PENDING_S の内に動き出したら tick が鳴らす（音源はその時に作る）。
-// 時計（D4）: 間引きはゲームの時計（tick が積む delta の和）、声の空きは再生の時計。rate の揺れは音だけの乱数（SFX_SEED_PLAY。頼まれた順に引く＝音の状態に依らない）。
+// 時計（D4）: 間引きはゲームの時計（tick が積む delta の和）、声の空きは再生の時計。rate の揺れは音だけの乱数（SFX_SEED_PLAY。頼まれた順に引く＝音の状態にも標本の有無にも依らない）。
+// 確かめの口 tap（S2。scripts/headless/sfx-probe が ?debug の __sfx に付ける。ふだんは null）: 頼まれた単発を、rate の揺れの後・落とす前に知らせる＝記録は音の状態に依らない。
 // 論理は読まない（位置の差だけを systems/sfx-bus から受け取る）。
 import {
   SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, SFX_WATCHDOG, type SfxKey,
@@ -40,8 +42,13 @@ export interface SfxStats {
   dropped: number[];
 }
 
+/** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし） */
+export type SfxTap = (key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS: number, flat: boolean) => void;
+
 export class SfxEngine {
   readonly mixer = new SfxMixer(SFX_VOICES);
+  /** 確かめの口（scripts/headless/sfx-probe。ふだんは null＝何もしない） */
+  tap: SfxTap | null = null;
   /** 束ねの出口（消音の音量）。scripts/headless/sfx-live が波形の頂を測るのにつなぐ */
   readonly master: SfxGainNode;
   /** ループの束（S3 の systems/sfx-mission がつなぐ。S1 は何もつながない） */
@@ -100,7 +107,7 @@ export class SfxEngine {
     }
   }
 
-  /** 起動時に 1 回ずつ: 合成した標本（22,050 Hz・モノ）を再生の buffer に写す（context が止まっていても作れる。投げたら呼ぶ側がエンジンごとやめる＝R7） */
+  /** 鍵ごとに 1 回ずつ（Boot と、その後の数フレーム）: 合成した標本（22,050 Hz・モノ）を再生の buffer に写す（context が止まっていても作れる。投げたら呼ぶ側がやめる＝R7） */
   setBuffer(key: SfxKey, samples: Float32Array): void {
     const b = this.ctx.createBuffer(1, samples.length, SFX_SAMPLE_RATE);
     b.getChannelData(0).set(samples);
@@ -109,6 +116,11 @@ export class SfxEngine {
 
   get muted(): boolean {
     return this.mutedNow;
+  }
+
+  /** ゲームの時計（tick が積んだ delta の和。秒） */
+  get clockS(): number {
+    return this.gameS;
   }
 
   /** 消音（L4: context は止めず master の音量を 0 に。変わった時だけ）。解く時は context が止まっていれば起こす（消音のボタンのタップの中） */
@@ -172,30 +184,32 @@ export class SfxEngine {
     swallow(this.ctx.resume());
   }
 
-  /** 位置つきの単発（dx・dy は聞き手からの差 m。systems/sfx-bus が聞き手の位置を引いて渡す） */
-  playAt(key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number): void {
+  /** 位置つきの単発（dx・dy は聞き手からの差 m。systems/sfx-bus が聞き手の位置を引いて渡す。minIntervalS はこの 1 発だけの最小間隔＝core/sfx-mix） */
+  playAt(key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS = 0): void {
     const ki = sfxKeyIndex(key);
+    const r = this.jittered(key, rate);
+    if (this.tap !== null) this.tap(key, dxM, dyM, r, gainMul, minIntervalS, false);
     if (this.buffers[ki] === null) {
       this.noBuffer++;
       return;
     }
-    const r = this.jittered(key, rate);
     if (this.mutedNow || this.ctx.state !== RUNNING) {
       this.idleDrops++;
       return;
     }
-    const v = this.mixer.playAt(key, dxM, dyM, this.gameS, this.ctx.currentTime, r, gainMul);
+    const v = this.mixer.playAt(key, dxM, dyM, this.gameS, this.ctx.currentTime, r, gainMul, minIntervalS);
     if (v >= 0) this.fire(ki, v, r);
   }
 
   /** 位置なしの単発（合図・UI。中央）。context がまだ動き出していない間の UI の音は 1 つだけ覚える（最初のタップ） */
   playFlat(key: SfxKey, rate: number, gainMul: number): void {
     const ki = sfxKeyIndex(key);
+    const r = this.jittered(key, rate);
+    if (this.tap !== null) this.tap(key, 0, 0, r, gainMul, 0, true);
     if (this.buffers[ki] === null) {
       this.noBuffer++;
       return;
     }
-    const r = this.jittered(key, rate);
     if (this.mutedNow || this.ctx.state !== RUNNING) {
       this.idleDrops++;
       if (!this.mutedNow && SFX_TABLE[key].family === 'ui') {

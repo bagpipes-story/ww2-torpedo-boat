@@ -1,7 +1,8 @@
 // v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §4・§6.2・§7.3・§9.1）: 音の棚卸しを固定する（tests/art-inventory の型）。
 // - 鍵は 25 本（単発 20・ループ 5）。足す・消すは config/sfx-config の表とここを一緒に直す。
 // - 表の欄がそろう（秒は spec §4・最小間隔は §7.3・届く帯は §6.2・優先は系統から）。種は SFX_SEED_<鍵> で重ならず、絵の種（ART_SEED_*）とも重ならない。合計 ≤ 70 万標本。
-// - 段ごとの作り方: S0 は ui_tap・mg・blast_l。残りは PLANNED の段（S2〜S4）で足す＝足した段は IMPLEMENTED_NOW へ移す。25 本そろったら PLANNED は空。
+// - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本。残りは PLANNED の段（S3〜S4）で足す＝足した段は IMPLEMENTED_NOW へ移す。25 本そろったら PLANNED は空。
+// - 音量の順（S2 の mix の詰め）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱（機銃・水柱が爆発を埋めない）。
 // - 音を足しても TEXTURE_KEYS とシーンの並びは今のまま（v0.7.0 の 53 鍵・7 シーン）。
 // S4 で足す検査: core/sfx-cues の合図の表の鍵は全部ここにある・どこからも鳴らさない鍵は無い（下の it.todo）。
 import { readFileSync, readdirSync } from 'node:fs';
@@ -26,17 +27,21 @@ const FAMILY: Readonly<Record<string, SfxFamily>> = {
 };
 /** 優先: 合図・UI（奪われない）3 > 爆発・魚雷 2 > 砲 1 > 水柱 0。ループは声を使わない（欄は 3） */
 const PRIORITY: Readonly<Record<SfxFamily, number>> = { ui: 3, cue: 3, loop: 3, blast: 2, gun: 1, splash: 0 };
-/** spec §7.3 の最小間隔（秒。ほかは 0＝合図は冷却で間引く） */
-const MIN_INTERVAL: Readonly<Record<string, number>> = { mg: 0.07, gun_near: 0.12, gun_far: 0.25, splash_s: 0.08, splash_l: 0.15, blast_s: 0.1, blast_l: 0.2 };
+/**
+ * spec §7.3 の最小間隔（秒。ほかは 0＝合図は冷却で間引く）。S2 で gun_near だけ 0.12 → 0.2: 駆逐艦の副砲は 0.125 秒ごとに撃ち、フレームの刻み（1/60 秒）で間が 0.117／0.133 秒に
+ * 揺れるので、0.12 では「1 発おき」がフレームの揺れ任せになる（probe の us_01）。0.2 で毎秒 4 発に決める
+ */
+const MIN_INTERVAL: Readonly<Record<string, number>> = { mg: 0.07, gun_near: 0.2, gun_far: 0.25, splash_s: 0.08, splash_l: 0.15, blast_s: 0.1, blast_l: 0.2 };
+/** 鍵の音量（S2 で probe の記録を mix した数から詰めた。合図・ループは仮のまま＝S3〜S5） */
+const GAIN: Readonly<Record<string, number>> = { mg: 0.4, gun_near: 0.7, gun_far: 0.8, splash_s: 0.3, splash_l: 0.5, blast_s: 0.8, blast_l: 1, torp_hit: 1, sink: 0.6 };
 /** spec §6.2 の届く帯（ほかは一番遠い帯 3） */
 const REACH: Readonly<Record<string, number>> = { splash_s: 1, mg: 2, splash_l: 2 };
 /** 再生のたびの rate の揺れ（spec §4。ほかは 0） */
 const JITTER: Readonly<Record<string, number>> = { mg: 0.08, splash_s: 0.12 };
 
 /** 今の段で作り方のある鍵（SFX_KEYS の順）と、残りを足す段（spec §10） */
-const IMPLEMENTED_NOW: readonly string[] = ['mg', 'blast_l', 'ui_tap'];
-const PLANNED: Readonly<Record<string, 'S2' | 'S3' | 'S4'>> = {
-  gun_near: 'S2', gun_far: 'S2', splash_s: 'S2', splash_l: 'S2', blast_s: 'S2', torp_hit: 'S2', sink: 'S2',
+const IMPLEMENTED_NOW: readonly string[] = ['mg', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'blast_l', 'torp_hit', 'ui_tap', 'sink'];
+const PLANNED: Readonly<Record<string, 'S3' | 'S4'>> = {
   engine: 'S3', sea: 'S3', fire: 'S3', rain: 'S3', drone: 'S3',
   torp_launch: 'S4', hull_hit: 'S4', alarm: 'S4', light_on: 'S4', flare_pop: 'S4', bomb_fall: 'S4', reload: 'S4', smoke: 'S4', bell: 'S4', engine_cough: 'S4',
 };
@@ -56,6 +61,7 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(d.seed).toBe((cfg as unknown as Record<string, number>)[`SFX_SEED_${key.toUpperCase()}`]);
     expect(d.gain).toBeGreaterThan(0);
     expect(d.gain).toBeLessThanOrEqual(1);
+    if (key in GAIN) expect(d.gain).toBe(GAIN[key]);
     expect(d.family).toBe(FAMILY[key]);
     expect(d.priority).toBe(PRIORITY[d.family]);
     expect(d.minIntervalS).toBe(MIN_INTERVAL[key] ?? 0);
@@ -97,8 +103,13 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     // S1: 最初の音の立ち上がり（R11。0 からではない＝最初のタップが聞こえる）・消音の絞り・最初のタップを覚える秒・見張り（L3c）・保存の鍵・Audio Session（L1）
     expect(cfg.SFX_FIRST_FADE).toEqual({ fromShare: 0.3, seconds: 0.3 });
     expect(cfg.SFX_MUTE_TIME_CONSTANT_S).toBe(0.015);
-    expect(cfg.SFX_S1_SMALL_BLAST).toEqual({ gain: 0.45, rate: 1.8 }); // S2 で blast_s に替えたら消す
-    expect(cfg.SFX_S1_SMALL_BLAST.rate).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
+    // S2: 沈没の 2 次の爆発（小さめ・0.3 秒の内は重ねない）・小艇の沈没の速さ（rate は 0.5〜2 の内）・Boot で作る標本は ui_tap だけ（残りは 1 フレームに 1 本）。S1 の代わりの音は消した
+    expect(cfg.SFX_SECONDARY_BLAST).toEqual({ gain: 0.7, minIntervalS: 0.3 });
+    expect(cfg.SFX_SECONDARY_BLAST.minIntervalS).toBeGreaterThan(SFX_TABLE.blast_s.minIntervalS);
+    expect(cfg.SFX_SINK_SMALL_RATE).toBe(1.3);
+    expect(cfg.SFX_SINK_SMALL_RATE).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
+    expect([...cfg.SFX_BUILD_FIRST]).toEqual(['ui_tap']);
+    expect('SFX_S1_SMALL_BLAST' in cfg).toBe(false);
     expect(cfg.SFX_UI_PENDING_S).toBe(0.5);
     expect(cfg.SFX_WATCHDOG).toEqual({ checkMs: 100, frozenMs: 500, throttleMs: 5000, capMs: 200, maxTries: 3 });
     expect([cfg.SFX_STORAGE_KEY, cfg.SFX_AUDIO_SESSION_TYPE]).toEqual(['night-hunters.sound', 'ambient']);
@@ -109,12 +120,20 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(cfg.SFX_LOOP_ENGINE.rateBase * (1 - cfg.SFX_LOOP_ENGINE.stageWobble[2])).toBeGreaterThanOrEqual(cfg.SFX_LOOP_RATE_MIN);
     expect((cfg.SFX_LOOP_ENGINE.rateBase + cfg.SFX_LOOP_ENGINE.rateSpan) * (1 + cfg.SFX_LOOP_ENGINE.stageWobble[2])).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
   });
+  it('音量の順（S2）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱。帯 0 の機銃は帯 1 の大きい爆発より小さい', () => {
+    const g = (k: SfxKey): number => SFX_TABLE[k].gain;
+    expect(g('torp_hit')).toBeGreaterThanOrEqual(g('blast_l'));
+    const order: SfxKey[] = ['blast_l', 'blast_s', 'gun_near', 'splash_l', 'mg', 'splash_s'];
+    for (let i = 1; i < order.length; i++) expect(g(order[i]!), `${order[i - 1]} > ${order[i]}`).toBeLessThan(g(order[i - 1]!));
+    expect(g('mg') * SFX_BAND_GAIN[0]!).toBeLessThan(g('blast_l') * SFX_BAND_GAIN[1]!);
+    expect(g('mg') * SFX_BAND_GAIN[0]!).toBeLessThan(g('torp_hit') * SFX_BAND_GAIN[1]!);
+  });
   it('sfx-config は何も import しない', () => {
     expect(readFileSync('src/config/sfx-config.ts', 'utf8')).not.toMatch(/^\s*import\s/m);
   });
 });
 
-describe('段ごとの作り方（S0: 3 本。残りは S2〜S4）', () => {
+describe('段ごとの作り方（S0: 3 本・S2: 7 本。残りは S3〜S4）', () => {
   it('作り方のある鍵は今の段の表と同じ・残りは予定の段にあり、合わせて 25 本', () => {
     expect(sfxImplementedKeys()).toEqual(SFX_KEYS.filter((k) => IMPLEMENTED_NOW.includes(k)));
     expect(sfxImplementedKeys().length).toBe(IMPLEMENTED_NOW.length);

@@ -1,5 +1,6 @@
 // v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §6.2・§7.3・§9.1）: 単発の音の判断 core/sfx-mix。帯の境・音量の単調・パンの範囲・鍵ごとの届く帯・大砲の音の切り替え・
 // 最小間隔（ゲームの時計）・声の上限・優先の奪い方（自分より低い声のうち一番低くて古い声。同じか高ければ新しい方を捨てる）。
+// S2: 1 発だけの最小間隔（沈没の 2 次の爆発）・頼まれた音の帯は落とした時も読める（probe）・大砲の鍵は距離で決まる・帯ごとの音量は鍵 × 帯。
 import { describe, expect, it } from 'vitest';
 import { SFX_BAND_GAIN, SFX_BAND_MAX_M, SFX_KEYS, SFX_PAN_MAX, SFX_TABLE, SFX_VOICES } from '../src/config/sfx-config';
 import { SFX_DROP_FAR, SFX_DROP_NONE, SFX_DROP_RATE, SFX_DROP_VOICES, SfxMixer, sfxBand, sfxBandGain, sfxGunKey, sfxKeyIndex, sfxPan } from '../src/core/sfx-mix';
@@ -36,6 +37,17 @@ describe('距離の帯とパン（spec §6.2。平方根なし＝距離の 2 乗
   });
   it('大砲の音: 帯 0〜1 は gun_near、帯 2〜3 は gun_far（こもった遠雷）', () => {
     expect([0, 1, 2, 3].map(sfxGunKey)).toEqual(['gun_near', 'gun_near', 'gun_far', 'gun_far']);
+  });
+  it('大砲の鍵は距離で決まる: 1,500 m までは gun_near、それより遠ければ gun_far、16 km より遠ければ（どちらの鍵でも）届かない', () => {
+    const key = (m: number): string => sfxGunKey(sfxBand(sq(m)));
+    expect([0, 399, 400, 1500].map(key)).toEqual(['gun_near', 'gun_near', 'gun_near', 'gun_near']);
+    expect([1501, 4000, 10000, 16000].map(key)).toEqual(['gun_far', 'gun_far', 'gun_far', 'gun_far']);
+    const m = new SfxMixer();
+    expect(m.playAt(sfxGunKey(sfxBand(sq(20000))), 0, 20000, 0, 0)).toBe(-1);
+    expect(m.lastDrop).toBe(SFX_DROP_FAR);
+    // 自艇の砲（距離 0）は一番大きい帯
+    expect(m.playAt('mg', 0, 0, 0, 0)).toBeGreaterThanOrEqual(0);
+    expect(m.gain).toBeCloseTo(SFX_TABLE.mg.gain * SFX_BAND_GAIN[0]!, 6);
   });
   it('鍵の添字は SFX_KEYS の順', () => {
     SFX_KEYS.forEach((k, i) => expect(sfxKeyIndex(k)).toBe(i));
@@ -91,6 +103,33 @@ describe('SfxMixer（最小間隔・届く帯・声 16 本と優先。spec §7.3
     for (let i = 0; i < 600; i++) if (n.playAt('mg', 0, 0, i / 60, i / 60) >= 0) played++;
     expect(played).toBeLessThanOrEqual(Math.ceil(10 / SFX_TABLE.mg.minIntervalS));
     expect(played).toBeGreaterThanOrEqual(110);
+  });
+  it('帯ごとの音量: 同じ鍵は遠いほど小さい（鍵 × 帯）。頼まれた音の帯は、落とした時も band に残る（帯の外は −1・位置なしは 0）', () => {
+    const m = new SfxMixer();
+    const gains = [100, 1000, 3000, 10000].map((d, i) => { m.reset(); expect(m.playAt('blast_l', d, 0, i, 0)).toBeGreaterThanOrEqual(0); expect(m.band).toBe(i); return m.gain; });
+    expect(gains).toEqual(SFX_BAND_GAIN.map((b) => SFX_TABLE.blast_l.gain * b));
+    m.reset();
+    expect(m.playAt('splash_s', 0, 3000, 50, 0)).toBe(-1); // 届かない（帯 2）
+    expect([m.lastDrop, m.band]).toEqual([SFX_DROP_FAR, 2]);
+    expect(m.playAt('mg', 0, 30000, 50, 0)).toBe(-1);
+    expect(m.band).toBe(-1);
+    expect(m.playAt('mg', 0, 100, 50, 0)).toBeGreaterThanOrEqual(0);
+    expect(m.playAt('mg', 0, 2000, 50.01, 0)).toBe(-1); // 最小間隔で落とした時も帯は書く
+    expect([m.lastDrop, m.band]).toEqual([SFX_DROP_RATE, 2]);
+    m.playFlat('ui_tap', 51, 0);
+    expect(m.band).toBe(0);
+  });
+  it('1 発だけの最小間隔（S2。沈没の 2 次の爆発）: 同じ鍵が鳴ってからその秒の内は落とす。表の値より短い指定は表の値のまま。ほかの鍵には効かない', () => {
+    const m = new SfxMixer();
+    expect(m.playAt('blast_s', 0, 0, 10, 0)).toBeGreaterThanOrEqual(0);
+    expect(m.playAt('blast_s', 0, 0, 10.2, 0.2, 1, 0.7, 0.3)).toBe(-1); // 2 次の爆発: 0.3 秒の内
+    expect(m.lastDrop).toBe(SFX_DROP_RATE);
+    expect(m.playAt('blast_s', 0, 0, 10.2, 0.2)).toBeGreaterThanOrEqual(0); // ふつうの小さい爆発は表の 0.1 秒だけ
+    expect(m.playAt('blast_s', 0, 0, 10.45, 0.45, 1, 0.7, 0.3)).toBe(-1); // 直前の小さい爆発から 0.25 秒
+    expect(m.playAt('blast_s', 0, 0, 10.5, 0.5, 1, 0.7, 0.3)).toBeGreaterThanOrEqual(0);
+    expect(m.gain).toBeCloseTo(SFX_TABLE.blast_s.gain * 0.7, 6);
+    expect(m.playAt('blast_s', 0, 0, 10.55, 0.55, 1, 1, 0.01)).toBe(-1); // 表の 0.1 秒より短い指定は効かない
+    expect(m.playAt('blast_l', 0, 0, 10.55, 0.55, 1, 1, 0.3)).toBeGreaterThanOrEqual(0); // ほかの鍵の時刻は見ない
   });
   it('届かない遠い音・声の無い音は最小間隔の時刻を進めない（次の近い音を間引かない）', () => {
     const m = new SfxMixer();

@@ -1,8 +1,8 @@
 // v0.7.1（アートと音②：合成の効果音。spec-v0710 §2・§4〜§7・D1）の音の定数。音量・間引き・距離の帯・音の種は「聞かせ方」の定数で、ゲームの強さの値ではない
 // ので data/*.json には置かない（config/*-art-config と同じ考え。論理に効く値は data のまま）。ユーザーの決め（v0.7.0 の U1。2026-11-07「コードで描く・鳴らす」）:
 // 音のファイルは使わず、起動時に 1 回 assets/sfx-bank が合成する。何も import しない（tests・scripts が node の型検査で読める）。
-// S0 は骨組み: 表は 25 本ぶんそろえるが、合成の作り方があるのは ui_tap・mg・blast_l の 3 本（残りは S2〜S4。tests/sfx-inventory が段ごとに固定する）。
-// 音量（gain）は仮の値（S5 の mix の詰めで決める）。最小間隔は spec §7.3、届く帯は §6.2、秒は §4。
+// 表は 25 本ぶんそろえるが、合成の作り方があるのは段ごと（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本。残りは S3〜S4。tests/sfx-inventory が段ごとに固定する）。
+// 音量（gain）と最小間隔は S2 で probe の記録を mix した数から詰めた（scripts/headless/sfx-probe・scripts/sfx-mix。S5 で実機の耳で詰め直す）。届く帯は spec §6.2、秒は §4。
 
 /** 合成と AudioBuffer の標本の速さ（Hz。古い WebKit の下限ちょうど。context の速さへは再生時に補われる＝spec §14 L5） */
 export const SFX_SAMPLE_RATE = 22050;
@@ -96,13 +96,13 @@ const NEAR = 1;
 
 /** 鍵 → 表（秒・種・音量・優先・最小間隔・届く帯・系統・rate の揺れ）。合図・UI・ループは位置なしで鳴らすので届く帯は一番遠い帯にしておく */
 export const SFX_TABLE: Readonly<Record<SfxKey, SfxDef>> = {
-  mg: def(0.12, SFX_SEED_MG, 0.5, SFX_PRIORITY_GUN, 0.07, MID, 'gun', 0.08),
-  gun_near: def(0.6, SFX_SEED_GUN_NEAR, 0.85, SFX_PRIORITY_GUN, 0.12, FAR, 'gun'),
+  mg: def(0.12, SFX_SEED_MG, 0.4, SFX_PRIORITY_GUN, 0.07, MID, 'gun', 0.08),
+  gun_near: def(0.6, SFX_SEED_GUN_NEAR, 0.7, SFX_PRIORITY_GUN, 0.2, FAR, 'gun'),
   gun_far: def(0.9, SFX_SEED_GUN_FAR, 0.8, SFX_PRIORITY_GUN, 0.25, FAR, 'gun'),
-  splash_s: def(0.35, SFX_SEED_SPLASH_S, 0.4, SFX_PRIORITY_SPLASH, 0.08, NEAR, 'splash', 0.12),
-  splash_l: def(0.8, SFX_SEED_SPLASH_L, 0.6, SFX_PRIORITY_SPLASH, 0.15, MID, 'splash'),
-  blast_s: def(0.5, SFX_SEED_BLAST_S, 0.7, SFX_PRIORITY_BLAST, 0.1, FAR, 'blast'),
-  blast_l: def(1.6, SFX_SEED_BLAST_L, 0.9, SFX_PRIORITY_BLAST, 0.2, FAR, 'blast'),
+  splash_s: def(0.35, SFX_SEED_SPLASH_S, 0.3, SFX_PRIORITY_SPLASH, 0.08, NEAR, 'splash', 0.12),
+  splash_l: def(0.8, SFX_SEED_SPLASH_L, 0.5, SFX_PRIORITY_SPLASH, 0.15, MID, 'splash'),
+  blast_s: def(0.5, SFX_SEED_BLAST_S, 0.8, SFX_PRIORITY_BLAST, 0.1, FAR, 'blast'),
+  blast_l: def(1.6, SFX_SEED_BLAST_L, 1.0, SFX_PRIORITY_BLAST, 0.2, FAR, 'blast'),
   torp_hit: def(2.2, SFX_SEED_TORP_HIT, 1.0, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
   torp_launch: def(0.7, SFX_SEED_TORP_LAUNCH, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   hull_hit: def(0.3, SFX_SEED_HULL_HIT, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
@@ -115,7 +115,7 @@ export const SFX_TABLE: Readonly<Record<SfxKey, SfxDef>> = {
   ui_tap: def(0.06, SFX_SEED_UI_TAP, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'ui'),
   bell: def(1.4, SFX_SEED_BELL, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   engine_cough: def(0.8, SFX_SEED_ENGINE_COUGH, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
-  sink: def(2.5, SFX_SEED_SINK, 0.7, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
+  sink: def(2.5, SFX_SEED_SINK, 0.6, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
   engine: def(1.0, SFX_SEED_ENGINE, 1, SFX_PRIORITY_CUE, 0, FAR, 'loop'),
   sea: def(4.0, SFX_SEED_SEA, 1, SFX_PRIORITY_CUE, 0, FAR, 'loop'),
   fire: def(2.0, SFX_SEED_FIRE, 1, SFX_PRIORITY_CUE, 0, FAR, 'loop'),
@@ -135,11 +135,12 @@ export const SFX_MASTER_GAIN = 0.8;
 // S1（鳴る縦切り。spec §7.2・§8・§11 の R11・§14 L1〜L4）: 再生のエンジン（systems/sfx-engine）と起動（systems/sfx-boot）の定数。どれも聞かせ方で、遊びには効かない
 /** 最初に鳴る音の立ち上がり（R11「イヤホンで大きすぎる」）: 束ねの音量をこの割合から seconds 秒で 1 へ。0 からにしない（最初のタップの 0.06 秒の音が聞こえなくなる） */
 export const SFX_FIRST_FADE = { fromShare: 0.3, seconds: 0.3 } as const;
-/**
- * S1 だけの代わりの音: 小さい爆発（魚雷の不発・機銃の被弾・座礁＝ExplosionFx.play の dud）は、blast_s の作り方ができる S2 まで blast_l を小さく速く鳴らす
- * （速さ 1.8 倍＝約 0.9 秒。rate は 0.5〜2 の内＝L6）。S2 で blast_s に替えたら消す
- */
-export const SFX_S1_SMALL_BLAST = { gain: 0.45, rate: 1.8 } as const;
+/** S2（spec §3.1）: 沈没の段の 2 次の爆発（ExplosionFx.secondary）は blast_s を音量 0.7 倍で、blast_s が鳴ってから 0.3 秒の内は鳴らさない（2 隻が同時に沈んでも連打にしない） */
+export const SFX_SECONDARY_BLAST = { gain: 0.7, minIntervalS: 0.3 } as const;
+/** S2: 小艇（大発・米PT・僚艇）の沈没は sink をこの速さで（高く短く。艦は 1）。rate は 0.5〜2 の内＝L6 */
+export const SFX_SINK_SMALL_RATE = 1.3;
+/** S2（spec §7.4）: Boot の create で標本を作るのはこの鍵だけ（最初の Title のタップが鳴る）。残りは次のフレームから 1 フレームに 1 本ずつ（systems/sfx-boot。作り終わる前の音は鳴らさないだけ） */
+export const SFX_BUILD_FIRST: readonly SfxKey[] = ['ui_tap'];
 /** 消音は master の音量を 0 へ（context は止めない＝L4）。ぷつっと切れないようにこの時定数（秒）で絞る。解く時はすぐ戻す */
 export const SFX_MUTE_TIME_CONSTANT_S = 0.015;
 /** 最初のタップ: context がまだ動き出していない間に頼まれた UI の音は 1 つだけ覚え、この秒の内に動き出せば鳴らす（止まっている context には積まない＝R2。古くなれば捨てる） */

@@ -3,11 +3,12 @@
 // - 止まっている context・消音では音源を 1 つも作らない（数えるだけ＝R2）。エンジンの登録が無ければどの口も何もしない。
 // - 声は 16 本を超えない。奪った声の前の音源は止める。1 発ごとに作るのは音源 1 個だけ（声・束は増えない＝R1）。
 // - 最初の 1 発は束ねを立ち上げる（R11）。最初のタップ（context が動き出す前の UI の音）は 1 つだけ覚えて、0.5 秒の内に動き出せば鳴らす。
+// - S2: 標本は後から 1 本ずつ入る＝まだ無い鍵は鳴らさないだけ（rate の揺れは標本の有無に依らず頼まれた順に引く）。確かめの口 tap は落とす前に全部の頼みを知らせる。大砲の口は距離で鍵を選ぶ。
 // - 消音は master の音量（context は止めない＝L4）。見張りの試験の外は tick の実時間を 0 にする（見張りを動かさない）。resume の拒否は握る（L2）。見張り（L3c）は running なのに時計が 0.5 秒進まない時だけ、止めて再開を 1 回。
 import { afterEach, describe, expect, it } from 'vitest';
 import { SFX_FIRST_FADE, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, SFX_WATCHDOG } from '../src/config/sfx-config';
 import { SFX_DROP_VOICES, sfxKeyIndex } from '../src/core/sfx-mix';
-import { registerSfxEngine, registerSfxListener, sfxAt, sfxCue, sfxLoop, sfxSetMuted, sfxUi } from '../src/systems/sfx-bus';
+import { registerSfxEngine, registerSfxListener, sfxAt, sfxCue, sfxGunAt, sfxLoop, sfxSetMuted, sfxUi } from '../src/systems/sfx-bus';
 import type { SfxCtx } from '../src/systems/sfx-audio-types';
 import { SfxEngine } from '../src/systems/sfx-engine';
 
@@ -212,6 +213,51 @@ describe('単発（1 発ごとに作るのは音源 1 個だけ）', () => {
     expect(ctx.sources.length).toBe(0);
     expect([e.stats().noBuffer, e.stats().busy]).toEqual([2, 0]);
   });
+  it('標本は後から入る（S2。Boot の後 1 フレームに 1 本）: まだ無い鍵は投げずに落とし、入った後は鳴る。rate の揺れは標本の有無に依らず頼まれた順', () => {
+    const a = setup();
+    const ctx = new FakeCtx();
+    ctx.state = 'running';
+    const late = new SfxEngine(ctx satisfies SfxCtx);
+    const buf = (k: 'mg' | 'ui_tap'): Float32Array => new Float32Array(Math.round(SFX_TABLE[k].seconds * SFX_SAMPLE_RATE)).fill(0.5);
+    late.setBuffer('ui_tap', buf('ui_tap')); // Boot で作るのは ui_tap だけ
+    expect(late.stats().buffers).toBe(1);
+    for (let i = 0; i < 5; i++) { for (const e of [a.e, late]) { e.tick(0.1, 0); expect(() => e.playAt('mg', 0, 0, 1, 1)).not.toThrow(); } }
+    expect(ctx.sources.length).toBe(0);
+    expect([late.stats().noBuffer, late.stats().busy, late.stats().idleDrops]).toEqual([5, 0, 0]);
+    late.playFlat('ui_tap', 1, 1); // 最初からある鍵は鳴る
+    expect(ctx.sources.length).toBe(1);
+    late.setBuffer('mg', buf('mg')); // 数フレーム後に入った
+    for (const e of [a.e, late]) { e.tick(0.1, 0); e.playAt('mg', 0, 0, 1, 1); }
+    expect(ctx.sources.length).toBe(2);
+    expect(ctx.sources[1]!.playbackRate.value).toBe(a.ctx.sources[5]!.playbackRate.value); // 6 発目の揺れ
+    expect(late.stats().buffers).toBe(2);
+  });
+  it('確かめの口 tap（S2 の probe）: 頼まれた単発を、揺れの後・落とす前に全部知らせる（止まっている context・消音・標本なしでも同じ列）。ふだんは null', () => {
+    type Row = [string, number, number, number, number, number, boolean];
+    const run = (state: string, muted: boolean): Row[] => {
+      const { e } = setup(state);
+      expect(e.tap).toBeNull();
+      const rows: Row[] = [];
+      e.tap = (key, dx, dy, rate, mul, minS, flat) => { rows.push([key, dx, dy, rate, mul, minS, flat]); };
+      e.setMuted(muted);
+      e.tick(0.5, 0);
+      e.playAt('mg', 30, -40, 1, 1);
+      e.playAt('mg', 30, -40, 1, 1); // 最小間隔で落ちる音も知らせる
+      e.playAt('gun_far', 0, 9000, 1, 1); // 標本の無い鍵も
+      e.playAt('blast_l', 5, 6, 1.3, 0.7, 0.3);
+      e.playFlat('ui_tap', 1, 0.5);
+      expect(e.clockS).toBeCloseTo(0.5, 9);
+      return rows;
+    };
+    const rows = run('running', false);
+    expect(rows.map((r) => r[0])).toEqual(['mg', 'mg', 'gun_far', 'blast_l', 'ui_tap']);
+    expect(rows[3]).toEqual(['blast_l', 5, 6, 1.3, 0.7, 0.3, false]);
+    expect(rows[4]).toEqual(['ui_tap', 0, 0, 1, 0.5, 0, true]);
+    expect(Math.abs(rows[0]![3] - 1)).toBeLessThanOrEqual(SFX_TABLE.mg.rateJitter);
+    expect(rows[0]![3]).not.toBe(rows[1]![3]);
+    expect(run('suspended', false)).toEqual(rows);
+    expect(run('running', true)).toEqual(rows);
+  });
   it('声は 16 本を超えない: 同じ優先の音は 17 本目から捨てる（音源も作らない）', () => {
     const { ctx, e } = setup();
     for (let i = 0; i < 40; i++) { e.tick(0.1, 0); e.playAt('mg', 0, 0, 1, 1); } // 再生の時計は進めない＝どの声も鳴ったまま
@@ -372,6 +418,35 @@ describe('口（systems/sfx-bus）: エンジンの登録が無ければ何も�
     registerSfxListener(null);
     sfxAt('mg', 1000, 2000);
     expect(ctx.sources.length).toBe(2);
+  });
+  it('大砲の口 sfxGunAt（S2）: 聞き手から 1,500 m までは gun_near、それより遠ければ gun_far（帯の音量つき）。聞き手のいない間は鳴らさない', () => {
+    const ctx = new FakeCtx();
+    ctx.state = 'running';
+    const e = new SfxEngine(ctx satisfies SfxCtx);
+    for (const k of ['gun_near', 'gun_far'] as const) e.setBuffer(k, new Float32Array(Math.round(SFX_TABLE[k].seconds * SFX_SAMPLE_RATE)).fill(0.5));
+    registerSfxEngine(e);
+    sfxGunAt(0, 0);
+    expect(ctx.sources.length).toBe(0);
+    registerSfxListener({ x: 100, y: 100 });
+    const g = graph(ctx, e);
+    sfxGunAt(100, 100 - 1200); // 帯 1 ＝近い音
+    expect(ctx.sources[0]!.buffer).toBe(ctx.buffers[0]);
+    expect(g.voices[0]!.gain.value).toBeCloseTo(SFX_TABLE.gun_near.gain * 0.55, 6);
+    sfxGunAt(100 - 3000, 100); // 帯 2 ＝遠雷・左
+    expect(ctx.sources[1]!.buffer).toBe(ctx.buffers[1]);
+    expect(g.voices[1]!.gain.value).toBeCloseTo(SFX_TABLE.gun_far.gain * 0.3, 6);
+    expect(ctx.pans[1]!.pan.value).toBeCloseTo(-0.7, 6);
+    sfxGunAt(100, 100 + 20000); // 16 km より遠い
+    expect(ctx.sources.length).toBe(2);
+    // sfxAt の 1 発だけの最小間隔（沈没の 2 次の爆発）はエンジンを通って core/sfx-mix に届く
+    e.tick(1, 0);
+    sfxAt('gun_near', 100, 100);
+    e.tick(0.25, 0);
+    sfxAt('gun_near', 100, 100, 0.7, 1, 0.3);
+    expect(ctx.sources.length).toBe(3);
+    e.tick(0.1, 0);
+    sfxAt('gun_near', 100, 100, 0.7, 1, 0.3);
+    expect(ctx.sources.length).toBe(4);
   });
   it('sfxUi・sfxCue は位置なし（中央）。sfxCue の遅らせと sfxLoop は S1 では何もしない。sfxSetMuted はエンジンの消音', () => {
     const { ctx, e } = setup();

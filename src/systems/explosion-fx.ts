@@ -16,7 +16,7 @@ import {
   EXPLOSION_SLOTS, EXPLOSION_SMALL_FLASH_RADIUS_M, EXPLOSION_SPLASH_RADIUS_M, EXPLOSION_SPLASH_TINT, FIRE_SMOKE_TINT,
 } from '../config/fx-art-config';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
-import { SFX_S1_SMALL_BLAST } from '../config/sfx-config';
+import { SFX_SECONDARY_BLAST } from '../config/sfx-config';
 import { BlastFx } from './blast-fx';
 import { sfxAt } from './sfx-bus';
 import type { SparkFx } from './spark-fx';
@@ -82,7 +82,7 @@ export class ExplosionFx {
     this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
     this.blast.play(i, x, y, dud, torpedo);
     if (torpedo && !dud) this.column.play(x, y);
-    sfxAt('blast_l', x, y, dud ? SFX_S1_SMALL_BLAST.gain : 1, dud ? SFX_S1_SMALL_BLAST.rate : 1); // 爆発音（v0.7.1 S1。小さい版は小さく速く。魚雷の命中の音・小さい版の音は S2）
+    sfxAt(dud ? 'blast_s' : torpedo ? 'torp_hit' : 'blast_l', x, y); // 爆発音（v0.7.1 S2。小さい版＝不発・被弾・座礁は blast_s、魚雷の命中は torp_hit、ほかの大きい版は blast_l）
   }
 
   /** 昼の割合（0＝夜・1＝昼。world-art が夜明けの段 lightStep / 16 を毎フレーム渡す）: 明るい海に ADD の光を足すと白く飛ぶので α を下げる（U6） */
@@ -96,6 +96,7 @@ export class ExplosionFx {
   /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
   secondary(x: number, y: number): void {
     this.blast.secondary(x, y);
+    sfxAt('blast_s', x, y, SFX_SECONDARY_BLAST.gain, 1, SFX_SECONDARY_BLAST.minIntervalS); // 2 次の爆発の音（v0.7.1 S2。小さめ・0.3 秒の内は重ねない）
   }
 
   /** 毎フレーム（world-art から。realDt は見た目の時計）: 部品ごとに膨らみと薄れ、寿命が尽きた部品から隠す。枠の寿命で枠を閉じる */

@@ -12,6 +12,19 @@ export function wavBytes(x: Float32Array, sampleRate: number): Buffer {
   return b;
 }
 
+/** 左右の Float32（−1〜1。同じ長さ）→ 16 bit・ステレオの WAV（1 を超える標本は頭打ち） */
+export function wavStereoBytes(l: Float32Array, r: Float32Array, sampleRate: number): Buffer {
+  const b = Buffer.alloc(44 + l.length * 4);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + l.length * 4, 4); b.write('WAVEfmt ', 8);
+  b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(2, 22); b.writeUInt32LE(sampleRate, 24); b.writeUInt32LE(sampleRate * 4, 28);
+  b.writeUInt16LE(4, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(l.length * 4, 40);
+  for (let i = 0; i < l.length; i++) {
+    b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, l[i]!)) * 32767), 44 + i * 4);
+    b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, r[i]!)) * 32767), 46 + i * 4);
+  }
+  return b;
+}
+
 /** 2 の冪の長さの FFT の大きさ（Hann 窓を掛け、0 で埋める）。戻りは size/2 個の |X| */
 export function spectrum(x: Float32Array, from: number, len: number, size: number): Float64Array {
   const re = new Float64Array(size);

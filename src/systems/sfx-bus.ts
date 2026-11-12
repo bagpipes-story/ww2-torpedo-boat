@@ -3,8 +3,9 @@
 // エンジンは systems/sfx-boot が Boot で 1 回登録する（再生の context が無い端末・NOAUDIO は登録なし＝どの口も何もしない）。聞き手（自艇の位置。読むだけ）は world-art が
 // 世界の作成時に登録し、破棄で null に（世界の作成前・破棄後の位置つきの音は鳴らさない。エンジンは世界の物を握らない）。
 // §7: どの口も確保しない（引数は数と鍵だけ。結果は返さない）。DOM にも Phaser にも触らない。
-// 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。sfxCue の遅らせ（S4）と sfxLoop（S3）はまだ何もしない。
+// 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。sfxCue の遅らせ（S4）と sfxLoop（S3）はまだ何もしない。
 import type { SfxKey } from '../config/sfx-config';
+import { sfxBand, sfxGunKey } from '../core/sfx-mix';
 import type { SfxEngine } from './sfx-engine';
 
 /** 聞き手の位置（世界の m。core の BoatState が満たす。読むだけ） */
@@ -31,11 +32,23 @@ export function sfxUi(key: SfxKey): void {
   if (engine !== null) engine.playFlat(key, 1, 1);
 }
 
-/** 位置つきの衝撃音（x・y は世界の m。聞き手からの距離の帯で音量、左右でパン。gain は音量の倍率・rate は速さ。聞き手のいない間は鳴らさない） */
-export function sfxAt(key: SfxKey, x: number, y: number, gain = 1, rate = 1): void {
+/**
+ * 位置つきの衝撃音（x・y は世界の m。聞き手からの距離の帯で音量、左右でパン。gain は音量の倍率・rate は速さ。聞き手のいない間は鳴らさない）。
+ * minIntervalS はこの 1 発だけの最小間隔（同じ鍵が鳴ってからこの秒の内は鳴らさない＝沈没の 2 次の爆発）
+ */
+export function sfxAt(key: SfxKey, x: number, y: number, gain = 1, rate = 1, minIntervalS = 0): void {
   const l = listener;
   if (engine === null || l === null) return;
-  engine.playAt(key, x - l.x, y - l.y, rate, gain);
+  engine.playAt(key, x - l.x, y - l.y, rate, gain, minIntervalS);
+}
+
+/** 大砲の発砲音（駆逐艦・沿岸砲・卯月）: 聞き手からの距離の帯で、近ければ gun_near・遠ければこもった遠雷 gun_far（距離が音色で分かる。spec §6.2） */
+export function sfxGunAt(x: number, y: number): void {
+  const l = listener;
+  if (engine === null || l === null) return;
+  const dx = x - l.x;
+  const dy = y - l.y;
+  engine.playAt(sfxGunKey(sfxBand(dx * dx + dy * dy)), dx, dy, 1, 1);
 }
 
 /** 状態の合図（位置なし。gain は音量の倍率・rate は速さ）。遅らせて鳴らす（delayS > 0。Result の 2 打目）は S4 から＝今は鳴らさない */

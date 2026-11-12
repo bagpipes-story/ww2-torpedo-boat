@@ -1,11 +1,12 @@
-// v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §9.1）: 音の合成を固定する。assets/sfx-bank の作り方のある鍵（S0 は ui_tap・mg・blast_l。S2〜S4 で増えると自動で入る）
+// v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §9.1）: 音の合成を固定する。assets/sfx-bank の作り方のある鍵（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本。S3〜S4 で増えると自動で入る）
 // それぞれについて: 長さ＝表の秒 × 22,050・NaN なし・頂 0.9・直流 < 0.02・単発は両端 < 1e-3・2 回作って同じ・16 bit に丸めた指紋（FNV。最下位ビットの揺れに強く）を固定・
 // 系統ごとの RMS の帯・零交差の高さの順・ループは継ぎ目・合成の壁時計。鍵を足す段は FINGERPRINTS に 1 行足す（無ければ落ちる）。音色を直した時は指紋を直す。
+// S2: 7 本の聞き分け（近い砲は鋭く明るい・遠雷はゆっくり立って暗い・大きい水柱は低い一打つき・魚雷の命中は爆発の後に水の柱が立つ・沈没は続く泡）を数で固定する。
 // 下半分は部品（assets/sfx-dsp）の単体テスト。
 import { describe, expect, it } from 'vitest';
 import { SFX_EDGE_FADE_S, SFX_PEAK, SFX_SAMPLE_RATE, SFX_SEED_MG, SFX_TABLE, type SfxFamily, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
-import { bandPass, crossfadeLoop, envelope, fadeEdges, fm, highPass, lowPass, meanOf, mixInto, mul, normalizePeak, peakOf, ramp, removeDc, rmsOf, saturate, sfxSamples, sine, whiteNoise, zeroCrossings } from '../src/assets/sfx-dsp';
+import { bandPass, crossfadeLoop, envelope, fadeEdges, fadeTail, fm, highPass, lowPass, meanOf, mixInto, mul, normalizePeak, peakOf, ramp, removeDc, rmsOf, saturate, sfxSamples, sine, whiteNoise, zeroCrossings } from '../src/assets/sfx-dsp';
 import { SeededRng } from '../src/core/rng';
 
 const SR = SFX_SAMPLE_RATE;
@@ -25,8 +26,15 @@ function fingerprint16(x: Float32Array): number {
 /** 鍵ごとの指紋（作り方のある鍵は必ずここにある） */
 const FINGERPRINTS: Partial<Record<SfxKey, number>> = {
   mg: 3539423712,
+  gun_near: 3447032880,
+  gun_far: 3904938802,
+  splash_s: 3929341713,
+  splash_l: 952053639,
+  blast_s: 1318136149,
   blast_l: 1634950625,
+  torp_hit: 2755808488,
   ui_tap: 274344421,
+  sink: 3533209858,
 };
 /** 系統ごとの RMS の帯（頂 0.9 にそろえた標本。小さすぎる＝針のような音・大きすぎる＝べったりした音を止める。仮の帯＝S5 で詰める） */
 const RMS_BAND: Readonly<Record<SfxFamily, readonly [number, number]>> = {
@@ -35,10 +43,22 @@ const RMS_BAND: Readonly<Record<SfxFamily, readonly [number, number]>> = {
 /** 零交差の高さ（1 秒あたり）の順: [低い方, 高い方]。両方に作り方がある組だけ比べる（S2 で遠雷 < 近い砲・大きい水柱 < 小さい水柱が効き始める） */
 const ZC_ORDER: readonly (readonly [SfxKey, SfxKey])[] = [['blast_l', 'mg'], ['gun_far', 'gun_near'], ['splash_l', 'splash_s'], ['blast_l', 'blast_s']];
 const zcRate = (x: Float32Array): number => (zeroCrossings(x) * SR) / x.length;
+/** 頂の位置（標本） */
+function peakAt(x: Float32Array): number {
+  let at = 0;
+  for (let i = 0; i < x.length; i++) if (Math.abs(x[i]!) > Math.abs(x[at]!)) at = i;
+  return at;
+}
+/** |x| が 頂 × ratio を最後に超える位置（標本＝「−20 dB までの長さ」の目安） */
+function lastAbove(x: Float32Array, ratio: number): number {
+  const p = peakOf(x) * ratio;
+  for (let i = x.length - 1; i >= 0; i--) if (Math.abs(x[i]!) >= p) return i;
+  return 0;
+}
 
 describe('音の合成（v0.7.1 S0。作り方のある鍵）', () => {
-  it('S0 の 3 本がある（空の検査にしない）・どの鍵にも指紋がある', () => {
-    for (const k of ['mg', 'blast_l', 'ui_tap'] as const) expect(KEYS).toContain(k);
+  it('S0 の 3 本と S2 の 7 本がある（空の検査にしない）・どの鍵にも指紋がある', () => {
+    for (const k of ['mg', 'blast_l', 'ui_tap', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'torp_hit', 'sink'] as const) expect(KEYS).toContain(k);
     expect(Object.keys(FINGERPRINTS).sort()).toEqual([...KEYS].sort());
   });
   it.each(KEYS)('%s: 長さ・NaN なし・頂 0.9・直流・両端・系統の RMS の帯', (key) => {
@@ -66,10 +86,52 @@ describe('音の合成（v0.7.1 S0。作り方のある鍵）', () => {
     expect(Buffer.from(a.buffer).equals(Buffer.from(b.buffer))).toBe(true);
     expect(fingerprint16(a), `${key} の指紋（音色を直したなら FINGERPRINTS を直す）`).toBe(FINGERPRINTS[key]);
   });
-  it('零交差の高さの順（爆発は機銃より低い。S2 で 遠雷 < 近い砲・大きい水柱 < 小さい水柱）', () => {
+  it('零交差の高さの順（爆発は機銃より低い・遠雷 < 近い砲・大きい水柱 < 小さい水柱・大きい爆発 < 小さい爆発）', () => {
     const active = ZC_ORDER.filter(([lo, hi]) => KEYS.includes(lo) && KEYS.includes(hi));
-    expect(active.length).toBeGreaterThanOrEqual(1);
+    expect(active.length).toBe(4);
     for (const [lo, hi] of active) expect(zcRate(renderSfx(lo)), `${lo} < ${hi}`).toBeLessThan(zcRate(renderSfx(hi)));
+  });
+  it('S2 の聞き分け: 近い砲は鋭く立って明るい・遠雷はゆっくり立って暗く長い', () => {
+    const near = renderSfx('gun_near');
+    const far = renderSfx('gun_far');
+    expect(peakAt(near)).toBeLessThan(0.015 * SR);
+    expect(peakAt(far)).toBeGreaterThan(0.03 * SR);
+    // 頭 0.1 秒の零交差: 近い砲は遠雷の 2 倍より高い（鋭い頭）。−20 dB までの長さは遠雷の方が長い
+    expect(zeroCrossings(near, 0, SR / 10)).toBeGreaterThan(zeroCrossings(far, 0, SR / 10) * 2);
+    expect(lastAbove(far, 0.1)).toBeGreaterThan(lastAbove(near, 0.1) * 2);
+  });
+  it('S2 の聞き分け: 小さい水柱は軽く短い・大きい水柱は頭に低い一打があって長い', () => {
+    const s = renderSfx('splash_s');
+    const l = renderSfx('splash_l');
+    expect(zeroCrossings(l, 0, SR / 20)).toBeLessThan(zeroCrossings(s, 0, SR / 20) * 0.6);
+    expect(lastAbove(l, 0.1)).toBeGreaterThan(lastAbove(s, 0.1) * 2);
+    expect(rmsOf(l)).toBeGreaterThan(rmsOf(s));
+  });
+  it('S2 の聞き分け: 小さい爆発は大きい爆発より短い・魚雷の命中は一番長く、爆発の頭の後（0.25 秒から）に水の柱が立つ（明るくなる）', () => {
+    const small = renderSfx('blast_s');
+    const big = renderSfx('blast_l');
+    const torp = renderSfx('torp_hit');
+    expect(lastAbove(small, 0.1)).toBeLessThan(lastAbove(big, 0.1) * 0.5);
+    expect(lastAbove(torp, 0.1)).toBeGreaterThan(lastAbove(big, 0.1) * 1.5);
+    // 頭（爆発）が一番大きい: 頂は 0.1 秒の内。頭 0.2 秒の RMS は水の柱（0.5〜0.9 秒）より大きい
+    expect(peakAt(torp)).toBeLessThan(0.1 * SR);
+    expect(rmsOf(torp, 0, 0.2 * SR)).toBeGreaterThan(rmsOf(torp, 0.5 * SR, 0.9 * SR));
+    // 水の柱: 0.5〜0.9 秒は、爆発だけの大きい爆発の同じ区間より明るく（零交差が 2 倍より多い）大きい
+    expect(zeroCrossings(torp, 0.5 * SR, 0.9 * SR)).toBeGreaterThan(zeroCrossings(big, 0.5 * SR, 0.9 * SR) * 2);
+    expect(rmsOf(torp, 0.5 * SR, 0.9 * SR)).toBeGreaterThan(rmsOf(big, 0.5 * SR, 0.9 * SR));
+    // 柱は立ち上がる: 0.25 秒からの 0.1 秒より、0.5 秒からの 0.1 秒の方が明るい
+    expect(zeroCrossings(torp, 0.5 * SR, 0.6 * SR)).toBeGreaterThan(zeroCrossings(torp, 0.25 * SR, 0.35 * SR));
+  });
+  it('S2 の聞き分け: 沈没は一打ではなく続く音（泡の拍）で、終わりは消え切る', () => {
+    const x = renderSfx('sink');
+    const n3 = Math.round(x.length / 3);
+    expect(Math.abs(20 * Math.log10(rmsOf(x, n3, 2 * n3) / rmsOf(x, 0, n3)))).toBeLessThan(6);
+    expect(rmsOf(x, x.length - Math.round(SR / 20))).toBeLessThan(rmsOf(x) * 0.15);
+    // 泡の拍: 20 ms ごとの RMS が大きく揺れる（山と谷の比が 3 倍より大きい。1 秒〜1.5 秒）
+    const win = Math.round(0.02 * SR);
+    let lo = Infinity, hi = 0;
+    for (let a = SR; a + win <= Math.round(1.5 * SR); a += win) { const r = rmsOf(x, a, a + win); lo = Math.min(lo, r); hi = Math.max(hi, r); }
+    expect(hi / lo).toBeGreaterThan(3);
   });
   it('ループは継ぎ目が合う（頭と末尾の標本の差 < 0.05・頭と末尾 10% の RMS の差 < 1.5 dB。S0 はループの作り方がまだ無い＝S3 で効く）', () => {
     for (const key of KEYS.filter((k) => SFX_TABLE[k].loop)) {
@@ -175,6 +237,11 @@ describe('音の合成の部品（assets/sfx-dsp）', () => {
     expect(f[fn >> 1]).toBeGreaterThan(0);
     expect(peakOf(normalizePeak(new Float32Array([0.1, -0.2, 0.05])))).toBeCloseTo(SFX_PEAK, 6);
     expect(peakOf(normalizePeak(new Float32Array(8)))).toBe(0);
+    // 尾の fade（S2）: 終わりの fadeS 秒を直線で 0 へ（その前は元のまま・最後の標本は 0）
+    const t = fadeTail(new Float32Array(N).fill(1), 0.1);
+    expect(t[N - 1 - sfxSamples(0.1)]).toBe(1);
+    expect(t[N - 1]).toBe(0);
+    expect(t[N - 1 - (sfxSamples(0.1) >> 1)]).toBeCloseTo(0.5, 2);
   });
   it('ループの継ぎ目の重ね: 長さ n・終わりの次が頭につながる・頭と末尾の大きさが同じ・重ねの外は元のまま', () => {
     const n = SR * 2;

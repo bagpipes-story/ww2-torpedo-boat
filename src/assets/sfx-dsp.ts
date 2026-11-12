@@ -206,6 +206,13 @@ export function fadeEdges(x: Float32Array, fadeS = SFX_EDGE_FADE_S): Float32Arra
   return x;
 }
 
+/** 終わりの fadeS 秒を直線で 0 へ（長い尾を表の秒の内で消し切る。torp_hit・sink）。x を書き換えて返す */
+export function fadeTail(x: Float32Array, fadeS: number): Float32Array {
+  const fn = Math.min(sfxSamples(fadeS), x.length);
+  for (let i = 0; i < fn; i++) x[x.length - 1 - i] = x[x.length - 1 - i]! * (i / fn);
+  return x;
+}
+
 /**
  * ループの継ぎ目の重ね: 長さ n ＋ 重ね（overlapS 秒）の標本から長さ n のループを作る。末尾の重ねの分を頭に等電力（sin・cos）で重ねる＝
  * 終わり（元の n − 1）の次が頭（元の n が消えていく所）につながる。雑音のループ（sea・fire・rain）用。周期の合う音（engine・drone）は整数周期で作って使わない

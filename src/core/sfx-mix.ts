@@ -45,11 +45,12 @@ export function sfxGunKey(band: number): SfxKey {
 
 /** 間引きと声の割り当て（ゲームに 1 つ。エンジンが持つ） */
 export class SfxMixer {
-  /** 鳴らせた時の結果: 音量（鍵 × 帯 × 呼ぶ側の倍率）・パン・帯・奪った声か（エンジンは奪った声の音源を止めてから鳴らす） */
+  /** 鳴らせた時の結果: 音量（鍵 × 帯 × 呼ぶ側の倍率）・パン・奪った声か（エンジンは奪った声の音源を止めてから鳴らす） */
   gain = 0;
   pan = 0;
-  band = 0;
   stole = false;
+  /** 直前に頼まれた音の距離の帯（落とした時も書く。帯の外は −1・位置なしは 0。scripts/headless/sfx-probe が読む） */
+  band = 0;
   /** 直前の呼び出しで落とした理由（SFX_DROP_*） */
   lastDrop = SFX_DROP_NONE;
   /** 数（scripts/headless の probe 用）: 鍵ごとの鳴らした数・理由ごとの落とした数・奪った数・同時の声の最大 */
@@ -74,20 +75,22 @@ export class SfxMixer {
 
   /**
    * 位置つきの単発（dx・dy は聞き手からの差 m）。鳴らすなら声の添字（0〜）を返し gain・pan・band・stole を書く。落とすなら −1（lastDrop に理由）。
-   * gameS はゲームの時計（最小間隔）、nowS は再生の時計（声の空き）、rate は再生の速さ（声の長さ＝表の秒 ÷ rate）
+   * gameS はゲームの時計（最小間隔）、nowS は再生の時計（声の空き）、rate は再生の速さ（声の長さ＝表の秒 ÷ rate）。
+   * minIntervalS はこの 1 発だけの最小間隔（表の値より長い時だけ効く＝沈没の 2 次の爆発。同じ鍵が鳴ってからこの秒の内は落とす）
    */
-  playAt(key: SfxKey, dxM: number, dyM: number, gameS: number, nowS: number, rate = 1, gainMul = 1): number {
+  playAt(key: SfxKey, dxM: number, dyM: number, gameS: number, nowS: number, rate = 1, gainMul = 1, minIntervalS = 0): number {
     const d = SFX_TABLE[key];
     const ki = KEY_INDEX[key];
-    if (gameS - this.lastPlayS[ki]! < d.minIntervalS) return this.drop(SFX_DROP_RATE);
     const d2 = dxM * dxM + dyM * dyM;
     const band = sfxBand(d2);
+    this.band = band;
+    const since = gameS - this.lastPlayS[ki]!;
+    if (since < d.minIntervalS || since < minIntervalS) return this.drop(SFX_DROP_RATE);
     if (band < 0 || band > d.reachBand) return this.drop(SFX_DROP_FAR);
     const v = this.allocVoice(d.priority, nowS, d.seconds / rate);
     if (v < 0) return this.drop(SFX_DROP_VOICES);
     this.gain = d.gain * sfxBandGain(band) * gainMul;
     this.pan = sfxPan(dxM, d2);
-    this.band = band;
     this.accept(ki, gameS);
     return v;
   }
@@ -96,12 +99,12 @@ export class SfxMixer {
   playFlat(key: SfxKey, gameS: number, nowS: number, rate = 1, gainMul = 1): number {
     const d = SFX_TABLE[key];
     const ki = KEY_INDEX[key];
+    this.band = 0;
     if (gameS - this.lastPlayS[ki]! < d.minIntervalS) return this.drop(SFX_DROP_RATE);
     const v = this.allocVoice(d.priority, nowS, d.seconds / rate);
     if (v < 0) return this.drop(SFX_DROP_VOICES);
     this.gain = d.gain * gainMul;
     this.pan = 0;
-    this.band = 0;
     this.accept(ki, gameS);
     return v;
   }
