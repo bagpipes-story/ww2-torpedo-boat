@@ -16,3 +16,13 @@ Lead plan (not user decisions): v0.7.0 = ship/boat/plane art + night-sea effects
 - U3 FPS is fine on the user's iPhone → more flashy effects and higher counts are OK. Lead budget: frame p95 ≤ ×1.40 vs base (was ×1.15), visible objects ≤ +150 (was +40), GPU ≤ +24 MB; §7 structure rules unchanged (pools, draw once, no per-frame alloc).
 - U4 shore battery remade (no more red square).
 - U5 wakes too straight → trail along the real path with sway (lead: pooled foam puffs laid at the stern positions).
+
+## U6–U8 (v0.7.0 iPhone round 2, 2026-11-12, verbatim)
+「水面、航跡、沿岸砲とても良いです。画面は撃沈時でも全くカクツクことなく、FPSは疑わしいくらいに61をキープしています。表示が正常であればまだ余裕ありますね。
+下記改善お願いします。砲撃、爆撃で命中した際の爆発エフェクトの大きさ自体はいいのですが、少し眩しく感じるため、フラッシュのような白色や輝度は落ち着かせてください。
+また、魚雷の爆発はもっと轟沈感を出すために派手に水柱を立たせてください。
+また、相対的に駆逐艦のグラフィックがしょぼい感じになってしまったので、駆逐艦のグラフィックを見直してクオリティを上げてください。でも、色は現在と同じ単系統のままで表現してください。」
+- U6 gun/bomb hit explosions: keep the size, tone down the white flash and brightness.
+- U7 torpedo hits: a much bigger, dramatic water column (「轟沈感」).
+- U8 destroyer art quality up, same single-hue palette (enemy red family / ally blue family).
+- Round-2 iPhone result: sea, wakes, shore battery very good; FPS steady 61 even during sinkings.
