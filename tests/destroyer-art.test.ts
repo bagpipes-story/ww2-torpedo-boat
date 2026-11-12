@@ -117,7 +117,7 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
   it('source の pin: 鍵・寸法（hullTexSize）・paintCanvas で 1 回、Math.random なし、300 行以下', () => {
     const art = readFileSync('src/assets/destroyer-art.ts', 'utf8');
     expect(art).toContain('const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);');
-    expect(art).toContain('paintCanvas(scene, key, size.w, size.h, (ctx) => {');
+    expect(art).toContain('paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {'); // IP2b: 画素は論理の寸法の S 倍（S＝artTexDensity。tests/art-inventory）
     expect(art).toContain("paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);");
     for (const f of ['destroyer-art', 'destroyer-plan', 'destroyer-paint', 'destroyer-part-paint', 'destroyer-pen']) {
       const s = readFileSync(`src/assets/${f}.ts`, 'utf8');

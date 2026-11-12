@@ -3,6 +3,7 @@
 // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+import { artTexDensity } from '../config/ship-art-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
 import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
 import { beyondBounds } from '../core/dawn-withdraw';
@@ -44,7 +45,7 @@ export class Destroyer {
     this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: aiParams.cruiseSpeedMps };
     this.ai = createShipAiState(start.headingDeg, aiParams.cruiseSpeedMps);
     this.circles = createCircles(spec.hullCircles);
-    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE).setDepth(DEPTH.destroyer);
+    this.sprite = scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey)).setDepth(DEPTH.destroyer); // 絵の密度（v0.7.0 IP2b。2 の冪＝大きさはビット同一）
     this.refreshHull();
     this.syncSprite();
   }

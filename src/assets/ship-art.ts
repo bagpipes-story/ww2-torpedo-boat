@@ -4,6 +4,7 @@
 import type Phaser from 'phaser';
 import { RENDER_SCALE } from '../config/game-config';
 import type { HullPalette } from '../config/boat-art-config';
+import { artTexDensity } from '../config/ship-art-config';
 import { hullTexSize, type BoatTextureSpec } from './art-dims';
 import { paintTexture, type ArtPen } from './art-pen';
 import type { ShipShape, ShipTone } from './ship-shape';
@@ -27,7 +28,13 @@ export function paintShip(pen: ArtPen, shape: ShipShape, pal: HullPalette, mid: 
   pen.parts(shape.parts, (t) => shipToneColor(t, pal, mid));
 }
 
-/** 形を key のテクスチャに（寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央） */
+/**
+ * 形を key のテクスチャに（論理の寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央）。IP2b: 画素はその S 倍（S＝artTexDensity(key)。輸送船 2・大発 1）で描き、
+ * 表示は Destroyer・AllyShip が 1 / (k·S) に縮める（世界の大きさと displayWidth/Height は今のまま）
+ */
 export function paintShipTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, shape: ShipShape, pal: HullPalette, mid: number): void {
-  paintTexture(scene, key, hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE), RENDER_SCALE, (pen) => paintShip(pen, shape, pal, mid));
+  const S = artTexDensity(key);
+  const size = hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE);
+  paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) => paintShip(pen, shape, pal, mid));
+  if (S !== 1) Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
 }

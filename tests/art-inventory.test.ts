@@ -3,7 +3,8 @@
 // - 各鍵を「描き直す世界の絵」「変えない（spec §2.2 の変えない物＝R27）」に分ける（新しい鍵は「描き直す（新しい物）」か「演出」）。
 // - assets/art-dims の式は v0.6.11 の placeholder の式と k ∈ {1, iPhone SE, iPhone 15, 2} で同じ。iPhone 15 の k で data から作る寸法は f5563ab のヘッドレスの実物と同じ px。
 // - 世界の絵の原点（setOrigin）は鍵ごとに今のまま（探照灯は光源 (0.5, 1)・爆撃進路の線は (0, 0.5)・ほかは中央）。
-// 実物の寸法の A/B（全任務の game.textures）は scripts/headless/tex-ab.mjs が見る（門）。
+// - IP2b: 艦の 5 つの鍵（駆逐艦 3・輸送船 2）は画素を ART_TEX_DENSITY 倍（2 の冪）で描き、表示を 1/(k·S) にする。論理の寸法（hullTexSize）・displayWidth/Height はビット同一。
+// 実物の寸法の A/B（全任務の game.textures）は scripts/headless/tex-ab.mjs が見る（門。IP2b から密度で割った論理の寸法で比べる）。
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -15,7 +16,7 @@ import { getGunboatParams } from '../src/config/gunboat-mission-data';
 import { validateLandingMissions } from '../src/config/landing-mission-data';
 import { validateAllyDestroyerMissions } from '../src/config/ally-destroyer-mission-data';
 import { EXPLOSION_RING_RADIUS_UNITS, TORPEDO_WIDTH_UNITS, WAKE_DOT_RADIUS_UNITS, aircraftTexSize, discTexSize, hullTexSize, searchlightTexSize, torpedoTexSize, type TexSize } from '../src/assets/art-dims';
-import { SHIP_ART_DEFAULT_KEY, SHIP_ART_KEY_BY_ENEMY, shipArtKey } from '../src/config/ship-art-config';
+import { ART_TEX_DENSITY, SHIP_ART_DEFAULT_KEY, SHIP_ART_KEY_BY_ENEMY, artTexDensity, shipArtKey } from '../src/config/ship-art-config';
 import { AIRCRAFT_ART_BY_ID, AIRCRAFT_ART_DEFAULT, AIRCRAFT_ART_SHAPES, FRIENDLY_AIRCRAFT_ART, aircraftArtShape } from '../src/config/aircraft-art-config';
 import { SEA_GRID_ON, SEA_LIGHT_ART } from '../src/config/sea-art-config';
 
@@ -187,6 +188,39 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
       'tex-transport-friendly': '35x262', 'tex-destroyer-friendly': '20x225', 'tex-torpedo': '4x14', 'tex-wake-dot': '8x8', 'tex-explosion-ring': '96x96',
       'tex-aircraft': '66x53', 'tex-starshell': '282x282', 'tex-smoke-puff': '142x142', 'tex-searchlight': '61x280',
     });
+  });
+  it('IP2b の密度: 艦の 5 つの鍵だけ・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も）', () => {
+    expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual(['tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-transport', 'tex-transport-friendly']);
+    for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
+    expect([artTexDensity('tex-barge'), artTexDensity('tex-boat-us_elco80')]).toEqual([1, 1]);
+    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24] };
+    const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
+    const ks = [...KS];
+    for (let i = 0; i <= 360; i++) ks.push(1 + i / 360); // k 1〜2 を 1/360 刻み
+    for (const key of Object.keys(ART_TEX_DENSITY)) {
+      const [[L, B], S] = [hulls[key]!, artTexDensity(key)];
+      for (const k of ks) {
+        const [t, a, b] = [hullTexSize(L, B, k), 1 / k, 1 / k / S];
+        expect(b * (t.w * S), `${key} k ${k}`).toBe(a * t.w);
+        expect(b * (t.h * S), `${key} k ${k}`).toBe(a * t.h);
+        expect(b * SINK_SCALE_TO * (t.w * S), `${key} k ${k} sink`).toBe(a * SINK_SCALE_TO * t.w);
+      }
+    }
+  });
+  it('IP2b の密度の通り道: 描く 2 か所が S 倍の画素、艦の Image を作る 3 か所が 1 / RENDER_SCALE / artTexDensity（ほかに 5 つの鍵の Image は無い）', () => {
+    for (const line of ['paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(readFileSync('src/assets/destroyer-art.ts', 'utf8')).toContain(line);
+    expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) =>');
+    expect(readFileSync('src/entities/destroyer.ts', 'utf8')).toContain('scene.add.image(start.x, start.y, textureKey).setScale(1 / RENDER_SCALE / artTexDensity(textureKey))');
+    expect(readFileSync('src/entities/ally-destroyer.ts', 'utf8')).toContain('TEXTURE_KEYS.destroyerFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.destroyerFriendly))');
+    expect(readFileSync('src/entities/ally-ship.ts', 'utf8')).toContain('TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly))');
+    const users: string[] = [];
+    for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
+      for (const f of readdirSync(join('src', dir))) {
+        const src = readFileSync(join('src', dir, f), 'utf8');
+        if (/TEXTURE_KEYS\.(?:destroyer|destroyerUs|destroyerFriendly|transport|transportFriendly)\b(?!Pool)/.test(src) || /'tex-(?:destroyer|transport)/.test(src)) users.push(`${dir}/${f}`);
+      }
+    }
+    expect(users.sort()).toEqual(['entities/ally-destroyer.ts', 'entities/ally-ship.ts', 'entities/destroyer.ts', 'systems/destroyer-group.ts']); // destroyer-group は鍵を Destroyer へ渡すだけ
   });
   it('placeholders.ts の私的な値（魚雷の幅・雷跡の点・爆発の輪）は art-dims と同じ', () => {
     const src = readFileSync('src/assets/placeholders.ts', 'utf8');

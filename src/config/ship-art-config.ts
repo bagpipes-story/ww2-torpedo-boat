@@ -15,6 +15,17 @@ export function shipArtKey(enemyId: string): string {
 }
 
 /**
+ * v0.7.0 IP2b: 艦の絵のテクスチャの密度（1 世界単位の px ＝ RENDER_SCALE × これ。表に無い鍵は 1）。絵は ART_TEX_DENSITY 倍の画素で描き、スプライトは 1 / (RENDER_SCALE × これ) で表示する
+ * （世界の大きさは今のまま）。2 の冪に限る: (1/k)/S と w·S は丸めが変わらないので displayWidth・displayHeight（卯月の名前の y・航跡・火災が読む）は S = 1 とビット同一（tests/art-inventory）
+ */
+export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
+  'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
+};
+export function artTexDensity(key: string): number {
+  return ART_TEX_DENSITY[key] ?? 1;
+}
+
+/**
  * 艦の当たりの形（R22）: 当たりは船幅の円を軸に並べたカプセル（core/torpedo-solver。艦首・艦尾まで船幅いっぱい）。絵の輪郭が当たりより痩せないよう、
  * 長さの SHIP_FULL_BEAM_FROM〜TO の間は幅 ≥ SHIP_FULL_BEAM_SHARE × B、艦首の先は画素の 0 行目、艦尾は長さの SHIP_STERN_MIN_SHARE 以上まで描く
  */

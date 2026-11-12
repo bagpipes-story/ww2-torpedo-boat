@@ -7,7 +7,7 @@
 import type Phaser from 'phaser';
 import { RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { PALETTE_ALLY, PALETTE_ENEMY } from '../config/boat-art-config';
-import { SHIP_ART_DEFAULT_KEY, shipArtKey, shipArtKind } from '../config/ship-art-config';
+import { SHIP_ART_DEFAULT_KEY, artTexDensity, shipArtKey, shipArtKind } from '../config/ship-art-config';
 import { getEnemyRecord, getPrototypeMission, type GameData } from '../config/game-data';
 import { hasHardVariant } from '../config/mission-data';
 import { hullTexSize, type BoatTextureSpec } from './art-dims';
@@ -15,14 +15,19 @@ import { destroyerPlan, type DestroyerKind } from './destroyer-plan';
 import { paintDestroyer } from './destroyer-paint';
 import { paintCanvas } from './sea-art';
 
-/** 1 枚を key のテクスチャに（寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央） */
+/**
+ * 1 枚を key のテクスチャに（論理の寸法は placeholder と同じ ceil(B·k) × ceil(L·k)。原点は表示側の既定＝中央）。IP2b: 画素はその S 倍（S＝artTexDensity(key)。2 の冪）で描き、
+ * 表示は Destroyer・AllyDestroyer が 1 / (k·S) に縮める（世界の大きさと displayWidth/Height は今のまま）
+ */
 function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextureSpec, kind: DestroyerKind, base: number): void {
   const k = RENDER_SCALE;
+  const S = artTexDensity(key);
   const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);
-  paintCanvas(scene, key, size.w, size.h, (ctx) => {
-    ctx.scale(k, k);
+  paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {
+    ctx.scale(k * S, k * S);
     paintDestroyer(ctx, destroyerPlan(kind, spec.lengthUnits, spec.beamUnits), base);
   });
+  Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
 }
 
 /** 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級） */

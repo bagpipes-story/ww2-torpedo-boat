@@ -9,6 +9,7 @@
 //   昼の海 #3b5670 との明るさの比（WCAG）・tint を掛けた版の比（僚艇と隼艇 ESCORT_TINT・jp_03 の隠れた艇 EVAC_HIDDEN_TINT α 0.45・去った米PT・座礁の大発）・
 //   艦の幅（長さの 20〜85% で ≥ 0.92 × 幅）と艦首の 0 行目・艦尾の 98%（R22）・魚雷の黄の面積・煙幕の半径の帯の α（R32）・星弾の 92% の内の α・探照灯の先端の行と扇の内の α（R2）・
 //   機の翼幅（≥ 箱の 0.8）。A（placeholder）と比べる門と、色の意味の絶対の門。B だけの鍵（例 tex-destroyer-us）は A の対の鍵（PAIR）と比べる。
+// v0.7.0 IP2b: 艦の 5 つの鍵は画素を S 倍（テクスチャの customData.density）で描く。寸法の門と CHECK の覆い・艦首の行は画素 / S＝論理の px で比べる（MB は画素のまま）。
 // 実行: A=<site A> B=<site B> [MISSIONS=us_01,...] [K2=0] [CHECK=1] [JOBS=3] [OUT=<json>] node scripts/headless/tex-ab.mjs
 import { writeFileSync } from 'node:fs';
 import { chromium, envNum, openGame, pool, serve } from './lib.mjs';
@@ -134,7 +135,8 @@ function collect(o) {
     const src = g.textures.get(key).source[0];
     const img = src.image;
     const isCanvas = typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement;
-    tex[key] = { w: src.width, h: src.height, canvas: isCanvas };
+    const density = g.textures.get(key).customData?.density ?? 1; // v0.7.0 IP2b: 画素を S 倍で描いた艦の鍵（論理の寸法＝画素 / S。GPU・CPU の MB は画素のまま）
+    tex[key] = { w: src.width, h: src.height, canvas: isCanvas, density };
     if (o.check && isCanvas && o.spec[key]) tex[key].m = metrics(img, o.spec[key]);
   }
   const origins = {};
@@ -164,11 +166,13 @@ async function oneSide(browser, base, mission, sc) {
 const f2 = (x) => (Number.isFinite(x) ? x.toFixed(2) : '—');
 const med = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 /** 鍵ごとの検査の門（B の数を A＝placeholder の数と比べる。B だけの鍵は A の対の鍵と） */
-function checkKey(key, a, b) {
+function checkKey(key, a, b, ta = {}, tb = {}) {
   const sp = SPEC[key];
   const out = [];
   const ok = (cond, msg) => out.push(`${cond ? '✓' : '✗'} ${msg}`);
-  ok(b.opaque >= a.opaque * 0.85, `覆い ${b.opaque}/${a.opaque} px（≥ 85%）`);
+  const sa = ta.density ?? 1; const sb = tb.density ?? 1; // IP2b: 画素の数と行は密度で割って論理の px に（比・明るさ・色相は密度に依らない）
+  const bo = b.opaque / (sb * sb); const ao = a.opaque / (sa * sa);
+  ok(bo >= ao * 0.85, `覆い ${bo.toFixed(0)}/${ao.toFixed(0)} 論理 px（≥ 85%）`);
   if (sp.kind === undefined) ok(b.luma >= a.luma * 0.9 && b.luma <= a.luma * 1.15, `明るさ ${f2(b.luma)}／${f2(a.luma)}（−10%〜+15%）`);
   if (sp.side === 'player') ok(b.sat < 0.12, `彩度 ${f2(b.sat)}（< 0.12）`);
   if (sp.side === 'enemy') ok(b.hue >= 330 || b.hue <= 20, `色相 ${b.hue.toFixed(0)}°（330〜20）`);
@@ -178,7 +182,7 @@ function checkKey(key, a, b) {
   for (const [name] of sp.tints ?? []) ok(b.tints[name] >= a.tints[name] * 0.85, `${name} の tint の比 ${f2(b.tints[name])}／${f2(a.tints[name])}（≥ 0.85 倍）`);
   if (sp.ship) {
     ok(b.midMinShare >= 0.92 || b.midMinShare >= a.midMinShare, `長さの 20〜85% の最小の幅 ${f2(b.midMinShare)}（≥ 0.92 か A ${f2(a.midMinShare)} 以上）`);
-    ok(b.firstRow <= Math.max(0, a.firstRow), `艦首の先の行 ${b.firstRow}（A ${a.firstRow}）`);
+    ok(Math.floor(b.firstRow / sb) <= Math.max(0, Math.floor(a.firstRow / sa)), `艦首の先の行 ${b.firstRow}/${sb}（A ${a.firstRow}/${sa}。論理の行）`);
     ok(b.lastRowShare >= 0.98, `艦尾 ${f2(b.lastRowShare)}（≥ 0.98）`);
   }
   if (sp.plane) ok(b.spanShare >= 0.8, `翼幅 ${f2(b.spanShare)}（≥ 0.8）`);
@@ -215,9 +219,9 @@ async function main() {
       for (const [key, ta] of Object.entries(r.a.tex)) {
         const tb = r.b.tex[key];
         if (!tb) missing.push(`${key}@${r.m}`);
-        else if (ta.w !== tb.w || ta.h !== tb.h) dimsBad.push(`${key}@${r.m} ${ta.w}x${ta.h} → ${tb.w}x${tb.h}`);
+        else if (ta.w / ta.density !== tb.w / tb.density || ta.h / ta.density !== tb.h / tb.density) dimsBad.push(`${key}@${r.m} ${ta.w}x${ta.h}/${ta.density} → ${tb.w}x${tb.h}/${tb.density}`);
       }
-      for (const key of Object.keys(r.b.tex)) if (!r.a.tex[key]) added.add(`${key} ${r.b.tex[key].w}x${r.b.tex[key].h}`);
+      for (const key of Object.keys(r.b.tex)) if (!r.a.tex[key]) added.add(`${key} ${r.b.tex[key].w}x${r.b.tex[key].h}${r.b.tex[key].density > 1 ? `/${r.b.tex[key].density}` : ''}`);
       for (const [key, oa] of Object.entries(r.a.origins)) if (r.b.origins[key] && JSON.stringify(oa) !== JSON.stringify(r.b.origins[key])) originBad.push(`${key}@${r.m} ${oa} → ${r.b.origins[key]}`);
       for (const side of ['a', 'b']) {
         let gpu = 0;
@@ -253,7 +257,7 @@ async function main() {
         const b = r.b.tex[key]?.m;
         const a = r.a.tex[SPEC[key].pair ?? key]?.m;
         if (!a || !b) continue;
-        const lines = checkKey(key, a, b);
+        const lines = checkKey(key, a, b, r.a.tex[SPEC[key].pair ?? key], r.b.tex[key]);
         if (lines.some((l) => l.startsWith('✗'))) bad++;
         console.log(`  ${key}${per.length > 1 ? `@${r.m}` : ''}: ${lines.join('・')}`);
       }

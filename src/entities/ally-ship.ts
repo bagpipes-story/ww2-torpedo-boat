@@ -10,6 +10,7 @@ import { CONVOY_LANDING_MARK_LABEL_OFFSET_M, CONVOY_LANDING_MARK_WIDTH } from '.
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { COAST_LABEL_FONT_PX, COAST_MARKER_COLOR, COAST_MARKER_TEXT_COLOR } from '../config/hunt-config';
 import { LANDING_MARK_HALF_M, LANDING_STATUS_DY_M, LANDING_STATUS_FONT_PX, LANDING_SUNK_TEXT_COLOR, LANDING_TEXT_HYST_PX } from '../config/landing-config';
+import { artTexDensity } from '../config/ship-art-config';
 import { ESCORT_LABEL_FONT_PX, ESCORT_LABEL_OFFSET_M, ESCORT_TEXT_COLOR, HUD_COLOR_WARN, SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG, hudTextStyle } from '../config/ui-config';
 import type { SeaBounds } from '../core/boat-motion';
 import type { LandingState, LandingWakes } from '../core/landing';
@@ -48,7 +49,7 @@ export class AllyShip {
     /** 字が重なってはいけない HUD の矩形（論理 px。ui/landing-markers の landingHudRects） */
     private readonly hud: readonly ScreenRect[],
   ) {
-    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
+    this.sprite = scene.add.image(p.x, p.y, TEXTURE_KEYS.transportFriendly).setScale(1 / RENDER_SCALE / artTexDensity(TEXTURE_KEYS.transportFriendly)).setAngle(p.headingDeg).setDepth(DEPTH.destroyer);
     // ラベルは回った絵の外接の箱の上、状態の行はその上（艇首の向きで決まる。動かないので 1 回だけ。R14 A6: 泊地は南の縁から 240 m で、カメラは北の自艇を追うので、
     // 下に置いた字は画面の外か右下の兵装・速力の HUD の下に入った）
     const h = degToRad(p.headingDeg);
