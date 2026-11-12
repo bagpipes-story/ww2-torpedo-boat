@@ -9,7 +9,7 @@ import { planHalfAt, type DestroyerPlan } from './destroyer-plan';
 import { paintPart, shadowOf } from './destroyer-part-paint';
 import { ellipse, path, toneCss, xGrad, type C } from './destroyer-pen';
 
-export { toneCss, toneRgb } from './destroyer-pen';
+export { toneCss, toneRgb, type C as PaintCtx } from './destroyer-pen';
 
 /** 甲板の上の模様（部品の下）: 板の継ぎ目・船首楼の段・煙突の煤・錨鎖・爆雷の軌条 */
 function paintDeckMarks(ctx: C, base: number, plan: DestroyerPlan): void {

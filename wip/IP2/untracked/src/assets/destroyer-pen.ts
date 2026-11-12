@@ -13,7 +13,29 @@ export function toneCss(base: number, v: number, a = 1): string {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-export type C = CanvasRenderingContext2D;
+/** 使う所だけの Canvas の 2D（CanvasRenderingContext2D がそのまま満たす。tests の Node の型検査は DOM の型を持たない） */
+export interface PaintGradient {
+  addColorStop(offset: number, color: string): void;
+}
+export interface C {
+  fillStyle: unknown;
+  strokeStyle: unknown;
+  lineWidth: number;
+  beginPath(): void;
+  closePath(): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void;
+  ellipse(x: number, y: number, rx: number, ry: number, rotation: number, start: number, end: number): void;
+  fill(): void;
+  stroke(): void;
+  clip(): void;
+  save(): void;
+  restore(): void;
+  fillRect(x: number, y: number, w: number, h: number): void;
+  createLinearGradient(x0: number, y0: number, x1: number, y1: number): PaintGradient;
+  createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): PaintGradient;
+}
 
 export function path(ctx: C, pts: readonly Pt[], dx = 0, dy = 0): void {
   ctx.beginPath();
@@ -40,7 +62,7 @@ export function ellipse(ctx: C, cx: number, cy: number, rx: number, ry: number):
   ctx.ellipse(cx, cy, Math.max(0.1, rx), Math.max(0.1, ry), 0, 0, Math.PI * 2);
 }
 /** 横（x0 → x1）の明るさの移り（左が明るい＝甲板・砲塔・煙突の陰影） */
-export function xGrad(ctx: C, base: number, x0: number, x1: number, stops: readonly (readonly [number, number])[]): CanvasGradient {
+export function xGrad(ctx: C, base: number, x0: number, x1: number, stops: readonly (readonly [number, number])[]): PaintGradient {
   const g = ctx.createLinearGradient(x0, 0, x1, 0);
   for (const [t, v] of stops) g.addColorStop(t, toneCss(base, v));
   return g;

@@ -10,7 +10,7 @@ import { DESTROYER_BARREL_UNITS, DESTROYER_TONES, DESTROYER_TWIN_DX } from '../s
 import { gameData, getEnemyRecord } from '../src/config/game-data';
 import { validateAllyDestroyerMissions } from '../src/config/ally-destroyer-mission-data';
 import { destroyerPartBounds, destroyerPartBoxes, destroyerPlan, planHalfAt, type DestroyerKind } from '../src/assets/destroyer-plan';
-import { paintDestroyer, toneRgb } from '../src/assets/destroyer-paint';
+import { paintDestroyer, toneRgb, type PaintCtx } from '../src/assets/destroyer-paint';
 
 const SS = gameData.hitRateModel.world.sprite_scale as number;
 const TS = gameData.hitRateModel.world.time_scale as number;
@@ -32,7 +32,7 @@ const hueOf = (c: number): number => hsv((c >> 16) & 255, (c >> 8) & 255, c & 25
 const hueDiff = (a: number, b: number): number => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
 
 /** 色と座標を記録する ctx（Canvas の 2D の使う所だけ） */
-function recorder(): { ctx: CanvasRenderingContext2D; colors: string[]; xs: number[]; ys: number[] } {
+function recorder(): { ctx: PaintCtx; colors: string[]; xs: number[]; ys: number[] } {
   const colors: string[] = []; const xs: number[] = []; const ys: number[] = [];
   const pt = (x: number, y: number): void => { xs.push(x); ys.push(y); };
   const grad = { addColorStop: (_t: number, c: string) => colors.push(c) };
@@ -48,7 +48,7 @@ function recorder(): { ctx: CanvasRenderingContext2D; colors: string[]; xs: numb
     createLinearGradient: () => grad,
     createRadialGradient: () => grad,
   };
-  return { ctx: o as unknown as CanvasRenderingContext2D, colors, xs, ys };
+  return { ctx: o as unknown as PaintCtx, colors, xs, ys };
 }
 function rgbaOf(c: string): [number, number, number, number] {
   const m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(c);
