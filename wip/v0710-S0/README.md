@@ -8,7 +8,7 @@
   - 変えた: `package.json`・`package-lock.json`（0.7.1）・`CHANGELOG.md`（v0.7.1 の項）・`docs/03_開発ロードマップ.md`（v0.7.1 の行）・`scripts/headless/lib.mjs`（`AUDIO=1`・`NOAUDIO=1`）
 - `tracked.patch`: 追跡しているファイルの `git diff`（3a9e7aa から）
 - `tools/run-gates.sh`: scratchpad の `v0710/tools/run-gates.sh`（v0700 の写しを 3a9e7aa の基準と音の 3 つの状態に直した物）。`tools/audio-state.mjs` は 3 つの状態の確かめ
-- `listen/`: `scripts/sfx-mix.ts` の出力（3 本の数 `listen-proxy.txt`・波形と声紋 `sfx-strip.png`）と、短い形の run-gates の SUMMARY 2 つ（us_02 20 秒・jp_03 ハード 40 秒）
+- `listen/`: `scripts/sfx-mix.ts` の出力（3 本の数 `listen-proxy.txt`。波形と声紋の PNG と WAV は scratchpad の `v0710/impl/S0/sfx/` だけ＝ここには入れない）と、短い形の run-gates の SUMMARY 2 つ（us_02 20 秒・jp_03 ハード 40 秒）
 
 戻し方: `cp -r files/. /home/user/ww2-torpedo-boat/`。基準のビルドは `git worktree add --detach <scratch>/v0710/wt-3a9e7aa 3a9e7aa` →
 `VITE_BASE=/ww2-torpedo-boat/ VITE_BUILD_REF=main VITE_BUILD_SHA=3a9e7aa npx vite build --outDir <scratch>/v0710/base-3a9e7aa`。
