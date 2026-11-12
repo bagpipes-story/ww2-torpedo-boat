@@ -1,0 +1,431 @@
+diff --git a/src/assets/sfx-bank.ts b/src/assets/sfx-bank.ts
+index cb2d689..89daa3a 100644
+--- a/src/assets/sfx-bank.ts
++++ b/src/assets/sfx-bank.ts
+@@ -7,11 +7,12 @@ import { SFX_KEYS, SFX_TABLE, type SfxKey } from '../config/sfx-config';
+ import { fadeEdges, normalizePeak, removeDc, sfxSamples, type SfxRecipe } from './sfx-dsp';
+ import { BLAST_RECIPES } from './sfx-recipes-blasts';
+ import { CUE_RECIPES } from './sfx-recipes-cues';
++import { EVENT_RECIPES } from './sfx-recipes-events';
+ import { GUN_RECIPES } from './sfx-recipes-guns';
+ import { LOOP_RECIPES } from './sfx-recipes-loops';
+ import { SPLASH_RECIPES } from './sfx-recipes-splashes';
+ 
+-const RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { ...GUN_RECIPES, ...SPLASH_RECIPES, ...BLAST_RECIPES, ...CUE_RECIPES, ...LOOP_RECIPES };
++const RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { ...GUN_RECIPES, ...SPLASH_RECIPES, ...BLAST_RECIPES, ...CUE_RECIPES, ...EVENT_RECIPES, ...LOOP_RECIPES };
+ 
+ /** 作り方のある鍵（SFX_KEYS の順）。起動時の合成・tests・scripts/sfx-mix はこの鍵だけを回す */
+ export function sfxImplementedKeys(): SfxKey[] {
+diff --git a/src/assets/sfx-recipes-cues.ts b/src/assets/sfx-recipes-cues.ts
+index e6130e3..d8aea28 100644
+--- a/src/assets/sfx-recipes-cues.ts
++++ b/src/assets/sfx-recipes-cues.ts
+@@ -1,7 +1,10 @@
+-// v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §4）: 合図・UI の音の作り方。S0 は ui_tap だけ
+-// （torp_launch・hull_hit・alarm・light_on・flare_pop・bomb_fall・reload・smoke・bell・engine_cough は S4 で足す）。数は音色の定数（聞かせ方）。
+-import type { SfxKey } from '../config/sfx-config';
+-import { envelope, mul, sine, type SfxRecipe } from './sfx-dsp';
++// v0.7.1（アートと音②：合成の効果音。spec-v0710 §4）: 合図・UI の音の作り方（金属・電子・機関の音）。S0 は ui_tap、S4 で alarm・bell・reload・hull_hit・engine_cough
++// （出来事の音＝torp_launch・light_on・flare_pop・bomb_fall・smoke は assets/sfx-recipes-events）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
++// iPhone の本体のスピーカーは約 300〜400 Hz より下がほとんど出ない: どの合図も 400 Hz より上に芯を持たせる（低い打音の engine_cough・hull_hit も歪ませた倍音・帯の雑音で。
++// 数は scripts/sfx-mix.ts の「小さいスピーカーの目安」）。直流・端の fade・頂の正規化は assets/sfx-bank。
++import { SFX_SEED_ENGINE_COUGH, SFX_SEED_HULL_HIT, SFX_SEED_RELOAD, type SfxKey } from '../config/sfx-config';
++import { SeededRng } from '../core/rng';
++import { bandPass, envelope, fadeTail, fm, highPass, lowPass, mixInto, mul, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
+ 
+ /** ui_tap（0.06 秒）: 正弦 880 → 660 Hz・減衰 40 ms。乱数は使わない */
+ const UI_TAP = { fromHz: 880, toHz: 660, glideS: 0.06, attackS: 0.002, decayS: 0.04 } as const;
+@@ -10,5 +13,117 @@ function uiTap(n: number): Float32Array {
+   return mul(sine(n, UI_TAP.fromHz, UI_TAP.toHz, UI_TAP.glideS), envelope(n, UI_TAP.attackS, UI_TAP.decayS));
+ }
+ 
+-/** 合図・UI の作り方（鍵 → 関数）。S4 で残りを足す */
+-export const CUE_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { ui_tap: uiTap };
++/**
++ * alarm（0.6 秒。発見された！・空襲の予告は rate 0.7・味方機の識別の要求は rate 1.3）: 2 音（400 Hz・520 Hz）を 0.3 秒ずつ。正弦を柔らかく歪ませた角の丸い矩形波
++ * （奇数の倍音）に低域通過 2k Hz（2 極）＝電子のブザーで、甲高くしない。音ごとに少し減衰させ（1 → 0.5）、終わりに短い間（0.03 秒）＝繰り返しても耳に刺さらない
++ */
++const ALARM = { toneHz: [400, 520], toneS: 0.3, drive: 1.1, lowPassHz: 2000, lowPassPoles: 2, attackS: 0.006, releaseS: 0.03, sag: 0.5 } as const;
++
++function alarm(n: number): Float32Array {
++  const c = ALARM;
++  const out = new Float32Array(n);
++  const tn = sfxSamples(c.toneS);
++  const an = sfxSamples(c.attackS);
++  const rn = sfxSamples(c.releaseS);
++  for (let k = 0; k < c.toneHz.length; k++) {
++    const len = Math.min(tn, n - k * tn);
++    const tone = saturate(sine(len, c.toneHz[k]!), c.drive);
++    for (let i = 0; i < len; i++) {
++      const edge = Math.min(1, i / an, Math.max(0, (len - rn - i) / an));
++      tone[i] = tone[i]! * edge * (1 - (c.sag * i) / len);
++    }
++    mixInto(out, tone, 1, k * c.toneS);
++  }
++  return lowPass(out, c.lowPassHz, c.lowPassHz, 0, c.lowPassPoles);
++}
++
++/**
++ * bell（1.4 秒。帰投せよ・揚陸完了は 1 打、夜明け・空襲の決着は rate 0.7、Result は帰投 2 打・それ以外は rate 0.5 で 1 打）: FM の鐘（搬送 660 Hz・比 2.76＝鐘らしい倍音から外れた
++ * 響き・変調の深さは 0.5 秒で 1/10 に澄む）＋ 打った瞬間の金属の明るさ（搬送の 2.0 倍の正弦を速く減衰）。指数の減衰 1.2 秒、尾は 0.15 秒で消し切る
++ */
++const BELL = { carrierHz: 660, ratio: 2.76, index: 3.2, indexDecayS: 0.5, attackS: 0.002, decayS: 1.2, strikeRatio: 2.0, strikeDecayS: 0.15, strikeGain: 0.35, tailFadeS: 0.15 } as const;
++
++function bell(n: number): Float32Array {
++  const c = BELL;
++  const out = mul(fm(n, c.carrierHz, c.ratio, c.index, c.indexDecayS), envelope(n, c.attackS, c.decayS));
++  mixInto(out, mul(sine(n, c.carrierHz * c.strikeRatio), envelope(n, c.attackS, c.strikeDecayS)), c.strikeGain);
++  return fadeTail(out, c.tailFadeS);
++}
++
++/**
++ * reload（0.35 秒。弾倉の交換の始め、終わりは rate 1.3）: 金属の 2 打＝雑音の帯 2〜6k Hz（各 15 ms で 1/10）＋短い金属の響き（FM 搬送 1.8k Hz・比 2.3）。
++ * 2 打目は 0.18 秒後に少し大きく低く（弾倉を「かちゃ・がちゃん」と差す）
++ */
++const RELOAD = {
++  clickLowHz: 2000, clickHighHz: 6000, clickAttackS: 0.0005, clickDecayS: 0.015,
++  pingHz: 1800, pingRatio: 2.3, pingIndex: 2, pingIndexDecayS: 0.02, pingDecayS: 0.03, pingGain: 0.35,
++  firstAtS: 0.01, secondAtS: 0.19, secondGain: 1.3, secondPingHz: 1300, thudHz: 300, thudDecayS: 0.04, thudGain: 0.25,
++} as const;
++
++function reload(n: number): Float32Array {
++  const c = RELOAD;
++  const rng = new SeededRng(SFX_SEED_RELOAD);
++  const out = new Float32Array(n);
++  const hits: readonly (readonly [number, number, number])[] = [[c.firstAtS, 1, c.pingHz], [c.secondAtS, c.secondGain, c.secondPingHz]];
++  for (const [atS, gain, pingHz] of hits) {
++    const len = n - sfxSamples(atS);
++    mixInto(out, mul(bandPass(whiteNoise(rng, len), c.clickLowHz, c.clickHighHz), envelope(len, c.clickAttackS, c.clickDecayS)), gain, atS);
++    mixInto(out, mul(fm(len, pingHz, c.pingRatio, c.pingIndex, c.pingIndexDecayS), envelope(len, c.clickAttackS, c.pingDecayS)), gain * c.pingGain, atS);
++  }
++  // 2 打目の重さ（差し込んだ手応え。歪ませて倍音を本体のスピーカーへ）
++  const len = n - sfxSamples(c.secondAtS);
++  mixInto(out, saturate(mul(sine(len, c.thudHz), envelope(len, c.clickAttackS, c.thudDecayS)), 2), c.thudGain, c.secondAtS);
++  return out;
++}
++
++/**
++ * hull_hit（0.3 秒。自艇の被弾＝HP が減った。爆発の音は絵の層の口が別に出す）: FM の金属音（搬送 320 Hz・比 1.4・深さは 0.06 秒で澄む・指数の減衰 0.12 秒）を歪ませて
++ * 板を叩いた倍音に ＋ 当たった瞬間の短い雑音（高域通過 1.5k Hz・減衰 12 ms）
++ */
++const HULL_HIT = {
++  carrierHz: 320, ratio: 1.4, index: 6, indexDecayS: 0.06, attackS: 0.001, decayS: 0.12, drive: 1.6,
++  noiseHighPassHz: 1500, noiseAttackS: 0.0005, noiseDecayS: 0.012, noiseGain: 0.8,
++  ringHz: 1240, ringDecayS: 0.09, ringGain: 0.25,
++} as const;
++
++function hullHit(n: number): Float32Array {
++  const c = HULL_HIT;
++  const rng = new SeededRng(SFX_SEED_HULL_HIT);
++  const out = saturate(mul(fm(n, c.carrierHz, c.ratio, c.index, c.indexDecayS), envelope(n, c.attackS, c.decayS)), c.drive);
++  mixInto(out, mul(sine(n, c.ringHz), envelope(n, c.attackS, c.ringDecayS)), c.ringGain);
++  mixInto(out, mul(highPass(whiteNoise(rng, n), c.noiseHighPassHz), envelope(n, c.noiseAttackS, c.noiseDecayS)), c.noiseGain);
++  return out;
++}
++
++/**
++ * engine_cough（0.8 秒。機関の損傷・機関の不調（段で rate 1.0／0.9／0.8）・燃料切れ（rate 0.7））: 低い破裂 3 つ（間は不揃い＝0、0.21、0.47 秒・後ほど小さい）。
++ * 1 つは 雑音の低域通過 300 Hz（2 極）＋ 70 Hz の正弦を強く歪ませ（倍音が本体のスピーカーに届く「ぼっ」）＋ 排気の帯の雑音 500〜2k Hz（「ぱすっ」。本体のスピーカーで聞こえる層）。
++ * 破裂の間は空回りの雑音を小さく（止まりかけのエンジン）
++ */
++const ENGINE_COUGH = {
++  atS: [0, 0.21, 0.47], gains: [1, 0.8, 0.6],
++  lowHz: 300, lowPoles: 2, lowGain: 2, bodyHz: 70, bodyGain: 0.9, attackS: 0.004, decayS: 0.09, drive: 4,
++  puffLowHz: 500, puffHighHz: 2000, puffDecayS: 0.07, puffGain: 5,
++  idleLowHz: 250, idleHighHz: 900, idleGain: 0.06,
++} as const;
++
++function engineCough(n: number): Float32Array {
++  const c = ENGINE_COUGH;
++  const rng = new SeededRng(SFX_SEED_ENGINE_COUGH);
++  const out = new Float32Array(n);
++  for (let k = 0; k < c.atS.length; k++) {
++    const atS = c.atS[k]!;
++    const len = n - sfxSamples(atS);
++    const pop = mul(lowPass(whiteNoise(rng, len), c.lowHz, c.lowHz, 0, c.lowPoles), envelope(len, c.attackS, c.decayS));
++    for (let i = 0; i < len; i++) pop[i] = pop[i]! * c.lowGain;
++    mixInto(pop, mul(sine(len, c.bodyHz), envelope(len, c.attackS, c.decayS)), c.bodyGain);
++    mixInto(out, saturate(pop, c.drive), c.gains[k]!, atS);
++    mixInto(out, mul(bandPass(whiteNoise(rng, len), c.puffLowHz, c.puffHighHz), envelope(len, c.attackS, c.puffDecayS)), c.gains[k]! * c.puffGain, atS);
++  }
++  const idle = bandPass(whiteNoise(rng, n), c.idleLowHz, c.idleHighHz);
++  for (let i = 0; i < n; i++) out[i] = out[i]! + idle[i]! * c.idleGain * (1 - i / n);
++  return out;
++}
++
++/** 合図・UI の作り方（鍵 → 関数） */
++export const CUE_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { alarm, ui_tap: uiTap, bell, reload, hull_hit: hullHit, engine_cough: engineCough };
+diff --git a/src/config/sfx-config.ts b/src/config/sfx-config.ts
+index 51df6fb..1147dbc 100644
+--- a/src/config/sfx-config.ts
++++ b/src/config/sfx-config.ts
+@@ -197,3 +197,20 @@ export const SFX_LOOP_BUS_GAIN = 0.5;
+ export const SFX_LOOP_STOP_FADE_S = 0.15;
+ /** S3（spec §3.3）: 一時停止の画面を開いた合図＝ボタンの音を低く・小さく */
+ export const SFX_PAUSE_OPEN = { gain: 0.7, rate: 0.7 } as const;
++/**
++ * S4（spec §3.2）: 状態の合図（core/sfx-cues）の冷却（ゲームの時計の秒。この秒の内の同じ行の立ち上がりは鳴らさない）・音量・速さ。魚雷の発射は一斉でも 1 本ずつ launchGapS の間で
++ * （積んだ数は queueMax まで）。自艇の被弾は HP が 1 フレームに hullMinDropHp より多く減った時だけ（火災の継続の被害＝毎秒 2 HP 以下は 1 フレームで 0.14 HP 以下＝鳴らさない）。
++ * 座礁は爆発の口の blast_s（dud）と同じフレームに来るので groundDelayS 遅らせる（blast_s の最小間隔 0.1 秒に落とされない）。鐘は bellCooldownS の内は重ねない（夜明けと「帰投せよ」が同じ
++ * フレームに来る＝設計の既定）。rate は 0.5〜2 の内（L6）
++ */
++export const SFX_CUE = {
++  launchGapS: 0.15, launchQueueMax: 4, ptSalvoGain: 0.6,
++  alarmCooldownS: 4, lightCooldownS: 3, flareCooldownS: 2, hullCooldownS: 0.2, hullMinDropHp: 0.5,
++  reloadCooldownS: 0.5, reloadEndRate: 1.3, extinguishRate: 1.6,
++  engineStageRate: [1.0, 0.9, 0.8], recoverRate: 0.7, recoverGain: 0.7, fuelEmptyRate: 0.7,
++  groundRate: 0.6, groundDelayS: 0.15,
++  bellCooldownS: 1.5, dawnBellRate: 0.7, bombCooldownS: 0.6,
++  raidAlarmRate: 0.7, raidAlarmCooldownS: 3, friendlyAlarmRate: 1.3, friendlyAlarmGain: 0.6,
++} as const;
++/** S4（spec §3.3・U-C）: Result の鐘＝帰投は strikes 打を gapS 秒ずらして、それ以外は lostRate の低い 1 打（曲ではなく合図） */
++export const SFX_RESULT_BELL = { strikes: 2, gapS: 0.5, lostRate: 0.5 } as const;
+diff --git a/src/core/sfx-mix.ts b/src/core/sfx-mix.ts
+index 4c35ac2..18e4d7e 100644
+--- a/src/core/sfx-mix.ts
++++ b/src/core/sfx-mix.ts
+@@ -95,17 +95,21 @@ export class SfxMixer {
+     return v;
+   }
+ 
+-  /** 位置なしの単発（合図・UI。中央・帯 0）。戻りと欄は playAt と同じ */
+-  playFlat(key: SfxKey, gameS: number, nowS: number, rate = 1, gainMul = 1): number {
++  /**
++   * 位置なしの単発（合図・UI。中央・帯 0）。戻りと欄は playAt と同じ。delayS（S4）は delayS 秒後に鳴り始める予約: 最小間隔は鳴り始める時刻（gameS ＋ delayS）で数え、
++   * 声は今から鳴り終わるまで（delayS ＋ 長さ）取る（今空いている声だけ＝今鳴っている音の音量を変えない）
++   */
++  playFlat(key: SfxKey, gameS: number, nowS: number, rate = 1, gainMul = 1, delayS = 0): number {
+     const d = SFX_TABLE[key];
+     const ki = KEY_INDEX[key];
++    const startS = gameS + delayS;
+     this.band = 0;
+-    if (gameS - this.lastPlayS[ki]! < d.minIntervalS) return this.drop(SFX_DROP_RATE);
+-    const v = this.allocVoice(d.priority, nowS, d.seconds / rate);
++    if (startS - this.lastPlayS[ki]! < d.minIntervalS) return this.drop(SFX_DROP_RATE);
++    const v = this.allocVoice(d.priority, nowS, delayS + d.seconds / rate);
+     if (v < 0) return this.drop(SFX_DROP_VOICES);
+     this.gain = d.gain * gainMul;
+     this.pan = 0;
+-    this.accept(ki, gameS);
++    this.accept(ki, startS);
+     return v;
+   }
+ 
+diff --git a/src/scenes/result-scene.ts b/src/scenes/result-scene.ts
+index cde3da8..c4398a9 100644
+--- a/src/scenes/result-scene.ts
++++ b/src/scenes/result-scene.ts
+@@ -28,6 +28,7 @@ import type { BandSummary, ShotRecord } from '../core/hit-rate';
+ import type { MissionEndReason } from '../core/mission-flow';
+ import type { KpiResultLines } from '../systems/kpi-storage';
+ import { escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
++import { sfxResultBell } from '../systems/sfx-bus';
+ import { resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
+ import { convoyHeadJa } from '../ui/convoy-lines';
+ import { LD_DONE } from '../core/landing';
+@@ -159,6 +160,7 @@ export class ResultScene extends Phaser.Scene {
+     this.leaving = false;
+     this.buttons = [];
+     addBuildLabel(this);
++    sfxResultBell(r.returned); // 任務の終わりの鐘（v0.7.1 S4。帰投 2 打・それ以外は低く 1 打）
+     const cx = GAME_WIDTH / 2;
+     let y = RESULT_TOP_Y;
+     // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）
+diff --git a/src/systems/sfx-bus.ts b/src/systems/sfx-bus.ts
+index afd2e66..779a781 100644
+--- a/src/systems/sfx-bus.ts
++++ b/src/systems/sfx-bus.ts
+@@ -4,8 +4,8 @@
+ // 世界の作成時に登録し、破棄で null に（世界の作成前・破棄後の位置つきの音は鳴らさない。エンジンは世界の物を握らない）。
+ // §7: どの口も確保しない（引数は数と鍵だけ。結果は返さない）。DOM にも Phaser にも触らない。
+ // 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
+-// （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。sfxCue の遅らせ（S4）はまだ何もしない。
+-import type { SfxKey } from '../config/sfx-config';
++// （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。S4 で sfxCue の遅らせ（再生の時計で予約）。
++import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
+ import type { SfxLoopTargets } from '../core/sfx-loops';
+ import { sfxBand, sfxGunKey } from '../core/sfx-mix';
+ import type { SfxEngine } from './sfx-engine';
+@@ -53,10 +53,17 @@ export function sfxGunAt(x: number, y: number): void {
+   engine.playAt(sfxGunKey(sfxBand(dx * dx + dy * dy)), dx, dy, 1, 1);
+ }
+ 
+-/** 状態の合図（位置なし。gain は音量の倍率・rate は速さ）。遅らせて鳴らす（delayS > 0。Result の 2 打目）は S4 から＝今は鳴らさない */
++/** 状態の合図（位置なし。gain は音量の倍率・rate は速さ）。delayS > 0 は再生の時計でその秒の後に鳴らす予約（S4。Result の 2 打目・座礁の擦れる音） */
+ export function sfxCue(key: SfxKey, gain = 1, delayS = 0, rate = 1): void {
+-  if (engine === null || delayS > 0) return;
+-  engine.playFlat(key, rate, gain);
++  if (engine !== null) engine.playFlat(key, rate, gain, delayS);
++}
++
++/** Result の鐘（S4。spec §3.3・U-C。Result の create から 1 回）: 帰投なら 2 打（0.5 秒ずらす予約）、それ以外は低い 1 打（曲ではなく合図） */
++export function sfxResultBell(returned: boolean): void {
++  if (engine === null) return;
++  const b = SFX_RESULT_BELL;
++  if (!returned) engine.playFlat('bell', b.lostRate, 1);
++  else for (let i = 0; i < b.strikes; i++) engine.playFlat('bell', 1, 1, i * b.gapS);
+ }
+ 
+ /** ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player） */
+diff --git a/src/systems/sfx-engine.ts b/src/systems/sfx-engine.ts
+index 8c48970..8b67912 100644
+--- a/src/systems/sfx-engine.ts
++++ b/src/systems/sfx-engine.ts
+@@ -6,6 +6,8 @@
+ // 落とす順（spec §7.3）: 標本がまだ無い鍵（作り方が後の段の鍵・起動の直後でまだ作り終えていない鍵＝S2 から標本は 1 フレームに 1 本ずつ作る）→ 消音か context が動いていない
+ // （数えるだけ＝止まっている context に積まない。R2）→ core/sfx-mix の最小間隔・距離の帯・声。
+ // 最初のタップだけの例外: context がまだ動き出していない間の UI の音は 1 つだけ覚え、SFX_UI_PENDING_S の内に動き出したら tick が鳴らす（音源はその時に作る）。
++// S4: 覚えるのは頼まれた速さと音量も（一時停止を開いた低いボタンの音が、後から普通のボタンの音で鳴らない）。遅らせて頼んだ音（Result の 2 打目）は覚えない。
++// S4: 遅らせる単発（playFlat の delayS。Result の鐘の 2 打目・座礁の擦れる音）は start(再生の時計 ＋ delayS) で予約する（タイマー・閉包は作らない）。間引きと声の空きは鳴り始める時刻で数える。
+ // 時計（D4）: 間引きはゲームの時計（tick が積む delta の和）、声の空きは再生の時計。rate の揺れは音だけの乱数（SFX_SEED_PLAY。頼まれた順に引く＝音の状態にも標本の有無にも依らない）。
+ // 確かめの口 tap（S2。scripts/headless/sfx-probe が ?debug の __sfx に付ける。ふだんは null）: 頼まれた単発を、rate の揺れの後・落とす前に知らせる＝記録は音の状態に依らない。
+ // 論理は読まない（位置の差だけを systems/sfx-bus から受け取る）。
+@@ -49,8 +51,8 @@ export interface SfxStats {
+   loopWrites: number;
+ }
+ 
+-/** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし） */
+-export type SfxTap = (key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS: number, flat: boolean) => void;
++/** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし。delayS は遅らせる秒＝S4） */
++export type SfxTap = (key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS: number, flat: boolean, delayS: number) => void;
+ 
+ export class SfxEngine {
+   readonly mixer = new SfxMixer(SFX_VOICES);
+@@ -72,6 +74,8 @@ export class SfxEngine {
+   private firstDone = false;
+   private pendingKey: SfxKey | null = null;
+   private pendingAtS = 0;
++  private pendingRate = 1;
++  private pendingGain = 1;
+   private watchLastMs = 0;
+   private watchCtS = -1;
+   private frozenMs = 0;
+@@ -164,7 +168,7 @@ export class SfxEngine {
+       else if (this.ctx.state === RUNNING) {
+         this.pendingKey = null;
+         this.pendingPlayed++;
+-        this.playFlat(key, 1, 1);
++        this.playFlat(key, this.pendingRate, this.pendingGain);
+       }
+     }
+     const el = wallMs - this.watchLastMs;
+@@ -197,7 +201,7 @@ export class SfxEngine {
+   playAt(key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS = 0): void {
+     const ki = sfxKeyIndex(key);
+     const r = this.jittered(key, rate);
+-    if (this.tap !== null) this.tap(key, dxM, dyM, r, gainMul, minIntervalS, false);
++    if (this.tap !== null) this.tap(key, dxM, dyM, r, gainMul, minIntervalS, false, 0);
+     if (this.buffers[ki] === null) {
+       this.noBuffer++;
+       return;
+@@ -210,25 +214,31 @@ export class SfxEngine {
+     if (v >= 0) this.fire(ki, v, r);
+   }
+ 
+-  /** 位置なしの単発（合図・UI。中央）。context がまだ動き出していない間の UI の音は 1 つだけ覚える（最初のタップ） */
+-  playFlat(key: SfxKey, rate: number, gainMul: number): void {
++  /**
++   * 位置なしの単発（合図・UI。中央）。context がまだ動き出していない間の UI の音は 1 つだけ覚える（最初のタップ。速さと音量も＝S4）。
++   * delayS > 0 は再生の時計で delayS 秒後に鳴らす予約（S4。間引き・声の空きはその時刻で数える。覚えない）
++   */
++  playFlat(key: SfxKey, rate: number, gainMul: number, delayS = 0): void {
+     const ki = sfxKeyIndex(key);
+     const r = this.jittered(key, rate);
+-    if (this.tap !== null) this.tap(key, 0, 0, r, gainMul, 0, true);
++    if (this.tap !== null) this.tap(key, 0, 0, r, gainMul, 0, true, delayS);
+     if (this.buffers[ki] === null) {
+       this.noBuffer++;
+       return;
+     }
+     if (this.mutedNow || this.ctx.state !== RUNNING) {
+       this.idleDrops++;
+-      if (!this.mutedNow && SFX_TABLE[key].family === 'ui') {
++      if (!this.mutedNow && delayS <= 0 && SFX_TABLE[key].family === 'ui') {
+         this.pendingKey = key;
+         this.pendingAtS = this.gameS;
++        this.pendingRate = rate;
++        this.pendingGain = gainMul;
+       }
+       return;
+     }
+-    const v = this.mixer.playFlat(key, this.gameS, this.ctx.currentTime, r, gainMul);
+-    if (v >= 0) this.fire(ki, v, r);
++    const d = delayS > 0 ? delayS : 0;
++    const v = this.mixer.playFlat(key, this.gameS, this.ctx.currentTime, r, gainMul, d);
++    if (v >= 0) this.fire(ki, v, r, d);
+   }
+ 
+   /** 確かめ用の数（scripts/headless。毎フレームは呼ばない） */
+@@ -248,8 +258,8 @@ export class SfxEngine {
+     return j > 0 ? rate * (1 + (this.rng.next() * 2 - 1) * j) : rate;
+   }
+ 
+-  /** 声 v で鳴らす: 奪った声なら前の音源を止め、使い捨ての音源を 1 個作ってつなぐ。最初の 1 発は束ねを立ち上げる（R11） */
+-  private fire(keyIndex: number, v: number, rate: number): void {
++  /** 声 v で鳴らす: 奪った声なら前の音源を止め、使い捨ての音源を 1 個作ってつなぐ（delayS 秒後に鳴り始める予約＝S4）。最初の 1 発は束ねを立ち上げる（R11） */
++  private fire(keyIndex: number, v: number, rate: number, delayS = 0): void {
+     const ctx = this.ctx;
+     const m = this.mixer;
+     if (m.stole) this.voiceSrc[v]?.stop();
+@@ -266,7 +276,7 @@ export class SfxEngine {
+     src.buffer = this.buffers[keyIndex]!;
+     if (rate !== 1) src.playbackRate.value = rate;
+     src.connect(this.voiceGain[v]!);
+-    src.start(0);
++    src.start(delayS > 0 ? ctx.currentTime + delayS : 0);
+     this.voiceSrc[v] = src;
+     this.sources++;
+   }
+diff --git a/src/systems/sfx-mission.ts b/src/systems/sfx-mission.ts
+index 231a765..978d868 100644
+--- a/src/systems/sfx-mission.ts
++++ b/src/systems/sfx-mission.ts
+@@ -4,11 +4,13 @@
+ // Hud の出来事: PAUSE（一時停止）でループの束を 0 へ・RESUME で戻す・SHUTDOWN（任務の終わり・やり直し・任務をやめる）で 5 本を止め、付けた口を外す
+ // （Hud のシーンは任務ごとに使い回される＝口を残すと前の任務の物が動く）。口は起動時に作った関数と自分を渡す（閉包を作らない）。
+ // 画面の枠組みの型は使わない（出来事の口は構造の型・名前は下の 3 つ＝Phaser.Scenes.Events の PAUSE・RESUME・SHUTDOWN と同じ文字。tests/sfx-mission が node_modules の定義と突き合わせる）。
+-// S4: 状態の合図（core/sfx-cues の stepSfxCues）をここの update に足す。
++// S4: 状態の合図（core/sfx-cues の stepSfxCues。発見の警報・魚雷の発射・被弾・鐘など）を同じ update で決め、自分の cue（合図の口）から systems/sfx-bus の sfxCue へ。
+ import type { BoatTelemetry } from '../core/boat-telemetry';
++import type { SfxKey } from '../config/sfx-config';
++import { createSfxCueState, stepSfxCues, type SfxCueSink } from '../core/sfx-cues';
+ import { createSfxLoopState, createSfxLoopTargets, stepSfxLoops, type SfxLoopState } from '../core/sfx-loops';
+ import { ktToMps } from '../core/units';
+-import { sfxLoops, sfxLoopsPaused, sfxLoopsStop } from './sfx-bus';
++import { sfxCue, sfxLoops, sfxLoopsPaused, sfxLoopsStop } from './sfx-bus';
+ 
+ /** シーンの出来事の名前（Phaser.Scenes.Events と同じ文字） */
+ export const SFX_SCENE_EV_PAUSE = 'pause';
+@@ -23,9 +25,10 @@ export interface SfxSceneEvents {
+   off(event: string, fn: () => void, context: unknown): unknown;
+ }
+ 
+-export class MissionSfx {
++export class MissionSfx implements SfxCueSink {
+   private readonly loopState: SfxLoopState;
+   private readonly loopTargets = createSfxLoopTargets();
++  private readonly cueState = createSfxCueState();
+ 
+   /** events は Hud の scene.events、speedMaxKt は任務の艇の最大速力（data/boats.json の speed_max_kt。エンジンの音の高さの割合に使う） */
+   constructor(private readonly events: SfxSceneEvents, speedMaxKt: number) {
+@@ -35,13 +38,19 @@ export class MissionSfx {
+     events.once(SFX_SCENE_EV_SHUTDOWN, this.onShutdown, this);
+   }
+ 
+-  /** 毎フレーム（HudScene.update。deltaMs はそのフレームの ms）: ループの目標を決めて渡す */
++  /** 毎フレーム（HudScene.update。deltaMs はそのフレームの ms）: 状態の合図を鳴らし、ループの目標を決めて渡す */
+   update(t: BoatTelemetry, deltaMs: number): void {
+     const dtS = deltaMs / MS_PER_S;
++    stepSfxCues(this.cueState, t, dtS, this);
+     stepSfxLoops(this.loopState, t, dtS, this.loopTargets);
+     sfxLoops(this.loopTargets, dtS);
+   }
+ 
++  /** 合図の口（core/sfx-cues が呼ぶ） */
++  cue(key: SfxKey, gain: number, rate: number, delayS: number): void {
++    sfxCue(key, gain, delayS, rate);
++  }
++
+   private onPause(): void {
+     sfxLoopsPaused(true);
+   }
