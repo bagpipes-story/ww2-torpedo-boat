@@ -18,6 +18,7 @@ import type { BoatState } from '../core/boat-motion';
 import { interceptHeadingDeg, velocityFromHeading } from '../core/torpedo-solver';
 import { degToRad } from '../core/units';
 import type { ExplosionFx } from './explosion-fx';
+import type { ExplosionLook } from './world-events';
 
 /** 今の世界の爆発のプール（world-art が世界の作成時に登録し、破棄で null に。R12: 静的な取り出しは使わない＝やり直しで破棄済みの Image を握らない） */
 let explosions: ExplosionFx | null = null;
@@ -25,8 +26,8 @@ export function registerExplosionFx(fx: ExplosionFx | null): void {
   explosions = fx;
 }
 
-/** 爆発の見た目の種類（v0.7.0 IP2。見た目だけ＝論理・呼ぶ順は変えない）: 'torpedo' は魚雷の命中（大きな水柱。U7）、'blast' はそれ以外（砲弾・爆弾・撃破・沈没・座礁） */
-export type ExplosionLook = 'blast' | 'torpedo';
+/** 爆発の見た目の種類（定義は world-events。IP4） */
+export type { ExplosionLook } from './world-events';
 
 /** 爆発（名前と最初の 4 つの引数は v0.4 のまま。mission-scene の 5 か所から。onTorpedoHit だけ 'torpedo'）。中身は世界の絵のプール（閃光・火球・水柱・輪。dud は小さい版＝水柱なし）。登録の無い間は何もしない */
 export function playExplosion(scene: Phaser.Scene, x: number, y: number, dud: boolean, look: ExplosionLook = 'blast'): void {

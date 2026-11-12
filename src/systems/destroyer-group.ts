@@ -5,6 +5,7 @@ import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
 import { allShipsOut, allShipsSettled, sinkingCount, withdrawnCount } from '../core/dawn-withdraw';
+import { litByOwnLight } from '../core/own-light';
 import type { SeededRng } from '../core/rng';
 import { startRetire } from '../core/ship-ai';
 import { Destroyer } from '../entities/destroyer';
@@ -114,9 +115,9 @@ export class DestroyerGroup {
     return false;
   }
 
-  /** i 以外の浮いている艦の光に照らされている（輸送船は自分では照らせず、駆逐艦の光の下で撃つ。v0.4.7） */
-  othersIlluminated(i: number): boolean {
-    for (let k = 0; k < this.ships.length; k++) if (k !== i && !this.ships[k]!.out && this.fires[k]!.illuminated) return true;
+  /** i 以外の浮いている艦が自分の光（探照灯・星弾）で照らしている（輸送船は自分では照らせず、駆逐艦の光の下で撃つ。v0.4.7）。他の艦の illuminated は読まない（互いを照らし続ける輪。v0.7.0 IP4） */
+  othersOwnLit(i: number): boolean {
+    for (let k = 0; k < this.ships.length; k++) if (k !== i && !this.ships[k]!.out && litByOwnLight(this.fires[k]!.state)) return true;
     return false;
   }
 

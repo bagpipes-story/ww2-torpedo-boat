@@ -103,6 +103,16 @@ describe('U7: 魚雷の命中の水柱', () => {
     expect(bf).toContain('if (!torpedo) this.sparks.drops(x, y, SPARK_DROPS_BIG);');
     expect(bf).toContain('if (k === KIND_BIG && a < BLAST_COLUMN_S) {');
   });
+  it('IP4: jp_04 の輸送船が魚雷で沈む時も大きな水柱（世界の onSunk に見た目の印 \'torpedo\' だけ。命中スロー・揺れ・呼ぶ順は今のまま）。ほかの撃破は blast のまま', () => {
+    const wl = read('src/systems/world-landing.ts');
+    expect(wl).toContain("    this.ship.sink();\n    this.onSunk(x, y, 'torpedo');");
+    expect(wl.split("'torpedo')").length - 1).toBe(1);
+    const mw = read('src/systems/mission-world.ts');
+    expect(mw).toContain("const onSunk = (x: number, y: number, look: ExplosionLook = 'blast'): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y, look); };");
+    const ms = read('src/scenes/mission-scene.ts');
+    expect(ms).toContain('onTargetDestroyed: (x, y, look) => {\n      playExplosion(this, x, y, false, look);\n      this.shakeCamera();');
+    for (const f of ['convoy', 'barge-hunt', 'pt-squadron', 'gunboat', 'world-arms']) expect(read(`src/systems/${f}.ts`)).not.toContain("'torpedo')");
+  });
   it('作法: 確保は constructor だけ（play・update に new・add なし）・乱数は絵だけの新しい種・300 行以下', () => {
     const s = code('src/systems/torpedo-column-fx.ts');
     const ctor = s.slice(s.indexOf('  constructor('), s.indexOf('  play('));

@@ -83,8 +83,8 @@ export class MissionScene extends Phaser.Scene {
     },
     // 撃沈では終わらない（帰投が目標。制空権下で敵艦隊がいなくなれば cleared）。終了判定は update の MissionEnd（systems/mission-end）
     onDestroyerSunk: () => {},
-    onTargetDestroyed: (x, y) => {
-      playExplosion(this, x, y, false);
+    onTargetDestroyed: (x, y, look) => {
+      playExplosion(this, x, y, false, look);
       this.shakeCamera();
     },
     onShellHit: (x, y, small, destroyed) => {

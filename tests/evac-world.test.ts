@@ -178,7 +178,7 @@ describe('座席の振り替え（BoatDamage.divert＝core/evac-seat の evacSin
   });
   it('mission-world: jp_03 の撃破（届くのは撃墜だけ）は爆発だけ（slowMoLeftS を立てない）。ほかの任務は今のまま', () => {
     const s = readFileSync(new URL('../src/systems/mission-world.ts', import.meta.url), 'utf8');
-    expect(s).toContain('const onSunk = (x: number, y: number): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y); };');
+    expect(s).toContain("const onSunk = (x: number, y: number, look: ExplosionLook = 'blast'): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y, look); };");
     expect(s).toContain('this.arms = buildArms(scene, this, data, seed, onSunk);');
   });
 });
