@@ -1,9 +1,0 @@
-[]
-mission=us_02&seed=1 context suspended・標本 15 本・単発の音源 0・ループ 鳴っている 0 作った 0 止めた 0 書いた 0・捨てた 0 エラー 0
-mission=jp_03&seed=1&hard context suspended・標本 15 本・単発の音源 0・ループ 鳴っている 0 作った 0 止めた 0 書いた 0・捨てた 13 エラー 0
-[AUDIO=1]
-mission=us_02&seed=1 context running・標本 15 本・単発の音源 0・ループ 鳴っている 5 作った 5 止めた 0 書いた 41・捨てた 0 エラー 0
-mission=jp_03&seed=1&hard context running・標本 15 本・単発の音源 6・ループ 鳴っている 5 作った 5 止めた 0 書いた 65・捨てた 0 エラー 0
-[NOAUDIO=1]
-mission=us_02&seed=1 エンジンなし エラー 0
-mission=jp_03&seed=1&hard エンジンなし エラー 0
