@@ -1,7 +1,8 @@
 // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇と大発の Canvas の 2D の描き方（Phaser に依らない assets/boat-paint・barge-paint）を
 // 記録するだけの偽の ctx で描き、色は地の色 1 つの明るさだけ（自艇の灰は彩度 ≤ 0.12＝tint が効く・敵は赤の系統・味方は青の系統）・描く物は船体の矩形の内・細部の表は layout と揃う、を確かめる。
 // 画素の明るさ・覆い・tint の比の門は scripts/headless/tex-ab（CHECK=1）。
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BOAT_ART_KIND_BY_ID, BOAT_ART_LAYOUTS, PALETTE_ALLY, PALETTE_ENEMY, PALETTE_PLAYER, type BoatArtKind } from '../src/config/boat-art-config';
 import { BOAT_PAINT_DETAILS } from '../src/config/boat-paint-config';
@@ -94,5 +95,49 @@ describe('大発の描き方（v0.7.0 IP3。assets/barge-paint）', () => {
       expect(s.split('\n').length, f).toBeLessThanOrEqual(300);
     }
     expect(readFileSync('src/config/boat-paint-config.ts', 'utf8')).not.toMatch(/^import /m);
+  });
+});
+
+describe('密度の通り道（v0.7.0 IP2b・IP3。tests/art-inventory から移した）', () => {
+  it('IP2b・IP3 の密度の通り道: 描く 3 か所が S 倍の画素、密度のある鍵の Image を作る所はみな game-config の artImageScale（1 / RENDER_SCALE / 密度）', () => {
+    for (const line of ['paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(readFileSync('src/assets/destroyer-art.ts', 'utf8')).toContain(line);
+    const ship = readFileSync('src/assets/ship-art.ts', 'utf8');
+    expect(ship).toContain('paintTexture(scene, key, { w: size.w * S, h: size.h * S }, RENDER_SCALE * S, (pen) =>');
+    for (const line of ['export function paintHullCanvas(', 'paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {', 'ctx.scale(k * S, k * S);']) expect(ship).toContain(line);
+    expect(readFileSync('src/config/game-config.ts', 'utf8')).toContain('return 1 / RENDER_SCALE / artTexDensity(key);');
+    const sites: Record<string, string> = {
+      'entities/destroyer.ts': 'scene.add.image(start.x, start.y, textureKey).setScale(artImageScale(textureKey))',
+      'entities/ally-destroyer.ts': 'TEXTURE_KEYS.destroyerFriendly).setScale(artImageScale(TEXTURE_KEYS.destroyerFriendly))',
+      'entities/ally-ship.ts': 'TEXTURE_KEYS.transportFriendly).setScale(artImageScale(TEXTURE_KEYS.transportFriendly))',
+      'entities/player-boat.ts': 'scene.add.image(start.x, start.y, textureKey).setScale(artImageScale(textureKey))',
+      'systems/escort-boat.ts': 'scene.add.image(b.x, b.y, textureKey).setTint(ESCORT_TINT).setScale(artImageScale(textureKey))',
+      'systems/gunboat.ts': 'scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(artImageScale(boatTextureKey(p.boatId)))',
+      'systems/evac-boats-view.ts': 'scene.add.image(0, 0, textureKey).setScale(this.scale)',
+      'systems/barge-hunt.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(artImageScale(TEXTURE_KEYS.barge))',
+      'systems/pt-squadron.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat))',
+      'systems/convoy.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(artImageScale(TEXTURE_KEYS.bargeFriendly))',
+    };
+    for (const [f, line] of Object.entries(sites)) expect(readFileSync(join('src', f), 'utf8'), f).toContain(line);
+    const evac = readFileSync('src/systems/evac-boats-view.ts', 'utf8');
+    expect(evac).toContain('this.scale = artImageScale(textureKey);');
+    expect(evac).toContain('img.setScale((1 - (1 - SINK_SCALE_TO) * k) / RENDER_SCALE / this.density)'); // 沈む途中も (x / k) / 密度
+    expect(evac).not.toContain('setScale(1 / RENDER_SCALE)');
+    const users: string[] = [];
+    for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
+      for (const f of readdirSync(join('src', dir))) {
+        const src = readFileSync(join('src', dir, f), 'utf8');
+        if (/TEXTURE_KEYS\.(?:destroyer|destroyerUs|destroyerFriendly|transport|transportFriendly)\b(?!Pool)/.test(src) || /'tex-(?:destroyer|transport)/.test(src)) users.push(`${dir}/${f}`);
+      }
+    }
+    expect(users.sort()).toEqual(['entities/ally-destroyer.ts', 'entities/ally-ship.ts', 'entities/destroyer.ts', 'systems/destroyer-group.ts']); // destroyer-group は鍵を Destroyer へ渡すだけ
+    // IP3: 艇・米PT・大発の鍵の Image を作る所は上の表だけ（textureKey を受け取る 3 つ＝自艇・僚艇・jp_03 の 18 隻と、鍵を直に書く 4 つ）
+    const boatUsers: string[] = [];
+    for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
+      for (const f of readdirSync(join('src', dir))) {
+        const src = readFileSync(join('src', dir, f), 'utf8');
+        if (/add\.(?:image|sprite)\([^;]*(?:TEXTURE_KEYS\.(?:barge|bargeFriendly|ptBoat)\b|boatTextureKey\()/.test(src)) boatUsers.push(`${dir}/${f}`);
+      }
+    }
+    expect(boatUsers.sort()).toEqual(['systems/barge-hunt.ts', 'systems/convoy.ts', 'systems/gunboat.ts', 'systems/pt-squadron.ts']);
   });
 });
