@@ -1,0 +1,7 @@
+detect m: stop 480 silent 600 hold 8 s; ram trigger 400 giveup 800
+[0] on=false beamOnBoat=false star=false illum=true det=false d=2415 [1] on=false beamOnBoat=false star=false illum=true det=false d=1751
+  ships=2 lat=600 stopOn=detect: stop@29.7s detLast+154.1 litLast+170.3 shotLast+168.6 shotsAfterStop=1034 ramWhileStopped=true minDist=0
+[0] on=false beamOnBoat=false star=false illum=true det=false d=1486 [1] on=false beamOnBoat=false star=false illum=true det=false d=3041
+  ships=2 lat=-600 stopOn=detect: stop@47.4s detLast+108.8 litLast+152.6 shotLast+150.8 shotsAfterStop=914 ramWhileStopped=true minDist=1
+[0] on=false beamOnBoat=false star=false illum=false det=false d=2415
+  ships=1 lat=600 stopOn=detect: stop@29.7s detLast+139.6 litLast+139.6 shotLast+139.5 shotsAfterStop=88 ramWhileStopped=true minDist=1
