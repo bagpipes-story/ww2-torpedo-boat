@@ -3,6 +3,43 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.7.1 — 2026-11-12（アートと音②：合成の効果音）
+
+- 目的: 全任務に効果音を足す。音はコードで合成し（ユーザーの決め v0.7.0 の U1「コードで描く・鳴らす」。外部の音のファイルを使わない）、最初のタッチから鳴り、消音を切り替えられる。BGM と命中スローは v0.7.2（命中スローは今のまま）。遊びは 1 ビットも変えない（音は絵と HUD に従う＝新しい手掛かりを漏らさない）。
+- Done: 段 S0〜S5 の門（npm test・typecheck・lint・build、凍結 20 本、模擬 `scripts/headless/g2.sh`（`G6=1 ALLY=1 EVAC=1`）OK 37 DIFF 0、main 3a9e7aa との再生 `ab-replay`（all 58・jp04base 8・jp03 4。`CAM=1`）と HUD の A/B `hud-ab`（base 16・jp04base 8・jp03 4）が音の 3 つの状態（既定＝context が suspended・`AUDIO=1`＝running・`NOAUDIO=1`＝AudioContext なし）で same:true、`tex-ab` が同じ、音の probe と mix の頂、heap、Boot ＋60 ms 以内、JS の束 ＋30 kB（gzip）以内）が通り、Pages で実機テスト（docs/03 の v0.7.1。S1 の後の早い 3 項目と S5 の後の 3 項目）を確かめた。
+- 設計の決め（計画 spec-v0710 §1。v0.7.0 の絵の型を音に写す＝Phaser に依らない純粋な合成＋定数＋起動時に 1 回の生成＋上限つきの再生＋音だけの乱数＋棚卸しと作法のテスト＋ヘッドレスの A/B）:
+  - D1（定数の置き場）: 音量・間引き・距離の帯・音の種は「聞かせ方」の定数で、ゲームの強さの値ではない。`config/sfx-config` に置く（`*-art-config` の類。何も import しない）。論理に効く値は `data/*.json` のまま。
+  - D2（hook の方針）: 論理のファイルは 1 行も触らない。位置つきの衝撃音は絵の層の口（`fx-bus` の `emitMuzzle`・`emitSpray`、`explosion-fx` の `play`・`secondary`、`sink-fx` の `start`）から、状態の合図とループは `BoatTelemetry` を読む純粋な観測器から、UI は `MenuButton` から。`mission-scene`・`mission-world`・`world-visuals`・`mission-effects`・凍結 20 本・core の既存のファイルは触らない。
+  - D3（context）: Phaser が既に作っている `game.sound.context` を使う（自前の `AudioContext` は作らない。無ければ音のエンジンは null で全部何もしない）。
+  - D4（時計）: 間引きはゲームの時計（`PRE_STEP` の delta の和）、声の空きは `ctx.currentTime`。ヘッドレスは偽の時計なので、probe の記録は間引きの前で取る（決定的）。
+  - D5（漏らさない規則）: 鳴らすのは、絵の層が既に出している出来事（閃光・水柱・爆発・沈没）と、HUD が既に文で出している状態だけ。見えていない敵のエンジン・機の爆音は鳴らさない。
+  - D6（既定の音量）: 初回は音オン。命中スローで音程は変えない（v0.7.2 で決める）。
+- 設計の既定（ユーザー未確認。計画 spec-v0710 §12・§14 L8。報告で知らせ、変えたいと言われたら変える）:
+  - U-A（本体の消音スイッチ）: 消音スイッチに従う（iOS の標準＝マナーモードでは鳴らない。Audio Session は `ambient`＝ほかのアプリの音楽を止めない）。代わりの案は `playback` で鳴らす（音楽を止めることがある）。
+  - U-B（画面の外の音）: 画面の外の砲声・爆発を、距離で小さく・左右つきで聞かせる（HUD が既に知らせている出来事だけ）。代わりの案は左右なし。
+  - U-C（任務の終わりの合図）: Result で鐘を鳴らす（帰投は 2 打・それ以外は低く 1 打。曲ではない＝BGM は v0.7.2）。
+- 変更点:
+  - S0（骨組みと道具。見た目も音も遊びも変えない＝まだ何も鳴らない・新しいファイルはゲームのどこからも import されない・Boot も世界も触らない）:
+    - 版 0.7.1（package.json・package-lock.json）。docs/03 の v0.7.1 の行に段 S0〜S5 と実機テスト項目（S1 の後の早い 3 項目・S5 の後の 3 項目）。CLAUDE.md は S5 でまとめて直す（§2「アート」に `sfx-config`・§4・§7 の「音を自動再生」の行）。
+    - `config/sfx-config`（定数だけ・何も import しない）: 鍵 `SFX_KEYS` 25 本（単発 20＝mg・gun_near・gun_far・splash_s・splash_l・blast_s・blast_l・torp_hit・torp_launch・hull_hit・alarm・light_on・flare_pop・bomb_fall・reload・smoke・ui_tap・bell・engine_cough・sink、ループ 5＝engine・sea・fire・rain・drone）、鍵ごとの表 `SFX_TABLE`（秒＝spec §4・種 `SFX_SEED_<鍵>`・音量・優先（合図と UI 3 ＞ 爆発と魚雷 2 ＞ 砲 1 ＞ 水柱 0）・最小間隔（mg 0.07・gun_near 0.12・gun_far 0.25・splash_s 0.08・splash_l 0.15・blast_s 0.10・blast_l 0.20 秒＝spec §7.3）・届く帯（splash_s は帯 1、mg・splash_l は帯 2、砲・爆発・沈没は帯 3）・系統・ループか・再生のたびの rate の揺れ（mg ±8%・splash_s ±12%））、標本 22,050 Hz・頂 0.9・端の fade 2 ms・合計の上限 70 万標本（25 本ぶんで 621,368＝約 28.2 秒）、声 16、距離の帯（≤ 400 m 1.0・≤ 1,500 m 0.55・≤ 4,000 m 0.30・≤ 16,000 m 0.16・それより遠い音は捨てる。大砲は帯 2 から遠雷 gun_far）、パン（dx ÷ 900 m × 0.7・30 m 以内は中央）、リミッタ（閾値 −10 dB・比 12・立ち上がり 3 ms・戻り 250 ms）と master 0.8、ループの更新（10 Hz・時定数 0.08 秒・音量の差 > 0.01・rate の差 > 0.005・一時停止 0.15 秒・rate 0.5〜2）とループの目標（エンジン 停止 0.10・静音 0.16・巡航 0.38・全速 0.60、海・火・雨・機の爆音＝spec §5）。種は 7501〜7525 と再生の揺れ 7599（絵の種 70xx〜74xx と重ねない）。鍵ごとの音量は仮の値（S5 の mix の詰めで決める）。
+    - `assets/sfx-dsp`（合成の部品。DOM にも Phaser にも依らない）: 白色雑音（音だけの `SeededRng`）・1 極の低域通過（掃引・重ね）と高域通過・双 2 次の帯域通過（掃引）・包絡（立ち上がり＋減衰）・立ち上がっていく包絡・正弦（指数の掃引）・FM・掛け算と足し込み・柔らかい歪み（tanh）・頂／RMS／平均／零交差・直流を引く・頂 0.9 の正規化・両端 2 ms の fade・ループの継ぎ目の等電力の重ね。言葉の約束:「減衰 D 秒」は D 秒で 1/10（−20 dB）に落ちる指数（spec §4 の表の秒をこの意味で読む。表の長さは減衰の 1.5〜2.4 倍なので終わりは −30〜−48 dB）。
+    - `assets/sfx-bank`（`renderSfx(key): Float32Array`・`sfxImplementedKeys()`）と作り方 `assets/sfx-recipes-guns`（mg）・`-blasts`（blast_l）・`-cues`（ui_tap）: 作り方が返した標本に、どの鍵にも同じ仕上げ（直流を引く → 単発は両端 2 ms の fade → 頂 0.9）を掛ける。同じ鍵は何度作っても同じ標本。作り方のまだ無い 22 本は `sfxImplementedKeys()` に入らず、`renderSfx` は「まだ無い」と投げる（黙って無音を返さない）。音色の数は鍵ごとの名前つきの表（`MG`・`BLAST_L`・`UI_TAP`）にまとめた。
+      - mg（0.12 秒）: 帯 900〜3k Hz の雑音の 2 連の破裂（減衰 25 ms・2 発目は 50 ms 後に 0.6 倍）＋150 Hz の一打を柔らかく歪ませる。
+      - blast_l（1.6 秒）: 正弦 120 → 30 Hz（減衰 0.8 秒）＋雑音の低域通過（2 極）の掃引 3k → 100 Hz を歪ませ、尾に 14 個のぱちぱち（時刻・長さ・大きさは音だけの乱数）。
+      - ui_tap（0.06 秒）: 正弦 880 → 660 Hz・減衰 40 ms。
+    - `core/sfx-mix`（単発の判断。確保は作る時だけ）: 距離の帯 `sfxBand`（距離の 2 乗と閾値の 2 乗を比べる＝平方根なし）・帯の音量・パン・大砲の鍵の切り替え `sfxGunKey`、`SfxMixer`（鍵ごとの最小間隔＝ゲームの時計、声 16 本の割り当て＝再生の時計と長さ。満ちていれば自分より優先の低い声のうち一番低くて古い声を奪い、同じか高い声しか無ければ新しい方を捨てる＝合図・UI は奪われない。鳴らせた時の音量・パン・帯・奪ったかは自分の欄に書く＝物を作らない。鍵ごとの鳴らした数・理由ごとの落とした数・同時の声の最大を数える＝S2 の probe 用）。落とす順は 最小間隔 → 距離の帯 → 声で、最小間隔の時刻は鳴らせた時だけ進める（届かない遠い音・声の無い音が、次の近い音を間引かない）。
+    - テスト（＋4 ファイル・＋129 件＋todo 2）: `tests/sfx-synth`（作り方のある鍵ごとに 長さ・NaN なし・頂 0.9・直流 < 0.02・両端 < 1e-3・2 回作って同じ・16 bit に丸めた指紋（FNV）の固定・系統の RMS の帯・零交差の高さの順（爆発 < 機銃。S2 で 遠雷 < 近い砲・大きい水柱 < 小さい水柱が効き始める）・ループの継ぎ目（S3 で効く）・合成 < 400 ms、部品の単体テスト 10 件）・`tests/sfx-inventory`（鍵 25 本と表の欄を spec の値で固定・種 26 は重ならず絵の種とも重ならない・合計 621,368 ≤ 70 万標本・聞かせ方の定数・今の段の作り方 3 本と残り 22 本の予定の段（S2 7・S3 5・S4 10）・作り方の無い鍵は投げる・TEXTURE_KEYS 53 鍵とシーンの並びは今のまま。S4 の「合図の表の鍵」「使われない鍵は無い」は it.todo）・`tests/sfx-rules`（`src` の下の `sfx-*.ts` に自動で効く: `Math.random` なし・`new SeededRng(` の引数は `SFX_SEED_*` だけ・ゲームの乱数の系列の名なし、毎フレーム・1 発ごとの口の本体に new・.map(・.filter(・オブジェクトのリテラルなし、論理の状態への代入なし、config・assets・core の sfx は `AudioContext`・`window`・`document`・`navigator`・`Phaser` を書かず import は sfx-* どうしと core/rng だけ、**import の許可表**＝sfx-* を import してよいゲーム側のファイルは boot-scene・world-art・fx-bus・explosion-fx・sink-fx・menu-ui・hud-scene・title-scene・pause-scene・result-scene の 10 本だけ（論理から音へ届く道が無い）、今の段で import しているゲーム側のファイルは 0 本、300 行以下）・`tests/sfx-mix`（帯の境・音量の単調・パンの範囲・届く帯・最小間隔・声の上限・優先の奪い方・合図は奪われない）。
+    - 道具: `scripts/headless/lib.mjs` に音の 3 つの状態（どの道具にも効く環境変数。どちらも無ければ今までどおり）＝`AUDIO=1` は `chromium.launch` に `--autoplay-policy=no-user-gesture-required`（Phaser の context が running になり `currentTime` が進む）・`NOAUDIO=1` はページの script の前に `AudioContext`・`webkitAudioContext` を消す（Phaser は context の無い sound manager になる）。確かめた: 既定 suspended・`AUDIO=1` running（0.3 秒で 0.299 秒進む）・`NOAUDIO=1` context なし、どれもページのエラー 0。`scripts/sfx-mix.ts`（＋部品 `scripts/sfx-files.ts`。esbuild で束ねて node で回す）: 作り方のある鍵を合成し、鍵ごとの長さ・頂・RMS・直流・零交差と、時間を 3 つに分けた区間の RMS・零交差の高さ・スペクトルの重心、そこから読める音色の一言を出す（耳の代わりの数）。`WAV=1` で 16 bit・モノの WAV、`PNG=1` で波形と声紋の帯を scratchpad に書く（repo には音・画像のファイルを入れない）。S2 で probe の記録を mix して頂と 1.0 超えの割合を出す形に広げる。scratchpad: 基準のビルド `v0710/base-3a9e7aa`（main 3a9e7aa を `VITE_BUILD_REF=main VITE_BUILD_SHA=3a9e7aa` で）・`v0710/tools/run-gates.sh`（v0700 の写し。再生の A/B を音の 3 つの状態で回す＝`AUDIO_STATES`・`SMALL_AUDIO_STATES`、`SKIP`・`AB_ENV` で短い形）。
+    - 3 本の数（`scripts/sfx-mix.ts`。頂はどれも 0.900・両端 0）: mg＝RMS −15.4 dB・零交差 2.29 kHz・区間の重心 1.62 → 2.69 → 2.33 kHz・頂は頭から 2 ms・−20 dB を最後に下回るのは 80 ms（2 発目の破裂まで）。blast_l＝RMS −12.0 dB・零交差 513 Hz・区間の RMS −7.5 → −21.0 → −34.7 dB・重心 691 → 70 → 322 Hz（轟きから低いうなりへ、尾はぱちぱち）・−20 dB は 0.92 秒。ui_tap＝RMS −12.1 dB・零交差 767 Hz・重心 843 → 766 → 696 Hz（音程が下がる）・−20 dB は 45 ms。合成の壁時計は 3 本で約 30〜40 ms。
+    - 束ね: 新しいファイルはどこからも import されないので、同じビルド番号（main@3a9e7aa）で作った S0 の JS の束は基準と**バイトで同じ**（`assets/index-D0TdQ6JD.js` 2,196,569 バイト・md5 6e97e14f…。index.html・manifest・icons も同じ。違うのは作った時刻の入る sw.js だけ）。
+    - 門: npm test 2,898 件（＋2 todo）・typecheck（2 つの tsconfig）・lint・build が通る。ゲームの束ね（JS）は main 3a9e7aa と同じビルド番号で作るとバイトで同じ（md5 6e97e14f…。新しいファイルはまだどこからも import されない）＝長い再生の門は S1 でまとめて回す。ヘッドレスの音の 3 つの状態（既定＝止まっている・AUDIO=1＝動いている・NOAUDIO=1＝context なし）と短い run-gates（us_02 20 秒・jp_03 ハード 40 秒）は全部同じ
+- 既知の制約:
+  - （S0）まだ何も鳴らない（エンジン・Boot・hook は S1 から）。作り方があるのは 3 本で、残り 22 本は S2〜S4（`tests/sfx-inventory` の `IMPLEMENTED_NOW`・`PLANNED` を段ごとに直す。`tests/sfx-synth` の `FINGERPRINTS` に 1 行足す）。hook を足す段は `tests/sfx-rules` の `GAME_IMPORTERS_NOW`・`HOOK_PINS`・`TOUCHED` を直す。
+  - （S0）鍵ごとの音量・リミッタの knee（6 dB。spec に無い仮の値）・系統の RMS の帯は仮（S5 の mix の詰め）。音色は数と波形でしか確かめていない（耳では S1 の実機から）。iPhone のスピーカーは低い音（約 300 Hz より下）がほとんど出ないので、blast_l の後半のうなりはイヤホンで聞こえる分。
+  - （S0）`core/sfx-mix` は `config/sfx-config` を import する（core が config を import するのは初めて。`sfx-config` は何も import しない定数の表なので Phaser・DOM には届かない＝`tests/sfx-rules` が import の先を固定）。
+  - （S0）16 bit の指紋は Node（V8）の `Math.sin`・`exp`・`pow`・`tanh` の値に依る。Node を上げて指紋だけが変わったら、数（頂・RMS・零交差）が同じことを見て指紋を直す。
+- 実機テスト結果: 未（S1 の後に早い 3 項目、S5 の後に 3 項目。docs/03 の v0.7.1）。
+
 ## v0.7.0 — 2026-11-08（アートと音①：コードで描く絵）
 
 - 目的: 全任務の艇・艦・機・大発と夜の海（波・航跡・水柱・爆発・火災と煙・探照灯・星弾・月光・夜明け）を、v0.6.11 の屋我地の陰（`assets/evac-terrain-art`）と同じ「起動時に 1 回コードで描くテクスチャ」に置き換え、遊びは 1 ビットも変えずに見た目で損をしないようにする。ユーザーの決め（v0.7.0 の U1。2026-11-07。問い「次は v0.7.0「アートと音」（艇・艦の絵、夜の海の演出、効果音・BGM）です。CLAUDE.md には「画像・音の制作にセッションを使わない」とあります。素材の出どころをどうしますか？」への答え「コードで描く・鳴らす（推奨）」＝絵と音はコードで描く・合成する、外部の画像・音のファイルを使わない。CLAUDE.md §2「アート」）。v0.7.0 は絵だけ。合成の効果音は v0.7.1、BGM と命中スローは v0.7.2（docs/03）。
