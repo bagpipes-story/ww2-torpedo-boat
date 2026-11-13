@@ -31,7 +31,8 @@ interface Burst {
 /** 泡: fromS〜toS に count 個の短い帯の雑音（中心 loHz〜hiHz のどこか・lenS 秒で rise 倍へ上がる＝「こぽ」）。後ろほど小さい（終わりで fall 倍） */
 interface Bubbles { readonly fromS: number; readonly toS: number; readonly count: number; readonly loHz: number; readonly hiHz: number; readonly rise: number; readonly lenS: number; readonly decayS: number; readonly gain: number; readonly fall: number }
 interface Recipe2 {
-  readonly seed: number;
+  /** 音だけの乱数（案ごとの種 SFX_SEED_LAB_LAUNCH_*） */
+  readonly rng: () => SeededRng;
   readonly bursts: readonly Burst[];
   readonly clacks?: readonly Clack[];
   readonly slides?: readonly Slide[];
@@ -84,7 +85,7 @@ function bubbles(out: Float32Array, rng: SeededRng, s: Bubbles): void {
 
 function recipe2(r: Recipe2): SfxRecipe {
   return (n) => {
-    const rng = new SeededRng(r.seed);
+    const rng = r.rng();
     const out = new Float32Array(n);
     for (const s of r.slides ?? []) slide(out, rng, s);
     for (const c of r.clacks ?? []) clack(out, rng, c);
@@ -109,7 +110,7 @@ function splash(atS: number, thumpGain: number, washS: number, washGain: number,
 
 /** E 大砲型「ドンッ＋ザバーン」: 1〜3 ms の鋭い割れ → 250〜900 Hz の雑音の爆風（歪み 6＝強く圧縮・減衰 0.34 秒）→ 30〜120 ms 間隔の拡がった響き 6 つ＋0.5 秒の残り → 0.4 秒に大きい着水 */
 const E: Recipe2 = {
-  seed: SFX_SEED_LAB_LAUNCH_E,
+  rng: () => new SeededRng(SFX_SEED_LAB_LAUNCH_E),
   bursts: [
     { atS: 0, gain: 2.2, loHz: 2000, hiHz: 0, attackS: 0.0002, decayS: 0.0025 },
     { atS: 0, gain: 1.6, loHz: 300, hiHz: 0, attackS: 0.0002, decayS: 0.0012 },
@@ -126,7 +127,7 @@ const E: Recipe2 = {
 const F_HEAVY = { ...HEAVY, clickHpHz: 700, bodyLoHz: 200, bodyHiHz: 900, bodyS: 0.07, bodyGain: 4, ringHz: [820, 1240, 1770], ringS: 0.008 } as const;
 /** F 落とす型「ガコン＋ザブン」: 止め金が外れる重い「ガコン」＋がたつき 4 つ → 台を転がる擦れ（0.17 秒）→ 0.24 秒に大きい「ザブン」（200 Hz〜3k Hz の胴 0.35 秒）→ 泡の「こぽこぽ」 */
 const F: Recipe2 = {
-  seed: SFX_SEED_LAB_LAUNCH_F,
+  rng: () => new SeededRng(SFX_SEED_LAB_LAUNCH_F),
   clacks: [
     { ...F_HEAVY, atS: 0.004, gain: 1 }, { ...F_HEAVY, atS: 0.016, gain: 0.45 },
     { ...MID, atS: 0.038, gain: 0.32 }, { ...MID, atS: 0.055, gain: 0.26 }, { ...LIGHT, atS: 0.074, gain: 0.2 }, { ...MID, atS: 0.1, gain: 0.15 },
@@ -144,7 +145,7 @@ const F: Recipe2 = {
 
 /** G 映画型「シュッ…ズドン」: 0.16 秒の吸い込み（逆回しのように上がる帯の雑音 400 Hz〜1.2k → 1.8k〜6k Hz）→ 割れ＋雑音の爆発（歪み 7）→ 0.75 秒の長い尾と高い「空気」→ 0.62 秒に中くらいの着水 */
 const G: Recipe2 = {
-  seed: SFX_SEED_LAB_LAUNCH_G,
+  rng: () => new SeededRng(SFX_SEED_LAB_LAUNCH_G),
   bursts: [
     { atS: 0, gain: 0.7, loHz: 400, hiHz: 1200, toLoHz: 1800, toHiHz: 6000, glideS: 0.16, attackS: 0.155, attackPow: 3, decayS: 0.008, lenS: 0.18 },
     { atS: 0.16, gain: 2.4, loHz: 1500, hiHz: 0, attackS: 0.0002, decayS: 0.003 },
@@ -160,7 +161,7 @@ const G: Recipe2 = {
 
 /** H 走り去る型「ドシュウゥン」: 割れ＋打撃＋空気の噴き出し → 1.6k → 500 Hz へ 1.15 秒で下がる帯の雑音（ドップラーで遠ざかる）を 34 → 26 Hz の拍（スクリュー）で揺らしながら 1.2 秒で消す */
 const H: Recipe2 = {
-  seed: SFX_SEED_LAB_LAUNCH_H,
+  rng: () => new SeededRng(SFX_SEED_LAB_LAUNCH_H),
   bursts: [
     { atS: 0, gain: 2.2, loHz: 1800, hiHz: 0, attackS: 0.0002, decayS: 0.003 },
     { atS: 0, gain: 0.8, loHz: 250, hiHz: 900, twice: true, attackS: 0.001, decayS: 0.12, drive: 3 },
@@ -188,5 +189,5 @@ export const LAUNCH_NEW_VARIANTS: readonly SfxRecipeVariant[] = [
   { id: 'F', recipe: recipe2(F), seconds: 1.4, rate: 1 },
   { id: 'G', recipe: recipe2(G), seconds: 1.5, rate: 1 },
   { id: 'H', recipe: recipe2(H), seconds: 1.5, rate: 1 },
-  { id: 'I', recipe: launch(I, SFX_SEED_LAB_LAUNCH_I), seconds: 1.2, rate: 1 },
+  { id: 'I', recipe: launch(I, () => new SeededRng(SFX_SEED_LAB_LAUNCH_I)), seconds: 1.2, rate: 1 },
 ];

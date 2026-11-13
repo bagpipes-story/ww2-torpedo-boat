@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: src/assets/sfx-recipes-launch2.ts
 - tools/ … scratchpad の道具（ana3・fpB・lab-shots・mixrun）、results/ … 文字の結果（音・画像は入れない。WAV と声紋は scratchpad の v0710/impl/IP3/sfx）
-- 一言: IP3 の最初の動く版（弾倉の既定 B・魚雷の新しい案 E〜I・試聴の場 5 行。テストは途中）
+- 一言: IP3 最終（弾倉の既定 B＝U-R1・魚雷の新しい案 E〜I・試聴の場 5 行・テスト 3,184・mix 頂 0.712・短い A/B same・CHANGELOG・docs/03）
