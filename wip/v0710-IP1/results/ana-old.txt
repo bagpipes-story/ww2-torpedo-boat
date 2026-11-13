@@ -1,8 +1,0 @@
-reload: 0.35s RMS 0.0593 (-24.5 dB) thirds RMS -25.7/-21.1/-44.3 dB centroid 2.59/2.59/0.34 kHz all 2.27 | >400 70% >1k 70% | -20dB 221 ms | peakAt 191.2 ms | bursts 0,180 ms
-torp_launch: 0.7s RMS 0.0947 (-20.5 dB) thirds RMS -16.3/-24.6/-49.7 dB centroid 2.01/2.73/1.50 kHz all 2.56 | >400 86% >1k 80% | -20dB 388 ms | peakAt 20.1 ms | bursts 0,300 ms
-torp 50ms windows: -11.4 -16.0 -21.0 -25.4 -29.4 -33.4 -18.9 -26.4 -34.4 -42.2 -48.7 -53.7 -60.0 -69.7 NaN NaN NaN NaN NaN NaN
-worst overall: gun_near~blast_s 2.20, splash_l~torp_launch 2.46, gun_near~bell 2.62
-worst reload: torp_launch~reload 6.04, splash_s~reload 6.50, gun_near~reload 7.15, splash_l~reload 7.86
-worst torp_launch: splash_l~torp_launch 2.46, splash_s~torp_launch 3.05, mg~torp_launch 3.96, torp_launch~light_on 5.12
-torp vs gun_near/blast_s/splash_l: splash_l~torp_launch 2.46, gun_near~torp_launch 5.83, blast_s~torp_launch 6.39
-test: torp splash rms(.37-.47) -31.9 vs (.27-.37) -21.4
