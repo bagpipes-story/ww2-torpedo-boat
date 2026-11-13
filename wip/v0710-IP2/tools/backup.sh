@@ -10,11 +10,11 @@ cd $R
 git diff HEAD > $D/tracked.patch
 UT=$(git ls-files --others --exclude-standard | grep -E '\.(ts|mjs|md|json|sh)$' || true)
 for f in $UT; do mkdir -p $D/files/$(dirname $f); cp $f $D/files/$f; done
-cp $S/tools/*.ts $S/tools/*.sh $S/tools/lab-shots.mjs $D/tools/ 2>/dev/null || true
+cp $S/tools/*.ts $S/tools/*.sh $S/tools/*.py $S/tools/lab-shots.mjs $S/tools/offline.mjs $D/tools/ 2>/dev/null || true
 cp $S/*.txt $S/*.log $D/results/ 2>/dev/null || true
 for m in $S/mix/*/; do n=$(basename $m); cp $m/offline.log $D/results/mix-$n-offline.log 2>/dev/null || true; done
 cat > $D/README.md <<EOR
-# wip/v0710-IP2 — v0.7.1 実機 1 回目の直し IP2（弾倉の交換の音を始め・終わりの 2 本に・魚雷の発射の音の作り直し・試聴の場 ?sfxlab）の作業の写し（commit の前）
+# wip/v0710-IP2 — v0.7.1 実機 2 回目の直し IP2（弾倉の交換の音を始め・終わりの 2 本に・魚雷の発射の音の作り直し・試聴の場 ?sfxlab）の作業の写し（commit の前）
 
 基準: ブランチ claude/v0.7.1-sfx の HEAD $(git rev-parse --short HEAD)（S0〜S5 ＋ IP1）。repo では commit していない（lead が長い門を回してから commit する）。
 戻し方: \`git checkout $(git rev-parse --short HEAD)\` の木で \`git apply tracked.patch\`、新しいファイルは \`files/\` を上書き。
