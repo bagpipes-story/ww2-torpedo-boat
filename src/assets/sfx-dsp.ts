@@ -134,6 +134,20 @@ export function fm(n: number, carrierHz: number, ratio: number, index: number, i
   return out;
 }
 
+/**
+ * 減衰する正弦の束（金属の「モード」。v0.7.1 IP1）: hz[k] の正弦を amps[k] の大きさで鳴らし始め、decays[k] 秒で 1/10 に落とす（立ち上がり無し＝叩いた瞬間に全部が鳴る）。
+ * 高さを整数比から外すと金属の板・筒の響き（整数比は電子音・楽器に聞こえる）。位相は標本の番号から直に（積まない）
+ */
+export function modes(n: number, hz: readonly number[], amps: readonly number[], decays: readonly number[]): Float32Array {
+  const out = new Float32Array(n);
+  for (let m = 0; m < hz.length; m++) {
+    const w = (TAU * hz[m]!) / SR, k = DECAY_RATIO_LN / Math.max(1, decays[m]! * SR), a = amps[m]!;
+    const end = Math.min(n, Math.ceil(6 * decays[m]! * SR)); // 6 × 減衰の秒＝−120 dB より先は足さない
+    for (let i = 0; i < end; i++) out[i] = out[i]! + a * Math.exp(-k * i) * Math.sin(w * i);
+  }
+  return out;
+}
+
 /** 標本ごとの掛け算（包絡を掛ける）。a を書き換えて返す */
 export function mul(a: Float32Array, b: Float32Array): Float32Array {
   for (let i = 0; i < a.length; i++) a[i] = a[i]! * (b[i] ?? 0);

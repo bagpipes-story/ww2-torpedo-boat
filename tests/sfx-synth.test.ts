@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { SFX_EDGE_FADE_S, SFX_PEAK, SFX_SAMPLE_RATE, SFX_SEED_MG, SFX_TABLE, type SfxFamily, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
-import { bandPass, crossfadeLoop, envelope, fadeEdges, fadeTail, fm, highPass, lowPass, meanOf, mixInto, mul, normalizePeak, peakOf, ramp, removeDc, rmsOf, saturate, sfxSamples, sine, whiteNoise, zeroCrossings } from '../src/assets/sfx-dsp';
+import { bandPass, crossfadeLoop, envelope, fadeEdges, fadeTail, fm, highPass, lowPass, meanOf, mixInto, modes, mul, normalizePeak, peakOf, ramp, removeDc, rmsOf, saturate, sfxSamples, sine, whiteNoise, zeroCrossings } from '../src/assets/sfx-dsp';
 import { SeededRng } from '../src/core/rng';
 
 const SR = SFX_SAMPLE_RATE;
@@ -42,13 +42,13 @@ const FINGERPRINTS: Partial<Record<SfxKey, number>> = {
   fire: 104566791,
   rain: 2630845142,
   drone: 1691882525,
-  torp_launch: 1007784514,
+  torp_launch: 1786366453,
   hull_hit: 2680124741,
   alarm: 1749539769,
   light_on: 2838731473,
   flare_pop: 235826790,
   bomb_fall: 3358791416,
-  reload: 4145594430,
+  reload: 3382733306,
   smoke: 449030864,
   bell: 88401544,
   engine_cough: 679273673,
@@ -234,6 +234,15 @@ describe('音の合成の部品（assets/sfx-dsp）', () => {
     const deep = fm(N, 320, 1.4, 6, 5);
     expect(peakOf(deep)).toBeLessThanOrEqual(1);
     expect(zeroCrossings(deep)).toBeGreaterThan(zeroCrossings(plain));
+  });
+  it('モードの束（IP1）: 頭は 0・1 本なら零交差は 2 × 高さ × 秒・「減衰 D 秒」の D 秒後に 1/10・束は足し算', () => {
+    const one = modes(N, [1000], [1], [0.2]);
+    expect(one[0]).toBe(0);
+    expect(Math.abs(zeroCrossings(one, 0, sfxSamples(0.1)) - 200)).toBeLessThanOrEqual(2);
+    expect(rmsOf(one, sfxSamples(0.2), sfxSamples(0.21)) / rmsOf(one, 0, sfxSamples(0.01))).toBeCloseTo(0.1, 1);
+    const two = modes(N, [1000, 2700], [1, 0.5], [0.2, 0.05]);
+    const b = modes(N, [2700], [0.5], [0.05]);
+    for (let i = 0; i < 2000; i++) expect(Math.abs(two[i]! - one[i]! - b[i]!)).toBeLessThan(1e-6);
   });
   it('掛け算・足し込み（ずらし・はみ出しは捨てる）・歪みは −1〜1', () => {
     expect(Array.from(mul(new Float32Array([1, 2, 3]), new Float32Array([2, 0.5])))).toEqual([2, 1, 0]);

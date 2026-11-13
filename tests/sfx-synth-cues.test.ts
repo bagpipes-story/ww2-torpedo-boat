@@ -2,8 +2,10 @@
 // （共通の検査＝長さ・頂・直流・両端・指紋・RMS の帯は tests/sfx-synth）。
 // - 本体のスピーカー（約 400 Hz より下が出ない）でも聞こえる: 400 Hz より上のエネルギーの割合の下限。合図で低く鳴らす速さ（鐘 0.5・サイレン 0.7・咳 0.7）でも。
 // - 単発 20 本のどの 2 本も、重心・零交差・頭 50 ms の重心・−20 dB までの長さ・頂の位置・RMS（log2 の差の和）が 2 より離れる（scripts の表と同じ数え方）。
-// - 鍵ごとの形: 警報は甲高くない（2 kHz より上 < 3%）2 音・爆弾は高さが下がり大きさが上がる・弾倉は 2 打・機関の咳は 3 打・鐘は長く澄む・煙幕は頭が無く星弾より暗い・
-//   魚雷の発射は 0.3 秒の後に水音・探照灯は続くうなり。
+// - 鍵ごとの形: 警報は甲高くない（2 kHz より上 < 3%）2 音・爆弾は高さが下がり大きさが上がる・弾倉は 3 打・機関の咳は 3 打・鐘は長く澄む・煙幕は頭が無く星弾より暗い・
+//   魚雷の発射は 0.37 秒の後に水音・探照灯は続くうなり。
+// - IP1（実機 1 回目「弾倉交換の音がまぬけ」「魚雷の発射音をもう少しカッコよく」）: 弾倉は鋼の音（400 Hz より下がほぼ無い・1 kHz より上が主）、魚雷の発射は頭に衝撃・
+//   着水の後にスクリューのうなり（中の高さ 0.6〜1.4 kHz）。
 import { describe, expect, it } from 'vitest';
 import { SFX_KEYS, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx } from '../src/assets/sfx-bank';
@@ -84,8 +86,8 @@ describe('合図 10 本の聞き分け（v0.7.1 S4）', () => {
     expect(zeroCrossings(v, 2 * n3, v.length)).toBeLessThan(zeroCrossings(v, 0, n3) * 0.7);
     expect(20 * Math.log10(rmsOf(v, 2 * n3, v.length) / rmsOf(v, 0, n3))).toBeGreaterThan(9);
   });
-  it('打の数: 弾倉は 2 打（間 0.18 秒）・機関の咳は 3 打・被弾は 1 打で短い（−20 dB まで 0.2 秒未満）', () => {
-    expect(bursts(x('reload'))).toBe(2);
+  it('打の数: 弾倉は 3 打（抜く・差す・止め金。IP1）・機関の咳は 3 打・被弾は 1 打で短い（−20 dB まで 0.2 秒未満）', () => {
+    expect(bursts(x('reload'))).toBe(3);
     expect(bursts(x('engine_cough'))).toBe(3);
     expect(len20(x('hull_hit'))).toBeLessThan(0.2);
   });
@@ -97,11 +99,20 @@ describe('合図 10 本の聞き分け（v0.7.1 S4）', () => {
     const n3 = Math.round(l.length / 3);
     expect(20 * Math.log10(rmsOf(l, 2 * n3, l.length) / rmsOf(l, 0, n3))).toBeGreaterThan(-6);
   });
-  it('煙幕は頭が無く（頂は 0.1 秒より後）星弾（頭の「ぽん」＝頂は 10 ms の内）より暗い。魚雷の発射は 0.3 秒の後に水音（0.3〜0.4 秒は直前より大きい）', () => {
+  it('煙幕は頭が無く（頂は 0.1 秒より後）星弾（頭の「ぽん」＝頂は 10 ms の内）より暗い。魚雷の発射は 0.37 秒の後に水音（0.37〜0.47 秒は直前より大きい。IP1）', () => {
     const sm = x('smoke'), fl = x('flare_pop'), tl = x('torp_launch');
     expect(peakAt(sm)).toBeGreaterThan(0.1);
     expect(peakAt(fl)).toBeLessThan(0.01);
     expect(centroidHz(sm, 0, sm.length, SR)).toBeLessThan(centroidHz(fl, 0, fl.length, SR) * 0.85);
-    expect(rmsOf(tl, at(0.3), at(0.4))).toBeGreaterThan(rmsOf(tl, at(0.2), at(0.3)));
+    expect(rmsOf(tl, at(0.37), at(0.47))).toBeGreaterThan(rmsOf(tl, at(0.27), at(0.37)));
+  });
+  it('IP1: 弾倉は鋼の音（400 Hz より上 ≥ 95%・1 kHz より上 ≥ 85%＝低い「ぽこっ」が無い）。魚雷の発射は頭 30 ms が一番大きく、着水の後（0.6〜0.9 秒）にスクリューのうなり（重心 0.6〜1.4 kHz）', () => {
+    const r = x('reload'), tl = x('torp_launch');
+    expect(shareAbove(r, 400)).toBeGreaterThanOrEqual(0.95);
+    expect(shareAbove(r, 1000)).toBeGreaterThanOrEqual(0.85);
+    expect(peakAt(tl)).toBeLessThan(0.03);
+    const c = centroidHz(tl, at(0.6), at(0.9), SR);
+    expect(c).toBeGreaterThan(600);
+    expect(c).toBeLessThan(1400);
   });
 });

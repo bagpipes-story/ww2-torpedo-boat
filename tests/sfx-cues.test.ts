@@ -92,7 +92,7 @@ describe('状態の合図（core/sfx-cues。spec §3.2）', () => {
     expect(c.step({ smokeLeftS: 8 })).toEqual([['smoke', 1, 1, 0]]);
     expect(c.step({ smokeLeftS: 7 }, 30)).toEqual([]);
   });
-  it('弾倉の交換: 始め（reloadN か大発の砲の残り秒が 0 → 正）は reload、終わりは rate 1.3（冷却 0.5 秒）', () => {
+  it('弾倉の交換: 始め（reloadN か大発の砲の残り秒が 0 → 正）は reload、終わりは rate 1.06（IP1 で 1.3 → 1.06＝同じ金属を少し高く。冷却 0.5 秒）', () => {
     const { step } = start();
     expect(step({ arms: { reloadN: 4 } })).toEqual([['reload', 1, 1, 0]]);
     expect(step({ arms: { reloadN: 3 } }, 60)).toEqual([]);

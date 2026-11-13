@@ -13,10 +13,10 @@ import { SFX_BAND_GAIN, SFX_BAND_MAX_M, SFX_KEYS, SFX_MAX_TOTAL_SAMPLES, SFX_SAM
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
 import { SFX_LOOP_IDS } from '../src/core/sfx-loops';
 
-/** spec §4 の 25 本と秒（単発 20・ループ 5） */
+/** spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した） */
 const SECONDS: Readonly<Record<string, number>> = {
-  mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 0.7, hull_hit: 0.3,
-  alarm: 0.6, light_on: 0.5, flare_pop: 1.2, bomb_fall: 1.2, reload: 0.35, smoke: 1.0, ui_tap: 0.06, bell: 1.4, engine_cough: 0.8, sink: 2.5,
+  mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 1.0, hull_hit: 0.3,
+  alarm: 0.6, light_on: 0.5, flare_pop: 1.2, bomb_fall: 1.2, reload: 0.42, smoke: 1.0, ui_tap: 0.06, bell: 1.4, engine_cough: 0.8, sink: 2.5,
   engine: 1.0, sea: 4.0, fire: 2.0, rain: 2.0, drone: 1.5,
 };
 const LOOPS = ['engine', 'sea', 'fire', 'rain', 'drone'];
@@ -87,11 +87,11 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(art.length).toBeGreaterThanOrEqual(10);
     for (const s of seeds) expect(art, s[0]).not.toContain(s[1]);
   });
-  it('標本の合計は 70 万以下（22,050 Hz・約 28.2 秒＝621,368 標本）', () => {
+  it('標本の合計は 70 万以下（22,050 Hz・約 28.5 秒＝629,527 標本。IP1 で torp_launch・reload を延ばして ＋8,159）', () => {
     expect(SFX_SAMPLE_RATE).toBe(22050);
     expect(SFX_MAX_TOTAL_SAMPLES).toBe(700_000);
     const total = SFX_KEYS.reduce((a, k) => a + Math.round(SFX_TABLE[k].seconds * SFX_SAMPLE_RATE), 0);
-    expect(total).toBe(621_368);
+    expect(total).toBe(629_527);
     expect(total).toBeLessThanOrEqual(SFX_MAX_TOTAL_SAMPLES);
   });
   it('聞かせ方の定数は spec のとおり（声 16・距離の帯・パン・リミッタ・master・ループの更新）', () => {
