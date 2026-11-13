@@ -5,3 +5,9 @@
 
  RUN  v4.1.11 /home/user/ww2-torpedo-boat
 
+
+ Test Files  282 passed (282)
+      Tests  3128 passed (3128)
+   Start at  11:15:14
+   Duration  321.75s (transform 9.38s, setup 0ms, import 51.37s, tests 837.60s, environment 27ms)
+

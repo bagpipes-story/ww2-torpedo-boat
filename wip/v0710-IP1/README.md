@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: なし
 - tools/ … scratchpad の道具（ana・peaks・tune-ip1・mixrun・cmp）、results/ … 文字の結果（音・画像は入れない。WAV と声紋は scratchpad の v0710/impl/IP1/sfx）
-- 一言: 最初の動く版（reload・torp_launch の作り直し・テストの指紋。docs はまだ）
+- 一言: IP1 最終（reload・torp_launch・modes・テスト・CHANGELOG・docs/03。npm test 3,128・mix 頂 0.712・短い A/B same）
