@@ -1,0 +1,25 @@
+reload      A  0.3s synth 9.2ms | 180-700 1% >400 100% >1k 96% | flat 0.410 peaky 4.3dB | -20dB 146ms peakAt 131.0ms RMS 0.103 cen 3.03k bursts 60,120
+reload      B* 0.3s synth 3.3ms | 180-700 25% >400 91% >1k 65% | flat 0.312 peaky 5.2dB | -20dB 256ms peakAt 200.5ms RMS 0.110 cen 2.05k bursts 120,200
+reload      C  0.3s synth 0.5ms | 180-700 1% >400 100% >1k 99% | flat 0.403 peaky 5.6dB | -20dB 94ms peakAt 90.2ms RMS 0.042 cen 5.31k bursts 0,40,80
+reload      D  0.42s synth 6.2ms | 180-700 1% >400 100% >1k 98% | flat 0.068 peaky 14.6dB | -20dB 343ms peakAt 150.1ms RMS 0.078 cen 2.06k bursts 0,140,300
+  pairwise: AB 2.62  AC 4.24  AD 2.61  BC 6.86  BD 1.77  CD 5.81
+reload_end  A  0.42s synth 2.6ms | 180-700 6% >400 98% >1k 82% | flat 0.380 peaky 4.9dB | -20dB 316ms peakAt 49.3ms RMS 0.086 cen 3.93k bursts 40,260,300
+reload_end  B* 0.42s synth 2.5ms | 180-700 17% >400 95% >1k 70% | flat 0.319 peaky 5.5dB | -20dB 379ms peakAt 73.3ms RMS 0.109 cen 2.39k bursts 20,60,280,340
+reload_end  C  0.42s synth 0.3ms | 180-700 0% >400 100% >1k 99% | flat 0.328 peaky 6.1dB | -20dB 252ms peakAt 4.3ms RMS 0.037 cen 4.77k bursts 0,180,240
+reload_end  D  0.42s synth 3.7ms | 180-700 1% >400 100% >1k 98% | flat 0.068 peaky 14.6dB | -20dB 343ms peakAt 150.1ms RMS 0.078 cen 2.06k bursts 0,140,300
+  pairwise: AB 2.19  AC 4.47  AD 2.87  BC 6.66  BD 2.01  CD 6.81
+torp_launch A* 1s synth 14.7ms | 180-700 49% >400 76% >1k 40% | flat 0.247 peaky 4.3dB | -20dB 523ms peakAt 59.5ms RMS 0.117 cen 2.43k bursts 0,380
+torp_launch B  1s synth 10.9ms | 180-700 71% >400 48% >1k 14% | flat 0.080 peaky 3.7dB | -20dB 602ms peakAt 52.4ms RMS 0.154 cen 1.68k bursts 20,80,140
+torp_launch C  1s synth 5.4ms | 180-700 2% >400 100% >1k 96% | flat 0.395 peaky 4.0dB | -20dB 587ms peakAt 8.5ms RMS 0.108 cen 2.65k bursts 20,420
+torp_launch D  1s synth 13.6ms | 180-700 7% >400 78% >1k 66% | flat 0.390 peaky 8.7dB | -20dB 576ms peakAt 6.6ms RMS 0.093 cen 2.36k bursts 0,380
+torp_launch E  1.3s synth 16.9ms | 180-700 57% >400 83% >1k 20% | flat 0.079 peaky 3.4dB | -20dB 757ms peakAt 67.1ms RMS 0.188 cen 1.40k bursts 0,60,180,280,400
+torp_launch F  1.4s synth 7.7ms | 180-700 50% >400 75% >1k 37% | flat 0.246 peaky 3.9dB | -20dB 559ms peakAt 249.8ms RMS 0.102 cen 1.41k bursts 0,260
+torp_launch G  1.5s synth 13.3ms | 180-700 68% >400 74% >1k 16% | flat 0.080 peaky 2.8dB | -20dB 769ms peakAt 160.5ms RMS 0.119 cen 0.90k bursts 160,200,240,280,320
+torp_launch H  1.5s synth 14.4ms | 180-700 26% >400 91% >1k 57% | flat 0.250 peaky 4.3dB | -20dB 1028ms peakAt 16.1ms RMS 0.093 cen 1.43k bursts 0,160,200,260
+torp_launch I  1.2s synth 17.0ms | 180-700 61% >400 66% >1k 24% | flat 0.145 peaky 4.1dB | -20dB 707ms peakAt 86.5ms RMS 0.245 cen 1.60k bursts 20,60,160,220,300,420
+  pairwise: AB 1.98  AC 5.12  AD 4.55  AE 3.14  AF 4.21  AG 5.12  AH 5.30  AI 3.10  BC 6.53  BD 5.07  BE 2.43  BF 4.55  BG 4.65  BH 4.44  BI 2.00  CD 2.13  CE 6.34  CF 6.56  CG 6.96  CH 4.56  CI 7.55  DE 5.26  DF 5.34  DG 5.51  DH 2.68  DI 6.10  EF 3.33  EG 3.30  EH 3.84  EI 1.78  FG 2.46  FH 4.65  FI 4.33  GH 3.92  GI 4.11  HI 5.18
+shots 21 worst: gun_near~blast_s 2.20, reload~reload_end 2.37, gun_near~bell 2.62
+  nearest reload: reload~reload_end 2.37, splash_l~reload 4.60, torp_launch~reload 4.79
+  nearest reload_end: reload~reload_end 2.37, torp_launch~reload_end 3.11, splash_l~reload_end 3.33
+  nearest torp_launch: splash_l~torp_launch 2.69, torp_launch~reload_end 3.11, torp_launch~reload 4.79
+total samples 636142
