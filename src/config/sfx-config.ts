@@ -1,7 +1,7 @@
 // v0.7.1（アートと音②：合成の効果音。spec-v0710 §2・§4〜§7・D1）の音の定数。音量・間引き・距離の帯・音の種は「聞かせ方」の定数で、ゲームの強さの値ではない
 // ので data/*.json には置かない（config/*-art-config と同じ考え。論理に効く値は data のまま）。ユーザーの決め（v0.7.0 の U1。2026-11-07「コードで描く・鳴らす」）:
 // 音のファイルは使わず、起動時に 1 回 assets/sfx-bank が合成する。何も import しない（tests・scripts が node の型検査で読める）。
-// 表は 25 本ぶんそろえるが、合成の作り方があるのは段ごと（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本。残りは S3〜S4。tests/sfx-inventory が段ごとに固定する）。
+// 表は 25 本。合成の作り方は段ごとに足した（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった。tests/sfx-inventory）。
 // 音量（gain）と最小間隔は S2 で probe の記録を mix した数から詰めた（scripts/headless/sfx-probe・scripts/sfx-mix。S5 で実機の耳で詰め直す）。届く帯は spec §6.2、秒は §4。
 
 /** 合成と AudioBuffer の標本の速さ（Hz。古い WebKit の下限ちょうど。context の速さへは再生時に補われる＝spec §14 L5） */
@@ -197,3 +197,20 @@ export const SFX_LOOP_BUS_GAIN = 0.5;
 export const SFX_LOOP_STOP_FADE_S = 0.15;
 /** S3（spec §3.3）: 一時停止の画面を開いた合図＝ボタンの音を低く・小さく */
 export const SFX_PAUSE_OPEN = { gain: 0.7, rate: 0.7 } as const;
+/**
+ * S4（spec §3.2）: 状態の合図（core/sfx-cues）の冷却（ゲームの時計の秒。この秒の内の同じ行の立ち上がりは鳴らさない）・音量・速さ。魚雷の発射は一斉でも 1 本ずつ launchGapS の間で
+ * （積んだ数は queueMax まで）。自艇の被弾は HP が 1 フレームに hullMinDropHp より多く減った時だけ（火災の継続の被害＝毎秒 2 HP 以下は 1 フレームで 0.14 HP 以下＝鳴らさない）。
+ * 座礁は爆発の口の blast_s（dud）と同じフレームに来るので groundDelayS 遅らせる（blast_s の最小間隔 0.1 秒に落とされない）。鐘は bellCooldownS の内は重ねない（夜明けと「帰投せよ」が同じ
+ * フレームに来る＝設計の既定）。rate は 0.5〜2 の内（L6）
+ */
+export const SFX_CUE = {
+  launchGapS: 0.15, launchQueueMax: 4, ptSalvoGain: 0.6,
+  alarmCooldownS: 4, lightCooldownS: 3, flareCooldownS: 2, hullCooldownS: 0.2, hullMinDropHp: 0.5,
+  reloadCooldownS: 0.5, reloadEndRate: 1.3, extinguishRate: 1.6,
+  engineStageRate: [1.0, 0.9, 0.8], recoverRate: 0.7, recoverGain: 0.7, fuelEmptyRate: 0.7,
+  groundRate: 0.6, groundDelayS: 0.15,
+  bellCooldownS: 1.5, dawnBellRate: 0.7, bombCooldownS: 0.6,
+  raidAlarmRate: 0.7, raidAlarmCooldownS: 3, friendlyAlarmRate: 1.3, friendlyAlarmGain: 0.6,
+} as const;
+/** S4（spec §3.3・U-C）: Result の鐘＝帰投は strikes 打を gapS 秒ずらして、それ以外は lostRate の低い 1 打（曲ではなく合図） */
+export const SFX_RESULT_BELL = { strikes: 2, gapS: 0.5, lostRate: 0.5 } as const;

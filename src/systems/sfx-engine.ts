@@ -6,6 +6,8 @@
 // 落とす順（spec §7.3）: 標本がまだ無い鍵（作り方が後の段の鍵・起動の直後でまだ作り終えていない鍵＝S2 から標本は 1 フレームに 1 本ずつ作る）→ 消音か context が動いていない
 // （数えるだけ＝止まっている context に積まない。R2）→ core/sfx-mix の最小間隔・距離の帯・声。
 // 最初のタップだけの例外: context がまだ動き出していない間の UI の音は 1 つだけ覚え、SFX_UI_PENDING_S の内に動き出したら tick が鳴らす（音源はその時に作る）。
+// S4: 覚えるのは頼まれた速さと音量も（一時停止を開いた低いボタンの音が、後から普通のボタンの音で鳴らない）。遅らせて頼んだ音（Result の 2 打目）は覚えない。
+// S4: 遅らせる単発（playFlat の delayS。Result の鐘の 2 打目・座礁の擦れる音）は start(再生の時計 ＋ delayS) で予約する（タイマー・閉包は作らない）。間引きと声の空きは鳴り始める時刻で数える。
 // 時計（D4）: 間引きはゲームの時計（tick が積む delta の和）、声の空きは再生の時計。rate の揺れは音だけの乱数（SFX_SEED_PLAY。頼まれた順に引く＝音の状態にも標本の有無にも依らない）。
 // 確かめの口 tap（S2。scripts/headless/sfx-probe が ?debug の __sfx に付ける。ふだんは null）: 頼まれた単発を、rate の揺れの後・落とす前に知らせる＝記録は音の状態に依らない。
 // 論理は読まない（位置の差だけを systems/sfx-bus から受け取る）。
@@ -49,8 +51,8 @@ export interface SfxStats {
   loopWrites: number;
 }
 
-/** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし） */
-export type SfxTap = (key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS: number, flat: boolean) => void;
+/** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし。delayS は遅らせる秒＝S4） */
+export type SfxTap = (key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS: number, flat: boolean, delayS: number) => void;
 
 export class SfxEngine {
   readonly mixer = new SfxMixer(SFX_VOICES);
@@ -72,6 +74,8 @@ export class SfxEngine {
   private firstDone = false;
   private pendingKey: SfxKey | null = null;
   private pendingAtS = 0;
+  private pendingRate = 1;
+  private pendingGain = 1;
   private watchLastMs = 0;
   private watchCtS = -1;
   private frozenMs = 0;
@@ -164,7 +168,7 @@ export class SfxEngine {
       else if (this.ctx.state === RUNNING) {
         this.pendingKey = null;
         this.pendingPlayed++;
-        this.playFlat(key, 1, 1);
+        this.playFlat(key, this.pendingRate, this.pendingGain);
       }
     }
     const el = wallMs - this.watchLastMs;
@@ -197,7 +201,7 @@ export class SfxEngine {
   playAt(key: SfxKey, dxM: number, dyM: number, rate: number, gainMul: number, minIntervalS = 0): void {
     const ki = sfxKeyIndex(key);
     const r = this.jittered(key, rate);
-    if (this.tap !== null) this.tap(key, dxM, dyM, r, gainMul, minIntervalS, false);
+    if (this.tap !== null) this.tap(key, dxM, dyM, r, gainMul, minIntervalS, false, 0);
     if (this.buffers[ki] === null) {
       this.noBuffer++;
       return;
@@ -210,25 +214,31 @@ export class SfxEngine {
     if (v >= 0) this.fire(ki, v, r);
   }
 
-  /** 位置なしの単発（合図・UI。中央）。context がまだ動き出していない間の UI の音は 1 つだけ覚える（最初のタップ） */
-  playFlat(key: SfxKey, rate: number, gainMul: number): void {
+  /**
+   * 位置なしの単発（合図・UI。中央）。context がまだ動き出していない間の UI の音は 1 つだけ覚える（最初のタップ。速さと音量も＝S4）。
+   * delayS > 0 は再生の時計で delayS 秒後に鳴らす予約（S4。間引き・声の空きはその時刻で数える。覚えない）
+   */
+  playFlat(key: SfxKey, rate: number, gainMul: number, delayS = 0): void {
     const ki = sfxKeyIndex(key);
     const r = this.jittered(key, rate);
-    if (this.tap !== null) this.tap(key, 0, 0, r, gainMul, 0, true);
+    if (this.tap !== null) this.tap(key, 0, 0, r, gainMul, 0, true, delayS);
     if (this.buffers[ki] === null) {
       this.noBuffer++;
       return;
     }
     if (this.mutedNow || this.ctx.state !== RUNNING) {
       this.idleDrops++;
-      if (!this.mutedNow && SFX_TABLE[key].family === 'ui') {
+      if (!this.mutedNow && delayS <= 0 && SFX_TABLE[key].family === 'ui') {
         this.pendingKey = key;
         this.pendingAtS = this.gameS;
+        this.pendingRate = rate;
+        this.pendingGain = gainMul;
       }
       return;
     }
-    const v = this.mixer.playFlat(key, this.gameS, this.ctx.currentTime, r, gainMul);
-    if (v >= 0) this.fire(ki, v, r);
+    const d = delayS > 0 ? delayS : 0;
+    const v = this.mixer.playFlat(key, this.gameS, this.ctx.currentTime, r, gainMul, d);
+    if (v >= 0) this.fire(ki, v, r, d);
   }
 
   /** 確かめ用の数（scripts/headless。毎フレームは呼ばない） */
@@ -248,8 +258,8 @@ export class SfxEngine {
     return j > 0 ? rate * (1 + (this.rng.next() * 2 - 1) * j) : rate;
   }
 
-  /** 声 v で鳴らす: 奪った声なら前の音源を止め、使い捨ての音源を 1 個作ってつなぐ。最初の 1 発は束ねを立ち上げる（R11） */
-  private fire(keyIndex: number, v: number, rate: number): void {
+  /** 声 v で鳴らす: 奪った声なら前の音源を止め、使い捨ての音源を 1 個作ってつなぐ（delayS 秒後に鳴り始める予約＝S4）。最初の 1 発は束ねを立ち上げる（R11） */
+  private fire(keyIndex: number, v: number, rate: number, delayS = 0): void {
     const ctx = this.ctx;
     const m = this.mixer;
     if (m.stole) this.voiceSrc[v]?.stop();
@@ -266,7 +276,7 @@ export class SfxEngine {
     src.buffer = this.buffers[keyIndex]!;
     if (rate !== 1) src.playbackRate.value = rate;
     src.connect(this.voiceGain[v]!);
-    src.start(0);
+    src.start(delayS > 0 ? ctx.currentTime + delayS : 0);
     this.voiceSrc[v] = src;
     this.sources++;
   }

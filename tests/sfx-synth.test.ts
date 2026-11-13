@@ -2,6 +2,7 @@
 // それぞれについて: 長さ＝表の秒 × 22,050・NaN なし・頂 0.9・直流 < 0.02・単発は両端 < 1e-3・2 回作って同じ・16 bit に丸めた指紋（FNV。最下位ビットの揺れに強く）を固定・
 // 系統ごとの RMS の帯・零交差の高さの順・ループは継ぎ目・合成の壁時計。鍵を足す段は FINGERPRINTS に 1 行足す（無ければ落ちる）。音色を直した時は指紋を直す。
 // S2: 7 本の聞き分け（近い砲は鋭く明るい・遠雷はゆっくり立って暗い・大きい水柱は低い一打つき・魚雷の命中は爆発の後に水の柱が立つ・沈没は続く泡）を数で固定する。
+// S4: 合図 10 本も共通の検査に入る（聞き分け・本体のスピーカーで聞こえる帯は tests/sfx-synth-cues）。
 // S3: ループ 5 本（engine・sea・fire・rain・drone）は上の共通の検査（長さ・頂・直流・指紋・継ぎ目）に自動で入る。ループだけの検査（継ぎ目の飛び・揺れ・聞こえる帯・部品）は tests/sfx-synth-loops。
 // 下半分は部品（assets/sfx-dsp）の単体テスト。
 import { describe, expect, it } from 'vitest';
@@ -41,6 +42,16 @@ const FINGERPRINTS: Partial<Record<SfxKey, number>> = {
   fire: 104566791,
   rain: 2630845142,
   drone: 1691882525,
+  torp_launch: 1007784514,
+  hull_hit: 2680124741,
+  alarm: 1749539769,
+  light_on: 2838731473,
+  flare_pop: 235826790,
+  bomb_fall: 3358791416,
+  reload: 4145594430,
+  smoke: 449030864,
+  bell: 88401544,
+  engine_cough: 679273673,
 };
 /** 系統ごとの RMS の帯（頂 0.9 にそろえた標本。小さすぎる＝針のような音・大きすぎる＝べったりした音を止める。仮の帯＝S5 で詰める） */
 const RMS_BAND: Readonly<Record<SfxFamily, readonly [number, number]>> = {
@@ -63,8 +74,8 @@ function lastAbove(x: Float32Array, ratio: number): number {
 }
 
 describe('音の合成（v0.7.1 S0。作り方のある鍵）', () => {
-  it('S0 の 3 本・S2 の 7 本・S3 のループ 5 本がある（空の検査にしない）・どの鍵にも指紋がある', () => {
-    for (const k of ['mg', 'blast_l', 'ui_tap', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'torp_hit', 'sink', 'engine', 'sea', 'fire', 'rain', 'drone'] as const) expect(KEYS).toContain(k);
+  it('25 本全部がある（S0 の 3 本・S2 の 7 本・S3 のループ 5 本・S4 の合図 10 本。空の検査にしない）・どの鍵にも指紋がある', () => {
+    expect(KEYS.length).toBe(25);
     expect(Object.keys(FINGERPRINTS).sort()).toEqual([...KEYS].sort());
   });
   it.each(KEYS)('%s: 長さ・NaN なし・頂 0.9・直流・両端・系統の RMS の帯', (key) => {

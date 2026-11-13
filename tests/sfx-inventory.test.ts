@@ -1,16 +1,17 @@
 // v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §4・§6.2・§7.3・§9.1）: 音の棚卸しを固定する（tests/art-inventory の型）。
 // - 鍵は 25 本（単発 20・ループ 5）。足す・消すは config/sfx-config の表とここを一緒に直す。
 // - 表の欄がそろう（秒は spec §4・最小間隔は §7.3・届く帯は §6.2・優先は系統から）。種は SFX_SEED_<鍵> で重ならず、絵の種（ART_SEED_*）とも重ならない。合計 ≤ 70 万標本。
-// - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本。残りは PLANNED の段（S4）で足す＝足した段は IMPLEMENTED_NOW へ移す。25 本そろったら PLANNED は空。
+// - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった（作り方の無い鍵は無い）。
 // - 音量の順（S2 の mix の詰め）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱（機銃・水柱が爆発を埋めない）。
 // - 音を足しても TEXTURE_KEYS とシーンの並びは今のまま（v0.7.0 の 53 鍵・7 シーン）。
-// S4 で足す検査: core/sfx-cues の合図の表の鍵は全部ここにある・どこからも鳴らさない鍵は無い（下の it.todo）。
+// - S4: 合図の観測器（core/sfx-cues）と口が鳴らす鍵は全部 SFX_KEYS にある・どこからも鳴らさない鍵は無い（src の呼ぶ側の文字を数える）。
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as cfg from '../src/config/sfx-config';
 import { SFX_BAND_GAIN, SFX_BAND_MAX_M, SFX_KEYS, SFX_MAX_TOTAL_SAMPLES, SFX_SAMPLE_RATE, SFX_TABLE, type SfxFamily, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
+import { SFX_LOOP_IDS } from '../src/core/sfx-loops';
 
 /** spec §4 の 25 本と秒（単発 20・ループ 5） */
 const SECONDS: Readonly<Record<string, number>> = {
@@ -39,11 +40,10 @@ const REACH: Readonly<Record<string, number>> = { splash_s: 1, mg: 2, splash_l: 
 /** 再生のたびの rate の揺れ（spec §4。ほかは 0） */
 const JITTER: Readonly<Record<string, number>> = { mg: 0.08, splash_s: 0.12 };
 
-/** 今の段で作り方のある鍵（SFX_KEYS の順）と、残りを足す段（spec §10） */
-const IMPLEMENTED_NOW: readonly string[] = ['mg', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'blast_l', 'torp_hit', 'ui_tap', 'sink', 'engine', 'sea', 'fire', 'rain', 'drone'];
-const PLANNED: Readonly<Record<string, 'S4'>> = {
-  torp_launch: 'S4', hull_hit: 'S4', alarm: 'S4', light_on: 'S4', flare_pop: 'S4', bomb_fall: 'S4', reload: 'S4', smoke: 'S4', bell: 'S4', engine_cough: 'S4',
-};
+/** 音を鳴らす側の src（鍵の文字を数える所）: 絵の層の口・距離の帯（大砲の近い音／遠雷）・UI・シーン・任務の音と合図の観測器・Result の鐘。ループは core/sfx-loops の SFX_LOOP_IDS */
+const CALLERS = [
+  'src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts', 'src/core/sfx-mix.ts', 'src/ui/menu-ui.ts', 'src/scenes/pause-scene.ts', 'src/core/sfx-cues.ts', 'src/systems/sfx-bus.ts',
+];
 
 describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
   it('鍵は 25 本（単発 20・ループ 5）で、spec §4 の表と同じ・重ならない', () => {
@@ -142,18 +142,22 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
   });
 });
 
-describe('段ごとの作り方（S0: 3 本・S2: 7 本・S3: ループ 5 本。残りは S4）', () => {
-  it('作り方のある鍵は今の段の表と同じ・残りは予定の段にあり、合わせて 25 本', () => {
-    expect(sfxImplementedKeys()).toEqual(SFX_KEYS.filter((k) => IMPLEMENTED_NOW.includes(k)));
-    expect(sfxImplementedKeys().length).toBe(IMPLEMENTED_NOW.length);
-    expect([...IMPLEMENTED_NOW, ...Object.keys(PLANNED)].sort()).toEqual([...SFX_KEYS].sort());
-    expect(IMPLEMENTED_NOW.filter((k) => k in PLANNED)).toEqual([]);
+describe('作り方は 25 本そろった（S0: 3 本・S2: 7 本・S3: ループ 5 本・S4: 合図 10 本）', () => {
+  it('作り方のある鍵は SFX_KEYS の 25 本全部（SFX_KEYS の順）', () => {
+    expect(sfxImplementedKeys()).toEqual([...SFX_KEYS]);
   });
-  it.each(Object.keys(PLANNED))('%s: 作り方がまだ無い鍵は、黙って無音を返さず投げる', (key) => {
-    expect(() => renderSfx(key as SfxKey)).toThrow(/まだ無い/);
+  it('表に無い鍵は黙って無音を返さず投げる', () => {
+    expect(() => renderSfx('nope' as SfxKey)).toThrow();
   });
-  it.todo('S4: core/sfx-cues の合図の表の鍵は全部 SFX_KEYS にある');
-  it.todo('S4: どこからも鳴らさない鍵は無い（口・合図・ループ・UI のどれかが使う）');
+  it('どこからも鳴らさない鍵は無い（単発は呼ぶ側の src の鍵の文字・ループは SFX_LOOP_IDS。鳴らす鍵の型は SfxKey＝表に無い鍵は型検査で落ちる）。合図の観測器の鍵は spec §3.2 の表のとおり', () => {
+    const keys = new Set<string>(SFX_KEYS);
+    const used = new Set<string>(SFX_LOOP_IDS);
+    for (const f of CALLERS) for (const m of readFileSync(f, 'utf8').replace(/\/\/[^\n]*/g, '').matchAll(/'(\w+)'/g)) if (keys.has(m[1]!)) used.add(m[1]!);
+    expect(SFX_KEYS.filter((k) => !used.has(k)), 'どこからも鳴らさない鍵').toEqual([]);
+    // 合図の観測器が鳴らす鍵（spec §3.2 の表の鍵）
+    const cues = [...readFileSync('src/core/sfx-cues.ts', 'utf8').matchAll(/sink\.cue\('(\w+)'/g)].map((m) => m[1]!);
+    expect([...new Set(cues)].sort()).toEqual(['alarm', 'bell', 'blast_s', 'bomb_fall', 'engine_cough', 'flare_pop', 'hull_hit', 'light_on', 'reload', 'smoke', 'torp_launch', 'ui_tap']);
+  });
 });
 
 describe('音を足しても絵の鍵とシーンの並びは今のまま（v0.7.0 の main 3a9e7aa）', () => {

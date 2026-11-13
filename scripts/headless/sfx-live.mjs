@@ -15,6 +15,7 @@
 // S3（ループ。LOOPS=0 で省く）: 台本の後、鳴る場合は続けて ループ 5 本が鳴っているか（単発の無い窓の波形の頂 > 0）→ Hud の一時停止で無音になるか（音源は止めない）→
 //   一時停止の「音」ボタンで消音 → 解く →「再開」で戻るか → 任務のやり直しを 3 回して、鳴っている繰り返しの音源が 5 個のままか（エンジンの数と、ページの中で
 //   AudioBufferSourceNode の start・stop を数えた数の両方）→「任務をやめる」で Title へ戻ると 0 個・無音か。鳴らない場合（既定の direct）はループを 1 つも作らないこと。
+// S4: ループの確かめの最後に、同じ出撃で Mission へ入り直して帰投で終え、Result の鐘（2 打）が鳴るか（鳴らした数と、Result の最初の 1.6 秒の波形の頂）。
 // 実行: SITE=<site> [FLOW=title|direct] [SECS=10] [MISSION=us_02（direct）] [ROW=<任務の行の題>（title）] [W=1560] [MUTE=0] [MUZZLE=0] [LOOPS=0] [Q=<direct の追加の query>] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-live.mjs
 import { writeFileSync } from 'node:fs';
 import { VIEWPORTS, chromium, envNum, serve } from './lib.mjs';
@@ -189,10 +190,19 @@ if (process.env.LOOPS !== '0' && !NO_AUDIO && (FLOW === 'title' || AUDIO)) {
   await page.evaluate(() => window.__game.scene.getScene('Hud').pause.open());
   await page.waitForFunction(() => window.__game.scene.isActive('Pause'), null, { timeout: 5000 });
   await sleep(400);
-  await page.evaluate(() => window.__game.scene.getScene('Pause').leave(true)); // 「任務をやめる」の長押しの後と同じ口
+  await page.evaluate(() => { window.__lastSortie = window.__game.scene.getScene('Mission').sortie; window.__game.scene.getScene('Pause').leave(true); }); // 「任務をやめる」の長押しの後と同じ口
   await page.waitForFunction(() => window.__game.scene.isActive('Title'), null, { timeout: 5000 });
   await sleep(900);
   loops.quit = await loopState('任務をやめる → Title');
+  // S4: Result の鐘（Title から同じ出撃で Mission へ入り直し、帰投で終える＝Result の create が鐘を 2 打。2 打目は 0.5 秒の予約）
+  await page.evaluate(() => window.__game.scene.getScene('Title').scene.start('Mission', window.__lastSortie));
+  await page.waitForFunction(() => { const g = window.__game; const m = g.scene.getScene('Mission'); return g.scene.isActive('Mission') && m.world; }, null, { timeout: 10000 });
+  await sleep(1500);
+  const bellBefore = (await page.evaluate(readState)).sfx.played[17];
+  await page.evaluate(() => window.__game.scene.getScene('Mission').endMission('returned'));
+  await page.waitForFunction(() => window.__game.scene.isActive('Result'), null, { timeout: 5000 });
+  const resultPeak = await windowPeak(1600);
+  loops.result = { ...(await loopState('Result（鐘の後）', 600)), bells: (await page.evaluate(readState)).sfx.played[17] - bellBefore, ringPeak: resultPeak };
 }
 await ctx.close();
 await browser.close();
@@ -236,6 +246,8 @@ if (loops.ran) {
   check(resumed.peak > playing.peak * 0.3 && resumed.loops === 5 && resumed.live === 5, `${label}: 「音: オン」に戻して再開するとループが戻る（頂 ${resumed.peak.toFixed(4)}・音源 ${resumed.loops}）`);
   check(retry.loops === 5 && retry.live === 5 && retry.starts - retry.stops === 5, `${label}: やり直し 3 回の後も鳴っている音源は 5 個（エンジン ${retry.loops}・ページの数え ${retry.live}・作った ${retry.starts} − 止めた ${retry.stops}）`);
   check(quit.loops === 0 && quit.live === 0 && quit.peak < playing.peak * 0.05, `${label}: 任務をやめると 0 個・無音（エンジン ${quit.loops}・ページの数え ${quit.live}・頂 ${quit.peak.toFixed(5)}）`);
+  const rs = loops.result;
+  check(rs.bells === 2 && rs.ringPeak > 0.01 && rs.ringPeak < 1 && rs.loops === 0, `${label}: Result の鐘（帰投＝2 打）が鳴る（鐘 ${rs.bells} 打・Result の最初の 1.6 秒の頂 ${rs.ringPeak.toFixed(4)}・ループ ${rs.loops}・その後の窓の頂 ${rs.peak.toFixed(5)}）`);
 } else if (!NO_AUDIO && end.sfx) {
   check(end.sfx.loops === 0 && end.sfx.loopStarts === 0, `${label}: 止まっている context ではループを 1 つも作らない（${end.sfx.loopStarts}）`);
 }

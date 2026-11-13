@@ -4,8 +4,8 @@
 // 世界の作成時に登録し、破棄で null に（世界の作成前・破棄後の位置つきの音は鳴らさない。エンジンは世界の物を握らない）。
 // §7: どの口も確保しない（引数は数と鍵だけ。結果は返さない）。DOM にも Phaser にも触らない。
 // 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
-// （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。sfxCue の遅らせ（S4）はまだ何もしない。
-import type { SfxKey } from '../config/sfx-config';
+// （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。S4 で sfxCue の遅らせ（再生の時計で予約）。
+import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
 import type { SfxLoopTargets } from '../core/sfx-loops';
 import { sfxBand, sfxGunKey } from '../core/sfx-mix';
 import type { SfxEngine } from './sfx-engine';
@@ -53,10 +53,17 @@ export function sfxGunAt(x: number, y: number): void {
   engine.playAt(sfxGunKey(sfxBand(dx * dx + dy * dy)), dx, dy, 1, 1);
 }
 
-/** 状態の合図（位置なし。gain は音量の倍率・rate は速さ）。遅らせて鳴らす（delayS > 0。Result の 2 打目）は S4 から＝今は鳴らさない */
+/** 状態の合図（位置なし。gain は音量の倍率・rate は速さ）。delayS > 0 は再生の時計でその秒の後に鳴らす予約（S4。Result の 2 打目・座礁の擦れる音） */
 export function sfxCue(key: SfxKey, gain = 1, delayS = 0, rate = 1): void {
-  if (engine === null || delayS > 0) return;
-  engine.playFlat(key, rate, gain);
+  if (engine !== null) engine.playFlat(key, rate, gain, delayS);
+}
+
+/** Result の鐘（S4。spec §3.3・U-C。Result の create から 1 回）: 帰投なら 2 打（0.5 秒ずらす予約）、それ以外は低い 1 打（曲ではなく合図） */
+export function sfxResultBell(returned: boolean): void {
+  if (engine === null) return;
+  const b = SFX_RESULT_BELL;
+  if (!returned) engine.playFlat('bell', b.lostRate, 1);
+  else for (let i = 0; i < b.strikes; i++) engine.playFlat('bell', 1, 1, i * b.gapS);
 }
 
 /** ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player） */

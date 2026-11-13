@@ -135,18 +135,54 @@ describe('口（systems/sfx-bus）: エンジンの登録が無ければ何も�
     sfxAt('gun_near', 100, 100, 0.7, 1, 0.3);
     expect(ctx.sources.length).toBe(4);
   });
-  it('sfxUi・sfxCue は位置なし（中央）。sfxCue の遅らせは S4 まで何もしない。sfxSetMuted はエンジンの消音', () => {
+  it('sfxUi・sfxCue は位置なし（中央）。sfxCue の遅らせ（S4）は start(再生の時計 ＋ 秒) の予約。sfxSetMuted はエンジンの消音', () => {
     const { ctx, e } = setup();
     registerSfxEngine(e);
+    ctx.currentTime = 3;
     sfxUi('ui_tap');
     sfxCue('blast_l', 0.5);
     expect(ctx.sources.length).toBe(2);
+    expect(ctx.sources[1]!.started).toBe(0);
     expect(graph(ctx, e).voices[1]!.gain.value).toBeCloseTo(SFX_TABLE.blast_l.gain * 0.5, 6);
+    e.tick(1, 0);
     sfxCue('blast_l', 1, 0.5);
-    expect(ctx.sources.length).toBe(2);
+    expect(ctx.sources.length).toBe(3);
+    expect(ctx.sources[2]!.started).toBeCloseTo(3.5, 9);
     sfxSetMuted(true);
     expect(e.muted).toBe(true);
     sfxUi('ui_tap');
+    expect(ctx.sources.length).toBe(3);
+  });
+});
+
+describe('S4: 遅らせる単発と、最初のタップの速さ・音量', () => {
+  it('遅らせた単発（Result の鐘の 2 打目）: 予約の時刻・間引きは鳴り始める時刻で数える・声は今空いている声を鳴り終わりまで取る・確かめの口に秒を渡す', () => {
+    const { ctx, e } = setup();
+    ctx.currentTime = 10;
+    const seen: number[] = [];
+    e.tap = (_k, _x, _y, _r, _g, _m, _f, d) => { seen.push(d); };
+    e.playFlat('blast_l', 1, 1, 0.5);
+    expect(ctx.sources[0]!.started).toBeCloseTo(10.5, 9);
+    // blast_l の最小間隔 0.2 秒: 今鳴らすのは予約の 0.5 秒前＝間隔の内なので落とす。予約の 0.25 秒後は鳴る（ゲームの時計を進める）
+    e.playFlat('blast_l', 1, 1);
+    expect(ctx.sources.length).toBe(1);
+    e.tick(0.75, 0);
+    e.playFlat('blast_l', 1, 1);
     expect(ctx.sources.length).toBe(2);
+    expect(seen).toEqual([0.5, 0, 0]);
+    // 声は予約の終わりまで取る（今から 0.5 ＋ 長さ）
+    ctx.currentTime = 10 + 0.5 + SFX_TABLE.blast_l.seconds - 0.01;
+    expect(e.mixer.busyVoices(ctx.currentTime)).toBeGreaterThanOrEqual(1);
+  });
+  it('最初のタップ: 覚えた UI の音は頼まれた速さと音量で鳴る（一時停止を開いた低い音が、普通のボタンの音で戻らない）。遅らせた UI の音は覚えない', () => {
+    const { ctx, e } = setup('suspended');
+    e.playFlat('ui_tap', 0.7, 0.7);
+    e.playFlat('ui_tap', 1, 1, 0.3);
+    ctx.state = 'running';
+    e.tick(0.1, 0);
+    expect(ctx.sources.length).toBe(1);
+    expect(ctx.sources[0]!.playbackRate.value).toBe(0.7);
+    expect(graph(ctx, e).voices[0]!.gain.value).toBeCloseTo(SFX_TABLE.ui_tap.gain * 0.7, 6);
+    expect(e.stats().pendingPlayed).toBe(1);
   });
 });

@@ -95,17 +95,21 @@ export class SfxMixer {
     return v;
   }
 
-  /** 位置なしの単発（合図・UI。中央・帯 0）。戻りと欄は playAt と同じ */
-  playFlat(key: SfxKey, gameS: number, nowS: number, rate = 1, gainMul = 1): number {
+  /**
+   * 位置なしの単発（合図・UI。中央・帯 0）。戻りと欄は playAt と同じ。delayS（S4）は delayS 秒後に鳴り始める予約: 最小間隔は鳴り始める時刻（gameS ＋ delayS）で数え、
+   * 声は今から鳴り終わるまで（delayS ＋ 長さ）取る（今空いている声だけ＝今鳴っている音の音量を変えない）
+   */
+  playFlat(key: SfxKey, gameS: number, nowS: number, rate = 1, gainMul = 1, delayS = 0): number {
     const d = SFX_TABLE[key];
     const ki = KEY_INDEX[key];
+    const startS = gameS + delayS;
     this.band = 0;
-    if (gameS - this.lastPlayS[ki]! < d.minIntervalS) return this.drop(SFX_DROP_RATE);
-    const v = this.allocVoice(d.priority, nowS, d.seconds / rate);
+    if (startS - this.lastPlayS[ki]! < d.minIntervalS) return this.drop(SFX_DROP_RATE);
+    const v = this.allocVoice(d.priority, nowS, delayS + d.seconds / rate);
     if (v < 0) return this.drop(SFX_DROP_VOICES);
     this.gain = d.gain * gainMul;
     this.pan = 0;
-    this.accept(ki, gameS);
+    this.accept(ki, startS);
     return v;
   }
 

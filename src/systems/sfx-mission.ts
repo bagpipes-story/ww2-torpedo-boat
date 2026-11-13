@@ -4,11 +4,13 @@
 // Hud の出来事: PAUSE（一時停止）でループの束を 0 へ・RESUME で戻す・SHUTDOWN（任務の終わり・やり直し・任務をやめる）で 5 本を止め、付けた口を外す
 // （Hud のシーンは任務ごとに使い回される＝口を残すと前の任務の物が動く）。口は起動時に作った関数と自分を渡す（閉包を作らない）。
 // 画面の枠組みの型は使わない（出来事の口は構造の型・名前は下の 3 つ＝Phaser.Scenes.Events の PAUSE・RESUME・SHUTDOWN と同じ文字。tests/sfx-mission が node_modules の定義と突き合わせる）。
-// S4: 状態の合図（core/sfx-cues の stepSfxCues）をここの update に足す。
+// S4: 状態の合図（core/sfx-cues の stepSfxCues。発見の警報・魚雷の発射・被弾・鐘など）を同じ update で決め、自分の cue（合図の口）から systems/sfx-bus の sfxCue へ。
 import type { BoatTelemetry } from '../core/boat-telemetry';
+import type { SfxKey } from '../config/sfx-config';
+import { createSfxCueState, stepSfxCues, type SfxCueSink } from '../core/sfx-cues';
 import { createSfxLoopState, createSfxLoopTargets, stepSfxLoops, type SfxLoopState } from '../core/sfx-loops';
 import { ktToMps } from '../core/units';
-import { sfxLoops, sfxLoopsPaused, sfxLoopsStop } from './sfx-bus';
+import { sfxCue, sfxLoops, sfxLoopsPaused, sfxLoopsStop } from './sfx-bus';
 
 /** シーンの出来事の名前（Phaser.Scenes.Events と同じ文字） */
 export const SFX_SCENE_EV_PAUSE = 'pause';
@@ -23,9 +25,10 @@ export interface SfxSceneEvents {
   off(event: string, fn: () => void, context: unknown): unknown;
 }
 
-export class MissionSfx {
+export class MissionSfx implements SfxCueSink {
   private readonly loopState: SfxLoopState;
   private readonly loopTargets = createSfxLoopTargets();
+  private readonly cueState = createSfxCueState();
 
   /** events は Hud の scene.events、speedMaxKt は任務の艇の最大速力（data/boats.json の speed_max_kt。エンジンの音の高さの割合に使う） */
   constructor(private readonly events: SfxSceneEvents, speedMaxKt: number) {
@@ -35,11 +38,17 @@ export class MissionSfx {
     events.once(SFX_SCENE_EV_SHUTDOWN, this.onShutdown, this);
   }
 
-  /** 毎フレーム（HudScene.update。deltaMs はそのフレームの ms）: ループの目標を決めて渡す */
+  /** 毎フレーム（HudScene.update。deltaMs はそのフレームの ms）: 状態の合図を鳴らし、ループの目標を決めて渡す */
   update(t: BoatTelemetry, deltaMs: number): void {
     const dtS = deltaMs / MS_PER_S;
+    stepSfxCues(this.cueState, t, dtS, this);
     stepSfxLoops(this.loopState, t, dtS, this.loopTargets);
     sfxLoops(this.loopTargets, dtS);
+  }
+
+  /** 合図の口（core/sfx-cues が呼ぶ） */
+  cue(key: SfxKey, gain: number, rate: number, delayS: number): void {
+    sfxCue(key, gain, delayS, rate);
   }
 
   private onPause(): void {
