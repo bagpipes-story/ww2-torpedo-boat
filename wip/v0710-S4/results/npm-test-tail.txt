@@ -1,3 +1,0 @@
-   Duration  311.30s (transform 9.93s, setup 0ms, import 52.26s, tests 839.42s, environment 26ms)
-
-exit 0
