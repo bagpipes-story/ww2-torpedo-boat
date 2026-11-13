@@ -2,7 +2,9 @@
 // ので data/*.json には置かない（config/*-art-config と同じ考え。論理に効く値は data のまま）。ユーザーの決め（v0.7.0 の U1。2026-11-07「コードで描く・鳴らす」）:
 // 音のファイルは使わず、起動時に 1 回 assets/sfx-bank が合成する。何も import しない（tests・scripts が node の型検査で読める）。
 // 表は 25 本。合成の作り方は段ごとに足した（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった。tests/sfx-inventory）。
-// 音量（gain）と最小間隔は S2 で probe の記録を mix した数から詰めた（scripts/headless/sfx-probe・scripts/sfx-mix。S5 で実機の耳で詰め直す）。届く帯は spec §6.2、秒は §4。
+// 音量（gain）と最小間隔は S2 で probe の記録を mix した数から詰め、S5 で本物のリミッタ（scripts/headless/sfx-offline。Chromium の DynamicsCompressor）に通した数で詰め直した:
+// 世界の音（砲・機銃・水柱・爆発・沈没）を約 −6 dB 下げてリミッタの閾値（−10 dB）の下に置き、爆発・魚雷の命中だけが閾値を叩く（混む窓で爆発の飛び出しが 1.6〜5.6 → 4.0〜11 dB）。
+// 合図は世界の音より上に（弾倉・魚雷の発射・煙幕を上げ、爆弾の笛は爆発の前を埋めないよう下げた）。耳では実機から。届く帯は spec §6.2、秒は §4。
 
 /** 合成と AudioBuffer の標本の速さ（Hz。古い WebKit の下限ちょうど。context の速さへは再生時に補われる＝spec §14 L5） */
 export const SFX_SAMPLE_RATE = 22050;
@@ -96,26 +98,26 @@ const NEAR = 1;
 
 /** 鍵 → 表（秒・種・音量・優先・最小間隔・届く帯・系統・rate の揺れ）。合図・UI・ループは位置なしで鳴らすので届く帯は一番遠い帯にしておく */
 export const SFX_TABLE: Readonly<Record<SfxKey, SfxDef>> = {
-  mg: def(0.12, SFX_SEED_MG, 0.4, SFX_PRIORITY_GUN, 0.07, MID, 'gun', 0.08),
-  gun_near: def(0.6, SFX_SEED_GUN_NEAR, 0.7, SFX_PRIORITY_GUN, 0.2, FAR, 'gun'),
-  gun_far: def(0.9, SFX_SEED_GUN_FAR, 0.8, SFX_PRIORITY_GUN, 0.25, FAR, 'gun'),
-  splash_s: def(0.35, SFX_SEED_SPLASH_S, 0.3, SFX_PRIORITY_SPLASH, 0.08, NEAR, 'splash', 0.12),
-  splash_l: def(0.8, SFX_SEED_SPLASH_L, 0.5, SFX_PRIORITY_SPLASH, 0.15, MID, 'splash'),
-  blast_s: def(0.5, SFX_SEED_BLAST_S, 0.8, SFX_PRIORITY_BLAST, 0.1, FAR, 'blast'),
-  blast_l: def(1.6, SFX_SEED_BLAST_L, 1.0, SFX_PRIORITY_BLAST, 0.2, FAR, 'blast'),
-  torp_hit: def(2.2, SFX_SEED_TORP_HIT, 1.0, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
-  torp_launch: def(0.7, SFX_SEED_TORP_LAUNCH, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  mg: def(0.12, SFX_SEED_MG, 0.18, SFX_PRIORITY_GUN, 0.07, MID, 'gun', 0.08),
+  gun_near: def(0.6, SFX_SEED_GUN_NEAR, 0.26, SFX_PRIORITY_GUN, 0.3, FAR, 'gun'),
+  gun_far: def(0.9, SFX_SEED_GUN_FAR, 0.4, SFX_PRIORITY_GUN, 0.25, FAR, 'gun'),
+  splash_s: def(0.35, SFX_SEED_SPLASH_S, 0.12, SFX_PRIORITY_SPLASH, 0.08, NEAR, 'splash', 0.12),
+  splash_l: def(0.8, SFX_SEED_SPLASH_L, 0.2, SFX_PRIORITY_SPLASH, 0.15, MID, 'splash'),
+  blast_s: def(0.5, SFX_SEED_BLAST_S, 0.4, SFX_PRIORITY_BLAST, 0.35, FAR, 'blast'),
+  blast_l: def(1.6, SFX_SEED_BLAST_L, 0.8, SFX_PRIORITY_BLAST, 0.2, FAR, 'blast'),
+  torp_hit: def(2.2, SFX_SEED_TORP_HIT, 0.8, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
+  torp_launch: def(0.7, SFX_SEED_TORP_LAUNCH, 0.8, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   hull_hit: def(0.3, SFX_SEED_HULL_HIT, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   alarm: def(0.6, SFX_SEED_ALARM, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   light_on: def(0.5, SFX_SEED_LIGHT_ON, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   flare_pop: def(1.2, SFX_SEED_FLARE_POP, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
-  bomb_fall: def(1.2, SFX_SEED_BOMB_FALL, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
-  reload: def(0.35, SFX_SEED_RELOAD, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
-  smoke: def(1.0, SFX_SEED_SMOKE, 0.45, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  bomb_fall: def(1.2, SFX_SEED_BOMB_FALL, 0.3, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  reload: def(0.35, SFX_SEED_RELOAD, 1, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  smoke: def(1.0, SFX_SEED_SMOKE, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   ui_tap: def(0.06, SFX_SEED_UI_TAP, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'ui'),
   bell: def(1.4, SFX_SEED_BELL, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   engine_cough: def(0.8, SFX_SEED_ENGINE_COUGH, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
-  sink: def(2.5, SFX_SEED_SINK, 0.6, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
+  sink: def(2.5, SFX_SEED_SINK, 0.3, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
   engine: def(1.0, SFX_SEED_ENGINE, 1, SFX_PRIORITY_CUE, 0, FAR, 'loop'),
   sea: def(4.0, SFX_SEED_SEA, 1, SFX_PRIORITY_CUE, 0, FAR, 'loop'),
   fire: def(2.0, SFX_SEED_FIRE, 1, SFX_PRIORITY_CUE, 0, FAR, 'loop'),
@@ -135,8 +137,8 @@ export const SFX_MASTER_GAIN = 0.8;
 // S1（鳴る縦切り。spec §7.2・§8・§11 の R11・§14 L1〜L4）: 再生のエンジン（systems/sfx-engine）と起動（systems/sfx-boot）の定数。どれも聞かせ方で、遊びには効かない
 /** 最初に鳴る音の立ち上がり（R11「イヤホンで大きすぎる」）: 束ねの音量をこの割合から seconds 秒で 1 へ。0 からにしない（最初のタップの 0.06 秒の音が聞こえなくなる） */
 export const SFX_FIRST_FADE = { fromShare: 0.3, seconds: 0.3 } as const;
-/** S2（spec §3.1）: 沈没の段の 2 次の爆発（ExplosionFx.secondary）は blast_s を音量 0.7 倍で、blast_s が鳴ってから 0.3 秒の内は鳴らさない（2 隻が同時に沈んでも連打にしない） */
-export const SFX_SECONDARY_BLAST = { gain: 0.7, minIntervalS: 0.3 } as const;
+/** S2（spec §3.1）: 沈没の段の 2 次の爆発（ExplosionFx.secondary）は blast_s を音量 0.7 倍で、blast_s が鳴ってから 0.5 秒の内は鳴らさない（2 隻が同時に沈んでも連打にしない。S5 で 0.3 → 0.5＝表の 0.35 秒より長く） */
+export const SFX_SECONDARY_BLAST = { gain: 0.7, minIntervalS: 0.5 } as const;
 /** S2: 小艇（大発・米PT・僚艇）の沈没は sink をこの速さで（高く短く。艦は 1）。rate は 0.5〜2 の内＝L6 */
 export const SFX_SINK_SMALL_RATE = 1.3;
 /** S2（spec §7.4）: Boot の create で標本を作るのはこの鍵だけ（最初の Title のタップが鳴る）。残りは次のフレームから 1 フレームに 1 本ずつ（systems/sfx-boot。作り終わる前の音は鳴らさないだけ） */
@@ -164,16 +166,16 @@ export const SFX_LOOP_PAUSE_FADE_S = 0.15;
 export const SFX_LOOP_RATE_MIN = 0.5;
 export const SFX_LOOP_RATE_MAX = 2;
 
-/** ループの目標（spec §5 の表。読むのは S3 の core/sfx-cues。音量は 0〜1、rate は倍） */
+/** ループの目標（spec §5 の表。読むのは S3 の core/sfx-cues。音量は 0〜1、rate は倍）。S5: 単発を約 −6 dB 下げたので、エンジンは spec の 0.7 倍・海は 0.8 倍（段の比は spec のまま＝静音と全速の差は同じ） */
 export const SFX_LOOP_ENGINE = {
   /** targetStep ごとの音量: 停止・静音・巡航・全速（燃料切れと沈没は 0） */
-  gainStop: 0.1, gainSilent: 0.16, gainCruise: 0.38, gainFull: 0.6,
+  gainStop: 0.07, gainSilent: 0.11, gainCruise: 0.27, gainFull: 0.42,
   /** rate ＝ rateBase ＋ rateSpan ×（速さ ÷ 艇の最大） */
   rateBase: 0.75, rateSpan: 0.75,
   /** 機関の損傷の揺れ（± 割合・Hz）と、機関の不調（jp_05）の WARN・FINAL・LIMP の揺れ（± 割合） */
   damagedWobble: 0.06, wobbleHz: 3, stageWobble: [0.04, 0.08, 0.12],
 } as const;
-export const SFX_LOOP_SEA = { gainBase: 0.1, gainSpeed: 0.14, gainStorm: 0.1 } as const;
+export const SFX_LOOP_SEA = { gainBase: 0.08, gainSpeed: 0.11, gainStorm: 0.08 } as const;
 export const SFX_LOOP_FIRE = { gain: 0.35, riseS: 0.3, fallS: 0.5 } as const;
 export const SFX_LOOP_RAIN = { gainInside: 0.4, gainNear: 0.15 } as const;
 export const SFX_LOOP_DRONE = {
@@ -189,7 +191,8 @@ export const SFX_LOOP_DRONE = {
 /**
  * S3（ループのつなぎ。systems/sfx-loop-player）: ループの束はリミッタを通さず master へ直につなぐ（リミッタは単発の重なりを抑える物。鳴り続けるループを通すと、
  * 出口がループで埋まって爆発の飛び出しが 3 dB 前後まで縮み、砲声のたびにエンジンの音が沈む＝数は CHANGELOG の v0.7.1 S3）。束の音量 SFX_LOOP_BUS_GAIN は上の表（spec §5 の比）に
- * 掛ける全体の倍率（5 本の目標の一番大きい和 2.14 × 頂 0.9 × 0.5 ≤ 1＝束の出口で 1 を超えない。本物のリミッタで測った出口の頂は 0.74。S5 で実機の耳で詰める）。
+ * 掛ける全体の倍率（5 本の目標の一番大きい和 × 頂 0.9 × 0.5 ≤ 1＝束の出口で 1 を超えない。S5: 単発を下げたのでエンジン・海の目標を下げ（spec §5 の 0.7 倍・0.8 倍）、束の音量は 0.5 のまま。
+ * 本物のリミッタで測った出口の頂は全部の件で 0.75 以下）。
  * 一時停止は束を 0 へ、再開で戻す
  */
 export const SFX_LOOP_BUS_GAIN = 0.5;
@@ -200,15 +203,17 @@ export const SFX_PAUSE_OPEN = { gain: 0.7, rate: 0.7 } as const;
 /**
  * S4（spec §3.2）: 状態の合図（core/sfx-cues）の冷却（ゲームの時計の秒。この秒の内の同じ行の立ち上がりは鳴らさない）・音量・速さ。魚雷の発射は一斉でも 1 本ずつ launchGapS の間で
  * （積んだ数は queueMax まで）。自艇の被弾は HP が 1 フレームに hullMinDropHp より多く減った時だけ（火災の継続の被害＝毎秒 2 HP 以下は 1 フレームで 0.14 HP 以下＝鳴らさない）。
- * 座礁は爆発の口の blast_s（dud）と同じフレームに来るので groundDelayS 遅らせる（blast_s の最小間隔 0.1 秒に落とされない）。鐘は bellCooldownS の内は重ねない（夜明けと「帰投せよ」が同じ
- * フレームに来る＝設計の既定）。rate は 0.5〜2 の内（L6）
+ * 座礁は爆発の口の blast_s（dud）と同じフレームに来るので groundDelayS 遅らせる（blast_s の最小間隔 0.35 秒に落とされない。S5 で 0.15 → 0.4）。鐘は bellCooldownS の内は重ねない（夜明けと「帰投せよ」が同じ
+ * フレームに来る＝設計の既定）。rate は 0.5〜2 の内（L6）。
+ * S5（数で詰めた）: 被弾の金属音は 2 秒に 1 回まで（米PT・駆逐艦の副砲を浴びると 0.2 秒では 20 秒に 12 回鳴った。被弾の爆発の音 blast_s は 0.35 秒の内を 1 つにまとめて鳴る）。機関の咳は 8 秒に 1 回まで
+ * （jp_05 の過熱・限界の繰り返し。機関の不調＝LIMP・損傷・燃料切れは冷却の内でも鳴らす＝段が上がった知らせを落とさない）
  */
 export const SFX_CUE = {
   launchGapS: 0.15, launchQueueMax: 4, ptSalvoGain: 0.6,
-  alarmCooldownS: 4, lightCooldownS: 3, flareCooldownS: 2, hullCooldownS: 0.2, hullMinDropHp: 0.5,
+  alarmCooldownS: 4, lightCooldownS: 3, flareCooldownS: 2, hullCooldownS: 2, hullMinDropHp: 0.5,
   reloadCooldownS: 0.5, reloadEndRate: 1.3, extinguishRate: 1.6,
-  engineStageRate: [1.0, 0.9, 0.8], recoverRate: 0.7, recoverGain: 0.7, fuelEmptyRate: 0.7,
-  groundRate: 0.6, groundDelayS: 0.15,
+  engineStageRate: [1.0, 0.9, 0.8], coughCooldownS: 8, recoverRate: 0.7, recoverGain: 0.7, fuelEmptyRate: 0.7,
+  groundRate: 0.6, groundDelayS: 0.4,
   bellCooldownS: 1.5, dawnBellRate: 0.7, bombCooldownS: 0.6,
   raidAlarmRate: 0.7, raidAlarmCooldownS: 3, friendlyAlarmRate: 1.3, friendlyAlarmGain: 0.6,
 } as const;

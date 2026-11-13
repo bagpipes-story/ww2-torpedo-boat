@@ -48,9 +48,9 @@ describe('ループの並びと始めの値', () => {
 });
 
 describe('engine（spec §5）', () => {
-  it('速力帯で音量: 停止 0.10・静音 0.16・巡航 0.38・全速 0.60（静音が本当に静か）', () => {
+  it('速力帯で音量: 停止 0.07・静音 0.11・巡航 0.27・全速 0.42（spec §5 の 0.7 倍＝S5。静音が本当に静か）', () => {
     const g = (step: string): number => once(tel({ targetStep: step })).gain[LOOP_ENGINE]!;
-    expect([g('stop'), g('silent'), g('cruise'), g('full')]).toEqual([0.1, 0.16, 0.38, 0.6]);
+    expect([g('stop'), g('silent'), g('cruise'), g('full')]).toEqual([0.07, 0.11, 0.27, 0.42]);
     expect(g('silent') / g('full')).toBeLessThan(0.3);
   });
   it('rate ＝ 0.75 ＋ 0.75 ×（速さ ÷ 艇の最大）。割合は 0〜1 に収める。艇の最大が 0 でも落ちない', () => {
@@ -114,14 +114,14 @@ describe('engine（spec §5）', () => {
 });
 
 describe('sea・rain・fire（spec §5）', () => {
-  it('sea ＝ 0.10 ＋ 0.14 × 速さの割合。暴風の帯の中は ＋0.10（近く・前方は足さない）。rate は 1', () => {
+  it('sea ＝ 0.08 ＋ 0.11 × 速さの割合。暴風の帯の中は ＋0.08（spec §5 の 0.8 倍＝S5。近く・前方は足さない）。rate は 1', () => {
     const g = (v: number, storm = STORM_NONE): number => once(tel({ speedMps: v, stormState: storm })).gain[LOOP_SEA]!;
-    expect(g(0)).toBeCloseTo(0.1, 9);
-    expect(g(MAX / 2)).toBeCloseTo(0.17, 9);
-    expect(g(MAX)).toBeCloseTo(0.24, 9);
-    expect(g(MAX, STORM_INSIDE)).toBeCloseTo(0.34, 9);
-    expect(g(MAX, STORM_NEAR)).toBeCloseTo(0.24, 9);
-    expect(g(0, STORM_AHEAD)).toBeCloseTo(0.1, 9);
+    expect(g(0)).toBeCloseTo(0.08, 9);
+    expect(g(MAX / 2)).toBeCloseTo(0.135, 9);
+    expect(g(MAX)).toBeCloseTo(0.19, 9);
+    expect(g(MAX, STORM_INSIDE)).toBeCloseTo(0.27, 9);
+    expect(g(MAX, STORM_NEAR)).toBeCloseTo(0.19, 9);
+    expect(g(0, STORM_AHEAD)).toBeCloseTo(0.08, 9);
     expect(once(tel({ speedMps: MAX, stormState: STORM_INSIDE })).rate[LOOP_SEA]).toBe(1);
   });
   it('rain: 暴風の帯の中 0.40・近く 0.15・ほかは 0', () => {

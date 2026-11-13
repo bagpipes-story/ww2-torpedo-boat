@@ -30,11 +30,16 @@ const FAMILY: Readonly<Record<string, SfxFamily>> = {
 const PRIORITY: Readonly<Record<SfxFamily, number>> = { ui: 3, cue: 3, loop: 3, blast: 2, gun: 1, splash: 0 };
 /**
  * spec §7.3 の最小間隔（秒。ほかは 0＝合図は冷却で間引く）。S2 で gun_near だけ 0.12 → 0.2: 駆逐艦の副砲は 0.125 秒ごとに撃ち、フレームの刻み（1/60 秒）で間が 0.117／0.133 秒に
- * 揺れるので、0.12 では「1 発おき」がフレームの揺れ任せになる（probe の us_01）。0.2 で毎秒 4 発に決める
+ * 揺れるので、0.12 では「1 発おき」がフレームの揺れ任せになる（probe の us_01）。0.2 で毎秒 4 発に決める。
+ * S5（本物のリミッタの数）: gun_near 0.2 → 0.3（毎秒 4 発の砲声が帯 1 の床になって爆発の飛び出しを 2 dB 前後まで縮めていた）・blast_s 0.1 → 0.35（自艇が続けて撃たれた時の
+ * 小さい爆発は 0.35 秒の内を 1 つの音にまとめる）
  */
-const MIN_INTERVAL: Readonly<Record<string, number>> = { mg: 0.07, gun_near: 0.2, gun_far: 0.25, splash_s: 0.08, splash_l: 0.15, blast_s: 0.1, blast_l: 0.2 };
-/** 鍵の音量（S2 で probe の記録を mix した数から詰めた。合図・ループは仮のまま＝S3〜S5） */
-const GAIN: Readonly<Record<string, number>> = { mg: 0.4, gun_near: 0.7, gun_far: 0.8, splash_s: 0.3, splash_l: 0.5, blast_s: 0.8, blast_l: 1, torp_hit: 1, sink: 0.6 };
+const MIN_INTERVAL: Readonly<Record<string, number>> = { mg: 0.07, gun_near: 0.3, gun_far: 0.25, splash_s: 0.08, splash_l: 0.15, blast_s: 0.35, blast_l: 0.2 };
+/** 鍵の音量（S2 で probe の記録を mix した数から、S5 で本物のリミッタに通した数から詰めた＝世界の音を約 −6 dB・合図は世界の音の上） */
+const GAIN: Readonly<Record<string, number>> = {
+  mg: 0.18, gun_near: 0.26, gun_far: 0.4, splash_s: 0.12, splash_l: 0.2, blast_s: 0.4, blast_l: 0.8, torp_hit: 0.8, sink: 0.3,
+  torp_launch: 0.8, hull_hit: 0.7, alarm: 0.6, light_on: 0.6, flare_pop: 0.5, bomb_fall: 0.3, reload: 1, smoke: 0.7, ui_tap: 0.5, bell: 0.6, engine_cough: 0.7,
+};
 /** spec §6.2 の届く帯（ほかは一番遠い帯 3） */
 const REACH: Readonly<Record<string, number>> = { splash_s: 1, mg: 2, splash_l: 2 };
 /** 再生のたびの rate の揺れ（spec §4。ほかは 0） */
@@ -102,8 +107,8 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     // S1: 最初の音の立ち上がり（R11。0 からではない＝最初のタップが聞こえる）・消音の絞り・最初のタップを覚える秒・見張り（L3c）・保存の鍵・Audio Session（L1）
     expect(cfg.SFX_FIRST_FADE).toEqual({ fromShare: 0.3, seconds: 0.3 });
     expect(cfg.SFX_MUTE_TIME_CONSTANT_S).toBe(0.015);
-    // S2: 沈没の 2 次の爆発（小さめ・0.3 秒の内は重ねない）・小艇の沈没の速さ（rate は 0.5〜2 の内）・Boot で作る標本は ui_tap だけ（残りは 1 フレームに 1 本）。S1 の代わりの音は消した
-    expect(cfg.SFX_SECONDARY_BLAST).toEqual({ gain: 0.7, minIntervalS: 0.3 });
+    // S2: 沈没の 2 次の爆発（小さめ・0.5 秒の内は重ねない＝S5 で blast_s の 0.35 秒より長く）・小艇の沈没の速さ（rate は 0.5〜2 の内）・Boot で作る標本は ui_tap だけ（残りは 1 フレームに 1 本）。S1 の代わりの音は消した
+    expect(cfg.SFX_SECONDARY_BLAST).toEqual({ gain: 0.7, minIntervalS: 0.5 });
     expect(cfg.SFX_SECONDARY_BLAST.minIntervalS).toBeGreaterThan(SFX_TABLE.blast_s.minIntervalS);
     expect(cfg.SFX_SINK_SMALL_RATE).toBe(1.3);
     expect(cfg.SFX_SINK_SMALL_RATE).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
@@ -114,13 +119,13 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect([cfg.SFX_STORAGE_KEY, cfg.SFX_AUDIO_SESSION_TYPE]).toEqual(['night-hunters.sound', 'ambient']);
     expect([cfg.SFX_LOOP_UPDATE_HZ, cfg.SFX_LOOP_TIME_CONSTANT_S, cfg.SFX_LOOP_GAIN_EPS, cfg.SFX_LOOP_RATE_EPS, cfg.SFX_LOOP_PAUSE_FADE_S]).toEqual([10, 0.08, 0.01, 0.005, 0.15]);
     expect([cfg.SFX_LOOP_RATE_MIN, cfg.SFX_LOOP_RATE_MAX]).toEqual([0.5, 2]);
-    expect(cfg.SFX_LOOP_ENGINE).toMatchObject({ gainStop: 0.1, gainSilent: 0.16, gainCruise: 0.38, gainFull: 0.6, rateBase: 0.75, rateSpan: 0.75 });
+    expect(cfg.SFX_LOOP_ENGINE).toMatchObject({ gainStop: 0.07, gainSilent: 0.11, gainCruise: 0.27, gainFull: 0.42, rateBase: 0.75, rateSpan: 0.75 });
     // 全速のエンジン ≤ 0.6（R11）・rate は 0.5〜2 の内（§14 L6）
     expect(cfg.SFX_LOOP_ENGINE.rateBase * (1 - cfg.SFX_LOOP_ENGINE.stageWobble[2])).toBeGreaterThanOrEqual(cfg.SFX_LOOP_RATE_MIN);
     expect((cfg.SFX_LOOP_ENGINE.rateBase + cfg.SFX_LOOP_ENGINE.rateSpan) * (1 + cfg.SFX_LOOP_ENGINE.stageWobble[2])).toBeLessThanOrEqual(cfg.SFX_LOOP_RATE_MAX);
-    // S3: ループの目標の表は spec §5 のまま（比）。束の音量（リミッタの後へつなぐ時の全体の倍率）・止める時の絞り・一時停止を開いた合図・機の爆音の帯と jp_03
+    // S3: ループの目標の表は spec §5 のまま（比。S5 でエンジンは 0.7 倍・海は 0.8 倍）。束の音量（リミッタの後へつなぐ時の全体の倍率）・止める時の絞り・一時停止を開いた合図・機の爆音の帯と jp_03
     expect(cfg.SFX_LOOP_ENGINE).toMatchObject({ damagedWobble: 0.06, wobbleHz: 3, stageWobble: [0.04, 0.08, 0.12] });
-    expect([cfg.SFX_LOOP_SEA, cfg.SFX_LOOP_FIRE, cfg.SFX_LOOP_RAIN]).toEqual([{ gainBase: 0.1, gainSpeed: 0.14, gainStorm: 0.1 }, { gain: 0.35, riseS: 0.3, fallS: 0.5 }, { gainInside: 0.4, gainNear: 0.15 }]);
+    expect([cfg.SFX_LOOP_SEA, cfg.SFX_LOOP_FIRE, cfg.SFX_LOOP_RAIN]).toEqual([{ gainBase: 0.08, gainSpeed: 0.11, gainStorm: 0.08 }, { gain: 0.35, riseS: 0.3, fallS: 0.5 }, { gainInside: 0.4, gainNear: 0.15 }]);
     expect(cfg.SFX_LOOP_DRONE).toEqual({ gainFar: 0.1, gainNear: 0.4, gainByBand: [0.4, 0.3, 0.2], gainFriendly: 0.4, gainFriendlyLeaving: 0.2, gainAttack: 0.45, gainRest: 0.1, gainEvacOther: 0.25, rateMin: 0.9, rateMax: 1.15 });
     expect(cfg.SFX_LOOP_DRONE.gainByBand.length).toBe(SFX_BAND_MAX_M.length - 1);
     expect([cfg.SFX_LOOP_BUS_GAIN, cfg.SFX_LOOP_STOP_FADE_S]).toEqual([0.5, 0.15]);

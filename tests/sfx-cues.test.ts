@@ -3,7 +3,7 @@
 // - 魚雷の発射は一斉でも 1 本ずつ 0.15 秒の間で。被弾は HP が 1 フレームに 0.5 より多く減った時だけ（火災の継続の被害では鳴らない）。jp_03 の［切替］のフレームは艇の値を写すだけ。
 // - 冷却はゲームの時計（渡された dt の和）＝一時停止の間（update が呼ばれない）は進まない。鐘は同じフレームに 2 つ来ても 1 打。
 import { describe, expect, it } from 'vitest';
-import { SFX_CUE, SFX_KEYS, type SfxKey } from '../src/config/sfx-config';
+import { SFX_CUE, SFX_KEYS, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
 import { AS_T_FALLING, AS_T_RUN } from '../src/core/air-strike-state';
 import { ENGINE_EV_FINAL, ENGINE_EV_LIMP, ENGINE_EV_RECOVER, ENGINE_EV_WARN } from '../src/core/engine-trouble';
 import { FF_CHALLENGE, FF_OUT_IDENTIFIED, FF_STRAFE } from '../src/core/friendly';
@@ -74,7 +74,8 @@ describe('状態の合図（core/sfx-cues。spec §3.2）', () => {
     b.step({}, Math.ceil(SFX_CUE.flareCooldownS / DT));
     expect(b.step({ friendlyOutcome: FF_OUT_IDENTIFIED })).toEqual([['flare_pop', 1, 1, 0]]);
   });
-  it('被弾: HP が 1 フレームに 0.5 より多く減ったら hull_hit（冷却 0.2 秒）。火災の継続の被害（毎秒 2 HP）では鳴らない', () => {
+  it('被弾: HP が 1 フレームに 0.5 より多く減ったら hull_hit（冷却 2 秒＝S5。被弾の爆発の音は毎回）。火災の継続の被害（毎秒 2 HP）では鳴らない', () => {
+    expect(SFX_CUE.hullCooldownS).toBe(2);
     const { step } = start({ hp: 100 });
     expect(step({ hp: 92 })).toEqual([['hull_hit', 1, 1, 0]]);
     expect(step({ hp: 84 })).toEqual([]); // 冷却の内
@@ -106,13 +107,25 @@ describe('状態の合図（core/sfx-cues。spec §3.2）', () => {
     expect(a.step({ engineDamaged: true, fuelEmpty: true })).toEqual([['engine_cough', 1, SFX_CUE.fuelEmptyRate, 0]]);
     const b = start({ engine: { on: true, eventSeq: 0 } });
     const evs = [ENGINE_EV_WARN, ENGINE_EV_FINAL, ENGINE_EV_LIMP, ENGINE_EV_RECOVER];
-    const got = evs.map((ev, i) => b.step({ engine: { on: true, eventSeq: i + 1, lastEvent: ev } }, 3));
+    const gap = Math.ceil(SFX_CUE.coughCooldownS / DT) + 1;
+    const got = evs.map((ev, i) => b.step({ engine: { on: true, eventSeq: i + 1, lastEvent: ev } }, gap));
     expect(got).toEqual([[['engine_cough', 1, 1, 0]], [['engine_cough', 1, 0.9, 0]], [['engine_cough', 1, 0.8, 0]], [['ui_tap', SFX_CUE.recoverGain, SFX_CUE.recoverRate, 0]]]);
   });
-  it('座礁: 浅瀬が SHALLOW_GROUNDED になったら blast_s を rate 0.6・0.15 秒遅らせて（爆発の口の dud と同じフレームでも最小間隔に落とされない）', () => {
+  it('機関の咳は 8 秒に 1 回まで（S5。jp_05 の過熱・限界の繰り返し）。不調（LIMP）・損傷・燃料切れは冷却の内でも鳴らす（段が上がった知らせ）', () => {
+    expect(SFX_CUE.coughCooldownS).toBe(8);
+    const b = start({ engine: { on: true, eventSeq: 0 } });
+    const ev = (seq: number, lastEvent: number, frames = 1): Heard[] => b.step({ engine: { on: true, eventSeq: seq, lastEvent } }, frames);
+    expect(ev(1, ENGINE_EV_WARN)).toEqual([['engine_cough', 1, 1, 0]]);
+    expect(ev(2, ENGINE_EV_FINAL, 60)).toEqual([]); // 冷却の内の限界は落とす
+    expect(ev(3, ENGINE_EV_LIMP)).toEqual([['engine_cough', 1, 0.8, 0]]); // 不調は鳴らす
+    expect(ev(4, ENGINE_EV_RECOVER)).toEqual([['ui_tap', SFX_CUE.recoverGain, SFX_CUE.recoverRate, 0]]);
+    expect(ev(5, ENGINE_EV_WARN, Math.ceil(SFX_CUE.coughCooldownS / DT) - 30)).toEqual([]); // 不調から 8 秒の内
+    expect(b.step({ engine: { on: true, eventSeq: 5, lastEvent: ENGINE_EV_WARN }, engineDamaged: true })).toEqual([['engine_cough', 1, 1, 0]]); // 損傷は鳴らす
+  });
+  it('座礁: 浅瀬が SHALLOW_GROUNDED になったら blast_s を rate 0.6・0.4 秒遅らせて（爆発の口の dud と同じフレームでも最小間隔に落とされない）', () => {
     const { step } = start({ shallowState: SHALLOW_APPROACHING });
     expect(step({ shallowState: SHALLOW_GROUNDED })).toEqual([['blast_s', 1, SFX_CUE.groundRate, SFX_CUE.groundDelayS]]);
-    expect(SFX_CUE.groundDelayS).toBeGreaterThan(0.1);
+    expect(SFX_CUE.groundDelayS).toBeGreaterThan(SFX_TABLE.blast_s.minIntervalS);
     expect(step({ shallowState: SHALLOW_GROUNDED }, 30)).toEqual([]);
   });
   it('鐘: 帰投せよ（callFlags 0 → 非 0）は 1 打・夜明けは rate 0.7・同じフレームに来たら 1 打（夜明けの方）・揚陸完了も 1 打', () => {

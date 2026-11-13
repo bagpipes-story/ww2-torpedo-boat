@@ -120,16 +120,19 @@ describe('SfxMixer（最小間隔・届く帯・声 16 本と優先。spec §7.3
     expect(m.band).toBe(0);
   });
   it('1 発だけの最小間隔（S2。沈没の 2 次の爆発）: 同じ鍵が鳴ってからその秒の内は落とす。表の値より短い指定は表の値のまま。ほかの鍵には効かない', () => {
+    const tab = SFX_TABLE.blast_s.minIntervalS; // S5: 0.35 秒
+    const sec = 0.5; // 2 次の爆発の指定（SFX_SECONDARY_BLAST）
     const m = new SfxMixer();
     expect(m.playAt('blast_s', 0, 0, 10, 0)).toBeGreaterThanOrEqual(0);
-    expect(m.playAt('blast_s', 0, 0, 10.2, 0.2, 1, 0.7, 0.3)).toBe(-1); // 2 次の爆発: 0.3 秒の内
+    expect(m.playAt('blast_s', 0, 0, 10 + tab + 0.05, tab + 0.05, 1, 0.7, sec)).toBe(-1); // 2 次の爆発: 0.5 秒の内
     expect(m.lastDrop).toBe(SFX_DROP_RATE);
-    expect(m.playAt('blast_s', 0, 0, 10.2, 0.2)).toBeGreaterThanOrEqual(0); // ふつうの小さい爆発は表の 0.1 秒だけ
-    expect(m.playAt('blast_s', 0, 0, 10.45, 0.45, 1, 0.7, 0.3)).toBe(-1); // 直前の小さい爆発から 0.25 秒
-    expect(m.playAt('blast_s', 0, 0, 10.5, 0.5, 1, 0.7, 0.3)).toBeGreaterThanOrEqual(0);
+    expect(m.playAt('blast_s', 0, 0, 10 + tab + 0.05, tab + 0.05)).toBeGreaterThanOrEqual(0); // ふつうの小さい爆発は表の秒だけ
+    const t1 = 10 + tab + 0.05;
+    expect(m.playAt('blast_s', 0, 0, t1 + sec - 0.05, t1 - 10 + sec - 0.05, 1, 0.7, sec)).toBe(-1); // 直前の小さい爆発から 0.45 秒
+    expect(m.playAt('blast_s', 0, 0, t1 + sec, t1 - 10 + sec, 1, 0.7, sec)).toBeGreaterThanOrEqual(0);
     expect(m.gain).toBeCloseTo(SFX_TABLE.blast_s.gain * 0.7, 6);
-    expect(m.playAt('blast_s', 0, 0, 10.55, 0.55, 1, 1, 0.01)).toBe(-1); // 表の 0.1 秒より短い指定は効かない
-    expect(m.playAt('blast_l', 0, 0, 10.55, 0.55, 1, 1, 0.3)).toBeGreaterThanOrEqual(0); // ほかの鍵の時刻は見ない
+    expect(m.playAt('blast_s', 0, 0, t1 + sec + tab - 0.05, t1 - 10 + sec + tab - 0.05, 1, 1, 0.01)).toBe(-1); // 表の秒より短い指定は効かない
+    expect(m.playAt('blast_l', 0, 0, t1 + sec + 0.05, t1 - 10 + sec + 0.05, 1, 1, sec)).toBeGreaterThanOrEqual(0); // ほかの鍵の時刻は見ない
   });
   it('届かない遠い音・声の無い音は最小間隔の時刻を進めない（次の近い音を間引かない）', () => {
     const m = new SfxMixer();

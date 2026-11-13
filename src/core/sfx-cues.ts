@@ -30,7 +30,8 @@ const CD_RELOAD = 5;
 const CD_BELL = 6;
 const CD_BOMB = 7;
 const CD_RAID = 8;
-const CD_COUNT = 9;
+const CD_COUGH = 9;
+const CD_COUNT = 10;
 
 /** 観測器の覚え（任務ごとに 1 つ）: 前のフレームの値と冷却の残り秒 */
 export interface SfxCueState {
@@ -79,6 +80,12 @@ function take(s: SfxCueState, slot: number, coolS: number): boolean {
   return true;
 }
 
+/** 冷却の内でも鳴らす知らせ（段が上がった・壊れた）: 鳴らして冷却を入れ直す */
+function force(s: SfxCueState, slot: number, coolS: number): true {
+  s.cool[slot] = coolS;
+  return true;
+}
+
 /** 座席の艇ごとの値を写す（始めのフレームと jp_03 の［切替］のフレーム） */
 function copyBoat(s: SfxCueState, t: BoatTelemetry): void {
   s.lastHp = t.hp;
@@ -119,19 +126,19 @@ function stepBoat(s: SfxCueState, t: BoatTelemetry, sink: SfxCueSink): void {
   if (s.onFire && !t.onFire && t.hp > 0) sink.cue('smoke', 1, c.extinguishRate, 0);
   const smoking = t.smokeLeftS > 0;
   if (smoking && !s.smoking) sink.cue('smoke', 1, 1, 0);
-  if (t.engineDamaged && !s.engineDamaged) sink.cue('engine_cough', 1, 1, 0);
-  if (t.fuelEmpty && !s.fuelEmpty) sink.cue('engine_cough', 1, c.fuelEmptyRate, 0);
+  if (t.engineDamaged && !s.engineDamaged && force(s, CD_COUGH, c.coughCooldownS)) sink.cue('engine_cough', 1, 1, 0);
+  if (t.fuelEmpty && !s.fuelEmpty && force(s, CD_COUGH, c.coughCooldownS)) sink.cue('engine_cough', 1, c.fuelEmptyRate, 0);
   const grounded = t.shallowState === SHALLOW_GROUNDED;
   if (grounded && !s.grounded) sink.cue('blast_s', 1, c.groundRate, c.groundDelayS);
   copyBoat(s, t);
 }
 
-/** 機関の不調（jp_05）の出来事 → 合図（段で低く。回復はボタンの音を低く） */
-function engineEvent(ev: number, sink: SfxCueSink): void {
+/** 機関の不調（jp_05）の出来事 → 合図（段で低く。過熱・限界の咳は 8 秒に 1 回まで、不調は冷却の内でも鳴らす。回復はボタンの音を低く） */
+function engineEvent(s: SfxCueState, ev: number, sink: SfxCueSink): void {
   const c = SFX_CUE;
-  if (ev === ENGINE_EV_WARN) sink.cue('engine_cough', 1, c.engineStageRate[0], 0);
-  else if (ev === ENGINE_EV_FINAL) sink.cue('engine_cough', 1, c.engineStageRate[1], 0);
-  else if (ev === ENGINE_EV_LIMP) sink.cue('engine_cough', 1, c.engineStageRate[2], 0);
+  if (ev === ENGINE_EV_WARN && take(s, CD_COUGH, c.coughCooldownS)) sink.cue('engine_cough', 1, c.engineStageRate[0], 0);
+  else if (ev === ENGINE_EV_FINAL && take(s, CD_COUGH, c.coughCooldownS)) sink.cue('engine_cough', 1, c.engineStageRate[1], 0);
+  else if (ev === ENGINE_EV_LIMP && force(s, CD_COUGH, c.coughCooldownS)) sink.cue('engine_cough', 1, c.engineStageRate[2], 0);
   else if (ev === ENGINE_EV_RECOVER) sink.cue('ui_tap', c.recoverGain, c.recoverRate, 0);
 }
 
@@ -199,7 +206,7 @@ export function stepSfxCues(s: SfxCueState, t: BoatTelemetry, dtS: number, sink:
   if (reloading !== s.reloading && take(s, CD_RELOAD, c.reloadCooldownS)) sink.cue('reload', 1, reloading ? 1 : c.reloadEndRate, 0);
   s.reloading = reloading;
   // 機関の不調（jp_05）
-  if (t.engine.eventSeq !== s.engineSeq && t.engine.on) engineEvent(t.engine.lastEvent, sink);
+  if (t.engine.eventSeq !== s.engineSeq && t.engine.on) engineEvent(s, t.engine.lastEvent, sink);
   s.engineSeq = t.engine.eventSeq;
   // 鐘: 夜明け・空襲の決着（低く）・帰投せよ・揚陸完了（同じフレームに来ても 1 打）
   if (t.dawn.reached && !s.dawn && take(s, CD_BELL, c.bellCooldownS)) sink.cue('bell', 1, c.dawnBellRate, 0);

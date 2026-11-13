@@ -96,7 +96,7 @@ export class ExplosionFx {
   /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
   secondary(x: number, y: number): void {
     this.blast.secondary(x, y);
-    sfxAt('blast_s', x, y, SFX_SECONDARY_BLAST.gain, 1, SFX_SECONDARY_BLAST.minIntervalS); // 2 次の爆発の音（v0.7.1 S2。小さめ・0.3 秒の内は重ねない）
+    sfxAt('blast_s', x, y, SFX_SECONDARY_BLAST.gain, 1, SFX_SECONDARY_BLAST.minIntervalS); // 2 次の爆発の音（v0.7.1 S2。小さめ・0.5 秒の内は重ねない＝S5）
   }
 
   /** 毎フレーム（world-art から。realDt は見た目の時計）: 部品ごとに膨らみと薄れ、寿命が尽きた部品から隠す。枠の寿命で枠を閉じる */
