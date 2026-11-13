@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: 
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: S5 mix の詰め（世界の音 −6 dB・合図・被弾 2 秒・咳 8 秒）。docs はまだ
+- 一言: S5 最終（mix・冷却・docs・CHANGELOG。npm test 3,126・probe 31 OK・sfx-live 6 OK・短い A/B same・heap 9.3・gzip +14.4 kB）

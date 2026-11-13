@@ -5,7 +5,7 @@ N=$1; G=$2; L=$3; shift 3
 P=${PROBE:-$S5/base/probe.json}
 BUSY=${CASES:-jp_03h,jp_03h-last,jp_04h-busy,jp_05-hot,jp_06h,us_02-storm,us_02h-busy,us_03-burst,us_02,jp_04h,us_01h,jp_01h}
 rm -rf $S5/exp/$N; mkdir -p $S5/exp/$N
-PROBE=$P OUT=$S5/exp/$N/raw CASES=$BUSY GAINS="$G" LOOPS="$L" MININT="${MININT:-}" node $S5/tools/tune.mjs
+PROBE=$P OUT=$S5/exp/$N/raw CASES=$BUSY GAINS="$G" LOOPS="$L" MININT="${MININT:-}" FROM="${FROM:-}" node $S5/tools/tune.mjs
 env "$@" RAW=$S5/exp/$N/raw JSON=$S5/exp/$N/res.json node $S5/tools/offline.mjs > $S5/exp/$N/offline.log
 rm -rf $S5/exp/$N/raw
 python3 - $S5/exp/$N/res.json "$N" <<'PY'

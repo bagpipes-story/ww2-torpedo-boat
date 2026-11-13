@@ -1,0 +1,32 @@
+  Title（タップの前）: WebAudio context running t 1.631 s 44100 Hz ・ 音源 0 今 0 最大 0 捨てた（消音・停止）0 最初のタップ 0 resume 0 見張り 0 消音 false mg 0 blast_l 0 ui_tap 0 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.000
+  Title（音: オフ）: WebAudio context running t 2.252 s 44100 Hz ・ 音源 1 今 0 最大 1 捨てた（消音・停止）0 最初のタップ 0 resume 0 見張り 0 消音 true mg 0 blast_l 0 ui_tap 1 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.078
+  Title（音: オン に戻した）: WebAudio context running t 2.813 s 44100 Hz ・ 音源 2 今 0 最大 1 捨てた（消音・停止）1 最初のタップ 0 resume 0 見張り 0 消音 false mg 0 blast_l 0 ui_tap 2 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.419
+  Briefing（最初の行のタップの後）: WebAudio context running t 3.68 s 44100 Hz ・ 音源 3 今 0 最大 1 捨てた（消音・停止）1 最初のタップ 0 resume 0 見張り 0 消音 false mg 0 blast_l 0 ui_tap 3 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.419
+  Mission（始め）: WebAudio context running t 4.212 s 44100 Hz ・ 音源 4 今 0 最大 1 捨てた（消音・停止）1 最初のタップ 0 resume 0 見張り 0 消音 false mg 0 blast_l 0 ui_tap 4 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.419
+  Mission（1 回目の爆発の後）: WebAudio context running t 6.571 s 44100 Hz ・ 音源 7 今 1 最大 1 捨てた（消音・停止）1 最初のタップ 0 resume 0 見張り 0 消音 false mg 2 blast_l 1 ui_tap 4 落とした（間隔・遠い・声）8/0/0 ・ 頂 0.419
+  Mission（終わり）: WebAudio context running t 14.66 s 44100 Hz ・ 音源 11 今 0 最大 2 捨てた（消音・停止）1 最初のタップ 0 resume 0 見張り 0 消音 false mg 5 blast_l 2 ui_tap 4 落とした（間隔・遠い・声）19/0/0 ・ 頂 0.500
+✓ AUDIO=1 FLOW=title: ページのエラー 0
+✓ AUDIO=1 FLOW=title: 任務が進む（実時間 10 秒で任務の時計 3.9 秒）
+✓ AUDIO=1 FLOW=title: context は running（running・44100 Hz）
+✓ AUDIO=1 FLOW=title: 機銃と爆発を鳴らした（音源 11・mg 5・blast_l 2）
+✓ AUDIO=1 FLOW=title: ボタンの音を鳴らした（ui_tap 4・最初のタップを後から 0）
+✓ AUDIO=1 FLOW=title: 波形の頂は 0 より大きく 1 未満（頂 0.500・1 以上の窓 0／87）
+✓ AUDIO=1 FLOW=title: 同時の声は 16 以下（最大 2・今 0）
+✓ AUDIO=1 FLOW=title: 見張りは動かない（0）
+  ループ 任務の中（単発なし）: 窓の頂 0.0480 ・ 鳴っている音源 5（ページの数え 5）・ 作った 5 止めた 0 ・ 書いた 4 ・ Mission+Hud
+  ループ 一時停止: 窓の頂 0.0000 ・ 鳴っている音源 5（ページの数え 5）・ 作った 5 止めた 0 ・ 書いた 4 ・ 
+  ループ 再開の後: 窓の頂 0.0316 ・ 鳴っている音源 5（ページの数え 5）・ 作った 5 止めた 0 ・ 書いた 4 ・ Mission+Hud
+  ループ やり直し 1 回目: 窓の頂 0.0480 ・ 鳴っている音源 5（ページの数え 5）・ 作った 10 止めた 5 ・ 書いた 8 ・ Mission+Hud
+  ループ やり直し 2 回目: 窓の頂 0.0480 ・ 鳴っている音源 5（ページの数え 5）・ 作った 15 止めた 10 ・ 書いた 12 ・ Mission+Hud
+  ループ やり直し 3 回目: 窓の頂 0.0480 ・ 鳴っている音源 5（ページの数え 5）・ 作った 20 止めた 15 ・ 書いた 16 ・ Mission+Hud
+  ループ 任務をやめる → Title: 窓の頂 0.0000 ・ 鳴っている音源 0（ページの数え 0）・ 作った 20 止めた 20 ・ 書いた 16 ・ Title
+  ループ Result（鐘の後）: 窓の頂 0.0536 ・ 鳴っている音源 0（ページの数え 0）・ 作った 25 止めた 25 ・ 書いた 20 ・ Result
+✓ AUDIO=1 FLOW=title: ループ 5 本が鳴っている（エンジン 5・ページの数え 5）
+✓ AUDIO=1 FLOW=title: 単発の無い窓でも波形がある＝ループの音（頂 0.0480）
+✓ AUDIO=1 FLOW=title: 一時停止で無音（頂 0.00000。音源は止めない＝5）
+✓ AUDIO=1 FLOW=title: 一時停止の「音」ボタンで消音（消音 true・題「音: オフ」true）
+✓ AUDIO=1 FLOW=title: 「音: オン」に戻して再開するとループが戻る（頂 0.0316・音源 5）
+✓ AUDIO=1 FLOW=title: やり直し 3 回の後も鳴っている音源は 5 個（エンジン 5・ページの数え 5・作った 20 − 止めた 15）
+✓ AUDIO=1 FLOW=title: 任務をやめると 0 個・無音（エンジン 0・ページの数え 0・頂 0.00000）
+✓ AUDIO=1 FLOW=title: Result の鐘（帰投＝2 打）が鳴る（鐘 2 打・Result の最初の 1.6 秒の頂 0.5495・ループ 0・その後の窓の頂 0.05364）
+sfx-live AUDIO=1 FLOW=title OK

@@ -1,0 +1,11 @@
+  Title（タップの前）: context なし context なし ・ エンジンなし ・ 頂 0.000
+  Title（音: オフ）: context なし context なし ・ エンジンなし ・ 頂 0.000
+  Title（音: オン に戻した）: context なし context なし ・ エンジンなし ・ 頂 0.000
+  Briefing（最初の行のタップの後）: context なし context なし ・ エンジンなし ・ 頂 0.000
+  Mission（始め）: context なし context なし ・ エンジンなし ・ 頂 0.000
+  Mission（1 回目の爆発の後）: context なし context なし ・ エンジンなし ・ 頂 0.000
+  Mission（終わり）: context なし context なし ・ エンジンなし ・ 頂 0.000
+✓ NOAUDIO=1 FLOW=title: ページのエラー 0
+✓ NOAUDIO=1 FLOW=title: 任務が進む（実時間 10 秒で任務の時計 9.8 秒）
+✓ NOAUDIO=1 FLOW=title: エンジンなし（context なし）
+sfx-live NOAUDIO=1 FLOW=title OK

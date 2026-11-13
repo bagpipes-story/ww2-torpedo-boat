@@ -10,6 +10,7 @@ const parse = (s: string | undefined): Record<string, number> => Object.fromEntr
 const gains = parse(process.env.GAINS);
 const loopsMul = parse(process.env.LOOPS);
 const minInt = parse(process.env.MININT);
+const fromS = parse(process.env.FROM);
 const out = process.env.OUT!; mkdirSync(out, { recursive: true });
 const pick = process.env.CASES ? process.env.CASES.split(',') : null;
 const data = JSON.parse(readFileSync(process.env.PROBE!, 'utf8')) as { cases: ProbeCase[] };
@@ -42,7 +43,7 @@ for (const c0 of data.cases) {
   let qBest = 1e9, qAt = 5;
   for (let s = 5; s + W <= total; s++) { let k = 0; for (let i = s; i < s + W; i++) k += per[i]!; if (k < qBest) { qBest = k; qAt = s; } }
   const busy = busiestWindow(c, W);
-  for (const [tag, from0] of [['busy', busy.from], ['quiet', qAt * SR]] as const) {
+  for (const [tag, from0] of [['busy', fromS[c0.name] !== undefined ? Math.round(fromS[c0.name]! * SR) : busy.from], ['quiet', qAt * SR]] as const) {
     const from = from0, to = Math.min(n, from + W * SR), a = Math.max(0, from - SR);
     const sl = (x: Float32Array): string => Buffer.from(new Float32Array(x.subarray(a, to)).buffer).toString('base64');
     const on = onsets.filter((o) => o.at >= from && o.at < to).map((o) => ({ ...o, at: o.at - a }));

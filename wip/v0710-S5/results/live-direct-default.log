@@ -1,0 +1,11 @@
+  Mission（始め）: WebAudio context suspended t 0 s 44100 Hz ・ 音源 0 今 0 最大 0 捨てた（消音・停止）0 最初のタップ 0 resume 1 見張り 0 消音 false mg 0 blast_l 0 ui_tap 0 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.000
+  Mission（1 回目の爆発の後）: WebAudio context suspended t 0 s 44100 Hz ・ 音源 0 今 0 最大 0 捨てた（消音・停止）11 最初のタップ 0 resume 1 見張り 0 消音 false mg 0 blast_l 0 ui_tap 0 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.000
+  Mission（終わり）: WebAudio context suspended t 0 s 44100 Hz ・ 音源 0 今 0 最大 0 捨てた（消音・停止）26 最初のタップ 0 resume 1 見張り 0 消音 false mg 0 blast_l 0 ui_tap 0 落とした（間隔・遠い・声）0/0/0 ・ 頂 0.000
+✓ 既定 FLOW=direct: ページのエラー 0
+✓ 既定 FLOW=direct: 任務が進む（実時間 10 秒で任務の時計 1.4 秒）
+✓ 既定 FLOW=direct: context は止まったまま（suspended）
+✓ 既定 FLOW=direct: 音源を 1 つも作らない（0）
+✓ 既定 FLOW=direct: 捨てた数だけ増える（26）＝積まない
+✓ 既定 FLOW=direct: 波形は無音（頂 0）
+✓ 既定 FLOW=direct: 止まっている context ではループを 1 つも作らない（0）
+sfx-live 既定 FLOW=direct OK

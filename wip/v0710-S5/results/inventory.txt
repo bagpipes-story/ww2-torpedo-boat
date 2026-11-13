@@ -1,0 +1,16 @@
+us_01   alarm1 bell1 blast_l3 blast_s17 gun_near43 hull_hit3 light_on1 mg13 sink2 splash_l24 splash_s106 torp_launch4 | loops engine,sea,fire
+us_01h  alarm1 bell1 blast_l3 blast_s16 gun_far7 gun_near35 hull_hit1 light_on1 mg9 sink2 splash_l17 splash_s86 torp_launch4 | loops engine,sea,fire
+us_02   alarm2 bell2 blast_s6 engine_cough1 gun_near5 hull_hit1 light_on1 mg184 reload4 sink1 splash_l75 splash_s134 torp_hit1 torp_launch4 | loops engine,sea
+us_02h  alarm4 bell1 blast_l2 blast_s4 engine_cough1 gun_near12 hull_hit2 light_on4 mg11 sink1 splash_l7 splash_s40 torp_launch3 | loops engine,sea,fire
+us_03   alarm2 bell1 blast_l2 blast_s3 gun_near4 hull_hit3 mg30 splash_l2 splash_s59 torp_launch4 | loops engine,sea,fire
+us_03h  alarm2 bell1 blast_l1 blast_s3 gun_near4 hull_hit2 mg35 splash_l3 splash_s61 torp_launch4 | loops engine,sea,fire
+jp_01   alarm1 bell2 blast_s3 engine_cough1 hull_hit2 mg16 splash_s13 torp_launch2 | loops engine,sea
+jp_01h  alarm1 bell1 blast_l1 blast_s16 engine_cough1 hull_hit7 mg121 reload6 sink1 splash_l16 splash_s92 torp_launch2 | loops engine,sea
+jp_02   bell1 blast_l2 blast_s2 bomb_fall2 engine_cough1 hull_hit2 sink1 | loops engine,sea,fire,drone
+jp_03   alarm7 bell1 blast_l16 blast_s2 bomb_fall33 engine_cough2 hull_hit6 sink1 smoke1 splash_l30 ui_tap10 | loops engine,sea,fire,drone
+jp_03h  alarm6 bell1 blast_l14 blast_s2 bomb_fall28 engine_cough2 hull_hit6 sink1 smoke1 splash_l31 ui_tap8 | loops engine,sea,fire,drone
+jp_04   alarm1 bell1 blast_l1 blast_s16 engine_cough1 gun_near6 hull_hit5 mg36 sink2 splash_l1 splash_s26 torp_hit2 torp_launch2 | loops engine,sea
+jp_04h  alarm1 bell1 blast_l1 blast_s18 engine_cough1 gun_near6 hull_hit6 mg61 reload4 sink2 splash_l5 splash_s50 torp_hit2 torp_launch2 | loops engine,sea,fire
+jp_05   alarm1 bell1 blast_l1 blast_s14 engine_cough3 hull_hit8 mg76 sink1 splash_l2 splash_s62 torp_launch2 ui_tap1 | loops engine,sea
+jp_06   alarm2 bell1 blast_l2 blast_s5 gun_near16 hull_hit3 light_on2 mg3 sink1 splash_l6 splash_s45 torp_launch2 | loops engine,sea
+jp_06h  alarm2 bell1 blast_l1 blast_s7 gun_near23 hull_hit3 light_on5 mg2 sink1 splash_l11 splash_s69 torp_launch2 | loops engine,sea,fire
