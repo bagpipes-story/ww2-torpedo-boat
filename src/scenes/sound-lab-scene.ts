@@ -1,5 +1,6 @@
 // 音の試聴の場（v0.7.1 IP2。実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音も…ポンっ」）: URL に ?sfxlab がある時だけ Boot が Title の代わりにここへ来る（ふだんの URL は変わらない）。
-// 弾倉の始め・弾倉の終わり・魚雷の発射の案 A〜D（assets/sfx-variants。D は IP1 の音）と「続けて聞く」（始め → 1.2 秒 → 終わり）をボタンで鳴らす。ゲームの再生のエンジンを
+// 弾倉の始め・弾倉の終わり・魚雷の発射の案 A〜D（assets/sfx-variants。D は IP1 の音）と「続けて聞く」（始め → 1.2 秒 → 終わり）をボタンで鳴らす。IP3（実機 3 回目）で
+// 魚雷の発射の新しい案 E〜I の行を足した（行と案の対応は SFX_LAB_ROWS）。ゲームの再生のエンジンを
 // そのまま使い、鍵の標本を押した案に差し替えて合図と同じ音量（鍵の表の音量 × 1）で鳴らす＝ゲームの中と同じ大きさ。場を出る時（SHUTDOWN）に既定の標本へ戻す。
 // 静的な画面: 物体は create で 1 回だけ作る。案の標本は押した時に 1 回だけ作って覚える（1 本 1〜20 ms）。update は最初のタップの待ちを見るだけ（確保しない）。
 // iOS: ボタンは指を離した時（MenuButton の onUp）に決まり、その touchend で Phaser と systems/sfx-boot が context を起こす。まだ動いていなければ押した案を 1 つ覚え、
@@ -14,14 +15,14 @@ import {
 } from '../config/sound-lab-config';
 import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
 import { renderSfx } from '../assets/sfx-bank';
-import { SFX_VARIANT_GROUPS, renderSfxVariant } from '../assets/sfx-variants';
+import { SFX_LAB_ROWS, SFX_VARIANT_GROUPS, renderSfxVariant } from '../assets/sfx-variants';
 import { sfxCanPlay, sfxCue, sfxSetBuffer, sfxSetMuted } from '../systems/sfx-bus';
 import { soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
 import { soundLabBackRect, soundLabButtonRect, soundLabButtonTitle, soundLabLabelRect, type SoundLabFrame } from '../ui/sound-lab-layout';
 
-/** 「続けて聞く」の行（SFX_VARIANT_GROUPS の後）。始めと終わりの組（SFX_VARIANT_GROUPS の添字） */
-const PAIR_ROW = SFX_VARIANT_GROUPS.length;
+/** 「続けて聞く」の行（SFX_LAB_ROWS の後）。始めと終わりの組（SFX_VARIANT_GROUPS の添字） */
+const PAIR_ROW = SFX_LAB_ROWS.length;
 const PAIR_START = 0;
 const PAIR_END = 1;
 const NONE = -1;
@@ -54,13 +55,17 @@ export class SoundLabScene extends Phaser.Scene {
       const r = soundLabLabelRect(row, frame);
       this.add.text(r.x, r.y + r.h / 2, SOUND_LAB_ROW_LABELS_JA[row]!, hudTextStyle(SOUND_LAB_LABEL_PX, HUD_COLOR_STRONG)).setOrigin(0, 1).setDepth(DEPTH.hud);
       this.add.text(r.x, r.y + r.h / 2, SOUND_LAB_ROW_SUBS_JA[row]!, hudTextStyle(SOUND_LAB_LABEL_SUB_PX, HUD_COLOR)).setOrigin(0, 0).setDepth(DEPTH.hud);
-      const g = SFX_VARIANT_GROUPS[row < PAIR_ROW ? row : PAIR_START]!;
-      g.variants.forEach((v, col) => {
-        const b = soundLabButtonRect(row, col, frame);
-        const sub = row < PAIR_ROW ? g.notesJa[col]! : SOUND_LAB_PAIR_NOTE_JA;
-        const spec = { ...b, title: soundLabButtonTitle(v.id, v.id === g.defaultId), titlePx: SOUND_LAB_BUTTON_PX, sub, subPx: SOUND_LAB_NOTE_PX, align: 'center' as const, silent: true };
+      const lr = row < PAIR_ROW ? SFX_LAB_ROWS[row]! : { group: PAIR_START, first: 0, count: SFX_VARIANT_GROUPS[PAIR_START]!.variants.length };
+      const g = SFX_VARIANT_GROUPS[lr.group]!;
+      for (let col = 0; col < lr.count; col++) {
+        const vi = lr.first + col;
+        const v = g.variants[vi]!;
+        const b = soundLabButtonRect(row, col, lr.count, frame);
+        const sub = row < PAIR_ROW ? g.notesJa[vi]! : SOUND_LAB_PAIR_NOTE_JA;
+        const title = soundLabButtonTitle(v.id, v.id === g.defaultId, row < PAIR_ROW ? g.kindsJa?.[vi] : '');
+        const spec = { ...b, title, titlePx: SOUND_LAB_BUTTON_PX, sub, subPx: SOUND_LAB_NOTE_PX, align: 'center' as const, silent: true };
         this.buttons.push(new MenuButton(this, spec, () => this.tap(row, col)));
-      });
+      }
     }
     const back = soundLabBackRect(frame);
     this.buttons.push(new MenuButton(this, { ...back, title: SOUND_LAB_BACK_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave()));
@@ -106,13 +111,16 @@ export class SoundLabScene extends Phaser.Scene {
 
   /** 行 row・列 col を鳴らす（「続けて聞く」は始めを今・終わりを SFX_LAB.pairGapS 秒後の予約で） */
   private audition(row: number, col: number): void {
-    const groups = SFX_VARIANT_GROUPS;
-    if (row < PAIR_ROW) this.sound1(row, col, 0);
-    else {
+    let id: string;
+    if (row < PAIR_ROW) {
+      const lr = SFX_LAB_ROWS[row]!;
+      this.sound1(lr.group, lr.first + col, 0);
+      id = SFX_VARIANT_GROUPS[lr.group]!.variants[lr.first + col]!.id;
+    } else {
       this.sound1(PAIR_START, col, 0);
       this.sound1(PAIR_END, col, SFX_LAB.pairGapS);
+      id = SFX_VARIANT_GROUPS[PAIR_START]!.variants[col]!.id;
     }
-    const id = groups[row < PAIR_ROW ? row : PAIR_START]!.variants[col]!.id;
     this.status?.setText(`${SOUND_LAB_PLAYED_JA}${SOUND_LAB_ROW_LABELS_JA[row]!} ${id}`);
   }
 

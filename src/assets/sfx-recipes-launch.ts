@@ -3,6 +3,7 @@
 // 小さいスピーカーの「どん・どすっ」＝高さの無い雑音のエネルギーを 180〜700 Hz に集め、速く立ち上げて 0.15〜0.3 秒で減衰、雑音のほうを柔らかく歪ませて太く（正弦は歪ませない）、
 // 20〜60 ms の短い拡がった尾（別々の雑音を遅らせて重ねる＝船体の響き。同じ雑音を重ねると櫛の高さが出る）。圧縮空気の「ぶしゅっ」と着水の「ざぶん」は残す。
 // 試聴の場（?sfxlab）で聞き比べる案: A「どすん＋ぶしゅっ」（既定）・B 大きい「どおん」・C「ばしゅっ」（空気の発射が主・低いのは少し）・D IP1 の音（比べる用）。
+// IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 新しい案 E〜I は assets/sfx-recipes-launch2（試聴の場だけ。既定は A のまま＝ユーザーが選ぶまで）。
 // 数は音色の定数（聞かせ方）で、案ごとの名前つきの表。乱数は音だけの種 SFX_SEED_TORP_LAUNCH。直流・端の fade・頂の正規化は assets/sfx-bank。
 import { SFX_SEED_TORP_LAUNCH, type SfxKey } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
@@ -13,7 +14,7 @@ import type { SfxRecipeVariant } from './sfx-recipes-reload';
 interface Thud { readonly loHz: number; readonly hiHz: number; readonly attackS: number; readonly decayS: number; readonly drive: number; readonly gain: number }
 /** 拡がった尾: taps の秒ごとに別の雑音の短い打撃（帯・減衰は共通）を gains の大きさで */
 interface Tail { readonly tapsS: readonly number[]; readonly gains: readonly number[]; readonly loHz: number; readonly hiHz: number; readonly decayS: number }
-interface Launch {
+export interface Launch {
   /** 頭の割れ（高域通過の雑音・数 ms） */
   readonly crackHpHz: number; readonly crackS: number; readonly crackGain: number;
   readonly thuds: readonly Thud[];
@@ -25,6 +26,8 @@ interface Launch {
   /** 着水（低い帯の「どぼ」＋ 広い帯の「ざぶん」） */
   readonly splashAtS: number; readonly splashThumpS: number; readonly splashThumpGain: number; readonly splashS: number; readonly splashGain: number;
   readonly tailFadeS: number;
+  /** IP3: 全体の歪み（頂 1 にそろえて tanh＝全体を圧縮して大きく。無しは A〜C） */
+  readonly busDrive?: number;
 }
 const ATTACK_S = 0.0003;
 const SPLASH = { thumpLoHz: 250, thumpHiHz: 800, loHz: 400, hiHz: 4000, attackS: 0.005 } as const;
@@ -37,9 +40,10 @@ function thud(n: number, rng: SeededRng, t: Thud, atS = 0): Float32Array {
   return saturate(x, t.drive);
 }
 
-function launch(c: Launch): SfxRecipe {
+/** 案の表 → 作り方（乱数は音だけの種。A〜C は SFX_SEED_TORP_LAUNCH・IP3 の I は makeRng＝試聴の場の種） */
+export function launch(c: Launch, makeRng?: () => SeededRng): SfxRecipe {
   return (n) => {
-    const rng = new SeededRng(SFX_SEED_TORP_LAUNCH);
+    const rng = makeRng ? makeRng() : new SeededRng(SFX_SEED_TORP_LAUNCH);
     const out = mul(highPass(whiteNoise(rng, n), c.crackHpHz), envelope(n, ATTACK_S, c.crackS));
     for (let i = 0; i < n; i++) out[i] = out[i]! * c.crackGain;
     for (const t of c.thuds) mixInto(out, thud(n, rng, t), t.gain);
@@ -54,12 +58,16 @@ function launch(c: Launch): SfxRecipe {
     const sn = n - sfxSamples(c.splashAtS);
     mixInto(out, mul(bandPass(whiteNoise(rng, sn), SPLASH.thumpLoHz, SPLASH.thumpHiHz), envelope(sn, SPLASH.attackS, c.splashThumpS)), c.splashThumpGain, c.splashAtS);
     mixInto(out, mul(bandPass(whiteNoise(rng, sn), SPLASH.loHz, SPLASH.hiHz), envelope(sn, SPLASH.attackS, c.splashS)), c.splashGain, c.splashAtS);
+    if (c.busDrive) {
+      const g = 1 / Math.max(1e-9, peakOf(out));
+      for (let i = 0; i < n; i++) out[i] = Math.tanh(out[i]! * g * c.busDrive);
+    }
     return fadeTail(out, c.tailFadeS);
   };
 }
 
 /** A「どすん＋ぶしゅっ」（既定）: 180〜700 Hz の雑音の打撃（減衰 0.22 秒・歪み 2.5）＋ 22〜64 ms の尾 4 つ ＋ 空気の掃引 3k → 800 Hz ＋ 0.37 秒に着水 */
-const LAUNCH_A: Launch = {
+export const LAUNCH_A: Launch = {
   crackHpHz: 1500, crackS: 0.005, crackGain: 2.4,
   thuds: [{ loHz: 180, hiHz: 700, attackS: 0.002, decayS: 0.22, drive: 2.5, gain: 1 }],
   tail: { tapsS: [0.022, 0.037, 0.051, 0.064], gains: [0.5, 0.38, 0.28, 0.2], loHz: 200, hiHz: 900, decayS: 0.12 }, tailGain: 0.7,

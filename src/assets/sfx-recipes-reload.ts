@@ -1,7 +1,8 @@
 // v0.7.1 IP2（実機 2 回目「弾倉交換はやはりまぬけな感じ…機銃の弾倉を変える金属音っぽく聞こえません」）: 弾倉の交換の音の作り方。始め `reload`（止め金を外して弾倉を抜く
 // 「かしゃっ」）と終わり `reload_end`（差し込む「がちゃっ」…槓桿を引いて放す「じゃきっ」）の 2 本に分けた（IP1 は同じ 3 打を始めと終わりで 2 回鳴らした＝間抜けに聞こえた）。
 // 銃の金属の音は「雑音」が主: 1〜3 ms の雑音の当たり・3〜8 ms で消える短い響き・帯の雑音の胴（重さ）・擦れる「しゃっ」。長く鳴る高さ（IP1 のモード 12〜80 ms＝小さい鐘・木琴）は使わない。
-// 試聴の場（?sfxlab。scenes/sound-lab-scene）で聞き比べる案: A 雑音の打音（既定）・B 重い「がしゃっ」・C 乾いた小さい音（小銃の槓桿）・D IP1 の音（比べる用）。
+// 試聴の場（?sfxlab。scenes/sound-lab-scene）で聞き比べる案: A 雑音の打音・B 重い「がしゃっ」・C 乾いた小さい音（小銃の槓桿）・D IP1 の音（比べる用）。
+// IP3（実機 3 回目。ユーザーの決め U-R1「弾倉はBでいきましょう」）: 始めも終わりも B が既定（ゲームで鳴る）。A・C・D は試聴の場に比べる用に残す。
 // 数は音色の定数（聞かせ方）で、案ごとの名前つきの表。乱数は音だけの種（SFX_SEED_RELOAD・SFX_SEED_RELOAD_END）。直流・端の fade・頂の正規化は assets/sfx-bank。
 import { SFX_SAMPLE_RATE, SFX_SEED_RELOAD, SFX_SEED_RELOAD_END, type SfxKey } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
@@ -12,14 +13,14 @@ const SR = SFX_SAMPLE_RATE;
 const ATTACK_S = 0.0002;
 
 /** 金属の部品がぶつかる 1 打: 雑音の当たり（高域通過）＋ 帯の雑音の胴 ＋ 短い響き（ringS 秒で 1/10。8 ms 以下＝高さに聞こえない） */
-interface Clack {
+export interface Clack {
   readonly atS: number; readonly gain: number;
   readonly clickS: number; readonly clickHpHz: number; readonly clickGain: number;
   readonly bodyLoHz: number; readonly bodyHiHz: number; readonly bodyS: number; readonly bodyGain: number;
   readonly ringHz: readonly number[]; readonly ringS: number; readonly ringGain: number;
 }
 /** 擦れる音（弾倉が溝を滑る・槓桿を引く）: 帯の雑音（帯を loHz〜hiHz から toLoHz〜toHiHz へ掃引）× 山の形 × ざらつき（grainHz ごとに大きさが揺れる＝rough の割合） */
-interface Slide {
+export interface Slide {
   readonly atS: number; readonly durS: number; readonly gain: number;
   readonly loHz: number; readonly hiHz: number; readonly toLoHz: number; readonly toHiHz: number;
   readonly grainHz: number; readonly rough: number;
@@ -29,7 +30,7 @@ interface Mech {
   readonly clacks: readonly Clack[];
 }
 
-function clack(out: Float32Array, rng: SeededRng, c: Clack): void {
+export function clack(out: Float32Array, rng: SeededRng, c: Clack): void {
   const at = sfxSamples(c.atS);
   const len = Math.min(out.length - at, sfxSamples(6 * Math.max(c.bodyS, c.clickS, c.ringS)));
   if (len <= 0) return;
@@ -45,7 +46,7 @@ function clack(out: Float32Array, rng: SeededRng, c: Clack): void {
   mixInto(out, hit, c.gain, c.atS);
 }
 
-function slide(out: Float32Array, rng: SeededRng, s: Slide): void {
+export function slide(out: Float32Array, rng: SeededRng, s: Slide): void {
   const len = Math.min(out.length - sfxSamples(s.atS), sfxSamples(s.durS));
   if (len <= 0) return;
   const x = bandPass(whiteNoise(rng, len), s.loHz, s.hiHz, s.toLoHz, s.toHiHz, s.durS);
@@ -72,15 +73,15 @@ function mech(m: Mech, end: boolean): SfxRecipe {
 
 const NO_RING: readonly number[] = [];
 /** 打音の型（重い・中・軽い・乾いた）。案の表は at と gain と少しの違いだけを書く */
-const HEAVY = { clickS: 0.002, clickHpHz: 1000, clickGain: 1, bodyLoHz: 450, bodyHiHz: 1700, bodyS: 0.035, bodyGain: 2.4, ringHz: [1530, 2270, 3110, 3940], ringS: 0.007, ringGain: 0.25 } as const;
-const MID = { clickS: 0.0015, clickHpHz: 1500, clickGain: 1, bodyLoHz: 800, bodyHiHz: 2600, bodyS: 0.02, bodyGain: 1.6, ringHz: [2230, 3290, 4470], ringS: 0.006, ringGain: 0.25 } as const;
-const LIGHT = { clickS: 0.001, clickHpHz: 2500, clickGain: 1, bodyLoHz: 1500, bodyHiHz: 4200, bodyS: 0.008, bodyGain: 1, ringHz: [3620, 4810], ringS: 0.004, ringGain: 0.2 } as const;
+export const HEAVY = { clickS: 0.002, clickHpHz: 1000, clickGain: 1, bodyLoHz: 450, bodyHiHz: 1700, bodyS: 0.035, bodyGain: 2.4, ringHz: [1530, 2270, 3110, 3940], ringS: 0.007, ringGain: 0.25 } as const;
+export const MID = { clickS: 0.0015, clickHpHz: 1500, clickGain: 1, bodyLoHz: 800, bodyHiHz: 2600, bodyS: 0.02, bodyGain: 1.6, ringHz: [2230, 3290, 4470], ringS: 0.006, ringGain: 0.25 } as const;
+export const LIGHT = { clickS: 0.001, clickHpHz: 2500, clickGain: 1, bodyLoHz: 1500, bodyHiHz: 4200, bodyS: 0.008, bodyGain: 1, ringHz: [3620, 4810], ringS: 0.004, ringGain: 0.2 } as const;
 const DRY = { clickS: 0.0008, clickHpHz: 2000, clickGain: 1, bodyLoHz: 1200, bodyHiHz: 4500, bodyS: 0.005, bodyGain: 0.9, ringHz: NO_RING, ringS: 0, ringGain: 0 } as const;
 /** 擦れの型: 弾倉が溝を滑る（中の帯・粗い）・槓桿（明るい帯・細かい） */
-const MAG_SLIDE = { loHz: 1600, hiHz: 4800, toLoHz: 1300, toHiHz: 3800, grainHz: 170, rough: 0.6 } as const;
+export const MAG_SLIDE = { loHz: 1600, hiHz: 4800, toLoHz: 1300, toHiHz: 3800, grainHz: 170, rough: 0.6 } as const;
 const BOLT_SLIDE = { loHz: 2200, hiHz: 6000, toLoHz: 2600, toHiHz: 7000, grainHz: 320, rough: 0.7 } as const;
 
-/** A 雑音の打音（既定）: 始め＝止め金の「かち」→ 弾倉が抜ける「しゃっ」→ 抜けた「かしゃ」。終わり＝差し込む「しゃ・がちゃっ」＋止め金 → 0.22 秒に槓桿を引く「じゃっ」→ 放して「きっ」 */
+/** A 雑音の打音（IP2 の既定）: 始め＝止め金の「かち」→ 弾倉が抜ける「しゃっ」→ 抜けた「かしゃ」。終わり＝差し込む「しゃ・がちゃっ」＋止め金 → 0.22 秒に槓桿を引く「じゃっ」→ 放して「きっ」 */
 const RELOAD_A: Mech = {
   slides: [{ ...MAG_SLIDE, atS: 0.03, durS: 0.11, gain: 1.3 }],
   clacks: [{ ...LIGHT, atS: 0.006, gain: 0.8 }, { ...MID, atS: 0.13, gain: 1 }, { ...LIGHT, atS: 0.142, gain: 0.35 }],
@@ -92,7 +93,7 @@ const RELOAD_END_A: Mech = {
     { ...LIGHT, atS: 0.22, gain: 0.4 }, { ...MID, atS: 0.3, gain: 1, ringS: 0.008 }, { ...LIGHT, atS: 0.313, gain: 0.3 },
   ],
 };
-/** B 重い「がしゃっ」: 胴が低く厚い（300〜1.3k Hz）・擦れが長く粗い・打ちに跳ね返り。槓桿は強い「がしゃっ」 */
+/** B 重い「がしゃっ」（IP3 から既定＝U-R1）: 胴が低く厚い（300〜1.3k Hz）・擦れが長く粗い・打ちに跳ね返り。槓桿は強い「がしゃっ」 */
 const B_BODY = { bodyLoHz: 260, bodyHiHz: 1100, bodyS: 0.055, bodyGain: 3.6, ringHz: [1130, 1690, 2410], ringS: 0.008 } as const;
 const RELOAD_B: Mech = {
   slides: [{ ...MAG_SLIDE, loHz: 800, hiHz: 3000, toLoHz: 700, toHiHz: 2500, grainHz: 120, rough: 0.75, atS: 0.035, durS: 0.16, gain: 1.6 }],
@@ -163,7 +164,7 @@ export interface SfxRecipeVariant {
 /** IP1 の標本の秒と、IP1 が弾倉の終わりに鳴らした速さ（D を IP1 のとおりに聞かせる） */
 const IP1_SECONDS = 0.42;
 const IP1_END_RATE = 1.06;
-/** 始めと終わりの標本の秒（既定の案 A の長さ＝config/sfx-config の表の秒。B・C も同じ長さに収める） */
+/** 始めと終わりの標本の秒（既定の案 B の長さ＝config/sfx-config の表の秒。A・C も同じ長さに収める） */
 export const RELOAD_SECONDS = 0.3;
 export const RELOAD_END_SECONDS = 0.42;
 export const RELOAD_VARIANTS: readonly SfxRecipeVariant[] = [
@@ -178,8 +179,8 @@ export const RELOAD_END_VARIANTS: readonly SfxRecipeVariant[] = [
   { id: 'C', recipe: mech(RELOAD_END_C, true), seconds: RELOAD_END_SECONDS, rate: 1 },
   { id: 'D', recipe: reloadIp1, seconds: IP1_SECONDS, rate: IP1_END_RATE },
 ];
-/** ゲームで鳴らす案（試聴の場の「（今）」） */
-export const RELOAD_DEFAULT_ID = 'A';
+/** ゲームで鳴らす案（試聴の場の「（今）」）。IP3: ユーザーの決め U-R1（始め・終わりとも B「重い がしゃっ」） */
+export const RELOAD_DEFAULT_ID = 'B';
 
 function pick(list: readonly SfxRecipeVariant[], id: string): SfxRecipe {
   const v = list.find((x) => x.id === id);

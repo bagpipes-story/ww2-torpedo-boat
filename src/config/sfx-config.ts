@@ -61,6 +61,12 @@ export const SFX_SEED_RAIN = 7524;
 export const SFX_SEED_DRONE = 7525;
 /** IP2: 弾倉の交換の終わり（差し込む・槓桿） */
 export const SFX_SEED_RELOAD_END = 7526;
+/** IP3: 試聴の場（?sfxlab）だけの魚雷の発射の新しい案 E〜I（ゲームの鍵ではない＝起動時には作らず、押した時に作る。assets/sfx-recipes-launch2） */
+export const SFX_SEED_LAB_LAUNCH_E = 7527;
+export const SFX_SEED_LAB_LAUNCH_F = 7528;
+export const SFX_SEED_LAB_LAUNCH_G = 7529;
+export const SFX_SEED_LAB_LAUNCH_H = 7530;
+export const SFX_SEED_LAB_LAUNCH_I = 7531;
 /** 再生のたびの rate の揺れ（エンジンの乱数。合成の種とは別） */
 export const SFX_SEED_PLAY = 7599;
 

@@ -8,6 +8,7 @@
 //   着水の後にスクリューのうなり（中の高さ 0.6〜1.4 kHz）。
 // - IP2（実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音も…ポンっ」）: 弾倉は始め reload・終わり reload_end の 2 本で、どちらも雑音の金属（高さが目立たない＝平均スペクトルの
 //   局所の頂 < 8 dB。IP1 は 14.6 dB）。魚雷の発射は高さの無い雑音の「どん」（180〜700 Hz に 40% 以上・頂 < 6 dB）。スクリューのうなりはやめた。案の表は tests/sfx-variants。
+// - IP3（実機 3 回目「弾倉はBでいきましょう」＝U-R1）: 弾倉の既定は B「重い がしゃっ」（胴が低く厚い＝400 Hz より上 90%／95%・始めの −20 dB まで 256 ms・終わりは 4 つの山）。
 import { describe, expect, it } from 'vitest';
 import { SFX_KEYS, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx } from '../src/assets/sfx-bank';
@@ -112,9 +113,9 @@ describe('合図 11 本の聞き分け（v0.7.1 S4。IP2 で弾倉の終わり�
     expect(zeroCrossings(v, 2 * n3, v.length)).toBeLessThan(zeroCrossings(v, 0, n3) * 0.7);
     expect(20 * Math.log10(rmsOf(v, 2 * n3, v.length) / rmsOf(v, 0, n3))).toBeGreaterThan(9);
   });
-  it('打の数: 弾倉の始めは 2 打（止め金・抜けた）・終わりは 3 打（差す・槓桿を引く・放す。IP2）・機関の咳は 3 打・被弾は 1 打で短い（−20 dB まで 0.2 秒未満）', () => {
+  it('打の数: 弾倉の始めは 2 打（止め金・抜けた）・終わりは 4 つの山（差し込む擦れ・がちゃっ・槓桿を引く・放す。IP3 の既定 B）・機関の咳は 3 打・被弾は 1 打で短い（−20 dB まで 0.2 秒未満）', () => {
     expect(bursts(x('reload'))).toBe(2);
-    expect(bursts(x('reload_end'))).toBe(3);
+    expect(bursts(x('reload_end'))).toBe(4);
     expect(bursts(x('engine_cough'))).toBe(3);
     expect(len20(x('hull_hit'))).toBeLessThan(0.2);
   });
@@ -133,12 +134,12 @@ describe('合図 11 本の聞き分け（v0.7.1 S4。IP2 で弾倉の終わり�
     expect(centroidHz(sm, 0, sm.length, SR)).toBeLessThan(centroidHz(fl, 0, fl.length, SR) * 0.85);
     expect(rmsOf(tl, at(0.37), at(0.47))).toBeGreaterThan(rmsOf(tl, at(0.27), at(0.37)));
   });
-  it('IP2: 弾倉の始め・終わりは雑音の金属（400 Hz より上 ≥ 95%・局所の頂 < 8 dB＝長く鳴る高さが無い）。始めは短く（−20 dB まで 0.2 秒未満）、終わりは差してから槓桿まで続く（0.25 秒より長い）', () => {
+  it('IP2・IP3: 弾倉の始め・終わりは雑音の金属（400 Hz より上 ≥ 90%＝既定 B の胴は低く厚い・局所の頂 < 8 dB＝長く鳴る高さが無い）。始めは短く（−20 dB まで 0.3 秒未満）、終わりは差してから槓桿まで続く（0.25 秒より長い）', () => {
     for (const k of ['reload', 'reload_end'] as const) {
-      expect(shareAbove(x(k), 400), k).toBeGreaterThanOrEqual(0.95);
+      expect(shareAbove(x(k), 400), k).toBeGreaterThanOrEqual(0.9);
       expect(peakinessDb(x(k)), k).toBeLessThan(8);
     }
-    expect(len20(x('reload'))).toBeLessThan(0.2);
+    expect(len20(x('reload'))).toBeLessThan(0.3);
     expect(len20(x('reload_end'))).toBeGreaterThan(0.25);
   });
   it('IP2: 魚雷の発射は高さの無い「どん」（180〜700 Hz に 40% 以上・局所の頂 < 6 dB）で本体のスピーカーにも届く（400 Hz より上 ≥ 60%）。一番大きい 0.1 秒は頭（0〜0.1 秒）', () => {
