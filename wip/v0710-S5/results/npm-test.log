@@ -1,0 +1,7 @@
+
+> ww2-torpedo-boat@0.7.1 test
+> vitest run --testTimeout=90000
+
+
+ RUN  v4.1.11 /home/user/ww2-torpedo-boat
+

@@ -1,0 +1,63 @@
+jp_01-busy         @ 84s 頂 0.753 超 0.00% RMS -21.8dB engine 73%  爆発 2: 10.2/9.1 孤 2:10.2  合図(数:中央/最小) hull_hit 2:8.2/7.3
+jp_01-quiet        @  5s 頂 0.531 超 0.00% RMS -30.2dB engine 63%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:12.2/12.1
+jp_01h-busy        @105s 頂 0.807 超 0.00% RMS -19.4dB engine 53%  爆発 5: 6.6/3.9 孤 4:7.3  合図(数:中央/最小) hull_hit 5:5.5/3.0 engine_cough 1:7.5/7.5 reload 1:-2.3/-2.3
+jp_01h-quiet       @  5s 頂 0.531 超 0.00% RMS -30.2dB engine 63%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:12.2/12.1
+jp_02-busy         @ 14s 頂 0.693 超 0.00% RMS -18.1dB engine 24%  爆発 4: 5.6/-0.6 孤 2:5.9  合図(数:中央/最小) bomb_fall 2:9.8/-2.0 hull_hit 2:5.5/5.2 engine_cough 1:5.5/5.5
+jp_02-quiet        @  5s 頂 0.215 超 0.00% RMS -27.1dB engine 86%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+jp_03-busy         @143s 頂 0.783 超 0.00% RMS -15.2dB engine 31%  爆発 4: 6.1/5.1 孤 4:6.1  合図(数:中央/最小) bomb_fall 6:0.8/-2.9 hull_hit 2:5.7/4.8 engine_cough 1:4.8/4.8
+jp_03-quiet        @  5s 頂 0.099 超 0.00% RMS -33.4dB engine 74%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+jp_03-switch-busy  @ 82s 頂 0.767 超 0.00% RMS -18.2dB engine 48%  爆発 1: 5.9/5.9 孤 1:5.9  合図(数:中央/最小) reload 2:-1.2/-3.9 bomb_fall 2:7.8/-2.5
+jp_03-switch-quiet @  5s 頂 0.169 超 0.00% RMS -27.8dB engine 92%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+jp_03h-busy        @143s 頂 0.783 超 0.00% RMS -14.2dB engine 30%  爆発 5: 5.6/4.7 孤 5:5.6  合図(数:中央/最小) bomb_fall 6:-2.5/-3.1 smoke 1:0.2/0.2 hull_hit 1:4.5/4.5 engine_cough 1:4.5/4.5
+jp_03h-last-busy   @141s 頂 0.747 超 0.00% RMS -16.0dB engine 37%  爆発 2: 5.4/4.7 孤 2:5.4  合図(数:中央/最小) bomb_fall 5:0.4/-2.5 reload 2:-3.2/-3.6 hull_hit 1:5.2/5.2
+jp_03h-last-quiet  @  5s 頂 0.099 超 0.00% RMS -33.4dB engine 74%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+jp_03h-quiet       @  5s 頂 0.099 超 0.00% RMS -33.4dB engine 74%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+jp_04-busy         @ 62s 頂 0.774 超 0.00% RMS -17.7dB engine 34%  爆発 13: 3.8/-3.4 孤 4:10.7  合図(数:中央/最小) hull_hit 7:3.1/-0.5 engine_cough 1:2.3/2.3 bell 1:11.5/11.5
+jp_04-quiet        @  5s 頂 0.516 超 0.00% RMS -26.9dB engine 83%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.7/6.6
+jp_04-salvo-busy   @ 70s 頂 0.664 超 0.00% RMS -20.8dB engine 11%  爆発 7: 1.6/-3.4 孤 3:19.6  合図(数:中央/最小) bell 1:1.3/1.3
+jp_04-salvo-quiet  @  5s 頂 0.060 超 0.00% RMS -37.7dB engine 76%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+jp_04h-busy-busy   @ 78s 頂 0.731 超 0.00% RMS -20.3dB engine 39%  爆発 5: 9.1/3.6 孤 4:9.4  合図(数:中央/最小) hull_hit 5:7.4/2.8 reload 3:9.0/-5.0
+jp_04h-busy-quiet  @  5s 頂 0.516 超 0.00% RMS -26.9dB engine 83%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.7/6.6
+jp_04h-busy        @ 80s 頂 0.707 超 0.00% RMS -20.9dB engine 50%  爆発 4: 7.0/3.6 孤 3:7.0  合図(数:中央/最小) hull_hit 4:5.8/2.9 engine_cough 1:5.7/5.7 reload 1:-4.6/-4.6
+jp_04h-quiet       @  5s 頂 0.516 超 0.00% RMS -26.9dB engine 83%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.7/6.6
+jp_05-busy         @ 88s 頂 0.721 超 0.00% RMS -19.6dB engine 57%  爆発 2: 7.2/2.5 孤 2:7.2  合図(数:中央/最小) hull_hit 2:6.1/1.7 engine_cough 1:3.8/3.8 bell 1:11.2/11.2
+jp_05-hot-busy     @ 15s 頂 0.715 超 0.00% RMS -21.3dB engine 39%  爆発 5: 5.2/1.4 孤 2:16.8  合図(数:中央/最小) hull_hit 5:4.6/0.5 engine_cough 2:5.4/0.5
+jp_05-hot-quiet    @ 25s 頂 0.613 超 0.00% RMS -24.1dB engine 91%  爆発 0: - 孤 0:-  合図(数:中央/最小) engine_cough 1:5.3/5.3
+jp_05-quiet        @  5s 頂 0.481 超 0.00% RMS -30.9dB engine 56%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:12.3/12.2
+jp_06-busy         @ 40s 頂 0.721 超 0.00% RMS -18.1dB engine 14%  爆発 5: 3.0/1.7 孤 2:3.6  合図(数:中央/最小) light_on 1:15.2/15.2 hull_hit 4:2.7/1.2
+jp_06-quiet        @  5s 頂 0.516 超 0.00% RMS -27.8dB engine 80%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.6/6.4
+jp_06h-busy        @ 39s 頂 0.756 超 0.00% RMS -16.1dB engine 12%  爆発 13: 2.8/-0.2 孤 3:4.7  合図(数:中央/最小) light_on 1:14.4/14.4 hull_hit 8:2.6/-0.2
+jp_06h-quiet       @  5s 頂 0.516 超 0.00% RMS -27.8dB engine 80%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.6/6.4
+us_01-busy         @ 47s 頂 0.772 超 0.00% RMS -14.8dB engine 14%  爆発 13: 1.5/-0.6 孤 4:3.2  合図(数:中央/最小) torp_launch 1:0.9/0.9 hull_hit 10:1.6/-0.8 bell 1:2.6/2.6
+us_01-chores-busy  @ 27s 頂 0.759 超 0.00% RMS -16.6dB engine 24%  爆発 6: 2.9/0.2 孤 2:2.9  合図(数:中央/最小) alarm 1:15.4/15.4 light_on 1:11.6/11.6 hull_hit 4:4.1/0.8
+us_01-chores-quiet @  5s 頂 0.478 超 0.00% RMS -26.9dB engine 84%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.7/6.6
+us_01-dawn-busy    @ 32s 頂 0.778 超 0.00% RMS -14.7dB engine 12%  爆発 10: 2.8/-0.3 孤 5:2.8  合図(数:中央/最小) alarm 1:4.4/4.4 bomb_fall 4:1.5/-1.5 light_on 1:-0.0/-0.0 torp_launch 1:2.1/2.1 hull_hit 5:2.1/0.8
+us_01-dawn-quiet   @  5s 頂 0.473 超 0.00% RMS -27.4dB engine 88%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 1:6.3/6.3
+us_01-quiet        @  5s 頂 0.473 超 0.00% RMS -27.4dB engine 88%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 1:6.3/6.3
+us_01h-busy        @ 41s 頂 0.716 超 0.00% RMS -15.1dB engine 19%  爆発 15: 2.2/-1.3 孤 4:2.7  合図(数:中央/最小) torp_launch 1:2.7/2.7 bell 1:0.8/0.8
+us_01h-quiet       @  5s 頂 0.473 超 0.00% RMS -27.4dB engine 88%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 1:6.3/6.3
+us_02-busy         @ 24s 頂 0.677 超 0.00% RMS -18.5dB engine 16%  爆発 7: 1.6/-3.7 孤 2:6.1  合図(数:中央/最小) torp_launch 1:12.2/12.2 alarm 1:13.4/13.4 light_on 1:15.3/15.3 hull_hit 1:3.6/3.6 bell 1:2.8/2.8
+us_02-ff-busy      @ 39s 頂 0.682 超 0.00% RMS -16.2dB engine 10%  爆発 5: 3.1/2.2 孤 3:3.0  合図(数:中央/最小) hull_hit 5:2.6/1.9
+us_02-ff-quiet     @  5s 頂 0.094 超 0.00% RMS -33.9dB engine 78%  爆発 0: - 孤 0:-  合図(数:中央/最小) 
+us_02-fuel-busy    @  8s 頂 0.683 超 0.00% RMS -21.7dB engine 73%  爆発 0: - 孤 0:-  合図(数:中央/最小) light_on 1:9.1/9.1
+us_02-fuel-quiet   @  5s 頂 0.694 超 0.00% RMS -21.3dB engine 69%  爆発 0: - 孤 0:-  合図(数:中央/最小) light_on 1:9.2/9.2
+us_02-ground-busy  @ 15s 頂 0.678 超 0.00% RMS -20.4dB engine 58%  爆発 2: 11.0/5.3 孤 1:11.0  合図(数:中央/最小) 
+us_02-ground-quiet @  5s 頂 0.664 超 0.00% RMS -21.3dB engine 69%  爆発 0: - 孤 0:-  合図(数:中央/最小) light_on 1:8.9/8.9
+us_02-home-busy    @ 26s 頂 0.654 超 0.00% RMS -20.9dB engine 40%  爆発 2: 12.8/5.9 孤 1:12.8  合図(数:中央/最小) 
+us_02-home-quiet   @  5s 頂 0.528 超 0.00% RMS -23.4dB engine 56%  爆発 0: - 孤 0:-  合図(数:中央/最小) alarm 1:15.0/15.0
+us_02-plane-busy   @ 21s 頂 0.784 超 0.00% RMS -14.9dB engine 11%  爆発 9: 2.4/-1.7 孤 4:2.6  合図(数:中央/最小) hull_hit 7:1.8/-0.9 torp_launch 1:0.6/0.6 bomb_fall 1:2.5/2.5
+us_02-plane-quiet  @  5s 頂 0.473 超 0.00% RMS -26.8dB engine 67%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:9.0/6.0
+us_02-quiet        @  5s 頂 0.539 超 0.00% RMS -23.4dB engine 48%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:6.6/6.5 alarm 1:11.7/11.7
+us_02-storm-busy   @ 22s 頂 0.701 超 0.00% RMS -16.6dB engine 11%  爆発 8: 2.7/0.3 孤 2:3.9  合図(数:中央/最小) alarm 1:20.2/20.2 torp_launch 1:-6.9/-6.9 light_on 1:14.8/14.8 hull_hit 4:3.4/0.0 engine_cough 1:2.6/2.6
+us_02-storm-quiet  @ 10s 頂 0.513 超 0.00% RMS -29.2dB engine 55%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 1:5.6/5.6
+us_02h-busy-busy   @ 26s 頂 0.762 超 0.00% RMS -16.2dB engine 9%  爆発 7: 2.5/0.6 孤 3:4.5  合図(数:中央/最小) hull_hit 5:4.5/2.3 alarm 1:-2.2/-2.2 light_on 1:11.9/11.9
+us_02h-busy-quiet  @  5s 頂 0.602 超 0.00% RMS -23.6dB engine 47%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:9.6/6.6 alarm 1:11.8/11.8
+us_02h-busy        @ 27s 頂 0.755 超 0.00% RMS -17.2dB engine 17%  爆発 7: 1.4/-1.0 孤 2:7.2  合図(数:中央/最小) light_on 1:11.8/11.8 hull_hit 5:1.0/-1.4 engine_cough 1:6.8/6.8
+us_02h-quiet       @  5s 頂 0.552 超 0.00% RMS -23.8dB engine 41%  爆発 0: - 孤 0:-  合図(数:中央/最小) alarm 1:14.7/14.7 torp_launch 2:12.1/6.6
+us_03-burst-busy   @  3s 頂 0.727 超 0.00% RMS -17.3dB engine 19%  爆発 9: 6.7/0.9 孤 4:9.4  合図(数:中央/最小) alarm 1:17.7/17.7 hull_hit 7:5.7/0.8 torp_launch 2:3.6/-1.2
+us_03-burst-quiet  @ 18s 頂 0.592 超 0.00% RMS -21.3dB engine 18%  爆発 2: 15.4/6.3 孤 1:15.4  合図(数:中央/最小) torp_launch 1:8.0/8.0 smoke 1:6.5/6.5 bell 1:19.2/19.2
+us_03-busy         @ 34s 頂 0.522 超 0.00% RMS -25.9dB engine 58%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 1:4.1/4.1
+us_03-quiet        @  5s 頂 0.518 超 0.00% RMS -29.7dB engine 67%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:12.2/11.9
+us_03h-busy        @ 58s 頂 0.667 超 0.00% RMS -18.8dB engine 25%  爆発 3: 7.6/6.5 孤 2:17.2  合図(数:中央/最小) alarm 1:16.9/16.9 hull_hit 1:7.2/7.2 bell 1:9.7/9.7
+us_03h-quiet       @  5s 頂 0.518 超 0.00% RMS -29.7dB engine 67%  爆発 0: - 孤 0:-  合図(数:中央/最小) torp_launch 2:12.2/11.9
+最大の頂 0.807・1.0 超え 0.000%  （BUS 0.5・LIMIT -10,6,12・MASTER 0.8）
