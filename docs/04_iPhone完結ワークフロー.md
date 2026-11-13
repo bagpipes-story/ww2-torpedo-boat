@@ -84,6 +84,7 @@ Codeセッションにファイルを添付できる場合は、#3の代わり�
 | Actionsが「not allowed to deploy to github-pages」で失敗 | §2の#4（github-pages環境の Deployment branches を No restriction） |
 | Pages URLが古いまま | Actionsのデプロイ完了を待つ（1〜2分）。Safariでリロード。v0.5以降はアプリ内のビルド番号を見る |
 | ホーム画面のアプリ（v0.5.1）が古いビルドのまま | オンラインか確かめる（オフラインでは最後に開いたビルド）。アプリを上にスワイプして閉じてから開き直す。直らなければ Safari で `…/ww2-torpedo-boat/?nosw` を開く（Service Worker の登録とキャッシュを消す）→ 普通の URL を開き直す |
+| 効果音の案を聞き比べたい（v0.7.1 IP2） | Safari で `…/ww2-torpedo-boat/?sfxlab` を開く（Title の代わりに音の試聴の場。本体の消音を切ってボタンで鳴らす。「戻る」で Title へ。ふだんの URL は変わらない） |
 | ホーム画面のアプリで通算の命中率が 0 になった | iOS は Safari とホーム画面のアプリで保存場所が別（v0.5.0 の通算は Safari 側に残っている）。以後はどちらか一方で遊ぶ |
 | セッションが「Environment expired」 | セッションを開き直す。履歴は復元される。走っていたコマンドは再実行を頼む |
 | `npm ci` が lockfile 不一致で失敗 | 「package-lock.json を作り直して」と頼む |

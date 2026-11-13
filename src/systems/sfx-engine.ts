@@ -131,6 +131,11 @@ export class SfxEngine {
     return this.mutedNow;
   }
 
+  /** context が動いているか（試聴の場の最初のタップの待ち。IP2） */
+  get running(): boolean {
+    return this.ctx.state === RUNNING;
+  }
+
   /** ゲームの時計（tick が積んだ delta の和。秒） */
   get clockS(): number {
     return this.gameS;

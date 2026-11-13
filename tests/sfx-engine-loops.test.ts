@@ -79,7 +79,7 @@ describe('始める（context が動いていて・消音でなく・標本が�
     x.e.setBuffer('drone', fakeSamples('drone'));
     run(x, targets(), 8);
     expect(alive(x.ctx).length).toBe(SFX_LOOP_COUNT);
-    expect(SFX_LOOP_IDS.map((k) => SFX_KEYS.indexOf(k))).toEqual([20, 21, 22, 23, 24]);
+    expect(SFX_LOOP_IDS.map((k) => SFX_KEYS.indexOf(k))).toEqual([21, 22, 23, 24, 25]); // IP2 で reload_end を単発の終わりの前に足した
   });
   it('消音では始めない。任務の途中で消音にしたら絞って止め、解いたら作り直す（鳴っている音源は 5 個のまま）', () => {
     const x = loopSetup();

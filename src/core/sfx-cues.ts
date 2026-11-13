@@ -201,9 +201,12 @@ export function stepSfxCues(s: SfxCueState, t: BoatTelemetry, dtS: number, sink:
     sink.cue('ui_tap', 1, 1, 0);
   } else stepBoat(s, t, sink);
   s.seatSeq = seatSeq;
-  // 弾倉の交換（始めと終わり）
+  // 弾倉の交換: 始めは reload（抜く）・終わりは reload_end（差し込む・槓桿。IP2 で別の鍵に＝同じ音を 2 回鳴らさない）
   const reloading = t.arms.reloadN > 0 || t.gunReloadLeftS > 0;
-  if (reloading !== s.reloading && take(s, CD_RELOAD, c.reloadCooldownS)) sink.cue('reload', 1, reloading ? 1 : c.reloadEndRate, 0);
+  if (reloading !== s.reloading && take(s, CD_RELOAD, c.reloadCooldownS)) {
+    if (reloading) sink.cue('reload', 1, 1, 0);
+    else sink.cue('reload_end', 1, 1, 0);
+  }
   s.reloading = reloading;
   // 機関の不調（jp_05）
   if (t.engine.eventSeq !== s.engineSeq && t.engine.on) engineEvent(s, t.engine.lastEvent, sink);

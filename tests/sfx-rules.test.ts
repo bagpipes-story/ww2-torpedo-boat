@@ -59,11 +59,13 @@ function hotBodies(src: string): string[] {
 const ALLOWED_IMPORTERS = [
   'src/scenes/boot-scene.ts', 'src/systems/world-art.ts', 'src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts',
   'src/ui/menu-ui.ts', 'src/scenes/hud-scene.ts', 'src/scenes/title-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts',
+  // IP2（実機 2 回目）: 音の試聴の場（?sfxlab の時だけ Boot から。案の標本を作って鍵に差し替え、合図の口で鳴らす）
+  'src/scenes/sound-lab-scene.ts',
 ];
 /** 今の段で sfx-* を import しているゲーム側のファイル（S1: Boot・聞き手の登録・砲と水柱の口・爆発の口・ボタン・Title の「音」ボタン。S2: 沈没の口 sink-fx。S3: hud-scene（任務の音）・pause-scene（「音」ボタン）。S4: result-scene（鐘）） */
 const GAME_IMPORTERS_NOW: readonly string[] = [
   'src/scenes/boot-scene.ts', 'src/systems/world-art.ts', 'src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts', 'src/ui/menu-ui.ts', 'src/scenes/title-scene.ts',
-  'src/scenes/hud-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts',
+  'src/scenes/hud-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts', 'src/scenes/sound-lab-scene.ts',
 ];
 /** hook の行の pin（S1 から: ファイルとその中に在るべき 1 行。spec §2 の「触る既存ファイル」） */
 const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
@@ -76,7 +78,7 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   { file: 'src/systems/explosion-fx.ts', line: "    sfxAt(dud ? 'blast_s' : torpedo ? 'torp_hit' : 'blast_l', x, y); //" },
   { file: 'src/systems/explosion-fx.ts', line: "    this.blast.secondary(x, y);\n    sfxAt('blast_s', x, y, SFX_SECONDARY_BLAST.gain, 1, SFX_SECONDARY_BLAST.minIntervalS); //" },
   { file: 'src/systems/sink-fx.ts', line: "    sfxAt('sink', x, y, 1, ship ? 1 : SFX_SINK_SMALL_RATE); //" },
-  { file: 'src/ui/menu-ui.ts', line: "    if (!this.enabled || p.wasCanceled) return;\n    sfxUi('ui_tap'); //" },
+  { file: 'src/ui/menu-ui.ts', line: "    if (!this.enabled || p.wasCanceled) return;\n    if (!this.silent) sfxUi('ui_tap'); //" }, // IP2: 試聴の場の案のボタンだけ silent
   { file: 'src/scenes/title-scene.ts', line: '      setSoundEnabled(!soundEnabled());\n' },
   // S3: Hud が任務の音を作り（艇の最大速力を 1 回渡す）、update の最後に 1 回呼ぶ。一時停止の画面の「音」ボタンと、開いた合図
   { file: 'src/scenes/hud-scene.ts', line: '    this.sfx = new MissionSfx(this.events, getBoatRecord(data, mission.playerBoatId).speed_max_kt);\n' },
@@ -85,9 +87,14 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   { file: 'src/scenes/pause-scene.ts', line: "    sfxCue('ui_tap', SFX_PAUSE_OPEN.gain, 0, SFX_PAUSE_OPEN.rate);\n" },
   // S4: Result の鐘（create の 1 行。帰投 2 打・それ以外は低く 1 打）
   { file: 'src/scenes/result-scene.ts', line: '    addBuildLabel(this);\n    sfxResultBell(r.returned); //' },
+  // IP2: 試聴の場は案の標本を鍵に差し替えて合図の口で鳴らし、場を出る時に既定の標本へ戻す
+  { file: 'src/scenes/sound-lab-scene.ts', line: '    sfxSetBuffer(g.key, x);\n    sfxCue(g.key, 1, delayS, v.rate);\n' },
+  { file: 'src/scenes/sound-lab-scene.ts', line: '      for (const g of SFX_VARIANT_GROUPS) sfxSetBuffer(g.key, renderSfx(g.key)); // 既定の標本へ戻す\n      sfxSetMuted(!soundEnabled());\n' },
 ];
 /** 音のために触った既存の src のファイル（300 行以下を見る） */
-const TOUCHED: readonly string[] = [...GAME_IMPORTERS_NOW, 'src/config/menu-config.ts', 'src/config/title-layout-config.ts'];
+const TOUCHED: readonly string[] = [
+  ...GAME_IMPORTERS_NOW, 'src/config/menu-config.ts', 'src/config/title-layout-config.ts', 'src/config/game-config.ts', 'src/config/phaser-config.ts', 'src/config/sound-lab-config.ts', 'src/ui/sound-lab-layout.ts',
+];
 /** 再生の層（S1 から）: DOM に触ってよいのは sfx-boot だけ */
 const PLAYBACK = SFX.filter((f) => /^src\/systems\//.test(f));
 
@@ -225,14 +232,14 @@ describe('音へ届く道は許可表の口だけ（import の許可表。R14）
     }
     for (const f of ['src/scenes/mission-scene.ts', 'src/systems/mission-world.ts', 'src/systems/world-visuals.ts', 'src/systems/mission-effects.ts']) expect(ALLOWED_IMPORTERS).not.toContain(f);
   });
-  it('今の段で import しているゲーム側のファイルは表のとおり（S4: 10 本＝許可表の全部。大発の 13mm の発砲＝barge-hunt は入れない）', () => {
+  it('今の段で import しているゲーム側のファイルは表のとおり（S4: 10 本＝許可表の全部。IP2 で試聴の場を足して 11 本。大発の 13mm の発砲＝barge-hunt は入れない）', () => {
     expect(sfxImporters()).toEqual([...GAME_IMPORTERS_NOW].sort());
     expect(GAME_IMPORTERS_NOW).not.toContain('src/systems/barge-hunt.ts');
     expect(readFileSync('src/systems/barge-hunt.ts', 'utf8')).toContain('    onFire: () => {},\n');
   });
-  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行）と、触った既存のファイルは 300 行以下', () => {
+  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行）と、触った既存のファイルは 300 行以下', () => {
     for (const p of HOOK_PINS) expect(readFileSync(p.file, 'utf8'), p.file).toContain(p.line);
-    expect(HOOK_PINS.length).toBe(15);
+    expect(HOOK_PINS.length).toBe(17);
     expect([...GAME_IMPORTERS_NOW].sort()).toEqual([...ALLOWED_IMPORTERS].sort());
     // 絵の層の口から呼ぶ位置つきの音は 6 か所だけ（水柱・大砲・機銃・爆発・2 次の爆発・沈み始め）。S1 の代わりの音は残っていない
     const calls = ['src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts'].map((f) => (code(f).match(/\bsfx(?:Gun)?At\(/g) ?? []).length);

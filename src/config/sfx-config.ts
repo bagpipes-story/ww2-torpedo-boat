@@ -1,7 +1,7 @@
 // v0.7.1（アートと音②：合成の効果音。spec-v0710 §2・§4〜§7・D1）の音の定数。音量・間引き・距離の帯・音の種は「聞かせ方」の定数で、ゲームの強さの値ではない
 // ので data/*.json には置かない（config/*-art-config と同じ考え。論理に効く値は data のまま）。ユーザーの決め（v0.7.0 の U1。2026-11-07「コードで描く・鳴らす」）:
 // 音のファイルは使わず、起動時に 1 回 assets/sfx-bank が合成する。何も import しない（tests・scripts が node の型検査で読める）。
-// 表は 25 本。合成の作り方は段ごとに足した（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった。tests/sfx-inventory）。
+// 表は 26 本。合成の作り方は段ごとに足した（S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった。IP2 で弾倉の終わり reload_end を足して 26 本。tests/sfx-inventory）。
 // 音量（gain）と最小間隔は S2 で probe の記録を mix した数から詰め、S5 で本物のリミッタ（scripts/headless/sfx-offline。Chromium の DynamicsCompressor）に通した数で詰め直した:
 // 世界の音（砲・機銃・水柱・爆発・沈没）を約 −6 dB 下げてリミッタの閾値（−10 dB）の下に置き、爆発・魚雷の命中だけが閾値を叩く（混む窓で爆発の飛び出しが 1.6〜5.6 → 4.0〜11 dB）。
 // 合図は世界の音より上に（弾倉・魚雷の発射・煙幕を上げ、爆弾の笛は爆発の前を埋めないよう下げた）。耳では実機から。届く帯は spec §6.2、秒は §4。
@@ -17,10 +17,10 @@ export const SFX_MAX_TOTAL_SAMPLES = 700_000;
 /** 同時に鳴る単発の声の数（起動時に作って使い回す＝R1） */
 export const SFX_VOICES = 16;
 
-/** 音の鍵（25 本。単発 20・ループ 5）。足す・消すは下の表と tests/sfx-inventory と一緒に */
+/** 音の鍵（26 本。単発 21・ループ 5。IP2 で弾倉の終わり reload_end を足した）。足す・消すは下の表と tests/sfx-inventory と一緒に */
 export const SFX_KEYS = [
   'mg', 'gun_near', 'gun_far', 'splash_s', 'splash_l', 'blast_s', 'blast_l', 'torp_hit', 'torp_launch', 'hull_hit',
-  'alarm', 'light_on', 'flare_pop', 'bomb_fall', 'reload', 'smoke', 'ui_tap', 'bell', 'engine_cough', 'sink',
+  'alarm', 'light_on', 'flare_pop', 'bomb_fall', 'reload', 'reload_end', 'smoke', 'ui_tap', 'bell', 'engine_cough', 'sink',
   'engine', 'sea', 'fire', 'rain', 'drone',
 ] as const;
 export type SfxKey = (typeof SFX_KEYS)[number];
@@ -59,6 +59,8 @@ export const SFX_SEED_SEA = 7522;
 export const SFX_SEED_FIRE = 7523;
 export const SFX_SEED_RAIN = 7524;
 export const SFX_SEED_DRONE = 7525;
+/** IP2: 弾倉の交換の終わり（差し込む・槓桿） */
+export const SFX_SEED_RELOAD_END = 7526;
 /** 再生のたびの rate の揺れ（エンジンの乱数。合成の種とは別） */
 export const SFX_SEED_PLAY = 7599;
 
@@ -112,7 +114,8 @@ export const SFX_TABLE: Readonly<Record<SfxKey, SfxDef>> = {
   light_on: def(0.5, SFX_SEED_LIGHT_ON, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   flare_pop: def(1.2, SFX_SEED_FLARE_POP, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   bomb_fall: def(1.2, SFX_SEED_BOMB_FALL, 0.3, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
-  reload: def(0.42, SFX_SEED_RELOAD, 1, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  reload: def(0.3, SFX_SEED_RELOAD, 1, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  reload_end: def(0.42, SFX_SEED_RELOAD_END, 1, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   smoke: def(1.0, SFX_SEED_SMOKE, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   ui_tap: def(0.06, SFX_SEED_UI_TAP, 0.5, SFX_PRIORITY_CUE, 0, FAR, 'ui'),
   bell: def(1.4, SFX_SEED_BELL, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
@@ -204,14 +207,14 @@ export const SFX_PAUSE_OPEN = { gain: 0.7, rate: 0.7 } as const;
  * S4（spec §3.2）: 状態の合図（core/sfx-cues）の冷却（ゲームの時計の秒。この秒の内の同じ行の立ち上がりは鳴らさない）・音量・速さ。魚雷の発射は一斉でも 1 本ずつ launchGapS の間で
  * （積んだ数は queueMax まで）。自艇の被弾は HP が 1 フレームに hullMinDropHp より多く減った時だけ（火災の継続の被害＝毎秒 2 HP 以下は 1 フレームで 0.14 HP 以下＝鳴らさない）。
  * 座礁は爆発の口の blast_s（dud）と同じフレームに来るので groundDelayS 遅らせる（blast_s の最小間隔 0.35 秒に落とされない。S5 で 0.15 → 0.4）。鐘は bellCooldownS の内は重ねない（夜明けと「帰投せよ」が同じ
- * フレームに来る＝設計の既定）。rate は 0.5〜2 の内（L6）。
+ * フレームに来る＝設計の既定）。rate は 0.5〜2 の内（L6）。弾倉の交換は始めが reload・終わりが reload_end（IP2。どちらも rate 1。IP1 の終わりの rate 1.06 はやめた）。
  * S5（数で詰めた）: 被弾の金属音は 2 秒に 1 回まで（米PT・駆逐艦の副砲を浴びると 0.2 秒では 20 秒に 12 回鳴った。被弾の爆発の音 blast_s は 0.35 秒の内を 1 つにまとめて鳴る）。機関の咳は 8 秒に 1 回まで
  * （jp_05 の過熱・限界の繰り返し。機関の不調＝LIMP・損傷・燃料切れは冷却の内でも鳴らす＝段が上がった知らせを落とさない）
  */
 export const SFX_CUE = {
   launchGapS: 0.15, launchQueueMax: 4, ptSalvoGain: 0.6,
   alarmCooldownS: 4, lightCooldownS: 3, flareCooldownS: 2, hullCooldownS: 2, hullMinDropHp: 0.5,
-  reloadCooldownS: 0.5, reloadEndRate: 1.06, extinguishRate: 1.6,
+  reloadCooldownS: 0.5, extinguishRate: 1.6,
   engineStageRate: [1.0, 0.9, 0.8], coughCooldownS: 8, recoverRate: 0.7, recoverGain: 0.7, fuelEmptyRate: 0.7,
   groundRate: 0.6, groundDelayS: 0.4,
   bellCooldownS: 1.5, dawnBellRate: 0.7, bombCooldownS: 0.6,
@@ -219,3 +222,8 @@ export const SFX_CUE = {
 } as const;
 /** S4（spec §3.3・U-C）: Result の鐘＝帰投は strikes 打を gapS 秒ずらして、それ以外は lostRate の低い 1 打（曲ではなく合図） */
 export const SFX_RESULT_BELL = { strikes: 2, gapS: 0.5, lostRate: 0.5 } as const;
+/**
+ * IP2（実機 2 回目）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）。「続けて聞く」は弾倉の始めを鳴らして pairGapS 秒後に終わり（再生の時計の予約）。
+ * 最初のタップで context がまだ動いていなければ、押した案を 1 つ覚えて pendingS 秒の内に動き出したら鳴らす（止まっている context に積まない）
+ */
+export const SFX_LAB = { pairGapS: 1.2, pendingS: 1.0 } as const;

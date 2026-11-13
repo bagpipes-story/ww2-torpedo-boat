@@ -1,9 +1,9 @@
 // v0.7.1 S0（アートと音②：合成の効果音。spec-v0710 §4・§6.2・§7.3・§9.1）: 音の棚卸しを固定する（tests/art-inventory の型）。
-// - 鍵は 25 本（単発 20・ループ 5）。足す・消すは config/sfx-config の表とここを一緒に直す。
+// - 鍵は 26 本（単発 21・ループ 5。IP2 で弾倉の終わり reload_end を足した）。足す・消すは config/sfx-config の表とここを一緒に直す。
 // - 表の欄がそろう（秒は spec §4・最小間隔は §7.3・届く帯は §6.2・優先は系統から）。種は SFX_SEED_<鍵> で重ならず、絵の種（ART_SEED_*）とも重ならない。合計 ≤ 70 万標本。
 // - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった（作り方の無い鍵は無い）。
 // - 音量の順（S2 の mix の詰め）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱（機銃・水柱が爆発を埋めない）。
-// - 音を足しても TEXTURE_KEYS とシーンの並びは今のまま（v0.7.0 の 53 鍵・7 シーン）。
+// - 音を足しても TEXTURE_KEYS は今のまま（v0.7.0 の 53 鍵）。シーンは v0.7.0 の 7 つの後に音の試聴の場（IP2。?sfxlab の時だけ）を 1 つ足した 8 つ。
 // - S4: 合図の観測器（core/sfx-cues）と口が鳴らす鍵は全部 SFX_KEYS にある・どこからも鳴らさない鍵は無い（src の呼ぶ側の文字を数える）。
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,17 +13,17 @@ import { SFX_BAND_GAIN, SFX_BAND_MAX_M, SFX_KEYS, SFX_MAX_TOTAL_SAMPLES, SFX_SAM
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
 import { SFX_LOOP_IDS } from '../src/core/sfx-loops';
 
-/** spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した） */
+/** spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した）。IP2（実機 2 回目）: reload 0.42 → 0.3（始め＝抜く）・reload_end 0.42（終わり＝差す・槓桿）を足して 26 本 */
 const SECONDS: Readonly<Record<string, number>> = {
   mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 1.0, hull_hit: 0.3,
-  alarm: 0.6, light_on: 0.5, flare_pop: 1.2, bomb_fall: 1.2, reload: 0.42, smoke: 1.0, ui_tap: 0.06, bell: 1.4, engine_cough: 0.8, sink: 2.5,
+  alarm: 0.6, light_on: 0.5, flare_pop: 1.2, bomb_fall: 1.2, reload: 0.3, reload_end: 0.42, smoke: 1.0, ui_tap: 0.06, bell: 1.4, engine_cough: 0.8, sink: 2.5,
   engine: 1.0, sea: 4.0, fire: 2.0, rain: 2.0, drone: 1.5,
 };
 const LOOPS = ['engine', 'sea', 'fire', 'rain', 'drone'];
 /** 系統（spec §7.3 の優先の単位） */
 const FAMILY: Readonly<Record<string, SfxFamily>> = {
   mg: 'gun', gun_near: 'gun', gun_far: 'gun', splash_s: 'splash', splash_l: 'splash', blast_s: 'blast', blast_l: 'blast', torp_hit: 'blast', sink: 'blast',
-  torp_launch: 'cue', hull_hit: 'cue', alarm: 'cue', light_on: 'cue', flare_pop: 'cue', bomb_fall: 'cue', reload: 'cue', smoke: 'cue', bell: 'cue', engine_cough: 'cue',
+  torp_launch: 'cue', hull_hit: 'cue', alarm: 'cue', light_on: 'cue', flare_pop: 'cue', bomb_fall: 'cue', reload: 'cue', reload_end: 'cue', smoke: 'cue', bell: 'cue', engine_cough: 'cue',
   ui_tap: 'ui', engine: 'loop', sea: 'loop', fire: 'loop', rain: 'loop', drone: 'loop',
 };
 /** 優先: 合図・UI（奪われない）3 > 爆発・魚雷 2 > 砲 1 > 水柱 0。ループは声を使わない（欄は 3） */
@@ -38,7 +38,7 @@ const MIN_INTERVAL: Readonly<Record<string, number>> = { mg: 0.07, gun_near: 0.3
 /** 鍵の音量（S2 で probe の記録を mix した数から、S5 で本物のリミッタに通した数から詰めた＝世界の音を約 −6 dB・合図は世界の音の上） */
 const GAIN: Readonly<Record<string, number>> = {
   mg: 0.18, gun_near: 0.26, gun_far: 0.4, splash_s: 0.12, splash_l: 0.2, blast_s: 0.4, blast_l: 0.8, torp_hit: 0.8, sink: 0.3,
-  torp_launch: 0.8, hull_hit: 0.7, alarm: 0.6, light_on: 0.6, flare_pop: 0.5, bomb_fall: 0.3, reload: 1, smoke: 0.7, ui_tap: 0.5, bell: 0.6, engine_cough: 0.7,
+  torp_launch: 0.8, hull_hit: 0.7, alarm: 0.6, light_on: 0.6, flare_pop: 0.5, bomb_fall: 0.3, reload: 1, reload_end: 1, smoke: 0.7, ui_tap: 0.5, bell: 0.6, engine_cough: 0.7,
 };
 /** spec §6.2 の届く帯（ほかは一番遠い帯 3） */
 const REACH: Readonly<Record<string, number>> = { splash_s: 1, mg: 2, splash_l: 2 };
@@ -51,10 +51,10 @@ const CALLERS = [
 ];
 
 describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
-  it('鍵は 25 本（単発 20・ループ 5）で、spec §4 の表と同じ・重ならない', () => {
+  it('鍵は 26 本（単発 21・ループ 5。IP2 で reload_end）で、spec §4 の表と同じ・重ならない', () => {
     expect([...SFX_KEYS]).toEqual(Object.keys(SECONDS));
-    expect(SFX_KEYS.length).toBe(25);
-    expect(new Set(SFX_KEYS).size).toBe(25);
+    expect(SFX_KEYS.length).toBe(26);
+    expect(new Set(SFX_KEYS).size).toBe(26);
     expect(Object.keys(SFX_TABLE).sort()).toEqual([...SFX_KEYS].sort());
     expect(SFX_KEYS.filter((k) => SFX_TABLE[k].loop)).toEqual(LOOPS);
   });
@@ -73,12 +73,12 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(d.loop).toBe(LOOPS.includes(key));
     expect(d.rateJitter).toBe(JITTER[key] ?? 0);
   });
-  it('種は 26（鍵 25 ＋ 再生の揺れ SFX_SEED_PLAY）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
+  it('種は 27（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
     const src = readFileSync('src/config/sfx-config.ts', 'utf8');
     const seeds = [...src.matchAll(/^export const (SFX_SEED_\w+) = (\d+);/gm)].map((m) => [m[1]!, Number(m[2])] as const);
-    expect(seeds.length).toBe(26);
+    expect(seeds.length).toBe(27);
     expect(seeds.map((s) => s[0]).sort()).toEqual([...SFX_KEYS.map((k) => `SFX_SEED_${k.toUpperCase()}`), 'SFX_SEED_PLAY'].sort());
-    expect(new Set(seeds.map((s) => s[1])).size).toBe(26);
+    expect(new Set(seeds.map((s) => s[1])).size).toBe(27);
     const art: number[] = [];
     for (const f of readdirSync('src/config')) {
       if (f.startsWith('sfx-')) continue;
@@ -87,11 +87,11 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(art.length).toBeGreaterThanOrEqual(10);
     for (const s of seeds) expect(art, s[0]).not.toContain(s[1]);
   });
-  it('標本の合計は 70 万以下（22,050 Hz・約 28.5 秒＝629,527 標本。IP1 で torp_launch・reload を延ばして ＋8,159）', () => {
+  it('標本の合計は 70 万以下（22,050 Hz・約 28.8 秒＝636,142 標本。IP1 で torp_launch・reload を延ばして ＋8,159、IP2 で reload 0.42 → 0.3 秒・reload_end 0.42 秒を足して ＋6,615）', () => {
     expect(SFX_SAMPLE_RATE).toBe(22050);
     expect(SFX_MAX_TOTAL_SAMPLES).toBe(700_000);
     const total = SFX_KEYS.reduce((a, k) => a + Math.round(SFX_TABLE[k].seconds * SFX_SAMPLE_RATE), 0);
-    expect(total).toBe(629_527);
+    expect(total).toBe(636_142);
     expect(total).toBeLessThanOrEqual(SFX_MAX_TOTAL_SAMPLES);
   });
   it('聞かせ方の定数は spec のとおり（声 16・距離の帯・パン・リミッタ・master・ループの更新）', () => {
@@ -147,8 +147,8 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
   });
 });
 
-describe('作り方は 25 本そろった（S0: 3 本・S2: 7 本・S3: ループ 5 本・S4: 合図 10 本）', () => {
-  it('作り方のある鍵は SFX_KEYS の 25 本全部（SFX_KEYS の順）', () => {
+describe('作り方は 26 本そろった（S0: 3 本・S2: 7 本・S3: ループ 5 本・S4: 合図 10 本・IP2: 弾倉の終わり）', () => {
+  it('作り方のある鍵は SFX_KEYS の 26 本全部（SFX_KEYS の順）', () => {
     expect(sfxImplementedKeys()).toEqual([...SFX_KEYS]);
   });
   it('表に無い鍵は黙って無音を返さず投げる', () => {
@@ -161,11 +161,11 @@ describe('作り方は 25 本そろった（S0: 3 本・S2: 7 本・S3: ルー�
     expect(SFX_KEYS.filter((k) => !used.has(k)), 'どこからも鳴らさない鍵').toEqual([]);
     // 合図の観測器が鳴らす鍵（spec §3.2 の表の鍵）
     const cues = [...readFileSync('src/core/sfx-cues.ts', 'utf8').matchAll(/sink\.cue\('(\w+)'/g)].map((m) => m[1]!);
-    expect([...new Set(cues)].sort()).toEqual(['alarm', 'bell', 'blast_s', 'bomb_fall', 'engine_cough', 'flare_pop', 'hull_hit', 'light_on', 'reload', 'smoke', 'torp_launch', 'ui_tap']);
+    expect([...new Set(cues)].sort()).toEqual(['alarm', 'bell', 'blast_s', 'bomb_fall', 'engine_cough', 'flare_pop', 'hull_hit', 'light_on', 'reload', 'reload_end', 'smoke', 'torp_launch', 'ui_tap']);
   });
 });
 
-describe('音を足しても絵の鍵とシーンの並びは今のまま（v0.7.0 の main 3a9e7aa）', () => {
+describe('音を足しても絵の鍵は今のまま（v0.7.0 の main 3a9e7aa）。シーンは試聴の場を 1 つ足した（IP2）', () => {
   it('TEXTURE_KEYS は 53 鍵で、名前と値の指紋が同じ', () => {
     const m = /export const TEXTURE_KEYS = \{([\s\S]*?)\n\} as const;/.exec(readFileSync('src/config/game-config.ts', 'utf8'));
     const rows = [...m![1]!.matchAll(/^\s*(\w+): '([^']+)',/gm)].map((x) => `${x[1]}:${x[2]}`);
@@ -175,8 +175,13 @@ describe('音を足しても絵の鍵とシーンの並びは今のまま（v0.7
     expect(rows.length).toBe(53);
     expect(h).toBe(TEXTURE_KEYS_FNV);
   });
-  it('シーンの並びは Boot・Title・Briefing・Mission・Hud・Result・Pause', () => {
-    expect(readFileSync('src/config/phaser-config.ts', 'utf8')).toContain('  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene],');
+  it('シーンの並びは Boot・Title・Briefing・Mission・Hud・Result・Pause・SoundLab（IP2。?sfxlab の時だけ Boot から＝ふだんの URL は Title・?debug は Mission）', () => {
+    expect(readFileSync('src/config/phaser-config.ts', 'utf8')).toContain('  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene],');
+    const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
+    expect(boot).toContain('    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.soundLab); //');
+    expect(boot).toContain('    else if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, ');
+    expect(boot).toContain('    else this.scene.start(SCENE_KEYS.title);');
+    expect(readFileSync('src/config/game-config.ts', 'utf8')).toContain("export const SFX_LAB_ENABLED = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('sfxlab');");
   });
 });
 const TEXTURE_KEYS_FNV = 1609463289;

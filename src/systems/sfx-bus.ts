@@ -5,6 +5,7 @@
 // §7: どの口も確保しない（引数は数と鍵だけ。結果は返さない）。DOM にも Phaser にも触らない。
 // 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
 // （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。S4 で sfxCue の遅らせ（再生の時計で予約）。
+// IP2: 試聴の場（?sfxlab）の口 sfxSetBuffer・sfxCanPlay（scenes/sound-lab-scene だけが呼ぶ。ゲームの中では呼ばない）。
 import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
 import type { SfxLoopTargets } from '../core/sfx-loops';
 import { sfxBand, sfxGunKey } from '../core/sfx-mix';
@@ -84,4 +85,14 @@ export function sfxLoopsStop(): void {
 /** 消音（Title・一時停止の「音」ボタン、起動時の保存の値）。解く時は止まっている context を起こす */
 export function sfxSetMuted(v: boolean): void {
   if (engine !== null) engine.setMuted(v);
+}
+
+/** 試聴の場（IP2。?sfxlab の scenes/sound-lab-scene）: 鍵の標本を差し替える（案を鳴らす前と、場を出る時に既定へ戻す）。エンジンが無ければ何もしない */
+export function sfxSetBuffer(key: SfxKey, samples: Float32Array): void {
+  if (engine !== null) engine.setBuffer(key, samples);
+}
+
+/** 試聴の場: 今鳴らせるか（エンジンがあり、context が動いていて、消音でない）。最初のタップで context が動き出すのを待つ。エンジンが無ければ null */
+export function sfxCanPlay(): boolean | null {
+  return engine === null ? null : engine.running && !engine.muted;
 }

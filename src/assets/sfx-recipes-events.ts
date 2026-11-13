@@ -1,62 +1,12 @@
-// v0.7.1 S4（アートと音②：合成の効果音。spec-v0710 §4・§3.2）: 状態の合図のうち「出来事の音」の作り方＝魚雷の発射 torp_launch・探照灯 light_on・星弾と照明弾 flare_pop・
-// 爆弾の落ちてくる音 bomb_fall・煙幕 smoke（金属・電子・機関の合図は assets/sfx-recipes-cues）。IP1 で torp_launch を作り直した。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
+// v0.7.1 S4（アートと音②：合成の効果音。spec-v0710 §4・§3.2）: 状態の合図のうち「出来事の音」の作り方＝探照灯 light_on・星弾と照明弾 flare_pop・
+// 爆弾の落ちてくる音 bomb_fall・煙幕 smoke（金属・電子・機関の合図は assets/sfx-recipes-cues。魚雷の発射 torp_launch は IP2 から assets/sfx-recipes-launch）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
 // 本体のスピーカー（約 300〜400 Hz より下がほとんど出ない）でも聞こえるように、どれも 400 Hz より上に芯を持たせる。直流・端の fade・頂の正規化は assets/sfx-bank。
-import { SFX_SAMPLE_RATE, SFX_SEED_BOMB_FALL, SFX_SEED_FLARE_POP, SFX_SEED_LIGHT_ON, SFX_SEED_SMOKE, SFX_SEED_TORP_LAUNCH, type SfxKey } from '../config/sfx-config';
+import { SFX_SAMPLE_RATE, SFX_SEED_BOMB_FALL, SFX_SEED_FLARE_POP, SFX_SEED_LIGHT_ON, SFX_SEED_SMOKE, type SfxKey } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
-import { bandPass, envelope, fadeTail, harmonics, highPass, lowPass, mixInto, modes, mul, ramp, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
+import { bandPass, envelope, fadeTail, harmonics, highPass, lowPass, mixInto, mul, ramp, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
 
 const TAU = Math.PI * 2;
 const SR = SFX_SAMPLE_RATE;
-
-/**
- * torp_launch（1.0 秒。魚雷の発射＝積んでいる魚雷が減った・米PT の雷撃の報告は音量 0.6）: 重ねた 5 つの層を順に。
- * ① 発射の衝撃「どぅん」（t = 0）: 鋭い雑音の割れ（高域通過 2k Hz・3 ms）＋ 低い打撃（正弦 140 → 60 Hz を強く歪ませる＝倍音が本体のスピーカーへ・減衰 0.15 秒）＋
- *   帯の雑音の「どん」（300〜1.2k Hz・減衰 0.12 秒）
- * ② 圧縮空気の「ぶしゅっ」: 雑音の帯の掃引 3.5k → 700 Hz（0.3 秒。帯は中心の 0.55〜1.45 倍・減衰 0.32 秒）
- * ③ 発射管の金属の響き「きぃん」: 整数比から外れた 5 本のモード（640 Hz〜2.9k Hz・減衰 0.2〜0.35 秒。鐘にしない小ささ）
- * ④ 0.37 秒に魚雷が海に入る「ざぶん」: 低い帯の雑音の「どぼ」（250〜800 Hz・減衰 80 ms）＋ 雑音の帯 400 Hz〜4k Hz（減衰 0.2 秒）
- * ⑤ 着水の後にスクリューの「ういーん」: 少しずらした 2 本の正弦 ＋ 細い帯の雑音を 700 → 1.1k Hz へ上げながら小さく消えていく（遠ざかる）
- * IP1（実機 1 回目「もう少しカッコよく」）: S4 の 0.7 秒（空気の掃引 2.5k → 400 Hz ＋ 小さな「とん」＋ 小さな水音）に、衝撃の芯・管の響き・スクリューを足した
- */
-const TORP_LAUNCH = {
-  crackHighPassHz: 2000, crackAttackS: 0.0003, crackDecayS: 0.003, crackGain: 1.6,
-  punchFromHz: 140, punchToHz: 60, punchGlideS: 0.1, punchAttackS: 0.001, punchDecayS: 0.15, punchDrive: 4, punchGain: 0.5,
-  thumpLowHz: 300, thumpHighHz: 1200, thumpAttackS: 0.001, thumpDecayS: 0.12, thumpGain: 2.4,
-  airFromHz: 3500, airToHz: 700, airWidth: 0.45, airGlideS: 0.3, airAttackS: 0.004, airDecayS: 0.32, airGain: 2.6,
-  ringHz: [640, 1047, 1523, 2210, 2870], ringAmps: [0.6, 0.9, 1, 0.75, 0.5], ringDecays: [0.35, 0.33, 0.3, 0.27, 0.24], ringGain: 0.3,
-  splashAtS: 0.37, splashThumpLowHz: 250, splashThumpHighHz: 800, splashThumpDecayS: 0.08, splashThumpGain: 1.6,
-  splashLowHz: 400, splashHighHz: 4000, splashAttackS: 0.005, splashDecayS: 0.2, splashGain: 1.6,
-  whineAtS: 0.45, whineFromHz: 700, whineToHz: 1100, whineGlideS: 0.5, whineDetune: 1.012, whineWidth: 0.06,
-  whineAttackS: 0.06, whineDecayS: 0.4, whineGain: 0.16, whineNoiseGain: 0.6,
-  tailFadeS: 0.1,
-} as const;
-
-function torpLaunch(n: number): Float32Array {
-  const c = TORP_LAUNCH;
-  const rng = new SeededRng(SFX_SEED_TORP_LAUNCH);
-  // ① 衝撃
-  const out = mul(highPass(whiteNoise(rng, n), c.crackHighPassHz), envelope(n, c.crackAttackS, c.crackDecayS));
-  for (let i = 0; i < n; i++) out[i] = out[i]! * c.crackGain;
-  mixInto(out, saturate(mul(sine(n, c.punchFromHz, c.punchToHz, c.punchGlideS), envelope(n, c.punchAttackS, c.punchDecayS)), c.punchDrive), c.punchGain);
-  mixInto(out, mul(bandPass(whiteNoise(rng, n), c.thumpLowHz, c.thumpHighHz), envelope(n, c.thumpAttackS, c.thumpDecayS)), c.thumpGain);
-  // ② 圧縮空気
-  const lo = 1 - c.airWidth, hi = 1 + c.airWidth;
-  mixInto(out, mul(bandPass(whiteNoise(rng, n), c.airFromHz * lo, c.airFromHz * hi, c.airToHz * lo, c.airToHz * hi, c.airGlideS), envelope(n, c.airAttackS, c.airDecayS)), c.airGain);
-  // ③ 管の響き
-  mixInto(out, modes(n, c.ringHz, c.ringAmps, c.ringDecays), c.ringGain);
-  // ④ 着水
-  const sn = n - sfxSamples(c.splashAtS);
-  mixInto(out, mul(bandPass(whiteNoise(rng, sn), c.splashThumpLowHz, c.splashThumpHighHz), envelope(sn, c.splashAttackS, c.splashThumpDecayS)), c.splashThumpGain, c.splashAtS);
-  mixInto(out, mul(bandPass(whiteNoise(rng, sn), c.splashLowHz, c.splashHighHz), envelope(sn, c.splashAttackS, c.splashDecayS)), c.splashGain, c.splashAtS);
-  // ⑤ スクリュー（遠ざかる）
-  const wn = n - sfxSamples(c.whineAtS);
-  const whine = sine(wn, c.whineFromHz, c.whineToHz, c.whineGlideS);
-  mixInto(whine, sine(wn, c.whineFromHz * c.whineDetune, c.whineToHz * c.whineDetune, c.whineGlideS));
-  const wlo = 1 - c.whineWidth, whi = 1 + c.whineWidth;
-  mixInto(whine, bandPass(whiteNoise(rng, wn), c.whineFromHz * wlo, c.whineFromHz * whi, c.whineToHz * wlo, c.whineToHz * whi, c.whineGlideS), c.whineNoiseGain);
-  mixInto(out, mul(whine, envelope(wn, c.whineAttackS, c.whineDecayS)), c.whineGain, c.whineAtS);
-  return fadeTail(out, c.tailFadeS);
-}
 
 /**
  * light_on（0.5 秒。探照灯に照らされた）: 開閉器の低い打音（雑音の低域通過 600 Hz・30 ms で 1/10）＋ アーク灯のうなり＝120 Hz の倍音 14 本（3 倍音から上を 1/√h で強く・
@@ -147,4 +97,4 @@ function smoke(n: number): Float32Array {
 }
 
 /** 出来事の合図の作り方（鍵 → 関数） */
-export const EVENT_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { torp_launch: torpLaunch, light_on: lightOn, flare_pop: flarePop, bomb_fall: bombFall, smoke };
+export const EVENT_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { light_on: lightOn, flare_pop: flarePop, bomb_fall: bombFall, smoke };

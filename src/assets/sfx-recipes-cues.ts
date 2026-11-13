@@ -1,10 +1,10 @@
-// v0.7.1（アートと音②：合成の効果音。spec-v0710 §4）: 合図・UI の音の作り方（金属・電子・機関の音）。S0 は ui_tap、S4 で alarm・bell・reload・hull_hit・engine_cough（IP1 で reload を作り直した）
+// v0.7.1（アートと音②：合成の効果音。spec-v0710 §4）: 合図・UI の音の作り方（金属・電子・機関の音）。S0 は ui_tap、S4 で alarm・bell・hull_hit・engine_cough（弾倉の交換 reload・reload_end は IP2 から assets/sfx-recipes-reload）
 // （出来事の音＝torp_launch・light_on・flare_pop・bomb_fall・smoke は assets/sfx-recipes-events）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
 // iPhone の本体のスピーカーは約 300〜400 Hz より下がほとんど出ない: どの合図も 400 Hz より上に芯を持たせる（低い打音の engine_cough・hull_hit も歪ませた倍音・帯の雑音で。
 // 数は scripts/sfx-mix.ts の「小さいスピーカーの目安」）。直流・端の fade・頂の正規化は assets/sfx-bank。
-import { SFX_SEED_ENGINE_COUGH, SFX_SEED_HULL_HIT, SFX_SEED_RELOAD, type SfxKey } from '../config/sfx-config';
+import { SFX_SEED_ENGINE_COUGH, SFX_SEED_HULL_HIT, type SfxKey } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
-import { bandPass, envelope, fadeTail, fm, harmonics, highPass, lowPass, mixInto, modes, mul, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
+import { bandPass, envelope, fadeTail, fm, harmonics, highPass, lowPass, mixInto, mul, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
 
 /** ui_tap（0.06 秒）: 正弦 880 → 660 Hz・減衰 40 ms。乱数は使わない */
 const UI_TAP = { fromHz: 880, toHz: 660, glideS: 0.06, attackS: 0.002, decayS: 0.04 } as const;
@@ -49,49 +49,6 @@ function bell(n: number): Float32Array {
   const out = mul(fm(n, c.carrierHz, c.ratio, c.index, c.indexDecayS), envelope(n, c.attackS, c.decayS));
   mixInto(out, mul(sine(n, c.carrierHz * c.strikeRatio), envelope(n, c.attackS, c.strikeDecayS)), c.strikeGain);
   return fadeTail(out, c.tailFadeS);
-}
-
-/**
- * reload（0.42 秒。弾倉の交換の始め・終わりは rate 1.06＝同じ金属を少しだけ高く）: 鋼を叩いた音を 3 つ＝弾倉を抜く「かちっ」（軽い）→ 差し込む「がちゃん」
- * （一番強く・低いモード＋胴の雑音＋12 ms 後の跳ね返り）→ 止め金の「じゃきん」（明るい 2 打・間 20 ms・後の打は少し長く鳴る）。1 打は ① 1〜2 ms の雑音の当たり
- * （高域通過 1.5k Hz）② 整数比から外れた 4〜7 本のモード（1.2〜8 kHz・高いほど速く減衰 12〜80 ms＝鋼の板・部品の響き）③ 帯の雑音の胴（600 Hz〜2.5k Hz・15〜40 ms
- * ＝重さ）。400 Hz より下の正弦は無い。打ごとに高さを ±1.5% 揺らす（音だけの種）。
- * IP1（実機 1 回目「まぬけな音」）: S4 の 2 打（2 打目の重さ＝300 Hz の正弦を歪ませた「ぽこっ」・金属の響き＝FM 1 本 1.8k Hz の「ぴっ」）をやめた
- */
-const RELOAD = {
-  clickHighPassHz: 1500, clickAttackS: 0.0002, detune: 0.03,
-  strikes: [
-    // 抜く「かちっ」
-    { atS: 0.008, gain: 0.7, baseHz: 2150, ratios: [1, 1.43, 1.97, 2.61, 3.27], amps: [1, 0.8, 0.6, 0.45, 0.3], decays: [0.04, 0.03, 0.022, 0.017, 0.013],
-      clickS: 0.0012, clickGain: 1.2, bodyLowHz: 1000, bodyHighHz: 2500, bodyDecayS: 0.02, bodyGain: 0.8 },
-    // 差す「がちゃん」（一番強い・低いモード）
-    { atS: 0.15, gain: 1, baseHz: 1230, ratios: [1, 1.37, 1.81, 2.36, 2.94, 3.71, 4.52], amps: [1, 0.9, 0.75, 0.6, 0.45, 0.35, 0.25],
-      decays: [0.08, 0.065, 0.05, 0.04, 0.03, 0.022, 0.016], clickS: 0.002, clickGain: 1.5, bodyLowHz: 600, bodyHighHz: 2000, bodyDecayS: 0.04, bodyGain: 2.2 },
-    // 「がちゃん」の跳ね返り
-    { atS: 0.162, gain: 0.35, baseHz: 1290, ratios: [1, 1.37, 1.81, 2.36, 2.94], amps: [1, 0.9, 0.75, 0.6, 0.45], decays: [0.05, 0.04, 0.03, 0.025, 0.02],
-      clickS: 0.0015, clickGain: 1.2, bodyLowHz: 700, bodyHighHz: 2200, bodyDecayS: 0.025, bodyGain: 1.2 },
-    // 止め金の「じゃ」
-    { atS: 0.29, gain: 0.6, baseHz: 2750, ratios: [1, 1.52, 2.09, 2.71], amps: [1, 0.7, 0.5, 0.35], decays: [0.03, 0.022, 0.016, 0.012],
-      clickS: 0.001, clickGain: 1.4, bodyLowHz: 1200, bodyHighHz: 2500, bodyDecayS: 0.015, bodyGain: 0.8 },
-    // 止め金の「きん」（少し長く鳴る）
-    { atS: 0.31, gain: 0.8, baseHz: 2900, ratios: [1, 1.52, 2.09, 2.71], amps: [1, 0.7, 0.5, 0.35], decays: [0.06, 0.045, 0.03, 0.02],
-      clickS: 0.001, clickGain: 1.2, bodyLowHz: 1200, bodyHighHz: 2500, bodyDecayS: 0.015, bodyGain: 0.6 },
-  ],
-} as const;
-
-function reload(n: number): Float32Array {
-  const c = RELOAD;
-  const rng = new SeededRng(SFX_SEED_RELOAD);
-  const out = new Float32Array(n);
-  for (const s of c.strikes) {
-    const len = n - sfxSamples(s.atS);
-    const f = 1 + c.detune * (rng.next() - 0.5);
-    const hit = modes(len, s.ratios.map((r) => s.baseHz * f * r), s.amps, s.decays);
-    mixInto(hit, mul(highPass(whiteNoise(rng, len), c.clickHighPassHz), envelope(len, c.clickAttackS, s.clickS)), s.clickGain);
-    mixInto(hit, mul(bandPass(whiteNoise(rng, len), s.bodyLowHz, s.bodyHighHz), envelope(len, c.clickAttackS, s.bodyDecayS)), s.bodyGain);
-    mixInto(out, hit, s.gain, s.atS);
-  }
-  return out;
 }
 
 /**
@@ -144,4 +101,4 @@ function engineCough(n: number): Float32Array {
 }
 
 /** 合図・UI の作り方（鍵 → 関数） */
-export const CUE_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { alarm, ui_tap: uiTap, bell, reload, hull_hit: hullHit, engine_cough: engineCough };
+export const CUE_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { alarm, ui_tap: uiTap, bell, hull_hit: hullHit, engine_cough: engineCough };

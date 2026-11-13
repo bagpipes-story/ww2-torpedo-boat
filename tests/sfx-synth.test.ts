@@ -42,13 +42,14 @@ const FINGERPRINTS: Partial<Record<SfxKey, number>> = {
   fire: 104566791,
   rain: 2630845142,
   drone: 1691882525,
-  torp_launch: 1786366453,
+  torp_launch: 3234308985,
   hull_hit: 2680124741,
   alarm: 1749539769,
   light_on: 2838731473,
   flare_pop: 235826790,
   bomb_fall: 3358791416,
-  reload: 3382733306,
+  reload: 1068679179,
+  reload_end: 3923572943,
   smoke: 449030864,
   bell: 88401544,
   engine_cough: 679273673,
@@ -74,8 +75,8 @@ function lastAbove(x: Float32Array, ratio: number): number {
 }
 
 describe('音の合成（v0.7.1 S0。作り方のある鍵）', () => {
-  it('25 本全部がある（S0 の 3 本・S2 の 7 本・S3 のループ 5 本・S4 の合図 10 本。空の検査にしない）・どの鍵にも指紋がある', () => {
-    expect(KEYS.length).toBe(25);
+  it('26 本全部がある（S0 の 3 本・S2 の 7 本・S3 のループ 5 本・S4 の合図 10 本・IP2 の弾倉の終わり。空の検査にしない）・どの鍵にも指紋がある', () => {
+    expect(KEYS.length).toBe(26);
     expect(Object.keys(FINGERPRINTS).sort()).toEqual([...KEYS].sort());
   });
   it.each(KEYS)('%s: 長さ・NaN なし・頂 0.9・直流・両端・系統の RMS の帯', (key) => {
