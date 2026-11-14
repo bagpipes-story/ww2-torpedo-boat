@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: なし
 - tools/ … scratchpad の道具（fp4・anaF・lab-shots・mix）、results/ … 文字の結果（音・画像は入れない。写しは scratchpad の v0710/impl/IP4/shots）
-- 一言: F 既定・mix/一斉発射/probe の数・CHANGELOG/docs（npm test と短い門は走行中）
+- 一言: IP4 最終（魚雷の既定 F＝U-R2・U-R1 確定・試聴の場の説明・テスト 3,187・mix 頂 0.712・一斉発射・probe 11 件・短い A/B same・CHANGELOG・docs/02・docs/03）

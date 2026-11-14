@@ -1,0 +1,10 @@
+IP4（agent の確かめ。repo では commit していない）
+✓ typecheck（2 つの tsconfig）・lint
+✓ npm test 3,187 passed・284 files（IP3 3,184 から ＋3）
+✓ build（run-gates の IP4-quick-us02）
+✓ 短い A/B（AB_ENV MISSION=us_02 SECS=20・AUDIO_STATES=audio）: ab-all@audio・ab-jp04base・ab-jp03・hud-base@audio・hud-jp04base・hud-jp03 とも same 1 diff 0
+✓ ビット同一: renderSfx('torp_launch') == renderSfxVariant(F)・len 30870・fp 1125567461（IP3 の F）
+✓ mix（S5 probe 31 件・本物のリミッタ）: 頂 0.712・1.0 超え 0%（mix-compare.txt・mix-compare-w06.txt）
+✓ 一斉発射 4 本: 頂 0.69・超え 0%・同時 4（salvo.txt）
+✓ probe 11 件 OK・✗ 0・声の最大 12（probe.log）
+✓ 試聴の場の写し shots/lab-w1280.png・lab-w1584.png（エラー 0）
