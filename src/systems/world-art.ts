@@ -11,6 +11,7 @@ import { FireFx, type FireWorldView } from './fire-fx';
 import { registerSparkFx } from './fx-bus';
 import { registerExplosionFx } from './mission-effects';
 import { SeaFx } from './sea-fx';
+import { registerSfxListener } from './sfx-bus';
 import { SinkFx } from './sink-fx';
 import { SparkFx } from './spark-fx';
 import { WakeFx, type WakeWorldView } from './wake-fx';
@@ -42,6 +43,7 @@ export class WorldArt {
     this.sink = new SinkFx(scene, this.explosions, this.sparks);
     this.fire = new FireFx(scene, w, this.sink);
     this.coast = new CoastFx(scene, w.setup);
+    registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
   }
 
   /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
@@ -58,6 +60,7 @@ export class WorldArt {
   destroy(): void {
     registerExplosionFx(null);
     registerSparkFx(null);
+    registerSfxListener(null);
     this.sea.destroy();
     this.wake.destroy();
     this.explosions.destroy();

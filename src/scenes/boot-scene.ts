@@ -1,5 +1,5 @@
-// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0）。
-// 音のアンロックは v0.7 でここに足す。
+// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0。?sfxlab は音の試聴の場＝v0.7.1 IP2）。
+// 音（v0.7.1）: 合成の効果音のエンジンをここで 1 回作る（systems/sfx-boot。標本の合成・ゲームの時計・iOS の保険の resume）。最初のタッチの unlock は Phaser の sound manager がする。
 import Phaser from 'phaser';
 import {
   DEBUG_DIRECT_MISSION,
@@ -10,6 +10,7 @@ import {
   DEBUG_RAID_OVERRIDE,
   PROTOTYPE_MISSION_ID,
   REGISTRY_KEY_DATA,
+  SFX_LAB_ENABLED,
   REGISTRY_KEY_INPUT,
   SCENE_KEYS,
   TEXTURE_KEYS,
@@ -21,6 +22,7 @@ import { hasHardVariant } from '../config/mission-data';
 import { createInputState } from '../core/input-state';
 import { directSortie } from '../core/sortie';
 import { migrateLegacyUnlocks } from '../systems/progress-storage';
+import { createSfx } from '../systems/sfx-boot';
 import {
   generateDebugRingTexture,
   generateGunneryTextures,
@@ -143,9 +145,11 @@ export class BootScene extends Phaser.Scene {
     const allyMission = ally ? getPrototypeMission(gameData, allyMissionId(ally.shipId)) : null;
     if (ally && allyMission) generateAllyDestroyerTextures(this, { lengthUnits: ally.lengthM * spriteScale, beamUnits: ally.beamM * spriteScale }, allyFanFor(ally, allyMission.coast !== null, allyMission.bounds.height));
     validateEvacMissions(gameData); // 空襲下の退避（v0.6.11。jp_03）: 隊・隠れ場所・波と編隊・燃料の V-E1〜V-E12（ハードも。壊れていれば Boot で止まる。絵は S4）
+    createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
-    if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));
+    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.soundLab); // 音の試聴の場（v0.7.1 IP2。?sfxlab の時だけ。ふだんの URL は Title・?debug は Mission のまま）
+    else if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));
     else this.scene.start(SCENE_KEYS.title);
   }
 }

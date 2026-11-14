@@ -16,7 +16,7 @@ import {
   RENDER_SCALE,
   SCENE_KEYS,
 } from '../config/game-config';
-import { effectiveFuelAllotmentGal, getGameData, getPrototypeMission } from '../config/game-data';
+import { effectiveFuelAllotmentGal, getBoatRecord, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { isSortie } from '../core/sortie';
@@ -24,6 +24,7 @@ import { HUD_COLOR_KPI, HUD_FONT_DEBUG_PX, HUD_HIST_BADGE_JA, HUD_HIST_BADGE_X, 
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PauseControl } from '../systems/pause-control';
 import { PinchZoom } from '../systems/pinch-zoom';
+import { MissionSfx } from '../systems/sfx-mission';
 import { VirtualStick } from '../systems/virtual-stick';
 import { BoatHud } from '../ui/boat-hud';
 import { DebugHud } from '../ui/debug-hud';
@@ -51,6 +52,7 @@ export class HudScene extends Phaser.Scene {
   private pinch?: PinchZoom;
   /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
   private pause?: PauseControl;
+  private sfx?: MissionSfx; // 任務の間の音（v0.7.1 S3。ループ 5 本。テレメトリを読むだけ。一時停止・終わりは自分で Hud の出来事を聞く）
   private telemetry!: BoatTelemetry;
   /** Mission が launch で渡す Sortie の任務（v0.4.0） */
   private missionId: string = PROTOTYPE_MISSION_ID;
@@ -108,6 +110,7 @@ export class HudScene extends Phaser.Scene {
     // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
     this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);
+    this.sfx = new MissionSfx(this.events, getBoatRecord(data, mission.playerBoatId).speed_max_kt);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stick?.destroy();
@@ -133,10 +136,11 @@ export class HudScene extends Phaser.Scene {
       this.pinch = undefined;
       this.pause?.destroy();
       this.pause = undefined;
+      this.sfx = undefined;
     });
   }
 
-  override update(): void {
+  override update(_time: number, delta: number): void {
     this.keyboard?.update();
     this.boatHud?.refresh(this.telemetry, this.time.now);
     this.hpBar?.refresh(this.telemetry, this.time.now);
@@ -145,5 +149,6 @@ export class HudScene extends Phaser.Scene {
     this.markers?.refresh(this.telemetry);
     this.dawnBanner?.refresh(this.telemetry, this.time.now);
     this.panel?.update(this.telemetry, this.time.now);
+    this.sfx?.update(this.telemetry, delta); // 音は最後（HUD の描き換えの後。HUD には触らない）
   }
 }

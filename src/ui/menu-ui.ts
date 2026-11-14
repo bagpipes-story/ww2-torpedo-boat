@@ -18,6 +18,7 @@ import {
   MENU_TWO_LINE_DY,
 } from '../config/menu-config';
 import { HUD_COLOR, HUD_COLOR_STRONG, HUD_FONT_DEBUG_PX, hudTextStyle } from '../config/ui-config';
+import { sfxUi } from '../systems/sfx-bus';
 
 export interface MenuButtonSpec {
   /** 左上と大きさ */
@@ -36,6 +37,8 @@ export interface MenuButtonSpec {
   rightColor?: string;
   /** left: Title の行（題は左上、2 行目は左下、right は右端の中央）。center: 題は中央、2 行目が空でなければ題を cy−MENU_TWO_LINE_DY、2 行目を cy+MENU_TWO_LINE_DY */
   align: 'left' | 'center';
+  /** 決定の時のボタンの音を鳴らさない（v0.7.1 IP2。試聴の場の案のボタン＝押した音が聞き比べる音の頭に重ならない） */
+  silent?: boolean;
 }
 
 /** 押していない印（Phaser の pointer.id は 0 以上） */
@@ -53,6 +56,7 @@ export class MenuButton {
   private enabled = true;
   private selected = false;
   private pointerId = NO_POINTER;
+  private readonly silent: boolean;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -61,6 +65,7 @@ export class MenuButton {
     delayMs: number = MENU_INPUT_DELAY_MS,
   ) {
     const { x, y, w, h } = spec;
+    this.silent = spec.silent === true;
     this.rect = scene.add
       .rectangle(x + w / 2, y + h / 2, w, h, MENU_FILL_COLOR, MENU_FILL_ALPHA)
       .setStrokeStyle(MENU_STROKE_PX, MENU_FILL_COLOR, MENU_STROKE_ALPHA)
@@ -147,7 +152,9 @@ export class MenuButton {
     if (p.id !== this.pointerId) return;
     this.release();
     // touchcancel（コントロールセンター・着信など）も Phaser は離した扱いで GO の up を出すので、決定にしない
-    if (this.enabled && !p.wasCanceled) this.onTap();
+    if (!this.enabled || p.wasCanceled) return;
+    if (!this.silent) sfxUi('ui_tap'); // ボタンの音（v0.7.1 S1。決定の時だけ＝無効・取り消しは鳴らない）
+    this.onTap();
   }
 
   private onRelease(p: Phaser.Input.Pointer): void {

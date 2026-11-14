@@ -11,8 +11,10 @@ import {
 import { ADD_DEPTH_STEP, BLEND_ADD, FIRE_SMOKE_DEPTH, FLAME_BODY_SHARE, FLAME_FRAME_S, FLAME_TEX_PX } from '../config/fx-art-config';
 import { TEXTURE_KEYS } from '../config/game-config';
 import { RENDERER_WEBGL } from '../config/sea-art-config';
+import { SFX_SINK_SMALL_RATE } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
 import type { ExplosionFx } from './explosion-fx';
+import { sfxAt } from './sfx-bus';
 import type { SparkFx } from './spark-fx';
 
 export class SinkFx {
@@ -57,6 +59,7 @@ export class SinkFx {
     this.blastsDone[s] = 0;
     this.bubbleIn[s] = 0;
     for (let k = 0; k < SINK_FLAMES_PER_SLOT; k++) this.flames[s * SINK_FLAMES_PER_SLOT + k]!.setVisible(false);
+    sfxAt('sink', x, y, 1, ship ? 1 : SFX_SINK_SMALL_RATE); // 沈み始めの音（v0.7.1 S2。泡ときしみ。小艇は高く短く）
   }
 
   /** 毎フレーム（fire-fx の update の後に world-art から） */

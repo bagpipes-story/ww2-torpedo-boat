@@ -6,6 +6,7 @@ import { HudScene } from '../scenes/hud-scene';
 import { MissionScene } from '../scenes/mission-scene';
 import { PauseScene } from '../scenes/pause-scene';
 import { ResultScene } from '../scenes/result-scene';
+import { SoundLabScene } from '../scenes/sound-lab-scene';
 import { TitleScene } from '../scenes/title-scene';
 import { ACTIVE_TOUCH_POINTERS, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SEA_COLOR } from './game-config';
 
@@ -33,6 +34,6 @@ export const phaserConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  // 後ろほど手前に描く（Pause は Mission・Hud の上。v0.5.1）
-  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene],
+  // 後ろほど手前に描く（Pause は Mission・Hud の上。v0.5.1）。音の試聴の場（v0.7.1 IP2）は ?sfxlab の時だけ Boot から（ほかのシーンとは重ならない）
+  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene],
 };

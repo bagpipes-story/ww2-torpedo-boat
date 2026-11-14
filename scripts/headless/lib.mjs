@@ -5,13 +5,21 @@
 //   ?debug は自動で付ける（window.__game の公開）。Service Worker は &nosw で入れない。
 // - 起動の直後は delta 0 のフレームで Mission の world ができるまで進める（固定ステップを 1 つも回さない＝記録の前にステップが走らない）。
 // 実行: 各道具の頭の注を見る（node scripts/headless/<tool>.mjs）。Playwright は入っている require('playwright') を使う。
+// v0.7.1 S0: 音の 3 つの状態（どの道具にも効く環境変数）。既定＝今までどおり（context は suspended のまま）・AUDIO=1＝context が running・NOAUDIO=1＝AudioContext なし。
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-export const { chromium } = require('playwright');
+const pw = require('playwright');
+/** 音の状態（v0.7.1 S0。spec-v0710 §9.3・§14 L7）: AUDIO=1 は autoplay を許して起動する（Phaser の AudioContext が running になる＝音が鳴る状態で遊びが同じかを見る） */
+const AUDIO_ARGS = process.env.AUDIO === '1' ? ['--autoplay-policy=no-user-gesture-required'] : null;
+/** NOAUDIO=1 はページの script の前に AudioContext を消す（Phaser は WebAudio 無しの sound manager になる＝音のエンジンが無い状態） */
+const NO_AUDIO = process.env.NOAUDIO === '1';
+if (AUDIO_ARGS && NO_AUDIO) throw new Error('AUDIO=1 と NOAUDIO=1 は一緒に使えない');
+/** どの道具も chromium.launch() だけを使う。AUDIO=1 の時だけ引数を足した launch に差し替える（どちらも無ければ playwright の物そのまま） */
+export const chromium = AUDIO_ARGS ? { launch: (o = {}) => pw.chromium.launch({ ...o, args: [...(o.args ?? []), ...AUDIO_ARGS] }) } : pw.chromium;
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 export const BASE_PATH = '/ww2-torpedo-boat/';
@@ -93,6 +101,7 @@ export async function openGame(browser, base, query, opts = {}) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e && e.message ? e.message : e)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
+  if (NO_AUDIO) await page.addInitScript(() => { delete window.AudioContext; delete window.webkitAudioContext; });
   await page.addInitScript(pageInit);
   if (opts.init) await page.addInitScript(opts.init);
   await page.goto(`${base}?debug&nosw${query ? `&${query}` : ''}`);
