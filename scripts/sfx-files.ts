@@ -52,6 +52,20 @@ export function spectrum(x: Float32Array, from: number, len: number, size: numbe
   return out;
 }
 
+/**
+ * 帯のエネルギーの割合 [hz より上, lowHz より下]（1,024 標本ごとの FFT。scripts/sfx-mix.ts の「小さいスピーカーの目安」と同じ数え方。v0.7.2 S0 の曲の §3.3 の帯の確かめ:
+ * 400 Hz より上 ≥ 60%・200 Hz より下 ≤ 12%）
+ */
+export function bandShares(x: Float32Array, sampleRate: number, hz = 400, lowHz = 200): [number, number] {
+  const size = 1024;
+  let hi = 0, lo = 0, all = 0;
+  for (let from = 0; from < x.length; from += size) {
+    const mag = spectrum(x, from, Math.min(size, x.length - from), size);
+    for (let i = 1; i < mag.length; i++) { const p = mag[i]! * mag[i]!, f = (i * sampleRate) / size; all += p; if (f >= hz) hi += p; if (f < lowHz) lo += p; }
+  }
+  return all > 0 ? [hi / all, lo / all] : [0, 0];
+}
+
 /** 区間 [from, to) のスペクトルの重心 Hz（エネルギーの重み。音の明るさの目安） */
 export function centroidHz(x: Float32Array, from: number, to: number, sampleRate: number): number {
   let size = 256;

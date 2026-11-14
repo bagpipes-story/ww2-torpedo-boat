@@ -19,7 +19,7 @@ const SR = SFX_SAMPLE_RATE;
 export type ProbeRow = [t: number, key: SfxKey, dx: number, dy: number, rate: number, mul: number, voice: number, drop: number, gain: number, pan: number, band: number, stole: number, flat: number];
 /** ループの記録の 1 行（sfx-probe の install）: [時刻, 音量 engine・sea・fire・rain・drone, engine の rate, drone の rate, 書いた数] */
 export type LoopRow = [t: number, g0: number, g1: number, g2: number, g3: number, g4: number, rEngine: number, rDrone: number, writes: number];
-export interface ProbeCase { name: string; q: string; secs: number; mode: string; t0: number; t1: number; steals: number; maxVoices: number; demand: number; log: ProbeRow[]; loops?: LoopRow[] }
+export interface ProbeCase { name: string; q: string; secs: number; mode: string; t0: number; t1: number; steals: number; maxVoices: number; demand: number; log: ProbeRow[]; loops?: LoopRow[]; mood?: [number, number][] }
 
 export interface Mixdown {
   /** モノの和（パンなし）・左・右・爆発の束・ほかの束（どれも長さは同じ。時刻 0 は記録の t0） */

@@ -3,7 +3,8 @@
 // - 表の欄がそろう（秒は spec §4・最小間隔は §7.3・届く帯は §6.2・優先は系統から）。種は SFX_SEED_<鍵> で重ならず、絵の種（ART_SEED_*）とも重ならない。合計 ≤ 70 万標本。
 // - 段ごとの作り方: S0 は ui_tap・mg・blast_l、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本＝25 本そろった（作り方の無い鍵は無い）。
 // - 音量の順（S2 の mix の詰め）: 魚雷の命中 ≥ 大きい爆発 > 小さい爆発 > 近い砲 > 大きい水柱 > 機銃 > 小さい水柱（機銃・水柱が爆発を埋めない）。
-// - 音を足しても TEXTURE_KEYS は今のまま（v0.7.0 の 53 鍵）。シーンは v0.7.0 の 7 つの後に音の試聴の場（IP2。?sfxlab の時だけ）を 1 つ足した 8 つ。
+// - 音を足しても TEXTURE_KEYS は今のまま（v0.7.0 の 53 鍵）。シーンは v0.7.0 の 7 つの後に音の試聴の場（IP2）を 1 つ足した 8 つ、v0.7.2 S1 で曲の試聴の場を足した 9 つ
+//   （?sfxlab は曲の試聴の場を開き、効果音の試聴の場はその中のボタンから）。
 // - S4: 合図の観測器（core/sfx-cues）と口が鳴らす鍵は全部 SFX_KEYS にある・どこからも鳴らさない鍵は無い（src の呼ぶ側の文字を数える）。
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -169,7 +170,7 @@ describe('作り方は 26 本そろった（S0: 3 本・S2: 7 本・S3: ルー�
   });
 });
 
-describe('音を足しても絵の鍵は今のまま（v0.7.0 の main 3a9e7aa）。シーンは試聴の場を 1 つ足した（IP2）', () => {
+describe('音を足しても絵の鍵は今のまま（v0.7.0 の main 3a9e7aa）。シーンは試聴の場を足した（IP2・v0.7.2 S1）', () => {
   it('TEXTURE_KEYS は 53 鍵で、名前と値の指紋が同じ', () => {
     const m = /export const TEXTURE_KEYS = \{([\s\S]*?)\n\} as const;/.exec(readFileSync('src/config/game-config.ts', 'utf8'));
     const rows = [...m![1]!.matchAll(/^\s*(\w+): '([^']+)',/gm)].map((x) => `${x[1]}:${x[2]}`);
@@ -179,10 +180,12 @@ describe('音を足しても絵の鍵は今のまま（v0.7.0 の main 3a9e7aa�
     expect(rows.length).toBe(53);
     expect(h).toBe(TEXTURE_KEYS_FNV);
   });
-  it('シーンの並びは Boot・Title・Briefing・Mission・Hud・Result・Pause・SoundLab（IP2。?sfxlab の時だけ Boot から＝ふだんの URL は Title・?debug は Mission）', () => {
-    expect(readFileSync('src/config/phaser-config.ts', 'utf8')).toContain('  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene],');
+  it('シーンの並びは Boot・Title・Briefing・Mission・Hud・Result・Pause・SoundLab・MusicLab（v0.7.2 S1。?sfxlab の時だけ Boot から曲の試聴の場へ＝ふだんの URL は Title・?debug は Mission）', () => {
+    expect(readFileSync('src/config/phaser-config.ts', 'utf8')).toContain('  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene, MusicLabScene],');
     const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
-    expect(boot).toContain('    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.soundLab); //');
+    expect(boot).toContain('    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.musicLab); //');
+    expect(boot).not.toContain('SCENE_KEYS.soundLab');
+    expect(readFileSync('src/config/game-config.ts', 'utf8')).toContain("  musicLab: 'MusicLab',\n");
     expect(boot).toContain('    else if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, ');
     expect(boot).toContain('    else this.scene.start(SCENE_KEYS.title);');
     expect(readFileSync('src/config/game-config.ts', 'utf8')).toContain("export const SFX_LAB_ENABLED = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('sfxlab');");

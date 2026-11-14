@@ -3,7 +3,13 @@
 // 爆発の飛び出し（頭 0.3 秒 − 直前 1 秒）を出す。scripts/sfx-mixdown.ts の模型（先読み・戻りの自動調整・自動の補正の音量が本物と違う）の代わりの数。
 // つなぎの案: 「通す」＝単発＋ループ × 束の音量 をリミッタへ／「後」＝リミッタは単発だけで、ループ × 束の音量 は master へ直に（S3 の決め）。束の音量は BUS（既定 1,0.5）。
 // OfflineAudioContext を使うのはこの道具だけ（ゲームは使わない＝spec-v0710 §14 L5）。WebKit の DynamicsCompressor は同じ系統の実装だが、確かめたのは Chromium。
-// 実行: RAW=<raw-*.json のあるディレクトリ> [BUS=1,0.5] node scripts/headless/sfx-offline.mjs
+// v0.7.2 S1: 曲の束（raw の music と musicGain。scripts/sfx-music.ts の RAW=1 が書く raw-menu-*.json）は master へ直に（リミッタを通さない＝ゲームと同じ）。uiAt（ボタンの音の位置）が
+//   あれば、ボタンの音の出口の頂と、その前 0.6〜0.1 秒の曲だけの出口の RMS の差（dB。spec-v0720 §8.3「メニューは UI の音が曲より ≥ 12 dB」）を出す。
+// v0.7.2 S2（任務の曲。spec-v0720 §8.3・brief L23）: 合図と爆発の頭の位置（onsets）と曲の束（music）のある任務の窓（scripts/sfx-mix.ts の RAW=1 MUSIC=1 が書く raw-<件>-busy／quiet.json）は、
+//   ゲームのつなぎ（単発 → リミッタ → master・ループ × 0.5 → master・曲の束 → master）で「曲なし」と「曲あり」を 2 回通し、門を出す: 出口の頂 < 0.9・1.0 超え 0%・前の 1 秒に爆発の無い
+//   爆発の飛び出し（頭 0.3 秒 − 直前 1 秒）の窓ごとの中央値 ≥ 6.5 dB・合図（鍵ごと）と爆発の飛び出しの中央値の下がり（曲なし − 曲あり）≤ 0.5 dB（警報は ≤ 0.2 dB）。爆弾の笛の頭は 0.5〜1.1 秒。
+//   JSON=<file> に窓ごとの数を書く。メニューの窓（raw-menu-*.json）は S1 のまま（UI の音が曲より ≥ 12 dB）。
+// 実行: RAW=<raw-*.json のあるディレクトリ> [BUS=1,0.5] [JSON=<file>] node scripts/headless/sfx-offline.mjs
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from './lib.mjs';
@@ -41,6 +47,16 @@ async function render(o) {
   bus.connect(o.through ? comp : master);
   s1.start(0);
   s2.start(0);
+  if (o.music) {
+    const mb = ctx.createBuffer(1, n, o.sr);
+    mb.copyToChannel(f32(o.music), 0);
+    const s3 = ctx.createBufferSource(), mg = ctx.createGain();
+    s3.buffer = mb;
+    mg.gain.value = o.musicGain;
+    s3.connect(mg);
+    mg.connect(master); // 曲の束は master へ直に（v0.7.2 の決め D6）
+    s3.start(0);
+  }
   const out = await ctx.startRendering();
   const L = out.getChannelData(0), R = out.getChannelData(1);
   let peak = 0, over = 0;
@@ -48,23 +64,108 @@ async function render(o) {
   const power = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += L[i] * L[i] + R[i] * R[i]; return s / Math.max(1, b - a); };
   const h = Math.round(0.3 * o.sr);
   const pops = o.blastAt.map((at) => 10 * Math.log10((power(at, at + h) + 1e-9) / (power(at - o.sr, at) + 1e-9))).sort((x, y) => x - y);
-  return { peak, over: over / Math.max(1, n - o.pre), pops };
+  const db = (v) => 20 * Math.log10(v + 1e-12);
+  const ui = (o.uiAt ?? []).map((at) => {
+    let p = 0;
+    for (let i = at; i < Math.min(n, at + Math.round(0.1 * o.sr)); i++) p = Math.max(p, Math.abs(L[i]), Math.abs(R[i]));
+    return db(p) - 10 * Math.log10(power(at - Math.round(0.6 * o.sr), at - Math.round(0.1 * o.sr)) / 2 + 1e-24);
+  }).sort((x, y) => x - y);
+  return { peak, over: over / Math.max(1, n - o.pre), pops, ui };
+}
+
+/** ページの中（S2）: 任務の窓をゲームのつなぎで通し（曲は withMusic の時だけ）、出口の頂・1.0 超え・合図と爆発の頭の飛び出しを返す */
+async function renderMission(o) {
+  const f32 = (b64) => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Float32Array(u.buffer); };
+  const n = f32(o.left).length, sr = o.sr;
+  const ctx = new OfflineAudioContext(2, n, sr);
+  const buf = (chs) => { const b = ctx.createBuffer(chs.length, n, sr); chs.forEach((x, i) => b.copyToChannel(x, i)); return b; };
+  const comp = ctx.createDynamicsCompressor();
+  for (const k of ['threshold', 'knee', 'ratio', 'attack', 'release']) comp[k].value = o.limiter[k];
+  const master = ctx.createGain();
+  master.gain.value = o.master;
+  comp.connect(master);
+  master.connect(ctx.destination);
+  const src = (b, to, g) => { const s = ctx.createBufferSource(); s.buffer = b; const m = ctx.createGain(); m.gain.value = g; s.connect(m); m.connect(to); s.start(0); };
+  src(buf([f32(o.left), f32(o.right)]), comp, 1);
+  src(buf([f32(o.loops)]), master, o.bus);
+  if (o.withMusic) src(buf([f32(o.music)]), master, o.musicGain);
+  const out = await ctx.startRendering();
+  const L = out.getChannelData(0), R = out.getChannelData(1);
+  let peak = 0, over = 0, sum = 0;
+  for (let i = o.pre; i < n; i++) { const a = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (a > peak) peak = a; if (a > 1) over++; sum += L[i] * L[i] + R[i] * R[i]; }
+  const power = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += L[i] * L[i] + R[i] * R[i]; return s / Math.max(1, Math.min(n, b) - Math.max(0, a)); };
+  // 曲だけの出口の強さ（左右に同じ＝2 倍。cmr＝頭の強さ（曲なし）÷ 同じ頭の曲の強さ＝合図が曲より何 dB 上か）
+  const mu = o.withMusic ? f32(o.music) : null, mg = o.musicGain * o.master;
+  const musicPower = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += 2 * (mu[i] * mg) ** 2; return s / Math.max(1, Math.min(n, b) - Math.max(0, a)); };
+  const pops = o.onsets.filter((on) => on.at >= o.pre && (on.fam === 'cue' || (on.fam === 'blast' && on.key !== 'sink'))).map((on) => {
+    let h0 = 0, h1 = Math.min(Math.round(0.3 * sr), on.len);
+    if (on.key === 'bomb_fall') { h0 = Math.round(0.5 * sr); h1 = Math.round(1.1 * sr); }
+    const iso = on.fam === 'blast' && !o.onsets.some((x) => x.fam === 'blast' && x.key !== 'sink' && x.at < on.at && x.at >= on.at - sr);
+    const ph = power(on.at + h0, on.at + h1), pp = power(on.at - sr, on.at);
+    return { key: on.key, fam: on.fam, iso, ph, pm: mu ? musicPower(on.at + h0, on.at + h1) : 0, pop: 10 * Math.log10((ph + 1e-12) / (pp + 1e-12)) };
+  });
+  return { peak, over: over / Math.max(1, n - o.pre), rms: Math.sqrt(sum / 2 / Math.max(1, n - o.pre)), pops };
 }
 
 const files = readdirSync(process.env.RAW).filter((f) => /^raw-.*\.json$/.test(f)).sort();
 const browser = await chromium.launch();
 const page = await (await browser.newContext()).newPage();
-let worst = 0;
+let worst = 0, uiBad = 0;
+const med = (a) => { const x = [...a].sort((p, q) => p - q); return x.length ? x[x.length >> 1] : NaN; };
+const mission = [];
 for (const f of files) {
   const raw = JSON.parse(readFileSync(join(process.env.RAW, f), 'utf8'));
-  const routes = [...BUS.map((b) => ({ name: `通す×${b}`, bus: b, through: true })), ...BUS.filter((b) => b !== 1).map((b) => ({ name: `後×${b}`, bus: b, through: false })), { name: 'ループなし', bus: 0, through: false }];
+  if (raw.onsets && raw.music) {
+    // S2: 任務の窓（曲なし・曲あり）
+    const o = { ...raw, limiter: LIMITER, master: MASTER, bus: BUS[BUS.length - 1] };
+    const off = await page.evaluate(renderMission, { ...o, withMusic: false });
+    const on = await page.evaluate(renderMission, { ...o, withMusic: true });
+    const iso = (r) => r.pops.filter((p) => p.iso).map((p) => p.pop);
+    const bl = (r) => r.pops.filter((p) => p.fam === 'blast').map((p) => p.pop);
+    mission.push({ name: raw.name, tag: raw.tag, startS: raw.startS, ducks: raw.ducks, off, on });
+    const fmt = (x) => (Number.isNaN(x) ? '   -' : x.toFixed(1).padStart(5));
+    console.log(`${`${raw.name}-${raw.tag}`.padEnd(18)} @${raw.startS.toFixed(0).padStart(3)}s 頂 ${off.peak.toFixed(3)} → ${on.peak.toFixed(3)}  1.0 超え ${(on.over * 100).toFixed(3)}%  RMS ${(20 * Math.log10(off.rms + 1e-12)).toFixed(1)} → ${(20 * Math.log10(on.rms + 1e-12)).toFixed(1)} dB  爆発 ${bl(off).length} 回 中央値 ${fmt(med(bl(off)))} → ${fmt(med(bl(on)))}・孤立 ${iso(off).length} 回 ${fmt(med(iso(off)))} → ${fmt(med(iso(on)))} dB  下げ ${raw.ducks} 回`);
+    continue;
+  }
+  const routes = raw.music ? [{ name: '曲は後', bus: 0, through: false }] : [...BUS.map((b) => ({ name: `通す×${b}`, bus: b, through: true })), ...BUS.filter((b) => b !== 1).map((b) => ({ name: `後×${b}`, bus: b, through: false })), { name: 'ループなし', bus: 0, through: false }];
   for (const r of routes) {
     const res = await page.evaluate(render, { ...raw, limiter: LIMITER, master: MASTER, bus: r.bus, through: r.through });
-    if (!r.through && r.bus > 0) worst = Math.max(worst, res.peak);
+    if ((!r.through && r.bus > 0) || raw.music) worst = Math.max(worst, res.peak);
     const mid = res.pops.length ? `${res.pops[res.pops.length >> 1].toFixed(1)} dB` : '-';
-    console.log(`${raw.name.padEnd(12)} ${r.name.padEnd(8)} 出口の頂 ${res.peak.toFixed(3)}・1.0 超え ${(res.over * 100).toFixed(3)}%  爆発 ${res.pops.length} 回の飛び出し 中央値 ${mid}・一番悪い ${res.pops.length ? `${res.pops[0].toFixed(1)} dB` : '-'}`);
+    const ui = res.ui.length ? `  ボタンの音 ${res.ui.length} 回: 出口の頂 − 曲の RMS 中央値 ${res.ui[res.ui.length >> 1].toFixed(1)} dB・一番悪い ${res.ui[0].toFixed(1)} dB（門 ≥ 12）` : '';
+    if (res.ui.length && res.ui[0] < 12) uiBad++;
+    console.log(`${raw.name.padEnd(12)} ${r.name.padEnd(8)} 出口の頂 ${res.peak.toFixed(3)}・1.0 超え ${(res.over * 100).toFixed(3)}%  爆発 ${res.pops.length} 回の飛び出し 中央値 ${mid}・一番悪い ${res.pops.length ? `${res.pops[0].toFixed(1)} dB` : '-'}${ui}`);
   }
 }
 await browser.close();
+let bad = 0;
+if (mission.length) {
+  // S2 の門（spec §8.3・brief L23）
+  const check = (ok, text) => { if (!ok) bad++; console.log(`${ok ? '✓' : '✗'} ${text}`); };
+  const peakOn = Math.max(...mission.map((m) => m.on.peak)), peakOff = Math.max(...mission.map((m) => m.off.peak));
+  const overOn = Math.max(...mission.map((m) => m.on.over));
+  check(peakOn < 0.9, `曲ありの出口の頂の最大 ${peakOn.toFixed(3)} < 0.9（曲なし ${peakOff.toFixed(3)}・${mission.length} 窓）`);
+  check(overOn === 0, `曲ありの 1.0 超え ${(overOn * 100).toFixed(4)}%（0%）`);
+  const isoWins = mission.map((m) => ({ n: `${m.name}-${m.tag}`, off: med(m.off.pops.filter((p) => p.iso).map((p) => p.pop)), on: med(m.on.pops.filter((p) => p.iso).map((p) => p.pop)) })).filter((x) => !Number.isNaN(x.on));
+  const isoMin = isoWins.reduce((a, x) => (x.on < a.on ? x : a), { n: '-', on: Infinity, off: Infinity });
+  check(isoMin.on >= 6.5, `前の 1 秒に爆発の無い爆発の飛び出し（窓ごとの中央値）の最小 ${isoMin.on.toFixed(1)} dB ≥ 6.5（${isoMin.n}・曲なし ${isoMin.off.toFixed(1)}。${isoWins.length} 窓）`);
+  const keys = [...new Set(mission.flatMap((m) => m.off.pops.map((p) => (p.fam === 'blast' ? '爆発' : p.key))))].sort();
+  for (const k of keys) {
+    const sel = (r) => r.pops.filter((p) => (p.fam === 'blast' ? '爆発' : p.key) === k).map((p) => p.pop);
+    const a = mission.flatMap((m) => sel(m.off)), b = mission.flatMap((m) => sel(m.on));
+    const busyA = mission.filter((m) => m.tag === 'busy').flatMap((m) => sel(m.off)), busyB = mission.filter((m) => m.tag === 'busy').flatMap((m) => sel(m.on));
+    const quietA = mission.filter((m) => m.tag === 'quiet').flatMap((m) => sel(m.off)), quietB = mission.filter((m) => m.tag === 'quiet').flatMap((m) => sel(m.on));
+    const drop = med(a) - med(b), lim = k === 'alarm' ? 0.2 : 0.5;
+    const part = (x, y) => (x.length ? `${med(x).toFixed(1)} → ${med(y).toFixed(1)}` : '-');
+    check(drop <= lim, `${k.padEnd(12)} ${String(a.length).padStart(3)} 回: 飛び出しの中央値 ${med(a).toFixed(2)} → ${med(b).toFixed(2)} dB（下がり ${drop.toFixed(2)} ≤ ${lim}）  混む窓 ${part(busyA, busyB)}・静かな窓 ${part(quietA, quietB)}`);
+  }
+  const ducks = mission.reduce((a, m) => a + (m.ducks ?? 0), 0);
+  console.log(`曲を下げた回数（窓の中の模型）: ${ducks}`);
+  // 参考（埋もれ）: 合図・爆発の頭の強さ（曲なし）が同じ頭の曲（下げの後）より何 dB 上か（cmr。12 dB 以上なら曲の上に聞こえる目安）。鍵ごとの中央値と一番悪い値
+  const cm = {};
+  for (const m of mission) m.off.pops.forEach((p, i) => { const q = m.on.pops[i]; if (!q || q.pm <= 0) return; (cm[p.fam === 'blast' ? '爆発' : p.key] ??= []).push(10 * Math.log10((p.ph + 1e-12) / q.pm)); });
+  console.log(`参考 合図・爆発の頭 − 同じ頭の曲（cmr・中央値／一番悪い・下げの後）: ${Object.keys(cm).sort().map((k) => `${k} ${med(cm[k]).toFixed(1)}／${Math.min(...cm[k]).toFixed(1)}`).join('  ')}`);
+  if (process.env.JSON) (await import('node:fs')).writeFileSync(process.env.JSON, JSON.stringify(mission.map((m) => ({ ...m, off: { ...m.off }, on: { ...m.on } }))));
+}
 console.log(`本物のリミッタ（Chromium）: 「後」の案の出口の頂の最大 ${worst.toFixed(3)}（1 未満が目標）`);
-process.exitCode = worst < 1 ? 0 : 1;
+process.exitCode = worst < 1 && uiBad === 0 && bad === 0 ? 0 : 1;

@@ -11,19 +11,23 @@
 // 時計（D4）: 間引きはゲームの時計（tick が積む delta の和）、声の空きは再生の時計。rate の揺れは音だけの乱数（SFX_SEED_PLAY。頼まれた順に引く＝音の状態にも標本の有無にも依らない）。
 // 確かめの口 tap（S2。scripts/headless/sfx-probe が ?debug の __sfx に付ける。ふだんは null）: 頼まれた単発を、rate の揺れの後・落とす前に知らせる＝記録は音の状態に依らない。
 // 論理は読まない（位置の差だけを systems/sfx-bus から受け取る）。
+// v0.7.2 S1: 見張りを systems/sfx-watchdog へ分け（振る舞いは同じ）、曲の再生 systems/sfx-music-player を持つ（曲の束は master へ直に＝リミッタを通さない。tick から毎フレーム
+// update＝作る仕事と 10 Hz の決め、消音は曲も止める）。wall は実時間の ms（曲を作る時間の記録だけ。systems/sfx-boot が performance.now を渡す。tests は 0）。
+// v0.7.2 S2: 単発を鳴らせた時（fire）に曲を下げる表を引く（systems/sfx-music-duck。警報・鐘・魚雷の命中・近い大きい爆発・探照灯。鳴り始める時刻で）。
 import {
-  SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, SFX_WATCHDOG, type SfxKey,
+  SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, type SfxKey,
 } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
 import { SfxMixer, sfxKeyIndex } from '../core/sfx-mix';
-import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource, SfxThenable } from './sfx-audio-types';
+import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource } from './sfx-audio-types';
 import { SfxLoopPlayer } from './sfx-loop-player';
+import { SfxMusicDuck } from './sfx-music-duck';
+import { SfxMusicPlayer, type SfxMusicStats } from './sfx-music-player';
+import { SfxWatchdog, sfxSwallow } from './sfx-watchdog';
 
 const RUNNING = 'running';
-function noop(): void {}
-/** 約束の拒否を握る（iOS 26 の「Failed to start the audio device」。L2） */
-function swallow(p: SfxThenable | undefined): void {
-  if (p && typeof p.catch === 'function') p.catch(noop);
+function noClock(): number {
+  return 0;
 }
 
 /** scripts/headless の確かめ用の数 */
@@ -49,6 +53,10 @@ export interface SfxStats {
   loopStarts: number;
   loopStops: number;
   loopWrites: number;
+  /** v0.7.2 S1: 曲の再生と作る列の数。S2: 曲を下げた回数（直しを含む）・直した回数 */
+  music: SfxMusicStats;
+  ducks: number;
+  duckReworks: number;
 }
 
 /** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし。delayS は遅らせる秒＝S4） */
@@ -63,6 +71,9 @@ export class SfxEngine {
   /** ループの束（master へ直につなぐ）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
   readonly loopBus: SfxGainNode;
   readonly loops: SfxLoopPlayer;
+  /** 曲の再生（v0.7.2 S1。systems/sfx-bus の sfxMusic… が動かす）と、合図で曲を下げる（S2） */
+  readonly music: SfxMusicPlayer;
+  readonly duck: SfxMusicDuck;
   private readonly fade: SfxGainNode;
   private readonly voiceGain: SfxGainNode[] = [];
   private readonly voicePan: (SfxPanNode | null)[] = [];
@@ -76,19 +87,15 @@ export class SfxEngine {
   private pendingAtS = 0;
   private pendingRate = 1;
   private pendingGain = 1;
-  private watchLastMs = 0;
-  private watchCtS = -1;
-  private frozenMs = 0;
-  private watchKickMs = -Infinity;
-  private watchTries = 0;
+  /** context の見張り（v0.7.2 S1 で systems/sfx-watchdog へ分けた。振る舞いは v0.7.1 のまま） */
+  private readonly watchdog: SfxWatchdog;
   private sources = 0;
   private idleDrops = 0;
   private noBuffer = 0;
   private pendingPlayed = 0;
   private kicks = 0;
-  private watchdogKicks = 0;
 
-  constructor(private readonly ctx: SfxCtx) {
+  constructor(private readonly ctx: SfxCtx, wall: () => number = noClock) {
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = SFX_LIMITER.thresholdDb;
     limiter.knee.value = SFX_LIMITER.kneeDb;
@@ -118,6 +125,9 @@ export class SfxEngine {
       this.voiceSrc.push(null);
     }
     this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);
+    this.music = new SfxMusicPlayer(ctx, this.master, wall);
+    this.duck = new SfxMusicDuck(this.music.duck);
+    this.watchdog = new SfxWatchdog(ctx);
   }
 
   /** 鍵ごとに 1 回ずつ（Boot と、その後の数フレーム）: 合成した標本（22,050 Hz・モノ）を再生の buffer に写す（context が止まっていても作れる。投げたら呼ぶ側がやめる＝R7） */
@@ -155,16 +165,17 @@ export class SfxEngine {
       g.setValueAtTime(SFX_MASTER_GAIN, now);
       this.kick();
     }
+    this.music.setMuted(v); // 曲の音源も止める（電池）・解けば頭から（v0.7.2 S1・L12）
   }
 
   /** context が動いていなければ起こす（タッチの終わり・pageshow・消音を解いた時。拒否は握る＝L2・L3） */
   kick(): void {
     if (this.ctx.state === RUNNING) return;
     this.kicks++;
-    swallow(this.ctx.resume());
+    sfxSwallow(this.ctx.resume());
   }
 
-  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、10 Hz で context の見張り（L3c）。wallMs は実時間 */
+  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、曲（作る仕事と 10 Hz の決め）、10 Hz で context の見張り（L3c）。wallMs は実時間 */
   tick(dtS: number, wallMs: number): void {
     this.gameS += dtS;
     const key = this.pendingKey;
@@ -176,30 +187,8 @@ export class SfxEngine {
         this.playFlat(key, this.pendingRate, this.pendingGain);
       }
     }
-    const el = wallMs - this.watchLastMs;
-    if (el < SFX_WATCHDOG.checkMs) return;
-    this.watchLastMs = wallMs;
-    const ct = this.ctx.currentTime;
-    if (this.ctx.state !== RUNNING) {
-      this.watchCtS = -1;
-      this.frozenMs = 0;
-      return;
-    }
-    if (ct !== this.watchCtS) {
-      if (this.watchCtS >= 0) this.watchTries = 0; // 時計が進むのを見た
-      this.watchCtS = ct;
-      this.frozenMs = 0;
-      return;
-    }
-    this.frozenMs += el < SFX_WATCHDOG.capMs ? el : SFX_WATCHDOG.capMs;
-    if (this.frozenMs < SFX_WATCHDOG.frozenMs || wallMs - this.watchKickMs < SFX_WATCHDOG.throttleMs || this.watchTries >= SFX_WATCHDOG.maxTries) return;
-    // running なのに時計が進まない（iOS の復帰の不具合の 1 つ）: 止めてすぐ再開を 1 回。次は throttleMs の後・進まないまま maxTries 回まで（作り直しは v0.7.1 では入れない＝L3）
-    this.watchKickMs = wallMs;
-    this.frozenMs = 0;
-    this.watchTries++;
-    this.watchdogKicks++;
-    swallow(this.ctx.suspend());
-    swallow(this.ctx.resume());
+    this.music.update(dtS);
+    this.watchdog.tick(wallMs);
   }
 
   /** 位置つきの単発（dx・dy は聞き手からの差 m。systems/sfx-bus が聞き手の位置を引いて渡す。minIntervalS はこの 1 発だけの最小間隔＝core/sfx-mix） */
@@ -251,9 +240,10 @@ export class SfxEngine {
     return {
       state: this.ctx.state, muted: this.mutedNow, gameS: this.gameS, buffers: this.buffers.reduce((n, b) => n + (b ? 1 : 0), 0),
       sources: this.sources, busy: this.mixer.busyVoices(this.ctx.currentTime), maxBusy: this.mixer.maxBusy,
-      idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdogKicks,
+      idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdog.kicks,
       played: Array.from(this.mixer.played), dropped: Array.from(this.mixer.dropped),
-      loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes,
+      loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes, music: this.music.stats(),
+      ducks: this.duck.ducks, duckReworks: this.duck.reworked,
     };
   }
 
@@ -263,7 +253,10 @@ export class SfxEngine {
     return j > 0 ? rate * (1 + (this.rng.next() * 2 - 1) * j) : rate;
   }
 
-  /** 声 v で鳴らす: 奪った声なら前の音源を止め、使い捨ての音源を 1 個作ってつなぐ（delayS 秒後に鳴り始める予約＝S4）。最初の 1 発は束ねを立ち上げる（R11） */
+  /**
+   * 声 v で鳴らす: 奪った声なら前の音源を止め、使い捨ての音源を 1 個作ってつなぐ（delayS 秒後に鳴り始める予約＝S4）。最初の 1 発は束ねを立ち上げる（R11）。
+   * v0.7.2 S2: 鳴り始める時刻に曲を下げる表を引く（帯は core/sfx-mix が今の音に書いた帯。位置なしは 0）
+   */
   private fire(keyIndex: number, v: number, rate: number, delayS = 0): void {
     const ctx = this.ctx;
     const m = this.mixer;
@@ -284,5 +277,6 @@ export class SfxEngine {
     src.start(delayS > 0 ? ctx.currentTime + delayS : 0);
     this.voiceSrc[v] = src;
     this.sources++;
+    this.duck.play(keyIndex, m.band, delayS > 0 ? ctx.currentTime + delayS : ctx.currentTime);
   }
 }

@@ -6,7 +6,11 @@
 // 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
 // （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。S4 で sfxCue の遅らせ（再生の時計で予約）。
 // IP2: 試聴の場（?sfxlab）の口 sfxSetBuffer・sfxCanPlay（scenes/sound-lab-scene だけが呼ぶ。ゲームの中では呼ばない）。
+// v0.7.2 S1: 曲の口 sfxMusic・sfxMusicRelease・sfxMusicPaused・sfxMusicEnabled（場面・任務の終わり・一時停止・「曲」ボタン）と、曲の試聴の場の口 sfxMusicAudition・sfxMusicLab*
+// （scenes/music-lab-scene だけ）。決めと音源は systems/sfx-music-player（止まっている context・消音・曲オフ・標本なしでは音源を作らない）。
+// v0.7.2 S2: 任務の段の口 sfxMusicMood（MissionSfx が core/sfx-music-mood の段を毎フレーム。曲の試聴の場も）。
 import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
+import type { MusicKey } from '../config/sfx-music-config';
 import type { SfxLoopTargets } from '../core/sfx-loops';
 import { sfxBand, sfxGunKey } from '../core/sfx-mix';
 import type { SfxEngine } from './sfx-engine';
@@ -95,4 +99,48 @@ export function sfxSetBuffer(key: SfxKey, samples: Float32Array): void {
 /** 試聴の場: 今鳴らせるか（エンジンがあり、context が動いていて、消音でない）。最初のタップで context が動き出すのを待つ。エンジンが無ければ null */
 export function sfxCanPlay(): boolean | null {
   return engine === null ? null : engine.running && !engine.muted;
+}
+
+/**
+ * 曲の場面を頼む（v0.7.2 S1。D8）: Title・Result は MUSIC_CTX_MENU（Result は鐘の後 delayS 秒）・MissionSfx は MUSIC_CTX_MISSION・曲の試聴の場は MUSIC_CTX_LAB・効果音の試聴の場は
+ * MUSIC_CTX_NONE。同じ場面の頼み直しは何もしない（Briefing は頼まない＝Title の曲が続く）。場面が替われば一時停止は解く
+ */
+export function sfxMusic(ctx: number, delayS = 0): void {
+  if (engine !== null) engine.music.request(ctx, delayS);
+}
+
+/** 任務の終わり（MissionSfx の SHUTDOWN）: 今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼んだメニューの曲を消さない） */
+export function sfxMusicRelease(ctx: number): void {
+  if (engine !== null) engine.music.release(ctx);
+}
+
+/** 任務の段（v0.7.2 S2。MUSIC_MOOD_*。MissionSfx が毎フレーム・曲の試聴の場）: 変わった時だけ、鳴っている家族の 3 層の音量を書く */
+export function sfxMusicMood(level: number): void {
+  if (engine !== null) engine.music.setMood(level);
+}
+
+/** 一時停止で曲の束を 0 へ・再開で戻す（Hud の PAUSE・RESUME。音源は止めない） */
+export function sfxMusicPaused(v: boolean): void {
+  if (engine !== null) engine.music.setPaused(v);
+}
+
+/** 「曲: オン／オフ」（systems/sfx-settings・起動時の保存の値・試聴の場）。オフは 0.3 秒で 0 にして止め、オンで頭から */
+export function sfxMusicEnabled(v: boolean): void {
+  if (engine !== null) engine.music.setEnabled(v);
+}
+
+/** 曲の試聴の場: 鳴らす候補（null で止める）。まだ作っていなければ作り始め、できたらそのまま鳴らす */
+export function sfxMusicAudition(key: MusicKey | null): void {
+  if (engine !== null) engine.music.audition(key);
+}
+
+/** 曲の試聴の場の文: 鳴らしている曲・作っている曲（無ければ null）と進み（0〜1） */
+export function sfxMusicLabPlaying(): MusicKey | null {
+  return engine === null ? null : engine.music.playingKey;
+}
+export function sfxMusicLabBuilding(): MusicKey | null {
+  return engine === null ? null : engine.music.build.key;
+}
+export function sfxMusicLabProgress(): number {
+  return engine === null ? 0 : engine.music.build.progress;
 }

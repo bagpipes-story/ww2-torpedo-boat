@@ -9,6 +9,8 @@
 // 同じ模型で比べる: ループだけの時にリミッタが下げている量・単発が鳴っている時にループが沈む量・出口（自動の補正の音量と master の後）の頂と 1.0 超え・爆発の飛び出し。
 // WAV=1 の mix-<件>.wav は S3 の決めの出口（リミッタの模型の後＋ループ）になる。
 // RAW=1（S3）: 一番混む 10 秒（＋前 1 秒）の単発の束（左右）とループの束を <出力先>/raw-<件>.json に書く（scripts/headless/sfx-offline.mjs が本物の DynamicsCompressor に通す）。
+// v0.7.2 S2: MUSIC=1 は件ごとに 2 窓（混む 10 秒・静かな 10 秒＝位置つきの単発が一番少ない 10 秒。5 秒から・沈み始めの前）を raw-<件>-busy.json・raw-<件>-quiet.json に、合図と爆発の頭の位置
+// （onsets）と任務の曲の束（scripts/sfx-music-stem＝段の移り・下げ・3 層。master の前）を足して書く。DUCK=<鍵>:<dB>:<hold 秒>[:<帯>],… と LAYERS=<L0>,<L1>,<L2>（層の音量の倍率）は L23 の案の比べ。
 // 実行: npx esbuild scripts/sfx-mix.ts --bundle --platform=node --format=esm --outfile=<scratch>/sfx-mix.mjs && [WAV=1] [PNG=1] [ONLY=mg,ui_tap] [PROBE=<json>] node <scratch>/sfx-mix.mjs [<出力先>]
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,7 +18,9 @@ import { SFX_KEYS, SFX_LOOP_BUS_GAIN, SFX_MASTER_GAIN, SFX_MAX_TOTAL_SAMPLES, SF
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
 import { meanOf, peakOf, rmsOf, zeroCrossings } from '../src/assets/sfx-dsp';
 import { STRIP_H, STRIP_W, centroidHz, drawStrip, pngBytes, spectrum, wavBytes, wavStereoBytes } from './sfx-files';
-import { LIMITER_MAKEUP, blastMargins, blastPops, busiestWindow, limiterGain, limiterStats, loopStem, mixStats, mixdown, routeStats, type ProbeCase } from './sfx-mixdown';
+import { LIMITER_MAKEUP, blastMargins, blastPops, busiestWindow, limiterGain, limiterStats, loopStem, mixStats, mixdown, routeStats, type Mixdown, type ProbeCase } from './sfx-mixdown';
+import { SFX_MUSIC_DUCK } from '../src/config/sfx-music-config';
+import { musicStem, type StemOptions } from './sfx-music-stem';
 
 const SR = SFX_SAMPLE_RATE;
 const db = (v: number): string => (v > 0 ? `${(20 * Math.log10(v)).toFixed(1)} dB` : '-inf dB');
@@ -109,11 +113,7 @@ function probeReport(file: string): void {
         worstOut = Math.max(worstOut, through ? 0 : all.outPeak);
         console.log(`${''.padEnd(12)}   ${name.padEnd(8)} 混む 10 秒: ループだけの時 リミッタ −${r.quietDb.toFixed(1)} dB・出口のループ RMS ${db(r.quietLoopRms)}  単発の間にループが沈む 中央値 ${r.duckDb.toFixed(1)} dB・95% ${r.duck95Db.toFixed(1)} dB  出口の頂 ${r.outPeak.toFixed(2)}（全体 ${all.outPeak.toFixed(2)}）・1.0 超え ${pct(all.outOver)}  飛び出し 中央値 ${mid(r.pops)}・一番悪い ${r.pops.length ? `${r.pops[0]!.toFixed(1)} dB` : '-'}（全体の中央値 ${mid(all.pops)}・< 3 dB ${all.pops.filter((v) => v < 3).length}/${all.pops.length} 回）`);
       }
-      if (process.env.RAW === '1') {
-        const a = Math.max(0, w.from - SR);
-        const b64 = (x: Float32Array): string => Buffer.from(new Float32Array(x.subarray(a, to)).buffer).toString('base64');
-        writeFileSync(join(outDir, `raw-${c.name}.json`), JSON.stringify({ name: c.name, sr: SR, pre: w.from - a, blastAt: m.blastAt.filter((v) => v >= w.from && v < to).map((v) => v - a), left: b64(m.left), right: b64(m.right), loops: b64(lp) }));
-      }
+      if (process.env.RAW === '1') writeRaw(c, m, lp, w.from);
       if (wav) {
         const k = SFX_MASTER_GAIN;
         const l = new Float32Array(to - w.from), rr = new Float32Array(to - w.from);
@@ -125,6 +125,49 @@ function probeReport(file: string): void {
   if (worstOut > 0) console.log(`S3 の決め（ループはリミッタの後）の出口の頂の最大 ${worstOut.toFixed(2)}（模型。自動の補正の音量 ×${LIMITER_MAKEUP.toFixed(2)}・master ×${SFX_MASTER_GAIN}。1 未満が目標）`);
   console.log(`一番混む ${WINDOW_S} 秒の 1.0 超えの割合の最大 ${pct(worstOver)}（目標 < 1%）${wav ? `  書いた先: ${outDir}/mix-<件>.wav（ループの行のある記録は S3 の出口＝リミッタの模型の後＋ループ × 束の音量 × master。無い記録はリミッタの前。1.0 を超えた所は WAV では頭打ち）` : ''}`);
 }
+/** v0.7.2 S2: 静かな 10 秒（位置つきの単発が一番少ない 10 秒。5 秒から・沈み始めの前＝probe の台本は沈んだ後も回す）の始まりの標本 */
+function quietWindow(c: ProbeCase, windowS: number): number {
+  const sink = (c.mood ?? []).find(([, lv]) => lv === 3);
+  const total = Math.ceil((sink ? sink[0] : c.t1) - c.t0);
+  const per = new Uint32Array(Math.max(1, total + 1));
+  for (const r of c.log) if (r[6] >= 0 && r[12] !== 1) per[Math.min(total, Math.floor(r[0] - c.t0))]!++;
+  let best = Infinity, at = 5;
+  for (let s = 5; s + windowS <= total; s++) { let k = 0; for (let i = s; i < s + windowS; i++) k += per[i]!; if (k < best) { best = k; at = s; } }
+  return at * SR;
+}
+
+/** DUCK・LAYERS（L23 の案の比べ）から曲の束の案 */
+function stemOptions(): StemOptions {
+  const o: StemOptions = {};
+  if (process.env.DUCK) {
+    const t: Record<string, { db: number; holdS: number; maxBand?: number }> = { ...SFX_MUSIC_DUCK };
+    for (const kv of process.env.DUCK.split(',')) { const [k, db, h, b] = kv.split(':'); t[k!] = { db: Number(db), holdS: Number(h), ...(b !== undefined ? { maxBand: Number(b) } : {}) }; }
+    o.table = t;
+  }
+  if (process.env.LAYERS) o.layerMul = process.env.LAYERS.split(',').map(Number);
+  return o;
+}
+
+/** RAW=1: 窓ごとの材料（S3 は混む窓 1 つ。v0.7.2 S2 の MUSIC=1 は混む窓と静かな窓・合図と爆発の頭・曲の束） */
+function writeRaw(c: ProbeCase, m: Mixdown, lp: Float32Array, busyFrom: number): void {
+  const music = process.env.MUSIC === '1';
+  const opts = stemOptions();
+  const wins: [string, number][] = music ? [['busy', busyFrom], ['quiet', quietWindow(c, 10)]] : [['', busyFrom]];
+  for (const [tag, from] of wins) {
+    const to = Math.min(m.mono.length, from + 10 * SR), a = Math.max(0, from - SR);
+    const b64 = (x: Float32Array): string => Buffer.from(new Float32Array(x.subarray(a, to)).buffer).toString('base64');
+    const rec: Record<string, unknown> = { name: c.name, tag, sr: SR, pre: from - a, startS: from / SR, blastAt: m.blastAt.filter((v) => v >= from && v < to).map((v) => v - a), left: b64(m.left), right: b64(m.right), loops: b64(lp) };
+    if (music) {
+      rec.onsets = c.log.filter((r) => r[6] >= 0).map((r) => ({ at: Math.round((r[0] - c.t0) * SR) - a, key: r[1], fam: SFX_TABLE[r[1]].family, len: Math.round((SFX_TABLE[r[1]].seconds * SR) / r[4]) })).filter((o) => o.at >= 0 && o.at < to - a);
+      const st = musicStem(c, a, to, opts);
+      rec.music = Buffer.from(st.x.buffer).toString('base64');
+      rec.musicGain = 1;
+      rec.ducks = st.ducks;
+    }
+    writeFileSync(join(outDir, `raw-${c.name}${tag ? `-${tag}` : ''}.json`), JSON.stringify(rec));
+  }
+}
+
 if (process.env.PROBE) {
   probeReport(process.env.PROBE);
   process.exit(0);

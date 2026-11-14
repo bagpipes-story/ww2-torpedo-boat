@@ -8,6 +8,7 @@
 // - 消音は master の音量（context は止めない＝L4）。tick の実時間は 0 にする（見張りを動かさない）。
 import { afterEach, describe, expect, it } from 'vitest';
 import { SFX_FIRST_FADE, SFX_LIMITER, SFX_LOOP_BUS_GAIN, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES } from '../src/config/sfx-config';
+import { MUSIC_PLAYER } from '../src/config/sfx-music-config';
 import { SFX_LOOP_COUNT } from '../src/core/sfx-loops';
 import { SFX_DROP_VOICES, sfxKeyIndex } from '../src/core/sfx-mix';
 import { registerSfxEngine, registerSfxListener } from '../src/systems/sfx-bus';
@@ -23,7 +24,8 @@ describe('つなぎ（spec §7.1・§7.3。作るのは起動時だけ）', () =
   it('声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → master（リミッタを通さない）。リミッタと master は config の値', () => {
     const { ctx, e } = setup();
     const g = graph(ctx, e);
-    expect([ctx.gains.length, ctx.pans.length, ctx.limiters.length]).toEqual([SFX_VOICES + 4 + SFX_LOOP_COUNT, SFX_VOICES, 1]);
+    // v0.7.2 S1: ＋曲の束・下げる音量・音量の節 MUSIC_PLAYER.slots 本（曲のつなぎは tests/sfx-engine-music）
+    expect([ctx.gains.length, ctx.pans.length, ctx.limiters.length]).toEqual([SFX_VOICES + 4 + SFX_LOOP_COUNT + 2 + MUSIC_PLAYER.slots, SFX_VOICES, 1]);
     expect(g.voices.length).toBe(SFX_VOICES);
     g.voices.forEach((v, i) => {
       expect(v.outs).toEqual([ctx.pans[i]]);

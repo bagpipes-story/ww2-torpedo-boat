@@ -6,9 +6,12 @@
 // iOS: ボタンは指を離した時（MenuButton の onUp）に決まり、その touchend で Phaser と systems/sfx-boot が context を起こす。まだ動いていなければ押した案を 1 つ覚え、
 // SFX_LAB.pendingS 秒の内に動き出したら鳴らす（止まっている context に積まない）。案のボタンはボタンの音を鳴らさない（聞き比べる音の頭に重ねない）。
 // ゲームの遊び・保存（消音の設定）には触らない: 場にいる間だけ消音を解き、出る時に保存の値へ戻す。
+// v0.7.2 S1: ?sfxlab は曲の試聴の場（scenes/music-lab-scene）を開き、ここへはその「効果音の試聴へ」から来る。ここでは曲を止め（sfxMusic(MUSIC_CTX_NONE)）、下の段の「曲の試聴へ」で戻る。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
 import { SFX_LAB } from '../config/sfx-config';
+import { MUSIC_LAB_FROM_SFX_JA } from '../config/music-lab-config';
+import { MUSIC_CTX_NONE } from '../config/sfx-music-config';
 import {
   SOUND_LAB_BACK_JA, SOUND_LAB_BACK_PX, SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_PX, SOUND_LAB_HEAD_Y, SOUND_LAB_LABEL_PX, SOUND_LAB_LABEL_SUB_PX, SOUND_LAB_NOTE_PX,
   SOUND_LAB_PAIR_NOTE_JA, SOUND_LAB_PLAYED_JA, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA, SOUND_LAB_STATUS_IDLE_JA, SOUND_LAB_STATUS_NONE_JA, SOUND_LAB_STATUS_PX, SOUND_LAB_STATUS_WAIT_JA,
@@ -16,9 +19,10 @@ import {
 import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
 import { renderSfx } from '../assets/sfx-bank';
 import { SFX_LAB_ROWS, SFX_VARIANT_GROUPS, renderSfxVariant } from '../assets/sfx-variants';
-import { sfxCanPlay, sfxCue, sfxSetBuffer, sfxSetMuted } from '../systems/sfx-bus';
+import { sfxCanPlay, sfxCue, sfxMusic, sfxSetBuffer, sfxSetMuted } from '../systems/sfx-bus';
 import { soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
+import { musicLabSideRect } from '../ui/music-lab-layout';
 import { soundLabBackRect, soundLabButtonRect, soundLabButtonTitle, soundLabLabelRect, type SoundLabFrame } from '../ui/sound-lab-layout';
 
 /** 「続けて聞く」の行（SFX_LAB_ROWS の後）。始めと終わりの組（SFX_VARIANT_GROUPS の添字） */
@@ -68,10 +72,12 @@ export class SoundLabScene extends Phaser.Scene {
       }
     }
     const back = soundLabBackRect(frame);
-    this.buttons.push(new MenuButton(this, { ...back, title: SOUND_LAB_BACK_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave()));
+    this.buttons.push(new MenuButton(this, { ...back, title: SOUND_LAB_BACK_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave(SCENE_KEYS.title)));
+    this.buttons.push(new MenuButton(this, { ...musicLabSideRect(frame), title: MUSIC_LAB_FROM_SFX_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave(SCENE_KEYS.musicLab)));
     const statusText = sfxCanPlay() === null ? SOUND_LAB_STATUS_NONE_JA : SOUND_LAB_STATUS_IDLE_JA;
     this.status = this.add.text(GAME_WIDTH - HUD_MARGIN, back.y + back.h / 2, statusText, hudTextStyle(SOUND_LAB_STATUS_PX, HUD_COLOR)).setOrigin(1, 0.5).setDepth(DEPTH.hud);
     sfxSetMuted(false); // 場にいる間だけ鳴らす（保存の値は変えない）
+    sfxMusic(MUSIC_CTX_NONE); // 曲は止める（v0.7.2 S1。曲の試聴の場から来た時の候補の曲）
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const b of this.buttons) b.destroy();
@@ -137,10 +143,10 @@ export class SoundLabScene extends Phaser.Scene {
     sfxCue(g.key, 1, delayS, v.rate);
   }
 
-  /** 「戻る」: タイトルへ（差し替えた標本は SHUTDOWN で既定に戻す。二重押しは leaving で防ぐ） */
-  private leave(): void {
+  /** 「戻る」: タイトルへ・「曲の試聴へ」（v0.7.2 S1）: 曲の試聴の場へ（差し替えた標本は SHUTDOWN で既定に戻す。二重押しは leaving で防ぐ） */
+  private leave(to: string): void {
     if (this.leaving) return;
     this.leaving = true;
-    this.scene.start(SCENE_KEYS.title);
+    this.scene.start(to);
   }
 }
