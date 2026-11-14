@@ -1,8 +1,390 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 1a9bf58..7bb880d 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -81,6 +81,23 @@
+       - JS の束（同じビルド番号）: 2,287,855 → 2,295,529 バイト（＋7.7 kB）・gzip（vite の表示）699.75 → 703.55 kB（＋3.80 kB。brief L27 の S2 ≤ ＋4 kB の内・v0.7.2 の門 ＋20 kB の残り 5.0 kB）。
+       - 短い確かめ: npm test 3,488 件（296 ファイル）・typecheck（2 つの tsconfig）・lint・build が通る。
+     - 門（lead の `v0720/tools/run-gates.sh S2`・基準 `v0720/base-35e9e77`・art-perf は参考なので外した）: build・typecheck・lint・npm test 3,488 件が通る。14:15 に済み（S2 の commit ae67534 の後）: g2 は OK 37・DIFF 0。再生の A/B（ab-replay）は all 58 が音の 3 つの状態とも 57 同じ、jp04base 8・jp03 4 は同じ。違ったのはどれも us_02 seed 1 の result の組の 1 件（既知の揺れ。既定と `AUDIO=1` は最後のフレームの `.t` が 1 フレームずれる・`NOAUDIO=1` は終わり方まで揺れて最後のフレームの見出しの秒が「夜明け後 57 秒」↔「53 秒」。S0 の束がバイトで同じ時にも同じ件が揺れた＝道具の側）で、result の組を同じ状態で JOBS=1 で回し直して 3 つの状態とも 8 件同じ。HUD の A/B（hud-ab）は base 16（音の 3 つの状態）・jp04base 8・jp03 4 が同じ。tex-ab CHECK=1 の ✗ 0。スナップショットはそのまま。lead の決め（L23）: 計画 §8.3 の「合図と爆発の窓の中央値の下がり ≤ 0.5 dB（警報 ≤ 0.2 dB）」は、曲が合図の前の 1 秒にも鳴るだけで定義の上で 1〜2 dB 下がる（計画の見込み違い）。通すには 3 層とも 10 dB 下げる（静か −43 dBFS＝本体のスピーカーではほぼ聞こえない）しかなく、U-M1 の「任務中も静かに流れる曲」にならない。そこで §3.4 の音量（静か −33・緊張 −30・戦闘 −27 dBFS）のまま、この 2 つは門から外して数（下がり・cmr＝合図の頭 0.3 秒 − その時の曲〔下げの後〕）を記録し、耳で決める（S2 の実機 ②・S4 で詰める）。頂 < 0.9・1.0 超え 0%・メニューの UI の音 ≥ 12 dB は門のまま（通る）。
++  - S3（命中スローの音。スローの論理と data は変えない＝U11。スローの間はベッド＝ループと曲を「時間が遅くなった」音にし、爆発・魚雷の命中などの単発は鋭いまま。既定は案 A＝O2。遊びと HUD は変えない）:
++    - 読み口（brief L28）: `systems/world-art`（許可表の中）が世界の作成で `registerSfxSlowMo(w)`・破棄で null（聞き手の登録と同じ形。`ArtWorldView` に `readonly slowMoLeftS: number`）。型は `systems/sfx-bus` の `SfxSlowMoSource`＝`{ readonly slowMoLeftS: number }`（読むのはこの欄だけ）。`sfxLoops`（Hud の update の道）がフレームに 1 回読み、エンジンへ「スローの最中か」を渡す。mission-world・テレメトリの書き手・data・凍結のファイルは触っていない。
++    - つなぎ（L30）: ループの束と曲（下げる音量の出口）→ ベッドの濾波器（BiquadFilter の lowpass・Q は既定・ふだん `SFX_SLOW_SHAPE.idleHz`＝20 kHz）→ master。単発の束・リミッタ・立ち上がりは通らない。濾波器はエンジンの constructor で 1 つだけ作る（構造の型 `SfxCtx` に `createBiquadFilter`・`SfxFilterNode`、tests の偽の context に `FakeFilter`。曲の再生は出口を受け取る形 `SfxMusicPlayer(ctx, out, wall)` にした）。ふだんの 20 kHz は、標本（22,050 Hz）の中身 20 Hz〜11,025 Hz で +0.11 dB（44.1 kHz の context）・+0.29 dB（48 kHz）以下（WebAudio の式で計算。22,050 Hz の context ではナイキストより上＝素通しそのもの）。
++    - 命中スローの音 `systems/sfx-slowmo`（新・113 行。エンジンが 1 つ持つ）: 欲しい形（スローの最中なら今の案・ふだんは素通し）と書いた形が違い、context が running の時だけ書く（立ち上がり・立ち下がり・案の替わり・止まっていた context が動き出した最初のフレーム＝エンジンの tick の追いつき）。続く間は 1 つも書かない。案（L29。`SFX_SLOW`）: A＝濾波器 20 kHz → 1,100 Hz（時定数 0.04 秒）・ループの rate × 0.8・曲の rate × 0.85（時定数 0.06 秒）、戻しはどれも時定数 0.25 秒／B＝濾波器だけ／C＝何も書かない（v0.7.1 と同じ）。曲の rate は音源の組 `systems/sfx-music-slots` の `stepRate`（鳴っている組の層ごとの音源に同じ値・同じ時刻・同じ時定数で 1 回ずつ＝立ち上がりで 3 回。予約の前に消す）で、これから始める組もその rate で始まる（スローの途中で始まった家族も 3 層とも遅い＝層はずれない）。ループの rate は純粋な `applySfxSlowRate(目標, 倍率, 書き場所)`（倍率 1 は目標をそのまま返す・ほかは書き場所に写して掛ける＝観測器の目標は書き換えない・確保しない）を通してからループの再生へ（書くのはループの再生の 10 Hz・変わった時だけ・その時定数 0.08 秒）。エンジンの最小の rate（止まったエンジンの揺れの底 0.75 × 0.88 ＝ 0.66）× 0.8 ＝ 0.528 ≥ 0.5（ループの再生で切られない＝tests で固定）。
++    - 戻す: Hud の SHUTDOWN（`sfxLoopsStop`）と、メニュー・試聴の場の曲を頼んだ時（`sfxMusic(MUSIC_CTX_MENU／LAB)`）。Phaser 3.90 の順（Result・Title の create が Hud の SHUTDOWN より先）でも、先に来た方で戻る＝スローの途中で任務が終わっても Result・Title の曲はこもらない（やり直しは Hud の SHUTDOWN だけで戻る）。一時停止の間は世界も Hud も止まる（書かない・残りの秒も止まる）。消音・曲オフの途中は曲の組が止まり、スローのまま解けば新しい組は遅い rate で始まる。自艇の沈み始め（同じフレームに沈み始めの段＝2.5 秒の消え）は両方が効く（曲はどちらでも消える）。jp_03 は世界がスローする時だけ同じに鳴る。
++    - 曲の試聴の場（L31）: 行 2 の 4 つ目「命中＋スロー」（戦闘の曲・全速のエンジンに魚雷の命中とスローだけを 8 秒ごと）と行 3「命中スロー」＝案 A・B・C（「止める」なし。押すたびにその案にして、今のベッド＝行 2 の台本〔台本でなければ「静か＋海」から〕に魚雷の命中と data の秒のスロー）。印「（今）」は `SFX_SLOW_DEFAULT_ID` から（ユーザーが選んだらその 1 つを変える）。台本 `systems/sfx-lab-demo` は世界の代わりの残り秒を同じ読み口に登録し（世界と同じ順＝命中 → 実時間で引く → sfxLoops が読む）、命中スローの秒は data の `feel.hit_slowmo_seconds`＝ゲームと同じ道。場を出る時に既定の案へ戻す（口 `sfxSlowVariant` を呼ぶのは場だけ）。ボタンの題と 2 行目の引きを `ui/music-lab-layout` へ移した（場のシーンは 246 行＝250 行以下）。
++    - S2 の試聴の場の直し（lead）: 上の説明が論理幅 1,280 で語の切れ目から 3 行に折り返し、3 行目「い（その案は作り直します）」が行 0 のボタンの上にかかっていた → 改行で 2 行に分けた（「曲の試聴（v0.7.2）：タイトルの曲と命中スローを A・B・C から選んでください（（今）がゲームの案）」「押すと作って鳴らします。知っている曲に似ていたら一言ください（その案は作り直します）」。見積もりで 1,070・924 px ≤ 折り返しの幅 1,232 px、ヘッドレスの描画で幅 1,082 px・高さ 54 px＝y 52〜106 で行の上 124 より上＝論理幅 1,280 と 1,584 で撮って確かめた）。ぎこちない「任務の曲は段ごとと効果音と一緒に。」は消した。tests/music-lab で論理幅 1,280〜1,584 の 8 px 刻みに、どの行も折り返さない・2 行の下が行 0 の上より上を固定。
++    - テスト（＋2 ファイルと道具 1・＋24 件＝npm test 3,512 件・298 ファイル）: `tests/sfx-slowmo`（立ち上がりで濾波器 1・曲の 3 層に同じ時刻と時定数で 3・ループの rate は次の 10 Hz で倍率 × 目標・続く間は 0・立ち下がりで素通しと 1・案 B と C・単発は声へ・既定の案・最小の rate・applySfxSlowRate）・`tests/sfx-slowmo-flow`（止まっている context は書かずに追いつく・一時停止・消音と曲オフの途中に始まる組・Hud の SHUTDOWN と Result の create のどちらが先でも先に来た方で戻る・メニューと試聴の場で戻る・試聴の場の案の替え・スローの途中に始まった家族・ランダムな移り 15 回 × 20 種で鳴っている ≤ 6・組の層は同じ rate の予約）・道具 `tests/sfx-slowmo-kit`（ゲームと同じフレームの順）。直した: `tests/sfx-engine-kit`（偽の濾波器・graph の bed）・`tests/sfx-engine`（つなぎ）・`tests/sfx-engine-music`（下げる音量 → 濾波器）・`tests/sfx-rules`（再生の層 14 本・ループの束 → 濾波器・hook の pin 24 → 27 行＝world-art の 2 行と曲の試聴の場の 1 行）・`tests/sfx-rules-music`（音源の組の予約の数・つなぎの pin・S3 の作法＝濾波器はエンジンの 1 か所・予約の前に消す・値は読み返さない・読み口は slowMoLeftS だけ・戻すのは 2 か所・案を替えるのは試聴の場だけ・applySfxSlowRate は確保しない）・`tests/music-lab`（行 2 の 5 列・行 3・既定の印・説明の 2 行）・`tests/sfx-lab-demo`（命中＋スロー・行 3 の命中）。テストが効く確かめ: 書き換え 7 つ（tick の追いつき・メニューの戻し・Hud の SHUTDOWN の戻し・途中で始まる組の rate・止まっている context への書き込み・案の書き直し・rate の予約の前の消し）を 1 つずつ入れると、どれも 1 件以上 ✗（Hud の SHUTDOWN の戻しは最初の版で見えていなかった＝試験を足した）。
++    - 道具: `scripts/headless/sfx-slowmo.mjs`（新）＝本物の context（`AUDIO=1`）で ?debug の世界の slowMoLeftS に data の秒を入れ（命中の代わり・単発なし）、master と濾波器の前のベッドの AnalyserNode を 10 ms ごとに読む（rAF を止めて 60 Hz のタイマーで描かずに進める＝測りが遅れない。最初の版は描くと主の糸が詰まって 4 回/秒しか読めなかった）。`scripts/headless/sfx-music-live.mjs` にスローの途中で任務を終える確かめ（1 回目の帰投と「任務をやめる」）。`scripts/headless/sfx-probe.mjs` に件ごとの命中スローの回数・計の秒と音の層の立ち上がりの数。`scripts/headless/sfx-offline.mjs` に `BED`（ベッドの濾波器）・`CTX_SR`（context の速さ）・`BEDCHECK=1`（濾波器なし／ありの差）・`S2_JSON`（S2 の回との差）。scratchpad: v0720/impl/S3（tools の backup・dbg-drive・lab-shots、shots、mix）。
++    - 数（agent・ヘッドレスの Chromium。基準は v0720/base-35e9e77）:
++      - 命中スローの音（`sfx-slowmo`・us_03・context 44,100 Hz・案 A・B・C を 2 回ずつ・ループだけ／曲あり・単発 0）: 曲あり（ゲームの状態）の出口の 2 kHz より上は、案 A で 0.2 秒に −14.3／−14.8 dB・0.2〜1.1 秒の平均 −16.4／−16.4 dB（門 ≥ 12 ✓）、案 B −16.0／−17.2・−18.6／−20.1 dB、案 C −5.5／−3.4・−3.5／−1.7 dB（＝曲の音符の揺れ）。濾波（master ÷ 濾波器の前のベッド＝中身の揺れが消える）: 案 A −13.5〜−13.9 dB・案 B −13.5〜−14.1 dB（門 ≥ 12 ✓。0.2 秒で −12.0〜−14.1）・案 C 0.00 dB（門 ±0.5 ✓）、終わりの 1.5 秒の後はどの案も ±0.01 dB に戻る（門 ±0.5 ✓）。どの回も立ち上がり 1・終わりは素通し（20,000 Hz・曲の rate 1）。ループだけの出口は案 A −10.9／−11.3 dB・案 B −14.5／−16.0 dB（A は rate の下げで海の高い音が濾波器の弱く効く 2〜2.5 kHz へ下がる＝下の帯は +2 dB）。
++      - スローの途中で終える（`sfx-music-live`。既定・`AUDIO=1`・`NOAUDIO=1`・`FLOW=notap` の 4 つとも OK・ページのエラー 0）: 1 回目の帰投の前に案 A（1,100 Hz）のスローを入れて終えた Result の曲の 2 kHz より上 −43.4 dB（`AUDIO=1`）・−42.8 dB（既定）＝スローの無い 2〜4 回目の中央値 −43.3 dB の ±0.6 dB（門 ±1.5 ✓）・Result と Title（スローの途中に一時停止 → 任務をやめる）で素通し・曲の rate 1。S2 までの確かめ（Title・曲のオン／オフ・Briefing・Mission の 3 層・一時停止・Result の鐘の後 2.25〜2.31 秒・任務をやめる → Title・作り直さない・鳴っている ≤ 4）は全部そのまま ✓。
++      - 命中スローの回数（`sfx-probe` 31 件・✗ 0）: 計 29 回（スローのある件 23・1 件の最大 2 回＝us_01・us_01h・jp_04・jp_04h・us_03-burst・jp_04h-busy）・どの件も音の層の立ち上がりの数＝世界のスローの回数。単発・ループ・段・合図の記録は S2 の最後の probe と 31 件とも同じ（S3 は音の決めを変えない）。
++      - 濾波器は素通し（`sfx-offline`・S2 の 62 窓＝v0720/impl/S2/mix/base）: raw の 22,050 Hz の context では S2 の回（mix/game/res.json）との差が出口の頂・RMS・合図と爆発の頭とも 0.000 dB（62/62 窓）。48 kHz の context で濾波器なし → あり: 頂 0.071・RMS 0.011・頭 0.028 dB、44.1 kHz: 0.066・0.006・0.015 dB（門 ±0.3 ✓）。曲ありの出口の頂の最大 0.783（22.05 kHz）・0.763（48 kHz）・0.783（44.1 kHz）< 0.9・1.0 超え 0%。
++      - 短い run-gates（`SKIP="test g2 art-perf" AB_ENV="MISSION=us_02 SECS=40" SMALL_AUDIO_STATES="default audio noaudio"`・v0720/impl/S3-quick-us02。S2 の 20 秒を 40 秒に延ばした＝ab-replay・hud-ab の台本〔INPUT primary〕では us_02 seed 1 の 30.3〜31.5 秒に命中スローがある）: build・typecheck・lint が通り、ab-replay（all・jp04base・jp03）と hud-ab（base・jp04base・jp03）は音の 3 つの状態の全部で same（各 1 件＝18 組。`AUDIO=1` ではスローの間に濾波器と rate を書いている）・tex-ab CHECK=1 の ✗ 0・スナップショットはそのまま。
++      - JS の束（同じビルド番号）: 2,295,529 → 2,298,935 バイト（＋3.4 kB）・gzip（vite の表示）703.55 → 704.66 kB（＋1.11 kB。brief L32 の S3 ≤ ＋2 kB の内・v0.7.2 の門 ＋20 kB の残り 3.9 kB）。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
+ - 既知の制約（S0）:
+   - 耳: 曲は数（声紋・帯の割合・旋律の決まり）でしか確かめていない。最後はユーザーの耳（S1 の試聴の場に「知っている曲に似ていたら教えてください」）。旋律は決まりを通る最初の種で、良し悪しは選んでいない。
+   - 継ぎ目: 計画の「頭と末尾の差 < 0.02」は、拍の頭に音のある輪では普通の隣どうしの差（A 0.031・C 0.022 の中央値）より小さくできない（A 0.040・C 0.038・L0 0.087）。代わりに、輪の尾が頭へ続くこと（輪で描いた和＝長く描いて畳んだ和）・差が中の差の 99% の内・継ぎ目をまたぐ 50 ms の RMS が前後の幅 ±2 dB の内、で固定した。
+@@ -106,6 +123,14 @@
+   - 3 層の組が 3 つ重なる（メニュー ⇄ 任務をすばやく行き来する）と、新しい組は止めかけの組が鳴り終わるまで（最大 1.2 秒）始めない（鳴っている音源 ≤ 6 のため）。
+   - 一時停止の一瞬（L24）: 動き出した最初のフレームで束を 0 にするので、動き出してからそのフレームまで（1 フレーム＝約 17 ms）は曲が聞こえうる（止まっている context には書かない作法のため）。
+   - Boot の create の門（基準 ＋5 ms）: ヘッドレスの Chromium では 15 回の中央値が回ごとに ±30 ms 振れる（Boot の仕事が同じ S1 と S2 の比べでも ＋20／−24／−32 ms）ので、数では見分けていない。S2 が Boot で足すのは下げの配列 3 本だけで、createSfx の分は S1 と同じ（2.8〜3.5 ms）。
++- 既知の制約（S3）:
++  - 耳: 命中スローの音はまだユーザーの耳で聞いていない（既定は案 A。`?sfxlab` の行 3 で A〜C を比べて選ぶ。選んだら `SFX_SLOW_DEFAULT_ID` を 1 つ変える）。iPhone（WebKit）の BiquadFilter・playbackRate の予約は測っていない（ヘッドレスの Chromium だけ）。
++  - ループの rate の予約はループの再生の時定数 0.08 秒・10 Hz の決め（立ち上がりの後 0.1 秒の内）で、brief の 0.06 秒（上げ）・0.25 秒（戻し）ではない（「変わった時だけ書く」をそのまま使うため）。ループは濾波器と曲（0.25 秒）より速く元の高さへ戻る。
++  - 案 A の 2 kHz より上の下がりは、ループだけ（「曲: オフ」）の出口では約 11 dB（rate の下げで海の高い音が 2〜2.5 kHz＝濾波器の弱く効く所へ下がる。濾波器だけの効きは約 13.5 dB・曲ありの出口は約 16 dB）。
++  - 濾波器の Q は既定（1 dB）: 1,100 Hz の間は 0.5〜1.1 kHz が約 +1 dB 持ち上がる。ふだんの 20 kHz の差は 48 kHz の context で最大 +0.29 dB（11 kHz 付近。0.3 dB の内だが余りは小さい）。
++  - オフラインの mix（`scripts/sfx-mix.ts` の RAW=1・`scripts/sfx-music-stem.ts`）は命中スローの窓を写していない（曲の束の模型に rate が無い）。スローの窓はベッドを下げるだけなので、頂と飛び出しの数は甘くならない側。
++  - 曲の試聴の場の行 3 は行 2 の台本の上で鳴らす（タイトルの曲・任務の曲の行のままでは鳴らさず、「静か＋海」に替えてから）。場で案を替えるとスローの最中でも書き直す（ゲームでは案は替わらない）。
++  - 止まっている context の間の立ち上がり・立ち下がりは、動き出した最初のフレーム（エンジンの tick）で追いつく（その間は書かない作法のため、動き出してから約 17 ms は前の形のまま）。
+ - 実機テスト結果: 未（S0 は鳴らない。最初は S1 の後の 3 項目）。
+ 
+ ## v0.7.1 — 2026-11-12（アートと音②：合成の効果音）
+diff --git "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md" "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+index 30a4eb8..8c65155 100644
+--- "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
++++ "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+@@ -51,7 +51,7 @@
+ | 候補（実機の感想しだい） | 夜明け③：昼の海 | 機銃掃射・昼の見張り（駆逐艦が遠くから見る、探照灯なし）・煙幕と対空・争奪（敵機 → 遅れて味方戦闘機） | 昼が昼らしいか | 1 |
+ | v0.7.0 | アートと音①：コードで描く絵 | 絵と音はコードで描く・合成する（ユーザーの決め v0.7.0 の U1（2026-11-07）「コードで描く・鳴らす」。外部の画像・音のファイルを使わない。手本は v0.6.11 の屋我地の陰）。全任務の艇・艦・機・大発（トップダウン・起動時に 1 回描くテクスチャ。鍵・寸法・原点は今のまま）と夜の海の演出（波の面・航跡・水柱・砲口炎・爆発・火災と煙・探照灯・星弾・煙幕・月のきらめき・夜明けの光・岸の帯）。遊びは 1 ビットも変えない（模擬の md5・f5563ab との再生と HUD の A/B・テクスチャの寸法の A/B）。段 S0〜S4（S0 棚卸しの道具と骨組み・S1 自艇と僚艇・S2a 艦と大発と米PT と魚雷・S2b 機の種類・S3a 海の面と夜明けの光・S3b 航跡と水柱と爆発・S3c 炎と煙と光と岸・S4 仕上げ）。段 S0〜S4 済み（2026-11-09。門と計測は CHANGELOG の v0.7.0） | （1〜3 回目の項目は済み。1 回目（ビルド f08ed2b）の感想「波の模様が波に見えずにゴミのように見えます…格子の線はあった方がいい」「もっと派手な演出、数でも大丈夫」「沿岸砲もリメイク」「航跡が直線すぎる」→ 実機 1 回目の直し IP1a・IP1b、2 回目（ビルド 3e1e8ad）「水面、航跡、沿岸砲とても良いです。…FPSは疑わしいくらいに61をキープ」＋直し 3 点「爆発エフェクト…眩しく感じる」「魚雷の爆発はもっと…派手に水柱」「駆逐艦のグラフィックを見直して…色は現在と同じ単系統」→ 実機 2 回目の直し IP2、3 回目（ビルド 34ed12c）「描画の解像度の上限を上げてみましょうか。また、自機（魚雷艇）と大発も視覚的なクオリティを上げてください。」→ 実機 3 回目の直し IP3、4 回目（ビルド d499360）「jp_04 で輸送船が魚雷で沈む時は、派手な水柱ではなく、ふつうの爆発のままです…魚雷で沈む時は派手な水柱でお願いします。」「慶良間の夜で敵に見つかったあと、停止して敵のサーチライトから外れて敵が自機を見失ってるはずなのに砲撃を続行してきます。」＋命中スローは今のまま（U11）→ 実機 4 回目の直し IP4＝CHANGELOG v0.7.0）実機 5 回目: ① jp_06（慶良間の夜）のハードで駆逐艦に見つかった後に止まって探照灯から外れ、見失われる（「未発見」に戻る）と、砲撃がおよそ 10 秒の内に止み、上の行に「探照灯に照射中！」が出ないか（照らされていない時は出ない。ノーマルの 1 隻は前と同じ） ② jp_04 で米PT の魚雷が輸送船に当たって沈む時、駆逐艦に当てた時と同じ大きな水柱が立つか（沈まない被雷も前と同じ水柱） ③ 全体の見た目（解像度の上限 3・艇と大発の絵・爆発と水柱）で気になる所が無いか・一番重い場面で FPS が 55 以上か。旧 4 回目の項目: ① どの画面でも（Title・Briefing・HUD の字と輪、海の格子、艦・機・航跡）前のビルドより絵と字がくっきり見えるか（描画の解像度の上限を 2 → 3 に。左上の FPS の下の行が「… @3x」の端末で効く。字や HUD の位置・大きさ・タッチの効き方は前と同じか） ② 自艇（us_01 の Elco・jp_01 の T-38）と大発（us_03 の敵の赤・jp_01 の味方の青）・jp_01 ハードの隼艇・jp_04 の米PT・jp_03 の 18 隻が、色は今の白・赤・青のまま、甲板の陰影・操舵室の風防・発射管や魚雷・銃座と砲身・大発の道板と荷台の兵と機関の覆いで「クオリティが上がった」と見えるか（既定のズームと、ピンチで寄った時） ③ 一番重い場面（us_02 ハードの撃沈が重なる時・jp_03 ハードの最後の空襲）で、上がった解像度のまま左上の FPS が 55 以上か・カクつかないか・端末が熱くならないか。旧 3 回目の項目: ① 砲撃・爆撃の命中（us_02 で駆逐艦の砲弾を受ける・us_03 の沿岸砲・jp_03 の爆弾）の爆発が、大きさはそのままで眩しくないか（白い強い光でなく橙の閃光と火の玉。昼の jp_03 でも白く飛ばないか） ② us_02 で駆逐艦に魚雷を当てると、艦の幅の何倍もの白い水柱が画面の上へ高く立ち上がり、頂が開いて崩れ、水滴が落ちて泡の輪と霧が残るか（「轟沈感」が出たか。一番重い場面の FPS も一言） ③ 駆逐艦（us_01・us_02 の日本の駆逐艦、jp_06 の米駆逐艦、jp_04 の卯月）が、色は今の赤・青の単系統のまま、砲塔・艦橋・煙突・発射管・短艇の陰影で「しょぼくない」艦に見えるか。旧 2 回目の項目: ① 夜と昼の海が「水面」に見えるか（ゴミに見えないか）・格子の線ははっきり残っているか ② 自艇や艦が曲がると航跡が通った道に沿って曲がり、少し揺らいで見えるか ③ 派手になった演出と新しい沿岸砲: us_02 で駆逐艦に魚雷を当てて沈める（閃光 2 段・火の玉・白い水柱・水面に広がる輪・飛び散る火花・残る煙、沈む艦の 2 次の爆発・甲板の炎・泡と油）、us_03 の沿岸砲（土嚢と擬装の砲台に赤い輪と印・砲が艇の方へ回り、撃つと大きな閃光と煙）、撃ち合いの砲口の火花と水柱のしぶきが「派手になった」と感じるか。一番重い場面（us_02 ハードの撃沈が重なる時・jp_03 ハードの最後の空襲）で左上の FPS が 55 以上か・カクつかないか。旧 1 回目の項目: ① どの任務でも、自艇（白）・敵（赤）・味方（青）が夜の海で一目で分かるか。「見張り」で引いても、魚雷艇・大発・駆逐艦・輸送船・飛行機の形の違いが分かるか ② 航跡・水柱・爆発・火災の煙・沈む艦の油の輪・探照灯・星弾が、敵や弾・雷跡を見落とす邪魔になっていないか（星弾と探照灯の照らす範囲の縁が分かるか・静音で自艇の白い航跡が出ないか） ③ 撃ち合いや空襲が重なる場面（us_02 ハードの星弾と探照灯、jp_03 ハードの最後の空襲）で、左上の FPS が 55 以上か・カクつかないか | 2〜3 |
+ | v0.7.1 | アートと音②：合成の効果音 | 機銃・砲・爆発・エンジン・波などを音のファイルを使わず合成（Web Audio。22,050 Hz・25 本＝単発 20・ループ 5 を起動時に 1 回）。最初のタッチで鳴らし始める（iOS）・消音の切り替え（Title と一時停止。覚える）。音は絵と HUD に従う（絵の層が出している出来事と HUD が文で出している状態だけを鳴らす＝新しい手掛かりを漏らさない）。遊びは 1 ビットも変えない（模擬の md5・main 3a9e7aa との再生と HUD の A/B を音の 3 つの状態＝既定・`AUDIO=1`・`NOAUDIO=1` で）。BGM と命中スローは v0.7.2。段 S0〜S5（S0 骨組みと道具＝定数 `config/sfx-config`・合成 `assets/sfx-*`・判断 `core/sfx-mix`・テスト・ヘッドレスの音の状態。まだ鳴らない ／ S1 鳴る縦切り＝エンジン・Boot・消音の保存・Title の「音」ボタン・ボタンの音・機銃・爆発（push して実機）／ S2 砲・着弾・爆発の全部と距離の帯・パン・間引き ／ S3 ループ＝エンジン・海・火・雨・機の爆音と一時停止の「音」ボタン ／ S4 合図・UI・Result の鐘 ／ S5 mix の仕上げと全部の門・docs）。段 S0〜S5 済み（2026-11-13）・実機の直し IP1〜IP4 済み（2026-11-14。弾倉交換は B＝U-R1・魚雷の発射は F＝U-R2。試聴の場 `?sfxlab` は次の試聴のために残す）。設計の既定（ユーザー未確認）: 本体の消音スイッチに従う・画面の外の砲声を左右つきで聞かせる・Result で鐘。門と数は CHANGELOG の v0.7.1 | S1 の後（早い 3 項目）: ① Title: マナーモードを切って「音: オン」のままボタンを押すと音が鳴るか（Safari とホーム画面のアプリの両方） ② us_02: 機銃と爆発（魚雷の命中・被弾）が鳴るか・音が遅れたり割れたりしないか ③ 「音: オフ」で消えるか・ホーム画面へ出て戻る／画面ロックの後も鳴るか。S5 の後（最終の 3 項目。マナーモードを切って）: ① us_02: 静音と全速でエンジンの音が変わるか・発見の警報・探照灯・砲声と水柱・魚雷の発射と命中が聞き分けられるか・うるさくないか ② jp_03 ハードか「大発を狩れ」の連射で FPS が落ちないか・音が割れないか ③ 消音を Title と一時停止で切り替えて次に開いた時も覚えているか・ホーム画面へ出て戻る／着信の後に音が戻るか。実機 1 回目（S5 のビルド f020a1e）で弾倉交換の音・魚雷の発射音の直し（IP1）。実機 2 回目（IP1 の後）: ① 弾倉交換の音が金属音に聞こえるか（交換の始めと終わり） ② 魚雷の発射音がかっこよく・はっきり聞こえるか（自艇の発射。jp_04 の米PT の雷撃の報告も） ③ ほかの音とのバランス・うるさくないか。実機 2 回目（IP1 のビルド 82eb46b）で弾倉交換は「まぬけ」・魚雷の発射は「ポンっ」のまま → IP2 で作り直し（弾倉は始め・終わりの 2 本）と試聴の場 `?sfxlab`。実機 3 回目（IP2 の後）: ① `?sfxlab` で弾倉の始め・終わり・魚雷の発射を聞き比べ、良い記号を選ぶ ② ゲームの中で新しい既定の弾倉交換と魚雷の発射がどう聞こえるか ③ ほかの音とのバランス。実機 3 回目（IP2 のビルド 9a71c21）で弾倉は B に決まり（U-R1）、魚雷は「もう何案か」→ IP3 で弾倉の既定を B に・魚雷の発射の新しい案 E〜I。実機 4 回目（IP3 の後）: ① `?sfxlab` で魚雷の新しい案 E〜I（と前の A〜D）を聞き比べて良い記号を選ぶ ② ゲームの中の弾倉交換（B）がどう聞こえるか ③ ほかの音とのバランス。実機 4 回目（IP3 のビルド 10edb02）で魚雷は F に決まり（U-R2）・弾倉交換（B）も OK → IP4 で魚雷の発射の既定を F に。実機 5 回目（IP4 の後。最終の 3 項目）: ① ゲームの中で魚雷の発射（F）が試聴ページと同じに聞こえるか（自艇の発射・連続で撃つ時・jp_04 の米PT の雷撃の報告） ② 弾倉交換（B）と魚雷の発射がほかの音に埋もれないか・うるさくないか ③ 全体の音で気になる所があれば一言 | 1〜2 |
+-| v0.7.2 | アートと音③：BGM と命中スローの音 | ユーザーの決め U-M1（2026-11-14「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result に合成の BGM、任務の中は小さい曲で見つかったら緊張・撃たれたら戦闘の曲に変わる（HUD が出している状態だけで決める）。警報で曲を下げる。「曲: オン／オフ」は「音」と別（覚える）。命中スローは今のまま（v0.7.0 の U11）で、スローの間の音の扱いだけを足す（論理と data は変えない）。音のファイルは使わない（作曲は音符・合成は数フレームに分けて 1 本の標本へ）。遊びは 1 ビットも変えない（main 35e9e77 との再生と HUD の A/B を音の 3 つの状態で）。段 S0〜S4（S0 骨組みと道具＝定数 `config/sfx-music-config`・作曲と合成 `assets/sfx-music-*`・テスト 4 本・`scripts/sfx-music.ts`・種の探索・費用の実測。まだ鳴らない ／ S1 メニューの曲・Title と一時停止の「曲」ボタン・試聴の場 `?sfxlab`（タイトルの曲 A・B・C。push してユーザーが選ぶ）／ S2 任務の曲（3 層・段の観測器 `core/sfx-music-mood`・警報などで下げる）／ S3 命中スローの音（案 A〜C を試聴）／ S4 仕上げ・docs）。段 S0〜S2 済み（2026-11-14。S1 で Title・Briefing・Result にメニューの曲＝既定は A・「曲: オン／オフ」は Title の右上と一時停止・`?sfxlab` は曲の試聴の場＝効果音の試聴の場はその中から。S2 で任務の曲＝静か・緊張・戦闘の 3 層を同じ時刻に始めて音量だけを段で動かす・段は HUD が出している状態だけから決める `core/sfx-music-mood`・警報 −8 dB などで曲を下げる・家族は Title・Briefing の間に作っておく・試聴の場に「任務の曲」「効果音と一緒に」の行）。設計の既定（ユーザー未確認）: タイトルの曲は試聴で選ぶまで A・命中スローは案 A（低く遅く）・一時停止で曲も止まる／Result は鐘の後にタイトルの曲・警報以外の下げ（鐘・魚雷の命中・近い大きい爆発・探照灯）。門と数は CHANGELOG の v0.7.2 | S1 の後（3 項目）: ① `?sfxlab` でタイトルの曲 A・B・C を聞いて選ぶ（知っている曲に似ていたら一言） ② Title と一時停止の「曲: オン／オフ」が効き、次に開いても覚えている（「音: オフ」の間は曲も鳴らない） ③ 最初のタップが遅れない・任務に入ると曲が消え、Result の鐘の後に戻る・ホーム画面へ出て戻っても鳴る。S2 の後（3 項目）: ① us_02 か jp_06 で「静か → 発見で緊張 → 照らされて戦闘 → 逃げ切ると戻る」が場面に合うか・うるさくないか ② 警報（曲が下がるのが分かるか）・魚雷の発射・爆発が曲に埋もれないか ③ jp_03 の昼の空襲・us_02 の暴風・夜明けの空襲で気になる所。S3・S4 の後の項目はその段で足す | 1〜2 |
++| v0.7.2 | アートと音③：BGM と命中スローの音 | ユーザーの決め U-M1（2026-11-14「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result に合成の BGM、任務の中は小さい曲で見つかったら緊張・撃たれたら戦闘の曲に変わる（HUD が出している状態だけで決める）。警報で曲を下げる。「曲: オン／オフ」は「音」と別（覚える）。命中スローは今のまま（v0.7.0 の U11）で、スローの間の音の扱いだけを足す（論理と data は変えない）。音のファイルは使わない（作曲は音符・合成は数フレームに分けて 1 本の標本へ）。遊びは 1 ビットも変えない（main 35e9e77 との再生と HUD の A/B を音の 3 つの状態で）。段 S0〜S4（S0 骨組みと道具＝定数 `config/sfx-music-config`・作曲と合成 `assets/sfx-music-*`・テスト 4 本・`scripts/sfx-music.ts`・種の探索・費用の実測。まだ鳴らない ／ S1 メニューの曲・Title と一時停止の「曲」ボタン・試聴の場 `?sfxlab`（タイトルの曲 A・B・C。push してユーザーが選ぶ）／ S2 任務の曲（3 層・段の観測器 `core/sfx-music-mood`・警報などで下げる）／ S3 命中スローの音（案 A〜C を試聴）／ S4 仕上げ・docs）。段 S0〜S3 済み（2026-11-14。S1 で Title・Briefing・Result にメニューの曲＝既定は A・「曲: オン／オフ」は Title の右上と一時停止・`?sfxlab` は曲の試聴の場＝効果音の試聴の場はその中から。S2 で任務の曲＝静か・緊張・戦闘の 3 層を同じ時刻に始めて音量だけを段で動かす・段は HUD が出している状態だけから決める `core/sfx-music-mood`・警報 −8 dB などで曲を下げる・家族は Title・Briefing の間に作っておく・試聴の場に「任務の曲」「効果音と一緒に」の行。S3 で命中スローの音＝スローの間はループと曲を 1 つの低域通過（ふだんは素通しの 20 kHz）に通して低く・案 A は rate も遅く・爆発と魚雷の命中は鋭いまま・スローの途中で任務が終わっても Result と Title の曲はこもらない・`?sfxlab` の行 2「命中＋スロー」と行 3「命中スロー A・B・C」で比べる）。設計の既定（ユーザー未確認）: タイトルの曲は試聴で選ぶまで A・命中スローは案 A（低く遅く）・一時停止で曲も止まる／Result は鐘の後にタイトルの曲・警報以外の下げ（鐘・魚雷の命中・近い大きい爆発・探照灯）。門と数は CHANGELOG の v0.7.2 | S1 の後（3 項目）: ① `?sfxlab` でタイトルの曲 A・B・C を聞いて選ぶ（知っている曲に似ていたら一言） ② Title と一時停止の「曲: オン／オフ」が効き、次に開いても覚えている（「音: オフ」の間は曲も鳴らない） ③ 最初のタップが遅れない・任務に入ると曲が消え、Result の鐘の後に戻る・ホーム画面へ出て戻っても鳴る。S2 の後（3 項目）: ① us_02 か jp_06 で「静か → 発見で緊張 → 照らされて戦闘 → 逃げ切ると戻る」が場面に合うか・うるさくないか ② 警報（曲が下がるのが分かるか）・魚雷の発射・爆発が曲に埋もれないか ③ jp_03 の昼の空襲・us_02 の暴風・夜明けの空襲で気になる所。S3 の後（3 項目）: ① 魚雷の命中・撃沈の瞬間に周りの音が低く遅くなり 1 秒ほどで戻るか（`?sfxlab` で A〜C を比べて選ぶ） ② スローが操作の邪魔にならないか ③ 自艇が沈む時に不自然でないか。S4 の後の項目はその段で足す | 1〜2 |
+ | v0.8.0 | iOSビルド | Capacitor導入／GitHub Actions（macOSランナー）でipa／TestFlight配信／アイコン・スプラッシュ | TestFlightで起動、PWA版と同じ挙動 | 2 |
+ | v0.9.0 | 仕上げ | チュートリアル／設定／セーブ／難易度／バランス最終調整／アクセシビリティ（左右入替・色） | 初見の人が5分で遊べるか | 2 |
+ | **v1.0.0** | App Store | 審査提出に必要なもの一式（プライバシー、スクリーンショット、説明文）／買い切り価格 | 審査通過 | 1〜2 |
+diff --git a/scripts/headless/sfx-music-live.mjs b/scripts/headless/sfx-music-live.mjs
+index f3a9e6a..28de798 100644
+--- a/scripts/headless/sfx-music-live.mjs
++++ b/scripts/headless/sfx-music-live.mjs
+@@ -9,10 +9,13 @@
+ //   v0.7.2 S2: ゲームの列は既定のタイトルの曲と任務の家族 3 層（Title・Briefing の間に作り終える＝4 本を待ってから進む）。Mission は家族の 3 層（同じ when）・もう一度の任務も 3 層で
+ //     作り直さない・一時停止で頂 ≈ 0・Result の鐘の後に 1。
+ //   notap: 既定の状態でタップを 1 つもしない（context は suspended のまま）: 曲の標本はできるが、音源 0・書き込み 0・波形は無音（止まっている context に積まない）。
++//   v0.7.2 S3（命中スロー）: 1 回目の帰投の直前と「任務をやめる」の直前に、世界の slowMoLeftS へ data の秒を入れて（命中の代わり）0.3 秒の後に終える＝スローの途中で任務が終わる。
++//     Result・Title でエンジンの stats().slow が素通し（形 null・濾波器の Hz 20000・曲の rate 1）で、Result の曲の 2 kHz より上の強さ（鐘の後の 1.2 秒）が、スローの無い 2〜4 回目の
++//     中央値の ±1.5 dB（こもっていない）。
+ // 音の状態（lib.mjs の環境変数）: 既定・AUDIO=1（autoplay を許す＝最初から running）・NOAUDIO=1（AudioContext なし＝エンジンが無い。同じ流れがページのエラー 0 で回ることだけ見る）。
+ // 門（✓/✗ を出し、✗ があれば終了コード 1）。数は回すたびに少し揺れる（実時間）。
+ // 実行: SITE=<site> [FLOW=title|notap] [W=1560] [ROW=<任務の行の題>] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-music-live.mjs
+-import { writeFileSync } from 'node:fs';
++import { readFileSync, writeFileSync } from 'node:fs';
+ import { VIEWPORTS, chromium, envNum, serve } from './lib.mjs';
+ 
+ if (!process.env.SITE) throw new Error('SITE=<site> が要る');
+@@ -24,6 +27,9 @@ const LIVE_MAX = 6;
+ /** v0.7.2 S2: ゲームの列の曲の数（既定のタイトルの曲 1 ＋ 任務の家族 3）と常駐の上限（config/sfx-music-config の MUSIC_MAX_RESIDENT_SAMPLES） */
+ const GAME_SONGS = 4;
+ const RESIDENT_MAX = 1_800_000;
++/** v0.7.2 S3: 命中スローの秒（世界と同じ data）と、ベッドの濾波器の素通しの Hz（config/sfx-music-config の SFX_SLOW_SHAPE.idleHz の写し） */
++const SLOW_S = JSON.parse(readFileSync(new URL('../../data/hit_rate_model.json', import.meta.url), 'utf8')).feel.hit_slowmo_seconds;
++const IDLE_HZ = 20000;
+ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+ 
+ /** ページの中（init script）: 曲の音源の start・stop を数える（stop の予約の時刻も覚えて「鳴っている」を数える） */
+@@ -55,19 +61,25 @@ function countMusic() {
+ function startMeter() {
+   const sfx = window.__sfx;
+   const s = window.__game.sound;
+-  const m = { peak: 0, win: 0, polls: 0 };
++  const m = { peak: 0, win: 0, polls: 0, hi: 0, hiN: 0 };
+   window.__meter = m;
+   if (!sfx || !('context' in s) || !s.context) return false;
+   const an = s.context.createAnalyser();
+   an.fftSize = 8192;
++  an.smoothingTimeConstant = 0;
+   sfx.master.connect(an);
+   const buf = new Float32Array(an.fftSize);
++  const fb = new Float32Array(an.frequencyBinCount);
++  const k0 = Math.ceil(2000 / (s.context.sampleRate / an.fftSize)); // S3: 2 kHz より上の帯
+   setInterval(() => {
+     an.getFloatTimeDomainData(buf);
+     let p = 0;
+     for (let i = 0; i < buf.length; i++) { const v = Math.abs(buf[i]); if (v > p) p = v; }
+     if (p > m.peak) m.peak = p;
+     if (p > m.win) m.win = p;
++    an.getFloatFrequencyData(fb);
++    for (let i = k0; i < fb.length; i++) m.hi += 10 ** (fb[i] / 10);
++    m.hiN++;
+     m.polls++;
+     const c = window.__musicSrc;
+     if (c) c.maxAlive = Math.max(c.maxAlive, c.alive());
+@@ -84,6 +96,7 @@ function readState() {
+   return {
+     ctx: 'context' in s && s.context ? { state: s.context.state, t: s.context.currentTime } : null,
+     music: sfx ? sfx.stats().music : null,
++    slow: sfx ? sfx.stats().slow : null,
+     page: c ? { started: c.started, stopped: c.stopped, unstopped: c.started - c.stopped, alive: c.alive(), maxAlive: c.maxAlive, maxUnstopped: c.maxUnstopped, lastStart: c.starts[c.starts.length - 1] ?? null } : null,
+     scenes: ['Title', 'Briefing', 'Mission', 'Hud', 'Result', 'Pause', 'MusicLab'].filter((k) => g.scene.isActive(k)),
+   };
+@@ -118,6 +131,10 @@ const tap = async (scene, text) => {
+   await page.touchscreen.tap(c.x, c.y);
+ };
+ const windowPeak = async (ms) => { await page.evaluate(() => { if (window.__meter) window.__meter.win = 0; }); await sleep(ms); return page.evaluate(() => (window.__meter ? window.__meter.win : 0)); };
++/** S3: ms の間の 2 kHz より上の強さの平均（dB） */
++const windowHi = async (ms) => { await page.evaluate(() => { if (window.__meter) { window.__meter.hi = 0; window.__meter.hiN = 0; } }); await sleep(ms); return page.evaluate(() => (window.__meter && window.__meter.hiN ? 10 * Math.log10(window.__meter.hi / window.__meter.hiN + 1e-30) : NaN)); };
++/** S3: 命中の代わりに世界の残り秒を入れ、0.3 秒の後のエンジンの命中スローの数（エンジンが無ければ null） */
++const slowNow = async () => { await page.evaluate((v) => { window.__game.scene.getScene('Mission').world.slowMoLeftS = v; }, SLOW_S); await sleep(300); return page.evaluate(() => (window.__sfx ? window.__sfx.stats().slow : null)); };
+ const waitScene = (k) => page.waitForFunction((key) => window.__game.scene.isActive(key), k, { timeout: 15000 });
+ /** 曲の標本ができるまで（エンジンが無ければすぐ。S2: ゲームの列の 4 本ができて作業用の配列を捨てた＝列が空になった次のフレーム） */
+ const waitBuilt = () => page.waitForFunction((n) => { const s = window.__sfx; if (!s) return true; const m = s.stats().music; return m.buffers >= n && !m.work; }, GAME_SONGS, { timeout: 60000 });
+@@ -185,6 +202,7 @@ if (FLOW === 'notap') {
+       await sleep(2000);
+       res.again = [...(res.again ?? []), await note(`もう一度 ${i} の Mission`)];
+     }
++    const slow = i === 0 ? await slowNow() : null; // S3: 1 回目はスローの途中で終える
+     await page.evaluate(() => window.__game.scene.getScene('Mission').endMission('returned'));
+     await waitScene('Result');
+     await sleep(1500);
+@@ -193,8 +211,8 @@ if (FLOW === 'notap') {
+     const st = await note(`Result ${i + 1}（鐘の後）`);
+     const ls = st.page && st.page.lastStart;
+     const t0 = await page.evaluate(() => window.__delayedAt ?? null);
+-    res.results.push({ early: early.music ? early.music.sources : null, sources: st.music ? st.music.sources : null, delay: ls && t0 !== null ? ls.when - t0 : null });
+-    await sleep(1200);
++    const hi = await windowHi(1200);
++    res.results.push({ early: early.music ? early.music.sources : null, sources: st.music ? st.music.sources : null, delay: ls && t0 !== null ? ls.when - t0 : null, slow, after: st.slow, hi });
+   }
+   await tap('Result', 'もう一度');
+   await waitScene('Briefing');
+@@ -202,6 +220,7 @@ if (FLOW === 'notap') {
+   await tap('Briefing', '出撃');
+   await page.waitForFunction(() => { const g = window.__game; const m = g.scene.getScene('Mission'); return g.scene.isActive('Mission') && m.world && g.scene.isActive('Hud'); }, null, { timeout: 15000 });
+   await sleep(1500);
++  res.quitSlow = await slowNow(); // S3: スローの途中で一時停止 → 任務をやめる
+   await page.evaluate(() => window.__game.scene.getScene('Hud').pause.open());
+   await waitScene('Pause');
+   await sleep(400);
+@@ -246,6 +265,11 @@ if (NO_AUDIO) {
+     res.results.forEach((r, i) => check(r.early === 0 && r.sources === 1 && r.delay !== null && r.delay >= 2.2 && r.delay < 2.5, `${label}: Result ${i + 1} 回目: 1.5 秒は 0・鐘の後 ${r.delay === null ? '-' : r.delay.toFixed(2)} 秒で 1（帰投 2.2 秒＋始めの 0.05 秒＋10 Hz）`));
+     check(res.quit.music.sources === 1 && res.quit.scenes.includes('Title') && !res.quit.music.paused, `${label}: 一時停止 → 任務をやめる → Title で 1（一時停止は解けている）`);
+     check(last.music.builds === GAME_SONGS && !last.music.work && last.music.resident === res.built.music.resident, `${label}: 最後まで曲は作り直さない（作った曲 ${last.music.builds}・作業用の配列 ${last.music.work}・常駐 ${last.music.resident}）`);
++    // S3: スローの途中で終えた任務の後の Result・Title の曲はこもらない
++    const idle = (x) => x && !x.on && x.shown === null && x.filterHz === IDLE_HZ && x.musicRate === 1;
++    const r0 = res.results[0], his = res.results.slice(1).map((r) => r.hi).sort((a, b) => a - b), hiMed = his[his.length >> 1];
++    check(r0.slow && r0.slow.on && r0.slow.shown !== null && idle(r0.after) && Math.abs(r0.hi - hiMed) <= 1.5, `${label}: スローの途中（形 ${r0.slow ? r0.slow.shown : '-'}・${r0.slow ? r0.slow.filterHz : '-'} Hz）で終えた Result の曲はこもらない（素通し ${idle(r0.after)}・2 kHz より上 ${r0.hi.toFixed(1)} dB／スローの無い回の中央値 ${hiMed.toFixed(1)} dB・門 ±1.5）`);
++    check(res.quitSlow && res.quitSlow.on && idle(res.quit.slow), `${label}: スローの途中に一時停止 → 任務をやめる → Title の曲もこもらない（素通し ${idle(res.quit.slow)}）`);
+   }
+ }
+ if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ label, errors, rows, res }, null, 1));
+diff --git a/scripts/headless/sfx-offline.mjs b/scripts/headless/sfx-offline.mjs
+index 0eef182..12e28b9 100644
+--- a/scripts/headless/sfx-offline.mjs
++++ b/scripts/headless/sfx-offline.mjs
+@@ -9,7 +9,11 @@
+ //   ゲームのつなぎ（単発 → リミッタ → master・ループ × 0.5 → master・曲の束 → master）で「曲なし」と「曲あり」を 2 回通し、門を出す: 出口の頂 < 0.9・1.0 超え 0%・前の 1 秒に爆発の無い
+ //   爆発の飛び出し（頭 0.3 秒 − 直前 1 秒）の窓ごとの中央値 ≥ 6.5 dB・合図（鍵ごと）と爆発の飛び出しの中央値の下がり（曲なし − 曲あり）≤ 0.5 dB（警報は ≤ 0.2 dB）。爆弾の笛の頭は 0.5〜1.1 秒。
+ //   JSON=<file> に窓ごとの数を書く。メニューの窓（raw-menu-*.json）は S1 のまま（UI の音が曲より ≥ 12 dB）。
+-// 実行: RAW=<raw-*.json のあるディレクトリ> [BUS=1,0.5] [JSON=<file>] node scripts/headless/sfx-offline.mjs
++// v0.7.2 S3（命中スローのベッドの濾波器。spec-v0720 §4.5・brief L30）: BED=<Hz>（ゲームは config/sfx-music-config の SFX_SLOW_SHAPE.idleHz＝20000）でループの束と曲の束を低域通過（BiquadFilter・
++//   Q は既定）に通してから master へ（ゲームの S3 のつなぎ）。CTX_SR=<Hz> は context の速さ（既定は raw の 22,050 Hz＝濾波器の Hz がナイキストより上で素通し。端末の 44,100・48,000 では
++//   標本は context が補う）。BEDCHECK=1 は曲ありの窓を「濾波器なし（S2）」と「BED の濾波器あり（S3）」の 2 回通し、窓ごとの出口の頂・RMS・合図と爆発の頭の差（dB）の最大を出す
++//   （門 ±0.3 dB）。S2_JSON=<S2 の JSON> は今の回の曲ありの数と S2 の回の数の窓ごとの差の最大を出す。
++// 実行: RAW=<raw-*.json のあるディレクトリ> [BUS=1,0.5] [JSON=<file>] [BED=20000] [CTX_SR=48000] [BEDCHECK=1] [S2_JSON=<file>] node scripts/headless/sfx-offline.mjs
+ import { readFileSync, readdirSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { chromium } from './lib.mjs';
+@@ -18,6 +22,10 @@ if (!process.env.RAW) throw new Error('RAW=<raw-*.json のあるディレクト
+ const LIMITER = { threshold: -10, knee: 6, ratio: 12, attack: 0.003, release: 0.25 };
+ const MASTER = 0.8;
+ const BUS = (process.env.BUS ?? '1,0.5').split(',').map(Number);
++/** S3: ベッドの濾波器の Hz（0 は無し＝S2 のつなぎ）・context の速さ（0 は raw の速さ）・濾波器ありとなしを比べるか */
++const BED = Number(process.env.BED ?? 0);
++const CTX_SR = Number(process.env.CTX_SR ?? 0);
++const BEDCHECK = process.env.BEDCHECK === '1';
+ 
+ /** ページの中: 1 件・1 案を本物のリミッタに通して数を返す */
+ async function render(o) {
+@@ -73,12 +81,15 @@ async function render(o) {
+   return { peak, over: over / Math.max(1, n - o.pre), pops, ui };
+ }
+ 
+-/** ページの中（S2）: 任務の窓をゲームのつなぎで通し（曲は withMusic の時だけ）、出口の頂・1.0 超え・合図と爆発の頭の飛び出しを返す */
++/**
++ * ページの中（S2）: 任務の窓をゲームのつなぎで通し（曲は withMusic の時だけ）、出口の頂・1.0 超え・合図と爆発の頭の飛び出しを返す。
++ * S3: bedHz > 0 はループと曲を低域通過の濾波器に通す（ゲームのベッドの濾波器）。ctxSr > 0 は context の速さ（標本の位置は raw の速さから換えて読む）
++ */
+ async function renderMission(o) {
+   const f32 = (b64) => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Float32Array(u.buffer); };
+-  const n = f32(o.left).length, sr = o.sr;
++  const n0 = f32(o.left).length, sr0 = o.sr, sr = o.ctxSr > 0 ? o.ctxSr : sr0, k = sr / sr0, n = Math.ceil(n0 * k);
+   const ctx = new OfflineAudioContext(2, n, sr);
+-  const buf = (chs) => { const b = ctx.createBuffer(chs.length, n, sr); chs.forEach((x, i) => b.copyToChannel(x, i)); return b; };
++  const buf = (chs) => { const b = ctx.createBuffer(chs.length, n0, sr0); chs.forEach((x, i) => b.copyToChannel(x, i)); return b; };
+   const comp = ctx.createDynamicsCompressor();
+   for (const k of ['threshold', 'knee', 'ratio', 'attack', 'release']) comp[k].value = o.limiter[k];
+   const master = ctx.createGain();
+@@ -86,25 +97,29 @@ async function renderMission(o) {
+   comp.connect(master);
+   master.connect(ctx.destination);
+   const src = (b, to, g) => { const s = ctx.createBufferSource(); s.buffer = b; const m = ctx.createGain(); m.gain.value = g; s.connect(m); m.connect(to); s.start(0); };
++  let bed = master;
++  if (o.bedHz > 0) { bed = ctx.createBiquadFilter(); bed.type = 'lowpass'; bed.frequency.value = o.bedHz; bed.connect(master); } // S3: ベッドの濾波器（Q は既定）
+   src(buf([f32(o.left), f32(o.right)]), comp, 1);
+-  src(buf([f32(o.loops)]), master, o.bus);
+-  if (o.withMusic) src(buf([f32(o.music)]), master, o.musicGain);
++  src(buf([f32(o.loops)]), bed, o.bus);
++  if (o.withMusic) src(buf([f32(o.music)]), bed, o.musicGain);
+   const out = await ctx.startRendering();
+   const L = out.getChannelData(0), R = out.getChannelData(1);
++  const pre = Math.round(o.pre * k);
+   let peak = 0, over = 0, sum = 0;
+-  for (let i = o.pre; i < n; i++) { const a = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (a > peak) peak = a; if (a > 1) over++; sum += L[i] * L[i] + R[i] * R[i]; }
++  for (let i = pre; i < n; i++) { const a = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (a > peak) peak = a; if (a > 1) over++; sum += L[i] * L[i] + R[i] * R[i]; }
+   const power = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += L[i] * L[i] + R[i] * R[i]; return s / Math.max(1, Math.min(n, b) - Math.max(0, a)); };
+   // 曲だけの出口の強さ（左右に同じ＝2 倍。cmr＝頭の強さ（曲なし）÷ 同じ頭の曲の強さ＝合図が曲より何 dB 上か）
+   const mu = o.withMusic ? f32(o.music) : null, mg = o.musicGain * o.master;
+-  const musicPower = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += 2 * (mu[i] * mg) ** 2; return s / Math.max(1, Math.min(n, b) - Math.max(0, a)); };
++  const musicPower = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n0, b); i++) s += 2 * (mu[i] * mg) ** 2; return s / Math.max(1, Math.min(n0, b) - Math.max(0, a)); };
+   const pops = o.onsets.filter((on) => on.at >= o.pre && (on.fam === 'cue' || (on.fam === 'blast' && on.key !== 'sink'))).map((on) => {
+-    let h0 = 0, h1 = Math.min(Math.round(0.3 * sr), on.len);
+-    if (on.key === 'bomb_fall') { h0 = Math.round(0.5 * sr); h1 = Math.round(1.1 * sr); }
+-    const iso = on.fam === 'blast' && !o.onsets.some((x) => x.fam === 'blast' && x.key !== 'sink' && x.at < on.at && x.at >= on.at - sr);
+-    const ph = power(on.at + h0, on.at + h1), pp = power(on.at - sr, on.at);
++    let h0 = 0, h1 = Math.min(Math.round(0.3 * sr0), on.len);
++    if (on.key === 'bomb_fall') { h0 = Math.round(0.5 * sr0); h1 = Math.round(1.1 * sr0); }
++    const iso = on.fam === 'blast' && !o.onsets.some((x) => x.fam === 'blast' && x.key !== 'sink' && x.at < on.at && x.at >= on.at - sr0);
++    const at = (v) => Math.round(v * k); // raw の標本 → 出口の標本
++    const ph = power(at(on.at + h0), at(on.at + h1)), pp = power(at(on.at - sr0), at(on.at));
+     return { key: on.key, fam: on.fam, iso, ph, pm: mu ? musicPower(on.at + h0, on.at + h1) : 0, pop: 10 * Math.log10((ph + 1e-12) / (pp + 1e-12)) };
+   });
+-  return { peak, over: over / Math.max(1, n - o.pre), rms: Math.sqrt(sum / 2 / Math.max(1, n - o.pre)), pops };
++  return { peak, over: over / Math.max(1, n - pre), rms: Math.sqrt(sum / 2 / Math.max(1, n - pre)), pops };
+ }
+ 
+ const files = readdirSync(process.env.RAW).filter((f) => /^raw-.*\.json$/.test(f)).sort();
+@@ -113,13 +128,15 @@ const page = await (await browser.newContext()).newPage();
+ let worst = 0, uiBad = 0;
+ const med = (a) => { const x = [...a].sort((p, q) => p - q); return x.length ? x[x.length >> 1] : NaN; };
+ const mission = [];
++const bedRows = [];
+ for (const f of files) {
+   const raw = JSON.parse(readFileSync(join(process.env.RAW, f), 'utf8'));
+   if (raw.onsets && raw.music) {
+     // S2: 任務の窓（曲なし・曲あり）
+-    const o = { ...raw, limiter: LIMITER, master: MASTER, bus: BUS[BUS.length - 1] };
++    const o = { ...raw, limiter: LIMITER, master: MASTER, bus: BUS[BUS.length - 1], bedHz: BED, ctxSr: CTX_SR };
+     const off = await page.evaluate(renderMission, { ...o, withMusic: false });
+     const on = await page.evaluate(renderMission, { ...o, withMusic: true });
++    if (BEDCHECK) bedRows.push({ n: `${raw.name}-${raw.tag}`, a: await page.evaluate(renderMission, { ...o, withMusic: true, bedHz: 0 }), b: on });
+     const iso = (r) => r.pops.filter((p) => p.iso).map((p) => p.pop);
+     const bl = (r) => r.pops.filter((p) => p.fam === 'blast').map((p) => p.pop);
+     mission.push({ name: raw.name, tag: raw.tag, startS: raw.startS, ducks: raw.ducks, off, on });
+@@ -166,6 +183,29 @@ if (mission.length) {
+   for (const m of mission) m.off.pops.forEach((p, i) => { const q = m.on.pops[i]; if (!q || q.pm <= 0) return; (cm[p.fam === 'blast' ? '爆発' : p.key] ??= []).push(10 * Math.log10((p.ph + 1e-12) / q.pm)); });
+   console.log(`参考 合図・爆発の頭 − 同じ頭の曲（cmr・中央値／一番悪い・下げの後）: ${Object.keys(cm).sort().map((k) => `${k} ${med(cm[k]).toFixed(1)}／${Math.min(...cm[k]).toFixed(1)}`).join('  ')}`);
+   if (process.env.JSON) (await import('node:fs')).writeFileSync(process.env.JSON, JSON.stringify(mission.map((m) => ({ ...m, off: { ...m.off }, on: { ...m.on } }))));
++  // S3: ベッドの濾波器は素通しか（同じ窓の「濾波器なし」a と今の回 b の差・S2 の回との差。dB の差の最大）
++  const db = (v) => 20 * Math.log10(v + 1e-12);
++  const diff = (pairs) => {
++    let peak = 0, rms = 0, pop = 0, worstN = '-';
++    for (const { n, a, b } of pairs) {
++      const dp = Math.abs(db(a.peak) - db(b.peak)), dr = Math.abs(db(a.rms) - db(b.rms));
++      const dq = a.pops.reduce((m, p, i) => (b.pops[i] ? Math.max(m, Math.abs(p.pop - b.pops[i].pop), Math.abs(10 * Math.log10((p.ph + 1e-12) / (b.pops[i].ph + 1e-12)))) : m), 0);
++      if (Math.max(dp, dr, dq) > Math.max(peak, rms, pop)) worstN = n;
++      peak = Math.max(peak, dp); rms = Math.max(rms, dr); pop = Math.max(pop, dq);
++    }
++    return { peak, rms, pop, worstN };
++  };
++  const bedText = `ベッドの濾波器 ${BED || 'なし'} Hz・context ${CTX_SR || '22050（raw）'} Hz`;
++  if (BEDCHECK && bedRows.length) {
++    const d = diff(bedRows);
++    check(Math.max(d.peak, d.rms, d.pop) <= 0.3, `S3 ${bedText}: 濾波器なし → ありの差の最大（${bedRows.length} 窓）: 出口の頂 ${d.peak.toFixed(3)}・RMS ${d.rms.toFixed(3)}・合図と爆発の頭（飛び出しと強さ）${d.pop.toFixed(3)} dB（門 ±0.3・一番の窓 ${d.worstN}）`);
++  }
++  if (process.env.S2_JSON) {
++    const s2 = JSON.parse(readFileSync(process.env.S2_JSON, 'utf8'));
++    const pairs = mission.map((m) => ({ n: `${m.name}-${m.tag}`, a: (s2.find((x) => x.name === m.name && x.tag === m.tag) ?? {}).on, b: m.on })).filter((p) => p.a);
++    const d = diff(pairs);
++    check(pairs.length === s2.length && Math.max(d.peak, d.rms, d.pop) <= 0.3, `S3 ${bedText}: S2 の回（${process.env.S2_JSON.split('/').slice(-3).join('/')}）との差の最大（${pairs.length}/${s2.length} 窓）: 出口の頂 ${d.peak.toFixed(3)}・RMS ${d.rms.toFixed(3)}・合図と爆発の頭 ${d.pop.toFixed(3)} dB（門 ±0.3・一番の窓 ${d.worstN}）`);
++  }
+ }
+ console.log(`本物のリミッタ（Chromium）: 「後」の案の出口の頂の最大 ${worst.toFixed(3)}（1 未満が目標）`);
+ process.exitCode = worst < 1 && uiBad === 0 && bad === 0 ? 0 : 1;
+diff --git a/scripts/headless/sfx-probe.mjs b/scripts/headless/sfx-probe.mjs
+index ce4c985..3b119c4 100644
+--- a/scripts/headless/sfx-probe.mjs
++++ b/scripts/headless/sfx-probe.mjs
+@@ -15,6 +15,8 @@
+ // v0.7.2 S2（任務の曲の段。spec-v0720 §5.5・§8.2・brief L20・L21）: 毎フレーム、Hud の MissionSfx の段（core/sfx-music-mood の level）の移りを記録し、件ごとに 段ごとの時間の割合・移りの数・
+ //   どの 60 秒の窓の中の移りの最大・最初の緊張と戦闘の時刻を出す。同じフレームに HUD のテレメトリの「見つかった」「撃たれている」欄（spec §5.1 の表をここに写した＝観測器とは別に
+ //   書いた写し。定数は core の値の写し）が最初に立った時刻も取る。門: 1 分（どの 60 秒の窓も）の移り ≤ 6・最初の緊張 ≥ 最初の「見つかった」・最初の戦闘 ≥ 最初の「撃たれている」（D5）。
++// v0.7.2 S3（命中スロー。spec-v0720 §6.4）: 毎フレーム、世界の slowMoLeftS > 0（Hud が読むのと同じ値）の移りを記録し、件ごとに スローの回数・計の秒と、音の層が見た立ち上がりの数
++//   （エンジンの slow.rises。止まっている context の間も数える）を出す。門: 2 つが同じ（音の層は世界と同じ回数のスローを見る）。
+ // OUT=<json> に記録を書く（scripts/sfx-mix.ts の PROBE=<json> が波形に直して、リミッタ前の頂・1.0 超えの割合・RMS を出す。S2: 段の移りの行 mood も＝曲の束の模型）。
+ // 実行: SITE=<site> [CASES=us_03-burst,jp_03h-last] [JOBS=3] [OUT=<json>] node scripts/headless/sfx-probe.mjs
+ import { writeFileSync } from 'node:fs';
+@@ -48,6 +50,8 @@ function install({ voices, rule }) {
+   // S2: 段の移り（毎フレーム）と、HUD の「見つかった」「撃たれている」欄が最初に立った時刻（spec §5.1 の表の写し。定数は core の値: SP_APPROACH 1・SP_FLARE_PASS 2・SP_ORBIT 3・SP_RUN 4、
+   // FF_CHALLENGE 1・FF_STRAFE 2、AS_T_INBOUND 1・ORBIT 2・RUN 3・FALLING 4・REST 5、PA_PASS 1・PA_ORBIT 2、EVA_NONE 0、LANDING_REPORT_NONE 0、米PT の標的の自艇 0、被弾は 1 フレームに 0.5 HP より多く）
+   const mood = { rows: [], last: -1, firstFound: null, firstShot: null, prevHp: NaN, prevSeat: -1 };
++  // S3: 命中スローの移り（[時刻, 0/1]）と、始めのエンジンの立ち上がりの数
++  const slow = { rows: [], last: false, rises0: e.slow ? e.slow.rises : 0 };
+   const attack = (th) => th === 2 || th === 3 || th === 4;
+   const near = (th) => th === 1 || th === 5;
+   const trackMood = (hud, t) => {
+@@ -72,7 +76,11 @@ function install({ voices, rule }) {
+   hl.frame = (d) => {
+     frame0(d);
+     const hud0 = window.__game.scene.getScene('Hud');
+-    if (hud0 && hud0.sfx && hl.active('Hud')) trackMood(hud0, e.clockS);
++    if (hud0 && hud0.sfx && hl.active('Hud')) {
++      trackMood(hud0, e.clockS);
++      const w = hl.world(), on = !!w && w.slowMoLeftS > 0;
++      if (on !== slow.last) { slow.rows.push([Math.round(e.clockS * 1e4) / 1e4, on ? 1 : 0]); slow.last = on; }
++    }
+     acc += d / 1000;
+     if (acc < rule.tickS) return;
+     acc = acc < 2 * rule.tickS ? acc - rule.tickS : 0;
+@@ -99,7 +107,7 @@ function install({ voices, rule }) {
+     if (flat) wide.playFlat(key, t, t, rate, mul, d); else wide.playAt(key, dx, dy, t, t, rate, mul, minS);
+     log.push([r4(t + d), key, Math.round(dx), Math.round(dy), r4(rate), mul, v, sim.lastDrop, v >= 0 ? r4(sim.gain) : 0, v >= 0 ? r4(sim.pan) : 0, sim.band, v >= 0 && sim.stole ? 1 : 0, flat ? 1 : 0]);
+   };
+-  window.__probe = { sim, wide, log, loops, mood, t0: e.clockS };
++  window.__probe = { sim, wide, log, loops, mood, slow, t0: e.clockS };
+   return true;
+ }
+ 
+@@ -108,7 +116,7 @@ function collect() {
+   const p = window.__probe;
+   const e = window.__sfx;
+   const st = e.stats();
+-  return { log: p.log, loops: p.loops, mood: { rows: p.mood.rows, firstFound: p.mood.firstFound, firstShot: p.mood.firstShot }, t0: p.t0, t1: e.clockS, steals: p.sim.stolen, maxVoices: p.sim.maxBusy, demand: p.wide.maxBusy, dropped: Array.from(p.sim.dropped), engine: { state: st.state, sources: st.sources, idleDrops: st.idleDrops, noBuffer: st.noBuffer, buffers: st.buffers } };
++  return { log: p.log, loops: p.loops, mood: { rows: p.mood.rows, firstFound: p.mood.firstFound, firstShot: p.mood.firstShot }, slow: { rows: p.slow.rows, rises: e.slow ? e.slow.rises - p.slow.rises0 : null }, t0: p.t0, t1: e.clockS, steals: p.sim.stolen, maxVoices: p.sim.maxBusy, demand: p.wide.maxBusy, dropped: Array.from(p.sim.dropped), engine: { state: st.state, sources: st.sources, idleDrops: st.idleDrops, noBuffer: st.noBuffer, buffers: st.buffers } };
+ }
+ 
+ async function oneCase(browser, base, c) {
+@@ -245,6 +253,13 @@ for (const r of results) {
+   check(M.maxWin <= MOOD_MAX_PER_MIN, `${r.name}: 曲の段の移りはどの 60 秒の窓も ≤ ${MOOD_MAX_PER_MIN}（${M.maxWin}）`);
+   check(M.firstTense === null || (M.firstFound !== null && M.firstTense >= M.firstFound - 1e-6), `${r.name}: 最初の緊張 ≥ 最初の「見つかった」欄（D5: ${ft(M.firstTense)} ≥ ${ft(M.firstFound)}）`);
+   check(M.firstBattle === null || (M.firstShot !== null && M.firstBattle >= M.firstShot - 1e-6), `${r.name}: 最初の戦闘 ≥ 最初の「撃たれている」欄（D5: ${ft(M.firstBattle)} ≥ ${ft(M.firstShot)}）`);
++  // S3: 命中スローの回数（世界）と音の層が見た立ち上がり
++  const sr = (r.slow && r.slow.rows) || [];
++  let slowN = 0, slowS = 0;
++  for (let i = 0; i < sr.length; i++) if (sr[i][1] === 1) { slowN++; slowS += (i + 1 < sr.length ? sr[i + 1][0] : r.t1) - sr[i][0]; }
++  r.slowSummary = { n: slowN, s: slowS, rises: r.slow ? r.slow.rises : null };
++  console.log(`${''.padEnd(12)} 命中スロー: ${slowN} 回（計 ${slowS.toFixed(1)} 秒${sr.length ? `・最初 ${sr[0][0].toFixed(1)} 秒` : ''}）・音の層の立ち上がり ${r.slowSummary.rises}`);
++  if (r.slowSummary.rises !== null) check(r.slowSummary.rises === slowN, `${r.name}: 音の層は世界と同じ回数の命中スローを見る（${r.slowSummary.rises}・${slowN}）`);
+ }
+ if (!only) for (const k of S2_KEYS) check(total[k] > 0, `${k}: 全部の件を通して 1 回以上鳴る（${total[k]}）`);
+ console.log(`全部の件の合計（鳴らした数）: ${S2_KEYS.map((k) => `${k} ${total[k]}`).join('  ')}`);
+@@ -252,8 +267,10 @@ console.log(`全部の件の合計（鳴らした数）: ${S2_KEYS.map((k) => `$
+ const ALL_KEYS = [...S2_KEYS, 'torp_launch', 'hull_hit', 'alarm', 'light_on', 'flare_pop', 'bomb_fall', 'reload', 'reload_end', 'smoke', 'ui_tap', 'bell', 'engine_cough', ...LOOP_IDS];
+ console.log(`25 本の鍵（全部の件を通して）: ${ALL_KEYS.map((k) => `${k} ${everyKey[k] ?? 0}`).join('  ')}`);
+ if (!only) check(ALL_KEYS.every((k) => (everyKey[k] ?? 0) > 0), `25 本の鍵がどれも 1 回以上鳴る${ALL_KEYS.some((k) => !everyKey[k]) ? `（鳴らない: ${ALL_KEYS.filter((k) => !everyKey[k]).join('・')}）` : ''}`);
++const ss = results.map((r) => r.slowSummary).filter(Boolean);
++if (ss.length) console.log(`命中スロー（${ss.length} 件）: 計 ${ss.reduce((a, x) => a + x.n, 0)} 回・スローのある件 ${ss.filter((x) => x.n > 0).length}・1 件の最大 ${Math.max(...ss.map((x) => x.n))} 回`);
+ const mm = results.map((r) => r.moodSummary).filter(Boolean);
+ if (mm.length) console.log(`曲の段（${mm.length} 件）: どの 60 秒の窓の移りの最大 ${Math.max(...mm.map((m) => m.maxWin))}・1 分あたりの最大 ${Math.max(...mm.map((m) => m.perMin)).toFixed(1)}・静かの割合の中央値 ${(mm.map((m) => m.share[0]).sort((a, b) => a - b)[mm.length >> 1] * 100).toFixed(0)}%`);
+-if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ voices: VOICES, cases: results.map((r) => ({ name: r.name, q: r.q, secs: r.secs, mode: r.mode ?? 'ab', t0: r.t0, t1: r.t1, steals: r.steals, maxVoices: r.maxVoices, demand: r.demand, engine: r.engine, errors: r.errors, log: r.log, loops: r.loops ?? [], mood: r.mood ? r.mood.rows : [], moodSummary: r.moodSummary, cueCounts: r.cueCounts })) }));
++if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ voices: VOICES, cases: results.map((r) => ({ name: r.name, q: r.q, secs: r.secs, mode: r.mode ?? 'ab', t0: r.t0, t1: r.t1, steals: r.steals, maxVoices: r.maxVoices, demand: r.demand, engine: r.engine, errors: r.errors, log: r.log, loops: r.loops ?? [], mood: r.mood ? r.mood.rows : [], moodSummary: r.moodSummary, slow: r.slow ? r.slow.rows : [], slowSummary: r.slowSummary, cueCounts: r.cueCounts })) }));
+ console.log(`sfx-probe ${bad === 0 ? 'OK' : `NG ${bad}`}（${results.length} 件）`);
+ process.exitCode = bad === 0 ? 0 : 1;
 diff --git a/src/config/music-lab-config.ts b/src/config/music-lab-config.ts
-index 3314137..ee24fd3 100644
+index 3314137..ee23c7e 100644
 --- a/src/config/music-lab-config.ts
 +++ b/src/config/music-lab-config.ts
-@@ -1,13 +1,14 @@
+@@ -1,13 +1,17 @@
  // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §7・brief L14）: 曲の試聴の場（?sfxlab。scenes/music-lab-scene）の語と置き方。論理 px（高さ 720・幅 1280〜1584）。
 -// S2（brief L25）: 行 1「任務の曲」（静か・緊張・戦闘・自動・止める）と行 2「効果音と一緒に」（台本 3 つ・止める。4 つ目の「命中＋スロー」は S3）の語・自動の回し方・台本の表。
 +// S2（brief L25）: 行 1「任務の曲」（静か・緊張・戦闘・自動・止める）と行 2「効果音と一緒に」（台本 3 つ・止める）の語・自動の回し方・台本の表。
@@ -10,19 +392,23 @@ index 3314137..ee24fd3 100644
  // 割り付け（行の上 124・高さ 84・間 10・行の名前の幅 236・列の間 16・下の段の「戻る」320 × 84）は v0.7.1 の効果音の試聴の場と同じ（ui/sound-lab-layout の矩形をそのまま使う）。
  // 何も import しない（ui/music-lab-layout と tests/music-lab が node で読んでも game-config → screen-fit の DOM を引かない。sound-lab-config と同じ）。ゲームの数値ではないので data/*.json には置かない。
  
- /** 上の説明（ビルド番号の下・中央。折り返す。論理幅 1280 で 2 行＝行の上 124 より上） */
+-/** 上の説明（ビルド番号の下・中央。折り返す。論理幅 1280 で 2 行＝行の上 124 より上） */
 -export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）: タイトルの曲を A・B・C から選んでください（（今）がゲームの曲）。任務の曲は段ごとと効果音と一緒に。知っている曲に似ていたら一言ください（その案は作り直します）';
 -/** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に。S3 で命中スローの行を足す） */
 -export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に'];
 -export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ'];
-+export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）: タイトルの曲と命中スローを A・B・C から選んでください（（今）がゲームの案）。任務の曲は段ごとと効果音と一緒に。知っている曲に似ていたら一言ください（その案は作り直します）';
++/**
++ * 上の説明（ビルド番号の下・中央）。v0.7.2 S3: 2 行を改行で分けた（S2 までは折り返し任せで、論理幅 1280 では語の切れ目で 3 行になり、3 行目が行 0 のボタンの上にかかった）。
++ * どの行も論理幅 1280〜1584 の折り返しの幅（論理幅 − 2 × 余白）に収まる＝折り返さない（tests/music-lab が 8 px 刻みで見る）。2 行の下は行の上 124 より上
++ */
++export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲と命中スローを A・B・C から選んでください（（今）がゲームの案）\n押すと作って鳴らします。知っている曲に似ていたら一言ください（その案は作り直します）';
 +/** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に・行 3＝命中スロー＝S3） */
 +export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー'];
 +export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ', '押すと命中とスロー'];
  /**
   * タイトルの曲の候補（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝A・B・C）: 記号・名前・2 行目の一言。ボタンの題は「記号 名前」、ゲームの曲（既定）は「記号（今）」だけ
   * （v0.7.1 IP4 と同じ: 論理幅 1280 の 4 列のボタン 233 px に収める）で、名前は 2 行目へ
-@@ -26,13 +27,14 @@ export const MUSIC_LAB_AUTO_SUB_JA = '8 秒ずつ回す';
+@@ -26,13 +30,14 @@ export const MUSIC_LAB_AUTO_SUB_JA = '8 秒ずつ回す';
  /** 「自動」の回し方: 段（MUSIC_MOOD_*: 0 静か・1 緊張・2 戦闘）の並びをくり返す（静か → 緊張 → 戦闘 → 緊張＝ゲームで起きる移りだけ）・1 段の秒（曲の家族が鳴ってから数える） */
  export const MUSIC_LAB_AUTO_MOODS: readonly number[] = [0, 1, 2, 1];
  export const MUSIC_LAB_AUTO_STEP_S = 8;
@@ -41,7 +427,7 @@ index 3314137..ee24fd3 100644
   */
  export const MUSIC_LAB_DEMOS: readonly { readonly mood: number; readonly step: string; readonly speed: number; readonly periodS: number; readonly events: readonly (readonly number[])[] }[] = [
    { mood: 0, step: 'cruise', speed: 0.45, periodS: 8, events: [] },
-@@ -41,7 +43,14 @@ export const MUSIC_LAB_DEMOS: readonly { readonly mood: number; readonly step: s
+@@ -41,7 +46,14 @@ export const MUSIC_LAB_DEMOS: readonly { readonly mood: number; readonly step: s
      mood: 2, step: 'full', speed: 0.9, periodS: 8,
      events: [[0.3, 6, 0, 0], [0.9, 0, 900, -300], [1.5, 2, 60, 40], [2.1, 0, 900, -300], [2.7, 2, -80, 50], [3.2, 1, 250, 0], [3.4, 1, 250, 0], [3.6, 1, 250, 0], [4.0, 3, 300, 100], [5.0, 0, 3000, 500], [6.0, 4, 700, -200], [7.0, 7, 0, 0], [7.4, 3, 1000, -400]],
    },
@@ -758,7 +1144,7 @@ index 762bda8..bb1f805 100644
 +  return [musicLabButtonTitle(MUSIC_LAB_SLOW_LETTERS[col]!, MUSIC_LAB_SLOW_NAMES_JA[col]!, d), musicLabButtonSub(MUSIC_LAB_SLOW_NAMES_JA[col]!, MUSIC_LAB_SLOW_NOTES_JA[col]!, d)];
 +}
 diff --git a/tests/music-lab.test.ts b/tests/music-lab.test.ts
-index 960527e..db545f0 100644
+index 960527e..9f66b7d 100644
 --- a/tests/music-lab.test.ts
 +++ b/tests/music-lab.test.ts
 @@ -6,19 +6,23 @@
@@ -857,7 +1243,34 @@ index 960527e..db545f0 100644
      const f = { gameWidth: w, gameHeight: H, margin: MARGIN };
      const rects: SoundLabRect[] = [];
      for (let row = 0; row < COLS.length; row++) for (let col = 0; col < COLS[row]!; col++) rects.push(soundLabButtonRect(row, col, COLS[row]!, f));
-@@ -132,6 +155,14 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+@@ -96,13 +119,24 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+       expect(l.y).toBe(first.y);
+     }
+     expect(SOUND_LAB_ROW_TOP).toBeGreaterThan(headBottom);
+-    // 説明は 2 行まで（論理幅 − 余白で折り返す。見積もりの 0.9 倍の詰まりで）
+-    expect(textWidthPx(MUSIC_LAB_HEAD_JA, SOUND_LAB_HEAD_PX)).toBeLessThanOrEqual(2 * 0.9 * (w - 2 * MARGIN));
++    // 説明は 2 行まで（v0.7.2 S3: 改行で 2 行に分け、どの行も折り返しの幅に収める＝下の 8 px 刻みの試験）
++    expect(MUSIC_LAB_HEAD_JA.split('\n').every((l) => textWidthPx(l, SOUND_LAB_HEAD_PX) <= w - 2 * MARGIN)).toBe(true);
+     // 右下の状態の一文（右寄せ・中心は「戻る」の中心の高さ）は「効果音の試聴へ」の右
+     const longest = Math.max(...STATUSES.map((t) => textWidthPx(t, SOUND_LAB_STATUS_PX)));
+     expect(w - MARGIN - longest - (side.x + side.w), `${w}`).toBeGreaterThanOrEqual(24);
+     expect([side.y, side.h, side.w]).toEqual([back.y, back.h, back.w]);
+   });
++  it('説明（v0.7.2 S3 で S2 の直し）: 改行で 2 行・論理幅 1280〜1584 の 8 px 刻みのどれでもどの行も折り返しの幅（論理幅 − 2 × 余白）に収まり（折り返さない＝3 行にならない）、2 行の下は行 0 の上より上', () => {
++    const lines = MUSIC_LAB_HEAD_JA.split('\n');
++    expect(lines.length).toBe(2);
++    expect(MUSIC_LAB_HEAD_JA).not.toContain('段ごとと効果音と一緒に'); // S2 のぎこちない言い回しは直した
++    for (let w = 1280; w <= 1584; w += 8) {
++      for (const l of lines) expect(textWidthPx(l, SOUND_LAB_HEAD_PX), `${w}: ${l}`).toBeLessThanOrEqual(w - 2 * MARGIN);
++      const bottom = SOUND_LAB_HEAD_Y + lines.length * SOUND_LAB_HEAD_PX * LINE_H;
++      expect(bottom, `${w}`).toBeLessThan(soundLabButtonRect(0, 0, MUSIC_LAB_ROW0_COLS, { gameWidth: w, gameHeight: H, margin: MARGIN }).y);
++      expect(bottom, `${w}`).toBeLessThan(soundLabLabelRect(0, { gameWidth: w, gameHeight: H, margin: MARGIN }).y);
++    }
++  });
+   it('語: 説明に「知っている曲に似ていたら一言」・既定の曲だけ「記号（今）」の題で名前は 2 行目（ほかは「記号 名前」と一言）。論理幅 1280 のボタンに題・2 行目・「作成中…」が収まる', () => {
+     expect(MUSIC_LAB_HEAD_JA).toContain('知っている曲に似ていたら一言ください');
+     expect(MUSIC_LAB_DEFAULT_MARK_JA).toBe('（今）');
+@@ -132,6 +166,14 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
      for (const t of [...MUSIC_LAB_DEMO_SUBS_JA, MUSIC_LAB_STOP_SUB_JA, MUSIC_LAB_BUILDING_SUB_JA]) expect(textWidthPx(t, SOUND_LAB_NOTE_PX), t).toBeLessThanOrEqual(b2);
      const side = musicLabSideRect(f);
      for (const t of [MUSIC_LAB_TO_SFX_JA, MUSIC_LAB_FROM_SFX_JA]) expect(textWidthPx(t, SOUND_LAB_BACK_PX)).toBeLessThanOrEqual(side.w - 64);
@@ -872,7 +1285,7 @@ index 960527e..db545f0 100644
    });
  });
  
-@@ -150,6 +181,12 @@ describe('曲の試聴の場のシーン（v0.7.2 S1）', () => {
+@@ -150,6 +192,12 @@ describe('曲の試聴の場のシーン（v0.7.2 S1）', () => {
      expect(s).toContain('      sfxMusicAudition(MUSIC_TITLE_KEYS[col]!);\n');
      expect(s).toContain('      sfxMusicAudition(FAMILY_KEY);\n');
      expect(s.split('\n').length).toBeLessThanOrEqual(251);
