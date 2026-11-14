@@ -1,8 +1,9 @@
 // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §2・§10 R1〜R3・R6・R7）: 曲を数フレームに分けて 1 本の標本へ描く（MusicBuilder.stepBuild(予算)）。
-// 段: 0 で埋める → 音符（楽器の口 stepTone・stepFm・stepNoise。予算の内なら音符の途中でも区切り、状態を残して続きから書く）→（ラジオの C だけ: 頂の下見 → 濾波器のならし
-// ＝輪の末尾 0.1 秒を先に通して状態を作る（継ぎ目で状態が続く＝R7）→ 柔らかい歪み・帯 320〜3,200 Hz）→ 数え（和・最大・最小）→ 直流を引いて頂 0.9 に掛ける（打楽器の層 L1・L2 は
-// 頂を 3 次で丸める＝glue。任務の出口の頂の余りのため）。どの段も予算の単位（config の MUSIC_COST）で数え、1 回の stepBuild は予算を超えない。JIT の初回（書き方ごとに初めの
-// 60 万標本）は 1 回に 2 万標本まで（MUSIC_BUILD_WARM）。分け方に依らず標本はビット同一（同じ順の同じ計算。状態は Float64）。
+// 段: 0 で埋める → 音符（楽器の口 stepTone・stepFm・stepNoise。予算の内なら音符の途中でも区切り、状態を残して続きから書く）→（部屋の響きのある曲だけ: 響きのならし＝輪の末尾を
+// 先に通して櫛と全域通過の状態を作る（継ぎ目で響きが続く＝R7）→ 響きを足す）→ 数え（和・最大・最小）→ 直流を引いて頂 0.9 に掛ける（打楽器の層 L1・L2 は頂を 3 次で丸める＝glue。
+// 任務の出口の頂の余りのため）。どの段も予算の単位（config の MUSIC_COST）で数え、1 回の stepBuild は予算を超えない。JIT の初回（書き方ごとに初めの 60 万標本）は 1 回に 2 万標本まで
+// （MUSIC_BUILD_WARM）。分け方に依らず標本はビット同一（同じ順の同じ計算。状態は Float64）。
+// v0.7.2 IP1: C のラジオ（帯・歪み・ぱちぱち・揺れ）を消し、同じ「ならしてから通す」形で部屋の響き（room。D・E）を足した（乾いた音はファミコンらしさの元＝ユーザー「B はファミコンの RPG みたい」）。
 // 輪: 尾は頭へ回して描く（楽器の口）＝末尾の次が頭に続く。作業用の配列は呼ぶ側の 1 本（一番長い鍵の長さ＝R2）を使い回し、出来た標本は result()（次に作る前に写す）。
 // 毎フレームの口は stepBuild（と中の step*。確保しない＝tests/sfx-rules）。作る時だけの口（constructor・renderMusic・composeMusicKey）は確保してよい。
 import { MUSIC_BUILD_WARM, MUSIC_COST, MUSIC_PEAK, MUSIC_SAMPLE_RATE, MUSIC_WORK_SAMPLES, type MusicKey } from '../config/sfx-music-config';
@@ -11,25 +12,21 @@ import { MUSIC_INSTRUMENTS, MusicTables, musicNoteSamples, musicUnitsPerSample, 
 import { MUSIC_THEMES, musicRng } from './sfx-music-themes';
 
 const SR = MUSIC_SAMPLE_RATE;
-const TAU = Math.PI * 2;
-/** ラジオ（C）: 帯 320〜3,200 Hz（2 次の高域通過 → 低域通過）・柔らかい歪み（下見の頂を drive にそろえて u − u³/3）・ならしの秒 */
-const RADIO = { lowHz: 320, highHz: 3200, q: Math.SQRT1_2, drive: 0.9, warmS: 0.1 } as const;
+/**
+ * 部屋の響き（曲の room＝[響きの割合, 残響の秒 T60]）: 帰りに 1 極の低域通過のある櫛 4 本（25〜34 ms。帰りの量は T60 から）の和 → 全域通過 2 段（0.5）。
+ * 響きの大きさは櫛の定常の利得で割ってそろえる（割合 ≒ 響き ÷ 元の RMS）。ならしは輪の末尾 warmT60 × T60 秒（その前の響きは −45 dB 以下＝継ぎ目で続く）
+ */
+const ROOM = { combs: [557, 613, 677, 739], allpass: [173, 67], damp: 0.35, apG: 0.5, warmT60: 1.5 } as const;
+const NC = ROOM.combs.length, NA = ROOM.allpass.length;
 /** 打楽器の層の丸め（glue）: 頂 0.9 にそろえた v を v × (1.5 − (0.5 / 0.81) v²) に＝頂 0.9 は 0.9 のまま・小さい音は ×1.5（＋3.5 dB）＝頂と RMS の比を 3.5 dB 縮める */
 const GLUE_C1 = 1.5, GLUE_C3 = 0.5;
-const S_CLEAR = 0, S_NOTES = 1, S_PRE = 2, S_WARM = 3, S_FX = 4, S_SCAN = 5, S_SCALE = 6, S_DONE = 7;
+const S_CLEAR = 0, S_NOTES = 1, S_WARM = 2, S_FX = 3, S_SCAN = 4, S_SCALE = 5, S_DONE = 6;
 /**
- * 書き方ごとの JIT の初回の残り（標本。config の MUSIC_BUILD_WARM）: 0〜3 波形表（重ね・ビブラート／揺れの有無）・4 FM・5〜6 雑音（胴の有無）・7〜13 段（0 で埋めるのは native なので数えない）。
+ * 書き方ごとの JIT の初回の残り（標本。config の MUSIC_BUILD_WARM）: 0〜2 波形表（重ね・ビブラートの有無・トレモロ）・3 FM・4〜5 雑音（胴の有無）・6〜11 段（0 で埋めるのは native なので数えない）。
  * このページで一度温まれば次の曲では効かない（標本は同じ。分け方だけ）
  */
-const WARM_LEFT = new Float64Array(14).fill(MUSIC_BUILD_WARM.samples);
-WARM_LEFT[7 + S_CLEAR] = 0;
-
-/** 2 次の濾波器（RBJ の高域通過・低域通過）の係数を co[o..o+4] に（b0 b1 b2 a1 a2） */
-function biquad(co: Float64Array, o: number, hz: number, high: boolean): void {
-  const w = (TAU * hz) / SR, c = Math.cos(w), al = Math.sin(w) / (2 * RADIO.q), a0 = 1 + al;
-  const b1 = high ? -(1 + c) : 1 - c, b0 = high ? (1 + c) / 2 : (1 - c) / 2;
-  co[o] = b0 / a0; co[o + 1] = b1 / a0; co[o + 2] = b0 / a0; co[o + 3] = (-2 * c) / a0; co[o + 4] = (1 - al) / a0;
-}
+const WARM_LEFT = new Float64Array(12).fill(MUSIC_BUILD_WARM.samples);
+WARM_LEFT[6 + S_CLEAR] = 0;
 
 export class MusicBuilder {
   readonly n: number;
@@ -42,15 +39,16 @@ export class MusicBuilder {
   private noteN = 0;
   private ownUnits = 0;
   private readonly st = new Float64Array(8);
-  /** ラジオ: 係数 10（高域・低域）と状態 8（x1 x2 y1 y2 × 2） */
-  private readonly co = new Float64Array(10);
-  private readonly fx = new Float64Array(8);
-  private readonly warmN = Math.round(RADIO.warmS * SR);
-  private readonly radio: boolean;
+  /** 部屋の響き（room の曲だけ作る）: 櫛と全域通過の遅れの列（1 本に並べる）・各列の始め・長さ・今の位置・櫛の帰りの量と低域通過の状態 */
+  private readonly rb: Float64Array;
+  private readonly rOff = new Int32Array(NC + NA);
+  private readonly rLen = new Int32Array(NC + NA);
+  private readonly rPos = new Int32Array(NC + NA);
+  private readonly rFb = new Float64Array(NC);
+  private readonly rLp = new Float64Array(NC);
+  private readonly warmN: number;
+  private readonly wet: number;
   private readonly glue: boolean;
-  private readonly wowD: number;
-  private readonly wowC: number;
-  private pre = 0;
   private sum = 0;
   private hi = -Infinity;
   private lo = Infinity;
@@ -60,16 +58,21 @@ export class MusicBuilder {
   constructor(private readonly tables: MusicTables, private readonly work: Float32Array, readonly score: MusicScore) {
     this.n = score.n;
     if (work.length < this.n) throw new Error(`作業用の配列 ${work.length} が曲 '${score.theme.key}' の ${this.n} より短い`);
-    this.radio = score.theme.radio === true;
     this.glue = score.theme.glue === true;
-    this.wowD = score.theme.wow?.[0] ?? 0;
-    this.wowC = score.theme.wow?.[1] ?? 0;
+    const room = score.theme.room;
+    let at = 0, e2 = 0;
+    for (let k = 0; k < NC + NA; k++) {
+      const d = k < NC ? ROOM.combs[k]! : ROOM.allpass[k - NC]!;
+      this.rOff[k] = at; this.rLen[k] = d; at += d;
+      if (k < NC && room) { this.rFb[k] = 10 ** ((-3 * d) / (room[1] * SR)); e2 += this.rFb[k]! ** 2; }
+    }
+    this.rb = new Float64Array(room ? at : 0);
+    this.warmN = room ? Math.min(this.n, Math.round(ROOM.warmT60 * room[1] * SR)) : 0;
+    this.wet = room ? room[0] * Math.sqrt((1 - e2 / NC) / NC) : 0;
     let u = 3 * this.n * MUSIC_COST.pass;
     for (const x of score.notes) u += MUSIC_COST.note + musicNoteSamples(x) * musicUnitsPerSample(x.inst);
-    if (this.radio) u += this.n * MUSIC_COST.pass + (this.warmN + this.n) * MUSIC_COST.fx - this.n * MUSIC_COST.pass;
+    if (room) u += (this.warmN + this.n) * MUSIC_COST.room - this.n * MUSIC_COST.pass;
     this.totalUnits = u;
-    biquad(this.co, 0, RADIO.lowHz, true);
-    biquad(this.co, 5, RADIO.highHz, false);
     this.noteN = score.notes.length > 0 ? musicNoteSamples(score.notes[0]!) : 0;
   }
 
@@ -93,10 +96,10 @@ export class MusicBuilder {
     let left = budget, cold = MUSIC_BUILD_WARM.perCall;
     if (!this.tables.ready) left -= this.tables.stepTables(left);
     while (this.tables.ready && this.stage !== S_DONE) {
-      const notes = this.stage === S_NOTES, setup = notes && this.sub === 0 ? MUSIC_COST.note : 0;
-      const unit = notes ? musicUnitsPerSample(this.score.notes[this.at]!.inst) : this.stage === S_WARM || this.stage === S_FX ? MUSIC_COST.fx : MUSIC_COST.pass;
+      const notes = this.stage === S_NOTES, room = this.stage === S_WARM || this.stage === S_FX, setup = notes && this.sub === 0 ? MUSIC_COST.note : 0;
+      const unit = notes ? musicUnitsPerSample(this.score.notes[this.at]!.inst) : room ? MUSIC_COST.room : MUSIC_COST.pass;
       const total = notes ? this.noteN : this.stage === S_WARM ? this.warmN : this.n;
-      const v = this.stepVariant(), w = WARM_LEFT[v]! > 0 ? (notes ? 1 : MUSIC_BUILD_WARM.passShare) : 0;
+      const v = this.stepVariant(), w = WARM_LEFT[v]! > 0 ? (notes || room ? 1 : MUSIC_BUILD_WARM.passShare) : 0;
       const k = Math.min(total - this.sub, Math.floor((left - setup) / unit), w > 0 ? Math.floor(cold / w) : Infinity);
       if (k <= 0) break;
       this.stepStage(this.sub, this.sub + k);
@@ -111,9 +114,9 @@ export class MusicBuilder {
 
   /** 今の書き方（WARM_LEFT の添字） */
   private stepVariant(): number {
-    if (this.stage !== S_NOTES) return 7 + this.stage;
+    if (this.stage !== S_NOTES) return 6 + this.stage;
     const d = MUSIC_INSTRUMENTS[this.score.notes[this.at]!.inst];
-    return d.kind === 'fm' ? 4 : d.kind === 'noise' ? (d.bodyGain ? 6 : 5) : (d.wave2 || d.vibHz ? 1 : 0) + (this.wowD > 0 ? 2 : 0);
+    return d.kind === 'fm' ? 3 : d.kind === 'noise' ? (d.bodyGain ? 5 : 4) : d.tremDepth ? 2 : d.wave2 || d.vibHz ? 1 : 0;
   }
 
   /** 今の段の [a, b) の標本 */
@@ -122,13 +125,9 @@ export class MusicBuilder {
     if (this.stage === S_CLEAR) x.fill(0, a, b);
     else if (this.stage === S_NOTES) {
       const nt = this.score.notes[this.at]!, kind = MUSIC_INSTRUMENTS[nt.inst].kind;
-      if (kind === 'tone') stepTone(x, n, nt, a, b, this.st, this.tables, this.wowD, this.wowC);
+      if (kind === 'tone') stepTone(x, n, nt, a, b, this.st, this.tables);
       else if (kind === 'fm') stepFm(x, n, nt, a, b, this.st, this.tables);
       else stepNoise(x, n, nt, a, b, this.st, this.tables);
-    } else if (this.stage === S_PRE) {
-      let p = this.pre;
-      for (let i = a; i < b; i++) p = Math.max(p, Math.abs(x[i]!));
-      this.pre = p;
     } else if (this.stage === S_SCALE && this.glue) {
       const m = this.mean, g = this.scale, c3 = GLUE_C3 / (MUSIC_PEAK * MUSIC_PEAK);
       for (let i = a; i < b; i++) { const v = (x[i]! - m) * g; x[i] = v * (GLUE_C1 - c3 * v * v); }
@@ -138,24 +137,42 @@ export class MusicBuilder {
     } else this.stepFx(a, b);
   }
 
-  /** ならし（輪の末尾を通して状態だけ作る）・ラジオ（柔らかい歪み → 高域通過 → 低域通過。書いて数える）・数え（和・最大・最小）。状態と係数は手元に写して回す */
+  /**
+   * ならし（輪の末尾を響きに通して状態だけ作る）・響き（元 ＋ 割合 × 全域通過（櫛の和）。書いて数える）・数え（和・最大・最小）。
+   * 櫛: 出 = 列[位置]・低域 = 出 × (1 − damp) ＋ 低域 × damp・列[位置] = 入 ＋ 低域 × 帰り。全域通過: 出 = 列[位置] − 入・列[位置] = 入 ＋ 列[位置] × 0.5。
+   * ならしと響きは同じ命令の列（ならしは割合 0 で元の値をそのまま書き戻し、数えた和・最大・最小は段の終わりで捨てる）＝ならしで温まった JIT をそのまま使う（分かれ道があると響きの最初の 1 回が遅い）
+   */
   private stepFx(a: number, b: number): void {
-    const x = this.work, c = this.co, s = this.fx, warm = this.stage === S_WARM, k = RADIO.drive / (this.pre > 0 ? this.pre : 1), from = warm ? this.n - this.warmN : 0;
-    const b0 = c[0]!, b1 = c[1]!, b2 = c[2]!, a1 = c[3]!, a2 = c[4]!, d0 = c[5]!, d1 = c[6]!, d2 = c[7]!, e1 = c[8]!, e2 = c[9]!;
-    let x1 = s[0]!, x2 = s[1]!, y1 = s[2]!, y2 = s[3]!, z1 = s[4]!, z2 = s[5]!, w1 = s[6]!, w2 = s[7]!, sum = this.sum, hi = this.hi, lo = this.lo;
+    const x = this.work, warm = this.stage === S_WARM, from = warm ? this.n - this.warmN : 0, rb = this.rb, off = this.rOff, len = this.rLen, pos = this.rPos, fb = this.rFb, lp = this.rLp;
+    const dmp = ROOM.damp, dm1 = 1 - dmp, ag = ROOM.apG, wet = warm ? 0 : this.wet;
+    let sum = this.sum, hi = this.hi, lo = this.lo;
     if (this.stage === S_SCAN) {
       for (let i = a; i < b; i++) { const v = x[i]!; sum += v; if (v > hi) hi = v; if (v < lo) lo = v; }
     } else {
       for (let i = a; i < b; i++) {
-        const u = x[from + i]! * k, w = u - (u * u * u) / 3, h = b0 * w + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2, v = d0 * h + d1 * z1 + d2 * z2 - e1 * w1 - e2 * w2;
-        x2 = x1; x1 = w; y2 = y1; y1 = h; z2 = z1; z1 = h; w2 = w1; w1 = v;
-        if (warm) continue;
-        x[i] = v; sum += v;
+        const u = x[from + i]!;
+        let y = 0;
+        for (let c = 0; c < NC; c++) {
+          const p = off[c]! + pos[c]!, o = rb[p]!;
+          lp[c] = o * dm1 + lp[c]! * dmp;
+          rb[p] = u + lp[c]! * fb[c]!;
+          const q = pos[c]! + 1;
+          pos[c] = q >= len[c]! ? 0 : q;
+          y += o;
+        }
+        for (let c = NC; c < NC + NA; c++) {
+          const p = off[c]! + pos[c]!, o = rb[p]!;
+          rb[p] = y + o * ag;
+          y = o - y;
+          const q = pos[c]! + 1;
+          pos[c] = q >= len[c]! ? 0 : q;
+        }
+        const v = u + y * wet;
+        x[from + i] = v; sum += v;
         if (v > hi) hi = v;
         if (v < lo) lo = v;
       }
     }
-    s[0] = x1; s[1] = x2; s[2] = y1; s[3] = y2; s[4] = z1; s[5] = z2; s[6] = w1; s[7] = w2;
     this.sum = sum; this.hi = hi; this.lo = lo;
   }
 
@@ -167,8 +184,11 @@ export class MusicBuilder {
       return;
     }
     if (this.stage === S_CLEAR) this.stage = S_NOTES;
-    else if (this.stage === S_NOTES) this.stage = this.radio ? S_PRE : S_SCAN;
-    else if (this.stage === S_PRE || this.stage === S_WARM) this.stage++;
+    else if (this.stage === S_NOTES) this.stage = this.warmN > 0 ? S_WARM : S_SCAN;
+    else if (this.stage === S_WARM) {
+      this.sum = 0; this.hi = -Infinity; this.lo = Infinity;
+      this.stage = S_FX;
+    }
     else if (this.stage === S_FX || this.stage === S_SCAN) {
       this.mean = this.sum / this.n;
       const peak = Math.max(this.hi - this.mean, this.mean - this.lo);

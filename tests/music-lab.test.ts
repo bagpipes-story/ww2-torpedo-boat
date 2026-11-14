@@ -1,5 +1,5 @@
 // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §7・brief L14）: 曲の試聴の場（?sfxlab。scenes/music-lab-scene）の置き方と語・道を固定する（ui/music-lab-layout は Phaser なし）。
-// - 論理幅 1280〜1584 の全部で: 行 0 の 4 つ（候補 A・B・C と「止める」）・「戻る」・「効果音の試聴へ」が画面の内・重ならない・高さ 84 px 以上・幅 160 px 以上、行の名前はボタンの左、
+// - 論理幅 1280〜1584 の全部で: 行 0 の 4 つ（候補 A・D・E＝v0.7.2 IP1 で B・C から替えた と「止める」）・「戻る」・「効果音の試聴へ」が画面の内・重ならない・高さ 84 px 以上・幅 160 px 以上、行の名前はボタンの左、
 //   説明（2 行まで）より下、右下の状態の一文（一番長い文）とボタンが重ならない。
 // - 語: 説明に「知っている曲に似ていたら一言」。ゲームの曲（既定 MUSIC_TITLE_DEFAULT_ID）は「記号（今）」だけの題（v0.7.1 IP4 と同じ）と名前の 2 行目。題と 2 行目は 1280 のボタンに収まる。
 // - シーン: 候補と「止める」はボタンの音を鳴らさない（silent）・create で場面 LAB と「音」「曲」を鳴らす側へ・SHUTDOWN で NONE（候補の標本を捨てる）と保存の値へ・update は確保しない。
@@ -47,10 +47,10 @@ const SLOW_DEFAULT = SFX_SLOW_IDS.indexOf(SFX_SLOW_DEFAULT_ID);
 const scene = (): string => readFileSync('src/scenes/music-lab-scene.ts', 'utf8');
 
 describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
-  it('行 0: 候補 A・B・C（MUSIC_TITLE_KEYS の順）と「止める」の 4 つ。記号・名前・一言は候補の数だけ。行の名前は「タイトルの曲」', () => {
-    expect(MUSIC_TITLE_KEYS).toEqual(['title_a', 'title_b', 'title_c']);
-    expect([...MUSIC_LAB_LETTERS]).toEqual(['A', 'B', 'C']);
-    expect([...MUSIC_LAB_NAMES_JA]).toEqual(['静かな夜の海', '小太鼓と金管', 'ラジオの哀愁']);
+  it('行 0: 候補 A・D・E（MUSIC_TITLE_KEYS の順。v0.7.2 IP1 で B・C を消して D・E）と「止める」の 4 つ。記号・名前・一言は候補の数だけ。行の名前は「タイトルの曲」', () => {
+    expect(MUSIC_TITLE_KEYS).toEqual(['title_a', 'title_d', 'title_e']);
+    expect([...MUSIC_LAB_LETTERS]).toEqual(['A', 'D', 'E']);
+    expect([...MUSIC_LAB_NAMES_JA]).toEqual(['静かな夜の海', 'A を行進で', '勇ましい行進']);
     expect(MUSIC_LAB_NOTES_JA.length).toBe(3);
     expect(MUSIC_LAB_ROW0_COLS).toBe(MUSIC_TITLE_KEYS.length + 1);
     expect([MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA].map((a) => a.length)).toEqual([4, 4]);
@@ -130,6 +130,7 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
     const lines = MUSIC_LAB_HEAD_JA.split('\n');
     expect(lines.length).toBe(2);
     expect(MUSIC_LAB_HEAD_JA).not.toContain('段ごとと効果音と一緒に'); // S2 のぎこちない言い回しは直した
+    expect(lines[0]).toContain('タイトルの曲は A・D・E、命中スローは A・B・C'); // v0.7.2 IP1: 記号を候補ごとに
     for (let w = 1280; w <= 1584; w += 8) {
       for (const l of lines) expect(textWidthPx(l, SOUND_LAB_HEAD_PX), `${w}: ${l}`).toBeLessThanOrEqual(w - 2 * MARGIN);
       const bottom = SOUND_LAB_HEAD_Y + lines.length * SOUND_LAB_HEAD_PX * LINE_H;
@@ -141,10 +142,10 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
     expect(MUSIC_LAB_HEAD_JA).toContain('知っている曲に似ていたら一言ください');
     expect(MUSIC_LAB_DEFAULT_MARK_JA).toBe('（今）');
     expect(musicLabButtonTitle('A', '静かな夜の海', true)).toBe('A（今）');
-    expect(musicLabButtonTitle('B', '小太鼓と金管', false)).toBe('B 小太鼓と金管');
+    expect(musicLabButtonTitle('D', 'A を行進で', false)).toBe('D A を行進で');
     expect(musicLabButtonSub('静かな夜の海', 'パッドと鈴・63 BPM', true)).toBe('静かな夜の海');
-    expect(musicLabButtonSub('小太鼓と金管', '行進・105 BPM', false)).toBe('行進・105 BPM');
-    expect(MUSIC_TITLE_KEYS.map((_, i) => titleOf(i))).toEqual(['A（今）', 'B 小太鼓と金管', 'C ラジオの哀愁']); // 既定は A（§11 O1。ユーザーが選んだら直す）
+    expect(musicLabButtonSub('A を行進で', '金管・小太鼓・126 BPM', false)).toBe('金管・小太鼓・126 BPM');
+    expect(MUSIC_TITLE_KEYS.map((_, i) => titleOf(i))).toEqual(['A（今）', 'D A を行進で', 'E 勇ましい行進']); // 既定は A（§11 O1。ユーザーが選んだら直す）
     const f = { gameWidth: 1280, gameHeight: H, margin: MARGIN };
     const bw = soundLabButtonRect(0, 0, MUSIC_LAB_ROW0_COLS, f).w;
     for (let i = 0; i < MUSIC_TITLE_KEYS.length; i++) {

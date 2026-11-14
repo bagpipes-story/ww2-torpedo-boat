@@ -88,28 +88,28 @@ describe('曲の試聴の場（L14）', () => {
     registerSfxEngine(x.e);
     x.e.music.allowBuild();
     sfxMusic(MUSIC_CTX_LAB);
-    sfxMusicAudition('title_b');
+    sfxMusicAudition('title_d');
     run(x, 3 * FRAME_S);
-    expect(sfxMusicLabBuilding()).toBe('title_b');
+    expect(sfxMusicLabBuilding()).toBe('title_d');
     run(x, 10 * FRAME_S);
     expect(sfxMusicLabProgress()).toBeGreaterThan(0);
     expect(sfxMusicLabPlaying()).toBeNull();
     buildAll(x);
     run(x, 0.12);
-    expect(sfxMusicLabPlaying()).toBe('title_b');
+    expect(sfxMusicLabPlaying()).toBe('title_d');
     const b = unstopped(x)[0]!;
-    expect(fingerprint16(b.buffer!.data)).toBe(FINGERPRINTS.title_b);
-    sfxMusicAudition('title_c'); // できるまで B が鳴る
+    expect(fingerprint16(b.buffer!.data)).toBe(FINGERPRINTS.title_d);
+    sfxMusicAudition('title_e'); // できるまで D が鳴る
     run(x, 0.5);
-    expect([sfxMusicLabBuilding(), sfxMusicLabPlaying(), b.stopped]).toEqual(['title_c', 'title_b', false]);
-    for (let f = 0; f < 3000 && sfxMusicLabBuilding() === 'title_c'; f++) run(x, FRAME_S);
+    expect([sfxMusicLabBuilding(), sfxMusicLabPlaying(), b.stopped]).toEqual(['title_e', 'title_d', false]);
+    for (let f = 0; f < 3000 && sfxMusicLabBuilding() === 'title_e'; f++) run(x, FRAME_S);
     run(x, 0.12);
     const c = unstopped(x)[0]!;
-    expect([sfxMusicLabPlaying(), b.stopped, c.buffer === b.buffer]).toEqual(['title_c', true, false]);
+    expect([sfxMusicLabPlaying(), b.stopped, c.buffer === b.buffer]).toEqual(['title_e', true, false]);
     expect(b.stopAt - x.ctx.currentTime).toBeLessThanOrEqual(MUSIC_FADE.labCrossS);
     const slot = graph(x.ctx, x.e).music.slots.find((n) => c.outs.includes(n))!;
     expect(slot.gain.events[2]![3]).toBeCloseTo(MUSIC_FADE.labCrossS * TC, 9);
-    expect(fingerprint16(c.buffer!.data)).toBe(FINGERPRINTS.title_c);
+    expect(fingerprint16(c.buffer!.data)).toBe(FINGERPRINTS.title_e);
     let st = x.e.music.stats();
     expect(st.resident).toBeLessThanOrEqual(MUSIC_LAB_MAX_SAMPLES);
     sfxMusicAudition(null);
@@ -128,9 +128,9 @@ describe('曲の試聴の場（L14）', () => {
     x.e.music.request(MUSIC_CTX_LAB);
     run(x, 20 * FRAME_S);
     expect(x.e.music.stats().building).toBe(MUSIC_TITLE_DEFAULT_ID);
-    x.e.music.audition('title_b');
+    x.e.music.audition('title_e'); // A と同じ長さの D では buffer を長さで見分けられないので E
     run(x, FRAME_S);
-    expect([x.e.music.stats().building, x.e.music.stats().abandoned]).toEqual(['title_b', 1]);
+    expect([x.e.music.stats().building, x.e.music.stats().abandoned]).toEqual(['title_e', 1]);
     buildAll(x);
     buildAll(x);
     const a = x.ctx.buffers.filter((b) => b.length === MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID]);

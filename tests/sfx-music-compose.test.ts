@@ -12,7 +12,7 @@ import { MUSIC_SEEDS, MUSIC_THEMES, musicRng } from '../src/assets/sfx-music-the
 import { SeededRng } from '../src/core/rng';
 
 const SCORES = Object.fromEntries(MUSIC_KEYS.map((k) => [k, composeMusic(MUSIC_THEMES[k], musicRng(k))])) as Record<MusicKey, MusicScore>;
-const MELODIC: readonly MusicKey[] = ['title_a', 'title_b', 'title_c', 'mission_l0'];
+const MELODIC: readonly MusicKey[] = ['title_a', 'title_d', 'title_e', 'mission_l0'];
 /** 旋律の音を入れ替えた楽譜（決まり文句の見張りの確かめ用。リズムは元のまま） */
 function withPitches(sc: MusicScore, pitches: readonly number[]): MusicScore {
   const melody = sc.melody.map((m, i) => ({ ...m, pitch: pitches[i % pitches.length]! }));
@@ -62,15 +62,15 @@ describe('作曲器（v0.7.2 S0）', () => {
     }
     m.cadences.forEach(([, kind], i) => { if (kind === 'half') expect([2, 7], `${k} half`).toContain((pcOf(c.cadences[i]!) - th.tonic + 12) % 12); });
   });
-  it('句の終わりの音: A は 4 小節目 E（2 度）・8 小節目は A の和音の根音 A（主音 D は A の和音に無い）、B は 8 小節目 2 度か 5 度・16 小節目 B♭、C は 4 小節目 E（5 度）・8 小節目 A', () => {
+  it('句の終わりの音: A は 4 小節目 E（2 度）・8 小節目は A の和音の根音 A（主音 D は A の和音に無い）、D は 4・12 小節目 E・8・16 小節目 A、E は 8 小節目 2 度か 5 度（A か D）・16 小節目 D（D の和音の根音）', () => {
     expect(melodyCheck(SCORES.title_a).cadences.map(pcOf)).toEqual([4, 9]);
-    const b = melodyCheck(SCORES.title_b).cadences.map(pcOf);
-    expect([0, 5]).toContain(b[1]);
-    expect(b[3]).toBe(10);
-    expect(melodyCheck(SCORES.title_c).cadences.map(pcOf)).toEqual([4, 9]);
+    expect(melodyCheck(SCORES.title_d).cadences.map(pcOf)).toEqual([4, 9, 4, 9]);
+    const e = melodyCheck(SCORES.title_e).cadences.map(pcOf);
+    expect([9, 2]).toContain(e[1]);
+    expect(e[3]).toBe(2);
   });
-  it('5〜6 小節目は 1〜2 小節目の変形（A・C は同じリズムで違う音。B は 5・9・13 小節目にも）', () => {
-    for (const k of ['title_a', 'title_c', 'title_b'] as const) {
+  it('5〜6 小節目は 1〜2 小節目の変形（A は同じリズムで違う音。D・E は 1 小節ずつ 5・9・13 小節目にも）', () => {
+    for (const k of ['title_a', 'title_d', 'title_e'] as const) {
       const th = MUSIC_THEMES[k], six = sixteenthOf(th.bpm), barN = th.beats * 4, ns = SCORES[k].melody;
       for (const [to, from] of th.melody!.motifs) {
         const span = th.melody!.span, sel = (b0: number): MusicNote[] => ns.filter((x) => Math.floor(x.start / six / barN) >= b0 - 1 && Math.floor(x.start / six / barN) < b0 - 1 + span);
@@ -81,23 +81,23 @@ describe('作曲器（v0.7.2 S0）', () => {
     }
   });
   it('決まり文句の見張りが効く（わざと破った旋律）: 主和音の分散 4 音・5–1–3–5 の始まり・同じ音 3 回と 4 度以上の跳躍・行ったり来たり・同じ 4 小節 3 回', () => {
-    const c = SCORES.title_c; // A 和声的短音階（主和音 A C E）
-    expect(melodyCheck(withPitches(c, [69, 72, 76, 81, 74, 72, 71, 69])).violations).toContain('arpeggio');
-    expect(melodyCheck(withPitches(c, [64, 69, 72, 76, 74, 72, 71, 72])).violations.some((v) => v.startsWith('fanfare'))).toBe(true);
-    expect(melodyCheck(withPitches(c, [72, 72, 72, 77, 76, 74, 72, 71])).violations.some((v) => v.startsWith('repeatLeap'))).toBe(true);
-    expect(melodyCheck(withPitches(c, [72, 71, 72, 71, 72, 74, 76, 74])).violations).toContain('trill');
-    const th: MusicTheme = MUSIC_THEMES.title_b, bar = 8 * sixteenthOf(th.bpm); // 2/4 の 16 小節に、4 小節ごとに同じ音の並び（4 回）
-    const melody = Array.from({ length: 16 }, (_, b): MusicNote => ({ inst: 'brass', start: b * bar, len: Math.round(bar * 0.9), pitch: [70, 72, 74, 72][b % 4]!, vel: 1, decayS: 0, noise: 0 }));
-    expect(melodyCheck({ theme: th, notes: melody, melody, n: MUSIC_LENGTHS.title_b }).violations).toContain('repeat4');
+    const e = SCORES.title_e; // G 和声的短音階（主和音 G B♭ D）
+    expect(melodyCheck(withPitches(e, [67, 70, 74, 79, 72, 70, 69, 67])).violations).toContain('arpeggio');
+    expect(melodyCheck(withPitches(e, [62, 67, 70, 74, 72, 70, 69, 70])).violations.some((v) => v.startsWith('fanfare'))).toBe(true);
+    expect(melodyCheck(withPitches(e, [70, 70, 70, 75, 74, 72, 70, 69])).violations.some((v) => v.startsWith('repeatLeap'))).toBe(true);
+    expect(melodyCheck(withPitches(e, [70, 69, 70, 69, 70, 72, 74, 72])).violations).toContain('trill');
+    const th: MusicTheme = MUSIC_THEMES.title_e, bar = 8 * sixteenthOf(th.bpm); // 2/4 の 16 小節に、4 小節ごとに同じ音の並び（4 回）
+    const melody = Array.from({ length: 16 }, (_, b): MusicNote => ({ inst: 'horn', start: b * bar, len: Math.round(bar * 0.9), pitch: [70, 72, 74, 72][b % 4]!, vel: 1, decayS: 0, noise: 0 }));
+    expect(melodyCheck({ theme: th, notes: melody, melody, n: MUSIC_LENGTHS.title_e }).violations).toContain('repeat4');
   });
-  it('和音と音階: 和音の音名・D エオリアの A の和音は C の代わりに C#・E エオリアの B7 は D の代わりに D#・A 和声的短音階はそのまま', () => {
+  it('和音と音階: 和音の音名・D エオリアの A の和音は C の代わりに C#・E エオリアの B7 は D の代わりに D#・G 和声的短音階の D の和音はそのまま（F# は音階の内）', () => {
     expect(chordPcs('Bb')).toEqual([10, 2, 5]);
     expect(chordPcs('E7')).toEqual([4, 8, 11, 2]);
     expect(chordPcs('Gm')).toEqual([7, 10, 2]);
     expect(() => chordPcs('Hm')).toThrow();
     expect(barScale(MUSIC_THEMES.title_a, chordPcs('A')).sort((a, b) => a - b)).toEqual([1, 2, 4, 5, 7, 9, 10]);
     expect(barScale(MUSIC_THEMES.mission_l0, chordPcs('B7')).sort((a, b) => a - b)).toEqual([0, 3, 4, 6, 7, 9, 11]);
-    expect(barScale(MUSIC_THEMES.title_c, chordPcs('E7')).sort((a, b) => a - b)).toEqual([0, 2, 4, 5, 8, 9, 11]);
+    expect(barScale(MUSIC_THEMES.title_e, chordPcs('D')).sort((a, b) => a - b)).toEqual([0, 2, 3, 6, 7, 9, 10]);
   });
   it('旋律の音の並びは source に無い（sfx-music の source に MIDI らしい数 40〜96 だけの 4 つ以上の並び・音名の並びが無い）', () => {
     const files = ['src/config/sfx-music-config.ts', ...readdirSync('src/assets').filter((f) => f.startsWith('sfx-music-')).map((f) => `src/assets/${f}`)];
@@ -110,6 +110,15 @@ describe('作曲器（v0.7.2 S0）', () => {
       }
       expect(s, f).not.toMatch(/['"](?:[A-G][#b]?\d[\s,]+){3,}[A-G][#b]?\d['"]/);
     }
+  });
+  it('IP1: D・E の旋律は合奏（2 声 ±3 cent）＝楽譜の旋律の音は確かめ用の中央の 1 声・音符は声ごとに同じ始めと長さ・A は 1 声のまま', () => {
+    for (const k of ['title_d', 'title_e'] as const) {
+      const sc = SCORES[k], m = MUSIC_THEMES[k].melody!, v = m.voices ?? 1, horn = sc.notes.filter((x) => x.inst === m.inst && x.start < sc.n);
+      expect(v).toBe(2);
+      expect(horn.slice(0, sc.melody.length * v).map((x) => x.start)).toEqual(sc.melody.flatMap((x) => Array<number>(v).fill(x.start)));
+      expect(horn.slice(0, 2).map((x) => Math.round((x.pitch - sc.melody[0]!.pitch) * 100))).toEqual([-(m.cents ?? 0) / 2, (m.cents ?? 0) / 2]);
+    }
+    expect(SCORES.title_a.notes.slice(0, SCORES.title_a.melody.length)).toEqual(SCORES.title_a.melody);
   });
   it('任務の 3 層は同じ和音の進行と速さ（L2 は 2 小節）・L1・L2 は旋律なし', () => {
     const l0 = MUSIC_THEMES.mission_l0;

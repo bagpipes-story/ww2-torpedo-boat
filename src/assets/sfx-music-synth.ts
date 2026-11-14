@@ -1,8 +1,8 @@
 // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §2・§3.3）: 曲の楽器。画面の枠組みにも再生の API にも依らない純粋な計算（tests/sfx-music-synth が node で回す）。
-// - 波形表（2,048 点・線形補間）: 波形 6 種 × オクターブ 6 本。表ごとに 10 kHz より上の倍音を入れない（22,050 Hz で折り返さない）。大きさは RMS でそろえる（低い音も高い音も同じ
+// - 波形表（2,048 点・線形補間）: 波形 3 種 × オクターブ 6 本。表ごとに 10 kHz より上の倍音を入れない（22,050 Hz で折り返さない）。大きさは RMS でそろえる（低い音も高い音も同じ
 //   大きさ）。表と雑音（32,768 標本）は MusicTables が持つ（確保は constructor だけ。埋めるのは stepTables で、予算の内で 1 倍音ずつ）。
-// - 楽器（spec §3.3。iPhone の本体は約 300〜400 Hz より下がほとんど出ない）: パッド（鋸の表・立ち上がり 1.5 秒）・鈴（FM 3.5:1・正弦の表）・はじく音（明るい短い鋸。低音はこれ）・
-//   金管風（立ち上がりの後に倍音を明るく・0.15 秒からビブラート）・弱音器の金管風・小太鼓・トム・リム（雑音の帯＋胴。胴は 180 Hz 以上）・ブラシ・うねり（雑音の帯 400〜1,600 Hz）・震え・ぱちぱち。
+// - 楽器（spec §3.3。iPhone の本体は約 300〜400 Hz より下がほとんど出ない）: パッド（鋸の表・立ち上がり 1.5 秒）・鈴（FM 3.5:1・正弦の表）・温かい金管（旋律と刻み）・弓の刻み・
+//   やわらかい和音・高いトレモロ・小太鼓とティンパニ風の打ち（雑音の帯＋胴。胴は 180 Hz 以上）・やわらかいシンバル・うねり（雑音の帯 400〜1,600 Hz）。v0.7.2 IP1 で明るい表を消した。
 // - IP1〜IP2 の教え（長く鳴る低い正弦は本体で「ポンっ」）: 200 Hz より下の基音は 0.4 秒より長く鳴らさない（鳴らすなら 2〜6 倍音が 70% 以上。tests/sfx-music-synth が音符で確かめる）。
 // - 音符 1 つを書く口 stepTone・stepFm・stepNoise: 共有の Float32Array に足す（輪の長さ n。はみ出す尾は頭へ＝2 区間に分けて書く・% なし）。包絡は掛け算の漸化式（標本ごとの exp なし）。
 //   [i0, i1) だけを書き、続きの状態は st に残す（分けて書いても一度に書いても同じ標本）。毎フレームの口なので確保しない（名前が step* ＝tests/sfx-rules の検査が効く）。
@@ -18,16 +18,16 @@ const OCT_BASE_HZ = 110, OCTS = 6, TOP_HZ = 10000;
 /** 「減衰 D 秒」（D 秒で 1/10）の 2.5 倍＝−50 dB で書くのをやめる・雑音の表の長さ・ビブラートと揺れの書き直しは 32 標本ごと */
 const TAIL = 2.5, NOISE_N = 1 << 15, MOD_BLOCK = 31;
 
-export type MusicWave = 'warm' | 'dark' | 'bright' | 'brassLo' | 'brassHi' | 'mute';
-const WAVES: readonly MusicWave[] = ['warm', 'dark', 'bright', 'brassLo', 'brassHi', 'mute'];
-/** 波形 → 倍音 h（その高さ hz）の大きさ。warm・dark はパッド（倍音を 6・3 番から丸める）、bright ははじく音（基音を弱めて 2〜6 倍音を本体のスピーカーへ）、金管は閉じた音 → 開いた音 */
+export type MusicWave = 'warm' | 'dark' | 'horn';
+const WAVES: readonly MusicWave[] = ['warm', 'dark', 'horn'];
+/**
+ * 波形 → 倍音 h（その高さ hz）の大きさ。warm・dark は倍音を 6・3 番から丸める（パッド・刻み・やわらかい和音）。horn は温かい金管（鋸を 2 kHz から 2 次で丸める＝高い倍音が少ない）。
+ * v0.7.2 IP1: B・C と前の L1・L2 だけが使っていた明るい表（基音を弱めた鋸・1/√h の金管・鼻にかかった弱音器）は消した（ファミコンのような尖った音の元。ユーザー「B はファミコンの RPG みたい」）
+ */
 const WAVE_AMP: Readonly<Record<MusicWave, (h: number, hz: number) => number>> = {
   warm: (h) => 1 / h / (1 + (h / 6) ** 2),
   dark: (h) => 1 / h / (1 + (h / 3) ** 2),
-  bright: (h) => (h === 1 ? 0.45 : 1 / h),
-  brassLo: (h) => (h <= 4 ? 1 / (h * h) : 0),
-  brassHi: (h, hz) => (hz < 1800 ? 1 : (1800 / hz) ** 2) / Math.sqrt(h),
-  mute: (h, hz) => (h === 1 ? 0.2 : 1 / Math.sqrt(h)) * (0.15 + Math.exp(-(((hz - 1700) / 700) ** 2))),
+  horn: (h, hz) => 1 / h / (1 + (hz / 2000) ** 2),
 };
 const harmonicsOf = (o: number): number => Math.max(1, Math.floor(TOP_HZ / (OCT_BASE_HZ * 2 ** (o + 1))));
 const refHz = (o: number): number => OCT_BASE_HZ * 2 ** (o + 0.5);
@@ -41,7 +41,7 @@ export function musicHarmonic26Share(wave: MusicWave, hz: number): number {
   return mid / all;
 }
 
-export type MusicInst = 'pad' | 'padDark' | 'bell' | 'pluck' | 'brass' | 'mute' | 'snare' | 'tom' | 'rim' | 'brush' | 'swell' | 'shaker' | 'crackle';
+export type MusicInst = 'pad' | 'padDark' | 'bell' | 'horn' | 'stab' | 'bowed' | 'soft' | 'trem' | 'snare' | 'boom' | 'crash' | 'swell';
 /**
  * 音符（作曲器 assets/sfx-music-compose が作る）: 楽器・始めの標本（0〜輪の長さ − 1）・押さえている長さ（標本。この後は離した後の減衰）・音高（MIDI。小数は cent のずれ。
  * 打楽器は使わない）・強さ（線形）・減衰の秒の上書き（0 は楽器の値。鈴の 0.9〜1.8 秒）・雑音の表の読み始め（打楽器ごとに違う所から）
@@ -49,31 +49,35 @@ export type MusicInst = 'pad' | 'padDark' | 'bell' | 'pluck' | 'brass' | 'mute' 
 export interface MusicNote { readonly inst: MusicInst; readonly start: number; readonly len: number; readonly pitch: number; readonly vel: number; readonly decayS: number; readonly noise: number }
 /**
  * 楽器の 1 行: 種類・音量・立ち上がり・減衰（D 秒で 1/10。0 は保つ）・離した後の減衰・波形表。金管は立ち上がりの後 brightS 秒で wave2 へ bright の割合まで重ねる（倍音が明るくなる）・
- * ビブラート（Hz・± 割合・vibDelayS 秒から vibRampS 秒で深くする）。FM は変調の比・深さ（rad）・深さの減衰。雑音は 1 極の高域通過 → 低域通過の帯と胴（正弦 bodyHz → bodyToHz を
- * 30 ms で・減衰 bodyDecayS）。うねりは立ち上がり＝長さ × attackFrac・減衰の秒＝長さ × decayFrac
+ * ビブラート（Hz・± 割合・vibDelayS 秒から vibRampS 秒で深くする）・トレモロ（v0.7.2 IP1。音量を tremHz で 1 − tremDepth〜1 に揺らす）。FM は変調の比・深さ（rad）・深さの減衰。
+ * 雑音は 1 極の高域通過 → 低域通過の帯と胴（正弦 bodyHz → bodyToHz を 30 ms で・減衰 bodyDecayS。body2 は 2 倍の高さの胴の倍音の大きさ＝IP1 のティンパニ風）。
+ * うねりは立ち上がり＝長さ × attackFrac・減衰の秒＝長さ × decayFrac
  */
 interface InstDef {
   readonly kind: 'tone' | 'fm' | 'noise'; readonly gain: number; readonly attackS: number; readonly decayS: number; readonly releaseS: number; readonly wave?: MusicWave;
   readonly wave2?: MusicWave; readonly brightS?: number; readonly bright?: number; readonly vibHz?: number; readonly vibDepth?: number; readonly vibDelayS?: number; readonly vibRampS?: number;
-  readonly ratio?: number; readonly index?: number; readonly indexDecayS?: number;
+  readonly tremHz?: number; readonly tremDepth?: number; readonly ratio?: number; readonly index?: number; readonly indexDecayS?: number;
   readonly hpHz?: number; readonly lpHz?: number; readonly noiseGain?: number; readonly bodyHz?: number; readonly bodyToHz?: number; readonly bodyDecayS?: number; readonly bodyGain?: number;
-  readonly attackFrac?: number; readonly decayFrac?: number;
+  readonly body2?: number; readonly attackFrac?: number; readonly decayFrac?: number;
 }
-/** 楽器の表（音色の数＝聞かせ方の定数。強さの比は作曲器の層の vel と掛ける） */
+/**
+ * 楽器の表（音色の数＝聞かせ方の定数。強さの比は作曲器の層の vel と掛ける）。v0.7.2 IP1: 温かい金管の旋律 horn（暗い表 → horn の表へ 0.07 秒で）・金管の刻み stab・弓の刻み bowed・
+ * やわらかい和音 soft・高いトレモロ trem・ティンパニ風の打ち boom（胴 280 → 230 Hz と 2 倍の倍音）・やわらかいシンバル crash を足し、B・C と前の L1・L2 の楽器（明るいはじく音・
+ * 1/√h の金管・弱音器・トム・リム・ブラシ・16 分の震え・ぱちぱち）を消した
+ */
 export const MUSIC_INSTRUMENTS: Readonly<Record<MusicInst, InstDef>> = {
   pad: { kind: 'tone', gain: 0.5, attackS: 1.5, decayS: 0, releaseS: 0.9, wave: 'warm' },
   padDark: { kind: 'tone', gain: 0.5, attackS: 2.0, decayS: 0, releaseS: 1.2, wave: 'dark' },
   bell: { kind: 'fm', gain: 0.8, attackS: 0.002, decayS: 1.3, releaseS: 0, ratio: 3.5, index: 2.2, indexDecayS: 0.35 },
-  pluck: { kind: 'tone', gain: 0.8, attackS: 0.003, decayS: 0.3, releaseS: 0.05, wave: 'bright' },
-  brass: { kind: 'tone', gain: 0.7, attackS: 0.04, decayS: 3, releaseS: 0.12, wave: 'brassLo', wave2: 'brassHi', brightS: 0.08, bright: 0.85, vibHz: 5, vibDepth: 0.004, vibDelayS: 0.15, vibRampS: 0.25 },
-  mute: { kind: 'tone', gain: 0.7, attackS: 0.03, decayS: 2.5, releaseS: 0.1, wave: 'brassLo', wave2: 'mute', brightS: 0.06, bright: 0.9, vibHz: 5.5, vibDepth: 0.006, vibDelayS: 0.15, vibRampS: 0.3 },
+  horn: { kind: 'tone', gain: 0.7, attackS: 0.035, decayS: 4, releaseS: 0.14, wave: 'dark', wave2: 'horn', brightS: 0.07, bright: 0.8, vibHz: 5, vibDepth: 0.003, vibDelayS: 0.2, vibRampS: 0.3 },
+  stab: { kind: 'tone', gain: 0.8, attackS: 0.006, decayS: 0.5, releaseS: 0.06, wave: 'dark', wave2: 'horn', brightS: 0.012, bright: 1 },
+  bowed: { kind: 'tone', gain: 0.75, attackS: 0.012, decayS: 0.45, releaseS: 0.07, wave: 'warm' },
+  soft: { kind: 'tone', gain: 0.7, attackS: 0.02, decayS: 0.6, releaseS: 0.1, wave: 'dark' },
+  trem: { kind: 'tone', gain: 0.4, attackS: 0.9, decayS: 0, releaseS: 1.2, wave: 'dark', tremHz: 7, tremDepth: 0.6 },
   snare: { kind: 'noise', gain: 0.8, attackS: 0.001, decayS: 0.12, releaseS: 0.05, hpHz: 1200, lpHz: 7000, noiseGain: 1, bodyHz: 200, bodyToHz: 185, bodyDecayS: 0.05, bodyGain: 0.5 },
-  tom: { kind: 'noise', gain: 0.8, attackS: 0.002, decayS: 0.15, releaseS: 0.05, hpHz: 300, lpHz: 2000, noiseGain: 0.35, bodyHz: 260, bodyToHz: 205, bodyDecayS: 0.2, bodyGain: 1 },
-  rim: { kind: 'noise', gain: 0.6, attackS: 0.0005, decayS: 0.02, releaseS: 0.02, hpHz: 2500, lpHz: 8000, noiseGain: 1, bodyHz: 600, bodyToHz: 560, bodyDecayS: 0.03, bodyGain: 0.5 },
-  brush: { kind: 'noise', gain: 0.5, attackS: 0.012, decayS: 0.1, releaseS: 0.05, hpHz: 2000, lpHz: 7000, noiseGain: 1 },
+  boom: { kind: 'noise', gain: 0.9, attackS: 0.002, decayS: 0.08, releaseS: 0.3, hpHz: 250, lpHz: 1200, noiseGain: 0.35, bodyHz: 280, bodyToHz: 230, bodyDecayS: 0.3, bodyGain: 0.8, body2: 1 },
+  crash: { kind: 'noise', gain: 0.35, attackS: 0.002, decayS: 1.1, releaseS: 0.4, hpHz: 2500, lpHz: 9000, noiseGain: 1 },
   swell: { kind: 'noise', gain: 0.4, attackS: 0, decayS: 0, releaseS: 1, hpHz: 400, lpHz: 1600, noiseGain: 1, attackFrac: 0.45, decayFrac: 0.5 },
-  shaker: { kind: 'noise', gain: 0.4, attackS: 0.004, decayS: 0.05, releaseS: 0.03, hpHz: 2000, lpHz: 4000, noiseGain: 1 },
-  crackle: { kind: 'noise', gain: 0.3, attackS: 0, decayS: 0.003, releaseS: 0.002, hpHz: 1500, lpHz: 8000, noiseGain: 1 },
 };
 
 /** MIDI → Hz */
@@ -162,35 +166,43 @@ export class MusicTables {
   }
 }
 
-/** 波形表の音符（パッド・はじく音・金管）。wowDepth・wowCycles は曲全体の揺れ（輪の中に整数回＝継ぎ目で続く。ラジオの C だけ） */
-export function stepTone(dst: Float32Array, n: number, nt: MusicNote, i0: number, i1: number, st: Float64Array, tb: MusicTables, wowDepth: number, wowCycles: number): void {
+/** 波形表の音符（パッド・刻み・金管・トレモロ）。トレモロの音量は 32 標本ごとに次の値を決め、その間を直線でつなぐ（段の音が出ない） */
+export function stepTone(dst: Float32Array, n: number, nt: MusicNote, i0: number, i1: number, st: Float64Array, tb: MusicTables): void {
   const d = MUSIC_INSTRUMENTS[nt.inst], w = tb.waves, s = tb.sine, hz = midiHz(nt.pitch);
   const inc = (hz * TAB) / SR, r1 = tb.waveRow(d.wave!, hz), r2 = d.wave2 ? tb.waveRow(d.wave2, hz) : -1;
   const an = attackN(d, nt), invA = 1 / an, len = nt.len, g = nt.vel * d.gain, dec = decayOf(d, nt);
   const rD = dec > 0 ? Math.exp(-LN10 / (dec * SR)) : 1, rR = Math.exp(-LN10 / (d.releaseS * SR));
   const bn = Math.max(1, Math.round((d.brightS ?? 0) * SR)), bright = d.bright ?? 0;
   const vibInc = (((d.vibHz ?? 0) * TAB) / SR) * (MOD_BLOCK + 1), vibD = d.vibDepth ?? 0;
-  const vib0 = Math.round((d.vibDelayS ?? 0) * SR), vibRamp = Math.max(1, Math.round((d.vibRampS ?? 0) * SR)), wowK = (wowCycles * TAB) / n;
-  let ph = st[0]!, e = st[1]!, cur = st[2]!, lfo = st[3]!;
-  if (i0 === 0) { ph = 0; e = 0; cur = inc; lfo = 0; }
+  const vib0 = Math.round((d.vibDelayS ?? 0) * SR), vibRamp = Math.max(1, Math.round((d.vibRampS ?? 0) * SR));
+  const trD = d.tremDepth ?? 0, trInc = (((d.tremHz ?? 0) * TAB) / SR) * (MOD_BLOCK + 1);
+  let ph = st[0]!, e = st[1]!, cur = st[2]!, lfo = st[3]!, tl = st[4]!, tg = st[5]!, dt = st[6]!;
+  if (i0 === 0) { ph = 0; e = 0; cur = inc; lfo = 0; tl = 0; tg = 1 - trD * 0.5; dt = 0; }
   const split = n - nt.start;
   for (let seg = 0; seg < 2; seg++) {
     const a = seg === 0 ? i0 : Math.max(i0, split), b = seg === 0 ? Math.min(i1, split) : i1, off = seg === 0 ? nt.start : nt.start - n;
     for (let i = a; i < b; i++) {
-      if ((i & MOD_BLOCK) === 0 && (vibD > 0 || wowDepth > 0)) {
-        const depth = i <= vib0 ? 0 : i >= vib0 + vibRamp ? vibD : (vibD * (i - vib0)) / vibRamp;
-        cur = inc * (1 + depth * s[lfo | 0]! + wowDepth * s[(((nt.start + i) * wowK) % TAB) | 0]!);
-        if ((lfo += vibInc) >= TAB) lfo -= TAB;
+      if ((i & MOD_BLOCK) === 0 && (vibD > 0 || trD > 0)) {
+        if (vibD > 0) {
+          const depth = i <= vib0 ? 0 : i >= vib0 + vibRamp ? vibD : (vibD * (i - vib0)) / vibRamp;
+          cur = inc * (1 + depth * s[lfo | 0]!);
+          if ((lfo += vibInc) >= TAB) lfo -= TAB;
+        }
+        if (trD > 0) {
+          if ((tl += trInc) >= TAB) tl -= TAB;
+          dt = (1 - trD * (0.5 + 0.5 * s[tl | 0]!) - tg) / (MOD_BLOCK + 1);
+        }
       }
       e = i >= len ? e * rR : i < an ? i * invA : i === an ? 1 : e * rD;
       const j = ph | 0, f = ph - j;
       let v = w[r1 + j]! + (w[r1 + j + 1]! - w[r1 + j]!) * f;
       if (r2 >= 0) v += (w[r2 + j]! + (w[r2 + j + 1]! - w[r2 + j]!) * f - v) * (i >= bn ? bright : (bright * i) / bn);
-      dst[i + off] = dst[i + off]! + v * e * g;
+      dst[i + off] = dst[i + off]! + v * e * g * tg;
+      tg += dt;
       if ((ph += cur) >= TAB) ph -= TAB;
     }
   }
-  st[0] = ph; st[1] = e; st[2] = cur; st[3] = lfo;
+  st[0] = ph; st[1] = e; st[2] = cur; st[3] = lfo; st[4] = tl; st[5] = tg; st[6] = dt;
 }
 
 /** FM の鈴（搬送 × 3.5 の変調。正弦の表で引く。深さは打った後に澄む） */
@@ -218,9 +230,9 @@ export function stepFm(dst: Float32Array, n: number, nt: MusicNote, i0: number, 
   st[0] = pc; st[1] = pm; st[2] = e; st[3] = x;
 }
 
-/** 雑音の打楽器・うねり（雑音の表 → 1 極の高域通過 → 低域通過 ＋ 胴の正弦の掃引） */
+/** 雑音の打楽器・うねり（雑音の表 → 1 極の高域通過 → 低域通過 ＋ 胴の正弦の掃引＝2 倍の倍音は同じ位相の 2 倍から） */
 export function stepNoise(dst: Float32Array, n: number, nt: MusicNote, i0: number, i1: number, st: Float64Array, tb: MusicTables): void {
-  const d = MUSIC_INSTRUMENTS[nt.inst], z = tb.noise, s = tb.sine, g = nt.vel * d.gain, ng = d.noiseGain ?? 1, bg = d.bodyGain ?? 0;
+  const d = MUSIC_INSTRUMENTS[nt.inst], z = tb.noise, s = tb.sine, g = nt.vel * d.gain, ng = d.noiseGain ?? 1, bg = d.bodyGain ?? 0, b2 = d.body2 ?? 0;
   const aH = 1 - Math.exp((-TAU * (d.hpHz ?? 20)) / SR), aL = 1 - Math.exp((-TAU * (d.lpHz ?? 10000)) / SR);
   const an = attackN(d, nt), invA = 1 / an, len = nt.len, dec = decayOf(d, nt);
   const rD = dec > 0 ? Math.exp(-LN10 / (dec * SR)) : 1, rR = Math.exp(-LN10 / (d.releaseS * SR));
@@ -238,7 +250,9 @@ export function stepNoise(dst: Float32Array, n: number, nt: MusicNote, i0: numbe
       let v = y * e * ng;
       if (bg > 0) {
         const j = bp | 0;
-        v += (s[j]! + (s[j + 1]! - s[j]!) * (bp - j)) * be * bg;
+        let u = s[j]! + (s[j + 1]! - s[j]!) * (bp - j);
+        if (b2 > 0) { const q = bp * 2 >= TAB ? bp * 2 - TAB : bp * 2, k = q | 0; u += (s[k]! + (s[k + 1]! - s[k]!) * (q - k)) * b2; }
+        v += u * be * bg;
         if ((bp += bi) >= TAB) bp -= TAB;
         if (bi > bTo) bi *= rG;
         be *= rB;

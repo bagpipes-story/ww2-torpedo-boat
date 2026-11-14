@@ -66,6 +66,44 @@ export function bandShares(x: Float32Array, sampleRate: number, hz = 400, lowHz 
   return all > 0 ? [hi / all, lo / all] : [0, 0];
 }
 
+/** [lo, hi) Hz の帯のエネルギーの割合（v0.7.2 IP1。緊張と戦闘の 2〜5 kHz の比べ。1,024 標本ごとの FFT・端の半端は数えない） */
+export function bandShare(x: Float32Array, sampleRate: number, lo: number, hi: number): number {
+  const size = 1024;
+  let b = 0, all = 0;
+  for (let from = 0; from + size <= x.length; from += size) {
+    const mag = spectrum(x, from, size, size);
+    for (let i = 1; i < mag.length; i++) { const p = mag[i]! * mag[i]!, f = (i * sampleRate) / size; all += p; if (f >= lo && f < hi) b += p; }
+  }
+  return all > 0 ? b / all : 0;
+}
+
+/**
+ * 発音の密度（毎秒。v0.7.2 IP1 の緊張と戦闘の比べ）: RMS を 0.1 にそろえ、1,024 の FFT を 512 ずつ進めて log(1 + 100|X|) の正の差（150 Hz〜8 kHz）の和を取り、
+ * 山＝前後 3 窓（約 70 ms）で最大・前後 0.5 秒の平均 × 1.5 ＋ 全体の 99% 点 × 0.05 より大きい・前の山から 3 窓以上を数える
+ */
+export function onsetRate(x0: Float32Array, sampleRate: number): number {
+  let s = 0;
+  for (let i = 0; i < x0.length; i++) s += x0[i]! * x0[i]!;
+  const g = 0.1 / Math.max(1e-9, Math.sqrt(s / x0.length)), x = x0.map((v) => v * g), size = 1024, hop = 512, fl: number[] = [];
+  let prev: Float64Array | null = null;
+  for (let from = 0; from + size <= x.length; from += hop) {
+    const mag = spectrum(x, from, size, size), lg = mag.map((m) => Math.log(1 + 100 * m));
+    let f = 0;
+    for (let i = 1; prev && i < mag.length; i++) { const hz = (i * sampleRate) / size; if (hz >= 150 && hz <= 8000 && lg[i]! > prev[i]!) f += lg[i]! - prev[i]!; }
+    fl.push(f);
+    prev = lg;
+  }
+  const p99 = [...fl].sort((a, b) => a - b)[Math.floor(fl.length * 0.99)]!, half = Math.round((0.5 * sampleRate) / hop);
+  let n = 0, last = -99;
+  for (let t = 1; t < fl.length - 1; t++) {
+    let peak = true, sum = 0, c = 0;
+    for (let k = -3; k <= 3; k++) if (k !== 0 && (fl[t + k] ?? -1) > fl[t]!) peak = false;
+    for (let k = -half; k <= half; k++) if (fl[t + k] !== undefined) { sum += fl[t + k]!; c++; }
+    if (peak && fl[t]! > (sum / c) * 1.5 + p99 * 0.05 && t - last >= 3) { n++; last = t; }
+  }
+  return n / (x.length / sampleRate);
+}
+
 /** 区間 [from, to) のスペクトルの重心 Hz（エネルギーの重み。音の明るさの目安） */
 export function centroidHz(x: Float32Array, from: number, to: number, sampleRate: number): number {
   let size = 256;

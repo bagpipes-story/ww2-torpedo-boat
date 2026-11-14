@@ -177,7 +177,7 @@ describe('移りの数（spec §4.2）: 任務の家族を含むランダムな�
   it('ランダムな移り 12 回 × 20 種（メニュー・任務・Result の遅らせ・試聴の場の候補と家族・段・消音・曲・一時停止・止まる）: どの時点も鳴っている ≤ 6・組は 3 層まで・stop は 1 音源 1 回・最後に start − stop が合う', () => {
     for (let seed = 1; seed <= 20; seed++) {
       const x = setup();
-      for (const k of ['title_a', 'title_b', 'title_c'] as const) put(x, k);
+      for (const k of ['title_a', 'title_d', 'title_e'] as const) put(x, k);
       putFamily(x);
       const rng = new SeededRng(seed + 100);
       let stopCalls = 0;
@@ -186,7 +186,7 @@ describe('移りの数（spec §4.2）: 任務の家族を含むランダムな�
       x.ctx.createBufferSource = () => { const s = create(); wrap(s); return s; };
       const acts: ((r: number) => void)[] = [
         () => x.e.music.request(MUSIC_CTX_MENU), () => x.e.music.request(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_MENU, MUSIC_FADE.resultLostDelayS),
-        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_a', 'title_b', 'mission_l0', null] as const)[Math.floor(r * 4)]!),
+        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_a', 'title_d', 'mission_l0', null] as const)[Math.floor(r * 4)]!),
         (r) => x.e.music.setMood(Math.floor(r * 4)), (r) => x.e.music.setMood(Math.floor(r * 3)), (r) => x.e.setMuted(r < 0.4), (r) => x.e.music.setEnabled(r < 0.75), (r) => x.e.music.setPaused(r < 0.5),
         (r) => { x.ctx.state = r < 0.8 ? 'running' : 'suspended'; },
       ];

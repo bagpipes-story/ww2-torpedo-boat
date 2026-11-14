@@ -40,7 +40,7 @@ export function fingerprint16(x: Float32Array): number {
   return h;
 }
 export const FINGERPRINTS: Readonly<Record<MusicKey, number>> = {
-  title_a: 4284675595, title_b: 2535656704, title_c: 4273943891, mission_l0: 1046475320, mission_l1: 2447541197, mission_l2: 2200234592,
+  title_a: 4284675595, title_d: 603232752, title_e: 1072575395, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
 };
 /** 今作っている曲（無ければ次に作る曲）を作り終えるまで回し、もう 2 フレーム進める（列が空なら作業用の配列を捨てるフレーム）。作り終えたフレーム数を返す */
 export function buildAll(x: X, maxFrames = 3000): number {

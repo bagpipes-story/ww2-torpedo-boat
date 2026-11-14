@@ -6,19 +6,21 @@
 
 /**
  * 上の説明（ビルド番号の下・中央）。v0.7.2 S3: 2 行を改行で分けた（S2 までは折り返し任せで、論理幅 1280 では語の切れ目で 3 行になり、3 行目が行 0 のボタンの上にかかった）。
- * どの行も論理幅 1280〜1584 の折り返しの幅（論理幅 − 2 × 余白）に収まる＝折り返さない（tests/music-lab が 8 px 刻みで見る）。2 行の下は行の上 124 より上
+ * どの行も論理幅 1280〜1584 の折り返しの幅（論理幅 − 2 × 余白）に収まる＝折り返さない（tests/music-lab が 8 px 刻みで見る）。2 行の下は行の上 124 より上。
+ * v0.7.2 IP1: タイトルの曲の記号を A・D・E に（命中スローは A・B・C のまま）
  */
-export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲と命中スローを A・B・C から選んでください（（今）がゲームの案）\n押すと作って鳴らします。知っている曲に似ていたら一言ください（その案は作り直します）';
+export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲は A・D・E、命中スローは A・B・C から選んでください（（今）がゲームの案）\n押すと作って鳴らします。知っている曲に似ていたら一言ください（その案は作り直します）';
 /** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に・行 3＝命中スロー＝S3） */
 export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー'];
 export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ', '押すと命中とスロー'];
 /**
- * タイトルの曲の候補（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝A・B・C）: 記号・名前・2 行目の一言。ボタンの題は「記号 名前」、ゲームの曲（既定）は「記号（今）」だけ
- * （v0.7.1 IP4 と同じ: 論理幅 1280 の 4 列のボタン 233 px に収める）で、名前は 2 行目へ
+ * タイトルの曲の候補（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝A・D・E）: 記号・名前・2 行目の一言。ボタンの題は「記号 名前」、ゲームの曲（既定）は「記号（今）」だけ
+ * （v0.7.1 IP4 と同じ: 論理幅 1280 の 4 列のボタン 233 px に収める）で、名前は 2 行目へ。v0.7.2 IP1: B・C（実機 1 回目で B は「ファミコンの RPG みたい」）を D「A を行進で」・
+ * E「勇ましい行進」（どちらも 126 BPM）に替えた（記号を D・E にして、消した B・C と取り違えないように）
  */
-export const MUSIC_LAB_LETTERS: readonly string[] = ['A', 'B', 'C'];
-export const MUSIC_LAB_NAMES_JA: readonly string[] = ['静かな夜の海', '小太鼓と金管', 'ラジオの哀愁'];
-export const MUSIC_LAB_NOTES_JA: readonly string[] = ['パッドと鈴・63 BPM', '行進・105 BPM', '1940 年代・70 BPM'];
+export const MUSIC_LAB_LETTERS: readonly string[] = ['A', 'D', 'E'];
+export const MUSIC_LAB_NAMES_JA: readonly string[] = ['静かな夜の海', 'A を行進で', '勇ましい行進'];
+export const MUSIC_LAB_NOTES_JA: readonly string[] = ['パッドと鈴・63 BPM', '金管・小太鼓・126 BPM', '短調・付点・126 BPM'];
 /** 行 0 の 4 つ目のボタン（鳴っている曲を止める） */
 export const MUSIC_LAB_STOP_JA = '止める';
 export const MUSIC_LAB_STOP_SUB_JA = '0.5 秒で消す';

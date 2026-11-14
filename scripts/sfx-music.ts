@@ -1,10 +1,10 @@
-// 曲の確かめ（v0.7.2 S0。spec-v0720 §3・§8.2）: assets/sfx-music-* の曲 6 本（タイトルの候補 A・B・C と任務の層 L0・L1・L2）を作曲・合成し、耳の代わりの数を出す。ゲームは import しない。
+// 曲の確かめ（v0.7.2 S0。spec-v0720 §3・§8.2）: assets/sfx-music-* の曲 6 本（タイトルの候補 A・D・E＝IP1 で B・C から替えた と任務の層 L0・L1・L2）を作曲・合成し、耳の代わりの数を出す。ゲームは import しない。
 // - SEARCH=1: 鍵の順に（前の鍵の種の次から）「作曲の決まり（assets/sfx-music-compose の melodyCheck＝§3.1・§3.2）を全部通る最初の種」を探して出す
 //   （config/sfx-music-config の SFX_SEED_MUSIC_* に書く数。FROM=<数> で探し始め。既定 7601）。
-// - 既定: 鍵ごとに 長さ・頂・RMS（dBFS）・400 Hz より上と 200 Hz より下のエネルギーの割合（§3.3: 上 ≥ 60%（B は ≥ 55%）・下 ≤ 12%）・継ぎ目（末尾 → 頭の標本の差と、ふつうの差の
+// - 既定: 鍵ごとに 長さ・頂・RMS（dBFS）・400 Hz より上と 200 Hz より下のエネルギーの割合（§3.3: 上 ≥ 60%・下 ≤ 12%）・2.5 kHz より上の割合（IP1: 尖った倍音の目安）・継ぎ目（末尾 → 頭の標本の差と、ふつうの差の
 //   中央値・99%。継ぎ目をまたぐ 50 ms の RMS とその前後）・重心・作る費用（単位・予算 MUSIC_BUILD_BUDGET で何フレーム）と node の時間（1 回の stepBuild の中央値・95%・最大）・
 //   旋律の数（強拍の和音の音の割合・順次の割合・跳躍の戻り・音域・句の終わりの音・決まりの破れ）。任務の段（静か・緊張・戦闘）の重ね（L2 は 4 回）と、出口（× 音量 × master 0.8）の
-//   RMS を目標（§3.4）と比べ、音量の案（目標 ÷（RMS × 0.8）。緊張・戦闘は重ねて二分法）を出す。
+//   RMS を目標（§3.4）と比べ、音量の案（目標 ÷（RMS × 0.8）。緊張・戦闘は重ねて二分法）を出す。IP1: 緊張と戦闘の違い（発音の密度・2〜5 kHz の帯の出口・RMS。tests/sfx-music-contrast と同じ数え方）。
 // - WAV=1: <出力先>/<鍵>.wav（16 bit・モノ・22,050 Hz。LOOP=<回数> で輪を続けて書く＝継ぎ目を聴く）と段の重ね mix-tense.wav・mix-battle.wav（頂 0.9 にそろえる）。
 //   PNG=1: <出力先>/music-strip.png（鍵の順に波形と声紋の帯）。出力先は scratchpad（repo には音・画像のファイルを入れない）。
 // - RAW=1（v0.7.2 S1）: メニューの mix の材料 <出力先>/raw-menu-<鍵>.json（タイトルの候補ごとに 12 秒: 曲の頭から × MUSIC_GAIN と、1 秒目から 1.5 秒おきのボタンの音 ui_tap
@@ -22,7 +22,7 @@ import { MusicBuilder, composeMusicKey } from '../src/assets/sfx-music-render';
 import { MusicTables } from '../src/assets/sfx-music-synth';
 import { MUSIC_THEMES } from '../src/assets/sfx-music-themes';
 import { SeededRng } from '../src/core/rng';
-import { STRIP_H, STRIP_W, bandShares, centroidHz, drawStrip, pngBytes, wavBytes } from './sfx-files';
+import { STRIP_H, STRIP_W, bandShare, bandShares, centroidHz, drawStrip, onsetRate, pngBytes, wavBytes } from './sfx-files';
 
 const SR = MUSIC_SAMPLE_RATE;
 const dbfs = (v: number): string => (v > 0 ? `${(20 * Math.log10(v)).toFixed(1)}` : '-inf');
@@ -77,7 +77,7 @@ function report(outDir: string): void {
     times.sort((p, q) => p - q);
     const w = Math.round(0.025 * SR), seam = new Float32Array([...x.subarray(n - w), ...x.subarray(0, w)]);
     const [hi, lo] = bandShares(x, SR);
-    console.log(`${key.padEnd(11)} ${(n / SR).toFixed(2)} 秒（${n}）  頂 ${peakOf(x).toFixed(3)}  RMS ${dbfs(rmsOf(x))} dBFS  >400 Hz ${pct(hi)}・<200 Hz ${pct(lo)}  重心 ${centroidHz(x, 0, Math.min(n, 65536), SR).toFixed(0)} Hz  音符 ${sc.notes.length}`);
+    console.log(`${key.padEnd(11)} ${(n / SR).toFixed(2)} 秒（${n}）  頂 ${peakOf(x).toFixed(3)}  RMS ${dbfs(rmsOf(x))} dBFS  >400 Hz ${pct(hi)}・<200 Hz ${pct(lo)}・>2.5 kHz ${(bandShare(x, SR, 2500, SR) * 100).toFixed(1)}%  重心 ${centroidHz(x, 0, Math.min(n, 65536), SR).toFixed(0)} Hz  音符 ${sc.notes.length}${sc.theme.room ? `  響き ${sc.theme.room.join('・')} 秒` : ''}`);
     console.log(`${''.padEnd(11)} 継ぎ目: 差 ${Math.abs(x[0]! - x[n - 1]!).toFixed(4)}（中の差の中央値 ${quant(jumps, 0.5).toFixed(4)}・99% ${quant(jumps, 0.99).toFixed(4)}）・50 ms の RMS 前 ${dbfs(rmsOf(x, n - 3 * w, n - w))}／またぐ ${dbfs(rmsOf(seam))}／後 ${dbfs(rmsOf(x, w, 3 * w))} dBFS`);
     console.log(`${''.padEnd(11)} 作る: ${units.toFixed(0)} 単位＝${times.length} フレーム（予算 ${MUSIC_BUILD_BUDGET}）・node ${times.reduce((p, q) => p + q, 0).toFixed(1)} ms（1 回の中央値 ${quant(times, 0.5).toFixed(2)}・95% ${quant(times, 0.95).toFixed(2)}・最大 ${times[times.length - 1]!.toFixed(2)} ms）・${((units / (n / SR)) / 1000).toFixed(0)} k 単位／音 1 秒`);
     const c = melodyCheck(sc);
@@ -100,12 +100,15 @@ function report(outDir: string): void {
     let a = 0, b = 4;
     for (let it = 0; it < 40; it++) { const m = (a + b) / 2; sug[li] = m; if (rmsOf(moodMix(xs, li, sug)) > target(moods[li]!)) b = m; else a = m; }
   }
+  const cmp: number[][] = [];
   moods.forEach((t, m) => {
-    const x = moodMix(xs, m, cur);
-    console.log(`任務 段 ${['静か', '緊張', '戦闘'][m]}: 出口 ${db(rmsOf(x) * MUSIC_MASTER_GAIN).toFixed(1)} dBFS（目標 ${t}）・頂 ${(peakOf(x) * MUSIC_MASTER_GAIN).toFixed(3)}・>400 Hz ${pct(bandShares(x, SR)[0])}・<200 Hz ${pct(bandShares(x, SR)[1])}`);
+    const x = moodMix(xs, m, cur), r = db(rmsOf(x) * MUSIC_MASTER_GAIN), band = r + 10 * Math.log10(bandShare(x, SR, 2000, 5000)), on = onsetRate(x, SR);
+    cmp.push([r, band, on]);
+    console.log(`任務 段 ${['静か', '緊張', '戦闘'][m]}: 出口 ${r.toFixed(1)} dBFS（目標 ${t}）・頂 ${(peakOf(x) * MUSIC_MASTER_GAIN).toFixed(3)}・>400 Hz ${pct(bandShares(x, SR)[0])}・<200 Hz ${pct(bandShares(x, SR)[1])}・2〜5 kHz の帯 ${band.toFixed(1)} dBFS・発音 ${on.toFixed(2)}/秒`);
     if (wav && m > 0) { const pk = peakOf(x), y = x.map((v) => (v * 0.9) / pk); writeFileSync(join(outDir, `mix-${m === 1 ? 'tense' : 'battle'}.wav`), wavBytes(y, SR)); }
   });
   console.log(`任務の層の音量の案（L0・L1・L2）: ${sug.map((g) => g.toFixed(3)).join('・')}（今 ${cur.join('・')}）`);
+  console.log(`緊張と戦闘の違い（IP1）: 発音 ×${(cmp[2]![2]! / cmp[1]![2]!).toFixed(2)}（門 ≥ 2）・2〜5 kHz の帯 ${(cmp[2]![1]! - cmp[1]![1]!).toFixed(1)} dB（門 ≥ 4）・RMS ${(cmp[2]![0]! - cmp[1]![0]!).toFixed(1)} dB`);
   if (png) {
     const keys = [...MUSIC_KEYS], rgb = new Uint8Array(STRIP_W * STRIP_H * (keys.length + 2) * 3);
     keys.forEach((k, i) => drawStrip(rgb, i * STRIP_H, xs[k]));

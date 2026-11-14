@@ -234,7 +234,7 @@ describe('移りの数（spec §4.2）・10 Hz で変わった時だけ', () => 
   it('ランダムな移り 10 回 × 20 種: どの時点も鳴っている曲の音源 ≤ 6・stop は 1 音源 1 回・組の音源は同じ when。最後に外すと start − stop が合う', () => {
     for (let seed = 1; seed <= 20; seed++) {
       const x = setup();
-      for (const k of ['title_a', 'title_b', 'title_c'] as const) put(x, k);
+      for (const k of ['title_a', 'title_d', 'title_e'] as const) put(x, k);
       const rng = new SeededRng(seed);
       let stopCalls = 0;
       const wrap = (s: FakeSource): void => { const st = s.stop.bind(s); s.stop = (w?: number) => { if (s.stopped) throw new Error('stop を 2 回'); stopCalls++; st(w); }; };
@@ -242,7 +242,7 @@ describe('移りの数（spec §4.2）・10 Hz で変わった時だけ', () => 
       x.ctx.createBufferSource = () => { const s = create(); wrap(s); return s; };
       const acts: ((r: number) => void)[] = [
         () => x.e.music.request(MUSIC_CTX_MENU), () => x.e.music.request(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_MENU, MUSIC_FADE.resultReturnedDelayS),
-        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_a', 'title_b', 'title_c', null] as const)[Math.floor(r * 4)]!),
+        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_a', 'title_d', 'title_e', null] as const)[Math.floor(r * 4)]!),
         (r) => x.e.setMuted(r < 0.5), (r) => x.e.music.setEnabled(r < 0.7), (r) => x.e.music.setPaused(r < 0.5), (r) => { x.ctx.state = r < 0.8 ? 'running' : 'suspended'; },
       ];
       for (let i = 0; i < 10; i++) {

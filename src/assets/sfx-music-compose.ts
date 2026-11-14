@@ -19,8 +19,8 @@ export interface MusicMelody {
   readonly span: 1 | 2; readonly rhythms: readonly MusicRhythm[]; readonly ends: readonly MusicRhythm[];
   /** [小節（1 から）, 終わりの種類]・[写す先の小節, 元の小節]（span 小節ずつ同じリズムで変形して写す） */
   readonly cadences: readonly (readonly [number, MusicCadence])[]; readonly motifs: readonly (readonly [number, number])[];
-  /** 押さえる長さの割合（金管 0.9）・音ごとの減衰の秒の幅（鈴） */
-  readonly legato: number; readonly decayS?: readonly [number, number];
+  /** 押さえる長さの割合（金管 0.9）・音ごとの減衰の秒の幅（鈴）・合奏の声の数と声ごとのずれ（cent。v0.7.2 IP1。確かめは中央の 1 声で） */
+  readonly legato: number; readonly decayS?: readonly [number, number]; readonly voices?: number; readonly cents?: number;
 }
 export interface MusicPart {
   /** chord＝和音の音を全部（声部は前の和音の近く）・root＝根音・alt＝根音と 5 度を交互・pedal＝pcs の音を全部・none＝打楽器 */
@@ -35,8 +35,8 @@ export interface MusicTheme {
   /** 主音（0〜11。C＝0）・旋法・1 小節 1 和音（'Dm'・'Bb'・'E7' など） */
   readonly tonic: number; readonly mode: MusicMode; readonly chords: readonly string[];
   readonly melody: MusicMelody | null; readonly parts: readonly MusicPart[];
-  /** 曲全体の揺れ [深さ ± 割合, 輪の中の回数]・全体をラジオに・打楽器の層の頂を丸める（assets/sfx-music-render） */
-  readonly wow?: readonly [number, number]; readonly radio?: boolean; readonly glue?: boolean;
+  /** 部屋の響き [響きの割合, 残響の秒]（v0.7.2 IP1。C のラジオの代わり）・打楽器の層の頂を丸める（assets/sfx-music-render） */
+  readonly room?: readonly [number, number]; readonly glue?: boolean;
 }
 /** 楽譜: 書く順の音符（旋律が先）・旋律・輪の長さ（標本） */
 export interface MusicScore { readonly theme: MusicTheme; readonly notes: readonly MusicNote[]; readonly melody: readonly MusicNote[]; readonly n: number }
@@ -188,7 +188,8 @@ function composePart(th: MusicTheme, pt: MusicPart, rng: SeededRng, six: number,
 export function composeMusic(th: MusicTheme, rng: SeededRng): MusicScore {
   const six = sixteenthOf(th.bpm), n = th.bars * th.beats * 4 * six;
   if (!Number.isInteger(six) || n !== MUSIC_LENGTHS[th.key] || th.chords.length !== th.bars) throw new Error(`曲 '${th.key}' の長さ ${n} が表と違う`);
-  const melody = th.melody ? composeMelody(th, th.melody, rng, six) : [], notes = [...melody];
+  const melody = th.melody ? composeMelody(th, th.melody, rng, six) : [], voices = th.melody?.voices ?? 1, cents = th.melody?.cents ?? 0, notes: MusicNote[] = [];
+  for (const m of melody) for (let v = 0; v < voices; v++) notes.push(voices > 1 ? { ...m, pitch: m.pitch + ((v - (voices - 1) / 2) * cents) / 100 } : m);
   for (const pt of th.parts) composePart(th, pt, rng, six, n, notes);
   for (const x of notes) if (musicNoteSamples(x) > n) throw new Error(`曲 '${th.key}' の ${x.inst} が輪より長い`);
   return { theme: th, notes, melody, n };

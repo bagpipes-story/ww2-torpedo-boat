@@ -10,29 +10,35 @@ export const MUSIC_SAMPLE_RATE = 22050;
 /** 仕上げの頂（効果音と同じ 0.9。束と層の音量は下の MUSIC_GAIN で掛ける） */
 export const MUSIC_PEAK = 0.9;
 
-/** 曲の鍵（6 本＝タイトルの候補 A・B・C と任務の層 L0 静か・L1 緊張・L2 戦闘）。効果音の SFX_KEYS とは別の表（§13 L5。tests が重ならないことを固定） */
-export const MUSIC_KEYS = ['title_a', 'title_b', 'title_c', 'mission_l0', 'mission_l1', 'mission_l2'] as const;
+/**
+ * 曲の鍵（6 本＝タイトルの候補 A・D・E と任務の層 L0 静か・L1 緊張・L2 戦闘）。効果音の SFX_KEYS とは別の表（§13 L5。tests が重ならないことを固定）。
+ * v0.7.2 IP1: B（ユーザー「ファミコンの RPG みたい」）と C を消し、126 BPM の D・E を足した（記号は消した B・C と取り違えないように D・E）
+ */
+export const MUSIC_KEYS = ['title_a', 'title_d', 'title_e', 'mission_l0', 'mission_l1', 'mission_l2'] as const;
 export type MusicKey = (typeof MUSIC_KEYS)[number];
-export const MUSIC_TITLE_KEYS: readonly MusicKey[] = ['title_a', 'title_b', 'title_c'];
+export const MUSIC_TITLE_KEYS: readonly MusicKey[] = ['title_a', 'title_d', 'title_e'];
 /** 任務の 3 層（同じ when で始めて音量だけを変える。L0・L1 は 8 小節、L2 は 2 小節＝8 小節を 4 回で割り切る） */
 export const MUSIC_LAYER_KEYS: readonly MusicKey[] = ['mission_l0', 'mission_l1', 'mission_l2'];
 
 /** 速さ（BPM）は 16 分音符が 22,050 Hz で整数の標本になる 7 つだけ（330,750 ÷ BPM＝継ぎ目と層の同期が標本の単位でぴったり。spec §2） */
 export const MUSIC_BPMS = [63, 70, 75, 90, 98, 105, 126] as const;
 export type MusicBpm = (typeof MUSIC_BPMS)[number];
-/** 鍵ごとの長さ（標本＝小節 × 拍 × 4 × 16 分の標本。spec §3.5・§3.6）: A 63 BPM 4/4 8 小節・B 105 BPM 2/4 16 小節・C 70 BPM 4/4 8 小節・任務 90 BPM 4/4 */
+/**
+ * 鍵ごとの長さ（標本＝小節 × 拍 × 4 × 16 分の標本。spec §3.5・§3.6）: A 63 BPM 4/4 8 小節・D 126 BPM 4/4 16 小節・E 126 BPM 2/4 16 小節・任務 90 BPM 4/4。
+ * v0.7.2 IP1: E は 15.24 秒（試聴の場で 3 本＋家族を作っても 280 万標本の内＝D 30.48 秒と合わせて消した B・C と同じ 1,008,000）
+ */
 export const MUSIC_LENGTHS: Readonly<Record<MusicKey, number>> = {
-  title_a: 672_000, title_b: 403_200, title_c: 604_800, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600,
+  title_a: 672_000, title_d: 672_000, title_e: 336_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600,
 };
 
 // 曲だけの乱数の種（作曲は new SeededRng(SFX_SEED_MUSIC_<鍵>) だけ。7601〜7699＝効果音 7501〜7531・7599、絵の ART_SEED_*（70xx〜74xx）と重ねない）。
 // 値は scripts/sfx-music.ts が「§3.1・§3.2 の決まりを全部通る最初の種」を鍵の順に（前の鍵の種の次から）探して決めた（ゲームの中では探さない）
 export const SFX_SEED_MUSIC_A = 7603;
-export const SFX_SEED_MUSIC_B = 7619;
-export const SFX_SEED_MUSIC_C = 7621;
-export const SFX_SEED_MUSIC_L0 = 7622;
-export const SFX_SEED_MUSIC_L1 = 7623;
-export const SFX_SEED_MUSIC_L2 = 7624;
+export const SFX_SEED_MUSIC_D = 7609;
+export const SFX_SEED_MUSIC_E = 7627;
+export const SFX_SEED_MUSIC_L0 = 7628;
+export const SFX_SEED_MUSIC_L1 = 7629;
+export const SFX_SEED_MUSIC_L2 = 7630;
 /** 打楽器・うねり・ぱちぱちの雑音の表（32,768 標本を 1 回だけ作って使い回す） */
 export const SFX_SEED_MUSIC_NOISE = 7699;
 
@@ -47,7 +53,7 @@ export const MUSIC_MASTER_GAIN = 0.8;
  * （MUSIC_MOOD_WEIGHTS）で静か・緊張・戦闘の目標になる数。scripts/sfx-music.ts が今の標本から出した数（標本を作り直したら出し直す）
  */
 export const MUSIC_GAIN: Readonly<Record<MusicKey, number>> = {
-  title_a: 0.411, title_b: 0.399, title_c: 0.622, mission_l0: 0.152, mission_l1: 0.232, mission_l2: 0.268,
+  title_a: 0.411, title_d: 0.481, title_e: 0.393, mission_l0: 0.152, mission_l1: 0.134, mission_l2: 0.255,
 };
 
 /** 任務の段（S2 の core/sfx-music-mood）: 0 静か・1 緊張（見つかった）・2 戦闘（撃たれている）・3 沈み始め（v0.7.2 S2。3 層とも sinkFadeS で 0。段の重さの表の外） */
@@ -55,8 +61,11 @@ export const MUSIC_MOOD_QUIET = 0;
 export const MUSIC_MOOD_TENSE = 1;
 export const MUSIC_MOOD_BATTLE = 2;
 export const MUSIC_MOOD_SINK = 3;
-/** 段ごとの層の音量（L0, L1, L2。spec §3.6）: 静か (1, 0, 0)・緊張 (0.8, 1, 0)・戦闘 (0.6, 0.8, 1) */
-export const MUSIC_MOOD_WEIGHTS: readonly (readonly [number, number, number])[] = [[1, 0, 0], [0.8, 1, 0], [0.6, 0.8, 1]];
+/**
+ * 段ごとの層の音量（L0, L1, L2。spec §3.6）: 静か (1, 0, 0)・緊張 (0.8, 1, 0)・戦闘 (0.5, 0.3, 1)。v0.7.2 IP1: S2 の戦闘 (0.6, 0.8, 1) は「緊張 ＋ 打楽器」で
+ * ユーザーに「緊張と戦闘の音楽はおなじでは？」と言われた → 戦闘は緊張の層をほとんど下げて走る層を前に（緊張のまばらな心音とトレモロが戦闘の下で小さく続く）
+ */
+export const MUSIC_MOOD_WEIGHTS: readonly (readonly [number, number, number])[] = [[1, 0, 0], [0.8, 1, 0], [0.5, 0.3, 1]];
 /**
  * 段の間（spec §5.2。時計はゲームの時計＝一時停止の間は進まない）: 上がるのは次の 10 Hz で（戦闘は時定数 0.6 秒・緊張 1.5 秒）。下がるのは最後の信号から
  * 戦闘 6 秒・緊張 8 秒の後（探照灯の往復・見え隠れでぱたぱたしない）、戦闘 → 緊張は 3 秒・緊張 → 静かは 4 秒で。沈み始めは 2.5 秒で 0。1 分の移りは 6 回まで（probe の門）。
@@ -123,11 +132,11 @@ export const SFX_SLOW_SHAPE = { idleHz: 20000, filterTcS: 0.04, rateTcS: 0.06, e
 
 /**
  * 作る予算（spec §2・D4・R1）: 1 フレームに MUSIC_BUILD_BUDGET 単位まで。単位は「波形表の 1 声の 1 標本」＝1（node で約 8 ns）。金管（2 つの表の重ね）＝2、FM の鈴＝3、
- * 雑音の打楽器・うねり＝2、ラジオの濾波（C。2 次の濾波器 2 つの漸化式＝待ちが長い）＝3、0 で埋める・数える・掛ける一回り＝0.5／標本、波形表の 1 倍音の 1 点＝1（JIT の前の初回が遅いので重めに）、音符 1 つの用意（係数の exp・log）＝300。
+ * 雑音の打楽器・うねり＝2、部屋の響き（v0.7.2 IP1。櫛 4 本と全域通過 2 段）＝room、0 で埋める・数える・掛ける一回り＝0.5／標本、波形表の 1 倍音の 1 点＝1（JIT の前の初回が遅いので重めに）、音符 1 つの用意（係数の exp・log）＝300。
  * 予算の内なら音符の途中でも区切る（状態を残して続きから書く＝分け方に依らずビット同一。tests/sfx-music-render）
  */
 export const MUSIC_BUILD_BUDGET = 150_000;
-export const MUSIC_COST = { tone: 1, toneMix: 2, fm: 3, noise: 2, fx: 3, pass: 0.5, tablePoint: 1, note: 300 } as const;
+export const MUSIC_COST = { tone: 1, toneMix: 2, fm: 3, noise: 2, room: 4, pass: 0.5, tablePoint: 1, note: 300 } as const;
 /** 予算がこれより小さいと進まないことがある（波形表の 1 倍音＝2,048 点 × 1＝2,048 単位） */
 export const MUSIC_BUILD_MIN_BUDGET = 2048;
 /**

@@ -1,5 +1,5 @@
 // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §2〜§6・§8.1・§13）: 曲の棚卸しを固定する（tests/sfx-inventory の型）。
-// - 曲の鍵は 6 本（タイトルの候補 A・B・C と任務の層 L0・L1・L2）で、効果音の SFX_KEYS とは別の表（§13 L5: 効果音 26 本の表・標本・音量はそのまま）。
+// - 曲の鍵は 6 本（タイトルの候補 A・D・E＝v0.7.2 IP1 で B・C から替えた と任務の層 L0・L1・L2）で、効果音の SFX_KEYS とは別の表（§13 L5: 効果音 26 本の表・標本・音量はそのまま）。
 // - 種は SFX_SEED_MUSIC_*（7601〜7699）だけで重ならず、効果音・絵の種とも重ならない。作曲の乱数は musicRng（曲ごとの種）。Math.random なし。
 // - 速さは 16 分音符が整数の標本になる 7 つだけ・長さは小節 × 拍 × 4 × 16 分・任務の層は L2 の整数倍（R6）・常駐の上限（ゲーム 180 万・試聴の場 280 万標本）。
 // - 音量の表（§3.4 の出口の目標・段の重さ・鍵ごとの音量）・下げる表（§4.6。警報 −8 dB は U-M1・ほかは設計の既定）・段の間（§5.2）・命中スローの案（§6.2・O2）・
@@ -20,12 +20,12 @@ const MUSIC_FILES = ['src/config/sfx-music-config.ts', ...readdirSync('src/asset
 const seedsIn = (file: string, re: RegExp): [string, number][] => [...readFileSync(file, 'utf8').matchAll(re)].map((m) => [m[1]!, Number(m[2])]);
 /** spec §3.5・§3.6 の速さ・拍・小節 */
 const FORM: Readonly<Record<MusicKey, readonly [number, number, number]>> = {
-  title_a: [63, 4, 8], title_b: [105, 2, 16], title_c: [70, 4, 8], mission_l0: [90, 4, 8], mission_l1: [90, 4, 8], mission_l2: [90, 4, 2],
+  title_a: [63, 4, 8], title_d: [126, 4, 16], title_e: [126, 2, 16], mission_l0: [90, 4, 8], mission_l1: [90, 4, 8], mission_l2: [90, 4, 2],
 };
 
 describe('曲の鍵と表（v0.7.2 S0）', () => {
   it('鍵は 6 本（タイトル 3・任務の層 3）で重ならず、効果音の SFX_KEYS にも表 SFX_TABLE にも入っていない（§13 L5）', () => {
-    expect([...MUSIC_KEYS]).toEqual(['title_a', 'title_b', 'title_c', 'mission_l0', 'mission_l1', 'mission_l2']);
+    expect([...MUSIC_KEYS]).toEqual(['title_a', 'title_d', 'title_e', 'mission_l0', 'mission_l1', 'mission_l2']);
     expect(new Set(MUSIC_KEYS).size).toBe(6);
     expect([...MUSIC_TITLE_KEYS, ...MUSIC_LAYER_KEYS].sort()).toEqual([...MUSIC_KEYS].sort());
     for (const k of MUSIC_KEYS) {
@@ -44,14 +44,14 @@ describe('曲の鍵と表（v0.7.2 S0）', () => {
   it('速さは 16 分音符が 22,050 Hz で整数の標本になる 7 つだけ（spec §2）・曲はその中の速さ・長さは小節 × 拍 × 4 × 16 分（spec §3.5・§3.6）', () => {
     expect([...MUSIC_BPMS]).toEqual([63, 70, 75, 90, 98, 105, 126]);
     for (const bpm of MUSIC_BPMS) expect(Number.isInteger(sixteenthOf(bpm)), `${bpm}`).toBe(true);
-    expect([63, 70, 90, 105].map((b) => sixteenthOf(b as mc.MusicBpm))).toEqual([5250, 4725, 3675, 3150]);
+    expect([63, 90, 126].map((b) => sixteenthOf(b as mc.MusicBpm))).toEqual([5250, 3675, 2625]);
     for (const k of MUSIC_KEYS) {
       const th = MUSIC_THEMES[k], [bpm, beats, bars] = FORM[k];
       expect([th.bpm, th.beats, th.bars], k).toEqual([bpm, beats, bars]);
       expect(MUSIC_LENGTHS[k], k).toBe(bars * beats * 4 * sixteenthOf(th.bpm));
       expect(th.chords.length, k).toBe(bars);
     }
-    expect(MUSIC_LENGTHS).toEqual({ title_a: 672_000, title_b: 403_200, title_c: 604_800, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600 });
+    expect(MUSIC_LENGTHS).toEqual({ title_a: 672_000, title_d: 672_000, title_e: 336_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600 });
   });
   it('任務の層の長さは L2 の整数倍（R6: 同じ時刻に始めればずれない）', () => {
     expect(MUSIC_LENGTHS.mission_l0).toBe(MUSIC_LENGTHS.mission_l1);
@@ -77,7 +77,7 @@ describe('曲の鍵と表（v0.7.2 S0）', () => {
 describe('曲の種（音だけの乱数）', () => {
   it('種は SFX_SEED_MUSIC_* の 7 つ（曲 6 ＋ 雑音の表）で 7601〜7699・重ならず、効果音の種（SFX_SEED_*）と絵の種（ART_SEED_*）とも重ならない', () => {
     const seeds = seedsIn('src/config/sfx-music-config.ts', /^export const (SFX_SEED_MUSIC_\w+) = (\d+);/gm);
-    expect(seeds.map((s) => s[0]).sort()).toEqual(['SFX_SEED_MUSIC_A', 'SFX_SEED_MUSIC_B', 'SFX_SEED_MUSIC_C', 'SFX_SEED_MUSIC_L0', 'SFX_SEED_MUSIC_L1', 'SFX_SEED_MUSIC_L2', 'SFX_SEED_MUSIC_NOISE']);
+    expect(seeds.map((s) => s[0]).sort()).toEqual(['SFX_SEED_MUSIC_A', 'SFX_SEED_MUSIC_D', 'SFX_SEED_MUSIC_E', 'SFX_SEED_MUSIC_L0', 'SFX_SEED_MUSIC_L1', 'SFX_SEED_MUSIC_L2', 'SFX_SEED_MUSIC_NOISE']);
     expect(new Set(seeds.map((s) => s[1])).size).toBe(7);
     for (const [name, v] of seeds) expect(v >= 7601 && v <= 7699, `${name} ${v}`).toBe(true);
     const sfx = seedsIn('src/config/sfx-config.ts', /^export const (SFX_SEED_\w+) = (\d+);/gm).map((s) => s[1]);
@@ -94,7 +94,7 @@ describe('曲の種（音だけの乱数）', () => {
     }
   });
   it('曲ごとの乱数 musicRng は MUSIC_SEEDS の種の SeededRng と同じ系列・種は鍵ごとに違う', () => {
-    expect(MUSIC_SEEDS).toEqual({ title_a: mc.SFX_SEED_MUSIC_A, title_b: mc.SFX_SEED_MUSIC_B, title_c: mc.SFX_SEED_MUSIC_C, mission_l0: mc.SFX_SEED_MUSIC_L0, mission_l1: mc.SFX_SEED_MUSIC_L1, mission_l2: mc.SFX_SEED_MUSIC_L2 });
+    expect(MUSIC_SEEDS).toEqual({ title_a: mc.SFX_SEED_MUSIC_A, title_d: mc.SFX_SEED_MUSIC_D, title_e: mc.SFX_SEED_MUSIC_E, mission_l0: mc.SFX_SEED_MUSIC_L0, mission_l1: mc.SFX_SEED_MUSIC_L1, mission_l2: mc.SFX_SEED_MUSIC_L2 });
     for (const k of MUSIC_KEYS) {
       const a = musicRng(k), b = new SeededRng(MUSIC_SEEDS[k]);
       for (let i = 0; i < 8; i++) expect(a.next(), k).toBe(b.next());
@@ -114,7 +114,7 @@ describe('音量・下げ・段・命中スロー・移り・予算の表（spec
   it('出口の RMS の目標（§3.4）と許し・段の重さ（§3.6）・鍵ごとの音量はそろっていて 0 < g ≤ 1', () => {
     expect(MUSIC_TARGET_DBFS).toEqual({ menu: -24, quiet: -33, tense: -30, battle: -27 });
     expect(mc.MUSIC_LEVEL_TOLERANCE_DB).toBe(1.5);
-    expect(MUSIC_MOOD_WEIGHTS).toEqual([[1, 0, 0], [0.8, 1, 0], [0.6, 0.8, 1]]);
+    expect(MUSIC_MOOD_WEIGHTS).toEqual([[1, 0, 0], [0.8, 1, 0], [0.5, 0.3, 1]]); // v0.7.2 IP1: 戦闘は緊張の層を 0.3 に（S2 は (0.6, 0.8, 1)＝「緊張 ＋ 打楽器」）
     expect([mc.MUSIC_MOOD_QUIET, mc.MUSIC_MOOD_TENSE, mc.MUSIC_MOOD_BATTLE]).toEqual([0, 1, 2]);
     expect(Object.keys(MUSIC_GAIN).sort()).toEqual([...MUSIC_KEYS].sort());
     for (const k of MUSIC_KEYS) expect(MUSIC_GAIN[k] > 0 && MUSIC_GAIN[k] <= 1, k).toBe(true);
@@ -146,7 +146,7 @@ describe('音量・下げ・段・命中スロー・移り・予算の表（spec
   });
   it('作る予算（§2）: 1 フレーム 150,000 単位・波形表 1 声＝1・金管＝2・FM＝3・雑音＝2・JIT の初回の上限', () => {
     expect(mc.MUSIC_BUILD_BUDGET).toBe(150_000);
-    expect(mc.MUSIC_COST).toMatchObject({ tone: 1, toneMix: 2, fm: 3, noise: 2 });
+    expect(mc.MUSIC_COST).toMatchObject({ tone: 1, toneMix: 2, fm: 3, noise: 2, room: 4 });
     expect(mc.MUSIC_BUILD_MIN_BUDGET).toBe(2048 * mc.MUSIC_COST.tablePoint);
     expect(mc.MUSIC_BUILD_WARM.perCall * mc.MUSIC_COST.fm).toBeLessThanOrEqual(mc.MUSIC_BUILD_BUDGET);
   });
