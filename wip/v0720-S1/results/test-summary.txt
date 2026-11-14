@@ -1,2 +1,0 @@
- Test Files  292 passed (292)
-      Tests  3375 passed (3375)
