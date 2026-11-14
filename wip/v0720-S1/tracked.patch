@@ -1,0 +1,804 @@
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 5e7c49a..a9a03b0 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -66,7 +66,7 @@ export function artImageScale(key: string): number {
+   return 1 / RENDER_SCALE / artTexDensity(key);
+ }
+ 
+-/** URL に ?sfxlab があるときだけ true（v0.7.1 IP2）: Boot が Title の代わりに音の試聴の場（scenes/sound-lab-scene）へ。?debug とは別（?debug が無くてもよい） */
++/** URL に ?sfxlab があるときだけ true（v0.7.1 IP2）: Boot が Title の代わりに試聴の場へ（v0.7.2 S1 から曲の試聴の場 scenes/music-lab-scene。効果音の場はその中から）。?debug とは別（?debug が無くてもよい） */
+ export const SFX_LAB_ENABLED = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('sfxlab');
+ 
+ /** URL に ?debug があるときだけ true。window.__game の公開、見越し点マーカー、発見距離・視程の円を出す（通常の Pages URL では何もしない） */
+@@ -191,8 +191,10 @@ export const SCENE_KEYS = {
+   result: 'Result',
+   /** 一時停止（v0.5.1 実機 1 回目）。Mission と Hud の上に重ねる */
+   pause: 'Pause',
+-  /** 音の試聴の場（v0.7.1 IP2。?sfxlab の時だけ Boot から） */
++  /** 音の試聴の場（v0.7.1 IP2。v0.7.2 S1 から曲の試聴の場のボタンから） */
+   soundLab: 'SoundLab',
++  /** 曲の試聴の場（v0.7.2 S1。?sfxlab の時だけ Boot から） */
++  musicLab: 'MusicLab',
+ } as const;
+ 
+ /** 艇の絵の鍵（v0.6.0: 艇ごとに 1 枚。Boot が遊べる任務の自艇と僚艇の寸法から 1 回だけ作る。T-38 は Elco より小さい） */
+diff --git a/src/config/menu-config.ts b/src/config/menu-config.ts
+index b19bca9..46b06dd 100644
+--- a/src/config/menu-config.ts
++++ b/src/config/menu-config.ts
+@@ -1,7 +1,7 @@
+ // Title・Briefing・Result のボタンと配置（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）と UI の語（v0.4.0、docs/02 §4）。ゲームの数値ではないので data/*.json には置かない。
+ // ui-config.ts（HUD）が 270 行を超えたので分けた。ボタンの高さはどれも 96 px 以上（iPhone の表示倍率 0.483〜0.546 で 46 pt 以上）。
+ import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN } from './game-config';
+-import { TITLE_SOUND_W, TITLE_TOGGLE_GAP } from './title-layout-config';
++import { TITLE_MUSIC_GAP, TITLE_SOUND_W, TITLE_TOGGLE_GAP } from './title-layout-config';
+ 
+ /** 画面ができてから押下を受けない ms（前の画面から押しっぱなしの指・2 度押しで進まない） */
+ export const MENU_INPUT_DELAY_MS = 300;
+@@ -43,9 +43,10 @@ export function titleCampaignLockedSubJa(prereqName: string, done: number, total
+ }
+ // 任務の行・操作の一言の y・切り替えの間と、日本のタブの 2 列の格子（v0.6.7）は title-layout-config（DOM を読まないので ui/title-grid と tests が読める）。ここから出し直す
+ export { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_GAP, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_TOP, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from './title-layout-config';
+-// 右上の「音」ボタン（v0.7.1 S1。値と文は title-layout-config）。x は画面の右端から
+-export { TITLE_SOUND_H, TITLE_SOUND_HINT_GAP, TITLE_SOUND_HINT_JA, TITLE_SOUND_HINT_PX, TITLE_SOUND_OFF_JA, TITLE_SOUND_ON_JA, TITLE_SOUND_PX, TITLE_SOUND_W, TITLE_SOUND_Y } from './title-layout-config';
++// 右上の「音」ボタン（v0.7.1 S1）とその左の「曲」ボタン（v0.7.2 S1。同じ大きさ・間 TITLE_MUSIC_GAP）。値と文は title-layout-config。x は画面の右端から
++export { TITLE_MUSIC_OFF_JA, TITLE_MUSIC_ON_JA, TITLE_SOUND_H, TITLE_SOUND_OFF_JA, TITLE_SOUND_ON_JA, TITLE_SOUND_PX, TITLE_SOUND_SUB_JA, TITLE_SOUND_SUB_PX, TITLE_SOUND_W, TITLE_SOUND_Y } from './title-layout-config';
+ export const TITLE_SOUND_X = GAME_WIDTH - HUD_MARGIN - TITLE_SOUND_W;
++export const TITLE_MUSIC_X = TITLE_SOUND_X - TITLE_MUSIC_GAP - TITLE_SOUND_W;
+ // 操作の一言（文・字の大きさ・キャンペーンごと）は title-hint-config（v0.6.3。DOM を読まないのでテストが幅を測れる）。ここから出し直す
+ export { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_JA, TITLE_HINT_PX } from './title-hint-config';
+ /**
+@@ -165,5 +166,11 @@ export const PAUSE_BACKING_ALPHA = 0.85;
+  */
+ export const PAUSE_SOUND_W = MENU_PRIMARY_W;
+ export const PAUSE_SOUND_X = GAME_WIDTH / 2 - PAUSE_SOUND_W / 2;
++/**
++ * 一時停止の「曲」ボタン（v0.7.2 S1。spec-v0720 §4.4・brief L16）: 「音」のすぐ上（同じ x・幅 320・高さ 96・間 16＝y 488〜584。下の段の 3 つはそのまま）。題は Title の「曲」と同じ
++ * 「曲: オン」⇄「曲: オフ」で、選んだ値も同じ（systems/sfx-settings）。下の Hud が透けないよう黒を敷く（tests/pause-sound）
++ */
++export const PAUSE_MUSIC_GAP = 16;
++export const PAUSE_MUSIC_Y = RESULT_BUTTON_Y - PAUSE_MUSIC_GAP - RESULT_BUTTON_H;
+ /** 再開してから Hud が押下を受けない ms（右下の「再開」の 2 度押しが、下にある魚雷・扇のボタンに入らないように） */
+ export const PAUSE_RESUME_GUARD_MS = 300;
+diff --git a/src/config/phaser-config.ts b/src/config/phaser-config.ts
+index a69fcc8..427f4cf 100644
+--- a/src/config/phaser-config.ts
++++ b/src/config/phaser-config.ts
+@@ -4,6 +4,7 @@ import { BootScene } from '../scenes/boot-scene';
+ import { BriefingScene } from '../scenes/briefing-scene';
+ import { HudScene } from '../scenes/hud-scene';
+ import { MissionScene } from '../scenes/mission-scene';
++import { MusicLabScene } from '../scenes/music-lab-scene';
+ import { PauseScene } from '../scenes/pause-scene';
+ import { ResultScene } from '../scenes/result-scene';
+ import { SoundLabScene } from '../scenes/sound-lab-scene';
+@@ -34,6 +35,6 @@ export const phaserConfig: Phaser.Types.Core.GameConfig = {
+       debug: false,
+     },
+   },
+-  // 後ろほど手前に描く（Pause は Mission・Hud の上。v0.5.1）。音の試聴の場（v0.7.1 IP2）は ?sfxlab の時だけ Boot から（ほかのシーンとは重ならない）
+-  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene],
++  // 後ろほど手前に描く（Pause は Mission・Hud の上。v0.5.1）。試聴の場（v0.7.1 IP2 の効果音・v0.7.2 S1 の曲）は ?sfxlab の時だけ Boot から（ほかのシーンとは重ならない）
++  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene, MusicLabScene],
+ };
+diff --git a/src/config/sfx-music-config.ts b/src/config/sfx-music-config.ts
+index 0275647..9a07fca 100644
+--- a/src/config/sfx-music-config.ts
++++ b/src/config/sfx-music-config.ts
+@@ -2,7 +2,8 @@
+ // 作る予算・常駐の上限・音だけの種は「聞かせ方」の定数で、ゲームの強さの値ではない（config/sfx-config と同じ考え。論理に効く値は data/*.json のまま）。何も import しない。
+ // ユーザーの決め U-M1（2026-11-14「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result に BGM、任務の中は小さい曲で、見つかったら緊張・撃たれたら戦闘の曲に変わる。
+ // 警報の合図が鳴る時は曲を下げる。「曲: オン／オフ」は「音」と別。曲の標本は assets/sfx-music-*（作曲は音符・合成は音符を数フレームに分けて 1 本の標本へ描く＝方式 (a)）。
+-// S0 はゲームのどこからも import されない（鳴らない＝束はバイトで同じ）。再生（systems/sfx-music-player）は S1、任務の段は S2、命中スローは S3。
++// S0 はゲームのどこからも import されなかった（鳴らない＝束はバイトで同じ）。S1 で再生（systems/sfx-music-player・作る列 systems/sfx-music-build）とメニューの曲・「曲」ボタン・
++// 曲の試聴の場、S2 で任務の段、S3 で命中スロー。
+ 
+ /** 標本の速さ（効果音と同じ 22,050 Hz・モノ。tests/sfx-music-inventory が SFX_SAMPLE_RATE と同じことを固定） */
+ export const MUSIC_SAMPLE_RATE = 22050;
+@@ -79,6 +80,12 @@ export const MUSIC_FADE = {
+ } as const;
+ /** 曲の音源の数の上限（落ち着いた時は 0・1・3、移りの最中も ≤ 6。spec §4.2） */
+ export const MUSIC_MAX_SOURCES = 6;
++/**
++ * 再生（v0.7.2 S1 の systems/sfx-music-player）: 決めは 10 Hz（updateHz）。組の音源は「今 ＋ startLeadS」の同じ when で始める（S2 の 3 層が同じ標本から鳴る）。音量の節は slots 本
++ * （1 組 layersMax 層まで × 3 組＝鳴っている組・止めかけの組・急いで 0 にした組。stop は 1 音源 1 回だけなので、急いで止める組は音量だけを 30 ms で 0 にし、節は予約の stop まで空かない）。
++ * 移りの秒 → 時定数は × fadeTc（秒の後に約 2%＝止める時に「ぷつっ」としない）。作る時間の記録は timingRing 回ぶん（stats の中央値・95%）
++ */
++export const MUSIC_PLAYER = { updateHz: 10, startLeadS: 0.05, slots: 9, layersMax: 3, fadeTc: 0.25, timingRing: 512 } as const;
+ /** 曲のオン／オフの保存（localStorage の鍵。'0' でオフ・無い／読めなければオン＝D7。「音: オフ」の間は曲も鳴らない） */
+ export const MUSIC_STORAGE_KEY = 'night-hunters.music';
+ 
+diff --git a/src/config/title-layout-config.ts b/src/config/title-layout-config.ts
+index 1cfa460..8339836 100644
+--- a/src/config/title-layout-config.ts
++++ b/src/config/title-layout-config.ts
+@@ -24,8 +24,7 @@ export const TITLE_GRID_ROWS_MAX = 3;
+ export const TITLE_GRID_COL_W = 597;
+ /**
+  * v0.7.1 S1: 右上の「音」ボタン（音: オン ⇄ 音: オフ。覚える＝systems/sfx-settings）。右端は画面の右 − HUD_MARGIN、上端 20・下端 100（タブの上端 108 の上）。
+- * 200 × 80 px ≈ 109 × 44 pt（iPhone 15 横）。左に小さい字の一言（本体の消音スイッチはページから読めない）を 2 行・右寄せで置く。ボタンの下はタブまで 8 px しか無く、
+- * 論理幅 1280 ではタブ（右端 1112）とボタン（左端 1056）の x が重なるので下には置けない。左なら 1280 でもロゴ（右端 約 812）まで 52 px 空く（tests/title-sound）
++ * 200 × 80 px ≈ 109 × 44 pt（iPhone 15 横）。ボタンの下はタブまで 8 px しか無く、論理幅 1280 ではタブ（右端 1112）とボタン（左端 1056）の x が重なるので下には何も置けない（tests/title-sound）
+  */
+ export const TITLE_SOUND_W = 200;
+ export const TITLE_SOUND_H = 80;
+@@ -33,7 +32,13 @@ export const TITLE_SOUND_Y = 20;
+ export const TITLE_SOUND_PX = 26;
+ export const TITLE_SOUND_ON_JA = '音: オン';
+ export const TITLE_SOUND_OFF_JA = '音: オフ';
+-export const TITLE_SOUND_HINT_JA = '音が出ない時は\n本体の消音を確かめる';
+-export const TITLE_SOUND_HINT_PX = 18;
+-/** 一言の右端とボタンの左端の間 */
+-export const TITLE_SOUND_HINT_GAP = 12;
++/**
++ * v0.7.2 S1（spec-v0720 §4.4・brief L15）: 「音」の左に「曲」ボタン（曲: オン ⇄ 曲: オフ。「音」と別に覚える＝systems/sfx-settings）。大きさは「音」と同じ 200 × 80 px・間 12。
++ * 論理幅 1280 で「曲」は 844〜1044・「音」は 1056〜1256（ロゴの右端 約 812 との間 32 px・25 字のビルド番号の右端 約 776 との間 68 px。1584 で 1148〜1348・1360〜1560）。
++ * v0.7.1 の左の一言（2 行・約 180 px）は置けなくなった（1280 でロゴにかかる）ので、「音」ボタンの 2 行目「本体の消音も確認」（17 px で 136 px＝余白を引いた幅 136 に収まる）にした
++ */
++export const TITLE_MUSIC_GAP = 12;
++export const TITLE_MUSIC_ON_JA = '曲: オン';
++export const TITLE_MUSIC_OFF_JA = '曲: オフ';
++export const TITLE_SOUND_SUB_JA = '本体の消音も確認';
++export const TITLE_SOUND_SUB_PX = 17;
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index 3c58998..ccb9ba9 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -1,4 +1,4 @@
+-// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0。?sfxlab は音の試聴の場＝v0.7.1 IP2）。
++// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0。?sfxlab は試聴の場＝v0.7.1 IP2・v0.7.2 S1 から曲）。
+ // 音（v0.7.1）: 合成の効果音のエンジンをここで 1 回作る（systems/sfx-boot。標本の合成・ゲームの時計・iOS の保険の resume）。最初のタッチの unlock は Phaser の sound manager がする。
+ import Phaser from 'phaser';
+ import {
+@@ -148,7 +148,7 @@ export class BootScene extends Phaser.Scene {
+     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
+     if (DEBUG_ENABLED) generateDebugRingTexture(this);
+ 
+-    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.soundLab); // 音の試聴の場（v0.7.1 IP2。?sfxlab の時だけ。ふだんの URL は Title・?debug は Mission のまま）
++    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.musicLab); // 試聴の場（?sfxlab の時だけ。v0.7.2 S1 から曲の試聴の場＝効果音の試聴の場はその中のボタンから。ふだんの URL は Title・?debug は Mission のまま）
+     else if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));
+     else this.scene.start(SCENE_KEYS.title);
+   }
+diff --git a/src/scenes/pause-scene.ts b/src/scenes/pause-scene.ts
+index 0753724..3c0276c 100644
+--- a/src/scenes/pause-scene.ts
++++ b/src/scenes/pause-scene.ts
+@@ -2,6 +2,7 @@
+ // 右下「再開」で Mission と Hud を動かし直す。左下「任務をやめる」は 1 秒長押しで Mission を終わらせて任務一覧（Title）へ（Result は出さない・通算の命中率に数えない）。
+ // 画面ができてから 0.3 秒は押下を受けない（一時停止を押した指の 2 度押しで再開しない）。作るのは 1 回だけ（§7）。
+ // v0.7.1 S3: 下の段の中央に「音」ボタン（音: オン ⇄ 音: オフ。Title のボタンと同じ値＝systems/sfx-settings）。開いた時に低いボタンの音。
++// v0.7.2 S1: 「音」のすぐ上に「曲」ボタン（曲: オン ⇄ 曲: オフ。Title の「曲」と同じ値・「音」とは別。S1 は任務の曲がまだ無いので、押しても設定と題が変わるだけ）。
+ import Phaser from 'phaser';
+ import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+ import {
+@@ -9,6 +10,7 @@ import {
+   MENU_PRIMARY_X,
+   PAUSE_BACKING_ALPHA,
+   PAUSE_DIM_ALPHA,
++  PAUSE_MUSIC_Y,
+   PAUSE_NOTE_JA,
+   PAUSE_NOTE_PX,
+   PAUSE_NOTE_Y,
+@@ -27,13 +29,15 @@ import {
+   RESULT_BUTTON_PX,
+   RESULT_BUTTON_Y,
+   RESULT_LIST_X,
++  TITLE_MUSIC_OFF_JA,
++  TITLE_MUSIC_ON_JA,
+   TITLE_SOUND_OFF_JA,
+   TITLE_SOUND_ON_JA,
+ } from '../config/menu-config';
+ import { SFX_PAUSE_OPEN } from '../config/sfx-config';
+ import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+ import { sfxCue } from '../systems/sfx-bus';
+-import { setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
++import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
+ import { HoldConfirmButton } from '../ui/hold-confirm-button';
+ import { MenuButton, addBuildLabel } from '../ui/menu-ui';
+ 
+@@ -41,6 +45,7 @@ export class PauseScene extends Phaser.Scene {
+   private resume?: MenuButton;
+   private quit?: HoldConfirmButton;
+   private soundBtn?: MenuButton;
++  private musicBtn?: MenuButton;
+   /** 二重遷移の防止 */
+   private leaving = false;
+ 
+@@ -59,6 +64,7 @@ export class PauseScene extends Phaser.Scene {
+     this.back(MENU_PRIMARY_X, RESULT_BUTTON_Y, MENU_PRIMARY_W, RESULT_BUTTON_H);
+     this.back(RESULT_LIST_X, RESULT_BUTTON_Y, MENU_PRIMARY_W, RESULT_BUTTON_H);
+     this.back(PAUSE_SOUND_X, RESULT_BUTTON_Y, PAUSE_SOUND_W, RESULT_BUTTON_H);
++    this.back(PAUSE_SOUND_X, PAUSE_MUSIC_Y, PAUSE_SOUND_W, RESULT_BUTTON_H);
+     this.add.text(GAME_WIDTH / 2, PAUSE_TITLE_Y, PAUSE_TITLE_JA, hudTextStyle(PAUSE_TITLE_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setDepth(DEPTH.hud);
+     this.add.text(GAME_WIDTH / 2, PAUSE_NOTE_Y, PAUSE_NOTE_JA, hudTextStyle(PAUSE_NOTE_PX, HUD_COLOR)).setOrigin(0.5).setDepth(DEPTH.hud);
+     this.resume = new MenuButton(this, { x: MENU_PRIMARY_X, y: RESULT_BUTTON_Y, w: MENU_PRIMARY_W, h: RESULT_BUTTON_H, title: PAUSE_RESUME_JA, titlePx: RESULT_BUTTON_PX, align: 'center' }, () => this.leave(false));
+@@ -73,14 +79,22 @@ export class PauseScene extends Phaser.Scene {
+       setSoundEnabled(!soundEnabled());
+       this.soundBtn?.setTitle(soundTitle());
+     });
++    // 「曲」ボタン（v0.7.2 S1）: 「音」のすぐ上。押すたびに切り替えて覚える（Title の「曲」と同じ値）
++    const musicTitle = (): string => (musicEnabled() ? TITLE_MUSIC_ON_JA : TITLE_MUSIC_OFF_JA);
++    this.musicBtn = new MenuButton(this, { x: PAUSE_SOUND_X, y: PAUSE_MUSIC_Y, w: PAUSE_SOUND_W, h: RESULT_BUTTON_H, title: musicTitle(), titlePx: RESULT_BUTTON_PX, align: 'center' }, () => {
++      setMusicEnabled(!musicEnabled());
++      this.musicBtn?.setTitle(musicTitle());
++    });
+     sfxCue('ui_tap', SFX_PAUSE_OPEN.gain, 0, SFX_PAUSE_OPEN.rate);
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+       this.resume?.destroy();
+       this.quit?.destroy();
+       this.soundBtn?.destroy();
++      this.musicBtn?.destroy();
+       this.resume = undefined;
+       this.quit = undefined;
+       this.soundBtn = undefined;
++      this.musicBtn = undefined;
+     });
+   }
+ 
+diff --git a/src/scenes/result-scene.ts b/src/scenes/result-scene.ts
+index c4398a9..5c172bb 100644
+--- a/src/scenes/result-scene.ts
++++ b/src/scenes/result-scene.ts
+@@ -28,7 +28,8 @@ import type { BandSummary, ShotRecord } from '../core/hit-rate';
+ import type { MissionEndReason } from '../core/mission-flow';
+ import type { KpiResultLines } from '../systems/kpi-storage';
+ import { escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
+-import { sfxResultBell } from '../systems/sfx-bus';
++import { sfxMusic, sfxResultBell } from '../systems/sfx-bus';
++import { MUSIC_CTX_MENU, MUSIC_FADE } from '../config/sfx-music-config';
+ import { resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
+ import { convoyHeadJa } from '../ui/convoy-lines';
+ import { LD_DONE } from '../core/landing';
+@@ -161,6 +162,7 @@ export class ResultScene extends Phaser.Scene {
+     this.buttons = [];
+     addBuildLabel(this);
+     sfxResultBell(r.returned); // 任務の終わりの鐘（v0.7.1 S4。帰投 2 打・それ以外は低く 1 打）
++    sfxMusic(MUSIC_CTX_MENU, r.returned ? MUSIC_FADE.resultReturnedDelayS : MUSIC_FADE.resultLostDelayS); // 鐘の後にタイトルの曲を頭から（v0.7.2 S1・D10）
+     const cx = GAME_WIDTH / 2;
+     let y = RESULT_TOP_Y;
+     // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）
+diff --git a/src/scenes/sound-lab-scene.ts b/src/scenes/sound-lab-scene.ts
+index 4b679c2..33734b0 100644
+--- a/src/scenes/sound-lab-scene.ts
++++ b/src/scenes/sound-lab-scene.ts
+@@ -6,9 +6,12 @@
+ // iOS: ボタンは指を離した時（MenuButton の onUp）に決まり、その touchend で Phaser と systems/sfx-boot が context を起こす。まだ動いていなければ押した案を 1 つ覚え、
+ // SFX_LAB.pendingS 秒の内に動き出したら鳴らす（止まっている context に積まない）。案のボタンはボタンの音を鳴らさない（聞き比べる音の頭に重ねない）。
+ // ゲームの遊び・保存（消音の設定）には触らない: 場にいる間だけ消音を解き、出る時に保存の値へ戻す。
++// v0.7.2 S1: ?sfxlab は曲の試聴の場（scenes/music-lab-scene）を開き、ここへはその「効果音の試聴へ」から来る。ここでは曲を止め（sfxMusic(MUSIC_CTX_NONE)）、下の段の「曲の試聴へ」で戻る。
+ import Phaser from 'phaser';
+ import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+ import { SFX_LAB } from '../config/sfx-config';
++import { MUSIC_LAB_FROM_SFX_JA } from '../config/music-lab-config';
++import { MUSIC_CTX_NONE } from '../config/sfx-music-config';
+ import {
+   SOUND_LAB_BACK_JA, SOUND_LAB_BACK_PX, SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_PX, SOUND_LAB_HEAD_Y, SOUND_LAB_LABEL_PX, SOUND_LAB_LABEL_SUB_PX, SOUND_LAB_NOTE_PX,
+   SOUND_LAB_PAIR_NOTE_JA, SOUND_LAB_PLAYED_JA, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA, SOUND_LAB_STATUS_IDLE_JA, SOUND_LAB_STATUS_NONE_JA, SOUND_LAB_STATUS_PX, SOUND_LAB_STATUS_WAIT_JA,
+@@ -16,9 +19,10 @@ import {
+ import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+ import { renderSfx } from '../assets/sfx-bank';
+ import { SFX_LAB_ROWS, SFX_VARIANT_GROUPS, renderSfxVariant } from '../assets/sfx-variants';
+-import { sfxCanPlay, sfxCue, sfxSetBuffer, sfxSetMuted } from '../systems/sfx-bus';
++import { sfxCanPlay, sfxCue, sfxMusic, sfxSetBuffer, sfxSetMuted } from '../systems/sfx-bus';
+ import { soundEnabled } from '../systems/sfx-settings';
+ import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
++import { musicLabSideRect } from '../ui/music-lab-layout';
+ import { soundLabBackRect, soundLabButtonRect, soundLabButtonTitle, soundLabLabelRect, type SoundLabFrame } from '../ui/sound-lab-layout';
+ 
+ /** 「続けて聞く」の行（SFX_LAB_ROWS の後）。始めと終わりの組（SFX_VARIANT_GROUPS の添字） */
+@@ -68,10 +72,12 @@ export class SoundLabScene extends Phaser.Scene {
+       }
+     }
+     const back = soundLabBackRect(frame);
+-    this.buttons.push(new MenuButton(this, { ...back, title: SOUND_LAB_BACK_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave()));
++    this.buttons.push(new MenuButton(this, { ...back, title: SOUND_LAB_BACK_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave(SCENE_KEYS.title)));
++    this.buttons.push(new MenuButton(this, { ...musicLabSideRect(frame), title: MUSIC_LAB_FROM_SFX_JA, titlePx: SOUND_LAB_BACK_PX, align: 'center' }, () => this.leave(SCENE_KEYS.musicLab)));
+     const statusText = sfxCanPlay() === null ? SOUND_LAB_STATUS_NONE_JA : SOUND_LAB_STATUS_IDLE_JA;
+     this.status = this.add.text(GAME_WIDTH - HUD_MARGIN, back.y + back.h / 2, statusText, hudTextStyle(SOUND_LAB_STATUS_PX, HUD_COLOR)).setOrigin(1, 0.5).setDepth(DEPTH.hud);
+     sfxSetMuted(false); // 場にいる間だけ鳴らす（保存の値は変えない）
++    sfxMusic(MUSIC_CTX_NONE); // 曲は止める（v0.7.2 S1。曲の試聴の場から来た時の候補の曲）
+ 
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+       for (const b of this.buttons) b.destroy();
+@@ -137,10 +143,10 @@ export class SoundLabScene extends Phaser.Scene {
+     sfxCue(g.key, 1, delayS, v.rate);
+   }
+ 
+-  /** 「戻る」: タイトルへ（差し替えた標本は SHUTDOWN で既定に戻す。二重押しは leaving で防ぐ） */
+-  private leave(): void {
++  /** 「戻る」: タイトルへ・「曲の試聴へ」（v0.7.2 S1）: 曲の試聴の場へ（差し替えた標本は SHUTDOWN で既定に戻す。二重押しは leaving で防ぐ） */
++  private leave(to: string): void {
+     if (this.leaving) return;
+     this.leaving = true;
+-    this.scene.start(SCENE_KEYS.title);
++    this.scene.start(to);
+   }
+ }
+diff --git a/src/scenes/title-scene.ts b/src/scenes/title-scene.ts
+index a5d85e1..da37f7a 100644
+--- a/src/scenes/title-scene.ts
++++ b/src/scenes/title-scene.ts
+@@ -2,6 +2,7 @@
+ // v0.6.0: キャンペーンのタブ（米PT｜日本ハードモード）。日本側は米PTの遊べる任務を 1 回ずつ帰投で終えると開く（core/campaign。一度開いたら閉じない）。
+ // v0.6.7: 任務が 4 つ以上のタブ（日本）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。米PT のタブは 1 列のまま。
+ // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
++// v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
+ import Phaser from 'phaser';
+ import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
+ import { getCampaigns, getMenuEntries, playableMissionIds } from '../config/campaign-data';
+@@ -35,13 +36,15 @@ import {
+   TITLE_ROW_STATUS_PX,
+   TITLE_ROW_SUB_PX,
+   TITLE_ROW_TITLE_PX,
++  TITLE_MUSIC_OFF_JA,
++  TITLE_MUSIC_ON_JA,
++  TITLE_MUSIC_X,
+   TITLE_SOUND_H,
+-  TITLE_SOUND_HINT_GAP,
+-  TITLE_SOUND_HINT_JA,
+-  TITLE_SOUND_HINT_PX,
+   TITLE_SOUND_OFF_JA,
+   TITLE_SOUND_ON_JA,
+   TITLE_SOUND_PX,
++  TITLE_SOUND_SUB_JA,
++  TITLE_SOUND_SUB_PX,
+   TITLE_SOUND_W,
+   TITLE_SOUND_X,
+   TITLE_SOUND_Y,
+@@ -56,13 +59,15 @@ import {
+   titleHistSubJa,
+   titleMarkerLockedSubJa,
+ } from '../config/menu-config';
++import { MUSIC_CTX_MENU } from '../config/sfx-music-config';
+ import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+ import { shortLabelJa } from '../core/briefing';
+ import { campaignStatus, type CampaignStatus } from '../core/campaign';
+ import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
+ import { seedForBriefing, type BriefingInit } from '../core/sortie';
+ import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLegacyUnlocks, setLeadMarkerEnabled, sortiesDone, unlockedCampaignIds } from '../systems/progress-storage';
+-import { setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
++import { sfxMusic } from '../systems/sfx-bus';
++import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
+ import { MenuButton, addBuildLabel } from '../ui/menu-ui';
+ import { titleGridOn, titleRowRect } from '../ui/title-grid';
+ 
+@@ -75,8 +80,9 @@ export class TitleScene extends Phaser.Scene {
+   /** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目。localStorage に覚える。解放前は押せない） */
+   private marker?: MenuButton;
+   private diff?: MenuButton;
+-  /** 音のオン／オフ（v0.7.1 S1。右上。localStorage に覚える） */
++  /** 音のオン／オフ（v0.7.1 S1。右上。localStorage に覚える）と、その左の曲のオン／オフ（v0.7.2 S1。別の鍵に覚える） */
+   private soundBtn?: MenuButton;
++  private musicBtn?: MenuButton;
+   /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
+   private leaving = false;
+ 
+@@ -95,6 +101,7 @@ export class TitleScene extends Phaser.Scene {
+     const cx = GAME_WIDTH / 2;
+ 
+     addBuildLabel(this);
++    sfxMusic(MUSIC_CTX_MENU); // メニューの曲（v0.7.2 S1。標本ができていて context が動いていれば上げる。最初のタップは待たない）
+     this.add.text(cx, TITLE_LOGO_Y, TITLE_LOGO_TEXT, hudTextStyle(TITLE_LOGO_PX, HUD_COLOR_STRONG)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
+     // キャンペーンのタブ（v0.6.0）: 選んでいるタブは枠を強く。未解放は条件と進みを出して押せない。押したら registry に覚えて作り直す（Title は静的な画面。§7）
+     const campaigns = getCampaigns(data);
+@@ -171,13 +178,19 @@ export class TitleScene extends Phaser.Scene {
+     });
+     this.marker.setEnabled(unlocked);
+     this.marker.setSelected(unlocked && leadMarkerEnabled());
+-    // 音（v0.7.1 S1）: 右上。タップで オン ⇄ オフ（覚える。オンにした時はボタンの音が鳴る）。左の一言は本体の消音スイッチ（ページからは読めない）
++    // 音（v0.7.1 S1）: 右上。タップで オン ⇄ オフ（覚える。オンにした時はボタンの音が鳴る）。2 行目は本体の消音スイッチ（ページからは読めない。v0.7.2 S1 で左の一言から移した）
+     const soundTitle = (): string => (soundEnabled() ? TITLE_SOUND_ON_JA : TITLE_SOUND_OFF_JA);
+-    this.soundBtn = new MenuButton(this, { x: TITLE_SOUND_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: soundTitle(), titlePx: TITLE_SOUND_PX, align: 'center' }, () => {
++    const soundSpec = { x: TITLE_SOUND_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: soundTitle(), titlePx: TITLE_SOUND_PX, sub: TITLE_SOUND_SUB_JA, subPx: TITLE_SOUND_SUB_PX, align: 'center' as const };
++    this.soundBtn = new MenuButton(this, soundSpec, () => {
+       setSoundEnabled(!soundEnabled());
+       this.soundBtn?.setTitle(soundTitle());
+     });
+-    this.add.text(TITLE_SOUND_X - TITLE_SOUND_HINT_GAP, TITLE_SOUND_Y + TITLE_SOUND_H / 2, TITLE_SOUND_HINT_JA, hudTextStyle(TITLE_SOUND_HINT_PX, HUD_COLOR)).setOrigin(1, 0.5).setAlign('right').setDepth(DEPTH.hud);
++    // 曲（v0.7.2 S1）: 「音」の左。タップで オン ⇄ オフ（「音」と別に覚える。オフは曲だけ 0.3 秒で消え、オンでメニューの曲を頭から）
++    const musicTitle = (): string => (musicEnabled() ? TITLE_MUSIC_ON_JA : TITLE_MUSIC_OFF_JA);
++    this.musicBtn = new MenuButton(this, { x: TITLE_MUSIC_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: musicTitle(), titlePx: TITLE_SOUND_PX, align: 'center' }, () => {
++      setMusicEnabled(!musicEnabled());
++      this.musicBtn?.setTitle(musicTitle());
++    });
+ 
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+       for (const r of this.rows) r.destroy();
+@@ -192,6 +205,8 @@ export class TitleScene extends Phaser.Scene {
+       this.marker = undefined;
+       this.soundBtn?.destroy();
+       this.soundBtn = undefined;
++      this.musicBtn?.destroy();
++      this.musicBtn = undefined;
+     });
+   }
+ 
+diff --git a/src/systems/sfx-boot.ts b/src/systems/sfx-boot.ts
+index 0ba968e..9032fec 100644
+--- a/src/systems/sfx-boot.ts
++++ b/src/systems/sfx-boot.ts
+@@ -9,6 +9,8 @@
+ //   保険に window の capture の touchend・pointerup と pageshow を付けたままにして、context が動いていなければ resume（拒否は握る。着信・Siri・長い裏の後）。
+ //   context の作り直しは入れない（L3。実機で「戻らない」が出たら次の段）。
+ // §7: 毎フレームの口（onPreStep）と保険の口（onGesture）は確保しない（起動時に作った関数をそのまま渡す）。標本を作る数フレーム（起動の直後だけ）の後は、buildNext は数の比べ 1 つ。
++// v0.7.2 S1（spec-v0720 D4・D7）: 起動で「曲」の保存の値を渡し、効果音の列が終わったら曲を作り始める（作るのはその次のフレームから・1 フレームに決まった量＝systems/sfx-music-build）。
++//   曲を作る時間の記録のために実時間の口（wallNow）をエンジンへ渡す（音の層で performance を読むのはこのファイルだけ）。
+ import Phaser from 'phaser';
+ import { renderSfx, sfxImplementedKeys } from '../assets/sfx-bank';
+ import { DEBUG_ENABLED } from '../config/game-config';
+@@ -16,7 +18,7 @@ import { SFX_AUDIO_SESSION_TYPE, SFX_BUILD_FIRST, type SfxKey } from '../config/
+ import { registerSfxEngine } from './sfx-bus';
+ import type { SfxCtx } from './sfx-audio-types';
+ import { SfxEngine } from './sfx-engine';
+-import { soundEnabled } from './sfx-settings';
++import { musicEnabled, soundEnabled } from './sfx-settings';
+ 
+ const MS_PER_S = 1000;
+ let engine: SfxEngine | null = null;
+@@ -24,6 +26,11 @@ let engine: SfxEngine | null = null;
+ let buildQueue: readonly SfxKey[] = [];
+ let buildAt = 0;
+ 
++/** 実時間の ms（曲を作る時間の記録。起動時に 1 回渡す関数＝毎フレームの閉包を作らない） */
++function wallNow(): number {
++  return performance.now();
++}
++
+ function warn(err: unknown): void {
+   console.warn(`音のエンジンを作れない（音なしで続ける）: ${err instanceof Error ? err.message : String(err)}`);
+ }
+@@ -38,6 +45,7 @@ function buildNext(e: SfxEngine): void {
+     buildAt = buildQueue.length;
+     warn(err);
+   }
++  if (buildAt >= buildQueue.length) e.music.allowBuild(); // 効果音の列が終わった: 次のフレームから曲を作る（v0.7.2 S1・D4）
+ }
+ 
+ function onPreStep(_time: number, deltaMs: number): void {
+@@ -54,12 +62,13 @@ function onGesture(): void {
+ export function createSfx(game: Phaser.Game): void {
+   if (engine !== null || !('context' in game.sound) || !game.sound.context) return;
+   try {
+-    const e = new SfxEngine(game.sound.context as unknown as SfxCtx);
++    const e = new SfxEngine(game.sound.context as unknown as SfxCtx, wallNow);
+     const keys = sfxImplementedKeys();
+     for (const key of keys) if (SFX_BUILD_FIRST.includes(key)) e.setBuffer(key, renderSfx(key));
+     buildQueue = keys.filter((k) => !SFX_BUILD_FIRST.includes(k));
+     buildAt = 0;
+     e.setMuted(!soundEnabled());
++    e.music.setEnabled(musicEnabled()); // 「曲: オン／オフ」の保存の値（v0.7.2 S1・D7。「音」とは別）
+     engine = e;
+   } catch (err) {
+     warn(err);
+diff --git a/src/systems/sfx-bus.ts b/src/systems/sfx-bus.ts
+index 0f613a2..78dc7b7 100644
+--- a/src/systems/sfx-bus.ts
++++ b/src/systems/sfx-bus.ts
+@@ -6,7 +6,10 @@
+ // 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
+ // （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。S4 で sfxCue の遅らせ（再生の時計で予約）。
+ // IP2: 試聴の場（?sfxlab）の口 sfxSetBuffer・sfxCanPlay（scenes/sound-lab-scene だけが呼ぶ。ゲームの中では呼ばない）。
++// v0.7.2 S1: 曲の口 sfxMusic・sfxMusicRelease・sfxMusicPaused・sfxMusicEnabled（場面・任務の終わり・一時停止・「曲」ボタン）と、曲の試聴の場の口 sfxMusicAudition・sfxMusicLab*
++// （scenes/music-lab-scene だけ）。決めと音源は systems/sfx-music-player（止まっている context・消音・曲オフ・標本なしでは音源を作らない）。
+ import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
++import type { MusicKey } from '../config/sfx-music-config';
+ import type { SfxLoopTargets } from '../core/sfx-loops';
+ import { sfxBand, sfxGunKey } from '../core/sfx-mix';
+ import type { SfxEngine } from './sfx-engine';
+@@ -96,3 +99,42 @@ export function sfxSetBuffer(key: SfxKey, samples: Float32Array): void {
+ export function sfxCanPlay(): boolean | null {
+   return engine === null ? null : engine.running && !engine.muted;
+ }
++
++/**
++ * 曲の場面を頼む（v0.7.2 S1。D8）: Title・Result は MUSIC_CTX_MENU（Result は鐘の後 delayS 秒）・MissionSfx は MUSIC_CTX_MISSION・曲の試聴の場は MUSIC_CTX_LAB・効果音の試聴の場は
++ * MUSIC_CTX_NONE。同じ場面の頼み直しは何もしない（Briefing は頼まない＝Title の曲が続く）。場面が替われば一時停止は解く
++ */
++export function sfxMusic(ctx: number, delayS = 0): void {
++  if (engine !== null) engine.music.request(ctx, delayS);
++}
++
++/** 任務の終わり（MissionSfx の SHUTDOWN）: 今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼んだメニューの曲を消さない） */
++export function sfxMusicRelease(ctx: number): void {
++  if (engine !== null) engine.music.release(ctx);
++}
++
++/** 一時停止で曲の束を 0 へ・再開で戻す（Hud の PAUSE・RESUME。音源は止めない） */
++export function sfxMusicPaused(v: boolean): void {
++  if (engine !== null) engine.music.setPaused(v);
++}
++
++/** 「曲: オン／オフ」（systems/sfx-settings・起動時の保存の値・試聴の場）。オフは 0.3 秒で 0 にして止め、オンで頭から */
++export function sfxMusicEnabled(v: boolean): void {
++  if (engine !== null) engine.music.setEnabled(v);
++}
++
++/** 曲の試聴の場: 鳴らす候補（null で止める）。まだ作っていなければ作り始め、できたらそのまま鳴らす */
++export function sfxMusicAudition(key: MusicKey | null): void {
++  if (engine !== null) engine.music.audition(key);
++}
++
++/** 曲の試聴の場の文: 鳴らしている曲・作っている曲（無ければ null）と進み（0〜1） */
++export function sfxMusicLabPlaying(): MusicKey | null {
++  return engine === null ? null : engine.music.playingKey;
++}
++export function sfxMusicLabBuilding(): MusicKey | null {
++  return engine === null ? null : engine.music.build.key;
++}
++export function sfxMusicLabProgress(): number {
++  return engine === null ? 0 : engine.music.build.progress;
++}
+diff --git a/src/systems/sfx-engine.ts b/src/systems/sfx-engine.ts
+index 5c1f0fb..be2327a 100644
+--- a/src/systems/sfx-engine.ts
++++ b/src/systems/sfx-engine.ts
+@@ -11,19 +11,21 @@
+ // 時計（D4）: 間引きはゲームの時計（tick が積む delta の和）、声の空きは再生の時計。rate の揺れは音だけの乱数（SFX_SEED_PLAY。頼まれた順に引く＝音の状態にも標本の有無にも依らない）。
+ // 確かめの口 tap（S2。scripts/headless/sfx-probe が ?debug の __sfx に付ける。ふだんは null）: 頼まれた単発を、rate の揺れの後・落とす前に知らせる＝記録は音の状態に依らない。
+ // 論理は読まない（位置の差だけを systems/sfx-bus から受け取る）。
++// v0.7.2 S1: 見張りを systems/sfx-watchdog へ分け（振る舞いは同じ）、曲の再生 systems/sfx-music-player を持つ（曲の束は master へ直に＝リミッタを通さない。tick から毎フレーム
++// update＝作る仕事と 10 Hz の決め、消音は曲も止める）。wall は実時間の ms（曲を作る時間の記録だけ。systems/sfx-boot が performance.now を渡す。tests は 0）。
+ import {
+-  SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, SFX_WATCHDOG, type SfxKey,
++  SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, type SfxKey,
+ } from '../config/sfx-config';
+ import { SeededRng } from '../core/rng';
+ import { SfxMixer, sfxKeyIndex } from '../core/sfx-mix';
+-import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource, SfxThenable } from './sfx-audio-types';
++import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource } from './sfx-audio-types';
+ import { SfxLoopPlayer } from './sfx-loop-player';
++import { SfxMusicPlayer, type SfxMusicStats } from './sfx-music-player';
++import { SfxWatchdog, sfxSwallow } from './sfx-watchdog';
+ 
+ const RUNNING = 'running';
+-function noop(): void {}
+-/** 約束の拒否を握る（iOS 26 の「Failed to start the audio device」。L2） */
+-function swallow(p: SfxThenable | undefined): void {
+-  if (p && typeof p.catch === 'function') p.catch(noop);
++function noClock(): number {
++  return 0;
+ }
+ 
+ /** scripts/headless の確かめ用の数 */
+@@ -49,6 +51,8 @@ export interface SfxStats {
+   loopStarts: number;
+   loopStops: number;
+   loopWrites: number;
++  /** v0.7.2 S1: 曲の再生と作る列の数 */
++  music: SfxMusicStats;
+ }
+ 
+ /** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし。delayS は遅らせる秒＝S4） */
+@@ -63,6 +67,8 @@ export class SfxEngine {
+   /** ループの束（master へ直につなぐ）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
+   readonly loopBus: SfxGainNode;
+   readonly loops: SfxLoopPlayer;
++  /** 曲の再生（v0.7.2 S1。systems/sfx-bus の sfxMusic… が動かす） */
++  readonly music: SfxMusicPlayer;
+   private readonly fade: SfxGainNode;
+   private readonly voiceGain: SfxGainNode[] = [];
+   private readonly voicePan: (SfxPanNode | null)[] = [];
+@@ -76,19 +82,15 @@ export class SfxEngine {
+   private pendingAtS = 0;
+   private pendingRate = 1;
+   private pendingGain = 1;
+-  private watchLastMs = 0;
+-  private watchCtS = -1;
+-  private frozenMs = 0;
+-  private watchKickMs = -Infinity;
+-  private watchTries = 0;
++  /** context の見張り（v0.7.2 S1 で systems/sfx-watchdog へ分けた。振る舞いは v0.7.1 のまま） */
++  private readonly watchdog: SfxWatchdog;
+   private sources = 0;
+   private idleDrops = 0;
+   private noBuffer = 0;
+   private pendingPlayed = 0;
+   private kicks = 0;
+-  private watchdogKicks = 0;
+ 
+-  constructor(private readonly ctx: SfxCtx) {
++  constructor(private readonly ctx: SfxCtx, wall: () => number = noClock) {
+     const limiter = ctx.createDynamicsCompressor();
+     limiter.threshold.value = SFX_LIMITER.thresholdDb;
+     limiter.knee.value = SFX_LIMITER.kneeDb;
+@@ -118,6 +120,8 @@ export class SfxEngine {
+       this.voiceSrc.push(null);
+     }
+     this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);
++    this.music = new SfxMusicPlayer(ctx, this.master, wall);
++    this.watchdog = new SfxWatchdog(ctx);
+   }
+ 
+   /** 鍵ごとに 1 回ずつ（Boot と、その後の数フレーム）: 合成した標本（22,050 Hz・モノ）を再生の buffer に写す（context が止まっていても作れる。投げたら呼ぶ側がやめる＝R7） */
+@@ -155,16 +159,17 @@ export class SfxEngine {
+       g.setValueAtTime(SFX_MASTER_GAIN, now);
+       this.kick();
+     }
++    this.music.setMuted(v); // 曲の音源も止める（電池）・解けば頭から（v0.7.2 S1・L12）
+   }
+ 
+   /** context が動いていなければ起こす（タッチの終わり・pageshow・消音を解いた時。拒否は握る＝L2・L3） */
+   kick(): void {
+     if (this.ctx.state === RUNNING) return;
+     this.kicks++;
+-    swallow(this.ctx.resume());
++    sfxSwallow(this.ctx.resume());
+   }
+ 
+-  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、10 Hz で context の見張り（L3c）。wallMs は実時間 */
++  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、曲（作る仕事と 10 Hz の決め）、10 Hz で context の見張り（L3c）。wallMs は実時間 */
+   tick(dtS: number, wallMs: number): void {
+     this.gameS += dtS;
+     const key = this.pendingKey;
+@@ -176,30 +181,8 @@ export class SfxEngine {
+         this.playFlat(key, this.pendingRate, this.pendingGain);
+       }
+     }
+-    const el = wallMs - this.watchLastMs;
+-    if (el < SFX_WATCHDOG.checkMs) return;
+-    this.watchLastMs = wallMs;
+-    const ct = this.ctx.currentTime;
+-    if (this.ctx.state !== RUNNING) {
+-      this.watchCtS = -1;
+-      this.frozenMs = 0;
+-      return;
+-    }
+-    if (ct !== this.watchCtS) {
+-      if (this.watchCtS >= 0) this.watchTries = 0; // 時計が進むのを見た
+-      this.watchCtS = ct;
+-      this.frozenMs = 0;
+-      return;
+-    }
+-    this.frozenMs += el < SFX_WATCHDOG.capMs ? el : SFX_WATCHDOG.capMs;
+-    if (this.frozenMs < SFX_WATCHDOG.frozenMs || wallMs - this.watchKickMs < SFX_WATCHDOG.throttleMs || this.watchTries >= SFX_WATCHDOG.maxTries) return;
+-    // running なのに時計が進まない（iOS の復帰の不具合の 1 つ）: 止めてすぐ再開を 1 回。次は throttleMs の後・進まないまま maxTries 回まで（作り直しは v0.7.1 では入れない＝L3）
+-    this.watchKickMs = wallMs;
+-    this.frozenMs = 0;
+-    this.watchTries++;
+-    this.watchdogKicks++;
+-    swallow(this.ctx.suspend());
+-    swallow(this.ctx.resume());
++    this.music.update(dtS);
++    this.watchdog.tick(wallMs);
+   }
+ 
+   /** 位置つきの単発（dx・dy は聞き手からの差 m。systems/sfx-bus が聞き手の位置を引いて渡す。minIntervalS はこの 1 発だけの最小間隔＝core/sfx-mix） */
+@@ -251,9 +234,9 @@ export class SfxEngine {
+     return {
+       state: this.ctx.state, muted: this.mutedNow, gameS: this.gameS, buffers: this.buffers.reduce((n, b) => n + (b ? 1 : 0), 0),
+       sources: this.sources, busy: this.mixer.busyVoices(this.ctx.currentTime), maxBusy: this.mixer.maxBusy,
+-      idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdogKicks,
++      idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdog.kicks,
+       played: Array.from(this.mixer.played), dropped: Array.from(this.mixer.dropped),
+-      loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes,
++      loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes, music: this.music.stats(),
+     };
+   }
+ 
+diff --git a/src/systems/sfx-mission.ts b/src/systems/sfx-mission.ts
+index 978d868..e0bad6f 100644
+--- a/src/systems/sfx-mission.ts
++++ b/src/systems/sfx-mission.ts
+@@ -5,12 +5,15 @@
+ // （Hud のシーンは任務ごとに使い回される＝口を残すと前の任務の物が動く）。口は起動時に作った関数と自分を渡す（閉包を作らない）。
+ // 画面の枠組みの型は使わない（出来事の口は構造の型・名前は下の 3 つ＝Phaser.Scenes.Events の PAUSE・RESUME・SHUTDOWN と同じ文字。tests/sfx-mission が node_modules の定義と突き合わせる）。
+ // S4: 状態の合図（core/sfx-cues の stepSfxCues。発見の警報・魚雷の発射・被弾・鐘など）を同じ update で決め、自分の cue（合図の口）から systems/sfx-bus の sfxCue へ。
++// v0.7.2 S1（spec-v0720 §4.2・brief L13）: 作る時に曲の場面 MISSION を頼み（S1 は任務の曲がまだ無い＝メニューの曲が 1.2 秒で消えるだけ。S2 で 3 層）、PAUSE・RESUME で曲の束も 0 へ／戻し、
++// SHUTDOWN で「今も任務なら」外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼まれたメニューの曲を消さない）。
+ import type { BoatTelemetry } from '../core/boat-telemetry';
+ import type { SfxKey } from '../config/sfx-config';
++import { MUSIC_CTX_MISSION } from '../config/sfx-music-config';
+ import { createSfxCueState, stepSfxCues, type SfxCueSink } from '../core/sfx-cues';
+ import { createSfxLoopState, createSfxLoopTargets, stepSfxLoops, type SfxLoopState } from '../core/sfx-loops';
+ import { ktToMps } from '../core/units';
+-import { sfxCue, sfxLoops, sfxLoopsPaused, sfxLoopsStop } from './sfx-bus';
++import { sfxCue, sfxLoops, sfxLoopsPaused, sfxLoopsStop, sfxMusic, sfxMusicPaused, sfxMusicRelease } from './sfx-bus';
+ 
+ /** シーンの出来事の名前（Phaser.Scenes.Events と同じ文字） */
+ export const SFX_SCENE_EV_PAUSE = 'pause';
+@@ -36,6 +39,7 @@ export class MissionSfx implements SfxCueSink {
+     events.on(SFX_SCENE_EV_PAUSE, this.onPause, this);
+     events.on(SFX_SCENE_EV_RESUME, this.onResume, this);
+     events.once(SFX_SCENE_EV_SHUTDOWN, this.onShutdown, this);
++    sfxMusic(MUSIC_CTX_MISSION);
+   }
+ 
+   /** 毎フレーム（HudScene.update。deltaMs はそのフレームの ms）: 状態の合図を鳴らし、ループの目標を決めて渡す */
+@@ -53,15 +57,18 @@ export class MissionSfx implements SfxCueSink {
+ 
+   private onPause(): void {
+     sfxLoopsPaused(true);
++    sfxMusicPaused(true);
+   }
+ 
+   private onResume(): void {
+     sfxLoopsPaused(false);
++    sfxMusicPaused(false);
+   }
+ 
+   private onShutdown(): void {
+     this.events.off(SFX_SCENE_EV_PAUSE, this.onPause, this);
+     this.events.off(SFX_SCENE_EV_RESUME, this.onResume, this);
+     sfxLoopsStop();
++    sfxMusicRelease(MUSIC_CTX_MISSION);
+   }
+ }
+diff --git a/src/systems/sfx-settings.ts b/src/systems/sfx-settings.ts
+index 4352ad0..e12befa 100644
+--- a/src/systems/sfx-settings.ts
++++ b/src/systems/sfx-settings.ts
+@@ -2,35 +2,63 @@
+ // progress-storage の見越し点マーカー（leadMarkerEnabled）と同じ作法: 読めない・書けない（プライベートブラウズ・容量・無効）時も例外を外へ出さない。update では触らない（§7）。
+ // 違う所: 選んだ値はこのページの間は覚えておく（保存が効かない端末でも「音: オフ」が効く。開き直すと音オンに戻る）。
+ // iOS の注意: Safari とホーム画面のアプリ（PWA）は保存場所が別。
++// v0.7.2 S1（spec-v0720 D7・brief L12）: 「曲: オン／オフ」も同じ作法で別の鍵 night-hunters.music（'0' でオフ・既定オン）。「音」とは別に切り替え・別に覚える
++// （「音: オフ」の間は曲も鳴らない＝master が 0。曲だけ止めたい時が「曲: オフ」）。読み書きは下の 2 つの関数の 1 か所ずつ。
+ import { SFX_STORAGE_KEY } from '../config/sfx-config';
+-import { sfxSetMuted, sfxUi } from './sfx-bus';
++import { MUSIC_STORAGE_KEY } from '../config/sfx-music-config';
++import { sfxMusicEnabled, sfxSetMuted, sfxUi } from './sfx-bus';
+ 
+-/** このページで選んだ値（まだ選んでいなければ null＝保存を読む） */
++/** このページで選んだ値（まだ選んでいなければ null＝保存を読む）: 音・曲 */
+ let chosen: boolean | null = null;
++let chosenMusic: boolean | null = null;
+ 
+-/** 音を鳴らす設定か（既定はオン） */
+-export function soundEnabled(): boolean {
+-  if (chosen !== null) return chosen;
++/** 保存の値（'0' だけがオフ。無い・読めなければオン） */
++function storedOn(key: string): boolean {
+   try {
+-    return globalThis.localStorage?.getItem(SFX_STORAGE_KEY) !== '0';
++    return globalThis.localStorage?.getItem(key) !== '0';
+   } catch {
+     return true;
+   }
+ }
+ 
+-/** 音のオン／オフを選ぶ（Title・一時停止の「音」ボタン）: 覚えて、エンジンの消音を切り替え、オンにした時はボタンの音を鳴らす（止まっている context もここで起こす） */
+-export function setSoundEnabled(v: boolean): void {
+-  chosen = v;
++/** 保存する（書けなければ覚えないだけ） */
++function store(key: string, v: boolean): void {
+   try {
+-    globalThis.localStorage?.setItem(SFX_STORAGE_KEY, v ? '1' : '0');
++    globalThis.localStorage?.setItem(key, v ? '1' : '0');
+   } catch {
+     // 覚えないだけ
+   }
++}
++
++/** 音を鳴らす設定か（既定はオン） */
++export function soundEnabled(): boolean {
++  return chosen !== null ? chosen : storedOn(SFX_STORAGE_KEY);
++}
++
++/** 音のオン／オフを選ぶ（Title・一時停止の「音」ボタン）: 覚えて、エンジンの消音を切り替え、オンにした時はボタンの音を鳴らす（止まっている context もここで起こす） */
++export function setSoundEnabled(v: boolean): void {
++  chosen = v;
++  store(SFX_STORAGE_KEY, v);
+   sfxSetMuted(!v);
+   if (v) sfxUi('ui_tap');
+ }
+ 
++/** 曲を鳴らす設定か（既定はオン。v0.7.2 S1） */
++export function musicEnabled(): boolean {
++  return chosenMusic !== null ? chosenMusic : storedOn(MUSIC_STORAGE_KEY);
++}
++
++/** 曲のオン／オフを選ぶ（Title・一時停止の「曲」ボタン）: 覚えて、曲の再生に渡す（オフは 0.3 秒で消して止め、オンで今の場面の曲を頭から。ボタンの音は MenuButton が鳴らす） */
++export function setMusicEnabled(v: boolean): void {
++  chosenMusic = v;
++  store(MUSIC_STORAGE_KEY, v);
++  sfxMusicEnabled(v);
++}
++
+ /** tests: このページで選んだ値を忘れる */
+ export function forgetSoundChoice(): void {
+   chosen = null;
+ }
++export function forgetMusicChoice(): void {
++  chosenMusic = null;
++}
