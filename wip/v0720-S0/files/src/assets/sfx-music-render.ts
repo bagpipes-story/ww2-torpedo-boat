@@ -1,9 +1,10 @@
 // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §2・§10 R1〜R3・R6・R7）: 曲を数フレームに分けて 1 本の標本へ描く（MusicBuilder.stepBuild(予算)）。
 // 段: 0 で埋める → 音符（楽器の口 stepTone・stepFm・stepNoise。予算の内なら音符の途中でも区切り、状態を残して続きから書く）→（ラジオの C だけ: 頂の下見 → 濾波器のならし
-// ＝輪の末尾 0.1 秒を先に通して状態を作る（継ぎ目で状態が続く＝R7）→ 柔らかい歪み・帯 320〜3,200 Hz）→ 数え（和・最大・最小）→ 直流を引いて頂 0.9 に掛ける。
-// どの段も予算の単位（config の MUSIC_COST）で数え、1 回の stepBuild は予算を超えない。分け方に依らず標本はビット同一（同じ順の同じ計算。状態は Float64）。
+// ＝輪の末尾 0.1 秒を先に通して状態を作る（継ぎ目で状態が続く＝R7）→ 柔らかい歪み・帯 320〜3,200 Hz）→ 数え（和・最大・最小）→ 直流を引いて頂 0.9 に掛ける（打楽器の層 L1・L2 は
+// 頂を 3 次で丸める＝glue。任務の出口の頂の余りのため）。どの段も予算の単位（config の MUSIC_COST）で数え、1 回の stepBuild は予算を超えない。JIT の初回（書き方ごとに初めの
+// 60 万標本）は 1 回に 2 万標本まで（MUSIC_BUILD_WARM）。分け方に依らず標本はビット同一（同じ順の同じ計算。状態は Float64）。
 // 輪: 尾は頭へ回して描く（楽器の口）＝末尾の次が頭に続く。作業用の配列は呼ぶ側の 1 本（一番長い鍵の長さ＝R2）を使い回し、出来た標本は result()（次に作る前に写す）。
-// 毎フレームの口は stepBuild（と中の step*。確保しない＝tests/sfx-rules）。作る時だけの口（constructor・renderMusic・musicScore）は確保してよい。
+// 毎フレームの口は stepBuild（と中の step*。確保しない＝tests/sfx-rules）。作る時だけの口（constructor・renderMusic・composeMusicKey）は確保してよい。
 import { MUSIC_BUILD_WARM, MUSIC_COST, MUSIC_PEAK, MUSIC_SAMPLE_RATE, MUSIC_WORK_SAMPLES, type MusicKey } from '../config/sfx-music-config';
 import { composeMusic, type MusicScore } from './sfx-music-compose';
 import { MUSIC_INSTRUMENTS, MusicTables, musicNoteSamples, musicUnitsPerSample, stepFm, stepNoise, stepTone } from './sfx-music-synth';
@@ -178,13 +179,13 @@ export class MusicBuilder {
 }
 
 /** 曲の楽譜（作曲は 1 回。同じ鍵は同じ音符） */
-export function musicScore(key: MusicKey): MusicScore {
+export function composeMusicKey(key: MusicKey): MusicScore {
   return composeMusic(MUSIC_THEMES[key], musicRng(key));
 }
 
 /** 一度に描く（tests・scripts 用。表と作業用の配列を作り、出来た標本を写して返す）。budget を渡すとその予算で分けて描く */
 export function renderMusic(key: MusicKey, budget = Infinity, tables = new MusicTables(), work = new Float32Array(MUSIC_WORK_SAMPLES)): Float32Array {
-  const b = new MusicBuilder(tables, work, musicScore(key));
+  const b = new MusicBuilder(tables, work, composeMusicKey(key));
   for (let guard = 0; !b.done; guard++) {
     if (b.stepBuild(budget === Infinity ? 1e15 : budget) === 0 && guard > 4) throw new Error(`曲 '${key}' が予算 ${budget} で進まない`);
   }

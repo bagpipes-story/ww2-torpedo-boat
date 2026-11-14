@@ -1,12 +1,12 @@
 // 層の中の楽器ごとの寄与（頂・RMS・>400 Hz）。scratchpad の道具
 import { MUSIC_KEYS, MUSIC_WORK_SAMPLES, type MusicKey } from '/home/user/ww2-torpedo-boat/src/config/sfx-music-config';
-import { MusicBuilder, musicScore } from '/home/user/ww2-torpedo-boat/src/assets/sfx-music-render';
+import { MusicBuilder, composeMusicKey } from '/home/user/ww2-torpedo-boat/src/assets/sfx-music-render';
 import { MusicTables } from '/home/user/ww2-torpedo-boat/src/assets/sfx-music-synth';
 import { bandShares } from '/home/user/ww2-torpedo-boat/scripts/sfx-music';
 const tables = new MusicTables(), work = new Float32Array(MUSIC_WORK_SAMPLES);
 const keys = (process.env.KEYS ?? MUSIC_KEYS.join(',')).split(',') as MusicKey[];
 for (const key of keys) {
-  const sc = musicScore(key), insts = [...new Set(sc.notes.map((x) => x.inst))];
+  const sc = composeMusicKey(key), insts = [...new Set(sc.notes.map((x) => x.inst))];
   const full = new MusicBuilder(tables, work, sc); while (!full.done) full.stepBuild(1e12);
   const all = full.result().slice();
   // 仕上げの前の大きさで比べたいので、楽器ごとに同じ仕上げ（全体の倍率）を使う: 全体の raw の頂を知るために raw を作る

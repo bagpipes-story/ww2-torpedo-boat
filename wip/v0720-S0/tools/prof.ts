@@ -1,10 +1,10 @@
 import { MUSIC_BUILD_BUDGET, MUSIC_KEYS, MUSIC_WORK_SAMPLES } from '/home/user/ww2-torpedo-boat/src/config/sfx-music-config';
-import { MusicBuilder, musicScore } from '/home/user/ww2-torpedo-boat/src/assets/sfx-music-render';
+import { MusicBuilder, composeMusicKey } from '/home/user/ww2-torpedo-boat/src/assets/sfx-music-render';
 import { MusicTables } from '/home/user/ww2-torpedo-boat/src/assets/sfx-music-synth';
 const tables = new MusicTables(), work = new Float32Array(MUSIC_WORK_SAMPLES);
 while (!tables.ready) tables.stepTables(MUSIC_BUILD_BUDGET);
 for (let round = 0; round < 2; round++) for (const key of MUSIC_KEYS) {
-  const b = new MusicBuilder(tables, work, musicScore(key)) as any;
+  const b = new MusicBuilder(tables, work, composeMusicKey(key)) as any;
   const per = new Map<string, number[]>();
   while (!b.done) {
     const stage = b.stage, inst = stage === 1 ? b.score.notes[b.at].inst : '';

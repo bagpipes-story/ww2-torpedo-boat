@@ -92,9 +92,9 @@ function attackN(d: InstDef, nt: MusicNote): number {
 function decayOf(d: InstDef, nt: MusicNote): number {
   return nt.decayS > 0 ? nt.decayS : d.decayFrac ? (nt.len * d.decayFrac) / SR : d.decayS;
 }
-/** 音符を書く標本の数（押さえている長さ＋離した後の減衰。減衰する楽器は −50 dB まで。鈴は打った後に鳴り切る） */
+/** 音符を書く標本の数（押さえている長さ＋離した後の減衰。減衰する楽器は −50 dB まで（胴は胴の減衰で）。鈴は打った後に鳴り切る） */
 export function musicNoteSamples(nt: MusicNote): number {
-  const d = MUSIC_INSTRUMENTS[nt.inst], dec = decayOf(d, nt), ring = dec > 0 ? attackN(d, nt) + Math.ceil(TAIL * dec * SR) : Infinity;
+  const d = MUSIC_INSTRUMENTS[nt.inst], dec = Math.max(decayOf(d, nt), d.bodyGain ? d.bodyDecayS ?? 0 : 0), ring = dec > 0 ? attackN(d, nt) + Math.ceil(TAIL * dec * SR) : Infinity;
   return d.kind === 'fm' ? ring : Math.min(ring, nt.len + Math.ceil(TAIL * d.releaseS * SR));
 }
 /** 鳴っている秒（−20 dB まで。IP1〜IP2 の教えの確かめ） */
@@ -182,7 +182,7 @@ export function stepTone(dst: Float32Array, n: number, nt: MusicNote, i0: number
         cur = inc * (1 + depth * s[lfo | 0]! + wowDepth * s[(((nt.start + i) * wowK) % TAB) | 0]!);
         if ((lfo += vibInc) >= TAB) lfo -= TAB;
       }
-      e = i < an ? i * invA : i < len ? (i === an ? 1 : e * rD) : e * rR;
+      e = i >= len ? e * rR : i < an ? i * invA : i === an ? 1 : e * rD;
       const j = ph | 0, f = ph - j;
       let v = w[r1 + j]! + (w[r1 + j + 1]! - w[r1 + j]!) * f;
       if (r2 >= 0) v += (w[r2 + j]! + (w[r2 + j + 1]! - w[r2 + j]!) * f - v) * (i >= bn ? bright : (bright * i) / bn);
@@ -234,7 +234,7 @@ export function stepNoise(dst: Float32Array, n: number, nt: MusicNote, i0: numbe
       const x = z[(z0 + i) & (NOISE_N - 1)]!;
       lo += aH * (x - lo);
       y += aL * (x - lo - y);
-      e = i < an ? i * invA : i < len ? (i === an ? 1 : e * rD) : e * rR;
+      e = i >= len ? e * rR : i < an ? i * invA : i === an ? 1 : e * rD;
       let v = y * e * ng;
       if (bg > 0) {
         const j = bp | 0;

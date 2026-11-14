@@ -15,7 +15,7 @@ import {
 } from '../src/config/sfx-music-config';
 import { SFX_MAX_TOTAL_SAMPLES } from '../src/config/sfx-config';
 import { composeMusic, melodyCheck, type MusicScore } from '../src/assets/sfx-music-compose';
-import { MusicBuilder, musicScore } from '../src/assets/sfx-music-render';
+import { MusicBuilder, composeMusicKey } from '../src/assets/sfx-music-render';
 import { MusicTables } from '../src/assets/sfx-music-synth';
 import { MUSIC_THEMES } from '../src/assets/sfx-music-themes';
 import { SeededRng } from '../src/core/rng';
@@ -62,7 +62,7 @@ function report(outDir: string): void {
   const xs = {} as Record<MusicKey, Float32Array>;
   let total = 0;
   for (const key of MUSIC_KEYS) {
-    const sc: MusicScore = musicScore(key), b = new MusicBuilder(tables, work, sc), times: number[] = [];
+    const sc: MusicScore = composeMusicKey(key), b = new MusicBuilder(tables, work, sc), times: number[] = [];
     let units = 0;
     while (!b.done) { const a = performance.now(); units += b.stepBuild(MUSIC_BUILD_BUDGET); times.push(performance.now() - a); }
     const x = b.result().slice(), n = x.length;

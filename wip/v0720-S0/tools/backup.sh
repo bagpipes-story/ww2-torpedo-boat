@@ -15,6 +15,7 @@ cp $S/tools/*.ts $S/tools/*.sh $S/tools/*.mjs $D/tools/ 2>/dev/null || true
 rm -f $D/tools/sfx-music.mjs $D/tools/prof.mjs $D/tools/parts.mjs
 cp $T/run-gates.sh $D/tools/run-gates.sh 2>/dev/null || true
 cp $S/*.txt $S/*.log $D/results/ 2>/dev/null || true
+rm -f $D/results/build-same.log
 cat > $D/README.md <<EOR
 # wip/v0720-S0 — v0.7.2 S0（骨組みと道具: 曲の定数・作曲器・合成・分けて描く・試聴の数の道具。鳴らない）の作業の写し（commit の前）
 
