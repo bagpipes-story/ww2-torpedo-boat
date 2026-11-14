@@ -1,6 +1,6 @@
 // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §2・D4・R1・R2・brief L6〜L9）: 曲を作る列（曲の再生 systems/sfx-music-player が 1 つ持つ）。
 // - いつ: 効果音の列が終わった次のフレームから（systems/sfx-boot が allow を 1 回。Boot では作らない）。1 フレームに MUSIC_BUILD_BUDGET 単位（決まった量＝分け方が決まる＝L9。
-//   標本は分け方に依らずビット同一＝tests/sfx-music-render）。
+//   標本は分け方に依らずビット同一＝tests/sfx-music-render）。1 曲の始めのフレームは確保と作曲だけ（描くのは次のフレームから）。
 // - 順: 今の場面の曲（step の want。曲の試聴の場で押した候補）→ ゲームの列 MUSIC_GAME_BUILD（S1 は既定のタイトルの曲だけ＝L6。S2 で任務の家族を後ろに足す）。
 //   作りかけと違う「今の場面の曲」がまだ無ければ、作りかけをやめてそちらを先に（やめた曲は後で頭から作り直す＝標本は同じ）。
 // - 記憶（L7・L8）: 波形の表と作業用の配列は最初に作る時に作る。できた曲はそのフレームに buffer へ写し、ほかに Float32 の写しは持たない。列が空になれば作業用の配列を捨てる
@@ -88,11 +88,12 @@ export class SfxMusicBuild {
           this.work = null; // 列が空: 作業用の配列を捨てる（表は残す）
           return;
         }
-        this.renderStart(k);
+        this.renderStart(k); // 作り始めのフレームは確保と作曲だけ（描くのは次のフレームから＝1 フレームを軽く）
+      } else {
+        const b = this.builder;
+        b.stepBuild(MUSIC_BUILD_BUDGET);
+        if (b.done) this.renderFinish(b);
       }
-      const b = this.builder!;
-      b.stepBuild(MUSIC_BUILD_BUDGET);
-      if (b.done) this.renderFinish(b);
     } catch (err) {
       this.failed = true;
       this.builder = null;

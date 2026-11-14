@@ -11,7 +11,10 @@ git diff HEAD > $D/tracked.patch
 UT=$(git ls-files --others --exclude-standard | grep -E '\.(ts|mjs|md|json|sh)$' || true)
 for f in $UT; do mkdir -p $D/files/$(dirname $f); cp $f $D/files/$f; done
 cp $S/tools/*.ts $S/tools/*.sh $S/tools/*.mjs $D/tools/ 2>/dev/null || true
-cp $S/*.txt $D/results/ 2>/dev/null || true
+rm -f $D/tools/sfx-music.mjs
+cp $S/*.txt $S/music-live-*.log $S/typecheck.log $S/lint.log $S/build.log $D/results/ 2>/dev/null || true
+cp $S/../S1-quick-us02/SUMMARY.txt $D/results/run-gates-quick-SUMMARY.txt 2>/dev/null || true
+grep -E "Test Files|Tests  " $S/test.log > $D/results/test-summary.txt 2>/dev/null || true
 cat > $D/README.md <<EOR
 # wip/v0720-S1 — v0.7.2 S1（メニューの曲・「曲」ボタン・曲の試聴の場）の作業の写し（commit の前）
 

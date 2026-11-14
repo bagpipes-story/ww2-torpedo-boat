@@ -46,6 +46,7 @@ export class SfxMusicPlayer {
   private curKey = NONE;
   private curCtx = MUSIC_CTX_NONE;
   private want = MUSIC_CTX_NONE;
+  /** 今の場面の曲を始めてよい再生の時計（Result の遅らせ。鐘の 2 打目と同じ時計＝ゲームの時計ではない） */
   private wantAtS = 0;
   private labKey = NONE;
   private enabled = true;
@@ -53,7 +54,6 @@ export class SfxMusicPlayer {
   private paused = false;
   private busDown = false;
   private started = false;
-  private clockS = 0;
   private accS = 0;
   /** 確かめ用の数: 作った音源・止めた音源・ノードへ書いた回数 */
   starts = 0;
@@ -84,7 +84,7 @@ export class SfxMusicPlayer {
       this.build.dropLab();
     }
     this.want = ctx;
-    this.wantAtS = this.clockS + (delayS > 0 ? delayS : 0);
+    this.wantAtS = this.ctx.currentTime + (delayS > 0 ? delayS : 0);
     this.paused = false;
     this.build.wake();
     this.stepGroups();
@@ -137,7 +137,6 @@ export class SfxMusicPlayer {
 
   /** 毎フレーム（エンジンの tick から）: 作る仕事（1 フレームに決まった量）と、10 Hz の決め */
   update(dtS: number): void {
-    this.clockS += dtS;
     this.build.step(this.wantKey());
     this.accS += dtS;
     if (this.accS < TICK_S) return;
@@ -170,7 +169,7 @@ export class SfxMusicPlayer {
     if (this.ctx.state !== RUNNING) return;
     const now = this.ctx.currentTime;
     if (this.paused !== this.busDown) this.stepBus(now);
-    const k = this.muted || !this.enabled || this.clockS < this.wantAtS ? NONE : this.wantKey();
+    const k = this.muted || !this.enabled || now < this.wantAtS ? NONE : this.wantKey();
     // 試聴の場で別の候補を押した: その候補ができるまで今の候補を鳴らしておき、できたら 0.5 秒で重ねる（ほかの場面は待たずに下げる）
     const keep = k !== NONE && this.build.buffers[k] === null && this.want === MUSIC_CTX_LAB && this.curCtx === MUSIC_CTX_LAB;
     if (this.curN > 0 && !keep && (this.curKey !== k || this.curCtx !== this.want)) this.stepStop(now, this.fadeOutS());
@@ -229,7 +228,7 @@ export class SfxMusicPlayer {
     for (let s = 0; s < SLOTS && got < n; s++) if (this.srcs[s] === null && this.endAt[s]! <= now) this.cur[got++] = s;
     if (got < n) return;
     const when = now + MUSIC_PLAYER.startLeadS;
-    const late = !this.started || this.clockS - this.wantAtS > 2 * TICK_S; // 最初の音・遅れて始める（標本がまだだった・動き出した・音／曲をオンにした）
+    const late = !this.started || now - this.wantAtS > 2 * TICK_S; // 最初の音・遅れて始める（標本がまだだった・動き出した・音／曲をオンにした）
     const inS = this.want === MUSIC_CTX_LAB ? MUSIC_FADE.labCrossS : late ? MUSIC_FADE.firstInS : MUSIC_FADE.menuInS;
     for (let i = 0; i < n; i++) {
       const s = this.cur[i]!;
