@@ -1,0 +1,120 @@
+us_01        200 秒  頼まれた   326  声の最大 10（上限なしなら 10）  奪った 0  一番混む 1 秒 17 発  torp_launch 4/4  alarm 1/1  gun_near 43/131（間隔 88）  light_on 1/1  splash_s 106/117（間隔 11）  mg 13/13  splash_l 24/27（間隔 3）  blast_s 17/23（間隔 6）  blast_l 3/3  sink 2/2  hull_hit 3/3  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）326・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 4  alarm 1  light_on 1  hull_hit 3  bell 1
+✓ us_01: この件で鳴るはずの合図が鳴る（torp_launch・alarm・light_on・hull_hit・bell）
+✓ us_01: ページのエラー 0
+✓ us_01: 同時の声 ≤ 16（10）
+             ループ: engine 28% 最大 0.27 変化 17  sea 100% 最大 0.16 変化 23  fire 3% 最大 0.35 変化 10  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27  書いた 234 回（一番混む 1 秒 13）
+✓ us_01: エンジンと海のループが鳴る（最大 0.27・0.1635）
+✓ us_01: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 13）
+✓ us_01: この任務で鳴るはずのループが鳴る（fire）
+✓ us_01: この任務で鳴るはずの鍵が鳴る（gun_near・splash_s・splash_l・blast_s）
+us_01h       200 秒  頼まれた   278  声の最大 12（上限なしなら 12）  奪った 0  一番混む 1 秒 18 発  torp_launch 4/4  alarm 1/1  gun_near 35/106（間隔 71）  splash_l 17/21（間隔 4）  blast_s 16/20（間隔 4）  gun_far 7/7  light_on 1/1  splash_s 86/101（間隔 15）  mg 9/9  bell 1/1  blast_l 3/4（間隔 1）  sink 2/2  hull_hit 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）278・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 4  alarm 1  light_on 1  bell 1  hull_hit 1
+✓ us_01h: この件で鳴るはずの合図が鳴る（torp_launch・alarm・light_on・hull_hit・bell）
+✓ us_01h: ページのエラー 0
+✓ us_01h: 同時の声 ≤ 16（12）
+             ループ: engine 27% 最大 0.27 変化 17  sea 100% 最大 0.16 変化 21  fire 1% 最大 0.35 変化 10  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27  書いた 216 回（一番混む 1 秒 14）
+✓ us_01h: エンジンと海のループが鳴る（最大 0.27・0.1624）
+✓ us_01h: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+✓ us_01h: この任務で鳴るはずのループが鳴る（fire）
+✓ us_01h: この任務で鳴るはずの鍵が鳴る（gun_near・gun_far・splash_s・splash_l・blast_s）
+us_02        200 秒  頼まれた   525  声の最大 8（上限なしなら 8）  奪った 0  一番混む 1 秒 16 発  torp_launch 4/4  alarm 2/2  gun_near 5/17（間隔 12）  light_on 1/1  splash_s 134/146（間隔 12）  splash_l 75/123（間隔 48）  blast_s 6/7（間隔 1）  hull_hit 1/1  torp_hit 1/1  sink 1/1  bell 2/2  mg 184/215（間隔 31）  reload 2/2  reload_end 2/2  engine_cough 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）525・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 4  alarm 2  light_on 1  hull_hit 1  bell 1  reload 2  reload_end 2  bell@0.7 1  engine_cough@0.7 1
+✓ us_02: この件で鳴るはずの合図が鳴る（torp_launch・alarm・light_on・reload・engine_cough・bell）
+✓ us_02: ページのエラー 0
+✓ us_02: 同時の声 ≤ 16（8）
+             ループ: engine 90% 最大 0.27 変化 165  sea 100% 最大 0.16 変化 303  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27  書いた 1699 回（一番混む 1 秒 15）
+✓ us_02: エンジンと海のループが鳴る（最大 0.27・0.1635）
+✓ us_02: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 15）
+✓ us_02: この任務で鳴るはずの鍵が鳴る（mg・gun_near・splash_s・splash_l・blast_s・torp_hit・sink）
+us_02h       200 秒  頼まれた   210  声の最大 11（上限なしなら 11）  奪った 0  一番混む 1 秒 22 発  alarm 4/4  torp_launch 3/3  gun_near 12/79（間隔 67）  light_on 4/4  splash_s 40/82（間隔 42）  splash_l 7/11（間隔 4）  blast_l 2/4（間隔 2）  hull_hit 2/2  engine_cough 1/1  blast_s 4/5（間隔 1）  mg 11/13（間隔 2）  sink 1/1  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）210・標本がまだ無い 0・標本 26 本
+             合図: alarm 4  torp_launch 3  light_on 4  hull_hit 2  engine_cough 1  bell 1
+✓ us_02h: この件で鳴るはずの合図が鳴る（torp_launch・alarm・light_on・hull_hit・engine_cough・bell）
+✓ us_02h: ページのエラー 0
+✓ us_02h: 同時の声 ≤ 16（11）
+             ループ: engine 18% 最大 0.27 変化 9  sea 100% 最大 0.16 変化 18  fire 2% 最大 0.35 変化 10  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27  書いた 119 回（一番混む 1 秒 16）
+✓ us_02h: エンジンと海のループが鳴る（最大 0.27・0.1613）
+✓ us_02h: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 16）
+✓ us_02h: この任務で鳴るはずのループが鳴る（fire）
+✓ us_02h: この任務で鳴るはずの鍵が鳴る（gun_near・splash_s・splash_l・blast_s・blast_l）
+us_03         70 秒  頼まれた   144  声の最大 8（上限なしなら 8）  奪った 0  一番混む 1 秒 17 発  torp_launch 4/4  alarm 2/2  blast_s 3/3  hull_hit 3/3  splash_s 59/87（間隔 28）  mg 30/35（間隔 5）  gun_near 4/4  blast_l 2/2  splash_l 2/3（間隔 1）  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）144・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 4  alarm 2  hull_hit 3  blast_s@0.6 1  bell@0.5 1
+✓ us_03: この件で鳴るはずの合図が鳴る（torp_launch・alarm・hull_hit・blast_s・bell）
+✓ us_03: ページのエラー 0
+✓ us_03: 同時の声 ≤ 16（8）
+             ループ: engine 100% 最大 0.27 変化 23  sea 100% 最大 0.16 変化 54  fire 13% 最大 0.35 変化 4  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0.07/0.11/0.27  書いた 297 回（一番混む 1 秒 16）
+✓ us_03: エンジンと海のループが鳴る（最大 0.27・0.1629）
+✓ us_03: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 16）
+✓ us_03: この任務で鳴るはずのループが鳴る（fire）
+✓ us_03: この任務で鳴るはずの鍵が鳴る（mg・gun_near・splash_s・blast_s・blast_l）
+us_03h        68 秒  頼まれた   152  声の最大 10（上限なしなら 10）  奪った 0  一番混む 1 秒 20 発  torp_launch 4/4  alarm 2/2  splash_s 61/90（間隔 29）  mg 35/42（間隔 7）  blast_s 3/3  hull_hit 2/2  gun_near 4/4  blast_l 1/1  splash_l 3/3  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）152・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 4  alarm 2  hull_hit 2  blast_s@0.6 1  bell@0.5 1
+✓ us_03h: この件で鳴るはずの合図が鳴る（torp_launch・alarm・hull_hit・blast_s・bell）
+✓ us_03h: ページのエラー 0
+✓ us_03h: 同時の声 ≤ 16（10）
+             ループ: engine 100% 最大 0.27 変化 23  sea 100% 最大 0.16 変化 52  fire 14% 最大 0.35 変化 3  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0.07/0.11/0.27  書いた 293 回（一番混む 1 秒 16）
+✓ us_03h: エンジンと海のループが鳴る（最大 0.27・0.1629）
+✓ us_03h: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 16）
+✓ us_03h: この任務で鳴るはずのループが鳴る（fire）
+✓ us_03h: この任務で鳴るはずの鍵が鳴る（mg・gun_near・splash_s・blast_s・blast_l）
+jp_04        170 秒  頼まれた   108  声の最大 6（上限なしなら 6）  奪った 0  一番混む 1 秒 10 発  torp_launch 2/2  alarm 1/1  mg 36/36  splash_s 26/27（間隔 1）  gun_near 6/7（間隔 1）  splash_l 1/1  blast_s 16/22（間隔 6）  hull_hit 5/5  torp_hit 2/2  engine_cough 1/1  sink 2/2  bell 1/1  blast_l 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）108・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 2  alarm 1  hull_hit 5  engine_cough 1  bell 1
+✓ jp_04: この件で鳴るはずの合図が鳴る（torp_launch・alarm・hull_hit・engine_cough・bell）
+✓ jp_04: ページのエラー 0
+✓ jp_04: 同時の声 ≤ 16（6）
+             ループ: engine 49% 最大 0.42 変化 12  sea 100% 最大 0.17 変化 20  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27/0.42  書いた 278 回（一番混む 1 秒 14）
+✓ jp_04: エンジンと海のループが鳴る（最大 0.42・0.168）
+✓ jp_04: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+✓ jp_04: この任務で鳴るはずの鍵が鳴る（mg・gun_near・splash_s・blast_s・torp_hit・sink）
+jp_04h       170 秒  頼まれた   163  声の最大 6（上限なしなら 6）  奪った 0  一番混む 1 秒 11 発  torp_launch 2/2  alarm 1/1  mg 61/61  splash_s 50/51（間隔 1）  gun_near 6/7（間隔 1）  splash_l 5/5  blast_s 18/19（間隔 1）  hull_hit 6/6  torp_hit 2/2  sink 2/2  bell 1/1  reload 2/2  reload_end 2/2  engine_cough 1/1  blast_l 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）163・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 2  alarm 1  hull_hit 6  bell 1  reload 2  reload_end 2  engine_cough 1
+✓ jp_04h: この件で鳴るはずの合図が鳴る（torp_launch・alarm・hull_hit・reload・engine_cough・bell）
+✓ jp_04h: ページのエラー 0
+✓ jp_04h: 同時の声 ≤ 16（6）
+             ループ: engine 58% 最大 0.42 変化 24  sea 100% 最大 0.17 変化 27  fire 5% 最大 0.35 変化 9  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27/0.42  書いた 320 回（一番混む 1 秒 14）
+✓ jp_04h: エンジンと海のループが鳴る（最大 0.42・0.1674）
+✓ jp_04h: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 14）
+✓ jp_04h: この任務で鳴るはずのループが鳴る（fire）
+✓ jp_04h: この任務で鳴るはずの鍵が鳴る（mg・gun_near・splash_s・blast_s・torp_hit・sink）
+us_01-chores 200 秒  頼まれた    95  声の最大 9（上限なしなら 9）  奪った 0  一番混む 1 秒 13 発  torp_launch 3/3  smoke 1/1  alarm 1/1  gun_near 12/38（間隔 26）  light_on 2/2  splash_s 32/33（間隔 1）  splash_l 4/5（間隔 1）  blast_s 4/5（間隔 1）  hull_hit 2/2  blast_l 2/3（間隔 1）  sink 1/1  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）95・標本がまだ無い 0・標本 26 本
+             合図: torp_launch 3  smoke 1  alarm 1  light_on 2  hull_hit 2  bell 1
+✓ us_01-chores: この件で鳴るはずの合図が鳴る（torp_launch・smoke・alarm・light_on・hull_hit・bell）
+✓ us_01-chores: ページのエラー 0
+✓ us_01-chores: 同時の声 ≤ 16（9）
+             ループ: engine 18% 最大 0.27 変化 4  sea 100% 最大 0.15 変化 7  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0/0.07/0.11/0.27  書いた 35 回（一番混む 1 秒 13）
+✓ us_01-chores: エンジンと海のループが鳴る（最大 0.27・0.1452）
+✓ us_01-chores: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 13）
+jp_04-salvo   90 秒  頼まれた    11  声の最大 5（上限なしなら 5）  奪った 0  一番混む 1 秒 4 発  torp_launch 2/2  torp_hit 2/2  sink 1/1  bell 1/1  blast_s 5/5
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）11・標本がまだ無い 0・標本 26 本
+             合図: torp_launch×0.6 2  bell 1
+✓ jp_04-salvo: この件で鳴るはずの合図が鳴る（torp_launch）
+✓ jp_04-salvo: ページのエラー 0
+✓ jp_04-salvo: 同時の声 ≤ 16（5）
+             ループ: engine 100% 最大 0.07 変化 1  sea 100% 最大 0.08 変化 1  fire 0% 最大 0.00 変化 0  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0.07  書いた 4 回（一番混む 1 秒 4）
+✓ jp_04-salvo: エンジンと海のループが鳴る（最大 0.07・0.08）
+✓ jp_04-salvo: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 4）
+✓ jp_04-salvo: この任務で鳴るはずの鍵が鳴る（sink）
+us_03-burst   28 秒  頼まれた   175  声の最大 9（上限なしなら 9）  奪った 0  一番混む 1 秒 20 発  mg 43/51（間隔 8）  gun_near 6/6  alarm 1/1  splash_s 59/86（間隔 27）  blast_s 9/9  hull_hit 4/4  blast_l 3/4（間隔 1）  splash_l 9/9  torp_launch 3/3  smoke 1/1  bell 1/1
+             エンジン（既定の状態）: suspended・音源 0・捨てた（消音・停止）175・標本がまだ無い 0・標本 26 本
+             合図: alarm 1  hull_hit 4  torp_launch 3  smoke@1.6 1  blast_s@0.6 1  bell@0.5 1
+✓ us_03-burst: この件で鳴るはずの合図が鳴る（torp_launch・alarm・hull_hit・smoke・blast_s・bell）
+✓ us_03-burst: ページのエラー 0
+✓ us_03-burst: 同時の声 ≤ 16（9）
+             ループ: engine 100% 最大 0.27 変化 9  sea 100% 最大 0.14 変化 10  fire 80% 最大 0.35 変化 10  rain 0% 最大 0.00 変化 0  drone 0% 最大 0.00 変化 0  engine の段 0.07/0.11/0.27  書いた 87 回（一番混む 1 秒 16）
+✓ us_03-burst: エンジンと海のループが鳴る（最大 0.27・0.1443）
+✓ us_03-burst: ループの書き込みは毎秒 10 回 × 7 項目まで（一番混む 1 秒 16）
+✓ us_03-burst: この任務で鳴るはずのループが鳴る（fire）
+✓ us_03-burst: この任務で鳴るはずの鍵が鳴る（mg・splash_s・blast_l）
+全部の件の合計（鳴らした数）: mg 422  gun_near 133  gun_far 7  splash_s 653  splash_l 147  blast_s 101  blast_l 18  torp_hit 7  sink 12
+25 本の鍵（全部の件を通して）: mg 422  gun_near 133  gun_far 7  splash_s 653  splash_l 147  blast_s 101  blast_l 18  torp_hit 7  sink 12  torp_launch 35  hull_hit 29  alarm 16  light_on 9  flare_pop 0  bomb_fall 0  reload 4  reload_end 4  smoke 2  ui_tap 0  bell 12  engine_cough 4  engine 11  sea 11  fire 7  rain 0  drone 0
+sfx-probe OK（11 件）
+rc=0
