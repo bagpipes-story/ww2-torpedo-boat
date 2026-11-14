@@ -1,0 +1,451 @@
+diff --git a/src/assets/sfx-bank.ts b/src/assets/sfx-bank.ts
+index 0458dcc..2081fc3 100644
+--- a/src/assets/sfx-bank.ts
++++ b/src/assets/sfx-bank.ts
+@@ -3,12 +3,13 @@
+ // 起動時に鍵ごとに 1 回だけ使う（systems/sfx-boot が AudioBuffer に写したら Float32Array は捨てる＝ここでは覚えない。S2 から Boot の後の数フレームに 1 本ずつ）。
+ // 段: S0 は ui_tap・mg・blast_l の 3 本、S2 で砲・水柱・爆発・沈没の 7 本、S3 でループ 5 本、S4 で合図 10 本（sfx-recipes-cues・sfx-recipes-events）＝25 本そろった。
+ // IP2: 弾倉の交換（reload・reload_end）は sfx-recipes-reload、魚雷の発射は sfx-recipes-launch（どちらも試聴の場の案の表の既定）＝26 本。
++// IP4: 魚雷の発射の既定は F（U-R2）。既定の選びは前の案と新しい案の両方が見える sfx-recipes-launch2。
+ // 表は作り方のファイルごとの Partial を合わせた物なので、作り方の無い鍵は sfxImplementedKeys() に入らず renderSfx は投げる（tests/sfx-inventory が 26 本全部を固定する）。
+ import { SFX_KEYS, SFX_TABLE, type SfxKey } from '../config/sfx-config';
+ import { fadeEdges, normalizePeak, removeDc, sfxSamples, type SfxRecipe } from './sfx-dsp';
+ import { BLAST_RECIPES } from './sfx-recipes-blasts';
+ import { CUE_RECIPES } from './sfx-recipes-cues';
+-import { LAUNCH_RECIPES } from './sfx-recipes-launch';
++import { LAUNCH_RECIPES } from './sfx-recipes-launch2';
+ import { RELOAD_RECIPES } from './sfx-recipes-reload';
+ import { EVENT_RECIPES } from './sfx-recipes-events';
+ import { GUN_RECIPES } from './sfx-recipes-guns';
+diff --git a/src/assets/sfx-recipes-events.ts b/src/assets/sfx-recipes-events.ts
+index 07cb3d3..d89b676 100644
+--- a/src/assets/sfx-recipes-events.ts
++++ b/src/assets/sfx-recipes-events.ts
+@@ -1,5 +1,5 @@
+ // v0.7.1 S4（アートと音②：合成の効果音。spec-v0710 §4・§3.2）: 状態の合図のうち「出来事の音」の作り方＝探照灯 light_on・星弾と照明弾 flare_pop・
+-// 爆弾の落ちてくる音 bomb_fall・煙幕 smoke（金属・電子・機関の合図は assets/sfx-recipes-cues。魚雷の発射 torp_launch は IP2 から assets/sfx-recipes-launch）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
++// 爆弾の落ちてくる音 bomb_fall・煙幕 smoke（金属・電子・機関の合図は assets/sfx-recipes-cues。魚雷の発射 torp_launch は IP2 から assets/sfx-recipes-launch・IP4 から既定 F は sfx-recipes-launch2）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
+ // 本体のスピーカー（約 300〜400 Hz より下がほとんど出ない）でも聞こえるように、どれも 400 Hz より上に芯を持たせる。直流・端の fade・頂の正規化は assets/sfx-bank。
+ import { SFX_SAMPLE_RATE, SFX_SEED_BOMB_FALL, SFX_SEED_FLARE_POP, SFX_SEED_LIGHT_ON, SFX_SEED_SMOKE, type SfxKey } from '../config/sfx-config';
+ import { SeededRng } from '../core/rng';
+diff --git a/src/assets/sfx-recipes-launch.ts b/src/assets/sfx-recipes-launch.ts
+index a66c762..6805f1d 100644
+--- a/src/assets/sfx-recipes-launch.ts
++++ b/src/assets/sfx-recipes-launch.ts
+@@ -2,10 +2,11 @@
+ // 本体のスピーカー（約 300 Hz より下が出ない）では倍音だけが残って高さのある短い「ぽん」になった（管の響き・スクリューの正弦も高さを足した）。
+ // 小さいスピーカーの「どん・どすっ」＝高さの無い雑音のエネルギーを 180〜700 Hz に集め、速く立ち上げて 0.15〜0.3 秒で減衰、雑音のほうを柔らかく歪ませて太く（正弦は歪ませない）、
+ // 20〜60 ms の短い拡がった尾（別々の雑音を遅らせて重ねる＝船体の響き。同じ雑音を重ねると櫛の高さが出る）。圧縮空気の「ぶしゅっ」と着水の「ざぶん」は残す。
+-// 試聴の場（?sfxlab）で聞き比べる案: A「どすん＋ぶしゅっ」（既定）・B 大きい「どおん」・C「ばしゅっ」（空気の発射が主・低いのは少し）・D IP1 の音（比べる用）。
+-// IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 新しい案 E〜I は assets/sfx-recipes-launch2（試聴の場だけ。既定は A のまま＝ユーザーが選ぶまで）。
++// 試聴の場（?sfxlab）で聞き比べる案: A「どすん＋ぶしゅっ」（IP2〜IP3 の既定）・B 大きい「どおん」・C「ばしゅっ」（空気の発射が主・低いのは少し）・D IP1 の音（比べる用）。
++// IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 新しい案 E〜I は assets/sfx-recipes-launch2。IP4（実機 4 回目「魚雷はFで行きます」＝U-R2）: ゲームの既定は F
++// （両方の案の表が見える sfx-recipes-launch2 の LAUNCH_DEFAULT_ID・LAUNCH_RECIPES。ここから launch2 を import すると輪になる）。A〜D は試聴の場に比べる用に残す。
+ // 数は音色の定数（聞かせ方）で、案ごとの名前つきの表。乱数は音だけの種 SFX_SEED_TORP_LAUNCH。直流・端の fade・頂の正規化は assets/sfx-bank。
+-import { SFX_SEED_TORP_LAUNCH, type SfxKey } from '../config/sfx-config';
++import { SFX_SEED_TORP_LAUNCH } from '../config/sfx-config';
+ import { SeededRng } from '../core/rng';
+ import { bandPass, envelope, fadeTail, highPass, mixInto, modes, mul, peakOf, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
+ import type { SfxRecipeVariant } from './sfx-recipes-reload';
+@@ -66,7 +67,7 @@ export function launch(c: Launch, makeRng?: () => SeededRng): SfxRecipe {
+   };
+ }
+ 
+-/** A「どすん＋ぶしゅっ」（既定）: 180〜700 Hz の雑音の打撃（減衰 0.22 秒・歪み 2.5）＋ 22〜64 ms の尾 4 つ ＋ 空気の掃引 3k → 800 Hz ＋ 0.37 秒に着水 */
++/** A「どすん＋ぶしゅっ」（IP2〜IP3 の既定）: 180〜700 Hz の雑音の打撃（減衰 0.22 秒・歪み 2.5）＋ 22〜64 ms の尾 4 つ ＋ 空気の掃引 3k → 800 Hz ＋ 0.37 秒に着水 */
+ export const LAUNCH_A: Launch = {
+   crackHpHz: 1500, crackS: 0.005, crackGain: 2.4,
+   thuds: [{ loHz: 180, hiHz: 700, attackS: 0.002, decayS: 0.22, drive: 2.5, gain: 1 }],
+@@ -133,7 +134,7 @@ function launchIp1(n: number): Float32Array {
+   return fadeTail(out, c.tailFadeS);
+ }
+ 
+-/** 標本の秒（どの案も 1.0 秒＝config/sfx-config の表の秒） */
++/** 標本の秒（A〜D は 1.0 秒。IP2〜IP3 の表の秒。IP4 から表の秒は既定 F の 1.4 秒） */
+ export const LAUNCH_SECONDS = 1.0;
+ export const LAUNCH_VARIANTS: readonly SfxRecipeVariant[] = [
+   { id: 'A', recipe: launch(LAUNCH_A), seconds: LAUNCH_SECONDS, rate: 1 },
+@@ -141,8 +142,3 @@ export const LAUNCH_VARIANTS: readonly SfxRecipeVariant[] = [
+   { id: 'C', recipe: launch(LAUNCH_C), seconds: LAUNCH_SECONDS, rate: 1 },
+   { id: 'D', recipe: launchIp1, seconds: LAUNCH_SECONDS, rate: 1 },
+ ];
+-/** ゲームで鳴らす案（試聴の場の「（今）」） */
+-export const LAUNCH_DEFAULT_ID = 'A';
+-
+-/** 魚雷の発射の作り方（鍵 → 関数）: 既定の案 */
+-export const LAUNCH_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { torp_launch: LAUNCH_VARIANTS.find((v) => v.id === LAUNCH_DEFAULT_ID)!.recipe };
+diff --git a/src/assets/sfx-recipes-launch2.ts b/src/assets/sfx-recipes-launch2.ts
+index b73daeb..17d4ff1 100644
+--- a/src/assets/sfx-recipes-launch2.ts
++++ b/src/assets/sfx-recipes-launch2.ts
+@@ -1,15 +1,17 @@
+-// v0.7.1 IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 魚雷の発射の新しい案 E〜I（試聴の場 ?sfxlab だけ。ゲームの既定は sfx-recipes-launch の A のまま）。
++// v0.7.1 IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 魚雷の発射の新しい案 E〜I（試聴の場 ?sfxlab。IP3 ではゲームの既定は A のまま）。
++// IP4（実機 4 回目「魚雷はFで行きます」＝ユーザーの決め U-R2）: ゲームの torp_launch は F（下の LAUNCH_DEFAULT_ID・LAUNCH_RECIPES。前の案 A〜D と新しい案の両方が見えるのは
++// ここだけ＝sfx-recipes-launch から import すると輪になる）。F の作り方・種 SFX_SEED_LAB_LAUNCH_F・秒 1.4 は IP3 で試聴したまま＝ゲームの標本は試聴した F とビット同一（tests/sfx-variants）。
+ // A〜D のどれも好まれなかった（IP1「ポンっ」・「カッコよく」）ので、小さい調整ではなく向きの違う 5 つ: E 大砲型「ドンッ＋ザバーン」・F 落とす型「ガコン＋ザブン」
+ // （1943 年からの米 PT の Mk 13 は舷側の台から転がして落とした＝史実の向き）・G 映画型「シュッ…ズドン」・H 走り去る型「ドシュウゥン」・I「A を重く大きく」（大きさが足りなかったかを確かめる）。
+ // どれも本体のスピーカー向け: 芯のエネルギーは 300〜400 Hz より上、「どん」は高さの無い雑音か速く滑る物だけ（長く鳴る低い正弦は倍音が「ぽん」に聞こえる＝使わない）。
+ // 1 つの音は雑音の塊（Burst）の和: 帯（掃引できる・2 回重ねて外を強く落とす）× 包絡（立ち上がりの曲がり pow）→ 歪み（頂 1 にそろえて tanh＝圧縮して太く）→ 大きさの揺れ（スクリューの拍）。
+ // F の金属の当たりと擦れは弾倉の B と同じ雑音の金属（sfx-recipes-reload の clack・slide）。数は音色の定数（聞かせ方）。乱数は案ごとの音だけの種 SFX_SEED_LAB_LAUNCH_*。
+ import {
+-  SFX_SAMPLE_RATE, SFX_SEED_LAB_LAUNCH_E, SFX_SEED_LAB_LAUNCH_F, SFX_SEED_LAB_LAUNCH_G, SFX_SEED_LAB_LAUNCH_H, SFX_SEED_LAB_LAUNCH_I,
++  SFX_SAMPLE_RATE, SFX_SEED_LAB_LAUNCH_E, SFX_SEED_LAB_LAUNCH_F, SFX_SEED_LAB_LAUNCH_G, SFX_SEED_LAB_LAUNCH_H, SFX_SEED_LAB_LAUNCH_I, type SfxKey,
+ } from '../config/sfx-config';
+ import { SeededRng } from '../core/rng';
+ import { bandPass, fadeTail, highPass, mixInto, peakOf, sfxSamples, whiteNoise, type SfxRecipe } from './sfx-dsp';
+-import { LAUNCH_A, launch, type Launch } from './sfx-recipes-launch';
++import { LAUNCH_A, LAUNCH_VARIANTS, launch, type Launch } from './sfx-recipes-launch';
+ import { HEAVY, LIGHT, MAG_SLIDE, MID, clack, slide, type Clack, type Slide, type SfxRecipeVariant } from './sfx-recipes-reload';
+ 
+ const SR = SFX_SAMPLE_RATE;
+@@ -183,7 +185,7 @@ const I: Launch = {
+   airGain: 1.9, splashAtS: 0.42, splashThumpS: 0.1, splashThumpGain: 1.1, splashS: 0.26, splashGain: 1.2, tailFadeS: 0.12, busDrive: 2,
+ };
+ 
+-/** 新しい案 E〜I（秒は案ごと。試聴の場だけ＝起動時の標本の合計 70 万には入らない） */
++/** 新しい案 E〜I（秒は案ごと。既定の F だけが起動時に作られ、標本の合計 70 万に入る。ほかは試聴の場だけ） */
+ export const LAUNCH_NEW_VARIANTS: readonly SfxRecipeVariant[] = [
+   { id: 'E', recipe: recipe2(E), seconds: 1.3, rate: 1 },
+   { id: 'F', recipe: recipe2(F), seconds: 1.4, rate: 1 },
+@@ -191,3 +193,10 @@ export const LAUNCH_NEW_VARIANTS: readonly SfxRecipeVariant[] = [
+   { id: 'H', recipe: recipe2(H), seconds: 1.5, rate: 1 },
+   { id: 'I', recipe: launch(I, () => new SeededRng(SFX_SEED_LAB_LAUNCH_I)), seconds: 1.2, rate: 1 },
+ ];
++
++/** 試聴の場の魚雷の発射の 9 案（前の案 A〜D・新しい案 E〜I の順） */
++export const LAUNCH_ALL_VARIANTS: readonly SfxRecipeVariant[] = [...LAUNCH_VARIANTS, ...LAUNCH_NEW_VARIANTS];
++/** ゲームで鳴らす案（試聴の場の「（今）」）。IP4 で A → F（U-R2）。秒は config/sfx-config の表の torp_launch の秒と同じ（tests/sfx-variants） */
++export const LAUNCH_DEFAULT_ID = 'F';
++/** 魚雷の発射の作り方（鍵 → 関数）: 既定の案 */
++export const LAUNCH_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { torp_launch: LAUNCH_ALL_VARIANTS.find((v) => v.id === LAUNCH_DEFAULT_ID)!.recipe };
+diff --git a/src/assets/sfx-variants.ts b/src/assets/sfx-variants.ts
+index 7dd1068..d840833 100644
+--- a/src/assets/sfx-variants.ts
++++ b/src/assets/sfx-variants.ts
+@@ -3,11 +3,11 @@
+ // （assets/sfx-bank の finishSfx）で作る＝既定の案の標本は renderSfx(鍵) とビット同一（tests/sfx-variants）。試聴の場は押された時に 1 回だけ作って覚える（起動時には作らない）。
+ // IP3（実機 3 回目「弾倉はBでいきましょう。魚雷はんーもう何案か出してください」）: 弾倉の既定は B（U-R1）。魚雷の発射に新しい案 E〜I（sfx-recipes-launch2。秒は案ごと・
+ // 試聴の場だけ）を足して 9 案。試聴の場の行は SFX_LAB_ROWS（魚雷の発射は前の案 A〜D の行と新しい案 E〜I の行に分ける）。
++// IP4（実機 4 回目「魚雷はFで行きます。弾倉交換もOKです。」）: 魚雷の発射の既定は F（U-R2。sfx-recipes-launch2 の LAUNCH_DEFAULT_ID）。試聴の場は次の試聴（v0.7.2 の BGM など）のために残す。
+ import type { SfxKey } from '../config/sfx-config';
+ import { finishSfx } from './sfx-bank';
+ import { sfxSamples } from './sfx-dsp';
+-import { LAUNCH_DEFAULT_ID, LAUNCH_VARIANTS } from './sfx-recipes-launch';
+-import { LAUNCH_NEW_VARIANTS } from './sfx-recipes-launch2';
++import { LAUNCH_ALL_VARIANTS, LAUNCH_DEFAULT_ID } from './sfx-recipes-launch2';
+ import { RELOAD_DEFAULT_ID, RELOAD_END_VARIANTS, RELOAD_VARIANTS, type SfxRecipeVariant } from './sfx-recipes-reload';
+ 
+ /** 試聴の 1 つの音（鍵と案の並び） */
+@@ -26,7 +26,7 @@ export const SFX_VARIANT_GROUPS: readonly SfxVariantGroup[] = [
+   { key: 'reload', variants: RELOAD_VARIANTS, defaultId: RELOAD_DEFAULT_ID, notesJa: ['雑音の打音', '重い がしゃっ', '乾いた 小銃', 'IP1 の音'] },
+   { key: 'reload_end', variants: RELOAD_END_VARIANTS, defaultId: RELOAD_DEFAULT_ID, notesJa: ['雑音の打音', '重い がしゃっ', '乾いた 小銃', 'IP1 の音'] },
+   {
+-    key: 'torp_launch', variants: [...LAUNCH_VARIANTS, ...LAUNCH_NEW_VARIANTS], defaultId: LAUNCH_DEFAULT_ID,
++    key: 'torp_launch', variants: LAUNCH_ALL_VARIANTS, defaultId: LAUNCH_DEFAULT_ID,
+     notesJa: ['どすん＋ぶしゅっ', '大きい どおん', 'ばしゅっ', 'IP1 の音', 'ドンッ＋ザバーン', 'ガコン＋ザブン', 'シュッ…ズドン', 'ドシュウゥン', '大きく 重く'],
+     kindsJa: ['', '', '', '', '大砲', '落とす', '映画', '走り去る', 'Aを重く'],
+   },
+diff --git a/src/config/sfx-config.ts b/src/config/sfx-config.ts
+index 5b6b570..7a89203 100644
+--- a/src/config/sfx-config.ts
++++ b/src/config/sfx-config.ts
+@@ -61,7 +61,10 @@ export const SFX_SEED_RAIN = 7524;
+ export const SFX_SEED_DRONE = 7525;
+ /** IP2: 弾倉の交換の終わり（差し込む・槓桿） */
+ export const SFX_SEED_RELOAD_END = 7526;
+-/** IP3: 試聴の場（?sfxlab）だけの魚雷の発射の新しい案 E〜I（ゲームの鍵ではない＝起動時には作らず、押した時に作る。assets/sfx-recipes-launch2） */
++/**
++ * IP3: 試聴の場（?sfxlab）の魚雷の発射の新しい案 E〜I（押した時に作る。assets/sfx-recipes-launch2）。IP4: F はゲームの torp_launch（U-R2）＝起動時に F の種で作る
++ * （試聴した標本とビット同一にするため種はこのまま。表の torp_launch の種 SFX_SEED_TORP_LAUNCH は試聴の場の前の案 A〜D の種）
++ */
+ export const SFX_SEED_LAB_LAUNCH_E = 7527;
+ export const SFX_SEED_LAB_LAUNCH_F = 7528;
+ export const SFX_SEED_LAB_LAUNCH_G = 7529;
+@@ -114,7 +117,7 @@ export const SFX_TABLE: Readonly<Record<SfxKey, SfxDef>> = {
+   blast_s: def(0.5, SFX_SEED_BLAST_S, 0.4, SFX_PRIORITY_BLAST, 0.35, FAR, 'blast'),
+   blast_l: def(1.6, SFX_SEED_BLAST_L, 0.8, SFX_PRIORITY_BLAST, 0.2, FAR, 'blast'),
+   torp_hit: def(2.2, SFX_SEED_TORP_HIT, 0.8, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
+-  torp_launch: def(1.0, SFX_SEED_TORP_LAUNCH, 0.8, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
++  torp_launch: def(1.4, SFX_SEED_TORP_LAUNCH, 0.8, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+   hull_hit: def(0.3, SFX_SEED_HULL_HIT, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+   alarm: def(0.6, SFX_SEED_ALARM, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+   light_on: def(0.5, SFX_SEED_LIGHT_ON, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+diff --git a/src/config/sound-lab-config.ts b/src/config/sound-lab-config.ts
+index bcf9c46..2435307 100644
+--- a/src/config/sound-lab-config.ts
++++ b/src/config/sound-lab-config.ts
+@@ -1,9 +1,9 @@
+-// v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語。論理 px（高さ 720・幅 1280〜1584）。ゲームの数値ではないので data/*.json には置かない。
++// v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）・IP4（実機 4 回目。弾倉 B・魚雷 F に決まった後も次の試聴のために残す）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語。論理 px（高さ 720・幅 1280〜1584）。ゲームの数値ではないので data/*.json には置かない。
+ // 何も import しない（ui/sound-lab-layout と tests/sound-lab が node で読んでも game-config → screen-fit の DOM を引かない。title-layout-config と同じ）。
+ // 再生の秒（「続けて聞く」の間・最初のタップの待ち）は config/sfx-config の SFX_LAB。
+ 
+-/** 上の説明（ビルド番号の下・中央。折り返す） */
+-export const SOUND_LAB_HEAD_JA = '音の試聴（v0.7.1 IP3）: 弾倉は B に決めました。魚雷の新しい案 E〜I を聞き比べて、良かった記号を教えてください';
++/** 上の説明（ビルド番号の下・中央。折り返す。IP4 の文は論理幅 1280 でも 1 行に収まる＝2 行になっても行の上 124 より上） */
++export const SOUND_LAB_HEAD_JA = '音の試聴（v0.7.1）: 弾倉は B・魚雷は F に決めました（（今）の印）。ほかの案は比べる用に残しています';
+ export const SOUND_LAB_HEAD_Y = 52;
+ export const SOUND_LAB_HEAD_PX = 22;
+ /**
+diff --git a/src/scenes/sound-lab-scene.ts b/src/scenes/sound-lab-scene.ts
+index 218f31a..4b679c2 100644
+--- a/src/scenes/sound-lab-scene.ts
++++ b/src/scenes/sound-lab-scene.ts
+@@ -1,6 +1,6 @@
+ // 音の試聴の場（v0.7.1 IP2。実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音も…ポンっ」）: URL に ?sfxlab がある時だけ Boot が Title の代わりにここへ来る（ふだんの URL は変わらない）。
+ // 弾倉の始め・弾倉の終わり・魚雷の発射の案 A〜D（assets/sfx-variants。D は IP1 の音）と「続けて聞く」（始め → 1.2 秒 → 終わり）をボタンで鳴らす。IP3（実機 3 回目）で
+-// 魚雷の発射の新しい案 E〜I の行を足した（行と案の対応は SFX_LAB_ROWS）。ゲームの再生のエンジンを
++// 魚雷の発射の新しい案 E〜I の行を足した（行と案の対応は SFX_LAB_ROWS）。IP4（実機 4 回目。弾倉 B・魚雷 F に決まった）: 次の試聴（v0.7.2 の BGM など）のために残す。ゲームの再生のエンジンを
+ // そのまま使い、鍵の標本を押した案に差し替えて合図と同じ音量（鍵の表の音量 × 1）で鳴らす＝ゲームの中と同じ大きさ。場を出る時（SHUTDOWN）に既定の標本へ戻す。
+ // 静的な画面: 物体は create で 1 回だけ作る。案の標本は押した時に 1 回だけ作って覚える（1 本 1〜20 ms）。update は最初のタップの待ちを見るだけ（確保しない）。
+ // iOS: ボタンは指を離した時（MenuButton の onUp）に決まり、その touchend で Phaser と systems/sfx-boot が context を起こす。まだ動いていなければ押した案を 1 つ覚え、
+diff --git a/src/ui/sound-lab-layout.ts b/src/ui/sound-lab-layout.ts
+index 9e2438a..2b754e9 100644
+--- a/src/ui/sound-lab-layout.ts
++++ b/src/ui/sound-lab-layout.ts
+@@ -1,4 +1,4 @@
+-// 音の試聴の場（v0.7.1 IP2・IP3。?sfxlab）の矩形と語。Phaser・DOM なし（tests/sound-lab が論理幅の全部で測る）。scenes/sound-lab-scene の create で 1 回だけ呼ぶ。
++// 音の試聴の場（v0.7.1 IP2・IP3・IP4。?sfxlab）の矩形と語。Phaser・DOM なし（tests/sound-lab が論理幅の全部で測る）。scenes/sound-lab-scene の create で 1 回だけ呼ぶ。
+ // 行は上から 弾倉の始め・弾倉の終わり・魚雷の発射（A〜D）・魚雷の発射（新。E〜I）・続けて聞く、列は案（左から。行ごとに 4 つか 5 つ）。左端は行の名前、下の左端は「戻る」、下の右は状態の一文。
+ import {
+   SOUND_LAB_BACK_H, SOUND_LAB_BACK_W, SOUND_LAB_COL_GAP, SOUND_LAB_DEFAULT_MARK_JA, SOUND_LAB_LABEL_W, SOUND_LAB_ROW_GAP, SOUND_LAB_ROW_H, SOUND_LAB_ROW_TOP,
+@@ -34,8 +34,11 @@ export function soundLabBackRect(f: SoundLabFrame): SoundLabRect {
+   return { x: f.margin, y: f.gameHeight - f.margin - SOUND_LAB_BACK_H, w: SOUND_LAB_BACK_W, h: SOUND_LAB_BACK_H };
+ }
+ 
+-/** ボタンの題: 記号（IP3: 型 kind があれば「記号 型」。既定の案は「（今）」を付ける） */
++/**
++ * ボタンの題: 記号（IP3: 型 kind があれば「記号 型」）。既定の案は「記号（今）」＝型は付けない（IP4: 既定になった F の「F 落とす（今）」は論理幅 1280 の 5 列のボタン
++ * 183 px からはみ出した。型は 2 行目の一言で分かる）
++ */
+ export function soundLabButtonTitle(id: string, isDefault: boolean, kind = ''): string {
+-  const t = kind === '' ? id : `${id} ${kind}`;
+-  return isDefault ? `${t}${SOUND_LAB_DEFAULT_MARK_JA}` : t;
++  if (isDefault) return `${id}${SOUND_LAB_DEFAULT_MARK_JA}`;
++  return kind === '' ? id : `${id} ${kind}`;
+ }
+diff --git a/tests/sfx-inventory.test.ts b/tests/sfx-inventory.test.ts
+index 5c89f8c..8c06c1b 100644
+--- a/tests/sfx-inventory.test.ts
++++ b/tests/sfx-inventory.test.ts
+@@ -13,9 +13,12 @@ import { SFX_BAND_GAIN, SFX_BAND_MAX_M, SFX_KEYS, SFX_MAX_TOTAL_SAMPLES, SFX_SAM
+ import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
+ import { SFX_LOOP_IDS } from '../src/core/sfx-loops';
+ 
+-/** spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した）。IP2（実機 2 回目）: reload 0.42 → 0.3（始め＝抜く）・reload_end 0.42（終わり＝差す・槓桿）を足して 26 本 */
++/**
++ * spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した）。IP2（実機 2 回目）: reload 0.42 → 0.3（始め＝抜く）・reload_end 0.42（終わり＝差す・槓桿）を足して 26 本。
++ * IP4（実機 4 回目。U-R2）: torp_launch 1.0 → 1.4（既定 F の秒＝IP3 で試聴した長さ）
++ */
+ const SECONDS: Readonly<Record<string, number>> = {
+-  mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 1.0, hull_hit: 0.3,
++  mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 1.4, hull_hit: 0.3,
+   alarm: 0.6, light_on: 0.5, flare_pop: 1.2, bomb_fall: 1.2, reload: 0.3, reload_end: 0.42, smoke: 1.0, ui_tap: 0.06, bell: 1.4, engine_cough: 0.8, sink: 2.5,
+   engine: 1.0, sea: 4.0, fire: 2.0, rain: 2.0, drone: 1.5,
+ };
+@@ -73,7 +76,7 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
+     expect(d.loop).toBe(LOOPS.includes(key));
+     expect(d.rateJitter).toBe(JITTER[key] ?? 0);
+   });
+-  it('種は 32（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場だけの魚雷の発射 E〜I の 5）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
++  it('種は 32（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場の魚雷の発射 E〜I の 5。IP4 から F の種はゲームの torp_launch も使う）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
+     const src = readFileSync('src/config/sfx-config.ts', 'utf8');
+     const seeds = [...src.matchAll(/^export const (SFX_SEED_\w+) = (\d+);/gm)].map((m) => [m[1]!, Number(m[2])] as const);
+     expect(seeds.length).toBe(32);
+@@ -88,11 +91,11 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
+     expect(art.length).toBeGreaterThanOrEqual(10);
+     for (const s of seeds) expect(art, s[0]).not.toContain(s[1]);
+   });
+-  it('標本の合計は 70 万以下（22,050 Hz・約 28.8 秒＝636,142 標本。IP1 で torp_launch・reload を延ばして ＋8,159、IP2 で reload 0.42 → 0.3 秒・reload_end 0.42 秒を足して ＋6,615）', () => {
++  it('標本の合計は 70 万以下（22,050 Hz・約 29.2 秒＝644,962 標本。IP1 で torp_launch・reload を延ばして ＋8,159、IP2 で reload 0.42 → 0.3 秒・reload_end 0.42 秒を足して ＋6,615、IP4 で torp_launch 1.0 → 1.4 秒の ＋8,820）', () => {
+     expect(SFX_SAMPLE_RATE).toBe(22050);
+     expect(SFX_MAX_TOTAL_SAMPLES).toBe(700_000);
+     const total = SFX_KEYS.reduce((a, k) => a + Math.round(SFX_TABLE[k].seconds * SFX_SAMPLE_RATE), 0);
+-    expect(total).toBe(636_142);
++    expect(total).toBe(644_962);
+     expect(total).toBeLessThanOrEqual(SFX_MAX_TOTAL_SAMPLES);
+   });
+   it('聞かせ方の定数は spec のとおり（声 16・距離の帯・パン・リミッタ・master・ループの更新）', () => {
+diff --git a/tests/sfx-synth-cues.test.ts b/tests/sfx-synth-cues.test.ts
+index 1ab1b55..fee244b 100644
+--- a/tests/sfx-synth-cues.test.ts
++++ b/tests/sfx-synth-cues.test.ts
+@@ -9,6 +9,9 @@
+ // - IP2（実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音も…ポンっ」）: 弾倉は始め reload・終わり reload_end の 2 本で、どちらも雑音の金属（高さが目立たない＝平均スペクトルの
+ //   局所の頂 < 8 dB。IP1 は 14.6 dB）。魚雷の発射は高さの無い雑音の「どん」（180〜700 Hz に 40% 以上・頂 < 6 dB）。スクリューのうなりはやめた。案の表は tests/sfx-variants。
+ // - IP3（実機 3 回目「弾倉はBでいきましょう」＝U-R1）: 弾倉の既定は B「重い がしゃっ」（胴が低く厚い＝400 Hz より上 90%／95%・始めの −20 dB まで 256 ms・終わりは 4 つの山）。
++// - IP4（実機 4 回目「魚雷はFで行きます」＝U-R2）: 魚雷の発射は F「落とす ガコン＋ザブン」: 頭に金属の「ガコン」（頭 30 ms の頂は全体の頂の 0.8 倍より大きい）→ 台を転がる擦れ →
++//   0.21〜0.24 秒のほぼ無音 → 0.24 秒に「ザブン」（一番大きい 0.1 秒は 0.24〜0.34 秒・直前の 0.1 秒の 3 倍より大きい）→ 泡で消える（1.0 秒より後は −30 dB より小さい）。
++//   高さの無い雑音（局所の頂 < 6 dB）で本体のスピーカーに届く（400 Hz より上 ≥ 60%）・芯は 180〜700 Hz に 40% 以上（IP2 の「どん」の向きのまま）。
+ import { describe, expect, it } from 'vitest';
+ import { SFX_KEYS, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
+ import { renderSfx } from '../src/assets/sfx-bank';
+@@ -127,12 +130,12 @@ describe('合図 11 本の聞き分け（v0.7.1 S4。IP2 で弾倉の終わり
+     const n3 = Math.round(l.length / 3);
+     expect(20 * Math.log10(rmsOf(l, 2 * n3, l.length) / rmsOf(l, 0, n3))).toBeGreaterThan(-6);
+   });
+-  it('煙幕は頭が無く（頂は 0.1 秒より後）星弾（頭の「ぽん」＝頂は 10 ms の内）より暗い。魚雷の発射は 0.37 秒の後に水音（0.37〜0.47 秒は直前より大きい。IP1）', () => {
++  it('煙幕は頭が無く（頂は 0.1 秒より後）星弾（頭の「ぽん」＝頂は 10 ms の内）より暗い。魚雷の発射は 0.24 秒の後に水音（0.24〜0.34 秒は直前より大きい。IP4 の F）', () => {
+     const sm = x('smoke'), fl = x('flare_pop'), tl = x('torp_launch');
+     expect(peakAt(sm)).toBeGreaterThan(0.1);
+     expect(peakAt(fl)).toBeLessThan(0.01);
+     expect(centroidHz(sm, 0, sm.length, SR)).toBeLessThan(centroidHz(fl, 0, fl.length, SR) * 0.85);
+-    expect(rmsOf(tl, at(0.37), at(0.47))).toBeGreaterThan(rmsOf(tl, at(0.27), at(0.37)));
++    expect(rmsOf(tl, at(0.24), at(0.34))).toBeGreaterThan(rmsOf(tl, at(0.14), at(0.24)));
+   });
+   it('IP2・IP3: 弾倉の始め・終わりは雑音の金属（400 Hz より上 ≥ 90%＝既定 B の胴は低く厚い・局所の頂 < 8 dB＝長く鳴る高さが無い）。始めは短く（−20 dB まで 0.3 秒未満）、終わりは差してから槓桿まで続く（0.25 秒より長い）', () => {
+     for (const k of ['reload', 'reload_end'] as const) {
+@@ -142,12 +145,20 @@ describe('合図 11 本の聞き分け（v0.7.1 S4。IP2 で弾倉の終わり
+     expect(len20(x('reload'))).toBeLessThan(0.3);
+     expect(len20(x('reload_end'))).toBeGreaterThan(0.25);
+   });
+-  it('IP2: 魚雷の発射は高さの無い「どん」（180〜700 Hz に 40% 以上・局所の頂 < 6 dB）で本体のスピーカーにも届く（400 Hz より上 ≥ 60%）。一番大きい 0.1 秒は頭（0〜0.1 秒）', () => {
++  it('IP4: 魚雷の発射は F「ガコン＋ザブン」: 高さの無い雑音（局所の頂 < 6 dB・芯は 180〜700 Hz に 40% 以上）で本体のスピーカーにも届く（400 Hz より上 ≥ 60%）', () => {
+     const tl = x('torp_launch');
+     expect(shareIn(tl, 180, 700)).toBeGreaterThanOrEqual(0.4);
+     expect(peakinessDb(tl)).toBeLessThan(6);
+     expect(shareAbove(tl, 400)).toBeGreaterThanOrEqual(0.6);
+-    const head = rmsOf(tl, 0, at(0.1));
+-    for (let t = 0.1; t + 0.1 <= 1; t += 0.1) expect(rmsOf(tl, at(t), at(t + 0.1)), `${t.toFixed(1)} 秒`).toBeLessThan(head);
++  });
++  it('IP4: 魚雷の発射 F は金属が先・水が後: 頭 30 ms に「ガコン」（頂は全体の頂の 0.8 倍より大きい）→ 0.21〜0.24 秒はほぼ無音 → 一番大きい 0.1 秒は 0.24〜0.34 秒の「ザブン」→ 泡で消える', () => {
++    const tl = x('torp_launch');
++    expect(peakOf(tl.subarray(0, at(0.03)))).toBeGreaterThan(peakOf(tl) * 0.8);
++    const splash = rmsOf(tl, at(0.24), at(0.34));
++    expect(splash).toBeGreaterThan(rmsOf(tl, at(0.14), at(0.24)) * 3);
++    expect(rmsOf(tl, at(0.21), at(0.24))).toBeLessThan(splash * 0.05);
++    for (let t = 0; t + 0.1 <= 1.4 + 1e-9; t += 0.1) if (Math.abs(t - 0.2) > 1e-9) expect(rmsOf(tl, at(t), at(t + 0.1)), `${t.toFixed(1)} 秒`).toBeLessThan(splash);
++    expect(rmsOf(tl, at(0), at(0.1))).toBeGreaterThan(splash * 0.3);
++    expect(20 * Math.log10(rmsOf(tl, at(1.0), tl.length) / splash)).toBeLessThan(-30);
+   });
+ });
+diff --git a/tests/sfx-synth.test.ts b/tests/sfx-synth.test.ts
+index 3fca266..7d787ee 100644
+--- a/tests/sfx-synth.test.ts
++++ b/tests/sfx-synth.test.ts
+@@ -3,6 +3,7 @@
+ // 系統ごとの RMS の帯・零交差の高さの順・ループは継ぎ目・合成の壁時計。鍵を足す段は FINGERPRINTS に 1 行足す（無ければ落ちる）。音色を直した時は指紋を直す。
+ // S2: 7 本の聞き分け（近い砲は鋭く明るい・遠雷はゆっくり立って暗い・大きい水柱は低い一打つき・魚雷の命中は爆発の後に水の柱が立つ・沈没は続く泡）を数で固定する。
+ // S4: 合図 10 本も共通の検査に入る（聞き分け・本体のスピーカーで聞こえる帯は tests/sfx-synth-cues）。
++// IP4: torp_launch は F（U-R2）＝IP3 で試聴した F の指紋 1125567461（tests/sfx-variants の F と同じ。IP2〜IP3 の A は 3234308985＝試聴の場の A のまま）。
+ // S3: ループ 5 本（engine・sea・fire・rain・drone）は上の共通の検査（長さ・頂・直流・指紋・継ぎ目）に自動で入る。ループだけの検査（継ぎ目の飛び・揺れ・聞こえる帯・部品）は tests/sfx-synth-loops。
+ // 下半分は部品（assets/sfx-dsp）の単体テスト。
+ import { describe, expect, it } from 'vitest';
+@@ -42,7 +43,7 @@ const FINGERPRINTS: Partial<Record<SfxKey, number>> = {
+   fire: 104566791,
+   rain: 2630845142,
+   drone: 1691882525,
+-  torp_launch: 3234308985,
++  torp_launch: 1125567461,
+   hull_hit: 2680124741,
+   alarm: 1749539769,
+   light_on: 2838731473,
+diff --git a/tests/sfx-variants.test.ts b/tests/sfx-variants.test.ts
+index 4cc1a76..525c9bd 100644
+--- a/tests/sfx-variants.test.ts
++++ b/tests/sfx-variants.test.ts
+@@ -4,6 +4,8 @@
+ // - 既定の案の秒は表の秒（config/sfx-config）。弾倉の終わりの D だけ IP1 の終わりの速さ 1.06 で鳴らす（ほかは 1）。
+ // - IP3（実機 3 回目「弾倉はBでいきましょう。魚雷はんーもう何案か出してください」）: 弾倉の既定は始め・終わりとも B（U-R1。IP2 で試聴した B と同じ標本＝指紋が IP2 のまま）。
+ //   魚雷の発射は新しい案 E〜I を足して 9 案（既定は A のまま）。E〜I は 1.6 秒以内・本体のスピーカー向け（400 Hz より上 ≥ 60%・局所の頂 < 6 dB）・指紋を固定。9 案のどの 2 つも 1.5 より離れる。
++// - IP4（実機 4 回目「魚雷はFで行きます。弾倉交換もOKです。」）: 魚雷の発射の既定は F（U-R2）。ゲームの標本 renderSfx('torp_launch') は試聴の場の F とビット同一で、指紋は IP3 で試聴した F の
++//   1125567461 のまま（作り方・種 SFX_SEED_LAB_LAUNCH_F・秒 1.4 が同じ）。前の既定 A は試聴の場に残り、指紋は IP2〜IP3 のゲームの torp_launch 3234308985 のまま。
+ import { describe, expect, it } from 'vitest';
+ import { SFX_SAMPLE_RATE, SFX_TABLE } from '../src/config/sfx-config';
+ import { renderSfx } from '../src/assets/sfx-bank';
+@@ -71,6 +73,8 @@ function peakinessDb(v: Float32Array): number {
+ /** IP2 で試聴した弾倉の B（IP3 から既定）と、IP3 の魚雷の発射の新しい案 E〜I の指紋 */
+ const B_FP: Readonly<Record<string, number>> = { reload: 464075404, reload_end: 345574464 };
+ const NEW_FP: Readonly<Record<string, number>> = { E: 2172940326, F: 1125567461, G: 1433634797, H: 2336520830, I: 872527779 };
++/** IP2〜IP3 のゲームの torp_launch（試聴の場の A。IP4 から既定ではない）の指紋 */
++const A_FP = 3234308985;
+ /** IP1 の reload・torp_launch の指紋（tests/sfx-synth の IP1 の値。D はこのまま） */
+ const IP1_FP: Readonly<Record<string, number>> = { reload: 3382733306, reload_end: 3382733306, torp_launch: 1786366453 };
+ const memo = new Map<string, Float32Array>();
+@@ -82,12 +86,12 @@ const render = (gi: number, vi: number): Float32Array => {
+ const CASES = SFX_VARIANT_GROUPS.flatMap((g, gi) => g.variants.map((v, vi) => [`${g.key} ${v.id}`, gi, vi] as const));
+ 
+ describe('試聴の案の表（v0.7.1 IP2・IP3）', () => {
+-  it('弾倉の始め・終わりに A〜D（既定は B＝U-R1）、魚雷の発射に A〜I（既定は A のまま）。D は IP1 の音。一言は案ごとに 1 つ・型は新しい案だけ', () => {
++  it('弾倉の始め・終わりに A〜D（既定は B＝U-R1）、魚雷の発射に A〜I（既定は F＝U-R2）。D は IP1 の音。一言は案ごとに 1 つ・型は新しい案だけ', () => {
+     expect(SFX_VARIANT_GROUPS.map((g) => g.key)).toEqual(['reload', 'reload_end', 'torp_launch']);
+     for (const g of SFX_VARIANT_GROUPS) {
+       const torp = g.key === 'torp_launch';
+       expect(g.variants.map((v) => v.id).join('')).toBe(torp ? 'ABCDEFGHI' : 'ABCD');
+-      expect(g.defaultId).toBe(torp ? 'A' : 'B');
++      expect(g.defaultId).toBe(torp ? 'F' : 'B');
+       expect(g.notesJa.length).toBe(g.variants.length);
+       expect(g.notesJa[3]).toBe('IP1 の音');
+       for (const v of g.variants) expect(v.rate).toBe(g.key === 'reload_end' && v.id === 'D' ? 1.06 : 1);
+@@ -125,6 +129,17 @@ describe('試聴の案の表（v0.7.1 IP2・IP3）', () => {
+       expect(fingerprint16(render(gi, 3)), `${g.key} D`).toBe(IP1_FP[g.key]);
+     });
+   });
++  it('IP4: ゲームの torp_launch は IP3 で試聴した F とビット同一（作り方・種・秒 1.4 が同じ＝指紋 1125567461）。前の既定 A は試聴の場に IP2〜IP3 の指紋のまま', () => {
++    const g = SFX_VARIANT_GROUPS[2]!;
++    const fi = g.variants.findIndex((v) => v.id === 'F');
++    expect(g.variants[fi]!.seconds).toBe(1.4);
++    expect(SFX_TABLE.torp_launch.seconds).toBe(1.4);
++    const game = renderSfx('torp_launch');
++    expect(game.length).toBe(at(1.4));
++    expect(Buffer.from(game.buffer).equals(Buffer.from(renderSfxVariant(g.variants[fi]!).buffer))).toBe(true);
++    expect(fingerprint16(game)).toBe(NEW_FP.F);
++    expect(fingerprint16(render(2, 0))).toBe(A_FP);
++  });
+   it('同じ音の案どうしは 6 つの数で 1.5 より離れる（聞き分けられる）', () => {
+     SFX_VARIANT_GROUPS.forEach((g, gi) => {
+       for (let i = 0; i < g.variants.length; i++) for (let j = i + 1; j < g.variants.length; j++) {
+diff --git a/tests/sound-lab.test.ts b/tests/sound-lab.test.ts
+index b050423..2fdc35c 100644
+--- a/tests/sound-lab.test.ts
++++ b/tests/sound-lab.test.ts
+@@ -1,13 +1,13 @@
+-// v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語・道を固定する（ui/sound-lab-layout は Phaser なし）。
++// v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）・IP4（実機 4 回目。決めた後も次の試聴のために残す）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語・道を固定する（ui/sound-lab-layout は Phaser なし）。
+ // - 論理幅 1280〜1584 の全部で: 5 行（4 列・4 列・4 列・5 列・4 列＝21）のボタンと「戻る」が画面の内・重ならない・高さ 84 px 以上・幅 160 px 以上、行の名前はボタンの左、
+ //   説明（y 52）より下、上中央のビルド番号の行（y 24〜）に重ならない。
+-// - ボタンの題は記号（IP3 の新しい案は「記号 型」・既定の案だけ「（今）」）、行の名前は 弾倉の始め・弾倉の終わり・魚雷の発射・魚雷の発射（新）・続けて聞く。案のボタンはボタンの音を鳴らさない（silent）。
++// - ボタンの題は記号（IP3 の新しい案は「記号 型」・既定の案だけ「記号（今）」＝IP4 の既定 F は型を付けない＝論理幅 1280 の 5 列に収まる）、行の名前は 弾倉の始め・弾倉の終わり・魚雷の発射・魚雷の発射（新）・続けて聞く。案のボタンはボタンの音を鳴らさない（silent）。
+ // - 道: ?sfxlab の時だけ Boot から来る（tests/sfx-inventory がシーンの並びと Boot の行を固定）。差し替えの口 sfxSetBuffer・sfxCanPlay を呼ぶのは試聴の場だけ（ゲームの中では呼ばない）。
+ import { readFileSync, readdirSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+ import { SFX_LAB } from '../src/config/sfx-config';
+-import { SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_Y, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA } from '../src/config/sound-lab-config';
++import { SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_Y, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA } from '../src/config/sound-lab-config';
+ import { SFX_LAB_ROWS, SFX_VARIANT_GROUPS } from '../src/assets/sfx-variants';
+ import { soundLabBackRect, soundLabButtonRect, soundLabButtonTitle, soundLabLabelRect, type SoundLabRect } from '../src/ui/sound-lab-layout';
+ 
+@@ -47,16 +47,30 @@ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
+     }
+   });
+   it('語: 行の名前と一言・ボタンの題（既定だけ「（今）」）・「続けて聞く」は 1.2 秒の間', () => {
+-    expect(SOUND_LAB_HEAD_JA).toBe('音の試聴（v0.7.1 IP3）: 弾倉は B に決めました。魚雷の新しい案 E〜I を聞き比べて、良かった記号を教えてください');
++    expect(SOUND_LAB_HEAD_JA).toBe('音の試聴（v0.7.1）: 弾倉は B・魚雷は F に決めました（（今）の印）。ほかの案は比べる用に残しています');
+     expect([...SOUND_LAB_ROW_LABELS_JA]).toEqual(['弾倉の始め', '弾倉の終わり', '魚雷の発射', '魚雷の発射（新）', '続けて聞く']);
+     expect(SOUND_LAB_ROW_SUBS_JA.length).toBe(ROWS);
+     expect(soundLabButtonTitle('A', true)).toBe('A（今）');
+     expect(soundLabButtonTitle('B', false)).toBe('B');
+     expect(soundLabButtonTitle('E', false, '大砲')).toBe('E 大砲');
+     expect(soundLabButtonTitle('E', false, '')).toBe('E');
++    expect(soundLabButtonTitle('F', true, '落とす')).toBe('F（今）');
+     expect(SFX_LAB).toEqual({ pairGapS: 1.2, pendingS: 1.0 });
+     expect(SOUND_LAB_ROW_SUBS_JA[4]).toContain(`${SFX_LAB.pairGapS} 秒`);
+   });
++  it('IP4: 一番狭い論理幅 1280 でもボタンの題（既定の「（今）」つき）がボタンの幅に収まる（等幅の字: 半角 0.6 em・全角 1 em で見積もる。IP4 の「F 落とす（今）」は 216 px で 183 px からはみ出した）', () => {
++    const f = { gameWidth: 1280, gameHeight: H, margin: MARGIN };
++    const em = (t: string): number => [...t].reduce((a, c) => a + (c.charCodeAt(0) < 0x80 ? 0.6 : 1), 0);
++    SFX_LAB_ROWS.forEach((r, row) => {
++      const g = SFX_VARIANT_GROUPS[r.group]!;
++      for (let col = 0; col < r.count; col++) {
++        const v = g.variants[r.first + col]!;
++        const t = soundLabButtonTitle(v.id, v.id === g.defaultId, g.kindsJa?.[r.first + col]);
++        expect(em(t) * SOUND_LAB_BUTTON_PX, t).toBeLessThanOrEqual(soundLabButtonRect(row, col, r.count, f).w);
++      }
++    });
++    expect(soundLabButtonTitle('F', SFX_VARIANT_GROUPS[2]!.defaultId === 'F', '落とす')).toBe('F（今）');
++  });
+   it('シーン: 案のボタンは silent（5 行。行と案は SFX_LAB_ROWS）・「戻る」はタイトルへ・create は鳴らさない・update は確保しない', () => {
+     const s = readFileSync('src/scenes/sound-lab-scene.ts', 'utf8');
+     expect(s.match(/new MenuButton\(/g)!.length).toBe(2);
