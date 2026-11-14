@@ -2,9 +2,11 @@
 // 決めは再生の側・ここは書くだけ）。音量の節 MUSIC_PLAYER.slots 本（起動時に作って使い回す＝1 組 layersMax 層まで × 3 組＝鳴っている組・止めかけの組・急いで 0 にした組）→ 曲の束。
 // 組の音源は同じ when（今 ＋ startLeadS）で buffer 全体を繰り返す（任務の家族の 3 層が同じ標本から鳴る＝層がずれない）。古い組は音量を時定数で 0 へ・予約の stop（1 音源 1 回だけ＝古い WebKit は
 // 2 回目の stop で投げる）。止めかけの組がまだ鳴っている時にまた止めれば、その組の音量を 30 ms で 0 へ（節は予約の stop まで空けない）。家族の組の段の移りは 3 層の音量だけを書く。
+// 音源の数（spec §4.2）: 始めると鳴っている音源（止めかけを含む）が MUSIC_MAX_SOURCES を超えるなら、まだ始めない（止めかけの組が鳴り終わる次の 10 Hz で。S2: 3 層の組が 3 つ重なると 7〜9 本に
+// なる＝メニュー ⇄ 任務をすばやく行き来した時だけ少し遅れて始まる）。
 // 移りの秒 → 時定数は × MUSIC_PLAYER.fadeTc（秒の後に約 2%＝止める時に「ぷつっ」としない）。値は読み返さない（L6）。予約の前に必ず消す（R4）。
 // §7: step* は確保しない（音源は組を始める時に作る使い捨て。曲の音源を作るのはここの 1 か所）。
-import { MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_GAIN, MUSIC_KEYS, MUSIC_MOOD_QUIET, MUSIC_PLAYER } from '../config/sfx-music-config';
+import { MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_GAIN, MUSIC_KEYS, MUSIC_MAX_SOURCES, MUSIC_MOOD_QUIET, MUSIC_PLAYER } from '../config/sfx-music-config';
 import { musicMoodGain, musicMoodTc } from '../core/sfx-music-mood';
 import type { SfxBuffer, SfxCtx, SfxGainNode, SfxSource } from './sfx-audio-types';
 
@@ -43,7 +45,7 @@ export class SfxMusicSlots {
     }
   }
 
-  /** 鳴っている音源（予約の stop がまだ先の物も）の数（stats から。毎フレームは呼ばない） */
+  /** 鳴っている音源（予約の stop がまだ先の物も）の数（stats と、組を始める前の数え） */
   live(now: number): number {
     let n = 0;
     for (let s = 0; s < SLOTS; s++) if (this.srcs[s] !== null || this.endAt[s]! > now) n++;
@@ -83,6 +85,7 @@ export class SfxMusicSlots {
    * 空きの節が足りなければ始めずに false（止めかけの組が鳴り終わる次の決めで）
    */
   stepStart(now: number, k: number, n: number, scene: number, mood: number, inS: number, buffers: MusicBuffers): boolean {
+    if (this.live(now) + n > MUSIC_MAX_SOURCES) return false;
     let got = 0;
     for (let s = 0; s < SLOTS && got < n; s++) if (this.srcs[s] === null && this.endAt[s]! <= now) this.cur[got++] = s;
     if (got < n) return false;

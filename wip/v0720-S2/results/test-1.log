@@ -1,0 +1,13 @@
+
+> ww2-torpedo-boat@0.7.2 test
+> vitest run --testTimeout=90000
+
+
+ RUN  v4.1.11 /home/user/ww2-torpedo-boat
+
+
+ Test Files  295 passed (295)
+      Tests  3481 passed (3481)
+   Start at  12:07:03
+   Duration  473.84s (transform 12.03s, setup 0ms, import 63.93s, tests 1301.25s, environment 35ms)
+
