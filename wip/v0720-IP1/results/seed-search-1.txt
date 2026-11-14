@@ -1,6 +1,0 @@
-title_a     種 7603（2 個を落とした: recover 2・steps 1・repeatLeap 1）
-title_d     種 7635（31 個を落とした: recover 29・trill 7・steps 1・arpeggio 2・repeatLeap 1）
-title_e     種 7636（0 個を落とした）
-mission_l0  種 7637（0 個を落とした）
-mission_l1  種 7638（0 個を落とした）
-mission_l2  種 7639（0 個を落とした）
