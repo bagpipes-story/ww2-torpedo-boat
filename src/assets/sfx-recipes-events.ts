@@ -1,5 +1,5 @@
 // v0.7.1 S4（アートと音②：合成の効果音。spec-v0710 §4・§3.2）: 状態の合図のうち「出来事の音」の作り方＝探照灯 light_on・星弾と照明弾 flare_pop・
-// 爆弾の落ちてくる音 bomb_fall・煙幕 smoke（金属・電子・機関の合図は assets/sfx-recipes-cues。魚雷の発射 torp_launch は IP2 から assets/sfx-recipes-launch）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
+// 爆弾の落ちてくる音 bomb_fall・煙幕 smoke（金属・電子・機関の合図は assets/sfx-recipes-cues。魚雷の発射 torp_launch は IP2 から assets/sfx-recipes-launch・IP4 から既定 F は sfx-recipes-launch2）。数は音色の定数（聞かせ方）で、鍵ごとの名前つきの表にまとめる。乱数は音だけの種。
 // 本体のスピーカー（約 300〜400 Hz より下がほとんど出ない）でも聞こえるように、どれも 400 Hz より上に芯を持たせる。直流・端の fade・頂の正規化は assets/sfx-bank。
 import { SFX_SAMPLE_RATE, SFX_SEED_BOMB_FALL, SFX_SEED_FLARE_POP, SFX_SEED_LIGHT_ON, SFX_SEED_SMOKE, type SfxKey } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';

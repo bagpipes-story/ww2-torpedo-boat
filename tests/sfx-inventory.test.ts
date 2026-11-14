@@ -13,9 +13,12 @@ import { SFX_BAND_GAIN, SFX_BAND_MAX_M, SFX_KEYS, SFX_MAX_TOTAL_SAMPLES, SFX_SAM
 import { renderSfx, sfxImplementedKeys } from '../src/assets/sfx-bank';
 import { SFX_LOOP_IDS } from '../src/core/sfx-loops';
 
-/** spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した）。IP2（実機 2 回目）: reload 0.42 → 0.3（始め＝抜く）・reload_end 0.42（終わり＝差す・槓桿）を足して 26 本 */
+/**
+ * spec §4 の 25 本と秒（単発 20・ループ 5）。IP1（実機 1 回目）: torp_launch 0.7 → 1.0・reload 0.35 → 0.42（作り直した）。IP2（実機 2 回目）: reload 0.42 → 0.3（始め＝抜く）・reload_end 0.42（終わり＝差す・槓桿）を足して 26 本。
+ * IP4（実機 4 回目。U-R2）: torp_launch 1.0 → 1.4（既定 F の秒＝IP3 で試聴した長さ）
+ */
 const SECONDS: Readonly<Record<string, number>> = {
-  mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 1.0, hull_hit: 0.3,
+  mg: 0.12, gun_near: 0.6, gun_far: 0.9, splash_s: 0.35, splash_l: 0.8, blast_s: 0.5, blast_l: 1.6, torp_hit: 2.2, torp_launch: 1.4, hull_hit: 0.3,
   alarm: 0.6, light_on: 0.5, flare_pop: 1.2, bomb_fall: 1.2, reload: 0.3, reload_end: 0.42, smoke: 1.0, ui_tap: 0.06, bell: 1.4, engine_cough: 0.8, sink: 2.5,
   engine: 1.0, sea: 4.0, fire: 2.0, rain: 2.0, drone: 1.5,
 };
@@ -73,7 +76,7 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(d.loop).toBe(LOOPS.includes(key));
     expect(d.rateJitter).toBe(JITTER[key] ?? 0);
   });
-  it('種は 32（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場だけの魚雷の発射 E〜I の 5）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
+  it('種は 32（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場の魚雷の発射 E〜I の 5。IP4 から F の種はゲームの torp_launch も使う）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
     const src = readFileSync('src/config/sfx-config.ts', 'utf8');
     const seeds = [...src.matchAll(/^export const (SFX_SEED_\w+) = (\d+);/gm)].map((m) => [m[1]!, Number(m[2])] as const);
     expect(seeds.length).toBe(32);
@@ -88,11 +91,11 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(art.length).toBeGreaterThanOrEqual(10);
     for (const s of seeds) expect(art, s[0]).not.toContain(s[1]);
   });
-  it('標本の合計は 70 万以下（22,050 Hz・約 28.8 秒＝636,142 標本。IP1 で torp_launch・reload を延ばして ＋8,159、IP2 で reload 0.42 → 0.3 秒・reload_end 0.42 秒を足して ＋6,615）', () => {
+  it('標本の合計は 70 万以下（22,050 Hz・約 29.2 秒＝644,962 標本。IP1 で torp_launch・reload を延ばして ＋8,159、IP2 で reload 0.42 → 0.3 秒・reload_end 0.42 秒を足して ＋6,615、IP4 で torp_launch 1.0 → 1.4 秒の ＋8,820）', () => {
     expect(SFX_SAMPLE_RATE).toBe(22050);
     expect(SFX_MAX_TOTAL_SAMPLES).toBe(700_000);
     const total = SFX_KEYS.reduce((a, k) => a + Math.round(SFX_TABLE[k].seconds * SFX_SAMPLE_RATE), 0);
-    expect(total).toBe(636_142);
+    expect(total).toBe(644_962);
     expect(total).toBeLessThanOrEqual(SFX_MAX_TOTAL_SAMPLES);
   });
   it('聞かせ方の定数は spec のとおり（声 16・距離の帯・パン・リミッタ・master・ループの更新）', () => {

@@ -1,9 +1,9 @@
-// v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語。論理 px（高さ 720・幅 1280〜1584）。ゲームの数値ではないので data/*.json には置かない。
+// v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）・IP4（実機 4 回目。弾倉 B・魚雷 F に決まった後も次の試聴のために残す）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語。論理 px（高さ 720・幅 1280〜1584）。ゲームの数値ではないので data/*.json には置かない。
 // 何も import しない（ui/sound-lab-layout と tests/sound-lab が node で読んでも game-config → screen-fit の DOM を引かない。title-layout-config と同じ）。
 // 再生の秒（「続けて聞く」の間・最初のタップの待ち）は config/sfx-config の SFX_LAB。
 
-/** 上の説明（ビルド番号の下・中央。折り返す） */
-export const SOUND_LAB_HEAD_JA = '音の試聴（v0.7.1 IP3）: 弾倉は B に決めました。魚雷の新しい案 E〜I を聞き比べて、良かった記号を教えてください';
+/** 上の説明（ビルド番号の下・中央。折り返す。IP4 の文は論理幅 1280 でも 1 行に収まる＝2 行になっても行の上 124 より上） */
+export const SOUND_LAB_HEAD_JA = '音の試聴（v0.7.1）: 弾倉は B・魚雷は F に決めました（（今）の印）。ほかの案は比べる用に残しています';
 export const SOUND_LAB_HEAD_Y = 52;
 export const SOUND_LAB_HEAD_PX = 22;
 /**

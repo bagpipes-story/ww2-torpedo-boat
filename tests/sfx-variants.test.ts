@@ -4,6 +4,8 @@
 // - 既定の案の秒は表の秒（config/sfx-config）。弾倉の終わりの D だけ IP1 の終わりの速さ 1.06 で鳴らす（ほかは 1）。
 // - IP3（実機 3 回目「弾倉はBでいきましょう。魚雷はんーもう何案か出してください」）: 弾倉の既定は始め・終わりとも B（U-R1。IP2 で試聴した B と同じ標本＝指紋が IP2 のまま）。
 //   魚雷の発射は新しい案 E〜I を足して 9 案（既定は A のまま）。E〜I は 1.6 秒以内・本体のスピーカー向け（400 Hz より上 ≥ 60%・局所の頂 < 6 dB）・指紋を固定。9 案のどの 2 つも 1.5 より離れる。
+// - IP4（実機 4 回目「魚雷はFで行きます。弾倉交換もOKです。」）: 魚雷の発射の既定は F（U-R2）。ゲームの標本 renderSfx('torp_launch') は試聴の場の F とビット同一で、指紋は IP3 で試聴した F の
+//   1125567461 のまま（作り方・種 SFX_SEED_LAB_LAUNCH_F・秒 1.4 が同じ）。前の既定 A は試聴の場に残り、指紋は IP2〜IP3 のゲームの torp_launch 3234308985 のまま。
 import { describe, expect, it } from 'vitest';
 import { SFX_SAMPLE_RATE, SFX_TABLE } from '../src/config/sfx-config';
 import { renderSfx } from '../src/assets/sfx-bank';
@@ -71,6 +73,8 @@ function peakinessDb(v: Float32Array): number {
 /** IP2 で試聴した弾倉の B（IP3 から既定）と、IP3 の魚雷の発射の新しい案 E〜I の指紋 */
 const B_FP: Readonly<Record<string, number>> = { reload: 464075404, reload_end: 345574464 };
 const NEW_FP: Readonly<Record<string, number>> = { E: 2172940326, F: 1125567461, G: 1433634797, H: 2336520830, I: 872527779 };
+/** IP2〜IP3 のゲームの torp_launch（試聴の場の A。IP4 から既定ではない）の指紋 */
+const A_FP = 3234308985;
 /** IP1 の reload・torp_launch の指紋（tests/sfx-synth の IP1 の値。D はこのまま） */
 const IP1_FP: Readonly<Record<string, number>> = { reload: 3382733306, reload_end: 3382733306, torp_launch: 1786366453 };
 const memo = new Map<string, Float32Array>();
@@ -82,12 +86,12 @@ const render = (gi: number, vi: number): Float32Array => {
 const CASES = SFX_VARIANT_GROUPS.flatMap((g, gi) => g.variants.map((v, vi) => [`${g.key} ${v.id}`, gi, vi] as const));
 
 describe('試聴の案の表（v0.7.1 IP2・IP3）', () => {
-  it('弾倉の始め・終わりに A〜D（既定は B＝U-R1）、魚雷の発射に A〜I（既定は A のまま）。D は IP1 の音。一言は案ごとに 1 つ・型は新しい案だけ', () => {
+  it('弾倉の始め・終わりに A〜D（既定は B＝U-R1）、魚雷の発射に A〜I（既定は F＝U-R2）。D は IP1 の音。一言は案ごとに 1 つ・型は新しい案だけ', () => {
     expect(SFX_VARIANT_GROUPS.map((g) => g.key)).toEqual(['reload', 'reload_end', 'torp_launch']);
     for (const g of SFX_VARIANT_GROUPS) {
       const torp = g.key === 'torp_launch';
       expect(g.variants.map((v) => v.id).join('')).toBe(torp ? 'ABCDEFGHI' : 'ABCD');
-      expect(g.defaultId).toBe(torp ? 'A' : 'B');
+      expect(g.defaultId).toBe(torp ? 'F' : 'B');
       expect(g.notesJa.length).toBe(g.variants.length);
       expect(g.notesJa[3]).toBe('IP1 の音');
       for (const v of g.variants) expect(v.rate).toBe(g.key === 'reload_end' && v.id === 'D' ? 1.06 : 1);
@@ -124,6 +128,17 @@ describe('試聴の案の表（v0.7.1 IP2・IP3）', () => {
       expect(Buffer.from(render(gi, di).buffer).equals(Buffer.from(renderSfx(g.key).buffer)), g.key).toBe(true);
       expect(fingerprint16(render(gi, 3)), `${g.key} D`).toBe(IP1_FP[g.key]);
     });
+  });
+  it('IP4: ゲームの torp_launch は IP3 で試聴した F とビット同一（作り方・種・秒 1.4 が同じ＝指紋 1125567461）。前の既定 A は試聴の場に IP2〜IP3 の指紋のまま', () => {
+    const g = SFX_VARIANT_GROUPS[2]!;
+    const fi = g.variants.findIndex((v) => v.id === 'F');
+    expect(g.variants[fi]!.seconds).toBe(1.4);
+    expect(SFX_TABLE.torp_launch.seconds).toBe(1.4);
+    const game = renderSfx('torp_launch');
+    expect(game.length).toBe(at(1.4));
+    expect(Buffer.from(game.buffer).equals(Buffer.from(renderSfxVariant(g.variants[fi]!).buffer))).toBe(true);
+    expect(fingerprint16(game)).toBe(NEW_FP.F);
+    expect(fingerprint16(render(2, 0))).toBe(A_FP);
   });
   it('同じ音の案どうしは 6 つの数で 1.5 より離れる（聞き分けられる）', () => {
     SFX_VARIANT_GROUPS.forEach((g, gi) => {

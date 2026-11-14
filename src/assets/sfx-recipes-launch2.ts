@@ -1,15 +1,17 @@
-// v0.7.1 IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 魚雷の発射の新しい案 E〜I（試聴の場 ?sfxlab だけ。ゲームの既定は sfx-recipes-launch の A のまま）。
+// v0.7.1 IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 魚雷の発射の新しい案 E〜I（試聴の場 ?sfxlab。IP3 ではゲームの既定は A のまま）。
+// IP4（実機 4 回目「魚雷はFで行きます」＝ユーザーの決め U-R2）: ゲームの torp_launch は F（下の LAUNCH_DEFAULT_ID・LAUNCH_RECIPES。前の案 A〜D と新しい案の両方が見えるのは
+// ここだけ＝sfx-recipes-launch から import すると輪になる）。F の作り方・種 SFX_SEED_LAB_LAUNCH_F・秒 1.4 は IP3 で試聴したまま＝ゲームの標本は試聴した F とビット同一（tests/sfx-variants）。
 // A〜D のどれも好まれなかった（IP1「ポンっ」・「カッコよく」）ので、小さい調整ではなく向きの違う 5 つ: E 大砲型「ドンッ＋ザバーン」・F 落とす型「ガコン＋ザブン」
 // （1943 年からの米 PT の Mk 13 は舷側の台から転がして落とした＝史実の向き）・G 映画型「シュッ…ズドン」・H 走り去る型「ドシュウゥン」・I「A を重く大きく」（大きさが足りなかったかを確かめる）。
 // どれも本体のスピーカー向け: 芯のエネルギーは 300〜400 Hz より上、「どん」は高さの無い雑音か速く滑る物だけ（長く鳴る低い正弦は倍音が「ぽん」に聞こえる＝使わない）。
 // 1 つの音は雑音の塊（Burst）の和: 帯（掃引できる・2 回重ねて外を強く落とす）× 包絡（立ち上がりの曲がり pow）→ 歪み（頂 1 にそろえて tanh＝圧縮して太く）→ 大きさの揺れ（スクリューの拍）。
 // F の金属の当たりと擦れは弾倉の B と同じ雑音の金属（sfx-recipes-reload の clack・slide）。数は音色の定数（聞かせ方）。乱数は案ごとの音だけの種 SFX_SEED_LAB_LAUNCH_*。
 import {
-  SFX_SAMPLE_RATE, SFX_SEED_LAB_LAUNCH_E, SFX_SEED_LAB_LAUNCH_F, SFX_SEED_LAB_LAUNCH_G, SFX_SEED_LAB_LAUNCH_H, SFX_SEED_LAB_LAUNCH_I,
+  SFX_SAMPLE_RATE, SFX_SEED_LAB_LAUNCH_E, SFX_SEED_LAB_LAUNCH_F, SFX_SEED_LAB_LAUNCH_G, SFX_SEED_LAB_LAUNCH_H, SFX_SEED_LAB_LAUNCH_I, type SfxKey,
 } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
 import { bandPass, fadeTail, highPass, mixInto, peakOf, sfxSamples, whiteNoise, type SfxRecipe } from './sfx-dsp';
-import { LAUNCH_A, launch, type Launch } from './sfx-recipes-launch';
+import { LAUNCH_A, LAUNCH_VARIANTS, launch, type Launch } from './sfx-recipes-launch';
 import { HEAVY, LIGHT, MAG_SLIDE, MID, clack, slide, type Clack, type Slide, type SfxRecipeVariant } from './sfx-recipes-reload';
 
 const SR = SFX_SAMPLE_RATE;
@@ -183,7 +185,7 @@ const I: Launch = {
   airGain: 1.9, splashAtS: 0.42, splashThumpS: 0.1, splashThumpGain: 1.1, splashS: 0.26, splashGain: 1.2, tailFadeS: 0.12, busDrive: 2,
 };
 
-/** 新しい案 E〜I（秒は案ごと。試聴の場だけ＝起動時の標本の合計 70 万には入らない） */
+/** 新しい案 E〜I（秒は案ごと。既定の F だけが起動時に作られ、標本の合計 70 万に入る。ほかは試聴の場だけ） */
 export const LAUNCH_NEW_VARIANTS: readonly SfxRecipeVariant[] = [
   { id: 'E', recipe: recipe2(E), seconds: 1.3, rate: 1 },
   { id: 'F', recipe: recipe2(F), seconds: 1.4, rate: 1 },
@@ -191,3 +193,10 @@ export const LAUNCH_NEW_VARIANTS: readonly SfxRecipeVariant[] = [
   { id: 'H', recipe: recipe2(H), seconds: 1.5, rate: 1 },
   { id: 'I', recipe: launch(I, () => new SeededRng(SFX_SEED_LAB_LAUNCH_I)), seconds: 1.2, rate: 1 },
 ];
+
+/** 試聴の場の魚雷の発射の 9 案（前の案 A〜D・新しい案 E〜I の順） */
+export const LAUNCH_ALL_VARIANTS: readonly SfxRecipeVariant[] = [...LAUNCH_VARIANTS, ...LAUNCH_NEW_VARIANTS];
+/** ゲームで鳴らす案（試聴の場の「（今）」）。IP4 で A → F（U-R2）。秒は config/sfx-config の表の torp_launch の秒と同じ（tests/sfx-variants） */
+export const LAUNCH_DEFAULT_ID = 'F';
+/** 魚雷の発射の作り方（鍵 → 関数）: 既定の案 */
+export const LAUNCH_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { torp_launch: LAUNCH_ALL_VARIANTS.find((v) => v.id === LAUNCH_DEFAULT_ID)!.recipe };

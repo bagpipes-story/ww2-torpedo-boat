@@ -61,7 +61,10 @@ export const SFX_SEED_RAIN = 7524;
 export const SFX_SEED_DRONE = 7525;
 /** IP2: 弾倉の交換の終わり（差し込む・槓桿） */
 export const SFX_SEED_RELOAD_END = 7526;
-/** IP3: 試聴の場（?sfxlab）だけの魚雷の発射の新しい案 E〜I（ゲームの鍵ではない＝起動時には作らず、押した時に作る。assets/sfx-recipes-launch2） */
+/**
+ * IP3: 試聴の場（?sfxlab）の魚雷の発射の新しい案 E〜I（押した時に作る。assets/sfx-recipes-launch2）。IP4: F はゲームの torp_launch（U-R2）＝起動時に F の種で作る
+ * （試聴した標本とビット同一にするため種はこのまま。表の torp_launch の種 SFX_SEED_TORP_LAUNCH は試聴の場の前の案 A〜D の種）
+ */
 export const SFX_SEED_LAB_LAUNCH_E = 7527;
 export const SFX_SEED_LAB_LAUNCH_F = 7528;
 export const SFX_SEED_LAB_LAUNCH_G = 7529;
@@ -114,7 +117,7 @@ export const SFX_TABLE: Readonly<Record<SfxKey, SfxDef>> = {
   blast_s: def(0.5, SFX_SEED_BLAST_S, 0.4, SFX_PRIORITY_BLAST, 0.35, FAR, 'blast'),
   blast_l: def(1.6, SFX_SEED_BLAST_L, 0.8, SFX_PRIORITY_BLAST, 0.2, FAR, 'blast'),
   torp_hit: def(2.2, SFX_SEED_TORP_HIT, 0.8, SFX_PRIORITY_BLAST, 0, FAR, 'blast'),
-  torp_launch: def(1.0, SFX_SEED_TORP_LAUNCH, 0.8, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
+  torp_launch: def(1.4, SFX_SEED_TORP_LAUNCH, 0.8, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   hull_hit: def(0.3, SFX_SEED_HULL_HIT, 0.7, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   alarm: def(0.6, SFX_SEED_ALARM, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),
   light_on: def(0.5, SFX_SEED_LIGHT_ON, 0.6, SFX_PRIORITY_CUE, 0, FAR, 'cue'),

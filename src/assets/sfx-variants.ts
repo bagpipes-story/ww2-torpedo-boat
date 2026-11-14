@@ -3,11 +3,11 @@
 // （assets/sfx-bank の finishSfx）で作る＝既定の案の標本は renderSfx(鍵) とビット同一（tests/sfx-variants）。試聴の場は押された時に 1 回だけ作って覚える（起動時には作らない）。
 // IP3（実機 3 回目「弾倉はBでいきましょう。魚雷はんーもう何案か出してください」）: 弾倉の既定は B（U-R1）。魚雷の発射に新しい案 E〜I（sfx-recipes-launch2。秒は案ごと・
 // 試聴の場だけ）を足して 9 案。試聴の場の行は SFX_LAB_ROWS（魚雷の発射は前の案 A〜D の行と新しい案 E〜I の行に分ける）。
+// IP4（実機 4 回目「魚雷はFで行きます。弾倉交換もOKです。」）: 魚雷の発射の既定は F（U-R2。sfx-recipes-launch2 の LAUNCH_DEFAULT_ID）。試聴の場は次の試聴（v0.7.2 の BGM など）のために残す。
 import type { SfxKey } from '../config/sfx-config';
 import { finishSfx } from './sfx-bank';
 import { sfxSamples } from './sfx-dsp';
-import { LAUNCH_DEFAULT_ID, LAUNCH_VARIANTS } from './sfx-recipes-launch';
-import { LAUNCH_NEW_VARIANTS } from './sfx-recipes-launch2';
+import { LAUNCH_ALL_VARIANTS, LAUNCH_DEFAULT_ID } from './sfx-recipes-launch2';
 import { RELOAD_DEFAULT_ID, RELOAD_END_VARIANTS, RELOAD_VARIANTS, type SfxRecipeVariant } from './sfx-recipes-reload';
 
 /** 試聴の 1 つの音（鍵と案の並び） */
@@ -26,7 +26,7 @@ export const SFX_VARIANT_GROUPS: readonly SfxVariantGroup[] = [
   { key: 'reload', variants: RELOAD_VARIANTS, defaultId: RELOAD_DEFAULT_ID, notesJa: ['雑音の打音', '重い がしゃっ', '乾いた 小銃', 'IP1 の音'] },
   { key: 'reload_end', variants: RELOAD_END_VARIANTS, defaultId: RELOAD_DEFAULT_ID, notesJa: ['雑音の打音', '重い がしゃっ', '乾いた 小銃', 'IP1 の音'] },
   {
-    key: 'torp_launch', variants: [...LAUNCH_VARIANTS, ...LAUNCH_NEW_VARIANTS], defaultId: LAUNCH_DEFAULT_ID,
+    key: 'torp_launch', variants: LAUNCH_ALL_VARIANTS, defaultId: LAUNCH_DEFAULT_ID,
     notesJa: ['どすん＋ぶしゅっ', '大きい どおん', 'ばしゅっ', 'IP1 の音', 'ドンッ＋ザバーン', 'ガコン＋ザブン', 'シュッ…ズドン', 'ドシュウゥン', '大きく 重く'],
     kindsJa: ['', '', '', '', '大砲', '落とす', '映画', '走り去る', 'Aを重く'],
   },

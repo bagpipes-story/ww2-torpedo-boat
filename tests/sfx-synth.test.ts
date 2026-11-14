@@ -3,6 +3,7 @@
 // 系統ごとの RMS の帯・零交差の高さの順・ループは継ぎ目・合成の壁時計。鍵を足す段は FINGERPRINTS に 1 行足す（無ければ落ちる）。音色を直した時は指紋を直す。
 // S2: 7 本の聞き分け（近い砲は鋭く明るい・遠雷はゆっくり立って暗い・大きい水柱は低い一打つき・魚雷の命中は爆発の後に水の柱が立つ・沈没は続く泡）を数で固定する。
 // S4: 合図 10 本も共通の検査に入る（聞き分け・本体のスピーカーで聞こえる帯は tests/sfx-synth-cues）。
+// IP4: torp_launch は F（U-R2）＝IP3 で試聴した F の指紋 1125567461（tests/sfx-variants の F と同じ。IP2〜IP3 の A は 3234308985＝試聴の場の A のまま）。
 // S3: ループ 5 本（engine・sea・fire・rain・drone）は上の共通の検査（長さ・頂・直流・指紋・継ぎ目）に自動で入る。ループだけの検査（継ぎ目の飛び・揺れ・聞こえる帯・部品）は tests/sfx-synth-loops。
 // 下半分は部品（assets/sfx-dsp）の単体テスト。
 import { describe, expect, it } from 'vitest';
@@ -42,7 +43,7 @@ const FINGERPRINTS: Partial<Record<SfxKey, number>> = {
   fire: 104566791,
   rain: 2630845142,
   drone: 1691882525,
-  torp_launch: 3234308985,
+  torp_launch: 1125567461,
   hull_hit: 2680124741,
   alarm: 1749539769,
   light_on: 2838731473,

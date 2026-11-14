@@ -2,10 +2,11 @@
 // 本体のスピーカー（約 300 Hz より下が出ない）では倍音だけが残って高さのある短い「ぽん」になった（管の響き・スクリューの正弦も高さを足した）。
 // 小さいスピーカーの「どん・どすっ」＝高さの無い雑音のエネルギーを 180〜700 Hz に集め、速く立ち上げて 0.15〜0.3 秒で減衰、雑音のほうを柔らかく歪ませて太く（正弦は歪ませない）、
 // 20〜60 ms の短い拡がった尾（別々の雑音を遅らせて重ねる＝船体の響き。同じ雑音を重ねると櫛の高さが出る）。圧縮空気の「ぶしゅっ」と着水の「ざぶん」は残す。
-// 試聴の場（?sfxlab）で聞き比べる案: A「どすん＋ぶしゅっ」（既定）・B 大きい「どおん」・C「ばしゅっ」（空気の発射が主・低いのは少し）・D IP1 の音（比べる用）。
-// IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 新しい案 E〜I は assets/sfx-recipes-launch2（試聴の場だけ。既定は A のまま＝ユーザーが選ぶまで）。
+// 試聴の場（?sfxlab）で聞き比べる案: A「どすん＋ぶしゅっ」（IP2〜IP3 の既定）・B 大きい「どおん」・C「ばしゅっ」（空気の発射が主・低いのは少し）・D IP1 の音（比べる用）。
+// IP3（実機 3 回目「魚雷はんーもう何案か出してください」）: 新しい案 E〜I は assets/sfx-recipes-launch2。IP4（実機 4 回目「魚雷はFで行きます」＝U-R2）: ゲームの既定は F
+// （両方の案の表が見える sfx-recipes-launch2 の LAUNCH_DEFAULT_ID・LAUNCH_RECIPES。ここから launch2 を import すると輪になる）。A〜D は試聴の場に比べる用に残す。
 // 数は音色の定数（聞かせ方）で、案ごとの名前つきの表。乱数は音だけの種 SFX_SEED_TORP_LAUNCH。直流・端の fade・頂の正規化は assets/sfx-bank。
-import { SFX_SEED_TORP_LAUNCH, type SfxKey } from '../config/sfx-config';
+import { SFX_SEED_TORP_LAUNCH } from '../config/sfx-config';
 import { SeededRng } from '../core/rng';
 import { bandPass, envelope, fadeTail, highPass, mixInto, modes, mul, peakOf, saturate, sfxSamples, sine, whiteNoise, type SfxRecipe } from './sfx-dsp';
 import type { SfxRecipeVariant } from './sfx-recipes-reload';
@@ -66,7 +67,7 @@ export function launch(c: Launch, makeRng?: () => SeededRng): SfxRecipe {
   };
 }
 
-/** A「どすん＋ぶしゅっ」（既定）: 180〜700 Hz の雑音の打撃（減衰 0.22 秒・歪み 2.5）＋ 22〜64 ms の尾 4 つ ＋ 空気の掃引 3k → 800 Hz ＋ 0.37 秒に着水 */
+/** A「どすん＋ぶしゅっ」（IP2〜IP3 の既定）: 180〜700 Hz の雑音の打撃（減衰 0.22 秒・歪み 2.5）＋ 22〜64 ms の尾 4 つ ＋ 空気の掃引 3k → 800 Hz ＋ 0.37 秒に着水 */
 export const LAUNCH_A: Launch = {
   crackHpHz: 1500, crackS: 0.005, crackGain: 2.4,
   thuds: [{ loHz: 180, hiHz: 700, attackS: 0.002, decayS: 0.22, drive: 2.5, gain: 1 }],
@@ -133,7 +134,7 @@ function launchIp1(n: number): Float32Array {
   return fadeTail(out, c.tailFadeS);
 }
 
-/** 標本の秒（どの案も 1.0 秒＝config/sfx-config の表の秒） */
+/** 標本の秒（A〜D は 1.0 秒。IP2〜IP3 の表の秒。IP4 から表の秒は既定 F の 1.4 秒） */
 export const LAUNCH_SECONDS = 1.0;
 export const LAUNCH_VARIANTS: readonly SfxRecipeVariant[] = [
   { id: 'A', recipe: launch(LAUNCH_A), seconds: LAUNCH_SECONDS, rate: 1 },
@@ -141,8 +142,3 @@ export const LAUNCH_VARIANTS: readonly SfxRecipeVariant[] = [
   { id: 'C', recipe: launch(LAUNCH_C), seconds: LAUNCH_SECONDS, rate: 1 },
   { id: 'D', recipe: launchIp1, seconds: LAUNCH_SECONDS, rate: 1 },
 ];
-/** ゲームで鳴らす案（試聴の場の「（今）」） */
-export const LAUNCH_DEFAULT_ID = 'A';
-
-/** 魚雷の発射の作り方（鍵 → 関数）: 既定の案 */
-export const LAUNCH_RECIPES: Partial<Record<SfxKey, SfxRecipe>> = { torp_launch: LAUNCH_VARIANTS.find((v) => v.id === LAUNCH_DEFAULT_ID)!.recipe };

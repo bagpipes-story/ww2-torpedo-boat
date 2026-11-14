@@ -9,6 +9,9 @@
 // - IP2（実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音も…ポンっ」）: 弾倉は始め reload・終わり reload_end の 2 本で、どちらも雑音の金属（高さが目立たない＝平均スペクトルの
 //   局所の頂 < 8 dB。IP1 は 14.6 dB）。魚雷の発射は高さの無い雑音の「どん」（180〜700 Hz に 40% 以上・頂 < 6 dB）。スクリューのうなりはやめた。案の表は tests/sfx-variants。
 // - IP3（実機 3 回目「弾倉はBでいきましょう」＝U-R1）: 弾倉の既定は B「重い がしゃっ」（胴が低く厚い＝400 Hz より上 90%／95%・始めの −20 dB まで 256 ms・終わりは 4 つの山）。
+// - IP4（実機 4 回目「魚雷はFで行きます」＝U-R2）: 魚雷の発射は F「落とす ガコン＋ザブン」: 頭に金属の「ガコン」（頭 30 ms の頂は全体の頂の 0.8 倍より大きい）→ 台を転がる擦れ →
+//   0.21〜0.24 秒のほぼ無音 → 0.24 秒に「ザブン」（一番大きい 0.1 秒は 0.24〜0.34 秒・直前の 0.1 秒の 3 倍より大きい）→ 泡で消える（1.0 秒より後は −30 dB より小さい）。
+//   高さの無い雑音（局所の頂 < 6 dB）で本体のスピーカーに届く（400 Hz より上 ≥ 60%）・芯は 180〜700 Hz に 40% 以上（IP2 の「どん」の向きのまま）。
 import { describe, expect, it } from 'vitest';
 import { SFX_KEYS, SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
 import { renderSfx } from '../src/assets/sfx-bank';
@@ -127,12 +130,12 @@ describe('合図 11 本の聞き分け（v0.7.1 S4。IP2 で弾倉の終わり�
     const n3 = Math.round(l.length / 3);
     expect(20 * Math.log10(rmsOf(l, 2 * n3, l.length) / rmsOf(l, 0, n3))).toBeGreaterThan(-6);
   });
-  it('煙幕は頭が無く（頂は 0.1 秒より後）星弾（頭の「ぽん」＝頂は 10 ms の内）より暗い。魚雷の発射は 0.37 秒の後に水音（0.37〜0.47 秒は直前より大きい。IP1）', () => {
+  it('煙幕は頭が無く（頂は 0.1 秒より後）星弾（頭の「ぽん」＝頂は 10 ms の内）より暗い。魚雷の発射は 0.24 秒の後に水音（0.24〜0.34 秒は直前より大きい。IP4 の F）', () => {
     const sm = x('smoke'), fl = x('flare_pop'), tl = x('torp_launch');
     expect(peakAt(sm)).toBeGreaterThan(0.1);
     expect(peakAt(fl)).toBeLessThan(0.01);
     expect(centroidHz(sm, 0, sm.length, SR)).toBeLessThan(centroidHz(fl, 0, fl.length, SR) * 0.85);
-    expect(rmsOf(tl, at(0.37), at(0.47))).toBeGreaterThan(rmsOf(tl, at(0.27), at(0.37)));
+    expect(rmsOf(tl, at(0.24), at(0.34))).toBeGreaterThan(rmsOf(tl, at(0.14), at(0.24)));
   });
   it('IP2・IP3: 弾倉の始め・終わりは雑音の金属（400 Hz より上 ≥ 90%＝既定 B の胴は低く厚い・局所の頂 < 8 dB＝長く鳴る高さが無い）。始めは短く（−20 dB まで 0.3 秒未満）、終わりは差してから槓桿まで続く（0.25 秒より長い）', () => {
     for (const k of ['reload', 'reload_end'] as const) {
@@ -142,12 +145,20 @@ describe('合図 11 本の聞き分け（v0.7.1 S4。IP2 で弾倉の終わり�
     expect(len20(x('reload'))).toBeLessThan(0.3);
     expect(len20(x('reload_end'))).toBeGreaterThan(0.25);
   });
-  it('IP2: 魚雷の発射は高さの無い「どん」（180〜700 Hz に 40% 以上・局所の頂 < 6 dB）で本体のスピーカーにも届く（400 Hz より上 ≥ 60%）。一番大きい 0.1 秒は頭（0〜0.1 秒）', () => {
+  it('IP4: 魚雷の発射は F「ガコン＋ザブン」: 高さの無い雑音（局所の頂 < 6 dB・芯は 180〜700 Hz に 40% 以上）で本体のスピーカーにも届く（400 Hz より上 ≥ 60%）', () => {
     const tl = x('torp_launch');
     expect(shareIn(tl, 180, 700)).toBeGreaterThanOrEqual(0.4);
     expect(peakinessDb(tl)).toBeLessThan(6);
     expect(shareAbove(tl, 400)).toBeGreaterThanOrEqual(0.6);
-    const head = rmsOf(tl, 0, at(0.1));
-    for (let t = 0.1; t + 0.1 <= 1; t += 0.1) expect(rmsOf(tl, at(t), at(t + 0.1)), `${t.toFixed(1)} 秒`).toBeLessThan(head);
+  });
+  it('IP4: 魚雷の発射 F は金属が先・水が後: 頭 30 ms に「ガコン」（頂は全体の頂の 0.8 倍より大きい）→ 0.21〜0.24 秒はほぼ無音 → 一番大きい 0.1 秒は 0.24〜0.34 秒の「ザブン」→ 泡で消える', () => {
+    const tl = x('torp_launch');
+    expect(peakOf(tl.subarray(0, at(0.03)))).toBeGreaterThan(peakOf(tl) * 0.8);
+    const splash = rmsOf(tl, at(0.24), at(0.34));
+    expect(splash).toBeGreaterThan(rmsOf(tl, at(0.14), at(0.24)) * 3);
+    expect(rmsOf(tl, at(0.21), at(0.24))).toBeLessThan(splash * 0.05);
+    for (let t = 0; t + 0.1 <= 1.4 + 1e-9; t += 0.1) if (Math.abs(t - 0.2) > 1e-9) expect(rmsOf(tl, at(t), at(t + 0.1)), `${t.toFixed(1)} 秒`).toBeLessThan(splash);
+    expect(rmsOf(tl, at(0), at(0.1))).toBeGreaterThan(splash * 0.3);
+    expect(20 * Math.log10(rmsOf(tl, at(1.0), tl.length) / splash)).toBeLessThan(-30);
   });
 });
