@@ -1,0 +1,1248 @@
+diff --git a/src/config/music-lab-config.ts b/src/config/music-lab-config.ts
+index 3314137..ee24fd3 100644
+--- a/src/config/music-lab-config.ts
++++ b/src/config/music-lab-config.ts
+@@ -1,13 +1,14 @@
+ // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §7・brief L14）: 曲の試聴の場（?sfxlab。scenes/music-lab-scene）の語と置き方。論理 px（高さ 720・幅 1280〜1584）。
+-// S2（brief L25）: 行 1「任務の曲」（静か・緊張・戦闘・自動・止める）と行 2「効果音と一緒に」（台本 3 つ・止める。4 つ目の「命中＋スロー」は S3）の語・自動の回し方・台本の表。
++// S2（brief L25）: 行 1「任務の曲」（静か・緊張・戦闘・自動・止める）と行 2「効果音と一緒に」（台本 3 つ・止める）の語・自動の回し方・台本の表。
++// S3（brief L31）: 行 2 の 4 つ目「命中＋スロー」（台本）と行 3「命中スロー」（案 A・B・C。押すたびに今のベッドへ魚雷の命中とスロー）の語・命中の位置。
+ // 割り付け（行の上 124・高さ 84・間 10・行の名前の幅 236・列の間 16・下の段の「戻る」320 × 84）は v0.7.1 の効果音の試聴の場と同じ（ui/sound-lab-layout の矩形をそのまま使う）。
+ // 何も import しない（ui/music-lab-layout と tests/music-lab が node で読んでも game-config → screen-fit の DOM を引かない。sound-lab-config と同じ）。ゲームの数値ではないので data/*.json には置かない。
+ 
+ /** 上の説明（ビルド番号の下・中央。折り返す。論理幅 1280 で 2 行＝行の上 124 より上） */
+-export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）: タイトルの曲を A・B・C から選んでください（（今）がゲームの曲）。任務の曲は段ごとと効果音と一緒に。知っている曲に似ていたら一言ください（その案は作り直します）';
+-/** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に。S3 で命中スローの行を足す） */
+-export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に'];
+-export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ'];
++export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）: タイトルの曲と命中スローを A・B・C から選んでください（（今）がゲームの案）。任務の曲は段ごとと効果音と一緒に。知っている曲に似ていたら一言ください（その案は作り直します）';
++/** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に・行 3＝命中スロー＝S3） */
++export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー'];
++export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ', '押すと命中とスロー'];
+ /**
+  * タイトルの曲の候補（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝A・B・C）: 記号・名前・2 行目の一言。ボタンの題は「記号 名前」、ゲームの曲（既定）は「記号（今）」だけ
+  * （v0.7.1 IP4 と同じ: 論理幅 1280 の 4 列のボタン 233 px に収める）で、名前は 2 行目へ
+@@ -26,13 +27,14 @@ export const MUSIC_LAB_AUTO_SUB_JA = '8 秒ずつ回す';
+ /** 「自動」の回し方: 段（MUSIC_MOOD_*: 0 静か・1 緊張・2 戦闘）の並びをくり返す（静か → 緊張 → 戦闘 → 緊張＝ゲームで起きる移りだけ）・1 段の秒（曲の家族が鳴ってから数える） */
+ export const MUSIC_LAB_AUTO_MOODS: readonly number[] = [0, 1, 2, 1];
+ export const MUSIC_LAB_AUTO_STEP_S = 8;
+-/** 行 2（効果音と一緒に）: 台本 3 つの題と 2 行目（並びは MUSIC_LAB_DEMOS） */
+-export const MUSIC_LAB_DEMO_TITLES_JA: readonly string[] = ['静か＋海', '発見＋警報', '戦闘＋砲声'];
+-export const MUSIC_LAB_DEMO_SUBS_JA: readonly string[] = ['エンジンと海の音', '警報で曲が下がる', '砲声と爆発で下がる'];
++/** 行 2（効果音と一緒に）: 台本 4 つの題と 2 行目（並びは MUSIC_LAB_DEMOS。4 つ目の「命中＋スロー」は S3） */
++export const MUSIC_LAB_DEMO_TITLES_JA: readonly string[] = ['静か＋海', '発見＋警報', '戦闘＋砲声', '命中＋スロー'];
++export const MUSIC_LAB_DEMO_SUBS_JA: readonly string[] = ['エンジンと海の音', '警報で曲が下がる', '砲声と爆発で下がる', '命中で周りがこもる'];
+ /**
+  * 行 2 の台本（systems/sfx-lab-demo。曲の家族が鳴ってからくり返す）: 段（MUSIC_MOOD_*）・エンジンのループの速力帯（'silent'・'cruise'・'full'）と速さの割合（0〜1。ゲームの式で音量と rate）・
+  * くり返しの秒・出来事 [秒, 種類, 聞き手からの x m, y m]。種類は sfx-lab-demo の DEMO_KEYS の添字（0 大砲＝距離の帯で近い音／遠雷・1 機銃・2 大きい水柱・3 大きい爆発・4 魚雷の命中・
+- * 5 警報・6 探照灯・7 被弾。5〜7 は位置なしの合図）。聞き手は (0, 0)・距離の帯は単発と同じ（400・1,500・4,000 m）。「戦闘＋砲声」は大きい爆発を帯 0（300 m）と帯 1（1,000 m）で鳴らす
++ * 5 警報・6 探照灯・7 被弾。5〜7 は位置なしの合図。S3 の 8＝魚雷の命中＋命中スロー＝世界の命中と同じ残り秒）。聞き手は (0, 0)・距離の帯は単発と同じ（400・1,500・4,000 m）。
++ * 「戦闘＋砲声」は大きい爆発を帯 0（300 m）と帯 1（1,000 m）で鳴らす。「命中＋スロー」は戦闘の曲・全速のエンジンに魚雷の命中とスローだけ（スローの案は行 3 で選んだ物＝既定はゲームの案）
+  */
+ export const MUSIC_LAB_DEMOS: readonly { readonly mood: number; readonly step: string; readonly speed: number; readonly periodS: number; readonly events: readonly (readonly number[])[] }[] = [
+   { mood: 0, step: 'cruise', speed: 0.45, periodS: 8, events: [] },
+@@ -41,7 +43,14 @@ export const MUSIC_LAB_DEMOS: readonly { readonly mood: number; readonly step: s
+     mood: 2, step: 'full', speed: 0.9, periodS: 8,
+     events: [[0.3, 6, 0, 0], [0.9, 0, 900, -300], [1.5, 2, 60, 40], [2.1, 0, 900, -300], [2.7, 2, -80, 50], [3.2, 1, 250, 0], [3.4, 1, 250, 0], [3.6, 1, 250, 0], [4.0, 3, 300, 100], [5.0, 0, 3000, 500], [6.0, 4, 700, -200], [7.0, 7, 0, 0], [7.4, 3, 1000, -400]],
+   },
++  { mood: 2, step: 'full', speed: 0.9, periodS: 8, events: [[1.0, 8, 700, -200]] },
+ ];
++/** v0.7.2 S3: 行 3（命中スロー）の案（記号は config/sfx-music-config の SFX_SLOW_IDS と同じ並び＝tests/music-lab）の名前と 2 行目の一言。ゲームの案（既定）は「記号（今）」の題と名前の 2 行目 */
++export const MUSIC_LAB_SLOW_LETTERS: readonly string[] = ['A', 'B', 'C'];
++export const MUSIC_LAB_SLOW_NAMES_JA: readonly string[] = ['低く遅く', '低くだけ', 'なし'];
++export const MUSIC_LAB_SLOW_NOTES_JA: readonly string[] = ['こもって遅くなる', '速さはそのまま', '今のまま（v0.7.1）'];
++/** 行 3 で鳴らす魚雷の命中の位置（聞き手からの m。距離の帯 1＝「戦闘＋砲声」「命中＋スロー」の魚雷の命中と同じ） */
++export const MUSIC_LAB_SLOW_HIT_XY: readonly [number, number] = [700, -200];
+ /** 状態の一文の曲の名前（任務の家族）と「自動」の印 */
+ export const MUSIC_LAB_FAMILY_JA = '任務の曲';
+ /** ゲームの曲の印（効果音の試聴の場と同じ） */
+diff --git a/src/scenes/music-lab-scene.ts b/src/scenes/music-lab-scene.ts
+index 3d8f0ad..e5fa6e7 100644
+--- a/src/scenes/music-lab-scene.ts
++++ b/src/scenes/music-lab-scene.ts
+@@ -1,6 +1,8 @@
+ // 曲の試聴の場（v0.7.2 S1。spec-v0720 §7・brief L14）: URL に ?sfxlab がある時だけ Boot が Title の代わりにここへ来る（ふだんの URL は変わらない）。v0.7.1 の効果音の試聴の場は
+ // 下の段の「効果音の試聴へ」から。行 0 はタイトルの曲の候補 A・B・C と「止める」。S2（brief L25）: 行 1「任務の曲」＝段（静か・緊張・戦闘）・自動（8 秒ずつ回す）・止める、
+-// 行 2「効果音と一緒に」＝台本 3 つ（systems/sfx-lab-demo。聞き手 (0, 0)・本物の距離の帯・合図・ループ＝ゲームと同じ大きさと下げ）・止める。S3 で命中スローの行。
++// 行 2「効果音と一緒に」＝台本 3 つ（systems/sfx-lab-demo。聞き手 (0, 0)・本物の距離の帯・合図・ループ＝ゲームと同じ大きさと下げ）・止める。
++// S3（brief L31）: 行 2 の 4 つ目「命中＋スロー」（台本）と行 3「命中スロー」＝案 A・B・C（押すたびにその案にして、今のベッド＝行 2 の台本〔鳴っていなければ「静か＋海」から〕に魚雷の命中と
++// data の秒の命中スロー＝ゲームと同じ道。選んだ案のボタンを強く。場を出る時に既定の案へ戻す）。ボタンの題と 2 行目は ui/music-lab-layout（250 行に収めるため移した）。
+ // 押す: まだ作っていなければ作り始め（そのボタンの 2 行目に「作成中…」・右下に「作成中… B 40%」）、できたらそのタップの続きとして鳴らす（もう一度押さなくてよい）。
+ // 鳴っている（作っている）ボタンをもう一度押すと止める。別の曲は、その曲ができてから 0.5 秒で重ねる（それまで今の曲が鳴る）。任務の曲の段は同じ家族のまま段だけ移る（ゲームの時定数）。
+ // 行 2 の台本は任務の曲が鳴ってから始める。どのボタンもボタンの音を鳴らさない（silent。戻る・効果音の試聴へは鳴らす）。
+@@ -10,24 +12,24 @@
+ // ゲームの保存（「音」「曲」）には触らない: 場にいる間だけ消音を解き曲をオンにし、出る時に保存の値へ戻す。出る時に候補の標本を捨てる（ゲームの列の曲は残す）。
+ // 静的な画面: 物体は create で 1 回だけ作る。update は曲の再生の状態を読み、変わった時だけ文を書き換える（毎フレームの setText をしない＝§7）。
+ import Phaser from 'phaser';
+-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
++import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, REGISTRY_KEY_DATA, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
++import { getGameData } from '../config/game-data';
+ import {
+-  MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_MOODS, MUSIC_LAB_AUTO_STEP_S, MUSIC_LAB_AUTO_SUB_JA, MUSIC_LAB_BUILDING_SUB_JA, MUSIC_LAB_DEMO_SUBS_JA, MUSIC_LAB_DEMO_TITLES_JA, MUSIC_LAB_DEMOS,
+-  MUSIC_LAB_FAMILY_JA, MUSIC_LAB_HEAD_JA, MUSIC_LAB_LETTERS, MUSIC_LAB_MOOD_SUBS_JA, MUSIC_LAB_MOOD_TITLES_JA, MUSIC_LAB_NAMES_JA, MUSIC_LAB_NOTES_JA, MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA,
+-  MUSIC_LAB_STATUS_BUILDING_JA, MUSIC_LAB_STATUS_IDLE_JA, MUSIC_LAB_STATUS_NONE_JA, MUSIC_LAB_STATUS_PLAYING_JA, MUSIC_LAB_STATUS_STOPPED_JA, MUSIC_LAB_STATUS_WAIT_JA, MUSIC_LAB_STOP_JA,
+-  MUSIC_LAB_STOP_SUB_JA, MUSIC_LAB_TO_SFX_JA,
++  MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_MOODS, MUSIC_LAB_AUTO_STEP_S, MUSIC_LAB_BUILDING_SUB_JA, MUSIC_LAB_DEMO_TITLES_JA, MUSIC_LAB_DEMOS, MUSIC_LAB_FAMILY_JA, MUSIC_LAB_HEAD_JA, MUSIC_LAB_LETTERS,
++  MUSIC_LAB_MOOD_TITLES_JA, MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA, MUSIC_LAB_STATUS_BUILDING_JA, MUSIC_LAB_STATUS_IDLE_JA, MUSIC_LAB_STATUS_NONE_JA,
++  MUSIC_LAB_STATUS_PLAYING_JA, MUSIC_LAB_STATUS_STOPPED_JA, MUSIC_LAB_STATUS_WAIT_JA, MUSIC_LAB_TO_SFX_JA,
+ } from '../config/music-lab-config';
+-import { MUSIC_CTX_LAB, MUSIC_CTX_NONE, MUSIC_LAYER_KEYS, MUSIC_TITLE_KEYS, type MusicKey } from '../config/sfx-music-config';
++import { MUSIC_CTX_LAB, MUSIC_CTX_NONE, MUSIC_LAYER_KEYS, MUSIC_TITLE_KEYS, SFX_SLOW_DEFAULT_ID, SFX_SLOW_IDS, type MusicKey } from '../config/sfx-music-config';
+ import {
+   SOUND_LAB_BACK_JA, SOUND_LAB_BACK_PX, SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_PX, SOUND_LAB_HEAD_Y, SOUND_LAB_LABEL_PX, SOUND_LAB_LABEL_SUB_PX, SOUND_LAB_NOTE_PX, SOUND_LAB_STATUS_PX,
+ } from '../config/sound-lab-config';
+ import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+ import { MUSIC_TITLE_DEFAULT_ID } from '../assets/sfx-music-themes';
+ import { SfxLabDemo } from '../systems/sfx-lab-demo';
+-import { sfxCanPlay, sfxMusic, sfxMusicAudition, sfxMusicEnabled, sfxMusicLabBuilding, sfxMusicLabPlaying, sfxMusicLabProgress, sfxMusicMood, sfxSetMuted } from '../systems/sfx-bus';
++import { sfxCanPlay, sfxMusic, sfxMusicAudition, sfxMusicEnabled, sfxMusicLabBuilding, sfxMusicLabPlaying, sfxMusicLabProgress, sfxMusicMood, sfxSetMuted, sfxSlowVariant } from '../systems/sfx-bus';
+ import { musicEnabled, soundEnabled } from '../systems/sfx-settings';
+ import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
+-import { MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS, musicLabButtonSub, musicLabButtonTitle, musicLabSideRect } from '../ui/music-lab-layout';
++import { MUSIC_LAB_ROW_COLS, MUSIC_LAB_ROW_DEMO, MUSIC_LAB_ROW_MOOD, MUSIC_LAB_ROW_SLOW, MUSIC_LAB_ROW_TITLE, musicLabHasStop, musicLabLabel, musicLabSideRect } from '../ui/music-lab-layout';
+ import { soundLabBackRect, soundLabButtonRect, soundLabLabelRect, type SoundLabFrame } from '../ui/sound-lab-layout';
+ 
+ const NONE = -1;
+@@ -37,10 +39,11 @@ const PERCENT = 100;
+ const MS_PER_S = 1000;
+ /** 鳴らせるか（sfxCanPlay の 3 つ: エンジンなし・止まっている・鳴らせる）を数に */
+ const CAN_NONE = 0, CAN_WAIT = 1, CAN_PLAY = 2;
+-/** 行（行 0 タイトルの曲・行 1 任務の曲・行 2 効果音と一緒に）と、行ごとの列の数・選んだボタンの番号（行 × ROW_SPAN ＋ 列）。行 1 の「自動」の列 */
+-const ROW_TITLE = 0, ROW_MOOD = 1, ROW_DEMO = 2;
+-const ROW_COLS: readonly number[] = [MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS];
++/** 行（ui/music-lab-layout）と、行ごとの列の数・選んだボタンの番号（行 × ROW_SPAN ＋ 列）。行 1 の「自動」の列。ゲームの曲・ゲームの命中スローの案の番号（「記号（今）」） */
++const ROW_TITLE = MUSIC_LAB_ROW_TITLE, ROW_MOOD = MUSIC_LAB_ROW_MOOD, ROW_DEMO = MUSIC_LAB_ROW_DEMO, ROW_SLOW = MUSIC_LAB_ROW_SLOW, ROW_COLS = MUSIC_LAB_ROW_COLS;
+ const ROW_SPAN = 8;
++const TITLE_DEFAULT = MUSIC_TITLE_KEYS.indexOf(MUSIC_TITLE_DEFAULT_ID);
++const SLOW_DEFAULT = SFX_SLOW_IDS.indexOf(SFX_SLOW_DEFAULT_ID);
+ const COL_AUTO = MUSIC_LAB_MOOD_TITLES_JA.length;
+ /** 曲の印: タイトルの候補は MUSIC_TITLE_KEYS の番号・任務の家族は FAMILY（作っている層は FAMILY ＋ 層） */
+ const FAMILY = 10;
+@@ -58,8 +61,10 @@ export class MusicLabScene extends Phaser.Scene {
+   private tapped = false;
+   private autoI = 0;
+   private autoS = 0;
+-  /** 前に書いた状態（変わった時だけ文を書く）: 鳴らしている曲・作っている曲・進みの %・選んだボタン・鳴らせるか・自動の段 */
+-  private readonly shown = new Int16Array(6);
++  /** S3: 命中スローの案（SFX_SLOW_IDS の番号。選んだ案のボタンを強く） */
++  private slowI = SLOW_DEFAULT;
++  /** 前に書いた状態（変わった時だけ文を書く）: 鳴らしている曲・作っている曲・進みの %・選んだボタン・鳴らせるか・自動の段・命中スローの案 */
++  private readonly shown = new Int16Array(7);
+   private leaving = false;
+ 
+   constructor() {
+@@ -71,6 +76,8 @@ export class MusicLabScene extends Phaser.Scene {
+     this.leaving = false;
+     this.chosen = NONE;
+     this.tapped = false;
++    this.slowI = SLOW_DEFAULT;
++    this.demo.slowS = getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.feel.hit_slowmo_seconds; // 命中スローの秒（世界と同じ data）
+     this.shown.fill(UNSHOWN);
+     this.buttons = [];
+     this.rows = [];
+@@ -85,7 +92,7 @@ export class MusicLabScene extends Phaser.Scene {
+       const list: MenuButton[] = [];
+       const subs: string[] = [];
+       for (let col = 0; col < ROW_COLS[row]!; col++) {
+-        const [title, sub] = this.labelOf(row, col);
++        const [title, sub] = musicLabLabel(row, col, TITLE_DEFAULT, SLOW_DEFAULT);
+         subs.push(sub);
+         const spec = { ...soundLabButtonRect(row, col, ROW_COLS[row]!, frame), title, titlePx: SOUND_LAB_BUTTON_PX, sub, subPx: SOUND_LAB_NOTE_PX, align: 'center' as const, silent: true };
+         const code = row * ROW_SPAN + col;
+@@ -112,7 +119,8 @@ export class MusicLabScene extends Phaser.Scene {
+       this.rows = [];
+       this.subs = [];
+       this.status = undefined;
+-      this.demo.stop(); // 台本のループを止めて聞き手を外す
++      this.demo.stop(); // 台本のループを止めて聞き手を外す（命中スローの音も戻る）
++      sfxSlowVariant(SFX_SLOW_DEFAULT_ID); // 命中スローはゲームの案へ
+       sfxMusic(MUSIC_CTX_NONE); // 候補の標本を捨てる（ゲームの列の曲は残す）。行き先の Title はメニューの曲を頼む
+       sfxSetMuted(!soundEnabled());
+       sfxMusicEnabled(musicEnabled());
+@@ -140,22 +148,35 @@ export class MusicLabScene extends Phaser.Scene {
+     const c = sfxCanPlay();
+     const can = c === null ? CAN_NONE : c ? CAN_PLAY : CAN_WAIT;
+     const s = this.shown;
+-    if (s[0] === p && s[1] === b && s[2] === pct && s[3] === this.chosen && s[4] === can && s[5] === this.autoI) return;
++    if (s[0] === p && s[1] === b && s[2] === pct && s[3] === this.chosen && s[4] === can && s[5] === this.autoI && s[6] === this.slowI) return;
+     s[0] = p;
+     s[1] = b;
+     s[2] = pct;
+     s[3] = this.chosen;
+     s[4] = can;
+     s[5] = this.autoI;
++    s[6] = this.slowI;
+     this.refresh(p, b, pct, can);
+   }
+ 
+-  /** ボタンを押した（行 × ROW_SPAN ＋ 列）: 「止める」と、選んであるボタン（鳴っている・作っている）をもう一度押すと止める。ほかは鳴らす（まだなら作ってから） */
++  /** ボタンを押した（行 × ROW_SPAN ＋ 列）: 「止める」と、選んであるボタン（鳴っている・作っている）をもう一度押すと止める。ほかは鳴らす（まだなら作ってから）。行 3 は案を替えて命中とスロー */
+   private tap(code: number): void {
+     this.tapped = true;
+-    const row = Math.floor(code / ROW_SPAN);
+-    const col = code - row * ROW_SPAN;
+-    const stop = col === ROW_COLS[row]! - 1 || code === this.chosen;
++    let row = Math.floor(code / ROW_SPAN);
++    let col = code - row * ROW_SPAN;
++    if (row === ROW_SLOW) {
++      this.slowI = col;
++      sfxSlowVariant(SFX_SLOW_IDS[col]!);
++      this.demo.queueHit(); // 台本が鳴っていれば今、まだなら始まった時に（台本でなければ「静か＋海」から）
++      if (Math.floor(this.chosen / ROW_SPAN) === ROW_DEMO) {
++        this.update(0, 0);
++        return;
++      }
++      row = ROW_DEMO;
++      col = 0;
++      code = ROW_DEMO * ROW_SPAN;
++    }
++    const stop = (musicLabHasStop(row) && col === ROW_COLS[row]! - 1) || code === this.chosen;
+     this.chosen = stop ? NONE : code;
+     if (stop || row !== ROW_DEMO) this.demo.stop(); // 別の台本へは update が頭から替える（ループは続ける）
+     if (stop) {
+@@ -178,7 +199,7 @@ export class MusicLabScene extends Phaser.Scene {
+     for (let row = 0; row < this.rows.length; row++) {
+       for (let col = 0; col < this.rows[row]!.length; col++) {
+         const code = row * ROW_SPAN + col;
+-        const on = row === ROW_TITLE ? col === p : p === FAMILY && code === this.chosen;
++        const on = row === ROW_TITLE ? col === p : row === ROW_SLOW ? col === this.slowI : p === FAMILY && code === this.chosen;
+         this.rows[row]![col]!.setSub(building && code === this.chosen ? MUSIC_LAB_BUILDING_SUB_JA : this.subs[row]![col]!);
+         this.rows[row]![col]!.setSelected(on);
+       }
+@@ -194,17 +215,6 @@ export class MusicLabScene extends Phaser.Scene {
+     if (st.text !== text) st.setText(text);
+   }
+ 
+-  /** ボタンの題と 2 行目（create だけ。行 0 はゲームの曲を「記号（今）」・行 1 は段と自動・行 2 は台本・各行の最後は「止める」） */
+-  private labelOf(row: number, col: number): [string, string] {
+-    if (col === ROW_COLS[row]! - 1) return [MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA];
+-    if (row === ROW_TITLE) {
+-      const d = MUSIC_TITLE_KEYS[col] === MUSIC_TITLE_DEFAULT_ID;
+-      return [musicLabButtonTitle(MUSIC_LAB_LETTERS[col]!, MUSIC_LAB_NAMES_JA[col]!, d), musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
+-    }
+-    if (row === ROW_MOOD) return col === COL_AUTO ? [MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_SUB_JA] : [MUSIC_LAB_MOOD_TITLES_JA[col]!, MUSIC_LAB_MOOD_SUBS_JA[col]!];
+-    return [MUSIC_LAB_DEMO_TITLES_JA[col]!, MUSIC_LAB_DEMO_SUBS_JA[col]!];
+-  }
+-
+   /** 曲の印 → 状態の一文の名前（タイトルの候補は記号・任務の家族は「任務の曲 1/3」の層） */
+   private nameOf(mark: number): string {
+     return mark >= FAMILY ? `${MUSIC_LAB_FAMILY_JA} ${mark - FAMILY + 1}/${MUSIC_LAYER_KEYS.length}` : MUSIC_LAB_LETTERS[mark]!;
+diff --git a/src/systems/sfx-audio-types.ts b/src/systems/sfx-audio-types.ts
+index d99fce7..b72cbbc 100644
+--- a/src/systems/sfx-audio-types.ts
++++ b/src/systems/sfx-audio-types.ts
+@@ -25,6 +25,11 @@ export interface SfxLimiterNode extends SfxNode {
+   readonly attack: SfxParam;
+   readonly release: SfxParam;
+ }
++/** v0.7.2 S3: 2 次の濾波器（命中スローのベッドの濾波器だけ。type は 'lowpass'・frequency は Hz。Q は既定のまま） */
++export interface SfxFilterNode extends SfxNode {
++  type: string;
++  readonly frequency: SfxParam;
++}
+ export interface SfxBuffer {
+   getChannelData(channel: number): { set(samples: Float32Array): void };
+ }
+@@ -48,6 +53,8 @@ export interface SfxCtx {
+   /** 無い端末（古い iOS）は中央で鳴らす（R7） */
+   createStereoPanner?: () => SfxPanNode;
+   createDynamicsCompressor(): SfxLimiterNode;
++  /** v0.7.2 S3: ベッドの濾波器（起動時に 1 つだけ） */
++  createBiquadFilter(): SfxFilterNode;
+   createBufferSource(): SfxSource;
+   createBuffer(channels: number, length: number, sampleRate: number): SfxBuffer;
+   resume(): SfxThenable | undefined;
+diff --git a/src/systems/sfx-bus.ts b/src/systems/sfx-bus.ts
+index 1ead087..d6fbf65 100644
+--- a/src/systems/sfx-bus.ts
++++ b/src/systems/sfx-bus.ts
+@@ -9,11 +9,14 @@
+ // v0.7.2 S1: 曲の口 sfxMusic・sfxMusicRelease・sfxMusicPaused・sfxMusicEnabled（場面・任務の終わり・一時停止・「曲」ボタン）と、曲の試聴の場の口 sfxMusicAudition・sfxMusicLab*
+ // （scenes/music-lab-scene だけ）。決めと音源は systems/sfx-music-player（止まっている context・消音・曲オフ・標本なしでは音源を作らない）。
+ // v0.7.2 S2: 任務の段の口 sfxMusicMood（MissionSfx が core/sfx-music-mood の段を毎フレーム。曲の試聴の場も）。
++// v0.7.2 S3（brief L28・L31）: 命中スローの読み口 registerSfxSlowMo（world-art が世界の作成で世界・破棄で null＝聞き手と同じ形。読むのは slowMoLeftS だけ）。sfxLoops がフレームに 1 回読んで
++// エンジンの命中スローの音へ渡し（書くのは変わった時だけ）、ループの目標の rate に案の倍率を掛ける。sfxLoopsStop とメニュー・試聴の場の sfxMusic で戻す。試聴の場の案の口 sfxSlowVariant。
+ import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
+-import type { MusicKey } from '../config/sfx-music-config';
++import { MUSIC_CTX_LAB, MUSIC_CTX_MENU, type MusicKey, type SfxSlowId } from '../config/sfx-music-config';
+ import type { SfxLoopTargets } from '../core/sfx-loops';
+ import { sfxBand, sfxGunKey } from '../core/sfx-mix';
+ import type { SfxEngine } from './sfx-engine';
++import { applySfxSlowRate } from './sfx-slowmo';
+ 
+ /** 聞き手の位置（世界の m。core の BoatState が満たす。読むだけ） */
+ export interface SfxListenerPos {
+@@ -21,8 +24,14 @@ export interface SfxListenerPos {
+   readonly y: number;
+ }
+ 
++/** 命中スローの残り秒（v0.7.2 S3。MissionWorld がそのまま満たす。読むだけ） */
++export interface SfxSlowMoSource {
++  readonly slowMoLeftS: number;
++}
++
+ let engine: SfxEngine | null = null;
+ let listener: SfxListenerPos | null = null;
++let slowMo: SfxSlowMoSource | null = null;
+ 
+ /** Boot で 1 回（systems/sfx-boot）。null で外す（tests） */
+ export function registerSfxEngine(e: SfxEngine | null): void {
+@@ -34,6 +43,11 @@ export function registerSfxListener(pos: SfxListenerPos | null): void {
+   listener = pos;
+ }
+ 
++/** 命中スローの読み口（v0.7.2 S3。世界の作成時に世界・破棄で null＝world-art。曲の試聴の場の台本も） */
++export function registerSfxSlowMo(src: SfxSlowMoSource | null): void {
++  slowMo = src;
++}
++
+ /** UI の音（ボタン。位置なし・中央）。最初のタップは context が動き出してから鳴る（エンジンが 1 つだけ覚える） */
+ export function sfxUi(key: SfxKey): void {
+   if (engine !== null) engine.playFlat(key, 1, 1);
+@@ -71,9 +85,15 @@ export function sfxResultBell(returned: boolean): void {
+   else for (let i = 0; i < b.strikes; i++) engine.playFlat('bell', 1, 1, i * b.gapS);
+ }
+ 
+-/** ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player） */
++/**
++ * ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player）。
++ * v0.7.2 S3: 命中スローをここで 1 回読み（変わった時だけ書く）、目標の rate に案の倍率を掛けてから（目標そのものは書き換えない）
++ */
+ export function sfxLoops(targets: SfxLoopTargets, dtS: number): void {
+-  if (engine !== null) engine.loops.update(targets, dtS, engine.muted);
++  if (engine === null) return;
++  const s = slowMo;
++  engine.slow.update(s !== null && s.slowMoLeftS > 0);
++  engine.loops.update(applySfxSlowRate(targets, engine.slow.loopFactor, engine.slow.targets), dtS, engine.muted);
+ }
+ 
+ /** 一時停止でループの束を 0 へ・再開で戻す（Hud の PAUSE・RESUME） */
+@@ -81,9 +101,11 @@ export function sfxLoopsPaused(v: boolean): void {
+   if (engine !== null) engine.loops.setPaused(v);
+ }
+ 
+-/** ループを止める（Hud の SHUTDOWN＝任務の終わり・やり直し・任務をやめる） */
++/** ループを止める（Hud の SHUTDOWN＝任務の終わり・やり直し・任務をやめる）。v0.7.2 S3: 命中スローの濾波器と rate も戻す（スローの途中で終わっても） */
+ export function sfxLoopsStop(): void {
+-  if (engine !== null) engine.loops.stop();
++  if (engine === null) return;
++  engine.loops.stop();
++  engine.slow.reset();
+ }
+ 
+ /** 消音（Title・一時停止の「音」ボタン、起動時の保存の値）。解く時は止まっている context を起こす */
+@@ -106,7 +128,9 @@ export function sfxCanPlay(): boolean | null {
+  * MUSIC_CTX_NONE。同じ場面の頼み直しは何もしない（Briefing は頼まない＝Title の曲が続く）。場面が替われば一時停止は解く
+  */
+ export function sfxMusic(ctx: number, delayS = 0): void {
+-  if (engine !== null) engine.music.request(ctx, delayS);
++  if (engine === null) return;
++  if (ctx === MUSIC_CTX_MENU || ctx === MUSIC_CTX_LAB) engine.slow.reset(); // v0.7.2 S3: メニュー・試聴の場の曲はこもらせない（濾波器と rate を戻してから頼む）
++  engine.music.request(ctx, delayS);
+ }
+ 
+ /** 任務の終わり（MissionSfx の SHUTDOWN）: 今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼んだメニューの曲を消さない） */
+@@ -134,6 +158,11 @@ export function sfxMusicAudition(key: MusicKey | null): void {
+   if (engine !== null) engine.music.audition(key);
+ }
+ 
++/** 曲の試聴の場（v0.7.2 S3・L31）: 命中スローの案（スローの最中なら新しい案で書き直す）。場を出る時に既定の SFX_SLOW_DEFAULT_ID へ戻す */
++export function sfxSlowVariant(id: SfxSlowId): void {
++  if (engine !== null) engine.slow.setVariant(id);
++}
++
+ /** 曲の試聴の場の文: 鳴らしている曲・作っている曲（無ければ null）と進み（0〜1） */
+ export function sfxMusicLabPlaying(): MusicKey | null {
+   return engine === null ? null : engine.music.playingKey;
+diff --git a/src/systems/sfx-engine.ts b/src/systems/sfx-engine.ts
+index 63b6c67..7edaaa2 100644
+--- a/src/systems/sfx-engine.ts
++++ b/src/systems/sfx-engine.ts
+@@ -14,6 +14,7 @@
+ // v0.7.2 S1: 見張りを systems/sfx-watchdog へ分け（振る舞いは同じ）、曲の再生 systems/sfx-music-player を持つ（曲の束は master へ直に＝リミッタを通さない。tick から毎フレーム
+ // update＝作る仕事と 10 Hz の決め、消音は曲も止める）。wall は実時間の ms（曲を作る時間の記録だけ。systems/sfx-boot が performance.now を渡す。tests は 0）。
+ // v0.7.2 S2: 単発を鳴らせた時（fire）に曲を下げる表を引く（systems/sfx-music-duck。警報・鐘・魚雷の命中・近い大きい爆発・探照灯。鳴り始める時刻で）。
++// v0.7.2 S3: ベッドの濾波器（ループの束と曲の束 → 低域通過 → master。単発は通らない）と命中スローの音（systems/sfx-slowmo。tick が毎フレーム追いつきの step）。
+ import {
+   SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, type SfxKey,
+ } from '../config/sfx-config';
+@@ -23,6 +24,7 @@ import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource } from './sf
+ import { SfxLoopPlayer } from './sfx-loop-player';
+ import { SfxMusicDuck } from './sfx-music-duck';
+ import { SfxMusicPlayer, type SfxMusicStats } from './sfx-music-player';
++import { SfxSlowMo, type SfxSlowStats } from './sfx-slowmo';
+ import { SfxWatchdog, sfxSwallow } from './sfx-watchdog';
+ 
+ const RUNNING = 'running';
+@@ -57,6 +59,8 @@ export interface SfxStats {
+   music: SfxMusicStats;
+   ducks: number;
+   duckReworks: number;
++  /** v0.7.2 S3: 命中スローの音 */
++  slow: SfxSlowStats;
+ }
+ 
+ /** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし。delayS は遅らせる秒＝S4） */
+@@ -68,12 +72,14 @@ export class SfxEngine {
+   tap: SfxTap | null = null;
+   /** 束ねの出口（消音の音量）。scripts/headless/sfx-live が波形の頂を測るのにつなぐ */
+   readonly master: SfxGainNode;
+-  /** ループの束（master へ直につなぐ）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
++  /** ループの束（v0.7.2 S3 からベッドの濾波器を通して master へ。リミッタは通さない）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
+   readonly loopBus: SfxGainNode;
+   readonly loops: SfxLoopPlayer;
+   /** 曲の再生（v0.7.2 S1。systems/sfx-bus の sfxMusic… が動かす）と、合図で曲を下げる（S2） */
+   readonly music: SfxMusicPlayer;
+   readonly duck: SfxMusicDuck;
++  /** 命中スローの音（v0.7.2 S3。ベッドの濾波器と曲・ループの rate。systems/sfx-bus の sfxLoops・sfxLoopsStop・sfxMusic が動かす） */
++  readonly slow: SfxSlowMo;
+   private readonly fade: SfxGainNode;
+   private readonly voiceGain: SfxGainNode[] = [];
+   private readonly voicePan: (SfxPanNode | null)[] = [];
+@@ -111,8 +117,10 @@ export class SfxEngine {
+     this.master.connect(ctx.destination);
+     const shots = ctx.createGain();
+     shots.connect(limiter);
++    const bed = ctx.createBiquadFilter(); // v0.7.2 S3: ベッドの濾波器（ループの束と曲の束が通る。ふだん素通し）
++    bed.connect(this.master);
+     this.loopBus = ctx.createGain();
+-    this.loopBus.connect(this.master);
++    this.loopBus.connect(bed);
+     for (let i = 0; i < SFX_VOICES; i++) {
+       const g = ctx.createGain();
+       const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+@@ -125,8 +133,9 @@ export class SfxEngine {
+       this.voiceSrc.push(null);
+     }
+     this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);
+-    this.music = new SfxMusicPlayer(ctx, this.master, wall);
++    this.music = new SfxMusicPlayer(ctx, bed, wall);
+     this.duck = new SfxMusicDuck(this.music.duck);
++    this.slow = new SfxSlowMo(ctx, bed, this.music.slots);
+     this.watchdog = new SfxWatchdog(ctx);
+   }
+ 
+@@ -175,7 +184,7 @@ export class SfxEngine {
+     sfxSwallow(this.ctx.resume());
+   }
+ 
+-  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、曲（作る仕事と 10 Hz の決め）、10 Hz で context の見張り（L3c）。wallMs は実時間 */
++  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、命中スローの追いつき（S3）、曲（作る仕事と 10 Hz の決め）、10 Hz で context の見張り（L3c）。wallMs は実時間 */
+   tick(dtS: number, wallMs: number): void {
+     this.gameS += dtS;
+     const key = this.pendingKey;
+@@ -187,6 +196,7 @@ export class SfxEngine {
+         this.playFlat(key, this.pendingRate, this.pendingGain);
+       }
+     }
++    this.slow.step();
+     this.music.update(dtS);
+     this.watchdog.tick(wallMs);
+   }
+@@ -243,7 +253,7 @@ export class SfxEngine {
+       idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdog.kicks,
+       played: Array.from(this.mixer.played), dropped: Array.from(this.mixer.dropped),
+       loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes, music: this.music.stats(),
+-      ducks: this.duck.ducks, duckReworks: this.duck.reworked,
++      ducks: this.duck.ducks, duckReworks: this.duck.reworked, slow: this.slow.stats(),
+     };
+   }
+ 
+diff --git a/src/systems/sfx-lab-demo.ts b/src/systems/sfx-lab-demo.ts
+index cc69c42..4d7531d 100644
+--- a/src/systems/sfx-lab-demo.ts
++++ b/src/systems/sfx-lab-demo.ts
+@@ -3,11 +3,13 @@
+ // 魚雷の命中・近い大きい爆発）はエンジンの中で同じに効く（試聴の場は何もしない）。段は場が sfxMusicMood で渡し、台本は曲の家族が鳴ってから場が始める。
+ // 台本の表は config/music-lab-config の MUSIC_LAB_DEMOS（ループの音量と rate はゲームの式＝core/sfx-loops と同じ: エンジンは速力帯の音量・rate は 0.75 ＋ 0.75 × 速さの割合、海は 0.08 ＋ 0.11 × 割合）。
+ // 止める（stop）でループを止めて聞き手を外す（場の SHUTDOWN・別のボタン・「止める」）。ゲームの中では使わない（任務の聞き手は world-art・ループは systems/sfx-mission）。
+-// §7: update は確保しない（表を読むだけ・ループの目標の配列は作る時に 1 回）。
++// v0.7.2 S3（brief L31）: 命中スロー＝台本の種類 8（「命中＋スロー」）と行 3 の案のボタン（hit）。世界の代わりの残り秒を命中スローの読み口に登録し（registerSfxSlowMo＝world-art と同じ形）、
++// 命中で slowS 秒（場が data の feel.hit_slowmo_seconds を入れる）を入れ、世界と同じ順（命中 → 実時間で引く → sfxLoops が読む）で毎フレーム引く＝ゲームと同じ道で鳴る。
++// §7: update は確保しない（表を読むだけ・ループの目標の配列と残り秒の物は作る時に 1 回）。
+ import { SFX_LOOP_ENGINE, SFX_LOOP_SEA, type SfxKey } from '../config/sfx-config';
+-import { MUSIC_LAB_DEMOS } from '../config/music-lab-config';
++import { MUSIC_LAB_DEMOS, MUSIC_LAB_SLOW_HIT_XY } from '../config/music-lab-config';
+ import { LOOP_ENGINE, LOOP_SEA, createSfxLoopTargets } from '../core/sfx-loops';
+-import { registerSfxListener, sfxAt, sfxCue, sfxGunAt, sfxLoops, sfxLoopsStop } from './sfx-bus';
++import { registerSfxListener, registerSfxSlowMo, sfxAt, sfxCue, sfxGunAt, sfxLoops, sfxLoopsStop } from './sfx-bus';
+ 
+ const NONE = -1;
+ /** 台本の種類 → 鍵（MUSIC_LAB_DEMOS の種類の並び。大砲は距離の帯で鍵を選ぶ＝sfxGunAt。合図は位置なし） */
+@@ -15,23 +17,31 @@ const DEMO_KEYS: readonly SfxKey[] = ['gun_near', 'mg', 'splash_l', 'blast_l', '
+ const KIND_GUN = 0;
+ /** ここから後ろの種類は位置なしの合図（sfxCue） */
+ const KIND_FIRST_CUE = 5;
++/** v0.7.2 S3: 魚雷の命中＋命中スロー（位置つきの torp_hit と残り秒） */
++const KIND_HIT_SLOW = 8;
+ /** 出来事の欄: [秒, 種類, x, y] */
+ const EV_AT = 0, EV_KIND = 1, EV_X = 2, EV_Y = 3;
+ /** 聞き手（世界の原点。登録している間だけ位置つきの音が鳴る） */
+ const ORIGIN = { x: 0, y: 0 };
+ 
+ export class SfxLabDemo {
++  /** 命中スローの秒（場の create が data の feel.hit_slowmo_seconds を入れる） */
++  slowS = 0;
+   private readonly targets = createSfxLoopTargets();
++  /** 世界の代わりの命中スローの残り秒（台本を鳴らしている間だけ読み口に登録する） */
++  private readonly slowView = { slowMoLeftS: 0 };
+   private demo = NONE;
+   private tS = 0;
+   private next = 0;
++  /** 行 3 の案のボタンで、台本が始まったら命中とスローを入れる */
++  private pendingHit = false;
+ 
+   /** 鳴らしている台本の番号（MUSIC_LAB_DEMOS の添字。無ければ −1） */
+   get active(): number {
+     return this.demo;
+   }
+ 
+-  /** 台本 i を頭から（前の台本は続けて止めずに替える）: 聞き手を (0, 0) に・ループの目標を台本の速さで */
++  /** 台本 i を頭から（前の台本は続けて止めずに替える）: 聞き手を (0, 0) に・命中スローの読み口を登録・ループの目標を台本の速さで */
+   start(i: number): void {
+     const d = MUSIC_LAB_DEMOS[i]!;
+     const e = SFX_LOOP_ENGINE;
+@@ -39,6 +49,7 @@ export class SfxLabDemo {
+     this.tS = 0;
+     this.next = 0;
+     registerSfxListener(ORIGIN);
++    registerSfxSlowMo(this.slowView);
+     const g = this.targets.gain;
+     const r = this.targets.rate;
+     g.fill(0);
+@@ -46,20 +57,36 @@ export class SfxLabDemo {
+     g[LOOP_ENGINE] = d.step === 'full' ? e.gainFull : d.step === 'cruise' ? e.gainCruise : e.gainSilent;
+     r[LOOP_ENGINE] = e.rateBase + e.rateSpan * d.speed;
+     g[LOOP_SEA] = SFX_LOOP_SEA.gainBase + SFX_LOOP_SEA.gainSpeed * d.speed;
++    if (this.pendingHit) this.queueHit();
+   }
+ 
+-  /** 止める（鳴らしていなければ何もしない）: ループを止め、聞き手を外す */
++  /** 止める（鳴らしていなければ待っている命中を消すだけ）: スローを解き、ループを止め（命中スローの音も戻る）、聞き手と読み口を外す */
+   stop(): void {
++    this.pendingHit = false;
+     if (this.demo === NONE) return;
+     this.demo = NONE;
++    this.slowView.slowMoLeftS = 0;
+     sfxLoopsStop();
+     registerSfxListener(null);
++    registerSfxSlowMo(null);
+   }
+ 
+-  /** 毎フレーム（場の update。dtS は秒）: ループの目標を渡し、台本の出来事を時刻の順に鳴らす（くり返しの秒で頭へ） */
++  /** 魚雷の命中＋命中スロー（台本の種類 8・行 3 の案のボタン。鳴らしていなければ何もしない）: 位置つきの torp_hit と、残り秒に slowS（世界の命中と同じ＝このフレームの sfxLoops が読む） */
++  hit(x: number, y: number): void {
++    if (this.demo === NONE) return;
++    sfxAt('torp_hit', x, y);
++    this.slowView.slowMoLeftS = this.slowS;
++  }
++
++  /** 行 3 の案のボタン: 台本が鳴っていれば今、まだなら台本が始まった時に、魚雷の命中（MUSIC_LAB_SLOW_HIT_XY）と命中スロー */
++  queueHit(): void {
++    this.pendingHit = this.demo === NONE;
++    if (!this.pendingHit) this.hit(MUSIC_LAB_SLOW_HIT_XY[0], MUSIC_LAB_SLOW_HIT_XY[1]);
++  }
++
++  /** 毎フレーム（場の update。dtS は秒）: 台本の出来事を時刻の順に鳴らし（くり返しの秒で頭へ）、命中スローの残り秒を引いてから、ループの目標を渡す（世界と同じ順） */
+   update(dtS: number): void {
+     if (this.demo === NONE) return;
+-    sfxLoops(this.targets, dtS);
+     const d = MUSIC_LAB_DEMOS[this.demo]!;
+     const ev = d.events;
+     this.tS += dtS;
+@@ -68,12 +95,16 @@ export class SfxLabDemo {
+       this.tS -= d.periodS;
+       this.next = 0;
+     }
++    const v = this.slowView;
++    if (v.slowMoLeftS > 0) v.slowMoLeftS -= dtS;
++    sfxLoops(this.targets, dtS);
+   }
+ 
+-  /** 出来事 1 つを鳴らす（大砲は距離の帯で近い音／遠雷・合図は位置なし・ほかは位置つき） */
++  /** 出来事 1 つを鳴らす（大砲は距離の帯で近い音／遠雷・命中スロー・合図は位置なし・ほかは位置つき） */
+   private emitOne(e: readonly number[]): void {
+     const k = e[EV_KIND]!;
+     if (k === KIND_GUN) sfxGunAt(e[EV_X]!, e[EV_Y]!);
++    else if (k === KIND_HIT_SLOW) this.hit(e[EV_X]!, e[EV_Y]!);
+     else if (k >= KIND_FIRST_CUE) sfxCue(DEMO_KEYS[k]!);
+     else sfxAt(DEMO_KEYS[k]!, e[EV_X]!, e[EV_Y]!);
+   }
+diff --git a/src/systems/sfx-music-player.ts b/src/systems/sfx-music-player.ts
+index 2fc8fa2..6e3068a 100644
+--- a/src/systems/sfx-music-player.ts
++++ b/src/systems/sfx-music-player.ts
+@@ -1,5 +1,6 @@
+ // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §1・§4・§10・§13・brief L6〜L14）: 曲の再生。エンジン（systems/sfx-engine）が 1 つ持つ。
+-// つなぎ: 音源の組（systems/sfx-music-slots。音量の節 9 本）→ 曲の束（一時停止で 0）→ 下げる音量（S2 の ducking＝systems/sfx-music-duck）→ master（単発のリミッタは通さない＝D6）。
++// つなぎ: 音源の組（systems/sfx-music-slots。音量の節 9 本）→ 曲の束（一時停止で 0）→ 下げる音量（S2 の ducking＝systems/sfx-music-duck）→ ベッドの濾波器（S3。ループの束と同じ 1 つ＝
++//   systems/sfx-slowmo）→ master（単発のリミッタは通さない＝D6）。
+ // 場面（D8・L13）: request(ctx, delayS)＝Title・Result は MENU（Result は鐘の後 delayS 秒）・MissionSfx は MISSION・曲の試聴の場は LAB・効果音の試聴の場は NONE。同じ場面の頼み直しは
+ //   何もしない（Title ⇄ Briefing・遅らせの途中の MENU は予定どおり）。release(ctx) は今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を次のシーンの create の後に回す）。
+ //   場面が替われば一時停止は解き、段は静かに戻し、試聴の場を出れば候補の標本を捨てる（ゲームの列の曲は残す）。
+@@ -16,7 +17,7 @@ import {
+   MUSIC_CTX_LAB, MUSIC_CTX_MENU, MUSIC_CTX_MISSION, MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_MOOD_QUIET, MUSIC_PLAYER, type MusicKey,
+ } from '../config/sfx-music-config';
+ import { MUSIC_TITLE_DEFAULT_ID } from '../assets/sfx-music-themes';
+-import type { SfxCtx, SfxGainNode } from './sfx-audio-types';
++import type { SfxCtx, SfxGainNode, SfxNode } from './sfx-audio-types';
+ import { SfxMusicBuild } from './sfx-music-build';
+ import { SfxMusicSlots } from './sfx-music-slots';
+ 
+@@ -60,11 +61,11 @@ export class SfxMusicPlayer {
+   /** 確かめ用: 曲の束へ書いた回数（組の分は slots） */
+   private busWrites = 0;
+ 
+-  /** master はエンジンの出口の音量（曲の束はここへ直に）。wall は実時間の ms（作る時間の記録だけ。tests は 0 を返す物） */
+-  constructor(private readonly ctx: SfxCtx, master: SfxGainNode, wall: () => number) {
++  /** out は曲の行き先（S3 からベッドの濾波器 → master。リミッタは通さない）。wall は実時間の ms（作る時間の記録だけ。tests は 0 を返す物） */
++  constructor(private readonly ctx: SfxCtx, out: SfxNode, wall: () => number) {
+     this.build = new SfxMusicBuild(ctx, wall);
+     this.duck = ctx.createGain();
+-    this.duck.connect(master);
++    this.duck.connect(out);
+     this.bus = ctx.createGain();
+     this.bus.connect(this.duck);
+     this.slots = new SfxMusicSlots(ctx, this.bus);
+diff --git a/src/systems/sfx-music-slots.ts b/src/systems/sfx-music-slots.ts
+index 50bdb42..5e8e124 100644
+--- a/src/systems/sfx-music-slots.ts
++++ b/src/systems/sfx-music-slots.ts
+@@ -5,6 +5,8 @@
+ // 音源の数（spec §4.2）: 始めると鳴っている音源（止めかけを含む）が MUSIC_MAX_SOURCES を超えるなら、まだ始めない（止めかけの組が鳴り終わる次の 10 Hz で。S2: 3 層の組が 3 つ重なると 7〜9 本に
+ // なる＝メニュー ⇄ 任務をすばやく行き来した時だけ少し遅れて始まる）。
+ // 移りの秒 → 時定数は × MUSIC_PLAYER.fadeTc（秒の後に約 2%＝止める時に「ぷつっ」としない）。値は読み返さない（L6）。予約の前に必ず消す（R4）。
++// v0.7.2 S3（命中スロー。systems/sfx-slowmo が書く）: 鳴っている組の 3 層の rate を同じ時刻・同じ時定数で書く（stepRate。層の音源ごとに 1 つ＝3 回の書き込み。同期は崩れない）。
++//   これから始める組も今の rate で始める（スローの途中で始まった組も遅いまま＝3 層とも同じ）。
+ // §7: step* は確保しない（音源は組を始める時に作る使い捨て。曲の音源を作るのはここの 1 か所）。
+ import { MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_GAIN, MUSIC_KEYS, MUSIC_MAX_SOURCES, MUSIC_MOOD_QUIET, MUSIC_PLAYER } from '../config/sfx-music-config';
+ import { musicMoodGain, musicMoodTc } from '../core/sfx-music-mood';
+@@ -29,6 +31,8 @@ export class SfxMusicSlots {
+   key = NONE;
+   scene = MUSIC_CTX_NONE;
+   mood = MUSIC_MOOD_QUIET;
++  /** 曲の速さ（v0.7.2 S3。命中スローの最中は案の musicRate・ふだん 1。これから始める組もこの速さ） */
++  rate = 1;
+   /** 確かめ用の数: 作った音源・止めた音源・ノードへ書いた回数 */
+   starts = 0;
+   stops = 0;
+@@ -99,6 +103,7 @@ export class SfxMusicSlots {
+       const src = this.ctx.createBufferSource();
+       src.buffer = buffers[k + i]!;
+       src.loop = true;
++      if (this.rate !== 1) src.playbackRate.value = this.rate; // 命中スローの途中で始まる組（S3）
+       src.connect(this.gains[s]!);
+       src.start(when);
+       this.srcs[s] = src;
+@@ -125,4 +130,16 @@ export class SfxMusicSlots {
+     }
+     this.mood = mood;
+   }
++
++  /** v0.7.2 S3: 曲の速さを rate へ（鳴っている組の層ごとの音源に同じ時刻・同じ時定数 tc で。予約の前に消す）。これから始める組もこの速さ。書いた数を返す */
++  stepRate(now: number, rate: number, tc: number): number {
++    this.rate = rate;
++    for (let i = 0; i < this.n; i++) {
++      const p = this.srcs[this.cur[i]!]!.playbackRate;
++      p.cancelScheduledValues(now);
++      p.setTargetAtTime(rate, now, tc);
++      this.writes++;
++    }
++    return this.n;
++  }
+ }
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 0354ad8..eb43478 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -3,6 +3,7 @@
+ // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
+ // IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
+ // IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
++// v0.7.2 S3（音。brief L28）: 命中スローの残り秒を読むだけの口として世界を音に登録し（registerSfxSlowMo）、破棄で外す（聞き手と同じ形。音は slowMoLeftS を読むだけ）。
+ import type Phaser from 'phaser';
+ import { SEA_LIGHT_STEPS } from '../config/dawn-config';
+ import { CoastFx } from './coast-fx';
+@@ -11,7 +12,7 @@ import { FireFx, type FireWorldView } from './fire-fx';
+ import { registerSparkFx } from './fx-bus';
+ import { registerExplosionFx } from './mission-effects';
+ import { SeaFx } from './sea-fx';
+-import { registerSfxListener } from './sfx-bus';
++import { registerSfxListener, registerSfxSlowMo } from './sfx-bus';
+ import { SinkFx } from './sink-fx';
+ import { SparkFx } from './spark-fx';
+ import { WakeFx, type WakeWorldView } from './wake-fx';
+@@ -22,6 +23,8 @@ export type ArtWorldView = WakeWorldView &
+   FireWorldView & {
+     readonly setup: WorldSetup;
+     readonly dawn: { readonly lightStep: number };
++    /** 命中スローの残り秒（v0.7.2 S3。音が読むだけ） */
++    readonly slowMoLeftS: number;
+   };
+ 
+ export class WorldArt {
+@@ -44,6 +47,7 @@ export class WorldArt {
+     this.fire = new FireFx(scene, w, this.sink);
+     this.coast = new CoastFx(scene, w.setup);
+     registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
++    registerSfxSlowMo(w); // 命中スローの音（v0.7.2 S3。slowMoLeftS を読むだけ。世界の作成前・破棄後はスローなし）
+   }
+ 
+   /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
+@@ -61,6 +65,7 @@ export class WorldArt {
+     registerExplosionFx(null);
+     registerSparkFx(null);
+     registerSfxListener(null);
++    registerSfxSlowMo(null);
+     this.sea.destroy();
+     this.wake.destroy();
+     this.explosions.destroy();
+diff --git a/src/ui/music-lab-layout.ts b/src/ui/music-lab-layout.ts
+index 762bda8..bb1f805 100644
+--- a/src/ui/music-lab-layout.ts
++++ b/src/ui/music-lab-layout.ts
+@@ -1,15 +1,27 @@
+ // 曲の試聴の場（v0.7.2 S1。?sfxlab）の矩形と語。Phaser・DOM なし（tests/music-lab が論理幅の全部で測る）。scenes/music-lab-scene の create で 1 回だけ呼ぶ。
+ // 行・行の名前・左下の「戻る」は v0.7.1 の効果音の試聴の場（ui/sound-lab-layout）の矩形をそのまま使う（同じ割り付け）。ここは下の段の 2 つ目のボタン（曲の場の「効果音の試聴へ」と
+ // 効果音の場の「曲の試聴へ」。「戻る」の右）と、候補のボタンの題・2 行目。
+-import { MUSIC_LAB_DEFAULT_MARK_JA } from '../config/music-lab-config';
++// v0.7.2 S3: 行 3「命中スロー」（案 A・B・C の 3 つ。押すたびに鳴らす＝「止める」なし）と、ボタンの題と 2 行目の引き（場のシーンから移した＝シーンを 250 行以下に保つ）。
++import {
++  MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_SUB_JA, MUSIC_LAB_DEFAULT_MARK_JA, MUSIC_LAB_DEMO_SUBS_JA, MUSIC_LAB_DEMO_TITLES_JA, MUSIC_LAB_LETTERS, MUSIC_LAB_MOOD_SUBS_JA, MUSIC_LAB_MOOD_TITLES_JA,
++  MUSIC_LAB_NAMES_JA, MUSIC_LAB_NOTES_JA, MUSIC_LAB_SLOW_LETTERS, MUSIC_LAB_SLOW_NAMES_JA, MUSIC_LAB_SLOW_NOTES_JA, MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA,
++} from '../config/music-lab-config';
+ import { SOUND_LAB_BACK_H, SOUND_LAB_BACK_W, SOUND_LAB_COL_GAP } from '../config/sound-lab-config';
+ import type { SoundLabFrame, SoundLabRect } from './sound-lab-layout';
+ 
+ /** 行 0（タイトルの曲）のボタンの数: 候補 3 つと「止める」 */
+ export const MUSIC_LAB_ROW0_COLS = 4;
+-/** v0.7.2 S2: 行 1（任務の曲）＝段 3 つ・「自動」・「止める」、行 2（効果音と一緒に）＝台本 3 つ・「止める」（S3 で「命中＋スロー」を足して 5） */
++/** v0.7.2 S2: 行 1（任務の曲）＝段 3 つ・「自動」・「止める」、行 2（効果音と一緒に）＝台本 4 つ（S3 で「命中＋スロー」を足した）・「止める」 */
+ export const MUSIC_LAB_ROW1_COLS = 5;
+-export const MUSIC_LAB_ROW2_COLS = 4;
++export const MUSIC_LAB_ROW2_COLS = 5;
++/** v0.7.2 S3: 行 3（命中スロー）＝案 A・B・C（「止める」なし） */
++export const MUSIC_LAB_ROW3_COLS = 3;
++/** 行の番号（行 0 タイトルの曲・行 1 任務の曲・行 2 効果音と一緒に・行 3 命中スロー）と行ごとの列の数 */
++export const MUSIC_LAB_ROW_TITLE = 0;
++export const MUSIC_LAB_ROW_MOOD = 1;
++export const MUSIC_LAB_ROW_DEMO = 2;
++export const MUSIC_LAB_ROW_SLOW = 3;
++export const MUSIC_LAB_ROW_COLS: readonly number[] = [MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS, MUSIC_LAB_ROW3_COLS];
+ 
+ /** 下の段の 2 つ目のボタン: 「戻る」の右に列の間を空けて同じ大きさ（右下の状態の一文とは論理幅 1280 でも重ならない＝tests/music-lab） */
+ export function musicLabSideRect(f: SoundLabFrame): SoundLabRect {
+@@ -25,3 +37,24 @@ export function musicLabButtonTitle(letter: string, name: string, isDefault: boo
+ export function musicLabButtonSub(name: string, note: string, isDefault: boolean): string {
+   return isDefault ? name : note;
+ }
++
++/** 行に「止める」があるか（行 3 の命中スローは押すたびに鳴らすだけ） */
++export function musicLabHasStop(row: number): boolean {
++  return row !== MUSIC_LAB_ROW_SLOW;
++}
++
++/**
++ * ボタンの題と 2 行目（場の create だけ）: 行 0 はゲームの曲（titleDefault 番）を「記号（今）」・行 1 は段と自動・行 2 は台本・行 3 はゲームの命中スローの案（slowDefault 番）を
++ * 「記号（今）」。「止める」のある行の最後は「止める」
++ */
++export function musicLabLabel(row: number, col: number, titleDefault: number, slowDefault: number): [string, string] {
++  if (musicLabHasStop(row) && col === MUSIC_LAB_ROW_COLS[row]! - 1) return [MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA];
++  if (row === MUSIC_LAB_ROW_TITLE) {
++    const d = col === titleDefault;
++    return [musicLabButtonTitle(MUSIC_LAB_LETTERS[col]!, MUSIC_LAB_NAMES_JA[col]!, d), musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
++  }
++  if (row === MUSIC_LAB_ROW_MOOD) return col === MUSIC_LAB_MOOD_TITLES_JA.length ? [MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_SUB_JA] : [MUSIC_LAB_MOOD_TITLES_JA[col]!, MUSIC_LAB_MOOD_SUBS_JA[col]!];
++  if (row === MUSIC_LAB_ROW_DEMO) return [MUSIC_LAB_DEMO_TITLES_JA[col]!, MUSIC_LAB_DEMO_SUBS_JA[col]!];
++  const d = col === slowDefault;
++  return [musicLabButtonTitle(MUSIC_LAB_SLOW_LETTERS[col]!, MUSIC_LAB_SLOW_NAMES_JA[col]!, d), musicLabButtonSub(MUSIC_LAB_SLOW_NAMES_JA[col]!, MUSIC_LAB_SLOW_NOTES_JA[col]!, d)];
++}
+diff --git a/tests/music-lab.test.ts b/tests/music-lab.test.ts
+index 960527e..db545f0 100644
+--- a/tests/music-lab.test.ts
++++ b/tests/music-lab.test.ts
+@@ -6,19 +6,23 @@
+ // - 道: 試聴の口（sfxMusicAudition・sfxMusicLab*）を呼ぶのは曲の試聴の場だけ。効果音の試聴の場は曲を止め、「曲の試聴へ」で戻る。
+ // - v0.7.2 S2（brief L25）: 行 1「任務の曲」（静か・緊張・戦闘・自動・止める＝5 列）と行 2「効果音と一緒に」（台本 3 つ・止める＝4 列。S3 で「命中＋スロー」）も同じ論理幅の全部で置き方と語を見る。
+ //   自動は静か → 緊張 → 戦闘 → 緊張（ゲームで起きる移りだけ）を 8 秒ずつ。台本の表は段・速力帯・出来事の種類が範囲の内（tests/sfx-lab-demo が鳴らし方を見る）。
++// - v0.7.2 S3（brief L31）: 行 2 の 4 つ目「命中＋スロー」（5 列）と行 3「命中スロー」（案 A・B・C の 3 列・「止める」なし・記号は SFX_SLOW_IDS・ゲームの案 SFX_SLOW_DEFAULT_ID が「記号（今）」）。
++//   押すたびに案を替えて命中とスロー（台本でない時は「静か＋海」から）・出る時にゲームの案へ戻す。
+ import { readFileSync, readdirSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+ import {
+   MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_MOODS, MUSIC_LAB_AUTO_STEP_S, MUSIC_LAB_AUTO_SUB_JA, MUSIC_LAB_BUILDING_SUB_JA, MUSIC_LAB_DEFAULT_MARK_JA, MUSIC_LAB_DEMO_SUBS_JA, MUSIC_LAB_DEMO_TITLES_JA, MUSIC_LAB_DEMOS,
+   MUSIC_LAB_FAMILY_JA, MUSIC_LAB_FROM_SFX_JA, MUSIC_LAB_HEAD_JA, MUSIC_LAB_LETTERS, MUSIC_LAB_MOOD_SUBS_JA, MUSIC_LAB_MOOD_TITLES_JA, MUSIC_LAB_NAMES_JA, MUSIC_LAB_NOTES_JA, MUSIC_LAB_ROW_LABELS_JA,
+-  MUSIC_LAB_ROW_SUBS_JA, MUSIC_LAB_STATUS_BUILDING_JA, MUSIC_LAB_STATUS_IDLE_JA, MUSIC_LAB_STATUS_NONE_JA, MUSIC_LAB_STATUS_PLAYING_JA, MUSIC_LAB_STATUS_STOPPED_JA, MUSIC_LAB_STATUS_WAIT_JA,
+-  MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA, MUSIC_LAB_TO_SFX_JA,
++  MUSIC_LAB_ROW_SUBS_JA, MUSIC_LAB_SLOW_HIT_XY, MUSIC_LAB_SLOW_LETTERS, MUSIC_LAB_SLOW_NAMES_JA, MUSIC_LAB_SLOW_NOTES_JA, MUSIC_LAB_STATUS_BUILDING_JA, MUSIC_LAB_STATUS_IDLE_JA, MUSIC_LAB_STATUS_NONE_JA,
++  MUSIC_LAB_STATUS_PLAYING_JA, MUSIC_LAB_STATUS_STOPPED_JA, MUSIC_LAB_STATUS_WAIT_JA, MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA, MUSIC_LAB_TO_SFX_JA,
+ } from '../src/config/music-lab-config';
+-import { MUSIC_LAYER_KEYS, MUSIC_MOOD_BATTLE, MUSIC_MOOD_QUIET, MUSIC_MOOD_TENSE, MUSIC_TITLE_KEYS } from '../src/config/sfx-music-config';
++import { MUSIC_LAYER_KEYS, MUSIC_MOOD_BATTLE, MUSIC_MOOD_QUIET, MUSIC_MOOD_TENSE, MUSIC_TITLE_KEYS, SFX_SLOW_DEFAULT_ID, SFX_SLOW_IDS } from '../src/config/sfx-music-config';
+ import { SOUND_LAB_BACK_PX, SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_PX, SOUND_LAB_HEAD_Y, SOUND_LAB_NOTE_PX, SOUND_LAB_ROW_TOP, SOUND_LAB_STATUS_PX } from '../src/config/sound-lab-config';
+ import { MUSIC_TITLE_DEFAULT_ID } from '../src/assets/sfx-music-themes';
+-import { MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS, musicLabButtonSub, musicLabButtonTitle, musicLabSideRect } from '../src/ui/music-lab-layout';
++import {
++  MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS, MUSIC_LAB_ROW3_COLS, MUSIC_LAB_ROW_COLS, MUSIC_LAB_ROW_SLOW, musicLabButtonSub, musicLabButtonTitle, musicLabHasStop, musicLabLabel, musicLabSideRect,
++} from '../src/ui/music-lab-layout';
+ import { soundLabBackRect, soundLabButtonRect, soundLabLabelRect, type SoundLabRect } from '../src/ui/sound-lab-layout';
+ import { textWidthPx } from './pt-ui-kit';
+ 
+@@ -37,8 +41,9 @@ const STATUSES = [
+   `${MUSIC_LAB_STATUS_BUILDING_JA}${MUSIC_LAB_FAMILY_JA} 3/3 100%`, ...MUSIC_LAB_MOOD_TITLES_JA.map((m) => `${MUSIC_LAB_STATUS_PLAYING_JA}${MUSIC_LAB_FAMILY_JA} ${MUSIC_LAB_AUTO_JA}・${m}`),
+   ...MUSIC_LAB_DEMO_TITLES_JA.map((d) => `${MUSIC_LAB_STATUS_PLAYING_JA}${d}`),
+ ];
+-/** 行ごとの列の数（行 0 タイトルの曲・行 1 任務の曲・行 2 効果音と一緒に） */
+-const COLS = [MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS];
++/** 行ごとの列の数（行 0 タイトルの曲・行 1 任務の曲・行 2 効果音と一緒に・行 3 命中スロー） */
++const COLS = [MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS, MUSIC_LAB_ROW3_COLS];
++const SLOW_DEFAULT = SFX_SLOW_IDS.indexOf(SFX_SLOW_DEFAULT_ID);
+ const scene = (): string => readFileSync('src/scenes/music-lab-scene.ts', 'utf8');
+ 
+ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+@@ -48,8 +53,9 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+     expect([...MUSIC_LAB_NAMES_JA]).toEqual(['静かな夜の海', '小太鼓と金管', 'ラジオの哀愁']);
+     expect(MUSIC_LAB_NOTES_JA.length).toBe(3);
+     expect(MUSIC_LAB_ROW0_COLS).toBe(MUSIC_TITLE_KEYS.length + 1);
+-    expect([MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA].map((a) => a.length)).toEqual([3, 3]);
+-    expect([...MUSIC_LAB_ROW_LABELS_JA]).toEqual(['タイトルの曲', '任務の曲', '効果音と一緒に']);
++    expect([MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA].map((a) => a.length)).toEqual([4, 4]);
++    expect([...MUSIC_LAB_ROW_LABELS_JA]).toEqual(['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー']);
++    expect(MUSIC_LAB_ROW_COLS).toEqual(COLS);
+   });
+   it('S2: 行 1 は段 3 つ（静か・緊張・戦闘＝MUSIC_MOOD_* の順）・「自動」・「止める」、行 2 は台本 3 つ・「止める」。自動は静か → 緊張 → 戦闘 → 緊張を 8 秒ずつ。台本の表は範囲の内', () => {
+     expect([MUSIC_MOOD_QUIET, MUSIC_MOOD_TENSE, MUSIC_MOOD_BATTLE]).toEqual([0, 1, 2]);
+@@ -58,8 +64,8 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+     expect([MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_SUB_JA]).toEqual(['自動', '8 秒ずつ回す']);
+     expect([[...MUSIC_LAB_AUTO_MOODS], MUSIC_LAB_AUTO_STEP_S]).toEqual([[0, 1, 2, 1], 8]);
+     for (let i = 0; i < MUSIC_LAB_AUTO_MOODS.length; i++) expect(Math.abs(MUSIC_LAB_AUTO_MOODS[i]! - MUSIC_LAB_AUTO_MOODS[(i + 1) % MUSIC_LAB_AUTO_MOODS.length]!)).toBe(1); // 1 段ずつ（ゲームで起きる移り）
+-    expect([MUSIC_LAB_DEMO_TITLES_JA.length, MUSIC_LAB_DEMO_SUBS_JA.length, MUSIC_LAB_DEMOS.length, MUSIC_LAB_ROW2_COLS]).toEqual([3, 3, 3, 4]);
+-    expect(MUSIC_LAB_DEMOS.map((d) => d.mood)).toEqual([MUSIC_MOOD_QUIET, MUSIC_MOOD_TENSE, MUSIC_MOOD_BATTLE]);
++    expect([MUSIC_LAB_DEMO_TITLES_JA.length, MUSIC_LAB_DEMO_SUBS_JA.length, MUSIC_LAB_DEMOS.length, MUSIC_LAB_ROW2_COLS]).toEqual([4, 4, 4, 5]);
++    expect(MUSIC_LAB_DEMOS.map((d) => d.mood)).toEqual([MUSIC_MOOD_QUIET, MUSIC_MOOD_TENSE, MUSIC_MOOD_BATTLE, MUSIC_MOOD_BATTLE]);
+     for (const d of MUSIC_LAB_DEMOS) {
+       expect(['silent', 'cruise', 'full']).toContain(d.step);
+       expect(d.speed > 0 && d.speed <= 1 && d.periodS > 0).toBe(true);
+@@ -67,13 +73,30 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+       for (const e of d.events) {
+         expect(e.length).toBe(4);
+         expect(e[0]! >= last && e[0]! < d.periodS).toBe(true); // 時刻の順・くり返しの秒の内
+-        expect(Number.isInteger(e[1]) && e[1]! >= 0 && e[1]! <= 7).toBe(true);
++        expect(Number.isInteger(e[1]) && e[1]! >= 0 && e[1]! <= 8).toBe(true); // S3: 8＝魚雷の命中＋命中スロー
+         last = e[0]!;
+       }
+     }
+     expect(MUSIC_LAYER_KEYS[0]).toBe('mission_l0');
++    // S3: 「命中＋スロー」は魚雷の命中とスローだけ（行 3 の命中と同じ位置）
++    expect(MUSIC_LAB_DEMO_TITLES_JA[3]).toBe('命中＋スロー');
++    expect(MUSIC_LAB_DEMOS[3]!.events).toEqual([[1.0, 8, ...MUSIC_LAB_SLOW_HIT_XY]]);
++  });
++  it('S3: 行 3 は案 A・B・C（記号は SFX_SLOW_IDS の順）の 3 つで「止める」なし。ゲームの案（SFX_SLOW_DEFAULT_ID）だけ「記号（今）」の題と名前の 2 行目。ほかの行の最後は「止める」', () => {
++    expect([...MUSIC_LAB_SLOW_LETTERS]).toEqual([...SFX_SLOW_IDS]);
++    expect([MUSIC_LAB_SLOW_NAMES_JA.length, MUSIC_LAB_SLOW_NOTES_JA.length, MUSIC_LAB_ROW3_COLS]).toEqual([SFX_SLOW_IDS.length, SFX_SLOW_IDS.length, SFX_SLOW_IDS.length]);
++    expect([...MUSIC_LAB_SLOW_NAMES_JA]).toEqual(['低く遅く', '低くだけ', 'なし']);
++    expect(COLS.map((_, r) => musicLabHasStop(r))).toEqual([true, true, true, false]);
++    expect(MUSIC_LAB_ROW_SLOW).toBe(3);
++    for (let col = 0; col < MUSIC_LAB_ROW3_COLS; col++) {
++      const d = col === SLOW_DEFAULT;
++      expect(musicLabLabel(3, col, 0, SLOW_DEFAULT)).toEqual([d ? `${SFX_SLOW_IDS[col]}${MUSIC_LAB_DEFAULT_MARK_JA}` : `${SFX_SLOW_IDS[col]} ${MUSIC_LAB_SLOW_NAMES_JA[col]}`, d ? MUSIC_LAB_SLOW_NAMES_JA[col] : MUSIC_LAB_SLOW_NOTES_JA[col]]);
++    }
++    expect(musicLabLabel(3, 0, 0, SLOW_DEFAULT)[0]).toBe('A（今）'); // 既定は A（§11 O2。ユーザーが選んだら SFX_SLOW_DEFAULT_ID を直す＝この行も）
++    for (let r = 0; r < 3; r++) expect(musicLabLabel(r, COLS[r]! - 1, 0, SLOW_DEFAULT)).toEqual([MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA]);
++    expect(musicLabLabel(2, 3, 0, SLOW_DEFAULT)).toEqual(['命中＋スロー', MUSIC_LAB_DEMO_SUBS_JA[3]]);
+   });
+-  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 15 個（3 行と下の段）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明（2 行まで）より下。右下の状態の一文と重ならない', (w) => {
++  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 19 個（4 行と下の段）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明（2 行まで）より下。右下の状態の一文と重ならない', (w) => {
+     const f = { gameWidth: w, gameHeight: H, margin: MARGIN };
+     const rects: SoundLabRect[] = [];
+     for (let row = 0; row < COLS.length; row++) for (let col = 0; col < COLS[row]!; col++) rects.push(soundLabButtonRect(row, col, COLS[row]!, f));
+@@ -132,6 +155,14 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+     for (const t of [...MUSIC_LAB_DEMO_SUBS_JA, MUSIC_LAB_STOP_SUB_JA, MUSIC_LAB_BUILDING_SUB_JA]) expect(textWidthPx(t, SOUND_LAB_NOTE_PX), t).toBeLessThanOrEqual(b2);
+     const side = musicLabSideRect(f);
+     for (const t of [MUSIC_LAB_TO_SFX_JA, MUSIC_LAB_FROM_SFX_JA]) expect(textWidthPx(t, SOUND_LAB_BACK_PX)).toBeLessThanOrEqual(side.w - 64);
++    // S3: 行 3（3 列）の題と 2 行目（既定でもそうでなくても＝ユーザーが選び直しても溢れない）
++    const b3 = soundLabButtonRect(3, 0, MUSIC_LAB_ROW3_COLS, f).w;
++    for (let i = 0; i < SFX_SLOW_IDS.length; i++) {
++      for (const d of [true, false]) {
++        expect(textWidthPx(musicLabButtonTitle(MUSIC_LAB_SLOW_LETTERS[i]!, MUSIC_LAB_SLOW_NAMES_JA[i]!, d), SOUND_LAB_BUTTON_PX), `${i} ${d}`).toBeLessThanOrEqual(b3);
++        expect(textWidthPx(musicLabButtonSub(MUSIC_LAB_SLOW_NAMES_JA[i]!, MUSIC_LAB_SLOW_NOTES_JA[i]!, d), SOUND_LAB_NOTE_PX), `${i} ${d}`).toBeLessThanOrEqual(b3);
++      }
++    }
+   });
+ });
+ 
+@@ -150,6 +181,12 @@ describe('曲の試聴の場のシーン（v0.7.2 S1）', () => {
+     expect(s).toContain('      sfxMusicAudition(MUSIC_TITLE_KEYS[col]!);\n');
+     expect(s).toContain('      sfxMusicAudition(FAMILY_KEY);\n');
+     expect(s.split('\n').length).toBeLessThanOrEqual(251);
++    // S3: 行 3 は案を替えて命中を待たせ（台本が鳴っていれば今）、出る時にゲームの案へ。命中スローの秒は data（世界と同じ）
++    expect(s).toContain('      sfxSlowVariant(SFX_SLOW_IDS[col]!);\n      this.demo.queueHit(); //');
++    expect(s).toContain('      this.demo.stop(); //');
++    expect(s).toContain('      sfxSlowVariant(SFX_SLOW_DEFAULT_ID); //');
++    expect(s).toContain('    this.demo.slowS = getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.feel.hit_slowmo_seconds; //');
++    expect(s).toContain('const SLOW_DEFAULT = SFX_SLOW_IDS.indexOf(SFX_SLOW_DEFAULT_ID);\n');
+   });
+   it('update は確保せず文を書かない（状態が変わった時だけ refresh が書く。refresh は前と同じ文なら setText しない・2 行目は create で作った物を引く）。台本は任務の曲が鳴ってから', () => {
+     const s = scene();
+diff --git a/tests/sfx-engine-kit.ts b/tests/sfx-engine-kit.ts
+index fed610f..52356ef 100644
+--- a/tests/sfx-engine-kit.ts
++++ b/tests/sfx-engine-kit.ts
+@@ -1,6 +1,7 @@
+ // v0.7.1 S3: 音のエンジンのテスト（tests/sfx-engine・sfx-engine-wake・sfx-engine-loops）が共有する偽の再生の context（S1 の tests/sfx-engine から分けた。中身は同じ＋ループの欄）。
+ // 偽の param は予約（set・ramp・target・cancel）を順に覚える。偽の音源は start・stop と loop を覚える。構造の型 SfxCtx を満たす（satisfies で確かめる）。
+ // v0.7.2 S1: エンジンが曲の再生（曲の束・下げる音量・音量の節 MUSIC_PLAYER.slots 本）も作るので、graph はそれを声から外して music に返す（tests/sfx-engine-music も使う）。
++// v0.7.2 S3: ベッドの濾波器（偽の濾波器 FakeFilter。type と frequency の予約を覚える）。graph はそれを bed に返す（ループの束と下げる音量 → bed → master）。
+ import { SFX_SAMPLE_RATE, SFX_TABLE, type SfxKey } from '../src/config/sfx-config';
+ import type { SfxCtx } from '../src/systems/sfx-audio-types';
+ import { SfxEngine } from '../src/systems/sfx-engine';
+@@ -23,6 +24,12 @@ export class FakePan extends FakeNode { readonly pan = new FakeParam(); }
+ export class FakeLimiter extends FakeNode {
+   readonly threshold = new FakeParam(); readonly knee = new FakeParam(); readonly ratio = new FakeParam(); readonly attack = new FakeParam(); readonly release = new FakeParam();
+ }
++/** v0.7.2 S3: 濾波器（本物の既定は lowpass・350 Hz） */
++export class FakeFilter extends FakeNode {
++  type = 'lowpass';
++  readonly frequency = new FakeParam();
++  constructor() { super(); this.frequency.value = 350; }
++}
+ export class FakeBuffer {
+   readonly data: Float32Array;
+   constructor(readonly channels: number, readonly length: number, readonly sampleRate: number) { this.data = new Float32Array(length); }
+@@ -51,6 +58,7 @@ export class FakeCtx {
+   readonly gains: FakeGain[] = [];
+   readonly pans: FakePan[] = [];
+   readonly limiters: FakeLimiter[] = [];
++  readonly filters: FakeFilter[] = [];
+   readonly sources: FakeSource[] = [];
+   readonly buffers: FakeBuffer[] = [];
+   readonly resumes: FakeThenable[] = [];
+@@ -58,6 +66,7 @@ export class FakeCtx {
+   createStereoPanner?: () => FakePan = () => { const p = new FakePan(); this.pans.push(p); return p; };
+   createGain(): FakeGain { const g = new FakeGain(); this.gains.push(g); return g; }
+   createDynamicsCompressor(): FakeLimiter { const l = new FakeLimiter(); this.limiters.push(l); return l; }
++  createBiquadFilter(): FakeFilter { const f = new FakeFilter(); this.filters.push(f); return f; }
+   createBufferSource(): FakeSource { const s = new FakeSource(); this.sources.push(s); return s; }
+   createBuffer(ch: number, n: number, rate: number): FakeBuffer { const b = new FakeBuffer(ch, n, rate); this.buffers.push(b); return b; }
+   resume(): FakeThenable { const t = new FakeThenable(); this.resumes.push(t); return t; }
+@@ -80,9 +89,10 @@ export function setup(state = 'running', withPan = true): { ctx: FakeCtx; e: Sfx
+ }
+ /** 曲の再生のノード（v0.7.2 S1）: 曲の束・下げる音量・音量の節（曲の束へつなぐ） */
+ export interface MusicNodes { bus: FakeGain; duck: FakeGain; slots: FakeGain[] }
+-/** つなぎの中の役（作った順に依らず、つながりで探す）。loops はループごとの音量 5 本（ループの束へつなぐ）。music は曲の再生のノード（声に入れない） */
+-export function graph(ctx: FakeCtx, e: SfxEngine): { master: FakeGain; fade: FakeGain; limiter: FakeLimiter; shots: FakeGain; loopBus: FakeGain; voices: FakeGain[]; loops: FakeGain[]; music: MusicNodes } {
++/** つなぎの中の役（作った順に依らず、つながりで探す）。loops はループごとの音量 5 本（ループの束へつなぐ）。music は曲の再生のノード（声に入れない）。bed はベッドの濾波器（S3） */
++export function graph(ctx: FakeCtx, e: SfxEngine): { master: FakeGain; fade: FakeGain; limiter: FakeLimiter; shots: FakeGain; loopBus: FakeGain; voices: FakeGain[]; loops: FakeGain[]; music: MusicNodes; bed: FakeFilter } {
+   const master = e.master as unknown as FakeGain;
++  const bed = e.slow.bed as unknown as FakeFilter;
+   const loopBus = e.loopBus as unknown as FakeGain;
+   const music: MusicNodes = { bus: e.music.bus as unknown as FakeGain, duck: e.music.duck as unknown as FakeGain, slots: [] };
+   music.slots = ctx.gains.filter((g) => g.outs.includes(music.bus));
+@@ -92,5 +102,5 @@ export function graph(ctx: FakeCtx, e: SfxEngine): { master: FakeGain; fade: Fak
+   const loops = ctx.gains.filter((g) => g.outs.includes(loopBus));
+   const notVoice = new Set<FakeGain>([fade, master, shots, loopBus, ...loops, music.bus, music.duck, ...music.slots]);
+   const voices = ctx.gains.filter((g) => !notVoice.has(g));
+-  return { master, fade, limiter, shots, loopBus, voices, loops, music };
++  return { master, fade, limiter, shots, loopBus, voices, loops, music, bed };
+ }
+diff --git a/tests/sfx-engine-music.test.ts b/tests/sfx-engine-music.test.ts
+index 19043e1..14e15dd 100644
+--- a/tests/sfx-engine-music.test.ts
++++ b/tests/sfx-engine-music.test.ts
+@@ -17,13 +17,14 @@ import { FRAME_S, LEAD, TC, alive, musicSrcs, put, run, sceneEvents, unstopped }
+ afterEach(() => registerSfxEngine(null));
+ 
+ describe('つなぎ（起動時に作る。リミッタを通さない）', () => {
+-  it('音量の節 9 本 → 曲の束 → 下げる音量 → master。節は 0 から・束と下げるは 1・音源はまだ無い', () => {
++  it('音量の節 9 本 → 曲の束 → 下げる音量 → ベッドの濾波器（v0.7.2 S3）→ master。節は 0 から・束と下げるは 1・音源はまだ無い', () => {
+     const x = setup();
+     const g = graph(x.ctx, x.e);
+     expect(g.music.slots.length).toBe(MUSIC_PLAYER.slots);
+     for (const s of g.music.slots) expect([s.outs, s.gain.value]).toEqual([[g.music.bus], 0]);
+     expect(g.music.bus.outs).toEqual([g.music.duck]);
+-    expect(g.music.duck.outs).toEqual([g.master]);
++    expect(g.music.duck.outs).toEqual([g.bed]);
++    expect(g.bed.outs).toEqual([g.master]);
+     expect([g.music.bus.gain.value, g.music.duck.gain.value]).toEqual([1, 1]);
+     expect(g.music.duck.outs).not.toContain(g.limiter);
+     expect(g.voices.length).toBe(16);
+diff --git a/tests/sfx-engine.test.ts b/tests/sfx-engine.test.ts
+index ac43b26..ff46f86 100644
+--- a/tests/sfx-engine.test.ts
++++ b/tests/sfx-engine.test.ts
+@@ -1,6 +1,7 @@
+ // v0.7.1 S1（アートと音②：合成の効果音。spec-v0710 §7・§9.1・§11 の R1・R2・R11・§14 L4）: 再生の薄い層 systems/sfx-engine を偽の context（tests/sfx-engine-kit）で確かめる。
+ // S3 で 3 つに分けた: ここ＝つなぎ・単発・最初の音／tests/sfx-engine-wake＝context を起こす・見張り・口（systems/sfx-bus）／tests/sfx-engine-loops＝ループ。
+ // - つなぎ: 声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → master（S3: リミッタを通さない）。パンの無い端末は中央（R7）。
++//   v0.7.2 S3: ループの束と曲（下げる音量）はベッドの濾波器（低域通過・ふだん素通しの SFX_SLOW_SHAPE.idleHz）を通って master へ。単発は通らない（命中スローは tests/sfx-slowmo）。
+ // - 止まっている context・消音では音源を 1 つも作らない（数えるだけ＝R2）。
+ // - 声は 16 本を超えない。奪った声の前の音源は止める。1 発ごとに作るのは音源 1 個だけ（声・束は増えない＝R1）。
+ // - 最初の 1 発は束ねを立ち上げる（R11）。最初のタップ（context が動き出す前の UI の音）は 1 つだけ覚えて、0.5 秒の内に動き出せば鳴らす。
+@@ -8,7 +9,7 @@
+ // - 消音は master の音量（context は止めない＝L4）。tick の実時間は 0 にする（見張りを動かさない）。
+ import { afterEach, describe, expect, it } from 'vitest';
+ import { SFX_FIRST_FADE, SFX_LIMITER, SFX_LOOP_BUS_GAIN, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES } from '../src/config/sfx-config';
+-import { MUSIC_PLAYER } from '../src/config/sfx-music-config';
++import { MUSIC_PLAYER, SFX_SLOW_SHAPE } from '../src/config/sfx-music-config';
+ import { SFX_LOOP_COUNT } from '../src/core/sfx-loops';
+ import { SFX_DROP_VOICES, sfxKeyIndex } from '../src/core/sfx-mix';
+ import { registerSfxEngine, registerSfxListener } from '../src/systems/sfx-bus';
+@@ -21,11 +22,11 @@ afterEach(() => {
+ });
+ 
+ describe('つなぎ（spec §7.1・§7.3。作るのは起動時だけ）', () => {
+-  it('声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → master（リミッタを通さない）。リミッタと master は config の値', () => {
++  it('声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → ベッドの濾波器 → master（リミッタを通さない）。リミッタと master は config の値', () => {
+     const { ctx, e } = setup();
+     const g = graph(ctx, e);
+-    // v0.7.2 S1: ＋曲の束・下げる音量・音量の節 MUSIC_PLAYER.slots 本（曲のつなぎは tests/sfx-engine-music）
+-    expect([ctx.gains.length, ctx.pans.length, ctx.limiters.length]).toEqual([SFX_VOICES + 4 + SFX_LOOP_COUNT + 2 + MUSIC_PLAYER.slots, SFX_VOICES, 1]);
++    // v0.7.2 S1: ＋曲の束・下げる音量・音量の節 MUSIC_PLAYER.slots 本（曲のつなぎは tests/sfx-engine-music）。S3: ＋ベッドの濾波器 1 つ（音量の節は増えない）
++    expect([ctx.gains.length, ctx.pans.length, ctx.limiters.length, ctx.filters.length]).toEqual([SFX_VOICES + 4 + SFX_LOOP_COUNT + 2 + MUSIC_PLAYER.slots, SFX_VOICES, 1, 1]);
+     expect(g.voices.length).toBe(SFX_VOICES);
+     g.voices.forEach((v, i) => {
+       expect(v.outs).toEqual([ctx.pans[i]]);
+@@ -35,8 +36,12 @@ describe('つなぎ（spec §7.1・§7.3。作るのは起動時だけ）', () =
+     expect(g.limiter.outs).toEqual([g.fade]);
+     expect(g.fade.outs).toEqual([g.master]);
+     expect(g.master.outs).toEqual([ctx.destination]);
+-    // S3: ループの束は master へ直に（リミッタ・最初の音の立ち上がりを通さない）。ループごとの音量は 0 から・音源は任務が始めるまで無い
+-    expect(g.loopBus.outs).toEqual([g.master]);
++    // S3: ループの束は master へ（リミッタ・最初の音の立ち上がりを通さない）。ループごとの音量は 0 から・音源は任務が始めるまで無い。
++    // v0.7.2 S3: ループの束と曲はベッドの濾波器（低域通過・素通しの Hz）を通る。単発の束・リミッタ・立ち上がりは通らない
++    expect(g.loopBus.outs).toEqual([g.bed]);
++    expect(g.bed.outs).toEqual([g.master]);
++    expect([g.bed.type, g.bed.frequency.value, g.bed.frequency.events]).toEqual(['lowpass', SFX_SLOW_SHAPE.idleHz, []]);
++    expect([g.shots.outs, g.limiter.outs, g.fade.outs].flat()).not.toContain(g.bed);
+     expect(g.loopBus.gain.value).toBe(SFX_LOOP_BUS_GAIN);
+     expect(g.loops.length).toBe(SFX_LOOP_COUNT);
+     for (const l of g.loops) expect([l.outs, l.gain.value]).toEqual([[g.loopBus], 0]);
+diff --git a/tests/sfx-lab-demo.test.ts b/tests/sfx-lab-demo.test.ts
+index 27cc6a9..cb3ba94 100644
+--- a/tests/sfx-lab-demo.test.ts
++++ b/tests/sfx-lab-demo.test.ts
+@@ -1,10 +1,14 @@
+ // v0.7.2 S2（アートと音③：BGM と命中スローの音。spec-v0720 §7・brief L25）: 曲の試聴の場の行 2「効果音と一緒に」の台本 systems/sfx-lab-demo を偽の context のエンジンで確かめる。
+ // - ゲームと同じ口で鳴る: 聞き手 (0, 0)・距離の帯（大砲は近い音／遠雷）・位置なしの合図・ループの目標（エンジンと海はゲームの式）。曲を下げる表はエンジンの中で同じに効く（探照灯・近い大きい爆発・魚雷の命中・警報）。
+ // - くり返しの秒で頭へ。止めるとループを止めて聞き手を外す（その後の位置つきの音は鳴らない）。
++// - v0.7.2 S3: 「命中＋スロー」の台本と行 3 の命中（queueHit）は、torp_hit と命中スローの残り秒（世界と同じ読み口・data の秒）で、ゲームと同じ道の命中スローの音になる。
+ import { afterEach, describe, expect, it } from 'vitest';
++import hitRateModel from '../data/hit_rate_model.json';
+ import { MUSIC_LAB_DEMOS } from '../src/config/music-lab-config';
+ import { SFX_KEYS, SFX_LOOP_ENGINE, SFX_LOOP_SEA, type SfxKey } from '../src/config/sfx-config';
+-import { registerSfxEngine, registerSfxListener, sfxAt } from '../src/systems/sfx-bus';
++import { SFX_SLOW, SFX_SLOW_DEFAULT_ID, SFX_SLOW_SHAPE } from '../src/config/sfx-music-config';
++import { registerSfxEngine, registerSfxListener, registerSfxSlowMo, sfxAt, sfxLoops } from '../src/systems/sfx-bus';
++import { createSfxLoopTargets } from '../src/core/sfx-loops';
+ import { SfxLabDemo } from '../src/systems/sfx-lab-demo';
+ import { fakeSamples, graph, setup } from './sfx-engine-kit';
+ import { FRAME_S } from './sfx-music-kit';
+@@ -12,7 +16,9 @@ import { FRAME_S } from './sfx-music-kit';
+ afterEach(() => {
+   registerSfxEngine(null);
+   registerSfxListener(null);
++  registerSfxSlowMo(null);
+ });
++const SLOW_S = hitRateModel.feel.hit_slowmo_seconds;
+ /** 全部の鍵の標本の代わりを持つエンジン（登録する） */
+ function engine(): ReturnType<typeof setup> {
+   const x = setup();
+@@ -75,4 +81,42 @@ describe('曲の試聴の場の台本（効果音と一緒に）', () => {
+     expect([x.e.stats().loopStarts, x.e.stats().loops]).toEqual([loops, 5]);
+     expect(played(x, 'light_on')).toBe(1);
+   });
++  it('命中＋スロー（S3）: 台本の命中で torp_hit と命中スロー（data の秒・ゲームの案）。スローの間に濾波器はゲームの案の Hz・終われば素通しへ。くり返す', () => {
++    const x = engine();
++    const d = new SfxLabDemo();
++    d.slowS = SLOW_S;
++    d.start(3);
++    step(x, d, 1.05);
++    expect(played(x, 'torp_hit')).toBe(1);
++    expect(x.e.stats().slow).toMatchObject({ on: true, rises: 1, shown: SFX_SLOW_DEFAULT_ID, loopFactor: SFX_SLOW[SFX_SLOW_DEFAULT_ID].loopRate });
++    expect(x.e.stats().slow.filterHz).toBe(SFX_SLOW[SFX_SLOW_DEFAULT_ID].filterHz);
++    step(x, d, SLOW_S);
++    expect(x.e.stats().slow).toMatchObject({ on: false, shown: null, filterHz: SFX_SLOW_SHAPE.idleHz });
++    step(x, d, 8 - 1.05 - SLOW_S + 1.05);
++    expect([played(x, 'torp_hit'), x.e.stats().slow.rises]).toEqual([2, 2]);
++  });
++  it('行 3 の命中（queueHit）: 台本がまだなら始まった時に 1 回・鳴っていれば今。止めると待っている命中は消え、スローを解いて読み口を外す（その後の sfxLoops は読まない）', () => {
++    const x = engine();
++    const d = new SfxLabDemo();
++    d.slowS = SLOW_S;
++    d.queueHit();
++    d.stop(); // 待っている命中を消す
++    d.start(0);
++    step(x, d, 0.5);
++    expect([played(x, 'torp_hit'), x.e.stats().slow.rises]).toEqual([0, 0]);
++    d.stop();
++    d.queueHit();
++    expect(played(x, 'torp_hit')).toBe(0);
++    d.start(0);
++    step(x, d, FRAME_S);
++    expect([played(x, 'torp_hit'), x.e.stats().slow.on]).toEqual([1, true]);
++    step(x, d, 0.3);
++    d.queueHit();
++    step(x, d, FRAME_S);
++    expect([played(x, 'torp_hit'), x.e.stats().slow.rises]).toEqual([2, 1]); // 最中の命中は残り秒を入れ直すだけ
++    d.stop();
++    expect(x.e.stats().slow.on).toBe(false);
++    sfxLoops(createSfxLoopTargets(), FRAME_S); // 読み口は外れている
++    expect(x.e.stats().slow.on).toBe(false);
++  });
+ });
+diff --git a/tests/sfx-rules-music.test.ts b/tests/sfx-rules-music.test.ts
+index 14f1d87..a9afa8b 100644
+--- a/tests/sfx-rules-music.test.ts
++++ b/tests/sfx-rules-music.test.ts
+@@ -5,6 +5,9 @@
+ //   ゲーム側で sfx-music-* を import するのは定数（config/sfx-music-config）と、曲の試聴の場の既定の id（assets/sfx-music-themes）だけ。
+ // - S2: 音源の組を systems/sfx-music-slots へ分けた（曲の音源を作る・start・stop・組の音量はそこ。再生は束と決めだけ）。曲を下げる systems/sfx-music-duck は下げる音量のノードだけに書く
+ //   （予約の前に消す・鳴り始める時刻で・確保しない）。段の音量と時定数は core/sfx-music-mood の関数（再生と道具が同じ物）。
++// - S3（spec-v0720 §6・brief L28〜L30）: 命中スローの音 systems/sfx-slowmo。ベッドの濾波器はエンジンの constructor の 1 か所で作り（ループの束と曲 → 濾波器 → master）、書くのは
++//   予約の前に消してからの setTargetAtTime だけ（値は読み返さない・音源を作らない）。曲の rate は音源の組の stepRate（3 層に同じ時刻）。読み口は slowMoLeftS だけを読み、sfxLoops で 1 回。
++//   ループの rate は applySfxSlowRate（確保しない・目標そのものは書き換えない）を通してループの再生へ。戻すのは sfxLoopsStop とメニュー・試聴の場の sfxMusic。
+ import { readFileSync } from 'node:fs';
+ import { basename } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+@@ -20,8 +23,8 @@ describe('曲の再生の作法（v0.7.2 S1）', () => {
+     expect(sl).toContain('      src.loop = true;\n');
+     expect(sl.match(/\.createGain\(/g)!.length).toBe(1); // 音量の節（constructor の中）
+     expect(sl.lastIndexOf('.createGain(')).toBeLessThan(sl.indexOf('  live(now: number): number {'));
+-    expect(sl.match(/setTargetAtTime\(/g)!.length).toBe(4); // 急いで 0・止める・始める・段
+-    expect(sl.match(/cancelScheduledValues\(/g)!.length).toBe(4); // 予約の前に必ず消す
++    expect(sl.match(/setTargetAtTime\(/g)!.length).toBe(5); // 急いで 0・止める・始める・段・速さ（S3）
++    expect(sl.match(/cancelScheduledValues\(/g)!.length).toBe(5); // 予約の前に必ず消す
+     const p = code('src/systems/sfx-music-player.ts');
+     expect(p).not.toMatch(/\.createBufferSource\(|\.start\(|\.stop\(/);
+     for (const x of [p, sl]) expect(x).not.toMatch(/\.createBuffer\(|loopStart|loopEnd|\.suspend\(|\.resume\(|onended|addEventListener|setTimeout|setInterval|\.then\(|\.value\b(?!\s*=)/);
+@@ -30,7 +33,7 @@ describe('曲の再生の作法（v0.7.2 S1）', () => {
+     expect(p.match(/setTargetAtTime\(/g)!.length).toBe(1); // 束（一時停止）
+     expect(p.match(/setValueAtTime\(/g)!.length).toBe(1); // 一時停止のまま動き出した時に束を今すぐ 0（L24）
+     expect(p.match(/cancelScheduledValues\(/g)!.length).toBe(1);
+-    expect(p).toContain('    this.duck.connect(master);\n    this.bus = ctx.createGain();\n    this.bus.connect(this.duck);\n');
++    expect(p).toContain('    this.duck.connect(out);\n    this.bus = ctx.createGain();\n    this.bus.connect(this.duck);\n');
+     // S2: 曲を下げるのは下げる音量のノードだけ（予約の前に消す・2 つの予約）。エンジンは単発を鳴らせた時（fire の最後）に 1 回呼ぶ
+     const d = code('src/systems/sfx-music-duck.ts');
+     expect(d).not.toMatch(/\.create\w*\(|\.start\(|\.stop\(|\.suspend\(|\.resume\(|onended|addEventListener|setTimeout|setInterval|\.then\(|\.value\b/);
+@@ -50,7 +53,7 @@ describe('曲の再生の作法（v0.7.2 S1）', () => {
+     expect(b.match(/\bnew (?:MusicTables|Float32Array|MusicBuilder)\(/g)!.length).toBe(3);
+     expect(b.indexOf('new MusicTables(')).toBeGreaterThan(b.indexOf('private renderStart(k: number): void {'));
+     const e = code('src/systems/sfx-engine.ts');
+-    expect(e).toContain('    this.music = new SfxMusicPlayer(ctx, this.master, wall);\n');
++    expect(e).toContain('    this.music = new SfxMusicPlayer(ctx, bed, wall);\n');
+     expect(e).not.toMatch(/SfxMusicPlayer\(ctx, limiter|music\.\w+\.connect\(limiter/);
+     // 毎フレームの口の検査に掛かる（空の検査にしない）
+     expect(hotBodies(p).length).toBeGreaterThanOrEqual(4);
+@@ -90,3 +93,40 @@ describe('曲の骨組み（v0.7.2 S0）と再生（S1）', () => {
+   });
+ });
+ 
++describe('命中スローの音の作法（v0.7.2 S3）', () => {
++  it('ベッドの濾波器はエンジンの constructor の 1 か所（ループの束と曲 → 濾波器 → master・単発は通らない）。書くのは予約の前に消した setTargetAtTime だけ・値は読み返さない・音源を作らない', () => {
++    const e = code('src/systems/sfx-engine.ts');
++    expect(e.match(/\.createBiquadFilter\(/g)!.length).toBe(1);
++    expect(e.indexOf('.createBiquadFilter(')).toBeLessThan(e.indexOf('setBuffer(key: SfxKey'));
++    expect(e).toContain('    this.slow = new SfxSlowMo(ctx, bed, this.music.slots);\n');
++    expect(e).toContain('    this.slow.step();\n    this.music.update(dtS);\n');
++    expect(e).not.toMatch(/shots\.connect\(bed|limiter\.connect\(bed|fade\.connect\(bed/);
++    for (const f of SRC) if (f !== 'src/systems/sfx-engine.ts') expect(code(f), f).not.toMatch(/\.createBiquadFilter\(/);
++    const w = code('src/systems/sfx-slowmo.ts');
++    expect(w).not.toMatch(/\.create\w*\(|\.start\(|\.stop\(|\.suspend\(|\.resume\(|onended|addEventListener|setTimeout|setInterval|\.then\(|\.value\b(?!\s*=)|setValueAtTime|linearRamp/);
++    expect(w.match(/cancelScheduledValues\(/g)!.length).toBe(1);
++    expect(w.match(/setTargetAtTime\(/g)!.length).toBe(1);
++    expect(w).toContain("    if (want === this.shown || this.ctx.state !== RUNNING) return;\n");
++    expect(hotBodies(w).length).toBeGreaterThanOrEqual(2); // update・step（確保なしの検査に掛かる）
++    // applySfxSlowRate（毎フレーム。名前が口の検査に当たらないのでここで見る）: 確保しない・src を書き換えない・factor 1 は写さない
++    const a = w.slice(w.indexOf('export function applySfxSlowRate('), w.indexOf('export class SfxSlowMo'));
++    expect(a.length).toBeGreaterThan(100);
++    expect(a.slice(a.indexOf('{'))).not.toMatch(/\bnew\s|=>|\.(map|filter|slice|concat|fill)\(|\{\s*\w+\s*:|=\s*\[|src\.\w+\[i\]\s*=(?!=)/);
++    expect(a).toContain('  if (factor === 1) return src;\n');
++  });
++  it('読み口: 読むのは slowMoLeftS だけ（型は 1 欄・sfxLoops でフレームに 1 回）。戻すのは sfxLoopsStop とメニュー・試聴の場の sfxMusic。案を替えるのは曲の試聴の場だけ', () => {
++    const b = code('src/systems/sfx-bus.ts');
++    expect(b).toContain('export interface SfxSlowMoSource {\n  readonly slowMoLeftS: number;\n}\n');
++    expect(b.match(/\bslowMo\b/g)!.length).toBe(3); // 宣言・登録・sfxLoops の 1 回
++    expect(b).toContain('  const s = slowMo;\n  engine.slow.update(s !== null && s.slowMoLeftS > 0);\n  engine.loops.update(applySfxSlowRate(targets, engine.slow.loopFactor, engine.slow.targets), dtS, engine.muted);\n');
++    expect(b).toContain('  engine.loops.stop();\n  engine.slow.reset();\n');
++    expect(b).toContain('  if (ctx === MUSIC_CTX_MENU || ctx === MUSIC_CTX_LAB) engine.slow.reset();');
++    expect(b.match(/engine\.slow\.reset\(\)/g)!.length).toBe(2);
++    const users = SRC.filter((f) => f !== 'src/systems/sfx-bus.ts' && /\bsfxSlowVariant\(/.test(code(f)));
++    expect(users).toEqual(['src/scenes/music-lab-scene.ts']);
++    const registrants = SRC.filter((f) => f !== 'src/systems/sfx-bus.ts' && /\bregisterSfxSlowMo\(/.test(code(f))).sort();
++    expect(registrants).toEqual(['src/systems/sfx-lab-demo.ts', 'src/systems/world-art.ts']);
++    // world-art の見方は読むだけ（readonly）。論理のファイルは音を import しない（許可表は tests/sfx-rules）
++    expect(code('src/systems/world-art.ts')).toContain('    readonly slowMoLeftS: number;\n');
++  });
++});
+diff --git a/tests/sfx-rules.test.ts b/tests/sfx-rules.test.ts
+index 7b00108..23ee5c5 100644
+--- a/tests/sfx-rules.test.ts
++++ b/tests/sfx-rules.test.ts
+@@ -23,6 +23,8 @@
+ // - v0.7.2 S2（spec-v0720 §5.5・brief L19〜L22・L25）: 任務の曲の段の観測器 core/sfx-music-mood が純粋な層に入る（import はテレメトリの型と段の定数だけ・敵の位置・距離・見えているかの欄を
+ //   読まない＝D5）。再生の層に曲を下げる systems/sfx-music-duck・音源の組 systems/sfx-music-slots（sfx-music-player から分けた）・曲の試聴の場の「効果音と一緒に」の台本 systems/sfx-lab-demo（13 本）。
+ //   sfx-mission は段の 1 行（sfxMusicMood(stepSfxMood(…))）。
++// - v0.7.2 S3（spec-v0720 §6・brief L28〜L31）: 命中スローの音 systems/sfx-slowmo が再生の層に入る（14 本）。ループの束はベッドの濾波器を通って master へ。world-art の hook に命中スローの
++//   読み口の 2 行（作成で世界・破棄で null）、曲の試聴の場の hook に案を戻す 1 行＝27 行（作法の残りは tests/sfx-rules-music の S3）。
+ import { readFileSync } from 'node:fs';
+ import { basename } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+@@ -47,6 +49,9 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
+   { file: 'src/scenes/boot-scene.ts', line: '    createSfx(this.game); //' },
+   { file: 'src/systems/world-art.ts', line: '    registerSfxListener(w.boat.state); //' },
+   { file: 'src/systems/world-art.ts', line: '    registerSfxListener(null);\n' },
++  // v0.7.2 S3: 命中スローの読み口（世界の slowMoLeftS を読むだけ。作成で登録・破棄で外す）
++  { file: 'src/systems/world-art.ts', line: '    registerSfxSlowMo(w); //' },
++  { file: 'src/systems/world-art.ts', line: '    registerSfxListener(null);\n    registerSfxSlowMo(null);\n' },
+   // S2: 絵の層の口 5 行（spec §3.1）＝水柱・砲口（大砲／機銃）・爆発・2 次の爆発・沈み始め
+   { file: 'src/systems/fx-bus.ts', line: "  sparks?.spray(x, y, hit);\n  sfxAt(hit ? 'splash_l' : 'splash_s', x, y);\n" },
+   { file: 'src/systems/fx-bus.ts', line: "  sparks?.muzzle(x, y, big);\n  if (big) sfxGunAt(x, y);\n  else sfxAt('mg', x, y);\n" },
+@@ -73,6 +78,8 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
+   { file: 'src/scenes/sound-lab-scene.ts', line: '    sfxMusic(MUSIC_CTX_NONE); //' },
+   { file: 'src/scenes/music-lab-scene.ts', line: '    sfxSetMuted(false);\n    sfxMusicEnabled(true);\n    sfxMusic(MUSIC_CTX_LAB);\n' },
+   { file: 'src/scenes/music-lab-scene.ts', line: '    if (stop) {\n      sfxMusicAudition(null);\n    } else if (row === ROW_TITLE) {\n      sfxMusicAudition(MUSIC_TITLE_KEYS[col]!);\n' },
++  // v0.7.2 S3: 曲の試聴の場は出る時に命中スローの案をゲームの案へ戻す
++  { file: 'src/scenes/music-lab-scene.ts', line: '      sfxSlowVariant(SFX_SLOW_DEFAULT_ID); //' },
+ ];
+ /** 音のために触った既存の src のファイル（300 行以下を見る） */
+ const TOUCHED: readonly string[] = [
+@@ -94,7 +101,7 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
+     expect(PLAYBACK).toEqual([
+       'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-lab-demo.ts', 'src/systems/sfx-loop-player.ts',
+       'src/systems/sfx-mission.ts', 'src/systems/sfx-music-build.ts', 'src/systems/sfx-music-duck.ts', 'src/systems/sfx-music-player.ts', 'src/systems/sfx-music-slots.ts',
+-      'src/systems/sfx-settings.ts', 'src/systems/sfx-watchdog.ts',
++      'src/systems/sfx-settings.ts', 'src/systems/sfx-slowmo.ts', 'src/systems/sfx-watchdog.ts',
+     ]);
+     expect(PURE).toContain('src/core/sfx-music-mood.ts');
+   });
+@@ -138,7 +145,7 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
+     expect(w).not.toMatch(/onended|addEventListener|setTimeout|setInterval|\.then\(|\.create\w*\(/);
+     for (const f of PLAYBACK) if (!f.endsWith('/sfx-watchdog.ts')) expect(code(f), f).not.toMatch(/\.suspend\(/);
+   });
+-  it('ループの再生（S3）: 音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所・buffer 全体を繰り返す（start は 0 だけ）・context は止めない。エンジンはループの束を master へつなぐ', () => {
++  it('ループの再生（S3）: 音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所・buffer 全体を繰り返す（start は 0 だけ）・context は止めない。エンジンはループの束をベッドの濾波器（v0.7.2 S3）から master へ', () => {
+     const s = code('src/systems/sfx-loop-player.ts');
+     expect(s.match(/\.createBufferSource\(/g)!.length).toBe(1);
+     expect(s.match(/\.createGain\(/g)!.length).toBe(1);
+@@ -153,7 +160,7 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
+     expect(s).not.toMatch(/loopStart|loopEnd|\.suspend\(|\.resume\(|onended|addEventListener|setTimeout|setInterval|\.then\(|\.value\b(?!\s*=)/); // 値は読み返さない（L6）
+     expect(s.match(/setTargetAtTime\(/g)!.length).toBe(4); // 音量・rate・一時停止の束・止める時の絞り
+     const e = code('src/systems/sfx-engine.ts');
+-    expect(e).toContain('    this.loopBus.connect(this.master);\n');
++    expect(e).toContain('    bed.connect(this.master);\n    this.loopBus = ctx.createGain();\n    this.loopBus.connect(bed);\n');
+     expect(e).toContain('    this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);\n');
+     expect(e).not.toContain('this.loopBus.connect(limiter)');
+     // 任務の音は Phaser を import せず、ループの口 3 つと合図の口 sfxCue だけを呼ぶ（S4: 合図の観測器 core/sfx-cues）
+@@ -245,9 +252,9 @@ describe('音へ届く道は許可表の口だけ（import の許可表。R14）
+     expect(GAME_IMPORTERS_NOW).not.toContain('src/systems/barge-hunt.ts');
+     expect(readFileSync('src/systems/barge-hunt.ts', 'utf8')).toContain('    onFire: () => {},\n');
+   });
+-  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行。v0.7.2 S1: 曲の 7 行で 12 本に 24 行）と、触った既存のファイルは 300 行以下', () => {
++  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行。v0.7.2 S1: 曲の 7 行で 12 本に 24 行。S3: 命中スローの 3 行で 27 行）と、触った既存のファイルは 300 行以下', () => {
+     for (const p of HOOK_PINS) expect(readFileSync(p.file, 'utf8'), p.file).toContain(p.line);
+-    expect(HOOK_PINS.length).toBe(24);
++    expect(HOOK_PINS.length).toBe(27);
+     expect([...GAME_IMPORTERS_NOW].sort()).toEqual([...ALLOWED_IMPORTERS].sort());
+     // 絵の層の口から呼ぶ位置つきの音は 6 か所だけ（水柱・大砲・機銃・爆発・2 次の爆発・沈み始め）。S1 の代わりの音は残っていない
+     const calls = ['src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts'].map((f) => (code(f).match(/\bsfx(?:Gun)?At\(/g) ?? []).length);
