@@ -14,6 +14,8 @@
 // - S3: ループの再生（systems/sfx-loop-player）は、音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所だけ・buffer 全体を繰り返す（start の位置・長さを使わない＝L6）。
 //   任務の音（systems/sfx-mission）は Phaser を import しない（出来事の口は構造の型）。
 // - sfx-* と、音のために触った既存のファイルは 300 行以下。
+// - v0.7.2 S0（曲の骨組み。spec-v0720 §9 S0）: 曲の純粋な層（config/sfx-music-config・assets/sfx-music-*）も名前が sfx- なので上の作法が全部効く（毎フレームの口＝stepBuild・stepTone など
+//   の本体に確保なし）。S0 ではゲーム側のどのファイルも sfx-music-* を import しない（束がバイトで同じ。GAME_IMPORTERS_NOW は v0.7.1 のまま）。
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -218,6 +220,22 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
   });
   it.each(SFX)('%s: 300 行以下', (f) => {
     expect(readFileSync(f, 'utf8').split('\n').length).toBeLessThanOrEqual(301);
+  });
+});
+
+describe('曲の骨組み（v0.7.2 S0）', () => {
+  const MUSIC = SFX.filter((f) => basename(f).startsWith('sfx-music-'));
+  it('曲のファイル 5 本は純粋な層（config・assets）に入り、上の作法（乱数・毎フレームの口・import・300 行）が効く', () => {
+    expect(MUSIC).toEqual(['src/assets/sfx-music-compose.ts', 'src/assets/sfx-music-render.ts', 'src/assets/sfx-music-synth.ts', 'src/assets/sfx-music-themes.ts', 'src/config/sfx-music-config.ts']);
+    for (const f of MUSIC) expect(PURE).toContain(f);
+  });
+  it('毎フレームの口（作る口 stepBuild・表を埋める stepTables・音符を書く stepTone／stepFm／stepNoise・段の step*）は検査に掛かる（空の検査にしない）', () => {
+    expect(hotBodies(code('src/assets/sfx-music-render.ts')).length).toBeGreaterThanOrEqual(5);
+    expect(hotBodies(code('src/assets/sfx-music-synth.ts')).length).toBeGreaterThanOrEqual(5);
+    expect(code('src/assets/sfx-music-render.ts')).toMatch(/\bstepBuild\(budget: number\): number \{/);
+  });
+  it('S0 ではゲーム側のどのファイルも sfx-music-* を import しない（曲はまだ鳴らない）', () => {
+    for (const f of SRC) if (!basename(f).startsWith('sfx-')) expect(imports(code(f)).some((p) => basename(p).startsWith('sfx-music-')), f).toBe(false);
   });
 });
 
