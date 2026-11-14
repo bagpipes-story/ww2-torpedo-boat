@@ -1,0 +1,18 @@
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 383 modules transformed.
+
+(!) outDir /tmp/claude-0/-home-user-ww2-torpedo-boat/8620609b-38c2-5666-adab-d8b565d37033/scratchpad/v0720/base-35e9e77 is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../base-35e9e77/index.html                    2.30 kB │ gzip:   1.23 kB
+../base-35e9e77/assets/index-DUkOVaaO.js  2,256.30 kB │ gzip: 688.53 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.88s
+exit 0
