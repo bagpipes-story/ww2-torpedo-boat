@@ -13,4 +13,4 @@ tests/sfx-lab-demo.test.ts
 tests/sfx-music-duck.test.ts
 tests/sfx-music-mood.test.ts
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: 途中 2（全部の実装・テスト 4 本＋直し・probe の段・offline の曲の束と案の比べ。npm test 3,481 件）
+- 一言: 最後（CHANGELOG の数を全部埋めた・npm test 3,488 件・296 ファイル・heap・実時間・Boot・最初のタップ。門の行は lead が足す）
