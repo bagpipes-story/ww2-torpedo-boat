@@ -15,6 +15,8 @@
 // v0.7.2 S2（任務の曲の段。spec-v0720 §5.5・§8.2・brief L20・L21）: 毎フレーム、Hud の MissionSfx の段（core/sfx-music-mood の level）の移りを記録し、件ごとに 段ごとの時間の割合・移りの数・
 //   どの 60 秒の窓の中の移りの最大・最初の緊張と戦闘の時刻を出す。同じフレームに HUD のテレメトリの「見つかった」「撃たれている」欄（spec §5.1 の表をここに写した＝観測器とは別に
 //   書いた写し。定数は core の値の写し）が最初に立った時刻も取る。門: 1 分（どの 60 秒の窓も）の移り ≤ 6・最初の緊張 ≥ 最初の「見つかった」・最初の戦闘 ≥ 最初の「撃たれている」（D5）。
+// v0.7.2 S3（命中スロー。spec-v0720 §6.4）: 毎フレーム、世界の slowMoLeftS > 0（Hud が読むのと同じ値）の移りを記録し、件ごとに スローの回数・計の秒と、音の層が見た立ち上がりの数
+//   （エンジンの slow.rises。止まっている context の間も数える）を出す。門: 2 つが同じ（音の層は世界と同じ回数のスローを見る）。
 // OUT=<json> に記録を書く（scripts/sfx-mix.ts の PROBE=<json> が波形に直して、リミッタ前の頂・1.0 超えの割合・RMS を出す。S2: 段の移りの行 mood も＝曲の束の模型）。
 // 実行: SITE=<site> [CASES=us_03-burst,jp_03h-last] [JOBS=3] [OUT=<json>] node scripts/headless/sfx-probe.mjs
 import { writeFileSync } from 'node:fs';
@@ -48,6 +50,8 @@ function install({ voices, rule }) {
   // S2: 段の移り（毎フレーム）と、HUD の「見つかった」「撃たれている」欄が最初に立った時刻（spec §5.1 の表の写し。定数は core の値: SP_APPROACH 1・SP_FLARE_PASS 2・SP_ORBIT 3・SP_RUN 4、
   // FF_CHALLENGE 1・FF_STRAFE 2、AS_T_INBOUND 1・ORBIT 2・RUN 3・FALLING 4・REST 5、PA_PASS 1・PA_ORBIT 2、EVA_NONE 0、LANDING_REPORT_NONE 0、米PT の標的の自艇 0、被弾は 1 フレームに 0.5 HP より多く）
   const mood = { rows: [], last: -1, firstFound: null, firstShot: null, prevHp: NaN, prevSeat: -1 };
+  // S3: 命中スローの移り（[時刻, 0/1]）と、始めのエンジンの立ち上がりの数
+  const slow = { rows: [], last: false, rises0: e.slow ? e.slow.rises : 0 };
   const attack = (th) => th === 2 || th === 3 || th === 4;
   const near = (th) => th === 1 || th === 5;
   const trackMood = (hud, t) => {
@@ -72,7 +76,11 @@ function install({ voices, rule }) {
   hl.frame = (d) => {
     frame0(d);
     const hud0 = window.__game.scene.getScene('Hud');
-    if (hud0 && hud0.sfx && hl.active('Hud')) trackMood(hud0, e.clockS);
+    if (hud0 && hud0.sfx && hl.active('Hud')) {
+      trackMood(hud0, e.clockS);
+      const w = hl.world(), on = !!w && w.slowMoLeftS > 0;
+      if (on !== slow.last) { slow.rows.push([Math.round(e.clockS * 1e4) / 1e4, on ? 1 : 0]); slow.last = on; }
+    }
     acc += d / 1000;
     if (acc < rule.tickS) return;
     acc = acc < 2 * rule.tickS ? acc - rule.tickS : 0;
@@ -99,7 +107,7 @@ function install({ voices, rule }) {
     if (flat) wide.playFlat(key, t, t, rate, mul, d); else wide.playAt(key, dx, dy, t, t, rate, mul, minS);
     log.push([r4(t + d), key, Math.round(dx), Math.round(dy), r4(rate), mul, v, sim.lastDrop, v >= 0 ? r4(sim.gain) : 0, v >= 0 ? r4(sim.pan) : 0, sim.band, v >= 0 && sim.stole ? 1 : 0, flat ? 1 : 0]);
   };
-  window.__probe = { sim, wide, log, loops, mood, t0: e.clockS };
+  window.__probe = { sim, wide, log, loops, mood, slow, t0: e.clockS };
   return true;
 }
 
@@ -108,7 +116,7 @@ function collect() {
   const p = window.__probe;
   const e = window.__sfx;
   const st = e.stats();
-  return { log: p.log, loops: p.loops, mood: { rows: p.mood.rows, firstFound: p.mood.firstFound, firstShot: p.mood.firstShot }, t0: p.t0, t1: e.clockS, steals: p.sim.stolen, maxVoices: p.sim.maxBusy, demand: p.wide.maxBusy, dropped: Array.from(p.sim.dropped), engine: { state: st.state, sources: st.sources, idleDrops: st.idleDrops, noBuffer: st.noBuffer, buffers: st.buffers } };
+  return { log: p.log, loops: p.loops, mood: { rows: p.mood.rows, firstFound: p.mood.firstFound, firstShot: p.mood.firstShot }, slow: { rows: p.slow.rows, rises: e.slow ? e.slow.rises - p.slow.rises0 : null }, t0: p.t0, t1: e.clockS, steals: p.sim.stolen, maxVoices: p.sim.maxBusy, demand: p.wide.maxBusy, dropped: Array.from(p.sim.dropped), engine: { state: st.state, sources: st.sources, idleDrops: st.idleDrops, noBuffer: st.noBuffer, buffers: st.buffers } };
 }
 
 async function oneCase(browser, base, c) {
@@ -245,6 +253,13 @@ for (const r of results) {
   check(M.maxWin <= MOOD_MAX_PER_MIN, `${r.name}: 曲の段の移りはどの 60 秒の窓も ≤ ${MOOD_MAX_PER_MIN}（${M.maxWin}）`);
   check(M.firstTense === null || (M.firstFound !== null && M.firstTense >= M.firstFound - 1e-6), `${r.name}: 最初の緊張 ≥ 最初の「見つかった」欄（D5: ${ft(M.firstTense)} ≥ ${ft(M.firstFound)}）`);
   check(M.firstBattle === null || (M.firstShot !== null && M.firstBattle >= M.firstShot - 1e-6), `${r.name}: 最初の戦闘 ≥ 最初の「撃たれている」欄（D5: ${ft(M.firstBattle)} ≥ ${ft(M.firstShot)}）`);
+  // S3: 命中スローの回数（世界）と音の層が見た立ち上がり
+  const sr = (r.slow && r.slow.rows) || [];
+  let slowN = 0, slowS = 0;
+  for (let i = 0; i < sr.length; i++) if (sr[i][1] === 1) { slowN++; slowS += (i + 1 < sr.length ? sr[i + 1][0] : r.t1) - sr[i][0]; }
+  r.slowSummary = { n: slowN, s: slowS, rises: r.slow ? r.slow.rises : null };
+  console.log(`${''.padEnd(12)} 命中スロー: ${slowN} 回（計 ${slowS.toFixed(1)} 秒${sr.length ? `・最初 ${sr[0][0].toFixed(1)} 秒` : ''}）・音の層の立ち上がり ${r.slowSummary.rises}`);
+  if (r.slowSummary.rises !== null) check(r.slowSummary.rises === slowN, `${r.name}: 音の層は世界と同じ回数の命中スローを見る（${r.slowSummary.rises}・${slowN}）`);
 }
 if (!only) for (const k of S2_KEYS) check(total[k] > 0, `${k}: 全部の件を通して 1 回以上鳴る（${total[k]}）`);
 console.log(`全部の件の合計（鳴らした数）: ${S2_KEYS.map((k) => `${k} ${total[k]}`).join('  ')}`);
@@ -252,8 +267,10 @@ console.log(`全部の件の合計（鳴らした数）: ${S2_KEYS.map((k) => `$
 const ALL_KEYS = [...S2_KEYS, 'torp_launch', 'hull_hit', 'alarm', 'light_on', 'flare_pop', 'bomb_fall', 'reload', 'reload_end', 'smoke', 'ui_tap', 'bell', 'engine_cough', ...LOOP_IDS];
 console.log(`25 本の鍵（全部の件を通して）: ${ALL_KEYS.map((k) => `${k} ${everyKey[k] ?? 0}`).join('  ')}`);
 if (!only) check(ALL_KEYS.every((k) => (everyKey[k] ?? 0) > 0), `25 本の鍵がどれも 1 回以上鳴る${ALL_KEYS.some((k) => !everyKey[k]) ? `（鳴らない: ${ALL_KEYS.filter((k) => !everyKey[k]).join('・')}）` : ''}`);
+const ss = results.map((r) => r.slowSummary).filter(Boolean);
+if (ss.length) console.log(`命中スロー（${ss.length} 件）: 計 ${ss.reduce((a, x) => a + x.n, 0)} 回・スローのある件 ${ss.filter((x) => x.n > 0).length}・1 件の最大 ${Math.max(...ss.map((x) => x.n))} 回`);
 const mm = results.map((r) => r.moodSummary).filter(Boolean);
 if (mm.length) console.log(`曲の段（${mm.length} 件）: どの 60 秒の窓の移りの最大 ${Math.max(...mm.map((m) => m.maxWin))}・1 分あたりの最大 ${Math.max(...mm.map((m) => m.perMin)).toFixed(1)}・静かの割合の中央値 ${(mm.map((m) => m.share[0]).sort((a, b) => a - b)[mm.length >> 1] * 100).toFixed(0)}%`);
-if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ voices: VOICES, cases: results.map((r) => ({ name: r.name, q: r.q, secs: r.secs, mode: r.mode ?? 'ab', t0: r.t0, t1: r.t1, steals: r.steals, maxVoices: r.maxVoices, demand: r.demand, engine: r.engine, errors: r.errors, log: r.log, loops: r.loops ?? [], mood: r.mood ? r.mood.rows : [], moodSummary: r.moodSummary, cueCounts: r.cueCounts })) }));
+if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ voices: VOICES, cases: results.map((r) => ({ name: r.name, q: r.q, secs: r.secs, mode: r.mode ?? 'ab', t0: r.t0, t1: r.t1, steals: r.steals, maxVoices: r.maxVoices, demand: r.demand, engine: r.engine, errors: r.errors, log: r.log, loops: r.loops ?? [], mood: r.mood ? r.mood.rows : [], moodSummary: r.moodSummary, slow: r.slow ? r.slow.rows : [], slowSummary: r.slowSummary, cueCounts: r.cueCounts })) }));
 console.log(`sfx-probe ${bad === 0 ? 'OK' : `NG ${bad}`}（${results.length} 件）`);
 process.exitCode = bad === 0 ? 0 : 1;

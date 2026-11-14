@@ -1,6 +1,7 @@
 // v0.7.1 S1（アートと音②：合成の効果音。spec-v0710 §7・§9.1・§11 の R1・R2・R11・§14 L4）: 再生の薄い層 systems/sfx-engine を偽の context（tests/sfx-engine-kit）で確かめる。
 // S3 で 3 つに分けた: ここ＝つなぎ・単発・最初の音／tests/sfx-engine-wake＝context を起こす・見張り・口（systems/sfx-bus）／tests/sfx-engine-loops＝ループ。
 // - つなぎ: 声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → master（S3: リミッタを通さない）。パンの無い端末は中央（R7）。
+//   v0.7.2 S3: ループの束と曲（下げる音量）はベッドの濾波器（低域通過・ふだん素通しの SFX_SLOW_SHAPE.idleHz）を通って master へ。単発は通らない（命中スローは tests/sfx-slowmo）。
 // - 止まっている context・消音では音源を 1 つも作らない（数えるだけ＝R2）。
 // - 声は 16 本を超えない。奪った声の前の音源は止める。1 発ごとに作るのは音源 1 個だけ（声・束は増えない＝R1）。
 // - 最初の 1 発は束ねを立ち上げる（R11）。最初のタップ（context が動き出す前の UI の音）は 1 つだけ覚えて、0.5 秒の内に動き出せば鳴らす。
@@ -8,7 +9,7 @@
 // - 消音は master の音量（context は止めない＝L4）。tick の実時間は 0 にする（見張りを動かさない）。
 import { afterEach, describe, expect, it } from 'vitest';
 import { SFX_FIRST_FADE, SFX_LIMITER, SFX_LOOP_BUS_GAIN, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES } from '../src/config/sfx-config';
-import { MUSIC_PLAYER } from '../src/config/sfx-music-config';
+import { MUSIC_PLAYER, SFX_SLOW_SHAPE } from '../src/config/sfx-music-config';
 import { SFX_LOOP_COUNT } from '../src/core/sfx-loops';
 import { SFX_DROP_VOICES, sfxKeyIndex } from '../src/core/sfx-mix';
 import { registerSfxEngine, registerSfxListener } from '../src/systems/sfx-bus';
@@ -21,11 +22,11 @@ afterEach(() => {
 });
 
 describe('つなぎ（spec §7.1・§7.3。作るのは起動時だけ）', () => {
-  it('声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → master（リミッタを通さない）。リミッタと master は config の値', () => {
+  it('声 16 本（音量 → パン → 単発の束）→ リミッタ → 立ち上がり → master → 出口。ループ 5 本 → ループの束 → ベッドの濾波器 → master（リミッタを通さない）。リミッタと master は config の値', () => {
     const { ctx, e } = setup();
     const g = graph(ctx, e);
-    // v0.7.2 S1: ＋曲の束・下げる音量・音量の節 MUSIC_PLAYER.slots 本（曲のつなぎは tests/sfx-engine-music）
-    expect([ctx.gains.length, ctx.pans.length, ctx.limiters.length]).toEqual([SFX_VOICES + 4 + SFX_LOOP_COUNT + 2 + MUSIC_PLAYER.slots, SFX_VOICES, 1]);
+    // v0.7.2 S1: ＋曲の束・下げる音量・音量の節 MUSIC_PLAYER.slots 本（曲のつなぎは tests/sfx-engine-music）。S3: ＋ベッドの濾波器 1 つ（音量の節は増えない）
+    expect([ctx.gains.length, ctx.pans.length, ctx.limiters.length, ctx.filters.length]).toEqual([SFX_VOICES + 4 + SFX_LOOP_COUNT + 2 + MUSIC_PLAYER.slots, SFX_VOICES, 1, 1]);
     expect(g.voices.length).toBe(SFX_VOICES);
     g.voices.forEach((v, i) => {
       expect(v.outs).toEqual([ctx.pans[i]]);
@@ -35,8 +36,12 @@ describe('つなぎ（spec §7.1・§7.3。作るのは起動時だけ）', () =
     expect(g.limiter.outs).toEqual([g.fade]);
     expect(g.fade.outs).toEqual([g.master]);
     expect(g.master.outs).toEqual([ctx.destination]);
-    // S3: ループの束は master へ直に（リミッタ・最初の音の立ち上がりを通さない）。ループごとの音量は 0 から・音源は任務が始めるまで無い
-    expect(g.loopBus.outs).toEqual([g.master]);
+    // S3: ループの束は master へ（リミッタ・最初の音の立ち上がりを通さない）。ループごとの音量は 0 から・音源は任務が始めるまで無い。
+    // v0.7.2 S3: ループの束と曲はベッドの濾波器（低域通過・素通しの Hz）を通る。単発の束・リミッタ・立ち上がりは通らない
+    expect(g.loopBus.outs).toEqual([g.bed]);
+    expect(g.bed.outs).toEqual([g.master]);
+    expect([g.bed.type, g.bed.frequency.value, g.bed.frequency.events]).toEqual(['lowpass', SFX_SLOW_SHAPE.idleHz, []]);
+    expect([g.shots.outs, g.limiter.outs, g.fade.outs].flat()).not.toContain(g.bed);
     expect(g.loopBus.gain.value).toBe(SFX_LOOP_BUS_GAIN);
     expect(g.loops.length).toBe(SFX_LOOP_COUNT);
     for (const l of g.loops) expect([l.outs, l.gain.value]).toEqual([[g.loopBus], 0]);

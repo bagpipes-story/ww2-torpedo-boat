@@ -1,5 +1,6 @@
 // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §1・§4・§10・§13・brief L6〜L14）: 曲の再生。エンジン（systems/sfx-engine）が 1 つ持つ。
-// つなぎ: 音源の組（systems/sfx-music-slots。音量の節 9 本）→ 曲の束（一時停止で 0）→ 下げる音量（S2 の ducking＝systems/sfx-music-duck）→ master（単発のリミッタは通さない＝D6）。
+// つなぎ: 音源の組（systems/sfx-music-slots。音量の節 9 本）→ 曲の束（一時停止で 0）→ 下げる音量（S2 の ducking＝systems/sfx-music-duck）→ ベッドの濾波器（S3。ループの束と同じ 1 つ＝
+//   systems/sfx-slowmo）→ master（単発のリミッタは通さない＝D6）。
 // 場面（D8・L13）: request(ctx, delayS)＝Title・Result は MENU（Result は鐘の後 delayS 秒）・MissionSfx は MISSION・曲の試聴の場は LAB・効果音の試聴の場は NONE。同じ場面の頼み直しは
 //   何もしない（Title ⇄ Briefing・遅らせの途中の MENU は予定どおり）。release(ctx) は今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を次のシーンの create の後に回す）。
 //   場面が替われば一時停止は解き、段は静かに戻し、試聴の場を出れば候補の標本を捨てる（ゲームの列の曲は残す）。
@@ -16,7 +17,7 @@ import {
   MUSIC_CTX_LAB, MUSIC_CTX_MENU, MUSIC_CTX_MISSION, MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_MOOD_QUIET, MUSIC_PLAYER, type MusicKey,
 } from '../config/sfx-music-config';
 import { MUSIC_TITLE_DEFAULT_ID } from '../assets/sfx-music-themes';
-import type { SfxCtx, SfxGainNode } from './sfx-audio-types';
+import type { SfxCtx, SfxGainNode, SfxNode } from './sfx-audio-types';
 import { SfxMusicBuild } from './sfx-music-build';
 import { SfxMusicSlots } from './sfx-music-slots';
 
@@ -60,11 +61,11 @@ export class SfxMusicPlayer {
   /** 確かめ用: 曲の束へ書いた回数（組の分は slots） */
   private busWrites = 0;
 
-  /** master はエンジンの出口の音量（曲の束はここへ直に）。wall は実時間の ms（作る時間の記録だけ。tests は 0 を返す物） */
-  constructor(private readonly ctx: SfxCtx, master: SfxGainNode, wall: () => number) {
+  /** out は曲の行き先（S3 からベッドの濾波器 → master。リミッタは通さない）。wall は実時間の ms（作る時間の記録だけ。tests は 0 を返す物） */
+  constructor(private readonly ctx: SfxCtx, out: SfxNode, wall: () => number) {
     this.build = new SfxMusicBuild(ctx, wall);
     this.duck = ctx.createGain();
-    this.duck.connect(master);
+    this.duck.connect(out);
     this.bus = ctx.createGain();
     this.bus.connect(this.duck);
     this.slots = new SfxMusicSlots(ctx, this.bus);

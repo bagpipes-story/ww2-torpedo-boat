@@ -14,6 +14,7 @@
 // v0.7.2 S1: 見張りを systems/sfx-watchdog へ分け（振る舞いは同じ）、曲の再生 systems/sfx-music-player を持つ（曲の束は master へ直に＝リミッタを通さない。tick から毎フレーム
 // update＝作る仕事と 10 Hz の決め、消音は曲も止める）。wall は実時間の ms（曲を作る時間の記録だけ。systems/sfx-boot が performance.now を渡す。tests は 0）。
 // v0.7.2 S2: 単発を鳴らせた時（fire）に曲を下げる表を引く（systems/sfx-music-duck。警報・鐘・魚雷の命中・近い大きい爆発・探照灯。鳴り始める時刻で）。
+// v0.7.2 S3: ベッドの濾波器（ループの束と曲の束 → 低域通過 → master。単発は通らない）と命中スローの音（systems/sfx-slowmo。tick が毎フレーム追いつきの step）。
 import {
   SFX_FIRST_FADE, SFX_KEYS, SFX_LIMITER, SFX_MASTER_GAIN, SFX_MUTE_TIME_CONSTANT_S, SFX_SAMPLE_RATE, SFX_SEED_PLAY, SFX_TABLE, SFX_UI_PENDING_S, SFX_VOICES, type SfxKey,
 } from '../config/sfx-config';
@@ -23,6 +24,7 @@ import type { SfxBuffer, SfxCtx, SfxGainNode, SfxPanNode, SfxSource } from './sf
 import { SfxLoopPlayer } from './sfx-loop-player';
 import { SfxMusicDuck } from './sfx-music-duck';
 import { SfxMusicPlayer, type SfxMusicStats } from './sfx-music-player';
+import { SfxSlowMo, type SfxSlowStats } from './sfx-slowmo';
 import { SfxWatchdog, sfxSwallow } from './sfx-watchdog';
 
 const RUNNING = 'running';
@@ -57,6 +59,8 @@ export interface SfxStats {
   music: SfxMusicStats;
   ducks: number;
   duckReworks: number;
+  /** v0.7.2 S3: 命中スローの音 */
+  slow: SfxSlowStats;
 }
 
 /** 確かめの口（頼まれた単発 1 つ。rate は揺れの後。flat は位置なし。delayS は遅らせる秒＝S4） */
@@ -68,12 +72,14 @@ export class SfxEngine {
   tap: SfxTap | null = null;
   /** 束ねの出口（消音の音量）。scripts/headless/sfx-live が波形の頂を測るのにつなぐ */
   readonly master: SfxGainNode;
-  /** ループの束（master へ直につなぐ）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
+  /** ループの束（v0.7.2 S3 からベッドの濾波器を通して master へ。リミッタは通さない）と、ループ 5 本の再生（S3。systems/sfx-mission が systems/sfx-bus を通して動かす） */
   readonly loopBus: SfxGainNode;
   readonly loops: SfxLoopPlayer;
   /** 曲の再生（v0.7.2 S1。systems/sfx-bus の sfxMusic… が動かす）と、合図で曲を下げる（S2） */
   readonly music: SfxMusicPlayer;
   readonly duck: SfxMusicDuck;
+  /** 命中スローの音（v0.7.2 S3。ベッドの濾波器と曲・ループの rate。systems/sfx-bus の sfxLoops・sfxLoopsStop・sfxMusic が動かす） */
+  readonly slow: SfxSlowMo;
   private readonly fade: SfxGainNode;
   private readonly voiceGain: SfxGainNode[] = [];
   private readonly voicePan: (SfxPanNode | null)[] = [];
@@ -111,8 +117,10 @@ export class SfxEngine {
     this.master.connect(ctx.destination);
     const shots = ctx.createGain();
     shots.connect(limiter);
+    const bed = ctx.createBiquadFilter(); // v0.7.2 S3: ベッドの濾波器（ループの束と曲の束が通る。ふだん素通し）
+    bed.connect(this.master);
     this.loopBus = ctx.createGain();
-    this.loopBus.connect(this.master);
+    this.loopBus.connect(bed);
     for (let i = 0; i < SFX_VOICES; i++) {
       const g = ctx.createGain();
       const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
@@ -125,8 +133,9 @@ export class SfxEngine {
       this.voiceSrc.push(null);
     }
     this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);
-    this.music = new SfxMusicPlayer(ctx, this.master, wall);
+    this.music = new SfxMusicPlayer(ctx, bed, wall);
     this.duck = new SfxMusicDuck(this.music.duck);
+    this.slow = new SfxSlowMo(ctx, bed, this.music.slots);
     this.watchdog = new SfxWatchdog(ctx);
   }
 
@@ -175,7 +184,7 @@ export class SfxEngine {
     sfxSwallow(this.ctx.resume());
   }
 
-  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、曲（作る仕事と 10 Hz の決め）、10 Hz で context の見張り（L3c）。wallMs は実時間 */
+  /** 毎フレーム（Boot が付けた PRE_STEP から）: ゲームの時計を進め、覚えた最初のタップを鳴らし、命中スローの追いつき（S3）、曲（作る仕事と 10 Hz の決め）、10 Hz で context の見張り（L3c）。wallMs は実時間 */
   tick(dtS: number, wallMs: number): void {
     this.gameS += dtS;
     const key = this.pendingKey;
@@ -187,6 +196,7 @@ export class SfxEngine {
         this.playFlat(key, this.pendingRate, this.pendingGain);
       }
     }
+    this.slow.step();
     this.music.update(dtS);
     this.watchdog.tick(wallMs);
   }
@@ -243,7 +253,7 @@ export class SfxEngine {
       idleDrops: this.idleDrops, noBuffer: this.noBuffer, pendingPlayed: this.pendingPlayed, kicks: this.kicks, watchdogKicks: this.watchdog.kicks,
       played: Array.from(this.mixer.played), dropped: Array.from(this.mixer.dropped),
       loops: this.loops.liveSources, loopStarts: this.loops.starts, loopStops: this.loops.stops, loopWrites: this.loops.writes, music: this.music.stats(),
-      ducks: this.duck.ducks, duckReworks: this.duck.reworked,
+      ducks: this.duck.ducks, duckReworks: this.duck.reworked, slow: this.slow.stats(),
     };
   }
 

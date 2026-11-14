@@ -9,7 +9,11 @@
 //   ゲームのつなぎ（単発 → リミッタ → master・ループ × 0.5 → master・曲の束 → master）で「曲なし」と「曲あり」を 2 回通し、門を出す: 出口の頂 < 0.9・1.0 超え 0%・前の 1 秒に爆発の無い
 //   爆発の飛び出し（頭 0.3 秒 − 直前 1 秒）の窓ごとの中央値 ≥ 6.5 dB・合図（鍵ごと）と爆発の飛び出しの中央値の下がり（曲なし − 曲あり）≤ 0.5 dB（警報は ≤ 0.2 dB）。爆弾の笛の頭は 0.5〜1.1 秒。
 //   JSON=<file> に窓ごとの数を書く。メニューの窓（raw-menu-*.json）は S1 のまま（UI の音が曲より ≥ 12 dB）。
-// 実行: RAW=<raw-*.json のあるディレクトリ> [BUS=1,0.5] [JSON=<file>] node scripts/headless/sfx-offline.mjs
+// v0.7.2 S3（命中スローのベッドの濾波器。spec-v0720 §4.5・brief L30）: BED=<Hz>（ゲームは config/sfx-music-config の SFX_SLOW_SHAPE.idleHz＝20000）でループの束と曲の束を低域通過（BiquadFilter・
+//   Q は既定）に通してから master へ（ゲームの S3 のつなぎ）。CTX_SR=<Hz> は context の速さ（既定は raw の 22,050 Hz＝濾波器の Hz がナイキストより上で素通し。端末の 44,100・48,000 では
+//   標本は context が補う）。BEDCHECK=1 は曲ありの窓を「濾波器なし（S2）」と「BED の濾波器あり（S3）」の 2 回通し、窓ごとの出口の頂・RMS・合図と爆発の頭の差（dB）の最大を出す
+//   （門 ±0.3 dB）。S2_JSON=<S2 の JSON> は今の回の曲ありの数と S2 の回の数の窓ごとの差の最大を出す。
+// 実行: RAW=<raw-*.json のあるディレクトリ> [BUS=1,0.5] [JSON=<file>] [BED=20000] [CTX_SR=48000] [BEDCHECK=1] [S2_JSON=<file>] node scripts/headless/sfx-offline.mjs
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from './lib.mjs';
@@ -18,6 +22,10 @@ if (!process.env.RAW) throw new Error('RAW=<raw-*.json のあるディレクト�
 const LIMITER = { threshold: -10, knee: 6, ratio: 12, attack: 0.003, release: 0.25 };
 const MASTER = 0.8;
 const BUS = (process.env.BUS ?? '1,0.5').split(',').map(Number);
+/** S3: ベッドの濾波器の Hz（0 は無し＝S2 のつなぎ）・context の速さ（0 は raw の速さ）・濾波器ありとなしを比べるか */
+const BED = Number(process.env.BED ?? 0);
+const CTX_SR = Number(process.env.CTX_SR ?? 0);
+const BEDCHECK = process.env.BEDCHECK === '1';
 
 /** ページの中: 1 件・1 案を本物のリミッタに通して数を返す */
 async function render(o) {
@@ -73,12 +81,15 @@ async function render(o) {
   return { peak, over: over / Math.max(1, n - o.pre), pops, ui };
 }
 
-/** ページの中（S2）: 任務の窓をゲームのつなぎで通し（曲は withMusic の時だけ）、出口の頂・1.0 超え・合図と爆発の頭の飛び出しを返す */
+/**
+ * ページの中（S2）: 任務の窓をゲームのつなぎで通し（曲は withMusic の時だけ）、出口の頂・1.0 超え・合図と爆発の頭の飛び出しを返す。
+ * S3: bedHz > 0 はループと曲を低域通過の濾波器に通す（ゲームのベッドの濾波器）。ctxSr > 0 は context の速さ（標本の位置は raw の速さから換えて読む）
+ */
 async function renderMission(o) {
   const f32 = (b64) => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Float32Array(u.buffer); };
-  const n = f32(o.left).length, sr = o.sr;
+  const n0 = f32(o.left).length, sr0 = o.sr, sr = o.ctxSr > 0 ? o.ctxSr : sr0, k = sr / sr0, n = Math.ceil(n0 * k);
   const ctx = new OfflineAudioContext(2, n, sr);
-  const buf = (chs) => { const b = ctx.createBuffer(chs.length, n, sr); chs.forEach((x, i) => b.copyToChannel(x, i)); return b; };
+  const buf = (chs) => { const b = ctx.createBuffer(chs.length, n0, sr0); chs.forEach((x, i) => b.copyToChannel(x, i)); return b; };
   const comp = ctx.createDynamicsCompressor();
   for (const k of ['threshold', 'knee', 'ratio', 'attack', 'release']) comp[k].value = o.limiter[k];
   const master = ctx.createGain();
@@ -86,25 +97,29 @@ async function renderMission(o) {
   comp.connect(master);
   master.connect(ctx.destination);
   const src = (b, to, g) => { const s = ctx.createBufferSource(); s.buffer = b; const m = ctx.createGain(); m.gain.value = g; s.connect(m); m.connect(to); s.start(0); };
+  let bed = master;
+  if (o.bedHz > 0) { bed = ctx.createBiquadFilter(); bed.type = 'lowpass'; bed.frequency.value = o.bedHz; bed.connect(master); } // S3: ベッドの濾波器（Q は既定）
   src(buf([f32(o.left), f32(o.right)]), comp, 1);
-  src(buf([f32(o.loops)]), master, o.bus);
-  if (o.withMusic) src(buf([f32(o.music)]), master, o.musicGain);
+  src(buf([f32(o.loops)]), bed, o.bus);
+  if (o.withMusic) src(buf([f32(o.music)]), bed, o.musicGain);
   const out = await ctx.startRendering();
   const L = out.getChannelData(0), R = out.getChannelData(1);
+  const pre = Math.round(o.pre * k);
   let peak = 0, over = 0, sum = 0;
-  for (let i = o.pre; i < n; i++) { const a = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (a > peak) peak = a; if (a > 1) over++; sum += L[i] * L[i] + R[i] * R[i]; }
+  for (let i = pre; i < n; i++) { const a = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (a > peak) peak = a; if (a > 1) over++; sum += L[i] * L[i] + R[i] * R[i]; }
   const power = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += L[i] * L[i] + R[i] * R[i]; return s / Math.max(1, Math.min(n, b) - Math.max(0, a)); };
   // 曲だけの出口の強さ（左右に同じ＝2 倍。cmr＝頭の強さ（曲なし）÷ 同じ頭の曲の強さ＝合図が曲より何 dB 上か）
   const mu = o.withMusic ? f32(o.music) : null, mg = o.musicGain * o.master;
-  const musicPower = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n, b); i++) s += 2 * (mu[i] * mg) ** 2; return s / Math.max(1, Math.min(n, b) - Math.max(0, a)); };
+  const musicPower = (a, b) => { let s = 0; for (let i = Math.max(0, a); i < Math.min(n0, b); i++) s += 2 * (mu[i] * mg) ** 2; return s / Math.max(1, Math.min(n0, b) - Math.max(0, a)); };
   const pops = o.onsets.filter((on) => on.at >= o.pre && (on.fam === 'cue' || (on.fam === 'blast' && on.key !== 'sink'))).map((on) => {
-    let h0 = 0, h1 = Math.min(Math.round(0.3 * sr), on.len);
-    if (on.key === 'bomb_fall') { h0 = Math.round(0.5 * sr); h1 = Math.round(1.1 * sr); }
-    const iso = on.fam === 'blast' && !o.onsets.some((x) => x.fam === 'blast' && x.key !== 'sink' && x.at < on.at && x.at >= on.at - sr);
-    const ph = power(on.at + h0, on.at + h1), pp = power(on.at - sr, on.at);
+    let h0 = 0, h1 = Math.min(Math.round(0.3 * sr0), on.len);
+    if (on.key === 'bomb_fall') { h0 = Math.round(0.5 * sr0); h1 = Math.round(1.1 * sr0); }
+    const iso = on.fam === 'blast' && !o.onsets.some((x) => x.fam === 'blast' && x.key !== 'sink' && x.at < on.at && x.at >= on.at - sr0);
+    const at = (v) => Math.round(v * k); // raw の標本 → 出口の標本
+    const ph = power(at(on.at + h0), at(on.at + h1)), pp = power(at(on.at - sr0), at(on.at));
     return { key: on.key, fam: on.fam, iso, ph, pm: mu ? musicPower(on.at + h0, on.at + h1) : 0, pop: 10 * Math.log10((ph + 1e-12) / (pp + 1e-12)) };
   });
-  return { peak, over: over / Math.max(1, n - o.pre), rms: Math.sqrt(sum / 2 / Math.max(1, n - o.pre)), pops };
+  return { peak, over: over / Math.max(1, n - pre), rms: Math.sqrt(sum / 2 / Math.max(1, n - pre)), pops };
 }
 
 const files = readdirSync(process.env.RAW).filter((f) => /^raw-.*\.json$/.test(f)).sort();
@@ -113,13 +128,15 @@ const page = await (await browser.newContext()).newPage();
 let worst = 0, uiBad = 0;
 const med = (a) => { const x = [...a].sort((p, q) => p - q); return x.length ? x[x.length >> 1] : NaN; };
 const mission = [];
+const bedRows = [];
 for (const f of files) {
   const raw = JSON.parse(readFileSync(join(process.env.RAW, f), 'utf8'));
   if (raw.onsets && raw.music) {
     // S2: 任務の窓（曲なし・曲あり）
-    const o = { ...raw, limiter: LIMITER, master: MASTER, bus: BUS[BUS.length - 1] };
+    const o = { ...raw, limiter: LIMITER, master: MASTER, bus: BUS[BUS.length - 1], bedHz: BED, ctxSr: CTX_SR };
     const off = await page.evaluate(renderMission, { ...o, withMusic: false });
     const on = await page.evaluate(renderMission, { ...o, withMusic: true });
+    if (BEDCHECK) bedRows.push({ n: `${raw.name}-${raw.tag}`, a: await page.evaluate(renderMission, { ...o, withMusic: true, bedHz: 0 }), b: on });
     const iso = (r) => r.pops.filter((p) => p.iso).map((p) => p.pop);
     const bl = (r) => r.pops.filter((p) => p.fam === 'blast').map((p) => p.pop);
     mission.push({ name: raw.name, tag: raw.tag, startS: raw.startS, ducks: raw.ducks, off, on });
@@ -166,6 +183,29 @@ if (mission.length) {
   for (const m of mission) m.off.pops.forEach((p, i) => { const q = m.on.pops[i]; if (!q || q.pm <= 0) return; (cm[p.fam === 'blast' ? '爆発' : p.key] ??= []).push(10 * Math.log10((p.ph + 1e-12) / q.pm)); });
   console.log(`参考 合図・爆発の頭 − 同じ頭の曲（cmr・中央値／一番悪い・下げの後）: ${Object.keys(cm).sort().map((k) => `${k} ${med(cm[k]).toFixed(1)}／${Math.min(...cm[k]).toFixed(1)}`).join('  ')}`);
   if (process.env.JSON) (await import('node:fs')).writeFileSync(process.env.JSON, JSON.stringify(mission.map((m) => ({ ...m, off: { ...m.off }, on: { ...m.on } }))));
+  // S3: ベッドの濾波器は素通しか（同じ窓の「濾波器なし」a と今の回 b の差・S2 の回との差。dB の差の最大）
+  const db = (v) => 20 * Math.log10(v + 1e-12);
+  const diff = (pairs) => {
+    let peak = 0, rms = 0, pop = 0, worstN = '-';
+    for (const { n, a, b } of pairs) {
+      const dp = Math.abs(db(a.peak) - db(b.peak)), dr = Math.abs(db(a.rms) - db(b.rms));
+      const dq = a.pops.reduce((m, p, i) => (b.pops[i] ? Math.max(m, Math.abs(p.pop - b.pops[i].pop), Math.abs(10 * Math.log10((p.ph + 1e-12) / (b.pops[i].ph + 1e-12)))) : m), 0);
+      if (Math.max(dp, dr, dq) > Math.max(peak, rms, pop)) worstN = n;
+      peak = Math.max(peak, dp); rms = Math.max(rms, dr); pop = Math.max(pop, dq);
+    }
+    return { peak, rms, pop, worstN };
+  };
+  const bedText = `ベッドの濾波器 ${BED || 'なし'} Hz・context ${CTX_SR || '22050（raw）'} Hz`;
+  if (BEDCHECK && bedRows.length) {
+    const d = diff(bedRows);
+    check(Math.max(d.peak, d.rms, d.pop) <= 0.3, `S3 ${bedText}: 濾波器なし → ありの差の最大（${bedRows.length} 窓）: 出口の頂 ${d.peak.toFixed(3)}・RMS ${d.rms.toFixed(3)}・合図と爆発の頭（飛び出しと強さ）${d.pop.toFixed(3)} dB（門 ±0.3・一番の窓 ${d.worstN}）`);
+  }
+  if (process.env.S2_JSON) {
+    const s2 = JSON.parse(readFileSync(process.env.S2_JSON, 'utf8'));
+    const pairs = mission.map((m) => ({ n: `${m.name}-${m.tag}`, a: (s2.find((x) => x.name === m.name && x.tag === m.tag) ?? {}).on, b: m.on })).filter((p) => p.a);
+    const d = diff(pairs);
+    check(pairs.length === s2.length && Math.max(d.peak, d.rms, d.pop) <= 0.3, `S3 ${bedText}: S2 の回（${process.env.S2_JSON.split('/').slice(-3).join('/')}）との差の最大（${pairs.length}/${s2.length} 窓）: 出口の頂 ${d.peak.toFixed(3)}・RMS ${d.rms.toFixed(3)}・合図と爆発の頭 ${d.pop.toFixed(3)} dB（門 ±0.3・一番の窓 ${d.worstN}）`);
+  }
 }
 console.log(`本物のリミッタ（Chromium）: 「後」の案の出口の頂の最大 ${worst.toFixed(3)}（1 未満が目標）`);
 process.exitCode = worst < 1 && uiBad === 0 && bad === 0 ? 0 : 1;

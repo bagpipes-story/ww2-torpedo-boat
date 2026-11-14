@@ -1,6 +1,8 @@
 // 曲の試聴の場（v0.7.2 S1。spec-v0720 §7・brief L14）: URL に ?sfxlab がある時だけ Boot が Title の代わりにここへ来る（ふだんの URL は変わらない）。v0.7.1 の効果音の試聴の場は
 // 下の段の「効果音の試聴へ」から。行 0 はタイトルの曲の候補 A・B・C と「止める」。S2（brief L25）: 行 1「任務の曲」＝段（静か・緊張・戦闘）・自動（8 秒ずつ回す）・止める、
-// 行 2「効果音と一緒に」＝台本 3 つ（systems/sfx-lab-demo。聞き手 (0, 0)・本物の距離の帯・合図・ループ＝ゲームと同じ大きさと下げ）・止める。S3 で命中スローの行。
+// 行 2「効果音と一緒に」＝台本 3 つ（systems/sfx-lab-demo。聞き手 (0, 0)・本物の距離の帯・合図・ループ＝ゲームと同じ大きさと下げ）・止める。
+// S3（brief L31）: 行 2 の 4 つ目「命中＋スロー」（台本）と行 3「命中スロー」＝案 A・B・C（押すたびにその案にして、今のベッド＝行 2 の台本〔鳴っていなければ「静か＋海」から〕に魚雷の命中と
+// data の秒の命中スロー＝ゲームと同じ道。選んだ案のボタンを強く。場を出る時に既定の案へ戻す）。ボタンの題と 2 行目は ui/music-lab-layout（250 行に収めるため移した）。
 // 押す: まだ作っていなければ作り始め（そのボタンの 2 行目に「作成中…」・右下に「作成中… B 40%」）、できたらそのタップの続きとして鳴らす（もう一度押さなくてよい）。
 // 鳴っている（作っている）ボタンをもう一度押すと止める。別の曲は、その曲ができてから 0.5 秒で重ねる（それまで今の曲が鳴る）。任務の曲の段は同じ家族のまま段だけ移る（ゲームの時定数）。
 // 行 2 の台本は任務の曲が鳴ってから始める。どのボタンもボタンの音を鳴らさない（silent。戻る・効果音の試聴へは鳴らす）。
@@ -10,24 +12,24 @@
 // ゲームの保存（「音」「曲」）には触らない: 場にいる間だけ消音を解き曲をオンにし、出る時に保存の値へ戻す。出る時に候補の標本を捨てる（ゲームの列の曲は残す）。
 // 静的な画面: 物体は create で 1 回だけ作る。update は曲の再生の状態を読み、変わった時だけ文を書き換える（毎フレームの setText をしない＝§7）。
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, REGISTRY_KEY_DATA, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
+import { getGameData } from '../config/game-data';
 import {
-  MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_MOODS, MUSIC_LAB_AUTO_STEP_S, MUSIC_LAB_AUTO_SUB_JA, MUSIC_LAB_BUILDING_SUB_JA, MUSIC_LAB_DEMO_SUBS_JA, MUSIC_LAB_DEMO_TITLES_JA, MUSIC_LAB_DEMOS,
-  MUSIC_LAB_FAMILY_JA, MUSIC_LAB_HEAD_JA, MUSIC_LAB_LETTERS, MUSIC_LAB_MOOD_SUBS_JA, MUSIC_LAB_MOOD_TITLES_JA, MUSIC_LAB_NAMES_JA, MUSIC_LAB_NOTES_JA, MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA,
-  MUSIC_LAB_STATUS_BUILDING_JA, MUSIC_LAB_STATUS_IDLE_JA, MUSIC_LAB_STATUS_NONE_JA, MUSIC_LAB_STATUS_PLAYING_JA, MUSIC_LAB_STATUS_STOPPED_JA, MUSIC_LAB_STATUS_WAIT_JA, MUSIC_LAB_STOP_JA,
-  MUSIC_LAB_STOP_SUB_JA, MUSIC_LAB_TO_SFX_JA,
+  MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_MOODS, MUSIC_LAB_AUTO_STEP_S, MUSIC_LAB_BUILDING_SUB_JA, MUSIC_LAB_DEMO_TITLES_JA, MUSIC_LAB_DEMOS, MUSIC_LAB_FAMILY_JA, MUSIC_LAB_HEAD_JA, MUSIC_LAB_LETTERS,
+  MUSIC_LAB_MOOD_TITLES_JA, MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA, MUSIC_LAB_STATUS_BUILDING_JA, MUSIC_LAB_STATUS_IDLE_JA, MUSIC_LAB_STATUS_NONE_JA,
+  MUSIC_LAB_STATUS_PLAYING_JA, MUSIC_LAB_STATUS_STOPPED_JA, MUSIC_LAB_STATUS_WAIT_JA, MUSIC_LAB_TO_SFX_JA,
 } from '../config/music-lab-config';
-import { MUSIC_CTX_LAB, MUSIC_CTX_NONE, MUSIC_LAYER_KEYS, MUSIC_TITLE_KEYS, type MusicKey } from '../config/sfx-music-config';
+import { MUSIC_CTX_LAB, MUSIC_CTX_NONE, MUSIC_LAYER_KEYS, MUSIC_TITLE_KEYS, SFX_SLOW_DEFAULT_ID, SFX_SLOW_IDS, type MusicKey } from '../config/sfx-music-config';
 import {
   SOUND_LAB_BACK_JA, SOUND_LAB_BACK_PX, SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_PX, SOUND_LAB_HEAD_Y, SOUND_LAB_LABEL_PX, SOUND_LAB_LABEL_SUB_PX, SOUND_LAB_NOTE_PX, SOUND_LAB_STATUS_PX,
 } from '../config/sound-lab-config';
 import { HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
 import { MUSIC_TITLE_DEFAULT_ID } from '../assets/sfx-music-themes';
 import { SfxLabDemo } from '../systems/sfx-lab-demo';
-import { sfxCanPlay, sfxMusic, sfxMusicAudition, sfxMusicEnabled, sfxMusicLabBuilding, sfxMusicLabPlaying, sfxMusicLabProgress, sfxMusicMood, sfxSetMuted } from '../systems/sfx-bus';
+import { sfxCanPlay, sfxMusic, sfxMusicAudition, sfxMusicEnabled, sfxMusicLabBuilding, sfxMusicLabPlaying, sfxMusicLabProgress, sfxMusicMood, sfxSetMuted, sfxSlowVariant } from '../systems/sfx-bus';
 import { musicEnabled, soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
-import { MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS, musicLabButtonSub, musicLabButtonTitle, musicLabSideRect } from '../ui/music-lab-layout';
+import { MUSIC_LAB_ROW_COLS, MUSIC_LAB_ROW_DEMO, MUSIC_LAB_ROW_MOOD, MUSIC_LAB_ROW_SLOW, MUSIC_LAB_ROW_TITLE, musicLabHasStop, musicLabLabel, musicLabSideRect } from '../ui/music-lab-layout';
 import { soundLabBackRect, soundLabButtonRect, soundLabLabelRect, type SoundLabFrame } from '../ui/sound-lab-layout';
 
 const NONE = -1;
@@ -37,10 +39,11 @@ const PERCENT = 100;
 const MS_PER_S = 1000;
 /** 鳴らせるか（sfxCanPlay の 3 つ: エンジンなし・止まっている・鳴らせる）を数に */
 const CAN_NONE = 0, CAN_WAIT = 1, CAN_PLAY = 2;
-/** 行（行 0 タイトルの曲・行 1 任務の曲・行 2 効果音と一緒に）と、行ごとの列の数・選んだボタンの番号（行 × ROW_SPAN ＋ 列）。行 1 の「自動」の列 */
-const ROW_TITLE = 0, ROW_MOOD = 1, ROW_DEMO = 2;
-const ROW_COLS: readonly number[] = [MUSIC_LAB_ROW0_COLS, MUSIC_LAB_ROW1_COLS, MUSIC_LAB_ROW2_COLS];
+/** 行（ui/music-lab-layout）と、行ごとの列の数・選んだボタンの番号（行 × ROW_SPAN ＋ 列）。行 1 の「自動」の列。ゲームの曲・ゲームの命中スローの案の番号（「記号（今）」） */
+const ROW_TITLE = MUSIC_LAB_ROW_TITLE, ROW_MOOD = MUSIC_LAB_ROW_MOOD, ROW_DEMO = MUSIC_LAB_ROW_DEMO, ROW_SLOW = MUSIC_LAB_ROW_SLOW, ROW_COLS = MUSIC_LAB_ROW_COLS;
 const ROW_SPAN = 8;
+const TITLE_DEFAULT = MUSIC_TITLE_KEYS.indexOf(MUSIC_TITLE_DEFAULT_ID);
+const SLOW_DEFAULT = SFX_SLOW_IDS.indexOf(SFX_SLOW_DEFAULT_ID);
 const COL_AUTO = MUSIC_LAB_MOOD_TITLES_JA.length;
 /** 曲の印: タイトルの候補は MUSIC_TITLE_KEYS の番号・任務の家族は FAMILY（作っている層は FAMILY ＋ 層） */
 const FAMILY = 10;
@@ -58,8 +61,10 @@ export class MusicLabScene extends Phaser.Scene {
   private tapped = false;
   private autoI = 0;
   private autoS = 0;
-  /** 前に書いた状態（変わった時だけ文を書く）: 鳴らしている曲・作っている曲・進みの %・選んだボタン・鳴らせるか・自動の段 */
-  private readonly shown = new Int16Array(6);
+  /** S3: 命中スローの案（SFX_SLOW_IDS の番号。選んだ案のボタンを強く） */
+  private slowI = SLOW_DEFAULT;
+  /** 前に書いた状態（変わった時だけ文を書く）: 鳴らしている曲・作っている曲・進みの %・選んだボタン・鳴らせるか・自動の段・命中スローの案 */
+  private readonly shown = new Int16Array(7);
   private leaving = false;
 
   constructor() {
@@ -71,6 +76,8 @@ export class MusicLabScene extends Phaser.Scene {
     this.leaving = false;
     this.chosen = NONE;
     this.tapped = false;
+    this.slowI = SLOW_DEFAULT;
+    this.demo.slowS = getGameData(this.registry, REGISTRY_KEY_DATA).hitRateModel.feel.hit_slowmo_seconds; // 命中スローの秒（世界と同じ data）
     this.shown.fill(UNSHOWN);
     this.buttons = [];
     this.rows = [];
@@ -85,7 +92,7 @@ export class MusicLabScene extends Phaser.Scene {
       const list: MenuButton[] = [];
       const subs: string[] = [];
       for (let col = 0; col < ROW_COLS[row]!; col++) {
-        const [title, sub] = this.labelOf(row, col);
+        const [title, sub] = musicLabLabel(row, col, TITLE_DEFAULT, SLOW_DEFAULT);
         subs.push(sub);
         const spec = { ...soundLabButtonRect(row, col, ROW_COLS[row]!, frame), title, titlePx: SOUND_LAB_BUTTON_PX, sub, subPx: SOUND_LAB_NOTE_PX, align: 'center' as const, silent: true };
         const code = row * ROW_SPAN + col;
@@ -112,7 +119,8 @@ export class MusicLabScene extends Phaser.Scene {
       this.rows = [];
       this.subs = [];
       this.status = undefined;
-      this.demo.stop(); // 台本のループを止めて聞き手を外す
+      this.demo.stop(); // 台本のループを止めて聞き手を外す（命中スローの音も戻る）
+      sfxSlowVariant(SFX_SLOW_DEFAULT_ID); // 命中スローはゲームの案へ
       sfxMusic(MUSIC_CTX_NONE); // 候補の標本を捨てる（ゲームの列の曲は残す）。行き先の Title はメニューの曲を頼む
       sfxSetMuted(!soundEnabled());
       sfxMusicEnabled(musicEnabled());
@@ -140,22 +148,35 @@ export class MusicLabScene extends Phaser.Scene {
     const c = sfxCanPlay();
     const can = c === null ? CAN_NONE : c ? CAN_PLAY : CAN_WAIT;
     const s = this.shown;
-    if (s[0] === p && s[1] === b && s[2] === pct && s[3] === this.chosen && s[4] === can && s[5] === this.autoI) return;
+    if (s[0] === p && s[1] === b && s[2] === pct && s[3] === this.chosen && s[4] === can && s[5] === this.autoI && s[6] === this.slowI) return;
     s[0] = p;
     s[1] = b;
     s[2] = pct;
     s[3] = this.chosen;
     s[4] = can;
     s[5] = this.autoI;
+    s[6] = this.slowI;
     this.refresh(p, b, pct, can);
   }
 
-  /** ボタンを押した（行 × ROW_SPAN ＋ 列）: 「止める」と、選んであるボタン（鳴っている・作っている）をもう一度押すと止める。ほかは鳴らす（まだなら作ってから） */
+  /** ボタンを押した（行 × ROW_SPAN ＋ 列）: 「止める」と、選んであるボタン（鳴っている・作っている）をもう一度押すと止める。ほかは鳴らす（まだなら作ってから）。行 3 は案を替えて命中とスロー */
   private tap(code: number): void {
     this.tapped = true;
-    const row = Math.floor(code / ROW_SPAN);
-    const col = code - row * ROW_SPAN;
-    const stop = col === ROW_COLS[row]! - 1 || code === this.chosen;
+    let row = Math.floor(code / ROW_SPAN);
+    let col = code - row * ROW_SPAN;
+    if (row === ROW_SLOW) {
+      this.slowI = col;
+      sfxSlowVariant(SFX_SLOW_IDS[col]!);
+      this.demo.queueHit(); // 台本が鳴っていれば今、まだなら始まった時に（台本でなければ「静か＋海」から）
+      if (Math.floor(this.chosen / ROW_SPAN) === ROW_DEMO) {
+        this.update(0, 0);
+        return;
+      }
+      row = ROW_DEMO;
+      col = 0;
+      code = ROW_DEMO * ROW_SPAN;
+    }
+    const stop = (musicLabHasStop(row) && col === ROW_COLS[row]! - 1) || code === this.chosen;
     this.chosen = stop ? NONE : code;
     if (stop || row !== ROW_DEMO) this.demo.stop(); // 別の台本へは update が頭から替える（ループは続ける）
     if (stop) {
@@ -178,7 +199,7 @@ export class MusicLabScene extends Phaser.Scene {
     for (let row = 0; row < this.rows.length; row++) {
       for (let col = 0; col < this.rows[row]!.length; col++) {
         const code = row * ROW_SPAN + col;
-        const on = row === ROW_TITLE ? col === p : p === FAMILY && code === this.chosen;
+        const on = row === ROW_TITLE ? col === p : row === ROW_SLOW ? col === this.slowI : p === FAMILY && code === this.chosen;
         this.rows[row]![col]!.setSub(building && code === this.chosen ? MUSIC_LAB_BUILDING_SUB_JA : this.subs[row]![col]!);
         this.rows[row]![col]!.setSelected(on);
       }
@@ -192,17 +213,6 @@ export class MusicLabScene extends Phaser.Scene {
     else if (p !== NONE) text = `${MUSIC_LAB_STATUS_PLAYING_JA}${this.playingName(p)}`;
     else text = this.tapped && this.chosen === NONE ? MUSIC_LAB_STATUS_STOPPED_JA : MUSIC_LAB_STATUS_IDLE_JA;
     if (st.text !== text) st.setText(text);
-  }
-
-  /** ボタンの題と 2 行目（create だけ。行 0 はゲームの曲を「記号（今）」・行 1 は段と自動・行 2 は台本・各行の最後は「止める」） */
-  private labelOf(row: number, col: number): [string, string] {
-    if (col === ROW_COLS[row]! - 1) return [MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA];
-    if (row === ROW_TITLE) {
-      const d = MUSIC_TITLE_KEYS[col] === MUSIC_TITLE_DEFAULT_ID;
-      return [musicLabButtonTitle(MUSIC_LAB_LETTERS[col]!, MUSIC_LAB_NAMES_JA[col]!, d), musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
-    }
-    if (row === ROW_MOOD) return col === COL_AUTO ? [MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_SUB_JA] : [MUSIC_LAB_MOOD_TITLES_JA[col]!, MUSIC_LAB_MOOD_SUBS_JA[col]!];
-    return [MUSIC_LAB_DEMO_TITLES_JA[col]!, MUSIC_LAB_DEMO_SUBS_JA[col]!];
   }
 
   /** 曲の印 → 状態の一文の名前（タイトルの候補は記号・任務の家族は「任務の曲 1/3」の層） */

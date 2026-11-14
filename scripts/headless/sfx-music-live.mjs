@@ -9,10 +9,13 @@
 //   v0.7.2 S2: ゲームの列は既定のタイトルの曲と任務の家族 3 層（Title・Briefing の間に作り終える＝4 本を待ってから進む）。Mission は家族の 3 層（同じ when）・もう一度の任務も 3 層で
 //     作り直さない・一時停止で頂 ≈ 0・Result の鐘の後に 1。
 //   notap: 既定の状態でタップを 1 つもしない（context は suspended のまま）: 曲の標本はできるが、音源 0・書き込み 0・波形は無音（止まっている context に積まない）。
+//   v0.7.2 S3（命中スロー）: 1 回目の帰投の直前と「任務をやめる」の直前に、世界の slowMoLeftS へ data の秒を入れて（命中の代わり）0.3 秒の後に終える＝スローの途中で任務が終わる。
+//     Result・Title でエンジンの stats().slow が素通し（形 null・濾波器の Hz 20000・曲の rate 1）で、Result の曲の 2 kHz より上の強さ（鐘の後の 1.2 秒）が、スローの無い 2〜4 回目の
+//     中央値の ±1.5 dB（こもっていない）。
 // 音の状態（lib.mjs の環境変数）: 既定・AUDIO=1（autoplay を許す＝最初から running）・NOAUDIO=1（AudioContext なし＝エンジンが無い。同じ流れがページのエラー 0 で回ることだけ見る）。
 // 門（✓/✗ を出し、✗ があれば終了コード 1）。数は回すたびに少し揺れる（実時間）。
 // 実行: SITE=<site> [FLOW=title|notap] [W=1560] [ROW=<任務の行の題>] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-music-live.mjs
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { VIEWPORTS, chromium, envNum, serve } from './lib.mjs';
 
 if (!process.env.SITE) throw new Error('SITE=<site> が要る');
@@ -24,6 +27,9 @@ const LIVE_MAX = 6;
 /** v0.7.2 S2: ゲームの列の曲の数（既定のタイトルの曲 1 ＋ 任務の家族 3）と常駐の上限（config/sfx-music-config の MUSIC_MAX_RESIDENT_SAMPLES） */
 const GAME_SONGS = 4;
 const RESIDENT_MAX = 1_800_000;
+/** v0.7.2 S3: 命中スローの秒（世界と同じ data）と、ベッドの濾波器の素通しの Hz（config/sfx-music-config の SFX_SLOW_SHAPE.idleHz の写し） */
+const SLOW_S = JSON.parse(readFileSync(new URL('../../data/hit_rate_model.json', import.meta.url), 'utf8')).feel.hit_slowmo_seconds;
+const IDLE_HZ = 20000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** ページの中（init script）: 曲の音源の start・stop を数える（stop の予約の時刻も覚えて「鳴っている」を数える） */
@@ -55,19 +61,25 @@ function countMusic() {
 function startMeter() {
   const sfx = window.__sfx;
   const s = window.__game.sound;
-  const m = { peak: 0, win: 0, polls: 0 };
+  const m = { peak: 0, win: 0, polls: 0, hi: 0, hiN: 0 };
   window.__meter = m;
   if (!sfx || !('context' in s) || !s.context) return false;
   const an = s.context.createAnalyser();
   an.fftSize = 8192;
+  an.smoothingTimeConstant = 0;
   sfx.master.connect(an);
   const buf = new Float32Array(an.fftSize);
+  const fb = new Float32Array(an.frequencyBinCount);
+  const k0 = Math.ceil(2000 / (s.context.sampleRate / an.fftSize)); // S3: 2 kHz より上の帯
   setInterval(() => {
     an.getFloatTimeDomainData(buf);
     let p = 0;
     for (let i = 0; i < buf.length; i++) { const v = Math.abs(buf[i]); if (v > p) p = v; }
     if (p > m.peak) m.peak = p;
     if (p > m.win) m.win = p;
+    an.getFloatFrequencyData(fb);
+    for (let i = k0; i < fb.length; i++) m.hi += 10 ** (fb[i] / 10);
+    m.hiN++;
     m.polls++;
     const c = window.__musicSrc;
     if (c) c.maxAlive = Math.max(c.maxAlive, c.alive());
@@ -84,6 +96,7 @@ function readState() {
   return {
     ctx: 'context' in s && s.context ? { state: s.context.state, t: s.context.currentTime } : null,
     music: sfx ? sfx.stats().music : null,
+    slow: sfx ? sfx.stats().slow : null,
     page: c ? { started: c.started, stopped: c.stopped, unstopped: c.started - c.stopped, alive: c.alive(), maxAlive: c.maxAlive, maxUnstopped: c.maxUnstopped, lastStart: c.starts[c.starts.length - 1] ?? null } : null,
     scenes: ['Title', 'Briefing', 'Mission', 'Hud', 'Result', 'Pause', 'MusicLab'].filter((k) => g.scene.isActive(k)),
   };
@@ -118,6 +131,10 @@ const tap = async (scene, text) => {
   await page.touchscreen.tap(c.x, c.y);
 };
 const windowPeak = async (ms) => { await page.evaluate(() => { if (window.__meter) window.__meter.win = 0; }); await sleep(ms); return page.evaluate(() => (window.__meter ? window.__meter.win : 0)); };
+/** S3: ms の間の 2 kHz より上の強さの平均（dB） */
+const windowHi = async (ms) => { await page.evaluate(() => { if (window.__meter) { window.__meter.hi = 0; window.__meter.hiN = 0; } }); await sleep(ms); return page.evaluate(() => (window.__meter && window.__meter.hiN ? 10 * Math.log10(window.__meter.hi / window.__meter.hiN + 1e-30) : NaN)); };
+/** S3: 命中の代わりに世界の残り秒を入れ、0.3 秒の後のエンジンの命中スローの数（エンジンが無ければ null） */
+const slowNow = async () => { await page.evaluate((v) => { window.__game.scene.getScene('Mission').world.slowMoLeftS = v; }, SLOW_S); await sleep(300); return page.evaluate(() => (window.__sfx ? window.__sfx.stats().slow : null)); };
 const waitScene = (k) => page.waitForFunction((key) => window.__game.scene.isActive(key), k, { timeout: 15000 });
 /** 曲の標本ができるまで（エンジンが無ければすぐ。S2: ゲームの列の 4 本ができて作業用の配列を捨てた＝列が空になった次のフレーム） */
 const waitBuilt = () => page.waitForFunction((n) => { const s = window.__sfx; if (!s) return true; const m = s.stats().music; return m.buffers >= n && !m.work; }, GAME_SONGS, { timeout: 60000 });
@@ -185,6 +202,7 @@ if (FLOW === 'notap') {
       await sleep(2000);
       res.again = [...(res.again ?? []), await note(`もう一度 ${i} の Mission`)];
     }
+    const slow = i === 0 ? await slowNow() : null; // S3: 1 回目はスローの途中で終える
     await page.evaluate(() => window.__game.scene.getScene('Mission').endMission('returned'));
     await waitScene('Result');
     await sleep(1500);
@@ -193,8 +211,8 @@ if (FLOW === 'notap') {
     const st = await note(`Result ${i + 1}（鐘の後）`);
     const ls = st.page && st.page.lastStart;
     const t0 = await page.evaluate(() => window.__delayedAt ?? null);
-    res.results.push({ early: early.music ? early.music.sources : null, sources: st.music ? st.music.sources : null, delay: ls && t0 !== null ? ls.when - t0 : null });
-    await sleep(1200);
+    const hi = await windowHi(1200);
+    res.results.push({ early: early.music ? early.music.sources : null, sources: st.music ? st.music.sources : null, delay: ls && t0 !== null ? ls.when - t0 : null, slow, after: st.slow, hi });
   }
   await tap('Result', 'もう一度');
   await waitScene('Briefing');
@@ -202,6 +220,7 @@ if (FLOW === 'notap') {
   await tap('Briefing', '出撃');
   await page.waitForFunction(() => { const g = window.__game; const m = g.scene.getScene('Mission'); return g.scene.isActive('Mission') && m.world && g.scene.isActive('Hud'); }, null, { timeout: 15000 });
   await sleep(1500);
+  res.quitSlow = await slowNow(); // S3: スローの途中で一時停止 → 任務をやめる
   await page.evaluate(() => window.__game.scene.getScene('Hud').pause.open());
   await waitScene('Pause');
   await sleep(400);
@@ -246,6 +265,11 @@ if (NO_AUDIO) {
     res.results.forEach((r, i) => check(r.early === 0 && r.sources === 1 && r.delay !== null && r.delay >= 2.2 && r.delay < 2.5, `${label}: Result ${i + 1} 回目: 1.5 秒は 0・鐘の後 ${r.delay === null ? '-' : r.delay.toFixed(2)} 秒で 1（帰投 2.2 秒＋始めの 0.05 秒＋10 Hz）`));
     check(res.quit.music.sources === 1 && res.quit.scenes.includes('Title') && !res.quit.music.paused, `${label}: 一時停止 → 任務をやめる → Title で 1（一時停止は解けている）`);
     check(last.music.builds === GAME_SONGS && !last.music.work && last.music.resident === res.built.music.resident, `${label}: 最後まで曲は作り直さない（作った曲 ${last.music.builds}・作業用の配列 ${last.music.work}・常駐 ${last.music.resident}）`);
+    // S3: スローの途中で終えた任務の後の Result・Title の曲はこもらない
+    const idle = (x) => x && !x.on && x.shown === null && x.filterHz === IDLE_HZ && x.musicRate === 1;
+    const r0 = res.results[0], his = res.results.slice(1).map((r) => r.hi).sort((a, b) => a - b), hiMed = his[his.length >> 1];
+    check(r0.slow && r0.slow.on && r0.slow.shown !== null && idle(r0.after) && Math.abs(r0.hi - hiMed) <= 1.5, `${label}: スローの途中（形 ${r0.slow ? r0.slow.shown : '-'}・${r0.slow ? r0.slow.filterHz : '-'} Hz）で終えた Result の曲はこもらない（素通し ${idle(r0.after)}・2 kHz より上 ${r0.hi.toFixed(1)} dB／スローの無い回の中央値 ${hiMed.toFixed(1)} dB・門 ±1.5）`);
+    check(res.quitSlow && res.quitSlow.on && idle(res.quit.slow), `${label}: スローの途中に一時停止 → 任務をやめる → Title の曲もこもらない（素通し ${idle(res.quit.slow)}）`);
   }
 }
 if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ label, errors, rows, res }, null, 1));

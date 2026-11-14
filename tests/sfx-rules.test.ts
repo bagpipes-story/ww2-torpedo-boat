@@ -23,6 +23,8 @@
 // - v0.7.2 S2（spec-v0720 §5.5・brief L19〜L22・L25）: 任務の曲の段の観測器 core/sfx-music-mood が純粋な層に入る（import はテレメトリの型と段の定数だけ・敵の位置・距離・見えているかの欄を
 //   読まない＝D5）。再生の層に曲を下げる systems/sfx-music-duck・音源の組 systems/sfx-music-slots（sfx-music-player から分けた）・曲の試聴の場の「効果音と一緒に」の台本 systems/sfx-lab-demo（13 本）。
 //   sfx-mission は段の 1 行（sfxMusicMood(stepSfxMood(…))）。
+// - v0.7.2 S3（spec-v0720 §6・brief L28〜L31）: 命中スローの音 systems/sfx-slowmo が再生の層に入る（14 本）。ループの束はベッドの濾波器を通って master へ。world-art の hook に命中スローの
+//   読み口の 2 行（作成で世界・破棄で null）、曲の試聴の場の hook に案を戻す 1 行＝27 行（作法の残りは tests/sfx-rules-music の S3）。
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -47,6 +49,9 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   { file: 'src/scenes/boot-scene.ts', line: '    createSfx(this.game); //' },
   { file: 'src/systems/world-art.ts', line: '    registerSfxListener(w.boat.state); //' },
   { file: 'src/systems/world-art.ts', line: '    registerSfxListener(null);\n' },
+  // v0.7.2 S3: 命中スローの読み口（世界の slowMoLeftS を読むだけ。作成で登録・破棄で外す）
+  { file: 'src/systems/world-art.ts', line: '    registerSfxSlowMo(w); //' },
+  { file: 'src/systems/world-art.ts', line: '    registerSfxListener(null);\n    registerSfxSlowMo(null);\n' },
   // S2: 絵の層の口 5 行（spec §3.1）＝水柱・砲口（大砲／機銃）・爆発・2 次の爆発・沈み始め
   { file: 'src/systems/fx-bus.ts', line: "  sparks?.spray(x, y, hit);\n  sfxAt(hit ? 'splash_l' : 'splash_s', x, y);\n" },
   { file: 'src/systems/fx-bus.ts', line: "  sparks?.muzzle(x, y, big);\n  if (big) sfxGunAt(x, y);\n  else sfxAt('mg', x, y);\n" },
@@ -73,6 +78,8 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   { file: 'src/scenes/sound-lab-scene.ts', line: '    sfxMusic(MUSIC_CTX_NONE); //' },
   { file: 'src/scenes/music-lab-scene.ts', line: '    sfxSetMuted(false);\n    sfxMusicEnabled(true);\n    sfxMusic(MUSIC_CTX_LAB);\n' },
   { file: 'src/scenes/music-lab-scene.ts', line: '    if (stop) {\n      sfxMusicAudition(null);\n    } else if (row === ROW_TITLE) {\n      sfxMusicAudition(MUSIC_TITLE_KEYS[col]!);\n' },
+  // v0.7.2 S3: 曲の試聴の場は出る時に命中スローの案をゲームの案へ戻す
+  { file: 'src/scenes/music-lab-scene.ts', line: '      sfxSlowVariant(SFX_SLOW_DEFAULT_ID); //' },
 ];
 /** 音のために触った既存の src のファイル（300 行以下を見る） */
 const TOUCHED: readonly string[] = [
@@ -94,7 +101,7 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(PLAYBACK).toEqual([
       'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-lab-demo.ts', 'src/systems/sfx-loop-player.ts',
       'src/systems/sfx-mission.ts', 'src/systems/sfx-music-build.ts', 'src/systems/sfx-music-duck.ts', 'src/systems/sfx-music-player.ts', 'src/systems/sfx-music-slots.ts',
-      'src/systems/sfx-settings.ts', 'src/systems/sfx-watchdog.ts',
+      'src/systems/sfx-settings.ts', 'src/systems/sfx-slowmo.ts', 'src/systems/sfx-watchdog.ts',
     ]);
     expect(PURE).toContain('src/core/sfx-music-mood.ts');
   });
@@ -138,7 +145,7 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(w).not.toMatch(/onended|addEventListener|setTimeout|setInterval|\.then\(|\.create\w*\(/);
     for (const f of PLAYBACK) if (!f.endsWith('/sfx-watchdog.ts')) expect(code(f), f).not.toMatch(/\.suspend\(/);
   });
-  it('ループの再生（S3）: 音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所・buffer 全体を繰り返す（start は 0 だけ）・context は止めない。エンジンはループの束を master へつなぐ', () => {
+  it('ループの再生（S3）: 音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所・buffer 全体を繰り返す（start は 0 だけ）・context は止めない。エンジンはループの束をベッドの濾波器（v0.7.2 S3）から master へ', () => {
     const s = code('src/systems/sfx-loop-player.ts');
     expect(s.match(/\.createBufferSource\(/g)!.length).toBe(1);
     expect(s.match(/\.createGain\(/g)!.length).toBe(1);
@@ -153,7 +160,7 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(s).not.toMatch(/loopStart|loopEnd|\.suspend\(|\.resume\(|onended|addEventListener|setTimeout|setInterval|\.then\(|\.value\b(?!\s*=)/); // 値は読み返さない（L6）
     expect(s.match(/setTargetAtTime\(/g)!.length).toBe(4); // 音量・rate・一時停止の束・止める時の絞り
     const e = code('src/systems/sfx-engine.ts');
-    expect(e).toContain('    this.loopBus.connect(this.master);\n');
+    expect(e).toContain('    bed.connect(this.master);\n    this.loopBus = ctx.createGain();\n    this.loopBus.connect(bed);\n');
     expect(e).toContain('    this.loops = new SfxLoopPlayer(ctx, this.loopBus, this.buffers);\n');
     expect(e).not.toContain('this.loopBus.connect(limiter)');
     // 任務の音は Phaser を import せず、ループの口 3 つと合図の口 sfxCue だけを呼ぶ（S4: 合図の観測器 core/sfx-cues）
@@ -245,9 +252,9 @@ describe('音へ届く道は許可表の口だけ（import の許可表。R14）
     expect(GAME_IMPORTERS_NOW).not.toContain('src/systems/barge-hunt.ts');
     expect(readFileSync('src/systems/barge-hunt.ts', 'utf8')).toContain('    onFire: () => {},\n');
   });
-  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行。v0.7.2 S1: 曲の 7 行で 12 本に 24 行）と、触った既存のファイルは 300 行以下', () => {
+  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行。v0.7.2 S1: 曲の 7 行で 12 本に 24 行。S3: 命中スローの 3 行で 27 行）と、触った既存のファイルは 300 行以下', () => {
     for (const p of HOOK_PINS) expect(readFileSync(p.file, 'utf8'), p.file).toContain(p.line);
-    expect(HOOK_PINS.length).toBe(24);
+    expect(HOOK_PINS.length).toBe(27);
     expect([...GAME_IMPORTERS_NOW].sort()).toEqual([...ALLOWED_IMPORTERS].sort());
     // 絵の層の口から呼ぶ位置つきの音は 6 か所だけ（水柱・大砲・機銃・爆発・2 次の爆発・沈み始め）。S1 の代わりの音は残っていない
     const calls = ['src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts'].map((f) => (code(f).match(/\bsfx(?:Gun)?At\(/g) ?? []).length);

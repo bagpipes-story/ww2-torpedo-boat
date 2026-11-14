@@ -5,6 +5,8 @@
 // 音源の数（spec §4.2）: 始めると鳴っている音源（止めかけを含む）が MUSIC_MAX_SOURCES を超えるなら、まだ始めない（止めかけの組が鳴り終わる次の 10 Hz で。S2: 3 層の組が 3 つ重なると 7〜9 本に
 // なる＝メニュー ⇄ 任務をすばやく行き来した時だけ少し遅れて始まる）。
 // 移りの秒 → 時定数は × MUSIC_PLAYER.fadeTc（秒の後に約 2%＝止める時に「ぷつっ」としない）。値は読み返さない（L6）。予約の前に必ず消す（R4）。
+// v0.7.2 S3（命中スロー。systems/sfx-slowmo が書く）: 鳴っている組の 3 層の rate を同じ時刻・同じ時定数で書く（stepRate。層の音源ごとに 1 つ＝3 回の書き込み。同期は崩れない）。
+//   これから始める組も今の rate で始める（スローの途中で始まった組も遅いまま＝3 層とも同じ）。
 // §7: step* は確保しない（音源は組を始める時に作る使い捨て。曲の音源を作るのはここの 1 か所）。
 import { MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_GAIN, MUSIC_KEYS, MUSIC_MAX_SOURCES, MUSIC_MOOD_QUIET, MUSIC_PLAYER } from '../config/sfx-music-config';
 import { musicMoodGain, musicMoodTc } from '../core/sfx-music-mood';
@@ -29,6 +31,8 @@ export class SfxMusicSlots {
   key = NONE;
   scene = MUSIC_CTX_NONE;
   mood = MUSIC_MOOD_QUIET;
+  /** 曲の速さ（v0.7.2 S3。命中スローの最中は案の musicRate・ふだん 1。これから始める組もこの速さ） */
+  rate = 1;
   /** 確かめ用の数: 作った音源・止めた音源・ノードへ書いた回数 */
   starts = 0;
   stops = 0;
@@ -99,6 +103,7 @@ export class SfxMusicSlots {
       const src = this.ctx.createBufferSource();
       src.buffer = buffers[k + i]!;
       src.loop = true;
+      if (this.rate !== 1) src.playbackRate.value = this.rate; // 命中スローの途中で始まる組（S3）
       src.connect(this.gains[s]!);
       src.start(when);
       this.srcs[s] = src;
@@ -124,5 +129,17 @@ export class SfxMusicSlots {
       this.writes++;
     }
     this.mood = mood;
+  }
+
+  /** v0.7.2 S3: 曲の速さを rate へ（鳴っている組の層ごとの音源に同じ時刻・同じ時定数 tc で。予約の前に消す）。これから始める組もこの速さ。書いた数を返す */
+  stepRate(now: number, rate: number, tc: number): number {
+    this.rate = rate;
+    for (let i = 0; i < this.n; i++) {
+      const p = this.srcs[this.cur[i]!]!.playbackRate;
+      p.cancelScheduledValues(now);
+      p.setTargetAtTime(rate, now, tc);
+      this.writes++;
+    }
+    return this.n;
   }
 }

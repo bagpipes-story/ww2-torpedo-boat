@@ -17,13 +17,14 @@ import { FRAME_S, LEAD, TC, alive, musicSrcs, put, run, sceneEvents, unstopped }
 afterEach(() => registerSfxEngine(null));
 
 describe('つなぎ（起動時に作る。リミッタを通さない）', () => {
-  it('音量の節 9 本 → 曲の束 → 下げる音量 → master。節は 0 から・束と下げるは 1・音源はまだ無い', () => {
+  it('音量の節 9 本 → 曲の束 → 下げる音量 → ベッドの濾波器（v0.7.2 S3）→ master。節は 0 から・束と下げるは 1・音源はまだ無い', () => {
     const x = setup();
     const g = graph(x.ctx, x.e);
     expect(g.music.slots.length).toBe(MUSIC_PLAYER.slots);
     for (const s of g.music.slots) expect([s.outs, s.gain.value]).toEqual([[g.music.bus], 0]);
     expect(g.music.bus.outs).toEqual([g.music.duck]);
-    expect(g.music.duck.outs).toEqual([g.master]);
+    expect(g.music.duck.outs).toEqual([g.bed]);
+    expect(g.bed.outs).toEqual([g.master]);
     expect([g.music.bus.gain.value, g.music.duck.gain.value]).toEqual([1, 1]);
     expect(g.music.duck.outs).not.toContain(g.limiter);
     expect(g.voices.length).toBe(16);
