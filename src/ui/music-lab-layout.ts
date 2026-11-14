@@ -7,6 +7,9 @@ import type { SoundLabFrame, SoundLabRect } from './sound-lab-layout';
 
 /** 行 0（タイトルの曲）のボタンの数: 候補 3 つと「止める」 */
 export const MUSIC_LAB_ROW0_COLS = 4;
+/** v0.7.2 S2: 行 1（任務の曲）＝段 3 つ・「自動」・「止める」、行 2（効果音と一緒に）＝台本 3 つ・「止める」（S3 で「命中＋スロー」を足して 5） */
+export const MUSIC_LAB_ROW1_COLS = 5;
+export const MUSIC_LAB_ROW2_COLS = 4;
 
 /** 下の段の 2 つ目のボタン: 「戻る」の右に列の間を空けて同じ大きさ（右下の状態の一文とは論理幅 1280 でも重ならない＝tests/music-lab） */
 export function musicLabSideRect(f: SoundLabFrame): SoundLabRect {

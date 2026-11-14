@@ -1,21 +1,22 @@
 // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §2・D4・R1・R2・brief L6〜L9）: 曲を作る列（曲の再生 systems/sfx-music-player が 1 つ持つ）。
 // - いつ: 効果音の列が終わった次のフレームから（systems/sfx-boot が allow を 1 回。Boot では作らない）。1 フレームに MUSIC_BUILD_BUDGET 単位（決まった量＝分け方が決まる＝L9。
 //   標本は分け方に依らずビット同一＝tests/sfx-music-render）。1 曲の始めのフレームは確保と作曲だけ（描くのは次のフレームから）。
-// - 順: 今の場面の曲（step の want。曲の試聴の場で押した候補）→ ゲームの列 MUSIC_GAME_BUILD（S1 は既定のタイトルの曲だけ＝L6。S2 で任務の家族を後ろに足す）。
+// - 順: 今の場面の曲（step の want。曲の試聴の場で押した候補・任務はまだ無い層の最初）→ ゲームの列 MUSIC_GAME_BUILD（S1 は既定のタイトルの曲だけ＝L6。S2 で任務の家族 L0〜L2 を後ろに
+//   足した＝Title・Briefing の間に同じ予算で作っておき、任務をまたいで使い回す。§13 L1）。
 //   作りかけと違う「今の場面の曲」がまだ無ければ、作りかけをやめてそちらを先に（やめた曲は後で頭から作り直す＝標本は同じ）。
 // - 記憶（L7・L8）: 波形の表と作業用の配列は最初に作る時に作る。できた曲はそのフレームに buffer へ写し、ほかに Float32 の写しは持たない。列が空になれば作業用の配列を捨てる
 //   （2.7 MB。試聴の場で押せばまた作る）。表（0.44 MB）は残す（作り直すと 109 万単位＝8 フレームと JIT の初回がまた掛かる。S2 の家族・試聴の場がすぐ始められる）。
 // - 作れない端末（buffer を作れない・記憶が足りない）: 投げたらやめて曲なしで続ける（効果音はそのまま）。
 // §7: 毎フレームの口 step・dropLab は確保しない。確保は作る時だけの render*（表・作業用の配列・作曲・作り手・buffer）。作る時間は輪に数えるだけ（stats で並べる）。
-import { MUSIC_BUILD_BUDGET, MUSIC_KEYS, MUSIC_PLAYER, MUSIC_SAMPLE_RATE, MUSIC_WORK_SAMPLES, type MusicKey } from '../config/sfx-music-config';
+import { MUSIC_BUILD_BUDGET, MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_PLAYER, MUSIC_SAMPLE_RATE, MUSIC_WORK_SAMPLES, type MusicKey } from '../config/sfx-music-config';
 import { MusicBuilder, composeMusicKey } from '../assets/sfx-music-render';
 import { MusicTables } from '../assets/sfx-music-synth';
 import { MUSIC_TITLE_DEFAULT_ID } from '../assets/sfx-music-themes';
 import type { SfxBuffer, SfxCtx } from './sfx-audio-types';
 
 const NONE = -1;
-/** ゲームの中で作る曲（この順。S1 は既定のタイトルの曲だけ＝L6。S2 で任務の家族 MUSIC_LAYER_KEYS を後ろに足す） */
-export const MUSIC_GAME_BUILD: readonly MusicKey[] = [MUSIC_TITLE_DEFAULT_ID];
+/** ゲームの中で作る曲（この順。S1 は既定のタイトルの曲だけ＝L6。S2 で任務の家族 MUSIC_LAYER_KEYS を後ろに足した＝§13 L1） */
+export const MUSIC_GAME_BUILD: readonly MusicKey[] = [MUSIC_TITLE_DEFAULT_ID, ...MUSIC_LAYER_KEYS];
 const GAME_BUILD: readonly number[] = MUSIC_GAME_BUILD.map((k) => MUSIC_KEYS.indexOf(k));
 /** まだ作らない・次のフレームから・作ってよい */
 const BUILD_OFF = 0, BUILD_ARMED = 1, BUILD_ON = 2;

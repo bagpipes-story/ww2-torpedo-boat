@@ -128,7 +128,8 @@ describe('音量・下げ・段・命中スロー・移り・予算の表（spec
     for (const d of Object.values(SFX_MUSIC_DUCK)) expect(d.db < 0 && d.holdS > 0).toBe(true);
   });
   it('任務の段の間（§5.2）と場面（D8）・移りの秒（§3.4・§4.2・D10）・音源の上限（§4.2）・保存の鍵（D7。音の鍵と別）', () => {
-    expect(mc.SFX_MUSIC_MOOD).toEqual({ updateHz: 10, riseTcBattleS: 0.6, riseTcTenseS: 1.5, holdBattleS: 6, holdTenseS: 8, fallBattleS: 3, fallTenseS: 4, sinkFadeS: 2.5, maxChangesPerMin: 6 });
+    expect(mc.SFX_MUSIC_MOOD).toEqual({ updateHz: 10, riseTcBattleS: 0.6, riseTcTenseS: 1.5, holdBattleS: 6, holdTenseS: 8, fallBattleS: 3, fallTenseS: 4, sinkFadeS: 2.5, maxChangesPerMin: 6, hitMinDropHp: 0.5 });
+    expect(mc.MUSIC_MOOD_SINK).toBe(MUSIC_MOOD_WEIGHTS.length); // v0.7.2 S2: 沈み始めは段の重さの表の外（3 層とも 0）
     expect(new Set([mc.MUSIC_CTX_NONE, mc.MUSIC_CTX_MENU, mc.MUSIC_CTX_MISSION, mc.MUSIC_CTX_LAB]).size).toBe(4);
     expect(mc.MUSIC_FADE).toEqual({
       firstInS: 2, menuInS: 2, menuOutS: 1.2, missionInS: 3, missionOutS: 0.5, resultReturnedDelayS: 2.2, resultLostDelayS: 3.0, pauseS: 0.15, musicOffS: 0.3, muteStopS: 0.15, labCrossS: 0.5, hastyStopS: 0.03,

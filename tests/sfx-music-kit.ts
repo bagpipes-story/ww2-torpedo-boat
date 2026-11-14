@@ -1,6 +1,7 @@
 // v0.7.2 S1: 曲の再生のテスト（tests/sfx-engine-music・sfx-music-build）が共有する道具。偽の context とエンジンは tests/sfx-engine-kit。
+// S2: 指紋に任務の家族の 3 層（tests/sfx-music-render と同じ数）・ゲームの列を最後まで作る buildList・家族の標本の代わり putFamily。
 // 曲の音源は「繰り返す・長い buffer」（効果音のループは 4 秒＝88,200 標本まで）で見分ける。時計は 1/60 秒ずつ（再生の時計も進める。実時間は 0＝見張りを動かさない）。
-import { MUSIC_KEYS, MUSIC_LENGTHS, MUSIC_PLAYER, MUSIC_SAMPLE_RATE, type MusicKey } from '../src/config/sfx-music-config';
+import { MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_LENGTHS, MUSIC_PLAYER, MUSIC_SAMPLE_RATE, type MusicKey } from '../src/config/sfx-music-config';
 import type { SfxBuffer } from '../src/systems/sfx-audio-types';
 import type { SfxEngine } from '../src/systems/sfx-engine';
 import type { SfxSceneEvents } from '../src/systems/sfx-mission';
@@ -38,7 +39,9 @@ export function fingerprint16(x: Float32Array): number {
   }
   return h;
 }
-export const FINGERPRINTS: Partial<Record<MusicKey, number>> = { title_a: 4284675595, title_b: 2535656704, title_c: 4273943891 };
+export const FINGERPRINTS: Readonly<Record<MusicKey, number>> = {
+  title_a: 4284675595, title_b: 2535656704, title_c: 4273943891, mission_l0: 1046475320, mission_l1: 2447541197, mission_l2: 2200234592,
+};
 /** 今作っている曲（無ければ次に作る曲）を作り終えるまで回し、もう 2 フレーム進める（列が空なら作業用の配列を捨てるフレーム）。作り終えたフレーム数を返す */
 export function buildAll(x: X, maxFrames = 3000): number {
   for (let f = 0; f < maxFrames; f++) {
@@ -49,6 +52,19 @@ export function buildAll(x: X, maxFrames = 3000): number {
     }
   }
   return -1;
+}
+/** v0.7.2 S2: ゲームの列が空になる（作業用の配列を捨てる）まで回す。回したフレーム数を返す（作り終えなければ −1） */
+export function buildList(x: X, maxFrames = 6000): number {
+  for (let f = 0; f < maxFrames; f++) {
+    run(x, FRAME_S);
+    const st = x.e.music.stats();
+    if (st.tables && !st.work && st.building === null && st.buildCalls > 0) return f;
+  }
+  return -1;
+}
+/** v0.7.2 S2: 任務の家族の 3 層の標本の代わりを置く（長さは表どおり・中身は 0） */
+export function putFamily(x: X): FakeBuffer[] {
+  return MUSIC_LAYER_KEYS.map((k) => put(x, k));
 }
 /** Hud の scene.events の代わり（on・once で覚えた口を fire で呼ぶ。off は消す） */
 export function sceneEvents(): SfxSceneEvents & { fire(e: string): void } {

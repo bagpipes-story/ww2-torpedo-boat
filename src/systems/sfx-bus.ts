@@ -8,6 +8,7 @@
 // IP2: 試聴の場（?sfxlab）の口 sfxSetBuffer・sfxCanPlay（scenes/sound-lab-scene だけが呼ぶ。ゲームの中では呼ばない）。
 // v0.7.2 S1: 曲の口 sfxMusic・sfxMusicRelease・sfxMusicPaused・sfxMusicEnabled（場面・任務の終わり・一時停止・「曲」ボタン）と、曲の試聴の場の口 sfxMusicAudition・sfxMusicLab*
 // （scenes/music-lab-scene だけ）。決めと音源は systems/sfx-music-player（止まっている context・消音・曲オフ・標本なしでは音源を作らない）。
+// v0.7.2 S2: 任務の段の口 sfxMusicMood（MissionSfx が core/sfx-music-mood の段を毎フレーム。曲の試聴の場も）。
 import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
 import type { MusicKey } from '../config/sfx-music-config';
 import type { SfxLoopTargets } from '../core/sfx-loops';
@@ -111,6 +112,11 @@ export function sfxMusic(ctx: number, delayS = 0): void {
 /** 任務の終わり（MissionSfx の SHUTDOWN）: 今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼んだメニューの曲を消さない） */
 export function sfxMusicRelease(ctx: number): void {
   if (engine !== null) engine.music.release(ctx);
+}
+
+/** 任務の段（v0.7.2 S2。MUSIC_MOOD_*。MissionSfx が毎フレーム・曲の試聴の場）: 変わった時だけ、鳴っている家族の 3 層の音量を書く */
+export function sfxMusicMood(level: number): void {
+  if (engine !== null) engine.music.setMood(level);
 }
 
 /** 一時停止で曲の束を 0 へ・再開で戻す（Hud の PAUSE・RESUME。音源は止めない） */

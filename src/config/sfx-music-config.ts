@@ -50,18 +50,20 @@ export const MUSIC_GAIN: Readonly<Record<MusicKey, number>> = {
   title_a: 0.411, title_b: 0.399, title_c: 0.622, mission_l0: 0.152, mission_l1: 0.232, mission_l2: 0.268,
 };
 
-/** 任務の段（S2 の core/sfx-music-mood）: 0 静か・1 緊張（見つかった）・2 戦闘（撃たれている） */
+/** 任務の段（S2 の core/sfx-music-mood）: 0 静か・1 緊張（見つかった）・2 戦闘（撃たれている）・3 沈み始め（v0.7.2 S2。3 層とも sinkFadeS で 0。段の重さの表の外） */
 export const MUSIC_MOOD_QUIET = 0;
 export const MUSIC_MOOD_TENSE = 1;
 export const MUSIC_MOOD_BATTLE = 2;
+export const MUSIC_MOOD_SINK = 3;
 /** 段ごとの層の音量（L0, L1, L2。spec §3.6）: 静か (1, 0, 0)・緊張 (0.8, 1, 0)・戦闘 (0.6, 0.8, 1) */
 export const MUSIC_MOOD_WEIGHTS: readonly (readonly [number, number, number])[] = [[1, 0, 0], [0.8, 1, 0], [0.6, 0.8, 1]];
 /**
  * 段の間（spec §5.2。時計はゲームの時計＝一時停止の間は進まない）: 上がるのは次の 10 Hz で（戦闘は時定数 0.6 秒・緊張 1.5 秒）。下がるのは最後の信号から
- * 戦闘 6 秒・緊張 8 秒の後（探照灯の往復・見え隠れでぱたぱたしない）、戦闘 → 緊張は 3 秒・緊張 → 静かは 4 秒で。沈み始めは 2.5 秒で 0。1 分の移りは 6 回まで（probe の門）
+ * 戦闘 6 秒・緊張 8 秒の後（探照灯の往復・見え隠れでぱたぱたしない）、戦闘 → 緊張は 3 秒・緊張 → 静かは 4 秒で。沈み始めは 2.5 秒で 0。1 分の移りは 6 回まで（probe の門）。
+ * v0.7.2 S2: 被弾は HP が 1 フレームに hitMinDropHp より多く減った時（火災の継続の被害を除く＝config/sfx-config の SFX_CUE.hullMinDropHp と同じ考え）
  */
 export const SFX_MUSIC_MOOD = {
-  updateHz: 10, riseTcBattleS: 0.6, riseTcTenseS: 1.5, holdBattleS: 6, holdTenseS: 8, fallBattleS: 3, fallTenseS: 4, sinkFadeS: 2.5, maxChangesPerMin: 6,
+  updateHz: 10, riseTcBattleS: 0.6, riseTcTenseS: 1.5, holdBattleS: 6, holdTenseS: 8, fallBattleS: 3, fallTenseS: 4, sinkFadeS: 2.5, maxChangesPerMin: 6, hitMinDropHp: 0.5,
 } as const;
 
 /** 曲の場面（S1 の systems/sfx-music-player が頼まれる場面。D8）: なし・メニュー（Title・Briefing・Result）・任務・試聴の場 */

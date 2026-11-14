@@ -20,6 +20,9 @@
 //   systems/sfx-music-build（brief の 260 行に収めるため分けた）が再生の層に入る（10 本）。曲の音源を作るのは再生の 1 か所・曲の buffer を作るのは作る列の 1 か所・start は組の when だけ。
 //   許可表に曲の試聴の場 music-lab-scene。ゲーム側で sfx-music-* を import するのは定数の config/sfx-music-config（Title・Result・試聴の場 2 つ）と、曲の試聴の場の既定の id だけ。
 //   hook の pin は Title 2（メニューの曲・「曲」ボタン）・Result 1（鐘の後の曲）・Pause 1（「曲」ボタン）・効果音の試聴の場 1（曲を止める）・曲の試聴の場 2（場面と候補）＝24 行。
+// - v0.7.2 S2（spec-v0720 §5.5・brief L19〜L22・L25）: 任務の曲の段の観測器 core/sfx-music-mood が純粋な層に入る（import はテレメトリの型と段の定数だけ・敵の位置・距離・見えているかの欄を
+//   読まない＝D5）。再生の層に曲を下げる systems/sfx-music-duck・音源の組 systems/sfx-music-slots（sfx-music-player から分けた）・曲の試聴の場の「効果音と一緒に」の台本 systems/sfx-lab-demo（13 本）。
+//   sfx-mission は段の 1 行（sfxMusicMood(stepSfxMood(…))）。
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -69,7 +72,7 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   { file: 'src/scenes/pause-scene.ts', line: '      setMusicEnabled(!musicEnabled());\n      this.musicBtn?.setTitle(musicTitle());\n' },
   { file: 'src/scenes/sound-lab-scene.ts', line: '    sfxMusic(MUSIC_CTX_NONE); //' },
   { file: 'src/scenes/music-lab-scene.ts', line: '    sfxSetMuted(false);\n    sfxMusicEnabled(true);\n    sfxMusic(MUSIC_CTX_LAB);\n' },
-  { file: 'src/scenes/music-lab-scene.ts', line: '    sfxMusicAudition(this.chosen === NONE ? null : MUSIC_TITLE_KEYS[this.chosen]!);\n' },
+  { file: 'src/scenes/music-lab-scene.ts', line: '    if (stop) {\n      sfxMusicAudition(null);\n    } else if (row === ROW_TITLE) {\n      sfxMusicAudition(MUSIC_TITLE_KEYS[col]!);\n' },
 ];
 /** 音のために触った既存の src のファイル（300 行以下を見る） */
 const TOUCHED: readonly string[] = [
@@ -89,9 +92,11 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     }
     for (const f of ['src/assets/sfx-recipes-loops.ts', 'src/core/sfx-loops.ts', 'src/assets/sfx-recipes-events.ts', 'src/core/sfx-cues.ts']) expect(PURE).toContain(f);
     expect(PLAYBACK).toEqual([
-      'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-loop-player.ts', 'src/systems/sfx-mission.ts',
-      'src/systems/sfx-music-build.ts', 'src/systems/sfx-music-player.ts', 'src/systems/sfx-settings.ts', 'src/systems/sfx-watchdog.ts',
+      'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-lab-demo.ts', 'src/systems/sfx-loop-player.ts',
+      'src/systems/sfx-mission.ts', 'src/systems/sfx-music-build.ts', 'src/systems/sfx-music-duck.ts', 'src/systems/sfx-music-player.ts', 'src/systems/sfx-music-slots.ts',
+      'src/systems/sfx-settings.ts', 'src/systems/sfx-watchdog.ts',
     ]);
+    expect(PURE).toContain('src/core/sfx-music-mood.ts');
   });
   it.each(PLAYBACK)('%s: DOM・ブラウザの再生の型の名前・Phaser に触るのは sfx-boot だけ（エンジンと口は構造の型。保存は globalThis.localStorage だけ）', (f) => {
     const s = code(f);
@@ -153,11 +158,14 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(e).not.toContain('this.loopBus.connect(limiter)');
     // 任務の音は Phaser を import せず、ループの口 3 つと合図の口 sfxCue だけを呼ぶ（S4: 合図の観測器 core/sfx-cues）
     const m = code('src/systems/sfx-mission.ts');
-    expect(imports(m).sort()).toEqual(['../config/sfx-config', '../config/sfx-music-config', '../core/boat-telemetry', '../core/sfx-cues', '../core/sfx-loops', '../core/units', './sfx-bus']);
+    expect(imports(m).sort()).toEqual(['../config/sfx-config', '../config/sfx-music-config', '../core/boat-telemetry', '../core/sfx-cues', '../core/sfx-loops', '../core/sfx-music-mood', '../core/units', './sfx-bus']);
     // v0.7.2 S1: 作る時に任務の曲の場面・PAUSE・RESUME で曲の束・SHUTDOWN で「今も任務なら」外す
     expect(m).toContain('    sfxMusic(MUSIC_CTX_MISSION);\n');
     expect(m).toContain('    sfxLoopsStop();\n    sfxMusicRelease(MUSIC_CTX_MISSION);\n');
     expect(m).toContain('    stepSfxCues(this.cueState, t, dtS, this);\n    stepSfxLoops(this.loopState, t, dtS, this.loopTargets);\n');
+    // v0.7.2 S2: 同じ update の最後に任務の曲の段（観測器の戻りをそのまま口へ）
+    expect(m).toContain('    sfxLoops(this.loopTargets, dtS);\n    sfxMusicMood(stepSfxMood(this.moodState, t, dtS));\n  }\n');
+    expect(m.match(/sfxMusicMood\(/g)!.length).toBe(1);
   });
   it.each(SFX)('%s: 乱数は音だけの SeededRng（種は SFX_SEED_*）で、Math.random もゲームの乱数の系列も使わない', (f) => {
     const s = code(f);
@@ -193,6 +201,17 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(imports(code('src/core/sfx-loops.ts')).sort()).toEqual([
       '../config/sfx-config', './air-strike-state', './boat-telemetry', './engine-trouble', './evac-telemetry', './friendly', './patrol-air-state', './seaplane', './storm',
     ]);
+  });
+  it('core/sfx-music-mood（v0.7.2 S2 の段の観測器）が import する core のファイルは、テレメトリの型と段の定数だけ。敵の位置・距離・見えているか・見つかる距離の欄を読まない（D5）。口を呼ばない', () => {
+    const s = code('src/core/sfx-music-mood.ts');
+    expect(imports(s).sort()).toEqual([
+      '../config/sfx-music-config', './air-strike-state', './boat-telemetry', './evac-telemetry', './friendly', './landing', './patrol-air-state', './seaplane',
+    ]);
+    for (const f of ['enemyDx', 'enemyDy', 'enemySighted', 'planeDistM', 'distM', 'detectRangeM', 'sighted', 'dx', 'dy', 'inboundDistM', 'reportDx', 'reportDy', 'reportSighted', 'shipDx', 'shipDy', 'shipDistM']) {
+      expect(s, f).not.toMatch(new RegExp(`\\.${f}\\b`));
+    }
+    expect(s).not.toMatch(/sfxMusic|sfxCue|playFlat|registerSfx/);
+    expect(readFileSync('src/core/sfx-music-mood.ts', 'utf8').split('\n').length).toBeLessThanOrEqual(201); // brief L19: 200 行以下
   });
   it('core/sfx-cues（S4 の合図の観測器）が import する core のファイルは、テレメトリの型と段の定数だけ。鳴らすのは渡された口の cue だけ（エンジン・口を import しない）', () => {
     const s = code('src/core/sfx-cues.ts');
