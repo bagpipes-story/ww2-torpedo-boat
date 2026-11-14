@@ -28,7 +28,8 @@ import type { BandSummary, ShotRecord } from '../core/hit-rate';
 import type { MissionEndReason } from '../core/mission-flow';
 import type { KpiResultLines } from '../systems/kpi-storage';
 import { escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
-import { sfxResultBell } from '../systems/sfx-bus';
+import { sfxMusic, sfxResultBell } from '../systems/sfx-bus';
+import { MUSIC_CTX_MENU, MUSIC_FADE } from '../config/sfx-music-config';
 import { resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
 import { convoyHeadJa } from '../ui/convoy-lines';
 import { LD_DONE } from '../core/landing';
@@ -161,6 +162,7 @@ export class ResultScene extends Phaser.Scene {
     this.buttons = [];
     addBuildLabel(this);
     sfxResultBell(r.returned); // 任務の終わりの鐘（v0.7.1 S4。帰投 2 打・それ以外は低く 1 打）
+    sfxMusic(MUSIC_CTX_MENU, r.returned ? MUSIC_FADE.resultReturnedDelayS : MUSIC_FADE.resultLostDelayS); // 鐘の後にタイトルの曲を頭から（v0.7.2 S1・D10）
     const cx = GAME_WIDTH / 2;
     let y = RESULT_TOP_Y;
     // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）

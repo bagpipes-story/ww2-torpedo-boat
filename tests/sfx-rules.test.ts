@@ -16,46 +16,14 @@
 // - sfx-* と、音のために触った既存のファイルは 300 行以下。
 // - v0.7.2 S0（曲の骨組み。spec-v0720 §9 S0）: 曲の純粋な層（config/sfx-music-config・assets/sfx-music-*）も名前が sfx- なので上の作法が全部効く（毎フレームの口＝stepBuild・stepTone など
 //   の本体に確保なし）。S0 ではゲーム側のどのファイルも sfx-music-* を import しない（束がバイトで同じ。GAME_IMPORTERS_NOW は v0.7.1 のまま）。
-import { readFileSync, readdirSync } from 'node:fs';
-import { basename, join } from 'node:path';
+// - v0.7.2 S1（spec-v0720 §8.1・brief L13〜L18）: 見張りを systems/sfx-watchdog へ分けた（context を止めるのはそこの 1 か所）。曲の再生 systems/sfx-music-player と作る列
+//   systems/sfx-music-build（brief の 260 行に収めるため分けた）が再生の層に入る（10 本）。曲の音源を作るのは再生の 1 か所・曲の buffer を作るのは作る列の 1 か所・start は組の when だけ。
+//   許可表に曲の試聴の場 music-lab-scene。ゲーム側で sfx-music-* を import するのは定数の config/sfx-music-config（Title・Result・試聴の場 2 つ）と、曲の試聴の場の既定の id だけ。
+//   hook の pin は Title 2（メニューの曲・「曲」ボタン）・Result 1（鐘の後の曲）・Pause 1（「曲」ボタン）・効果音の試聴の場 1（曲を止める）・曲の試聴の場 2（場面と候補）＝24 行。
+import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { describe, expect, it } from 'vitest';
-
-function allTs(dir: string): string[] {
-  return readdirSync(dir, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.ts')).map((f) => join(dir, f).split('\\').join('/')).sort();
-}
-const SRC = allTs('src');
-const SFX = SRC.filter((f) => basename(f).startsWith('sfx-'));
-/** 純粋な層（node で回る）: config・assets・core */
-const PURE = SFX.filter((f) => /^src\/(config|assets|core)\//.test(f));
-
-/** コメント（// と /* *\/）を除いた source */
-function code(file: string): string {
-  return strip(readFileSync(file, 'utf8'));
-}
-function strip(src: string): string {
-  // 左から順に、先に始まった方の注釈を消す（S1: 行の注釈の中の「data/*.json」を塊の注釈の始まりと読んで、boot-scene の import まで消していた）
-  return src.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
-}
-/** import・export from の先（相対の道の最後の名前。拡張子なし） */
-function imports(src: string): string[] {
-  return [...src.matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)['"]([^'"]+)['"]/g)].map((m) => m[1]!);
-}
-/** 毎フレーム・1 発ごとに通る口の本体（中かっこを数えて取り出す） */
-function hotBodies(src: string): string[] {
-  const out: string[] = [];
-  const re = /\b((?:update|step|tick|play|emit|cue|alloc|accept|drop|sfxAt|sfxGunAt|sfxUi|sfxCue|sfxLoop)\w*)\s*\([^)]*\)\s*(?::\s*[\w<>[\]|. ]+)?\s*\{/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src))) {
-    let depth = 1;
-    let i = re.lastIndex;
-    for (; i < src.length && depth > 0; i++) {
-      if (src[i] === '{') depth++;
-      else if (src[i] === '}') depth--;
-    }
-    out.push(src.slice(re.lastIndex, i - 1));
-  }
-  return out;
-}
+import { PLAYBACK, PURE, SFX, SRC, code, hotBodies, imports, strip } from './sfx-rules-kit';
 
 /** sfx-* を import してよいゲーム側のファイル（spec §9.1 の許可表。絵の層の口 5・UI 1・シーン 4） */
 const ALLOWED_IMPORTERS = [
@@ -63,11 +31,13 @@ const ALLOWED_IMPORTERS = [
   'src/ui/menu-ui.ts', 'src/scenes/hud-scene.ts', 'src/scenes/title-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts',
   // IP2（実機 2 回目）: 音の試聴の場（?sfxlab の時だけ Boot から。案の標本を作って鍵に差し替え、合図の口で鳴らす）
   'src/scenes/sound-lab-scene.ts',
+  // v0.7.2 S1: 曲の試聴の場（?sfxlab の時だけ Boot から。候補を作って曲の口で鳴らす）
+  'src/scenes/music-lab-scene.ts',
 ];
 /** 今の段で sfx-* を import しているゲーム側のファイル（S1: Boot・聞き手の登録・砲と水柱の口・爆発の口・ボタン・Title の「音」ボタン。S2: 沈没の口 sink-fx。S3: hud-scene（任務の音）・pause-scene（「音」ボタン）。S4: result-scene（鐘）） */
 const GAME_IMPORTERS_NOW: readonly string[] = [
   'src/scenes/boot-scene.ts', 'src/systems/world-art.ts', 'src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts', 'src/ui/menu-ui.ts', 'src/scenes/title-scene.ts',
-  'src/scenes/hud-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts', 'src/scenes/sound-lab-scene.ts',
+  'src/scenes/hud-scene.ts', 'src/scenes/pause-scene.ts', 'src/scenes/result-scene.ts', 'src/scenes/sound-lab-scene.ts', 'src/scenes/music-lab-scene.ts',
 ];
 /** hook の行の pin（S1 から: ファイルとその中に在るべき 1 行。spec §2 の「触る既存ファイル」） */
 const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
@@ -92,13 +62,20 @@ const HOOK_PINS: readonly { readonly file: string; readonly line: string }[] = [
   // IP2: 試聴の場は案の標本を鍵に差し替えて合図の口で鳴らし、場を出る時に既定の標本へ戻す
   { file: 'src/scenes/sound-lab-scene.ts', line: '    sfxSetBuffer(g.key, x);\n    sfxCue(g.key, 1, delayS, v.rate);\n' },
   { file: 'src/scenes/sound-lab-scene.ts', line: '      for (const g of SFX_VARIANT_GROUPS) sfxSetBuffer(g.key, renderSfx(g.key)); // 既定の標本へ戻す\n      sfxSetMuted(!soundEnabled());\n' },
+  // v0.7.2 S1: メニューの曲（Title の create・Result の鐘の後）、「曲」ボタン（Title・Pause）、効果音の試聴の場は曲を止め、曲の試聴の場は場面と候補
+  { file: 'src/scenes/title-scene.ts', line: '    sfxMusic(MUSIC_CTX_MENU); //' },
+  { file: 'src/scenes/title-scene.ts', line: '      setMusicEnabled(!musicEnabled());\n' },
+  { file: 'src/scenes/result-scene.ts', line: '    sfxResultBell(r.returned); // 任務の終わりの鐘（v0.7.1 S4。帰投 2 打・それ以外は低く 1 打）\n    sfxMusic(MUSIC_CTX_MENU, r.returned ? MUSIC_FADE.resultReturnedDelayS : MUSIC_FADE.resultLostDelayS); //' },
+  { file: 'src/scenes/pause-scene.ts', line: '      setMusicEnabled(!musicEnabled());\n      this.musicBtn?.setTitle(musicTitle());\n' },
+  { file: 'src/scenes/sound-lab-scene.ts', line: '    sfxMusic(MUSIC_CTX_NONE); //' },
+  { file: 'src/scenes/music-lab-scene.ts', line: '    sfxSetMuted(false);\n    sfxMusicEnabled(true);\n    sfxMusic(MUSIC_CTX_LAB);\n' },
+  { file: 'src/scenes/music-lab-scene.ts', line: '    sfxMusicAudition(this.chosen === NONE ? null : MUSIC_TITLE_KEYS[this.chosen]!);\n' },
 ];
 /** 音のために触った既存の src のファイル（300 行以下を見る） */
 const TOUCHED: readonly string[] = [
   ...GAME_IMPORTERS_NOW, 'src/config/menu-config.ts', 'src/config/title-layout-config.ts', 'src/config/game-config.ts', 'src/config/phaser-config.ts', 'src/config/sound-lab-config.ts', 'src/ui/sound-lab-layout.ts',
+  'src/config/music-lab-config.ts', 'src/ui/music-lab-layout.ts',
 ];
-/** 再生の層（S1 から）: DOM に触ってよいのは sfx-boot だけ */
-const PLAYBACK = SFX.filter((f) => /^src\/systems\//.test(f));
 
 function sfxImporters(): string[] {
   return SRC.filter((f) => !basename(f).startsWith('sfx-') && imports(code(f)).some((p) => basename(p).startsWith('sfx-')));
@@ -112,7 +89,8 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     }
     for (const f of ['src/assets/sfx-recipes-loops.ts', 'src/core/sfx-loops.ts', 'src/assets/sfx-recipes-events.ts', 'src/core/sfx-cues.ts']) expect(PURE).toContain(f);
     expect(PLAYBACK).toEqual([
-      'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-loop-player.ts', 'src/systems/sfx-mission.ts', 'src/systems/sfx-settings.ts',
+      'src/systems/sfx-audio-types.ts', 'src/systems/sfx-boot.ts', 'src/systems/sfx-bus.ts', 'src/systems/sfx-engine.ts', 'src/systems/sfx-loop-player.ts', 'src/systems/sfx-mission.ts',
+      'src/systems/sfx-music-build.ts', 'src/systems/sfx-music-player.ts', 'src/systems/sfx-settings.ts', 'src/systems/sfx-watchdog.ts',
     ]);
   });
   it.each(PLAYBACK)('%s: DOM・ブラウザの再生の型の名前・Phaser に触るのは sfx-boot だけ（エンジンと口は構造の型。保存は globalThis.localStorage だけ）', (f) => {
@@ -146,8 +124,14 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(ctorEnd).toBeGreaterThan(0);
     expect(afterSetBuffer).toBeGreaterThan(ctorEnd);
     expect(s.slice(afterSetBuffer)).not.toMatch(/\.create(?:Gain|StereoPanner|DynamicsCompressor|Buffer)\(/);
-    expect(s.match(/\.suspend\(\)/g)!.length).toBe(1);
     expect(s).not.toMatch(/onended|addEventListener|setTimeout|setInterval|\.then\(/);
+    // v0.7.2 S1: 見張りは systems/sfx-watchdog（context を止める .suspend() は音の層でそこの 1 か所。エンジンの tick から毎フレーム）
+    expect(s).not.toMatch(/\.suspend\(/);
+    expect(s).toContain('    this.music.update(dtS);\n    this.watchdog.tick(wallMs);\n');
+    const w = code('src/systems/sfx-watchdog.ts');
+    expect(w.match(/\.suspend\(\)/g)!.length).toBe(1);
+    expect(w).not.toMatch(/onended|addEventListener|setTimeout|setInterval|\.then\(|\.create\w*\(/);
+    for (const f of PLAYBACK) if (!f.endsWith('/sfx-watchdog.ts')) expect(code(f), f).not.toMatch(/\.suspend\(/);
   });
   it('ループの再生（S3）: 音量 5 本を作るのは constructor だけ・音源を作るのは begin の 1 か所・buffer 全体を繰り返す（start は 0 だけ）・context は止めない。エンジンはループの束を master へつなぐ', () => {
     const s = code('src/systems/sfx-loop-player.ts');
@@ -169,7 +153,10 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
     expect(e).not.toContain('this.loopBus.connect(limiter)');
     // 任務の音は Phaser を import せず、ループの口 3 つと合図の口 sfxCue だけを呼ぶ（S4: 合図の観測器 core/sfx-cues）
     const m = code('src/systems/sfx-mission.ts');
-    expect(imports(m).sort()).toEqual(['../config/sfx-config', '../core/boat-telemetry', '../core/sfx-cues', '../core/sfx-loops', '../core/units', './sfx-bus']);
+    expect(imports(m).sort()).toEqual(['../config/sfx-config', '../config/sfx-music-config', '../core/boat-telemetry', '../core/sfx-cues', '../core/sfx-loops', '../core/units', './sfx-bus']);
+    // v0.7.2 S1: 作る時に任務の曲の場面・PAUSE・RESUME で曲の束・SHUTDOWN で「今も任務なら」外す
+    expect(m).toContain('    sfxMusic(MUSIC_CTX_MISSION);\n');
+    expect(m).toContain('    sfxLoopsStop();\n    sfxMusicRelease(MUSIC_CTX_MISSION);\n');
     expect(m).toContain('    stepSfxCues(this.cueState, t, dtS, this);\n    stepSfxLoops(this.loopState, t, dtS, this.loopTargets);\n');
   });
   it.each(SFX)('%s: 乱数は音だけの SeededRng（種は SFX_SEED_*）で、Math.random もゲームの乱数の系列も使わない', (f) => {
@@ -223,22 +210,6 @@ describe('音のファイルの作法（v0.7.1 S0。R14）', () => {
   });
 });
 
-describe('曲の骨組み（v0.7.2 S0）', () => {
-  const MUSIC = SFX.filter((f) => basename(f).startsWith('sfx-music-'));
-  it('曲のファイル 5 本は純粋な層（config・assets）に入り、上の作法（乱数・毎フレームの口・import・300 行）が効く', () => {
-    expect(MUSIC).toEqual(['src/assets/sfx-music-compose.ts', 'src/assets/sfx-music-render.ts', 'src/assets/sfx-music-synth.ts', 'src/assets/sfx-music-themes.ts', 'src/config/sfx-music-config.ts']);
-    for (const f of MUSIC) expect(PURE).toContain(f);
-  });
-  it('毎フレームの口（作る口 stepBuild・表を埋める stepTables・音符を書く stepTone／stepFm／stepNoise・段の step*）は検査に掛かる（空の検査にしない）', () => {
-    expect(hotBodies(code('src/assets/sfx-music-render.ts')).length).toBeGreaterThanOrEqual(5);
-    expect(hotBodies(code('src/assets/sfx-music-synth.ts')).length).toBeGreaterThanOrEqual(5);
-    expect(code('src/assets/sfx-music-render.ts')).toMatch(/\bstepBuild\(budget: number\): number \{/);
-  });
-  it('S0 ではゲーム側のどのファイルも sfx-music-* を import しない（曲はまだ鳴らない）', () => {
-    for (const f of SRC) if (!basename(f).startsWith('sfx-')) expect(imports(code(f)).some((p) => basename(p).startsWith('sfx-music-')), f).toBe(false);
-  });
-});
-
 describe('音へ届く道は許可表の口だけ（import の許可表。R14）', () => {
   it('sfx-* を import しているゲーム側のファイルは許可表の中', () => {
     for (const f of sfxImporters()) expect(ALLOWED_IMPORTERS, f).toContain(f);
@@ -250,14 +221,14 @@ describe('音へ届く道は許可表の口だけ（import の許可表。R14）
     }
     for (const f of ['src/scenes/mission-scene.ts', 'src/systems/mission-world.ts', 'src/systems/world-visuals.ts', 'src/systems/mission-effects.ts']) expect(ALLOWED_IMPORTERS).not.toContain(f);
   });
-  it('今の段で import しているゲーム側のファイルは表のとおり（S4: 10 本＝許可表の全部。IP2 で試聴の場を足して 11 本。大発の 13mm の発砲＝barge-hunt は入れない）', () => {
+  it('今の段で import しているゲーム側のファイルは表のとおり（S4: 10 本＝許可表の全部。IP2 で試聴の場を足して 11 本・v0.7.2 S1 で曲の試聴の場を足して 12 本。大発の 13mm の発砲＝barge-hunt は入れない）', () => {
     expect(sfxImporters()).toEqual([...GAME_IMPORTERS_NOW].sort());
     expect(GAME_IMPORTERS_NOW).not.toContain('src/systems/barge-hunt.ts');
     expect(readFileSync('src/systems/barge-hunt.ts', 'utf8')).toContain('    onFire: () => {},\n');
   });
-  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行）と、触った既存のファイルは 300 行以下', () => {
+  it('hook の行の pin（S4: 10 本に 15 行。絵の層の口は 5 行。IP2: 試聴の場の 2 行で 11 本に 17 行。v0.7.2 S1: 曲の 7 行で 12 本に 24 行）と、触った既存のファイルは 300 行以下', () => {
     for (const p of HOOK_PINS) expect(readFileSync(p.file, 'utf8'), p.file).toContain(p.line);
-    expect(HOOK_PINS.length).toBe(17);
+    expect(HOOK_PINS.length).toBe(24);
     expect([...GAME_IMPORTERS_NOW].sort()).toEqual([...ALLOWED_IMPORTERS].sort());
     // 絵の層の口から呼ぶ位置つきの音は 6 か所だけ（水柱・大砲・機銃・爆発・2 次の爆発・沈み始め）。S1 の代わりの音は残っていない
     const calls = ['src/systems/fx-bus.ts', 'src/systems/explosion-fx.ts', 'src/systems/sink-fx.ts'].map((f) => (code(f).match(/\bsfx(?:Gun)?At\(/g) ?? []).length);

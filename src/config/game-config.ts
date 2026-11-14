@@ -66,7 +66,7 @@ export function artImageScale(key: string): number {
   return 1 / RENDER_SCALE / artTexDensity(key);
 }
 
-/** URL に ?sfxlab があるときだけ true（v0.7.1 IP2）: Boot が Title の代わりに音の試聴の場（scenes/sound-lab-scene）へ。?debug とは別（?debug が無くてもよい） */
+/** URL に ?sfxlab があるときだけ true（v0.7.1 IP2）: Boot が Title の代わりに試聴の場へ（v0.7.2 S1 から曲の試聴の場 scenes/music-lab-scene。効果音の場はその中から）。?debug とは別（?debug が無くてもよい） */
 export const SFX_LAB_ENABLED = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('sfxlab');
 
 /** URL に ?debug があるときだけ true。window.__game の公開、見越し点マーカー、発見距離・視程の円を出す（通常の Pages URL では何もしない） */
@@ -191,8 +191,10 @@ export const SCENE_KEYS = {
   result: 'Result',
   /** 一時停止（v0.5.1 実機 1 回目）。Mission と Hud の上に重ねる */
   pause: 'Pause',
-  /** 音の試聴の場（v0.7.1 IP2。?sfxlab の時だけ Boot から） */
+  /** 音の試聴の場（v0.7.1 IP2。v0.7.2 S1 から曲の試聴の場のボタンから） */
   soundLab: 'SoundLab',
+  /** 曲の試聴の場（v0.7.2 S1。?sfxlab の時だけ Boot から） */
+  musicLab: 'MusicLab',
 } as const;
 
 /** 艇の絵の鍵（v0.6.0: 艇ごとに 1 枚。Boot が遊べる任務の自艇と僚艇の寸法から 1 回だけ作る。T-38 は Elco より小さい） */

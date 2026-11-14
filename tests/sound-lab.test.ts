@@ -3,6 +3,7 @@
 //   説明（y 52）より下、上中央のビルド番号の行（y 24〜）に重ならない。
 // - ボタンの題は記号（IP3 の新しい案は「記号 型」・既定の案だけ「記号（今）」＝IP4 の既定 F は型を付けない＝論理幅 1280 の 5 列に収まる）、行の名前は 弾倉の始め・弾倉の終わり・魚雷の発射・魚雷の発射（新）・続けて聞く。案のボタンはボタンの音を鳴らさない（silent）。
 // - 道: ?sfxlab の時だけ Boot から来る（tests/sfx-inventory がシーンの並びと Boot の行を固定）。差し替えの口 sfxSetBuffer・sfxCanPlay を呼ぶのは試聴の場だけ（ゲームの中では呼ばない）。
+// - v0.7.2 S1: ?sfxlab は曲の試聴の場（tests/music-lab）を開き、ここへはその「効果音の試聴へ」から来る。下の段に「曲の試聴へ」（「戻る」の右＝ui/music-lab-layout の musicLabSideRect）。
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +11,7 @@ import { SFX_LAB } from '../src/config/sfx-config';
 import { SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_Y, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA } from '../src/config/sound-lab-config';
 import { SFX_LAB_ROWS, SFX_VARIANT_GROUPS } from '../src/assets/sfx-variants';
 import { soundLabBackRect, soundLabButtonRect, soundLabButtonTitle, soundLabLabelRect, type SoundLabRect } from '../src/ui/sound-lab-layout';
+import { musicLabSideRect } from '../src/ui/music-lab-layout';
 
 const H = 720;
 const MARGIN = 24;
@@ -25,12 +27,12 @@ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
     expect(ids).toEqual(['ABCD', 'ABCD', 'ABCD', 'EFGHI']);
     expect(SFX_LAB_ROWS.map((r) => SFX_VARIANT_GROUPS[r.group]!.key)).toEqual(['reload', 'reload_end', 'torp_launch', 'torp_launch']);
   });
-  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 21 と「戻る」が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明より下', (w) => {
+  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 21 と「戻る」・「曲の試聴へ」（v0.7.2 S1）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明より下', (w) => {
     const f = { gameWidth: w, gameHeight: H, margin: MARGIN };
     const rects: SoundLabRect[] = [];
     for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS[row]!; col++) rects.push(soundLabButtonRect(row, col, COLS[row]!, f));
-    rects.push(soundLabBackRect(f));
-    expect(rects.length).toBe(22);
+    rects.push(soundLabBackRect(f), musicLabSideRect(f));
+    expect(rects.length).toBe(23);
     for (const r of rects) {
       expect(r.x).toBeGreaterThanOrEqual(MARGIN);
       expect(r.x + r.w).toBeLessThanOrEqual(w - MARGIN + 1e-9);
@@ -71,19 +73,22 @@ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
     });
     expect(soundLabButtonTitle('F', SFX_VARIANT_GROUPS[2]!.defaultId === 'F', '落とす')).toBe('F（今）');
   });
-  it('シーン: 案のボタンは silent（5 行。行と案は SFX_LAB_ROWS）・「戻る」はタイトルへ・create は鳴らさない・update は確保しない', () => {
+  it('シーン: 案のボタンは silent（5 行。行と案は SFX_LAB_ROWS）・「戻る」はタイトルへ・「曲の試聴へ」は曲の試聴の場へ（v0.7.2 S1）・create は鳴らさない・update は確保しない', () => {
     const s = readFileSync('src/scenes/sound-lab-scene.ts', 'utf8');
-    expect(s.match(/new MenuButton\(/g)!.length).toBe(2);
+    expect(s.match(/new MenuButton\(/g)!.length).toBe(3);
     expect(s).toContain("align: 'center' as const, silent: true };");
-    expect(s).toContain('    this.scene.start(SCENE_KEYS.title);\n');
+    expect(s).toContain('() => this.leave(SCENE_KEYS.title)');
+    expect(s).toContain('() => this.leave(SCENE_KEYS.musicLab)');
+    expect(s).toContain('    this.scene.start(to);\n');
     expect(s).toContain('  override update(time: number): void {');
     const upd = s.slice(s.indexOf('  override update('), s.indexOf('  private tap('));
     expect(upd).not.toMatch(/\bnew\s|\.(map|filter|slice)\(|=>|setText/);
     expect(s.split('\n').length).toBeLessThanOrEqual(300);
   });
-  it('差し替えの口（sfxSetBuffer・sfxCanPlay）を呼ぶのは試聴の場だけ', () => {
+  it('差し替えの口（sfxSetBuffer・sfxCanPlay）を呼ぶのは試聴の場だけ（v0.7.2 S1: sfxCanPlay は曲の試聴の場も＝「この端末では音が出せません」・「音の準備中…」の文）', () => {
     const files = readdirSync('src', { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.ts')).map((f) => join('src', f).split('\\').join('/'));
-    const users = files.filter((f) => /\bsfx(?:SetBuffer|CanPlay)\(/.test(readFileSync(f, 'utf8').replace(/\/\/[^\n]*/g, ''))).sort();
-    expect(users).toEqual(['src/scenes/sound-lab-scene.ts', 'src/systems/sfx-bus.ts']);
+    const users = (re: RegExp): string[] => files.filter((f) => re.test(readFileSync(f, 'utf8').replace(/\/\/[^\n]*/g, ''))).sort();
+    expect(users(/\bsfxSetBuffer\(/)).toEqual(['src/scenes/sound-lab-scene.ts', 'src/systems/sfx-bus.ts']);
+    expect(users(/\bsfxCanPlay\(/)).toEqual(['src/scenes/music-lab-scene.ts', 'src/scenes/sound-lab-scene.ts', 'src/systems/sfx-bus.ts']);
   });
 });

@@ -5,12 +5,15 @@
 // （Hud のシーンは任務ごとに使い回される＝口を残すと前の任務の物が動く）。口は起動時に作った関数と自分を渡す（閉包を作らない）。
 // 画面の枠組みの型は使わない（出来事の口は構造の型・名前は下の 3 つ＝Phaser.Scenes.Events の PAUSE・RESUME・SHUTDOWN と同じ文字。tests/sfx-mission が node_modules の定義と突き合わせる）。
 // S4: 状態の合図（core/sfx-cues の stepSfxCues。発見の警報・魚雷の発射・被弾・鐘など）を同じ update で決め、自分の cue（合図の口）から systems/sfx-bus の sfxCue へ。
+// v0.7.2 S1（spec-v0720 §4.2・brief L13）: 作る時に曲の場面 MISSION を頼み（S1 は任務の曲がまだ無い＝メニューの曲が 1.2 秒で消えるだけ。S2 で 3 層）、PAUSE・RESUME で曲の束も 0 へ／戻し、
+// SHUTDOWN で「今も任務なら」外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼まれたメニューの曲を消さない）。
 import type { BoatTelemetry } from '../core/boat-telemetry';
 import type { SfxKey } from '../config/sfx-config';
+import { MUSIC_CTX_MISSION } from '../config/sfx-music-config';
 import { createSfxCueState, stepSfxCues, type SfxCueSink } from '../core/sfx-cues';
 import { createSfxLoopState, createSfxLoopTargets, stepSfxLoops, type SfxLoopState } from '../core/sfx-loops';
 import { ktToMps } from '../core/units';
-import { sfxCue, sfxLoops, sfxLoopsPaused, sfxLoopsStop } from './sfx-bus';
+import { sfxCue, sfxLoops, sfxLoopsPaused, sfxLoopsStop, sfxMusic, sfxMusicPaused, sfxMusicRelease } from './sfx-bus';
 
 /** シーンの出来事の名前（Phaser.Scenes.Events と同じ文字） */
 export const SFX_SCENE_EV_PAUSE = 'pause';
@@ -36,6 +39,7 @@ export class MissionSfx implements SfxCueSink {
     events.on(SFX_SCENE_EV_PAUSE, this.onPause, this);
     events.on(SFX_SCENE_EV_RESUME, this.onResume, this);
     events.once(SFX_SCENE_EV_SHUTDOWN, this.onShutdown, this);
+    sfxMusic(MUSIC_CTX_MISSION);
   }
 
   /** 毎フレーム（HudScene.update。deltaMs はそのフレームの ms）: 状態の合図を鳴らし、ループの目標を決めて渡す */
@@ -53,15 +57,18 @@ export class MissionSfx implements SfxCueSink {
 
   private onPause(): void {
     sfxLoopsPaused(true);
+    sfxMusicPaused(true);
   }
 
   private onResume(): void {
     sfxLoopsPaused(false);
+    sfxMusicPaused(false);
   }
 
   private onShutdown(): void {
     this.events.off(SFX_SCENE_EV_PAUSE, this.onPause, this);
     this.events.off(SFX_SCENE_EV_RESUME, this.onResume, this);
     sfxLoopsStop();
+    sfxMusicRelease(MUSIC_CTX_MISSION);
   }
 }

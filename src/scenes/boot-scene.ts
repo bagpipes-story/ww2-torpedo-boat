@@ -1,4 +1,4 @@
-// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0。?sfxlab は音の試聴の場＝v0.7.1 IP2）。
+// Boot: data/*.json を Registry に置き、共有の入力状態を作り、プレースホルダーをテクスチャ化して Title へ（?debug は Mission へ直行。docs/02 §4、v0.4.0。?sfxlab は試聴の場＝v0.7.1 IP2・v0.7.2 S1 から曲）。
 // 音（v0.7.1）: 合成の効果音のエンジンをここで 1 回作る（systems/sfx-boot。標本の合成・ゲームの時計・iOS の保険の resume）。最初のタッチの unlock は Phaser の sound manager がする。
 import Phaser from 'phaser';
 import {
@@ -148,7 +148,7 @@ export class BootScene extends Phaser.Scene {
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
-    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.soundLab); // 音の試聴の場（v0.7.1 IP2。?sfxlab の時だけ。ふだんの URL は Title・?debug は Mission のまま）
+    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.musicLab); // 試聴の場（?sfxlab の時だけ。v0.7.2 S1 から曲の試聴の場＝効果音の試聴の場はその中のボタンから。ふだんの URL は Title・?debug は Mission のまま）
     else if (DEBUG_DIRECT_MISSION) this.scene.start(SCENE_KEYS.mission, directSortie(debugMissionId(), sortieSeed(), DEBUG_RAID_OVERRIDE, DEBUG_HARD, DEBUG_HISTORICAL));
     else this.scene.start(SCENE_KEYS.title);
   }

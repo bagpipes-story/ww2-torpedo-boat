@@ -2,7 +2,8 @@
 // 作る予算・常駐の上限・音だけの種は「聞かせ方」の定数で、ゲームの強さの値ではない（config/sfx-config と同じ考え。論理に効く値は data/*.json のまま）。何も import しない。
 // ユーザーの決め U-M1（2026-11-14「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result に BGM、任務の中は小さい曲で、見つかったら緊張・撃たれたら戦闘の曲に変わる。
 // 警報の合図が鳴る時は曲を下げる。「曲: オン／オフ」は「音」と別。曲の標本は assets/sfx-music-*（作曲は音符・合成は音符を数フレームに分けて 1 本の標本へ描く＝方式 (a)）。
-// S0 はゲームのどこからも import されない（鳴らない＝束はバイトで同じ）。再生（systems/sfx-music-player）は S1、任務の段は S2、命中スローは S3。
+// S0 はゲームのどこからも import されなかった（鳴らない＝束はバイトで同じ）。S1 で再生（systems/sfx-music-player・作る列 systems/sfx-music-build）とメニューの曲・「曲」ボタン・
+// 曲の試聴の場、S2 で任務の段、S3 で命中スロー。
 
 /** 標本の速さ（効果音と同じ 22,050 Hz・モノ。tests/sfx-music-inventory が SFX_SAMPLE_RATE と同じことを固定） */
 export const MUSIC_SAMPLE_RATE = 22050;
@@ -79,6 +80,12 @@ export const MUSIC_FADE = {
 } as const;
 /** 曲の音源の数の上限（落ち着いた時は 0・1・3、移りの最中も ≤ 6。spec §4.2） */
 export const MUSIC_MAX_SOURCES = 6;
+/**
+ * 再生（v0.7.2 S1 の systems/sfx-music-player）: 決めは 10 Hz（updateHz）。組の音源は「今 ＋ startLeadS」の同じ when で始める（S2 の 3 層が同じ標本から鳴る）。音量の節は slots 本
+ * （1 組 layersMax 層まで × 3 組＝鳴っている組・止めかけの組・急いで 0 にした組。stop は 1 音源 1 回だけなので、急いで止める組は音量だけを 30 ms で 0 にし、節は予約の stop まで空かない）。
+ * 移りの秒 → 時定数は × fadeTc（秒の後に約 2%＝止める時に「ぷつっ」としない）。作る時間の記録は timingRing 回ぶん（stats の中央値・95%）
+ */
+export const MUSIC_PLAYER = { updateHz: 10, startLeadS: 0.05, slots: 9, layersMax: 3, fadeTc: 0.25, timingRing: 512 } as const;
 /** 曲のオン／オフの保存（localStorage の鍵。'0' でオフ・無い／読めなければオン＝D7。「音: オフ」の間は曲も鳴らない） */
 export const MUSIC_STORAGE_KEY = 'night-hunters.music';
 

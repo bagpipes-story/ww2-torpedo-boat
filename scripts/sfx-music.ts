@@ -7,13 +7,16 @@
 //   RMS を目標（§3.4）と比べ、音量の案（目標 ÷（RMS × 0.8）。緊張・戦闘は重ねて二分法）を出す。
 // - WAV=1: <出力先>/<鍵>.wav（16 bit・モノ・22,050 Hz。LOOP=<回数> で輪を続けて書く＝継ぎ目を聴く）と段の重ね mix-tense.wav・mix-battle.wav（頂 0.9 にそろえる）。
 //   PNG=1: <出力先>/music-strip.png（鍵の順に波形と声紋の帯）。出力先は scratchpad（repo には音・画像のファイルを入れない）。
+// - RAW=1（v0.7.2 S1）: メニューの mix の材料 <出力先>/raw-menu-<鍵>.json（タイトルの候補ごとに 12 秒: 曲の頭から × MUSIC_GAIN と、1 秒目から 1.5 秒おきのボタンの音 ui_tap
+//   ＝表の音量 × 中央のパン 0.707 の左右）。scripts/headless/sfx-offline.mjs が本物のリミッタ（ボタンの音）と master へ直の曲の束で出口を作り、ボタンの音の頂と曲の RMS の差を出す。
 // 実行: npx esbuild scripts/sfx-music.ts --bundle --platform=node --format=esm --outfile=<scratch>/sfx-music.mjs && [SEARCH=1] [WAV=1] [PNG=1] node <scratch>/sfx-music.mjs [<出力先>]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   MUSIC_BUILD_BUDGET, MUSIC_GAIN, MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_MASTER_GAIN, MUSIC_MOOD_WEIGHTS, MUSIC_SAMPLE_RATE, MUSIC_TARGET_DBFS, MUSIC_TITLE_KEYS, MUSIC_WORK_SAMPLES, type MusicKey,
 } from '../src/config/sfx-music-config';
-import { SFX_MAX_TOTAL_SAMPLES } from '../src/config/sfx-config';
+import { SFX_MAX_TOTAL_SAMPLES, SFX_TABLE } from '../src/config/sfx-config';
+import { renderSfx } from '../src/assets/sfx-bank';
 import { composeMusic, melodyCheck, type MusicScore } from '../src/assets/sfx-music-compose';
 import { MusicBuilder, composeMusicKey } from '../src/assets/sfx-music-render';
 import { MusicTables } from '../src/assets/sfx-music-synth';
@@ -110,6 +113,22 @@ function report(outDir: string): void {
     writeFileSync(join(outDir, 'music-strip.png'), pngBytes(rgb, STRIP_W, STRIP_H * (keys.length + 2)));
   }
   if (wav || png) console.log(`書いた先: ${outDir}${wav ? '（<鍵>.wav・mix-tense.wav・mix-battle.wav）' : ''}${png ? '（music-strip.png: 上から鍵の順・緊張の重ね・戦闘の重ね）' : ''}`);
+  if (process.env.RAW === '1') rawMenu(xs, outDir);
+}
+
+/** メニューの mix の材料（RAW=1。v0.7.2 S1）: 曲（× MUSIC_GAIN）と 1.5 秒おきのボタンの音（左右。リミッタへ行く単発の束） */
+function rawMenu(xs: Readonly<Record<MusicKey, Float32Array>>, outDir: string): void {
+  if (!outDir) throw new Error('RAW=1 は出力先（scratchpad のディレクトリ）が要る');
+  const n = 12 * SR, tap = renderSfx('ui_tap'), pan = Math.SQRT1_2, g = SFX_TABLE.ui_tap.gain * pan, uiAt: number[] = [];
+  const shots = new Float32Array(n);
+  for (let at = SR; at + tap.length < n; at += Math.round(1.5 * SR)) { uiAt.push(at); for (let i = 0; i < tap.length; i++) shots[at + i] = shots[at + i]! + tap[i]! * g; }
+  const b64 = (x: Float32Array): string => Buffer.from(x.buffer, x.byteOffset, x.byteLength).toString('base64');
+  for (const k of MUSIC_TITLE_KEYS) {
+    const music = new Float32Array(n);
+    for (let i = 0; i < n; i++) music[i] = xs[k][i % xs[k].length]!;
+    writeFileSync(join(outDir, `raw-menu-${k}.json`), JSON.stringify({ name: `menu-${k}`, sr: SR, pre: 0, blastAt: [], uiAt, left: b64(shots), right: b64(shots), loops: b64(new Float32Array(n)), music: b64(music), musicGain: MUSIC_GAIN[k] }));
+  }
+  console.log(`メニューの mix の材料: ${outDir}/raw-menu-<鍵>.json（${MUSIC_TITLE_KEYS.join('・')}。ボタンの音 ${uiAt.length} 回）`);
 }
 const MUSIC_LENGTHS_SUM = (): number => MUSIC_KEYS.filter((k) => k === 'title_a' || MUSIC_LAYER_KEYS.includes(k)).reduce((a, k) => a + MUSIC_THEMES[k].bars * MUSIC_THEMES[k].beats * 4 * ((SR * 60) / (MUSIC_THEMES[k].bpm * 4)), 0);
 
