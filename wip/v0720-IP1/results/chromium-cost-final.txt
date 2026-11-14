@@ -1,0 +1,48 @@
+page title_a+mission_l0+mission_l1+mission_l2 round 1 (isolated true, budget 150000): calls 346  per-call median 0.96 p95 2.63 max 6.30 ms  total 378 ms  errors 0
+   tables      calls   4  median 2.43 p95 4.11 max 4.11 ms  first5 2.4,1.2,0.7,4.1  compose 0.7 ms  ns/unit(median call) 16.2
+   title_a     calls 178  median 0.96 p95 3.59 max 5.74 ms  first5 1.0,0.8,3.8,3.7,3.7  compose 2.9 ms  ns/unit(median call) 6.4
+   mission_l0  calls  82  median 1.50 p95 1.60 max 1.61 ms  first5 0.2,0.5,0.9,0.9,1.1  compose 0.5 ms  ns/unit(median call) 10.0
+   mission_l1  calls  62  median 0.53 p95 2.22 max 2.70 ms  first5 0.1,2.7,0.5,0.5,0.5  compose 0.3 ms  ns/unit(median call) 26.5
+   mission_l2  calls  20  median 1.20 p95 6.30 max 6.30 ms  first5 1.2,0.5,0.8,2.0,1.2  compose 0.5 ms  ns/unit(median call) 29.2
+page title_a+mission_l0+mission_l1+mission_l2 round 2 (isolated true, budget 150000): calls 346  per-call median 0.86 p95 2.74 max 5.75 ms  total 365 ms  errors 0
+   tables      calls   4  median 2.16 p95 4.27 max 4.27 ms  first5 2.2,1.4,1.4,4.3  compose 0.6 ms  ns/unit(median call) 14.4
+   title_a     calls 178  median 1.03 p95 2.58 max 4.04 ms  first5 1.0,0.7,3.6,2.2,1.9  compose 2.8 ms  ns/unit(median call) 6.9
+   mission_l0  calls  82  median 0.89 p95 2.56 max 3.95 ms  first5 0.1,0.4,0.7,0.6,0.7  compose 0.4 ms  ns/unit(median call) 5.9
+   mission_l1  calls  62  median 0.66 p95 1.88 max 3.48 ms  first5 0.1,3.5,0.5,0.4,0.5  compose 0.4 ms  ns/unit(median call) 33.2
+   mission_l2  calls  20  median 1.43 p95 5.75 max 5.75 ms  first5 0.7,0.8,0.5,2.2,2.0  compose 0.6 ms  ns/unit(median call) 35.0
+page title_a+mission_l0+mission_l1+mission_l2 round 3 (isolated true, budget 150000): calls 346  per-call median 1.12 p95 2.88 max 8.84 ms  total 451 ms  errors 0
+   tables      calls   4  median 2.35 p95 4.07 max 4.07 ms  first5 2.3,1.0,0.8,4.1  compose 0.8 ms  ns/unit(median call) 15.7
+   title_a     calls 178  median 1.10 p95 3.73 max 8.84 ms  first5 1.0,0.7,3.8,4.1,2.2  compose 2.8 ms  ns/unit(median call) 7.4
+   mission_l0  calls  82  median 1.80 p95 2.61 max 2.69 ms  first5 0.2,0.6,1.0,1.0,1.2  compose 0.4 ms  ns/unit(median call) 12.0
+   mission_l1  calls  62  median 0.41 p95 2.61 max 4.36 ms  first5 0.1,4.4,0.7,0.8,1.0  compose 0.4 ms  ns/unit(median call) 20.7
+   mission_l2  calls  20  median 1.10 p95 3.54 max 3.54 ms  first5 0.3,0.4,0.3,2.2,1.1  compose 0.4 ms  ns/unit(median call) 26.9
+page title_d+title_e round 1 (isolated true, budget 150000): calls 299  per-call median 0.82 p95 2.81 max 7.20 ms  total 306 ms  errors 0
+   tables      calls   4  median 2.29 p95 3.39 max 3.39 ms  first5 2.3,1.2,1.1,3.4  compose 0.7 ms  ns/unit(median call) 15.3
+   title_d     calls 228  median 0.80 p95 3.33 max 7.20 ms  first5 0.8,0.6,7.2,5.0,3.9  compose 4.0 ms  ns/unit(median call) 5.4
+   title_e     calls  67  median 1.14 p95 2.35 max 2.71 ms  first5 0.2,1.4,1.3,1.4,1.0  compose 2.1 ms  ns/unit(median call) 7.6
+page title_d+title_e round 2 (isolated true, budget 150000): calls 299  per-call median 0.98 p95 3.49 max 7.20 ms  total 395 ms  errors 0
+   tables      calls   4  median 1.73 p95 2.93 max 2.93 ms  first5 1.7,1.1,0.8,2.9  compose 0.6 ms  ns/unit(median call) 11.6
+   title_d     calls 228  median 0.88 p95 3.95 max 7.20 ms  first5 0.9,0.6,5.3,4.3,5.3  compose 3.8 ms  ns/unit(median call) 5.9
+   title_e     calls  67  median 1.38 p95 2.80 max 2.85 ms  first5 0.2,1.4,1.4,1.3,1.9  compose 1.9 ms  ns/unit(median call) 9.2
+page title_d+title_e round 3 (isolated true, budget 150000): calls 299  per-call median 0.84 p95 2.40 max 8.02 ms  total 296 ms  errors 0
+   tables      calls   4  median 2.19 p95 3.77 max 3.77 ms  first5 2.2,1.5,0.7,3.8  compose 0.7 ms  ns/unit(median call) 14.6
+   title_d     calls 228  median 0.69 p95 2.76 max 8.02 ms  first5 1.4,1.2,8.0,7.2,7.9  compose 3.8 ms  ns/unit(median call) 4.6
+   title_e     calls  67  median 1.14 p95 1.84 max 2.40 ms  first5 0.1,1.1,1.1,0.8,0.8  compose 1.2 ms  ns/unit(median call) 7.6
+page title_d+mission_l0+mission_l1+mission_l2 round 1 (isolated true, budget 150000): calls 401  per-call median 0.82 p95 2.81 max 6.88 ms  total 380 ms  errors 0
+   tables      calls   4  median 2.09 p95 3.86 max 3.86 ms  first5 2.1,1.3,0.9,3.9  compose 0.7 ms  ns/unit(median call) 14.0
+   title_d     calls 228  median 0.81 p95 2.29 max 6.88 ms  first5 1.1,0.7,6.9,4.9,5.2  compose 5.6 ms  ns/unit(median call) 5.4
+   mission_l0  calls 115  median 0.85 p95 2.94 max 4.43 ms  first5 0.1,2.3,2.9,2.0,0.8  compose 0.4 ms  ns/unit(median call) 5.7
+   mission_l1  calls  42  median 0.46 p95 2.73 max 3.06 ms  first5 0.1,1.0,1.6,1.4,1.3  compose 0.3 ms  ns/unit(median call) 23.0
+   mission_l2  calls  12  median 0.74 p95 1.34 max 1.34 ms  first5 0.4,0.5,0.5,0.6,0.7  compose 0.4 ms  ns/unit(median call) 4.9
+page title_d+mission_l0+mission_l1+mission_l2 round 2 (isolated true, budget 150000): calls 401  per-call median 0.83 p95 2.49 max 8.39 ms  total 394 ms  errors 0
+   tables      calls   4  median 1.55 p95 3.43 max 3.43 ms  first5 1.6,0.8,1.0,3.4  compose 0.6 ms  ns/unit(median call) 10.4
+   title_d     calls 228  median 0.76 p95 2.18 max 8.39 ms  first5 0.8,0.6,7.3,2.4,0.4  compose 7.0 ms  ns/unit(median call) 5.1
+   mission_l0  calls 115  median 0.95 p95 2.91 max 4.95 ms  first5 0.1,2.5,4.1,0.4,2.2  compose 0.4 ms  ns/unit(median call) 6.3
+   mission_l1  calls  42  median 0.78 p95 3.34 max 4.15 ms  first5 0.1,0.7,1.2,1.3,1.2  compose 0.4 ms  ns/unit(median call) 38.8
+   mission_l2  calls  12  median 1.62 p95 2.13 max 2.13 ms  first5 0.7,1.0,1.7,1.3,1.6  compose 0.5 ms  ns/unit(median call) 10.8
+page title_d+mission_l0+mission_l1+mission_l2 round 3 (isolated true, budget 150000): calls 401  per-call median 0.86 p95 3.09 max 7.40 ms  total 466 ms  errors 0
+   tables      calls   4  median 1.69 p95 3.09 max 3.09 ms  first5 1.7,0.8,0.9,3.1  compose 0.5 ms  ns/unit(median call) 11.3
+   title_d     calls 228  median 0.81 p95 3.21 max 7.40 ms  first5 0.8,0.6,6.7,4.2,2.9  compose 3.9 ms  ns/unit(median call) 5.4
+   mission_l0  calls 115  median 1.41 p95 3.02 max 5.20 ms  first5 0.1,2.7,4.0,1.7,0.8  compose 0.4 ms  ns/unit(median call) 9.4
+   mission_l1  calls  42  median 0.87 p95 3.52 max 4.27 ms  first5 0.1,4.2,2.7,2.0,2.3  compose 0.4 ms  ns/unit(median call) 43.3
+   mission_l2  calls  12  median 1.20 p95 1.64 max 1.64 ms  first5 0.7,1.1,1.0,1.2,1.4  compose 1.1 ms  ns/unit(median call) 8.0

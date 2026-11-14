@@ -17,7 +17,7 @@ var SFX_SEED_MUSIC_L0 = 7628;
 var SFX_SEED_MUSIC_L1 = 7629;
 var SFX_SEED_MUSIC_L2 = 7630;
 var SFX_SEED_MUSIC_NOISE = 7699;
-var MUSIC_COST = { tone: 1, toneMix: 2, fm: 3, noise: 2, room: 3, pass: 0.5, tablePoint: 1, note: 300 };
+var MUSIC_COST = { tone: 1, toneMix: 2, fm: 3, noise: 2, room: 4, pass: 0.5, tablePoint: 1, note: 300 };
 var MUSIC_BUILD_WARM = { samples: 6e5, perCall: 2e4, passShare: 0.25 };
 var MUSIC_WORK_SAMPLES = 672e3;
 
@@ -716,11 +716,12 @@ var MusicBuilder = class {
   }
   /**
    * ならし（輪の末尾を響きに通して状態だけ作る）・響き（元 ＋ 割合 × 全域通過（櫛の和）。書いて数える）・数え（和・最大・最小）。
-   * 櫛: 出 = 列[位置]・低域 = 出 × (1 − damp) ＋ 低域 × damp・列[位置] = 入 ＋ 低域 × 帰り。全域通過: 出 = 列[位置] − 入・列[位置] = 入 ＋ 列[位置] × 0.5
+   * 櫛: 出 = 列[位置]・低域 = 出 × (1 − damp) ＋ 低域 × damp・列[位置] = 入 ＋ 低域 × 帰り。全域通過: 出 = 列[位置] − 入・列[位置] = 入 ＋ 列[位置] × 0.5。
+   * ならしと響きは同じ命令の列（ならしは割合 0 で元の値をそのまま書き戻し、数えた和・最大・最小は段の終わりで捨てる）＝ならしで温まった JIT をそのまま使う（分かれ道があると響きの最初の 1 回が遅い）
    */
   stepFx(a, b) {
     const x = this.work, warm = this.stage === S_WARM, from = warm ? this.n - this.warmN : 0, rb = this.rb, off = this.rOff, len = this.rLen, pos = this.rPos, fb = this.rFb, lp = this.rLp;
-    const dmp = ROOM.damp, dm1 = 1 - dmp, ag = ROOM.apG, wet = this.wet;
+    const dmp = ROOM.damp, dm1 = 1 - dmp, ag = ROOM.apG, wet = warm ? 0 : this.wet;
     let sum = this.sum, hi = this.hi, lo = this.lo;
     if (this.stage === S_SCAN) {
       for (let i = a; i < b; i++) {
@@ -748,9 +749,8 @@ var MusicBuilder = class {
           const q = pos[c] + 1;
           pos[c] = q >= len[c] ? 0 : q;
         }
-        if (warm) continue;
         const v = u + y * wet;
-        x[i] = v;
+        x[from + i] = v;
         sum += v;
         if (v > hi) hi = v;
         if (v < lo) lo = v;
@@ -769,8 +769,12 @@ var MusicBuilder = class {
     }
     if (this.stage === S_CLEAR) this.stage = S_NOTES;
     else if (this.stage === S_NOTES) this.stage = this.warmN > 0 ? S_WARM : S_SCAN;
-    else if (this.stage === S_WARM) this.stage = S_FX;
-    else if (this.stage === S_FX || this.stage === S_SCAN) {
+    else if (this.stage === S_WARM) {
+      this.sum = 0;
+      this.hi = -Infinity;
+      this.lo = Infinity;
+      this.stage = S_FX;
+    } else if (this.stage === S_FX || this.stage === S_SCAN) {
       this.mean = this.sum / this.n;
       const peak = Math.max(this.hi - this.mean, this.mean - this.lo);
       this.scale = peak > 0 ? MUSIC_PEAK / peak : 1;

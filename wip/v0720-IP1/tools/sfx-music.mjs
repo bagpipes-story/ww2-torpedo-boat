@@ -35,7 +35,7 @@ var MUSIC_GAIN = {
 };
 var MUSIC_MOOD_WEIGHTS = [[1, 0, 0], [0.8, 1, 0], [0.5, 0.3, 1]];
 var MUSIC_BUILD_BUDGET = 15e4;
-var MUSIC_COST = { tone: 1, toneMix: 2, fm: 3, noise: 2, room: 3, pass: 0.5, tablePoint: 1, note: 300 };
+var MUSIC_COST = { tone: 1, toneMix: 2, fm: 3, noise: 2, room: 4, pass: 0.5, tablePoint: 1, note: 300 };
 var MUSIC_BUILD_WARM = { samples: 6e5, perCall: 2e4, passShare: 0.25 };
 var MUSIC_WORK_SAMPLES = 672e3;
 
@@ -2299,11 +2299,12 @@ var MusicBuilder = class {
   }
   /**
    * ならし（輪の末尾を響きに通して状態だけ作る）・響き（元 ＋ 割合 × 全域通過（櫛の和）。書いて数える）・数え（和・最大・最小）。
-   * 櫛: 出 = 列[位置]・低域 = 出 × (1 − damp) ＋ 低域 × damp・列[位置] = 入 ＋ 低域 × 帰り。全域通過: 出 = 列[位置] − 入・列[位置] = 入 ＋ 列[位置] × 0.5
+   * 櫛: 出 = 列[位置]・低域 = 出 × (1 − damp) ＋ 低域 × damp・列[位置] = 入 ＋ 低域 × 帰り。全域通過: 出 = 列[位置] − 入・列[位置] = 入 ＋ 列[位置] × 0.5。
+   * ならしと響きは同じ命令の列（ならしは割合 0 で元の値をそのまま書き戻し、数えた和・最大・最小は段の終わりで捨てる）＝ならしで温まった JIT をそのまま使う（分かれ道があると響きの最初の 1 回が遅い）
    */
   stepFx(a, b) {
     const x = this.work, warm = this.stage === S_WARM, from = warm ? this.n - this.warmN : 0, rb = this.rb, off = this.rOff, len = this.rLen, pos = this.rPos, fb = this.rFb, lp = this.rLp;
-    const dmp = ROOM.damp, dm1 = 1 - dmp, ag = ROOM.apG, wet = this.wet;
+    const dmp = ROOM.damp, dm1 = 1 - dmp, ag = ROOM.apG, wet = warm ? 0 : this.wet;
     let sum = this.sum, hi = this.hi, lo = this.lo;
     if (this.stage === S_SCAN) {
       for (let i = a; i < b; i++) {
@@ -2331,9 +2332,8 @@ var MusicBuilder = class {
           const q = pos[c] + 1;
           pos[c] = q >= len[c] ? 0 : q;
         }
-        if (warm) continue;
         const v = u + y * wet;
-        x[i] = v;
+        x[from + i] = v;
         sum += v;
         if (v > hi) hi = v;
         if (v < lo) lo = v;
@@ -2352,8 +2352,12 @@ var MusicBuilder = class {
     }
     if (this.stage === S_CLEAR) this.stage = S_NOTES;
     else if (this.stage === S_NOTES) this.stage = this.warmN > 0 ? S_WARM : S_SCAN;
-    else if (this.stage === S_WARM) this.stage = S_FX;
-    else if (this.stage === S_FX || this.stage === S_SCAN) {
+    else if (this.stage === S_WARM) {
+      this.sum = 0;
+      this.hi = -Infinity;
+      this.lo = Infinity;
+      this.stage = S_FX;
+    } else if (this.stage === S_FX || this.stage === S_SCAN) {
       this.mean = this.sum / this.n;
       const peak = Math.max(this.hi - this.mean, this.mean - this.lo);
       this.scale = peak > 0 ? MUSIC_PEAK / peak : 1;
@@ -2429,6 +2433,50 @@ function bandShares(x, sampleRate, hz = 400, lowHz = 200) {
     }
   }
   return all > 0 ? [hi / all, lo / all] : [0, 0];
+}
+function bandShare(x, sampleRate, lo, hi) {
+  const size = 1024;
+  let b = 0, all = 0;
+  for (let from = 0; from + size <= x.length; from += size) {
+    const mag = spectrum(x, from, size, size);
+    for (let i = 1; i < mag.length; i++) {
+      const p = mag[i] * mag[i], f = i * sampleRate / size;
+      all += p;
+      if (f >= lo && f < hi) b += p;
+    }
+  }
+  return all > 0 ? b / all : 0;
+}
+function onsetRate(x0, sampleRate) {
+  let s = 0;
+  for (let i = 0; i < x0.length; i++) s += x0[i] * x0[i];
+  const g = 0.1 / Math.max(1e-9, Math.sqrt(s / x0.length)), x = x0.map((v) => v * g), size = 1024, hop = 512, fl = [];
+  let prev = null;
+  for (let from = 0; from + size <= x.length; from += hop) {
+    const mag = spectrum(x, from, size, size), lg = mag.map((m) => Math.log(1 + 100 * m));
+    let f = 0;
+    for (let i = 1; prev && i < mag.length; i++) {
+      const hz = i * sampleRate / size;
+      if (hz >= 150 && hz <= 8e3 && lg[i] > prev[i]) f += lg[i] - prev[i];
+    }
+    fl.push(f);
+    prev = lg;
+  }
+  const p99 = [...fl].sort((a, b) => a - b)[Math.floor(fl.length * 0.99)], half = Math.round(0.5 * sampleRate / hop);
+  let n = 0, last = -99;
+  for (let t = 1; t < fl.length - 1; t++) {
+    let peak = true, sum = 0, c = 0;
+    for (let k = -3; k <= 3; k++) if (k !== 0 && (fl[t + k] ?? -1) > fl[t]) peak = false;
+    for (let k = -half; k <= half; k++) if (fl[t + k] !== void 0) {
+      sum += fl[t + k];
+      c++;
+    }
+    if (peak && fl[t] > sum / c * 1.5 + p99 * 0.05 && t - last >= 3) {
+      n++;
+      last = t;
+    }
+  }
+  return n / (x.length / sampleRate);
 }
 function centroidHz(x, from, to, sampleRate) {
   let size = 256;
@@ -2574,7 +2622,7 @@ function report(outDir) {
     times.sort((p, q) => p - q);
     const w = Math.round(0.025 * SR8), seam = new Float32Array([...x.subarray(n - w), ...x.subarray(0, w)]);
     const [hi, lo] = bandShares(x, SR8);
-    console.log(`${key.padEnd(11)} ${(n / SR8).toFixed(2)} \u79D2\uFF08${n}\uFF09  \u9802 ${peakOf2(x).toFixed(3)}  RMS ${dbfs(rmsOf(x))} dBFS  >400 Hz ${pct(hi)}\u30FB<200 Hz ${pct(lo)}  \u91CD\u5FC3 ${centroidHz(x, 0, Math.min(n, 65536), SR8).toFixed(0)} Hz  \u97F3\u7B26 ${sc.notes.length}`);
+    console.log(`${key.padEnd(11)} ${(n / SR8).toFixed(2)} \u79D2\uFF08${n}\uFF09  \u9802 ${peakOf2(x).toFixed(3)}  RMS ${dbfs(rmsOf(x))} dBFS  >400 Hz ${pct(hi)}\u30FB<200 Hz ${pct(lo)}\u30FB>2.5 kHz ${(bandShare(x, SR8, 2500, SR8) * 100).toFixed(1)}%  \u91CD\u5FC3 ${centroidHz(x, 0, Math.min(n, 65536), SR8).toFixed(0)} Hz  \u97F3\u7B26 ${sc.notes.length}${sc.theme.room ? `  \u97FF\u304D ${sc.theme.room.join("\u30FB")} \u79D2` : ""}`);
     console.log(`${"".padEnd(11)} \u7D99\u304E\u76EE: \u5DEE ${Math.abs(x[0] - x[n - 1]).toFixed(4)}\uFF08\u4E2D\u306E\u5DEE\u306E\u4E2D\u592E\u5024 ${quant(jumps, 0.5).toFixed(4)}\u30FB99% ${quant(jumps, 0.99).toFixed(4)}\uFF09\u30FB50 ms \u306E RMS \u524D ${dbfs(rmsOf(x, n - 3 * w, n - w))}\uFF0F\u307E\u305F\u3050 ${dbfs(rmsOf(seam))}\uFF0F\u5F8C ${dbfs(rmsOf(x, w, 3 * w))} dBFS`);
     console.log(`${"".padEnd(11)} \u4F5C\u308B: ${units.toFixed(0)} \u5358\u4F4D\uFF1D${times.length} \u30D5\u30EC\u30FC\u30E0\uFF08\u4E88\u7B97 ${MUSIC_BUILD_BUDGET}\uFF09\u30FBnode ${times.reduce((p, q) => p + q, 0).toFixed(1)} ms\uFF081 \u56DE\u306E\u4E2D\u592E\u5024 ${quant(times, 0.5).toFixed(2)}\u30FB95% ${quant(times, 0.95).toFixed(2)}\u30FB\u6700\u5927 ${times[times.length - 1].toFixed(2)} ms\uFF09\u30FB${(units / (n / SR8) / 1e3).toFixed(0)} k \u5358\u4F4D\uFF0F\u97F3 1 \u79D2`);
     const c = melodyCheck(sc);
@@ -2601,15 +2649,18 @@ function report(outDir) {
       else a = m;
     }
   }
+  const cmp = [];
   moods.forEach((t, m) => {
-    const x = moodMix(xs, m, cur);
-    console.log(`\u4EFB\u52D9 \u6BB5 ${["\u9759\u304B", "\u7DCA\u5F35", "\u6226\u95D8"][m]}: \u51FA\u53E3 ${db(rmsOf(x) * MUSIC_MASTER_GAIN).toFixed(1)} dBFS\uFF08\u76EE\u6A19 ${t}\uFF09\u30FB\u9802 ${(peakOf2(x) * MUSIC_MASTER_GAIN).toFixed(3)}\u30FB>400 Hz ${pct(bandShares(x, SR8)[0])}\u30FB<200 Hz ${pct(bandShares(x, SR8)[1])}`);
+    const x = moodMix(xs, m, cur), r = db(rmsOf(x) * MUSIC_MASTER_GAIN), band = r + 10 * Math.log10(bandShare(x, SR8, 2e3, 5e3)), on = onsetRate(x, SR8);
+    cmp.push([r, band, on]);
+    console.log(`\u4EFB\u52D9 \u6BB5 ${["\u9759\u304B", "\u7DCA\u5F35", "\u6226\u95D8"][m]}: \u51FA\u53E3 ${r.toFixed(1)} dBFS\uFF08\u76EE\u6A19 ${t}\uFF09\u30FB\u9802 ${(peakOf2(x) * MUSIC_MASTER_GAIN).toFixed(3)}\u30FB>400 Hz ${pct(bandShares(x, SR8)[0])}\u30FB<200 Hz ${pct(bandShares(x, SR8)[1])}\u30FB2\u301C5 kHz \u306E\u5E2F ${band.toFixed(1)} dBFS\u30FB\u767A\u97F3 ${on.toFixed(2)}/\u79D2`);
     if (wav && m > 0) {
       const pk = peakOf2(x), y = x.map((v) => v * 0.9 / pk);
       writeFileSync(join(outDir, `mix-${m === 1 ? "tense" : "battle"}.wav`), wavBytes(y, SR8));
     }
   });
   console.log(`\u4EFB\u52D9\u306E\u5C64\u306E\u97F3\u91CF\u306E\u6848\uFF08L0\u30FBL1\u30FBL2\uFF09: ${sug.map((g) => g.toFixed(3)).join("\u30FB")}\uFF08\u4ECA ${cur.join("\u30FB")}\uFF09`);
+  console.log(`\u7DCA\u5F35\u3068\u6226\u95D8\u306E\u9055\u3044\uFF08IP1\uFF09: \u767A\u97F3 \xD7${(cmp[2][2] / cmp[1][2]).toFixed(2)}\uFF08\u9580 \u2265 2\uFF09\u30FB2\u301C5 kHz \u306E\u5E2F ${(cmp[2][1] - cmp[1][1]).toFixed(1)} dB\uFF08\u9580 \u2265 4\uFF09\u30FBRMS ${(cmp[2][0] - cmp[1][0]).toFixed(1)} dB`);
   if (png) {
     const keys = [...MUSIC_KEYS], rgb = new Uint8Array(STRIP_W * STRIP_H * (keys.length + 2) * 3);
     keys.forEach((k, i) => drawStrip(rgb, i * STRIP_H, xs[k]));

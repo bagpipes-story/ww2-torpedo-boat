@@ -1,0 +1,13 @@
+import { chromium, serve } from '/home/user/ww2-torpedo-boat/scripts/headless/lib.mjs';
+const sv = await serve(process.env.SITE, { isolate: true });
+const browser = await chromium.launch();
+const page = await browser.newPage();
+page.on('pageerror', (e) => console.log('pageerror', String(e)));
+page.on('console', (m) => console.log('console', m.text()));
+page.on('requestfailed', (r) => console.log('failed', r.url()));
+page.on('response', (r) => console.log('resp', r.status(), r.url()));
+console.log('base', sv.base);
+await page.goto(sv.base);
+await page.waitForTimeout(2000);
+console.log('has bench', await page.evaluate(() => typeof window.__bench));
+await browser.close(); await sv.close();

@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: tests/sfx-music-contrast.test.ts
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: 途中: D・E・L1・L2 の作り直し・部屋の響き・トレモロ・tests の直し（npm test の前）
+- 一言: 終わり: IP1 の実装・tests 3,522 件・数（曲・違い・mix・メニュー・Chromium・live 4 つ・短い run-gates 18 組）・CHANGELOG・docs/03
