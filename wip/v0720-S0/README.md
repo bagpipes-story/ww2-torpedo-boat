@@ -14,4 +14,4 @@ tests/sfx-music-inventory.test.ts
 tests/sfx-music-render.test.ts
 tests/sfx-music-synth.test.ts
 - tools/ … scratchpad の道具（Chromium の費用の測り bench-*・kern-*、prof・parts・tabbench・fxbench、backup.sh、v0720/tools/run-gates.sh の写し）、results/ … 文字の結果（音・画像は入れない。WAV・PNG は scratchpad の v0720/impl/S0/music）
-- 一言: S0 最終（テスト 4 本＋rules 3 件・npm test 3,326・typecheck・lint・build・束は main 35e9e77 とバイトで同じ・短い run-gates は音の 3 つの状態で全部同じ・CHANGELOG・docs/03・版 0.7.2・Chromium の費用・種 7603/7619/7621/7622/7623/7624）
+- 一言: S0 最終＋CHANGELOG の束ね・短い確かめの行

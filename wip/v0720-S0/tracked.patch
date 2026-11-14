@@ -1,8 +1,8 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 2d86a11..e559914 100644
+index 2d86a11..2521875 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -3,6 +3,39 @@
+@@ -3,6 +3,41 @@
  書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
  3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
  
@@ -30,6 +30,8 @@ index 2d86a11..e559914 100644
 +    - 費用の実測（ヘッドレスの Chromium・1 回の `stepBuild(150,000)`・ページを開くたびに初めから 5 回）: ゲームの順（表 → A → L0 → L1 → L2）は 313 回で中央値 0.73〜0.82 ms・95% 2.1〜2.7 ms・最大 5.3〜10.7 ms（最大は書き方の初回）、試聴の場の B → C は 264 回で中央値 0.49〜0.64 ms・95% 1.9〜3.1 ms・最大 6.3〜10.2 ms。温まった後の 1 回は 0.5〜1.5 ms。JIT の初回の上限を入れる前は、書き方を初めて回す 1 回が 10〜24 ms（表は 1 回で 7〜16 ms）だった。node の 1 回の中央値は 0.6〜1.0 ms。
 +    - テスト（＋4 ファイル・＋111 件）: `tests/sfx-music-synth`（楽器ごとに NaN なし・立ち上がり 0・書き終わり −40 dB 未満・分けても同じ・輪の尾が頭へ続く・表の 10 kHz の上限と RMS・表を埋める口の予算・IP1〜IP2 の教え・胴の下限・費用の単位）・`tests/sfx-music-compose`（同じ種は同じ音符・種は決まりを通る最初の数・旋律の決まり・句の終わり・変形・決まり文句の見張りがわざと破った旋律で効く・和音と音階・旋律の音の並びが source に無い）・`tests/sfx-music-render`（分けた標本＝一度の標本・16 bit の指紋・頂・直流・輪の尾・継ぎ目・帯の割合・出口の RMS の目標 ±1.5 dB・出口の頂 < 0.4・予算・作業用の配列）・`tests/sfx-music-inventory`（鍵・SFX_KEYS に入らない・種・速さと長さ・層の整数倍・常駐の上限・音量・下げ・段・スロー・移り・予算の表）。`tests/sfx-rules` に曲のファイルが純粋な層に入る・毎フレームの口が検査に掛かる・ゲーム側は sfx-music-* を import しない、を足した（GAME_IMPORTERS_NOW・hook の pin は v0.7.1 のまま）。`scripts/sfx-files` に帯の割合 `bandShares`。
 +    - 道具: `scripts/sfx-music.ts`（esbuild＋node）＝`SEARCH=1` で鍵の順に決まりを全部通る最初の種を探す・既定で鍵ごとの数と段の重ね・音量の案、`WAV=1`・`PNG=1`・`LOOP=<回数>` は scratchpad へ。scratchpad: 基準のビルド `v0720/base-35e9e77`（main 35e9e77 を `VITE_BUILD_REF=main VITE_BUILD_SHA=35e9e77` で。worktree `v0720/wt-35e9e77`）・`v0720/tools/run-gates.sh`（v0710 の写し。基準と出力先だけを変え、音の 3 つの状態・既知の揺れの回し直しはそのまま）・Chromium の費用の道具（`v0720/impl/S0/tools/bench-*`）。
++    - 束ね: 新しいファイルはどこからも import されないので、同じビルド番号（main@35e9e77）で作った S0 の JS の束は基準と**バイトで同じ**（`assets/index-DUkOVaaO.js` 2,256,304 バイト・md5 6556391c…。index.html・manifest・icons も同じ。違うのは作った時刻の入る sw.js だけ）。
++    - 短い確かめ（agent）: npm test 3,326 件（288 ファイル）・typecheck（2 つの tsconfig）・lint・build が通る。短い run-gates（`SKIP="test g2 art-perf" AB_ENV="MISSION=us_02 SECS=20"`・小さい組も音の 3 つの状態で）は ab-replay・hud-ab が既定・`AUDIO=1`・`NOAUDIO=1` の全部で same（各 1 件）・tex-ab CHECK=1 の ✗ 0・スナップショットはそのまま（約 3 分）。
 +    - 門: （lead が別に回した run-gates の結果をここに足す）
 +- 既知の制約（S0）:
 +  - 耳: 曲は数（声紋・帯の割合・旋律の決まり）でしか確かめていない。最後はユーザーの耳（S1 の試聴の場に「知っている曲に似ていたら教えてください」）。旋律は決まりを通る最初の種で、良し悪しは選んでいない。
