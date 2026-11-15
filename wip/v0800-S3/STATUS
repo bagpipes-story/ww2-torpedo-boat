@@ -1,5 +1,6 @@
-v0.8.0 S3 (intercept sim) — WIP backup. Base f9ba94f (claude/v0.8.0-us-campaign). Apply: git apply s3.patch
-State: sim files + first tables done (t1 normal d9db008b 2m10.8s / hard aab25d01 2m33.4s; 帯 ✗ 6 / ✗ 2). Knob probes ①〜④ done (none reaches B1/B2/B3; ④ fuel 34 makes F ✓ but rewrites tests/__snapshots__/setup-us04 = outside the allowed list).
-strait-probe written and run: with &noplane and 識別 pressed, world = sim on all 24 nights (same reason, same second). Real night: seaplane adds 4/8 radar_ambush losses.
-g2.sh US04=1 added (md5 = first tables; band line required).
-Not yet: intercept-sim-b, light-set stability check, final tables re-run, CHANGELOG S3 block, hand-back (bands unreachable → lead decision).
+v0.8.0 S3 (intercept sim) — final implementer tree (uncommitted in the repo). Base f9ba94f (claude/v0.8.0-us-campaign). Apply: git apply s3.patch
+Data unchanged (no §4.11 knob moved). Tables: normal md5 d9db008bb03d3cdad27e07c2c48783d1 (2m15s), hard aab25d017507d7eb6d6373338dde664e (2m38s) = first tables.
+Bands: B1a ✗ 31.0 / B1b ✗ 56.4 / B1c ✗ 43.6 / B2 ✗ 53.3 / B3 ✗ 0.4 / B4 ✓ 0.0 / B5 ✓ 48.1 / B6 ✓ 38.1 / F ✗ 49.6; hard H1 ✗ 31.0 / H2 ✗ 62.8 -> lead decision needed.
+g2 (G6 ALLY EVAC US04): OK 37 DIFF 2 (us4/us4h md5 same, bands ✗). npm test: 3 fail = intercept-sim-b x2 (bands) + tests/radar importer pin (needs the sim files added; outside S3's allowed files; proposed patch v0800/impl/S3-dev/proposed/radar-test.patch).
+strait-probe: &noplane + IDENT=1 -> world = sim on 24/24 nights. Real night: seaplane adds 4/8 radar_ambush losses.
+Scratch evidence: v0800/impl/S3-dev/{tables,final,probe,probes.log,lightsets.txt,g2.log,npmtest.log}.
