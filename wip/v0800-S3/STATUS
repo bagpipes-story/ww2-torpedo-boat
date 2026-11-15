@@ -4,3 +4,4 @@ Bands: B1a ✗ 31.0 / B1b ✗ 56.4 / B1c ✗ 43.6 / B2 ✗ 53.3 / B3 ✗ 0.4 / B
 g2 (G6 ALLY EVAC US04): OK 37 DIFF 2 (us4/us4h md5 same, bands ✗). npm test: 3 fail = intercept-sim-b x2 (bands) + tests/radar importer pin (needs the sim files added; outside S3's allowed files; proposed patch v0800/impl/S3-dev/proposed/radar-test.patch).
 strait-probe: &noplane + IDENT=1 -> world = sim on 24/24 nights. Real night: seaplane adds 4/8 radar_ambush losses.
 Scratch evidence: v0800/impl/S3-dev/{tables,final,probe,probes.log,lightsets.txt,g2.log,npmtest.log}.
+Build: same label main@2afe092 -> 7 of 8 files byte-identical to the S2 gate site (sw.js build time only).
