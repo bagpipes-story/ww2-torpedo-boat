@@ -1,6 +1,6 @@
 # v0.8.0 S4 brief (lead → implementer)
 
-Branch `claude/v0.8.0-us-campaign`, HEAD = the S3 commit (lead fills; S2 is f9ba94f). PR #39. Do NOT commit; the lead runs the gates, commits and pushes.
+Branch `claude/v0.8.0-us-campaign`, HEAD = e8be5eb (the S3 commit; S2 is f9ba94f). PR #39. Do NOT commit; the lead runs the gates, commits and pushes.
 Machine: 4 CPUs, 15 GB. Keep parallel jobs ≤ 3; one heavy job at a time. Gate runner `scratchpad/v0800/tools/run-gates.sh <stage>` (read its header; run it as `S4-impl` once your tree is final). Back up early and regularly to notes70 `wip/v0800-S4/` (branch `claude/v0.7.0-notes`, 4/8/16/32 s backoff).
 
 Spec: `scratchpad/v0800/plan/spec-v0800.md` — implement stage **S4（HUD・Briefing・Result）** as its §6 row says, with §4.9 (every text, the px limits and how they are measured), §4.6 (objective, success, scoring unchanged), §3.2 D-R1〜D-R12 (what the radar may show; D-R10 the HUD), §3.5 (neutrality tests incl. `sfx-music-mood` / `sfx-rules`), §4.10 (no sound, no music change; the green edge marker art), §4.12 (no persons or the famous boat), §5.1 / §5.2, §7. Lead notes from S2 and S3: `scratchpad/v0800/plan/notes-S4.md` (read it; its S3 section lists the us_04 data that changed in S3: the escort's first heading 270 and the fuel 33 gal). The data numbers (radar range, column speed, lanes) may have moved in S3 — read them from data, never hard-code them in text or tests.

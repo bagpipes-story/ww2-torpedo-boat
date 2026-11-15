@@ -11,6 +11,7 @@
 #   JOBS（既定 3）
 # SUMMARY の名前: 既定の状態は ab-all・hud-base …、ほかの状態は @audio・@noaudio を付ける（log も同じ名前）。art-perf は参考（門ではない）。
 # 既知の揺れ（v0.7.0 から）: ab-all の us_02 seed 1 の最後のフレーム → result の組を同じ状態で JOBS=1 で回し直す（下）。
+# g2 は S3 から US04=1（us_04 の帯の表 2 本＝OK 39。S2 までの木で回すときは US04=0）。
 # 時間の目安（v0.7.1 IP4・S5 の実測）: npm test 約 6 分・g2 約 20 分・ab-all は 1 状態 1〜2 分・hud-base と小さい組は 1 分以内・tex-ab 約 1 分＝art-perf なしで約 35〜40 分、art-perf は ＋約 14 分。
 set -u
 STAGE=${1:?stage}
@@ -31,7 +32,7 @@ skip build || { rm -rf $B && VITE_BASE=/ww2-torpedo-boat/ VITE_BUILD_REF=main VI
 skip typecheck || { npm run typecheck > $D/typecheck.log 2>&1 && ok typecheck || ng typecheck; }
 skip lint || { npm run lint > $D/lint.log 2>&1 && ok lint || ng lint; }
 skip test || { npm test > $D/test.log 2>&1 && ok "npm test $(grep -E 'Tests +[0-9]+ passed' $D/test.log | tail -1 | tr -s ' ')" || ng "npm test (see test.log)"; }
-skip g2 || { G6=1 ALLY=1 EVAC=1 OUTDIR=$D/g2 bash scripts/headless/g2.sh > $D/g2.log 2>&1 && ok "g2 $(grep -o 'OK [0-9]* DIFF [0-9]*' $D/g2.log | tail -1)" || ng "g2 $(grep -o 'OK [0-9]* DIFF [0-9]*' $D/g2.log | tail -1)"; }
+skip g2 || { G6=1 ALLY=1 EVAC=1 US04=${US04:-1} OUTDIR=$D/g2 bash scripts/headless/g2.sh > $D/g2.log 2>&1 && ok "g2 $(grep -o 'OK [0-9]* DIFF [0-9]*' $D/g2.log | tail -1)" || ng "g2 $(grep -o 'OK [0-9]* DIFF [0-9]*' $D/g2.log | tail -1)"; }
 # 音の状態 → lib.mjs の環境変数
 state_env(){ case "$1" in default) echo "";; audio) echo "AUDIO=1";; noaudio) echo "NOAUDIO=1";; *) echo "BAD_STATE=$1";; esac; }
 abrun(){ # name tool set cam state

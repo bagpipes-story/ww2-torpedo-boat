@@ -1,5 +1,0 @@
-v0.8.0 S3 — lead tree after the S3c hand-back (uncommitted in the repo). Base f9ba94f. Apply: git apply s3.patch
-S3c (agent, 80a3b25): L45 B2a/B2b, NOCOVER ref, L46 F on radar_twice + dry rule D, fuel 48 -> 33 gal; bands all pass.
-Lead fix before the gates: D picks rows by "not sunk >= 20%" (was "home >= 20%": a row that runs dry would drop out and pass D vacuously).
-  calibration dryHomeMin -> dryLiveMin, D text, tests a (+1 D test) / b / c / d comments, data fuel _source wording, CHANGELOG line counts and policy notes.
-Done: tables re-run (normal 69d56c38, hard f8a81b96; only the D line words changed), g2.sh + CHANGELOG updated. Next: run-gates.sh S3 (running), commit "v0.8.0 S3", push, remove this folder.
