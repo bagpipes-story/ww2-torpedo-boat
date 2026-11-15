@@ -110,7 +110,7 @@ export function stepRadar(s: RadarState, p: RadarParams, geo: RadarGeometry, now
     if (!(x >= 0 && x <= geo.width && y >= 0 && y <= geo.height)) continue;
     const dx = x - fromX;
     const dy = y - fromY;
-    if (dx * dx + dy * dy > (kind === RADAR_KIND_SMALL ? p.smallRange2 : p.shipRange2)) continue;
+    if (!(dx * dx + dy * dy <= (kind === RADAR_KIND_SMALL ? p.smallRange2 : p.shipRange2))) continue; // NaN の位置は映さない
     if (clutter2 > 0 && landDist2(geo.land, x, y) < clutter2) continue;
     const rx = Math.round(x / step) * step;
     const ry = Math.round(y / step) * step;
@@ -181,7 +181,8 @@ function newestBlip(s: RadarState): number {
     for (let j = 0; j < s.prevN; j++) {
       const dx = q.x - s.prevX[j]!;
       const dy = q.y - s.prevY[j]!;
-      if (dx * dx + dy * dy < m) m = dx * dx + dy * dy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < m) m = d2;
     }
     if (m > bestD2) {
       bestD2 = m;
@@ -200,7 +201,8 @@ function lostBlip(s: RadarState): number {
     for (let k = 0; k < s.n; k++) {
       const dx = s.blips[k]!.x - s.prevX[j]!;
       const dy = s.blips[k]!.y - s.prevY[j]!;
-      if (dx * dx + dy * dy < m) m = dx * dx + dy * dy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < m) m = d2;
     }
     if (m > bestD2) {
       bestD2 = m;
