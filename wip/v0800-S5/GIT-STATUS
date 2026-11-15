@@ -1,4 +1,8 @@
+ M CLAUDE.md
  M data/missions_seed.json
+ M "docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+ M "docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+ M "docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
  M src/config/menu-config.ts
  M src/config/title-layout-config.ts
  M src/scenes/title-scene.ts
@@ -12,3 +16,5 @@
  M tests/jp05-mission.test.ts
  M tests/setup-us04.test.ts
  M tests/title-grid.test.ts
+?? scripts/headless/brief-result-us04.mjs
+?? scripts/headless/strait-perf.mjs
