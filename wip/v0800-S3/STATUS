@@ -1,4 +1,5 @@
 v0.8.0 S3 (intercept sim) — WIP backup. Base f9ba94f (claude/v0.8.0-us-campaign). Apply: git apply s3.patch
-State: sim files written (core/intercept-sim, -world, -torpedoes, -tracks, -policy, -cell; systems/intercept-sim-setup, intercept-calibration; scripts/intercept-sim). 
-Not yet: first table, knobs, g2 US04=1, tests a/b, strait-probe, CHANGELOG.
-Notes: policies being frozen; findings so far: the cover patrol + 3-ship gunfire dominate own sinking; full-speed escape (spec text) is detected at 1,920 m.
+State: sim files + first tables done (t1 normal d9db008b 2m10.8s / hard aab25d01 2m33.4s; 帯 ✗ 6 / ✗ 2). Knob probes ①〜④ done (none reaches B1/B2/B3; ④ fuel 34 makes F ✓ but rewrites tests/__snapshots__/setup-us04 = outside the allowed list).
+strait-probe written and run: with &noplane and 識別 pressed, world = sim on all 24 nights (same reason, same second). Real night: seaplane adds 4/8 radar_ambush losses.
+g2.sh US04=1 added (md5 = first tables; band line required).
+Not yet: intercept-sim-b, light-set stability check, final tables re-run, CHANGELOG S3 block, hand-back (bands unreachable → lead decision).

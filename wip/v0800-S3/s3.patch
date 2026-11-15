@@ -1,3 +1,188 @@
+diff --git a/scripts/headless/g2.sh b/scripts/headless/g2.sh
+index 399dcfd..e94f050 100755
+--- a/scripts/headless/g2.sh
++++ b/scripts/headless/g2.sh
+@@ -7,13 +7,17 @@
+ #   EVAC=1（v0.6.11 S7）: jp_03 の帯の表 2 本（scripts/evac-sim の TABLE=2＝N 400 × 2 組・seed 1〜400・1001〜1400、ノーマル・ハード。spec-v0611-r2 §12.4 の帯の ✓/✗ の行を出す）も。
+ #   md5 は S3b の点 G1 の data で S8 の core の直し 2 つ（入っている隊の交代で止める・見つかった陰を輪の外へ出れば出る）の後の表（CHANGELOG v0.6.11 S8。S3b〜S7 は 0660589a・e6409b7a）で、
+ #   その出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 6 分ほど（tests/evac-sim-b は軽い組）。
++#   US04=1（v0.8.0 S3）: us_04 の帯の表 2 本（scripts/intercept-sim の TABLE=2＝N 400 × 2 組・seed 1〜400・1001〜1400、ノーマル・ハード。spec-v0800 §4.11 の帯の ✓/✗ の行を出す）も。
++#   md5 は S3 の最後の表（CHANGELOG v0.8.0 S3）で、出力に「帯: すべて ✓」の行があること（無ければ DIFF）。1 本 2〜3 分（tests/intercept-sim-b は軽い組）。
+ # 模擬の scripts/*.ts を esbuild で束ねて node で回し、標準出力の md5 を比べる（並べて JOBS 本ずつ）。DIFF が 1 つでもあれば終了コード 1。
+-# 実行: [G6=1] [ALLY=1] [EVAC=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
++# 実行: [G6=1] [ALLY=1] [EVAC=1] [US04=1] [JOBS=4] [OUTDIR=<scratch>] bash scripts/headless/g2.sh
+ set -u
+ cd "$(dirname "$0")/../.."
+ OUT="${OUTDIR:-$(mktemp -d)}"
+ mkdir -p "$OUT"
+-for s in pt-pass-sim convoy-sim dawn-strike-sim patrol-air-sim landing-sim evac-sim; do
++SIMS="pt-pass-sim convoy-sim dawn-strike-sim patrol-air-sim landing-sim evac-sim"
++if [ "${US04:-0}" = "1" ]; then SIMS="$SIMS intercept-sim"; fi
++for s in $SIMS; do
+   npx esbuild "scripts/$s.ts" --bundle --platform=node --format=esm --log-level=warning --outfile="$OUT/$s.mjs" || exit 2
+ done
+ # 名前|束ねた模擬|env|期待する md5（頭だけでもよい）
+@@ -54,13 +58,19 @@ if [ "${EVAC:-0}" = "1" ]; then
+     "ev2|evac-sim|TABLE=2|01b151af66bb4f5bf5832ac1f1adc65d" "ev2h|evac-sim|HARD=1 TABLE=2|b428c5b1ce4e0684831cb764f139e019"
+   )
+ fi
++if [ "${US04:-0}" = "1" ]; then
++  # 名前が us4 で始まる件も、出力に帯の行「帯: すべて ✓」が要る（scripts/intercept-sim の TABLE=2）
++  CASES+=(
++    "us4|intercept-sim|TABLE=2|d9db008bb03d3cdad27e07c2c48783d1" "us4h|intercept-sim|HARD=1 TABLE=2|aab25d017507d7eb6d6373338dde664e"
++  )
++fi
+ run() {
+   IFS='|' read -r name sim envs want <<<"$1"
+   # shellcheck disable=SC2086
+   env $envs node "$OUT/$sim.mjs" > "$OUT/$name.txt" 2> "$OUT/$name.err"
+   got=$(md5sum < "$OUT/$name.txt" | cut -c1-32)
+   band=""
+-  if [ "${name:0:2}" = "ev" ] && ! grep -q '^帯: すべて ✓' "$OUT/$name.txt"; then band="・帯に ✗"; fi
++  if { [ "${name:0:2}" = "ev" ] || [ "${name:0:3}" = "us4" ]; } && ! grep -q '^帯: すべて ✓' "$OUT/$name.txt"; then band="・帯に ✗"; fi
+   if [ "${got:0:${#want}}" = "$want" ] && [ -z "$band" ]; then echo "OK   $name $got"; else echo "DIFF $name $got（期待 $want$band）"; fi
+ }
+ export -f run
+diff --git a/scripts/headless/strait-probe.mjs b/scripts/headless/strait-probe.mjs
+new file mode 100644
+index 0000000..94b78c8
+--- /dev/null
++++ b/scripts/headless/strait-probe.mjs
+@@ -0,0 +1,134 @@
++// us_04 の向きの確かめ（v0.8.0 S3。spec-v0800 §4.11 の「世界との一致」・§8 R9、lead の L24。門ではない）: ヘッドレスで本当の世界（?debug&mission=us_04・今夜の水上機と誤射と
++// 夜明けの空襲も込み＝模擬に無い危険）を、模擬と同じ台本（core/intercept-sim-policy をそのままページに束ねる。目は core/intercept-sim の fillInterceptEye＝世界と同じ視程の規則、
++// 地図の値は systems/intercept-sim-setup の interceptPlan）で回し、同じ seed・同じ台本の模擬（node）と並べる。報告: 夜ごとの終わりの理由・撃沈・撃った本数・秒（世界／模擬）、
++// 台本ごとの 1 隻以上撃沈・自艇の沈没・衝突（体当たり）の夜の数と、世界と模擬が食い違った夜（撃った本数は世界は減った本数・模擬は狙う艦のある魚雷）。ページのエラーが 1 つでもあれば終了コード 1（数の食い違いは門にしない）。
++// 沈む絵の tween（自艇・艦）は Phaser の TweenManager が壁の時計（Date.now）で進めるので、ページの Date.now を偽の時計（__hl.t）に替える＝60 fps の実時間で遊んだのと同じ
++// （替えないと沈み始めた艦の「沈没の演出中」が壁の 2 秒＝偽の時計の数百秒続き、終わりと水上機・誤射が止まる。ゲームの論理は Date.now を seed の既定にしか使わない＝&seed で渡す）。
++// 実行: VITE_BASE=/ww2-torpedo-boat/ npx vite build --outDir <site> の後
++//   SITE=<site> [SEEDS=1-8] [POLS=radar_ambush,idle_lane,radar_dodge] [HARD=1] [NOPLANE=1] [IDENT=1] [MAXS=330] [W=1560] [JOBS=3] node scripts/headless/strait-probe.mjs
++// IDENT=1: 味方機の識別の要求（HUD の合図）から 1 秒で［識別］を押す（台本は既定では押さない＝誤射は模擬に無い危険のまま）。NOPLANE=1 は ?debug&noplane（水上機なし）。
++import { mkdtempSync, writeFileSync } from 'node:fs';
++import { createRequire } from 'node:module';
++import { tmpdir } from 'node:os';
++import { dirname, join } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
++import { parseSeeds } from './world-vs-sim.mjs';
++
++const require = createRequire(import.meta.url);
++const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src');
++/** 1 回の evaluate で進めるフレーム */
++const CHUNK = 600;
++
++/** ページの中の台本（模擬と同じ関数）。台本の入力をスティックと魚雷の一斉の要求に写し、1 フレームずつ進める。任務が終われば Result の理由 */
++const PAGE = `
++import { gameData } from '${SRC}/config/game-data';
++import { fillInterceptEye } from '${SRC}/core/intercept-sim';
++import { createInterceptDriver, stepInterceptDriver } from '${SRC}/core/intercept-sim-policy';
++import { interceptPlan } from '${SRC}/systems/intercept-sim-setup';
++window.__sp = { run(o) {
++  const hl = window.__hl;
++  let st = window.__spState;
++  if (!st) {
++    const w = hl.world();
++    st = window.__spState = { d: createInterceptDriver(o.policy, o.seed, interceptPlan(gameData, w.setup)), v: { t: 0, boat: w.boat.state, torpedoes: 0, atHome: false, radar: null, eyeX: NaN, eyeY: NaN, markerDeg: NaN },
++      out: { headingDeg: NaN, speed01: 0, fireN: 0, fireSpreadDeg: 0 }, vel: { x: 0, y: 0 }, frames: 0, sunk: 0, fired: 0, r0: w.torpedoes.remaining };
++  }
++  for (let k = 0; k < o.frames; k++) {
++    if (!hl.active('Mission')) { const r = window.__game.scene.getScene('Result').result; return { done: true, reason: r ? r.reason : 'none', sunk: st.sunk, fired: st.fired, t: st.frames / 60 }; }
++    const w = hl.world();
++    const v = st.v;
++    v.t = w.stepTimeS; v.torpedoes = w.torpedoes.remaining; v.atHome = w.atHome; v.radar = w.radar ? w.radar.state : null;
++    fillInterceptEye(v, w.boat.state, w.destroyers.ships, w.visRange2, w.setup.torpedoParams.speedMps, st.vel);
++    stepInterceptDriver(st.d, v, st.out);
++    hl.steer(st.out.headingDeg, st.out.speed01);
++    const ff = w.friendly ? w.friendly.state : null;
++    if (o.ident && ff && ff.phase === 1 && ff.periodS - ff.timerS >= 1) w.input.identifyTap = true; // core/friendly の FF_CHALLENGE
++    if (st.out.fireN > 0) { w.input.fireSalvoSpreadDeg = st.out.fireSpreadDeg; w.input.fireSalvoCount = st.out.fireN; }
++    hl.frame(o.frameMs);
++    st.frames++;
++    st.sunk = w.destroyers.sunkCount;
++    st.fired = st.r0 - w.torpedoes.remaining;
++  }
++  return st.frames >= o.maxFrames ? { done: true, reason: 'maxSteps', sunk: st.sunk, fired: st.fired, t: st.frames / 60 } : { done: false };
++} };
++`;
++/** 模擬の 1 夜（node）。同じ seed・同じ台本 */
++const SIM = `
++import { gameData } from '${SRC}/config/game-data';
++import { runInterceptTrial } from '${SRC}/core/intercept-sim';
++import { interceptNightSetup } from '${SRC}/systems/intercept-sim-setup';
++export function simNight(policy, seed, hard) {
++  const t = runInterceptTrial(interceptNightSetup(gameData, seed, hard), policy, seed);
++  return { reason: t.reason, sunk: t.sunkCover + t.sunkColumn, fired: t.fired, t: t.endS, own: t.ownSunk !== null, ram: t.rammedBy !== 0 };
++}
++`;
++
++async function bundle(contents, format, platform) {
++  const r = await require('esbuild').build({ stdin: { contents, resolveDir: SRC, loader: 'js' }, bundle: true, format, platform, write: false, logLevel: 'silent' });
++  return r.outputFiles[0].text;
++}
++
++/** ページの Date.now を偽の時計に（init script。lib の pageInit の後） */
++function tweenClock() {
++  const t0 = Date.now();
++  Date.now = () => t0 + (window.__hl ? window.__hl.t : 0);
++}
++
++async function worldNight(browser, base, code, c) {
++  const q = `mission=us_04&seed=${c.seed}${c.hard ? '&hard' : ''}${c.noplane ? '&noplane' : ''}`;
++  const { page, ctx, errors } = await openGame(browser, base, q, { width: c.width, init: tweenClock });
++  try {
++    await page.addScriptTag({ content: code });
++    let r;
++    do r = await page.evaluate((o) => window.__sp.run(o), { policy: c.policy, seed: c.seed, frames: CHUNK, frameMs: FRAME_MS, maxFrames: Math.round(c.maxS * 60), ident: c.ident });
++    while (!r.done);
++    return { ...r, own: SUNK.has(r.reason), ram: r.reason === 'rammed', errors };
++  } catch (e) {
++    return { done: true, reason: 'error', sunk: 0, fired: 0, t: 0, own: false, ram: false, errors: [...errors, String(e && e.message ? e.message : e)] };
++  } finally {
++    await ctx.close();
++  }
++}
++
++/** 世界の終わりの理由のうち自艇の沈没（水上機・夜明けの空襲・誤射も＝模擬に無い危険） */
++const SUNK = new Set(['rammed', 'destroyed', 'friendly_fire', 'bombed', 'air_strike', 'storm']);
++const tally = (rs) => ({ sink: rs.filter((r) => r.sunk >= 1).length, own: rs.filter((r) => r.own).length, ram: rs.filter((r) => r.ram).length, home: rs.filter((r) => r.reason === 'returned' || r.reason === 'cleared').length });
++/** 食い違い: 1 隻以上撃沈・自艇の沈没・衝突のどれかが世界と模擬で違う夜 */
++const differs = (w, s) => (w.sunk >= 1) !== (s.sunk >= 1) || w.own !== s.own || w.ram !== s.ram;
++
++async function main() {
++  const site = process.env.SITE;
++  if (!site) throw new Error('SITE=<ビルドした site のディレクトリ> が要る');
++  const seeds = parseSeeds(process.env.SEEDS ?? '1-8');
++  const pols = (process.env.POLS ?? 'radar_ambush,idle_lane,radar_dodge').split(',');
++  const hard = process.env.HARD === '1';
++  const cases = [];
++  for (const policy of pols) for (const seed of seeds) cases.push({ policy, seed, hard, noplane: process.env.NOPLANE === '1', ident: process.env.IDENT === '1', maxS: envNum('MAXS', 330), width: envNum('W', 1560) });
++  const dir = mkdtempSync(join(tmpdir(), 'strait-probe-'));
++  writeFileSync(join(dir, 'sim.mjs'), await bundle(SIM, 'esm', 'node'));
++  const { simNight } = await import(pathToFileURL(join(dir, 'sim.mjs')).href);
++  const code = await bundle(PAGE, 'iife', 'browser');
++  const sv = await serve(site);
++  const browser = await chromium.launch();
++  const res = await pool(cases, envNum('JOBS', 3), async (c) => ({ c, w: await worldNight(browser, sv.base, code, c), s: simNight(c.policy, c.seed, c.hard) }));
++  await browser.close();
++  await sv.close();
++  let errs = 0;
++  const f = (r) => `${r.reason.padEnd(9)} 撃沈 ${r.sunk} 撃つ ${r.fired} ${r.t.toFixed(0).padStart(3)} 秒`;
++  for (const { c, w, s } of res) {
++    errs += w.errors.length;
++    console.log(`${c.policy.padEnd(13)} seed ${String(c.seed).padStart(2)} | 世界 ${f(w)} | 模擬 ${f(s)}${differs(w, s) ? ' | 食い違い' : ''}${w.errors.length ? ` | page errors ${w.errors.length}（${w.errors[0]}）` : ''}`);
++  }
++  for (const policy of pols) {
++    const mine = res.filter((r) => r.c.policy === policy);
++    const tw = tally(mine.map((r) => r.w));
++    const ts = tally(mine.map((r) => r.s));
++    const differ = mine.filter(({ w, s }) => differs(w, s)).length;
++    console.log(`${policy.padEnd(13)} ${mine.length} 夜: 1 隻以上撃沈 世界 ${tw.sink}・模擬 ${ts.sink} | 自艇の沈没 世界 ${tw.own}・模擬 ${ts.own} | 衝突 世界 ${tw.ram}・模擬 ${ts.ram} | 帰投 世界 ${tw.home}・模擬 ${ts.home} | 食い違った夜 ${differ}`);
++  }
++  console.log(`nights ${res.length} page errors ${errs}${hard ? '（ハード）' : ''}${process.env.NOPLANE === '1' ? '（&noplane）' : ''}${process.env.IDENT === '1' ? '（識別を押す）' : ''}`);
++  process.exitCode = errs === 0 ? 0 : 1;
++}
++
++await main();
 diff --git a/scripts/intercept-sim.ts b/scripts/intercept-sim.ts
 new file mode 100644
 index 0000000..4acc57c
@@ -195,7 +380,7 @@ index 0000000..898ca62
 +}
 diff --git a/src/core/intercept-sim-policy.ts b/src/core/intercept-sim-policy.ts
 new file mode 100644
-index 0000000..cdcc1b0
+index 0000000..c43a95a
 --- /dev/null
 +++ b/src/core/intercept-sim-policy.ts
 @@ -0,0 +1,232 @@
@@ -242,9 +427,9 @@ index 0000000..cdcc1b0
 +  eyeX: number; eyeY: number; markerDeg: number;
 +}
 +
-+/** 地図と艇の知れる値（Briefing・画面）。速さは画面の m/s（実秒あたり）、speed01 は全速の比、礁は地図の矩形 */
++/** 地図と艇の知れる値（Briefing・画面）。レーダーの射程（無ければ NaN）、速さは画面の m/s（実秒あたり）、speed01 は全速の比、礁は地図の矩形 */
 +export interface InterceptPlan {
-+  readonly width: number; readonly height: number; readonly ringX: number; readonly ringY: number; readonly ringR: number; readonly dawnS: number;
++  readonly width: number; readonly height: number; readonly radarRangeM: number; readonly ringX: number; readonly ringY: number; readonly ringR: number; readonly dawnS: number;
 +  readonly silent01: number; readonly cruise01: number; readonly spacingDeg: number; readonly torpedoScreenMps: number; readonly fullScreenMps: number;
 +  readonly reefs: readonly { readonly x: number; readonly y: number; readonly w: number; readonly h: number }[];
 +}
@@ -273,7 +458,7 @@ index 0000000..cdcc1b0
 +
 +export function createInterceptDriver(policy: InterceptPolicy, seed: number, plan: InterceptPlan): InterceptDriver {
 +  const rng = new SeededRng((seed * INTERCEPT_HUMAN_SEED_MUL + INTERCEPT_HUMAN_SEED_ADD) >>> 0);
-+  return { sp: SPECS[policy], rng, plan, tracks: createInterceptTracks(plan.width), mode: DRIVE_WAIT, pass: 0, actAt: NaN, aimErr: 0, threatAt: NaN, escH: 0, escUntil: 0, escLaneY: NaN, escX: NaN, escY: NaN };
++  return { sp: SPECS[policy], rng, plan, tracks: createInterceptTracks(plan.width, plan.radarRangeM), mode: DRIVE_WAIT, pass: 0, actAt: NaN, aimErr: 0, threatAt: NaN, escH: 0, escUntil: 0, escLaneY: NaN, escX: NaN, escY: NaN };
 +}
 +
 +const bearing = (x: number, y: number, tx: number, ty: number): number => wrapDeg360(radToDeg(Math.atan2(tx - x, -(ty - y))));
@@ -579,13 +764,13 @@ index 0000000..eb63983
 +}
 diff --git a/src/core/intercept-sim-tracks.ts b/src/core/intercept-sim-tracks.ts
 new file mode 100644
-index 0000000..e9c4fe0
+index 0000000..ba04cf3
 --- /dev/null
 +++ b/src/core/intercept-sim-tracks.ts
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,170 @@
 +// 迎撃の模擬（v0.8.0 S3。us_04。spec-v0800 §4.11、lead の L17）の台本のレーダーの読み方: 人が PPI（平面位置表示器）を読むように、掃引ごとの輝点
 +// （core/radar の状態そのまま＝丸めた位置だけ・どの艦かは無い）を前の掃引の航跡の予測の位置と突き合わせて自分の航跡（位置・速さ・見た回数・生まれた縁）を作る。
-+// 列は「西の縁に現れて東へ速く動く輝点」（往路）・「東の縁に現れて西へ」（復路）と読む（護衛は出撃の時から海峡の中にいる輝点）。近づいて近くを通る輝点
++// 列は「出撃の後に PPI の縁（海域の縁か射程の縁）の西半分に現れて東へ速く動く輝点」（往路）・「東半分に現れて西へ」（復路）と読む（護衛は最初の掃引から映っている輝点）。近づいて近くを通る輝点
 +// （最接近の点が avoidM の内・avoidS 秒の内）から離れる針路も航跡だけから。艦の AI・発見・段階・本当の位置は読まない（tests/intercept-sim-a が import と名前を走査する）。
 +// 数は人の読み方の目安（design。ゲームの強さの値ではない）。確保は作る時（createInterceptTracks）だけ。Phaser 非依存。
 +import type { BoatState } from './boat-motion';
@@ -593,28 +778,30 @@ index 0000000..e9c4fe0
 +import { radToDeg, wrapDeg360 } from './units';
 +
 +/**
-+ * 航跡の読み方の目安: 突き合わせの門 m・縁で生まれたとみなす m・列とみなす東西の速さ（画面の m/s）・通り過ぎた m・よけ始める最接近 m・よけ終える最接近 m・
++ * 航跡の読み方の目安: 突き合わせの門 m・PPI の縁とみなす m・列とみなす東西の速さ（画面の m/s）・通り過ぎた m・よけ始める最接近 m・よけ終える最接近 m・
 + * 近い脅威の m・見る秒・全速で急ぐ m と秒
 + */
-+export const TRACK_READ = { gateM: 350, bornEdgeM: 600, columnVx: 30, passedM: 300, avoidM: 700, clearM: 900, closeM: 1000, avoidS: 30, avoidFullM: 300, avoidFullS: 10 } as const;
++export const TRACK_READ = { gateM: 350, edgeM: 600, columnVx: 30, passedM: 300, avoidM: 700, clearM: 900, closeM: 1000, avoidS: 30, avoidFullM: 300, avoidFullS: 10 } as const;
 +const TRACKS = 16;
 +
 +export interface InterceptTracks {
++  /** 海域の幅とレーダーの艦の射程（Briefing の「レーダー 4000 m」） */
 +  readonly width: number;
++  readonly rangeM: number;
 +  n: number;
 +  readonly x: Float64Array; readonly y: Float64Array; readonly vx: Float64Array; readonly vy: Float64Array;
-+  /** 見た掃引の回数（255 で止める）・生まれた縁（−1 西・1 東・0 中）・最後に見た掃引の秒・この掃引で合った印 */
++  /** 見た掃引の回数（255 で止める）・生まれた側（−1 西半分・1 東半分＝出撃の後に現れた。0＝最初の掃引から映っていた）・最後に見た掃引の秒・この掃引で合った印 */
 +  readonly seen: Uint8Array; readonly born: Int8Array; readonly at: Float64Array; readonly hit: Uint8Array;
 +  /** 読んだ掃引の回数と、復路の列を一度でも読んだか */
 +  sweeps: number; outSeen: boolean;
 +}
 +
-+export function createInterceptTracks(width: number): InterceptTracks {
++export function createInterceptTracks(width: number, rangeM: number): InterceptTracks {
 +  const f = (): Float64Array => new Float64Array(TRACKS);
-+  return { width, n: 0, x: f(), y: f(), vx: f(), vy: f(), seen: new Uint8Array(TRACKS), born: new Int8Array(TRACKS), at: f(), hit: new Uint8Array(TRACKS), sweeps: -1, outSeen: false };
++  return { width, rangeM, n: 0, x: f(), y: f(), vx: f(), vy: f(), seen: new Uint8Array(TRACKS), born: new Int8Array(TRACKS), at: f(), hit: new Uint8Array(TRACKS), sweeps: -1, outSeen: false };
 +}
 +
-+/** 往路の列の航跡（西の縁で生まれて東へ）・復路の列の航跡（東の縁で生まれて西へ）。2 回以上見た航跡だけ */
++/** 往路の列の航跡（後から西半分に現れて東へ）・復路の列の航跡（後から東半分に現れて西へ）。2 回以上見た航跡だけ */
 +export const isInTrack = (k: InterceptTracks, j: number): boolean => k.seen[j]! >= 2 && k.born[j] === -1 && k.vx[j]! > TRACK_READ.columnVx;
 +export const isOutTrack = (k: InterceptTracks, j: number): boolean => k.seen[j]! >= 2 && k.born[j] === 1 && k.vx[j]! < -TRACK_READ.columnVx;
 +
@@ -653,9 +840,12 @@ index 0000000..e9c4fe0
 +      if (k.seen[best]! < 255) k.seen[best]!++;
 +    } else if (k.n < TRACKS) {
 +      const j = k.n++;
-+      const e = TRACK_READ.bornEdgeM;
 +      k.x[j] = bx; k.y[j] = by; k.vx[j] = 0; k.vy[j] = 0; k.seen[j] = 1; k.at[j] = now; k.hit[j] = 1;
-+      k.born[j] = bx < e ? -1 : bx > k.width - e ? 1 : 0;
++      // 出撃の最初の掃引から映っている輝点（護衛）と、海域の中ほどで切れてまた映った輝点は列ではない。後から PPI の縁（海域の東西の縁か
++      // レーダーの射程の縁）に現れた輝点は、現れた側（海域の西半分か東半分）で読む
++      const e = TRACK_READ.edgeM;
++      const rim = bx < e || bx > k.width - e || (bx - r.fromX) ** 2 + (by - r.fromY) ** 2 > (k.rangeM - e) ** 2;
++      k.born[j] = r.sweeps <= 1 || !rim ? 0 : bx < k.width / 2 ? -1 : 1;
 +    }
 +  }
 +  let m = 0;
@@ -1374,10 +1564,10 @@ index 0000000..dbfa6dc
 +}
 diff --git a/src/systems/intercept-sim-setup.ts b/src/systems/intercept-sim-setup.ts
 new file mode 100644
-index 0000000..4215ae3
+index 0000000..818bfb8
 --- /dev/null
 +++ b/src/systems/intercept-sim-setup.ts
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,88 @@
 +// 迎撃の模擬の組み立て（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L19・L21）: 1 夜ごとに buildWorldSetup(data, 'us_04', 出撃の seed) の値から
 +// core/intercept-sim の設定を作る（今夜の揺らぎ＝seed+16 の護衛のずれ・列の入りの秒と道の y・水上機と誤射の有無は世界と同じ道。模擬は水上機と誤射を持たない）。
 +// つまみ（spec §4.11 の順の data の鍵）の上書きは記録を写して buildWorldSetup に通す＝起動時の検査（V-R・V-T・V-S）も通る（通らない値は例外）。
@@ -1386,10 +1576,10 @@ index 0000000..4215ae3
 +import { FIXED_STEP_S } from '../config/step-config';
 +import { retireHeadingDeg } from '../core/dawn-withdraw';
 +import type { InterceptSimSetup } from '../core/intercept-sim';
-+import { INTERCEPT_HUMAN } from '../core/intercept-sim-policy';
++import { INTERCEPT_HUMAN, type InterceptPlan } from '../core/intercept-sim-policy';
 +import { directSortie } from '../core/sortie';
 +import { landLinesFromShores } from '../core/strait-geometry';
-+import { buildWorldSetup } from './world-setup';
++import { buildWorldSetup, type WorldSetup } from './world-setup';
 +
 +export const INTERCEPT_SIM_MISSION = 'us_04';
 +/** config/ui-config の SHELL_POOL_SIZE（48）・SINK_DURATION_MS（2000 ms）・MISSION_END_DELAY_MS（1500 ms）と同じ（ui-config は画面の game-config を読むので node の模擬から読まない。tests/intercept-sim-a が一致を確かめる） */
@@ -1452,10 +1642,191 @@ index 0000000..4215ae3
 +    ship: ds.spec, coverAi: ds.shipAi, gunnery: ds.gunnery, passRadius2: ds.passRadius2, coverStarts: ds.starts, objectiveSinks: ds.objectiveSinks ?? ds.starts.length + tr.ships,
 +    transit: tr, radar: w.radar ?? null, radarGeo: { width: m.bounds.width, height: m.bounds.height, land: w.shores ? landLinesFromShores(w.shores, m.bounds.width, m.bounds.height) : [] },
 +    shellPoolSize: INTERCEPT_SIM_SHELL_POOL, sinkS: INTERCEPT_SIM_SINK_S, adriftDelayS: INTERCEPT_SIM_ADRIFT_DELAY_S, afterDawnS: INTERCEPT_SIM_AFTER_DAWN_S,
-+    plan: {
-+      width: m.bounds.width, height: m.bounds.height, ringX: m.returnPoint.x, ringY: m.returnPoint.y, ringR: m.returnPoint.radiusM, dawnS: w.durationS,
-+      silent01: (b.silentMaxMps / b.speedMaxMps) * INTERCEPT_HUMAN.silentFrac, cruise01: b.speedCruiseMps / b.speedMaxMps, spacingDeg: data.hitRateModel.torpedo_launch.salvo_spacing_deg,
-+      torpedoScreenMps: w.torpedoParams.speedMps * w.timeScale, fullScreenMps: b.speedMaxMps * w.timeScale, reefs: m.shallows,
-+    },
++    plan: interceptPlan(data, w),
 +  };
 +}
++
++/** 台本の地図と艇の知れる値（Briefing・画面＝WorldSetup から）。模擬と世界のヘッドレスの台本（scripts/headless/strait-probe）が同じ物を使う */
++export function interceptPlan(data: GameData, w: WorldSetup): InterceptPlan {
++  const m = w.mission;
++  const b = w.boatParams;
++  return {
++    width: m.bounds.width, height: m.bounds.height, radarRangeM: w.radar ? w.radar.shipRangeM : NaN, ringX: m.returnPoint.x, ringY: m.returnPoint.y, ringR: m.returnPoint.radiusM, dawnS: w.durationS,
++    silent01: (b.silentMaxMps / b.speedMaxMps) * INTERCEPT_HUMAN.silentFrac, cruise01: b.speedCruiseMps / b.speedMaxMps, spacingDeg: data.hitRateModel.torpedo_launch.salvo_spacing_deg,
++    torpedoScreenMps: w.torpedoParams.speedMps * w.timeScale, fullScreenMps: b.speedMaxMps * w.timeScale, reefs: m.shallows,
++  };
++}
+diff --git a/tests/intercept-sim-a.test.ts b/tests/intercept-sim-a.test.ts
+new file mode 100644
+index 0000000..89af095
+--- /dev/null
++++ b/tests/intercept-sim-a.test.ts
+@@ -0,0 +1,168 @@
++// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L17〜L19・L23）: 決定性（同じ seed で同じ 1 夜・同じ表）、漏らさない（L17: 台本の 2 本のファイルの
++// import と名前の走査・台本が読む物の鍵・目は世界と同じ規則）、乱数（模擬だけの系列はゲームの seed〜seed+43 に触らない）、世界の写しの突き合わせ（艦・列の通過・レーダーは
++// tests/transit-world-kit の本物の DestroyerTransit・WorldRadar と、魚雷のプールと発射管制は本物の TorpedoPool・TorpedoLauncher とステップごとに同じ）、見た目の定数、ファイルの大きさ。
++// 帯は tests/intercept-sim-b（軽い組）と scripts/headless/g2.sh の US04=1（N 400 × 2 組）。
++import { readFileSync } from 'node:fs';
++import { describe, expect, it } from 'vitest';
++import { gameData } from '../src/config/game-data';
++import { fillInterceptEye, runInterceptTrial, type InterceptSimSetup } from '../src/core/intercept-sim';
++import { interceptCellOf } from '../src/core/intercept-sim-cell';
++import { INTERCEPT_HUMAN_SEED_ADD, INTERCEPT_HUMAN_SEED_MUL, INTERCEPT_POLICIES, type InterceptView } from '../src/core/intercept-sim-policy';
++import { SimLauncher, SimTorpedoPool } from '../src/core/intercept-sim-torpedoes';
++import { SeededRng } from '../src/core/rng';
++import { TorpedoLauncher } from '../src/systems/torpedo-launcher';
++import { INTERCEPT_SIM_ADRIFT_DELAY_S, INTERCEPT_SIM_SHELL_POOL, INTERCEPT_SIM_SINK_S, interceptNightSetup } from '../src/systems/intercept-sim-setup';
++import { buildWorldSetup } from '../src/systems/world-setup';
++import { directSortie } from '../src/core/sortie';
++import type { TorpedoEvents } from '../src/core/torpedo-targets';
++import { kitStep, kitWorld } from './transit-world-kit';
++import { TorpedoPool, fakeShip, scene, type FakeShip } from './torpedo-free-kit';
++
++const code = (p: string): string => readFileSync(`src/${p}`, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
++const importsOf = (p: string): string[] => [...readFileSync(`src/${p}`, 'utf8').matchAll(/^import[^;]*from '([^']+)';/gm)].map((m) => m[1]!);
++
++describe('決定性（L19）', () => {
++  it('同じ seed・同じ遊び方なら同じ 1 夜（ノーマル・ハード・どの遊び方も）', () => {
++    for (const hard of [false, true]) {
++      for (const p of [...INTERCEPT_POLICIES, 'radar_ambush_quiet', 'stay'] as const) {
++        for (const seed of [3, 1007]) expect(runInterceptTrial(interceptNightSetup(gameData, seed, hard), p, seed)).toEqual(runInterceptTrial(interceptNightSetup(gameData, seed, hard), p, seed));
++      }
++    }
++  });
++
++  it('同じ seed の組なら同じ表（radar_ambush の軽い組の片方＝seed 1〜50）、seed が違えば夜が変わる', () => {
++    const cell = (): ReturnType<typeof interceptCellOf> => interceptCellOf(Array.from({ length: 50 }, (_, i) => runInterceptTrial(interceptNightSetup(gameData, 1 + i, false), 'radar_ambush', 1 + i)), 1);
++    expect(cell()).toEqual(cell());
++    expect(runInterceptTrial(interceptNightSetup(gameData, 1, false), 'charge', 1)).not.toEqual(runInterceptTrial(interceptNightSetup(gameData, 2, false), 'charge', 2));
++  });
++
++  it('人の揺らぎの系列（seed × MUL ＋ ADD）は、同じ夜のゲームの系列（seed〜seed+43）のどれとも違う値（seed 1〜1400・ハードの組も）', () => {
++    for (let seed = 1; seed <= 1400; seed++) {
++      const h = (seed * INTERCEPT_HUMAN_SEED_MUL + INTERCEPT_HUMAN_SEED_ADD) >>> 0;
++      expect(h - seed > 43 || h < seed).toBe(true);
++    }
++  });
++});
++
++describe('漏らさない（L17）', () => {
++  it('台本の 2 本は、隠れた状態を持つ物を import しない（レーダーの状態・自艇・乱数・解き方・単位・航跡だけ）', () => {
++    expect(importsOf('core/intercept-sim-policy.ts')).toEqual(['./boat-motion', './intercept-sim-tracks', './radar', './rng', './torpedo-solver', './units']);
++    expect(importsOf('core/intercept-sim-tracks.ts')).toEqual(['./boat-motion', './radar', './units']);
++    for (const p of ['core/intercept-sim-policy.ts', 'core/intercept-sim-tracks.ts']) {
++      const c = code(p);
++      for (const bad of ['playerDetected', 'detectRange', 'visRange2', 'ShipAi', 'phase', 'transit', 'ships', 'withdrawn', 'offMap', 'sinking', 'hitsTaken', 'gunnery', 'illuminat', 'lookout', 'SimShip', 'TorpedoState', 'Math.random']) expect(c, `${p}: ${bad}`).not.toContain(bad);
++      expect(c, `${p}: .ai`).not.toMatch(/\.ai\b/);
++    }
++  });
++
++  it('台本が読む物の鍵はちょうど 時計・自艇・残りの魚雷・輪の中・レーダーの状態・目の位置・マーカーの方位（艦の添字・速さ・AI は無い）', () => {
++    const v: InterceptView = { t: 0, boat: { x: 0, y: 0, headingDeg: 0, speedMps: 0 }, torpedoes: 4, atHome: false, radar: null, eyeX: NaN, eyeY: NaN, markerDeg: NaN };
++    expect(Object.keys(v).sort()).toEqual(['atHome', 'boat', 'eyeX', 'eyeY', 'markerDeg', 'radar', 't', 'torpedoes']);
++    expect(code('core/intercept-sim-policy.ts')).toMatch(/export interface InterceptView \{\s*t: number;\s*readonly boat: BoatState;\s*torpedoes: number;\s*atHome: boolean;\s*radar: RadarState \| null;\s*eyeX: number; eyeY: number; markerDeg: number;\s*\}/);
++  });
++
++  it('目は世界の規則（一番近い浮いている艦が setup.visRange2＝buildWorldSetup の視程の 2 乗の内）。外なら位置もマーカーも NaN', () => {
++    const s = interceptNightSetup(gameData, 5, false);
++    expect(s.visRange2).toBe(buildWorldSetup(gameData, 'us_04', { sortie: directSortie('us_04', 5, 'none', false, false), hard: false }).visRange2);
++    const v: InterceptView = { t: 0, boat: { x: 0, y: 0, headingDeg: 0, speedMps: 0 }, torpedoes: 4, atHome: false, radar: null, eyeX: 0, eyeY: 0, markerDeg: 0 };
++    const vel = { x: 0, y: 0 };
++    const r = Math.sqrt(s.visRange2);
++    const ship = (x: number, out = false): { state: { x: number; y: number; headingDeg: number; speedMps: number }; out: boolean } => ({ state: { x, y: 0, headingDeg: 270, speedMps: 15 }, out });
++    fillInterceptEye(v, v.boat, [ship(r + 1)], s.visRange2, s.torpedo.speedMps, vel);
++    expect([v.eyeX, v.markerDeg]).toEqual([NaN, NaN]);
++    fillInterceptEye(v, v.boat, [ship(r - 1)], s.visRange2, s.torpedo.speedMps, vel);
++    expect(v.eyeX).toBe(r - 1);
++    expect(Number.isFinite(v.markerDeg)).toBe(true);
++    // 沈み始めた・海域の外（out）の艦は見えない（近くても）。見えるのは一番近い浮いている艦だけ
++    fillInterceptEye(v, v.boat, [ship(100, true), ship(r + 5)], s.visRange2, s.torpedo.speedMps, vel);
++    expect(v.eyeX).toBeNaN();
++  });
++});
++
++describe('世界の写しの突き合わせ（L18）', () => {
++  /** 模擬（止まったままの stay）と小さな世界（本物の DestroyerTransit・WorldRadar。艦は自艇を同じ停止の距離で見つける）を同じステップで回し、艦・段階・輝点が同じ */
++  function compare(seed: number, hard: boolean, start: { x: number; y: number } | null): number {
++    const s0 = interceptNightSetup(gameData, seed, hard);
++    const s: InterceptSimSetup = start ? { ...s0, start: { ...start, headingDeg: 270 } } : s0;
++    const k = kitWorld({ hard, seed, detect: true });
++    if (start) Object.assign(k.boat.state, start);
++    let steps = 0;
++    let diff = '';
++    runInterceptTrial(s, 'stay', seed, (w) => {
++      if (diff || w.sinking) return;
++      kitStep(k);
++      steps++;
++      for (let i = 0; i < w.ships.length; i++) {
++        const a = w.ships[i]!;
++        const b = k.ships[i]!;
++        if (a.state.x !== b.state.x || a.state.y !== b.state.y || a.state.headingDeg !== b.state.headingDeg || a.state.speedMps !== b.state.speedMps || a.out !== b.out || a.ai.mode !== b.ai.mode) diff = `ステップ ${steps} 艦 ${i}`;
++      }
++      const ra = w.radar!;
++      const rb = k.radar!.state;
++      if (ra.sweeps !== rb.sweeps || ra.n !== rb.n || !Object.is(ra.firstS, rb.firstS)) diff = `ステップ ${steps} 掃引`;
++      for (let j = 0; j < ra.n; j++) if (ra.blips[j]!.x !== rb.blips[j]!.x || ra.blips[j]!.y !== rb.blips[j]!.y || ra.blips[j]!.atS !== rb.blips[j]!.atS) diff = `ステップ ${steps} 輝点 ${j}`;
++      if (w.transit.state.phase.join() !== k.transit.state.phase.join() || w.transit.pending !== k.transit.pending || w.transit.allOut !== k.transit.allOut) diff = `ステップ ${steps} 段階`;
++    });
++    expect(diff).toBe('');
++    return steps;
++  }
++
++  it.each([[1, false], [2, false], [4, true], [9, true]] as const)('海域の南東の隅で止まった艇（見つからない）の一晩: seed %i ハード %s の全ステップ（夜明けの退きを含む）', (seed, hard) => {
++    expect(compare(seed, hard, { x: 5900, y: 3900 })).toBeGreaterThanOrEqual((interceptNightSetup(gameData, seed, hard).durationS + 60) * 60 - 1);
++  });
++
++  it.each([[2, false], [3, true]] as const)('出発点で止まった艇（護衛が見つけて体当たり・砲）: seed %i ハード %s は沈み始めるまで同じ', (seed, hard) => {
++    expect(compare(seed, hard, null)).toBeGreaterThan(600);
++  });
++
++  it('魚雷のプールと発射管制は本物（TorpedoPool・TorpedoLauncher）と同じ発射・同じ知らせの順・同じ状態（扇 4 本 × 2 回・動く船体 2 隻・1 隻は途中で沈む）', () => {
++    const s = interceptNightSetup(gameData, 1, false);
++    const bounds = s.bounds;
++    const run = (sim: boolean): string[] => {
++      const log: string[] = [];
++      const ships: FakeShip[] = [fakeShip(3000, 1500), fakeShip(3400, 1900)];
++      const rng = new SeededRng(77);
++      const pool = sim ? new SimTorpedoPool(s.torpedo, 8, bounds) : new TorpedoPool(scene, s.torpedo, 8, bounds);
++      const launcher = sim ? new SimLauncher(pool as SimTorpedoPool, rng, s.reliability, s.jitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedo.speedMps) : new TorpedoLauncher(pool as never, rng, s.reliability, s.jitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedo.speedMps);
++      const at = (st: { x: number; y: number }): string => `${st.x.toFixed(9)},${st.y.toFixed(9)}`;
++      const ev: TorpedoEvents = {
++        onHit: (i, x, y, t) => { log.push(`hit ${i} ${x} ${y} ${t.leadErrDeg}`); ships[i]!.out = ships[i]!.sinking = true; ships[i]!.sinkStartS = 1; },
++        onLateHit: (i, x, y) => log.push(`late ${i} ${x} ${y}`),
++        onMiss: (t) => log.push(`miss ${at(t)} ${t.rangeAtLaunchM}`),
++      };
++      const boat = { x: 3200, y: 2800, headingDeg: 350, speedMps: 0 };
++      for (let k = 0; k < 2400; k++) {
++        if (k === 0 || k === 900) launcher.queueFan(boat, 4, 12);
++        const tgt = ships.find((x) => !x.out) ?? null;
++        const ts = launcher.update(s.stepS, boat, tgt ? tgt.state : null, tgt !== null);
++        if (ts) log.push(`fire ${at(ts)} ${ts.headingDeg} ${ts.dud} ${ts.erratic} ${ts.leadErrDeg} ${ts.kpiTarget}`);
++        for (const x of ships) if (!x.out) x.state.x += 1.5;
++        pool.step(s.stepS * s.timeScale, s.stepS, ships, s.passRadius2, ev, k * s.stepS, 5);
++        boat.headingDeg = (boat.headingDeg + 0.05) % 360;
++      }
++      for (const t of pool.states) log.push(`state ${at(t)} ${t.active} ${t.resolved} ${t.runM}`);
++      return log;
++    };
++    const a = run(false);
++    expect(a.filter((l) => l.startsWith('fire')).length).toBe(8);
++    expect(run(true)).toEqual(a);
++  });
++
++  it('見た目の定数は config/ui-config と同じ（砲弾の枠・沈没の演出・漂流で終えるまで）', () => {
++    const ui = readFileSync('src/config/ui-config.ts', 'utf8');
++    const n = (k: string): number => Number(new RegExp(`export const ${k} = (\\d+);`).exec(ui)![1]);
++    expect([INTERCEPT_SIM_SHELL_POOL, INTERCEPT_SIM_SINK_S * 1000, INTERCEPT_SIM_ADRIFT_DELAY_S * 1000]).toEqual([n('SHELL_POOL_SIZE'), n('SINK_DURATION_MS'), n('MISSION_END_DELAY_MS')]);
++  });
++});
++
++describe('ファイル', () => {
++  it('新しい模擬のファイルはどれも 300 行の内・模型の名前を書かない', () => {
++    const files = ['core/intercept-sim.ts', 'core/intercept-sim-world.ts', 'core/intercept-sim-torpedoes.ts', 'core/intercept-sim-tracks.ts', 'core/intercept-sim-policy.ts', 'core/intercept-sim-cell.ts', 'systems/intercept-sim-setup.ts', 'systems/intercept-calibration.ts'];
++    for (const f of files) {
++      const src = readFileSync(`src/${f}`, 'utf8');
++      expect(src.split('\n').length - 1, f).toBeLessThanOrEqual(300);
++      expect(src).not.toMatch(/\b(opus|sonnet|haiku)\b|claude-[a-z]/i);
++    }
++    for (const f of ['scripts/intercept-sim.ts', 'scripts/headless/strait-probe.mjs']) expect(readFileSync(f, 'utf8').split('\n').length - 1, f).toBeLessThanOrEqual(150);
++  });
++});
