@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: なし
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: 途中: 効果音の試聴の案（魚雷の発射 A〜E・G〜I・弾倉 A・C・D）と D（前）を src から外した（tests はまだ）
+- 一言: 途中: 片づけと tests（関係する 15 本が通る）・束 706.38 kB（＋17.85）。docs はまだ

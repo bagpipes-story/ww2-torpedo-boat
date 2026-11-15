@@ -1001,3 +1001,827 @@ index 30917e9..f060fa7 100644
      const d = col === titleDefault;
      return [d ? `${MUSIC_LAB_LETTERS[col]!}${MUSIC_LAB_DEFAULT_MARK_JA}` : MUSIC_LAB_LETTERS[col]!, musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
    }
+diff --git a/tests/music-lab.test.ts b/tests/music-lab.test.ts
+index e73a55a..8af3a70 100644
+--- a/tests/music-lab.test.ts
++++ b/tests/music-lab.test.ts
+@@ -1,8 +1,8 @@
+ // v0.7.2 S1（アートと音③：BGM と命中スローの音。spec-v0720 §7・brief L14）: 曲の試聴の場（?sfxlab。scenes/music-lab-scene）の置き方と語・道を固定する（ui/music-lab-layout は Phaser なし）。
+-// - 論理幅 1280〜1584 の全部で: 行 0 の 3 つ（D（今）・D（前）＝v0.7.2 IP2。IP1 は A・D・E と「止める」の 4 つ）・「戻る」・「効果音の試聴へ」が画面の内・重ならない・高さ 84 px 以上・幅 160 px 以上、行の名前はボタンの左、
++// - 論理幅 1280〜1584 の全部で: 行 0 の 2 つ（D（今）と「止める」＝v0.7.2 S4。IP2 は D（前）も・IP1 は A・D・E と「止める」の 4 つ）・「戻る」・「効果音の試聴へ」が画面の内・重ならない・高さ 84 px 以上・幅 160 px 以上、行の名前はボタンの左、
+ //   説明（2 行まで）より下、右下の状態の一文（一番長い文）とボタンが重ならない。
+ // - 語: 説明に「知っている曲に似ていたら一言」・IP2 のユーザーの決め（タイトルの曲は D・命中スローは A）。行 0 はゲームの曲（MUSIC_TITLE_DEFAULT_ID）が「記号（今）」の題と名前の 2 行目、
+-//   ほかは記号だけの題と一言（［D（今） 新しい D］［D（前） 実機 2 回目の D］）。題と 2 行目は 1280 のボタンに収まる。
++//   ほかは記号だけの題と一言（S4 から［D（今） 新しい D］だけ）。題と 2 行目は 1280 のボタンに収まる。
+ // - シーン: 候補と「止める」はボタンの音を鳴らさない（silent）・create で場面 LAB と「音」「曲」を鳴らす側へ・SHUTDOWN で NONE（候補の標本を捨てる）と保存の値へ・update は確保しない。
+ // - 道: 試聴の口（sfxMusicAudition・sfxMusicLab*）を呼ぶのは曲の試聴の場だけ。効果音の試聴の場は曲を止め、「曲の試聴へ」で戻る。
+ // - v0.7.2 S2（brief L25）: 行 1「任務の曲」（静か・緊張・戦闘・自動・止める＝5 列）と行 2「効果音と一緒に」（台本 3 つ・止める＝4 列。S3 で「命中＋スロー」）も同じ論理幅の全部で置き方と語を見る。
+@@ -32,6 +32,8 @@ const MARGIN = 24;
+ const LINE_H = 1.25;
+ const overlap = (a: SoundLabRect, b: SoundLabRect): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+ const TITLE_DEFAULT = MUSIC_TITLE_KEYS.indexOf(MUSIC_TITLE_DEFAULT_ID);
++/** 既定の曲が行 0 に無い時の番号（候補の題と 2 行目の形を見る） */
++const NONE_DEFAULT = -1;
+ const titleOf = (i: number, def = TITLE_DEFAULT): string => musicLabLabel(0, i, def, 0)[0];
+ const subOf = (i: number, def = TITLE_DEFAULT): string => musicLabLabel(0, i, def, 0)[1];
+ /** 右下の状態の一文の候補（一番長い物で重なりを見る） */
+@@ -48,12 +50,12 @@ const SLOW_DEFAULT = SFX_SLOW_IDS.indexOf(SFX_SLOW_DEFAULT_ID);
+ const scene = (): string => readFileSync('src/scenes/music-lab-scene.ts', 'utf8');
+ 
+ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+-  it('行 0: D（今）と D（前）（MUSIC_TITLE_KEYS の順。v0.7.2 IP2 でユーザーの決め＝D・A と E を消した）と「止める」の 3 つ。記号・名前・一言は曲の数だけ。行の名前は「タイトルの曲」', () => {
+-    expect(MUSIC_TITLE_KEYS).toEqual(['title_d', 'title_d_prev']);
+-    expect([...MUSIC_LAB_LETTERS]).toEqual(['D', 'D（前）']);
+-    expect([...MUSIC_LAB_NAMES_JA]).toEqual(['新しい D', '前の D']);
+-    expect(MUSIC_LAB_NOTES_JA.length).toBe(2);
+-    expect(MUSIC_LAB_ROW0_COLS).toBe(3);
++  it('行 0: D（今）（MUSIC_TITLE_KEYS。v0.7.2 IP2 でユーザーの決め＝D・A と E を消した・S4 で D（前）を消した）と「止める」の 2 つ。記号・名前・一言は曲の数だけ。行の名前は「タイトルの曲」', () => {
++    expect(MUSIC_TITLE_KEYS).toEqual(['title_d']);
++    expect([...MUSIC_LAB_LETTERS]).toEqual(['D']);
++    expect([...MUSIC_LAB_NAMES_JA]).toEqual(['新しい D']);
++    expect(MUSIC_LAB_NOTES_JA.length).toBe(1);
++    expect(MUSIC_LAB_ROW0_COLS).toBe(2);
+     expect(MUSIC_LAB_ROW0_COLS).toBe(MUSIC_TITLE_KEYS.length + 1);
+     expect([MUSIC_LAB_ROW_LABELS_JA, MUSIC_LAB_ROW_SUBS_JA].map((a) => a.length)).toEqual([4, 4]);
+     expect([...MUSIC_LAB_ROW_LABELS_JA]).toEqual(['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー']);
+@@ -98,7 +100,7 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+     for (let r = 0; r < 3; r++) expect(musicLabLabel(r, COLS[r]! - 1, 0, SLOW_DEFAULT)).toEqual([MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA]);
+     expect(musicLabLabel(2, 3, 0, SLOW_DEFAULT)).toEqual(['命中＋スロー', MUSIC_LAB_DEMO_SUBS_JA[3]]);
+   });
+-  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 19 個（4 行と下の段）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明（2 行まで）より下。右下の状態の一文と重ならない', (w) => {
++  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 17 個（4 行と下の段。v0.7.2 S4 で行 0 は 2 つ）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明（2 行まで）より下。右下の状態の一文と重ならない', (w) => {
+     const f = { gameWidth: w, gameHeight: H, margin: MARGIN };
+     const rects: SoundLabRect[] = [];
+     for (let row = 0; row < COLS.length; row++) for (let col = 0; col < COLS[row]!; col++) rects.push(soundLabButtonRect(row, col, COLS[row]!, f));
+@@ -133,7 +135,7 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+     expect(lines.length).toBe(2);
+     expect(MUSIC_LAB_HEAD_JA).not.toContain('段ごとと効果音と一緒に'); // S2 のぎこちない言い回しは直した
+     expect(lines[0]).toContain('タイトルの曲は D、命中スローは A に決まりました'); // v0.7.2 IP2: ユーザーの決め（場は聞き比べのために残す）
+-    expect(lines[1]).toContain('D（今）は作り直した D、D（前）は前の D');
++    expect(lines[1]).toContain('D（今）は作り直した D（前の D は片づけました）'); // v0.7.2 S4: 作り直した D が受け入れられた（実機 3 回目）
+     for (let w = 1280; w <= 1584; w += 8) {
+       for (const l of lines) expect(textWidthPx(l, SOUND_LAB_HEAD_PX), `${w}: ${l}`).toBeLessThanOrEqual(w - 2 * MARGIN);
+       const bottom = SOUND_LAB_HEAD_Y + lines.length * SOUND_LAB_HEAD_PX * LINE_H;
+@@ -148,13 +150,14 @@ describe('曲の試聴の場の置き方と語（v0.7.2 S1）', () => {
+     expect(musicLabButtonTitle('B', '低くだけ', false)).toBe('B 低くだけ');
+     expect(musicLabButtonSub('低く遅く', 'こもって遅くなる', true)).toBe('低く遅く');
+     expect(musicLabButtonSub('低くだけ', '速さはそのまま', false)).toBe('速さはそのまま');
+-    expect(MUSIC_TITLE_KEYS.map((_, i) => titleOf(i))).toEqual(['D（今）', 'D（前）']); // IP2: ユーザーの決め U-M2（タイトルの曲は D）
+-    expect(MUSIC_TITLE_KEYS.map((_, i) => subOf(i))).toEqual(['新しい D', '実機 2 回目の D']);
++    expect(MUSIC_TITLE_KEYS.map((_, i) => titleOf(i))).toEqual(['D（今）']); // IP2: ユーザーの決め U-M2（タイトルの曲は D）
++    expect(MUSIC_TITLE_KEYS.map((_, i) => subOf(i))).toEqual(['新しい D']);
++    expect(musicLabLabel(0, 0, NONE_DEFAULT, 0)).toEqual(['D', '金管・弦・126 BPM']); // 既定でない候補の題は記号だけ・2 行目は一言（候補を足した時の形）
+     const f = { gameWidth: 1280, gameHeight: H, margin: MARGIN };
+     const bw = soundLabButtonRect(0, 0, MUSIC_LAB_ROW0_COLS, f).w;
+     for (let i = 0; i < MUSIC_TITLE_KEYS.length; i++) {
+       // 既定でない時の題・既定の時の題のどちらも収まる（ユーザーが選び直しても溢れない）
+-      for (let def = 0; def < MUSIC_TITLE_KEYS.length; def++) {
++      for (let def = NONE_DEFAULT; def < MUSIC_TITLE_KEYS.length; def++) { // v0.7.2 S4: 候補 1 つでも「既定でない時」の題を見る
+         expect(textWidthPx(titleOf(i, def), SOUND_LAB_BUTTON_PX), `${i} ${def}`).toBeLessThanOrEqual(bw);
+         expect(textWidthPx(subOf(i, def), SOUND_LAB_NOTE_PX), `${i} ${def}`).toBeLessThanOrEqual(bw);
+         expect(subOf(i, def).length).toBeGreaterThan(0);
+diff --git a/tests/sfx-engine-mood.test.ts b/tests/sfx-engine-mood.test.ts
+index 50d8d14..54ae508 100644
+--- a/tests/sfx-engine-mood.test.ts
++++ b/tests/sfx-engine-mood.test.ts
+@@ -177,7 +177,7 @@ describe('移りの数（spec §4.2）: 任務の家族を含むランダムな
+   it('ランダムな移り 12 回 × 20 種（メニュー・任務・Result の遅らせ・試聴の場の候補と家族・段・消音・曲・一時停止・止まる）: どの時点も鳴っている ≤ 6・組は 3 層まで・stop は 1 音源 1 回・最後に start − stop が合う', () => {
+     for (let seed = 1; seed <= 20; seed++) {
+       const x = setup();
+-      for (const k of ['title_d', 'title_d_prev'] as const) put(x, k);
++      put(x, 'title_d'); // v0.7.2 S4: タイトルの候補は D だけ（D（前）を消した）
+       putFamily(x);
+       const rng = new SeededRng(seed + 100);
+       let stopCalls = 0;
+@@ -186,7 +186,7 @@ describe('移りの数（spec §4.2）: 任務の家族を含むランダムな
+       x.ctx.createBufferSource = () => { const s = create(); wrap(s); return s; };
+       const acts: ((r: number) => void)[] = [
+         () => x.e.music.request(MUSIC_CTX_MENU), () => x.e.music.request(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_MENU, MUSIC_FADE.resultLostDelayS),
+-        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_d', 'title_d_prev', 'mission_l0', null] as const)[Math.floor(r * 4)]!),
++        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_d', 'mission_l0', null] as const)[Math.floor(r * 3)]!),
+         (r) => x.e.music.setMood(Math.floor(r * 4)), (r) => x.e.music.setMood(Math.floor(r * 3)), (r) => x.e.setMuted(r < 0.4), (r) => x.e.music.setEnabled(r < 0.75), (r) => x.e.music.setPaused(r < 0.5),
+         (r) => { x.ctx.state = r < 0.8 ? 'running' : 'suspended'; },
+       ];
+diff --git a/tests/sfx-engine-music.test.ts b/tests/sfx-engine-music.test.ts
+index f60845a..ea984e4 100644
+--- a/tests/sfx-engine-music.test.ts
++++ b/tests/sfx-engine-music.test.ts
+@@ -12,7 +12,7 @@ import { SeededRng } from '../src/core/rng';
+ import { registerSfxEngine, sfxMusic, sfxMusicEnabled, sfxMusicPaused, sfxMusicRelease } from '../src/systems/sfx-bus';
+ import { MissionSfx, SFX_SCENE_EV_PAUSE, SFX_SCENE_EV_RESUME, SFX_SCENE_EV_SHUTDOWN } from '../src/systems/sfx-mission';
+ import { type FakeSource, graph, setup } from './sfx-engine-kit';
+-import { FRAME_S, LEAD, TC, alive, musicSrcs, put, run, sceneEvents, unstopped } from './sfx-music-kit';
++import { FRAME_S, LEAD, TC, alive, musicSrcs, put, putFamily, run, sceneEvents, unstopped } from './sfx-music-kit';
+ 
+ afterEach(() => registerSfxEngine(null));
+ 
+@@ -234,7 +234,8 @@ describe('移りの数（spec §4.2）・10 Hz で変わった時だけ', () =>
+   it('ランダムな移り 10 回 × 20 種: どの時点も鳴っている曲の音源 ≤ 6・stop は 1 音源 1 回・組の音源は同じ when。最後に外すと start − stop が合う', () => {
+     for (let seed = 1; seed <= 20; seed++) {
+       const x = setup();
+-      for (const k of ['title_d', 'title_d_prev'] as const) put(x, k);
++      put(x, 'title_d');
++      putFamily(x); // v0.7.2 S4: 試聴の場の候補は D と任務の家族（D（前）を消した）
+       const rng = new SeededRng(seed);
+       let stopCalls = 0;
+       const wrap = (s: FakeSource): void => { const st = s.stop.bind(s); s.stop = (w?: number) => { if (s.stopped) throw new Error('stop を 2 回'); stopCalls++; st(w); }; };
+@@ -242,7 +243,7 @@ describe('移りの数（spec §4.2）・10 Hz で変わった時だけ', () =>
+       x.ctx.createBufferSource = () => { const s = create(); wrap(s); return s; };
+       const acts: ((r: number) => void)[] = [
+         () => x.e.music.request(MUSIC_CTX_MENU), () => x.e.music.request(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_MENU, MUSIC_FADE.resultReturnedDelayS),
+-        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_d', 'title_d_prev', null] as const)[Math.floor(r * 3)]!),
++        () => x.e.music.release(MUSIC_CTX_MISSION), () => x.e.music.request(MUSIC_CTX_LAB), (r) => x.e.music.audition((['title_d', 'mission_l0', null] as const)[Math.floor(r * 3)]!),
+         (r) => x.e.setMuted(r < 0.5), (r) => x.e.music.setEnabled(r < 0.7), (r) => x.e.music.setPaused(r < 0.5), (r) => { x.ctx.state = r < 0.8 ? 'running' : 'suspended'; },
+       ];
+       for (let i = 0; i < 10; i++) {
+diff --git a/tests/sfx-inventory.test.ts b/tests/sfx-inventory.test.ts
+index bd92d21..552aa90 100644
+--- a/tests/sfx-inventory.test.ts
++++ b/tests/sfx-inventory.test.ts
+@@ -77,13 +77,13 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
+     expect(d.loop).toBe(LOOPS.includes(key));
+     expect(d.rateJitter).toBe(JITTER[key] ?? 0);
+   });
+-  it('種は 32（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場の魚雷の発射 E〜I の 5。IP4 から F の種はゲームの torp_launch も使う）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
++  it('種は 28（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場の魚雷の発射の F＝IP4 からゲームの torp_launch。v0.7.2 S4 で使われなくなった E・G・H・I を消した）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
+     const src = readFileSync('src/config/sfx-config.ts', 'utf8');
+     const seeds = [...src.matchAll(/^export const (SFX_SEED_\w+) = (\d+);/gm)].map((m) => [m[1]!, Number(m[2])] as const);
+-    expect(seeds.length).toBe(32);
+-    const lab = ['E', 'F', 'G', 'H', 'I'].map((v) => `SFX_SEED_LAB_LAUNCH_${v}`);
++    expect(seeds.length).toBe(28);
++    const lab = ['SFX_SEED_LAB_LAUNCH_F'];
+     expect(seeds.map((s) => s[0]).sort()).toEqual([...SFX_KEYS.map((k) => `SFX_SEED_${k.toUpperCase()}`), 'SFX_SEED_PLAY', ...lab].sort());
+-    expect(new Set(seeds.map((s) => s[1])).size).toBe(32);
++    expect(new Set(seeds.map((s) => s[1])).size).toBe(28);
+     const art: number[] = [];
+     for (const f of readdirSync('src/config')) {
+       if (f.startsWith('sfx-')) continue;
+diff --git a/tests/sfx-music-build.test.ts b/tests/sfx-music-build.test.ts
+index 5ed077e..627885f 100644
+--- a/tests/sfx-music-build.test.ts
++++ b/tests/sfx-music-build.test.ts
+@@ -4,7 +4,7 @@
+ // - ゲームの列は既定のタイトルの曲だけ（S1＝L6）→ S2 で任務の家族 L0〜L2 を後ろに足した（§13 L1: Title・Briefing の間に同じ予算で作り、任務をまたいで使い回す）。できた buffer は
+ //   ゲームの標本そのもの（tests/sfx-music-render の指紋）で、曲ごとに buffer は 1 本だけ。列が空になれば作業用の配列を捨て、表は残す。任務（MISSION）はまだ無い層の最初を先に作る。
+ // - 試聴の場（L14）: 押した候補を作ってから鳴らす・別の候補はできるまで今のが鳴り、できたら 0.5 秒で重ねる・出ると候補の標本を捨てる（ゲームの列の曲は残す）。作りかけの既定の曲は押した候補に譲る。
+-// - v0.7.2 IP2: タイトルの曲は D（ユーザーの決め）・試聴の場の候補は D（前）だけ（A・E を消した）。
++// - v0.7.2 IP2: タイトルの曲は D（ユーザーの決め）・試聴の場の候補は D（前）だけ（A・E を消した）。S4: D（前）も消した＝試聴の場の候補は D と任務の家族（どれもゲームの列の曲）。
+ import { afterEach, describe, expect, it } from 'vitest';
+ import {
+   MUSIC_CTX_LAB, MUSIC_CTX_MENU, MUSIC_CTX_MISSION, MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_KEYS, MUSIC_LAB_MAX_SAMPLES, MUSIC_LAYER_KEYS, MUSIC_LENGTHS, MUSIC_MAX_RESIDENT_SAMPLES, MUSIC_SAMPLE_RATE,
+@@ -84,58 +84,53 @@ describe('作る列（D4・L6〜L9）', () => {
+ });
+ 
+ describe('曲の試聴の場（L14）', () => {
+-  it('押した候補を作ってから鳴らす（作っている間は進み）・別の候補はできるまで今のが鳴り、できたら 0.5 秒で重ねる・同じ口で止める・出ると候補の標本を捨てる（v0.7.2 IP2: D（前）→ D（今））', () => {
++  it('押した候補を作ってから鳴らす（作っている間は進み）・別の候補（任務の家族）はできるまで今のが鳴り、できたら 0.5 秒で重ねる・同じ口で止める・出てもゲームの列の曲は残す（v0.7.2 S4: D（前）を消し、候補はどれもゲームの曲）', () => {
+     const x = setup();
+     registerSfxEngine(x.e);
+     x.e.music.allowBuild();
+     sfxMusic(MUSIC_CTX_LAB);
+-    sfxMusicAudition('title_d_prev');
++    sfxMusicAudition(MUSIC_TITLE_DEFAULT_ID);
+     run(x, 3 * FRAME_S);
+-    expect(sfxMusicLabBuilding()).toBe('title_d_prev');
++    expect(sfxMusicLabBuilding()).toBe(MUSIC_TITLE_DEFAULT_ID);
+     run(x, 10 * FRAME_S);
+     expect(sfxMusicLabProgress()).toBeGreaterThan(0);
+     expect(sfxMusicLabPlaying()).toBeNull();
+     buildAll(x);
+     run(x, 0.12);
+-    expect(sfxMusicLabPlaying()).toBe('title_d_prev');
++    expect(sfxMusicLabPlaying()).toBe(MUSIC_TITLE_DEFAULT_ID);
+     const b = unstopped(x)[0]!;
+-    expect(fingerprint16(b.buffer!.data)).toBe(FINGERPRINTS.title_d_prev);
+-    sfxMusicAudition('title_d'); // ゲームの曲（列の頭）。できるまで D（前）が鳴る
++    expect(fingerprint16(b.buffer!.data)).toBe(FINGERPRINTS.title_d);
++    sfxMusicAudition('mission_l0'); // 任務の家族（L0 の鍵）。3 層ができるまで D が鳴る
+     run(x, 0.5);
+-    expect([sfxMusicLabBuilding(), sfxMusicLabPlaying(), b.stopped]).toEqual(['title_d', 'title_d_prev', false]);
+-    for (let f = 0; f < 3000 && sfxMusicLabBuilding() === 'title_d'; f++) run(x, FRAME_S);
++    expect([sfxMusicLabBuilding(), sfxMusicLabPlaying(), b.stopped]).toEqual(['mission_l0', MUSIC_TITLE_DEFAULT_ID, false]);
++    expect(buildList(x)).toBeGreaterThan(10); // 3 層（列が空になって作業用の配列を捨てるまで）
+     run(x, 0.12);
+-    const c = unstopped(x)[0]!;
+-    expect([sfxMusicLabPlaying(), b.stopped, c.buffer === b.buffer]).toEqual(['title_d', true, false]);
++    const fam = unstopped(x);
++    expect([sfxMusicLabPlaying(), b.stopped, fam.length]).toEqual(['mission_l0', true, MUSIC_LAYER_KEYS.length]);
+     expect(b.stopAt - x.ctx.currentTime).toBeLessThanOrEqual(MUSIC_FADE.labCrossS);
+-    const slot = graph(x.ctx, x.e).music.slots.find((n) => c.outs.includes(n))!;
+-    expect(slot.gain.events[2]![3]).toBeCloseTo(MUSIC_FADE.labCrossS * TC, 9);
+-    expect(fingerprint16(c.buffer!.data)).toBe(FINGERPRINTS.title_d);
++    expect(new Set(fam.map((s) => s.started)).size).toBe(1); // 3 層は同じ when
++    expect(fam.map((s) => fingerprint16(s.buffer!.data))).toEqual(MUSIC_LAYER_KEYS.map((k) => FINGERPRINTS[k]));
+     let st = x.e.music.stats();
+     expect(st.resident).toBeLessThanOrEqual(MUSIC_LAB_MAX_SAMPLES);
+     sfxMusicAudition(null);
+-    expect([sfxMusicLabPlaying(), c.stopped]).toEqual([null, true]);
+-    buildAll(x); // 押していない間はゲームの列（家族の L0）を作る
++    expect([sfxMusicLabPlaying(), fam.every((s) => s.stopped)]).toEqual([null, true]);
++    sfxMusic(MUSIC_CTX_NONE); // 出る: 候補はどれもゲームの列の曲なので捨てない（D と家族は Title・任務でそのまま使う）
+     st = x.e.music.stats();
+-    expect(st.buffers).toBe(3);
+-    sfxMusic(MUSIC_CTX_NONE); // 出る: D（前）だけ捨てる（ゲームの列の D と L0 は残す）
+-    st = x.e.music.stats();
+-    expect([st.buffers, st.resident]).toEqual([2, MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID] + MUSIC_LENGTHS.mission_l0]);
+-    expect(x.e.music.build.buffers[MUSIC_KEYS.indexOf(MUSIC_TITLE_DEFAULT_ID)]).not.toBeNull();
+-    expect(x.e.music.build.buffers[MUSIC_KEYS.indexOf('title_d_prev')]).toBeNull();
++    expect([st.buffers, st.resident]).toEqual([MUSIC_GAME_BUILD.length, MUSIC_GAME_BUILD.reduce((a, k) => a + MUSIC_LENGTHS[k], 0)]);
++    for (const k of MUSIC_GAME_BUILD) expect(x.e.music.build.buffers[MUSIC_KEYS.indexOf(k)], k).not.toBeNull();
++    expect(x.ctx.buffers.filter((m) => m.length > 100_000).length).toBe(MUSIC_GAME_BUILD.length); // 曲ごとに 1 本（作り直さない）
+   });
+-  it('既定の曲を作っている途中に別の候補を押すと、作りかけをやめて押した候補を先に作る（やめた曲は後で頭から＝同じ標本。v0.7.2 IP2: D と D（前）は同じ長さなので指紋で見分ける）', () => {
++  it('既定の曲を作っている途中に別の候補（任務の家族）を押すと、作りかけをやめて押した候補を先に作る（やめた曲は後で頭から＝同じ標本）', () => {
+     const x = setup();
+     x.e.music.allowBuild();
+     x.e.music.request(MUSIC_CTX_LAB);
+     run(x, 20 * FRAME_S);
+     expect(x.e.music.stats().building).toBe(MUSIC_TITLE_DEFAULT_ID);
+-    x.e.music.audition('title_d_prev');
++    x.e.music.audition('mission_l0');
+     run(x, FRAME_S);
+-    expect([x.e.music.stats().building, x.e.music.stats().abandoned]).toEqual(['title_d_prev', 1]);
+-    buildAll(x);
+-    buildAll(x);
+-    const fps = x.ctx.buffers.filter((b) => b.length === MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID]).map((b) => fingerprint16(b.data)).sort((p, q) => p - q);
+-    expect(fps).toEqual([FINGERPRINTS.title_d, FINGERPRINTS.title_d_prev].sort((p, q) => p - q)); // 曲ごとに 1 本・やめた D は頭から作り直して同じ標本
++    expect([x.e.music.stats().building, x.e.music.stats().abandoned]).toEqual(['mission_l0', 1]);
++    expect(buildList(x)).toBeGreaterThan(10);
++    const fps = x.ctx.buffers.filter((b) => b.length > 100_000).map((b) => fingerprint16(b.data)).sort((p, q) => p - q);
++    expect(fps).toEqual(MUSIC_GAME_BUILD.map((k) => FINGERPRINTS[k]).sort((p, q) => p - q)); // 曲ごとに 1 本・やめた D は頭から作り直して同じ標本
+   });
+ });
+diff --git a/tests/sfx-music-compose.test.ts b/tests/sfx-music-compose.test.ts
+index 614af16..7ed0340 100644
+--- a/tests/sfx-music-compose.test.ts
++++ b/tests/sfx-music-compose.test.ts
+@@ -1,6 +1,6 @@
+ // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §3.1・§3.2・§8.1）: 作曲器（assets/sfx-music-compose）を固定する。
+ // - 同じ種は同じ音符・D（前）と任務の家族の種は「決まりを全部通る最初の種」（IP1 の鎖のまま＝scripts/sfx-music.ts の SEED_CHAIN_FROM。IP2 の D の種は tests/sfx-music-score が
+-//   区間の中で点が一番高いことを確かめる）。
++//   区間の中で点が一番高いことを確かめる）。v0.7.2 S4: D（前）はゲームから消した。計画の無いタイトルの道の試験は tests/sfx-music-kit の写し PREV_THEME で続ける。
+ // - 旋律の決まり: 旋法の中・強拍の和音の音 ≥ 80%・順次 60〜85%（跳躍がある）・跳躍の戻り ≥ 90%・音域・句の終わり（half は 2 度か 5 度・end は主音／和音に無ければ根音）・
+ //   5〜6 小節目は 1〜2 小節目の変形（同じリズム・違う音）。決まり文句（§3.1）の見張りが効く（わざと破った旋律で確かめる）。
+ // - 旋律の音の並びは source に無い（MIDI らしい数の 4 つ以上の並び・音名の並びを置かない＝和音の進行とリズムの型だけ）。
+@@ -11,11 +11,17 @@ import { MELODY_MIN_NOTES, barScale, chordAt, chordBass, chordPcs, chordSymAt, c
+ import { musicNoteSamples, type MusicNote } from '../src/assets/sfx-music-synth';
+ import { MUSIC_SEEDS, MUSIC_THEMES, musicRng } from '../src/assets/sfx-music-themes';
+ import { SeededRng } from '../src/core/rng';
++import { PREV_CHAIN_FROM, PREV_SEED, PREV_THEME, prevScore } from './sfx-music-kit';
+ 
+ const SCORES = Object.fromEntries(MUSIC_KEYS.map((k) => [k, composeMusic(MUSIC_THEMES[k], musicRng(k))])) as Record<MusicKey, MusicScore>;
+-const MELODIC: readonly MusicKey[] = ['title_d', 'title_d_prev', 'mission_l0'];
++/** v0.7.2 S4: 消した D（前）の写し（tests/sfx-music-kit）の楽譜 */
++const PREV = prevScore();
++/** 旋律のある曲（名前・表・楽譜。D（前）は写し） */
++const MELODIC: readonly (readonly [string, MusicTheme, MusicScore])[] = [
++  ['title_d', MUSIC_THEMES.title_d, SCORES.title_d], ['D（前）', PREV_THEME, PREV], ['mission_l0', MUSIC_THEMES.mission_l0, SCORES.mission_l0],
++];
+ /** IP1 の鎖の始まり（scripts/sfx-music.ts の SEED_CHAIN_FROM と同じ。消した A 7603・E 7627 の次） */
+-const CHAIN_FROM: Readonly<Partial<Record<MusicKey, number>>> = { title_d_prev: 7604, mission_l0: 7628, mission_l1: 7629, mission_l2: 7630 };
++const CHAIN_FROM: Readonly<Partial<Record<MusicKey, number>>> = { mission_l0: 7628, mission_l1: 7629, mission_l2: 7630 };
+ /** 旋律の音を入れ替えた楽譜（決まり文句の見張りの確かめ用。リズムは元のまま） */
+ function withPitches(sc: MusicScore, pitches: readonly number[]): MusicScore {
+   const melody = sc.melody.map((m, i) => ({ ...m, pitch: pitches[i % pitches.length]! }));
+@@ -28,12 +34,14 @@ describe('作曲器（v0.7.2 S0）', () => {
+     expect(again.notes).toEqual(SCORES[k].notes);
+     if (SCORES[k].melody.length > 0) expect(composeMusic(MUSIC_THEMES[k], new SeededRng(MUSIC_SEEDS[k] + 1000)).melody.map((m) => m.pitch)).not.toEqual(SCORES[k].melody.map((m) => m.pitch));
+   });
+-  it('D（前）と任務の家族の種は IP1 の鎖のまま「決まりを全部通る最初の種」（IP2 で A・E を消しても種と標本は動かさない）・どの曲も決まりを通る', () => {
++  it('D（前）と任務の家族の種は IP1 の鎖のまま「決まりを全部通る最初の種」（IP2 で A・E・S4 で D（前）を消しても種と標本は動かさない）・どの曲も決まりを通る', () => {
+     for (const [k, from] of Object.entries(CHAIN_FROM) as [MusicKey, number][]) {
+       for (let s = from; s < MUSIC_SEEDS[k]; s++) expect(melodyCheck(composeMusic(MUSIC_THEMES[k], new SeededRng(s))).violations.length, `${k} ${s}`).toBeGreaterThan(0);
+       expect(MUSIC_SEEDS[k], k).toBeGreaterThanOrEqual(from);
+     }
++    for (let s = PREV_CHAIN_FROM; s < PREV_SEED; s++) expect(melodyCheck(composeMusic(PREV_THEME, new SeededRng(s))).violations.length, `D（前） ${s}`).toBeGreaterThan(0);
+     for (const k of MUSIC_KEYS) expect(melodyCheck(SCORES[k]).violations, k).toEqual([]);
++    expect(melodyCheck(PREV).violations).toEqual([]);
+   });
+   it.each([...MUSIC_KEYS])('%s: 長さは表のとおり・どの音符も輪の中で始まり、輪より短く書き終わる・16 分音符は整数の標本', (k) => {
+     const sc = SCORES[k];
+@@ -46,13 +54,13 @@ describe('作曲器（v0.7.2 S0）', () => {
+       expect(Number.isFinite(x.pitch) && x.vel > 0 && x.vel <= 1.2).toBe(true);
+     }
+   });
+-  it.each([...MELODIC])('%s: 旋律の決まり（旋法・強拍の和音の音 ≥ 80%・音域・句の終わり）。8 音以上の旋律は順次 60〜85%・跳躍の戻り ≥ 90%・音域の幅 5 度以上', (k) => {
+-    const th = MUSIC_THEMES[k], m = th.melody!, c = melodyCheck(SCORES[k]), six = sixteenthOf(th.bpm);
++  it.each([...MELODIC])('%s: 旋律の決まり（旋法・強拍の和音の音 ≥ 80%・音域・句の終わり）。8 音以上の旋律は順次 60〜85%・跳躍の戻り ≥ 90%・音域の幅 5 度以上', (k, th, sc) => {
++    const m = th.melody!, c = melodyCheck(sc), six = sixteenthOf(th.bpm);
+     expect(c.violations).toEqual([]);
+     expect(c.strongChord).toBeGreaterThanOrEqual(0.8);
+     expect(c.low).toBeGreaterThanOrEqual(m.low);
+     expect(c.high).toBeLessThanOrEqual(m.high);
+-    for (const x of SCORES[k].melody) expect(barScale(th, chordAt(th, x.start / six)), `${k} ${x.pitch}`).toContain(pcOf(x.pitch)); // IP2: 半小節の和音も（音の位置の和音）
++    for (const x of sc.melody) expect(barScale(th, chordAt(th, x.start / six)), `${k} ${x.pitch}`).toContain(pcOf(x.pitch)); // IP2: 半小節の和音も（音の位置の和音）
+     if (c.count >= MELODY_MIN_NOTES) {
+       expect(c.stepShare).toBeGreaterThanOrEqual(0.6);
+       expect(c.stepShare).toBeLessThanOrEqual(0.85);
+@@ -62,7 +70,7 @@ describe('作曲器（v0.7.2 S0）', () => {
+     m.cadences.forEach(([, kind], i) => { if (kind === 'half') expect([2, 7], `${k} half`).toContain((pcOf(c.cadences[i]!) - th.tonic + 12) % 12); });
+   });
+   it('句の終わりの音: D（前）は 4・12 小節目 E・8・16 小節目 A（IP1 のまま）。IP2 の D は 4・12 小節目が 5 度か 2 度（半終止）・8 小節目が主音か 3 度（閉じる）・16 小節目が主音', () => {
+-    expect(melodyCheck(SCORES.title_d_prev).cadences.map(pcOf)).toEqual([4, 9, 4, 9]);
++    expect(melodyCheck(PREV).cadences.map(pcOf)).toEqual([4, 9, 4, 9]);
+     const d = melodyCheck(SCORES.title_d).cadences.map(pcOf);
+     expect([4, 9]).toContain(d[0]);
+     expect([2, 5]).toContain(d[1]);
+@@ -70,8 +78,8 @@ describe('作曲器（v0.7.2 S0）', () => {
+     expect(d[3]).toBe(2);
+   });
+   it('5〜6 小節目は 1〜2 小節目の変形（D（前）は 1 小節ずつ 5・9・13 小節目に同じリズムで違う音。IP2 の D の写しは tests/sfx-music-plan）', () => {
+-    for (const k of ['title_d_prev'] as const) {
+-      const th = MUSIC_THEMES[k], six = sixteenthOf(th.bpm), barN = th.beats * 4, ns = SCORES[k].melody;
++    {
++      const k = 'D（前）', th = PREV_THEME, six = sixteenthOf(th.bpm), barN = th.beats * 4, ns = PREV.melody;
+       for (const [to, from] of th.melody!.motifs) {
+         const span = th.melody!.span, sel = (b0: number): MusicNote[] => ns.filter((x) => Math.floor(x.start / six / barN) >= b0 - 1 && Math.floor(x.start / six / barN) < b0 - 1 + span);
+         const a = sel(from), b = sel(to);
+@@ -81,16 +89,15 @@ describe('作曲器（v0.7.2 S0）', () => {
+     }
+   });
+   it('決まり文句の見張りが効く（わざと破った旋律）: 主和音の分散 4 音・5–1–3–5 の始まり・同じ音 3 回と 4 度以上の跳躍・行ったり来たり・同じ 4 小節 3 回', () => {
+-    for (const k of ['title_d', 'title_d_prev'] as const) { // D エオリア（主和音 D F A）。IP2 で E（G 和声的短音階）を消したので D で
+-      const e = SCORES[k];
++    for (const [k, e] of [['title_d', SCORES.title_d], ['D（前）', PREV]] as const) { // D エオリア（主和音 D F A）。IP2 で E（G 和声的短音階）を消したので D で
+       expect(melodyCheck(withPitches(e, [62, 65, 69, 74, 72, 70, 69, 67])).violations, k).toContain('arpeggio');
+       expect(melodyCheck(withPitches(e, [69, 74, 77, 81, 79, 77, 76, 74])).violations.some((v) => v.startsWith('fanfare')), k).toBe(true);
+       expect(melodyCheck(withPitches(e, [74, 74, 74, 79, 77, 76, 74, 72])).violations.some((v) => v.startsWith('repeatLeap')), k).toBe(true);
+       expect(melodyCheck(withPitches(e, [74, 72, 74, 72, 74, 76, 77, 76])).violations, k).toContain('trill');
+     }
+-    const th: MusicTheme = MUSIC_THEMES.title_d_prev, bar = 16 * sixteenthOf(th.bpm); // 4/4 の 16 小節に、4 小節ごとに同じ音の並び（4 回）
++    const th: MusicTheme = PREV_THEME, bar = 16 * sixteenthOf(th.bpm); // 4/4 の 16 小節に、4 小節ごとに同じ音の並び（4 回）
+     const melody = Array.from({ length: 16 }, (_, b): MusicNote => ({ inst: 'horn', start: b * bar, len: Math.round(bar * 0.9), pitch: [74, 76, 77, 76][b % 4]!, vel: 1, decayS: 0, noise: 0 }));
+-    expect(melodyCheck({ theme: th, notes: melody, melody, n: MUSIC_LENGTHS.title_d_prev }).violations).toContain('repeat4');
++    expect(melodyCheck({ theme: th, notes: melody, melody, n: MUSIC_LENGTHS.title_d }).violations).toContain('repeat4');
+   });
+   it('和音と音階: 和音の音名・D エオリアの A の和音は C の代わりに C#・E7 は G の代わりに G#・B♭ の代わりに B・E エオリアの B7 は D の代わりに D#', () => {
+     expect(chordPcs('Bb')).toEqual([10, 2, 5]);
+@@ -108,7 +115,7 @@ describe('作曲器（v0.7.2 S0）', () => {
+     const d = MUSIC_THEMES.title_d; // 7 小節目 'Gm A7'・16 小節目 'Dm Dm Asus4 A'
+     expect([0, 7, 8, 15].map((x) => chordSymAt(d, 6 * 16 + x))).toEqual(['Gm', 'Gm', 'A7', 'A7']);
+     expect([0, 4, 8, 12].map((x) => chordSymAt(d, 15 * 16 + x))).toEqual(['Dm', 'Dm', 'Asus4', 'A']);
+-    const p = MUSIC_THEMES.title_d_prev;
++    const p = PREV_THEME;
+     for (let b = 0; b < p.bars; b++) for (let x = 0; x < 16; x++) expect(chordSymAt(p, b * 16 + x)).toBe(p.chords[b]);
+   });
+   it('旋律の音の並びは source に無い（sfx-music の source に MIDI らしい数 40〜96 だけの 4 つ以上の並び・音名の並びが無い）', () => {
+@@ -124,8 +131,8 @@ describe('作曲器（v0.7.2 S0）', () => {
+     }
+   });
+   it('IP1: タイトルの曲の旋律は合奏（2 声 ±3 cent）＝楽譜の旋律の音は確かめ用の中央の 1 声・音符は声ごとに同じ始めと長さ・任務の鈴は 1 声のまま', () => {
+-    for (const k of ['title_d', 'title_d_prev'] as const) {
+-      const sc = SCORES[k], m = MUSIC_THEMES[k].melody!, v = m.voices ?? 1, horn = sc.notes.filter((x) => x.inst === m.inst && x.start < sc.n);
++    for (const [k, sc] of [['title_d', SCORES.title_d], ['D（前）', PREV]] as const) {
++      const m = sc.theme.melody!, v = m.voices ?? 1, horn = sc.notes.filter((x) => x.inst === m.inst && x.start < sc.n);
+       expect(v).toBe(2);
+       expect(horn.slice(0, sc.melody.length * v).map((x) => x.start)).toEqual(sc.melody.flatMap((x) => Array<number>(v).fill(x.start)));
+       expect(horn.slice(0, 2).map((x) => Math.round((x.pitch - sc.melody[0]!.pitch) * 100))).toEqual([-(m.cents ?? 0) / 2, (m.cents ?? 0) / 2]);
+diff --git a/tests/sfx-music-inventory.test.ts b/tests/sfx-music-inventory.test.ts
+index 0a46cf3..f291447 100644
+--- a/tests/sfx-music-inventory.test.ts
++++ b/tests/sfx-music-inventory.test.ts
+@@ -1,5 +1,5 @@
+ // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §2〜§6・§8.1・§13）: 曲の棚卸しを固定する（tests/sfx-inventory の型）。
+-// - 曲の鍵は 5 本（タイトルの曲 D と聞き比べの D（前）＝v0.7.2 IP2 で A・E を消した〔IP1 で B・C を D・E に〕と任務の層 L0・L1・L2）で、効果音の SFX_KEYS とは別の表
++// - 曲の鍵は 4 本（タイトルの曲 D＝v0.7.2 IP2 で A・E・S4 で聞き比べの D（前）を消した〔IP1 で B・C を D・E に〕と任務の層 L0・L1・L2）で、効果音の SFX_KEYS とは別の表
+ //   （§13 L5: 効果音 26 本の表・標本・音量はそのまま）。
+ // - 種は SFX_SEED_MUSIC_*（7601〜7699。IP2 の D は探す区間 MUSIC_SEED_SEARCH_D の中）だけで重ならず、効果音・絵の種とも重ならない。作曲の乱数は musicRng（曲ごとの種）。Math.random なし。
+ // - 速さは 16 分音符が整数の標本になる 7 つだけ・長さは小節 × 拍 × 4 × 16 分・任務の層は L2 の整数倍（R6）・常駐の上限（ゲーム 180 万・試聴の場 280 万標本）。
+@@ -21,13 +21,13 @@ const MUSIC_FILES = ['src/config/sfx-music-config.ts', ...readdirSync('src/asset
+ const seedsIn = (file: string, re: RegExp): [string, number][] => [...readFileSync(file, 'utf8').matchAll(re)].map((m) => [m[1]!, Number(m[2]!.replace(/_/g, ''))]);
+ /** spec §3.5・§3.6 の速さ・拍・小節 */
+ const FORM: Readonly<Record<MusicKey, readonly [number, number, number]>> = {
+-  title_d: [126, 4, 16], title_d_prev: [126, 4, 16], mission_l0: [90, 4, 8], mission_l1: [90, 4, 8], mission_l2: [90, 4, 2],
++  title_d: [126, 4, 16], mission_l0: [90, 4, 8], mission_l1: [90, 4, 8], mission_l2: [90, 4, 2],
+ };
+ 
+ describe('曲の鍵と表（v0.7.2 S0）', () => {
+-  it('鍵は 5 本（タイトルの曲 D・聞き比べの D（前）・任務の層 3。IP2 で A・E を消した）で重ならず、効果音の SFX_KEYS にも表 SFX_TABLE にも入っていない（§13 L5）', () => {
+-    expect([...MUSIC_KEYS]).toEqual(['title_d', 'title_d_prev', 'mission_l0', 'mission_l1', 'mission_l2']);
+-    expect(new Set(MUSIC_KEYS).size).toBe(5);
++  it('鍵は 4 本（タイトルの曲 D・任務の層 3。IP2 で A・E・S4 で D（前）を消した）で重ならず、効果音の SFX_KEYS にも表 SFX_TABLE にも入っていない（§13 L5）', () => {
++    expect([...MUSIC_KEYS]).toEqual(['title_d', 'mission_l0', 'mission_l1', 'mission_l2']);
++    expect(new Set(MUSIC_KEYS).size).toBe(4);
+     expect([...MUSIC_TITLE_KEYS, ...MUSIC_LAYER_KEYS].sort()).toEqual([...MUSIC_KEYS].sort());
+     for (const k of MUSIC_KEYS) {
+       expect((SFX_KEYS as readonly string[]).includes(k), k).toBe(false);
+@@ -52,20 +52,20 @@ describe('曲の鍵と表（v0.7.2 S0）', () => {
+       expect(MUSIC_LENGTHS[k], k).toBe(bars * beats * 4 * sixteenthOf(th.bpm));
+       expect(th.chords.length, k).toBe(bars);
+     }
+-    expect(MUSIC_LENGTHS).toEqual({ title_d: 672_000, title_d_prev: 672_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600 });
++    expect(MUSIC_LENGTHS).toEqual({ title_d: 672_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600 });
+   });
+   it('任務の層の長さは L2 の整数倍（R6: 同じ時刻に始めればずれない）', () => {
+     expect(MUSIC_LENGTHS.mission_l0).toBe(MUSIC_LENGTHS.mission_l1);
+     expect(MUSIC_LENGTHS.mission_l0 % MUSIC_LENGTHS.mission_l2).toBe(0);
+     expect(MUSIC_LENGTHS.mission_l0 / MUSIC_LENGTHS.mission_l2).toBe(4);
+   });
+-  it('常駐の上限（R2）: ゲームの中（タイトルの曲 D＋任務の家族）≤ 180 万標本、試聴の場（D・D（前）＋家族）≤ 280 万標本・作業用の配列は一番長い鍵の長さ', () => {
++  it('常駐の上限（R2）: ゲームの中（タイトルの曲 D＋任務の家族）≤ 180 万標本、試聴の場（S4 から鍵は全部ゲームの曲＝同じ 1,730,400）≤ 280 万標本・作業用の配列は一番長い鍵の長さ', () => {
+     const game = MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID] + MUSIC_LAYER_KEYS.reduce((a, k) => a + MUSIC_LENGTHS[k], 0);
+     expect(game).toBe(1_730_400);
+     expect(game).toBeLessThanOrEqual(mc.MUSIC_MAX_RESIDENT_SAMPLES);
+     for (const t of MUSIC_TITLE_KEYS) expect(MUSIC_LENGTHS[t] + game - MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID]).toBeLessThanOrEqual(mc.MUSIC_MAX_RESIDENT_SAMPLES);
+     const lab = MUSIC_KEYS.reduce((a, k) => a + MUSIC_LENGTHS[k], 0);
+-    expect(lab).toBe(2_402_400);
++    expect(lab).toBe(1_730_400);
+     expect(lab).toBeLessThanOrEqual(mc.MUSIC_LAB_MAX_SAMPLES);
+     expect([mc.MUSIC_MAX_RESIDENT_SAMPLES, mc.MUSIC_LAB_MAX_SAMPLES]).toEqual([1_800_000, 2_800_000]);
+     expect(mc.MUSIC_WORK_SAMPLES).toBe(Math.max(...Object.values(MUSIC_LENGTHS)));
+@@ -76,15 +76,15 @@ describe('曲の鍵と表（v0.7.2 S0）', () => {
+ });
+ 
+ describe('曲の種（音だけの乱数）', () => {
+-  it('種は SFX_SEED_MUSIC_* の 6 つ（曲 5 ＋ 雑音の表）で 7601〜7699（IP2 の D は探す区間 MUSIC_SEED_SEARCH_D の中）・重ならず、効果音の種（SFX_SEED_*）と絵の種（ART_SEED_*）とも重ならない', () => {
++  it('種は SFX_SEED_MUSIC_* の 5 つ（曲 4 ＋ 雑音の表。S4 で D（前）の 7609 を消した）で 7601〜7699（IP2 の D は探す区間 MUSIC_SEED_SEARCH_D の中）・重ならず、効果音の種（SFX_SEED_*）と絵の種（ART_SEED_*）とも重ならない', () => {
+     const seeds = seedsIn('src/config/sfx-music-config.ts', /^export const (SFX_SEED_MUSIC_\w+) = ([\d_]+);/gm);
+-    expect(seeds.map((s) => s[0]).sort()).toEqual(['SFX_SEED_MUSIC_D', 'SFX_SEED_MUSIC_D_PREV', 'SFX_SEED_MUSIC_L0', 'SFX_SEED_MUSIC_L1', 'SFX_SEED_MUSIC_L2', 'SFX_SEED_MUSIC_NOISE']);
+-    expect(new Set(seeds.map((s) => s[1])).size).toBe(6);
++    expect(seeds.map((s) => s[0]).sort()).toEqual(['SFX_SEED_MUSIC_D', 'SFX_SEED_MUSIC_L0', 'SFX_SEED_MUSIC_L1', 'SFX_SEED_MUSIC_L2', 'SFX_SEED_MUSIC_NOISE']);
++    expect(new Set(seeds.map((s) => s[1])).size).toBe(5);
+     const box = mc.MUSIC_SEED_SEARCH_D;
+     for (const [name, v] of seeds) expect(name === 'SFX_SEED_MUSIC_D' ? v >= box.from && v < box.from + box.count : v >= 7601 && v <= 7699, `${name} ${v}`).toBe(true);
+-    expect([mc.SFX_SEED_MUSIC_D_PREV, mc.SFX_SEED_MUSIC_L0, mc.SFX_SEED_MUSIC_L1, mc.SFX_SEED_MUSIC_L2]).toEqual([7609, 7628, 7629, 7630]); // IP1 の標本のまま（IP2 で A・E を消しても動かさない）
++    expect([mc.SFX_SEED_MUSIC_L0, mc.SFX_SEED_MUSIC_L1, mc.SFX_SEED_MUSIC_L2]).toEqual([7628, 7629, 7630]); // IP1 の標本のまま（IP2 で A・E・S4 で D（前）を消しても動かさない）
+     const sfx = seedsIn('src/config/sfx-config.ts', /^export const (SFX_SEED_\w+) = (\d+);/gm).map((s) => s[1]);
+-    expect(sfx.length).toBe(32);
++    expect(sfx.length).toBe(28); // v0.7.2 S4: 試聴の場の魚雷の発射の案 E・G・H・I の種を消した（32 → 28）
+     const art: number[] = [];
+     for (const f of readdirSync('src/config')) {
+       if (f.startsWith('sfx-')) continue;
+@@ -97,7 +97,7 @@ describe('曲の種（音だけの乱数）', () => {
+     }
+   });
+   it('曲ごとの乱数 musicRng は MUSIC_SEEDS の種の SeededRng と同じ系列・種は鍵ごとに違う', () => {
+-    expect(MUSIC_SEEDS).toEqual({ title_d: mc.SFX_SEED_MUSIC_D, title_d_prev: mc.SFX_SEED_MUSIC_D_PREV, mission_l0: mc.SFX_SEED_MUSIC_L0, mission_l1: mc.SFX_SEED_MUSIC_L1, mission_l2: mc.SFX_SEED_MUSIC_L2 });
++    expect(MUSIC_SEEDS).toEqual({ title_d: mc.SFX_SEED_MUSIC_D, mission_l0: mc.SFX_SEED_MUSIC_L0, mission_l1: mc.SFX_SEED_MUSIC_L1, mission_l2: mc.SFX_SEED_MUSIC_L2 });
+     for (const k of MUSIC_KEYS) {
+       const a = musicRng(k), b = new SeededRng(MUSIC_SEEDS[k]);
+       for (let i = 0; i < 8; i++) expect(a.next(), k).toBe(b.next());
+diff --git a/tests/sfx-music-kit.ts b/tests/sfx-music-kit.ts
+index 0694800..8a6f3a7 100644
+--- a/tests/sfx-music-kit.ts
++++ b/tests/sfx-music-kit.ts
+@@ -1,7 +1,10 @@
+ // v0.7.2 S1: 曲の再生のテスト（tests/sfx-engine-music・sfx-music-build）が共有する道具。偽の context とエンジンは tests/sfx-engine-kit。
+ // S2: 指紋に任務の家族の 3 層（tests/sfx-music-render と同じ数）・ゲームの列を最後まで作る buildList・家族の標本の代わり putFamily。
+ // 曲の音源は「繰り返す・長い buffer」（効果音のループは 4 秒＝88,200 標本まで）で見分ける。時計は 1/60 秒ずつ（再生の時計も進める。実時間は 0＝見張りを動かさない）。
++// v0.7.2 S4: 消した D（前）（IP1 の D）の楽譜の表の写し PREV_THEME（作曲器・合成の試験の材料。下の注）。
+ import { MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_LENGTHS, MUSIC_PLAYER, MUSIC_SAMPLE_RATE, type MusicKey } from '../src/config/sfx-music-config';
++import { composeMusic, type MusicRhythm, type MusicScore, type MusicTheme } from '../src/assets/sfx-music-compose';
++import { SeededRng } from '../src/core/rng';
+ import type { SfxBuffer } from '../src/systems/sfx-audio-types';
+ import type { SfxEngine } from '../src/systems/sfx-engine';
+ import type { SfxSceneEvents } from '../src/systems/sfx-mission';
+@@ -40,8 +43,43 @@ export function fingerprint16(x: Float32Array): number {
+   return h;
+ }
+ export const FINGERPRINTS: Readonly<Record<MusicKey, number>> = {
+-  title_d: 2970034224, title_d_prev: 603232752, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
++  title_d: 2970034224, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
+ };
++
++/** 32 分の連打（from の 16 分から to まで・強さ v0 → v1。assets/sfx-music-themes の roll と同じ） */
++function roll(from: number, to: number, v0: number, v1: number): number[] {
++  const out: number[] = [], k = (to - from) * 2;
++  for (let i = 0; i < k; i++) out.push(from + i / 2, 0.5, Math.round(v0 + ((v1 - v0) * i) / Math.max(1, k - 1)));
++  return out;
++}
++const PREV_CHORDS = ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A'] as const;
++const PREV_MARCH: readonly MusicRhythm[] = [[0, 1, 100, 2, 1, 45, 3, 1, 50, 4, 1, 80, 6, 1, 50, 8, 1, 95, 10, 1, 45, 11, 1, 50, 12, 1, 80, 14, 1, 50], [0, 1, 100, 3, 1, 55, 4, 1, 80, 6, 1, 50, 7, 1, 55, 8, 1, 95, 11, 1, 55, 12, 1, 80, 14, 1, 50, 15, 1, 55]];
++/**
++ * v0.7.2 S4: 消した D（前）＝IP1 の D（鍵 title_d_prev・種 7609・音量 0.481。v0.7.2 IP2 の assets/sfx-music-themes の表の写し）。作曲器の「計画の無い 1 小節 1 和音のタイトルの道」
++ * （動機の変形 motifs・句の終わりの型 ends・小太鼓の連打 fill・根音の刻み root・部屋の響き）はゲームの曲では任務の家族と D が別々に使うだけになったので、試験の材料として持つ。
++ * 指紋 603232752 は IP1 の D とビット同一（作曲器と合成が変わっていない証。tests/sfx-music-render）。鍵は長さの同じ title_d を借りる（作曲器が鍵で読むのは長さだけ）
++ */
++export const PREV_THEME: MusicTheme = {
++  key: 'title_d', bpm: 126, beats: 4, bars: 16, tonic: 2, mode: 'aeolian', chords: [...PREV_CHORDS, ...PREV_CHORDS], room: [0.16, 1.0],
++  melody: {
++    inst: 'horn', low: 65, high: 79, vel: 1, span: 1, legato: 0.85, voices: 2, cents: 6,
++    rhythms: [[0, 4, 100, 4, 4, 80, 8, 6, 90, 14, 2, 70], [0, 6, 100, 6, 2, 75, 8, 4, 90, 12, 4, 80], [0, 3, 100, 3, 1, 70, 4, 4, 85, 8, 8, 95], [0, 4, 100, 4, 2, 75, 6, 2, 75, 8, 4, 90, 12, 4, 80], [0, 8, 100, 8, 3, 85, 11, 1, 70, 12, 4, 90]],
++    ends: [[0, 4, 90, 4, 4, 80, 8, 8, 100], [0, 6, 95, 6, 2, 75, 8, 8, 100], [0, 16, 100]],
++    cadences: [[4, 'half'], [8, 'end'], [12, 'half'], [16, 'end']], motifs: [[5, 1], [9, 1], [13, 5]],
++  },
++  parts: [
++    { inst: 'pad', pitch: 'chord', low: 57, high: 71, vel: 0.4, voices: 2, cents: 4, rhythms: [[0, 16, 100]] },
++    { inst: 'bowed', pitch: 'root', low: 57, high: 69, vel: 0.55, voices: 2, cents: 7, human: 0.06, rhythms: [[0, 1, 100, 2, 1, 55, 4, 1, 80, 6, 1, 55, 8, 1, 95, 10, 1, 55, 12, 1, 80, 14, 1, 60]] },
++    { inst: 'snare', pitch: 'none', low: 0, high: 0, vel: 0.4, human: 0.08, fillEvery: 4, rhythms: PREV_MARCH, fill: [0, 1, 100, 2, 1, 45, 4, 1, 80, 6, 1, 50, ...roll(8, 16, 40, 100)] },
++    { inst: 'boom', pitch: 'none', low: 0, high: 0, vel: 0.7, human: 0.05, rhythms: [[0, 4, 100, 8, 4, 80]] },
++  ],
++};
++/** D（前）の種・種の鎖の始まり（IP1 の「決まりを全部通る最初の種」＝消した A 7603 の次から）・指紋（16 bit の FNV） */
++export const PREV_SEED = 7609;
++export const PREV_CHAIN_FROM = 7604;
++export const PREV_FINGERPRINT = 603232752;
++/** D（前）の楽譜（同じ種は同じ音符） */
++export const prevScore = (): MusicScore => composeMusic(PREV_THEME, new SeededRng(PREV_SEED));
+ /** 今作っている曲（無ければ次に作る曲）を作り終えるまで回し、もう 2 フレーム進める（列が空なら作業用の配列を捨てるフレーム）。作り終えたフレーム数を返す */
+ export function buildAll(x: X, maxFrames = 3000): number {
+   for (let f = 0; f < maxFrames; f++) {
+diff --git a/tests/sfx-music-render.test.ts b/tests/sfx-music-render.test.ts
+index 979596c..6c24fd7 100644
+--- a/tests/sfx-music-render.test.ts
++++ b/tests/sfx-music-render.test.ts
+@@ -5,6 +5,7 @@
+ //   200 Hz より下 ≤ 12%。任務の層は L2 を 4 回で重ねる（R6）。
+ // - v0.7.2 IP1: 部屋の響き（D・E の room）も分けて描いて同じ標本（小さい予算で）・響きは継ぎ目で続く（上の継ぎ目の試験）・響きのない曲（A・任務の家族）は響きの段を通らない。
+ // - v0.7.2 IP2: 鍵は D（作り直し）・D（前）（IP1 の D とビット同一＝指紋 603232752）と任務の家族（IP1 のまま）。小さい予算で分けて描く試験は新しい D（伴奏の計画と響き）と L2。
++// - v0.7.2 S4: D（前）はゲームから消した。tests/sfx-music-kit の写し PREV_THEME を分けて描いても一度に描いても指紋 603232752（作曲器と合成が IP1 のまま）。
+ // - 予算（§2・R1）: どの stepBuild も予算を超えない・音 1 秒の費用は予算 5 フレームまで・進みは 0 → 1・作業用の配列は 1 本（R2）。
+ import { describe, expect, it } from 'vitest';
+ import {
+@@ -14,6 +15,7 @@ import {
+ import { MusicBuilder, composeMusicKey, renderMusic } from '../src/assets/sfx-music-render';
+ import { MUSIC_INSTRUMENTS, MusicTables, musicNoteSamples, stepFm, stepNoise, stepTone } from '../src/assets/sfx-music-synth';
+ import { bandShares } from '../scripts/sfx-files';
++import { PREV_FINGERPRINT, prevScore } from './sfx-music-kit';
+ 
+ const SR = MUSIC_SAMPLE_RATE;
+ const TB = new MusicTables();
+@@ -34,7 +36,7 @@ function fingerprint16(x: Float32Array): number {
+ }
+ /** 鍵ごとの指紋（作り方・種・楽器を直したら直す。Node（V8）の Math.sin・exp・pow・log に依る＝tests/sfx-synth と同じ） */
+ const FINGERPRINTS: Readonly<Record<MusicKey, number>> = {
+-  title_d: 2970034224, title_d_prev: 603232752, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
++  title_d: 2970034224, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
+ };
+ /** 段の重ね（L2 は 4 回）× 鍵の音量 */
+ function moodMix(mood: number): Float32Array {
+@@ -61,8 +63,19 @@ describe('分けて描く曲（v0.7.2 S0）', () => {
+       expect(Buffer.from(small.buffer).equals(Buffer.from(X[k].buffer))).toBe(true);
+     }
+   });
+-  it('IP1: 部屋の響きはタイトルの曲だけ（IP2: D と D（前）。任務の家族は通らない）・響きの段の費用は (ならし ＋ 輪) × room 単位', () => {
+-    expect(MUSIC_KEYS.filter((k) => composeMusicKey(k).theme.room !== undefined)).toEqual(['title_d', 'title_d_prev']);
++  it('S4: 消した D（前）の写し（tests/sfx-music-kit）は予算 150,000 で分けて描いても一度に描いても IP1 の指紋のまま（計画の無いタイトルの道と響き）', () => {
++    const draw = (budget: number): Float32Array => {
++      const b = new MusicBuilder(TB, WORK, prevScore());
++      while (!b.done) b.stepBuild(budget);
++      return b.result().slice();
++    };
++    const split = draw(MUSIC_BUILD_BUDGET), one = draw(1e15);
++    expect(fingerprint16(split)).toBe(PREV_FINGERPRINT);
++    expect(Buffer.from(one.buffer).equals(Buffer.from(split.buffer))).toBe(true);
++    expect(peakOf(split)).toBeCloseTo(MUSIC_PEAK, 5);
++  });
++  it('IP1: 部屋の響きはタイトルの曲だけ（S4: D。任務の家族は通らない）・響きの段の費用は (ならし ＋ 輪) × room 単位', () => {
++    expect(MUSIC_KEYS.filter((k) => composeMusicKey(k).theme.room !== undefined)).toEqual(['title_d']);
+     for (const k of MUSIC_KEYS) {
+       const sc = composeMusicKey(k), dry = new MusicBuilder(TB, WORK, { ...sc, theme: { ...sc.theme, room: undefined } }), wet = new MusicBuilder(TB, WORK, sc);
+       const room = sc.theme.room;
+diff --git a/tests/sfx-music-score.test.ts b/tests/sfx-music-score.test.ts
+index 5cb3ebe..a0cd462 100644
+--- a/tests/sfx-music-score.test.ts
++++ b/tests/sfx-music-score.test.ts
+@@ -1,5 +1,6 @@
+ // v0.7.2 IP2（実機 2 回目）: 旋律の点（assets/sfx-music-score の musicality）を固定する。決まりごとに、わざと破った旋律で点が効くこと・選んだ種が区間の中で点が一番高いこと
+ // （scripts/sfx-music.ts の SEARCH=1 と同じ並べ方＝点の高い順・同じ点なら小さい種）・IP1 の D（前）より新しい D の方が点が高いことを確かめる。
++// v0.7.2 S4: D（前）はゲームから消した（比べは tests/sfx-music-kit の写し PREV_THEME で続ける）。
+ // 決まり: 動機の戻り 3 回以上・山（一番高い音）は 1 回で輪の 75〜90%・音域 9 度〜13 度（13〜21 半音）・跳躍はオクターブまで・同じ音は 2 回まで・melodyCheck の決まり（跳躍の戻りなど）。
+ import { describe, expect, it } from 'vitest';
+ import { MUSIC_SEED_SEARCH_D, SFX_SEED_MUSIC_D } from '../src/config/sfx-music-config';
+@@ -7,8 +8,9 @@ import { composeMusic, type MusicScore } from '../src/assets/sfx-music-compose';
+ import { MUSICALITY_RULES, MUSICALITY_WEIGHTS, musicality, type MusicalityPart } from '../src/assets/sfx-music-score';
+ import { MUSIC_THEMES, musicRng } from '../src/assets/sfx-music-themes';
+ import { SeededRng } from '../src/core/rng';
++import { prevScore } from './sfx-music-kit';
+ 
+-const D = composeMusic(MUSIC_THEMES.title_d, musicRng('title_d')), PREV = composeMusic(MUSIC_THEMES.title_d_prev, musicRng('title_d_prev'));
++const D = composeMusic(MUSIC_THEMES.title_d, musicRng('title_d')), PREV = prevScore();
+ const R = musicality(D);
+ /** 旋律の音を f で直した楽譜（点は旋律だけを読む） */
+ function edit(sc: MusicScore, f: (p: number[]) => void): MusicScore {
+diff --git a/tests/sfx-variants.test.ts b/tests/sfx-variants.test.ts
+index 525c9bd..668c56e 100644
+--- a/tests/sfx-variants.test.ts
++++ b/tests/sfx-variants.test.ts
+@@ -1,17 +1,15 @@
+-// v0.7.1 IP2（実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音もどんっではなくポンっ」）: 試聴の場（?sfxlab）の案の表（assets/sfx-variants）を固定する。
+-// - 3 つの音（弾倉の始め reload・弾倉の終わり reload_end・魚雷の発射 torp_launch）に案 A〜D。D は IP1 の音（IP1 の指紋のまま）・既定は A（ゲームで鳴る renderSfx の標本とビット同一）。
+-// - どの案も: 長さ＝案の秒 × 22,050・有限・頂 0.9・両端 0・直流 < 0.02・2 回作って同じ。同じ音の案どうしは 6 つの数（tests/sfx-synth-cues と同じ数え方）で 1.5 より離れる＝聞き分けられる。
+-// - 既定の案の秒は表の秒（config/sfx-config）。弾倉の終わりの D だけ IP1 の終わりの速さ 1.06 で鳴らす（ほかは 1）。
+-// - IP3（実機 3 回目「弾倉はBでいきましょう。魚雷はんーもう何案か出してください」）: 弾倉の既定は始め・終わりとも B（U-R1。IP2 で試聴した B と同じ標本＝指紋が IP2 のまま）。
+-//   魚雷の発射は新しい案 E〜I を足して 9 案（既定は A のまま）。E〜I は 1.6 秒以内・本体のスピーカー向け（400 Hz より上 ≥ 60%・局所の頂 < 6 dB）・指紋を固定。9 案のどの 2 つも 1.5 より離れる。
+-// - IP4（実機 4 回目「魚雷はFで行きます。弾倉交換もOKです。」）: 魚雷の発射の既定は F（U-R2）。ゲームの標本 renderSfx('torp_launch') は試聴の場の F とビット同一で、指紋は IP3 で試聴した F の
+-//   1125567461 のまま（作り方・種 SFX_SEED_LAB_LAUNCH_F・秒 1.4 が同じ）。前の既定 A は試聴の場に残り、指紋は IP2〜IP3 のゲームの torp_launch 3234308985 のまま。
++// v0.7.1 IP2（実機 2 回目「弾倉交換はやはりまぬけ…」「魚雷発射音もどんっではなくポンっ」）: 試聴の場（?sfxlab の「効果音の試聴へ」）の案の表（assets/sfx-variants）を固定する。
++// - v0.7.1 IP2〜IP4 の聞き比べ（弾倉の A〜D・魚雷の発射の A〜I）で、弾倉は B（U-R1）・魚雷の発射は F（U-R2）に決まった。v0.7.2 S4: 使われなくなった案を片づけ（ユーザーの OK 2026-11-15）、
++//   表は 3 つの音（弾倉の始め reload・弾倉の終わり reload_end・魚雷の発射 torp_launch）にゲームの案 1 つずつ。
++// - どの案も: 長さ＝案の秒 × 22,050・有限・頂 0.9・両端 0・直流 < 0.02・2 回作って同じ。既定の案はゲームの標本（renderSfx）とビット同一で、秒は表の秒（config/sfx-config）。
++// - 弾倉の B は IP2 で試聴した B の指紋のまま。ゲームの torp_launch は IP3 で試聴した F とビット同一（作り方・種 SFX_SEED_LAB_LAUNCH_F・秒 1.4 が同じ＝指紋 1125567461）で、
++//   本体のスピーカー向け（400 Hz より上 ≥ 60%・局所の頂 < 6 dB）。
+ import { describe, expect, it } from 'vitest';
+ import { SFX_SAMPLE_RATE, SFX_TABLE } from '../src/config/sfx-config';
+ import { renderSfx } from '../src/assets/sfx-bank';
+-import { meanOf, peakOf, rmsOf, zeroCrossings } from '../src/assets/sfx-dsp';
++import { meanOf, peakOf } from '../src/assets/sfx-dsp';
+ import { SFX_VARIANT_GROUPS, renderSfxVariant } from '../src/assets/sfx-variants';
+-import { centroidHz, spectrum } from '../scripts/sfx-files';
++import { spectrum } from '../scripts/sfx-files';
+ 
+ const SR = SFX_SAMPLE_RATE;
+ const at = (s: number): number => Math.round(s * SR);
+@@ -24,22 +22,6 @@ function fingerprint16(x: Float32Array): number {
+   }
+   return h;
+ }
+-function peakAt(v: Float32Array): number {
+-  let a = 0;
+-  for (let i = 0; i < v.length; i++) if (Math.abs(v[i]!) > Math.abs(v[a]!)) a = i;
+-  return a / SR;
+-}
+-function len20(v: Float32Array): number {
+-  const p = peakOf(v) * 0.1;
+-  for (let i = v.length - 1; i >= 0; i--) if (Math.abs(v[i]!) >= p) return i / SR;
+-  return 0;
+-}
+-/** tests/sfx-synth-cues の 6 つの数（重心・零交差・頭 50 ms の重心・−20 dB までの長さ・頂の位置・RMS）の log2 の差の和 */
+-function dist(a: Float32Array, b: Float32Array): number {
+-  const f = (v: Float32Array): number[] => [centroidHz(v, 0, v.length, SR), zeroCrossings(v) / v.length, centroidHz(v, 0, Math.min(v.length, at(0.05)), SR), len20(v) + 0.05, peakAt(v) + 0.02, rmsOf(v)];
+-  const fa = f(a), fb = f(b);
+-  return fa.reduce((s, x, i) => s + Math.abs(Math.log2(x / fb[i]!)), 0);
+-}
+ /** 帯 [lo, ∞) Hz のエネルギーの割合（tests/sfx-synth-cues と同じ数え方） */
+ function shareAbove(v: Float32Array, hz: number): number {
+   const size = 1024;
+@@ -70,13 +52,9 @@ function peakinessDb(v: Float32Array): number {
+   }
+   return 10 * Math.log10(best);
+ }
+-/** IP2 で試聴した弾倉の B（IP3 から既定）と、IP3 の魚雷の発射の新しい案 E〜I の指紋 */
++/** IP2 で試聴した弾倉の B（IP3 から既定）と、IP3 で試聴した魚雷の発射の F（IP4 から既定）の指紋 */
+ const B_FP: Readonly<Record<string, number>> = { reload: 464075404, reload_end: 345574464 };
+-const NEW_FP: Readonly<Record<string, number>> = { E: 2172940326, F: 1125567461, G: 1433634797, H: 2336520830, I: 872527779 };
+-/** IP2〜IP3 のゲームの torp_launch（試聴の場の A。IP4 から既定ではない）の指紋 */
+-const A_FP = 3234308985;
+-/** IP1 の reload・torp_launch の指紋（tests/sfx-synth の IP1 の値。D はこのまま） */
+-const IP1_FP: Readonly<Record<string, number>> = { reload: 3382733306, reload_end: 3382733306, torp_launch: 1786366453 };
++const F_FP = 1125567461;
+ const memo = new Map<string, Float32Array>();
+ const render = (gi: number, vi: number): Float32Array => {
+   const k = `${gi}:${vi}`;
+@@ -85,30 +63,25 @@ const render = (gi: number, vi: number): Float32Array => {
+ };
+ const CASES = SFX_VARIANT_GROUPS.flatMap((g, gi) => g.variants.map((v, vi) => [`${g.key} ${v.id}`, gi, vi] as const));
+ 
+-describe('試聴の案の表（v0.7.1 IP2・IP3）', () => {
+-  it('弾倉の始め・終わりに A〜D（既定は B＝U-R1）、魚雷の発射に A〜I（既定は F＝U-R2）。D は IP1 の音。一言は案ごとに 1 つ・型は新しい案だけ', () => {
++describe('試聴の案の表（v0.7.1 IP2〜IP4・v0.7.2 S4）', () => {
++  it('弾倉の始め・終わりは B（U-R1）・魚雷の発射は F（U-R2）の 1 つずつ（v0.7.2 S4 でほかの案を片づけた）。一言は案ごとに 1 つ・型なし・速さは 1', () => {
+     expect(SFX_VARIANT_GROUPS.map((g) => g.key)).toEqual(['reload', 'reload_end', 'torp_launch']);
+     for (const g of SFX_VARIANT_GROUPS) {
+       const torp = g.key === 'torp_launch';
+-      expect(g.variants.map((v) => v.id).join('')).toBe(torp ? 'ABCDEFGHI' : 'ABCD');
++      expect(g.variants.map((v) => v.id).join('')).toBe(torp ? 'F' : 'B');
+       expect(g.defaultId).toBe(torp ? 'F' : 'B');
+       expect(g.notesJa.length).toBe(g.variants.length);
+-      expect(g.notesJa[3]).toBe('IP1 の音');
+-      for (const v of g.variants) expect(v.rate).toBe(g.key === 'reload_end' && v.id === 'D' ? 1.06 : 1);
+-      if (torp) expect(g.kindsJa).toEqual(['', '', '', '', '大砲', '落とす', '映画', '走り去る', 'Aを重く']);
+-      else expect(g.kindsJa).toBeUndefined();
++      for (const v of g.variants) expect(v.rate).toBe(1);
++      expect(g.kindsJa).toBeUndefined();
+     }
+   });
+-  it('IP3: 弾倉の既定 B は IP2 で試聴した B と同じ標本（指紋）。魚雷の新しい案 E〜I は 1.6 秒以内・指紋が固定・本体のスピーカー向け（400 Hz より上 ≥ 60%・局所の頂 < 6 dB）', () => {
+-    for (const gi of [0, 1]) expect(fingerprint16(render(gi, 1)), SFX_VARIANT_GROUPS[gi]!.key).toBe(B_FP[SFX_VARIANT_GROUPS[gi]!.key]);
+-    const g = SFX_VARIANT_GROUPS[2]!;
+-    for (let vi = 4; vi < g.variants.length; vi++) {
+-      const v = g.variants[vi]!, x = render(2, vi);
+-      expect(v.seconds, v.id).toBeLessThanOrEqual(1.6);
+-      expect(fingerprint16(x), v.id).toBe(NEW_FP[v.id]);
+-      expect(shareAbove(x, 400), v.id).toBeGreaterThanOrEqual(0.6);
+-      expect(peakinessDb(x), v.id).toBeLessThan(6);
+-    }
++  it('弾倉の B は IP2 で試聴した B と同じ標本（指紋）。魚雷の発射の F は 1.6 秒以内・指紋が固定・本体のスピーカー向け（400 Hz より上 ≥ 60%・局所の頂 < 6 dB）', () => {
++    for (const gi of [0, 1]) expect(fingerprint16(render(gi, 0)), SFX_VARIANT_GROUPS[gi]!.key).toBe(B_FP[SFX_VARIANT_GROUPS[gi]!.key]);
++    const v = SFX_VARIANT_GROUPS[2]!.variants[0]!, x = render(2, 0);
++    expect(v.seconds).toBeLessThanOrEqual(1.6);
++    expect(fingerprint16(x)).toBe(F_FP);
++    expect(shareAbove(x, 400)).toBeGreaterThanOrEqual(0.6);
++    expect(peakinessDb(x)).toBeLessThan(6);
+   });
+   it.each(CASES)('%s: 長さ・有限・頂 0.9・両端 0・直流・2 回作って同じ', (_name, gi, vi) => {
+     const v = SFX_VARIANT_GROUPS[gi]!.variants[vi]!;
+@@ -121,33 +94,16 @@ describe('試聴の案の表（v0.7.1 IP2・IP3）', () => {
+     expect(Math.abs(meanOf(x))).toBeLessThan(0.02);
+     expect(Buffer.from(renderSfxVariant(v).buffer).equals(Buffer.from(x.buffer))).toBe(true);
+   });
+-  it('既定の案はゲームの標本（renderSfx）とビット同一で、秒は表の秒。D は IP1 の指紋のまま', () => {
++  it('既定の案はゲームの標本（renderSfx）とビット同一で、秒は表の秒（torp_launch は 1.4 秒）', () => {
+     SFX_VARIANT_GROUPS.forEach((g, gi) => {
+       const di = g.variants.findIndex((v) => v.id === g.defaultId);
+       expect(g.variants[di]!.seconds, g.key).toBe(SFX_TABLE[g.key].seconds);
+       expect(Buffer.from(render(gi, di).buffer).equals(Buffer.from(renderSfx(g.key).buffer)), g.key).toBe(true);
+-      expect(fingerprint16(render(gi, 3)), `${g.key} D`).toBe(IP1_FP[g.key]);
+     });
+-  });
+-  it('IP4: ゲームの torp_launch は IP3 で試聴した F とビット同一（作り方・種・秒 1.4 が同じ＝指紋 1125567461）。前の既定 A は試聴の場に IP2〜IP3 の指紋のまま', () => {
+-    const g = SFX_VARIANT_GROUPS[2]!;
+-    const fi = g.variants.findIndex((v) => v.id === 'F');
+-    expect(g.variants[fi]!.seconds).toBe(1.4);
+     expect(SFX_TABLE.torp_launch.seconds).toBe(1.4);
+-    const game = renderSfx('torp_launch');
+-    expect(game.length).toBe(at(1.4));
+-    expect(Buffer.from(game.buffer).equals(Buffer.from(renderSfxVariant(g.variants[fi]!).buffer))).toBe(true);
+-    expect(fingerprint16(game)).toBe(NEW_FP.F);
+-    expect(fingerprint16(render(2, 0))).toBe(A_FP);
+-  });
+-  it('同じ音の案どうしは 6 つの数で 1.5 より離れる（聞き分けられる）', () => {
+-    SFX_VARIANT_GROUPS.forEach((g, gi) => {
+-      for (let i = 0; i < g.variants.length; i++) for (let j = i + 1; j < g.variants.length; j++) {
+-        expect(dist(render(gi, i), render(gi, j)), `${g.key} ${g.variants[i]!.id}${g.variants[j]!.id}`).toBeGreaterThan(1.5);
+-      }
+-    });
++    expect(fingerprint16(renderSfx('torp_launch'))).toBe(F_FP);
+   });
+-  it('案を作る時間は小さい（全部で 17 本・1 本あたり 60 ms 未満。試聴の場は押した時に 1 回だけ作る）', () => {
++  it('案を作る時間は小さい（1 本あたり 60 ms 未満。試聴の場は押した時に 1 回だけ作る）', () => {
+     for (const g of SFX_VARIANT_GROUPS) for (const v of g.variants) {
+       const t0 = performance.now();
+       renderSfxVariant(v);
+diff --git a/tests/sound-lab.test.ts b/tests/sound-lab.test.ts
+index c8b8648..c3d2967 100644
+--- a/tests/sound-lab.test.ts
++++ b/tests/sound-lab.test.ts
+@@ -1,17 +1,19 @@
+ // v0.7.1 IP2（実機 2 回目）・IP3（実機 3 回目）・IP4（実機 4 回目。決めた後も次の試聴のために残す）: 音の試聴の場（?sfxlab。scenes/sound-lab-scene）の置き方と語・道を固定する（ui/sound-lab-layout は Phaser なし）。
+-// - 論理幅 1280〜1584 の全部で: 5 行（4 列・4 列・4 列・5 列・4 列＝21）のボタンと「戻る」が画面の内・重ならない・高さ 84 px 以上・幅 160 px 以上、行の名前はボタンの左、
+-//   説明（y 52）より下、上中央のビルド番号の行（y 24〜）に重ならない。
+-// - ボタンの題は記号（IP3 の新しい案は「記号 型」・既定の案だけ「記号（今）」＝IP4 の既定 F は型を付けない＝論理幅 1280 の 5 列に収まる）、行の名前は 弾倉の始め・弾倉の終わり・魚雷の発射・魚雷の発射（新）・続けて聞く。案のボタンはボタンの音を鳴らさない（silent）。
++// - 論理幅 1280〜1584 の全部で: 行（v0.7.2 S4 から 4 行・どの行もボタン 1 つ＝ゲームの音だけ。v0.7.1 IP3〜IP4 は 5 行 21）のボタンと「戻る」が画面の内・重ならない・高さ 84 px 以上・
++//   幅 160 px 以上、行の名前はボタンの左、説明（y 52）より下、上中央のビルド番号の行（y 24〜）に重ならない。
++// - ボタンの題は記号（v0.7.1 IP3 の型つきの案は「記号 型」・既定の案は「記号（今）」）、行の名前は 弾倉の始め・弾倉の終わり・魚雷の発射・続けて聞く。案のボタンはボタンの音を鳴らさない（silent）。
++// - v0.7.2 S4: 使われなくなった案（弾倉の A・C・D・魚雷の発射の A〜E・G〜I）を片づけた（ユーザーの OK 2026-11-15）。
+ // - 道: ?sfxlab の時だけ Boot から来る（tests/sfx-inventory がシーンの並びと Boot の行を固定）。差し替えの口 sfxSetBuffer・sfxCanPlay を呼ぶのは試聴の場だけ（ゲームの中では呼ばない）。
+ // - v0.7.2 S1: ?sfxlab は曲の試聴の場（tests/music-lab）を開き、ここへはその「効果音の試聴へ」から来る。下の段に「曲の試聴へ」（「戻る」の右＝ui/music-lab-layout の musicLabSideRect）。
+ import { readFileSync, readdirSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+ import { SFX_LAB } from '../src/config/sfx-config';
+-import { SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_Y, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA } from '../src/config/sound-lab-config';
++import { SOUND_LAB_BUTTON_PX, SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_PX, SOUND_LAB_HEAD_Y, SOUND_LAB_ROW_LABELS_JA, SOUND_LAB_ROW_SUBS_JA } from '../src/config/sound-lab-config';
+ import { SFX_LAB_ROWS, SFX_VARIANT_GROUPS } from '../src/assets/sfx-variants';
+ import { soundLabBackRect, soundLabButtonRect, soundLabButtonTitle, soundLabLabelRect, type SoundLabRect } from '../src/ui/sound-lab-layout';
+ import { musicLabSideRect } from '../src/ui/music-lab-layout';
++import { textWidthPx } from './pt-ui-kit';
+ 
+ const H = 720;
+ const MARGIN = 24;
+@@ -21,18 +23,19 @@ const COLS = [...SFX_LAB_ROWS.map((r) => r.count), SFX_VARIANT_GROUPS[0]!.varian
+ const overlap = (a: SoundLabRect, b: SoundLabRect): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+ 
+ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
+-  it('行: 弾倉の始め A〜D・弾倉の終わり A〜D・魚雷の発射 A〜D・魚雷の発射 E〜I（どの案も 1 回ずつ）・続けて聞く A〜D', () => {
+-    expect(COLS).toEqual([4, 4, 4, 5, 4]);
++  it('行（v0.7.2 S4）: 弾倉の始め B・弾倉の終わり B・魚雷の発射 F（ゲームの案だけ・どの案も 1 回ずつ）・続けて聞く B', () => {
++    expect(COLS).toEqual([1, 1, 1, 1]);
+     const ids = SFX_LAB_ROWS.map((r) => SFX_VARIANT_GROUPS[r.group]!.variants.slice(r.first, r.first + r.count).map((v) => v.id).join(''));
+-    expect(ids).toEqual(['ABCD', 'ABCD', 'ABCD', 'EFGHI']);
+-    expect(SFX_LAB_ROWS.map((r) => SFX_VARIANT_GROUPS[r.group]!.key)).toEqual(['reload', 'reload_end', 'torp_launch', 'torp_launch']);
++    expect(ids).toEqual(['B', 'B', 'F']);
++    expect(SFX_LAB_ROWS.map((r) => SFX_VARIANT_GROUPS[r.group]!.key)).toEqual(['reload', 'reload_end', 'torp_launch']);
++    expect(SFX_LAB_ROWS.map((r) => SFX_VARIANT_GROUPS[r.group]!.variants.length)).toEqual([1, 1, 1]);
+   });
+-  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 21 と「戻る」・「曲の試聴へ」（v0.7.2 S1）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明より下', (w) => {
++  it.each([1280, 1360, 1440, 1520, 1584])('論理幅 %i: ボタン 4 と「戻る」・「曲の試聴へ」（v0.7.2 S1）が画面の内・重ならない・高さ 84 以上・幅 160 以上。行の名前は左・説明より下', (w) => {
+     const f = { gameWidth: w, gameHeight: H, margin: MARGIN };
+     const rects: SoundLabRect[] = [];
+     for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS[row]!; col++) rects.push(soundLabButtonRect(row, col, COLS[row]!, f));
+     rects.push(soundLabBackRect(f), musicLabSideRect(f));
+-    expect(rects.length).toBe(23);
++    expect(rects.length).toBe(6);
+     for (const r of rects) {
+       expect(r.x).toBeGreaterThanOrEqual(MARGIN);
+       expect(r.x + r.w).toBeLessThanOrEqual(w - MARGIN + 1e-9);
+@@ -49,8 +52,9 @@ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
+     }
+   });
+   it('語: 行の名前と一言・ボタンの題（既定だけ「（今）」）・「続けて聞く」は 1.2 秒の間', () => {
+-    expect(SOUND_LAB_HEAD_JA).toBe('音の試聴（v0.7.1）: 弾倉は B・魚雷は F に決めました（（今）の印）。ほかの案は比べる用に残しています');
+-    expect([...SOUND_LAB_ROW_LABELS_JA]).toEqual(['弾倉の始め', '弾倉の終わり', '魚雷の発射', '魚雷の発射（新）', '続けて聞く']);
++    expect(SOUND_LAB_HEAD_JA).toBe('音の試聴（v0.7.1）: 弾倉 B・魚雷 F に決まりました。ゲームと同じ大きさで鳴らします（ほかの案は片づけました）');
++    expect(textWidthPx(SOUND_LAB_HEAD_JA, SOUND_LAB_HEAD_PX)).toBeLessThanOrEqual(1280 - 2 * MARGIN); // 論理幅 1280 でも 1 行
++    expect([...SOUND_LAB_ROW_LABELS_JA]).toEqual(['弾倉の始め', '弾倉の終わり', '魚雷の発射', '続けて聞く']);
+     expect(SOUND_LAB_ROW_SUBS_JA.length).toBe(ROWS);
+     expect(soundLabButtonTitle('A', true)).toBe('A（今）');
+     expect(soundLabButtonTitle('B', false)).toBe('B');
+@@ -58,7 +62,7 @@ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
+     expect(soundLabButtonTitle('E', false, '')).toBe('E');
+     expect(soundLabButtonTitle('F', true, '落とす')).toBe('F（今）');
+     expect(SFX_LAB).toEqual({ pairGapS: 1.2, pendingS: 1.0 });
+-    expect(SOUND_LAB_ROW_SUBS_JA[4]).toContain(`${SFX_LAB.pairGapS} 秒`);
++    expect(SOUND_LAB_ROW_SUBS_JA[3]).toContain(`${SFX_LAB.pairGapS} 秒`);
+   });
+   it('IP4: 一番狭い論理幅 1280 でもボタンの題（既定の「（今）」つき）がボタンの幅に収まる（等幅の字: 半角 0.6 em・全角 1 em で見積もる。IP4 の「F 落とす（今）」は 216 px で 183 px からはみ出した）', () => {
+     const f = { gameWidth: 1280, gameHeight: H, margin: MARGIN };
+@@ -73,7 +77,7 @@ describe('音の試聴の場の置き方（v0.7.1 IP2）', () => {
+     });
+     expect(soundLabButtonTitle('F', SFX_VARIANT_GROUPS[2]!.defaultId === 'F', '落とす')).toBe('F（今）');
+   });
+-  it('シーン: 案のボタンは silent（5 行。行と案は SFX_LAB_ROWS）・「戻る」はタイトルへ・「曲の試聴へ」は曲の試聴の場へ（v0.7.2 S1）・create は鳴らさない・update は確保しない', () => {
++  it('シーン: 案のボタンは silent（4 行。行と案は SFX_LAB_ROWS）・「戻る」はタイトルへ・「曲の試聴へ」は曲の試聴の場へ（v0.7.2 S1）・create は鳴らさない・update は確保しない', () => {
+     const s = readFileSync('src/scenes/sound-lab-scene.ts', 'utf8');
+     expect(s.match(/new MenuButton\(/g)!.length).toBe(3);
+     expect(s).toContain("align: 'center' as const, silent: true };");
