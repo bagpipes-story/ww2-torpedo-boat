@@ -42,3 +42,4 @@
   Remaining: gates (S2-impl running), perf.mjs after gates, hand-back.
 - step 5: run-gates S2-impl ALL_DONE: build/typecheck/lint OK, npm test 3743, g2 OK 37 DIFF 0, ab-all 58/57/57 (2 flakes us_02 s1 last .t; result reruns 8/8 both, nodawn@noaudio JOBS=1 16/16), jp04base 8, jp03 4, hud base 16 x3, hud jp04base 8, jp03 4, tex-ab 0 ✗, snapshots untouched.
   perf run 1 invalid (boat sank, mission ended mid-window); perf.mjs rewritten (HP pinned, flee, pre-dawn windows, isolate). CHANGELOG agent-check line updated.
+- step 6: perf (perf2/perf3.log): updateFrame p95 us_04 0.290 (h 0.295) vs us_02 0.255 (h 0.265); render p95 145 vs 73 (radar on/off 156/154 = noise); children min flat 971/1040/822/891. CHANGELOG perf line added. Next: hand-back.
