@@ -137,7 +137,8 @@ async function play() {
   for (const width of widths) for (const mode of modes) {
     const g = await openTitle(browser, s.base, width, {});
     const rec = { width, mode, steps: [], errors: g.errors, labels: {}, shots: [] };
-    const shot = async (tag) => { await g.page.evaluate(() => window.__hl.render()); const p = `${out}/play-${tag}-${mode}-w${width}.png`; await g.page.screenshot({ path: p }); rec.shots.push(p); };
+    // in-mission shots: render 40 times first (the camera follow runs in preRender; headlessStep alone does not move the camera)
+    const shot = async (tag) => { await g.page.evaluate((n) => { for (let i = 0; i < n; i++) window.__hl.render(); }, tag.startsWith('m') ? 40 : 1); const p = `${out}/play-${tag}-${mode}-w${width}.png`; await g.page.screenshot({ path: p }); rec.shots.push(p); };
     const label = (key) => g.page.evaluate((k) => { const s = window.__hl.scene(k); const t = s.children.list.find((o) => o.type === 'Text' && /@[0-9a-f]{7}/.test(o.text)); return t ? { text: t.text, v: t.visible, a: t.alpha, x: t.x, y: t.y } : null; }, key);
     try {
       const ut = (await tabsOf(g.page)).find((t) => t.title.includes('米PT'));
