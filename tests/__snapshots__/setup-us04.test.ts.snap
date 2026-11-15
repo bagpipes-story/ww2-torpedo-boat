@@ -21,13 +21,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": false,
@@ -51,7 +51,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -167,8 +167,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -247,7 +247,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    {
     "x": 1825.1071251928806,
     "y": 1099.64169440791,
-    "headingDeg": 103.51140711456537
+    "headingDeg": 253.51140711456537
    }
   ],
   "spec": {
@@ -569,13 +569,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": false,
@@ -599,7 +599,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -715,8 +715,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -764,7 +764,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    {
     "x": 2101.695292070508,
     "y": 1330.4044425487518,
-    "headingDeg": 120.95346527174115
+    "headingDeg": 270.95346527174115
    }
   ],
   "spec": {
@@ -1089,13 +1089,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": false,
@@ -1119,7 +1119,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -1235,8 +1235,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -1315,7 +1315,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    {
     "x": 1825.1071251928806,
     "y": 1099.64169440791,
-    "headingDeg": 103.51140711456537
+    "headingDeg": 253.51140711456537
    }
   ],
   "spec": {
@@ -1637,13 +1637,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": false,
@@ -1667,7 +1667,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -1783,8 +1783,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -1832,7 +1832,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false �
    {
     "x": 2101.695292070508,
     "y": 1330.4044425487518,
-    "headingDeg": 120.95346527174115
+    "headingDeg": 270.95346527174115
    }
   ],
   "spec": {
@@ -2157,13 +2157,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": true,
@@ -2187,7 +2187,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -2303,8 +2303,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -2383,7 +2383,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    {
     "x": 1825.1071251928806,
     "y": 1099.64169440791,
-    "headingDeg": 103.51140711456537
+    "headingDeg": 253.51140711456537
    }
   ],
   "spec": {
@@ -2705,13 +2705,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": true,
@@ -2735,7 +2735,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -2851,8 +2851,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -2900,7 +2900,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    {
     "x": 2101.695292070508,
     "y": 1330.4044425487518,
-    "headingDeg": 120.95346527174115
+    "headingDeg": 270.95346527174115
    }
   ],
   "spec": {
@@ -3225,13 +3225,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": true,
@@ -3255,7 +3255,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -3371,8 +3371,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -3451,7 +3451,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    {
     "x": 1825.1071251928806,
     "y": 1099.64169440791,
-    "headingDeg": 103.51140711456537
+    "headingDeg": 253.51140711456537
    }
   ],
   "spec": {
@@ -3773,13 +3773,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "enemyStart": {
    "x": 1800,
    "y": 1200,
-   "headingDeg": 120
+   "headingDeg": 270
   },
   "enemyStarts": [
    {
     "x": 1800,
     "y": 1200,
-    "headingDeg": 120
+    "headingDeg": 270
    }
   ],
   "hard": true,
@@ -3803,7 +3803,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 48,
+  "fuelAllotmentGal": 33,
   "shallows": [
    {
     "x": 500,
@@ -3919,8 +3919,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 48,
- "fuelStartGal": 48,
+ "fuelAllotmentGal": 33,
+ "fuelStartGal": 33,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -3968,7 +3968,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
    {
     "x": 2101.695292070508,
     "y": 1330.4044425487518,
-    "headingDeg": 120.95346527174115
+    "headingDeg": 270.95346527174115
    }
   ],
   "spec": {
