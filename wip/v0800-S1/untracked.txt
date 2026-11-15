@@ -1,8 +1,0 @@
-src/core/radar.ts
-src/core/ship-transit.ts
-src/core/strait-geometry.ts
-tests/core-rules-kit.ts
-tests/radar-night.test.ts
-tests/radar.test.ts
-tests/ship-transit.test.ts
-tests/strait-geometry.test.ts
