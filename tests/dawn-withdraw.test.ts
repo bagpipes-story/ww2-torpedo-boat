@@ -264,7 +264,7 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
       if (id !== 'us_02') expect(protoOf(gameData, id)['dawn_withdraw'], id).toBeUndefined();
       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
     }
-    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（playable_from はまだ）で、東京急行は西へ退く
+    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く
     expect(getDawnAir(gameData, 'us_06').retireEdge).toBeNull();
     expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);
   });

@@ -24,7 +24,7 @@ export const MENU_PRIMARY_W = 320;
 export const MENU_PRIMARY_X = GAME_WIDTH - HUD_MARGIN - MENU_PRIMARY_W;
 
 /**
- * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（米PT は 1 列 3 件。日本は v0.6.7 から 2 列の格子＝ui/title-grid）、操作の一言。
+ * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（米PT は 1 列 3 件＝v0.8.0 から 4 件で格子。日本は v0.6.7 から 2 列の格子＝ui/title-grid）、操作の一言。
  * v0.6.0 でタブを入れた分、ロゴを縮め行を詰めた（行 104 → 96 px・間 16 → 12。3 行で 216〜528。ボタンの高さは 96 px 以上のまま）
  */
 export const TITLE_LOGO_TEXT = 'NIGHT HUNTERS';

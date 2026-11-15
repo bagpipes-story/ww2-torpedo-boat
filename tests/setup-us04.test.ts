@@ -1,7 +1,7 @@
 // v0.8.0 S0（spec-v0800 §4.8・§6 の S0）: us_04「ブラケット海峡の夜」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
 // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.0 S0 の木で作った。us_04 の setup は S1〜S5 で鍵が増えうるので、
 // 書き換える時は CHANGELOG に段と理由を書く（ほかの 9 任務の setup の snapshot は -u しない）。Briefing の行は入れない（S4 で変わる）。
-// 今夜の揺らぎ（+16）は 10 回（危険 2・護衛 3・列 3・大発の先頭 1・反転 1）。遊べるのは S5 から（playable_from はまだ）。
+// 今夜の揺らぎ（+16）は 10 回（危険 2・護衛 3・列 3・大発の先頭 1・反転 1）。遊べるのは S5 から（v0.8.0 S5 で playable_from v0.8.0）。
 // あわせて: 撃沈の達成の隻数をノーマルにも読む鍵（v0_1_prototype.objective_sink_count。config/mission-hard-data）と、us_04 の data に人名・有名な艇の名を出さない（§4.12）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData, type GameData } from '../src/config/game-data';
@@ -33,7 +33,7 @@ describe('us_04 の setup の snapshot（v0.8.0 S0 の木）', () => {
     const { s, draws } = build(hard, historical, seed);
     expect(JSON.stringify(s, null, 1)).toMatchSnapshot(`${label} setup`);
     expect(draws).toBe(10);
-    // 駆逐艦の任務（護衛 1 隻＝enemy_start。列は transit）・Mk 8・新月・夜明けは空襲（L1 の既定）で西へ退く・撃沈の達成は 1 隻
+    // 駆逐艦の任務（護衛 1 隻＝enemy_start。列は transit）・Mk 8・新月・夜明けは空襲（S0 は L1 の既定・S5 でユーザーの決め U1）で西へ退く・撃沈の達成は 1 隻
     expect([s.mission.torpedoId, s.mission.moon, s.mission.enemyStarts.length, s.mission.objectiveSinkCount, s.destroyer!.objectiveSinks]).toEqual(['us_mk8', 'dark', 1, 1, 1]);
     expect([s.barges, s.ptBoats, s.convoy, s.transport, s.escort, s.raid, s.storm, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, 'torpedo']);
     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears, s.airStrike!.planes]).toEqual(['enemy', 'west', '東京急行', false, 4]);

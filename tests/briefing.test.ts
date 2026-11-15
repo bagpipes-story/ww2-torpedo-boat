@@ -22,17 +22,18 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
 const labelOf = (id: string): string => riskLabelJa(gameData, id);
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
-  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。v0.4.4 から 3 件とも出撃できる。sub は日付 ・ 場所', () => {
+  it('任務一覧: 米PTキャンペーンの 4 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）。sub は日付 ・ 場所', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.campaignName).toBe('米PTキャンペーン');
     expect(menu.entries).toEqual([
       { id: 'us_01', title: 'コレヒドール脱出', sub: '1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）', playable: true, status: '出撃準備 →' },
       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
       { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
+      { id: 'us_04', title: 'ブラケット海峡の夜', sub: '1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖）', playable: true, status: '出撃準備 →' },
     ]);
   });
   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
-    const US_IDS = ['us_01', 'us_02', 'us_03'];
+    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）
     expect(getMenuEntries(gameData).entries.map((e) => e.id)).toEqual(US_IDS);
     const otherCampaign = clone();
     byId(otherCampaign, 'jp_01')['playable_from'] = 'v0.5.0';
@@ -74,7 +75,10 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     delete byId(nonePlayable, 'us_01')['v0_1_prototype'];
     delete byId(nonePlayable, 'us_02')['v0_1_prototype'];
     delete byId(nonePlayable, 'us_03')['v0_1_prototype'];
-    expect(() => getMenuEntries(nonePlayable)).toThrow();
+    expect(() => getMenuEntries(nonePlayable)).toThrow(); // 日本のタブの解放の一覧（us_01〜03）が遊べる任務の外になる（v0.8.0 S0 の getCampaigns の検査）
+    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.0 S5: us_04 が残る
+    delete byId(nonePlayable, 'us_04')['v0_1_prototype'];
+    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).toThrow(/出撃できる任務/);
   });
   it('日付: 1942-12-11 → 1942年12月11日、1942-03-11 → 1942年3月11日、1942/12/11 は例外', () => {
     expect(formatDateJa('1942-12-11')).toBe('1942年12月11日');
@@ -215,6 +219,9 @@ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト�
     expect(rowsOf(false, 1, true)[2]!.text).toBe('新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m');
     const rec = getBriefingRecord(gameData, 'us_04');
     expect([formatDateJa(rec.date), rec.place, rec.titleJa]).toEqual(['1943年8月1日', 'ブラケット海峡（コロンバンガラ島沖）', 'ブラケット海峡の夜']);
+    // v0.8.0 S5（brief L57）: 目的の文に隻数を書かない（ノーマルは列 3 ＋ 護衛 1、ハードは列 4 ＋ 護衛 1＝敵の行の ×4／×5 が言う）。ハードの文は持たない
+    expect(rec.objective).toBe('東京急行の駆逐艦がビラへ向かい、揚げ終えると同じ海峡を全速で戻る。分隊の先頭の艇としてレーダーで捉えて雷撃し、進路をよけて生きて帰れ');
+    expect(getBriefingRecord(gameData, 'us_04', true).objective).toBe(rec.objective);
   });
   it('今夜の揺らぎ（seed 1〜60・ノーマルとハード）でも敵の行は「西と北西から」か「西から」（護衛の出発点が西に寄った夜は方角を 1 つに）', () => {
     const seen = new Set<string>();

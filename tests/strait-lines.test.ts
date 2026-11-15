@@ -85,7 +85,7 @@ describe('衝突の危険の時計（ui/strait-line-clock）', () => {
     expect(frame(tel(0, NaN))).toBe(0);
     expect(frame(tel(1, 480)) & MODE_FLAG_BOW_ON).not.toBe(0);
     const k1 = c.bowKey;
-    expect([c.bowStep, specialLine(tele(), MISSION_BOW_ON, { landingEv: tele().landing, strait: c })]).toEqual([5, { text: '衝突の危険！ 駆逐艦 500 m ・ 艇首がこちらへ', color: HUD_COLOR_WARN }]);
+    expect([c.bowStep, specialLine(tele(), MISSION_BOW_ON, { landingEv: tele().landing, strait: c })]).toEqual([5, { text: '衝突の危険！ 駆逐艦 500 m ・ 艦首がこちらへ', color: HUD_COLOR_WARN }]);
     let on = 0;
     for (let i = 0; i < 400; i++) if ((frame(tel(1, 480 - i)) & MODE_FLAG_BOW_ON) !== 0) on += 16;
     expect(on).toBeGreaterThanOrEqual(STRAIT_EVENT_SHOW_MS - 32);

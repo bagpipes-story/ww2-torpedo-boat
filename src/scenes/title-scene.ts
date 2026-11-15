@@ -1,6 +1,6 @@
 // Title: ゲーム名と任務一覧（米PTキャンペーンの playable_from を持つ任務を order 順。出撃できない任務は「準備中 ・ 版」で押せない）。docs/02 §4、v0.4.0。
 // v0.6.0: キャンペーンのタブ（米PT｜日本ハードモード）。日本側は米PTの遊べる任務を 1 回ずつ帰投で終えると開く（core/campaign。一度開いたら閉じない）。
-// v0.6.7: 任務が 4 つ以上のタブ（日本）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。米PT のタブは 1 列のまま。
+// v0.6.7: 任務が 4 つ以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
 // v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
 import Phaser from 'phaser';
@@ -61,7 +61,6 @@ import {
 } from '../config/menu-config';
 import { MUSIC_CTX_MENU } from '../config/sfx-music-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
-import { shortLabelJa } from '../core/briefing';
 import { campaignStatus, type CampaignStatus } from '../core/campaign';
 import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
 import { seedForBriefing, type BriefingInit } from '../core/sortie';
@@ -69,7 +68,7 @@ import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLega
 import { sfxMusic } from '../systems/sfx-bus';
 import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import { titleGridOn, titleRowRect } from '../ui/title-grid';
+import { titleGridOn, titleGridSubJa, titleRowRect } from '../ui/title-grid';
 
 export class TitleScene extends Phaser.Scene {
   private rows: MenuButton[] = [];
@@ -116,7 +115,7 @@ export class TitleScene extends Phaser.Scene {
       tab.setSelected(c.id === selected.id);
       this.tabs.push(tab);
     });
-    // 任務の行（v0.6.7）: 4 行以上のタブ（日本）は 2 列の格子で、副題は最初の「（」の前まで（列 597 px に状態「出撃準備 →」と並べて収める）。米PT は 1 列のまま
+    // 任務の行（v0.6.7）: 4 行以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子で、副題は最初の「（」か「→」の前まで（titleGridSubJa。列 597 px に状態「出撃準備 →」と並べて収める）
     const n = menu.entries.length;
     const grid = titleGridOn(n);
     menu.entries.forEach((e, i) => {
@@ -130,7 +129,7 @@ export class TitleScene extends Phaser.Scene {
           h: TITLE_ROW_H,
           title: e.title,
           titlePx: TITLE_ROW_TITLE_PX,
-          sub: grid ? shortLabelJa(e.sub) : e.sub,
+          sub: grid ? titleGridSubJa(e.sub) : e.sub,
           subPx: TITLE_ROW_SUB_PX,
           right: e.status,
           rightPx: TITLE_ROW_STATUS_PX,

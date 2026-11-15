@@ -74,7 +74,7 @@ export function bowOnCos2(halfAngleDeg: number): number {
 }
 
 /**
- * 衝突の危険（spec §4.9「衝突の危険！ 駆逐艦 400 m ・ 艇首がこちらへ」）: 艦 (sx, sy)（針路 headingDeg。0＝北・時計回り。x は東・y は南）から自艇 (bx, by) までが
+ * 衝突の危険（spec §4.9「衝突の危険！ 駆逐艦 400 m ・ 艦首がこちらへ」。v0.8.0 S5 で spec の「艇首」を直した）: 艦 (sx, sy)（針路 headingDeg。0＝北・時計回り。x は東・y は南）から自艇 (bx, by) までが
  * range の内（range2 はその 2 乗。境界は含む）で、艦首が自艇へ半角の内（cos2＝bowOnCos2。境界は含む）。同じ点なら真。
  * 艦首の単位ベクトル (sin h, −cos h) と自艇への向きの内積と 2 乗の距離だけ（atan2・平方根なし）。目で見えている艦だけに使うのは呼ぶ側（S4）
  */
