@@ -10,7 +10,10 @@
 //   all（88c9f19 と比べる 58 件）には入れない（元の件は今のまま）。jp_03 の写しは座席の自艇・HP・燃料・魚雷と HUD の文（隊の 18 隻は world-vs-sim が比べる）。
 // v0.6.11 S8: SET=jp04base で jp_04（卯月あり）のノーマル・ハード × seed 1〜4 を 170 秒（A は 88c9f19。all には入れない）。
 // v0.6.11 S8b: CAM=1 で写しにカメラ（scrollX・scrollY・zoom・followOffset）も足す（jp_03 の隠れ場所の中の見越し 0 がほかの任務のカメラを変えないことを見る。既定は今の写しのまま）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03] [CAM=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.0 S2（spec-v0800 §6 の S2・brief L9・L13）: SET=us04 で us_04（ブラケット海峡の夜。列の通過とレーダー）のノーマル・ハード × seed 1・2 を 260 秒（夜明けまで。all には入れない。
+//   A は S2 の commit のビルド＝以後の段の回帰）。写しは隊の全艦（s.d。列の艦も）に列の段階（s.tr）とレーダーの輝点（s.rd: 掃引の回数・数・位置）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+//   NORADAR=1 で B だけ &noradar（レーダーを切った夜。A と同じビルドで回せばレーダーが世界も HUD も変えない証＝L9 の (b)。レーダーの写し s.rd は比べない）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04] [CAM=1] [NORADAR=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 
@@ -33,6 +36,9 @@ export function abRun(o) {
     if (w.convoy) s.c = [w.convoy.state.arrived, w.convoy.state.sunk, w.convoy.state.hitsTaken, w.convoy.state.barges.map((x) => [r6(x.x), r6(x.y)])];
     s.tp = w.torpedoes.states.map((x) => (x.active ? [r6(x.x), r6(x.y)] : 0));
     if (w.landing) s.l = [w.landing.state.phase, w.landing.state.hits, w.landing.pool.states.map((x) => (x.active ? [r6(x.x), r6(x.y)] : 0))];
+    // 列の通過（v0.8.0 S2。us_04）の段階と、レーダーの輝点（NORADAR の比べでは写さない）。無い任務は鍵ごと無い
+    if (w.destroyers && w.destroyers.transit) s.tr = Array.from(w.destroyers.transit.state.phase.slice(0, w.destroyers.transit.state.ships));
+    if (w.radar && !o.noradar) s.rd = [w.radar.state.sweeps, w.radar.state.n, w.radar.state.blips.slice(0, w.radar.state.n).map((x) => [x.x, x.y])];
     s.hud = hl.texts('Hud');
     if (o.cam) {
       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
@@ -95,7 +101,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1' };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1' };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -108,15 +114,17 @@ export function abCases(set, input) {
     jp04base: () => [false, true].flatMap((hard) => [1, 2, 3, 4].map((seed) => ({ ...base, mission: 'jp_04', hard, seed, secs: envNum('SECS', 170), set: 'jp04base' }))),
     // jp_03 の空襲下の退避（v0.6.11 S6。Title に出た版）: 決着の 240 秒の後まで。A は S5（ae6af75）のビルド
     jp03: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'jp_03', hard, seed, secs: envNum('SECS', 260), set: 'jp03' }))),
+    // us_04 のブラケット海峡の夜（v0.8.0 S2。列の通過とレーダー）: 夜明けの 260 秒まで。A は S2 の commit のビルド（以後の段の回帰）。NORADAR=1 なら B だけレーダーを切る
+    us04: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_04', hard, seed, secs: envNum('SECS', 260), set: 'us04' }))),
   };
   if (process.env.MISSION) {
-    return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
+    return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', noradar: process.env.NORADAR === '1', secs: envNum('SECS', 90), set: 'one' }];
   }
   return set === 'all' ? [...sets.base(), ...sets.dawn20(), ...sets.nodawn(), ...sets.ptrun(), ...sets.result()] : sets[set]();
 }
 
 export function query(c, side) {
-  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}`;
+  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}`;
 }
 
 export async function oneCase(browser, A, B, c) {
@@ -151,7 +159,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }

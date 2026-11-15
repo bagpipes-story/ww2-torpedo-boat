@@ -55,14 +55,15 @@ export function buildEnemies(
   // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
   const gunRng = new SeededRng((seed + 1) >>> 0);
   // 見張り（雷跡に気づく抽選。v0.5.0）も別系列（seed+17。seed+16 は今夜の揺らぎ）。気づくまで 1 ステップ 1 回だけ引く
-  // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）
-  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
-  // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）
-  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+  // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）。
+  // 列の通過（v0.8.0 S2。us_04 の setup.transit だけ）の艦は隊が護衛の後ろに作る（同じ id・砲。無い任務は null＝隊は v0.7.2 のまま）
+  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, s.transit ?? null, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
+  // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）。駆逐艦は隊の先頭 destroyerCount 隻（列の通過の艦も込み。無い任務は ds.starts の隻数と同じ）
+  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
   const escort = s.escort && ds ? new EscortBoat(scene, s.escort, boat, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
   const escortHit = (damage: number, x: number, y: number): void => (escort!.hit(damage, clock.stepTimeS) ? onSunk(x, y) : events.onShellHit(x, y, true, false));
-  destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
+  destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
   // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。

@@ -1,6 +1,8 @@
 // 駆逐艦の隊（v0.4.5。難易度ハードで 2 隻以上。v0.4.7 から輸送船も隊の 1 隻）: 艦（entities/destroyer）とその反撃（enemy-fire）を隻数ぶん持ち、世界・敵の側・テレメトリが「どれか／すべて／最寄り」で読む。
 // 夜明けに退く（v0.6.2）: withdraw() で全艦が退く向きへ全速、海域を出た艦は out（狙えない・見えない・撃たない）。撃沈の数・達成・allSinking は沈み始めた艦だけ（退いた艦は数えない）。
 // 任務の達成は駆逐艦だけ（輸送船は撃破の加点）。砲撃の乱数は 1 つの系列（seed+1）を、見張り（雷跡に気づく。v0.5.0）の乱数は別の系列（seed+17）を、それぞれ艦の順に消費する（1 隻ならこれまでと同じ）。§7: 確保しない（最寄りは添字で返す）。
+// 列の通過（v0.8.0 S2。us_04。setup.transit の任務だけ）: 列の艦は護衛（ds.starts）の後ろ・輸送船の前に作り、駆逐艦に数える（撃沈・達成・命中率の KPI）。段階は transit（systems/destroyer-transit）。
+// 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
 import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
@@ -9,6 +11,8 @@ import { litByOwnLight } from '../core/own-light';
 import type { SeededRng } from '../core/rng';
 import { startRetire } from '../core/ship-ai';
 import { Destroyer } from '../entities/destroyer';
+import type { TransitSetup } from '../config/transit-mission-data';
+import { DestroyerTransit } from './destroyer-transit';
 import { EnemyFire } from './enemy-fire';
 import type { SplashPool } from './splash-pool';
 import type { DestroyerSetup, TransportSetup } from './world-setup';
@@ -22,15 +26,27 @@ export class DestroyerGroup {
   readonly passRadius2: number;
   /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。既定は全隻。jp_06 のハードは 2 隻中 1 隻） */
   readonly objectiveSinks: number;
+  /** 列の通過（v0.8.0 S2。us_04）の段階と列の艦。setup.transit の無い任務は null */
+  readonly transit: DestroyerTransit | null;
 
   constructor(
-    scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
+    scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null,
+    /** 列の通過（v0.8.0 S2。setup.transit。無い任務は null）。列の艦は護衛と同じ寸法・砲・絵で、AI は列の速さの transit.shipAi */
+    transit: TransitSetup | null,
+    bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
     /** 駆逐艦の絵の鍵（v0.7.0 S2a。world-enemies が ship-art-config の shipArtKey(敵の id) を渡す＝D3・R15。絵だけ。当たりは ds.spec のまま） */
     destroyerTextureKey: string = TEXTURE_KEYS.destroyer,
   ) {
     for (const st of ds.starts) {
       this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey));
       this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, st.headingDeg, splashes));
+    }
+    if (transit) {
+      const leg = transit.inbound;
+      for (let i = 0; i < transit.ships; i++) {
+        this.ships.push(new Destroyer(scene, { x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, ds.spec, transit.shipAi, bounds, lookoutRng, destroyerTextureKey));
+        this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, leg.headingDeg, splashes));
+      }
     }
     this.destroyerCount = this.ships.length;
     this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
@@ -40,6 +56,7 @@ export class DestroyerGroup {
       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
       if (transport.passRadius2 > this.passRadius2) this.passRadius2 = transport.passRadius2;
     }
+    this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null; // 列の艦はここで海域の外（まだ来ない）へ
   }
 
   /** 隊の隻数（輸送船込み） */
@@ -72,14 +89,19 @@ export class DestroyerGroup {
     return true;
   }
 
-  /** すべて（輸送船込み）が沈み始めたか夜明けに退いた（v0.6.2）。以後は魚雷を撃てない（退く艦がいなければ allSinking と同じ） */
+  /** すべて（輸送船込み）が沈み始めたか夜明けに退いた（v0.6.2）。以後は魚雷を撃てない（退く艦がいなければ allSinking と同じ）。列の通過は戻りの残りが 0 の時だけ（v0.8.0） */
   get allOut(): boolean {
-    return allShipsOut(this.ships);
+    return this.transit ? this.transit.allOut : allShipsOut(this.ships);
   }
 
-  /** すべての決着がついた（沈没演出が終わったか退いた）。走っている魚雷を外れとして確定してよい（退く艦がいなければ v0.6.1 の allSunk＝すべての沈没演出が終わった、と同じ） */
+  /** すべての決着がついた（沈没演出が終わったか退いた）。走っている魚雷を外れとして確定してよい（退く艦がいなければ v0.6.1 の allSunk＝すべての沈没演出が終わった、と同じ）。列の通過は同上 */
   get allSettled(): boolean {
-    return allShipsSettled(this.ships);
+    return this.transit ? this.transit.allSettled : allShipsSettled(this.ships);
+  }
+
+  /** 列の通過の残りの戻り（これから海域に現れる艦。v0.8.0。列の無い任務は 0）。destroyer-step は 0 の時だけ走っている魚雷を外れで確定する */
+  get pendingReturns(): number {
+    return this.transit ? this.transit.pending : 0;
   }
 
   /** 夜明けに退いて海域を出た駆逐艦の隻数（v0.6.2。輸送船は transportWithdrawn） */

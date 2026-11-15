@@ -1,6 +1,8 @@
 // 駆逐艦（v0.2.0: 巡航・雷跡回避・体当たり。docs/02 §6.4）。判断と操舵は core/ship-ai.ts、船体円は事前確保して座標だけ更新する（§7）。
 // 夜明けに退く（v0.6.2）: ai.retiring の間は海域の縁で止めず、縁の外へ boundsMarginM より出たら withdrawn（スプライトを 1 回だけ隠す）。
 // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
+// 列の通過（v0.8.0 S2。us_04。systems/destroyer-transit が段階を当てる）: offMap（まだ来ない・揚陸の地＝海域の外）も out に入れる（ほかの任務の艦はいつも false）。
+// 列の艦（transitShip）は退く動きのまま縁の外へ出ても withdrawn を自分で立てない（縁の外 118 m で止まると段階の goneX 150 m に届かない）。去ったかは段階が決める（goAway）。
 import Phaser from 'phaser';
 import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
@@ -29,6 +31,10 @@ export class Destroyer {
   sinkStartS = NaN;
   /** 夜明けに退いて海域を出た（v0.6.2。スプライトは隠した。運動・当たり判定・反撃を止める。撃沈には数えない） */
   withdrawn = false;
+  /** 列の通過の艦がまだ来ない・揚陸の地にいる（v0.8.0 S2。海域の外。隠す・動かない・当たらない・撃たない。退いた・撃沈のどちらにも数えない） */
+  offMap = false;
+  /** 列の通過の艦（v0.8.0 S2。systems/destroyer-transit が立てる）: 縁の外の退き終わり（withdrawn）は段階が決める */
+  transitShip = false;
   private sighted = true;
 
   constructor(
@@ -53,9 +59,9 @@ export class Destroyer {
     return this.ai.mode;
   }
 
-  /** もう狙えない（沈み始めたか、夜明けに退いて海域を出た） */
+  /** もう狙えない（沈み始めたか、夜明けに退いて海域を出たか、列の通過で海域の外＝v0.8.0） */
   get out(): boolean {
-    return this.sinking || this.withdrawn;
+    return this.sinking || this.withdrawn || this.offMap;
   }
 
   /**
@@ -68,7 +74,7 @@ export class Destroyer {
     updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
     if (!this.ai.retiring) clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
-    else if (beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
+    else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
       this.withdrawn = true;
       this.sprite.setVisible(false);
       return true;
@@ -126,6 +132,33 @@ export class Destroyer {
         onDone();
       },
     });
+  }
+
+  /**
+   * 列の通過（v0.8.0 S2）: 海域の外へ（gone＝去った＝withdrawn・退いたに数える、ほか＝まだ来ない・揚陸の地＝offMap）。絵を隠し、見つけていた・雷跡を見ていた覚えを解く
+   * （戻っても前の通過の発見を持ち越さない。体当たりの覚えは退く動きの間は使わない）。乱数は引かない
+   */
+  goAway(gone: boolean): void {
+    if (gone) this.withdrawn = true;
+    else this.offMap = true;
+    this.sprite.setVisible(false);
+    this.sighted = false;
+    const ai = this.ai;
+    ai.playerDetected = false;
+    ai.detectHoldLeftS = 0;
+    ai.wakeSpotted = false;
+    ai.wakeSeenForS = -1;
+  }
+
+  /** 列の通過（v0.8.0 S2）: 道の現れる点へ置き直して海域の中へ（絵は視程の出し入れ＝mission-telemetry の setSighted が出す。退く向きは呼ぶ側の startRetire） */
+  reappear(x: number, y: number, headingDeg: number, speedMps: number): void {
+    const s = this.state;
+    s.x = x;
+    s.y = y;
+    s.headingDeg = headingDeg;
+    s.speedMps = speedMps;
+    this.offMap = false;
+    this.refreshHull();
   }
 
   destroy(): void {

@@ -4,6 +4,7 @@
 // v0.6.8 S3（spec-v068 §5.1）: 兵装（systems/arms-step）は最初に 自分の弾倉・艦への機銃 → 閃光（敵の見つける距離。駆逐艦・大発・沿岸砲・米PT が同じステップから読む）、
 // 最後に対空（艦艇が先＝砲は 1 つ。撃墜の後は順番を飛ばす。夜明けの空襲の段の前）。押さなければ何も変わらない（乱数も閃光も無い）。
 // v0.6.9 S5a（spec-v069 §4.1）: 米PT の隊の段の直後・機関の不調の前に揚陸の段（systems/world-landing の stepAfterPts。jp_04 だけ。ほかの任務は w.landing が null で何もしない）。
+// v0.8.0 S2（spec-v0800 §6 の S2）: 最後にレーダー（systems/world-radar。us_04 だけ。掃引の時だけ艦の位置を読む＝世界には書かない。ほかの任務は w.radar が null で何もしない）。
 import type { BoatState } from '../core/boat-motion';
 import type { DestroyerGroup } from './destroyer-group';
 import { stepDestroyerSide } from './destroyer-step';
@@ -24,4 +25,5 @@ export function stepEnemySide(w: MissionWorld, g: DestroyerGroup | null, dt: num
   w.landing?.stepAfterPts(w, dt, feelDt); // 米PT の雷撃 → 敵の魚雷 → 揚陸の時計（v0.6.9。jp_04 だけ。systems/world-landing。凍結の隊の段の直後＝模擬 core/landing-sim と同じ順）。揚陸の無い任務は何もしない
   w.engine?.step(w, feelDt); // 機関の熱と不調（v0.6.5）は米PT の段の直後（このステップに固めた赤い線も見る）・火災の前（模擬 core/pt-sim-engine と同じ順・同じ時計）
   w.arms?.stepAir(w, dt, feelDt); // 対空（v0.6.8）は最後: 艦艇の標的が無いときだけ機へ。撃墜の後は毎ステップ順番を飛ばす（夜明けの空襲の段の前）
+  w.radar?.step(w); // レーダー（v0.8.0 S2）は敵の側の全部の後（艦を動かし列の段階を当てた後の位置を掃引の時だけ読む）
 }

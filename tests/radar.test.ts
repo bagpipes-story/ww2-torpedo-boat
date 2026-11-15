@@ -1,7 +1,7 @@
 // v0.8.0 S1（spec-v0800 §3.2 D-R1〜D-R12・§3.5・§5.2・§7、lead の L6・L7）: core/radar の規則を us_04 の setup の値（so_early: 艦 4,000・小さい艇 1,200・掃引 3 秒・
 // 陸の反射 400・丸め 50）と両岸で確かめる: 射程の縁 ±1 m・小さい艇・陸の反射の帯と水道の切れ目・丸めと同じ格子・掃引の刻み（間は輝点が動かない）・機は映らない・
 // 沈み始めた艦と海域の外の艦は次の掃引で消える・固定長 16（近い順）・決定性・出来事（最初の接触・増えた・減った）・一番近い接触の距離・輝点の記録の鍵（位置だけ）・
-// 隠れた状態を読まない（import と名前）・step の本体に確保なし・S1 ではゲームの誰も import しない（束はバイトで同じ）。
+// 隠れた状態を読まない（import と名前）・step の本体に確保なし・S1 ではゲームの誰も import しない（束はバイトで同じ）。S2 からは import する所を固定（世界・絵・テレメトリだけ）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { getPrototypeMission } from '../src/config/mission-data';
@@ -189,8 +189,10 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確�
     expect(s.match(/Math\.sqrt\(/g)!.length).toBe(1);
     expect(s).not.toMatch(/Math\.(hypot|atan2)\b/);
   });
-  it('S1 ではゲーム（src）の誰も core/radar・ship-transit・strait-geometry を import しない（strait-geometry は core/radar だけ）＝束はバイトで同じ', () => {
-    const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`)));
-    expect([importers('radar'), importers('ship-transit'), importers('strait-geometry')]).toEqual([[], [], ['src/core/radar.ts']]);
+  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）', () => {
+    const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
+    expect(importers('radar')).toEqual(['src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
+    expect(importers('ship-transit')).toEqual(['src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
+    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/world-radar.ts']);
   });
 });
