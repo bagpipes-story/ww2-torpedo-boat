@@ -5,12 +5,12 @@
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { getPrototypeMission } from '../src/config/mission-data';
-import { getRadarParams } from '../src/config/radar-mission-data';
+import { getRadarData, getRadarParams } from '../src/config/radar-mission-data';
 import {
   RADAR_BLIP_CAPACITY, RADAR_KIND_AIR, RADAR_KIND_SHIP, RADAR_KIND_SMALL,
   createRadarState, createRadarTargets, radarAge01, radarSweepDue, stepRadar, type RadarGeometry, type RadarState,
 } from '../src/core/radar';
-import type { RadarParams } from '../src/core/radar-data';
+import { radarParamsFromData, type RadarParams } from '../src/core/radar-data';
 import { landLinesFromShores } from '../src/core/strait-geometry';
 import { buildWorldSetup } from '../src/systems/world-setup';
 import { code, imports, scanAllocations } from './core-rules-kit';
@@ -51,12 +51,10 @@ describe('us_04 のレーダーの値（setup。so_early・分隊の先頭の艇
 });
 
 describe('映る物・映らない物（1 回の掃引）', () => {
-  it('射程の縁 ±1 m（境界は映る）: 艦は 4,000 m・小さい艇は 1,200 m', () => {
-    const from = [100, 100] as const;
-    expect(once([[4099, 100], [4100, 100], [4101, 100]], from).length).toBe(2);
-    expect(once([[1299, 100, RADAR_KIND_SMALL], [1300, 100, RADAR_KIND_SMALL], [1301, 100, RADAR_KIND_SMALL], [1301, 100]], from)).toEqual([[1300, 100], [1300, 100]].slice(0, 1).concat([]));
-    expect(once([[1301, 100, RADAR_KIND_SMALL]], from)).toEqual([]);
-    expect(once([[1301, 100, RADAR_KIND_SHIP]], from)).toEqual([[1300, 100]]);
+  it('射程の縁 ±1 m（境界は映る）: 艦は 4,000 m・小さい艇は 1,200 m（小さい艇でない物は艦の射程）', () => {
+    const n = (t: Tgt): number => once([t], [100, 100]).length;
+    expect([n([4099, 100]), n([4100, 100]), n([4101, 100]), n([2500, 3299]), n([2500, 3301])]).toEqual([1, 1, 0, 1, 0]); // 斜め: 3,999.2 m・4,000.8 m
+    expect([n([1299, 100, RADAR_KIND_SMALL]), n([1300, 100, RADAR_KIND_SMALL]), n([1301, 100, RADAR_KIND_SMALL]), n([1301, 100, RADAR_KIND_SHIP])]).toEqual([1, 1, 0, 1]);
   });
   it('陸の反射（400 m の内は映らない。境界は映る）: 北の岸・南の岸・水道の切れ目の中ほどは映り、切れ目の端（岸の角）の近くは映らない。反射 0 の型なら岸のすぐそばも映る', () => {
     const cases: [Tgt, boolean][] = [
@@ -78,9 +76,9 @@ describe('映る物・映らない物（1 回の掃引）', () => {
     expect(once([[3234, 2345], [3224.9, 2324.9]])).toEqual([[3200, 2300], [3250, 2350]]);
     expect(once([[3225, 2325]])).toEqual([[3250, 2350]]);
     expect(once([[3260, 2360], [3270, 2340], [3240, 2330]]).length).toBe(1);
-    const late = getRadarParams(gameData, getPrototypeMission(gameData, 'us_04'))!;
-    const so = gameData.hitRateModel as unknown as { radar: { models: Record<string, { position_step_m: number }> } };
-    expect(once([[3234, 2345]], [3000, 2000], { ...late, positionStepM: so.radar.models['so_late']!.position_step_m })).toEqual([[3225, 2350]]);
+    const late = radarParamsFromData(getRadarData(gameData).models['so_late']!, { model: 'so_late', fit: 'own', source: 'design (tests)' }, false);
+    expect(late.positionStepM).toBe(25);
+    expect(once([[3234, 2345]], [3000, 2000], late)).toEqual([[3225, 2350]]);
   });
   it('固定長 16: 映る物が 20 あれば自艇から近い順の 16（入れる順に依らない）。使わない枠は NaN', () => {
     const ships: Tgt[] = Array.from({ length: 20 }, (_, k) => [3000 + 100 * (k + 1), 2000] as const);
