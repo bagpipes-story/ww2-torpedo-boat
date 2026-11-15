@@ -1,0 +1,43 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 3810 passed (3810)
+✓ g2 OK 39 DIFF 0
+✓ ab-all cases 58 same 58 diff 0
+✗ ab-all@audio cases 58 same 56 diff 2
+✓ ab-all@noaudio cases 58 same 58 diff 0
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✓ ab-us04 cases 4 same 4 diff 0
+    us04   us_04 seed 1 same:true frames 15600
+    us04   us_04 seed 2 same:true frames 15600
+    us04   us_04&hard seed 1 same:true frames 15600
+    us04   us_04&hard seed 2 same:true frames 15600
+✓ hud-us04 cases 4 same 4 diff 0
+    hud us_04 seed 1 same:true snapshots 260
+    hud us_04 seed 2 same:true snapshots 260
+    hud us_04&hard seed 1 same:true snapshots 260
+    hud us_04&hard seed 2 same:true snapshots 260
+✓ ab-us04-noradar cases 4 same 4 diff 0
+    us04   us_04 seed 1 B&noradar masked 1208 same:true frames 15600
+    us04   us_04 seed 2 B&noradar masked 1692 same:true frames 15600
+    us04   us_04&hard seed 1 B&noradar masked 1450 same:true frames 15600
+    us04   us_04&hard seed 2 B&noradar masked 1692 same:true frames 15600
+✓ hud-us04-noradar cases 4 same 4 diff 0
+    hud us_04 seed 1 B&noradar masked 20 same:true snapshots 260
+    hud us_04 seed 2 B&noradar masked 28 same:true snapshots 260
+    hud us_04&hard seed 1 B&noradar masked 24 same:true snapshots 260
+    hud us_04&hard seed 2 B&noradar masked 28 same:true snapshots 260
+    differs (ab-all@audio): nodawn us_02 seed 1 nostrike same:false frames 11244 最初の違い frame 11243 {"path":".t","a":187.383333,"b":187.4}
+    differs (ab-all@audio): result us_02 seed 1 result same:false frames 12001 最初の違い frame 12000 {"path":".0","a":"(Result なし)","b":"main@2afe092"}
+✓ ab-all@audio rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ ab-all@audio rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
+✓ tex-ab CHECK=1 0 ✗ lines
+✓ art-perf(参考) art-perf OK（2 組・窓 15 秒・2 フレームに 1 回描く・W 1560）
+✗ snapshots changed
+ALL_DONE

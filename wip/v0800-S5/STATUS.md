@@ -22,5 +22,9 @@ Base HEAD 1c3898b (S4). Working tree uncommitted (18 modified + 2 new). Patch: n
 - Touch play (title-play.mjs play): 4/4 runs Title → US tab → (difficulty) → us_04 card → Briefing → 出撃 → stick 20 s; 0 page errors; build label visible. Shots in S5-dev/play/.
 - CHANGELOG: S5 block (ends with the 門 placeholder) + final known constraints; U1 line updated.
 
+## Gates (run-gates S5-impl, done 22:27; SUMMARY in impl/S5-impl and notes70 wip/v0800-S5/gates)
+- all ✓ except: ab-all@audio 56/58 (us_02 seed 1 end-of-mission: nodawn `.t` 187.383333 vs 187.4; result: A "(Result なし)" vs B Result text) → reruns JOBS=1 nodawn 16/16, result 8/8;
+  snapshots changed = setup-us04 only (L60, 8 lines). us04 sets 4/4 ×4. art-perf OK. CHANGELOG "agent の確かめ" filled.
+
 ## Left
-- run-gates S5-impl (running, started 21:3x; art-perf on) → fill the CHANGELOG "agent の確かめ" line; hand-back.
+- hand-back to the lead.
