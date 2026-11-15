@@ -40,3 +40,5 @@
   Screenshots in impl/S2-shots (noplane set + shore set). CHANGELOG S2 block written. run-gates S2-impl running (build/typecheck/lint/test 3743 OK so far).
 - step 4: headless L11 (real world, slowmo.mjs): seed1 normal & seed2 hard, 3 forced slow-mos at 40/45/50 s: orders same, OUT points same, times +2.52 s. wakecheck: hidden hulls no wake (2400 samples).
   Remaining: gates (S2-impl running), perf.mjs after gates, hand-back.
+- step 5: run-gates S2-impl ALL_DONE: build/typecheck/lint OK, npm test 3743, g2 OK 37 DIFF 0, ab-all 58/57/57 (2 flakes us_02 s1 last .t; result reruns 8/8 both, nodawn@noaudio JOBS=1 16/16), jp04base 8, jp03 4, hud base 16 x3, hud jp04base 8, jp03 4, tex-ab 0 ✗, snapshots untouched.
+  perf run 1 invalid (boat sank, mission ended mid-window); perf.mjs rewritten (HP pinned, flee, pre-dawn windows, isolate). CHANGELOG agent-check line updated.
