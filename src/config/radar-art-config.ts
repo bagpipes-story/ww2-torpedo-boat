@@ -6,6 +6,11 @@
 export const RADAR_BLIP_TEX_KEY = 'tex-radar-blip';
 /** 輪の色（緑。PPI の蛍光の見立て） */
 export const RADAR_BLIP_COLOR = 0x6dff8c;
+/**
+ * 緑の端の印「レーダー N m」の矢印の絵の鍵（v0.8.0 S4。tex-target-marker の色違い＝輪と同じ色。Boot が 1 枚作る・ui/radar-marker が使う）。
+ * config/game-config の TEXTURE_KEYS には入れない（v0.7.0 からの絵の鍵の棚卸し＝tests/art-inventory・sfx-inventory を変えない。輪の鍵と同じ置き場）
+ */
+export const RADAR_MARKER_TEX_KEY = 'tex-radar-marker';
 /** 輪の半径と線の幅（世界の m。丸めの格子 50 m より大きく、艦の絵（長さ約 236 m）の外にはみ出る大きさ） */
 export const RADAR_BLIP_RADIUS_M = 80;
 export const RADAR_BLIP_LINE_M = 10;

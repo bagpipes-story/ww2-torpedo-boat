@@ -79,6 +79,13 @@ export const MISSION_LANDING_THREAT = 36;
 export const MISSION_LANDING_FIRE_LINE = 37;
 /** 38 空襲下の退避（v0.6.11 S5。jp_03。t.evac.enabled の任務だけ。夜明け（240 秒の後）の空襲の行の下・ほかの全部の上。中の行は ui/evac-lines の evacLineMode。ほかの任務は 1 ビットも変わらない） */
 export const MISSION_EVAC = 38;
+/**
+ * 海峡の夜（v0.8.0 S4。us_04。文は ui/strait-lines・radar-lines、時計は ui/strait-line-clock。旗はレーダー・列の通過のある任務だけ立つ＝ほかの任務は 1 ビットも変わらない）:
+ * 39 レーダーの出来事（最初の接触・新しい接触・東へ消えた・帰りの列か。1 回・4 秒。急ぎの行＝水上機の攻撃・味方機・座礁の下、浅瀬・暴風・水上機の接近・結果・呼びかけ・平常の上）、
+ * 40 衝突の危険（目で見えている艦の艦首がこちらへ。夜明けの空襲の行のすぐ下・ほかの全部の上）
+ */
+export const MISSION_RADAR_EVENT = 39;
+export const MISSION_BOW_ON = 40;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -95,6 +102,9 @@ export const MODE_FLAG_CONVOY_EVENT = 32;
 export const MODE_FLAG_ENGINE_EVENT = 64;
 /** 揚陸の出来事の表示中（v0.6.9。ui/pt-line-clock が揚陸の出来事の通し番号の増えで立て、赤い線・13mm・輸送隊の出来事の下で 1 度出るまで待つ。揚陸の無い任務は立たない） */
 export const MODE_FLAG_LANDING_EVENT = 128;
+/** 海峡の夜のレーダーの出来事・衝突の危険の表示中（v0.8.0 S4。ui/strait-line-clock が 2 行目に出ていた ms の和が 4 秒に届くまで立てる。レーダー・列の通過の無い任務は立たない） */
+export const MODE_FLAG_RADAR_EVENT = 256;
+export const MODE_FLAG_BOW_ON = 512;
 
 /** 暴風の近く・中で安全速力を超えている（警告。ほかの行の末尾にも付く） */
 export function stormWarning(t: BoatTelemetry): boolean {
@@ -160,8 +170,8 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
- * 優先順: 魚雷待ち > 燃料切れ（どちらも揚陸の決着の前の帰投の輪の中では立てない。v0.6.9 R14 A5）> 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 輸送船が射線に入る（v0.6.9 R14 A1）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 揚陸の出来事（v0.6.9）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
- * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 優先順: 魚雷待ち > 燃料切れ（どちらも揚陸の決着の前の帰投の輪の中では立てない。v0.6.9 R14 A5）> 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 衝突の危険（v0.8.0 S4）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 輸送船が射線に入る（v0.6.9 R14 A1）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 揚陸の出来事（v0.6.9）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
+ * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > レーダーの出来事（v0.8.0 S4）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   // 揚陸の決着の前に帰投の輪の中（v0.6.9 R14 A5。jp_04 だけ。ほかの任務は偽で前のまま）: 任務は終わらない（systems/mission-end の landingHold）ので魚雷待ち・漂流の行は出さず、
@@ -174,6 +184,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   // 夜明けのラッチの瞬間に落ちている夜の 1 発（最大 1.28 秒）は夜明けの 4 機の接近・旋回の行に隠さない（R6。夜明けの最初の進路はラッチから first_run_s 後で重ならない）
   if (pa.enabled && pa.threat === AS_T_FALLING && (t.dawn.threat === AS_T_INBOUND || t.dawn.threat === AS_T_ORBIT)) return MISSION_PATROL_ATTACK;
   if (t.dawn.threat !== AS_T_NONE && t.dawn.threat !== AS_T_REST) return MISSION_STRIKE;
+  if ((flags & MODE_FLAG_BOW_ON) !== 0) return MISSION_BOW_ON; // 衝突の危険（v0.8.0 S4。us_04 だけ旗が立つ）
   if (t.evac.enabled) return MISSION_EVAC; // 空襲下の退避（v0.6.11 S5。帰投の呼びかけ・平常の行は出ない＝jp_03 の 2 行目に「夜明け」は無い）
   if (pa.enabled) {
     // 夜の哨戒機（v0.6.7。jp_02 に他の敵はいない）: 発見と夜の出撃 > 捜索 > 結果（平常は下の帰投せよの下。出撃の後の哨戒で航跡の行が出るなら結果より航跡。レビュー ux:ux-4）
@@ -210,6 +221,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.gunMission && t.gunStatus === GUN_SAFE && t.enemySighted) return MISSION_BARGE_SIGHTED;
   if (t.batteryInArc) return MISSION_BATTERY;
   if (t.escortEnabled && !t.escortSunk && t.escortDistM > t.escortLagWarnM) return MISSION_ESCORT_LAG;
+  if ((flags & MODE_FLAG_RADAR_EVENT) !== 0) return MISSION_RADAR_EVENT; // レーダーの出来事（v0.8.0 S4。us_04 だけ旗が立つ）
   if (t.shallowState !== 0) return MISSION_SHALLOWS;
   if (stormWarning(t)) return MISSION_STORM_WARN;
   if (planeApproaching(t)) return MISSION_PLANE;

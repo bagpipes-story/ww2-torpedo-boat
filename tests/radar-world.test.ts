@@ -50,7 +50,8 @@ describe('レーダーの段の順と作る所（ソース）', () => {
   });
   it('buildRadar は setup.radar の任務だけ作る（無ければ null＝絵も絵の鍵も作らない）。WorldRadar は掃引の時でなければ何もしない', () => {
     const rv = code('systems/radar-view.ts');
-    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene)) : null;');
+    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa) : null;');
+    expect(rv).toContain("const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）
     const wr = code('systems/world-radar.ts');
     const step = wr.slice(wr.indexOf('  step(w: RadarWorldView): void {'));
     expect(lines(step).slice(0, 3)).toEqual(['step(w: RadarWorldView): void {', 'const r = this.state;', 'if (!radarSweepDue(r, w.stepTimeS)) return;']);
@@ -121,10 +122,11 @@ describe('掃引の時刻と輝点（us_04 ノーマル・揺らぎなし・自�
 
 describe('レーダーのテレメトリ（systems/radar-telemetry）', () => {
   it('レーダーの無い世界は enabled false のまま何も書かない', () => {
-    const t = initRadarTelemetry({ radar: null });
-    expect([t.enabled, t.shipRangeM, t.sweeps, t.contacts]).toEqual([false, 0, 0, 0]);
+    const none = { radar: null, boat: { state: { x: 1, y: 2 } } }; // v0.8.0 S4: 自艇の位置も読む（レーダーの無い世界は写さない）
+    const t = initRadarTelemetry(none);
+    expect([t.enabled, t.shipRangeM, t.sweeps, t.contacts, t.blips.length, t.eastJa]).toEqual([false, 0, 0, 0, 0, '']);
     const before = JSON.stringify(t);
-    refreshRadarTelemetry(t, { radar: null });
+    refreshRadarTelemetry(t, none);
     expect(JSON.stringify(t)).toBe(before);
   });
 });

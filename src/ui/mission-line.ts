@@ -136,7 +136,7 @@ export class MissionLine {
     const mode = missionMode(t, call, flags);
     this.ptClock.shown(mode, nowMs);
     // 米PT・輸送隊・機関・水上機のキー（ui/mission-line-keys。v0.6.9 S0 で切り出し。shown の後・同じ式と順）
-    const { ptMode, pKey, cKey, engineMode, eKey, eTag, planeMode, planeKey, lKey, leKey } = composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent, this.ptClock.landingEv);
+    const { ptMode, pKey, cKey, engineMode, eKey, eTag, planeMode, planeKey, lKey, leKey } = composeLineKeys(this.keys, t, mode, flags, this.lastPtKey, this.ptClock.merge, this.ptClock.convoyEvent, this.ptClock.landingEv, this.ptClock.strait);
     // 暴風の距離の刻み: 近いときは 50 m、予報は 100 m（それ以外は 0）
     const stormStep = t.stormState === STORM_NEAR ? Math.ceil(t.stormGapM / STORM_WARN_STEP_M) : t.stormState === STORM_AHEAD ? Math.ceil(t.stormGapM / STORM_AHEAD_STEP_M) : 0;
     const shallowStep = Math.ceil(t.shallowAheadM / SHALLOW_WARN_STEP_M);

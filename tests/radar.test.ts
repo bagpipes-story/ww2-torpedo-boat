@@ -189,10 +189,10 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確�
     expect(s.match(/Math\.sqrt\(/g)!.length).toBe(1);
     expect(s).not.toMatch(/Math\.(hypot|atan2)\b/);
   });
-  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も', () => {
+  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も。S4 から Result の列の行（段階の数え）と衝突の危険のテレメトリ（bowOnRisk）も', () => {
     const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
     expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
-    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
-    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/world-radar.ts']);
+    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
+    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/strait-telemetry.ts', 'src/systems/world-radar.ts']);
   });
 });

@@ -92,7 +92,10 @@ describe('レーダーの層は読むだけ（ソースの走査）', () => {
   });
   it('レーダーを import するのはレーダーの層と mission-world（作る）だけ。音の層（sfx-*）は import しない', () => {
     const users = (re: RegExp): string[] => SRC.filter((f) => imports(code(f)).some((p) => re.test(p))).sort();
-    expect(users(/\/(world-radar|radar-view|radar-telemetry|radar-art|radar-art-config)$/)).toEqual(['src/assets/radar-art.ts', 'src/systems/mission-telemetry.ts', 'src/systems/mission-world.ts', 'src/systems/radar-view.ts', 'src/systems/telemetry-create.ts']);
+    // v0.8.0 S4: Boot が緑の端の印の矢印の絵を輝点と同じ色（radar-art-config の RADAR_BLIP_COLOR・鍵 RADAR_MARKER_TEX_KEY）で 1 枚作り、ui/radar-marker がその鍵を使う（見せ方の定数だけ。レーダーの論理は読まない）
+    expect(users(/\/(world-radar|radar-view|radar-telemetry|radar-art|radar-art-config)$/)).toEqual(['src/assets/radar-art.ts', 'src/scenes/boot-scene.ts', 'src/systems/mission-telemetry.ts', 'src/systems/mission-world.ts', 'src/systems/radar-view.ts', 'src/systems/telemetry-create.ts', 'src/ui/radar-marker.ts']);
+    expect(imports(code('src/ui/radar-marker.ts')).filter((p) => /radar-art/.test(p))).toEqual(['../config/radar-art-config']);
+    expect(imports(code('src/scenes/boot-scene.ts')).filter((p) => /radar/.test(p))).toEqual(['../config/radar-mission-data', '../config/radar-art-config']);
     for (const f of SFX) expect(imports(code(f)).filter((p) => /radar|ship-transit|strait-geometry|destroyer-transit/.test(p)), f).toEqual([]);
   });
 });

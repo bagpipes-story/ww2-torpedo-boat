@@ -90,7 +90,7 @@ export function kitWorld(o: { hard?: boolean; seed?: number; dawnS?: number; rad
   const ships: KitShip[] = ds.starts.map((st) => new KitShip(st, ds.shipAi, ds.spec.boundsMarginM));
   for (let i = 0; i < tr.ships; i++) ships.push(new KitShip({ x: tr.inbound.appearX, y: tr.inbound.laneY, headingDeg: tr.inbound.headingDeg }, tr.shipAi, ds.spec.boundsMarginM));
   const transit = new DestroyerTransit(ships, ds.starts.length, tr);
-  const radar = o.radar === false ? null : new WorldRadar(setup.radar!, setup.mission.bounds, setup.shores, ships.length, null);
+  const radar = o.radar === false ? null : new WorldRadar(setup.radar!, setup.mission.bounds, setup.shores, ships.length, null, tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''); // 東の揚陸の地の名は systems/radar-view の buildRadar と同じ（v0.8.0 S4）
   const ps = setup.playerStart;
   return {
     setup, ships, transit, radar, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 } }, destroyers: { ships },

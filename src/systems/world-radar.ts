@@ -5,6 +5,8 @@
 // 陸の反射の岸の線は海峡の両岸（setup.shores）から起動時に 1 回（両岸の無い任務は空）。機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
 // 絵（輝点 16 の Image）は systems/radar-view が持ち、毎フレーム updateVisuals が渡す（置き直すのは掃引の回数が変わった時だけ）。
 // Phaser 非依存（絵は構造の型 RadarBlipView。tests/radar-world・radar-neutral が絵なしで回す）・乱数なし。確保は constructor だけ。
+// v0.8.0 S4（brief L26・L31）: 東の縁の向こうの揚陸の地の名（作る時に 1 回。2 行目の「東（ビラ）へ消えた」）と、Result の「目で見えない間に撃った魚雷」の数え
+// （発射の時の見えていたかは systems/torpedo-free が世界の規則で決めて渡し、命中は systems/torpedo-hits が渡す＝ここは数えるだけ。魚雷の状態は読まない・書かない）。
 import type { ShoresSetup } from '../config/shores-mission-data';
 import { RADAR_KIND_SHIP, createRadarState, createRadarTargets, radarSweepDue, stepRadar, type RadarGeometry, type RadarState, type RadarTargets } from '../core/radar';
 import type { RadarParams } from '../core/radar-data';
@@ -34,6 +36,10 @@ export class WorldRadar {
   readonly geo: RadarGeometry;
   /** 掃引に渡す枠（隊の隻数。掃引の時だけ 0〜n − 1 を書く） */
   private readonly targets: RadarTargets;
+  /** 目で見えない間に撃った魚雷（S4・brief L31）: 発射の時に印を付けた魚雷（プールの状態。使い回さない）・本数・そのうちの命中（不発を除く） */
+  private readonly unseen = new WeakSet<object>();
+  private nUnseenShots = 0;
+  private nUnseenHits = 0;
 
   constructor(
     readonly p: RadarParams,
@@ -42,10 +48,28 @@ export class WorldRadar {
     /** 隊の隻数（隊の無い任務は 0＝何も映らない） */
     shipCapacity: number,
     private readonly view: RadarBlipView | null,
+    /** 東の縁の向こうの揚陸の地の名（列が東へ抜けて戻る任務だけ。無ければ ''） */
+    readonly eastJa = '',
   ) {
     const { width, height } = bounds;
     this.geo = { width, height, land: shores ? landLinesFromShores(shores, width, height) : [] };
     this.targets = createRadarTargets(shipCapacity);
+  }
+
+  /** 目で見えない間に撃った魚雷の本数・そのうちの命中（Result の 1 行。systems/strait-result-part） */
+  get unseenShots(): number { return this.nUnseenShots; }
+  get unseenHits(): number { return this.nUnseenHits; }
+
+  /** 魚雷を 1 本撃った（狙える艦がある間の発射。sighted は発射の時に 3 行目が敵影ありだったか） */
+  noteLaunch(torpedo: object, sighted: boolean): void {
+    if (sighted) return;
+    this.unseen.add(torpedo);
+    this.nUnseenShots++;
+  }
+
+  /** 魚雷が当たった（不発でない。終わり際の当たりも） */
+  noteHit(torpedo: object): void {
+    if (this.unseen.has(torpedo)) this.nUnseenHits++;
   }
 
   /** 1 固定ステップ（敵の側の段の最後）。掃引の時でなければ何もしない */

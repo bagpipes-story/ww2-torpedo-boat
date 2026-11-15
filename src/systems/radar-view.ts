@@ -56,5 +56,7 @@ export class RadarView implements RadarBlipView {
 /** レーダーの世界と絵（setup.radar の任務だけ。無ければ null）。世界の論理の全部の後・世界の絵の前に 1 回 */
 export function buildRadar(scene: Phaser.Scene, w: { readonly setup: WorldSetup; readonly destroyers: { readonly total: number } | null }): WorldRadar | null {
   const p = w.setup.radar;
-  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene)) : null;
+  const tr = w.setup.transit;
+  const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''; // 東の縁の向こうの揚陸の地（v0.8.0 S4。2 行目の「東（ビラ）へ消えた」。列の無い任務は ''）
+  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa) : null;
 }

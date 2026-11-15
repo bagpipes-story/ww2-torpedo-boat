@@ -154,6 +154,13 @@ export interface BoatTelemetry {
   evac: EvacTelemetry; // 空襲下の退避（v0.6.11 S5。core/evac-telemetry。jp_03）: 操作中の隊・座席の隊の HP・予告・出来事・近い隠れ場所・狙われた隊（systems/evac-telemetry。無い任務は enabled false）
   radar: RadarTelemetry; // 自艇のレーダー（v0.8.0 S2。core/radar の状態の写し。us_04）: 掃引・接触・最初の接触・増えた／減った（systems/radar-telemetry。無い任務・?debug&noradar は enabled false）。HUD の文・端の印・Result は S4
   transit: TransitTelemetry; // 列の通過（v0.8.0 S2。core/ship-transit の段階の数。us_04）: 段階ごとの隻数・残りの戻り・通算（systems/transit-telemetry。無い任務は enabled false）。文は S4
+  strait: StraitTelemetry; // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04）: 視程の 2 乗・艦首がこちらへ向く目で見えている艦（systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
+}
+
+/** 輝点の位置（core/radar の RadarBlip の読むだけの形。S4 の緑の端の印が読む） */
+export interface RadarBlipPos {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** レーダーの HUD・Result の材料（v0.8.0 S2。読み手は S4 の ui/radar-lines・radar-result）。輝点の位置は世界の絵（systems/radar-view）が出し、ここは数と出来事だけ */
@@ -178,6 +185,17 @@ export interface RadarTelemetry {
   lostCount: number;
   lostX: number;
   lostY: number;
+  /**
+   * v0.8.0 S4（ui/radar-lines・radar-marker の材料。brief L26・L27）: 海域の幅 m（PPI の枠の東の縁）と東の縁の向こうの揚陸の地の名（列が東へ抜けて戻る任務だけ。無ければ ''）、
+   * 今の輝点（core/radar の状態の枠をそのまま参照する＝毎フレーム写さない。0〜contacts − 1 が近い順）、最後の掃引の自艇の位置（接触の方位と距離の元）と今の自艇の位置（端の印の元）
+   */
+  widthM: number;
+  eastJa: string;
+  blips: readonly RadarBlipPos[];
+  fromX: number;
+  fromY: number;
+  boatX: number;
+  boatY: number;
 }
 
 /** 列の通過の HUD・Result の材料（v0.8.0 S2。読み手は S4 の ui/strait-lines・strait-result） */
@@ -198,4 +216,14 @@ export interface TransitTelemetry {
   arrivedCount: number;
   outCount: number;
   firstOutS: number;
+}
+
+/** 海峡の夜の HUD の材料（v0.8.0 S4。brief L27・L28。読み手は ui/radar-marker（目で見える輝点を除く）と ui/strait-line-clock（衝突の危険）） */
+export interface StraitTelemetry {
+  enabled: boolean;
+  /** 自艇の視程の 2 乗（世界の visRange2 の写し＝艦の絵と敵影の規則。暴風の雨で変わる） */
+  eyeRange2: number;
+  /** 衝突の危険の艦（隊の艦の添字のビット: 目で見えていて・艦首が自艇へ半角の内・距離の内）と、その一番近い艦までの m（無ければ NaN） */
+  bowOnMask: number;
+  bowOnM: number;
 }

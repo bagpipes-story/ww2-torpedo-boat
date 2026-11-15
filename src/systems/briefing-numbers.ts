@@ -1,5 +1,5 @@
 // Briefing の数値（v0.4.0。v0.6.3 で world-setup から切り出し。中身はそのまま）。world-setup.ts が再 export する（今までの import のため）。
-import { NO_WEAPON_BRIEFING_JA, allyBriefingJa, bearingJa, compassJa, landingBriefingJa, patrolAirDetectJa, patrolWeaponBriefingJa, ptGunBriefingJa, type BriefingNumbers } from '../core/briefing';
+import { NO_WEAPON_BRIEFING_JA, allyBriefingJa, bearingJa, compassJa, landingBriefingJa, patrolAirDetectJa, patrolWeaponBriefingJa, ptGunBriefingJa, radarBriefingJa, type BriefingNumbers } from '../core/briefing';
 import { dawnConditionJa } from '../core/dawn-air';
 import { EVAC_FUEL_NOTE_JA, EVAC_RAID_HAZARD_JA, EVAC_REPASS_JA, EVAC_SUCCESS_TAIL_JA, EVAC_WEAPON_JA, evacAfterRaidHazardJa, evacClockJa, evacDayRowJa, evacEnemyRowJa } from '../core/evac-briefing';
 import { DAWN_STRIKE_EVENT_ID } from '../core/air-strike-data';
@@ -29,6 +29,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(s.landing && s.allyDestroyer ? { allyJa: allyBriefingJa(s.allyDestroyer.labelJa, bearingJa(bearingDeg(s.landing.params.x, s.landing.params.y, s.allyDestroyer.x, s.allyDestroyer.y))) } : {}),
     // 空襲下の退避（v0.6.11 S6。jp_03。spec-v0611-r2 §10.5）: 成功の尾・時の行・敵の波・危険の名前（昼の言い方）・条件の時計と燃料と機銃ともう一度来る編隊。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
     ...evacPart(s),
+    // レーダー（v0.8.0 S4。us_04。spec-v0800 §4.9）: 月の行の尾（射程と、陸の反射のある海域なら「陸のそばは映らない」）。無い任務・?debug&noradar は鍵ごと省く
+    ...(s.radar ? { radarJa: radarBriefingJa(s.radar.shipRangeM, s.radar.landClutterM > 0 && (s.shores !== undefined || s.mission.coast !== null)) } : {}),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
@@ -77,6 +79,12 @@ function enemyFromJa(s: WorldSetup): string {
   if (s.evac) return bearingJa(s.evac.raid.fromBearingDeg); // 空襲下の退避（v0.6.11 S6。jp_03）: 港の空襲の来る方角（予告の行の「東から」と同じ）
   if (s.landing) return s.landing.params.fromDirsJa; // 揚陸の任務（v0.6.9。jp_04）: 泊地から見た今夜の PT の出発点（線の順。「北と東」「北・東・北東」。2 行目の平常の行と同じ）
   const e = s.enemyFrom;
+  if (s.transit) {
+    // 列の通過（v0.8.0 S4。us_04。spec §4.9「西と北西から」）: 列の来る縁の方角と、海域の中心から見た護衛の出発点の方角（同じなら 1 つ）
+    const col = bearingJa(s.transit.inbound.edge === 'west' ? 270 : 90);
+    const cover = e ? compassJa(e.x, e.y, s.mission.bounds.width, s.mission.bounds.height) : col;
+    return cover === col ? col : `${col}と${cover}`;
+  }
   if (!e) return '';
   if (s.ptBoats) return bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, e.x, e.y));
   return compassJa(e.x, e.y, s.mission.bounds.width, s.mission.bounds.height);

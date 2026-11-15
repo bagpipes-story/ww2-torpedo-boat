@@ -57,6 +57,7 @@ import { validateLandingMissions } from '../config/landing-mission-data';
 import { validateAllyDestroyerMissions } from '../config/ally-destroyer-mission-data';
 import { validateEvacMissions } from '../config/evac-mission-data';
 import { validateRadarMissions } from '../config/radar-mission-data';
+import { RADAR_BLIP_COLOR, RADAR_MARKER_TEX_KEY } from '../config/radar-art-config';
 import { validateTransitMissions } from '../config/transit-mission-data';
 import { validateShoresMissions } from '../config/shores-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
@@ -119,6 +120,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
+    generateTargetMarkerTexture(this, RADAR_MARKER_TEX_KEY, TARGET_MARKER_SIZE, RADAR_BLIP_COLOR); // 緑の「レーダー N m」（v0.8.0 S4。輝点と同じ色）
     generateReturnTextures(this);
     generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
     generateEvacRingTexture(this); // 空襲下の退避の輪（v0.6.11 S5。jp_03）

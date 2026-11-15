@@ -23,6 +23,12 @@ export function ptGunBriefingJa(label: string): string {
   return `${label}1挺（撃つと閃光で見つかる。魚雷はPTの下を抜ける）`;
 }
 
+/**
+ * レーダーのある任務（v0.8.0 S4。us_04。spec-v0800 §4.9）の月の行の尾: 「レーダー 4000 m（陸のそばは映らない）」（射程は data の ship_range_m。陸の反射のある海域だけ括弧）。
+ * 句の中はノーブレークスペース（Phaser の折り返しは半角スペースで切るので「4000⏎m」と割れた。briefingRows が「 ・」＋ノーブレークスペースで足す＝句ごと次の行へ）
+ */
+export const radarBriefingJa = (shipRangeM: number, landClutter: boolean): string => `レーダー\u00a0${Math.round(shipRangeM)}\u00a0m${landClutter ? '（陸のそばは映らない）' : ''}`;
+
 /** 停泊して揚陸する輸送船の任務（v0.6.9。jp_04）の教え（spec R12: 自艇と戦っている PT も輸送船の近くで艇首が向けば撃つ）。目的（missions_seed の objective・hard の objective_ja）と「条件」が同じ句で言う */
 export const LANDING_FIGHT_AWAY_JA = '輸送船から離れて戦え';
 /** 同じ任務の帰投の句（spec R14 A5: 揚陸の決着の前に帰投の輪へ入っても任務は終わらず、輪の中で揚陸を見届けられる。HUD の「帰投の輪 ・ 揚陸を見届けるまで待て」「帰投の輪で止まって待て」と同じ事） */
@@ -200,6 +206,8 @@ export interface BriefingNumbers {
   secondaryJa?: string;
   /** 月の行の「見つかる 巡航 N m／静音 N m」の差し替え（v0.6.7。夜の哨戒機の任務だけ＝patrolAirDetectJa。無い任務では鍵ごと出ない） */
   airDetectJa?: string;
+  /** 月の行の尾（v0.8.0 S4。レーダーのある任務だけ＝radarBriefingJa。「 ・」＋ノーブレークスペースで足す。無い任務・?debug&noradar では鍵ごと出ない＝ほかの任務の文は変わらない） */
+  radarJa?: string;
   /**
    * 「条件」の最後に足す揚陸の句（v0.6.9。停泊して揚陸する輸送船の任務だけ＝landingBriefingJa: 帰投の輪で待てる・揚陸の秒・沈むまでの本数・教え「輸送船から離れて戦え」・
    * 米PT の魚雷は自艇の下を抜ける）。「 ・」＋ノーブレークスペースで足す（weaponPartJa と同じ理由）。無い任務では鍵ごと出ない（ほかの任務の文は変わらない）
@@ -259,7 +267,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     { label: '成功', text: `${t.success}${n.successTailJa ?? `（帰投地点は${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}の青い輪）`}` },
     n.dayRowJa !== undefined
       ? { label: '時', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ ${n.dayRowJa}` }
-      : { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}` },
+      : { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}${n.radarJa ? ` ・\u00a0${n.radarJa}` : ''}` },
     { label: '敵', text: `${enemy}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.enemyRowJa !== undefined ? ` ・ ${n.enemyRowJa}` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, hazardOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], hazardOf)}` },
     {

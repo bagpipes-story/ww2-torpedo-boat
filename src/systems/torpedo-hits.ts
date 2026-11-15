@@ -29,6 +29,8 @@ export interface TorpedoHitWorld {
   readonly dawn: { readonly reached: boolean; readonly retireHeadingDeg: number };
   /** 固定ステップで進んだ実秒（沈み始めた時計。終わり際の当たりの窓） */
   readonly stepTimeS: number;
+  /** 目で見えない間に撃った魚雷の命中を数える（v0.8.0 S4。systems/world-radar。レーダーの無い世界は null・無い） */
+  readonly radar?: { noteHit(torpedo: object): void } | null;
 }
 
 /** 記録の 1 行（命中・終わり際の当たり・外れで同じ形） */
@@ -43,6 +45,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
       w.shots.push(shotOf(w, s, true));
       const g = w.destroyers;
       const d = g ? g.ships[target] : undefined;
+      if (!dud) w.radar?.noteHit(s); // 目で見えない間に撃った魚雷の命中（v0.8.0 S4。レーダーのある任務だけ。記録と同じ当たり＝不発を除く）
       if (!dud && g && d) {
         w.hits++;
         w.slowMoLeftS = w.setup.slowMoSeconds;
@@ -60,6 +63,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
     // 終わり際の当たり（v0.6.2 実機 1 回目）: 記録と爆発だけ。艦の被弾・撃沈・命中スロー・一斉発射の破棄は触らない（すべて出た後なので艦・乱数・AI は変わらない）
     onLateHit: (_target, x, y, s) => {
       w.shots.push(shotOf(w, s, true));
+      if (!s.dud) w.radar?.noteHit(s);
       if (!s.dud) w.hits++;
       events.onTorpedoHit(x, y, s.dud);
     },

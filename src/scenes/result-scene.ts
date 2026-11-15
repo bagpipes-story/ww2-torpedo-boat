@@ -38,7 +38,7 @@ import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa } from '../ui/pt-lines';
 import { directSortie, isSortie, type BriefingInit, type Sortie } from '../core/sortie';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EscortResult, EvacResult, GunboatResult, LandingResult, PatrolResult, PtResult } from '../ui/result-types';
+import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EscortResult, EvacResult, GunboatResult, LandingResult, PatrolResult, PtResult, StraitNightResult } from '../ui/result-types';
 import { resultBodyLines, resultFitLiftPx } from '../ui/result-body';
 
 export type { MissionEndReason } from '../core/mission-flow';
@@ -47,7 +47,7 @@ export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/re
 /** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
 const TRANSPORT_ENEMY_ID = 'ijn_transport';
 
-export interface MissionResult {
+export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 のレーダーと列の通過の鍵（ui/result-types。ある任務だけ）
   reason: MissionEndReason;
   /** 任務の種類（scoring.json の達成点） */
   missionType: string;

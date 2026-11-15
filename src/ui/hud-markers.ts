@@ -8,6 +8,7 @@
 // 上の HUD の帯・右端の技能のボタン・兵装の下。▼ が出ていれば出さない。F12: 視程の内の脅威の PT なら出さない）と
 // 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前）。決まりは ui/landing-markers。どちらも右下の速力と兵装の HUD の角を避け、近い印から縁に沿ってずらす（雷撃は「PT」から、輸送は雷撃と帰投から）。
 // v0.6.11 S5（空襲下の退避の任務 jp_03 だけ）: 帰投の印は作らず（中の壕＝帰投地点だけを指す印は紛らわしい＝r2 L8）、画面の外の狙われた隊と近い空いた隠れ場所の矢印（ui/evac-markers の EvacEdgeMarkers）。
+// v0.8.0 S4（レーダーのある任務 us_04 だけ）: 緑の「レーダー N m」（ui/radar-marker。画面の外・目の外の一番近い輝点。敵・帰投・敵機の印の後に refresh し、それらから離す）。
 import Phaser from 'phaser';
 import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
@@ -47,6 +48,7 @@ import { EvacEdgeMarkers } from './evac-markers';
 import { snappedDistM } from './edge-marker-screen';
 import { avoidPauseButton, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from './landing-markers';
 import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
+import { RadarEdgeMarker } from './radar-marker';
 
 /** 味方の大発の矢印「大発 N m」（v0.6.4）の上端の余白: 敵機の矢印の下（帰投の矢印と同じく上にラベル。ui-config は 300 行を超えているのでここに置く） */
 const CONVOY_MARKER_TOP_MARGIN = PLANE_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
@@ -91,6 +93,9 @@ export class HudMarkers {
   private shipMarker?: EdgeMarker;
   /** 空襲下の退避（v0.6.11 S5。jp_03 だけ）: 狙われた隊・近い隠れ場所の矢印 */
   private evacMarkers?: EvacEdgeMarkers;
+  /** レーダー（v0.8.0 S4。us_04 だけ）: 緑の「レーダー N m」と、離す相手の印（作る時に 1 回組む） */
+  private radarMarker?: RadarEdgeMarker;
+  private radarOthers: readonly (EdgeMarker | undefined)[] = [];
 
   constructor(scene: Phaser.Scene, mission: PrototypeMission, telemetry: BoatTelemetry) {
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
@@ -103,6 +108,10 @@ export class HudMarkers {
     if (mission.convoy) this.convoyMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: CONVOY_MARKER_LABEL, stepM: CONVOY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     if (telemetry.gunboat.enabled) this.gunboatMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: telemetry.gunboat.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 });
     if (telemetry.seaplaneEnabled || telemetry.dawn.strikeEnabled || telemetry.patrol.enabled) this.planeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+    if (telemetry.radar.enabled) {
+      this.radarMarker = new RadarEdgeMarker(scene);
+      this.radarOthers = [this.targetMarker, this.homeMarker, this.planeMarker];
+    }
     if (!telemetry.landing.enabled) return;
     this.runnerMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: LANDING_RUNNER_MARKER_LABEL, stepM: LANDING_DIST_STEP_M, labelAbove: false, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN, hideMargin: TARGET_MARKER_MARGIN });
     this.shipMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: LANDING_SHIP_MARKER_LABEL, stepM: LANDING_DIST_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 });
@@ -121,6 +130,7 @@ export class HudMarkers {
     this.evacMarkers?.refresh(telemetry);
     this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry, telemetry.convoy.nearestM); // 平方根は convoy-telemetry の 1 回（レビュー neutral:N2）
     if (this.shipMarker) this.refreshLanding(telemetry); // 揚陸の任務だけ（v0.6.9 S6b）
+    this.radarMarker?.refresh(telemetry, this.radarOthers, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP); // レーダーの任務だけ（v0.8.0 S4）
     const gb = telemetry.gunboat;
     const gm = this.gunboatMarker;
     if (!gm) return;
@@ -163,6 +173,8 @@ export class HudMarkers {
     this.shipMarker?.destroy();
     this.evacMarkers?.destroy();
     this.evacMarkers = undefined;
+    this.radarMarker?.destroy();
+    this.radarMarker = undefined;
     this.targetMarker = undefined;
     this.homeMarker = undefined;
     this.planeMarker = undefined;

@@ -13,9 +13,41 @@
 // v0.8.0 S2（spec-v0800 §6 の S2・brief L9・L13）: SET=us04 で us_04（ブラケット海峡の夜。列の通過とレーダー）のノーマル・ハード × seed 1・2 を 260 秒（夜明けまで。all には入れない。
 //   A は S2 の commit のビルド＝以後の段の回帰）。写しは隊の全艦（s.d。列の艦も）に列の段階（s.tr）とレーダーの輝点（s.rd: 掃引の回数・数・位置）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
 //   NORADAR=1 で B だけ &noradar（レーダーを切った夜。A と同じビルドで回せばレーダーが世界も HUD も変えない証＝L9 の (b)。レーダーの写し s.rd は比べない）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04] [CAM=1] [NORADAR=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.0 S4（brief L33）: us_04 の HUD の S4 の物を比べから外す明示の濾し（S4_FILTER。tests/hud-ab-filter が固定）。RADARUI=1（A は S3 の commit のビルド・B は今の木）は B が、
+//   NORADAR=1（A＝B＝今の木・B だけ &noradar）は A が「出し側」: 出し側を先に回し、2 行目が S4 の行（RADARUI は 4 つのレーダーの文と衝突の危険、NORADAR はレーダーの文だけ＝衝突の危険と
+//   3 行目の「去った」は比べる）だったフレームの番号とその Text の添字を記録し、両方の側でそのフレームのその Text だけを '<S4>' に替える。緑の端の印（字の色 #6dff8c・絵の鍵 tex-radar-marker）は
+//   両方の側で除く。世界の写し（自艇・艦・魚雷・列の段階・輝点）とほかの HUD の物はそのまま比べる。結果に隠したフレームの数（masked）。FILTERTEST=1 は濾しが別の変化を隠さない試し
+//   （出し側でない側の、隠したフレームの 3 行目の字に 'X' を足す → 違いが出るはず）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04] [CAM=1] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+
+/** S4 の濾し（brief L33。ページへは文字列で渡す）: 2 行目の S4 の行・そのうちレーダーだけの行・緑の端の印の字の色と絵の鍵・隠した物の字 */
+export const S4_FILTER = {
+  lineRe: '^(レーダー探知！ |レーダー: |接触が東（|衝突の危険！ )',
+  radarOnlyRe: '^(レーダー探知！ |レーダー: |接触が東（)',
+  green: '#6dff8c',
+  tex: 'tex-radar-marker',
+  mask: '<S4>',
+};
+
+/** ページの中: HUD の物を濾す（緑の印を除き、出し側は S4 の行を見つけて記録し、両方の側で記録した Text を mask に替える）。f は o.s4、k はフレームの番号 */
+export function s4Hud(objs, f, k) {
+  const out = objs.filter((x) => !(x.type === 'Text' && x.color === f.green) && x.tex !== f.tex);
+  if (f.source) {
+    const re = new RegExp(f.re);
+    const i = out.findIndex((x) => x.type === 'Text' && re.test(x.text));
+    if (i >= 0) f.marks[k] = i;
+  }
+  const at = f.marks[k];
+  if (at !== undefined && out[at]) out[at] = { type: 'Text', text: f.mask };
+  if (f.inject && at !== undefined) {
+    // 濾しが別の変化を隠さない試し（FILTERTEST=1）: 隠したフレームの、隠していない Text（3 行目の「見つかる距離」の行）に 'X' を足す
+    const j = out.findIndex((x, n) => n !== at && x.type === 'Text' && /見つかる距離|去った|撃沈/.test(x.text));
+    if (j >= 0) out[j] = { ...out[j], text: `${out[j].text}X` };
+  }
+  return out;
+}
 
 /** ページの中: 1 夜を回してフレームごとの写しの指紋を返す（写しの文字列はページに残す＝最初の違いの取り出し用）。o.hudEvery があればその間隔のフレームだけ HUD の物を写す（hud-ab） */
 export function abRun(o) {
@@ -39,7 +71,7 @@ export function abRun(o) {
     // 列の通過（v0.8.0 S2。us_04）の段階と、レーダーの輝点（NORADAR の比べでは写さない）。無い任務は鍵ごと無い
     if (w.destroyers && w.destroyers.transit) s.tr = Array.from(w.destroyers.transit.state.phase.slice(0, w.destroyers.transit.state.ships));
     if (w.radar && !o.noradar) s.rd = [w.radar.state.sweeps, w.radar.state.n, w.radar.state.blips.slice(0, w.radar.state.n).map((x) => [x.x, x.y])];
-    s.hud = hl.texts('Hud');
+    s.hud = o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length).filter((x) => x.type === 'Text').map((x) => x.text) : hl.texts('Hud');
     if (o.cam) {
       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
       const m = hl.mission();
@@ -67,7 +99,7 @@ export function abRun(o) {
     w.input.gunHeld = gun && t % 8 < 3 && dist < 1500;
     hl.frame(o.frameMs);
     if (o.hudEvery && (k + 1) % o.hudEvery !== 0) continue;
-    const sn = o.hudEvery ? JSON.stringify({ t: r6(w.stepTimeS), hud: hl.objects('Hud') }) : snap();
+    const sn = o.hudEvery ? JSON.stringify({ t: r6(w.stepTimeS), hud: o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length) : hl.objects('Hud') }) : snap();
     frames.push(sn);
     hashes.push(hl.fnv(sn));
   }
@@ -79,7 +111,7 @@ export function abRun(o) {
     hashes.push(hl.fnv(JSON.stringify(result)));
     frames.push(JSON.stringify(result));
   }
-  return { hashes, result };
+  return { hashes, result, marks: o.s4 ? o.s4.marks : null };
 }
 
 /** 2 つの写し（JSON の文字列）の最初に違う欄 */
@@ -101,7 +133,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1' };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', filtertest: process.env.FILTERTEST === '1' };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -118,7 +150,7 @@ export function abCases(set, input) {
     us04: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_04', hard, seed, secs: envNum('SECS', 260), set: 'us04' }))),
   };
   if (process.env.MISSION) {
-    return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', noradar: process.env.NORADAR === '1', secs: envNum('SECS', 90), set: 'one' }];
+    return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
   }
   return set === 'all' ? [...sets.base(), ...sets.dawn20(), ...sets.nodawn(), ...sets.ptrun(), ...sets.result()] : sets[set]();
 }
@@ -127,12 +159,30 @@ export function query(c, side) {
   return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}`;
 }
 
+/** S4 の濾しの設定（RADARUI は B・NORADAR は A が出し側。どちらでもなければ null＝今のまま） */
+function s4Of(c, side) {
+  if (!c.radarui && !c.noradar) return null;
+  const src = c.radarui ? 'B' : 'A';
+  return { ...S4_FILTER, re: c.radarui ? S4_FILTER.lineRe : S4_FILTER.radarOnlyRe, source: side === src, marks: {}, inject: c.filtertest === true && side !== src };
+}
+
 export async function oneCase(browser, A, B, c) {
   const pa = await openGame(browser, A, query(c, 'A'), { width: envNum('W', 1560) });
   const pb = await openGame(browser, B, query(c, 'B'), { width: envNum('W', 1560) });
   try {
     const o = { ...c, frameMs: FRAME_MS, hudEvery: c.hudEvery ?? 0 };
-    const [ra, rb] = await Promise.all([pa.page.evaluate(abRun, o), pb.page.evaluate(abRun, o)]);
+    let ra;
+    let rb;
+    if (c.radarui || c.noradar) {
+      // S4 の濾し: 出し側を先に回してフレームの印を集め、もう一方へ渡す
+      for (const p of [pa, pb]) await p.page.evaluate(`window.__s4Hud = ${s4Hud.toString()}`);
+      const first = c.radarui ? pb : pa;
+      const second = c.radarui ? pa : pb;
+      const r1 = await first.page.evaluate(abRun, { ...o, s4: s4Of(c, c.radarui ? 'B' : 'A') });
+      const r2 = await second.page.evaluate(abRun, { ...o, s4: { ...s4Of(c, c.radarui ? 'A' : 'B'), marks: r1.marks } });
+      [ra, rb] = c.radarui ? [r2, r1] : [r1, r2];
+      c.masked = Object.keys(r1.marks).length;
+    } else [ra, rb] = await Promise.all([pa.page.evaluate(abRun, o), pb.page.evaluate(abRun, o)]);
     const n = Math.min(ra.hashes.length, rb.hashes.length);
     let at = -1;
     for (let i = 0; i < n; i++) if (ra.hashes[i] !== rb.hashes[i]) { at = i; break; }
@@ -159,7 +209,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }
