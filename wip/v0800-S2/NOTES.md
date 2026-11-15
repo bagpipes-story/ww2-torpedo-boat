@@ -38,3 +38,5 @@
   Mutation check: world-radar write `b.x =` is caught by radar-neutral. Next: ab-replay NORADAR/us04, gates, screenshots, perf, CHANGELOG.
 - step 3: ab-replay NORADAR/us04 added; NORADAR us04: 3/4 same, hard s1 last-frame .t flake -> JOBS=1 rerun same x2; hud-ab us04 NORADAR 4/4; us04 A=B 4/4.
   Screenshots in impl/S2-shots (noplane set + shore set). CHANGELOG S2 block written. run-gates S2-impl running (build/typecheck/lint/test 3743 OK so far).
+- step 4: headless L11 (real world, slowmo.mjs): seed1 normal & seed2 hard, 3 forced slow-mos at 40/45/50 s: orders same, OUT points same, times +2.52 s. wakecheck: hidden hulls no wake (2400 samples).
+  Remaining: gates (S2-impl running), perf.mjs after gates, hand-back.
