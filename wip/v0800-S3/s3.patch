@@ -1,5 +1,5 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 34e5ddf..009933b 100644
+index 34e5ddf..ebcc2c3 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
 @@ -54,6 +54,38 @@
@@ -8,10 +8,10 @@ index 34e5ddf..009933b 100644
      - 門（lead）: 差分を全部読んだ（L10 の `.ships` の読み手の表・L11・R2・§7 の確保と乱数・凍結のファイル・300 行）。直す所なし。実装の門（上の「agent の確かめ」の `run-gates.sh`）の site と、lead が今の木を同じビルド番号で作り直した site は 8 ファイルのうち 7 つがバイト同一（違うのは sw.js のキャッシュの名前に入る作った時刻だけ＝`v0800/tools/dist-same.sh`。JS の束 `assets/index-BW6Yn6Z8.js` 2,343,621 バイト）＝実装の門の g2・再生と HUD の A/B・tex-ab はこの木の束の結果。agent の log で違った 2 件を見た（どちらも us_02 seed 1 の最後のフレームの `.t` が 182.95 と 182.966667＝既知の揺れ。`AUDIO=1` は result の組、`NOAUDIO=1` は nodawn の組で、どちらも同じ状態の JOBS=1 の回し直しで全件同じ）。lead が自分で回した物（`v0800/tools/s2-lead.sh`）: build・typecheck・lint・npm test 3,743 件（凍結の sha256 の tests を含む）が通る。`SET=us04` の再生の A/B（A＝B＝この木・JOBS=1）は `NORADAR=1` の 4 件もレーダーあり同士の 4 件も全 15,600 フレーム同じ（今回は終わりのフレームの揺れも出なかった）、HUD の A/B `SET=us04 NORADAR=1`（260 秒）は 4 件同じ、ページのエラー 0。スナップショットはそのまま。どのファイルも 300 行の内（一番長いのは mission-world 286）。
 +  - S3（模擬と最初の表。ゲームの誰も新しいファイルを import しない＝束は変わらない。S3 では data は S0／S2 のまま＝§4.11 のつまみは 1 つも動かさず、lead の決め（下の S3b・S3c）で us_04 の護衛の針路と燃料、遊び方の離れ方、B2・B3・F の読みを直した。帯はノーマル・ハードともすべて ✓）:
 +    - 目的: us_04 の 1 夜（列の通過・護衛・レーダー・魚雷・砲・被害・燃料）を世界と同じ core で回す迎撃の模擬と、spec §4.11 の 7 つの遊び方の表・帯（B1〜B6・ハード・§4.6 の燃料 F）を作り、最初の表から §4.11 の順でつまみを試す。
-+    - 新しいファイル（spec §4.11 の 6 本＋写しと航跡の 3 本。core から systems を import しない作法と 300 行のため分けた）: `core/intercept-sim`（295 行。1 夜の流れ＝mission-world の stepFn と MissionScene の 1 フレームと同じ順。`fillInterceptEye`＝目は世界の規則 `setup.visRange2` の内の一番近い浮いている艦と、見越し点マーカーと同じ `core/torpedo-solver` の方位）・`core/intercept-sim-world`（221 行。entities/destroyer の論理・systems/destroyer-transit・systems/world-radar の step の写しと B6 の 1 本 `columnShot`）・`core/intercept-sim-torpedoes`（140 行。凍結の systems/torpedo-pool と systems/torpedo-launcher の写し）・`core/intercept-sim-tracks`（170 行。輝点から人のように航跡を作る）・`core/intercept-sim-policy`（232 行）・`core/intercept-sim-cell`（102 行）・`systems/intercept-sim-setup`（88 行。`buildWorldSetup` の us_04 から。`interceptPlan` は strait-probe も使う）・`systems/intercept-calibration`（90 行。帯と B6）・`scripts/intercept-sim.ts`（81 行。N 400 × 2 組・`HARD=1`・`TABLE=1/2`・`POL`・つまみ `SPEED`・`RANGE`・`SWEEP`・`LANE`・`UNLOAD`・`FUEL`・`PERF=1`）・`scripts/headless/strait-probe.mjs`（134 行）。
++    - 新しいファイル（spec §4.11 の 6 本＋写しと航跡の 3 本。core から systems を import しない作法と 300 行のため分けた）: `core/intercept-sim`（298 行。1 夜の流れ＝mission-world の stepFn と MissionScene の 1 フレームと同じ順。`fillInterceptEye`＝目は世界の規則 `setup.visRange2` の内の一番近い浮いている艦と、見越し点マーカーと同じ `core/torpedo-solver` の方位）・`core/intercept-sim-world`（221 行。entities/destroyer の論理・systems/destroyer-transit・systems/world-radar の step の写しと B6 の 1 本 `columnShot`）・`core/intercept-sim-torpedoes`（140 行。凍結の systems/torpedo-pool と systems/torpedo-launcher の写し）・`core/intercept-sim-tracks`（170 行。輝点から人のように航跡を作る）・`core/intercept-sim-policy`（233 行）・`core/intercept-sim-cell`（113 行）・`systems/intercept-sim-setup`（97 行。`buildWorldSetup` の us_04 から。`interceptPlan` は strait-probe も使う）・`systems/intercept-calibration`（128 行。帯と B6）・`scripts/intercept-sim.ts`（86 行。N 400 × 2 組・`HARD=1`・`TABLE=1/2`・`POL`・つまみ `SPEED`・`RANGE`・`SWEEP`・`LANE`・`UNLOAD`・`FUEL`・`COVER`（S3b）・`NOCOVER=1`（S3c の参考）・`PERF=1`）・`scripts/headless/strait-probe.mjs`（134 行）。行数は S3 の最後の木（S3c と lead の直しの後）。
 +    - 世界と同じ規則（L18）: 艦と列は `core/ship-ai`（updateShipAi・steerShip・startRetire。S0 の setup の AI＝列は 30 kt）・`core/ship-transit`（同じ時計）、魚雷は凍結の torpedo・torpedo-targets・torpedo-solver と core/salvo、砲・探照灯・星弾・被害は core/gunnery・own-light、自艇は boat-motion・crew・fuel・shallows、発見は visibility、終わりは mission-flow、レーダーは core/radar。命中スロー（1.2 秒 × 0.3）は入れた。省いた物（ファイルの頭にも）: 水上機・味方機の誤射・夜明けの空襲（夜明けの 60 秒後に打ち切り＝'cut'）・煙幕・消火・艇の機銃（台本は使わない）。写しは tests/intercept-sim-a が本物とステップごとに突き合わせる。
 +    - 乱数（L19）: 発射管制 seed・砲 seed+1・見張り seed+17 は世界と同じ系列、今夜の揺らぎ（列の入りの秒・道の y）は `buildWorldSetup`（seed+16）のまま。人の揺らぎ（反応 0.5〜2 秒・狙い ±2°）は模擬だけの系列 (seed × 7907 ＋ 40483)（seed 1〜1400 でゲームの seed〜seed+43 と重ならない）。同じ環境なら同じ標準出力（md5）。
-+    - 遊び方（L17: レーダーの輝点＝core/radar の状態そのままと、目で見える艦だけを読む。艦の AI・発見・段階・本当の位置は読まない＝tests の import と名前の走査）: `radar_ambush` 往路の列の航跡（出撃の後に PPI の縁の西半分に現れて東へ速く動く輝点）の道の 650 m 脇へ静音で回って止まり、目で見えた列の艦（航跡と合う艦。護衛は撃たない）へ 4 本の扇（12°）、道から全速で離れ（spec の文のまま）、礁の帯を横切らないよう輪の北 200 m の門から輪へ帰る（接触が 1,800 m の内・目で見える艦・輪の近くでは静音、ほかは巡航）／`radar_twice` 往路 2 本・復路 2 本／`eye_only` レーダーを読まず出発点（海峡の中ほど）で止まり、見えた艦へ 4 本／`idle_lane` 復路の最初の接触の道の上で止まる（撃たない）／`radar_dodge` 出発点で待ち、近づく接触から離れる（撃たない）／`charge` 往路の列の先頭へ全速で突っ込み、見えたら 4 本／`home_after_inbound` 出発点からレーダーの航跡の見越しで 1,650 m の内に 4 本撃って帰る。帯の無い参考の行 `radar_ambush_quiet`（離れ方だけ静音）と `stay`（tests）。脇の 650 m は Briefing の「見つかる 静音 600 m」の外。
++    - 遊び方（L17: レーダーの輝点＝core/radar の状態そのままと、目で見える艦だけを読む。艦の AI・発見・段階・本当の位置は読まない＝tests の import と名前の走査）: `radar_ambush` 往路の列の航跡（出撃の後に PPI の縁の西半分に現れて東へ速く動く輝点）の道の 650 m 脇へ静音で回って止まり、目で見えた列の艦（航跡と合う艦。護衛は撃たない）へ 4 本の扇（12°）、道から全速で離れ（spec の文のまま。S3b の L37 から静音で離れる＝spec の形は参考の行 `radar_ambush_full`）、礁の帯を横切らないよう輪の北 200 m の門から輪へ帰る（接触が 1,800 m の内・目で見える艦・輪の近くでは静音、ほかは巡航）／`radar_twice` 往路 2 本・復路 2 本／`eye_only` レーダーを読まず出発点（海峡の中ほど）で止まり、見えた艦へ 4 本／`idle_lane` 復路の最初の接触の道の上で止まる（撃たない）／`radar_dodge` 出発点で待ち、近づく接触から離れる（撃たない）／`charge` 往路の列の先頭へ全速で突っ込み、見えたら 4 本／`home_after_inbound` 出発点からレーダーの航跡の見越しで 1,650 m の内に 4 本撃って帰る。帯の無い参考の行 `radar_ambush_quiet`（離れ方だけ静音。S3b の L37 で radar_ambush そのものになり、無くなった）と `stay`（tests）。脇の 650 m は Briefing の「見つかる 静音 600 m」の外。
 +    - 最初の表（S0／S2 の data。`TABLE=2`＝seed 1〜400・1001〜1400 の 800 夜。ノーマル md5 d9db008b…・2 分 11 秒、ハード md5 aab25d01…・2 分 33 秒）: 1 隻以上撃沈／自艇の沈没／帰投 = radar_ambush 31.0／56.4／43.6%（見つかった 88.3%・帰投の夜の燃料の中央値 49.6%）・radar_twice 32.6／70.1／29.9・eye_only 53.3／38.1／61.9・idle_lane 0／100／0（衝突 0.4%）・radar_dodge 0／33.4／66.6（衝突 0）・charge 49.0／48.1／51.9・home_after_inbound 7.5／2.1／97.9。B6 は 38.1%（206/540）。帯: B1a ✗・B1b ✗・B1c ✗・B2 ✗（53.3 は 31.0 − 15 の上）・B3 ✗・B4 ✓・B5 ✓・B6 ✓・F ✗＝✗ 6 件。ハード: radar_ambush 31.0／62.8／37.3 で H1 ✗・H2 ✗。
 +    - つまみ（§4.11 の順に 1 つずつ。どれも動かしていない。表は N 400 × 2 組・帯の要る行だけ）: ① `transit.speed_kt` — B6 が ✓ なので動かさない（試しの 25 kt は揚陸 20 秒でもハードの 4 隻目が V-T3 に掛かる＝248.6 秒）。② `radar.models.so_early` — `ship_range_m` 3,000: radar_ambush 27.9／52.8／47.3%・6,000: 31.0／56.4／43.6%（4,000 と同じ＝列は出発点から 3,620 m の西の入りの点（spec §4.3）に現れるので 4,000 m で初めから映る）、`sweep_s` 2: 32.0／56.6／43.4%・5: 4.4%（台本の航跡の門 350 m が掃引の間の列の 385 m より狭い＝台本の限り）。B1a は 35% に届かず、B1b・B1c・B2 も動かない（eye_only はレーダーを読まない＝53.3% のまま）。③ `transit.outbound.lane_y_m` 2,000・2,450・2,600 と `unload_s` 25: idle_lane の衝突 0.0〜0.8%・radar_ambush は 31.0／56.4／43.6% のまま（`unload_s` 60 はハードで V-T3＝257.5 秒）。④ `fuel_allotment_gal` 34: F 28.9% ✓（p10 20・p90 36。radar_twice の漂流 3.6%）・38: 36.4% ✗。④ は F を帯に入れるが、us_04 の setup の snapshot（tests/__snapshots__/setup-us04＝S3 の許しの外）の書き換えが要り、F は radar_ambush の離れ方（下の決め）で変わるので動かさなかった。
 +    - 帯が届かない訳（模擬の夜を調べた。seed 1〜100・1001〜1100 の 200 夜）: (1) 護衛（us_02 の AI。(1800, 1200) から見回る）が出発点のそばを通る（目に入る秒の中央 24 秒）。eye_only の撃沈 101 夜はみな護衛で列は 0、eye_only の沈没 76 夜・radar_dodge の沈没 73 夜（撃つ前）・radar_ambush_quiet の沈没 43 夜はみな護衛が先に見つけた＝B2 はレーダーの差でなく護衛で決まる。(2) spec の「全速で離れ」は見つかる 1,920 m で列の 3 隻に照らされて撃たれる（radar_ambush の沈没 108 夜のうち列が先に見つけた 60 夜。`radar_ambush_quiet` は沈没 19.5%・帰投 80.5%・撃沈 31.0%・帰投の夜の燃料の中央値 59%）。(3) 道の上で止まった艇は列の 3 隻に 480 m で見つかり、当たる前に砲で沈む（idle_lane の沈没 100%・衝突 0.4%＝B3 の危険は衝突でなく砲）。どれも §4.11 のつまみ（レーダー・道・揚陸・燃料）の外で、敵の砲・見張りは触れない（spec）。lead の決め待ち（遊び方の文・護衛の見回り・帯のどれを動かすか）。
@@ -42,7 +42,7 @@ index 34e5ddf..009933b 100644
    - us_04 はまだ Title に出ない（HUD・Briefing・Result は S4、出撃可は S5）。S2 から `?debug&mission=us_04` で列の通過・護衛・レーダーの輝点・両岸が動く（HUD の文はまだ今の駆逐艦の任務のまま）。
    - 史実は WebSearch の抜粋のみ（本文未読）。列の間隔・速さ・揚陸の秒・護衛の見回り・ハードの 5 隻目・礁・地図の向き（東西の模式図）・レーダーの射程の縮め方は作り（S3 の模擬と実機で直す）。
 diff --git a/data/missions_seed.json b/data/missions_seed.json
-index 267ebc8..de4f9eb 100644
+index 267ebc8..0b094ff 100644
 --- a/data/missions_seed.json
 +++ b/data/missions_seed.json
 @@ -558,8 +558,8 @@
@@ -52,7 +52,7 @@ index 267ebc8..de4f9eb 100644
 -        "fuel_allotment_gal": 48,
 -        "fuel_allotment_gal_source": "design (v0.8.0 S0・spec-v0800 §4.6。戦闘に使える割当（us_02 と同じ考え）。260 秒の夜に、レーダーで列の前へ回り、撃って、復路をよけて南西の輪へ帰る。帰投の時の残りが 15〜35% になるよう S3 の模擬で合わせる（初めの値）)",
 +        "fuel_allotment_gal": 33,
-+        "fuel_allotment_gal_source": "design (v0.8.0 S0・spec-v0800 §4.6。戦闘に使える割当（us_02 と同じ考え）。260 秒の夜に、レーダーで列の前へ回り、撃って、復路をよけて南西の輪へ帰る。初めは 48 gal。v0.8.0 S3c（lead の L46）: 48 → 33 gal。帰投の時の残りは、一番燃料を使うレーダーの行 radar_twice（往路と復路で 2 本ずつ）の帰投の夜の中央値で 15〜35%（狙い 25%）に合わせる（radar_ambush は S3b で静音で離れるようになり一番燃料を使わない行＝48 gal で中央値 18.2 gal 使う。radar_ambush で 25% にすると radar_twice が多くの夜に尽きる）。迎撃の模擬（N 400 × 2 組）の 48 gal: radar_twice の残りの中央値 48.6%＝24.7 gal 使う → 24.7 ÷ 0.75 ＝ 32.9 → 33 gal。33 gal: radar_twice の残りの中央値 25.3%（p10 13%・p90 30%）・radar_ambush 44.5%。漂流は radar_twice 0.5%・radar_ambush 0.3%（ハードは 0.1%・0.1%）で、帰投 20% 以上の行はどれも 5% 以下。ノーマル・ハードの帯はすべて ✓)",
++        "fuel_allotment_gal_source": "design (v0.8.0 S0・spec-v0800 §4.6。戦闘に使える割当（us_02 と同じ考え）。260 秒の夜に、レーダーで列の前へ回り、撃って、復路をよけて南西の輪へ帰る。初めは 48 gal。v0.8.0 S3c（lead の L46）: 48 → 33 gal。帰投の時の残りは、一番燃料を使うレーダーの行 radar_twice（往路と復路で 2 本ずつ）の帰投の夜の中央値で 15〜35%（狙い 25%）に合わせる（radar_ambush は S3b で静音で離れるようになり一番燃料を使わない行＝48 gal で中央値 18.2 gal 使う。radar_ambush で 25% にすると radar_twice が多くの夜に尽きる）。迎撃の模擬（N 400 × 2 組）の 48 gal: radar_twice の残りの中央値 48.6%＝24.7 gal 使う → 24.7 ÷ 0.75 ＝ 32.9 → 33 gal。33 gal: radar_twice の残りの中央値 25.3%（p10 13%・p90 30%）・radar_ambush 44.5%。漂流は radar_twice 0.5%・radar_ambush 0.3%（ハードは 0.1%・0.1%）で、自艇が沈まない夜が 20% 以上の行はどれも 5% 以下。ノーマル・ハードの帯はすべて ✓)",
          "bounds_m": {
            "width": 6000,
            "height": 4000,
@@ -112,389 +112,6 @@ index 399dcfd..658a661 100755
    if [ "${got:0:${#want}}" = "$want" ] && [ -z "$band" ]; then echo "OK   $name $got"; else echo "DIFF $name $got（期待 $want$band）"; fi
  }
  export -f run
-diff --git a/tests/__snapshots__/setup-us04.test.ts.snap b/tests/__snapshots__/setup-us04.test.ts.snap
-index c883b82..ffa345c 100644
---- a/tests/__snapshots__/setup-us04.test.ts.snap
-+++ b/tests/__snapshots__/setup-us04.test.ts.snap
-@@ -21,13 +21,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": false,
-@@ -51,7 +51,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -167,8 +167,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -247,7 +247,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    {
-     "x": 1825.1071251928806,
-     "y": 1099.64169440791,
--    "headingDeg": 103.51140711456537
-+    "headingDeg": 253.51140711456537
-    }
-   ],
-   "spec": {
-@@ -569,13 +569,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": false,
-@@ -599,7 +599,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -715,8 +715,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -764,7 +764,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    {
-     "x": 2101.695292070508,
-     "y": 1330.4044425487518,
--    "headingDeg": 120.95346527174115
-+    "headingDeg": 270.95346527174115
-    }
-   ],
-   "spec": {
-@@ -1089,13 +1089,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": false,
-@@ -1119,7 +1119,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -1235,8 +1235,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -1315,7 +1315,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    {
-     "x": 1825.1071251928806,
-     "y": 1099.64169440791,
--    "headingDeg": 103.51140711456537
-+    "headingDeg": 253.51140711456537
-    }
-   ],
-   "spec": {
-@@ -1637,13 +1637,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": false,
-@@ -1667,7 +1667,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -1783,8 +1783,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -1832,7 +1832,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
-    {
-     "x": 2101.695292070508,
-     "y": 1330.4044425487518,
--    "headingDeg": 120.95346527174115
-+    "headingDeg": 270.95346527174115
-    }
-   ],
-   "spec": {
-@@ -2157,13 +2157,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": true,
-@@ -2187,7 +2187,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -2303,8 +2303,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -2383,7 +2383,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    {
-     "x": 1825.1071251928806,
-     "y": 1099.64169440791,
--    "headingDeg": 103.51140711456537
-+    "headingDeg": 253.51140711456537
-    }
-   ],
-   "spec": {
-@@ -2705,13 +2705,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": true,
-@@ -2735,7 +2735,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -2851,8 +2851,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -2900,7 +2900,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    {
-     "x": 2101.695292070508,
-     "y": 1330.4044425487518,
--    "headingDeg": 120.95346527174115
-+    "headingDeg": 270.95346527174115
-    }
-   ],
-   "spec": {
-@@ -3225,13 +3225,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": true,
-@@ -3255,7 +3255,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -3371,8 +3371,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -3451,7 +3451,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    {
-     "x": 1825.1071251928806,
-     "y": 1099.64169440791,
--    "headingDeg": 103.51140711456537
-+    "headingDeg": 253.51140711456537
-    }
-   ],
-   "spec": {
-@@ -3773,13 +3773,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "enemyStart": {
-    "x": 1800,
-    "y": 1200,
--   "headingDeg": 120
-+   "headingDeg": 270
-   },
-   "enemyStarts": [
-    {
-     "x": 1800,
-     "y": 1200,
--    "headingDeg": 120
-+    "headingDeg": 270
-    }
-   ],
-   "hard": true,
-@@ -3803,7 +3803,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    "torpedoSettleMaxS": 10,
-    "torpedoEndSettleS": 5
-   },
--  "fuelAllotmentGal": 48,
-+  "fuelAllotmentGal": 33,
-   "shallows": [
-    {
-     "x": 500,
-@@ -3919,8 +3919,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-   "galPerMCruise": 0.004695682226279292,
-   "galPerMFull": 0.006923121231052803
-  },
-- "fuelAllotmentGal": 48,
-- "fuelStartGal": 48,
-+ "fuelAllotmentGal": 33,
-+ "fuelStartGal": 33,
-  "raid": null,
-  "start": {
-   "fuelFactor": 1,
-@@ -3968,7 +3968,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
-    {
-     "x": 2101.695292070508,
-     "y": 1330.4044425487518,
--    "headingDeg": 120.95346527174115
-+    "headingDeg": 270.95346527174115
-    }
-   ],
-   "spec": {
-diff --git a/tests/radar.test.ts b/tests/radar.test.ts
-index b49b8a7..f807af9 100644
---- a/tests/radar.test.ts
-+++ b/tests/radar.test.ts
-@@ -189,10 +189,10 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確
-     expect(s.match(/Math\.sqrt\(/g)!.length).toBe(1);
-     expect(s).not.toMatch(/Math\.(hypot|atan2)\b/);
-   });
--  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）', () => {
-+  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も', () => {
-     const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
--    expect(importers('radar')).toEqual(['src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
--    expect(importers('ship-transit')).toEqual(['src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
--    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/world-radar.ts']);
-+    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
-+    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
-+    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/world-radar.ts']);
-   });
- });
 diff --git a/scripts/headless/strait-probe.mjs b/scripts/headless/strait-probe.mjs
 new file mode 100644
 index 0000000..94b78c8
@@ -1940,14 +1557,14 @@ index 0000000..c2ef1d4
 +}
 diff --git a/src/systems/intercept-calibration.ts b/src/systems/intercept-calibration.ts
 new file mode 100644
-index 0000000..4d1ce9b
+index 0000000..23f020c
 --- /dev/null
 +++ b/src/systems/intercept-calibration.ts
 @@ -0,0 +1,128 @@
 +// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」）の帯（spec-v0800 §4.11 の B1〜B6・ハード、§4.6 の燃料。lead の L20・L21）。帯の数は spec の決めなので動かさない
 +// （S3b の lead の L39: B3 は「idle_lane の自艇の沈没（衝突・体当たり・砲火）≥ 20%」＝危険がある、の読み。KPI に合わせた見張りは止まった艇を 480 m で見つけ、当たる前に砲が届く。
 +// S3c の L45: B2 は B2a「列はレーダーで」（eye_only の列の艦の撃沈 ≤ radar_ambush の列の撃沈 − 15 点。護衛は 4 隻の 1 隻なので撃って達成してよい）と B2b「目だけは危ない」
-+// （eye_only の自艇の沈没 ≥ radar_ambush ＋ 15 点）。L46: F は radar_twice の帰投の夜の燃料の中央値（一番燃料を使うレーダーの行）、D は 7 行のうち帰投 20% 以上の行の漂流 ≤ 5%）。
++// （eye_only の自艇の沈没 ≥ radar_ambush ＋ 15 点）。L46: F は radar_twice の帰投の夜の燃料の中央値（一番燃料を使うレーダーの行）、D は 7 行のうち自艇が沈まない夜が 20% 以上の行の漂流 ≤ 5%。lead の S3 の門の前の直し: 帰投で選ぶと、尽きて帰れない夜の多い行ほど外れて検査が空になる）。
 +// 合わせるのは data のつまみだけ（spec §4.11 の順: ① B6 → transit.speed_kt ② B1・B2 → radar.models.so_early の ship_range_m・sweep_s ③ B3・B4 → transit.outbound.lane_y_m・
 +// unload_s ④ 燃料 → fuel_allotment_gal。敵の回避・見張り・砲・命中率の値には触れない）。scripts/intercept-sim の TABLE=2（N 400 × 2 組）と scripts/headless/g2.sh の US04=1 が
 +// この帯で「帯: すべて ✓」を出し、tests/intercept-sim-b が軽い組で同じ帯を見る。B6 は CLAUDE.md §2 の KPI（正しく狙った 1 本 35〜45%）を列の艦に測る（core/intercept-sim-world の
@@ -1963,10 +1580,10 @@ index 0000000..4d1ce9b
 +
 +/**
 + * 帯（spec §4.11・§4.6・L39・L45・L46）: B1 撃沈・沈没・帰投、B2a 列の撃沈の差・B2b 沈没の差、B3 道の上の沈没、B4 衝突、B5 突っ込む沈没、B6 列への 1 本、ハードの B1、
-+ * 燃料（radar_twice の帰投の夜の中央値）、漂流（帰投 dryHomeMin % 以上の行の漂流 ≤ dryMax %。ノーマル・ハード）
++ * 燃料（radar_twice の帰投の夜の中央値）、漂流（自艇が沈まない夜が dryLiveMin % 以上の行の漂流 ≤ dryMax %。ノーマル・ハード）
 + */
 +export const INTERCEPT_BANDS = {
-+  b1Sink: [35, 60] as const, b1OwnMax: 15, b1HomeMin: 80, b2Gap: 15, b3OwnMin: 20, b4RamMax: 5, b5OwnMin: 40, b6: [35, 45] as const, dryHomeMin: 20, dryMax: 5,
++  b1Sink: [35, 60] as const, b1OwnMax: 15, b1HomeMin: 80, b2Gap: 15, b3OwnMin: 20, b4RamMax: 5, b5OwnMin: 40, b6: [35, 45] as const, dryLiveMin: 20, dryMax: 5,
 +  hardSink: [35, 65] as const, hardOwnMax: 25, fuel: [15, 35] as const,
 +} as const;
 +/** B6 の距離（m。700〜1,100 m の 100 m おき） */
@@ -2030,17 +1647,17 @@ index 0000000..4d1ce9b
 +  const out: InterceptBandCheck[] = [];
 +  const add = (id: string, text: string, ok: boolean): void => void out.push({ id, text, ok });
 +  const amb = cells.get('radar_ambush');
-+  // 漂流（L46）: 7 行のうち帰投が dryHomeMin 以上の行（表に無い行は数えない）。一番多い行を出す
++  // 漂流（L46）: 7 行のうち自艇が沈まない夜（100 − 沈没）が dryLiveMin 以上の行（表に無い行は数えない。帰投で選ぶと漂流の夜が帰投を減らして行が外れる）。一番多い行を出す
 +  const dry = (): void => {
 +    let worst: InterceptPolicy | null = null;
 +    let rows = 0;
 +    for (const p of INTERCEPT_POLICIES) {
 +      const c = cells.get(p);
-+      if (!c || !(c.homePct >= B.dryHomeMin)) continue;
++      if (!c || !(100 - c.ownSunkPct >= B.dryLiveMin)) continue;
 +      rows++;
 +      if (worst === null || c.adriftPct > cells.get(worst)!.adriftPct) worst = p;
 +    }
-+    if (worst) add('D', `帰投 ${B.dryHomeMin}% 以上の ${rows} 行の漂流 ≤ ${B.dryMax}%（一番多い ${worst} ${f1(cells.get(worst)!.adriftPct)}%）`, cells.get(worst)!.adriftPct <= B.dryMax);
++    if (worst) add('D', `沈まない夜が ${B.dryLiveMin}% 以上の ${rows} 行の漂流 ≤ ${B.dryMax}%（一番多い ${worst} ${f1(cells.get(worst)!.adriftPct)}%）`, cells.get(worst)!.adriftPct <= B.dryMax);
 +  };
 +  if (hard) {
 +    if (amb) {
@@ -2175,12 +1792,376 @@ index 0000000..6ffdf6a
 +    torpedoScreenMps: w.torpedoParams.speedMps * w.timeScale, fullScreenMps: b.speedMaxMps * w.timeScale, reefs: m.shallows,
 +  };
 +}
+diff --git a/tests/__snapshots__/setup-us04.test.ts.snap b/tests/__snapshots__/setup-us04.test.ts.snap
+index c883b82..ffa345c 100644
+--- a/tests/__snapshots__/setup-us04.test.ts.snap
++++ b/tests/__snapshots__/setup-us04.test.ts.snap
+@@ -21,13 +21,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -51,7 +51,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -167,8 +167,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -247,7 +247,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -569,13 +569,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -599,7 +599,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -715,8 +715,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -764,7 +764,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+@@ -1089,13 +1089,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -1119,7 +1119,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -1235,8 +1235,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -1315,7 +1315,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -1637,13 +1637,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -1667,7 +1667,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -1783,8 +1783,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -1832,7 +1832,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+@@ -2157,13 +2157,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -2187,7 +2187,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -2303,8 +2303,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -2383,7 +2383,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -2705,13 +2705,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -2735,7 +2735,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -2851,8 +2851,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -2900,7 +2900,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+@@ -3225,13 +3225,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -3255,7 +3255,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -3371,8 +3371,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -3451,7 +3451,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -3773,13 +3773,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -3803,7 +3803,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "torpedoSettleMaxS": 10,
+    "torpedoEndSettleS": 5
+   },
+-  "fuelAllotmentGal": 48,
++  "fuelAllotmentGal": 33,
+   "shallows": [
+    {
+     "x": 500,
+@@ -3919,8 +3919,8 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "galPerMCruise": 0.004695682226279292,
+   "galPerMFull": 0.006923121231052803
+  },
+- "fuelAllotmentGal": 48,
+- "fuelStartGal": 48,
++ "fuelAllotmentGal": 33,
++ "fuelStartGal": 33,
+  "raid": null,
+  "start": {
+   "fuelFactor": 1,
+@@ -3968,7 +3968,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
 diff --git a/tests/intercept-sim-a.test.ts b/tests/intercept-sim-a.test.ts
 new file mode 100644
-index 0000000..223e1dc
+index 0000000..24045e6
 --- /dev/null
 +++ b/tests/intercept-sim-a.test.ts
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,184 @@
 +// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L17〜L19・L23）: 決定性（同じ seed で同じ 1 夜・同じ表）、漏らさない（L17: 台本の 2 本のファイルの
 +// import と名前の走査・台本が読む物の鍵・目は世界と同じ規則）、乱数（模擬だけの系列はゲームの seed〜seed+43 に触らない）、世界の写しの突き合わせ（艦・列の通過・レーダーは
 +// tests/transit-world-kit の本物の DestroyerTransit・WorldRadar と、魚雷のプールと発射管制は本物の TorpedoPool・TorpedoLauncher とステップごとに同じ）、見た目の定数、ファイルの大きさ。
@@ -2189,7 +2170,8 @@ index 0000000..223e1dc
 +import { describe, expect, it } from 'vitest';
 +import { gameData } from '../src/config/game-data';
 +import { fillInterceptEye, runInterceptTrial, type InterceptSimSetup } from '../src/core/intercept-sim';
-+import { interceptCellOf } from '../src/core/intercept-sim-cell';
++import { interceptCellOf, type InterceptCell } from '../src/core/intercept-sim-cell';
++import { interceptBandChecks } from '../src/systems/intercept-calibration';
 +import { INTERCEPT_HUMAN_SEED_ADD, INTERCEPT_HUMAN_SEED_MUL, INTERCEPT_POLICIES, type InterceptView } from '../src/core/intercept-sim-policy';
 +import { SimLauncher, SimTorpedoPool } from '../src/core/intercept-sim-torpedoes';
 +import { SeededRng } from '../src/core/rng';
@@ -2341,6 +2323,18 @@ index 0000000..223e1dc
 +  });
 +});
 +
++describe('帯の読み（lead の S3 の門の前の直し）', () => {
++  it('漂流 D は自艇が沈まない夜が 20% 以上の行を見る（燃料が尽きて帰れない行は外れない・ほぼ毎夜沈む行は外れる）', () => {
++    const base = interceptCellOf([runInterceptTrial(interceptNightSetup(gameData, 1, true), 'radar_dodge', 1)], 1);
++    const at = (o: Partial<InterceptCell>): InterceptCell => ({ ...base, ...o });
++    const cells = new Map([['radar_ambush', at({ homePct: 97, ownSunkPct: 2, adriftPct: 0 })], ['radar_twice', at({ homePct: 15, ownSunkPct: 5, adriftPct: 80 })], ['idle_lane', at({ homePct: 0, ownSunkPct: 99, adriftPct: 1 })]] as const);
++    const d = interceptBandChecks(cells, true, null).find((x) => x.id === 'D')!;
++    expect(d.ok).toBe(false);
++    expect(d.text).toContain('2 行');
++    expect(d.text).toContain('radar_twice 80.0%');
++  });
++});
++
 +describe('ファイル', () => {
 +  it('新しい模擬のファイルはどれも 300 行の内（道具は 150 行の内）・模型の識別子（claude-<名>-<版>）を書かない', () => {
 +    const files = ['core/intercept-sim.ts', 'core/intercept-sim-world.ts', 'core/intercept-sim-torpedoes.ts', 'core/intercept-sim-tracks.ts', 'core/intercept-sim-policy.ts', 'core/intercept-sim-cell.ts', 'systems/intercept-sim-setup.ts', 'systems/intercept-calibration.ts'].map((f) => `src/${f}`);
@@ -2354,12 +2348,12 @@ index 0000000..223e1dc
 +});
 diff --git a/tests/intercept-sim-b.test.ts b/tests/intercept-sim-b.test.ts
 new file mode 100644
-index 0000000..c4bbf82
+index 0000000..5f87560
 --- /dev/null
 +++ b/tests/intercept-sim-b.test.ts
 @@ -0,0 +1,20 @@
 +// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L23・L44・L48）の帯を軽い組で見る（ノーマル。ハードは tests/intercept-sim-c・-d）:
-+// N 50 × 2 組（seed 151〜200・1151〜1200）の 7 つの遊び方（S3c の F は radar_twice、漂流 D は 7 行の帰投 20% 以上の行を見るので全部）で、systems/intercept-calibration の帯
++// N 50 × 2 組（seed 151〜200・1151〜1200）の 7 つの遊び方（S3c の F は radar_twice、漂流 D は 7 行の沈まない夜が 20% 以上の行を見るので全部）で、systems/intercept-calibration の帯
 +// （B1・B2a・B2b・B3〜B6・燃料 F・漂流 D）が ✗ 0。
 +// 軽い組の選び方: 表（scripts/intercept-sim の TABLE=2＝N 400 × 2 組）の 800 夜を 50 × 2 の 8 つの組（seed 1+50k〜50+50k・1001+50k〜1050+50k、k = 0〜7）に割り、
 +// 帯ごとの ✓/✗ を 800 夜の表と比べた（CHANGELOG v0.8.0 S3）。S3b・S3c の data では k = 0 の B1a が 33.0%（800 夜は 35.8%）で裏返るので、全部の帯で 800 夜と同じ ✓/✗ の組のうち
@@ -2380,13 +2374,13 @@ index 0000000..c4bbf82
 +});
 diff --git a/tests/intercept-sim-c.test.ts b/tests/intercept-sim-c.test.ts
 new file mode 100644
-index 0000000..871ad35
+index 0000000..ec1f650
 --- /dev/null
 +++ b/tests/intercept-sim-c.test.ts
 @@ -0,0 +1,14 @@
 +// 迎撃の模擬（v0.8.0 S3c。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L47・L48）の帯を軽い組で見る（ハード。ノーマルは tests/intercept-sim-b。1 本の
 +// vitest のファイルを 30 秒の内に保つため、ハードの 7 つの遊び方は -c（radar_ambush・radar_twice・eye_only・idle_lane）と -d（radar_dodge・charge・home_after_inbound）に分けた）:
-+// 同じ軽い組（seed 151〜200・1151〜1200）で H1・H2（radar_ambush）と漂流 D（この 4 行のうち帰投 20% 以上の行）が ✗ 0。
++// 同じ軽い組（seed 151〜200・1151〜1200）で H1・H2（radar_ambush）と漂流 D（この 4 行のうち沈まない夜が 20% 以上の行）が ✗ 0。
 +import { describe, expect, it } from 'vitest';
 +import { interceptBandChecks } from '../src/systems/intercept-calibration';
 +import { INTERCEPT_LIGHT_HARD_A, interceptFailed, interceptLightCells } from './intercept-sim-kit';
@@ -2400,12 +2394,12 @@ index 0000000..871ad35
 +});
 diff --git a/tests/intercept-sim-d.test.ts b/tests/intercept-sim-d.test.ts
 new file mode 100644
-index 0000000..20b8396
+index 0000000..3511678
 --- /dev/null
 +++ b/tests/intercept-sim-d.test.ts
 @@ -0,0 +1,13 @@
 +// 迎撃の模擬（v0.8.0 S3c。us_04。spec-v0800 §4.11、lead の L47・L48）の帯を軽い組で見る（ハードの後半。前半は tests/intercept-sim-c）: 同じ軽い組（seed 151〜200・
-+// 1151〜1200）の radar_dodge・charge・home_after_inbound のうち帰投 20% 以上の行の漂流 D が ✗ 0。
++// 1151〜1200）の radar_dodge・charge・home_after_inbound のうち沈まない夜が 20% 以上の行の漂流 D が ✗ 0。
 +import { describe, expect, it } from 'vitest';
 +import { interceptBandChecks } from '../src/systems/intercept-calibration';
 +import { INTERCEPT_LIGHT_HARD_B, interceptFailed, interceptLightCells } from './intercept-sim-kit';
@@ -2449,3 +2443,22 @@ index 0000000..b891381
 +
 +/** ✗ の帯の文 */
 +export const interceptFailed = (checks: readonly { id: string; text: string; ok: boolean }[]): string[] => checks.filter((x) => !x.ok).map((x) => `${x.id} ${x.text}`);
+diff --git a/tests/radar.test.ts b/tests/radar.test.ts
+index b49b8a7..f807af9 100644
+--- a/tests/radar.test.ts
++++ b/tests/radar.test.ts
+@@ -189,10 +189,10 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確
+     expect(s.match(/Math\.sqrt\(/g)!.length).toBe(1);
+     expect(s).not.toMatch(/Math\.(hypot|atan2)\b/);
+   });
+-  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）', () => {
++  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も', () => {
+     const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
+-    expect(importers('radar')).toEqual(['src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
+-    expect(importers('ship-transit')).toEqual(['src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
+-    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/world-radar.ts']);
++    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
++    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
++    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/world-radar.ts']);
+   });
+ });

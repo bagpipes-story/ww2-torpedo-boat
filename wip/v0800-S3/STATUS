@@ -1,7 +1,5 @@
-v0.8.0 S3c (lead decisions L45-L49) — implementer tree (uncommitted in the repo). Base f9ba94f. Apply: git apply s3.patch
-L45: B2 -> B2a (eye_only column sinks <= radar_ambush column sinks - 15) + B2b (eye_only own sinking >= radar_ambush + 15), reference lines; NOCOVER=1 reference table (sim only).
-L46: F reads radar_twice; dry rule D; fuel 48 -> 33 gal (one run, no correction); setup-us04 snapshot rewritten (fuel lines).
-Final tables: normal 37dc9ae40e7f0f5441a793ec557a2c41, hard a918d9d9193c1039e939dde33ed6f675 — 帯: すべて ✓ both.
-Light set k=3 unchanged; tests split: intercept-sim-b (normal), -c/-d (hard), kit. npm test green (317 files, 3,761 tests).
-strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). g2 done.
-g2 (G6 ALLY EVAC US04): OK 39 DIFF 0 (us4/us4h 帯: すべて ✓), 28 min.
+v0.8.0 S3 — lead tree after the S3c hand-back (uncommitted in the repo). Base f9ba94f. Apply: git apply s3.patch
+S3c (agent, 80a3b25): L45 B2a/B2b, NOCOVER ref, L46 F on radar_twice + dry rule D, fuel 48 -> 33 gal; bands all pass.
+Lead fix before the gates: D picks rows by "not sunk >= 20%" (was "home >= 20%": a row that runs dry would drop out and pass D vacuously).
+  calibration dryHomeMin -> dryLiveMin, D text, tests a (+1 D test) / b / c / d comments, data fuel _source wording, CHANGELOG line counts and policy notes.
+Next: re-run TABLE=2 normal/hard for new md5s -> g2.sh + CHANGELOG; run-gates.sh S3 (g2 with US04=1); commit "v0.8.0 S3"; push; remove this folder.
