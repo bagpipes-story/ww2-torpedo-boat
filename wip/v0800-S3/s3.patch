@@ -1,12 +1,12 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 34e5ddf..4035c81 100644
+index 34e5ddf..94cec48 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -54,6 +54,22 @@
+@@ -54,6 +54,31 @@
      - 性能（参考。門ではない。agent の `v0800/tools/s2/perf.mjs`＝spec §5.2 の測り方: 艇は出発点で止まり 1,300 m の内の浮いている艦から全速で離れる・HP は測る間だけ固定・夜明けの 20 秒前までの 60 秒の窓・dpr 2・W 1560・crossOriginIsolated の 5 μs の時計・2 回の良い方）: updateFrame の p50／p95／p99 は us_04（t 140〜200＝復路の列が通る）0.180／0.290／0.515 ms・ハード 0.185／0.295／0.500 ms、us_02（t 70〜130）0.165／0.255／0.460 ms・ハード 0.175／0.265／0.480 ms（us_04 の p95 は us_02 の × 1.14・ハードどうし × 1.11）。画面の物の数の 30 秒ごとの最小は us_04 971・ハード 1,040・us_02 822・ハード 891 でどの窓も一定（漏れなし。us_04 の差は列の艦と輝点 16 と岸の絵）。ヘッドレスの CPU のラスタの描く時間（進める＋描く）の p95 は us_04 145 ms・us_02 73 ms と約 2 倍だが、同じ窓のレーダーあり・なし（`&noradar`）は 156・154 ms で揺れの内＝レーダーの絵ではない（この窓の us_04 は自艇が南の岸の近くにいて岸の帯と陸が画面に入り、30 kt の艦 3 隻の航跡がある）。本当の値は iPhone の左上の FPS（実機 3）。
      - 制約（S2 の時点）: HUD の文（2 行目の接触・列の出来事・衝突の危険・緑の端の印）・Briefing・Result は S4（S2 はテレメトリの材料だけ）。輝点は掃引ごとに置き直すので、30 kt の列では次の掃引までに艦が最大約 230 m 先へ進み、輪が艦首より後ろに残る（D-R7 のとおり。回る線は描かない）。水道の切れ目の南（海域の外）は今の縁の外と同じ無地の暗い海（海の模様と格子は海域の内だけ＝systems/sea-fx の作り。切れ目に模様を伸ばすのは S4・S5 の候補）。列の艦は雷跡を避けて南北の縁の外へ出ても段階は x だけで決まる（東西の縁を越えるまで海域の中の扱い。道は縁から 1,300 m 以上内なので起きにくい）。列が去った後の 3 行目は今の夜明けの文の形「東京急行は西へ去った ・ 狙う艦なし」が出る（S4 で決める）。レーダーは大発・PT を渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ）。ヘッドレスでは任務の終わり（沈没の演出の後の Result）のフレームが壁時計に依って揺れる（今の任務も同じ。上の 1 件）。
      - 門（lead）: 差分を全部読んだ（L10 の `.ships` の読み手の表・L11・R2・§7 の確保と乱数・凍結のファイル・300 行）。直す所なし。実装の門（上の「agent の確かめ」の `run-gates.sh`）の site と、lead が今の木を同じビルド番号で作り直した site は 8 ファイルのうち 7 つがバイト同一（違うのは sw.js のキャッシュの名前に入る作った時刻だけ＝`v0800/tools/dist-same.sh`。JS の束 `assets/index-BW6Yn6Z8.js` 2,343,621 バイト）＝実装の門の g2・再生と HUD の A/B・tex-ab はこの木の束の結果。agent の log で違った 2 件を見た（どちらも us_02 seed 1 の最後のフレームの `.t` が 182.95 と 182.966667＝既知の揺れ。`AUDIO=1` は result の組、`NOAUDIO=1` は nodawn の組で、どちらも同じ状態の JOBS=1 の回し直しで全件同じ）。lead が自分で回した物（`v0800/tools/s2-lead.sh`）: build・typecheck・lint・npm test 3,743 件（凍結の sha256 の tests を含む）が通る。`SET=us04` の再生の A/B（A＝B＝この木・JOBS=1）は `NORADAR=1` の 4 件もレーダーあり同士の 4 件も全 15,600 フレーム同じ（今回は終わりのフレームの揺れも出なかった）、HUD の A/B `SET=us04 NORADAR=1`（260 秒）は 4 件同じ、ページのエラー 0。スナップショットはそのまま。どのファイルも 300 行の内（一番長いのは mission-world 286）。
-+  - S3（模擬と最初の表。ゲームの誰も新しいファイルを import しない＝束は変わらない。data は S0／S2 のまま＝§4.11 のつまみは 1 つも動かしていない。帯は ✗ が残る＝lead の決め待ち）:
++  - S3（模擬と最初の表。ゲームの誰も新しいファイルを import しない＝束は変わらない。S3 では data は S0／S2 のまま＝§4.11 のつまみは 1 つも動かさず、lead の決め（下の S3b）で us_04 の護衛の針路と遊び方の離れ方と B3 の読みを直した。帯は B2・F が ✗＝lead の決め待ち）:
 +    - 目的: us_04 の 1 夜（列の通過・護衛・レーダー・魚雷・砲・被害・燃料）を世界と同じ core で回す迎撃の模擬と、spec §4.11 の 7 つの遊び方の表・帯（B1〜B6・ハード・§4.6 の燃料 F）を作り、最初の表から §4.11 の順でつまみを試す。
 +    - 新しいファイル（spec §4.11 の 6 本＋写しと航跡の 3 本。core から systems を import しない作法と 300 行のため分けた）: `core/intercept-sim`（295 行。1 夜の流れ＝mission-world の stepFn と MissionScene の 1 フレームと同じ順。`fillInterceptEye`＝目は世界の規則 `setup.visRange2` の内の一番近い浮いている艦と、見越し点マーカーと同じ `core/torpedo-solver` の方位）・`core/intercept-sim-world`（221 行。entities/destroyer の論理・systems/destroyer-transit・systems/world-radar の step の写しと B6 の 1 本 `columnShot`）・`core/intercept-sim-torpedoes`（140 行。凍結の systems/torpedo-pool と systems/torpedo-launcher の写し）・`core/intercept-sim-tracks`（170 行。輝点から人のように航跡を作る）・`core/intercept-sim-policy`（232 行）・`core/intercept-sim-cell`（102 行）・`systems/intercept-sim-setup`（88 行。`buildWorldSetup` の us_04 から。`interceptPlan` は strait-probe も使う）・`systems/intercept-calibration`（90 行。帯と B6）・`scripts/intercept-sim.ts`（81 行。N 400 × 2 組・`HARD=1`・`TABLE=1/2`・`POL`・つまみ `SPEED`・`RANGE`・`SWEEP`・`LANE`・`UNLOAD`・`FUEL`・`PERF=1`）・`scripts/headless/strait-probe.mjs`（134 行）。
 +    - 世界と同じ規則（L18）: 艦と列は `core/ship-ai`（updateShipAi・steerShip・startRetire。S0 の setup の AI＝列は 30 kt）・`core/ship-transit`（同じ時計）、魚雷は凍結の torpedo・torpedo-targets・torpedo-solver と core/salvo、砲・探照灯・星弾・被害は core/gunnery・own-light、自艇は boat-motion・crew・fuel・shallows、発見は visibility、終わりは mission-flow、レーダーは core/radar。命中スロー（1.2 秒 × 0.3）は入れた。省いた物（ファイルの頭にも）: 水上機・味方機の誤射・夜明けの空襲（夜明けの 60 秒後に打ち切り＝'cut'）・煙幕・消火・艇の機銃（台本は使わない）。写しは tests/intercept-sim-a が本物とステップごとに突き合わせる。
@@ -15,18 +15,42 @@ index 34e5ddf..4035c81 100644
 +    - 最初の表（S0／S2 の data。`TABLE=2`＝seed 1〜400・1001〜1400 の 800 夜。ノーマル md5 d9db008b…・2 分 11 秒、ハード md5 aab25d01…・2 分 33 秒）: 1 隻以上撃沈／自艇の沈没／帰投 = radar_ambush 31.0／56.4／43.6%（見つかった 88.3%・帰投の夜の燃料の中央値 49.6%）・radar_twice 32.6／70.1／29.9・eye_only 53.3／38.1／61.9・idle_lane 0／100／0（衝突 0.4%）・radar_dodge 0／33.4／66.6（衝突 0）・charge 49.0／48.1／51.9・home_after_inbound 7.5／2.1／97.9。B6 は 38.1%（206/540）。帯: B1a ✗・B1b ✗・B1c ✗・B2 ✗（53.3 は 31.0 − 15 の上）・B3 ✗・B4 ✓・B5 ✓・B6 ✓・F ✗＝✗ 6 件。ハード: radar_ambush 31.0／62.8／37.3 で H1 ✗・H2 ✗。
 +    - つまみ（§4.11 の順に 1 つずつ。どれも動かしていない。表は N 400 × 2 組・帯の要る行だけ）: ① `transit.speed_kt` — B6 が ✓ なので動かさない（試しの 25 kt は揚陸 20 秒でもハードの 4 隻目が V-T3 に掛かる＝248.6 秒）。② `radar.models.so_early` — `ship_range_m` 3,000: radar_ambush 27.9／52.8／47.3%・6,000: 31.0／56.4／43.6%（4,000 と同じ＝列は出発点から 3,620 m の西の入りの点（spec §4.3）に現れるので 4,000 m で初めから映る）、`sweep_s` 2: 32.0／56.6／43.4%・5: 4.4%（台本の航跡の門 350 m が掃引の間の列の 385 m より狭い＝台本の限り）。B1a は 35% に届かず、B1b・B1c・B2 も動かない（eye_only はレーダーを読まない＝53.3% のまま）。③ `transit.outbound.lane_y_m` 2,000・2,450・2,600 と `unload_s` 25: idle_lane の衝突 0.0〜0.8%・radar_ambush は 31.0／56.4／43.6% のまま（`unload_s` 60 はハードで V-T3＝257.5 秒）。④ `fuel_allotment_gal` 34: F 28.9% ✓（p10 20・p90 36。radar_twice の漂流 3.6%）・38: 36.4% ✗。④ は F を帯に入れるが、us_04 の setup の snapshot（tests/__snapshots__/setup-us04＝S3 の許しの外）の書き換えが要り、F は radar_ambush の離れ方（下の決め）で変わるので動かさなかった。
 +    - 帯が届かない訳（模擬の夜を調べた。seed 1〜100・1001〜1100 の 200 夜）: (1) 護衛（us_02 の AI。(1800, 1200) から見回る）が出発点のそばを通る（目に入る秒の中央 24 秒）。eye_only の撃沈 101 夜はみな護衛で列は 0、eye_only の沈没 76 夜・radar_dodge の沈没 73 夜（撃つ前）・radar_ambush_quiet の沈没 43 夜はみな護衛が先に見つけた＝B2 はレーダーの差でなく護衛で決まる。(2) spec の「全速で離れ」は見つかる 1,920 m で列の 3 隻に照らされて撃たれる（radar_ambush の沈没 108 夜のうち列が先に見つけた 60 夜。`radar_ambush_quiet` は沈没 19.5%・帰投 80.5%・撃沈 31.0%・帰投の夜の燃料の中央値 59%）。(3) 道の上で止まった艇は列の 3 隻に 480 m で見つかり、当たる前に砲で沈む（idle_lane の沈没 100%・衝突 0.4%＝B3 の危険は衝突でなく砲）。どれも §4.11 のつまみ（レーダー・道・揚陸・燃料）の外で、敵の砲・見張りは触れない（spec）。lead の決め待ち（遊び方の文・護衛の見回り・帯のどれを動かすか）。
-+    - 最後の表（S3 の最後の木で回し直した）: 最初の表と同じ（ノーマル md5 d9db008bb03d3cdad27e07c2c48783d1・2 分 15 秒、ハード md5 aab25d017507d7eb6d6373338dde664e・2 分 38 秒。4 CPU・ほかの重い仕事なし）。
-+    - 軽い組（tests/intercept-sim-b。N 50 × 2 組＝seed 1〜50・1001〜1050。帯の行のある 5 つの遊び方とハードの radar_ambush。約 22 秒）: 800 夜を 50 × 2 の 8 組（k = 0〜7）に割って帯の ✓/✗ を比べた。k = 0 は全部の帯で 800 夜と同じ（B1a 32.0・B1b 48.0・B1c 52.0・B2 55.0・B3 0.0・B4 0.0・B5 48.0・F 50.1、H1 32.0・H2 65.0）。8 組の揺れ: B1a 26〜35・B1b 48〜64・B1c 36〜52・B2 46〜58・B5 40〜55・F 48.3〜51.4・H1 26〜35・H2 58〜66（k = 3 の B1a・H1 が 35.0% で ✓＝帯の端の近くは軽い組で裏返る）。帯が ✗ のままなので、この tests は今 2 件とも落ちる（lead の決めの後に通る形）。
-+    - 世界との向きの確かめ（`scripts/headless/strait-probe.mjs`。S2 の site・`?debug&mission=us_04`・seed 1〜8・ノーマル・3 つの台本＝模擬の台本をそのままページに束ねた。1 回 約 25 秒）: 今夜のまま（水上機あり）では radar_ambush の 1 隻以上撃沈 世界 3・模擬 3／自艇の沈没 世界 6・模擬 2／衝突 0・0（食い違い 4 夜＝水上機の照明弾の後に砲・爆弾）、idle_lane は 8 夜とも同じ（砲で沈む・同じ秒・衝突 0）、radar_dodge も 8 夜とも同じ（帰投 6・沈没 2）。`&noplane` では radar_ambush の 3 夜が帰り道の味方機の誤射（台本は［識別］を押さない）。`&noplane` で識別を押す（`IDENT=1`）と 24 夜とも世界と模擬が同じ（終わりの理由・撃沈・撃った本数・終わりの秒）。沈む絵の tween は壁の時計で進むので、ページの `Date.now` を偽の時計に替えた（60 fps の実時間と同じ）。
-+    - g2.sh（L22）: `US04=1` で us_04 の帯の表 2 本（`us4`・`us4h`。md5 は上の最後の表。出力に「帯: すべて ✓」が要る＝今は ✗ なので DIFF）。今の 37 本の件と md5 は変えていない（`US04=1` の時だけ intercept-sim を束ねる）。agent の確かめ: `G6=1 ALLY=1 EVAC=1 US04=1 JOBS=3` で OK 37・DIFF 2（us4・us4h は md5 が同じで「帯に ✗」）・30 分。
-+    - tests（＋2 ファイル）: 新 `intercept-sim-a`（15 件・約 12 秒: 同じ seed で同じ 1 夜〔7 行＋参考 2 行 × ノーマル・ハード〕・同じ軽い組で同じ表・人の系列がゲームの系列と重ならない・台本 2 本の import と名前の走査・台本が読む物の鍵・目は世界の規則・艦と列とレーダーが tests/transit-world-kit の本物とステップごとに同じ〔南東の隅で止まった一晩 4 件・出発点で沈むまで 2 件〕・魚雷のプールと発射管制が本物と同じ・見た目の定数・300／150 行と模型の識別子）・新 `intercept-sim-b`（2 件・約 22 秒: 軽い組の帯 ✗ 0）。agent の確かめ: typecheck（2 つの tsconfig）が通る。同じビルド番号（main@2afe092）で作った site は S2 の門の site と 8 ファイルのうち 7 つがバイト同一（違うのは sw.js の作った時刻だけ＝束は変わらない）。npm test は 315 ファイル・3,760 件のうち 3 件が落ちる＝intercept-sim-b の 2 件（帯が ✗）と `tests/radar` の S2 の固定「core/radar・core/ship-transit・core/strait-geometry を import する所」（S3 の模擬の 7 本が増えた＝L18 で同じ core を使うので避けられない。固定の書き換えは S3 の許しの外のファイル＝lead へ）。
-+    - 既知の制約（S3 の時点）: 帯が届かない（上の訳。lead の決め待ち）。模擬は水上機・誤射・夜明けの空襲を持たない＝今夜のまま（水上機あり）の世界は radar_ambush に厳しい（strait-probe の 6／8 夜の沈没）。台本の航跡の読みは掃引 5 秒で列を追えない（`sweep_s` を 4 秒より長くするなら台本の門を広げる）。B6 は 30 kt の列へ前から 64.6° の内の射点だけ（艦が魚雷より速い）を数える。
++    - S3 の最後の表（S3b の前。S3 の最後の木で回し直した）: 最初の表と同じ（ノーマル md5 d9db008bb03d3cdad27e07c2c48783d1・2 分 15 秒、ハード md5 aab25d017507d7eb6d6373338dde664e・2 分 38 秒。4 CPU・ほかの重い仕事なし）。
++    - 軽い組（S3 の時点。tests/intercept-sim-b。N 50 × 2 組＝seed 1〜50・1001〜1050。S3b で選び直した＝下の L44。帯の行のある 5 つの遊び方とハードの radar_ambush。約 22 秒）: 800 夜を 50 × 2 の 8 組（k = 0〜7）に割って帯の ✓/✗ を比べた。k = 0 は全部の帯で 800 夜と同じ（B1a 32.0・B1b 48.0・B1c 52.0・B2 55.0・B3 0.0・B4 0.0・B5 48.0・F 50.1、H1 32.0・H2 65.0）。8 組の揺れ: B1a 26〜35・B1b 48〜64・B1c 36〜52・B2 46〜58・B5 40〜55・F 48.3〜51.4・H1 26〜35・H2 58〜66（k = 3 の B1a・H1 が 35.0% で ✓＝帯の端の近くは軽い組で裏返る）。帯が ✗ のままなので、この tests は今 2 件とも落ちる（lead の決めの後に通る形）。
++    - 世界との向きの確かめ（S3 の時点。`scripts/headless/strait-probe.mjs`。S2 の site・`?debug&mission=us_04`・seed 1〜8・ノーマル・3 つの台本＝模擬の台本をそのままページに束ねた。1 回 約 25 秒）: 今夜のまま（水上機あり）では radar_ambush の 1 隻以上撃沈 世界 3・模擬 3／自艇の沈没 世界 6・模擬 2／衝突 0・0（食い違い 4 夜＝水上機の照明弾の後に砲・爆弾）、idle_lane は 8 夜とも同じ（砲で沈む・同じ秒・衝突 0）、radar_dodge も 8 夜とも同じ（帰投 6・沈没 2）。`&noplane` では radar_ambush の 3 夜が帰り道の味方機の誤射（台本は［識別］を押さない）。`&noplane` で識別を押す（`IDENT=1`）と 24 夜とも世界と模擬が同じ（終わりの理由・撃沈・撃った本数・終わりの秒）。沈む絵の tween は壁の時計で進むので、ページの `Date.now` を偽の時計に替えた（60 fps の実時間と同じ）。
++    - g2.sh（L22）: `US04=1` で us_04 の帯の表 2 本（`us4`・`us4h`。md5 は S3b の最後の表〔下〕。出力に「帯: すべて ✓」が要る＝S3 の時点はノーマル・ハードとも ✗ で DIFF）。今の 37 本の件と md5 は変えていない（`US04=1` の時だけ intercept-sim を束ねる）。agent の確かめ: `G6=1 ALLY=1 EVAC=1 US04=1 JOBS=3` で OK 37・DIFF 2（us4・us4h は md5 が同じで「帯に ✗」）・30 分。
++    - tests（＋2 ファイル。件数と時間は S3 の時点）: 新 `intercept-sim-a`（15 件・約 12 秒: 同じ seed で同じ 1 夜〔7 行＋参考 2 行 × ノーマル・ハード〕・同じ軽い組で同じ表・人の系列がゲームの系列と重ならない・台本 2 本の import と名前の走査・台本が読む物の鍵・目は世界の規則・艦と列とレーダーが tests/transit-world-kit の本物とステップごとに同じ〔南東の隅で止まった一晩 4 件・出発点で沈むまで 2 件〕・魚雷のプールと発射管制が本物と同じ・見た目の定数・300／150 行と模型の識別子）・新 `intercept-sim-b`（2 件・約 22 秒: 軽い組の帯 ✗ 0）。agent の確かめ: typecheck（2 つの tsconfig）が通る。同じビルド番号（main@2afe092）で作った site は S2 の門の site と 8 ファイルのうち 7 つがバイト同一（違うのは sw.js の作った時刻だけ＝束は変わらない）。npm test は 315 ファイル・3,760 件のうち 3 件が落ちる＝intercept-sim-b の 2 件（帯が ✗）と `tests/radar` の S2 の固定「core/radar・core/ship-transit・core/strait-geometry を import する所」（S3 の模擬の 7 本が増えた＝L18 で同じ core を使うので避けられない。固定の書き換えは S3 の許しの外のファイル＝lead へ）。
++    - S3b（lead の決め L36〜L44。S3 の hand-back の後。data は us_04 の `enemy_start` の針路だけ＝L38。帯は B2・F が ✗ のまま L40 で止めた＝lead の決め待ち）:
++      - L36 魚雷 1 本ずつの内訳（data は S3 のまま。seed 1〜100・1001〜1100 の 200 夜。重ならない順＝命中・不発・解けない／遅い〔マーカーが NaN か的が正横より後ろ〕・蛇行・回避〔走る間に的が雷跡を見て舵〕・扇の外の 2 本・狙いのずれ〔> 2°〕・正しく狙った外れ）: radar_ambush（静音で離れる）692 本＝命中 9.2・不発 7.4・解けない 1.9・蛇行 4.5・回避 69.8・外の 2 本 2.9・ずれ 4.3・正しく狙った外れ 0.0%。発射の時に的が自艇を見つけていた 0%、走る間に回避が始まった 88.6%（発射から中央 2.5 秒）、艦首からの角は中央 57°（45〜55° の 234 本は命中 15.4%・55〜65° の 447 本は 6.3%）・距離 中央 797 m・走った距離 中央 611 m、扇の 1〜4 本目の命中 32.9／3.5／0.6／0.0%。eye_only 800 本（みな護衛）命中 12.6%・回避 55.4%・角 中央 24°。charge 800 本（護衛 756・列 44）命中 11.8%・発射の時に的が見つけていた 93.4%。B6 の 1 本 540 本＝命中 38.1%・回避 74.4%（回避した本 21.9%・しない本 85.5%）、艦首から 0／15／30／45／60° で 41.7／48.3／42.5／41.7／18.3%（60° は回避 93.3%・走 1,021 m）。読み: 差は世界（27 kt の Mk 8 と雷跡を見て回る 30 kt の列）。Briefing の「見つかる 静音 600 m」の外（脇 650 m）を通る列は目の 900 m で艦首から 46° 以上に見え、人の反応（0.5〜2 秒＝77 m/秒）と扇の 1.2 秒で 50〜64°（解ける端 64.6°）で撃つ。1 本目の雷跡で的が回るので 2〜4 本目はほぼ当たらない（B6 は 1 本だけで、78% が艦首から 45° の内）。台本の欠け（扇がマーカーの外・解けない的・艦首だけの射点）は無い＝台本は直さず、① も動かさない。
++      - L37 radar_ambush・radar_twice は静音で離れる（spec の「全速で離れ」は世界の発見の規則＝全速は 1,920 m で見つかる、に反し、us_01〜us_03 を遊んだ人はそう離れない）。spec の形は参考の行 `radar_ambush_full`（帯なし）。表（data は S3 のまま。ノーマル md5 a7c1909e…・2 分 37 秒、ハード 09f73f98…・3 分 0 秒）: radar_ambush 31.0／19.5／80.5%（燃料の中央値 59.4%）・radar_twice 42.5／19.0／81.0・radar_ambush_full 31.0／56.4／43.6、ほかは S3 と同じ。帯 B1a ✗・B1b ✗ 19.5・B1c ✓ 80.5・B2 ✗・B3 ✓（L39 の読み）・B4〜B6 ✓・F ✗＝✗ 4、ハード H1 ✗ 31.0・H2 ✓ 20.1。表に「護先」（自艇が沈んだ夜のうち護衛が最初に見つけた %）と「護見」（護衛が最初に目に入った秒の中央）を足した: radar_ambush・radar_dodge・eye_only・charge はどれも護先 100%。
++      - L38 護衛の最初の脚（`enemy_start`。北の岸の約 1 マイル沖の見張り＝y 900〜1,300・針路 090／270・出撃の時にレーダーの内、の読みは source に残す）。候補を 1 つずつ（ノーマル N 400 × 2 組。`COVER=x,y,針路` の上書き。どれも B5 ✓）: C1 (1800,1200)@270＝護先 eye_only 100%・radar_dodge 66.3%、eye_only の護見 78.7 秒、radar_ambush 35.8／2.1／97.8%、eye_only 63.4／56.5%、radar_dodge の沈没 11.1%、charge の沈没 98.1%（md5 86d371a7…）／C2 (900,1100)@090＝98.6%・100%、49.2 秒、22.8／15.8／84.0%、51.1／45.8%、15.5%、82.9%（dea53f0d…）／C3 (5000,1100)@270＝85.6%・100%、122.4 秒、38.0／4.4／95.6%、34.6／75.8%、23.9%、78.0%（76a48ee7…）。護先の下がりが一番大きい C1 にした（位置は同じで針路だけ＝一番小さい動き）。出撃の時の輝点は出発点から 2,280 m・方位 308°。C4 は試していない（C1 で radar_dodge の護先が下がった。eye_only の護先はどの候補も 85% 以上＝下の B2 の訳）。`tests/__snapshots__/setup-us04.test.ts.snap` を `vitest -u`（その 1 本だけ）: 8 つの snapshot × 3 行＝`mission.enemyStart.headingDeg` と `mission.enemyStarts[0].headingDeg` 120 → 270、今夜の揺らぎの `destroyer.starts[0].headingDeg` が ＋150（seed 1: 120.95… → 270.95…・seed 12345: 103.51… → 253.51…）。ほかは同じ。V-* の検査は通る。
++      - L39 B3 は「idle_lane の自艇の沈没（衝突・体当たり・砲火）≥ 20%」（危険がある、の意図のまま。KPI に合わせた見張りは止まった艇を 480 m で見つけ、当たる前に砲が届く）。衝突の列は表に残す。B4 は今のまま（衝突 ≤ 5%）。radar_dodge の沈没と最初に見つけた艦は表の行と帯の後の「参考」の行。
++      - 表（最後の data＝L38 の C1。ノーマル md5 a06bc7d2eb8a2a85bb65c989061d6597・3 分 16 秒、ハード c17a7a68b7a01558c32506b9c1d70ee0・3 分 29 秒。表は 8 行）: 1 隻以上撃沈／自艇の沈没／帰投 = radar_ambush 35.8／2.1／97.8%（達成 35.4%・燃料の中央値 61.8%）・radar_twice 48.3／5.3／94.8・eye_only 63.4／56.5／43.5（達成 40.6%）・idle_lane 0／99.9／0.1（衝突 1.1%）・radar_dodge 0／11.1／88.9（護先 66.3%）・charge 66.6／98.1／1.9・home_after_inbound 15.0／1.1／98.9・radar_ambush_full 35.8／45.0／55.0。帯 B1a ✓ 35.8・B1b ✓ 2.1・B1c ✓ 97.8・**B2 ✗ 63.4（≤ 20.8）**・B3 ✓ 99.9・B4 ✓ 0.0・B5 ✓ 98.1・B6 ✓ 38.1・**F ✗ 61.8**＝✗ 2、参考 達成の差 −5.3 点。ハード radar_ambush 37.6／4.1／95.8 で H1 ✓・H2 ✓（帯: すべて ✓）。
++      - L40 で止めた: B1a は 35.8%（35 の内＝① の 28・27 kt は要らない・動かしていない。60 の内＝② も要らない）。B2 が ✗ のまま＝「止めて報告」。訳: C1 でも eye_only の撃沈はほぼ護衛（400 夜で護衛を沈めた夜 65.0%・往路の列 0%・復路の列 0.3%）。us_02 の AI は端で海域の中央 (3000, 2000) へ向き直し、中央は出発点から 849 m（目の 900 m の内）。C1 は西の端 (700, 1200 前後) から中央へ向かう線が出発点の約 370 m 脇を通る（目で見え、止まった艇は 480 m で見つかる）。最初の脚の針路の揺らぎ ±20° は 4,000 m で横に ±1,500 m ずれる。夜のうちに端へ着く護衛は、どの候補でも出発点から見える所を通る（一番遅い C3 でも護見 122 秒・eye_only の撃沈 34.6% で、B2 の 23.0 に届かない）。
++      - L41（燃料）・L44 の g2 の「帯: すべて ✓」は L40 で止めたのでしていない（F は 61.8% のまま）。L42 ハードは上の表。L43 `tests/radar` の固定に S3 の模擬の 7 本を足した（lead の承認。S3 の patch のまま）。
++      - L44: 軽い組（tests/intercept-sim-b）を選び直した。800 夜を 8 組に割ると k = 0 の B1a が 33.0%（800 夜は 35.8%）で裏返るので、全部の帯で 800 夜と同じ ✓/✗ の組のうち端から一番遠い k = 3（seed 151〜200・1151〜1200。B1a 40.0%・H1 41.0%。8 組の揺れは B1a 31〜41・H1 32〜45、ほかの帯は端から 10 点以上）。端から ±3 点の内の帯は 800 夜の B1a（0.8 点）。g2 の `US04=1` の md5 は上の表（ノーマルは帯に ✗ なので DIFF・ハードは OK のはず）。strait-probe（この木を同じビルド番号で作った site・seed 1〜8）: 今夜のまま（水上機あり・識別は押さない）も `NOPLANE=1 IDENT=1` も 24 夜とも世界と模擬が同じ（終わりの理由・撃沈・撃った本数・終わりの秒。radar_ambush は 8 夜とも帰投・撃沈 3、idle_lane は 8 夜とも砲で沈む・衝突 0、radar_dodge は 8 夜とも帰投）。静音で離れると水上機にも誤射にも当たらなかった。npm test は 315 ファイル・3,760 件のうち intercept-sim-b のノーマル 1 件だけ落ちる（B2・F）。
++    - 既知の制約（S3b の時点）: B2（eye_only の撃沈 63.4% ≤ radar_ambush − 15）が届かない＝護衛は us_02 の AI のまま端で中央へ向き直し、中央が出発点から 849 m（目の内）にあるので、止まって待つ目だけの艇が護衛を撃てる（lead の決め待ち）。F（燃料）は L41 の前で止めたので 48 gal のまま（帰投の夜の中央値 61.8%）。B1a は 800 夜で端から 0.8 点（軽い組で裏返る）。模擬は水上機・誤射・夜明けの空襲を持たない（S3b の木の strait-probe では静音で離れる台本は 24 夜とも水上機・誤射に当たらなかった）。台本の航跡の読みは掃引 5 秒で列を追えない。B6 は 30 kt の列へ前から 64.6° の内の射点だけを数える（艦が魚雷より速い）。
 +    - 門: （lead が別に回した run-gates の結果をここに足す）
  - 既知の制約（S2 の時点。最終は S5 でまとめ直す）:
    - us_04 はまだ Title に出ない（HUD・Briefing・Result は S4、出撃可は S5）。S2 から `?debug&mission=us_04` で列の通過・護衛・レーダーの輝点・両岸が動く（HUD の文はまだ今の駆逐艦の任務のまま）。
    - 史実は WebSearch の抜粋のみ（本文未読）。列の間隔・速さ・揚陸の秒・護衛の見回り・ハードの 5 隻目・礁・地図の向き（東西の模式図）・レーダーの射程の縮め方は作り（S3 の模擬と実機で直す）。
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index 267ebc8..aceedf7 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -574,8 +574,8 @@
+         "enemy_start": {
+           "x_m": 1800,
+           "y_m": 1200,
+-          "heading_deg": 120,
+-          "source": "design (v0.8.0。護衛の駆逐艦（4 隻のうち輸送をしない 1 隻）。報告の「ファーガソン水道からの入口を見張るような艦がコロンバンガラの約 1 マイル沖にいた」（spec-v0800 §4.1）の当てはめ。us_02 の AI のまま見回る（端から 700 m で向き直す・見つければ 400 m で体当たり・照らして撃つ）。北の岸から 1,200 m＝レーダーの陸の反射（400 m）の外)"
++          "heading_deg": 270,
++          "source": "design (v0.8.0。護衛の駆逐艦（4 隻のうち輸送をしない 1 隻）。報告の「ファーガソン水道からの入口を見張るような艦がコロンバンガラの約 1 マイル沖にいた」（spec-v0800 §4.1）の当てはめ。us_02 の AI のまま見回る（端から 700 m で向き直す・見つければ 400 m で体当たり・照らして撃つ）。北の岸から 1,200 m＝レーダーの陸の反射（400 m）の外。出発点から 2,280 m・方位 308°（レーダーの 4,000 m の内＝出撃してすぐ輝点が 1 つ）。v0.8.0 S3b（lead の L38）: 最初の脚を 120° → 270°（西へ。位置は同じ）。120° の脚は出発点の 312 m 脇を通り、止まって待つ艇の沈没はみな護衛が先に見つけていた（迎撃の模擬 N 400 × 2 組: radar_dodge の沈没 33.4%・eye_only 38.1%、どちらも 100% が護衛）。候補 C1 (1800,1200)@270・C2 (900,1100)@090・C3 (5000,1100)@270 を比べ、沈没のうち護衛が先に見つけた割合が一番下がった C1 にした（radar_dodge 100 → 66.3%・沈没 33.4 → 11.1%、eye_only 100%、charge の沈没 98.1%＝B5 の 40% 以上のまま。C2 は radar_dodge 100%・eye_only 98.6%、C3 は 100%・85.6%）)"
+         },
+         "return_point": {
+           "x_m": 1300,
 diff --git a/scripts/headless/g2.sh b/scripts/headless/g2.sh
-index 399dcfd..e94f050 100755
+index 399dcfd..0d22305 100755
 --- a/scripts/headless/g2.sh
 +++ b/scripts/headless/g2.sh
 @@ -7,13 +7,17 @@
@@ -56,7 +80,7 @@ index 399dcfd..e94f050 100755
 +if [ "${US04:-0}" = "1" ]; then
 +  # 名前が us4 で始まる件も、出力に帯の行「帯: すべて ✓」が要る（scripts/intercept-sim の TABLE=2）
 +  CASES+=(
-+    "us4|intercept-sim|TABLE=2|d9db008bb03d3cdad27e07c2c48783d1" "us4h|intercept-sim|HARD=1 TABLE=2|aab25d017507d7eb6d6373338dde664e"
++    "us4|intercept-sim|TABLE=2|a06bc7d2eb8a2a85bb65c989061d6597" "us4h|intercept-sim|HARD=1 TABLE=2|c17a7a68b7a01558c32506b9c1d70ee0"
 +  )
 +fi
  run() {
@@ -70,6 +94,229 @@ index 399dcfd..e94f050 100755
    if [ "${got:0:${#want}}" = "$want" ] && [ -z "$band" ]; then echo "OK   $name $got"; else echo "DIFF $name $got（期待 $want$band）"; fi
  }
  export -f run
+diff --git a/tests/__snapshots__/setup-us04.test.ts.snap b/tests/__snapshots__/setup-us04.test.ts.snap
+index c883b82..a683863 100644
+--- a/tests/__snapshots__/setup-us04.test.ts.snap
++++ b/tests/__snapshots__/setup-us04.test.ts.snap
+@@ -21,13 +21,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -247,7 +247,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -569,13 +569,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -764,7 +764,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+@@ -1089,13 +1089,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -1315,7 +1315,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -1637,13 +1637,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": false,
+@@ -1832,7 +1832,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+@@ -2157,13 +2157,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -2383,7 +2383,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -2705,13 +2705,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -2900,7 +2900,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+@@ -3225,13 +3225,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -3451,7 +3451,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 1825.1071251928806,
+     "y": 1099.64169440791,
+-    "headingDeg": 103.51140711456537
++    "headingDeg": 253.51140711456537
+    }
+   ],
+   "spec": {
+@@ -3773,13 +3773,13 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+   "enemyStart": {
+    "x": 1800,
+    "y": 1200,
+-   "headingDeg": 120
++   "headingDeg": 270
+   },
+   "enemyStarts": [
+    {
+     "x": 1800,
+     "y": 1200,
+-    "headingDeg": 120
++    "headingDeg": 270
+    }
+   ],
+   "hard": true,
+@@ -3968,7 +3968,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    {
+     "x": 2101.695292070508,
+     "y": 1330.4044425487518,
+-    "headingDeg": 120.95346527174115
++    "headingDeg": 270.95346527174115
+    }
+   ],
+   "spec": {
+diff --git a/tests/radar.test.ts b/tests/radar.test.ts
+index b49b8a7..f807af9 100644
+--- a/tests/radar.test.ts
++++ b/tests/radar.test.ts
+@@ -189,10 +189,10 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確
+     expect(s.match(/Math\.sqrt\(/g)!.length).toBe(1);
+     expect(s).not.toMatch(/Math\.(hypot|atan2)\b/);
+   });
+-  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）', () => {
++  it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も', () => {
+     const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
+-    expect(importers('radar')).toEqual(['src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
+-    expect(importers('ship-transit')).toEqual(['src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
+-    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/world-radar.ts']);
++    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
++    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/transit-telemetry.ts']);
++    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/world-radar.ts']);
+   });
+ });
 diff --git a/scripts/headless/strait-probe.mjs b/scripts/headless/strait-probe.mjs
 new file mode 100644
 index 0000000..94b78c8
@@ -212,21 +459,22 @@ index 0000000..94b78c8
 +await main();
 diff --git a/scripts/intercept-sim.ts b/scripts/intercept-sim.ts
 new file mode 100644
-index 0000000..4acc57c
+index 0000000..438205f
 --- /dev/null
 +++ b/scripts/intercept-sim.ts
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,84 @@
 +// 迎撃の模擬の表（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11）。中身は src/core/intercept-sim*.ts・src/systems/intercept-sim-setup.ts・intercept-calibration.ts
 +// （tests/intercept-sim-a・b と同じ）。TABLE=1（既定）: 組ごとの遊び方の表。TABLE=2: 組を合わせた表と帯の ✓/✗（✗ があれば終了コード 1。scripts/headless/g2.sh の US04=1）。
 +// PERF=1: 1 夜の node の秒（radar_ambush と charge・REPS 夜）。環境変数: N（1 組の夜。既定 400）・SEED（最初の組の最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400・1001〜1400）・
 +//   HARD=1・POL（, 区切り。既定は spec §4.11 の 7 行）・つまみ（spec §4.11 の順の data の鍵）SPEED（transit.speed_kt）・RANGE・SWEEP（radar.models.so_early の ship_range_m・sweep_s）・
-+//   LANE・UNLOAD（transit.outbound.lane_y_m・transit.unload_s）・FUEL（fuel_allotment_gal）
++//   LANE・UNLOAD（transit.outbound.lane_y_m・transit.unload_s）・FUEL（fuel_allotment_gal）・COVER（x,y,針路＝護衛の最初の脚 enemy_start。S3b の L38 の候補）。
++//   既定の行は spec §4.11 の 7 つと参考の radar_ambush_full（spec の文のまま全速で離れる。帯なし）。列「護先」は自艇が沈んだ夜のうち護衛が最初に見つけた %、「護見」は護衛が最初に目に入った秒の中央
 +// 実行: npx esbuild scripts/intercept-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/intercept-sim.mjs && TABLE=2 node <scratch>/intercept-sim.mjs
 +import { gameData } from '../src/config/game-data';
 +import { runInterceptTrial, type InterceptSimSetup } from '../src/core/intercept-sim';
 +import { interceptCellOf, type InterceptCell, type InterceptTrial } from '../src/core/intercept-sim-cell';
 +import { INTERCEPT_POLICIES, type InterceptPolicy } from '../src/core/intercept-sim-policy';
-+import { interceptB6, interceptBandChecks } from '../src/systems/intercept-calibration';
++import { interceptB6, interceptBandChecks, interceptNotes } from '../src/systems/intercept-calibration';
 +import { interceptNightSetup, withInterceptKnobs, type InterceptKnobs } from '../src/systems/intercept-sim-setup';
 +
 +const env = (k: string): string | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? process.env[k] : undefined);
@@ -235,9 +483,10 @@ index 0000000..4acc57c
 +const seed0 = num('SEED') ?? 1;
 +const blocks = num('BLOCKS') ?? 2;
 +const hard = env('HARD') === '1';
-+const knobs: InterceptKnobs = { speedKt: num('SPEED'), shipRangeM: num('RANGE'), sweepS: num('SWEEP'), laneY: num('LANE'), unloadS: num('UNLOAD'), fuelGal: num('FUEL') };
-+const pols = (env('POL')?.split(',').map((x) => x.trim()).filter((x) => x !== '') ?? [...INTERCEPT_POLICIES]) as InterceptPolicy[];
-+for (const p of pols) if (!([...INTERCEPT_POLICIES, 'radar_ambush_quiet', 'stay'] as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は無い（${INTERCEPT_POLICIES.join(' / ')} / radar_ambush_quiet / stay）`);
++const cv = env('COVER')?.split(',').map(Number);
++const knobs: InterceptKnobs = { speedKt: num('SPEED'), shipRangeM: num('RANGE'), sweepS: num('SWEEP'), laneY: num('LANE'), unloadS: num('UNLOAD'), fuelGal: num('FUEL'), cover: cv ? { x: cv[0]!, y: cv[1]!, headingDeg: cv[2]! } : undefined };
++const pols = (env('POL')?.split(',').map((x) => x.trim()).filter((x) => x !== '') ?? [...INTERCEPT_POLICIES, 'radar_ambush_full']) as InterceptPolicy[];
++for (const p of pols) if (!([...INTERCEPT_POLICIES, 'radar_ambush_full', 'stay'] as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は無い（${INTERCEPT_POLICIES.join(' / ')} / radar_ambush_full / stay）`);
 +const data = withInterceptKnobs(gameData, knobs);
 +const seeds = (b: number): number => seed0 + b * 1000;
 +const setups = new Map<number, InterceptSimSetup>();
@@ -263,14 +512,14 @@ index 0000000..4acc57c
 +  const proto = (data.missionsSeed.missions as readonly Record<string, unknown>[]).find((m) => m['id'] === 'us_04')!['v0_1_prototype'] as Record<string, unknown>;
 +  const tb = proto['transit'] as { speed_kt: number; spacing_s: number; unload_s: number; inbound: { lane_y_m: number }; outbound: { lane_y_m: number } };
 +  const r = s1.radar;
-+  console.log(`[us_04 ${hard ? 'ハード' : 'ノーマル'} N ${n} × ${blocks} 組（seed ${Array.from({ length: blocks }, (_, b) => `${seeds(b)}〜${seeds(b) + n - 1}`).join('・')}）${Object.entries(knobs).filter(([, v]) => v !== undefined).map(([k, v]) => ` ${k} ${String(v)}`).join('')}]`);
++  console.log(`[us_04 ${hard ? 'ハード' : 'ノーマル'} N ${n} × ${blocks} 組（seed ${Array.from({ length: blocks }, (_, b) => `${seeds(b)}〜${seeds(b) + n - 1}`).join('・')}）${Object.entries(knobs).filter(([, v]) => v !== undefined).map(([k, v]) => ` ${k} ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`).join('')}]`);
 +  console.log(`列 ${s1.transit.ships} 隻・${tb.speed_kt} kt・${tb.spacing_s} 秒おき・往路の道 y ${tb.inbound.lane_y_m}・揚陸 ${tb.unload_s} 秒・復路の道 y ${tb.outbound.lane_y_m}・レーダー ${r ? `${r.shipRangeM} m・掃引 ${r.sweepS} 秒` : 'なし'}・燃料 ${s1.fuelAllotmentGal} gal・夜明け ${s1.durationS} 秒`);
-+  const head = `${'遊び方'.padEnd(19)}撃沈≥1  撃沈数 沈没   衝突(護/列)      砲火   帰投   達成   座礁  漂流  打切  夜明外 発見   燃料(帰投)p10-中-p90 終了秒 撃つ 命中%  狙1本(本)    接触秒 見え秒`;
++  const head = `${'遊び方'.padEnd(19)}撃沈≥1  撃沈数 沈没   衝突(護/列)      砲火   帰投   達成   座礁  漂流  打切  夜明外 発見   燃料(帰投)p10-中-p90 終了秒 撃つ 命中%  狙1本(本)    接触秒 見え秒 護先%  護見秒`;
 +  const row = (p: string, c: InterceptCell): string =>
 +    p.padEnd(20) + pct(c.sinkPct).padEnd(7) + fx(c.sinkMean, 2).padEnd(6) + pct(c.ownSunkPct).padEnd(7) + `${pct(c.rammedPct)}(${fx(c.rammedCoverPct, 1)}/${fx(c.rammedColumnPct, 1)})`.padEnd(17) +
 +    pct(c.gunSunkPct).padEnd(7) + pct(c.homePct).padEnd(7) + pct(c.achievedPct).padEnd(7) + pct(c.groundedPct).padEnd(6) + pct(c.adriftPct).padEnd(6) + pct(c.cutPct).padEnd(6) + pct(c.dawnOutPct).padEnd(7) +
 +    pct(c.detectedPct).padEnd(7) + `${fx(c.fuelP10, 0)}-${fx(c.fuelMed, 0)}-${fx(c.fuelP90, 0)}`.padEnd(21) + fx(c.endMed, 0).padEnd(7) + fx(c.firedMean, 2).padEnd(5) + pct(c.hitPct).padEnd(7) +
-+    `${pct(c.aimedPct)}(${c.aimed})`.padEnd(13) + fx(c.contactMed, 1).padEnd(7) + fx(c.sightMed, 1);
++    `${pct(c.aimedPct)}(${c.aimed})`.padEnd(13) + fx(c.contactMed, 1).padEnd(7) + fx(c.sightMed, 1).padEnd(7) + pct(c.coverFirstPct).padEnd(7) + fx(c.coverSightMed, 1);
 +  const all = new Map<InterceptPolicy, InterceptTrial[]>();
 +  for (let b = 0; b < blocks; b++) {
 +    console.log(`-- seed ${seeds(b)}〜${seeds(b) + n - 1}`);
@@ -292,6 +541,7 @@ index 0000000..4acc57c
 +    }
 +    const checks = interceptBandChecks(merged, hard, hard ? null : interceptB6(data, s1));
 +    console.log(`帯（${blocks * n} 夜）:\n  ${checks.map((x) => `${x.id} ${x.text} ${x.ok ? '✓' : '✗'}`).join('\n  ')}`);
++    if (!hard) for (const line of interceptNotes(merged)) console.log(`  参考 ${line}`);
 +    const bad = checks.filter((x) => !x.ok);
 +    console.log(bad.length === 0 ? '帯: すべて ✓' : `帯: ✗ ${bad.length} 件`);
 +    if (bad.length > 0) process.exitCode = 1;
@@ -299,10 +549,10 @@ index 0000000..4acc57c
 +}
 diff --git a/src/core/intercept-sim-cell.ts b/src/core/intercept-sim-cell.ts
 new file mode 100644
-index 0000000..898ca62
+index 0000000..14851da
 --- /dev/null
 +++ b/src/core/intercept-sim-cell.ts
-@@ -0,0 +1,102 @@
+@@ -0,0 +1,110 @@
 +// 迎撃の模擬（v0.8.0 S3。us_04。spec-v0800 §4.11）の 1 夜の記録（InterceptTrial）と遊び方ごとの集計（InterceptCell）。帯（B1〜B6・ハード・燃料）は
 +// systems/intercept-calibration が集計の列を読む。記録の「見つかった」「衝突の相手」は模擬が世界の側から書く（台本は読まない）。集計は夜の終わりの後だけ（確保してよい）。
 +import type { MissionEndReason } from './mission-flow';
@@ -340,12 +590,15 @@ index 0000000..898ca62
 +  detected: boolean;
 +  firstContactS: number;
 +  firstSightS: number;
++  /** 最初に自艇を見つけた艦（RAM_COVER 護衛・RAM_COLUMN 列・RAM_NONE 見つからない。同じステップなら護衛）と、護衛が最初に目の内に入った秒（lead の L38。NaN は無し） */
++  firstDetector: number;
++  coverSightS: number;
 +}
 +
 +export function createInterceptTrial(policy: InterceptPolicy, seed: number, hard: boolean): InterceptTrial {
 +  return {
 +    policy, seed, hard, reason: 'cut', endS: 0, sunkCover: 0, sunkColumn: 0, ownSunk: null, rammedBy: RAM_NONE, fuelPct: 0, hpLeft: 0, shellHits: 0,
-+    fired: 0, hits: 0, aimed: 0, aimedHits: 0, dawnOut: false, detected: false, firstContactS: NaN, firstSightS: NaN,
++    fired: 0, hits: 0, aimed: 0, aimedHits: 0, dawnOut: false, detected: false, firstContactS: NaN, firstSightS: NaN, firstDetector: RAM_NONE, coverSightS: NaN,
 +  };
 +}
 +
@@ -361,6 +614,8 @@ index 0000000..898ca62
 +  sinkMean: number; firedMean: number; shellHitsMean: number; hitPct: number; aimed: number; aimedPct: number;
 +  /** 帰投した夜の燃料 %（p10・中央・p90）・終わりの秒の中央・最初の接触と最初に見えた秒の中央 */
 +  fuelP10: number; fuelMed: number; fuelP90: number; endMed: number; contactMed: number; sightMed: number;
++  /** 自艇が沈んだ夜のうち護衛が最初に見つけた %（L38）・護衛が最初に目に入った秒の中央 */
++  coverFirstPct: number; coverSightMed: number;
 +}
 +
 +function quantile(xs: number[], q: number): number {
@@ -376,6 +631,7 @@ index 0000000..898ca62
 +  const fired = ts.reduce((s, t) => s + t.fired, 0);
 +  const aimed = ts.reduce((s, t) => s + t.aimed, 0);
 +  const home = ts.filter(trialReturned);
++  const sunk = ts.filter((t) => t.ownSunk !== null);
 +  return {
 +    n,
 +    sinkPct: pct((t) => t.sunkCover + t.sunkColumn >= 1),
@@ -403,20 +659,23 @@ index 0000000..898ca62
 +    endMed: quantile(ts.map((t) => t.endS), 0.5),
 +    contactMed: quantile(ts.map((t) => t.firstContactS), 0.5),
 +    sightMed: quantile(ts.map((t) => t.firstSightS), 0.5),
++    coverFirstPct: sunk.length > 0 ? (100 * sunk.filter((t) => t.firstDetector === RAM_COVER).length) / sunk.length : NaN,
++    coverSightMed: quantile(ts.map((t) => t.coverSightS), 0.5),
 +  };
 +}
 diff --git a/src/core/intercept-sim-policy.ts b/src/core/intercept-sim-policy.ts
 new file mode 100644
-index 0000000..c43a95a
+index 0000000..42babb7
 --- /dev/null
 +++ b/src/core/intercept-sim-policy.ts
-@@ -0,0 +1,232 @@
+@@ -0,0 +1,233 @@
 +// 迎撃の模擬の遊び方（v0.8.0 S3。us_04。spec-v0800 §4.11、lead の L17・L19）。人が画面から知れる物だけを読む（漏らさない）: レーダーの輝点
 +// （core/radar の状態そのまま。航跡は core/intercept-sim-tracks が人のように作る）・目で見える最寄りの艦（世界と同じ規則＝setup.visRange2 の内の位置と、
 +// ゲームと同じ core/torpedo-solver の見越し点マーカーの方位）・自艇・地図（Briefing の輪・礁・海域）。艦の AI・発見・段階・本当の位置は読まない（tests/intercept-sim-a の走査）。
 +// 人の揺らぎ（反応 0.5〜2 秒・狙い ±2°）は模擬だけの系列（seed × INTERCEPT_HUMAN_SEED_MUL ＋ ADD。ゲームの seed〜seed+43 に触らない）。台本（spec §4.11 の 7 行と試しの stay）:
-+//   radar_ambush 往路の列の道（航跡）の 650 m 脇へ静音で回って止まり、目で見えた列の艦（航跡と合う艦。護衛は撃たない）へ 4 本の扇、道から全速で離れて帰る
-+//   radar_twice 同じく往路へ 2 本、離れて待ち、復路の列の 650 m 脇から 2 本 ／ eye_only レーダーを読まず出発点（海峡の中ほど）で止まって待ち、目で見えた艦へ 4 本
++//   radar_ambush 往路の列の道（航跡）の 650 m 脇へ静音で回って止まり、目で見えた列の艦（航跡と合う艦。護衛は撃たない）へ 4 本の扇、道から静音で離れて帰る
++//   （lead の L37: spec の「全速で離れ」は世界の発見の規則＝全速は 1,920 m で見つかる、に反するので参考の行 radar_ambush_full に残す）
++//   radar_twice 同じく往路へ 2 本、静音で離れて待ち、復路の列の 650 m 脇から 2 本 ／ eye_only レーダーを読まず出発点（海峡の中ほど）で止まって待ち、目で見えた艦へ 4 本
 +//   idle_lane 復路の最初の接触の道の上へ静音で出て止まる（アイドル＝史実の危険の形。撃たない）／ radar_dodge 出発点で待ち、近づく接触（復路の列も）から離れる（撃たない）
 +//   charge 往路の列の先頭へ全速で突っ込み、見えたら 4 本 ／ home_after_inbound 史実の先頭の艇: 出発点からレーダーの方位（航跡の見越し）で 1,650 m の内に 4 本撃って帰る
 +// レーダーを読む台本は待つ間と帰り道で近づく接触から離れ、帰り道は接触が近い間は静音。どの台本も夜明けの 60 秒前には帰る（stay は動かない）。確保は作る時だけ。Phaser 非依存。
@@ -428,8 +687,8 @@ index 0000000..c43a95a
 +import { radToDeg, wrapDeg180, wrapDeg360 } from './units';
 +
 +export const INTERCEPT_POLICIES = ['radar_ambush', 'radar_twice', 'eye_only', 'idle_lane', 'radar_dodge', 'charge', 'home_after_inbound'] as const;
-+/** 帯の無い参考の行: radar_ambush_quiet（radar_ambush の離れ方だけ静音＝spec の「全速で離れ」との比べ）・stay（出発点で止まったまま。tests の突き合わせ） */
-+export type InterceptPolicy = (typeof INTERCEPT_POLICIES)[number] | 'radar_ambush_quiet' | 'stay';
++/** 帯の無い参考の行: radar_ambush_full（spec の文のまま全速で離れる radar_ambush＝L37 で静音に替えた訳を表に残す）・stay（出発点で止まったまま。tests の突き合わせ） */
++export type InterceptPolicy = (typeof INTERCEPT_POLICIES)[number] | 'radar_ambush_full' | 'stay';
 +/** 人の揺らぎの系列（模擬だけ。core/evac-sim-rows・landing-sim-policy と同じ形で別の足し算） */
 +export const INTERCEPT_HUMAN_SEED_MUL = 7907;
 +export const INTERCEPT_HUMAN_SEED_ADD = 40483;
@@ -467,11 +726,11 @@ index 0000000..c43a95a
 +/** radar: 輝点を読む・how: 待ち方・fan1/fan2: 往路と復路の扇の本数・column: 列の艦（航跡と合う艦）だけ撃つ・avoid: 近づく接触から離れる・quiet: 離れるのも静音 */
 +interface Spec { readonly radar: boolean; readonly how: How; readonly fan1: number; readonly fan2: number; readonly column: boolean; readonly avoid: boolean; readonly quiet?: boolean }
 +const SPECS: Readonly<Record<InterceptPolicy, Spec>> = {
-+  radar_ambush: { radar: true, how: 'ambush', fan1: 4, fan2: 0, column: true, avoid: true }, radar_twice: { radar: true, how: 'ambush', fan1: 2, fan2: 2, column: true, avoid: true },
++  radar_ambush: { radar: true, how: 'ambush', fan1: 4, fan2: 0, column: true, avoid: true, quiet: true }, radar_twice: { radar: true, how: 'ambush', fan1: 2, fan2: 2, column: true, avoid: true, quiet: true },
 +  eye_only: { radar: false, how: 'start', fan1: 4, fan2: 0, column: false, avoid: false }, idle_lane: { radar: true, how: 'lane', fan1: 0, fan2: 0, column: false, avoid: true },
 +  radar_dodge: { radar: true, how: 'start', fan1: 0, fan2: 0, column: false, avoid: true }, charge: { radar: true, how: 'charge', fan1: 4, fan2: 0, column: false, avoid: false },
 +  home_after_inbound: { radar: true, how: 'bearing', fan1: 4, fan2: 0, column: true, avoid: true }, stay: { radar: false, how: 'stay', fan1: 0, fan2: 0, column: false, avoid: false },
-+  radar_ambush_quiet: { radar: true, how: 'ambush', fan1: 4, fan2: 0, column: true, avoid: true, quiet: true },
++  radar_ambush_full: { radar: true, how: 'ambush', fan1: 4, fan2: 0, column: true, avoid: true },
 +};
 +/** 段: 待つ（回り込む・突っ込む）・狙う・離れる・帰る・道の上で止まる */
 +export const DRIVE_WAIT = 0, DRIVE_AIM = 1, DRIVE_ESCAPE = 2, DRIVE_HOME = 3, DRIVE_IDLE = 4;
@@ -600,7 +859,7 @@ index 0000000..c43a95a
 +  d.mode = DRIVE_ESCAPE;
 +}
 +
-+/** 離れる段: 全速（quiet の台本は静音）で、元（道か撃った艦）から escapeClearM 離れるか秒の上限か礁・岸の手前まで。復路の扇が残れば待つ段へ、ほかは帰る */
++/** 離れる段: 静音（quiet の無い台本＝radar_ambush_full・eye_only・charge は全速）で、元（道か撃った艦）から escapeClearM 離れるか秒の上限か礁・岸の手前まで。復路の扇が残れば待つ段へ、ほかは帰る */
 +function escape(d: InterceptDriver, v: InterceptView, o: InterceptOut): void {
 +  const b = v.boat;
 +  const g = INTERCEPT_HUMAN.reefGuardM;
@@ -1194,10 +1453,10 @@ index 0000000..43aec4c
 +const COLUMN_SHOT_EXTRA_S = 60;
 diff --git a/src/core/intercept-sim.ts b/src/core/intercept-sim.ts
 new file mode 100644
-index 0000000..906f436
+index 0000000..c2ef1d4
 --- /dev/null
 +++ b/src/core/intercept-sim.ts
-@@ -0,0 +1,295 @@
+@@ -0,0 +1,298 @@
 +// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11・§4.4〜§4.7、lead の L17〜L19）の 1 夜。世界（systems/mission-world の stepFn と
 +// MissionScene の 1 フレーム）と同じ順・同じ core: フレームの頭（終わりの窓なら撃たない → 台本 → 発射の要求 → 発射管制）→ 固定ステップ（時計 → 夜明けのラッチと退く →
 +// 乗員 → 自艇・座礁・燃料・輪 → 速力帯 → 発見距離 → 艦 → 列の通過 → 一斉発射の破棄・外れの確定 → 魚雷 → 体当たり → 探照灯・星弾・砲 → レーダー → 火災 → 夜明けに外）→
@@ -1211,7 +1470,7 @@ index 0000000..906f436
 +import { shotKpiTarget } from './dawn-withdraw';
 +import { createFuelState, stepFuel, type FuelCurve } from './fuel';
 +import { applyShellHit, createDamageState, createGunneryState, stepDamage, updateGuns, updateIllumination, type DamageParams, type GunneryParams, type GunneryState, type HitOutcome, type ShellEvents } from './gunnery';
-+import { RAM_COLUMN, RAM_COVER, createInterceptTrial, type InterceptTrial } from './intercept-sim-cell';
++import { RAM_COLUMN, RAM_COVER, RAM_NONE, createInterceptTrial, type InterceptTrial } from './intercept-sim-cell';
 +import { createInterceptDriver, stepInterceptDriver, type InterceptOut, type InterceptPlan, type InterceptPolicy, type InterceptView } from './intercept-sim-policy';
 +import { SimLauncher, SimTorpedoPool } from './intercept-sim-torpedoes';
 +import { SimShip, SimTransit, stepSimRadar, type SimShipSpec } from './intercept-sim-world';
@@ -1250,10 +1509,7 @@ index 0000000..906f436
 +}
 +
 +/** 試し（tests の突き合わせ・PERF）が毎ステップの終わりに読む世界（読むだけ） */
-+export interface InterceptWorldView {
-+  readonly t: number; readonly boat: BoatState; readonly ships: readonly SimShip[]; readonly transit: SimTransit; readonly radar: RadarState | null; readonly sinking: boolean;
-+  readonly torpedoes: readonly TorpedoState[];
-+}
++export interface InterceptWorldView { readonly t: number; readonly boat: BoatState; readonly ships: readonly SimShip[]; readonly transit: SimTransit; readonly radar: RadarState | null; readonly sinking: boolean; readonly torpedoes: readonly TorpedoState[] }
 +
 +const DRIFT: BoatInput = { headingDeg: NaN, speed01: 0 };
 +
@@ -1438,7 +1694,13 @@ index 0000000..906f436
 +    if (transit.step(t, dawn, feelDt)) left = true;
 +    if (left && transit.allOut) launcher.clearQueue();
 +    if (transit.pending === 0 && remainingTorpedoesSettled(ships, t, s.ring.torpedoEndSettleS)) pool.resolveRemainingAsMisses(ev);
-+    for (const d of ships) if (!d.out && d.ai.playerDetected) tr.detected = true;
++    for (let i = 0; i < ships.length; i++) {
++      const d = ships[i]!;
++      if (d.out) continue;
++      if (d.ai.playerDetected && tr.firstDetector === RAM_NONE) tr.firstDetector = i < coverN ? RAM_COVER : RAM_COLUMN; // 最初に見つけた艦（同じステップなら護衛）
++      if (i < coverN && Number.isNaN(tr.coverSightS) && (d.state.x - boat.x) ** 2 + (d.state.y - boat.y) ** 2 <= s.visRange2) tr.coverSightS = t;
++    }
++    tr.detected = tr.firstDetector !== RAM_NONE;
 +    pool.step(dt, feelDt, ships, s.passRadius2, ev, t, s.ring.torpedoEndSettleS);
 +    if (!sinking) {
 +      for (let i = 0; i < ships.length; i++) {
@@ -1495,11 +1757,12 @@ index 0000000..906f436
 +}
 diff --git a/src/systems/intercept-calibration.ts b/src/systems/intercept-calibration.ts
 new file mode 100644
-index 0000000..dbfa6dc
+index 0000000..4770698
 --- /dev/null
 +++ b/src/systems/intercept-calibration.ts
-@@ -0,0 +1,90 @@
-+// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」）の帯（spec-v0800 §4.11 の B1〜B6・ハード、§4.6 の燃料。lead の L20・L21）。帯の数は spec の決めなので動かさない。
+@@ -0,0 +1,102 @@
++// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」）の帯（spec-v0800 §4.11 の B1〜B6・ハード、§4.6 の燃料。lead の L20・L21）。帯の数は spec の決めなので動かさない
++// （S3b の lead の L39: B3 は「idle_lane の自艇の沈没（衝突・体当たり・砲火）≥ 20%」＝危険がある、の読み。KPI に合わせた見張りは止まった艇を 480 m で見つけ、当たる前に砲が届く）。
 +// 合わせるのは data のつまみだけ（spec §4.11 の順: ① B6 → transit.speed_kt ② B1・B2 → radar.models.so_early の ship_range_m・sweep_s ③ B3・B4 → transit.outbound.lane_y_m・
 +// unload_s ④ 燃料 → fuel_allotment_gal。敵の回避・見張り・砲・命中率の値には触れない）。scripts/intercept-sim の TABLE=2（N 400 × 2 組）と scripts/headless/g2.sh の US04=1 が
 +// この帯で「帯: すべて ✓」を出し、tests/intercept-sim-b が軽い組で同じ帯を見る。B6 は CLAUDE.md §2 の KPI（正しく狙った 1 本 35〜45%）を列の艦に測る（core/intercept-sim-world の
@@ -1513,9 +1776,9 @@ index 0000000..dbfa6dc
 +import { SeededRng } from '../core/rng';
 +import { INTERCEPT_B6_MAX_M, INTERCEPT_B6_MIN_M } from './intercept-sim-setup';
 +
-+/** 帯（spec §4.11・§4.6）: B1 撃沈・沈没・帰投、B2 目だけとの差、B3・B4 衝突、B5 突っ込む沈没、B6 列への 1 本、ハードの B1、燃料（帰投の夜の中央値） */
++/** 帯（spec §4.11・§4.6・L39）: B1 撃沈・沈没・帰投、B2 目だけとの差、B3 道の上の沈没、B4 衝突、B5 突っ込む沈没、B6 列への 1 本、ハードの B1、燃料（帰投の夜の中央値） */
 +export const INTERCEPT_BANDS = {
-+  b1Sink: [35, 60] as const, b1OwnMax: 15, b1HomeMin: 80, b2Gap: 15, b3RamMin: 20, b4RamMax: 5, b5OwnMin: 40, b6: [35, 45] as const,
++  b1Sink: [35, 60] as const, b1OwnMax: 15, b1HomeMin: 80, b2Gap: 15, b3OwnMin: 20, b4RamMax: 5, b5OwnMin: 40, b6: [35, 45] as const,
 +  hardSink: [35, 65] as const, hardOwnMax: 25, fuel: [15, 35] as const,
 +} as const;
 +/** B6 の距離（m。700〜1,100 m の 100 m おき） */
@@ -1556,8 +1819,19 @@ index 0000000..dbfa6dc
 +  return { shots, hits, pct: shots > 0 ? (100 * hits) / shots : NaN };
 +}
 +
-+const inBand = (x: number, b: readonly [number, number]): boolean => Number.isFinite(x) && x >= b[0] && x <= b[1];
 +const f1 = (x: number): string => (Number.isFinite(x) ? x.toFixed(1) : '—');
++const inBand = (x: number, b: readonly [number, number]): boolean => Number.isFinite(x) && x >= b[0] && x <= b[1];
++
++/** 参考の行（帯ではない。L39・L40）: 達成の差（radar_ambush − eye_only）・radar_dodge の自艇の沈没と護衛が先に見つけた割合 */
++export function interceptNotes(cells: ReadonlyMap<InterceptPolicy, InterceptCell>): string[] {
++  const out: string[] = [];
++  const amb = cells.get('radar_ambush');
++  const eye = cells.get('eye_only');
++  const dodge = cells.get('radar_dodge');
++  if (amb && eye) out.push(`達成の差 radar_ambush ${f1(amb.achievedPct)}% − eye_only ${f1(eye.achievedPct)}% = ${f1(amb.achievedPct - eye.achievedPct)} 点`);
++  if (dodge) out.push(`radar_dodge の自艇の沈没 ${f1(dodge.ownSunkPct)}%（そのうち護衛が先に見つけた ${f1(dodge.coverFirstPct)}%）`);
++  return out;
++}
 +
 +/** 帯の検査（行の無い帯は出さない）。b6 は interceptB6（ハードは B6 を見ない＝列の艦はノーマルと同じ） */
 +export function interceptBandChecks(cells: ReadonlyMap<InterceptPolicy, InterceptCell>, hard: boolean, b6: InterceptB6 | null): InterceptBandCheck[] {
@@ -1580,7 +1854,7 @@ index 0000000..dbfa6dc
 +  const eye = cells.get('eye_only');
 +  if (eye && amb) add('B2', `eye_only の 1 隻以上撃沈 ${f1(eye.sinkPct)}% ≤ radar_ambush ${f1(amb.sinkPct)} − ${B.b2Gap} 点`, eye.sinkPct <= amb.sinkPct - B.b2Gap);
 +  const idle = cells.get('idle_lane');
-+  if (idle) add('B3', `idle_lane の衝突・体当たり ${f1(idle.rammedPct)}% ≥ ${B.b3RamMin}%`, idle.rammedPct >= B.b3RamMin);
++  if (idle) add('B3', `idle_lane の自艇の沈没（衝突・体当たり ${f1(idle.rammedPct)}%・砲火 ${f1(idle.gunSunkPct)}%）${f1(idle.ownSunkPct)}% ≥ ${B.b3OwnMin}%`, idle.ownSunkPct >= B.b3OwnMin);
 +  const dodge = cells.get('radar_dodge');
 +  if (dodge) add('B4', `radar_dodge の衝突・体当たり ${f1(dodge.rammedPct)}% ≤ ${B.b4RamMax}%`, dodge.rammedPct <= B.b4RamMax);
 +  const charge = cells.get('charge');
@@ -1591,10 +1865,10 @@ index 0000000..dbfa6dc
 +}
 diff --git a/src/systems/intercept-sim-setup.ts b/src/systems/intercept-sim-setup.ts
 new file mode 100644
-index 0000000..818bfb8
+index 0000000..f849e48
 --- /dev/null
 +++ b/src/systems/intercept-sim-setup.ts
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,94 @@
 +// 迎撃の模擬の組み立て（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L19・L21）: 1 夜ごとに buildWorldSetup(data, 'us_04', 出撃の seed) の値から
 +// core/intercept-sim の設定を作る（今夜の揺らぎ＝seed+16 の護衛のずれ・列の入りの秒と道の y・水上機と誤射の有無は世界と同じ道。模擬は水上機と誤射を持たない）。
 +// つまみ（spec §4.11 の順の data の鍵）の上書きは記録を写して buildWorldSetup に通す＝起動時の検査（V-R・V-T・V-S）も通る（通らない値は例外）。
@@ -1619,7 +1893,10 @@ index 0000000..818bfb8
 +export const INTERCEPT_B6_MIN_M = 700;
 +export const INTERCEPT_B6_MAX_M = 1100;
 +
-+/** spec §4.11 のつまみ（data の鍵。undefined は data のまま）: ① transit.speed_kt ② radar.models.so_early の ship_range_m・sweep_s ③ transit.outbound.lane_y_m・transit.unload_s ④ fuel_allotment_gal */
++/**
++ * spec §4.11 のつまみ（data の鍵。undefined は data のまま）: ① transit.speed_kt ② radar.models.so_early の ship_range_m・sweep_s ③ transit.outbound.lane_y_m・transit.unload_s
++ * ④ fuel_allotment_gal。cover は S3b の lead の L38（護衛の最初の脚 enemy_start の x・y・針路）の候補を比べる上書き
++ */
 +export interface InterceptKnobs {
 +  speedKt?: number;
 +  shipRangeM?: number;
@@ -1627,6 +1904,7 @@ index 0000000..818bfb8
 +  laneY?: number;
 +  unloadS?: number;
 +  fuelGal?: number;
++  cover?: { readonly x: number; readonly y: number; readonly headingDeg: number };
 +}
 +
 +type Rec = Record<string, unknown>;
@@ -1640,7 +1918,9 @@ index 0000000..818bfb8
 +    const tr = proto['transit'] as Rec;
 +    const out = tr['outbound'] as Rec;
 +    const transit = { ...tr, speed_kt: k.speedKt ?? tr['speed_kt'], unload_s: k.unloadS ?? tr['unload_s'], outbound: { ...out, lane_y_m: k.laneY ?? out['lane_y_m'] } };
-+    return { ...m, v0_1_prototype: { ...proto, transit, fuel_allotment_gal: k.fuelGal ?? proto['fuel_allotment_gal'] } };
++    const es = proto['enemy_start'] as Rec;
++    const enemy_start = k.cover ? { ...es, x_m: k.cover.x, y_m: k.cover.y, heading_deg: k.cover.headingDeg } : es;
++    return { ...m, v0_1_prototype: { ...proto, transit, enemy_start, fuel_allotment_gal: k.fuelGal ?? proto['fuel_allotment_gal'] } };
 +  });
 +  const radar = data.hitRateModel.radar as unknown as Rec;
 +  const models = radar['models'] as Rec;
@@ -1685,7 +1965,7 @@ index 0000000..818bfb8
 +}
 diff --git a/tests/intercept-sim-a.test.ts b/tests/intercept-sim-a.test.ts
 new file mode 100644
-index 0000000..706f987
+index 0000000..4de4c79
 --- /dev/null
 +++ b/tests/intercept-sim-a.test.ts
 @@ -0,0 +1,171 @@
@@ -1715,14 +1995,14 @@ index 0000000..706f987
 +describe('決定性（L19）', () => {
 +  it('同じ seed・同じ遊び方なら同じ 1 夜（ノーマル・ハード・どの遊び方も）', () => {
 +    for (const hard of [false, true]) {
-+      for (const p of [...INTERCEPT_POLICIES, 'radar_ambush_quiet', 'stay'] as const) {
++      for (const p of [...INTERCEPT_POLICIES, 'radar_ambush_full', 'stay'] as const) {
 +        for (const seed of [3, 1007]) expect(runInterceptTrial(interceptNightSetup(gameData, seed, hard), p, seed)).toEqual(runInterceptTrial(interceptNightSetup(gameData, seed, hard), p, seed));
 +      }
 +    }
 +  });
 +
-+  it('同じ seed の組なら同じ表（radar_ambush の軽い組 N 50 × 2＝seed 1〜50・1001〜1050。tests/intercept-sim-b と同じ組）、seed が違えば夜が変わる', () => {
-+    const seeds = [...Array.from({ length: 50 }, (_, i) => 1 + i), ...Array.from({ length: 50 }, (_, i) => 1001 + i)];
++  it('同じ seed の組なら同じ表（radar_ambush の軽い組 N 50 × 2＝seed 151〜200・1151〜1200。tests/intercept-sim-b と同じ組）、seed が違えば夜が変わる', () => {
++    const seeds = [...Array.from({ length: 50 }, (_, i) => 151 + i), ...Array.from({ length: 50 }, (_, i) => 1151 + i)];
 +    const cell = (): ReturnType<typeof interceptCellOf> => interceptCellOf(seeds.map((seed) => runInterceptTrial(interceptNightSetup(gameData, seed, false), 'radar_ambush', seed)), 1);
 +    const a = cell();
 +    expect(a.n).toBe(100);
@@ -1862,16 +2142,17 @@ index 0000000..706f987
 +});
 diff --git a/tests/intercept-sim-b.test.ts b/tests/intercept-sim-b.test.ts
 new file mode 100644
-index 0000000..293d575
+index 0000000..05f7a3c
 --- /dev/null
 +++ b/tests/intercept-sim-b.test.ts
-@@ -0,0 +1,43 @@
-+// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L23）の帯を軽い組で見る: N 50 × 2 組（seed 1〜50・1001〜1050）の
+@@ -0,0 +1,44 @@
++// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L23・L44）の帯を軽い組で見る: N 50 × 2 組（seed 151〜200・1151〜1200）の
 +// 帯の行のある 5 つの遊び方（ノーマル。radar_twice・home_after_inbound は表だけの行）と radar_ambush（ハード）で、systems/intercept-calibration の帯
 +// （B1〜B6・燃料 F・ハードの H1・H2）が ✗ 0。
 +// 軽い組の選び方: 表（scripts/intercept-sim の TABLE=2＝N 400 × 2 組）の 800 夜を 50 × 2 の 8 つの組（seed 1+50k〜50+50k・1001+50k〜1050+50k、k = 0〜7）に割り、
-+// 帯ごとの ✓/✗ を 800 夜の表と比べた（CHANGELOG v0.8.0 S3）。ここは k = 0 の組＝全部の帯で 800 夜と同じ ✓/✗。8 組の揺れは帯の端の近くで ±5 点ほど
-+// （S3 の表では k = 3 の B1a・H1 が 35.0% で ✓）。帯の端に寄った値は軽い組で裏返りうるので、つまみや帯を動かしたら 8 組をもう一度比べる。B6 は夜に依らない（固定の seed の 1 本の射撃）。
++// 帯ごとの ✓/✗ を 800 夜の表と比べた（CHANGELOG v0.8.0 S3）。S3b（護衛の最初の脚 270°・静音で離れる）の data では k = 0 の B1a が 33.0%（800 夜は 35.8%）で裏返るので、
++// 全部の帯で 800 夜と同じ ✓/✗ の組のうち帯の端から一番遠い k = 3 にした（B1a 40.0%・H1 41.0%。800 夜の B1a は端から 0.8 点）。8 組の揺れは B1a 31〜41・H1 32〜45。
++// 帯の端に寄った値は軽い組で裏返りうるので、つまみや帯を動かしたら 8 組をもう一度比べる。B6 は夜に依らない（固定の seed の 1 本の射撃）。
 +// 本数（N 400 × 2 組）の帯は scripts/headless/g2.sh の US04=1。
 +import { describe, expect, it } from 'vitest';
 +import { gameData } from '../src/config/game-data';
@@ -1883,8 +2164,8 @@ index 0000000..293d575
 +
 +/** 帯の行のある遊び方（B1・F radar_ambush、B2 eye_only、B3 idle_lane、B4 radar_dodge、B5 charge） */
 +const BANDED: readonly InterceptPolicy[] = ['radar_ambush', 'eye_only', 'idle_lane', 'radar_dodge', 'charge'];
-+/** 軽い組の seed（50 × 2 組） */
-+const LIGHT_SEEDS: readonly number[] = [...Array.from({ length: 50 }, (_, i) => 1 + i), ...Array.from({ length: 50 }, (_, i) => 1001 + i)];
++/** 軽い組の seed（50 × 2 組。800 夜の k = 3） */
++const LIGHT_SEEDS: readonly number[] = [...Array.from({ length: 50 }, (_, i) => 151 + i), ...Array.from({ length: 50 }, (_, i) => 1151 + i)];
 +
 +function cells(hard: boolean, pols: readonly InterceptPolicy[]): Map<InterceptPolicy, InterceptCell> {
 +  const out = new Map<InterceptPolicy, InterceptCell>();

@@ -1,7 +1,6 @@
-v0.8.0 S3 (intercept sim) — final implementer tree (uncommitted in the repo). Base f9ba94f (claude/v0.8.0-us-campaign). Apply: git apply s3.patch
-Data unchanged (no §4.11 knob moved). Tables: normal md5 d9db008bb03d3cdad27e07c2c48783d1 (2m15s), hard aab25d017507d7eb6d6373338dde664e (2m38s) = first tables.
-Bands: B1a ✗ 31.0 / B1b ✗ 56.4 / B1c ✗ 43.6 / B2 ✗ 53.3 / B3 ✗ 0.4 / B4 ✓ 0.0 / B5 ✓ 48.1 / B6 ✓ 38.1 / F ✗ 49.6; hard H1 ✗ 31.0 / H2 ✗ 62.8 -> lead decision needed.
-g2 (G6 ALLY EVAC US04): OK 37 DIFF 2 (us4/us4h md5 same, bands ✗). npm test: 3 fail = intercept-sim-b x2 (bands) + tests/radar importer pin (needs the sim files added; outside S3's allowed files; proposed patch v0800/impl/S3-dev/proposed/radar-test.patch).
-strait-probe: &noplane + IDENT=1 -> world = sim on 24/24 nights. Real night: seaplane adds 4/8 radar_ambush losses.
-Scratch evidence: v0800/impl/S3-dev/{tables,final,probe,probes.log,lightsets.txt,g2.log,npmtest.log}.
-Build: same label main@2afe092 -> 7 of 8 files byte-identical to the S2 gate site (sw.js build time only).
+v0.8.0 S3b (lead decisions L36-L44) — implementer tree (uncommitted in the repo). Base f9ba94f. Apply: git apply s3.patch
+Done: L36 torpedo breakdown (world, no policy fix); L37 radar_ambush/radar_twice quiet escape (+ reference row radar_ambush_full); L38 cover C1 (1800,1200)@270 in data + setup-us04 snapshot rewritten (heading lines only); L39 B3 = idle_lane own sinking; L42 hard H1/H2 ✓; L43 radar.test patch applied.
+Stopped at L40: B2 ✗ (eye_only 63.4% vs ≤ 20.8; the cover still passes the start), F ✗ 61.8% (L41 not reached). B1 ✓ (35.8/2.1/97.8).
+Final tables: normal a06bc7d2eb8a2a85bb65c989061d6597, hard c17a7a68b7a01558c32506b9c1d70ee0. Light set re-picked k=3 (seeds 151-200, 1151-1200).
+strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). npm test: 1 fail (intercept-sim-b normal: B2, F).
+run-gates S3-impl running (SKIP art-perf) at the time of this backup.
