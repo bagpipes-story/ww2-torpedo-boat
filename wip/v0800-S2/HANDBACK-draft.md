@@ -1,0 +1,6 @@
+# S2 hand-back draft (fill gates/perf at the end)
+- Files: see `git status` at 67299e7 + notes; new: systems/destroyer-transit 108, world-radar 82, radar-view 60, strait-terrain 73, radar-telemetry 55, transit-telemetry 51, assets/radar-art 25, config/radar-art-config 26, config/strait-art-config 6; tests transit-world 200, transit-world-kit 122, radar-world 130, radar-neutral 139, strait-art 102.
+  changed: entities/destroyer 134->167, destroyer-group 177->199, destroyer-step 43->46, world-enemies 77->78, world-enemy-step 27->29, mission-world 283->286, world-visuals 52->54, world-art 77->82, coast-fx 53->53, assets/coast-shape 82->137, core/boat-telemetry 155->201, telemetry-create 132->136, mission-telemetry 201->205, config/game-config 261->263, debug-setup 50->52, ab-replay 162->170, hud-ab 26->27, tests radar 196->198, world-visuals 73->74.
+- L9: vitest radar-neutral 12/12 (+mutation caught); headless NORADAR us04: 3/4 same + hard s1 last-frame flake -> JOBS=1 x2 same; hud-ab us04 NORADAR 4/4.
+- L11: transit-world 3 cases; headless slowmo.mjs real world: same order/points, +2.52 s.
+- Screenshots: impl/S2-shots/us04-noplane-{start,start-lookout,inbound,hold,outbound}-w1280.png, us04-{start,start-lookout,inbound,outbound}-w1280.png (seaplane night, boat sunk), us04-shore-{passage,passage-east,north-ne}-w1280.png

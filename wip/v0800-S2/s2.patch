@@ -1,5 +1,5 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index f01a1ea..87af132 100644
+index f01a1ea..2854cb7 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
 @@ -37,8 +37,23 @@
@@ -18,7 +18,7 @@ index f01a1ea..87af132 100644
 +    - `?debug&noradar`（D-R12）: `config/game-config` の `DEBUG_RADAR_OFF` を `config/debug-setup` が `radarOff` に渡す（`radarSetupPart` が radar の鍵ごと出さない）。
 +    - 海峡の両岸の絵（spec §4.10・§7 の 9）: `assets/coast-shape` に任務の岸の線の一覧 `coastLines`（今の南の岸・jp_03 の北の島の 2 本は v0.7.2 の systems/coast-fx の式・順のまま、両岸は陸の区間ごと＝us_04 は北 1 本・南は水道の両側の 2 本）と `shoreLandSpans`（82 → 137 行）。`systems/coast-fx`（53 行のまま）はその一覧を 1 本ずつ並べるだけ。新 `systems/strait-terrain`（73 行。systems/evac-terrain の作法＝起動時に 1 回の Graphics。命令は us_04 で 10＝塗りの色 1・陸の矩形 3・線の色 1・浜の線 3・水道に面した陸の端の線 2）: 北と南の陸と浜の線、字 5（コロンバンガラ島・ギゾ島・アランデル島・ファーガソン水道・「ビラ →」＝列が抜ける縁の外の北の陸の上）。陸の際の砂浜と木々は今の岸の帯（1 回だけ作る tex-coast-strip）。`systems/world-art`（77 → 82 行）が両岸の任務だけ作って破棄する。新 `config/strait-art-config`（6 行。揚陸の地の字の矢印）。
 +    - テレメトリ（S4 の HUD・Result の材料。文はまだ出さない）: `core/boat-telemetry`（155 → 201 行）に `radar`（射程・掃引の回数・接触の数・一番近い接触・最初の接触・増えた／減った）と `transit`（段階ごとの隻数・残りの戻り・通算・復路の最初の秒）。新 `systems/radar-telemetry`（55 行）・`systems/transit-telemetry`（51 行）が createTelemetry で 1 回作り、refreshTelemetry で毎フレーム写すだけ（無い任務は enabled false のまま何もしない）。`systems/telemetry-create`（132 → 136 行）・`systems/mission-telemetry`（201 → 205 行）。
-+    - ヘッドレス: `scripts/headless/ab-replay.mjs`（162 → 170 行）に `SET=us04`（us_04 のノーマル・ハード × seed 1・2 を 260 秒。all には入れない。A は S2 の commit のビルド）と `NORADAR=1`（B だけ `&noradar`。写しのレーダーの欄は比べない）。写しに列の段階 `s.tr` とレーダーの輝点 `s.rd`（掃引の回数・数・位置）を足した（無い任務は鍵ごと無い＝今の組の写しはそのまま）。
++    - ヘッドレス: `scripts/headless/ab-replay.mjs`（162 → 170 行）に `SET=us04`（us_04 のノーマル・ハード × seed 1・2 を 260 秒。all には入れない。A は S2 の commit のビルド）と `NORADAR=1`（B だけ `&noradar`。写しのレーダーの欄は比べない）。写しに列の段階 `s.tr` とレーダーの輝点 `s.rd`（掃引の回数・数・位置）を足した（無い任務は鍵ごと無い＝今の組の写しはそのまま）。`scripts/headless/hud-ab.mjs`（26 → 27 行）の `SET=us04` の既定の秒は 260（`NORADAR=1` も効く）。
 +    - tests（＋4 ファイル＋kit 1 本・＋38 件。直した固定 2 本）: 新 `transit-world`（12 件: Phaser なしの小さな世界＝tests/transit-world-kit で mission-world の固定ステップの順に回し、入りの秒と 8 秒おき・縁の x・揚陸 40 秒・復路の道と針路・渡りの秒・護衛の退き・海域の外の艦は out で退いたは去った艦だけ・R2〔護衛が沈み列がみなビラの間は allOut・allSettled が偽で core の外れの確定は真＝門が要る。最後の艦が去ったステップに 1 回だけ真〕・夜明け 2 件〔ビラの艦は戻らない・入りの前の夜明け〕・L11〔往路の全艦が海域の中の 3 実秒の命中スローで、ビラに着く順・復路に現れる順・現れる点と針路・往路の間隔 m が同じ。ノーマル・seed 1・ハード seed 2〕・配線の文〔destroyer-step の順と門・隊の allOut の枝・world-enemies の砲の添字・Destroyer の goAway・reappear と kit の写しの突き合わせ〕）・新 `radar-world`（7 件: 敵の側の段の最後・作る所・見た目の順のソース、掃引は最初の固定ステップと 3 秒の倍数を越えた最初のステップ・間は輝点が動かない、どの掃引の輝点も海域の中の艦を射程・陸の反射・丸めで別に計算した物と同じ、spec §4.5 の流れ〔護衛 1 → 最大 4 → 0。最初の接触は北西 2,300 m〕・隠れた艦と沈み始めた艦は映らない・テレメトリ）・新 `radar-neutral`（12 件。L9 の (a): レーダーの層 4 本の代入の左辺は自分・手元・自分のテレメトリの塊だけ〔走査が世界への代入を見つけることも確かめた〕・世界を書く口を呼ばない・import の固定・音の層は import しない、Phaser なしの小さな世界をレーダーあり・なしで 260 秒回して毎ステップ艦・AI・列の段階が同じ〔艦が自艇を見つける AI も回す。3 件〕、setup はレーダーを切っても radar の鍵が無いだけで今夜の乱数は 10 回のまま）・新 `strait-art`（7 件: 両岸の無い任務〔ハードも〕の岸の帯の線と Bob は v0.7.2 の式と同じ・us_04 の 3 本・陸の区間・coast-fx と strait-terrain と world-art の作り）。直した固定: `radar`（S1 の「誰も import しない」→ import する所を固定＝core/radar は world-radar・radar-view・radar-telemetry、ship-transit は destroyer-transit・transit-telemetry、strait-geometry は core/radar・world-radar）・`world-visuals`（退避の後・世界の絵の前にレーダーの 1 行ずつ）。
 +    - agent の確かめ: build・typecheck（2 つの tsconfig）・npm test 3,743 件が通る。レーダーが世界を変えない証（L9 の (b)）: `NORADAR=1 SET=us04` で A と B を同じ S2 のビルドにした再生の A/B は 4 件中 3 件が全 15,600 フレーム同じ、ハード seed 1 は最後のフレームの `.t` だけ違った（両方とも 239.2 秒で任務が終わり、終わりのフレームが 1 つずれた＝既知の揺れの形。JOBS=1 で 2 回回し直してどちらも全 15,600 フレーム同じ）。HUD の A/B（hud-ab の `SET=us04 NORADAR=1`・260 秒）は 4 件とも同じ。`SET=us04` の A＝B（どちらもレーダーあり）は 4 件とも同じ（決定的）。ページのエラー 0。画面写し（W 1280・`&noplane`）で往路の列の輝点（目の 900 m の外＝艦の絵なし・3 行目は「敵影なし」のまま）・復路の列（近い 1 隻は目で見え輪の中・先の艦は輪だけ）・北の岸と「ビラ →」・水道の切れ目と礁と輪を見た。
 +    - 制約（S2 の時点）: HUD の文（2 行目の接触・列の出来事・衝突の危険・緑の端の印）・Briefing・Result は S4（S2 はテレメトリの材料だけ）。輝点は掃引ごとに置き直すので、30 kt の列では次の掃引までに艦が最大約 230 m 先へ進み、輪が艦首より後ろに残る（D-R7 のとおり。回る線は描かない）。水道の切れ目の南（海域の外）は今の縁の外と同じ無地の暗い海（海の模様と格子は海域の内だけ＝systems/sea-fx の作り。切れ目に模様を伸ばすのは S4・S5 の候補）。列の艦は雷跡を避けて南北の縁の外へ出ても段階は x だけで決まる（東西の縁を越えるまで海域の中の扱い。道は縁から 1,300 m 以上内なので起きにくい）。列が去った後の 3 行目は今の夜明けの文の形「東京急行は西へ去った ・ 狙う艦なし」が出る（S4 で決める）。レーダーは大発・PT を渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ）。ヘッドレスでは任務の終わり（沈没の演出の後の Result）のフレームが壁時計に依って揺れる（今の任務も同じ。上の 1 件）。
@@ -92,6 +92,35 @@ index b77f602..55165ce 100644
      if (!r.same) bad++;
      console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
    }
+diff --git a/scripts/headless/hud-ab.mjs b/scripts/headless/hud-ab.mjs
+index d6d9223..8e93e4c 100644
+--- a/scripts/headless/hud-ab.mjs
++++ b/scripts/headless/hud-ab.mjs
+@@ -4,12 +4,13 @@
+ // v0.6.10 S5b: SET=jp04 で ab-replay の jp04 の組（jp_04 の B は &noally・ノーマルとハード × seed 1〜4＝G6w）。既定は base。
+ // v0.6.11 S6: SET=jp03 で ab-replay の jp03 の組（jp_03 のノーマル・ハード × seed 1・2。既定の秒は 260＝決着の後まで。A は S5 の ae6af75）。
+ // v0.6.11 S8: SET=jp04base で jp_04（卯月あり）を 88c9f19 と（ab-replay の jp04base の組。秒は 170）。
+-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
++// v0.8.0 S2: SET=us04 で us_04（ab-replay の us04 の組。秒は 260＝夜明けまで）。NORADAR=1 で B だけ &noradar（レーダーが HUD を変えない証。S4 からはレーダーの文を除いて比べる）。
++// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04] [NORADAR=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+ import { abCases, oneCase } from './ab-replay.mjs';
+ import { chromium, envNum, pool, serve } from './lib.mjs';
+ 
+ if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
+-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' ? 260 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
++const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
+ const sa = await serve(process.env.A);
+ const sb = await serve(process.env.B);
+ const browser = await chromium.launch();
+@@ -20,7 +21,7 @@ await sb.close();
+ let bad = 0;
+ for (const r of res) {
+   if (!r.same) bad++;
+-  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
++  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+ }
+ console.log(`cases ${res.length} same ${res.length - bad} diff ${bad}`);
+ process.exitCode = bad === 0 ? 0 : 1;
 diff --git a/src/assets/coast-shape.ts b/src/assets/coast-shape.ts
 index 7682f25..79a38e0 100644
 --- a/src/assets/coast-shape.ts
