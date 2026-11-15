@@ -1,7 +1,7 @@
 // Title・Briefing・Result のボタンと配置（論理座標 GAME_WIDTH×720（幅は画面の縦横比で 1280〜1584。v0.5.1） の px）と UI の語（v0.4.0、docs/02 §4）。ゲームの数値ではないので data/*.json には置かない。
 // ui-config.ts（HUD）が 270 行を超えたので分けた。ボタンの高さはどれも 96 px 以上（iPhone の表示倍率 0.483〜0.546 で 46 pt 以上）。
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN } from './game-config';
-import { TITLE_SOUND_W, TITLE_TOGGLE_GAP } from './title-layout-config';
+import { TITLE_MUSIC_GAP, TITLE_SOUND_W, TITLE_TOGGLE_GAP } from './title-layout-config';
 
 /** 画面ができてから押下を受けない ms（前の画面から押しっぱなしの指・2 度押しで進まない） */
 export const MENU_INPUT_DELAY_MS = 300;
@@ -43,9 +43,10 @@ export function titleCampaignLockedSubJa(prereqName: string, done: number, total
 }
 // 任務の行・操作の一言の y・切り替えの間と、日本のタブの 2 列の格子（v0.6.7）は title-layout-config（DOM を読まないので ui/title-grid と tests が読める）。ここから出し直す
 export { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_GAP, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_TOP, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from './title-layout-config';
-// 右上の「音」ボタン（v0.7.1 S1。値と文は title-layout-config）。x は画面の右端から
-export { TITLE_SOUND_H, TITLE_SOUND_HINT_GAP, TITLE_SOUND_HINT_JA, TITLE_SOUND_HINT_PX, TITLE_SOUND_OFF_JA, TITLE_SOUND_ON_JA, TITLE_SOUND_PX, TITLE_SOUND_W, TITLE_SOUND_Y } from './title-layout-config';
+// 右上の「音」ボタン（v0.7.1 S1）とその左の「曲」ボタン（v0.7.2 S1。同じ大きさ・間 TITLE_MUSIC_GAP）。値と文は title-layout-config。x は画面の右端から
+export { TITLE_MUSIC_OFF_JA, TITLE_MUSIC_ON_JA, TITLE_SOUND_H, TITLE_SOUND_OFF_JA, TITLE_SOUND_ON_JA, TITLE_SOUND_PX, TITLE_SOUND_SUB_JA, TITLE_SOUND_SUB_PX, TITLE_SOUND_W, TITLE_SOUND_Y } from './title-layout-config';
 export const TITLE_SOUND_X = GAME_WIDTH - HUD_MARGIN - TITLE_SOUND_W;
+export const TITLE_MUSIC_X = TITLE_SOUND_X - TITLE_MUSIC_GAP - TITLE_SOUND_W;
 // 操作の一言（文・字の大きさ・キャンペーンごと）は title-hint-config（v0.6.3。DOM を読まないのでテストが幅を測れる）。ここから出し直す
 export { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_JA, TITLE_HINT_PX } from './title-hint-config';
 /**
@@ -165,5 +166,11 @@ export const PAUSE_BACKING_ALPHA = 0.85;
  */
 export const PAUSE_SOUND_W = MENU_PRIMARY_W;
 export const PAUSE_SOUND_X = GAME_WIDTH / 2 - PAUSE_SOUND_W / 2;
+/**
+ * 一時停止の「曲」ボタン（v0.7.2 S1。spec-v0720 §4.4・brief L16）: 「音」のすぐ上（同じ x・幅 320・高さ 96・間 16＝y 488〜584。下の段の 3 つはそのまま）。題は Title の「曲」と同じ
+ * 「曲: オン」⇄「曲: オフ」で、選んだ値も同じ（systems/sfx-settings）。下の Hud が透けないよう黒を敷く（tests/pause-sound）
+ */
+export const PAUSE_MUSIC_GAP = 16;
+export const PAUSE_MUSIC_Y = RESULT_BUTTON_Y - PAUSE_MUSIC_GAP - RESULT_BUTTON_H;
 /** 再開してから Hud が押下を受けない ms（右下の「再開」の 2 度押しが、下にある魚雷・扇のボタンに入らないように） */
 export const PAUSE_RESUME_GUARD_MS = 300;

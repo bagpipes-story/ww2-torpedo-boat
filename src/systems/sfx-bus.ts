@@ -6,10 +6,17 @@
 // 段: S1 は sfxUi・sfxAt・sfxSetMuted と聞き手。S2 で大砲の口 sfxGunAt（距離の帯で近い音／遠雷）と sfxAt の最小間隔。S3 でループの口 sfxLoops・sfxLoopsPaused・sfxLoopsStop
 // （systems/sfx-mission だけが呼ぶ。計画の sfxLoop(id, gain, rate) は 5 本の目標をまとめて渡す形にした）。S4 で sfxCue の遅らせ（再生の時計で予約）。
 // IP2: 試聴の場（?sfxlab）の口 sfxSetBuffer・sfxCanPlay（scenes/sound-lab-scene だけが呼ぶ。ゲームの中では呼ばない）。
+// v0.7.2 S1: 曲の口 sfxMusic・sfxMusicRelease・sfxMusicPaused・sfxMusicEnabled（場面・任務の終わり・一時停止・「曲」ボタン）と、曲の試聴の場の口 sfxMusicAudition・sfxMusicLab*
+// （scenes/music-lab-scene だけ）。決めと音源は systems/sfx-music-player（止まっている context・消音・曲オフ・標本なしでは音源を作らない）。
+// v0.7.2 S2: 任務の段の口 sfxMusicMood（MissionSfx が core/sfx-music-mood の段を毎フレーム。曲の試聴の場も）。
+// v0.7.2 S3（brief L28・L31）: 命中スローの読み口 registerSfxSlowMo（world-art が世界の作成で世界・破棄で null＝聞き手と同じ形。読むのは slowMoLeftS だけ）。sfxLoops がフレームに 1 回読んで
+// エンジンの命中スローの音へ渡し（書くのは変わった時だけ）、ループの目標の rate に案の倍率を掛ける。sfxLoopsStop とメニュー・試聴の場の sfxMusic で戻す。試聴の場の案の口 sfxSlowVariant。
 import { SFX_RESULT_BELL, type SfxKey } from '../config/sfx-config';
+import { MUSIC_CTX_LAB, MUSIC_CTX_MENU, type MusicKey, type SfxSlowId } from '../config/sfx-music-config';
 import type { SfxLoopTargets } from '../core/sfx-loops';
 import { sfxBand, sfxGunKey } from '../core/sfx-mix';
 import type { SfxEngine } from './sfx-engine';
+import { applySfxSlowRate } from './sfx-slowmo';
 
 /** 聞き手の位置（世界の m。core の BoatState が満たす。読むだけ） */
 export interface SfxListenerPos {
@@ -17,8 +24,14 @@ export interface SfxListenerPos {
   readonly y: number;
 }
 
+/** 命中スローの残り秒（v0.7.2 S3。MissionWorld がそのまま満たす。読むだけ） */
+export interface SfxSlowMoSource {
+  readonly slowMoLeftS: number;
+}
+
 let engine: SfxEngine | null = null;
 let listener: SfxListenerPos | null = null;
+let slowMo: SfxSlowMoSource | null = null;
 
 /** Boot で 1 回（systems/sfx-boot）。null で外す（tests） */
 export function registerSfxEngine(e: SfxEngine | null): void {
@@ -28,6 +41,11 @@ export function registerSfxEngine(e: SfxEngine | null): void {
 /** 聞き手（世界の作成時に自艇の状態・破棄で null。world-art） */
 export function registerSfxListener(pos: SfxListenerPos | null): void {
   listener = pos;
+}
+
+/** 命中スローの読み口（v0.7.2 S3。世界の作成時に世界・破棄で null＝world-art。曲の試聴の場の台本も） */
+export function registerSfxSlowMo(src: SfxSlowMoSource | null): void {
+  slowMo = src;
 }
 
 /** UI の音（ボタン。位置なし・中央）。最初のタップは context が動き出してから鳴る（エンジンが 1 つだけ覚える） */
@@ -67,9 +85,15 @@ export function sfxResultBell(returned: boolean): void {
   else for (let i = 0; i < b.strikes; i++) engine.playFlat('bell', 1, 1, i * b.gapS);
 }
 
-/** ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player） */
+/**
+ * ループ 5 本の目標（core/sfx-loops が書いた音量・速さ）を渡す（任務の間、毎フレーム。dtS はそのフレームの秒）。ノードへ書くのは 10 Hz・変わった時だけ（systems/sfx-loop-player）。
+ * v0.7.2 S3: 命中スローをここで 1 回読み（変わった時だけ書く）、目標の rate に案の倍率を掛けてから（目標そのものは書き換えない）
+ */
 export function sfxLoops(targets: SfxLoopTargets, dtS: number): void {
-  if (engine !== null) engine.loops.update(targets, dtS, engine.muted);
+  if (engine === null) return;
+  const s = slowMo;
+  engine.slow.update(s !== null && s.slowMoLeftS > 0);
+  engine.loops.update(applySfxSlowRate(targets, engine.slow.loopFactor, engine.slow.targets), dtS, engine.muted);
 }
 
 /** 一時停止でループの束を 0 へ・再開で戻す（Hud の PAUSE・RESUME） */
@@ -77,9 +101,11 @@ export function sfxLoopsPaused(v: boolean): void {
   if (engine !== null) engine.loops.setPaused(v);
 }
 
-/** ループを止める（Hud の SHUTDOWN＝任務の終わり・やり直し・任務をやめる） */
+/** ループを止める（Hud の SHUTDOWN＝任務の終わり・やり直し・任務をやめる）。v0.7.2 S3: 命中スローの濾波器と rate も戻す（スローの途中で終わっても） */
 export function sfxLoopsStop(): void {
-  if (engine !== null) engine.loops.stop();
+  if (engine === null) return;
+  engine.loops.stop();
+  engine.slow.reset();
 }
 
 /** 消音（Title・一時停止の「音」ボタン、起動時の保存の値）。解く時は止まっている context を起こす */
@@ -95,4 +121,55 @@ export function sfxSetBuffer(key: SfxKey, samples: Float32Array): void {
 /** 試聴の場: 今鳴らせるか（エンジンがあり、context が動いていて、消音でない）。最初のタップで context が動き出すのを待つ。エンジンが無ければ null */
 export function sfxCanPlay(): boolean | null {
   return engine === null ? null : engine.running && !engine.muted;
+}
+
+/**
+ * 曲の場面を頼む（v0.7.2 S1。D8）: Title・Result は MUSIC_CTX_MENU（Result は鐘の後 delayS 秒）・MissionSfx は MUSIC_CTX_MISSION・曲の試聴の場は MUSIC_CTX_LAB・効果音の試聴の場は
+ * MUSIC_CTX_NONE。同じ場面の頼み直しは何もしない（Briefing は頼まない＝Title の曲が続く）。場面が替われば一時停止は解く
+ */
+export function sfxMusic(ctx: number, delayS = 0): void {
+  if (engine === null) return;
+  if (ctx === MUSIC_CTX_MENU || ctx === MUSIC_CTX_LAB) engine.slow.reset(); // v0.7.2 S3: メニュー・試聴の場の曲はこもらせない（濾波器と rate を戻してから頼む）
+  engine.music.request(ctx, delayS);
+}
+
+/** 任務の終わり（MissionSfx の SHUTDOWN）: 今の場面が ctx の時だけ外す（Phaser 3.90 は Hud の SHUTDOWN を Result・Title の create の後に回す＝先に頼んだメニューの曲を消さない） */
+export function sfxMusicRelease(ctx: number): void {
+  if (engine !== null) engine.music.release(ctx);
+}
+
+/** 任務の段（v0.7.2 S2。MUSIC_MOOD_*。MissionSfx が毎フレーム・曲の試聴の場）: 変わった時だけ、鳴っている家族の 3 層の音量を書く */
+export function sfxMusicMood(level: number): void {
+  if (engine !== null) engine.music.setMood(level);
+}
+
+/** 一時停止で曲の束を 0 へ・再開で戻す（Hud の PAUSE・RESUME。音源は止めない） */
+export function sfxMusicPaused(v: boolean): void {
+  if (engine !== null) engine.music.setPaused(v);
+}
+
+/** 「曲: オン／オフ」（systems/sfx-settings・起動時の保存の値・試聴の場）。オフは 0.3 秒で 0 にして止め、オンで頭から */
+export function sfxMusicEnabled(v: boolean): void {
+  if (engine !== null) engine.music.setEnabled(v);
+}
+
+/** 曲の試聴の場: 鳴らす候補（null で止める）。まだ作っていなければ作り始め、できたらそのまま鳴らす */
+export function sfxMusicAudition(key: MusicKey | null): void {
+  if (engine !== null) engine.music.audition(key);
+}
+
+/** 曲の試聴の場（v0.7.2 S3・L31）: 命中スローの案（スローの最中なら新しい案で書き直す）。場を出る時に既定の SFX_SLOW_DEFAULT_ID へ戻す */
+export function sfxSlowVariant(id: SfxSlowId): void {
+  if (engine !== null) engine.slow.setVariant(id);
+}
+
+/** 曲の試聴の場の文: 鳴らしている曲・作っている曲（無ければ null）と進み（0〜1） */
+export function sfxMusicLabPlaying(): MusicKey | null {
+  return engine === null ? null : engine.music.playingKey;
+}
+export function sfxMusicLabBuilding(): MusicKey | null {
+  return engine === null ? null : engine.music.build.key;
+}
+export function sfxMusicLabProgress(): number {
+  return engine === null ? 0 : engine.music.build.progress;
 }

@@ -62,14 +62,11 @@ export const SFX_SEED_DRONE = 7525;
 /** IP2: 弾倉の交換の終わり（差し込む・槓桿） */
 export const SFX_SEED_RELOAD_END = 7526;
 /**
- * IP3: 試聴の場（?sfxlab）の魚雷の発射の新しい案 E〜I（押した時に作る。assets/sfx-recipes-launch2）。IP4: F はゲームの torp_launch（U-R2）＝起動時に F の種で作る
- * （試聴した標本とビット同一にするため種はこのまま。表の torp_launch の種 SFX_SEED_TORP_LAUNCH は試聴の場の前の案 A〜D の種）
+ * IP3: 試聴の場（?sfxlab）の魚雷の発射の新しい案 E〜I の種（7527〜7531）。IP4: F はゲームの torp_launch（U-R2）＝起動時に F の種で作る（assets/sfx-recipes-launch。
+ * 試聴した標本とビット同一にするため種はこのまま。表の torp_launch の種 SFX_SEED_TORP_LAUNCH は前の案 A〜D の種＝表の欄に残す）。
+ * v0.7.2 S4: 使われなくなった E・G・H・I（7527・7529〜7531）は案と一緒に消した（番号は空けたまま＝ほかに使わない）
  */
-export const SFX_SEED_LAB_LAUNCH_E = 7527;
 export const SFX_SEED_LAB_LAUNCH_F = 7528;
-export const SFX_SEED_LAB_LAUNCH_G = 7529;
-export const SFX_SEED_LAB_LAUNCH_H = 7530;
-export const SFX_SEED_LAB_LAUNCH_I = 7531;
 /** 再生のたびの rate の揺れ（エンジンの乱数。合成の種とは別） */
 export const SFX_SEED_PLAY = 7599;
 

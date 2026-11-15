@@ -16,8 +16,10 @@
 //   一時停止の「音」ボタンで消音 → 解く →「再開」で戻るか → 任務のやり直しを 3 回して、鳴っている繰り返しの音源が 5 個のままか（エンジンの数と、ページの中で
 //   AudioBufferSourceNode の start・stop を数えた数の両方）→「任務をやめる」で Title へ戻ると 0 個・無音か。鳴らない場合（既定の direct）はループを 1 つも作らないこと。
 // S4: ループの確かめの最後に、同じ出撃で Mission へ入り直して帰投で終え、Result の鐘（2 打）が鳴るか（鳴らした数と、Result の最初の 1.6 秒の波形の頂）。
-// 実行: SITE=<site> [FLOW=title|direct] [SECS=10] [MISSION=us_02（direct）] [ROW=<任務の行の題>（title）] [W=1560] [MUTE=0] [MUZZLE=0] [LOOPS=0] [Q=<direct の追加の query>] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-live.mjs
-import { writeFileSync } from 'node:fs';
+// v0.7.2 S1: Title・Result でメニューの曲が鳴るので、ここでは保存の「曲: オフ」で開く（ループの数え・「任務をやめる → Title で無音」は効果音だけの確かめのまま。MUSIC=1 で曲も鳴らす）。
+//   曲の確かめは scripts/headless/sfx-music-live。
+// 実行: SITE=<site> [FLOW=title|direct] [SECS=10] [MISSION=us_02（direct）] [ROW=<任務の行の題>（title）] [W=1560] [MUTE=0] [MUZZLE=0] [LOOPS=0] [Q=<direct の追加の query>] [MUSIC=1] [AUDIO=1|NOAUDIO=1] [OUT=<json>] node scripts/headless/sfx-live.mjs
+import { readFileSync, writeFileSync } from 'node:fs';
 import { VIEWPORTS, chromium, envNum, serve } from './lib.mjs';
 
 if (!process.env.SITE) throw new Error('SITE=<site> が要る');
@@ -30,6 +32,9 @@ const NO_AUDIO = process.env.NOAUDIO === '1';
 const AUDIO = process.env.AUDIO === '1';
 const VOICES = 16;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// 鍵の番号は config/sfx-config の SFX_KEYS の並びから引く（v0.7.2 S1: IP2 で reload_end が 15 番に入ってから ui_tap・bell の固定の番号が 1 つずれていた）
+const SFX_KEY_LIST = [.../export const SFX_KEYS = \[([\s\S]*?)\] as const/.exec(readFileSync(new URL('../../src/config/sfx-config.ts', import.meta.url), 'utf8'))[1].matchAll(/'(\w+)'/g)].map((x) => x[1]);
+const KEY_INDEX = { mg: SFX_KEY_LIST.indexOf('mg'), blast_l: SFX_KEY_LIST.indexOf('blast_l'), ui_tap: SFX_KEY_LIST.indexOf('ui_tap'), bell: SFX_KEY_LIST.indexOf('bell') };
 
 /** ページの中: 波形の頂を測り始める（master → AnalyserNode。50 ms ごとに 8192 標本＝約 0.19 秒の窓の頂を取る＝描画で遅れても窓が重なる）。context が無ければ何もしない */
 function startMeter() {
@@ -92,6 +97,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e && e.message ? e.message : e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
+if (process.env.MUSIC !== '1') await page.addInitScript(() => { try { localStorage.setItem('night-hunters.music', '0'); } catch { /* 保存が無い */ } });
 if (NO_AUDIO) await page.addInitScript(() => { delete window.AudioContext; delete window.webkitAudioContext; });
 // S3: 繰り返す音源（ループ）の start・stop をページの中で数える（エンジンの数とは別の証）
 else await page.addInitScript(() => {
@@ -198,23 +204,22 @@ if (process.env.LOOPS !== '0' && !NO_AUDIO && (FLOW === 'title' || AUDIO)) {
   await page.evaluate(() => window.__game.scene.getScene('Title').scene.start('Mission', window.__lastSortie));
   await page.waitForFunction(() => { const g = window.__game; const m = g.scene.getScene('Mission'); return g.scene.isActive('Mission') && m.world; }, null, { timeout: 10000 });
   await sleep(1500);
-  const bellBefore = (await page.evaluate(readState)).sfx.played[17];
+  const bellBefore = (await page.evaluate(readState)).sfx.played[KEY_INDEX.bell];
   await page.evaluate(() => window.__game.scene.getScene('Mission').endMission('returned'));
   await page.waitForFunction(() => window.__game.scene.isActive('Result'), null, { timeout: 5000 });
   const resultPeak = await windowPeak(1600);
-  loops.result = { ...(await loopState('Result（鐘の後）', 600)), bells: (await page.evaluate(readState)).sfx.played[17] - bellBefore, ringPeak: resultPeak };
+  loops.result = { ...(await loopState('Result（鐘の後）', 600)), bells: (await page.evaluate(readState)).sfx.played[KEY_INDEX.bell] - bellBefore, ringPeak: resultPeak };
 }
 await ctx.close();
 await browser.close();
 await sv.close();
 
-const KEY_INDEX = { mg: 0, blast_l: 6, ui_tap: 16 };
 let bad = 0;
 const check = (ok, text) => { if (!ok) bad++; console.log(`${ok ? '✓' : '✗'} ${text}`); };
 const label = `${AUDIO ? 'AUDIO=1' : NO_AUDIO ? 'NOAUDIO=1' : '既定'} FLOW=${FLOW}`;
 for (const l of log) {
   const s = l.sfx;
-  console.log(`  ${l.name}: ${l.manager} context ${l.ctx ? `${l.ctx.state} t ${l.ctx.t} s ${l.ctx.rate} Hz` : 'なし'}${s ? ` ・ 音源 ${s.sources} 今 ${s.busy} 最大 ${s.maxBusy} 捨てた（消音・停止）${s.idleDrops} 最初のタップ ${s.pendingPlayed} resume ${s.kicks} 見張り ${s.watchdogKicks} 消音 ${s.muted} mg ${s.played[0]} blast_l ${s.played[6]} ui_tap ${s.played[16]} 落とした（間隔・遠い・声）${s.dropped.slice(1).join('/')}` : ' ・ エンジンなし'}${l.meter ? ` ・ 頂 ${l.meter.peak.toFixed(3)}` : ''}`);
+  console.log(`  ${l.name}: ${l.manager} context ${l.ctx ? `${l.ctx.state} t ${l.ctx.t} s ${l.ctx.rate} Hz` : 'なし'}${s ? ` ・ 音源 ${s.sources} 今 ${s.busy} 最大 ${s.maxBusy} 捨てた（消音・停止）${s.idleDrops} 最初のタップ ${s.pendingPlayed} resume ${s.kicks} 見張り ${s.watchdogKicks} 消音 ${s.muted} mg ${s.played[KEY_INDEX.mg]} blast_l ${s.played[KEY_INDEX.blast_l]} ui_tap ${s.played[KEY_INDEX.ui_tap]} 落とした（間隔・遠い・声）${s.dropped.slice(1).join('/')}` : ' ・ エンジンなし'}${l.meter ? ` ・ 頂 ${l.meter.peak.toFixed(3)}` : ''}`);
 }
 check(errors.length === 0, `${label}: ページのエラー 0${errors.length ? `（${errors.length} 件: ${errors[0]}）` : ''}`);
 // ヘッドレスは描画が遅く（SwiftShader）、任務の時計は実時間より遅れる（1 フレーム 4 ステップまで）＝進んでいることだけ見る

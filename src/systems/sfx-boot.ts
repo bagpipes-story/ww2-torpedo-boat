@@ -9,6 +9,8 @@
 //   保険に window の capture の touchend・pointerup と pageshow を付けたままにして、context が動いていなければ resume（拒否は握る。着信・Siri・長い裏の後）。
 //   context の作り直しは入れない（L3。実機で「戻らない」が出たら次の段）。
 // §7: 毎フレームの口（onPreStep）と保険の口（onGesture）は確保しない（起動時に作った関数をそのまま渡す）。標本を作る数フレーム（起動の直後だけ）の後は、buildNext は数の比べ 1 つ。
+// v0.7.2 S1（spec-v0720 D4・D7）: 起動で「曲」の保存の値を渡し、効果音の列が終わったら曲を作り始める（作るのはその次のフレームから・1 フレームに決まった量＝systems/sfx-music-build）。
+//   曲を作る時間の記録のために実時間の口（wallNow）をエンジンへ渡す（音の層で performance を読むのはこのファイルだけ）。
 import Phaser from 'phaser';
 import { renderSfx, sfxImplementedKeys } from '../assets/sfx-bank';
 import { DEBUG_ENABLED } from '../config/game-config';
@@ -16,13 +18,18 @@ import { SFX_AUDIO_SESSION_TYPE, SFX_BUILD_FIRST, type SfxKey } from '../config/
 import { registerSfxEngine } from './sfx-bus';
 import type { SfxCtx } from './sfx-audio-types';
 import { SfxEngine } from './sfx-engine';
-import { soundEnabled } from './sfx-settings';
+import { musicEnabled, soundEnabled } from './sfx-settings';
 
 const MS_PER_S = 1000;
 let engine: SfxEngine | null = null;
 /** これから作る標本の鍵（Boot で決める）と、次に作る添字 */
 let buildQueue: readonly SfxKey[] = [];
 let buildAt = 0;
+
+/** 実時間の ms（曲を作る時間の記録。起動時に 1 回渡す関数＝毎フレームの閉包を作らない） */
+function wallNow(): number {
+  return performance.now();
+}
 
 function warn(err: unknown): void {
   console.warn(`音のエンジンを作れない（音なしで続ける）: ${err instanceof Error ? err.message : String(err)}`);
@@ -38,6 +45,7 @@ function buildNext(e: SfxEngine): void {
     buildAt = buildQueue.length;
     warn(err);
   }
+  if (buildAt >= buildQueue.length) e.music.allowBuild(); // 効果音の列が終わった: 次のフレームから曲を作る（v0.7.2 S1・D4）
 }
 
 function onPreStep(_time: number, deltaMs: number): void {
@@ -54,12 +62,13 @@ function onGesture(): void {
 export function createSfx(game: Phaser.Game): void {
   if (engine !== null || !('context' in game.sound) || !game.sound.context) return;
   try {
-    const e = new SfxEngine(game.sound.context as unknown as SfxCtx);
+    const e = new SfxEngine(game.sound.context as unknown as SfxCtx, wallNow);
     const keys = sfxImplementedKeys();
     for (const key of keys) if (SFX_BUILD_FIRST.includes(key)) e.setBuffer(key, renderSfx(key));
     buildQueue = keys.filter((k) => !SFX_BUILD_FIRST.includes(k));
     buildAt = 0;
     e.setMuted(!soundEnabled());
+    e.music.setEnabled(musicEnabled()); // 「曲: オン／オフ」の保存の値（v0.7.2 S1・D7。「音」とは別）
     engine = e;
   } catch (err) {
     warn(err);

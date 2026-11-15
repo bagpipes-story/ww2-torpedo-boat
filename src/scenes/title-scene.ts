@@ -2,6 +2,7 @@
 // v0.6.0: キャンペーンのタブ（米PT｜日本ハードモード）。日本側は米PTの遊べる任務を 1 回ずつ帰投で終えると開く（core/campaign。一度開いたら閉じない）。
 // v0.6.7: 任務が 4 つ以上のタブ（日本）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。米PT のタブは 1 列のまま。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
+// v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
 import Phaser from 'phaser';
 import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
 import { getCampaigns, getMenuEntries, playableMissionIds } from '../config/campaign-data';
@@ -35,13 +36,15 @@ import {
   TITLE_ROW_STATUS_PX,
   TITLE_ROW_SUB_PX,
   TITLE_ROW_TITLE_PX,
+  TITLE_MUSIC_OFF_JA,
+  TITLE_MUSIC_ON_JA,
+  TITLE_MUSIC_X,
   TITLE_SOUND_H,
-  TITLE_SOUND_HINT_GAP,
-  TITLE_SOUND_HINT_JA,
-  TITLE_SOUND_HINT_PX,
   TITLE_SOUND_OFF_JA,
   TITLE_SOUND_ON_JA,
   TITLE_SOUND_PX,
+  TITLE_SOUND_SUB_JA,
+  TITLE_SOUND_SUB_PX,
   TITLE_SOUND_W,
   TITLE_SOUND_X,
   TITLE_SOUND_Y,
@@ -56,13 +59,15 @@ import {
   titleHistSubJa,
   titleMarkerLockedSubJa,
 } from '../config/menu-config';
+import { MUSIC_CTX_MENU } from '../config/sfx-music-config';
 import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
 import { shortLabelJa } from '../core/briefing';
 import { campaignStatus, type CampaignStatus } from '../core/campaign';
 import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
 import { seedForBriefing, type BriefingInit } from '../core/sortie';
 import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLegacyUnlocks, setLeadMarkerEnabled, sortiesDone, unlockedCampaignIds } from '../systems/progress-storage';
-import { setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
+import { sfxMusic } from '../systems/sfx-bus';
+import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 import { titleGridOn, titleRowRect } from '../ui/title-grid';
 
@@ -75,8 +80,9 @@ export class TitleScene extends Phaser.Scene {
   /** 見越し点マーカーの切り替え（v0.5.2 実機 1 回目。localStorage に覚える。解放前は押せない） */
   private marker?: MenuButton;
   private diff?: MenuButton;
-  /** 音のオン／オフ（v0.7.1 S1。右上。localStorage に覚える） */
+  /** 音のオン／オフ（v0.7.1 S1。右上。localStorage に覚える）と、その左の曲のオン／オフ（v0.7.2 S1。別の鍵に覚える） */
   private soundBtn?: MenuButton;
+  private musicBtn?: MenuButton;
   /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
   private leaving = false;
 
@@ -95,6 +101,7 @@ export class TitleScene extends Phaser.Scene {
     const cx = GAME_WIDTH / 2;
 
     addBuildLabel(this);
+    sfxMusic(MUSIC_CTX_MENU); // メニューの曲（v0.7.2 S1。標本ができていて context が動いていれば上げる。最初のタップは待たない）
     this.add.text(cx, TITLE_LOGO_Y, TITLE_LOGO_TEXT, hudTextStyle(TITLE_LOGO_PX, HUD_COLOR_STRONG)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
     // キャンペーンのタブ（v0.6.0）: 選んでいるタブは枠を強く。未解放は条件と進みを出して押せない。押したら registry に覚えて作り直す（Title は静的な画面。§7）
     const campaigns = getCampaigns(data);
@@ -171,13 +178,19 @@ export class TitleScene extends Phaser.Scene {
     });
     this.marker.setEnabled(unlocked);
     this.marker.setSelected(unlocked && leadMarkerEnabled());
-    // 音（v0.7.1 S1）: 右上。タップで オン ⇄ オフ（覚える。オンにした時はボタンの音が鳴る）。左の一言は本体の消音スイッチ（ページからは読めない）
+    // 音（v0.7.1 S1）: 右上。タップで オン ⇄ オフ（覚える。オンにした時はボタンの音が鳴る）。2 行目は本体の消音スイッチ（ページからは読めない。v0.7.2 S1 で左の一言から移した）
     const soundTitle = (): string => (soundEnabled() ? TITLE_SOUND_ON_JA : TITLE_SOUND_OFF_JA);
-    this.soundBtn = new MenuButton(this, { x: TITLE_SOUND_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: soundTitle(), titlePx: TITLE_SOUND_PX, align: 'center' }, () => {
+    const soundSpec = { x: TITLE_SOUND_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: soundTitle(), titlePx: TITLE_SOUND_PX, sub: TITLE_SOUND_SUB_JA, subPx: TITLE_SOUND_SUB_PX, align: 'center' as const };
+    this.soundBtn = new MenuButton(this, soundSpec, () => {
       setSoundEnabled(!soundEnabled());
       this.soundBtn?.setTitle(soundTitle());
     });
-    this.add.text(TITLE_SOUND_X - TITLE_SOUND_HINT_GAP, TITLE_SOUND_Y + TITLE_SOUND_H / 2, TITLE_SOUND_HINT_JA, hudTextStyle(TITLE_SOUND_HINT_PX, HUD_COLOR)).setOrigin(1, 0.5).setAlign('right').setDepth(DEPTH.hud);
+    // 曲（v0.7.2 S1）: 「音」の左。タップで オン ⇄ オフ（「音」と別に覚える。オフは曲だけ 0.3 秒で消え、オンでメニューの曲を頭から）
+    const musicTitle = (): string => (musicEnabled() ? TITLE_MUSIC_ON_JA : TITLE_MUSIC_OFF_JA);
+    this.musicBtn = new MenuButton(this, { x: TITLE_MUSIC_X, y: TITLE_SOUND_Y, w: TITLE_SOUND_W, h: TITLE_SOUND_H, title: musicTitle(), titlePx: TITLE_SOUND_PX, align: 'center' }, () => {
+      setMusicEnabled(!musicEnabled());
+      this.musicBtn?.setTitle(musicTitle());
+    });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const r of this.rows) r.destroy();
@@ -192,6 +205,8 @@ export class TitleScene extends Phaser.Scene {
       this.marker = undefined;
       this.soundBtn?.destroy();
       this.soundBtn = undefined;
+      this.musicBtn?.destroy();
+      this.musicBtn = undefined;
     });
   }
 

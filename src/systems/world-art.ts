@@ -3,6 +3,7 @@
 // S3c は炎と煙（systems/fire-fx）と岸の帯（systems/coast-fx。動かない絵＝毎フレームは何もしない）。世界の論理の状態は読むだけ（art-rules）。乱数はそれぞれの演出が絵だけの SeededRng を持つ（R30）。
 // IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
 // IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
+// v0.7.2 S3（音。brief L28）: 命中スローの残り秒を読むだけの口として世界を音に登録し（registerSfxSlowMo）、破棄で外す（聞き手と同じ形。音は slowMoLeftS を読むだけ）。
 import type Phaser from 'phaser';
 import { SEA_LIGHT_STEPS } from '../config/dawn-config';
 import { CoastFx } from './coast-fx';
@@ -11,7 +12,7 @@ import { FireFx, type FireWorldView } from './fire-fx';
 import { registerSparkFx } from './fx-bus';
 import { registerExplosionFx } from './mission-effects';
 import { SeaFx } from './sea-fx';
-import { registerSfxListener } from './sfx-bus';
+import { registerSfxListener, registerSfxSlowMo } from './sfx-bus';
 import { SinkFx } from './sink-fx';
 import { SparkFx } from './spark-fx';
 import { WakeFx, type WakeWorldView } from './wake-fx';
@@ -22,6 +23,8 @@ export type ArtWorldView = WakeWorldView &
   FireWorldView & {
     readonly setup: WorldSetup;
     readonly dawn: { readonly lightStep: number };
+    /** 命中スローの残り秒（v0.7.2 S3。音が読むだけ） */
+    readonly slowMoLeftS: number;
   };
 
 export class WorldArt {
@@ -44,6 +47,7 @@ export class WorldArt {
     this.fire = new FireFx(scene, w, this.sink);
     this.coast = new CoastFx(scene, w.setup);
     registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
+    registerSfxSlowMo(w); // 命中スローの音（v0.7.2 S3。slowMoLeftS を読むだけ。世界の作成前・破棄後はスローなし）
   }
 
   /** 毎フレーム（world-visuals の最後。夜明けの段は w.dawn.updateVisuals の後なのでこのフレームの値。船体の絵も同期の後） */
@@ -61,6 +65,7 @@ export class WorldArt {
     registerExplosionFx(null);
     registerSparkFx(null);
     registerSfxListener(null);
+    registerSfxSlowMo(null);
     this.sea.destroy();
     this.wake.destroy();
     this.explosions.destroy();

@@ -25,6 +25,11 @@ export interface SfxLimiterNode extends SfxNode {
   readonly attack: SfxParam;
   readonly release: SfxParam;
 }
+/** v0.7.2 S3: 2 次の濾波器（命中スローのベッドの濾波器だけ。type は 'lowpass'・frequency は Hz。Q は既定のまま） */
+export interface SfxFilterNode extends SfxNode {
+  type: string;
+  readonly frequency: SfxParam;
+}
 export interface SfxBuffer {
   getChannelData(channel: number): { set(samples: Float32Array): void };
 }
@@ -48,6 +53,8 @@ export interface SfxCtx {
   /** 無い端末（古い iOS）は中央で鳴らす（R7） */
   createStereoPanner?: () => SfxPanNode;
   createDynamicsCompressor(): SfxLimiterNode;
+  /** v0.7.2 S3: ベッドの濾波器（起動時に 1 つだけ） */
+  createBiquadFilter(): SfxFilterNode;
   createBufferSource(): SfxSource;
   createBuffer(channels: number, length: number, sampleRate: number): SfxBuffer;
   resume(): SfxThenable | undefined;
