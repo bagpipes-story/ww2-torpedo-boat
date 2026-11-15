@@ -1,0 +1,796 @@
+diff --git a/data/boats.json b/data/boats.json
+index 9be319d..9177fcb 100644
+--- a/data/boats.json
++++ b/data/boats.json
+@@ -45,8 +45,10 @@
+         "40mm_bofors_late"
+       ],
+       "radar": {
+-        "available_from": "1943-01",
+-        "range_m": 31000
++        "available_from": "1943-07",
++        "range_m": 31000,
++        "type": "SO",
++        "source": "historical (v0.8.0 S0・spec-v0800 §3.1。SO 型は 1943 年半ばから一部の艇（分隊の先頭）に載り、1943-08 のブラケット海峡では 3〜4 隻だけ。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。艦船への探知は約 16〜20 nm（出典で食い違う。range_m 31,000 m＝約 17 nm はその間）。available_from は 1943-01 → 1943-07（半ば）に直した。WebSearch の抜粋のみ・本文未読。ゲームの射程は hit_rate_model.json の radar.models（海域の縮尺）)"
+       },
+       "gun_battery": {
+         "label_ja": "40mm・37mm・20mm・12.7mm",
+@@ -236,8 +238,10 @@
+         "40mm_bofors_late"
+       ],
+       "radar": {
+-        "available_from": "1943-01",
+-        "range_m": 31000
++        "available_from": "1943-07",
++        "range_m": 31000,
++        "type": "SO",
++        "source": "historical (v0.8.0 S0・spec-v0800 §3.1。SO 型は 1943 年半ばから一部の艇（分隊の先頭）に載り、1943-08 のブラケット海峡では 3〜4 隻だけ。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。艦船への探知は約 16〜20 nm（出典で食い違う。range_m 31,000 m＝約 17 nm はその間）。available_from は 1943-01 → 1943-07（半ば）に直した。WebSearch の抜粋のみ・本文未読。ゲームの射程は hit_rate_model.json の radar.models（海域の縮尺）)"
+       },
+       "smoke_generator": true,
+       "smoke": {
+diff --git a/data/enemies.json b/data/enemies.json
+index dfec587..75a4906 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -715,10 +715,10 @@
+         "boat_ref": "historical (寸法 24.4×6.3 m・最大 39 kt は boats.json の us_elco80。旋回 24°/秒・加速 1.2 はその design 値)",
+         "torpedo_immune": "historical (Elco の吃水 約 1.1〜1.5 m は 45cm 魚雷の最小深度 2 m より浅く、魚雷は下を抜ける。大発と同じ理由。PT も小艇には砲で戦った: UNO 論文・Bulkley、WebSearch の抜粋のみ・本文未読)",
+         "detection": "design (v0.6.3。base_detect_m 2000 は us_destroyer と同じ。新月 × 速力係数で 停止 480・静音 600・巡航 1,200・全速 1,920 m。艇の視程 900 m より静音なら先に見つけ、巡航なら先に見つかる。史実の暗夜の目視（Bulkley IV「隊列の真ん中に入るまで気づかなかった」、抜粋のみ）は 300〜800 m で、停止・静音が入る（巡航 1,200 m はそれより遠い＝ゲームとして厳しめ）。radar_m 8000 は外した: SO レーダーは 1943 年から一部の艇だけ・小さな木造艇への距離は不明（low）・8,000 m だと暗さが効かない。reaction_delay_s 1.5 は発見から突撃までの予告。detect_from_s 5: 出撃から 5 秒は見つけない（出発で即発見を防ぐ）)",
+-        "patrol": "historical / design (1 軸のアイドル約 6 kt・「8〜9 kt のアイドル」: PT-109 の DANFS・UNO 論文、抜粋のみ。8 kt と arrive_m は設計値)",
++        "patrol": "historical / design (1 軸のアイドル約 6 kt・「8〜9 kt のアイドル」: 1943-08 のブラケット海峡のある艇の DANFS・UNO 論文、抜粋のみ。8 kt と arrive_m は設計値)",
+         "attack": "design (v0.6.3。模擬 pt-pass-sim（400 夜）で決めた。掃射の航過は 15〜20 kt・600 yd で撃ち始め 100〜300 yd で効く（研究メモの提案＝design。抜粋は 15・20 kt で寄った例と『600 yd まで寄った』だけ: UNO 論文・Bulkley、抜粋のみ）。突撃 35 kt は T-14 の 31 kt より速い＝振り切れない。最接近の 5 秒前に航過の進路を固めて赤い線で予告し、2.5 秒は撃たない。航過を固めるのは本当に向かってくるときだけ（v0.6.3 の直し）: commit_heading_tol_deg 30＝固める針路（狙いの点への方位）と今の針路の差が 30° 以内・艇が固める線の前・航過の速さ（艇 + overtake 6 kt、下限 25 kt）で線を進むとして最接近まで 5 秒・その距離が有効射程 400 m の内。直す前は今の速度（突撃 35 kt）で最接近を見たので、離脱から向き直る前（差 最大 約 110°）や追い越す速さでは縮まらない後ろ 約 785 m でも固め、赤い線が 1 フレームで消える航過が 1 夜に 巡航 0.12・静音 0.40・PT へ向かう 0.79 回、撃たずに終わる航過が 巡航 0.78・静音 1.21 回あった → 直した後は 0 回（20° でも 45° でも結果はほぼ同じ）。hold_off_m 500: 他の PT が航過中か次の航過まで（pass_gap_s）の間、待つ PT は艇から 500 m（有効射程の外）より内へ寄らず 500〜600 m で外へ曲がって待つ（直す前は 2 番手が艇の 16〜27 m まで寄って絵が重なり、37 m で航過を固めた。直した後、待ち始めに 500 m の外にいた PT は 455 m より内へ入らず、内にいた PT も 1.1 秒以内に離れ始め最短 136 m。航過を固める距離は最短 巡航 137 m・全速で逃げ回る 91 m。待つ間は突撃の 25 秒に数えない）。1 回 10 発まで・艇首尾 30° と 60 m 以内は撃たない・航過は同時に 1 隻・次の航過まで 2.5 秒・1 隻 2 回で去る（2 回目の航過は PT-323/369 の記録。回数で去る規則の史料は無い＝弾と時間の抽象）。直しの後の再調整（spec §F.4 の順）: 撃てる航過だけになると、静音でまっすぐ帰る艇の沈没が 9% → 71%（巡航 19% → 16%）。遅い艇ほど PT の線の近くに長くいて航過を多く受けるため。guns.damage 4 → 3 は 巡航 3〜6%・静音 33〜52% で巡航の帯（10〜32%）を割るので 4 のまま。rounds_per_pass 12 → 10・pass_offset_m 120 → 155（離れて撃つので散布が広がり、遅い艇ほど効く）・hold_off_m 500（550 だと待つ PT が遠く巡航 3〜6%）で、沈没 巡航 11%・静音 19%・赤い線で転舵 0%・遅い転舵 1%・PT へ向かう 2%、HP の平均 31.5・36.4・14.3・23.3・27.7（直す前 19%・9%・0%・1%・0%、35.8・29.6・14.0・24.1・19.3。400 夜）。v0.6.3 レビューの直し（航過を終える縁は絵の半長・回数に数えるのは撃ったか open_fire_s 経った航過だけ・出発で見つからないよう出発点を 150 m 北と線を 200 m 南）の後の再調整: pass_offset_m 155 → 140。線を南へ動かすと何もしない艇が軽くなった（seed 1〜1200 の 200 夜ずつ 6 組の平均で 沈没 巡航 13% → 5%・静音 23% → 15%）ので、spec §F.4 の順で guns.damage（5 は 10 × 5 = 50 で 1 回の航過で沈む）・rounds_per_pass（11 は静音 26〜30%）の次の pass_offset_m で戻した（145 は巡航 4〜10%）。140 の 6 組: 沈没 巡航 7〜11%（平均 9%）・静音 23〜29%（平均 26%）、HP の平均 巡航 31・静音 32・赤い線で転舵 15（沈没 0%）・遅い転舵 25（1%）・PT へ向かう 27（2%）。200 夜 1 組の値はこの幅でぶれる（上の 11%・19% も 1 組の値）。縁へ逃げて止まる（edge_flee）は HP 33・沈没 5%（直す前は縁で航過が撃たずに終わり、PT が撃たずに去った）。v0.6.3 実機 1 回目（ユーザー『ちょっと簡単すぎる・PT もあんまり執拗に攻撃してこないので単調』）: max_passes 2 → 4（弾の抽象: .50 は 1 門 約 1,000 発・1 回の戦闘で 1 隻 約 2,000 発＝短い航過 5〜10 回分、『弾を撃ち尽くすまで繰り返し航過した』PT-133/132（1944-04）、PT-116 は僚艇が退いた後に 1 隻で 2 度目の航過（1944-09-28）。WebSearch の抜粋のみ・本文未読。5 回は HUD どおりの転舵で HP −1 ほどしか増えず、ずっと全速だと漂流 7%）、pass_offset_m 140 → 120（転舵する艇に一番効く: HP −3、静音でまっすぐは沈没 +20 点。min_range_m 60 < 120 < effective_night_m 400）、break_max_s 8 → 5・break_off_m 800 → 650（すぐ向き直る。650 > effective_night_m 400）。rounds_per_pass 10（10 × 4 = 40 < 50。12 だと巡航でまっすぐが 47%）・open_fire_s・pass_gap_s・wingman_delay_s（1.5〜2.0 でも変わらない）は変えない。模擬（scratchpad の試作、400 夜 × 3 組。待つ PT の位置取り（tactics）込み）: 沈没 巡航でまっすぐ 28%（前 7.5%）・静音でまっすぐ 46%（前 23%）・HUD どおりの転舵 1%（HP −18、前 −9）・2 秒遅れの転舵 11.5%（前 1.5%）、HUD どおりに転舵すると 1 夜の航過 5.5 回（前 3〜4 回）。縁へ逃げて止まる（edge_flee）は沈没 71%・HP −47（前 5%・−33。縁に逃げ場は無い＝分かっている罠で、帰投の床なし。止まった艇への位置取りを艇首の向きからにした後の pt-pass-sim 400 夜。レビュー F5・R3）。v0.6.3 実機 2 回目（ユーザー『まだ簡単・逃げるだけなら簡単・もっと執拗に追いかけ回して射撃して』）: 航過は撃ち切ったか（撃退で黙った PT は今どおり線のまま抜ける）、予告から open_fire_s 経って有効射程の外へ離れていけば終える（core/pt-fire。赤い線は危ない間だけ）。逃げる艇（chase.min_target_kt 以上）への航過の後は離脱せず追撃へ（chase）。hold_off_m 500 → 550（有効射程 450 m の外で待つ）、pass_gap_s 2.5 → 3.0（線が早く消えるので次の線まで 0.5 秒足した。それでも赤い線の間は 1 夜の平均 7.0〜7.8 秒、前 13.7〜15.1 秒）。模擬（pt-pass-sim、N 400 × 2 組）は chase の source と CHANGELOG）",
+         "guns": "historical (2 連装 .50 ×2 と 20mm、1943 後半から 37/40mm を現地で追加: navweaps・NHHC、抜粋のみ) / design (1 門にまとめた値。damage 4 × 10 発 = 40 < T-14 の HP 50＝1 回の航過では砲だけで沈まない（v0.6.3 の直しの再調整で 12 → 10 発）。rof 240/分（体感）・dispersion 32 m（400 m で）・shell_speed 500 は大発の 13mm と同じ見える曳光弾。fire 0.03・engine 0.02 は大発と同じ。v0.6.3 実機 2 回目: effective_night_m 400 → 450（dispersion_m 32 は有効射程での半径のまま＝300 m の散布 24 → 21 m。かわした艇に効く。450 は模擬で決めた（約 490 yd。研究メモの提案『500〜600 yd で撃ち始め 100〜300 yd で効く』は design で、抜粋は『600 yd まで寄った』だけ: UNO 論文・Bulkley、WebSearch の抜粋のみ・本文未読。当たりの広がりは dispersion_m が持つ。450 ≤ 視程 900 を検査）。engine_damage_chance 0.02 → 0.15（逃げ足を奪う。PT-363 は岸に隠れた機銃に機関を撃たれて止まり失われた（1944-11-25）: WebSearch の抜粋のみ・本文未読。T-14 は 1 機 1 軸で engine_reliability 0.7。機関損傷で全速 31 → 21.7 kt（boats.json の engine_damage_speed_factor 0.7）。模擬（N 400）: 機関損傷の夜 巡航 79%・全速でまっすぐ逃げる 59%・撃ち返す 47%（前 12〜20%）、全速でまっすぐ逃げる沈没 4.8% → 13〜16%。0.10 なら 11%・0.20 なら 16% だが機関損傷の夜が 58〜89%）)",
+-        "torpedo_attack": "historical (launch_range_m 900≈1,000 yd: 1944-12-12 の卯月への PT-490・492 の雷撃（medium。combinedfleet の卯月の記録・Pacific Wrecks）、1943-08 のファーガソン水道 1,000〜1,800 yd（high。NHHC の PT-109 の報告）。salvo_count 3: 2 隻で 6 本（medium）。torpedo_id: 1944 の Elco 80 は Mk 13（boats.json の us_elco80.torpedoes.type_late、33.5 kt。core/pt-torpedo-data が同じかを検査）。慌てた斉射の目安はスリガオ海峡（気づいて撃ち返す艦へ 34 本で 1〜2 本＝3〜6%・出典 1 つ（medium-low））。WebSearch の抜粋のみ・本文未読。URL は docs/01 §8 の jp_04 の表) / design (v0.6.9。launch_heading_tol_deg・salvo_spacing_deg・aim_error_deg（気づかれていない斉射の 1 本が 30〜50%。試作 aspect-mc: 泊地への角度 45° で 0.44）・hurried_max_m・hurried_error_factor（慌てた斉射の 1 本 0.08〜0.25）・engaged_error_factor・reacquire_s・retreat_after_salvo。慌てた斉射: 隊が自艇（か 25mm の閃光）を捉えたステップに、哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT はみな（見つけた PT だけでなく）狙いの誤差を hurried_error_factor 倍にして撃つ（spec R2: 早く引きつけるか遅れるかで差が出る）。hurried_max_m 0 で慌てた斉射なし（jp_04 では V13 が起動時に止める: 0 にするなら player_start も動かす。tests/jp04-mission）。戦いながらの斉射（spec R12: 早く引きつけても輸送船のそばで戦えば輸送船は危ない＝輸送船から離れて戦え）: 自艇と戦っている PT（警戒・突撃・追撃・離脱。哨戒・航過・去るは除く）で魚雷が残り、揚陸中の輸送船から launch_range_m の内で艇首が launch_heading_tol_deg 以内なら、狙いの誤差を engaged_error_factor 倍にして撃つ（1 隻 1 回・見失いの reacquire_s は掛けない・揚陸の決着の後は撃たない。撃っても去らない＝下の retreat_after_salvo）。engaged_error_factor 2.0 は S4 の模擬（scripts/landing-sim。N 400 × 2 組＝seed 1〜400 と 401〜800。数は 組 1 / 組 2）で慌てた斉射と同じ 2.5 から 1.5〜3.0 を回して決めた（spec R12・R13）: HUD どおりに早く引きつけて輸送船から離れて戦う lure の達成 84.5 / 82.3%（帯 70〜88 の真ん中。1.5 は 79.8 / 78.5%・2.5 は 87.3 / 85.3% で上の端まで 0.7 点・3.0 は 87.8 / 88.3% で帯の外）・自艇の沈没 2.8 / 3.8%（≤ 18）・1 夜の戦いながらの斉射 0.54 / 0.55・その当たりうる 1 本 0.310 / 0.306（気づかれていない 0.445 / 0.446 と慌てた 0.169 / 0.172 の間）。見つかっている間に輸送船のそば（400 m の内）で戦う lure_near は 28.0 / 28.3%（lure − lure_near ＋55.3 点、帯 ≥ 10＝輸送船から離れて戦え）、近い報告まで待って寄る lure_late は 52.0 / 50.0%（lure − 32.4 点、帯 ≤ −10。v0.6.9 S8 のレビューの直しで見失って 10 秒撃たない PT を「近い」と報告しなくなった後の値。前は 64.3 / 61.5%）、ハードの lure 67.0 / 63.8%（帯 45〜70）・自艇の沈没 19.0 / 20.8%（≤ 30）。0 で戦いながらの斉射なし（lure 97.8 / 96.3%。早く引きつければ輸送船はまず沈まない＝R12 の前）。retreat_after_salvo は false（v0.6.10 実機 1 回目。3 種類の斉射とも撃っても去らず、そのまま自艇と戦って銃撃してくる＝v0.6.9 の S1〜S8 の規則に戻した）: ユーザー「卯月が強すぎてPTが瞬殺される。卯月を弱めたところであまり意味がないので、当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→「A: 卯月は残し、PT を撃った後も去らない形に戻す」（卯月の値は変えない）。模擬（N 400 × 2 組。数は 組 1 / 組 2）: 卯月のいる夜 lure 94.3 / 93.0%・human 71.5 / 69.0%・human_face 58.8 / 59.8%・face 71.0 / 76.3%、ハード lure 87.8 / 81.0%・human 48.8 / 45.8%、卯月を切った夜（ALLY_OFF）lure 84.5 / 82.3%（v0.6.9 S4 と同じ）・lure_late 64.3 / 61.3%・kite 3.3 / 3.5%・ハードの lure 67.0 / 63.8%（帯は systems/ally-sim-bands と CHANGELOG v0.6.10 実機 1 回目）。v0.6.9 実機 1 回目〜v0.6.10 S8 は true だった（以下はそのときの文。上の S4 の数は戦いながら撃った PT が去らずに戦い続けた規則のとき）: 3 種類の斉射とも撃ったら去る。ユーザーの報告「魚雷発射後、外れても敵が帰投せず、自機につきまとうため、ゲームクリアがかなりきつい」（体感で輸送船が残る 20%・魚雷が外れた後のクリア 0%）に、ユーザーの選択 A「引きつけて離す」＝撃った PT は戦いながらの斉射でも去る（もう 1 隻は v0.6.10 の味方の駆逐艦が受け持つ。数の合わせはその後に人に近い遊び方の行で。値は変えない）。実機 1 回目 S1 の模擬（N 400 × 2 組。数は 組 1 / 組 2）: lure の達成 87.3 / 87.0%（帯 70〜88）・自艇の沈没 1.0 / 1.5%・1 夜の戦いながらの斉射 0.51 / 0.52、lure_near 35.8 / 36.3%（lure − lure_near ＋51.1 点）・lure_late 52.0 / 50.0%（lure − 36.1 点）・kite 43.8 / 42.5%・lure_noshoot 22.0 / 24.0%、ハードの lure 73.0 / 75.0%（帯を 45〜70 から 45〜75 へ）・自艇の沈没 12.3 / 10.5%。斉射の当たりうる 1 本（12 の遊び方を合わせて）は気づかれていない 0.446 / 0.448・慌てた 0.169 / 0.172 で前と同じ、戦いながら 0.304 / 0.300。S4 で動かせる範囲は missions_seed の jp_04 の landing.source（spec R7）。ほかの値（launch_heading_tol_deg 30・salvo_spacing_deg 8・aim_error_deg 10・hurried_max_m 1,300・hurried_error_factor 2.5・reacquire_s 10）は S1 のまま S4 の帯に入ったので動かさない: 斉射の当たりうる 1 本（10 の遊び方を合わせて）気づかれていない 0.445 / 0.446（帯 0.30〜0.50）・慌てた 0.169 / 0.172（帯 0.08〜0.25）。jp_04 だけが読む（core/pt-torpedo-data）)",
++        "torpedo_attack": "historical (launch_range_m 900≈1,000 yd: 1944-12-12 の卯月への PT-490・492 の雷撃（medium。combinedfleet の卯月の記録・Pacific Wrecks）、1943-08 のファーガソン水道 1,000〜1,800 yd（high。NHHC の喪失報告。v0.8.0 S0 で艇の名を外した＝CLAUDE.md §11）。salvo_count 3: 2 隻で 6 本（medium）。torpedo_id: 1944 の Elco 80 は Mk 13（boats.json の us_elco80.torpedoes.type_late、33.5 kt。core/pt-torpedo-data が同じかを検査）。慌てた斉射の目安はスリガオ海峡（気づいて撃ち返す艦へ 34 本で 1〜2 本＝3〜6%・出典 1 つ（medium-low））。WebSearch の抜粋のみ・本文未読。URL は docs/01 §8 の jp_04 の表) / design (v0.6.9。launch_heading_tol_deg・salvo_spacing_deg・aim_error_deg（気づかれていない斉射の 1 本が 30〜50%。試作 aspect-mc: 泊地への角度 45° で 0.44）・hurried_max_m・hurried_error_factor（慌てた斉射の 1 本 0.08〜0.25）・engaged_error_factor・reacquire_s・retreat_after_salvo。慌てた斉射: 隊が自艇（か 25mm の閃光）を捉えたステップに、哨戒中で魚雷が残り、輸送船から hurried_max_m の内で艇首が launch_heading_tol_deg 以内の PT はみな（見つけた PT だけでなく）狙いの誤差を hurried_error_factor 倍にして撃つ（spec R2: 早く引きつけるか遅れるかで差が出る）。hurried_max_m 0 で慌てた斉射なし（jp_04 では V13 が起動時に止める: 0 にするなら player_start も動かす。tests/jp04-mission）。戦いながらの斉射（spec R12: 早く引きつけても輸送船のそばで戦えば輸送船は危ない＝輸送船から離れて戦え）: 自艇と戦っている PT（警戒・突撃・追撃・離脱。哨戒・航過・去るは除く）で魚雷が残り、揚陸中の輸送船から launch_range_m の内で艇首が launch_heading_tol_deg 以内なら、狙いの誤差を engaged_error_factor 倍にして撃つ（1 隻 1 回・見失いの reacquire_s は掛けない・揚陸の決着の後は撃たない。撃っても去らない＝下の retreat_after_salvo）。engaged_error_factor 2.0 は S4 の模擬（scripts/landing-sim。N 400 × 2 組＝seed 1〜400 と 401〜800。数は 組 1 / 組 2）で慌てた斉射と同じ 2.5 から 1.5〜3.0 を回して決めた（spec R12・R13）: HUD どおりに早く引きつけて輸送船から離れて戦う lure の達成 84.5 / 82.3%（帯 70〜88 の真ん中。1.5 は 79.8 / 78.5%・2.5 は 87.3 / 85.3% で上の端まで 0.7 点・3.0 は 87.8 / 88.3% で帯の外）・自艇の沈没 2.8 / 3.8%（≤ 18）・1 夜の戦いながらの斉射 0.54 / 0.55・その当たりうる 1 本 0.310 / 0.306（気づかれていない 0.445 / 0.446 と慌てた 0.169 / 0.172 の間）。見つかっている間に輸送船のそば（400 m の内）で戦う lure_near は 28.0 / 28.3%（lure − lure_near ＋55.3 点、帯 ≥ 10＝輸送船から離れて戦え）、近い報告まで待って寄る lure_late は 52.0 / 50.0%（lure − 32.4 点、帯 ≤ −10。v0.6.9 S8 のレビューの直しで見失って 10 秒撃たない PT を「近い」と報告しなくなった後の値。前は 64.3 / 61.5%）、ハードの lure 67.0 / 63.8%（帯 45〜70）・自艇の沈没 19.0 / 20.8%（≤ 30）。0 で戦いながらの斉射なし（lure 97.8 / 96.3%。早く引きつければ輸送船はまず沈まない＝R12 の前）。retreat_after_salvo は false（v0.6.10 実機 1 回目。3 種類の斉射とも撃っても去らず、そのまま自艇と戦って銃撃してくる＝v0.6.9 の S1〜S8 の規則に戻した）: ユーザー「卯月が強すぎてPTが瞬殺される。卯月を弱めたところであまり意味がないので、当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→「A: 卯月は残し、PT を撃った後も去らない形に戻す」（卯月の値は変えない）。模擬（N 400 × 2 組。数は 組 1 / 組 2）: 卯月のいる夜 lure 94.3 / 93.0%・human 71.5 / 69.0%・human_face 58.8 / 59.8%・face 71.0 / 76.3%、ハード lure 87.8 / 81.0%・human 48.8 / 45.8%、卯月を切った夜（ALLY_OFF）lure 84.5 / 82.3%（v0.6.9 S4 と同じ）・lure_late 64.3 / 61.3%・kite 3.3 / 3.5%・ハードの lure 67.0 / 63.8%（帯は systems/ally-sim-bands と CHANGELOG v0.6.10 実機 1 回目）。v0.6.9 実機 1 回目〜v0.6.10 S8 は true だった（以下はそのときの文。上の S4 の数は戦いながら撃った PT が去らずに戦い続けた規則のとき）: 3 種類の斉射とも撃ったら去る。ユーザーの報告「魚雷発射後、外れても敵が帰投せず、自機につきまとうため、ゲームクリアがかなりきつい」（体感で輸送船が残る 20%・魚雷が外れた後のクリア 0%）に、ユーザーの選択 A「引きつけて離す」＝撃った PT は戦いながらの斉射でも去る（もう 1 隻は v0.6.10 の味方の駆逐艦が受け持つ。数の合わせはその後に人に近い遊び方の行で。値は変えない）。実機 1 回目 S1 の模擬（N 400 × 2 組。数は 組 1 / 組 2）: lure の達成 87.3 / 87.0%（帯 70〜88）・自艇の沈没 1.0 / 1.5%・1 夜の戦いながらの斉射 0.51 / 0.52、lure_near 35.8 / 36.3%（lure − lure_near ＋51.1 点）・lure_late 52.0 / 50.0%（lure − 36.1 点）・kite 43.8 / 42.5%・lure_noshoot 22.0 / 24.0%、ハードの lure 73.0 / 75.0%（帯を 45〜70 から 45〜75 へ）・自艇の沈没 12.3 / 10.5%。斉射の当たりうる 1 本（12 の遊び方を合わせて）は気づかれていない 0.446 / 0.448・慌てた 0.169 / 0.172 で前と同じ、戦いながら 0.304 / 0.300。S4 で動かせる範囲は missions_seed の jp_04 の landing.source（spec R7）。ほかの値（launch_heading_tol_deg 30・salvo_spacing_deg 8・aim_error_deg 10・hurried_max_m 1,300・hurried_error_factor 2.5・reacquire_s 10）は S1 のまま S4 の帯に入ったので動かさない: 斉射の当たりうる 1 本（10 の遊び方を合わせて）気づかれていない 0.445 / 0.446（帯 0.30〜0.50）・慌てた 0.169 / 0.172（帯 0.08〜0.25）。jp_04 だけが読む（core/pt-torpedo-data）)",
+         "tactics": "design (v0.6.3 実機 1 回目。挟み撃ち: 航過を待つ PT は前の航過の PT と反対の舷（艇の針路から −舷 × station_rel_deg の方角）、艇から station_m 550 m（hold_off_m 500 < 550 < 2 × hold_off_m − effective_night_m 600）の点（station_lead_s 1 秒先の艇の位置から）へ回る。角は航過ごとに 90°・45°・135° を順に（真横・前寄り・後ろ寄りを目指す角で、着く角ではない: 走る艇には遅れ、巡航でまっすぐ帰る艇（300 夜）では待ちが解けるのは艇首から約 40° か 150〜175° が多く、赤い線 955 本のうち 艇首側 629・真横 318・艇尾側 8。レビュー R1）。艇がほぼ止まっていれば最後に見た艇首の向きから取る（レビュー R3: 待つ PT から見た方位で取ると点がいつも PT の先へ逃げ、反対の舷へ回らずに艇の周りを回り続けた。見つかって止まった艇で、待ちが解けたのが反対の舷 53% → 98%）。方位の差が station_tol_deg 30° より大きい間は hold_off の形で外を回り（内へ寄らない）、点まで station_close_m 150 m より近ければ艇の速さ + 追い越しで並ぶ。航過は同時に 1 隻のまま・待つ PT は撃たない。3 隻の哨戒・同じ PT の 2 度の攻撃の記録はあるが、2 隻の挟み撃ちの史料は無い（WebSearch の抜粋のみ・本文未読）。模擬（pt-pass-sim、seed 1〜200 の 200 夜。位置取りなし → あり）: 赤い線が前と反対の舷から来る割合 巡航でまっすぐ 0.49 → 0.88・赤い線で全速の転舵 0.56 → 0.74・HUD どおりの転舵 0.53 → 0.64・暗さで止まる 0.57 → 0.57・縁へ逃げる 0.64 → 0.98・止まって撃ち合う 0.27 → 0.47（v0.6.3 は 0.35〜0.55。HUD どおりの転舵の伸びの多くは max_passes・break_* から。レビュー F3）、何もしないで巡航でまっすぐ帰る艇の沈没 12% → 26%。待ち始めに 500 m の外にいた PT の最接近 380 m 以上（400 夜・22 の遊び方）。v0.6.3 実機 2 回目: station_m 550 → 600（hold_off_m 550 < 600 < 2 × 550 − 450 = 650）。追撃の待つ PT の位置取りは chase.held_*)",
+         "under_fire": "historical / design (v0.6.3 実機 1 回目。T-14 の 13mm を受けたとき。historical: Elco の船体はマホガニー 2 層で小口径弾は抜け、穴は木栓で塞いだ。PT を沈めたのは 100 オクタンのガソリン 約 3,000 gal への引火か機関。大発の機銃だけで沈んだ PT は抜粋に無い（Bulkley の損失表の抜粋は沿岸砲台に 5 隻で、大発の欄は無い。PT-363 は浜の大発を掃射しに入り、岸に隠れた機銃に機関を撃たれて止まり失われた。Bulkley は沿岸砲台に数える）。PT-167 は乗員 1 名が撃たれて退き、PT-116 は 1 隻で 2 度目の航過をした。すべて WebSearch の抜粋のみ・本文未読。design: 命中 1 発ごとに乱数を 1 回引く: fire_chance 0.3% で炎上して沈む（PT を沈める唯一の道）・casualty_chance 3% で死傷が出て去る、どれでもなく HP（boat_ref の hull_hp 100）が retreat_hp 60 以下（13mm の 2 × 20 発）なら穴だらけで去る（HP だけでは沈まない: retreat_hp < hull_hp）。航過中に去る PT は撃つのをやめ、固めた針路のまま抜けてから去る（赤い線は消えない）。模擬（pt-pass-sim 400 夜）: 転舵しながら撃つと 1 夜 命中 約 9 発・撃退の夜 22%・撃沈の夜 2%、止まって撃ち合うと撃沈の夜 9.5% だが自艇が 28.5% 沈む。航過中の 1 命中で弾を減らす（制圧）は止まって撃つ方が転舵より得になったので入れない)",
+         "chase": "design（v0.6.3 実機 2 回目。感想『逃げるだけなら簡単。もっと執拗に追いかけ回して射撃して』）。模擬 pt-pass-sim（N 400・seed 1〜400 と 401〜800、N 200）で決めた。航過の後、逃げる艇（min_target_kt 10 kt 以上）の艇尾側にいる PT は離脱せずに追撃へ入る（突撃・待つ PT も、艇の艇尾から start_aft_deg 75° 以内・commit_max_m の内なら入る）。艇の後ろ寄りの舷（艇の針路から station_rel_deg 135°・station_m 170 m）へ speed_kt 39 kt で回り込んで並び、撃つ権利（航過と同じ 1 つ）が空けば PT から艇への赤い線で予告し、open_fire_s 2.5 秒後から 1 回 burst_rounds 6 発まで撃つ（burst_max_s 3 秒まで。6 × 4 = 24 < HP 50）。待つ PT は反対の舷の held_rel_deg 150°・held_station_m 350 m（有効射程 450 m の内・commit_m の縁。撃つ権利は 1 つなので待つ間は撃たない）で待ち、held_guard_m 150 m より内へは自分から寄らない。同じ PT が続けて撃つのは、相方が撃てる距離にいないときだけ（gap_s 2 + self_gap_s 3 秒）。艇首の ±30° の円錐の中へも bow_rof_factor 0.4 倍の速さで撃つ（艇首の 37mm）。艇が cone_quit_s 2 秒以上艇首の円錐にいればその連射をやめる。13mm を suppress_hits 3 発受けると追撃をやめて離れる（制圧。1 回分の連射を使う）。艇が slow_exit_s 2 秒遅い（10 kt 未満）か PT が艇首から exit_fwd_deg 45° 以内へ出たら突撃（航過）へ戻る。1 隻 航過 4 回・連射 max_bursts 6 回か夜明け・撃退・撃沈で去る。研究メモの提案（design。抜粋は 15・20 kt で寄った例と『600 yd まで寄った』だけ）: 全速（35〜40 kt）は位置取り・離脱・追撃にだけ使い、掃射の航過は 15〜20 kt。史実: 1943 年半ばから現地改装で艇首に 37mm M4（PT-103 は 1943-08-01 に乗員が搭載）、艇尾に 40mm（1943 後半から）。2 連装 .50 は艦橋の脇の旋回銃座。PT-167 は乗員 1 名の死で退き、PT-116 は 1 隻で 2 度目の航過をした。PT-133・132 は弾を撃ち尽くすまで航過を繰り返した（1944-04）。逃げる小艇を後ろから追って撃った記録・2 隻で左右から追った記録は抜粋に無い（追撃の形はゲームの抽象）。すべて WebSearch の抜粋のみ・本文未読。speed_kt 39 は boats.json の us_elco80 の最大（T-14 の 31 kt より 8 kt 速い＝振り切れない）。模擬（N 400、2 組）: 撃たずにかわすだけ 13〜36%（HP −30〜−41。前 1〜9%）、全速でまっすぐ逃げる 13〜16%（前 1%）、何もしない 44〜51%、撃ち返す 0〜13%（2 秒遅れの反応は 14〜26%。1 隻以上を追い払う夜 29〜88%。撃つ行の数は本番の模擬。実機 2 回目のレビュー F3: 前の数は試作の値だった）、暗さに隠れる 11〜15%（HP −12）。連射に巡航で離れて戻る・ジグザグは 62〜78% 沈む（針路そのまま撃ち返すのが答え。HUD がそう言う）。"
+diff --git a/data/hit_rate_model.json b/data/hit_rate_model.json
+index 2978e26..33c06c7 100644
+--- a/data/hit_rate_model.json
++++ b/data/hit_rate_model.json
+@@ -198,5 +198,28 @@
+   "gun_flash": {
+     "hold_s": 1.0,
+     "source": "design (v0.6.8。v0.6.8 で撃てるようになった機銃（駆逐艦・輸送船・機へ）を撃ってからこの秒の間、敵の見つける距離を gun_battery.muzzle_flash_reveal_m（1,200 m）以上にする（駆逐艦・大発・沿岸砲・米PT と夜の哨戒機の門番。大発・米PT と同じ『撃てば閃光で見つかる』。駆逐艦には煙幕は効かない。us_03 の大発と沿岸砲は煙幕で線が遮られていれば × 0.3 が残る＝既知の制約）。1 発ごとに 3 行目の『見つかる距離』が点滅しないよう 1 秒保つ（jp_01 の convoy.flash_hold_s 1.0 と同じ値）。主兵装の大発・米PT の砲の閃光は今までの規則のまま)"
++  },
++  "radar": {
++    "note": "レーダー（v0.8.0。spec-v0800 §3）。目とは別の感覚で、HUD の情報だけ（敵の発見・自艇の視程・見越し点マーカー・敵の AI・命中率は何も変えない＝D-R1）。掃引ごとに射程の内の艦艇の位置だけを輝点で出す（種類・針路・速さ・こちらに気づいたかは出さない＝D-R2）。機は映さない（aircraft false＝D-R3）。陸（岸の線）から land_clutter_m の内の艦艇は映らない（D-R4）。大発・PT などの小さい艇は small_range_m の内だけ（D-R5）。位置は position_step_m の格子に丸める（乱数なし＝D-R7）。任務の v0_1_prototype.radar が型（models の鍵）と付き方（leader＝分隊の先頭の艇・own＝自艇の標準装備）を選ぶ（自艇の boats.json の radar.available_from が任務の日付以前＝V-R2。検査は core/radar-data と config/radar-mission-data）",
++    "aircraft": false,
++    "models": {
++      "so_early": {
++        "ship_range_m": 4000,
++        "small_range_m": 1200,
++        "sweep_s": 3,
++        "land_clutter_m": 400,
++        "position_step_m": 50,
++        "source": "historical (1943 年半ばから PT に載り始めた初期の SO 型（10 cm の水上捜索。艦船へは約 16〜20 nm＝出典で食い違う。5 インチの PPI）。岸のそばの船の反射は岸の反射と混じって見分けにくい＝spec-v0800 §3.1。WebSearch の抜粋のみ・本文未読) / design (v0.8.0 S0。史実の射程のままでは 6 × 4 km の海域が常に全部見え、夜の「見えない敵」が無くなるので海域の縮尺に合わせて縮めた（D-R6）: 艦 4,000 m（新月の目の 900 m の約 4.4 倍）・小さい艇 1,200 m・掃引 3 秒・陸の反射 400 m・丸め 50 m。S3 の模擬（B1・B2）と iPhone の実機で直す)"
++      },
++      "so_late": {
++        "ship_range_m": 6000,
++        "small_range_m": 1800,
++        "sweep_s": 2,
++        "land_clutter_m": 300,
++        "position_step_m": 25,
++        "source": "historical (1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた（全艇が積んでいたかは未確認）。1944 年末からの新しい艇は工場で SO-3 を積んで来た＝spec-v0800 §3.1。WebSearch の抜粋のみ・本文未読) / design (v0.8.0 S0。1944 年の型（us_05〜us_07 で使う。v0.8.1 以降）: 艦 6,000 m・小さい艇 1,800 m・掃引 2 秒・陸の反射 300 m・丸め 25 m。使う版の模擬と実機で直す)"
++      }
++    },
++    "source": "historical (SO 系の探知の値・PPI・岸の反射・1943 年は初期の機材＝spec-v0800 §3.1) / design (v0.8.0 S0。海域の縮尺に合わせた射程（D-R6）・掃引の秒・丸め・機は映さない（D-R3）。v0.9 のストアは任務の radar の block を足すだけでどの任務にも付けられる形＝spec-v0800 §2.3)"
+   }
+ }
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index fd4e096..267ebc8 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -17,6 +17,12 @@
+       "short_ja": "日本",
+       "player_boat_default": "jp_t38",
+       "unlock": "complete_us_pt",
++      "unlock_mission_ids": [
++        "us_01",
++        "us_02",
++        "us_03"
++      ],
++      "unlock_mission_ids_source": "design (v0.8.0 S0・spec-v0800 §2.4。lead の既定 L2（ユーザー未確認・spec-v0800 §9 Q3）: 日本のタブを開く条件は今の米PT の 3 任務のまま（一覧で固定。core/campaign の parseUnlockMissionIds・config/campaign-data の unlockPrereqIds）。無ければ v0.6.0 のとおり相手のキャンペーンの遊べる任務を全部＝us_04〜us_07 が遊べるようになると 7 任務に増える。日本のタブは 3 任務の後に開く前提で作った・新しい任務は 1944 年の難しい夜が多い・ストアと殴り込みは別に「全クリア後」。すでに開いた端末は閉じない（開いた印）)",
+       "enemy_faction": "USN",
+       "enemy_faction_source": "design (v0.6.1。夜明けの空襲の機体の faction を検査する（日本の艇を零観が襲う写し間違いを起動時に止める）)",
+       "source": "design (v0.6.0。unlock complete_us_pt: 米PTキャンペーンの遊べる任務（playable_from と v0_1_prototype を持つ。v0.6.0 では us_01・us_02・us_03）を、それぞれ 1 回、帰投で終えると開く（撃沈やノルマの達成は問わない）。一度開いたら閉じない（localStorage night-hunters.unlocked）。v0.5.2 までに任務を 3 回以上終えた端末は開いたものとみなす。?debug&title&unlock で保存を変えずに開ける。CLAUDE.md §2『米PTキャンペーンの後にアンロック』の具体化)"
+@@ -501,8 +507,9 @@
+       "place": "ブラケット海峡（コロンバンガラ島沖）",
+       "type": "intercept_destroyer",
+       "player_boat": "us_elco80",
+-      "torpedo_type": "us_mk13",
+-      "objective": "駆逐艦4隻の輸送部隊を雷撃。衝突に注意",
++      "torpedo_type": "us_mk8",
++      "torpedo_type_source": "historical (v0.8.0 S0 の調べ・spec-v0800 §2.0。この夜の艇は発射管から撃った: ある艇は管の発射の火が閃光を出し、1 本の管から火が出た（NHHC の報告の抜粋。URL は書かない）＝Mk 8 と管。Mk 13 と転がして落とす架台への換装は 1943 年半ばから（Wikipedia「PT boat」「Mark 8 torpedo」の抜粋）。v0.4.0 の種は us_mk13 だった。WebSearch の抜粋のみ・本文未読)",
++      "objective": "東京急行の駆逐艦4隻がビラへ向かい、揚げ終えると同じ海峡を全速で戻る。分隊の先頭の艇としてレーダーで捉えて雷撃し、進路をよけて生きて帰れ",
+       "enemies": [
+         "ijn_destroyer",
+         "ijn_destroyer",
+@@ -515,26 +522,198 @@
+       ],
+       "moon": "dark",
+       "duration_min": 5,
+-      "success": "帰投。命中はボーナス",
+-      "historical_note": "PT15隻・約30本で命中ゼロ。駆逐艦天霧がPT-109を切断。",
+-      "source_url": "https://en.wikipedia.org/wiki/Motor_Torpedo_Boat_PT-109",
++      "success": "帰投。1隻撃沈で達成",
++      "historical_note": "PT 15隻・約30本で命中ゼロ。レーダーは分隊の先頭の艇だけ。帰りの駆逐艦に体当たりされて失われた艇があった",
++      "briefing_note_ja": "1943年8月1〜2日の夜、PT 15隻が4つの分隊でブラケット海峡に張ったが、約30本の魚雷は1本も当たらなかった。レーダーを積むのは分隊の先頭の艇だけで、撃ち終えた先頭の艇が引き揚げると、残った艇にはほとんど何も見えなかった。駆逐艦はビラで兵と物資を揚げ、同じ海峡を戻っていった。",
++      "source_url": "https://en.wikipedia.org/wiki/Blackett_Strait",
+       "dawn_air": {
+         "control": "contested",
+         "confidence": "medium",
+-        "play_as": "own",
++        "play_as": "enemy",
+         "enemy_ships_at_dawn": "retire",
+-        "label_ja": "昼の空はおおむね味方（エアソルス）",
++        "label_ja": "昼の空は争奪（日本の水上機の空襲）",
+         "refs": [
+           {
+-            "url": "https://www.history.navy.mil/research/histories/ship-histories/danfs/p/pt-109.html",
+-            "claim": "PT-109 の艦歴（DANFS）。1943-08-01〜02 の夜、ブラケット海峡で東京急行の駆逐艦を迎え撃った PT の 1 隻。1943-08-01（任務の当日）、日本の爆撃機 18 機がレンドバの PT 基地を空襲し、PT-117 大破・PT-164 沈没"
++            "url": "https://pacificwrecks.com/date/1943/08/01.html",
++            "claim": "1943-08-01（任務の当日）の昼、日本の爆撃機がレンドバの PT 基地（ルンバリ島）を空襲し、PT-117・PT-164 の 2 隻が失われた（海上の艇でなく基地）。その夜、PT 15 隻がブラケット海峡で東京急行の駆逐艦を迎え撃った"
++          },
++          {
++            "url": "https://img.pacificwrecks.com/ship/ptboat/bases/lumbaria/index.html",
++            "claim": "レンドバのルンバリ島の PT 基地は 1943-08-01 の昼に日本の爆撃機の空襲を受けた"
+           },
+           {
+             "url": "https://pacificwrecks.com/ship/ptboat/PT-166.html",
+             "claim": "1943-07-20 の朝（08:00 ごろ）、パトロール帰りの PT-164・166・168 を味方の B-25 4 機が敵と誤認して攻撃し、PT-166 が沈没"
+           }
+         ],
+-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読。英語・日本語の調査とも contested（英語は自軍寄り）。日本機の空襲もある（任務の当日、レンドバの PT 基地へ爆撃機 18 機: DANFS PT-109。海上の艇でなく基地）。夜明けの帰り道に空から襲われた記録で見つけたのは味方 B-25 の誤射（PT-166、07-20）だけ) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。control は contested で、ユーザーの規則は『制空権がない限り全シナリオ共通』なので、play_as own は遊べるようにする前にユーザーと見直す)"
++        "source": "historical (control・enemy_ships_at_dawn。refs は WebSearch の抜粋のみ・本文未読（2026-10-18 の調べと v0.8.0 の調べ＝spec-v0800 §4.1）。英語・日本語の調査とも contested（英語は自軍寄り）。日本機の空襲もある（任務の当日の昼、レンドバの PT 基地へ日本の爆撃機。海上の艇でなく基地）。夜明けの帰り道に空から襲われた記録で見つけたのは味方 B-25 の誤射（PT-166、07-20）だけ。v0.8.0 S0 で refs の先頭（ある艇の艦歴の頁）を基地の空襲の頁 2 つに替えた＝CLAUDE.md §11・spec-v0800 §4.12) / design (v0.6.1。play_as・label_ja。v0.8.0 S0: play_as を own → enemy（lead の既定 L1＝ユーザーの規則「制空権がない限り夜明けの後は空襲」。空は争奪で、日本機はその日の昼に PT 基地を空襲した）。夜明けに帰投の輪の外なら日本の水上機 4 機の空襲（v0_1_prototype.dawn_strike）。遊べるようにする前（S5）にユーザーと見直す＝spec-v0800 §9 Q1)"
++      },
++      "v0_1_prototype": {
++        "enemies": [
++          "ijn_destroyer",
++          "ijn_destroyer",
++          "ijn_destroyer",
++          "ijn_destroyer"
++        ],
++        "enemy_behavior": "transit と ai (v0.8.0。東京急行の駆逐艦 3 隻（ハード 4）は列の通過（下の transit）: 西の縁から 30 kt で東へ抜けてビラで揚陸し、同じ海峡を戻る。往路も復路も退く動き（端で向き直さない・わざとの体当たりはしない・雷跡を見れば櫛で梳く・見つければ照らして撃つ）。護衛の駆逐艦 1 隻は enemy_start から us_02 の AI のまま見回り（端で向き直す・体当たり・照らして撃つ）、復路の最初の艦が現れると西へ退く。世界の配線は S2)",
++        "duration_s": 260,
++        "duration_s_source": "design (v0.8.0 S0・spec-v0800 §4.5。夜明けまでの実秒。列の往路（入り 18 秒・8 秒おき）→ ビラで揚陸 40 秒 → 復路が西の縁の外へ去るまでが、揺らぎのない夜のハード 4 隻で 237.5 秒＝夜明けの 22.5 秒前（V-T3）。月の無い夜（新月）のまま。燃料と合わせて S3 の模擬で直す)",
++        "fuel_allotment_gal": 48,
++        "fuel_allotment_gal_source": "design (v0.8.0 S0・spec-v0800 §4.6。戦闘に使える割当（us_02 と同じ考え）。260 秒の夜に、レーダーで列の前へ回り、撃って、復路をよけて南西の輪へ帰る。帰投の時の残りが 15〜35% になるよう S3 の模擬で合わせる（初めの値）)",
++        "bounds_m": {
++          "width": 6000,
++          "height": 4000,
++          "source": "design (v0.8.0。us_02 と同じ広さ。ブラケット海峡を東西に置いた模式図（本当は北西〜南東。spec-v0800 §4.3）。北の縁（y 0）の外がコロンバンガラ島、南の縁（y 4,000）の外がアランデル島・ギゾ島（下の shores）)"
++        },
++        "player_start": {
++          "x_m": 3600,
++          "y_m": 2600,
++          "heading_deg": 270,
++          "source": "design (v0.8.0。海峡の中ほど・復路の道の南 300 m から西向き・停止。往路の入りの点 (150, 1500) まで 3,620 m（V-T5 の 1,500 m の外）、護衛の出発点まで 2,280 m（レーダーの 4,000 m の内＝出撃してすぐ輝点が 1 つ）、帰投の輪の中心まで 2,550 m（味方機の開始 1,750 m の外）)"
++        },
++        "enemy_start": {
++          "x_m": 1800,
++          "y_m": 1200,
++          "heading_deg": 120,
++          "source": "design (v0.8.0。護衛の駆逐艦（4 隻のうち輸送をしない 1 隻）。報告の「ファーガソン水道からの入口を見張るような艦がコロンバンガラの約 1 マイル沖にいた」（spec-v0800 §4.1）の当てはめ。us_02 の AI のまま見回る（端から 700 m で向き直す・見つければ 400 m で体当たり・照らして撃つ）。北の岸から 1,200 m＝レーダーの陸の反射（400 m）の外)"
++        },
++        "return_point": {
++          "x_m": 1300,
++          "y_m": 3700,
++          "radius_m": 250,
++          "call_margin": 1.5,
++          "torpedo_settle_max_s": 10,
++          "torpedo_end_settle_s": 5,
++          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。終わり際に走っている魚雷の決着を待つ最大実秒: 自艇の沈没は沈み始めてから数え、沈没の演出（2 秒）が終わるまでは終えない。敵艦隊なし（cleared）・漂流・座礁は理由が決まってから、夜明け後の輪の中は輪に入ってから数える。夜明け前の輪の中は torpedo_settle_max_s のまま。待つ間の命中は得点・命中率・Result に入り、待ち切って走っている魚雷は外れ)",
++          "source": "design (v0.8.0。帰投地点＝ファーガソン水道の中（南の岸の切れ目 x 700〜1,900 の真上＝V-S2。南の縁から 50 m）。出発点から 2,550 m（縁まで 2,300 m）。水道の両脇の礁の間（x 900〜1,700 の 800 m）を通って帰る。半径・call_margin・待ちは us_02 と同じ)"
++        },
++        "shallows": [
++          {
++            "x_m": 500,
++            "y_m": 3500,
++            "width_m": 400,
++            "height_m": 500,
++            "label_ja": "礁"
++          },
++          {
++            "x_m": 1700,
++            "y_m": 3500,
++            "width_m": 400,
++            "height_m": 500,
++            "label_ja": "礁"
++          }
++        ],
++        "shallows_source": "design (v0.8.0。ファーガソン水道の両脇の礁（PT の喪失の最大の原因は座礁＝docs/01 §7.1）。安全速力 15 kt（risk_events の grounding.params）。輪へ全速で帰る時、真ん中の 800 m（x 900〜1,700）を外れると礁に乗る。礁は輪にも出発点にもかからない（V-S2）)",
++        "friendly_aircraft": {
++          "trigger_edge_m": 1500,
++          "source": "design (v0.8.0。v0.3.3 の識別。1943-07-20 の朝に味方の B-25 が帰りの PT を敵と誤り 1 隻を沈めた（dawn_air.refs）。帰投地点の輪の縁から 1,500 m の内で数え始める。出発点（縁まで 2,300 m）は外)"
++        },
++        "enemy_aircraft": {
++          "enemy_id": "ijn_seaplane_jake",
++          "source": "design (v0.8.0。v0.4.1 の夜の水上機。この夜、ある艇は水上機に航跡を見られないよう機関をアイドルにしていた（spec-v0800 §4.1）。今夜出る確率は下の night の揺らぎ（80%）)"
++        },
++        "hazards": [
++          "enemy_ship_gunfire_or_ram",
++          "enemy_aircraft",
++          "grounding",
++          "friendly_fire",
++          "dawn_air_strike"
++        ],
++        "hazards_source": "design (v0.8.0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（護衛と列）、敵航空機（夜の水上機。night で 80%）、座礁（水道の礁）、友軍誤射（朝の帰り道。night で 80%）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。上位の hazards（任務本体の設計）は変えない)",
++        "night": {
++          "hazard_scale": 8,
++          "optional_hazards": [
++            "enemy_aircraft",
++            "friendly_fire"
++          ],
++          "enemy_jitter": {
++            "x_m": 400,
++            "y_m": 150,
++            "heading_deg": 20
++          },
++          "mirror_chance": 0,
++          "source": "design (v0.8.0。夜の揺らぎ（seed+16）。今夜出る確率は share × 8: 敵航空機 80%・友軍誤射 80%（us_02 と同じ）。護衛の駆逐艦は x ±400・y ±150・針路 ±20°。列の通過も敵の 1 件として同じ幅で揺らす（x のずれ ÷ 列の画面上の速さ 77 m/秒＝入りの秒 ±5.2 秒・y のずれ＝往路と復路の道の y ±150 m・針路のずれは使わない＝config/transit-mission-data）。左右反転なし（mirror_chance 0。ビラは東・水道は南西＝V-T6）)"
++        },
++        "dawn_strike": {
++          "aircraft_id": "ijn_f1m2_pete",
++          "count": 4,
++          "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
++          "from_bearing_deg": 315,
++          "escort_target_planes": [],
++          "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++        },
++        "dawn_withdraw": {
++          "retire_edge": "west",
++          "force_ja": "東京急行",
++          "source": "design (v0.8.0。夜明けに浮いている艦（護衛と、海峡にいる列）は西へ退く（来た道＝ベラ湾の方へ。V-T2 で transit.inbound.edge と同じ）。ビラで揚陸している艦は戻らない（揚陸で残った扱い。S1）。force_ja は夜明けの帯の呼び名)"
++        },
++        "enemy_hits_to_sink": 1,
++        "enemy_hits_to_sink_source": "design (v0.8.0。us_02・jp_06 と同じ 1 本で沈没の演出。列の艦も同じ（S2）)",
++        "objective_sink_count": 1,
++        "objective_sink_count_source": "design (v0.8.0。ノーマルも撃沈の達成は 1 隻（列 3 ＋ 護衛 1 のうち）。v0.6.0 の hard.objective_sink_count をノーマルにも読む鍵（config/mission-hard-data。この鍵の無い任務は今までどおり全隻）。史実は約 30 本で命中 0)",
++        "hard": {
++          "extra_transit_ships": 1,
++          "objective_sink_count": 1,
++          "source": "design (v0.8.0。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦…の数が増えていけばよい」）: 列の艦を 1 隻足して 4 隻 ＋ 護衛 1＝暗号の解読と戦果の報告の「駆逐艦 5 隻」（史実は 4 隻）。達成は 1 隻の撃沈のまま)"
++        },
++        "transit": {
++          "ships": 3,
++          "spacing_s": 8,
++          "speed_kt": 30,
++          "edge_inset_m": 150,
++          "inbound": {
++            "edge": "west",
++            "lane_y_m": 1500,
++            "heading_deg": 90,
++            "enter_s": 18
++          },
++          "unload_s": 40,
++          "outbound": {
++            "edge": "east",
++            "lane_y_m": 2300,
++            "heading_deg": 270
++          },
++          "cover_leaves_with_outbound": true,
++          "vila_label_ja": "ビラ",
++          "source": "historical (駆逐艦 4 隻のうち 3 隻が輸送・1 隻が護衛。ベラ湾からブラケット海峡へ入り、ビラ（コロンバンガラ島）で兵約 900 と物資を揚げて同じ海峡を戻った。帰りの駆逐艦に体当たりされて失われた艇があった＝spec-v0800 §4.1。WebSearch の抜粋のみ・本文未読) / design (v0.8.0 S0。列の通過: 1 隻目は西の縁の内 150 m・y 1,500 に 18 秒で現れ、090°・30 kt（画面上 77 m/秒）で 8 秒おき（約 620 m の間隔）に続き、東の縁の外 150 m でビラに着く（見えない・撃てない・狙えない）。各艦は着いてから 40 秒で東の縁の内 150 m・y 2,300 に 270° で現れ、西の縁の外 150 m で去る（撃沈に数えない）。往路も復路も退く動き（列の AI は enemies.json の値のまま最大速力だけ 30 kt）。復路の最初の艦が現れると護衛も西へ退く（cover_leaves_with_outbound）。揺らぎのない夜のハード 4 隻で最後の艦が去るのは 237.5 秒（夜明け 260 秒の 22.5 秒前＝V-T3）。速さ・間隔・揚陸の秒は S3 の模擬で直す（KPI を合わせた艦の回避・見張り・砲の値には触れない）)"
++        },
++        "shores": {
++          "north": {
++            "land_m": 600,
++            "labels": [
++              {
++                "label_ja": "コロンバンガラ島",
++                "x_m": 3000
++              }
++            ]
++          },
++          "south": {
++            "land_m": 600,
++            "labels": [
++              {
++                "label_ja": "ギゾ島",
++                "x_m": 300
++              },
++              {
++                "label_ja": "アランデル島",
++                "x_m": 4200
++              }
++            ],
++            "gaps_m": [
++              [
++                700,
++                1900
++              ]
++            ],
++            "gap_label_ja": "ファーガソン水道"
++          },
++          "source": "historical (海峡はコロンバンガラ島（北東）とアランデル島・ギゾ島（南西）の間。PT はファーガソン水道を通って出入りした＝spec-v0800 §4.1) / design (v0.8.0 S0。東西に置いた模式図の両岸: 北の縁（y 0）の外に陸 600 m、南の縁（y 4,000）の外に陸 600 m（x 700〜1,900 は切れ目＝ファーガソン水道。陸を描かず海が南へ続く）。字は陸の上（x は字の中心）。艇は今の岸と同じく海域の縁で止まる（陸の当たりは要らない）。今の岸（coast）とは一緒に置けない（V-S3）。絵は S2)"
++        },
++        "radar": {
++          "model": "so_early",
++          "fit": "leader",
++          "source": "historical (1943-08-01〜02 のブラケット海峡でレーダーを積んでいたのは分隊の先頭の艇だけ（3 隻とも 4 隻とも）。先頭の艇はレーダーの方位で撃ち、撃ち終えると帰る命令で、残りの艇はほとんど何も見えなかった＝spec-v0800 §3.1。WebSearch の抜粋のみ・本文未読) / design (v0.8.0 S0。プレイヤーをレーダーを積む先頭の艇にした（spec-v0800 §9 Q2。実機 1 回目に聞く）。型は初期の SO（hit_rate_model.json の radar.models.so_early）)"
++        }
+       }
+     },
+     {
+diff --git a/package-lock.json b/package-lock.json
+index 2ea338b..2fcf125 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "ww2-torpedo-boat",
+-  "version": "0.7.2",
++  "version": "0.8.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "ww2-torpedo-boat",
+-      "version": "0.7.2",
++      "version": "0.8.0",
+       "dependencies": {
+         "phaser": "^3.90.0"
+       },
+diff --git a/package.json b/package.json
+index 9ff02dc..21cb327 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "ww2-torpedo-boat",
+-  "version": "0.7.2",
++  "version": "0.8.0",
+   "private": true,
+   "description": "WWII魚雷艇ゲーム（仮称: Night Hunters）— Phaser 3 + TypeScript + Vite",
+   "type": "module",
+diff --git a/src/config/campaign-data.ts b/src/config/campaign-data.ts
+index b2c8e37..45825f8 100644
+--- a/src/config/campaign-data.ts
++++ b/src/config/campaign-data.ts
+@@ -2,7 +2,7 @@
+ // data を直接読み、game-data の関数は呼ばない（mission-data と同じ作法。値の循環を作らない）。壊れた data は例外（起動時に分かる）。
+ import type { GameData } from './game-data';
+ import { menuEntries, type MenuEntry } from '../core/briefing';
+-import { parseUnlockRule, type UnlockRule } from '../core/campaign';
++import { parseUnlockMissionIds, parseUnlockRule, type UnlockRule } from '../core/campaign';
+ 
+ export interface CampaignInfo {
+   id: string;
+@@ -10,6 +10,8 @@ export interface CampaignInfo {
+   /** 短い名前（未解放のタブの条件の文に使う。short_ja。無ければ name_ja） */
+   shortJa: string;
+   unlock: UnlockRule;
++  /** 解放の条件の任務（v0.8.0。unlock_mission_ids。complete_ の相手の遊べる任務の中だけ）。無ければ null＝相手の遊べる任務を全部 */
++  unlockMissionIds: string[] | null;
+ }
+ 
+ /** キャンペーンの一覧（data の順）。id・name_ja が無い、unlock が読めない、complete_ の相手が無い、default がちょうど 1 件でない、のどれかなら例外 */
+@@ -20,12 +22,16 @@ export function getCampaigns(data: GameData): CampaignInfo[] {
+     const nameJa = c['name_ja'];
+     if (typeof id !== 'string' || id === '' || typeof nameJa !== 'string' || nameJa === '') throw new Error(`missions_seed.json の campaigns[${i}] に id / name_ja が無い`);
+     const shortJa = typeof c['short_ja'] === 'string' && c['short_ja'] !== '' ? c['short_ja'] : nameJa;
+-    return { id, nameJa, shortJa, unlock: parseUnlockRule(c['unlock'], `campaigns.${id}`) };
++    return { id, nameJa, shortJa, unlock: parseUnlockRule(c['unlock'], `campaigns.${id}`), unlockMissionIds: parseUnlockMissionIds(c['unlock_mission_ids'], `campaigns.${id}`) };
+   });
+   const ids = new Set(out.map((c) => c.id));
+   if (ids.size !== out.length) throw new Error('missions_seed.json の campaigns の id が重複している');
+   for (const c of out) if (c.unlock.kind === 'complete' && (!ids.has(c.unlock.campaignId) || c.unlock.campaignId === c.id)) throw new Error(`campaigns.${c.id} の unlock の相手（${c.unlock.campaignId}）が無い`);
+   if (out.filter((c) => c.unlock.kind === 'default').length !== 1) throw new Error("missions_seed.json の campaigns に unlock が 'default' のキャンペーンがちょうど 1 件ない");
++  for (const c of out) {
++    const pre = c.unlock.kind === 'complete' ? playableMissionIds(data, c.unlock.campaignId) : [];
++    if (c.unlockMissionIds && !c.unlockMissionIds.every((x) => pre.includes(x))) throw new Error(`campaigns.${c.id}.unlock_mission_ids（${c.unlockMissionIds.join('・')}）は complete_ の相手の遊べる任務（${pre.join('・') || 'なし'}）の中だけ`);
++  }
+   return out;
+ }
+ 
+@@ -51,6 +57,11 @@ export function playableMissionIds(data: GameData, campaignId: string): string[]
+   return out;
+ }
+ 
++/** 解放の条件の任務（v0.8.0。Title の「済 n/N」と開く判定・v0.5.2 までの端末の移し替えが読む）: complete_ は unlock_mission_ids か相手の遊べる任務を全部、default は [] */
++export function unlockPrereqIds(data: GameData, c: CampaignInfo): string[] {
++  return c.unlock.kind === 'complete' ? (c.unlockMissionIds ?? playableMissionIds(data, c.unlock.campaignId)) : [];
++}
++
+ /** 任務のキャンペーンの id（無ければ ''） */
+ export function missionCampaignId(data: GameData, missionId: string): string {
+   const m = (data.missionsSeed.missions as readonly Record<string, unknown>[]).find((x) => x['id'] === missionId);
+diff --git a/src/config/mission-data.ts b/src/config/mission-data.ts
+index d7cb4cc..865df4d 100644
+--- a/src/config/mission-data.ts
++++ b/src/config/mission-data.ts
+@@ -30,7 +30,7 @@ export interface PrototypeMission {
+   enemyStarts: { x: number; y: number; headingDeg: number }[];
+   /** 難易度ハードで読んだ（v0.4.5。敵の数が増える。hard block の無い任務ではノーマルと同じ） */
+   hard: boolean;
+-  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。無ければ全隻＝null） */
++  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。v0.8.0 からノーマルも v0_1_prototype.objective_sink_count＝読みは config/mission-hard-data。無ければ全隻＝null） */
+   objectiveSinkCount: number | null;
+   /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery。v0.6.3 実機 1 回目から米PT の jp_05 も T-14 の 13mm）か none（v0.6.3。撃たない。米PT の任務と、v0.6.7 から夜の哨戒機の任務（jp_02）だけ） */
+   mainWeapon: MainWeapon;
+diff --git a/src/config/mission-hard-data.ts b/src/config/mission-hard-data.ts
+index 056ebe7..32a2c58 100644
+--- a/src/config/mission-hard-data.ts
++++ b/src/config/mission-hard-data.ts
+@@ -2,6 +2,8 @@
+ // extra_enemy_starts（駆逐艦を足す。enemy_start の任務だけ）・objective_sink_count（撃沈の達成の隻数。v0.6.0）・extra_shore_battery_x_m（沿岸砲を足す。shore_battery の任務だけ）。
+ // v0.6.6（jp_01）: extra_pt_legs_m（米PT の哨戒線を足す。pt_boats の任務だけ）・convoy_arrive_quota（上陸のノルマ。convoy の任務だけ）・objective_ja／success_ja／note_ja（ハードの Briefing の文。3 つとも有るか無いか）。
+ // 鍵は hard が偽でも検査し、足す・置き換えるのは hard のときだけ（今までと同じ）。知らない鍵は見ない（他の任務の hard block は今のまま）。
++// v0.8.0（us_04。spec-v0800 §4.6）: 撃沈の達成の隻数をノーマルにも読む（v0_1_prototype.objective_sink_count。ハードは hard.objective_sink_count、無ければノーマルの値。どちらも無い任務は今までどおり全隻＝null）。
++// 隻数の上限には列の通過（v0_1_prototype.transit.ships と hard.extra_transit_ships。形の検査は config/transit-mission-data の V-T1）の艦も数える。
+ // isNum・readStart もここ（mission-data が import し、isNum は今までの import のために再 export する。ここから mission-data を import すると循環になる）。
+ 
+ /** 出発点（x_m / y_m / heading_deg） */
+@@ -15,6 +17,15 @@ export function isNum(v: unknown): v is number {
+   return typeof v === 'number' && Number.isFinite(v);
+ }
+ 
++/** 1 以上の整数ならその値、ほかは 0（列の通過の艦の数を隻数の上限に足す。形の検査は config/transit-mission-data） */
++function positiveInt(v: unknown): number {
++  return typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : 0;
++}
++
++function objOf(v: unknown): Record<string, unknown> | null {
++  return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
++}
++
+ export function readStart(v: unknown, label: string): { x: number; y: number; headingDeg: number } {
+   const r = v as Record<string, unknown> | undefined;
+   if (!r || !isNum(r['x_m']) || !isNum(r['y_m']) || !isNum(r['heading_deg'])) {
+@@ -63,7 +74,11 @@ export function readHardBlock(proto: Record<string, unknown>, missionId: string,
+   const hardRaw = proto['hard'] as Record<string, unknown> | undefined;
+   const enemyStarts = enemyStart ? [enemyStart] : [];
+   const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
+-  let objectiveSinkCount: number | null = null;
++  // ノーマルの撃沈の達成の隻数（v0.8.0）: 1〜ノーマルの隻数（駆逐艦 ＋ 列の通過の艦）の整数
++  const normalShips = (enemyStart ? 1 : 0) + positiveInt(objOf(proto['transit'])?.['ships']);
++  const nosc = proto['objective_sink_count'];
++  if (nosc !== undefined && (!Number.isInteger(nosc) || (nosc as number) < 1 || (nosc as number) > normalShips)) throw new Error(`${missionId}.v0_1_prototype.objective_sink_count は 1〜ノーマルの隻数（${normalShips}）の整数`);
++  let objectiveSinkCount: number | null = nosc === undefined ? null : (nosc as number);
+   let ptLegs: number[][] | null = null;
+   let convoyQuota: number | null = null;
+   let text: HardText | null = null;
+@@ -75,9 +90,10 @@ export function readHardBlock(proto: Record<string, unknown>, missionId: string,
+       if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は駆逐艦（enemy_start）の任務だけ`);
+       if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
+     }
+-    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）
++    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）。v0.8.0: ハードの隻数に列の通過の艦（足す分も）を数える
+     const osc = hardRaw['objective_sink_count'];
+-    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || !Array.isArray(es) || (osc as number) > 1 + (es as unknown[]).length)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
++    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw['extra_transit_ships']);
++    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || (osc as number) > hardShips)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
+     if (hard && osc !== undefined) objectiveSinkCount = osc as number;
+     const xs = hardRaw['extra_shore_battery_x_m'];
+     if (xs !== undefined) {
+diff --git a/src/core/campaign.ts b/src/core/campaign.ts
+index 14830d5..8627c26 100644
+--- a/src/core/campaign.ts
++++ b/src/core/campaign.ts
+@@ -1,5 +1,6 @@
+ // キャンペーンと解放（v0.6.0。docs/02 §4「Campaign」、CLAUDE.md §2「日本側は米PTキャンペーンの後にアンロック」）。Phaser 非依存。
+-// 解放の規則は missions_seed.json の campaigns[].unlock: 'default'（最初から開いている）か 'complete_<キャンペーン id>'（その遊べる任務を全部、1 回ずつ帰投で終える）。
++// 解放の規則は missions_seed.json の campaigns[].unlock: 'default'（最初から開いている）か 'complete_<キャンペーン id>'（その遊べる任務を全部、1 回ずつ帰投で終える。
++// v0.8.0 から unlock_mission_ids があればその任務だけ＝日本のタブは米PT の 3 任務のまま）。
+ // 一度開いたキャンペーンは閉じない（開いた印を別に保存する）。帰投で終えた任務の id と開いた印の読み書きは systems/progress-storage.ts。
+ 
+ export type UnlockRule = { kind: 'default' } | { kind: 'complete'; campaignId: string };
+@@ -13,6 +14,16 @@ export function parseUnlockRule(v: unknown, label: string): UnlockRule {
+   throw new Error(`${label} の unlock は 'default' か 'complete_<キャンペーン id>'（${String(v)}）`);
+ }
+ 
++/**
++ * 解放の条件の任務の一覧（v0.8.0。campaigns[].unlock_mission_ids。spec-v0800 §2.4）: 無ければ null（相手のキャンペーンの遊べる任務を全部＝v0.6.0）。
++ * 置くなら空でない・重複の無い・空でない文字列の配列（相手の遊べる任務の中かは config/campaign-data）
++ */
++export function parseUnlockMissionIds(v: unknown, label: string): string[] | null {
++  if (v === undefined) return null;
++  if (!Array.isArray(v) || v.length === 0 || !v.every((x) => typeof x === 'string' && x !== '') || new Set(v).size !== v.length) throw new Error(`${label} の unlock_mission_ids は空でない・重複の無い任務の id の配列（${JSON.stringify(v)}）`);
++  return (v as string[]).slice();
++}
++
+ export interface CampaignStatus {
+   unlocked: boolean;
+   /** 条件の任務のうち帰投で終えた数と、条件の任務の数（default は 0 / 0） */
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index ccb9ba9..95c42d0 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -56,6 +56,9 @@ import { getPatrolAirParams } from '../config/patrol-air-mission-data';
+ import { validateLandingMissions } from '../config/landing-mission-data';
+ import { validateAllyDestroyerMissions } from '../config/ally-destroyer-mission-data';
+ import { validateEvacMissions } from '../config/evac-mission-data';
++import { validateRadarMissions } from '../config/radar-mission-data';
++import { validateTransitMissions } from '../config/transit-mission-data';
++import { validateShoresMissions } from '../config/shores-mission-data';
+ import { validateLoadouts } from '../config/loadout-data';
+ import { COAST_MARKER_COLOR } from '../config/hunt-config';
+ import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
+@@ -145,6 +148,10 @@ export class BootScene extends Phaser.Scene {
+     const allyMission = ally ? getPrototypeMission(gameData, allyMissionId(ally.shipId)) : null;
+     if (ally && allyMission) generateAllyDestroyerTextures(this, { lengthUnits: ally.lengthM * spriteScale, beamUnits: ally.beamM * spriteScale }, allyFanFor(ally, allyMission.coast !== null, allyMission.bounds.height));
+     validateEvacMissions(gameData); // 空襲下の退避（v0.6.11。jp_03）: 隊・隠れ場所・波と編隊・燃料の V-E1〜V-E12（ハードも。壊れていれば Boot で止まる。絵は S4）
++    // 米PT キャンペーン②（v0.8.0。us_04）: レーダー（radar の data と V-R1〜V-R5）・列の通過（V-T1〜V-T6）・海峡の両岸（V-S1〜V-S3）をハードも 1 回（壊れていれば Boot で止まる。絵は S2）
++    validateRadarMissions(gameData);
++    validateTransitMissions(gameData);
++    validateShoresMissions(gameData);
+     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
+     if (DEBUG_ENABLED) generateDebugRingTexture(this);
+ 
+diff --git a/src/scenes/title-scene.ts b/src/scenes/title-scene.ts
+index da37f7a..457656f 100644
+--- a/src/scenes/title-scene.ts
++++ b/src/scenes/title-scene.ts
+@@ -5,7 +5,7 @@
+ // v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
+ import Phaser from 'phaser';
+ import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
+-import { getCampaigns, getMenuEntries, playableMissionIds } from '../config/campaign-data';
++import { getCampaigns, getMenuEntries, unlockPrereqIds } from '../config/campaign-data';
+ import { getAimAssistLevels, getGameData } from '../config/game-data';
+ import {
+   TITLE_DIFF_H,
+@@ -218,7 +218,7 @@ export class TitleScene extends Phaser.Scene {
+   private selectCampaign(): { id: string; status: Map<string, CampaignStatus> } {
+     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
+     const campaigns = getCampaigns(data);
+-    const prereq = (c: (typeof campaigns)[number]): string[] => (c.unlock.kind === 'complete' ? playableMissionIds(data, c.unlock.campaignId) : []);
++    const prereq = (c: (typeof campaigns)[number]): string[] => unlockPrereqIds(data, c); // v0.8.0: campaigns の unlock_mission_ids（日本のタブは米PT の 3 任務のまま）か相手の遊べる任務を全部
+     // v0.5.2 までの端末の移し替えは Boot（migrateLegacyUnlocks）で済んでいる。念のためここでも（2 回目からは何もしない）
+     migrateLegacyUnlocks(data);
+     const cleared = clearedMissionIds();
+diff --git a/src/systems/progress-storage.ts b/src/systems/progress-storage.ts
+index 36ca7bf..a3e38fa 100644
+--- a/src/systems/progress-storage.ts
++++ b/src/systems/progress-storage.ts
+@@ -2,7 +2,7 @@
+ // 読めない・書けない（プライベートブラウズ・容量・無効）ときは 0 のまま／増やさないだけで、例外を外へ出さない（kpi-storage と同じ作法。update では触らない。§7）。
+ // iOS の注意: Safari とホーム画面のアプリ（PWA）は保存場所が別。?debug&sorties=N で回数をみなす（保存は変えない）。
+ import { DEBUG_SORTIES } from '../config/game-config';
+-import { getCampaigns, playableMissionIds } from '../config/campaign-data';
++import { getCampaigns, unlockPrereqIds } from '../config/campaign-data';
+ import type { GameData } from '../config/game-data';
+ import { legacyUnlocked, parseIdList, serializeIdList } from '../core/campaign';
+ import { parseSortieCount, serializeSortieCount } from '../core/progress';
+@@ -117,6 +117,6 @@ export function migrateLegacyUnlocks(data: GameData): void {
+   const raw = readClearedRaw();
+   if (raw !== null) return;
+   const sorties = storedSorties();
+-  for (const c of getCampaigns(data)) if (c.unlock.kind === 'complete' && legacyUnlocked(raw, sorties, playableMissionIds(data, c.unlock.campaignId).length)) markCampaignUnlocked(c.id);
++  for (const c of getCampaigns(data)) if (c.unlock.kind === 'complete' && legacyUnlocked(raw, sorties, unlockPrereqIds(data, c).length)) markCampaignUnlocked(c.id); // v0.8.0: 条件の任務の数は unlockPrereqIds（米PT の 3 のまま）
+   initClearedIfAbsent();
+ }
+diff --git a/src/systems/world-setup-types.ts b/src/systems/world-setup-types.ts
+index ff2fc26..e470ece 100644
+--- a/src/systems/world-setup-types.ts
++++ b/src/systems/world-setup-types.ts
+@@ -8,6 +8,9 @@ import type { LandingSetup } from '../config/landing-mission-data';
+ import type { MainWeapon } from '../config/mission-data';
+ import type { PatrolAirSetup, PatrolAirSetupOptions } from '../config/patrol-air-mission-data';
+ import type { EvacSetup } from '../config/evac-mission-data';
++import type { RadarSetup, RadarSetupOptions } from '../config/radar-mission-data';
++import type { TransitSetup } from '../config/transit-mission-data';
++import type { ShoresSetup } from '../config/shores-mission-data';
+ import type { BargeParams } from '../core/barge-data';
+ import type { BoatParams } from '../core/boat-motion';
+ import type { ConvoySetup } from '../core/convoy-data';
+@@ -116,10 +119,13 @@ export interface WorldSetup {
+   landing?: LandingSetup; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。v0_1_prototype.landing のある任務＝jp_04 だけ。config/landing-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
+   allyDestroyer?: AllyDestroyerParams; // 味方の駆逐艦 卯月（v0.6.10。v0_1_prototype.ally_destroyer のある任務＝jp_04 だけ。config/ally-destroyer-mission-data。無い任務と allyOff では鍵ごと出ない＝setup の snapshot を変えない）
+   evac?: EvacSetup; // 空襲下の退避（v0.6.11。v0_1_prototype.evac のある任務＝jp_03 だけ。config/evac-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
++  radar?: RadarSetup; // 自艇のレーダー（v0.8.0。v0_1_prototype.radar のある任務＝us_04 だけ。config/radar-mission-data。無い任務と radarOff では鍵ごと出ない＝setup の snapshot を変えない）
++  transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 だけ。config/transit-mission-data。無い任務では鍵ごと出ない）
++  shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
+ }
+ 
+ /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
+-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions {
++export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions {
+   fuelGal?: number;
+   dawnS?: number;
+   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
+diff --git a/src/systems/world-setup.ts b/src/systems/world-setup.ts
+index 40102a8..3c321a6 100644
+--- a/src/systems/world-setup.ts
++++ b/src/systems/world-setup.ts
+@@ -36,6 +36,9 @@ import { patrolAirSetupPart } from '../config/patrol-air-mission-data';
+ import { landingSetupPart } from '../config/landing-mission-data';
+ import { allyDestroyerSetupPart } from '../config/ally-destroyer-mission-data';
+ import { evacSetupPart } from '../config/evac-mission-data';
++import { radarSetupPart } from '../config/radar-mission-data';
++import { transitNightRolls, transitSetupPart } from '../config/transit-mission-data';
++import { shoresSetupPart } from '../config/shores-mission-data';
+ import { fixedNight, rollNight } from '../core/night';
+ import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
+ import { destroyerSetup, type TransportSetup } from './destroyer-setup';
+@@ -72,7 +75,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+   const tr = mission.transport && !o.transportOff ? mission.transport : null;
+   const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
+   const ptBase = getPtParams(data, mission, world.time_scale);
+-  const enemyRolls = shipStarts.length + (ptBase ? 1 : 0); // 米PT の隊（v0.6.3）は隊ごと 1 件の敵として揺らす（米PT の無い任務の回数は同じ）
++  const enemyRolls = shipStarts.length + (ptBase ? 1 : 0) + transitNightRolls(data, mission); // 米PT の隊（v0.6.3）と列の通過（v0.8.0。us_04）は隊・列ごと 1 件の敵として揺らす（無い任務の回数は同じ）
+   const night =
+     sortie && mission.night && !o.fixedNight
+       ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, enemyRolls, batteries.length)
+@@ -169,6 +172,9 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+     ...landingPart, // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04 だけ。無い任務では鍵ごと出ない）
+     ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o), // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
+     ...evacSetupPart(data, missionId, hard), // 空襲下の退避（v0.6.11。jp_03 だけ。6 つの隊・隠れ場所・波と編隊・燃料を数えない秒・昼。無い任務では鍵ごと出ない）
++    ...radarSetupPart(data, mission, o), // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
++    ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical), // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
++    ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
+   };
+ }
+ 
+diff --git a/tests/boot-loop.test.ts b/tests/boot-loop.test.ts
+index b68f086..a3993fe 100644
+--- a/tests/boot-loop.test.ts
++++ b/tests/boot-loop.test.ts
+@@ -12,6 +12,9 @@ import { getConvoyParams } from '../src/config/convoy-mission-data';
+ import { getGunboatParams } from '../src/config/gunboat-mission-data';
+ import { getPatrolAirParams } from '../src/config/patrol-air-mission-data';
+ import { validateEvacMissions } from '../src/config/evac-mission-data';
++import { validateRadarMissions } from '../src/config/radar-mission-data';
++import { validateTransitMissions } from '../src/config/transit-mission-data';
++import { validateShoresMissions } from '../src/config/shores-mission-data';
+ 
+ type Rec = Record<string, unknown>;
+ const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype'] && typeof m['id'] === 'string').map((m) => m['id'] as string);
+@@ -27,8 +30,8 @@ function bootLoop(id: string): void {
+ }
+ 
+ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
+-  it('遊べる世界のある任務は 9 つ（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6）', () => {
+-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
++  it('遊べる世界のある任務は 10（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5）', () => {
++    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']);
+   });
+   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
+     expect(() => bootLoop(id)).not.toThrow();
+@@ -45,6 +48,12 @@ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）',
+     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
+     expect(src.indexOf('validateEvacMissions(gameData)')).toBeGreaterThan(src.indexOf('for (const id of boatIds)'));
+   });
++  it('米PT キャンペーン②（v0.8.0 S0。us_04）: Boot の validateRadarMissions・validateTransitMissions・validateShoresMissions は投げず us_04 の値を返す（ソースの pin: 退避の検査の後にこの順で 1 回ずつ）', () => {
++    expect([validateRadarMissions(gameData)?.model, validateTransitMissions(gameData)?.ships, validateShoresMissions(gameData)?.south.gapLabelJa]).toEqual(['so_early', 3, 'ファーガソン水道']);
++    const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
++    const at = ['validateEvacMissions(gameData);', 'validateRadarMissions(gameData);', 'validateTransitMissions(gameData);', 'validateShoresMissions(gameData);'].map((c) => src.indexOf(c));
++    expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]!))).toBe(true);
++  });
+   it('ソースの pin: boot-scene の輪は getPrototypeMission → getEngineParams → getPatrolAirParams → ハード（getPtParams・getConvoyParams）→ getGunboatParams の順', () => {
+     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
+     const start = src.indexOf('for (const m of gameData.missionsSeed.missions');
+diff --git a/tests/campaign.test.ts b/tests/campaign.test.ts
+index 3f47ce5..5d4e2a8 100644
+--- a/tests/campaign.test.ts
++++ b/tests/campaign.test.ts
+@@ -1,7 +1,7 @@
+ import { describe, expect, it } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+-import { defaultCampaign, getCampaigns, getMenuEntries, missionCampaignId, playableMissionIds, recordsHitKpi } from '../src/config/campaign-data';
+-import { campaignStatus, legacyUnlocked, parseIdList, parseUnlockRule, serializeIdList } from '../src/core/campaign';
++import { defaultCampaign, getCampaigns, getMenuEntries, missionCampaignId, playableMissionIds, recordsHitKpi, unlockPrereqIds } from '../src/config/campaign-data';
++import { campaignStatus, legacyUnlocked, parseIdList, parseUnlockMissionIds, parseUnlockRule, serializeIdList } from '../src/core/campaign';
+ 
+ const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+ 
+@@ -58,6 +58,31 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
+     (dup.missionsSeed.campaigns[1] as { id: string }).id = 'us_pt';
+     expect(() => getCampaigns(dup)).toThrow();
+   });
++  it('解放の条件の任務（v0.8.0 S0。spec-v0800 §2.4・lead の既定 L2）: 日本のタブは unlock_mission_ids で米PT の 3 任務のまま（us_04 が遊べるようになっても 3）。米PT は条件なし', () => {
++    const [us, jp] = getCampaigns(gameData);
++    expect([us!.unlockMissionIds, jp!.unlockMissionIds]).toEqual([null, ['us_01', 'us_02', 'us_03']]);
++    expect([unlockPrereqIds(gameData, us!), unlockPrereqIds(gameData, jp!)]).toEqual([[], ['us_01', 'us_02', 'us_03']]);
++    expect(String((gameData.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids_source'])).toContain('design (v0.8.0 S0');
++    // us_04 が遊べるようになった木（playable_from を足した写し）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝4）
++    const later = clone();
++    ((later.missionsSeed.missions as unknown as Record<string, unknown>[]).find((m) => m['id'] === 'us_04')!)['playable_from'] = 'v0.8.0';
++    expect(playableMissionIds(later, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
++    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03']);
++    expect(campaignStatus(getCampaigns(later)[1]!.unlock, unlockPrereqIds(later, getCampaigns(later)[1]!), new Set(['us_01', 'us_02', 'us_03']), false, false)).toEqual({ unlocked: true, done: 3, total: 3 });
++    delete (later.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'];
++    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
++  });
++  it('解放の条件の一覧の検査: 空・重複・文字でない・相手の遊べる任務の外・default のキャンペーンに置く は例外', () => {
++    expect(parseUnlockMissionIds(undefined, 'x')).toBeNull();
++    expect(parseUnlockMissionIds(['us_01'], 'x')).toEqual(['us_01']);
++    for (const bad of [[], ['us_01', 'us_01'], ['us_01', ''], 'us_01', [1]]) expect(() => parseUnlockMissionIds(bad, 'campaigns.jp_hard'), JSON.stringify(bad)).toThrow(/campaigns\.jp_hard の unlock_mission_ids は空でない・重複の無い任務の id の配列/);
++    const notPlayable = clone();
++    (notPlayable.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01', 'us_04'];
++    expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_04）は complete_ の相手の遊べる任務（us_01・us_02・us_03）の中だけ/);
++    const onDefault = clone();
++    (onDefault.missionsSeed.campaigns[0] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01'];
++    expect(() => getCampaigns(onDefault)).toThrow(/campaigns\.us_pt\.unlock_mission_ids（us_01）は complete_ の相手の遊べる任務（なし）の中だけ/);
++  });
+   it('通算の命中率に数えるのは米PTの任務だけ（hit_rate_model.kpi_measurement.campaigns）', () => {
+     expect(gameData.hitRateModel.kpi_measurement.campaigns).toEqual(['us_pt']);
+     expect(['us_01', 'us_02', 'us_03'].map((id) => recordsHitKpi(gameData, id))).toEqual([true, true, true]);
+diff --git a/tests/dawn-air.test.ts b/tests/dawn-air.test.ts
+index dfa70d9..3de2985 100644
+--- a/tests/dawn-air.test.ts
++++ b/tests/dawn-air.test.ts
+@@ -275,7 +275,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       us_01: ['enemy', 'medium', 'enemy', 'stay', '昼の空は敵（日本の水上機）'],
+       us_02: ['own', 'high', 'own', 'retire', '昼の空は味方（ヘンダーソン基地）'],
+       us_03: ['contested', 'medium', 'enemy', 'hide', '昼の空は争奪（日本機の昼の空襲）'], // v0.6.1 実機 1 回目: ユーザーの判断で空襲あり
+-      us_04: ['contested', 'medium', 'own', 'retire', '昼の空はおおむね味方（エアソルス）'],
++      us_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本の水上機の空襲）'], // v0.8.0 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」）。遊べるようにする前（S5）に spec-v0800 §9 Q1 で見直す
+       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
+       us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
+       us_07: ['own', 'high', 'own', 'none', '昼の空は味方（連合軍）'],
+diff --git a/tests/dawn-withdraw.test.ts b/tests/dawn-withdraw.test.ts
+index 3bdc484..44f61f4 100644
+--- a/tests/dawn-withdraw.test.ts
++++ b/tests/dawn-withdraw.test.ts
+@@ -264,8 +264,9 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
+       if (id !== 'us_02') expect(protoOf(gameData, id)['dawn_withdraw'], id).toBeUndefined();
+       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
+     }
+-    // 遊べない任務は v0_1_prototype が無いので退く先は持たない
+-    expect(getDawnAir(gameData, 'us_04').retireEdge).toBeNull();
++    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（playable_from はまだ）で、東京急行は西へ退く
++    expect(getDawnAir(gameData, 'us_06').retireEdge).toBeNull();
++    expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);
+   });
+   it('dawnWithdrawFromData: 形・知らないキー・縁・source の崩れは任務の id を付けて例外', () => {
+     const ok = { retire_edge: 'west', force_ja: '東京急行', source: 'design (x)' };
+diff --git a/tests/engine-data.test.ts b/tests/engine-data.test.ts
+index a3097f9..47467f6 100644
+--- a/tests/engine-data.test.ts
++++ b/tests/engine-data.test.ts
+@@ -154,7 +154,7 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
+ 
+ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の同居の検査）', () => {
+   it('不調が入るのは v0_1_prototype.hazards に engine_failure がある jp_05 だけ（jp_01 の T-38 にも engine_reliability 0.85 があるが読まない）', () => {
+-    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']); // v0.6.7: jp_02（夜の哨戒機。不調なし）。v0.6.9 S1: jp_04（揚陸の輸送船。不調なし。playable_from は S7）。v0.6.11 S0: jp_03（空襲下の退避。不調なし。playable_from は S6）
++    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']); // v0.6.7: jp_02（夜の哨戒機。不調なし）。v0.6.9 S1: jp_04（揚陸の輸送船。不調なし。playable_from は S7）。v0.6.11 S0: jp_03（空襲下の退避。不調なし。playable_from は S6）。v0.8.0 S0: us_04（列の通過とレーダー。不調なし。playable_from は S5）
+     for (const id of PROTO_IDS) expect(getEngineParams(gameData, id) !== null, id).toBe(id === 'jp_05');
+     expect(getEngineParams(gameData, 'jp_05')).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, warnRearmHeat: 0.5, startHeat: 0 });
+     expect(boatOf(gameData, 'jp_t38')['engine_reliability']).toBe(0.85);
+diff --git a/tests/landing-neutral.test.ts b/tests/landing-neutral.test.ts
+index d592147..78e02a2 100644
+--- a/tests/landing-neutral.test.ts
++++ b/tests/landing-neutral.test.ts
+@@ -17,10 +17,10 @@ import { missionMode } from '../src/ui/mission-mode';
+ import { tele } from './pt-ui-kit';
+ 
+ type Rec = Record<string, unknown>;
+-const OTHERS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）
++const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）
+ 
+-describe('landing-neutral（他の 8 任務）', () => {
+-  it('v0_1_prototype を持つのは 8 任務（v0.6.11 S0 の jp_03 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
++describe('landing-neutral（他の 9 任務）', () => {
++  it('v0_1_prototype を持つのは 9 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
+     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
+     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
+     const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);
+@@ -55,7 +55,7 @@ describe('landing-neutral（他の 8 任務）', () => {
+ /** コメントを除いたソース */
+ const code = (p: string): string => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+ 
+-describe('landing-neutral のテレメトリ（S5b。他の 8 任務）', () => {
++describe('landing-neutral のテレメトリ（S5b。他の 9 任務）', () => {
+   it('配線: 揚陸の世界は setup.landing の無い任務で null（buildLanding の最初の枝）、出発時のテレメトリはいつも landing の鍵を持ち、毎フレームの書き換えは null の世界で何もしない', () => {
+     expect(code('systems/world-landing.ts')).toContain('if (!s.landing || !pts) return null;');
+     expect(code('systems/telemetry-create.ts')).toContain('landing: initLandingTelemetry(w),');
+diff --git a/tests/person-denylist.ts b/tests/person-denylist.ts
+index 1f1acbe..17f3d03 100644
+--- a/tests/person-denylist.ts
++++ b/tests/person-denylist.ts
+@@ -1,5 +1,10 @@
+ // 人物名を出さない（CLAUDE.md §11）検査の共通の表（v0.6.1 で briefing.test.ts から移した。dawn-air.test.ts も使う）。テストではない（vitest は *.test.ts だけ拾う）。
+ 
+-/** 人物名の denylist と階級つきの呼び方（v0.6.7: research-v067 の 1-14・1-15 に FAW-2 の司令官の名が出たので Price・プライスを足した。階級の付かない名前は RANK_RE では拾えない） */
+-export const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ', 'Kennedy', 'バルクリー', 'Bulkeley', 'Bulkley', '白石', '齋藤', 'Price', 'プライス'];
++/**
++ * 人物名の denylist と階級つきの呼び方（v0.6.7: research-v067 の 1-14・1-15 に FAW-2 の司令官の名が出たので Price・プライスを足した。階級の付かない名前は RANK_RE では拾えない）。
++ * v0.8.0 S0（spec-v0800 §4.12）: us_04（1943-08-01〜02 のブラケット海峡）の夜の逸話に出る島民 2 人の名（ラテン文字と片仮名。名と姓に分けて拾う）を足した
++ */
++export const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ', 'Kennedy', 'バルクリー', 'Bulkeley', 'Bulkley', '白石', '齋藤', 'Price', 'プライス', 'Biuku', 'Gasa', 'ビウク', 'ガサ', 'Eroni', 'Kumana', 'エロニ', 'クマナ'];
+ export const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
++/** その夜に駆逐艦に体当たりされた有名な艇の番号（v0.8.0 S0。spec-v0800 §4.12。URL の小文字・空白・ハイフンの有無も拾う）。us_04 の文と data に出さない */
++export const FAMOUS_BOAT_RE = /PT-?\s*109/i;
