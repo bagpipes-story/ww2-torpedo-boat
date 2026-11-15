@@ -30,7 +30,7 @@ export interface PrototypeMission {
   enemyStarts: { x: number; y: number; headingDeg: number }[];
   /** 難易度ハードで読んだ（v0.4.5。敵の数が増える。hard block の無い任務ではノーマルと同じ） */
   hard: boolean;
-  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。無ければ全隻＝null） */
+  /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。hard.objective_sink_count。v0.8.0 からノーマルも v0_1_prototype.objective_sink_count＝読みは config/mission-hard-data。無ければ全隻＝null） */
   objectiveSinkCount: number | null;
   /** 主兵装（v0.4.2）: torpedo（右下が魚雷）か guns（右下が射撃。boats.json の gun_battery。v0.6.3 実機 1 回目から米PT の jp_05 も T-14 の 13mm）か none（v0.6.3。撃たない。米PT の任務と、v0.6.7 から夜の哨戒機の任務（jp_02）だけ） */
   mainWeapon: MainWeapon;

@@ -5,7 +5,7 @@
 // v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
 import Phaser from 'phaser';
 import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
-import { getCampaigns, getMenuEntries, playableMissionIds } from '../config/campaign-data';
+import { getCampaigns, getMenuEntries, unlockPrereqIds } from '../config/campaign-data';
 import { getAimAssistLevels, getGameData } from '../config/game-data';
 import {
   TITLE_DIFF_H,
@@ -218,7 +218,7 @@ export class TitleScene extends Phaser.Scene {
   private selectCampaign(): { id: string; status: Map<string, CampaignStatus> } {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const campaigns = getCampaigns(data);
-    const prereq = (c: (typeof campaigns)[number]): string[] => (c.unlock.kind === 'complete' ? playableMissionIds(data, c.unlock.campaignId) : []);
+    const prereq = (c: (typeof campaigns)[number]): string[] => unlockPrereqIds(data, c); // v0.8.0: campaigns の unlock_mission_ids（日本のタブは米PT の 3 任務のまま）か相手の遊べる任務を全部
     // v0.5.2 までの端末の移し替えは Boot（migrateLegacyUnlocks）で済んでいる。念のためここでも（2 回目からは何もしない）
     migrateLegacyUnlocks(data);
     const cleared = clearedMissionIds();

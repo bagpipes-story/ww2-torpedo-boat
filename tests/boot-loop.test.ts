@@ -12,6 +12,9 @@ import { getConvoyParams } from '../src/config/convoy-mission-data';
 import { getGunboatParams } from '../src/config/gunboat-mission-data';
 import { getPatrolAirParams } from '../src/config/patrol-air-mission-data';
 import { validateEvacMissions } from '../src/config/evac-mission-data';
+import { validateRadarMissions } from '../src/config/radar-mission-data';
+import { validateTransitMissions } from '../src/config/transit-mission-data';
+import { validateShoresMissions } from '../src/config/shores-mission-data';
 
 type Rec = Record<string, unknown>;
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype'] && typeof m['id'] === 'string').map((m) => m['id'] as string);
@@ -27,8 +30,8 @@ function bootLoop(id: string): void {
 }
 
 describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
-  it('遊べる世界のある任務は 9 つ（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6）', () => {
-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03']);
+  it('遊べる世界のある任務は 10（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5）', () => {
+    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']);
   });
   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
     expect(() => bootLoop(id)).not.toThrow();
@@ -44,6 +47,12 @@ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）',
     expect(validateEvacMissions(gameData)?.params.groups.length).toBe(6);
     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
     expect(src.indexOf('validateEvacMissions(gameData)')).toBeGreaterThan(src.indexOf('for (const id of boatIds)'));
+  });
+  it('米PT キャンペーン②（v0.8.0 S0。us_04）: Boot の validateRadarMissions・validateTransitMissions・validateShoresMissions は投げず us_04 の値を返す（ソースの pin: 退避の検査の後にこの順で 1 回ずつ）', () => {
+    expect([validateRadarMissions(gameData)?.model, validateTransitMissions(gameData)?.ships, validateShoresMissions(gameData)?.south.gapLabelJa]).toEqual(['so_early', 3, 'ファーガソン水道']);
+    const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
+    const at = ['validateEvacMissions(gameData);', 'validateRadarMissions(gameData);', 'validateTransitMissions(gameData);', 'validateShoresMissions(gameData);'].map((c) => src.indexOf(c));
+    expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]!))).toBe(true);
   });
   it('ソースの pin: boot-scene の輪は getPrototypeMission → getEngineParams → getPatrolAirParams → ハード（getPtParams・getConvoyParams）→ getGunboatParams の順', () => {
     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');

@@ -2,7 +2,7 @@
 // 読めない・書けない（プライベートブラウズ・容量・無効）ときは 0 のまま／増やさないだけで、例外を外へ出さない（kpi-storage と同じ作法。update では触らない。§7）。
 // iOS の注意: Safari とホーム画面のアプリ（PWA）は保存場所が別。?debug&sorties=N で回数をみなす（保存は変えない）。
 import { DEBUG_SORTIES } from '../config/game-config';
-import { getCampaigns, playableMissionIds } from '../config/campaign-data';
+import { getCampaigns, unlockPrereqIds } from '../config/campaign-data';
 import type { GameData } from '../config/game-data';
 import { legacyUnlocked, parseIdList, serializeIdList } from '../core/campaign';
 import { parseSortieCount, serializeSortieCount } from '../core/progress';
@@ -117,6 +117,6 @@ export function migrateLegacyUnlocks(data: GameData): void {
   const raw = readClearedRaw();
   if (raw !== null) return;
   const sorties = storedSorties();
-  for (const c of getCampaigns(data)) if (c.unlock.kind === 'complete' && legacyUnlocked(raw, sorties, playableMissionIds(data, c.unlock.campaignId).length)) markCampaignUnlocked(c.id);
+  for (const c of getCampaigns(data)) if (c.unlock.kind === 'complete' && legacyUnlocked(raw, sorties, unlockPrereqIds(data, c).length)) markCampaignUnlocked(c.id); // v0.8.0: 条件の任務の数は unlockPrereqIds（米PT の 3 のまま）
   initClearedIfAbsent();
 }

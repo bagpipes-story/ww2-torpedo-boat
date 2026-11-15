@@ -2,6 +2,8 @@
 // extra_enemy_starts（駆逐艦を足す。enemy_start の任務だけ）・objective_sink_count（撃沈の達成の隻数。v0.6.0）・extra_shore_battery_x_m（沿岸砲を足す。shore_battery の任務だけ）。
 // v0.6.6（jp_01）: extra_pt_legs_m（米PT の哨戒線を足す。pt_boats の任務だけ）・convoy_arrive_quota（上陸のノルマ。convoy の任務だけ）・objective_ja／success_ja／note_ja（ハードの Briefing の文。3 つとも有るか無いか）。
 // 鍵は hard が偽でも検査し、足す・置き換えるのは hard のときだけ（今までと同じ）。知らない鍵は見ない（他の任務の hard block は今のまま）。
+// v0.8.0（us_04。spec-v0800 §4.6）: 撃沈の達成の隻数をノーマルにも読む（v0_1_prototype.objective_sink_count。ハードは hard.objective_sink_count、無ければノーマルの値。どちらも無い任務は今までどおり全隻＝null）。
+// 隻数の上限には列の通過（v0_1_prototype.transit.ships と hard.extra_transit_ships。形の検査は config/transit-mission-data の V-T1）の艦も数える。
 // isNum・readStart もここ（mission-data が import し、isNum は今までの import のために再 export する。ここから mission-data を import すると循環になる）。
 
 /** 出発点（x_m / y_m / heading_deg） */
@@ -13,6 +15,15 @@ export interface StartPoint {
 
 export function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
+}
+
+/** 1 以上の整数ならその値、ほかは 0（列の通過の艦の数を隻数の上限に足す。形の検査は config/transit-mission-data） */
+function positiveInt(v: unknown): number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : 0;
+}
+
+function objOf(v: unknown): Record<string, unknown> | null {
+  return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }
 
 export function readStart(v: unknown, label: string): { x: number; y: number; headingDeg: number } {
@@ -63,7 +74,11 @@ export function readHardBlock(proto: Record<string, unknown>, missionId: string,
   const hardRaw = proto['hard'] as Record<string, unknown> | undefined;
   const enemyStarts = enemyStart ? [enemyStart] : [];
   const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
-  let objectiveSinkCount: number | null = null;
+  // ノーマルの撃沈の達成の隻数（v0.8.0）: 1〜ノーマルの隻数（駆逐艦 ＋ 列の通過の艦）の整数
+  const normalShips = (enemyStart ? 1 : 0) + positiveInt(objOf(proto['transit'])?.['ships']);
+  const nosc = proto['objective_sink_count'];
+  if (nosc !== undefined && (!Number.isInteger(nosc) || (nosc as number) < 1 || (nosc as number) > normalShips)) throw new Error(`${missionId}.v0_1_prototype.objective_sink_count は 1〜ノーマルの隻数（${normalShips}）の整数`);
+  let objectiveSinkCount: number | null = nosc === undefined ? null : (nosc as number);
   let ptLegs: number[][] | null = null;
   let convoyQuota: number | null = null;
   let text: HardText | null = null;
@@ -75,9 +90,10 @@ export function readHardBlock(proto: Record<string, unknown>, missionId: string,
       if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts は駆逐艦（enemy_start）の任務だけ`);
       if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
     }
-    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）
+    // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）。v0.8.0: ハードの隻数に列の通過の艦（足す分も）を数える
     const osc = hardRaw['objective_sink_count'];
-    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || !Array.isArray(es) || (osc as number) > 1 + (es as unknown[]).length)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
+    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw['extra_transit_ships']);
+    if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || (osc as number) > hardShips)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
     if (hard && osc !== undefined) objectiveSinkCount = osc as number;
     const xs = hardRaw['extra_shore_battery_x_m'];
     if (xs !== undefined) {

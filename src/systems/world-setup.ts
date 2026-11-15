@@ -36,6 +36,9 @@ import { patrolAirSetupPart } from '../config/patrol-air-mission-data';
 import { landingSetupPart } from '../config/landing-mission-data';
 import { allyDestroyerSetupPart } from '../config/ally-destroyer-mission-data';
 import { evacSetupPart } from '../config/evac-mission-data';
+import { radarSetupPart } from '../config/radar-mission-data';
+import { transitNightRolls, transitSetupPart } from '../config/transit-mission-data';
+import { shoresSetupPart } from '../config/shores-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, type TransportSetup } from './destroyer-setup';
@@ -72,7 +75,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const tr = mission.transport && !o.transportOff ? mission.transport : null;
   const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
   const ptBase = getPtParams(data, mission, world.time_scale);
-  const enemyRolls = shipStarts.length + (ptBase ? 1 : 0); // 米PT の隊（v0.6.3）は隊ごと 1 件の敵として揺らす（米PT の無い任務の回数は同じ）
+  const enemyRolls = shipStarts.length + (ptBase ? 1 : 0) + transitNightRolls(data, mission); // 米PT の隊（v0.6.3）と列の通過（v0.8.0。us_04）は隊・列ごと 1 件の敵として揺らす（無い任務の回数は同じ）
   const night =
     sortie && mission.night && !o.fixedNight
       ? rollNight(mission.night, (id) => events.find((e) => e['id'] === id)?.['share'] as number, sortie.seed, enemyRolls, batteries.length)
@@ -169,6 +172,9 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...landingPart, // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04 だけ。無い任務では鍵ごと出ない）
     ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o), // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
     ...evacSetupPart(data, missionId, hard), // 空襲下の退避（v0.6.11。jp_03 だけ。6 つの隊・隠れ場所・波と編隊・燃料を数えない秒・昼。無い任務では鍵ごと出ない）
+    ...radarSetupPart(data, mission, o), // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
+    ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical), // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
+    ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
   };
 }
 

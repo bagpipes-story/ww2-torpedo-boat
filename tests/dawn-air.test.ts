@@ -275,7 +275,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       us_01: ['enemy', 'medium', 'enemy', 'stay', '昼の空は敵（日本の水上機）'],
       us_02: ['own', 'high', 'own', 'retire', '昼の空は味方（ヘンダーソン基地）'],
       us_03: ['contested', 'medium', 'enemy', 'hide', '昼の空は争奪（日本機の昼の空襲）'], // v0.6.1 実機 1 回目: ユーザーの判断で空襲あり
-      us_04: ['contested', 'medium', 'own', 'retire', '昼の空はおおむね味方（エアソルス）'],
+      us_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本の水上機の空襲）'], // v0.8.0 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」）。遊べるようにする前（S5）に spec-v0800 §9 Q1 で見直す
       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
       us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
       us_07: ['own', 'high', 'own', 'none', '昼の空は味方（連合軍）'],

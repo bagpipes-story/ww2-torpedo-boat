@@ -45,8 +45,10 @@
         "40mm_bofors_late"
       ],
       "radar": {
-        "available_from": "1943-01",
-        "range_m": 31000
+        "available_from": "1943-07",
+        "range_m": 31000,
+        "type": "SO",
+        "source": "historical (v0.8.0 S0・spec-v0800 §3.1。SO 型は 1943 年半ばから一部の艇（分隊の先頭）に載り、1943-08 のブラケット海峡では 3〜4 隻だけ。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。艦船への探知は約 16〜20 nm（出典で食い違う。range_m 31,000 m＝約 17 nm はその間）。available_from は 1943-01 → 1943-07（半ば）に直した。WebSearch の抜粋のみ・本文未読。ゲームの射程は hit_rate_model.json の radar.models（海域の縮尺）)"
       },
       "gun_battery": {
         "label_ja": "40mm・37mm・20mm・12.7mm",
@@ -236,8 +238,10 @@
         "40mm_bofors_late"
       ],
       "radar": {
-        "available_from": "1943-01",
-        "range_m": 31000
+        "available_from": "1943-07",
+        "range_m": 31000,
+        "type": "SO",
+        "source": "historical (v0.8.0 S0・spec-v0800 §3.1。SO 型は 1943 年半ばから一部の艇（分隊の先頭）に載り、1943-08 のブラケット海峡では 3〜4 隻だけ。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。艦船への探知は約 16〜20 nm（出典で食い違う。range_m 31,000 m＝約 17 nm はその間）。available_from は 1943-01 → 1943-07（半ば）に直した。WebSearch の抜粋のみ・本文未読。ゲームの射程は hit_rate_model.json の radar.models（海域の縮尺）)"
       },
       "smoke_generator": true,
       "smoke": {

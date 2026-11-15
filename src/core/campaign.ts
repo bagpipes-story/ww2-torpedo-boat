@@ -1,5 +1,6 @@
 // キャンペーンと解放（v0.6.0。docs/02 §4「Campaign」、CLAUDE.md §2「日本側は米PTキャンペーンの後にアンロック」）。Phaser 非依存。
-// 解放の規則は missions_seed.json の campaigns[].unlock: 'default'（最初から開いている）か 'complete_<キャンペーン id>'（その遊べる任務を全部、1 回ずつ帰投で終える）。
+// 解放の規則は missions_seed.json の campaigns[].unlock: 'default'（最初から開いている）か 'complete_<キャンペーン id>'（その遊べる任務を全部、1 回ずつ帰投で終える。
+// v0.8.0 から unlock_mission_ids があればその任務だけ＝日本のタブは米PT の 3 任務のまま）。
 // 一度開いたキャンペーンは閉じない（開いた印を別に保存する）。帰投で終えた任務の id と開いた印の読み書きは systems/progress-storage.ts。
 
 export type UnlockRule = { kind: 'default' } | { kind: 'complete'; campaignId: string };
@@ -11,6 +12,16 @@ export function parseUnlockRule(v: unknown, label: string): UnlockRule {
   if (v === 'default') return { kind: 'default' };
   if (typeof v === 'string' && v.startsWith(COMPLETE_PREFIX) && v.length > COMPLETE_PREFIX.length) return { kind: 'complete', campaignId: v.slice(COMPLETE_PREFIX.length) };
   throw new Error(`${label} の unlock は 'default' か 'complete_<キャンペーン id>'（${String(v)}）`);
+}
+
+/**
+ * 解放の条件の任務の一覧（v0.8.0。campaigns[].unlock_mission_ids。spec-v0800 §2.4）: 無ければ null（相手のキャンペーンの遊べる任務を全部＝v0.6.0）。
+ * 置くなら空でない・重複の無い・空でない文字列の配列（相手の遊べる任務の中かは config/campaign-data）
+ */
+export function parseUnlockMissionIds(v: unknown, label: string): string[] | null {
+  if (v === undefined) return null;
+  if (!Array.isArray(v) || v.length === 0 || !v.every((x) => typeof x === 'string' && x !== '') || new Set(v).size !== v.length) throw new Error(`${label} の unlock_mission_ids は空でない・重複の無い任務の id の配列（${JSON.stringify(v)}）`);
+  return (v as string[]).slice();
 }
 
 export interface CampaignStatus {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
-import { defaultCampaign, getCampaigns, getMenuEntries, missionCampaignId, playableMissionIds, recordsHitKpi } from '../src/config/campaign-data';
-import { campaignStatus, legacyUnlocked, parseIdList, parseUnlockRule, serializeIdList } from '../src/core/campaign';
+import { defaultCampaign, getCampaigns, getMenuEntries, missionCampaignId, playableMissionIds, recordsHitKpi, unlockPrereqIds } from '../src/config/campaign-data';
+import { campaignStatus, legacyUnlocked, parseIdList, parseUnlockMissionIds, parseUnlockRule, serializeIdList } from '../src/core/campaign';
 
 const clone = (): typeof gameData => JSON.parse(JSON.stringify(gameData)) as typeof gameData;
 
@@ -57,6 +57,31 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     const dup = clone();
     (dup.missionsSeed.campaigns[1] as { id: string }).id = 'us_pt';
     expect(() => getCampaigns(dup)).toThrow();
+  });
+  it('解放の条件の任務（v0.8.0 S0。spec-v0800 §2.4・lead の既定 L2）: 日本のタブは unlock_mission_ids で米PT の 3 任務のまま（us_04 が遊べるようになっても 3）。米PT は条件なし', () => {
+    const [us, jp] = getCampaigns(gameData);
+    expect([us!.unlockMissionIds, jp!.unlockMissionIds]).toEqual([null, ['us_01', 'us_02', 'us_03']]);
+    expect([unlockPrereqIds(gameData, us!), unlockPrereqIds(gameData, jp!)]).toEqual([[], ['us_01', 'us_02', 'us_03']]);
+    expect(String((gameData.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids_source'])).toContain('design (v0.8.0 S0');
+    // us_04 が遊べるようになった木（playable_from を足した写し）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝4）
+    const later = clone();
+    ((later.missionsSeed.missions as unknown as Record<string, unknown>[]).find((m) => m['id'] === 'us_04')!)['playable_from'] = 'v0.8.0';
+    expect(playableMissionIds(later, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
+    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03']);
+    expect(campaignStatus(getCampaigns(later)[1]!.unlock, unlockPrereqIds(later, getCampaigns(later)[1]!), new Set(['us_01', 'us_02', 'us_03']), false, false)).toEqual({ unlocked: true, done: 3, total: 3 });
+    delete (later.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'];
+    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
+  });
+  it('解放の条件の一覧の検査: 空・重複・文字でない・相手の遊べる任務の外・default のキャンペーンに置く は例外', () => {
+    expect(parseUnlockMissionIds(undefined, 'x')).toBeNull();
+    expect(parseUnlockMissionIds(['us_01'], 'x')).toEqual(['us_01']);
+    for (const bad of [[], ['us_01', 'us_01'], ['us_01', ''], 'us_01', [1]]) expect(() => parseUnlockMissionIds(bad, 'campaigns.jp_hard'), JSON.stringify(bad)).toThrow(/campaigns\.jp_hard の unlock_mission_ids は空でない・重複の無い任務の id の配列/);
+    const notPlayable = clone();
+    (notPlayable.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01', 'us_04'];
+    expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_04）は complete_ の相手の遊べる任務（us_01・us_02・us_03）の中だけ/);
+    const onDefault = clone();
+    (onDefault.missionsSeed.campaigns[0] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01'];
+    expect(() => getCampaigns(onDefault)).toThrow(/campaigns\.us_pt\.unlock_mission_ids（us_01）は complete_ の相手の遊べる任務（なし）の中だけ/);
   });
   it('通算の命中率に数えるのは米PTの任務だけ（hit_rate_model.kpi_measurement.campaigns）', () => {
     expect(gameData.hitRateModel.kpi_measurement.campaigns).toEqual(['us_pt']);

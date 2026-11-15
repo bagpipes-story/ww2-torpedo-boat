@@ -17,10 +17,10 @@ import { missionMode } from '../src/ui/mission-mode';
 import { tele } from './pt-ui-kit';
 
 type Rec = Record<string, unknown>;
-const OTHERS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）
+const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）
 
-describe('landing-neutral（他の 8 任務）', () => {
-  it('v0_1_prototype を持つのは 8 任務（v0.6.11 S0 の jp_03 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
+describe('landing-neutral（他の 9 任務）', () => {
+  it('v0_1_prototype を持つのは 9 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
     const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);
@@ -55,7 +55,7 @@ describe('landing-neutral（他の 8 任務）', () => {
 /** コメントを除いたソース */
 const code = (p: string): string => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
-describe('landing-neutral のテレメトリ（S5b。他の 8 任務）', () => {
+describe('landing-neutral のテレメトリ（S5b。他の 9 任務）', () => {
   it('配線: 揚陸の世界は setup.landing の無い任務で null（buildLanding の最初の枝）、出発時のテレメトリはいつも landing の鍵を持ち、毎フレームの書き換えは null の世界で何もしない', () => {
     expect(code('systems/world-landing.ts')).toContain('if (!s.landing || !pts) return null;');
     expect(code('systems/telemetry-create.ts')).toContain('landing: initLandingTelemetry(w),');
