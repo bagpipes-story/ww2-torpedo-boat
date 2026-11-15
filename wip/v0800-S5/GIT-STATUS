@@ -1,4 +1,9 @@
  M data/missions_seed.json
+ M src/config/menu-config.ts
+ M src/config/title-layout-config.ts
+ M src/scenes/title-scene.ts
+ M src/ui/title-grid.ts
+ M tests/__snapshots__/setup-us04.test.ts.snap
  M tests/briefing.test.ts
  M tests/campaign.test.ts
  M tests/dawn-air.test.ts

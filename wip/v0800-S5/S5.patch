@@ -1,5 +1,5 @@
 diff --git a/data/missions_seed.json b/data/missions_seed.json
-index 459c7c8..cb205f6 100644
+index 459c7c8..34d1be5 100644
 --- a/data/missions_seed.json
 +++ b/data/missions_seed.json
 @@ -502,6 +502,7 @@
@@ -37,6 +37,15 @@ index 459c7c8..cb205f6 100644
          "fuel_allotment_gal": 33,
          "fuel_allotment_gal_source": "design (v0.8.0 S0・spec-v0800 §4.6。戦闘に使える割当（us_02 と同じ考え）。260 秒の夜に、レーダーで列の前へ回り、撃って、復路をよけて南西の輪へ帰る。初めは 48 gal。v0.8.0 S3c（lead の L46）: 48 → 33 gal。帰投の時の残りは、一番燃料を使うレーダーの行 radar_twice（往路と復路で 2 本ずつ）の帰投の夜の中央値で 15〜35%（狙い 25%）に合わせる（radar_ambush は S3b で静音で離れるようになり一番燃料を使わない行＝48 gal で中央値 18.2 gal 使う。radar_ambush で 25% にすると radar_twice が多くの夜に尽きる）。迎撃の模擬（N 400 × 2 組）の 48 gal: radar_twice の残りの中央値 48.6%＝24.7 gal 使う → 24.7 ÷ 0.75 ＝ 32.9 → 33 gal。33 gal: radar_twice の残りの中央値 25.3%（p10 13%・p90 30%）・radar_ambush 44.5%。漂流は radar_twice 0.5%・radar_ambush 0.3%（ハードは 0.1%・0.1%）で、自艇が沈まない夜が 20% 以上の行はどれも 5% 以下。ノーマル・ハードの帯はすべて ✓)",
          "bounds_m": {
+@@ -640,7 +641,7 @@
+           "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+           "from_bearing_deg": 315,
+           "escort_target_planes": [],
+-          "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++          "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+         },
+         "dawn_withdraw": {
+           "retire_edge": "west",
 @@ -675,7 +676,7 @@
            },
            "cover_leaves_with_outbound": true,
@@ -46,6 +55,194 @@ index 459c7c8..cb205f6 100644
          },
          "shores": {
            "north": {
+diff --git a/src/config/menu-config.ts b/src/config/menu-config.ts
+index 46b06dd..349e03d 100644
+--- a/src/config/menu-config.ts
++++ b/src/config/menu-config.ts
+@@ -24,7 +24,7 @@ export const MENU_PRIMARY_W = 320;
+ export const MENU_PRIMARY_X = GAME_WIDTH - HUD_MARGIN - MENU_PRIMARY_W;
+ 
+ /**
+- * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（米PT は 1 列 3 件。日本は v0.6.7 から 2 列の格子＝ui/title-grid）、操作の一言。
++ * Title: ゲーム名、キャンペーンのタブ（v0.6.0。米PT｜日本ハードモード）、任務の行（米PT は 1 列 3 件＝v0.8.0 から 4 件で格子。日本は v0.6.7 から 2 列の格子＝ui/title-grid）、操作の一言。
+  * v0.6.0 でタブを入れた分、ロゴを縮め行を詰めた（行 104 → 96 px・間 16 → 12。3 行で 216〜528。ボタンの高さは 96 px 以上のまま）
+  */
+ export const TITLE_LOGO_TEXT = 'NIGHT HUNTERS';
+diff --git a/src/config/title-layout-config.ts b/src/config/title-layout-config.ts
+index 8339836..1f9ac86 100644
+--- a/src/config/title-layout-config.ts
++++ b/src/config/title-layout-config.ts
+@@ -1,7 +1,7 @@
+ // Title の任務の行の置き方（論理 px。高さ 720・幅 1280〜1584）。v0.6.7 で menu-config から移し（値は同じ）、日本のタブの 2 列の格子の値を足した（spec-v067 §D.6）。menu-config が出し直す。
+ // 何も import しない（ui/title-grid と tests/title-grid が node の型検査で読んでも game-config → screen-fit の DOM を引かない。title-hint-config と同じ）。
+ 
+-/** 1 列の行（米PT の 3 任務。v0.6.0 でタブを入れた分、行 104 → 96 px・間 16 → 12。3 行で 216〜528）。x は論理幅に関わらず 160（v0.6.6 までと同じ） */
++/** 1 列の行（v0.7.2 までの米PT の 3 任務。v0.6.0 でタブを入れた分、行 104 → 96 px・間 16 → 12。3 行で 216〜528）。x は論理幅に関わらず 160（v0.6.6 までと同じ）。v0.8.0 から米PT も 4 任務の格子 */
+ export const TITLE_ROW_X = 160;
+ export const TITLE_ROW_W = 960;
+ export const TITLE_ROW_H = 96;
+@@ -15,7 +15,7 @@ export const TITLE_HINT_Y = 560;
+ /** 下の 3 つの切り替え（難易度・史実モード・マーカー）の間。格子の列の間も同じ */
+ export const TITLE_TOGGLE_GAP = 24;
+ /**
+- * v0.6.7: タブの行がこの数以上なら 2 列の格子（日本ハードモードの 4 任務）。未満（米PT の 3 行）は 1 列のまま。
++ * v0.6.7: タブの行がこの数以上なら 2 列の格子（日本ハードモードの 4〜6 任務・v0.8.0 から米PT の 4 任務）。未満（v0.7.2 までの米PT の 3 行）は 1 列。
+  * 格子は 3 段（6 任務）まで（4 段目は操作の一言にかかる。米PT の 7 任務が並ぶ版で見直す）
+  */
+ export const TITLE_GRID_FROM = 4;
+diff --git a/src/scenes/title-scene.ts b/src/scenes/title-scene.ts
+index 457656f..54da92b 100644
+--- a/src/scenes/title-scene.ts
++++ b/src/scenes/title-scene.ts
+@@ -1,6 +1,6 @@
+ // Title: ゲーム名と任務一覧（米PTキャンペーンの playable_from を持つ任務を order 順。出撃できない任務は「準備中 ・ 版」で押せない）。docs/02 §4、v0.4.0。
+ // v0.6.0: キャンペーンのタブ（米PT｜日本ハードモード）。日本側は米PTの遊べる任務を 1 回ずつ帰投で終えると開く（core/campaign。一度開いたら閉じない）。
+-// v0.6.7: 任務が 4 つ以上のタブ（日本）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。米PT のタブは 1 列のまま。
++// v0.6.7: 任務が 4 つ以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。
+ // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
+ // v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
+ import Phaser from 'phaser';
+@@ -61,7 +61,6 @@ import {
+ } from '../config/menu-config';
+ import { MUSIC_CTX_MENU } from '../config/sfx-music-config';
+ import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, hudTextStyle } from '../config/ui-config';
+-import { shortLabelJa } from '../core/briefing';
+ import { campaignStatus, type CampaignStatus } from '../core/campaign';
+ import { AIM_ASSIST_NONE, aimAssistLevelFor, nextAimAssistUnlock } from '../core/progress';
+ import { seedForBriefing, type BriefingInit } from '../core/sortie';
+@@ -69,7 +68,7 @@ import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLega
+ import { sfxMusic } from '../systems/sfx-bus';
+ import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
+ import { MenuButton, addBuildLabel } from '../ui/menu-ui';
+-import { titleGridOn, titleRowRect } from '../ui/title-grid';
++import { titleGridOn, titleGridSubJa, titleRowRect } from '../ui/title-grid';
+ 
+ export class TitleScene extends Phaser.Scene {
+   private rows: MenuButton[] = [];
+@@ -116,7 +115,7 @@ export class TitleScene extends Phaser.Scene {
+       tab.setSelected(c.id === selected.id);
+       this.tabs.push(tab);
+     });
+-    // 任務の行（v0.6.7）: 4 行以上のタブ（日本）は 2 列の格子で、副題は最初の「（」の前まで（列 597 px に状態「出撃準備 →」と並べて収める）。米PT は 1 列のまま
++    // 任務の行（v0.6.7）: 4 行以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子で、副題は最初の「（」か「→」の前まで（titleGridSubJa。列 597 px に状態「出撃準備 →」と並べて収める）
+     const n = menu.entries.length;
+     const grid = titleGridOn(n);
+     menu.entries.forEach((e, i) => {
+@@ -130,7 +129,7 @@ export class TitleScene extends Phaser.Scene {
+           h: TITLE_ROW_H,
+           title: e.title,
+           titlePx: TITLE_ROW_TITLE_PX,
+-          sub: grid ? shortLabelJa(e.sub) : e.sub,
++          sub: grid ? titleGridSubJa(e.sub) : e.sub,
+           subPx: TITLE_ROW_SUB_PX,
+           right: e.status,
+           rightPx: TITLE_ROW_STATUS_PX,
+diff --git a/src/ui/title-grid.ts b/src/ui/title-grid.ts
+index 604a12c..c1bde0c 100644
+--- a/src/ui/title-grid.ts
++++ b/src/ui/title-grid.ts
+@@ -1,5 +1,5 @@
+ // Title の任務の行の矩形（v0.6.7。spec-v067 §D.6）。Phaser・DOM なし（tests/title-grid が論理幅の全部で測る）。Title の create で行ごとに 1 回だけ呼ぶ。
+-// 行が TITLE_GRID_FROM 未満（米PT の 3 行）は 1 列（x TITLE_ROW_X・w TITLE_ROW_W。v0.6.6 までと同じ）。以上（日本ハードモードの 4 任務）は 2 列の格子:
++// 行が TITLE_GRID_FROM 未満（v0.7.2 までの米PT の 3 行）は 1 列（x TITLE_ROW_X・w TITLE_ROW_W。v0.6.6 までと同じ）。以上（日本ハードモードの 4〜6 任務・v0.8.0 から米PT の 4 任務）は 2 列の格子:
+ // 列 TITLE_GRID_COL_W・間 TITLE_TOGGLE_GAP（計 1,218 を画面の中央に）、行優先（order 順に 左上・右上・左下・右下）。段の y と高さは 1 列と同じ。
+ import { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_ROW_GAP, TITLE_ROW_H, TITLE_ROW_TOP, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from '../config/title-layout-config';
+ 
+@@ -18,6 +18,18 @@ export function titleGridOn(n: number): boolean {
+   return n >= TITLE_GRID_FROM;
+ }
+ 
++/**
++ * 格子の行の副題（v0.8.0 S5。lead の L59）: 最初の「（」か最初の「→」の、先に来る方の前まで（trim）。どちらも無ければそのまま。
++ * 列 597 px に状態「出撃準備 →」と並べて収める（us_01「1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）」→「1942年3月11日 ・ コレヒドール」）。
++ * core/briefing の shortLabelJa（「（」だけ。Briefing の敵・危険の語も使う）は変えない。日本のタブの副題は「→」を持たないので shortLabelJa と同じ（tests/title-grid）
++ */
++export function titleGridSubJa(sub: string): string {
++  const p = sub.indexOf('（');
++  const a = sub.indexOf('→');
++  const i = p < 0 ? a : a < 0 ? p : Math.min(p, a);
++  return i > 0 ? sub.slice(0, i).trim() : sub;
++}
++
+ /** n 行のタブの i 番目（0 から、order 順）の行の矩形。gameWidth は論理幅（GAME_WIDTH） */
+ export function titleRowRect(i: number, n: number, gameWidth: number): TitleRowRect {
+   if (!titleGridOn(n)) return { x: TITLE_ROW_X, y: TITLE_ROW_TOP + i * (TITLE_ROW_H + TITLE_ROW_GAP), w: TITLE_ROW_W };
+diff --git a/tests/__snapshots__/setup-us04.test.ts.snap b/tests/__snapshots__/setup-us04.test.ts.snap
+index ffa345c..a10693e 100644
+--- a/tests/__snapshots__/setup-us04.test.ts.snap
++++ b/tests/__snapshots__/setup-us04.test.ts.snap
+@@ -102,7 +102,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -650,7 +650,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -1170,7 +1170,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -1718,7 +1718,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード false 
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -2238,7 +2238,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -2786,7 +2786,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -3306,7 +3306,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
+@@ -3854,7 +3854,7 @@ exports[`us_04 の setup の snapshot（v0.8.0 S0 の木） > ハード true 史
+    "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
+    "from_bearing_deg": 315,
+    "escort_target_planes": [],
+-   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
++   "source": "design (v0.8.0 S0。dawn_air.play_as enemy（S0〜S4 は lead の既定 L1。S5 からユーザーの決め U1＝spec-v0800 §9 Q1 への答え「Aのままでいいと思うよ」、2026-11-15）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
+   }
+  },
+  "playerStart": {
 diff --git a/tests/briefing.test.ts b/tests/briefing.test.ts
 index 0dab9a6..b6af0de 100644
 --- a/tests/briefing.test.ts
@@ -268,7 +465,7 @@ index 04eb1ad..3a75ab8 100644
      expect([s.barges, s.ptBoats, s.convoy, s.transport, s.escort, s.raid, s.storm, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, 'torpedo']);
      expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears, s.airStrike!.planes]).toEqual(['enemy', 'west', '東京急行', false, 4]);
 diff --git a/tests/title-grid.test.ts b/tests/title-grid.test.ts
-index 9939729..c6fb7b9 100644
+index 9939729..3f38dbf 100644
 --- a/tests/title-grid.test.ts
 +++ b/tests/title-grid.test.ts
 @@ -1,6 +1,7 @@
@@ -279,6 +476,15 @@ index 9939729..c6fb7b9 100644
  import { readFileSync } from 'node:fs';
  import { join } from 'node:path';
  import { describe, expect, it } from 'vitest';
+@@ -10,7 +11,7 @@ import { getPrototypeMission } from '../src/config/mission-data';
+ import { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_PX } from '../src/config/title-hint-config';
+ import { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from '../src/config/title-layout-config';
+ import { shortLabelJa } from '../src/core/briefing';
+-import { TITLE_GRID_W, titleGridOn, titleRowRect, type TitleRowRect } from '../src/ui/title-grid';
++import { TITLE_GRID_W, titleGridOn, titleGridSubJa, titleRowRect, type TitleRowRect } from '../src/ui/title-grid';
+ import { textWidthPx } from './pt-ui-kit';
+ 
+ const src = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
 @@ -26,7 +27,7 @@ const JP = getMenuEntries(gameData, 'jp_hard').entries;
  const US = getMenuEntries(gameData, 'us_pt').entries;
  
@@ -327,3 +533,72 @@ index 9939729..c6fb7b9 100644
      }
    });
    it('押しやすさ: 列 597 × 96 px は iPhone 15 横（393 pt / 720 px）で 326 × 52 pt（≥ 44 pt）', () => {
+@@ -99,7 +112,7 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+   });
+ });
+ 
+-describe('格子の行の文（副題は「（」の前まで。spec §D.6）', () => {
++describe('格子の行の文（副題は「（」の前まで。spec §D.6。v0.8.0 S5 から「→」の前まで も＝titleGridSubJa）', () => {
+   it('副題は 6 つとも「（」の前まで（20 px で 368／288／360／320／288／368 px。jp_04 は「パロンポン沖（レイテ島西岸）」→「パロンポン沖」、jp_03 は「（」が無いのでそのまま）', () => {
+     const subs = JP.map((e) => shortLabelJa(e.sub));
+     expect(subs).toEqual(['1942年12月9日 ・ ガダルカナル島北岸', '1944年1月30日 ・ ウェーク島', '1944年10月10日 ・ 沖縄本島・運天港', '1944年12月11日 ・ パロンポン沖', '1944年2月18日 ・ ラバウル沖', '1945年3月28日 ・ 沖縄・慶良間列島沖']);
+@@ -120,10 +133,37 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6）',
+       worstTitle = Math.min(worstTitle, titleGap);
+     }
+     expect([Math.round(worstSub), Math.round(worstTitle)]).toEqual([30, 39]);
+-    // 1 列（米PT）は副題を切らない: 960 − 64 の内に「出撃準備 →」と並ぶ（いちばん長い us_02）
+-    for (const e of US) expect(TITLE_ROW_W - 2 * MENU_PAD_X - textWidthPx(e.status, TITLE_ROW_STATUS_PX) - textWidthPx(e.sub, TITLE_ROW_SUB_PX), e.id).toBeGreaterThanOrEqual(16);
+   });
+-  it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT は 1 列の 960 px の内（R12）', () => {
++  it('v0.8.0 S5（lead の L59）: 格子の副題は titleGridSubJa＝最初の「（」か「→」の先に来る方の前まで。どちらも無ければそのまま。日本の 6 つは shortLabelJa と同じ（「→」を持たない＝日本のタブは物体ごとに同じ）', () => {
++    expect(titleGridSubJa('1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）')).toBe('1942年3月11日 ・ コレヒドール'); // 「→」が先
++    expect(titleGridSubJa('1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖→ビラ）')).toBe('1943年8月1日 ・ ブラケット海峡'); // 「（」が先
++    expect(titleGridSubJa('1944年10月10日 ・ 沖縄本島・運天港')).toBe('1944年10月10日 ・ 沖縄本島・運天港'); // どちらも無い
++    expect(titleGridSubJa('A → B')).toBe('A');
++    for (const e of JP) {
++      expect(e.sub.includes('→'), e.id).toBe(false);
++      expect(titleGridSubJa(e.sub), e.id).toBe(shortLabelJa(e.sub));
++    }
++  });
++  it('v0.8.0 S5（L59）: 米PT の 4 つの札（2 × 2）も状態「出撃準備 →」と副題・題が重ならない（すき間 ≥ 16 px＝日本の格子と同じ規則。W 1,280・1,584 とも列 597 px）。us_01 は「→」の前まで（91 px）', () => {
++    const subs = US.map((e) => titleGridSubJa(e.sub));
++    expect(subs).toEqual(['1942年3月11日 ・ コレヒドール', '1942年12月11日 ・ ガダルカナル島沖', '1943年7月15日 ・ ニューギニア北岸', '1943年8月1日 ・ ブラケット海峡']);
++    for (const w of [1280, 1584]) {
++      US.forEach((e, i) => {
++        const r = titleRowRect(i, US.length, w);
++        expect(r.w, `${w} ${e.id}`).toBe(TITLE_GRID_COL_W);
++        const inner = r.w - 2 * MENU_PAD_X;
++        const status = textWidthPx(e.status, TITLE_ROW_STATUS_PX);
++        expect(inner - status - textWidthPx(subs[i]!, TITLE_ROW_SUB_PX), `${w} ${e.id} 副題`).toBeGreaterThanOrEqual(16);
++        expect(inner - status - textWidthPx(e.title, TITLE_ROW_TITLE_PX), `${w} ${e.id} 題`).toBeGreaterThanOrEqual(16);
++      });
++    }
++    // 副題のすき間（us_01 は「→」で切らないと −30 px＝状態に食い込んでいた）と題のすき間
++    const gap = (t: string, px: number): number => Math.round(TITLE_GRID_COL_W - 2 * MENU_PAD_X - textWidthPx('出撃準備 →', TITLE_ROW_STATUS_PX) - textWidthPx(t, px));
++    expect(subs.map((t) => gap(t, TITLE_ROW_SUB_PX))).toEqual([90, 38, 50, 82]);
++    expect(gap(shortLabelJa(US[0]!.sub), TITLE_ROW_SUB_PX)).toBe(-30);
++    expect(US.map((e) => gap(e.title, TITLE_ROW_TITLE_PX))).toEqual([159, 129, 249, 129]);
++  });
++  it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT も格子の幅の内（v0.8.0 S5 から 2 × 2。今の一言は 1 列の 960 px の内のまま。R12）', () => {
+     const jp = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
+     expect(jp).toContain('右下の角で魚雷');
+     expect(jp).toContain('その左で機銃');
+@@ -131,14 +171,16 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6）',
+     expect(Math.round(textWidthPx(jp, TITLE_HINT_PX))).toBe(1037);
+     expect(textWidthPx(jp, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_GRID_W);
+     expect(textWidthPx(TITLE_HINT_BY_CAMPAIGN_JA['us_pt']!, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_ROW_W);
++    expect(textWidthPx(TITLE_HINT_BY_CAMPAIGN_JA['us_pt']!, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_GRID_W);
+   });
+ });
+ 
+ describe('title-scene の配線（ソース）', () => {
+-  it('行の矩形は titleRowRect から、副題は格子のときだけ shortLabelJa。行の固定の x・y・w は使わない', () => {
++  it('行の矩形は titleRowRect から、副題は格子のときだけ titleGridSubJa（v0.8.0 S5 まで shortLabelJa）。行の固定の x・y・w は使わない', () => {
+     const code = src('scenes/title-scene.ts');
+     expect(code).toContain('const r = titleRowRect(i, n, GAME_WIDTH);');
+-    expect(code).toContain('sub: grid ? shortLabelJa(e.sub) : e.sub,');
++    expect(code).toContain('sub: grid ? titleGridSubJa(e.sub) : e.sub,');
++    expect(code.includes('shortLabelJa'), 'shortLabelJa').toBe(false);
+     for (const k of ['TITLE_ROW_X', 'TITLE_ROW_W', 'TITLE_ROW_TOP', 'TITLE_ROW_GAP']) expect(code.includes(k), k).toBe(false);
+   });
+ });
