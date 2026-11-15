@@ -15,9 +15,12 @@ Base HEAD 1c3898b (S4). Working tree uncommitted (18 modified + 2 new). Patch: n
 - New scripts: scripts/headless/strait-perf.mjs (127 lines; L53); scripts/headless/brief-result-us04.mjs (L63; not yet wired into brief-result.mjs).
 - Scratchpad: run-gates.sh extended (us04 sets L54, flake rerun L62). site-1c3898b = S4 commit build (same bundle as impl/S4/site; only sw.js differs).
 
+## Done after the restart
+- brief-result.mjs US04=1 (287 lines; module brief-result-us04.mjs 95): Briefing lines [2,1,2,1,1,2]+3, note bottom 549 ≤ 576 (W 1560/1280 × normal/hard);
+  Result body 514 / worst 578 ≤ 592; 0 overlaps; 0 page errors. Shots in S5-dev/brief/.
+- strait-perf (fresh, 2 rounds): updateFrame p95 us_04 0.290 / us_02 0.245 = ×1.18; hard 0.295 / 0.250 = ×1.18 (gate ≤ 1.2 ✓); mins constant (971/1040/822/891/955). Log S5-dev/strait-perf.log.
+- Touch play (title-play.mjs play): 4/4 runs Title → US tab → (difficulty) → us_04 card → Briefing → 出撃 → stick 20 s; 0 page errors; build label visible. Shots in S5-dev/play/.
+- CHANGELOG: S5 block (ends with the 門 placeholder) + final known constraints; U1 line updated.
+
 ## Left
-- Wire brief-result-us04.mjs into brief-result.mjs (≤ 300 lines) and run it (real wrap of the new objective; Result body ≤ 592).
-- strait-perf from the start (the run before the restart was lost: no numbers).
-- Touch play from the Title (normal/hard × W 1280/1560) and the remaining screenshots.
-- CHANGELOG S5 block (L50–L63, pins, docs, perf, provenance list) and the version's top part.
-- Full npm test; run-gates S5-impl (art-perf on); L56 material; hand-back.
+- run-gates S5-impl (running, started 21:3x; art-perf on) → fill the CHANGELOG "agent の確かめ" line; hand-back.
