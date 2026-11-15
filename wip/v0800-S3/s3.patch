@@ -1,0 +1,1461 @@
+diff --git a/scripts/intercept-sim.ts b/scripts/intercept-sim.ts
+new file mode 100644
+index 0000000..4acc57c
+--- /dev/null
++++ b/scripts/intercept-sim.ts
+@@ -0,0 +1,81 @@
++// 迎撃の模擬の表（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11）。中身は src/core/intercept-sim*.ts・src/systems/intercept-sim-setup.ts・intercept-calibration.ts
++// （tests/intercept-sim-a・b と同じ）。TABLE=1（既定）: 組ごとの遊び方の表。TABLE=2: 組を合わせた表と帯の ✓/✗（✗ があれば終了コード 1。scripts/headless/g2.sh の US04=1）。
++// PERF=1: 1 夜の node の秒（radar_ambush と charge・REPS 夜）。環境変数: N（1 組の夜。既定 400）・SEED（最初の組の最初の seed。既定 1）・BLOCKS（組の数。既定 2＝seed 1〜400・1001〜1400）・
++//   HARD=1・POL（, 区切り。既定は spec §4.11 の 7 行）・つまみ（spec §4.11 の順の data の鍵）SPEED（transit.speed_kt）・RANGE・SWEEP（radar.models.so_early の ship_range_m・sweep_s）・
++//   LANE・UNLOAD（transit.outbound.lane_y_m・transit.unload_s）・FUEL（fuel_allotment_gal）
++// 実行: npx esbuild scripts/intercept-sim.ts --bundle --platform=node --format=esm --outfile=<scratch>/intercept-sim.mjs && TABLE=2 node <scratch>/intercept-sim.mjs
++import { gameData } from '../src/config/game-data';
++import { runInterceptTrial, type InterceptSimSetup } from '../src/core/intercept-sim';
++import { interceptCellOf, type InterceptCell, type InterceptTrial } from '../src/core/intercept-sim-cell';
++import { INTERCEPT_POLICIES, type InterceptPolicy } from '../src/core/intercept-sim-policy';
++import { interceptB6, interceptBandChecks } from '../src/systems/intercept-calibration';
++import { interceptNightSetup, withInterceptKnobs, type InterceptKnobs } from '../src/systems/intercept-sim-setup';
++
++const env = (k: string): string | undefined => (process.env[k] !== undefined && process.env[k] !== '' ? process.env[k] : undefined);
++const num = (k: string): number | undefined => (env(k) !== undefined ? Number(env(k)) : undefined);
++const n = num('N') ?? 400;
++const seed0 = num('SEED') ?? 1;
++const blocks = num('BLOCKS') ?? 2;
++const hard = env('HARD') === '1';
++const knobs: InterceptKnobs = { speedKt: num('SPEED'), shipRangeM: num('RANGE'), sweepS: num('SWEEP'), laneY: num('LANE'), unloadS: num('UNLOAD'), fuelGal: num('FUEL') };
++const pols = (env('POL')?.split(',').map((x) => x.trim()).filter((x) => x !== '') ?? [...INTERCEPT_POLICIES]) as InterceptPolicy[];
++for (const p of pols) if (!([...INTERCEPT_POLICIES, 'radar_ambush_quiet', 'stay'] as readonly string[]).includes(p)) throw new Error(`遊び方 ${p} は無い（${INTERCEPT_POLICIES.join(' / ')} / radar_ambush_quiet / stay）`);
++const data = withInterceptKnobs(gameData, knobs);
++const seeds = (b: number): number => seed0 + b * 1000;
++const setups = new Map<number, InterceptSimSetup>();
++const setupOf = (seed: number): InterceptSimSetup => {
++  let s = setups.get(seed);
++  if (!s) setups.set(seed, (s = interceptNightSetup(data, seed, hard)));
++  return s;
++};
++const pct = (x: number): string => (Number.isFinite(x) ? `${x.toFixed(1)}%` : '—');
++const fx = (x: number, d: number): string => (Number.isFinite(x) ? x.toFixed(d) : '—');
++
++if (env('PERF') === '1') {
++  const reps = num('REPS') ?? 50;
++  for (const p of ['radar_ambush', 'charge', 'stay'] as InterceptPolicy[]) {
++    const t0 = performance.now();
++    let steps = 0;
++    for (let i = 0; i < reps; i++) steps += Math.round(runInterceptTrial(setupOf(seed0 + i), p, seed0 + i).endS * 60);
++    const ms = performance.now() - t0;
++    console.log(`[us_04 ${hard ? 'ハード' : 'ノーマル'} ${p} × ${reps} 夜] 1 夜 ${(ms / reps).toFixed(1)} ms・1 ステップ ${((ms * 1000) / steps).toFixed(2)} μs（${steps} ステップ）`);
++  }
++} else {
++  const s1 = setupOf(seeds(0));
++  const proto = (data.missionsSeed.missions as readonly Record<string, unknown>[]).find((m) => m['id'] === 'us_04')!['v0_1_prototype'] as Record<string, unknown>;
++  const tb = proto['transit'] as { speed_kt: number; spacing_s: number; unload_s: number; inbound: { lane_y_m: number }; outbound: { lane_y_m: number } };
++  const r = s1.radar;
++  console.log(`[us_04 ${hard ? 'ハード' : 'ノーマル'} N ${n} × ${blocks} 組（seed ${Array.from({ length: blocks }, (_, b) => `${seeds(b)}〜${seeds(b) + n - 1}`).join('・')}）${Object.entries(knobs).filter(([, v]) => v !== undefined).map(([k, v]) => ` ${k} ${String(v)}`).join('')}]`);
++  console.log(`列 ${s1.transit.ships} 隻・${tb.speed_kt} kt・${tb.spacing_s} 秒おき・往路の道 y ${tb.inbound.lane_y_m}・揚陸 ${tb.unload_s} 秒・復路の道 y ${tb.outbound.lane_y_m}・レーダー ${r ? `${r.shipRangeM} m・掃引 ${r.sweepS} 秒` : 'なし'}・燃料 ${s1.fuelAllotmentGal} gal・夜明け ${s1.durationS} 秒`);
++  const head = `${'遊び方'.padEnd(19)}撃沈≥1  撃沈数 沈没   衝突(護/列)      砲火   帰投   達成   座礁  漂流  打切  夜明外 発見   燃料(帰投)p10-中-p90 終了秒 撃つ 命中%  狙1本(本)    接触秒 見え秒`;
++  const row = (p: string, c: InterceptCell): string =>
++    p.padEnd(20) + pct(c.sinkPct).padEnd(7) + fx(c.sinkMean, 2).padEnd(6) + pct(c.ownSunkPct).padEnd(7) + `${pct(c.rammedPct)}(${fx(c.rammedCoverPct, 1)}/${fx(c.rammedColumnPct, 1)})`.padEnd(17) +
++    pct(c.gunSunkPct).padEnd(7) + pct(c.homePct).padEnd(7) + pct(c.achievedPct).padEnd(7) + pct(c.groundedPct).padEnd(6) + pct(c.adriftPct).padEnd(6) + pct(c.cutPct).padEnd(6) + pct(c.dawnOutPct).padEnd(7) +
++    pct(c.detectedPct).padEnd(7) + `${fx(c.fuelP10, 0)}-${fx(c.fuelMed, 0)}-${fx(c.fuelP90, 0)}`.padEnd(21) + fx(c.endMed, 0).padEnd(7) + fx(c.firedMean, 2).padEnd(5) + pct(c.hitPct).padEnd(7) +
++    `${pct(c.aimedPct)}(${c.aimed})`.padEnd(13) + fx(c.contactMed, 1).padEnd(7) + fx(c.sightMed, 1);
++  const all = new Map<InterceptPolicy, InterceptTrial[]>();
++  for (let b = 0; b < blocks; b++) {
++    console.log(`-- seed ${seeds(b)}〜${seeds(b) + n - 1}`);
++    console.log(head);
++    for (const p of pols) {
++      const ts: InterceptTrial[] = [];
++      for (let i = 0; i < n; i++) ts.push(runInterceptTrial(setupOf(seeds(b) + i), p, seeds(b) + i));
++      all.set(p, [...(all.get(p) ?? []), ...ts]);
++      console.log(row(p, interceptCellOf(ts, s1.objectiveSinks)));
++    }
++  }
++  if (env('TABLE') === '2') {
++    const merged = new Map<InterceptPolicy, InterceptCell>();
++    console.log(`-- ${blocks} 組を合わせた ${blocks * n} 夜`);
++    console.log(head);
++    for (const [p, ts] of all) {
++      merged.set(p, interceptCellOf(ts, s1.objectiveSinks));
++      console.log(row(p, merged.get(p)!));
++    }
++    const checks = interceptBandChecks(merged, hard, hard ? null : interceptB6(data, s1));
++    console.log(`帯（${blocks * n} 夜）:\n  ${checks.map((x) => `${x.id} ${x.text} ${x.ok ? '✓' : '✗'}`).join('\n  ')}`);
++    const bad = checks.filter((x) => !x.ok);
++    console.log(bad.length === 0 ? '帯: すべて ✓' : `帯: ✗ ${bad.length} 件`);
++    if (bad.length > 0) process.exitCode = 1;
++  }
++}
+diff --git a/src/core/intercept-sim-cell.ts b/src/core/intercept-sim-cell.ts
+new file mode 100644
+index 0000000..898ca62
+--- /dev/null
++++ b/src/core/intercept-sim-cell.ts
+@@ -0,0 +1,102 @@
++// 迎撃の模擬（v0.8.0 S3。us_04。spec-v0800 §4.11）の 1 夜の記録（InterceptTrial）と遊び方ごとの集計（InterceptCell）。帯（B1〜B6・ハード・燃料）は
++// systems/intercept-calibration が集計の列を読む。記録の「見つかった」「衝突の相手」は模擬が世界の側から書く（台本は読まない）。集計は夜の終わりの後だけ（確保してよい）。
++import type { MissionEndReason } from './mission-flow';
++import type { InterceptPolicy } from './intercept-sim-policy';
++
++/** 衝突・体当たりの相手（rammedBy） */
++export const RAM_NONE = 0;
++export const RAM_COVER = 1;
++export const RAM_COLUMN = 2;
++
++export interface InterceptTrial {
++  policy: InterceptPolicy;
++  seed: number;
++  hard: boolean;
++  /** 終わり方（世界の終わりの理由。'cut' は夜明け ＋ afterDawnS の打ち切りで輪の外＝夜明けの空襲は模擬しない） */
++  reason: MissionEndReason | 'cut';
++  endS: number;
++  /** 沈めた護衛・列の艦（沈み始めた。退いた艦は数えない） */
++  sunkCover: number;
++  sunkColumn: number;
++  /** 自艇が沈み始めた理由（rammed・destroyed。沈まなければ null）と衝突・体当たりの相手 */
++  ownSunk: MissionEndReason | null;
++  rammedBy: number;
++  /** 終わりの燃料（割当の %）・HP・被弾 */
++  fuelPct: number;
++  hpLeft: number;
++  shellHits: number;
++  /** 撃った本数（狙う艦の無い魚雷を除く）・不発でない命中・正しく狙った 1 本（|見越しのずれ| ≤ aimed・蛇行なし・KPI の的・B6 の距離の内）とその命中 */
++  fired: number;
++  hits: number;
++  aimed: number;
++  aimedHits: number;
++  /** 夜明けに輪の外（世界の caughtOutside）・艦に見つかった・レーダーの最初の接触と目で最初に見えた秒（NaN は無し） */
++  dawnOut: boolean;
++  detected: boolean;
++  firstContactS: number;
++  firstSightS: number;
++}
++
++export function createInterceptTrial(policy: InterceptPolicy, seed: number, hard: boolean): InterceptTrial {
++  return {
++    policy, seed, hard, reason: 'cut', endS: 0, sunkCover: 0, sunkColumn: 0, ownSunk: null, rammedBy: RAM_NONE, fuelPct: 0, hpLeft: 0, shellHits: 0,
++    fired: 0, hits: 0, aimed: 0, aimedHits: 0, dawnOut: false, detected: false, firstContactS: NaN, firstSightS: NaN,
++  };
++}
++
++/** 帰投（世界の帰投と「敵艦隊なし」） */
++export const trialReturned = (t: InterceptTrial): boolean => t.reason === 'returned' || t.reason === 'cleared';
++
++export interface InterceptCell {
++  n: number;
++  /** % の列: 1 隻以上撃沈・自艇の沈没・衝突／体当たり（護衛・列）・砲火の沈没・帰投・達成（撃沈の隻数 ＋ 帰投）・座礁・漂流・打ち切り・夜明けに外・見つかった */
++  sinkPct: number; ownSunkPct: number; rammedPct: number; rammedCoverPct: number; rammedColumnPct: number; gunSunkPct: number;
++  homePct: number; achievedPct: number; groundedPct: number; adriftPct: number; cutPct: number; dawnOutPct: number; detectedPct: number;
++  /** 平均: 撃沈の隻数・撃った本数・被弾。命中率（命中 ÷ 撃った本数 %）・正しく狙った 1 本の本数と命中率 % */
++  sinkMean: number; firedMean: number; shellHitsMean: number; hitPct: number; aimed: number; aimedPct: number;
++  /** 帰投した夜の燃料 %（p10・中央・p90）・終わりの秒の中央・最初の接触と最初に見えた秒の中央 */
++  fuelP10: number; fuelMed: number; fuelP90: number; endMed: number; contactMed: number; sightMed: number;
++}
++
++function quantile(xs: number[], q: number): number {
++  const a = xs.filter((x) => Number.isFinite(x)).sort((x, y) => x - y);
++  return a.length === 0 ? NaN : a[Math.min(a.length - 1, Math.floor(q * a.length))]!;
++}
++
++/** 遊び方 1 つの夜の集計。objectiveSinks は達成の隻数 */
++export function interceptCellOf(ts: readonly InterceptTrial[], objectiveSinks: number): InterceptCell {
++  const n = ts.length;
++  const pct = (f: (t: InterceptTrial) => boolean): number => (n > 0 ? (100 * ts.filter(f).length) / n : NaN);
++  const mean = (f: (t: InterceptTrial) => number): number => (n > 0 ? ts.reduce((s, t) => s + f(t), 0) / n : NaN);
++  const fired = ts.reduce((s, t) => s + t.fired, 0);
++  const aimed = ts.reduce((s, t) => s + t.aimed, 0);
++  const home = ts.filter(trialReturned);
++  return {
++    n,
++    sinkPct: pct((t) => t.sunkCover + t.sunkColumn >= 1),
++    ownSunkPct: pct((t) => t.ownSunk !== null),
++    rammedPct: pct((t) => t.rammedBy !== RAM_NONE),
++    rammedCoverPct: pct((t) => t.rammedBy === RAM_COVER),
++    rammedColumnPct: pct((t) => t.rammedBy === RAM_COLUMN),
++    gunSunkPct: pct((t) => t.ownSunk === 'destroyed'),
++    homePct: pct(trialReturned),
++    achievedPct: pct((t) => trialReturned(t) && t.sunkCover + t.sunkColumn >= objectiveSinks),
++    groundedPct: pct((t) => t.reason === 'grounded'),
++    adriftPct: pct((t) => t.reason === 'adrift'),
++    cutPct: pct((t) => t.reason === 'cut'),
++    dawnOutPct: pct((t) => t.dawnOut),
++    detectedPct: pct((t) => t.detected),
++    sinkMean: mean((t) => t.sunkCover + t.sunkColumn),
++    firedMean: mean((t) => t.fired),
++    shellHitsMean: mean((t) => t.shellHits),
++    hitPct: fired > 0 ? (100 * ts.reduce((s, t) => s + t.hits, 0)) / fired : NaN,
++    aimed,
++    aimedPct: aimed > 0 ? (100 * ts.reduce((s, t) => s + t.aimedHits, 0)) / aimed : NaN,
++    fuelP10: quantile(home.map((t) => t.fuelPct), 0.1),
++    fuelMed: quantile(home.map((t) => t.fuelPct), 0.5),
++    fuelP90: quantile(home.map((t) => t.fuelPct), 0.9),
++    endMed: quantile(ts.map((t) => t.endS), 0.5),
++    contactMed: quantile(ts.map((t) => t.firstContactS), 0.5),
++    sightMed: quantile(ts.map((t) => t.firstSightS), 0.5),
++  };
++}
+diff --git a/src/core/intercept-sim-policy.ts b/src/core/intercept-sim-policy.ts
+new file mode 100644
+index 0000000..cdcc1b0
+--- /dev/null
++++ b/src/core/intercept-sim-policy.ts
+@@ -0,0 +1,232 @@
++// 迎撃の模擬の遊び方（v0.8.0 S3。us_04。spec-v0800 §4.11、lead の L17・L19）。人が画面から知れる物だけを読む（漏らさない）: レーダーの輝点
++// （core/radar の状態そのまま。航跡は core/intercept-sim-tracks が人のように作る）・目で見える最寄りの艦（世界と同じ規則＝setup.visRange2 の内の位置と、
++// ゲームと同じ core/torpedo-solver の見越し点マーカーの方位）・自艇・地図（Briefing の輪・礁・海域）。艦の AI・発見・段階・本当の位置は読まない（tests/intercept-sim-a の走査）。
++// 人の揺らぎ（反応 0.5〜2 秒・狙い ±2°）は模擬だけの系列（seed × INTERCEPT_HUMAN_SEED_MUL ＋ ADD。ゲームの seed〜seed+43 に触らない）。台本（spec §4.11 の 7 行と試しの stay）:
++//   radar_ambush 往路の列の道（航跡）の 650 m 脇へ静音で回って止まり、目で見えた列の艦（航跡と合う艦。護衛は撃たない）へ 4 本の扇、道から全速で離れて帰る
++//   radar_twice 同じく往路へ 2 本、離れて待ち、復路の列の 650 m 脇から 2 本 ／ eye_only レーダーを読まず出発点（海峡の中ほど）で止まって待ち、目で見えた艦へ 4 本
++//   idle_lane 復路の最初の接触の道の上へ静音で出て止まる（アイドル＝史実の危険の形。撃たない）／ radar_dodge 出発点で待ち、近づく接触（復路の列も）から離れる（撃たない）
++//   charge 往路の列の先頭へ全速で突っ込み、見えたら 4 本 ／ home_after_inbound 史実の先頭の艇: 出発点からレーダーの方位（航跡の見越し）で 1,650 m の内に 4 本撃って帰る
++// レーダーを読む台本は待つ間と帰り道で近づく接触から離れ、帰り道は接触が近い間は静音。どの台本も夜明けの 60 秒前には帰る（stay は動かない）。確保は作る時だけ。Phaser 非依存。
++import type { BoatState } from './boat-motion';
++import { TRACK_READ, columnPassed, createInterceptTracks, trackAvoid, trackLane, trackNear, trackNearest2, updateTracks, type InterceptTracks } from './intercept-sim-tracks';
++import type { RadarState } from './radar';
++import { SeededRng } from './rng';
++import { interceptHeadingDeg } from './torpedo-solver';
++import { radToDeg, wrapDeg180, wrapDeg360 } from './units';
++
++export const INTERCEPT_POLICIES = ['radar_ambush', 'radar_twice', 'eye_only', 'idle_lane', 'radar_dodge', 'charge', 'home_after_inbound'] as const;
++/** 帯の無い参考の行: radar_ambush_quiet（radar_ambush の離れ方だけ静音＝spec の「全速で離れ」との比べ）・stay（出発点で止まったまま。tests の突き合わせ） */
++export type InterceptPolicy = (typeof INTERCEPT_POLICIES)[number] | 'radar_ambush_quiet' | 'stay';
++/** 人の揺らぎの系列（模擬だけ。core/evac-sim-rows・landing-sim-policy と同じ形で別の足し算） */
++export const INTERCEPT_HUMAN_SEED_MUL = 7907;
++export const INTERCEPT_HUMAN_SEED_ADD = 40483;
++/**
++ * 人の揺らぎ（spec §4.11）と台本の目安（design。ゲームの強さの値ではない）: 反応の秒・狙いの ±度・脇の m・狙いの許し・列の艦と読む m・離れ終える m と秒の上限・
++ * 方位で撃つ m・着いた m・道の上に止まる m と落とし始める m と最低の速さの比・帰る秒・輪の手前 m・静音へ落とす m・帰り道を静音にする m・礁と岸の手前 m・
++ * 静音の速さ（静音の帯の上限の比＝帯を跨がない）
++ */
++export const INTERCEPT_HUMAN = {
++  reactS: [0.5, 2] as const, aimDeg: 2, ambushM: 650, aimTolDeg: 1.5, matchM: 400, escapeClearM: 2000, escapeMaxS: 25, bearingFireM: 1650,
++  arriveM: 40, parkM: 6, parkBrakeM: 150, parkMinFrac: 0.12, dawnHomeS: 60, homeLeadM: 200, homeSlowM: 400, quietM: 1800, reefGuardM: 200, shoreGuardM: 400, silentFrac: 0.95,
++} as const;
++
++/** 台本が読む物（core/intercept-sim が毎フレームの頭に書く） */
++export interface InterceptView {
++  t: number;
++  readonly boat: BoatState;
++  torpedoes: number;
++  atHome: boolean;
++  radar: RadarState | null;
++  /** 目で見える最寄りの艦の位置（見えなければ NaN）と見越し点マーカーの方位（解けなければ NaN） */
++  eyeX: number; eyeY: number; markerDeg: number;
++}
++
++/** 地図と艇の知れる値（Briefing・画面）。速さは画面の m/s（実秒あたり）、speed01 は全速の比、礁は地図の矩形 */
++export interface InterceptPlan {
++  readonly width: number; readonly height: number; readonly ringX: number; readonly ringY: number; readonly ringR: number; readonly dawnS: number;
++  readonly silent01: number; readonly cruise01: number; readonly spacingDeg: number; readonly torpedoScreenMps: number; readonly fullScreenMps: number;
++  readonly reefs: readonly { readonly x: number; readonly y: number; readonly w: number; readonly h: number }[];
++}
++
++export interface InterceptOut { headingDeg: number; speed01: number; fireN: number; fireSpreadDeg: number }
++
++type How = 'ambush' | 'start' | 'lane' | 'charge' | 'bearing' | 'stay';
++/** radar: 輝点を読む・how: 待ち方・fan1/fan2: 往路と復路の扇の本数・column: 列の艦（航跡と合う艦）だけ撃つ・avoid: 近づく接触から離れる・quiet: 離れるのも静音 */
++interface Spec { readonly radar: boolean; readonly how: How; readonly fan1: number; readonly fan2: number; readonly column: boolean; readonly avoid: boolean; readonly quiet?: boolean }
++const SPECS: Readonly<Record<InterceptPolicy, Spec>> = {
++  radar_ambush: { radar: true, how: 'ambush', fan1: 4, fan2: 0, column: true, avoid: true }, radar_twice: { radar: true, how: 'ambush', fan1: 2, fan2: 2, column: true, avoid: true },
++  eye_only: { radar: false, how: 'start', fan1: 4, fan2: 0, column: false, avoid: false }, idle_lane: { radar: true, how: 'lane', fan1: 0, fan2: 0, column: false, avoid: true },
++  radar_dodge: { radar: true, how: 'start', fan1: 0, fan2: 0, column: false, avoid: true }, charge: { radar: true, how: 'charge', fan1: 4, fan2: 0, column: false, avoid: false },
++  home_after_inbound: { radar: true, how: 'bearing', fan1: 4, fan2: 0, column: true, avoid: true }, stay: { radar: false, how: 'stay', fan1: 0, fan2: 0, column: false, avoid: false },
++  radar_ambush_quiet: { radar: true, how: 'ambush', fan1: 4, fan2: 0, column: true, avoid: true, quiet: true },
++};
++/** 段: 待つ（回り込む・突っ込む）・狙う・離れる・帰る・道の上で止まる */
++export const DRIVE_WAIT = 0, DRIVE_AIM = 1, DRIVE_ESCAPE = 2, DRIVE_HOME = 3, DRIVE_IDLE = 4;
++
++export interface InterceptDriver {
++  readonly sp: Spec; readonly rng: SeededRng; readonly plan: InterceptPlan; readonly tracks: InterceptTracks;
++  mode: number; pass: number; actAt: number; aimErr: number; threatAt: number;
++  /** 離れる: 向き・終わりの秒の上限・離れる元（列の道の y か、撃った艦の位置） */
++  escH: number; escUntil: number; escLaneY: number; escX: number; escY: number;
++}
++
++export function createInterceptDriver(policy: InterceptPolicy, seed: number, plan: InterceptPlan): InterceptDriver {
++  const rng = new SeededRng((seed * INTERCEPT_HUMAN_SEED_MUL + INTERCEPT_HUMAN_SEED_ADD) >>> 0);
++  return { sp: SPECS[policy], rng, plan, tracks: createInterceptTracks(plan.width), mode: DRIVE_WAIT, pass: 0, actAt: NaN, aimErr: 0, threatAt: NaN, escH: 0, escUntil: 0, escLaneY: NaN, escX: NaN, escY: NaN };
++}
++
++const bearing = (x: number, y: number, tx: number, ty: number): number => wrapDeg360(radToDeg(Math.atan2(tx - x, -(ty - y))));
++const react = (d: InterceptDriver, t: number): number => t + d.rng.nextRange(INTERCEPT_HUMAN.reactS[0], INTERCEPT_HUMAN.reactS[1]);
++const LANE = { y: NaN, lead: -1 };
++const AV = { h: NaN, full: false };
++
++/** 航跡 j の今の見越し（速さ speed の弾が当たる方位。解けなければ NaN） */
++function leadOn(d: InterceptDriver, j: number, b: BoatState, t: number, speed: number): number {
++  const k = d.tracks;
++  const age = t - k.at[j]!;
++  return interceptHeadingDeg(b.x, b.y, speed, k.x[j]! + k.vx[j]! * age, k.y[j]! + k.vy[j]! * age, k.vx[j]!, k.vy[j]!) ?? NaN;
++}
++
++/** 目で見えた艦を撃ってよいか（列だけ撃つ台本は、その艦が今の段の列の航跡と合う時だけ） */
++function shootable(d: InterceptDriver, v: InterceptView): boolean {
++  return Number.isFinite(v.markerDeg) && (!d.sp.column || trackNear(d.tracks, v.eyeX, v.eyeY, v.t, d.pass === 1 ? 2 : 1, INTERCEPT_HUMAN.matchM));
++}
++
++/** 1 フレームの台本（固定ステップの前）。o に針路（NaN は保つ）・速さ・撃つ本数と扇の開き角を書く */
++export function stepInterceptDriver(d: InterceptDriver, v: InterceptView, o: InterceptOut): void {
++  const sp = d.sp;
++  o.headingDeg = NaN;
++  o.speed01 = 0;
++  o.fireN = 0;
++  o.fireSpreadDeg = 0;
++  if (sp.radar && v.radar) updateTracks(d.tracks, v.radar);
++  if (sp.how === 'stay') return;
++  if (v.atHome) {
++    d.mode = DRIVE_HOME;
++    return;
++  }
++  if ((d.mode === DRIVE_WAIT || d.mode === DRIVE_IDLE) && v.t >= d.plan.dawnS - INTERCEPT_HUMAN.dawnHomeS) d.mode = DRIVE_HOME;
++  if (d.mode === DRIVE_WAIT) wait(d, v, o);
++  if (d.mode === DRIVE_AIM) aim(d, v, o);
++  else if (d.mode === DRIVE_ESCAPE) escape(d, v, o);
++  else if (d.mode === DRIVE_IDLE && d.tracks.outSeen && columnPassed(d.tracks, v.boat)) d.mode = DRIVE_HOME;
++  if (d.mode === DRIVE_HOME) home(d, v, o);
++}
++
++/** 待つ段: 見えたら狙う（方位で撃つ台本は航跡の距離で）。回り込む台本は列の航跡を読んで（反応の後）脇か道の上へ、突っ込む台本は先頭の見越しへ全速 */
++function wait(d: InterceptDriver, v: InterceptView, o: InterceptOut): void {
++  const sp = d.sp;
++  const b = v.boat;
++  const t = v.t;
++  const k = d.tracks;
++  const fan = d.pass === 0 ? sp.fan1 : sp.fan2;
++  trackLane(k, d.pass === 1 || sp.how === 'lane', LANE);
++  const lead = LANE.lead;
++  const fire = fan > 0 && v.torpedoes > 0 && (sp.how === 'bearing' ? lead >= 0 && k.seen[lead]! >= 3 && Math.hypot(k.x[lead]! - b.x, k.y[lead]! - b.y) <= INTERCEPT_HUMAN.bearingFireM : shootable(d, v));
++  if (fire) {
++    d.mode = DRIVE_AIM;
++    d.actAt = react(d, t);
++    d.aimErr = d.rng.nextRange(-INTERCEPT_HUMAN.aimDeg, INTERCEPT_HUMAN.aimDeg);
++    return;
++  }
++  if ((sp.how === 'ambush' || sp.how === 'lane' || sp.how === 'charge') && lead >= 0) {
++    if (Number.isNaN(d.actAt)) d.actAt = react(d, t);
++    if (t >= d.actAt) {
++      if (sp.how === 'charge') {
++        const h = leadOn(d, lead, b, t, d.plan.fullScreenMps);
++        o.headingDeg = Number.isNaN(h) ? bearing(b.x, b.y, k.x[lead]!, k.y[lead]!) : h;
++        o.speed01 = 1;
++        return;
++      }
++      const gy = sp.how === 'lane' ? LANE.y : LANE.y + (b.y >= LANE.y ? 1 : -1) * INTERCEPT_HUMAN.ambushM;
++      const gap = Math.abs(gy - b.y);
++      // 道の上に止まる台本は道の手前で落として、輝点の y にちょうど止まる（人が PPI の線に艇を重ねる）
++      if (gap > (sp.how === 'lane' ? INTERCEPT_HUMAN.parkM : INTERCEPT_HUMAN.arriveM)) {
++        o.headingDeg = gy > b.y ? 180 : 0;
++        o.speed01 = sp.how === 'lane' ? d.plan.silent01 * Math.min(1, Math.max(INTERCEPT_HUMAN.parkMinFrac, gap / INTERCEPT_HUMAN.parkBrakeM)) : d.plan.silent01;
++      } else if (sp.how === 'lane') d.mode = DRIVE_IDLE;
++    }
++  }
++  if (sp.how === 'start' && fan === 0 && k.outSeen && columnPassed(k, b)) d.mode = DRIVE_HOME;
++  if (d.mode === DRIVE_WAIT && sp.avoid) avoid(d, v, o, sp.how === 'ambush' ? 1 + d.pass : sp.how === 'bearing' ? 1 : sp.how === 'lane' && lead >= 0 ? 2 : 0);
++}
++
++/** 狙う段: 反応の遅れの後、マーカー（方位で撃つ台本は航跡の見越し）＋ 狙いのずれへ向き、向けば扇を撃って離れる段へ。的が消えたら待つ段へ戻る */
++function aim(d: InterceptDriver, v: InterceptView, o: InterceptOut): void {
++  const sp = d.sp;
++  const b = v.boat;
++  const t = v.t;
++  trackLane(d.tracks, d.pass === 1, LANE);
++  const a = sp.how === 'bearing' ? (LANE.lead >= 0 ? leadOn(d, LANE.lead, b, t, d.plan.torpedoScreenMps) : NaN) : shootable(d, v) ? v.markerDeg : NaN;
++  if (Number.isNaN(a)) {
++    d.mode = DRIVE_WAIT;
++    d.actAt = NaN;
++    return;
++  }
++  if (t < d.actAt) {
++    if (sp.how === 'charge') o.speed01 = 1;
++    return;
++  }
++  o.headingDeg = wrapDeg360(a + d.aimErr);
++  o.speed01 = sp.how === 'charge' ? 1 : 0;
++  if (Math.abs(wrapDeg180(b.headingDeg - o.headingDeg)) > INTERCEPT_HUMAN.aimTolDeg) return;
++  const fan = d.pass === 0 ? sp.fan1 : sp.fan2;
++  o.fireN = fan;
++  o.fireSpreadDeg = d.plan.spacingDeg * (fan - 1);
++  d.actAt = NaN;
++  if (sp.how === 'bearing') {
++    d.mode = DRIVE_HOME;
++    return;
++  }
++  // 列の艦を撃ったら道から直角に、ほかは撃った艦から真っ直ぐ離れる
++  d.escLaneY = sp.column ? LANE.y : NaN;
++  d.escX = Number.isFinite(v.eyeX) ? v.eyeX : b.x;
++  d.escY = Number.isFinite(v.eyeY) ? v.eyeY : b.y;
++  d.escH = Number.isFinite(d.escLaneY) ? (b.y >= d.escLaneY ? 180 : 0) : bearing(d.escX, d.escY, b.x, b.y);
++  d.escUntil = t + INTERCEPT_HUMAN.escapeMaxS;
++  d.mode = DRIVE_ESCAPE;
++}
++
++/** 離れる段: 全速（quiet の台本は静音）で、元（道か撃った艦）から escapeClearM 離れるか秒の上限か礁・岸の手前まで。復路の扇が残れば待つ段へ、ほかは帰る */
++function escape(d: InterceptDriver, v: InterceptView, o: InterceptOut): void {
++  const b = v.boat;
++  const g = INTERCEPT_HUMAN.reefGuardM;
++  o.headingDeg = d.escH;
++  o.speed01 = d.sp.quiet ? d.plan.silent01 : 1;
++  const far = Number.isFinite(d.escLaneY) ? Math.abs(b.y - d.escLaneY) >= INTERCEPT_HUMAN.escapeClearM : Math.hypot(b.x - d.escX, b.y - d.escY) >= INTERCEPT_HUMAN.escapeClearM;
++  let reef = b.y < INTERCEPT_HUMAN.shoreGuardM || b.y > d.plan.height - INTERCEPT_HUMAN.shoreGuardM;
++  for (const r of d.plan.reefs) if (b.x >= r.x - g && b.x <= r.x + r.w + g && b.y >= r.y - g && b.y <= r.y + r.h + g) reef = true;
++  if (!far && !reef && v.t < d.escUntil) return;
++  if (d.pass === 0 && d.sp.fan2 > 0 && v.torpedoes > 0) {
++    d.pass = 1;
++    d.mode = DRIVE_WAIT;
++  } else d.mode = DRIVE_HOME;
++}
++
++/** 近づく接触から離れる（よけ始めは反応の遅れの後。よけている間は最接近が clearM を越えるまで続ける。急ぐ時は全速、ほかは静音）。脅威が無ければ何もしない */
++function avoid(d: InterceptDriver, v: InterceptView, o: InterceptOut, skip: number): void {
++  const dodging = Number.isFinite(d.threatAt) && v.t >= d.threatAt;
++  trackAvoid(d.tracks, v.boat, v.t, skip, dodging ? TRACK_READ.clearM : TRACK_READ.avoidM, AV);
++  if (Number.isNaN(AV.h)) {
++    d.threatAt = NaN;
++    return;
++  }
++  if (Number.isNaN(d.threatAt)) d.threatAt = react(d, v.t);
++  if (v.t < d.threatAt) return;
++  o.headingDeg = AV.h;
++  o.speed01 = AV.full ? 1 : d.plan.silent01;
++}
++
++/** 帰る: 輪の北の入口（礁の間の水道の上）を経て輪の中心へ（水道の外で入口の線より南なら先に北へ）。巡航、輪の近くと接触（輝点か目）が近い間は静音。接触をよける台本は帰り道もよける */
++function home(d: InterceptDriver, v: InterceptView, o: InterceptOut): void {
++  const p = d.plan;
++  const b = v.boat;
++  const gateY = p.ringY - p.ringR - INTERCEPT_HUMAN.homeLeadM;
++  const inPass = Math.abs(b.x - p.ringX) <= p.ringR;
++  // 輪の北の線より南で水道の外にいれば、まず北へ（礁の帯を横切らない）
++  if (!inPass && b.y > gateY + INTERCEPT_HUMAN.arriveM) o.headingDeg = 0;
++  else o.headingDeg = bearing(b.x, b.y, p.ringX, inPass && b.y >= gateY - INTERCEPT_HUMAN.arriveM ? p.ringY : gateY);
++  const near = Math.hypot(p.ringX - b.x, p.ringY - b.y) < INTERCEPT_HUMAN.homeSlowM || Number.isFinite(v.eyeX) || trackNearest2(d.tracks, b, v.t) < INTERCEPT_HUMAN.quietM * INTERCEPT_HUMAN.quietM;
++  o.speed01 = near ? p.silent01 : p.cruise01;
++  if (d.sp.avoid) avoid(d, v, o, 0);
++}
+diff --git a/src/core/intercept-sim-torpedoes.ts b/src/core/intercept-sim-torpedoes.ts
+new file mode 100644
+index 0000000..eb63983
+--- /dev/null
++++ b/src/core/intercept-sim-torpedoes.ts
+@@ -0,0 +1,140 @@
++// 迎撃の模擬（v0.8.0 S3。us_04。spec-v0800 §4.11、lead の L18）の魚雷の写し（Phaser 非依存）: 魚雷のプール（凍結の systems/torpedo-pool の TorpedoPool の状態・fire・step・
++// resolveRemainingAsMisses。雷跡の点は絵だけなので置かない＝nextWakeAtM は誰も読まない）と発射管制（systems/torpedo-launcher の TorpedoLauncher。乱数の順は 不発 → 蛇行 → 偏差）。
++// 凍結の core（torpedo・torpedo-targets・torpedo-solver）と core/salvo を同じ順で呼ぶ。tests/intercept-sim-a が本物（tests/torpedo-free-kit の TorpedoPool・TorpedoLauncher）と
++// 同じ発射の並びで状態と知らせの順を突き合わせる。確保は作る時だけ。
++import type { BoatState, SeaBounds } from './boat-motion';
++import type { SeededRng } from './rng';
++import { fillSalvoHeadings } from './salvo';
++import { createTorpedoState, isArmed, launchTorpedo, markMissIfPassed, stepTorpedo, type TorpedoParams, type TorpedoReliability, type TorpedoState } from './torpedo';
++import { createTargetScan, scanTargets, type TorpedoEvents, type TorpedoTarget } from './torpedo-targets';
++import { interceptHeadingDeg, velocityFromHeading } from './torpedo-solver';
++import { degToRad, wrapDeg180 } from './units';
++
++/** 魚雷のプール（TorpedoPool の状態・fire・step・resolveRemainingAsMisses の写し。絵と雷跡の点なし） */
++export class SimTorpedoPool {
++  readonly states: TorpedoState[] = [];
++  private firedCount = 0;
++  private readonly scan = createTargetScan();
++
++  constructor(private readonly params: TorpedoParams, readonly capacity: number, private readonly bounds: SeaBounds) {
++    for (let i = 0; i < capacity; i++) this.states.push(createTorpedoState());
++  }
++
++  get remaining(): number {
++    return this.capacity - this.firedCount;
++  }
++
++  get unresolvedCount(): number {
++    let n = 0;
++    for (let i = 0; i < this.states.length; i++) {
++      const s = this.states[i]!;
++      if (s.active && !s.resolved) n++;
++    }
++    return n;
++  }
++
++  fire(x: number, y: number, headingDeg: number, dud: boolean, erratic: boolean, erraticBiasDeg: number, rangeAtLaunchM: number): TorpedoState | null {
++    if (this.remaining <= 0) return null;
++    const s = this.states[this.firedCount]!;
++    this.firedCount++;
++    launchTorpedo(s, x, y, headingDeg, dud, erratic, erraticBiasDeg, rangeAtLaunchM, 0);
++    return s;
++  }
++
++  step(dt: number, realDt: number, targets: readonly TorpedoTarget[], passRadius2: number, events: TorpedoEvents, nowS: number, settleS: number): void {
++    for (let i = 0; i < this.states.length; i++) {
++      const s = this.states[i]!;
++      if (!s.active) continue;
++      const expired = stepTorpedo(s, this.params, dt, realDt);
++      if (expired || s.x < 0 || s.y < 0 || s.x > this.bounds.width || s.y > this.bounds.height) {
++        s.active = false;
++        if (!s.resolved) events.onMiss(s);
++        continue;
++      }
++      if (s.resolved) continue;
++      const sc = this.scan;
++      scanTargets(sc, s.x, s.y, isArmed(s, this.params), targets, nowS, settleS);
++      if (sc.late >= 0) {
++        s.active = false;
++        s.resolved = true;
++        events.onLateHit(sc.late, s.x, s.y, s);
++        continue;
++      }
++      if (sc.nearest < 0) continue;
++      if (sc.hit >= 0) {
++        s.active = false;
++        s.resolved = true;
++        events.onHit(sc.hit, s.x, s.y, s);
++        continue;
++      }
++      const n = targets[sc.nearest]!.state;
++      if (markMissIfPassed(s, this.params, n.x, n.y, passRadius2)) events.onMiss(s);
++    }
++  }
++
++  resolveRemainingAsMisses(events: TorpedoEvents): void {
++    for (let i = 0; i < this.states.length; i++) {
++      const s = this.states[i]!;
++      if (!s.active || s.resolved) continue;
++      s.resolved = true;
++      events.onMiss(s);
++    }
++  }
++}
++
++/** 発射管制（TorpedoLauncher の写し。乱数の順は 不発 → 蛇行 → 偏差） */
++export class SimLauncher {
++  private readonly headings: number[] = [];
++  private pending = 0;
++  private nextIndex = 0;
++  private cooldownS = 0;
++  private side = 1;
++  private readonly targetVel = { x: 0, y: 0 };
++
++  constructor(private readonly pool: SimTorpedoPool, private readonly rng: SeededRng, private readonly reliability: TorpedoReliability, private readonly jitterDeg: number, private readonly launchOffsetM: number, private readonly intervalS: number, private readonly torpedoSpeedMps: number) {
++    for (let i = 0; i < pool.capacity; i++) this.headings.push(0);
++  }
++
++  get queued(): number {
++    return this.pending;
++  }
++
++  clearQueue(): void {
++    this.pending = 0;
++  }
++
++  queueFan(boat: BoatState, count: number, spreadDeg: number): void {
++    if (this.pending > 0) return;
++    const n = Math.min(count, this.pool.remaining);
++    if (n <= 0) return;
++    this.pending = fillSalvoHeadings(boat.headingDeg, n, spreadDeg, this.headings);
++    this.nextIndex = 0;
++    this.cooldownS = 0;
++  }
++
++  update(realDt: number, boat: BoatState, target: BoatState | null, kpiTarget: boolean): TorpedoState | null {
++    if (this.pending === 0) return null;
++    this.cooldownS -= realDt;
++    if (this.cooldownS > 0) return null;
++    const headingDeg = this.headings[this.nextIndex]!;
++    this.nextIndex++;
++    this.pending--;
++    this.cooldownS = this.intervalS;
++    const rangeAtLaunch = target ? Math.hypot(target.x - boat.x, target.y - boat.y) : Number.NaN;
++    const h = degToRad(boat.headingDeg);
++    const side = this.side;
++    this.side = -this.side;
++    const x = boat.x + Math.cos(h) * this.launchOffsetM * side;
++    const y = boat.y + Math.sin(h) * this.launchOffsetM * side;
++    const dud = this.rng.chance(this.reliability.dud);
++    const erratic = this.rng.chance(this.reliability.erratic);
++    const bias = erratic ? this.rng.nextRange(-this.jitterDeg, this.jitterDeg) : 0;
++    const s = this.pool.fire(x, y, headingDeg, dud, erratic, bias, rangeAtLaunch);
++    if (!s || !target) return s;
++    velocityFromHeading(target.headingDeg, target.speedMps, this.targetVel);
++    const aim = interceptHeadingDeg(x, y, this.torpedoSpeedMps, target.x, target.y, this.targetVel.x, this.targetVel.y);
++    s.leadErrDeg = aim === null ? Number.NaN : wrapDeg180(headingDeg - aim);
++    s.kpiTarget = kpiTarget;
++    return s;
++  }
++}
+diff --git a/src/core/intercept-sim-tracks.ts b/src/core/intercept-sim-tracks.ts
+new file mode 100644
+index 0000000..e9c4fe0
+--- /dev/null
++++ b/src/core/intercept-sim-tracks.ts
+@@ -0,0 +1,165 @@
++// 迎撃の模擬（v0.8.0 S3。us_04。spec-v0800 §4.11、lead の L17）の台本のレーダーの読み方: 人が PPI（平面位置表示器）を読むように、掃引ごとの輝点
++// （core/radar の状態そのまま＝丸めた位置だけ・どの艦かは無い）を前の掃引の航跡の予測の位置と突き合わせて自分の航跡（位置・速さ・見た回数・生まれた縁）を作る。
++// 列は「西の縁に現れて東へ速く動く輝点」（往路）・「東の縁に現れて西へ」（復路）と読む（護衛は出撃の時から海峡の中にいる輝点）。近づいて近くを通る輝点
++// （最接近の点が avoidM の内・avoidS 秒の内）から離れる針路も航跡だけから。艦の AI・発見・段階・本当の位置は読まない（tests/intercept-sim-a が import と名前を走査する）。
++// 数は人の読み方の目安（design。ゲームの強さの値ではない）。確保は作る時（createInterceptTracks）だけ。Phaser 非依存。
++import type { BoatState } from './boat-motion';
++import type { RadarState } from './radar';
++import { radToDeg, wrapDeg360 } from './units';
++
++/**
++ * 航跡の読み方の目安: 突き合わせの門 m・縁で生まれたとみなす m・列とみなす東西の速さ（画面の m/s）・通り過ぎた m・よけ始める最接近 m・よけ終える最接近 m・
++ * 近い脅威の m・見る秒・全速で急ぐ m と秒
++ */
++export const TRACK_READ = { gateM: 350, bornEdgeM: 600, columnVx: 30, passedM: 300, avoidM: 700, clearM: 900, closeM: 1000, avoidS: 30, avoidFullM: 300, avoidFullS: 10 } as const;
++const TRACKS = 16;
++
++export interface InterceptTracks {
++  readonly width: number;
++  n: number;
++  readonly x: Float64Array; readonly y: Float64Array; readonly vx: Float64Array; readonly vy: Float64Array;
++  /** 見た掃引の回数（255 で止める）・生まれた縁（−1 西・1 東・0 中）・最後に見た掃引の秒・この掃引で合った印 */
++  readonly seen: Uint8Array; readonly born: Int8Array; readonly at: Float64Array; readonly hit: Uint8Array;
++  /** 読んだ掃引の回数と、復路の列を一度でも読んだか */
++  sweeps: number; outSeen: boolean;
++}
++
++export function createInterceptTracks(width: number): InterceptTracks {
++  const f = (): Float64Array => new Float64Array(TRACKS);
++  return { width, n: 0, x: f(), y: f(), vx: f(), vy: f(), seen: new Uint8Array(TRACKS), born: new Int8Array(TRACKS), at: f(), hit: new Uint8Array(TRACKS), sweeps: -1, outSeen: false };
++}
++
++/** 往路の列の航跡（西の縁で生まれて東へ）・復路の列の航跡（東の縁で生まれて西へ）。2 回以上見た航跡だけ */
++export const isInTrack = (k: InterceptTracks, j: number): boolean => k.seen[j]! >= 2 && k.born[j] === -1 && k.vx[j]! > TRACK_READ.columnVx;
++export const isOutTrack = (k: InterceptTracks, j: number): boolean => k.seen[j]! >= 2 && k.born[j] === 1 && k.vx[j]! < -TRACK_READ.columnVx;
++
++/** 掃引が変わったら輝点を突き合わせる: 予測の位置から gateM の内の一番近い航跡（輝点は近い順）。合わない輝点は新しい航跡、見えなくなった航跡は消す */
++export function updateTracks(k: InterceptTracks, r: RadarState): void {
++  if (r.sweeps === k.sweeps) return;
++  k.sweeps = r.sweeps;
++  const now = r.lastSweepS;
++  const g2 = TRACK_READ.gateM * TRACK_READ.gateM;
++  k.hit.fill(0, 0, k.n);
++  const n0 = k.n;
++  for (let b = 0; b < r.n; b++) {
++    const bx = r.blips[b]!.x;
++    const by = r.blips[b]!.y;
++    let best = -1;
++    let bestD2 = g2;
++    for (let j = 0; j < n0; j++) {
++      if (k.hit[j] === 1) continue;
++      const dt = now - k.at[j]!;
++      const ex = bx - (k.x[j]! + k.vx[j]! * dt);
++      const ey = by - (k.y[j]! + k.vy[j]! * dt);
++      if (ex * ex + ey * ey <= bestD2) {
++        bestD2 = ex * ex + ey * ey;
++        best = j;
++      }
++    }
++    if (best >= 0) {
++      const dt = now - k.at[best]!;
++      const w = k.seen[best] === 1 ? 1 : 0.5;
++      k.vx[best] = k.vx[best]! * (1 - w) + ((bx - k.x[best]!) / dt) * w;
++      k.vy[best] = k.vy[best]! * (1 - w) + ((by - k.y[best]!) / dt) * w;
++      k.x[best] = bx;
++      k.y[best] = by;
++      k.at[best] = now;
++      k.hit[best] = 1;
++      if (k.seen[best]! < 255) k.seen[best]!++;
++    } else if (k.n < TRACKS) {
++      const j = k.n++;
++      const e = TRACK_READ.bornEdgeM;
++      k.x[j] = bx; k.y[j] = by; k.vx[j] = 0; k.vy[j] = 0; k.seen[j] = 1; k.at[j] = now; k.hit[j] = 1;
++      k.born[j] = bx < e ? -1 : bx > k.width - e ? 1 : 0;
++    }
++  }
++  let m = 0;
++  for (let j = 0; j < k.n; j++) {
++    if (k.hit[j] !== 1) continue;
++    k.x[m] = k.x[j]!; k.y[m] = k.y[j]!; k.vx[m] = k.vx[j]!; k.vy[m] = k.vy[j]!; k.seen[m] = k.seen[j]!; k.born[m] = k.born[j]!; k.at[m] = k.at[j]!; k.hit[m] = 1;
++    if (isOutTrack(k, m)) k.outSeen = true;
++    m++;
++  }
++  k.n = m;
++}
++
++/** 列の道の y（その向きの航跡の平均）と先頭の添字（往路は一番東・復路は一番西）。無ければ y NaN・lead −1 */
++export function trackLane(k: InterceptTracks, out: boolean, o: { y: number; lead: number }): void {
++  let s = 0;
++  let c = 0;
++  o.lead = -1;
++  for (let j = 0; j < k.n; j++) {
++    if (!(out ? isOutTrack(k, j) : isInTrack(k, j))) continue;
++    s += k.y[j]!;
++    c++;
++    if (o.lead < 0 || (out ? k.x[j]! < k.x[o.lead]! : k.x[j]! > k.x[o.lead]!)) o.lead = j;
++  }
++  o.y = c > 0 ? s / c : NaN;
++}
++
++/** (x, y) の matchM の内に kind（1 往路・2 復路・0 どれでも）の航跡がある（今の秒へ速さで進めた位置）。目で見えた艦が列の艦か、の人の読み */
++export function trackNear(k: InterceptTracks, x: number, y: number, t: number, kind: number, matchM: number): boolean {
++  for (let j = 0; j < k.n; j++) {
++    if ((kind === 1 && !isInTrack(k, j)) || (kind === 2 && !isOutTrack(k, j))) continue;
++    const age = t - k.at[j]!;
++    const dx = k.x[j]! + k.vx[j]! * age - x;
++    const dy = k.y[j]! + k.vy[j]! * age - y;
++    if (dx * dx + dy * dy <= matchM * matchM) return true;
++  }
++  return false;
++}
++
++/** 一番近い航跡までの 2 乗の m（無ければ Infinity）。帰り道を静音にするかの人の読み */
++export function trackNearest2(k: InterceptTracks, b: BoatState, t: number): number {
++  let best = Infinity;
++  for (let j = 0; j < k.n; j++) {
++    const age = t - k.at[j]!;
++    const dx = k.x[j]! + k.vx[j]! * age - b.x;
++    const dy = k.y[j]! + k.vy[j]! * age - b.y;
++    if (dx * dx + dy * dy < best) best = dx * dx + dy * dy;
++  }
++  return best;
++}
++
++/** 復路の列が自艇の西へ passedM 過ぎた（東に復路の航跡が残っていない） */
++export function columnPassed(k: InterceptTracks, b: BoatState): boolean {
++  for (let j = 0; j < k.n; j++) if (isOutTrack(k, j) && k.x[j]! > b.x - TRACK_READ.passedM) return false;
++  return true;
++}
++
++/**
++ * 近づく航跡から離れる針路（無ければ h NaN）。2 つの読み（自艇は止まっているとして読む＝人が「あの接触は今の自艇のどれだけ近くを通るか」を見る形。自艇の動きで脅威が点滅しない）:
++ * 道の脅威＝最接近が limitM の内で avoidS 秒の内（最接近の点から自艇への向き＝道から直角に離れる。真っ直ぐ来るなら航跡の向きの直角）、
++ * 近い脅威＝closeM の内で近づいている（接触から真っ直ぐ離れる。向きを変えている護衛は直線の最接近では読めない）。一番急ぐ（会うまでの秒が短い）物を選ぶ。
++ * skip: 0 なし・1 往路の列・2 復路の列は数えない。t は今の秒（航跡は最後の掃引から速さで進める）。full は急ぐ時（会うまで avoidFullS 秒の内で avoidFullM の内）
++ */
++export function trackAvoid(k: InterceptTracks, b: BoatState, t: number, skip: number, limitM: number, o: { h: number; full: boolean }): void {
++  const R = TRACK_READ;
++  let bestT: number = R.avoidS;
++  o.h = NaN;
++  o.full = false;
++  for (let j = 0; j < k.n; j++) {
++    if (k.seen[j]! < 2 || (skip === 1 && isInTrack(k, j)) || (skip === 2 && isOutTrack(k, j))) continue;
++    const age = t - k.at[j]!;
++    const rx = k.x[j]! + k.vx[j]! * age - b.x;
++    const ry = k.y[j]! + k.vy[j]! * age - b.y;
++    const vx = k.vx[j]!;
++    const vy = k.vy[j]!;
++    const v2 = vx * vx + vy * vy;
++    const r2 = rx * rx + ry * ry;
++    const tc = v2 > 1 ? -(rx * vx + ry * vy) / v2 : -1;
++    if (!(tc > 0)) continue;
++    const cx = rx + vx * tc;
++    const cy = ry + vy * tc;
++    const c2 = cx * cx + cy * cy;
++    const path = tc < bestT && c2 < limitM * limitM;
++    const close = r2 < R.closeM * R.closeM;
++    if (!path && !close) continue;
++    // 会うまでの秒: 道の脅威は最接近の秒、近い脅威は距離 ÷ 近づく速さ
++    const meet = path ? tc : r2 / -(rx * vx + ry * vy);
++    if (!(meet < bestT)) continue;
++    bestT = meet;
++    o.full = meet < R.avoidFullS && (path ? c2 : r2) < R.avoidFullM * R.avoidFullM;
++    o.h = path && c2 > 1 ? wrapDeg360(radToDeg(Math.atan2(-cx, cy))) : close ? wrapDeg360(radToDeg(Math.atan2(-rx, ry))) : wrapDeg360(radToDeg(Math.atan2(vy, vx)));
++  }
++}
+diff --git a/src/core/intercept-sim-world.ts b/src/core/intercept-sim-world.ts
+new file mode 100644
+index 0000000..43aec4c
+--- /dev/null
++++ b/src/core/intercept-sim-world.ts
+@@ -0,0 +1,221 @@
++// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L18）の世界の側の写し（Phaser 非依存・乱数は渡された系列だけ）:
++// 艦（entities/destroyer の論理: step・goAway・reappear・体当たり・被雷・沈み始め）・列の通過（systems/destroyer-transit の DestroyerTransit）・
++// レーダーの掃引（systems/world-radar の WorldRadar.step）。魚雷のプールと発射管制の写しは core/intercept-sim-torpedoes。どれも同じ core（ship-ai・ship-transit・
++// radar・dawn-withdraw・torpedo-solver）を同じ順で呼ぶ。core から systems は import しない作法なので写し、tests/intercept-sim-a が本物（tests/transit-world-kit の
++// DestroyerTransit・WorldRadar）とステップごとに突き合わせる。沈没の演出（2 秒の tween）は呼ぶ側が時計で数える。確保は作る時だけ。B6 の 1 本（columnShot）もここ。
++import { clampToBounds, type BoatState, type SeaBounds } from './boat-motion';
++import { beyondBounds } from './dawn-withdraw';
++import { RADAR_KIND_SHIP, radarSweepDue, stepRadar, type RadarGeometry, type RadarState, type RadarTargets } from './radar';
++import type { RadarParams } from './radar-data';
++import type { SeededRng } from './rng';
++import { createShipAiState, startRetire, steerShip, turnRateFor, updateShipAi, type ShipAiParams, type ShipAiState } from './ship-ai';
++import { createShipTransit, stepShipTransit, transitAppearLeg, transitPending, type ShipTransitState, type TransitPlan } from './ship-transit';
++import { createTorpedoState, isArmed, launchTorpedo, markMissIfPassed, stepTorpedo, type TorpedoParams, type TorpedoState } from './torpedo';
++import type { TorpedoTarget } from './torpedo-targets';
++import { boatTouchesHull, createCircles, fillHullCircles, interceptHeadingDeg, pointHitsHull, velocityFromHeading, type Circle } from './torpedo-solver';
++
++/** 艦の寸法と耐久（systems/destroyer-setup の DestroyerSpec が形で満たす） */
++export interface SimShipSpec {
++  readonly lengthM: number;
++  readonly beamM: number;
++  readonly hullCircles: number;
++  readonly hitsToSink: number;
++  readonly hitScale: number;
++  readonly boundsMarginM: number;
++}
++
++/** 艦 1 隻（entities/destroyer の論理。絵なし） */
++export class SimShip implements TorpedoTarget {
++  readonly state: BoatState;
++  readonly ai: ShipAiState;
++  readonly circles: Circle[];
++  hitsTaken = 0;
++  sinking = false;
++  sunk = false;
++  sinkStartS = NaN;
++  withdrawn = false;
++  offMap = false;
++  transitShip = false;
++
++  constructor(start: { x: number; y: number; headingDeg: number }, readonly spec: SimShipSpec, readonly p: ShipAiParams) {
++    this.state = { x: start.x, y: start.y, headingDeg: start.headingDeg, speedMps: p.cruiseSpeedMps };
++    this.ai = createShipAiState(start.headingDeg, p.cruiseSpeedMps);
++    this.circles = createCircles(spec.hullCircles);
++    this.refreshHull();
++  }
++
++  get out(): boolean {
++    return this.sinking || this.withdrawn || this.offMap;
++  }
++
++  /** Destroyer.step と同じ式。戻りはこのステップで退き終えたか */
++  step(dt: number, realDt: number, player: BoatState, detectM: number, holdS: number, torps: readonly TorpedoState[], bounds: SeaBounds, lookout: SeededRng): boolean {
++    if (this.out) return false;
++    updateShipAi(this.ai, this.state, player, detectM, holdS, torps, this.p, bounds, realDt, lookout);
++    steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.p), this.p.accelMps2, dt);
++    if (!this.ai.retiring) clampToBounds(this.state, bounds, this.spec.boundsMarginM);
++    else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, bounds, this.spec.boundsMarginM)) {
++      this.withdrawn = true;
++      return true;
++    }
++    this.refreshHull();
++    return false;
++  }
++
++  private refreshHull(): void {
++    fillHullCircles(this.circles, this.state.x, this.state.y, this.state.headingDeg, this.spec.lengthM * this.spec.hitScale, this.spec.beamM * this.spec.hitScale);
++  }
++
++  touchesBoat(boat: BoatState, halfLengthM: number): boolean {
++    return !this.out && boatTouchesHull(boat.x, boat.y, boat.headingDeg, halfLengthM, this.circles);
++  }
++
++  takeHit(): boolean {
++    this.hitsTaken++;
++    return this.hitsTaken >= this.spec.hitsToSink;
++  }
++
++  /** Destroyer.playSinking の論理（演出の終わり＝sunk は呼ぶ側が sinkS の後に立てる） */
++  startSinking(nowS: number): void {
++    if (this.sinking) return;
++    this.sinking = true;
++    this.sinkStartS = nowS;
++    this.state.speedMps = 0;
++  }
++
++  goAway(gone: boolean): void {
++    if (gone) this.withdrawn = true;
++    else this.offMap = true;
++    const ai = this.ai;
++    ai.playerDetected = false;
++    ai.detectHoldLeftS = 0;
++    ai.wakeSpotted = false;
++    ai.wakeSeenForS = -1;
++  }
++
++  reappear(x: number, y: number, headingDeg: number, speedMps: number): void {
++    const s = this.state;
++    s.x = x;
++    s.y = y;
++    s.headingDeg = headingDeg;
++    s.speedMps = speedMps;
++    this.offMap = false;
++    this.refreshHull();
++  }
++}
++
++/** 列の通過（systems/destroyer-transit の DestroyerTransit と同じ式。all は護衛 → 列、first は列の 1 隻目の添字） */
++export class SimTransit {
++  readonly state: ShipTransitState;
++  readonly column: readonly SimShip[];
++
++  constructor(private readonly all: readonly SimShip[], private readonly first: number, readonly plan: TransitPlan & { readonly speedMps: number }) {
++    this.state = createShipTransit(plan);
++    this.column = all.slice(first, first + plan.ships);
++    for (const s of this.column) {
++      s.transitShip = true;
++      s.goAway(false);
++    }
++  }
++
++  get pending(): number {
++    return transitPending(this.state);
++  }
++
++  get allOut(): boolean {
++    if (transitPending(this.state) > 0) return false;
++    for (let i = 0; i < this.all.length; i++) if (!this.all[i]!.out) return false;
++    return true;
++  }
++
++  get allSettled(): boolean {
++    if (transitPending(this.state) > 0) return false;
++    for (let i = 0; i < this.all.length; i++) {
++      const s = this.all[i]!;
++      if (!s.sunk && !s.withdrawn && !s.offMap) return false;
++    }
++    return true;
++  }
++
++  /** 戻りは艦が海域を出た（着いたか去った）ステップか */
++  step(nowS: number, dawn: boolean, feelDt: number): boolean {
++    const st = this.state;
++    const p = this.plan;
++    stepShipTransit(st, p, feelDt, nowS, dawn, this.column);
++    const placed = st.entered | st.returned;
++    const left = st.arrived | st.gone;
++    if (placed === 0 && left === 0 && !st.coverLeaves) return false;
++    for (let i = 0; i < st.ships; i++) {
++      const bit = 1 << i;
++      const s = this.column[i]!;
++      if ((placed & bit) !== 0) {
++        const leg = transitAppearLeg(p, st.phase[i]!)!;
++        s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);
++        startRetire(s.ai, leg.headingDeg);
++      } else if ((left & bit) !== 0) {
++        s.goAway((st.gone & bit) !== 0);
++      }
++    }
++    if (st.coverLeaves) {
++      for (let i = 0; i < this.first; i++) {
++        const c = this.all[i]!;
++        if (!c.out) startRetire(c.ai, p.outbound.headingDeg);
++      }
++    }
++    return left !== 0;
++  }
++}
++
++/** WorldRadar.step と同じ: 掃引の時だけ隊の艦の位置と「out でない」を渡す */
++export function stepSimRadar(r: RadarState, p: RadarParams, geo: RadarGeometry, tg: RadarTargets, nowS: number, boat: BoatState, ships: readonly SimShip[]): void {
++  if (!radarSweepDue(r, nowS)) return;
++  let n = 0;
++  for (let i = 0; i < ships.length && n < tg.x.length; i++) {
++    const d = ships[i]!;
++    tg.x[n] = d.state.x;
++    tg.y[n] = d.state.y;
++    tg.kind[n] = RADAR_KIND_SHIP;
++    tg.afloat[n] = d.out ? 0 : 1;
++    n++;
++  }
++  tg.n = n;
++  stepRadar(r, p, geo, nowS, boat.x, boat.y, tg);
++}
++
++/**
++ * B6（lead の L20・CLAUDE.md §2 の KPI）の 1 本: 列の艦（列の AI＝最大速力だけ列の速さ・退く動き・列の速さ）へ、止まった艇から正しい見越し角
++ * （ゲームの見越し点マーカーと同じ core/torpedo-solver）＋ aimErrDeg の 1 本。艦は東（90°）へ、艇は艦から見て bearingDeg（0 左正横・90 艦首・180 右正横）の rangeM。
++ * core/hit-rate-sim の simulateShot と同じ形（端の無い海・艇は見つからない・同じ順）で、艦だけが列の艦（S2 の現れ方: 列の速さで退く動き）。解けなければ null
++ */
++export function columnShot(spec: SimShipSpec, ai: ShipAiParams, speedMps: number, tp: TorpedoParams, passRadius2: number, timeScale: number, stepS: number, rangeM: number, bearingDeg: number, aimErrDeg: number, lookout: SeededRng): boolean | null {
++  const c = COLUMN_SHOT_SEA / 2;
++  const ship = new SimShip({ x: c, y: c, headingDeg: 90 }, spec, ai);
++  ship.transitShip = true;
++  ship.reappear(c, c, 90, speedMps);
++  startRetire(ship.ai, 90);
++  const b = (bearingDeg * Math.PI) / 180;
++  const bx = c + Math.sin(b) * rangeM;
++  const by = c - Math.cos(b) * rangeM;
++  const vel = { x: 0, y: 0 };
++  velocityFromHeading(90, speedMps, vel);
++  const aim = interceptHeadingDeg(bx, by, tp.speedMps, c, c, vel.x, vel.y);
++  if (aim === null) return null;
++  const torp = createTorpedoState();
++  launchTorpedo(torp, bx, by, aim + aimErrDeg, false, false, 0, rangeM, 0);
++  const torps = [torp];
++  const far: BoatState = { x: 0, y: 0, headingDeg: 0, speedMps: 0 };
++  const bounds = { width: COLUMN_SHOT_SEA, height: COLUMN_SHOT_SEA };
++  const dt = stepS * timeScale;
++  const maxSteps = Math.ceil((tp.rangeM / tp.speedMps + COLUMN_SHOT_EXTRA_S) / dt);
++  for (let i = 0; i < maxSteps; i++) {
++    ship.step(dt, stepS, far, 0, 0, torps, bounds, lookout);
++    if (stepTorpedo(torp, tp, dt, stepS)) return false;
++    if (isArmed(torp, tp) && pointHitsHull(torp.x, torp.y, ship.circles)) return true;
++    if (markMissIfPassed(torp, tp, ship.state.x, ship.state.y, passRadius2)) return false;
++  }
++  return false;
++}
++
++/** 端の向き直しが働かない広さ（core/hit-rate-sim と同じ）と、射程の後の余裕の秒 */
++const COLUMN_SHOT_SEA = 1e7;
++const COLUMN_SHOT_EXTRA_S = 60;
+diff --git a/src/core/intercept-sim.ts b/src/core/intercept-sim.ts
+new file mode 100644
+index 0000000..906f436
+--- /dev/null
++++ b/src/core/intercept-sim.ts
+@@ -0,0 +1,295 @@
++// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11・§4.4〜§4.7、lead の L17〜L19）の 1 夜。世界（systems/mission-world の stepFn と
++// MissionScene の 1 フレーム）と同じ順・同じ core: フレームの頭（終わりの窓なら撃たない → 台本 → 発射の要求 → 発射管制）→ 固定ステップ（時計 → 夜明けのラッチと退く →
++// 乗員 → 自艇・座礁・燃料・輪 → 速力帯 → 発見距離 → 艦 → 列の通過 → 一斉発射の破棄・外れの確定 → 魚雷 → 体当たり → 探照灯・星弾・砲 → レーダー → 火災 → 夜明けに外）→
++// 命中スローの残り → 待ちの秒 → 終わり（core/mission-flow の decideMissionEnd・stepEndSettle）。艦・列・レーダー・魚雷・発射管制は core/intercept-sim-world・-torpedoes の写し。
++// 命中スロー（魚雷の命中・自艇の沈み始めで 1.2 秒 × 0.3）は世界と同じに入れる。省いたもの（spec §4.11・L18）: 水上機・味方機の誤射・夜明けの空襲（別の模擬がある。
++// 夜明けの後は afterDawnS で打ち切り＝'cut'）・煙幕・消火・艇の機銃（台本は使わない）・暴風（us_04 に無い）。乱数: 発射管制 seed、砲 seed+1、見張り seed+17（世界と同じ系列）、
++// 今夜の揺らぎは setup（buildWorldSetup の seed+16）に入ったまま、人の揺らぎは台本の模擬だけの系列。確保は 1 夜の始めだけ。
++import { clampToBounds, nextSpeedBand, setPerformance, stepBoat, type BoatInput, type BoatParams, type BoatState, type SeaBounds, type SpeedStep } from './boat-motion';
++import { crewAccelFactor, crewLost, crewTurnFactor, type CrewEffects, type CrewParams } from './crew';
++import { dawnReached } from './dawn-air';
++import { shotKpiTarget } from './dawn-withdraw';
++import { createFuelState, stepFuel, type FuelCurve } from './fuel';
++import { applyShellHit, createDamageState, createGunneryState, stepDamage, updateGuns, updateIllumination, type DamageParams, type GunneryParams, type GunneryState, type HitOutcome, type ShellEvents } from './gunnery';
++import { RAM_COLUMN, RAM_COVER, createInterceptTrial, type InterceptTrial } from './intercept-sim-cell';
++import { createInterceptDriver, stepInterceptDriver, type InterceptOut, type InterceptPlan, type InterceptPolicy, type InterceptView } from './intercept-sim-policy';
++import { SimLauncher, SimTorpedoPool } from './intercept-sim-torpedoes';
++import { SimShip, SimTransit, stepSimRadar, type SimShipSpec } from './intercept-sim-world';
++import { createEndSettle, decideMissionEnd, insideRing, promoteAdriftToCleared, stepEndSettle, type EndCheck, type MissionEndReason, type ReturnPoint } from './mission-flow';
++import { litByOwnLight } from './own-light';
++import { createRadarState, createRadarTargets, type RadarGeometry, type RadarState } from './radar';
++import type { RadarParams } from './radar-data';
++import { SeededRng } from './rng';
++import { shallowIndexAt, type GroundingParams, type ShallowRect } from './shallows';
++import { LOOKOUT_SEED_OFFSET, startRetire, type ShipAiParams } from './ship-ai';
++import type { TransitPlan } from './ship-transit';
++import type { TorpedoParams, TorpedoReliability, TorpedoState } from './torpedo';
++import { remainingTorpedoesSettled, type TorpedoEvents } from './torpedo-targets';
++import { interceptHeadingDeg, velocityFromHeading } from './torpedo-solver';
++import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from './visibility';
++
++type Start = { readonly x: number; readonly y: number; readonly headingDeg: number };
++
++/** 1 夜の値（systems/intercept-sim-setup が buildWorldSetup の今夜の値から組む） */
++export interface InterceptSimSetup {
++  readonly hard: boolean; readonly bounds: SeaBounds; readonly boundsMarginM: number; readonly start: Start;
++  readonly boat: BoatParams; readonly damage: DamageParams; readonly crew: CrewParams; readonly crewEffects: CrewEffects;
++  readonly fuelCurve: FuelCurve; readonly fuelStartGal: number; readonly fuelAllotmentGal: number;
++  readonly vis: VisibilityParams; readonly baseDetectM: number; readonly visRange2: number; readonly halfLengthM: number; readonly halfBeamM: number;
++  readonly shallows: readonly ShallowRect[]; readonly grounding: GroundingParams; readonly ring: ReturnPoint; readonly fleetGoneClears: boolean;
++  readonly durationS: number; readonly timeScale: number; readonly stepS: number; readonly slowMoFactor: number; readonly slowMoSeconds: number; readonly retireHeadingDeg: number;
++  readonly torpedo: TorpedoParams; readonly reliability: TorpedoReliability; readonly jitterDeg: number; readonly launchOffsetM: number; readonly salvoIntervalS: number; readonly torpedoCount: number;
++  /** 正しく狙った 1 本の見越しのずれの上限（kpi_measurement.aimed_lead_error_deg_max）と B6 の距離（m） */
++  readonly aimedErrMaxDeg: number; readonly aimedMinM: number; readonly aimedMaxM: number;
++  readonly ship: SimShipSpec; readonly coverAi: ShipAiParams; readonly gunnery: GunneryParams; readonly passRadius2: number; readonly coverStarts: readonly Start[]; readonly objectiveSinks: number;
++  readonly transit: TransitPlan & { readonly speedMps: number; readonly shipAi: ShipAiParams };
++  readonly radar: RadarParams | null; readonly radarGeo: RadarGeometry;
++  /** 世界の見た目の定数（config/ui-config。tests が一致を確かめる）: 砲弾の枠・沈没の演出の秒・漂流で終えるまでの秒。夜明けの後の打ち切りの秒 */
++  readonly shellPoolSize: number; readonly sinkS: number; readonly adriftDelayS: number; readonly afterDawnS: number;
++  readonly plan: InterceptPlan;
++}
++
++/** 試し（tests の突き合わせ・PERF）が毎ステップの終わりに読む世界（読むだけ） */
++export interface InterceptWorldView {
++  readonly t: number; readonly boat: BoatState; readonly ships: readonly SimShip[]; readonly transit: SimTransit; readonly radar: RadarState | null; readonly sinking: boolean;
++  readonly torpedoes: readonly TorpedoState[];
++}
++
++const DRIFT: BoatInput = { headingDeg: NaN, speed01: 0 };
++
++/** 一番近い浮いている艦の添字（無ければ −1。systems/destroyer-group の nearestAfloatIndex と同じ） */
++function nearestAfloat(ships: readonly { readonly state: BoatState; readonly out: boolean }[], x: number, y: number): number {
++  let best = -1;
++  let bestD2 = Infinity;
++  for (let i = 0; i < ships.length; i++) {
++    const s = ships[i]!;
++    if (s.out) continue;
++    const d2 = (s.state.x - x) ** 2 + (s.state.y - y) ** 2;
++    if (d2 < bestD2) {
++      bestD2 = d2;
++      best = i;
++    }
++  }
++  return best;
++}
++
++/**
++ * 台本の目（mission-scene の見越し点マーカーと同じ規則）: 一番近い浮いている艦が視程の 2 乗の内なら、その位置とマーカーの方位（torpedoSpeedMps は game の m/s）。
++ * 見えなければ NaN。世界のヘッドレスの台本（scripts/headless/strait-probe）も同じ関数で目を作る。vel は使い回しの書き先
++ */
++export function fillInterceptEye(v: InterceptView, boat: BoatState, ships: readonly { readonly state: BoatState; readonly out: boolean }[], visRange2: number, torpedoSpeedMps: number, vel: { x: number; y: number }): void {
++  const i = nearestAfloat(ships, boat.x, boat.y);
++  const f = i >= 0 ? ships[i]!.state : null;
++  if (!f || (f.x - boat.x) ** 2 + (f.y - boat.y) ** 2 > visRange2) {
++    v.eyeX = v.eyeY = v.markerDeg = NaN;
++    return;
++  }
++  v.eyeX = f.x;
++  v.eyeY = f.y;
++  velocityFromHeading(f.headingDeg, f.speedMps, vel);
++  v.markerDeg = interceptHeadingDeg(boat.x, boat.y, torpedoSpeedMps, f.x, f.y, vel.x, vel.y) ?? NaN;
++}
++
++/** 1 夜。艇は出発点で止まっていて、台本どおり動く。probe は毎ステップの終わりの世界（試しだけ） */
++export function runInterceptTrial(s: InterceptSimSetup, policy: InterceptPolicy, seed: number, probe?: (w: InterceptWorldView) => void): InterceptTrial {
++  const bp: BoatParams = { ...s.boat };
++  const boat: BoatState = { x: s.start.x, y: s.start.y, headingDeg: s.start.headingDeg, speedMps: 0 };
++  const dmg = createDamageState(s.damage);
++  const fuel = createFuelState(s.fuelStartGal);
++  const lookout = new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0);
++  const gunRng = new SeededRng((seed + 1) >>> 0);
++  const ships: SimShip[] = [];
++  const fires: GunneryState[] = [];
++  for (const st of s.coverStarts) ships.push(new SimShip(st, s.ship, s.coverAi));
++  const leg = s.transit.inbound;
++  for (let i = 0; i < s.transit.ships; i++) ships.push(new SimShip({ x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, s.ship, s.transit.shipAi));
++  for (const d of ships) fires.push(createGunneryState(s.gunnery, s.shellPoolSize, d.state.headingDeg));
++  const coverN = s.coverStarts.length;
++  const transit = new SimTransit(ships, coverN, s.transit);
++  const radar = s.radar ? createRadarState() : null;
++  const tg = createRadarTargets(ships.length);
++  const pool = new SimTorpedoPool(s.torpedo, s.torpedoCount, s.bounds);
++  const launcher = new SimLauncher(pool, new SeededRng(seed >>> 0), s.reliability, s.jitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedo.speedMps);
++  const tr = createInterceptTrial(policy, seed, s.hard);
++  const driver = createInterceptDriver(policy, seed, s.plan);
++  const view: InterceptView = { t: 0, boat, torpedoes: pool.remaining, atHome: false, radar, eyeX: NaN, eyeY: NaN, markerDeg: NaN };
++  const out: InterceptOut = { headingDeg: NaN, speed01: 0, fireN: 0, fireSpreadDeg: 0 };
++  const input: BoatInput = { headingDeg: NaN, speed01: 0 };
++  const vel = { x: 0, y: 0 };
++  const hit: HitOutcome = { destroyed: false, startedFire: false, engineHit: false };
++  const check: EndCheck = { boatSinking: false, atHome: false, torpedoesRunning: false, waitS: 0, timeLeftS: 0, destroyerSinkPlaying: false, fuelEmpty: false, stopped: true, grounded: false, fleetGone: false };
++  const endP = { torpedoSettleMaxS: s.ring.torpedoSettleMaxS, adriftDelayS: s.adriftDelayS, endSettleS: s.ring.torpedoEndSettleS };
++  const settle = createEndSettle();
++  const wv = { t: 0, boat, ships, transit, radar, sinking: false, torpedoes: pool.states };
++  let t = 0;
++  let slowLeft = 0;
++  let sinking = false;
++  let sinkAt = NaN;
++  let sunkReason: MissionEndReason | null = null;
++  let fireReason: MissionEndReason = 'destroyed';
++  let grounded = false;
++  let atHome = false;
++  let dawn = false;
++  let band: SpeedStep = 'stop';
++  let waitS = 0;
++  const sinkBoat = (reason: MissionEndReason): void => {
++    if (sinking) return;
++    sinking = true;
++    sinkAt = t;
++    tr.ownSunk = reason;
++    dmg.hp = 0;
++    dmg.fireLeftS = 0;
++    boat.speedMps = 0;
++    slowLeft = s.slowMoSeconds;
++  };
++  const shellEv: ShellEvents = {
++    onFire: () => {},
++    // 命中（systems/boat-damage の applyHit と mission-world の hitBoat）: 火災・機関の抽選は砲の系列 seed+1、機関は最大速力を下げる
++    onImpact: (gi, _x, _y, h) => {
++      if (!h || sinking) return;
++      tr.shellHits++;
++      applyShellHit(dmg, s.gunnery.guns[gi]!, s.damage, gunRng, hit);
++      if (hit.engineHit) {
++        bp.speedMaxMps = s.boat.speedMaxMps * s.damage.engineSpeedFactor;
++        if (bp.speedCruiseMps > bp.speedMaxMps) bp.speedCruiseMps = bp.speedMaxMps;
++      }
++      if (hit.startedFire) fireReason = 'destroyed';
++      if (hit.destroyed) sinkBoat('destroyed');
++    },
++  };
++  // 魚雷の決着（systems/torpedo-hits と同じ）: 不発でない命中で命中スロー・1 本で沈み始め・すべて出たら残りの一斉発射を捨てる。記録は正しく狙った 1 本（B6 の距離の内）だけ数える
++  const note = (ts: TorpedoState, h: boolean): void => {
++    const kpi = shotKpiTarget(ts.kpiTarget, dawn, s.retireHeadingDeg);
++    if (!kpi || ts.erratic || !(Math.abs(ts.leadErrDeg) <= s.aimedErrMaxDeg) || !(ts.rangeAtLaunchM >= s.aimedMinM && ts.rangeAtLaunchM <= s.aimedMaxM)) return;
++    tr.aimed++;
++    if (h && !ts.dud) tr.aimedHits++;
++  };
++  const ev: TorpedoEvents = {
++    onHit: (target, _x, _y, ts) => {
++      note(ts, true);
++      if (ts.dud) return;
++      tr.hits++;
++      slowLeft = s.slowMoSeconds;
++      const d = ships[target]!;
++      if (!d.takeHit()) return;
++      d.startSinking(t);
++      if (target < coverN) tr.sunkCover++;
++      else tr.sunkColumn++;
++      if (transit.allOut) launcher.clearQueue();
++    },
++    onLateHit: (_target, _x, _y, ts) => {
++      note(ts, true);
++      if (!ts.dud) tr.hits++;
++    },
++    onMiss: (ts) => note(ts, false),
++  };
++  for (;;) {
++    // --- フレームの頭（MissionScene.update: 終わりの窓なら撃たない → updateFrame の入力の消費＝発射の要求と発射管制） ---
++    view.t = t;
++    view.torpedoes = pool.remaining;
++    view.atHome = atHome;
++    fillInterceptEye(view, boat, ships, s.visRange2, s.torpedo.speedMps, vel);
++    if (Number.isNaN(tr.firstSightS) && Number.isFinite(view.eyeX)) tr.firstSightS = t;
++    stepInterceptDriver(driver, view, out);
++    input.headingDeg = out.headingDeg;
++    input.speed01 = out.speed01;
++    const hold = settle.reason !== null;
++    if (hold) launcher.clearQueue();
++    if (!sinking) {
++      if (atHome) {
++        if (transit.allOut) launcher.clearQueue();
++      } else if (!hold && out.fireN > 0) launcher.queueFan(boat, out.fireN, out.fireSpreadDeg);
++      const live = !transit.allOut;
++      const ti = live ? nearestAfloat(ships, boat.x, boat.y) : -1;
++      const ts = launcher.update(s.stepS, boat, live ? ships[ti < 0 ? 0 : ti]!.state : null, ti >= 0 && !dawn);
++      if (ts && !live) ts.resolved = true;
++      else if (ts) tr.fired++;
++    }
++    // --- 固定ステップ（mission-world の stepFn） ---
++    const feelDt = s.stepS * (slowLeft > 0 ? s.slowMoFactor : 1);
++    const dt = feelDt * s.timeScale;
++    t += s.stepS;
++    for (const d of ships) if (d.sinking && !d.sunk && t - d.sinkStartS >= s.sinkS) d.sunk = true;
++    if (!dawn && !sinking && !grounded && dawnReached(s.durationS, t)) {
++      dawn = true;
++      tr.dawnOut = !atHome;
++      for (const d of ships) if (!d.out) startRetire(d.ai, s.retireHeadingDeg);
++    }
++    const lost = crewLost(s.crew, s.damage.maxHp, dmg.hp);
++    setPerformance(bp, s.boat.turnRateDegS, s.boat.accelMps2, crewTurnFactor(s.crewEffects, lost), crewAccelFactor(s.crewEffects, lost));
++    if (!sinking) {
++      if (grounded) boat.speedMps = 0;
++      else {
++        stepBoat(boat, fuel.empty ? DRIFT : input, bp, dt);
++        clampToBounds(boat, s.bounds, s.boundsMarginM);
++        if (boat.speedMps > s.grounding.safeSpeedMps && shallowIndexAt(s.shallows, boat.x, boat.y) >= 0) {
++          grounded = true;
++          boat.speedMps = 0;
++        }
++      }
++      stepFuel(fuel, s.fuelCurve, boat.speedMps, dt);
++      atHome = insideRing(s.ring, boat.x, boat.y);
++    }
++    band = nextSpeedBand(band, boat.speedMps, bp);
++    const detectM = enemyDetectRangeM(s.baseDetectM, speedFactorForBand(band, s.vis.speedFactor), s.vis, false);
++    // 敵の側（systems/destroyer-step）: 艦 → 列の通過 → 一斉発射の破棄 → 外れの確定 → 魚雷 → 体当たり → 探照灯・星弾・砲（僚艇なし・照明弾なし）→ レーダー（world-enemy-step の最後）
++    let left = false;
++    for (const d of ships) if (d.step(dt, feelDt, boat, detectM, s.vis.detectHoldS, pool.states, s.bounds, lookout)) left = true;
++    if (transit.step(t, dawn, feelDt)) left = true;
++    if (left && transit.allOut) launcher.clearQueue();
++    if (transit.pending === 0 && remainingTorpedoesSettled(ships, t, s.ring.torpedoEndSettleS)) pool.resolveRemainingAsMisses(ev);
++    for (const d of ships) if (!d.out && d.ai.playerDetected) tr.detected = true;
++    pool.step(dt, feelDt, ships, s.passRadius2, ev, t, s.ring.torpedoEndSettleS);
++    if (!sinking) {
++      for (let i = 0; i < ships.length; i++) {
++        if (!ships[i]!.touchesBoat(boat, s.halfLengthM)) continue;
++        tr.rammedBy = i < coverN ? RAM_COVER : RAM_COLUMN;
++        sinkBoat('rammed');
++        break;
++      }
++    }
++    for (let i = 0; i < ships.length; i++) {
++      const d = ships[i]!;
++      let lit = false;
++      for (let k = 0; k < ships.length; k++) if (k !== i && !ships[k]!.out && litByOwnLight(fires[k]!)) lit = true;
++      updateIllumination(fires[i]!, d.state, boat, d.ai.playerDetected && !d.out, s.gunnery, feelDt, false, lit);
++      updateGuns(fires[i]!, d.state, boat, !d.out && !sinking, s.halfLengthM, s.halfBeamM, s.gunnery, gunRng, feelDt, dt, shellEv);
++    }
++    if (radar && s.radar) stepSimRadar(radar, s.radar, s.radarGeo, tg, t, boat, ships);
++    if (!sinking && stepDamage(dmg, s.damage, feelDt)) sinkBoat(fireReason);
++    if (dawn && !atHome && !sinking) tr.dawnOut = true;
++    // --- フレームの終わり（命中スローの残り → MissionScene の待ちの秒と終わり。沈没の演出 sinkS の後に沈没の理由が入る） ---
++    if (slowLeft > 0) slowLeft -= s.stepS;
++    if (probe) {
++      wv.t = t;
++      wv.sinking = sinking;
++      probe(wv);
++    }
++    if (atHome || grounded || (fuel.empty && band === 'stop')) waitS += s.stepS;
++    else waitS = 0;
++    if (sinking && sunkReason === null && t - sinkAt >= s.sinkS) sunkReason = tr.ownSunk;
++    check.boatSinking = sinking;
++    check.atHome = atHome;
++    check.torpedoesRunning = pool.unresolvedCount > 0 || launcher.queued > 0;
++    check.waitS = waitS;
++    check.timeLeftS = Math.max(0, s.durationS - t);
++    let playing = false;
++    for (const d of ships) if (d.sinking && !d.sunk) playing = true;
++    check.destroyerSinkPlaying = playing;
++    check.fuelEmpty = fuel.empty;
++    check.stopped = band === 'stop';
++    check.grounded = grounded;
++    check.fleetGone = s.fleetGoneClears && transit.allOut;
++    const running = sinking ? pool.unresolvedCount > 0 : check.torpedoesRunning;
++    let reason: MissionEndReason | 'cut' | null = null;
++    if (!promoteAdriftToCleared(settle, t, sinking, check.fleetGone, playing)) reason = stepEndSettle(settle, t, sinking, sunkReason, decideMissionEnd(check, endP), running, endP.endSettleS);
++    if (reason === null && dawn && t >= s.durationS + s.afterDawnS) reason = 'cut';
++    if (reason === null) continue;
++    tr.reason = reason;
++    tr.endS = t;
++    tr.fuelPct = (100 * fuel.gal) / s.fuelAllotmentGal;
++    tr.hpLeft = dmg.hp;
++    tr.firstContactS = radar ? radar.firstS : NaN;
++    return tr;
++  }
++}
+diff --git a/src/systems/intercept-calibration.ts b/src/systems/intercept-calibration.ts
+new file mode 100644
+index 0000000..dbfa6dc
+--- /dev/null
++++ b/src/systems/intercept-calibration.ts
+@@ -0,0 +1,90 @@
++// 迎撃の模擬（v0.8.0 S3。us_04「ブラケット海峡の夜」）の帯（spec-v0800 §4.11 の B1〜B6・ハード、§4.6 の燃料。lead の L20・L21）。帯の数は spec の決めなので動かさない。
++// 合わせるのは data のつまみだけ（spec §4.11 の順: ① B6 → transit.speed_kt ② B1・B2 → radar.models.so_early の ship_range_m・sweep_s ③ B3・B4 → transit.outbound.lane_y_m・
++// unload_s ④ 燃料 → fuel_allotment_gal。敵の回避・見張り・砲・命中率の値には触れない）。scripts/intercept-sim の TABLE=2（N 400 × 2 組）と scripts/headless/g2.sh の US04=1 が
++// この帯で「帯: すべて ✓」を出し、tests/intercept-sim-b が軽い組で同じ帯を見る。B6 は CLAUDE.md §2 の KPI（正しく狙った 1 本 35〜45%）を列の艦に測る（core/intercept-sim-world の
++// columnShot。kpi_measurement.sim の方位・ずれ・回数・seed で、距離は 700〜1,100 m の 100 m おき＝core/hit-rate-sim の simulateBands と同じ数え方）。Phaser 非依存。
++import type { GameData } from '../config/game-data';
++import type { InterceptSimSetup } from '../core/intercept-sim';
++import type { InterceptCell } from '../core/intercept-sim-cell';
++import type { InterceptPolicy } from '../core/intercept-sim-policy';
++import { columnShot } from '../core/intercept-sim-world';
++import { simBearings } from '../core/hit-rate-sim';
++import { SeededRng } from '../core/rng';
++import { INTERCEPT_B6_MAX_M, INTERCEPT_B6_MIN_M } from './intercept-sim-setup';
++
++/** 帯（spec §4.11・§4.6）: B1 撃沈・沈没・帰投、B2 目だけとの差、B3・B4 衝突、B5 突っ込む沈没、B6 列への 1 本、ハードの B1、燃料（帰投の夜の中央値） */
++export const INTERCEPT_BANDS = {
++  b1Sink: [35, 60] as const, b1OwnMax: 15, b1HomeMin: 80, b2Gap: 15, b3RamMin: 20, b4RamMax: 5, b5OwnMin: 40, b6: [35, 45] as const,
++  hardSink: [35, 65] as const, hardOwnMax: 25, fuel: [15, 35] as const,
++} as const;
++/** B6 の距離（m。700〜1,100 m の 100 m おき） */
++export const INTERCEPT_B6_RANGES_M: readonly number[] = [700, 800, 900, 1000, 1100];
++
++export interface InterceptBandCheck {
++  id: string;
++  text: string;
++  ok: boolean;
++}
++
++export interface InterceptB6 {
++  shots: number;
++  hits: number;
++  pct: number;
++}
++
++/** B6: 列の艦（setup の列の AI・列の速さ）へ正しく狙った 1 本。解けない組（艦が速い＝真横や後ろからは追いつけない）は数えない（simulateBands と同じ） */
++export function interceptB6(data: GameData, s: InterceptSimSetup): InterceptB6 {
++  const sim = data.hitRateModel.kpi_measurement.sim;
++  const rng = new SeededRng(sim.seed >>> 0);
++  const tr = s.transit;
++  let shots = 0;
++  let hits = 0;
++  for (const r of INTERCEPT_B6_RANGES_M) {
++    if (r < INTERCEPT_B6_MIN_M || r > INTERCEPT_B6_MAX_M) throw new Error(`B6 の距離 ${r} m は ${INTERCEPT_B6_MIN_M}〜${INTERCEPT_B6_MAX_M} m`);
++    for (const bg of simBearings(sim.bearing_step_deg)) {
++      for (const e of sim.aim_errors_deg) {
++        for (let k = 0; k < sim.reps; k++) {
++          const h = columnShot(s.ship, tr.shipAi, tr.speedMps, s.torpedo, s.passRadius2, s.timeScale, s.stepS, r, bg, e, rng);
++          if (h === null) break;
++          shots++;
++          if (h) hits++;
++        }
++      }
++    }
++  }
++  return { shots, hits, pct: shots > 0 ? (100 * hits) / shots : NaN };
++}
++
++const inBand = (x: number, b: readonly [number, number]): boolean => Number.isFinite(x) && x >= b[0] && x <= b[1];
++const f1 = (x: number): string => (Number.isFinite(x) ? x.toFixed(1) : '—');
++
++/** 帯の検査（行の無い帯は出さない）。b6 は interceptB6（ハードは B6 を見ない＝列の艦はノーマルと同じ） */
++export function interceptBandChecks(cells: ReadonlyMap<InterceptPolicy, InterceptCell>, hard: boolean, b6: InterceptB6 | null): InterceptBandCheck[] {
++  const B = INTERCEPT_BANDS;
++  const out: InterceptBandCheck[] = [];
++  const add = (id: string, text: string, ok: boolean): void => void out.push({ id, text, ok });
++  const amb = cells.get('radar_ambush');
++  if (hard) {
++    if (amb) {
++      add('H1', `ハード radar_ambush の 1 隻以上撃沈 ${f1(amb.sinkPct)}% は ${B.hardSink[0]}〜${B.hardSink[1]}%`, inBand(amb.sinkPct, B.hardSink));
++      add('H2', `ハード radar_ambush の自艇の沈没 ${f1(amb.ownSunkPct)}% ≤ ${B.hardOwnMax}%`, amb.ownSunkPct <= B.hardOwnMax);
++    }
++    return out;
++  }
++  if (amb) {
++    add('B1a', `radar_ambush の 1 隻以上撃沈 ${f1(amb.sinkPct)}% は ${B.b1Sink[0]}〜${B.b1Sink[1]}%`, inBand(amb.sinkPct, B.b1Sink));
++    add('B1b', `radar_ambush の自艇の沈没 ${f1(amb.ownSunkPct)}% ≤ ${B.b1OwnMax}%`, amb.ownSunkPct <= B.b1OwnMax);
++    add('B1c', `radar_ambush の帰投 ${f1(amb.homePct)}% ≥ ${B.b1HomeMin}%`, amb.homePct >= B.b1HomeMin);
++  }
++  const eye = cells.get('eye_only');
++  if (eye && amb) add('B2', `eye_only の 1 隻以上撃沈 ${f1(eye.sinkPct)}% ≤ radar_ambush ${f1(amb.sinkPct)} − ${B.b2Gap} 点`, eye.sinkPct <= amb.sinkPct - B.b2Gap);
++  const idle = cells.get('idle_lane');
++  if (idle) add('B3', `idle_lane の衝突・体当たり ${f1(idle.rammedPct)}% ≥ ${B.b3RamMin}%`, idle.rammedPct >= B.b3RamMin);
++  const dodge = cells.get('radar_dodge');
++  if (dodge) add('B4', `radar_dodge の衝突・体当たり ${f1(dodge.rammedPct)}% ≤ ${B.b4RamMax}%`, dodge.rammedPct <= B.b4RamMax);
++  const charge = cells.get('charge');
++  if (charge) add('B5', `charge の自艇の沈没 ${f1(charge.ownSunkPct)}% ≥ ${B.b5OwnMin}%`, charge.ownSunkPct >= B.b5OwnMin);
++  if (b6) add('B6', `列への正しく狙った 1 本（${INTERCEPT_B6_MIN_M}〜${INTERCEPT_B6_MAX_M} m）${f1(b6.pct)}%（${b6.hits}/${b6.shots}）は ${B.b6[0]}〜${B.b6[1]}%`, inBand(b6.pct, B.b6));
++  if (amb) add('F', `radar_ambush の帰投の夜の燃料の中央値 ${f1(amb.fuelMed)}% は ${B.fuel[0]}〜${B.fuel[1]}%`, inBand(amb.fuelMed, B.fuel));
++  return out;
++}
+diff --git a/src/systems/intercept-sim-setup.ts b/src/systems/intercept-sim-setup.ts
+new file mode 100644
+index 0000000..4215ae3
+--- /dev/null
++++ b/src/systems/intercept-sim-setup.ts
+@@ -0,0 +1,81 @@
++// 迎撃の模擬の組み立て（v0.8.0 S3。us_04「ブラケット海峡の夜」。spec-v0800 §4.11、lead の L19・L21）: 1 夜ごとに buildWorldSetup(data, 'us_04', 出撃の seed) の値から
++// core/intercept-sim の設定を作る（今夜の揺らぎ＝seed+16 の護衛のずれ・列の入りの秒と道の y・水上機と誤射の有無は世界と同じ道。模擬は水上機と誤射を持たない）。
++// つまみ（spec §4.11 の順の data の鍵）の上書きは記録を写して buildWorldSetup に通す＝起動時の検査（V-R・V-T・V-S）も通る（通らない値は例外）。
++// Phaser 非依存・window を読まない（tests/intercept-sim-* と scripts/intercept-sim が使う。ゲームは使わない）。
++import type { GameData } from '../config/game-data';
++import { FIXED_STEP_S } from '../config/step-config';
++import { retireHeadingDeg } from '../core/dawn-withdraw';
++import type { InterceptSimSetup } from '../core/intercept-sim';
++import { INTERCEPT_HUMAN } from '../core/intercept-sim-policy';
++import { directSortie } from '../core/sortie';
++import { landLinesFromShores } from '../core/strait-geometry';
++import { buildWorldSetup } from './world-setup';
++
++export const INTERCEPT_SIM_MISSION = 'us_04';
++/** config/ui-config の SHELL_POOL_SIZE（48）・SINK_DURATION_MS（2000 ms）・MISSION_END_DELAY_MS（1500 ms）と同じ（ui-config は画面の game-config を読むので node の模擬から読まない。tests/intercept-sim-a が一致を確かめる） */
++export const INTERCEPT_SIM_SHELL_POOL = 48;
++export const INTERCEPT_SIM_SINK_S = 2;
++export const INTERCEPT_SIM_ADRIFT_DELAY_S = 1.5;
++/** 夜明けの後の打ち切り（実秒。夜明けの空襲は模擬しない＝輪の外のままなら 'cut'） */
++export const INTERCEPT_SIM_AFTER_DAWN_S = 60;
++/** B6 の距離（lead の L20: 列への正しく狙った 1 本の 700〜1,100 m） */
++export const INTERCEPT_B6_MIN_M = 700;
++export const INTERCEPT_B6_MAX_M = 1100;
++
++/** spec §4.11 のつまみ（data の鍵。undefined は data のまま）: ① transit.speed_kt ② radar.models.so_early の ship_range_m・sweep_s ③ transit.outbound.lane_y_m・transit.unload_s ④ fuel_allotment_gal */
++export interface InterceptKnobs {
++  speedKt?: number;
++  shipRangeM?: number;
++  sweepS?: number;
++  laneY?: number;
++  unloadS?: number;
++  fuelGal?: number;
++}
++
++type Rec = Record<string, unknown>;
++
++/** つまみを当てた data の写し（つまみが無ければそのまま） */
++export function withInterceptKnobs(data: GameData, k: InterceptKnobs): GameData {
++  if (Object.values(k).every((v) => v === undefined)) return data;
++  const missions = (data.missionsSeed.missions as readonly Rec[]).map((m) => {
++    if (m['id'] !== INTERCEPT_SIM_MISSION) return m;
++    const proto = m['v0_1_prototype'] as Rec;
++    const tr = proto['transit'] as Rec;
++    const out = tr['outbound'] as Rec;
++    const transit = { ...tr, speed_kt: k.speedKt ?? tr['speed_kt'], unload_s: k.unloadS ?? tr['unload_s'], outbound: { ...out, lane_y_m: k.laneY ?? out['lane_y_m'] } };
++    return { ...m, v0_1_prototype: { ...proto, transit, fuel_allotment_gal: k.fuelGal ?? proto['fuel_allotment_gal'] } };
++  });
++  const radar = data.hitRateModel.radar as unknown as Rec;
++  const models = radar['models'] as Rec;
++  const early = models['so_early'] as Rec;
++  const so_early = { ...early, ship_range_m: k.shipRangeM ?? early['ship_range_m'], sweep_s: k.sweepS ?? early['sweep_s'] };
++  const hitRateModel = { ...data.hitRateModel, radar: { ...radar, models: { ...models, so_early } } };
++  return { ...data, hitRateModel, missionsSeed: { ...data.missionsSeed, missions } } as unknown as GameData;
++}
++
++/** 1 夜の設定（seed は出撃の seed＝今夜の揺らぎ。模擬の発射管制・砲・見張りも同じ seed の系列）。data はつまみを当てた写しでよい */
++export function interceptNightSetup(data: GameData, seed: number, hard: boolean): InterceptSimSetup {
++  const w = buildWorldSetup(data, INTERCEPT_SIM_MISSION, { sortie: directSortie(INTERCEPT_SIM_MISSION, seed, 'none', hard, false), hard });
++  const ds = w.destroyer;
++  const tr = w.transit;
++  if (!ds || !tr || !w.dawnAir.retireEdge) throw new Error(`${INTERCEPT_SIM_MISSION} に護衛（enemy_start）・列の通過（transit）・夜明けに退く縁（dawn_withdraw）が要る`);
++  const m = w.mission;
++  const b = w.boatParams;
++  return {
++    hard, bounds: m.bounds, boundsMarginM: w.boundsMarginM, start: w.playerStart,
++    boat: b, damage: w.damageParams, crew: w.crew, crewEffects: w.crewEffects, fuelCurve: w.fuelCurve, fuelStartGal: w.fuelStartGal, fuelAllotmentGal: w.fuelAllotmentGal,
++    vis: w.vis, baseDetectM: w.baseDetectM, visRange2: w.visRange2, halfLengthM: w.boatHalfLengthM, halfBeamM: w.boatHalfBeamM,
++    shallows: m.shallows, grounding: w.grounding, ring: m.returnPoint, fleetGoneClears: w.dawnAir.fleetGoneClears,
++    durationS: w.durationS, timeScale: w.timeScale, stepS: FIXED_STEP_S, slowMoFactor: w.slowMoFactor, slowMoSeconds: w.slowMoSeconds, retireHeadingDeg: retireHeadingDeg(w.dawnAir.retireEdge, w.night.mirrored),
++    torpedo: w.torpedoParams, reliability: w.torpedoReliability, jitterDeg: w.torpedoJitterDeg, launchOffsetM: w.launchOffsetM, salvoIntervalS: w.salvoIntervalS, torpedoCount: w.torpedoCapacity,
++    aimedErrMaxDeg: data.hitRateModel.kpi_measurement.aimed_lead_error_deg_max, aimedMinM: INTERCEPT_B6_MIN_M, aimedMaxM: INTERCEPT_B6_MAX_M,
++    ship: ds.spec, coverAi: ds.shipAi, gunnery: ds.gunnery, passRadius2: ds.passRadius2, coverStarts: ds.starts, objectiveSinks: ds.objectiveSinks ?? ds.starts.length + tr.ships,
++    transit: tr, radar: w.radar ?? null, radarGeo: { width: m.bounds.width, height: m.bounds.height, land: w.shores ? landLinesFromShores(w.shores, m.bounds.width, m.bounds.height) : [] },
++    shellPoolSize: INTERCEPT_SIM_SHELL_POOL, sinkS: INTERCEPT_SIM_SINK_S, adriftDelayS: INTERCEPT_SIM_ADRIFT_DELAY_S, afterDawnS: INTERCEPT_SIM_AFTER_DAWN_S,
++    plan: {
++      width: m.bounds.width, height: m.bounds.height, ringX: m.returnPoint.x, ringY: m.returnPoint.y, ringR: m.returnPoint.radiusM, dawnS: w.durationS,
++      silent01: (b.silentMaxMps / b.speedMaxMps) * INTERCEPT_HUMAN.silentFrac, cruise01: b.speedCruiseMps / b.speedMaxMps, spacingDeg: data.hitRateModel.torpedo_launch.salvo_spacing_deg,
++      torpedoScreenMps: w.torpedoParams.speedMps * w.timeScale, fullScreenMps: b.speedMaxMps * w.timeScale, reefs: m.shallows,
++    },
++  };
++}

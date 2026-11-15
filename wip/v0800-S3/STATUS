@@ -1,0 +1,4 @@
+v0.8.0 S3 (intercept sim) — WIP backup. Base f9ba94f (claude/v0.8.0-us-campaign). Apply: git apply s3.patch
+State: sim files written (core/intercept-sim, -world, -torpedoes, -tracks, -policy, -cell; systems/intercept-sim-setup, intercept-calibration; scripts/intercept-sim). 
+Not yet: first table, knobs, g2 US04=1, tests a/b, strait-probe, CHANGELOG.
+Notes: policies being frozen; findings so far: the cover patrol + 3-ship gunfire dominate own sinking; full-speed escape (spec text) is detected at 1,920 m.
