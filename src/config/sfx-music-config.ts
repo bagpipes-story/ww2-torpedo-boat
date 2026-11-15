@@ -11,13 +11,14 @@ export const MUSIC_SAMPLE_RATE = 22050;
 export const MUSIC_PEAK = 0.9;
 
 /**
- * 曲の鍵（5 本＝タイトルの曲 D と聞き比べの D（前）、任務の層 L0 静か・L1 緊張・L2 戦闘）。効果音の SFX_KEYS とは別の表（§13 L5。tests が重ならないことを固定）。
+ * 曲の鍵（4 本＝タイトルの曲 D、任務の層 L0 静か・L1 緊張・L2 戦闘）。効果音の SFX_KEYS とは別の表（§13 L5。tests が重ならないことを固定）。
  * v0.7.2 IP1: B（ユーザー「ファミコンの RPG みたい」）と C を消し、126 BPM の D・E を足した（記号は消した B・C と取り違えないように D・E）。
- * v0.7.2 IP2（ユーザーの決め U-M2「タイトルはDでいきます。Dをさらに名曲となるようにリメイクしてください」）: A・E を消し、D を作り直した（title_d）。IP1 の D は試聴の場の聞き比べだけ（title_d_prev）
+ * v0.7.2 IP2（ユーザーの決め U-M2「タイトルはDでいきます。Dをさらに名曲となるようにリメイクしてください」）: A・E を消し、D を作り直した（title_d）。IP1 の D は聞き比べだけ（title_d_prev）。
+ * v0.7.2 S4（実機 3 回目「OKです。進めてください」＝作り直した D を受け入れた）: 聞き比べの title_d_prev「D（前）」を消した（種 7609 は空けたまま。tests/sfx-music-kit が試験の材料に写しを持つ）
  */
-export const MUSIC_KEYS = ['title_d', 'title_d_prev', 'mission_l0', 'mission_l1', 'mission_l2'] as const;
+export const MUSIC_KEYS = ['title_d', 'mission_l0', 'mission_l1', 'mission_l2'] as const;
 export type MusicKey = (typeof MUSIC_KEYS)[number];
-export const MUSIC_TITLE_KEYS: readonly MusicKey[] = ['title_d', 'title_d_prev'];
+export const MUSIC_TITLE_KEYS: readonly MusicKey[] = ['title_d'];
 /** 任務の 3 層（同じ when で始めて音量だけを変える。L0・L1 は 8 小節、L2 は 2 小節＝8 小節を 4 回で割り切る） */
 export const MUSIC_LAYER_KEYS: readonly MusicKey[] = ['mission_l0', 'mission_l1', 'mission_l2'];
 
@@ -25,18 +26,17 @@ export const MUSIC_LAYER_KEYS: readonly MusicKey[] = ['mission_l0', 'mission_l1'
 export const MUSIC_BPMS = [63, 70, 75, 90, 98, 105, 126] as const;
 export type MusicBpm = (typeof MUSIC_BPMS)[number];
 /**
- * 鍵ごとの長さ（標本＝小節 × 拍 × 4 × 16 分の標本。spec §3.5・§3.6）: D と D（前）は 126 BPM 4/4 16 小節（30.48 秒）・任務 90 BPM 4/4。
+ * 鍵ごとの長さ（標本＝小節 × 拍 × 4 × 16 分の標本。spec §3.5・§3.6）: D は 126 BPM 4/4 16 小節（30.48 秒）・任務 90 BPM 4/4。
  * v0.7.2 IP2: D は IP1 と同じ長さ（ゲームの常駐 D ＋家族 1,730,400 標本は IP1 と同じ・作る時間もほぼ同じ）
  */
 export const MUSIC_LENGTHS: Readonly<Record<MusicKey, number>> = {
-  title_d: 672_000, title_d_prev: 672_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600,
+  title_d: 672_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600,
 };
 
 // 曲だけの乱数の種（作曲は new SeededRng(SFX_SEED_MUSIC_<鍵>) だけ。7601〜7699＝効果音 7501〜7531・7599、絵の ART_SEED_*（70xx〜74xx）と重ねない）。
-// D（前）・L0〜L2 は scripts/sfx-music.ts が「§3.1・§3.2 の決まりを全部通る最初の種」を鍵の順に（前の鍵の種の次から）探して決めた数のまま（IP2 で A 7603・E 7627 を消しても動かさない
-// ＝標本は IP1 とビット同一）。v0.7.2 IP2: D は MUSIC_SEED_SEARCH_D の区間の種のうち、旋律の点（assets/sfx-music-score）が一番高い種（ゲームの中では探さない）
+// L0〜L2 は scripts/sfx-music.ts が「§3.1・§3.2 の決まりを全部通る最初の種」を鍵の順に（前の鍵の種の次から）探して決めた数のまま（IP2 で A 7603・E 7627・S4 で D（前）7609 を消しても
+// 動かさない＝標本は IP1 とビット同一）。v0.7.2 IP2: D は MUSIC_SEED_SEARCH_D の区間の種のうち、旋律の点（assets/sfx-music-score）が一番高い種（ゲームの中では探さない）
 export const SFX_SEED_MUSIC_D = 760_160;
-export const SFX_SEED_MUSIC_D_PREV = 7609;
 export const SFX_SEED_MUSIC_L0 = 7628;
 export const SFX_SEED_MUSIC_L1 = 7629;
 export const SFX_SEED_MUSIC_L2 = 7630;
@@ -59,7 +59,7 @@ export const MUSIC_MASTER_GAIN = 0.8;
  * （MUSIC_MOOD_WEIGHTS）で静か・緊張・戦闘の目標になる数。scripts/sfx-music.ts が今の標本から出した数（標本を作り直したら出し直す）
  */
 export const MUSIC_GAIN: Readonly<Record<MusicKey, number>> = {
-  title_d: 0.501, title_d_prev: 0.481, mission_l0: 0.152, mission_l1: 0.134, mission_l2: 0.255,
+  title_d: 0.501, mission_l0: 0.152, mission_l1: 0.134, mission_l2: 0.255,
 };
 
 /** 任務の段（S2 の core/sfx-music-mood）: 0 静か・1 緊張（見つかった）・2 戦闘（撃たれている）・3 沈み始め（v0.7.2 S2。3 層とも sinkFadeS で 0。段の重さの表の外） */
@@ -151,7 +151,7 @@ export const MUSIC_BUILD_MIN_BUDGET = 2048;
  * （段の一回り＝0 で埋める以外の数え・掛けは軽いので passShare 倍に数える）。分け方だけが変わる＝標本はビット同一（作り終えるのが少し遅れる）
  */
 export const MUSIC_BUILD_WARM = { samples: 600_000, perCall: 20_000, passShare: 0.25 } as const;
-/** 常駐の上限（標本）: ゲームの中はタイトルの曲 D 1 本＋任務の家族 3 層 ≤ 180 万標本（7.2 MB。効果音 644,962 標本は別）。試聴の場は D・D（前）＋家族 ≤ 280 万（約 11 MB） */
+/** 常駐の上限（標本）: ゲームの中はタイトルの曲 D 1 本＋任務の家族 3 層 ≤ 180 万標本（7.2 MB。効果音 644,962 標本は別）。試聴の場 ≤ 280 万（約 11 MB。v0.7.2 S4 で D（前）を消してからは場でもゲームと同じ 1,730,400） */
 export const MUSIC_MAX_RESIDENT_SAMPLES = 1_800_000;
 export const MUSIC_LAB_MAX_SAMPLES = 2_800_000;
 /** 作業用の配列（1 本を一番長い鍵の長さで 1 回だけ作って使い回す＝R2。作り終えたら写して捨ててよい） */

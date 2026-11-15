@@ -1,5 +1,6 @@
 // v0.7.2 IP2（実機 2 回目）: 旋律の点（assets/sfx-music-score の musicality）を固定する。決まりごとに、わざと破った旋律で点が効くこと・選んだ種が区間の中で点が一番高いこと
 // （scripts/sfx-music.ts の SEARCH=1 と同じ並べ方＝点の高い順・同じ点なら小さい種）・IP1 の D（前）より新しい D の方が点が高いことを確かめる。
+// v0.7.2 S4: D（前）はゲームから消した（比べは tests/sfx-music-kit の写し PREV_THEME で続ける）。
 // 決まり: 動機の戻り 3 回以上・山（一番高い音）は 1 回で輪の 75〜90%・音域 9 度〜13 度（13〜21 半音）・跳躍はオクターブまで・同じ音は 2 回まで・melodyCheck の決まり（跳躍の戻りなど）。
 import { describe, expect, it } from 'vitest';
 import { MUSIC_SEED_SEARCH_D, SFX_SEED_MUSIC_D } from '../src/config/sfx-music-config';
@@ -7,8 +8,9 @@ import { composeMusic, type MusicScore } from '../src/assets/sfx-music-compose';
 import { MUSICALITY_RULES, MUSICALITY_WEIGHTS, musicality, type MusicalityPart } from '../src/assets/sfx-music-score';
 import { MUSIC_THEMES, musicRng } from '../src/assets/sfx-music-themes';
 import { SeededRng } from '../src/core/rng';
+import { prevScore } from './sfx-music-kit';
 
-const D = composeMusic(MUSIC_THEMES.title_d, musicRng('title_d')), PREV = composeMusic(MUSIC_THEMES.title_d_prev, musicRng('title_d_prev'));
+const D = composeMusic(MUSIC_THEMES.title_d, musicRng('title_d')), PREV = prevScore();
 const R = musicality(D);
 /** 旋律の音を f で直した楽譜（点は旋律だけを読む） */
 function edit(sc: MusicScore, f: (p: number[]) => void): MusicScore {

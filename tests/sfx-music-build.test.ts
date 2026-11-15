@@ -4,7 +4,7 @@
 // - ゲームの列は既定のタイトルの曲だけ（S1＝L6）→ S2 で任務の家族 L0〜L2 を後ろに足した（§13 L1: Title・Briefing の間に同じ予算で作り、任務をまたいで使い回す）。できた buffer は
 //   ゲームの標本そのもの（tests/sfx-music-render の指紋）で、曲ごとに buffer は 1 本だけ。列が空になれば作業用の配列を捨て、表は残す。任務（MISSION）はまだ無い層の最初を先に作る。
 // - 試聴の場（L14）: 押した候補を作ってから鳴らす・別の候補はできるまで今のが鳴り、できたら 0.5 秒で重ねる・出ると候補の標本を捨てる（ゲームの列の曲は残す）。作りかけの既定の曲は押した候補に譲る。
-// - v0.7.2 IP2: タイトルの曲は D（ユーザーの決め）・試聴の場の候補は D（前）だけ（A・E を消した）。
+// - v0.7.2 IP2: タイトルの曲は D（ユーザーの決め）・試聴の場の候補は D（前）だけ（A・E を消した）。S4: D（前）も消した＝試聴の場の候補は D と任務の家族（どれもゲームの列の曲）。
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   MUSIC_CTX_LAB, MUSIC_CTX_MENU, MUSIC_CTX_MISSION, MUSIC_CTX_NONE, MUSIC_FADE, MUSIC_KEYS, MUSIC_LAB_MAX_SAMPLES, MUSIC_LAYER_KEYS, MUSIC_LENGTHS, MUSIC_MAX_RESIDENT_SAMPLES, MUSIC_SAMPLE_RATE,
@@ -84,58 +84,53 @@ describe('作る列（D4・L6〜L9）', () => {
 });
 
 describe('曲の試聴の場（L14）', () => {
-  it('押した候補を作ってから鳴らす（作っている間は進み）・別の候補はできるまで今のが鳴り、できたら 0.5 秒で重ねる・同じ口で止める・出ると候補の標本を捨てる（v0.7.2 IP2: D（前）→ D（今））', () => {
+  it('押した候補を作ってから鳴らす（作っている間は進み）・別の候補（任務の家族）はできるまで今のが鳴り、できたら 0.5 秒で重ねる・同じ口で止める・出てもゲームの列の曲は残す（v0.7.2 S4: D（前）を消し、候補はどれもゲームの曲）', () => {
     const x = setup();
     registerSfxEngine(x.e);
     x.e.music.allowBuild();
     sfxMusic(MUSIC_CTX_LAB);
-    sfxMusicAudition('title_d_prev');
+    sfxMusicAudition(MUSIC_TITLE_DEFAULT_ID);
     run(x, 3 * FRAME_S);
-    expect(sfxMusicLabBuilding()).toBe('title_d_prev');
+    expect(sfxMusicLabBuilding()).toBe(MUSIC_TITLE_DEFAULT_ID);
     run(x, 10 * FRAME_S);
     expect(sfxMusicLabProgress()).toBeGreaterThan(0);
     expect(sfxMusicLabPlaying()).toBeNull();
     buildAll(x);
     run(x, 0.12);
-    expect(sfxMusicLabPlaying()).toBe('title_d_prev');
+    expect(sfxMusicLabPlaying()).toBe(MUSIC_TITLE_DEFAULT_ID);
     const b = unstopped(x)[0]!;
-    expect(fingerprint16(b.buffer!.data)).toBe(FINGERPRINTS.title_d_prev);
-    sfxMusicAudition('title_d'); // ゲームの曲（列の頭）。できるまで D（前）が鳴る
+    expect(fingerprint16(b.buffer!.data)).toBe(FINGERPRINTS.title_d);
+    sfxMusicAudition('mission_l0'); // 任務の家族（L0 の鍵）。3 層ができるまで D が鳴る
     run(x, 0.5);
-    expect([sfxMusicLabBuilding(), sfxMusicLabPlaying(), b.stopped]).toEqual(['title_d', 'title_d_prev', false]);
-    for (let f = 0; f < 3000 && sfxMusicLabBuilding() === 'title_d'; f++) run(x, FRAME_S);
+    expect([sfxMusicLabBuilding(), sfxMusicLabPlaying(), b.stopped]).toEqual(['mission_l0', MUSIC_TITLE_DEFAULT_ID, false]);
+    expect(buildList(x)).toBeGreaterThan(10); // 3 層（列が空になって作業用の配列を捨てるまで）
     run(x, 0.12);
-    const c = unstopped(x)[0]!;
-    expect([sfxMusicLabPlaying(), b.stopped, c.buffer === b.buffer]).toEqual(['title_d', true, false]);
+    const fam = unstopped(x);
+    expect([sfxMusicLabPlaying(), b.stopped, fam.length]).toEqual(['mission_l0', true, MUSIC_LAYER_KEYS.length]);
     expect(b.stopAt - x.ctx.currentTime).toBeLessThanOrEqual(MUSIC_FADE.labCrossS);
-    const slot = graph(x.ctx, x.e).music.slots.find((n) => c.outs.includes(n))!;
-    expect(slot.gain.events[2]![3]).toBeCloseTo(MUSIC_FADE.labCrossS * TC, 9);
-    expect(fingerprint16(c.buffer!.data)).toBe(FINGERPRINTS.title_d);
+    expect(new Set(fam.map((s) => s.started)).size).toBe(1); // 3 層は同じ when
+    expect(fam.map((s) => fingerprint16(s.buffer!.data))).toEqual(MUSIC_LAYER_KEYS.map((k) => FINGERPRINTS[k]));
     let st = x.e.music.stats();
     expect(st.resident).toBeLessThanOrEqual(MUSIC_LAB_MAX_SAMPLES);
     sfxMusicAudition(null);
-    expect([sfxMusicLabPlaying(), c.stopped]).toEqual([null, true]);
-    buildAll(x); // 押していない間はゲームの列（家族の L0）を作る
+    expect([sfxMusicLabPlaying(), fam.every((s) => s.stopped)]).toEqual([null, true]);
+    sfxMusic(MUSIC_CTX_NONE); // 出る: 候補はどれもゲームの列の曲なので捨てない（D と家族は Title・任務でそのまま使う）
     st = x.e.music.stats();
-    expect(st.buffers).toBe(3);
-    sfxMusic(MUSIC_CTX_NONE); // 出る: D（前）だけ捨てる（ゲームの列の D と L0 は残す）
-    st = x.e.music.stats();
-    expect([st.buffers, st.resident]).toEqual([2, MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID] + MUSIC_LENGTHS.mission_l0]);
-    expect(x.e.music.build.buffers[MUSIC_KEYS.indexOf(MUSIC_TITLE_DEFAULT_ID)]).not.toBeNull();
-    expect(x.e.music.build.buffers[MUSIC_KEYS.indexOf('title_d_prev')]).toBeNull();
+    expect([st.buffers, st.resident]).toEqual([MUSIC_GAME_BUILD.length, MUSIC_GAME_BUILD.reduce((a, k) => a + MUSIC_LENGTHS[k], 0)]);
+    for (const k of MUSIC_GAME_BUILD) expect(x.e.music.build.buffers[MUSIC_KEYS.indexOf(k)], k).not.toBeNull();
+    expect(x.ctx.buffers.filter((m) => m.length > 100_000).length).toBe(MUSIC_GAME_BUILD.length); // 曲ごとに 1 本（作り直さない）
   });
-  it('既定の曲を作っている途中に別の候補を押すと、作りかけをやめて押した候補を先に作る（やめた曲は後で頭から＝同じ標本。v0.7.2 IP2: D と D（前）は同じ長さなので指紋で見分ける）', () => {
+  it('既定の曲を作っている途中に別の候補（任務の家族）を押すと、作りかけをやめて押した候補を先に作る（やめた曲は後で頭から＝同じ標本）', () => {
     const x = setup();
     x.e.music.allowBuild();
     x.e.music.request(MUSIC_CTX_LAB);
     run(x, 20 * FRAME_S);
     expect(x.e.music.stats().building).toBe(MUSIC_TITLE_DEFAULT_ID);
-    x.e.music.audition('title_d_prev');
+    x.e.music.audition('mission_l0');
     run(x, FRAME_S);
-    expect([x.e.music.stats().building, x.e.music.stats().abandoned]).toEqual(['title_d_prev', 1]);
-    buildAll(x);
-    buildAll(x);
-    const fps = x.ctx.buffers.filter((b) => b.length === MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID]).map((b) => fingerprint16(b.data)).sort((p, q) => p - q);
-    expect(fps).toEqual([FINGERPRINTS.title_d, FINGERPRINTS.title_d_prev].sort((p, q) => p - q)); // 曲ごとに 1 本・やめた D は頭から作り直して同じ標本
+    expect([x.e.music.stats().building, x.e.music.stats().abandoned]).toEqual(['mission_l0', 1]);
+    expect(buildList(x)).toBeGreaterThan(10);
+    const fps = x.ctx.buffers.filter((b) => b.length > 100_000).map((b) => fingerprint16(b.data)).sort((p, q) => p - q);
+    expect(fps).toEqual(MUSIC_GAME_BUILD.map((k) => FINGERPRINTS[k]).sort((p, q) => p - q)); // 曲ごとに 1 本・やめた D は頭から作り直して同じ標本
   });
 });

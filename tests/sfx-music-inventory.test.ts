@@ -1,5 +1,5 @@
 // v0.7.2 S0（アートと音③：BGM と命中スローの音。spec-v0720 §2〜§6・§8.1・§13）: 曲の棚卸しを固定する（tests/sfx-inventory の型）。
-// - 曲の鍵は 5 本（タイトルの曲 D と聞き比べの D（前）＝v0.7.2 IP2 で A・E を消した〔IP1 で B・C を D・E に〕と任務の層 L0・L1・L2）で、効果音の SFX_KEYS とは別の表
+// - 曲の鍵は 4 本（タイトルの曲 D＝v0.7.2 IP2 で A・E・S4 で聞き比べの D（前）を消した〔IP1 で B・C を D・E に〕と任務の層 L0・L1・L2）で、効果音の SFX_KEYS とは別の表
 //   （§13 L5: 効果音 26 本の表・標本・音量はそのまま）。
 // - 種は SFX_SEED_MUSIC_*（7601〜7699。IP2 の D は探す区間 MUSIC_SEED_SEARCH_D の中）だけで重ならず、効果音・絵の種とも重ならない。作曲の乱数は musicRng（曲ごとの種）。Math.random なし。
 // - 速さは 16 分音符が整数の標本になる 7 つだけ・長さは小節 × 拍 × 4 × 16 分・任務の層は L2 の整数倍（R6）・常駐の上限（ゲーム 180 万・試聴の場 280 万標本）。
@@ -21,13 +21,13 @@ const MUSIC_FILES = ['src/config/sfx-music-config.ts', ...readdirSync('src/asset
 const seedsIn = (file: string, re: RegExp): [string, number][] => [...readFileSync(file, 'utf8').matchAll(re)].map((m) => [m[1]!, Number(m[2]!.replace(/_/g, ''))]);
 /** spec §3.5・§3.6 の速さ・拍・小節 */
 const FORM: Readonly<Record<MusicKey, readonly [number, number, number]>> = {
-  title_d: [126, 4, 16], title_d_prev: [126, 4, 16], mission_l0: [90, 4, 8], mission_l1: [90, 4, 8], mission_l2: [90, 4, 2],
+  title_d: [126, 4, 16], mission_l0: [90, 4, 8], mission_l1: [90, 4, 8], mission_l2: [90, 4, 2],
 };
 
 describe('曲の鍵と表（v0.7.2 S0）', () => {
-  it('鍵は 5 本（タイトルの曲 D・聞き比べの D（前）・任務の層 3。IP2 で A・E を消した）で重ならず、効果音の SFX_KEYS にも表 SFX_TABLE にも入っていない（§13 L5）', () => {
-    expect([...MUSIC_KEYS]).toEqual(['title_d', 'title_d_prev', 'mission_l0', 'mission_l1', 'mission_l2']);
-    expect(new Set(MUSIC_KEYS).size).toBe(5);
+  it('鍵は 4 本（タイトルの曲 D・任務の層 3。IP2 で A・E・S4 で D（前）を消した）で重ならず、効果音の SFX_KEYS にも表 SFX_TABLE にも入っていない（§13 L5）', () => {
+    expect([...MUSIC_KEYS]).toEqual(['title_d', 'mission_l0', 'mission_l1', 'mission_l2']);
+    expect(new Set(MUSIC_KEYS).size).toBe(4);
     expect([...MUSIC_TITLE_KEYS, ...MUSIC_LAYER_KEYS].sort()).toEqual([...MUSIC_KEYS].sort());
     for (const k of MUSIC_KEYS) {
       expect((SFX_KEYS as readonly string[]).includes(k), k).toBe(false);
@@ -52,20 +52,20 @@ describe('曲の鍵と表（v0.7.2 S0）', () => {
       expect(MUSIC_LENGTHS[k], k).toBe(bars * beats * 4 * sixteenthOf(th.bpm));
       expect(th.chords.length, k).toBe(bars);
     }
-    expect(MUSIC_LENGTHS).toEqual({ title_d: 672_000, title_d_prev: 672_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600 });
+    expect(MUSIC_LENGTHS).toEqual({ title_d: 672_000, mission_l0: 470_400, mission_l1: 470_400, mission_l2: 117_600 });
   });
   it('任務の層の長さは L2 の整数倍（R6: 同じ時刻に始めればずれない）', () => {
     expect(MUSIC_LENGTHS.mission_l0).toBe(MUSIC_LENGTHS.mission_l1);
     expect(MUSIC_LENGTHS.mission_l0 % MUSIC_LENGTHS.mission_l2).toBe(0);
     expect(MUSIC_LENGTHS.mission_l0 / MUSIC_LENGTHS.mission_l2).toBe(4);
   });
-  it('常駐の上限（R2）: ゲームの中（タイトルの曲 D＋任務の家族）≤ 180 万標本、試聴の場（D・D（前）＋家族）≤ 280 万標本・作業用の配列は一番長い鍵の長さ', () => {
+  it('常駐の上限（R2）: ゲームの中（タイトルの曲 D＋任務の家族）≤ 180 万標本、試聴の場（S4 から鍵は全部ゲームの曲＝同じ 1,730,400）≤ 280 万標本・作業用の配列は一番長い鍵の長さ', () => {
     const game = MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID] + MUSIC_LAYER_KEYS.reduce((a, k) => a + MUSIC_LENGTHS[k], 0);
     expect(game).toBe(1_730_400);
     expect(game).toBeLessThanOrEqual(mc.MUSIC_MAX_RESIDENT_SAMPLES);
     for (const t of MUSIC_TITLE_KEYS) expect(MUSIC_LENGTHS[t] + game - MUSIC_LENGTHS[MUSIC_TITLE_DEFAULT_ID]).toBeLessThanOrEqual(mc.MUSIC_MAX_RESIDENT_SAMPLES);
     const lab = MUSIC_KEYS.reduce((a, k) => a + MUSIC_LENGTHS[k], 0);
-    expect(lab).toBe(2_402_400);
+    expect(lab).toBe(1_730_400);
     expect(lab).toBeLessThanOrEqual(mc.MUSIC_LAB_MAX_SAMPLES);
     expect([mc.MUSIC_MAX_RESIDENT_SAMPLES, mc.MUSIC_LAB_MAX_SAMPLES]).toEqual([1_800_000, 2_800_000]);
     expect(mc.MUSIC_WORK_SAMPLES).toBe(Math.max(...Object.values(MUSIC_LENGTHS)));
@@ -76,15 +76,15 @@ describe('曲の鍵と表（v0.7.2 S0）', () => {
 });
 
 describe('曲の種（音だけの乱数）', () => {
-  it('種は SFX_SEED_MUSIC_* の 6 つ（曲 5 ＋ 雑音の表）で 7601〜7699（IP2 の D は探す区間 MUSIC_SEED_SEARCH_D の中）・重ならず、効果音の種（SFX_SEED_*）と絵の種（ART_SEED_*）とも重ならない', () => {
+  it('種は SFX_SEED_MUSIC_* の 5 つ（曲 4 ＋ 雑音の表。S4 で D（前）の 7609 を消した）で 7601〜7699（IP2 の D は探す区間 MUSIC_SEED_SEARCH_D の中）・重ならず、効果音の種（SFX_SEED_*）と絵の種（ART_SEED_*）とも重ならない', () => {
     const seeds = seedsIn('src/config/sfx-music-config.ts', /^export const (SFX_SEED_MUSIC_\w+) = ([\d_]+);/gm);
-    expect(seeds.map((s) => s[0]).sort()).toEqual(['SFX_SEED_MUSIC_D', 'SFX_SEED_MUSIC_D_PREV', 'SFX_SEED_MUSIC_L0', 'SFX_SEED_MUSIC_L1', 'SFX_SEED_MUSIC_L2', 'SFX_SEED_MUSIC_NOISE']);
-    expect(new Set(seeds.map((s) => s[1])).size).toBe(6);
+    expect(seeds.map((s) => s[0]).sort()).toEqual(['SFX_SEED_MUSIC_D', 'SFX_SEED_MUSIC_L0', 'SFX_SEED_MUSIC_L1', 'SFX_SEED_MUSIC_L2', 'SFX_SEED_MUSIC_NOISE']);
+    expect(new Set(seeds.map((s) => s[1])).size).toBe(5);
     const box = mc.MUSIC_SEED_SEARCH_D;
     for (const [name, v] of seeds) expect(name === 'SFX_SEED_MUSIC_D' ? v >= box.from && v < box.from + box.count : v >= 7601 && v <= 7699, `${name} ${v}`).toBe(true);
-    expect([mc.SFX_SEED_MUSIC_D_PREV, mc.SFX_SEED_MUSIC_L0, mc.SFX_SEED_MUSIC_L1, mc.SFX_SEED_MUSIC_L2]).toEqual([7609, 7628, 7629, 7630]); // IP1 の標本のまま（IP2 で A・E を消しても動かさない）
+    expect([mc.SFX_SEED_MUSIC_L0, mc.SFX_SEED_MUSIC_L1, mc.SFX_SEED_MUSIC_L2]).toEqual([7628, 7629, 7630]); // IP1 の標本のまま（IP2 で A・E・S4 で D（前）を消しても動かさない）
     const sfx = seedsIn('src/config/sfx-config.ts', /^export const (SFX_SEED_\w+) = (\d+);/gm).map((s) => s[1]);
-    expect(sfx.length).toBe(32);
+    expect(sfx.length).toBe(28); // v0.7.2 S4: 試聴の場の魚雷の発射の案 E・G・H・I の種を消した（32 → 28）
     const art: number[] = [];
     for (const f of readdirSync('src/config')) {
       if (f.startsWith('sfx-')) continue;
@@ -97,7 +97,7 @@ describe('曲の種（音だけの乱数）', () => {
     }
   });
   it('曲ごとの乱数 musicRng は MUSIC_SEEDS の種の SeededRng と同じ系列・種は鍵ごとに違う', () => {
-    expect(MUSIC_SEEDS).toEqual({ title_d: mc.SFX_SEED_MUSIC_D, title_d_prev: mc.SFX_SEED_MUSIC_D_PREV, mission_l0: mc.SFX_SEED_MUSIC_L0, mission_l1: mc.SFX_SEED_MUSIC_L1, mission_l2: mc.SFX_SEED_MUSIC_L2 });
+    expect(MUSIC_SEEDS).toEqual({ title_d: mc.SFX_SEED_MUSIC_D, mission_l0: mc.SFX_SEED_MUSIC_L0, mission_l1: mc.SFX_SEED_MUSIC_L1, mission_l2: mc.SFX_SEED_MUSIC_L2 });
     for (const k of MUSIC_KEYS) {
       const a = musicRng(k), b = new SeededRng(MUSIC_SEEDS[k]);
       for (let i = 0; i < 8; i++) expect(a.next(), k).toBe(b.next());

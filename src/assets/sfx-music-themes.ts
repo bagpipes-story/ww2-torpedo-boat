@@ -3,7 +3,8 @@
 // v0.7.2 IP1（実機 1 回目。ユーザー「…もっとアップテンポでもいいかと思います。軍艦マーチくらいの。…B はファミコンの RPG みたいでださいです。また、緊張と戦闘の音楽はおなじでは？」）で
 // B・C を消して 126 BPM の D・E を足し、緊張と戦闘を作り直した（速さだけを参考にし、知っている曲はまねない）。
 // v0.7.2 IP2（実機 2 回目。ユーザー「タイトルはDでいきます。Dをさらに名曲となるようにリメイクしてください。命中スローはAでいいです。」）: D をタイトルの曲に決め、作り直した。
-// A・E は消した（ユーザーの決め）。IP1 の D は試聴の場の聞き比べだけに残す（鍵 title_d_prev「D（前）」。標本は IP1 とビット同一）。
+// A・E は消した（ユーザーの決め）。IP1 の D は試聴の場の聞き比べ「D（前）」（鍵 title_d_prev）に残したが、S4（実機 3 回目「OKです。進めてください」）で消した
+// （試験の材料の写しは tests/sfx-music-kit の PREV_THEME＝作曲器の 1 小節 1 和音のタイトルの道が変わらない証）。
 // - D（IP2。鍵 title_d）: 4/4・126 BPM・16 小節（30.48 秒）・D エオリア（属和音は長調）。4 小節ずつの歌の形 a（1〜4。言い出し・半終止）→ a′（5〜8。答え・閉じる）→
 //   b（9〜12。F の明るさへ上がる移し・E7 → A で張る）→ a″（13〜16。動機が 3 度上で戻って山・いちばん強い終止の後に Asus4 → A で 1 小節目へ戻る）。
 //   和音: Dm｜B♭｜F｜C A｜Dm｜B♭｜Gm A7｜Dm｜F｜Gm｜B♭ E7/G#｜A｜Dm｜B♭｜Gm A7｜Dm Dm Asus4 A（IP1 の D の Dm B♭ F C／Dm B♭ Gm A を残した）。
@@ -12,21 +13,18 @@
 //   伴奏（assets/sfx-music-arrange）: 温かい金管の旋律（2 声）・動く低音（弓の 8 分の刻み。経過音で和音の間をつなぐ）・和音のパッド・対旋律の弦（a′・b・a″。旋律と反行・長い音）・
 //   行進の小太鼓（句の終わりの連打・11〜12 小節目はだんだん強く連打）・1・3 拍のティンパニ風の打ち（12 小節目は 13 小節目への連打）・13 小節目の頭のやわらかいシンバル・部屋の響き。
 //   強弱の弧: a は mp・a′ は mf・b はだんだん強く・a″ は ff で 16 小節目で落ち着いて輪の頭へ。
-// - D（前）（IP1。鍵 title_d_prev）: 4/4・126 BPM・16 小節（消した A の進行 Dm B♭ F C Dm B♭ Gm A を 2 回）。温かい金管の旋律（2 声 ±3 cent）・弓の 8 分の刻み（根音）・
-//   行進の小太鼓（4 小節ごとに連打）・1・3 拍のティンパニ風の打ち・パッド・部屋の響き。
 // - 任務（U-M1）: 4/4・90 BPM・E エオリア・Em C D Em Em C Am B7。L0 静か（暗いパッド・2 小節に 1 回の鈴・うねり）。IP1 で緊張と戦闘をはっきり分けた:
 //   L1 緊張＝まばら（2 分音符ごとの心音の「ドクン」・高い B のトレモロ・4 拍目の 2 音の刻み＝根音と 5 度。16 分の震えは消した）、
 //   L2 戦闘＝走る（2 小節。拍ごとのティンパニ風の打ち・裏拍に強い 16 分の小太鼓と 2 小節目の連打・E と B の金管の切れた刻み・16 分の低い弓の刻み）。3 層は同じ時刻に始めて音量だけを変える（L2 は 8 小節に 4 回）。
 // 乱数は曲ごとの種 SFX_SEED_MUSIC_*（musicRng）。タイトルの曲は MUSIC_TITLE_DEFAULT_ID（IP2: ユーザーの決めで D）。
-import { SFX_SEED_MUSIC_D, SFX_SEED_MUSIC_D_PREV, SFX_SEED_MUSIC_L0, SFX_SEED_MUSIC_L1, SFX_SEED_MUSIC_L2, type MusicKey } from '../config/sfx-music-config';
+import { SFX_SEED_MUSIC_D, SFX_SEED_MUSIC_L0, SFX_SEED_MUSIC_L1, SFX_SEED_MUSIC_L2, type MusicKey } from '../config/sfx-music-config';
 import { SeededRng } from '../core/rng';
 import type { MusicArrange, MusicPart, MusicPlan, MusicRhythm, MusicTheme } from './sfx-music-compose';
 
 /** タイトルの曲（v0.7.2 IP2: ユーザーの決め U-M2「タイトルはDでいきます」＝作り直した D。試聴の場の「（今）」の印） */
 export const MUSIC_TITLE_DEFAULT_ID: MusicKey = 'title_d';
 
-/** IP1 の D の進行（消した A の進行を 2 回）・任務の家族の共通（E エオリア・90 BPM・8 小節） */
-const PREV_CHORDS = ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A'] as const;
+/** 任務の家族の共通（E エオリア・90 BPM・8 小節） */
 const MISSION = { bpm: 90, beats: 4, bars: 8, tonic: 4, mode: 'aeolian', chords: ['Em', 'C', 'D', 'Em', 'Em', 'C', 'Am', 'B7'] } as const;
 const SWELL_4: MusicPart = { inst: 'swell', pitch: 'none', low: 0, high: 0, vel: 1, every: 4, rhythms: [[0, 64, 100]] };
 const PAD_BAR = [[0, 16, 100]] as const;
@@ -92,21 +90,6 @@ export const MUSIC_THEMES: Readonly<Record<MusicKey, MusicTheme>> = {
     },
     parts: [], arrange: D_ARRANGE,
   },
-  title_d_prev: {
-    key: 'title_d_prev', bpm: 126, beats: 4, bars: 16, tonic: 2, mode: 'aeolian', chords: [...PREV_CHORDS, ...PREV_CHORDS], room: [0.16, 1.0],
-    melody: {
-      inst: 'horn', low: 65, high: 79, vel: 1, span: 1, legato: 0.85, voices: 2, cents: 6,
-      rhythms: [[0, 4, 100, 4, 4, 80, 8, 6, 90, 14, 2, 70], [0, 6, 100, 6, 2, 75, 8, 4, 90, 12, 4, 80], [0, 3, 100, 3, 1, 70, 4, 4, 85, 8, 8, 95], [0, 4, 100, 4, 2, 75, 6, 2, 75, 8, 4, 90, 12, 4, 80], [0, 8, 100, 8, 3, 85, 11, 1, 70, 12, 4, 90]],
-      ends: [[0, 4, 90, 4, 4, 80, 8, 8, 100], [0, 6, 95, 6, 2, 75, 8, 8, 100], [0, 16, 100]],
-      cadences: [[4, 'half'], [8, 'end'], [12, 'half'], [16, 'end']], motifs: [[5, 1], [9, 1], [13, 5]],
-    },
-    parts: [
-      { inst: 'pad', pitch: 'chord', low: 57, high: 71, vel: 0.4, voices: 2, cents: 4, rhythms: PAD_BAR },
-      { inst: 'bowed', pitch: 'root', low: 57, high: 69, vel: 0.55, voices: 2, cents: 7, human: 0.06, rhythms: [[0, 1, 100, 2, 1, 55, 4, 1, 80, 6, 1, 55, 8, 1, 95, 10, 1, 55, 12, 1, 80, 14, 1, 60]] },
-      { inst: 'snare', ...NONE, vel: 0.4, human: 0.08, fillEvery: 4, rhythms: MARCH_4, fill: [0, 1, 100, 2, 1, 45, 4, 1, 80, 6, 1, 50, ...roll(8, 16, 40, 100)] },
-      { inst: 'boom', ...NONE, vel: 0.7, human: 0.05, rhythms: [[0, 4, 100, 8, 4, 80]] },
-    ],
-  },
   mission_l0: {
     key: 'mission_l0', ...MISSION,
     melody: { inst: 'bell', low: 71, high: 83, vel: 0.7, span: 2, legato: 1, decayS: [1.2, 1.8], rhythms: [[0, 32, 100]], ends: [[0, 32, 100]], cadences: [[4, 'half'], [8, 'end']], motifs: [] },
@@ -135,7 +118,6 @@ export const MUSIC_THEMES: Readonly<Record<MusicKey, MusicTheme>> = {
 export function musicRng(key: MusicKey): SeededRng {
   switch (key) {
     case 'title_d': return new SeededRng(SFX_SEED_MUSIC_D);
-    case 'title_d_prev': return new SeededRng(SFX_SEED_MUSIC_D_PREV);
     case 'mission_l0': return new SeededRng(SFX_SEED_MUSIC_L0);
     case 'mission_l1': return new SeededRng(SFX_SEED_MUSIC_L1);
     case 'mission_l2': return new SeededRng(SFX_SEED_MUSIC_L2);
@@ -143,5 +125,5 @@ export function musicRng(key: MusicKey): SeededRng {
 }
 /** 曲の種（tests・scripts の確かめ用。musicRng と同じ数） */
 export const MUSIC_SEEDS: Readonly<Record<MusicKey, number>> = {
-  title_d: SFX_SEED_MUSIC_D, title_d_prev: SFX_SEED_MUSIC_D_PREV, mission_l0: SFX_SEED_MUSIC_L0, mission_l1: SFX_SEED_MUSIC_L1, mission_l2: SFX_SEED_MUSIC_L2,
+  title_d: SFX_SEED_MUSIC_D, mission_l0: SFX_SEED_MUSIC_L0, mission_l1: SFX_SEED_MUSIC_L1, mission_l2: SFX_SEED_MUSIC_L2,
 };

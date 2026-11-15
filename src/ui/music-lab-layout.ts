@@ -9,8 +9,8 @@ import {
 import { SOUND_LAB_BACK_H, SOUND_LAB_BACK_W, SOUND_LAB_COL_GAP } from '../config/sound-lab-config';
 import type { SoundLabFrame, SoundLabRect } from './sound-lab-layout';
 
-/** 行 0（タイトルの曲）のボタンの数: D（今）・D（前）と「止める」（v0.7.2 IP2。IP1 は候補 A・D・E と「止める」の 4 つ） */
-export const MUSIC_LAB_ROW0_COLS = 3;
+/** 行 0（タイトルの曲）のボタンの数: D（今）と「止める」（v0.7.2 S4。IP2 は D（今）・D（前）と「止める」の 3 つ、IP1 は候補 A・D・E と「止める」の 4 つ） */
+export const MUSIC_LAB_ROW0_COLS = 2;
 /** v0.7.2 S2: 行 1（任務の曲）＝段 3 つ・「自動」・「止める」、行 2（効果音と一緒に）＝台本 4 つ（S3 で「命中＋スロー」を足した）・「止める」 */
 export const MUSIC_LAB_ROW1_COLS = 5;
 export const MUSIC_LAB_ROW2_COLS = 5;
@@ -50,7 +50,7 @@ export function musicLabHasStop(row: number): boolean {
 export function musicLabLabel(row: number, col: number, titleDefault: number, slowDefault: number): [string, string] {
   if (musicLabHasStop(row) && col === MUSIC_LAB_ROW_COLS[row]! - 1) return [MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA];
   if (row === MUSIC_LAB_ROW_TITLE) {
-    // v0.7.2 IP2: 題は記号だけ（ゲームの曲は「記号（今）」）＝［D（今） 新しい D］［D（前） 実機 2 回目の D］
+    // v0.7.2 IP2: 題は記号だけ（ゲームの曲は「記号（今）」）＝S4 から［D（今） 新しい D］だけ
     const d = col === titleDefault;
     return [d ? `${MUSIC_LAB_LETTERS[col]!}${MUSIC_LAB_DEFAULT_MARK_JA}` : MUSIC_LAB_LETTERS[col]!, musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
   }

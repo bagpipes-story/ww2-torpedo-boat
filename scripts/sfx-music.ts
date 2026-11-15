@@ -1,8 +1,8 @@
-// 曲の確かめ（v0.7.2 S0。spec-v0720 §3・§8.2）: assets/sfx-music-* の曲 5 本（タイトルの曲 D と聞き比べの D（前）＝IP2 で A・E を消した、任務の層 L0・L1・L2）を作曲・合成し、耳の代わりの数を出す。
+// 曲の確かめ（v0.7.2 S0。spec-v0720 §3・§8.2）: assets/sfx-music-* の曲 4 本（タイトルの曲 D＝IP2 で A・E・S4 で聞き比べの D（前）を消した、任務の層 L0・L1・L2）を作曲・合成し、耳の代わりの数を出す。
 // ゲームは import しない。
 // - SEARCH=1（v0.7.2 IP2）: D は MUSIC_SEED_SEARCH_D の区間の種を全部作曲して旋律の点（assets/sfx-music-score）を比べ、点の上位 5 つ（点の内訳と決まりの破れ）と一番の種を出す
-//   （config/sfx-music-config の SFX_SEED_MUSIC_D に書く数。tests/sfx-music-score が同じ区間で確かめ直す）。D（前）・L0〜L2 は種を動かさない（IP1 の標本のまま）: 「決まりを全部通る最初の種」
-//   の鎖（D（前）は 7604 から・L0 は 7628 から＝消した A 7603・E 7627 の次）を確かめて出す。
+//   （config/sfx-music-config の SFX_SEED_MUSIC_D に書く数。tests/sfx-music-score が同じ区間で確かめ直す）。L0〜L2 は種を動かさない（IP1 の標本のまま）: 「決まりを全部通る最初の種」
+//   の鎖（L0 は 7628 から＝消した A 7603・E 7627 の次。D（前）の 7604 からの鎖は S4 で D（前）と一緒に消した）を確かめて出す。
 // - 既定: 鍵ごとに 長さ・頂・RMS（dBFS）・400 Hz より上と 200 Hz より下のエネルギーの割合（§3.3: 上 ≥ 60%・下 ≤ 12%）・2.5 kHz より上の割合（IP1: 尖った倍音の目安）・継ぎ目（末尾 → 頭の標本の差と、ふつうの差の
 //   中央値・99%。継ぎ目をまたぐ 50 ms の RMS とその前後）・重心・作る費用（単位・予算 MUSIC_BUILD_BUDGET で何フレーム）と node の時間（1 回の stepBuild の中央値・95%・最大）・
 //   旋律の数（強拍の和音の音の割合・順次の割合・跳躍の戻り・音域・句の終わりの音・決まりの破れ）と旋律の点。任務の段（静か・緊張・戦闘）の重ね（L2 は 4 回）と、出口（× 音量 × master 0.8）の
@@ -45,7 +45,7 @@ function moodMix(xs: Readonly<Record<MusicKey, Float32Array>>, mood: number, gai
 }
 
 /** 種の鎖の始まり（決まりを全部通る最初の種。IP1 の標本のまま動かさない＝消した A 7603・E 7627 の次から） */
-export const SEED_CHAIN_FROM: Readonly<Partial<Record<MusicKey, number>>> = { title_d_prev: 7604, mission_l0: 7628, mission_l1: 7629, mission_l2: 7630 };
+export const SEED_CHAIN_FROM: Readonly<Partial<Record<MusicKey, number>>> = { mission_l0: 7628, mission_l1: 7629, mission_l2: 7630 };
 
 function search(): void {
   // D: 区間の種を全部作曲して点を比べる（上位 5 つと決まりの破れの数）
@@ -63,7 +63,7 @@ function search(): void {
     console.log(`  ${k + 1}. 種 ${x.seed}  点 ${r.total.toFixed(3)}  ${Object.entries(r.parts).map(([n, v]) => `${n} ${v.toFixed(2)}`).join(' ')}  （戻り ${r.returns}・山 ${(r.climaxAt * 100).toFixed(1)}%・音域 ${r.span} 半音・順次 ${(r.stepShare * 100).toFixed(0)}%・跳躍 ${r.leaps}）`);
   }
   console.log(`  一番の種 ${rows[0]!.seed}（今の SFX_SEED_MUSIC_D ${MUSIC_SEEDS.title_d}${rows[0]!.seed === MUSIC_SEEDS.title_d ? '＝同じ' : '＝直す'}）`);
-  // D（前）・任務の層: 種の鎖を確かめる（決まりを全部通る最初の種のまま）
+  // 任務の層: 種の鎖を確かめる（決まりを全部通る最初の種のまま）
   for (const [key, from] of Object.entries(SEED_CHAIN_FROM) as [MusicKey, number][]) {
     let seed = from;
     while (melodyCheck(composeMusic(MUSIC_THEMES[key], new SeededRng(seed))).violations.length > 0) seed++;

@@ -7,20 +7,21 @@
 /**
  * 上の説明（ビルド番号の下・中央）。v0.7.2 S3: 2 行を改行で分けた（S2 までは折り返し任せで、論理幅 1280 では語の切れ目で 3 行になり、3 行目が行 0 のボタンの上にかかった）。
  * どの行も論理幅 1280〜1584 の折り返しの幅（論理幅 − 2 × 余白）に収まる＝折り返さない（tests/music-lab が 8 px 刻みで見る）。2 行の下は行の上 124 より上。
- * v0.7.2 IP1: タイトルの曲の記号を A・D・E に（命中スローは A・B・C のまま）。v0.7.2 IP2: ユーザーの決め（タイトルの曲は D・命中スローは A）。場は聞き比べのために残す
+ * v0.7.2 IP1: タイトルの曲の記号を A・D・E に（命中スローは A・B・C のまま）。v0.7.2 IP2: ユーザーの決め（タイトルの曲は D・命中スローは A）。場は聞き比べのために残す。
+ * v0.7.2 S4: 作り直した D が受け入れられた（実機 3 回目）ので D（前）を片づけた（2 行目）。命中スローの B・C は聞き比べに残す
  */
-export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲は D、命中スローは A に決まりました（（今）がゲームの曲と案・聞き比べ用）\nD（今）は作り直した D、D（前）は前の D。押すと作って鳴らします。知っている曲に似ていたら一言ください';
+export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲は D、命中スローは A に決まりました（（今）がゲームの曲と案・聞き比べ用）\nD（今）は作り直した D（前の D は片づけました）。押すと作って鳴らします。知っている曲に似ていたら一言ください';
 /** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に・行 3＝命中スロー＝S3） */
 export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー'];
 export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ', '押すと命中とスロー'];
 /**
- * タイトルの曲（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝D・D（前））: 記号・名前・2 行目の一言。v0.7.2 IP2: 行 0 は［D（今） 新しい D］［D（前） 実機 2 回目の D］［止める］
- * （ゲームの曲は「記号（今）」の題と名前の 2 行目、ほかは記号だけの題と一言の 2 行目＝ui/music-lab-layout の musicLabLabel）。IP1 の A・E はユーザーの決めで消した
- * （v0.7.2 IP1: B・C〔実機 1 回目で B は「ファミコンの RPG みたい」〕を D「A を行進で」・E「勇ましい行進」に替えた）
+ * タイトルの曲（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝D）: 記号・名前・2 行目の一言。v0.7.2 S4: 行 0 は［D（今） 新しい D］［止める］
+ * （ゲームの曲は「記号（今）」の題と名前の 2 行目、ほかは記号だけの題と一言の 2 行目＝ui/music-lab-layout の musicLabLabel。候補を足す時のために表のまま）。
+ * v0.7.2 IP1: B・C〔実機 1 回目で B は「ファミコンの RPG みたい」〕を D「A を行進で」・E「勇ましい行進」に替えた。IP2: A・E はユーザーの決めで消した。S4: IP2 の聞き比べの D（前）を消した
  */
-export const MUSIC_LAB_LETTERS: readonly string[] = ['D', 'D（前）'];
-export const MUSIC_LAB_NAMES_JA: readonly string[] = ['新しい D', '前の D'];
-export const MUSIC_LAB_NOTES_JA: readonly string[] = ['金管・弦・126 BPM', '実機 2 回目の D'];
+export const MUSIC_LAB_LETTERS: readonly string[] = ['D'];
+export const MUSIC_LAB_NAMES_JA: readonly string[] = ['新しい D'];
+export const MUSIC_LAB_NOTES_JA: readonly string[] = ['金管・弦・126 BPM'];
 /** 行 0 の最後のボタン（鳴っている曲を止める） */
 export const MUSIC_LAB_STOP_JA = '止める';
 export const MUSIC_LAB_STOP_SUB_JA = '0.5 秒で消す';

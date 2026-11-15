@@ -77,13 +77,13 @@ describe('音の鍵と表の棚卸し（v0.7.1 S0）', () => {
     expect(d.loop).toBe(LOOPS.includes(key));
     expect(d.rateJitter).toBe(JITTER[key] ?? 0);
   });
-  it('種は 32（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場の魚雷の発射 E〜I の 5。IP4 から F の種はゲームの torp_launch も使う）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
+  it('種は 28（鍵 26 ＋ 再生の揺れ SFX_SEED_PLAY ＋ IP3 の試聴の場の魚雷の発射の F＝IP4 からゲームの torp_launch。v0.7.2 S4 で使われなくなった E・G・H・I を消した）で重ならず、絵の種（ART_SEED_*）とも重ならない', () => {
     const src = readFileSync('src/config/sfx-config.ts', 'utf8');
     const seeds = [...src.matchAll(/^export const (SFX_SEED_\w+) = (\d+);/gm)].map((m) => [m[1]!, Number(m[2])] as const);
-    expect(seeds.length).toBe(32);
-    const lab = ['E', 'F', 'G', 'H', 'I'].map((v) => `SFX_SEED_LAB_LAUNCH_${v}`);
+    expect(seeds.length).toBe(28);
+    const lab = ['SFX_SEED_LAB_LAUNCH_F'];
     expect(seeds.map((s) => s[0]).sort()).toEqual([...SFX_KEYS.map((k) => `SFX_SEED_${k.toUpperCase()}`), 'SFX_SEED_PLAY', ...lab].sort());
-    expect(new Set(seeds.map((s) => s[1])).size).toBe(32);
+    expect(new Set(seeds.map((s) => s[1])).size).toBe(28);
     const art: number[] = [];
     for (const f of readdirSync('src/config')) {
       if (f.startsWith('sfx-')) continue;
