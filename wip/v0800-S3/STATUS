@@ -1,7 +1,6 @@
-v0.8.0 S3b (lead decisions L36-L44) — implementer tree (uncommitted in the repo). Base f9ba94f. Apply: git apply s3.patch
-Done: L36 torpedo breakdown (world, no policy fix); L37 radar_ambush/radar_twice quiet escape (+ reference row radar_ambush_full); L38 cover C1 (1800,1200)@270 in data + setup-us04 snapshot rewritten (heading lines only); L39 B3 = idle_lane own sinking; L42 hard H1/H2 ✓; L43 radar.test patch applied.
-Stopped at L40: B2 ✗ (eye_only 63.4% vs ≤ 20.8; the cover still passes the start), F ✗ 61.8% (L41 not reached). B1 ✓ (35.8/2.1/97.8).
-Final tables: normal a06bc7d2eb8a2a85bb65c989061d6597, hard c17a7a68b7a01558c32506b9c1d70ee0. Light set re-picked k=3 (seeds 151-200, 1151-1200).
-strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). npm test: 1 fail (intercept-sim-b normal: B2, F).
-run-gates S3-impl running (SKIP art-perf) at the time of this backup.
-Gates (S3-impl, SKIP art-perf): build/typecheck/lint ✓; npm test ✗ only intercept-sim-b normal; g2 OK 37 DIFF 0; ab-all 56/58 + 57/58 (known us_02 seed 1 .t flake; reruns 8/8); noaudio 58/58; hud all ✓; tex-ab 0 ✗; snapshots: setup-us04 only.
+v0.8.0 S3c (lead decisions L45-L49) — implementer tree (uncommitted in the repo). Base f9ba94f. Apply: git apply s3.patch
+L45: B2 -> B2a (eye_only column sinks <= radar_ambush column sinks - 15) + B2b (eye_only own sinking >= radar_ambush + 15), reference lines; NOCOVER=1 reference table (sim only).
+L46: F reads radar_twice; dry rule D; fuel 48 -> 33 gal (one run, no correction); setup-us04 snapshot rewritten (fuel lines).
+Final tables: normal 37dc9ae40e7f0f5441a793ec557a2c41, hard a918d9d9193c1039e939dde33ed6f675 — 帯: すべて ✓ both.
+Light set k=3 unchanged; tests split: intercept-sim-b (normal), -c/-d (hard), kit. npm test green (317 files, 3,761 tests).
+strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). g2 (G6 ALLY EVAC US04) running at backup time.
