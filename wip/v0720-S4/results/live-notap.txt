@@ -1,6 +1,0 @@
-✓ 既定 FLOW=notap: ページのエラー 0
-✓ 既定 FLOW=notap: 曲の音源はどの時点も ≤ 6（鳴っている最大 0・stop 前の最大 0）
-✓ 既定 FLOW=notap: ゲームの列は既定のタイトルの曲と任務の家族の 4 本を Title で作り終える（標本 4・常駐 1730400 ≤ 1800000・作業用の配列 false）
-✓ 既定 FLOW=notap: context は止まったまま（suspended）
-✓ 既定 FLOW=notap: 音源 0・書き込み 0（0・0・ページ 0）＝止まっている context に積まない
-✓ 既定 FLOW=notap: 波形は無音（頂 0）
