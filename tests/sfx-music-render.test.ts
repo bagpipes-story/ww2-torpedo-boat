@@ -4,6 +4,7 @@
 // - 大きさ（§3.4）: 鍵の音量 × 標本の RMS × master 0.8 が出口の目標（メニュー −24・静か −33・緊張 −30・戦闘 −27 dBFS）の ±1.5 dB。帯の割合（§3.3）: 400 Hz より上 ≥ 60%・
 //   200 Hz より下 ≤ 12%。任務の層は L2 を 4 回で重ねる（R6）。
 // - v0.7.2 IP1: 部屋の響き（D・E の room）も分けて描いて同じ標本（小さい予算で）・響きは継ぎ目で続く（上の継ぎ目の試験）・響きのない曲（A・任務の家族）は響きの段を通らない。
+// - v0.7.2 IP2: 鍵は D（作り直し）・D（前）（IP1 の D とビット同一＝指紋 603232752）と任務の家族（IP1 のまま）。小さい予算で分けて描く試験は新しい D（伴奏の計画と響き）と L2。
 // - 予算（§2・R1）: どの stepBuild も予算を超えない・音 1 秒の費用は予算 5 フレームまで・進みは 0 → 1・作業用の配列は 1 本（R2）。
 import { describe, expect, it } from 'vitest';
 import {
@@ -33,7 +34,7 @@ function fingerprint16(x: Float32Array): number {
 }
 /** 鍵ごとの指紋（作り方・種・楽器を直したら直す。Node（V8）の Math.sin・exp・pow・log に依る＝tests/sfx-synth と同じ） */
 const FINGERPRINTS: Readonly<Record<MusicKey, number>> = {
-  title_a: 4284675595, title_d: 603232752, title_e: 1072575395, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
+  title_d: 2970034224, title_d_prev: 603232752, mission_l0: 900593930, mission_l1: 3400001408, mission_l2: 542741560,
 };
 /** 段の重ね（L2 は 4 回）× 鍵の音量 */
 function moodMix(mood: number): Float32Array {
@@ -55,13 +56,13 @@ describe('分けて描く曲（v0.7.2 S0）', () => {
   it.each([...MUSIC_KEYS])('%s: 分けて描いた標本＝一度に描いた標本（ビット同一。予算 150,000・小さい予算 9,973・表も作り直して）', (k) => {
     const one = renderMusic(k, Infinity, TB, WORK);
     expect(Buffer.from(one.buffer).equals(Buffer.from(X[k].buffer))).toBe(true);
-    if (k === 'title_e' || k === 'mission_l2') {
+    if (k === 'title_d' || k === 'mission_l2') {
       const small = renderMusic(k, 9973, new MusicTables(), new Float32Array(MUSIC_LENGTHS[k]));
       expect(Buffer.from(small.buffer).equals(Buffer.from(X[k].buffer))).toBe(true);
     }
   });
-  it('IP1: 部屋の響きは D・E だけ（A と任務の家族は通らない＝A の標本は S0 のまま）・響きの段の費用は (ならし ＋ 輪) × room 単位', () => {
-    expect(MUSIC_KEYS.filter((k) => composeMusicKey(k).theme.room !== undefined)).toEqual(['title_d', 'title_e']);
+  it('IP1: 部屋の響きはタイトルの曲だけ（IP2: D と D（前）。任務の家族は通らない）・響きの段の費用は (ならし ＋ 輪) × room 単位', () => {
+    expect(MUSIC_KEYS.filter((k) => composeMusicKey(k).theme.room !== undefined)).toEqual(['title_d', 'title_d_prev']);
     for (const k of MUSIC_KEYS) {
       const sc = composeMusicKey(k), dry = new MusicBuilder(TB, WORK, { ...sc, theme: { ...sc.theme, room: undefined } }), wet = new MusicBuilder(TB, WORK, sc);
       const room = sc.theme.room;

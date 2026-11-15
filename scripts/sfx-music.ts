@@ -1,26 +1,30 @@
-// 曲の確かめ（v0.7.2 S0。spec-v0720 §3・§8.2）: assets/sfx-music-* の曲 6 本（タイトルの候補 A・D・E＝IP1 で B・C から替えた と任務の層 L0・L1・L2）を作曲・合成し、耳の代わりの数を出す。ゲームは import しない。
-// - SEARCH=1: 鍵の順に（前の鍵の種の次から）「作曲の決まり（assets/sfx-music-compose の melodyCheck＝§3.1・§3.2）を全部通る最初の種」を探して出す
-//   （config/sfx-music-config の SFX_SEED_MUSIC_* に書く数。FROM=<数> で探し始め。既定 7601）。
+// 曲の確かめ（v0.7.2 S0。spec-v0720 §3・§8.2）: assets/sfx-music-* の曲 5 本（タイトルの曲 D と聞き比べの D（前）＝IP2 で A・E を消した、任務の層 L0・L1・L2）を作曲・合成し、耳の代わりの数を出す。
+// ゲームは import しない。
+// - SEARCH=1（v0.7.2 IP2）: D は MUSIC_SEED_SEARCH_D の区間の種を全部作曲して旋律の点（assets/sfx-music-score）を比べ、点の上位 5 つ（点の内訳と決まりの破れ）と一番の種を出す
+//   （config/sfx-music-config の SFX_SEED_MUSIC_D に書く数。tests/sfx-music-score が同じ区間で確かめ直す）。D（前）・L0〜L2 は種を動かさない（IP1 の標本のまま）: 「決まりを全部通る最初の種」
+//   の鎖（D（前）は 7604 から・L0 は 7628 から＝消した A 7603・E 7627 の次）を確かめて出す。
 // - 既定: 鍵ごとに 長さ・頂・RMS（dBFS）・400 Hz より上と 200 Hz より下のエネルギーの割合（§3.3: 上 ≥ 60%・下 ≤ 12%）・2.5 kHz より上の割合（IP1: 尖った倍音の目安）・継ぎ目（末尾 → 頭の標本の差と、ふつうの差の
 //   中央値・99%。継ぎ目をまたぐ 50 ms の RMS とその前後）・重心・作る費用（単位・予算 MUSIC_BUILD_BUDGET で何フレーム）と node の時間（1 回の stepBuild の中央値・95%・最大）・
-//   旋律の数（強拍の和音の音の割合・順次の割合・跳躍の戻り・音域・句の終わりの音・決まりの破れ）。任務の段（静か・緊張・戦闘）の重ね（L2 は 4 回）と、出口（× 音量 × master 0.8）の
+//   旋律の数（強拍の和音の音の割合・順次の割合・跳躍の戻り・音域・句の終わりの音・決まりの破れ）と旋律の点。任務の段（静か・緊張・戦闘）の重ね（L2 は 4 回）と、出口（× 音量 × master 0.8）の
 //   RMS を目標（§3.4）と比べ、音量の案（目標 ÷（RMS × 0.8）。緊張・戦闘は重ねて二分法）を出す。IP1: 緊張と戦闘の違い（発音の密度・2〜5 kHz の帯の出口・RMS。tests/sfx-music-contrast と同じ数え方）。
 // - WAV=1: <出力先>/<鍵>.wav（16 bit・モノ・22,050 Hz。LOOP=<回数> で輪を続けて書く＝継ぎ目を聴く）と段の重ね mix-tense.wav・mix-battle.wav（頂 0.9 にそろえる）。
 //   PNG=1: <出力先>/music-strip.png（鍵の順に波形と声紋の帯）。出力先は scratchpad（repo には音・画像のファイルを入れない）。
-// - RAW=1（v0.7.2 S1）: メニューの mix の材料 <出力先>/raw-menu-<鍵>.json（タイトルの候補ごとに 12 秒: 曲の頭から × MUSIC_GAIN と、1 秒目から 1.5 秒おきのボタンの音 ui_tap
+// - RAW=1（v0.7.2 S1）: メニューの mix の材料 <出力先>/raw-menu-<鍵>.json（タイトルの曲ごとに 12 秒: 曲の頭から × MUSIC_GAIN と、1 秒目から 1.5 秒おきのボタンの音 ui_tap
 //   ＝表の音量 × 中央のパン 0.707 の左右）。scripts/headless/sfx-offline.mjs が本物のリミッタ（ボタンの音）と master へ直の曲の束で出口を作り、ボタンの音の頂と曲の RMS の差を出す。
 // 実行: npx esbuild scripts/sfx-music.ts --bundle --platform=node --format=esm --outfile=<scratch>/sfx-music.mjs && [SEARCH=1] [WAV=1] [PNG=1] node <scratch>/sfx-music.mjs [<出力先>]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  MUSIC_BUILD_BUDGET, MUSIC_GAIN, MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_MASTER_GAIN, MUSIC_MOOD_WEIGHTS, MUSIC_SAMPLE_RATE, MUSIC_TARGET_DBFS, MUSIC_TITLE_KEYS, MUSIC_WORK_SAMPLES, type MusicKey,
+  MUSIC_BUILD_BUDGET, MUSIC_GAIN, MUSIC_KEYS, MUSIC_LAYER_KEYS, MUSIC_MASTER_GAIN, MUSIC_MOOD_WEIGHTS, MUSIC_SAMPLE_RATE, MUSIC_SEED_SEARCH_D, MUSIC_TARGET_DBFS, MUSIC_TITLE_KEYS, MUSIC_WORK_SAMPLES,
+  type MusicKey,
 } from '../src/config/sfx-music-config';
 import { SFX_MAX_TOTAL_SAMPLES, SFX_TABLE } from '../src/config/sfx-config';
 import { renderSfx } from '../src/assets/sfx-bank';
 import { composeMusic, melodyCheck, type MusicScore } from '../src/assets/sfx-music-compose';
 import { MusicBuilder, composeMusicKey } from '../src/assets/sfx-music-render';
 import { MusicTables } from '../src/assets/sfx-music-synth';
-import { MUSIC_THEMES } from '../src/assets/sfx-music-themes';
+import { musicality } from '../src/assets/sfx-music-score';
+import { MUSIC_SEEDS, MUSIC_THEMES, MUSIC_TITLE_DEFAULT_ID } from '../src/assets/sfx-music-themes';
 import { SeededRng } from '../src/core/rng';
 import { STRIP_H, STRIP_W, bandShare, bandShares, centroidHz, drawStrip, onsetRate, pngBytes, wavBytes } from './sfx-files';
 
@@ -40,16 +44,30 @@ function moodMix(xs: Readonly<Record<MusicKey, Float32Array>>, mood: number, gai
   return out;
 }
 
-function search(from: number): void {
-  let seed = from;
-  for (const key of MUSIC_KEYS) {
-    const tally = new Map<string, number>();
-    for (let tries = 0; ; tries++, seed++) {
-      const v = melodyCheck(composeMusic(MUSIC_THEMES[key], new SeededRng(seed))).violations;
-      if (v.length === 0) { console.log(`${key.padEnd(11)} 種 ${seed}（${tries} 個を落とした${tries ? `: ${[...tally].map(([k, c]) => `${k} ${c}`).join('・')}` : ''}）`); seed++; break; }
-      for (const r of v) tally.set(r.replace(/@\d+/, ''), (tally.get(r.replace(/@\d+/, '')) ?? 0) + 1);
-      if (tries > 5000) throw new Error(`${key}: 5,000 個の種で決まりを通らない`);
-    }
+/** 種の鎖の始まり（決まりを全部通る最初の種。IP1 の標本のまま動かさない＝消した A 7603・E 7627 の次から） */
+export const SEED_CHAIN_FROM: Readonly<Partial<Record<MusicKey, number>>> = { title_d_prev: 7604, mission_l0: 7628, mission_l1: 7629, mission_l2: 7630 };
+
+function search(): void {
+  // D: 区間の種を全部作曲して点を比べる（上位 5 つと決まりの破れの数）
+  const th = MUSIC_THEMES.title_d, rows: { seed: number; r: ReturnType<typeof musicality> }[] = [], tally = new Map<string, number>();
+  for (let s = MUSIC_SEED_SEARCH_D.from; s < MUSIC_SEED_SEARCH_D.from + MUSIC_SEED_SEARCH_D.count; s++) {
+    const r = musicality(composeMusic(th, new SeededRng(s)));
+    for (const x of r.violations) tally.set(x.replace(/@\d+/, ''), (tally.get(x.replace(/@\d+/, '')) ?? 0) + 1);
+    rows.push({ seed: s, r });
+  }
+  rows.sort((a, b) => b.r.total - a.r.total || a.seed - b.seed);
+  const ok = rows.filter((x) => x.r.total > 0).length;
+  console.log(`title_d: ${MUSIC_SEED_SEARCH_D.count} 個の種（${MUSIC_SEED_SEARCH_D.from}〜${MUSIC_SEED_SEARCH_D.from + MUSIC_SEED_SEARCH_D.count - 1}）・決まりを全部通る ${ok} 個・破れ ${[...tally].sort((a, b) => b[1] - a[1]).map(([k, c]) => `${k} ${c}`).join('・')}`);
+  for (const [k, x] of rows.slice(0, 5).entries()) {
+    const r = x.r;
+    console.log(`  ${k + 1}. 種 ${x.seed}  点 ${r.total.toFixed(3)}  ${Object.entries(r.parts).map(([n, v]) => `${n} ${v.toFixed(2)}`).join(' ')}  （戻り ${r.returns}・山 ${(r.climaxAt * 100).toFixed(1)}%・音域 ${r.span} 半音・順次 ${(r.stepShare * 100).toFixed(0)}%・跳躍 ${r.leaps}）`);
+  }
+  console.log(`  一番の種 ${rows[0]!.seed}（今の SFX_SEED_MUSIC_D ${MUSIC_SEEDS.title_d}${rows[0]!.seed === MUSIC_SEEDS.title_d ? '＝同じ' : '＝直す'}）`);
+  // D（前）・任務の層: 種の鎖を確かめる（決まりを全部通る最初の種のまま）
+  for (const [key, from] of Object.entries(SEED_CHAIN_FROM) as [MusicKey, number][]) {
+    let seed = from;
+    while (melodyCheck(composeMusic(MUSIC_THEMES[key], new SeededRng(seed))).violations.length > 0) seed++;
+    console.log(`${key.padEnd(12)} 種 ${seed}（${from} から・今 ${MUSIC_SEEDS[key]}${seed === MUSIC_SEEDS[key] ? '＝同じ' : '＝違う'}）`);
   }
 }
 
@@ -61,7 +79,7 @@ function report(outDir: string): void {
   const t0 = performance.now();
   let tableUnits = 0, tableCalls = 0;
   while (!tables.ready) { tableUnits += tables.stepTables(MUSIC_BUILD_BUDGET); tableCalls++; }
-  console.log(`表（波形 6 × オクターブ 6・雑音 32,768）: ${tableUnits.toFixed(0)} 単位・${tableCalls} 回・${(performance.now() - t0).toFixed(1)} ms`);
+  console.log(`表（波形 3 × オクターブ 6・雑音 32,768）: ${tableUnits.toFixed(0)} 単位・${tableCalls} 回・${(performance.now() - t0).toFixed(1)} ms`);
   const xs = {} as Record<MusicKey, Float32Array>;
   let total = 0;
   for (const key of MUSIC_KEYS) {
@@ -83,6 +101,7 @@ function report(outDir: string): void {
     const c = melodyCheck(sc);
     if (c.count > 0) console.log(`${''.padEnd(11)} 旋律 ${c.count} 音: 強拍の和音の音 ${pct(c.strongChord)}・順次 ${pct(c.stepShare)}（跳躍 ${pct(1 - c.stepShare)}）・跳躍の戻り ${pct(c.recovered)}・音域 ${noteName(c.low)}〜${noteName(c.high)}・句の終わり ${MUSIC_THEMES[key].melody!.cadences.map(([bar, k], i) => `${bar} 小節 ${k} ${noteName(c.cadences[i]!)}`).join('・')}・決まりの破れ ${c.violations.length ? c.violations.join(',') : 'なし'}`);
     if (c.count > 0) console.log(`${''.padEnd(11)} 旋律の音: ${sc.melody.map((m) => noteName(m.pitch)).join(' ')}`);
+    if (c.count >= 8) { const r = musicality(sc); console.log(`${''.padEnd(11)} 旋律の点 ${r.total.toFixed(3)}（${Object.entries(r.parts).map(([n, v]) => `${n} ${v.toFixed(2)}`).join(' ')}・破れ ${r.violations.join(',') || 'なし'}）`); }
     if (wav) {
       const rep = new Float32Array(n * loops);
       for (let k = 0; k < loops; k++) rep.set(x, k * n);
@@ -133,7 +152,7 @@ function rawMenu(xs: Readonly<Record<MusicKey, Float32Array>>, outDir: string): 
   }
   console.log(`メニューの mix の材料: ${outDir}/raw-menu-<鍵>.json（${MUSIC_TITLE_KEYS.join('・')}。ボタンの音 ${uiAt.length} 回）`);
 }
-const MUSIC_LENGTHS_SUM = (): number => MUSIC_KEYS.filter((k) => k === 'title_a' || MUSIC_LAYER_KEYS.includes(k)).reduce((a, k) => a + MUSIC_THEMES[k].bars * MUSIC_THEMES[k].beats * 4 * ((SR * 60) / (MUSIC_THEMES[k].bpm * 4)), 0);
+const MUSIC_LENGTHS_SUM = (): number => MUSIC_KEYS.filter((k) => k === MUSIC_TITLE_DEFAULT_ID || MUSIC_LAYER_KEYS.includes(k)).reduce((a, k) => a + MUSIC_THEMES[k].bars * MUSIC_THEMES[k].beats * 4 * ((SR * 60) / (MUSIC_THEMES[k].bpm * 4)), 0);
 
-if (process.env.SEARCH === '1') search(Number(process.env.FROM ?? 7601));
+if (process.env.SEARCH === '1') search();
 else report(process.argv[2] ?? '');

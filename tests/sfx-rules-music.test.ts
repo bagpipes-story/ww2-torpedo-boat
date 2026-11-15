@@ -66,12 +66,13 @@ describe('曲の再生の作法（v0.7.2 S1）', () => {
 
 describe('曲の骨組み（v0.7.2 S0）と再生（S1）', () => {
   const MUSIC = SFX.filter((f) => basename(f).startsWith('sfx-music-'));
-  it('曲のファイル: 純粋な層（config・assets・core）に 6 本、再生の層（systems）に S1 の 2 本と S2 の 2 本。どれにも上の作法（乱数・毎フレームの口・import・300 行）が効く', () => {
+  it('曲のファイル: 純粋な層（config・assets・core）に 10 本（IP2 で作曲器を分けた 4 本＝伴奏・動機の計画・旋律の点・基礎）、再生の層（systems）に S1 の 2 本と S2 の 2 本。どれにも上の作法（乱数・毎フレームの口・import・300 行）が効く', () => {
     expect(MUSIC.filter((f) => PURE.includes(f))).toEqual([
-      'src/assets/sfx-music-compose.ts', 'src/assets/sfx-music-render.ts', 'src/assets/sfx-music-synth.ts', 'src/assets/sfx-music-themes.ts', 'src/config/sfx-music-config.ts', 'src/core/sfx-music-mood.ts',
+      'src/assets/sfx-music-arrange.ts', 'src/assets/sfx-music-compose.ts', 'src/assets/sfx-music-plan.ts', 'src/assets/sfx-music-render.ts', 'src/assets/sfx-music-score.ts', 'src/assets/sfx-music-synth.ts',
+      'src/assets/sfx-music-themes.ts', 'src/assets/sfx-music-theory.ts', 'src/config/sfx-music-config.ts', 'src/core/sfx-music-mood.ts',
     ]);
     expect(MUSIC.filter((f) => PLAYBACK.includes(f))).toEqual(['src/systems/sfx-music-build.ts', 'src/systems/sfx-music-duck.ts', 'src/systems/sfx-music-player.ts', 'src/systems/sfx-music-slots.ts']);
-    expect(MUSIC.length).toBe(10);
+    expect(MUSIC.length).toBe(14);
     expect(readFileSync('src/systems/sfx-music-player.ts', 'utf8').split('\n').length).toBeLessThanOrEqual(261); // S1 の brief: 260 行以下（S2 は音源の組を sfx-music-slots へ分けて保つ）
     expect(readFileSync('src/scenes/music-lab-scene.ts', 'utf8').split('\n').length).toBeLessThanOrEqual(251); // 250 行以下
   });

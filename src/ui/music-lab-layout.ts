@@ -9,8 +9,8 @@ import {
 import { SOUND_LAB_BACK_H, SOUND_LAB_BACK_W, SOUND_LAB_COL_GAP } from '../config/sound-lab-config';
 import type { SoundLabFrame, SoundLabRect } from './sound-lab-layout';
 
-/** 行 0（タイトルの曲）のボタンの数: 候補 3 つと「止める」 */
-export const MUSIC_LAB_ROW0_COLS = 4;
+/** 行 0（タイトルの曲）のボタンの数: D（今）・D（前）と「止める」（v0.7.2 IP2。IP1 は候補 A・D・E と「止める」の 4 つ） */
+export const MUSIC_LAB_ROW0_COLS = 3;
 /** v0.7.2 S2: 行 1（任務の曲）＝段 3 つ・「自動」・「止める」、行 2（効果音と一緒に）＝台本 4 つ（S3 で「命中＋スロー」を足した）・「止める」 */
 export const MUSIC_LAB_ROW1_COLS = 5;
 export const MUSIC_LAB_ROW2_COLS = 5;
@@ -44,14 +44,15 @@ export function musicLabHasStop(row: number): boolean {
 }
 
 /**
- * ボタンの題と 2 行目（場の create だけ）: 行 0 はゲームの曲（titleDefault 番）を「記号（今）」・行 1 は段と自動・行 2 は台本・行 3 はゲームの命中スローの案（slowDefault 番）を
- * 「記号（今）」。「止める」のある行の最後は「止める」
+ * ボタンの題と 2 行目（場の create だけ）: 行 0 はゲームの曲（titleDefault 番）を「記号（今）」・ほかは記号だけ（v0.7.2 IP2）・行 1 は段と自動・行 2 は台本・行 3 はゲームの
+ * 命中スローの案（slowDefault 番）を「記号（今）」。「止める」のある行の最後は「止める」
  */
 export function musicLabLabel(row: number, col: number, titleDefault: number, slowDefault: number): [string, string] {
   if (musicLabHasStop(row) && col === MUSIC_LAB_ROW_COLS[row]! - 1) return [MUSIC_LAB_STOP_JA, MUSIC_LAB_STOP_SUB_JA];
   if (row === MUSIC_LAB_ROW_TITLE) {
+    // v0.7.2 IP2: 題は記号だけ（ゲームの曲は「記号（今）」）＝［D（今） 新しい D］［D（前） 実機 2 回目の D］
     const d = col === titleDefault;
-    return [musicLabButtonTitle(MUSIC_LAB_LETTERS[col]!, MUSIC_LAB_NAMES_JA[col]!, d), musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
+    return [d ? `${MUSIC_LAB_LETTERS[col]!}${MUSIC_LAB_DEFAULT_MARK_JA}` : MUSIC_LAB_LETTERS[col]!, musicLabButtonSub(MUSIC_LAB_NAMES_JA[col]!, MUSIC_LAB_NOTES_JA[col]!, d)];
   }
   if (row === MUSIC_LAB_ROW_MOOD) return col === MUSIC_LAB_MOOD_TITLES_JA.length ? [MUSIC_LAB_AUTO_JA, MUSIC_LAB_AUTO_SUB_JA] : [MUSIC_LAB_MOOD_TITLES_JA[col]!, MUSIC_LAB_MOOD_SUBS_JA[col]!];
   if (row === MUSIC_LAB_ROW_DEMO) return [MUSIC_LAB_DEMO_TITLES_JA[col]!, MUSIC_LAB_DEMO_SUBS_JA[col]!];

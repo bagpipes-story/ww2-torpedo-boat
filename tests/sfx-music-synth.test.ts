@@ -34,8 +34,8 @@ function shareAbove(x: Float32Array, from: number, len: number, hz: number): num
   for (let i = 1; i < mag.length; i++) { const p = mag[i]! * mag[i]!; all += p; if ((i * SR) / len >= hz) hi += p; }
   return hi / all;
 }
-/** 楽器ごとの代表の音高（金管の旋律・刻み・弓・やわらかい和音・トレモロ・鈴・パッド） */
-const PITCH: Partial<Record<MusicInst, number>> = { horn: 72, stab: 64, bowed: 60, soft: 66, trem: 83, bell: 79, pad: 64, padDark: 66 };
+/** 楽器ごとの代表の音高（金管の旋律・刻み・弓・対旋律の弦〔IP2〕・トレモロ・鈴・パッド） */
+const PITCH: Partial<Record<MusicInst, number>> = { horn: 72, stab: 64, bowed: 60, strings: 66, trem: 83, bell: 79, pad: 64, padDark: 66 };
 const TONES = INSTS.filter((i) => MUSIC_INSTRUMENTS[i].kind === 'tone');
 
 describe('曲の楽器（v0.7.2 S0）', () => {
@@ -86,18 +86,21 @@ describe('曲の楽器（v0.7.2 S0）', () => {
     expect(Buffer.from(t2.noise.buffer).equals(Buffer.from(TB.noise.buffer))).toBe(true);
     expect(new MusicTables().stepTables(2047)).toBe(0);
   });
-  it('IP1〜IP2 の教え: 曲の音符で 200 Hz より下の基音は 0.4 秒より長く鳴らない（鳴らすなら 2〜6 倍音が 70% 以上）', () => {
+  it('IP1〜IP2 の教え: 曲の音符で 200 Hz より下の基音は 0.4 秒より長く鳴らない（鳴らすなら 2〜6 倍音が 70% 以上）。v0.7.2 IP2: 200 Hz より下の音符は 0（D の動く低音も G#3＝208 Hz 以上）', () => {
+    const ok = (nt: MusicNote): boolean => midiHz(nt.pitch) >= 200 || musicSoundingS(nt) <= 0.4 || musicHarmonic26Share(MUSIC_INSTRUMENTS[nt.inst].wave as MusicWave, midiHz(nt.pitch)) >= 0.7;
     let low = 0;
     for (const k of MUSIC_KEYS) {
       for (const nt of composeMusicKey(k).notes) {
-        const d = MUSIC_INSTRUMENTS[nt.inst];
-        if (d.kind === 'noise' || midiHz(nt.pitch) >= 200) continue;
-        low++;
-        const ok = musicSoundingS(nt) <= 0.4 || musicHarmonic26Share(d.wave as MusicWave, midiHz(nt.pitch)) >= 0.7;
-        expect(ok, `${k} ${nt.inst} ${midiHz(nt.pitch).toFixed(0)} Hz ${musicSoundingS(nt).toFixed(2)} 秒`).toBe(true);
+        if (MUSIC_INSTRUMENTS[nt.inst].kind === 'noise') continue;
+        if (midiHz(nt.pitch) < 200) low++;
+        expect(ok(nt), `${k} ${nt.inst} ${midiHz(nt.pitch).toFixed(0)} Hz ${musicSoundingS(nt).toFixed(2)} 秒`).toBe(true);
       }
     }
-    expect(low).toBeGreaterThan(0); // E の拍の頭の低い金管（G3。空の検査にしない）
+    expect(low).toBe(0); // IP2 で E（拍の頭の低い金管 G3）を消した
+    expect(Math.min(...composeMusicKey('title_d').notes.filter((x) => MUSIC_INSTRUMENTS[x.inst].kind !== 'noise').map((x) => midiHz(x.pitch)))).toBeGreaterThanOrEqual(200);
+    // 決まりの見張りが効く（空の検査にしない）: 196 Hz（G3）のパッドを 1 秒は破る・0.3 秒の弓はよい
+    expect(ok(note('pad', 0, SR, 55))).toBe(false);
+    expect(ok(note('bowed', 0, Math.round(0.2 * SR), 55))).toBe(true);
   });
   it('雑音の打楽器の胴は 180 Hz 以上（ティンパニ風の打ち boom は 220 Hz 以上＝緊張の心音・戦闘の拍）・うねりの帯は 400〜1,600 Hz', () => {
     for (const inst of INSTS) {

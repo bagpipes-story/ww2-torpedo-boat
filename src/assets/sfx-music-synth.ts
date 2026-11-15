@@ -2,7 +2,7 @@
 // - 波形表（2,048 点・線形補間）: 波形 3 種 × オクターブ 6 本。表ごとに 10 kHz より上の倍音を入れない（22,050 Hz で折り返さない）。大きさは RMS でそろえる（低い音も高い音も同じ
 //   大きさ）。表と雑音（32,768 標本）は MusicTables が持つ（確保は constructor だけ。埋めるのは stepTables で、予算の内で 1 倍音ずつ）。
 // - 楽器（spec §3.3。iPhone の本体は約 300〜400 Hz より下がほとんど出ない）: パッド（鋸の表・立ち上がり 1.5 秒）・鈴（FM 3.5:1・正弦の表）・温かい金管（旋律と刻み）・弓の刻み・
-//   やわらかい和音・高いトレモロ・小太鼓とティンパニ風の打ち（雑音の帯＋胴。胴は 180 Hz 以上）・やわらかいシンバル・うねり（雑音の帯 400〜1,600 Hz）。v0.7.2 IP1 で明るい表を消した。
+//   対旋律の弦（IP2）・高いトレモロ・小太鼓とティンパニ風の打ち（雑音の帯＋胴。胴は 180 Hz 以上）・やわらかいシンバル・うねり（雑音の帯 400〜1,600 Hz）。v0.7.2 IP1 で明るい表を消した。
 // - IP1〜IP2 の教え（長く鳴る低い正弦は本体で「ポンっ」）: 200 Hz より下の基音は 0.4 秒より長く鳴らさない（鳴らすなら 2〜6 倍音が 70% 以上。tests/sfx-music-synth が音符で確かめる）。
 // - 音符 1 つを書く口 stepTone・stepFm・stepNoise: 共有の Float32Array に足す（輪の長さ n。はみ出す尾は頭へ＝2 区間に分けて書く・% なし）。包絡は掛け算の漸化式（標本ごとの exp なし）。
 //   [i0, i1) だけを書き、続きの状態は st に残す（分けて書いても一度に書いても同じ標本）。毎フレームの口なので確保しない（名前が step* ＝tests/sfx-rules の検査が効く）。
@@ -41,7 +41,7 @@ export function musicHarmonic26Share(wave: MusicWave, hz: number): number {
   return mid / all;
 }
 
-export type MusicInst = 'pad' | 'padDark' | 'bell' | 'horn' | 'stab' | 'bowed' | 'soft' | 'trem' | 'snare' | 'boom' | 'crash' | 'swell';
+export type MusicInst = 'pad' | 'padDark' | 'bell' | 'horn' | 'stab' | 'bowed' | 'strings' | 'trem' | 'snare' | 'boom' | 'crash' | 'swell';
 /**
  * 音符（作曲器 assets/sfx-music-compose が作る）: 楽器・始めの標本（0〜輪の長さ − 1）・押さえている長さ（標本。この後は離した後の減衰）・音高（MIDI。小数は cent のずれ。
  * 打楽器は使わない）・強さ（線形）・減衰の秒の上書き（0 は楽器の値。鈴の 0.9〜1.8 秒）・雑音の表の読み始め（打楽器ごとに違う所から）
@@ -63,7 +63,8 @@ interface InstDef {
 /**
  * 楽器の表（音色の数＝聞かせ方の定数。強さの比は作曲器の層の vel と掛ける）。v0.7.2 IP1: 温かい金管の旋律 horn（暗い表 → horn の表へ 0.07 秒で）・金管の刻み stab・弓の刻み bowed・
  * やわらかい和音 soft・高いトレモロ trem・ティンパニ風の打ち boom（胴 280 → 230 Hz と 2 倍の倍音）・やわらかいシンバル crash を足し、B・C と前の L1・L2 の楽器（明るいはじく音・
- * 1/√h の金管・弱音器・トム・リム・ブラシ・16 分の震え・ぱちぱち）を消した
+ * 1/√h の金管・弱音器・トム・リム・ブラシ・16 分の震え・ぱちぱち）を消した。v0.7.2 IP2: 対旋律の弦 strings（温かい表・立ち上がり 0.09 秒・のばす・0.25 秒から 5.2 Hz のビブラート）を足し、
+ * E だけが使っていた soft を消した（E を消した＝ユーザーの決め）
  */
 export const MUSIC_INSTRUMENTS: Readonly<Record<MusicInst, InstDef>> = {
   pad: { kind: 'tone', gain: 0.5, attackS: 1.5, decayS: 0, releaseS: 0.9, wave: 'warm' },
@@ -72,7 +73,7 @@ export const MUSIC_INSTRUMENTS: Readonly<Record<MusicInst, InstDef>> = {
   horn: { kind: 'tone', gain: 0.7, attackS: 0.035, decayS: 4, releaseS: 0.14, wave: 'dark', wave2: 'horn', brightS: 0.07, bright: 0.8, vibHz: 5, vibDepth: 0.003, vibDelayS: 0.2, vibRampS: 0.3 },
   stab: { kind: 'tone', gain: 0.8, attackS: 0.006, decayS: 0.5, releaseS: 0.06, wave: 'dark', wave2: 'horn', brightS: 0.012, bright: 1 },
   bowed: { kind: 'tone', gain: 0.75, attackS: 0.012, decayS: 0.45, releaseS: 0.07, wave: 'warm' },
-  soft: { kind: 'tone', gain: 0.7, attackS: 0.02, decayS: 0.6, releaseS: 0.1, wave: 'dark' },
+  strings: { kind: 'tone', gain: 0.6, attackS: 0.09, decayS: 0, releaseS: 0.28, wave: 'warm', vibHz: 5.2, vibDepth: 0.0035, vibDelayS: 0.25, vibRampS: 0.4 },
   trem: { kind: 'tone', gain: 0.4, attackS: 0.9, decayS: 0, releaseS: 1.2, wave: 'dark', tremHz: 7, tremDepth: 0.6 },
   snare: { kind: 'noise', gain: 0.8, attackS: 0.001, decayS: 0.12, releaseS: 0.05, hpHz: 1200, lpHz: 7000, noiseGain: 1, bodyHz: 200, bodyToHz: 185, bodyDecayS: 0.05, bodyGain: 0.5 },
   boom: { kind: 'noise', gain: 0.9, attackS: 0.002, decayS: 0.08, releaseS: 0.3, hpHz: 250, lpHz: 1200, noiseGain: 0.35, bodyHz: 280, bodyToHz: 230, bodyDecayS: 0.3, bodyGain: 0.8, body2: 1 },

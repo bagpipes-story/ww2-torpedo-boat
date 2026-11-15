@@ -7,21 +7,21 @@
 /**
  * 上の説明（ビルド番号の下・中央）。v0.7.2 S3: 2 行を改行で分けた（S2 までは折り返し任せで、論理幅 1280 では語の切れ目で 3 行になり、3 行目が行 0 のボタンの上にかかった）。
  * どの行も論理幅 1280〜1584 の折り返しの幅（論理幅 − 2 × 余白）に収まる＝折り返さない（tests/music-lab が 8 px 刻みで見る）。2 行の下は行の上 124 より上。
- * v0.7.2 IP1: タイトルの曲の記号を A・D・E に（命中スローは A・B・C のまま）
+ * v0.7.2 IP1: タイトルの曲の記号を A・D・E に（命中スローは A・B・C のまま）。v0.7.2 IP2: ユーザーの決め（タイトルの曲は D・命中スローは A）。場は聞き比べのために残す
  */
-export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲は A・D・E、命中スローは A・B・C から選んでください（（今）がゲームの案）\n押すと作って鳴らします。知っている曲に似ていたら一言ください（その案は作り直します）';
+export const MUSIC_LAB_HEAD_JA = '曲の試聴（v0.7.2）：タイトルの曲は D、命中スローは A に決まりました（（今）がゲームの曲と案・聞き比べ用）\nD（今）は作り直した D、D（前）は前の D。押すと作って鳴らします。知っている曲に似ていたら一言ください';
 /** 行の名前と、その下の小さい一言（行 0＝タイトルの曲・行 1＝任務の曲・行 2＝効果音と一緒に・行 3＝命中スロー＝S3） */
 export const MUSIC_LAB_ROW_LABELS_JA: readonly string[] = ['タイトルの曲', '任務の曲', '効果音と一緒に', '命中スロー'];
 export const MUSIC_LAB_ROW_SUBS_JA: readonly string[] = ['押すと作って鳴らす', '段で変わる（ゲームと同じ）', 'ゲームと同じ大きさと下げ', '押すと命中とスロー'];
 /**
- * タイトルの曲の候補（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝A・D・E）: 記号・名前・2 行目の一言。ボタンの題は「記号 名前」、ゲームの曲（既定）は「記号（今）」だけ
- * （v0.7.1 IP4 と同じ: 論理幅 1280 の 4 列のボタン 233 px に収める）で、名前は 2 行目へ。v0.7.2 IP1: B・C（実機 1 回目で B は「ファミコンの RPG みたい」）を D「A を行進で」・
- * E「勇ましい行進」（どちらも 126 BPM）に替えた（記号を D・E にして、消した B・C と取り違えないように）
+ * タイトルの曲（並びは config/sfx-music-config の MUSIC_TITLE_KEYS＝D・D（前））: 記号・名前・2 行目の一言。v0.7.2 IP2: 行 0 は［D（今） 新しい D］［D（前） 実機 2 回目の D］［止める］
+ * （ゲームの曲は「記号（今）」の題と名前の 2 行目、ほかは記号だけの題と一言の 2 行目＝ui/music-lab-layout の musicLabLabel）。IP1 の A・E はユーザーの決めで消した
+ * （v0.7.2 IP1: B・C〔実機 1 回目で B は「ファミコンの RPG みたい」〕を D「A を行進で」・E「勇ましい行進」に替えた）
  */
-export const MUSIC_LAB_LETTERS: readonly string[] = ['A', 'D', 'E'];
-export const MUSIC_LAB_NAMES_JA: readonly string[] = ['静かな夜の海', 'A を行進で', '勇ましい行進'];
-export const MUSIC_LAB_NOTES_JA: readonly string[] = ['パッドと鈴・63 BPM', '金管・小太鼓・126 BPM', '短調・付点・126 BPM'];
-/** 行 0 の 4 つ目のボタン（鳴っている曲を止める） */
+export const MUSIC_LAB_LETTERS: readonly string[] = ['D', 'D（前）'];
+export const MUSIC_LAB_NAMES_JA: readonly string[] = ['新しい D', '前の D'];
+export const MUSIC_LAB_NOTES_JA: readonly string[] = ['金管・弦・126 BPM', '実機 2 回目の D'];
+/** 行 0 の最後のボタン（鳴っている曲を止める） */
 export const MUSIC_LAB_STOP_JA = '止める';
 export const MUSIC_LAB_STOP_SUB_JA = '0.5 秒で消す';
 /** 行 1（任務の曲）: 段のボタン 3 つ（並びは MUSIC_MOOD_QUIET・TENSE・BATTLE）の題と 2 行目、「自動」 */
@@ -50,7 +50,10 @@ export const MUSIC_LAB_DEMOS: readonly { readonly mood: number; readonly step: s
   },
   { mood: 2, step: 'full', speed: 0.9, periodS: 8, events: [[1.0, 8, 700, -200]] },
 ];
-/** v0.7.2 S3: 行 3（命中スロー）の案（記号は config/sfx-music-config の SFX_SLOW_IDS と同じ並び＝tests/music-lab）の名前と 2 行目の一言。ゲームの案（既定）は「記号（今）」の題と名前の 2 行目 */
+/**
+ * v0.7.2 S3: 行 3（命中スロー）の案（記号は config/sfx-music-config の SFX_SLOW_IDS と同じ並び＝tests/music-lab）の名前と 2 行目の一言。ゲームの案は「記号（今）」の題と名前の 2 行目
+ * （v0.7.2 IP2: ユーザーの決め U-S1「命中スローはAでいいです」＝A）
+ */
 export const MUSIC_LAB_SLOW_LETTERS: readonly string[] = ['A', 'B', 'C'];
 export const MUSIC_LAB_SLOW_NAMES_JA: readonly string[] = ['低く遅く', '低くだけ', 'なし'];
 export const MUSIC_LAB_SLOW_NOTES_JA: readonly string[] = ['こもって遅くなる', '速さはそのまま', '今のまま（v0.7.1）'];

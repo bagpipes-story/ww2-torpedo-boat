@@ -4,46 +4,22 @@
 // 終わり（half）は 2 度か 5 度・最後（end）は主音（その音の和音に主音が無い時＝A の最後の A の和音は、その和音の根音）・5〜6 小節目は 1〜2 小節目の動機の変形（同じリズムで音階の上を移す）。
 // 決まり文句（§3.1。melodyCheck が数える。種は決まりを全部通る最初の数＝scripts/sfx-music.ts）: 主和音の分散を 4 音続けない（歩きも避ける）・5–1–3–5 で始めない・
 // 句の頭で同じ音を 3 回打って 4 度以上跳ばない（同じ音は 2 回まで）・同じ 4 小節を 3 回以上そのまま繰り返さない。どれも作る時だけ動く（確保してよい）。
-import { MUSIC_LENGTHS, MUSIC_SAMPLE_RATE, type MusicBpm, type MusicKey } from '../config/sfx-music-config';
+// v0.7.2 IP2（実機 2 回目。D を作り直す）: 型と基礎は assets/sfx-music-theory へ分けた（1 小節を等分する和音・分数の和音・sus4）。動機の計画（theme.melody.plan）のある曲の旋律は
+// assets/sfx-music-plan、伴奏の計画（theme.arrange）のある曲の伴奏は assets/sfx-music-arrange（小節ごとの強さ dyn は旋律の合奏にもここで掛ける）。計画の無い曲（D（前）・任務の家族）は
+// 前と同じ計算＝標本はビット同一。melodyCheck は音の位置の和音で数え、計画の曲の句の終わりは小節の一番長い音・closed（主音か 3 度）を足した。旋律の点は assets/sfx-music-score。
+import { MUSIC_LENGTHS } from '../config/sfx-music-config';
 import type { SeededRng } from '../core/rng';
-import { musicNoteSamples, type MusicInst, type MusicNote } from './sfx-music-synth';
+import { composeArrange } from './sfx-music-arrange';
+import { composePlanMelody } from './sfx-music-plan';
+import { musicNoteSamples, type MusicNote } from './sfx-music-synth';
+import {
+  barScale, chordAt, clampOct, lowest, nearestOf, note, pcOf, pick, scaleStep, sixteenthOf, tonicTriad,
+  type MusicCadence, type MusicMelody, type MusicPart, type MusicRhythm, type MusicScore, type MusicTheme,
+} from './sfx-music-theory';
 
-export type MusicMode = 'aeolian' | 'dorian' | 'harmonic' | 'major';
-/** リズムの型: [16 分の位置, 長さ（16 分）, 強さ（%）] の並び（型の長さは span 小節） */
-export type MusicRhythm = readonly number[];
-/** 句の終わり: half＝2 度か 5 度（半終止）・end＝主音（和音に無ければ根音）・rest＝和音の音 */
-export type MusicCadence = 'half' | 'end' | 'rest';
-export interface MusicMelody {
-  readonly inst: MusicInst; readonly low: number; readonly high: number; readonly vel: number;
-  /** 型の長さ（小節）・ふつうの型・句の終わりの型（最後の音が長い） */
-  readonly span: 1 | 2; readonly rhythms: readonly MusicRhythm[]; readonly ends: readonly MusicRhythm[];
-  /** [小節（1 から）, 終わりの種類]・[写す先の小節, 元の小節]（span 小節ずつ同じリズムで変形して写す） */
-  readonly cadences: readonly (readonly [number, MusicCadence])[]; readonly motifs: readonly (readonly [number, number])[];
-  /** 押さえる長さの割合（金管 0.9）・音ごとの減衰の秒の幅（鈴）・合奏の声の数と声ごとのずれ（cent。v0.7.2 IP1。確かめは中央の 1 声で） */
-  readonly legato: number; readonly decayS?: readonly [number, number]; readonly voices?: number; readonly cents?: number;
-}
-export interface MusicPart {
-  /** chord＝和音の音を全部（声部は前の和音の近く）・root＝根音・alt＝根音と 5 度を交互・pedal＝pcs の音を全部・none＝打楽器 */
-  readonly inst: MusicInst; readonly pitch: 'chord' | 'root' | 'alt' | 'pedal' | 'none'; readonly low: number; readonly high: number; readonly vel: number;
-  /** 型（every 小節ごとに種で選ぶ）・fillEvery 小節ごとの終わりの型（小太鼓の連打） */
-  readonly rhythms: readonly MusicRhythm[]; readonly every?: number; readonly fill?: MusicRhythm; readonly fillEvery?: number;
-  /** パッドの声の数と声ごとのずれ（cent）・pedal の音名（0〜11）・強さの揺れ（± 割合）・ぱちぱちの毎秒の数（型の代わりに種で散らす） */
-  readonly voices?: number; readonly cents?: number; readonly pcs?: readonly number[]; readonly human?: number; readonly rate?: number;
-}
-export interface MusicTheme {
-  readonly key: MusicKey; readonly bpm: MusicBpm; readonly beats: 2 | 4; readonly bars: number;
-  /** 主音（0〜11。C＝0）・旋法・1 小節 1 和音（'Dm'・'Bb'・'E7' など） */
-  readonly tonic: number; readonly mode: MusicMode; readonly chords: readonly string[];
-  readonly melody: MusicMelody | null; readonly parts: readonly MusicPart[];
-  /** 部屋の響き [響きの割合, 残響の秒]（v0.7.2 IP1。C のラジオの代わり）・打楽器の層の頂を丸める（assets/sfx-music-render） */
-  readonly room?: readonly [number, number]; readonly glue?: boolean;
-}
-/** 楽譜: 書く順の音符（旋律が先）・旋律・輪の長さ（標本） */
-export interface MusicScore { readonly theme: MusicTheme; readonly notes: readonly MusicNote[]; readonly melody: readonly MusicNote[]; readonly n: number }
+export type { MusicArrange, MusicCadence, MusicMelody, MusicMode, MusicPart, MusicPlan, MusicPlanRole, MusicRhythm, MusicScore, MusicTheme } from './sfx-music-theory';
+export { barScale, chordAt, chordBass, chordPcs, chordSymAt, pcOf, sixteenthOf } from './sfx-music-theory';
 
-const SR = MUSIC_SAMPLE_RATE;
-const MODES: Readonly<Record<MusicMode, readonly number[]>> = { aeolian: [0, 2, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], harmonic: [0, 2, 3, 5, 7, 8, 11], major: [0, 2, 4, 5, 7, 9, 11] };
-const QUALITY: Readonly<Record<string, readonly number[]>> = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10] };
 /**
  * 歩きの重み: 順次（1〜2 半音。上下で 2 つ）は 0.35 ずつ・跳躍（3 度〜5 度。上下で 6 つ）は 0.05 ずつ＝順次 70%・跳躍 30%。同じ音は 0.05（3 回目は 0）。
  * 順次の後は同じ向きを ×1.6（線が続く）・1 つ前の音へ戻るのは ×0.4（行ったり来たりの震えを避ける）
@@ -52,42 +28,6 @@ const W_STEP = 0.35, W_LEAP = 0.05, W_SAME = 0.05, MAX_LEAP = 7, W_ON = 1.6, W_B
 const SHIFTS = [-2, -1, 1, 2], NOISE_SPAN = 1 << 15;
 /** 旋律として数える音の数（これより少ない＝任務の鈴は順次・跳躍・音域の幅を数えない） */
 export const MELODY_MIN_NOTES = 8;
-
-export const pcOf = (p: number): number => ((Math.round(p) % 12) + 12) % 12;
-/** 16 分音符の標本（330,750 ÷ BPM） */
-export const sixteenthOf = (bpm: MusicBpm): number => (SR * 60) / (bpm * 4);
-/** 和音の音名（0〜11。[根音, 3 度, 5 度, (7 度)]） */
-export function chordPcs(sym: string): number[] {
-  const m = /^([A-G])([b#]?)(m7|m|7|)$/.exec(sym);
-  if (!m) throw new Error(`和音 '${sym}' が読めない`);
-  const root = 'C.D.EF.G.A.B'.indexOf(m[1]!) + (m[2] === 'b' ? -1 : m[2] === '#' ? 1 : 0);
-  return QUALITY[m[3]!]!.map((iv) => (root + iv + 12) % 12);
-}
-/** 小節の音階: 旋法の音に、和音の音で音階に無い音を半音下（無ければ上）の代わりに入れる（D エオリアの A の和音の C#・E エオリアの B7 の D#） */
-export function barScale(th: MusicTheme, chord: readonly number[]): number[] {
-  const sc = MODES[th.mode].map((iv) => (th.tonic + iv) % 12);
-  for (const c of chord) if (!sc.includes(c)) sc[sc.includes((c + 11) % 12) ? sc.indexOf((c + 11) % 12) : sc.indexOf((c + 1) % 12)] = c;
-  return sc;
-}
-function scaleStep(p: number, k: number, sc: readonly number[]): number {
-  let q = Math.round(p);
-  while (!sc.includes(pcOf(q))) q++;
-  for (let i = 0; i < Math.abs(k); i++) do q += Math.sign(k); while (!sc.includes(pcOf(q)));
-  return q;
-}
-/** pcs のどれかの音で p に一番近い音（音域の内） */
-function nearestOf(p: number, pcs: readonly number[], lo: number, hi: number): number {
-  let best = lo, bd = Infinity;
-  for (let q = lo; q <= hi; q++) if (pcs.includes(pcOf(q)) && Math.abs(q - p) < bd) { bd = Math.abs(q - p); best = q; }
-  return best;
-}
-const clampOct = (p: number, lo: number, hi: number): number => (p > hi ? clampOct(p - 12, lo, hi) : p < lo ? clampOct(p + 12, lo, hi) : p);
-const pick = <T>(list: readonly T[], rng: SeededRng): T => list[Math.floor(rng.next() * list.length)]!;
-const lowest = (pc: number, lo: number): number => lo + ((pc - (lo % 12) + 12) % 12);
-const tonicTriad = (th: MusicTheme): number[] => [th.tonic, (th.tonic + (th.mode === 'major' ? 4 : 3)) % 12, (th.tonic + 7) % 12];
-function note(inst: MusicInst, start: number, len: number, pitch: number, vel: number, decayS = 0, noise = 0): MusicNote {
-  return { inst, start: Math.round(start), len: Math.max(1, Math.round(len)), pitch, vel, decayS, noise };
-}
 
 /** 旋律の 1 音の位置（強拍・和音・音階・句の終わり・写しの元の番号と移す段） */
 interface Onset { readonly at: number; readonly dur: number; readonly vel: number; readonly strong: boolean; readonly ch: number[]; readonly sc: number[]; readonly cad?: MusicCadence; readonly src: number; readonly shift: number }
@@ -120,7 +60,7 @@ function composeMelody(th: MusicTheme, m: MusicMelody, rng: SeededRng, six: numb
     const r = srcSlot >= 0 ? rh[srcSlot]! : pick(cad ? m.ends : m.rhythms, rng);
     rh.push(r); first.push(on.length);
     for (let k = 0; k < r.length; k += 3) {
-      const at = s * barN * m.span + r[k]!, pos = at % barN, ch = chordPcs(th.chords[Math.floor(at / barN)]!);
+      const at = s * barN * m.span + r[k]!, pos = at % barN, ch = chordAt(th, at);
       on.push({ at, dur: r[k + 1]!, vel: r[k + 2]! / 100, strong: pos === 0 || (th.beats === 4 && pos === 8), ch, sc: barScale(th, ch), cad: k + 3 >= r.length ? cad : undefined, src: srcSlot >= 0 ? first[srcSlot]! + k / 3 : -1, shift });
     }
   }
@@ -155,20 +95,14 @@ function composeMelody(th: MusicTheme, m: MusicMelody, rng: SeededRng, six: numb
   return out;
 }
 
-/** 伴奏の層（型の表と和音から。pad は 3 声 ±cent・声部は前の和音の近く。ぱちぱちは毎秒 rate 回を種で散らす） */
-function composePart(th: MusicTheme, pt: MusicPart, rng: SeededRng, six: number, n: number, out: MusicNote[]): void {
+/** 伴奏の層（型の表と和音から。pad は 3 声 ±cent・声部は前の和音の近く。v0.7.2 IP2: 使う曲の無いぱちぱち〔毎秒 rate 回〕の枝は消した） */
+function composePart(th: MusicTheme, pt: MusicPart, rng: SeededRng, six: number, out: MusicNote[]): void {
   const barN = th.beats * 4, every = pt.every ?? 1, voices = pt.voices ?? 1, human = pt.human ?? 0;
-  if (pt.rate) {
-    for (let t = -Math.log(1 - rng.next()) / pt.rate; t * SR < n; t += -Math.log(1 - rng.next()) / pt.rate) {
-      out.push(note(pt.inst, t * SR, six, 0, pt.vel * (0.4 + 0.6 * rng.next()), 0, Math.floor(rng.next() * NOISE_SPAN)));
-    }
-    return;
-  }
   let center = (pt.low + pt.high) / 2, alt = 0;
   for (let b = 0; b < th.bars; b += every) {
     const r = pt.fill && pt.fillEvery && (b + every) % pt.fillEvery === 0 ? pt.fill : pick(pt.rhythms, rng);
     for (let k = 0; k < r.length; k += 3) {
-      const at = b * barN + r[k]!, ch = chordPcs(th.chords[Math.floor(at / barN)]!), root = lowest(ch[0]!, pt.low), up = (ch[2]! - ch[0]! + 12) % 12;
+      const at = b * barN + r[k]!, ch = chordAt(th, at), root = lowest(ch[0]!, pt.low), up = (ch[2]! - ch[0]! + 12) % 12;
       let ps: number[];
       if (pt.pitch === 'none') ps = [0];
       else if (pt.pitch === 'root') ps = [root];
@@ -188,11 +122,23 @@ function composePart(th: MusicTheme, pt: MusicPart, rng: SeededRng, six: number,
 export function composeMusic(th: MusicTheme, rng: SeededRng): MusicScore {
   const six = sixteenthOf(th.bpm), n = th.bars * th.beats * 4 * six;
   if (!Number.isInteger(six) || n !== MUSIC_LENGTHS[th.key] || th.chords.length !== th.bars) throw new Error(`曲 '${th.key}' の長さ ${n} が表と違う`);
-  const melody = th.melody ? composeMelody(th, th.melody, rng, six) : [], voices = th.melody?.voices ?? 1, cents = th.melody?.cents ?? 0, notes: MusicNote[] = [];
-  for (const m of melody) for (let v = 0; v < voices; v++) notes.push(voices > 1 ? { ...m, pitch: m.pitch + ((v - (voices - 1) / 2) * cents) / 100 } : m);
-  for (const pt of th.parts) composePart(th, pt, rng, six, n, notes);
+  const m0 = th.melody, melody = m0 ? (m0.plan ? composePlanMelody(th, m0, m0.plan, rng, six) : composeMelody(th, m0, rng, six)) : [];
+  const voices = m0?.voices ?? 1, cents = m0?.cents ?? 0, dyn = th.arrange?.dyn, barS = th.beats * 4 * six, notes: MusicNote[] = [];
+  for (const m of melody) {
+    const vel = dyn ? m.vel * dyn[Math.floor(m.start / barS)]! : m.vel; // IP2: 強弱の弧（伴奏の計画の小節ごとの強さ）
+    for (let v = 0; v < voices; v++) notes.push(voices > 1 || dyn ? { ...m, vel, pitch: m.pitch + ((v - (voices - 1) / 2) * cents) / 100 } : m);
+  }
+  if (th.arrange) composeArrange(th, th.arrange, melody, rng, six, notes);
+  else for (const pt of th.parts) composePart(th, pt, rng, six, notes);
   for (const x of notes) if (musicNoteSamples(x) > n) throw new Error(`曲 '${th.key}' の ${x.inst} が輪より長い`);
   return { theme: th, notes, melody, n };
+}
+
+/** 小節 b0（0 から）の一番長い音の番号（同じ長さなら先の音。IP2 の句の終わり） */
+export function cadenceNoteIndex(ns: readonly MusicNote[], bar: readonly number[], b0: number): number {
+  let best = -1;
+  for (let k = 0; k < ns.length; k++) if (bar[k] === b0 && (best < 0 || ns[k]!.len > ns[best]!.len)) best = k;
+  return best;
 }
 
 /** 旋律の確かめ（spec §3.1・§3.2 の決まり。violations が空なら通る）。cadences は句の終わりの音（MIDI） */
@@ -204,17 +150,19 @@ export function melodyCheck(sc: MusicScore): MelodyCheck {
   const th = sc.theme, m = th.melody, v: string[] = [];
   if (!m) return { count: 0, strongChord: 1, stepShare: 1, recovered: 1, low: 0, high: 0, cadences: [], violations: [] };
   const six = sixteenthOf(th.bpm), barN = th.beats * 4, ns = sc.melody, p = ns.map((x) => Math.round(x.pitch)), idx = p.map((_, i) => i);
-  const at = ns.map((x) => x.start / six), bar = at.map((a) => Math.floor(a / barN)), ch = bar.map((b) => chordPcs(th.chords[b]!));
+  const at = ns.map((x) => x.start / six), bar = at.map((a) => Math.floor(a / barN)), ch = at.map((a) => chordAt(th, a));
   const strong = idx.filter((i) => at[i]! % barN === 0 || (th.beats === 4 && at[i]! % barN === 8));
   if (idx.some((i) => !barScale(th, ch[i]!).includes(pcOf(p[i]!)))) v.push('mode');
   const strongChord = strong.filter((i) => ch[i]!.includes(pcOf(p[i]!))).length / Math.max(1, strong.length);
   if (strongChord < 0.8) v.push('strong');
-  const cadIdx = m.cadences.map(([b]) => bar.reduce((last, x, k) => (x < b && x >= b - m.span ? k : last), -1));
+  // 句の終わりの音: 句の最後の音（IP2 の動機の計画は句の終わりの小節の一番長い音＝その後の弱い拍の音は次の句への上がり）
+  const cadIdx = m.cadences.map(([b]) => (m.plan ? cadenceNoteIndex(ns, bar, b - 1) : bar.reduce((last, x, k) => (x < b && x >= b - m.span ? k : last), -1)));
   const cadences: number[] = [];
   m.cadences.forEach(([b, kind], k) => {
-    const i = cadIdx[k]!, pc = pcOf(p[i]!), c = ch[i]!, half = [(th.tonic + 2) % 12, (th.tonic + 7) % 12];
+    const i = cadIdx[k]!, pc = pcOf(p[i]!), c = ch[i]!, half = [(th.tonic + 2) % 12, (th.tonic + 7) % 12], closed = [th.tonic, tonicTriad(th)[1]!];
     cadences.push(p[i]!);
-    if (!(kind === 'half' ? half.includes(pc) && (c.includes(pc) || !half.some((x) => c.includes(x))) : kind === 'end' ? pc === (c.includes(th.tonic) ? th.tonic : c[0]) : c.includes(pc))) v.push(`cadence@${b}`);
+    const ok = kind === 'half' ? half.includes(pc) && (c.includes(pc) || !half.some((x) => c.includes(x))) : kind === 'end' ? pc === (c.includes(th.tonic) ? th.tonic : c[0]) : kind === 'closed' ? closed.includes(pc) && c.includes(pc) : c.includes(pc);
+    if (!ok) v.push(`cadence@${b}`);
   });
   const iv = p.slice(1).map((x, i) => x - p[i]!), moves = iv.filter((x) => x !== 0);
   const stepShare = moves.filter((x) => Math.abs(x) <= 2).length / Math.max(1, moves.length);
