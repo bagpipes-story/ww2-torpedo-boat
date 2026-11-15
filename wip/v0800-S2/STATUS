@@ -13,6 +13,8 @@
  M src/systems/world-enemies.ts
  M src/systems/world-enemy-step.ts
  M src/systems/world-visuals.ts
+ M tests/radar.test.ts
+ M tests/world-visuals.test.ts
 ?? src/assets/radar-art.ts
 ?? src/config/radar-art-config.ts
 ?? src/config/strait-art-config.ts
@@ -22,3 +24,8 @@
 ?? src/systems/strait-terrain.ts
 ?? src/systems/transit-telemetry.ts
 ?? src/systems/world-radar.ts
+?? tests/radar-neutral.test.ts
+?? tests/radar-world.test.ts
+?? tests/strait-art.test.ts
+?? tests/transit-world-kit.ts
+?? tests/transit-world.test.ts
