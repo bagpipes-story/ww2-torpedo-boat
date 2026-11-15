@@ -12,7 +12,7 @@ const us04 = buildWorldSetup(gameData, 'us_04', {});
 const { width: W, height: H } = us04.mission.bounds;
 const STRAIT: LandLine[] = landLinesFromShores(us04.shores!, W, H);
 const d = (x: number, y: number, lines: readonly LandLine[] = STRAIT): number => Math.sqrt(landDist2(lines, x, y));
-const CLUTTER = 400; // hit_rate_model.json の radar.models.so_early.land_clutter_m（tests/radar が data と合わせる）
+const CLUTTER = us04.radar!.landClutterM; // 400（hit_rate_model.json の radar.models.so_early.land_clutter_m。tests/radar が値を固定）
 
 describe('岸の線（陸の区間＝海域の幅から切れ目を除く）', () => {
   it('us_04: 北は y 0・陸は y の小さい側で切れ目なし、南は y 4,000・陸はその外で x 700〜1,900 が切れ目（ファーガソン水道）', () => {
