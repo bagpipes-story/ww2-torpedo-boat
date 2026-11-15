@@ -1,5 +1,5 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 18beca1..2a1b7ce 100644
+index 18beca1..1c8efeb 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
 @@ -6,14 +6,15 @@
@@ -92,7 +92,7 @@ index 18beca1..2a1b7ce 100644
 +    - JS の束（同じビルド番号 main@35e9e77・vite の表示）: 2,310,420 → 2,298,578 バイト（−11.8 kB）・gzip 709.83 → 706.38 kB（−3.45 kB＝効果音の案 −3.12・D（前）−0.33）。v0.7.2 全体は main 688.53 → 706.38＝＋17.85 kB（計画 §8.3 の門 ＋20 kB の内・余り 2.15 kB）。基準の束は main 35e9e77 を作り直して md5 6556391c… のまま（同じ 688.53 kB）。
 +    - docs: CLAUDE.md（§2「アート」に BGM＝U-M1・U-M2・U-S1・設計の既定・定数の置き場、§4 に曲の層、§7 に「曲を Boot や 1 フレームで作らない・止まっている context に曲の音源を作らない」の行・変更履歴）・docs/02（§4 の Boot・Title・Result・一時停止に `?sfxlab` と「曲」ボタンと曲の流れ、§7.1 に「BGM（v0.7.2）」）・docs/03（v0.7.2 の行に S4・実機 3 回目・最終の 3 項目）。この版の既知の制約を 1 つにまとめ直した（下）。
 +    - テスト（−27 件＝npm test 3,606 件・301 ファイル。案が 1 つになった試験と D（前）の鍵の分が減った）: 直した `tests/sfx-variants`（案はゲームの 1 つずつ・B と F の指紋・F は本体のスピーカー向け・既定＝ゲームの標本。案どうしの離れの試験は案が 1 つになったので外した）・`sound-lab`（4 行 × 1・ボタン 4 と下の段 2・説明は 1 行）・`sfx-inventory`（効果音の種 32 → 28）・`music-lab`（行 0 は D と「止める」・説明の 2 行目・既定でない候補の題）・`sfx-music-compose`・`sfx-music-render`・`sfx-music-score`（D（前）は写しで）・`sfx-music-inventory`（鍵 4・種 5・場の常駐 1,730,400）・`sfx-music-build`（試聴の場の候補は D と家族＝作ってから鳴らす・家族は 3 層がそろってから同じ when で重ねる・出てもゲームの列の曲は捨てない・作りかけを譲っても同じ標本）・`sfx-engine-music`・`sfx-engine-mood`（ランダムな移りの候補を D・家族・止める に）・道具 `sfx-music-kit`（指紋の表・PREV_THEME）。`scripts/sfx-music.ts` の種の鎖から D（前）を外した。
-+    - 短い確かめ（agent）: {CHECKS}
++    - 短い確かめ（agent）: npm test 3,606 件（301 ファイル）・typecheck（2 つの tsconfig）・lint・build が通る。短い run-gates（`SKIP="test g2 art-perf" AB_ENV="MISSION=us_02 SECS=40" SMALL_AUDIO_STATES="default audio noaudio"`・v0720/impl/S4-quick-us02）: ab-replay・hud-ab の 6 組（all・jp04base・jp03 × 2 道具）が既定・`AUDIO=1`・`NOAUDIO=1` の 18 回とも same（各 1 件）・tex-ab CHECK=1 の ✗ 0・スナップショットはそのまま。曲の音（`sfx-music-live`・その site）: 既定 19・`AUDIO=1` 19・`NOAUDIO=1` 2・`FLOW=notap` 6 の門が全部 ✓（IP2 と同じ数。ページのエラー 0・Title の曲は title_d・曲の音源は鳴っている最大 4・常駐 1,730,400・ゲームの中の作る 397 回〔中央値 0.70・95% 1.70・最大 6.40 ms〕・Result の鐘の後 2.25〜2.34 秒で 1）。試聴の場の見た目（ヘッドレスの Chromium・論理幅 1,280 と 1,584・scratchpad の v0720/impl/S4/shots）: 曲の試聴の場の行 0 は 2 つ・説明は 2 行、「効果音の試聴へ」で効果音の試聴の場（4 行 × 1）が開き、魚雷の発射を押すと「鳴らした: 魚雷の発射 F」、「曲の試聴へ」で戻る（ページのエラー 0）。
 +    - 門: （lead が別に回した run-gates の結果をここに足す）
 +- 既知の制約（最終。S0〜S4 の段ごとの制約をまとめ直した。段ごとの元の書き方は d453ac4 までの CHANGELOG）:
 +  - 耳: タイトルの曲 D と命中スローの案 A はユーザーが試聴の場で耳で選んだ（U-M2・U-S1・実機 3 回目の OK）。任務の曲（段の移り・音量）と下げの深さはまだ任務の中では聞いてもらっていない（数と試聴の場の台本だけ。S4 の後の実機の項目 ①③）。iPhone の本体のスピーカーでのメニューの曲とボタンの音の差は、本物のリミッタ（Chromium の OfflineAudioContext）で測っただけ（ボタンの音の頂 − 曲の RMS の中央値 19.3 dB・一番悪い 17.3 dB）。
