@@ -1,0 +1,1124 @@
+diff --git a/src/assets/coast-shape.ts b/src/assets/coast-shape.ts
+index 7682f25..79a38e0 100644
+--- a/src/assets/coast-shape.ts
++++ b/src/assets/coast-shape.ts
+@@ -2,11 +2,66 @@
+ // 帯の中身（砂浜の幅・寄せ波・陸の際の木々の樹冠。絵だけの乱数・x は周期 COAST_STRIP_LEN_M で折り返す＝どの帯の端も隣と同じ画素）。tests/fx-art-s3c が確かめる。
+ // 並べ方（Blitter の Bob は拡大できない＝長さは frame の幅で合わせる）: 区間の左は左右反転の帯（左端に x 512 の列＝透明へ落とした端が来る）、右は反転しない帯（右端に x 512）。
+ // 真ん中に部分の帯を 2 つ（反転と反転なし・どちらも x c〜512）＝鏡の継ぎ目は同じ列 c で続く。帯の間は 0 ≡ 512（周期）で続く。全部の帯で 1 枚おきに反転（R24）。
++// v0.8.0 S2（spec-v0800 §4.10・§7 の 9、brief L15）: 任務の岸の線の一覧（coastLines）。今の南の岸（coast）と jp_03 の北の島（evac）の 2 本は v0.7.2 の systems/coast-fx の式・順のまま、
++// 海峡の両岸（setup.shores。us_04）は北と南の陸の区間ごとに 1 本（切れ目＝水道には帯を置かない。陸は海域の幅の外へ陸の幅だけ伸ばす）。
++import { EVAC_ISLAND_LAND_M } from '../config/evac-config';
+ import {
+   COAST_CROWNS, COAST_CROWN_R_M, COAST_SAND_M, COAST_SAND_WAVE_M, COAST_STRIP_LAND_M, COAST_STRIP_LEN_M, COAST_STRIP_SEA_M,
+ } from '../config/sea-art-config';
+ import { SeededRng } from '../core/rng';
+ 
++/** 岸の 1 辺（config/shores-mission-data の ShoreSide が形で満たす）: 陸の幅と切れ目 */
++export interface ShoreSideView {
++  readonly landM: number;
++  readonly gaps: readonly { readonly x0: number; readonly x1: number }[];
++}
++
++/** 岸の線を読む世界の値（WorldSetup が満たす） */
++export interface CoastLinesView {
++  readonly mission: { readonly coast: { readonly landM: number } | null; readonly bounds: { readonly width: number; readonly height: number } };
++  readonly evac?: unknown;
++  readonly shores?: { readonly north: ShoreSideView; readonly south: ShoreSideView };
++}
++
++/** 岸の帯 1 本（Blitter 1 つ）: 帯の上端の y・区間 x0〜x1・上下の反転（陸が y < 0 の北の岸は反転＝海 8 m が y 0〜8） */
++export interface CoastLine {
++  readonly y: number;
++  readonly x0: number;
++  readonly x1: number;
++  readonly flipY: boolean;
++}
++
++/** 岸の 1 辺の陸の区間（x の昇順。−陸の幅〜海域の幅＋陸の幅から切れ目を除く。切れ目は昇順・重ならない＝V-S1） */
++export function shoreLandSpans(side: ShoreSideView, width: number): { x0: number; x1: number }[] {
++  const out: { x0: number; x1: number }[] = [];
++  let x = -side.landM;
++  for (const g of side.gaps) {
++    if (g.x0 > x) out.push({ x0: x, x1: g.x0 });
++    if (g.x1 > x) x = g.x1;
++  }
++  if (x < width + side.landM) out.push({ x0: x, x1: width + side.landM });
++  return out;
++}
++
++/** 任務の岸の帯の一覧（起動時に 1 回。岸の無い任務は空）。順は 今の南の岸 → jp_03 の北の島 → 海峡の北の岸の区間 → 南の岸の区間 */
++export function coastLines(s: CoastLinesView): CoastLine[] {
++  const out: CoastLine[] = [];
++  const { width, height } = s.mission.bounds;
++  const coast = s.mission.coast;
++  if (coast) {
++    // 南の岸（陸は y > 高さ）: 帯の上端の海 8 m が波打ち際の外
++    out.push({ y: height - COAST_STRIP_SEA_M, x0: -coast.landM, x1: width + coast.landM, flipY: false });
++    // jp_03 の北の島（陸は y < 0）: 上下を反転して、海 8 m が y 0〜8
++    if (s.evac) out.push({ y: -COAST_STRIP_LAND_M, x0: -EVAC_ISLAND_LAND_M, x1: width + EVAC_ISLAND_LAND_M, flipY: true });
++  }
++  const sh = s.shores;
++  if (sh) {
++    for (const sp of shoreLandSpans(sh.north, width)) out.push({ y: -COAST_STRIP_LAND_M, x0: sp.x0, x1: sp.x1, flipY: true });
++    for (const sp of shoreLandSpans(sh.south, width)) out.push({ y: height - COAST_STRIP_SEA_M, x0: sp.x0, x1: sp.x1, flipY: false });
++  }
++  return out;
++}
++
+ /** 帯 1 つ（Bob）: 左端の x m・frame の行（0 そのまま・1 右端の COAST_STRIP_FADE_M を透明へ）・frame の x の始まり px・幅 px・左右反転 */
+ export interface CoastBob {
+   readonly x: number;
+diff --git a/src/assets/radar-art.ts b/src/assets/radar-art.ts
+new file mode 100644
+index 0000000..0d150a9
+--- /dev/null
++++ b/src/assets/radar-art.ts
+@@ -0,0 +1,25 @@
++// レーダーの輝点の絵（v0.8.0 S2。spec-v0800 §4.10・§5.2・§7 の 1）: 緑の輪 1 枚を、レーダーのある任務（setup.radar）で初めて使う時に 1 回だけ Graphics に描いて
++// generateTexture する（テクスチャはページの間残る＝やり直しは描かない。毎フレームは systems/radar-view の Image の位置と α だけ）。
++// 輪は外の淡い光（太い線）と内の線の 2 本（同じ中心）。大きさと色は config/radar-art-config。座標は世界の m を RENDER_SCALE 倍した px（Image は 1 / RENDER_SCALE で置く）。乱数なし。
++import type Phaser from 'phaser';
++import { RENDER_SCALE } from '../config/game-config';
++import { RADAR_BLIP_COLOR, RADAR_BLIP_GLOW_ALPHA, RADAR_BLIP_GLOW_M, RADAR_BLIP_LINE_M, RADAR_BLIP_RADIUS_M, RADAR_BLIP_TEX_KEY } from '../config/radar-art-config';
++
++/** 輪の絵の 1 辺の px（k は 1 m の px。外の光の外側まで＋余白 4 px） */
++export function radarBlipTexPx(k: number): number {
++  return Math.ceil((RADAR_BLIP_RADIUS_M + RADAR_BLIP_GLOW_M / 2) * 2 * k) + 4;
++}
++
++/** 輪の絵が無ければ 1 回だけ作る（2 回目からは何もしない） */
++export function ensureRadarBlipTexture(scene: Phaser.Scene): void {
++  if (scene.textures.exists(RADAR_BLIP_TEX_KEY)) return;
++  const k = RENDER_SCALE;
++  const d = radarBlipTexPx(k);
++  const g = scene.make.graphics({ x: 0, y: 0 }, false);
++  g.lineStyle(RADAR_BLIP_GLOW_M * k, RADAR_BLIP_COLOR, RADAR_BLIP_GLOW_ALPHA);
++  g.strokeCircle(d / 2, d / 2, RADAR_BLIP_RADIUS_M * k);
++  g.lineStyle(RADAR_BLIP_LINE_M * k, RADAR_BLIP_COLOR, 1);
++  g.strokeCircle(d / 2, d / 2, RADAR_BLIP_RADIUS_M * k);
++  g.generateTexture(RADAR_BLIP_TEX_KEY, d, d);
++  g.destroy();
++}
+diff --git a/src/config/debug-setup.ts b/src/config/debug-setup.ts
+index 2f3fa88..59a7def 100644
+--- a/src/config/debug-setup.ts
++++ b/src/config/debug-setup.ts
+@@ -12,6 +12,7 @@ import {
+   DEBUG_FUEL_ALLOTMENT_GAL,
+   DEBUG_GUNBOAT_OFF,
+   DEBUG_PATROL_OFF,
++  DEBUG_RADAR_OFF,
+   DEBUG_SEAPLANE,
+   DEBUG_SEAPLANE_OFF,
+   DEBUG_SHIP_HIT_SCALE,
+@@ -46,5 +47,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
+     gunboatOff: DEBUG_GUNBOAT_OFF, // ?debug&nogunboat（v0.6.6）
+     patrolOff: DEBUG_PATROL_OFF, // ?debug&nopatrol（v0.6.7）
+     allyOff: DEBUG_ALLY_OFF, // ?debug&noally（v0.6.10）
++    radarOff: DEBUG_RADAR_OFF, // ?debug&noradar（v0.8.0 S2。config/radar-mission-data の radarSetupPart）
+   };
+ }
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index a9a03b0..4fcf4fc 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -126,6 +126,8 @@ export const DEBUG_AA_CHANCE = debugNumber('aa');
+ export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nopatrol'); // ?debug&nopatrol: 夜の哨戒機なし（v0.6.7。jp_02 の夜の 2 機が来ない。夜明けの 4 機は残る）
+ /** ?debug&noally: 味方の駆逐艦 卯月なし（v0.6.10。jp_04 が v0.6.10 S0b と同じ世界。模擬の ALLY_OFF=1 と同じ。比較用） */
+ export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
++/** ?debug&noradar: その任務のレーダーを切る（v0.8.0 S2。spec-v0800 D-R12。us_04 を「レーダーの無い艇の夜」で試す・比べる。レーダーの無い任務では何も変わらない） */
++export const DEBUG_RADAR_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noradar');
+ /** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
+ export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
+ /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
+diff --git a/src/config/radar-art-config.ts b/src/config/radar-art-config.ts
+new file mode 100644
+index 0000000..916d40d
+--- /dev/null
++++ b/src/config/radar-art-config.ts
+@@ -0,0 +1,26 @@
++// レーダーの輝点の見せ方の定数（v0.8.0 S2。spec-v0800 §3.2 の D-R2・§4.10・§5.2・§7 の 1・3。assets/radar-art と systems/radar-view が読む）。
++// ゲームの強さの値ではない（射程・掃引・陸の反射・丸めは data/hit_rate_model.json の radar。CLAUDE.md §2「アート」の作法）。輝点はみな同じ色と大きさ（種類・針路・速さは出さない＝D-R2）。
++// 薄れ方は記録の掃引の秒からの経過（固定ステップの時計）を段に丸めて、段が変わった時だけ α を書く（tween なし）。何も import しない。
++
++/** 輪の絵の鍵（レーダーのある任務で初めて使う時に 1 回作る＝ほかの任務は絵の鍵が増えない） */
++export const RADAR_BLIP_TEX_KEY = 'tex-radar-blip';
++/** 輪の色（緑。PPI の蛍光の見立て） */
++export const RADAR_BLIP_COLOR = 0x6dff8c;
++/** 輪の半径と線の幅（世界の m。丸めの格子 50 m より大きく、艦の絵（長さ約 236 m）の外にはみ出る大きさ） */
++export const RADAR_BLIP_RADIUS_M = 80;
++export const RADAR_BLIP_LINE_M = 10;
++/** 輪の外の淡い光（同じ中心の太い線）の幅 m と α */
++export const RADAR_BLIP_GLOW_M = 26;
++export const RADAR_BLIP_GLOW_ALPHA = 0.28;
++/** 置いたばかりの α と、次の掃引の直前の α（間は直線） */
++export const RADAR_BLIP_ALPHA_FRESH = 0.9;
++export const RADAR_BLIP_ALPHA_OLD = 0.25;
++/** 薄れの段の数（brief L15 の 10 段） */
++export const RADAR_BLIP_FADE_STEPS = 10;
++/** 描く深さ（航跡 4 の上・魚雷 8 と艦 9 の下＝目で見えている艦の絵が輪の上。config/game-config の DEPTH と合わせる） */
++export const RADAR_BLIP_DEPTH = 5;
++
++/** 薄れの段 q（0＝置いたばかり〜RADAR_BLIP_FADE_STEPS＝次の掃引の直前）の α */
++export function radarBlipAlpha(q: number): number {
++  return RADAR_BLIP_ALPHA_FRESH - ((RADAR_BLIP_ALPHA_FRESH - RADAR_BLIP_ALPHA_OLD) * q) / RADAR_BLIP_FADE_STEPS;
++}
+diff --git a/src/config/strait-art-config.ts b/src/config/strait-art-config.ts
+new file mode 100644
+index 0000000..5d9e577
+--- /dev/null
++++ b/src/config/strait-art-config.ts
+@@ -0,0 +1,6 @@
++// 海峡の両岸の絵の見せ方の定数（v0.8.0 S2。spec-v0800 §4.3・§4.10。systems/strait-terrain が読む）。陸の色・浜の線・字の色と大きさは今の岸（config/hunt-config の COAST_*）と同じ。
++// ゲームの強さの値ではない（岸の幅・名・切れ目・揚陸の地の名は data/missions_seed.json の shores と transit）。何も import しない。
++
++/** 揚陸の地の字の矢印（列が抜ける縁の向き。東の縁なら「ビラ →」・西の縁なら「← ビラ」） */
++export const STRAIT_LANDING_ARROW_EAST_JA = '→';
++export const STRAIT_LANDING_ARROW_WEST_JA = '←';
+diff --git a/src/core/boat-telemetry.ts b/src/core/boat-telemetry.ts
+index 24db0d3..6409f4b 100644
+--- a/src/core/boat-telemetry.ts
++++ b/src/core/boat-telemetry.ts
+@@ -1,4 +1,4 @@
+-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac を足した）。
++// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac、v0.8.0 S2 でレーダーの radar と列の通過の transit を足した）。
+ // Phaser 非依存。型だけ（実行時の値を持たない）。
+ import type { AllyTelemetry } from './ally-telemetry';
+ import type { ArmsTelemetry } from './arms-cue';
+@@ -152,4 +152,50 @@ export interface BoatTelemetry {
+   landing: LandingTelemetry; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。core/landing。jp_04）: 揚陸・報告・雷跡・出来事（systems/landing-telemetry が毎フレーム書く。無い任務は enabled false）
+   ally: AllyTelemetry; // 味方の駆逐艦 卯月（v0.6.10 S6。core/ally-telemetry。jp_04）: 呼び名・帰投の輪の呼びかけ・平常の行の末尾・最後の砲の出来事が卯月か（systems/ally-telemetry。無い任務は enabled false）
+   evac: EvacTelemetry; // 空襲下の退避（v0.6.11 S5。core/evac-telemetry。jp_03）: 操作中の隊・座席の隊の HP・予告・出来事・近い隠れ場所・狙われた隊（systems/evac-telemetry。無い任務は enabled false）
++  radar: RadarTelemetry; // 自艇のレーダー（v0.8.0 S2。core/radar の状態の写し。us_04）: 掃引・接触・最初の接触・増えた／減った（systems/radar-telemetry。無い任務・?debug&noradar は enabled false）。HUD の文・端の印・Result は S4
++  transit: TransitTelemetry; // 列の通過（v0.8.0 S2。core/ship-transit の段階の数。us_04）: 段階ごとの隻数・残りの戻り・通算（systems/transit-telemetry。無い任務は enabled false）。文は S4
++}
++
++/** レーダーの HUD・Result の材料（v0.8.0 S2。読み手は S4 の ui/radar-lines・radar-result）。輝点の位置は世界の絵（systems/radar-view）が出し、ここは数と出来事だけ */
++export interface RadarTelemetry {
++  enabled: boolean;
++  /** 艦が映る射程 m（Briefing・HUD の尾） */
++  shipRangeM: number;
++  /** 掃引の回数・今の接触（輝点）の数・一番近い接触までの m（無ければ NaN） */
++  sweeps: number;
++  contacts: number;
++  nearestM: number;
++  /** 夜の最初の接触: 秒（NaN は未だ）・一番近い輝点・その時の自艇 */
++  firstS: number;
++  firstX: number;
++  firstY: number;
++  firstFromX: number;
++  firstFromY: number;
++  /** 接触の数が増えた回数と最後の新しい接触、減った回数と最後に消えた接触 */
++  newCount: number;
++  newX: number;
++  newY: number;
++  lostCount: number;
++  lostX: number;
++  lostY: number;
++}
++
++/** 列の通過の HUD・Result の材料（v0.8.0 S2。読み手は S4 の ui/strait-lines・strait-result） */
++export interface TransitTelemetry {
++  enabled: boolean;
++  /** 列の艦の数（ハード込み） */
++  ships: number;
++  /** 今の段階ごとの隻数: まだ来ない・往路・揚陸の地（ビラ）・復路・去った・撃沈 */
++  waiting: number;
++  inbound: number;
++  away: number;
++  outbound: number;
++  gone: number;
++  sunk: number;
++  /** 残りの戻り（これから現れる艦。夜明けの後は 0）・通算（往路に現れた・揚陸の地に着いた・復路に現れた）・復路の最初の艦が現れた秒（NaN は未だ） */
++  pending: number;
++  inCount: number;
++  arrivedCount: number;
++  outCount: number;
++  firstOutS: number;
+ }
+diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
+index 5b8b487..effb410 100644
+--- a/src/entities/destroyer.ts
++++ b/src/entities/destroyer.ts
+@@ -1,6 +1,8 @@
+ // 駆逐艦（v0.2.0: 巡航・雷跡回避・体当たり。docs/02 §6.4）。判断と操舵は core/ship-ai.ts、船体円は事前確保して座標だけ更新する（§7）。
+ // 夜明けに退く（v0.6.2）: ai.retiring の間は海域の縁で止めず、縁の外へ boundsMarginM より出たら withdrawn（スプライトを 1 回だけ隠す）。
+ // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
++// 列の通過（v0.8.0 S2。us_04。systems/destroyer-transit が段階を当てる）: offMap（まだ来ない・揚陸の地＝海域の外）も out に入れる（ほかの任務の艦はいつも false）。
++// 列の艦（transitShip）は退く動きのまま縁の外へ出ても withdrawn を自分で立てない（縁の外 118 m で止まると段階の goneX 150 m に届かない）。去ったかは段階が決める（goAway）。
+ import Phaser from 'phaser';
+ import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+@@ -29,6 +31,10 @@ export class Destroyer {
+   sinkStartS = NaN;
+   /** 夜明けに退いて海域を出た（v0.6.2。スプライトは隠した。運動・当たり判定・反撃を止める。撃沈には数えない） */
+   withdrawn = false;
++  /** 列の通過の艦がまだ来ない・揚陸の地にいる（v0.8.0 S2。海域の外。隠す・動かない・当たらない・撃たない。退いた・撃沈のどちらにも数えない） */
++  offMap = false;
++  /** 列の通過の艦（v0.8.0 S2。systems/destroyer-transit が立てる）: 縁の外の退き終わり（withdrawn）は段階が決める */
++  transitShip = false;
+   private sighted = true;
+ 
+   constructor(
+@@ -53,9 +59,9 @@ export class Destroyer {
+     return this.ai.mode;
+   }
+ 
+-  /** もう狙えない（沈み始めたか、夜明けに退いて海域を出た） */
++  /** もう狙えない（沈み始めたか、夜明けに退いて海域を出たか、列の通過で海域の外＝v0.8.0） */
+   get out(): boolean {
+-    return this.sinking || this.withdrawn;
++    return this.sinking || this.withdrawn || this.offMap;
+   }
+ 
+   /**
+@@ -68,7 +74,7 @@ export class Destroyer {
+     updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
+     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
+     if (!this.ai.retiring) clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
+-    else if (beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
++    else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
+       this.withdrawn = true;
+       this.sprite.setVisible(false);
+       return true;
+@@ -128,6 +134,33 @@ export class Destroyer {
+     });
+   }
+ 
++  /**
++   * 列の通過（v0.8.0 S2）: 海域の外へ（gone＝去った＝withdrawn・退いたに数える、ほか＝まだ来ない・揚陸の地＝offMap）。絵を隠し、見つけていた・雷跡を見ていた覚えを解く
++   * （戻っても前の通過の発見を持ち越さない。体当たりの覚えは退く動きの間は使わない）。乱数は引かない
++   */
++  goAway(gone: boolean): void {
++    if (gone) this.withdrawn = true;
++    else this.offMap = true;
++    this.sprite.setVisible(false);
++    this.sighted = false;
++    const ai = this.ai;
++    ai.playerDetected = false;
++    ai.detectHoldLeftS = 0;
++    ai.wakeSpotted = false;
++    ai.wakeSeenForS = -1;
++  }
++
++  /** 列の通過（v0.8.0 S2）: 道の現れる点へ置き直して海域の中へ（絵は視程の出し入れ＝mission-telemetry の setSighted が出す。退く向きは呼ぶ側の startRetire） */
++  reappear(x: number, y: number, headingDeg: number, speedMps: number): void {
++    const s = this.state;
++    s.x = x;
++    s.y = y;
++    s.headingDeg = headingDeg;
++    s.speedMps = speedMps;
++    this.offMap = false;
++    this.refreshHull();
++  }
++
+   destroy(): void {
+     this.sprite.destroy();
+   }
+diff --git a/src/systems/coast-fx.ts b/src/systems/coast-fx.ts
+index 229e24a..8ca11cd 100644
+--- a/src/systems/coast-fx.ts
++++ b/src/systems/coast-fx.ts
+@@ -5,33 +5,33 @@
+ // 陰の絵は陸の側を帯の上の深さに分けて置く（systems/evac-terrain）＝帯は岩・崖の下を通る。斜路の海の部分（深さ 1）には寄せ波の白が掛かる（波打ち際の波）。
+ // 1 本の岸の線は Blitter 1 つ（Bob は画面の物に数えない＝見える物 +1。並べ方は assets/coast-shape）。陸の内側は今の一様な塗り（entities/shallows・systems/evac-terrain）のまま。
+ // §7: 確保は constructor だけで、毎フレームは何もしない（動かない絵）。論理の状態は読むだけ。
++// v0.8.0 S2（spec-v0800 §4.10・§7 の 9）: 岸の線の一覧（assets/coast-shape の coastLines）を受けて 1 本ずつ並べる。今の 2 本（南の岸・jp_03 の北の島）の値と順は v0.7.2 のまま、
++// 海峡の両岸（us_04 の setup.shores）は北の岸 1 本・南の岸は水道の切れ目の両側の 2 本。
+ import type Phaser from 'phaser';
+-import { coastBobs } from '../assets/coast-shape';
++import { coastBobs, coastLines } from '../assets/coast-shape';
+ import { ensureCoastStripTexture } from '../assets/sea-art';
+-import { EVAC_ISLAND_LAND_M } from '../config/evac-config';
+ import type { EvacSetup } from '../config/evac-mission-data';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import type { CoastBlock } from '../config/mission-data';
++import type { ShoresSetup } from '../config/shores-mission-data';
+ import { COAST_ART_PX_PER_M, COAST_STRIP_DEPTH, COAST_STRIP_LAND_M, COAST_STRIP_LEN_M, COAST_STRIP_SEA_M } from '../config/sea-art-config';
+ 
+ /** 世界から読む物（WorldSetup の一部） */
+ export interface CoastSetupView {
+   readonly mission: { readonly coast: CoastBlock | null; readonly bounds: { readonly width: number; readonly height: number } };
+   readonly evac?: EvacSetup;
++  /** 海峡の両岸（v0.8.0 S2。us_04 だけ） */
++  readonly shores?: ShoresSetup;
+ }
+ 
+ export class CoastFx {
+   private readonly lines: Phaser.GameObjects.Blitter[] = [];
+ 
+   constructor(scene: Phaser.Scene, s: CoastSetupView) {
+-    const coast = s.mission.coast;
+-    if (!coast) return;
++    const lines = coastLines(s);
++    if (lines.length === 0) return;
+     ensureCoastStripTexture(scene);
+-    const { width, height } = s.mission.bounds;
+-    // 南の岸（陸は y > 高さ）: 帯の上端の海 8 m が波打ち際の外
+-    this.line(scene, height - COAST_STRIP_SEA_M, -coast.landM, width + coast.landM, false);
+-    // jp_03 の北の島（陸は y < 0）: 上下を反転して、海 8 m が y 0〜8
+-    if (s.evac) this.line(scene, -COAST_STRIP_LAND_M, -EVAC_ISLAND_LAND_M, width + EVAC_ISLAND_LAND_M, true);
++    for (const l of lines) this.line(scene, l.y, l.x0, l.x1, l.flipY);
+   }
+ 
+   private line(scene: Phaser.Scene, y: number, x0: number, x1: number, flipY: boolean): void {
+diff --git a/src/systems/destroyer-group.ts b/src/systems/destroyer-group.ts
+index d7b9c48..9b6d1b0 100644
+--- a/src/systems/destroyer-group.ts
++++ b/src/systems/destroyer-group.ts
+@@ -1,6 +1,8 @@
+ // 駆逐艦の隊（v0.4.5。難易度ハードで 2 隻以上。v0.4.7 から輸送船も隊の 1 隻）: 艦（entities/destroyer）とその反撃（enemy-fire）を隻数ぶん持ち、世界・敵の側・テレメトリが「どれか／すべて／最寄り」で読む。
+ // 夜明けに退く（v0.6.2）: withdraw() で全艦が退く向きへ全速、海域を出た艦は out（狙えない・見えない・撃たない）。撃沈の数・達成・allSinking は沈み始めた艦だけ（退いた艦は数えない）。
+ // 任務の達成は駆逐艦だけ（輸送船は撃破の加点）。砲撃の乱数は 1 つの系列（seed+1）を、見張り（雷跡に気づく。v0.5.0）の乱数は別の系列（seed+17）を、それぞれ艦の順に消費する（1 隻ならこれまでと同じ）。§7: 確保しない（最寄りは添字で返す）。
++// 列の通過（v0.8.0 S2。us_04。setup.transit の任務だけ）: 列の艦は護衛（ds.starts）の後ろ・輸送船の前に作り、駆逐艦に数える（撃沈・達成・命中率の KPI）。段階は transit（systems/destroyer-transit）。
++// 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
+ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import type { BoatState, SeaBounds } from '../core/boat-motion';
+@@ -9,6 +11,8 @@ import { litByOwnLight } from '../core/own-light';
+ import type { SeededRng } from '../core/rng';
+ import { startRetire } from '../core/ship-ai';
+ import { Destroyer } from '../entities/destroyer';
++import type { TransitSetup } from '../config/transit-mission-data';
++import { DestroyerTransit } from './destroyer-transit';
+ import { EnemyFire } from './enemy-fire';
+ import type { SplashPool } from './splash-pool';
+ import type { DestroyerSetup, TransportSetup } from './world-setup';
+@@ -22,9 +26,14 @@ export class DestroyerGroup {
+   readonly passRadius2: number;
+   /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。既定は全隻。jp_06 のハードは 2 隻中 1 隻） */
+   readonly objectiveSinks: number;
++  /** 列の通過（v0.8.0 S2。us_04）の段階と列の艦。setup.transit の無い任務は null */
++  readonly transit: DestroyerTransit | null;
+ 
+   constructor(
+-    scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null, bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
++    scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null,
++    /** 列の通過（v0.8.0 S2。setup.transit。無い任務は null）。列の艦は護衛と同じ寸法・砲・絵で、AI は列の速さの transit.shipAi */
++    transit: TransitSetup | null,
++    bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
+     /** 駆逐艦の絵の鍵（v0.7.0 S2a。world-enemies が ship-art-config の shipArtKey(敵の id) を渡す＝D3・R15。絵だけ。当たりは ds.spec のまま） */
+     destroyerTextureKey: string = TEXTURE_KEYS.destroyer,
+   ) {
+@@ -32,6 +41,13 @@ export class DestroyerGroup {
+       this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey));
+       this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, st.headingDeg, splashes));
+     }
++    if (transit) {
++      const leg = transit.inbound;
++      for (let i = 0; i < transit.ships; i++) {
++        this.ships.push(new Destroyer(scene, { x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, ds.spec, transit.shipAi, bounds, lookoutRng, destroyerTextureKey));
++        this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, leg.headingDeg, splashes));
++      }
++    }
+     this.destroyerCount = this.ships.length;
+     this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
+     this.passRadius2 = ds.passRadius2;
+@@ -40,6 +56,7 @@ export class DestroyerGroup {
+       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
+       if (transport.passRadius2 > this.passRadius2) this.passRadius2 = transport.passRadius2;
+     }
++    this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null; // 列の艦はここで海域の外（まだ来ない）へ
+   }
+ 
+   /** 隊の隻数（輸送船込み） */
+@@ -72,14 +89,19 @@ export class DestroyerGroup {
+     return true;
+   }
+ 
+-  /** すべて（輸送船込み）が沈み始めたか夜明けに退いた（v0.6.2）。以後は魚雷を撃てない（退く艦がいなければ allSinking と同じ） */
++  /** すべて（輸送船込み）が沈み始めたか夜明けに退いた（v0.6.2）。以後は魚雷を撃てない（退く艦がいなければ allSinking と同じ）。列の通過は戻りの残りが 0 の時だけ（v0.8.0） */
+   get allOut(): boolean {
+-    return allShipsOut(this.ships);
++    return this.transit ? this.transit.allOut : allShipsOut(this.ships);
+   }
+ 
+-  /** すべての決着がついた（沈没演出が終わったか退いた）。走っている魚雷を外れとして確定してよい（退く艦がいなければ v0.6.1 の allSunk＝すべての沈没演出が終わった、と同じ） */
++  /** すべての決着がついた（沈没演出が終わったか退いた）。走っている魚雷を外れとして確定してよい（退く艦がいなければ v0.6.1 の allSunk＝すべての沈没演出が終わった、と同じ）。列の通過は同上 */
+   get allSettled(): boolean {
+-    return allShipsSettled(this.ships);
++    return this.transit ? this.transit.allSettled : allShipsSettled(this.ships);
++  }
++
++  /** 列の通過の残りの戻り（これから海域に現れる艦。v0.8.0。列の無い任務は 0）。destroyer-step は 0 の時だけ走っている魚雷を外れで確定する */
++  get pendingReturns(): number {
++    return this.transit ? this.transit.pending : 0;
+   }
+ 
+   /** 夜明けに退いて海域を出た駆逐艦の隻数（v0.6.2。輸送船は transportWithdrawn） */
+diff --git a/src/systems/destroyer-step.ts b/src/systems/destroyer-step.ts
+index b15ad81..e9fee27 100644
+--- a/src/systems/destroyer-step.ts
++++ b/src/systems/destroyer-step.ts
+@@ -4,6 +4,8 @@
+ // 夜明けに退く（v0.6.2）: 海域を出た艦（out）は撃たず照らさない。最後の 1 隻が出たら、沈み始めたとき（torpedo-hits）と同じく残りの一斉発射を捨てる。
+ // 走っている魚雷の外れの確定（v0.6.2 実機 1 回目からここだけ）: すべて出て、沈む船体の終わり際の当たりの窓（演出の終わりと沈み始めて torpedo_end_settle_s の遅い方。
+ // core/torpedo-targets）が閉じたステップから。それまで沈む船体へ当たった魚雷は命中に数える（記録だけ）。沈んだ艦が無ければ退き終えたステップで（v0.6.2 と同じ）。
++// 列の通過（v0.8.0 S2。us_04）: 艦を動かした直後に段階を進める（systems/destroyer-transit。現れる艦はこのステップの魚雷・体当たり・反撃から海域の中）。
++// 走っている魚雷の外れの確定は戻りの残り（ビラの艦）が 0 の時だけ（R2）。列の無い任務は transit が null・戻りの残りは 0（v0.7.2 と同じ）。
+ import type { BoatState } from '../core/boat-motion';
+ import { losBlocked } from '../core/smoke';
+ import { remainingTorpedoesSettled } from '../core/torpedo-targets';
+@@ -14,9 +16,10 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
+   const c = w.setup;
+   let left = false;
+   for (const d of g.ships) if (d.step(dt, feelDt, boat, w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
++  if (g.transit?.step(w, feelDt)) left = true;
+   if (left && g.allOut) w.launcher.clearQueue();
+   const settleS = w.returnPoint.torpedoEndSettleS;
+-  if (remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();
++  if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();
+   const detectedNow = g.anyDetected;
+   if (detectedNow && !w.detect.prev) w.detect.count++;
+   w.detect.prev = detectedNow;
+diff --git a/src/systems/destroyer-transit.ts b/src/systems/destroyer-transit.ts
+new file mode 100644
+index 0000000..ea3307e
+--- /dev/null
++++ b/src/systems/destroyer-transit.ts
+@@ -0,0 +1,108 @@
++// 列の通過（v0.8.0 S2。us_04「ブラケット海峡の夜」の東京急行。spec-v0800 §4.4・§4.5・§6 の S2、brief L10・L11）の世界の側: core/ship-transit の段階を隊の列の艦に当てる。
++// 隊（systems/destroyer-group）が作って持ち、固定ステップでは艦を動かした直後（systems/destroyer-step。魚雷・体当たり・反撃の前）に 1 回進める:
++//   入った・戻った艦はその道の現れる点（appearX・laneY・headingDeg）へ置き、道の針路へ退く動き（startRetire＝端で向き直さない・わざとの体当たりはしない）。
++//   揚陸の地に着いた艦は海域の外（offMap）、去った艦は退いた（withdrawn＝夜明けの行の「退いた」に数える）、沈み始めた艦はそのまま（撃沈）。
++//   復路の最初の艦が現れたら護衛（隊の列より前の艦）も復路の針路へ退く（cover_leaves_with_outbound。護衛は今の縁の外の退き終わり＝entities/destroyer）。
++// 海域の外の艦（まだ来ない・揚陸の地・去った）は Destroyer.out（見えない・当たらない・撃たない・照らさない・見つけない・狙えない・レーダーに映らない＝brief L10）。
++// 隊の「すべて出た」（allOut・allSettled）は戻りの残り（transitPending）が 0 の時だけ（R2: 列がビラにいる間に一斉発射を捨てない・走る魚雷を外れにしない・「敵艦隊なし」にしない）。
++// 夜明けの後は戻りの残りが 0（core）＝まだ来ない・揚陸の地の艦は出たものとして数える（退いた・撃沈のどちらにも数えない）。
++// 時計（S1 の作り・brief L11）: 入りは体感の時計（feelDt の和）、着く・去るは縁の x、戻りは固定ステップの時計（stepTimeS）。命中スローで列の順と道は変わらない（tests/transit-world）。
++// Phaser 非依存（艦は構造の型 TransitShip＝entities/destroyer の Destroyer が満たす。tests/transit-world が素の艦で回す）・乱数なし。確保は constructor だけ。
++import type { TransitSetup } from '../config/transit-mission-data';
++import { startRetire, type ShipAiState } from '../core/ship-ai';
++import { createShipTransit, stepShipTransit, transitAppearLeg, transitPending, type ShipTransitState } from '../core/ship-transit';
++
++/** 隊の艦（entities/destroyer の Destroyer がそのまま満たす。列の艦は goAway・reappear、護衛は ai だけ使う） */
++export interface TransitShip {
++  readonly state: { readonly x: number };
++  readonly ai: ShipAiState;
++  readonly sinking: boolean;
++  readonly sunk: boolean;
++  readonly withdrawn: boolean;
++  readonly offMap: boolean;
++  readonly out: boolean;
++  transitShip: boolean;
++  goAway(gone: boolean): void;
++  reappear(x: number, y: number, headingDeg: number, speedMps: number): void;
++}
++
++/** 固定ステップで読む世界の部分（MissionWorld がそのまま満たす）: 固定ステップの時計と夜明けのラッチ（このステップの頭で立つ） */
++export interface TransitWorldView {
++  readonly stepTimeS: number;
++  readonly dawn: { readonly reached: boolean };
++}
++
++export class DestroyerTransit {
++  readonly state: ShipTransitState;
++  /** 列の艦（隊の ships の first から plan.ships 隻＝core の艦 0〜ships − 1） */
++  readonly column: readonly TransitShip[];
++
++  constructor(
++    /** 隊の艦の全部（護衛 → 列。隊の ships をそのまま） */
++    private readonly all: readonly TransitShip[],
++    /** 列の 1 隻目の添字（＝護衛の隻数） */
++    private readonly first: number,
++    readonly plan: TransitSetup,
++  ) {
++    this.state = createShipTransit(plan);
++    this.column = all.slice(first, first + plan.ships);
++    // 列の艦はまだ来ない（WAIT）＝海域の外で作る。縁の外の退き終わりは段階が決める（S1 の注の必ず直す所）
++    for (const s of this.column) {
++      s.transitShip = true;
++      s.goAway(false);
++    }
++  }
++
++  /** 残りの戻り（これから海域に現れる艦の数。夜明けの後は 0） */
++  get pending(): number {
++    return transitPending(this.state);
++  }
++
++  /** すべて（護衛と列）が沈み始めたか退いたか、もう来ない（夜明けの後の海域の外）。戻りの残りがある間は偽 */
++  get allOut(): boolean {
++    if (transitPending(this.state) > 0) return false;
++    for (let i = 0; i < this.all.length; i++) if (!this.all[i]!.out) return false;
++    return true;
++  }
++
++  /** すべての決着がついた（沈没演出が終わったか退いたか、もう来ない）。戻りの残りがある間は偽 */
++  get allSettled(): boolean {
++    if (transitPending(this.state) > 0) return false;
++    for (let i = 0; i < this.all.length; i++) {
++      const s = this.all[i]!;
++      if (!s.sunk && !s.withdrawn && !s.offMap) return false;
++    }
++    return true;
++  }
++
++  /**
++   * 1 固定ステップ（艦を動かした直後）。feelDt は命中スロー込みの実秒。段階を進め、入った・戻った艦を置き、着いた・去った艦を海域の外へ、護衛を退かせる。
++   * 戻りは艦が海域を出た（揚陸の地に着いたか去った）ステップか（それで隊のすべてが出たなら destroyer-step が残りの一斉発射を捨てる）
++   */
++  step(w: TransitWorldView, feelDt: number): boolean {
++    const st = this.state;
++    const p = this.plan;
++    stepShipTransit(st, p, feelDt, w.stepTimeS, w.dawn.reached, this.column);
++    const placed = st.entered | st.returned;
++    const left = st.arrived | st.gone;
++    if (placed === 0 && left === 0 && !st.coverLeaves) return false;
++    for (let i = 0; i < st.ships; i++) {
++      const bit = 1 << i;
++      const s = this.column[i]!;
++      if ((placed & bit) !== 0) {
++        const leg = transitAppearLeg(p, st.phase[i]!)!;
++        s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);
++        startRetire(s.ai, leg.headingDeg);
++      } else if ((left & bit) !== 0) {
++        s.goAway((st.gone & bit) !== 0);
++      }
++    }
++    if (st.coverLeaves) {
++      for (let i = 0; i < this.first; i++) {
++        const c = this.all[i]!;
++        if (!c.out) startRetire(c.ai, p.outbound.headingDeg);
++      }
++    }
++    return left !== 0;
++  }
++}
+diff --git a/src/systems/mission-telemetry.ts b/src/systems/mission-telemetry.ts
+index 50ae52b..d07ea11 100644
+--- a/src/systems/mission-telemetry.ts
++++ b/src/systems/mission-telemetry.ts
+@@ -23,6 +23,8 @@ import { landingResultPart, refreshLandingTelemetry } from './landing-telemetry'
+ import { detectionsOf, objectiveDoneOf } from './mission-objective';
+ import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
+ import { ptResult, refreshPtTelemetry } from './pt-telemetry';
++import { refreshRadarTelemetry } from './radar-telemetry';
++import { refreshTransitTelemetry } from './transit-telemetry';
+ import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
+ import type { MissionWorld } from './mission-world';
+ 
+@@ -125,6 +127,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
+   refreshLandingTelemetry(t.landing, w); // 停泊して揚陸する味方の輸送船（v0.6.9）: 揚陸・米PT の報告・走っている雷跡・出来事（雷跡は世界の updateFrame が数えた後）
+   refreshAllyTelemetry(t.ally, w); // 味方の駆逐艦 卯月（v0.6.10 S6）: 隊の最後の砲の出来事が卯月の砲か（2 行目の頭「卯月 撃退！」）
+   refreshEvacTelemetry(t.evac, w); // 空襲下の退避（v0.6.11 S5。jp_03）: 隊・座席・予告・出来事（兵装の後＝撃墜と機銃の出来事を読む）
++  refreshRadarTelemetry(t.radar, w); // 自艇のレーダー（v0.8.0 S2。us_04）: 掃引・接触・出来事の数を写すだけ（無い任務は何もしない）
++  refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
+   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
+   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
+   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
+diff --git a/src/systems/mission-world.ts b/src/systems/mission-world.ts
+index 1cd8616..83fd3c9 100644
+--- a/src/systems/mission-world.ts
++++ b/src/systems/mission-world.ts
+@@ -34,6 +34,7 @@ import type { FriendlyFire } from './friendly-fire';
+ import type { Gunboat } from './gunboat';
+ import type { PatrolAir } from './patrol-air';
+ import type { PtSquadron } from './pt-squadron';
++import { buildRadar, type WorldRadar } from './radar-view';
+ import { SmokeScreen } from './smoke-screen';
+ import { SplashPool } from './splash-pool';
+ import type { StormFront } from './storm-front';
+@@ -76,6 +77,7 @@ export class MissionWorld {
+   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
+   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
+   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
++  readonly radar: WorldRadar | null; // 自艇のレーダー（v0.8.0 S2。us_04。world-radar.ts・radar-view.ts）: 掃引と輝点。読むだけ（目・発見・AI は変えない）。setup.radar の無い任務・?debug&noradar は null
+   readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
+   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
+   readonly params: BoatParams;
+@@ -218,6 +220,7 @@ export class MissionWorld {
+     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
+     this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
+     this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
++    this.radar = buildRadar(scene, this); // レーダー（v0.8.0 S2。us_04 だけ。乱数なし・世界には書かない）は論理の後・絵の前。進めるのは敵の側の段の最後（world-enemy-step）
+     this.art = new WorldArt(scene, this); // 世界の絵（v0.7.0 S3a。絵だけ＝ゲームの乱数の系列も生成の順も触らない）は論理の全部の後
+     this.refreshShallowStatus();
+   }
+diff --git a/src/systems/radar-telemetry.ts b/src/systems/radar-telemetry.ts
+new file mode 100644
+index 0000000..ba7eed0
+--- /dev/null
++++ b/src/systems/radar-telemetry.ts
+@@ -0,0 +1,55 @@
++// レーダーのテレメトリ（v0.8.0 S2。spec-v0800 §4.9 の材料・§6 の S2）: createTelemetry で 1 回作り（initRadarTelemetry）、毎フレーム refreshTelemetry の中で 1 回だけ中身を写す
++// （§7: 確保しない）。core/radar の状態の数と出来事（数えて残す＝1 フレームに掃引が何回あっても読み落とさない）をそのまま写すだけ。読むのは世界の radar だけ、書くのは t.radar だけ
++// （brief L9。tests/radar-neutral が走査）。レーダーの無い任務・?debug&noradar は enabled false のまま何もしない。HUD の 2 行目の文・端の印・Result の行は S4。
++import type { RadarTelemetry } from '../core/boat-telemetry';
++import type { RadarState } from '../core/radar';
++
++/** 読む世界の部分（MissionWorld がそのまま満たす） */
++export interface RadarTelemetryWorld {
++  readonly radar: { readonly state: RadarState; readonly p: { readonly shipRangeM: number } } | null;
++}
++
++/** 出発時の radar（任務で決まる射程と、まだ掃引していない数） */
++export function initRadarTelemetry(w: RadarTelemetryWorld): RadarTelemetry {
++  const t: RadarTelemetry = {
++    enabled: w.radar !== null,
++    shipRangeM: w.radar ? w.radar.p.shipRangeM : 0,
++    sweeps: 0,
++    contacts: 0,
++    nearestM: NaN,
++    firstS: NaN,
++    firstX: NaN,
++    firstY: NaN,
++    firstFromX: NaN,
++    firstFromY: NaN,
++    newCount: 0,
++    newX: NaN,
++    newY: NaN,
++    lostCount: 0,
++    lostX: NaN,
++    lostY: NaN,
++  };
++  refreshRadarTelemetry(t, w);
++  return t;
++}
++
++/** 毎フレーム 1 回（レーダーの無い任務は何もしない） */
++export function refreshRadarTelemetry(t: RadarTelemetry, w: RadarTelemetryWorld): void {
++  const r = w.radar;
++  if (!r) return;
++  const s = r.state;
++  t.sweeps = s.sweeps;
++  t.contacts = s.n;
++  t.nearestM = s.nearestM;
++  t.firstS = s.firstS;
++  t.firstX = s.firstX;
++  t.firstY = s.firstY;
++  t.firstFromX = s.firstFromX;
++  t.firstFromY = s.firstFromY;
++  t.newCount = s.newCount;
++  t.newX = s.newX;
++  t.newY = s.newY;
++  t.lostCount = s.lostCount;
++  t.lostX = s.lostX;
++  t.lostY = s.lostY;
++}
+diff --git a/src/systems/radar-view.ts b/src/systems/radar-view.ts
+new file mode 100644
+index 0000000..4fc3d17
+--- /dev/null
++++ b/src/systems/radar-view.ts
+@@ -0,0 +1,60 @@
++// レーダーの輝点の絵（v0.8.0 S2。spec-v0800 §3.2 の D-R2・§5.2・§7 の 1〜3、brief L15）: 起動時に緑の輪の Image を 16 個（core/radar の RADAR_BLIP_CAPACITY）作っておき、
++// 掃引の回数が変わった時だけ位置と見せる・隠すを書く（掃引の間は動かない）。薄れ方は輝点を置いた掃引の秒からの経過（固定ステップの時計）を 10 段に丸め、
++// 段が変わった時だけ setAlpha（tween なし）。輪の絵は assets/radar-art が初めて使う時に 1 回作る。論理の状態は読むだけ。§7: 確保は constructor だけ。
++// buildRadar（mission-world が 1 回呼ぶ）: setup.radar の任務（us_04）だけ WorldRadar とこの絵を作る。無い任務・?debug&noradar は null（絵も絵の鍵も作らない）。
++import type Phaser from 'phaser';
++import { ensureRadarBlipTexture } from '../assets/radar-art';
++import { RENDER_SCALE } from '../config/game-config';
++import { RADAR_BLIP_DEPTH, RADAR_BLIP_FADE_STEPS, RADAR_BLIP_TEX_KEY, radarBlipAlpha } from '../config/radar-art-config';
++import { RADAR_BLIP_CAPACITY, radarAge01, type RadarState } from '../core/radar';
++import { WorldRadar, type RadarBlipView } from './world-radar';
++import type { WorldSetup } from './world-setup';
++
++export type { WorldRadar } from './world-radar';
++
++export class RadarView implements RadarBlipView {
++  private readonly imgs: Phaser.GameObjects.Image[] = [];
++  /** 位置を書いた掃引の回数（−1 は未だ）と、輝点ごとの今の薄れの段（−1 は未だ） */
++  private placedSweeps = -1;
++  private readonly fade = new Int8Array(RADAR_BLIP_CAPACITY).fill(-1);
++
++  constructor(scene: Phaser.Scene) {
++    ensureRadarBlipTexture(scene);
++    for (let k = 0; k < RADAR_BLIP_CAPACITY; k++) this.imgs.push(scene.add.image(0, 0, RADAR_BLIP_TEX_KEY).setScale(1 / RENDER_SCALE).setDepth(RADAR_BLIP_DEPTH).setVisible(false));
++  }
++
++  /** 毎フレーム: 掃引が変わった時だけ置き直し、薄れの段が変わった輝点だけ α を書く */
++  update(s: RadarState, nowS: number, sweepS: number): void {
++    if (s.sweeps !== this.placedSweeps) {
++      this.placedSweeps = s.sweeps;
++      for (let k = 0; k < RADAR_BLIP_CAPACITY; k++) {
++        const img = this.imgs[k]!;
++        this.fade[k] = -1;
++        if (k < s.n) {
++          const b = s.blips[k]!;
++          img.setPosition(b.x, b.y);
++          if (!img.visible) img.setVisible(true);
++        } else if (img.visible) {
++          img.setVisible(false);
++        }
++      }
++    }
++    for (let k = 0; k < s.n; k++) {
++      const q = Math.round(radarAge01(s.blips[k]!.atS, nowS, sweepS) * RADAR_BLIP_FADE_STEPS);
++      if (q === this.fade[k]) continue;
++      this.fade[k] = q;
++      this.imgs[k]!.setAlpha(radarBlipAlpha(q));
++    }
++  }
++
++  destroy(): void {
++    for (const img of this.imgs) img.destroy();
++    this.imgs.length = 0;
++  }
++}
++
++/** レーダーの世界と絵（setup.radar の任務だけ。無ければ null）。世界の論理の全部の後・世界の絵の前に 1 回 */
++export function buildRadar(scene: Phaser.Scene, w: { readonly setup: WorldSetup; readonly destroyers: { readonly total: number } | null }): WorldRadar | null {
++  const p = w.setup.radar;
++  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene)) : null;
++}
+diff --git a/src/systems/strait-terrain.ts b/src/systems/strait-terrain.ts
+new file mode 100644
+index 0000000..4a2d33b
+--- /dev/null
++++ b/src/systems/strait-terrain.ts
+@@ -0,0 +1,73 @@
++// 海峡の両岸の陸と字（v0.8.0 S2。us_04「ブラケット海峡の夜」。spec-v0800 §4.3・§4.10・§5.2、brief L15）: 北の縁 y 0 の外（コロンバンガラ島）と南の縁の外
++// （アランデル島・ギゾ島。ファーガソン水道の切れ目は陸を描かず海が南へ続く）の陸の塗りと浜の線、島・水道・揚陸の地（「ビラ →」）の名。
++// systems/evac-terrain の作法: 起動時に 1 回だけ Graphics に記録し、毎フレーム触らない（世界の大きさのテクスチャにしない）。陸の際の砂浜・寄せ波・樹冠は今の岸の帯
++// （tex-coast-strip を 1 回だけ作って systems/coast-fx が陸の区間ごとに並べる）。描く命令は 塗りの色 1・陸の矩形（区間の数＝us_04 は 3）・線の色 1・浜の線（区間の数）・
++// 水道に面した陸の端の線（切れ目の両端＝us_04 は 2）＝us_04 で 10。字は島の名（labels）・切れ目の名・揚陸の地の名の Text（us_04 は 5）。論理の状態は読むだけ。
++import type Phaser from 'phaser';
++import { shoreLandSpans } from '../assets/coast-shape';
++import { DEPTH } from '../config/game-config';
++import { COAST_LABEL_FONT_PX, COAST_LAND_COLOR, COAST_LINE_COLOR, COAST_LINE_WIDTH, COAST_TEXT_COLOR } from '../config/hunt-config';
++import type { ShoreSide, ShoresSetup } from '../config/shores-mission-data';
++import { STRAIT_LANDING_ARROW_EAST_JA, STRAIT_LANDING_ARROW_WEST_JA } from '../config/strait-art-config';
++import type { TransitSetup } from '../config/transit-mission-data';
++import { hudTextStyle } from '../config/ui-config';
++
++/** 世界から読む物（WorldSetup の一部） */
++export interface StraitSetupView {
++  readonly mission: { readonly bounds: { readonly width: number; readonly height: number } };
++  readonly shores?: ShoresSetup;
++  readonly transit?: TransitSetup;
++}
++
++export class StraitTerrain {
++  private readonly graphics: Phaser.GameObjects.Graphics;
++  private readonly labels: Phaser.GameObjects.Text[] = [];
++
++  constructor(scene: Phaser.Scene, s: StraitSetupView) {
++    const g = scene.add.graphics().setDepth(DEPTH.shallows);
++    this.graphics = g;
++    const sh = s.shores;
++    if (!sh) return;
++    const { width, height } = s.mission.bounds;
++    g.fillStyle(COAST_LAND_COLOR, 1);
++    for (const sp of shoreLandSpans(sh.north, width)) g.fillRect(sp.x0, -sh.north.landM, sp.x1 - sp.x0, sh.north.landM);
++    for (const sp of shoreLandSpans(sh.south, width)) g.fillRect(sp.x0, height, sp.x1 - sp.x0, sh.south.landM);
++    g.lineStyle(COAST_LINE_WIDTH, COAST_LINE_COLOR, 1);
++    this.shoreLines(g, sh.north, width, 0, -1);
++    this.shoreLines(g, sh.south, width, height, 1);
++    this.side(scene, sh.north, -sh.north.landM / 2);
++    this.side(scene, sh.south, height + sh.south.landM / 2);
++    // 揚陸の地（列が抜ける縁の外。北の陸の上）の名と矢印
++    const tr = s.transit;
++    if (tr) {
++      const east = tr.inbound.edge === 'west';
++      const text = east ? `${tr.vilaLabelJa} ${STRAIT_LANDING_ARROW_EAST_JA}` : `${STRAIT_LANDING_ARROW_WEST_JA} ${tr.vilaLabelJa}`;
++      this.label(scene, east ? width + sh.north.landM / 2 : -sh.north.landM / 2, -sh.north.landM / 2, text);
++    }
++  }
++
++  /** 浜の線（陸の区間ごと）と、切れ目（水道）に面した陸の端の線（岸の線 y から陸の側 sign へ陸の幅） */
++  private shoreLines(g: Phaser.GameObjects.Graphics, side: ShoreSide, width: number, y: number, sign: number): void {
++    for (const sp of shoreLandSpans(side, width)) g.lineBetween(sp.x0, y, sp.x1, y);
++    for (const gap of side.gaps) {
++      g.lineBetween(gap.x0, y, gap.x0, y + sign * side.landM);
++      g.lineBetween(gap.x1, y, gap.x1, y + sign * side.landM);
++    }
++  }
++
++  /** 1 辺の字: 島の名（陸の中ほど）と切れ目の名（切れ目の真ん中・陸と同じ深さの海の上） */
++  private side(scene: Phaser.Scene, side: ShoreSide, y: number): void {
++    for (const l of side.labels) this.label(scene, l.x, y, l.labelJa);
++    for (const gap of side.gaps) this.label(scene, (gap.x0 + gap.x1) / 2, y, side.gapLabelJa);
++  }
++
++  private label(scene: Phaser.Scene, x: number, y: number, text: string): void {
++    this.labels.push(scene.add.text(x, y, text, hudTextStyle(COAST_LABEL_FONT_PX, COAST_TEXT_COLOR)).setOrigin(0.5).setDepth(DEPTH.shallows));
++  }
++
++  destroy(): void {
++    this.graphics.destroy();
++    for (const l of this.labels) l.destroy();
++    this.labels.length = 0;
++  }
++}
+diff --git a/src/systems/telemetry-create.ts b/src/systems/telemetry-create.ts
+index d8a2d50..a679be5 100644
+--- a/src/systems/telemetry-create.ts
++++ b/src/systems/telemetry-create.ts
+@@ -17,6 +17,8 @@ import { initEvacTelemetry } from './evac-telemetry';
+ import { initLandingTelemetry } from './landing-telemetry';
+ import { initPatrolTelemetry } from './patrol-telemetry';
+ import { initPtTelemetry } from './pt-telemetry';
++import { initRadarTelemetry } from './radar-telemetry';
++import { initTransitTelemetry } from './transit-telemetry';
+ import type { MissionWorld } from './mission-world';
+ 
+ /** 出発時のテレメトリ（帰投・燃料の値は直後の refreshReturnState と refreshTelemetry で埋まる） */
+@@ -128,5 +130,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
+     landing: initLandingTelemetry(w), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry。無い任務は enabled false）
+     ally: initAllyTelemetry(w), // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。systems/ally-telemetry。無い任務・&noally は enabled false）
+     evac: initEvacTelemetry(w), // 空襲下の退避（v0.6.11 S5。jp_03。systems/evac-telemetry。無い任務は enabled false）
++    radar: initRadarTelemetry(w), // 自艇のレーダー（v0.8.0 S2。us_04。systems/radar-telemetry。無い任務・?debug&noradar は enabled false）
++    transit: initTransitTelemetry(w), // 列の通過（v0.8.0 S2。us_04。systems/transit-telemetry。無い任務は enabled false）
+   };
+ }
+diff --git a/src/systems/transit-telemetry.ts b/src/systems/transit-telemetry.ts
+new file mode 100644
+index 0000000..403d60f
+--- /dev/null
++++ b/src/systems/transit-telemetry.ts
+@@ -0,0 +1,51 @@
++// 列の通過のテレメトリ（v0.8.0 S2。spec-v0800 §4.9 の材料・§6 の S2）: createTelemetry で 1 回作り（initTransitTelemetry）、毎フレーム refreshTelemetry の中で 1 回だけ中身を写す
++// （§7: 確保しない）。core/ship-transit の段階ごとの隻数（艦 ≤ 6 を数えるだけ）・残りの戻り・通算をそのまま写す。読むのは隊の transit だけ、書くのは t.transit だけ。
++// 列の通過の無い任務は enabled false のまま何もしない。HUD の 2 行目・3 行目の文と Result の行は S4（ui/strait-lines・strait-result）。
++import type { TransitTelemetry } from '../core/boat-telemetry';
++import { TRANSIT_AWAY, TRANSIT_GONE, TRANSIT_IN, TRANSIT_OUT, TRANSIT_SUNK, TRANSIT_WAIT, transitCount, transitPending, type ShipTransitState } from '../core/ship-transit';
++
++/** 読む世界の部分（MissionWorld がそのまま満たす） */
++export interface TransitTelemetryWorld {
++  readonly destroyers: { readonly transit: { readonly state: ShipTransitState } | null } | null;
++}
++
++const transitOf = (w: TransitTelemetryWorld): ShipTransitState | null => (w.destroyers && w.destroyers.transit ? w.destroyers.transit.state : null);
++
++/** 出発時の transit（列の艦の数。まだ誰も来ていない） */
++export function initTransitTelemetry(w: TransitTelemetryWorld): TransitTelemetry {
++  const s = transitOf(w);
++  const t: TransitTelemetry = {
++    enabled: s !== null,
++    ships: s ? s.ships : 0,
++    waiting: 0,
++    inbound: 0,
++    away: 0,
++    outbound: 0,
++    gone: 0,
++    sunk: 0,
++    pending: 0,
++    inCount: 0,
++    arrivedCount: 0,
++    outCount: 0,
++    firstOutS: NaN,
++  };
++  refreshTransitTelemetry(t, w);
++  return t;
++}
++
++/** 毎フレーム 1 回（列の通過の無い任務は何もしない） */
++export function refreshTransitTelemetry(t: TransitTelemetry, w: TransitTelemetryWorld): void {
++  const s = transitOf(w);
++  if (!s) return;
++  t.waiting = transitCount(s, TRANSIT_WAIT);
++  t.inbound = transitCount(s, TRANSIT_IN);
++  t.away = transitCount(s, TRANSIT_AWAY);
++  t.outbound = transitCount(s, TRANSIT_OUT);
++  t.gone = transitCount(s, TRANSIT_GONE);
++  t.sunk = transitCount(s, TRANSIT_SUNK);
++  t.pending = transitPending(s);
++  t.inCount = s.inCount;
++  t.arrivedCount = s.arrivedCount;
++  t.outCount = s.outCount;
++  t.firstOutS = s.firstOutS;
++}
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index eb43478..3e2eb09 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -4,6 +4,7 @@
+ // IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
+ // IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
+ // v0.7.2 S3（音。brief L28）: 命中スローの残り秒を読むだけの口として世界を音に登録し（registerSfxSlowMo）、破棄で外す（聞き手と同じ形。音は slowMoLeftS を読むだけ）。
++// v0.8.0 S2（spec-v0800 §4.10）: 海峡の両岸の陸と字（systems/strait-terrain。us_04 の setup.shores だけ。動かない絵）を岸の帯の後に作る。
+ import type Phaser from 'phaser';
+ import { SEA_LIGHT_STEPS } from '../config/dawn-config';
+ import { CoastFx } from './coast-fx';
+@@ -15,6 +16,7 @@ import { SeaFx } from './sea-fx';
+ import { registerSfxListener, registerSfxSlowMo } from './sfx-bus';
+ import { SinkFx } from './sink-fx';
+ import { SparkFx } from './spark-fx';
++import { StraitTerrain } from './strait-terrain';
+ import { WakeFx, type WakeWorldView } from './wake-fx';
+ import type { WorldSetup } from './world-setup';
+ 
+@@ -35,6 +37,7 @@ export class WorldArt {
+   private readonly sparks: SparkFx;
+   private readonly sink: SinkFx;
+   private readonly coast: CoastFx;
++  private readonly strait: StraitTerrain | null;
+ 
+   constructor(scene: Phaser.Scene, w: ArtWorldView) {
+     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
+@@ -46,6 +49,7 @@ export class WorldArt {
+     this.sink = new SinkFx(scene, this.explosions, this.sparks);
+     this.fire = new FireFx(scene, w, this.sink);
+     this.coast = new CoastFx(scene, w.setup);
++    this.strait = w.setup.shores ? new StraitTerrain(scene, w.setup) : null;
+     registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
+     registerSfxSlowMo(w); // 命中スローの音（v0.7.2 S3。slowMoLeftS を読むだけ。世界の作成前・破棄後はスローなし）
+   }
+@@ -73,5 +77,6 @@ export class WorldArt {
+     this.sink.destroy();
+     this.sparks.destroy();
+     this.coast.destroy();
++    this.strait?.destroy();
+   }
+ }
+diff --git a/src/systems/world-enemies.ts b/src/systems/world-enemies.ts
+index aa5baa0..263c27d 100644
+--- a/src/systems/world-enemies.ts
++++ b/src/systems/world-enemies.ts
+@@ -55,14 +55,15 @@ export function buildEnemies(
+   // 砲撃のばらつきは別系列（seed+1）で、発射順に影響されない（隊は艦の順に同じ系列を消費する。v0.4.5）
+   const gunRng = new SeededRng((seed + 1) >>> 0);
+   // 見張り（雷跡に気づく抽選。v0.5.0）も別系列（seed+17。seed+16 は今夜の揺らぎ）。気づくまで 1 ステップ 1 回だけ引く
+-  // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）
+-  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
+-  // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）
+-  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
++  // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）。
++  // 列の通過（v0.8.0 S2。us_04 の setup.transit だけ）の艦は隊が護衛の後ろに作る（同じ id・砲。無い任務は null＝隊は v0.7.2 のまま）
++  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, s.transit ?? null, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
++  // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）。駆逐艦は隊の先頭 destroyerCount 隻（列の通過の艦も込み。無い任務は ds.starts の隻数と同じ）
++  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
+   const escort = s.escort && ds ? new EscortBoat(scene, s.escort, boat, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
+   const escortHit = (damage: number, x: number, y: number): void => (escort!.hit(damage, clock.stepTimeS) ? onSunk(x, y) : events.onShellHit(x, y, true, false));
+-  destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < ds!.starts.length ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
++  destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
+   // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
+   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
+   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。
+diff --git a/src/systems/world-enemy-step.ts b/src/systems/world-enemy-step.ts
+index 08d4fc7..f341e57 100644
+--- a/src/systems/world-enemy-step.ts
++++ b/src/systems/world-enemy-step.ts
+@@ -4,6 +4,7 @@
+ // v0.6.8 S3（spec-v068 §5.1）: 兵装（systems/arms-step）は最初に 自分の弾倉・艦への機銃 → 閃光（敵の見つける距離。駆逐艦・大発・沿岸砲・米PT が同じステップから読む）、
+ // 最後に対空（艦艇が先＝砲は 1 つ。撃墜の後は順番を飛ばす。夜明けの空襲の段の前）。押さなければ何も変わらない（乱数も閃光も無い）。
+ // v0.6.9 S5a（spec-v069 §4.1）: 米PT の隊の段の直後・機関の不調の前に揚陸の段（systems/world-landing の stepAfterPts。jp_04 だけ。ほかの任務は w.landing が null で何もしない）。
++// v0.8.0 S2（spec-v0800 §6 の S2）: 最後にレーダー（systems/world-radar。us_04 だけ。掃引の時だけ艦の位置を読む＝世界には書かない。ほかの任務は w.radar が null で何もしない）。
+ import type { BoatState } from '../core/boat-motion';
+ import type { DestroyerGroup } from './destroyer-group';
+ import { stepDestroyerSide } from './destroyer-step';
+@@ -24,4 +25,5 @@ export function stepEnemySide(w: MissionWorld, g: DestroyerGroup | null, dt: num
+   w.landing?.stepAfterPts(w, dt, feelDt); // 米PT の雷撃 → 敵の魚雷 → 揚陸の時計（v0.6.9。jp_04 だけ。systems/world-landing。凍結の隊の段の直後＝模擬 core/landing-sim と同じ順）。揚陸の無い任務は何もしない
+   w.engine?.step(w, feelDt); // 機関の熱と不調（v0.6.5）は米PT の段の直後（このステップに固めた赤い線も見る）・火災の前（模擬 core/pt-sim-engine と同じ順・同じ時計）
+   w.arms?.stepAir(w, dt, feelDt); // 対空（v0.6.8）は最後: 艦艇の標的が無いときだけ機へ。撃墜の後は毎ステップ順番を飛ばす（夜明けの空襲の段の前）
++  w.radar?.step(w); // レーダー（v0.8.0 S2）は敵の側の全部の後（艦を動かし列の段階を当てた後の位置を掃引の時だけ読む）
+ }
+diff --git a/src/systems/world-radar.ts b/src/systems/world-radar.ts
+new file mode 100644
+index 0000000..6c1a4ce
+--- /dev/null
++++ b/src/systems/world-radar.ts
+@@ -0,0 +1,82 @@
++// レーダー（v0.8.0 S2。spec-v0800 §3.2 の D-R1〜D-R12・§3.5・§5.2・§6 の S2、brief L9）の世界の側: core/radar の状態を持ち、固定ステップの敵の側の段の最後
++// （systems/world-enemy-step。艦を動かし、列の通過の段階を当てた後）に進める。掃引の時（radarSweepDue）だけ、隊の艦（護衛・列・輸送船＝どれも艦）の位置と
++// 「浮いて海域の中か」（Destroyer.out の逆＝沈み始めた・退いた・海域の外の列の艦は映らない）を渡す（掃引の間は何もしない＝§5.2）。
++// 目とは別の感覚（D-R1・brief L9）: 世界・自艇・艦・AI・視程・発見・テレメトリには何も書かない（読むだけ。書くのは自分の state と渡す枠 targets だけ＝tests/radar-neutral が走査）。
++// 陸の反射の岸の線は海峡の両岸（setup.shores）から起動時に 1 回（両岸の無い任務は空）。機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
++// 絵（輝点 16 の Image）は systems/radar-view が持ち、毎フレーム updateVisuals が渡す（置き直すのは掃引の回数が変わった時だけ）。
++// Phaser 非依存（絵は構造の型 RadarBlipView。tests/radar-world・radar-neutral が絵なしで回す）・乱数なし。確保は constructor だけ。
++import type { ShoresSetup } from '../config/shores-mission-data';
++import { RADAR_KIND_SHIP, createRadarState, createRadarTargets, radarSweepDue, stepRadar, type RadarGeometry, type RadarState, type RadarTargets } from '../core/radar';
++import type { RadarParams } from '../core/radar-data';
++import { landLinesFromShores } from '../core/strait-geometry';
++
++/** 掃引で読む艦（entities/destroyer の Destroyer が満たす） */
++export interface RadarShip {
++  readonly state: { readonly x: number; readonly y: number };
++  readonly out: boolean;
++}
++
++/** 固定ステップで読む世界の部分（MissionWorld がそのまま満たす） */
++export interface RadarWorldView {
++  readonly stepTimeS: number;
++  readonly boat: { readonly state: { readonly x: number; readonly y: number } };
++  readonly destroyers: { readonly ships: readonly RadarShip[] } | null;
++}
++
++/** 輝点の絵（systems/radar-view の RadarView が満たす）。nowS は固定ステップの時計（薄れ方） */
++export interface RadarBlipView {
++  update(s: RadarState, nowS: number, sweepS: number): void;
++  destroy(): void;
++}
++
++export class WorldRadar {
++  readonly state: RadarState = createRadarState();
++  readonly geo: RadarGeometry;
++  /** 掃引に渡す枠（隊の隻数。掃引の時だけ 0〜n − 1 を書く） */
++  private readonly targets: RadarTargets;
++
++  constructor(
++    readonly p: RadarParams,
++    bounds: { readonly width: number; readonly height: number },
++    shores: ShoresSetup | undefined,
++    /** 隊の隻数（隊の無い任務は 0＝何も映らない） */
++    shipCapacity: number,
++    private readonly view: RadarBlipView | null,
++  ) {
++    const { width, height } = bounds;
++    this.geo = { width, height, land: shores ? landLinesFromShores(shores, width, height) : [] };
++    this.targets = createRadarTargets(shipCapacity);
++  }
++
++  /** 1 固定ステップ（敵の側の段の最後）。掃引の時でなければ何もしない */
++  step(w: RadarWorldView): void {
++    const r = this.state;
++    if (!radarSweepDue(r, w.stepTimeS)) return;
++    const tg = this.targets;
++    const g = w.destroyers;
++    let n = 0;
++    if (g) {
++      const ships = g.ships;
++      for (let i = 0; i < ships.length && n < tg.x.length; i++) {
++        const d = ships[i]!;
++        tg.x[n] = d.state.x;
++        tg.y[n] = d.state.y;
++        tg.kind[n] = RADAR_KIND_SHIP;
++        tg.afloat[n] = d.out ? 0 : 1;
++        n++;
++      }
++    }
++    tg.n = n;
++    const b = w.boat.state;
++    stepRadar(r, this.p, this.geo, w.stepTimeS, b.x, b.y, tg);
++  }
++
++  /** 毎フレーム（world-visuals）: 輝点の絵。nowS は固定ステップの時計 */
++  updateVisuals(nowS: number): void {
++    this.view?.update(this.state, nowS, this.p.sweepS);
++  }
++
++  destroy(): void {
++    this.view?.destroy();
++  }
++}
+diff --git a/src/systems/world-visuals.ts b/src/systems/world-visuals.ts
+index 6eb3df5..0e2f431 100644
+--- a/src/systems/world-visuals.ts
++++ b/src/systems/world-visuals.ts
+@@ -3,7 +3,7 @@
+ // 移すために MissionWorld.smokeScreen を private readonly から readonly にした（ここが読む。ほかに private から出したものは無い）。
+ import type { MissionWorld } from './mission-world';
+ 
+-/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9）→ 卯月（v0.6.10） */
++/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9）→ 卯月（v0.6.10）→ 退避（v0.6.11）→ レーダー（v0.8.0）→ 世界の絵 */
+ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
+   const g = w.destroyers;
+   w.storm?.updateVisuals(realDt, w.boat.state);
+@@ -25,6 +25,7 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
+   w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
+   w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）
+   w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）
++  w.radar?.updateVisuals(w.stepTimeS); // レーダーの輝点（v0.8.0 S2。us_04 だけ。掃引が変わった時だけ置き直す・薄れの段が変わった時だけ α）
+   w.art.update(realDt, w); // 世界の絵＝海の模様・夜明けの光・きらめき（v0.7.0 S3a。systems/world-art。全任務。夜明けの段の後＝最後）
+ }
+ 
+@@ -48,5 +49,6 @@ export function destroyWorldVisuals(w: MissionWorld): void {
+   w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）
+   w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
+   w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
++  w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）
+   w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）
+ }

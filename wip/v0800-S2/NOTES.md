@@ -33,3 +33,4 @@
 
 ## Progress log
 - (start) design written, no code yet.
+- step 1: src wiring done (destroyer, destroyer-transit, group, world-enemies, destroyer-step, radar x4, mission-world 286, world-enemy-step, world-visuals, debug noradar, coast-shape coastLines, coast-fx, strait-terrain, world-art, telemetry x2). typecheck OK. Next: npm test, new tests, headless.
