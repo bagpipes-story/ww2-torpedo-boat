@@ -3,4 +3,5 @@ L45: B2 -> B2a (eye_only column sinks <= radar_ambush column sinks - 15) + B2b (
 L46: F reads radar_twice; dry rule D; fuel 48 -> 33 gal (one run, no correction); setup-us04 snapshot rewritten (fuel lines).
 Final tables: normal 37dc9ae40e7f0f5441a793ec557a2c41, hard a918d9d9193c1039e939dde33ed6f675 — 帯: すべて ✓ both.
 Light set k=3 unchanged; tests split: intercept-sim-b (normal), -c/-d (hard), kit. npm test green (317 files, 3,761 tests).
-strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). g2 (G6 ALLY EVAC US04) running at backup time.
+strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). g2 done.
+g2 (G6 ALLY EVAC US04): OK 39 DIFF 0 (us4/us4h 帯: すべて ✓), 28 min.
