@@ -5,4 +5,4 @@
 - tracked.patch … 追跡済みのファイルの git diff HEAD
 - files/ … 新しいファイル（git の追跡外）: なし
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: 途中: 片づけと tests（関係する 15 本が通る）・束 706.38 kB（＋17.85）。docs はまだ
+- 一言: 途中: docs（CLAUDE.md・docs/02・docs/03・CHANGELOG の S4 と最終の既知の制約）・npm test 3,606 件が通る。短い run-gates と live はまだ
