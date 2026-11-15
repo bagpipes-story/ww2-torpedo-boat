@@ -505,14 +505,14 @@ index 4fc3d17..5e6840e 100644
  }
 diff --git a/src/systems/strait-result-part.ts b/src/systems/strait-result-part.ts
 new file mode 100644
-index 0000000..227b73c
+index 0000000..c39042e
 --- /dev/null
 +++ b/src/systems/strait-result-part.ts
 @@ -0,0 +1,37 @@
 +// Result の us_04 の 2 つの鍵の材料（v0.8.0 S4。spec-v0800 §4.9、brief L26・L31）: レーダー（最初の接触・目で見えない間に撃った魚雷＝ui/radar-result）と列の通過
 +// （往路・復路・撃沈・揚陸の地＝ui/strait-result）。systems/mission-telemetry の buildMissionResult が終わりに 1 回だけ呼ぶ。ある任務だけ鍵が出る（ほかの任務の Result は同じ）。
 +// 世界の形は構造の型で読む（tests が Phaser なしの小さな世界から作れる）。レーダーの記録は掃引の時の丸めた輝点と自艇の位置だけ（艦の正体・列の段階・AI は入れない）。
-+import { TRANSIT_AWAY, TRANSIT_SUNK, transitCount, type ShipTransitState } from '../core/ship-transit';
++import { TRANSIT_AWAY, TRANSIT_IN, TRANSIT_SUNK, transitCount, type ShipTransitState } from '../core/ship-transit';
 +import type { RadarResult } from '../ui/radar-result';
 +import type { StraitResult } from '../ui/strait-result';
 +
@@ -539,12 +539,12 @@ index 0000000..227b73c
 +  return { radar: { firstS: s.firstS, firstDx: s.firstX - s.firstFromX, firstDy: s.firstY - s.firstFromY, unseenShots: r.unseenShots, unseenHits: r.unseenHits } };
 +}
 +
-+/** 列の通過の Result の材料: 列の通過のある任務だけ strait の鍵（列の呼び名は dawn_withdraw.force_ja。無ければ「列」） */
++/** 列の通過の Result の材料: 列の通過のある任務だけ strait の鍵（列の呼び名は dawn_withdraw.force_ja。無ければ「列」。往路の途中は終わった時に IN の艦） */
 +export function straitResultPart(w: StraitResultWorld): { strait?: StraitResult } {
 +  const tr = w.destroyers ? w.destroyers.transit : null;
 +  if (!tr) return {};
 +  const s = tr.state;
-+  return { strait: { forceJa: w.setup.dawnAir.retireForceJa || '列', vilaJa: tr.plan.vilaLabelJa, inCount: s.inCount, outCount: s.outCount, sunk: transitCount(s, TRANSIT_SUNK), away: transitCount(s, TRANSIT_AWAY) } };
++  return { strait: { forceJa: w.setup.dawnAir.retireForceJa || '列', vilaJa: tr.plan.vilaLabelJa, inCount: s.inCount, outCount: s.outCount, sunk: transitCount(s, TRANSIT_SUNK), away: transitCount(s, TRANSIT_AWAY), inbound: transitCount(s, TRANSIT_IN) } };
 +}
 diff --git a/src/systems/strait-telemetry.ts b/src/systems/strait-telemetry.ts
 new file mode 100644
@@ -1474,13 +1474,14 @@ index 0000000..835c087
 +}
 diff --git a/src/ui/strait-result.ts b/src/ui/strait-result.ts
 new file mode 100644
-index 0000000..3aacb6c
+index 0000000..e0ae634
 --- /dev/null
 +++ b/src/ui/strait-result.ts
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,24 @@
 +// Result の列の通過の 1 行（v0.8.0 S4。spec-v0800 §4.9）: 「東京急行: 往路 3 隻 → 復路 2 隻（撃沈 1・ビラに残った 0）」。
 +// 材料（StraitResult）は systems/strait-result-part が列の通過の段階の数（core/ship-transit）から終わりに 1 回作る: 往路に現れた・復路に現れた・列の撃沈（往路でも復路でも。護衛は数えない＝
-+// 駆逐艦の行が言う）・終わった時に揚陸の地にいた（夜明けで戻らない艦も、終わった時にまだ揚陸中の艦も）。列の通過のある任務（us_04）だけ鍵がある。Phaser・DOM を読まない。
++// 駆逐艦の行が言う）・終わった時に揚陸の地にいた（夜明けで戻らない艦も、終わった時にまだ揚陸中の艦も）・終わった時にまだ往路の途中にいた（早く帰投・沈没した夜。spec の形に無い尾で、
++// 0 の時は出さない＝「往路 3 隻 → 復路 0 隻（撃沈 0・ビラに残った 0）」と数が合わなく見えた。S4 の Result の写真）。列の通過のある任務（us_04）だけ鍵がある。Phaser・DOM を読まない。
 +
 +/** Result の列の通過の材料（終わりに 1 回） */
 +export interface StraitResult {
@@ -1492,11 +1493,14 @@ index 0000000..3aacb6c
 +  outCount: number;
 +  sunk: number;
 +  away: number;
++  /** 終わった時にまだ往路の途中（海域の中で揚陸の地へ向かう）だった隻数。0 なら行に出さない */
++  inbound: number;
 +}
 +
 +/** Result の列の通過の 1 行 */
 +export function straitResultLineJa(s: StraitResult): string {
-+  return `${s.forceJa}: 往路 ${s.inCount} 隻 → 復路 ${s.outCount} 隻（撃沈 ${s.sunk}・${s.vilaJa}に残った ${s.away}）`;
++  const tail = s.inbound > 0 ? `・往路の途中 ${s.inbound}` : '';
++  return `${s.forceJa}: 往路 ${s.inCount} 隻 → 復路 ${s.outCount} 隻（撃沈 ${s.sunk}・${s.vilaJa}に残った ${s.away}${tail}）`;
 +}
 diff --git a/tests/briefing-other-kit.ts b/tests/briefing-other-kit.ts
 new file mode 100644
@@ -2106,10 +2110,10 @@ index bb0675a..aa3b159 100644
  });
 diff --git a/tests/radar-result.test.ts b/tests/radar-result.test.ts
 new file mode 100644
-index 0000000..94725e7
+index 0000000..4751af4
 --- /dev/null
 +++ b/tests/radar-result.test.ts
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,182 @@
 +// v0.8.0 S4（spec-v0800 §4.9・§3.2 D-R9、brief L26・L31・L34）: Result の us_04 の 2 行（ui/radar-result・strait-result）と、その材料（systems/strait-result-part・world-radar の数え）。
 +// - 文の形: 最初の接触が 1 秒の前なら「出撃直後」・後なら「出撃 N 秒」・接触なし／目で見えない間に撃った魚雷 0 本・N 本（命中 N）。列の行は往路・復路・撃沈・揚陸の地に残った。
 +// - 幅: 20 px で論理幅 1280 の行の幅 1232 の内（縮めない）。本文の下端（result-scene の line() の足し方）は 592 の内に収まるか、収める上げは行の間の半分より小さい。
@@ -2135,7 +2139,7 @@ index 0000000..94725e7
 +import { kitStep, kitWorld } from './transit-world-kit';
 +
 +const R0: RadarResult = { firstS: 0.0167, firstDx: -1800, firstDy: -1400, unseenShots: 2, unseenHits: 0 };
-+const S0: StraitResult = { forceJa: '東京急行', vilaJa: 'ビラ', inCount: 3, outCount: 2, sunk: 1, away: 0 };
++const S0: StraitResult = { forceJa: '東京急行', vilaJa: 'ビラ', inCount: 3, outCount: 2, sunk: 1, away: 0, inbound: 0 };
 +const BODY_MAX_Y = 720 - 24 - 96 - 8; // RESULT_BODY_MAX_Y（menu-config は DOM を読むので値で。tests/evac-result と同じ）
 +
 +describe('文の形（spec §4.9）', () => {
@@ -2145,13 +2149,14 @@ index 0000000..94725e7
 +    expect(radarResultLineJa({ ...R0, firstS: NaN, firstDx: NaN, firstDy: NaN, unseenShots: 4, unseenHits: 1 })).toBe('レーダー: 接触なし ・ 目で見えない間に撃った魚雷 4 本（命中 1）');
 +    expect(radarResultLineJa({ ...R0, firstS: RADAR_RESULT_SOON_S })).toContain('（出撃 1 秒）');
 +    expect(straitResultLineJa(S0)).toBe('東京急行: 往路 3 隻 → 復路 2 隻（撃沈 1・ビラに残った 0）');
++    expect(straitResultLineJa({ ...S0, outCount: 0, sunk: 0, inbound: 3 })).toBe('東京急行: 往路 3 隻 → 復路 0 隻（撃沈 0・ビラに残った 0・往路の途中 3）'); // 早く終わった夜だけの尾
 +    expect(RADAR_LINE_STEP_M).toBe(100);
 +  });
-+  it('幅: いちばん広い形（4000 m・北東・出撃 260 秒・魚雷 4 本（命中 4）／ハードの 4 隻）は 20 px で 1232 px（論理幅 1280 − 左右 24）の内。px を固定', () => {
++  it('幅: いちばん広い形（4000 m・北東・出撃 260 秒・魚雷 4 本（命中 4）／ハードの 4 隻・往路の途中の尾）は 20 px で 1232 px（論理幅 1280 − 左右 24）の内。px を固定', () => {
 +    const wide = radarResultLineJa({ firstS: 259.6, firstDx: 2828, firstDy: -2828, unseenShots: 4, unseenHits: 4 });
-+    const st = straitResultLineJa({ ...S0, inCount: 4, outCount: 4, sunk: 4, away: 4 });
-+    expect([wide, st]).toEqual(['レーダー: 最初の接触 北東 4000 m（出撃 260 秒） ・ 目で見えない間に撃った魚雷 4 本（命中 4）', '東京急行: 往路 4 隻 → 復路 4 隻（撃沈 4・ビラに残った 4）']);
-+    expect([Math.round(textWidthPx(wide, 20) * 10) / 10, Math.round(textWidthPx(st, 20) * 10) / 10]).toEqual([964.9, 608.6]);
++    const st = straitResultLineJa({ ...S0, inCount: 4, outCount: 4, sunk: 4, away: 4, inbound: 4 });
++    expect([wide, st]).toEqual(['レーダー: 最初の接触 北東 4000 m（出撃 260 秒） ・ 目で見えない間に撃った魚雷 4 本（命中 4）', '東京急行: 往路 4 隻 → 復路 4 隻（撃沈 4・ビラに残った 4・往路の途中 4）']);
++    expect([Math.round(textWidthPx(wide, 20) * 10) / 10, Math.round(textWidthPx(st, 20) * 10) / 10]).toEqual([964.9, 752.6]);
 +    for (const s of [wide, st]) expect(textWidthPx(s, 20)).toBeLessThanOrEqual(1280 - 48);
 +  });
 +});
@@ -2260,11 +2265,26 @@ index 0000000..94725e7
 +    expect(Math.round(Math.hypot(r.radar!.firstDx, r.radar!.firstDy) / 100) * 100).toBe(2300);
 +    expect(r.radar!.firstS).toBeLessThan(RADAR_RESULT_SOON_S);
 +    const g = { destroyers: { transit: w.transit } as never, setup: w.setup };
-+    expect(straitResultPart(g).strait).toEqual({ forceJa: '東京急行', vilaJa: 'ビラ', inCount: 3, outCount: 0, sunk: 0, away: 3 });
++    expect(straitResultPart(g).strait).toEqual({ forceJa: '東京急行', vilaJa: 'ビラ', inCount: 3, outCount: 0, sunk: 0, away: 3, inbound: 0 });
 +    expect([radarResultPart({ radar: null }), straitResultPart({ destroyers: null, setup: w.setup })]).toEqual([{}, {}]);
 +    const mt = code('src/systems/mission-telemetry.ts');
 +    expect(mt).toContain('...radarResultPart(w),');
 +    expect(mt).toContain('...straitResultPart(w),');
++  });
++  it('数が合う: 撃沈の無い夜はどの秒に終わっても 往路 = 復路 + ビラに残った + 往路の途中。早く終わった夜（列がまだ往路）だけ尾が出る', () => {
++    const w = kitWorld();
++    const g = { destroyers: { transit: w.transit } as never, setup: w.setup };
++    let early = '';
++    for (let next = 1; w.stepTimeS < 260; ) {
++      kitStep(w);
++      if (w.stepTimeS < next) continue;
++      next++;
++      const s = straitResultPart(g).strait!;
++      expect(s.sunk).toBe(0);
++      expect(s.inCount, `${w.stepTimeS}`).toBe(s.outCount + s.away + s.inbound);
++      if (s.inbound > 0 && early === '') early = straitResultLineJa(s);
++    }
++    expect(early).toMatch(/^東京急行: 往路 \d 隻 → 復路 0 隻（撃沈 0・ビラに残った \d・往路の途中 \d）$/);
 +  });
 +});
 +
