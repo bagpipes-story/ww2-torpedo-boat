@@ -122,7 +122,7 @@ function bassLine(th, segs, lo, hi) {
   });
   return out;
 }
-function composeArrange(th, a, melody, rng, six, n, out) {
+function composeArrange(th, a, melody, rng, six, out) {
   const barN = th.beats * 4, segs = segmentsOf(th), dyn = (at) => a.dyn[Math.min(a.dyn.length - 1, Math.floor(at / barN))];
   const jitter = (h) => 1 + h * (rng.next() * 2 - 1), noise = () => Math.floor(rng.next() * NOISE_SPAN);
   const voices = (inst, at, len, p, vel, v, cents) => {
@@ -159,7 +159,7 @@ function composeArrange(th, a, melody, rng, six, n, out) {
           if (!ch.includes(pcOf(q)) || q > mp - MIN_BELOW) continue;
           const iv = (mp - q) % 12, dc = Number.isNaN(prevC) ? 0 : q - prevC, dm = Number.isNaN(prevM) ? 0 : mp - prevM, prevIv = Number.isNaN(prevC) ? -1 : (prevM - prevC) % 12;
           const similar = Math.sign(dc) !== 0 && Math.sign(dc) === Math.sign(dm);
-          if (similar && (iv === 0 || iv === 7) && prevIv === iv) continue;
+          if (similar && (iv === 0 || iv === 7) && prevIv === iv || Math.abs(dc) > 7) continue;
           const motion = Number.isNaN(prevC) ? 0.6 : dc !== 0 && dm !== 0 ? similar ? 0.25 : 1 : dc === 0 && dm === 0 ? 0.5 : 0.6;
           const ad = Math.abs(dc), step = ad === 0 ? 0.3 : ad <= 2 ? 1 : ad <= 4 ? 0.6 : ad <= 5 ? 0.3 : ad <= 7 ? 0.1 : -1;
           const sc = W_CONS * (CONS[iv] ?? 0) + W_MOTION * motion + W_STEP * step + W_MID * (1 - Math.abs(q - mid) / span) - (pcOf(q) === pcOf(bass) && Math.abs(q - bass) < 12 ? 0.5 : 0);
@@ -188,7 +188,6 @@ function composeArrange(th, a, melody, rng, six, n, out) {
     }
   }
   for (const bar of a.crash.bars) out.push(note("crash", (bar - 1) * barN * six, barN / 2 * six, 0, a.crash.vel * dyn((bar - 1) * barN), 0, noise()));
-  if (out.some((x) => x.start >= n)) throw new Error(`\u66F2 '${th.key}' \u306E\u4F34\u594F\u304C\u8F2A\u306E\u5916`);
 }
 
 // src/assets/sfx-music-plan.ts
@@ -326,10 +325,7 @@ function composePlanMelody(th, m, plan, rng, six) {
     walk(ps, slots, run, { target: j < slots.length ? ps[j] : ps[0], soft: false, cap: capOf(slots[i].bar), leaps: 1 }, lo, hi, rng, tonic);
     i = j;
   }
-  return slots.map((o, i) => noteOf(m, o, ps[i], six));
-}
-function noteOf(m, o, p, six) {
-  return { inst: m.inst, start: Math.round(o.at * six), len: Math.max(1, Math.round(o.dur * six * m.legato)), pitch: p, vel: m.vel * o.vel, decayS: 0, noise: 0 };
+  return slots.map((o, i) => note(m.inst, o.at * six, o.dur * six * m.legato, ps[i], m.vel * o.vel));
 }
 function placePenalty(qs, src, ref, lo, cap) {
   const into = ref === UNSET ? 0 : qs[0] - ref;
@@ -705,7 +701,6 @@ var W_SAME = 0.05;
 var MAX_LEAP = 7;
 var W_ON2 = 1.6;
 var W_BACK2 = 0.4;
-var SR3 = MUSIC_SAMPLE_RATE;
 var SHIFTS = [-2, -1, 1, 2];
 var NOISE_SPAN2 = 1 << 15;
 function cadencePcs(th, o) {
@@ -772,14 +767,8 @@ function composeMelody(th, m, rng, six) {
   }
   return out;
 }
-function composePart(th, pt, rng, six, n, out) {
+function composePart(th, pt, rng, six, out) {
   const barN = th.beats * 4, every = pt.every ?? 1, voices = pt.voices ?? 1, human = pt.human ?? 0;
-  if (pt.rate) {
-    for (let t = -Math.log(1 - rng.next()) / pt.rate; t * SR3 < n; t += -Math.log(1 - rng.next()) / pt.rate) {
-      out.push(note(pt.inst, t * SR3, six, 0, pt.vel * (0.4 + 0.6 * rng.next()), 0, Math.floor(rng.next() * NOISE_SPAN2)));
-    }
-    return;
-  }
   let center = (pt.low + pt.high) / 2, alt = 0;
   for (let b = 0; b < th.bars; b += every) {
     const r = pt.fill && pt.fillEvery && (b + every) % pt.fillEvery === 0 ? pt.fill : pick(pt.rhythms, rng);
@@ -808,8 +797,8 @@ function composeMusic(th, rng) {
     const vel = dyn ? m.vel * dyn[Math.floor(m.start / barS)] : m.vel;
     for (let v = 0; v < voices; v++) notes.push(voices > 1 || dyn ? { ...m, vel, pitch: m.pitch + (v - (voices - 1) / 2) * cents / 100 } : m);
   }
-  if (th.arrange) composeArrange(th, th.arrange, melody, rng, six, n, notes);
-  else for (const pt of th.parts) composePart(th, pt, rng, six, n, notes);
+  if (th.arrange) composeArrange(th, th.arrange, melody, rng, six, notes);
+  else for (const pt of th.parts) composePart(th, pt, rng, six, notes);
   for (const x of notes) if (musicNoteSamples(x) > n) throw new Error(`\u66F2 '${th.key}' \u306E ${x.inst} \u304C\u8F2A\u3088\u308A\u9577\u3044`);
   return { theme: th, notes, melody, n };
 }
@@ -974,7 +963,7 @@ function musicRng(key) {
 }
 
 // src/assets/sfx-music-render.ts
-var SR4 = MUSIC_SAMPLE_RATE;
+var SR3 = MUSIC_SAMPLE_RATE;
 var ROOM = { combs: [557, 613, 677, 739], allpass: [173, 67], damp: 0.35, apG: 0.5, warmT60: 1.5 };
 var NC = ROOM.combs.length;
 var NA = ROOM.allpass.length;
@@ -1022,12 +1011,12 @@ var MusicBuilder = class {
       this.rLen[k] = d;
       at += d;
       if (k < NC && room) {
-        this.rFb[k] = 10 ** (-3 * d / (room[1] * SR4));
+        this.rFb[k] = 10 ** (-3 * d / (room[1] * SR3));
         e2 += this.rFb[k] ** 2;
       }
     }
     this.rb = new Float64Array(room ? at : 0);
-    this.warmN = room ? Math.min(this.n, Math.round(ROOM.warmT60 * room[1] * SR4)) : 0;
+    this.warmN = room ? Math.min(this.n, Math.round(ROOM.warmT60 * room[1] * SR3)) : 0;
     this.wet = room ? room[0] * Math.sqrt((1 - e2 / NC) / NC) : 0;
     let u = 3 * this.n * MUSIC_COST.pass;
     for (const x of score.notes) u += MUSIC_COST.note + musicNoteSamples(x) * musicUnitsPerSample(x.inst);

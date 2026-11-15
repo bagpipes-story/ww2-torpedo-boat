@@ -11,7 +11,7 @@
 // 作る時だけ動く（確保してよい）。乱数は呼ぶ側の音だけの SeededRng。
 import type { SeededRng } from '../core/rng';
 import type { MusicNote } from './sfx-music-synth';
-import { barScale, chordAt, isAvoid, pcOf, pick, scaleStep, type MusicMelody, type MusicPlan, type MusicPlanRole, type MusicRhythm, type MusicTheme } from './sfx-music-theory';
+import { barScale, chordAt, isAvoid, note, pcOf, pick, scaleStep, type MusicMelody, type MusicPlan, type MusicPlanRole, type MusicRhythm, type MusicTheme } from './sfx-music-theory';
 
 /** 旋律の 1 音の場所（16 分の位置・長さ・強さ・小節・役・強拍・和音・音階） */
 interface Slot { readonly at: number; readonly dur: number; readonly vel: number; readonly bar: number; readonly role: MusicPlanRole; readonly strong: boolean; readonly ch: number[]; readonly sc: number[] }
@@ -151,10 +151,7 @@ export function composePlanMelody(th: MusicTheme, m: MusicMelody, plan: MusicPla
     walk(ps, slots, run, { target: j < slots.length ? ps[j]! : ps[0]!, soft: false, cap: capOf(slots[i]!.bar), leaps: 1 }, lo, hi, rng, tonic);
     i = j;
   }
-  return slots.map((o, i) => noteOf(m, o, ps[i]!, six));
-}
-function noteOf(m: MusicMelody, o: Slot, p: number, six: number): MusicNote {
-  return { inst: m.inst, start: Math.round(o.at * six), len: Math.max(1, Math.round(o.dur * six * m.legato)), pitch: p, vel: m.vel * o.vel, decayS: 0, noise: 0 };
+  return slots.map((o, i) => note(m.inst, o.at * six, o.dur * six * m.legato, ps[i]!, m.vel * o.vel));
 }
 
 /** 移した小節の点（小さいほど良い）: 音域と cap の外・形の向きの違い・同じ音の続き・行ったり来たり・戻らない跳躍・増 2 度など・入りの距離（前の音 ref から） */

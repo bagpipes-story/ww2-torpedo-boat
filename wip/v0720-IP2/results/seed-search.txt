@@ -1,0 +1,11 @@
+title_d: 400 個の種（760000〜760399）・決まりを全部通る 52 個・破れ recover 331・trill 52・span13 29・steps 27・repeatRun 23・climaxOnce 18・climaxAt 14・bigLeap 6・arpeggio 6
+  1. 種 760160  点 0.929  motif 1.00 arch 1.00 steps 0.88 rhythm 0.70 cadence 0.96 range 1.00 repeat 0.95 seam 1.00 harmony 0.75  （戻り 8・山 81.3%・音域 17 半音・順次 72%・跳躍 16）
+  2. 種 760068  点 0.927  motif 1.00 arch 1.00 steps 0.90 rhythm 0.60 cadence 0.96 range 1.00 repeat 0.95 seam 1.00 harmony 0.84  （戻り 7・山 81.3%・音域 13 半音・順次 74%・跳躍 16）
+  3. 種 760279  点 0.926  motif 1.00 arch 1.00 steps 0.95 rhythm 0.72 cadence 0.96 range 1.00 repeat 0.80 seam 1.00 harmony 0.75  （戻り 9・山 81.3%・音域 17 半音・順次 71%・跳躍 16）
+  4. 種 760317  点 0.925  motif 1.00 arch 1.00 steps 0.90 rhythm 0.74 cadence 0.94 range 1.00 repeat 0.87 seam 1.00 harmony 0.75  （戻り 9・山 78.1%・音域 16 半音・順次 74%・跳躍 17）
+  5. 種 760148  点 0.916  motif 1.00 arch 1.00 steps 0.86 rhythm 0.64 cadence 0.95 range 1.00 repeat 0.87 seam 1.00 harmony 0.88  （戻り 7・山 78.1%・音域 16 半音・順次 75%・跳躍 16）
+  一番の種 760160（今の SFX_SEED_MUSIC_D 760160＝同じ）
+title_d_prev 種 7609（7604 から・今 7609＝同じ）
+mission_l0   種 7628（7628 から・今 7628＝同じ）
+mission_l1   種 7629（7629 から・今 7629＝同じ）
+mission_l2   種 7630（7630 から・今 7630＝同じ）

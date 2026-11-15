@@ -25,7 +25,7 @@ var MUSIC_SEED_SEARCH_D = { from: 76e4, count: 400 };
 var MUSIC_TARGET_DBFS = { menu: -24, quiet: -33, tense: -30, battle: -27 };
 var MUSIC_MASTER_GAIN = 0.8;
 var MUSIC_GAIN = {
-  title_d: 0.481,
+  title_d: 0.501,
   title_d_prev: 0.481,
   mission_l0: 0.152,
   mission_l1: 0.134,
@@ -1677,7 +1677,7 @@ function bassLine(th, segs, lo, hi) {
   });
   return out;
 }
-function composeArrange(th, a, melody, rng, six, n, out) {
+function composeArrange(th, a, melody, rng, six, out) {
   const barN = th.beats * 4, segs = segmentsOf(th), dyn = (at) => a.dyn[Math.min(a.dyn.length - 1, Math.floor(at / barN))];
   const jitter = (h) => 1 + h * (rng.next() * 2 - 1), noise = () => Math.floor(rng.next() * NOISE_SPAN);
   const voices = (inst, at, len, p, vel, v, cents) => {
@@ -1714,7 +1714,7 @@ function composeArrange(th, a, melody, rng, six, n, out) {
           if (!ch.includes(pcOf(q)) || q > mp - MIN_BELOW) continue;
           const iv = (mp - q) % 12, dc = Number.isNaN(prevC) ? 0 : q - prevC, dm = Number.isNaN(prevM) ? 0 : mp - prevM, prevIv = Number.isNaN(prevC) ? -1 : (prevM - prevC) % 12;
           const similar = Math.sign(dc) !== 0 && Math.sign(dc) === Math.sign(dm);
-          if (similar && (iv === 0 || iv === 7) && prevIv === iv) continue;
+          if (similar && (iv === 0 || iv === 7) && prevIv === iv || Math.abs(dc) > 7) continue;
           const motion = Number.isNaN(prevC) ? 0.6 : dc !== 0 && dm !== 0 ? similar ? 0.25 : 1 : dc === 0 && dm === 0 ? 0.5 : 0.6;
           const ad = Math.abs(dc), step = ad === 0 ? 0.3 : ad <= 2 ? 1 : ad <= 4 ? 0.6 : ad <= 5 ? 0.3 : ad <= 7 ? 0.1 : -1;
           const sc = W_CONS * (CONS[iv] ?? 0) + W_MOTION * motion + W_STEP * step + W_MID * (1 - Math.abs(q - mid) / span) - (pcOf(q) === pcOf(bass) && Math.abs(q - bass) < 12 ? 0.5 : 0);
@@ -1743,7 +1743,6 @@ function composeArrange(th, a, melody, rng, six, n, out) {
     }
   }
   for (const bar of a.crash.bars) out.push(note("crash", (bar - 1) * barN * six, barN / 2 * six, 0, a.crash.vel * dyn((bar - 1) * barN), 0, noise()));
-  if (out.some((x) => x.start >= n)) throw new Error(`\u66F2 '${th.key}' \u306E\u4F34\u594F\u304C\u8F2A\u306E\u5916`);
 }
 
 // src/assets/sfx-music-plan.ts
@@ -1881,10 +1880,7 @@ function composePlanMelody(th, m, plan, rng, six) {
     walk(ps, slots, run, { target: j < slots.length ? ps[j] : ps[0], soft: false, cap: capOf(slots[i].bar), leaps: 1 }, lo, hi, rng, tonic);
     i = j;
   }
-  return slots.map((o, i) => noteOf(m, o, ps[i], six));
-}
-function noteOf(m, o, p, six) {
-  return { inst: m.inst, start: Math.round(o.at * six), len: Math.max(1, Math.round(o.dur * six * m.legato)), pitch: p, vel: m.vel * o.vel, decayS: 0, noise: 0 };
+  return slots.map((o, i) => note(m.inst, o.at * six, o.dur * six * m.legato, ps[i], m.vel * o.vel));
 }
 function placePenalty(qs, src, ref, lo, cap) {
   const into = ref === UNSET ? 0 : qs[0] - ref;
@@ -2235,7 +2231,6 @@ var W_SAME = 0.05;
 var MAX_LEAP = 7;
 var W_ON2 = 1.6;
 var W_BACK2 = 0.4;
-var SR7 = MUSIC_SAMPLE_RATE;
 var SHIFTS = [-2, -1, 1, 2];
 var NOISE_SPAN2 = 1 << 15;
 var MELODY_MIN_NOTES = 8;
@@ -2303,14 +2298,8 @@ function composeMelody(th, m, rng, six) {
   }
   return out;
 }
-function composePart(th, pt, rng, six, n, out) {
+function composePart(th, pt, rng, six, out) {
   const barN = th.beats * 4, every = pt.every ?? 1, voices = pt.voices ?? 1, human = pt.human ?? 0;
-  if (pt.rate) {
-    for (let t = -Math.log(1 - rng.next()) / pt.rate; t * SR7 < n; t += -Math.log(1 - rng.next()) / pt.rate) {
-      out.push(note(pt.inst, t * SR7, six, 0, pt.vel * (0.4 + 0.6 * rng.next()), 0, Math.floor(rng.next() * NOISE_SPAN2)));
-    }
-    return;
-  }
   let center = (pt.low + pt.high) / 2, alt = 0;
   for (let b = 0; b < th.bars; b += every) {
     const r = pt.fill && pt.fillEvery && (b + every) % pt.fillEvery === 0 ? pt.fill : pick2(pt.rhythms, rng);
@@ -2339,8 +2328,8 @@ function composeMusic(th, rng) {
     const vel = dyn ? m.vel * dyn[Math.floor(m.start / barS)] : m.vel;
     for (let v = 0; v < voices; v++) notes.push(voices > 1 || dyn ? { ...m, vel, pitch: m.pitch + (v - (voices - 1) / 2) * cents / 100 } : m);
   }
-  if (th.arrange) composeArrange(th, th.arrange, melody, rng, six, n, notes);
-  else for (const pt of th.parts) composePart(th, pt, rng, six, n, notes);
+  if (th.arrange) composeArrange(th, th.arrange, melody, rng, six, notes);
+  else for (const pt of th.parts) composePart(th, pt, rng, six, notes);
   for (const x of notes) if (musicNoteSamples(x) > n) throw new Error(`\u66F2 '${th.key}' \u306E ${x.inst} \u304C\u8F2A\u3088\u308A\u9577\u3044`);
   return { theme: th, notes, melody, n };
 }
@@ -2571,7 +2560,7 @@ var MUSIC_SEEDS = {
 };
 
 // src/assets/sfx-music-render.ts
-var SR8 = MUSIC_SAMPLE_RATE;
+var SR7 = MUSIC_SAMPLE_RATE;
 var ROOM = { combs: [557, 613, 677, 739], allpass: [173, 67], damp: 0.35, apG: 0.5, warmT60: 1.5 };
 var NC = ROOM.combs.length;
 var NA = ROOM.allpass.length;
@@ -2619,12 +2608,12 @@ var MusicBuilder = class {
       this.rLen[k] = d;
       at += d;
       if (k < NC && room) {
-        this.rFb[k] = 10 ** (-3 * d / (room[1] * SR8));
+        this.rFb[k] = 10 ** (-3 * d / (room[1] * SR7));
         e2 += this.rFb[k] ** 2;
       }
     }
     this.rb = new Float64Array(room ? at : 0);
-    this.warmN = room ? Math.min(this.n, Math.round(ROOM.warmT60 * room[1] * SR8)) : 0;
+    this.warmN = room ? Math.min(this.n, Math.round(ROOM.warmT60 * room[1] * SR7)) : 0;
     this.wet = room ? room[0] * Math.sqrt((1 - e2 / NC) / NC) : 0;
     let u = 3 * this.n * MUSIC_COST.pass;
     for (const x of score.notes) u += MUSIC_COST.note + musicNoteSamples(x) * musicUnitsPerSample(x.inst);
@@ -3038,7 +3027,7 @@ function drawStrip(rgb, y0, x) {
 }
 
 // scripts/sfx-music.ts
-var SR9 = MUSIC_SAMPLE_RATE;
+var SR8 = MUSIC_SAMPLE_RATE;
 var dbfs = (v) => v > 0 ? `${(20 * Math.log10(v)).toFixed(1)}` : "-inf";
 var NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 var noteName = (p) => `${NAMES[(Math.round(p) % 12 + 12) % 12]}${Math.floor(Math.round(p) / 12) - 1}`;
@@ -3109,11 +3098,11 @@ function report(outDir) {
     for (let i = 1; i < n; i++) jumps.push(Math.abs(x[i] - x[i - 1]));
     jumps.sort((p, q) => p - q);
     times.sort((p, q) => p - q);
-    const w = Math.round(0.025 * SR9), seam = new Float32Array([...x.subarray(n - w), ...x.subarray(0, w)]);
-    const [hi, lo] = bandShares(x, SR9);
-    console.log(`${key.padEnd(11)} ${(n / SR9).toFixed(2)} \u79D2\uFF08${n}\uFF09  \u9802 ${peakOf2(x).toFixed(3)}  RMS ${dbfs(rmsOf(x))} dBFS  >400 Hz ${pct(hi)}\u30FB<200 Hz ${pct(lo)}\u30FB>2.5 kHz ${(bandShare(x, SR9, 2500, SR9) * 100).toFixed(1)}%  \u91CD\u5FC3 ${centroidHz(x, 0, Math.min(n, 65536), SR9).toFixed(0)} Hz  \u97F3\u7B26 ${sc.notes.length}${sc.theme.room ? `  \u97FF\u304D ${sc.theme.room.join("\u30FB")} \u79D2` : ""}`);
+    const w = Math.round(0.025 * SR8), seam = new Float32Array([...x.subarray(n - w), ...x.subarray(0, w)]);
+    const [hi, lo] = bandShares(x, SR8);
+    console.log(`${key.padEnd(11)} ${(n / SR8).toFixed(2)} \u79D2\uFF08${n}\uFF09  \u9802 ${peakOf2(x).toFixed(3)}  RMS ${dbfs(rmsOf(x))} dBFS  >400 Hz ${pct(hi)}\u30FB<200 Hz ${pct(lo)}\u30FB>2.5 kHz ${(bandShare(x, SR8, 2500, SR8) * 100).toFixed(1)}%  \u91CD\u5FC3 ${centroidHz(x, 0, Math.min(n, 65536), SR8).toFixed(0)} Hz  \u97F3\u7B26 ${sc.notes.length}${sc.theme.room ? `  \u97FF\u304D ${sc.theme.room.join("\u30FB")} \u79D2` : ""}`);
     console.log(`${"".padEnd(11)} \u7D99\u304E\u76EE: \u5DEE ${Math.abs(x[0] - x[n - 1]).toFixed(4)}\uFF08\u4E2D\u306E\u5DEE\u306E\u4E2D\u592E\u5024 ${quant(jumps, 0.5).toFixed(4)}\u30FB99% ${quant(jumps, 0.99).toFixed(4)}\uFF09\u30FB50 ms \u306E RMS \u524D ${dbfs(rmsOf(x, n - 3 * w, n - w))}\uFF0F\u307E\u305F\u3050 ${dbfs(rmsOf(seam))}\uFF0F\u5F8C ${dbfs(rmsOf(x, w, 3 * w))} dBFS`);
-    console.log(`${"".padEnd(11)} \u4F5C\u308B: ${units.toFixed(0)} \u5358\u4F4D\uFF1D${times.length} \u30D5\u30EC\u30FC\u30E0\uFF08\u4E88\u7B97 ${MUSIC_BUILD_BUDGET}\uFF09\u30FBnode ${times.reduce((p, q) => p + q, 0).toFixed(1)} ms\uFF081 \u56DE\u306E\u4E2D\u592E\u5024 ${quant(times, 0.5).toFixed(2)}\u30FB95% ${quant(times, 0.95).toFixed(2)}\u30FB\u6700\u5927 ${times[times.length - 1].toFixed(2)} ms\uFF09\u30FB${(units / (n / SR9) / 1e3).toFixed(0)} k \u5358\u4F4D\uFF0F\u97F3 1 \u79D2`);
+    console.log(`${"".padEnd(11)} \u4F5C\u308B: ${units.toFixed(0)} \u5358\u4F4D\uFF1D${times.length} \u30D5\u30EC\u30FC\u30E0\uFF08\u4E88\u7B97 ${MUSIC_BUILD_BUDGET}\uFF09\u30FBnode ${times.reduce((p, q) => p + q, 0).toFixed(1)} ms\uFF081 \u56DE\u306E\u4E2D\u592E\u5024 ${quant(times, 0.5).toFixed(2)}\u30FB95% ${quant(times, 0.95).toFixed(2)}\u30FB\u6700\u5927 ${times[times.length - 1].toFixed(2)} ms\uFF09\u30FB${(units / (n / SR8) / 1e3).toFixed(0)} k \u5358\u4F4D\uFF0F\u97F3 1 \u79D2`);
     const c = melodyCheck(sc);
     if (c.count > 0) console.log(`${"".padEnd(11)} \u65CB\u5F8B ${c.count} \u97F3: \u5F37\u62CD\u306E\u548C\u97F3\u306E\u97F3 ${pct(c.strongChord)}\u30FB\u9806\u6B21 ${pct(c.stepShare)}\uFF08\u8DF3\u8E8D ${pct(1 - c.stepShare)}\uFF09\u30FB\u8DF3\u8E8D\u306E\u623B\u308A ${pct(c.recovered)}\u30FB\u97F3\u57DF ${noteName(c.low)}\u301C${noteName(c.high)}\u30FB\u53E5\u306E\u7D42\u308F\u308A ${MUSIC_THEMES[key].melody.cadences.map(([bar, k], i) => `${bar} \u5C0F\u7BC0 ${k} ${noteName(c.cadences[i])}`).join("\u30FB")}\u30FB\u6C7A\u307E\u308A\u306E\u7834\u308C ${c.violations.length ? c.violations.join(",") : "\u306A\u3057"}`);
     if (c.count > 0) console.log(`${"".padEnd(11)} \u65CB\u5F8B\u306E\u97F3: ${sc.melody.map((m) => noteName(m.pitch)).join(" ")}`);
@@ -3124,7 +3113,7 @@ function report(outDir) {
     if (wav) {
       const rep = new Float32Array(n * loops);
       for (let k = 0; k < loops; k++) rep.set(x, k * n);
-      writeFileSync(join(outDir, `${key}.wav`), wavBytes(rep, SR9));
+      writeFileSync(join(outDir, `${key}.wav`), wavBytes(rep, SR8));
     }
   }
   console.log(`\u6A19\u672C\u306E\u5408\u8A08 ${total}\uFF08${(total * 4 / 1e6).toFixed(2)} MB\uFF09\u30FB\u30B2\u30FC\u30E0\u306E\u5E38\u99D0\uFF08\u65E2\u5B9A\u306E\u30BF\u30A4\u30C8\u30EB 1 \u672C\uFF0B\u5BB6\u65CF\uFF09${MUSIC_LENGTHS_SUM()}\u30FB\u52B9\u679C\u97F3\u306E\u4E0A\u9650 ${SFX_MAX_TOTAL_SAMPLES}`);
@@ -3144,12 +3133,12 @@ function report(outDir) {
   }
   const cmp = [];
   moods.forEach((t, m) => {
-    const x = moodMix(xs, m, cur), r = db(rmsOf(x) * MUSIC_MASTER_GAIN), band = r + 10 * Math.log10(bandShare(x, SR9, 2e3, 5e3)), on = onsetRate(x, SR9);
+    const x = moodMix(xs, m, cur), r = db(rmsOf(x) * MUSIC_MASTER_GAIN), band = r + 10 * Math.log10(bandShare(x, SR8, 2e3, 5e3)), on = onsetRate(x, SR8);
     cmp.push([r, band, on]);
-    console.log(`\u4EFB\u52D9 \u6BB5 ${["\u9759\u304B", "\u7DCA\u5F35", "\u6226\u95D8"][m]}: \u51FA\u53E3 ${r.toFixed(1)} dBFS\uFF08\u76EE\u6A19 ${t}\uFF09\u30FB\u9802 ${(peakOf2(x) * MUSIC_MASTER_GAIN).toFixed(3)}\u30FB>400 Hz ${pct(bandShares(x, SR9)[0])}\u30FB<200 Hz ${pct(bandShares(x, SR9)[1])}\u30FB2\u301C5 kHz \u306E\u5E2F ${band.toFixed(1)} dBFS\u30FB\u767A\u97F3 ${on.toFixed(2)}/\u79D2`);
+    console.log(`\u4EFB\u52D9 \u6BB5 ${["\u9759\u304B", "\u7DCA\u5F35", "\u6226\u95D8"][m]}: \u51FA\u53E3 ${r.toFixed(1)} dBFS\uFF08\u76EE\u6A19 ${t}\uFF09\u30FB\u9802 ${(peakOf2(x) * MUSIC_MASTER_GAIN).toFixed(3)}\u30FB>400 Hz ${pct(bandShares(x, SR8)[0])}\u30FB<200 Hz ${pct(bandShares(x, SR8)[1])}\u30FB2\u301C5 kHz \u306E\u5E2F ${band.toFixed(1)} dBFS\u30FB\u767A\u97F3 ${on.toFixed(2)}/\u79D2`);
     if (wav && m > 0) {
       const pk = peakOf2(x), y = x.map((v) => v * 0.9 / pk);
-      writeFileSync(join(outDir, `mix-${m === 1 ? "tense" : "battle"}.wav`), wavBytes(y, SR9));
+      writeFileSync(join(outDir, `mix-${m === 1 ? "tense" : "battle"}.wav`), wavBytes(y, SR8));
     }
   });
   console.log(`\u4EFB\u52D9\u306E\u5C64\u306E\u97F3\u91CF\u306E\u6848\uFF08L0\u30FBL1\u30FBL2\uFF09: ${sug.map((g) => g.toFixed(3)).join("\u30FB")}\uFF08\u4ECA ${cur.join("\u30FB")}\uFF09`);
@@ -3168,9 +3157,9 @@ function report(outDir) {
 }
 function rawMenu(xs, outDir) {
   if (!outDir) throw new Error("RAW=1 \u306F\u51FA\u529B\u5148\uFF08scratchpad \u306E\u30C7\u30A3\u30EC\u30AF\u30C8\u30EA\uFF09\u304C\u8981\u308B");
-  const n = 12 * SR9, tap = renderSfx("ui_tap"), pan = Math.SQRT1_2, g = SFX_TABLE.ui_tap.gain * pan, uiAt = [];
+  const n = 12 * SR8, tap = renderSfx("ui_tap"), pan = Math.SQRT1_2, g = SFX_TABLE.ui_tap.gain * pan, uiAt = [];
   const shots = new Float32Array(n);
-  for (let at = SR9; at + tap.length < n; at += Math.round(1.5 * SR9)) {
+  for (let at = SR8; at + tap.length < n; at += Math.round(1.5 * SR8)) {
     uiAt.push(at);
     for (let i = 0; i < tap.length; i++) shots[at + i] = shots[at + i] + tap[i] * g;
   }
@@ -3178,11 +3167,11 @@ function rawMenu(xs, outDir) {
   for (const k of MUSIC_TITLE_KEYS) {
     const music = new Float32Array(n);
     for (let i = 0; i < n; i++) music[i] = xs[k][i % xs[k].length];
-    writeFileSync(join(outDir, `raw-menu-${k}.json`), JSON.stringify({ name: `menu-${k}`, sr: SR9, pre: 0, blastAt: [], uiAt, left: b64(shots), right: b64(shots), loops: b64(new Float32Array(n)), music: b64(music), musicGain: MUSIC_GAIN[k] }));
+    writeFileSync(join(outDir, `raw-menu-${k}.json`), JSON.stringify({ name: `menu-${k}`, sr: SR8, pre: 0, blastAt: [], uiAt, left: b64(shots), right: b64(shots), loops: b64(new Float32Array(n)), music: b64(music), musicGain: MUSIC_GAIN[k] }));
   }
   console.log(`\u30E1\u30CB\u30E5\u30FC\u306E mix \u306E\u6750\u6599: ${outDir}/raw-menu-<\u9375>.json\uFF08${MUSIC_TITLE_KEYS.join("\u30FB")}\u3002\u30DC\u30BF\u30F3\u306E\u97F3 ${uiAt.length} \u56DE\uFF09`);
 }
-var MUSIC_LENGTHS_SUM = () => MUSIC_KEYS.filter((k) => k === MUSIC_TITLE_DEFAULT_ID || MUSIC_LAYER_KEYS.includes(k)).reduce((a, k) => a + MUSIC_THEMES[k].bars * MUSIC_THEMES[k].beats * 4 * (SR9 * 60 / (MUSIC_THEMES[k].bpm * 4)), 0);
+var MUSIC_LENGTHS_SUM = () => MUSIC_KEYS.filter((k) => k === MUSIC_TITLE_DEFAULT_ID || MUSIC_LAYER_KEYS.includes(k)).reduce((a, k) => a + MUSIC_THEMES[k].bars * MUSIC_THEMES[k].beats * 4 * (SR8 * 60 / (MUSIC_THEMES[k].bpm * 4)), 0);
 if (process.env.SEARCH === "1") search();
 else report(process.argv[2] ?? "");
 export {

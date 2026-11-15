@@ -39,8 +39,8 @@ export interface MusicPart {
   readonly inst: MusicInst; readonly pitch: 'chord' | 'root' | 'alt' | 'pedal' | 'none'; readonly low: number; readonly high: number; readonly vel: number;
   /** 型（every 小節ごとに種で選ぶ）・fillEvery 小節ごとの終わりの型（小太鼓の連打） */
   readonly rhythms: readonly MusicRhythm[]; readonly every?: number; readonly fill?: MusicRhythm; readonly fillEvery?: number;
-  /** パッドの声の数と声ごとのずれ（cent）・pedal の音名（0〜11）・強さの揺れ（± 割合）・ぱちぱちの毎秒の数（型の代わりに種で散らす） */
-  readonly voices?: number; readonly cents?: number; readonly pcs?: readonly number[]; readonly human?: number; readonly rate?: number;
+  /** パッドの声の数と声ごとのずれ（cent）・pedal の音名（0〜11）・強さの揺れ（± 割合） */
+  readonly voices?: number; readonly cents?: number; readonly pcs?: readonly number[]; readonly human?: number;
 }
 /**
  * 伴奏の計画（v0.7.2 IP2。assets/sfx-music-arrange。あれば parts の代わり）: 動く低音（弓の 8 分の刻み）・和音のパッド・対旋律（弦）・小太鼓・ティンパニ風の打ち・シンバル。

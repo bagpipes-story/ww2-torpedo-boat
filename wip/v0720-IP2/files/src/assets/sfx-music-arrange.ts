@@ -58,7 +58,7 @@ function bassLine(th: MusicTheme, segs: readonly Seg[], lo: number, hi: number):
 }
 
 /** 伴奏（out に足す）。旋律は 16 分の位置で読む */
-export function composeArrange(th: MusicTheme, a: MusicArrange, melody: readonly MusicNote[], rng: SeededRng, six: number, n: number, out: MusicNote[]): void {
+export function composeArrange(th: MusicTheme, a: MusicArrange, melody: readonly MusicNote[], rng: SeededRng, six: number, out: MusicNote[]): void {
   const barN = th.beats * 4, segs = segmentsOf(th), dyn = (at: number): number => a.dyn[Math.min(a.dyn.length - 1, Math.floor(at / barN))]!;
   const jitter = (h: number): number => 1 + h * (rng.next() * 2 - 1), noise = (): number => Math.floor(rng.next() * NOISE_SPAN);
   const voices = (inst: MusicNote['inst'], at: number, len: number, p: number, vel: number, v: number, cents: number): void => {
@@ -99,7 +99,7 @@ export function composeArrange(th: MusicTheme, a: MusicArrange, melody: readonly
           if (!ch.includes(pcOf(q)) || q > mp - MIN_BELOW) continue;
           const iv = (mp - q) % 12, dc = Number.isNaN(prevC) ? 0 : q - prevC, dm = Number.isNaN(prevM) ? 0 : mp - prevM, prevIv = Number.isNaN(prevC) ? -1 : (prevM - prevC) % 12;
           const similar = Math.sign(dc) !== 0 && Math.sign(dc) === Math.sign(dm);
-          if (similar && (iv === 0 || iv === 7) && prevIv === iv) continue; // 5 度・8 度の並行
+          if ((similar && (iv === 0 || iv === 7) && prevIv === iv) || Math.abs(dc) > 7) continue; // 5 度・8 度の並行・5 度より大きい跳躍
           const motion = Number.isNaN(prevC) ? 0.6 : dc !== 0 && dm !== 0 ? (similar ? 0.25 : 1) : dc === 0 && dm === 0 ? 0.5 : 0.6;
           const ad = Math.abs(dc), step = ad === 0 ? 0.3 : ad <= 2 ? 1 : ad <= 4 ? 0.6 : ad <= 5 ? 0.3 : ad <= 7 ? 0.1 : -1;
           const sc = W_CONS * (CONS[iv] ?? 0) + W_MOTION * motion + W_STEP * step + W_MID * (1 - Math.abs(q - mid) / span) - (pcOf(q) === pcOf(bass) && Math.abs(q - bass) < 12 ? 0.5 : 0);
@@ -126,5 +126,4 @@ export function composeArrange(th: MusicTheme, a: MusicArrange, melody: readonly
     }
   }
   for (const bar of a.crash.bars) out.push(note('crash', (bar - 1) * barN * six, (barN / 2) * six, 0, a.crash.vel * dyn((bar - 1) * barN), 0, noise()));
-  if (out.some((x) => x.start >= n)) throw new Error(`曲 '${th.key}' の伴奏が輪の外`);
 }

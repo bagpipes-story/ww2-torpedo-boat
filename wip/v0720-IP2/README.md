@@ -7,5 +7,7 @@
 src/assets/sfx-music-plan.ts
 src/assets/sfx-music-score.ts
 src/assets/sfx-music-theory.ts
+tests/sfx-music-plan.test.ts
+tests/sfx-music-score.test.ts
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: 途中: 動機の計画の作曲器（plan）・伴奏（arrange）・旋律の点（score）・新しい D・D（前）・A と E を消す（tests はまだ）
+- 一言: 途中 2: 実装・tests（npm test 3,633 件）・数（種の探し・指紋・Chromium・メニューの mix）・CHANGELOG・docs/03（live と短い門はまだ）
