@@ -10,4 +10,4 @@ src/assets/sfx-music-theory.ts
 tests/sfx-music-plan.test.ts
 tests/sfx-music-score.test.ts
 - tools/ … scratchpad の道具、results/ … 文字の結果（音・画像は入れない）
-- 一言: 途中 2: 実装・tests（npm test 3,633 件）・数（種の探し・指紋・Chromium・メニューの mix）・CHANGELOG・docs/03（live と短い門はまだ）
+- 一言: 終わり: IP2 の実装・tests 3,633 件・数（種の上位 5・指紋・作る費用・Chromium・メニューの mix・live 4 つ・短い run-gates 18 組）・CHANGELOG・docs/03

@@ -1,0 +1,5 @@
+default exit 0
+audio exit 0
+noaudio exit 0
+notap exit 0
+LIVE_DONE
