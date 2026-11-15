@@ -1,5 +1,5 @@
 diff --git a/data/missions_seed.json b/data/missions_seed.json
-index 459c7c8..4a28505 100644
+index 459c7c8..cb205f6 100644
 --- a/data/missions_seed.json
 +++ b/data/missions_seed.json
 @@ -502,6 +502,7 @@
@@ -37,15 +37,6 @@ index 459c7c8..4a28505 100644
          "fuel_allotment_gal": 33,
          "fuel_allotment_gal_source": "design (v0.8.0 S0・spec-v0800 §4.6。戦闘に使える割当（us_02 と同じ考え）。260 秒の夜に、レーダーで列の前へ回り、撃って、復路をよけて南西の輪へ帰る。初めは 48 gal。v0.8.0 S3c（lead の L46）: 48 → 33 gal。帰投の時の残りは、一番燃料を使うレーダーの行 radar_twice（往路と復路で 2 本ずつ）の帰投の夜の中央値で 15〜35%（狙い 25%）に合わせる（radar_ambush は S3b で静音で離れるようになり一番燃料を使わない行＝48 gal で中央値 18.2 gal 使う。radar_ambush で 25% にすると radar_twice が多くの夜に尽きる）。迎撃の模擬（N 400 × 2 組）の 48 gal: radar_twice の残りの中央値 48.6%＝24.7 gal 使う → 24.7 ÷ 0.75 ＝ 32.9 → 33 gal。33 gal: radar_twice の残りの中央値 25.3%（p10 13%・p90 30%）・radar_ambush 44.5%。漂流は radar_twice 0.5%・radar_ambush 0.3%（ハードは 0.1%・0.1%）で、自艇が沈まない夜が 20% 以上の行はどれも 5% 以下。ノーマル・ハードの帯はすべて ✓)",
          "bounds_m": {
-@@ -640,7 +641,7 @@
-           "count_source": "design (us_01・us_03 と同じ 4 機（ユーザーの例「敵水上機戦隊四機」）。この朝に海上の PT を襲った日本機の記録は見つけていない＝その日の昼の空襲は基地へ)",
-           "from_bearing_deg": 315,
-           "escort_target_planes": [],
--          "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
-+          "source": "design (v0.8.0 S0。dawn_air.play_as enemy（lead の既定 L1・spec-v0800 §9 Q1。S5 でユーザーの決め U1＝「Aのままでいいと思うよ」）の夜明けの空襲。北西＝ショートランド方面（日本の水上機の基地）の方角から（推定）。僚艇はいない)"
-         },
-         "dawn_withdraw": {
-           "retire_edge": "west",
 @@ -675,7 +676,7 @@
            },
            "cover_leaves_with_outbound": true,
@@ -55,3 +46,284 @@ index 459c7c8..4a28505 100644
          },
          "shores": {
            "north": {
+diff --git a/tests/briefing.test.ts b/tests/briefing.test.ts
+index 0dab9a6..b6af0de 100644
+--- a/tests/briefing.test.ts
++++ b/tests/briefing.test.ts
+@@ -22,17 +22,18 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
+ const labelOf = (id: string): string => riskLabelJa(gameData, id);
+ 
+ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
+-  it('任務一覧: 米PTキャンペーンの 3 件を order 順に。v0.4.4 から 3 件とも出撃できる。sub は日付 ・ 場所', () => {
++  it('任務一覧: 米PTキャンペーンの 4 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）。sub は日付 ・ 場所', () => {
+     const menu = getMenuEntries(gameData);
+     expect(menu.campaignName).toBe('米PTキャンペーン');
+     expect(menu.entries).toEqual([
+       { id: 'us_01', title: 'コレヒドール脱出', sub: '1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）', playable: true, status: '出撃準備 →' },
+       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
+       { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
++      { id: 'us_04', title: 'ブラケット海峡の夜', sub: '1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖）', playable: true, status: '出撃準備 →' },
+     ]);
+   });
+   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
+-    const US_IDS = ['us_01', 'us_02', 'us_03'];
++    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）
+     expect(getMenuEntries(gameData).entries.map((e) => e.id)).toEqual(US_IDS);
+     const otherCampaign = clone();
+     byId(otherCampaign, 'jp_01')['playable_from'] = 'v0.5.0';
+@@ -74,7 +75,10 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
+     delete byId(nonePlayable, 'us_01')['v0_1_prototype'];
+     delete byId(nonePlayable, 'us_02')['v0_1_prototype'];
+     delete byId(nonePlayable, 'us_03')['v0_1_prototype'];
+-    expect(() => getMenuEntries(nonePlayable)).toThrow();
++    expect(() => getMenuEntries(nonePlayable)).toThrow(); // 日本のタブの解放の一覧（us_01〜03）が遊べる任務の外になる（v0.8.0 S0 の getCampaigns の検査）
++    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.0 S5: us_04 が残る
++    delete byId(nonePlayable, 'us_04')['v0_1_prototype'];
++    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).toThrow(/出撃できる任務/);
+   });
+   it('日付: 1942-12-11 → 1942年12月11日、1942-03-11 → 1942年3月11日、1942/12/11 は例外', () => {
+     expect(formatDateJa('1942-12-11')).toBe('1942年12月11日');
+@@ -215,6 +219,9 @@ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト
+     expect(rowsOf(false, 1, true)[2]!.text).toBe('新月 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m');
+     const rec = getBriefingRecord(gameData, 'us_04');
+     expect([formatDateJa(rec.date), rec.place, rec.titleJa]).toEqual(['1943年8月1日', 'ブラケット海峡（コロンバンガラ島沖）', 'ブラケット海峡の夜']);
++    // v0.8.0 S5（brief L57）: 目的の文に隻数を書かない（ノーマルは列 3 ＋ 護衛 1、ハードは列 4 ＋ 護衛 1＝敵の行の ×4／×5 が言う）。ハードの文は持たない
++    expect(rec.objective).toBe('東京急行の駆逐艦がビラへ向かい、揚げ終えると同じ海峡を全速で戻る。分隊の先頭の艇としてレーダーで捉えて雷撃し、進路をよけて生きて帰れ');
++    expect(getBriefingRecord(gameData, 'us_04', true).objective).toBe(rec.objective);
+   });
+   it('今夜の揺らぎ（seed 1〜60・ノーマルとハード）でも敵の行は「西と北西から」か「西から」（護衛の出発点が西に寄った夜は方角を 1 つに）', () => {
+     const seen = new Set<string>();
+diff --git a/tests/campaign.test.ts b/tests/campaign.test.ts
+index 5d4e2a8..eff52c7 100644
+--- a/tests/campaign.test.ts
++++ b/tests/campaign.test.ts
+@@ -1,3 +1,5 @@
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+ import { defaultCampaign, getCampaigns, getMenuEntries, missionCampaignId, playableMissionIds, recordsHitKpi, unlockPrereqIds } from '../src/config/campaign-data';
+@@ -32,14 +34,14 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
+     expect(parseIdList('["us_01","us_01","",3]')).toEqual(['us_01']);
+     for (const bad of [null, undefined, '', '{', '"us_01"', '{"a":1}']) expect(parseIdList(bad)).toEqual([]);
+   });
+-  it('data: 米PT（default）と日本ハードモード（complete_us_pt）。米PTの遊べる任務は us_01〜03、日本は jp_01・jp_02・jp_04・jp_05・jp_06。短い名前', () => {
++  it('data: 米PT（default）と日本ハードモード（complete_us_pt）。米PTの遊べる任務は us_01〜04（v0.8.0 S5 で us_04）、日本は jp_01〜jp_06。短い名前', () => {
+     const cs = getCampaigns(gameData);
+     expect(cs.map((c) => [c.id, c.shortJa, c.unlock])).toEqual([
+       ['us_pt', '米PT', { kind: 'default' }],
+       ['jp_hard', '日本', { kind: 'complete', campaignId: 'us_pt' }],
+     ]);
+     expect(defaultCampaign(gameData).id).toBe('us_pt');
+-    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03']);
++    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']); // v0.8.0 S5: us_04（ブラケット海峡の夜）に playable_from
+     expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。v0.6.7: jp_02（孤島の哨戒）も。v0.6.9: jp_04（多号作戦・オルモック湾へ）も。v0.6.11 S6: jp_03（運天港・空襲下の退避）も。配列順
+     expect(getMenuEntries(gameData, 'jp_hard').campaignName).toBe('日本ハードモード');
+     expect(() => getMenuEntries(gameData, 'nope')).toThrow();
+@@ -63,22 +65,36 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
+     expect([us!.unlockMissionIds, jp!.unlockMissionIds]).toEqual([null, ['us_01', 'us_02', 'us_03']]);
+     expect([unlockPrereqIds(gameData, us!), unlockPrereqIds(gameData, jp!)]).toEqual([[], ['us_01', 'us_02', 'us_03']]);
+     expect(String((gameData.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids_source'])).toContain('design (v0.8.0 S0');
+-    // us_04 が遊べるようになった木（playable_from を足した写し）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝4）
++    // v0.8.0 S5 から us_04 が遊べる（S0 の木では playable_from を足した写しで確かめた）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝4）
++    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
+     const later = clone();
+-    ((later.missionsSeed.missions as unknown as Record<string, unknown>[]).find((m) => m['id'] === 'us_04')!)['playable_from'] = 'v0.8.0';
+-    expect(playableMissionIds(later, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
+-    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03']);
+-    expect(campaignStatus(getCampaigns(later)[1]!.unlock, unlockPrereqIds(later, getCampaigns(later)[1]!), new Set(['us_01', 'us_02', 'us_03']), false, false)).toEqual({ unlocked: true, done: 3, total: 3 });
+     delete (later.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'];
+     expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
+   });
++  it('v0.8.0 S5（brief L50）: us_04 が遊べても日本のタブは米PT の 3 任務で開く。(a) us_01〜03 を帰投で終え us_04 は一度も → 開く (b) us_04 だけ帰投で終えた → 未解放・済 0/3 のまま', () => {
++    const [us, jp] = getCampaigns(gameData);
++    const pre = unlockPrereqIds(gameData, jp!);
++    expect(pre).toEqual(['us_01', 'us_02', 'us_03']);
++    // (a)
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_01', 'us_02', 'us_03']), false, false)).toEqual({ unlocked: true, done: 3, total: 3 });
++    // (b) と、us_04 を足しても数えない（us_04 ＋ 2 任務は 2/3）
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_04']), false, false)).toEqual({ unlocked: false, done: 0, total: 3 });
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_04', 'us_01', 'us_02']), false, false)).toEqual({ unlocked: false, done: 2, total: 3 });
++    // Title の未解放のタブの 2 行目（config/menu-config の titleCampaignLockedSubJa。DOM を読む config なのでソースの式を写して埋める）は今の「米PTの 3 任務…（済 0/3）」のまま
++    const src = readFileSync(join(__dirname, '..', 'src', 'config', 'menu-config.ts'), 'utf8');
++    const tpl = /return `(未解放 ・ \$\{prereqName\}の \$\{total\} 任務を帰投で（済 \$\{done\}\/\$\{total\}）)`;/.exec(src)![1]!;
++    const fill = (done: number, total: number): string => tpl.replace('${prereqName}', us!.shortJa).replace('${done}', String(done)).split('${total}').join(String(total));
++    expect(fill(0, pre.length)).toBe('未解放 ・ 米PTの 3 任務を帰投で（済 0/3）');
++    // v0.5.2 までの端末の移し替え（systems/progress-storage の migrateLegacyUnlocks）も条件の数は 3 のまま
++    expect([legacyUnlocked(null, 3, pre.length), legacyUnlocked(null, 2, pre.length)]).toEqual([true, false]);
++  });
+   it('解放の条件の一覧の検査: 空・重複・文字でない・相手の遊べる任務の外・default のキャンペーンに置く は例外', () => {
+     expect(parseUnlockMissionIds(undefined, 'x')).toBeNull();
+     expect(parseUnlockMissionIds(['us_01'], 'x')).toEqual(['us_01']);
+     for (const bad of [[], ['us_01', 'us_01'], ['us_01', ''], 'us_01', [1]]) expect(() => parseUnlockMissionIds(bad, 'campaigns.jp_hard'), JSON.stringify(bad)).toThrow(/campaigns\.jp_hard の unlock_mission_ids は空でない・重複の無い任務の id の配列/);
+     const notPlayable = clone();
+-    (notPlayable.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01', 'us_04'];
+-    expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_04）は complete_ の相手の遊べる任務（us_01・us_02・us_03）の中だけ/);
++    (notPlayable.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01', 'us_05']; // v0.8.0 S5 から us_04 は遊べるので、まだ遊べない us_05 で
++    expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_05）は complete_ の相手の遊べる任務（us_01・us_02・us_03・us_04）の中だけ/);
+     const onDefault = clone();
+     (onDefault.missionsSeed.campaigns[0] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01'];
+     expect(() => getCampaigns(onDefault)).toThrow(/campaigns\.us_pt\.unlock_mission_ids（us_01）は complete_ の相手の遊べる任務（なし）の中だけ/);
+diff --git a/tests/dawn-air.test.ts b/tests/dawn-air.test.ts
+index 3de2985..e88313e 100644
+--- a/tests/dawn-air.test.ts
++++ b/tests/dawn-air.test.ts
+@@ -275,7 +275,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       us_01: ['enemy', 'medium', 'enemy', 'stay', '昼の空は敵（日本の水上機）'],
+       us_02: ['own', 'high', 'own', 'retire', '昼の空は味方（ヘンダーソン基地）'],
+       us_03: ['contested', 'medium', 'enemy', 'hide', '昼の空は争奪（日本機の昼の空襲）'], // v0.6.1 実機 1 回目: ユーザーの判断で空襲あり
+-      us_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本の水上機の空襲）'], // v0.8.0 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」）。遊べるようにする前（S5）に spec-v0800 §9 Q1 で見直す
++      us_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本の水上機の空襲）'], // v0.8.0 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」）。S5: ユーザーの決め U1（2026-11-15「Aのままでいいと思うよ」）で enemy のまま
+       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
+       us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
+       us_07: ['own', 'high', 'own', 'none', '昼の空は味方（連合軍）'],
+@@ -295,9 +295,9 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       expect(String((byId(gameData, id)['dawn_air'] as Rec)['source']), id).toContain('抜粋のみ・本文未読');
+     }
+   });
+-  it('遊べる任務（us_01・us_02・us_03・jp_01・jp_02・jp_03・jp_04・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
+-    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（ヘンダーソン基地の制空下。空襲あり）。v0.6.7: jp_02（米の飛行艇。夜明けは 4 機）。v0.6.9: jp_04（タクロバンの米機の制空下。空襲あり）。v0.6.11 S6: jp_03（第38任務部隊の制空下。240 秒の後は 4 機）
+-    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', jp_01: 'enemy', jp_02: 'enemy', jp_03: 'enemy', jp_04: 'enemy', jp_05: 'own', jp_06: 'enemy' };
++  it('遊べる任務（us_01・us_02・us_03・us_04・jp_01・jp_02・jp_03・jp_04・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
++    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（ヘンダーソン基地の制空下。空襲あり）。v0.6.7: jp_02（米の飛行艇。夜明けは 4 機）。v0.6.9: jp_04（タクロバンの米機の制空下。空襲あり）。v0.6.11 S6: jp_03（第38任務部隊の制空下。240 秒の後は 4 機）。v0.8.0 S5: us_04（争奪の空を敵として遊ぶ＝ユーザーの決め U1。夜明けの後は水上機 4 機）
++    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', us_04: 'enemy', jp_01: 'enemy', jp_02: 'enemy', jp_03: 'enemy', jp_04: 'enemy', jp_05: 'own', jp_06: 'enemy' };
+     for (const id of PLAYABLE_IDS) {
+       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
+       const s = buildWorldSetup(gameData, id);
+@@ -405,8 +405,9 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+     }
+     // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296。v0.6.3 の jp_05 は 23 gal で 1,449、実機 1 回目の 32 gal・アイドル 0.14 で 1,440。
+     // v0.6.4 の jp_01 は 19 gal で 1,453（T-38 のアイドル 800/8.5 × 0.1 = 9.4118 gal/h: 19 / 9.4118 × 720 = 1453.4999… → 1453。上限いっぱい）。v0.6.7 の jp_02 は jp_05 と同じ T-14・32 gal で 1,440。
+-    // v0.6.9 の jp_04 は jp_01 と同じ T-38・19 gal で 1,453。v0.6.11 S6 の jp_03 は T-38・16 gal で 1,224 ＋ 空襲の間の 240 ＝ 1,464（V-E10 の 240 ＋ 1,224 ＋ 1.5 < 1,500）
+-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1453, 1440, 1464, 1453, 1440, 1224]);
++    // v0.6.9 の jp_04 は jp_01 と同じ T-38・19 gal で 1,453。v0.6.11 S6 の jp_03 は T-38・16 gal で 1,224 ＋ 空襲の間の 240 ＝ 1,464（V-E10 の 240 ＋ 1,224 ＋ 1.5 < 1,500）。
++    // v0.8.0 S5 の us_04 は Elco 80・33 gal で 1,188（アイドル 200 × 0.1 = 20 gal/h: 33 / 20 × 720。夜明けの 260 秒より後）
++    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1453, 1440, 1464, 1453, 1440, 1224]);
+   });
+   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲と夜の哨戒の機体・dawn_air_strike と patrol_air の文', () => {
+     const texts: string[] = [];
+diff --git a/tests/dawn-withdraw.test.ts b/tests/dawn-withdraw.test.ts
+index 44f61f4..692c517 100644
+--- a/tests/dawn-withdraw.test.ts
++++ b/tests/dawn-withdraw.test.ts
+@@ -264,7 +264,7 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
+       if (id !== 'us_02') expect(protoOf(gameData, id)['dawn_withdraw'], id).toBeUndefined();
+       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
+     }
+-    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（playable_from はまだ）で、東京急行は西へ退く
++    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く
+     expect(getDawnAir(gameData, 'us_06').retireEdge).toBeNull();
+     expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);
+   });
+diff --git a/tests/evac-briefing.test.ts b/tests/evac-briefing.test.ts
+index 3a3996f..d6ffc00 100644
+--- a/tests/evac-briefing.test.ts
++++ b/tests/evac-briefing.test.ts
+@@ -128,7 +128,8 @@ function oldRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: string) => st
+ }
+ 
+ describe('ほかの 8 任務の Briefing はバイト同一', () => {
+-  const others = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'jp_03');
++  // v0.8.0 S5: us_04 は遊べるが、月の行にレーダーの尾を持つ v0.8.0 の文（tests/briefing の us_04 の段が固定）なので v0.6.10 の式の比べから外す
++  const others = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'jp_03' && id !== 'us_04');
+   it('8 任務 × ノーマル・ハード × seed 1〜4（今夜の揺らぎ・見越し点の句あり）で v0.6.10 の式と同じ文。evac の鍵は 1 つも出ない', () => {
+     expect(others).toEqual(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06']);
+     const keys = ['successTailJa', 'dayRowJa', 'enemyRowJa', 'clockJa', 'fuelNoteJa', 'repassJa', 'hazardLabelsJa'];
+diff --git a/tests/jp05-mission.test.ts b/tests/jp05-mission.test.ts
+index 4ec6f57..dd13e11 100644
+--- a/tests/jp05-mission.test.ts
++++ b/tests/jp05-mission.test.ts
+@@ -195,9 +195,9 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
+ });
+ 
+ describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い任務に「ハード」と出していた）', () => {
+-  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）・jp_03（v0.6.11。同時の編隊 3）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
++  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）・jp_03（v0.6.11。同時の編隊 3）・us_04（v0.8.0。列の艦 ＋1）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
+     const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
+-    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_03', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03']);
++    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_03', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']);
+     expect(hasHardVariant(gameData, 'jp_05')).toBe(false);
+     expect(difficultyJa(false, true)).toBe('');
+     expect(difficultyJa(false, false)).toBe('');
+diff --git a/tests/setup-us04.test.ts b/tests/setup-us04.test.ts
+index 04eb1ad..3a75ab8 100644
+--- a/tests/setup-us04.test.ts
++++ b/tests/setup-us04.test.ts
+@@ -1,7 +1,7 @@
+ // v0.8.0 S0（spec-v0800 §4.8・§6 の S0）: us_04「ブラケット海峡の夜」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
+ // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.0 S0 の木で作った。us_04 の setup は S1〜S5 で鍵が増えうるので、
+ // 書き換える時は CHANGELOG に段と理由を書く（ほかの 9 任務の setup の snapshot は -u しない）。Briefing の行は入れない（S4 で変わる）。
+-// 今夜の揺らぎ（+16）は 10 回（危険 2・護衛 3・列 3・大発の先頭 1・反転 1）。遊べるのは S5 から（playable_from はまだ）。
++// 今夜の揺らぎ（+16）は 10 回（危険 2・護衛 3・列 3・大発の先頭 1・反転 1）。遊べるのは S5 から（v0.8.0 S5 で playable_from v0.8.0）。
+ // あわせて: 撃沈の達成の隻数をノーマルにも読む鍵（v0_1_prototype.objective_sink_count。config/mission-hard-data）と、us_04 の data に人名・有名な艇の名を出さない（§4.12）。
+ import { afterEach, describe, expect, it, vi } from 'vitest';
+ import { gameData, type GameData } from '../src/config/game-data';
+@@ -33,7 +33,7 @@ describe('us_04 の setup の snapshot（v0.8.0 S0 の木）', () => {
+     const { s, draws } = build(hard, historical, seed);
+     expect(JSON.stringify(s, null, 1)).toMatchSnapshot(`${label} setup`);
+     expect(draws).toBe(10);
+-    // 駆逐艦の任務（護衛 1 隻＝enemy_start。列は transit）・Mk 8・新月・夜明けは空襲（L1 の既定）で西へ退く・撃沈の達成は 1 隻
++    // 駆逐艦の任務（護衛 1 隻＝enemy_start。列は transit）・Mk 8・新月・夜明けは空襲（S0 は L1 の既定・S5 でユーザーの決め U1）で西へ退く・撃沈の達成は 1 隻
+     expect([s.mission.torpedoId, s.mission.moon, s.mission.enemyStarts.length, s.mission.objectiveSinkCount, s.destroyer!.objectiveSinks]).toEqual(['us_mk8', 'dark', 1, 1, 1]);
+     expect([s.barges, s.ptBoats, s.convoy, s.transport, s.escort, s.raid, s.storm, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, 'torpedo']);
+     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears, s.airStrike!.planes]).toEqual(['enemy', 'west', '東京急行', false, 4]);
+diff --git a/tests/title-grid.test.ts b/tests/title-grid.test.ts
+index 9939729..c6fb7b9 100644
+--- a/tests/title-grid.test.ts
++++ b/tests/title-grid.test.ts
+@@ -1,6 +1,7 @@
+ // Title の日本のタブの 2 列の格子（v0.6.7。spec-v067 §D.6・§G.1・N6）: ui/title-grid の矩形（論理幅 1,280〜1,584 の 8 刻みの全部で画面の内・重ならない・中央）、
+ // 3 つの論理幅の置き方、米PT のタブは 1 列のまま（x 160・w 960）、格子の副題（「（」の前まで）と状態・題が重ならない、操作の一言の幅（日本 1,218・米 960）、title-scene の配線。
+ // menu-config・game-config は DOM を読むので import しない（値は title-layout-config から、DOM の側の 2 つの値はソースを読んで結ぶ）。
++// v0.8.0 S5: us_04 が遊べるようになり米PT のタブも 4 任務＝日本のタブと同じ 2 列の格子（2 × 2。1 列は 3 行以下のタブの形として titleRowRect に残る）。
+ import { readFileSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+@@ -26,7 +27,7 @@ const JP = getMenuEntries(gameData, 'jp_hard').entries;
+ const US = getMenuEntries(gameData, 'us_pt').entries;
+ 
+ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+-  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は 3 任務で 1 列', () => {
++  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は v0.8.0 S5 から 4 任務で 2 × 2', () => {
+     expect(JP.map((e) => [e.id, e.title, e.playable])).toEqual([
+       ['jp_01', '夜の輸送護衛', true],
+       ['jp_02', '孤島の哨戒', true],
+@@ -35,10 +36,15 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+       ['jp_05', '鹵獲艇の哨戒', true],
+       ['jp_06', '慶良間の夜・最終出撃', true],
+     ]);
+-    expect([TITLE_GRID_FROM, titleGridOn(JP.length), titleGridOn(US.length)]).toEqual([4, true, false]);
++    expect([TITLE_GRID_FROM, titleGridOn(JP.length), titleGridOn(US.length)]).toEqual([4, true, true]);
+     // v0.6.11 S6: 6 任務で 2 × TITLE_GRID_ROWS_MAX の格子が満杯（次の日本の任務は並べ方が要る＝CHANGELOG の既知の制約）
+     expect([JP.length, 2 * TITLE_GRID_ROWS_MAX]).toEqual([6, 6]);
+-    expect(US.map((e) => e.id)).toEqual(['us_01', 'us_02', 'us_03']);
++    expect(US.map((e) => [e.id, e.title, e.playable])).toEqual([
++      ['us_01', 'コレヒドール脱出', true],
++      ['us_02', '東京急行を迎え撃て', true],
++      ['us_03', '大発を狩れ', true],
++      ['us_04', 'ブラケット海峡の夜', true],
++    ]);
+   });
+   it('3 つの論理幅の置き方: 列 597・間 24・計 1,218（下の 3 つの切り替えと同じ幅・同じ中心）、左 x = 幅/2 − 609・右 = 左 + 621、段 y 216・324', () => {
+     expect([TITLE_GRID_COL_W, TITLE_TOGGLE_GAP, TITLE_GRID_W, 3 * TITLE_DIFF_W + 2 * TITLE_TOGGLE_GAP]).toEqual([597, 24, 1218, 1218]);
+@@ -86,10 +92,17 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+       }
+     }
+   });
+-  it('米PT のタブ（3 行）はどの論理幅でも v0.6.6 と同じ x 160・y 216／324／432・w 960（N6）', () => {
+-    expect([TITLE_ROW_X, TITLE_ROW_W]).toEqual([160, 960]);
++  it('米PT のタブ（v0.8.0 S5 から 4 行）は日本のタブの 4 任務と同じ 2 × 2（左上 us_01・右上 us_02・左下 us_03・右下 us_04）。3 行以下のタブは v0.6.6 と同じ 1 列 x 160・y 216／324／432・w 960（N6）', () => {
++    expect([TITLE_ROW_X, TITLE_ROW_W, US.length]).toEqual([160, 960, 4]);
+     for (const w of WIDTHS) {
+-      expect(rects(US.length, w), String(w)).toEqual([216, 324, 432].map((y) => ({ x: 160, y, w: 960 })));
++      const l = w / 2 - 609;
++      expect(rects(US.length, w), String(w)).toEqual([
++        { x: l, y: 216, w: 597 },
++        { x: l + 621, y: 216, w: 597 },
++        { x: l, y: 324, w: 597 },
++        { x: l + 621, y: 324, w: 597 },
++      ]);
++      expect(rects(3, w), String(w)).toEqual([216, 324, 432].map((y) => ({ x: 160, y, w: 960 })));
+     }
+   });
+   it('押しやすさ: 列 597 × 96 px は iPhone 15 横（393 pt / 720 px）で 326 × 52 pt（≥ 44 pt）', () => {

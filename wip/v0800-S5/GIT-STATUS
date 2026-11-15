@@ -1,1 +1,9 @@
  M data/missions_seed.json
+ M tests/briefing.test.ts
+ M tests/campaign.test.ts
+ M tests/dawn-air.test.ts
+ M tests/dawn-withdraw.test.ts
+ M tests/evac-briefing.test.ts
+ M tests/jp05-mission.test.ts
+ M tests/setup-us04.test.ts
+ M tests/title-grid.test.ts
