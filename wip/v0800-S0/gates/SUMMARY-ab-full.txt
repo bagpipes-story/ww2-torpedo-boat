@@ -1,0 +1,20 @@
+- build (SKIP)
+- typecheck (SKIP)
+- lint (SKIP)
+- test (SKIP)
+- g2 (SKIP)
+✓ ab-all cases 58 same 58 diff 0
+✓ ab-all@audio cases 58 same 58 diff 0
+✗ ab-all@noaudio cases 58 same 57 diff 1
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✓ ab-all@noaudio rerun of the flaky set (result, JOBS=1): cases 8 same 8 diff 0
+✓ tex-ab CHECK=1 0 ✗ lines
+- art-perf (SKIP)
+- snapshots (SKIP)
+ALL_DONE
