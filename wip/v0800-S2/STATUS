@@ -1,3 +1,5 @@
+ M CHANGELOG.md
+ M scripts/headless/ab-replay.mjs
  M src/assets/coast-shape.ts
  M src/config/debug-setup.ts
  M src/config/game-config.ts

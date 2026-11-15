@@ -36,3 +36,5 @@
 - step 1: src wiring done (destroyer, destroyer-transit, group, world-enemies, destroyer-step, radar x4, mission-world 286, world-enemy-step, world-visuals, debug noradar, coast-shape coastLines, coast-fx, strait-terrain, world-art, telemetry x2). typecheck OK. Next: npm test, new tests, headless.
 - step 2: tests added and passing alone: transit-world (12), radar-world (7), radar-neutral (12), strait-art (7); pins updated: radar.test (importers), world-visuals (radar lines). Full suite before new tests: 3 pin fails only (fixed).
   Mutation check: world-radar write `b.x =` is caught by radar-neutral. Next: ab-replay NORADAR/us04, gates, screenshots, perf, CHANGELOG.
+- step 3: ab-replay NORADAR/us04 added; NORADAR us04: 3/4 same, hard s1 last-frame .t flake -> JOBS=1 rerun same x2; hud-ab us04 NORADAR 4/4; us04 A=B 4/4.
+  Screenshots in impl/S2-shots (noplane set + shore set). CHANGELOG S2 block written. run-gates S2-impl running (build/typecheck/lint/test 3743 OK so far).
