@@ -4,3 +4,4 @@ Stopped at L40: B2 ✗ (eye_only 63.4% vs ≤ 20.8; the cover still passes the s
 Final tables: normal a06bc7d2eb8a2a85bb65c989061d6597, hard c17a7a68b7a01558c32506b9c1d70ee0. Light set re-picked k=3 (seeds 151-200, 1151-1200).
 strait-probe on the final build: 24/24 world = sim (real night and NOPLANE IDENT). npm test: 1 fail (intercept-sim-b normal: B2, F).
 run-gates S3-impl running (SKIP art-perf) at the time of this backup.
+Gates (S3-impl, SKIP art-perf): build/typecheck/lint ✓; npm test ✗ only intercept-sim-b normal; g2 OK 37 DIFF 0; ab-all 56/58 + 57/58 (known us_02 seed 1 .t flake; reruns 8/8); noaudio 58/58; hud all ✓; tex-ab 0 ✗; snapshots: setup-us04 only.
