@@ -1,0 +1,800 @@
+diff --git a/src/assets/destroyer-art.ts b/src/assets/destroyer-art.ts
+index 365b386..27b7157 100644
+--- a/src/assets/destroyer-art.ts
++++ b/src/assets/destroyer-art.ts
+@@ -31,12 +31,12 @@ function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextu
+ }
+ 
+ /**
+- * 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表をそのまま（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級・v0.8.1 S2 の tex-destroyer-mutsuki＝睦月型。
+- * 駆逐艦の形でない鍵は陽炎型＝v0.8.0 までの選び方と同じ画素）
++ * 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表をそのまま（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級・v0.8.1 S2 の tex-destroyer-mutsuki＝睦月型・
++ * S2b の tex-subchaser＝駆潜艇。艦の形でない鍵＝輸送船は陽炎型＝v0.8.0 までの選び方と同じ画素）
+  */
+ export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string = TEXTURE_KEYS.destroyer): void {
+   const kind = shipArtKind(key);
+-  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' || kind === 'mutsuki' ? kind : 'kagero', PALETTE_ENEMY.deck);
++  paintDestroyerTexture(scene, key, spec, kind === 'transport' ? 'kagero' : kind, PALETTE_ENEMY.deck);
+ }
+ 
+ /**
+@@ -58,6 +58,22 @@ export function generateExtraDestroyerTextures(scene: Phaser.Scene, data: GameDa
+   }
+ }
+ 
++/**
++ * ハードの駆潜艇の絵（v0.8.1 S2b。spec-v0810 §3.6 D-A2。ijn_subchaser → tex-subchaser）: v0_1_prototype の hard に picket_enemy_id を持つ任務（us_06）の記録から 1 枚ずつ
++ * （寸法は記録 × sprite_scale＝102 × 13.4 単位・敵の色。generateExtraDestroyerTextures と同じ読み＝任務の表を 1 回）。鍵の無い id は作らない（既定の 1 枚を上書きしない）。setup には何も足さない
++ */
++export function generatePicketTextures(scene: Phaser.Scene, data: GameData, spriteScale: number): void {
++  const done = new Set<string>([SHIP_ART_DEFAULT_KEY]);
++  for (const m of data.missionsSeed.missions as readonly Record<string, unknown>[]) {
++    const hard = (m['v0_1_prototype'] as Record<string, unknown> | undefined)?.['hard'] as Record<string, unknown> | undefined;
++    const id = hard?.['picket_enemy_id'];
++    if (typeof id !== 'string' || done.has(shipArtKey(id))) continue;
++    done.add(shipArtKey(id));
++    const r = getEnemyRecord(data, id);
++    generateDestroyerTexture(scene, { lengthUnits: r.length_m * spriteScale, beamUnits: r.beam_m * spriteScale }, shipArtKey(id));
++  }
++}
++
+ /** 味方の駆逐艦 卯月（睦月型）を薄い青で（ally-destroyer-placeholder の generateAllyDestroyerTextures が艦の 1 枚にこれを呼ぶ。扇は今のまま） */
+ export function paintAllyDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
+   paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);
+diff --git a/src/assets/destroyer-plan.ts b/src/assets/destroyer-plan.ts
+index 83eaeef..a467411 100644
+--- a/src/assets/destroyer-plan.ts
++++ b/src/assets/destroyer-plan.ts
+@@ -8,7 +8,7 @@ import {
+ } from '../config/destroyer-art-config';
+ import { hullHalfWidthAt, hullOutline, type Pt } from './boat-shape';
+ 
+-export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki';
++export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki' | 'subchaser'; // 駆潜艇は v0.8.1 S2b（us_06 のハード）
+ 
+ /** 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ） */
+ export type DestroyerPart =
+diff --git a/src/config/destroyer-art-config.ts b/src/config/destroyer-art-config.ts
+index 7831b37..aae3379 100644
+--- a/src/config/destroyer-art-config.ts
++++ b/src/config/destroyer-art-config.ts
+@@ -25,7 +25,7 @@ export interface DestroyerDetail {
+   readonly yardHalfB: number;
+   readonly panelUnits: number;
+ }
+-export const DESTROYER_DETAILS: Readonly<Record<'kagero' | 'fletcher' | 'mutsuki', DestroyerDetail>> = {
++export const DESTROYER_DETAILS: Readonly<Record<'kagero' | 'fletcher' | 'mutsuki' | 'subchaser', DestroyerDetail>> = {
+   kagero: {
+     gun: 'twin', bridge: 'ijn', tubeN: 4, tubeLen: 0.06, tubeShield: true,
+     boats: [[0.5, 0.36], [0.5, -0.36]], lockers: [[0.2, 0.32], [0.2, -0.32], [0.66, 0.34], [0.66, -0.34], [0.93, 0.22], [0.93, -0.22]],
+@@ -41,6 +41,12 @@ export const DESTROYER_DETAILS: Readonly<Record<'kagero' | 'fletcher' | 'mutsuki
+     boats: [[0.39, 0.33], [0.39, -0.33]], lockers: [[0.64, 0.33], [0.64, -0.33], [0.8, 0.3], [0.8, -0.3]],
+     dcRacks: false, yardHalfB: 0.34, panelUnits: 5,
+   },
++  // v0.8.1 S2b（spec-v0810 §3.6 D-A2）: 駆潜艇（第13号型）＝盾つきの単装の砲 1・小さな艦橋・発射管なし・短艇 1・艦尾の爆雷の軌条と爆雷の山 4（甲板の小物）
++  subchaser: {
++    gun: 'single12', bridge: 'ijnSmall', tubeN: 0, tubeLen: 0, tubeShield: false,
++    boats: [[0.5, 0.3]], lockers: [[0.82, 0.26], [0.82, -0.26], [0.88, 0.26], [0.88, -0.26]],
++    dcRacks: true, yardHalfB: 0.34, panelUnits: 4,
++  },
+ };
+ 
+ /** 短艇の大きさ（単位）: 長さ・幅。甲板の小物の大きさ（単位） */
+diff --git a/src/config/ship-art-config.ts b/src/config/ship-art-config.ts
+index 9517707..1cb14d0 100644
+--- a/src/config/ship-art-config.ts
++++ b/src/config/ship-art-config.ts
+@@ -10,6 +10,7 @@ export const SHIP_ART_KEY_BY_ENEMY: Readonly<Record<string, string>> = {
+   ijn_destroyer: 'tex-destroyer',
+   us_destroyer: 'tex-destroyer-us',
+   ijn_destroyer_mutsuki_enemy: 'tex-destroyer-mutsuki', // v0.8.1 S2（spec-v0810 §3.6 D-A1）: us_06 の敵の卯月＝睦月型の形を敵の色で（味方の卯月 tex-destroyer-friendly と同じ置き方）
++  ijn_subchaser: 'tex-subchaser', // v0.8.1 S2b（D-A2）: us_06 のハードの駆潜艇（第13号型）＝新しい形 'subchaser' を敵の色で（Boot の generatePicketTextures が hard の picket_enemy_id から 1 回）
+ };
+ export function shipArtKey(enemyId: string): string {
+   return SHIP_ART_KEY_BY_ENEMY[enemyId] ?? SHIP_ART_DEFAULT_KEY;
+@@ -22,6 +23,7 @@ export function shipArtKey(enemyId: string): string {
+ export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
+   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
+   'tex-destroyer-mutsuki': 2, // v0.8.1 S2（D-A1。敵の卯月）
++  'tex-subchaser': 2, // v0.8.1 S2b（D-A2。ハードの駆潜艇）
+   // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
+   'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
+ };
+@@ -43,11 +45,12 @@ export const BARGE_RAMP_BEAM_SHARE = 0.76;
+ /** 艦の絵の乱れの乱数の種（絵だけ。ゲームの乱数とは別） */
+ export const ART_SEED_SHIP = 7101;
+ 
+-/** 艦の絵の形の種類（S2a。spec §4.2）と、鍵 → 形の表。陽炎型（敵の駆逐艦）・フレッチャー級（jp_06 の米駆逐艦）・睦月型（卯月）・輸送船（敵と味方の 2 枚は同じ形で色だけ違う） */
+-export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport';
++/** 艦の絵の形の種類（S2a。spec §4.2）と、鍵 → 形の表。陽炎型（敵の駆逐艦）・フレッチャー級（jp_06 の米駆逐艦）・睦月型（卯月）・輸送船（敵と味方の 2 枚は同じ形で色だけ違う）・駆潜艇（v0.8.1 S2b） */
++export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport' | 'subchaser';
+ export const SHIP_ART_KIND_BY_KEY: Readonly<Record<string, ShipArtKind>> = {
+   'tex-destroyer': 'kagero', 'tex-destroyer-us': 'fletcher', 'tex-destroyer-friendly': 'mutsuki', 'tex-transport': 'transport', 'tex-transport-friendly': 'transport',
+   'tex-destroyer-mutsuki': 'mutsuki', // v0.8.1 S2（D-A1。敵の卯月）
++  'tex-subchaser': 'subchaser', // v0.8.1 S2b（D-A2。ハードの駆潜艇）
+ };
+ export const SHIP_ART_DEFAULT_KIND: ShipArtKind = 'kagero';
+ export function shipArtKind(key: string): ShipArtKind {
+@@ -98,6 +101,14 @@ export const SHIP_ART_LAYOUTS: Readonly<Record<ShipArtKind, ShipArtLayout>> = {
+     mounts: [[0.12, 0.34, 1], [0.365, 0.34, 1], [0.7, 0.34, -1], [0.88, 0.34, -1]], tubes: [[0.415, 0.5], [0.58, 0.5]], tubs: [[0.66, 0.2], [0.66, -0.2]],
+     hatches: [], masts: [0.165], derricks: [],
+   },
++  // 駆潜艇（第13号型。v0.8.1 S2b の D-A2。us_06 のハード。51 × 6.7 m の小艦）: 船首楼の段 38%・前に盾つきの単装の 8 cm 高角砲 1（15%）・小さな艦橋 25〜34%・マスト 35.5%・煙突 1（44%）・
++  // 13.2 mm の台 2（56%）と艦尾の爆雷の投射機の台（中心線 74%。爆雷の軌条と爆雷の山は destroyer-art-config）・角に近い艦尾
++  subchaser: {
++    hull: [[0, 0], [0.03, 0.3], [0.08, 0.6], [0.14, 0.85], [0.19, 1], [0.86, 1], [0.94, 0.88], [0.98, 0.72], [1, 0.6]],
++    forecastle: [0.38, 'line'], bridge: [0.25, 0.34, 0.6], funnels: [[0.44, 0.4, 0.055]],
++    mounts: [[0.15, 0.36, 1]], tubes: [], tubs: [[0.56, 0.22], [0.56, -0.22], [0.74, 0]],
++    hatches: [], masts: [0.355], derricks: [],
++  },
+   // 輸送船（敵は灰赤・味方は薄い青。味方の 1 枚は寸法を厳守＝名前と状態の行の y）: 丸い艦首と艦尾・船倉のハッチ 4（前 2・後ろ 2）・中央やや後ろの船橋 50〜62% と煙突 66%・マスト 2 と荷役の腕
+   transport: {
+     hull: [[0, 0], [0.015, 0.4], [0.04, 0.7], [0.09, 0.9], [0.15, 0.98], [0.19, 1], [0.86, 1], [0.92, 0.92], [0.97, 0.7], [1, 0.4]],
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index f4f1ce9..6e437f7 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -34,7 +34,7 @@ import {
+   generateUiTextures,
+ } from '../assets/placeholders';
+ import { generatePlayerBoatTexture } from '../assets/boat-art';
+-import { generateDestroyerTexture, generateExtraDestroyerTextures } from '../assets/destroyer-art';
++import { generateDestroyerTexture, generateExtraDestroyerTextures, generatePicketTextures } from '../assets/destroyer-art';
+ import { generateTransportTexture } from '../assets/transport-art';
+ import { generateAircraftTexture } from '../assets/aircraft-art';
+ import { generateGunButtonTexture } from '../assets/weapon-textures';
+@@ -103,6 +103,7 @@ export class BootScene extends Phaser.Scene {
+     const enemy = getEnemyRecord(gameData, mission.enemyId);
+     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
+     generateExtraDestroyerTextures(this, gameData, spriteScale); // 米駆逐艦 tex-destroyer-us（v0.7.0 S2a。jp_06。遊べる任務の駆逐艦の id から 1 枚ずつ＝D3）
++    generatePicketTextures(this, gameData, spriteScale); // ハードの駆潜艇 tex-subchaser（v0.8.1 S2b。us_06。hard の picket_enemy_id から 1 枚＝D-A2）
+     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
+     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
+     // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける
+diff --git a/src/systems/destroyer-anchor.ts b/src/systems/destroyer-anchor.ts
+index 790e2b9..96f52fa 100644
+--- a/src/systems/destroyer-anchor.ts
++++ b/src/systems/destroyer-anchor.ts
+@@ -5,7 +5,7 @@
+ // （Destroyer を作り直さない。以後は us_02 の AI のまま＝速さ 0 から加速）。夜明けは世界の夜明けのラッチ（w.dawn.reached）を渡す＝止まっている駆逐艦は遅れなしで動き出し、隊の withdraw が東へ退かせる。
+ // 動かない艦（空知丸＝underwayS が null）は一晩じゅう止まったまま: 夜明けの withdraw で retiring は立つが、止まった艦は舵を使わないので退かず、退いた（withdrawn）にもならない
+ // （隊の allOut・allSettled は空知丸が浮いている間は偽のまま＝夜は帰投・沈没・漂流で終わる。us_06 に fleet_gone_clears は無い）。
+-// 計画は setup.anchors の先頭 count 隻だけ（S2 は駆逐艦と輸送船。ハードの駆潜艇は S2b が隊の輸送船の後ろに並べる＝それまで計画の尾は使わない。setup は書き換えず、作る時に 1 回切り出す）。
++// 計画は setup.anchors の隊の艦の全部（駆逐艦 → 輸送船 → v0.8.1 S2b のハードの駆潜艇＝隊の並びと同じ）。数が隊の艦と違えば作る時に例外（V-A5 の並び。setup は書き換えず、作る時に 1 回写す）。
+ // 記録（気づいた・動き出した世界の秒・背に岸の秒・止まった艦への魚雷）は systems/anchor-telemetry の AnchorLog。Phaser 非依存（艦は構造の型 AnchorShip＝Destroyer が満たす）・乱数なし。確保は constructor だけ。
+ import type { AnchorSetup } from '../config/anchor-mission-data';
+ import { anchorHeld, createAnchorState, stepAnchors, type AnchorPlan, type AnchorShipView, type AnchorState } from '../core/anchored-ship';
+@@ -26,19 +26,20 @@ export interface AnchorWorldView {
+ }
+ 
+ export class DestroyerAnchor {
+-  /** 隊の先頭 count 隻の計画（setup.anchors の切り出し。艦 i＝隊の艦 i） */
++  /** 隊の艦の全部の計画（setup.anchors の写し。艦 i＝隊の艦 i） */
+   readonly plan: AnchorPlan;
+   readonly state: AnchorState;
+   readonly log: AnchorLog;
+ 
+   constructor(
+-    /** 隊の艦の全部（駆逐艦 → 輸送船。隊の ships をそのまま） */
++    /** 隊の艦の全部（駆逐艦 → 輸送船 → 駆潜艇。隊の ships をそのまま） */
+     private readonly ships: readonly AnchorShip[],
+     setup: AnchorSetup,
+-    /** 止まった艦の数（隊の先頭から。駆逐艦と輸送船＝S2 の切り出し） */
++    /** 止まった艦の数（隊の艦の数＝ships.length。setup.anchors の艦の数と同じでなければ例外） */
+     count: number,
+   ) {
+-    this.plan = { underwayS: setup.underwayS.slice(0, Math.min(count, ships.length)), alarmS: setup.alarmS };
++    if (setup.underwayS.length !== count || count !== ships.length) throw new Error(`止まった艦の計画（anchors.underwayS ${setup.underwayS.length} 隻）と隊の艦（${ships.length} 隻）の数が違う（V-A5 の隊の並び: 駆逐艦 → 輸送船 → 駆潜艇・spec-v0810 §4.4）`);
++    this.plan = { underwayS: setup.underwayS.slice(), alarmS: setup.alarmS };
+     const n = this.plan.underwayS.length;
+     this.state = createAnchorState(n);
+     this.log = new AnchorLog(n);
+diff --git a/src/systems/destroyer-group.ts b/src/systems/destroyer-group.ts
+index 41d759b..cc1f3a3 100644
+--- a/src/systems/destroyer-group.ts
++++ b/src/systems/destroyer-group.ts
+@@ -4,30 +4,32 @@
+ // 列の通過（v0.8.0 S2。us_04。setup.transit の任務だけ）: 列の艦は護衛（ds.starts）の後ろ・輸送船の前に作り、駆逐艦に数える（撃沈・達成・命中率の KPI）。段階は transit（systems/destroyer-transit）。
+ // 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
+ // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。setup.anchors・setup.backdrop の任務だけ world-enemies が作った後に 1 回付ける＝anchors・backdrop。無い任務は null で式は今のまま）。
+-// 輸送船の添字は transportIndex（無ければ −1。今は destroyerCount と同じ）。S2b のハードの駆潜艇はこの後ろに並ぶ（S2 では作らない）。
++// 輸送船の添字は transportIndex（無ければ −1）。ハードの駆潜艇（v0.8.1 S2b。setup.pickets）はその後ろ＝並びは護衛 → 列 → 輸送船 → 駆潜艇。駆潜艇は駆逐艦にも輸送船にも数えない（達成・KPI・撃沈 n/m・輸送船の加点の外）が、海の上の艦として allOut・allSettled・最寄り・体当たり・夜明けに退くに入る。
+ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import type { BoatState, SeaBounds } from '../core/boat-motion';
+ import { allShipsOut, allShipsSettled, sinkingCount, withdrawnCount } from '../core/dawn-withdraw';
+ import { litByOwnLight } from '../core/own-light';
++import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';
+ import type { SeededRng } from '../core/rng';
+ import { startRetire } from '../core/ship-ai';
+ import type { LandLine } from '../core/strait-geometry';
+ import { Destroyer } from '../entities/destroyer';
+ import type { AnchorSetup } from '../config/anchor-mission-data';
+ import type { BackdropSetup } from '../config/backdrop-mission-data';
++import { shipArtKey } from '../config/ship-art-config';
+ import type { TransitSetup } from '../config/transit-mission-data';
+ import { DestroyerAnchor } from './destroyer-anchor';
+ import { DestroyerTransit } from './destroyer-transit';
+ import { ShoreBackdrop } from './shore-backdrop';
+ import { EnemyFire } from './enemy-fire';
+ import type { SplashPool } from './splash-pool';
+-import type { DestroyerSetup, TransportSetup } from './world-setup';
++import type { DestroyerSetup, PicketSetup, TransportSetup } from './world-setup';
+ 
+ export class DestroyerGroup {
+   readonly ships: Destroyer[] = [];
+   readonly fires: EnemyFire[] = [];
+-  /** 駆逐艦の隻数（先頭から。これより後ろは輸送船） */
++  /** 駆逐艦の隻数（先頭から。これより後ろは輸送船・駆潜艇） */
+   readonly destroyerCount: number;
+   /** 魚雷の通過判定の半径二乗（隊の最大） */
+   readonly passRadius2: number;
+@@ -37,6 +39,9 @@ export class DestroyerGroup {
+   readonly transit: DestroyerTransit | null;
+   /** 輸送船の添字（v0.8.1 S2。無ければ −1）。hasTransport・transportSunk・transportWithdrawn はここを読む */
+   readonly transportIndex: number;
++  readonly picketIndex: number; // ハードの駆潜艇（v0.8.1 S2b）の先頭の添字（無ければ −1）と隻数
++  readonly picketCount: number;
++  private readonly guns: readonly [DestroyerSetup['gunnery'], DestroyerSetup['gunnery'] | null, DestroyerSetup['gunnery'] | null]; // 艦ごとの砲（gunneryAt）: 駆逐艦（列の艦も）・輸送船・駆潜艇
+   /** 止まった艦（v0.8.1 S2。setAnchors）と暗い岸を背に（setBackdrop）。付けるのは world-enemies の 1 回だけ。無い任務は null */
+   anchors: DestroyerAnchor | null = null;
+   backdrop: ShoreBackdrop | null = null;
+@@ -48,6 +53,8 @@ export class DestroyerGroup {
+     bounds: SeaBounds, gunRng: SeededRng, lookoutRng: SeededRng, splashes: SplashPool,
+     /** 駆逐艦の絵の鍵（v0.7.0 S2a。world-enemies が ship-art-config の shipArtKey(敵の id) を渡す＝D3・R15。絵だけ。当たりは ds.spec のまま） */
+     destroyerTextureKey: string = TEXTURE_KEYS.destroyer,
++    /** ハードの駆潜艇（v0.8.1 S2b。setup.pickets。無い任務は null）。輸送船の後ろに並べ、絵の鍵は記録の id から（shipArtKey） */
++    pickets: PicketSetup | null = null,
+   ) {
+     for (const st of ds.starts) {
+       this.ships.push(new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey));
+@@ -69,10 +76,20 @@ export class DestroyerGroup {
+       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
+       if (transport.passRadius2 > this.passRadius2) this.passRadius2 = transport.passRadius2;
+     }
++    this.picketIndex = pickets ? this.ships.length : -1;
++    this.picketCount = pickets ? pickets.starts.length : 0;
++    if (pickets) {
++      for (const start of pickets.starts) {
++        this.ships.push(new Destroyer(scene, start, pickets.spec, pickets.shipAi, bounds, lookoutRng, shipArtKey(pickets.enemyId)));
++        this.fires.push(new EnemyFire(scene, pickets.gunnery, gunRng, start.headingDeg, splashes));
++      }
++      if (pickets.passRadius2 > this.passRadius2) this.passRadius2 = pickets.passRadius2;
++    }
++    this.guns = [ds.gunnery, transport ? transport.gunnery : null, pickets ? pickets.gunnery : null];
+     this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null; // 列の艦はここで海域の外（まだ来ない）へ
+   }
+ 
+-  /** 隊の隻数（輸送船込み） */
++  /** 隊の隻数（輸送船・駆潜艇込み） */
+   get total(): number {
+     return this.ships.length;
+   }
+@@ -206,9 +223,9 @@ export class DestroyerGroup {
+     for (const f of this.fires) f.setBeamLand(lines);
+   }
+ 
+-  /** 止まった艦を付ける（v0.8.1 S2。setup.anchors の任務だけ world-enemies が 1 回）。計画は隊の先頭の駆逐艦と輸送船の分だけ（S2b の駆潜艇はまだ並ばない＝L30） */
++  /** 止まった艦を付ける（v0.8.1 S2。setup.anchors の任務だけ world-enemies が 1 回）。計画は隊の艦の全部（駆逐艦 → 輸送船 → 駆潜艇。数が違えば destroyer-anchor が例外） */
+   setAnchors(a: AnchorSetup): void {
+-    this.anchors = new DestroyerAnchor(this.ships, a, this.transportIndex >= 0 ? this.transportIndex + 1 : this.destroyerCount);
++    this.anchors = new DestroyerAnchor(this.ships, a, this.ships.length);
+   }
+ 
+   /** 暗い岸を背にを付ける（v0.8.1 S2。setup.backdrop の任務だけ world-enemies が 1 回。岸の線は探照灯の切り取りと同じ線・照明弾の距離は今夜の水上機の値） */
+@@ -216,6 +233,12 @@ export class DestroyerGroup {
+     this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);
+   }
+ 
++  /** 艦 i の砲（v0.8.1 S2b。world-enemies の命中の 2 つの手）。駆潜艇のいない任務は今の式（駆逐艦か輸送船）と同じ値 */
++  gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }
++
++  /** 艦 i のレーダーの種類（v0.8.1 S2b。world-radar）: 駆潜艇は小さい艇、ほかの艦はみな艦（駆潜艇のいない任務は今と同じ） */
++  radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
++
+   updateVisuals(realDt: number): void {
+     for (let i = 0; i < this.ships.length; i++) this.fires[i]!.updateVisuals(realDt, this.ships[i]!.state);
+   }
+diff --git a/src/systems/world-enemies.ts b/src/systems/world-enemies.ts
+index 94f66a5..c61abe6 100644
+--- a/src/systems/world-enemies.ts
++++ b/src/systems/world-enemies.ts
+@@ -57,20 +57,20 @@ export function buildEnemies(
+   const gunRng = new SeededRng((seed + 1) >>> 0);
+   // 見張り（雷跡に気づく抽選。v0.5.0）も別系列（seed+17。seed+16 は今夜の揺らぎ）。気づくまで 1 ステップ 1 回だけ引く
+   // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）。
+-  // 列の通過（v0.8.0 S2。us_04 の setup.transit だけ）の艦は隊が護衛の後ろに作る（同じ id・砲。無い任務は null＝隊は v0.7.2 のまま）
+-  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, s.transit ?? null, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
++  // 列の通過（v0.8.0 S2。us_04 の setup.transit だけ）の艦は隊が護衛の後ろに作る（同じ id・砲。無い任務は null＝隊は v0.7.2 のまま）。ハードの駆潜艇（v0.8.1 S2b。us_06 のハードの setup.pickets）は輸送船の後ろ
++  const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, s.transit ?? null, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId), s.pickets ?? null) : null;
+   // 海峡の両岸（v0.8.0 実機 1 回目。us_04 の setup.shores）と今の岸（coast の南。v0.8.1 S2。駆逐艦の隊と岸を両方持つのは us_06 だけ＝tests/anchor-world）: 探照灯の絵を岸の線で切る
+-  // （陸の上に光を描かない。照らす判定は変えない）。同じ線で暗い岸を背に（setup.backdrop）、止まった艦（setup.anchors）も隊に付ける（無い任務は何もしない。S2b の駆潜艇はまだ作らない）
++  // （陸の上に光を描かない。照らす判定は変えない）。同じ線で暗い岸を背に（setup.backdrop）、止まった艦（setup.anchors。駆潜艇も）も隊に付ける（無い任務は何もしない）
+   const land = destroyers && (s.shores || mission.coast) ? landLinesOf(s.shores ?? null, mission.coast !== null, mission.bounds.width, mission.bounds.height) : null;
+   if (destroyers && land) destroyers.setBeamLand(land);
+   if (destroyers && land && s.backdrop) destroyers.setBackdrop(s.backdrop, land, s.seaplane ? s.seaplane.flareRevealM : 0);
+   if (destroyers && s.anchors) destroyers.setAnchors(s.anchors);
+-  // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）。駆逐艦は隊の先頭 destroyerCount 隻（列の通過の艦も込み。無い任務は ds.starts の隻数と同じ）
+-  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
++  // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7。v0.8.1 S2b から駆潜艇の 76mm・13mm）＝隊の gunneryAt（駆逐艦は隊の先頭 destroyerCount 隻＝列の通過の艦も込み）
++  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
+   const escort = s.escort && ds ? new EscortBoat(scene, s.escort, boat, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
+   const escortHit = (damage: number, x: number, y: number): void => (escort!.hit(damage, clock.stepTimeS) ? onSunk(x, y) : events.onShellHit(x, y, true, false));
+-  destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gi]!.damage, x, y)));
++  destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit(destroyers.gunneryAt(i).guns[gi]!.damage, x, y)));
+   // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
+   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
+   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。
+diff --git a/src/systems/world-radar.ts b/src/systems/world-radar.ts
+index 49d485f..50e515b 100644
+--- a/src/systems/world-radar.ts
++++ b/src/systems/world-radar.ts
+@@ -3,7 +3,7 @@
+ // 「浮いて海域の中か」（Destroyer.out の逆＝沈み始めた・退いた・海域の外の列の艦は映らない）を渡す（掃引の間は何もしない＝§5.2）。
+ // 目とは別の感覚（D-R1・brief L9）: 世界・自艇・艦・AI・視程・発見・テレメトリには何も書かない（読むだけ。書くのは自分の state と渡す枠 targets だけ＝tests/radar-neutral が走査）。
+ // 陸の反射の岸の線は海峡の両岸（setup.shores）か今の岸（coast の南。v0.8.1 S2 の us_06＝泊地の空知丸は反射に紛れる）から起動時に 1 回（core/strait-geometry の landLinesOf。どちらも無い任務は空）。
+-// 機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
++// 機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。隊の艦の種類は隊の radarKindAt（v0.8.1 S2b。us_06 のハードの駆潜艇は小さい艇＝1,800 m の内だけ。ほかはみな艦）。
+ // 絵（輝点 16 の Image）は systems/radar-view が持ち、毎フレーム updateVisuals が渡す（置き直すのは掃引の回数が変わった時だけ）。
+ // Phaser 非依存（絵は構造の型 RadarBlipView。tests/radar-world・radar-neutral が絵なしで回す）・乱数なし。確保は constructor だけ。
+ // v0.8.0 S4（brief L26・L31）: 東の縁の向こうの揚陸の地の名（作る時に 1 回。2 行目の「東（ビラ）へ消えた」）と、Result の「目で見えない間に撃った魚雷」の数え
+@@ -23,7 +23,8 @@ export interface RadarShip {
+ export interface RadarWorldView {
+   readonly stepTimeS: number;
+   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
+-  readonly destroyers: { readonly ships: readonly RadarShip[] } | null;
++  /** radarKindAt は艦 i の種類（v0.8.1 S2b。DestroyerGroup＝ハードの駆潜艇は小さい艇。無ければみな艦） */
++  readonly destroyers: { readonly ships: readonly RadarShip[]; radarKindAt?(i: number): number } | null;
+ }
+ 
+ /** 輝点の絵（systems/radar-view の RadarView が満たす）。nowS は固定ステップの時計（薄れ方） */
+@@ -88,7 +89,7 @@ export class WorldRadar {
+         const d = ships[i]!;
+         tg.x[n] = d.state.x;
+         tg.y[n] = d.state.y;
+-        tg.kind[n] = RADAR_KIND_SHIP;
++        tg.kind[n] = g.radarKindAt ? g.radarKindAt(i) : RADAR_KIND_SHIP;
+         tg.afloat[n] = d.out ? 0 : 1;
+         n++;
+       }
+diff --git a/tests/anchor-world-kit.ts b/tests/anchor-world-kit.ts
+index a2367ed..877bf01 100644
+--- a/tests/anchor-world-kit.ts
++++ b/tests/anchor-world-kit.ts
+@@ -2,13 +2,14 @@
+ // 艦は entities/destroyer の step と同じ式の素の艦（絵・反撃なし。当たりの円はあり。式は AnchorKitShip に写した＝tests/anchor-world が entities/destroyer の文と突き合わせる）。
+ // 1 固定ステップは systems/mission-world の stepFn の順: 時計（stepTimeS += 実秒）→ 夜明けのラッチ（立った 1 回だけ浮いている艦を退く向きへ＝destroyer-group の withdraw）→
+ // 敵の側の段＝本物の systems/destroyer-step（艦の段の見つける距離は本物の systems/shore-backdrop・止まった艦の段は本物の systems/destroyer-anchor）。
+-// 隊の付け方は world-enemies・destroyer-group と同じ（岸の線は landLinesOf・計画は駆逐艦と輸送船の分＝S2 の L30。tests/anchor-world が source を突き合わせる）。
++// 隊の付け方は world-enemies・destroyer-group と同じ（並びは駆逐艦 → 輸送船 → ハードの駆潜艇＝v0.8.1 S2b の L41・岸の線は landLinesOf・計画は隊の艦の全部＝L43。tests/anchor-world が source を突き合わせる）。
+ // 反撃（EnemyFire）・魚雷のプール・体当たり・一斉発射は偽物（何もしない）。雷跡は tests が置く素の魚雷（active・位置・針路だけ）を AI が読む。
+ // destroyer-step は型で destroyer-group（Phaser の entities/destroyer を引く）を参照するので、型検査（tsconfig.node）に入れないよう文字列を組んだ動的 import で読む（torpedo-free-kit の作法）。
+ import { gameData } from '../src/config/game-data';
+ import { FIXED_STEP_S } from '../src/config/step-config';
+ import { clampToBounds, clampYToBounds, type BoatState, type SeaBounds } from '../src/core/boat-motion';
+ import { allShipsOut, allShipsSettled, beyondBounds, retireHeadingDeg } from '../src/core/dawn-withdraw';
++import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../src/core/radar';
+ import { SeededRng } from '../src/core/rng';
+ import { LOOKOUT_SEED_OFFSET, createShipAiState, startRetire, steerShip, turnRateFor, updateShipAi, type ShipAiParams, type ShipAiState } from '../src/core/ship-ai';
+ import { landLinesOf } from '../src/core/strait-geometry';
+@@ -84,7 +85,7 @@ export class KitGroup {
+   readonly passRadius2 = 0;
+   anchors: DestroyerAnchor | null = null;
+   backdrop: ShoreBackdrop | null = null;
+-  constructor(readonly ships: AnchorKitShip[], readonly destroyerCount: number, readonly transportIndex: number) {
++  constructor(readonly ships: AnchorKitShip[], readonly destroyerCount: number, readonly transportIndex: number, readonly picketIndex = -1, readonly picketCount = 0) {
+     this.fires = ships.map(() => ({ step: () => undefined, stepPair: () => undefined }));
+   }
+   get allOut(): boolean { return allShipsOut(this.ships); }
+@@ -104,6 +105,8 @@ export class KitGroup {
+   withdraw(headingDeg: number): void {
+     for (const s of this.ships) if (!s.out) startRetire(s.ai, headingDeg);
+   }
++  /** systems/destroyer-group の radarKindAt と同じ式（v0.8.1 S2b。tests/picket-world が文と値を突き合わせる） */
++  radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
+ }
+ 
+ export interface AnchorKitWorld {
+@@ -146,11 +149,14 @@ export function anchorKit(o: { mission?: string; hard?: boolean; seed?: number;
+   const ships = ds.starts.map((st) => new AnchorKitShip(st, ds.spec, ds.shipAi, bounds, lookout));
+   const tr = setup.transport;
+   if (tr) ships.push(new AnchorKitShip(tr.start, tr.spec, tr.shipAi, bounds, lookout));
+-  const g = new KitGroup(ships, ds.starts.length, tr ? ds.starts.length : -1);
+-  // world-enemies・destroyer-group と同じ付け方（岸の線は探照灯の切り取りと同じ・計画は駆逐艦と輸送船の分）
++  const pk = setup.pickets ?? null; // ハードの駆潜艇（v0.8.1 S2b）は輸送船の後ろ（destroyer-group と同じ並び・同じ見張りの系列）
++  const pi = pk ? ships.length : -1;
++  if (pk) for (const st of pk.starts) ships.push(new AnchorKitShip(st, pk.spec, pk.shipAi, bounds, lookout));
++  const g = new KitGroup(ships, ds.starts.length, tr ? ds.starts.length : -1, pi, pk ? pk.starts.length : 0);
++  // world-enemies・destroyer-group と同じ付け方（岸の線は探照灯の切り取りと同じ・計画は隊の艦の全部）
+   const land = setup.shores || setup.mission.coast ? landLinesOf(setup.shores ?? null, setup.mission.coast !== null, bounds.width, bounds.height) : null;
+   if (land && setup.backdrop) g.backdrop = new ShoreBackdrop(setup.backdrop, land, ships.length, setup.seaplane ? setup.seaplane.flareRevealM : 0);
+-  if (setup.anchors) g.anchors = new DestroyerAnchor(ships, setup.anchors, g.transportIndex >= 0 ? g.transportIndex + 1 : g.destroyerCount);
++  if (setup.anchors) g.anchors = new DestroyerAnchor(ships, setup.anchors, ships.length);
+   const ps = setup.playerStart;
+   return {
+     setup, destroyers: g, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 }, sinking: false },
+diff --git a/tests/anchor-world.test.ts b/tests/anchor-world.test.ts
+index 99799a7..cce2aa2 100644
+--- a/tests/anchor-world.test.ts
++++ b/tests/anchor-world.test.ts
+@@ -3,7 +3,7 @@
+ // - 止まった艦は動かず当たりの円も作った時のまま（見張りは走る）・5 つの理由で気づく・駆逐艦は気づいて体感 6 秒で動き出す（命中スローで延びる）・空知丸は夜明けの後も動かない・警報は 4 秒。
+ // - 夜明けは遅れなしで動き出し、卯月は東へ退く。空知丸が残るので隊の allOut・allSettled は偽のまま＝夜は帰投・漂流で終わる（us_06 に fleet_gone_clears は無い）。
+ // - 止まった艦の見張りの乱数の引き方は止まっていない艦と同じ入力で同じ。止まった艦の無い任務の d.step に渡る距離は w.detectRangeM そのもの（anchored はいつも偽）。
+-// - L30: S2 ではハードでも隊は駆逐艦と輸送船だけ（計画は [6, null]）。L35: v0_1_prototype・岸・駆逐艦の隊を持つ任務は us_06 だけ（探照灯が岸で切れる任務が黙って増えない）。
++// - S2b（L41・L43）: ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻（計画は [6, null, 4, 4]＝S2 の 2 隻の固定を直した。駆潜艇の規則は tests/picket-world）。L35: v0_1_prototype・岸・駆逐艦の隊を持つ任務は us_06 だけ（探照灯が岸で切れる任務が黙って増えない）。
+ import { readFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+ import { gameData, getPrototypeMission } from '../src/config/game-data';
+@@ -13,6 +13,7 @@ import { ANCHOR_ALERT, ANCHOR_ASLEEP, ANCHOR_REASON_ALARM, ANCHOR_REASON_DAWN, A
+ import { SeededRng } from '../src/core/rng';
+ import { MissionEnd } from '../src/systems/mission-end';
+ import { anchorTelemetryPart, refreshAnchorTelemetry } from '../src/systems/anchor-telemetry';
++import { DestroyerAnchor } from '../src/systems/destroyer-anchor';
+ import { AnchorKitShip, anchorKit, anchorStep, runUntil, type AnchorKitWorld } from './anchor-world-kit';
+ import { code } from './core-rules-kit';
+ 
+@@ -230,19 +231,22 @@ describe('配線の source（L30〜L35）', () => {
+     expect(k).toContain('if (this.anchored) return false; // Destroyer.step と同じ（v0.8.1 S2）');
+     expect(k).toContain('updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes as never, this.aiParams, this.bounds, realDt, this.lookoutRng);');
+   });
+-  it('付け方: world-enemies は岸の線（landLinesOf）を 1 回作り、探照灯・背に岸・止まった艦を隊に付ける。隊の計画は駆逐艦と輸送船の分（S2b の駆潜艇はまだ）。kit も同じ', () => {
++  it('付け方: world-enemies は岸の線（landLinesOf）を 1 回作り、探照灯・背に岸・止まった艦を隊に付ける。隊の計画は隊の艦の全部（S2b の L43: 駆潜艇も。数が違えば作る時に例外）。kit も同じ', () => {
+     const we = code('src/systems/world-enemies.ts');
+     expect(we).toContain('if (destroyers && land && s.backdrop) destroyers.setBackdrop(s.backdrop, land, s.seaplane ? s.seaplane.flareRevealM : 0);');
+     expect(we).toContain('if (destroyers && s.anchors) destroyers.setAnchors(s.anchors);');
+-    expect(we).not.toMatch(/pickets/);
++    expect(we).toContain('splashes, shipArtKey(mission.enemyId), s.pickets ?? null) : null;'); // 駆潜艇は隊の新しい最後の引数だけ（S2b の L41。world-enemies はほかに読まない）
++    expect(we.match(/pickets/g)).toHaveLength(1);
+     const g = code('src/systems/destroyer-group.ts');
+-    expect(g).toContain('this.anchors = new DestroyerAnchor(this.ships, a, this.transportIndex >= 0 ? this.transportIndex + 1 : this.destroyerCount);');
++    expect(g).toContain('this.anchors = new DestroyerAnchor(this.ships, a, this.ships.length);');
+     expect(g).toContain('this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);');
+     expect(g).toContain('this.transportIndex = transport ? this.ships.length : -1;');
+-    expect(g).not.toMatch(/pickets/);
++    expect(g).toContain('this.picketIndex = pickets ? this.ships.length : -1;');
+     for (const get of ['return this.transportIndex >= 0;', 'return this.transportIndex >= 0 && this.ships[this.transportIndex]!.sinking;', 'return this.transportIndex >= 0 && this.ships[this.transportIndex]!.withdrawn;']) expect(g).toContain(get);
++    const da = code('src/systems/destroyer-anchor.ts');
++    expect(da).toContain('if (setup.underwayS.length !== count || count !== ships.length) throw new Error(');
+     const k = code('tests/anchor-world-kit.ts');
+-    expect(k).toContain('g.anchors = new DestroyerAnchor(ships, setup.anchors, g.transportIndex >= 0 ? g.transportIndex + 1 : g.destroyerCount);');
++    expect(k).toContain('g.anchors = new DestroyerAnchor(ships, setup.anchors, ships.length);');
+     expect(k).toContain('g.backdrop = new ShoreBackdrop(setup.backdrop, land, ships.length, setup.seaplane ? setup.seaplane.flareRevealM : 0);');
+     const st = code('src/systems/destroyer-step.ts');
+     expect(st).toContain('bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM');
+@@ -268,14 +272,19 @@ describe('配線の source（L30〜L35）', () => {
+   });
+ });
+ 
+-describe('S2 の範囲（L30）と岸のある駆逐艦の任務（L35）', () => {
+-  it('ハードでも S2 の隊は駆逐艦と輸送船だけ（setup の pickets はあるが世界は作らない＝計画は [6, null]。駆潜艇は S2b）', () => {
++describe('ハードの隊（S2b の L41・L43）と岸のある駆逐艦の任務（L35）', () => {
++  it('ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻で、計画は setup の [6, null, 4, 4] の全部（S2 は 2 隻に切り出していた＝S2b で直した固定）。数が違えば作る時に例外（V-A5）', () => {
+     const w = anchorKit({ hard: true, seed: 1 });
+     expect(w.setup.pickets!.starts.length).toBe(2);
+-    expect(w.setup.anchors!.underwayS).toEqual([6, null, 4, 4]); // setup は書き換えない
+-    expect(w.destroyers.ships.length).toBe(2);
+-    expect(anchors(w).plan.underwayS).toEqual([6, null]);
+-    expect(anchors(w).state.n).toBe(2);
++    expect(w.setup.anchors!.underwayS).toEqual([6, null, 4, 4]);
++    expect(w.destroyers.ships.length).toBe(4);
++    expect(anchors(w).plan.underwayS).toEqual([6, null, 4, 4]);
++    expect(anchors(w).plan.underwayS).not.toBe(w.setup.anchors!.underwayS); // setup は書き換えない（作る時に 1 回写す）
++    expect(anchors(w).state.n).toBe(4);
++    expect(w.destroyers.ships.map((d) => d.anchored)).toEqual([true, true, true, true]);
++    const ships = w.destroyers.ships;
++    expect(() => new DestroyerAnchor(ships.slice(0, 2), w.setup.anchors!, 2)).toThrow(/V-A5/);
++    expect(() => new DestroyerAnchor(ships, w.setup.anchors!, 2)).toThrow(/止まった艦の計画（anchors\.underwayS 4 隻）と隊の艦（4 隻）/);
+   });
+   it('v0_1_prototype・岸（coast）・駆逐艦の隊を持つ任務（ハードも）は us_06 だけ（探照灯の絵が岸で切れ、レーダーの陸の反射に南の岸が入る任務。新しい任務は知って足す）', () => {
+     const ids = new Set<string>();
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index 9d11fb8..ae339e7 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -68,6 +68,7 @@ const KEEP = [
+ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
+   'tex-destroyer-us': 'redraw-new',
+   'tex-destroyer-mutsuki': 'redraw-new', // v0.8.1 S2（spec-v0810 D-A1。v0.7.0 の予定の外）: us_06 の敵の卯月（睦月型の形を敵の色で）。鍵は ship-art-config の表だけ（TEXTURE_KEYS には足さない）
++  'tex-subchaser': 'redraw-new', // v0.8.1 S2b（D-A2）: us_06 のハードの駆潜艇（新しい形 'subchaser' を敵の色で）。鍵は ship-art-config の表だけ
+   'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx', 'tex-wake-puff': 'fx',
+   'tex-sea-tile': 'fx', 'tex-dawn-glow': 'fx', 'tex-glint': 'fx', 'tex-coast-strip': 'fx',
+   'tex-oil-slick': 'fx', // S4（spec の D2 の外。沈没の油の輪が水柱の絵の流用で星形に見えた＝独立の見え方の検査の指摘）
+@@ -193,11 +194,11 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）',
+   it('IP2b・IP3 の密度: 艦の 5 つの鍵（IP2b）と艇 5・米PT・大発 2 の 8 つの鍵（IP3 の U10）・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も。k は U9 の上限 3 まで）', () => {
+     expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
+       'tex-barge', 'tex-barge-friendly', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
+-      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-mutsuki', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
+-    ]); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）
++      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-mutsuki', 'tex-destroyer-us', 'tex-pt-boat', 'tex-subchaser', 'tex-transport', 'tex-transport-friendly',
++    ]); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）・S2b: ハードの駆潜艇の tex-subchaser（D-A2）
+     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
+     expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
+-    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32] };
++    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32], 'tex-subchaser': [102, 13.4] };
+     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
+     const ks = [...KS];
+     for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
+@@ -270,6 +271,7 @@ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
+     expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'ijn_destroyer_mutsuki_enemy', 'us_destroyer']); // v0.8.1 S0: us_06 の敵の卯月（v0_1_prototype は S0 から・遊べるのは S4 から）
+     for (const id of destroyerIds) expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
+     expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2 から敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1。Boot が 1 回作る）
++    expect(shipArtKey('ijn_subchaser')).toBe('tex-subchaser'); // v0.8.1 S2b（D-A2）: ハードの駆潜艇（hard の picket_enemy_id。駆逐艦の id ではないので上の一覧には無い）
+     expect(shipArtKey('ijn_light_cruiser')).toBe(SHIP_ART_DEFAULT_KEY);
+   });
+   it('機の種類の表（D4）: data の全部の機の id（空襲・水上機・哨戒機）を覆い、表に無い id と機の無い任務は既定の形', () => {
+diff --git a/tests/destroyer-art.test.ts b/tests/destroyer-art.test.ts
+index cc822b3..009d059 100644
+--- a/tests/destroyer-art.test.ts
++++ b/tests/destroyer-art.test.ts
+@@ -1,5 +1,5 @@
+ // v0.7.0 IP2（実機 2 回目。ユーザーの U8「駆逐艦のグラフィックを見直してクオリティを上げてください。でも、色は現在と同じ単系統のままで表現してください。」）:
+-// 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。
++// 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。v0.8.1 S2b（D-A2）で同じ描き方の駆潜艇（第13号型）を足した。
+ // - 置き方: 部品は船体の縁から 1 単位以上内・艦首と艦尾から 1 単位以上内・大きさ ≥ 2 単位（R17）、中心線の部品（砲は砲身まで）は長さの向きに重ならない、形で見分ける（連装 3・単装 5・単装 4）。
+ // - 色: 記録する ctx で描いた全部の色（塗り・線・グラデーションの止め）が陣営のパレットの地の色と同じ色相（±2°）＝単系統、純白は使わない、toneRgb は色相を変えない。
+ // - 描く範囲: 点・矩形はテクスチャの矩形の内（陰のずれの分だけの余白）。source の pin: 鍵・寸法（hullTexSize）・paintCanvas・Math.random なし・300 行。
+@@ -20,6 +20,7 @@ const SHIPS: { kind: DestroyerKind; L: number; B: number; base: number }[] = [
+   { kind: 'kagero', ...dims('ijn_destroyer'), base: PALETTE_ENEMY.deck },
+   { kind: 'fletcher', ...dims('us_destroyer'), base: PALETTE_ENEMY.deck },
+   { kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS, base: PALETTE_ALLY.deck },
++  { kind: 'subchaser', ...dims('ijn_subchaser'), base: PALETTE_ENEMY.deck }, // v0.8.1 S2b（D-A2。102 × 13.4 単位）
+ ];
+ 
+ function hsv(r: number, g: number, b: number): { h: number; s: number } {
+@@ -59,7 +60,7 @@ function rgbaOf(c: string): [number, number, number, number] {
+ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
+   it.each(SHIPS)('$kind: 部品は船体の内（縁・艦首・艦尾から 1 単位）・大きさ ≥ 2 単位・中心線の部品は重ならない', ({ kind, L, B }) => {
+     const plan = destroyerPlan(kind, L, B);
+-    expect(plan.parts.length).toBeGreaterThan(15);
++    expect(plan.parts.length).toBeGreaterThan(kind === 'subchaser' ? 10 : 15); // 駆潜艇は小艦（砲 1・煙突 1・発射管なし）
+     for (const p of plan.parts) {
+       for (const b of destroyerPartBoxes(p, DESTROYER_TWIN_DX + DESTROYER_BARREL_UNITS / 2)) {
+         expect(b.y0, `${kind} ${p.t} 艦首`).toBeGreaterThanOrEqual(1);
+@@ -91,10 +92,21 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
+       expect(count(k, 'bridge')).toBe(1);
+     }
+   });
++  it('v0.8.1 S2b（D-A2）: 駆潜艇は前に盾つきの単装の砲 1・小さな艦橋 1・煙突 1・マスト 1・発射管なし・艦尾の爆雷の軌条と爆雷の山（甲板の小物 4）・中心線の投射機の台', () => {
++    const plan = destroyerPlan('subchaser', 102, 13.4);
++    const of = (t: string): number => plan.parts.filter((p) => p.t === t).length;
++    expect(plan.parts.flatMap((p) => (p.t === 'gun' ? [[p.style, p.dir]] : []))).toEqual([['single12', 1]]);
++    expect([of('bridge'), of('funnel'), of('mast'), of('tubes'), of('boat'), of('locker')]).toEqual([1, 1, 1, 0, 1, 4]);
++    expect(plan.parts.find((p) => p.t === 'bridge')).toMatchObject({ style: 'ijnSmall' });
++    expect(plan.detail.dcRacks).toBe(true);
++    const gun = plan.parts.find((p) => p.t === 'gun')!;
++    for (const p of plan.parts) if (p.t === 'locker') expect(p.cy).toBeGreaterThan(0.8 * 102); // 爆雷は艦尾
++    expect(gun.cy).toBeLessThan(plan.parts.find((p) => p.t === 'bridge')!.cy); // 砲は艦橋の前
++  });
+   it.each(SHIPS)('$kind: 描いた全部の色は地の色と同じ色相（単系統）・純白なし、点はテクスチャの内（陰のずれの余白 3 単位）', ({ kind, L, B, base }) => {
+     const r = recorder();
+     paintDestroyer(r.ctx, destroyerPlan(kind, L, B), base);
+-    expect(r.colors.length).toBeGreaterThan(100);
++    expect(r.colors.length).toBeGreaterThan(kind === 'subchaser' ? 60 : 100); // 駆潜艇は部品が少ない
+     const h0 = hueOf(base);
+     for (const c of new Set(r.colors)) {
+       const [R, G, Bl] = rgbaOf(c);
+diff --git a/tests/enemy-mutsuki.test.ts b/tests/enemy-mutsuki.test.ts
+index 6d2bb26..1b3ce66 100644
+--- a/tests/enemy-mutsuki.test.ts
++++ b/tests/enemy-mutsuki.test.ts
+@@ -1,7 +1,7 @@
+ // v0.8.1 S0（spec-v0810 §3.2 D-S1・D-S8・§4.3・lead の L13）: enemies.json の新しい 2 記録。
+ // 敵としての卯月（ijn_destroyer_mutsuki_enemy）は寸法・最大速力・主砲の数だけが睦月型（jp_04 の味方の記録 ijn_destroyer_mutsuki と同じ史実の値）で、
+ // AI・砲の 1 門の値・25 mm・探照灯・星弾・沈む本数は ijn_destroyer の写し（命中率の KPI を合わせた値＝同じことをここで固定）。
+-// 駆潜艇（ijn_subchaser。ハードの us_06 だけ）は AI と砲の形を持つ記録（getEnemyRecord・destroyerSetup で組める）。世界の配線は S2b。
++// 駆潜艇（ijn_subchaser。ハードの us_06 だけ）は AI と砲の形を持つ記録（getEnemyRecord・destroyerSetup で組める）。世界の配線と絵の鍵 tex-subchaser は S2b（tests/picket-world）。
+ import { describe, expect, it } from 'vitest';
+ import { gameData, getEnemyRecord } from '../src/config/game-data';
+ import { destroyerSetup } from '../src/systems/destroyer-setup';
+@@ -71,5 +71,6 @@ describe('駆潜艇（ijn_subchaser。第13号型。ハードの us_06 だけ）
+     const radiusM = s.shipAi.cruiseSpeedMps / ((r.turn_rate_deg_s * Math.PI) / 180);
+     expect(radiusM).toBeCloseTo(117.9, 1);
+     expect(r.patrol.edge_turn_margin_m).toBeGreaterThan(radiusM + s.spec.boundsMarginM);
++    expect(shipArtKey('ijn_subchaser')).toBe('tex-subchaser'); // v0.8.1 S2b（D-A2）: 駆潜艇の形を敵の色で（S0〜S2 は既定の SHIP_ART_DEFAULT_KEY）
+   });
+ });
+diff --git a/tests/radar-us06.test.ts b/tests/radar-us06.test.ts
+index b3399cd..3bb518d 100644
+--- a/tests/radar-us06.test.ts
++++ b/tests/radar-us06.test.ts
+@@ -1,8 +1,10 @@
+ // v0.8.1 S2（spec-v0810 §3.4 D-R1〜D-R3・§6 の S2「tests/radar-us06」、lead の L35）: us_06 の自艇のレーダー（so_late・自艇）の陸の反射に今の岸（coast の南＝y 3,000）が入る
+-// （systems/world-radar が core/strait-geometry の landLinesOf で作る。両岸の us_04 は今の線のまま）。今夜の揺らぎ（x ±150・y ±50）の seed 1〜40 のノーマル・ハード（S2 の隊は駆逐艦と輸送船）で:
++// （systems/world-radar が core/strait-geometry の landLinesOf で作る。両岸の us_04 は今の線のまま）。今夜の揺らぎ（x ±150・y ±50）の seed 1〜40 のノーマル・ハードで:
+ // 出撃の最初の掃引に卯月（岸から 620 m 前後＝反射 300 m の外）が映り、空知丸（岸から 240 m 前後＝反射の内）は夜明けの後まで一度も映らない。岸の線が無ければ空知丸は映ってしまう（D-R2 の要）。
++// v0.8.1 S2b（D-R3・L44）: ハードの駆潜艇 2 隻は小さい艇（RADAR_KIND_SMALL＝1,800 m）。出発点から今夜の揺らぎ込みで 1,978 m 以上なので最初の掃引に映らず、1,800 m の内なら映る（艦の 6,000 m ではない）。
+ import { describe, expect, it } from 'vitest';
+ import { gameData } from '../src/config/game-data';
++import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../src/core/radar';
+ import { landDist2, landLinesFromShores } from '../src/core/strait-geometry';
+ import { WorldRadar } from '../src/systems/world-radar';
+ import { buildWorldSetup } from '../src/systems/world-setup';
+@@ -13,12 +15,14 @@ const SM = 1;
+ const radarOf = (w: AnchorKitWorld, coast = w.setup.mission.coast !== null): WorldRadar => new WorldRadar(w.setup.radar!, w.setup.mission.bounds, w.setup.shores, w.destroyers.ships.length, null, '', coast);
+ const q = (w: AnchorKitWorld, v: number): number => Math.round(v / w.setup.radar!.positionStepM) * w.setup.radar!.positionStepM;
+ const blipAt = (r: WorldRadar, x: number, y: number): boolean => r.state.blips.slice(0, r.state.n).some((b) => b.x === x && b.y === y);
++/** so_late の小さい艇の距離（1,800 m） */
++const w0SmallRange = (): number => anchorKit().setup.radar!.smallRangeM;
+ 
+ describe('us_06 のレーダーと泊地（今夜の揺らぎ seed 1〜40）', () => {
+-  it('data: so_late（艦 6,000 m・反射 300 m・丸め 25 m）・岸の線は南の 1 本（切れ目なし）', () => {
++  it('data: so_late（艦 6,000 m・小さい艇 1,800 m・反射 300 m・丸め 25 m）・岸の線は南の 1 本（切れ目なし）', () => {
+     const w = anchorKit();
+     const p = w.setup.radar!;
+-    expect([p.shipRangeM, p.landClutterM, p.positionStepM]).toEqual([6000, 300, 25]);
++    expect([p.shipRangeM, p.smallRangeM, p.landClutterM, p.positionStepM]).toEqual([6000, 1800, 300, 25]);
+     const r = radarOf(w);
+     expect(r.geo.land.map((l) => [l.edge, l.y, l.spans.length])).toEqual([['south', 3000, 1]]);
+   });
+@@ -28,7 +32,7 @@ describe('us_06 のレーダーと泊地（今夜の揺らぎ seed 1〜40）', (
+       const uzM: number[] = [];
+       for (let seed = 1; seed <= 40; seed++) {
+         const w = anchorKit({ hard, seed, dawnS: 120 });
+-        expect(w.destroyers.ships.length, `seed ${seed}`).toBe(2); // S2 は駆逐艦と輸送船（駆潜艇は S2b）
++        expect(w.destroyers.ships.length, `seed ${seed}`).toBe(hard ? 4 : 2); // S2b からハードは駆潜艇 2 隻が輸送船の後ろ
+         const r = radarOf(w);
+         const uz0 = { ...w.destroyers.ships[UZ]!.state };
+         const sm = w.destroyers.ships[SM]!.state;
+@@ -50,7 +54,7 @@ describe('us_06 のレーダーと泊地（今夜の揺らぎ seed 1〜40）', (
+             first = false;
+           }
+           if (blipAt(r, smx, smy)) smSeen++;
+-          expect(r.state.n, `seed ${seed} t ${w.stepTimeS}`).toBeLessThanOrEqual(1);
++          if (!hard || !w.dawn.reached) expect(r.state.n, `seed ${seed} t ${w.stepTimeS}`).toBeLessThanOrEqual(1); // ハードの夜明けの後は東へ退く駆潜艇が出発点の 1,800 m の内を通りうる
+         }
+         expect(first, `seed ${seed}`).toBe(false);
+         expect(smSeen, `seed ${seed} 空知丸`).toBe(0);
+@@ -64,6 +68,39 @@ describe('us_06 のレーダーと泊地（今夜の揺らぎ seed 1〜40）', (
+       expect(new Set(smM).size).toBeGreaterThan(20); // 揺らぎが効いている
+     });
+   }
++  it('ハードの駆潜艇（S2b）: 隊の種類は小さい艇で、出発点から 1,978 m 以上＝最初の掃引に映らない（seed 1〜40）。1,800 m の内なら小さい艇として映り、1,850 m では映らない', () => {
++    let minM = Infinity;
++    for (let seed = 1; seed <= 40; seed++) {
++      const w = anchorKit({ hard: true, seed });
++      const g = w.destroyers;
++      expect([g.picketIndex, g.picketCount, [0, 1, 2, 3].map((i) => g.radarKindAt(i))], `seed ${seed}`).toEqual([2, 2, [RADAR_KIND_SHIP, RADAR_KIND_SHIP, RADAR_KIND_SMALL, RADAR_KIND_SMALL]]);
++      const b = w.boat.state;
++      for (const i of [2, 3]) minM = Math.min(minM, Math.hypot(g.ships[i]!.state.x - b.x, g.ships[i]!.state.y - b.y));
++      const r = radarOf(w);
++      while (r.state.sweeps === 0) {
++        anchorStep(w);
++        r.step(w);
++      }
++      for (const i of [2, 3]) expect(blipAt(r, q(w, g.ships[i]!.state.x), q(w, g.ships[i]!.state.y)), `seed ${seed} 駆潜艇 ${i}`).toBe(false);
++      expect(r.state.n, `seed ${seed}`).toBe(1); // 卯月だけ
++      // 自艇を駆潜艇の真北へ（止まっていれば見つかる 480 m の外）: 1,850 m では映らず、1,700 m で映る
++      for (const i of [2, 3]) {
++        const p = g.ships[i]!.state;
++        for (const [m, seen] of [[1850, false], [1700, true]] as const) {
++          Object.assign(b, { x: p.x, y: p.y - m });
++          const before = r.state.sweeps;
++          while (r.state.sweeps === before) {
++            anchorStep(w);
++            r.step(w);
++          }
++          expect(blipAt(r, q(w, p.x), q(w, p.y)), `seed ${seed} 駆潜艇 ${i} ${m} m`).toBe(seen);
++        }
++      }
++      expect(g.ships.map((d) => d.anchored), `seed ${seed}`).toEqual([true, true, true, true]); // 誰も気づいていない（1,700 m は見つかる距離の外）
++    }
++    expect(minM).toBeGreaterThanOrEqual(1977.9); // V-A4（揺らぎの矩形の隅で 1,978 m）
++    expect(minM).toBeGreaterThan(w0SmallRange());
++  });
+   it('岸の線が無ければ（v0.8.0 の作り＝両岸からだけ）空知丸は最初の掃引に映ってしまう（D-R2 の要）', () => {
+     const w = anchorKit();
+     const r = radarOf(w, false);
+diff --git a/tests/radar.test.ts b/tests/radar.test.ts
+index ef1e78f..045abff 100644
+--- a/tests/radar.test.ts
++++ b/tests/radar.test.ts
+@@ -191,7 +191,9 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確
+   });
+   it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も。S4 から Result の列の行（段階の数え）と衝突の危険のテレメトリ（bowOnRisk）も', () => {
+     const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
+-    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
++    // v0.8.1 S2b（L44）: 隊（destroyer-group）が艦ごとのレーダーの種類の定数だけを読む（radarKindAt＝ハードの駆潜艇は RADAR_KIND_SMALL。掃引は world-radar のまま）
++    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-group.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
++    expect(code('src/systems/destroyer-group.ts')).toContain("import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';");
+     expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
+     // v0.8.0 実機 1 回目: 探照灯を岸で切る（beamLengthToLand）ために destroyer-group・enemy-fire・world-enemies も（tests/strait-ip1）
+     // v0.8.1 S2: 暗い岸を背に（systems/shore-backdrop の landBehind。us_06）も
+diff --git a/tests/ship-art.test.ts b/tests/ship-art.test.ts
+index 1a763fc..ac3b5e9 100644
+--- a/tests/ship-art.test.ts
++++ b/tests/ship-art.test.ts
+@@ -22,7 +22,7 @@ const HS = gameData.hitRateModel.world.hit_scale as number;
+ const dims = (id: string): { L: number; B: number } => { const r = getEnemyRecord(gameData, id); return { L: r.length_m * SS, B: r.beam_m * SS }; };
+ const landing = validateLandingMissions(gameData, TS)!;
+ const ally = validateAllyDestroyerMissions(gameData, TS, getEnemyRecord(gameData, 'ijn_destroyer').searchlight!.cone_deg)!;
+-/** Boot と同じ寸法の 6 枚（鍵・形・世界単位。v0.8.1 S2 で us_06 の敵の卯月＝睦月型の形の敵の色の 1 枚を足した） */
++/** Boot と同じ寸法の 7 枚（鍵・形・世界単位。v0.8.1 S2 で us_06 の敵の卯月＝睦月型の形の敵の色の 1 枚、S2b でハードの駆潜艇の 1 枚を足した） */
+ const SHIPS: { key: string; kind: ShipArtKind; L: number; B: number }[] = [
+   { key: 'tex-destroyer', kind: 'kagero', ...dims('ijn_destroyer') },
+   { key: 'tex-destroyer-us', kind: 'fletcher', ...dims('us_destroyer') },
+@@ -30,6 +30,7 @@ const SHIPS: { key: string; kind: ShipArtKind; L: number; B: number }[] = [
+   { key: 'tex-destroyer-friendly', kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS },
+   { key: 'tex-transport', kind: 'transport', ...dims(getPrototypeMission(gameData, 'us_02').transport!.enemyId) },
+   { key: 'tex-transport-friendly', kind: 'transport', L: landing.lengthM * SS, B: landing.beamM * SS },
++  { key: 'tex-subchaser', kind: 'subchaser', ...dims('ijn_subchaser') },
+ ];
+ const hsv = (c: number): { h: number; s: number } => {
+   const r = (c >> 16) & 255; const g = (c >> 8) & 255; const b = c & 255;
+@@ -57,7 +58,7 @@ function expectPartsInside(shape: ShipShape, halfAt: (yFrac: number) => number,
+ }
+ 
+ describe('艦の絵の形（v0.7.0 S2a）', () => {
+-  it('鍵 → 形の表は 6 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
++  it('鍵 → 形の表は 7 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
+     expect(Object.keys(SHIP_ART_KIND_BY_KEY).sort()).toEqual(SHIPS.map((s) => s.key).sort());
+     for (const s of SHIPS) expect(shipArtKind(s.key)).toBe(s.kind);
+     expect(shipArtKind('tex-boat-jp_t38')).toBe('kagero');
+@@ -104,16 +105,23 @@ describe('艦の絵の形（v0.7.0 S2a）', () => {
+     expect(l.transport.hatches).toHaveLength(4);
+     expect(hullHalfWidthAt(l.transport.hull, 0.04, 1)).toBeGreaterThan(hullHalfWidthAt(l.kagero.hull, 0.04, 1) * 1.5);
+     for (const k of ['kagero', 'fletcher', 'mutsuki'] as const) { expect(l[k].funnels).toHaveLength(2); expect(l[k].tubes).toHaveLength(2); }
++    // v0.8.1 S2b（D-A2）: 駆潜艇は前に単装の砲 1・煙突 1・発射管なし・船首楼の段・艦尾の中心線に爆雷の投射機の台（砲より後ろ）
++    expect([l.subchaser.mounts.length, l.subchaser.mounts[0]![2], l.subchaser.mounts[0]![1] < 0.4, l.subchaser.funnels.length, l.subchaser.tubes.length, l.subchaser.forecastle?.[1]]).toEqual([1, 1, true, 1, 0, 'line']);
++    expect(l.subchaser.mounts[0]![0]).toBeLessThan(l.subchaser.bridge[0]);
++    expect(l.subchaser.tubs.filter(([f, x]) => x === 0 && f > 0.7)).toHaveLength(1);
+   });
+   it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）。v0.8.1 S2 の敵の卯月の鍵は ship-art-config の表だけ（TEXTURE_KEYS の 53 鍵は変えない＝tests/sfx-inventory）', () => {
+     const g = readFileSync('src/config/game-config.ts', 'utf8');
+-    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) if (v !== 'tex-destroyer-mutsuki') expect(g).toContain(`'${v}'`);
++    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) if (v !== 'tex-destroyer-mutsuki' && v !== 'tex-subchaser') expect(g).toContain(`'${v}'`);
+     expect(g).not.toContain("'tex-destroyer-mutsuki'");
++    expect(g).not.toContain("'tex-subchaser'"); // v0.8.1 S2b（D-A2）: 駆潜艇の鍵も ship-art-config の表だけ
+     expect(shipArtKey('us_destroyer')).toBe('tex-destroyer-us');
+     expect(shipArtKey('ijn_destroyer')).toBe('tex-destroyer');
+     expect(dims('us_destroyer')).toEqual({ L: 229.6, B: 24 });
+     expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2（D-A1）: 敵の卯月は味方の卯月の絵と同じ大きさ（記録 × sprite_scale）
+     expect(dims('ijn_destroyer_mutsuki_enemy')).toEqual({ L: 205.4, B: 18.32 });
++    expect(shipArtKey('ijn_subchaser')).toBe('tex-subchaser'); // v0.8.1 S2b（D-A2）: ハードの駆潜艇（記録 × sprite_scale）
++    expect(dims('ijn_subchaser')).toEqual({ L: 102, B: 13.4 });
+   });
+ });
+ 
+@@ -145,18 +153,22 @@ describe('大発・米PT・魚雷の絵（v0.7.0 S2a）', () => {
+     for (const c of [PALETTE_ALLY.deck, PALETTE_ALLY.rim, PALETTE_ALLY.side, PALETTE_ALLY.superstructure]) { const h = hsv(c).h; expect(h).toBeGreaterThanOrEqual(190); expect(h).toBeLessThanOrEqual(220); }
+     expect(ART_RIM_UNITS).toBe(1.5);
+   });
+-  it('source の pin: Boot は駆逐艦の絵の後に米駆逐艦の 1 行、world-enemies が shipArtKey(mission.enemyId) を DestroyerGroup の最後の引数で渡す（setup には足さない＝R15）、placeholders.ts は 300 行以下', () => {
++  it('source の pin: Boot は駆逐艦の絵の後に米駆逐艦の 1 行と駆潜艇の 1 行、world-enemies が shipArtKey(mission.enemyId) を DestroyerGroup の絵の鍵の引数で渡す（setup には足さない＝R15。v0.8.1 S2b から最後の引数はハードの駆潜艇）、placeholders.ts は 300 行以下', () => {
+     const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
+     const i = boot.indexOf('generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });');
+     const j = boot.indexOf('generateExtraDestroyerTextures(this, gameData, spriteScale);');
+     expect(i).toBeGreaterThan(0);
+     expect(j).toBeGreaterThan(i);
+     expect(boot.split('generateExtraDestroyerTextures(').length).toBe(2);
++    const k = boot.indexOf('generatePicketTextures(this, gameData, spriteScale);'); // v0.8.1 S2b（D-A2）: 駆潜艇の絵は駆逐艦の絵の直後に 1 回
++    expect(k).toBeGreaterThan(j);
++    expect(boot.split('generatePicketTextures(').length).toBe(2);
+     const we = readFileSync('src/systems/world-enemies.ts', 'utf8');
+-    expect(we).toContain('splashes, shipArtKey(mission.enemyId)) : null;');
++    expect(we).toContain('splashes, shipArtKey(mission.enemyId), s.pickets ?? null) : null;'); // v0.8.1 S2b（L41）: 駆潜艇は新しい最後の引数（絵の鍵は隊が記録の id から）
+     const dg = readFileSync('src/systems/destroyer-group.ts', 'utf8');
+     expect(dg).toContain('destroyerTextureKey: string = TEXTURE_KEYS.destroyer,');
+     expect(dg).toContain('new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey)');
++    expect(dg).toContain('new Destroyer(scene, start, pickets.spec, pickets.shipAi, bounds, lookoutRng, shipArtKey(pickets.enemyId))');
+     expect(readFileSync('src/systems/destroyer-setup.ts', 'utf8')).not.toMatch(/textureKey|artKey|shipArt/); // setup には絵の鍵を足さない（snapshot が変わる）
+     expect(readFileSync('src/assets/placeholders.ts', 'utf8').split('\n').length).toBeLessThanOrEqual(301);
+     expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE)');
+diff --git a/tests/transit-world.test.ts b/tests/transit-world.test.ts
+index 2ed24cc..d1863d1 100644
+--- a/tests/transit-world.test.ts
++++ b/tests/transit-world.test.ts
+@@ -119,9 +119,10 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
+     expect(g).toContain('return this.transit ? this.transit.allSettled : allShipsSettled(this.ships);');
+     expect(g).toContain('return this.transit ? this.transit.pending : 0;');
+     expect(g).toContain('this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null;');
+-    // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）
++    // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）。v0.8.1 S2b（L42）: 命中の 2 つの手は隊の gunneryAt（同じ式を隊へ移した。駆潜艇は 3 つ目の枝）
+     const we = code('systems/world-enemies.ts');
+-    expect(we.split('i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery').length - 1).toBe(2);
++    expect(we.split('destroyers.gunneryAt(i).guns[').length - 1).toBe(2);
++    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }");
+     expect(we).not.toContain('ds!.starts.length');
+   });
+ });
