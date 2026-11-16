@@ -1,5 +1,6 @@
 // 海峡の幾何（v0.8.0 S1。us_04「ブラケット海峡の夜」。spec-v0800 §4.3・§4.9・§3.2 D-R4）: 海域の北の縁（y 0）と南の縁（y 海域の高さ）の岸の線と、
-// 切れ目（水道）を除いた陸の区間、点から一番近い陸までの距離の 2 乗（レーダーの陸の反射の帯＝core/radar）、衝突の危険（艦首が自艇へ向く。2 行目の文＝S4）。
+// 切れ目（水道）を除いた陸の区間、点から一番近い陸までの距離の 2 乗（レーダーの陸の反射の帯＝core/radar）、衝突の危険（艦首が自艇へ向く。2 行目の文＝S4）、
+// 探照灯の光を岸で止める長さ（beamLengthToLand。実機 1 回目＝systems/enemy-fire の絵だけ）。
 // 陸までの距離は岸の角も見る: 陸の区間の真横なら岸の線まで、切れ目の上なら切れ目の両端の陸（岸の角）まで。だから水道の中は両端の陸から遠ければ反射の外。
 // 岸の線は us_04 の両岸（config/shores-mission-data の ShoresSetup。北と南・切れ目あり）からも、今の岸（coast。南だけ・切れ目なし＝v0.8.1 の us_06）からも landLine で作れる。
 // Phaser 非依存・乱数なし。作る（landLine・landLinesFromShores）は起動時に 1 回だけ確保し、判定（landDist2・bowOnRisk）は確保しない（2 乗の距離と内積だけ。平方根・atan2 なし）。
@@ -65,6 +66,35 @@ export function landDist2(lines: readonly LandLine[], x: number, y: number): num
     }
   }
   return best;
+}
+
+/**
+ * 探照灯の光の長さ（v0.8.0 実機 1 回目「南の陸の遥か下から複数のサーチライトが向かってきた」）: 光源 (x, y) から方位 bearingDeg（0＝北・時計回り）へ伸びる
+ * 中心線が、陸の区間のある岸の線に当たるまでの距離と rangeM の短い方（島が光を遮る＝陸の上に光を描かない）。切れ目（水道）を通る光と、陸の無い向きは rangeM。
+ * 光源が岸の線の向こう（陸の側）にあり、その真上が陸なら 0。見た目だけ（照らす判定＝core/gunnery は今のまま）。確保しない
+ */
+export function beamLengthToLand(lines: readonly LandLine[], x: number, y: number, bearingDeg: number, rangeM: number): number {
+  const h = degToRad(bearingDeg);
+  const ux = Math.sin(h);
+  const uy = -Math.cos(h);
+  let len = rangeM;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const toward = uy * line.landSide; // 陸の側へ進む速さの割合（> 0 で岸の線へ向かう）
+    const a = (line.y - y) * line.landSide; // 岸の線まで（海の側が正）
+    if (toward <= 0 && a > 0) continue;
+    const t = a <= 0 ? 0 : a / toward;
+    if (t >= len) continue;
+    const xc = x + ux * t;
+    const spans = line.spans;
+    for (let j = 0; j < spans.length; j++) {
+      if (xc >= spans[j]!.x0 && xc <= spans[j]!.x1) {
+        len = t;
+        break;
+      }
+    }
+  }
+  return len;
 }
 
 /** bowOnRisk の cos2（半角 halfAngleDeg の cos の 2 乗。0 < 半角 < 90。起動時に 1 回） */

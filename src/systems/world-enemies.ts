@@ -10,6 +10,7 @@ import type { HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
 import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
+import { landLinesFromShores } from '../core/strait-geometry';
 import { BargeHunt } from './barge-hunt';
 import { shipArtKey } from '../config/ship-art-config';
 import { DestroyerGroup } from './destroyer-group';
@@ -58,6 +59,8 @@ export function buildEnemies(
   // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）。
   // 列の通過（v0.8.0 S2。us_04 の setup.transit だけ）の艦は隊が護衛の後ろに作る（同じ id・砲。無い任務は null＝隊は v0.7.2 のまま）
   const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, s.transit ?? null, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
+  // 海峡の両岸（v0.8.0 実機 1 回目。us_04 の setup.shores だけ）: 探照灯の絵を岸の線で切る（陸の上に光を描かない。照らす判定は変えない）
+  if (destroyers && s.shores) destroyers.setBeamLand(landLinesFromShores(s.shores, mission.bounds.width, mission.bounds.height));
   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）。駆逐艦は隊の先頭 destroyerCount 隻（列の通過の艦も込み。無い任務は ds.starts の隻数と同じ）
   destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）

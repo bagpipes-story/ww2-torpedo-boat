@@ -1,5 +1,6 @@
 // 駆逐艦の反撃の見た目（v0.2.1）: 探照灯の扇・星弾の照明・砲弾/曳光弾・着弾の水柱・砲口の閃光。
 // 判断と運動は core/gunnery.ts。§7: すべて起動時にプールし、毎フレームは transform/alpha だけ触る。
+// v0.8.0 実機 1 回目: 岸の線のある任務（us_04）だけ、探照灯の絵を岸で切る（setBeamLand。長さが変わった時だけ setCrop。照らす判定は変えない）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -17,6 +18,7 @@ import type { BoatState } from '../core/boat-motion';
 import { createGunneryState, updateGuns, updateIllumination, type GunneryParams, type GunneryState, type ShellEvents } from '../core/gunnery';
 import { pointIlluminated, updateGunsPair, type GunTarget, type PairShellEvents } from '../core/gunnery-pair';
 import type { SeededRng } from '../core/rng';
+import { beamLengthToLand, type LandLine } from '../core/strait-geometry';
 import { radToDeg } from '../core/units';
 import type { SplashPool } from './splash-pool';
 
@@ -28,6 +30,9 @@ export class EnemyFire {
   private readonly shellSprites: Phaser.GameObjects.Image[] = [];
   /** 各スプライトが今どの砲のテクスチャか（-1 = 未設定）。同じフレーム内でスロットが別の砲に使い回されても正しく描く */
   private readonly shellTexGun: Int8Array;
+  /** 探照灯を止める岸の線（v0.8.0 実機 1 回目。無い任務は null＝絵は今のまま）と、今の切り取りの行数（-1 は切っていない） */
+  private beamLand: readonly LandLine[] | null = null;
+  private beamRows = -1;
   private readonly light: Phaser.GameObjects.Image;
   private readonly star: Phaser.GameObjects.Image;
   private readonly flash: Phaser.GameObjects.Image;
@@ -99,6 +104,11 @@ export class EnemyFire {
       .setVisible(false);
   }
 
+  /** 岸の線を渡す（v0.8.0 実機 1 回目。起動時に 1 回。us_04 の両岸＝core/strait-geometry の landLinesFromShores） */
+  setBeamLand(lines: readonly LandLine[]): void {
+    this.beamLand = lines.length > 0 ? lines : null;
+  }
+
   setHitHandler(h: ShellHitHandler): void {
     this.onHit = h;
   }
@@ -162,6 +172,7 @@ export class EnemyFire {
     const light = this.state.light;
     if (light.on) {
       this.light.setPosition(ship.x, ship.y).setAngle(light.bearingDeg);
+      if (this.beamLand) this.clipBeam(ship, light.bearingDeg);
       if (!this.light.visible) this.light.setVisible(true);
       if (this.blocked !== this.blockedDrawn) {
         this.blockedDrawn = this.blocked;
@@ -202,6 +213,18 @@ export class EnemyFire {
         this.flash.setAlpha(1 - this.flashAge / MUZZLE_FLASH_LIFETIME_S);
       }
     }
+  }
+
+  /** 探照灯の絵を岸の線で切る（光源＝絵の下端から長さの分の行だけ残す。行数が変わった時だけ setCrop） */
+  private clipBeam(ship: BoatState, bearingDeg: number): void {
+    const range = this.params.searchlight.rangeM;
+    const len = beamLengthToLand(this.beamLand!, ship.x, ship.y, bearingDeg, range);
+    const h = this.light.frame.height;
+    const rows = len >= range ? h : Math.round((h * len) / range);
+    if (rows === this.beamRows) return;
+    this.beamRows = rows;
+    if (rows >= h) this.light.setCrop();
+    else this.light.setCrop(0, h - rows, this.light.frame.width, rows);
   }
 
   destroy(): void {

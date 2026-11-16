@@ -5,7 +5,7 @@
 // 自艇は動かない（発見の距離 0＝見つからない・撃たれない）。命中スローは slow の間だけ feelDt ＝ 実秒 × hit_slowmo_factor、dt ＝ feelDt × time_scale（mission-world と同じ）。
 import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
-import { clampToBounds, type BoatState, type SeaBounds } from '../src/core/boat-motion';
+import { clampToBounds, clampYToBounds, type BoatState, type SeaBounds } from '../src/core/boat-motion';
 import { beyondBounds, retireHeadingDeg } from '../src/core/dawn-withdraw';
 import { SeededRng } from '../src/core/rng';
 import { createShipAiState, startRetire, steerShip, turnRateFor, updateShipAi, type ShipAiParams, type ShipAiState } from '../src/core/ship-ai';
@@ -38,7 +38,8 @@ export class KitShip implements TransitShip {
     updateShipAi(this.ai, this.state, player, detectM, holdS, [], this.p, bounds, realDt, rng);
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.p), this.p.accelMps2, dt);
     if (!this.ai.retiring) clampToBounds(this.state, bounds, this.marginM);
-    else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, bounds, this.marginM)) {
+    else if (this.transitShip) clampYToBounds(this.state, bounds, this.marginM); // Destroyer.step と同じ（v0.8.0 実機 1 回目）
+    else if (beyondBounds(this.state.x, this.state.y, bounds, this.marginM)) {
       this.withdrawn = true;
       return true;
     }

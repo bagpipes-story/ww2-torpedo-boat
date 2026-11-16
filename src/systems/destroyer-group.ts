@@ -10,6 +10,7 @@ import { allShipsOut, allShipsSettled, sinkingCount, withdrawnCount } from '../c
 import { litByOwnLight } from '../core/own-light';
 import type { SeededRng } from '../core/rng';
 import { startRetire } from '../core/ship-ai';
+import type { LandLine } from '../core/strait-geometry';
 import { Destroyer } from '../entities/destroyer';
 import type { TransitSetup } from '../config/transit-mission-data';
 import { DestroyerTransit } from './destroyer-transit';
@@ -186,6 +187,11 @@ export class DestroyerGroup {
 
   syncSprites(): void {
     for (const s of this.ships) s.syncSprite();
+  }
+
+  /** 探照灯を岸で切る（v0.8.0 実機 1 回目。岸の線のある任務だけ world-enemies が 1 回呼ぶ） */
+  setBeamLand(lines: readonly LandLine[]): void {
+    for (const f of this.fires) f.setBeamLand(lines);
   }
 
   updateVisuals(realDt: number): void {

@@ -3,7 +3,7 @@
 // レーダーの掃引（systems/world-radar の WorldRadar.step）。魚雷のプールと発射管制の写しは core/intercept-sim-torpedoes。どれも同じ core（ship-ai・ship-transit・
 // radar・dawn-withdraw・torpedo-solver）を同じ順で呼ぶ。core から systems は import しない作法なので写し、tests/intercept-sim-a が本物（tests/transit-world-kit の
 // DestroyerTransit・WorldRadar）とステップごとに突き合わせる。沈没の演出（2 秒の tween）は呼ぶ側が時計で数える。確保は作る時だけ。B6 の 1 本（columnShot）もここ。
-import { clampToBounds, type BoatState, type SeaBounds } from './boat-motion';
+import { clampToBounds, clampYToBounds, type BoatState, type SeaBounds } from './boat-motion';
 import { beyondBounds } from './dawn-withdraw';
 import { RADAR_KIND_SHIP, radarSweepDue, stepRadar, type RadarGeometry, type RadarState, type RadarTargets } from './radar';
 import type { RadarParams } from './radar-data';
@@ -54,7 +54,8 @@ export class SimShip implements TorpedoTarget {
     updateShipAi(this.ai, this.state, player, detectM, holdS, torps, this.p, bounds, realDt, lookout);
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.p), this.p.accelMps2, dt);
     if (!this.ai.retiring) clampToBounds(this.state, bounds, this.spec.boundsMarginM);
-    else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, bounds, this.spec.boundsMarginM)) {
+    else if (this.transitShip) clampYToBounds(this.state, bounds, this.spec.boundsMarginM); // Destroyer.step と同じ（v0.8.0 実機 1 回目）
+    else if (beyondBounds(this.state.x, this.state.y, bounds, this.spec.boundsMarginM)) {
       this.withdrawn = true;
       return true;
     }

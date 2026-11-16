@@ -91,7 +91,7 @@ describe('衝突の危険（艦首が自艇へ半角 15° の内・500 m の内�
 describe('source（判定は確保しない・平方根も atan2 も乱数も使わない）', () => {
   it('作る関数（landLine・landLinesFromShores）のほかは本体に確保の形が無い。import は core/units だけ', () => {
     const { names, bad } = scanAllocations(FILE, ['landLine', 'landLinesFromShores']);
-    expect(names).toEqual(['bowOnCos2', 'bowOnRisk', 'landDist2', 'landLine', 'landLinesFromShores']);
+    expect(names).toEqual(['beamLengthToLand', 'bowOnCos2', 'bowOnRisk', 'landDist2', 'landLine', 'landLinesFromShores']); // v0.8.0 実機 1 回目: beamLengthToLand
     expect(bad).toEqual([]);
     const s = code(FILE);
     expect(imports(s)).toEqual(['./units']);

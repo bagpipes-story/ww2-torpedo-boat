@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
-import { clampToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
+import { clampToBounds, clampYToBounds, type BoatState, type SeaBounds } from '../core/boat-motion';
 import { beyondBounds } from '../core/dawn-withdraw';
 import type { SeededRng } from '../core/rng';
 import { createShipAiState, steerShip, turnRateFor, updateShipAi, type ShipAiMode, type ShipAiParams, type ShipAiState } from '../core/ship-ai';
@@ -74,7 +74,8 @@ export class Destroyer {
     updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
     if (!this.ai.retiring) clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
-    else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
+    else if (this.transitShip) clampYToBounds(this.state, this.bounds, this.spec.boundsMarginM); // 列の艦は南北の縁（陸）へ出さない（v0.8.0 実機 1 回目。東西は段階が決める）
+    else if (beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {
       this.withdrawn = true;
       this.sprite.setVisible(false);
       return true;

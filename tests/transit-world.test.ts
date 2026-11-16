@@ -190,11 +190,14 @@ describe('Destroyer の列の通過の口（kit はその写し）', () => {
   };
   it('out に offMap を入れ、列の艦は縁の外の退き終わりを自分で立てない。goAway は海域の外へ（去ったなら withdrawn）＋絵を隠す＋発見と雷跡の覚えを解く、reappear は置き直して海域の中へ', () => {
     expect(d).toContain('return this.sinking || this.withdrawn || this.offMap;');
-    expect(d).toContain('else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {');
+    // v0.8.0 実機 1 回目: 列の艦は退く動きでも南北の縁の内に止める（tests/strait-ip1）。列でない艦の縁の外の退き終わりは今のまま
+    expect(d).toContain('else if (this.transitShip) clampYToBounds(this.state, this.bounds, this.spec.boundsMarginM);');
+    expect(d).toContain('else if (beyondBounds(this.state.x, this.state.y, this.bounds, this.spec.boundsMarginM)) {');
     expect(body('goAway')).toBe('if (gone) this.withdrawn = true; else this.offMap = true; this.sprite.setVisible(false); this.sighted = false; const ai = this.ai; ai.playerDetected = false; ai.detectHoldLeftS = 0; ai.wakeSpotted = false; ai.wakeSeenForS = -1;');
     expect(body('reappear')).toBe('const s = this.state; s.x = x; s.y = y; s.headingDeg = headingDeg; s.speedMps = speedMps; this.offMap = false; this.refreshHull();');
     const k = readFileSync('tests/transit-world-kit.ts', 'utf8');
     expect(k).toContain('if (gone) this.withdrawn = true;\n    else this.offMap = true;\n    const ai = this.ai;\n    ai.playerDetected = false;\n    ai.detectHoldLeftS = 0;\n    ai.wakeSpotted = false;\n    ai.wakeSeenForS = -1;');
-    expect(k).toContain('else if (!this.transitShip && beyondBounds(this.state.x, this.state.y, bounds, this.marginM)) {');
+    expect(k).toContain('else if (this.transitShip) clampYToBounds(this.state, bounds, this.marginM);');
+    expect(k).toContain('else if (beyondBounds(this.state.x, this.state.y, bounds, this.marginM)) {');
   });
 });
