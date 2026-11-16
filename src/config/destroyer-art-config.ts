@@ -25,7 +25,7 @@ export interface DestroyerDetail {
   readonly yardHalfB: number;
   readonly panelUnits: number;
 }
-export const DESTROYER_DETAILS: Readonly<Record<'kagero' | 'fletcher' | 'mutsuki', DestroyerDetail>> = {
+export const DESTROYER_DETAILS: Readonly<Record<'kagero' | 'fletcher' | 'mutsuki' | 'subchaser', DestroyerDetail>> = {
   kagero: {
     gun: 'twin', bridge: 'ijn', tubeN: 4, tubeLen: 0.06, tubeShield: true,
     boats: [[0.5, 0.36], [0.5, -0.36]], lockers: [[0.2, 0.32], [0.2, -0.32], [0.66, 0.34], [0.66, -0.34], [0.93, 0.22], [0.93, -0.22]],
@@ -40,6 +40,12 @@ export const DESTROYER_DETAILS: Readonly<Record<'kagero' | 'fletcher' | 'mutsuki
     gun: 'single12', bridge: 'ijnSmall', tubeN: 3, tubeLen: 0.055, tubeShield: false,
     boats: [[0.39, 0.33], [0.39, -0.33]], lockers: [[0.64, 0.33], [0.64, -0.33], [0.8, 0.3], [0.8, -0.3]],
     dcRacks: false, yardHalfB: 0.34, panelUnits: 5,
+  },
+  // v0.8.1 S2b（spec-v0810 §3.6 D-A2）: 駆潜艇（第13号型）＝盾つきの単装の砲 1・小さな艦橋・発射管なし・短艇 1・艦尾の爆雷の軌条と爆雷の山 4（甲板の小物）
+  subchaser: {
+    gun: 'single12', bridge: 'ijnSmall', tubeN: 0, tubeLen: 0, tubeShield: false,
+    boats: [[0.5, 0.3]], lockers: [[0.82, 0.26], [0.82, -0.26], [0.88, 0.26], [0.88, -0.26]],
+    dcRacks: true, yardHalfB: 0.34, panelUnits: 4,
   },
 };
 

@@ -3,7 +3,7 @@
 // 「浮いて海域の中か」（Destroyer.out の逆＝沈み始めた・退いた・海域の外の列の艦は映らない）を渡す（掃引の間は何もしない＝§5.2）。
 // 目とは別の感覚（D-R1・brief L9）: 世界・自艇・艦・AI・視程・発見・テレメトリには何も書かない（読むだけ。書くのは自分の state と渡す枠 targets だけ＝tests/radar-neutral が走査）。
 // 陸の反射の岸の線は海峡の両岸（setup.shores）か今の岸（coast の南。v0.8.1 S2 の us_06＝泊地の空知丸は反射に紛れる）から起動時に 1 回（core/strait-geometry の landLinesOf。どちらも無い任務は空）。
-// 機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
+// 機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。隊の艦の種類は隊の radarKindAt（v0.8.1 S2b。us_06 のハードの駆潜艇は小さい艇＝1,800 m の内だけ。ほかはみな艦）。
 // 絵（輝点 16 の Image）は systems/radar-view が持ち、毎フレーム updateVisuals が渡す（置き直すのは掃引の回数が変わった時だけ）。
 // Phaser 非依存（絵は構造の型 RadarBlipView。tests/radar-world・radar-neutral が絵なしで回す）・乱数なし。確保は constructor だけ。
 // v0.8.0 S4（brief L26・L31）: 東の縁の向こうの揚陸の地の名（作る時に 1 回。2 行目の「東（ビラ）へ消えた」）と、Result の「目で見えない間に撃った魚雷」の数え
@@ -23,7 +23,8 @@ export interface RadarShip {
 export interface RadarWorldView {
   readonly stepTimeS: number;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
-  readonly destroyers: { readonly ships: readonly RadarShip[] } | null;
+  /** radarKindAt は艦 i の種類（v0.8.1 S2b。DestroyerGroup＝ハードの駆潜艇は小さい艇。無ければみな艦） */
+  readonly destroyers: { readonly ships: readonly RadarShip[]; radarKindAt?(i: number): number } | null;
 }
 
 /** 輝点の絵（systems/radar-view の RadarView が満たす）。nowS は固定ステップの時計（薄れ方） */
@@ -88,7 +89,7 @@ export class WorldRadar {
         const d = ships[i]!;
         tg.x[n] = d.state.x;
         tg.y[n] = d.state.y;
-        tg.kind[n] = RADAR_KIND_SHIP;
+        tg.kind[n] = g.radarKindAt ? g.radarKindAt(i) : RADAR_KIND_SHIP;
         tg.afloat[n] = d.out ? 0 : 1;
         n++;
       }

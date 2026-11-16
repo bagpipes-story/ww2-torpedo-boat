@@ -10,6 +10,7 @@ export const SHIP_ART_KEY_BY_ENEMY: Readonly<Record<string, string>> = {
   ijn_destroyer: 'tex-destroyer',
   us_destroyer: 'tex-destroyer-us',
   ijn_destroyer_mutsuki_enemy: 'tex-destroyer-mutsuki', // v0.8.1 S2（spec-v0810 §3.6 D-A1）: us_06 の敵の卯月＝睦月型の形を敵の色で（味方の卯月 tex-destroyer-friendly と同じ置き方）
+  ijn_subchaser: 'tex-subchaser', // v0.8.1 S2b（D-A2）: us_06 のハードの駆潜艇（第13号型）＝新しい形 'subchaser' を敵の色で（Boot の generatePicketTextures が hard の picket_enemy_id から 1 回）
 };
 export function shipArtKey(enemyId: string): string {
   return SHIP_ART_KEY_BY_ENEMY[enemyId] ?? SHIP_ART_DEFAULT_KEY;
@@ -22,6 +23,7 @@ export function shipArtKey(enemyId: string): string {
 export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
   'tex-destroyer-mutsuki': 2, // v0.8.1 S2（D-A1。敵の卯月）
+  'tex-subchaser': 2, // v0.8.1 S2b（D-A2。ハードの駆潜艇）
   // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
   'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
 };
@@ -43,11 +45,12 @@ export const BARGE_RAMP_BEAM_SHARE = 0.76;
 /** 艦の絵の乱れの乱数の種（絵だけ。ゲームの乱数とは別） */
 export const ART_SEED_SHIP = 7101;
 
-/** 艦の絵の形の種類（S2a。spec §4.2）と、鍵 → 形の表。陽炎型（敵の駆逐艦）・フレッチャー級（jp_06 の米駆逐艦）・睦月型（卯月）・輸送船（敵と味方の 2 枚は同じ形で色だけ違う） */
-export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport';
+/** 艦の絵の形の種類（S2a。spec §4.2）と、鍵 → 形の表。陽炎型（敵の駆逐艦）・フレッチャー級（jp_06 の米駆逐艦）・睦月型（卯月）・輸送船（敵と味方の 2 枚は同じ形で色だけ違う）・駆潜艇（v0.8.1 S2b） */
+export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport' | 'subchaser';
 export const SHIP_ART_KIND_BY_KEY: Readonly<Record<string, ShipArtKind>> = {
   'tex-destroyer': 'kagero', 'tex-destroyer-us': 'fletcher', 'tex-destroyer-friendly': 'mutsuki', 'tex-transport': 'transport', 'tex-transport-friendly': 'transport',
   'tex-destroyer-mutsuki': 'mutsuki', // v0.8.1 S2（D-A1。敵の卯月）
+  'tex-subchaser': 'subchaser', // v0.8.1 S2b（D-A2。ハードの駆潜艇）
 };
 export const SHIP_ART_DEFAULT_KIND: ShipArtKind = 'kagero';
 export function shipArtKind(key: string): ShipArtKind {
@@ -97,6 +100,14 @@ export const SHIP_ART_LAYOUTS: Readonly<Record<ShipArtKind, ShipArtLayout>> = {
     forecastle: [0.275, 'notch'], bridge: [0.19, 0.26, 0.6], funnels: [[0.3, 0.4, 0.04], [0.48, 0.4, 0.04]],
     mounts: [[0.12, 0.34, 1], [0.365, 0.34, 1], [0.7, 0.34, -1], [0.88, 0.34, -1]], tubes: [[0.415, 0.5], [0.58, 0.5]], tubs: [[0.66, 0.2], [0.66, -0.2]],
     hatches: [], masts: [0.165], derricks: [],
+  },
+  // 駆潜艇（第13号型。v0.8.1 S2b の D-A2。us_06 のハード。51 × 6.7 m の小艦）: 船首楼の段 38%・前に盾つきの単装の 8 cm 高角砲 1（15%）・小さな艦橋 25〜34%・マスト 35.5%・煙突 1（44%）・
+  // 13.2 mm の台 2（56%）と艦尾の爆雷の投射機の台（中心線 74%。爆雷の軌条と爆雷の山は destroyer-art-config）・角に近い艦尾
+  subchaser: {
+    hull: [[0, 0], [0.03, 0.3], [0.08, 0.6], [0.14, 0.85], [0.19, 1], [0.86, 1], [0.94, 0.88], [0.98, 0.72], [1, 0.6]],
+    forecastle: [0.38, 'line'], bridge: [0.25, 0.34, 0.6], funnels: [[0.44, 0.4, 0.055]],
+    mounts: [[0.15, 0.36, 1]], tubes: [], tubs: [[0.56, 0.22], [0.56, -0.22], [0.74, 0]],
+    hatches: [], masts: [0.355], derricks: [],
   },
   // 輸送船（敵は灰赤・味方は薄い青。味方の 1 枚は寸法を厳守＝名前と状態の行の y）: 丸い艦首と艦尾・船倉のハッチ 4（前 2・後ろ 2）・中央やや後ろの船橋 50〜62% と煙突 66%・マスト 2 と荷役の腕
   transport: {

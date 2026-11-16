@@ -8,7 +8,7 @@ import {
 } from '../config/destroyer-art-config';
 import { hullHalfWidthAt, hullOutline, type Pt } from './boat-shape';
 
-export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki';
+export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki' | 'subchaser'; // 駆潜艇は v0.8.1 S2b（us_06 のハード）
 
 /** 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ） */
 export type DestroyerPart =

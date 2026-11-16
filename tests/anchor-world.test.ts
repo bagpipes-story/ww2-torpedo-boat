@@ -3,7 +3,7 @@
 // - 止まった艦は動かず当たりの円も作った時のまま（見張りは走る）・5 つの理由で気づく・駆逐艦は気づいて体感 6 秒で動き出す（命中スローで延びる）・空知丸は夜明けの後も動かない・警報は 4 秒。
 // - 夜明けは遅れなしで動き出し、卯月は東へ退く。空知丸が残るので隊の allOut・allSettled は偽のまま＝夜は帰投・漂流で終わる（us_06 に fleet_gone_clears は無い）。
 // - 止まった艦の見張りの乱数の引き方は止まっていない艦と同じ入力で同じ。止まった艦の無い任務の d.step に渡る距離は w.detectRangeM そのもの（anchored はいつも偽）。
-// - L30: S2 ではハードでも隊は駆逐艦と輸送船だけ（計画は [6, null]）。L35: v0_1_prototype・岸・駆逐艦の隊を持つ任務は us_06 だけ（探照灯が岸で切れる任務が黙って増えない）。
+// - S2b（L41・L43）: ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻（計画は [6, null, 4, 4]＝S2 の 2 隻の固定を直した。駆潜艇の規則は tests/picket-world）。L35: v0_1_prototype・岸・駆逐艦の隊を持つ任務は us_06 だけ（探照灯が岸で切れる任務が黙って増えない）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
@@ -13,6 +13,7 @@ import { ANCHOR_ALERT, ANCHOR_ASLEEP, ANCHOR_REASON_ALARM, ANCHOR_REASON_DAWN, A
 import { SeededRng } from '../src/core/rng';
 import { MissionEnd } from '../src/systems/mission-end';
 import { anchorTelemetryPart, refreshAnchorTelemetry } from '../src/systems/anchor-telemetry';
+import { DestroyerAnchor } from '../src/systems/destroyer-anchor';
 import { AnchorKitShip, anchorKit, anchorStep, runUntil, type AnchorKitWorld } from './anchor-world-kit';
 import { code } from './core-rules-kit';
 
@@ -230,19 +231,22 @@ describe('配線の source（L30〜L35）', () => {
     expect(k).toContain('if (this.anchored) return false; // Destroyer.step と同じ（v0.8.1 S2）');
     expect(k).toContain('updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes as never, this.aiParams, this.bounds, realDt, this.lookoutRng);');
   });
-  it('付け方: world-enemies は岸の線（landLinesOf）を 1 回作り、探照灯・背に岸・止まった艦を隊に付ける。隊の計画は駆逐艦と輸送船の分（S2b の駆潜艇はまだ）。kit も同じ', () => {
+  it('付け方: world-enemies は岸の線（landLinesOf）を 1 回作り、探照灯・背に岸・止まった艦を隊に付ける。隊の計画は隊の艦の全部（S2b の L43: 駆潜艇も。数が違えば作る時に例外）。kit も同じ', () => {
     const we = code('src/systems/world-enemies.ts');
     expect(we).toContain('if (destroyers && land && s.backdrop) destroyers.setBackdrop(s.backdrop, land, s.seaplane ? s.seaplane.flareRevealM : 0);');
     expect(we).toContain('if (destroyers && s.anchors) destroyers.setAnchors(s.anchors);');
-    expect(we).not.toMatch(/pickets/);
+    expect(we).toContain('splashes, shipArtKey(mission.enemyId), s.pickets ?? null) : null;'); // 駆潜艇は隊の新しい最後の引数だけ（S2b の L41。world-enemies はほかに読まない）
+    expect(we.match(/pickets/g)).toHaveLength(1);
     const g = code('src/systems/destroyer-group.ts');
-    expect(g).toContain('this.anchors = new DestroyerAnchor(this.ships, a, this.transportIndex >= 0 ? this.transportIndex + 1 : this.destroyerCount);');
+    expect(g).toContain('this.anchors = new DestroyerAnchor(this.ships, a, this.ships.length);');
     expect(g).toContain('this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);');
     expect(g).toContain('this.transportIndex = transport ? this.ships.length : -1;');
-    expect(g).not.toMatch(/pickets/);
+    expect(g).toContain('this.picketIndex = pickets ? this.ships.length : -1;');
     for (const get of ['return this.transportIndex >= 0;', 'return this.transportIndex >= 0 && this.ships[this.transportIndex]!.sinking;', 'return this.transportIndex >= 0 && this.ships[this.transportIndex]!.withdrawn;']) expect(g).toContain(get);
+    const da = code('src/systems/destroyer-anchor.ts');
+    expect(da).toContain('if (setup.underwayS.length !== count || count !== ships.length) throw new Error(');
     const k = code('tests/anchor-world-kit.ts');
-    expect(k).toContain('g.anchors = new DestroyerAnchor(ships, setup.anchors, g.transportIndex >= 0 ? g.transportIndex + 1 : g.destroyerCount);');
+    expect(k).toContain('g.anchors = new DestroyerAnchor(ships, setup.anchors, ships.length);');
     expect(k).toContain('g.backdrop = new ShoreBackdrop(setup.backdrop, land, ships.length, setup.seaplane ? setup.seaplane.flareRevealM : 0);');
     const st = code('src/systems/destroyer-step.ts');
     expect(st).toContain('bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM');
@@ -268,14 +272,18 @@ describe('配線の source（L30〜L35）', () => {
   });
 });
 
-describe('S2 の範囲（L30）と岸のある駆逐艦の任務（L35）', () => {
-  it('ハードでも S2 の隊は駆逐艦と輸送船だけ（setup の pickets はあるが世界は作らない＝計画は [6, null]。駆潜艇は S2b）', () => {
+describe('ハードの隊（S2b の L41・L43）と岸のある駆逐艦の任務（L35）', () => {
+  it('ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻で、計画は setup の [6, null, 4, 4] の全部（S2 は 2 隻に切り出していた＝S2b で直した固定）。数が違えば作る時に例外（V-A5）', () => {
     const w = anchorKit({ hard: true, seed: 1 });
     expect(w.setup.pickets!.starts.length).toBe(2);
-    expect(w.setup.anchors!.underwayS).toEqual([6, null, 4, 4]); // setup は書き換えない
-    expect(w.destroyers.ships.length).toBe(2);
-    expect(anchors(w).plan.underwayS).toEqual([6, null]);
-    expect(anchors(w).state.n).toBe(2);
+    expect(w.setup.anchors!.underwayS).toEqual([6, null, 4, 4]);
+    expect(w.destroyers.ships.length).toBe(4);
+    expect(anchors(w).plan.underwayS).toEqual([6, null, 4, 4]);
+    expect(anchors(w).plan.underwayS).not.toBe(w.setup.anchors!.underwayS); // setup は書き換えない（作る時に 1 回写す）
+    expect([anchors(w).state.n, w.destroyers.ships.map((d) => d.anchored)]).toEqual([4, [true, true, true, true]]);
+    const ships = w.destroyers.ships;
+    expect(() => new DestroyerAnchor(ships.slice(0, 2), w.setup.anchors!, 2)).toThrow(/V-A5/);
+    expect(() => new DestroyerAnchor(ships, w.setup.anchors!, 2)).toThrow(/止まった艦の計画（anchors\.underwayS 4 隻）と隊の艦（4 隻）/);
   });
   it('v0_1_prototype・岸（coast）・駆逐艦の隊を持つ任務（ハードも）は us_06 だけ（探照灯の絵が岸で切れ、レーダーの陸の反射に南の岸が入る任務。新しい任務は知って足す）', () => {
     const ids = new Set<string>();

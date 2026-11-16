@@ -1,7 +1,7 @@
 // v0.8.1 S0（spec-v0810 §3.2 D-S1・D-S8・§4.3・lead の L13）: enemies.json の新しい 2 記録。
 // 敵としての卯月（ijn_destroyer_mutsuki_enemy）は寸法・最大速力・主砲の数だけが睦月型（jp_04 の味方の記録 ijn_destroyer_mutsuki と同じ史実の値）で、
 // AI・砲の 1 門の値・25 mm・探照灯・星弾・沈む本数は ijn_destroyer の写し（命中率の KPI を合わせた値＝同じことをここで固定）。
-// 駆潜艇（ijn_subchaser。ハードの us_06 だけ）は AI と砲の形を持つ記録（getEnemyRecord・destroyerSetup で組める）。世界の配線は S2b。
+// 駆潜艇（ijn_subchaser。ハードの us_06 だけ）は AI と砲の形を持つ記録（getEnemyRecord・destroyerSetup で組める）。世界の配線と絵の鍵 tex-subchaser は S2b（tests/picket-world）。
 import { describe, expect, it } from 'vitest';
 import { gameData, getEnemyRecord } from '../src/config/game-data';
 import { destroyerSetup } from '../src/systems/destroyer-setup';
@@ -71,5 +71,6 @@ describe('駆潜艇（ijn_subchaser。第13号型。ハードの us_06 だけ）
     const radiusM = s.shipAi.cruiseSpeedMps / ((r.turn_rate_deg_s * Math.PI) / 180);
     expect(radiusM).toBeCloseTo(117.9, 1);
     expect(r.patrol.edge_turn_margin_m).toBeGreaterThan(radiusM + s.spec.boundsMarginM);
+    expect(shipArtKey('ijn_subchaser')).toBe('tex-subchaser'); // v0.8.1 S2b（D-A2）: 駆潜艇の形を敵の色で（S0〜S2 は既定の SHIP_ART_DEFAULT_KEY）
   });
 });

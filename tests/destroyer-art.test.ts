@@ -1,5 +1,5 @@
 // v0.7.0 IP2（実機 2 回目。ユーザーの U8「駆逐艦のグラフィックを見直してクオリティを上げてください。でも、色は現在と同じ単系統のままで表現してください。」）:
-// 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。
+// 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。v0.8.1 S2b（D-A2）で同じ描き方の駆潜艇（第13号型）を足した。
 // - 置き方: 部品は船体の縁から 1 単位以上内・艦首と艦尾から 1 単位以上内・大きさ ≥ 2 単位（R17）、中心線の部品（砲は砲身まで）は長さの向きに重ならない、形で見分ける（連装 3・単装 5・単装 4）。
 // - 色: 記録する ctx で描いた全部の色（塗り・線・グラデーションの止め）が陣営のパレットの地の色と同じ色相（±2°）＝単系統、純白は使わない、toneRgb は色相を変えない。
 // - 描く範囲: 点・矩形はテクスチャの矩形の内（陰のずれの分だけの余白）。source の pin: 鍵・寸法（hullTexSize）・paintCanvas・Math.random なし・300 行。
@@ -20,6 +20,7 @@ const SHIPS: { kind: DestroyerKind; L: number; B: number; base: number }[] = [
   { kind: 'kagero', ...dims('ijn_destroyer'), base: PALETTE_ENEMY.deck },
   { kind: 'fletcher', ...dims('us_destroyer'), base: PALETTE_ENEMY.deck },
   { kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS, base: PALETTE_ALLY.deck },
+  { kind: 'subchaser', ...dims('ijn_subchaser'), base: PALETTE_ENEMY.deck }, // v0.8.1 S2b（D-A2。102 × 13.4 単位）
 ];
 
 function hsv(r: number, g: number, b: number): { h: number; s: number } {
@@ -59,7 +60,7 @@ function rgbaOf(c: string): [number, number, number, number] {
 describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
   it.each(SHIPS)('$kind: 部品は船体の内（縁・艦首・艦尾から 1 単位）・大きさ ≥ 2 単位・中心線の部品は重ならない', ({ kind, L, B }) => {
     const plan = destroyerPlan(kind, L, B);
-    expect(plan.parts.length).toBeGreaterThan(15);
+    expect(plan.parts.length).toBeGreaterThan(kind === 'subchaser' ? 10 : 15); // 駆潜艇は小艦（砲 1・煙突 1・発射管なし）
     for (const p of plan.parts) {
       for (const b of destroyerPartBoxes(p, DESTROYER_TWIN_DX + DESTROYER_BARREL_UNITS / 2)) {
         expect(b.y0, `${kind} ${p.t} 艦首`).toBeGreaterThanOrEqual(1);
@@ -91,10 +92,21 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
       expect(count(k, 'bridge')).toBe(1);
     }
   });
+  it('v0.8.1 S2b（D-A2）: 駆潜艇は前に盾つきの単装の砲 1・小さな艦橋 1・煙突 1・マスト 1・発射管なし・艦尾の爆雷の軌条と爆雷の山（甲板の小物 4）・中心線の投射機の台', () => {
+    const plan = destroyerPlan('subchaser', 102, 13.4);
+    const of = (t: string): number => plan.parts.filter((p) => p.t === t).length;
+    expect(plan.parts.flatMap((p) => (p.t === 'gun' ? [[p.style, p.dir]] : []))).toEqual([['single12', 1]]);
+    expect([of('bridge'), of('funnel'), of('mast'), of('tubes'), of('boat'), of('locker')]).toEqual([1, 1, 1, 0, 1, 4]);
+    expect(plan.parts.find((p) => p.t === 'bridge')).toMatchObject({ style: 'ijnSmall' });
+    expect(plan.detail.dcRacks).toBe(true);
+    const gun = plan.parts.find((p) => p.t === 'gun')!;
+    for (const p of plan.parts) if (p.t === 'locker') expect(p.cy).toBeGreaterThan(0.8 * 102); // 爆雷は艦尾
+    expect(gun.cy).toBeLessThan(plan.parts.find((p) => p.t === 'bridge')!.cy); // 砲は艦橋の前
+  });
   it.each(SHIPS)('$kind: 描いた全部の色は地の色と同じ色相（単系統）・純白なし、点はテクスチャの内（陰のずれの余白 3 単位）', ({ kind, L, B, base }) => {
     const r = recorder();
     paintDestroyer(r.ctx, destroyerPlan(kind, L, B), base);
-    expect(r.colors.length).toBeGreaterThan(100);
+    expect(r.colors.length).toBeGreaterThan(kind === 'subchaser' ? 60 : 100); // 駆潜艇は部品が少ない
     const h0 = hueOf(base);
     for (const c of new Set(r.colors)) {
       const [R, G, Bl] = rgbaOf(c);

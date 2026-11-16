@@ -31,12 +31,12 @@ function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextu
 }
 
 /**
- * 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表をそのまま（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級・v0.8.1 S2 の tex-destroyer-mutsuki＝睦月型。
- * 駆逐艦の形でない鍵は陽炎型＝v0.8.0 までの選び方と同じ画素）
+ * 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表をそのまま（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級・v0.8.1 S2 の tex-destroyer-mutsuki＝睦月型・
+ * S2b の tex-subchaser＝駆潜艇。艦の形でない鍵＝輸送船は陽炎型＝v0.8.0 までの選び方と同じ画素）
  */
 export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string = TEXTURE_KEYS.destroyer): void {
   const kind = shipArtKind(key);
-  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' || kind === 'mutsuki' ? kind : 'kagero', PALETTE_ENEMY.deck);
+  paintDestroyerTexture(scene, key, spec, kind === 'transport' ? 'kagero' : kind, PALETTE_ENEMY.deck);
 }
 
 /**
@@ -55,6 +55,22 @@ export function generateExtraDestroyerTextures(scene: Phaser.Scene, data: GameDa
       const r = getEnemyRecord(data, pm.enemyId);
       generateDestroyerTexture(scene, { lengthUnits: r.length_m * spriteScale, beamUnits: r.beam_m * spriteScale }, key);
     }
+  }
+}
+
+/**
+ * ハードの駆潜艇の絵（v0.8.1 S2b。spec-v0810 §3.6 D-A2。ijn_subchaser → tex-subchaser）: v0_1_prototype の hard に picket_enemy_id を持つ任務（us_06）の記録から 1 枚ずつ
+ * （寸法は記録 × sprite_scale＝102 × 13.4 単位・敵の色。generateExtraDestroyerTextures と同じ読み＝任務の表を 1 回）。鍵の無い id は作らない（既定の 1 枚を上書きしない）。setup には何も足さない
+ */
+export function generatePicketTextures(scene: Phaser.Scene, data: GameData, spriteScale: number): void {
+  const done = new Set<string>([SHIP_ART_DEFAULT_KEY]);
+  for (const m of data.missionsSeed.missions as readonly Record<string, unknown>[]) {
+    const hard = (m['v0_1_prototype'] as Record<string, unknown> | undefined)?.['hard'] as Record<string, unknown> | undefined;
+    const id = hard?.['picket_enemy_id'];
+    if (typeof id !== 'string' || done.has(shipArtKey(id))) continue;
+    done.add(shipArtKey(id));
+    const r = getEnemyRecord(data, id);
+    generateDestroyerTexture(scene, { lengthUnits: r.length_m * spriteScale, beamUnits: r.beam_m * spriteScale }, shipArtKey(id));
   }
 }
 

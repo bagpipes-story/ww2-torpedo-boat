@@ -2,13 +2,14 @@
 // 艦は entities/destroyer の step と同じ式の素の艦（絵・反撃なし。当たりの円はあり。式は AnchorKitShip に写した＝tests/anchor-world が entities/destroyer の文と突き合わせる）。
 // 1 固定ステップは systems/mission-world の stepFn の順: 時計（stepTimeS += 実秒）→ 夜明けのラッチ（立った 1 回だけ浮いている艦を退く向きへ＝destroyer-group の withdraw）→
 // 敵の側の段＝本物の systems/destroyer-step（艦の段の見つける距離は本物の systems/shore-backdrop・止まった艦の段は本物の systems/destroyer-anchor）。
-// 隊の付け方は world-enemies・destroyer-group と同じ（岸の線は landLinesOf・計画は駆逐艦と輸送船の分＝S2 の L30。tests/anchor-world が source を突き合わせる）。
+// 隊の付け方は world-enemies・destroyer-group と同じ（並びは駆逐艦 → 輸送船 → ハードの駆潜艇＝v0.8.1 S2b の L41・岸の線は landLinesOf・計画は隊の艦の全部＝L43。tests/anchor-world が source を突き合わせる）。
 // 反撃（EnemyFire）・魚雷のプール・体当たり・一斉発射は偽物（何もしない）。雷跡は tests が置く素の魚雷（active・位置・針路だけ）を AI が読む。
 // destroyer-step は型で destroyer-group（Phaser の entities/destroyer を引く）を参照するので、型検査（tsconfig.node）に入れないよう文字列を組んだ動的 import で読む（torpedo-free-kit の作法）。
 import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import { clampToBounds, clampYToBounds, type BoatState, type SeaBounds } from '../src/core/boat-motion';
 import { allShipsOut, allShipsSettled, beyondBounds, retireHeadingDeg } from '../src/core/dawn-withdraw';
+import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../src/core/radar';
 import { SeededRng } from '../src/core/rng';
 import { LOOKOUT_SEED_OFFSET, createShipAiState, startRetire, steerShip, turnRateFor, updateShipAi, type ShipAiParams, type ShipAiState } from '../src/core/ship-ai';
 import { landLinesOf } from '../src/core/strait-geometry';
@@ -84,7 +85,7 @@ export class KitGroup {
   readonly passRadius2 = 0;
   anchors: DestroyerAnchor | null = null;
   backdrop: ShoreBackdrop | null = null;
-  constructor(readonly ships: AnchorKitShip[], readonly destroyerCount: number, readonly transportIndex: number) {
+  constructor(readonly ships: AnchorKitShip[], readonly destroyerCount: number, readonly transportIndex: number, readonly picketIndex = -1, readonly picketCount = 0) {
     this.fires = ships.map(() => ({ step: () => undefined, stepPair: () => undefined }));
   }
   get allOut(): boolean { return allShipsOut(this.ships); }
@@ -104,6 +105,8 @@ export class KitGroup {
   withdraw(headingDeg: number): void {
     for (const s of this.ships) if (!s.out) startRetire(s.ai, headingDeg);
   }
+  /** systems/destroyer-group の radarKindAt と同じ式（v0.8.1 S2b。tests/picket-world が文と値を突き合わせる） */
+  radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
 }
 
 export interface AnchorKitWorld {
@@ -146,11 +149,14 @@ export function anchorKit(o: { mission?: string; hard?: boolean; seed?: number; 
   const ships = ds.starts.map((st) => new AnchorKitShip(st, ds.spec, ds.shipAi, bounds, lookout));
   const tr = setup.transport;
   if (tr) ships.push(new AnchorKitShip(tr.start, tr.spec, tr.shipAi, bounds, lookout));
-  const g = new KitGroup(ships, ds.starts.length, tr ? ds.starts.length : -1);
-  // world-enemies・destroyer-group と同じ付け方（岸の線は探照灯の切り取りと同じ・計画は駆逐艦と輸送船の分）
+  const pk = setup.pickets ?? null; // ハードの駆潜艇（v0.8.1 S2b）は輸送船の後ろ（destroyer-group と同じ並び・同じ見張りの系列）
+  const pi = pk ? ships.length : -1;
+  if (pk) for (const st of pk.starts) ships.push(new AnchorKitShip(st, pk.spec, pk.shipAi, bounds, lookout));
+  const g = new KitGroup(ships, ds.starts.length, tr ? ds.starts.length : -1, pi, pk ? pk.starts.length : 0);
+  // world-enemies・destroyer-group と同じ付け方（岸の線は探照灯の切り取りと同じ・計画は隊の艦の全部）
   const land = setup.shores || setup.mission.coast ? landLinesOf(setup.shores ?? null, setup.mission.coast !== null, bounds.width, bounds.height) : null;
   if (land && setup.backdrop) g.backdrop = new ShoreBackdrop(setup.backdrop, land, ships.length, setup.seaplane ? setup.seaplane.flareRevealM : 0);
-  if (setup.anchors) g.anchors = new DestroyerAnchor(ships, setup.anchors, g.transportIndex >= 0 ? g.transportIndex + 1 : g.destroyerCount);
+  if (setup.anchors) g.anchors = new DestroyerAnchor(ships, setup.anchors, ships.length);
   const ps = setup.playerStart;
   return {
     setup, destroyers: g, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 }, sinking: false },

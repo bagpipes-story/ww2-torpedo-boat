@@ -119,9 +119,10 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
     expect(g).toContain('return this.transit ? this.transit.allSettled : allShipsSettled(this.ships);');
     expect(g).toContain('return this.transit ? this.transit.pending : 0;');
     expect(g).toContain('this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null;');
-    // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）
+    // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）。v0.8.1 S2b（L42）: 命中の 2 つの手は隊の gunneryAt（同じ式を隊へ移した。駆潜艇は 3 つ目の枝）
     const we = code('systems/world-enemies.ts');
-    expect(we.split('i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery').length - 1).toBe(2);
+    expect(we.split('destroyers.gunneryAt(i).guns[').length - 1).toBe(2);
+    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }");
     expect(we).not.toContain('ds!.starts.length');
   });
 });

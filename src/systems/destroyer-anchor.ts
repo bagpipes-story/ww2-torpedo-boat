@@ -5,7 +5,7 @@
 // （Destroyer を作り直さない。以後は us_02 の AI のまま＝速さ 0 から加速）。夜明けは世界の夜明けのラッチ（w.dawn.reached）を渡す＝止まっている駆逐艦は遅れなしで動き出し、隊の withdraw が東へ退かせる。
 // 動かない艦（空知丸＝underwayS が null）は一晩じゅう止まったまま: 夜明けの withdraw で retiring は立つが、止まった艦は舵を使わないので退かず、退いた（withdrawn）にもならない
 // （隊の allOut・allSettled は空知丸が浮いている間は偽のまま＝夜は帰投・沈没・漂流で終わる。us_06 に fleet_gone_clears は無い）。
-// 計画は setup.anchors の先頭 count 隻だけ（S2 は駆逐艦と輸送船。ハードの駆潜艇は S2b が隊の輸送船の後ろに並べる＝それまで計画の尾は使わない。setup は書き換えず、作る時に 1 回切り出す）。
+// 計画は setup.anchors の隊の艦の全部（駆逐艦 → 輸送船 → v0.8.1 S2b のハードの駆潜艇＝隊の並びと同じ）。数が隊の艦と違えば作る時に例外（V-A5 の並び。setup は書き換えず、作る時に 1 回写す）。
 // 記録（気づいた・動き出した世界の秒・背に岸の秒・止まった艦への魚雷）は systems/anchor-telemetry の AnchorLog。Phaser 非依存（艦は構造の型 AnchorShip＝Destroyer が満たす）・乱数なし。確保は constructor だけ。
 import type { AnchorSetup } from '../config/anchor-mission-data';
 import { anchorHeld, createAnchorState, stepAnchors, type AnchorPlan, type AnchorShipView, type AnchorState } from '../core/anchored-ship';
@@ -26,19 +26,20 @@ export interface AnchorWorldView {
 }
 
 export class DestroyerAnchor {
-  /** 隊の先頭 count 隻の計画（setup.anchors の切り出し。艦 i＝隊の艦 i） */
+  /** 隊の艦の全部の計画（setup.anchors の写し。艦 i＝隊の艦 i） */
   readonly plan: AnchorPlan;
   readonly state: AnchorState;
   readonly log: AnchorLog;
 
   constructor(
-    /** 隊の艦の全部（駆逐艦 → 輸送船。隊の ships をそのまま） */
+    /** 隊の艦の全部（駆逐艦 → 輸送船 → 駆潜艇。隊の ships をそのまま） */
     private readonly ships: readonly AnchorShip[],
     setup: AnchorSetup,
-    /** 止まった艦の数（隊の先頭から。駆逐艦と輸送船＝S2 の切り出し） */
+    /** 止まった艦の数（隊の艦の数＝ships.length。setup.anchors の艦の数と同じでなければ例外） */
     count: number,
   ) {
-    this.plan = { underwayS: setup.underwayS.slice(0, Math.min(count, ships.length)), alarmS: setup.alarmS };
+    if (setup.underwayS.length !== count || count !== ships.length) throw new Error(`止まった艦の計画（anchors.underwayS ${setup.underwayS.length} 隻）と隊の艦（${ships.length} 隻）の数が違う（V-A5 の隊の並び: 駆逐艦 → 輸送船 → 駆潜艇・spec-v0810 §4.4）`);
+    this.plan = { underwayS: setup.underwayS.slice(), alarmS: setup.alarmS };
     const n = this.plan.underwayS.length;
     this.state = createAnchorState(n);
     this.log = new AnchorLog(n);
