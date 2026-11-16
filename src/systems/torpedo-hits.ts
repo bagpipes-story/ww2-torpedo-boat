@@ -15,6 +15,8 @@ export interface TorpedoHitGroup {
   readonly ships: readonly { takeHit(): boolean; playSinking(nowS: number, onDone: () => void): void }[];
   readonly allOut: boolean;
   readonly allSettled: boolean;
+  /** 止まった艦への魚雷の命中を数える（v0.8.1 S2。us_06。systems/destroyer-anchor。無い任務は null・無い） */
+  readonly anchors?: { noteHit(torpedo: object): void } | null;
 }
 
 /** 記録と命中スローの書き先（MissionWorld がそのまま満たす） */
@@ -46,6 +48,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
       const g = w.destroyers;
       const d = g ? g.ships[target] : undefined;
       if (!dud) w.radar?.noteHit(s); // 目で見えない間に撃った魚雷の命中（v0.8.0 S4。レーダーのある任務だけ。記録と同じ当たり＝不発を除く）
+      if (!dud) g?.anchors?.noteHit(s); // 止まった艦への魚雷の命中（v0.8.1 S2。止まった艦の任務だけ。同じ当たり）
       if (!dud && g && d) {
         w.hits++;
         w.slowMoLeftS = w.setup.slowMoSeconds;
@@ -64,6 +67,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
     onLateHit: (_target, x, y, s) => {
       w.shots.push(shotOf(w, s, true));
       if (!s.dud) w.radar?.noteHit(s);
+      if (!s.dud) w.destroyers?.anchors?.noteHit(s);
       if (!s.dud) w.hits++;
       events.onTorpedoHit(x, y, s.dud);
     },

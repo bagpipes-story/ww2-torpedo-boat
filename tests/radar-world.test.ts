@@ -50,7 +50,8 @@ describe('レーダーの段の順と作る所（ソース）', () => {
   });
   it('buildRadar は setup.radar の任務だけ作る（無ければ null＝絵も絵の鍵も作らない）。WorldRadar は掃引の時でなければ何もしない', () => {
     const rv = code('systems/radar-view.ts');
-    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa) : null;');
+    // v0.8.1 S2: 陸の反射に今の岸（coast の南）も渡す（us_06。両岸の us_04 は両岸の線のまま＝core/strait-geometry の landLinesOf）
+    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null;');
     expect(rv).toContain("const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）
     const wr = code('systems/world-radar.ts');
     const step = wr.slice(wr.indexOf('  step(w: RadarWorldView): void {'));

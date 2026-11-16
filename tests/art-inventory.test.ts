@@ -67,6 +67,7 @@ const KEEP = [
 /** v0.7.0 で足す予定の鍵（spec D2）と分類。TEXTURE_KEYS に足した鍵はここに無ければならない（無い鍵を足すならここにも足す） */
 const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
   'tex-destroyer-us': 'redraw-new',
+  'tex-destroyer-mutsuki': 'redraw-new', // v0.8.1 S2（spec-v0810 D-A1。v0.7.0 の予定の外）: us_06 の敵の卯月（睦月型の形を敵の色で）。鍵は ship-art-config の表だけ（TEXTURE_KEYS には足さない）
   'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx', 'tex-wake-puff': 'fx',
   'tex-sea-tile': 'fx', 'tex-dawn-glow': 'fx', 'tex-glint': 'fx', 'tex-coast-strip': 'fx',
   'tex-oil-slick': 'fx', // S4（spec の D2 の外。沈没の油の輪が水柱の絵の流用で星形に見えた＝独立の見え方の検査の指摘）
@@ -192,11 +193,11 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
   it('IP2b・IP3 の密度: 艦の 5 つの鍵（IP2b）と艇 5・米PT・大発 2 の 8 つの鍵（IP3 の U10）・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も。k は U9 の上限 3 まで）', () => {
     expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
       'tex-barge', 'tex-barge-friendly', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
-      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
-    ]);
+      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-mutsuki', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
+    ]); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）
     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
     expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
-    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24] };
+    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32] };
     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
     const ks = [...KS];
     for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
@@ -255,7 +256,7 @@ describe('世界の絵の原点（setOrigin）は鍵ごとに今のまま', () =
 });
 
 describe('art config の表（v0.7.0 S0 の骨組み）', () => {
-  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い（v0.8.1 S0 の us_06 の卯月は S2 まで既定）、表に無い id は v0.6.11 の 1 枚', () => {
+  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い（v0.8.1 S2 から us_06 の卯月も）、表に無い id は v0.6.11 の 1 枚', () => {
     for (const v of [SHIP_ART_DEFAULT_KEY, ...Object.values(SHIP_ART_KEY_BY_ENEMY)]) expect(KEY_VALUES.includes(v) || PLANNED_NEW[v] === 'redraw-new', v).toBe(true);
     expect(SHIP_ART_DEFAULT_KEY).toBe(TEXTURE_KEYS['destroyer']);
     const destroyerIds = new Set<string>();
@@ -267,8 +268,8 @@ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
       }
     }
     expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'ijn_destroyer_mutsuki_enemy', 'us_destroyer']); // v0.8.1 S0: us_06 の敵の卯月（v0_1_prototype は S0 から・遊べるのは S4 から）
-    for (const id of destroyerIds) if (id !== 'ijn_destroyer_mutsuki_enemy') expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
-    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe(SHIP_ART_DEFAULT_KEY); // v0.8.1 S0 は表に無く既定の 1 枚（Boot は新しい絵を作らない）。S2 で敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1）
+    for (const id of destroyerIds) expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
+    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2 から敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1。Boot が 1 回作る）
     expect(shipArtKey('ijn_light_cruiser')).toBe(SHIP_ART_DEFAULT_KEY);
   });
   it('機の種類の表（D4）: data の全部の機の id（空襲・水上機・哨戒機）を覆い、表に無い id と機の無い任務は既定の形', () => {

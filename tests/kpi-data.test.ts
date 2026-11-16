@@ -35,11 +35,11 @@ describe('kpi_measurement.min_target_speed_kt（V-K1）', () => {
       expect(() => getKpiMinTargetSpeedKt(e), String(bad)).toThrow(/hit_rate_model\.json の kpi_measurement\.min_target_speed_kt は 0 以上の有限の数（.*）（V-K1・spec-v0810 §4\.4）/);
     }
   });
-  it('S0 ではゲームの誰も読まない: src のどのファイルも config/kpi-data を import せず、min_target_speed_kt の字は kpi-data の中だけ（読むのは S2 の MissionWorld）', () => {
+  it('S2 から読むのは MissionWorld だけ（data から 1 回。setup には入れない）: config/kpi-data を import するのは systems/mission-world だけ、min_target_speed_kt の字は kpi-data の中だけ', () => {
     const all = files(SRC);
     expect(all.length).toBeGreaterThan(300);
-    const importers = all.filter((f) => /from '[./]+(config\/)?kpi-data'/.test(readFileSync(f, 'utf8')));
-    expect(importers).toEqual([]);
+    const importers = all.filter((f) => /from '[./]+(config\/)?kpi-data'/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(SRC.length + 1));
+    expect(importers).toEqual(['systems/mission-world.ts']); // v0.8.1 S2（lead の L36）: S0・S1 は誰も import しなかった
     const readers = all.filter((f) => readFileSync(f, 'utf8').includes('min_target_speed_kt')).map((f) => f.slice(SRC.length + 1));
     expect(readers).toEqual(['config/kpi-data.ts']);
   });

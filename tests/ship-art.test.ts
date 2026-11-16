@@ -22,10 +22,11 @@ const HS = gameData.hitRateModel.world.hit_scale as number;
 const dims = (id: string): { L: number; B: number } => { const r = getEnemyRecord(gameData, id); return { L: r.length_m * SS, B: r.beam_m * SS }; };
 const landing = validateLandingMissions(gameData, TS)!;
 const ally = validateAllyDestroyerMissions(gameData, TS, getEnemyRecord(gameData, 'ijn_destroyer').searchlight!.cone_deg)!;
-/** Boot と同じ寸法の 5 枚（鍵・形・世界単位） */
+/** Boot と同じ寸法の 6 枚（鍵・形・世界単位。v0.8.1 S2 で us_06 の敵の卯月＝睦月型の形の敵の色の 1 枚を足した） */
 const SHIPS: { key: string; kind: ShipArtKind; L: number; B: number }[] = [
   { key: 'tex-destroyer', kind: 'kagero', ...dims('ijn_destroyer') },
   { key: 'tex-destroyer-us', kind: 'fletcher', ...dims('us_destroyer') },
+  { key: 'tex-destroyer-mutsuki', kind: 'mutsuki', ...dims('ijn_destroyer_mutsuki_enemy') },
   { key: 'tex-destroyer-friendly', kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS },
   { key: 'tex-transport', kind: 'transport', ...dims(getPrototypeMission(gameData, 'us_02').transport!.enemyId) },
   { key: 'tex-transport-friendly', kind: 'transport', L: landing.lengthM * SS, B: landing.beamM * SS },
@@ -56,7 +57,7 @@ function expectPartsInside(shape: ShipShape, halfAt: (yFrac: number) => number, 
 }
 
 describe('艦の絵の形（v0.7.0 S2a）', () => {
-  it('鍵 → 形の表は 5 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
+  it('鍵 → 形の表は 6 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
     expect(Object.keys(SHIP_ART_KIND_BY_KEY).sort()).toEqual(SHIPS.map((s) => s.key).sort());
     for (const s of SHIPS) expect(shipArtKind(s.key)).toBe(s.kind);
     expect(shipArtKind('tex-boat-jp_t38')).toBe('kagero');
@@ -104,12 +105,15 @@ describe('艦の絵の形（v0.7.0 S2a）', () => {
     expect(hullHalfWidthAt(l.transport.hull, 0.04, 1)).toBeGreaterThan(hullHalfWidthAt(l.kagero.hull, 0.04, 1) * 1.5);
     for (const k of ['kagero', 'fletcher', 'mutsuki'] as const) { expect(l[k].funnels).toHaveLength(2); expect(l[k].tubes).toHaveLength(2); }
   });
-  it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）', () => {
+  it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）。v0.8.1 S2 の敵の卯月の鍵は ship-art-config の表だけ（TEXTURE_KEYS の 53 鍵は変えない＝tests/sfx-inventory）', () => {
     const g = readFileSync('src/config/game-config.ts', 'utf8');
-    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) expect(g).toContain(`'${v}'`);
+    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) if (v !== 'tex-destroyer-mutsuki') expect(g).toContain(`'${v}'`);
+    expect(g).not.toContain("'tex-destroyer-mutsuki'");
     expect(shipArtKey('us_destroyer')).toBe('tex-destroyer-us');
     expect(shipArtKey('ijn_destroyer')).toBe('tex-destroyer');
     expect(dims('us_destroyer')).toEqual({ L: 229.6, B: 24 });
+    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2（D-A1）: 敵の卯月は味方の卯月の絵と同じ大きさ（記録 × sprite_scale）
+    expect(dims('ijn_destroyer_mutsuki_enemy')).toEqual({ L: 205.4, B: 18.32 });
   });
 });
 

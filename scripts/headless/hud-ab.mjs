@@ -6,12 +6,13 @@
 // v0.6.11 S8: SET=jp04base で jp_04（卯月あり）を 88c9f19 と（ab-replay の jp04base の組。秒は 170）。
 // v0.8.0 S2: SET=us04 で us_04（ab-replay の us04 の組。秒は 260＝夜明けまで）。NORADAR=1 で B だけ &noradar（レーダーが HUD を変えない証。S4 からはレーダーの文を除いて比べる）。
 // v0.8.0 S4（brief L33）: RADARUI=1・NORADAR=1 は ab-replay の S4 の濾し（S4_FILTER）で比べる（2 行目の S4 の行のスナップの数を masked に出す）。FILTERTEST=1 は濾しの試し（違いが出るはず）。
-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+// v0.8.1 S2: SET=us06 で us_06（ab-replay の us06 の組。秒は 200＝夜明けまで。S2 は A＝B＝今の木・S3 から A は S2 の commit のビルド）。
+// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
 import { abCases, oneCase } from './ab-replay.mjs';
 import { chromium, envNum, pool, serve } from './lib.mjs';
 
 if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
+const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
 const sa = await serve(process.env.A);
 const sb = await serve(process.env.B);
 const browser = await chromium.launch();

@@ -11,6 +11,7 @@ import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
 import { STORM_NONE } from '../core/storm';
 import { mpsToKt } from '../core/units';
 import { initAllyTelemetry } from './ally-telemetry';
+import { anchorTelemetryPart } from './anchor-telemetry';
 import { initConvoyTelemetry } from './convoy-telemetry';
 import { initDawnTelemetry } from './dawn-telemetry';
 import { initEvacTelemetry } from './evac-telemetry';
@@ -134,5 +135,6 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     radar: initRadarTelemetry(w), // 自艇のレーダー（v0.8.0 S2。us_04。systems/radar-telemetry。無い任務・?debug&noradar は enabled false）
     transit: initTransitTelemetry(w), // 列の通過（v0.8.0 S2。us_04。systems/transit-telemetry。無い任務は enabled false）
     strait: initStraitTelemetry(w), // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04。systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
+    ...anchorTelemetryPart(w), // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
   };
 }

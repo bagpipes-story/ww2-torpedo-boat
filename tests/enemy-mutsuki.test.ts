@@ -37,7 +37,7 @@ describe('敵の卯月（ijn_destroyer_mutsuki_enemy）', () => {
     expect(String(src['length_m・beam_m'])).toMatch(/^historical .*\/ design \(v0\.8\.1 S0/);
     expect(String(src['guns'])).toMatch(/^historical .*\/ design \(v0\.8\.1 S0/);
   });
-  it('getEnemyRecord と destroyerSetup で組める（AI と砲の形）。当たりは 102.7 m の 2 倍・沈むのは 2 本・見つける基準 2,000 m。絵の鍵は S0 では既定のまま（S2 で敵の色の睦月型）', () => {
+  it('getEnemyRecord と destroyerSetup で組める（AI と砲の形）。当たりは 102.7 m の 2 倍・沈むのは 2 本・見つける基準 2,000 m。絵の鍵は S2 から敵の色の睦月型（S0・S1 は既定のまま）', () => {
     const r = getEnemyRecord(gameData, 'ijn_destroyer_mutsuki_enemy');
     expect(r.detection.base_detect_m).toBe(2000);
     const s = destroyerSetup(gameData, [{ x: 3620, y: 2380, headingDeg: 270 }], 'ijn_destroyer_mutsuki_enemy', null, 2, false);
@@ -47,7 +47,8 @@ describe('敵の卯月（ijn_destroyer_mutsuki_enemy）', () => {
     expect(s.gunnery.guns.map((g) => g.id)).toEqual(['main_120mm', 'aa_25mm']);
     expect(s.gunnery.searchlight).toEqual(k.gunnery.searchlight);
     expect(s.gunnery.starshell).toEqual(k.gunnery.starshell);
-    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe(SHIP_ART_DEFAULT_KEY);
+    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2（D-A1）: 敵の色の睦月型（S0・S1 は既定の SHIP_ART_DEFAULT_KEY）
+    expect(SHIP_ART_DEFAULT_KEY).toBe('tex-destroyer');
   });
 });
 

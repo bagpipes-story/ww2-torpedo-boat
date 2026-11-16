@@ -4,7 +4,7 @@
 // 最も遅い目標の速さは記録と core/ship-ai の値から: 巡航（作った時の速さも）・回避（巡航 ＋ speed_boost_kt を 0〜最大に）・体当たりと退く（最大）・us_04 の列（現れる速さと最大＝30 kt）。
 // 艦の速さは目標へ加減速で近づくだけ（steerShip）なので、浮いている艦の速さは作った時・現れた時の速さと目標の速さの最小より下がらない（沈み始めた艦は狙えない）。
 // その前提（AI の目標の速さの式・Destroyer が速さを書く所・steerShip の近づき方）も source で固定する（5 kt 未満で回避する艦を足す版はここが落ちて知らせる＝spec §8 R4）。
-// S1 ではゲームの誰も kpiTargetAtLaunch を呼ばない（呼ぶのは S2 の systems/torpedo-free）。
+// S1 ではゲームの誰も kpiTargetAtLaunch を呼ばなかった（S2 から systems/torpedo-free が発射の時に呼ぶ＝tests/kpi-world）。
 import { describe, expect, it } from 'vitest';
 import { playableMissionIds } from '../src/config/campaign-data';
 import { gameData, getEnemyRecord, getEvasionMultiplier } from '../src/config/game-data';
@@ -41,8 +41,8 @@ describe('kpiTargetAtLaunch（発射の時の KPI の的）', () => {
       }
     }
   });
-  it('S1 ではゲームの誰も呼ばない（src で名前が出るのは core/hit-rate だけ）', () => {
-    expect(SRC.filter((f) => code(f).includes('kpiTargetAtLaunch'))).toEqual(['src/core/hit-rate.ts']);
+  it('S2 から呼ぶのは systems/torpedo-free の発射の時だけ（S1 は core/hit-rate の中だけ）', () => {
+    expect(SRC.filter((f) => code(f).includes('kpiTargetAtLaunch'))).toEqual(['src/core/hit-rate.ts', 'src/systems/torpedo-free.ts']);
   });
 });
 

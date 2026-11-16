@@ -3,6 +3,8 @@
 // 任務の達成は駆逐艦だけ（輸送船は撃破の加点）。砲撃の乱数は 1 つの系列（seed+1）を、見張り（雷跡に気づく。v0.5.0）の乱数は別の系列（seed+17）を、それぞれ艦の順に消費する（1 隻ならこれまでと同じ）。§7: 確保しない（最寄りは添字で返す）。
 // 列の通過（v0.8.0 S2。us_04。setup.transit の任務だけ）: 列の艦は護衛（ds.starts）の後ろ・輸送船の前に作り、駆逐艦に数える（撃沈・達成・命中率の KPI）。段階は transit（systems/destroyer-transit）。
 // 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
+// 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。setup.anchors・setup.backdrop の任務だけ world-enemies が作った後に 1 回付ける＝anchors・backdrop。無い任務は null で式は今のまま）。
+// 輸送船の添字は transportIndex（無ければ −1。今は destroyerCount と同じ）。S2b のハードの駆潜艇はこの後ろに並ぶ（S2 では作らない）。
 import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
@@ -12,8 +14,12 @@ import type { SeededRng } from '../core/rng';
 import { startRetire } from '../core/ship-ai';
 import type { LandLine } from '../core/strait-geometry';
 import { Destroyer } from '../entities/destroyer';
+import type { AnchorSetup } from '../config/anchor-mission-data';
+import type { BackdropSetup } from '../config/backdrop-mission-data';
 import type { TransitSetup } from '../config/transit-mission-data';
+import { DestroyerAnchor } from './destroyer-anchor';
 import { DestroyerTransit } from './destroyer-transit';
+import { ShoreBackdrop } from './shore-backdrop';
 import { EnemyFire } from './enemy-fire';
 import type { SplashPool } from './splash-pool';
 import type { DestroyerSetup, TransportSetup } from './world-setup';
@@ -29,6 +35,11 @@ export class DestroyerGroup {
   readonly objectiveSinks: number;
   /** 列の通過（v0.8.0 S2。us_04）の段階と列の艦。setup.transit の無い任務は null */
   readonly transit: DestroyerTransit | null;
+  /** 輸送船の添字（v0.8.1 S2。無ければ −1）。hasTransport・transportSunk・transportWithdrawn はここを読む */
+  readonly transportIndex: number;
+  /** 止まった艦（v0.8.1 S2。setAnchors）と暗い岸を背に（setBackdrop）。付けるのは world-enemies の 1 回だけ。無い任務は null */
+  anchors: DestroyerAnchor | null = null;
+  backdrop: ShoreBackdrop | null = null;
 
   constructor(
     scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null,
@@ -52,6 +63,7 @@ export class DestroyerGroup {
     this.destroyerCount = this.ships.length;
     this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
     this.passRadius2 = ds.passRadius2;
+    this.transportIndex = transport ? this.ships.length : -1;
     if (transport) {
       this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, lookoutRng, TEXTURE_KEYS.transport));
       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
@@ -67,11 +79,11 @@ export class DestroyerGroup {
 
   /** 輸送船がいる／沈み始めた（v0.4.7） */
   get hasTransport(): boolean {
-    return this.ships.length > this.destroyerCount;
+    return this.transportIndex >= 0;
   }
 
   get transportSunk(): boolean {
-    return this.hasTransport && this.ships[this.destroyerCount]!.sinking;
+    return this.transportIndex >= 0 && this.ships[this.transportIndex]!.sinking;
   }
 
   /** 沈み始めた駆逐艦の隻数（撃沈の表示。輸送船と退いた艦は数えない） */
@@ -112,7 +124,7 @@ export class DestroyerGroup {
 
   /** 輸送船が夜明けに退いて海域を出た（v0.6.2） */
   get transportWithdrawn(): boolean {
-    return this.hasTransport && this.ships[this.destroyerCount]!.withdrawn;
+    return this.transportIndex >= 0 && this.ships[this.transportIndex]!.withdrawn;
   }
 
   /** 夜明けに退く（v0.6.2。夜明けのラッチで 1 回だけ）: 浮いている艦すべてが headingDeg へ全速（core/ship-ai の startRetire）。乱数は引かない */
@@ -192,6 +204,16 @@ export class DestroyerGroup {
   /** 探照灯を岸で切る（v0.8.0 実機 1 回目。岸の線のある任務だけ world-enemies が 1 回呼ぶ） */
   setBeamLand(lines: readonly LandLine[]): void {
     for (const f of this.fires) f.setBeamLand(lines);
+  }
+
+  /** 止まった艦を付ける（v0.8.1 S2。setup.anchors の任務だけ world-enemies が 1 回）。計画は隊の先頭の駆逐艦と輸送船の分だけ（S2b の駆潜艇はまだ並ばない＝L30） */
+  setAnchors(a: AnchorSetup): void {
+    this.anchors = new DestroyerAnchor(this.ships, a, this.transportIndex >= 0 ? this.transportIndex + 1 : this.destroyerCount);
+  }
+
+  /** 暗い岸を背にを付ける（v0.8.1 S2。setup.backdrop の任務だけ world-enemies が 1 回。岸の線は探照灯の切り取りと同じ線・照明弾の距離は今夜の水上機の値） */
+  setBackdrop(b: BackdropSetup, lines: readonly LandLine[], flareRevealM: number): void {
+    this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);
   }
 
   updateVisuals(realDt: number): void {

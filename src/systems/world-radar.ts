@@ -2,7 +2,8 @@
 // （systems/world-enemy-step。艦を動かし、列の通過の段階を当てた後）に進める。掃引の時（radarSweepDue）だけ、隊の艦（護衛・列・輸送船＝どれも艦）の位置と
 // 「浮いて海域の中か」（Destroyer.out の逆＝沈み始めた・退いた・海域の外の列の艦は映らない）を渡す（掃引の間は何もしない＝§5.2）。
 // 目とは別の感覚（D-R1・brief L9）: 世界・自艇・艦・AI・視程・発見・テレメトリには何も書かない（読むだけ。書くのは自分の state と渡す枠 targets だけ＝tests/radar-neutral が走査）。
-// 陸の反射の岸の線は海峡の両岸（setup.shores）から起動時に 1 回（両岸の無い任務は空）。機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
+// 陸の反射の岸の線は海峡の両岸（setup.shores）か今の岸（coast の南。v0.8.1 S2 の us_06＝泊地の空知丸は反射に紛れる）から起動時に 1 回（core/strait-geometry の landLinesOf。どちらも無い任務は空）。
+// 機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
 // 絵（輝点 16 の Image）は systems/radar-view が持ち、毎フレーム updateVisuals が渡す（置き直すのは掃引の回数が変わった時だけ）。
 // Phaser 非依存（絵は構造の型 RadarBlipView。tests/radar-world・radar-neutral が絵なしで回す）・乱数なし。確保は constructor だけ。
 // v0.8.0 S4（brief L26・L31）: 東の縁の向こうの揚陸の地の名（作る時に 1 回。2 行目の「東（ビラ）へ消えた」）と、Result の「目で見えない間に撃った魚雷」の数え
@@ -10,7 +11,7 @@
 import type { ShoresSetup } from '../config/shores-mission-data';
 import { RADAR_KIND_SHIP, createRadarState, createRadarTargets, radarSweepDue, stepRadar, type RadarGeometry, type RadarState, type RadarTargets } from '../core/radar';
 import type { RadarParams } from '../core/radar-data';
-import { landLinesFromShores } from '../core/strait-geometry';
+import { landLinesOf } from '../core/strait-geometry';
 
 /** 掃引で読む艦（entities/destroyer の Destroyer が満たす） */
 export interface RadarShip {
@@ -50,9 +51,11 @@ export class WorldRadar {
     private readonly view: RadarBlipView | null,
     /** 東の縁の向こうの揚陸の地の名（列が東へ抜けて戻る任務だけ。無ければ ''） */
     readonly eastJa = '',
+    /** 今の岸（coast の南）がある（v0.8.1 S2。us_06。両岸の任務は両岸が先＝us_04 は今の線のまま） */
+    coastSouth?: boolean,
   ) {
     const { width, height } = bounds;
-    this.geo = { width, height, land: shores ? landLinesFromShores(shores, width, height) : [] };
+    this.geo = { width, height, land: landLinesOf(shores ?? null, coastSouth === true, width, height) };
     this.targets = createRadarTargets(shipCapacity);
   }
 

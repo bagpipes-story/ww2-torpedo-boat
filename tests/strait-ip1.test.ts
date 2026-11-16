@@ -67,9 +67,13 @@ describe('列の通過の艦を南北の縁の内に止める（予防。世界�
     expect(col.y).toBe(night.ship.boundsMarginM);
     expect(run(false).withdrawn).toBe(true);
   });
-  it('source: Destroyer.step と SimShip.step に同じ 1 行（列の艦だけ clampYToBounds）。探照灯を切るのは岸の線のある任務だけ（world-enemies が s.shores の時に 1 回）', () => {
+  it('source: Destroyer.step と SimShip.step に同じ 1 行（列の艦だけ clampYToBounds）。探照灯を切るのは岸の線のある任務だけ（world-enemies が s.shores か coast の時に 1 回。v0.8.1 S2 から coast の us_06 も）', () => {
     for (const f of ['src/entities/destroyer.ts', 'src/core/intercept-sim-world.ts']) expect(code(f), f).toMatch(/else if \(this\.transitShip\) clampYToBounds\(this\.state, (this\.)?bounds, this\.spec\.boundsMarginM\);/);
-    expect(code('src/systems/world-enemies.ts')).toContain('if (destroyers && s.shores) destroyers.setBeamLand(landLinesFromShores(s.shores, mission.bounds.width, mission.bounds.height));');
+    // v0.8.1 S2（spec-v0810 D-A3・lead の L35）: 岸の線は core/strait-geometry の landLinesOf（両岸があれば今の landLinesFromShores と同じ線＝us_04 は変わらない。tests/shore-backdrop）
+    const we = code('src/systems/world-enemies.ts');
+    expect(we).toContain('const land = destroyers && (s.shores || mission.coast) ? landLinesOf(s.shores ?? null, mission.coast !== null, mission.bounds.width, mission.bounds.height) : null;');
+    expect(we).toContain('if (destroyers && land) destroyers.setBeamLand(land);');
+    expect(we.split('setBeamLand(').length - 1).toBe(1);
     const ef = code('src/systems/enemy-fire.ts');
     expect(ef).toContain('if (this.beamLand) this.clipBeam(ship, light.bearingDeg);');
     expect(ef).toContain('if (rows === this.beamRows) return;'); // 行数が変わった時だけ setCrop（§7）

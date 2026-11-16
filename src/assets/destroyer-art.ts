@@ -30,14 +30,17 @@ function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextu
   Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
 }
 
-/** 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級） */
+/**
+ * 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表をそのまま（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級・v0.8.1 S2 の tex-destroyer-mutsuki＝睦月型。
+ * 駆逐艦の形でない鍵は陽炎型＝v0.8.0 までの選び方と同じ画素）
+ */
 export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string = TEXTURE_KEYS.destroyer): void {
   const kind = shipArtKind(key);
-  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' ? 'fletcher' : 'kagero', PALETTE_ENEMY.deck);
+  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' || kind === 'mutsuki' ? kind : 'kagero', PALETTE_ENEMY.deck);
 }
 
 /**
- * 既定でない駆逐艦の鍵（今は us_destroyer → tex-destroyer-us。jp_06）を、遊べる任務（ハードも）の駆逐艦の id から 1 枚ずつ（寸法はその敵の記録 × sprite_scale）。
+ * 既定でない駆逐艦の鍵（us_destroyer → tex-destroyer-us。jp_06。v0.8.1 S2 から ijn_destroyer_mutsuki_enemy → tex-destroyer-mutsuki。us_06）を、遊べる任務（ハードも）の駆逐艦の id から 1 枚ずつ（寸法はその敵の記録 × sprite_scale）。
  * 駆逐艦の任務＝enemy_start があり、大発の隊・米PT の隊でない任務（tests/art-inventory と同じ読み）。setup には何も足さない（R15）
  */
 export function generateExtraDestroyerTextures(scene: Phaser.Scene, data: GameData, spriteScale: number): void {

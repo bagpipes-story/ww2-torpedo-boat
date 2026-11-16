@@ -6,6 +6,7 @@ import { missionAircraftId, paintMissionAircraft } from '../assets/aircraft-art'
 import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
 import { debugSetupOptions } from '../config/debug-setup';
 import { getBoatTorpedoCount, type GameData } from '../config/game-data';
+import { getKpiMinTargetSpeedMps } from '../config/kpi-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
 import { nextSpeedBand, setPerformance, type BoatParams, type SpeedStep } from '../core/boat-motion';
 import { FixedStepper } from '../core/fixed-stepper';
@@ -98,6 +99,7 @@ export class MissionWorld {
   readonly smokeParams: SmokeParams | null;
   readonly shots: ShotRecord[] = [];
   readonly seed: number;
+  readonly kpiMinTargetSpeedMps: number; // 命中率の KPI の的の目標の速さの下限 m/s（v0.8.1 S2。config/kpi-data を data から 1 回。setup には入れない＝systems/torpedo-free）
   hits = 0;
   band: SpeedStep = 'stop';
   readonly detect = { count: 0, prev: false }; // 駆逐艦（v0.6.3 から米PT の隊も）に見つかった回数と前ステップの発見状態（destroyer-step・pt-squadron が数える。Result の「回避」。v0.4.4）
@@ -168,6 +170,7 @@ export class MissionWorld {
   ) {
     this.events = events;
     const seed = (this.seed = sortie.seed);
+    this.kpiMinTargetSpeedMps = getKpiMinTargetSpeedMps(data);
     // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
     const s = buildWorldSetup(data, sortie.missionId, debugSetupOptions(sortie, sortie.hard));
     this.setup = s;

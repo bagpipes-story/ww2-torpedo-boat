@@ -9,6 +9,7 @@ export const SHIP_ART_DEFAULT_KEY = 'tex-destroyer';
 export const SHIP_ART_KEY_BY_ENEMY: Readonly<Record<string, string>> = {
   ijn_destroyer: 'tex-destroyer',
   us_destroyer: 'tex-destroyer-us',
+  ijn_destroyer_mutsuki_enemy: 'tex-destroyer-mutsuki', // v0.8.1 S2（spec-v0810 §3.6 D-A1）: us_06 の敵の卯月＝睦月型の形を敵の色で（味方の卯月 tex-destroyer-friendly と同じ置き方）
 };
 export function shipArtKey(enemyId: string): string {
   return SHIP_ART_KEY_BY_ENEMY[enemyId] ?? SHIP_ART_DEFAULT_KEY;
@@ -20,6 +21,7 @@ export function shipArtKey(enemyId: string): string {
  */
 export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
+  'tex-destroyer-mutsuki': 2, // v0.8.1 S2（D-A1。敵の卯月）
   // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
   'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
 };
@@ -45,6 +47,7 @@ export const ART_SEED_SHIP = 7101;
 export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport';
 export const SHIP_ART_KIND_BY_KEY: Readonly<Record<string, ShipArtKind>> = {
   'tex-destroyer': 'kagero', 'tex-destroyer-us': 'fletcher', 'tex-destroyer-friendly': 'mutsuki', 'tex-transport': 'transport', 'tex-transport-friendly': 'transport',
+  'tex-destroyer-mutsuki': 'mutsuki', // v0.8.1 S2（D-A1。敵の卯月）
 };
 export const SHIP_ART_DEFAULT_KIND: ShipArtKind = 'kagero';
 export function shipArtKind(key: string): ShipArtKind {

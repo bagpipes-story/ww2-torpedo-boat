@@ -63,6 +63,16 @@ describe('衝突の危険のテレメトリ（systems/strait-telemetry。brief L
     refreshStraitTelemetry(t, w);
     expect([t.bowOnMask, Math.round(t.bowOnM), t.eyeRange2]).toEqual([1, 450, 810000]);
   });
+  it('止まった艦（v0.8.1 S2。Destroyer.anchored＝us_06 の卯月と空知丸）は艦首が自艇へ向いていても衝突の危険に数えない。動き出せば今の規則（spec-v0810 D-R4）', () => {
+    const still = { ...ship(0, 400), anchored: true };
+    const w = world([still, ship(90, 450, 14.9)], 900, false);
+    const t = strait({ ...w, radar: {} });
+    expect([t.enabled, t.bowOnMask, Math.round(t.bowOnM)]).toEqual([true, 0b10, 450]); // レーダーの任務（us_06 は列なし）で有効・止まった艦のビットは立たない
+    still.anchored = false;
+    refreshStraitTelemetry(t, { ...w, radar: {} });
+    expect([t.bowOnMask, Math.round(t.bowOnM)]).toEqual([0b11, 400]);
+    expect(code('src/systems/strait-telemetry.ts')).toContain('if (d.anchored) continue;');
+  });
   it('source: 規則は setSighted と同じ（out でなく d² ≤ 視程²）・bowOnRisk（2 乗の距離と内積）・平方根はビットのある時だけ・atan2 なし・世界へ書かない', () => {
     const src = code('src/systems/strait-telemetry.ts');
     expect(src).toContain('if (d.out) continue;');

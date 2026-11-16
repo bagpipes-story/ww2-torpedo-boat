@@ -2,6 +2,7 @@
 // world-setup 自体は window を読まない（テストの tsconfig に DOM が無い）ので、URL を読む game-config の値はここで渡す。
 import {
   DEBUG_ALLY_OFF,
+  DEBUG_BACKDROP_OFF,
   DEBUG_BARGES_NEAR,
   DEBUG_BATTERY_OFF,
   DEBUG_DAWN_S,
@@ -48,5 +49,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     patrolOff: DEBUG_PATROL_OFF, // ?debug&nopatrol（v0.6.7）
     allyOff: DEBUG_ALLY_OFF, // ?debug&noally（v0.6.10）
     radarOff: DEBUG_RADAR_OFF, // ?debug&noradar（v0.8.0 S2。config/radar-mission-data の radarSetupPart）
+    backdropOff: DEBUG_BACKDROP_OFF, // ?debug&nobackdrop（v0.8.1 S2。config/backdrop-mission-data の backdropSetupPart）
   };
 }

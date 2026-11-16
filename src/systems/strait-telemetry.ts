@@ -3,6 +3,7 @@
 // - 衝突の危険: 目で見えている艦だけ（out でなく d² ≤ 視程²＝systems/mission-telemetry の setSighted と同じ規則）で、艦首が自艇へ半角の内・距離の内（core/strait-geometry の bowOnRisk。
 //   2 乗の距離と内積だけ＝atan2 なし）。艦の添字のビットと一番近い艦までの m（平方根はビットがある時だけ 1 本）。1 回の接近で 1 回の文にするのは ui/strait-line-clock（ビットが立った時）。
 // 列の通過もレーダーも無い任務は enabled false のまま何もしない（ほかの任務の毎フレームの仕事は増えない）。世界・艦・AI には何も書かない（読むだけ）。
+// v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。
 import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_RANGE_M } from '../config/strait-hud-config';
 import type { StraitTelemetry } from '../core/boat-telemetry';
 import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
@@ -11,7 +12,7 @@ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
 export interface StraitTelemetryWorld {
   readonly visRange2: number;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
-  readonly destroyers: { readonly transit: object | null; readonly ships: readonly { readonly out: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
+  readonly destroyers: { readonly transit: object | null; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
   readonly radar: object | null;
 }
 
@@ -42,6 +43,7 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
     for (let i = 0; i < ships.length && i < BOW_MAX_SHIPS; i++) {
       const d = ships[i]!;
       if (d.out) continue;
+      if (d.anchored) continue; // 止まった艦（v0.8.1 S2。us_06）は艦首が向いていても衝突の危険と言わない（D-R4）
       const s = d.state;
       const dx = s.x - b.x;
       const dy = s.y - b.y;

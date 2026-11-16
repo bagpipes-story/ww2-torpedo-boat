@@ -6,6 +6,8 @@
 // core/torpedo-targets）が閉じたステップから。それまで沈む船体へ当たった魚雷は命中に数える（記録だけ）。沈んだ艦が無ければ退き終えたステップで（v0.6.2 と同じ）。
 // 列の通過（v0.8.0 S2。us_04）: 艦を動かした直後に段階を進める（systems/destroyer-transit。現れる艦はこのステップの魚雷・体当たり・反撃から海域の中）。
 // 走っている魚雷の外れの確定は戻りの残り（ビラの艦）が 0 の時だけ（R2）。列の無い任務は transit が null・戻りの残りは 0（v0.7.2 と同じ）。
+// 暗い岸を背にと止まった艦（v0.8.1 S2。us_06）: 艦ごとの見つける距離は隊の backdrop（systems/shore-backdrop）があればその艦の値、無ければ世界の 1 つの値そのもの（今のまま）。
+// 止まった艦の段（systems/destroyer-anchor）は艦を動かし列の段階を当てた直後（動き出した艦は次のステップから動く）。無い任務は anchors が null で何もしない。
 import type { BoatState } from '../core/boat-motion';
 import { losBlocked } from '../core/smoke';
 import { remainingTorpedoesSettled } from '../core/torpedo-targets';
@@ -15,8 +17,13 @@ import type { MissionWorld } from './mission-world';
 export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number, feelDt: number, boat: BoatState): void {
   const c = w.setup;
   let left = false;
-  for (const d of g.ships) if (d.step(dt, feelDt, boat, w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
+  const bd = g.backdrop;
+  for (let i = 0; i < g.ships.length; i++) {
+    const d = g.ships[i]!;
+    if (d.step(dt, feelDt, boat, bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
+  }
   if (g.transit?.step(w, feelDt)) left = true;
+  g.anchors?.step(w, feelDt);
   if (left && g.allOut) w.launcher.clearQueue();
   const settleS = w.returnPoint.torpedoEndSettleS;
   if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();

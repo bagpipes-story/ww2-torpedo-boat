@@ -93,7 +93,8 @@ export function kit(id: string, g: TorpedoAimGroup | null = null, seed = 11): Ki
   const arms = new ArmsStep(id === 'us_03' ? 'barge' : id === 'jp_01' || id === 'jp_05' ? 'pt' : 'noship');
   const ev = spies();
   const boat: BoatState = { x: s.mission.bounds.width / 2, y: s.mission.bounds.height * 0.75, headingDeg: 0, speedMps: 0 };
-  const w = { input: createInputState(), launcher, torpedoes: pool, boat: { state: boat }, destroyers: g, atHome: false, dawn: { reached: false }, arms, torpedoEvents: ev as TorpedoEvents };
+  // kpiMinTargetSpeedMps 0（v0.8.1 S2）: 偽の艦は止まっている（速さ 0）ので、KPI の旗は今の規則のまま見る（下限 5 kt の規則は tests/kpi-world）
+  const w = { input: createInputState(), launcher, torpedoes: pool, boat: { state: boat }, destroyers: g, atHome: false, dawn: { reached: false }, kpiMinTargetSpeedMps: 0, arms, torpedoEvents: ev as TorpedoEvents };
   return { s, w, rng, arms, ev };
 }
 /** 1 フレーム（入力 → 発射管制）と、駆逐艦のいない任務の固定ステップ 1 回（world-enemy-step の stepFreeTorpedoes） */

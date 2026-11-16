@@ -18,7 +18,9 @@
 //   3 行目の「去った」は比べる）だったフレームの番号とその Text の添字を記録し、両方の側でそのフレームのその Text だけを '<S4>' に替える。緑の端の印（字の色 #6dff8c・絵の鍵 tex-radar-marker）は
 //   両方の側で除く。世界の写し（自艇・艦・魚雷・列の段階・輝点）とほかの HUD の物はそのまま比べる。結果に隠したフレームの数（masked）。FILTERTEST=1 は濾しが別の変化を隠さない試し
 //   （出し側でない側の、隠したフレームの 3 行目の字に 'X' を足す → 違いが出るはず）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04] [CAM=1] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.1 S2（spec-v0810 §6 の S2・brief の「新しい組」）: SET=us06 で us_06（オルモック湾の決着。止まった艦と暗い岸を背に）のノーマル・ハード × seed 1・2 を 200 秒（夜明けまで。all には入れない。
+//   S2 は A＝B＝今の木で決定性を見る・S3 から A は S2 の commit のビルド＝以後の段の回帰）。写しに止まった艦の段（s.an: 段・anchored）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 
@@ -71,6 +73,8 @@ export function abRun(o) {
     // 列の通過（v0.8.0 S2。us_04）の段階と、レーダーの輝点（NORADAR の比べでは写さない）。無い任務は鍵ごと無い
     if (w.destroyers && w.destroyers.transit) s.tr = Array.from(w.destroyers.transit.state.phase.slice(0, w.destroyers.transit.state.ships));
     if (w.radar && !o.noradar) s.rd = [w.radar.state.sweeps, w.radar.state.n, w.radar.state.blips.slice(0, w.radar.state.n).map((x) => [x.x, x.y])];
+    // 止まった艦（v0.8.1 S2。us_06）の段と止まっているか。無い任務は鍵ごと無い
+    if (w.destroyers && w.destroyers.anchors) s.an = [Array.from(w.destroyers.anchors.state.stage), w.destroyers.ships.map((x) => x.anchored)];
     s.hud = o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length).filter((x) => x.type === 'Text').map((x) => x.text) : hl.texts('Hud');
     if (o.cam) {
       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
@@ -148,6 +152,8 @@ export function abCases(set, input) {
     jp03: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'jp_03', hard, seed, secs: envNum('SECS', 260), set: 'jp03' }))),
     // us_04 のブラケット海峡の夜（v0.8.0 S2。列の通過とレーダー）: 夜明けの 260 秒まで。A は S2 の commit のビルド（以後の段の回帰）。NORADAR=1 なら B だけレーダーを切る
     us04: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_04', hard, seed, secs: envNum('SECS', 260), set: 'us04' }))),
+    // us_06 のオルモック湾の決着（v0.8.1 S2。止まった艦と暗い岸を背に）: 夜明けの 200 秒まで。S2 は A＝B＝今の木（決定性）・S3 から A は S2 の commit のビルド
+    us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
   };
   if (process.env.MISSION) {
     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
