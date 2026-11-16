@@ -13,7 +13,9 @@
 # 環境変数:
 #   AUDIO_STATES（既定 "default audio noaudio"）: ab-replay all 58 と hud-ab base 16 を回す状態
 #   SMALL_AUDIO_STATES（既定 "default"）: 小さい組（ab-replay・hud-ab の jp04base 8・jp03 4）を回す状態
-#   SKIP（既定 "art-perf"。空白区切り）: 飛ばす門 build typecheck lint test g2 ab hud us04 tex-ab art-perf snapshots（build を飛ばすと $D/site をそのまま使う）
+#   SKIP（既定 "art-perf"。空白区切り）: 飛ばす門 build typecheck lint test g2 ab hud us04 us06 tex-ab art-perf snapshots（build を飛ばすと $D/site をそのまま使う）
+#   A06（既定 なし。v0.8.1 S2 で足した）: us_06 の組（ab-us06・hud-us06。SET=us06＝ノーマル・ハード × seed 1・2 を 200 秒）の A のサイト（S3 から lead が S2 の commit のビルドを渡す）。
+#     無ければ us06 の門は回さない（SUMMARY に「- us06 (A06 なし)」）。B は今の木・濾しなし・既定の音の状態だけ
 #   AB_ENV（既定 なし）: ab-replay・hud-ab だけに渡す環境変数（短い確かめ用。例 AB_ENV="MISSION=us_02 SECS=20"＝どの組も us_02 の 1 件 20 秒になる）
 #   JOBS（既定 3）
 # SUMMARY の名前: 既定の状態は ab-all・hud-base …、ほかの状態は @audio・@noaudio を付ける（log も同じ名前）。art-perf は参考（門ではない）。
@@ -71,6 +73,22 @@ if ! skip us04; then
   abrun04 hud-us04 hud-ab $A $B
   abrun04 ab-us04-noradar ab-replay $B $B NORADAR=1
   abrun04 hud-us04-noradar hud-ab $B $B NORADAR=1
+fi
+# us_06 の組（v0.8.1 S2 から。SKIP の名前 us06）: A06 がある時だけ A＝A06・B＝今の木（SET=us06・濾しなし）
+abrun06(){ # name tool A B
+  local n=$1 t=$2 a=$3 b=$4
+  env $AB_ENV A=$a B=$b SET=us06 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
+  local line; line=$(grep -E '^cases' $D/$n.log | tail -1)
+  if echo "$line" | grep -q 'diff 0'; then ok "$n $line"; else ng "$n $line"; fi
+  grep -E 'same:(true|false)' $D/$n.log | sed -E 's/^/    /' | cut -c1-260 >> $SUM
+}
+if ! skip us06; then
+  if [ -n "${A06:-}" ]; then
+    abrun06 ab-us06 ab-replay $A06 $B
+    abrun06 hud-us06 hud-ab $A06 $B
+  else
+    echo "- us06 (A06 なし)" >> $SUM
+  fi
 fi
 # 既知の揺れ（v0.7.0 から）: nodawn/result の us_02 seed 1 の最後のフレームの .t。ab-all（どの状態でも）が ✗ なら、違った件の組を同じ状態で 1 本ずつ回し直す（v0.8.0 S5 の L62）
 for st in $AUDIO_STATES; do
