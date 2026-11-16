@@ -81,6 +81,7 @@
       "erratic"
     ],
     "aimed_lead_error_deg_max": 3,
+    "min_target_speed_kt": 5,
     "record_version": "v0.5.0",
     "campaigns": ["us_pt"],
     "sim": {
@@ -91,7 +92,7 @@
       "reps": 4,
       "seed": 1
     },
-    "source": "design (v0.5.0。aimed_lead_error_deg_max: Result の通算の命中率は「正しく狙った 1 本」＝発射時の見越し角のずれ（目標の今の速さと針路のまま進むとしたときの命中針路との差）がこの度以内で、蛇行していない魚雷だけを数える（KPI の表は『正しい見越し角の 1 本』の命中率なので）。3°: 1,000 m で船体の長さ方向に約 50 m のずれ。当たり判定 2 倍の艦（236 m）なら避けなければ当たる幅。扇の内側の 2 本（±2°）は入り、外側（±6°）は入らない。record_version: 通算の記録の版（localStorage の鍵）。回避や当たり判定を変えて測り直すときに上げる（古い記録は読まない）。sim: src/core/hit-rate-sim.ts の模擬（tests/hit-rate-sim.test.ts と scripts/hit-rate-sim.ts）。止まった艇から、kpi_by_range の sim_ranges_m の各距離・艦の左正横〜艦首〜右正横 bearing_step_deg 刻み・見越し角のずれ aim_errors_deg を reps 回ずつ撃つ（見張りの抽選は seed の 1 系列）。ずれ −2/0/+2° は aimed の ±3° の中のばらつきの代わり（一様 ±3° と標準偏差がほぼ同じ）。campaigns（v0.6.0）: 通算の命中率に数えるキャンペーン（米PTだけ。日本の 45cm 魚雷・米駆逐艦への 1 本を混ぜると、ノーマルの調整の唯一の根拠が崩れる。史実モードも数えない）)"
+    "source": "design (v0.5.0。aimed_lead_error_deg_max: Result の通算の命中率は「正しく狙った 1 本」＝発射時の見越し角のずれ（目標の今の速さと針路のまま進むとしたときの命中針路との差）がこの度以内で、蛇行していない魚雷だけを数える（KPI の表は『正しい見越し角の 1 本』の命中率なので）。3°: 1,000 m で船体の長さ方向に約 50 m のずれ。当たり判定 2 倍の艦（236 m）なら避けなければ当たる幅。扇の内側の 2 本（±2°）は入り、外側（±6°）は入らない。record_version: 通算の記録の版（localStorage の鍵）。回避や当たり判定を変えて測り直すときに上げる（古い記録は読まない）。sim: src/core/hit-rate-sim.ts の模擬（tests/hit-rate-sim.test.ts と scripts/hit-rate-sim.ts）。止まった艇から、kpi_by_range の sim_ranges_m の各距離・艦の左正横〜艦首〜右正横 bearing_step_deg 刻み・見越し角のずれ aim_errors_deg を reps 回ずつ撃つ（見張りの抽選は seed の 1 系列）。ずれ −2/0/+2° は aimed の ±3° の中のばらつきの代わり（一様 ±3° と標準偏差がほぼ同じ）。campaigns（v0.6.0）: 通算の命中率に数えるキャンペーン（米PTだけ。日本の 45cm 魚雷・米駆逐艦への 1 本を混ぜると、ノーマルの調整の唯一の根拠が崩れる。史実モードも数えない）) / design (v0.8.1 S0・spec-v0810 §3.5 D-K1・D-K2。min_target_speed_kt: 発射の時に狙った艦（今の規則の最寄りの浮いている艦）の速さがこの kt 未満なら、その 1 本は通算の命中率に数えない（止まった艦への 1 本は「正しく狙った 1 本」の命中率の根拠にならない）。5 kt は今のどの任務の駆逐艦の AI の最も遅い目標の速さ（us_destroyer の回避 18 − 10 ＝ 8 kt・ijn_destroyer の回避 25 − 10 ＝ 15 kt）より下なので、今の任務のどの 1 本の数え方も変わらない。外れるのは止まった艦（0 kt）と動き出して約 1.7 秒の内だけ。record_version は変えない（今までの通算を捨てない）。読むのは S2 から（config/kpi-data。鍵が無ければ 0＝今の規則）)"
   },
   "reliability_by_era": {
     "early_1942": {

@@ -255,7 +255,7 @@ describe('世界の絵の原点（setOrigin）は鍵ごとに今のまま', () =
 });
 
 describe('art config の表（v0.7.0 S0 の骨組み）', () => {
-  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い、表に無い id は v0.6.11 の 1 枚', () => {
+  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い（v0.8.1 S0 の us_06 の卯月は S2 まで既定）、表に無い id は v0.6.11 の 1 枚', () => {
     for (const v of [SHIP_ART_DEFAULT_KEY, ...Object.values(SHIP_ART_KEY_BY_ENEMY)]) expect(KEY_VALUES.includes(v) || PLANNED_NEW[v] === 'redraw-new', v).toBe(true);
     expect(SHIP_ART_DEFAULT_KEY).toBe(TEXTURE_KEYS['destroyer']);
     const destroyerIds = new Set<string>();
@@ -266,8 +266,9 @@ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
         if (pm.enemyStart && !pm.barges && !pm.ptBoats) destroyerIds.add(pm.enemyId);
       }
     }
-    expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'us_destroyer']);
-    for (const id of destroyerIds) expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
+    expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'ijn_destroyer_mutsuki_enemy', 'us_destroyer']); // v0.8.1 S0: us_06 の敵の卯月（v0_1_prototype は S0 から・遊べるのは S4 から）
+    for (const id of destroyerIds) if (id !== 'ijn_destroyer_mutsuki_enemy') expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
+    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe(SHIP_ART_DEFAULT_KEY); // v0.8.1 S0 は表に無く既定の 1 枚（Boot は新しい絵を作らない）。S2 で敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1）
     expect(shipArtKey('ijn_light_cruiser')).toBe(SHIP_ART_DEFAULT_KEY);
   });
   it('機の種類の表（D4）: data の全部の機の id（空襲・水上機・哨戒機）を覆い、表に無い id と機の無い任務は既定の形', () => {

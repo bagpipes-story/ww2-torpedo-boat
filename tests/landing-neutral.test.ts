@@ -17,10 +17,10 @@ import { missionMode } from '../src/ui/mission-mode';
 import { tele } from './pt-ui-kit';
 
 type Rec = Record<string, unknown>;
-const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）
+const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_06', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）。v0.8.1 S0: us_06（止まった艦。jp_04 と同じ泊地の空知丸は敵の輸送船＝揚陸の仕組みなし）
 
 describe('landing-neutral（他の 9 任務）', () => {
-  it('v0_1_prototype を持つのは 9 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
+  it('v0_1_prototype を持つのは 10 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04・v0.8.1 S0 の us_06 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
     const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);

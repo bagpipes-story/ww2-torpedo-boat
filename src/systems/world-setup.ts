@@ -39,11 +39,13 @@ import { evacSetupPart } from '../config/evac-mission-data';
 import { radarSetupPart } from '../config/radar-mission-data';
 import { transitNightRolls, transitSetupPart } from '../config/transit-mission-data';
 import { shoresSetupPart } from '../config/shores-mission-data';
+import { anchorSetupPart, getAnchorParams } from '../config/anchor-mission-data';
+import { backdropSetupPart } from '../config/backdrop-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
-import { destroyerSetup, type TransportSetup } from './destroyer-setup';
+import { destroyerSetup, picketSetup, type TransportSetup } from './destroyer-setup';
 
-export type { DestroyerSpec, DestroyerSetup, TransportSetup } from './destroyer-setup';
+export type { DestroyerSpec, DestroyerSetup, PicketSetup, TransportSetup } from './destroyer-setup';
 export type { SetupOptions, WorldSetup } from './world-setup-types'; // 型は world-setup-types.ts（v0.6.7 S0 で移した。今までの import のため）
 export { briefingNumbers } from './briefing-numbers'; // Briefing の数値（v0.6.3 で briefing-numbers.ts へ。今までの import のため）
 import { boatParamsFromData } from '../core/boat-motion';
@@ -71,9 +73,10 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   // 今夜（v0.4.6）: 出撃の seed があり、任務に night block があり、?debug&fixed でなければ揺らぐ
   const batteries = o.batteryOff ? [] : getShoreBatteryParamsList(data, mission);
   const events = data.riskEvents.events as readonly Record<string, unknown>[];
-  // 輸送船（v0.4.7）は隊の最後の 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける
+  // 輸送船（v0.4.7）は駆逐艦の後ろの 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける（v0.8.1 からハードの駆潜艇がその後ろに並ぶ）
   const tr = mission.transport && !o.transportOff ? mission.transport : null;
-  const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
+  const anchor = getAnchorParams(data, mission); // 止まった艦（v0.8.1。us_06 だけ）。ハードの駆潜艇は隊の最後（輸送船の後ろ）に 1 隻ずつ揺らぎを受ける（無い任務は null＝引く回数は同じ）
+  const shipStarts = [...mission.enemyStarts, ...(tr ? [tr.start] : []), ...(anchor?.pickets?.starts ?? [])];
   const ptBase = getPtParams(data, mission, world.time_scale);
   const enemyRolls = shipStarts.length + (ptBase ? 1 : 0) + transitNightRolls(data, mission); // 米PT の隊（v0.6.3）と列の通過（v0.8.0。us_04）は隊・列ごと 1 件の敵として揺らす（無い任務の回数は同じ）
   const night =
@@ -91,8 +94,10 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   let transport: TransportSetup | null = null;
   if (destroyer && tr) {
     const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null, shipHitScale, historical);
-    transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[applied.starts.length - 1]! };
+    transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[mission.enemyStarts.length]! };
   }
+  const pk = anchor?.pickets ?? null;
+  const pickets = destroyer && pk ? picketSetup(data, applied.starts.slice(mission.enemyStarts.length + (tr ? 1 : 0)), pk.enemyId, shipHitScale, historical) : null;
   const barges = applied.barges;
   const ptBoats = ptBase ? applyPtNight(night, ptBase) : null;
   const convoyBase = getConvoyParams(data, mission);
@@ -175,6 +180,9 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...radarSetupPart(data, mission, o), // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
     ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical), // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
     ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
+    ...(destroyer ? anchorSetupPart(anchor, mission.enemyStarts.length, tr !== null) : {}), // 止まった艦（v0.8.1。us_06 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
+    ...backdropSetupPart(data, mission, o), // 暗い岸を背に（v0.8.1。us_06 だけ。無い任務と backdropOff では鍵ごと出ない）
+    ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
   };
 }
 

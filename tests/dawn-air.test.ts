@@ -277,7 +277,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       us_03: ['contested', 'medium', 'enemy', 'hide', '昼の空は争奪（日本機の昼の空襲）'], // v0.6.1 実機 1 回目: ユーザーの判断で空襲あり
       us_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本の水上機の空襲）'], // v0.8.0 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」）。S5: ユーザーの決め U1（2026-11-15「Aのままでいいと思うよ」）で enemy のまま
       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
-      us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
+      us_06: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本機の空襲）'], // v0.8.1 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」・v0.8.0 の us_04 の U1 の前例）。v0_1_prototype は S0 から（遊べるのは S4 から）
       us_07: ['own', 'high', 'own', 'none', '昼の空は味方（連合軍）'],
       jp_01: ['enemy', 'medium', 'enemy', 'none', '昼の空は敵（ヘンダーソン基地）'], // v0.6.4: 米PT は夜明けに core/pt-boats のラッチで去る（retire は駆逐艦の規則で、無い任務には置けない）
       jp_02: ['enemy', 'low', 'enemy', 'none', '昼の空は敵（米の飛行艇）'],
@@ -304,7 +304,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(s.dawnAir.playAs, id).toBe(want[id]);
       expect(new WorldDawn({ cameras: { main: {} } } as never, s, null).air, id).toBe(want[id] === 'enemy' ? DAWN_AIR_ENEMY : DAWN_AIR_OWN);
     }
-    expect(() => checkPlayableDawn(gameData, 'us_06')).toThrow(/遊べる任務でない/);
+    expect(() => checkPlayableDawn(gameData, 'us_05')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ
+    expect(() => checkPlayableDawn(gameData, 'us_06')).not.toThrow();
     expect(() => getDawnAir(gameData, 'nope')).toThrow(/nope/);
   });
   it('遊べる任務: play_as が enemy ⇔ v0_1_prototype.dawn_strike ⇔ hazards の dawn_air_strike。機体の faction はキャンペーンの enemy_faction（米PT IJN・日本 USN）', () => {

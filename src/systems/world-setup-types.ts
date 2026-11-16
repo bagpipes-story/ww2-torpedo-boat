@@ -11,6 +11,8 @@ import type { EvacSetup } from '../config/evac-mission-data';
 import type { RadarSetup, RadarSetupOptions } from '../config/radar-mission-data';
 import type { TransitSetup } from '../config/transit-mission-data';
 import type { ShoresSetup } from '../config/shores-mission-data';
+import type { AnchorSetup } from '../config/anchor-mission-data';
+import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -31,7 +33,7 @@ import type { RaidParams, Sortie, SortieConditions } from '../core/sortie';
 import type { StormParams } from '../core/storm';
 import type { TorpedoParams, TorpedoReliability } from '../core/torpedo';
 import type { VisibilityParams } from '../core/visibility';
-import type { DestroyerSetup, TransportSetup } from './destroyer-setup';
+import type { DestroyerSetup, PicketSetup, TransportSetup } from './destroyer-setup';
 
 export interface WorldSetup {
   mission: PrototypeMission;
@@ -122,10 +124,13 @@ export interface WorldSetup {
   radar?: RadarSetup; // 自艇のレーダー（v0.8.0。v0_1_prototype.radar のある任務＝us_04 だけ。config/radar-mission-data。無い任務と radarOff では鍵ごと出ない＝setup の snapshot を変えない）
   transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 だけ。config/transit-mission-data。無い任務では鍵ごと出ない）
   shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
+  anchors?: AnchorSetup; // 止まった艦（v0.8.1。v0_1_prototype.anchored のある任務＝us_06 だけ。隊の艦ごとの動き出す秒・警報の秒。config/anchor-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
+  backdrop?: BackdropSetup; // 暗い岸を背に（v0.8.1。v0_1_prototype.shore_backdrop のある任務＝us_06 だけ。config/backdrop-mission-data。無い任務と backdropOff では鍵ごと出ない。S0 では世界は読まない）
+  pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions {
+export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions, BackdropSetupOptions {
   fuelGal?: number;
   dawnS?: number;
   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
