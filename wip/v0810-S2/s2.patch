@@ -120,6 +120,19 @@ index 3aadf2c..091a974 100644
 +  heldShots: number;
 +  heldHits: number;
 +}
+diff --git a/src/core/hit-rate.ts b/src/core/hit-rate.ts
+index 7aa3d2d..86e3c47 100644
+--- a/src/core/hit-rate.ts
++++ b/src/core/hit-rate.ts
+@@ -16,7 +16,7 @@ export interface ShotRecord {
+ /**
+  * 発射の時の KPI の的（v0.8.1 S1。spec-v0810 §3.5 D-K1）: 駆逐艦を狙い、夜明けの前（v0.5.0・v0.6.1 の今の条件）で、狙った艦の速さが minSpeedMps 以上
+  * （config/kpi-data が読む hit_rate_model.json の kpi_measurement の目標の速さの下限＝5 kt。止まった艦への 1 本は通算の命中率に数えない。境は含む＝5.00 kt は数え 4.99 kt は数えない）。
+- * minSpeedMps 0 なら今の条件そのもの（速さは 0 以上）。S2 の systems/torpedo-free が発射の時に 1 回呼ぶ（S1 ではゲームの誰も呼ばない）
++ * minSpeedMps 0 なら今の条件そのもの（速さは 0 以上）。v0.8.1 S2 から systems/torpedo-free が発射の時に 1 回呼ぶ
+  */
+ export function kpiTargetAtLaunch(isDestroyer: boolean, dawnReached: boolean, targetSpeedMps: number, minSpeedMps: number): boolean {
+   return isDestroyer && !dawnReached && targetSpeedMps >= minSpeedMps;
 diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
 index 68c51c6..25cb241 100644
 --- a/src/entities/destroyer.ts
@@ -481,7 +494,7 @@ index 7a61815..94f66a5 100644
    destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
    // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
 diff --git a/src/systems/world-radar.ts b/src/systems/world-radar.ts
-index 0346e07..c208122 100644
+index 0346e07..49d485f 100644
 --- a/src/systems/world-radar.ts
 +++ b/src/systems/world-radar.ts
 @@ -2,7 +2,8 @@
@@ -508,14 +521,239 @@ index 0346e07..c208122 100644
      /** 東の縁の向こうの揚陸の地の名（列が東へ抜けて戻る任務だけ。無ければ ''） */
      readonly eastJa = '',
 +    /** 今の岸（coast の南）がある（v0.8.1 S2。us_06。両岸の任務は両岸が先＝us_04 は今の線のまま） */
-+    coastSouth = false,
++    coastSouth?: boolean,
    ) {
      const { width, height } = bounds;
 -    this.geo = { width, height, land: shores ? landLinesFromShores(shores, width, height) : [] };
-+    this.geo = { width, height, land: landLinesOf(shores ?? null, coastSouth, width, height) };
++    this.geo = { width, height, land: landLinesOf(shores ?? null, coastSouth === true, width, height) };
      this.targets = createRadarTargets(shipCapacity);
    }
  
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index addc0f4..9d11fb8 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -67,6 +67,7 @@ const KEEP = [
+ /** v0.7.0 で足す予定の鍵（spec D2）と分類。TEXTURE_KEYS に足した鍵はここに無ければならない（無い鍵を足すならここにも足す） */
+ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
+   'tex-destroyer-us': 'redraw-new',
++  'tex-destroyer-mutsuki': 'redraw-new', // v0.8.1 S2（spec-v0810 D-A1。v0.7.0 の予定の外）: us_06 の敵の卯月（睦月型の形を敵の色で）。鍵は ship-art-config の表だけ（TEXTURE_KEYS には足さない）
+   'tex-splash': 'fx', 'tex-muzzle-flash': 'fx', 'tex-fireball': 'fx', 'tex-flame': 'fx', 'tex-wake-boat': 'fx', 'tex-wake-ship': 'fx', 'tex-wake-puff': 'fx',
+   'tex-sea-tile': 'fx', 'tex-dawn-glow': 'fx', 'tex-glint': 'fx', 'tex-coast-strip': 'fx',
+   'tex-oil-slick': 'fx', // S4（spec の D2 の外。沈没の油の輪が水柱の絵の流用で星形に見えた＝独立の見え方の検査の指摘）
+@@ -192,11 +193,11 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）',
+   it('IP2b・IP3 の密度: 艦の 5 つの鍵（IP2b）と艇 5・米PT・大発 2 の 8 つの鍵（IP3 の U10）・2 の冪。画素は論理の寸法の S 倍、displayWidth/Height（scaleX × 画素）は S = 1 とビット同一（沈む tween の倍率も。k は U9 の上限 3 まで）', () => {
+     expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
+       'tex-barge', 'tex-barge-friendly', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
+-      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
+-    ]);
++      'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-mutsuki', 'tex-destroyer-us', 'tex-pt-boat', 'tex-transport', 'tex-transport-friendly',
++    ]); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）
+     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
+     expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
+-    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24] };
++    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32] };
+     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
+     const ks = [...KS];
+     for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
+@@ -255,7 +256,7 @@ describe('世界の絵の原点（setOrigin）は鍵ごとに今のまま', () =
+ });
+ 
+ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
+-  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い（v0.8.1 S0 の us_06 の卯月は S2 まで既定）、表に無い id は v0.6.11 の 1 枚', () => {
++  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い（v0.8.1 S2 から us_06 の卯月も）、表に無い id は v0.6.11 の 1 枚', () => {
+     for (const v of [SHIP_ART_DEFAULT_KEY, ...Object.values(SHIP_ART_KEY_BY_ENEMY)]) expect(KEY_VALUES.includes(v) || PLANNED_NEW[v] === 'redraw-new', v).toBe(true);
+     expect(SHIP_ART_DEFAULT_KEY).toBe(TEXTURE_KEYS['destroyer']);
+     const destroyerIds = new Set<string>();
+@@ -267,8 +268,8 @@ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
+       }
+     }
+     expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'ijn_destroyer_mutsuki_enemy', 'us_destroyer']); // v0.8.1 S0: us_06 の敵の卯月（v0_1_prototype は S0 から・遊べるのは S4 から）
+-    for (const id of destroyerIds) if (id !== 'ijn_destroyer_mutsuki_enemy') expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
+-    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe(SHIP_ART_DEFAULT_KEY); // v0.8.1 S0 は表に無く既定の 1 枚（Boot は新しい絵を作らない）。S2 で敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1）
++    for (const id of destroyerIds) expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
++    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2 から敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1。Boot が 1 回作る）
+     expect(shipArtKey('ijn_light_cruiser')).toBe(SHIP_ART_DEFAULT_KEY);
+   });
+   it('機の種類の表（D4）: data の全部の機の id（空襲・水上機・哨戒機）を覆い、表に無い id と機の無い任務は既定の形', () => {
+diff --git a/tests/enemy-mutsuki.test.ts b/tests/enemy-mutsuki.test.ts
+index 6ff6d00..6d2bb26 100644
+--- a/tests/enemy-mutsuki.test.ts
++++ b/tests/enemy-mutsuki.test.ts
+@@ -37,7 +37,7 @@ describe('敵の卯月（ijn_destroyer_mutsuki_enemy）', () => {
+     expect(String(src['length_m・beam_m'])).toMatch(/^historical .*\/ design \(v0\.8\.1 S0/);
+     expect(String(src['guns'])).toMatch(/^historical .*\/ design \(v0\.8\.1 S0/);
+   });
+-  it('getEnemyRecord と destroyerSetup で組める（AI と砲の形）。当たりは 102.7 m の 2 倍・沈むのは 2 本・見つける基準 2,000 m。絵の鍵は S0 では既定のまま（S2 で敵の色の睦月型）', () => {
++  it('getEnemyRecord と destroyerSetup で組める（AI と砲の形）。当たりは 102.7 m の 2 倍・沈むのは 2 本・見つける基準 2,000 m。絵の鍵は S2 から敵の色の睦月型（S0・S1 は既定のまま）', () => {
+     const r = getEnemyRecord(gameData, 'ijn_destroyer_mutsuki_enemy');
+     expect(r.detection.base_detect_m).toBe(2000);
+     const s = destroyerSetup(gameData, [{ x: 3620, y: 2380, headingDeg: 270 }], 'ijn_destroyer_mutsuki_enemy', null, 2, false);
+@@ -47,7 +47,8 @@ describe('敵の卯月（ijn_destroyer_mutsuki_enemy）', () => {
+     expect(s.gunnery.guns.map((g) => g.id)).toEqual(['main_120mm', 'aa_25mm']);
+     expect(s.gunnery.searchlight).toEqual(k.gunnery.searchlight);
+     expect(s.gunnery.starshell).toEqual(k.gunnery.starshell);
+-    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe(SHIP_ART_DEFAULT_KEY);
++    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2（D-A1）: 敵の色の睦月型（S0・S1 は既定の SHIP_ART_DEFAULT_KEY）
++    expect(SHIP_ART_DEFAULT_KEY).toBe('tex-destroyer');
+   });
+ });
+ 
+diff --git a/tests/kpi-data.test.ts b/tests/kpi-data.test.ts
+index ea9da5a..baec2e7 100644
+--- a/tests/kpi-data.test.ts
++++ b/tests/kpi-data.test.ts
+@@ -35,11 +35,11 @@ describe('kpi_measurement.min_target_speed_kt（V-K1）', () => {
+       expect(() => getKpiMinTargetSpeedKt(e), String(bad)).toThrow(/hit_rate_model\.json の kpi_measurement\.min_target_speed_kt は 0 以上の有限の数（.*）（V-K1・spec-v0810 §4\.4）/);
+     }
+   });
+-  it('S0 ではゲームの誰も読まない: src のどのファイルも config/kpi-data を import せず、min_target_speed_kt の字は kpi-data の中だけ（読むのは S2 の MissionWorld）', () => {
++  it('S2 から読むのは MissionWorld だけ（data から 1 回。setup には入れない）: config/kpi-data を import するのは systems/mission-world だけ、min_target_speed_kt の字は kpi-data の中だけ', () => {
+     const all = files(SRC);
+     expect(all.length).toBeGreaterThan(300);
+-    const importers = all.filter((f) => /from '[./]+(config\/)?kpi-data'/.test(readFileSync(f, 'utf8')));
+-    expect(importers).toEqual([]);
++    const importers = all.filter((f) => /from '[./]+(config\/)?kpi-data'/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(SRC.length + 1));
++    expect(importers).toEqual(['systems/mission-world.ts']); // v0.8.1 S2（lead の L36）: S0・S1 は誰も import しなかった
+     const readers = all.filter((f) => readFileSync(f, 'utf8').includes('min_target_speed_kt')).map((f) => f.slice(SRC.length + 1));
+     expect(readers).toEqual(['config/kpi-data.ts']);
+   });
+diff --git a/tests/kpi-target.test.ts b/tests/kpi-target.test.ts
+index d086f2d..c239b6b 100644
+--- a/tests/kpi-target.test.ts
++++ b/tests/kpi-target.test.ts
+@@ -4,7 +4,7 @@
+ // 最も遅い目標の速さは記録と core/ship-ai の値から: 巡航（作った時の速さも）・回避（巡航 ＋ speed_boost_kt を 0〜最大に）・体当たりと退く（最大）・us_04 の列（現れる速さと最大＝30 kt）。
+ // 艦の速さは目標へ加減速で近づくだけ（steerShip）なので、浮いている艦の速さは作った時・現れた時の速さと目標の速さの最小より下がらない（沈み始めた艦は狙えない）。
+ // その前提（AI の目標の速さの式・Destroyer が速さを書く所・steerShip の近づき方）も source で固定する（5 kt 未満で回避する艦を足す版はここが落ちて知らせる＝spec §8 R4）。
+-// S1 ではゲームの誰も kpiTargetAtLaunch を呼ばない（呼ぶのは S2 の systems/torpedo-free）。
++// S1 ではゲームの誰も kpiTargetAtLaunch を呼ばなかった（S2 から systems/torpedo-free が発射の時に呼ぶ＝tests/kpi-world）。
+ import { describe, expect, it } from 'vitest';
+ import { playableMissionIds } from '../src/config/campaign-data';
+ import { gameData, getEnemyRecord, getEvasionMultiplier } from '../src/config/game-data';
+@@ -41,8 +41,8 @@ describe('kpiTargetAtLaunch（発射の時の KPI の的）', () => {
+       }
+     }
+   });
+-  it('S1 ではゲームの誰も呼ばない（src で名前が出るのは core/hit-rate だけ）', () => {
+-    expect(SRC.filter((f) => code(f).includes('kpiTargetAtLaunch'))).toEqual(['src/core/hit-rate.ts']);
++  it('S2 から呼ぶのは systems/torpedo-free の発射の時だけ（S1 は core/hit-rate の中だけ）', () => {
++    expect(SRC.filter((f) => code(f).includes('kpiTargetAtLaunch'))).toEqual(['src/core/hit-rate.ts', 'src/systems/torpedo-free.ts']);
+   });
+ });
+ 
+diff --git a/tests/radar-world.test.ts b/tests/radar-world.test.ts
+index c63896b..b66281e 100644
+--- a/tests/radar-world.test.ts
++++ b/tests/radar-world.test.ts
+@@ -50,7 +50,8 @@ describe('レーダーの段の順と作る所（ソース）', () => {
+   });
+   it('buildRadar は setup.radar の任務だけ作る（無ければ null＝絵も絵の鍵も作らない）。WorldRadar は掃引の時でなければ何もしない', () => {
+     const rv = code('systems/radar-view.ts');
+-    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa) : null;');
++    // v0.8.1 S2: 陸の反射に今の岸（coast の南）も渡す（us_06。両岸の us_04 は両岸の線のまま＝core/strait-geometry の landLinesOf）
++    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null;');
+     expect(rv).toContain("const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）
+     const wr = code('systems/world-radar.ts');
+     const step = wr.slice(wr.indexOf('  step(w: RadarWorldView): void {'));
+diff --git a/tests/radar.test.ts b/tests/radar.test.ts
+index 196cf78..ef1e78f 100644
+--- a/tests/radar.test.ts
++++ b/tests/radar.test.ts
+@@ -194,6 +194,7 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確
+     expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
+     expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
+     // v0.8.0 実機 1 回目: 探照灯を岸で切る（beamLengthToLand）ために destroyer-group・enemy-fire・world-enemies も（tests/strait-ip1）
+-    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/destroyer-group.ts', 'src/systems/enemy-fire.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/strait-telemetry.ts', 'src/systems/world-enemies.ts', 'src/systems/world-radar.ts']);
++    // v0.8.1 S2: 暗い岸を背に（systems/shore-backdrop の landBehind。us_06）も
++    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/destroyer-group.ts', 'src/systems/enemy-fire.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/shore-backdrop.ts', 'src/systems/strait-telemetry.ts', 'src/systems/world-enemies.ts', 'src/systems/world-radar.ts']);
+   });
+ });
+diff --git a/tests/ship-art.test.ts b/tests/ship-art.test.ts
+index ae1cc9b..1a763fc 100644
+--- a/tests/ship-art.test.ts
++++ b/tests/ship-art.test.ts
+@@ -22,10 +22,11 @@ const HS = gameData.hitRateModel.world.hit_scale as number;
+ const dims = (id: string): { L: number; B: number } => { const r = getEnemyRecord(gameData, id); return { L: r.length_m * SS, B: r.beam_m * SS }; };
+ const landing = validateLandingMissions(gameData, TS)!;
+ const ally = validateAllyDestroyerMissions(gameData, TS, getEnemyRecord(gameData, 'ijn_destroyer').searchlight!.cone_deg)!;
+-/** Boot と同じ寸法の 5 枚（鍵・形・世界単位） */
++/** Boot と同じ寸法の 6 枚（鍵・形・世界単位。v0.8.1 S2 で us_06 の敵の卯月＝睦月型の形の敵の色の 1 枚を足した） */
+ const SHIPS: { key: string; kind: ShipArtKind; L: number; B: number }[] = [
+   { key: 'tex-destroyer', kind: 'kagero', ...dims('ijn_destroyer') },
+   { key: 'tex-destroyer-us', kind: 'fletcher', ...dims('us_destroyer') },
++  { key: 'tex-destroyer-mutsuki', kind: 'mutsuki', ...dims('ijn_destroyer_mutsuki_enemy') },
+   { key: 'tex-destroyer-friendly', kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS },
+   { key: 'tex-transport', kind: 'transport', ...dims(getPrototypeMission(gameData, 'us_02').transport!.enemyId) },
+   { key: 'tex-transport-friendly', kind: 'transport', L: landing.lengthM * SS, B: landing.beamM * SS },
+@@ -56,7 +57,7 @@ function expectPartsInside(shape: ShipShape, halfAt: (yFrac: number) => number,
+ }
+ 
+ describe('艦の絵の形（v0.7.0 S2a）', () => {
+-  it('鍵 → 形の表は 5 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
++  it('鍵 → 形の表は 6 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
+     expect(Object.keys(SHIP_ART_KIND_BY_KEY).sort()).toEqual(SHIPS.map((s) => s.key).sort());
+     for (const s of SHIPS) expect(shipArtKind(s.key)).toBe(s.kind);
+     expect(shipArtKind('tex-boat-jp_t38')).toBe('kagero');
+@@ -104,12 +105,15 @@ describe('艦の絵の形（v0.7.0 S2a）', () => {
+     expect(hullHalfWidthAt(l.transport.hull, 0.04, 1)).toBeGreaterThan(hullHalfWidthAt(l.kagero.hull, 0.04, 1) * 1.5);
+     for (const k of ['kagero', 'fletcher', 'mutsuki'] as const) { expect(l[k].funnels).toHaveLength(2); expect(l[k].tubes).toHaveLength(2); }
+   });
+-  it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）', () => {
++  it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）。v0.8.1 S2 の敵の卯月の鍵は ship-art-config の表だけ（TEXTURE_KEYS の 53 鍵は変えない＝tests/sfx-inventory）', () => {
+     const g = readFileSync('src/config/game-config.ts', 'utf8');
+-    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) expect(g).toContain(`'${v}'`);
++    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) if (v !== 'tex-destroyer-mutsuki') expect(g).toContain(`'${v}'`);
++    expect(g).not.toContain("'tex-destroyer-mutsuki'");
+     expect(shipArtKey('us_destroyer')).toBe('tex-destroyer-us');
+     expect(shipArtKey('ijn_destroyer')).toBe('tex-destroyer');
+     expect(dims('us_destroyer')).toEqual({ L: 229.6, B: 24 });
++    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2（D-A1）: 敵の卯月は味方の卯月の絵と同じ大きさ（記録 × sprite_scale）
++    expect(dims('ijn_destroyer_mutsuki_enemy')).toEqual({ L: 205.4, B: 18.32 });
+   });
+ });
+ 
+diff --git a/tests/strait-ip1.test.ts b/tests/strait-ip1.test.ts
+index b62f5b4..9552ada 100644
+--- a/tests/strait-ip1.test.ts
++++ b/tests/strait-ip1.test.ts
+@@ -67,9 +67,13 @@ describe('列の通過の艦を南北の縁の内に止める（予防。世界
+     expect(col.y).toBe(night.ship.boundsMarginM);
+     expect(run(false).withdrawn).toBe(true);
+   });
+-  it('source: Destroyer.step と SimShip.step に同じ 1 行（列の艦だけ clampYToBounds）。探照灯を切るのは岸の線のある任務だけ（world-enemies が s.shores の時に 1 回）', () => {
++  it('source: Destroyer.step と SimShip.step に同じ 1 行（列の艦だけ clampYToBounds）。探照灯を切るのは岸の線のある任務だけ（world-enemies が s.shores か coast の時に 1 回。v0.8.1 S2 から coast の us_06 も）', () => {
+     for (const f of ['src/entities/destroyer.ts', 'src/core/intercept-sim-world.ts']) expect(code(f), f).toMatch(/else if \(this\.transitShip\) clampYToBounds\(this\.state, (this\.)?bounds, this\.spec\.boundsMarginM\);/);
+-    expect(code('src/systems/world-enemies.ts')).toContain('if (destroyers && s.shores) destroyers.setBeamLand(landLinesFromShores(s.shores, mission.bounds.width, mission.bounds.height));');
++    // v0.8.1 S2（spec-v0810 D-A3・lead の L35）: 岸の線は core/strait-geometry の landLinesOf（両岸があれば今の landLinesFromShores と同じ線＝us_04 は変わらない。tests/shore-backdrop）
++    const we = code('src/systems/world-enemies.ts');
++    expect(we).toContain('const land = destroyers && (s.shores || mission.coast) ? landLinesOf(s.shores ?? null, mission.coast !== null, mission.bounds.width, mission.bounds.height) : null;');
++    expect(we).toContain('if (destroyers && land) destroyers.setBeamLand(land);');
++    expect(we.split('setBeamLand(').length - 1).toBe(1);
+     const ef = code('src/systems/enemy-fire.ts');
+     expect(ef).toContain('if (this.beamLand) this.clipBeam(ship, light.bearingDeg);');
+     expect(ef).toContain('if (rows === this.beamRows) return;'); // 行数が変わった時だけ setCrop（§7）
+diff --git a/tests/strait-lines.test.ts b/tests/strait-lines.test.ts
+index 8cac42a..2c97249 100644
+--- a/tests/strait-lines.test.ts
++++ b/tests/strait-lines.test.ts
+@@ -63,6 +63,16 @@ describe('衝突の危険のテレメトリ（systems/strait-telemetry。brief L
+     refreshStraitTelemetry(t, w);
+     expect([t.bowOnMask, Math.round(t.bowOnM), t.eyeRange2]).toEqual([1, 450, 810000]);
+   });
++  it('止まった艦（v0.8.1 S2。Destroyer.anchored＝us_06 の卯月と空知丸）は艦首が自艇へ向いていても衝突の危険に数えない。動き出せば今の規則（spec-v0810 D-R4）', () => {
++    const still = { ...ship(0, 400), anchored: true };
++    const w = world([still, ship(90, 450, 14.9)], 900, false);
++    const t = strait({ ...w, radar: {} });
++    expect([t.enabled, t.bowOnMask, Math.round(t.bowOnM)]).toEqual([true, 0b10, 450]); // レーダーの任務（us_06 は列なし）で有効・止まった艦のビットは立たない
++    still.anchored = false;
++    refreshStraitTelemetry(t, { ...w, radar: {} });
++    expect([t.bowOnMask, Math.round(t.bowOnM)]).toEqual([0b11, 400]);
++    expect(code('src/systems/strait-telemetry.ts')).toContain('if (d.anchored) continue;');
++  });
+   it('source: 規則は setSighted と同じ（out でなく d² ≤ 視程²）・bowOnRisk（2 乗の距離と内積）・平方根はビットのある時だけ・atan2 なし・世界へ書かない', () => {
+     const src = code('src/systems/strait-telemetry.ts');
+     expect(src).toContain('if (d.out) continue;');
 diff --git a/tests/torpedo-free-kit.ts b/tests/torpedo-free-kit.ts
 index e230c40..bec9e0c 100644
 --- a/tests/torpedo-free-kit.ts
@@ -530,3 +768,32 @@ index e230c40..bec9e0c 100644
    return { s, w, rng, arms, ev };
  }
  /** 1 フレーム（入力 → 発射管制）と、駆逐艦のいない任務の固定ステップ 1 回（world-enemy-step の stepFreeTorpedoes） */
+diff --git a/tests/torpedo-free.test.ts b/tests/torpedo-free.test.ts
+index 583fc96..88a15ef 100644
+--- a/tests/torpedo-free.test.ts
++++ b/tests/torpedo-free.test.ts
+@@ -229,7 +229,9 @@ describe('ソースの pin（v0.6.7 の道を変えない）', () => {
+   });
+   it('torpedo-free: 狙える艦がある道は v0.6.7 の文のまま、無ければ null の目標で撃って決着させる。world-enemy-step は駆逐艦のいない任務だけ魚雷を進める', () => {
+     const s = strip('systems/torpedo-free.ts');
+-    expect(s).toContain('w.launcher.update(realDt, boat, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount && !w.dawn.reached);');
++    // v0.8.1 S2（spec-v0810 D-K1）: KPI の旗は core/hit-rate の kpiTargetAtLaunch（今の条件かつ狙った艦の速さ ≥ 下限。今のどの任務の駆逐艦も下限より速い＝tests/kpi-target・kpi-world）
++    expect(s).toContain('const target = g.ships[ti < 0 ? 0 : ti]!.state;');
++    expect(s).toContain('w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(ti >= 0 && ti < g.destroyerCount, w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));');
+     expect(s).toContain('const s = w.launcher.update(realDt, boat, null, false);');
+     expect(s).toContain('s.resolved = true;');
+     expect(s).toContain('w.torpedoes.step(dt, feelDt, NO_TORPEDO_TARGETS, 0, w.torpedoEvents);');
+diff --git a/tests/transit-world.test.ts b/tests/transit-world.test.ts
+index 3deda72..2ed24cc 100644
+--- a/tests/transit-world.test.ts
++++ b/tests/transit-world.test.ts
+@@ -110,7 +110,8 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
+   });
+   it('destroyer-step: 艦の段 → 列の段階（艦が出たら left）→ 一斉発射の破棄 → 戻りの残りが 0 の時だけ外れの確定 → 魚雷。隊の allOut・allSettled は列の通過があればその式', () => {
+     const s = code('systems/destroyer-step.ts');
+-    const order = ['for (const d of g.ships) if (d.step(', 'if (g.transit?.step(w, feelDt)) left = true;', 'if (left && g.allOut) w.launcher.clearQueue();', 'if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();', 'w.torpedoes.step('];
++    // v0.8.1 S2: 艦の段は添字の輪（艦ごとの見つける距離＝systems/shore-backdrop。無い任務は世界の 1 つの値。tests/anchor-world）。止まった艦の段は列の段階の直後
++    const order = ['if (d.step(dt, feelDt, boat, bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;', 'if (g.transit?.step(w, feelDt)) left = true;', 'g.anchors?.step(w, feelDt);', 'if (left && g.allOut) w.launcher.clearQueue();', 'if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();', 'w.torpedoes.step('];
+     const idx = order.map((p) => s.indexOf(p));
+     expect(idx.every((i, k) => i >= 0 && (k === 0 || i > idx[k - 1]!)), idx.join(' ')).toBe(true);
+     const g = code('systems/destroyer-group.ts');
