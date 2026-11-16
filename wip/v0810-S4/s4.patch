@@ -1,0 +1,610 @@
+diff --git a/data/enemies.json b/data/enemies.json
+index 165802b..9db6843 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -523,7 +523,7 @@
+         "length_m・beam_m・speed_max_kt": "historical (第13号型駆潜艇: 438 t・51 × 6.7 m・喫水 2.75 m・16 kt（Wikipedia の No.13-class submarine chaser とその写しの抜粋 1 つのみ・本文未読。medium。速力は docs/01 §8 の船団の表とも合う）。喫水 2.75 m ＞ Mk 13 の min_run_depth_m 2 なので魚雷は当たる（torpedo_immune を持たない）)",
+         "guns": "historical (1940 の兵装: 76.2 mm 高角砲 1・13.2 mm 機銃 2（同じ抜粋 1 つ。1944 年の兵装の変化は未確認）) / design (v0.8.1 S0・spec-v0810 §4.3。aa_76mm は ijn_transport の deck_gun_76mm の値の写し、aa_13mm は ijn_destroyer の aa_25mm の値で口径の名だけ違う（count 2）)",
+         "searchlight": "design (v0.8.1 S0。range_m 1,500（味方の卯月 ijn_destroyer_mutsuki と同じ）。cone_deg・sweep_deg_s・on_delay_s は ijn_destroyer と同じ（探照灯の絵は 1 枚・「発見された！」から反転する猶予 2.5 秒）。星弾は無い)",
+-        "others": "design (v0.8.1 S0・spec-v0810 §4.3。難易度ハードの us_06 だけ（missions_seed の v0_1_prototype.hard.picket_enemy_id）。巡航 12 kt・旋回 3.0°/秒・加速 0.4（小さく身軽な艦）。hull_hp 100 は未使用（1 本で沈む）。detection の base_detect_m 1,500 は記録の検査のためだけ（隊は駆逐艦の 1 つの見つける距離を使う＝今の us_02 の輸送船と同じ作り）・雷跡 800 m・毎秒 0.2・反応 1.0 秒。evasion は turn_away（雷跡から離れる向きへ今の旋回のまま・最大速力まで増す）。体当たりはしない。端 500 m で向き直す（12 kt・3.0°/秒の旋回半径 約 120 m ＋ 縁の余白 51 m より大きい）。世界の配線は S2b)"
++        "others": "design (v0.8.1 S0・spec-v0810 §4.3。難易度ハードの us_06 だけ（missions_seed の v0_1_prototype.hard.picket_enemy_id）。巡航 12 kt・旋回 3.0°/秒・加速 0.4（小さく身軽な艦）。hull_hp 100 は未使用（1 本で沈む）。detection の base_detect_m 1,500 は記録の検査のためだけ（隊は駆逐艦の 1 つの見つける距離を使う＝今の us_02 の輸送船と同じ作り）・雷跡 800 m・毎秒 0.2・反応 1.0 秒。evasion は turn_away（雷跡から離れる向きへ今の旋回のまま・最大速力まで増す）。体当たりはしない。端 500 m で向き直す（12 kt・3.0°/秒の旋回半径 約 120 m ＋ 縁の余白 51 m より大きい）。世界の配線は v0.8.1 S2b)"
+       },
+       "notes": "us_06 のハード（v0.8.1）で泊地の外に止まって見張る駆潜艇 2 隻。気づくと動き出して記録の AI（体当たりなし）になる。点は無く、撃沈の達成・命中率の KPI・撃沈 n/m に数えない。"
+     },
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index 53f1fda..57c430a 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -765,6 +765,7 @@
+       "id": "us_06",
+       "campaign": "us_pt",
+       "order": 6,
++      "playable_from": "v0.8.1",
+       "title_ja": "オルモック湾の決着",
+       "date": "1944-12-11",
+       "place": "パロンポン沖（レイテ島西岸）",
+@@ -813,11 +814,11 @@
+         "enemies": [
+           "ijn_destroyer_mutsuki_enemy"
+         ],
+-        "enemy_behavior": "anchored と ai (v0.8.1。パロンポン沖に止まった駆逐艦 卯月（enemies.json の ijn_destroyer_mutsuki_enemy）と、泊地で揚陸する輸送船 空知丸（下の transport）は t = 0 から止まっている（下の anchored）。見張りは止まっていても us_02 の規則のまま走り、自艇を見た・雷跡・被雷・隊の警報・夜明けのどれかで気づく。気づいた駆逐艦は destroyer_underway_s 後に動き出して us_02 の AI（探照灯・砲・星弾・400 m の体当たり・端で向き直し）になる。空知丸は一晩じゅう動かない（気づけば 76 mm を他の艦の光の下で撃つ）。艦から見て自艇の背に暗い岸があれば見つかる距離が縮む（下の shore_backdrop）。世界の配線は S2)",
++        "enemy_behavior": "anchored と ai (v0.8.1。パロンポン沖に止まった駆逐艦 卯月（enemies.json の ijn_destroyer_mutsuki_enemy）と、泊地で揚陸する輸送船 空知丸（下の transport）は t = 0 から止まっている（下の anchored）。見張りは止まっていても us_02 の規則のまま走り、自艇を見た・雷跡・被雷・隊の警報・夜明けのどれかで気づく。気づいた駆逐艦は destroyer_underway_s 後に動き出して us_02 の AI（探照灯・砲・星弾・400 m の体当たり・端で向き直し）になる。空知丸は一晩じゅう動かない（気づけば 76 mm を他の艦の光の下で撃つ）。艦から見て自艇の背に暗い岸があれば見つかる距離が縮む（下の shore_backdrop）。世界の配線は v0.8.1 S2・ハードの駆潜艇は S2b・出撃可（playable_from）は S4)",
+         "duration_s": 200,
+-        "duration_s_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。夜明けまでの実秒の初めの値。岸を回る道（出発 → (5100, 1500) 巡航 → (5100, 2870) 静音 → 卯月の真南 (3620, 2900) 静音 → 狙って 15 秒 → 帰投の輪の縁まで巡航）は手の概算で 138 秒＝夜明けの 62 秒前。S3 の探りの帯 T（帰投の夜の 90% 以上が夜明けの前）で 180〜240 秒の内で直す。duration_min 5 は任務本体の設計値で、これとは別のプロトタイプ値)",
++        "duration_s_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。夜明けまでの実秒の初めの値。岸を回る道（出発 → (5100, 1500) 巡航 → (5100, 2870) 静音 → 卯月の真南 (3620, 2900) 静音 → 狙って 15 秒 → 帰投の輪の縁まで巡航）は手の概算で 138 秒＝夜明けの 62 秒前。duration_min 5 は任務本体の設計値で、これとは別のプロトタイプ値) / design (v0.8.1 S3: 探りの帯 T（帰投の夜の 90% 以上が夜明けの前）は浜沿いの夜の 100% で通った＝200 秒のまま（180〜240 秒の内で直す必要なし）)",
+         "fuel_allotment_gal": 40,
+-        "fuel_allotment_gal_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。戦闘に使える割当（us_02 と同じ考え）の初めの値。core/fuel の曲線の手の概算（画面の 1 km あたり 静音 18 kt 4.0・巡航 23 kt 4.7・全速 6.9 gal）で岸を回る道は 28.9 gal＝残り 28%。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（40 gal は 1,440 秒）。S3 の探りの帯 F（帰投の夜の残りの中央値 15〜35%）で直し、足りなければ燃料でなく出発点と帰投の輪を直す)",
++        "fuel_allotment_gal_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。戦闘に使える割当（us_02 と同じ考え）の初めの値。core/fuel の曲線の手の概算（画面の 1 km あたり 静音 18 kt 4.0・巡航 23 kt 4.7・全速 6.9 gal）で岸を回る道は 28.9 gal＝残り 28%。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（40 gal は 1,440 秒）。足りなければ燃料でなく出発点と帰投の輪を直す) / design (v0.8.1 S3: 探りの帯 F（帰投の夜の残りの中央値 15〜35%）は浜沿いの夜の中央値 27% で通った＝40 gal のまま。北を大きく回って空知丸を先に撃つ道は 40 夜とも燃料切れで漂流（加点の道は目的の代わりにならない）)",
+         "shallows": [],
+         "bounds_m": {
+           "width": 6000,
+@@ -895,19 +896,19 @@
+         "radar": {
+           "model": "so_late",
+           "fit": "own",
+-          "source": "historical (1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じ、卯月はレーダーで捉えられた（docs/01 §8・spec-v0800 §3.1。medium）) / design (v0.8.1 S0・spec-v0810 §3.4 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ＝ユーザーの決め U1）。陸の反射 300 m に対し空知丸は岸の線から 240 m（映らない）・卯月は 620 m（映る）。世界の配線は S2)"
++          "source": "historical (1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じ、卯月はレーダーで捉えられた（docs/01 §8・spec-v0800 §3.1。medium）) / design (v0.8.1 S0・spec-v0810 §3.4 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ＝ユーザーの決め U1）。陸の反射 300 m に対し空知丸は岸の線から 240 m（映らない）・卯月は 620 m（映る）。世界の配線は v0.8.1 S2（coast の南の岸の線も陸の反射に渡す）)"
+         },
+         "anchored": {
+           "destroyer_underway_s": 3,
+           "transport_underway": false,
+           "picket_underway_s": 4,
+           "alarm_s": 4,
+-          "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 秒（S0 は 6 秒・S3 で 3 秒。体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は S2) / design (v0.8.1 S3: destroyer_underway_s 6 → 3＝探りの帯 A1（shore_east の達成 100% ＞ 80%）・A2（open_north の達成 100% ＞ A1 − 15）。spec-v0810 §3.9 のつまみ ③ の下の端。気づいて 3 秒で動き出す＝北の 900 m からの扇（走る 10.5 秒）は雷跡に気づいて動き出した艦を外しうる（open_north の達成 100 → 73%）。浜からの真南の扇（走る約 5.7 秒）は外れない＝A1・A5 は 100% のまま（CHANGELOG v0.8.1 S3 の開いた帯）)"
++          "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 秒（S0 は 6 秒・S3 で 3 秒。体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は v0.8.1 S2・ハードの駆潜艇は S2b) / design (v0.8.1 S3: destroyer_underway_s 6 → 3＝探りの帯 A1（shore_east の達成 100% ＞ 80%）・A2（open_north の達成 100% ＞ A1 − 15）。spec-v0810 §3.9 のつまみ ③ の下の端。気づいて 3 秒で動き出す＝北の 900 m からの扇（走る 10.5 秒）は雷跡に気づいて動き出した艦を外しうる（open_north の達成 100 → 73%）。浜からの真南の扇（走る約 5.7 秒）は外れない＝A1・A5 は 100% のまま（CHANGELOG v0.8.1 S3 の開いた帯）)"
+         },
+         "shore_backdrop": {
+           "detect_factor": 0.6,
+           "behind_m": 2000,
+-          "source": "historical (PT はレーダーで捉え、消音して暗い岸を背に低速で忍び寄った（卯月の夜と PT の寄り方の教え。medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.3 D-B1〜D-B3。艦から自艇への線を自艇の向こうへ伸ばし、behind_m 2,000 m の内で陸の岸の線に当たれば、その艦の見つける距離 × detect_factor 0.6（月の段 1 つ分＝dark 0.6 と half 1.0 の比と同じ大きさ）。照らされている間は効かず、機銃の閃光の 1,200 m はそのまま。卯月の見つける距離（月没後）は 停止 480 → 288・静音 600 → 360・巡航 1,200 → 720・全速 1,920 → 1,152 m。S3 の探りの帯（A1〜A3）で detect_factor 0.5〜0.7・behind_m 1,000〜3,000 の内で直す。世界の配線は S2)"
++          "source": "historical (PT はレーダーで捉え、消音して暗い岸を背に低速で忍び寄った（卯月の夜と PT の寄り方の教え。medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.3 D-B1〜D-B3。艦から自艇への線を自艇の向こうへ伸ばし、behind_m 2,000 m の内で陸の岸の線に当たれば、その艦の見つける距離 × detect_factor 0.6（月の段 1 つ分＝dark 0.6 と half 1.0 の比と同じ大きさ）。照らされている間は効かず、機銃の閃光の 1,200 m はそのまま。卯月の見つける距離（月没後）は 停止 480 → 288・静音 600 → 360・巡航 1,200 → 720・全速 1,920 → 1,152 m。S3 の探りの帯（A1〜A3）で detect_factor 0.5〜0.7・behind_m 1,000〜3,000 の内で直す。世界の配線は v0.8.1 S2) / design (v0.8.1 S3: detect_factor 0.7 を試して帯が変わらず（浜の真南の止まる点＝卯月から 440〜540 m は 0.7 の背に岸の静音 420 m よりまだ遠い）0.6 に戻した。behind_m も動かさない（浜の上で卯月から見た背の陸は 140 m 前後＝1,000〜3,000 のどれでも当たる）。浜沿いの夜の達成 100% は帯 A1 の上へ外れたまま＝実機で見る（CHANGELOG v0.8.1 S3 の開いた帯）)"
+         },
+         "hard": {
+           "extra_pickets": [
+@@ -923,7 +924,7 @@
+             }
+           ],
+           "picket_enemy_id": "ijn_subchaser",
+-          "source": "historical (卯月と駆潜艇 2 隻（第13号型）が空知丸をパロンポンへ導いた（medium。docs/01 §8）。その夜の駆潜艇の位置は見つからない) / design (v0.8.1 S0・spec-v0810 §3.2 D-S8。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦…の数が増えていけばよい」）: 駆潜艇 2 隻を泊地の外の哨戒の位置 (2300, 2050)・090° と (3200, 1500)・270°（S3 で (4300, 2200) から移した）に止めて置く（止まった艦の規則のまま。anchored.picket_underway_s で動き出し、体当たりはしない）。隊の並びは駆逐艦 → 輸送船 → 駆潜艇。撃沈の達成・命中率の KPI・撃沈 n/m・輸送船の加点に数えず、点は無い。出発点から今夜の揺らぎの端で 2,040 m 以上（全速で見つかる 1,920 m の外＝V-A4。S2b の (4300, 2200) は 1,978 m）。世界の配線は S2b（v0.8.1b へ回すこともある）) / design (v0.8.1 S3: 2 隻目 (4300, 2200) → (3200, 1500)＝探りの帯 H1（ハードの shore_east の達成 5%・自艇の沈没 90%＝理不尽）・H2。spec-v0810 §3.9 のつまみ ⑦。(4300, 2200) は岸を回る道の巡航の脚の終わり (5100, 1500) から 1,063 m＝巡航の見つかる 1,200 m の内で、ほとんどの夜に警報で卯月が動き出した。泊地の北西の哨戒へ移し、北から真っすぐ寄る道を見張る（卯月の北 900 m の点から名目で 420 m）＝ハードでも岸の道が正解（H2）。岸を回る道（巡航の脚・静音で下る脚・浜）からは揺らぎの端でも 1,300 m 以上・出発点から 2,040 m 以上（V-A4）)"
++          "source": "historical (卯月と駆潜艇 2 隻（第13号型）が空知丸をパロンポンへ導いた（medium。docs/01 §8）。その夜の駆潜艇の位置は見つからない) / design (v0.8.1 S0・spec-v0810 §3.2 D-S8。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦…の数が増えていけばよい」）: 駆潜艇 2 隻を泊地の外の哨戒の位置 (2300, 2050)・090° と (3200, 1500)・270°（S3 で (4300, 2200) から移した）に止めて置く（止まった艦の規則のまま。anchored.picket_underway_s で動き出し、体当たりはしない）。隊の並びは駆逐艦 → 輸送船 → 駆潜艇。撃沈の達成・命中率の KPI・撃沈 n/m・輸送船の加点に数えず、点は無い。出発点から今夜の揺らぎの端で 2,040 m 以上（全速で見つかる 1,920 m の外＝V-A4。S2b の (4300, 2200) は 1,978 m）。世界の配線は v0.8.1 S2b（v0.8.1 の内に入った。Briefing の敵の行にハードだけ「駆潜艇 ×2」）） / design (v0.8.1 S3: 2 隻目 (4300, 2200) → (3200, 1500)＝探りの帯 H1（ハードの shore_east の達成 5%・自艇の沈没 90%＝理不尽）・H2。spec-v0810 §3.9 のつまみ ⑦。(4300, 2200) は岸を回る道の巡航の脚の終わり (5100, 1500) から 1,063 m＝巡航の見つかる 1,200 m の内で、ほとんどの夜に警報で卯月が動き出した。泊地の北西の哨戒へ移し、北から真っすぐ寄る道を見張る（卯月の北 900 m の点から名目で 420 m）＝ハードでも岸の道が正解（H2）。岸を回る道（巡航の脚・静音で下る脚・浜）からは揺らぎの端でも 1,300 m 以上・出発点から 2,040 m 以上（V-A4）)"
+         }
+       }
+     },
+diff --git a/src/config/briefing-data.ts b/src/config/briefing-data.ts
+index 06dd593..938b136 100644
+--- a/src/config/briefing-data.ts
++++ b/src/config/briefing-data.ts
+@@ -39,6 +39,8 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
+   const extra = hard && proto?.['transit'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined)?.['extra_transit_ships'] : undefined;
+   for (let i = 0; i < (typeof extra === 'number' ? extra : 0); i++) enemyIds.push(mission.enemyId);
+   if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
++  const pk = hard && proto?.['anchored'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined) : undefined; // ハードの駆潜艇（v0.8.1 S4。us_06。V-A5 で 1〜4 隻）は輸送船の後ろに
++  if (pk && Array.isArray(pk['extra_pickets']) && typeof pk['picket_enemy_id'] === 'string') for (const _ of pk['extra_pickets']) enemyIds.push(pk['picket_enemy_id']);
+   return {
+     id: missionId,
+     titleJa: text('title_ja'),
+diff --git a/src/core/boat-telemetry.ts b/src/core/boat-telemetry.ts
+index 091a974..54ff381 100644
+--- a/src/core/boat-telemetry.ts
++++ b/src/core/boat-telemetry.ts
+@@ -227,6 +227,8 @@ export interface StraitTelemetry {
+   /** 衝突の危険の艦（隊の艦の添字のビット: 目で見えていて・艦首が自艇へ半角の内・距離の内）と、その一番近い艦までの m（無ければ NaN） */
+   bowOnMask: number;
+   bowOnM: number;
++  /** その一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハードの隊の最後の 2 隻。2 行目の名詞。駆潜艇のいない任務はいつも偽） */
++  bowOnPicket: boolean;
+ }
+ 
+ /** 止まった艦と暗い岸を背にの HUD・Result の材料（v0.8.1 S2。setup.anchors の任務＝us_06 だけ鍵が出る。読み手は S4 の ui/anchor-lines・anchor-result） */
+@@ -242,4 +244,6 @@ export interface AnchorTelemetry {
+   backdropS: number;
+   heldShots: number;
+   heldHits: number;
++  /** 艦ごと（上と同じ添字）の目で見えているビット（v0.8.1 S4。systems/mission-telemetry の setSighted と同じ d² ≤ visRange2・海域を出た艦は 0。HUD の「停泊していた艦が動き出した！」の材料） */
++  seenMask: number;
+ }
+diff --git a/src/core/briefing.ts b/src/core/briefing.ts
+index 437421a..85a8f91 100644
+--- a/src/core/briefing.ts
++++ b/src/core/briefing.ts
+@@ -186,6 +186,8 @@ export interface BriefingNumbers {
+   gunsLabel: string;
+   /** 敵の来る方角（8 方位。v0.4.6。夜ごとに変わる。無ければ ''） */
+   enemyFromJa: string;
++  /** 敵の行の括弧の差し替え（v0.8.1 S4。止まった艦の任務だけ「南西に停泊」＝systems/briefing-numbers。無い任務では鍵ごと出ない） */
++  enemyAtJa?: string;
+   homeX: number;
+   homeY: number;
+   boundsW: number;
+@@ -268,7 +270,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
+     n.dayRowJa !== undefined
+       ? { label: '時', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ ${n.dayRowJa}` }
+       : { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}${n.radarJa ? ` ・\u00a0${n.radarJa}` : ''}` },
+-    { label: '敵', text: `${enemy}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.enemyRowJa !== undefined ? ` ・ ${n.enemyRowJa}` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
++    { label: '敵', text: `${enemy}${n.enemyAtJa ? `（${n.enemyAtJa}）` : n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.enemyRowJa !== undefined ? ` ・ ${n.enemyRowJa}` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
+     { label: '危険', text: `${hazardsJa(t.hazardIds, hazardOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], hazardOf)}` },
+     {
+       label: '条件',
+diff --git a/src/scenes/result-scene.ts b/src/scenes/result-scene.ts
+index 47209b8..82c3403 100644
+--- a/src/scenes/result-scene.ts
++++ b/src/scenes/result-scene.ts
+@@ -176,7 +176,7 @@ export class ResultScene extends Phaser.Scene {
+     };
+     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
+     const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
+-    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
++    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+     const h = r.hunt;
+     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
+     for (const b of resultBodyLines(r, hardV)) {
+diff --git a/src/systems/anchor-telemetry.ts b/src/systems/anchor-telemetry.ts
+index ab6ee2f..0dc14ed 100644
+--- a/src/systems/anchor-telemetry.ts
++++ b/src/systems/anchor-telemetry.ts
+@@ -1,7 +1,7 @@
+ // 止まった艦と暗い岸を背にの記録とテレメトリ（v0.8.1 S2。us_06。spec-v0810 §3.2 D-S4・§3.3 D-B4・§3.7 D-O4 の材料、lead の L37）。AnchorLog は systems/destroyer-anchor が持ち、止まった艦の段の後に 1 回 step:
+ // 艦ごとの気づいた・動き出した世界の秒（core/anchored-ship の時計は体感＝命中スロー込みなので、ビットが立ったステップの stepTimeS を別に刻む）と通算、最寄りの浮いている艦（enemy.focus と同じ nearestAfloatIndex）に
+ // 対して背に岸が効いていた世界の秒、止まった艦へ撃った魚雷とその命中（印は world-radar の目で見えない魚雷と同じ WeakSet。発射は systems/torpedo-free、命中は systems/torpedo-hits が渡す＝数えるだけ）。
+-// テレメトリは数を写すだけ（配列は参照）・setup.anchors の無い任務は鍵ごと出ない。世界・艦・AI には何も書かない。Phaser 非依存・乱数なし。確保は作る時と発射の時の印だけ。HUD の文と Result の行は S4。
++// テレメトリは数を写すだけ（配列は参照）・setup.anchors の無い任務は鍵ごと出ない。世界・艦・AI には何も書かない。Phaser 非依存・乱数なし。確保は作る時と発射の時の印だけ。S4: 目で見えている艦のビット（HUD）。
+ import type { AnchorState } from '../core/anchored-ship';
+ import type { AnchorTelemetry } from '../core/boat-telemetry';
+ import type { AnchorWorldView } from './destroyer-anchor';
+@@ -45,13 +45,14 @@ export class AnchorLog {
+   noteHit(torpedo: object): void { if (this.held.has(torpedo)) this.heldHits++; }
+ }
+ 
+-type AnchorTelemetryWorld = { readonly destroyers: { readonly anchors: { readonly state: AnchorState; readonly log: AnchorLog } | null } | null };
++type ShipEye = { readonly out: boolean; readonly state: { readonly x: number; readonly y: number } };
++type AnchorTelemetryWorld = { readonly visRange2: number; readonly boat: { readonly state: { readonly x: number; readonly y: number } }; readonly destroyers: { readonly anchors: { readonly state: AnchorState; readonly log: AnchorLog } | null; readonly ships: readonly ShipEye[] } | null };
+ 
+ /** 出発時の anchor（止まった艦の任務だけ鍵が出る。無い任務は {}＝ほかの任務のテレメトリは今のまま） */
+ export function anchorTelemetryPart(w: AnchorTelemetryWorld): { anchor?: AnchorTelemetry } {
+   const a = w.destroyers ? w.destroyers.anchors : null;
+   if (!a) return {};
+-  const t: AnchorTelemetry = { stage: a.state.stage, reason: a.state.reason, noticedAtS: a.log.noticedAtS, underwayAtS: a.log.underwayAtS, noticedCount: 0, underwayCount: 0, backdropOn: false, backdropS: 0, heldShots: 0, heldHits: 0 };
++  const t: AnchorTelemetry = { stage: a.state.stage, reason: a.state.reason, noticedAtS: a.log.noticedAtS, underwayAtS: a.log.underwayAtS, noticedCount: 0, underwayCount: 0, backdropOn: false, backdropS: 0, heldShots: 0, heldHits: 0, seenMask: 0 };
+   refreshAnchorTelemetry(t, w);
+   return { anchor: t };
+ }
+@@ -66,4 +67,9 @@ export function refreshAnchorTelemetry(t: AnchorTelemetry | undefined, w: Anchor
+   t.backdropS = l.backdropS;
+   t.heldShots = l.heldShots;
+   t.heldHits = l.heldHits;
++  // 目で見えている艦（v0.8.1 S4。mission-telemetry の setSighted と同じ d² ≤ visRange2）。HUD の「動き出した」は見えている艦だけ（ui/anchor-lines）
++  const b = w.boat.state, ships = w.destroyers!.ships;
++  let seen = 0;
++  for (let i = 0; i < t.underwayAtS.length && i < ships.length; i++) { const p = ships[i]!; if (!p.out && (p.state.x - b.x) ** 2 + (p.state.y - b.y) ** 2 <= w.visRange2) seen |= 1 << i; }
++  t.seenMask = seen;
+ }
+diff --git a/src/systems/briefing-numbers.ts b/src/systems/briefing-numbers.ts
+index 95c15e2..ddde2fc 100644
+--- a/src/systems/briefing-numbers.ts
++++ b/src/systems/briefing-numbers.ts
+@@ -29,6 +29,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
+     ...(s.landing && s.allyDestroyer ? { allyJa: allyBriefingJa(s.allyDestroyer.labelJa, bearingJa(bearingDeg(s.landing.params.x, s.landing.params.y, s.allyDestroyer.x, s.allyDestroyer.y))) } : {}),
+     // 空襲下の退避（v0.6.11 S6。jp_03。spec-v0611-r2 §10.5）: 成功の尾・時の行・敵の波・危険の名前（昼の言い方）・条件の時計と燃料と機銃ともう一度来る編隊。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
+     ...evacPart(s),
++    // 止まった艦の任務（v0.8.1 S4。us_06。spec-v0810 §3.7 D-O6）: 敵の行の括弧「（南西に停泊）」＝自艇の出発点から見た隊の先頭の艦（今夜の揺らぎ込み）。無い任務は鍵ごと省く
++    ...(s.anchors && s.destroyer ? { enemyAtJa: `${bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.destroyer.starts[0]!.x, s.destroyer.starts[0]!.y))}に停泊` } : {}),
+     // レーダー（v0.8.0 S4。us_04。spec-v0800 §4.9）: 月の行の尾（射程と、陸の反射のある海域なら「陸のそばは映らない」）。無い任務・?debug&noradar は鍵ごと省く
+     ...(s.radar ? { radarJa: radarBriefingJa(s.radar.shipRangeM, s.radar.landClutterM > 0 && (s.shores !== undefined || s.mission.coast !== null)) } : {}),
+     visM: playerVisRangeM(s.vis),
+diff --git a/src/systems/mission-result-extras.ts b/src/systems/mission-result-extras.ts
+index 946f709..9536ddc 100644
+--- a/src/systems/mission-result-extras.ts
++++ b/src/systems/mission-result-extras.ts
+@@ -1,9 +1,11 @@
+ // Result の材料のうち任務ごとの部分（v0.4.4 で mission-telemetry から切り出し）: 大発掃討（v0.4.2）と僚艇（v0.4.4）、敵の水上機（v0.4.1。v0.6.1 で切り出し）、暴風（v0.3.4。v0.6.3 で切り出し）、
+-// 機関の不調（v0.6.5）、隼艇の僚艇（v0.6.6）。終了時に 1 回だけ作る。
++// 機関の不調（v0.6.5）、隼艇の僚艇（v0.6.6）、止まった艦の任務（v0.8.1 S4。us_06）。終了時に 1 回だけ作る。
+ import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
+ import { meanInsideKt } from '../core/storm';
+ import type { BargeResult, EscortResult, MissionResult } from '../scenes/result-scene';
+ import type { EngineResult, GunboatResult } from '../ui/result-types';
++import type { GameData } from '../config/game-data';
++import { anchorShipNameJa, type AnchorResult } from '../ui/anchor-result';
+ import { gunboatFates } from './gunboat-credit';
+ import type { MissionWorld } from './mission-world';
+ 
+@@ -96,3 +98,16 @@ export function stormResultFields(w: MissionWorld): StormResultFields {
+     stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
+   };
+ }
++
++/**
++ * 止まった艦の任務の Result の材料（v0.8.1 S4。us_06。ui/anchor-result）: 止まった艦の任務だけ anchor の鍵。隊の先頭の艦（卯月）の名（enemies.json の name_ja）・撃沈・動き出した世界の秒と
++ * 気づいた理由、止まった艦への魚雷とその命中・最寄りの艦に対して背に岸が効いた秒（systems/anchor-telemetry の記録）。無い任務は {}（ほかの任務の Result は同じ）
++ */
++export function anchorResultPart(w: Pick<MissionWorld, 'destroyers' | 'setup'>, data: GameData): { anchor?: AnchorResult } {
++  const g = w.destroyers;
++  const a = g ? g.anchors : null;
++  if (!g || !a) return {};
++  const rec = (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === w.setup.mission.enemyId);
++  const name = typeof rec?.['name_ja'] === 'string' ? anchorShipNameJa(rec['name_ja']) : '駆逐艦';
++  return { anchor: { nameJa: name, sunk: g.ships[0]!.sinking, underwayS: a.log.underwayAtS[0]!, reason: a.state.reason[0]!, heldShots: a.log.heldShots, heldHits: a.log.heldHits, backdropS: a.log.backdropS } };
++}
+diff --git a/src/systems/mission-telemetry.ts b/src/systems/mission-telemetry.ts
+index 3273398..16e4dd5 100644
+--- a/src/systems/mission-telemetry.ts
++++ b/src/systems/mission-telemetry.ts
+@@ -12,7 +12,7 @@ import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
+ import type { AircraftPose } from '../core/friendly';
+ import { raidResultLine } from '../core/sortie';
+ import type { MissionResult } from '../scenes/result-scene';
+-import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
++import { anchorResultPart, bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+ import { radarResultPart, straitResultPart } from './strait-result-part';
+ import { evacResultPart } from '../core/evac-result';
+ import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
+@@ -209,5 +209,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
+     ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
+     ...radarResultPart(w), // レーダー（v0.8.0 S4。us_04）: レーダーの任務だけ radar の鍵（最初の接触・目で見えない間に撃った魚雷。本文の駆逐艦の行の後）
+     ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
++    ...anchorResultPart(w, data), // 止まった艦の任務（v0.8.1 S4。us_06）: anchor の鍵（卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒。本文の駆逐艦の行の後）
+   };
+ }
+diff --git a/src/systems/strait-telemetry.ts b/src/systems/strait-telemetry.ts
+index 96336db..4bac7a0 100644
+--- a/src/systems/strait-telemetry.ts
++++ b/src/systems/strait-telemetry.ts
+@@ -3,7 +3,7 @@
+ // - 衝突の危険: 目で見えている艦だけ（out でなく d² ≤ 視程²＝systems/mission-telemetry の setSighted と同じ規則）で、艦首が自艇へ半角の内・距離の内（core/strait-geometry の bowOnRisk。
+ //   2 乗の距離と内積だけ＝atan2 なし）。艦の添字のビットと一番近い艦までの m（平方根はビットがある時だけ 1 本）。1 回の接近で 1 回の文にするのは ui/strait-line-clock（ビットが立った時）。
+ // 列の通過もレーダーも無い任務は enabled false のまま何もしない（ほかの任務の毎フレームの仕事は増えない）。世界・艦・AI には何も書かない（読むだけ）。
+-// v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。
++// v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。S4: 一番近い危険な艦が駆潜艇か（2 行目の名詞）。
+ import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_RANGE_M } from '../config/strait-hud-config';
+ import type { StraitTelemetry } from '../core/boat-telemetry';
+ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
+@@ -12,7 +12,7 @@ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
+ export interface StraitTelemetryWorld {
+   readonly visRange2: number;
+   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
+-  readonly destroyers: { readonly transit: object | null; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
++  readonly destroyers: { readonly transit: object | null; readonly picketIndex?: number; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
+   readonly radar: object | null;
+ }
+ 
+@@ -24,7 +24,7 @@ const BOW_MAX_SHIPS = 30;
+ 
+ /** 出発時の strait（列の通過かレーダーのある任務だけ enabled） */
+ export function initStraitTelemetry(w: StraitTelemetryWorld): StraitTelemetry {
+-  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN };
++  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false };
+   refreshStraitTelemetry(t, w);
+   return t;
+ }
+@@ -38,6 +38,7 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
+   const g = w.destroyers;
+   let mask = 0;
+   let best = Infinity;
++  let bestI = -1;
+   if (g) {
+     const ships = g.ships;
+     for (let i = 0; i < ships.length && i < BOW_MAX_SHIPS; i++) {
+@@ -50,9 +51,10 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
+       const d2 = dx * dx + dy * dy;
+       if (d2 > r2 || !bowOnRisk(s.x, s.y, s.headingDeg, b.x, b.y, BOW_RANGE2, BOW_COS2)) continue;
+       mask |= 1 << i;
+-      if (d2 < best) best = d2;
++      if (d2 < best) { best = d2; bestI = i; }
+     }
+   }
+   t.bowOnMask = mask;
+   t.bowOnM = mask !== 0 ? Math.sqrt(best) : NaN;
++  t.bowOnPicket = bestI >= 0 && g !== null && g.picketIndex !== undefined && g.picketIndex >= 0 && bestI >= g.picketIndex; // 駆潜艇（v0.8.1 S4。隊の最後。名詞だけ）
+ }
+diff --git a/src/ui/dawn-lines.ts b/src/ui/dawn-lines.ts
+index 5e1e2aa..320ab40 100644
+--- a/src/ui/dawn-lines.ts
++++ b/src/ui/dawn-lines.ts
+@@ -17,6 +17,7 @@ import { callLabel, withWarnings, type HudLine } from './hud-lines';
+ import { evacSettleBannerLines, mssJa } from './evac-lines';
+ import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landingWaitTailJa } from './landing-lines';
+ import { stormWarning } from './mission-mode';
++import { anchorWithdrawJa } from './anchor-lines';
+ 
+ /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
+ const RESULT_DODGE_SHOWN = 8;
+@@ -177,7 +178,7 @@ export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
+   const d = t.dawn;
+   // 昼の任務（v0.6.11 S5。jp_03）: 「第1次の空襲が去った」と残存の確定・外なら §2 の 4 機（ui/evac-lines）
+   if (d.dayStart && t.evac.enabled) return evacSettleBannerLines(t.evac, d.air === DAWN_AIR_ENEMY && d.strikeEnabled ? `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}` : '');
+-  const withdraw = withdrawBannerJa(t);
++  const withdraw = anchorWithdrawJa(t, withdrawBannerJa(t)); // 止まった艦の任務（v0.8.1 S4。us_06）は泊地に残る輸送船の句（ui/anchor-lines。ほかの任務は同じ文）
+   if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
+     const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;
+     if (d.vip && t.escortEnabled && !t.escortSunk) return ['夜明け — 空襲', sub, '僚艇も狙われる ・ 自艇の転舵に僚艇が付いてくる'];
+diff --git a/src/ui/mission-line-keys.ts b/src/ui/mission-line-keys.ts
+index 5dbfff1..fd37a88 100644
+--- a/src/ui/mission-line-keys.ts
++++ b/src/ui/mission-line-keys.ts
+@@ -11,7 +11,7 @@ import { engineKey, engineTagKey } from './engine-lines';
+ import { evacLineKey } from './evac-lines';
+ import { landingEventKey, landingKey, type LandingEventView } from './landing-lines';
+ import { planeKeyOf, planeModeOf } from './mission-line-air';
+-import { MISSION_BOW_ON, MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_RADAR_EVENT } from './mission-mode';
++import { MISSION_ANCHOR_EVENT, MISSION_BOW_ON, MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_RADAR_EVENT } from './mission-mode';
+ import { ptKey } from './pt-lines';
+ 
+ /** 4 つのキーと、文を選ぶモードの判定（米PT の 5 つ・機関の 3 つ・水上機の 3 つ） */
+@@ -45,7 +45,7 @@ export function createLineKeys(): LineKeys {
+  */
+ export function composeLineKeys(
+   out: LineKeys, t: BoatTelemetry, mode: number, flags: number, lastPtKey: number, merge: number, convoyEvent: number, landingEv: LandingEventView = t.landing,
+-  strait: { readonly radarKey: number; readonly bowKey: number } | null = null,
++  strait: { readonly radarKey: number; readonly bowKey: number; readonly anchor?: { readonly key: number } } | null = null,
+ ): LineKeys {
+   const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
+   out.ptMode = ptMode;
+@@ -59,7 +59,7 @@ export function composeLineKeys(
+   const planeMode = planeModeOf(mode); // 水上機の 3 つ（9〜11）。キー（距離は接近中だけ 100 m 刻み）と文は ui/mission-line-air
+   out.planeMode = planeMode;
+   out.planeKey = planeKeyOf(t, planeMode);
+-  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : mode === MISSION_RADAR_EVENT ? (strait ? strait.radarKey : 0) : mode === MISSION_BOW_ON ? (strait ? strait.bowKey : 0) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38、海峡の夜（v0.8.0 S4）は 39・40 の行のキー
++  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : mode === MISSION_RADAR_EVENT ? (strait ? strait.radarKey : 0) : mode === MISSION_BOW_ON ? (strait ? strait.bowKey : 0) : mode === MISSION_ANCHOR_EVENT ? (strait?.anchor ? strait.anchor.key : 0) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38、海峡の夜（v0.8.0 S4）は 39・40、止まった艦の任務（v0.8.1 S4）は 41 の行のキー
+   out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(landingEv) : 0;
+   return out;
+ }
+diff --git a/src/ui/mission-mode.ts b/src/ui/mission-mode.ts
+index 333db44..4734d62 100644
+--- a/src/ui/mission-mode.ts
++++ b/src/ui/mission-mode.ts
+@@ -86,6 +86,9 @@ export const MISSION_EVAC = 38;
+  */
+ export const MISSION_RADAR_EVENT = 39;
+ export const MISSION_BOW_ON = 40;
++/** 41 止まった艦の任務の出来事（v0.8.1 S4。us_06。文と時計は ui/anchor-lines: 暗い岸を背にした・停泊していた艦が動き出した。1 回・4 秒。レーダーの出来事のすぐ下＝それを遅らせない）と旗 */
++export const MISSION_ANCHOR_EVENT = 41;
++export const MODE_FLAG_ANCHOR_EVENT = 1024;
+ 
+ /**
+  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
+@@ -171,7 +174,7 @@ export function bargeRunning(t: BoatTelemetry): boolean {
+ /**
+  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
+  * 優先順: 魚雷待ち > 燃料切れ（どちらも揚陸の決着の前の帰投の輪の中では立てない。v0.6.9 R14 A5）> 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 衝突の危険（v0.8.0 S4）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 輸送船が射線に入る（v0.6.9 R14 A1）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 揚陸の出来事（v0.6.9）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
+- * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > レーダーの出来事（v0.8.0 S4）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
++ * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > レーダーの出来事（v0.8.0 S4）> 止まった艦の出来事（v0.8.1 S4）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+  */
+ export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
+   // 揚陸の決着の前に帰投の輪の中（v0.6.9 R14 A5。jp_04 だけ。ほかの任務は偽で前のまま）: 任務は終わらない（systems/mission-end の landingHold）ので魚雷待ち・漂流の行は出さず、
+@@ -222,6 +225,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
+   if (t.batteryInArc) return MISSION_BATTERY;
+   if (t.escortEnabled && !t.escortSunk && t.escortDistM > t.escortLagWarnM) return MISSION_ESCORT_LAG;
+   if ((flags & MODE_FLAG_RADAR_EVENT) !== 0) return MISSION_RADAR_EVENT; // レーダーの出来事（v0.8.0 S4。us_04 だけ旗が立つ）
++  if ((flags & MODE_FLAG_ANCHOR_EVENT) !== 0) return MISSION_ANCHOR_EVENT; // 止まった艦の出来事（v0.8.1 S4。us_06 だけ旗が立つ）
+   if (t.shallowState !== 0) return MISSION_SHALLOWS;
+   if (stormWarning(t)) return MISSION_STORM_WARN;
+   if (planeApproaching(t)) return MISSION_PLANE;
+diff --git a/src/ui/result-body.ts b/src/ui/result-body.ts
+index b43bfa5..954808b 100644
+--- a/src/ui/result-body.ts
++++ b/src/ui/result-body.ts
+@@ -4,13 +4,14 @@
+ // v0.6.9 S7: 停泊して揚陸する輸送船（jp_04）は米PT の枝の頭に 3 行（ui/landing-result。輸送船の結末・PT ごとの雷撃・米PT の魚雷の和）。揚陸の無い任務は今までの行のまま。
+ // v0.6.10 S7: 卯月のいる夜（LandingResult.ally）はその 3 行の下に卯月の 1 行（ui/ally-result）、米PT の 4 行目（自艇の砲）から卯月の分を引く。卯月の無い夜は前の行のまま。
+ // v0.6.11 S6: 空襲下の退避（jp_03）は本文の頭に 4 行（ui/evac-result。残存と達成・隠れ場所と隊ごと・編隊・記録）。魚雷の行は出さない。退避の無い任務は今までの行のまま。
+-// v0.8.0 S4: 海峡の夜（us_04）は魚雷の枝の後ろにレーダーと列の通過の 1 行ずつ（ui/radar-result・strait-result。20 px・KPI の色）。鍵の無い任務は今までの行のまま。
++// v0.8.0 S4: 海峡の夜（us_04）は魚雷の枝の後ろにレーダーと列の通過の 1 行ずつ（ui/radar-result・strait-result。20 px・KPI の色）。鍵の無い任務は今までの行のまま。v0.8.1 S4: 止まった艦の任務（us_06）の 1 行（ui/anchor-result）。
+ // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
+ import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
+ import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
+ import type { BandSummary } from '../core/hit-rate';
+ import { allyGunShare, allyResultLineJa } from './ally-result';
+ import { armsResultLineJa } from './arms-lines';
++import { anchorResultLineJa, type AnchorResult } from './anchor-result';
+ import { convoyResultLine } from './convoy-lines';
+ import { engineResultLine } from './engine-lines';
+ import { evacResultLines } from './evac-result';
+@@ -40,6 +41,7 @@ export interface ResultBodySource {
+   /** 海峡の夜（v0.8.0 S4。us_04）のレーダーと列の通過。ある任務だけ鍵がある */
+   radar?: RadarResult;
+   strait?: StraitResult;
++  anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06）
+   detections: number; returned: boolean; objectiveDone: boolean;
+   shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
+   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
+@@ -113,6 +115,7 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
+     else line(RESULT_CAMPAIGN_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+     if (r.radar) line(radarResultLineJa(r.radar), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // レーダー（v0.8.0 S4。us_04）: 最初の接触・目で見えない間に撃った魚雷
+     if (r.strait) line(straitResultLineJa(r.strait), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 列の通過（v0.8.0 S4。us_04）: 往路・復路・撃沈・揚陸の地
++    if (r.anchor) line(anchorResultLineJa(r.anchor), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 止まった艦の任務（v0.8.1 S4。us_06）: 卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒
+   }
+   if (r.arms) line(armsResultLineJa(r.arms), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 兵装の新しい道（v0.6.8）: どの枝の後ろにも。使わなかった夜は無い
+   return out;
+diff --git a/src/ui/result-heading.ts b/src/ui/result-heading.ts
+index 676f273..92a6134 100644
+--- a/src/ui/result-heading.ts
++++ b/src/ui/result-heading.ts
+@@ -2,9 +2,10 @@
+ // v0.6.1: 夜明けは終了理由でなくなり（dawn を削除）、夜明けの後に終わった任務は見出しに「（夜明け後 N 秒）」を付ける。
+ // v0.6.2 実機 1 回目: 制空権下で敵艦隊がいなくなって終えた任務（cleared）は「敵艦隊なし（制空権下・帰投不要）」。帰投と同じに数える（returned が true）。
+ // v0.6.11 S6（jp_03。空襲下の退避＝昼の任務）: 帰投は「退避完了」、空襲の沈没は「空襲で沈没」、火災は「火災で沈没」（jp_03 に砲撃は無い＝座席へ入れた時の火災の理由の既定 destroyed）、
+-// 後ろの秒は「（空襲後 N 秒）」（evac の引数。ほかの任務の見出しは 1 字も変わらない）。
++// 後ろの秒は「（空襲後 N 秒）」（evac の引数。ほかの任務の見出しは 1 字も変わらない）。v0.8.1 S4: 止まった艦の任務（us_06。anchor の引数）の体当たりは「敵艦と衝突した」（ui/anchor-result）。
+ // Phaser も config（DOM を読む game-config）も使わない（文を組むだけ。tests から型検査ごと読める）。終了理由の型は core/mission-flow。
+ import type { MissionEndReason } from '../core/mission-flow';
++import { ANCHOR_REASON_LABEL } from './anchor-result';
+ 
+ /** 史実モードの見出しの印（v0.6.1 で config/menu-config から移した。文は同じ） */
+ export const RESULT_HISTORICAL_TAG_JA = '（史実）';
+@@ -49,9 +50,10 @@ export function resultDawnSuffixS(returned: boolean, d: { readonly reached: bool
+  * 「任務終了 — 理由」の見出し。dawnSuffixS は夜明け後の秒（NaN なら付けない。付けるときは「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に。resultDawnSuffixS）。
+  * evac（v0.6.11 S6。空襲下の退避の任務）は理由を EVAC_REASON_LABEL で言い換え、後ろの秒は「（空襲後 N 秒）」
+  */
+-export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false): string {
++export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false, anchor = false): string {
+   const dawn = Number.isNaN(dawnSuffixS) ? '' : `（${evac ? '空襲後' : '夜明け後'} ${Math.round(dawnSuffixS)} 秒）`;
+-  return `任務終了 — ${(evac ? EVAC_REASON_LABEL[reason] : undefined) ?? REASON_LABEL[reason]}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
++  const label = (evac ? EVAC_REASON_LABEL[reason] : anchor ? ANCHOR_REASON_LABEL[reason] : undefined) ?? REASON_LABEL[reason]; // 止まった艦の任務（v0.8.1 S4。ui/anchor-result）
++  return `任務終了 — ${label}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
+ }
+ 
+ /**
+diff --git a/src/ui/result-types.ts b/src/ui/result-types.ts
+index d52d713..f037808 100644
+--- a/src/ui/result-types.ts
++++ b/src/ui/result-types.ts
+@@ -2,6 +2,8 @@
+ // v0.6.3: 米PT の記録（PtResult）を足した。実機 1 回目: T-14 の 13mm の記録（射撃・命中・撃退・撃沈・閃光が最初）と enemies.json の id。実機 2 回目: 連射と制圧の数。
+ // v0.6.4: 味方の大発の輸送隊の記録（ConvoyResult）と、米PT の標的スロットの欄（大発への航過・最初に捉えた標的・砲の名）。v0.6.5: 機関の不調の記録（EngineResult）。
+ // v0.6.6: 隼艇の僚艇の記録（GunboatResult。jp_01 のハード）。v0.6.8: 兵装の新しい道の記録（ArmsResult。使った夜だけ）。v0.6.11 S6: 空襲下の退避の記録（EvacResult の再 export）。
++// v0.8.1 S4: 止まった艦の任務（us_06）の記録 AnchorResult（ui/anchor-result）を海峡の夜の鍵の入れ物 StraitNightResult に足した（result-scene の MissionResult が継ぐ＝scene は変えない）。
++import type { AnchorResult } from './anchor-result';
+ import type { RadarResult } from './radar-result';
+ import type { StraitResult } from './strait-result';
+ import type { BlindKind } from '../core/arms-cue';
+@@ -176,4 +178,5 @@ export interface AllyResult {
+ export interface StraitNightResult {
+   radar?: RadarResult; // レーダー（ui/radar-result。systems/strait-result-part の radarResultPart）
+   strait?: StraitResult; // 列の通過（ui/strait-result。straitResultPart）
++  anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06。ui/anchor-result。systems/mission-result-extras の anchorResultPart）
+ }
+diff --git a/src/ui/special-line.ts b/src/ui/special-line.ts
+index dcd2642..b3a5f4a 100644
+--- a/src/ui/special-line.ts
++++ b/src/ui/special-line.ts
+@@ -1,12 +1,13 @@
+ // 上中央の 2 行目の「特別の行」の振り分け（v0.6.11 S5。spec-v0611-r2 §10.1 の M13: ui/mission-line の landingLine の呼び出しをこれに替えて差し引き 0 行）:
+ // 空襲下の退避（jp_03。モード MISSION_EVAC の中の行は ui/evac-lines）と、停泊して揚陸する輸送船（jp_04。ui/landing-lines。揚陸の無い任務とほかのモードは null）。
+ // 揚陸の 2 行目の末尾（landingPassTailJa）も mission-line の import の 1 行のままここから出し直す。Phaser・DOM を読まない（文を組むだけ）。
+-// v0.8.0 S4: 海峡の夜（us_04）のレーダーの出来事と衝突の危険（モード 39・40。文は ui/strait-lines、時計は pt-line-clock の strait＝ui/strait-line-clock。ほかの任務にこのモードは無い）。
++// v0.8.0 S4: 海峡の夜（us_04）のレーダーの出来事と衝突の危険（モード 39・40。文は ui/strait-lines、時計は pt-line-clock の strait＝ui/strait-line-clock。ほかの任務にこのモードは無い）。v0.8.1 S4: 止まった艦の出来事（41。ui/anchor-lines）。
+ import type { BoatTelemetry } from '../core/boat-motion';
+ import { evacLine } from './evac-lines';
+ import type { HudLine } from './hud-lines';
+ import { landingLine, type LandingEventView } from './landing-lines';
+-import { MISSION_BOW_ON, MISSION_EVAC, MISSION_RADAR_EVENT } from './mission-mode';
++import { MISSION_ANCHOR_EVENT, MISSION_BOW_ON, MISSION_EVAC, MISSION_RADAR_EVENT } from './mission-mode';
++import { anchorLine } from './anchor-lines';
+ import { straitLine, type StraitLineView } from './strait-lines';
+ 
+ export { landingPassTailJa } from './landing-lines';
+@@ -14,5 +15,6 @@ export { landingPassTailJa } from './landing-lines';
+ /** モードの文（空襲下の退避か揚陸か海峡の夜。どれでもなければ null）。clock は ui/pt-line-clock（揚陸の 2 行目の出来事の写し landingEv・海峡の夜の時計 strait） */
+ export function specialLine(t: BoatTelemetry, mode: number, clock: { readonly landingEv: LandingEventView; readonly strait?: StraitLineView }): HudLine | null {
+   if (mode === MISSION_RADAR_EVENT || mode === MISSION_BOW_ON) return clock.strait ? straitLine(mode, clock.strait) : null;
++  if (mode === MISSION_ANCHOR_EVENT) return clock.strait?.anchor ? anchorLine(clock.strait.anchor) : null; // 止まった艦の任務の出来事（v0.8.1 S4。us_06。時計は strait-line-clock の anchor）
+   return mode === MISSION_EVAC && t.evac.enabled ? evacLine(t.evac) : landingLine(t, mode, clock.landingEv);
+ }
+diff --git a/src/ui/strait-line-clock.ts b/src/ui/strait-line-clock.ts
+index 20f2ead..f718610 100644
+--- a/src/ui/strait-line-clock.ts
++++ b/src/ui/strait-line-clock.ts
+@@ -4,11 +4,12 @@
+ // - レーダーの出来事（t.radar だけを読む。文は ui/radar-lines が出来事の時に 1 回組む）: 夜の最初の接触・接触が増えた（10 秒に 1 回まで）・東の縁で消えた（1 夜に 1 回）・
+ //   東へ消えた後に東の縁に現れた（1 夜に 1 回）。出ている間に次が来たら後ろに 1 つ待たせる（待っているものに替わるのは同じかより重い出来事だけ）。
+ // - 衝突の危険（t.strait の bowOnMask・bowOnM）: 艦のビットが新しく立った時（1 回の接近で 1 回。円錐か距離の外へ出れば次に備える）から 4 秒。距離は危険の間は毎フレームの一番近い艦まで。
+-// レーダーも列の通過も無い任務は何も始めない（旗は 0 のまま＝ほかの任務は 1 ビットも変わらない）。Phaser・DOM を読まない。確保は出来事の文を組む時だけ。
++// レーダーも列の通過も無い任務は何も始めない（旗は 0 のまま＝ほかの任務は 1 ビットも変わらない）。Phaser・DOM を読まない。確保は出来事の文を組む時だけ。 v0.8.1 S4: 止まった艦の任務（us_06）の出来事の時計 anchor（ui/anchor-lines）と衝突の危険の名詞（駆潜艇）も持つ。
+ import { BOW_ON_STEP_M, RADAR_NEW_MIN_GAP_MS, STRAIT_EVENT_SHOW_MS } from '../config/strait-hud-config';
+ import type { BoatTelemetry } from '../core/boat-telemetry';
+ import { MISSION_BOW_ON, MISSION_RADAR_EVENT, MODE_FLAG_BOW_ON, MODE_FLAG_RADAR_EVENT } from './mission-mode';
+ import { RADAR_EV_FIRST, RADAR_EV_NEW, RADAR_EV_NONE, RADAR_EV_RETURN, RADAR_EV_VILA, radarEventLineJa, radarLostAtEastEdge, radarNewAtEastEdge } from './radar-lines';
++import { AnchorLineClock } from './anchor-lines';
+ 
+ export class StraitLineClock {
+   /** 見たレーダーの出来事（最初の接触・新しい接触と消えた接触の回数）・1 夜に 1 回の 2 つ・最後に「新しい接触」を始めた ms */
+@@ -34,14 +35,16 @@ export class StraitLineClock {
+   private bowOnMs = 0;
+   private bowOnPrev = false;
+   bowStep = 1;
++  bowPicket = false; // 一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハード。ui/strait-lines の名詞）
+   private prevShownMs = 0;
++  readonly anchor = new AnchorLineClock(); // 止まった艦の任務の出来事（v0.8.1 S4。us_06。ui/anchor-lines。止まった艦の無い任務は旗 0 のまま）
+ 
+   /** 2 行目のキー（ui/mission-line-keys の lKey）: レーダーの出来事は通し番号、衝突の危険は通し番号と距離の刻み */
+   get radarKey(): number {
+     return this.radarSeq;
+   }
+   get bowKey(): number {
+-    return this.bowSeq * 64 + this.bowStep;
++    return this.bowSeq * 64 + this.bowStep + (this.bowPicket ? 1 << 20 : 0);
+   }
+ 
+   /** 毎フレーム（2 行目のモードを決める前）: MODE_FLAG_RADAR_EVENT・MODE_FLAG_BOW_ON。レーダーも列の通過も無い任務は 0 */
+@@ -80,7 +83,7 @@ export class StraitLineClock {
+     if (st && st.enabled) {
+       const fresh = st.bowOnMask & ~this.prevMask;
+       this.prevMask = st.bowOnMask;
+-      if (!Number.isNaN(st.bowOnM)) this.bowStep = Math.max(1, Math.ceil(st.bowOnM / BOW_ON_STEP_M));
++      if (!Number.isNaN(st.bowOnM)) { this.bowStep = Math.max(1, Math.ceil(st.bowOnM / BOW_ON_STEP_M)); this.bowPicket = st.bowOnPicket; }
+       if (fresh !== 0) {
+         this.bowSeq++;
+         this.bowActive = true;
+@@ -89,7 +92,7 @@ export class StraitLineClock {
+         this.bowActive = false;
+       }
+     }
+-    return (this.radarKind !== RADAR_EV_NONE ? MODE_FLAG_RADAR_EVENT : 0) | (this.bowActive ? MODE_FLAG_BOW_ON : 0);
++    return (this.radarKind !== RADAR_EV_NONE ? MODE_FLAG_RADAR_EVENT : 0) | (this.bowActive ? MODE_FLAG_BOW_ON : 0) | this.anchor.flags(t, nowMs);
+   }
+ 
+   /** そのフレームのモードが決まった後（nowMs は flags と同じ時刻）: 前のフレームから今まで出ていた ms を足す */
+@@ -100,6 +103,7 @@ export class StraitLineClock {
+     this.radarOnPrev = mode === MISSION_RADAR_EVENT;
+     this.bowOnPrev = mode === MISSION_BOW_ON;
+     this.prevShownMs = nowMs;
++    this.anchor.shown(mode, nowMs);
+   }
+ 
+   /** 出来事を出す（今出していなければ今から、出している間は後ろに 1 つ。文は今のテレメトリから 1 回だけ組む） */
+diff --git a/src/ui/strait-lines.ts b/src/ui/strait-lines.ts
+index b00c6d0..77ee55c 100644
+--- a/src/ui/strait-lines.ts
++++ b/src/ui/strait-lines.ts
+@@ -7,10 +7,11 @@ import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
+ import type { HudLine } from './hud-lines';
+ import { MISSION_BOW_ON, MISSION_RADAR_EVENT } from './mission-mode';
+ import { RADAR_EV_RETURN } from './radar-lines';
++import type { AnchorLineView } from './anchor-lines';
+ 
+-/** 衝突の危険の文（step は BOW_ON_STEP_M の刻みの数。1 以上） */
+-export function bowOnLineJa(step: number): string {
+-  return `衝突の危険！ 駆逐艦 ${step * BOW_ON_STEP_M} m ・ 艦首がこちらへ`;
++/** 衝突の危険の文（step は BOW_ON_STEP_M の刻みの数。1 以上。picket は一番近い危険な艦が駆潜艇＝v0.8.1 S4 の us_06 のハード。ほかの任務は駆逐艦のまま） */
++export function bowOnLineJa(step: number, picket = false): string {
++  return `衝突の危険！ ${picket ? '駆潜艇' : '駆逐艦'} ${step * BOW_ON_STEP_M} m ・ 艦首がこちらへ`;
+ }
+ 
+ /** 2 行目の文が読む ui/strait-line-clock の部分（そのクラスがそのまま満たす） */
+@@ -18,11 +19,13 @@ export interface StraitLineView {
+   readonly radarKind: number;
+   readonly radarText: string;
+   readonly bowStep: number;
++  readonly bowPicket?: boolean;
++  readonly anchor?: AnchorLineView; // 止まった艦の任務の出来事（v0.8.1 S4。ui/anchor-lines。ui/special-line がモード 41 で読む）
+ }
+ 
+ /** 海峡の 2 つのモードの行（ほかのモードは null）。帰りの列（進路から離れよ）と衝突の危険は警告の色、ほかのレーダーの出来事は強い色 */
+ export function straitLine(mode: number, c: StraitLineView): HudLine | null {
+-  if (mode === MISSION_BOW_ON) return { text: bowOnLineJa(c.bowStep), color: HUD_COLOR_WARN };
++  if (mode === MISSION_BOW_ON) return { text: bowOnLineJa(c.bowStep, c.bowPicket === true), color: HUD_COLOR_WARN };
+   if (mode === MISSION_RADAR_EVENT) return { text: c.radarText, color: c.radarKind === RADAR_EV_RETURN ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
+   return null;
+ }
+diff --git a/tests/anchor-world-kit.ts b/tests/anchor-world-kit.ts
+index 877bf01..db9e009 100644
+--- a/tests/anchor-world-kit.ts
++++ b/tests/anchor-world-kit.ts
+@@ -130,6 +130,8 @@ export interface AnchorKitWorld {
+   readonly torpedoEvents: object;
+   /** 世界の見つける距離（tests が書く。既定は出発時の値） */
+   detectRangeM: number;
++  /** 自艇の視程の 2 乗（v0.8.1 S4。systems/anchor-telemetry の目で見えている艦のビット。既定は setup の値） */
++  visRange2: number;
+   stepTimeS: number;
+   /** 夜明けの実秒（既定は setup.durationS） */
+   readonly dawnS: number;
+@@ -162,7 +164,7 @@ export function anchorKit(o: { mission?: string; hard?: boolean; seed?: number;
+     setup, destroyers: g, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 }, sinking: false },
+     torpedoes: { states: [], step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis,
+     detect: { count: 0, prev: false }, dawn: { reached: false }, enemy: { illuminated: false }, arms: null, escort: null, flareLit: false, hiddenBySmoke: false, smoke: null, smokeParams: null,
+-    torpedoEvents: {}, detectRangeM: setup.detectRangeAtStartM, stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
++    torpedoEvents: {}, detectRangeM: setup.detectRangeAtStartM, visRange2: setup.visRange2, stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
+   };
+ }
+ 
