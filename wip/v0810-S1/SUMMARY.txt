@@ -1,0 +1,39 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 3897 passed (3897)
+✓ g2 OK 39 DIFF 0
+✓ ab-all cases 58 same 58 diff 0
+✓ ab-all@audio cases 58 same 58 diff 0
+✓ ab-all@noaudio cases 58 same 58 diff 0
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✗ ab-us04 cases 4 same 2 diff 2
+    us04   us_04 seed 1 same:false frames 10345 最初の違い frame 10343 {"path":".t","a":172.383333,"b":172.4}
+    us04   us_04 seed 2 same:false frames 12432 最初の違い frame 12430 {"path":".t","a":207.166667,"b":207.183333}
+    us04   us_04&hard seed 1 same:true frames 15600
+    us04   us_04&hard seed 2 same:true frames 15600
+✓ hud-us04 cases 4 same 4 diff 0
+    hud us_04 seed 1 same:true snapshots 260
+    hud us_04 seed 2 same:true snapshots 260
+    hud us_04&hard seed 1 same:true snapshots 260
+    hud us_04&hard seed 2 same:true snapshots 260
+✓ ab-us04-noradar cases 4 same 4 diff 0
+    us04   us_04 seed 1 B&noradar masked 1208 same:true frames 15600
+    us04   us_04 seed 2 B&noradar masked 1692 same:true frames 15600
+    us04   us_04&hard seed 1 B&noradar masked 1450 same:true frames 15600
+    us04   us_04&hard seed 2 B&noradar masked 1692 same:true frames 15600
+✓ hud-us04-noradar cases 4 same 4 diff 0
+    hud us_04 seed 1 B&noradar masked 20 same:true snapshots 260
+    hud us_04 seed 2 B&noradar masked 28 same:true snapshots 260
+    hud us_04&hard seed 1 B&noradar masked 24 same:true snapshots 260
+    hud us_04&hard seed 2 B&noradar masked 28 same:true snapshots 260
+✓ tex-ab CHECK=1 0 ✗ lines
+- art-perf (SKIP)
+✓ snapshots untouched
+ALL_DONE
