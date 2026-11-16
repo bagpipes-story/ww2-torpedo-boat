@@ -74,10 +74,12 @@ if ! skip us04; then
   abrun04 ab-us04-noradar ab-replay $B $B NORADAR=1
   abrun04 hud-us04-noradar hud-ab $B $B NORADAR=1
 fi
-# us_06 の組（v0.8.1 S2 から。SKIP の名前 us06）: A06 がある時だけ A＝A06・B＝今の木（SET=us06・濾しなし）
+# us_06 の組（v0.8.1 S2 から。SKIP の名前 us06）: A06 がある時だけ A＝A06・B＝今の木（SET=us06）
+# v0.8.1 S4（lead の L69）: ANCHORUI=1（scripts/headless/anchor-filter。B が出し側で S4 の新しい文だけを隠す）を us06 の 2 つの組に。ab-replay の写しも HUD の文（s.hud）を持つので
+#   ab-us06 にも要る（世界の欄は全部そのまま比べる）。ANCHORUI06（既定 1）を 0 にすれば濾しなし（S3 までの形）
 abrun06(){ # name tool A B
   local n=$1 t=$2 a=$3 b=$4
-  env $AB_ENV A=$a B=$b SET=us06 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
+  env $AB_ENV $([ "${ANCHORUI06:-1}" = 1 ] && echo ANCHORUI=1) A=$a B=$b SET=us06 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
   local line; line=$(grep -E '^cases' $D/$n.log | tail -1)
   if echo "$line" | grep -q 'diff 0'; then ok "$n $line"; else ng "$n $line"; fi
   grep -E 'same:(true|false)' $D/$n.log | sed -E 's/^/    /' | cut -c1-260 >> $SUM
