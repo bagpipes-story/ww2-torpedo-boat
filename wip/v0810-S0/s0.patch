@@ -542,7 +542,7 @@ index e470ece..c9e2b40 100644
    dawnS?: number;
    /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
 diff --git a/src/systems/world-setup.ts b/src/systems/world-setup.ts
-index 3c321a6..38dc745 100644
+index 3c321a6..cda545e 100644
 --- a/src/systems/world-setup.ts
 +++ b/src/systems/world-setup.ts
 @@ -39,11 +39,13 @@ import { evacSetupPart } from '../config/evac-mission-data';
@@ -561,9 +561,12 @@ index 3c321a6..38dc745 100644
  export type { SetupOptions, WorldSetup } from './world-setup-types'; // 型は world-setup-types.ts（v0.6.7 S0 で移した。今までの import のため）
  export { briefingNumbers } from './briefing-numbers'; // Briefing の数値（v0.6.3 で briefing-numbers.ts へ。今までの import のため）
  import { boatParamsFromData } from '../core/boat-motion';
-@@ -73,7 +75,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+@@ -71,9 +73,10 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+   // 今夜（v0.4.6）: 出撃の seed があり、任務に night block があり、?debug&fixed でなければ揺らぐ
+   const batteries = o.batteryOff ? [] : getShoreBatteryParamsList(data, mission);
    const events = data.riskEvents.events as readonly Record<string, unknown>[];
-   // 輸送船（v0.4.7）は隊の最後の 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける
+-  // 輸送船（v0.4.7）は隊の最後の 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける
++  // 輸送船（v0.4.7）は駆逐艦の後ろの 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける（v0.8.1 からハードの駆潜艇がその後ろに並ぶ）
    const tr = mission.transport && !o.transportOff ? mission.transport : null;
 -  const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
 +  const anchor = getAnchorParams(data, mission); // 止まった艦（v0.8.1。us_06 だけ）。ハードの駆潜艇は隊の最後（輸送船の後ろ）に 1 隻ずつ揺らぎを受ける（無い任務は null＝引く回数は同じ）
