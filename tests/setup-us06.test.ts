@@ -39,7 +39,7 @@ describe('us_06 の setup の snapshot（v0.8.1 S0 の木）', () => {
     expect([s.barges, s.ptBoats, s.convoy, s.escort, s.raid, s.storm, s.seaplane, s.friendly, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, null, 'torpedo']);
     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears, s.airStrike!.planes]).toEqual(['enemy', 'east', '日本の艦', false, 4]);
     expect([s.radar!.model, s.radar!.fit, s.mission.coast!.label, s.coastEdgeY]).toEqual(['so_late', 'own', 'レイテ島（パロンポン）', 3000]);
-    expect([s.anchors, s.backdrop]).toEqual([{ underwayS: hard ? [6, null, 4, 4] : [6, null], alarmS: 4 }, { detectFactor: 0.6, behindM: 2000, behindM2: 4_000_000 }]);
+    expect([s.anchors, s.backdrop]).toEqual([{ underwayS: hard ? [3, null, 4, 4] : [3, null], alarmS: 4 }, { detectFactor: 0.6, behindM: 2000, behindM2: 4_000_000 }]);
     expect('pickets' in s).toBe(hard);
     if (hard) expect([s.pickets!.enemyId, s.pickets!.starts.length]).toEqual(['ijn_subchaser', 2]);
     expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'dawn_air_strike']);

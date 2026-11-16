@@ -1,7 +1,7 @@
 // v0.8.1 S2（spec-v0810 §3.4 D-R1〜D-R3・§6 の S2「tests/radar-us06」、lead の L35）: us_06 の自艇のレーダー（so_late・自艇）の陸の反射に今の岸（coast の南＝y 3,000）が入る
 // （systems/world-radar が core/strait-geometry の landLinesOf で作る。両岸の us_04 は今の線のまま）。今夜の揺らぎ（x ±150・y ±50）の seed 1〜40 のノーマル・ハードで:
 // 出撃の最初の掃引に卯月（岸から 620 m 前後＝反射 300 m の外）が映り、空知丸（岸から 240 m 前後＝反射の内）は夜明けの後まで一度も映らない。岸の線が無ければ空知丸は映ってしまう（D-R2 の要）。
-// v0.8.1 S2b（D-R3・L44）: ハードの駆潜艇 2 隻は小さい艇（RADAR_KIND_SMALL＝1,800 m）。出発点から今夜の揺らぎ込みで 1,978 m 以上なので最初の掃引に映らず、1,800 m の内なら映る（艦の 6,000 m ではない）。
+// v0.8.1 S2b（D-R3・L44）: ハードの駆潜艇 2 隻は小さい艇（RADAR_KIND_SMALL＝1,800 m）。出発点から今夜の揺らぎ込みで 2,040 m 以上（v0.8.1 S3 で 2 隻目を (4300, 2200) から (3200, 1500) へ。S2b は 1,978 m）なので最初の掃引に映らず、1,800 m の内なら映る（艦の 6,000 m ではない）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../src/core/radar';
@@ -68,7 +68,7 @@ describe('us_06 のレーダーと泊地（今夜の揺らぎ seed 1〜40）', (
       expect(new Set(smM).size).toBeGreaterThan(20); // 揺らぎが効いている
     });
   }
-  it('ハードの駆潜艇（S2b）: 隊の種類は小さい艇で、出発点から 1,978 m 以上＝最初の掃引に映らない（seed 1〜40）。1,800 m の内なら小さい艇として映り、1,850 m では映らない', () => {
+  it('ハードの駆潜艇（S2b）: 隊の種類は小さい艇で、出発点から 2,040 m 以上＝最初の掃引に映らない（seed 1〜40）。1,800 m の内なら小さい艇として映り、1,850 m では映らない', () => {
     let minM = Infinity;
     for (let seed = 1; seed <= 40; seed++) {
       const w = anchorKit({ hard: true, seed });
@@ -98,7 +98,7 @@ describe('us_06 のレーダーと泊地（今夜の揺らぎ seed 1〜40）', (
       }
       expect(g.ships.map((d) => d.anchored), `seed ${seed}`).toEqual([true, true, true, true]); // 誰も気づいていない（1,700 m は見つかる距離の外）
     }
-    expect(minM).toBeGreaterThanOrEqual(1977.9); // V-A4（揺らぎの矩形の隅で 1,978 m）
+    expect(minM).toBeGreaterThanOrEqual(2040); // V-A4（揺らぎの矩形の隅で 2,040 m。S2b の (4300, 2200) は 1,978 m）
     expect(minM).toBeGreaterThan(w0SmallRange());
   });
   it('岸の線が無ければ（v0.8.0 の作り＝両岸からだけ）空知丸は最初の掃引に映ってしまう（D-R2 の要）', () => {

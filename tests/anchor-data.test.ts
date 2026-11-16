@@ -22,11 +22,11 @@ const build = (f: (d: GameData) => void, id = 'us_06', hard = false): (() => unk
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
 
 describe('既定の data（us_06）', () => {
-  it('卯月は気づいて 6 秒で動き出し、空知丸は動かない。警報 4 秒。ハードの駆潜艇 2 隻は 4 秒（ハードの組み立てだけ）', () => {
+  it('卯月は気づいて 3 秒で動き出し（v0.8.1 S3 の探りの帯で 6 → 3）、空知丸は動かない。警報 4 秒。ハードの駆潜艇 2 隻は 4 秒（ハードの組み立てだけ）', () => {
     const n = getAnchorParams(gameData, getPrototypeMission(gameData, 'us_06'))!;
-    expect(n).toEqual({ destroyerUnderwayS: 6, transportUnderway: false, picketUnderwayS: 4, alarmS: 4, pickets: null });
+    expect(n).toEqual({ destroyerUnderwayS: 3, transportUnderway: false, picketUnderwayS: 4, alarmS: 4, pickets: null });
     const h = getAnchorParams(gameData, getPrototypeMission(gameData, 'us_06', true))!;
-    expect(h.pickets).toEqual({ enemyId: 'ijn_subchaser', starts: [{ x: 2300, y: 2050, headingDeg: 90 }, { x: 4300, y: 2200, headingDeg: 270 }] });
+    expect(h.pickets).toEqual({ enemyId: 'ijn_subchaser', starts: [{ x: 2300, y: 2050, headingDeg: 90 }, { x: 3200, y: 1500, headingDeg: 270 }] }); // 2 隻目は v0.8.1 S3 の探りの帯 H1・H2 で (4300, 2200) から
     expect(validateAnchorMissions(gameData)).toEqual(n);
     expect([ANCHOR_KEYS.length, ANCHOR_MAX_S, ANCHOR_PICKETS_MAX, ANCHOR_CHECK_SHORE_CLEAR_M]).toEqual([5, 30, 4, 50]);
     expect(String(anchoredOf(gameData)['source'])).toMatch(/historical .*\/ design \(v0\.8\.1 S0/);
@@ -34,14 +34,14 @@ describe('既定の data（us_06）', () => {
   it('setup の anchors（隊の並び＝駆逐艦 → 輸送船 → 駆潜艇の艦ごとの動き出す秒・動かない輸送船は null）と pickets（ハードだけ・今夜の揺らぎ込み）', () => {
     for (const historical of [false, true]) {
       const s = buildWorldSetup(gameData, 'us_06', { sortie: directSortie('us_06', 1, 'none', false, historical), hard: false });
-      expect(s.anchors).toEqual({ underwayS: [6, null], alarmS: 4 });
+      expect(s.anchors).toEqual({ underwayS: [3, null], alarmS: 4 });
       expect('pickets' in s).toBe(false);
       const h = buildWorldSetup(gameData, 'us_06', { sortie: directSortie('us_06', 1, 'none', true, historical), hard: true });
-      expect(h.anchors).toEqual({ underwayS: [6, null, 4, 4], alarmS: 4 });
+      expect(h.anchors).toEqual({ underwayS: [3, null, 4, 4], alarmS: 4 });
       expect([h.pickets!.enemyId, h.pickets!.starts.length, h.pickets!.spec.lengthM, h.pickets!.spec.hitsToSink, h.pickets!.shipAi.ramEnabled]).toEqual(['ijn_subchaser', 2, 51, 1, false]);
       // 駆潜艇は今夜の揺らぎの 3・4 件目（駆逐艦 → 輸送船の後ろ）。揺らぎは x ±150・y ±50・針路なし
       h.pickets!.starts.forEach((p, i) => {
-        const base = [{ x: 2300, y: 2050, h: 90 }, { x: 4300, y: 2200, h: 270 }][i]!;
+        const base = [{ x: 2300, y: 2050, h: 90 }, { x: 3200, y: 1500, h: 270 }][i]!;
         const o = h.night.enemyOffsets[2 + i]!;
         expect([p.x, p.y, p.headingDeg], String(i)).toEqual([base.x + o.dx, base.y + o.dy, base.h]);
         expect(Math.abs(o.dx) <= 150 && Math.abs(o.dy) <= 50 && o.dh === 0).toBe(true);
@@ -52,7 +52,7 @@ describe('既定の data（us_06）', () => {
     }
     // ?debug&notransport の夜は輸送船の欄が無い（駆潜艇は駆逐艦の後ろ）
     const nt = buildWorldSetup(gameData, 'us_06', { hard: true, transportOff: true });
-    expect([nt.transport, nt.anchors!.underwayS, nt.pickets!.starts.map((p) => p.x)]).toEqual([null, [6, 4, 4], [2300, 4300]]);
+    expect([nt.transport, nt.anchors!.underwayS, nt.pickets!.starts.map((p) => p.x)]).toEqual([null, [3, 4, 4], [2300, 3200]]);
     expect(anchorSetupPart(null, 1, true)).toEqual({});
   });
   it('止まった艦の無い任務は null・anchors と pickets の鍵が出ない（ノーマル・ハード・史実モード・seed 3 夜）', () => {
@@ -116,10 +116,10 @@ describe('起動時の検査（V-A1〜V-A6）', () => {
     expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[0]!['y_m'] = 80), 'us_06', true)).toThrow(/隊の 3 隻目（ijn_subchaser）の位置.*海域の縁から 51 m/);
   });
   it('V-A4 出発点: どの艦（ハードの駆潜艇も）からも今夜の揺らぎの端で全速で見つかる距離（月没後 1,920 m）より遠い・どの艦も帰投の輪の外', () => {
-    // 駆潜艇 (4300, 2200) の揺らぎの端 (4450, 2150) から出発点 (5000, 250) まで 1,978 m。y を 59 m 北へずらすと 1,920 m の内
-    expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 2141), 'us_06', true)).not.toThrow();
-    expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 2130), 'us_06', true)).toThrow(/player_start は隊の 4 隻目（ijn_subchaser。今夜の揺らぎの端）から全速で見つかる距離（1920 m。ノーマル・史実モードなし）より遠い（1910\.\d m）（V-A4/);
-    expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 2130), 'us_06', false)).not.toThrow(); // ノーマルの組み立ては駆潜艇を見ない
+    // 駆潜艇 (3200, 1500)（v0.8.1 S3 で (4300, 2200) から）の揺らぎの端 (3350, 1450) から出発点 (5000, 250) まで 2,040 m。y を 1,290 m（北へ 210 m）にしても 1,924 m、1,280 m で 1,919 m＝1,920 m の内
+    expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 1290), 'us_06', true)).not.toThrow();
+    expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 1280), 'us_06', true)).toThrow(/player_start は隊の 4 隻目（ijn_subchaser。今夜の揺らぎの端）から全速で見つかる距離（1920 m。ノーマル・史実モードなし）より遠い（1919\.\d m）（V-A4/);
+    expect(build((d) => ((hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 1280), 'us_06', false)).not.toThrow(); // ノーマルの組み立ては駆潜艇を見ない
     expect(build((d) => ((protoOf(d, 'us_06')['return_point'] as Rec)['x_m'] = 3620, (protoOf(d, 'us_06')['return_point'] as Rec)['y_m'] = 2200))).toThrow(/隊の 1 隻目（ijn_destroyer_mutsuki_enemy。今夜の揺らぎの端）は帰投の輪の外（V-A4/);
     // 反転のある夜は東西の鏡も見る: (1000, 1000) の卯月は出発点から 4,070 m だが、鏡の (5000, 1000) は 700 m
     const at1000 = (d: GameData): void => void Object.assign(protoOf(d, 'us_06')['enemy_start'] as Rec, { x_m: 1000, y_m: 1000 });
@@ -147,7 +147,7 @@ describe('起動時の検査（V-A1〜V-A6）', () => {
   });
   it('Boot の検査は壊れた us_06 で止まる（ハードも組む）', () => {
     const d = clone();
-    (hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 2130;
+    (hardOf(d)['extra_pickets'] as Rec[])[1]!['y_m'] = 1280;
     expect(() => validateAnchorMissions(d)).toThrow(/V-A4/);
   });
 });

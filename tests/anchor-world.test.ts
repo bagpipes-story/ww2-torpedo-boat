@@ -1,9 +1,9 @@
 // v0.8.1 S2（spec-v0810 §3.2 D-S3〜D-S7・§6 の S2「tests/anchor-world」、lead の L30〜L35）: 止まった艦の世界の配線（systems/destroyer-anchor・destroyer-step・destroyer-group・
 // entities/destroyer・world-enemies）を Phaser なしの小さな世界（tests/anchor-world-kit。艦の段は本物の destroyer-step）で確かめる:
-// - 止まった艦は動かず当たりの円も作った時のまま（見張りは走る）・5 つの理由で気づく・駆逐艦は気づいて体感 6 秒で動き出す（命中スローで延びる）・空知丸は夜明けの後も動かない・警報は 4 秒。
+// - 止まった艦は動かず当たりの円も作った時のまま（見張りは走る）・5 つの理由で気づく・駆逐艦は気づいて体感 3 秒で動き出す（命中スローで延びる。v0.8.1 S3 の探りの帯で 6 → 3）・空知丸は夜明けの後も動かない・警報は 4 秒。
 // - 夜明けは遅れなしで動き出し、卯月は東へ退く。空知丸が残るので隊の allOut・allSettled は偽のまま＝夜は帰投・漂流で終わる（us_06 に fleet_gone_clears は無い）。
 // - 止まった艦の見張りの乱数の引き方は止まっていない艦と同じ入力で同じ。止まった艦の無い任務の d.step に渡る距離は w.detectRangeM そのもの（anchored はいつも偽）。
-// - S2b（L41・L43）: ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻（計画は [6, null, 4, 4]＝S2 の 2 隻の固定を直した。駆潜艇の規則は tests/picket-world）。L35: v0_1_prototype・岸・駆逐艦の隊を持つ任務は us_06 だけ（探照灯が岸で切れる任務が黙って増えない）。
+// - S2b（L41・L43）: ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻（計画は [3, null, 4, 4]＝S2 の 2 隻の固定を直した。駆潜艇の規則は tests/picket-world）。L35: v0_1_prototype・岸・駆逐艦の隊を持つ任務は us_06 だけ（探照灯が岸で切れる任務が黙って増えない）。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission } from '../src/config/game-data';
@@ -34,7 +34,7 @@ describe('止まった艦（us_06 ノーマル・揺らぎなし）', () => {
     const w = anchorKit();
     const g = w.destroyers;
     expect(g.ships.length).toBe(2);
-    expect(anchors(w).plan.underwayS).toEqual([6, null]);
+    expect(anchors(w).plan.underwayS).toEqual([3, null]);
     const start = [pos(w, UZ), pos(w, SM)];
     const circles = g.ships.map((d) => JSON.stringify(d.circles));
     expect(start.map((p) => p[3])).toEqual([0, 0]);
@@ -47,26 +47,26 @@ describe('止まった艦（us_06 ノーマル・揺らぎなし）', () => {
     expect(g.ships.map((d) => d.ai.mode)).toEqual(['cruise', 'cruise']); // AI は判断していた（端の向き直しで哨戒の針路を書く）が、舵は使わない
   });
 
-  it('① 見た: 卯月が自艇を見つけて気づき、体感 6 秒で動き出す（速さ 0 から加速）。空知丸は警報の 4 秒で気づき、動かない。記録は世界の秒', () => {
+  it('① 見た: 卯月が自艇を見つけて気づき、体感 3 秒で動き出す（速さ 0 から加速）。空知丸は警報の 4 秒で気づき、動かない。記録は世界の秒', () => {
     const w = anchorKit();
     runUntil(w, 10);
     northOfUzuki(w, 300); // 停止の 480 m の内
     const t0 = w.stepTimeS + STEP;
-    runUntil(w, t0 + 3);
+    runUntil(w, t0 + 2);
     const a = anchors(w);
     expect([a.state.reason[UZ], a.state.stage[UZ]]).toEqual([ANCHOR_REASON_SEEN, ANCHOR_ALERT]);
     expect(near(a.log.noticedAtS[UZ]!, t0)).toBe(true);
     expect(w.destroyers.ships[UZ]!.anchored).toBe(true);
-    runUntil(w, t0 + 5.9);
+    runUntil(w, t0 + 2.9);
     expect(w.destroyers.ships[UZ]!.anchored).toBe(true);
-    runUntil(w, t0 + 6.2);
+    runUntil(w, t0 + 3.2);
     expect([w.destroyers.ships[UZ]!.anchored, a.state.stage[UZ]]).toEqual([false, ANCHOR_UNDERWAY]);
-    expect(near(a.log.underwayAtS[UZ]! - a.log.noticedAtS[UZ]!, 6)).toBe(true);
-    expect([a.state.reason[SM], a.state.stage[SM]]).toEqual([ANCHOR_REASON_ALARM, ANCHOR_ALERT]);
-    expect(near(a.log.noticedAtS[SM]! - a.log.noticedAtS[UZ]!, 4)).toBe(true); // 警報 4 秒
+    expect(near(a.log.underwayAtS[UZ]! - a.log.noticedAtS[UZ]!, 3)).toBe(true);
     const before = pos(w, UZ);
     const circles = JSON.stringify(w.destroyers.ships[UZ]!.circles);
     runUntil(w, t0 + 12);
+    expect([a.state.reason[SM], a.state.stage[SM]]).toEqual([ANCHOR_REASON_ALARM, ANCHOR_ALERT]); // 空知丸の警報は卯月が動き出した後（警報 4 秒 ＞ 3 秒）
+    expect(near(a.log.noticedAtS[SM]! - a.log.noticedAtS[UZ]!, 4)).toBe(true); // 警報 4 秒
     const after = pos(w, UZ);
     expect(after[3]!).toBeGreaterThan(0);
     expect(Math.hypot(after[0]! - before[0]!, after[1]! - before[1]!)).toBeGreaterThan(1);
@@ -86,7 +86,7 @@ describe('止まった艦（us_06 ノーマル・揺らぎなし）', () => {
     expect(a.state.reason[SM]).toBe(ANCHOR_REASON_ALARM);
   });
 
-  it('③ 被雷: 当たれば（hitsTaken ＞ 0）気づく。動き出すのは同じ 6 秒後', () => {
+  it('③ 被雷: 当たれば（hitsTaken ＞ 0）気づく。動き出すのは同じ 3 秒後', () => {
     const w = anchorKit();
     runUntil(w, 5);
     w.destroyers.ships[UZ]!.hitsTaken = 1;
@@ -94,7 +94,7 @@ describe('止まった艦（us_06 ノーマル・揺らぎなし）', () => {
     const a = anchors(w);
     expect(a.state.reason[UZ]).toBe(ANCHOR_REASON_HIT);
     expect(w.destroyers.ships[UZ]!.anchored).toBe(false);
-    expect(near(a.log.underwayAtS[UZ]! - a.log.noticedAtS[UZ]!, 6)).toBe(true);
+    expect(near(a.log.underwayAtS[UZ]! - a.log.noticedAtS[UZ]!, 3)).toBe(true);
   });
 
   it('体感の時計: 気づいた後に命中スローがあれば動き出すのは固定ステップの時計で遅れる（AI の反応遅れと同じ時計）', () => {
@@ -104,7 +104,7 @@ describe('止まった艦（us_06 ノーマル・揺らぎなし）', () => {
     while (w.stepTimeS < 15) anchorStep(w, k++ < Math.round(w.setup.slowMoSeconds / STEP));
     const a = anchors(w);
     const lost = w.setup.slowMoSeconds * (1 - w.setup.slowMoFactor);
-    expect(near(a.log.underwayAtS[UZ]! - a.log.noticedAtS[UZ]!, 6 + lost, STEP * 2)).toBe(true);
+    expect(near(a.log.underwayAtS[UZ]! - a.log.noticedAtS[UZ]!, 3 + lost, STEP * 2)).toBe(true);
   });
 
   it('⑤ 夜明け: 遅れなしで動き出し（気づいたステップに）、卯月は東へ退いて海域を出る。空知丸は退く向きが立っても動かず、退いたにもならない＝allOut・allSettled は偽のまま', () => {
@@ -273,12 +273,12 @@ describe('配線の source（L30〜L35）', () => {
 });
 
 describe('ハードの隊（S2b の L41・L43）と岸のある駆逐艦の任務（L35）', () => {
-  it('ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻で、計画は setup の [6, null, 4, 4] の全部（S2 は 2 隻に切り出していた＝S2b で直した固定）。数が違えば作る時に例外（V-A5）', () => {
+  it('ハードの隊は駆逐艦 → 輸送船 → 駆潜艇 2 の 4 隻で、計画は setup の [3, null, 4, 4] の全部（S2 は 2 隻に切り出していた＝S2b で直した固定）。数が違えば作る時に例外（V-A5）', () => {
     const w = anchorKit({ hard: true, seed: 1 });
     expect(w.setup.pickets!.starts.length).toBe(2);
-    expect(w.setup.anchors!.underwayS).toEqual([6, null, 4, 4]);
+    expect(w.setup.anchors!.underwayS).toEqual([3, null, 4, 4]);
     expect(w.destroyers.ships.length).toBe(4);
-    expect(anchors(w).plan.underwayS).toEqual([6, null, 4, 4]);
+    expect(anchors(w).plan.underwayS).toEqual([3, null, 4, 4]);
     expect(anchors(w).plan.underwayS).not.toBe(w.setup.anchors!.underwayS); // setup は書き換えない（作る時に 1 回写す）
     expect([anchors(w).state.n, w.destroyers.ships.map((d) => d.anchored)]).toEqual([4, [true, true, true, true]]);
     const ships = w.destroyers.ships;

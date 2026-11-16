@@ -92,12 +92,12 @@ describe('隊の並び（L41）', () => {
     const n = groupOf(setupOf('us_06', false), []);
     expect([n.total, n.destroyerCount, n.transportIndex, n.picketIndex, n.picketCount]).toEqual([2, 1, 1, -1, 0]);
   });
-  it('setAnchors: 本物の隊はハードの 4 隻をみな止める（速さ 0・anchored）。計画は [6, null, 4, 4]', () => {
+  it('setAnchors: 本物の隊はハードの 4 隻をみな止める（速さ 0・anchored）。計画は [3, null, 4, 4]', () => {
     const s = setupOf('us_06', true);
     const g = groupOf(s);
     g.setAnchors(s.anchors!);
     expect(g.ships.map((d) => [d.anchored, d.state.speedMps])).toEqual([[true, 0], [true, 0], [true, 0], [true, 0]]);
-    expect(g.anchors!.plan.underwayS).toEqual([6, null, 4, 4]);
+    expect(g.anchors!.plan.underwayS).toEqual([3, null, 4, 4]);
   });
 });
 
@@ -106,7 +106,7 @@ describe('止まった駆潜艇（ハード・揺らぎなし。tests/anchor-wor
   it('作る時に止まり、自艇が遠ければ 60 秒たっても位置・針路・当たりの円は作った時のまま・誰も気づかない', () => {
     const w = anchorKit({ hard: true });
     const ships = w.destroyers.ships;
-    expect(PK.map((i) => [ships[i]!.state.x, ships[i]!.state.y, ships[i]!.state.headingDeg, ships[i]!.state.speedMps])).toEqual([[2300, 2050, 90, 0], [4300, 2200, 270, 0]]);
+    expect(PK.map((i) => [ships[i]!.state.x, ships[i]!.state.y, ships[i]!.state.headingDeg, ships[i]!.state.speedMps])).toEqual([[2300, 2050, 90, 0], [3200, 1500, 270, 0]]); // 2 隻目は v0.8.1 S3 の探りの帯 H1・H2 で (4300, 2200) から
     const before = PK.map((i) => JSON.stringify([ships[i]!.state, ships[i]!.circles]));
     runUntil(w, 60);
     expect(PK.map((i) => JSON.stringify([ships[i]!.state, ships[i]!.circles]))).toEqual(before);
@@ -116,7 +116,7 @@ describe('止まった駆潜艇（ハード・揺らぎなし。tests/anchor-wor
     const w = anchorKit({ hard: true });
     runUntil(w, 10);
     const u = w.destroyers.ships[0]!.state;
-    Object.assign(w.boat.state, { x: u.x, y: u.y - 300 }); // 卯月の真北 300 m（停止の 480 m の内）。駆潜艇から 690 m・1,320 m（外）
+    Object.assign(w.boat.state, { x: u.x, y: u.y - 300 }); // 卯月の真北 300 m（停止の 480 m の内）。駆潜艇から 1,320 m・716 m（外）
     runUntil(w, 30);
     const a = anchors(w);
     const t0 = a.log.noticedAtS[0]!;
@@ -127,7 +127,7 @@ describe('止まった駆潜艇（ハード・揺らぎなし。tests/anchor-wor
       expect(near(a.log.underwayAtS[i]! - a.log.noticedAtS[i]!, 4), `駆潜艇 ${i} 動き出す`).toBe(true);
       expect(w.destroyers.ships[i]!.state.speedMps).toBeGreaterThan(0);
     }
-    expect(near(a.log.underwayAtS[0]! - t0, 6)).toBe(true); // 卯月は 6 秒（destroyer_underway_s）
+    expect(near(a.log.underwayAtS[0]! - t0, 3)).toBe(true); // 卯月は 3 秒（destroyer_underway_s。v0.8.1 S3 で 6 → 3）
   });
   it('体感の時計: 駆潜艇が気づいた後に命中スローがあれば、動き出すのは固定ステップの時計で遅れる', () => {
     const w = anchorKit({ hard: true });
@@ -192,9 +192,10 @@ describe('数え方と魚雷（L41・D-S8）', () => {
     while (g.ships[2]!.state.speedMps < MIN || g.ships[0]!.state.speedMps < MIN) anchorStep(aw);
     const k = kit('us_06', g);
     const w: FreeTorpedoWorld = { ...k.w, kpiMinTargetSpeedMps: MIN };
-    for (const [i, want] of [[2, false], [0, true]] as const) {
+    // 自艇は艦の外側 500 m（駆潜艇は西・卯月は東。v0.8.1 S3 で 2 隻目を (3200, 1500) へ移したので、北 500 m では動いた卯月より 2 隻目が近い夜がある）
+    for (const [i, want, dx, h] of [[2, false, -500, 90], [0, true, 500, 270]] as const) {
       const p = g.ships[i]!.state;
-      Object.assign(w.boat.state, { x: p.x, y: p.y - 500, headingDeg: 180 });
+      Object.assign(w.boat.state, { x: p.x + dx, y: p.y, headingDeg: h });
       expect(g.nearestAfloatIndex(w.boat.state.x, w.boat.state.y)).toBe(i);
       expect(fireOne(w).kpiTarget, `艦 ${i}`).toBe(want);
     }

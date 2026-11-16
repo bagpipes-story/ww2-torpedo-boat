@@ -57,7 +57,7 @@ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）',
     expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]!))).toBe(true);
   });
   it('オルモック湾の決着（v0.8.1 S0。us_06）: Boot の validateAnchorMissions・validateBackdropMissions は投げず us_06 の値を返す（ソースの pin: 海峡の両岸の検査の後にこの順で 1 回ずつ）', () => {
-    expect([validateAnchorMissions(gameData)?.destroyerUnderwayS, validateAnchorMissions(gameData)?.pickets, validateBackdropMissions(gameData)?.detectFactor]).toEqual([6, null, 0.6]);
+    expect([validateAnchorMissions(gameData)?.destroyerUnderwayS, validateAnchorMissions(gameData)?.pickets, validateBackdropMissions(gameData)?.detectFactor]).toEqual([3, null, 0.6]); // 卯月の 3 秒は v0.8.1 S3 の探りの帯で 6 → 3
     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
     const at = ['validateShoresMissions(gameData);', 'validateAnchorMissions(gameData);', 'validateBackdropMissions(gameData);', 'createSfx(this.game);'].map((c) => src.indexOf(c));
     expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]!))).toBe(true);

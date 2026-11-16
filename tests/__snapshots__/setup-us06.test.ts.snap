@@ -466,7 +466,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null
   ],
   "alarmS": 4
@@ -945,7 +945,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null
   ],
   "alarmS": 4
@@ -1424,7 +1424,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null
   ],
   "alarmS": 4
@@ -1903,7 +1903,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null
   ],
   "alarmS": 4
@@ -2392,7 +2392,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null,
    4,
    4
@@ -2412,8 +2412,8 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
     "headingDeg": 90
    },
    {
-    "x": 4355.013585952111,
-    "y": 2229.6590054873377,
+    "x": 3255.0135859521106,
+    "y": 1529.6590054873377,
     "headingDeg": 270
    }
   ],
@@ -2967,7 +2967,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null,
    4,
    4
@@ -2987,8 +2987,8 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
     "headingDeg": 90
    },
    {
-    "x": 4419.652112713084,
-    "y": 2168.7674994114786,
+    "x": 3319.6521127130836,
+    "y": 1468.7674994114786,
     "headingDeg": 270
    }
   ],
@@ -3542,7 +3542,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null,
    4,
    4
@@ -3562,8 +3562,8 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
     "headingDeg": 90
    },
    {
-    "x": 4355.013585952111,
-    "y": 2229.6590054873377,
+    "x": 3255.0135859521106,
+    "y": 1529.6590054873377,
     "headingDeg": 270
    }
   ],
@@ -4117,7 +4117,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "anchors": {
   "underwayS": [
-   6,
+   3,
    null,
    4,
    4
@@ -4137,8 +4137,8 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
     "headingDeg": 90
    },
    {
-    "x": 4419.652112713084,
-    "y": 2168.7674994114786,
+    "x": 3319.6521127130836,
+    "y": 1468.7674994114786,
     "headingDeg": 270
    }
   ],

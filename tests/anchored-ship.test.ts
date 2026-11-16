@@ -1,5 +1,5 @@
 // v0.8.1 S1（spec-v0810 §3.2 D-S3〜D-S7・§6 の S1、lead の L21・L24）: core/anchored-ship の止まった艦の規則（ASLEEP → ALERT → UNDERWAY）を、us_06 の setup の計画
-// （WorldSetup.anchors＝ノーマル [6, null]・ハード [6, null, 4, 4]・警報 4 秒）と素の艦（AI の出力の 2 つの旗・被雷の数・沈み始めた）で固定ステップに回す。
+// （WorldSetup.anchors＝ノーマル [3, null]・ハード [3, null, 4, 4]・警報 4 秒。卯月の 3 秒は v0.8.1 S3 の探りの帯で 6 → 3）と素の艦（AI の出力の 2 つの旗・被雷の数・沈み始めた）で固定ステップに回す。
 // 気づく 5 つの理由・警報の秒・動き出す秒（体感の時計＝命中スローで延びる）・夜明けは遅れなし・動かない輸送船（null）・沈み始めた艦・同じステップの順（① → ⑤）・
 // 一度気づけば旗が下りても戻らない・決定性（2 回と、夜ごとの戻し）・読み口が entities/destroyer と core/ship-ai の名前のまま・step の本体に確保なし。
 import { describe, expect, it } from 'vitest';
@@ -63,8 +63,8 @@ const stages = (st: AnchorState): number[] => Array.from({ length: st.n }, (_, i
 const reasons = (st: AnchorState): number[] => Array.from({ length: st.n }, (_, i) => anchorReason(st, i));
 
 describe('計画（us_06 の setup）と作る・戻す', () => {
-  it('ノーマルは卯月 6 秒・空知丸は動かない（null）、ハードは駆潜艇 2 隻 4 秒。警報 4 秒。作った時はみな ASLEEP・時計 0', () => {
-    expect([NORMAL.underwayS, NORMAL.alarmS, HARD.underwayS, HARD.alarmS]).toEqual([[6, null], 4, [6, null, 4, 4], 4]);
+  it('ノーマルは卯月 3 秒・空知丸は動かない（null）、ハードは駆潜艇 2 隻 4 秒。警報 4 秒。作った時はみな ASLEEP・時計 0', () => {
+    expect([NORMAL.underwayS, NORMAL.alarmS, HARD.underwayS, HARD.alarmS]).toEqual([[3, null], 4, [3, null, 4, 4], 4]);
     const st = createAnchorState(4);
     expect([st.n, stages(st), reasons(st), st.feelS, st.dawn, st.alarmAtS, st.noticed, st.underway]).toEqual([4, [0, 0, 0, 0], [0, 0, 0, 0], 0, false, NaN, 0, 0]);
     expect([anchorNoticedAtS(st, 0), anchorUnderwayAtS(st, 3), anchorHeld(st, 0)]).toEqual([NaN, NaN, true]);
@@ -83,22 +83,22 @@ describe('計画（us_06 の setup）と作る・戻す', () => {
 });
 
 describe('気づく 5 つの理由・警報・動き出す秒', () => {
-  it.each([['seen', ANCHOR_REASON_SEEN], ['wake', ANCHOR_REASON_WAKE], ['hit', ANCHOR_REASON_HIT]] as const)('① 〜 ③ %s: 卯月が 10 秒に気づき 16 秒に動き出す。空知丸は 14 秒に警報で気づき、動かない', (what, reason) => {
+  it.each([['seen', ANCHOR_REASON_SEEN], ['wake', ANCHOR_REASON_WAKE], ['hit', ANCHOR_REASON_HIT]] as const)('① 〜 ③ %s: 卯月が 10 秒に気づき 13 秒に動き出す。空知丸は 14 秒に警報で気づき、動かない', (what, reason) => {
     const { st, log } = run(NORMAL, { events: [[10, 0, what]] });
     expect(reasons(st)).toEqual([reason, ANCHOR_REASON_ALARM]);
     expect(stages(st)).toEqual([ANCHOR_UNDERWAY, ANCHOR_ALERT]);
     near(log.noticed[0], 10, 0);
-    near(log.underway[0], 16);
+    near(log.underway[0], 13);
     near(log.noticed[1], 14);
     expect([log.underway[1], anchorUnderwayAtS(st, 1), anchorHeld(st, 0), anchorHeld(st, 1)]).toEqual([undefined, NaN, false, true]);
     expect(anchorNoticedAtS(st, 0)).toBeCloseTo(10, 6);
     expect(st.alarmAtS).toBeCloseTo(10, 6);
   });
-  it('④ 警報: 空知丸が 10 秒に見つければ、卯月は 14 秒に警報で気づき 20 秒に動き出す。ハードの駆潜艇 2 隻も 14 秒に気づき 18 秒に動く', () => {
+  it('④ 警報: 空知丸が 10 秒に見つければ、卯月は 14 秒に警報で気づき 17 秒に動き出す。ハードの駆潜艇 2 隻も 14 秒に気づき 18 秒に動く', () => {
     const n = run(NORMAL, { events: [[10, 1, 'seen']] });
     expect(reasons(n.st)).toEqual([ANCHOR_REASON_ALARM, ANCHOR_REASON_SEEN]);
     near(n.log.noticed[0], 14);
-    near(n.log.underway[0], 20);
+    near(n.log.underway[0], 17);
     expect(n.log.underway[1]).toBeUndefined();
     const h = run(HARD, { events: [[10, 1, 'seen']] });
     expect([reasons(h.st), stages(h.st)]).toEqual([[4, 1, 4, 4], [2, 1, 2, 2]]);
@@ -125,7 +125,7 @@ describe('気づく 5 つの理由・警報・動き出す秒', () => {
     expect(log.underway[1]).toBeUndefined();
     expect(st.alarmAtS).toBeNaN(); // 夜明けは警報を上げない（みな気づいた）
   });
-  it('夜明けは気づいて待っている艦も今すぐ動かす（卯月は 10 秒に見つけ、12 秒の夜明けで 16 秒を待たずに）', () => {
+  it('夜明けは気づいて待っている艦も今すぐ動かす（卯月は 10 秒に見つけ、12 秒の夜明けで 13 秒を待たずに）', () => {
     const { st, log } = run(NORMAL, { events: [[10, 0, 'seen']], dawnS: 12 });
     expect(reasons(st)).toEqual([ANCHOR_REASON_SEEN, ANCHOR_REASON_DAWN]);
     near(log.underway[0], 12, 0);
@@ -133,10 +133,10 @@ describe('気づく 5 つの理由・警報・動き出す秒', () => {
   });
   it('一度気づけば旗が下りても戻らない（見失った・雷跡が通り過ぎた）', () => {
     const a = run(NORMAL, { events: [[10, 0, 'seen'], [11, 0, 'unseen']] });
-    near(a.log.underway[0], 16);
+    near(a.log.underway[0], 13);
     const b = run(NORMAL, { events: [[10, 0, 'wake'], [10.5, 0, 'unwake']] });
     expect(reasons(b.st)[0]).toBe(ANCHOR_REASON_WAKE);
-    near(b.log.underway[0], 16);
+    near(b.log.underway[0], 13);
   });
   it('このステップに気づいた艦の印（st.noticed）は気づいたステップだけ立つ', () => {
     const st = createAnchorState(2);
@@ -150,11 +150,11 @@ describe('体感の時計（命中スロー）', () => {
   it('動き出す秒は体感の時計: 気づいた後に命中スローが 1 回あれば、固定ステップの時計で 0.84 秒遅れる。気づいた秒は体感の時計で残る', () => {
     expect(LOST_S).toBeCloseTo(0.84, 9);
     const { st, log } = run(NORMAL, { events: [[10, 0, 'seen']], slow: [[11, 11 + SLOW_S]] });
-    near(log.underway[0], 16 + LOST_S, 1);
-    expect(anchorUnderwayAtS(st, 0)).toBeCloseTo(16, 1);
+    near(log.underway[0], 13 + LOST_S, 1);
+    expect(anchorUnderwayAtS(st, 0)).toBeCloseTo(13, 1);
     const early = run(NORMAL, { events: [[12, 0, 'seen']], slow: [[5, 5 + SLOW_S]] });
     expect(anchorNoticedAtS(early.st, 0)).toBeCloseTo(12 - LOST_S, 6);
-    near(early.log.underway[0], 18, 1);
+    near(early.log.underway[0], 15, 1);
   });
   it('警報の秒も体感の時計: 卯月の気づきの直後の命中スローで、空知丸の警報は 14 秒から 0.84 秒遅れる', () => {
     const { log } = run(NORMAL, { events: [[10, 0, 'seen']], slow: [[10.5, 10.5 + SLOW_S]] });
@@ -170,8 +170,8 @@ describe('沈み始めた艦・動かない艦・同じステップの順', () =
     near(log.underway[2], 18);
     expect(log.underway[0]).toBeUndefined();
   });
-  it('気づいて待っている間に沈み始めた艦は ALERT のまま（16 秒にも 40 秒の夜明けにも動かない）', () => {
-    const { st, log } = run(NORMAL, { events: [[10, 0, 'seen'], [13, 0, 'hit'], [13, 0, 'sink']], dawnS: 40 });
+  it('気づいて待っている間に沈み始めた艦は ALERT のまま（13 秒にも 40 秒の夜明けにも動かない）', () => {
+    const { st, log } = run(NORMAL, { events: [[10, 0, 'seen'], [12, 0, 'hit'], [12, 0, 'sink']], dawnS: 40 });
     expect([stages(st), log.underway[0]]).toEqual([[ANCHOR_ALERT, ANCHOR_ALERT], undefined]);
   });
   it('沈み始めた旗だけでも ③（被雷の数を読まない素の艦）', () => {
