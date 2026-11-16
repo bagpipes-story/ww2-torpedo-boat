@@ -13,6 +13,15 @@ export interface ShotRecord {
   kpiTarget: boolean;
 }
 
+/**
+ * 発射の時の KPI の的（v0.8.1 S1。spec-v0810 §3.5 D-K1）: 駆逐艦を狙い、夜明けの前（v0.5.0・v0.6.1 の今の条件）で、狙った艦の速さが minSpeedMps 以上
+ * （config/kpi-data が読む hit_rate_model.json の kpi_measurement の目標の速さの下限＝5 kt。止まった艦への 1 本は通算の命中率に数えない。境は含む＝5.00 kt は数え 4.99 kt は数えない）。
+ * minSpeedMps 0 なら今の条件そのもの（速さは 0 以上）。S2 の systems/torpedo-free が発射の時に 1 回呼ぶ（S1 ではゲームの誰も呼ばない）
+ */
+export function kpiTargetAtLaunch(isDestroyer: boolean, dawnReached: boolean, targetSpeedMps: number, minSpeedMps: number): boolean {
+  return isDestroyer && !dawnReached && targetSpeedMps >= minSpeedMps;
+}
+
 /** KPI の「正しく狙った 1 本」（docs/02 §6.3。v0.5.0）: 駆逐艦を狙い、蛇行せず、見越し角のずれが maxDeg 以内 */
 export function isAimedShot(r: ShotRecord, maxDeg: number): boolean {
   return r.kpiTarget && !r.erratic && Math.abs(r.leadErrDeg) <= maxDeg;
