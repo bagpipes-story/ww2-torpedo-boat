@@ -1,0 +1,48 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 3936 passed (3936)
+✓ g2 OK 39 DIFF 0
+✗ ab-all cases 58 same 56 diff 2
+✓ ab-all@audio cases 58 same 58 diff 0
+✗ ab-all@noaudio cases 58 same 56 diff 2
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✓ ab-us04 cases 4 same 4 diff 0
+    us04   us_04 seed 1 same:true frames 15600
+    us04   us_04 seed 2 same:true frames 15600
+    us04   us_04&hard seed 1 same:true frames 15600
+    us04   us_04&hard seed 2 same:true frames 15600
+✓ hud-us04 cases 4 same 4 diff 0
+    hud us_04 seed 1 same:true snapshots 260
+    hud us_04 seed 2 same:true snapshots 260
+    hud us_04&hard seed 1 same:true snapshots 260
+    hud us_04&hard seed 2 same:true snapshots 260
+✓ ab-us04-noradar cases 4 same 4 diff 0
+    us04   us_04 seed 1 B&noradar masked 1208 same:true frames 15600
+    us04   us_04 seed 2 B&noradar masked 1692 same:true frames 15600
+    us04   us_04&hard seed 1 B&noradar masked 1450 same:true frames 15600
+    us04   us_04&hard seed 2 B&noradar masked 1692 same:true frames 15600
+✓ hud-us04-noradar cases 4 same 4 diff 0
+    hud us_04 seed 1 B&noradar masked 20 same:true snapshots 260
+    hud us_04 seed 2 B&noradar masked 28 same:true snapshots 260
+    hud us_04&hard seed 1 B&noradar masked 24 same:true snapshots 260
+    hud us_04&hard seed 2 B&noradar masked 28 same:true snapshots 260
+- us06 (A06 なし)
+    differs (ab-all): nodawn us_02 seed 1 nostrike same:false frames 10978 最初の違い frame 10977 {"path":".t","a":182.95,"b":182.966667}
+    differs (ab-all): result us_02 seed 1 result same:false frames 10979 最初の違い frame 10977 {"path":".t","a":182.966667,"b":182.95}
+✓ ab-all rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ ab-all rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
+    differs (ab-all@noaudio): nodawn us_02 seed 1 nostrike same:false frames 10978 最初の違い frame 10977 {"path":".t","a":182.966667,"b":182.95}
+    differs (ab-all@noaudio): result us_02 seed 1 result same:false frames 11194 最初の違い frame 11192 {"path":".t","a":186.533333,"b":186.55}
+✓ ab-all@noaudio rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ ab-all@noaudio rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
+✓ tex-ab CHECK=1 0 ✗ lines
+- art-perf (SKIP)
+✓ snapshots untouched
+ALL_DONE

@@ -1,0 +1,5 @@
+us06   us_06 seed 1 same:true frames 12000
+us06   us_06 seed 2 same:true frames 12000
+us06   us_06&hard seed 1 same:true frames 12000
+us06   us_06&hard seed 2 same:true frames 12000
+cases 4 same 4 diff 0

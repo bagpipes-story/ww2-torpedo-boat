@@ -1,0 +1,5 @@
+hud us_06 seed 1 same:true snapshots 200
+hud us_06 seed 2 same:true snapshots 200
+hud us_06&hard seed 1 same:true snapshots 200
+hud us_06&hard seed 2 same:true snapshots 200
+cases 4 same 4 diff 0
