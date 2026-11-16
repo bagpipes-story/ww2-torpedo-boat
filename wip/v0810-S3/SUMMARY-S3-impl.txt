@@ -1,0 +1,57 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 3957 passed (3957)
+✓ g2 OK 39 DIFF 0
+✗ ab-all cases 58 same 56 diff 2
+✗ ab-all@audio cases 58 same 57 diff 1
+✗ ab-all@noaudio cases 58 same 57 diff 1
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✓ ab-us04 cases 4 same 4 diff 0
+    us04   us_04 seed 1 same:true frames 15600
+    us04   us_04 seed 2 same:true frames 15600
+    us04   us_04&hard seed 1 same:true frames 15600
+    us04   us_04&hard seed 2 same:true frames 15600
+✓ hud-us04 cases 4 same 4 diff 0
+    hud us_04 seed 1 same:true snapshots 260
+    hud us_04 seed 2 same:true snapshots 260
+    hud us_04&hard seed 1 same:true snapshots 260
+    hud us_04&hard seed 2 same:true snapshots 260
+✓ ab-us04-noradar cases 4 same 4 diff 0
+    us04   us_04 seed 1 B&noradar masked 1208 same:true frames 15600
+    us04   us_04 seed 2 B&noradar masked 1692 same:true frames 15600
+    us04   us_04&hard seed 1 B&noradar masked 1450 same:true frames 15600
+    us04   us_04&hard seed 2 B&noradar masked 1692 same:true frames 15600
+✓ hud-us04-noradar cases 4 same 4 diff 0
+    hud us_04 seed 1 B&noradar masked 20 same:true snapshots 260
+    hud us_04 seed 2 B&noradar masked 28 same:true snapshots 260
+    hud us_04&hard seed 1 B&noradar masked 24 same:true snapshots 260
+    hud us_04&hard seed 2 B&noradar masked 28 same:true snapshots 260
+✗ ab-us06 cases 4 same 0 diff 4
+    us06   us_06 seed 1 same:false frames 12000 最初の違い frame 1063 {"path":".an.0.0","a":1,"b":2}
+    us06   us_06 seed 2 same:false frames 12000 最初の違い frame 880 {"path":".an.0.0","a":1,"b":2}
+    us06   us_06&hard seed 1 same:false frames 12000 最初の違い frame 0 {"path":".d.3.0","a":4355.013586,"b":3255.013586}
+    us06   us_06&hard seed 2 same:false frames 12000 最初の違い frame 0 {"path":".d.3.0","a":4314.270054,"b":3214.270054}
+✗ hud-us06 cases 4 same 0 diff 4
+    hud us_06 seed 1 same:false snapshots 200 最初の違い 18 秒 {"path":".hud.23.x","a":782.8450168664831,"b":782.8504767604455}
+    hud us_06 seed 2 same:false snapshots 200 最初の違い 15 秒 {"path":".hud.23.x","a":774.5459324471416,"b":774.5537024111171}
+    hud us_06&hard seed 1 same:false snapshots 200 最初の違い 3 秒 {"path":".hud.7.text","a":"針路 198°","b":"針路 234°"}
+    hud us_06&hard seed 2 same:false snapshots 200 最初の違い 3 秒 {"path":".hud.7.text","a":"針路 199°","b":"針路 235°"}
+    differs (ab-all): nodawn us_02 seed 1 nostrike same:false frames 10978 最初の違い frame 10977 {"path":".t","a":182.95,"b":182.966667}
+    differs (ab-all): result us_02 seed 1 result same:false frames 11822 最初の違い frame 11820 {"path":".t","a":197,"b":197.016667}
+✓ ab-all rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ ab-all rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
+    differs (ab-all@audio): nodawn us_02 seed 1 nostrike same:false frames 10978 最初の違い frame 10977 {"path":".t","a":182.95,"b":182.966667}
+✓ ab-all@audio rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+    differs (ab-all@noaudio): nodawn us_02 seed 1 nostrike same:false frames 10978 最初の違い frame 10977 {"path":".t","a":182.95,"b":182.966667}
+✓ ab-all@noaudio rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ tex-ab CHECK=1 0 ✗ lines
+- art-perf (SKIP)
+✗ snapshots changed:  M tests/__snapshots__/setup-us06.test.ts.snap;
+ALL_DONE
