@@ -70,6 +70,102 @@ index 53f1fda..57c430a 100644
          }
        }
      },
+diff --git a/scripts/headless/ab-replay.mjs b/scripts/headless/ab-replay.mjs
+index d0e7cce..f9ed030 100644
+--- a/scripts/headless/ab-replay.mjs
++++ b/scripts/headless/ab-replay.mjs
+@@ -20,9 +20,11 @@
+ //   （出し側でない側の、隠したフレームの 3 行目の字に 'X' を足す → 違いが出るはず）。
+ // v0.8.1 S2（spec-v0810 §6 の S2・brief の「新しい組」）: SET=us06 で us_06（オルモック湾の決着。止まった艦と暗い岸を背に）のノーマル・ハード × seed 1・2 を 200 秒（夜明けまで。all には入れない。
+ //   S2 は A＝B＝今の木で決定性を見る・S3 から A は S2 の commit のビルド＝以後の段の回帰）。写しに止まった艦の段（s.an: 段・anchored）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
++// v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文の濾し（scripts/headless/anchor-filter。B が出し側・世界の写しは全部比べる。FILTERTEST=1 は濾しの試し）。
++// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+ import { fileURLToPath } from 'node:url';
+ import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
++import { anchorPair } from './anchor-filter.mjs';
+ 
+ /** S4 の濾し（brief L33。ページへは文字列で渡す）: 2 行目の S4 の行・そのうちレーダーだけの行・緑の端の印の字の色と絵の鍵・隠した物の字 */
+ export const S4_FILTER = {
+@@ -137,7 +139,7 @@ export function firstField(a, b) {
+ export function abCases(set, input) {
+   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
+   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
+-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', filtertest: process.env.FILTERTEST === '1' };
++  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1' };
+   const sets = {
+     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
+     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
+@@ -179,7 +181,8 @@ export async function oneCase(browser, A, B, c) {
+     const o = { ...c, frameMs: FRAME_MS, hudEvery: c.hudEvery ?? 0 };
+     let ra;
+     let rb;
+-    if (c.radarui || c.noradar) {
++    if (c.anchorui) [ra, rb] = await anchorPair(pa, pb, o, c, abRun); // us_06 の S4 の濾し（v0.8.1 S4。anchor-filter）
++    else if (c.radarui || c.noradar) {
+       // S4 の濾し: 出し側を先に回してフレームの印を集め、もう一方へ渡す
+       for (const p of [pa, pb]) await p.page.evaluate(`window.__s4Hud = ${s4Hud.toString()}`);
+       const first = c.radarui ? pb : pa;
+@@ -215,7 +218,7 @@ async function main() {
+   await sb.close();
+   let bad = 0;
+   for (const r of res) {
+-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
++    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+     if (!r.same) bad++;
+     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+   }
+diff --git a/scripts/headless/brief-result.mjs b/scripts/headless/brief-result.mjs
+index 89bf102..eba1da7 100644
+--- a/scripts/headless/brief-result.mjs
++++ b/scripts/headless/brief-result.mjs
+@@ -9,11 +9,13 @@
+ //   Result は POLS（既定 bot,stay＝達成の夜と未達の夜）× SEEDS（既定 1）× ノーマル・ハード × W を wvs-evac-entry の resultRun（模擬の台本を世界へ）で終わるまで遊び、本文の下端 ≤ 592・
+ //   重なりなし・「夜明け」なし・「（西）」なし。多い形（外で追撃・乗員の死傷・沈没）に作り直しても同じ。SHOTDIR に Briefing と Result（と多い形）を撮る。A は使わない。
+ // v0.8.0 S5（lead の L63）: US04=1 は us_04（ブラケット海峡の夜）だけ（brief-result-us04.mjs。Briefing の本当の折り返し・史実の下端 ≤ 584 − 8、Result の本文の下端 ≤ 592）。
+-// 実行: SITE=<B の site> [A=<A の site>] [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [W=1560,1280] [SECS=200] [SHOTDIR=<dir>] [TEXTS=1] [JOBS=3] [EVAC=1] [US04=1] node scripts/headless/brief-result.mjs
++// v0.8.1 S4（lead の L63・L64）: US06=1 は us_06（オルモック湾の決着）だけ（brief-result-us06.mjs。Briefing の本当の折り返し・史実の下端、Result の won・rammed の 2 夜の下端と見出し）。
++// 実行: SITE=<B の site> [A=<A の site>] [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [W=1560,1280] [SECS=200] [SHOTDIR=<dir>] [TEXTS=1] [JOBS=3] [EVAC=1] [US04=1] [US06=1] node scripts/headless/brief-result.mjs
+ import { mkdirSync } from 'node:fs';
+ import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+ import { bundleEntry, parseSeeds } from './world-vs-sim.mjs';
+ import { mainUs04 } from './brief-result-us04.mjs';
++import { mainUs06 } from './brief-result-us06.mjs';
+ 
+ const SORTIE_TOP = 720 - 24 - 112;
+ const BODY_MAX_Y = 592;
+@@ -221,7 +223,7 @@ async function mainEvac(siteB) {
+ async function main() {
+   const siteB = process.env.SITE;
+   if (siteB && process.env.EVAC === '1') return mainEvac(siteB);
+-  if (siteB && process.env.US04 === '1') return mainUs04(siteB, { readBriefing, bodyRows, worstResult, checkRows, SORTIE_TOP, BODY_MAX_Y, BRIEF_BODY_MAX_Y, chromium, openGame, serve, FRAME_MS, mkdirSync });
++  if (siteB && (process.env.US04 === '1' || process.env.US06 === '1')) return (process.env.US06 === '1' ? mainUs06 : mainUs04)(siteB, { readBriefing, bodyRows, worstResult, checkRows, SORTIE_TOP, BODY_MAX_Y, BRIEF_BODY_MAX_Y, chromium, openGame, serve, FRAME_MS, mkdirSync });
+   if (!siteB) throw new Error('SITE=<ビルドした site> が要る');
+   const siteA = process.env.A ?? '';
+   const widths = (process.env.W ?? '1560,1280').split(',').map(Number);
+diff --git a/scripts/headless/hud-ab.mjs b/scripts/headless/hud-ab.mjs
+index 57058e5..57d7aaf 100644
+--- a/scripts/headless/hud-ab.mjs
++++ b/scripts/headless/hud-ab.mjs
+@@ -7,7 +7,8 @@
+ // v0.8.0 S2: SET=us04 で us_04（ab-replay の us04 の組。秒は 260＝夜明けまで）。NORADAR=1 で B だけ &noradar（レーダーが HUD を変えない証。S4 からはレーダーの文を除いて比べる）。
+ // v0.8.0 S4（brief L33）: RADARUI=1・NORADAR=1 は ab-replay の S4 の濾し（S4_FILTER）で比べる（2 行目の S4 の行のスナップの数を masked に出す）。FILTERTEST=1 は濾しの試し（違いが出るはず）。
+ // v0.8.1 S2: SET=us06 で us_06（ab-replay の us06 の組。秒は 200＝夜明けまで。S2 は A＝B＝今の木・S3 から A は S2 の commit のビルド）。
+-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
++// v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文だけを比べから外す濾し（scripts/headless/anchor-filter。A は S3 の commit のビルド・B は今の木。tests/anchor-ab-filter が固定）。
++// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+ import { abCases, oneCase } from './ab-replay.mjs';
+ import { chromium, envNum, pool, serve } from './lib.mjs';
+ 
+@@ -23,7 +24,7 @@ await sb.close();
+ let bad = 0;
+ for (const r of res) {
+   if (!r.same) bad++;
+-  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
++  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+ }
+ console.log(`cases ${res.length} same ${res.length - bad} diff ${bad}`);
+ process.exitCode = bad === 0 ? 0 : 1;
 diff --git a/src/config/briefing-data.ts b/src/config/briefing-data.ts
 index 06dd593..938b136 100644
 --- a/src/config/briefing-data.ts
@@ -191,54 +287,19 @@ index 95c15e2..ddde2fc 100644
      // レーダー（v0.8.0 S4。us_04。spec-v0800 §4.9）: 月の行の尾（射程と、陸の反射のある海域なら「陸のそばは映らない」）。無い任務・?debug&noradar は鍵ごと省く
      ...(s.radar ? { radarJa: radarBriefingJa(s.radar.shipRangeM, s.radar.landClutterM > 0 && (s.shores !== undefined || s.mission.coast !== null)) } : {}),
      visM: playerVisRangeM(s.vis),
-diff --git a/src/systems/mission-result-extras.ts b/src/systems/mission-result-extras.ts
-index 946f709..9536ddc 100644
---- a/src/systems/mission-result-extras.ts
-+++ b/src/systems/mission-result-extras.ts
-@@ -1,9 +1,11 @@
- // Result の材料のうち任務ごとの部分（v0.4.4 で mission-telemetry から切り出し）: 大発掃討（v0.4.2）と僚艇（v0.4.4）、敵の水上機（v0.4.1。v0.6.1 で切り出し）、暴風（v0.3.4。v0.6.3 で切り出し）、
--// 機関の不調（v0.6.5）、隼艇の僚艇（v0.6.6）。終了時に 1 回だけ作る。
-+// 機関の不調（v0.6.5）、隼艇の僚艇（v0.6.6）、止まった艦の任務（v0.8.1 S4。us_06）。終了時に 1 回だけ作る。
- import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
- import { meanInsideKt } from '../core/storm';
- import type { BargeResult, EscortResult, MissionResult } from '../scenes/result-scene';
- import type { EngineResult, GunboatResult } from '../ui/result-types';
-+import type { GameData } from '../config/game-data';
-+import { anchorShipNameJa, type AnchorResult } from '../ui/anchor-result';
- import { gunboatFates } from './gunboat-credit';
- import type { MissionWorld } from './mission-world';
- 
-@@ -96,3 +98,16 @@ export function stormResultFields(w: MissionWorld): StormResultFields {
-     stormSlamDamage: w.storm ? w.storm.state.slamDamage : 0,
-   };
- }
-+
-+/**
-+ * 止まった艦の任務の Result の材料（v0.8.1 S4。us_06。ui/anchor-result）: 止まった艦の任務だけ anchor の鍵。隊の先頭の艦（卯月）の名（enemies.json の name_ja）・撃沈・動き出した世界の秒と
-+ * 気づいた理由、止まった艦への魚雷とその命中・最寄りの艦に対して背に岸が効いた秒（systems/anchor-telemetry の記録）。無い任務は {}（ほかの任務の Result は同じ）
-+ */
-+export function anchorResultPart(w: Pick<MissionWorld, 'destroyers' | 'setup'>, data: GameData): { anchor?: AnchorResult } {
-+  const g = w.destroyers;
-+  const a = g ? g.anchors : null;
-+  if (!g || !a) return {};
-+  const rec = (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === w.setup.mission.enemyId);
-+  const name = typeof rec?.['name_ja'] === 'string' ? anchorShipNameJa(rec['name_ja']) : '駆逐艦';
-+  return { anchor: { nameJa: name, sunk: g.ships[0]!.sinking, underwayS: a.log.underwayAtS[0]!, reason: a.state.reason[0]!, heldShots: a.log.heldShots, heldHits: a.log.heldHits, backdropS: a.log.backdropS } };
-+}
 diff --git a/src/systems/mission-telemetry.ts b/src/systems/mission-telemetry.ts
-index 3273398..16e4dd5 100644
+index 3273398..782c348 100644
 --- a/src/systems/mission-telemetry.ts
 +++ b/src/systems/mission-telemetry.ts
-@@ -12,7 +12,7 @@ import { endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
- import type { AircraftPose } from '../core/friendly';
+@@ -13,6 +13,7 @@ import type { AircraftPose } from '../core/friendly';
  import { raidResultLine } from '../core/sortie';
  import type { MissionResult } from '../scenes/result-scene';
--import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
-+import { anchorResultPart, bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+ import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
++import { anchorResultPart } from './anchor-result-part';
  import { radarResultPart, straitResultPart } from './strait-result-part';
  import { evacResultPart } from '../core/evac-result';
  import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
-@@ -209,5 +209,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
+@@ -209,5 +210,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
      ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
      ...radarResultPart(w), // レーダー（v0.8.0 S4。us_04）: レーダーの任務だけ radar の鍵（最初の接触・目で見えない間に撃った魚雷。本文の駆逐艦の行の後）
      ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
@@ -445,7 +506,7 @@ index 676f273..92a6134 100644
  
  /**
 diff --git a/src/ui/result-types.ts b/src/ui/result-types.ts
-index d52d713..f037808 100644
+index d52d713..34879a5 100644
 --- a/src/ui/result-types.ts
 +++ b/src/ui/result-types.ts
 @@ -2,6 +2,8 @@
@@ -461,7 +522,7 @@ index d52d713..f037808 100644
  export interface StraitNightResult {
    radar?: RadarResult; // レーダー（ui/radar-result。systems/strait-result-part の radarResultPart）
    strait?: StraitResult; // 列の通過（ui/strait-result。straitResultPart）
-+  anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06。ui/anchor-result。systems/mission-result-extras の anchorResultPart）
++  anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06。ui/anchor-result。systems/anchor-result-part の anchorResultPart）
  }
 diff --git a/src/ui/special-line.ts b/src/ui/special-line.ts
 index dcd2642..b3a5f4a 100644
@@ -586,6 +647,19 @@ index b00c6d0..77ee55c 100644
    if (mode === MISSION_RADAR_EVENT) return { text: c.radarText, color: c.radarKind === RADAR_EV_RETURN ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
    return null;
  }
+diff --git a/tests/ally-result.test.ts b/tests/ally-result.test.ts
+index d67c60f..15833bc 100644
+--- a/tests/ally-result.test.ts
++++ b/tests/ally-result.test.ts
+@@ -52,7 +52,7 @@ describe('Briefing の卯月の句（LD4・LD16）', () => {
+       if (id === 'jp_04') continue;
+       for (const hard of [false, true]) {
+         expect('allyJa' in briefingNumbers(buildWorldSetup(gameData, id, { hard })), id).toBe(false);
+-        expect(rowsOf(id, hard).join('\n'), id).not.toContain('卯月');
++        expect(rowsOf(id, hard).join('\n'), id).not.toContain(id === 'us_06' ? '味方の卯月' : '卯月'); // v0.8.1 S4: us_06 は敵の卯月（目的と成功の行）・味方の句は無い
+       }
+     }
+   });
 diff --git a/tests/anchor-world-kit.ts b/tests/anchor-world-kit.ts
 index 877bf01..db9e009 100644
 --- a/tests/anchor-world-kit.ts
@@ -608,3 +682,530 @@ index 877bf01..db9e009 100644
    };
  }
  
+diff --git a/tests/anchor-world.test.ts b/tests/anchor-world.test.ts
+index 9d864e5..4ca2584 100644
+--- a/tests/anchor-world.test.ts
++++ b/tests/anchor-world.test.ts
+@@ -256,7 +256,7 @@ describe('配線の source（L30〜L35）', () => {
+   it('destroyer-anchor・anchor-telemetry・shore-backdrop: Phaser・乱数・平方根なし、毎ステップの本体に確保の形なし、300 行より短い（L33・L34・L37 の行数）', () => {
+     const files: [string, number, string[]][] = [
+       ['src/systems/destroyer-anchor.ts', 110, ['  step(w: AnchorWorldView, feelDt: number): void {', '  held(i: number): boolean {', '  noteHit(torpedo: object): void {']],
+-      ['src/systems/anchor-telemetry.ts', 70, ['  step(st: AnchorState, w: AnchorWorldView): void {', 'export function refreshAnchorTelemetry(']],
++      ['src/systems/anchor-telemetry.ts', 80, ['  step(st: AnchorState, w: AnchorWorldView): void {', 'export function refreshAnchorTelemetry(']], // v0.8.1 S4: 目で見えている艦のビット（HUD の「動き出した」）で 69 → 75 行
+       ['src/systems/shore-backdrop.ts', 90, ['  rangeFor(i: number,', '  rangeAt(i: number, fallback: number): number {']],
+     ];
+     for (const [f, max, heads] of files) {
+diff --git a/tests/briefing-other-kit.ts b/tests/briefing-other-kit.ts
+index f00ad7a..f04db3e 100644
+--- a/tests/briefing-other-kit.ts
++++ b/tests/briefing-other-kit.ts
+@@ -7,8 +7,8 @@ import { briefingRows, formatDateJa } from '../src/core/briefing';
+ import { directSortie } from '../src/core/sortie';
+ import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
+ 
+-/** us_04 のほかの遊べる任務（v0.8.0 の時点の 9 つ） */
+-export const OTHER_BRIEFING_IDS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'] as const;
++/** us_06 のほかの遊べる任務（v0.8.1 S4 で us_04 を足した 10。v0.8.0 の時点は us_04 のほかの 9 つ） */
++export const OTHER_BRIEFING_IDS = ['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'] as const;
+ /** 条件の行の見越し点マーカーの句（progress の文の代わりの固定の文。どの任務にも同じ） */
+ const AIM = '見越し点マーカー 使用可';
+ 
+diff --git a/tests/briefing.test.ts b/tests/briefing.test.ts
+index b6af0de..1b137d7 100644
+--- a/tests/briefing.test.ts
++++ b/tests/briefing.test.ts
+@@ -3,12 +3,17 @@ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+ import { gameData, getPrototypeMission, getRaidParams } from '../src/config/game-data';
+ import { getMenuEntries } from '../src/config/mission-data';
++import { playableMissionIds } from '../src/config/campaign-data';
+ import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
+ import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
+ import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
+ import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
+ import { getEngineParams } from '../src/config/engine-mission-data';
+-import { FAMOUS_BOAT_RE, PERSON_DENYLIST, RANK_RE } from './person-denylist';
++import { FAMOUS_BOAT_RE, PERSON_DENYLIST, PT_NUMBER_RE, RANK_RE } from './person-denylist';
++import { ANCHOR_UNDERWAY_JA, anchorBackdropLineJa, anchorWithdrawJa } from '../src/ui/anchor-lines';
++import { anchorResultLineJa } from '../src/ui/anchor-result';
++import { resultHeadingJa } from '../src/ui/result-heading';
++import { bowOnLineJa } from '../src/ui/strait-lines';
+ import { createHash } from 'node:crypto';
+ import { directSortie } from '../src/core/sortie';
+ import { OTHER_BRIEFING_IDS, otherBriefingsJson } from './briefing-other-kit';
+@@ -22,7 +27,7 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
+ const labelOf = (id: string): string => riskLabelJa(gameData, id);
+ 
+ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
+-  it('任務一覧: 米PTキャンペーンの 4 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）。sub は日付 ・ 場所', () => {
++  it('任務一覧: 米PTキャンペーンの 5 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）、v0.8.1 S4 で us_06 も（3 段目の左）。sub は日付 ・ 場所', () => {
+     const menu = getMenuEntries(gameData);
+     expect(menu.campaignName).toBe('米PTキャンペーン');
+     expect(menu.entries).toEqual([
+@@ -30,10 +35,11 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
+       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
+       { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
+       { id: 'us_04', title: 'ブラケット海峡の夜', sub: '1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖）', playable: true, status: '出撃準備 →' },
++      { id: 'us_06', title: 'オルモック湾の決着', sub: '1944年12月11日 ・ パロンポン沖（レイテ島西岸）', playable: true, status: '出撃準備 →' },
+     ]);
+   });
+   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
+-    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）
++    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_06']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）。v0.8.1 S4: us_06 にも（v0.8.1）
+     expect(getMenuEntries(gameData).entries.map((e) => e.id)).toEqual(US_IDS);
+     const otherCampaign = clone();
+     byId(otherCampaign, 'jp_01')['playable_from'] = 'v0.5.0';
+@@ -76,8 +82,10 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
+     delete byId(nonePlayable, 'us_02')['v0_1_prototype'];
+     delete byId(nonePlayable, 'us_03')['v0_1_prototype'];
+     expect(() => getMenuEntries(nonePlayable)).toThrow(); // 日本のタブの解放の一覧（us_01〜03）が遊べる任務の外になる（v0.8.0 S0 の getCampaigns の検査）
+-    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.0 S5: us_04 が残る
++    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.0 S5: us_04 が残る（v0.8.1 S4 から us_06 も）
+     delete byId(nonePlayable, 'us_04')['v0_1_prototype'];
++    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.1 S4: us_06 が残る
++    delete byId(nonePlayable, 'us_06')['v0_1_prototype'];
+     expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).toThrow(/出撃できる任務/);
+   });
+   it('日付: 1942-12-11 → 1942年12月11日、1942-03-11 → 1942年3月11日、1942/12/11 は例外', () => {
+@@ -187,14 +195,16 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
+   });
+ });
+ 
+-// v0.8.0 S4（spec-v0800 §4.9・§4.6・§4.12、brief L25・L34）: us_04 の Briefing（月の行の尾・敵の来る方角「西と北西」・ハードの ×5）と、ほかの 9 任務の文がバイト同一の証。
+-// 基準の sha256 は S3 の commit（e8be5eb）の木に tests/briefing-other-kit.ts を写して esbuild で回した値（v0.8.0 S4 の hand-back。この木の値も同じ）。
++// v0.8.0 S4（spec-v0800 §4.9・§4.6・§4.12、brief L25・L34）: us_04 の Briefing（月の行の尾・敵の来る方角「西と北西」・ハードの ×5）と、ほかの任務の文がバイト同一の証。
++// 基準の sha256: v0.8.0 S4 は S3 の commit（e8be5eb）の木の 9 任務（84,709 字・b59abff9…）。v0.8.1 S4（lead の L60）から us_04 を足した 10 任務で、main e9d80ea（v0.8.0 のマージ）の木に
++// tests/briefing-other-kit.ts を写して esbuild で回した値（94,917 字。この木の値も同じ＝us_06 の S4 の文はほかの 10 任務の Briefing を 1 字も変えない）。
+ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト同一', () => {
+-  const OTHER_SHA = 'b59abff9d09c8bf0cc7858fe66ca3678262a20e702f64b0ddda0992a2a1f86a9';
+-  it('ほかの 9 任務（ノーマル・ハード × 史実モード × seed 4 つ）の日付・場所・題・6 行・史実は S3 の commit と同じ（sha256）', () => {
+-    expect(OTHER_BRIEFING_IDS.length).toBe(9);
++  const OTHER_SHA = '4dcef19ffd9b3b3900242608a5ca807f21031fac72a2260021e23716044eb47d';
++  it('ほかの 10 任務（us_06 のほか。ノーマル・ハード × 史実モード × seed 4 つ）の日付・場所・題・6 行・史実は main e9d80ea と同じ（sha256）', () => {
++    expect(OTHER_BRIEFING_IDS.length).toBe(10);
++    expect([...OTHER_BRIEFING_IDS].sort()).toEqual([...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'us_06').sort());
+     const j = otherBriefingsJson();
+-    expect(j.length).toBe(84709);
++    expect(j.length).toBe(94917);
+     expect(createHash('sha256').update(j).digest('hex')).toBe(OTHER_SHA);
+   });
+   const rowsOf = (hard: boolean, seed = 1, radarOff = false): { label: string; text: string }[] => {
+@@ -258,3 +268,71 @@ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト
+     }
+   });
+ });
++
++// v0.8.1 S4（spec-v0810 §3.7 D-O1・D-O5・D-O6・§3.8、lead の L64）: us_06 の Briefing（目的・史実メモ・月の行の尾・敵の行「（南西に停泊）」とハードの駆潜艇・危険・条件）と、
++// us_06 の画面の文の全部（Title の札・Briefing・HUD の新しい文・Result の 1 行と見出し・夜明けの帯）に人名・階級つきの呼び方・PT の番号（/PT-?\s*\d/。隻数は番号でない）が無いこと。
++describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番号', () => {
++  const rowsOf = (hard: boolean, seed = 1): { label: string; text: string }[] => {
++    const setup = buildWorldSetup(gameData, 'us_06', { sortie: directSortie('us_06', seed, 'none', hard, false), hard });
++    const rec = { ...getBriefingRecord(gameData, 'us_06', hard), hazardIds: setup.hazardsTonight, absentHazardIds: setup.absentHazards };
++    return briefingRows(rec, briefingNumbers(setup, '見越し点マーカー 使用可'), nameOf, labelOf);
++  };
++  const proto = (): Record<string, unknown> => byId(gameData, 'us_06')['v0_1_prototype'] as Record<string, unknown>;
++  it('6 行（数は data から: 夜明け・燃料・魚雷・射程・駆潜艇の隻数）。ハードは敵の行に「駆潜艇 ×2」。目的・成功・史実は data の文（ハードも同じ）', () => {
++    const p = getPrototypeMission(gameData, 'us_06');
++    const radar = gameData.hitRateModel.radar.models.so_late.ship_range_m;
++    const pickets = ((proto()['hard'] as Record<string, unknown>)['extra_pickets'] as unknown[]).length;
++    const torps = buildWorldSetup(gameData, 'us_06').torpedoCapacity;
++    for (const hard of [false, true]) {
++      expect(rowsOf(hard).map((r) => `${r.label}: ${r.text}`)).toEqual([
++        `目的: ${String(byId(gameData, 'us_06')['objective'])}`,
++        '成功: 帰投。卯月を撃沈すれば達成（帰投地点は北東の青い輪）',
++        `月: 月没後 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m ・ レーダー ${radar} m（陸のそばは映らない）`,
++        `敵: 駆逐艦 ×1、輸送船 ×1${hard ? `、駆潜艇 ×${pickets}` : ''}（南西に停泊）`,
++        '危険: 敵艦艇の砲撃・衝突、夜明けの空襲',
++        `条件: 夜明けまで ${p.durationS} 秒（以後は空襲・敵は東へ退く） ・ 燃料 ${String(proto()['fuel_allotment_gal'])} gal ・ 魚雷 ${torps} 本 ・ 機銃は艦に効かない ・ 見越し点マーカー 使用可`,
++      ]);
++    }
++    expect([pickets, p.durationS, proto()['fuel_allotment_gal'], torps, radar]).toEqual([2, 200, 40, 4, 6000]);
++    const rec = getBriefingRecord(gameData, 'us_06');
++    expect([formatDateJa(rec.date), rec.place, rec.titleJa]).toEqual(['1944年12月11日', 'パロンポン沖（レイテ島西岸）', 'オルモック湾の決着']);
++    expect(rec.objective).toBe('パロンポン沖に止まった駆逐艦 卯月と、揚陸中の輸送船 空知丸。レーダーで捉え、暗い岸を背に忍び寄って雷撃し、動き出した艦から逃れて帰れ');
++    expect(rec.noteJa).toBe('1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月を、レーダーで捉えた米PT\u00a02隻が暗い岸を背に忍び寄り、約900\u00a0mから魚雷6本を撃って2本以上を当てて沈めた。輸送船空知丸は駆潜艇2隻に導かれて揚陸していた。日本のタブの「多号作戦・オルモック湾へ」と同じ夜。');
++    expect(getBriefingRecord(gameData, 'us_06', true).noteJa).toBe(rec.noteJa); // 句の間はノーブレークスペース（S0 の data。Phaser の折り返しは半角スペースで切る）
++  });
++  it('敵の行の「南西に停泊」は自艇の出発点から見た今夜の卯月（seed 1〜60・ノーマルとハード）。止まった艦の無い任務には鍵が無い', () => {
++    const seen = new Set<string>();
++    for (const hard of [false, true]) for (let seed = 1; seed <= 60; seed++) seen.add(rowsOf(hard, seed)[3]!.text.replace(/、駆潜艇 ×2/, ''));
++    expect([...seen]).toEqual(['駆逐艦 ×1、輸送船 ×1（南西に停泊）']);
++    for (const id of OTHER_BRIEFING_IDS) expect('enemyAtJa' in briefingNumbers(buildWorldSetup(gameData, id)), id).toBe(false);
++  });
++  it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 2・成功 1・月 2・敵 1・危険 1・条件 2、史実 3（20 px）。下端は出撃のボタンの上端 584 − 8 の内（us_04 と同じ 561）', () => {
++    for (const hard of [false, true]) {
++      const r = rowsOf(hard).map((x) => x.text);
++      for (const W of [BRIEF_WRAP, BRIEF_WRAP - BRIEF_ROW_PX]) expect(r.map((t) => phaserWrap(t, BRIEF_ROW_PX, W).length), `${hard} ${W}`).toEqual([2, 1, 2, 1, 1, 2]);
++      for (const W of [BRIEF_WRAP, BRIEF_WRAP - BRIEF_ROW_PX]) expect(phaserWrap(getBriefingRecord(gameData, 'us_06', hard).noteJa, BRIEF_NOTE_PX, W).length, `${hard} ${W}`).toBe(3);
++    }
++    const lh = (px: number): number => Math.ceil(px * 1.25);
++    const bottom = 148 + [2, 1, 2, 1, 1, 2].reduce((a, n) => a + n * lh(BRIEF_ROW_PX) + 10, 0) + 8 + 3 * lh(BRIEF_NOTE_PX);
++    expect(bottom).toBe(561);
++    expect(bottom).toBeLessThanOrEqual(584 - 8);
++  });
++  it('us_06 の画面の文の全部（Title の札・Briefing・HUD の新しい文・Result の 1 行と見出し・夜明けの帯）に人名・階級つきの呼び方・PT の番号が無い', () => {
++    const texts: string[] = [];
++    const card = getMenuEntries(gameData).entries.find((e) => e.id === 'us_06')!;
++    texts.push(card.title, card.sub, card.status);
++    for (const hard of [false, true]) {
++      const rec = getBriefingRecord(gameData, 'us_06', hard);
++      texts.push(rec.titleJa, rec.place, rec.objective, rec.success, rec.noteJa, ...rowsOf(hard).map((r) => r.text));
++    }
++    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, bowOnLineJa(5, true), resultHeadingJa('rammed', NaN, true, false, false, true));
++    texts.push(anchorResultLineJa({ nameJa: '卯月', sunk: true, underwayS: 85, reason: 2, heldShots: 4, heldHits: 2, backdropS: 48 }));
++    const t = { anchor: {}, transportEnabled: true, transportSunk: false, shipsSunk: 0, shipsTotal: 1, torpedoesLeft: 2, dawn: { forceJa: '日本の艦', retireJa: '東' } } as never;
++    texts.push(anchorWithdrawJa(t, 'x'), anchorWithdrawJa({ ...(t as object), shipsSunk: 1 } as never, 'x'));
++    for (const s of texts) {
++      for (const name of PERSON_DENYLIST) expect(s).not.toContain(name);
++      expect(RANK_RE.test(s) || PT_NUMBER_RE.test(s) || FAMOUS_BOAT_RE.test(s), s).toBe(false);
++    }
++    expect(texts.length).toBe(32);
++  });
++});
+diff --git a/tests/campaign.test.ts b/tests/campaign.test.ts
+index eff52c7..57aa7b3 100644
+--- a/tests/campaign.test.ts
++++ b/tests/campaign.test.ts
+@@ -41,7 +41,7 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
+       ['jp_hard', '日本', { kind: 'complete', campaignId: 'us_pt' }],
+     ]);
+     expect(defaultCampaign(gameData).id).toBe('us_pt');
+-    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']); // v0.8.0 S5: us_04（ブラケット海峡の夜）に playable_from
++    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_06']); // v0.8.0 S5: us_04（ブラケット海峡の夜）に playable_from。v0.8.1 S4: us_06（オルモック湾の決着）も
+     expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。v0.6.7: jp_02（孤島の哨戒）も。v0.6.9: jp_04（多号作戦・オルモック湾へ）も。v0.6.11 S6: jp_03（運天港・空襲下の退避）も。配列順
+     expect(getMenuEntries(gameData, 'jp_hard').campaignName).toBe('日本ハードモード');
+     expect(() => getMenuEntries(gameData, 'nope')).toThrow();
+@@ -65,11 +65,11 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
+     expect([us!.unlockMissionIds, jp!.unlockMissionIds]).toEqual([null, ['us_01', 'us_02', 'us_03']]);
+     expect([unlockPrereqIds(gameData, us!), unlockPrereqIds(gameData, jp!)]).toEqual([[], ['us_01', 'us_02', 'us_03']]);
+     expect(String((gameData.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids_source'])).toContain('design (v0.8.0 S0');
+-    // v0.8.0 S5 から us_04 が遊べる（S0 の木では playable_from を足した写しで確かめた）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝4）
+-    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
++    // v0.8.0 S5 から us_04 が遊べる（S0 の木では playable_from を足した写しで確かめた）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝v0.8.1 S4 の us_06 で 5）
++    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_06']);
+     const later = clone();
+     delete (later.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'];
+-    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04']);
++    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_06']);
+   });
+   it('v0.8.0 S5（brief L50）: us_04 が遊べても日本のタブは米PT の 3 任務で開く。(a) us_01〜03 を帰投で終え us_04 は一度も → 開く (b) us_04 だけ帰投で終えた → 未解放・済 0/3 のまま', () => {
+     const [us, jp] = getCampaigns(gameData);
+@@ -88,13 +88,23 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
+     // v0.5.2 までの端末の移し替え（systems/progress-storage の migrateLegacyUnlocks）も条件の数は 3 のまま
+     expect([legacyUnlocked(null, 3, pre.length), legacyUnlocked(null, 2, pre.length)]).toEqual([true, false]);
+   });
++  it('v0.8.1 S4（brief L65）: us_06 が遊べても日本のタブは米PT の 3 任務で開く。us_06 だけ・us_04 と us_06 を帰投で終えても未解放（済 0/3）、us_06 ＋ 2 任務は 2/3、us_01〜03 なら開く', () => {
++    const [, jp] = getCampaigns(gameData);
++    const pre = unlockPrereqIds(gameData, jp!);
++    expect(pre).toEqual(['us_01', 'us_02', 'us_03']);
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_06']), false, false)).toEqual({ unlocked: false, done: 0, total: 3 });
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_04', 'us_06']), false, false)).toEqual({ unlocked: false, done: 0, total: 3 });
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_06', 'us_01', 'us_03']), false, false)).toEqual({ unlocked: false, done: 2, total: 3 });
++    expect(campaignStatus(jp!.unlock, pre, new Set(['us_01', 'us_02', 'us_03']), false, false)).toEqual({ unlocked: true, done: 3, total: 3 });
++    expect([legacyUnlocked(null, 3, pre.length), legacyUnlocked(null, 2, pre.length)]).toEqual([true, false]); // v0.5.2 までの端末の移し替えも 3 のまま
++  });
+   it('解放の条件の一覧の検査: 空・重複・文字でない・相手の遊べる任務の外・default のキャンペーンに置く は例外', () => {
+     expect(parseUnlockMissionIds(undefined, 'x')).toBeNull();
+     expect(parseUnlockMissionIds(['us_01'], 'x')).toEqual(['us_01']);
+     for (const bad of [[], ['us_01', 'us_01'], ['us_01', ''], 'us_01', [1]]) expect(() => parseUnlockMissionIds(bad, 'campaigns.jp_hard'), JSON.stringify(bad)).toThrow(/campaigns\.jp_hard の unlock_mission_ids は空でない・重複の無い任務の id の配列/);
+     const notPlayable = clone();
+     (notPlayable.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01', 'us_05']; // v0.8.0 S5 から us_04 は遊べるので、まだ遊べない us_05 で
+-    expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_05）は complete_ の相手の遊べる任務（us_01・us_02・us_03・us_04）の中だけ/);
++    expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_05）は complete_ の相手の遊べる任務（us_01・us_02・us_03・us_04・us_06）の中だけ/); // v0.8.1 S4: us_06 も遊べる
+     const onDefault = clone();
+     (onDefault.missionsSeed.campaigns[0] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01'];
+     expect(() => getCampaigns(onDefault)).toThrow(/campaigns\.us_pt\.unlock_mission_ids（us_01）は complete_ の相手の遊べる任務（なし）の中だけ/);
+diff --git a/tests/dawn-air.test.ts b/tests/dawn-air.test.ts
+index 51c4820..a0023e6 100644
+--- a/tests/dawn-air.test.ts
++++ b/tests/dawn-air.test.ts
+@@ -295,9 +295,9 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       expect(String((byId(gameData, id)['dawn_air'] as Rec)['source']), id).toContain('抜粋のみ・本文未読');
+     }
+   });
+-  it('遊べる任務（us_01・us_02・us_03・us_04・jp_01・jp_02・jp_03・jp_04・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
+-    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（ヘンダーソン基地の制空下。空襲あり）。v0.6.7: jp_02（米の飛行艇。夜明けは 4 機）。v0.6.9: jp_04（タクロバンの米機の制空下。空襲あり）。v0.6.11 S6: jp_03（第38任務部隊の制空下。240 秒の後は 4 機）。v0.8.0 S5: us_04（争奪の空を敵として遊ぶ＝ユーザーの決め U1。夜明けの後は水上機 4 機）
+-    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', us_04: 'enemy', jp_01: 'enemy', jp_02: 'enemy', jp_03: 'enemy', jp_04: 'enemy', jp_05: 'own', jp_06: 'enemy' };
++  it('遊べる任務（us_01・us_02・us_03・us_04・us_06・jp_01・jp_02・jp_03・jp_04・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
++    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_06', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.8.1 S4: us_06（争奪の空を敵として遊ぶ＝lead の既定 L1。夜明けの後は日本機 4 機）。v0.6.4: jp_01（ヘンダーソン基地の制空下。空襲あり）。v0.6.7: jp_02（米の飛行艇。夜明けは 4 機）。v0.6.9: jp_04（タクロバンの米機の制空下。空襲あり）。v0.6.11 S6: jp_03（第38任務部隊の制空下。240 秒の後は 4 機）。v0.8.0 S5: us_04（争奪の空を敵として遊ぶ＝ユーザーの決め U1。夜明けの後は水上機 4 機）
++    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', us_04: 'enemy', us_06: 'enemy', jp_01: 'enemy', jp_02: 'enemy', jp_03: 'enemy', jp_04: 'enemy', jp_05: 'own', jp_06: 'enemy' };
+     for (const id of PLAYABLE_IDS) {
+       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
+       const s = buildWorldSetup(gameData, id);
+@@ -407,8 +407,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+     // 燃料が尽きるまでの実秒（spec §3.1 の概算 1,340・1,370・1,070・1,220。us_03 は 30 gal で 1,080、v0.6.1 実機 1 回目の 36 gal で 1,296。v0.6.3 の jp_05 は 23 gal で 1,449、実機 1 回目の 32 gal・アイドル 0.14 で 1,440。
+     // v0.6.4 の jp_01 は 19 gal で 1,453（T-38 のアイドル 800/8.5 × 0.1 = 9.4118 gal/h: 19 / 9.4118 × 720 = 1453.4999… → 1453。上限いっぱい）。v0.6.7 の jp_02 は jp_05 と同じ T-14・32 gal で 1,440。
+     // v0.6.9 の jp_04 は jp_01 と同じ T-38・19 gal で 1,453。v0.6.11 S6 の jp_03 は T-38・16 gal で 1,224 ＋ 空襲の間の 240 ＝ 1,464（V-E10 の 240 ＋ 1,224 ＋ 1.5 < 1,500）。
+-    // v0.8.0 S5 の us_04 は Elco 80・33 gal で 1,188（アイドル 200 × 0.1 = 20 gal/h: 33 / 20 × 720。夜明けの 260 秒より後）
+-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1453, 1440, 1464, 1453, 1440, 1224]);
++    // v0.8.0 S5 の us_04 は Elco 80・33 gal で 1,188（アイドル 200 × 0.1 = 20 gal/h: 33 / 20 × 720。夜明けの 260 秒より後）。v0.8.1 S4 の us_06 は Elco 80・40 gal で 1,440（40 / 20 × 720。spec-v0810 §3.1 D-M5 の上限 41.6 gal の内）
++    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1440, 1453, 1440, 1464, 1453, 1440, 1224]);
+   });
+   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲と夜の哨戒の機体・dawn_air_strike と patrol_air の文', () => {
+     const texts: string[] = [];
+diff --git a/tests/evac-briefing.test.ts b/tests/evac-briefing.test.ts
+index d6ffc00..004de88 100644
+--- a/tests/evac-briefing.test.ts
++++ b/tests/evac-briefing.test.ts
+@@ -129,7 +129,8 @@ function oldRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: string) => st
+ 
+ describe('ほかの 8 任務の Briefing はバイト同一', () => {
+   // v0.8.0 S5: us_04 は遊べるが、月の行にレーダーの尾を持つ v0.8.0 の文（tests/briefing の us_04 の段が固定）なので v0.6.10 の式の比べから外す
+-  const others = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'jp_03' && id !== 'us_04');
++  // v0.8.1 S4: us_06 も同じ（月の行にレーダーの尾・敵の行の「（南西に停泊）」＝tests/briefing の us_06 の段が固定）
++  const others = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'jp_03' && id !== 'us_04' && id !== 'us_06');
+   it('8 任務 × ノーマル・ハード × seed 1〜4（今夜の揺らぎ・見越し点の句あり）で v0.6.10 の式と同じ文。evac の鍵は 1 つも出ない', () => {
+     expect(others).toEqual(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06']);
+     const keys = ['successTailJa', 'dayRowJa', 'enemyRowJa', 'clockJa', 'fuelNoteJa', 'repassJa', 'hazardLabelsJa'];
+diff --git a/tests/evac-result.test.ts b/tests/evac-result.test.ts
+index 103e2e3..2b64abb 100644
+--- a/tests/evac-result.test.ts
++++ b/tests/evac-result.test.ts
+@@ -246,7 +246,7 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
+     const rs = readFileSync(join(__dirname, '..', 'src', 'scenes', 'result-scene.ts'), 'utf8');
+     expect(rs).toContain('...(r.evac ? evacTimeLinesJa(r.evac, r.dawn, r.reason, r.returned) : [dawnResultLine(r.dawn, r.returned, r.reason === \'cleared\')])');
+     expect(rs).toContain('if (!r.returned && !r.evac) {');
+-    expect(rs).toContain('resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined)');
++    expect(rs).toContain('resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined)'); // v0.8.1 S4: 止まった艦の任務の旗（体当たり →「敵艦と衝突した」＝ui/anchor-result）
+     expect(rs).toContain(": r.patrol || r.evac ? '' : ships;");
+   });
+ });
+diff --git a/tests/jp05-mission.test.ts b/tests/jp05-mission.test.ts
+index dd13e11..4f7c94b 100644
+--- a/tests/jp05-mission.test.ts
++++ b/tests/jp05-mission.test.ts
+@@ -195,9 +195,9 @@ describe('jp_05 の任務と世界（v0.6.3）', () => {
+ });
+ 
+ describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い任務に「ハード」と出していた）', () => {
+-  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）・jp_03（v0.6.11。同時の編隊 3）・us_04（v0.8.0。列の艦 ＋1）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
++  it('ハードの違い（v0_1_prototype.hard）があるのは us_01・us_02・us_03・jp_06・jp_01（v0.6.6）・jp_04（v0.6.9）・jp_03（v0.6.11。同時の編隊 3）・us_04（v0.8.0。列の艦 ＋1）・us_06（v0.8.1。駆潜艇 2 隻）。jp_05 は無い＝Briefing は「（この任務は同じ）」、Result の見出しに「（ハード）」を付けない', () => {
+     const ids = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
+-    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_03', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']);
++    expect(ids.filter((id) => hasHardVariant(gameData, id)).sort()).toEqual(['jp_01', 'jp_03', 'jp_04', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_06']); // v0.8.1 S4: us_06 は遊べる任務に入った（ハードの違いは S0 からの hard.extra_pickets）
+     expect(hasHardVariant(gameData, 'jp_05')).toBe(false);
+     expect(difficultyJa(false, true)).toBe('');
+     expect(difficultyJa(false, false)).toBe('');
+diff --git a/tests/kpi-target.test.ts b/tests/kpi-target.test.ts
+index c239b6b..9124059 100644
+--- a/tests/kpi-target.test.ts
++++ b/tests/kpi-target.test.ts
+@@ -85,12 +85,12 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も
+     const t = buildWorldSetup(gameData, 'us_04', {}).transit!;
+     expect([t.speedKt, r2(mpsToKt(t.shipAi.maxSpeedMps))]).toEqual([30, 30]);
+   });
+-  it('遊べる任務（playable_from）の駆逐艦の任務はみな表にあり、まだ遊べない us_06 も表にある', () => {
++  it('遊べる任務（playable_from）の駆逐艦の任務はみな表にあり、us_06 も表にある（v0.8.1 S4 から遊べる）', () => {
+     const covered = new Set(rows.map((r) => r[0].split('&')[0]));
+     const campaigns = [...new Set((gameData.missionsSeed.missions as unknown as Record<string, unknown>[]).map((m) => m['campaign'] as string))];
+     expect(campaigns.sort()).toEqual(['jp_hard', 'us_pt']);
+     const playable = campaigns.flatMap((c) => playableMissionIds(gameData, c)).filter((id) => buildWorldSetup(gameData, id, {}).destroyer !== null);
+-    expect(playable.sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_04']);
++    expect(playable.sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_04', 'us_06']); // v0.8.1 S4: us_06 に playable_from
+     for (const id of [...playable, 'us_06']) expect(covered.has(id), id).toBe(true);
+   });
+   it('前提の source: AI の目標の速さは巡航・回避・最大だけ、Destroyer が速さを書くのは作る時（巡航）・現れる時（列の速さ）・沈み始め（0）だけ、steerShip は目標を越えない', () => {
+diff --git a/tests/mission-end.test.ts b/tests/mission-end.test.ts
+index cb7bbaf..4ffb475 100644
+--- a/tests/mission-end.test.ts
++++ b/tests/mission-end.test.ts
+@@ -367,7 +367,8 @@ describe('data: fleet_gone_clears（us_02）と torpedo_end_settle_s', () => {
+     for (const id of PLAYABLE) expect(getDawnAir(gameData, id).fleetGoneClears, id).toBe(id === 'us_02');
+     expect(buildWorldSetup(gameData, 'us_02').dawnAir.fleetGoneClears).toBe(true);
+     expect(String(protoOf(gameData, 'us_02')['fleet_gone_clears_source'])).toContain('帰投は必須ではない');
+-    expect(getDawnAir(gameData, 'us_04').fleetGoneClears).toBe(false); // 遊べない任務
++    expect(getDawnAir(gameData, 'us_04').fleetGoneClears).toBe(false); // v0.8.0 S5 から遊べる（「遊べない任務」は古い言葉＝v0.8.1 S4 で直した）。敵の空の任務で帰投が要る
++    expect(getDawnAir(gameData, 'us_06').fleetGoneClears).toBe(false); // v0.8.1 S4 から遊べる・敵の空（lead の既定 L1）で帰投が要る
+   });
+   it('遊べる 5 任務の帰投地点に torpedo_end_settle_s 5 秒（design。実機 1 回目「3秒ほど待ってほしい」→ 2 回目「5秒にしましょう」）', () => {
+     for (const id of PLAYABLE) {
+diff --git a/tests/person-denylist.ts b/tests/person-denylist.ts
+index 17f3d03..9713cd8 100644
+--- a/tests/person-denylist.ts
++++ b/tests/person-denylist.ts
+@@ -8,3 +8,5 @@ export const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ
+ export const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
+ /** その夜に駆逐艦に体当たりされた有名な艇の番号（v0.8.0 S0。spec-v0800 §4.12。URL の小文字・空白・ハイフンの有無も拾う）。us_04 の文と data に出さない */
+ export const FAMOUS_BOAT_RE = /PT-?\s*109/i;
++/** PT の番号（v0.8.1。spec-v0810 §3.8: us_06 の画面の文に出さない。PT-490・PT 492・PT323 など）。「隻」が続く数（「米PT 2隻」の隻数）は番号でない（tests/setup-us06 から移した） */
++export const PT_NUMBER_RE = /PT-?\s*\d+(?![\d隻])/;
+diff --git a/tests/radar-lines.test.ts b/tests/radar-lines.test.ts
+index f3fdbef..181f723 100644
+--- a/tests/radar-lines.test.ts
++++ b/tests/radar-lines.test.ts
+@@ -81,11 +81,11 @@ describe('読む欄（brief L26: レーダーの文はレーダーのテレメ
+     expect(src).not.toMatch(/\bt\.|\bw\.|transit|phase|enemy|sighted|visRange|ai\b|destroyer/);
+     expect([...src.matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['../config/strait-hud-config', '../core/boat-telemetry', '../core/briefing']);
+   });
+-  it('ui/strait-line-clock は t.radar と t.strait だけを読む（レーダーの欄は radar-lines へ渡す・数と東の縁の判定）', () => {
++  it('ui/strait-line-clock は t.radar と t.strait だけを読む（レーダーの欄は radar-lines へ渡す・数と東の縁の判定。v0.8.1 S4: 衝突の危険の名詞の bowOnPicket・止まった艦の出来事は anchor へ t を渡すだけ）', () => {
+     const src = code('src/ui/strait-line-clock.ts');
+     expect([...new Set([...src.matchAll(/\bt\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['radar', 'strait']);
+     expect([...new Set([...src.matchAll(/\br\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['enabled', 'firstS', 'lostCount', 'newCount']);
+-    expect([...new Set([...src.matchAll(/\bst\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['bowOnM', 'bowOnMask', 'enabled']);
++    expect([...new Set([...src.matchAll(/\bst\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['bowOnM', 'bowOnMask', 'bowOnPicket', 'enabled']);
+   });
+   it('レーダーのテレメトリ（systems/radar-telemetry）が書く欄は core/radar の状態の写しと、海域の幅・揚陸の地の名・自艇の位置だけ（視程・発見・艦は書かない）', () => {
+     const src = code('src/systems/radar-telemetry.ts');
+diff --git a/tests/setup-us06.test.ts b/tests/setup-us06.test.ts
+index 4221877..7df8090 100644
+--- a/tests/setup-us06.test.ts
++++ b/tests/setup-us06.test.ts
+@@ -8,14 +8,12 @@ import { gameData } from '../src/config/game-data';
+ import { SeededRng } from '../src/core/rng';
+ import { directSortie } from '../src/core/sortie';
+ import { buildWorldSetup } from '../src/systems/world-setup';
+-import { FAMOUS_BOAT_RE, PERSON_DENYLIST, RANK_RE } from './person-denylist';
++import { FAMOUS_BOAT_RE, PERSON_DENYLIST, PT_NUMBER_RE, RANK_RE } from './person-denylist';
+ 
+ const SEEDS = [1, 12345] as const;
+ const CASES = [false, true].flatMap((hard) => [false, true].flatMap((historical) => SEEDS.map((seed) => [hard, historical, seed] as const)));
+ type Rec = Record<string, unknown>;
+ const missionOf = (id: string): Rec => (gameData.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === id)!;
+-/** PT の番号（PT-490・PT 492・PT323 など）。「隻」が続く数（「米PT 2隻」の隻数）は番号でない */
+-const PT_NUMBER_RE = /PT-?\s*\d+(?![\d隻])/;
+ 
+ function build(hard: boolean, historical: boolean, seed: number): { s: ReturnType<typeof buildWorldSetup>; draws: number } {
+   const spy = vi.spyOn(SeededRng.prototype, 'next');
+@@ -61,12 +59,12 @@ describe('us_06 の setup の snapshot（v0.8.1 S0 の木）', () => {
+ });
+ 
+ describe('us_06 の種の直し（spec-v0810 §2）と人名・PT の番号（CLAUDE.md §11・spec-v0810 §3.8）', () => {
+-  it('場所はパロンポン沖・月は沈んでいた・目的に特攻艇なし・成功は卯月の撃沈・夜明けは L1・題と日付と順はそのまま・まだ遊べない', () => {
++  it('場所はパロンポン沖・月は沈んでいた・目的に特攻艇なし・成功は卯月の撃沈・夜明けは L1・題と日付と順はそのまま・S4 から遊べる（playable_from v0.8.1）', () => {
+     const m = missionOf('us_06');
+     expect([m['title_ja'], m['date'], m['order'], m['place'], m['moon'], m['moon_label_ja'], m['success'], m['torpedo_type'], m['player_boat']]).toEqual(['オルモック湾の決着', '1944-12-11', 6, 'パロンポン沖（レイテ島西岸）', 'dark', '月没後', '帰投。卯月を撃沈すれば達成', 'us_mk13', 'us_elco80']);
+     expect(String(m['objective'])).not.toContain('特攻');
+     expect(m['enemies']).toEqual(['ijn_destroyer_mutsuki_enemy', 'ijn_transport']);
+-    expect('playable_from' in m).toBe(false);
++    expect(m['playable_from']).toBe('v0.8.1'); // v0.8.1 S4（lead の L65）: Title の米PT のタブの 5 枚目。S0〜S3 は無かった
+     const da = m['dawn_air'] as Rec;
+     expect([da['control'], da['confidence'], da['play_as'], da['enemy_ships_at_dawn'], da['label_ja']]).toEqual(['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本機の空襲）']);
+     expect((da['refs'] as Rec[]).map((r) => r['url'])).toContain('https://en.wikipedia.org/wiki/VMF-541');
+diff --git a/tests/sfx-music-mood.test.ts b/tests/sfx-music-mood.test.ts
+index 984a252..3560866 100644
+--- a/tests/sfx-music-mood.test.ts
++++ b/tests/sfx-music-mood.test.ts
+@@ -247,6 +247,24 @@ describe('レーダー・列の通過・衝突の危険では段を変えない
+   });
+ });
+ 
++describe('止まった艦・動き出し・暗い岸を背にでは段を変えない（v0.8.1 S4。spec-v0810 §3.6 D-A3・D5、lead の L68）', () => {
++  it('気づいた・動き出した（艦ごとの段・理由・秒・通算）・背に岸のビットと秒・止まった艦への魚雷・目で見えている艦のビットが何であっても段は同じ（今の HUD の状態だけが決める）。source はその欄の名を持たない', () => {
++    const arr = (v: number): readonly number[] => Object.freeze([v, v, v, v]);
++    for (const k of [0, 1, 2]) {
++      const extra = {
++        anchor: Object.freeze({ stage: arr(k), reason: arr(k * 2), noticedAtS: arr(k ? 30 : NaN), underwayAtS: arr(k > 1 ? 33 : NaN), noticedCount: k * 4, underwayCount: k > 1 ? 3 : 0, backdropOn: k === 1, backdropS: 48 * k, heldShots: k, heldHits: k, seenMask: k ? 0b1111 : 0 }),
++      };
++      for (const [over, want] of [[{}, Q], [{ illuminated: true }, B], [{ playerDetected: true }, T]] as const) {
++        const t = Object.freeze({ ...(tel(over) as unknown as Record<string, unknown>), ...extra }) as unknown as BoatTelemetry;
++        expect(levelOf(over), String(k)).toBe(want);
++        expect(run(createSfxMoodState(), t), `${k} ${JSON.stringify(over)}`).toBe(want);
++      }
++    }
++    const src = readFileSync('src/core/sfx-music-mood.ts', 'utf8').replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
++    for (const f of ['anchor', 'underway', 'noticed', 'backdrop', 'held', 'seenMask']) expect(src, f).not.toContain(f);
++  });
++});
++
+ describe('観測器の作法（読むだけ・確保しない）', () => {
+   it('凍らせたテレメトリで全部の出どころを通しても投げない（どの欄にも書かない）。戻りは段の数だけ', () => {
+     const st = createSfxMoodState();
+diff --git a/tests/sfx-rules.test.ts b/tests/sfx-rules.test.ts
+index 4ef707e..c6aaf90 100644
+--- a/tests/sfx-rules.test.ts
++++ b/tests/sfx-rules.test.ts
+@@ -292,3 +292,17 @@ describe('音の層はレーダーと海峡の夜を読まない（v0.8.0 S4）'
+     expect(resolved('src/core/sfx-x.ts', './radar')).toBe('src/core/radar');
+   });
+ });
++
++// v0.8.1 S4（spec-v0810 §3.6 D-A3・D5、lead の L68）: 音の層（sfx-* の全部）は止まった艦・暗い岸を背に・駆潜艇の層を import しない（気づいた・動き出した・背に岸では鳴らさない・
++// 曲を下げない。「停泊していた艦が動き出した！」は警報の合図ではない＝下げは今の合図と重なった時だけ）
++describe('音の層は止まった艦と暗い岸を背にを読まない（v0.8.1 S4）', () => {
++  const NOT_FOR_SFX = /^src\/(?:core\/anchored-ship|systems\/destroyer-anchor|systems\/shore-backdrop|systems\/anchor-telemetry|systems\/anchor-result-part|ui\/anchor-lines|ui\/anchor-result|config\/anchor-hud-config|config\/anchor-mission-data|config\/backdrop-mission-data)$/;
++  it('どの sfx-* の import の先にも core/anchored-ship・systems/destroyer-anchor・shore-backdrop・anchor-telemetry・ui/anchor-lines・anchor-result（と S0〜S4 の止まった艦のファイル）が無い', () => {
++    expect(SFX.length).toBeGreaterThan(30);
++    const resolved = (f: string, p: string): string => (p.startsWith('.') ? posix.join(posix.dirname(f), p) : p);
++    for (const f of SFX) expect(imports(code(f)).map((p) => resolved(f, p)).filter((p) => NOT_FOR_SFX.test(p)), f).toEqual([]);
++    expect(['src/core/anchored-ship', 'src/systems/destroyer-anchor', 'src/systems/shore-backdrop', 'src/systems/anchor-telemetry', 'src/ui/anchor-lines', 'src/ui/anchor-result'].every((p) => NOT_FOR_SFX.test(p))).toBe(true);
++    // 合図の観測器（core/sfx-cues）と曲の段の観測器は t.anchor を読まない＝「停泊していた艦が動き出した！」で警報の合図・下げは起きない
++    for (const f of ['src/core/sfx-cues.ts', 'src/core/sfx-music-mood.ts', 'src/core/sfx-loops.ts']) expect(code(f), f).not.toMatch(/\banchor\b|underway|backdrop/);
++  });
++});
+diff --git a/tests/title-grid.test.ts b/tests/title-grid.test.ts
+index 3f38dbf..e57c309 100644
+--- a/tests/title-grid.test.ts
++++ b/tests/title-grid.test.ts
+@@ -2,6 +2,7 @@
+ // 3 つの論理幅の置き方、米PT のタブは 1 列のまま（x 160・w 960）、格子の副題（「（」の前まで）と状態・題が重ならない、操作の一言の幅（日本 1,218・米 960）、title-scene の配線。
+ // menu-config・game-config は DOM を読むので import しない（値は title-layout-config から、DOM の側の 2 つの値はソースを読んで結ぶ）。
+ // v0.8.0 S5: us_04 が遊べるようになり米PT のタブも 4 任務＝日本のタブと同じ 2 列の格子（2 × 2。1 列は 3 行以下のタブの形として titleRowRect に残る）。
++// v0.8.1 S4（lead の L65）: us_06 が遊べるようになり米PT のタブは 5 任務＝今の 2 列の格子で 3 段（2・2・1。日本のタブの v0.6.9 の 5 任務と同じ置き方。格子のコードは変えない）。
+ import { readFileSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+@@ -27,7 +28,7 @@ const JP = getMenuEntries(gameData, 'jp_hard').entries;
+ const US = getMenuEntries(gameData, 'us_pt').entries;
+ 
+ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+-  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は v0.8.0 S5 から 4 任務で 2 × 2', () => {
++  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は v0.8.0 S5 から 4 任務で 2 × 2、v0.8.1 S4 から 5 任務で 3 段（2・2・1）', () => {
+     expect(JP.map((e) => [e.id, e.title, e.playable])).toEqual([
+       ['jp_01', '夜の輸送護衛', true],
+       ['jp_02', '孤島の哨戒', true],
+@@ -44,7 +45,9 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+       ['us_02', '東京急行を迎え撃て', true],
+       ['us_03', '大発を狩れ', true],
+       ['us_04', 'ブラケット海峡の夜', true],
++      ['us_06', 'オルモック湾の決着', true],
+     ]);
++    expect(US.length).toBeLessThanOrEqual(2 * TITLE_GRID_ROWS_MAX); // 格子の内（あと 1 枚＝us_05 か us_07 で満杯）
+   });
+   it('3 つの論理幅の置き方: 列 597・間 24・計 1,218（下の 3 つの切り替えと同じ幅・同じ中心）、左 x = 幅/2 − 609・右 = 左 + 621、段 y 216・324', () => {
+     expect([TITLE_GRID_COL_W, TITLE_TOGGLE_GAP, TITLE_GRID_W, 3 * TITLE_DIFF_W + 2 * TITLE_TOGGLE_GAP]).toEqual([597, 24, 1218, 1218]);
+@@ -92,8 +95,8 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+       }
+     }
+   });
+-  it('米PT のタブ（v0.8.0 S5 から 4 行）は日本のタブの 4 任務と同じ 2 × 2（左上 us_01・右上 us_02・左下 us_03・右下 us_04）。3 行以下のタブは v0.6.6 と同じ 1 列 x 160・y 216／324／432・w 960（N6）', () => {
+-    expect([TITLE_ROW_X, TITLE_ROW_W, US.length]).toEqual([160, 960, 4]);
++  it('米PT のタブ（v0.8.0 S5 から 4 行・v0.8.1 S4 から 5 行）は日本のタブの 5 任務と同じ 3 段（左上 us_01・右上 us_02・左中 us_03・右中 us_04・左下 us_06。y 432・下端 528）。3 行以下のタブは v0.6.6 と同じ 1 列 x 160・y 216／324／432・w 960（N6）', () => {
++    expect([TITLE_ROW_X, TITLE_ROW_W, US.length]).toEqual([160, 960, 5]);
+     for (const w of WIDTHS) {
+       const l = w / 2 - 609;
+       expect(rects(US.length, w), String(w)).toEqual([
+@@ -101,7 +104,9 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
+         { x: l + 621, y: 216, w: 597 },
+         { x: l, y: 324, w: 597 },
+         { x: l + 621, y: 324, w: 597 },
++        { x: l, y: 432, w: 597 },
+       ]);
++      expect(rects(US.length, w), String(w)).toEqual(rects(5, w)); // 日本のタブの v0.6.9（5 任務）と同じ矩形
+       expect(rects(3, w), String(w)).toEqual([216, 324, 432].map((y) => ({ x: 160, y, w: 960 })));
+     }
+   });
+@@ -144,9 +149,9 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6。v0.
+       expect(titleGridSubJa(e.sub), e.id).toBe(shortLabelJa(e.sub));
+     }
+   });
+-  it('v0.8.0 S5（L59）: 米PT の 4 つの札（2 × 2）も状態「出撃準備 →」と副題・題が重ならない（すき間 ≥ 16 px＝日本の格子と同じ規則。W 1,280・1,584 とも列 597 px）。us_01 は「→」の前まで（91 px）', () => {
++  it('v0.8.0 S5（L59）: 米PT の札（v0.8.1 S4 から 5 つ）も状態「出撃準備 →」と副題・題が重ならない（すき間 ≥ 16 px＝日本の格子と同じ規則。W 1,280・1,584 とも列 597 px）。us_01 は「→」の前まで（91 px）', () => {
+     const subs = US.map((e) => titleGridSubJa(e.sub));
+-    expect(subs).toEqual(['1942年3月11日 ・ コレヒドール', '1942年12月11日 ・ ガダルカナル島沖', '1943年7月15日 ・ ニューギニア北岸', '1943年8月1日 ・ ブラケット海峡']);
++    expect(subs).toEqual(['1942年3月11日 ・ コレヒドール', '1942年12月11日 ・ ガダルカナル島沖', '1943年7月15日 ・ ニューギニア北岸', '1943年8月1日 ・ ブラケット海峡', '1944年12月11日 ・ パロンポン沖']); // us_06 は jp_04 と同じ副題（同じ夜・同じ場所）
+     for (const w of [1280, 1584]) {
+       US.forEach((e, i) => {
+         const r = titleRowRect(i, US.length, w);
+@@ -159,9 +164,9 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6。v0.
+     }
+     // 副題のすき間（us_01 は「→」で切らないと −30 px＝状態に食い込んでいた）と題のすき間
+     const gap = (t: string, px: number): number => Math.round(TITLE_GRID_COL_W - 2 * MENU_PAD_X - textWidthPx('出撃準備 →', TITLE_ROW_STATUS_PX) - textWidthPx(t, px));
+-    expect(subs.map((t) => gap(t, TITLE_ROW_SUB_PX))).toEqual([90, 38, 50, 82]);
++    expect(subs.map((t) => gap(t, TITLE_ROW_SUB_PX))).toEqual([90, 38, 50, 82, 78]);
+     expect(gap(shortLabelJa(US[0]!.sub), TITLE_ROW_SUB_PX)).toBe(-30);
+-    expect(US.map((e) => gap(e.title, TITLE_ROW_TITLE_PX))).toEqual([159, 129, 249, 129]);
++    expect(US.map((e) => gap(e.title, TITLE_ROW_TITLE_PX))).toEqual([159, 129, 249, 129, 129]);
+   });
+   it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT も格子の幅の内（v0.8.0 S5 から 2 × 2。今の一言は 1 列の 960 px の内のまま。R12）', () => {
+     const jp = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
