@@ -1,5 +1,5 @@
 diff --git a/src/core/hit-rate.ts b/src/core/hit-rate.ts
-index e1b5bfb..ce8a513 100644
+index e1b5bfb..7aa3d2d 100644
 --- a/src/core/hit-rate.ts
 +++ b/src/core/hit-rate.ts
 @@ -13,6 +13,15 @@ export interface ShotRecord {
@@ -8,7 +8,7 @@ index e1b5bfb..ce8a513 100644
  
 +/**
 + * 発射の時の KPI の的（v0.8.1 S1。spec-v0810 §3.5 D-K1）: 駆逐艦を狙い、夜明けの前（v0.5.0・v0.6.1 の今の条件）で、狙った艦の速さが minSpeedMps 以上
-+ * （hit_rate_model.json の kpi_measurement.min_target_speed_kt＝5 kt。止まった艦への 1 本は通算の命中率に数えない。境は含む＝5.00 kt は数え 4.99 kt は数えない）。
++ * （config/kpi-data が読む hit_rate_model.json の kpi_measurement の目標の速さの下限＝5 kt。止まった艦への 1 本は通算の命中率に数えない。境は含む＝5.00 kt は数え 4.99 kt は数えない）。
 + * minSpeedMps 0 なら今の条件そのもの（速さは 0 以上）。S2 の systems/torpedo-free が発射の時に 1 回呼ぶ（S1 ではゲームの誰も呼ばない）
 + */
 +export function kpiTargetAtLaunch(isDestroyer: boolean, dawnReached: boolean, targetSpeedMps: number, minSpeedMps: number): boolean {
@@ -81,3 +81,42 @@ index 9049f4a..2899927 100644
  /** bowOnRisk の cos2（半角 halfAngleDeg の cos の 2 乗。0 < 半角 < 90。起動時に 1 回） */
  export function bowOnCos2(halfAngleDeg: number): number {
    const c = Math.cos(degToRad(halfAngleDeg));
+diff --git a/tests/strait-geometry.test.ts b/tests/strait-geometry.test.ts
+index 17b585d..d62407e 100644
+--- a/tests/strait-geometry.test.ts
++++ b/tests/strait-geometry.test.ts
+@@ -3,7 +3,7 @@
+ // 判定の本体に確保が無く、平方根・atan2・乱数を使わないことも source で見る。
+ import { describe, expect, it } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+-import { bowOnCos2, bowOnRisk, landDist2, landLine, landLinesFromShores, type LandLine } from '../src/core/strait-geometry';
++import { bowOnCos2, bowOnRisk, landDist2, landLine, landLinesFromShores, landLinesOf, type LandLine } from '../src/core/strait-geometry';
+ import { buildWorldSetup } from '../src/systems/world-setup';
+ import { code, imports, scanAllocations } from './core-rules-kit';
+ 
+@@ -58,8 +58,9 @@ describe('陸までの距離（2 乗。レーダーの陸の反射の帯）', ()
+     expect(d(us04.mission.playerStart.x, us04.mission.playerStart.y)).toBeGreaterThan(CLUTTER);
+     expect(d(us04.mission.returnPoint.x, us04.mission.returnPoint.y - us04.mission.returnPoint.radiusM)).toBeGreaterThan(CLUTTER);
+   });
+-  it('今の岸の形（南だけ・切れ目なし＝v0.8.1 の us_06 が coast から作る）: 南の縁からの距離だけ', () => {
+-    const coast = [landLine('south', 6000, 3000, [])];
++  it('今の岸の形（南だけ・切れ目なし。v0.8.1 S1 から landLinesOf が us_06 の coast から作る＝S2 のレーダーの陸の反射と暗い岸を背に）: 南の縁からの距離だけ', () => {
++    const coast = landLinesOf(null, true, 6000, 3000);
++    expect(coast).toEqual([landLine('south', 6000, 3000, [])]);
+     for (const [x, y] of [[0, 2760], [3000, 2760], [3620, 2380], [6000, 100]] as const) expect(d(x, y, coast)).toBeCloseTo(3000 - y, 9);
+   });
+ });
+@@ -89,9 +90,10 @@ describe('衝突の危険（艦首が自艇へ半角 15° の内・500 m の内
+ });
+ 
+ describe('source（判定は確保しない・平方根も atan2 も乱数も使わない）', () => {
+-  it('作る関数（landLine・landLinesFromShores）のほかは本体に確保の形が無い。import は core/units だけ', () => {
+-    const { names, bad } = scanAllocations(FILE, ['landLine', 'landLinesFromShores']);
+-    expect(names).toEqual(['beamLengthToLand', 'bowOnCos2', 'bowOnRisk', 'landDist2', 'landLine', 'landLinesFromShores']); // v0.8.0 実機 1 回目: beamLengthToLand
++  it('作る関数（landLine・landLinesFromShores・landLinesOf）のほかは本体に確保の形が無い。import は core/units だけ', () => {
++    const { names, bad } = scanAllocations(FILE, ['landLine', 'landLinesFromShores', 'landLinesOf']);
++    // v0.8.0 実機 1 回目: beamLengthToLand。v0.8.1 S1: 暗い岸を背にの landBehind（判定＝確保しない。tests/shore-backdrop）と任務の岸の線の landLinesOf（作る）
++    expect(names).toEqual(['beamLengthToLand', 'bowOnCos2', 'bowOnRisk', 'landBehind', 'landDist2', 'landLine', 'landLinesFromShores', 'landLinesOf']);
+     expect(bad).toEqual([]);
+     const s = code(FILE);
+     expect(imports(s)).toEqual(['./units']);
