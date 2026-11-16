@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport-fit=cover: ノッチ下まで描く。user-scalable=no: ピンチズームを止める（CLAUDE.md §7 iOS固有） -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- PWA（v0.5.1）: ホーム画面に追加すると全画面（standalone）で起動。名前・アイコンは manifest と apple-touch-icon（iOS は apple-touch-icon を使う） -->
+    <meta name="apple-mobile-web-app-title" content="Night Hunters" />
+    <link rel="manifest" href="/ww2-torpedo-boat/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/ww2-torpedo-boat/icons/apple-touch-icon.png" />
+    <title>Night Hunters (WWII魚雷艇)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000; /* docs/02 §2: FIT の余白は黒。海の色（#0b1020）は Phaser 側の backgroundColor */
+        overflow: hidden;
+        /* iOS: 引っ張り更新・ダブルタップズーム・長押し選択を止める */
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #game {
+        /* 左上と大きさは JS（src/config/screen-fit.ts）が innerWidth/innerHeight と safe-area から入れる（v0.5.1 実機 1 回目:
+           iOS のホーム画面のアプリで 100dvh が起動直後に画面より大きく出て上下が見切れた）。ここは JS が動く前の仮の値 */
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+      #game canvas {
+        display: block;
+      }
+    </style>
+    <script type="module" crossorigin src="/ww2-torpedo-boat/assets/index-rpMFEaA8.js"></script>
+  </head>
+  <body>
+    <div id="game"></div>
+  </body>
+</html>
