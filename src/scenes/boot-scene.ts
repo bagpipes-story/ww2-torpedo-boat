@@ -56,6 +56,10 @@ import { getPatrolAirParams } from '../config/patrol-air-mission-data';
 import { validateLandingMissions } from '../config/landing-mission-data';
 import { validateAllyDestroyerMissions } from '../config/ally-destroyer-mission-data';
 import { validateEvacMissions } from '../config/evac-mission-data';
+import { validateRadarMissions } from '../config/radar-mission-data';
+import { RADAR_BLIP_COLOR, RADAR_MARKER_TEX_KEY } from '../config/radar-art-config';
+import { validateTransitMissions } from '../config/transit-mission-data';
+import { validateShoresMissions } from '../config/shores-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -116,6 +120,7 @@ export class BootScene extends Phaser.Scene {
     generateTargetMarkerTexture(this, TEXTURE_KEYS.targetMarker, TARGET_MARKER_SIZE, TARGET_MARKER_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.homeMarker, TARGET_MARKER_SIZE, HOME_COLOR);
     generateTargetMarkerTexture(this, TEXTURE_KEYS.coastMarker, TARGET_MARKER_SIZE, COAST_MARKER_COLOR); // 「岸 N m」（v0.4.2）
+    generateTargetMarkerTexture(this, RADAR_MARKER_TEX_KEY, TARGET_MARKER_SIZE, RADAR_BLIP_COLOR); // 緑の「レーダー N m」（v0.8.0 S4。輝点と同じ色）
     generateReturnTextures(this);
     generateImpactRingTexture(this); // 夜明けの空襲の着弾点の輪（v0.6.1）
     generateEvacRingTexture(this); // 空襲下の退避の輪（v0.6.11 S5。jp_03）
@@ -145,6 +150,10 @@ export class BootScene extends Phaser.Scene {
     const allyMission = ally ? getPrototypeMission(gameData, allyMissionId(ally.shipId)) : null;
     if (ally && allyMission) generateAllyDestroyerTextures(this, { lengthUnits: ally.lengthM * spriteScale, beamUnits: ally.beamM * spriteScale }, allyFanFor(ally, allyMission.coast !== null, allyMission.bounds.height));
     validateEvacMissions(gameData); // 空襲下の退避（v0.6.11。jp_03）: 隊・隠れ場所・波と編隊・燃料の V-E1〜V-E12（ハードも。壊れていれば Boot で止まる。絵は S4）
+    // 米PT キャンペーン②（v0.8.0。us_04）: レーダー（radar の data と V-R1〜V-R5）・列の通過（V-T1〜V-T6）・海峡の両岸（V-S1〜V-S3）をハードも 1 回（壊れていれば Boot で止まる。絵は S2）
+    validateRadarMissions(gameData);
+    validateTransitMissions(gameData);
+    validateShoresMissions(gameData);
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 

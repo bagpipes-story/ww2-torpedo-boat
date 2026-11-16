@@ -35,6 +35,9 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   if (moonLabel !== undefined && (typeof moonLabel !== 'string' || moonLabel.trim() === '')) throw new Error(`${missionId}.moon_label_ja は空でない文字列（Briefing の月の行）`);
   // 駆逐艦の任務は隻数ぶん id を並べる（ハードで 2 隻なら「駆逐艦 ×2」）、米PT の任務は線の本数ぶん（v0.6.6）。大発の任務は enemies のまま
   const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : mission.ptBoats ? mission.ptBoats.legs_m.map(() => mission.enemyId) : [...(enemies as string[])];
+  // 列の通過のハードの足す艦（v0.8.0 S4。us_04 の「駆逐艦 ×5」。hard.extra_transit_ships は Boot の V-T1 で 1 以上の整数。無い任務は 0＝今のまま）
+  const extra = hard && proto?.['transit'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined)?.['extra_transit_ships'] : undefined;
+  for (let i = 0; i < (typeof extra === 'number' ? extra : 0); i++) enemyIds.push(mission.enemyId);
   if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
   return {
     id: missionId,

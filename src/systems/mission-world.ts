@@ -34,6 +34,7 @@ import type { FriendlyFire } from './friendly-fire';
 import type { Gunboat } from './gunboat';
 import type { PatrolAir } from './patrol-air';
 import type { PtSquadron } from './pt-squadron';
+import { buildRadar, type WorldRadar } from './radar-view';
 import { SmokeScreen } from './smoke-screen';
 import { SplashPool } from './splash-pool';
 import type { StormFront } from './storm-front';
@@ -76,6 +77,7 @@ export class MissionWorld {
   readonly arms: WorldArms | null; // 兵装の新しい道（v0.6.8。world-arms.ts）: 狙う艦の無い魚雷の数と文・終わりの待ち。艇が魚雷も砲も積まなければ null
   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
+  readonly radar: WorldRadar | null; // 自艇のレーダー（v0.8.0 S2。us_04。world-radar.ts・radar-view.ts）: 掃引と輝点。読むだけ（目・発見・AI は変えない）。setup.radar の無い任務・?debug&noradar は null
   readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
@@ -218,6 +220,7 @@ export class MissionWorld {
     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
     this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk); // 揚陸と米PT の雷撃（v0.6.9。jp_04 だけ）は兵装の後＝最後（seed+26 はここだけ。ほかの系列の生成の順は変わらない）
     this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
+    this.radar = buildRadar(scene, this); // レーダー（v0.8.0 S2。us_04 だけ。乱数なし・世界には書かない）は論理の後・絵の前。進めるのは敵の側の段の最後（world-enemy-step）
     this.art = new WorldArt(scene, this); // 世界の絵（v0.7.0 S3a。絵だけ＝ゲームの乱数の系列も生成の順も触らない）は論理の全部の後
     this.refreshShallowStatus();
   }

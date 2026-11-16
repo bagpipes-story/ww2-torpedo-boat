@@ -13,6 +13,7 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { radarResultPart, straitResultPart } from './strait-result-part';
 import { evacResultPart } from '../core/evac-result';
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
@@ -23,6 +24,9 @@ import { landingResultPart, refreshLandingTelemetry } from './landing-telemetry'
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
 import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
 import { ptResult, refreshPtTelemetry } from './pt-telemetry';
+import { refreshRadarTelemetry } from './radar-telemetry';
+import { refreshStraitTelemetry } from './strait-telemetry';
+import { refreshTransitTelemetry } from './transit-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
 import type { MissionWorld } from './mission-world';
 
@@ -125,6 +129,9 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshLandingTelemetry(t.landing, w); // 停泊して揚陸する味方の輸送船（v0.6.9）: 揚陸・米PT の報告・走っている雷跡・出来事（雷跡は世界の updateFrame が数えた後）
   refreshAllyTelemetry(t.ally, w); // 味方の駆逐艦 卯月（v0.6.10 S6）: 隊の最後の砲の出来事が卯月の砲か（2 行目の頭「卯月 撃退！」）
   refreshEvacTelemetry(t.evac, w); // 空襲下の退避（v0.6.11 S5。jp_03）: 隊・座席・予告・出来事（兵装の後＝撃墜と機銃の出来事を読む）
+  refreshRadarTelemetry(t.radar, w); // 自艇のレーダー（v0.8.0 S2。us_04）: 掃引・接触・出来事の数を写すだけ（無い任務は何もしない）
+  refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
+  refreshStraitTelemetry(t.strait, w); // 海峡の夜（v0.8.0 S4。us_04）: 視程の 2 乗と衝突の危険（上の setSighted と同じ規則。無い任務は何もしない）
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
@@ -197,5 +204,7 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     ...armsResultPart(w), // 兵装の新しい道（v0.6.8）: 使った夜だけ arms の鍵（本文の後ろに 1 行）
     ...landingResultPart(w, reason), // 揚陸と米PT の雷撃（v0.6.9。jp_04）: 揚陸の任務だけ landing の鍵（本文の頭の 3 行・状況の行の頭・揚陸 300 点）
     ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
+    ...radarResultPart(w), // レーダー（v0.8.0 S4。us_04）: レーダーの任務だけ radar の鍵（最初の接触・目で見えない間に撃った魚雷。本文の駆逐艦の行の後）
+    ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
   };
 }

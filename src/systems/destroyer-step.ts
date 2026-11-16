@@ -4,6 +4,8 @@
 // 夜明けに退く（v0.6.2）: 海域を出た艦（out）は撃たず照らさない。最後の 1 隻が出たら、沈み始めたとき（torpedo-hits）と同じく残りの一斉発射を捨てる。
 // 走っている魚雷の外れの確定（v0.6.2 実機 1 回目からここだけ）: すべて出て、沈む船体の終わり際の当たりの窓（演出の終わりと沈み始めて torpedo_end_settle_s の遅い方。
 // core/torpedo-targets）が閉じたステップから。それまで沈む船体へ当たった魚雷は命中に数える（記録だけ）。沈んだ艦が無ければ退き終えたステップで（v0.6.2 と同じ）。
+// 列の通過（v0.8.0 S2。us_04）: 艦を動かした直後に段階を進める（systems/destroyer-transit。現れる艦はこのステップの魚雷・体当たり・反撃から海域の中）。
+// 走っている魚雷の外れの確定は戻りの残り（ビラの艦）が 0 の時だけ（R2）。列の無い任務は transit が null・戻りの残りは 0（v0.7.2 と同じ）。
 import type { BoatState } from '../core/boat-motion';
 import { losBlocked } from '../core/smoke';
 import { remainingTorpedoesSettled } from '../core/torpedo-targets';
@@ -14,9 +16,10 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
   const c = w.setup;
   let left = false;
   for (const d of g.ships) if (d.step(dt, feelDt, boat, w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
+  if (g.transit?.step(w, feelDt)) left = true;
   if (left && g.allOut) w.launcher.clearQueue();
   const settleS = w.returnPoint.torpedoEndSettleS;
-  if (remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();
+  if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();
   const detectedNow = g.anyDetected;
   if (detectedNow && !w.detect.prev) w.detect.count++;
   w.detect.prev = detectedNow;

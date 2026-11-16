@@ -4,12 +4,14 @@
 // v0.6.10 S5b: SET=jp04 で ab-replay の jp04 の組（jp_04 の B は &noally・ノーマルとハード × seed 1〜4＝G6w）。既定は base。
 // v0.6.11 S6: SET=jp03 で ab-replay の jp03 の組（jp_03 のノーマル・ハード × seed 1・2。既定の秒は 260＝決着の後まで。A は S5 の ae6af75）。
 // v0.6.11 S8: SET=jp04base で jp_04（卯月あり）を 88c9f19 と（ab-replay の jp04base の組。秒は 170）。
-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+// v0.8.0 S2: SET=us04 で us_04（ab-replay の us04 の組。秒は 260＝夜明けまで）。NORADAR=1 で B だけ &noradar（レーダーが HUD を変えない証。S4 からはレーダーの文を除いて比べる）。
+// v0.8.0 S4（brief L33）: RADARUI=1・NORADAR=1 は ab-replay の S4 の濾し（S4_FILTER）で比べる（2 行目の S4 の行のスナップの数を masked に出す）。FILTERTEST=1 は濾しの試し（違いが出るはず）。
+// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
 import { abCases, oneCase } from './ab-replay.mjs';
 import { chromium, envNum, pool, serve } from './lib.mjs';
 
 if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' ? 260 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
+const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
 const sa = await serve(process.env.A);
 const sb = await serve(process.env.B);
 const browser = await chromium.launch();
@@ -20,7 +22,7 @@ await sb.close();
 let bad = 0;
 for (const r of res) {
   if (!r.same) bad++;
-  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
 }
 console.log(`cases ${res.length} same ${res.length - bad} diff ${bad}`);
 process.exitCode = bad === 0 ? 0 : 1;

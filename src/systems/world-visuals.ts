@@ -3,7 +3,7 @@
 // 移すために MissionWorld.smokeScreen を private readonly から readonly にした（ここが読む。ほかに private から出したものは無い）。
 import type { MissionWorld } from './mission-world';
 
-/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9）→ 卯月（v0.6.10） */
+/** 毎フレーム: 暴風の帯 → 自艇 → 僚艇 → 駆逐艦 → 魚雷 → 大発 → 米PT → 輸送隊 → 水柱 → 煙幕 → 味方機 → 水上機 → 夜の哨戒機 → 夜明け → 兵装（v0.6.8 と同じ順）→ 揚陸（v0.6.9）→ 卯月（v0.6.10）→ 退避（v0.6.11）→ レーダー（v0.8.0）→ 世界の絵 */
 export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   const g = w.destroyers;
   w.storm?.updateVisuals(realDt, w.boat.state);
@@ -25,6 +25,7 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
   w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）
   w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）
+  w.radar?.updateVisuals(w.stepTimeS); // レーダーの輝点（v0.8.0 S2。us_04 だけ。掃引が変わった時だけ置き直す・薄れの段が変わった時だけ α）
   w.art.update(realDt, w); // 世界の絵＝海の模様・夜明けの光・きらめき（v0.7.0 S3a。systems/world-art。全任務。夜明けの段の後＝最後）
 }
 
@@ -48,5 +49,6 @@ export function destroyWorldVisuals(w: MissionWorld): void {
   w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）
   w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
   w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
+  w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）
   w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）
 }

@@ -17,6 +17,9 @@ import { initEvacTelemetry } from './evac-telemetry';
 import { initLandingTelemetry } from './landing-telemetry';
 import { initPatrolTelemetry } from './patrol-telemetry';
 import { initPtTelemetry } from './pt-telemetry';
+import { initRadarTelemetry } from './radar-telemetry';
+import { initStraitTelemetry } from './strait-telemetry';
+import { initTransitTelemetry } from './transit-telemetry';
 import type { MissionWorld } from './mission-world';
 
 /** 出発時のテレメトリ（帰投・燃料の値は直後の refreshReturnState と refreshTelemetry で埋まる） */
@@ -128,5 +131,8 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     landing: initLandingTelemetry(w), // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry。無い任務は enabled false）
     ally: initAllyTelemetry(w), // 味方の駆逐艦 卯月（v0.6.10 S6。jp_04。systems/ally-telemetry。無い任務・&noally は enabled false）
     evac: initEvacTelemetry(w), // 空襲下の退避（v0.6.11 S5。jp_03。systems/evac-telemetry。無い任務は enabled false）
+    radar: initRadarTelemetry(w), // 自艇のレーダー（v0.8.0 S2。us_04。systems/radar-telemetry。無い任務・?debug&noradar は enabled false）
+    transit: initTransitTelemetry(w), // 列の通過（v0.8.0 S2。us_04。systems/transit-telemetry。無い任務は enabled false）
+    strait: initStraitTelemetry(w), // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04。systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
   };
 }

@@ -4,6 +4,7 @@
 // IP1b（U3）: 火花・水滴・硝煙のプール（systems/spark-fx。fx-bus に登録＝SplashPool の水柱の飛沫と砲口の火花・火災の火の粉）、爆発の 2 段目（explosion-fx の中の blast-fx）、沈没の段（systems/sink-fx）。
 // IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
 // v0.7.2 S3（音。brief L28）: 命中スローの残り秒を読むだけの口として世界を音に登録し（registerSfxSlowMo）、破棄で外す（聞き手と同じ形。音は slowMoLeftS を読むだけ）。
+// v0.8.0 S2（spec-v0800 §4.10）: 海峡の両岸の陸と字（systems/strait-terrain。us_04 の setup.shores だけ。動かない絵）を岸の帯の後に作る。
 import type Phaser from 'phaser';
 import { SEA_LIGHT_STEPS } from '../config/dawn-config';
 import { CoastFx } from './coast-fx';
@@ -15,6 +16,7 @@ import { SeaFx } from './sea-fx';
 import { registerSfxListener, registerSfxSlowMo } from './sfx-bus';
 import { SinkFx } from './sink-fx';
 import { SparkFx } from './spark-fx';
+import { StraitTerrain } from './strait-terrain';
 import { WakeFx, type WakeWorldView } from './wake-fx';
 import type { WorldSetup } from './world-setup';
 
@@ -35,6 +37,7 @@ export class WorldArt {
   private readonly sparks: SparkFx;
   private readonly sink: SinkFx;
   private readonly coast: CoastFx;
+  private readonly strait: StraitTerrain | null;
 
   constructor(scene: Phaser.Scene, w: ArtWorldView) {
     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
@@ -46,6 +49,7 @@ export class WorldArt {
     this.sink = new SinkFx(scene, this.explosions, this.sparks);
     this.fire = new FireFx(scene, w, this.sink);
     this.coast = new CoastFx(scene, w.setup);
+    this.strait = w.setup.shores ? new StraitTerrain(scene, w.setup) : null;
     registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
     registerSfxSlowMo(w); // 命中スローの音（v0.7.2 S3。slowMoLeftS を読むだけ。世界の作成前・破棄後はスローなし）
   }
@@ -73,5 +77,6 @@ export class WorldArt {
     this.sink.destroy();
     this.sparks.destroy();
     this.coast.destroy();
+    this.strait?.destroy();
   }
 }

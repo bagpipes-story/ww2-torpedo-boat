@@ -2,6 +2,8 @@
 // v0.6.3: 米PT の記録（PtResult）を足した。実機 1 回目: T-14 の 13mm の記録（射撃・命中・撃退・撃沈・閃光が最初）と enemies.json の id。実機 2 回目: 連射と制圧の数。
 // v0.6.4: 味方の大発の輸送隊の記録（ConvoyResult）と、米PT の標的スロットの欄（大発への航過・最初に捉えた標的・砲の名）。v0.6.5: 機関の不調の記録（EngineResult）。
 // v0.6.6: 隼艇の僚艇の記録（GunboatResult。jp_01 のハード）。v0.6.8: 兵装の新しい道の記録（ArmsResult。使った夜だけ）。v0.6.11 S6: 空襲下の退避の記録（EvacResult の再 export）。
+import type { RadarResult } from './radar-result';
+import type { StraitResult } from './strait-result';
 import type { BlindKind } from '../core/arms-cue';
 import type { SpeedStep } from '../core/boat-motion';
 
@@ -168,4 +170,10 @@ export interface AllyResult {
   lit: number; litSalvo: number;
   shells: number; chase: number; hits: number; retired: number; sunk: number; suppressions: number;
   byAlly: boolean[];
+}
+
+/** 海峡の夜（v0.8.0 S4。us_04）の Result の 2 つの鍵（scenes/result-scene の MissionResult が継ぐ。ある任務だけ。本文の駆逐艦の行の後に 1 行ずつ＝ui/result-body） */
+export interface StraitNightResult {
+  radar?: RadarResult; // レーダー（ui/radar-result。systems/strait-result-part の radarResultPart）
+  strait?: StraitResult; // 列の通過（ui/strait-result。straitResultPart）
 }

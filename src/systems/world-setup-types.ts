@@ -8,6 +8,9 @@ import type { LandingSetup } from '../config/landing-mission-data';
 import type { MainWeapon } from '../config/mission-data';
 import type { PatrolAirSetup, PatrolAirSetupOptions } from '../config/patrol-air-mission-data';
 import type { EvacSetup } from '../config/evac-mission-data';
+import type { RadarSetup, RadarSetupOptions } from '../config/radar-mission-data';
+import type { TransitSetup } from '../config/transit-mission-data';
+import type { ShoresSetup } from '../config/shores-mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -116,10 +119,13 @@ export interface WorldSetup {
   landing?: LandingSetup; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。v0_1_prototype.landing のある任務＝jp_04 だけ。config/landing-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
   allyDestroyer?: AllyDestroyerParams; // 味方の駆逐艦 卯月（v0.6.10。v0_1_prototype.ally_destroyer のある任務＝jp_04 だけ。config/ally-destroyer-mission-data。無い任務と allyOff では鍵ごと出ない＝setup の snapshot を変えない）
   evac?: EvacSetup; // 空襲下の退避（v0.6.11。v0_1_prototype.evac のある任務＝jp_03 だけ。config/evac-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
+  radar?: RadarSetup; // 自艇のレーダー（v0.8.0。v0_1_prototype.radar のある任務＝us_04 だけ。config/radar-mission-data。無い任務と radarOff では鍵ごと出ない＝setup の snapshot を変えない）
+  transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 だけ。config/transit-mission-data。無い任務では鍵ごと出ない）
+  shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions {
+export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions {
   fuelGal?: number;
   dawnS?: number;
   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */

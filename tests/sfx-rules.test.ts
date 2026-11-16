@@ -26,7 +26,7 @@
 // - v0.7.2 S3（spec-v0720 §6・brief L28〜L31）: 命中スローの音 systems/sfx-slowmo が再生の層に入る（14 本）。ループの束はベッドの濾波器を通って master へ。world-art の hook に命中スローの
 //   読み口の 2 行（作成で世界・破棄で null）、曲の試聴の場の hook に案を戻す 1 行＝27 行（作法の残りは tests/sfx-rules-music の S3）。
 import { readFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { basename, posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PLAYBACK, PURE, SFX, SRC, code, hotBodies, imports, strip } from './sfx-rules-kit';
 
@@ -278,5 +278,17 @@ describe('音へ届く道は許可表の口だけ（import の許可表。R14）
     expect('./sfx-dsp').toMatch(/^\.\.?\/(?:(?:config|assets|core)\/)?(?:sfx-[\w-]+|rng)$/);
     expect('../systems/sfx-bus').not.toMatch(/^\.\.?\/(?:(?:config|assets|core)\/)?(?:sfx-[\w-]+|rng)$/);
     expect('phaser').not.toMatch(/^\.\.?\/(?:(?:config|assets|core)\/)?(?:sfx-[\w-]+|rng)$/);
+  });
+});
+
+// v0.8.0 S4（spec-v0800 §3.2 D-R11・§3.5、brief L32）: 音の層（sfx-* の全部）はレーダー・列の通過・海峡の夜の HUD を import しない（輝点・接触・列の出来事・「衝突の危険！」では鳴らさない・曲を下げない）
+describe('音の層はレーダーと海峡の夜を読まない（v0.8.0 S4）', () => {
+  const NOT_FOR_SFX = /^src\/(?:core\/radar|core\/ship-transit|core\/strait-geometry|systems\/world-radar|systems\/radar-view|systems\/radar-telemetry|systems\/transit-telemetry|systems\/strait-telemetry|ui\/radar-lines|ui\/strait-lines|ui\/strait-line-clock|ui\/radar-marker(?:-pick)?|ui\/radar-result|ui\/strait-result)$/;
+  it('どの sfx-* の import の先にも core/radar・core/ship-transit・systems/world-radar・radar-view・ui/radar-lines・ui/strait-lines（と S4 の海峡の夜のファイル）が無い', () => {
+    expect(SFX.length).toBeGreaterThan(30);
+    const resolved = (f: string, p: string): string => (p.startsWith('.') ? posix.join(posix.dirname(f), p) : p);
+    for (const f of SFX) expect(imports(code(f)).map((p) => resolved(f, p)).filter((p) => NOT_FOR_SFX.test(p)), f).toEqual([]);
+    expect(['src/ui/strait-lines', 'src/systems/radar-view', 'src/core/radar'].every((p) => NOT_FOR_SFX.test(p))).toBe(true);
+    expect(resolved('src/core/sfx-x.ts', './radar')).toBe('src/core/radar');
   });
 });

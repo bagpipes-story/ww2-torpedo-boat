@@ -1,6 +1,7 @@
 // Title の日本のタブの 2 列の格子（v0.6.7。spec-v067 §D.6・§G.1・N6）: ui/title-grid の矩形（論理幅 1,280〜1,584 の 8 刻みの全部で画面の内・重ならない・中央）、
 // 3 つの論理幅の置き方、米PT のタブは 1 列のまま（x 160・w 960）、格子の副題（「（」の前まで）と状態・題が重ならない、操作の一言の幅（日本 1,218・米 960）、title-scene の配線。
 // menu-config・game-config は DOM を読むので import しない（値は title-layout-config から、DOM の側の 2 つの値はソースを読んで結ぶ）。
+// v0.8.0 S5: us_04 が遊べるようになり米PT のタブも 4 任務＝日本のタブと同じ 2 列の格子（2 × 2。1 列は 3 行以下のタブの形として titleRowRect に残る）。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -10,7 +11,7 @@ import { getPrototypeMission } from '../src/config/mission-data';
 import { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_PX } from '../src/config/title-hint-config';
 import { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from '../src/config/title-layout-config';
 import { shortLabelJa } from '../src/core/briefing';
-import { TITLE_GRID_W, titleGridOn, titleRowRect, type TitleRowRect } from '../src/ui/title-grid';
+import { TITLE_GRID_W, titleGridOn, titleGridSubJa, titleRowRect, type TitleRowRect } from '../src/ui/title-grid';
 import { textWidthPx } from './pt-ui-kit';
 
 const src = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
@@ -26,7 +27,7 @@ const JP = getMenuEntries(gameData, 'jp_hard').entries;
 const US = getMenuEntries(gameData, 'us_pt').entries;
 
 describe('Title の任務の行の矩形（ui/title-grid）', () => {
-  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は 3 任務で 1 列', () => {
+  it('日本のタブは 6 任務（order 順 jp_01・jp_02・jp_03・jp_04・jp_05・jp_06。v0.6.9 で jp_04、v0.6.11 S6 で jp_03）で 2 列 × 3 段（行優先）＝上限ちょうど。米PT は v0.8.0 S5 から 4 任務で 2 × 2', () => {
     expect(JP.map((e) => [e.id, e.title, e.playable])).toEqual([
       ['jp_01', '夜の輸送護衛', true],
       ['jp_02', '孤島の哨戒', true],
@@ -35,10 +36,15 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
       ['jp_05', '鹵獲艇の哨戒', true],
       ['jp_06', '慶良間の夜・最終出撃', true],
     ]);
-    expect([TITLE_GRID_FROM, titleGridOn(JP.length), titleGridOn(US.length)]).toEqual([4, true, false]);
+    expect([TITLE_GRID_FROM, titleGridOn(JP.length), titleGridOn(US.length)]).toEqual([4, true, true]);
     // v0.6.11 S6: 6 任務で 2 × TITLE_GRID_ROWS_MAX の格子が満杯（次の日本の任務は並べ方が要る＝CHANGELOG の既知の制約）
     expect([JP.length, 2 * TITLE_GRID_ROWS_MAX]).toEqual([6, 6]);
-    expect(US.map((e) => e.id)).toEqual(['us_01', 'us_02', 'us_03']);
+    expect(US.map((e) => [e.id, e.title, e.playable])).toEqual([
+      ['us_01', 'コレヒドール脱出', true],
+      ['us_02', '東京急行を迎え撃て', true],
+      ['us_03', '大発を狩れ', true],
+      ['us_04', 'ブラケット海峡の夜', true],
+    ]);
   });
   it('3 つの論理幅の置き方: 列 597・間 24・計 1,218（下の 3 つの切り替えと同じ幅・同じ中心）、左 x = 幅/2 − 609・右 = 左 + 621、段 y 216・324', () => {
     expect([TITLE_GRID_COL_W, TITLE_TOGGLE_GAP, TITLE_GRID_W, 3 * TITLE_DIFF_W + 2 * TITLE_TOGGLE_GAP]).toEqual([597, 24, 1218, 1218]);
@@ -86,10 +92,17 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
       }
     }
   });
-  it('米PT のタブ（3 行）はどの論理幅でも v0.6.6 と同じ x 160・y 216／324／432・w 960（N6）', () => {
-    expect([TITLE_ROW_X, TITLE_ROW_W]).toEqual([160, 960]);
+  it('米PT のタブ（v0.8.0 S5 から 4 行）は日本のタブの 4 任務と同じ 2 × 2（左上 us_01・右上 us_02・左下 us_03・右下 us_04）。3 行以下のタブは v0.6.6 と同じ 1 列 x 160・y 216／324／432・w 960（N6）', () => {
+    expect([TITLE_ROW_X, TITLE_ROW_W, US.length]).toEqual([160, 960, 4]);
     for (const w of WIDTHS) {
-      expect(rects(US.length, w), String(w)).toEqual([216, 324, 432].map((y) => ({ x: 160, y, w: 960 })));
+      const l = w / 2 - 609;
+      expect(rects(US.length, w), String(w)).toEqual([
+        { x: l, y: 216, w: 597 },
+        { x: l + 621, y: 216, w: 597 },
+        { x: l, y: 324, w: 597 },
+        { x: l + 621, y: 324, w: 597 },
+      ]);
+      expect(rects(3, w), String(w)).toEqual([216, 324, 432].map((y) => ({ x: 160, y, w: 960 })));
     }
   });
   it('押しやすさ: 列 597 × 96 px は iPhone 15 横（393 pt / 720 px）で 326 × 52 pt（≥ 44 pt）', () => {
@@ -99,7 +112,7 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
   });
 });
 
-describe('格子の行の文（副題は「（」の前まで。spec §D.6）', () => {
+describe('格子の行の文（副題は「（」の前まで。spec §D.6。v0.8.0 S5 から「→」の前まで も＝titleGridSubJa）', () => {
   it('副題は 6 つとも「（」の前まで（20 px で 368／288／360／320／288／368 px。jp_04 は「パロンポン沖（レイテ島西岸）」→「パロンポン沖」、jp_03 は「（」が無いのでそのまま）', () => {
     const subs = JP.map((e) => shortLabelJa(e.sub));
     expect(subs).toEqual(['1942年12月9日 ・ ガダルカナル島北岸', '1944年1月30日 ・ ウェーク島', '1944年10月10日 ・ 沖縄本島・運天港', '1944年12月11日 ・ パロンポン沖', '1944年2月18日 ・ ラバウル沖', '1945年3月28日 ・ 沖縄・慶良間列島沖']);
@@ -120,10 +133,37 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6）', 
       worstTitle = Math.min(worstTitle, titleGap);
     }
     expect([Math.round(worstSub), Math.round(worstTitle)]).toEqual([30, 39]);
-    // 1 列（米PT）は副題を切らない: 960 − 64 の内に「出撃準備 →」と並ぶ（いちばん長い us_02）
-    for (const e of US) expect(TITLE_ROW_W - 2 * MENU_PAD_X - textWidthPx(e.status, TITLE_ROW_STATUS_PX) - textWidthPx(e.sub, TITLE_ROW_SUB_PX), e.id).toBeGreaterThanOrEqual(16);
   });
-  it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT は 1 列の 960 px の内（R12）', () => {
+  it('v0.8.0 S5（lead の L59）: 格子の副題は titleGridSubJa＝最初の「（」か「→」の先に来る方の前まで。どちらも無ければそのまま。日本の 6 つは shortLabelJa と同じ（「→」を持たない＝日本のタブは物体ごとに同じ）', () => {
+    expect(titleGridSubJa('1942年3月11日 ・ コレヒドール→ミンダナオ（フィリピン）')).toBe('1942年3月11日 ・ コレヒドール'); // 「→」が先
+    expect(titleGridSubJa('1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖→ビラ）')).toBe('1943年8月1日 ・ ブラケット海峡'); // 「（」が先
+    expect(titleGridSubJa('1944年10月10日 ・ 沖縄本島・運天港')).toBe('1944年10月10日 ・ 沖縄本島・運天港'); // どちらも無い
+    expect(titleGridSubJa('A → B')).toBe('A');
+    for (const e of JP) {
+      expect(e.sub.includes('→'), e.id).toBe(false);
+      expect(titleGridSubJa(e.sub), e.id).toBe(shortLabelJa(e.sub));
+    }
+  });
+  it('v0.8.0 S5（L59）: 米PT の 4 つの札（2 × 2）も状態「出撃準備 →」と副題・題が重ならない（すき間 ≥ 16 px＝日本の格子と同じ規則。W 1,280・1,584 とも列 597 px）。us_01 は「→」の前まで（91 px）', () => {
+    const subs = US.map((e) => titleGridSubJa(e.sub));
+    expect(subs).toEqual(['1942年3月11日 ・ コレヒドール', '1942年12月11日 ・ ガダルカナル島沖', '1943年7月15日 ・ ニューギニア北岸', '1943年8月1日 ・ ブラケット海峡']);
+    for (const w of [1280, 1584]) {
+      US.forEach((e, i) => {
+        const r = titleRowRect(i, US.length, w);
+        expect(r.w, `${w} ${e.id}`).toBe(TITLE_GRID_COL_W);
+        const inner = r.w - 2 * MENU_PAD_X;
+        const status = textWidthPx(e.status, TITLE_ROW_STATUS_PX);
+        expect(inner - status - textWidthPx(subs[i]!, TITLE_ROW_SUB_PX), `${w} ${e.id} 副題`).toBeGreaterThanOrEqual(16);
+        expect(inner - status - textWidthPx(e.title, TITLE_ROW_TITLE_PX), `${w} ${e.id} 題`).toBeGreaterThanOrEqual(16);
+      });
+    }
+    // 副題のすき間（us_01 は「→」で切らないと −30 px＝状態に食い込んでいた）と題のすき間
+    const gap = (t: string, px: number): number => Math.round(TITLE_GRID_COL_W - 2 * MENU_PAD_X - textWidthPx('出撃準備 →', TITLE_ROW_STATUS_PX) - textWidthPx(t, px));
+    expect(subs.map((t) => gap(t, TITLE_ROW_SUB_PX))).toEqual([90, 38, 50, 82]);
+    expect(gap(shortLabelJa(US[0]!.sub), TITLE_ROW_SUB_PX)).toBe(-30);
+    expect(US.map((e) => gap(e.title, TITLE_ROW_TITLE_PX))).toEqual([159, 129, 249, 129]);
+  });
+  it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT も格子の幅の内（v0.8.0 S5 から 2 × 2。今の一言は 1 列の 960 px の内のまま。R12）', () => {
     const jp = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
     expect(jp).toContain('右下の角で魚雷');
     expect(jp).toContain('その左で機銃');
@@ -131,14 +171,16 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6）', 
     expect(Math.round(textWidthPx(jp, TITLE_HINT_PX))).toBe(1037);
     expect(textWidthPx(jp, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_GRID_W);
     expect(textWidthPx(TITLE_HINT_BY_CAMPAIGN_JA['us_pt']!, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_ROW_W);
+    expect(textWidthPx(TITLE_HINT_BY_CAMPAIGN_JA['us_pt']!, TITLE_HINT_PX)).toBeLessThanOrEqual(TITLE_GRID_W);
   });
 });
 
 describe('title-scene の配線（ソース）', () => {
-  it('行の矩形は titleRowRect から、副題は格子のときだけ shortLabelJa。行の固定の x・y・w は使わない', () => {
+  it('行の矩形は titleRowRect から、副題は格子のときだけ titleGridSubJa（v0.8.0 S5 まで shortLabelJa）。行の固定の x・y・w は使わない', () => {
     const code = src('scenes/title-scene.ts');
     expect(code).toContain('const r = titleRowRect(i, n, GAME_WIDTH);');
-    expect(code).toContain('sub: grid ? shortLabelJa(e.sub) : e.sub,');
+    expect(code).toContain('sub: grid ? titleGridSubJa(e.sub) : e.sub,');
+    expect(code.includes('shortLabelJa'), 'shortLabelJa').toBe(false);
     for (const k of ['TITLE_ROW_X', 'TITLE_ROW_W', 'TITLE_ROW_TOP', 'TITLE_ROW_GAP']) expect(code.includes(k), k).toBe(false);
   });
 });

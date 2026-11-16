@@ -5,33 +5,33 @@
 // 陰の絵は陸の側を帯の上の深さに分けて置く（systems/evac-terrain）＝帯は岩・崖の下を通る。斜路の海の部分（深さ 1）には寄せ波の白が掛かる（波打ち際の波）。
 // 1 本の岸の線は Blitter 1 つ（Bob は画面の物に数えない＝見える物 +1。並べ方は assets/coast-shape）。陸の内側は今の一様な塗り（entities/shallows・systems/evac-terrain）のまま。
 // §7: 確保は constructor だけで、毎フレームは何もしない（動かない絵）。論理の状態は読むだけ。
+// v0.8.0 S2（spec-v0800 §4.10・§7 の 9）: 岸の線の一覧（assets/coast-shape の coastLines）を受けて 1 本ずつ並べる。今の 2 本（南の岸・jp_03 の北の島）の値と順は v0.7.2 のまま、
+// 海峡の両岸（us_04 の setup.shores）は北の岸 1 本・南の岸は水道の切れ目の両側の 2 本。
 import type Phaser from 'phaser';
-import { coastBobs } from '../assets/coast-shape';
+import { coastBobs, coastLines } from '../assets/coast-shape';
 import { ensureCoastStripTexture } from '../assets/sea-art';
-import { EVAC_ISLAND_LAND_M } from '../config/evac-config';
 import type { EvacSetup } from '../config/evac-mission-data';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { CoastBlock } from '../config/mission-data';
+import type { ShoresSetup } from '../config/shores-mission-data';
 import { COAST_ART_PX_PER_M, COAST_STRIP_DEPTH, COAST_STRIP_LAND_M, COAST_STRIP_LEN_M, COAST_STRIP_SEA_M } from '../config/sea-art-config';
 
 /** 世界から読む物（WorldSetup の一部） */
 export interface CoastSetupView {
   readonly mission: { readonly coast: CoastBlock | null; readonly bounds: { readonly width: number; readonly height: number } };
   readonly evac?: EvacSetup;
+  /** 海峡の両岸（v0.8.0 S2。us_04 だけ） */
+  readonly shores?: ShoresSetup;
 }
 
 export class CoastFx {
   private readonly lines: Phaser.GameObjects.Blitter[] = [];
 
   constructor(scene: Phaser.Scene, s: CoastSetupView) {
-    const coast = s.mission.coast;
-    if (!coast) return;
+    const lines = coastLines(s);
+    if (lines.length === 0) return;
     ensureCoastStripTexture(scene);
-    const { width, height } = s.mission.bounds;
-    // 南の岸（陸は y > 高さ）: 帯の上端の海 8 m が波打ち際の外
-    this.line(scene, height - COAST_STRIP_SEA_M, -coast.landM, width + coast.landM, false);
-    // jp_03 の北の島（陸は y < 0）: 上下を反転して、海 8 m が y 0〜8
-    if (s.evac) this.line(scene, -COAST_STRIP_LAND_M, -EVAC_ISLAND_LAND_M, width + EVAC_ISLAND_LAND_M, true);
+    for (const l of lines) this.line(scene, l.y, l.x0, l.x1, l.flipY);
   }
 
   private line(scene: Phaser.Scene, y: number, x0: number, x1: number, flipY: boolean): void {

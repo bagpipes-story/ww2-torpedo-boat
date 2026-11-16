@@ -21,6 +21,8 @@
 //   （「米PT 2 隻が戦いながら発射！ 輸送船へ 6 本」）、ほかは後ろに 1 つ待たせ（新しい方が待っているものに替わる。ただし斉射は待っている外れ・被雷・沈没に替わらない）、今の出来事が
 //   出たとみなされたら（2 秒）すぐ次を出す（前は待っている斉射が次の斉射に、出て 1 秒の被雷が沈没に替わり、命中した斉射・被雷の行が出なかった）。
 // v0.6.10 S6（卯月）: 照らされた斉射（LE_LIT_SALVO）は斉射の重さで同じ種類は足す（撃たずに去った LE_LIT_AWAY の −1 は v0.6.10 実機 1 回目に出来事ごと無くした）。
+// v0.8.0 S4（us_04。spec-v0800 §4.9「今の出来事の文の待ちの鎖に入れる」）: 海峡の夜のレーダーの出来事と衝突の危険は ui/strait-line-clock（1 つ持ち、flags・shown から呼ぶ。
+//   2 行目に出ていた ms の和で 4 秒＝上の行に隠れている間は待つ）。レーダーも列の通過も無い任務は旗 0 のまま（ほかの任務は 1 ビットも変わらない）。
 // Phaser 非依存・確保しない。毎フレーム flags → missionMode → shown の順に 1 回ずつ。
 import { CONVOY_EVENT_SHOW_MS } from '../config/convoy-config';
 import { ENGINE_EVENT_MIN_SHOWN_MS, ENGINE_EVENT_SHOW_MS } from '../config/engine-config';
@@ -37,6 +39,7 @@ import {
 } from './mission-mode';
 import { ptHoldPass } from './pt-chase-lines';
 import { holdShowUntil, mergeBurstBits } from './pt-gun-lines';
+import { StraitLineClock } from './strait-line-clock';
 
 export class PtLineClock {
   /** 見た攻撃の結果の通し番号とその表示の終わり ms */
@@ -74,6 +77,8 @@ export class PtLineClock {
   readonly landingEv: LandingEventView = createLandingEventView();
   private readonly landingNext: LandingEventView = createLandingEventView();
   private landingNextSet = false;
+  /** 海峡の夜のレーダーの出来事と衝突の危険（v0.8.0 S4。us_04。2 行目の文とキーは ui/special-line・mission-line-keys がこれを読む） */
+  readonly strait = new StraitLineClock();
 
   /** 毎フレーム（2 行目のモードを決める前）: MODE_FLAG_PT_RESULT・MODE_FLAG_PT_GUN_EVENT・MODE_FLAG_PT_HOLD・MODE_FLAG_CONVOY_EVENT・MODE_FLAG_ENGINE_EVENT・MODE_FLAG_LANDING_EVENT。lastMode は前に組んだ 2 行目のモード。米PT の無い任務は 0 */
   flags(t: BoatTelemetry, nowMs: number, lastMode: number): number {
@@ -147,7 +152,7 @@ export class PtLineClock {
     this.resultUntil = holdShowUntil(this.resultUntil, !passShown && (fire || nowMs < this.eventUntil || nowMs < this.convoyUntil || nowMs < this.landingUntil || nowMs < this.engineUntil), nowMs);
     return (
       (nowMs < this.resultUntil ? MODE_FLAG_PT_RESULT : 0) | (nowMs < this.eventUntil ? MODE_FLAG_PT_GUN_EVENT : 0) | (hold ? MODE_FLAG_PT_HOLD : 0) | (nowMs < this.convoyUntil ? MODE_FLAG_CONVOY_EVENT : 0) |
-      (nowMs < this.engineUntil ? MODE_FLAG_ENGINE_EVENT : 0) | (nowMs < this.landingUntil ? MODE_FLAG_LANDING_EVENT : 0)
+      (nowMs < this.engineUntil ? MODE_FLAG_ENGINE_EVENT : 0) | (nowMs < this.landingUntil ? MODE_FLAG_LANDING_EVENT : 0) | this.strait.flags(t, nowMs)
     );
   }
 
@@ -206,6 +211,7 @@ export class PtLineClock {
     this.prevShownMs = nowMs;
     if (this.engineOnMs >= ENGINE_EVENT_MIN_SHOWN_MS) this.engineShown = true;
     if (this.landingOnMs >= LANDING_EVENT_MIN_SHOWN_MS) this.landingShown = true;
+    this.strait.shown(mode, nowMs);
   }
 }
 

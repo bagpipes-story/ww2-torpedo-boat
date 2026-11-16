@@ -4,13 +4,14 @@
 // tests/mission-line-keys が v0.6.8（main 2ad122b）の mission-line.ts:130-138 の写しと、既存のテレメトリの材料のすべてで比べる。
 // v0.6.9 S6a: 揚陸（jp_04）の 2 つのキー（ui/landing-lines の landingKey・landingEventKey）を cKey の隣に足した。揚陸の無い任務はどちらも 0（上の 8 つの値は変わらない）。
 // v0.6.11 S5: 空襲下の退避（jp_03）のモード 38 の行のキー（ui/evac-lines の evacLineKey）は lKey の欄で渡す（揚陸と同時に無い。mission-line は差し引き 0 行。ほかの任務の lKey は今のまま）。
+// v0.8.0 S4: 海峡の夜（us_04）のモード 39・40 の行のキーも lKey の欄で（ui/strait-line-clock の radarKey・bowKey。mission-line は呼び出しの引数を 1 つ足しただけ＝行は増えない）。
 import type { BoatTelemetry } from '../core/boat-motion';
 import { convoyKey, convoyWaiting } from './convoy-lines';
 import { engineKey, engineTagKey } from './engine-lines';
 import { evacLineKey } from './evac-lines';
 import { landingEventKey, landingKey, type LandingEventView } from './landing-lines';
 import { planeKeyOf, planeModeOf } from './mission-line-air';
-import { MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS } from './mission-mode';
+import { MISSION_BOW_ON, MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_RADAR_EVENT } from './mission-mode';
 import { ptKey } from './pt-lines';
 
 /** 4 つのキーと、文を選ぶモードの判定（米PT の 5 つ・機関の 3 つ・水上機の 3 つ） */
@@ -39,10 +40,13 @@ export function createLineKeys(): LineKeys {
 }
 
 /**
- * そのフレームの 4 つのキーを out に書いて返す。lastPtKey は前回組み直したときの米PT のキー、merge・convoyEvent・landingEv は pt-line-clock の同じ名の値
- * （landingEv は 2 行目に出す揚陸の出来事の写し。省けばテレメトリの最後の出来事）
+ * そのフレームの 4 つのキーを out に書いて返す。lastPtKey は前回組み直したときの米PT のキー、merge・convoyEvent・landingEv・strait は pt-line-clock の同じ名の値
+ * （landingEv は 2 行目に出す揚陸の出来事の写し。省けばテレメトリの最後の出来事。strait は海峡の夜の時計＝v0.8.0 S4。省けばモード 39・40 のキーは 0）
  */
-export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, flags: number, lastPtKey: number, merge: number, convoyEvent: number, landingEv: LandingEventView = t.landing): LineKeys {
+export function composeLineKeys(
+  out: LineKeys, t: BoatTelemetry, mode: number, flags: number, lastPtKey: number, merge: number, convoyEvent: number, landingEv: LandingEventView = t.landing,
+  strait: { readonly radarKey: number; readonly bowKey: number } | null = null,
+): LineKeys {
   const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
   out.ptMode = ptMode;
   out.pKey = ptMode ? ptKey(t, mode, flags, lastPtKey, merge) : 0;
@@ -55,7 +59,7 @@ export function composeLineKeys(out: LineKeys, t: BoatTelemetry, mode: number, f
   const planeMode = planeModeOf(mode); // 水上機の 3 つ（9〜11）。キー（距離は接近中だけ 100 m 刻み）と文は ui/mission-line-air
   out.planeMode = planeMode;
   out.planeKey = planeKeyOf(t, planeMode);
-  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38 の行のキー
+  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : mode === MISSION_RADAR_EVENT ? (strait ? strait.radarKey : 0) : mode === MISSION_BOW_ON ? (strait ? strait.bowKey : 0) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38、海峡の夜（v0.8.0 S4）は 39・40 の行のキー
   out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(landingEv) : 0;
   return out;
 }

@@ -1,7 +1,7 @@
 // Title の任務の行の置き方（論理 px。高さ 720・幅 1280〜1584）。v0.6.7 で menu-config から移し（値は同じ）、日本のタブの 2 列の格子の値を足した（spec-v067 §D.6）。menu-config が出し直す。
 // 何も import しない（ui/title-grid と tests/title-grid が node の型検査で読んでも game-config → screen-fit の DOM を引かない。title-hint-config と同じ）。
 
-/** 1 列の行（米PT の 3 任務。v0.6.0 でタブを入れた分、行 104 → 96 px・間 16 → 12。3 行で 216〜528）。x は論理幅に関わらず 160（v0.6.6 までと同じ） */
+/** 1 列の行（v0.7.2 までの米PT の 3 任務。v0.6.0 でタブを入れた分、行 104 → 96 px・間 16 → 12。3 行で 216〜528）。x は論理幅に関わらず 160（v0.6.6 までと同じ）。v0.8.0 から米PT も 4 任務の格子 */
 export const TITLE_ROW_X = 160;
 export const TITLE_ROW_W = 960;
 export const TITLE_ROW_H = 96;
@@ -15,7 +15,7 @@ export const TITLE_HINT_Y = 560;
 /** 下の 3 つの切り替え（難易度・史実モード・マーカー）の間。格子の列の間も同じ */
 export const TITLE_TOGGLE_GAP = 24;
 /**
- * v0.6.7: タブの行がこの数以上なら 2 列の格子（日本ハードモードの 4 任務）。未満（米PT の 3 行）は 1 列のまま。
+ * v0.6.7: タブの行がこの数以上なら 2 列の格子（日本ハードモードの 4〜6 任務・v0.8.0 から米PT の 4 任務）。未満（v0.7.2 までの米PT の 3 行）は 1 列。
  * 格子は 3 段（6 任務）まで（4 段目は操作の一言にかかる。米PT の 7 任務が並ぶ版で見直す）
  */
 export const TITLE_GRID_FROM = 4;

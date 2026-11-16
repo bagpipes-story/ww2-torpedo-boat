@@ -227,6 +227,26 @@ describe('段の聞かせ方（曲の再生と道具が同じ関数）', () => {
   });
 });
 
+describe('レーダー・列の通過・衝突の危険では段を変えない（v0.8.0 S4。spec-v0800 §3.2 D-R11・§3.5・§4.10、brief L32）', () => {
+  it('輝点・接触・新しい／消えた接触・列の段階と通算・衝突の危険のビットが何であっても段は同じ（静かのまま・照らされたら戦闘のまま）。source はその欄の名を持たない', () => {
+    const blips = Array.from({ length: 16 }, (_, k) => Object.freeze({ x: 100 * k, y: 50 }));
+    for (const contacts of [0, 1, 4, 16]) {
+      const extra = {
+        radar: Object.freeze({ enabled: true, contacts, sweeps: 99, nearestM: 50, firstS: 0.02, newCount: contacts * 3, lostCount: contacts, newX: 10, newY: 10, lostX: 6000, lostY: 1500, blips, boatX: 0, boatY: 0, widthM: 6000, eastJa: 'ビラ' }),
+        transit: Object.freeze({ enabled: true, ships: 4, inbound: contacts % 3, away: 2, outbound: 1, gone: 0, sunk: 0, pending: 3, inCount: 4, arrivedCount: 2, outCount: 1, firstOutS: 136 }),
+        strait: Object.freeze({ enabled: true, eyeRange2: 810000, bowOnMask: contacts > 0 ? 0b111 : 0, bowOnM: 120 }),
+      };
+      for (const [over, want] of [[{}, Q], [{ illuminated: true }, B], [{ playerDetected: true }, T]] as const) {
+        const t = Object.freeze({ ...(tel(over) as unknown as Record<string, unknown>), ...extra }) as unknown as BoatTelemetry;
+        expect(levelOf(over), String(contacts)).toBe(want);
+        expect(run(createSfxMoodState(), t), `${contacts} ${JSON.stringify(over)}`).toBe(want);
+      }
+    }
+    const src = readFileSync('src/core/sfx-music-mood.ts', 'utf8').replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+    for (const f of ['radar', 'transit', 'strait', 'blips', 'contacts', 'bowOn']) expect(src, f).not.toContain(f);
+  });
+});
+
 describe('観測器の作法（読むだけ・確保しない）', () => {
   it('凍らせたテレメトリで全部の出どころを通しても投げない（どの欄にも書かない）。戻りは段の数だけ', () => {
     const st = createSfxMoodState();

@@ -3,6 +3,9 @@
 // 発射の時に決着（resolved）させる＝記録（ShotRecord）・走査・終わり際の当たり・終わりの待ち・得点・KPI のどれにも入らない。絵は走り、大発・PT の下を抜ける。
 // 味方（僚艇・輸送隊・隼艇・味方機）はもともと魚雷の的の配列に無い。乱数は今までの発射管制の +0（1 本 2〜3 回。撃たなければ引かない）だけ。
 // 狙える艦がある間の道は v0.6.7 の systems/world-input と同じ文（consumeFireInput も world-input から移した。中身はそのまま）。§7: 確保しない。
+// v0.8.0 S4（brief L31）: レーダーのある任務（us_04）だけ、狙える艦がある間に撃った 1 本ごとに「3 行目が敵影ありだったか」をレーダーの数えに渡す（Result の「目で見えない間に撃った魚雷」）。
+// 規則は systems/mission-telemetry の t.enemySighted と同じ（最寄りの浮いている艦＝enemy.focus が視程の 2 乗の内）。発射は固定ステップの前＝前のフレームの 3 行目と同じ位置で決まる。
+// 凍結の魚雷のファイル（core/torpedo・torpedo-targets・systems/torpedo-pool）は触らない。レーダーの無い任務は何もしない（発射・乱数・記録は同じ）。
 import type { BoatState } from '../core/boat-motion';
 import { discardFireInput, type InputState } from '../core/input-state';
 import type { TorpedoEvents, TorpedoTarget } from '../core/torpedo-targets';
@@ -36,6 +39,19 @@ export interface FreeTorpedoWorld {
   readonly dawn: { readonly reached: boolean };
   /** 狙う艦の無い魚雷を数える（systems/arms-step。無い世界は数えない） */
   readonly arms: { noteBlindTorpedo(): void } | null;
+  /** 目で見えない間に撃った魚雷を数える（v0.8.0 S4。systems/world-radar。レーダーの無い世界は null・無い） と、3 行目の敵影の規則（最寄りの浮いている艦と視程の 2 乗） */
+  readonly radar?: { noteLaunch(torpedo: object, sighted: boolean): void } | null;
+  readonly enemy?: { focus(x: number, y: number): { readonly x: number; readonly y: number } | null };
+  readonly visRange2?: number;
+}
+
+/** 3 行目の敵影あり（systems/mission-telemetry の t.enemySighted と同じ規則。v0.8.0 S4） */
+function enemyInSight(w: FreeTorpedoWorld, boat: BoatState): boolean {
+  const e = w.enemy ? w.enemy.focus(boat.x, boat.y) : null;
+  if (e === null || w.visRange2 === undefined) return false;
+  const dx = e.x - boat.x;
+  const dy = e.y - boat.y;
+  return dx * dx + dy * dy <= w.visRange2;
 }
 
 /** 狙える艦がある（駆逐艦の隊がいて、すべては出ていない） */
@@ -80,7 +96,8 @@ export function stepLauncher(w: FreeTorpedoWorld, realDt: number): void {
   const boat = w.boat.state;
   if (g !== null && !g.allOut) {
     const ti = g.nearestAfloatIndex(boat.x, boat.y);
-    w.launcher.update(realDt, boat, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount && !w.dawn.reached);
+    const s = w.launcher.update(realDt, boat, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount && !w.dawn.reached);
+    if (s && w.radar) w.radar.noteLaunch(s, enemyInSight(w, boat)); // 目で見えない間に撃った魚雷（v0.8.0 S4。レーダーのある任務だけ）
     return;
   }
   const s = w.launcher.update(realDt, boat, null, false);

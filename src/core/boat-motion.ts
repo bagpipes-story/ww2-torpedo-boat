@@ -160,6 +160,14 @@ export function stepStraight(s: BoatState, dt: number): void {
   s.y -= Math.cos(h) * s.speedMps * dt;
 }
 
+/**
+ * y だけ海域の内へ押し戻す（v0.8.0 実機 1 回目。us_04 の列の通過の艦＝東西の縁から出入りするので x は止めない。退く動きの艦が雷跡をよけて
+ * 南北の縁の外＝陸へ出ない予防。模擬と試しでは縁に届いた夜は無い）。margin は境界からの余白 m
+ */
+export function clampYToBounds(s: BoatState, b: SeaBounds, margin: number): void {
+  s.y = clamp(s.y, margin, b.height - margin);
+}
+
 /** 海域境界の内側に位置を押し戻す（docs/02 §6.1）。margin は境界からの余白 m */
 export function clampToBounds(s: BoatState, b: SeaBounds, margin: number): void {
   s.x = clamp(s.x, margin, b.width - margin);

@@ -2,7 +2,7 @@
 // data を直接読み、game-data の関数は呼ばない（mission-data と同じ作法。値の循環を作らない）。壊れた data は例外（起動時に分かる）。
 import type { GameData } from './game-data';
 import { menuEntries, type MenuEntry } from '../core/briefing';
-import { parseUnlockRule, type UnlockRule } from '../core/campaign';
+import { parseUnlockMissionIds, parseUnlockRule, type UnlockRule } from '../core/campaign';
 
 export interface CampaignInfo {
   id: string;
@@ -10,6 +10,8 @@ export interface CampaignInfo {
   /** 短い名前（未解放のタブの条件の文に使う。short_ja。無ければ name_ja） */
   shortJa: string;
   unlock: UnlockRule;
+  /** 解放の条件の任務（v0.8.0。unlock_mission_ids。complete_ の相手の遊べる任務の中だけ）。無ければ null＝相手の遊べる任務を全部 */
+  unlockMissionIds: string[] | null;
 }
 
 /** キャンペーンの一覧（data の順）。id・name_ja が無い、unlock が読めない、complete_ の相手が無い、default がちょうど 1 件でない、のどれかなら例外 */
@@ -20,12 +22,16 @@ export function getCampaigns(data: GameData): CampaignInfo[] {
     const nameJa = c['name_ja'];
     if (typeof id !== 'string' || id === '' || typeof nameJa !== 'string' || nameJa === '') throw new Error(`missions_seed.json の campaigns[${i}] に id / name_ja が無い`);
     const shortJa = typeof c['short_ja'] === 'string' && c['short_ja'] !== '' ? c['short_ja'] : nameJa;
-    return { id, nameJa, shortJa, unlock: parseUnlockRule(c['unlock'], `campaigns.${id}`) };
+    return { id, nameJa, shortJa, unlock: parseUnlockRule(c['unlock'], `campaigns.${id}`), unlockMissionIds: parseUnlockMissionIds(c['unlock_mission_ids'], `campaigns.${id}`) };
   });
   const ids = new Set(out.map((c) => c.id));
   if (ids.size !== out.length) throw new Error('missions_seed.json の campaigns の id が重複している');
   for (const c of out) if (c.unlock.kind === 'complete' && (!ids.has(c.unlock.campaignId) || c.unlock.campaignId === c.id)) throw new Error(`campaigns.${c.id} の unlock の相手（${c.unlock.campaignId}）が無い`);
   if (out.filter((c) => c.unlock.kind === 'default').length !== 1) throw new Error("missions_seed.json の campaigns に unlock が 'default' のキャンペーンがちょうど 1 件ない");
+  for (const c of out) {
+    const pre = c.unlock.kind === 'complete' ? playableMissionIds(data, c.unlock.campaignId) : [];
+    if (c.unlockMissionIds && !c.unlockMissionIds.every((x) => pre.includes(x))) throw new Error(`campaigns.${c.id}.unlock_mission_ids（${c.unlockMissionIds.join('・')}）は complete_ の相手の遊べる任務（${pre.join('・') || 'なし'}）の中だけ`);
+  }
   return out;
 }
 
@@ -49,6 +55,11 @@ export function playableMissionIds(data: GameData, campaignId: string): string[]
     if (m['campaign'] === campaignId && typeof m['playable_from'] === 'string' && typeof proto === 'object' && proto !== null && !Array.isArray(proto) && typeof m['id'] === 'string') out.push(m['id']);
   }
   return out;
+}
+
+/** 解放の条件の任務（v0.8.0。Title の「済 n/N」と開く判定・v0.5.2 までの端末の移し替えが読む）: complete_ は unlock_mission_ids か相手の遊べる任務を全部、default は [] */
+export function unlockPrereqIds(data: GameData, c: CampaignInfo): string[] {
+  return c.unlock.kind === 'complete' ? (c.unlockMissionIds ?? playableMissionIds(data, c.unlock.campaignId)) : [];
 }
 
 /** 任務のキャンペーンの id（無ければ ''） */
