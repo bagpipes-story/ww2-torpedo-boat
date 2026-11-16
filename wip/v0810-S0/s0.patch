@@ -1,3 +1,43 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index f15677e..b0e25c6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -3,6 +3,35 @@
+ 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
+ 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
+ 
++## v0.8.1 — 2026-11-16（米PT キャンペーン②b：オルモック湾の決着（us_06。パロンポン沖））
++
++- 目的: us_06「オルモック湾の決着」（1944-12-11〜12 の夜・パロンポン沖・月没後）を、1944 年の標準の SO レーダーで止まった卯月を捉え、暗い岸を背に忍び寄って撃ち、気づいて動き出した艦から逃れて北東へ帰る任務として出撃可にする。ほかの 10 任務・音・曲・日本のタブは 1 ビットも変えない。
++- Done: Pages の米PT のタブ（5 枚の格子）から us_06（ノーマル・ハード）を遊べ、止まった艦が気づいて動き出す・岸を背にすると見つかりにくい・レーダーに卯月は映り泊地の輸送船は映らない・止まった艦への 1 本は通算の命中率に入らない、が出て、探りの帯（計画 spec-v0810 §3.9）を満たし、ほかの 10 任務とそのハードがビット同一（spec §5.1）で、ユーザーが iPhone で docs/03 の v0.8.1 の 3 項目を確かめる。
++- 計画: spec-v0810（scratchpad の notes。段 S0〜S4 の 1 commit ずつ。新しい模擬は作らない＝spec-v0800 §2.2 の削る案 ①。本物の世界をヘッドレスで台本で回す探りで帯を見る。見積もり 約 1.9 セッション＝docs/03 の 1.5〜2 の内。超えそうならハードの駆潜艇＝S2b を v0.8.1b へ）。基準は main e9d80ea（v0.8.0 のマージ）。
++- ユーザーの決め:
++  - U1（2026-11-16。spec-v0800 §9 Q7）: 問い「次の任務 us_06「オルモック湾の決着」（1944年12月、パロンポン沖で止まっている駆逐艦 卯月と輸送船 空知丸を夜襲する）では、史実では PT が 2 隻で攻撃しました。プレイヤーの艇に、僚艇（2 隻目の味方の PT。プレイヤーの後ろについて来て一緒に撃つ・沈むこともある）を付けますか？」への答え「付けない（推奨）」＝自艇 1 隻（地図の上の味方は自艇だけ。史実の 2 隻目は Briefing の史実メモの文だけ）。
++- 設計の既定（ユーザー未確認。報告で知らせ、変えたいと言われたら変える）:
++  - L1: 夜明けの空は敵（日本機 4 機の空襲。夜明けに帰投の輪の外なら来る）。空は争奪で、ユーザーの規則「制空権がない限り夜明けの後は空襲」（v0.6.1）と v0.8.0 の us_04 のユーザーの決め U1「Aのままでいいと思うよ」の前例による。`dawn_air.play_as` contested → enemy・`label_ja`「昼の空は争奪（日本機の空襲）」・`v0_1_prototype.dawn_strike`（`ijn_a6m2n_rufe` 4 機・270°）。CLAUDE.md §2「夜明け」は今の一般の規則のとおりなので変えない。
++- 変更点:
++  - S0（data と検査。まだ遊べない＝us_06 に `playable_from` は無く Title に出ない・Boot と組み立ての検査だけが us_06 を読み、世界は新しい鍵を何も読まない。ほかの 10 任務は 1 ビットも変えない＝setup の snapshot は `-u` なし）:
++    - 版 0.8.1（package.json・package-lock.json）。docs/03 の v0.8.1 の行に U1・L1・計画・Done・段 S0〜S4・実機 3 項目の下書き・目安を書いた。CLAUDE.md は S4 で直す（§4 の木と変更履歴）。
++    - `data/missions_seed.json` us_06 の種の直し（spec-v0810 §2。理由はどれも source と docs/01 §8 の v0.6.9・v0.6.10 の調べ）: `place` オルモック湾（レイテ島）→「パロンポン沖（レイテ島西岸）」（卯月の沈んだ所は 11°03'N 124°23'E＝パロンポン。jp_04 と同じ。題は作戦の名として残す）・`moon` half → dark と `moon_label_ja`「月没後」（11 日 14:11 に月没・12 日 02:45 に月の出）・`objective` から「特攻艇に注意」を外して spec §3.7 D-O1 の文（震洋がいた記録なし。PT-323 は 12-10 の特攻**機**＝別の夜）・`success`「帰投。卯月を撃沈すれば達成」（D-O2。空知丸は今の輸送船の加点＝岸から 240 m に止まって 1 本で沈む空知丸を楽な道にしない。spec §9 Q1 は S4 の報告で聞く）・`enemies` の `ijn_destroyer` → 新しい `ijn_destroyer_mutsuki_enemy`（睦月型の寸法）・`historical_note` を直した（12 日 1 時ごろ・レーダーで捉え・暗い岸を背に約 1,000 yd から 6 本・2 本以上・空知丸は駆潜艇 2 隻に導かれて揚陸・月は沈んでいた。間違いの「特攻で PT-323・300 喪失」を「PT-323 は 12-10 に特攻機で失われた（別の夜）」に。出典の説明なので艇の番号は残す＝画面に出ない鍵）・`briefing_note_ja`（新。D-O5。PT の番号・人名なし。画面に出るのは S4）・`dawn_air`（L1。refs に jp_04 と同じ VMF-541 の頁＝12 日朝に日本機 33 機がオルモック湾の米艦へ。`control` contested・`confidence` medium・`enemy_ships_at_dawn` retire は史実の値のまま）。`title_ja`・`date`・`order`・`torpedo_type`（us_mk13＝PT-490/492 は Mk XIII 4 本）・`player_boat`・上位の `hazards`・`duration_min`・`source_url` はそのまま。
++    - us_06 の `v0_1_prototype`（新。どれも source 付き。spec §4.1。`playable_from` はまだ＝lead の L11）: jp_04 の地図を米の側から（6,000 × 3,000・`coast` 南 600 m「レイテ島（パロンポン）」・浅瀬なし）・出発 (5000, 250)・225°（北東のカモテス海の側・停止）・卯月 `enemy_start` (3620, 2380)・**270°**（jp_04 の卯月と同じ位置で向きだけ西＝左舷が南の浜。2 本は浜の側の左舷に当たった）・空知丸 `transport` (3000, 2760)・135°（jp_04 の泊地）・帰投の輪 (4400, 400)・半径 250（北東の海。出発点から 618 m）・200 秒・40 gal（どちらも初めの design。S3 の帯 T・F で直す）・危険 2 つ（駆逐艦の砲撃・衝突と夜明けの空襲。夜の水上機・誤射・暴風はその夜の記録なし）・今夜の揺らぎ（艦ごとに x ±150・y ±50・針路と反転なし・夜ごとの危険なし）・夜明けの空襲（L1）・夜明けに東へ退く（`dawn_withdraw` east「日本の艦」）・撃沈の達成 1 隻・レーダー `so_late`・`fit` own（陸の反射 300 m に対し空知丸は岸の線から 240 m＝映らない・卯月は 620 m＝映る）。新しい block 2 つ: `anchored`（`destroyer_underway_s` 6・`transport_underway` false・`picket_underway_s` 4・`alarm_s` 4）と `shore_backdrop`（`detect_factor` 0.6・`behind_m` 2,000）。`hard`（`extra_pickets` の駆潜艇 2 隻 (2300, 2050)・090° と (4300, 2200)・270°・`picket_enemy_id` ijn_subchaser。ハードの文の 3 つは置かない＝Briefing の文はノーマルと同じ。世界の配線は S2b で、v0.8.1b へ回すこともある）。`main_weapon`・`enemy_hits_to_sink`・`fleet_gone_clears` は置かない（魚雷・卯月は記録の 2 本・敵の空なので帰投が要る）。
++    - `data/enemies.json` に 2 記録（新。spec §4.3・lead の L13）: `ijn_destroyer_mutsuki_enemy`（「駆逐艦（睦月型・卯月）」。102.7 × 9.16 m・最大 34 kt は jp_04 の味方の記録 `ijn_destroyer_mutsuki` と同じ historical、主砲は 12 cm × 2＝`main_120mm` count 2。巡航・旋回・加速・耐久・沈む本数 2・`main_120mm` の 1 門の値（`main_127mm` の写し）・`aa_25mm`・探照灯・星弾・`detection`（note を除く）・`evasion`・`ram`・`patrol` は `ijn_destroyer` の写し＝命中率の KPI を合わせた値なので触らない。jp_04 の味方の記録は AI の鍵が無いので使わず、jp_04 は変えない）・`ijn_subchaser`（「駆潜艇（第13号型）」。51 × 6.7 m・16 kt は WebSearch の抜粋 1 つ（medium）・喫水 2.75 m は source に（Mk 13 の `min_run_depth_m` 2 より深い＝魚雷は当たる）・巡航 12・旋回 3.0・加速 0.4・1 本で沈む・`aa_76mm` 1（輸送船の `deck_gun_76mm` の写し）・`aa_13mm` 2（`aa_25mm` の値で口径の名だけ）・探照灯 1,500 m（ほかは `ijn_destroyer` と同じ）・星弾なし・回避は turn_away・体当たりなし・端 500 m）。どちらもまだ絵の鍵の表に無い（既定の 1 枚＝Boot は新しい絵を作らない。敵の色の睦月型と駆潜艇の形は S2・S2b）。
++    - `data/hit_rate_model.json` の `kpi_measurement` に `min_target_speed_kt` 5（新）と source の理由（spec §3.5 D-K1・D-K2: 発射の時に狙った艦が 5 kt 未満の 1 本は通算の命中率に数えない。今の任務の駆逐艦の AI の最も遅い目標の速さは us_destroyer の回避 18 − 10 ＝ 8 kt＝どの 1 本も変わらない）。`record_version` v0.5.0 とほかの値は 1 つも変えていない。S0 では誰も読まない（lead の L12。`tests/kpi-data` が src のどのファイルも `config/kpi-data` を import せず鍵の字も無いことを見る。読むのは S2 の MissionWorld）。
++    - 新 `config/anchor-mission-data`（152 行。V-A1〜V-A6・`getAnchorParams`・`anchorSetupPart`・`validateAnchorMissions`）: V-A1 鍵の閉じた集合・秒は 0 ＜ x ≤ 30・`transport_underway` は false だけ（動く輸送船は候補）・出典／V-A2 駆逐艦の任務（`enemy_start`）だけ・`transit`・`barges`・`pt_boats`・`landing`・`ally_destroyer`・`evac`・`patrol_air`・`escort`・`fleet_gone_clears` と同居しない／V-A3 どの艦も（今夜の揺らぎの四隅・反転のある夜は東西の鏡も）海域の縁の余白（記録の長さ × sprite_scale ÷ 2）より内・船体（長さ × ship_hit_scale ÷ 2）は岸の線から 50 m 以上沖（空知丸は y ＋50 の端で 190 m ≥ 170 m）／V-A4 出発点はどの艦（ハードの駆潜艇も）の揺らぎの矩形からも全速で見つかる距離（ノーマル・史実モードなし・隊の駆逐艦の基準距離。us_06 は 1,920 m。卯月まで 2,416 m・駆潜艇まで 1,978 m）より遠く、どの艦も帰投の輪の外／V-A5 `hard.extra_pickets` は 1〜4 隻・`picket_enemy_id` と両方・輸送船のある任務だけ（隊の並び: 駆逐艦 → 輸送船 → 駆潜艇）・AI と砲の記録・`picket_underway_s` が要る・止まった艦の無い任務の hard に置けない／V-A6 `dawn_air.enemy_ships_at_dawn` は retire で `dawn_withdraw` がある（`config/dawn-data` の検査も通す）。世界の値 `AnchorSetup`: 隊の艦ごとの動き出す秒（動かない輸送船は null。ノーマル [6, null]・ハード [6, null, 4, 4]）と警報の秒。
++    - 新 `config/backdrop-mission-data`（74 行。V-B1〜V-B3・`getBackdropParams`・`backdropSetupPart`・`validateBackdropMissions`・`BackdropSetupOptions.backdropOff`）: V-B1 鍵はちょうど `detect_factor`・`behind_m`・`source`・0 ＜ 係数 ＜ 1・0 ＜ 距離 ≤ 海域の対角／V-B2 岸の線のある任務（`coast` の south か `shores`）・駆逐艦の任務だけ（大発・米PT の任務は発見の仕組みが別）／V-B3 `backdropOff`（`?debug&nobackdrop` の配線は S2）なら鍵ごと出ない。世界の値 `BackdropSetup`（係数・X と X²）。
++    - 新 `config/kpi-data`（18 行。V-K1）: `min_target_speed_kt` は 0 以上の有限の数（無ければ 0＝今の規則）。kt と m/s の読み出し。
++    - 配線: `systems/world-setup`（187 → 195 行）に `getAnchorParams` を 1 回と setup part 3 つ（`anchors`・`backdrop`・ハードの `pickets`。無い任務では鍵ごと出ない）。ハードの駆潜艇は今夜の揺らぎの隊の最後（輸送船の後ろ）に 1 隻ずつ（us_06 の今夜の乱数はノーマル 8 回・ハード 14 回。ほかの任務の引く回数は同じ）。輸送船の出発点の添字を「揺らぎの最後」から「駆逐艦の数」に（駆潜艇のいない任務では同じ値）。`systems/world-setup-types`（152 → 157 行）に任意の鍵 3 つと `BackdropSetupOptions`。`systems/destroyer-setup`（55 → 65 行）に `PicketSetup` と `picketSetup`（`destroyerSetup` に記録の id を足した形）。`scenes/boot-scene`（185 → 189 行）で `validateAnchorMissions`・`validateBackdropMissions` を海峡の両岸の検査の後に 1 回ずつ。世界・絵・HUD・音・曲・Briefing・Result はまだ何も足していない（S1〜S4）。
++    - tests（＋5 ファイル・＋34 件、boot-loop に ＋1 件）: 新 `anchor-data`（10 件: 既定の data・setup の anchors と pickets〔駆潜艇は揺らぎの 3・4 件目・輸送船は 2 件目のまま・`?debug&notransport` の夜〕・ほかの任務は鍵ごと出ない・V-A1〜V-A6 の文と境〔30 秒ちょうど・空知丸の 170 m ちょうど・駆潜艇の 1,920 m の内外・反転の夜の鏡〕・Boot の検査）・`backdrop-data`（4 件: 既定の値・backdropOff で鍵だけ消える・ほかの任務は鍵ごと出ない・V-B1〜V-B2〔us_04 の両岸には置ける・us_02・jp_05・jp_01・us_03 には置けない〕）・`kpi-data`（3 件: 5 kt＝2.572 m/s・鍵が無ければ 0・V-K1・S0 では誰も読まない）・`enemy-mutsuki`（6 件: 写した鍵が `ijn_destroyer` と同じ・主砲 2 門の 1 門の値・寸法と最大速力は睦月型・`getEnemyRecord`／`destroyerSetup` で組める・絵の鍵は S0 では既定・駆潜艇の寸法と兵装と AI の形）・`setup-us06`（11 件: snapshot 8＝ノーマル／ハード × 史実モード × seed 1・12345 と今夜の乱数の回数・揺らぎの幅〔seed 1〜40 で空知丸は岸から 190〜290 m・卯月は 570〜670 m〕・種の直し・画面の文に人名・階級つきの呼び方・PT の番号〔「隻」が続く隻数は番号でない〕が無く、記録の全部と組んだ世界に人名と有名な艇の番号が無い）。直した固定（どれも「v0_1_prototype を持つ任務」が 10 → 11 になったため。理由はテストの注に）: `boot-loop`（一覧に us_06・Boot の新しい 2 つの検査の順の pin）・`engine-data` と `landing-neutral` の任務の一覧・`dawn-air`（us_06 の行を L1 に・「遊べる任務でない」の例を us_05 へ）・`dawn-withdraw`（遊べない任務の例を us_05 へ・us_06 は東へ「日本の艦」）・`art-inventory`（駆逐艦の任務の敵の id に us_06 の卯月・S2 までは既定の鍵）・`patrol-air-data`（Briefing の `moonLabelJa` に us_06「月没後」）・`radar-data`（レーダーの無い任務の一覧から us_06 を外し so_late・自艇・6,000 m・陸の反射 300 m を見る）。`jp05-mission`（ハードの違いのある任務は遊べる任務の中だけを見る＝S4）と `strait-geometry` の注（S1 で本当の使い手を指す）は S0 では直さない。
++    - 門: （lead が別に回した run-gates の結果をここに足す）
++- 既知の制約（S0 の時点）:
++  - まだ遊べない（Title に出ない。`playable_from` は S4）。`?debug&mission=us_06` では出撃できるが、世界は止まった艦・暗い岸を背に・駆潜艇・KPI の下限を何も読まない（卯月と空知丸は us_02 の AI のまま最初から動き、絵は既定の陽炎型の鍵＝S2 から）。`?debug&nobackdrop` の配線も S2。
++  - 史実: WebSearch の抜粋のみ（本文未読）。駆潜艇の寸法と兵装は抜粋 1 つ（1940 の形。1944 年の兵装の変化は未確認）。地図は jp_04 の模式図（浜は本当は西向き）・出発と輪・夜の長さ・燃料・駆潜艇の位置・動き出す秒・背に岸の係数と距離・夜明けの機（二式水上戦闘機の記録で陸上の日本機を代用）と方角は作り。卯月の向き 270° は「左舷が浜の側に当たった」の読み（medium）で、jp_04 の卯月は 90°（同じ夜の両側で向きが違う）。
++  - 隊の艦はみな駆逐艦の見つける基準距離（2,000 m）を使う（今の us_02 の輸送船と同じ作り。駆潜艇の記録の 1,500 m は検査のためだけ）。
++  - V-A4 の「帰投の輪の外」は「どの艦も（揺らぎの矩形が）帰投の輪にかからない」と読んだ（出発点が輪の外なのは getPrototypeMission が先に見る）。V-A3 の岸は岸の線の y で見る（両岸の任務の切れ目も岸として控えめに見る）。
++  - 史実モードの全速（見つかる距離 2,496 m）では、今夜の揺らぎの端で出発点から卯月まで 2,416 m＝出撃直後に全速だと気づかれうる（ノーマルは V-A4 で守る。spec §8 R9）。
++
+ ## v0.8.0 — 2026-11-15（米PT キャンペーン②：ブラケット海峡の夜とレーダー）
+ 
+ - 目的: us_04「ブラケット海峡の夜」（1943-08-01〜02・新月）を、分隊の先頭の艇の初期の SO レーダーで東京急行の駆逐艦の列を捉え、雷撃し、帰りに全速で戻ってくる列をよけて生きて帰る任務として出撃可にする。レーダー・列の通過・海峡の両岸・迎撃の模擬は v0.8.1〜v0.8.3（us_06・us_05・us_07）も使う共通の仕組みとしてここで作る。ほかの 9 任務は 1 ビットも変えない。
 diff --git a/data/enemies.json b/data/enemies.json
 index 75a4906..165802b 100644
 --- a/data/enemies.json
@@ -371,6 +411,50 @@ index 34d1be5..e9db7f1 100644
        }
      },
      {
+diff --git "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md" "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+index 0fd33dd..ae6c50d 100644
+--- "a/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
++++ "b/docs/03_\351\226\213\347\231\272\343\203\255\343\203\274\343\203\211\343\203\236\343\203\203\343\203\227.md"
+@@ -53,7 +53,7 @@
+ | v0.7.1 | アートと音②：合成の効果音 | 機銃・砲・爆発・エンジン・波などを音のファイルを使わず合成（Web Audio。22,050 Hz・25 本＝単発 20・ループ 5 を起動時に 1 回）。最初のタッチで鳴らし始める（iOS）・消音の切り替え（Title と一時停止。覚える）。音は絵と HUD に従う（絵の層が出している出来事と HUD が文で出している状態だけを鳴らす＝新しい手掛かりを漏らさない）。遊びは 1 ビットも変えない（模擬の md5・main 3a9e7aa との再生と HUD の A/B を音の 3 つの状態＝既定・`AUDIO=1`・`NOAUDIO=1` で）。BGM と命中スローは v0.7.2。段 S0〜S5（S0 骨組みと道具＝定数 `config/sfx-config`・合成 `assets/sfx-*`・判断 `core/sfx-mix`・テスト・ヘッドレスの音の状態。まだ鳴らない ／ S1 鳴る縦切り＝エンジン・Boot・消音の保存・Title の「音」ボタン・ボタンの音・機銃・爆発（push して実機）／ S2 砲・着弾・爆発の全部と距離の帯・パン・間引き ／ S3 ループ＝エンジン・海・火・雨・機の爆音と一時停止の「音」ボタン ／ S4 合図・UI・Result の鐘 ／ S5 mix の仕上げと全部の門・docs）。段 S0〜S5 済み（2026-11-13）・実機の直し IP1〜IP4 済み（2026-11-14。弾倉交換は B＝U-R1・魚雷の発射は F＝U-R2。試聴の場 `?sfxlab` は次の試聴のために残す）。設計の既定（ユーザー未確認）: 本体の消音スイッチに従う・画面の外の砲声を左右つきで聞かせる・Result で鐘。門と数は CHANGELOG の v0.7.1 | S1 の後（早い 3 項目）: ① Title: マナーモードを切って「音: オン」のままボタンを押すと音が鳴るか（Safari とホーム画面のアプリの両方） ② us_02: 機銃と爆発（魚雷の命中・被弾）が鳴るか・音が遅れたり割れたりしないか ③ 「音: オフ」で消えるか・ホーム画面へ出て戻る／画面ロックの後も鳴るか。S5 の後（最終の 3 項目。マナーモードを切って）: ① us_02: 静音と全速でエンジンの音が変わるか・発見の警報・探照灯・砲声と水柱・魚雷の発射と命中が聞き分けられるか・うるさくないか ② jp_03 ハードか「大発を狩れ」の連射で FPS が落ちないか・音が割れないか ③ 消音を Title と一時停止で切り替えて次に開いた時も覚えているか・ホーム画面へ出て戻る／着信の後に音が戻るか。実機 1 回目（S5 のビルド f020a1e）で弾倉交換の音・魚雷の発射音の直し（IP1）。実機 2 回目（IP1 の後）: ① 弾倉交換の音が金属音に聞こえるか（交換の始めと終わり） ② 魚雷の発射音がかっこよく・はっきり聞こえるか（自艇の発射。jp_04 の米PT の雷撃の報告も） ③ ほかの音とのバランス・うるさくないか。実機 2 回目（IP1 のビルド 82eb46b）で弾倉交換は「まぬけ」・魚雷の発射は「ポンっ」のまま → IP2 で作り直し（弾倉は始め・終わりの 2 本）と試聴の場 `?sfxlab`。実機 3 回目（IP2 の後）: ① `?sfxlab` で弾倉の始め・終わり・魚雷の発射を聞き比べ、良い記号を選ぶ ② ゲームの中で新しい既定の弾倉交換と魚雷の発射がどう聞こえるか ③ ほかの音とのバランス。実機 3 回目（IP2 のビルド 9a71c21）で弾倉は B に決まり（U-R1）、魚雷は「もう何案か」→ IP3 で弾倉の既定を B に・魚雷の発射の新しい案 E〜I。実機 4 回目（IP3 の後）: ① `?sfxlab` で魚雷の新しい案 E〜I（と前の A〜D）を聞き比べて良い記号を選ぶ ② ゲームの中の弾倉交換（B）がどう聞こえるか ③ ほかの音とのバランス。実機 4 回目（IP3 のビルド 10edb02）で魚雷は F に決まり（U-R2）・弾倉交換（B）も OK → IP4 で魚雷の発射の既定を F に。実機 5 回目（IP4 の後。最終の 3 項目）: ① ゲームの中で魚雷の発射（F）が試聴ページと同じに聞こえるか（自艇の発射・連続で撃つ時・jp_04 の米PT の雷撃の報告） ② 弾倉交換（B）と魚雷の発射がほかの音に埋もれないか・うるさくないか ③ 全体の音で気になる所があれば一言 | 1〜2 |
+ | v0.7.2 | アートと音③：BGM と命中スローの音 | ユーザーの決め U-M1（2026-11-14「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result に合成の BGM、任務の中は小さい曲で見つかったら緊張・撃たれたら戦闘の曲に変わる（HUD が出している状態だけで決める）。警報で曲を下げる。「曲: オン／オフ」は「音」と別（覚える）。命中スローは今のまま（v0.7.0 の U11）で、スローの間の音の扱いだけを足す（論理と data は変えない）。音のファイルは使わない（作曲は音符・合成は数フレームに分けて 1 本の標本へ）。遊びは 1 ビットも変えない（main 35e9e77 との再生と HUD の A/B を音の 3 つの状態で）。段 S0〜S4（S0 骨組みと道具＝定数 `config/sfx-music-config`・作曲と合成 `assets/sfx-music-*`・テスト 4 本・`scripts/sfx-music.ts`・種の探索・費用の実測。まだ鳴らない ／ S1 メニューの曲・Title と一時停止の「曲」ボタン・試聴の場 `?sfxlab`（タイトルの曲 A・B・C。push してユーザーが選ぶ）／ S2 任務の曲（3 層・段の観測器 `core/sfx-music-mood`・警報などで下げる）／ S3 命中スローの音（案 A〜C を試聴）／ S4 仕上げ・docs）。段 S0〜S4 済み（S0〜S3 は 2026-11-14。S1 で Title・Briefing・Result にメニューの曲＝既定は A・「曲: オン／オフ」は Title の右上と一時停止・`?sfxlab` は曲の試聴の場＝効果音の試聴の場はその中から。S2 で任務の曲＝静か・緊張・戦闘の 3 層を同じ時刻に始めて音量だけを段で動かす・段は HUD が出している状態だけから決める `core/sfx-music-mood`・警報 −8 dB などで曲を下げる・家族は Title・Briefing の間に作っておく・試聴の場に「任務の曲」「効果音と一緒に」の行。S3 で命中スローの音＝スローの間はループと曲を 1 つの低域通過（ふだんは素通しの 20 kHz）に通して低く・案 A は rate も遅く・爆発と魚雷の命中は鋭いまま・スローの途中で任務が終わっても Result と Title の曲はこもらない・`?sfxlab` の行 2「命中＋スロー」と行 3「命中スロー A・B・C」で比べる）。実機 1 回目（2026-11-14・S3 までのビルド）でタイトルの曲は「A でもよいがもっとアップテンポに（軍艦マーチくらい）」・B は「ファミコンの RPG みたいでださい」・「緊張と戦闘の音楽はおなじでは？」→ IP1 で B・C を消して 126 BPM の D「A を行進で」・E「勇ましい行進」を足し（温かい金管 2 声・弓の刻み・行進の小太鼓と連打・ティンパニ風の打ち・部屋の響き。明るく尖った表は消した。A は既定のまま・標本も同じ）、任務の緊張をまばら（2 分音符ごとの心音・高いトレモロ・4 拍目の 2 音）に・戦闘を走る形（拍ごとの打ち・裏拍の 16 分の小太鼓と連打・金管の刻み・16 分の弓）にして段の重さの戦闘を (0.5, 0.3, 1) に（戦闘 ÷ 緊張＝発音の密度 3.05 倍・2〜5 kHz ＋5.0 dB・RMS ＋3.0 dB。S2 は 1.18 倍・＋2.3 dB）。実機 2 回目（2026-11-14・IP1 のビルド）で「タイトルはDでいきます。Dをさらに名曲となるようにリメイクしてください。命中スローはAでいいです。」＝ユーザーの決め U-M2（タイトルの曲は D）・U-S1（命中スローの音は案 A）→ IP2 で D を作り直した（D 短調・126 BPM の行進・温かい金管・弦・小太鼓・ティンパニ風の打ち・部屋の響きはそのまま。4 小節ずつの歌の形 a → a′ → b → a″・2 小節の動機の計画〔そのまま・上がる移し・断片・3 度上の戻り〕・山は 14 小節目の 1 回・句の終わりの形・種は 400 個の旋律の点で一番の種・対旋律の弦・動く低音・強弱の弧 mp → mf → だんだん強く → ff・13 小節目のシンバル。和音は IP1 の D の進行を残し、半小節の和音と E7 → A を足した。IP1 の D は試聴の場の「D（前）」だけに残し、A と E は消した）。実機 3 回目（2026-11-15・IP2 のビルド）で「OKです。進めてください」＝作り直した D を受け入れた → S4（2026-11-15）で仕上げ: 聞き比べの D（前）と、v0.7.1 の効果音の試聴の場の決まって使われなくなった案（魚雷の発射の A〜E・G〜I・弾倉の A・C・D）を片づけて JS の束を門（main 35e9e77 から ＋20 kB）の内へ戻した（＋21.30 → ＋17.85 kB。ゲームの効果音 26 本と曲の標本はビット同一。試聴の場はゲームの音・曲と命中スローの A・B・C だけ）。CLAUDE.md（§2「アート」・§4・§7）と docs/02（§4・§7.1 の「BGM」）に決めと置き場を書いた。設計の既定（ユーザー未確認）: 一時停止で曲も止まる／Result は鐘の後にタイトルの曲・警報以外の下げ（鐘・魚雷の命中・近い大きい爆発・探照灯）。門と数は CHANGELOG の v0.7.2 | S1 の後（3 項目）: ① `?sfxlab` でタイトルの曲 A・B・C を聞いて選ぶ（知っている曲に似ていたら一言） ② Title と一時停止の「曲: オン／オフ」が効き、次に開いても覚えている（「音: オフ」の間は曲も鳴らない） ③ 最初のタップが遅れない・任務に入ると曲が消え、Result の鐘の後に戻る・ホーム画面へ出て戻っても鳴る。S2 の後（3 項目）: ① us_02 か jp_06 で「静か → 発見で緊張 → 照らされて戦闘 → 逃げ切ると戻る」が場面に合うか・うるさくないか ② 警報（曲が下がるのが分かるか）・魚雷の発射・爆発が曲に埋もれないか ③ jp_03 の昼の空襲・us_02 の暴風・夜明けの空襲で気になる所。S3 の後（3 項目）: ① 魚雷の命中・撃沈の瞬間に周りの音が低く遅くなり 1 秒ほどで戻るか（`?sfxlab` で A〜C を比べて選ぶ） ② スローが操作の邪魔にならないか ③ 自艇が沈む時に不自然でないか。実機 2 回目（IP1 の後）: ① `?sfxlab` でタイトルの曲 A・D・E を聞き比べて選ぶ（知っている曲に似ていたら一言） ② 試聴の場の「任務の曲」で 静か・緊張・戦闘 がはっきり違って聞こえるか ③ 任務の中で、見つかった時と撃たれた時に曲が変わるのが分かるか・うるさくないか。実機 2 回目（2026-11-14）で D に決まり（U-M2）・命中スローは A（U-S1）→ IP2。実機 3 回目（IP2 の後）: ① `?sfxlab` で新しい D と D（前）を聞き比べ、新しい D が「名曲」に近づいたか（知っている曲に似ていたら一言） ② タイトル・Briefing・Result で新しい D が流れ、繰り返しても疲れないか ③ 命中スロー（A）・任務の曲を含めて、全体で気になる所があれば一言。実機 3 回目（2026-11-15）で作り直した D を受け入れた（「OKです。進めてください」）→ S4。S4 の後（最終の 3 項目）: ① タイトル・出撃準備・結果で新しい D が流れ、任務では見つかると緊張・撃たれると戦闘に変わり、警報で曲が下がるのが分かるか ② 魚雷の命中・撃沈の瞬間に周りの音がこもって 1 秒ほどで戻るか・一時停止と「曲: オン／オフ」が効くか ③ 全体の音のバランスと重さ（FPS・カクつき）で気になる所が無いか | 1〜2 |
+ | v0.8.0 | 米PT キャンペーン②a：ブラケット海峡の夜とレーダー（us_04） | ユーザーの要望（2026-11-15「us_04〜us_07 の 4 つも作ってくださいね」「あとレーダーも実装するっていってたよね。レーダーもストアで追加かな」。docs/02 §6.5「レーダー装備なら `radar_m` 以内の敵を円で表示」は書いたまま作っていなかった）。計画 spec-v0800（作る順は us_04 → us_06 → us_05 → us_07＝レーダーが史実で初めて効いた夜を最初に、あとは軽い順。1 任務 1 PATCH 以上）。us_04「ブラケット海峡の夜」（1943-08-01〜02・新月）を出撃可に: 分隊の先頭の艇の初期の SO レーダー（掃引ごとに射程の内の艦艇の位置だけを緑の輪で出す。種類・針路・速さは出さない・機は映さない・陸のそば 400 m は映らない・見越し点マーカーは目で見える艦だけ。敵はレーダーに気づかない）で、西から 30 kt で来る東京急行の駆逐艦 3 隻の列（ハード 4）と見回る護衛 1 隻を探し、目で見える 900 m まで寄って Mk 8（管から 4 本）を撃ち、ビラで揚陸して同じ海峡を全速で戻ってくる列をよけて、南西のファーガソン水道の輪へ帰る。1 隻撃沈で達成。夜明けの後は日本の水上機 4 機の空襲（ユーザーの決め U1、2026-11-15「Aのままでいいと思うよ」）。日本のタブの解放は今の米PT の 3 任務のまま（設計の既定 L2）。共通の仕組み（レーダー・列の通過・海峡の両岸・迎撃の模擬）はここで作り、v0.8.1〜v0.8.3 が使う。迎撃の模擬の帯（spec §4.11）を満たし、ほかの 9 任務とそのハードは 1 ビットも変えない（setup の snapshot・g2 OK 37・main 2afe092 との再生と HUD の A/B を音の 3 つの状態で・tex-ab・凍結 20 本）。実在の人物とその夜の有名な艇は出さない（§11。体当たりの危険は一般の形）。史実の直し（v0.8.0 の調べ。S0 で種を直した）: 魚雷は Mk 13 でなく **Mk 8（管から撃った。発射の火が閃光を出した）**。段 S0〜S5（S0 data と検査（遊べない）／S1 純粋な規則＝`core/radar`・`ship-transit`・`strait-geometry`／S2 世界の配線（`?debug&mission=us_04` で遊べる・Title に出ない）／S3 迎撃の模擬と最初の表／S4 HUD・Briefing・Result／S5 出撃可・docs）。段 S0〜S5 済み（2026-11-15。S5 で出撃可＝Title の米PT のタブが 2 × 2・格子の副題は「（」か「→」の前まで。docs。門と計測は CHANGELOG の v0.8.0） | （S5 の後の 3 項目）① Title の米PT のタブ（2 × 2）の右下「ブラケット海峡の夜」から出撃してすぐ、2 行目に「レーダー探知！ 北西 2300 m ・ 接触 1 ・ 目では見えない」と北西に緑の輪が 1 つ（見回る護衛）、20 秒ほどで「レーダー: 西に新しい接触 … ・ 接触 2」と西の縁に輪が並んで東へ進むか。輪と緑の端の印「レーダー N m」を頼りに列の前へ回り、目で見える 900 m まで寄って撃てるか（輪だけでは見越し点マーカーが出ないのが分かるか。護衛を沈めても 1 隻で達成） ② 「接触が東（ビラ）へ消えた ・ 揚陸を終えると同じ海峡を戻ってくる」の 40 秒ほど後に「レーダー: 東に新しい接触 … ・ 帰りの列か ・ 進路から離れよ」が出て、出発点の北 300 m を西へ戻る列をよけられるか。道の上で止まっていると照らされて撃たれるか体当たりで沈むのが「理不尽／ちょうど／まだ易しい」のどれか一言（目で見える艦が艦首をこちらへ向けて 500 m に入ると「衝突の危険！」） ③ レーダーが分かりやすく強すぎないか。輪の無い夜（`…/?debug&mission=us_04&noradar`）と比べて、レーダーの無い艇の目だけの夜の方がその夜らしいか（spec-v0800 §9 Q2）。復路の列が通る間（出撃から 140〜200 秒）の左上の FPS | 3〜4 |
+-| v0.8.1 | 米PT キャンペーン②b：オルモック湾の決着（us_06。パロンポン沖） | us_06（1944-12-11〜12・月没後）を出撃可に: jp_04 の地図を米の側から。1944 年の標準の SO（`so_late`・自艇）で、パロンポン沖に止まった卯月と揚陸中の空知丸へ暗い岸を背に忍び寄って撃ち、気づいた艦から逃げる（新しい物: 止まった艦が気づいて動き出す規則・岸を背にした艇は見つかりにくい規則・敵の色の睦月型の絵・止まった艦への 1 本を通算の命中率に数えない）。夜明けは日本機 4 機の空襲（空は争奪→ユーザーの規則）。史実の直し（v0.8.0 の調べ。種はこの版の S0 で直す）: 卯月が沈んだのは湾の中でなく**パロンポン沖（レイテ島西岸）**、月は半月でなく**沈んでいた（dark）**、目的の「特攻艇に注意」は外す（震洋がいた記録は見つからない。PT-323 が失われたのは 12-10 の特攻**機**＝別の夜・別の場所）。僚艇（史実の 2 隻目）を付けるかはこの版の計画でユーザーに聞く（spec の Q7） | （この版の計画で決める） | 1.5〜2 |
++| v0.8.1 | 米PT キャンペーン②b：オルモック湾の決着（us_06。パロンポン沖） | ユーザーの決め U1（2026-11-16。spec-v0800 §9 Q7。問い「次の任務 us_06「オルモック湾の決着」（1944年12月、パロンポン沖で止まっている駆逐艦 卯月と輸送船 空知丸を夜襲する）では、史実では PT が 2 隻で攻撃しました。プレイヤーの艇に、僚艇（2 隻目の味方の PT。プレイヤーの後ろについて来て一緒に撃つ・沈むこともある）を付けますか？」への答え「付けない（推奨）」）＝地図の上の味方は自艇 1 隻。計画 spec-v0810（新しい模擬は作らない＝削る案 ①。本物の世界をヘッドレスで台本で回す探りで帯を見る）。us_06（1944-12-11〜12・月没後）を出撃可に: jp_04 の地図（6,000 × 3,000・南の岸＝レイテ島）を米の側から。北東の海 (5000, 250) から出て、1944 年の標準の SO（`so_late`・自艇。陸のそば 300 m は映らない）で止まった卯月（岸から 620 m＝映る）を捉え、泊地の空知丸（岸から 240 m＝映らない）とともに、暗い岸を背に忍び寄って Mk 13 を撃ち、気づいて動き出した艦（us_02 の AI）から逃れて北東の輪へ帰る。卯月の撃沈で達成（空知丸は輸送船の加点）。新しい物: 止まった艦の規則（見張りは止まっていても今の規則のまま走り、自艇を見た・雷跡・被雷・隊の警報・夜明けで気づき、駆逐艦は 6 秒後に動き出す。空知丸は一晩じゅう動かない）・暗い岸を背に（艦から見て自艇の 2,000 m 後ろに陸の岸があれば見つかる距離 × 0.6。照らされている間は効かない）・敵の色の睦月型の絵（102.7 m）・止まった艦への 1 本（狙った艦が 5 kt 未満）を通算の命中率に数えない（今の任務の駆逐艦は最も遅くて 8 kt＝どの 1 本も変わらない）・ハードは駆潜艇 2 隻（第13号型・止まった哨戒。点なし）。夜明けは日本機 4 機の空襲（設計の既定 L1: 空は争奪→ユーザーの規則「制空権がない限り夜明けの後は空襲」と v0.8.0 の U1 の前例。浮いている艦は東へ退く）。史実の直し（v0.8.0 の調べ。S0 で種を直した）: 卯月が沈んだのは湾の中でなく**パロンポン沖（レイテ島西岸）**、月は半月でなく**沈んでいた（dark・月没後）**、目的の「特攻艇に注意」は外す（震洋がいた記録は見つからない。PT-323 が失われたのは 12-10 の特攻**機**＝別の夜・別の場所）。ほかの 10 任務とそのハードは 1 ビットも変えない（setup の snapshot・g2・main e9d80ea との再生と HUD の A/B を音の 3 つの状態で・tex-ab・凍結 20 本）。実在の人物と PT の番号は画面に出さない（§11）。段 S0〜S4（S0 data と検査（遊べない）／S1 純粋な規則＝`core/anchored-ship`・`strait-geometry` の背に岸・`hit-rate` の KPI の旗（誰も import しない）／S2 世界の配線（`?debug&mission=us_06` で遊べる・Title に出ない。S2b に駆潜艇＝見積もりを超えそうなら v0.8.1b へ）／S3 ヘッドレスの探りと帯・つまみ／S4 HUD・Briefing・Result・出撃可（Title の米PT のタブは 5 枚）・docs）。S0 済み（2026-11-16。版 0.8.1・us_06 の種の直しと `v0_1_prototype`（`playable_from` はまだ）・`enemies.json` の敵の卯月と駆潜艇・`kpi_measurement.min_target_speed_kt`・起動時の検査 V-A1〜V-A6・V-B1〜V-B3・V-K1・setup の鍵 3 つ。門と計測は CHANGELOG の v0.8.1） | （下書き。S4 の後の 3 項目）① us_06 を出撃してすぐ南西に緑の輪（卯月）が 1 つ出て、泊地の輸送船は輪に出ない（陸のそば）か。東から浜へ回って浜沿いに寄ると、2 行目に「暗い岸を背にした」が出て 3 行目の「見つかる距離」が小さくなるか ② 止まった卯月の真南から 4 本を撃って沈められるか（2 本で沈む）。外して動き出した卯月（照らして撃ってくる）から北東の輪へ逃げられるか。「易しすぎ／ちょうど／難しい」の一言 ③ 北から真っすぐ寄った夜（気づかれて動き出す）との違いが分かるか。ハードの駆潜艇 2 隻。卯月に照らされて逃げている間の左上の FPS | 1.5〜2（計画の見込み 約 1.9） |
+ | v0.8.2 | 米PT キャンペーン②c：スリガオ海峡・最初の接触（us_05） | us_05（1944-10-24）を出撃可に: 第 1 分隊の先頭として、ボホール沖でレーダーに西村部隊の列を捉え、接触を保って報告し、照らされ撃たれながら生きて帰る（新しい物: 隊の艦ごとに違う寸法と砲・戦艦と重巡の絵・「追尾して報告」の点 `recon_and_attack`・無線の故障と中継の輪。v0.8.0 の列の通過・レーダー・迎撃の模擬を使う）。史実の直し（v0.8.0 の調べ。種はこの版の S0 で直す）: 最初の接触の相手は軽巡 1・駆逐艦 2 でなく**戦艦 2・重巡 1・駆逐艦 4 の列**（22:36 にレーダーで接触。軽巡 阿武隈への 1 本は 03:25 ごろの別の志摩部隊＝最初の接触ではない）、月は新月でなく**半月（輝面 46.7%）で 23:07 ごろ沈む**。史実の戦艦の列にするかはこの版の計画でユーザーに聞く（spec の Q6） | （この版の計画で決める） | 2〜3 |
+ | v0.8.3 | 米PT キャンペーン②d：D-Day・生存者救助（us_07） | us_07（1944-06-06）を出撃可に: 初期の Higgins の PT で、触雷して沈む駆逐艦の周りの生存者を拾い、沖の駆逐艦へ渡す（新しい物: 生存者を拾う・乗せる・渡す、機雷原、Higgins の絵、`rescue` の点、米PT のタブの 7 任務の並べ方と `order` の年代順）。史実の直し（v0.8.0 の調べ。種はこの版の S0 で直す）: 触雷は**日の出（06:00）の後の 06:33**＝夜でなく**昼**（月 dark → day）、危険の主は S ボートでなく**沿岸砲と機雷**（S ボートはその朝は来なかった）、艇は Elco でなく**初期の Higgins**。S ボートを出すか（出すならハードだけ）はこの版の計画でユーザーに聞く（spec の Q5） | （この版の計画で決める） | 2.5〜3 |
+ | v0.9.x | ストア（全クリア後のお楽しみ） | ユーザーの要望（2026-11-14「スコアの累積得点で武装やエンジンなどと交換できるストア」、2026-11-15「ストアも殴り込みもシナリオ全クリア後のお楽しみで課金の仕組みもできれば入れたいです」）: 全部の任務を達成した後に開く。任務の得点を貯め（今は任務ごとに出すだけで貯めていない）、魚雷・砲（37mm・40mm）・エンジン・煙幕・燃料タンク・レーダーなどと交換する（v0.4.7 の候補「兵装カスタマイズ」）。史実の艇は初期装備として残し、キャンペーンの任務は初期装備で達成できるまま。殴り込みモードの味方（魚雷艇・駆逐艦など）もここで買う。課金の形（何を売るか・アプリ内課金か日本の代替決済か）はこの版の計画で決める（作るのは iOS ビルドの後＝v0.11.0）。命中率の確定の設計（正しく狙った 1 本が 35〜45%）は変えない形を推す | 選ぶ楽しさがあるか・貯まる速さ | 2〜3 |
+diff --git a/package-lock.json b/package-lock.json
+index 2fcf125..c5f40cb 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "ww2-torpedo-boat",
+-  "version": "0.8.0",
++  "version": "0.8.1",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "ww2-torpedo-boat",
+-      "version": "0.8.0",
++      "version": "0.8.1",
+       "dependencies": {
+         "phaser": "^3.90.0"
+       },
+diff --git a/package.json b/package.json
+index 21cb327..82221f7 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "ww2-torpedo-boat",
+-  "version": "0.8.0",
++  "version": "0.8.1",
+   "private": true,
+   "description": "WWII魚雷艇ゲーム（仮称: Night Hunters）— Phaser 3 + TypeScript + Vite",
+   "type": "module",
 diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
 index 1c8c70f..f4f1ce9 100644
 --- a/src/scenes/boot-scene.ts
@@ -509,6 +593,31 @@ index 3c321a6..38dc745 100644
    };
  }
  
+diff --git a/tests/art-inventory.test.ts b/tests/art-inventory.test.ts
+index 4e97bfe..addc0f4 100644
+--- a/tests/art-inventory.test.ts
++++ b/tests/art-inventory.test.ts
+@@ -255,7 +255,7 @@ describe('世界の絵の原点（setOrigin）は鍵ごとに今のまま', () =
+ });
+ 
+ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
+-  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い、表に無い id は v0.6.11 の 1 枚', () => {
++  it('駆逐艦の絵の鍵の表（D3）: 値は TEXTURE_KEYS か予定の鍵、遊べる任務の駆逐艦の id を覆い（v0.8.1 S0 の us_06 の卯月は S2 まで既定）、表に無い id は v0.6.11 の 1 枚', () => {
+     for (const v of [SHIP_ART_DEFAULT_KEY, ...Object.values(SHIP_ART_KEY_BY_ENEMY)]) expect(KEY_VALUES.includes(v) || PLANNED_NEW[v] === 'redraw-new', v).toBe(true);
+     expect(SHIP_ART_DEFAULT_KEY).toBe(TEXTURE_KEYS['destroyer']);
+     const destroyerIds = new Set<string>();
+@@ -266,8 +266,9 @@ describe('art config の表（v0.7.0 S0 の骨組み）', () => {
+         if (pm.enemyStart && !pm.barges && !pm.ptBoats) destroyerIds.add(pm.enemyId);
+       }
+     }
+-    expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'us_destroyer']);
+-    for (const id of destroyerIds) expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
++    expect([...destroyerIds].sort()).toEqual(['ijn_destroyer', 'ijn_destroyer_mutsuki_enemy', 'us_destroyer']); // v0.8.1 S0: us_06 の敵の卯月（v0_1_prototype は S0 から・遊べるのは S4 から）
++    for (const id of destroyerIds) if (id !== 'ijn_destroyer_mutsuki_enemy') expect(SHIP_ART_KEY_BY_ENEMY[id], id).toBeDefined();
++    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe(SHIP_ART_DEFAULT_KEY); // v0.8.1 S0 は表に無く既定の 1 枚（Boot は新しい絵を作らない）。S2 で敵の色の睦月型の鍵（spec-v0810 §3.6 D-A1）
+     expect(shipArtKey('ijn_light_cruiser')).toBe(SHIP_ART_DEFAULT_KEY);
+   });
+   it('機の種類の表（D4）: data の全部の機の id（空襲・水上機・哨戒機）を覆い、表に無い id と機の無い任務は既定の形', () => {
 diff --git a/tests/boot-loop.test.ts b/tests/boot-loop.test.ts
 index a3993fe..201b9a3 100644
 --- a/tests/boot-loop.test.ts
@@ -618,3 +727,51 @@ index 78e02a2..c8490af 100644
      const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
      expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
      const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);
+diff --git a/tests/patrol-air-data.test.ts b/tests/patrol-air-data.test.ts
+index dc3f935..ff84fef 100644
+--- a/tests/patrol-air-data.test.ts
++++ b/tests/patrol-air-data.test.ts
+@@ -108,10 +108,10 @@ describe('組み立て（config/patrol-air-mission-data。spec §C.1・§C.7）'
+     expect([s.planes, s.bombsPerPlane, s.spawnM, s.runRadiusM, s.firstRunS, s.runGapS, s.spawnOffsetsDeg, s.fromJa, s.nameJa]).toEqual([2, 3, 1500, 600, 5, 2.2, [-10, 10], '北東', '米飛行艇（PB2Y 相当）']);
+     expect(s.firstRunS + s.runS).toBeCloseTo(6.944, 3);
+   });
+-  it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa は jp_02 と（v0.6.9 S0 から）jp_04 と（v0.6.11 S0 から）jp_03 だけ', () => {
++  it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa は jp_02 と（v0.6.9 S0 から）jp_04 と（v0.6.11 S0 から）jp_03 と（v0.8.1 S0 から）us_06 だけ', () => {
+     for (const id of PROTO_IDS) {
+       for (const hard of [false, true]) expect(Object.keys(buildWorldSetup(gameData, id, { hard })).includes('patrolAir'), `${id} ${hard}`).toBe(id === 'jp_02');
+-      expect(Object.keys(getBriefingRecord(gameData, id)).includes('moonLabelJa'), id).toBe(id === 'jp_02' || id === 'jp_04' || id === 'jp_03');
++      expect(Object.keys(getBriefingRecord(gameData, id)).includes('moonLabelJa'), id).toBe(id === 'jp_02' || id === 'jp_04' || id === 'jp_03' || id === 'us_06');
+     }
+     const s = buildWorldSetup(gameData, 'jp_02');
+     expect(s.patrolAir).toEqual(getPatrolAirParams(gameData, 'jp_02'));
+@@ -122,6 +122,7 @@ describe('組み立て（config/patrol-air-mission-data。spec §C.1・§C.7）'
+     expect(getBriefingRecord(gameData, 'jp_02').moonLabelJa).toBe('月没後');
+     expect(getBriefingRecord(gameData, 'jp_04').moonLabelJa).toBe('月没後'); // v0.6.9 S0（12 日 02:45 に月が昇る前）
+     expect(getBriefingRecord(gameData, 'jp_03').moonLabelJa).toBe('昼（07:00 空襲警報）'); // v0.6.11 S0
++    expect(getBriefingRecord(gameData, 'us_06').moonLabelJa).toBe('月没後'); // v0.8.1 S0（jp_04 と同じ夜。画面に出るのは S4）
+     expect(() => getBriefingRecord(((d) => ((missionOf(d, 'jp_02')['moon_label_ja'] = ''), d))(clone()), 'jp_02')).toThrow(/jp_02\.moon_label_ja/);
+   });
+   it('今夜の乱数（spec §H の N5）: jp_02 の出撃は夜の揺らぎ（seed+16）を 1 回も引かない（night block が無い。ノーマル・ハード × seed 1・12345）', () => {
+diff --git a/tests/radar-data.test.ts b/tests/radar-data.test.ts
+index 27fe1a5..3ca6492 100644
+--- a/tests/radar-data.test.ts
++++ b/tests/radar-data.test.ts
+@@ -94,8 +94,8 @@ describe('任務の radar（config/radar-mission-data の V-R1〜V-R5）', () =>
+     expect(protoOf(gameData, 'us_04')['radar']).toEqual({ model: 'so_early', fit: 'leader', source: expect.stringContaining('分隊の先頭の艇だけ') as unknown as string });
+     expect(validateRadarMissions(gameData)?.model).toBe('so_early');
+   });
+-  it('ほかの 9 任務は null・radarSetupPart は {}（setup に radar の鍵が出ない）。radarOff なら us_04 も {}', () => {
+-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04')) {
++  it('ほかの 9 任務は null・radarSetupPart は {}（setup に radar の鍵が出ない）。radarOff なら us_04 も {}。v0.8.1 S0 から us_06 も so_late（自艇）', () => {
++    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_06')) {
+       for (const hard of [false, true]) {
+         expect(getRadarParams(gameData, getPrototypeMission(gameData, id, hard)), id).toBeNull();
+         const s = buildWorldSetup(gameData, id, { sortie: directSortie(id, 3, 'none', hard, false), hard });
+@@ -106,6 +106,7 @@ describe('任務の radar（config/radar-mission-data の V-R1〜V-R5）', () =>
+     expect(radarSetupPart(gameData, getPrototypeMission(gameData, 'us_04'), { radarOff: true })).toEqual({});
+     expect('radar' in buildWorldSetup(gameData, 'us_04', { radarOff: true })).toBe(false);
+     expect(buildWorldSetup(gameData, 'us_04').radar?.shipRangeM).toBe(4000);
++    expect([buildWorldSetup(gameData, 'us_06').radar?.model, buildWorldSetup(gameData, 'us_06').radar?.fit, buildWorldSetup(gameData, 'us_06').radar?.shipRangeM, buildWorldSetup(gameData, 'us_06').radar?.landClutterM]).toEqual(['so_late', 'own', 6000, 300]);
+   });
+   it('V-R1: model が hit_rate_model.json の radar.models に無い・fit が違う', () => {
+     expect(build((d) => ((protoOf(d, 'us_04')['radar'] as Rec)['model'] = 'so_mid'))).toThrow(/us_04\.v0_1_prototype\.radar: model（so_mid）が hit_rate_model\.json の radar\.models（so_early・so_late）に無い（V-R1/);
