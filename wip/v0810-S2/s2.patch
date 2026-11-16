@@ -1,0 +1,532 @@
+diff --git a/src/assets/destroyer-art.ts b/src/assets/destroyer-art.ts
+index 05fdc19..365b386 100644
+--- a/src/assets/destroyer-art.ts
++++ b/src/assets/destroyer-art.ts
+@@ -30,14 +30,17 @@ function paintDestroyerTexture(scene: Phaser.Scene, key: string, spec: BoatTextu
+   Object.assign(scene.textures.get(key).customData, { density: S }); // 道具（tex-ab）が論理の寸法＝画素 / S で比べる
+ }
+ 
+-/** 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級） */
++/**
++ * 敵の駆逐艦: 艦首を上にした絵。原点はテクスチャ中央。key の形は鍵 → 形の表をそのまま（tex-destroyer＝陽炎型・tex-destroyer-us＝フレッチャー級・v0.8.1 S2 の tex-destroyer-mutsuki＝睦月型。
++ * 駆逐艦の形でない鍵は陽炎型＝v0.8.0 までの選び方と同じ画素）
++ */
+ export function generateDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string = TEXTURE_KEYS.destroyer): void {
+   const kind = shipArtKind(key);
+-  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' ? 'fletcher' : 'kagero', PALETTE_ENEMY.deck);
++  paintDestroyerTexture(scene, key, spec, kind === 'fletcher' || kind === 'mutsuki' ? kind : 'kagero', PALETTE_ENEMY.deck);
+ }
+ 
+ /**
+- * 既定でない駆逐艦の鍵（今は us_destroyer → tex-destroyer-us。jp_06）を、遊べる任務（ハードも）の駆逐艦の id から 1 枚ずつ（寸法はその敵の記録 × sprite_scale）。
++ * 既定でない駆逐艦の鍵（us_destroyer → tex-destroyer-us。jp_06。v0.8.1 S2 から ijn_destroyer_mutsuki_enemy → tex-destroyer-mutsuki。us_06）を、遊べる任務（ハードも）の駆逐艦の id から 1 枚ずつ（寸法はその敵の記録 × sprite_scale）。
+  * 駆逐艦の任務＝enemy_start があり、大発の隊・米PT の隊でない任務（tests/art-inventory と同じ読み）。setup には何も足さない（R15）
+  */
+ export function generateExtraDestroyerTextures(scene: Phaser.Scene, data: GameData, spriteScale: number): void {
+diff --git a/src/config/debug-setup.ts b/src/config/debug-setup.ts
+index 59a7def..a866b70 100644
+--- a/src/config/debug-setup.ts
++++ b/src/config/debug-setup.ts
+@@ -2,6 +2,7 @@
+ // world-setup 自体は window を読まない（テストの tsconfig に DOM が無い）ので、URL を読む game-config の値はここで渡す。
+ import {
+   DEBUG_ALLY_OFF,
++  DEBUG_BACKDROP_OFF,
+   DEBUG_BARGES_NEAR,
+   DEBUG_BATTERY_OFF,
+   DEBUG_DAWN_S,
+@@ -48,5 +49,6 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
+     patrolOff: DEBUG_PATROL_OFF, // ?debug&nopatrol（v0.6.7）
+     allyOff: DEBUG_ALLY_OFF, // ?debug&noally（v0.6.10）
+     radarOff: DEBUG_RADAR_OFF, // ?debug&noradar（v0.8.0 S2。config/radar-mission-data の radarSetupPart）
++    backdropOff: DEBUG_BACKDROP_OFF, // ?debug&nobackdrop（v0.8.1 S2。config/backdrop-mission-data の backdropSetupPart）
+   };
+ }
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index 4fcf4fc..d6ff507 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -128,6 +128,8 @@ export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.loca
+ export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
+ /** ?debug&noradar: その任務のレーダーを切る（v0.8.0 S2。spec-v0800 D-R12。us_04 を「レーダーの無い艇の夜」で試す・比べる。レーダーの無い任務では何も変わらない） */
+ export const DEBUG_RADAR_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noradar');
++/** ?debug&nobackdrop: その任務の暗い岸を背にを切る（v0.8.1 S2。spec-v0810 D-B6・V-B3。us_06 を「背に岸の無い夜」で試す・比べる。背に岸の無い任務では何も変わらない） */
++export const DEBUG_BACKDROP_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobackdrop');
+ /** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
+ export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
+ /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
+diff --git a/src/config/ship-art-config.ts b/src/config/ship-art-config.ts
+index e76990c..9517707 100644
+--- a/src/config/ship-art-config.ts
++++ b/src/config/ship-art-config.ts
+@@ -9,6 +9,7 @@ export const SHIP_ART_DEFAULT_KEY = 'tex-destroyer';
+ export const SHIP_ART_KEY_BY_ENEMY: Readonly<Record<string, string>> = {
+   ijn_destroyer: 'tex-destroyer',
+   us_destroyer: 'tex-destroyer-us',
++  ijn_destroyer_mutsuki_enemy: 'tex-destroyer-mutsuki', // v0.8.1 S2（spec-v0810 §3.6 D-A1）: us_06 の敵の卯月＝睦月型の形を敵の色で（味方の卯月 tex-destroyer-friendly と同じ置き方）
+ };
+ export function shipArtKey(enemyId: string): string {
+   return SHIP_ART_KEY_BY_ENEMY[enemyId] ?? SHIP_ART_DEFAULT_KEY;
+@@ -20,6 +21,7 @@ export function shipArtKey(enemyId: string): string {
+  */
+ export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
+   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
++  'tex-destroyer-mutsuki': 2, // v0.8.1 S2（D-A1。敵の卯月）
+   // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
+   'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
+ };
+@@ -45,6 +47,7 @@ export const ART_SEED_SHIP = 7101;
+ export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport';
+ export const SHIP_ART_KIND_BY_KEY: Readonly<Record<string, ShipArtKind>> = {
+   'tex-destroyer': 'kagero', 'tex-destroyer-us': 'fletcher', 'tex-destroyer-friendly': 'mutsuki', 'tex-transport': 'transport', 'tex-transport-friendly': 'transport',
++  'tex-destroyer-mutsuki': 'mutsuki', // v0.8.1 S2（D-A1。敵の卯月）
+ };
+ export const SHIP_ART_DEFAULT_KIND: ShipArtKind = 'kagero';
+ export function shipArtKind(key: string): ShipArtKind {
+diff --git a/src/core/boat-telemetry.ts b/src/core/boat-telemetry.ts
+index 3aadf2c..091a974 100644
+--- a/src/core/boat-telemetry.ts
++++ b/src/core/boat-telemetry.ts
+@@ -1,4 +1,4 @@
+-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac、v0.8.0 S2 でレーダーの radar と列の通過の transit を足した）。
++// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac、v0.8.0 S2 でレーダーの radar と列の通過の transit、v0.8.1 S2 で止まった艦の anchor を足した）。
+ // Phaser 非依存。型だけ（実行時の値を持たない）。
+ import type { AllyTelemetry } from './ally-telemetry';
+ import type { ArmsTelemetry } from './arms-cue';
+@@ -155,6 +155,7 @@ export interface BoatTelemetry {
+   radar: RadarTelemetry; // 自艇のレーダー（v0.8.0 S2。core/radar の状態の写し。us_04）: 掃引・接触・最初の接触・増えた／減った（systems/radar-telemetry。無い任務・?debug&noradar は enabled false）。HUD の文・端の印・Result は S4
+   transit: TransitTelemetry; // 列の通過（v0.8.0 S2。core/ship-transit の段階の数。us_04）: 段階ごとの隻数・残りの戻り・通算（systems/transit-telemetry。無い任務は enabled false）。文は S4
+   strait: StraitTelemetry; // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04）: 視程の 2 乗・艦首がこちらへ向く目で見えている艦（systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
++  anchor?: AnchorTelemetry; // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 気づいた・動き出した・背に岸の秒・止まった艦への魚雷（systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
+ }
+ 
+ /** 輝点の位置（core/radar の RadarBlip の読むだけの形。S4 の緑の端の印が読む） */
+@@ -227,3 +228,18 @@ export interface StraitTelemetry {
+   bowOnMask: number;
+   bowOnM: number;
+ }
++
++/** 止まった艦と暗い岸を背にの HUD・Result の材料（v0.8.1 S2。setup.anchors の任務＝us_06 だけ鍵が出る。読み手は S4 の ui/anchor-lines・anchor-result） */
++export interface AnchorTelemetry {
++  /** 艦ごと（隊の先頭から。長さは止まった艦の数）の段（core/anchored-ship の ANCHOR_*）・気づいた理由（ANCHOR_REASON_*）・気づいた／動き出した世界の秒（NaN は未だ）＝世界の固定長の配列の参照（写さない） */
++  stage: ArrayLike<number>;
++  reason: ArrayLike<number>;
++  noticedAtS: ArrayLike<number>;
++  underwayAtS: ArrayLike<number>;
++  noticedCount: number; // 気づいた・動き出した艦の通算（増えた時が出来事）・最寄りの浮いている艦に対して背に岸が効いている・その世界の秒の和・止まった艦へ撃った魚雷とその命中（不発を除く）
++  underwayCount: number;
++  backdropOn: boolean;
++  backdropS: number;
++  heldShots: number;
++  heldHits: number;
++}
+diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
+index 68c51c6..25cb241 100644
+--- a/src/entities/destroyer.ts
++++ b/src/entities/destroyer.ts
+@@ -3,6 +3,7 @@
+ // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
+ // 列の通過（v0.8.0 S2。us_04。systems/destroyer-transit が段階を当てる）: offMap（まだ来ない・揚陸の地＝海域の外）も out に入れる（ほかの任務の艦はいつも false）。
+ // 列の艦（transitShip）は退く動きのまま縁の外へ出ても withdrawn を自分で立てない（縁の外 118 m で止まると段階の goneX 150 m に届かない）。去ったかは段階が決める（goAway）。
++// 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor が立てて下ろす）: anchored の間も見張り（updateShipAi＝発見・雷跡・seed+17 の引き方）は今のまま走り、舵・速さ・縁・当たりの円は作った時のまま。
+ import Phaser from 'phaser';
+ import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+@@ -35,6 +36,8 @@ export class Destroyer {
+   offMap = false;
+   /** 列の通過の艦（v0.8.0 S2。systems/destroyer-transit が立てる）: 縁の外の退き終わり（withdrawn）は段階が決める */
+   transitShip = false;
++  /** 止まっている（v0.8.1 S2。us_06 の卯月と空知丸＝systems/destroyer-anchor が作った後に立て、動き出したら下ろす。ほかの任務の艦はいつも false） */
++  anchored = false;
+   private sighted = true;
+ 
+   constructor(
+@@ -72,6 +75,7 @@ export class Destroyer {
+   step(dt: number, realDt: number, player: BoatState, playerDetectRangeM: number, detectHoldS: number, torpedoes: readonly TorpedoState[]): boolean {
+     if (this.out) return false;
+     updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
++    if (this.anchored) return false; // 止まっている間は AI の舵と速さを使わない（位置・針路・当たりの円は作った時のまま。v0.8.1 S2）
+     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
+     if (!this.ai.retiring) clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
+     else if (this.transitShip) clampYToBounds(this.state, this.bounds, this.spec.boundsMarginM); // 列の艦は南北の縁（陸）へ出さない（v0.8.0 実機 1 回目。東西は段階が決める）
+diff --git a/src/systems/destroyer-group.ts b/src/systems/destroyer-group.ts
+index bb1a531..41d759b 100644
+--- a/src/systems/destroyer-group.ts
++++ b/src/systems/destroyer-group.ts
+@@ -3,6 +3,8 @@
+ // 任務の達成は駆逐艦だけ（輸送船は撃破の加点）。砲撃の乱数は 1 つの系列（seed+1）を、見張り（雷跡に気づく。v0.5.0）の乱数は別の系列（seed+17）を、それぞれ艦の順に消費する（1 隻ならこれまでと同じ）。§7: 確保しない（最寄りは添字で返す）。
+ // 列の通過（v0.8.0 S2。us_04。setup.transit の任務だけ）: 列の艦は護衛（ds.starts）の後ろ・輸送船の前に作り、駆逐艦に数える（撃沈・達成・命中率の KPI）。段階は transit（systems/destroyer-transit）。
+ // 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
++// 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。setup.anchors・setup.backdrop の任務だけ world-enemies が作った後に 1 回付ける＝anchors・backdrop。無い任務は null で式は今のまま）。
++// 輸送船の添字は transportIndex（無ければ −1。今は destroyerCount と同じ）。S2b のハードの駆潜艇はこの後ろに並ぶ（S2 では作らない）。
+ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import type { BoatState, SeaBounds } from '../core/boat-motion';
+@@ -12,8 +14,12 @@ import type { SeededRng } from '../core/rng';
+ import { startRetire } from '../core/ship-ai';
+ import type { LandLine } from '../core/strait-geometry';
+ import { Destroyer } from '../entities/destroyer';
++import type { AnchorSetup } from '../config/anchor-mission-data';
++import type { BackdropSetup } from '../config/backdrop-mission-data';
+ import type { TransitSetup } from '../config/transit-mission-data';
++import { DestroyerAnchor } from './destroyer-anchor';
+ import { DestroyerTransit } from './destroyer-transit';
++import { ShoreBackdrop } from './shore-backdrop';
+ import { EnemyFire } from './enemy-fire';
+ import type { SplashPool } from './splash-pool';
+ import type { DestroyerSetup, TransportSetup } from './world-setup';
+@@ -29,6 +35,11 @@ export class DestroyerGroup {
+   readonly objectiveSinks: number;
+   /** 列の通過（v0.8.0 S2。us_04）の段階と列の艦。setup.transit の無い任務は null */
+   readonly transit: DestroyerTransit | null;
++  /** 輸送船の添字（v0.8.1 S2。無ければ −1）。hasTransport・transportSunk・transportWithdrawn はここを読む */
++  readonly transportIndex: number;
++  /** 止まった艦（v0.8.1 S2。setAnchors）と暗い岸を背に（setBackdrop）。付けるのは world-enemies の 1 回だけ。無い任務は null */
++  anchors: DestroyerAnchor | null = null;
++  backdrop: ShoreBackdrop | null = null;
+ 
+   constructor(
+     scene: Phaser.Scene, ds: DestroyerSetup, transport: TransportSetup | null,
+@@ -52,6 +63,7 @@ export class DestroyerGroup {
+     this.destroyerCount = this.ships.length;
+     this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
+     this.passRadius2 = ds.passRadius2;
++    this.transportIndex = transport ? this.ships.length : -1;
+     if (transport) {
+       this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, lookoutRng, TEXTURE_KEYS.transport));
+       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
+@@ -67,11 +79,11 @@ export class DestroyerGroup {
+ 
+   /** 輸送船がいる／沈み始めた（v0.4.7） */
+   get hasTransport(): boolean {
+-    return this.ships.length > this.destroyerCount;
++    return this.transportIndex >= 0;
+   }
+ 
+   get transportSunk(): boolean {
+-    return this.hasTransport && this.ships[this.destroyerCount]!.sinking;
++    return this.transportIndex >= 0 && this.ships[this.transportIndex]!.sinking;
+   }
+ 
+   /** 沈み始めた駆逐艦の隻数（撃沈の表示。輸送船と退いた艦は数えない） */
+@@ -112,7 +124,7 @@ export class DestroyerGroup {
+ 
+   /** 輸送船が夜明けに退いて海域を出た（v0.6.2） */
+   get transportWithdrawn(): boolean {
+-    return this.hasTransport && this.ships[this.destroyerCount]!.withdrawn;
++    return this.transportIndex >= 0 && this.ships[this.transportIndex]!.withdrawn;
+   }
+ 
+   /** 夜明けに退く（v0.6.2。夜明けのラッチで 1 回だけ）: 浮いている艦すべてが headingDeg へ全速（core/ship-ai の startRetire）。乱数は引かない */
+@@ -194,6 +206,16 @@ export class DestroyerGroup {
+     for (const f of this.fires) f.setBeamLand(lines);
+   }
+ 
++  /** 止まった艦を付ける（v0.8.1 S2。setup.anchors の任務だけ world-enemies が 1 回）。計画は隊の先頭の駆逐艦と輸送船の分だけ（S2b の駆潜艇はまだ並ばない＝L30） */
++  setAnchors(a: AnchorSetup): void {
++    this.anchors = new DestroyerAnchor(this.ships, a, this.transportIndex >= 0 ? this.transportIndex + 1 : this.destroyerCount);
++  }
++
++  /** 暗い岸を背にを付ける（v0.8.1 S2。setup.backdrop の任務だけ world-enemies が 1 回。岸の線は探照灯の切り取りと同じ線・照明弾の距離は今夜の水上機の値） */
++  setBackdrop(b: BackdropSetup, lines: readonly LandLine[], flareRevealM: number): void {
++    this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);
++  }
++
+   updateVisuals(realDt: number): void {
+     for (let i = 0; i < this.ships.length; i++) this.fires[i]!.updateVisuals(realDt, this.ships[i]!.state);
+   }
+diff --git a/src/systems/destroyer-step.ts b/src/systems/destroyer-step.ts
+index e9fee27..440be46 100644
+--- a/src/systems/destroyer-step.ts
++++ b/src/systems/destroyer-step.ts
+@@ -6,6 +6,8 @@
+ // core/torpedo-targets）が閉じたステップから。それまで沈む船体へ当たった魚雷は命中に数える（記録だけ）。沈んだ艦が無ければ退き終えたステップで（v0.6.2 と同じ）。
+ // 列の通過（v0.8.0 S2。us_04）: 艦を動かした直後に段階を進める（systems/destroyer-transit。現れる艦はこのステップの魚雷・体当たり・反撃から海域の中）。
+ // 走っている魚雷の外れの確定は戻りの残り（ビラの艦）が 0 の時だけ（R2）。列の無い任務は transit が null・戻りの残りは 0（v0.7.2 と同じ）。
++// 暗い岸を背にと止まった艦（v0.8.1 S2。us_06）: 艦ごとの見つける距離は隊の backdrop（systems/shore-backdrop）があればその艦の値、無ければ世界の 1 つの値そのもの（今のまま）。
++// 止まった艦の段（systems/destroyer-anchor）は艦を動かし列の段階を当てた直後（動き出した艦は次のステップから動く）。無い任務は anchors が null で何もしない。
+ import type { BoatState } from '../core/boat-motion';
+ import { losBlocked } from '../core/smoke';
+ import { remainingTorpedoesSettled } from '../core/torpedo-targets';
+@@ -15,8 +17,13 @@ import type { MissionWorld } from './mission-world';
+ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number, feelDt: number, boat: BoatState): void {
+   const c = w.setup;
+   let left = false;
+-  for (const d of g.ships) if (d.step(dt, feelDt, boat, w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
++  const bd = g.backdrop;
++  for (let i = 0; i < g.ships.length; i++) {
++    const d = g.ships[i]!;
++    if (d.step(dt, feelDt, boat, bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
++  }
+   if (g.transit?.step(w, feelDt)) left = true;
++  g.anchors?.step(w, feelDt);
+   if (left && g.allOut) w.launcher.clearQueue();
+   const settleS = w.returnPoint.torpedoEndSettleS;
+   if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();
+diff --git a/src/systems/mission-telemetry.ts b/src/systems/mission-telemetry.ts
+index c43663a..3273398 100644
+--- a/src/systems/mission-telemetry.ts
++++ b/src/systems/mission-telemetry.ts
+@@ -19,6 +19,7 @@ import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
+ import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
+ import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
+ import { refreshAllyTelemetry } from './ally-telemetry';
++import { refreshAnchorTelemetry } from './anchor-telemetry';
+ import { refreshEvacTelemetry } from './evac-telemetry';
+ import { landingResultPart, refreshLandingTelemetry } from './landing-telemetry';
+ import { detectionsOf, objectiveDoneOf } from './mission-objective';
+@@ -71,6 +72,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
+   t.playerDetected = w.pts?.targets ? w.pts.targets.playerSeen() : w.enemy.detected; // 輸送隊の任務（v0.6.4 レビュー ux-2）は大発だけが見つかっている間は偽
+   // 大発の任務（v0.4.2）は煙幕を大発ごとに掛けるので、全員から隠れているときだけ表示の距離に smoke_factor を掛ける（us_02 は世界の値に込み）
+   t.detectRangeM = w.hunt && w.hiddenBySmoke ? w.detectRangeM * w.vis.smokeFactor : w.detectRangeM;
++  if (g && g.backdrop) t.detectRangeM = g.backdrop.rangeAt(g.nearestAfloatIndex(s.x, s.y), w.detectRangeM); // 暗い岸を背に（v0.8.1 S2。us_06）: 最寄りの浮いている艦（enemy.focus）に対する艦ごとの値
+   t.illuminated = w.enemy.illuminated;
+   t.starLit = ((g ? g.anyStarLit : false) || w.flareLit) && !down; // 照明弾（艦の星弾か水上機の照明弾）
+   t.hp = w.damage.hp;
+@@ -132,6 +134,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
+   refreshRadarTelemetry(t.radar, w); // 自艇のレーダー（v0.8.0 S2。us_04）: 掃引・接触・出来事の数を写すだけ（無い任務は何もしない）
+   refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
+   refreshStraitTelemetry(t.strait, w); // 海峡の夜（v0.8.0 S4。us_04）: 視程の 2 乗と衝突の危険（上の setSighted と同じ規則。無い任務は何もしない）
++  refreshAnchorTelemetry(t.anchor, w); // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 数を写すだけ（鍵の無い任務は何もしない）
+   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
+   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
+   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
+diff --git a/src/systems/mission-world.ts b/src/systems/mission-world.ts
+index 83fd3c9..84e0ae0 100644
+--- a/src/systems/mission-world.ts
++++ b/src/systems/mission-world.ts
+@@ -6,6 +6,7 @@ import { missionAircraftId, paintMissionAircraft } from '../assets/aircraft-art'
+ import { FIXED_STEP_S, MAX_STEPS_PER_FRAME, boatTextureKey } from '../config/game-config';
+ import { debugSetupOptions } from '../config/debug-setup';
+ import { getBoatTorpedoCount, type GameData } from '../config/game-data';
++import { getKpiMinTargetSpeedMps } from '../config/kpi-data';
+ import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
+ import { nextSpeedBand, setPerformance, type BoatParams, type SpeedStep } from '../core/boat-motion';
+ import { FixedStepper } from '../core/fixed-stepper';
+@@ -98,6 +99,7 @@ export class MissionWorld {
+   readonly smokeParams: SmokeParams | null;
+   readonly shots: ShotRecord[] = [];
+   readonly seed: number;
++  readonly kpiMinTargetSpeedMps: number; // 命中率の KPI の的の目標の速さの下限 m/s（v0.8.1 S2。config/kpi-data を data から 1 回。setup には入れない＝systems/torpedo-free）
+   hits = 0;
+   band: SpeedStep = 'stop';
+   readonly detect = { count: 0, prev: false }; // 駆逐艦（v0.6.3 から米PT の隊も）に見つかった回数と前ステップの発見状態（destroyer-step・pt-squadron が数える。Result の「回避」。v0.4.4）
+@@ -168,6 +170,7 @@ export class MissionWorld {
+   ) {
+     this.events = events;
+     const seed = (this.seed = sortie.seed);
++    this.kpiMinTargetSpeedMps = getKpiMinTargetSpeedMps(data);
+     // data からの数値はすべて world-setup で組み立てる（?debug の上書き込み）。ここではそれを持ち、エンティティを作るだけ
+     const s = buildWorldSetup(data, sortie.missionId, debugSetupOptions(sortie, sortie.hard));
+     this.setup = s;
+diff --git a/src/systems/radar-view.ts b/src/systems/radar-view.ts
+index 5e6840e..b65d8c4 100644
+--- a/src/systems/radar-view.ts
++++ b/src/systems/radar-view.ts
+@@ -58,5 +58,5 @@ export function buildRadar(scene: Phaser.Scene, w: { readonly setup: WorldSetup;
+   const p = w.setup.radar;
+   const tr = w.setup.transit;
+   const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''; // 東の縁の向こうの揚陸の地（v0.8.0 S4。2 行目の「東（ビラ）へ消えた」。列の無い任務は ''）
+-  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa) : null;
++  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null; // 陸の反射に今の岸も（v0.8.1 S2。us_06）
+ }
+diff --git a/src/systems/strait-telemetry.ts b/src/systems/strait-telemetry.ts
+index 654cb2a..96336db 100644
+--- a/src/systems/strait-telemetry.ts
++++ b/src/systems/strait-telemetry.ts
+@@ -3,6 +3,7 @@
+ // - 衝突の危険: 目で見えている艦だけ（out でなく d² ≤ 視程²＝systems/mission-telemetry の setSighted と同じ規則）で、艦首が自艇へ半角の内・距離の内（core/strait-geometry の bowOnRisk。
+ //   2 乗の距離と内積だけ＝atan2 なし）。艦の添字のビットと一番近い艦までの m（平方根はビットがある時だけ 1 本）。1 回の接近で 1 回の文にするのは ui/strait-line-clock（ビットが立った時）。
+ // 列の通過もレーダーも無い任務は enabled false のまま何もしない（ほかの任務の毎フレームの仕事は増えない）。世界・艦・AI には何も書かない（読むだけ）。
++// v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。
+ import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_RANGE_M } from '../config/strait-hud-config';
+ import type { StraitTelemetry } from '../core/boat-telemetry';
+ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
+@@ -11,7 +12,7 @@ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
+ export interface StraitTelemetryWorld {
+   readonly visRange2: number;
+   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
+-  readonly destroyers: { readonly transit: object | null; readonly ships: readonly { readonly out: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
++  readonly destroyers: { readonly transit: object | null; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
+   readonly radar: object | null;
+ }
+ 
+@@ -42,6 +43,7 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
+     for (let i = 0; i < ships.length && i < BOW_MAX_SHIPS; i++) {
+       const d = ships[i]!;
+       if (d.out) continue;
++      if (d.anchored) continue; // 止まった艦（v0.8.1 S2。us_06）は艦首が向いていても衝突の危険と言わない（D-R4）
+       const s = d.state;
+       const dx = s.x - b.x;
+       const dy = s.y - b.y;
+diff --git a/src/systems/telemetry-create.ts b/src/systems/telemetry-create.ts
+index fee8b09..9c0bb76 100644
+--- a/src/systems/telemetry-create.ts
++++ b/src/systems/telemetry-create.ts
+@@ -11,6 +11,7 @@ import { SP_IDLE, SP_OUT_NONE } from '../core/seaplane';
+ import { STORM_NONE } from '../core/storm';
+ import { mpsToKt } from '../core/units';
+ import { initAllyTelemetry } from './ally-telemetry';
++import { anchorTelemetryPart } from './anchor-telemetry';
+ import { initConvoyTelemetry } from './convoy-telemetry';
+ import { initDawnTelemetry } from './dawn-telemetry';
+ import { initEvacTelemetry } from './evac-telemetry';
+@@ -134,5 +135,6 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
+     radar: initRadarTelemetry(w), // 自艇のレーダー（v0.8.0 S2。us_04。systems/radar-telemetry。無い任務・?debug&noradar は enabled false）
+     transit: initTransitTelemetry(w), // 列の通過（v0.8.0 S2。us_04。systems/transit-telemetry。無い任務は enabled false）
+     strait: initStraitTelemetry(w), // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04。systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
++    ...anchorTelemetryPart(w), // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
+   };
+ }
+diff --git a/src/systems/torpedo-free.ts b/src/systems/torpedo-free.ts
+index a53a1e3..898abbe 100644
+--- a/src/systems/torpedo-free.ts
++++ b/src/systems/torpedo-free.ts
+@@ -6,7 +6,10 @@
+ // v0.8.0 S4（brief L31）: レーダーのある任務（us_04）だけ、狙える艦がある間に撃った 1 本ごとに「3 行目が敵影ありだったか」をレーダーの数えに渡す（Result の「目で見えない間に撃った魚雷」）。
+ // 規則は systems/mission-telemetry の t.enemySighted と同じ（最寄りの浮いている艦＝enemy.focus が視程の 2 乗の内）。発射は固定ステップの前＝前のフレームの 3 行目と同じ位置で決まる。
+ // 凍結の魚雷のファイル（core/torpedo・torpedo-targets・systems/torpedo-pool）は触らない。レーダーの無い任務は何もしない（発射・乱数・記録は同じ）。
++// v0.8.1 S2（spec-v0810 §3.5 D-K1）: KPI の的は core/hit-rate の kpiTargetAtLaunch（今の条件かつ狙った艦の速さ ≥ 下限 5 kt。今のどの任務の駆逐艦も 8 kt 以上＝旗は変わらない）。
++// 止まった艦の任務（us_06）だけ、狙った艦が止まっていた 1 本を隊の anchors（systems/destroyer-anchor）に渡す（Result の「止まった艦への魚雷」。無い任務は何もしない）。
+ import type { BoatState } from '../core/boat-motion';
++import { kpiTargetAtLaunch } from '../core/hit-rate';
+ import { discardFireInput, type InputState } from '../core/input-state';
+ import type { TorpedoEvents, TorpedoTarget } from '../core/torpedo-targets';
+ import type { TorpedoLauncher } from './torpedo-launcher';
+@@ -20,6 +23,8 @@ export interface TorpedoAimGroup {
+   readonly destroyerCount: number;
+   readonly ships: readonly { readonly state: BoatState }[];
+   nearestAfloatIndex(x: number, y: number): number;
++  /** 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor）: 撃った 1 本と狙った艦の添字を渡す。無い任務は null・無い */
++  readonly anchors?: { noteLaunch(torpedo: object, targetIndex: number): void } | null;
+ }
+ 
+ /** 魚雷のプールの部分（systems/torpedo-pool の TorpedoPool がそのまま満たす。構造の型＝DOM を読む config を引かない） */
+@@ -37,6 +42,8 @@ export interface FreeTorpedoWorld {
+   readonly destroyers: TorpedoAimGroup | null;
+   readonly atHome: boolean;
+   readonly dawn: { readonly reached: boolean };
++  /** KPI の的の目標の速さの下限 m/s（v0.8.1 S2。config/kpi-data。MissionWorld が data から 1 回読む） */
++  readonly kpiMinTargetSpeedMps: number;
+   /** 狙う艦の無い魚雷を数える（systems/arms-step。無い世界は数えない） */
+   readonly arms: { noteBlindTorpedo(): void } | null;
+   /** 目で見えない間に撃った魚雷を数える（v0.8.0 S4。systems/world-radar。レーダーの無い世界は null・無い） と、3 行目の敵影の規則（最寄りの浮いている艦と視程の 2 乗） */
+@@ -96,8 +103,10 @@ export function stepLauncher(w: FreeTorpedoWorld, realDt: number): void {
+   const boat = w.boat.state;
+   if (g !== null && !g.allOut) {
+     const ti = g.nearestAfloatIndex(boat.x, boat.y);
+-    const s = w.launcher.update(realDt, boat, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount && !w.dawn.reached);
++    const target = g.ships[ti < 0 ? 0 : ti]!.state;
++    const s = w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(ti >= 0 && ti < g.destroyerCount, w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));
+     if (s && w.radar) w.radar.noteLaunch(s, enemyInSight(w, boat)); // 目で見えない間に撃った魚雷（v0.8.0 S4。レーダーのある任務だけ）
++    if (s && g.anchors) g.anchors.noteLaunch(s, ti); // 止まった艦への魚雷（v0.8.1 S2。止まった艦の任務だけ）
+     return;
+   }
+   const s = w.launcher.update(realDt, boat, null, false);
+diff --git a/src/systems/torpedo-hits.ts b/src/systems/torpedo-hits.ts
+index 00ab052..2b7a154 100644
+--- a/src/systems/torpedo-hits.ts
++++ b/src/systems/torpedo-hits.ts
+@@ -15,6 +15,8 @@ export interface TorpedoHitGroup {
+   readonly ships: readonly { takeHit(): boolean; playSinking(nowS: number, onDone: () => void): void }[];
+   readonly allOut: boolean;
+   readonly allSettled: boolean;
++  /** 止まった艦への魚雷の命中を数える（v0.8.1 S2。us_06。systems/destroyer-anchor。無い任務は null・無い） */
++  readonly anchors?: { noteHit(torpedo: object): void } | null;
+ }
+ 
+ /** 記録と命中スローの書き先（MissionWorld がそのまま満たす） */
+@@ -46,6 +48,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
+       const g = w.destroyers;
+       const d = g ? g.ships[target] : undefined;
+       if (!dud) w.radar?.noteHit(s); // 目で見えない間に撃った魚雷の命中（v0.8.0 S4。レーダーのある任務だけ。記録と同じ当たり＝不発を除く）
++      if (!dud) g?.anchors?.noteHit(s); // 止まった艦への魚雷の命中（v0.8.1 S2。止まった艦の任務だけ。同じ当たり）
+       if (!dud && g && d) {
+         w.hits++;
+         w.slowMoLeftS = w.setup.slowMoSeconds;
+@@ -64,6 +67,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
+     onLateHit: (_target, x, y, s) => {
+       w.shots.push(shotOf(w, s, true));
+       if (!s.dud) w.radar?.noteHit(s);
++      if (!s.dud) w.destroyers?.anchors?.noteHit(s);
+       if (!s.dud) w.hits++;
+       events.onTorpedoHit(x, y, s.dud);
+     },
+diff --git a/src/systems/world-enemies.ts b/src/systems/world-enemies.ts
+index 7a61815..94f66a5 100644
+--- a/src/systems/world-enemies.ts
++++ b/src/systems/world-enemies.ts
+@@ -10,7 +10,7 @@ import type { HitSpec } from '../core/gunnery';
+ import type { MissionEndReason } from '../core/mission-flow';
+ import { SeededRng } from '../core/rng';
+ import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
+-import { landLinesFromShores } from '../core/strait-geometry';
++import { landLinesOf } from '../core/strait-geometry';
+ import { BargeHunt } from './barge-hunt';
+ import { shipArtKey } from '../config/ship-art-config';
+ import { DestroyerGroup } from './destroyer-group';
+@@ -59,8 +59,12 @@ export function buildEnemies(
+   // 駆逐艦の絵の鍵は敵の id から（v0.7.0 S2a。jp_06 の us_destroyer はフレッチャー級の tex-destroyer-us。絵だけ＝setup・当たり・乱数は変えない）。
+   // 列の通過（v0.8.0 S2。us_04 の setup.transit だけ）の艦は隊が護衛の後ろに作る（同じ id・砲。無い任務は null＝隊は v0.7.2 のまま）
+   const destroyers = ds ? new DestroyerGroup(scene, ds, s.transport, s.transit ?? null, mission.bounds, gunRng, new SeededRng((seed + LOOKOUT_SEED_OFFSET) >>> 0), splashes, shipArtKey(mission.enemyId)) : null;
+-  // 海峡の両岸（v0.8.0 実機 1 回目。us_04 の setup.shores だけ）: 探照灯の絵を岸の線で切る（陸の上に光を描かない。照らす判定は変えない）
+-  if (destroyers && s.shores) destroyers.setBeamLand(landLinesFromShores(s.shores, mission.bounds.width, mission.bounds.height));
++  // 海峡の両岸（v0.8.0 実機 1 回目。us_04 の setup.shores）と今の岸（coast の南。v0.8.1 S2。駆逐艦の隊と岸を両方持つのは us_06 だけ＝tests/anchor-world）: 探照灯の絵を岸の線で切る
++  // （陸の上に光を描かない。照らす判定は変えない）。同じ線で暗い岸を背に（setup.backdrop）、止まった艦（setup.anchors）も隊に付ける（無い任務は何もしない。S2b の駆潜艇はまだ作らない）
++  const land = destroyers && (s.shores || mission.coast) ? landLinesOf(s.shores ?? null, mission.coast !== null, mission.bounds.width, mission.bounds.height) : null;
++  if (destroyers && land) destroyers.setBeamLand(land);
++  if (destroyers && land && s.backdrop) destroyers.setBackdrop(s.backdrop, land, s.seaplane ? s.seaplane.flareRevealM : 0);
++  if (destroyers && s.anchors) destroyers.setAnchors(s.anchors);
+   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7）。駆逐艦は隊の先頭 destroyerCount 隻（列の通過の艦も込み。無い任務は ds.starts の隻数と同じ）
+   destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat((i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
+diff --git a/src/systems/world-radar.ts b/src/systems/world-radar.ts
+index 0346e07..c208122 100644
+--- a/src/systems/world-radar.ts
++++ b/src/systems/world-radar.ts
+@@ -2,7 +2,8 @@
+ // （systems/world-enemy-step。艦を動かし、列の通過の段階を当てた後）に進める。掃引の時（radarSweepDue）だけ、隊の艦（護衛・列・輸送船＝どれも艦）の位置と
+ // 「浮いて海域の中か」（Destroyer.out の逆＝沈み始めた・退いた・海域の外の列の艦は映らない）を渡す（掃引の間は何もしない＝§5.2）。
+ // 目とは別の感覚（D-R1・brief L9）: 世界・自艇・艦・AI・視程・発見・テレメトリには何も書かない（読むだけ。書くのは自分の state と渡す枠 targets だけ＝tests/radar-neutral が走査）。
+-// 陸の反射の岸の線は海峡の両岸（setup.shores）から起動時に 1 回（両岸の無い任務は空）。機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
++// 陸の反射の岸の線は海峡の両岸（setup.shores）か今の岸（coast の南。v0.8.1 S2 の us_06＝泊地の空知丸は反射に紛れる）から起動時に 1 回（core/strait-geometry の landLinesOf。どちらも無い任務は空）。
++// 機・大発・PT は渡さない（v0.8.0 のレーダーの任務は駆逐艦の隊だけ。足すのは後の版）。
+ // 絵（輝点 16 の Image）は systems/radar-view が持ち、毎フレーム updateVisuals が渡す（置き直すのは掃引の回数が変わった時だけ）。
+ // Phaser 非依存（絵は構造の型 RadarBlipView。tests/radar-world・radar-neutral が絵なしで回す）・乱数なし。確保は constructor だけ。
+ // v0.8.0 S4（brief L26・L31）: 東の縁の向こうの揚陸の地の名（作る時に 1 回。2 行目の「東（ビラ）へ消えた」）と、Result の「目で見えない間に撃った魚雷」の数え
+@@ -10,7 +11,7 @@
+ import type { ShoresSetup } from '../config/shores-mission-data';
+ import { RADAR_KIND_SHIP, createRadarState, createRadarTargets, radarSweepDue, stepRadar, type RadarGeometry, type RadarState, type RadarTargets } from '../core/radar';
+ import type { RadarParams } from '../core/radar-data';
+-import { landLinesFromShores } from '../core/strait-geometry';
++import { landLinesOf } from '../core/strait-geometry';
+ 
+ /** 掃引で読む艦（entities/destroyer の Destroyer が満たす） */
+ export interface RadarShip {
+@@ -50,9 +51,11 @@ export class WorldRadar {
+     private readonly view: RadarBlipView | null,
+     /** 東の縁の向こうの揚陸の地の名（列が東へ抜けて戻る任務だけ。無ければ ''） */
+     readonly eastJa = '',
++    /** 今の岸（coast の南）がある（v0.8.1 S2。us_06。両岸の任務は両岸が先＝us_04 は今の線のまま） */
++    coastSouth = false,
+   ) {
+     const { width, height } = bounds;
+-    this.geo = { width, height, land: shores ? landLinesFromShores(shores, width, height) : [] };
++    this.geo = { width, height, land: landLinesOf(shores ?? null, coastSouth, width, height) };
+     this.targets = createRadarTargets(shipCapacity);
+   }
+ 
+diff --git a/tests/torpedo-free-kit.ts b/tests/torpedo-free-kit.ts
+index e230c40..bec9e0c 100644
+--- a/tests/torpedo-free-kit.ts
++++ b/tests/torpedo-free-kit.ts
+@@ -93,7 +93,8 @@ export function kit(id: string, g: TorpedoAimGroup | null = null, seed = 11): Ki
+   const arms = new ArmsStep(id === 'us_03' ? 'barge' : id === 'jp_01' || id === 'jp_05' ? 'pt' : 'noship');
+   const ev = spies();
+   const boat: BoatState = { x: s.mission.bounds.width / 2, y: s.mission.bounds.height * 0.75, headingDeg: 0, speedMps: 0 };
+-  const w = { input: createInputState(), launcher, torpedoes: pool, boat: { state: boat }, destroyers: g, atHome: false, dawn: { reached: false }, arms, torpedoEvents: ev as TorpedoEvents };
++  // kpiMinTargetSpeedMps 0（v0.8.1 S2）: 偽の艦は止まっている（速さ 0）ので、KPI の旗は今の規則のまま見る（下限 5 kt の規則は tests/kpi-world）
++  const w = { input: createInputState(), launcher, torpedoes: pool, boat: { state: boat }, destroyers: g, atHome: false, dawn: { reached: false }, kpiMinTargetSpeedMps: 0, arms, torpedoEvents: ev as TorpedoEvents };
+   return { s, w, rng, arms, ev };
+ }
+ /** 1 フレーム（入力 → 発射管制）と、駆逐艦のいない任務の固定ステップ 1 回（world-enemy-step の stepFreeTorpedoes） */
