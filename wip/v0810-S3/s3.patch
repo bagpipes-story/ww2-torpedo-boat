@@ -1,16 +1,18 @@
 diff --git a/data/missions_seed.json b/data/missions_seed.json
-index e9db7f1..c0792c2 100644
+index e9db7f1..21bdb9a 100644
 --- a/data/missions_seed.json
 +++ b/data/missions_seed.json
-@@ -905,9 +905,9 @@
-           "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 6 秒（体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は S2)"
+@@ -898,11 +898,11 @@
+           "source": "historical (1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じ、卯月はレーダーで捉えられた（docs/01 §8・spec-v0800 §3.1。medium）) / design (v0.8.1 S0・spec-v0810 §3.4 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ＝ユーザーの決め U1）。陸の反射 300 m に対し空知丸は岸の線から 240 m（映らない）・卯月は 620 m（映る）。世界の配線は S2)"
+         },
+         "anchored": {
+-          "destroyer_underway_s": 6,
++          "destroyer_underway_s": 3,
+           "transport_underway": false,
+           "picket_underway_s": 4,
+           "alarm_s": 4,
+-          "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 6 秒（体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は S2)"
++          "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 6 秒（体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は S2) / design (v0.8.1 S3: destroyer_underway_s 6 → 3＝探りの帯 A1（shore_east の達成 100% ＞ 80%）・A2（open_north の達成 100% ＞ A1 − 15）。spec-v0810 §3.9 のつまみ ③ の下の端。気づいて 3 秒で動き出す＝北の 900 m からの扇（走る 10.5 秒）は動き出した艦を外しうる)"
          },
          "shore_backdrop": {
--          "detect_factor": 0.6,
-+          "detect_factor": 0.7,
-           "behind_m": 2000,
--          "source": "historical (PT はレーダーで捉え、消音して暗い岸を背に低速で忍び寄った（卯月の夜と PT の寄り方の教え。medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.3 D-B1〜D-B3。艦から自艇への線を自艇の向こうへ伸ばし、behind_m 2,000 m の内で陸の岸の線に当たれば、その艦の見つける距離 × detect_factor 0.6（月の段 1 つ分＝dark 0.6 と half 1.0 の比と同じ大きさ）。照らされている間は効かず、機銃の閃光の 1,200 m はそのまま。卯月の見つける距離（月没後）は 停止 480 → 288・静音 600 → 360・巡航 1,200 → 720・全速 1,920 → 1,152 m。S3 の探りの帯（A1〜A3）で detect_factor 0.5〜0.7・behind_m 1,000〜3,000 の内で直す。世界の配線は S2)"
-+          "source": "historical (PT はレーダーで捉え、消音して暗い岸を背に低速で忍び寄った（卯月の夜と PT の寄り方の教え。medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.3 D-B1〜D-B3。艦から自艇への線を自艇の向こうへ伸ばし、behind_m 2,000 m の内で陸の岸の線に当たれば、その艦の見つける距離 × detect_factor 0.6（月の段 1 つ分＝dark 0.6 と half 1.0 の比と同じ大きさ）。照らされている間は効かず、機銃の閃光の 1,200 m はそのまま。卯月の見つける距離（月没後）は 停止 480 → 288・静音 600 → 360・巡航 1,200 → 720・全速 1,920 → 1,152 m。S3 の探りの帯（A1〜A3）で detect_factor 0.5〜0.7・behind_m 1,000〜3,000 の内で直す。世界の配線は S2) / design (v0.8.1 S3: detect_factor 0.6 → 0.7＝探りの帯 A1（shore_east の達成 100% ＞ 80%）。spec-v0810 §3.9 のつまみ ②。背に岸の艦の見つける距離 停止 336・静音 420・巡航 840・全速 1,344 m)"
-         },
-         "hard": {
-           "extra_pickets": [
+           "detect_factor": 0.6,
