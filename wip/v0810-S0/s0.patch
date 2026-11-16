@@ -1,0 +1,620 @@
+diff --git a/data/enemies.json b/data/enemies.json
+index 75a4906..165802b 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -363,6 +363,170 @@
+       },
+       "notes": "jp_04（v0.6.10）の味方の駆逐艦。泊地の北東に止まり、海の上の扇の内で走る米PT を目で見つけて 1 隻ずつ照らし、12 cm と 25 mm で撃つ。13号電探は対空の見張り（medium）なので見張りは目。卯月が撃ち返した記録は見つからない（ゲーム上の想定）。米PT の魚雷・砲弾と夜明けの空襲の的にならず、沈まない（v0.6.10）。止まった艦なので AI・回避・体当たりの値を持たず、config/game-data の getEnemyRecord では読めない（core/ally-destroyer-data が読む）"
+     },
++    {
++      "id": "ijn_destroyer_mutsuki_enemy",
++      "faction": "IJN",
++      "name_ja": "駆逐艦（睦月型・卯月）",
++      "length_m": 102.7,
++      "beam_m": 9.16,
++      "speed_max_kt": 34,
++      "speed_typical_kt": 25,
++      "turn_rate_deg_s": 1.5,
++      "accel_mps2": 0.3,
++      "hull_hp": 300,
++      "hull_circles": 5,
++      "torpedo_hits_to_sink": 2,
++      "guns": [
++        {
++          "id": "main_120mm",
++          "count": 2,
++          "range_m": 10000,
++          "effective_night_m": 4000,
++          "rof_per_min": 10,
++          "damage": 40,
++          "shell_speed_mps": 400,
++          "dispersion_m": 160,
++          "splash_radius_m": 8,
++          "fire_chance": 0.35,
++          "engine_damage_chance": 0.3
++        },
++        {
++          "id": "aa_25mm",
++          "count": 4,
++          "range_m": 2000,
++          "effective_night_m": 1200,
++          "rof_per_min": 120,
++          "damage": 4,
++          "shell_speed_mps": 500,
++          "dispersion_m": 70,
++          "splash_radius_m": 3,
++          "fire_chance": 0.05,
++          "engine_damage_chance": 0.05
++        }
++      ],
++      "searchlight": {
++        "range_m": 3000,
++        "cone_deg": 12,
++        "sweep_deg_s": 20,
++        "on_delay_s": 2.5
++      },
++      "starshell": {
++        "range_m": 6000,
++        "illum_radius_m": 1500,
++        "duration_s": 25,
++        "cooldown_s": 60
++      },
++      "detection": {
++        "base_detect_m": 2000,
++        "wake_detect_m": 800,
++        "reaction_delay_s": 0.5,
++        "torpedo_wake_detect_m": 2000,
++        "wake_spot_rate_per_s": 0.2
++      },
++      "evasion": {
++        "mode": "comb_tracks",
++        "turn_toward_wakes": true,
++        "evade_turn_rate_deg_s": 2.0,
++        "speed_boost_kt": -10
++      },
++      "ram": {
++        "enabled": true,
++        "trigger_m": 400,
++        "give_up_m": 800,
++        "stall_s": 6,
++        "cooldown_s": 12,
++        "turn_rate_bonus_deg_s": 0.5
++      },
++      "patrol": {
++        "edge_turn_margin_m": 700
++      },
++      "source": {
++        "length_m・beam_m": "historical (睦月型の全長 102.72 m・幅 9.16 m。ijn_destroyer_mutsuki（jp_04 の味方の卯月）の source と同じ出典＝docs/01 §8 の「卯月の撃ち返し」の表。medium〜high) / design (v0.8.1 S0・spec-v0810 §3.2 D-S1。us_06 の敵としての卯月。102.7 m で当たりの船体（world.ship_hit_scale 倍）と絵（S2 から敵の色の睦月型）に使う。ijn_destroyer（陽炎型 118 m）のままでは同じ夜の卯月の大きさが両側で食い違う)",
++        "speed_max_kt": "historical (1941〜42 の高速輸送艦への改装の後 34 kt（ijn_destroyer_mutsuki と同じ。32.5 kt とする資料もある: low〜medium）)",
++        "guns": "historical (卯月 1944-08-31 の兵装: 12 cm 単装 2（medium〜high。ijn_destroyer_mutsuki と同じ）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S1。main_120mm は count 2 のほか（射程・夜の有効射程・発射の速さ・威力・弾の速さ・散り・当たりの半径・火災・機関）を ijn_destroyer の main_127mm の 1 門の値の写しに、aa_25mm は ijn_destroyer のまま（命中率の KPI と砲の模擬を合わせた値。tests/enemy-mutsuki が同じことを固定）)",
++        "speed_typical_kt・turn_rate_deg_s・accel_mps2・hull_hp・hull_circles・torpedo_hits_to_sink・searchlight・starshell・detection・evasion・ram・patrol": "design (v0.8.1 S0・spec-v0810 §3.2 D-S1。ijn_destroyer の値をそのまま（命中率の KPI＝hit_rate_model.json の kpi_by_range を合わせた値なので触らない。detection の note は ijn_destroyer にある。tests/enemy-mutsuki が同じことを固定）。torpedo_hits_to_sink 2 は史実の「2 本以上が命中して沈んだ」（medium）とも合う。jp_04 の味方の記録 ijn_destroyer_mutsuki は AI の鍵が無い（止まって沈まない艦）ので使わず、jp_04 は変えない)"
++      },
++      "notes": "us_06（v0.8.1）の敵の卯月。パロンポン沖に止まっていて、気づくと動き出して ijn_destroyer と同じ AI・砲・探照灯・星弾で戦う（止まった艦の規則は missions_seed の v0_1_prototype.anchored）。jp_04 の味方の卯月は ijn_destroyer_mutsuki（別の記録）。"
++    },
++    {
++      "id": "ijn_subchaser",
++      "faction": "IJN",
++      "name_ja": "駆潜艇（第13号型）",
++      "length_m": 51,
++      "beam_m": 6.7,
++      "speed_max_kt": 16,
++      "speed_typical_kt": 12,
++      "turn_rate_deg_s": 3.0,
++      "accel_mps2": 0.4,
++      "hull_hp": 100,
++      "hull_circles": 3,
++      "torpedo_hits_to_sink": 1,
++      "guns": [
++        {
++          "id": "aa_76mm",
++          "count": 1,
++          "range_m": 6000,
++          "effective_night_m": 2500,
++          "rof_per_min": 8,
++          "damage": 25,
++          "shell_speed_mps": 400,
++          "dispersion_m": 200,
++          "splash_radius_m": 8,
++          "fire_chance": 0.3,
++          "engine_damage_chance": 0.2
++        },
++        {
++          "id": "aa_13mm",
++          "count": 2,
++          "range_m": 2000,
++          "effective_night_m": 1200,
++          "rof_per_min": 120,
++          "damage": 4,
++          "shell_speed_mps": 500,
++          "dispersion_m": 70,
++          "splash_radius_m": 3,
++          "fire_chance": 0.05,
++          "engine_damage_chance": 0.05
++        }
++      ],
++      "searchlight": {
++        "range_m": 1500,
++        "cone_deg": 12,
++        "sweep_deg_s": 20,
++        "on_delay_s": 2.5
++      },
++      "starshell": null,
++      "detection": {
++        "base_detect_m": 1500,
++        "reaction_delay_s": 1.0,
++        "torpedo_wake_detect_m": 800,
++        "wake_spot_rate_per_s": 0.2
++      },
++      "evasion": {
++        "mode": "turn_away",
++        "turn_toward_wakes": false,
++        "evade_turn_rate_deg_s": 3.0,
++        "speed_boost_kt": 4
++      },
++      "ram": {
++        "enabled": false,
++        "trigger_m": 0,
++        "give_up_m": 0,
++        "stall_s": 0,
++        "cooldown_s": 0,
++        "turn_rate_bonus_deg_s": 0
++      },
++      "patrol": {
++        "edge_turn_margin_m": 500
++      },
++      "source": {
++        "length_m・beam_m・speed_max_kt": "historical (第13号型駆潜艇: 438 t・51 × 6.7 m・喫水 2.75 m・16 kt（Wikipedia の No.13-class submarine chaser とその写しの抜粋 1 つのみ・本文未読。medium。速力は docs/01 §8 の船団の表とも合う）。喫水 2.75 m ＞ Mk 13 の min_run_depth_m 2 なので魚雷は当たる（torpedo_immune を持たない）)",
++        "guns": "historical (1940 の兵装: 76.2 mm 高角砲 1・13.2 mm 機銃 2（同じ抜粋 1 つ。1944 年の兵装の変化は未確認）) / design (v0.8.1 S0・spec-v0810 §4.3。aa_76mm は ijn_transport の deck_gun_76mm の値の写し、aa_13mm は ijn_destroyer の aa_25mm の値で口径の名だけ違う（count 2）)",
++        "searchlight": "design (v0.8.1 S0。range_m 1,500（味方の卯月 ijn_destroyer_mutsuki と同じ）。cone_deg・sweep_deg_s・on_delay_s は ijn_destroyer と同じ（探照灯の絵は 1 枚・「発見された！」から反転する猶予 2.5 秒）。星弾は無い)",
++        "others": "design (v0.8.1 S0・spec-v0810 §4.3。難易度ハードの us_06 だけ（missions_seed の v0_1_prototype.hard.picket_enemy_id）。巡航 12 kt・旋回 3.0°/秒・加速 0.4（小さく身軽な艦）。hull_hp 100 は未使用（1 本で沈む）。detection の base_detect_m 1,500 は記録の検査のためだけ（隊は駆逐艦の 1 つの見つける距離を使う＝今の us_02 の輸送船と同じ作り）・雷跡 800 m・毎秒 0.2・反応 1.0 秒。evasion は turn_away（雷跡から離れる向きへ今の旋回のまま・最大速力まで増す）。体当たりはしない。端 500 m で向き直す（12 kt・3.0°/秒の旋回半径 約 120 m ＋ 縁の余白 51 m より大きい）。世界の配線は S2b)"
++      },
++      "notes": "us_06 のハード（v0.8.1）で泊地の外に止まって見張る駆潜艇 2 隻。気づくと動き出して記録の AI（体当たりなし）になる。点は無く、撃沈の達成・命中率の KPI・撃沈 n/m に数えない。"
++    },
+     {
+       "id": "daihatsu_barge",
+       "faction": "IJN",
+diff --git a/data/hit_rate_model.json b/data/hit_rate_model.json
+index 33c06c7..2e84731 100644
+--- a/data/hit_rate_model.json
++++ b/data/hit_rate_model.json
+@@ -81,6 +81,7 @@
+       "erratic"
+     ],
+     "aimed_lead_error_deg_max": 3,
++    "min_target_speed_kt": 5,
+     "record_version": "v0.5.0",
+     "campaigns": ["us_pt"],
+     "sim": {
+@@ -91,7 +92,7 @@
+       "reps": 4,
+       "seed": 1
+     },
+-    "source": "design (v0.5.0。aimed_lead_error_deg_max: Result の通算の命中率は「正しく狙った 1 本」＝発射時の見越し角のずれ（目標の今の速さと針路のまま進むとしたときの命中針路との差）がこの度以内で、蛇行していない魚雷だけを数える（KPI の表は『正しい見越し角の 1 本』の命中率なので）。3°: 1,000 m で船体の長さ方向に約 50 m のずれ。当たり判定 2 倍の艦（236 m）なら避けなければ当たる幅。扇の内側の 2 本（±2°）は入り、外側（±6°）は入らない。record_version: 通算の記録の版（localStorage の鍵）。回避や当たり判定を変えて測り直すときに上げる（古い記録は読まない）。sim: src/core/hit-rate-sim.ts の模擬（tests/hit-rate-sim.test.ts と scripts/hit-rate-sim.ts）。止まった艇から、kpi_by_range の sim_ranges_m の各距離・艦の左正横〜艦首〜右正横 bearing_step_deg 刻み・見越し角のずれ aim_errors_deg を reps 回ずつ撃つ（見張りの抽選は seed の 1 系列）。ずれ −2/0/+2° は aimed の ±3° の中のばらつきの代わり（一様 ±3° と標準偏差がほぼ同じ）。campaigns（v0.6.0）: 通算の命中率に数えるキャンペーン（米PTだけ。日本の 45cm 魚雷・米駆逐艦への 1 本を混ぜると、ノーマルの調整の唯一の根拠が崩れる。史実モードも数えない）)"
++    "source": "design (v0.5.0。aimed_lead_error_deg_max: Result の通算の命中率は「正しく狙った 1 本」＝発射時の見越し角のずれ（目標の今の速さと針路のまま進むとしたときの命中針路との差）がこの度以内で、蛇行していない魚雷だけを数える（KPI の表は『正しい見越し角の 1 本』の命中率なので）。3°: 1,000 m で船体の長さ方向に約 50 m のずれ。当たり判定 2 倍の艦（236 m）なら避けなければ当たる幅。扇の内側の 2 本（±2°）は入り、外側（±6°）は入らない。record_version: 通算の記録の版（localStorage の鍵）。回避や当たり判定を変えて測り直すときに上げる（古い記録は読まない）。sim: src/core/hit-rate-sim.ts の模擬（tests/hit-rate-sim.test.ts と scripts/hit-rate-sim.ts）。止まった艇から、kpi_by_range の sim_ranges_m の各距離・艦の左正横〜艦首〜右正横 bearing_step_deg 刻み・見越し角のずれ aim_errors_deg を reps 回ずつ撃つ（見張りの抽選は seed の 1 系列）。ずれ −2/0/+2° は aimed の ±3° の中のばらつきの代わり（一様 ±3° と標準偏差がほぼ同じ）。campaigns（v0.6.0）: 通算の命中率に数えるキャンペーン（米PTだけ。日本の 45cm 魚雷・米駆逐艦への 1 本を混ぜると、ノーマルの調整の唯一の根拠が崩れる。史実モードも数えない）) / design (v0.8.1 S0・spec-v0810 §3.5 D-K1・D-K2。min_target_speed_kt: 発射の時に狙った艦（今の規則の最寄りの浮いている艦）の速さがこの kt 未満なら、その 1 本は通算の命中率に数えない（止まった艦への 1 本は「正しく狙った 1 本」の命中率の根拠にならない）。5 kt は今のどの任務の駆逐艦の AI の最も遅い目標の速さ（us_destroyer の回避 18 − 10 ＝ 8 kt・ijn_destroyer の回避 25 − 10 ＝ 15 kt）より下なので、今の任務のどの 1 本の数え方も変わらない。外れるのは止まった艦（0 kt）と動き出して約 1.7 秒の内だけ。record_version は変えない（今までの通算を捨てない）。読むのは S2 から（config/kpi-data。鍵が無ければ 0＝今の規則）)"
+   },
+   "reliability_by_era": {
+     "early_1942": {
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index 34d1be5..e9db7f1 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -767,30 +767,32 @@
+       "order": 6,
+       "title_ja": "オルモック湾の決着",
+       "date": "1944-12-11",
+-      "place": "オルモック湾（レイテ島）",
++      "place": "パロンポン沖（レイテ島西岸）",
+       "type": "intercept_destroyer",
+       "player_boat": "us_elco80",
+       "torpedo_type": "us_mk13",
+-      "objective": "輸送部隊の駆逐艦を雷撃。特攻艇に注意",
++      "objective": "パロンポン沖に止まった駆逐艦 卯月と、揚陸中の輸送船 空知丸。レーダーで捉え、暗い岸を背に忍び寄って雷撃し、動き出した艦から逃れて帰れ",
+       "enemies": [
+-        "ijn_destroyer",
++        "ijn_destroyer_mutsuki_enemy",
+         "ijn_transport"
+       ],
+       "hazards": [
+         "enemy_ship_gunfire_or_ram",
+         "enemy_aircraft"
+       ],
+-      "moon": "half",
++      "moon": "dark",
++      "moon_label_ja": "月没後",
+       "duration_min": 5,
+-      "success": "駆逐艦撃沈または輸送船撃沈、帰投",
+-      "historical_note": "PT-490・492が駆逐艦卯月を撃沈（日本側記録一致）。特攻でPT-323・300喪失。",
++      "success": "帰投。卯月を撃沈すれば達成",
++      "historical_note": "1944-12-12 1時ごろ、パロンポン沖に止まっていた卯月を PT-490・PT-492 がレーダーで捉え、暗い岸を背に約1,000 ydから6本、2本以上が命中して撃沈（日本側記録一致）。空知丸は駆潜艇2隻に導かれパロンポンで揚陸。月は沈んでいた。PT-323 は 12-10 に特攻機で失われた（別の夜）。WebSearch の抜粋のみ・本文未読（docs/01 §8）",
+       "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
++      "briefing_note_ja": "1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月を、レーダーで捉えた米PT\u00a02隻が暗い岸を背に忍び寄り、約900\u00a0mから魚雷6本を撃って2本以上を当てて沈めた。輸送船空知丸は駆潜艇2隻に導かれて揚陸していた。日本のタブの「多号作戦・オルモック湾へ」と同じ夜。",
+       "dawn_air": {
+         "control": "contested",
+         "confidence": "medium",
+-        "play_as": "contested",
++        "play_as": "enemy",
+         "enemy_ships_at_dawn": "retire",
+-        "label_ja": "昼の空は争奪（特攻とコルセア）",
++        "label_ja": "昼の空は争奪（日本機の空襲）",
+         "refs": [
+           {
+             "url": "https://pacificwrecks.com/battle/battle-of-ormoc-bay.html",
+@@ -799,9 +801,130 @@
+           {
+             "url": "https://www.navsource.org/archives/12/05323.htm",
+             "claim": "PT-323 はレイテ方面で特攻機の体当たりを受けて失われた（1944-12）"
++          },
++          {
++            "url": "https://en.wikipedia.org/wiki/VMF-541",
++            "claim": "VMF(N)-541 の夜間戦闘機が1944-12-03 からタクロバンにいて、12日朝にオルモック湾の米艦へ向かう日本機33機を迎え撃った（夜明けの空は日本機も来る争奪）"
+           }
+         ],
+-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。play_as contested は将来の『敵機 → 遅れて味方戦闘機』用。遊べる世界を作るときに決める)"
++        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 と v0.6.9 の調べ（2026-10-28。docs/01 §8）の WebSearch の抜粋のみ・本文未読。昼の空は米（タクロバンの海兵隊のコルセア）が優勢で、12 日の夜明けには日本機 33 機がオルモック湾の米艦へ向かった) / design (v0.6.1。label_ja の初めの文と play_as contested（遊べる世界が無かった）。v0.8.1 S0: play_as contested → enemy・label_ja「昼の空は争奪（日本機の空襲）」・refs に VMF-541 の頁（jp_04 の refs と同じ）。lead の既定 L1（ユーザー未確認）＝空は争奪で、ユーザーの規則「制空権がない限り夜明けの後は空襲」（v0.6.1）と v0.8.0 の us_04 のユーザーの決め U1「Aのままでいいと思うよ」の前例。夜明けに帰投の輪の外なら日本機 4 機の空襲（v0_1_prototype.dawn_strike）。enemy_ships_at_dawn retire は史実の値のまま＝夜明けに浮いている艦は東へ退く（v0_1_prototype.dawn_withdraw）)"
++      },
++      "v0_1_prototype": {
++        "enemies": [
++          "ijn_destroyer_mutsuki_enemy"
++        ],
++        "enemy_behavior": "anchored と ai (v0.8.1。パロンポン沖に止まった駆逐艦 卯月（enemies.json の ijn_destroyer_mutsuki_enemy）と、泊地で揚陸する輸送船 空知丸（下の transport）は t = 0 から止まっている（下の anchored）。見張りは止まっていても us_02 の規則のまま走り、自艇を見た・雷跡・被雷・隊の警報・夜明けのどれかで気づく。気づいた駆逐艦は destroyer_underway_s 後に動き出して us_02 の AI（探照灯・砲・星弾・400 m の体当たり・端で向き直し）になる。空知丸は一晩じゅう動かない（気づけば 76 mm を他の艦の光の下で撃つ）。艦から見て自艇の背に暗い岸があれば見つかる距離が縮む（下の shore_backdrop）。世界の配線は S2)",
++        "duration_s": 200,
++        "duration_s_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。夜明けまでの実秒の初めの値。岸を回る道（出発 → (5100, 1500) 巡航 → (5100, 2870) 静音 → 卯月の真南 (3620, 2900) 静音 → 狙って 15 秒 → 帰投の輪の縁まで巡航）は手の概算で 138 秒＝夜明けの 62 秒前。S3 の探りの帯 T（帰投の夜の 90% 以上が夜明けの前）で 180〜240 秒の内で直す。duration_min 5 は任務本体の設計値で、これとは別のプロトタイプ値)",
++        "fuel_allotment_gal": 40,
++        "fuel_allotment_gal_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。戦闘に使える割当（us_02 と同じ考え）の初めの値。core/fuel の曲線の手の概算（画面の 1 km あたり 静音 18 kt 4.0・巡航 23 kt 4.7・全速 6.9 gal）で岸を回る道は 28.9 gal＝残り 28%。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（40 gal は 1,440 秒）。S3 の探りの帯 F（帰投の夜の残りの中央値 15〜35%）で直し、足りなければ燃料でなく出発点と帰投の輪を直す)",
++        "shallows": [],
++        "bounds_m": {
++          "width": 6000,
++          "height": 3000,
++          "source": "design (v0.8.1。jp_04 と同じ地図を米の側から（同じ夜の両側）。南の縁が岸（パロンポンの浜は本当は西向き＝模式図。岸は south だけ＝v0.4.2 の規則）)"
++        },
++        "player_start": {
++          "x_m": 5000,
++          "y_m": 250,
++          "heading_deg": 225,
++          "source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M3。北東のカモテス海の側から南西向き・停止（jp_04 の米PT の「東から岸沿い」の線の入口の側）。卯月まで 2,538 m・空知丸まで 3,209 m（今夜の揺らぎの端でも卯月まで 2,416 m＝全速で見つかる 1,920 m の外。V-A4）・帰投の輪の中心まで 618 m（縁まで 368 m）)"
++        },
++        "enemy_start": {
++          "x_m": 3620,
++          "y_m": 2380,
++          "heading_deg": 270,
++          "source": "historical (卯月は 12 日 1 時ごろパロンポン沖に止まっていた（lying to。medium）。2 本は艦橋の下の左舷と中央部に当たり、左舷が浜の側＝PT は岸の側から来た（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.1 D-M2。位置は jp_04 の卯月（ally_destroyer.station）と同じ (3620, 2380)＝泊地の北東 727 m・岸の線から 620 m（レーダーの陸の反射 300 m の外＝映る）。針路だけ 90° → 270°（西向きなら左舷が南の浜。jp_04 は変えない＝同じ夜の両側で向きが違うのは既知の制約）)"
++        },
++        "transport": {
++          "enemy_id": "ijn_transport",
++          "start": {
++            "x_m": 3000,
++            "y_m": 2760,
++            "heading_deg": 135
++          },
++          "source": "historical (空知丸（4,107 t）は卯月と駆潜艇 2 隻に導かれ、12 日にパロンポンで人員と積荷を揚げた（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S2。jp_04 の泊地（landing.anchor）と同じ (3000, 2760)・135°。ijn_transport（5,000 t 級 120 × 16 m）で代用（jp_04 と同じ）。隊の最後の 1 隻で、1 本で沈む（記録の値）・撃沈の達成に数えない（撃沈は scoring.json の輸送船の撃破点）。岸の線から 240 m（レーダーの陸の反射 300 m の内＝映らない）。一晩じゅう止まって揚陸を続け、夜明けにも退かない（anchored.transport_underway false）)"
++        },
++        "return_point": {
++          "x_m": 4400,
++          "y_m": 400,
++          "radius_m": 250,
++          "call_margin": 1.5,
++          "torpedo_settle_max_s": 10,
++          "torpedo_end_settle_s": 5,
++          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。終わり際に走っている魚雷の決着を待つ最大実秒: 自艇の沈没は沈み始めてから数え、沈没の演出（2 秒）が終わるまでは終えない。敵艦隊なし（cleared）・漂流・座礁は理由が決まってから、夜明け後の輪の中は輪に入ってから数える。夜明け前の輪の中は torpedo_settle_max_s のまま。待つ間の命中は得点・命中率・Result に入り、待ち切って走っている魚雷は外れ)",
++          "source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M3。北東の海（来た道のカモテス海の側）。出発点から 618 m（縁まで 368 m）、卯月から 2,128 m・空知丸から 2,744 m。半径・call_margin・待ちは us_04 と同じ)"
++        },
++        "coast": {
++          "side": "south",
++          "land_m": 600,
++          "label_ja": "レイテ島（パロンポン）",
++          "source": "design (v0.8.1。jp_04 の岸と同じ（見た目だけ。南の縁が浜）。揚陸地点の帯と字（systems/world-landing の味方の揚陸の絵）は描かない。暗い岸を背に（shore_backdrop）とレーダーの陸の反射の岸の線もこの南の縁)"
++        },
++        "hazards": [
++          "enemy_ship_gunfire_or_ram",
++          "dawn_air_strike"
++        ],
++        "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。夜の水上機・友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法)",
++        "night": {
++          "hazard_scale": 1,
++          "optional_hazards": [],
++          "enemy_jitter": {
++            "x_m": 150,
++            "y_m": 50,
++            "heading_deg": 0
++          },
++          "mirror_chance": 0,
++          "source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M4。今夜の揺らぎ（seed+16）: 止まった艦ごとに x ±150・y ±50 m・針路は揺らさない（ノーマルは卯月と空知丸の 2 件、ハードは駆潜艇 2 隻を足して 4 件。乱数はノーマル 8 回・ハード 14 回）。y ±50 でも空知丸は岸の線から 190〜290 m（レーダーの陸の反射 300 m の内）・卯月は 570〜670 m（外）。泊地と岸は反転しないので mirror_chance 0。夜ごとに出る危険は無い（optional_hazards なし）)"
++        },
++        "dawn_strike": {
++          "aircraft_id": "ijn_a6m2n_rufe",
++          "count": 4,
++          "count_source": "design (ほかの任務と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
++          "from_bearing_deg": 270,
++          "escort_target_planes": [],
++          "source": "historical (12 日の夜明けに日本機 33 機がオルモック湾の米艦へ向かった（VMF-541 の頁の抜粋。high。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.7 D-O3。dawn_air.play_as enemy（lead の既定 L1。ユーザー未確認）の夜明けの空襲。陸上の日本機を二式水上戦闘機（零戦の形の機）の記録で代用。西＝セブ・ネグロスの側の方角から（模式図）。僚艇はいない（ユーザーの決め U1）)"
++        },
++        "dawn_withdraw": {
++          "retire_edge": "east",
++          "force_ja": "日本の艦",
++          "source": "design (v0.8.1 S0・spec-v0810 §3.7 D-O3。夜明けに浮いている駆逐艦（ハードは駆潜艇も）は遅れなしで動き出して東へ退く（マニラへの帰り道を模式図で。北東の帰投の輪への道は横切らない）。止まって揚陸する空知丸は退かない（anchored.transport_underway false）。force_ja は夜明けの帯の呼び名)"
++        },
++        "objective_sink_count": 1,
++        "objective_sink_count_source": "design (v0.8.1 S0・spec-v0810 §3.7 D-O2。撃沈の達成は卯月 1 隻（隊の駆逐艦は卯月だけ）。空知丸は輸送船の撃破点で、達成に数えない＝岸から 240 m に止まって 1 本で沈む空知丸を楽な道にしない。史実で沈んだのも卯月。ハードの駆潜艇も数えない)",
++        "radar": {
++          "model": "so_late",
++          "fit": "own",
++          "source": "historical (1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じ、卯月はレーダーで捉えられた（docs/01 §8・spec-v0800 §3.1。medium）) / design (v0.8.1 S0・spec-v0810 §3.4 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ＝ユーザーの決め U1）。陸の反射 300 m に対し空知丸は岸の線から 240 m（映らない）・卯月は 620 m（映る）。世界の配線は S2)"
++        },
++        "anchored": {
++          "destroyer_underway_s": 6,
++          "transport_underway": false,
++          "picket_underway_s": 4,
++          "alarm_s": 4,
++          "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 6 秒（体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は S2)"
++        },
++        "shore_backdrop": {
++          "detect_factor": 0.6,
++          "behind_m": 2000,
++          "source": "historical (PT はレーダーで捉え、消音して暗い岸を背に低速で忍び寄った（卯月の夜と PT の寄り方の教え。medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.3 D-B1〜D-B3。艦から自艇への線を自艇の向こうへ伸ばし、behind_m 2,000 m の内で陸の岸の線に当たれば、その艦の見つける距離 × detect_factor 0.6（月の段 1 つ分＝dark 0.6 と half 1.0 の比と同じ大きさ）。照らされている間は効かず、機銃の閃光の 1,200 m はそのまま。卯月の見つける距離（月没後）は 停止 480 → 288・静音 600 → 360・巡航 1,200 → 720・全速 1,920 → 1,152 m。S3 の探りの帯（A1〜A3）で detect_factor 0.5〜0.7・behind_m 1,000〜3,000 の内で直す。世界の配線は S2)"
++        },
++        "hard": {
++          "extra_pickets": [
++            {
++              "x_m": 2300,
++              "y_m": 2050,
++              "heading_deg": 90
++            },
++            {
++              "x_m": 4300,
++              "y_m": 2200,
++              "heading_deg": 270
++            }
++          ],
++          "picket_enemy_id": "ijn_subchaser",
++          "source": "historical (卯月と駆潜艇 2 隻（第13号型）が空知丸をパロンポンへ導いた（medium。docs/01 §8）。その夜の駆潜艇の位置は見つからない) / design (v0.8.1 S0・spec-v0810 §3.2 D-S8。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦…の数が増えていけばよい」）: 駆潜艇 2 隻を泊地の外の哨戒の位置 (2300, 2050)・090° と (4300, 2200)・270° に止めて置く（止まった艦の規則のまま。anchored.picket_underway_s で動き出し、体当たりはしない）。隊の並びは駆逐艦 → 輸送船 → 駆潜艇。撃沈の達成・命中率の KPI・撃沈 n/m・輸送船の加点に数えず、点は無い。出発点から今夜の揺らぎの端で 1,978 m 以上（全速で見つかる 1,920 m の外＝V-A4）。世界の配線は S2b（v0.8.1b へ回すこともある）)"
++        }
+       }
+     },
+     {
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index 1c8c70f..f4f1ce9 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -60,6 +60,8 @@ import { validateRadarMissions } from '../config/radar-mission-data';
+ import { RADAR_BLIP_COLOR, RADAR_MARKER_TEX_KEY } from '../config/radar-art-config';
+ import { validateTransitMissions } from '../config/transit-mission-data';
+ import { validateShoresMissions } from '../config/shores-mission-data';
++import { validateAnchorMissions } from '../config/anchor-mission-data';
++import { validateBackdropMissions } from '../config/backdrop-mission-data';
+ import { validateLoadouts } from '../config/loadout-data';
+ import { COAST_MARKER_COLOR } from '../config/hunt-config';
+ import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
+@@ -154,6 +156,8 @@ export class BootScene extends Phaser.Scene {
+     validateRadarMissions(gameData);
+     validateTransitMissions(gameData);
+     validateShoresMissions(gameData);
++    validateAnchorMissions(gameData); // オルモック湾の決着（v0.8.1。us_06）: 止まった艦（V-A1〜V-A6）と暗い岸を背に（V-B1〜V-B3）をハードも 1 回（壊れていれば Boot で止まる。世界の配線は S2）
++    validateBackdropMissions(gameData);
+     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
+     if (DEBUG_ENABLED) generateDebugRingTexture(this);
+ 
+diff --git a/src/systems/destroyer-setup.ts b/src/systems/destroyer-setup.ts
+index e72bd96..73b4fde 100644
+--- a/src/systems/destroyer-setup.ts
++++ b/src/systems/destroyer-setup.ts
+@@ -1,4 +1,4 @@
+-// 駆逐艦の隊の数値（v0.4.7 で world-setup から切り出し。中身は v0.4.5 のまま、輸送船の型を足した）。Phaser 非依存。起動時に 1 回だけ。
++// 駆逐艦の隊の数値（v0.4.7 で world-setup から切り出し。中身は v0.4.5 のまま、輸送船の型を足した。v0.8.1 でハードの駆潜艇の型）。Phaser 非依存。起動時に 1 回だけ。
+ import { getEnemyRecord, getEvasionMultiplier, type GameData } from '../config/game-data';
+ import { gunneryParamsFromData, type GunneryParams } from '../core/gunnery';
+ import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
+@@ -34,6 +34,16 @@ export interface TransportSetup extends Omit<DestroyerSetup, 'starts'> {
+   start: { x: number; y: number; headingDeg: number };
+ }
+ 
++/** ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。config/anchor-mission-data）: 隊の最後に並ぶ艦の型（出発点は配列・今夜の揺らぎ込み）。達成・輸送船の加点に数えない */
++export interface PicketSetup extends Omit<DestroyerSetup, 'objectiveSinks'> {
++  enemyId: string;
++}
++
++/** 駆潜艇の数値（寸法・AI・反撃は enemies.json の picket_enemy_id の記録から。沈む本数は記録の値。v0.8.1） */
++export function picketSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitScale: number, historical: boolean): PicketSetup {
++  return { ...destroyerSetup(data, starts, enemyId, null, hitScale, historical), enemyId };
++}
++
+ /**
+  * 駆逐艦の数値（enemies.json の AI・反撃を持つ記録）。v0.4.2 で buildWorldSetup から切り出し（中身は v0.4.1 のまま）。
+  * hitScale は船体の当たり判定の倍率（buildWorldSetup が data の world.ship_hit_scale か ?debug&shiphit=N の上書きを渡す。v0.4.8）。historical は史実モード（v0.5.2。見張り・回避の倍率）
+diff --git a/src/systems/world-setup-types.ts b/src/systems/world-setup-types.ts
+index e470ece..c9e2b40 100644
+--- a/src/systems/world-setup-types.ts
++++ b/src/systems/world-setup-types.ts
+@@ -11,6 +11,8 @@ import type { EvacSetup } from '../config/evac-mission-data';
+ import type { RadarSetup, RadarSetupOptions } from '../config/radar-mission-data';
+ import type { TransitSetup } from '../config/transit-mission-data';
+ import type { ShoresSetup } from '../config/shores-mission-data';
++import type { AnchorSetup } from '../config/anchor-mission-data';
++import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
+ import type { BargeParams } from '../core/barge-data';
+ import type { BoatParams } from '../core/boat-motion';
+ import type { ConvoySetup } from '../core/convoy-data';
+@@ -31,7 +33,7 @@ import type { RaidParams, Sortie, SortieConditions } from '../core/sortie';
+ import type { StormParams } from '../core/storm';
+ import type { TorpedoParams, TorpedoReliability } from '../core/torpedo';
+ import type { VisibilityParams } from '../core/visibility';
+-import type { DestroyerSetup, TransportSetup } from './destroyer-setup';
++import type { DestroyerSetup, PicketSetup, TransportSetup } from './destroyer-setup';
+ 
+ export interface WorldSetup {
+   mission: PrototypeMission;
+@@ -122,10 +124,13 @@ export interface WorldSetup {
+   radar?: RadarSetup; // 自艇のレーダー（v0.8.0。v0_1_prototype.radar のある任務＝us_04 だけ。config/radar-mission-data。無い任務と radarOff では鍵ごと出ない＝setup の snapshot を変えない）
+   transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 だけ。config/transit-mission-data。無い任務では鍵ごと出ない）
+   shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
++  anchors?: AnchorSetup; // 止まった艦（v0.8.1。v0_1_prototype.anchored のある任務＝us_06 だけ。隊の艦ごとの動き出す秒・警報の秒。config/anchor-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
++  backdrop?: BackdropSetup; // 暗い岸を背に（v0.8.1。v0_1_prototype.shore_backdrop のある任務＝us_06 だけ。config/backdrop-mission-data。無い任務と backdropOff では鍵ごと出ない。S0 では世界は読まない）
++  pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
+ }
+ 
+ /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
+-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions {
++export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions, BackdropSetupOptions {
+   fuelGal?: number;
+   dawnS?: number;
+   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
+diff --git a/src/systems/world-setup.ts b/src/systems/world-setup.ts
+index 3c321a6..38dc745 100644
+--- a/src/systems/world-setup.ts
++++ b/src/systems/world-setup.ts
+@@ -39,11 +39,13 @@ import { evacSetupPart } from '../config/evac-mission-data';
+ import { radarSetupPart } from '../config/radar-mission-data';
+ import { transitNightRolls, transitSetupPart } from '../config/transit-mission-data';
+ import { shoresSetupPart } from '../config/shores-mission-data';
++import { anchorSetupPart, getAnchorParams } from '../config/anchor-mission-data';
++import { backdropSetupPart } from '../config/backdrop-mission-data';
+ import { fixedNight, rollNight } from '../core/night';
+ import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
+-import { destroyerSetup, type TransportSetup } from './destroyer-setup';
++import { destroyerSetup, picketSetup, type TransportSetup } from './destroyer-setup';
+ 
+-export type { DestroyerSpec, DestroyerSetup, TransportSetup } from './destroyer-setup';
++export type { DestroyerSpec, DestroyerSetup, PicketSetup, TransportSetup } from './destroyer-setup';
+ export type { SetupOptions, WorldSetup } from './world-setup-types'; // 型は world-setup-types.ts（v0.6.7 S0 で移した。今までの import のため）
+ export { briefingNumbers } from './briefing-numbers'; // Briefing の数値（v0.6.3 で briefing-numbers.ts へ。今までの import のため）
+ import { boatParamsFromData } from '../core/boat-motion';
+@@ -73,7 +75,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+   const events = data.riskEvents.events as readonly Record<string, unknown>[];
+   // 輸送船（v0.4.7）は隊の最後の 1 隻として同じ揺らぎ（ずれ・左右反転）を受ける
+   const tr = mission.transport && !o.transportOff ? mission.transport : null;
+-  const shipStarts = tr ? [...mission.enemyStarts, tr.start] : mission.enemyStarts;
++  const anchor = getAnchorParams(data, mission); // 止まった艦（v0.8.1。us_06 だけ）。ハードの駆潜艇は隊の最後（輸送船の後ろ）に 1 隻ずつ揺らぎを受ける（無い任務は null＝引く回数は同じ）
++  const shipStarts = [...mission.enemyStarts, ...(tr ? [tr.start] : []), ...(anchor?.pickets?.starts ?? [])];
+   const ptBase = getPtParams(data, mission, world.time_scale);
+   const enemyRolls = shipStarts.length + (ptBase ? 1 : 0) + transitNightRolls(data, mission); // 米PT の隊（v0.6.3）と列の通過（v0.8.0。us_04）は隊・列ごと 1 件の敵として揺らす（無い任務の回数は同じ）
+   const night =
+@@ -91,8 +94,10 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+   let transport: TransportSetup | null = null;
+   if (destroyer && tr) {
+     const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null, shipHitScale, historical);
+-    transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[applied.starts.length - 1]! };
++    transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[mission.enemyStarts.length]! };
+   }
++  const pk = anchor?.pickets ?? null;
++  const pickets = destroyer && pk ? picketSetup(data, applied.starts.slice(mission.enemyStarts.length + (tr ? 1 : 0)), pk.enemyId, shipHitScale, historical) : null;
+   const barges = applied.barges;
+   const ptBoats = ptBase ? applyPtNight(night, ptBase) : null;
+   const convoyBase = getConvoyParams(data, mission);
+@@ -175,6 +180,9 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+     ...radarSetupPart(data, mission, o), // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
+     ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical), // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
+     ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
++    ...(destroyer ? anchorSetupPart(anchor, mission.enemyStarts.length, tr !== null) : {}), // 止まった艦（v0.8.1。us_06 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
++    ...backdropSetupPart(data, mission, o), // 暗い岸を背に（v0.8.1。us_06 だけ。無い任務と backdropOff では鍵ごと出ない）
++    ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
+   };
+ }
+ 
+diff --git a/tests/boot-loop.test.ts b/tests/boot-loop.test.ts
+index a3993fe..201b9a3 100644
+--- a/tests/boot-loop.test.ts
++++ b/tests/boot-loop.test.ts
+@@ -15,6 +15,8 @@ import { validateEvacMissions } from '../src/config/evac-mission-data';
+ import { validateRadarMissions } from '../src/config/radar-mission-data';
+ import { validateTransitMissions } from '../src/config/transit-mission-data';
+ import { validateShoresMissions } from '../src/config/shores-mission-data';
++import { validateAnchorMissions } from '../src/config/anchor-mission-data';
++import { validateBackdropMissions } from '../src/config/backdrop-mission-data';
+ 
+ type Rec = Record<string, unknown>;
+ const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype'] && typeof m['id'] === 'string').map((m) => m['id'] as string);
+@@ -30,8 +32,8 @@ function bootLoop(id: string): void {
+ }
+ 
+ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
+-  it('遊べる世界のある任務は 10（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5）', () => {
+-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']);
++  it('遊べる世界のある任務は 11（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5。v0.8.1 の S0 で us_06。playable_from は S4）', () => {
++    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_06']);
+   });
+   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
+     expect(() => bootLoop(id)).not.toThrow();
+@@ -54,6 +56,14 @@ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）',
+     const at = ['validateEvacMissions(gameData);', 'validateRadarMissions(gameData);', 'validateTransitMissions(gameData);', 'validateShoresMissions(gameData);'].map((c) => src.indexOf(c));
+     expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]!))).toBe(true);
+   });
++  it('オルモック湾の決着（v0.8.1 S0。us_06）: Boot の validateAnchorMissions・validateBackdropMissions は投げず us_06 の値を返す（ソースの pin: 海峡の両岸の検査の後にこの順で 1 回ずつ）', () => {
++    expect([validateAnchorMissions(gameData)?.destroyerUnderwayS, validateAnchorMissions(gameData)?.pickets, validateBackdropMissions(gameData)?.detectFactor]).toEqual([6, null, 0.6]);
++    const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
++    const at = ['validateShoresMissions(gameData);', 'validateAnchorMissions(gameData);', 'validateBackdropMissions(gameData);', 'createSfx(this.game);'].map((c) => src.indexOf(c));
++    expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]!))).toBe(true);
++    expect(src.split('validateAnchorMissions(gameData)').length - 1).toBe(1);
++    expect(src.split('validateBackdropMissions(gameData)').length - 1).toBe(1);
++  });
+   it('ソースの pin: boot-scene の輪は getPrototypeMission → getEngineParams → getPatrolAirParams → ハード（getPtParams・getConvoyParams）→ getGunboatParams の順', () => {
+     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
+     const start = src.indexOf('for (const m of gameData.missionsSeed.missions');
+diff --git a/tests/dawn-air.test.ts b/tests/dawn-air.test.ts
+index e88313e..51c4820 100644
+--- a/tests/dawn-air.test.ts
++++ b/tests/dawn-air.test.ts
+@@ -277,7 +277,7 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       us_03: ['contested', 'medium', 'enemy', 'hide', '昼の空は争奪（日本機の昼の空襲）'], // v0.6.1 実機 1 回目: ユーザーの判断で空襲あり
+       us_04: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本の水上機の空襲）'], // v0.8.0 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」）。S5: ユーザーの決め U1（2026-11-15「Aのままでいいと思うよ」）で enemy のまま
+       us_05: ['own', 'medium', 'own', 'retire', '昼の空は味方（護衛空母）'],
+-      us_06: ['contested', 'medium', 'contested', 'retire', '昼の空は争奪（特攻とコルセア）'],
++      us_06: ['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本機の空襲）'], // v0.8.1 S0: lead の既定 L1（ユーザーの規則「制空権がない限り夜明けの後は空襲」・v0.8.0 の us_04 の U1 の前例）。v0_1_prototype は S0 から（遊べるのは S4 から）
+       us_07: ['own', 'high', 'own', 'none', '昼の空は味方（連合軍）'],
+       jp_01: ['enemy', 'medium', 'enemy', 'none', '昼の空は敵（ヘンダーソン基地）'], // v0.6.4: 米PT は夜明けに core/pt-boats のラッチで去る（retire は駆逐艦の規則で、無い任務には置けない）
+       jp_02: ['enemy', 'low', 'enemy', 'none', '昼の空は敵（米の飛行艇）'],
+@@ -304,7 +304,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       expect(s.dawnAir.playAs, id).toBe(want[id]);
+       expect(new WorldDawn({ cameras: { main: {} } } as never, s, null).air, id).toBe(want[id] === 'enemy' ? DAWN_AIR_ENEMY : DAWN_AIR_OWN);
+     }
+-    expect(() => checkPlayableDawn(gameData, 'us_06')).toThrow(/遊べる任務でない/);
++    expect(() => checkPlayableDawn(gameData, 'us_05')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ
++    expect(() => checkPlayableDawn(gameData, 'us_06')).not.toThrow();
+     expect(() => getDawnAir(gameData, 'nope')).toThrow(/nope/);
+   });
+   it('遊べる任務: play_as が enemy ⇔ v0_1_prototype.dawn_strike ⇔ hazards の dawn_air_strike。機体の faction はキャンペーンの enemy_faction（米PT IJN・日本 USN）', () => {
+diff --git a/tests/dawn-withdraw.test.ts b/tests/dawn-withdraw.test.ts
+index 692c517..5d03c63 100644
+--- a/tests/dawn-withdraw.test.ts
++++ b/tests/dawn-withdraw.test.ts
+@@ -264,8 +264,10 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
+       if (id !== 'us_02') expect(protoOf(gameData, id)['dawn_withdraw'], id).toBeUndefined();
+       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
+     }
+-    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く
+-    expect(getDawnAir(gameData, 'us_06').retireEdge).toBeNull();
++    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_05。v0.8.1 S0 までの例は us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く。
++    // us_06 は v0.8.1 S0 から v0_1_prototype（S4 から遊べる）で、日本の艦は東へ退く
++    expect(getDawnAir(gameData, 'us_05').retireEdge).toBeNull();
++    expect([getDawnAir(gameData, 'us_06').retireEdge, getDawnAir(gameData, 'us_06').retireForceJa]).toEqual(['east', '日本の艦']);
+     expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);
+   });
+   it('dawnWithdrawFromData: 形・知らないキー・縁・source の崩れは任務の id を付けて例外', () => {
+diff --git a/tests/engine-data.test.ts b/tests/engine-data.test.ts
+index 47467f6..998acc6 100644
+--- a/tests/engine-data.test.ts
++++ b/tests/engine-data.test.ts
+@@ -154,7 +154,7 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
+ 
+ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の同居の検査）', () => {
+   it('不調が入るのは v0_1_prototype.hazards に engine_failure がある jp_05 だけ（jp_01 の T-38 にも engine_reliability 0.85 があるが読まない）', () => {
+-    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04']); // v0.6.7: jp_02（夜の哨戒機。不調なし）。v0.6.9 S1: jp_04（揚陸の輸送船。不調なし。playable_from は S7）。v0.6.11 S0: jp_03（空襲下の退避。不調なし。playable_from は S6）。v0.8.0 S0: us_04（列の通過とレーダー。不調なし。playable_from は S5）
++    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_06']); // v0.6.7: jp_02（夜の哨戒機。不調なし）。v0.6.9 S1: jp_04（揚陸の輸送船。不調なし。playable_from は S7）。v0.6.11 S0: jp_03（空襲下の退避。不調なし。playable_from は S6）。v0.8.0 S0: us_04（列の通過とレーダー。不調なし。playable_from は S5）。v0.8.1 S0: us_06（止まった艦と暗い岸を背に。不調なし。playable_from は S4）
+     for (const id of PROTO_IDS) expect(getEngineParams(gameData, id) !== null, id).toBe(id === 'jp_05');
+     expect(getEngineParams(gameData, 'jp_05')).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, warnRearmHeat: 0.5, startHeat: 0 });
+     expect(boatOf(gameData, 'jp_t38')['engine_reliability']).toBe(0.85);
+diff --git a/tests/landing-neutral.test.ts b/tests/landing-neutral.test.ts
+index 78e02a2..c8490af 100644
+--- a/tests/landing-neutral.test.ts
++++ b/tests/landing-neutral.test.ts
+@@ -17,10 +17,10 @@ import { missionMode } from '../src/ui/mission-mode';
+ import { tele } from './pt-ui-kit';
+ 
+ type Rec = Record<string, unknown>;
+-const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）
++const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_06', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）。v0.8.1 S0: us_06（止まった艦。jp_04 と同じ泊地の空知丸は敵の輸送船＝揚陸の仕組みなし）
+ 
+ describe('landing-neutral（他の 9 任務）', () => {
+-  it('v0_1_prototype を持つのは 9 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
++  it('v0_1_prototype を持つのは 10 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04・v0.8.1 S0 の us_06 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
+     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
+     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
+     const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);
