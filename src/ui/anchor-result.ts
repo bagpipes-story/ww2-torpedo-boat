@@ -1,5 +1,5 @@
 // 止まった艦の任務（v0.8.1 S4。us_06）の Result の 1 行（spec-v0810 §3.7 D-O4、lead の L62・L63）: 駆逐艦の任務の行（ui/result-body の魚雷の枝）の後ろに 20 px・KPI の色で。
-// 「卯月: 撃沈（動き出す前） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸を背に 48 秒」。動き出していれば「（動き出す前）」の代わりに「 ・ 出撃 85 秒に動き出した（雷跡）」、
+// 「卯月: 撃沈（動き出す前） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸の陰に 48 秒」（IP1 で「岸を背に」から＝地図の岸の陰の海と 2 行目の「岸の陰に入った」と同じ言葉）。動き出していれば「（動き出す前）」の代わりに「 ・ 出撃 85 秒に動き出した（雷跡）」、
 // 沈めなければ「卯月: 健在」。止まった艦へ撃たなかった夜は魚雷の句を出さない。語は spec §11 の短い方（「止まった艦への魚雷」「通算の命中率に数えない」「岸を背にした」では、いちばん長い形が
 // 20 px で論理幅 1280 の行の幅 1232 を越えて縮む＝tests/anchor-result）。材料は systems/anchor-result-part の anchorResultPart（終わりに 1 回）。
 // 見出しの理由の言い換えもここ（ui/result-heading が読む）: 体当たりは止まった艦・輸送船・駆潜艇に自艇がぶつかっても同じ理由なので「敵艦と衝突した」。Phaser・DOM を読まない。
@@ -25,5 +25,5 @@ export function anchorShipNameJa(nameJa: string): string {
 export function anchorResultLineJa(a: AnchorResult): string {
   const moved = Number.isNaN(a.underwayS) ? '' : ` ・ 出撃 ${Math.round(a.underwayS)} 秒に動き出した（${ANCHOR_REASON_JA[a.reason] ?? '—'}）`;
   const held = a.heldShots > 0 ? ` ・ 止まった艦へ ${a.heldShots} 本（命中 ${a.heldHits}・通算に入れない）` : '';
-  return `${a.nameJa}: ${a.sunk ? '撃沈' : '健在'}${moved || (a.sunk ? '（動き出す前）' : '')}${held} ・ 岸を背に ${Math.round(a.backdropS)} 秒`;
+  return `${a.nameJa}: ${a.sunk ? '撃沈' : '健在'}${moved || (a.sunk ? '（動き出す前）' : '')}${held} ・ 岸の陰に ${Math.round(a.backdropS)} 秒`;
 }

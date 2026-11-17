@@ -1,4 +1,5 @@
 // v0.8.1 S4（spec-v0810 §3.7 D-O4、lead の L62・L63）: Result の us_06 の 1 行（ui/anchor-result）と見出しの言い換え、その材料（systems/anchor-result-part の anchorResultPart）。
+// v0.8.1 IP1: 尾の語「岸を背に N 秒」→「岸の陰に N 秒」（地図の岸の陰の海と 2 行目の「岸の陰に入った」と同じ言葉。字の数は同じ＝幅も同じ）。
 // - 文の形: 撃沈（動き出す前）・動き出していれば「 ・ 出撃 N 秒に動き出した（理由）」・健在。止まった艦へ撃った夜だけ魚雷の句。気づいた理由の語は 5 つ。
 // - 幅: 20 px で論理幅 1280 の行の幅 1232 の内（縮めない）＝いちばん長い形（199 秒・見つかった・4 本 4 命中・199 秒）。本文の下端は us_04 の 2 行と同じ置き方（592 の内か、上げても重ならない）。
 // - 見出し: 止まった艦の任務の体当たりは「敵艦と衝突した」。ほかの任務の見出しは 1 字も変わらない（REASON_LABEL のまま）。
@@ -22,15 +23,15 @@ const LINE_W = 1280 - 48;
 
 describe('文の形と幅（D-O4）', () => {
   it('撃沈（動き出す前）・動き出した秒と理由・健在。止まった艦へ撃たなかった夜は魚雷の句なし。理由の語 5 つ', () => {
-    expect(anchorResultLineJa(A0)).toBe('卯月: 撃沈（動き出す前） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸を背に 48 秒');
-    expect(anchorResultLineJa({ ...A0, underwayS: 85.2 })).toBe('卯月: 撃沈 ・ 出撃 85 秒に動き出した（雷跡） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸を背に 48 秒');
-    expect(anchorResultLineJa({ ...A0, sunk: false, heldShots: 0, heldHits: 0, backdropS: 0 })).toBe('卯月: 健在 ・ 岸を背に 0 秒');
-    expect(anchorResultLineJa({ ...A0, sunk: false, underwayS: 200, reason: ANCHOR_REASON_DAWN })).toBe('卯月: 健在 ・ 出撃 200 秒に動き出した（夜明け） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸を背に 48 秒');
+    expect(anchorResultLineJa(A0)).toBe('卯月: 撃沈（動き出す前） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸の陰に 48 秒');
+    expect(anchorResultLineJa({ ...A0, underwayS: 85.2 })).toBe('卯月: 撃沈 ・ 出撃 85 秒に動き出した（雷跡） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸の陰に 48 秒');
+    expect(anchorResultLineJa({ ...A0, sunk: false, heldShots: 0, heldHits: 0, backdropS: 0 })).toBe('卯月: 健在 ・ 岸の陰に 0 秒');
+    expect(anchorResultLineJa({ ...A0, sunk: false, underwayS: 200, reason: ANCHOR_REASON_DAWN })).toBe('卯月: 健在 ・ 出撃 200 秒に動き出した（夜明け） ・ 止まった艦へ 3 本（命中 2・通算に入れない） ・ 岸の陰に 48 秒');
     expect([ANCHOR_REASON_SEEN, ANCHOR_REASON_WAKE, ANCHOR_REASON_HIT, ANCHOR_REASON_ALARM, ANCHOR_REASON_DAWN].map((k) => ANCHOR_REASON_JA[k])).toEqual(['見つかった', '雷跡', '被雷', '警報', '夜明け']);
   });
   it('いちばん長い形（199 秒・見つかった・4 本 4 命中・199 秒）も 20 px で 1232 px の内（縮めない）。px を固定', () => {
     const wide = anchorResultLineJa({ nameJa: '卯月', sunk: true, underwayS: 199, reason: ANCHOR_REASON_SEEN, heldShots: 4, heldHits: 4, backdropS: 199 });
-    expect(wide).toBe('卯月: 撃沈 ・ 出撃 199 秒に動き出した（見つかった） ・ 止まった艦へ 4 本（命中 4・通算に入れない） ・ 岸を背に 199 秒');
+    expect(wide).toBe('卯月: 撃沈 ・ 出撃 199 秒に動き出した（見つかった） ・ 止まった艦へ 4 本（命中 4・通算に入れない） ・ 岸の陰に 199 秒');
     expect(Math.round(textWidthPx(wide, 20) * 10) / 10).toBe(1216.9);
     for (const r of [ANCHOR_REASON_SEEN, ANCHOR_REASON_WAKE, ANCHOR_REASON_HIT, ANCHOR_REASON_ALARM, ANCHOR_REASON_DAWN]) for (const sunk of [false, true]) expect(textWidthPx(anchorResultLineJa({ nameJa: '卯月', sunk, underwayS: 199, reason: r, heldShots: 4, heldHits: 4, backdropS: 199 }), 20)).toBeLessThanOrEqual(LINE_W);
     expect(textWidthPx(anchorResultLineJa({ ...A0, heldShots: 4, heldHits: 4, backdropS: 199 }), 20)).toBeLessThanOrEqual(LINE_W);

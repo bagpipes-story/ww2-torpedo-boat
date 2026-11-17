@@ -197,6 +197,7 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確�
     expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
     // v0.8.0 実機 1 回目: 探照灯を岸で切る（beamLengthToLand）ために destroyer-group・enemy-fire・world-enemies も（tests/strait-ip1）
     // v0.8.1 S2: 暗い岸を背に（systems/shore-backdrop の landBehind。us_06）も
-    expect(importers('strait-geometry')).toEqual(['src/core/radar.ts', 'src/systems/destroyer-group.ts', 'src/systems/enemy-fire.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/shore-backdrop.ts', 'src/systems/strait-telemetry.ts', 'src/systems/world-enemies.ts', 'src/systems/world-radar.ts']);
+    // v0.8.1 IP1: 岸の陰の海（core/backdrop-zone の格子と systems/backdrop-fx の境の升の割合。絵だけ＝世界は読まない＝tests/backdrop-zone）も
+    expect(importers('strait-geometry')).toEqual(['src/core/backdrop-zone.ts', 'src/core/radar.ts', 'src/systems/backdrop-fx.ts', 'src/systems/destroyer-group.ts', 'src/systems/enemy-fire.ts', 'src/systems/intercept-sim-setup.ts', 'src/systems/shore-backdrop.ts', 'src/systems/strait-telemetry.ts', 'src/systems/world-enemies.ts', 'src/systems/world-radar.ts']);
   });
 });

@@ -10,7 +10,7 @@ import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, 
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 import { getEngineParams } from '../src/config/engine-mission-data';
 import { FAMOUS_BOAT_RE, PERSON_DENYLIST, PT_NUMBER_RE, RANK_RE } from './person-denylist';
-import { ANCHOR_UNDERWAY_JA, anchorBackdropLineJa, anchorWithdrawJa } from '../src/ui/anchor-lines';
+import { ANCHOR_HINT_JA, ANCHOR_UNDERWAY_JA, anchorBackdropLineJa, anchorWithdrawJa } from '../src/ui/anchor-lines';
 import { anchorResultLineJa } from '../src/ui/anchor-result';
 import { resultHeadingJa } from '../src/ui/result-heading';
 import { bowOnLineJa } from '../src/ui/strait-lines';
@@ -289,7 +289,7 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番�
         '成功: 帰投。卯月を撃沈すれば達成（帰投地点は北東の青い輪）',
         `月: 月没後 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m ・ レーダー ${radar} m（陸のそばは映らない）`,
         `敵: 駆逐艦 ×1、輸送船 ×1${hard ? `、駆潜艇 ×${pickets}` : ''}（南西に停泊）`,
-        '危険: 敵艦艇の砲撃・衝突、夜明けの空襲',
+        '危険: 敵艦艇の砲撃・衝突、夜明けの空襲 ・\u00a0停泊艦の南の暗い海（岸の陰）なら見つかりにくい', // v0.8.1 IP1: 寄り方の手がかり（危険の行の尾。&nobackdrop では出ない）
         `条件: 夜明けまで ${p.durationS} 秒（以後は空襲・敵は東へ退く） ・ 燃料 ${String(proto()['fuel_allotment_gal'])} gal ・ 魚雷 ${torps} 本 ・ 機銃は艦に効かない ・ 見越し点マーカー 使用可`,
       ]);
     }
@@ -305,6 +305,9 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番�
     for (const hard of [false, true]) for (let seed = 1; seed <= 60; seed++) seen.add(rowsOf(hard, seed)[3]!.text.replace(/、駆潜艇 ×2/, ''));
     expect([...seen]).toEqual(['駆逐艦 ×1、輸送船 ×1（南西に停泊）']);
     for (const id of OTHER_BRIEFING_IDS) expect('enemyAtJa' in briefingNumbers(buildWorldSetup(gameData, id)), id).toBe(false);
+    // v0.8.1 IP1: 危険の行の尾（岸の陰の手がかり）も背に岸の任務だけ。&nobackdrop（背に岸の無い夜）にも出さない
+    for (const id of OTHER_BRIEFING_IDS) expect('hazardTailJa' in briefingNumbers(buildWorldSetup(gameData, id)), id).toBe(false);
+    expect('hazardTailJa' in briefingNumbers(buildWorldSetup(gameData, 'us_06', { backdropOff: true }))).toBe(false);
   });
   it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 2・成功 1・月 2・敵 1・危険 1・条件 2、史実 3（20 px）。下端は出撃のボタンの上端 584 − 8 の内（us_04 と同じ 561）', () => {
     for (const hard of [false, true]) {
@@ -325,7 +328,7 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番�
       const rec = getBriefingRecord(gameData, 'us_06', hard);
       texts.push(rec.titleJa, rec.place, rec.objective, rec.success, rec.noteJa, ...rowsOf(hard).map((r) => r.text));
     }
-    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, bowOnLineJa(5, true), resultHeadingJa('rammed', NaN, true, false, false, true));
+    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, ANCHOR_HINT_JA, bowOnLineJa(5, true), resultHeadingJa('rammed', NaN, true, false, false, true));
     texts.push(anchorResultLineJa({ nameJa: '卯月', sunk: true, underwayS: 85, reason: 2, heldShots: 4, heldHits: 2, backdropS: 48 }));
     const t = { anchor: {}, transportEnabled: true, transportSunk: false, shipsSunk: 0, shipsTotal: 1, torpedoesLeft: 2, dawn: { forceJa: '日本の艦', retireJa: '東' } } as never;
     texts.push(anchorWithdrawJa(t, 'x'), anchorWithdrawJa({ ...(t as object), shipsSunk: 1 } as never, 'x'));
@@ -333,6 +336,6 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番�
       for (const name of PERSON_DENYLIST) expect(s).not.toContain(name);
       expect(RANK_RE.test(s) || PT_NUMBER_RE.test(s) || FAMOUS_BOAT_RE.test(s), s).toBe(false);
     }
-    expect(texts.length).toBe(32);
+    expect(texts.length).toBe(33); // v0.8.1 IP1: HUD の手がかり（ANCHOR_HINT_JA）を足した
   });
 });

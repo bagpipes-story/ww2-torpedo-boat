@@ -1,5 +1,6 @@
 // v0.8.1 S4（spec-v0810 §6 の S4、lead の L61・L62・L68）: 止まった艦の任務（us_06）の 2 行目の出来事（ui/anchor-lines）と、us_02 の枝から来た文の us_06 だけの言い方。
-// - 「暗い岸を背にした ・ 見つかる距離 N m」: 背に岸のビットが立った時・20 秒に 1 回まで・N は 3 行目と同じ 50 m の四捨五入・ビットが下りたらやめる。
+// - 「岸の陰に入った ・ 見つかる距離 N m」（IP1 で「暗い岸を背にした」から）: 背に岸のビットが立った時・20 秒に 1 回まで・N は 3 行目と同じ 50 m の四捨五入・ビットが下りたらやめる。
+// - 寄り方の手がかり（IP1）「停泊艦の南の暗い海（岸の陰）から寄れ ・ 見つかりにくい」: 1 夜に 1 回・レーダーの最初の接触の後（無い夜は今）・岸の陰にいれば出さない・岸の陰に入れば替わる。
 // - 「停泊していた艦が動き出した！」（警告の色）: 目で見えている艦（seenMask）が動き出した時・艦ごとに 1 回・夜明けの動き出しは出さない・出ている「背に岸」に替わる。
 // - どちらも 22 px で 840 px の内（tests/pt-ui-kit の textWidthPx）。モードはレーダーの出来事のすぐ下。ほかの任務（t.anchor が無い）は旗 0・文は今のまま。
 // - 衝突の危険の名詞（駆潜艇）・夜明けの帯の「輸送船は泊地に残る」・読む欄の走査（艦の AI・止まった段の旗・見えない艦の位置を読まない）。
@@ -12,12 +13,14 @@ import { createDawnTelemetry } from '../src/core/dawn-air';
 import { CALL_DAWN } from '../src/core/mission-flow';
 import { anchorTelemetryPart, refreshAnchorTelemetry } from '../src/systems/anchor-telemetry';
 import { initStraitTelemetry, type StraitTelemetryWorld } from '../src/systems/strait-telemetry';
-import { ANCHOR_EV_BACKDROP, ANCHOR_EV_NONE, ANCHOR_EV_UNDERWAY, ANCHOR_UNDERWAY_JA, AnchorLineClock, anchorBackdropLineJa, anchorWithdrawJa } from '../src/ui/anchor-lines';
+import { ANCHOR_EV_BACKDROP, ANCHOR_EV_HINT, ANCHOR_EV_NONE, ANCHOR_EV_UNDERWAY, ANCHOR_HINT_JA, ANCHOR_UNDERWAY_JA, AnchorLineClock, anchorBackdropLineJa, anchorWithdrawJa } from '../src/ui/anchor-lines';
+import { ANCHOR_BRIEF_HINT_JA } from '../src/ui/anchor-texts';
 import { dawnBannerLines } from '../src/ui/dawn-lines';
 import { DETECT_RANGE_STEP_M } from '../src/ui/hud-lines';
 import { composeLineKeys, createLineKeys } from '../src/ui/mission-line-keys';
 import { MISSION_ANCHOR_EVENT, MISSION_BOW_ON, MISSION_CALL, MISSION_NORMAL, MISSION_RADAR_EVENT, MODE_FLAG_ANCHOR_EVENT, MODE_FLAG_BOW_ON, MODE_FLAG_RADAR_EVENT, missionMode } from '../src/ui/mission-mode';
 import { specialLine } from '../src/ui/special-line';
+import { anchorLine as anchorLineOf } from '../src/ui/anchor-texts';
 import { StraitLineClock } from '../src/ui/strait-line-clock';
 import { bowOnLineJa } from '../src/ui/strait-lines';
 import { anchorKit, runUntil } from './anchor-world-kit';
@@ -26,7 +29,11 @@ import { LINE2_MAX_PX, tele, textWidthPx } from './pt-ui-kit';
 import { code } from './sfx-rules-kit';
 
 const anc = (o: Partial<AnchorTelemetry> = {}): AnchorTelemetry => ({ stage: [0, 0, 0, 0], reason: [0, 0, 0, 0], noticedAtS: [NaN, NaN, NaN, NaN], underwayAtS: [NaN, NaN, NaN, NaN], noticedCount: 0, underwayCount: 0, backdropOn: false, backdropS: 0, heldShots: 0, heldHits: 0, seenMask: 0, ...o });
-const T = (a: AnchorTelemetry | undefined, over: Partial<BoatTelemetry> = {}): BoatTelemetry => tele({ enabled: false }, { detectRangeM: 360, ...over, ...(a ? { anchor: a } : {}) });
+/** レーダーはあるがまだ最初の接触が無い（手がかりは出ない＝S4 の時計と同じ）。手がかりのテストは radar を渡す */
+const T = (a: AnchorTelemetry | undefined, over: Partial<BoatTelemetry> = {}): BoatTelemetry => {
+  const t = tele({ enabled: false }, { detectRangeM: 360, ...over, ...(a ? { anchor: a } : {}) });
+  return over.radar ? t : { ...t, radar: { ...t.radar, enabled: true, firstS: NaN } };
+};
 /** 1 フレーム（16 ms）: 旗を見て、2 行目に出たことを渡す（出す行が他に無い＝旗がそのまま 41） */
 function frame(c: AnchorLineClock, t: BoatTelemetry, ms: number): number {
   const f = c.flags(t, ms);
@@ -36,15 +43,17 @@ function frame(c: AnchorLineClock, t: BoatTelemetry, ms: number): number {
 
 describe('文と幅（22 px・840 px の内）', () => {
   it('背に岸は 3 行目と同じ 50 m の刻み（360 m → 350 m）、動き出しは警告の色。どの距離の刻みでも 840 px の内（最も長いのは 4 桁）', () => {
-    expect(anchorBackdropLineJa(Math.round(360 / DETECT_RANGE_STEP_M))).toBe('暗い岸を背にした ・ 見つかる距離 350 m');
+    expect(anchorBackdropLineJa(Math.round(360 / DETECT_RANGE_STEP_M))).toBe('岸の陰に入った ・ 見つかる距離 350 m');
     expect(ANCHOR_UNDERWAY_JA).toBe('停泊していた艦が動き出した！');
     for (let step = 1; step <= 2000 / DETECT_RANGE_STEP_M; step++) expect(textWidthPx(anchorBackdropLineJa(step), 22)).toBeLessThanOrEqual(LINE2_MAX_PX);
-    expect(Math.round(textWidthPx(anchorBackdropLineJa(24), 22) * 10) / 10).toBe(449.2);
+    expect(Math.round(textWidthPx(anchorBackdropLineJa(24), 22) * 10) / 10).toBe(427.2);
+    expect(ANCHOR_HINT_JA).toBe('停泊艦の南の暗い海（岸の陰）から寄れ ・ 見つかりにくい');
+    expect(Math.round(textWidthPx(ANCHOR_HINT_JA, 22) * 10) / 10).toBe(598.5);
     expect(textWidthPx(ANCHOR_UNDERWAY_JA, 22)).toBe(308);
     expect(bowOnLineJa(5, true)).toBe('衝突の危険！ 駆潜艇 500 m ・ 艦首がこちらへ');
     expect(bowOnLineJa(5)).toBe('衝突の危険！ 駆逐艦 500 m ・ 艦首がこちらへ'); // ほかの任務（us_04）は今の文
     expect(textWidthPx(bowOnLineJa(5, true), 22)).toBe(textWidthPx(bowOnLineJa(5), 22));
-    for (const s of [anchorBackdropLineJa(24), ANCHOR_UNDERWAY_JA, bowOnLineJa(5, true)]) {
+    for (const s of [anchorBackdropLineJa(24), ANCHOR_UNDERWAY_JA, ANCHOR_HINT_JA, ANCHOR_BRIEF_HINT_JA, bowOnLineJa(5, true)]) {
       for (const name of PERSON_DENYLIST) expect(s).not.toContain(name);
       expect(s).not.toMatch(/PT-?\s*\d/);
     }
@@ -130,6 +139,69 @@ describe('時計（ui/anchor-lines の AnchorLineClock。ui/strait-line-clock �
   });
 });
 
+describe('寄り方の手がかり（IP1。実機 1 回目「浜の方へ向かえばいいという指示やヒントも無い」）', () => {
+  const R = (firstS: number, enabled = true): Partial<BoatTelemetry> => ({ radar: { ...tele().radar, enabled, firstS } });
+  it('レーダーの最初の接触の後に 1 回だけ 4 秒（平常の色）。接触の前は出さない。2 夜目の時計（作り直し）でまた 1 回', () => {
+    const c = new AnchorLineClock();
+    let ms = 0;
+    for (; ms < 3000; ms += 16) expect(frame(c, T(anc(), R(NaN)), ms)).toBe(0);
+    let on = 0;
+    for (; ms < 15000; ms += 16) if (frame(c, T(anc(), R(2.5)), ms) !== 0) on += 16;
+    expect(on).toBeGreaterThanOrEqual(ANCHOR_EVENT_SHOW_MS - 16);
+    expect(on).toBeLessThanOrEqual(ANCHOR_EVENT_SHOW_MS + 16);
+    expect(c.kind).toBe(ANCHOR_EV_NONE);
+    const c2 = new AnchorLineClock();
+    frame(c2, T(anc(), R(2.5)), 0);
+    expect(c2.kind).toBe(ANCHOR_EV_HINT);
+    expect(anchorLineOf(c2)).toEqual({ text: ANCHOR_HINT_JA, color: HUD_COLOR_STRONG });
+  });
+  it('レーダーの無い夜（&noradar）は出撃から。岸の陰にいれば出さずに済ませる（後で出ない）', () => {
+    const c = new AnchorLineClock();
+    frame(c, T(anc(), R(NaN, false)), 0);
+    expect(c.kind).toBe(ANCHOR_EV_HINT);
+    const d = new AnchorLineClock();
+    frame(d, T(anc({ backdropOn: true }), R(1)), 0);
+    expect(d.kind).toBe(ANCHOR_EV_BACKDROP);
+    let ms = 16;
+    for (; ms < 30000; ms += 16) { frame(d, T(anc(), R(1)), ms); expect(d.kind).not.toBe(ANCHOR_EV_HINT); }
+  });
+  it('出ている間に岸の陰に入れば「岸の陰に入った」に替わり（手がかりの無い時計と同じフレーム・同じ 20 秒の数え）、動き出しにも替わる', () => {
+    const c = new AnchorLineClock();
+    const plain = new AnchorLineClock(); // 手がかりの無い時計（レーダーの接触の前のまま）
+    frame(c, T(anc(), R(1)), 0);
+    frame(plain, T(anc()), 0);
+    const u0 = c.kind;
+    frame(c, T(anc({ backdropOn: true }), R(1)), 1000);
+    frame(plain, T(anc({ backdropOn: true })), 1000);
+    expect([c.kind, plain.kind]).toEqual([ANCHOR_EV_BACKDROP, ANCHOR_EV_BACKDROP]);
+    expect(u0).toBe(ANCHOR_EV_HINT);
+    for (let ms = 1016; ms < 40000; ms += 16) {
+      const on = ms % 9000 < 4500;
+      expect(frame(c, T(anc({ backdropOn: on }), R(1)), ms)).toBe(frame(plain, T(anc({ backdropOn: on })), ms));
+      expect(c.kind).toBe(plain.kind);
+    }
+    const u = new AnchorLineClock();
+    const up = new AnchorLineClock();
+    frame(u, T(anc(), R(1)), 0);
+    frame(up, T(anc()), 0);
+    const mv = anc({ underwayAtS: [5, NaN, NaN, NaN], reason: [ANCHOR_REASON_SEEN, 0, 0, 0], seenMask: 1 });
+    for (let ms = 1000; ms < 8000; ms += 16) {
+      expect(frame(u, T(mv, R(1)), ms)).toBe(frame(up, T(mv), ms));
+      expect(u.kind).toBe(up.kind);
+    }
+  });
+  it('海峡の時計の中ではレーダーの最初の接触の文が先（モード 39 が 41 より上＝手がかりはその 4 秒の後）', () => {
+    const c = new StraitLineClock();
+    const st = { strait: { enabled: false, eyeRange2: 0, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false } } as Partial<BoatTelemetry>;
+    const t = T(anc(), { ...st, radar: { ...tele().radar, enabled: true, firstS: 1, n: 1, newCount: 1, lostCount: 0 } } as Partial<BoatTelemetry>);
+    const f = c.flags(t, 0);
+    expect(f & MODE_FLAG_RADAR_EVENT).not.toBe(0);
+    expect(f & MODE_FLAG_ANCHOR_EVENT).not.toBe(0);
+    expect(missionMode(t, 0, f)).toBe(MISSION_RADAR_EVENT);
+    expect(c.anchor.kind).toBe(ANCHOR_EV_HINT);
+  });
+});
+
 describe('2 行目のモードとキー（ui/mission-mode・special-line・mission-line-keys・strait-line-clock）', () => {
   it('モード 41 はレーダーの出来事のすぐ下（レーダーを遅らせない）・呼びかけと平常の上・衝突の危険の下。旗が無ければ今のまま', () => {
     const base = T(undefined);
@@ -148,7 +220,7 @@ describe('2 行目のモードとキー（ui/mission-mode・special-line・missi
     c.shown(MISSION_ANCHOR_EVENT, 0);
     const keys = composeLineKeys(createLineKeys(), t, MISSION_ANCHOR_EVENT, MODE_FLAG_ANCHOR_EVENT, 0, 0, 0, t.landing, c);
     expect(keys.lKey).toBe(c.anchor.key);
-    expect(specialLine(t, MISSION_ANCHOR_EVENT, { landingEv: t.landing, strait: c })).toEqual({ text: '暗い岸を背にした ・ 見つかる距離 350 m', color: HUD_COLOR_STRONG });
+    expect(specialLine(t, MISSION_ANCHOR_EVENT, { landingEv: t.landing, strait: c })).toEqual({ text: '岸の陰に入った ・ 見つかる距離 350 m', color: HUD_COLOR_STRONG });
     expect(new StraitLineClock().flags(T(undefined, { strait: { enabled: false, eyeRange2: 0, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false } } as Partial<BoatTelemetry>), 0)).toBe(0);
   });
   it('衝突の危険の名詞: 一番近い危険な艦が隊の駆潜艇（picketIndex から後ろ）なら「駆潜艇」。駆潜艇のいない隊（us_04 の型）はいつも駆逐艦。キーは名詞が変われば変わる・今の任務の値は同じ', () => {
@@ -185,15 +257,16 @@ describe('夜明けの帯の退く行（anchorWithdrawJa。us_02 の枝の「日
 });
 
 describe('読む欄の走査（L61: t.anchor・3 行目の値・HUD の数だけ。艦の AI・止まった段の旗・見えない艦の本当の位置を読まない）', () => {
-  it('ui/anchor-lines は t.anchor の欄と detectRangeM・dawn・輸送船と撃沈の数・残弾だけを読み、艦・AI・世界・Phaser を読まない', () => {
-    const src = code('src/ui/anchor-lines.ts');
-    const reads = [...new Set([...src.matchAll(/\bt\.(\w+)(?:\.(\w+))?/g)].map((m) => (m[1] === 'dawn' ? `dawn.${m[2]}` : m[1]!)))].sort();
-    expect(reads).toEqual(['anchor', 'dawn.forceJa', 'dawn.retireJa', 'detectRangeM', 'shipsSunk', 'shipsTotal', 'torpedoesLeft', 'transportEnabled', 'transportSunk']);
+  it('ui/anchor-lines・anchor-texts は t.anchor の欄と detectRangeM・レーダーの最初の接触・dawn・輸送船と撃沈の数・残弾だけを読み、艦・AI・世界・Phaser を読まない', () => {
+    const src = code('src/ui/anchor-lines.ts') + code('src/ui/anchor-texts.ts');
+    const reads = [...new Set([...src.matchAll(/\bt\.(\w+)(?:\.(\w+))?/g)].map((m) => (m[1] === 'dawn' || m[1] === 'radar' ? `${m[1]}.${m[2]}` : m[1]!)))].sort();
+    expect(reads).toEqual(['anchor', 'dawn.forceJa', 'dawn.retireJa', 'detectRangeM', 'radar.enabled', 'radar.firstS', 'shipsSunk', 'shipsTotal', 'torpedoesLeft', 'transportEnabled', 'transportSunk']);
     const aReads = [...new Set([...src.matchAll(/\ba\.(\w+)/g)].map((m) => m[1]!))].sort();
     expect(aReads).toEqual(['backdropOn', 'reason', 'seenMask', 'underwayAtS']);
     const body = (f: string): string => code(f).replace(/^import .*$/gm, ''); // import の行（core/anchored-ship の定数の名）を除いた本体
-    expect(body('src/ui/anchor-lines.ts')).not.toMatch(/\.ai\b|\banchored\b|destroyers|\bships\b|\.state\.|shipAi|from 'phaser'|document|window|Math\.random|\bnew\s/);
-    expect([...code('src/ui/anchor-lines.ts').matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['../config/anchor-hud-config', '../config/hud-text-config', '../core/boat-telemetry', '../core/anchored-ship', './hud-lines', './mission-mode']);
+    for (const f of ['src/ui/anchor-lines.ts', 'src/ui/anchor-texts.ts']) expect(body(f)).not.toMatch(/\.ai\b|\banchored\b|destroyers|\bships\b|\.state\.|shipAi|from 'phaser'|document|window|Math\.random|\bnew\s/);
+    expect([...code('src/ui/anchor-lines.ts').matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['../config/anchor-hud-config', '../core/boat-telemetry', '../core/anchored-ship', './anchor-texts', './hud-lines', './mission-mode', './anchor-texts']);
+    expect([...code('src/ui/anchor-texts.ts').matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['../config/hud-text-config', '../core/boat-telemetry', './hud-lines']);
     expect(body('src/ui/anchor-result.ts')).not.toMatch(/\.ai\b|\banchored\b|destroyers|\bships\b|\.state\.|from 'phaser'|document|window|Math\.random/);
     // 目で見えている艦のビットは systems/anchor-telemetry が setSighted と同じ規則で書く（UI は位置を読まない）
     const tel = code('src/systems/anchor-telemetry.ts');
