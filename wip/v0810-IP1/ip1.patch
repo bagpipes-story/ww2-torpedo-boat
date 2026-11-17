@@ -1,0 +1,56 @@
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 3e2eb09..695a2c4 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -5,8 +5,10 @@
+ // IP2（U6）: 昼の割合（夜明けの段 lightStep / SEA_LIGHT_STEPS）を毎フレーム爆発に渡す（明るい海の ADD の光を下げる）。
+ // v0.7.2 S3（音。brief L28）: 命中スローの残り秒を読むだけの口として世界を音に登録し（registerSfxSlowMo）、破棄で外す（聞き手と同じ形。音は slowMoLeftS を読むだけ）。
+ // v0.8.0 S2（spec-v0800 §4.10）: 海峡の両岸の陸と字（systems/strait-terrain。us_04 の setup.shores だけ。動かない絵）を岸の帯の後に作る。
++// v0.8.1 IP1: 岸の陰の絵（systems/backdrop-fx＝暗い陸と岸の陰の海。背に岸のある任務＝us_06 だけ。無い任務は null＝物も絵の鍵も増えない）を海峡の陸の後に作る。
+ import type Phaser from 'phaser';
+ import { SEA_LIGHT_STEPS } from '../config/dawn-config';
++import { BackdropFx, type BackdropFxWorldView } from './backdrop-fx';
+ import { CoastFx } from './coast-fx';
+ import { ExplosionFx } from './explosion-fx';
+ import { FireFx, type FireWorldView } from './fire-fx';
+@@ -22,7 +24,8 @@ import type { WorldSetup } from './world-setup';
+ 
+ /** 世界から読む物（MissionWorld がそのまま満たす） */
+ export type ArtWorldView = WakeWorldView &
+-  FireWorldView & {
++  FireWorldView &
++  BackdropFxWorldView & {
+     readonly setup: WorldSetup;
+     readonly dawn: { readonly lightStep: number };
+     /** 命中スローの残り秒（v0.7.2 S3。音が読むだけ） */
+@@ -38,6 +41,7 @@ export class WorldArt {
+   private readonly sink: SinkFx;
+   private readonly coast: CoastFx;
+   private readonly strait: StraitTerrain | null;
++  private readonly backdrop: BackdropFx | null;
+ 
+   constructor(scene: Phaser.Scene, w: ArtWorldView) {
+     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
+@@ -50,6 +54,7 @@ export class WorldArt {
+     this.fire = new FireFx(scene, w, this.sink);
+     this.coast = new CoastFx(scene, w.setup);
+     this.strait = w.setup.shores ? new StraitTerrain(scene, w.setup) : null;
++    this.backdrop = w.setup.backdrop && w.destroyers?.backdrop ? new BackdropFx(scene, w) : null;
+     registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
+     registerSfxSlowMo(w); // 命中スローの音（v0.7.2 S3。slowMoLeftS を読むだけ。世界の作成前・破棄後はスローなし）
+   }
+@@ -63,6 +68,7 @@ export class WorldArt {
+     this.fire.update(realDt);
+     this.sink.update(realDt);
+     this.sparks.update(realDt);
++    this.backdrop?.update(realDt, w);
+   }
+ 
+   destroy(): void {
+@@ -78,5 +84,6 @@ export class WorldArt {
+     this.sparks.destroy();
+     this.coast.destroy();
+     this.strait?.destroy();
++    this.backdrop?.destroy();
+   }
+ }
