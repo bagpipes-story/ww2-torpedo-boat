@@ -115,6 +115,8 @@ export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 �
   seaplaneDodgeS: number[];
   /** 水上機を撃墜した（v0.6.8。「敵機: … 撃墜（…）」。落とさなかった夜は鍵ごと無い） */
   seaplaneDowned?: boolean;
+  /** 1 夜に複数回の攻撃の任務（v0.8.1 IP2。us_06）だけ: 爆弾を落とし切って去った攻撃の数（ui/seaplane-night-lines。無い任務は鍵ごと無い） */
+  seaplaneAttacks?: number;
   /** 任務の目標を達した（駆逐艦の撃沈／大発のノルマ。v0.4.2 で destroyerSunk から分けた） */
   objectiveDone: boolean;
   /** 大発掃討（v0.4.2）の記録。任務に大発がいなければ null */
@@ -176,7 +178,7 @@ export class ResultScene extends Phaser.Scene {
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
     const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
-    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {

@@ -81,11 +81,11 @@ describe('読む欄（brief L26: レーダーの文はレーダーのテレメ�
     expect(src).not.toMatch(/\bt\.|\bw\.|transit|phase|enemy|sighted|visRange|ai\b|destroyer/);
     expect([...src.matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['../config/strait-hud-config', '../core/boat-telemetry', '../core/briefing']);
   });
-  it('ui/strait-line-clock は t.radar と t.strait だけを読む（レーダーの欄は radar-lines へ渡す・数と東の縁の判定）', () => {
+  it('ui/strait-line-clock は t.radar と t.strait だけを読む（レーダーの欄は radar-lines へ渡す・数と東の縁の判定。v0.8.1 S4: 衝突の危険の名詞の bowOnPicket・止まった艦の出来事は anchor へ t を渡すだけ）', () => {
     const src = code('src/ui/strait-line-clock.ts');
     expect([...new Set([...src.matchAll(/\bt\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['radar', 'strait']);
     expect([...new Set([...src.matchAll(/\br\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['enabled', 'firstS', 'lostCount', 'newCount']);
-    expect([...new Set([...src.matchAll(/\bst\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['bowOnM', 'bowOnMask', 'enabled']);
+    expect([...new Set([...src.matchAll(/\bst\.(\w+)/g)].map((m) => m[1]!))].sort()).toEqual(['bowOnM', 'bowOnMask', 'bowOnPicket', 'enabled']);
   });
   it('レーダーのテレメトリ（systems/radar-telemetry）が書く欄は core/radar の状態の写しと、海域の幅・揚陸の地の名・自艇の位置だけ（視程・発見・艦は書かない）', () => {
     const src = code('src/systems/radar-telemetry.ts');

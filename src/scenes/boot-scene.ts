@@ -34,7 +34,7 @@ import {
   generateUiTextures,
 } from '../assets/placeholders';
 import { generatePlayerBoatTexture } from '../assets/boat-art';
-import { generateDestroyerTexture, generateExtraDestroyerTextures } from '../assets/destroyer-art';
+import { generateDestroyerTexture, generateExtraDestroyerTextures, generatePicketTextures } from '../assets/destroyer-art';
 import { generateTransportTexture } from '../assets/transport-art';
 import { generateAircraftTexture } from '../assets/aircraft-art';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
@@ -60,6 +60,9 @@ import { validateRadarMissions } from '../config/radar-mission-data';
 import { RADAR_BLIP_COLOR, RADAR_MARKER_TEX_KEY } from '../config/radar-art-config';
 import { validateTransitMissions } from '../config/transit-mission-data';
 import { validateShoresMissions } from '../config/shores-mission-data';
+import { validateAnchorMissions } from '../config/anchor-mission-data';
+import { validateBackdropMissions } from '../config/backdrop-mission-data';
+import { validateSeaplaneMissions } from '../config/seaplane-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -101,6 +104,7 @@ export class BootScene extends Phaser.Scene {
     const enemy = getEnemyRecord(gameData, mission.enemyId);
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     generateExtraDestroyerTextures(this, gameData, spriteScale); // 米駆逐艦 tex-destroyer-us（v0.7.0 S2a。jp_06。遊べる任務の駆逐艦の id から 1 枚ずつ＝D3）
+    generatePicketTextures(this, gameData, spriteScale); // ハードの駆潜艇 tex-subchaser（v0.8.1 S2b。us_06。hard の picket_enemy_id から 1 枚＝D-A2）
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
     // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける
@@ -154,6 +158,9 @@ export class BootScene extends Phaser.Scene {
     validateRadarMissions(gameData);
     validateTransitMissions(gameData);
     validateShoresMissions(gameData);
+    validateAnchorMissions(gameData); // オルモック湾の決着（v0.8.1。us_06）: 止まった艦（V-A1〜V-A6）と暗い岸を背に（V-B1〜V-B3）をハードも 1 回（壊れていれば Boot で止まる。世界の配線は S2）
+    validateBackdropMissions(gameData);
+    validateSeaplaneMissions(gameData); // 夜の水上機の任務ごとの値（v0.8.1 IP2。us_06 の attacks_per_night・V-P1〜V-P3）をハードも 1 回
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 

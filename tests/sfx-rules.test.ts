@@ -292,3 +292,18 @@ describe('音の層はレーダーと海峡の夜を読まない（v0.8.0 S4）'
     expect(resolved('src/core/sfx-x.ts', './radar')).toBe('src/core/radar');
   });
 });
+
+// v0.8.1 S4（spec-v0810 §3.6 D-A3・D5、lead の L68）: 音の層（sfx-* の全部）は止まった艦・暗い岸を背に・駆潜艇の層を import しない（気づいた・動き出した・背に岸では鳴らさない・
+// 曲を下げない。「停泊していた艦が動き出した！」は警報の合図ではない＝下げは今の合図と重なった時だけ）
+describe('音の層は止まった艦と暗い岸を背にを読まない（v0.8.1 S4）', () => {
+  // v0.8.1 IP1: 岸の陰の絵（core/backdrop-zone・assets/backdrop-art・systems/backdrop-fx・config/backdrop-art-config）と 2 行目の文（ui/anchor-texts）も
+  const NOT_FOR_SFX = /^src\/(?:core\/anchored-ship|systems\/destroyer-anchor|systems\/shore-backdrop|systems\/anchor-telemetry|systems\/anchor-result-part|ui\/anchor-lines|ui\/anchor-texts|ui\/anchor-result|config\/anchor-hud-config|config\/anchor-mission-data|config\/backdrop-mission-data|core\/backdrop-zone|assets\/backdrop-art|systems\/backdrop-fx|config\/backdrop-art-config)$/;
+  it('どの sfx-* の import の先にも core/anchored-ship・systems/destroyer-anchor・shore-backdrop・anchor-telemetry・ui/anchor-lines・anchor-result（と S0〜S4 の止まった艦のファイル）が無い', () => {
+    expect(SFX.length).toBeGreaterThan(30);
+    const resolved = (f: string, p: string): string => (p.startsWith('.') ? posix.join(posix.dirname(f), p) : p);
+    for (const f of SFX) expect(imports(code(f)).map((p) => resolved(f, p)).filter((p) => NOT_FOR_SFX.test(p)), f).toEqual([]);
+    expect(['src/core/anchored-ship', 'src/systems/destroyer-anchor', 'src/systems/shore-backdrop', 'src/systems/anchor-telemetry', 'src/ui/anchor-lines', 'src/ui/anchor-result', 'src/ui/anchor-texts', 'src/core/backdrop-zone', 'src/assets/backdrop-art', 'src/systems/backdrop-fx', 'src/config/backdrop-art-config'].every((p) => NOT_FOR_SFX.test(p))).toBe(true);
+    // 合図の観測器（core/sfx-cues）と曲の段の観測器は t.anchor を読まない＝「停泊していた艦が動き出した！」で警報の合図・下げは起きない
+    for (const f of ['src/core/sfx-cues.ts', 'src/core/sfx-music-mood.ts', 'src/core/sfx-loops.ts']) expect(code(f), f).not.toMatch(/\banchor\b|underway|backdrop/);
+  });
+});

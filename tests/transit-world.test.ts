@@ -110,7 +110,8 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
   });
   it('destroyer-step: 艦の段 → 列の段階（艦が出たら left）→ 一斉発射の破棄 → 戻りの残りが 0 の時だけ外れの確定 → 魚雷。隊の allOut・allSettled は列の通過があればその式', () => {
     const s = code('systems/destroyer-step.ts');
-    const order = ['for (const d of g.ships) if (d.step(', 'if (g.transit?.step(w, feelDt)) left = true;', 'if (left && g.allOut) w.launcher.clearQueue();', 'if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();', 'w.torpedoes.step('];
+    // v0.8.1 S2: 艦の段は添字の輪（艦ごとの見つける距離＝systems/shore-backdrop。無い任務は世界の 1 つの値。tests/anchor-world）。止まった艦の段は列の段階の直後
+    const order = ['if (d.step(dt, feelDt, boat, bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;', 'if (g.transit?.step(w, feelDt)) left = true;', 'g.anchors?.step(w, feelDt);', 'if (left && g.allOut) w.launcher.clearQueue();', 'if (g.pendingReturns === 0 && remainingTorpedoesSettled(g.ships, w.stepTimeS, settleS)) w.resolveRemainingAsMisses();', 'w.torpedoes.step('];
     const idx = order.map((p) => s.indexOf(p));
     expect(idx.every((i, k) => i >= 0 && (k === 0 || i > idx[k - 1]!)), idx.join(' ')).toBe(true);
     const g = code('systems/destroyer-group.ts');
@@ -118,9 +119,10 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
     expect(g).toContain('return this.transit ? this.transit.allSettled : allShipsSettled(this.ships);');
     expect(g).toContain('return this.transit ? this.transit.pending : 0;');
     expect(g).toContain('this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null;');
-    // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）
+    // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）。v0.8.1 S2b（L42）: 命中の 2 つの手は隊の gunneryAt（同じ式を隊へ移した。駆潜艇は 3 つ目の枝）
     const we = code('systems/world-enemies.ts');
-    expect(we.split('i < destroyers.destroyerCount ? ds!.gunnery : s.transport!.gunnery').length - 1).toBe(2);
+    expect(we.split('destroyers.gunneryAt(i).guns[').length - 1).toBe(2);
+    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }");
     expect(we).not.toContain('ds!.starts.length');
   });
 });

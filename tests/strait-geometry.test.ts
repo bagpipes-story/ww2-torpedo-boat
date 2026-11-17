@@ -3,7 +3,7 @@
 // 判定の本体に確保が無く、平方根・atan2・乱数を使わないことも source で見る。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
-import { bowOnCos2, bowOnRisk, landDist2, landLine, landLinesFromShores, type LandLine } from '../src/core/strait-geometry';
+import { bowOnCos2, bowOnRisk, landDist2, landLine, landLinesFromShores, landLinesOf, type LandLine } from '../src/core/strait-geometry';
 import { buildWorldSetup } from '../src/systems/world-setup';
 import { code, imports, scanAllocations } from './core-rules-kit';
 
@@ -58,8 +58,9 @@ describe('陸までの距離（2 乗。レーダーの陸の反射の帯）', ()
     expect(d(us04.mission.playerStart.x, us04.mission.playerStart.y)).toBeGreaterThan(CLUTTER);
     expect(d(us04.mission.returnPoint.x, us04.mission.returnPoint.y - us04.mission.returnPoint.radiusM)).toBeGreaterThan(CLUTTER);
   });
-  it('今の岸の形（南だけ・切れ目なし＝v0.8.1 の us_06 が coast から作る）: 南の縁からの距離だけ', () => {
-    const coast = [landLine('south', 6000, 3000, [])];
+  it('今の岸の形（南だけ・切れ目なし。v0.8.1 S1 から landLinesOf が us_06 の coast から作る＝S2 のレーダーの陸の反射と暗い岸を背に）: 南の縁からの距離だけ', () => {
+    const coast = landLinesOf(null, true, 6000, 3000);
+    expect(coast).toEqual([landLine('south', 6000, 3000, [])]);
     for (const [x, y] of [[0, 2760], [3000, 2760], [3620, 2380], [6000, 100]] as const) expect(d(x, y, coast)).toBeCloseTo(3000 - y, 9);
   });
 });
@@ -89,9 +90,10 @@ describe('衝突の危険（艦首が自艇へ半角 15° の内・500 m の内�
 });
 
 describe('source（判定は確保しない・平方根も atan2 も乱数も使わない）', () => {
-  it('作る関数（landLine・landLinesFromShores）のほかは本体に確保の形が無い。import は core/units だけ', () => {
-    const { names, bad } = scanAllocations(FILE, ['landLine', 'landLinesFromShores']);
-    expect(names).toEqual(['beamLengthToLand', 'bowOnCos2', 'bowOnRisk', 'landDist2', 'landLine', 'landLinesFromShores']); // v0.8.0 実機 1 回目: beamLengthToLand
+  it('作る関数（landLine・landLinesFromShores・landLinesOf）のほかは本体に確保の形が無い。import は core/units だけ', () => {
+    const { names, bad } = scanAllocations(FILE, ['landLine', 'landLinesFromShores', 'landLinesOf']);
+    // v0.8.0 実機 1 回目: beamLengthToLand。v0.8.1 S1: 暗い岸を背にの landBehind（判定＝確保しない。tests/shore-backdrop）と任務の岸の線の landLinesOf（作る）
+    expect(names).toEqual(['beamLengthToLand', 'bowOnCos2', 'bowOnRisk', 'landBehind', 'landDist2', 'landLine', 'landLinesFromShores', 'landLinesOf']);
     expect(bad).toEqual([]);
     const s = code(FILE);
     expect(imports(s)).toEqual(['./units']);

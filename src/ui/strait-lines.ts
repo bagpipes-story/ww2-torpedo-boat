@@ -7,10 +7,11 @@ import { HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import type { HudLine } from './hud-lines';
 import { MISSION_BOW_ON, MISSION_RADAR_EVENT } from './mission-mode';
 import { RADAR_EV_RETURN } from './radar-lines';
+import type { AnchorLineView } from './anchor-lines';
 
-/** 衝突の危険の文（step は BOW_ON_STEP_M の刻みの数。1 以上） */
-export function bowOnLineJa(step: number): string {
-  return `衝突の危険！ 駆逐艦 ${step * BOW_ON_STEP_M} m ・ 艦首がこちらへ`;
+/** 衝突の危険の文（step は BOW_ON_STEP_M の刻みの数。1 以上。picket は一番近い危険な艦が駆潜艇＝v0.8.1 S4 の us_06 のハード。ほかの任務は駆逐艦のまま） */
+export function bowOnLineJa(step: number, picket = false): string {
+  return `衝突の危険！ ${picket ? '駆潜艇' : '駆逐艦'} ${step * BOW_ON_STEP_M} m ・ 艦首がこちらへ`;
 }
 
 /** 2 行目の文が読む ui/strait-line-clock の部分（そのクラスがそのまま満たす） */
@@ -18,11 +19,13 @@ export interface StraitLineView {
   readonly radarKind: number;
   readonly radarText: string;
   readonly bowStep: number;
+  readonly bowPicket?: boolean;
+  readonly anchor?: AnchorLineView; // 止まった艦の任務の出来事（v0.8.1 S4。ui/anchor-lines。ui/special-line がモード 41 で読む）
 }
 
 /** 海峡の 2 つのモードの行（ほかのモードは null）。帰りの列（進路から離れよ）と衝突の危険は警告の色、ほかのレーダーの出来事は強い色 */
 export function straitLine(mode: number, c: StraitLineView): HudLine | null {
-  if (mode === MISSION_BOW_ON) return { text: bowOnLineJa(c.bowStep), color: HUD_COLOR_WARN };
+  if (mode === MISSION_BOW_ON) return { text: bowOnLineJa(c.bowStep, c.bowPicket === true), color: HUD_COLOR_WARN };
   if (mode === MISSION_RADAR_EVENT) return { text: c.radarText, color: c.radarKind === RADAR_EV_RETURN ? HUD_COLOR_WARN : HUD_COLOR_STRONG };
   return null;
 }

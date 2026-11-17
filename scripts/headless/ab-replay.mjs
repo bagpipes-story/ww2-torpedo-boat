@@ -12,15 +12,19 @@
 // v0.6.11 S8b: CAM=1 で写しにカメラ（scrollX・scrollY・zoom・followOffset）も足す（jp_03 の隠れ場所の中の見越し 0 がほかの任務のカメラを変えないことを見る。既定は今の写しのまま）。
 // v0.8.0 S2（spec-v0800 §6 の S2・brief L9・L13）: SET=us04 で us_04（ブラケット海峡の夜。列の通過とレーダー）のノーマル・ハード × seed 1・2 を 260 秒（夜明けまで。all には入れない。
 //   A は S2 の commit のビルド＝以後の段の回帰）。写しは隊の全艦（s.d。列の艦も）に列の段階（s.tr）とレーダーの輝点（s.rd: 掃引の回数・数・位置）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
-//   NORADAR=1 で B だけ &noradar（レーダーを切った夜。A と同じビルドで回せばレーダーが世界も HUD も変えない証＝L9 の (b)。レーダーの写し s.rd は比べない）。
+//   NOPLANE=1 で B だけ &noplane（v0.8.1 IP2: us_06 の水上機を切った夜が IP1 のビルドと同じ世界の証）。NORADAR=1 で B だけ &noradar（レーダーを切った夜。A と同じビルドで回せばレーダーが世界も HUD も変えない証＝L9 の (b)。レーダーの写し s.rd は比べない）。
 // v0.8.0 S4（brief L33）: us_04 の HUD の S4 の物を比べから外す明示の濾し（S4_FILTER。tests/hud-ab-filter が固定）。RADARUI=1（A は S3 の commit のビルド・B は今の木）は B が、
 //   NORADAR=1（A＝B＝今の木・B だけ &noradar）は A が「出し側」: 出し側を先に回し、2 行目が S4 の行（RADARUI は 4 つのレーダーの文と衝突の危険、NORADAR はレーダーの文だけ＝衝突の危険と
 //   3 行目の「去った」は比べる）だったフレームの番号とその Text の添字を記録し、両方の側でそのフレームのその Text だけを '<S4>' に替える。緑の端の印（字の色 #6dff8c・絵の鍵 tex-radar-marker）は
 //   両方の側で除く。世界の写し（自艇・艦・魚雷・列の段階・輝点）とほかの HUD の物はそのまま比べる。結果に隠したフレームの数（masked）。FILTERTEST=1 は濾しが別の変化を隠さない試し
 //   （出し側でない側の、隠したフレームの 3 行目の字に 'X' を足す → 違いが出るはず）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04] [CAM=1] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.1 S2（spec-v0810 §6 の S2・brief の「新しい組」）: SET=us06 で us_06（オルモック湾の決着。止まった艦と暗い岸を背に）のノーマル・ハード × seed 1・2 を 200 秒（夜明けまで。all には入れない。
+//   S2 は A＝B＝今の木で決定性を見る・S3 から A は S2 の commit のビルド＝以後の段の回帰）。写しに止まった艦の段（s.an: 段・anchored）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+// v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文の濾し（scripts/headless/anchor-filter。B が出し側・世界の写しは全部比べる。FILTERTEST=1 は濾しの試し）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+import { anchorPair } from './anchor-filter.mjs';
 
 /** S4 の濾し（brief L33。ページへは文字列で渡す）: 2 行目の S4 の行・そのうちレーダーだけの行・緑の端の印の字の色と絵の鍵・隠した物の字 */
 export const S4_FILTER = {
@@ -71,6 +75,8 @@ export function abRun(o) {
     // 列の通過（v0.8.0 S2。us_04）の段階と、レーダーの輝点（NORADAR の比べでは写さない）。無い任務は鍵ごと無い
     if (w.destroyers && w.destroyers.transit) s.tr = Array.from(w.destroyers.transit.state.phase.slice(0, w.destroyers.transit.state.ships));
     if (w.radar && !o.noradar) s.rd = [w.radar.state.sweeps, w.radar.state.n, w.radar.state.blips.slice(0, w.radar.state.n).map((x) => [x.x, x.y])];
+    // 止まった艦（v0.8.1 S2。us_06）の段と止まっているか。無い任務は鍵ごと無い
+    if (w.destroyers && w.destroyers.anchors) s.an = [Array.from(w.destroyers.anchors.state.stage), w.destroyers.ships.map((x) => x.anchored)];
     s.hud = o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length).filter((x) => x.type === 'Text').map((x) => x.text) : hl.texts('Hud');
     if (o.cam) {
       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
@@ -133,7 +139,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', filtertest: process.env.FILTERTEST === '1' };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1', ...(process.env.NOPLANE === '1' ? { noplane: true } : {}) };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -148,6 +154,8 @@ export function abCases(set, input) {
     jp03: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'jp_03', hard, seed, secs: envNum('SECS', 260), set: 'jp03' }))),
     // us_04 のブラケット海峡の夜（v0.8.0 S2。列の通過とレーダー）: 夜明けの 260 秒まで。A は S2 の commit のビルド（以後の段の回帰）。NORADAR=1 なら B だけレーダーを切る
     us04: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_04', hard, seed, secs: envNum('SECS', 260), set: 'us04' }))),
+    // us_06 のオルモック湾の決着（v0.8.1 S2。止まった艦と暗い岸を背に）: 夜明けの 200 秒まで。S2 は A＝B＝今の木（決定性）・S3 から A は S2 の commit のビルド
+    us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
   };
   if (process.env.MISSION) {
     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
@@ -156,7 +164,7 @@ export function abCases(set, input) {
 }
 
 export function query(c, side) {
-  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}`;
+  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}${c.noplane && side === 'B' ? '&noplane' : ''}`;
 }
 
 /** S4 の濾しの設定（RADARUI は B・NORADAR は A が出し側。どちらでもなければ null＝今のまま） */
@@ -173,7 +181,8 @@ export async function oneCase(browser, A, B, c) {
     const o = { ...c, frameMs: FRAME_MS, hudEvery: c.hudEvery ?? 0 };
     let ra;
     let rb;
-    if (c.radarui || c.noradar) {
+    if (c.anchorui) [ra, rb] = await anchorPair(pa, pb, o, c, abRun); // us_06 の S4 の濾し（v0.8.1 S4。anchor-filter）
+    else if (c.radarui || c.noradar) {
       // S4 の濾し: 出し側を先に回してフレームの印を集め、もう一方へ渡す
       for (const p of [pa, pb]) await p.page.evaluate(`window.__s4Hud = ${s4Hud.toString()}`);
       const first = c.radarui ? pb : pa;
@@ -209,7 +218,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }

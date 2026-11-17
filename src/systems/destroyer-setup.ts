@@ -1,4 +1,4 @@
-// 駆逐艦の隊の数値（v0.4.7 で world-setup から切り出し。中身は v0.4.5 のまま、輸送船の型を足した）。Phaser 非依存。起動時に 1 回だけ。
+// 駆逐艦の隊の数値（v0.4.7 で world-setup から切り出し。中身は v0.4.5 のまま、輸送船の型を足した。v0.8.1 でハードの駆潜艇の型）。Phaser 非依存。起動時に 1 回だけ。
 import { getEnemyRecord, getEvasionMultiplier, type GameData } from '../config/game-data';
 import { gunneryParamsFromData, type GunneryParams } from '../core/gunnery';
 import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
@@ -32,6 +32,16 @@ export interface DestroyerSetup {
 export interface TransportSetup extends Omit<DestroyerSetup, 'starts'> {
   enemyId: string;
   start: { x: number; y: number; headingDeg: number };
+}
+
+/** ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。config/anchor-mission-data）: 隊の最後に並ぶ艦の型（出発点は配列・今夜の揺らぎ込み）。達成・輸送船の加点に数えない */
+export interface PicketSetup extends Omit<DestroyerSetup, 'objectiveSinks'> {
+  enemyId: string;
+}
+
+/** 駆潜艇の数値（寸法・AI・反撃は enemies.json の picket_enemy_id の記録から。沈む本数は記録の値。v0.8.1） */
+export function picketSetup(data: GameData, starts: DestroyerSetup['starts'], enemyId: string, hitScale: number, historical: boolean): PicketSetup {
+  return { ...destroyerSetup(data, starts, enemyId, null, hitScale, historical), enemyId };
 }
 
 /**

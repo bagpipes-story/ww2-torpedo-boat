@@ -765,32 +765,35 @@
       "id": "us_06",
       "campaign": "us_pt",
       "order": 6,
+      "playable_from": "v0.8.1",
       "title_ja": "オルモック湾の決着",
       "date": "1944-12-11",
-      "place": "オルモック湾（レイテ島）",
+      "place": "パロンポン沖（レイテ島西岸）",
       "type": "intercept_destroyer",
       "player_boat": "us_elco80",
       "torpedo_type": "us_mk13",
-      "objective": "輸送部隊の駆逐艦を雷撃。特攻艇に注意",
+      "objective": "パロンポン沖に止まった駆逐艦 卯月と、揚陸中の輸送船 空知丸。レーダーで捉え、暗い岸を背に忍び寄って雷撃し、動き出した艦から逃れて帰れ",
       "enemies": [
-        "ijn_destroyer",
+        "ijn_destroyer_mutsuki_enemy",
         "ijn_transport"
       ],
       "hazards": [
         "enemy_ship_gunfire_or_ram",
         "enemy_aircraft"
       ],
-      "moon": "half",
+      "moon": "dark",
+      "moon_label_ja": "月没後",
       "duration_min": 5,
-      "success": "駆逐艦撃沈または輸送船撃沈、帰投",
-      "historical_note": "PT-490・492が駆逐艦卯月を撃沈（日本側記録一致）。特攻でPT-323・300喪失。",
+      "success": "帰投。卯月を撃沈すれば達成",
+      "historical_note": "1944-12-12 1時ごろ、パロンポン沖に止まっていた卯月を PT-490・PT-492 がレーダーで捉え、暗い岸を背に約1,000 ydから6本、2本以上が命中して撃沈（日本側記録一致）。空知丸は駆潜艇2隻に導かれパロンポンで揚陸。月は沈んでいた。PT-323 は 12-10 に特攻機で失われた（別の夜）。WebSearch の抜粋のみ・本文未読（docs/01 §8）",
       "source_url": "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
+      "briefing_note_ja": "1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月を、レーダーで捉えた米PT\u00a02隻が暗い岸を背に忍び寄り、約900\u00a0mから魚雷6本を撃って2本以上を当てて沈めた。輸送船空知丸は駆潜艇2隻に導かれて揚陸していた。日本のタブの「多号作戦・オルモック湾へ」と同じ夜。",
       "dawn_air": {
         "control": "contested",
         "confidence": "medium",
-        "play_as": "contested",
+        "play_as": "enemy",
         "enemy_ships_at_dawn": "retire",
-        "label_ja": "昼の空は争奪（特攻とコルセア）",
+        "label_ja": "昼の空は争奪（日本機の空襲）",
         "refs": [
           {
             "url": "https://pacificwrecks.com/battle/battle-of-ormoc-bay.html",
@@ -799,9 +802,136 @@
           {
             "url": "https://www.navsource.org/archives/12/05323.htm",
             "claim": "PT-323 はレイテ方面で特攻機の体当たりを受けて失われた（1944-12）"
+          },
+          {
+            "url": "https://en.wikipedia.org/wiki/VMF-541",
+            "claim": "VMF(N)-541 の夜間戦闘機が1944-12-03 からタクロバンにいて、12日朝にオルモック湾の米艦へ向かう日本機33機を迎え撃った（夜明けの空は日本機も来る争奪）"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い。play_as contested は将来の『敵機 → 遅れて味方戦闘機』用。遊べる世界を作るときに決める)"
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 と v0.6.9 の調べ（2026-10-28。docs/01 §8）の WebSearch の抜粋のみ・本文未読。昼の空は米（タクロバンの海兵隊のコルセア）が優勢で、12 日の夜明けには日本機 33 機がオルモック湾の米艦へ向かった) / design (v0.6.1。label_ja の初めの文と play_as contested（遊べる世界が無かった）。v0.8.1 S0: play_as contested → enemy・label_ja「昼の空は争奪（日本機の空襲）」・refs に VMF-541 の頁（jp_04 の refs と同じ）。lead の既定 L1（ユーザー未確認）＝空は争奪で、ユーザーの規則「制空権がない限り夜明けの後は空襲」（v0.6.1）と v0.8.0 の us_04 のユーザーの決め U1「Aのままでいいと思うよ」の前例。夜明けに帰投の輪の外なら日本機 4 機の空襲（v0_1_prototype.dawn_strike）。enemy_ships_at_dawn retire は史実の値のまま＝夜明けに浮いている艦は東へ退く（v0_1_prototype.dawn_withdraw）)"
+      },
+      "v0_1_prototype": {
+        "enemies": [
+          "ijn_destroyer_mutsuki_enemy"
+        ],
+        "enemy_behavior": "anchored と ai (v0.8.1。パロンポン沖に止まった駆逐艦 卯月（enemies.json の ijn_destroyer_mutsuki_enemy）と、泊地で揚陸する輸送船 空知丸（下の transport）は t = 0 から止まっている（下の anchored）。見張りは止まっていても us_02 の規則のまま走り、自艇を見た・雷跡・被雷・隊の警報・夜明けのどれかで気づく。気づいた駆逐艦は destroyer_underway_s 後に動き出して us_02 の AI（探照灯・砲・星弾・400 m の体当たり・端で向き直し）になる。空知丸は一晩じゅう動かない（気づけば 76 mm を他の艦の光の下で撃つ）。艦から見て自艇の背に暗い岸があれば見つかる距離が縮む（下の shore_backdrop）。世界の配線は v0.8.1 S2・ハードの駆潜艇は S2b・出撃可（playable_from）は S4)",
+        "duration_s": 200,
+        "duration_s_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。夜明けまでの実秒の初めの値。岸を回る道（出発 → (5100, 1500) 巡航 → (5100, 2870) 静音 → 卯月の真南 (3620, 2900) 静音 → 狙って 15 秒 → 帰投の輪の縁まで巡航）は手の概算で 138 秒＝夜明けの 62 秒前。duration_min 5 は任務本体の設計値で、これとは別のプロトタイプ値) / design (v0.8.1 S3: 探りの帯 T（帰投の夜の 90% 以上が夜明けの前）は浜沿いの夜の 100% で通った＝200 秒のまま（180〜240 秒の内で直す必要なし）)",
+        "fuel_allotment_gal": 40,
+        "fuel_allotment_gal_source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M5。戦闘に使える割当（us_02 と同じ考え）の初めの値。core/fuel の曲線の手の概算（画面の 1 km あたり 静音 18 kt 4.0・巡航 23 kt 4.7・全速 6.9 gal）で岸を回る道は 28.9 gal＝残り 28%。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（40 gal は 1,440 秒）。足りなければ燃料でなく出発点と帰投の輪を直す) / design (v0.8.1 S3: 探りの帯 F（帰投の夜の残りの中央値 15〜35%）は浜沿いの夜の中央値 27% で通った＝40 gal のまま。北を大きく回って空知丸を先に撃つ道は 40 夜とも燃料切れで漂流（加点の道は目的の代わりにならない）)",
+        "shallows": [],
+        "bounds_m": {
+          "width": 6000,
+          "height": 3000,
+          "source": "design (v0.8.1。jp_04 と同じ地図を米の側から（同じ夜の両側）。南の縁が岸（パロンポンの浜は本当は西向き＝模式図。岸は south だけ＝v0.4.2 の規則）)"
+        },
+        "player_start": {
+          "x_m": 5000,
+          "y_m": 250,
+          "heading_deg": 225,
+          "source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M3。北東のカモテス海の側から南西向き・停止（jp_04 の米PT の「東から岸沿い」の線の入口の側）。卯月まで 2,538 m・空知丸まで 3,209 m（今夜の揺らぎの端でも卯月まで 2,416 m＝全速で見つかる 1,920 m の外。V-A4）・帰投の輪の中心まで 618 m（縁まで 368 m）)"
+        },
+        "enemy_start": {
+          "x_m": 3620,
+          "y_m": 2380,
+          "heading_deg": 270,
+          "source": "historical (卯月は 12 日 1 時ごろパロンポン沖に止まっていた（lying to。medium）。2 本は艦橋の下の左舷と中央部に当たり、左舷が浜の側＝PT は岸の側から来た（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.1 D-M2。位置は jp_04 の卯月（ally_destroyer.station）と同じ (3620, 2380)＝泊地の北東 727 m・岸の線から 620 m（レーダーの陸の反射 300 m の外＝映る）。針路だけ 90° → 270°（西向きなら左舷が南の浜。jp_04 は変えない＝同じ夜の両側で向きが違うのは既知の制約）)"
+        },
+        "transport": {
+          "enemy_id": "ijn_transport",
+          "start": {
+            "x_m": 3000,
+            "y_m": 2760,
+            "heading_deg": 135
+          },
+          "source": "historical (空知丸（4,107 t）は卯月と駆潜艇 2 隻に導かれ、12 日にパロンポンで人員と積荷を揚げた（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S2。jp_04 の泊地（landing.anchor）と同じ (3000, 2760)・135°。ijn_transport（5,000 t 級 120 × 16 m）で代用（jp_04 と同じ）。隊の最後の 1 隻で、1 本で沈む（記録の値）・撃沈の達成に数えない（撃沈は scoring.json の輸送船の撃破点）。岸の線から 240 m（レーダーの陸の反射 300 m の内＝映らない）。一晩じゅう止まって揚陸を続け、夜明けにも退かない（anchored.transport_underway false）)"
+        },
+        "return_point": {
+          "x_m": 4400,
+          "y_m": 400,
+          "radius_m": 250,
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "torpedo_end_settle_s": 5,
+          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。終わり際に走っている魚雷の決着を待つ最大実秒: 自艇の沈没は沈み始めてから数え、沈没の演出（2 秒）が終わるまでは終えない。敵艦隊なし（cleared）・漂流・座礁は理由が決まってから、夜明け後の輪の中は輪に入ってから数える。夜明け前の輪の中は torpedo_settle_max_s のまま。待つ間の命中は得点・命中率・Result に入り、待ち切って走っている魚雷は外れ)",
+          "source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M3。北東の海（来た道のカモテス海の側）。出発点から 618 m（縁まで 368 m）、卯月から 2,128 m・空知丸から 2,744 m。半径・call_margin・待ちは us_04 と同じ)"
+        },
+        "coast": {
+          "side": "south",
+          "land_m": 600,
+          "label_ja": "レイテ島（パロンポン）",
+          "source": "design (v0.8.1。jp_04 の岸と同じ（見た目だけ。南の縁が浜）。揚陸地点の帯と字（systems/world-landing の味方の揚陸の絵）は描かない。暗い岸を背に（shore_backdrop）とレーダーの陸の反射の岸の線もこの南の縁)"
+        },
+        "enemy_aircraft": {
+          "enemy_id": "ijn_seaplane_jake",
+          "attacks_per_night": 2,
+          "source": "design (v0.8.1 IP2。ユーザーの U3（2026-11-17「A: ノーマルとハードの両方でお願いします」）と実機 1 回目「敵の哨戒機がバンバン飛んできて常に速度を気にしないといけない緊張感を足せばいいかもしれません」。仕組みと数は us_02 の ijn_seaplane_jake のまま（risk_events の enemy_aircraft.params・enemies.json の機体。航跡を wake_trigger_s 見せると卯月の方角 6,000 m から来て、静音に落とせば lose_s で見失い、1,500 m を切れば照明弾と爆弾 2 発）。毎夜（night の optional_hazards に入れない）。attacks_per_night 2: 1 夜に照明弾と爆弾で攻撃する回数（無い任務は 1＝v0.4.1 の 1 任務 1 回）。攻撃を終えて去ると patrol_cooldown_s の後に哨戒へ戻る（core/seaplane-night。凍結の core/seaplane の外の包み）。探り（scripts/headless/anchor-probe・ノーマル 6 × 40 夜・ハード 2 × 40 夜）では 2 と 3 で夜が同じ（3 回目の攻撃に届く夜が無い）＝小さい方。史実: 米の公刊史の第 III 部（ソロモン）に夜の水上機が一晩中 PT を悩ませた記述（docs/01 §8）、NHHC H-Gram 040 に 1944 年 10〜11 月のレイテの夜は日本機が優勢な時もあった。その夜のパロンポン沖で日本の夜の機が PT を襲った記録は見つからない（WebSearch 2026-11-17: Wikipedia Battle of Ormoc Bay・Pacific Wrecks 1944-12-11）＝作り。?debug&noplane で無し)"
+        },
+        "hazards": [
+          "enemy_ship_gunfire_or_ram",
+          "enemy_aircraft",
+          "dawn_air_strike"
+        ],
+        "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法。v0.8.1 IP2: 敵航空機（enemy_aircraft。日本の夜の水上機。block は enemy_aircraft。その夜の記録は無い＝作り。ユーザーの U3）を砲撃・衝突と夜明けの空襲の間に＝出会う順)",
+        "night": {
+          "hazard_scale": 1,
+          "optional_hazards": [],
+          "enemy_jitter": {
+            "x_m": 150,
+            "y_m": 50,
+            "heading_deg": 0
+          },
+          "mirror_chance": 0,
+          "source": "design (v0.8.1 S0・spec-v0810 §3.1 D-M4。今夜の揺らぎ（seed+16）: 止まった艦ごとに x ±150・y ±50 m・針路は揺らさない（ノーマルは卯月と空知丸の 2 件、ハードは駆潜艇 2 隻を足して 4 件。乱数はノーマル 8 回・ハード 14 回）。y ±50 でも空知丸は岸の線から 190〜290 m（レーダーの陸の反射 300 m の内）・卯月は 570〜670 m（外）。泊地と岸は反転しないので mirror_chance 0。夜ごとに出る危険は無い（optional_hazards なし）)"
+        },
+        "dawn_strike": {
+          "aircraft_id": "ijn_a6m2n_rufe",
+          "count": 4,
+          "count_source": "design (ほかの任務と同じ 4 機（tests/dawn-air が全任務 4 を pin）)",
+          "from_bearing_deg": 270,
+          "escort_target_planes": [],
+          "source": "historical (12 日の夜明けに日本機 33 機がオルモック湾の米艦へ向かった（VMF-541 の頁の抜粋。high。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.7 D-O3。dawn_air.play_as enemy（lead の既定 L1。ユーザー未確認）の夜明けの空襲。陸上の日本機を二式水上戦闘機（零戦の形の機）の記録で代用。西＝セブ・ネグロスの側の方角から（模式図）。僚艇はいない（ユーザーの決め U1）)"
+        },
+        "dawn_withdraw": {
+          "retire_edge": "east",
+          "force_ja": "日本の艦",
+          "source": "design (v0.8.1 S0・spec-v0810 §3.7 D-O3。夜明けに浮いている駆逐艦（ハードは駆潜艇も）は遅れなしで動き出して東へ退く（マニラへの帰り道を模式図で。北東の帰投の輪への道は横切らない）。止まって揚陸する空知丸は退かない（anchored.transport_underway false）。force_ja は夜明けの帯の呼び名)"
+        },
+        "objective_sink_count": 1,
+        "objective_sink_count_source": "design (v0.8.1 S0・spec-v0810 §3.7 D-O2。撃沈の達成は卯月 1 隻（隊の駆逐艦は卯月だけ）。空知丸は輸送船の撃破点で、達成に数えない＝岸から 240 m に止まって 1 本で沈む空知丸を楽な道にしない。史実で沈んだのも卯月。ハードの駆潜艇も数えない)",
+        "radar": {
+          "model": "so_late",
+          "fit": "own",
+          "source": "historical (1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じ、卯月はレーダーで捉えられた（docs/01 §8・spec-v0800 §3.1。medium）) / design (v0.8.1 S0・spec-v0810 §3.4 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ＝ユーザーの決め U1）。陸の反射 300 m に対し空知丸は岸の線から 240 m（映らない）・卯月は 620 m（映る）。世界の配線は v0.8.1 S2（coast の南の岸の線も陸の反射に渡す）)"
+        },
+        "anchored": {
+          "destroyer_underway_s": 3,
+          "transport_underway": false,
+          "picket_underway_s": 4,
+          "alarm_s": 4,
+          "source": "historical (卯月は止まっていて（lying to）、暗い岸を背に忍び寄った PT に気づかずに 2 本以上を受けて沈んだ（medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S3〜D-S8。隊の艦は t = 0 に止まっていて、気づくまで舵も速さも動かさない（見張りは止まっていても今の規則のまま）。気づく理由は 自艇を見た・雷跡・被雷・警報（隊の別の艦が気づくか沈み始めて alarm_s 4 秒）・夜明け。駆逐艦は気づいて destroyer_underway_s 秒（S0 は 6 秒・S3 で 3 秒。体感の時計＝命中スローで延びる。AI の反応遅れと同じ考え）で動き出し us_02 の AI になる（25 kt まで約 8.6 秒）。transport_underway false＝空知丸は一晩じゅう止まって揚陸を続ける（動く空知丸は候補）。picket_underway_s 4 秒はハードの駆潜艇。夜明けは遅れなしで動き出して退く。S3 の探りの帯（A1・A4）で destroyer_underway_s 3〜10・alarm_s 2〜8 の内で直す。世界の配線は v0.8.1 S2・ハードの駆潜艇は S2b) / design (v0.8.1 S3: destroyer_underway_s 6 → 3＝探りの帯 A1（shore_east の達成 100% ＞ 80%）・A2（open_north の達成 100% ＞ A1 − 15）。spec-v0810 §3.9 のつまみ ③ の下の端。気づいて 3 秒で動き出す＝北の 900 m からの扇（走る 10.5 秒）は雷跡に気づいて動き出した艦を外しうる（open_north の達成 100 → 73%）。浜からの真南の扇（走る約 5.7 秒）は外れない＝A1・A5 は 100% のまま（CHANGELOG v0.8.1 S3 の開いた帯）)"
+        },
+        "shore_backdrop": {
+          "detect_factor": 0.6,
+          "behind_m": 2000,
+          "source": "historical (PT はレーダーで捉え、消音して暗い岸を背に低速で忍び寄った（卯月の夜と PT の寄り方の教え。medium。docs/01 §8）) / design (v0.8.1 S0・spec-v0810 §3.3 D-B1〜D-B3。艦から自艇への線を自艇の向こうへ伸ばし、behind_m 2,000 m の内で陸の岸の線に当たれば、その艦の見つける距離 × detect_factor 0.6（月の段 1 つ分＝dark 0.6 と half 1.0 の比と同じ大きさ）。照らされている間は効かず、機銃の閃光の 1,200 m はそのまま。卯月の見つける距離（月没後）は 停止 480 → 288・静音 600 → 360・巡航 1,200 → 720・全速 1,920 → 1,152 m。S3 の探りの帯（A1〜A3）で detect_factor 0.5〜0.7・behind_m 1,000〜3,000 の内で直す。世界の配線は v0.8.1 S2) / design (v0.8.1 S3: detect_factor 0.7 を試して帯が変わらず（浜の真南の止まる点＝卯月から 440〜540 m は 0.7 の背に岸の静音 420 m よりまだ遠い）0.6 に戻した。behind_m も動かさない（浜の上で卯月から見た背の陸は 140 m 前後＝1,000〜3,000 のどれでも当たる）。浜沿いの夜の達成 100% は帯 A1 の上へ外れたまま＝実機で見る（CHANGELOG v0.8.1 S3 の開いた帯）)"
+        },
+        "hard": {
+          "extra_pickets": [
+            {
+              "x_m": 2300,
+              "y_m": 2050,
+              "heading_deg": 90
+            },
+            {
+              "x_m": 3200,
+              "y_m": 1500,
+              "heading_deg": 270
+            }
+          ],
+          "picket_enemy_id": "ijn_subchaser",
+          "source": "historical (卯月と駆潜艇 2 隻（第13号型）が空知丸をパロンポンへ導いた（medium。docs/01 §8）。その夜の駆潜艇の位置は見つからない) / design (v0.8.1 S0・spec-v0810 §3.2 D-S8。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦…の数が増えていけばよい」）: 駆潜艇 2 隻を泊地の外の哨戒の位置 (2300, 2050)・090° と (3200, 1500)・270°（S3 で (4300, 2200) から移した）に止めて置く（止まった艦の規則のまま。anchored.picket_underway_s で動き出し、体当たりはしない）。隊の並びは駆逐艦 → 輸送船 → 駆潜艇。撃沈の達成・命中率の KPI・撃沈 n/m・輸送船の加点に数えず、点は無い。出発点から今夜の揺らぎの端で 2,040 m 以上（全速で見つかる 1,920 m の外＝V-A4。S2b の (4300, 2200) は 1,978 m）。世界の配線は v0.8.1 S2b（v0.8.1 の内に入った。Briefing の敵の行にハードだけ「駆潜艇 ×2」）) / design (v0.8.1 S3: 2 隻目 (4300, 2200) → (3200, 1500)＝探りの帯 H1（ハードの shore_east の達成 5%・自艇の沈没 90%＝理不尽）・H2。spec-v0810 §3.9 のつまみ ⑦。(4300, 2200) は岸を回る道の巡航の脚の終わり (5100, 1500) から 1,063 m＝巡航の見つかる 1,200 m の内で、ほとんどの夜に警報で卯月が動き出した。泊地の北西の哨戒へ移し、北から真っすぐ寄る道を見張る（卯月の北 900 m の点から名目で 420 m）＝ハードでも岸の道が正解（H2）。岸を回る道（巡航の脚・静音で下る脚・浜）からは揺らぎの端でも 1,300 m 以上・出発点から 2,040 m 以上（V-A4）)"
+        }
       }
     },
     {

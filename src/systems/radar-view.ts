@@ -58,5 +58,5 @@ export function buildRadar(scene: Phaser.Scene, w: { readonly setup: WorldSetup;
   const p = w.setup.radar;
   const tr = w.setup.transit;
   const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''; // 東の縁の向こうの揚陸の地（v0.8.0 S4。2 行目の「東（ビラ）へ消えた」。列の無い任務は ''）
-  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa) : null;
+  return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null; // 陸の反射に今の岸も（v0.8.1 S2。us_06）
 }

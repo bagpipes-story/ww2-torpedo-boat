@@ -52,7 +52,7 @@ describe('Briefing の卯月の句（LD4・LD16）', () => {
       if (id === 'jp_04') continue;
       for (const hard of [false, true]) {
         expect('allyJa' in briefingNumbers(buildWorldSetup(gameData, id, { hard })), id).toBe(false);
-        expect(rowsOf(id, hard).join('\n'), id).not.toContain('卯月');
+        expect(rowsOf(id, hard).join('\n'), id).not.toContain(id === 'us_06' ? '味方の卯月' : '卯月'); // v0.8.1 S4: us_06 は敵の卯月（目的と成功の行）・味方の句は無い
       }
     }
   });

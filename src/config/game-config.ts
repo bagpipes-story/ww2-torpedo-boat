@@ -128,6 +128,8 @@ export const DEBUG_PATROL_OFF = DEBUG_ENABLED && new URLSearchParams(window.loca
 export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noally');
 /** ?debug&noradar: その任務のレーダーを切る（v0.8.0 S2。spec-v0800 D-R12。us_04 を「レーダーの無い艇の夜」で試す・比べる。レーダーの無い任務では何も変わらない） */
 export const DEBUG_RADAR_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noradar');
+/** ?debug&nobackdrop: その任務の暗い岸を背にを切る（v0.8.1 S2。spec-v0810 D-B6・V-B3。us_06 を「背に岸の無い夜」で試す・比べる。背に岸の無い任務では何も変わらない） */
+export const DEBUG_BACKDROP_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobackdrop');
 /** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
 export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
 /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */

@@ -364,6 +364,170 @@
       "notes": "jp_04（v0.6.10）の味方の駆逐艦。泊地の北東に止まり、海の上の扇の内で走る米PT を目で見つけて 1 隻ずつ照らし、12 cm と 25 mm で撃つ。13号電探は対空の見張り（medium）なので見張りは目。卯月が撃ち返した記録は見つからない（ゲーム上の想定）。米PT の魚雷・砲弾と夜明けの空襲の的にならず、沈まない（v0.6.10）。止まった艦なので AI・回避・体当たりの値を持たず、config/game-data の getEnemyRecord では読めない（core/ally-destroyer-data が読む）"
     },
     {
+      "id": "ijn_destroyer_mutsuki_enemy",
+      "faction": "IJN",
+      "name_ja": "駆逐艦（睦月型・卯月）",
+      "length_m": 102.7,
+      "beam_m": 9.16,
+      "speed_max_kt": 34,
+      "speed_typical_kt": 25,
+      "turn_rate_deg_s": 1.5,
+      "accel_mps2": 0.3,
+      "hull_hp": 300,
+      "hull_circles": 5,
+      "torpedo_hits_to_sink": 2,
+      "guns": [
+        {
+          "id": "main_120mm",
+          "count": 2,
+          "range_m": 10000,
+          "effective_night_m": 4000,
+          "rof_per_min": 10,
+          "damage": 40,
+          "shell_speed_mps": 400,
+          "dispersion_m": 160,
+          "splash_radius_m": 8,
+          "fire_chance": 0.35,
+          "engine_damage_chance": 0.3
+        },
+        {
+          "id": "aa_25mm",
+          "count": 4,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 70,
+          "splash_radius_m": 3,
+          "fire_chance": 0.05,
+          "engine_damage_chance": 0.05
+        }
+      ],
+      "searchlight": {
+        "range_m": 3000,
+        "cone_deg": 12,
+        "sweep_deg_s": 20,
+        "on_delay_s": 2.5
+      },
+      "starshell": {
+        "range_m": 6000,
+        "illum_radius_m": 1500,
+        "duration_s": 25,
+        "cooldown_s": 60
+      },
+      "detection": {
+        "base_detect_m": 2000,
+        "wake_detect_m": 800,
+        "reaction_delay_s": 0.5,
+        "torpedo_wake_detect_m": 2000,
+        "wake_spot_rate_per_s": 0.2
+      },
+      "evasion": {
+        "mode": "comb_tracks",
+        "turn_toward_wakes": true,
+        "evade_turn_rate_deg_s": 2.0,
+        "speed_boost_kt": -10
+      },
+      "ram": {
+        "enabled": true,
+        "trigger_m": 400,
+        "give_up_m": 800,
+        "stall_s": 6,
+        "cooldown_s": 12,
+        "turn_rate_bonus_deg_s": 0.5
+      },
+      "patrol": {
+        "edge_turn_margin_m": 700
+      },
+      "source": {
+        "length_m・beam_m": "historical (睦月型の全長 102.72 m・幅 9.16 m。ijn_destroyer_mutsuki（jp_04 の味方の卯月）の source と同じ出典＝docs/01 §8 の「卯月の撃ち返し」の表。medium〜high) / design (v0.8.1 S0・spec-v0810 §3.2 D-S1。us_06 の敵としての卯月。102.7 m で当たりの船体（world.ship_hit_scale 倍）と絵（S2 から敵の色の睦月型）に使う。ijn_destroyer（陽炎型 118 m）のままでは同じ夜の卯月の大きさが両側で食い違う)",
+        "speed_max_kt": "historical (1941〜42 の高速輸送艦への改装の後 34 kt（ijn_destroyer_mutsuki と同じ。32.5 kt とする資料もある: low〜medium）)",
+        "guns": "historical (卯月 1944-08-31 の兵装: 12 cm 単装 2（medium〜high。ijn_destroyer_mutsuki と同じ）) / design (v0.8.1 S0・spec-v0810 §3.2 D-S1。main_120mm は count 2 のほか（射程・夜の有効射程・発射の速さ・威力・弾の速さ・散り・当たりの半径・火災・機関）を ijn_destroyer の main_127mm の 1 門の値の写しに、aa_25mm は ijn_destroyer のまま（命中率の KPI と砲の模擬を合わせた値。tests/enemy-mutsuki が同じことを固定）)",
+        "speed_typical_kt・turn_rate_deg_s・accel_mps2・hull_hp・hull_circles・torpedo_hits_to_sink・searchlight・starshell・detection・evasion・ram・patrol": "design (v0.8.1 S0・spec-v0810 §3.2 D-S1。ijn_destroyer の値をそのまま（命中率の KPI＝hit_rate_model.json の kpi_by_range を合わせた値なので触らない。detection の note は ijn_destroyer にある。tests/enemy-mutsuki が同じことを固定）。torpedo_hits_to_sink 2 は史実の「2 本以上が命中して沈んだ」（medium）とも合う。jp_04 の味方の記録 ijn_destroyer_mutsuki は AI の鍵が無い（止まって沈まない艦）ので使わず、jp_04 は変えない)"
+      },
+      "notes": "us_06（v0.8.1）の敵の卯月。パロンポン沖に止まっていて、気づくと動き出して ijn_destroyer と同じ AI・砲・探照灯・星弾で戦う（止まった艦の規則は missions_seed の v0_1_prototype.anchored）。jp_04 の味方の卯月は ijn_destroyer_mutsuki（別の記録）。"
+    },
+    {
+      "id": "ijn_subchaser",
+      "faction": "IJN",
+      "name_ja": "駆潜艇（第13号型）",
+      "length_m": 51,
+      "beam_m": 6.7,
+      "speed_max_kt": 16,
+      "speed_typical_kt": 12,
+      "turn_rate_deg_s": 3.0,
+      "accel_mps2": 0.4,
+      "hull_hp": 100,
+      "hull_circles": 3,
+      "torpedo_hits_to_sink": 1,
+      "guns": [
+        {
+          "id": "aa_76mm",
+          "count": 1,
+          "range_m": 6000,
+          "effective_night_m": 2500,
+          "rof_per_min": 8,
+          "damage": 25,
+          "shell_speed_mps": 400,
+          "dispersion_m": 200,
+          "splash_radius_m": 8,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        },
+        {
+          "id": "aa_13mm",
+          "count": 2,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 70,
+          "splash_radius_m": 3,
+          "fire_chance": 0.05,
+          "engine_damage_chance": 0.05
+        }
+      ],
+      "searchlight": {
+        "range_m": 1500,
+        "cone_deg": 12,
+        "sweep_deg_s": 20,
+        "on_delay_s": 2.5
+      },
+      "starshell": null,
+      "detection": {
+        "base_detect_m": 1500,
+        "reaction_delay_s": 1.0,
+        "torpedo_wake_detect_m": 800,
+        "wake_spot_rate_per_s": 0.2
+      },
+      "evasion": {
+        "mode": "turn_away",
+        "turn_toward_wakes": false,
+        "evade_turn_rate_deg_s": 3.0,
+        "speed_boost_kt": 4
+      },
+      "ram": {
+        "enabled": false,
+        "trigger_m": 0,
+        "give_up_m": 0,
+        "stall_s": 0,
+        "cooldown_s": 0,
+        "turn_rate_bonus_deg_s": 0
+      },
+      "patrol": {
+        "edge_turn_margin_m": 500
+      },
+      "source": {
+        "length_m・beam_m・speed_max_kt": "historical (第13号型駆潜艇: 438 t・51 × 6.7 m・喫水 2.75 m・16 kt（Wikipedia の No.13-class submarine chaser とその写しの抜粋 1 つのみ・本文未読。medium。速力は docs/01 §8 の船団の表とも合う）。喫水 2.75 m ＞ Mk 13 の min_run_depth_m 2 なので魚雷は当たる（torpedo_immune を持たない）)",
+        "guns": "historical (1940 の兵装: 76.2 mm 高角砲 1・13.2 mm 機銃 2（同じ抜粋 1 つ。1944 年の兵装の変化は未確認）) / design (v0.8.1 S0・spec-v0810 §4.3。aa_76mm は ijn_transport の deck_gun_76mm の値の写し、aa_13mm は ijn_destroyer の aa_25mm の値で口径の名だけ違う（count 2）)",
+        "searchlight": "design (v0.8.1 S0。range_m 1,500（味方の卯月 ijn_destroyer_mutsuki と同じ）。cone_deg・sweep_deg_s・on_delay_s は ijn_destroyer と同じ（探照灯の絵は 1 枚・「発見された！」から反転する猶予 2.5 秒）。星弾は無い)",
+        "others": "design (v0.8.1 S0・spec-v0810 §4.3。難易度ハードの us_06 だけ（missions_seed の v0_1_prototype.hard.picket_enemy_id）。巡航 12 kt・旋回 3.0°/秒・加速 0.4（小さく身軽な艦）。hull_hp 100 は未使用（1 本で沈む）。detection の base_detect_m 1,500 は記録の検査のためだけ（隊は駆逐艦の 1 つの見つける距離を使う＝今の us_02 の輸送船と同じ作り）・雷跡 800 m・毎秒 0.2・反応 1.0 秒。evasion は turn_away（雷跡から離れる向きへ今の旋回のまま・最大速力まで増す）。体当たりはしない。端 500 m で向き直す（12 kt・3.0°/秒の旋回半径 約 120 m ＋ 縁の余白 51 m より大きい）。世界の配線は v0.8.1 S2b)"
+      },
+      "notes": "us_06 のハード（v0.8.1）で泊地の外に止まって見張る駆潜艇 2 隻。気づくと動き出して記録の AI（体当たりなし）になる。点は無く、撃沈の達成・命中率の KPI・撃沈 n/m に数えない。"
+    },
+    {
       "id": "daihatsu_barge",
       "faction": "IJN",
       "name_ja": "大発動艇（大発）",

@@ -63,6 +63,9 @@ ww2-torpedo-boat/
       sfx-music-config.ts     曲の見せ方の定数（鍵・音量・段の間・下げ・命中スロー・作る予算・種。v0.7.2。何も import しない）
       radar-art-config.ts ほか 絵と HUD の見せ方の定数（radar-art・strait-art・strait-hud＝輪の色と薄れ・揚陸の地の字・2 行目の出来事の秒と距離。v0.8.0。何も import しない）
       *-mission-data.ts       任務の block の検査と setup（radar・transit・shores＝V-R・V-T・V-S。無い任務では鍵ごと出ない。v0.8.0）
+      anchor-*.ts ほか        止まった艦の任務の data の検査と setup（anchor-mission-data＝V-A・backdrop-mission-data＝V-B・kpi-data＝V-K）と 2 行目の出来事の見せ方の定数（anchor-hud-config＝出す秒・背に岸の 20 秒。何も import しない）。v0.8.1
+      seaplane-mission-data.ts 夜の水上機の任務ごとの値（1 夜の攻撃の回数 attacks_per_night・秒の上書き）の検査（V-P1〜V-P3）と setup。無い任務は 1 回・今の値のまま。v0.8.1 IP2
+      backdrop-art-config.ts  岸の陰の絵の見せ方の定数（暗い陸の帯・岸の陰の海の格子・α・縁・薄れ。v0.8.1 IP1。何も import しない）
     core/                     Phaser非依存の純粋ロジック（必ずvitestでテスト）
       units.ts                kt→m/s、yd→m などの単位変換
       torpedo-solver.ts       見越し角・命中幾何
@@ -74,6 +77,9 @@ ww2-torpedo-boat/
       radar.ts・radar-data.ts レーダーの掃引（艦艇の位置だけ・輝点 16・陸の反射・丸め）と data の検査（v0.8.0）
       ship-transit.ts ほか    列の通過の段階（往路 → ビラ → 復路。transit-data は検査）と海峡の幾何（strait-geometry＝陸までの距離・衝突の危険）。v0.8.0
       intercept-sim*.ts       迎撃の模擬（us_04 の 1 夜＝world・torpedoes・tracks・policy・cell。scripts/intercept-sim・g2 の US04=1。v0.8.0）
+      anchored-ship.ts        止まった艦の段（気づく 5 つの理由・警報・動き出す秒・体感の時計・夜明けは遅れなし。固定長の配列）。暗い岸を背に・陸の線は strait-geometry の landBehind・landLinesOf、止まった艦への 1 本の KPI は hit-rate の kpiTargetAtLaunch（v0.8.1）
+      seaplane-night.ts       夜の水上機の 1 夜に複数回の攻撃（凍結の seaplane・seaplane-ordnance を包む。回数 1 は今と同じ）。v0.8.1 IP2
+      backdrop-zone.ts        岸の陰の海（止まった艦ごとに背に岸が効く自艇の位置を格子で。判定は landBehind そのもの。絵だけが読む＝世界は読まない。v0.8.1 IP1）
     scenes/                   Boot / Title / Briefing / Mission / Hud / Result
       music-lab-scene.ts      曲の試聴の場（`?sfxlab`。効果音の試聴の場 sound-lab-scene はその下の段から。v0.7.2）
     entities/                 PlayerBoat / Torpedo / Destroyer / Barge / Seaplane
@@ -83,12 +89,16 @@ ww2-torpedo-boat/
       sfx-slowmo.ts ほか      命中スローの音（sfx-slowmo）・context の見張り（sfx-watchdog）・曲の試聴の台本（sfx-lab-demo）。v0.7.2
       world-radar.ts ほか     レーダーの世界（world-radar・radar-view・radar-telemetry）・列の通過（destroyer-transit・transit-telemetry）・海峡（strait-terrain・strait-telemetry・strait-result-part）。v0.8.0
       intercept-*.ts          迎撃の模擬の setup と帯（intercept-sim-setup・intercept-calibration。ゲームは import しない。v0.8.0）
+      destroyer-anchor.ts ほか 止まった艦（destroyer-anchor）・暗い岸を背に（shore-backdrop）・その記録とテレメトリ（anchor-telemetry＝気づいた・動き出した秒・背に岸の秒・止まった艦への魚雷・目で見えている艦のビット）・Result の鍵（anchor-result-part）。ハードの駆潜艇は destroyer-group の隊の最後（destroyer-setup の picketSetup・絵は assets/destroyer-art の形 subchaser）。v0.8.1
+      backdrop-fx.ts          岸の陰の絵の持ち主（暗い陸の Blitter と、最寄りの止まった・知っている艦の陰の Image を替わる時だけ α。背に岸の任務だけ world-art が作る。v0.8.1 IP1）
     ui/                       HUD（Phaser内描画。DOMは最小限）
       radar-*.ts・strait-*.ts レーダーと列の 2 行目の出来事（radar-lines・strait-lines・strait-line-clock）・緑の端の印（radar-marker・radar-marker-pick）・Result の 2 行（radar-result・strait-result）。v0.8.0
+      anchor-*.ts             止まった艦の任務の 2 行目の出来事（anchor-lines＝時計・anchor-texts＝文: 岸の陰に入った・停泊していた艦が動き出した・寄り方の手がかり。時計は strait-line-clock が持つ）と Result の 1 行と見出しの言い換え（anchor-result）。v0.8.1
     assets/                   プレースホルダー生成（Graphics.generateTexture）
       sfx-*.ts                音の合成（v0.7.1。Phaser・DOM に依らない。起動時に 1 回）
       sfx-music-*.ts          曲の作曲と合成（synth・theory・compose・plan・arrange・render・themes。score は旋律の点＝scripts と tests だけ。v0.7.2。Boot では作らない）
       radar-art.ts            レーダーの緑の輪（初めて使う時に 1 回 generateTexture。v0.8.0）
+      backdrop-art.ts         暗い陸の帯と岸の陰の海（任務の開始に 1 回。陰は艦の位置が夜ごとに揺れるので世界の破棄で消す。v0.8.1 IP1）
   public/                     PWA manifest・アイコン
   tests/                      vitest
 ```
@@ -197,3 +207,6 @@ optional/claude.yml                  任意: GitHubの@claude連携
 - 2026-11-15 v0.7.2 §2「アート」に BGM（U-M1 のメニュー＋任務中も静かに・U-M2 のタイトルの曲 D・U-S1 の命中スロー A・設計の既定・定数の置き場 `config/sfx-music-config`）、§4 に曲の層（`assets/sfx-music-*`・`core/sfx-music-mood`・`systems/sfx-music-*`・`sfx-slowmo`・`sfx-watchdog`・`sfx-lab-demo`・`scenes/music-lab-scene`）、§7 に「曲を Boot や 1 フレームで作らない・止まっている context に曲の音源を作らない」の行
 - 2026-11-15 v0.8.0 §2「夜明け」に us_04（U1）、§4 にレーダー・列の通過・海峡の層
 - 2026-11-16 v0.8.0 実機1回目 §2 に「レーダー（us_04）」（ユーザーの決め U2: プレイヤーはレーダーを積む先頭の艇のまま）
+- 2026-11-17 v0.8.1 §4 に止まった艦・暗い岸を背に・駆潜艇の層
+- 2026-11-17 v0.8.1 IP2 §4 に夜の水上機の 1 夜に複数回の攻撃（core/seaplane-night・config/seaplane-mission-data）
+- 2026-11-17 v0.8.1 IP1 §4 に岸の陰の絵の層（`core/backdrop-zone`・`assets/backdrop-art`・`systems/backdrop-fx`・`config/backdrop-art-config`）と `ui/anchor-texts`

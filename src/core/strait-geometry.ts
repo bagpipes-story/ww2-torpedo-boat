@@ -2,8 +2,10 @@
 // 切れ目（水道）を除いた陸の区間、点から一番近い陸までの距離の 2 乗（レーダーの陸の反射の帯＝core/radar）、衝突の危険（艦首が自艇へ向く。2 行目の文＝S4）、
 // 探照灯の光を岸で止める長さ（beamLengthToLand。実機 1 回目＝systems/enemy-fire の絵だけ）。
 // 陸までの距離は岸の角も見る: 陸の区間の真横なら岸の線まで、切れ目の上なら切れ目の両端の陸（岸の角）まで。だから水道の中は両端の陸から遠ければ反射の外。
-// 岸の線は us_04 の両岸（config/shores-mission-data の ShoresSetup。北と南・切れ目あり）からも、今の岸（coast。南だけ・切れ目なし＝v0.8.1 の us_06）からも landLine で作れる。
-// Phaser 非依存・乱数なし。作る（landLine・landLinesFromShores）は起動時に 1 回だけ確保し、判定（landDist2・bowOnRisk）は確保しない（2 乗の距離と内積だけ。平方根・atan2 なし）。
+// 岸の線は us_04 の両岸（config/shores-mission-data の ShoresSetup。北と南・切れ目あり）からも、今の岸（coast。南だけ・切れ目なし＝v0.8.1 の us_06）からも作れる（landLinesOf）。
+// 暗い岸を背に（v0.8.1 S1。spec-v0810 §3.3 D-B2。us_06）: 艦から自艇への線を自艇の向こうへ伸ばして X の内で陸の区間に当たるか（landBehind。S2 の systems/shore-backdrop が使う）。
+// Phaser 非依存・乱数なし。作る（landLine・landLinesFromShores・landLinesOf）は起動時に 1 回だけ確保し、判定（landDist2・landBehind・bowOnRisk）は確保しない
+// （2 乗の距離と内積・割り算だけ。判定に平方根・atan2 なし）。
 import { degToRad } from './units';
 
 /** 岸の線の縁: north は y 0 の線で陸は y < 0 の側、south は y 海域の高さの線で陸はその外 */
@@ -45,6 +47,15 @@ export function landLinesFromShores(
   height: number,
 ): LandLine[] {
   return [landLine('north', width, height, shores.north.gaps), landLine('south', width, height, shores.south.gaps)];
+}
+
+/**
+ * 任務の岸の線（起動時に 1 回。v0.8.1 S1）: 両岸（shores）があれば landLinesFromShores と同じ線（us_04 は今のまま）、無くて coastSouth（今の岸の形の南＝us_06）なら
+ * 切れ目の無い南の線 1 本、どちらも無ければ空。両岸と岸を両方持つ任務は無い（両岸が先）
+ */
+export function landLinesOf(shores: Parameters<typeof landLinesFromShores>[0] | null, coastSouth: boolean, width: number, height: number): LandLine[] {
+  if (shores) return landLinesFromShores(shores, width, height);
+  return coastSouth ? [landLine('south', width, height, [])] : [];
 }
 
 /**
@@ -95,6 +106,29 @@ export function beamLengthToLand(lines: readonly LandLine[], x: number, y: numbe
     }
   }
   return len;
+}
+
+/**
+ * 暗い岸を背に（v0.8.1 S1。spec-v0810 §3.3 D-B1・D-B2）: 艦 S (sx, sy) から自艇 P (px, py) への線を P の向こうへ伸ばし、P から X の内（behindM2＝X²。境界は含む）で
+ * 陸の区間のある岸の線に当たるか。線ごとに a＝P から岸の線まで（海の側が正。線の上か向こうなら 0）、t＝S → P の陸へ近づく向きの成分。t ≤ 0（陸へ向かわない・S と P が同じ）は当たらない。
+ * P から当たる点までは a·|SP|/t なので、a²·|SP|² ≤ X²·t²（両辺とも非負＝2 乗で比べる）かつ当たる x＝P.x ＋ a·(P.x − S.x)/t が陸の区間の内（割り算は線ごとに 1 回）。確保しない
+ */
+export function landBehind(lines: readonly LandLine[], sx: number, sy: number, px: number, py: number, behindM2: number): boolean {
+  const dx = px - sx;
+  const dy = py - sy;
+  const sp2 = dx * dx + dy * dy;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const t = dy * line.landSide;
+    if (t <= 0) continue;
+    const a0 = (line.y - py) * line.landSide;
+    const a = a0 > 0 ? a0 : 0;
+    if (a * a * sp2 > behindM2 * t * t) continue;
+    const xc = px + (a * dx) / t;
+    const spans = line.spans;
+    for (let j = 0; j < spans.length; j++) if (xc >= spans[j]!.x0 && xc <= spans[j]!.x1) return true;
+  }
+  return false;
 }
 
 /** bowOnRisk の cos2（半角 halfAngleDeg の cos の 2 乗。0 < 半角 < 90。起動時に 1 回） */

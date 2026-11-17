@@ -22,13 +22,15 @@ const HS = gameData.hitRateModel.world.hit_scale as number;
 const dims = (id: string): { L: number; B: number } => { const r = getEnemyRecord(gameData, id); return { L: r.length_m * SS, B: r.beam_m * SS }; };
 const landing = validateLandingMissions(gameData, TS)!;
 const ally = validateAllyDestroyerMissions(gameData, TS, getEnemyRecord(gameData, 'ijn_destroyer').searchlight!.cone_deg)!;
-/** Boot と同じ寸法の 5 枚（鍵・形・世界単位） */
+/** Boot と同じ寸法の 7 枚（鍵・形・世界単位。v0.8.1 S2 で us_06 の敵の卯月＝睦月型の形の敵の色の 1 枚、S2b でハードの駆潜艇の 1 枚を足した） */
 const SHIPS: { key: string; kind: ShipArtKind; L: number; B: number }[] = [
   { key: 'tex-destroyer', kind: 'kagero', ...dims('ijn_destroyer') },
   { key: 'tex-destroyer-us', kind: 'fletcher', ...dims('us_destroyer') },
+  { key: 'tex-destroyer-mutsuki', kind: 'mutsuki', ...dims('ijn_destroyer_mutsuki_enemy') },
   { key: 'tex-destroyer-friendly', kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS },
   { key: 'tex-transport', kind: 'transport', ...dims(getPrototypeMission(gameData, 'us_02').transport!.enemyId) },
   { key: 'tex-transport-friendly', kind: 'transport', L: landing.lengthM * SS, B: landing.beamM * SS },
+  { key: 'tex-subchaser', kind: 'subchaser', ...dims('ijn_subchaser') },
 ];
 const hsv = (c: number): { h: number; s: number } => {
   const r = (c >> 16) & 255; const g = (c >> 8) & 255; const b = c & 255;
@@ -56,7 +58,7 @@ function expectPartsInside(shape: ShipShape, halfAt: (yFrac: number) => number, 
 }
 
 describe('艦の絵の形（v0.7.0 S2a）', () => {
-  it('鍵 → 形の表は 5 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
+  it('鍵 → 形の表は 7 枚を覆い、2 枚の輸送船は同じ形、表に無い鍵は陽炎型', () => {
     expect(Object.keys(SHIP_ART_KIND_BY_KEY).sort()).toEqual(SHIPS.map((s) => s.key).sort());
     for (const s of SHIPS) expect(shipArtKind(s.key)).toBe(s.kind);
     expect(shipArtKind('tex-boat-jp_t38')).toBe('kagero');
@@ -103,13 +105,23 @@ describe('艦の絵の形（v0.7.0 S2a）', () => {
     expect(l.transport.hatches).toHaveLength(4);
     expect(hullHalfWidthAt(l.transport.hull, 0.04, 1)).toBeGreaterThan(hullHalfWidthAt(l.kagero.hull, 0.04, 1) * 1.5);
     for (const k of ['kagero', 'fletcher', 'mutsuki'] as const) { expect(l[k].funnels).toHaveLength(2); expect(l[k].tubes).toHaveLength(2); }
+    // v0.8.1 S2b（D-A2）: 駆潜艇は前に単装の砲 1・煙突 1・発射管なし・船首楼の段・艦尾の中心線に爆雷の投射機の台（砲より後ろ）
+    expect([l.subchaser.mounts.length, l.subchaser.mounts[0]![2], l.subchaser.mounts[0]![1] < 0.4, l.subchaser.funnels.length, l.subchaser.tubes.length, l.subchaser.forecastle?.[1]]).toEqual([1, 1, true, 1, 0, 'line']);
+    expect(l.subchaser.mounts[0]![0]).toBeLessThan(l.subchaser.bridge[0]);
+    expect(l.subchaser.tubs.filter(([f, x]) => x === 0 && f > 0.7)).toHaveLength(1);
   });
-  it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）', () => {
+  it('駆逐艦の鍵の表（D3）: data の駆逐艦の id → TEXTURE_KEYS にある鍵（us_destroyer は tex-destroyer-us）。v0.8.1 S2 の敵の卯月の鍵は ship-art-config の表だけ（TEXTURE_KEYS の 53 鍵は変えない＝tests/sfx-inventory）', () => {
     const g = readFileSync('src/config/game-config.ts', 'utf8');
-    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) expect(g).toContain(`'${v}'`);
+    for (const v of Object.values(SHIP_ART_KEY_BY_ENEMY)) if (v !== 'tex-destroyer-mutsuki' && v !== 'tex-subchaser') expect(g).toContain(`'${v}'`);
+    expect(g).not.toContain("'tex-destroyer-mutsuki'");
+    expect(g).not.toContain("'tex-subchaser'"); // v0.8.1 S2b（D-A2）: 駆潜艇の鍵も ship-art-config の表だけ
     expect(shipArtKey('us_destroyer')).toBe('tex-destroyer-us');
     expect(shipArtKey('ijn_destroyer')).toBe('tex-destroyer');
     expect(dims('us_destroyer')).toEqual({ L: 229.6, B: 24 });
+    expect(shipArtKey('ijn_destroyer_mutsuki_enemy')).toBe('tex-destroyer-mutsuki'); // v0.8.1 S2（D-A1）: 敵の卯月は味方の卯月の絵と同じ大きさ（記録 × sprite_scale）
+    expect(dims('ijn_destroyer_mutsuki_enemy')).toEqual({ L: 205.4, B: 18.32 });
+    expect(shipArtKey('ijn_subchaser')).toBe('tex-subchaser'); // v0.8.1 S2b（D-A2）: ハードの駆潜艇（記録 × sprite_scale）
+    expect(dims('ijn_subchaser')).toEqual({ L: 102, B: 13.4 });
   });
 });
 
@@ -141,18 +153,22 @@ describe('大発・米PT・魚雷の絵（v0.7.0 S2a）', () => {
     for (const c of [PALETTE_ALLY.deck, PALETTE_ALLY.rim, PALETTE_ALLY.side, PALETTE_ALLY.superstructure]) { const h = hsv(c).h; expect(h).toBeGreaterThanOrEqual(190); expect(h).toBeLessThanOrEqual(220); }
     expect(ART_RIM_UNITS).toBe(1.5);
   });
-  it('source の pin: Boot は駆逐艦の絵の後に米駆逐艦の 1 行、world-enemies が shipArtKey(mission.enemyId) を DestroyerGroup の最後の引数で渡す（setup には足さない＝R15）、placeholders.ts は 300 行以下', () => {
+  it('source の pin: Boot は駆逐艦の絵の後に米駆逐艦の 1 行と駆潜艇の 1 行、world-enemies が shipArtKey(mission.enemyId) を DestroyerGroup の絵の鍵の引数で渡す（setup には足さない＝R15。v0.8.1 S2b から最後の引数はハードの駆潜艇）、placeholders.ts は 300 行以下', () => {
     const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
     const i = boot.indexOf('generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });');
     const j = boot.indexOf('generateExtraDestroyerTextures(this, gameData, spriteScale);');
     expect(i).toBeGreaterThan(0);
     expect(j).toBeGreaterThan(i);
     expect(boot.split('generateExtraDestroyerTextures(').length).toBe(2);
+    const k = boot.indexOf('generatePicketTextures(this, gameData, spriteScale);'); // v0.8.1 S2b（D-A2）: 駆潜艇の絵は駆逐艦の絵の直後に 1 回
+    expect(k).toBeGreaterThan(j);
+    expect(boot.split('generatePicketTextures(').length).toBe(2);
     const we = readFileSync('src/systems/world-enemies.ts', 'utf8');
-    expect(we).toContain('splashes, shipArtKey(mission.enemyId)) : null;');
+    expect(we).toContain('splashes, shipArtKey(mission.enemyId), s.pickets ?? null) : null;'); // v0.8.1 S2b（L41）: 駆潜艇は新しい最後の引数（絵の鍵は隊が記録の id から）
     const dg = readFileSync('src/systems/destroyer-group.ts', 'utf8');
     expect(dg).toContain('destroyerTextureKey: string = TEXTURE_KEYS.destroyer,');
     expect(dg).toContain('new Destroyer(scene, st, ds.spec, ds.shipAi, bounds, lookoutRng, destroyerTextureKey)');
+    expect(dg).toContain('new Destroyer(scene, start, pickets.spec, pickets.shipAi, bounds, lookoutRng, shipArtKey(pickets.enemyId))');
     expect(readFileSync('src/systems/destroyer-setup.ts', 'utf8')).not.toMatch(/textureKey|artKey|shipArt/); // setup には絵の鍵を足さない（snapshot が変わる）
     expect(readFileSync('src/assets/placeholders.ts', 'utf8').split('\n').length).toBeLessThanOrEqual(301);
     expect(readFileSync('src/assets/ship-art.ts', 'utf8')).toContain('hullTexSize(spec.lengthUnits, spec.beamUnits, RENDER_SCALE)');

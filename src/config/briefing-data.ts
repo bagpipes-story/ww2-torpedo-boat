@@ -39,6 +39,8 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   const extra = hard && proto?.['transit'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined)?.['extra_transit_ships'] : undefined;
   for (let i = 0; i < (typeof extra === 'number' ? extra : 0); i++) enemyIds.push(mission.enemyId);
   if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
+  const pk = hard && proto?.['anchored'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined) : undefined; // ハードの駆潜艇（v0.8.1 S4。us_06。V-A5 で 1〜4 隻）は輸送船の後ろに
+  if (pk && Array.isArray(pk['extra_pickets']) && typeof pk['picket_enemy_id'] === 'string') for (const _ of pk['extra_pickets']) enemyIds.push(pk['picket_enemy_id']);
   return {
     id: missionId,
     titleJa: text('title_ja'),

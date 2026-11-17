@@ -1,4 +1,4 @@
-// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac、v0.8.0 S2 でレーダーの radar と列の通過の transit を足した）。
+// HUD に渡す自艇の状態の型（v0.6.5 の準備で core/boat-motion.ts から移した。boat-motion が再 export する。v0.6.5 で機関の不調の engine、v0.6.6 で隼艇の gunboat、v0.6.7 で夜の哨戒機の patrol、v0.6.8 で兵装の arms・aaFiring、v0.6.9 で揚陸の landing、v0.6.10 で卯月の ally、v0.6.11 で空襲下の退避の evac、v0.8.0 S2 でレーダーの radar と列の通過の transit、v0.8.1 S2 で止まった艦の anchor を足した）。
 // Phaser 非依存。型だけ（実行時の値を持たない）。
 import type { AllyTelemetry } from './ally-telemetry';
 import type { ArmsTelemetry } from './arms-cue';
@@ -155,6 +155,7 @@ export interface BoatTelemetry {
   radar: RadarTelemetry; // 自艇のレーダー（v0.8.0 S2。core/radar の状態の写し。us_04）: 掃引・接触・最初の接触・増えた／減った（systems/radar-telemetry。無い任務・?debug&noradar は enabled false）。HUD の文・端の印・Result は S4
   transit: TransitTelemetry; // 列の通過（v0.8.0 S2。core/ship-transit の段階の数。us_04）: 段階ごとの隻数・残りの戻り・通算（systems/transit-telemetry。無い任務は enabled false）。文は S4
   strait: StraitTelemetry; // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04）: 視程の 2 乗・艦首がこちらへ向く目で見えている艦（systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
+  anchor?: AnchorTelemetry; // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 気づいた・動き出した・背に岸の秒・止まった艦への魚雷（systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
 }
 
 /** 輝点の位置（core/radar の RadarBlip の読むだけの形。S4 の緑の端の印が読む） */
@@ -226,4 +227,23 @@ export interface StraitTelemetry {
   /** 衝突の危険の艦（隊の艦の添字のビット: 目で見えていて・艦首が自艇へ半角の内・距離の内）と、その一番近い艦までの m（無ければ NaN） */
   bowOnMask: number;
   bowOnM: number;
+  /** その一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハードの隊の最後の 2 隻。2 行目の名詞。駆潜艇のいない任務はいつも偽） */
+  bowOnPicket: boolean;
+}
+
+/** 止まった艦と暗い岸を背にの HUD・Result の材料（v0.8.1 S2。setup.anchors の任務＝us_06 だけ鍵が出る。読み手は S4 の ui/anchor-lines・anchor-result） */
+export interface AnchorTelemetry {
+  /** 艦ごと（隊の先頭から。長さは止まった艦の数）の段（core/anchored-ship の ANCHOR_*）・気づいた理由（ANCHOR_REASON_*）・気づいた／動き出した世界の秒（NaN は未だ）＝世界の固定長の配列の参照（写さない） */
+  stage: ArrayLike<number>;
+  reason: ArrayLike<number>;
+  noticedAtS: ArrayLike<number>;
+  underwayAtS: ArrayLike<number>;
+  noticedCount: number; // 気づいた・動き出した艦の通算（増えた時が出来事）・最寄りの浮いている艦に対して背に岸が効いている・その世界の秒の和・止まった艦へ撃った魚雷とその命中（不発を除く）
+  underwayCount: number;
+  backdropOn: boolean;
+  backdropS: number;
+  heldShots: number;
+  heldHits: number;
+  /** 艦ごと（上と同じ添字）の目で見えているビット（v0.8.1 S4。systems/mission-telemetry の setSighted と同じ d² ≤ visRange2・海域を出た艦は 0。HUD の「停泊していた艦が動き出した！」の材料） */
+  seenMask: number;
 }

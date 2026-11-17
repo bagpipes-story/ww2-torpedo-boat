@@ -3,6 +3,7 @@
 // out（沈み始めたか退いた）は「もう狙えない・撃たない・見えない」、撃沈の数と任務の達成は sinking のまま（退いた艦は撃沈に数えない）。
 // 列の通過（v0.8.0 S2。us_04。systems/destroyer-transit が段階を当てる）: offMap（まだ来ない・揚陸の地＝海域の外）も out に入れる（ほかの任務の艦はいつも false）。
 // 列の艦（transitShip）は退く動きのまま縁の外へ出ても withdrawn を自分で立てない（縁の外 118 m で止まると段階の goneX 150 m に届かない）。去ったかは段階が決める（goAway）。
+// 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor が立てて下ろす）: anchored の間も見張り（updateShipAi＝発見・雷跡・seed+17 の引き方）は今のまま走り、舵・速さ・縁・当たりの円は作った時のまま。
 import Phaser from 'phaser';
 import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
@@ -35,6 +36,8 @@ export class Destroyer {
   offMap = false;
   /** 列の通過の艦（v0.8.0 S2。systems/destroyer-transit が立てる）: 縁の外の退き終わり（withdrawn）は段階が決める */
   transitShip = false;
+  /** 止まっている（v0.8.1 S2。us_06 の卯月と空知丸＝systems/destroyer-anchor が作った後に立て、動き出したら下ろす。ほかの任務の艦はいつも false） */
+  anchored = false;
   private sighted = true;
 
   constructor(
@@ -72,6 +75,7 @@ export class Destroyer {
   step(dt: number, realDt: number, player: BoatState, playerDetectRangeM: number, detectHoldS: number, torpedoes: readonly TorpedoState[]): boolean {
     if (this.out) return false;
     updateShipAi(this.ai, this.state, player, playerDetectRangeM, detectHoldS, torpedoes, this.aiParams, this.bounds, realDt, this.lookoutRng);
+    if (this.anchored) return false; // 止まっている間は AI の舵と速さを使わない（位置・針路・当たりの円は作った時のまま。v0.8.1 S2）
     steerShip(this.state, this.ai.desiredHeadingDeg, this.ai.desiredSpeedMps, turnRateFor(this.ai.mode, this.aiParams), this.aiParams.accelMps2, dt);
     if (!this.ai.retiring) clampToBounds(this.state, this.bounds, this.spec.boundsMarginM);
     else if (this.transitShip) clampYToBounds(this.state, this.bounds, this.spec.boundsMarginM); // 列の艦は南北の縁（陸）へ出さない（v0.8.0 実機 1 回目。東西は段階が決める）

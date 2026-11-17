@@ -13,12 +13,14 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { anchorResultPart } from './anchor-result-part';
 import { radarResultPart, straitResultPart } from './strait-result-part';
 import { evacResultPart } from '../core/evac-result';
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
 import { convoyResult, refreshConvoyTelemetry } from './convoy-telemetry';
 import { dawnResult, refreshDawnTelemetry } from './dawn-telemetry';
 import { refreshAllyTelemetry } from './ally-telemetry';
+import { refreshAnchorTelemetry } from './anchor-telemetry';
 import { refreshEvacTelemetry } from './evac-telemetry';
 import { landingResultPart, refreshLandingTelemetry } from './landing-telemetry';
 import { detectionsOf, objectiveDoneOf } from './mission-objective';
@@ -71,6 +73,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.playerDetected = w.pts?.targets ? w.pts.targets.playerSeen() : w.enemy.detected; // 輸送隊の任務（v0.6.4 レビュー ux-2）は大発だけが見つかっている間は偽
   // 大発の任務（v0.4.2）は煙幕を大発ごとに掛けるので、全員から隠れているときだけ表示の距離に smoke_factor を掛ける（us_02 は世界の値に込み）
   t.detectRangeM = w.hunt && w.hiddenBySmoke ? w.detectRangeM * w.vis.smokeFactor : w.detectRangeM;
+  if (g && g.backdrop) t.detectRangeM = g.backdrop.rangeAt(g.nearestAfloatIndex(s.x, s.y), w.detectRangeM); // 暗い岸を背に（v0.8.1 S2。us_06）: 最寄りの浮いている艦（enemy.focus）に対する艦ごとの値
   t.illuminated = w.enemy.illuminated;
   t.starLit = ((g ? g.anyStarLit : false) || w.flareLit) && !down; // 照明弾（艦の星弾か水上機の照明弾）
   t.hp = w.damage.hp;
@@ -132,6 +135,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshRadarTelemetry(t.radar, w); // 自艇のレーダー（v0.8.0 S2。us_04）: 掃引・接触・出来事の数を写すだけ（無い任務は何もしない）
   refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
   refreshStraitTelemetry(t.strait, w); // 海峡の夜（v0.8.0 S4。us_04）: 視程の 2 乗と衝突の危険（上の setSighted と同じ規則。無い任務は何もしない）
+  refreshAnchorTelemetry(t.anchor, w); // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 数を写すだけ（鍵の無い任務は何もしない）
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
@@ -206,5 +210,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
     ...radarResultPart(w), // レーダー（v0.8.0 S4。us_04）: レーダーの任務だけ radar の鍵（最初の接触・目で見えない間に撃った魚雷。本文の駆逐艦の行の後）
     ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
+    ...anchorResultPart(w, data), // 止まった艦の任務（v0.8.1 S4。us_06）: anchor の鍵（卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒。本文の駆逐艦の行の後）
   };
 }

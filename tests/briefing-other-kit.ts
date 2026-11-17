@@ -7,8 +7,8 @@ import { briefingRows, formatDateJa } from '../src/core/briefing';
 import { directSortie } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 
-/** us_04 のほかの遊べる任務（v0.8.0 の時点の 9 つ） */
-export const OTHER_BRIEFING_IDS = ['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'] as const;
+/** us_06 のほかの遊べる任務（v0.8.1 S4 で us_04 を足した 10。v0.8.0 の時点は us_04 のほかの 9 つ） */
+export const OTHER_BRIEFING_IDS = ['us_01', 'us_02', 'us_03', 'us_04', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'] as const;
 /** 条件の行の見越し点マーカーの句（progress の文の代わりの固定の文。どの任務にも同じ） */
 const AIM = '見越し点マーカー 使用可';
 

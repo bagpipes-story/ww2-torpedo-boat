@@ -50,7 +50,7 @@ export function buildHazards(
   return {
     friendly: fp ? new FriendlyFire(scene, fp, DEBUG_FRIENDLY_FORCE, splash, (x, y) => hit(fp.hit, friendlyRng, x, y, 'friendly_fire')) : null,
     storm: s.storm ? new StormFront(scene, s.storm, seed, DEBUG_STORM_START_Y, boat, splash, onSlam) : null,
-    seaplane: sp ? new EnemySeaplane(scene, sp, DEBUG_SEAPLANE, planeRng, boat, splash, (x, y) => hit(sp.bombHit, planeRng, x, y, 'bombed')) : null,
+    seaplane: sp ? new EnemySeaplane(scene, sp, DEBUG_SEAPLANE, planeRng, boat, splash, (x, y) => hit(sp.bombHit, planeRng, x, y, 'bombed'), s.seaplaneNight ? s.seaplaneNight.attacksPerNight : null) : null,
     strike: st ? new AirStrikeFlight(scene, st, strikeRng, splash, (x, y) => hit(st.bombHit, strikeRng, x, y, 'air_strike'), escortHit) : null,
     patrol: pa && patrolRng ? new PatrolAir(scene, pa, new AirStrikeFlight(scene, pa.sortie, patrolRng, splash, (x, y) => hit(pa.sortie.bombHit, patrolRng, x, y, 'bombed'), escortHit)) : null,
   };

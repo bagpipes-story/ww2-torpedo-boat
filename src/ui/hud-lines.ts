@@ -119,14 +119,16 @@ export function seaplaneLine(t: BoatTelemetry, distStep: number, shallowStep: nu
 }
 
 /** Result の「敵機:」の行（任務に水上機がいるときだけ）: 来ず / 見失わせただけ / 撃墜した（v0.6.8。機銃の対空）/ 攻撃を受けた（弾切れで去った）/ 発見確定の後に途中で終了 */
-export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[]; seaplaneDowned?: boolean }): string {
+export function seaplaneResultLine(r: { seaplaneOutcome: number; seaplaneAttacked: boolean; seaplaneSorties: number; seaplaneLost: number; seaplaneSlowReactS: number; seaplaneFlareLitS: number; seaplaneShellsUnderFlare: number; seaplaneBombs: number; seaplaneBombHits: number; seaplaneDodgeS: number[]; seaplaneDowned?: boolean; seaplaneAttacks?: number }): string {
   if (r.seaplaneSorties === 0) return '敵機: 来ず';
   const lostPart = r.seaplaneLost > 0 ? `見失わせた ${r.seaplaneLost} 回（減速まで ${Number.isNaN(r.seaplaneSlowReactS) ? '帯に隠れた' : `${r.seaplaneSlowReactS.toFixed(1)} 秒`}）` : '';
   // 撃墜（v0.6.8）: 結果の鍵は「打ち切り」のまま（4 は使わない＝ui/mission-line-air の 2 ビットの鍵と重なる）なので、落とした印で先に分ける
   if (r.seaplaneDowned) return `敵機: ${lostPart ? `${lostPart} → ` : ''}撃墜（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
-  if (r.seaplaneOutcome === SP_OUT_BOMBED) {
+  const nAttacks = r.seaplaneAttacks ?? 0; // 1 夜に複数回の攻撃の任務（v0.8.1 IP2。us_06）だけ鍵がある: 終えた攻撃の回数と通しの数（次の攻撃の途中で終われば「＋途中 1」）
+  if (r.seaplaneOutcome === SP_OUT_BOMBED || nAttacks > 0) {
     const dodge = r.seaplaneDodgeS.slice(0, r.seaplaneBombs).map((s) => (Number.isNaN(s) ? '—' : s.toFixed(1))).join('/');
-    return `敵機: ${lostPart ? `${lostPart} → ` : ''}照明弾の下 ${r.seaplaneFlareLitS.toFixed(1)} 秒 ・ 砲撃 ${r.seaplaneShellsUnderFlare} 発 ・ 爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits} ・ 転舵 ${dodge} 秒`;
+    const times = nAttacks > 0 ? `攻撃 ${nAttacks} 回${r.seaplaneAttacked ? '＋途中 1' : ''} ・ ` : '';
+    return `敵機: ${lostPart ? `${lostPart} → ` : ''}${times}照明弾の下 ${r.seaplaneFlareLitS.toFixed(1)} 秒 ・ 砲撃 ${r.seaplaneShellsUnderFlare} 発 ・ 爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits} ・ 転舵 ${dodge} 秒`;
   }
   if (r.seaplaneAttacked) return `敵機: ${lostPart ? `${lostPart} → ` : ''}攻撃の途中で終了（爆弾 ${r.seaplaneBombs} 発 命中 ${r.seaplaneBombHits}）`;
   return `敵機: 接近 ${r.seaplaneSorties} 回 ・ ${lostPart || '見失わせた 0 回'}`;

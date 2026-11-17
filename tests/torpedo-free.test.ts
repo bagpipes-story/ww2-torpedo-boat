@@ -229,7 +229,9 @@ describe('ソースの pin（v0.6.7 の道を変えない）', () => {
   });
   it('torpedo-free: 狙える艦がある道は v0.6.7 の文のまま、無ければ null の目標で撃って決着させる。world-enemy-step は駆逐艦のいない任務だけ魚雷を進める', () => {
     const s = strip('systems/torpedo-free.ts');
-    expect(s).toContain('w.launcher.update(realDt, boat, g.ships[ti < 0 ? 0 : ti]!.state, ti >= 0 && ti < g.destroyerCount && !w.dawn.reached);');
+    // v0.8.1 S2（spec-v0810 D-K1）: KPI の旗は core/hit-rate の kpiTargetAtLaunch（今の条件かつ狙った艦の速さ ≥ 下限。今のどの任務の駆逐艦も下限より速い＝tests/kpi-target・kpi-world）
+    expect(s).toContain('const target = g.ships[ti < 0 ? 0 : ti]!.state;');
+    expect(s).toContain('w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(ti >= 0 && ti < g.destroyerCount, w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));');
     expect(s).toContain('const s = w.launcher.update(realDt, boat, null, false);');
     expect(s).toContain('s.resolved = true;');
     expect(s).toContain('w.torpedoes.step(dt, feelDt, NO_TORPEDO_TARGETS, 0, w.torpedoEvents);');
