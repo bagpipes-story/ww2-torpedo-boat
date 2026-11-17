@@ -1,22 +1,261 @@
 diff --git a/data/missions_seed.json b/data/missions_seed.json
-index daf6807..a53d204 100644
+index daf6807..54c9a67 100644
 --- a/data/missions_seed.json
 +++ b/data/missions_seed.json
-@@ -862,8 +862,14 @@
+@@ -862,11 +862,17 @@
            "label_ja": "レイテ島（パロンポン）",
            "source": "design (v0.8.1。jp_04 の岸と同じ（見た目だけ。南の縁が浜）。揚陸地点の帯と字（systems/world-landing の味方の揚陸の絵）は描かない。暗い岸を背に（shore_backdrop）とレーダーの陸の反射の岸の線もこの南の縁)"
          },
 +        "enemy_aircraft": {
 +          "enemy_id": "ijn_seaplane_jake",
 +          "attacks_per_night": 2,
-+          "source": "TBD"
++          "source": "design (v0.8.1 IP2。ユーザーの U3（2026-11-17「A: ノーマルとハードの両方でお願いします」）と実機 1 回目「敵の哨戒機がバンバン飛んできて常に速度を気にしないといけない緊張感を足せばいいかもしれません」。仕組みと数は us_02 の ijn_seaplane_jake のまま（risk_events の enemy_aircraft.params・enemies.json の機体。航跡を wake_trigger_s 見せると卯月の方角 6,000 m から来て、静音に落とせば lose_s で見失い、1,500 m を切れば照明弾と爆弾 2 発）。毎夜（night の optional_hazards に入れない）。attacks_per_night 2: 1 夜に照明弾と爆弾で攻撃する回数（無い任務は 1＝v0.4.1 の 1 任務 1 回）。攻撃を終えて去ると patrol_cooldown_s の後に哨戒へ戻る（core/seaplane-night。凍結の core/seaplane の外の包み）。探り（scripts/headless/anchor-probe・ノーマル 6 × 40 夜・ハード 2 × 40 夜）では 2 と 3 で夜が同じ（3 回目の攻撃に届く夜が無い）＝小さい方。史実: 米の公刊史の第 III 部（ソロモン）に夜の水上機が一晩中 PT を悩ませた記述（docs/01 §8）、NHHC H-Gram 040 に 1944 年 10〜11 月のレイテの夜は日本機が優勢な時もあった。その夜のパロンポン沖で日本の夜の機が PT を襲った記録は見つからない（WebSearch 2026-11-17: Wikipedia Battle of Ormoc Bay・Pacific Wrecks 1944-12-11）＝作り。?debug&noplane で無し)"
 +        },
          "hazards": [
            "enemy_ship_gunfire_or_ram",
 +          "enemy_aircraft",
            "dawn_air_strike"
          ],
-         "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。夜の水上機・友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法)",
+-        "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。夜の水上機・友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法)",
++        "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法。v0.8.1 IP2: 敵航空機（enemy_aircraft。日本の夜の水上機。block は enemy_aircraft。その夜の記録は無い＝作り。ユーザーの U3）を砲撃・衝突と夜明けの空襲の間に＝出会う順)",
+         "night": {
+           "hazard_scale": 1,
+           "optional_hazards": [],
+diff --git a/scripts/headless/anchor-probe-policy.mjs b/scripts/headless/anchor-probe-policy.mjs
+index 97d6fa8..d29aee0 100644
+--- a/scripts/headless/anchor-probe-policy.mjs
++++ b/scripts/headless/anchor-probe-policy.mjs
+@@ -11,6 +11,8 @@
+ //   idle            出発点で止まったまま（漂流と夜明けの空襲の確かめ）
+ // 離れ方（L54）: 静音で離れ、見えている艦・レーダーの輝点・Briefing の輸送船（沈めるまで）のどれからも 1,200 m 離れたら巡航で輪へ。発見された・照らされている間は（反応の後）全速。
+ // 狙う・撃つのは目で見えている艦だけ。夜明けの 60 秒前になっても撃つ前なら輪へ帰る。確保は作る時だけ。
++// v0.8.1 IP2（水上機）: obey（HUD=1）の時だけ HUD の 2 行目の字（view の line2）に従う＝「敵機 N m ・ …」の間は反応の後に静音、行が消えたら元へ。「爆撃進路！」「爆弾投下！」は
++// 反応の後に左右へ 90° 転舵して全速。charge・idle は従わない。obey の無い台本は S3 のまま（乱数の引き方も同じ＝?debug&noplane の夜は S3〜IP1 と同じ夜）。
+ 
+ export const ANCHOR_POLICIES = ['shore_east', 'open_north', 'shore_east_nb', 'charge', 'transport_first', 'idle'];
+ export const ANCHOR_HARD_POLICIES = ['shore_east', 'open_north'];
+@@ -28,6 +30,7 @@ const ROUTES = {
+   idle: { legs: [], hits: [], leave: 'none' },
+ };
+ const LEGS = 0, APPROACH = 1, AIM = 2, HOLD = 3, LEAVE = 4, HOME = 5;
++const PLANE_APPROACH_RE = /^敵機 \d+ m ・ /, PLANE_BOMB_RE = /^(爆撃進路！|爆弾投下！)/; // HUD の 2 行目の水上機の文（ui/hud-lines の seaplaneLine）: 未確定の接近・爆撃進路と投下
+ 
+ /** 台本だけの乱数（mulberry32。0 以上 1 未満） */
+ function nextRand(d) {
+@@ -44,11 +47,12 @@ const bearing = (x, y, tx, ty) => wrap360((Math.atan2(tx - x, -(ty - y)) * 180)
+ const dist2 = (x, y, tx, ty) => (tx - x) * (tx - x) + (ty - y) * (ty - y);
+ 
+ /** plan: 地図と艇の知れる値（糊が作る時に 1 回）。目の推定 est: 種類ごとの最後の位置・速さ・今見えているか・沈んだか */
+-export function createAnchorDriver(policy, seed, plan) {
++export function createAnchorDriver(policy, seed, plan, obey = false) {
+   const r = ROUTES[policy];
+   if (!r) throw new Error(`知らない台本 ${policy}`);
+   const est = [0, 1].map((k) => ({ x: k === 0 ? plan.uzX : plan.trX, y: k === 0 ? plan.uzY : plan.trY, vx: 0, vy: 0, seen: false, gone: false, sweep: NaN }));
+-  return { policy, r, plan, rs: (seed * ANCHOR_HUMAN.seedMul + ANCHOR_HUMAN.seedAdd) >>> 0, est, mode: r.legs.length > 0 ? LEGS : r.hits.length > 0 ? APPROACH : HOME, leg: 0, hit: 0, actAt: NaN, err: 0, holdH: 0, holdUntil: 0, leaveUntil: NaN, alarmAt: NaN };
++  return { policy, r, plan, rs: (seed * ANCHOR_HUMAN.seedMul + ANCHOR_HUMAN.seedAdd) >>> 0, est, mode: r.legs.length > 0 ? LEGS : r.hits.length > 0 ? APPROACH : HOME, leg: 0, hit: 0, actAt: NaN, err: 0, holdH: 0, holdUntil: 0, leaveUntil: NaN, alarmAt: NaN,
++    obey: obey === true && policy !== 'charge' && policy !== 'idle', planeAt: NaN, dodgeAt: NaN, dodgeH: 0 };
+ }
+ 
+ /** 目とレーダーで推定を直す（駆逐艦は目で見えなければ推定に最も近い輝点。輸送船はレーダーに映らない＝Briefing の位置か目で見た位置） */
+@@ -102,8 +106,23 @@ function clearOfAll(d, v) {
+   return tr.gone || dist2(v.x, v.y, tr.x, tr.y) >= c2;
+ }
+ 
+-/** 1 フレームの台本（固定ステップの前）。o に針路（NaN は保つ）・速さ（全速の比）・撃つ本数と扇の開き角を書く */
++/** 1 フレームの台本（固定ステップの前）。o に針路（NaN は保つ）・速さ（全速の比）・撃つ本数と扇の開き角を書く。obey なら最後に水上機の HUD に従う（IP2） */
+ export function stepAnchorDriver(d, v, o) {
++  stepRoute(d, v, o);
++  if (d.obey) obeyPlane(d, v, o);
++}
++
++/** 水上機の HUD に従う（IP2。行が出た時に 1 回だけ反応の秒と向きを引く） */
++function obeyPlane(d, v, o) {
++  const H = ANCHOR_HUMAN, warn = PLANE_APPROACH_RE.test(v.line2), bomb = PLANE_BOMB_RE.test(v.line2);
++  if (warn) { if (Number.isNaN(d.planeAt)) d.planeAt = v.t + range(d, H.reactS[0], H.reactS[1]); } else d.planeAt = NaN;
++  if (bomb) { if (Number.isNaN(d.dodgeAt)) { d.dodgeAt = v.t + range(d, H.reactS[0], H.reactS[1]); d.dodgeH = wrap360(v.h + (nextRand(d) < 0.5 ? 90 : -90)); } } else d.dodgeAt = NaN;
++  if (warn && v.t >= d.planeAt && o.speed01 > d.plan.silent01) o.speed01 = d.plan.silent01;
++  if (bomb && v.t >= d.dodgeAt) { o.headingDeg = d.dodgeH; o.speed01 = 1; }
++}
++
++/** S3 の台本（道・寄る・狙う・離れる・帰る） */
++function stepRoute(d, v, o) {
+   const p = d.plan, H = ANCHOR_HUMAN, r = d.r;
+   o.headingDeg = NaN; o.speed01 = 0; o.fireN = 0; o.fireSpreadDeg = 0;
+   updateEstimates(d, v);
+diff --git a/scripts/headless/anchor-probe.mjs b/scripts/headless/anchor-probe.mjs
+index e350a7f..050f088 100644
+--- a/scripts/headless/anchor-probe.mjs
++++ b/scripts/headless/anchor-probe.mjs
+@@ -4,8 +4,10 @@
+ // 夜ごとの測り（L55）は印の間の 1 か所だけが何でも読む（tests/anchor-probe-scan はその間を除いて名前を走査する）。沈む絵の tween は壁の時計で進むので、
+ // ページの Date.now を偽の時計に替える（strait-probe と同じ）。帯（spec §3.9 の表）は ✓・✗・端（帯の端から ±5 点の内＝その行だけ seed 41〜80 を足して 80 夜で決める）。
+ // 実行: VITE_BASE=/ww2-torpedo-boat/ npx vite build --outDir <site> の後
+-//   SITE=<site> [SEEDS=1-40] [POLS=shore_east,…] [HARD=1] [MAXS=1600] [W=1560] [JOBS=3] [EXT=0] node scripts/headless/anchor-probe.mjs
++//   SITE=<site> [SEEDS=1-40] [POLS=shore_east,…] [HARD=1] [MAXS=1600] [W=1560] [JOBS=3] [EXT=0] [NOPLANE=1] [HUD=1] node scripts/headless/anchor-probe.mjs
+ // HARD=1 はハード（既定の台本は shore_east・open_north）。EXT=0 は端の行に seed を足さない。終了コードはページのエラーが 1 つでもあれば 1（帯は門にしない）。
++// v0.8.1 IP2（us_06 に夜の水上機）: NOPLANE=1 は ?debug&noplane（水上機なし＝S3〜IP1 の世界。夜の行の字も同じ＝md5 を比べられる）。HUD=1 は台本が水上機の HUD に従う
++// （2 行目の「敵機 N m ・ …」の間は静音・爆撃進路と投下の行で転舵。anchor-probe-policy の obey）。HUD の 2 行目はページの文そのもの（v.line2）。表と帯は anchor-probe-table。
+ import { createHash } from 'node:crypto';
+ import { readFileSync } from 'node:fs';
+ import { createRequire } from 'node:module';
+@@ -13,6 +15,7 @@ import { dirname, join } from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+ import { ANCHOR_HARD_POLICIES, ANCHOR_POLICIES } from './anchor-probe-policy.mjs';
++import { bands, fmtNight, fmtRow, printBands, rowOf } from './anchor-probe-table.mjs';
+ import { parseSeeds } from './world-vs-sim.mjs';
+ 
+ const require = createRequire(import.meta.url), HERE = dirname(fileURLToPath(import.meta.url)), ROOT = join(HERE, '..', '..');
+@@ -23,7 +26,10 @@ const PAGE = `
+ import { ANCHOR_HUMAN, createAnchorDriver, stepAnchorDriver } from '${HERE}/anchor-probe-policy.mjs';
+ const CAP = 16, f64 = () => new Float64Array(CAP);
+ const newView = () => ({ t: 0, leftS: 0, x: 0, y: 0, h: 0, hp: 0, fuel01: 0, torps: 0, atHome: false, seen: false, lit: false, rangeM: 0, ddSunk: 0, trSunk: false,
+-  bn: 0, sweepS: NaN, bx: f64(), by: f64(), bAt: f64(), en: 0, eid: new Int8Array(CAP), ekind: new Int8Array(CAP), ex: f64(), ey: f64(), evx: f64(), evy: f64() });
++  bn: 0, sweepS: NaN, bx: f64(), by: f64(), bAt: f64(), en: 0, eid: new Int8Array(CAP), ekind: new Int8Array(CAP), ex: f64(), ey: f64(), evx: f64(), evy: f64(), line2: '' });
++/** HUD の 2 行目（上中央）の文そのもの（IP2。人が読む物。Hud の物を 1 回見つけて持つ） */
++let l2 = null;
++const line2Of = () => { if (!l2) { const h = window.__game.scene.getScene('Hud'); l2 = h && h.boatHud ? h.boatHud.missionLine.missionText : null; } return l2 ? l2.text : ''; };
+ /** 地図と艇の知れる値（Briefing・画面）。停泊地と魚雷の速さと扇の間隔は node が data から渡す（np） */
+ function planOf(w, np) {
+   const s = w.setup, m = s.mission, b = s.boatParams;
+@@ -34,7 +40,7 @@ function planOf(w, np) {
+ function fillView(st, w, t) {
+   const v = st.v, b = w.boat.state, g = w.destroyers, r = w.radar ? w.radar.state : null, e = st.eye;
+   v.t = w.stepTimeS; v.leftS = t.timeLeftS; v.x = b.x; v.y = b.y; v.h = b.headingDeg; v.hp = t.hp; v.fuel01 = t.fuel01; v.torps = t.torpedoesLeft; v.atHome = t.atHome;
+-  v.seen = t.playerDetected; v.lit = t.illuminated; v.rangeM = t.detectRangeM; v.ddSunk = t.shipsSunk; v.trSunk = t.transportSunk;
++  v.seen = t.playerDetected; v.lit = t.illuminated; v.rangeM = t.detectRangeM; v.ddSunk = t.shipsSunk; v.trSunk = t.transportSunk; v.line2 = line2Of();
+   v.bn = r ? r.n : 0; v.sweepS = r ? r.lastSweepS : NaN;
+   for (let k = 0; k < v.bn; k++) { v.bx[k] = r.blips[k].x; v.by[k] = r.blips[k].y; v.bAt[k] = r.blips[k].atS; }
+   v.en = 0;
+@@ -62,6 +68,19 @@ function measureInit(st, w) {
+   };
+   // 卯月を沈め始めた 1 本の扇の番号（A5）
+   ev.onHit = (i, x, y, s) => { const uz = g.ships[0], was = uz.sinking; onHit(i, x, y, s); if (!was && uz.sinking) m.sinkFan = m.fanOf.get(s) ?? -1; };
++  // 夜の水上機（IP2。今夜の水上機が無ければ null）: 発見確定・照明弾の回数、未確定の接近の秒、P3＝照明弾が岸の陰を消した・照明弾の光の中で卯月が気づいた
++  m.pl = w.seaplane ? { locks: 0, flares: 0, slowS: 0, shadowOff: 0, uzFlare: false, prevLocked: false, prevFlare: false, prevBd: false } : null;
++}
++/** 毎フレーム（固定ステップの前・view の後）。水上機の測り（IP2） */
++function measureStep(st, w, t, dt) {
++  const q = st.m.pl, sp = w.seaplane;
++  if (!q || !sp) return;
++  const s = sp.state, a = t.anchor, lit = w.flareLit;
++  if (s.locked && !q.prevLocked) q.locks++;
++  if (s.phase === 1 && !s.locked) q.slowS += dt;
++  if (lit && !q.prevFlare) { q.flares++; if (q.prevBd) q.shadowOff++; }
++  if (a && !q.uzSeen && Number.isFinite(a.noticedAtS[0])) { q.uzSeen = true; q.uzFlare = lit; }
++  q.prevLocked = s.locked; q.prevFlare = lit; q.prevBd = a ? a.backdropOn : false;
+ }
+ function measureEnd(st, w, t, r) {
+   const g = w.destroyers, a = t.anchor, m = st.m, moveS = a ? a.underwayAtS[0] : NaN;
+@@ -69,15 +88,16 @@ function measureEnd(st, w, t, r) {
+   return { reason: r ? r.reason : 'maxSteps', home: r ? r.returned : false, preDawn: r ? !r.dawn.reached : false, fuelPct: r ? r.fuelLeftPct : NaN, t: w.stepTimeS,
+     uz: g.ships[0].sinking ? 1 : 0, tr: g.transportSunk ? 1 : 0, pk, why: a ? WHY[a.reason[0]] : '-', alertS: a ? a.noticedAtS[0] : NaN, moveS,
+     fired: m.fired, hits: w.hits, held: a ? a.heldShots : 0, heldHits: a ? a.heldHits : 0, bdS: a ? a.backdropS : 0, slow: m.slow, k5: m.k5, firstS: m.firstS,
+-    moveFirst: Number.isFinite(m.firstS) && moveS < m.firstS, moveEta: Number.isFinite(m.firstS) && moveS < m.firstEtaS, fan1: m.sinkFan === 1 ? 1 : 0 };
++    moveFirst: Number.isFinite(m.firstS) && moveS < m.firstS, moveEta: Number.isFinite(m.firstS) && moveS < m.firstEtaS, fan1: m.sinkFan === 1 ? 1 : 0, pl: planeEnd(m.pl, w.seaplane) };
+ }
++const planeEnd = (q, sp) => (q && sp ? { app: sp.state.sorties, lost: sp.state.lost, locks: q.locks, flares: q.flares, bombs: sp.state.ordnance.bombsDropped, bombHits: sp.state.ordnance.bombsHit, litS: sp.state.ordnance.flare.litS, shadowOff: q.shadowOff, uzFlare: q.uzFlare, slowS: q.slowS } : null);
+ // </anchor-probe:measure>
+ window.__ap = { run(o) {
+   const hl = window.__hl, game = window.__game;
+   let st = window.__apState;
+   if (!st) {
+     const w = hl.world(), plan = planOf(w, o.np), eye = { t0: f64().fill(NaN), x0: f64(), y0: f64(), vx: f64(), vy: f64() };
+-    st = window.__apState = { plan, d: createAnchorDriver(o.policy, o.seed, plan), v: newView(), out: { headingDeg: NaN, speed01: 0, fireN: 0, fireSpreadDeg: 0 }, eye, fan: 0, frames: 0, m: null };
++    st = window.__apState = { plan, d: createAnchorDriver(o.policy, o.seed, plan, o.obey), v: newView(), out: { headingDeg: NaN, speed01: 0, fireN: 0, fireSpreadDeg: 0 }, eye, fan: 0, frames: 0, m: null };
+     measureInit(st, w);
+   }
+   for (let k = 0; k < o.frames; k++) {
+@@ -85,6 +105,7 @@ window.__ap = { run(o) {
+     if (!hl.active('Mission')) return { done: true, m: measureEnd(st, w, t, game.scene.getScene('Result').result) };
+     if (st.frames >= o.maxFrames) return { done: true, m: measureEnd(st, w, t, null) };
+     fillView(st, w, t);
++    measureStep(st, w, t, o.frameMs / 1000);
+     stepAnchorDriver(st.d, st.v, st.out);
+     hl.steer(st.out.headingDeg, st.out.speed01);
+     if (st.out.fireN > 0) { w.input.fireSalvoSpreadDeg = st.out.fireSpreadDeg; w.input.fireSalvoCount = st.out.fireN; st.fan++; }
+@@ -107,12 +128,12 @@ function tweenClock() { const t0 = Date.now(); Date.now = () => t0 + (window.__h
+ 
+ const SUNK = new Set(['rammed', 'destroyed', 'friendly_fire', 'storm', 'bombed', 'air_strike']);
+ async function night(browser, base, code, c) {
+-  const q = `mission=${MISSION}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.policy === 'shore_east_nb' ? '&nobackdrop' : ''}`;
++  const q = `mission=${MISSION}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.policy === 'shore_east_nb' ? '&nobackdrop' : ''}${c.noplane ? '&noplane' : ''}`;
+   const { page, ctx, errors } = await openGame(browser, base, q, { width: c.width, init: tweenClock });
+   try {
+     await page.addScriptTag({ content: code });
+     let r;
+-    do r = await page.evaluate((o) => window.__ap.run(o), { policy: c.policy, seed: c.seed, np: c.np, frames: CHUNK, frameMs: FRAME_MS, maxFrames: Math.round(c.maxS * 60) });
++    do r = await page.evaluate((o) => window.__ap.run(o), { policy: c.policy, seed: c.seed, np: c.np, obey: c.obey, frames: CHUNK, frameMs: FRAME_MS, maxFrames: Math.round(c.maxS * 60) });
+     while (!r.done);
+     return { ...r.m, own: SUNK.has(r.m.reason), errors };
+   } catch (e) {
+@@ -122,55 +143,11 @@ async function night(browser, base, code, c) {
+   }
+ }
+ 
+-const pct = (rs, f) => (rs.length === 0 ? NaN : Math.round((100 * rs.filter(f).length) / rs.length));
+-const sum = (rs, k) => rs.reduce((s, r) => s + (r[k] ?? 0), 0);
+-const median = (xs) => { const s = [...xs].sort((a, b) => a - b), h = s.length >> 1; return s.length === 0 ? NaN : s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
+-const f1 = (x) => (Number.isFinite(x) ? x.toFixed(1) : '-');
+-/** 台本ごとの数（%・中央値）: 達成＝卯月撃沈＋帰投。A5 は撃った夜のうち撃つ前に動かなかった夜 */
+-function rowOf(rs) {
+-  const home = rs.filter((r) => r.home), fired = rs.filter((r) => r.fired > 0), early = fired.filter((r) => !r.moveFirst), reasons = {};
+-  for (const r of rs) reasons[r.reason] = (reasons[r.reason] ?? 0) + 1;
+-  return { n: rs.length, win: pct(rs, (r) => r.uz && r.home), own: pct(rs, (r) => r.own), home: pct(rs, (r) => r.home), uz: pct(rs, (r) => r.uz), tr: pct(rs, (r) => r.tr),
+-    moveFirst: pct(fired, (r) => r.moveFirst), moveEta: pct(fired, (r) => r.moveEta), a5: pct(early, (r) => r.fan1), a5n: early.length, fuel: median(home.map((r) => r.fuelPct)), preDawn: pct(home, (r) => r.preDawn),
+-    k5: sum(rs, 'k5'), slow: sum(rs, 'slow'), held: sum(rs, 'held'), heldHits: sum(rs, 'heldHits'), pk: sum(rs, 'pk'), bdS: median(rs.map((r) => r.bdS ?? 0)),
+-    drift: rs.filter((r) => r.reason === 'adrift' && !r.preDawn && r.t < 1500).length, ends: rs.filter((r) => (r.reason === 'adrift' || r.reason === 'air_strike') && !r.preDawn && r.t < 1500).length,
+-    lastS: Math.max(...rs.map((r) => r.t ?? 0)), reasons: Object.entries(reasons).map(([k, v]) => `${k} ${v}`).join('・') };
+-}
+-/** 帯の判定: 下限・上限（null は無し）。端は帯の端から ±5 点の内 */
+-function verdict(x, lo, hi) {
+-  if (!Number.isFinite(x)) return '—';
+-  if ((lo !== null && Math.abs(x - lo) <= 5) || (hi !== null && Math.abs(x - hi) <= 5)) return '端';
+-  return (lo === null || x >= lo) && (hi === null || x <= hi) ? '✓' : '✗';
+-}
+-/** spec §3.9 の帯（ノーマル A1〜A6・F・T・D・K、ハード H1・H2・K）: [名, 台本, 文, 判定の列] */
+-function bands(R, hard) {
+-  const a = R.shore_east, o = R.open_north, out = [];
+-  const add = (name, pol, parts) => out.push([name, pol, parts.map(([lab, x, lo, hi]) => `${lab} ${Number.isFinite(x) ? x : '-'} ${verdict(x, lo, hi)}`).join(' ・ '), parts.map(([, x, lo, hi]) => verdict(x, lo, hi))]);
+-  if (hard && a) add('H1', 'shore_east', [['達成', a.win, 40, 70], ['沈没', a.own, null, 20]]);
+-  if (hard && a && o) add('H2', 'open_north', [[`達成（≤ ${a.win - 15}）`, o.win, null, a.win - 15]]);
+-  if (!hard && a) add('A1', 'shore_east', [['達成', a.win, 55, 80], ['沈没', a.own, null, 10], ['帰投', a.home, 85, null]]);
+-  if (!hard && a && o) add('A2', 'open_north', [[`達成（≤ ${a.win - 15}）`, o.win, null, a.win - 15], ['最初の 1 本を撃つ前に動いた', o.moveFirst, 50, null]]);
+-  if (!hard && a && R.shore_east_nb) add('A3', 'shore_east_nb', [[`達成（≤ ${a.win - 15}）`, R.shore_east_nb.win, null, a.win - 15]]);
+-  const c = R.charge, v4 = c ? [verdict(c.own, 30, null), verdict(c.win, null, 35)] : [];
+-  if (!hard && c) out.push(['A4', 'charge', `沈没 ${c.own}（≥ 30）か 達成 ${c.win}（≤ 35）`, [v4.includes('✓') ? '✓' : v4.includes('端') ? '端' : '✗']]);
+-  if (!hard && a) add('A5', 'shore_east', [[`最初の扇で沈んだ（動く前に撃った ${a.a5n} 夜のうち）`, a.a5, 60, 90]]);
+-  if (!hard && a && R.transport_first) add('A6', 'transport_first', [['空知丸撃沈', R.transport_first.tr, 70, null], [`達成（≤ ${a.win}）`, R.transport_first.win, null, a.win]]);
+-  if (!hard && a) add('F', 'shore_east', [['帰投の夜の燃料の中央値 %', a.fuel, 15, 35]]);
+-  if (!hard && a) add('T', 'shore_east', [['帰投の夜の夜明け前 %', a.preDawn, 90, null]]);
+-  const d = R.idle;
+-  if (!hard && d) out.push(['D', 'idle', `夜明けの後・1,500 秒未満に終わった ${d.ends}/${d.n}（漂流 ${d.drift}・最も遅い ${f1(d.lastS)} 秒）`, [d.ends === d.n ? '✓' : '✗']]);
+-  const k = Object.values(R).reduce((s, r) => s + r.k5, 0);
+-  out.push(['K', 'すべて', `5 kt 未満の艦への 1 本で kpiTarget が真 ${k} 本`, [k === 0 ? '✓' : '✗']]);
+-  return out;
+-}
+-const fmtRow = (p, r) => `${p.padEnd(15)} ${String(r.n).padStart(2)} 夜 | 達成 ${r.win} | 沈没 ${r.own} | 帰投 ${r.home} | 卯月撃沈 ${r.uz} | 空知丸撃沈 ${r.tr} | 撃つ前に動いた ${r.moveFirst}・着く前 ${r.moveEta} | A5 ${r.a5}（${r.a5n}）| 燃料 ${f1(r.fuel)} | 夜明け前 ${r.preDawn} | 止まった艦へ ${r.held}（命中 ${r.heldHits}）| 5kt 未満 ${r.slow}・K ${r.k5} | 背に岸 ${f1(r.bdS)} 秒 | 駆潜艇撃沈 ${r.pk} | ${r.reasons}`;
+-const fmtNight = (c, r) => `${c.policy.padEnd(15)} seed ${String(c.seed).padStart(2)} | ${String(r.reason).padEnd(10)} 卯月 ${r.uz ?? '-'} 空知丸 ${r.tr ?? '-'} 駆潜艇 ${r.pk ?? '-'} 帰投 ${r.home ? 1 : 0} 夜明け前 ${r.preDawn ? 1 : 0} 燃料 ${r.fuelPct ?? '-'} | 気づき ${r.why ?? '-'} ${f1(r.alertS)} 動き ${f1(r.moveS)} 初弾 ${f1(r.firstS)} | 撃つ ${r.fired ?? '-'} 命中 ${r.hits ?? '-'} 止まった艦へ ${r.held ?? '-'}/${r.heldHits ?? '-'} 5kt ${r.slow ?? '-'}/${r.k5 ?? '-'} | 背に岸 ${f1(r.bdS)} | ${f1(r.t)} 秒${r.errors.length ? ` | page errors ${r.errors.length}（${r.errors[0]}）` : ''}`;
+-const printBands = (B) => { for (const [name, pol, text, v] of B) console.log(`  ${name} ${pol.padEnd(15)} ${text}  → ${v.join('')}`); };
+-
+ async function main() {
+   if (!process.env.SITE) throw new Error('SITE=<ビルドした site のディレクトリ> が要る');
+   const hard = process.env.HARD === '1', pols = process.env.POLS ? process.env.POLS.split(',') : hard ? ANCHOR_HARD_POLICIES : ANCHOR_POLICIES, np = nominalPlan();
+-  const mk = (seeds) => pols.flatMap((policy) => seeds.map((seed) => ({ policy, seed, hard, np, maxS: envNum('MAXS', 1600), width: envNum('W', 1560) })));
++  const noplane = process.env.NOPLANE === '1', obey = process.env.HUD === '1';
++  const mk = (seeds) => pols.flatMap((policy) => seeds.map((seed) => ({ policy, seed, hard, np, noplane, obey, maxS: envNum('MAXS', 1600), width: envNum('W', 1560) })));
+   const code = await bundle(PAGE), sv = await serve(process.env.SITE), browser = await chromium.launch(), t0 = Date.now();
+   const runAll = (cs) => pool(cs, envNum('JOBS', 3), async (c) => ({ c, r: await night(browser, sv.base, code, c) }));
+   const res = await runAll(mk(parseSeeds(process.env.SEEDS ?? '1-40')));
+@@ -192,7 +169,7 @@ async function main() {
+   for (const p of pols) console.log(fmtRow(p, R[p]));
+   console.log('帯:');
+   printBands(B);
+-  console.log(`nights ${res.length} page errors ${errs} md5 ${createHash('md5').update(lines.join('\n')).digest('hex')} ${((Date.now() - t0) / 1000).toFixed(0)} 秒${hard ? '（ハード）' : ''}`);
++  console.log(`nights ${res.length} page errors ${errs} md5 ${createHash('md5').update(lines.join('\n')).digest('hex')} ${((Date.now() - t0) / 1000).toFixed(0)} 秒${hard ? '（ハード）' : ''}${noplane ? '（水上機なし）' : ''}${obey ? '（HUD に従う）' : ''}`);
+   process.exitCode = errs === 0 ? 0 : 1;
+ }
+ 
 diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
 index 6e437f7..6981b0c 100644
 --- a/src/scenes/boot-scene.ts
@@ -216,6 +455,21 @@ index cda545e..91609c0 100644
      ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
    };
  }
+diff --git a/src/ui/anchor-texts.ts b/src/ui/anchor-texts.ts
+index dc99c29..e55b897 100644
+--- a/src/ui/anchor-texts.ts
++++ b/src/ui/anchor-texts.ts
+@@ -10,8 +10,8 @@ import { DETECT_RANGE_STEP_M, type HudLine } from './hud-lines';
+ export const ANCHOR_EV_NONE = 0, ANCHOR_EV_BACKDROP = 1, ANCHOR_EV_UNDERWAY = 2, ANCHOR_EV_HINT = 3;
+ export const ANCHOR_UNDERWAY_JA = '停泊していた艦が動き出した！';
+ export const ANCHOR_HINT_JA = '停泊艦の南の暗い海（岸の陰）から寄れ ・ 見つかりにくい';
+-/** Briefing の危険の行の尾（systems/briefing-numbers。HUD の手がかりと同じ言葉） */
+-export const ANCHOR_BRIEF_HINT_JA = '停泊艦の南の暗い海（岸の陰）なら見つかりにくい';
++/** Briefing の危険の行の尾（systems/briefing-numbers。HUD の手がかりと同じ言葉）。v0.8.1 IP2: 危険に「敵航空機、」が入り、行を 1 行（24 px・1,056 と 1,032 px）に収めるため「…暗い海（岸の陰）なら見つかりにくい」から短くした */
++export const ANCHOR_BRIEF_HINT_JA = '停泊艦の南の岸の陰から寄れ';
+ export const anchorBackdropLineJa = (step: number): string => `岸の陰に入った ・ 見つかる距離 ${step * DETECT_RANGE_STEP_M} m`;
+ 
+ /** 2 行目の文が読む時計の部分（AnchorLineClock がそのまま満たす） */
 diff --git a/src/ui/hud-lines.ts b/src/ui/hud-lines.ts
 index a673e8d..9308b94 100644
 --- a/src/ui/hud-lines.ts
@@ -267,3 +521,720 @@ index 4734d62..b317836 100644
    if (t.shallowState !== 0) return MISSION_SHALLOWS;
    if (stormWarning(t)) return MISSION_STORM_WARN;
    if (planeApproaching(t)) return MISSION_PLANE;
+diff --git a/tests/__snapshots__/setup-us06.test.ts.snap b/tests/__snapshots__/setup-us06.test.ts.snap
+index 62ea649..348cbc6 100644
+--- a/tests/__snapshots__/setup-us06.test.ts.snap
++++ b/tests/__snapshots__/setup-us06.test.ts.snap
+@@ -61,9 +61,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -167,7 +170,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -373,6 +407,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -475,6 +510,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "detectFactor": 0.6,
+   "behindM": 2000,
+   "behindM2": 4000000
++ },
++ "seaplaneNight": {
++  "attacksPerNight": 2
+  }
+ }"
+ `;
+@@ -540,9 +578,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -646,7 +687,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -852,6 +924,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -954,6 +1027,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "detectFactor": 0.6,
+   "behindM": 2000,
+   "behindM2": 4000000
++ },
++ "seaplaneNight": {
++  "attacksPerNight": 2
+  }
+ }"
+ `;
+@@ -1019,9 +1095,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -1125,7 +1204,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -1331,6 +1441,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -1433,6 +1544,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "detectFactor": 0.6,
+   "behindM": 2000,
+   "behindM2": 4000000
++ },
++ "seaplaneNight": {
++  "attacksPerNight": 2
+  }
+ }"
+ `;
+@@ -1498,9 +1612,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -1604,7 +1721,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -1810,6 +1958,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -1912,6 +2061,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false 
+   "detectFactor": 0.6,
+   "behindM": 2000,
+   "behindM2": 4000000
++ },
++ "seaplaneNight": {
++  "attacksPerNight": 2
+  }
+ }"
+ `;
+@@ -1977,9 +2129,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -2083,7 +2238,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -2299,6 +2485,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -2404,6 +2591,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "behindM": 2000,
+   "behindM2": 4000000
+  },
++ "seaplaneNight": {
++  "attacksPerNight": 2
++ },
+  "pickets": {
+   "starts": [
+    {
+@@ -2552,9 +2742,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -2658,7 +2851,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -2874,6 +3098,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -2979,6 +3204,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "behindM": 2000,
+   "behindM2": 4000000
+  },
++ "seaplaneNight": {
++  "attacksPerNight": 2
++ },
+  "pickets": {
+   "starts": [
+    {
+@@ -3127,9 +3355,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -3233,7 +3464,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -3449,6 +3711,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -3554,6 +3817,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "behindM": 2000,
+   "behindM2": 4000000
+  },
++ "seaplaneNight": {
++  "attacksPerNight": 2
++ },
+  "pickets": {
+   "starts": [
+    {
+@@ -3702,9 +3968,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "storm": null,
+   "hazards": [
+    "enemy_ship_gunfire_or_ram",
++   "enemy_aircraft",
+    "dawn_air_strike"
+   ],
+-  "enemyAircraft": null,
++  "enemyAircraft": {
++   "enemyId": "ijn_seaplane_jake"
++  },
+   "night": {
+    "hazardScale": 1,
+    "optionalHazards": [],
+@@ -3808,7 +4077,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "friendly": null,
+  "storm": null,
+- "seaplane": null,
++ "seaplane": {
++  "flightMps": 308.64,
++  "spawnM": 6000,
++  "wakeDetectM": 6000,
++  "baseDetectM": 1500,
++  "wakeThresholdKt": 18,
++  "patrolFromS": 20,
++  "wakeTriggerS": 3,
++  "loseS": 4,
++  "patrolCooldownS": 10,
++  "runRadiusM": 600,
++  "overpassS": 1.944012441679627,
++  "passS": 3.888024883359254,
++  "orbitDegPerS": 29.472948981529548,
++  "orbitS": 4,
++  "leaveS": 2.5,
++  "flareRadius2": 1440000,
++  "flareDurationS": 40,
++  "flareRevealM": 6000,
++  "bombCount": 2,
++  "bombHit": {
++   "damage": 35,
++   "fireChance": 0.3,
++   "engineDamageChance": 0.2
++  },
++  "bombFallFeelS": 2.2120050544373244,
++  "bombFallGameS": 11.060025272186621,
++  "bombLeadGameS": 20.780087480584754,
++  "bombScatterM": 56.568542494923804,
++  "boatHalfLengthM": 12.2,
++  "bombHitRadiusM": 28.15
++ },
+  "crew": {
+   "total": 14,
+   "casualtiesPerHp": 0.1
+@@ -4024,6 +4324,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+  },
+  "hazardsTonight": [
+   "enemy_ship_gunfire_or_ram",
++  "enemy_aircraft",
+   "dawn_air_strike"
+  ],
+  "absentHazards": [],
+@@ -4129,6 +4430,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
+   "behindM": 2000,
+   "behindM2": 4000000
+  },
++ "seaplaneNight": {
++  "attacksPerNight": 2
++ },
+  "pickets": {
+   "starts": [
+    {
+diff --git a/tests/anchor-probe-scan.test.ts b/tests/anchor-probe-scan.test.ts
+index 64adb4d..39bce1f 100644
+--- a/tests/anchor-probe-scan.test.ts
++++ b/tests/anchor-probe-scan.test.ts
+@@ -3,11 +3,14 @@
+ // - 台本とページの糊は、測りの印（<anchor-probe:measure> 〜 </anchor-probe:measure>）の間を除いて、艦の AI・止まった段・背に岸・今夜の揺らぎ・艦の速さの名前を持たない
+ //   （例外は ?debug の旗 &nobackdrop の字だけ＝shore_east_nb の夜を開く問い合わせ）。測りは印の間の 1 か所だけ。
+ // - 台本の揺らぎは自分の乱数（seed × 7907 ＋ 40483）で、同じ seed は同じ夜（小さな素の模型で 2 回回す）。
++// - v0.8.1 IP2（us_06 に夜の水上機）: 表と帯は anchor-probe-table（node の側だけ・import なし）。台本の obey（HUD=1）は HUD の 2 行目の字（view の line2）だけに従い、
++//   obey の無い台本は 2 行目の字を読まない（S3 の夜のまま＝?debug&noplane の md5 が S3〜IP1 と同じ）。
+ import { readFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+ 
+ const PROBE = readFileSync('scripts/headless/anchor-probe.mjs', 'utf8');
+ const POLICY = readFileSync('scripts/headless/anchor-probe-policy.mjs', 'utf8');
++const TABLE = readFileSync('scripts/headless/anchor-probe-table.mjs', 'utf8');
+ const OPEN = '// <anchor-probe:measure>', CLOSE = '// </anchor-probe:measure>';
+ const FORBIDDEN = [/anchored/i, /anchors/i, /shipAi/, /\.ai\./, /speedMps/i, /backdrop/i, /jitter/i, /underway/i, /noticed/i];
+ /** 測りの印の間を除き、?debug の旗 &nobackdrop を消した字 */
+@@ -18,7 +21,7 @@ const unfenced = (s: string): string => {
+ const count = (s: string, sub: string): number => s.split(sub).length - 1;
+ type View = Record<string, unknown> & { t: number; x: number; y: number; h: number };
+ type Out = { headingDeg: number; speed01: number; fireN: number; fireSpreadDeg: number };
+-type Policy = { ANCHOR_POLICIES: string[]; ANCHOR_HUMAN: { seedMul: number; seedAdd: number }; createAnchorDriver(p: string, seed: number, plan: object): object; stepAnchorDriver(d: object, v: View, o: Out): void };
++type Policy = { ANCHOR_POLICIES: string[]; ANCHOR_HUMAN: { seedMul: number; seedAdd: number }; createAnchorDriver(p: string, seed: number, plan: object, obey?: boolean): object; stepAnchorDriver(d: object, v: View, o: Out): void };
+ 
+ describe('us_06 の探りの台本と糊（D-P2）', () => {
+   it('測りは印の間の 1 か所だけ（ページの糊の中）・台本には印が無い', () => {
+@@ -28,7 +31,7 @@ describe('us_06 の探りの台本と糊（D-P2）', () => {
+     expect(PROBE.indexOf(CLOSE)).toBeLessThan(PROBE.indexOf('`;\n'));
+   });
+   it('台本と糊は測りの外で禁じた名前を持たない（艦の AI・止まった段・背に岸・今夜の揺らぎ・艦の速さ）', () => {
+-    for (const [name, text] of [['policy', unfenced(POLICY)], ['probe', unfenced(PROBE)]] as const) {
++    for (const [name, text] of [['policy', unfenced(POLICY)], ['probe', unfenced(PROBE)], ['table', TABLE]] as const) {
+       for (const re of FORBIDDEN) expect(text.match(re)?.[0] ?? null, `${name} ${re}`).toBeNull();
+     }
+     // 印の間には実際に測りの名前がある（印が空でない＝走査を外す意味がある）
+@@ -43,6 +46,9 @@ describe('us_06 の探りの台本と糊（D-P2）', () => {
+     expect(page.match(/^import .*$/gm)).toEqual(["import { ANCHOR_HUMAN, createAnchorDriver, stepAnchorDriver } from '${HERE}/anchor-probe-policy.mjs';"]);
+     expect(PROBE.split('\n').length - 1).toBeLessThanOrEqual(200);
+     expect(POLICY.split('\n').length - 1).toBeLessThanOrEqual(200);
++    // IP2: 表は node の側だけ（import・ページ・世界の物・Math.random なし）・200 行以下
++    expect(TABLE).not.toMatch(/^\s*import\b|\bimport\(|\brequire\(|Math\.random|\bwindow\b|__hl|__game|registry/m);
++    expect(TABLE.split('\n').length - 1).toBeLessThanOrEqual(200);
+   });
+   it('同じ seed は同じ夜（素の模型の艇を 6 つの台本で 150 秒ずつ 2 回）・揺らぎの系列は seed × 7907 ＋ 40483', async () => {
+     const path = '../scripts/headless/anchor-probe-policy.mjs';
+@@ -69,4 +75,25 @@ describe('us_06 の探りの台本と糊（D-P2）', () => {
+     expect(night('shore_east', 7)).not.toBe(night('shore_east', 8)); // 反応と狙いのずれは seed で変わる
+     expect(night('idle', 7)).toBe('5000.000,250.000');
+   });
++  it('IP2: obey の台本は 2 行目の字だけに従う（接近の行で静音・爆撃進路の行で 90° 転舵して全速）。obey なし・charge・idle は字を読まない', async () => {
++    const P = (await import('../scripts/headless/anchor-probe-policy.mjs')) as Policy;
++    const plan = { width: 6000, height: 3000, ringX: 4400, ringY: 400, ringR: 250, dawnS: 200, silent01: 0.42, cruise01: 0.59, uzX: 3620, uzY: 2380, trX: 3000, trY: 2760, torpScreenMps: 86, spacingDeg: 4 };
++    const view = (line2: string, t: number): View => ({ t, leftS: 200 - t, x: 5000, y: 250, h: 180, torps: 4, atHome: false, seen: false, lit: false, ddSunk: 0, trSunk: false, bn: 1, sweepS: 0, bx: [3620], by: [2380], en: 0, ekind: [0], ex: [3620], ey: [2380], evx: [0], evy: [0], line2 });
++    const speeds = (policy: string, obey: boolean, line2: string): { sp: number[]; h: number[] } => {
++      const d = P.createAnchorDriver(policy, 3, plan, obey), o: Out = { headingDeg: NaN, speed01: 0, fireN: 0, fireSpreadDeg: 0 }, sp: number[] = [], h: number[] = [];
++      for (let k = 0; k < 300; k++) { P.stepAnchorDriver(d, view(k < 60 ? '' : line2, k / 60), o); sp.push(o.speed01); h.push(o.headingDeg); }
++      return { sp, h };
++    };
++    const warn = '敵機 4100 m ・ 航跡を見られた ・ 18 kt 以下に減速！', bomb = '爆撃進路！ 転舵か減速でかわせ';
++    const base = speeds('shore_east', false, ''), w = speeds('shore_east', true, warn), b = speeds('shore_east', true, bomb);
++    expect(base.sp[0]).toBe(plan.cruise01); // 巡航の脚
++    expect(w.sp.slice(0, 60)).toEqual(base.sp.slice(0, 60));
++    expect(w.sp[59 + 2 * 60 + 2]).toBe(plan.silent01); // 反応の上限 2 秒の後は静音
++    expect(b.sp[299]).toBe(1);
++    expect(Math.abs(((b.h[299]! - 180 + 540) % 360) - 180)).toBe(90);
++    for (const [pol, line] of [['shore_east', warn], ['charge', warn], ['idle', bomb]] as const) {
++      const off = speeds(pol, pol !== 'shore_east', line), none = speeds(pol, false, '');
++      expect(off, pol).toEqual(none);
++    }
++  });
+ });
+diff --git a/tests/backdrop-world.test.ts b/tests/backdrop-world.test.ts
+index 4d45e78..6ce271a 100644
+--- a/tests/backdrop-world.test.ts
++++ b/tests/backdrop-world.test.ts
+@@ -49,10 +49,13 @@ describe('背に岸の距離（us_06・揺らぎなし。卯月 (3620, 2380)・
+     w.enemy.illuminated = false;
+     expect(ranges(w, 4400, 2850, 1200)[UZ]).toBe(720);
+   });
+-  it('水上機の照明弾の光の中なら下限は照明弾の距離（us_06 には水上機が無い＝0。照らされていれば係数なし）', () => {
++  it('水上機の照明弾の光の中なら下限は照明弾の距離（v0.8.1 IP2 から us_06 に夜の水上機＝照明弾の 6,000 m。S2〜IP1 は水上機が無く 0＝720 m だった。照らされていれば係数なし）', () => {
+     const w = anchorKit();
+-    expect(w.setup.seaplane).toBe(null);
++    const flareM = w.setup.seaplane!.flareRevealM;
++    expect(flareM).toBe(6000);
+     w.flareLit = true;
++    expect(ranges(w, 4400, 2850, 1200)[UZ]).toBe(flareM);
++    w.flareLit = false;
+     expect(ranges(w, 4400, 2850, 1200)[UZ]).toBe(720);
+   });
+   it('煙幕と掛け算: 世界の距離（煙幕込み）× 0.6', () => {
+diff --git a/tests/briefing.test.ts b/tests/briefing.test.ts
+index 698f515..de89754 100644
+--- a/tests/briefing.test.ts
++++ b/tests/briefing.test.ts
+@@ -289,7 +289,7 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番
+         '成功: 帰投。卯月を撃沈すれば達成（帰投地点は北東の青い輪）',
+         `月: 月没後 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m ・ レーダー ${radar} m（陸のそばは映らない）`,
+         `敵: 駆逐艦 ×1、輸送船 ×1${hard ? `、駆潜艇 ×${pickets}` : ''}（南西に停泊）`,
+-        '危険: 敵艦艇の砲撃・衝突、夜明けの空襲 ・\u00a0停泊艦の南の暗い海（岸の陰）なら見つかりにくい', // v0.8.1 IP1: 寄り方の手がかり（危険の行の尾。&nobackdrop では出ない）
++        '危険: 敵艦艇の砲撃・衝突、敵航空機、夜明けの空襲 ・\u00a0停泊艦の南の岸の陰から寄れ', // v0.8.1 IP1: 寄り方の手がかり（危険の行の尾。&nobackdrop では出ない）。IP2: 夜の水上機の「敵航空機」と、1 行に収める短い尾
+         `条件: 夜明けまで ${p.durationS} 秒（以後は空襲・敵は東へ退く） ・ 燃料 ${String(proto()['fuel_allotment_gal'])} gal ・ 魚雷 ${torps} 本 ・ 機銃は艦に効かない ・ 見越し点マーカー 使用可`,
+       ]);
+     }
+diff --git a/tests/setup-us06.test.ts b/tests/setup-us06.test.ts
+index 7df8090..1038088 100644
+--- a/tests/setup-us06.test.ts
++++ b/tests/setup-us06.test.ts
+@@ -1,5 +1,5 @@
+ // v0.8.1 S0（spec-v0810 §4.1・§4.5・§6 の S0）: us_06「オルモック湾の決着」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
+-// （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.1 S0 の木で作った。us_06 の setup は S1〜S4 で鍵が増えうるので、
++// （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.1 S0 の木で作った（S3 で動き出す秒と駆潜艇・IP2 で夜の水上機＝seaplane と seaplaneNight の鍵を -u）。us_06 の setup は S1〜S4 で鍵が増えうるので、
+ // 書き換える時は CHANGELOG に段と理由を書く（ほかの 10 任務の setup の snapshot は -u しない）。Briefing の行は入れない（S4 で変わる）。
+ // 今夜の揺らぎ（+16）はノーマル 8 回（卯月 3・空知丸 3・大発の先頭 1・反転 1）・ハード 14 回（駆潜艇 2 隻 ＋6）。遊べるのは S4 から（playable_from はまだ無い）。
+ // あわせて: us_06 の画面の文（題・場所・目的・成功・史実メモ・月・夜明け・岸・退く呼び名・敵の名）に人名・階級つきの呼び方・PT の番号が無い（CLAUDE.md §11・spec-v0810 §3.8）。
+@@ -34,13 +34,17 @@ describe('us_06 の setup の snapshot（v0.8.1 S0 の木）', () => {
+     // 駆逐艦の任務（卯月 1 隻＝enemy_start。空知丸は transport）・Mk 13・月没後・夜明けは空襲（L1）で東へ退く・撃沈の達成は 1 隻
+     expect([s.mission.enemyId, s.mission.torpedoId, s.mission.moon, s.mission.enemyStarts.length, s.mission.objectiveSinkCount, s.destroyer!.objectiveSinks, s.transport!.enemyId]).toEqual(['ijn_destroyer_mutsuki_enemy', 'us_mk13', 'dark', 1, 1, 1, 'ijn_transport']);
+     expect([s.destroyer!.spec.lengthM, s.destroyer!.spec.hitsToSink, s.transport!.spec.hitsToSink, s.destroyer!.baseDetectM]).toEqual([102.7, 2, 1, 2000]);
+-    expect([s.barges, s.ptBoats, s.convoy, s.escort, s.raid, s.storm, s.seaplane, s.friendly, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, null, 'torpedo']);
++    expect([s.barges, s.ptBoats, s.convoy, s.escort, s.raid, s.storm, s.friendly, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, 'torpedo']);
++    // v0.8.1 IP2（ユーザーの U3）: 夜の水上機（us_02 の ijn_seaplane_jake の仕組み・数は us_02 と同じ）がノーマル・ハードとも毎夜（optional_hazards なし）。1 夜の攻撃の回数は data から
++    const ea = (missionOf('us_06')['v0_1_prototype'] as Rec)['enemy_aircraft'] as Rec;
++    expect([s.seaplane !== null, s.seaplaneNight]).toEqual([true, { attacksPerNight: ea['attacks_per_night'] }]);
++    expect(s.seaplane).toEqual(buildWorldSetup(gameData, 'us_02').seaplane);
+     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears, s.airStrike!.planes]).toEqual(['enemy', 'east', '日本の艦', false, 4]);
+     expect([s.radar!.model, s.radar!.fit, s.mission.coast!.label, s.coastEdgeY]).toEqual(['so_late', 'own', 'レイテ島（パロンポン）', 3000]);
+     expect([s.anchors, s.backdrop]).toEqual([{ underwayS: hard ? [3, null, 4, 4] : [3, null], alarmS: 4 }, { detectFactor: 0.6, behindM: 2000, behindM2: 4_000_000 }]);
+     expect('pickets' in s).toBe(hard);
+     if (hard) expect([s.pickets!.enemyId, s.pickets!.starts.length]).toEqual(['ijn_subchaser', 2]);
+-    expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'dawn_air_strike']);
++    expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'enemy_aircraft', 'dawn_air_strike']); // v0.8.1 IP2: 夜の水上機を出会う順に
+     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'transit', 'shores'] as const) expect(k in s, k).toBe(false);
+     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));
+   });
