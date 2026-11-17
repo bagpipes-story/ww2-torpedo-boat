@@ -2,9 +2,10 @@
 // v0.6.1: 夜明けは終了理由でなくなり（dawn を削除）、夜明けの後に終わった任務は見出しに「（夜明け後 N 秒）」を付ける。
 // v0.6.2 実機 1 回目: 制空権下で敵艦隊がいなくなって終えた任務（cleared）は「敵艦隊なし（制空権下・帰投不要）」。帰投と同じに数える（returned が true）。
 // v0.6.11 S6（jp_03。空襲下の退避＝昼の任務）: 帰投は「退避完了」、空襲の沈没は「空襲で沈没」、火災は「火災で沈没」（jp_03 に砲撃は無い＝座席へ入れた時の火災の理由の既定 destroyed）、
-// 後ろの秒は「（空襲後 N 秒）」（evac の引数。ほかの任務の見出しは 1 字も変わらない）。
+// 後ろの秒は「（空襲後 N 秒）」（evac の引数。ほかの任務の見出しは 1 字も変わらない）。v0.8.1 S4: 止まった艦の任務（us_06。anchor の引数）の体当たりは「敵艦と衝突した」（ui/anchor-result）。
 // Phaser も config（DOM を読む game-config）も使わない（文を組むだけ。tests から型検査ごと読める）。終了理由の型は core/mission-flow。
 import type { MissionEndReason } from '../core/mission-flow';
+import { ANCHOR_REASON_LABEL } from './anchor-result';
 
 /** 史実モードの見出しの印（v0.6.1 で config/menu-config から移した。文は同じ） */
 export const RESULT_HISTORICAL_TAG_JA = '（史実）';
@@ -49,9 +50,10 @@ export function resultDawnSuffixS(returned: boolean, d: { readonly reached: bool
  * 「任務終了 — 理由」の見出し。dawnSuffixS は夜明け後の秒（NaN なら付けない。付けるときは「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に。resultDawnSuffixS）。
  * evac（v0.6.11 S6。空襲下の退避の任務）は理由を EVAC_REASON_LABEL で言い換え、後ろの秒は「（空襲後 N 秒）」
  */
-export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false): string {
+export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false, anchor = false): string {
   const dawn = Number.isNaN(dawnSuffixS) ? '' : `（${evac ? '空襲後' : '夜明け後'} ${Math.round(dawnSuffixS)} 秒）`;
-  return `任務終了 — ${(evac ? EVAC_REASON_LABEL[reason] : undefined) ?? REASON_LABEL[reason]}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
+  const label = (evac ? EVAC_REASON_LABEL[reason] : anchor ? ANCHOR_REASON_LABEL[reason] : undefined) ?? REASON_LABEL[reason]; // 止まった艦の任務（v0.8.1 S4。ui/anchor-result）
+  return `任務終了 — ${label}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
 }
 
 /**

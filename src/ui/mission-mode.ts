@@ -86,6 +86,9 @@ export const MISSION_EVAC = 38;
  */
 export const MISSION_RADAR_EVENT = 39;
 export const MISSION_BOW_ON = 40;
+/** 41 止まった艦の任務の出来事（v0.8.1 S4。us_06。文と時計は ui/anchor-lines: 暗い岸を背にした・停泊していた艦が動き出した。1 回・4 秒。レーダーの出来事のすぐ下＝それを遅らせない）と旗 */
+export const MISSION_ANCHOR_EVENT = 41;
+export const MODE_FLAG_ANCHOR_EVENT = 1024;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -171,7 +174,7 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
  * 優先順: 魚雷待ち > 燃料切れ（どちらも揚陸の決着の前の帰投の輪の中では立てない。v0.6.9 R14 A5）> 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 衝突の危険（v0.8.0 S4）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 輸送船が射線に入る（v0.6.9 R14 A1）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 揚陸の出来事（v0.6.9）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
- * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > レーダーの出来事（v0.8.0 S4）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > レーダーの出来事（v0.8.0 S4）> 止まった艦の出来事（v0.8.1 S4）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   // 揚陸の決着の前に帰投の輪の中（v0.6.9 R14 A5。jp_04 だけ。ほかの任務は偽で前のまま）: 任務は終わらない（systems/mission-end の landingHold）ので魚雷待ち・漂流の行は出さず、
@@ -222,6 +225,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.batteryInArc) return MISSION_BATTERY;
   if (t.escortEnabled && !t.escortSunk && t.escortDistM > t.escortLagWarnM) return MISSION_ESCORT_LAG;
   if ((flags & MODE_FLAG_RADAR_EVENT) !== 0) return MISSION_RADAR_EVENT; // レーダーの出来事（v0.8.0 S4。us_04 だけ旗が立つ）
+  if ((flags & MODE_FLAG_ANCHOR_EVENT) !== 0) return MISSION_ANCHOR_EVENT; // 止まった艦の出来事（v0.8.1 S4。us_06 だけ旗が立つ）
   if (t.shallowState !== 0) return MISSION_SHALLOWS;
   if (stormWarning(t)) return MISSION_STORM_WARN;
   if (planeApproaching(t)) return MISSION_PLANE;

@@ -8,14 +8,12 @@ import { gameData } from '../src/config/game-data';
 import { SeededRng } from '../src/core/rng';
 import { directSortie } from '../src/core/sortie';
 import { buildWorldSetup } from '../src/systems/world-setup';
-import { FAMOUS_BOAT_RE, PERSON_DENYLIST, RANK_RE } from './person-denylist';
+import { FAMOUS_BOAT_RE, PERSON_DENYLIST, PT_NUMBER_RE, RANK_RE } from './person-denylist';
 
 const SEEDS = [1, 12345] as const;
 const CASES = [false, true].flatMap((hard) => [false, true].flatMap((historical) => SEEDS.map((seed) => [hard, historical, seed] as const)));
 type Rec = Record<string, unknown>;
 const missionOf = (id: string): Rec => (gameData.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === id)!;
-/** PT の番号（PT-490・PT 492・PT323 など）。「隻」が続く数（「米PT 2隻」の隻数）は番号でない */
-const PT_NUMBER_RE = /PT-?\s*\d+(?![\d隻])/;
 
 function build(hard: boolean, historical: boolean, seed: number): { s: ReturnType<typeof buildWorldSetup>; draws: number } {
   const spy = vi.spyOn(SeededRng.prototype, 'next');
@@ -61,12 +59,12 @@ describe('us_06 の setup の snapshot（v0.8.1 S0 の木）', () => {
 });
 
 describe('us_06 の種の直し（spec-v0810 §2）と人名・PT の番号（CLAUDE.md §11・spec-v0810 §3.8）', () => {
-  it('場所はパロンポン沖・月は沈んでいた・目的に特攻艇なし・成功は卯月の撃沈・夜明けは L1・題と日付と順はそのまま・まだ遊べない', () => {
+  it('場所はパロンポン沖・月は沈んでいた・目的に特攻艇なし・成功は卯月の撃沈・夜明けは L1・題と日付と順はそのまま・S4 から遊べる（playable_from v0.8.1）', () => {
     const m = missionOf('us_06');
     expect([m['title_ja'], m['date'], m['order'], m['place'], m['moon'], m['moon_label_ja'], m['success'], m['torpedo_type'], m['player_boat']]).toEqual(['オルモック湾の決着', '1944-12-11', 6, 'パロンポン沖（レイテ島西岸）', 'dark', '月没後', '帰投。卯月を撃沈すれば達成', 'us_mk13', 'us_elco80']);
     expect(String(m['objective'])).not.toContain('特攻');
     expect(m['enemies']).toEqual(['ijn_destroyer_mutsuki_enemy', 'ijn_transport']);
-    expect('playable_from' in m).toBe(false);
+    expect(m['playable_from']).toBe('v0.8.1'); // v0.8.1 S4（lead の L65）: Title の米PT のタブの 5 枚目。S0〜S3 は無かった
     const da = m['dawn_air'] as Rec;
     expect([da['control'], da['confidence'], da['play_as'], da['enemy_ships_at_dawn'], da['label_ja']]).toEqual(['contested', 'medium', 'enemy', 'retire', '昼の空は争奪（日本機の空襲）']);
     expect((da['refs'] as Rec[]).map((r) => r['url'])).toContain('https://en.wikipedia.org/wiki/VMF-541');

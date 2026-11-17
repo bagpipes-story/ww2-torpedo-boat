@@ -176,7 +176,7 @@ export class ResultScene extends Phaser.Scene {
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
     const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
-    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {

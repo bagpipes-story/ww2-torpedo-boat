@@ -17,6 +17,7 @@ import { callLabel, withWarnings, type HudLine } from './hud-lines';
 import { evacSettleBannerLines, mssJa } from './evac-lines';
 import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landingWaitTailJa } from './landing-lines';
 import { stormWarning } from './mission-mode';
+import { anchorWithdrawJa } from './anchor-lines';
 
 /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
 const RESULT_DODGE_SHOWN = 8;
@@ -177,7 +178,7 @@ export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
   const d = t.dawn;
   // 昼の任務（v0.6.11 S5。jp_03）: 「第1次の空襲が去った」と残存の確定・外なら §2 の 4 機（ui/evac-lines）
   if (d.dayStart && t.evac.enabled) return evacSettleBannerLines(t.evac, d.air === DAWN_AIR_ENEMY && d.strikeEnabled ? `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}` : '');
-  const withdraw = withdrawBannerJa(t);
+  const withdraw = anchorWithdrawJa(t, withdrawBannerJa(t)); // 止まった艦の任務（v0.8.1 S4。us_06）は泊地に残る輸送船の句（ui/anchor-lines。ほかの任務は同じ文）
   if (d.air === DAWN_AIR_ENEMY && d.strikeEnabled) {
     const sub = `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}`;
     if (d.vip && t.escortEnabled && !t.escortSunk) return ['夜明け — 空襲', sub, '僚艇も狙われる ・ 自艇の転舵に僚艇が付いてくる'];

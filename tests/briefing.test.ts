@@ -3,12 +3,17 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gameData, getPrototypeMission, getRaidParams } from '../src/config/game-data';
 import { getMenuEntries } from '../src/config/mission-data';
+import { playableMissionIds } from '../src/config/campaign-data';
 import { enemyNameJa, getBriefingRecord, riskLabelJa } from '../src/config/briefing-data';
 import { bearingJa, briefingRows, compassJa, enemyCountsJa, formatDateJa, hazardsJa, menuEntries, moonLabelJa, shortLabelJa } from '../src/core/briefing';
 import { RAID_ALERT_JA, RAID_CALM_JA, RAID_DISPERSE, RAID_STAY, raidChoiceText, raidOutcomeText, raidResultLine } from '../src/core/sortie';
 import { briefingNumbers, buildWorldSetup } from '../src/systems/world-setup';
 import { getEngineParams } from '../src/config/engine-mission-data';
-import { FAMOUS_BOAT_RE, PERSON_DENYLIST, RANK_RE } from './person-denylist';
+import { FAMOUS_BOAT_RE, PERSON_DENYLIST, PT_NUMBER_RE, RANK_RE } from './person-denylist';
+import { ANCHOR_UNDERWAY_JA, anchorBackdropLineJa, anchorWithdrawJa } from '../src/ui/anchor-lines';
+import { anchorResultLineJa } from '../src/ui/anchor-result';
+import { resultHeadingJa } from '../src/ui/result-heading';
+import { bowOnLineJa } from '../src/ui/strait-lines';
 import { createHash } from 'node:crypto';
 import { directSortie } from '../src/core/sortie';
 import { OTHER_BRIEFING_IDS, otherBriefingsJson } from './briefing-other-kit';
@@ -22,7 +27,7 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
 const labelOf = (id: string): string => riskLabelJa(gameData, id);
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
-  it('任務一覧: 米PTキャンペーンの 4 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）。sub は日付 ・ 場所', () => {
+  it('任務一覧: 米PTキャンペーンの 5 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）、v0.8.1 S4 で us_06 も（3 段目の左）。sub は日付 ・ 場所', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.campaignName).toBe('米PTキャンペーン');
     expect(menu.entries).toEqual([
@@ -30,10 +35,11 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
       { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
       { id: 'us_04', title: 'ブラケット海峡の夜', sub: '1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖）', playable: true, status: '出撃準備 →' },
+      { id: 'us_06', title: 'オルモック湾の決着', sub: '1944年12月11日 ・ パロンポン沖（レイテ島西岸）', playable: true, status: '出撃準備 →' },
     ]);
   });
   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
-    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）
+    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_06']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）。v0.8.1 S4: us_06 にも（v0.8.1）
     expect(getMenuEntries(gameData).entries.map((e) => e.id)).toEqual(US_IDS);
     const otherCampaign = clone();
     byId(otherCampaign, 'jp_01')['playable_from'] = 'v0.5.0';
@@ -76,8 +82,10 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     delete byId(nonePlayable, 'us_02')['v0_1_prototype'];
     delete byId(nonePlayable, 'us_03')['v0_1_prototype'];
     expect(() => getMenuEntries(nonePlayable)).toThrow(); // 日本のタブの解放の一覧（us_01〜03）が遊べる任務の外になる（v0.8.0 S0 の getCampaigns の検査）
-    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.0 S5: us_04 が残る
+    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.0 S5: us_04 が残る（v0.8.1 S4 から us_06 も）
     delete byId(nonePlayable, 'us_04')['v0_1_prototype'];
+    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.1 S4: us_06 が残る
+    delete byId(nonePlayable, 'us_06')['v0_1_prototype'];
     expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).toThrow(/出撃できる任務/);
   });
   it('日付: 1942-12-11 → 1942年12月11日、1942-03-11 → 1942年3月11日、1942/12/11 は例外', () => {
@@ -187,14 +195,16 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
   });
 });
 
-// v0.8.0 S4（spec-v0800 §4.9・§4.6・§4.12、brief L25・L34）: us_04 の Briefing（月の行の尾・敵の来る方角「西と北西」・ハードの ×5）と、ほかの 9 任務の文がバイト同一の証。
-// 基準の sha256 は S3 の commit（e8be5eb）の木に tests/briefing-other-kit.ts を写して esbuild で回した値（v0.8.0 S4 の hand-back。この木の値も同じ）。
+// v0.8.0 S4（spec-v0800 §4.9・§4.6・§4.12、brief L25・L34）: us_04 の Briefing（月の行の尾・敵の来る方角「西と北西」・ハードの ×5）と、ほかの任務の文がバイト同一の証。
+// 基準の sha256: v0.8.0 S4 は S3 の commit（e8be5eb）の木の 9 任務（84,709 字・b59abff9…）。v0.8.1 S4（lead の L60）から us_04 を足した 10 任務で、main e9d80ea（v0.8.0 のマージ）の木に
+// tests/briefing-other-kit.ts を写して esbuild で回した値（94,917 字。この木の値も同じ＝us_06 の S4 の文はほかの 10 任務の Briefing を 1 字も変えない）。
 describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト同一', () => {
-  const OTHER_SHA = 'b59abff9d09c8bf0cc7858fe66ca3678262a20e702f64b0ddda0992a2a1f86a9';
-  it('ほかの 9 任務（ノーマル・ハード × 史実モード × seed 4 つ）の日付・場所・題・6 行・史実は S3 の commit と同じ（sha256）', () => {
-    expect(OTHER_BRIEFING_IDS.length).toBe(9);
+  const OTHER_SHA = '4dcef19ffd9b3b3900242608a5ca807f21031fac72a2260021e23716044eb47d';
+  it('ほかの 10 任務（us_06 のほか。ノーマル・ハード × 史実モード × seed 4 つ）の日付・場所・題・6 行・史実は main e9d80ea と同じ（sha256）', () => {
+    expect(OTHER_BRIEFING_IDS.length).toBe(10);
+    expect([...OTHER_BRIEFING_IDS].sort()).toEqual([...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'us_06').sort());
     const j = otherBriefingsJson();
-    expect(j.length).toBe(84709);
+    expect(j.length).toBe(94917);
     expect(createHash('sha256').update(j).digest('hex')).toBe(OTHER_SHA);
   });
   const rowsOf = (hard: boolean, seed = 1, radarOff = false): { label: string; text: string }[] => {
@@ -256,5 +266,73 @@ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト�
       for (const name of PERSON_DENYLIST) expect(t).not.toContain(name);
       expect(RANK_RE.test(t) || FAMOUS_BOAT_RE.test(t), t).toBe(false);
     }
+  });
+});
+
+// v0.8.1 S4（spec-v0810 §3.7 D-O1・D-O5・D-O6・§3.8、lead の L64）: us_06 の Briefing（目的・史実メモ・月の行の尾・敵の行「（南西に停泊）」とハードの駆潜艇・危険・条件）と、
+// us_06 の画面の文の全部（Title の札・Briefing・HUD の新しい文・Result の 1 行と見出し・夜明けの帯）に人名・階級つきの呼び方・PT の番号（/PT-?\s*\d/。隻数は番号でない）が無いこと。
+describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番号', () => {
+  const rowsOf = (hard: boolean, seed = 1): { label: string; text: string }[] => {
+    const setup = buildWorldSetup(gameData, 'us_06', { sortie: directSortie('us_06', seed, 'none', hard, false), hard });
+    const rec = { ...getBriefingRecord(gameData, 'us_06', hard), hazardIds: setup.hazardsTonight, absentHazardIds: setup.absentHazards };
+    return briefingRows(rec, briefingNumbers(setup, '見越し点マーカー 使用可'), nameOf, labelOf);
+  };
+  const proto = (): Record<string, unknown> => byId(gameData, 'us_06')['v0_1_prototype'] as Record<string, unknown>;
+  it('6 行（数は data から: 夜明け・燃料・魚雷・射程・駆潜艇の隻数）。ハードは敵の行に「駆潜艇 ×2」。目的・成功・史実は data の文（ハードも同じ）', () => {
+    const p = getPrototypeMission(gameData, 'us_06');
+    const radar = gameData.hitRateModel.radar.models.so_late.ship_range_m;
+    const pickets = ((proto()['hard'] as Record<string, unknown>)['extra_pickets'] as unknown[]).length;
+    const torps = buildWorldSetup(gameData, 'us_06').torpedoCapacity;
+    for (const hard of [false, true]) {
+      expect(rowsOf(hard).map((r) => `${r.label}: ${r.text}`)).toEqual([
+        `目的: ${String(byId(gameData, 'us_06')['objective'])}`,
+        '成功: 帰投。卯月を撃沈すれば達成（帰投地点は北東の青い輪）',
+        `月: 月没後 ・ 見える 900 m ・ 見つかる 巡航 1200 m／静音 600 m ・ レーダー ${radar} m（陸のそばは映らない）`,
+        `敵: 駆逐艦 ×1、輸送船 ×1${hard ? `、駆潜艇 ×${pickets}` : ''}（南西に停泊）`,
+        '危険: 敵艦艇の砲撃・衝突、夜明けの空襲',
+        `条件: 夜明けまで ${p.durationS} 秒（以後は空襲・敵は東へ退く） ・ 燃料 ${String(proto()['fuel_allotment_gal'])} gal ・ 魚雷 ${torps} 本 ・ 機銃は艦に効かない ・ 見越し点マーカー 使用可`,
+      ]);
+    }
+    expect([pickets, p.durationS, proto()['fuel_allotment_gal'], torps, radar]).toEqual([2, 200, 40, 4, 6000]);
+    const rec = getBriefingRecord(gameData, 'us_06');
+    expect([formatDateJa(rec.date), rec.place, rec.titleJa]).toEqual(['1944年12月11日', 'パロンポン沖（レイテ島西岸）', 'オルモック湾の決着']);
+    expect(rec.objective).toBe('パロンポン沖に止まった駆逐艦 卯月と、揚陸中の輸送船 空知丸。レーダーで捉え、暗い岸を背に忍び寄って雷撃し、動き出した艦から逃れて帰れ');
+    expect(rec.noteJa).toBe('1944年12月12日1時ごろ、パロンポン沖に止まっていた駆逐艦卯月を、レーダーで捉えた米PT\u00a02隻が暗い岸を背に忍び寄り、約900\u00a0mから魚雷6本を撃って2本以上を当てて沈めた。輸送船空知丸は駆潜艇2隻に導かれて揚陸していた。日本のタブの「多号作戦・オルモック湾へ」と同じ夜。');
+    expect(getBriefingRecord(gameData, 'us_06', true).noteJa).toBe(rec.noteJa); // 句の間はノーブレークスペース（S0 の data。Phaser の折り返しは半角スペースで切る）
+  });
+  it('敵の行の「南西に停泊」は自艇の出発点から見た今夜の卯月（seed 1〜60・ノーマルとハード）。止まった艦の無い任務には鍵が無い', () => {
+    const seen = new Set<string>();
+    for (const hard of [false, true]) for (let seed = 1; seed <= 60; seed++) seen.add(rowsOf(hard, seed)[3]!.text.replace(/、駆潜艇 ×2/, ''));
+    expect([...seen]).toEqual(['駆逐艦 ×1、輸送船 ×1（南西に停泊）']);
+    for (const id of OTHER_BRIEFING_IDS) expect('enemyAtJa' in briefingNumbers(buildWorldSetup(gameData, id)), id).toBe(false);
+  });
+  it('行の数（24 px・1,056 px。1 字の余白でも）: 目的 2・成功 1・月 2・敵 1・危険 1・条件 2、史実 3（20 px）。下端は出撃のボタンの上端 584 − 8 の内（us_04 と同じ 561）', () => {
+    for (const hard of [false, true]) {
+      const r = rowsOf(hard).map((x) => x.text);
+      for (const W of [BRIEF_WRAP, BRIEF_WRAP - BRIEF_ROW_PX]) expect(r.map((t) => phaserWrap(t, BRIEF_ROW_PX, W).length), `${hard} ${W}`).toEqual([2, 1, 2, 1, 1, 2]);
+      for (const W of [BRIEF_WRAP, BRIEF_WRAP - BRIEF_ROW_PX]) expect(phaserWrap(getBriefingRecord(gameData, 'us_06', hard).noteJa, BRIEF_NOTE_PX, W).length, `${hard} ${W}`).toBe(3);
+    }
+    const lh = (px: number): number => Math.ceil(px * 1.25);
+    const bottom = 148 + [2, 1, 2, 1, 1, 2].reduce((a, n) => a + n * lh(BRIEF_ROW_PX) + 10, 0) + 8 + 3 * lh(BRIEF_NOTE_PX);
+    expect(bottom).toBe(561);
+    expect(bottom).toBeLessThanOrEqual(584 - 8);
+  });
+  it('us_06 の画面の文の全部（Title の札・Briefing・HUD の新しい文・Result の 1 行と見出し・夜明けの帯）に人名・階級つきの呼び方・PT の番号が無い', () => {
+    const texts: string[] = [];
+    const card = getMenuEntries(gameData).entries.find((e) => e.id === 'us_06')!;
+    texts.push(card.title, card.sub, card.status);
+    for (const hard of [false, true]) {
+      const rec = getBriefingRecord(gameData, 'us_06', hard);
+      texts.push(rec.titleJa, rec.place, rec.objective, rec.success, rec.noteJa, ...rowsOf(hard).map((r) => r.text));
+    }
+    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, bowOnLineJa(5, true), resultHeadingJa('rammed', NaN, true, false, false, true));
+    texts.push(anchorResultLineJa({ nameJa: '卯月', sunk: true, underwayS: 85, reason: 2, heldShots: 4, heldHits: 2, backdropS: 48 }));
+    const t = { anchor: {}, transportEnabled: true, transportSunk: false, shipsSunk: 0, shipsTotal: 1, torpedoesLeft: 2, dawn: { forceJa: '日本の艦', retireJa: '東' } } as never;
+    texts.push(anchorWithdrawJa(t, 'x'), anchorWithdrawJa({ ...(t as object), shipsSunk: 1 } as never, 'x'));
+    for (const s of texts) {
+      for (const name of PERSON_DENYLIST) expect(s).not.toContain(name);
+      expect(RANK_RE.test(s) || PT_NUMBER_RE.test(s) || FAMOUS_BOAT_RE.test(s), s).toBe(false);
+    }
+    expect(texts.length).toBe(32);
   });
 });

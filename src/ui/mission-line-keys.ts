@@ -11,7 +11,7 @@ import { engineKey, engineTagKey } from './engine-lines';
 import { evacLineKey } from './evac-lines';
 import { landingEventKey, landingKey, type LandingEventView } from './landing-lines';
 import { planeKeyOf, planeModeOf } from './mission-line-air';
-import { MISSION_BOW_ON, MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_RADAR_EVENT } from './mission-mode';
+import { MISSION_ANCHOR_EVENT, MISSION_BOW_ON, MISSION_CALL, MISSION_CONVOY_EVENT, MISSION_ENGINE_EVENT, MISSION_EVAC, MISSION_ENGINE_STATUS, MISSION_LANDING_EVENT, MISSION_PT, MISSION_PT_CONTACT, MISSION_PT_GUN_EVENT, MISSION_PT_PASS, MISSION_RADAR_EVENT } from './mission-mode';
 import { ptKey } from './pt-lines';
 
 /** 4 つのキーと、文を選ぶモードの判定（米PT の 5 つ・機関の 3 つ・水上機の 3 つ） */
@@ -45,7 +45,7 @@ export function createLineKeys(): LineKeys {
  */
 export function composeLineKeys(
   out: LineKeys, t: BoatTelemetry, mode: number, flags: number, lastPtKey: number, merge: number, convoyEvent: number, landingEv: LandingEventView = t.landing,
-  strait: { readonly radarKey: number; readonly bowKey: number } | null = null,
+  strait: { readonly radarKey: number; readonly bowKey: number; readonly anchor?: { readonly key: number } } | null = null,
 ): LineKeys {
   const ptMode = mode >= MISSION_PT_PASS && mode <= MISSION_PT_GUN_EVENT; // 米PT の 5 つ（22〜26）。距離と方角はこのときだけ ptKey が求める
   out.ptMode = ptMode;
@@ -59,7 +59,7 @@ export function composeLineKeys(
   const planeMode = planeModeOf(mode); // 水上機の 3 つ（9〜11）。キー（距離は接近中だけ 100 m 刻み）と文は ui/mission-line-air
   out.planeMode = planeMode;
   out.planeKey = planeKeyOf(t, planeMode);
-  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : mode === MISSION_RADAR_EVENT ? (strait ? strait.radarKey : 0) : mode === MISSION_BOW_ON ? (strait ? strait.bowKey : 0) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38、海峡の夜（v0.8.0 S4）は 39・40 の行のキー
+  out.lKey = mode === MISSION_EVAC ? evacLineKey(t.evac) : mode === MISSION_RADAR_EVENT ? (strait ? strait.radarKey : 0) : mode === MISSION_BOW_ON ? (strait ? strait.bowKey : 0) : mode === MISSION_ANCHOR_EVENT ? (strait?.anchor ? strait.anchor.key : 0) : landingKey(t, mode); // 揚陸（v0.6.9）: 揚陸の無い任務は 0。空襲下の退避（v0.6.11 S5）は 38、海峡の夜（v0.8.0 S4）は 39・40、止まった艦の任務（v0.8.1 S4）は 41 の行のキー
   out.leKey = mode === MISSION_LANDING_EVENT && t.landing.enabled ? landingEventKey(landingEv) : 0;
   return out;
 }

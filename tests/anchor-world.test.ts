@@ -256,7 +256,7 @@ describe('配線の source（L30〜L35）', () => {
   it('destroyer-anchor・anchor-telemetry・shore-backdrop: Phaser・乱数・平方根なし、毎ステップの本体に確保の形なし、300 行より短い（L33・L34・L37 の行数）', () => {
     const files: [string, number, string[]][] = [
       ['src/systems/destroyer-anchor.ts', 110, ['  step(w: AnchorWorldView, feelDt: number): void {', '  held(i: number): boolean {', '  noteHit(torpedo: object): void {']],
-      ['src/systems/anchor-telemetry.ts', 70, ['  step(st: AnchorState, w: AnchorWorldView): void {', 'export function refreshAnchorTelemetry(']],
+      ['src/systems/anchor-telemetry.ts', 80, ['  step(st: AnchorState, w: AnchorWorldView): void {', 'export function refreshAnchorTelemetry(']], // v0.8.1 S4: 目で見えている艦のビット（HUD の「動き出した」）で 69 → 75 行
       ['src/systems/shore-backdrop.ts', 90, ['  rangeFor(i: number,', '  rangeAt(i: number, fallback: number): number {']],
     ];
     for (const [f, max, heads] of files) {

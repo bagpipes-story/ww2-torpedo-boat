@@ -523,7 +523,7 @@
         "length_m・beam_m・speed_max_kt": "historical (第13号型駆潜艇: 438 t・51 × 6.7 m・喫水 2.75 m・16 kt（Wikipedia の No.13-class submarine chaser とその写しの抜粋 1 つのみ・本文未読。medium。速力は docs/01 §8 の船団の表とも合う）。喫水 2.75 m ＞ Mk 13 の min_run_depth_m 2 なので魚雷は当たる（torpedo_immune を持たない）)",
         "guns": "historical (1940 の兵装: 76.2 mm 高角砲 1・13.2 mm 機銃 2（同じ抜粋 1 つ。1944 年の兵装の変化は未確認）) / design (v0.8.1 S0・spec-v0810 §4.3。aa_76mm は ijn_transport の deck_gun_76mm の値の写し、aa_13mm は ijn_destroyer の aa_25mm の値で口径の名だけ違う（count 2）)",
         "searchlight": "design (v0.8.1 S0。range_m 1,500（味方の卯月 ijn_destroyer_mutsuki と同じ）。cone_deg・sweep_deg_s・on_delay_s は ijn_destroyer と同じ（探照灯の絵は 1 枚・「発見された！」から反転する猶予 2.5 秒）。星弾は無い)",
-        "others": "design (v0.8.1 S0・spec-v0810 §4.3。難易度ハードの us_06 だけ（missions_seed の v0_1_prototype.hard.picket_enemy_id）。巡航 12 kt・旋回 3.0°/秒・加速 0.4（小さく身軽な艦）。hull_hp 100 は未使用（1 本で沈む）。detection の base_detect_m 1,500 は記録の検査のためだけ（隊は駆逐艦の 1 つの見つける距離を使う＝今の us_02 の輸送船と同じ作り）・雷跡 800 m・毎秒 0.2・反応 1.0 秒。evasion は turn_away（雷跡から離れる向きへ今の旋回のまま・最大速力まで増す）。体当たりはしない。端 500 m で向き直す（12 kt・3.0°/秒の旋回半径 約 120 m ＋ 縁の余白 51 m より大きい）。世界の配線は S2b)"
+        "others": "design (v0.8.1 S0・spec-v0810 §4.3。難易度ハードの us_06 だけ（missions_seed の v0_1_prototype.hard.picket_enemy_id）。巡航 12 kt・旋回 3.0°/秒・加速 0.4（小さく身軽な艦）。hull_hp 100 は未使用（1 本で沈む）。detection の base_detect_m 1,500 は記録の検査のためだけ（隊は駆逐艦の 1 つの見つける距離を使う＝今の us_02 の輸送船と同じ作り）・雷跡 800 m・毎秒 0.2・反応 1.0 秒。evasion は turn_away（雷跡から離れる向きへ今の旋回のまま・最大速力まで増す）。体当たりはしない。端 500 m で向き直す（12 kt・3.0°/秒の旋回半径 約 120 m ＋ 縁の余白 51 m より大きい）。世界の配線は v0.8.1 S2b)"
       },
       "notes": "us_06 のハード（v0.8.1）で泊地の外に止まって見張る駆潜艇 2 隻。気づくと動き出して記録の AI（体当たりなし）になる。点は無く、撃沈の達成・命中率の KPI・撃沈 n/m に数えない。"
     },

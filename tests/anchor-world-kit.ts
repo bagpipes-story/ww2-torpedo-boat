@@ -130,6 +130,8 @@ export interface AnchorKitWorld {
   readonly torpedoEvents: object;
   /** 世界の見つける距離（tests が書く。既定は出発時の値） */
   detectRangeM: number;
+  /** 自艇の視程の 2 乗（v0.8.1 S4。systems/anchor-telemetry の目で見えている艦のビット。既定は setup の値） */
+  visRange2: number;
   stepTimeS: number;
   /** 夜明けの実秒（既定は setup.durationS） */
   readonly dawnS: number;
@@ -162,7 +164,7 @@ export function anchorKit(o: { mission?: string; hard?: boolean; seed?: number; 
     setup, destroyers: g, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 }, sinking: false },
     torpedoes: { states: [], step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis,
     detect: { count: 0, prev: false }, dawn: { reached: false }, enemy: { illuminated: false }, arms: null, escort: null, flareLit: false, hiddenBySmoke: false, smoke: null, smokeParams: null,
-    torpedoEvents: {}, detectRangeM: setup.detectRangeAtStartM, stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
+    torpedoEvents: {}, detectRangeM: setup.detectRangeAtStartM, visRange2: setup.visRange2, stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
   };
 }
 

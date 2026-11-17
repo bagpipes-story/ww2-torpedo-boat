@@ -227,6 +227,8 @@ export interface StraitTelemetry {
   /** 衝突の危険の艦（隊の艦の添字のビット: 目で見えていて・艦首が自艇へ半角の内・距離の内）と、その一番近い艦までの m（無ければ NaN） */
   bowOnMask: number;
   bowOnM: number;
+  /** その一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハードの隊の最後の 2 隻。2 行目の名詞。駆潜艇のいない任務はいつも偽） */
+  bowOnPicket: boolean;
 }
 
 /** 止まった艦と暗い岸を背にの HUD・Result の材料（v0.8.1 S2。setup.anchors の任務＝us_06 だけ鍵が出る。読み手は S4 の ui/anchor-lines・anchor-result） */
@@ -242,4 +244,6 @@ export interface AnchorTelemetry {
   backdropS: number;
   heldShots: number;
   heldHits: number;
+  /** 艦ごと（上と同じ添字）の目で見えているビット（v0.8.1 S4。systems/mission-telemetry の setSighted と同じ d² ≤ visRange2・海域を出た艦は 0。HUD の「停泊していた艦が動き出した！」の材料） */
+  seenMask: number;
 }

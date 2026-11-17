@@ -29,6 +29,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(s.landing && s.allyDestroyer ? { allyJa: allyBriefingJa(s.allyDestroyer.labelJa, bearingJa(bearingDeg(s.landing.params.x, s.landing.params.y, s.allyDestroyer.x, s.allyDestroyer.y))) } : {}),
     // 空襲下の退避（v0.6.11 S6。jp_03。spec-v0611-r2 §10.5）: 成功の尾・時の行・敵の波・危険の名前（昼の言い方）・条件の時計と燃料と機銃ともう一度来る編隊。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
     ...evacPart(s),
+    // 止まった艦の任務（v0.8.1 S4。us_06。spec-v0810 §3.7 D-O6）: 敵の行の括弧「（南西に停泊）」＝自艇の出発点から見た隊の先頭の艦（今夜の揺らぎ込み）。無い任務は鍵ごと省く
+    ...(s.anchors && s.destroyer ? { enemyAtJa: `${bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.destroyer.starts[0]!.x, s.destroyer.starts[0]!.y))}に停泊` } : {}),
     // レーダー（v0.8.0 S4。us_04。spec-v0800 §4.9）: 月の行の尾（射程と、陸の反射のある海域なら「陸のそばは映らない」）。無い任務・?debug&noradar は鍵ごと省く
     ...(s.radar ? { radarJa: radarBriefingJa(s.radar.shipRangeM, s.radar.landClutterM > 0 && (s.shores !== undefined || s.mission.coast !== null)) } : {}),
     visM: playerVisRangeM(s.vis),

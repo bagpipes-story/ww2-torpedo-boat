@@ -186,6 +186,8 @@ export interface BriefingNumbers {
   gunsLabel: string;
   /** 敵の来る方角（8 方位。v0.4.6。夜ごとに変わる。無ければ ''） */
   enemyFromJa: string;
+  /** 敵の行の括弧の差し替え（v0.8.1 S4。止まった艦の任務だけ「南西に停泊」＝systems/briefing-numbers。無い任務では鍵ごと出ない） */
+  enemyAtJa?: string;
   homeX: number;
   homeY: number;
   boundsW: number;
@@ -268,7 +270,7 @@ export function briefingRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: s
     n.dayRowJa !== undefined
       ? { label: '時', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ ${n.dayRowJa}` }
       : { label: '月', text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} ・ 見える ${Math.round(n.visM)} m ・ ${n.airDetectJa ?? `見つかる 巡航 ${Math.round(n.detectCruiseM)} m／静音 ${Math.round(n.detectSilentM)} m`}${n.radarJa ? ` ・\u00a0${n.radarJa}` : ''}` },
-    { label: '敵', text: `${enemy}${n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.enemyRowJa !== undefined ? ` ・ ${n.enemyRowJa}` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
+    { label: '敵', text: `${enemy}${n.enemyAtJa ? `（${n.enemyAtJa}）` : n.enemyFromJa ? `（${n.enemyFromJa}から）` : ''}${n.enemyRowJa !== undefined ? ` ・ ${n.enemyRowJa}` : ''}${n.allyJa ? ` ・\u00a0${n.allyJa}` : ''}` },
     { label: '危険', text: `${hazardsJa(t.hazardIds, hazardOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], hazardOf)}` },
     {
       label: '条件',

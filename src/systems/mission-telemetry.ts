@@ -13,6 +13,7 @@ import type { AircraftPose } from '../core/friendly';
 import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
+import { anchorResultPart } from './anchor-result-part';
 import { radarResultPart, straitResultPart } from './strait-result-part';
 import { evacResultPart } from '../core/evac-result';
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
@@ -209,5 +210,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     ...evacResultPart(w), // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: evac の任務だけ evac の鍵（残存・隠れ場所・隊ごと・編隊・時の行・残った艇の点）
     ...radarResultPart(w), // レーダー（v0.8.0 S4。us_04）: レーダーの任務だけ radar の鍵（最初の接触・目で見えない間に撃った魚雷。本文の駆逐艦の行の後）
     ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
+    ...anchorResultPart(w, data), // 止まった艦の任務（v0.8.1 S4。us_06）: anchor の鍵（卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒。本文の駆逐艦の行の後）
   };
 }

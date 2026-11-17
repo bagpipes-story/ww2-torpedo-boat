@@ -3,7 +3,7 @@
 // - 衝突の危険: 目で見えている艦だけ（out でなく d² ≤ 視程²＝systems/mission-telemetry の setSighted と同じ規則）で、艦首が自艇へ半角の内・距離の内（core/strait-geometry の bowOnRisk。
 //   2 乗の距離と内積だけ＝atan2 なし）。艦の添字のビットと一番近い艦までの m（平方根はビットがある時だけ 1 本）。1 回の接近で 1 回の文にするのは ui/strait-line-clock（ビットが立った時）。
 // 列の通過もレーダーも無い任務は enabled false のまま何もしない（ほかの任務の毎フレームの仕事は増えない）。世界・艦・AI には何も書かない（読むだけ）。
-// v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。
+// v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。S4: 一番近い危険な艦が駆潜艇か（2 行目の名詞）。
 import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_RANGE_M } from '../config/strait-hud-config';
 import type { StraitTelemetry } from '../core/boat-telemetry';
 import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
@@ -12,7 +12,7 @@ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
 export interface StraitTelemetryWorld {
   readonly visRange2: number;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
-  readonly destroyers: { readonly transit: object | null; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
+  readonly destroyers: { readonly transit: object | null; readonly picketIndex?: number; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
   readonly radar: object | null;
 }
 
@@ -24,7 +24,7 @@ const BOW_MAX_SHIPS = 30;
 
 /** 出発時の strait（列の通過かレーダーのある任務だけ enabled） */
 export function initStraitTelemetry(w: StraitTelemetryWorld): StraitTelemetry {
-  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN };
+  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false };
   refreshStraitTelemetry(t, w);
   return t;
 }
@@ -38,6 +38,7 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
   const g = w.destroyers;
   let mask = 0;
   let best = Infinity;
+  let bestI = -1;
   if (g) {
     const ships = g.ships;
     for (let i = 0; i < ships.length && i < BOW_MAX_SHIPS; i++) {
@@ -50,9 +51,10 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
       const d2 = dx * dx + dy * dy;
       if (d2 > r2 || !bowOnRisk(s.x, s.y, s.headingDeg, b.x, b.y, BOW_RANGE2, BOW_COS2)) continue;
       mask |= 1 << i;
-      if (d2 < best) best = d2;
+      if (d2 < best) { best = d2; bestI = i; }
     }
   }
   t.bowOnMask = mask;
   t.bowOnM = mask !== 0 ? Math.sqrt(best) : NaN;
+  t.bowOnPicket = bestI >= 0 && g !== null && g.picketIndex !== undefined && g.picketIndex >= 0 && bestI >= g.picketIndex; // 駆潜艇（v0.8.1 S4。隊の最後。名詞だけ）
 }

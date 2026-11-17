@@ -246,7 +246,7 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
     const rs = readFileSync(join(__dirname, '..', 'src', 'scenes', 'result-scene.ts'), 'utf8');
     expect(rs).toContain('...(r.evac ? evacTimeLinesJa(r.evac, r.dawn, r.reason, r.returned) : [dawnResultLine(r.dawn, r.returned, r.reason === \'cleared\')])');
     expect(rs).toContain('if (!r.returned && !r.evac) {');
-    expect(rs).toContain('resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined)');
+    expect(rs).toContain('resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined)'); // v0.8.1 S4: 止まった艦の任務の旗（体当たり →「敵艦と衝突した」＝ui/anchor-result）
     expect(rs).toContain(": r.patrol || r.evac ? '' : ships;");
   });
 });

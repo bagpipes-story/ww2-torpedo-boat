@@ -247,6 +247,24 @@ describe('レーダー・列の通過・衝突の危険では段を変えない�
   });
 });
 
+describe('止まった艦・動き出し・暗い岸を背にでは段を変えない（v0.8.1 S4。spec-v0810 §3.6 D-A3・D5、lead の L68）', () => {
+  it('気づいた・動き出した（艦ごとの段・理由・秒・通算）・背に岸のビットと秒・止まった艦への魚雷・目で見えている艦のビットが何であっても段は同じ（今の HUD の状態だけが決める）。source はその欄の名を持たない', () => {
+    const arr = (v: number): readonly number[] => Object.freeze([v, v, v, v]);
+    for (const k of [0, 1, 2]) {
+      const extra = {
+        anchor: Object.freeze({ stage: arr(k), reason: arr(k * 2), noticedAtS: arr(k ? 30 : NaN), underwayAtS: arr(k > 1 ? 33 : NaN), noticedCount: k * 4, underwayCount: k > 1 ? 3 : 0, backdropOn: k === 1, backdropS: 48 * k, heldShots: k, heldHits: k, seenMask: k ? 0b1111 : 0 }),
+      };
+      for (const [over, want] of [[{}, Q], [{ illuminated: true }, B], [{ playerDetected: true }, T]] as const) {
+        const t = Object.freeze({ ...(tel(over) as unknown as Record<string, unknown>), ...extra }) as unknown as BoatTelemetry;
+        expect(levelOf(over), String(k)).toBe(want);
+        expect(run(createSfxMoodState(), t), `${k} ${JSON.stringify(over)}`).toBe(want);
+      }
+    }
+    const src = readFileSync('src/core/sfx-music-mood.ts', 'utf8').replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+    for (const f of ['anchor', 'underway', 'noticed', 'backdrop', 'held', 'seenMask']) expect(src, f).not.toContain(f);
+  });
+});
+
 describe('観測器の作法（読むだけ・確保しない）', () => {
   it('凍らせたテレメトリで全部の出どころを通しても投げない（どの欄にも書かない）。戻りは段の数だけ', () => {
     const st = createSfxMoodState();

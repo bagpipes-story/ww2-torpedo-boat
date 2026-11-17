@@ -8,3 +8,5 @@ export const PERSON_DENYLIST = ['マッカーサー', 'MacArthur', 'ケネディ
 export const RANK_RE = /[一-龥ァ-ヶ]{1,6}(中尉|大尉|少佐|中佐|大佐|少将|中将|大将|艇長)/;
 /** その夜に駆逐艦に体当たりされた有名な艇の番号（v0.8.0 S0。spec-v0800 §4.12。URL の小文字・空白・ハイフンの有無も拾う）。us_04 の文と data に出さない */
 export const FAMOUS_BOAT_RE = /PT-?\s*109/i;
+/** PT の番号（v0.8.1。spec-v0810 §3.8: us_06 の画面の文に出さない。PT-490・PT 492・PT323 など）。「隻」が続く数（「米PT 2隻」の隻数）は番号でない（tests/setup-us06 から移した） */
+export const PT_NUMBER_RE = /PT-?\s*\d+(?![\d隻])/;

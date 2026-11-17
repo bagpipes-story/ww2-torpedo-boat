@@ -9,11 +9,13 @@
 //   Result は POLS（既定 bot,stay＝達成の夜と未達の夜）× SEEDS（既定 1）× ノーマル・ハード × W を wvs-evac-entry の resultRun（模擬の台本を世界へ）で終わるまで遊び、本文の下端 ≤ 592・
 //   重なりなし・「夜明け」なし・「（西）」なし。多い形（外で追撃・乗員の死傷・沈没）に作り直しても同じ。SHOTDIR に Briefing と Result（と多い形）を撮る。A は使わない。
 // v0.8.0 S5（lead の L63）: US04=1 は us_04（ブラケット海峡の夜）だけ（brief-result-us04.mjs。Briefing の本当の折り返し・史実の下端 ≤ 584 − 8、Result の本文の下端 ≤ 592）。
-// 実行: SITE=<B の site> [A=<A の site>] [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [W=1560,1280] [SECS=200] [SHOTDIR=<dir>] [TEXTS=1] [JOBS=3] [EVAC=1] [US04=1] node scripts/headless/brief-result.mjs
+// v0.8.1 S4（lead の L63・L64）: US06=1 は us_06（オルモック湾の決着）だけ（brief-result-us06.mjs。Briefing の本当の折り返し・史実の下端、Result の won・rammed の 2 夜の下端と見出し）。
+// 実行: SITE=<B の site> [A=<A の site>] [SEEDS=1-6] [POLS=lure,near,late,east,hide,home] [W=1560,1280] [SECS=200] [SHOTDIR=<dir>] [TEXTS=1] [JOBS=3] [EVAC=1] [US04=1] [US06=1] node scripts/headless/brief-result.mjs
 import { mkdirSync } from 'node:fs';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { bundleEntry, parseSeeds } from './world-vs-sim.mjs';
 import { mainUs04 } from './brief-result-us04.mjs';
+import { mainUs06 } from './brief-result-us06.mjs';
 
 const SORTIE_TOP = 720 - 24 - 112;
 const BODY_MAX_Y = 592;
@@ -221,7 +223,7 @@ async function mainEvac(siteB) {
 async function main() {
   const siteB = process.env.SITE;
   if (siteB && process.env.EVAC === '1') return mainEvac(siteB);
-  if (siteB && process.env.US04 === '1') return mainUs04(siteB, { readBriefing, bodyRows, worstResult, checkRows, SORTIE_TOP, BODY_MAX_Y, BRIEF_BODY_MAX_Y, chromium, openGame, serve, FRAME_MS, mkdirSync });
+  if (siteB && (process.env.US04 === '1' || process.env.US06 === '1')) return (process.env.US06 === '1' ? mainUs06 : mainUs04)(siteB, { readBriefing, bodyRows, worstResult, checkRows, SORTIE_TOP, BODY_MAX_Y, BRIEF_BODY_MAX_Y, chromium, openGame, serve, FRAME_MS, mkdirSync });
   if (!siteB) throw new Error('SITE=<ビルドした site> が要る');
   const siteA = process.env.A ?? '';
   const widths = (process.env.W ?? '1560,1280').split(',').map(Number);

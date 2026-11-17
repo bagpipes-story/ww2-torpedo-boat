@@ -20,9 +20,11 @@
 //   （出し側でない側の、隠したフレームの 3 行目の字に 'X' を足す → 違いが出るはず）。
 // v0.8.1 S2（spec-v0810 §6 の S2・brief の「新しい組」）: SET=us06 で us_06（オルモック湾の決着。止まった艦と暗い岸を背に）のノーマル・ハード × seed 1・2 を 200 秒（夜明けまで。all には入れない。
 //   S2 は A＝B＝今の木で決定性を見る・S3 から A は S2 の commit のビルド＝以後の段の回帰）。写しに止まった艦の段（s.an: 段・anchored）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文の濾し（scripts/headless/anchor-filter。B が出し側・世界の写しは全部比べる。FILTERTEST=1 は濾しの試し）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+import { anchorPair } from './anchor-filter.mjs';
 
 /** S4 の濾し（brief L33。ページへは文字列で渡す）: 2 行目の S4 の行・そのうちレーダーだけの行・緑の端の印の字の色と絵の鍵・隠した物の字 */
 export const S4_FILTER = {
@@ -137,7 +139,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', filtertest: process.env.FILTERTEST === '1' };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1' };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -179,7 +181,8 @@ export async function oneCase(browser, A, B, c) {
     const o = { ...c, frameMs: FRAME_MS, hudEvery: c.hudEvery ?? 0 };
     let ra;
     let rb;
-    if (c.radarui || c.noradar) {
+    if (c.anchorui) [ra, rb] = await anchorPair(pa, pb, o, c, abRun); // us_06 の S4 の濾し（v0.8.1 S4。anchor-filter）
+    else if (c.radarui || c.noradar) {
       // S4 の濾し: 出し側を先に回してフレームの印を集め、もう一方へ渡す
       for (const p of [pa, pb]) await p.page.evaluate(`window.__s4Hud = ${s4Hud.toString()}`);
       const first = c.radarui ? pb : pa;
@@ -215,7 +218,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }
