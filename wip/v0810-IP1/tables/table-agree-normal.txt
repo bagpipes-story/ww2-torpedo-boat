@@ -1,0 +1,86 @@
+ZA shore_east seed 1: frames 8252 agree 99.95% bitOn 2981 drawnOn 2977 mm {"edge":4,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 0 trNearest 2647（unseen 2647） ex [["edge",50.72,0,5100,2748,true,false,0,false],["edge",50.73,0,5100,2749,true,false,0,false],["edge",100.37,1,4116,2830,true,false,1,false],["edge",100.38,1,4116,2829,true,false,1,false]]
+ZA shore_east seed 2: frames 8315 agree 99.81% bitOn 2842 drawnOn 2852 mm {"edge":16,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 185 trNearest 2814（unseen 2692） ex [["edge",51.27,0,5100,2772,true,false,0,false],["edge",51.28,0,5100,2773,true,false,0,false],["edge",51.3,0,5100,2774,true,false,0,false],["edge",101.72,1,4023,2866,false,true,1,false],["edge",101.73,1,4023,2866,false,true,1,false],["edge",101.75,1,4024,2866,false,true,1,false]]
+ZA shore_east seed 3: frames 8968 agree 98.92% bitOn 3106 drawnOn 3011 mm {"edge":97,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 0 trNearest 3576（unseen 2678） ex [["edge",51.23,0,5100,2771,false,true,0,false],["edge",101.42,1,3824,2864,true,false,1,false],["edge",101.43,1,3825,2864,true,false,1,false],["edge",101.45,1,3826,2864,true,false,1,false],["edge",101.47,1,3827,2864,true,false,1,false],["edge",101.48,1,3827,2864,true,false,1,false]]
+ZA shore_east seed 4: frames 8143 agree 99.96% bitOn 2847 drawnOn 2850 mm {"edge":3,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 134 trNearest 2686（unseen 2686） ex [["edge",50.82,0,5100,2753,false,true,0,false],["edge",100.52,1,4153,2850,false,true,1,false],["edge",100.53,1,4153,2850,false,true,1,false]]
+ZA shore_east seed 5: frames 8388 agree 99.96% bitOn 3074 drawnOn 3073 mm {"edge":3,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 187 trNearest 2860（unseen 2688） ex [["edge",51.12,0,5100,2766,true,false,0,false],["edge",51.13,0,5100,2767,true,false,0,false],["edge",105.47,1,4180,2854,false,true,1,false]]
+ZA shore_east seed 6: frames 8362 agree 99.92% bitOn 3070 drawnOn 3063 mm {"edge":7,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 0 trNearest 2691（unseen 2691） ex [["edge",50.8,0,5100,2752,true,false,0,false],["edge",50.82,0,5100,2753,true,false,0,false],["edge",50.83,0,5100,2753,true,false,0,false],["edge",101.9,1,4128,2850,true,false,1,false],["edge",101.92,1,4129,2849,true,false,1,false],["edge",101.93,1,4129,2848,true,false,1,false]]
+ZA open_north seed 1: frames 3730 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 199 trNearest 743（unseen 743） ex []
+ZA open_north seed 2: frames 2855 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1098 trNearest 0（unseen 0） ex []
+ZA open_north seed 3: frames 4228 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 22 trNearest 880（unseen 880） ex []
+ZA open_north seed 4: frames 2837 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 955 trNearest 0（unseen 0） ex []
+ZA open_north seed 5: frames 2885 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1108 trNearest 0（unseen 0） ex []
+ZA open_north seed 6: frames 4066 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 0 trNearest 778（unseen 778） ex []
+ZA charge seed 1: frames 922 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1096 trNearest 306（unseen 306） ex []
+ZA charge seed 2: frames 664 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1114 trNearest 0（unseen 0） ex []
+ZA charge seed 3: frames 687 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1161 trNearest 2（unseen 2） ex []
+ZA charge seed 4: frames 619 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1164 trNearest 0（unseen 0） ex []
+ZA charge seed 5: frames 653 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1352 trNearest 0（unseen 0） ex []
+ZA charge seed 6: frames 626 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1201 trNearest 2（unseen 2） ex []
+ZA transport_first seed 1: frames 7081 agree 95.40% bitOn 1253 drawnOn 927 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":326} lit 0 notAnchored 3633 trNearest 3974（unseen 3131） ex [["unknown",97.15,1,1800,2826,true,false,-1,false],["unknown",97.17,1,1800,2826,true,false,-1,false],["unknown",97.18,1,1800,2827,true,false,-1,false],["unknown",97.2,1,1800,2828,true,false,-1,false],["unknown",97.22,1,1800,2829,true,false,-1,false],["unknown",97.23,1,1800,2829,true,false,-1,false]]
+ZA transport_first seed 2: frames 6988 agree 97.82% bitOn 985 drawnOn 833 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":152} lit 0 notAnchored 3675 trNearest 3708（unseen 2875） ex [["unknown",100.07,1,1901,2863,true,false,-1,false],["unknown",100.08,1,1902,2863,true,false,-1,false],["unknown",100.1,1,1903,2863,true,false,-1,false],["unknown",100.12,1,1904,2863,true,false,-1,false],["unknown",100.13,1,1904,2863,true,false,-1,false],["unknown",100.15,1,1905,2863,true,false,-1,false]]
+ZA transport_first seed 3: frames 7327 agree 99.77% bitOn 928 drawnOn 945 mm {"edge":17,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 3338 trNearest 3213（unseen 2413） ex [["edge",106.38,1,2179,2867,false,true,1,false],["edge",106.4,1,2180,2867,false,true,1,false],["edge",106.42,1,2181,2867,false,true,1,false],["edge",106.43,1,2181,2867,false,true,1,false],["edge",106.45,1,2182,2867,false,true,1,false],["edge",106.47,1,2183,2867,false,true,1,false]]
+ZA transport_first seed 4: frames 7063 agree 95.23% bitOn 1203 drawnOn 866 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":337} lit 0 notAnchored 1174 trNearest 4010（unseen 3144） ex [["unknown",97.68,1,1802,2849,true,false,-1,false],["unknown",97.7,1,1802,2850,true,false,-1,false],["unknown",97.72,1,1803,2850,true,false,-1,false],["unknown",97.73,1,1803,2851,true,false,-1,false],["unknown",97.75,1,1803,2851,true,false,-1,false],["unknown",97.77,1,1804,2852,true,false,-1,false]]
+ZA transport_first seed 5: frames 7097 agree 94.80% bitOn 1231 drawnOn 862 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":369} lit 0 notAnchored 1098 trNearest 3840（unseen 2978） ex [["unknown",97.78,1,1804,2853,true,false,-1,false],["unknown",97.8,1,1804,2853,true,false,-1,false],["unknown",97.82,1,1805,2854,true,false,-1,false],["unknown",97.83,1,1805,2854,true,false,-1,false],["unknown",97.85,1,1806,2855,true,false,-1,false],["unknown",97.87,1,1806,2856,true,false,-1,false]]
+ZA transport_first seed 6: frames 7188 agree 95.66% bitOn 1335 drawnOn 1023 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":312} lit 0 notAnchored 3571 trNearest 3924（unseen 3049） ex [["unknown",97.57,1,1801,2844,true,false,-1,false],["unknown",97.58,1,1801,2845,true,false,-1,false],["unknown",97.6,1,1801,2845,true,false,-1,false],["unknown",97.62,1,1801,2846,true,false,-1,false],["unknown",97.63,1,1801,2847,true,false,-1,false],["unknown",97.65,1,1801,2847,true,false,-1,false]]
+ZA idle seed 1: frames 11999 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1120 trNearest 0（unseen 0） ex []
+ZA idle seed 2: frames 11999 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1120 trNearest 0（unseen 0） ex []
+ZA idle seed 3: frames 11999 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1516 trNearest 0（unseen 0） ex []
+ZA idle seed 4: frames 11999 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1384 trNearest 0（unseen 0） ex []
+ZA idle seed 5: frames 11999 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1384 trNearest 0（unseen 0） ex []
+ZA idle seed 6: frames 11999 agree 100.00% bitOn 0 drawnOn 0 mm {"edge":0,"timing":0,"lit":0,"other":0,"unknown":0} lit 0 notAnchored 1120 trNearest 0（unseen 0） ex []
+ZA TOTAL normal: {"n":189938,"ok":188295,"on":24855,"drawnOn":23282,"edge":147,"timing":0,"lit":0,"other":0,"unknown":1496,"litF":0,"notAnch":35109,"trNearest":42654,"trUnseen":36383} agree 99.135%
+charge          seed  1 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 48 | 気づき seen 7.3 動き 10.3 初弾 19.1 | 撃つ 4 命中 2 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 33.6 秒
+charge          seed  2 | destroyed  卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 61 | 気づき seen 8.1 動き 11.1 初弾 20.6 | 撃つ 4 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 29.6 秒
+charge          seed  3 | destroyed  卯月 1 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 58 | 気づき seen 8.4 動き 11.4 初弾 20.7 | 撃つ 4 命中 2 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 30.8 秒
+charge          seed  4 | destroyed  卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 62 | 気づき seen 7.3 動き 10.3 初弾 18.7 | 撃つ 4 命中 1 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 29.7 秒
+charge          seed  5 | returned   卯月 0 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 46 | 気づき seen 7.9 動き 10.9 初弾 19.5 | 撃つ 4 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 33.4 秒
+charge          seed  6 | destroyed  卯月 1 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 60 | 気づき seen 7.4 動き 10.4 初弾 18.7 | 撃つ 4 命中 2 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 30.4 秒
+idle            seed  1 | air_strike 卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 0 燃料 85 | 気づき dawn 200.0 動き 200.0 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 218.6 秒
+idle            seed  2 | air_strike 卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 0 燃料 85 | 気づき dawn 200.0 動き 200.0 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 218.6 秒
+idle            seed  3 | air_strike 卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 0 燃料 85 | 気づき dawn 200.0 動き 200.0 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 225.2 秒
+idle            seed  4 | air_strike 卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 0 燃料 85 | 気づき dawn 200.0 動き 200.0 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 223.0 秒
+idle            seed  5 | air_strike 卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 0 燃料 85 | 気づき dawn 200.0 動き 200.0 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 223.0 秒
+idle            seed  6 | air_strike 卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 0 燃料 85 | 気づき dawn 200.0 動き 200.0 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 218.6 秒
+open_north      seed  1 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 71 | 気づき wake 46.8 動き 49.8 初弾 42.2 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 0.0 | 65.5 秒
+open_north      seed  2 | returned   卯月 0 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 67 | 気づき wake 44.6 動き 47.6 初弾 44.0 | 撃つ 4 命中 1 止まった艦へ 4/1 5kt 4/0 | 背に岸 0.0 | 65.9 秒
+open_north      seed  3 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 69 | 気づき wake 52.2 動き 55.8 初弾 44.9 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 0.0 | 70.8 秒
+open_north      seed  4 | returned   卯月 0 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 69 | 気づき wake 44.3 動き 47.3 初弾 42.6 | 撃つ 4 命中 1 止まった艦へ 4/1 5kt 4/0 | 背に岸 0.0 | 63.2 秒
+open_north      seed  5 | returned   卯月 0 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 68 | 気づき wake 45.1 動き 48.1 初弾 44.4 | 撃つ 4 命中 1 止まった艦へ 4/1 5kt 4/0 | 背に岸 0.0 | 66.5 秒
+open_north      seed  6 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 71 | 気づき wake 51.1 動き - 初弾 43.5 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 0.0 | 67.7 秒
+shore_east      seed  1 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 29 | 気づき wake 90.8 動き - 初弾 86.2 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 49.7 | 137.5 秒
+shore_east      seed  2 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 27 | 気づき wake 88.7 動き 91.7 初弾 88.1 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 50.4 | 141.7 秒
+shore_east      seed  3 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 23 | 気づき alarm 94.0 動き - 初弾 90.0 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 51.8 | 149.5 秒
+shore_east      seed  4 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 29 | 気づき wake 88.0 動き 91.0 初弾 86.3 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 49.7 | 137.9 秒
+shore_east      seed  5 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 27 | 気づき wake 89.1 動き 92.1 初弾 88.5 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 54.3 | 142.9 秒
+shore_east      seed  6 | returned   卯月 1 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 28 | 気づき hit 93.3 動き - 初弾 87.3 | 撃つ 4 命中 2 止まった艦へ 4/2 5kt 4/0 | 背に岸 51.2 | 139.4 秒
+shore_east_nb   seed  1 | destroyed  卯月 1 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 18 | 気づき seen 78.4 動き 81.4 初弾 87.9 | 撃つ 4 命中 2 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 118.5 秒
+shore_east_nb   seed  2 | destroyed  卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 54 | 気づき seen 78.9 動き 81.9 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 104.4 秒
+shore_east_nb   seed  3 | destroyed  卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 10 | 気づき seen 82.1 動き 85.1 初弾 93.6 | 撃つ 4 命中 0 止まった艦へ 4/0 5kt 4/0 | 背に岸 0.0 | 126.5 秒
+shore_east_nb   seed  4 | destroyed  卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 56 | 気づき seen 77.2 動き 80.2 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 97.4 秒
+shore_east_nb   seed  5 | destroyed  卯月 0 空知丸 0 駆潜艇 0 帰投 0 夜明け前 1 燃料 57 | 気づき seen 79.1 動き 82.1 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 91.6 秒
+shore_east_nb   seed  6 | returned   卯月 0 空知丸 0 駆潜艇 0 帰投 1 夜明け前 1 燃料 21 | 気づき seen 78.6 動き 81.6 初弾 - | 撃つ 0 命中 0 止まった艦へ 0/0 5kt 0/0 | 背に岸 0.0 | 157.9 秒
+transport_first seed  1 | adrift     卯月 0 空知丸 1 駆潜艇 0 帰投 0 夜明け前 1 燃料 0 | 気づき wake 114.2 動き 118.0 初弾 109.6 | 撃つ 4 命中 2 止まった艦へ 2/1 5kt 2/0 | 背に岸 62.9 | 178.6 秒
+transport_first seed  2 | adrift     卯月 0 空知丸 1 駆潜艇 0 帰投 0 夜明け前 1 燃料 0 | 気づき wake 110.0 動き 113.0 初弾 109.4 | 撃つ 4 命中 2 止まった艦へ 2/1 5kt 2/0 | 背に岸 56.5 | 177.7 秒
+transport_first seed  3 | adrift     卯月 0 空知丸 1 駆潜艇 0 帰投 0 夜明け前 1 燃料 0 | 気づき alarm 118.3 動き 122.1 初弾 112.8 | 撃つ 4 命中 2 止まった艦へ 2/1 5kt 2/0 | 背に岸 56.0 | 177.7 秒
+transport_first seed  4 | adrift     卯月 1 空知丸 1 駆潜艇 0 帰投 0 夜明け前 1 燃料 0 | 気づき wake 112.5 動き 115.5 初弾 110.8 | 撃つ 4 命中 3 止まった艦へ 2/1 5kt 2/0 | 背に岸 39.6 | 177.0 秒
+transport_first seed  5 | adrift     卯月 1 空知丸 1 駆潜艇 0 帰投 0 夜明け前 1 燃料 0 | 気づき wake 112.1 動き 115.1 初弾 111.4 | 撃つ 4 命中 3 止まった艦へ 2/1 5kt 2/0 | 背に岸 38.8 | 177.4 秒
+transport_first seed  6 | adrift     卯月 0 空知丸 1 駆潜艇 0 帰投 0 夜明け前 1 燃料 0 | 気づき alarm 116.0 動き 119.8 初弾 110.5 | 撃つ 4 命中 1 止まった艦へ 2/1 5kt 2/0 | 背に岸 63.0 | 179.3 秒
+ノーマルの台本ごと:
+shore_east       6 夜 | 達成 100 | 沈没 0 | 帰投 100 | 卯月撃沈 100 | 空知丸撃沈 0 | 撃つ前に動いた 0・着く前 50 | A5 100（6）| 燃料 27.5 | 夜明け前 100 | 止まった艦へ 24（命中 12）| 5kt 未満 24・K 0 | 背に岸 50.8 秒 | 駆潜艇撃沈 0 | returned 6
+open_north       6 夜 | 達成 50 | 沈没 0 | 帰投 100 | 卯月撃沈 50 | 空知丸撃沈 0 | 撃つ前に動いた 0・着く前 67 | A5 50（6）| 燃料 69.0 | 夜明け前 100 | 止まった艦へ 24（命中 9）| 5kt 未満 24・K 0 | 背に岸 0.0 秒 | 駆潜艇撃沈 0 | returned 6
+shore_east_nb    6 夜 | 達成 0 | 沈没 83 | 帰投 17 | 卯月撃沈 17 | 空知丸撃沈 0 | 撃つ前に動いた 100・着く前 100 | A5 NaN（0）| 燃料 21.0 | 夜明け前 100 | 止まった艦へ 4（命中 0）| 5kt 未満 4・K 0 | 背に岸 0.0 秒 | 駆潜艇撃沈 0 | destroyed 5・returned 1
+charge           6 夜 | 達成 17 | 沈没 67 | 帰投 33 | 卯月撃沈 50 | 空知丸撃沈 0 | 撃つ前に動いた 100・着く前 100 | A5 NaN（0）| 燃料 47.0 | 夜明け前 100 | 止まった艦へ 0（命中 0）| 5kt 未満 0・K 0 | 背に岸 0.0 秒 | 駆潜艇撃沈 0 | returned 2・destroyed 4
+transport_first  6 夜 | 達成 0 | 沈没 0 | 帰投 0 | 卯月撃沈 33 | 空知丸撃沈 100 | 撃つ前に動いた 0・着く前 50 | A5 0（6）| 燃料 - | 夜明け前 NaN | 止まった艦へ 12（命中 6）| 5kt 未満 12・K 0 | 背に岸 56.2 秒 | 駆潜艇撃沈 0 | adrift 6
+idle             6 夜 | 達成 0 | 沈没 100 | 帰投 0 | 卯月撃沈 0 | 空知丸撃沈 0 | 撃つ前に動いた NaN・着く前 NaN | A5 NaN（0）| 燃料 - | 夜明け前 NaN | 止まった艦へ 0（命中 0）| 5kt 未満 0・K 0 | 背に岸 0.0 秒 | 駆潜艇撃沈 0 | air_strike 6
+帯:
+  A1 shore_east      達成 100 ✗ ・ 沈没 0 ✓ ・ 帰投 100 ✓  → ✗✓✓
+  A2 open_north      達成（≤ 85） 50 ✓ ・ 最初の 1 本を撃つ前に動いた 0 ✗  → ✓✗
+  A3 shore_east_nb   達成（≤ 85） 0 ✓  → ✓
+  A4 charge          沈没 67（≥ 30）か 達成 17（≤ 35）  → ✓
+  A5 shore_east      最初の扇で沈んだ（動く前に撃った 6 夜のうち） 100 ✗  → ✗
+  A6 transport_first 空知丸撃沈 100 ✓ ・ 達成（≤ 100） 0 ✓  → ✓✓
+  F shore_east      帰投の夜の燃料の中央値 % 27.5 ✓  → ✓
+  T shore_east      帰投の夜の夜明け前 % 100 ✓  → ✓
+  D idle            夜明けの後・1,500 秒未満に終わった 6/6（漂流 0・最も遅い 225.2 秒）  → ✓
+  K すべて             5 kt 未満の艦への 1 本で kpiTarget が真 0 本  → ✓
+nights 36 page errors 0 md5 05205bcd4e661422d840fc502a5bf2e7 41 秒
