@@ -1,0 +1,55 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 4012 passed (4012)
+✓ g2 OK 39 DIFF 0
+✗ ab-all cases 58 same 56 diff 2
+✗ ab-all@audio cases 58 same 57 diff 1
+✓ ab-all@noaudio cases 58 same 58 diff 0
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✓ ab-us04 cases 4 same 4 diff 0
+    us04   us_04 seed 1 same:true frames 15600
+    us04   us_04 seed 2 same:true frames 15600
+    us04   us_04&hard seed 1 same:true frames 15600
+    us04   us_04&hard seed 2 same:true frames 15600
+✓ hud-us04 cases 4 same 4 diff 0
+    hud us_04 seed 1 same:true snapshots 260
+    hud us_04 seed 2 same:true snapshots 260
+    hud us_04&hard seed 1 same:true snapshots 260
+    hud us_04&hard seed 2 same:true snapshots 260
+✓ ab-us04-noradar cases 4 same 4 diff 0
+    us04   us_04 seed 1 B&noradar masked 1208 same:true frames 15600
+    us04   us_04 seed 2 B&noradar masked 1692 same:true frames 15600
+    us04   us_04&hard seed 1 B&noradar masked 1450 same:true frames 15600
+    us04   us_04&hard seed 2 B&noradar masked 1692 same:true frames 15600
+✓ hud-us04-noradar cases 4 same 4 diff 0
+    hud us_04 seed 1 B&noradar masked 20 same:true snapshots 260
+    hud us_04 seed 2 B&noradar masked 28 same:true snapshots 260
+    hud us_04&hard seed 1 B&noradar masked 24 same:true snapshots 260
+    hud us_04&hard seed 2 B&noradar masked 28 same:true snapshots 260
+✗ ab-us06 cases 4 same 0 diff 4
+    us06   us_06 seed 1 ANCHORUI masked 241 same:false frames 12000 最初の違い frame 2292 {"path":".hud.6","a":"魚雷なし 帰投せよ  800 m","b":"敵機 6000 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    us06   us_06 seed 2 ANCHORUI masked 241 same:false frames 12000 最初の違い frame 2245 {"path":".hud.6","a":"魚雷なし 帰投せよ  800 m","b":"敵機 6000 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    us06   us_06&hard seed 1 ANCHORUI masked 402 same:false frames 12000 最初の違い frame 2477 {"path":".hud.6","a":"命中 0 ・ 輸送船 健在","b":"敵機 6000 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    us06   us_06&hard seed 2 ANCHORUI masked 241 same:false frames 12000 最初の違い frame 2456 {"path":".hud.6","a":"命中 0 ・ 輸送船 健在","b":"敵機 6000 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+✗ hud-us06 cases 4 same 0 diff 4
+    hud us_06 seed 1 ANCHORUI masked 4 same:false snapshots 200 最初の違い 39 秒 {"path":".hud.8.text","a":"魚雷なし 帰投せよ  800 m","b":"敵機 5800 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    hud us_06 seed 2 ANCHORUI masked 4 same:false snapshots 200 最初の違い 38 秒 {"path":".hud.8.text","a":"魚雷なし 帰投せよ  800 m","b":"敵機 5900 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    hud us_06&hard seed 1 ANCHORUI masked 6 same:false snapshots 200 最初の違い 42 秒 {"path":".hud.8.text","a":"命中 0 ・ 輸送船 健在","b":"敵機 5800 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    hud us_06&hard seed 2 ANCHORUI masked 4 same:false snapshots 200 最初の違い 41 秒 {"path":".hud.8.text","a":"命中 0 ・ 輸送船 健在","b":"敵機 6000 m ・ 航跡を見られた ・ 18 kt 以下に減速！"}
+    differs (ab-all): nodawn us_02 seed 1 nostrike same:false frames 11400 最初の違い frame 11399 {"path":".t","a":189.983333,"b":190}
+    differs (ab-all): result us_02 seed 1 result same:false frames 10979 最初の違い frame 10977 {"path":".t","a":182.966667,"b":182.95}
+✓ ab-all rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ ab-all rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
+    differs (ab-all@audio): nodawn us_02 seed 1 nostrike same:false frames 11964 最初の違い frame 11963 {"path":".t","a":199.4,"b":199.383333}
+✓ ab-all@audio rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+✓ tex-ab CHECK=1 0 ✗ lines
+- art-perf (SKIP)
+✗ snapshots changed:  M tests/__snapshots__/setup-us06.test.ts.snap;
+ALL_DONE
