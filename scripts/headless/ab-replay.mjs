@@ -12,7 +12,7 @@
 // v0.6.11 S8b: CAM=1 で写しにカメラ（scrollX・scrollY・zoom・followOffset）も足す（jp_03 の隠れ場所の中の見越し 0 がほかの任務のカメラを変えないことを見る。既定は今の写しのまま）。
 // v0.8.0 S2（spec-v0800 §6 の S2・brief L9・L13）: SET=us04 で us_04（ブラケット海峡の夜。列の通過とレーダー）のノーマル・ハード × seed 1・2 を 260 秒（夜明けまで。all には入れない。
 //   A は S2 の commit のビルド＝以後の段の回帰）。写しは隊の全艦（s.d。列の艦も）に列の段階（s.tr）とレーダーの輝点（s.rd: 掃引の回数・数・位置）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
-//   NORADAR=1 で B だけ &noradar（レーダーを切った夜。A と同じビルドで回せばレーダーが世界も HUD も変えない証＝L9 の (b)。レーダーの写し s.rd は比べない）。
+//   NOPLANE=1 で B だけ &noplane（v0.8.1 IP2: us_06 の水上機を切った夜が IP1 のビルドと同じ世界の証）。NORADAR=1 で B だけ &noradar（レーダーを切った夜。A と同じビルドで回せばレーダーが世界も HUD も変えない証＝L9 の (b)。レーダーの写し s.rd は比べない）。
 // v0.8.0 S4（brief L33）: us_04 の HUD の S4 の物を比べから外す明示の濾し（S4_FILTER。tests/hud-ab-filter が固定）。RADARUI=1（A は S3 の commit のビルド・B は今の木）は B が、
 //   NORADAR=1（A＝B＝今の木・B だけ &noradar）は A が「出し側」: 出し側を先に回し、2 行目が S4 の行（RADARUI は 4 つのレーダーの文と衝突の危険、NORADAR はレーダーの文だけ＝衝突の危険と
 //   3 行目の「去った」は比べる）だったフレームの番号とその Text の添字を記録し、両方の側でそのフレームのその Text だけを '<S4>' に替える。緑の端の印（字の色 #6dff8c・絵の鍵 tex-radar-marker）は
@@ -139,7 +139,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1' };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1', ...(process.env.NOPLANE === '1' ? { noplane: true } : {}) };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -164,7 +164,7 @@ export function abCases(set, input) {
 }
 
 export function query(c, side) {
-  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}`;
+  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}${c.noplane && side === 'B' ? '&noplane' : ''}`;
 }
 
 /** S4 の濾しの設定（RADARUI は B・NORADAR は A が出し側。どちらでもなければ null＝今のまま） */
@@ -218,7 +218,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }

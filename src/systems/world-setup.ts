@@ -12,7 +12,6 @@ import {
   getBoatTorpedoCount,
   getGunBatteryParams,
   getFriendlyParams,
-  getSeaplaneParams,
   getGroundingParams,
   getPrototypeMission,
   getRaidParams,
@@ -26,6 +25,7 @@ import {
   type PrototypeMission,
 } from '../config/game-data';
 import { DEBUG_BARGES_NEAR_OFFSET } from '../config/hunt-config';
+import { seaplaneNightSetupPart, seaplaneParamsFor } from '../config/seaplane-mission-data';
 import { missionCampaignId } from '../config/campaign-data';
 import { getAirStrikeParams, getDawnAir } from '../config/dawn-data';
 import { getPtParams } from '../config/pt-mission-data';
@@ -117,6 +117,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const raid = getRaidParams(data, mission);
   const start = sortie ? sortieConditions(sortie, raid) : NO_SORTIE_EFFECT;
   const landingPart = landingSetupPart(data, mission, ptBase, ptBoats, o);
+  // 敵の水上機（v0.4.1）。任務の enemy_aircraft の params の上書き（v0.8.1 IP2。us_06 だけ。無ければ getSeaplaneParams のまま）は config/seaplane-mission-data
+  const seaplane = o.planeOff || absent('enemy_aircraft') ? null : seaplaneParamsFor(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 });
   return {
     mission,
     playerStart: o.bargesNear && lead ? lead : mission.playerStart,
@@ -143,7 +145,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     grounding: getGroundingParams(data),
     friendly: absent('friendly_fire') ? null : getFriendlyParams(data, mission, world.time_scale),
     storm: o.stormOff || absent('storm') ? null : getStormParams(data, mission, world.time_scale),
-    seaplane: o.planeOff || absent('enemy_aircraft') ? null : getSeaplaneParams(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2 }),
+    seaplane,
     crew: getBoatCrewParams(data, mission.playerBoatId),
     crewEffects: getBoatCrewEffects(data, mission.playerBoatId),
     destroyer,
@@ -182,6 +184,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
     ...(destroyer ? anchorSetupPart(anchor, mission.enemyStarts.length, tr !== null) : {}), // 止まった艦（v0.8.1。us_06 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
     ...backdropSetupPart(data, mission, o), // 暗い岸を背に（v0.8.1。us_06 だけ。無い任務と backdropOff では鍵ごと出ない）
+    ...seaplaneNightSetupPart(data, mission, seaplane), // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。無い任務と水上機の無い夜は鍵ごと出ない）
     ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
   };
 }

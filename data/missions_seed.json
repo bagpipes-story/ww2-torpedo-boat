@@ -862,11 +862,17 @@
           "label_ja": "レイテ島（パロンポン）",
           "source": "design (v0.8.1。jp_04 の岸と同じ（見た目だけ。南の縁が浜）。揚陸地点の帯と字（systems/world-landing の味方の揚陸の絵）は描かない。暗い岸を背に（shore_backdrop）とレーダーの陸の反射の岸の線もこの南の縁)"
         },
+        "enemy_aircraft": {
+          "enemy_id": "ijn_seaplane_jake",
+          "attacks_per_night": 2,
+          "source": "design (v0.8.1 IP2。ユーザーの U3（2026-11-17「A: ノーマルとハードの両方でお願いします」）と実機 1 回目「敵の哨戒機がバンバン飛んできて常に速度を気にしないといけない緊張感を足せばいいかもしれません」。仕組みと数は us_02 の ijn_seaplane_jake のまま（risk_events の enemy_aircraft.params・enemies.json の機体。航跡を wake_trigger_s 見せると卯月の方角 6,000 m から来て、静音に落とせば lose_s で見失い、1,500 m を切れば照明弾と爆弾 2 発）。毎夜（night の optional_hazards に入れない）。attacks_per_night 2: 1 夜に照明弾と爆弾で攻撃する回数（無い任務は 1＝v0.4.1 の 1 任務 1 回）。攻撃を終えて去ると patrol_cooldown_s の後に哨戒へ戻る（core/seaplane-night。凍結の core/seaplane の外の包み）。探り（scripts/headless/anchor-probe・ノーマル 6 × 40 夜・ハード 2 × 40 夜）では 2 と 3 で夜が同じ（3 回目の攻撃に届く夜が無い）＝小さい方。史実: 米の公刊史の第 III 部（ソロモン）に夜の水上機が一晩中 PT を悩ませた記述（docs/01 §8）、NHHC H-Gram 040 に 1944 年 10〜11 月のレイテの夜は日本機が優勢な時もあった。その夜のパロンポン沖で日本の夜の機が PT を襲った記録は見つからない（WebSearch 2026-11-17: Wikipedia Battle of Ormoc Bay・Pacific Wrecks 1944-12-11）＝作り。?debug&noplane で無し)"
+        },
         "hazards": [
           "enemy_ship_gunfire_or_ram",
+          "enemy_aircraft",
           "dawn_air_strike"
         ],
-        "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。夜の水上機・友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法)",
+        "hazards_source": "design (v0.8.1 S0。この世界で起きる危険を出会う順に: 駆逐艦の砲撃・衝突（動き出した卯月の探照灯・砲・星弾・体当たりと、空知丸の 76 mm）、夜明けの空襲（dawn_air.play_as enemy の 4 機）。友軍誤射・暴風は出さない（その夜の記録なし＝docs/01 §8 の「夜の PBY…不在」「味方撃ち…不在」）。上位の hazards（任務本体の設計）は変えない＝jp_04 の作法。v0.8.1 IP2: 敵航空機（enemy_aircraft。日本の夜の水上機。block は enemy_aircraft。その夜の記録は無い＝作り。ユーザーの U3）を砲撃・衝突と夜明けの空襲の間に＝出会う順)",
         "night": {
           "hazard_scale": 1,
           "optional_hazards": [],

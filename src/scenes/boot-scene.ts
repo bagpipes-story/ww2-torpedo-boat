@@ -62,6 +62,7 @@ import { validateTransitMissions } from '../config/transit-mission-data';
 import { validateShoresMissions } from '../config/shores-mission-data';
 import { validateAnchorMissions } from '../config/anchor-mission-data';
 import { validateBackdropMissions } from '../config/backdrop-mission-data';
+import { validateSeaplaneMissions } from '../config/seaplane-mission-data';
 import { validateLoadouts } from '../config/loadout-data';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -159,6 +160,7 @@ export class BootScene extends Phaser.Scene {
     validateShoresMissions(gameData);
     validateAnchorMissions(gameData); // オルモック湾の決着（v0.8.1。us_06）: 止まった艦（V-A1〜V-A6）と暗い岸を背に（V-B1〜V-B3）をハードも 1 回（壊れていれば Boot で止まる。世界の配線は S2）
     validateBackdropMissions(gameData);
+    validateSeaplaneMissions(gameData); // 夜の水上機の任務ごとの値（v0.8.1 IP2。us_06 の attacks_per_night・V-P1〜V-P3）をハードも 1 回
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 

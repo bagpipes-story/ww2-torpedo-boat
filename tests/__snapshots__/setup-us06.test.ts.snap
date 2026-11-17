@@ -61,9 +61,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -167,7 +170,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -373,6 +407,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -475,6 +510,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  }
 }"
 `;
@@ -540,9 +578,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -646,7 +687,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -852,6 +924,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -954,6 +1027,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  }
 }"
 `;
@@ -1019,9 +1095,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -1125,7 +1204,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -1331,6 +1441,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -1433,6 +1544,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  }
 }"
 `;
@@ -1498,9 +1612,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -1604,7 +1721,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -1810,6 +1958,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -1912,6 +2061,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード false �
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  }
 }"
 `;
@@ -1977,9 +2129,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -2083,7 +2238,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -2299,6 +2485,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -2403,6 +2590,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  },
  "pickets": {
   "starts": [
@@ -2552,9 +2742,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -2658,7 +2851,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -2874,6 +3098,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -2978,6 +3203,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  },
  "pickets": {
   "starts": [
@@ -3127,9 +3355,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -3233,7 +3464,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -3449,6 +3711,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -3553,6 +3816,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  },
  "pickets": {
   "starts": [
@@ -3702,9 +3968,12 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "storm": null,
   "hazards": [
    "enemy_ship_gunfire_or_ram",
+   "enemy_aircraft",
    "dawn_air_strike"
   ],
-  "enemyAircraft": null,
+  "enemyAircraft": {
+   "enemyId": "ijn_seaplane_jake"
+  },
   "night": {
    "hazardScale": 1,
    "optionalHazards": [],
@@ -3808,7 +4077,38 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "friendly": null,
  "storm": null,
- "seaplane": null,
+ "seaplane": {
+  "flightMps": 308.64,
+  "spawnM": 6000,
+  "wakeDetectM": 6000,
+  "baseDetectM": 1500,
+  "wakeThresholdKt": 18,
+  "patrolFromS": 20,
+  "wakeTriggerS": 3,
+  "loseS": 4,
+  "patrolCooldownS": 10,
+  "runRadiusM": 600,
+  "overpassS": 1.944012441679627,
+  "passS": 3.888024883359254,
+  "orbitDegPerS": 29.472948981529548,
+  "orbitS": 4,
+  "leaveS": 2.5,
+  "flareRadius2": 1440000,
+  "flareDurationS": 40,
+  "flareRevealM": 6000,
+  "bombCount": 2,
+  "bombHit": {
+   "damage": 35,
+   "fireChance": 0.3,
+   "engineDamageChance": 0.2
+  },
+  "bombFallFeelS": 2.2120050544373244,
+  "bombFallGameS": 11.060025272186621,
+  "bombLeadGameS": 20.780087480584754,
+  "bombScatterM": 56.568542494923804,
+  "boatHalfLengthM": 12.2,
+  "bombHitRadiusM": 28.15
+ },
  "crew": {
   "total": 14,
   "casualtiesPerHp": 0.1
@@ -4024,6 +4324,7 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
  },
  "hazardsTonight": [
   "enemy_ship_gunfire_or_ram",
+  "enemy_aircraft",
   "dawn_air_strike"
  ],
  "absentHazards": [],
@@ -4128,6 +4429,9 @@ exports[`us_06 の setup の snapshot（v0.8.1 S0 の木） > ハード true 史
   "detectFactor": 0.6,
   "behindM": 2000,
   "behindM2": 4000000
+ },
+ "seaplaneNight": {
+  "attacksPerNight": 2
  },
  "pickets": {
   "starts": [

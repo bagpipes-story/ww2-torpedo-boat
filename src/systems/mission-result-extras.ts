@@ -64,9 +64,11 @@ export type SeaplaneResultFields = Pick<
   'seaplaneEnabled' | 'seaplanePhase' | 'seaplaneOutcome' | 'seaplaneAttacked' | 'seaplaneSorties' | 'seaplaneLost' | 'seaplaneSlowReactS' | 'seaplaneFlareLitS' | 'seaplaneShellsUnderFlare' | 'seaplaneBombs' | 'seaplaneBombHits' | 'seaplaneDodgeS'
 >;
 
-export function seaplaneResultFields(w: MissionWorld): SeaplaneResultFields {
+export function seaplaneResultFields(w: MissionWorld): SeaplaneResultFields & Pick<MissionResult, 'seaplaneAttacks'> {
   const sp = w.seaplane ? w.seaplane.state : null;
+  const night = w.seaplane ? w.seaplane.night : null;
   return {
+    ...(night ? { seaplaneAttacks: night.attacks } : {}), // 1 夜に複数回の攻撃の任務（v0.8.1 IP2。us_06）だけ: 爆弾を落とし切って去った攻撃の数（無い任務は鍵ごと無い）
     seaplaneEnabled: w.seaplane !== null,
     seaplanePhase: sp ? sp.phase : SP_IDLE,
     seaplaneOutcome: sp ? sp.outcome : SP_OUT_NONE,

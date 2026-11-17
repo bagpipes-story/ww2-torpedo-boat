@@ -13,6 +13,7 @@ import type { TransitSetup } from '../config/transit-mission-data';
 import type { ShoresSetup } from '../config/shores-mission-data';
 import type { AnchorSetup } from '../config/anchor-mission-data';
 import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
+import type { SeaplaneNightSetup } from '../config/seaplane-mission-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -126,6 +127,7 @@ export interface WorldSetup {
   shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
   anchors?: AnchorSetup; // 止まった艦（v0.8.1。v0_1_prototype.anchored のある任務＝us_06 だけ。隊の艦ごとの動き出す秒・警報の秒。config/anchor-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
   backdrop?: BackdropSetup; // 暗い岸を背に（v0.8.1。v0_1_prototype.shore_backdrop のある任務＝us_06 だけ。config/backdrop-mission-data。無い任務と backdropOff では鍵ごと出ない。S0 では世界は読まない）
+  seaplaneNight?: SeaplaneNightSetup; // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。config/seaplane-mission-data。無い任務と ?debug&noplane では鍵ごと出ない＝凍結の 1 任務 1 回のまま）
   pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
 }
 

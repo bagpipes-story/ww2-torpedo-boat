@@ -115,6 +115,8 @@ export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 �
   seaplaneDodgeS: number[];
   /** 水上機を撃墜した（v0.6.8。「敵機: … 撃墜（…）」。落とさなかった夜は鍵ごと無い） */
   seaplaneDowned?: boolean;
+  /** 1 夜に複数回の攻撃の任務（v0.8.1 IP2。us_06）だけ: 爆弾を落とし切って去った攻撃の数（ui/seaplane-night-lines。無い任務は鍵ごと無い） */
+  seaplaneAttacks?: number;
   /** 任務の目標を達した（駆逐艦の撃沈／大発のノルマ。v0.4.2 で destroyerSunk から分けた） */
   objectiveDone: boolean;
   /** 大発掃討（v0.4.2）の記録。任務に大発がいなければ null */

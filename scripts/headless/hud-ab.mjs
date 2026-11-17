@@ -24,7 +24,7 @@ await sb.close();
 let bad = 0;
 for (const r of res) {
   if (!r.same) bad++;
-  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
 }
 console.log(`cases ${res.length} same ${res.length - bad} diff ${bad}`);
 process.exitCode = bad === 0 ? 0 : 1;

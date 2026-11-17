@@ -49,10 +49,13 @@ describe('背に岸の距離（us_06・揺らぎなし。卯月 (3620, 2380)・�
     w.enemy.illuminated = false;
     expect(ranges(w, 4400, 2850, 1200)[UZ]).toBe(720);
   });
-  it('水上機の照明弾の光の中なら下限は照明弾の距離（us_06 には水上機が無い＝0。照らされていれば係数なし）', () => {
+  it('水上機の照明弾の光の中なら下限は照明弾の距離（v0.8.1 IP2 から us_06 に夜の水上機＝照明弾の 6,000 m。S2〜IP1 は水上機が無く 0＝720 m だった。照らされていれば係数なし）', () => {
     const w = anchorKit();
-    expect(w.setup.seaplane).toBe(null);
+    const flareM = w.setup.seaplane!.flareRevealM;
+    expect(flareM).toBe(6000);
     w.flareLit = true;
+    expect(ranges(w, 4400, 2850, 1200)[UZ]).toBe(flareM);
+    w.flareLit = false;
     expect(ranges(w, 4400, 2850, 1200)[UZ]).toBe(720);
   });
   it('煙幕と掛け算: 世界の距離（煙幕込み）× 0.6', () => {

@@ -11,6 +11,8 @@
 //   idle            出発点で止まったまま（漂流と夜明けの空襲の確かめ）
 // 離れ方（L54）: 静音で離れ、見えている艦・レーダーの輝点・Briefing の輸送船（沈めるまで）のどれからも 1,200 m 離れたら巡航で輪へ。発見された・照らされている間は（反応の後）全速。
 // 狙う・撃つのは目で見えている艦だけ。夜明けの 60 秒前になっても撃つ前なら輪へ帰る。確保は作る時だけ。
+// v0.8.1 IP2（水上機）: obey（HUD=1）の時だけ HUD の 2 行目の字（view の line2）に従う＝「敵機 N m ・ …」の間は反応の後に静音、行が消えたら元へ。「爆撃進路！」「爆弾投下！」は
+// 反応の後に左右へ 90° 転舵して全速。charge・idle は従わない。obey の無い台本は S3 のまま（乱数の引き方も同じ＝?debug&noplane の夜は S3〜IP1 と同じ夜）。
 
 export const ANCHOR_POLICIES = ['shore_east', 'open_north', 'shore_east_nb', 'charge', 'transport_first', 'idle'];
 export const ANCHOR_HARD_POLICIES = ['shore_east', 'open_north'];
@@ -28,6 +30,7 @@ const ROUTES = {
   idle: { legs: [], hits: [], leave: 'none' },
 };
 const LEGS = 0, APPROACH = 1, AIM = 2, HOLD = 3, LEAVE = 4, HOME = 5;
+const PLANE_APPROACH_RE = /^敵機 \d+ m ・ /, PLANE_BOMB_RE = /^(爆撃進路！|爆弾投下！)/; // HUD の 2 行目の水上機の文（ui/hud-lines の seaplaneLine）: 未確定の接近・爆撃進路と投下
 
 /** 台本だけの乱数（mulberry32。0 以上 1 未満） */
 function nextRand(d) {
@@ -44,11 +47,12 @@ const bearing = (x, y, tx, ty) => wrap360((Math.atan2(tx - x, -(ty - y)) * 180) 
 const dist2 = (x, y, tx, ty) => (tx - x) * (tx - x) + (ty - y) * (ty - y);
 
 /** plan: 地図と艇の知れる値（糊が作る時に 1 回）。目の推定 est: 種類ごとの最後の位置・速さ・今見えているか・沈んだか */
-export function createAnchorDriver(policy, seed, plan) {
+export function createAnchorDriver(policy, seed, plan, obey = false) {
   const r = ROUTES[policy];
   if (!r) throw new Error(`知らない台本 ${policy}`);
   const est = [0, 1].map((k) => ({ x: k === 0 ? plan.uzX : plan.trX, y: k === 0 ? plan.uzY : plan.trY, vx: 0, vy: 0, seen: false, gone: false, sweep: NaN }));
-  return { policy, r, plan, rs: (seed * ANCHOR_HUMAN.seedMul + ANCHOR_HUMAN.seedAdd) >>> 0, est, mode: r.legs.length > 0 ? LEGS : r.hits.length > 0 ? APPROACH : HOME, leg: 0, hit: 0, actAt: NaN, err: 0, holdH: 0, holdUntil: 0, leaveUntil: NaN, alarmAt: NaN };
+  return { policy, r, plan, rs: (seed * ANCHOR_HUMAN.seedMul + ANCHOR_HUMAN.seedAdd) >>> 0, est, mode: r.legs.length > 0 ? LEGS : r.hits.length > 0 ? APPROACH : HOME, leg: 0, hit: 0, actAt: NaN, err: 0, holdH: 0, holdUntil: 0, leaveUntil: NaN, alarmAt: NaN,
+    obey: obey === true && policy !== 'charge' && policy !== 'idle', planeAt: NaN, dodgeAt: NaN, dodgeH: 0 };
 }
 
 /** 目とレーダーで推定を直す（駆逐艦は目で見えなければ推定に最も近い輝点。輸送船はレーダーに映らない＝Briefing の位置か目で見た位置） */
@@ -102,8 +106,23 @@ function clearOfAll(d, v) {
   return tr.gone || dist2(v.x, v.y, tr.x, tr.y) >= c2;
 }
 
-/** 1 フレームの台本（固定ステップの前）。o に針路（NaN は保つ）・速さ（全速の比）・撃つ本数と扇の開き角を書く */
+/** 1 フレームの台本（固定ステップの前）。o に針路（NaN は保つ）・速さ（全速の比）・撃つ本数と扇の開き角を書く。obey なら最後に水上機の HUD に従う（IP2） */
 export function stepAnchorDriver(d, v, o) {
+  stepRoute(d, v, o);
+  if (d.obey) obeyPlane(d, v, o);
+}
+
+/** 水上機の HUD に従う（IP2。行が出た時に 1 回だけ反応の秒と向きを引く） */
+function obeyPlane(d, v, o) {
+  const H = ANCHOR_HUMAN, warn = PLANE_APPROACH_RE.test(v.line2), bomb = PLANE_BOMB_RE.test(v.line2);
+  if (warn) { if (Number.isNaN(d.planeAt)) d.planeAt = v.t + range(d, H.reactS[0], H.reactS[1]); } else d.planeAt = NaN;
+  if (bomb) { if (Number.isNaN(d.dodgeAt)) { d.dodgeAt = v.t + range(d, H.reactS[0], H.reactS[1]); d.dodgeH = wrap360(v.h + (nextRand(d) < 0.5 ? 90 : -90)); } } else d.dodgeAt = NaN;
+  if (warn && v.t >= d.planeAt && o.speed01 > d.plan.silent01) o.speed01 = d.plan.silent01;
+  if (bomb && v.t >= d.dodgeAt) { o.headingDeg = d.dodgeH; o.speed01 = 1; }
+}
+
+/** S3 の台本（道・寄る・狙う・離れる・帰る） */
+function stepRoute(d, v, o) {
   const p = d.plan, H = ANCHOR_HUMAN, r = d.r;
   o.headingDeg = NaN; o.speed01 = 0; o.fireN = 0; o.fireSpreadDeg = 0;
   updateEstimates(d, v);

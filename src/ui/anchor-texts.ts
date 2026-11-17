@@ -10,8 +10,8 @@ import { DETECT_RANGE_STEP_M, type HudLine } from './hud-lines';
 export const ANCHOR_EV_NONE = 0, ANCHOR_EV_BACKDROP = 1, ANCHOR_EV_UNDERWAY = 2, ANCHOR_EV_HINT = 3;
 export const ANCHOR_UNDERWAY_JA = '停泊していた艦が動き出した！';
 export const ANCHOR_HINT_JA = '停泊艦の南の暗い海（岸の陰）から寄れ ・ 見つかりにくい';
-/** Briefing の危険の行の尾（systems/briefing-numbers。HUD の手がかりと同じ言葉） */
-export const ANCHOR_BRIEF_HINT_JA = '停泊艦の南の暗い海（岸の陰）なら見つかりにくい';
+/** Briefing の危険の行の尾（systems/briefing-numbers。HUD の手がかりと同じ言葉）。v0.8.1 IP2: 危険に「敵航空機、」が入り、行を 1 行（24 px・1,056 と 1,032 px）に収めるため「…暗い海（岸の陰）なら見つかりにくい」から短くした */
+export const ANCHOR_BRIEF_HINT_JA = '停泊艦の南の岸の陰から寄れ';
 export const anchorBackdropLineJa = (step: number): string => `岸の陰に入った ・ 見つかる距離 ${step * DETECT_RANGE_STEP_M} m`;
 
 /** 2 行目の文が読む時計の部分（AnchorLineClock がそのまま満たす） */

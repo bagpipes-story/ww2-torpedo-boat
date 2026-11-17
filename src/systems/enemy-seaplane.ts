@@ -20,6 +20,7 @@ import {
   type SeaplaneParams,
   type SeaplaneState,
 } from '../core/seaplane';
+import { afterSeaplaneStep, createSeaplaneNight, type SeaplaneNightState } from '../core/seaplane-night';
 
 /** 開始条件と中断の材料として世界から読む部分（MissionWorld がそのまま満たす） */
 export interface SeaplaneWorldView {
@@ -40,6 +41,8 @@ export interface SeaplaneWorldView {
 
 export class EnemySeaplane {
   readonly state: SeaplaneState;
+  /** 1 夜に複数回の攻撃の包み（v0.8.1 IP2。core/seaplane-night。setup.seaplaneNight のある任務＝us_06 だけ。無い任務は null＝凍結の 1 任務 1 回のまま） */
+  readonly night: SeaplaneNightState | null;
   private readonly check: SeaplaneCheck;
   private readonly pose: AircraftPose = { dx: 0, dy: 0, headingDeg: 0, alpha: 0 };
   private readonly plane: Phaser.GameObjects.Image;
@@ -57,8 +60,11 @@ export class EnemySeaplane {
     boat: BoatState,
     private readonly splash: (x: number, y: number, hit: boolean) => void,
     private readonly onBombHit: (x: number, y: number) => void,
+    /** setup.seaplaneNight の attacks_per_night（無い任務は null） */
+    attacksPerNight: number | null = null,
   ) {
     this.state = createSeaplaneState(p);
+    this.night = attacksPerNight !== null ? createSeaplaneNight(this.state, p, attacksPerNight) : null;
     this.check = { boat, targetX: 0, targetY: 0, wake: false, stormInside: false, friendlyLive: false, busy: false, blocked: false, boatSinking: false, timeS: 0, shellsFired: 0, forceTrigger: debug !== 'none', forceSeen: debug === 'attack' };
     this.plane = scene.add.image(0, 0, TEXTURE_KEYS.enemyAircraft).setScale(1 / RENDER_SCALE).setDepth(DEPTH.aircraft).setVisible(false);
     this.flare = scene.add
@@ -68,7 +74,7 @@ export class EnemySeaplane {
       .setDepth(DEPTH.light)
       .setScale(Math.sqrt(p.flareRadius2) / STARSHELL_TEX_RADIUS_UNITS / RENDER_SCALE)
       .setVisible(false);
-    for (let i = 0; i < p.bombCount; i++) this.bombs.push(scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(BOMB_TINT).setDepth(DEPTH.shell).setVisible(false));
+    for (let i = 0; i < this.state.ordnance.bombs.length; i++) this.bombs.push(scene.add.image(0, 0, TEXTURE_KEYS.explosionRing).setTint(BOMB_TINT).setDepth(DEPTH.shell).setVisible(false));
   }
 
   /** 接近〜去る途中（味方機を同時に来させない） */
@@ -99,7 +105,9 @@ export class EnemySeaplane {
     c.timeS = w.stepTimeS;
     c.shellsFired = w.enemy.shotsFired;
     stepSeaplaneTrigger(s, c, this.p, feelDt);
+    const prevPhase = s.phase;
     const ev = stepSeaplane(s, this.p, c, this.rng, feelDt);
+    if (this.night) afterSeaplaneStep(this.night, s, this.p, prevPhase); // 攻撃を終えて去り終えたら回数まで哨戒へ戻す（v0.8.1 IP2。us_06 だけ）
     if (ev & SP_EV_FLARE) {
       this.flare.setPosition(s.ordnance.flare.x, s.ordnance.flare.y).setVisible(true);
       this.flareShown = true;

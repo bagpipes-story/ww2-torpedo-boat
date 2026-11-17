@@ -1,5 +1,5 @@
 // v0.8.1 S0（spec-v0810 §4.1・§4.5・§6 の S0）: us_06「オルモック湾の決着」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
-// （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.1 S0 の木で作った。us_06 の setup は S1〜S4 で鍵が増えうるので、
+// （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.1 S0 の木で作った（S3 で動き出す秒と駆潜艇・IP2 で夜の水上機＝seaplane と seaplaneNight の鍵を -u）。us_06 の setup は S1〜S4 で鍵が増えうるので、
 // 書き換える時は CHANGELOG に段と理由を書く（ほかの 10 任務の setup の snapshot は -u しない）。Briefing の行は入れない（S4 で変わる）。
 // 今夜の揺らぎ（+16）はノーマル 8 回（卯月 3・空知丸 3・大発の先頭 1・反転 1）・ハード 14 回（駆潜艇 2 隻 ＋6）。遊べるのは S4 から（playable_from はまだ無い）。
 // あわせて: us_06 の画面の文（題・場所・目的・成功・史実メモ・月・夜明け・岸・退く呼び名・敵の名）に人名・階級つきの呼び方・PT の番号が無い（CLAUDE.md §11・spec-v0810 §3.8）。
@@ -34,13 +34,17 @@ describe('us_06 の setup の snapshot（v0.8.1 S0 の木）', () => {
     // 駆逐艦の任務（卯月 1 隻＝enemy_start。空知丸は transport）・Mk 13・月没後・夜明けは空襲（L1）で東へ退く・撃沈の達成は 1 隻
     expect([s.mission.enemyId, s.mission.torpedoId, s.mission.moon, s.mission.enemyStarts.length, s.mission.objectiveSinkCount, s.destroyer!.objectiveSinks, s.transport!.enemyId]).toEqual(['ijn_destroyer_mutsuki_enemy', 'us_mk13', 'dark', 1, 1, 1, 'ijn_transport']);
     expect([s.destroyer!.spec.lengthM, s.destroyer!.spec.hitsToSink, s.transport!.spec.hitsToSink, s.destroyer!.baseDetectM]).toEqual([102.7, 2, 1, 2000]);
-    expect([s.barges, s.ptBoats, s.convoy, s.escort, s.raid, s.storm, s.seaplane, s.friendly, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, null, 'torpedo']);
+    expect([s.barges, s.ptBoats, s.convoy, s.escort, s.raid, s.storm, s.friendly, s.mainWeapon]).toEqual([null, null, null, null, null, null, null, 'torpedo']);
+    // v0.8.1 IP2（ユーザーの U3）: 夜の水上機（us_02 の ijn_seaplane_jake の仕組み・数は us_02 と同じ）がノーマル・ハードとも毎夜（optional_hazards なし）。1 夜の攻撃の回数は data から
+    const ea = (missionOf('us_06')['v0_1_prototype'] as Rec)['enemy_aircraft'] as Rec;
+    expect([s.seaplane !== null, s.seaplaneNight]).toEqual([true, { attacksPerNight: ea['attacks_per_night'] }]);
+    expect(s.seaplane).toEqual(buildWorldSetup(gameData, 'us_02').seaplane);
     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears, s.airStrike!.planes]).toEqual(['enemy', 'east', '日本の艦', false, 4]);
     expect([s.radar!.model, s.radar!.fit, s.mission.coast!.label, s.coastEdgeY]).toEqual(['so_late', 'own', 'レイテ島（パロンポン）', 3000]);
     expect([s.anchors, s.backdrop]).toEqual([{ underwayS: hard ? [3, null, 4, 4] : [3, null], alarmS: 4 }, { detectFactor: 0.6, behindM: 2000, behindM2: 4_000_000 }]);
     expect('pickets' in s).toBe(hard);
     if (hard) expect([s.pickets!.enemyId, s.pickets!.starts.length]).toEqual(['ijn_subchaser', 2]);
-    expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'dawn_air_strike']);
+    expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'enemy_aircraft', 'dawn_air_strike']); // v0.8.1 IP2: 夜の水上機を出会う順に
     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'transit', 'shores'] as const) expect(k in s, k).toBe(false);
     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));
   });

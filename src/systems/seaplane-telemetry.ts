@@ -14,9 +14,11 @@ export function refreshSeaplaneTelemetry(t: BoatTelemetry, w: MissionWorld, scra
   t.planeLocked = sp ? sp.locked : false;
   t.planeWake = w.band === 'cruise' || w.band === 'full';
   t.planeFlareOn = sp ? sp.ordnance.flare.leftS > 0 : false;
-  t.planeBombsDropped = sp ? sp.ordnance.bombsDropped : 0;
+  // 1 夜に複数回の攻撃の任務（v0.8.1 IP2。us_06）は今の攻撃の分だけ（core/seaplane-night が攻撃の前までの数を持つ。包みの無い任務は 0 を引く）
+  const n = w.seaplane ? w.seaplane.night : null;
+  t.planeBombsDropped = sp ? sp.ordnance.bombsDropped - (n ? n.bombBase : 0) : 0;
   t.planeBombAir = sp ? bombInAir(sp.ordnance) : false;
-  t.planeBombsHit = sp ? sp.ordnance.bombsHit : 0;
+  t.planeBombsHit = sp ? sp.ordnance.bombsHit - (n ? n.hitBase : 0) : 0;
   t.planeOutcome = sp ? sp.outcome : SP_OUT_NONE;
   if (sp && w.seaplane && seaplaneActive(sp)) {
     const q = seaplanePose(sp, w.seaplane.p, scratchPose);
