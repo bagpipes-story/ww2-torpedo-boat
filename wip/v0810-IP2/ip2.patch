@@ -1102,7 +1102,7 @@ index 62ea649..348cbc6 100644
    "starts": [
     {
 diff --git a/tests/anchor-probe-scan.test.ts b/tests/anchor-probe-scan.test.ts
-index 64adb4d..39bce1f 100644
+index 64adb4d..e7405bf 100644
 --- a/tests/anchor-probe-scan.test.ts
 +++ b/tests/anchor-probe-scan.test.ts
 @@ -3,11 +3,14 @@
@@ -1148,12 +1148,13 @@ index 64adb4d..39bce1f 100644
    });
    it('同じ seed は同じ夜（素の模型の艇を 6 つの台本で 150 秒ずつ 2 回）・揺らぎの系列は seed × 7907 ＋ 40483', async () => {
      const path = '../scripts/headless/anchor-probe-policy.mjs';
-@@ -69,4 +75,25 @@ describe('us_06 の探りの台本と糊（D-P2）', () => {
+@@ -69,4 +75,26 @@ describe('us_06 の探りの台本と糊（D-P2）', () => {
      expect(night('shore_east', 7)).not.toBe(night('shore_east', 8)); // 反応と狙いのずれは seed で変わる
      expect(night('idle', 7)).toBe('5000.000,250.000');
    });
 +  it('IP2: obey の台本は 2 行目の字だけに従う（接近の行で静音・爆撃進路の行で 90° 転舵して全速）。obey なし・charge・idle は字を読まない', async () => {
-+    const P = (await import('../scripts/headless/anchor-probe-policy.mjs')) as Policy;
++    const path = '../scripts/headless/anchor-probe-policy.mjs';
++    const P = (await import(path)) as Policy;
 +    const plan = { width: 6000, height: 3000, ringX: 4400, ringY: 400, ringR: 250, dawnS: 200, silent01: 0.42, cruise01: 0.59, uzX: 3620, uzY: 2380, trX: 3000, trY: 2760, torpScreenMps: 86, spacingDeg: 4 };
 +    const view = (line2: string, t: number): View => ({ t, leftS: 200 - t, x: 5000, y: 250, h: 180, torps: 4, atHome: false, seen: false, lit: false, ddSunk: 0, trSunk: false, bn: 1, sweepS: 0, bx: [3620], by: [2380], en: 0, ekind: [0], ex: [3620], ey: [2380], evx: [0], evy: [0], line2 });
 +    const speeds = (policy: string, obey: boolean, line2: string): { sp: number[]; h: number[] } => {
