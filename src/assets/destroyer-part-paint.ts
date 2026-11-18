@@ -25,7 +25,9 @@ export function shadowOf(ctx: C, p: DestroyerPart): void {
     ctx.fill();
     if (p.t === 'gun') {
       const y = p.dir === 1 ? p.cy - p.len / 2 - p.barrel : p.cy + p.len / 2;
-      for (const bx of p.style === 'twin' ? [-DESTROYER_TWIN_DX, DESTROYER_TWIN_DX] : [0]) ctx.fillRect(p.cx + bx - DESTROYER_BARREL_UNITS / 2 + dx, y + dy, DESTROYER_BARREL_UNITS, p.barrel);
+      const tdx = p.dx ?? DESTROYER_TWIN_DX; // 戦艦・重巡の砲塔だけ任意の欄（v0.8.2 S2b）。無ければ今の値
+      const bw = p.bw ?? DESTROYER_BARREL_UNITS;
+      for (const bx of p.style === 'twin' ? [-tdx, tdx] : [0]) ctx.fillRect(p.cx + bx - bw / 2 + dx, y + dy, bw, p.barrel);
     }
   }
 }
@@ -37,13 +39,15 @@ function paintGun(ctx: C, base: number, p: Extract<DestroyerPart, { t: 'gun' }>)
   const hw = p.w / 2;
   const front = Y(-h);
   const tip = Y(-h - p.barrel);
-  const barrels = p.style === 'twin' ? [-DESTROYER_TWIN_DX, DESTROYER_TWIN_DX] : [0];
+  const tdx = p.dx ?? DESTROYER_TWIN_DX; // 戦艦・重巡の砲塔の砲身の間隔と太さ（v0.8.2 S2b）。無ければ今の値
+  const bw = p.bw ?? DESTROYER_BARREL_UNITS;
+  const barrels = p.style === 'twin' ? [-tdx, tdx] : [0];
   for (const dx of barrels) {
-    const bx = p.cx + dx - DESTROYER_BARREL_UNITS / 2;
+    const bx = p.cx + dx - bw / 2;
     ctx.fillStyle = toneCss(base, T.dark);
-    ctx.fillRect(bx, Math.min(front, tip), DESTROYER_BARREL_UNITS, p.barrel + 1);
+    ctx.fillRect(bx, Math.min(front, tip), bw, p.barrel + 1);
     ctx.fillStyle = toneCss(base, T.turretLight, 0.55);
-    ctx.fillRect(bx, Math.min(front, tip), DESTROYER_BARREL_UNITS * 0.4, p.barrel + 1);
+    ctx.fillRect(bx, Math.min(front, tip), bw * 0.4, p.barrel + 1);
   }
   ctx.fillStyle = xGrad(ctx, base, p.cx - hw, p.cx + hw, [[0, T.turretLight], [0.55, (T.turretLight + T.turretDark) / 2], [1, T.turretDark]]);
   if (p.style === 'twin') {

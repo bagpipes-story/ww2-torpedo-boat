@@ -11,6 +11,8 @@ export const SHIP_ART_KEY_BY_ENEMY: Readonly<Record<string, string>> = {
   us_destroyer: 'tex-destroyer-us',
   ijn_destroyer_mutsuki_enemy: 'tex-destroyer-mutsuki', // v0.8.1 S2（spec-v0810 §3.6 D-A1）: us_06 の敵の卯月＝睦月型の形を敵の色で（味方の卯月 tex-destroyer-friendly と同じ置き方）
   ijn_subchaser: 'tex-subchaser', // v0.8.1 S2b（D-A2）: us_06 のハードの駆潜艇（第13号型）＝新しい形 'subchaser' を敵の色で（Boot の generatePicketTextures が hard の picket_enemy_id から 1 回）
+  // v0.8.2 S2b（spec-v0820 D-A1・D-A2）: us_05 の列の戦艦（扶桑型）と重巡（最上）＝新しい形 'fuso'・'mogami' を敵の色で（Boot の generateColumnTextures が transit.column から 1 回ずつ）
+  ijn_battleship_fuso: 'tex-battleship-fuso', ijn_cruiser_mogami: 'tex-cruiser-mogami',
 };
 export function shipArtKey(enemyId: string): string {
   return SHIP_ART_KEY_BY_ENEMY[enemyId] ?? SHIP_ART_DEFAULT_KEY;
@@ -24,6 +26,7 @@ export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
   'tex-destroyer': 2, 'tex-destroyer-us': 2, 'tex-destroyer-friendly': 2, 'tex-transport': 2, 'tex-transport-friendly': 2,
   'tex-destroyer-mutsuki': 2, // v0.8.1 S2（D-A1。敵の卯月）
   'tex-subchaser': 2, // v0.8.1 S2b（D-A2。ハードの駆潜艇）
+  'tex-battleship-fuso': 2, 'tex-cruiser-mogami': 2, // v0.8.2 S2b（D-A1・D-A2。us_05 の戦艦・重巡）
   // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
   'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
 };
@@ -45,12 +48,16 @@ export const BARGE_RAMP_BEAM_SHARE = 0.76;
 /** 艦の絵の乱れの乱数の種（絵だけ。ゲームの乱数とは別） */
 export const ART_SEED_SHIP = 7101;
 
-/** 艦の絵の形の種類（S2a。spec §4.2）と、鍵 → 形の表。陽炎型（敵の駆逐艦）・フレッチャー級（jp_06 の米駆逐艦）・睦月型（卯月）・輸送船（敵と味方の 2 枚は同じ形で色だけ違う）・駆潜艇（v0.8.1 S2b） */
-export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport' | 'subchaser';
+/**
+ * 艦の絵の形の種類（S2a。spec §4.2）と、鍵 → 形の表。陽炎型（敵の駆逐艦）・フレッチャー級（jp_06 の米駆逐艦）・睦月型（卯月）・輸送船（敵と味方の 2 枚は同じ形で色だけ違う）・駆潜艇（v0.8.1 S2b）・
+ * 戦艦の扶桑型と重巡の最上（v0.8.2 S2b。置き方は assets/capital-plan・細部は capital-art-config）
+ */
+export type ShipArtKind = 'kagero' | 'fletcher' | 'mutsuki' | 'transport' | 'subchaser' | 'fuso' | 'mogami';
 export const SHIP_ART_KIND_BY_KEY: Readonly<Record<string, ShipArtKind>> = {
   'tex-destroyer': 'kagero', 'tex-destroyer-us': 'fletcher', 'tex-destroyer-friendly': 'mutsuki', 'tex-transport': 'transport', 'tex-transport-friendly': 'transport',
   'tex-destroyer-mutsuki': 'mutsuki', // v0.8.1 S2（D-A1。敵の卯月）
   'tex-subchaser': 'subchaser', // v0.8.1 S2b（D-A2。ハードの駆潜艇）
+  'tex-battleship-fuso': 'fuso', 'tex-cruiser-mogami': 'mogami', // v0.8.2 S2b（D-A1・D-A2）
 };
 export const SHIP_ART_DEFAULT_KIND: ShipArtKind = 'kagero';
 export function shipArtKind(key: string): ShipArtKind {
@@ -108,6 +115,22 @@ export const SHIP_ART_LAYOUTS: Readonly<Record<ShipArtKind, ShipArtLayout>> = {
     forecastle: [0.38, 'line'], bridge: [0.25, 0.34, 0.6], funnels: [[0.44, 0.4, 0.055]],
     mounts: [[0.15, 0.36, 1]], tubes: [], tubs: [[0.56, 0.22], [0.56, -0.22], [0.74, 0]],
     hatches: [], masts: [0.355], derricks: [],
+  },
+  // 戦艦 扶桑型（v0.8.2 S2b の D-A1。us_05 の山城・扶桑。212.75 × 33.1 m＝425.5 × 66.2 単位）: 細い艦首・船首楼の段 49%・連装の主砲塔 6（前 16.5%・24.5%、中 52.5%・61.5%、後 74.5%・82.5%）・
+  // 塔の艦橋の足元 28.5〜37%（段・影・砲郭・高角砲・カタパルトは capital-art-config）・煙突 1（43%）・後檣 57.5%・丸い艦尾。砲身は次の砲塔に届かない（中心線の部品は重ならない）
+  fuso: {
+    hull: [[0, 0], [0.02, 0.22], [0.06, 0.5], [0.11, 0.75], [0.15, 0.9], [0.19, 1], [0.86, 1], [0.92, 0.88], [0.965, 0.66], [1, 0.36]],
+    forecastle: [0.49, 'line'], bridge: [0.285, 0.37, 0.42], funnels: [[0.43, 0.3, 0.05]],
+    mounts: [[0.165, 0.4, 1], [0.245, 0.4, 1], [0.525, 0.4, 1], [0.615, 0.4, -1], [0.745, 0.4, -1], [0.825, 0.4, -1]], tubes: [], tubs: [],
+    hatches: [], masts: [0.575], derricks: [],
+  },
+  // 重巡 最上（v0.8.2 S2b の D-A2。1944 年の航空巡洋艦。200.6 × 20.2 m＝401.2 × 40.4 単位）: 前部の連装の主砲塔 3（13%・20.5%・27.5%）・艦橋 30〜35.5%・傾いた太い煙突 1（43%）・
+  // 船首楼の段 50%・主檣 51%（後部の飛行甲板 60〜93%・カタパルト・高角砲は capital-art-config）
+  mogami: {
+    hull: [[0, 0], [0.025, 0.24], [0.07, 0.52], [0.12, 0.76], [0.16, 0.92], [0.19, 1], [0.86, 1], [0.93, 0.86], [0.975, 0.66], [1, 0.42]],
+    forecastle: [0.5, 'line'], bridge: [0.3, 0.355, 0.5], funnels: [[0.43, 0.36, 0.07]],
+    mounts: [[0.13, 0.42, 1], [0.205, 0.42, 1], [0.275, 0.42, 1]], tubes: [], tubs: [],
+    hatches: [], masts: [0.51], derricks: [],
   },
   // 輸送船（敵は灰赤・味方は薄い青。味方の 1 枚は寸法を厳守＝名前と状態の行の y）: 丸い艦首と艦尾・船倉のハッチ 4（前 2・後ろ 2）・中央やや後ろの船橋 50〜62% と煙突 66%・マスト 2 と荷役の腕
   transport: {

@@ -34,7 +34,7 @@ import {
   generateUiTextures,
 } from '../assets/placeholders';
 import { generatePlayerBoatTexture } from '../assets/boat-art';
-import { generateDestroyerTexture, generateExtraDestroyerTextures, generatePicketTextures } from '../assets/destroyer-art';
+import { generateColumnTextures, generateDestroyerTexture, generateExtraDestroyerTextures, generatePicketTextures } from '../assets/destroyer-art';
 import { generateTransportTexture } from '../assets/transport-art';
 import { generateAircraftTexture } from '../assets/aircraft-art';
 import { generateGunButtonTexture } from '../assets/weapon-textures';
@@ -108,6 +108,7 @@ export class BootScene extends Phaser.Scene {
     generateDestroyerTexture(this, { lengthUnits: enemy.length_m * spriteScale, beamUnits: enemy.beam_m * spriteScale });
     generateExtraDestroyerTextures(this, gameData, spriteScale); // 米駆逐艦 tex-destroyer-us（v0.7.0 S2a。jp_06。遊べる任務の駆逐艦の id から 1 枚ずつ＝D3）
     generatePicketTextures(this, gameData, spriteScale); // ハードの駆潜艇 tex-subchaser（v0.8.1 S2b。us_06。hard の picket_enemy_id から 1 枚＝D-A2）
+    generateColumnTextures(this, gameData, spriteScale); // 列の戦艦 tex-battleship-fuso・重巡 tex-cruiser-mogami（v0.8.2 S2b。us_05。transit.column から 1 枚ずつ＝D-A1・D-A2）
     const torpedo = getTorpedoRecord(gameData, mission.torpedoId);
     generateTorpedoTextures(this, torpedo.length_m * spriteScale);
     // 台座の輪: 静音帯の上限（speed_bands_kt.silent_max / speed_max_kt）に当たる倒し量。デッドゾーンの再スケールを逆に掛ける

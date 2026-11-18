@@ -68,9 +68,10 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
         ['battleship', 6, { onHits: [3, 4], chance: [0.03, 0.06] }], ['battleship', 6, { onHits: [3, 4], chance: [0.03, 0.06] }], ['destroyer', 2, null],
       ]);
     }
-    // S0 は絵の鍵が既定（戦艦・重巡の絵は S2b）・弾薬庫の上書き（?debug&boom）は確率だけ 1・当たりの倍率の上書き（?debug&shiphit）は寸法の当たりだけ
+    // 絵の鍵（v0.8.2 S2b で直した: S0〜S2 は既定の駆逐艦の絵＝戦艦・重巡は S2b の D-A1・D-A2 で ship-art-config の表に足した＝記録の id から）・弾薬庫の上書き（?debug&boom）は確率だけ 1・
+    // 当たりの倍率の上書き（?debug&shiphit）は寸法の当たりだけ
     const boom = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05'), null, false, { magazineBoom: true, shipHitScale: 1 })!;
-    expect(boom.kits.map((k) => k.artKey)).toEqual(NAMES.map(() => 'tex-destroyer'));
+    expect(boom.kits.map((k) => k.artKey)).toEqual(['tex-destroyer', 'tex-destroyer', 'tex-destroyer', 'tex-cruiser-mogami', 'tex-destroyer', 'tex-battleship-fuso', 'tex-battleship-fuso']);
     expect(boom.kits[6]!.magazine).toEqual({ onHits: [3, 4], chance: [1, 1] });
     expect(boom.kits[6]!.spec.hitScale).toBe(1);
     expect(boom.kits[4]!.screenAi).toEqual(shipAiParamsFromData(getEnemyRecord(gameData, 'ijn_destroyer'))); // 時雨の見張りの AI＝記録の値そのまま（史実モードなし）

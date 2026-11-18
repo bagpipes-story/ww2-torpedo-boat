@@ -123,8 +123,8 @@ export class Destroyer {
     return this.hitsTaken >= this.spec.hitsToSink;
   }
 
-  /** 沈没演出（図形: 縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る。nowS は沈み始めた時計（世界の stepTimeS） */
-  playSinking(nowS: number, onDone: () => void): void {
+  /** 沈没演出（図形: 縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る。nowS は沈み始めた時計（世界の stepTimeS）。durationScale は長さの倍（v0.8.2 S2b: 弾薬庫の誘爆だけ 0.5） */
+  playSinking(nowS: number, onDone: () => void, durationScale = 1): void {
     if (this.sinking) return;
     this.sinking = true;
     this.sinkStartS = nowS;
@@ -136,7 +136,7 @@ export class Destroyer {
       scaleY: this.sprite.scaleY * SINK_SCALE_TO,
       alpha: 0,
       angle: this.sprite.angle + SINK_TILT_DEG,
-      duration: SINK_DURATION_MS,
+      duration: SINK_DURATION_MS * durationScale,
       ease: 'Sine.easeIn',
       onComplete: () => {
         this.sunk = true;

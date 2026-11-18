@@ -98,7 +98,7 @@ describe('U7: 魚雷の命中の水柱', () => {
     expect(ms).toContain("onTorpedoHit: (x, y, dud) => {\n      playExplosion(this, x, y, dud, 'torpedo');");
     const ef = code('src/systems/explosion-fx.ts');
     expect(ef).toContain('if (torpedo && !dud) this.column.play(x, y);');
-    expect(ef).toContain('this.blast.play(i, x, y, dud, torpedo);');
+    expect(ef).toContain('this.blast.play(i, x, y, dud, torpedo, size);'); // v0.8.2 S2b で直した: 誘爆の大きい版の大きさの倍 size（既定 1＝今の値。systems/magazine-fx だけが 1 でない値を渡す）
     const bf = code('src/systems/blast-fx.ts');
     expect(bf).toContain('if (!torpedo) this.sparks.drops(x, y, SPARK_DROPS_BIG);');
     expect(bf).toContain('if (k === KIND_BIG && a < BLAST_COLUMN_S) {');

@@ -9,20 +9,28 @@ import {
 import { hullHalfWidthAt, hullOutline, type Pt } from './boat-shape';
 
 export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki' | 'subchaser'; // 駆潜艇は v0.8.1 S2b（us_06 のハード）
+/** 戦艦 扶桑型・重巡 最上（v0.8.2 S2b。us_05。置き方は assets/capital-plan。同じ DestroyerPlan の形で destroyer-paint が描く） */
+export type CapitalKind = 'fuso' | 'mogami';
 
-/** 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ） */
+/**
+ * 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ）。砲の dx・bw は連装の砲身の間隔（中心から）と太さ（v0.8.2 S2b の戦艦・重巡の砲塔だけ。無ければ destroyer-art-config の値）。
+ * v0.8.2 S2b の 3 つ: pagoda 塔の艦橋（tiers 段）・casemate 舷側の砲郭の列（n 門・side は右舷 1・左舷 −1）・deck 後部の飛行甲板（rails 本のレール）
+ */
 export type DestroyerPart =
-  | { readonly t: 'gun'; readonly style: DestroyerGunStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly dir: 1 | -1; readonly barrel: number }
+  | { readonly t: 'gun'; readonly style: DestroyerGunStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly dir: 1 | -1; readonly barrel: number; readonly dx?: number; readonly bw?: number }
   | { readonly t: 'tubes'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: number; readonly shield: boolean }
   | { readonly t: 'funnel'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'bridge'; readonly style: DestroyerBridgeStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'tub'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'mast'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'boat'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
-  | { readonly t: 'locker'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number };
+  | { readonly t: 'locker'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+  | { readonly t: 'pagoda'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly tiers: number }
+  | { readonly t: 'casemate'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: number; readonly side: 1 | -1 }
+  | { readonly t: 'deck'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly rails: number };
 
 export interface DestroyerPlan {
-  readonly kind: DestroyerKind;
+  readonly kind: DestroyerKind | CapitalKind;
   readonly L: number;
   readonly B: number;
   readonly detail: DestroyerDetail;

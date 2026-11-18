@@ -24,7 +24,7 @@ const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Record<string, u
 const SHIP_TEX = /^tex-(destroyer|transport|subchaser|battleship|cruiser)/;
 
 describe('kits（L19）: us_05 の列の艦ごとの記録', () => {
-  it('ノーマル 7 隻: 寸法・列の AI・砲は kits の同じ物、KPI の旗は駆逐艦の記録だけ、レーダーはみな艦、絵の鍵は S2 は既定の駆逐艦の絵、艦種は記録の ship_class', () => {
+  it('ノーマル 7 隻: 寸法・列の AI・砲は kits の同じ物、KPI の旗は駆逐艦の記録だけ、レーダーはみな艦、絵の鍵は記録の id から（S2b から戦艦・重巡の絵）、艦種は記録の ship_class', () => {
     const s = setupOf('us_05');
     const keys: string[] = [];
     const g = groupOf(s, undefined, undefined, keys);
@@ -39,8 +39,10 @@ describe('kits（L19）: us_05 の列の艦ごとの記録', () => {
     expect(g.ships.map((d) => [d.spec.lengthM, d.spec.hitsToSink])).toEqual([[118, 2], [118, 2], [118, 2], [200.6, 3], [118, 2], [212.75, 6], [212.75, 6]]);
     expect([-1, 0, 1, 2, 3, 4, 5, 6, 7].map((i) => g.kpiAt(i))).toEqual([false, true, true, true, false, true, false, false, false]);
     expect(Array.from(g.kits.radarKind)).toEqual(Array(7).fill(RADAR_KIND_SHIP));
-    expect(g.kits.artKeys).toEqual(Array(7).fill(SHIP_ART_DEFAULT_KEY));
-    expect(keys.filter((k) => SHIP_TEX.test(k))).toEqual(Array(7).fill(SHIP_ART_DEFAULT_KEY)); // 絵は駆逐艦の大きさの代用（当たりは記録の大きさ＝S2b まで）
+    // v0.8.2 S2b で直した（S2 は 7 隻とも既定の駆逐艦の絵の代用＝当たりと絵の大きさが食い違った）: 戦艦・重巡は記録 × sprite_scale の新しい絵（D-A1・D-A2）、駆逐艦 4 隻は陽炎型のまま
+    const want = ['tex-destroyer', 'tex-destroyer', 'tex-destroyer', 'tex-cruiser-mogami', SHIP_ART_DEFAULT_KEY, 'tex-battleship-fuso', 'tex-battleship-fuso'];
+    expect(g.kits.artKeys).toEqual(want);
+    expect(keys.filter((k) => SHIP_TEX.test(k))).toEqual(want);
     expect(g.kits.classes).toEqual(['destroyer', 'destroyer', 'destroyer', 'heavy_cruiser', 'destroyer', 'battleship', 'battleship']);
     expect(g.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, ...kits.map((k) => k.passRadius2)));
     expect(g.passRadius2).toBe(kits[5]!.passRadius2);

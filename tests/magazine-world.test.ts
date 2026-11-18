@@ -4,18 +4,21 @@
 // - 乱数は seed+44 の系列だけ（同じ seed の SeededRng の写しと同じ結果）。誘爆はその場で今の沈む道（playSinking＝sinking・沈み始めた秒）。記録は艦ごとの秒・何本目・引いた回数・確率の和。
 // - ?debug&boom（magazineBoom）は確率 1＝3 本目で必ず誘爆。
 // - ほかの任務は隊の magazine が null（作らない＝系列も作らない）・torpedo-hits の式は takeHit だけ。
+// - v0.8.2 S2b（L32・L33）: 誘爆で沈む艦だけ沈む tween の長さが MAGAZINE_SINK_SCALE（0.5）倍＝playSinking の 3 つ目の引数（沈む本数に届いた沈み方とほかの任務は 1＝今の 2 秒）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { hasHardVariant } from '../src/config/mission-data';
 import type { BoatState } from '../src/core/boat-motion';
 import type { ShotRecord } from '../src/core/hit-rate';
+import { MAGAZINE_SINK_SCALE } from '../src/config/capital-art-config';
+import { shipArtKey } from '../src/config/ship-art-config';
 import { MAGAZINE_SEED_OFFSET } from '../src/core/magazine-detonation';
 import { SeededRng } from '../src/core/rng';
 import { createTorpedoState, type TorpedoState } from '../src/core/torpedo';
 import { ShipMagazine } from '../src/systems/ship-magazine';
 import { torpedoEventsFor, type TorpedoHitWorld } from '../src/systems/torpedo-hits';
 import type { WorldEvents } from '../src/systems/world-events';
-import { groupOf, sceneOf, setupOf, type ColGroup } from './column-world-kit';
+import { DestroyerGroup, groupOf, sceneOf, setupOf, type ColGroup } from './column-world-kit';
 import { code } from './core-rules-kit';
 import { chain } from './torpedo-free-kit';
 
@@ -144,7 +147,9 @@ describe('作る世界（L17・L21）', () => {
   });
   it('torpedo-hits の 1 行（takeHit が先・誘爆の右は弾薬庫のある隊だけ）・終わり際の当たりは弾薬庫を読まない・world-enemies は ShipMagazine.of だけで作る', () => {
     const s = code('src/systems/torpedo-hits.ts');
-    expect(s).toContain('if (d.takeHit() || (g.magazine?.roll(target, d.hitsTaken ?? 0, w.stepTimeS) ?? false)) {');
+    // v0.8.2 S2b で直した（L32: 誘爆の沈む長さ 0.5 倍のために 1 行を 3 行に。takeHit が先・沈む命中では引かないのは同じ）
+    expect(s).toContain('const sunk = d.takeHit();\n        const boom = !sunk && (g.magazine?.roll(target, d.hitsTaken ?? 0, w.stepTimeS) ?? false);\n        if (sunk || boom) {');
+    expect(s).toContain('}, boom ? MAGAZINE_SINK_SCALE : 1);');
     expect(s.split('magazine').length - 1).toBe(2); // 型の 1 つと命中の 1 行
     const late = s.slice(s.indexOf('onLateHit:'), s.indexOf('onMiss:'));
     expect(late).not.toContain('magazine');
@@ -152,5 +157,52 @@ describe('作る世界（L17・L21）', () => {
     expect(we).toContain('const magazine = ds && destroyers ? ShipMagazine.of(s.transit?.column, ds.starts.length, destroyers.total, seed) : null;');
     expect(code('src/systems/ship-magazine.ts')).toContain('this.rng = new SeededRng((seed + MAGAZINE_SEED_OFFSET) >>> 0);');
     expect(MAGAZINE_SEED_OFFSET).toBe(44);
+  });
+});
+
+describe('誘爆の沈む長さ（v0.8.2 S2b の L32）', () => {
+  const torp = (): TorpedoState => ({ ...createTorpedoState(), dud: false, rangeAtLaunchM: 900, kpiTarget: false });
+  /** 1 隻の偽の隊（sinksAt 本目で沈む・弾薬庫は boomAt 本目で誘爆＝null なら弾薬庫なし）。playSinking の引数を残す */
+  function oneShip(sinksAt: number, boomAt: number | null | undefined): { hit: () => void; sinks: unknown[][]; rolls: number[] } {
+    const sinks: unknown[][] = [];
+    const rolls: number[] = [];
+    let hits = 0;
+    const d = { get hitsTaken(): number { return hits; }, takeHit: (): boolean => ++hits >= sinksAt, playSinking: (n: number, _f: () => void, scale?: number): void => void sinks.push([n, scale]) };
+    const magazine = boomAt === undefined ? undefined : boomAt === null ? null : { roll: (_i: number, h: number): boolean => (rolls.push(h), h === boomAt) };
+    const g = { ships: [d], allOut: false, allSettled: false, magazine };
+    const w = { shots: [] as ShotRecord[], hits: 0, slowMoLeftS: 0, setup: { slowMoSeconds: 1 }, destroyers: g, launcher: { clearQueue: () => undefined }, dawn: { reached: false, retireHeadingDeg: NaN }, stepTimeS: 7.5 };
+    const ev = torpedoEventsFor(w as unknown as TorpedoHitWorld, { onTorpedoHit: () => undefined, onDestroyerSunk: () => undefined } as unknown as WorldEvents);
+    return { hit: () => ev.onHit(0, 0, 0, torp()), sinks, rolls };
+  }
+  it('torpedo-hits: 沈む本数に届いた沈み方は 1（弾薬庫の無い隊・null の隊・弾薬庫のある隊でも）、誘爆だけ MAGAZINE_SINK_SCALE。沈む命中では引かない（takeHit が先）', () => {
+    expect(MAGAZINE_SINK_SCALE).toBe(0.5);
+    for (const boomAt of [undefined, null]) {
+      const a = oneShip(2, boomAt);
+      a.hit();
+      a.hit();
+      expect(a.sinks, String(boomAt)).toEqual([[7.5, 1]]);
+    }
+    const b = oneShip(6, 3);
+    for (let k = 0; k < 3; k++) b.hit(); // 誘爆の後の当たりは来ない（沈み始めた艦は out＝魚雷が当たらない。偽の艦は out を持たないので 3 本で止める）
+    expect([b.sinks, b.rolls]).toEqual([[[7.5, MAGAZINE_SINK_SCALE]], [1, 2, 3]]);
+    const c = oneShip(1, 1);
+    c.hit();
+    expect([c.sinks, c.rolls]).toEqual([[[7.5, 1]], []]);
+  });
+  it('本物の Destroyer: 沈む tween は誘爆した戦艦だけ 1,000 ms（今の 2,000 ms の 0.5 倍）、駆逐艦と重巡は 2,000 ms（?debug&boom の us_05）', () => {
+    const durations: number[] = [];
+    const scene = { add: { image: () => chain, text: () => chain, graphics: () => chain }, tweens: { add: (c: { duration: number }) => (durations.push(c.duration), chain) } };
+    const s = setupOf('us_05', false, undefined, { magazineBoom: true });
+    const g = new DestroyerGroup(scene, s.destroyer!, s.transport, s.transit ?? null, s.mission.bounds, new SeededRng(2), new SeededRng(18), chain, shipArtKey(s.mission.enemyId), s.pickets ?? null);
+    g.magazine = ShipMagazine.of(s.transit!.column, 0, g.total, 1);
+    for (const d of g.ships) d.offMap = false;
+    const w = { shots: [] as ShotRecord[], hits: 0, slowMoLeftS: 0, setup: { slowMoSeconds: 1 }, destroyers: g, launcher: { clearQueue: () => undefined }, dawn: { reached: false, retireHeadingDeg: NaN }, stepTimeS: 3 };
+    const ev = torpedoEventsFor(w as unknown as TorpedoHitWorld, { onTorpedoHit: () => undefined, onDestroyerSunk: () => undefined } as unknown as WorldEvents);
+    const hit = (i: number, n: number): void => { for (let k = 0; k < n; k++) ev.onHit(i, 0, 0, torp()); };
+    hit(0, 2);
+    hit(MOGAMI, 3);
+    hit(FUSO, 3);
+    expect(durations).toEqual([2000, 2000, 1000]);
+    expect([g.ships[0]!.sinking, g.ships[MOGAMI]!.sinking, g.ships[FUSO]!.sinking, g.ships[FUSO]!.sinkStartS]).toEqual([true, true, true, 3]);
   });
 });

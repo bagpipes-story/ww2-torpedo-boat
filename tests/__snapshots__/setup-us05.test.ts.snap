@@ -681,7 +681,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -869,7 +869,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -969,7 +969,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -1709,7 +1709,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -1897,7 +1897,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -1997,7 +1997,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -2737,7 +2737,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -2925,7 +2925,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -3025,7 +3025,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -3765,7 +3765,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -3953,7 +3953,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -4053,7 +4053,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -4795,7 +4795,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -4983,7 +4983,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -5083,7 +5083,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -5922,7 +5922,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -6110,7 +6110,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -6210,7 +6210,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -7049,7 +7049,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -7237,7 +7237,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -7337,7 +7337,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -8176,7 +8176,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 58081,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-cruiser-mogami",
     "magazine": null
    },
    {
@@ -8364,7 +8364,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,
@@ -8464,7 +8464,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      }
     },
     "passRadius2": 77813.1025,
-    "artKey": "tex-destroyer",
+    "artKey": "tex-battleship-fuso",
     "magazine": {
      "onHits": [
       3,

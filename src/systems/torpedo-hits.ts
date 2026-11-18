@@ -6,6 +6,8 @@
 // 確定するのは、最後の艦の演出の終わりではなく、終わり際の当たりの窓が閉じた後（destroyer-step が毎ステップ見る）。
 // v0.8.2 S2（us_05 の戦艦）: 沈む本数に届かなかった命中だけ、隊の弾薬庫（systems/ship-magazine。規則のある艦のいる隊だけ）が誘爆を引き、誘爆なら同じ沈む道へ。takeHit が必ず先
 // （無い任務は g.magazine が null で今の式）。不発・終わり際の当たりは引かない。
+// v0.8.2 S2b（D-A4・L32）: 誘爆で沈む艦だけ沈む tween を MAGAZINE_SINK_SCALE（0.5）倍に（playSinking の 3 つ目の引数。沈む本数に届いた沈み方とほかの任務は 1＝今の 2 秒）。
+import { MAGAZINE_SINK_SCALE } from '../config/capital-art-config';
 import { shotKpiTarget } from '../core/dawn-withdraw';
 import type { ShotRecord } from '../core/hit-rate';
 import type { TorpedoState } from '../core/torpedo';
@@ -14,7 +16,7 @@ import type { WorldEvents } from './world-events';
 
 /** 当たった艦と隊の形（systems/destroyer-group・entities/destroyer がそのまま満たす。v0.6.2 実機 1 回目で構造の型に。tests から作れる） */
 export interface TorpedoHitGroup {
-  readonly ships: readonly { takeHit(): boolean; readonly hitsTaken?: number; playSinking(nowS: number, onDone: () => void): void }[];
+  readonly ships: readonly { takeHit(): boolean; readonly hitsTaken?: number; playSinking(nowS: number, onDone: () => void, durationScale?: number): void }[];
   readonly allOut: boolean;
   readonly allSettled: boolean;
   /** 止まった艦への魚雷の命中を数える（v0.8.1 S2。us_06。systems/destroyer-anchor。無い任務は null・無い） */
@@ -56,11 +58,13 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
       if (!dud && g && d) {
         w.hits++;
         w.slowMoLeftS = w.setup.slowMoSeconds;
-        if (d.takeHit() || (g.magazine?.roll(target, d.hitsTaken ?? 0, w.stepTimeS) ?? false)) {
+        const sunk = d.takeHit();
+        const boom = !sunk && (g.magazine?.roll(target, d.hitsTaken ?? 0, w.stepTimeS) ?? false);
+        if (sunk || boom) {
           d.playSinking(w.stepTimeS, () => {
             // 最後の艦の演出が終わった（走っている魚雷の外れの確定は終わり際の当たりの窓の後。destroyer-step。v0.6.2 実機 1 回目までは、ここで確定していた）
             if (g.allSettled) events.onDestroyerSunk();
-          });
+          }, boom ? MAGAZINE_SINK_SCALE : 1);
           // すべて沈み始めたら残りの一斉発射は撃たない（残りの艦がいれば撃ち続けられる）
           if (g.allOut) w.launcher.clearQueue();
         }
