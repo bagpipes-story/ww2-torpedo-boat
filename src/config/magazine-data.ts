@@ -1,7 +1,7 @@
 // 戦艦の弾薬庫（v0.8.2。us_05「スリガオ海峡・最初の接触」の山城・扶桑。ユーザーの決め U1・spec-v0820 §4.4 D-G1〜D-G4）の記録の読み出しと起動時の検査 V-M1〜V-M3:
 // enemies.json の記録の magazine（{ on_hits, chance, source }）＝魚雷の命中（不発でない）で艦の hitsTaken が on_hits のどれかになり、まだ沈む本数に届かないとき、
 // その chance で弾薬庫が誘爆して轟沈する。規則は記録ごと（v0.10 の殴り込みが同じ記録を使える・大和型の記録には置かない＝ユーザーの例外。V-M3）。
-// ここは数を読むだけ（確率の引きは S1 の core/magazine・乱数 seed+33 と世界の配線は S2 の systems/ship-magazine）。読むのは config/column-mission-data（列の艦の kits）と Boot。
+// ここは数を読むだけ（確率の引きは S1 の core/magazine-detonation・乱数 seed+44 と世界の配線は S2 の systems/ship-magazine）。読むのは config/column-mission-data（列の艦の kits）と Boot。
 // ?debug&boom（MagazineSetupOptions.magazineBoom。URL の配線は S2）は確率を 1 にするだけ（規則の無い記録は null のまま＝今の任務は変わらない）。
 import type { GameData } from './game-data';
 import { isEnemyAiDataRecord } from '../core/ship-ai';

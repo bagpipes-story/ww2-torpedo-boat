@@ -1,7 +1,7 @@
 // 報告・無線・中継（v0.8.2。us_05「スリガオ海峡・最初の接触」の type recon_and_attack。spec-v0820 §4.5 D-N1〜D-N7・§5.3）の任務の読み出し: 任務の v0_1_prototype.recon があれば、
 // 報告の条件（艦種 identify_class の艦を目で確かめ、レーダーで track_s 追う）・無線の故障（damage が radio_min_damage 以上の砲弾 1 発ごとに radio_fail_chance）・中継の輪（relay）から
 // 世界の値（ReconSetup）を組み、起動時の検査 V-N1〜V-N5 をする（例外は鍵を名指す日本語）。block は生の proto から読む（PrototypeMission に鍵は足さない＝transit-mission-data と同じ作法）。
-// S0 では世界は何も読まない（setup の鍵が出るだけ。規則は S1 の core/recon-report、配線は S2 の systems/world-recon・乱数 seed+34）。
+// S0 では世界は何も読まない（setup の鍵が出るだけ。規則は S1 の core/recon-report、配線は S2 の systems/world-recon・乱数 seed+45）。
 import type { GameData, PrototypeMission } from './game-data';
 import { getPrototypeMission, hasHardVariant } from './mission-data';
 import { SHIP_CLASSES, getColumnPlan, type ShipClass } from './column-mission-data';
