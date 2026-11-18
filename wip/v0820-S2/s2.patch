@@ -582,6 +582,202 @@ index db9e009..8109cd3 100644
    /** systems/destroyer-group の radarKindAt と同じ式（v0.8.1 S2b。tests/picket-world が文と値を突き合わせる） */
    radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
  }
+diff --git a/tests/column-screen.test.ts b/tests/column-screen.test.ts
+index 30f0b15..56c68ce 100644
+--- a/tests/column-screen.test.ts
++++ b/tests/column-screen.test.ts
+@@ -2,7 +2,7 @@
+ // rejoin_s＝ノーマルは時雨〔列の 5 隻目＝bit 4〕・ハードは見張りの駆逐艦〔8 隻目＝bit 7〕も・40 秒）と素の艦（AI の出力の playerDetected・沈み始めた）で固定ステップに回す。
+ // 見つけて離れる・離れている間にまた見つければ見失った時計が戻る・見失って体感の時計で 40 秒で戻る（命中スローで延びる）・戻った艦はまた離れる（回数）・沈み始めた艦は離れも戻りもしない・
+ // 夜明け（誰も離れない・離れていた艦はそのステップに戻った扱い）・海域の外の艦は読まない・決定性（2 回と夜ごとの戻し）・読み口が entities/destroyer と core/ship-ai の名前のまま・
+-// step の本体に確保なし・S1 ではゲームの誰も import しない（lead の L10。S2 の systems/column-roles が置き換える）。
++// step の本体に確保なし・S2 から import するのは systems/column-roles だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。
+ import { describe, expect, it } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+ import { getColumnPlan } from '../src/config/column-mission-data';
+@@ -211,7 +211,7 @@ describe('決定性・読み口・source', () => {
+     expect(imports(s)).toEqual(['./transit-data']);
+     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|SeededRng|\brng\b/);
+   });
+-  it('S1 ではゲームの誰も import しない（lead の L10＝束は S0 とバイトで同じ。S2 の systems/column-roles が置き換える）', () => {
+-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/column-screen')))).toEqual([]);
++  it('S2 から import するのは systems/column-roles だけ（lead の L26。S1 は誰も import しなかった＝束は S0 とバイトで同じだった）', () => {
++    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/column-screen')))).toEqual(['src/systems/column-roles.ts']);
+   });
+ });
+diff --git a/tests/jp01-mission.test.ts b/tests/jp01-mission.test.ts
+index 0c4bdb6..0e745aa 100644
+--- a/tests/jp01-mission.test.ts
++++ b/tests/jp01-mission.test.ts
+@@ -240,7 +240,8 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
+     // 世界の配線（systems/mission-world の getter）: 呼びかけは決着の生の真偽、撃ち尽くしは輸送隊では偽
+     const world = readFileSync('src/systems/mission-world.ts', 'utf8');
+     // 書き方の揺れ（空白・改行）では落ちない形で、配線（輸送隊なら決着／偽）だけを見る。v0.6.9 S5a: 揚陸の任務（jp_04。this.landing）の枝が先に付いた（揚陸の無い任務は null で輸送隊の枝へ）
+-    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone;/);
++    // v0.8.2 S2（us_05 の報告の任務。lead の L22）: 敵の側の目標の後ろに「報告が届いた」の枝（recon の無い任務は null＝objectiveDone || false で同じ値）
++    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
+     expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.landing \? false : this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
+   });
+   it('達成（Result の objectiveDone。systems/mission-telemetry）は終了理由から: 帰投して上陸がノルマ以上。2/3 で沈めば達成でない（帰投 700 > 沈没 580）、3/3 決着でも帰投前は呼びかけだけ', () => {
+diff --git a/tests/kpi-target.test.ts b/tests/kpi-target.test.ts
+index 0bb9a43..b42df11 100644
+--- a/tests/kpi-target.test.ts
++++ b/tests/kpi-target.test.ts
+@@ -63,7 +63,13 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も
+         expect(s.destroyer.shipAi, `${id} ${hard} ${historical}`).toEqual(shipAiParamsFromData(rec, getEvasionMultiplier(gameData, historical)));
+         const tag = `${id}${hard ? '&hard' : ''}${historical ? '&hist' : ''}`;
+         rows.push([tag, s.mission.enemyId, 'escort', r2(mpsToKt(Math.min(...targetSpeeds(s.destroyer.shipAi))))]);
+-        if (s.transit) rows.push([tag, s.mission.enemyId, 'column', r2(mpsToKt(Math.min(s.transit.speedMps, ...targetSpeeds(s.transit.shipAi))))]);
++        // v0.8.2 S2（L19・spec-v0820 D-K2）: 片道の列（us_05）の艦は艦ごとの記録の AI（kits の列の AI・見張りの AI）。KPI に数える艦（駆逐艦の記録）だけを表に（戦艦・重巡は旗が偽）
++        const col = s.transit?.column;
++        if (col) for (const k of col.filter((x) => x.kpi)) {
++          rows.push([tag, k.enemyId, 'column', r2(mpsToKt(Math.min(s.transit!.speedMps, ...targetSpeeds(k.lineAi))))]);
++          if (k.screenAi) rows.push([tag, k.enemyId, 'screen', r2(mpsToKt(Math.min(...targetSpeeds(k.screenAi))))]);
++        }
++        else if (s.transit) rows.push([tag, s.mission.enemyId, 'column', r2(mpsToKt(Math.min(s.transit.speedMps, ...targetSpeeds(s.transit.shipAi))))]);
+       }
+     }
+   }
+@@ -71,8 +77,9 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も
+     const uniq = [...new Set(rows.map(([t, r, part, kt]) => `${t.split('&')[0]} ${r} ${part} ${kt}`))];
+     expect(uniq).toEqual([
+       'us_01 ijn_destroyer escort 15', 'us_02 ijn_destroyer escort 15', 'us_04 ijn_destroyer escort 15', 'us_04 ijn_destroyer column 15',
+-      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S0 の世界の列の艦はみな ijn_destroyer の形（最大 18 kt）。艦ごとの記録（重巡 12・戦艦 14 kt）は S2 の kits
+-      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15',
++      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S2 から列の艦は kits の艦ごとの AI: KPI の駆逐艦は列の AI（巡航 25・最大は列の 18 kt）の
++      // 回避 25 − 10 ＝ 15 kt、見張り（時雨・ハードの 8 隻目）の AI も 15 kt（spec D-K2 の「18 − 10 ＝ 8」は巡航を列の速さと読んだ見込み＝実際は記録の巡航）。重巡 12・戦艦 14 kt は KPI の外
++      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15', 'us_05 ijn_destroyer screen 15',
+       'us_06 ijn_destroyer_mutsuki_enemy escort 15', 'jp_06 us_destroyer escort 8',
+     ]);
+     for (const [t, , part, kt] of rows) expect(ktToMps(kt), `${t} ${part}`).toBeGreaterThanOrEqual(MIN);
+diff --git a/tests/landing-step-order.test.ts b/tests/landing-step-order.test.ts
+index 7d3f58e..22721ba 100644
+--- a/tests/landing-step-order.test.ts
++++ b/tests/landing-step-order.test.ts
+@@ -78,7 +78,8 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', ()
+   });
+   it('配線: 呼びかけ（returnCallDone）は揚陸の決着が先、撃ち尽くしは揚陸の任務で立てない、達成は揚陸完了して帰投（米PT の隊の枝より先）', () => {
+     const w = code('systems/mission-world.ts');
+-    expect(w).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone;/);
++    // v0.8.2 S2（us_05 の報告の任務。lead の L22）: 敵の側の目標の後ろに「報告が届いた」の枝（recon の無い任務は null＝objectiveDone || false で同じ値）
++    expect(w).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
+     expect(w).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.landing \? false : this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
+     const o = code('systems/mission-objective.ts');
+     expectOrder(o, ['if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;', 'return w.convoy ? convoyObjectiveDone(']);
+diff --git a/tests/magazine-detonation.test.ts b/tests/magazine-detonation.test.ts
+index 1543a6c..7082a8c 100644
+--- a/tests/magazine-detonation.test.ts
++++ b/tests/magazine-detonation.test.ts
+@@ -1,7 +1,7 @@
+ // v0.8.2 S1（spec-v0820 §4.4 D-G1〜D-G3・D-G5・§9 の 4、lead の L14・L15。ユーザーの決め U1）: core/magazine-detonation の戦艦の弾薬庫の規則を、enemies.json の扶桑型の記録の magazine
+ // （3 本目 3%・4 本目 6%）と us_05 の setup の列の kits で見る。3・4 本目の命中だけ引く・規則の無い艦は引かない・確率 0 と 1（?debug&boom）でも引く回数は同じ・seed+44 の 10 万回で 3%・6% ±0.2 点
+ // （3 つの夜の種）・4 本当たった艦の轟沈 1 − 0.97 × 0.94 ＝ 8.8% ±0.3 点（10 万隻）・艦ごとの記録（誘爆の秒・何本目か・引いた回数・引いた確率の和＝探りの期待値）・source（確保なし）・
+-// S1 ではゲームの誰も import しない（lead の L10。S2 の systems/ship-magazine が置き換える）。core/magazine（v0.6.8 の機銃の弾倉）とは別のファイル（名が重なるので magazine-detonation）。
++// S2 から import するのは systems/ship-magazine だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。core/magazine（v0.6.8 の機銃の弾倉）とは別のファイル（名が重なるので magazine-detonation）。
+ import { describe, expect, it, vi } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+ import { magazineRuleOf } from '../src/config/magazine-data';
+@@ -135,8 +135,8 @@ describe('source', () => {
+     expect(s).toMatch(/import type \{ SeededRng \} from '\.\/rng'/);
+     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|\.chance\(/);
+   });
+-  it('S1 ではゲームの誰も import しない（lead の L10＝束は S0 とバイトで同じ。S2 の systems/ship-magazine が置き換える）。機銃の弾倉の core/magazine は別のまま', () => {
+-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/magazine-detonation')))).toEqual([]);
++  it('S2 から import するのは systems/ship-magazine だけ（lead の L26。S1 は誰も import しなかった）。機銃の弾倉の core/magazine は別のまま', () => {
++    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/magazine-detonation')))).toEqual(['src/systems/ship-magazine.ts']);
+     expect(code('src/core/magazine.ts')).toContain('export function createMagazine(mag: MagazineParams): MagazineState');
+   });
+ });
+diff --git a/tests/picket-world.test.ts b/tests/picket-world.test.ts
+index 0f0debc..2ddf784 100644
+--- a/tests/picket-world.test.ts
++++ b/tests/picket-world.test.ts
+@@ -214,14 +214,15 @@ describe('砲とレーダー（L42・L44）', () => {
+         if (!s.destroyer) continue;
+         seen.push(`${id}${hard ? 'h' : ''}`);
+         const g = groupOf(s);
++        const col = s.transit?.column; // v0.8.2 S2（L19）: 片道の列（us_05）の艦は艦ごとの記録の砲（systems/column-kits。tests/column-world）。ほかの任務は今の式のまま
+         for (let i = 0; i < g.total; i++) {
+-          const want = s.pickets && i >= g.picketIndex ? s.pickets.gunnery : i < g.destroyerCount ? s.destroyer.gunnery : s.transport!.gunnery;
++          const want = col ? col[i]!.gunnery : s.pickets && i >= g.picketIndex ? s.pickets.gunnery : i < g.destroyerCount ? s.destroyer.gunnery : s.transport!.gunnery;
+           expect(g.gunneryAt(i), `${id} ${hard} ${i}`).toBe(want);
+         }
+         expect(!!s.pickets, id).toBe(id === 'us_06' && hard);
+       }
+     }
+-    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_05', 'us_05h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']); // v0.8.2 S0: us_05 は列だけの隊（S0 の列の艦は今の式＝駆逐艦の砲。艦ごとの砲は S2 の column-kits）
++    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_05', 'us_05h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']); // v0.8.2 S0: us_05 は列だけの隊（S2 から艦ごとの砲＝column-kits）
+     const g = groupOf(setupOf('us_06', true));
+     expect([2, 3].map((i) => g.gunneryAt(i).guns.map((x) => [x.id, x.count]))).toEqual([[['aa_76mm', 1], ['aa_13mm', 2]], [['aa_76mm', 1], ['aa_13mm', 2]]]);
+     expect(g.gunneryAt(2)).not.toBe(g.gunneryAt(1));
+@@ -248,7 +249,9 @@ describe('砲とレーダー（L42・L44）', () => {
+     expect(kinds(groupOf(setupOf('us_06', false)))).toEqual([RADAR_KIND_SHIP, RADAR_KIND_SHIP]);
+     expect(new Set(kinds(groupOf(setupOf('us_04', true))))).toEqual(new Set([RADAR_KIND_SHIP]));
+     const line = 'radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }';
+-    expect(code('src/systems/destroyer-group.ts')).toContain(line);
++    // v0.8.2 S2（L19）: 隊は艦ごとの配列を読むだけ（kits）。式は systems/column-kits の組み立ての 1 行に移った（同じ式＝今の値）。kit（anchor-world-kit）は今の式のまま
++    expect(code('src/systems/destroyer-group.ts')).toContain('radarKindAt(i: number): number { return this.kits.radarKind[i]!; }');
++    expect(code('src/systems/column-kits.ts')).toContain('radarKind[i] = g.picketIndex >= 0 && i >= g.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP;');
+     expect(code('tests/anchor-world-kit.ts')).toContain(line);
+     expect(code('src/systems/world-radar.ts')).toContain('tg.kind[n] = g.radarKindAt ? g.radarKindAt(i) : RADAR_KIND_SHIP;');
+   });
+diff --git a/tests/radar-world.test.ts b/tests/radar-world.test.ts
+index 1fb892d..75906c2 100644
+--- a/tests/radar-world.test.ts
++++ b/tests/radar-world.test.ts
+@@ -34,7 +34,7 @@ describe('レーダーの段の順と作る所（ソース）', () => {
+   it('world-enemy-step の最後の行が w.radar?.step(w)（対空の後）。mission-world は buildRadar を退避の後・世界の絵の前に 1 回、stepFn からは呼ばない', () => {
+     const e = lines(code('systems/world-enemy-step.ts'));
+     const end = e.lastIndexOf('}');
+-    expect(e.slice(end - 2, end)).toEqual(['w.arms?.stepAir(w, dt, feelDt);', 'w.radar?.step(w);']);
++    expect(e.slice(end - 3, end)).toEqual(['w.arms?.stepAir(w, dt, feelDt);', 'w.radar?.step(w);', 'w.recon?.step(w);']); // v0.8.2 S2: レーダーの後に報告（us_05 だけ。ほかの任務は null）
+     const m = code('systems/mission-world.ts');
+     const i = m.indexOf('this.evac = buildEvac(');
+     const j = m.indexOf('this.radar = buildRadar(scene, this);');
+diff --git a/tests/radar.test.ts b/tests/radar.test.ts
+index 54526a7..6103f68 100644
+--- a/tests/radar.test.ts
++++ b/tests/radar.test.ts
+@@ -191,10 +191,12 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確
+   });
+   it('S2 から: core/radar を import するのはレーダーの世界・絵・テレメトリ、core/ship-transit は列の通過の世界とテレメトリ、core/strait-geometry は core/radar とレーダーの世界だけ（S1 は誰も import しなかった）。S3 から迎撃の模擬（ゲームの束に入らない＝scripts と tests だけが import する）も。S4 から Result の列の行（段階の数え）と衝突の危険のテレメトリ（bowOnRisk）も', () => {
+     const importers = (name: string): string[] => SRC.filter((f) => imports(code(f)).some((p) => p.endsWith(`/${name}`))).sort();
+-    // v0.8.1 S2b（L44）: 隊（destroyer-group）が艦ごとのレーダーの種類の定数だけを読む（radarKindAt＝ハードの駆潜艇は RADAR_KIND_SMALL。掃引は world-radar のまま）
+-    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-group.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
+-    expect(code('src/systems/destroyer-group.ts')).toContain("import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';");
+-    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
++    // v0.8.1 S2b（L44）: 隊（destroyer-group）が艦ごとのレーダーの種類の定数だけを読む（radarKindAt＝ハードの駆潜艇は RADAR_KIND_SMALL。掃引は world-radar のまま）。
++    // v0.8.2 S2（L19）: その定数は隊の艦ごとの配列を組む systems/column-kits へ移った（隊は配列を読むだけ）
++    expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/column-kits.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
++    expect(code('src/systems/column-kits.ts')).toContain("import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';");
++    // v0.8.2 S2（L20）: 列の見張り（systems/column-roles）が海域の中の艦（transitOnMap）を読む
++    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/column-roles.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
+     // v0.8.0 実機 1 回目: 探照灯を岸で切る（beamLengthToLand）ために destroyer-group・enemy-fire・world-enemies も（tests/strait-ip1）
+     // v0.8.1 S2: 暗い岸を背に（systems/shore-backdrop の landBehind。us_06）も
+     // v0.8.1 IP1: 岸の陰の海（core/backdrop-zone の格子と systems/backdrop-fx の境の升の割合。絵だけ＝世界は読まない＝tests/backdrop-zone）も
+diff --git a/tests/recon-report.test.ts b/tests/recon-report.test.ts
+index 0396879..2fdbda8 100644
+--- a/tests/recon-report.test.ts
++++ b/tests/recon-report.test.ts
+@@ -2,7 +2,7 @@
+ // （WorldSetup.recon＝追う 20 秒・76 mm 以上〔damage 20〕で 35%・?debug&noradio は 0・radiofail は 1）と、世界が数えて渡す見る物（視程の内の戦艦の数・最後の掃引の列の接触の数・中継の輪）で
+ // 固定ステップに回す。確かめる・20 秒は固定ステップの時計（命中スローで延びない）・接触の無いステップは数えない・無線の故障の前と後・引かない時（76 mm 未満・送った後・壊れた後）・
+ // 0 と 1 でも引く回数は同じ・中継待ちから中継・夜明けの後の中継・追い終える前の輪は何もしない・沈んだら達成でないが「届いた」は残る・決定性・読み口・source（確保なし・平方根なし）・
+-// S1 ではゲームの誰も import しない（lead の L10。S2 の systems/world-recon が置き換える）。
++// S2 から import するのは systems/world-recon・mission-objective・recon-telemetry だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。
+ import { describe, expect, it, vi } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+ import { FIXED_STEP_S } from '../src/config/step-config';
+@@ -210,7 +210,7 @@ describe('達成・決定性・source', () => {
+     expect(s).toMatch(/import type \{ SeededRng \} from '\.\/rng'/);
+     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|\.chance\(/);
+   });
+-  it('S1 ではゲームの誰も import しない（lead の L10＝束は S0 とバイトで同じ。S2 の systems/world-recon が置き換える）', () => {
+-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/recon-report')))).toEqual([]);
++  it('S2 から import するのは systems/world-recon（世界の側）・mission-objective（達成）・recon-telemetry（あと何秒）だけ（lead の L26。S1 は誰も import しなかった）', () => {
++    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/recon-report')))).toEqual(['src/systems/mission-objective.ts', 'src/systems/recon-telemetry.ts', 'src/systems/world-recon.ts']);
+   });
+ });
 diff --git a/tests/torpedo-free-kit.ts b/tests/torpedo-free-kit.ts
 index bec9e0c..4eaceb3 100644
 --- a/tests/torpedo-free-kit.ts
@@ -594,3 +790,45 @@ index bec9e0c..4eaceb3 100644
      get allOut() {
        return ships.every((s) => s.out);
      },
+diff --git a/tests/torpedo-free.test.ts b/tests/torpedo-free.test.ts
+index 88a15ef..fa691c9 100644
+--- a/tests/torpedo-free.test.ts
++++ b/tests/torpedo-free.test.ts
+@@ -231,7 +231,8 @@ describe('ソースの pin（v0.6.7 の道を変えない）', () => {
+     const s = strip('systems/torpedo-free.ts');
+     // v0.8.1 S2（spec-v0810 D-K1）: KPI の旗は core/hit-rate の kpiTargetAtLaunch（今の条件かつ狙った艦の速さ ≥ 下限。今のどの任務の駆逐艦も下限より速い＝tests/kpi-target・kpi-world）
+     expect(s).toContain('const target = g.ships[ti < 0 ? 0 : ti]!.state;');
+-    expect(s).toContain('w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(ti >= 0 && ti < g.destroyerCount, w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));');
++    // v0.8.2 S2（spec-v0820 D-K1・§9 の 11）: 狙った艦が KPI の艦かは隊の kpiAt（艦ごとの Uint8Array。今の任務は 0 ≤ ti < destroyerCount と同じ値＝tests/column-world）
++    expect(s).toContain('w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(g.kpiAt(ti), w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));');
+     expect(s).toContain('const s = w.launcher.update(realDt, boat, null, false);');
+     expect(s).toContain('s.resolved = true;');
+     expect(s).toContain('w.torpedoes.step(dt, feelDt, NO_TORPEDO_TARGETS, 0, w.torpedoEvents);');
+diff --git a/tests/transit-world.test.ts b/tests/transit-world.test.ts
+index d7ec625..9371daf 100644
+--- a/tests/transit-world.test.ts
++++ b/tests/transit-world.test.ts
+@@ -122,7 +122,9 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
+     // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）。v0.8.1 S2b（L42）: 命中の 2 つの手は隊の gunneryAt（同じ式を隊へ移した。駆潜艇は 3 つ目の枝）
+     const we = code('systems/world-enemies.ts');
+     expect(we.split('destroyers.gunneryAt(i).guns[').length - 1).toBe(2);
+-    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }");
++    // v0.8.2 S2（L19）: 艦ごとの砲は隊の kits の配列（systems/column-kits が今の 3 つ組の値＝駆逐艦は ds.gunnery の同じ物を入れる。tests/column-world が値を確かめる）
++    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return this.kits.guns[i]!; }");
++    expect(code('systems/column-kits.ts')).toContain('guns.push(k ? k.gunnery : ds.gunnery);');
+     expect(we).not.toContain('ds!.starts.length');
+   });
+ });
+diff --git a/tests/world-visuals.test.ts b/tests/world-visuals.test.ts
+index 95fa007..d4f6ed4 100644
+--- a/tests/world-visuals.test.ts
++++ b/tests/world-visuals.test.ts
+@@ -53,7 +53,7 @@ describe('systems/world-visuals（v0.6.9 S0: mission-world の見た目の同期
+     expect(bodyLines(read('world-visuals.ts'), 'updateWorldVisuals')).toEqual(['const g = w.destroyers;', ...VISUALS, 'w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）', 'w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）', 'w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）', 'w.radar?.updateVisuals(w.stepTimeS); // レーダーの輝点（v0.8.0 S2。us_04 だけ。掃引が変わった時だけ置き直す・薄れの段が変わった時だけ α）', 'w.art.update(realDt, w); // 世界の絵＝海の模様・夜明けの光・きらめき（v0.7.0 S3a。systems/world-art。全任務。夜明けの段の後＝最後）']); // S6b: 世界を渡す（▼ の報告の PT・自艇・視程。tests/landing-markers）
+   });
+   it('destroyWorldVisuals は 2ad122b の destroy() の 15 行を同じ順で持つ。最後に揚陸の 1 行（v0.6.9 S5a）', () => {
+-    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）', 'w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）', 'w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）', 'w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）']);
++    expect(bodyLines(read('world-visuals.ts'), 'destroyWorldVisuals')).toEqual([...DESTROY, 'w.landing?.destroy(); // v0.6.9 S5a（jp_04 だけ。最後に足した）', 'w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）', 'w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）', 'w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）', 'w.recon?.destroy(); // v0.8.2 S2（us_05。中継の輪）', 'w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）']); // v0.8.2 S2: レーダーの後に中継の輪（w.recon。us_05 だけ。ほかの任務は null）
+   });
+   it('mission-world の updateFrame は 入力 → 固定ステップ → 命中スローの残り → 浅瀬 → 見た目 の順、destroy は world-visuals だけ。見た目の同期・破棄はもう持たない', () => {
+     const src = read('mission-world.ts');
