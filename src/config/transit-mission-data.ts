@@ -3,11 +3,14 @@
 // 起動時の検査 V-T1〜V-T6 をする（例外は鍵を名指す日本語）。形は core/transit-data。PrototypeMission に鍵は足さない（block は生の proto から読む。evac-mission-data と同じ作法）。
 // world-setup は今夜の揺らぎの回数（transitNightRolls。列ごと 1 件）と組み立てのたびに（transitSetupPart）、Boot は全任務（ハードも）を 1 回（validateTransitMissions）呼ぶ。
 // 今夜の揺らぎ（spec §4.8）: x のずれ ÷ 画面上の列の速さ → 入りの秒（東へ進む列が東へずれれば早い）、y のずれ → 往路と復路の道の y。針路のずれは使わない（乱数の回数は列ごと 3 回のまま）。
+// 片道の列（v0.8.2。us_05。spec-v0820 §4.2 D-C2・D-C4）: transit.column のある列は enemy_start の無い列だけの隊でよく（V-T6）、復路が無い（outbound null）。艦ごとの記録・時刻・道の
+// 検査（V-C1〜V-C6）と kits は config/column-mission-data、ここは置き場（V-T6）と夜明けに退く縁（V-T2: 向かう縁）だけを見て世界の値に艦ごとの入りの秒・道のずれ・kits を足す。
 import { getEnemyRecord, getEvasionMultiplier, type GameData, type PrototypeMission } from './game-data';
 import { getPrototypeMission, hasHardVariant } from './mission-data';
+import { getColumnPlan, type ColumnKit, type ColumnPlan, type ColumnSetupOptions } from './column-mission-data';
 import type { NightOffset } from '../core/night';
 import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
-import { TRANSIT_MAX_SHIPS, readTransitBlock, transitAppearX, transitGoneX, transitLastGoneS, type TransitEdge } from '../core/transit-data';
+import { TRANSIT_MAX_SHIPS, readTransitBlock, transitAppearX, transitGoneX, transitLastGoneS, type TransitEdge, type TransitOneWayBlock } from '../core/transit-data';
 import { ktToMps } from '../core/units';
 
 /** V-T2: 道の y は縁から（列の艦の境界の余白＝表示上の船体半分 ＋ これ）以上内（今夜の y のずれ込み） */
@@ -20,8 +23,8 @@ export const TRANSIT_CHECK_UNLOAD_MIN_S = 20;
 export const TRANSIT_CHECK_START_CLEAR_M = 1500;
 /** V-T6: 列の通過と同居しない v0_1_prototype の鍵（大発・米PT・輸送隊・輸送船・僚艇・航空機だけの任務・揚陸・味方の駆逐艦） */
 export const TRANSIT_EXCLUSIVE_KEYS = ['barges', 'pt_boats', 'convoy', 'transport', 'escort', 'patrol_air', 'evac', 'landing', 'ally_destroyer'] as const;
-/** 列の通過の任務だけが hard に持つ鍵（無い任務に置けば例外） */
-export const TRANSIT_ONLY_HARD_KEYS = ['extra_transit_ships'] as const;
+/** 列の通過の任務だけが hard に持つ鍵（無い任務に置けば例外。extra_column は v0.8.2 の片道の列＝config/column-mission-data） */
+export const TRANSIT_ONLY_HARD_KEYS = ['extra_transit_ships', 'extra_column'] as const;
 
 export interface TransitLeg {
   edge: TransitEdge;
@@ -48,11 +51,17 @@ export interface TransitSetup {
   enterS: number;
   unloadS: number;
   inbound: TransitLeg;
-  outbound: TransitLeg;
+  /** 復路（片道の列は null。v0.8.2） */
+  outbound: TransitLeg | null;
   coverLeavesWithOutbound: boolean;
   vilaLabelJa: string;
   /** 列の艦の AI（enemies.json の値のまま最大速力だけ列の速さ＝往路と復路・体当たりの増速の上限。史実モードの倍率込み） */
   shipAi: ShipAiParams;
+  /** 片道の列だけ（v0.8.2。無い任務では鍵ごと出ない）: 艦ごとの入りの秒（今夜の揺らぎ込み）・道のずれ・見張りが戻る秒・列の艦ごとの記録（S2 の systems/column-kits が読む） */
+  enterAtS?: number[];
+  laneDyM?: number[];
+  rejoinS?: number;
+  column?: ColumnKit[];
 }
 
 type Rec = Record<string, unknown>;
@@ -68,8 +77,8 @@ export function transitNightRolls(data: GameData, mission: PrototypeMission): nu
   return protoOf(data, mission.id)?.['transit'] === undefined ? 0 : 1;
 }
 
-/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」 */
-export function getTransitParams(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean): TransitSetup | null {
+/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」。opts は片道の列の kits の上書き */
+export function getTransitParams(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean, opts: ColumnSetupOptions = {}): TransitSetup | null {
   const proto = protoOf(data, mission.id);
   if (!proto) return null;
   const at = `${mission.id}.v0_1_prototype`;
@@ -82,10 +91,11 @@ export function getTransitParams(data: GameData, mission: PrototypeMission, nigh
     return null;
   }
   const b = readTransitBlock(proto['transit'], `${at}.transit`);
-  // V-T6 置き場: 護衛の駆逐艦（enemy_start）のいる任務・同居しない鍵・東西に反転しない（揚陸の地は一方の縁の外）
-  if (!mission.enemyStart) bad('V-T6', 'transit は駆逐艦の任務（enemy_start＝護衛がある）だけ');
+  // V-T6 置き場: 護衛の駆逐艦（enemy_start）のいる任務か列だけの隊（片道の列＝transit.column。v0.8.2）・同居しない鍵・東西に反転しない（揚陸の地は一方の縁の外）
+  if (!mission.enemyStart && b.column === undefined) bad('V-T6', 'transit は駆逐艦の任務（enemy_start＝護衛がある）だけ');
   for (const k of TRANSIT_EXCLUSIVE_KEYS) if (proto[k] !== undefined) bad('V-T6', `${k} と transit は同居しない`);
   if (mission.night && mission.night.mirrorChance !== 0) bad('V-T6', `night.mirror_chance は 0（列は東西に反転しない。${mission.night.mirrorChance}）`);
+  if (b.column !== undefined) return oneWayParams(data, mission, b, getColumnPlan(data, mission, night, historical, opts)!, night, historical, (proto['dawn_withdraw'] as Rec | undefined)?.['retire_edge'], bad);
   // V-T1 数: ハードの足す艦・上限・enemies（護衛 1 ＋ 列）・速さは艦の最大以下
   const extraRaw = hardRaw?.['extra_transit_ships'];
   if (extraRaw !== undefined && !(typeof extraRaw === 'number' && Number.isInteger(extraRaw) && extraRaw >= 1)) bad('V-T1', `hard.extra_transit_ships は 1 以上の整数（${String(extraRaw)}）`);
@@ -140,9 +150,30 @@ export function getTransitParams(data: GameData, mission: PrototypeMission, nigh
   };
 }
 
-/** WorldSetup に展開する部分: 列の通過の無い任務は {}（transit の鍵ごと出ない＝ほかの任務の setup の snapshot が変わらない） */
-export function transitSetupPart(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean): { transit?: TransitSetup } {
-  const p = getTransitParams(data, mission, night, historical);
+/**
+ * 片道の列の世界の値（v0.8.2。V-C1〜V-C6 は config/column-mission-data が済ませた plan）。夜明けに退く縁は列の向かう縁（V-T2 の片道版: 戻らない列は先へ退く）。
+ * 往復の鍵は使わない値（spacingS・unloadS 0・outbound null・護衛は退かない）、艦ごとの入りの秒・道のずれ・kits は鍵を足す（往復の列には出ない）
+ */
+function oneWayParams(data: GameData, mission: PrototypeMission, b: TransitOneWayBlock, plan: ColumnPlan, night: NightOffset | null, historical: boolean, retire: unknown, bad: (v: string, msg: string) => never): TransitSetup {
+  const { edge, lane_y_m: laneY, heading_deg: headingDeg } = b.inbound;
+  const forward: TransitEdge = edge === 'west' ? 'east' : 'west';
+  if (retire !== forward) bad('V-T2', `dawn_withdraw.retire_edge（${String(retire)}）は片道の列の向かう縁（${forward}。夜明けに先へ退く）`);
+  const { width } = mission.bounds;
+  const dy = night ? night.dy : 0;
+  const r = getEnemyRecord(data, mission.enemyId);
+  return {
+    enemyId: mission.enemyId, ships: plan.kits.length, spacingS: 0, speedKt: b.speed_kt, speedMps: ktToMps(b.speed_kt), crossS: width / (ktToMps(b.speed_kt) * data.hitRateModel.world.time_scale),
+    enterS: plan.enterAtS[0]!, unloadS: 0, // 1 隻目の入りの秒（今夜のずれ込み）。揚陸は無い
+    inbound: { edge, laneY: laneY + dy, headingDeg, appearX: transitAppearX(edge, width, b.edge_inset_m), goneX: transitGoneX(edge, width, b.edge_inset_m) },
+    outbound: null, coverLeavesWithOutbound: false, vilaLabelJa: b.vila_label_ja,
+    shipAi: { ...shipAiParamsFromData(r, getEvasionMultiplier(data, historical)), maxSpeedMps: ktToMps(b.speed_kt) },
+    enterAtS: plan.enterAtS, laneDyM: plan.laneDyM, ...(plan.rejoinS !== null ? { rejoinS: plan.rejoinS } : {}), column: plan.kits,
+  };
+}
+
+/** WorldSetup に展開する部分: 列の通過の無い任務は {}（transit の鍵ごと出ない＝ほかの任務の setup の snapshot が変わらない）。o は片道の列の kits の上書き（v0.8.2） */
+export function transitSetupPart(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean, o: ColumnSetupOptions = {}): { transit?: TransitSetup } {
+  const p = getTransitParams(data, mission, night, historical, o);
   return p ? { transit: p } : {};
 }
 

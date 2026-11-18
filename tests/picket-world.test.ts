@@ -221,7 +221,7 @@ describe('砲とレーダー（L42・L44）', () => {
         expect(!!s.pickets, id).toBe(id === 'us_06' && hard);
       }
     }
-    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']);
+    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_05', 'us_05h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']); // v0.8.2 S0: us_05 は列だけの隊（S0 の列の艦は今の式＝駆逐艦の砲。艦ごとの砲は S2 の column-kits）
     const g = groupOf(setupOf('us_06', true));
     expect([2, 3].map((i) => g.gunneryAt(i).guns.map((x) => [x.id, x.count]))).toEqual([[['aa_76mm', 1], ['aa_13mm', 2]], [['aa_76mm', 1], ['aa_13mm', 2]]]);
     expect(g.gunneryAt(2)).not.toBe(g.gunneryAt(1));

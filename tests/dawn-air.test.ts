@@ -304,7 +304,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(s.dawnAir.playAs, id).toBe(want[id]);
       expect(new WorldDawn({ cameras: { main: {} } } as never, s, null).air, id).toBe(want[id] === 'enemy' ? DAWN_AIR_ENEMY : DAWN_AIR_OWN);
     }
-    expect(() => checkPlayableDawn(gameData, 'us_05')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ
+    expect(() => checkPlayableDawn(gameData, 'us_07')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ。v0.8.2 S0: us_05 も v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_07 へ
+    expect(() => checkPlayableDawn(gameData, 'us_05')).not.toThrow(); // v0.8.2 S0: 列だけの隊（enemy_start なし・transit.column）も退く駆逐艦の隊（夜明けの空は own のまま＝lead の L1）
     expect(() => checkPlayableDawn(gameData, 'us_06')).not.toThrow();
     expect(() => getDawnAir(gameData, 'nope')).toThrow(/nope/);
   });

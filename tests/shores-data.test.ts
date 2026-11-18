@@ -42,8 +42,10 @@ describe('既定の data（us_04）', () => {
     expect([w.mission.coast, w.coastEdgeY]).toEqual([null, NaN]);
     expect(w.shores).toEqual(s);
   });
-  it('両岸の無い任務は null・shoresSetupPart は {}（setup に shores の鍵が出ない）。今の岸（coast）の任務の岸の値は今のまま', () => {
-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04')) {
+  it('両岸の無い任務は null・shoresSetupPart は {}（setup に shores の鍵が出ない）。今の岸（coast）の任務の岸の値は今のまま。v0.8.2 S0 から us_05 も両岸（ボホール島・カミギン島）', () => {
+    const us05 = buildWorldSetup(gameData, 'us_05').shores!;
+    expect([us05.north.landM, us05.north.labels, us05.north.gaps, us05.south.labels, us05.south.gaps, us05.south.gapLabelJa]).toEqual([600, [{ labelJa: 'ボホール島', x: 3200 }], [], [{ labelJa: 'カミギン島', x: 5650 }], [{ x0: 0, x1: 4800 }], 'ミンダナオ海']);
+    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_05')) {
       for (const hard of [false, true]) {
         expect(getShoresParams(gameData, getPrototypeMission(gameData, id, hard)), id).toBeNull();
         expect(shoresSetupPart(gameData, getPrototypeMission(gameData, id, hard)), id).toEqual({});

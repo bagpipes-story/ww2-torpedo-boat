@@ -41,6 +41,7 @@ import { transitNightRolls, transitSetupPart } from '../config/transit-mission-d
 import { shoresSetupPart } from '../config/shores-mission-data';
 import { anchorSetupPart, getAnchorParams } from '../config/anchor-mission-data';
 import { backdropSetupPart } from '../config/backdrop-mission-data';
+import { reconSetupPart } from '../config/recon-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, picketSetup, type TransportSetup } from './destroyer-setup';
@@ -88,7 +89,10 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const absent = (id: string): boolean => absentHazards.includes(id);
   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
   const shipHitScale = o.shipHitScale !== undefined && o.shipHitScale > 0 ? o.shipHitScale : world.ship_hit_scale;
-  const destroyer = mission.enemyStart ? { ...destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical), objectiveSinks: mission.objectiveSinkCount ?? mission.enemyStarts.length } : null;
+  // 列の通過（v0.8.0。us_04・v0.8.2 の片道の列 us_05）。今夜の揺らぎは駆逐艦の後の 1 件。片道の列（transit.column）は enemy_start の無い列だけの隊（D-C2）＝撃沈の達成は全隻（R3）
+  const transitPart = transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical, { shipHitScale, magazineBoom: o.magazineBoom });
+  const column = transitPart.transit?.column !== undefined;
+  const destroyer = mission.enemyStart || column ? { ...destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical), objectiveSinks: mission.objectiveSinkCount ?? (column ? transitPart.transit!.ships : mission.enemyStarts.length) } : null;
   const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
   if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
   let transport: TransportSetup | null = null;
@@ -170,7 +174,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     night,
     hazardsTonight: mission.hazards.filter((h) => !absent(h)),
     absentHazards,
-    enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0]!, y: ptBoats.startY[0]! } : null,
+    enemyFrom: column ? { x: transitPart.transit!.inbound.appearX, y: transitPart.transit!.inbound.laneY + transitPart.transit!.laneDyM![0]! } : destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0]!, y: ptBoats.startY[0]! } : null,
     dawnAir: getDawnAir(data, missionId),
     airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2, boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2 }, escort),
     ...engineSetupPart(data, missionId, o),
@@ -180,12 +184,13 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o), // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
     ...evacSetupPart(data, missionId, hard), // 空襲下の退避（v0.6.11。jp_03 だけ。6 つの隊・隠れ場所・波と編隊・燃料を数えない秒・昼。無い任務では鍵ごと出ない）
     ...radarSetupPart(data, mission, o), // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
-    ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical), // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
+    ...transitPart, // 列の通過（v0.8.0。us_04・v0.8.2 の us_05。上で組んだ。無い任務では鍵ごと出ない）
     ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
     ...(destroyer ? anchorSetupPart(anchor, mission.enemyStarts.length, tr !== null) : {}), // 止まった艦（v0.8.1。us_06 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
     ...backdropSetupPart(data, mission, o), // 暗い岸を背に（v0.8.1。us_06 だけ。無い任務と backdropOff では鍵ごと出ない）
     ...seaplaneNightSetupPart(data, mission, seaplane), // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。無い任務と水上機の無い夜は鍵ごと出ない）
     ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
+    ...reconSetupPart(data, mission, o), // 報告・無線・中継（v0.8.2。us_05 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
   };
 }
 

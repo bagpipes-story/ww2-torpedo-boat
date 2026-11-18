@@ -73,20 +73,20 @@ describe('既定の data（us_04 の東京急行）', () => {
     const t = getTransitParams(gameData, getPrototypeMission(gameData, 'us_04'), { dx: 154.32, dy: -50, dh: 17 }, false)!;
     expect(t.enterS).toBeCloseTo(18 - 154.32 / SCREEN_MPS, 9);
     expect(t.enterS).toBeCloseTo(16, 9);
-    expect([t.inbound.laneY, t.outbound.laneY, t.inbound.headingDeg, t.outbound.headingDeg]).toEqual([1450, 2250, 90, 270]);
-    expect([t.inbound.appearX, t.outbound.appearX]).toEqual([150, 5850]);
+    expect([t.inbound.laneY, t.outbound!.laneY, t.inbound.headingDeg, t.outbound!.headingDeg]).toEqual([1450, 2250, 90, 270]);
+    expect([t.inbound.appearX, t.outbound!.appearX]).toEqual([150, 5850]);
     // 世界の組み立て: 列は駆逐艦（護衛）の後の 1 件（seed のある夜は護衛とは別のずれ）
     const s = buildWorldSetup(gameData, 'us_04', { sortie: directSortie('us_04', 7, 'none', false, false) });
     const o = s.night.enemyOffsets;
     expect(o.length).toBe(2);
     expect(s.transit!.enterS).toBeCloseTo(18 - o[1]!.dx / SCREEN_MPS, 9);
     expect(s.transit!.inbound.laneY).toBeCloseTo(1500 + o[1]!.dy, 9);
-    expect(s.transit!.outbound.laneY).toBeCloseTo(2300 + o[1]!.dy, 9);
+    expect(s.transit!.outbound!.laneY).toBeCloseTo(2300 + o[1]!.dy, 9);
     expect(Math.abs(s.transit!.enterS - 18)).toBeLessThanOrEqual(400 / SCREEN_MPS);
   });
-  it('列の無い任務: 今夜の揺らぎの回数に足さない（0）・transitSetupPart は {}（setup に transit の鍵が出ない）', () => {
-    for (const id of PROTO_IDS) expect(transitNightRolls(gameData, getPrototypeMission(gameData, id)), id).toBe(id === 'us_04' ? 1 : 0);
-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04')) {
+  it('列の無い任務: 今夜の揺らぎの回数に足さない（0）・transitSetupPart は {}（setup に transit の鍵が出ない）。v0.8.2 S0 から us_05 も列（片道。tests/column-data）', () => {
+    for (const id of PROTO_IDS) expect(transitNightRolls(gameData, getPrototypeMission(gameData, id)), id).toBe(id === 'us_04' || id === 'us_05' ? 1 : 0);
+    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_05')) {
       for (const hard of [false, true]) {
         expect(getTransitParams(gameData, getPrototypeMission(gameData, id, hard), null, false), id).toBeNull();
         expect(transitSetupPart(gameData, getPrototypeMission(gameData, id, hard), null, false), id).toEqual({});
@@ -97,7 +97,7 @@ describe('既定の data（us_04 の東京急行）', () => {
     }
   });
   it('検査の定数と同居しない鍵（V-T6）', () => {
-    expect([TRANSIT_MAX_SHIPS, TRANSIT_CHECK_LANE_MARGIN_M, TRANSIT_CHECK_DAWN_MARGIN_S, TRANSIT_CHECK_UNLOAD_MIN_S, TRANSIT_CHECK_START_CLEAR_M]).toEqual([6, 200, 20, 20, 1500]);
+    expect([TRANSIT_MAX_SHIPS, TRANSIT_CHECK_LANE_MARGIN_M, TRANSIT_CHECK_DAWN_MARGIN_S, TRANSIT_CHECK_UNLOAD_MIN_S, TRANSIT_CHECK_START_CLEAR_M]).toEqual([8, 200, 20, 20, 1500]); // v0.8.2 S0: 列の上限 6 → 8（us_05 の第三部隊 7・ハード 8）
     expect(TRANSIT_EXCLUSIVE_KEYS).toEqual(['barges', 'pt_boats', 'convoy', 'transport', 'escort', 'patrol_air', 'evac', 'landing', 'ally_destroyer']);
     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
     expect(src.indexOf('validateTransitMissions(gameData);')).toBeGreaterThan(src.indexOf('validateEvacMissions(gameData);'));
@@ -110,9 +110,9 @@ describe('形（core/transit-data）', () => {
     const cases: [(t: Rec) => void, RegExp][] = [
       [(t) => (t['speed_mps'] = 1), /鍵はちょうど .*知らない鍵 speed_mps/],
       [(t) => delete t['unload_s'], /欠け unload_s/],
-      [(t) => (t['ships'] = 0), /ships は 1〜6 の整数（0。V-T1）/],
-      [(t) => (t['ships'] = 7), /ships は 1〜6 の整数（7。V-T1）/],
-      [(t) => (t['ships'] = 2.5), /ships は 1〜6 の整数/],
+      [(t) => (t['ships'] = 0), /ships は 1〜8 の整数（0。V-T1）/],
+      [(t) => (t['ships'] = 9), /ships は 1〜8 の整数（9。V-T1）/],
+      [(t) => (t['ships'] = 2.5), /ships は 1〜8 の整数/],
       [(t) => (t['spacing_s'] = 0), /spacing_s は正の数（0。V-T1）/],
       [(t) => (t['speed_kt'] = -30), /speed_kt は正の数/],
       [(t) => (t['edge_inset_m'] = 0), /edge_inset_m は正の数/],
@@ -136,10 +136,10 @@ describe('形（core/transit-data）', () => {
 });
 
 describe('起動時の検査（config/transit-mission-data の V-T1〜V-T6）', () => {
-  it('V-T1: ハードの足す艦・6 隻まで・enemies は護衛 1 ＋ 列の同じ id・速さは艦の最大以下・列の無い任務の hard に置けない', () => {
+  it('V-T1: ハードの足す艦・8 隻まで（v0.8.2 S0 で 6 → 8）・enemies は護衛 1 ＋ 列の同じ id・速さは艦の最大以下・列の無い任務の hard に置けない', () => {
     const hardOf = (d: GameData): Rec => protoOf(d, 'us_04')['hard'] as Rec;
     expect(build((d) => (hardOf(d)['extra_transit_ships'] = 0))).toThrow(/us_04\.v0_1_prototype\.hard\.extra_transit_ships は 1 以上の整数（0）（V-T1/);
-    expect(build((d) => (hardOf(d)['extra_transit_ships'] = 4))).toThrow(/transit\.ships ＋ hard\.extra_transit_ships（7）は 6 隻まで（V-T1/);
+    expect(build((d) => (hardOf(d)['extra_transit_ships'] = 6))).toThrow(/transit\.ships ＋ hard\.extra_transit_ships（9）は 8 隻まで（V-T1/);
     expect(build((d) => (protoOf(d, 'us_04')['enemies'] as string[]).pop())).toThrow(/us_04\.v0_1_prototype\.enemies（ijn_destroyer・ijn_destroyer・ijn_destroyer）は護衛 1 ＋ 列 3 の同じ id（ijn_destroyer）（V-T1/);
     expect(build((d) => (transitOf(d)['speed_kt'] = 36))).toThrow(/transit\.speed_kt（36）は ijn_destroyer の speed_max_kt（35）以下（V-T1/);
     expect(build((d) => ((protoOf(d, 'us_02')['hard'] as Rec)['extra_transit_ships'] = 1), 'us_02', true)).toThrow(/us_02\.v0_1_prototype\.hard\.extra_transit_ships は列の通過（transit）の任務だけ（V-T1/);

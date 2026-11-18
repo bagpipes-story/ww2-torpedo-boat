@@ -8,9 +8,10 @@
 // 夜明けの後は戻りの残りが 0（core）＝まだ来ない・揚陸の地の艦は出たものとして数える（退いた・撃沈のどちらにも数えない）。
 // 時計（S1 の作り・brief L11）: 入りは体感の時計（feelDt の和）、着く・去るは縁の x、戻りは固定ステップの時計（stepTimeS）。命中スローで列の順と道は変わらない（tests/transit-world）。
 // Phaser 非依存（艦は構造の型 TransitShip＝entities/destroyer の Destroyer が満たす。tests/transit-world が素の艦で回す）・乱数なし。確保は constructor だけ。
+// 片道の列（v0.8.2 S0。us_05。plan.outbound が null）: 入った艦は道 ＋ 艦ごとの y のずれ（plan.laneDyM）に置き、向こうの縁の外へ出たら去る（withdrawn。戻らない）。護衛のいない列なので護衛を退かせる枝は来ない。
 import type { TransitSetup } from '../config/transit-mission-data';
 import { startRetire, type ShipAiState } from '../core/ship-ai';
-import { createShipTransit, stepShipTransit, transitAppearLeg, transitPending, type ShipTransitState } from '../core/ship-transit';
+import { createShipTransit, stepShipTransit, transitAppearLeg, transitLaneDyM, transitPending, type ShipTransitState } from '../core/ship-transit';
 
 /** 隊の艦（entities/destroyer の Destroyer がそのまま満たす。列の艦は goAway・reappear、護衛は ai だけ使う） */
 export interface TransitShip {
@@ -91,13 +92,13 @@ export class DestroyerTransit {
       const s = this.column[i]!;
       if ((placed & bit) !== 0) {
         const leg = transitAppearLeg(p, st.phase[i]!)!;
-        s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);
+        s.reappear(leg.appearX, leg.laneY + transitLaneDyM(p, i), leg.headingDeg, p.speedMps); // 道のずれは片道の列の艦ごと（往復の列は 0）
         startRetire(s.ai, leg.headingDeg);
       } else if ((left & bit) !== 0) {
         s.goAway((st.gone & bit) !== 0);
       }
     }
-    if (st.coverLeaves) {
+    if (st.coverLeaves && p.outbound) {
       for (let i = 0; i < this.first; i++) {
         const c = this.all[i]!;
         if (!c.out) startRetire(c.ai, p.outbound.headingDeg);

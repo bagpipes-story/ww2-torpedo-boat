@@ -64,7 +64,7 @@ describe('文の幅（2 行目 ≤ 840 px＝22 px。L34）', () => {
 describe('東の縁の帯（見せ方の値の理由。brief L26）', () => {
   it('帯 500 m ≥ 掃引の間の列の道のり（速さ × time_scale × 掃引の秒）＋ 縁の内外 ＋ 丸めの半分（data から）', () => {
     const drift = TR.speedMps * S.timeScale * R.sweepS;
-    const inset = W - TR.outbound.appearX;
+    const inset = W - TR.outbound!.appearX;
     expect(drift).toBeCloseTo(231.5, 0);
     expect(RADAR_EAST_EDGE_MARGIN_M).toBeGreaterThanOrEqual(drift + inset + R.positionStepM / 2);
     // 護衛の見回り（端から 700 m で向き直す）は帯の外＝護衛の出入りを「東へ消えた」と読まない

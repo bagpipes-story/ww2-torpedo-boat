@@ -71,6 +71,8 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const uniq = [...new Set(rows.map(([t, r, part, kt]) => `${t.split('&')[0]} ${r} ${part} ${kt}`))];
     expect(uniq).toEqual([
       'us_01 ijn_destroyer escort 15', 'us_02 ijn_destroyer escort 15', 'us_04 ijn_destroyer escort 15', 'us_04 ijn_destroyer column 15',
+      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S0 の世界の列の艦はみな ijn_destroyer の形（最大 18 kt）。艦ごとの記録（重巡 12・戦艦 14 kt）は S2 の kits
+      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15',
       'us_06 ijn_destroyer_mutsuki_enemy escort 15', 'jp_06 us_destroyer escort 8',
     ]);
     for (const [t, , part, kt] of rows) expect(ktToMps(kt), `${t} ${part}`).toBeGreaterThanOrEqual(MIN);
@@ -102,6 +104,6 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const d = code('src/entities/destroyer.ts');
     expect(d.match(/speedMps\s*=(?!=)|speedMps:(?!\s*number)/g)!.length).toBe(3);
     for (const s of ['speedMps: aiParams.cruiseSpeedMps }', 'this.state.speedMps = 0;', 's.speedMps = speedMps;']) expect(d).toContain(s);
-    expect(code('src/systems/destroyer-transit.ts')).toContain('s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);');
+    expect(code('src/systems/destroyer-transit.ts')).toContain('s.reappear(leg.appearX, leg.laneY + transitLaneDyM(p, i), leg.headingDeg, p.speedMps);'); // v0.8.2 S0: 片道の列の艦ごとの道のずれ（速さは今のまま列の速さ）
   });
 });

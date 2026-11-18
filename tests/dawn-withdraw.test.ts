@@ -264,9 +264,10 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
       if (id !== 'us_02') expect(protoOf(gameData, id)['dawn_withdraw'], id).toBeUndefined();
       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
     }
-    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_05。v0.8.1 S0 までの例は us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く。
-    // us_06 は v0.8.1 S0 から v0_1_prototype（S4 から遊べる）で、日本の艦は東へ退く
-    expect(getDawnAir(gameData, 'us_05').retireEdge).toBeNull();
+    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_07。v0.8.1 S0 までの例は us_06・v0.8.2 S0 までは us_05）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く。
+    // us_06 は v0.8.1 S0 から v0_1_prototype（S4 から遊べる）で、日本の艦は東へ退く。us_05 は v0.8.2 S0 から v0_1_prototype（S4 から遊べる）で、片道の列の日本の艦隊は向かう東（スリガオ海峡）へ退く
+    expect(getDawnAir(gameData, 'us_07').retireEdge).toBeNull();
+    expect([getDawnAir(gameData, 'us_05').retireEdge, getDawnAir(gameData, 'us_05').retireForceJa]).toEqual(['east', '日本の艦隊']);
     expect([getDawnAir(gameData, 'us_06').retireEdge, getDawnAir(gameData, 'us_06').retireForceJa]).toEqual(['east', '日本の艦']);
     expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);
   });

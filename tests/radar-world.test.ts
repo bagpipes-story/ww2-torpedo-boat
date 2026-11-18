@@ -52,7 +52,7 @@ describe('レーダーの段の順と作る所（ソース）', () => {
     const rv = code('systems/radar-view.ts');
     // v0.8.1 S2: 陸の反射に今の岸（coast の南）も渡す（us_06。両岸の us_04 は両岸の線のまま＝core/strait-geometry の landLinesOf）
     expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null;');
-    expect(rv).toContain("const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）
+    expect(rv).toContain("const eastJa = tr && tr.outbound !== null && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）。v0.8.2 S0: 片道の列（outbound null）は ''（片道の文は S4）
     const wr = code('systems/world-radar.ts');
     const step = wr.slice(wr.indexOf('  step(w: RadarWorldView): void {'));
     expect(lines(step).slice(0, 3)).toEqual(['step(w: RadarWorldView): void {', 'const r = this.state;', 'if (!radarSweepDue(r, w.stepTimeS)) return;']);
