@@ -1,0 +1,849 @@
+diff --git a/src/assets/capital-paint.ts b/src/assets/capital-paint.ts
+index 68281f8..04d3d34 100644
+--- a/src/assets/capital-paint.ts
++++ b/src/assets/capital-paint.ts
+@@ -1,51 +1,161 @@
+-// v0.8.2 S2b（us_05。spec-v0820 §4.11 D-A1・D-A2、lead の L30）: 戦艦 扶桑型・重巡 最上の部品の型 3 つの描き方（Phaser に依らない。assets/destroyer-paint の paintDestroyer が部品ごとに先に呼ぶ）:
+-// 塔の艦橋（段ごとに縮んで明るくなる箱の重なりと、上の段ほど遠くへ落ちる影＝高さ。最上段に測距儀の腕と方位盤）・舷側の砲郭の列（張り出しと外へ向く短い砲身）・後部の飛行甲板
+-// （平らな明るい矩形・板の継ぎ目・縦のレール・回転台・暗い縁）。色は地の色 1 つの明るさだけ（destroyer-pen の toneCss・xGrad＝単系統）。起動時に 1 回だけ（Boot の generateColumnTextures）。
++// v0.8.2 S2b（us_05。spec-v0820 §4.11 D-A1・D-A2、lead の L30）: 戦艦 扶桑型・重巡 最上の部品の描き方（Phaser に依らない。assets/destroyer-paint の paintDestroyer が部品ごとに先に呼ぶ）:
++// 塔（段の重なりと、上の段ほど遠くへ落ちる影＝高さ）・舷側の砲郭の列（張り出しと外へ向く短い砲身）・後部の飛行甲板（平らな矩形・板の継ぎ目・レール・回転台・暗い縁）。
++// v0.8.2 S2c（ユーザーの実機の感想「デフォルメされすぎている…もう少しディティールに」）: 塔は段の表（capital-layout-config の CAPITAL_TOWER_ROWS: 箱・八角・測距儀の腕・方位盤と、探照灯の台の両端の灯）、
++// 主砲塔の細部と背負い式の影は capital-turret-paint、飛行甲板は艦尾へ細る台形にレール・横のレール・回転台。ほかの細部は capital-detail-paint。
++// 色は地の色 1 つの明るさだけ（destroyer-pen の toneCss・xGrad＝単系統）。起動時に 1 回だけ（Boot の generateColumnTextures）。
+ import {
+-  CASEMATE_BARREL_UNITS, CASEMATE_SPONSON_SHARE, DECK_EDGE_UNITS, DECK_PLANK_UNITS, DECK_RAIL_UNITS, DECK_TURNTABLE_SHARE, PAGODA_ARM_UNITS, PAGODA_DIRECTOR_SHARE, PAGODA_SHADOW_ALPHA, PAGODA_SHADOW_PER_TIER_UNITS, PAGODA_SHADOW_X_SHARE,
+-  PAGODA_STEP_SHADOW_ALPHA, PAGODA_STEP_SHADOW_UNITS,
++  CASEMATE_BARREL_UNITS, CASEMATE_SPONSON_SHARE, DECK_EDGE_UNITS, DECK_PLANK_UNITS, DECK_RAIL_UNITS, DECK_TURNTABLE_UNITS, 
++  PAGODA_LIGHT_UNITS, PAGODA_SHADOW_ALPHA, PAGODA_SHADOW_PER_TIER_UNITS, PAGODA_SHADOW_X_SHARE, PAGODA_STEP_SHADOW_ALPHA, PAGODA_STEP_SHADOW_UNITS, PAGODA_WINDOW_UNITS,
+ } from '../config/capital-art-config';
++import { CAPITAL_TOWER_ROWS } from '../config/capital-layout-config';
+ import { DESTROYER_TONES as T } from '../config/destroyer-art-config';
++import { paintCapitalDetail } from './capital-detail-paint';
++import { paintMainTurret } from './capital-turret-paint';
+ import { pagodaTier } from './capital-plan';
+ import type { DestroyerPart } from './destroyer-plan';
+ import { ellipse, rrect, toneCss, xGrad, type C } from './destroyer-pen';
+ 
+-/** 戦艦・重巡の部品（pagoda・casemate・deck）を描いたら true（ほかの型は描かずに false＝destroyer-part-paint の paintPart が描く） */
+-export function paintCapitalPart(ctx: C, base: number, p: DestroyerPart): boolean {
+-  if (p.t === 'pagoda') {
+-    // 高さ: 上の段ほど遠くへ落ちる長い影（艦尾・右舷の甲板へ）、段ごとに下の段へ落ちる短い影・上ほど明るい段・前の縁の窓の帯、最上段に測距儀の腕と方位盤
+-    ctx.fillStyle = toneCss(base, T.shadow, PAGODA_SHADOW_ALPHA);
+-    for (let k = 0; k < p.tiers; k++) {
+-      const [x, y, w, h] = pagodaTier(p, k);
+-      const s = PAGODA_SHADOW_PER_TIER_UNITS * (k + 1);
+-      rrect(ctx, x + s * PAGODA_SHADOW_X_SHARE, y + s, w, h, 1.5);
++type Pagoda = Extract<DestroyerPart, { t: 'pagoda' }>;
++
++/** 段の形の道（0 箱・1 八角・2 測距儀の腕・3 丸い方位盤） */
++function tierPath(ctx: C, shape: number, x: number, y: number, w: number, h: number): void {
++  if (shape === 3) ellipse(ctx, x + w / 2, y + h / 2, w / 2, h / 2);
++  else if (shape === 2) rrect(ctx, x, y, w, h, h / 2);
++  else if (shape === 1) {
++    const c = Math.min(w, h) * 0.28;
++    ctx.beginPath();
++    ctx.moveTo(x + c, y);
++    ctx.lineTo(x + w - c, y);
++    ctx.lineTo(x + w, y + c);
++    ctx.lineTo(x + w, y + h - c);
++    ctx.lineTo(x + w - c, y + h);
++    ctx.lineTo(x + c, y + h);
++    ctx.lineTo(x, y + h - c);
++    ctx.lineTo(x, y + c);
++    ctx.closePath();
++  } else rrect(ctx, x, y, w, h, 1.2);
++}
++
++/** 塔: 上の段ほど遠くへ落ちる長い影（艦尾・右舷の甲板へ）→ 段ごとに下の段へ落ちる短い影・上ほど明るい段・前の窓の帯・探照灯・測距儀・方位盤 */
++function paintTower(ctx: C, base: number, p: Pagoda): void {
++  const rows = CAPITAL_TOWER_ROWS[p.style];
++  // 長い影: 段ごとの影の箱を、その段の足元（影 0）から高さの所まで少しずつずらして重ね、1 つの道で塗る（重なっても濃さは同じ＝つながった 1 つの影）
++  ctx.fillStyle = toneCss(base, T.shadow, PAGODA_SHADOW_ALPHA);
++  ctx.beginPath();
++  for (let k = 0; k < p.tiers; k++) {
++    const [x, y, w, h] = pagodaTier(p, k);
++    const top = PAGODA_SHADOW_PER_TIER_UNITS * (k + 1);
++    for (let s = 0; s <= top; s += PAGODA_SHADOW_PER_TIER_UNITS / 2) {
++      const [sx, sy] = [x + s * PAGODA_SHADOW_X_SHARE, y + s];
++      ctx.moveTo(sx, sy);
++      ctx.lineTo(sx + w, sy);
++      ctx.lineTo(sx + w, sy + h);
++      ctx.lineTo(sx, sy + h);
++      ctx.closePath();
++    }
++  }
++  ctx.fill();
++  for (let k = 0; k < p.tiers; k++) {
++    const [x, y, w, h] = pagodaTier(p, k);
++    const [, , , shape, lights] = rows[k]!;
++    if (k > 0) {
++      ctx.fillStyle = toneCss(base, T.shadow, PAGODA_STEP_SHADOW_ALPHA);
++      tierPath(ctx, shape, x + PAGODA_STEP_SHADOW_UNITS * PAGODA_SHADOW_X_SHARE, y + PAGODA_STEP_SHADOW_UNITS, w, h);
+       ctx.fill();
+     }
+-    ctx.strokeStyle = toneCss(base, T.dark, 0.7);
+-    ctx.lineWidth = 0.5;
+-    for (let k = 0; k < p.tiers; k++) {
+-      const [x, y, w, h] = pagodaTier(p, k);
+-      if (k > 0) {
+-        // 段の影: この段が下の段に落とす短い影（段ごとの高さ）
+-        ctx.fillStyle = toneCss(base, T.shadow, PAGODA_STEP_SHADOW_ALPHA);
+-        rrect(ctx, x + PAGODA_STEP_SHADOW_UNITS * PAGODA_SHADOW_X_SHARE, y + PAGODA_STEP_SHADOW_UNITS, w, h, 1.4);
++    const v = T.super1 + ((T.boat - T.super1) * k) / Math.max(1, p.tiers - 1); // 上の段ほど明るい（高い）
++    ctx.fillStyle = shape === 2 ? xGrad(ctx, base, x, x + w, [[0, T.funnel], [1, T.dark]]) : xGrad(ctx, base, x, x + w, [[0, v * 1.06], [0.55, v * 0.94], [1, v * 0.74]]);
++    tierPath(ctx, shape, x, y, w, h);
++    ctx.fill();
++    ctx.strokeStyle = toneCss(base, T.dark, 0.75);
++    ctx.lineWidth = 0.45;
++    ctx.stroke();
++    if (shape === 2) {
++      // 測距儀の腕: 両端の明るい筒先
++      ctx.fillStyle = toneCss(base, T.roof, 0.9);
++      for (const ex of [x + h * 0.5, x + w - h * 0.5]) { ellipse(ctx, ex, y + h / 2, h * 0.42, h * 0.42); ctx.fill(); }
++      continue;
++    }
++    if (shape === 3) {
++      ctx.fillStyle = toneCss(base, T.dark, 0.85);
++      ctx.fillRect(x + w * 0.2, y + h * 0.3, w * 0.6, Math.min(0.7, h * 0.2));
++      continue;
++    }
++    if (h > PAGODA_WINDOW_UNITS * 3) {
++      ctx.fillStyle = toneCss(base, T.window, 0.85);
++      ctx.fillRect(x + 0.8, y + 0.45, w - 1.6, PAGODA_WINDOW_UNITS);
++    }
++    // 段の縁の手すり（明るい細い線）と探照灯の台の両端の灯
++    ctx.fillStyle = toneCss(base, T.roof, 0.45);
++    ctx.fillRect(x + 0.6, y + h - 0.7, w - 1.2, 0.3);
++    if (lights) {
++      for (const ex of [x + PAGODA_LIGHT_UNITS + 0.5, x + w - PAGODA_LIGHT_UNITS - 0.5]) {
++        ctx.fillStyle = toneCss(base, T.boat);
++        ellipse(ctx, ex, y + h / 2, PAGODA_LIGHT_UNITS, PAGODA_LIGHT_UNITS);
++        ctx.fill();
++        ctx.strokeStyle = toneCss(base, T.dark, 0.8);
++        ctx.lineWidth = 0.5;
++        ctx.stroke();
++        ctx.fillStyle = toneCss(base, T.window, 0.7);
++        ellipse(ctx, ex, y + h / 2 - PAGODA_LIGHT_UNITS * 0.35, PAGODA_LIGHT_UNITS * 0.55, PAGODA_LIGHT_UNITS * 0.3);
+         ctx.fill();
+       }
+-      const v = T.super1 + ((T.boat - T.super1) * k) / Math.max(1, p.tiers - 1); // 上の段ほど明るい（高い）
+-      ctx.fillStyle = xGrad(ctx, base, x, x + w, [[0, v * 1.06], [0.55, v * 0.94], [1, v * 0.74]]);
+-      rrect(ctx, x, y, w, h, 1.4);
+-      ctx.fill();
+-      ctx.stroke();
+-      ctx.fillStyle = toneCss(base, T.window, 0.85);
+-      ctx.fillRect(x + 0.7, y + 0.5, w - 1.4, 0.9);
+     }
+-    const [x, y, w, h] = pagodaTier(p, p.tiers - 1);
++  }
++}
++
++/** 飛行甲板（艦尾へ細る台形）: 板の継ぎ目・縦のレール・前の横のレールと回転台・暗い縁 */
++function paintFlightDeck(ctx: C, base: number, p: Extract<DestroyerPart, { t: 'deck' }>): void {
++  const [y0, y1] = [p.cy - p.len / 2, p.cy + p.len / 2];
++  const half = (y: number): number => (p.w + ((p.wAft - p.w) * (y - y0)) / p.len) / 2;
++  const outline = (): void => {
++    ctx.beginPath();
++    ctx.moveTo(p.cx - half(y0) + 1.2, y0);
++    ctx.lineTo(p.cx + half(y0) - 1.2, y0);
++    ctx.lineTo(p.cx + half(y0), y0 + 1.2);
++    ctx.lineTo(p.cx + half(y1), y1 - 1.2);
++    ctx.lineTo(p.cx + half(y1) - 1.2, y1);
++    ctx.lineTo(p.cx - half(y1) + 1.2, y1);
++    ctx.lineTo(p.cx - half(y1), y1 - 1.2);
++    ctx.lineTo(p.cx - half(y0), y0 + 1.2);
++    ctx.closePath();
++  };
++  ctx.fillStyle = xGrad(ctx, base, p.cx - p.w / 2, p.cx + p.w / 2, [[0, T.super1 * 0.98], [0.5, T.turretDark * 1.08], [1, T.turretDark * 0.86]]);
++  outline();
++  ctx.fill();
++  ctx.fillStyle = toneCss(base, T.shadow, 0.3);
++  for (let y = y0 + DECK_PLANK_UNITS; y < y1 - 1; y += DECK_PLANK_UNITS) ctx.fillRect(p.cx - half(y) + 0.8, y, half(y) * 2 - 1.6, 0.4);
++  const gap = (p.wAft * 0.62) / Math.max(1, p.rails - 1);
++  const xs = Array.from({ length: p.rails }, (_, j) => p.cx + (j - (p.rails - 1) / 2) * gap);
++  const yr = y0 + DECK_TURNTABLE_UNITS + 1.5;
++  for (const x of xs) {
+     ctx.fillStyle = toneCss(base, T.dark, 0.9);
+-    rrect(ctx, p.cx - p.w * 0.45, y + h * 0.45, p.w * 0.9, PAGODA_ARM_UNITS, PAGODA_ARM_UNITS / 2);
+-    ctx.fill();
+-    ctx.fillStyle = xGrad(ctx, base, x, x + w, [[0, T.roof], [1, T.turretDark]]);
+-    ellipse(ctx, p.cx, y + h * 0.3, w * PAGODA_DIRECTOR_SHARE, w * PAGODA_DIRECTOR_SHARE);
++    ctx.fillRect(x - DECK_RAIL_UNITS / 2, yr, DECK_RAIL_UNITS, y1 - yr - 2);
++    ctx.fillStyle = toneCss(base, T.turretLight, 0.55);
++    ctx.fillRect(x - DECK_RAIL_UNITS / 2, yr, DECK_RAIL_UNITS * 0.4, y1 - yr - 2);
++  }
++  // 前の横のレール（両舷のカタパルトへ）と、縦のレールとの交わりの回転台
++  ctx.fillStyle = toneCss(base, T.dark, 0.85);
++  ctx.fillRect(p.cx - half(yr) + 1.5, yr - DECK_RAIL_UNITS / 2, half(yr) * 2 - 3, DECK_RAIL_UNITS);
++  ctx.strokeStyle = toneCss(base, T.dark, 0.85);
++  ctx.lineWidth = DECK_EDGE_UNITS;
++  for (const x of xs) {
++    ctx.fillStyle = toneCss(base, T.turretDark * 1.1);
++    ellipse(ctx, x, yr, DECK_TURNTABLE_UNITS, DECK_TURNTABLE_UNITS);
+     ctx.fill();
++    ctx.stroke();
++  }
++  outline();
++  ctx.stroke();
++  ctx.fillStyle = toneCss(base, T.roof, 0.5); // 前の縁の光（一段高い甲板）
++  ctx.fillRect(p.cx - half(y0) + 1.2, y0 + 0.2, half(y0) * 2 - 2.4, 0.5);
++}
++
++/** 戦艦・重巡の部品を描いたら true（ほかの型は描かずに false＝destroyer-part-paint の paintPart が描く） */
++export function paintCapitalPart(ctx: C, base: number, p: DestroyerPart): boolean {
++  if (p.t === 'pagoda') paintTower(ctx, base, p);
++  else if (p.t === 'gun' && p.lift !== undefined) {
++    paintMainTurret(ctx, base, p); // 主砲塔（戦艦・重巡だけ lift がある）
+   } else if (p.t === 'casemate') {
+     // 舷側の砲郭: 門ごとに張り出しと外へ向く短い砲身
+     const r = (p.w * CASEMATE_SPONSON_SHARE) / 2;
+@@ -60,28 +170,7 @@ export function paintCapitalPart(ctx: C, base: number, p: DestroyerPart): boolea
+       ctx.fillStyle = toneCss(base, T.dark);
+       ctx.fillRect(p.side > 0 ? p.cx : p.cx - p.w / 2, y - CASEMATE_BARREL_UNITS / 2, p.w / 2, CASEMATE_BARREL_UNITS);
+     }
+-  } else if (p.t === 'deck') {
+-    // 飛行甲板: 平らな明るい矩形・横の板の継ぎ目・縦のレール（明るい縁つき）・前の端の回転台・暗い縁
+-    const [x0, y0] = [p.cx - p.w / 2, p.cy - p.len / 2];
+-    ctx.fillStyle = xGrad(ctx, base, x0, x0 + p.w, [[0, T.super2], [0.5, T.super1], [1, T.turretDark]]);
+-    rrect(ctx, x0, y0, p.w, p.len, 1.2);
+-    ctx.fill();
+-    ctx.fillStyle = toneCss(base, T.shadow, 0.3);
+-    for (let y = y0 + DECK_PLANK_UNITS; y < y0 + p.len - 1; y += DECK_PLANK_UNITS) ctx.fillRect(x0 + 0.8, y, p.w - 1.6, 0.45);
+-    for (let j = 1; j <= p.rails; j++) {
+-      const x = x0 + (p.w * j) / (p.rails + 1) - DECK_RAIL_UNITS / 2;
+-      ctx.fillStyle = toneCss(base, T.dark, 0.9);
+-      ctx.fillRect(x, y0 + 2, DECK_RAIL_UNITS, p.len - 4);
+-      ctx.fillStyle = toneCss(base, T.turretLight, 0.6);
+-      ctx.fillRect(x, y0 + 2, DECK_RAIL_UNITS * 0.4, p.len - 4);
+-    }
+-    const rt = p.w * DECK_TURNTABLE_SHARE;
+-    ctx.strokeStyle = toneCss(base, T.dark, 0.8);
+-    ctx.lineWidth = DECK_EDGE_UNITS;
+-    ellipse(ctx, p.cx, y0 + rt + 1, rt, rt);
+-    ctx.stroke();
+-    rrect(ctx, x0, y0, p.w, p.len, 1.2);
+-    ctx.stroke();
+-  } else return false;
++  } else if (p.t === 'deck') paintFlightDeck(ctx, base, p);
++  else return paintCapitalDetail(ctx, base, p);
+   return true;
+ }
+diff --git a/src/assets/capital-plan.ts b/src/assets/capital-plan.ts
+index 55a4209..f7a8f94 100644
+--- a/src/assets/capital-plan.ts
++++ b/src/assets/capital-plan.ts
+@@ -1,8 +1,12 @@
+ // v0.8.2 S2b（us_05「スリガオ海峡・最初の接触」。spec-v0820 §4.11 D-A1・D-A2、lead の L30）: 戦艦 扶桑型（山城・扶桑）と重巡 最上の置き方（Phaser にも Canvas にも依らない）。
+-// 骨組み（船体の輪郭・船首楼の段・艦橋の足元・煙突・主砲塔・マスト）は ship-art-config の SHIP_ART_LAYOUTS、細部は capital-art-config。駆逐艦と同じ DestroyerPlan の形
+-// （艦首が上・中心線は x = B/2・世界単位）にして assets/destroyer-paint が描く（新しい部品の型 pagoda・casemate・deck）。寸法は記録 × sprite_scale＝当たりと同じ大きさ（R22）。
+-// 見分けの鍵（L30）: 戦艦は高い段の塔の艦橋と連装の主砲塔 6（前 2・中 2・後 2）、重巡は前の主砲塔 3 と後部の平らな飛行甲板とレール。tests/destroyer-art・capital-art が置き方の決まりを見る。
+-import { CAPITAL_DETAILS, CAPITAL_LOCKER_UNITS, CAPITAL_TUB_UNITS, CASEMATE_EDGE_UNITS, CASEMATE_W_UNITS, PAGODA_SHIFT, PAGODA_SHRINK_LEN, PAGODA_SHRINK_W } from '../config/capital-art-config';
++// 骨組み（船体の輪郭・船首楼の段・艦橋の足元・煙突・主砲塔・マスト）は ship-art-config の SHIP_ART_LAYOUTS、細部の置き方は capital-layout-config。駆逐艦と同じ DestroyerPlan の形
++// （艦首が上・中心線は x = B/2・世界単位）にして assets/destroyer-paint が描く（新しい部品の型は assets/capital-paint・capital-detail-paint）。寸法は記録 × sprite_scale＝当たりと同じ大きさ（R22）。
++// v0.8.2 S2c（ユーザーの実機の感想 2026-11-18「デフォルメされすぎている…もう少しディティールに」「最上は後部甲板に水上機」）: 山城と最上の 1944 年の並びと細部（塔の段・背負い式の砲塔・
++// 副砲・高角砲・25 mm・短艇とダビット・カタパルトと水上機・クレーン・最上の飛行甲板の 7 機）。描く順は低い物から高い物へ（背負い式の砲塔は下の砲塔の後＝砲身が下の砲塔の屋根を越える）。
++import { AA_R_UNITS, CAPITAL_LOCKER_UNITS, CASEMATE_EDGE_UNITS, CASEMATE_W_UNITS, CRANE_UNITS, DAVIT_UNITS } from '../config/capital-art-config';
++import {
++  CAPITAL_DETAILS, CAPITAL_TOWER_ROWS, DECK_PLANE_FRONT_UNITS, DECK_PLANE_GAP_UNITS, PLANE_BI_UNITS, PLANE_MONO_UNITS, TURRET_EARS,
++} from '../config/capital-layout-config';
+ import type { DestroyerDetail } from '../config/destroyer-art-config';
+ import { SHIP_ART_LAYOUTS } from '../config/ship-art-config';
+ import { hullHalfWidthAt, hullOutline } from './boat-shape';
+@@ -13,48 +17,101 @@ export function isCapitalKind(kind: string): kind is CapitalKind {
+   return kind === 'fuso' || kind === 'mogami';
+ }
+ 
+-/** 置き方 → 描く部品の並び（低い物から高い物へ: 小物・短艇・飛行甲板・カタパルト・砲郭・主砲・高角砲・機銃の台・艦橋・煙突・マスト） */
++/** 斜めの矩形（幅 a × 長さ b を ang 度）の外の箱の [w, len] */
++function boxOf(a: number, b: number, ang: number): [number, number] {
++  const r = (ang * Math.PI) / 180;
++  const c = Math.abs(Math.cos(r));
++  const s = Math.abs(Math.sin(r));
++  return [a * c + b * s, a * s + b * c];
++}
++function plane(cx: number, cy: number, ang: number, bi: boolean): DestroyerPart {
++  const [span, plen] = bi ? PLANE_BI_UNITS : PLANE_MONO_UNITS;
++  const [w, len] = boxOf(span, plen, ang);
++  return { t: 'plane', cx, cy, w, len, span, plen, ang, bi };
++}
++
++/** 置き方 → 描く部品の並び（低い物から高い物へ: 小物・ダビット・短艇・飛行甲板・砲郭・発射管・カタパルト・水上機・甲板の主砲塔・高角砲・機銃・高い主砲塔・後部の上部構造・煙突・塔・マスト・クレーン） */
+ export function capitalPlan(kind: CapitalKind, L: number, B: number): DestroyerPlan {
+   const lay = SHIP_ART_LAYOUTS[kind];
+   const d = CAPITAL_DETAILS[kind];
+   const cx = B / 2;
+   const parts: DestroyerPart[] = [];
++  const [bw, bl] = d.boatSize;
+   for (const [f, xf] of d.lockers) parts.push({ t: 'locker', cx: cx + xf * B, cy: f * L, w: CAPITAL_LOCKER_UNITS[0], len: CAPITAL_LOCKER_UNITS[1] });
+-  for (const [f, xf] of d.boats) parts.push({ t: 'boat', cx: cx + xf * B, cy: f * L, w: d.boatSize[0], len: d.boatSize[1] });
++  for (const [f, xf] of d.boats) {
++    const side = xf > 0 ? 1 : -1;
++    for (const k of [-1, 1]) parts.push({ t: 'davit', cx: cx + xf * B + side * (bw / 2 + DAVIT_UNITS * 0.6), cy: f * L + k * bl * 0.3, w: DAVIT_UNITS, len: DAVIT_UNITS, side });
++  }
++  for (const [f, xf] of d.boats) parts.push({ t: 'boat', cx: cx + xf * B, cy: f * L, w: bw, len: bl });
+   if (d.deck) {
+-    const [f0, f1, wf, rails] = d.deck;
+-    parts.push({ t: 'deck', cx, cy: ((f0 + f1) / 2) * L, w: wf * B, len: (f1 - f0) * L, rails });
++    const [f0, f1, wf, wa, rails] = d.deck;
++    parts.push({ t: 'deck', cx, cy: ((f0 + f1) / 2) * L, w: wf * B, len: (f1 - f0) * L, rails, wAft: wa * B });
+   }
+-  for (const [f, xf] of d.catapults) parts.push({ t: 'tubes', cx: cx + xf * B, cy: f * L, w: d.catapultSize[0], len: d.catapultSize[1] * L, n: 1, shield: false });
+   if (d.casemates) {
+     // 舷側の砲郭の列: 列の前後で狭い方の半幅から、縁の余白と列の幅の半分だけ内（甲板の輪郭の内）
+     const [f0, f1, n] = d.casemates;
+     const off = Math.min(hullHalfWidthAt(lay.hull, f0, B), hullHalfWidthAt(lay.hull, f1, B)) - CASEMATE_EDGE_UNITS - CASEMATE_W_UNITS / 2;
+     for (const side of [1, -1] as const) parts.push({ t: 'casemate', cx: cx + side * off, cy: ((f0 + f1) / 2) * L, w: CASEMATE_W_UNITS, len: (f1 - f0) * L, n, side });
+   }
+-  const [tl, bl, bw, dx] = d.turret;
+-  for (const [f, wf, dir] of lay.mounts) parts.push({ t: 'gun', style: 'twin', cx, cy: f * L, w: wf * B, len: tl * L, dir, barrel: bl * L, dx, bw });
++  const [tw, tl, tn] = d.tubeSize;
++  for (const [f, xf] of d.tubes) parts.push({ t: 'tubes', cx: cx + xf * B, cy: f * L, w: tw * B, len: tl * L, n: tn, shield: true });
++  const [cl, cw] = d.catapultSize;
++  for (const [f, xf, ang] of d.catapults) {
++    const [w, len] = boxOf(cw, cl * L, ang);
++    parts.push({ t: 'catapult', cx: cx + xf * B, cy: f * L, w, len, cl: cl * L, cw, ang });
++  }
++  for (const [f, xf, ang, bi] of d.planes) parts.push(plane(cx + xf * B, f * L, ang, bi === 1));
++  if (d.deck) {
++    // 飛行甲板の水上機: 艦首側から機首を前へ、間を空けて中心線に並べる（描くのは艦尾側から）
++    const ps: DestroyerPart[] = [];
++    let nose = d.deck[0] * L + DECK_PLANE_FRONT_UNITS;
++    d.deckPlanes.forEach((bi) => {
++      const plen = (bi ? PLANE_BI_UNITS : PLANE_MONO_UNITS)[1];
++      ps.push(plane(cx, nose + plen / 2, 0, bi === 1));
++      nose += plen + DECK_PLANE_GAP_UNITS;
++    });
++    parts.push(...ps.reverse());
++  }
++  const [tlen, barrel, tbw, tdx] = d.turret;
++  const gun = (i: number): DestroyerPart => {
++    const [f, wf, dir] = lay.mounts[i]!;
++    return { t: 'gun', style: 'twin', cx, cy: f * L, w: wf * B, len: tlen * L, dir, barrel: barrel * L, dx: tdx, bw: tbw, lift: d.lifts[i], ears: TURRET_EARS[kind] };
++  };
++  lay.mounts.forEach((_, i) => { if (!d.lifts[i]) parts.push(gun(i)); });
+   const [hw, hl, hb, hbw, hdx] = d.haSize;
+   for (const [f, xf, dir] of d.ha) parts.push({ t: 'gun', style: 'twin', cx: cx + xf * B, cy: f * L, w: hw * B, len: hl * L, dir, barrel: hb * L, dx: hdx, bw: hbw });
+-  for (const [f, xf] of d.tubs) parts.push({ t: 'tub', cx: cx + xf * B, cy: f * L, w: CAPITAL_TUB_UNITS, len: CAPITAL_TUB_UNITS });
++  for (const [list, n, r] of [[d.aa3, 3, AA_R_UNITS[0]], [d.aa1, 1, AA_R_UNITS[1]]] as const) {
++    for (const [f, xf] of list) parts.push({ t: 'aa', cx: cx + xf * B, cy: f * L, w: r * 2, len: r * 2, n, side: xf > 0 ? 1 : -1 });
++  }
++  // 高い主砲塔（背負い式・高い台）: 低い段から順に（下の砲塔の後＝砲身が屋根を越える）
++  const lifted = lay.mounts.map((_, i) => i).filter((i) => d.lifts[i]! > 0).sort((a, b) => d.lifts[a]! - d.lifts[b]!);
++  for (const i of lifted) parts.push(gun(i));
++  if (d.aftHouse) {
++    const [f0, f1, wf] = d.aftHouse;
++    parts.push({ t: 'pagoda', style: 'fusoAft', cx, cy: ((f0 + f1) / 2) * L, w: wf * B, len: (f1 - f0) * L, tiers: CAPITAL_TOWER_ROWS.fusoAft.length });
++  }
++  const [sw, sl, trunk] = d.stack;
++  for (const [f, wf, lf] of lay.funnels) parts.push({ t: 'stack', cx, cy: f * L, w: sw * B, len: sl * L, fw: wf * B, flen: lf * L, trunk });
+   {
+     const [f0, f1, wf] = lay.bridge;
+-    const cy = ((f0 + f1) / 2) * L;
+-    if (d.tiers > 0) parts.push({ t: 'pagoda', cx, cy, w: wf * B, len: (f1 - f0) * L, tiers: d.tiers });
+-    else parts.push({ t: 'bridge', style: 'ijn', cx, cy, w: wf * B, len: (f1 - f0) * L });
++    parts.push({ t: 'pagoda', style: d.tower, cx, cy: ((f0 + f1) / 2) * L, w: wf * B, len: (f1 - f0) * L, tiers: CAPITAL_TOWER_ROWS[d.tower].length });
+   }
+-  for (const [f, wf, lf] of lay.funnels) parts.push({ t: 'funnel', cx, cy: f * L, w: wf * B, len: lf * L });
+   for (const f of lay.masts) parts.push({ t: 'mast', cx, cy: f * L, w: d.yardHalfB * B * 2, len: 2 });
+-  // 甲板の模様（destroyer-paint の paintDeckMarks）が読む欄: 板の継ぎ目の間隔・爆雷の軌条なし（ほかの欄は描くのに使わない）
++  for (const [f0, x0f, f1, x1f] of d.cranes) {
++    const [x0, y0, x1, y1] = [cx + x0f * B, f0 * L, cx + x1f * B, f1 * L];
++    parts.push({ t: 'crane', cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w: Math.abs(x1 - x0) + CRANE_UNITS * 2, len: Math.abs(y1 - y0) + CRANE_UNITS * 2, x0, y0, x1, y1 });
++  }
++  // 甲板の模様（destroyer-paint の paintDeckMarks）が読む欄: 横の継ぎ目は描かない（木甲板の縦の板は capital-deck-paint）・爆雷の軌条なし（ほかの欄は描くのに使わない）
+   const detail: DestroyerDetail = {
+-    gun: 'twin', bridge: 'ijn', tubeN: 1, tubeLen: d.catapultSize[1], tubeShield: false, boats: d.boats, lockers: d.lockers, dcRacks: false, yardHalfB: d.yardHalfB, panelUnits: d.panelUnits,
++    gun: 'twin', bridge: 'ijn', tubeN: 1, tubeLen: cl, tubeShield: false, boats: d.boats, lockers: d.lockers, dcRacks: false, yardHalfB: d.yardHalfB, panelUnits: L,
+   };
+   return { kind, L, B, detail, hull: lay.hull, outline: hullOutline(lay.hull, L, B), forecastle: lay.forecastle, parts };
+ }
+ 
+-/** 塔の艦橋の k 段目の箱 [x, y, w, h]（段ごとに縮み、少し前へ。PAGODA_SHIFT ≤ PAGODA_SHRINK_LEN / 2 なので足元の箱の内＝tests/capital-art）。assets/capital-paint が描く（起動時だけ） */
++/** 塔の k 段目の箱 [x, y, w, h]（capital-layout-config の CAPITAL_TOWER_ROWS。どの段も部品の箱の内＝tests/capital-art）。assets/capital-paint が描く（起動時だけ） */
+ export function pagodaTier(p: Extract<DestroyerPart, { t: 'pagoda' }>, k: number): [number, number, number, number] {
+-  const w = p.w * (1 - PAGODA_SHRINK_W * k);
+-  const h = p.len * (1 - PAGODA_SHRINK_LEN * k);
+-  return [p.cx - w / 2, p.cy - p.len * PAGODA_SHIFT * k - h / 2, w, h];
++  const [ws, ls, dy] = CAPITAL_TOWER_ROWS[p.style][k]!;
++  const w = p.w * ws;
++  const h = p.len * ls;
++  return [p.cx - w / 2, p.cy + p.len * dy - h / 2, w, h];
+ }
+diff --git a/src/assets/destroyer-paint.ts b/src/assets/destroyer-paint.ts
+index 6ce1dc2..35ade7e 100644
+--- a/src/assets/destroyer-paint.ts
++++ b/src/assets/destroyer-paint.ts
+@@ -4,9 +4,13 @@
+ // 描く順: 喫水の暗い縁 → 舷の明るい帯 → 甲板（左が明るく右が暗い横の陰影・板の継ぎ目・船首楼の段の影・煙突の煤・錨鎖・爆雷の軌条）→ 高い物の陰（右舷・艦尾へずらす）→ 部品
+ //   （小物・短艇・発射管・砲・機銃の台・艦橋・煙突・マスト。それぞれ明るい側と暗い側・屋根の光・縁の線）→ 艦首の舷の光。部品は甲板の輪郭で切る（船体の外へ漏らさない）。
+ // v0.8.2 S2b（D-A1・D-A2）: 戦艦・重巡の部品の型 3 つ（塔の艦橋・舷側の砲郭・飛行甲板）は assets/capital-paint。駆逐艦の置き方にこの型は無い＝駆逐艦の絵の画素は今のまま（tex-ab）。
++// v0.8.2 S2c: 戦艦・重巡の新しい型（煙突の台・25 mm・ダビット・カタパルト・水上機・クレーン）の影と描き方は capital-detail-paint、甲板の模様は capital-deck-paint（駆逐艦では呼ばない・何もしない）。
+ import { DESTROYER_BOW_FLARE_TO, DESTROYER_SHADOW_ALPHA, DESTROYER_SHEER_UNITS, DESTROYER_STEP_SHADOW_UNITS, DESTROYER_TONES as T, DESTROYER_WATERLINE_UNITS } from '../config/destroyer-art-config';
+ import { hullOutline } from './boat-shape';
++import { paintCapitalDeck } from './capital-deck-paint';
++import { capitalShadow } from './capital-detail-paint';
+ import { paintCapitalPart } from './capital-paint';
++import { isCapitalKind } from './capital-plan';
+ import { planHalfAt, type DestroyerPlan } from './destroyer-plan';
+ import { paintPart, shadowOf } from './destroyer-part-paint';
+ import { ellipse, path, toneCss, xGrad, type C } from './destroyer-pen';
+@@ -89,9 +93,10 @@ export function paintDestroyer(ctx: C, plan: DestroyerPlan, base: number): void
+   path(ctx, deck);
+   ctx.clip();
+   paintDeckMarks(ctx, base, plan);
++  if (isCapitalKind(plan.kind)) paintCapitalDeck(ctx, base, plan); // v0.8.2 S2c: 戦艦・重巡だけ（木甲板の板・防波堤・揚錨機）
+   ctx.fillStyle = toneCss(base, T.shadow, DESTROYER_SHADOW_ALPHA);
+   ctx.strokeStyle = toneCss(base, T.shadow, DESTROYER_SHADOW_ALPHA * 0.8);
+-  for (const p of plan.parts) shadowOf(ctx, p);
++  for (const p of plan.parts) if (!capitalShadow(ctx, p)) shadowOf(ctx, p);
+   for (const p of plan.parts) if (!paintCapitalPart(ctx, base, p)) paintPart(ctx, base, p);
+   path(ctx, deck);
+   ctx.strokeStyle = toneCss(base, T.shadow, 0.35);
+diff --git a/src/assets/destroyer-plan.ts b/src/assets/destroyer-plan.ts
+index 1af9367..e7fe893 100644
+--- a/src/assets/destroyer-plan.ts
++++ b/src/assets/destroyer-plan.ts
+@@ -11,13 +11,18 @@ import { hullHalfWidthAt, hullOutline, type Pt } from './boat-shape';
+ export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki' | 'subchaser'; // 駆潜艇は v0.8.1 S2b（us_06 のハード）
+ /** 戦艦 扶桑型・重巡 最上（v0.8.2 S2b。us_05。置き方は assets/capital-plan。同じ DestroyerPlan の形で destroyer-paint が描く） */
+ export type CapitalKind = 'fuso' | 'mogami';
++/** 塔の段の表の名（v0.8.2 S2c。config/capital-layout-config の CAPITAL_TOWER_ROWS: 山城の塔の艦橋・山城の後部の上部構造・最上の塔の艦橋） */
++export type CapitalTower = 'fuso' | 'fusoAft' | 'mogami';
+ 
+ /**
+  * 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ）。砲の dx・bw は連装の砲身の間隔（中心から）と太さ（v0.8.2 S2b の戦艦・重巡の砲塔だけ。無ければ destroyer-art-config の値）。
+  * v0.8.2 S2b の 3 つ: pagoda 塔の艦橋（tiers 段）・casemate 舷側の砲郭の列（n 門・side は右舷 1・左舷 −1）・deck 後部の飛行甲板（rails 本のレール）
++ * v0.8.2 S2c（ユーザーの実機の感想「もう少しディティールに」）: 砲の lift（背負い式・高い台の段。高いほど後で描き甲板と下の砲塔へ影を落とす）と ears（主砲塔の後ろの測距儀の耳。幅の割合）・pagoda の style（段の表）・deck の wAft（艦尾側の幅）と
++ * stack 煙突と探照灯の台（trunk は最上の傾いた太い煙突）・aa 25 mm 機銃（n 連装・side は銃身の向く舷）・davit ボートダビット・catapult 斜めのカタパルト（cl × cw・ang 度。艦首へ向く軸を右舷へ回す）・
++ * plane 水上機（span × plen・ang 度・bi は複葉）・crane クレーンの腕（x0, y0 の柱から x1, y1 の先へ）。斜めの物の w・len は外の箱（tests が船体の内に収まるかを見る）
+  */
+ export type DestroyerPart =
+-  | { readonly t: 'gun'; readonly style: DestroyerGunStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly dir: 1 | -1; readonly barrel: number; readonly dx?: number; readonly bw?: number }
++  | { readonly t: 'gun'; readonly style: DestroyerGunStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly dir: 1 | -1; readonly barrel: number; readonly dx?: number; readonly bw?: number; readonly lift?: number; readonly ears?: number }
+   | { readonly t: 'tubes'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: number; readonly shield: boolean }
+   | { readonly t: 'funnel'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+   | { readonly t: 'bridge'; readonly style: DestroyerBridgeStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+@@ -25,9 +30,15 @@ export type DestroyerPart =
+   | { readonly t: 'mast'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+   | { readonly t: 'boat'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+   | { readonly t: 'locker'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+-  | { readonly t: 'pagoda'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly tiers: number }
++  | { readonly t: 'pagoda'; readonly style: CapitalTower; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly tiers: number }
+   | { readonly t: 'casemate'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: number; readonly side: 1 | -1 }
+-  | { readonly t: 'deck'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly rails: number };
++  | { readonly t: 'deck'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly rails: number; readonly wAft: number }
++  | { readonly t: 'stack'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly fw: number; readonly flen: number; readonly trunk: boolean }
++  | { readonly t: 'aa'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: 1 | 3; readonly side: 1 | -1 }
++  | { readonly t: 'davit'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly side: 1 | -1 }
++  | { readonly t: 'catapult'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly cl: number; readonly cw: number; readonly ang: number }
++  | { readonly t: 'plane'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly span: number; readonly plen: number; readonly ang: number; readonly bi: boolean }
++  | { readonly t: 'crane'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly x0: number; readonly y0: number; readonly x1: number; readonly y1: number };
+ 
+ export interface DestroyerPlan {
+   readonly kind: DestroyerKind | CapitalKind;
+@@ -84,6 +95,15 @@ export function destroyerPartBounds(p: DestroyerPart): { x0: number; x1: number;
+ 
+ /** 部品の箱（砲は砲塔と砲身の 2 つ。ほかは destroyerPartBounds の 1 つ）。tests が船体の内に収まるかを見る */
+ export function destroyerPartBoxes(p: DestroyerPart, barrelSpread: number): { x0: number; x1: number; y0: number; y1: number }[] {
++  if (p.t === 'deck') {
++    // v0.8.2 S2c: 艦尾へ細る飛行甲板（最上だけ）は長さを 10 に切った箱（それぞれ前の端の幅）
++    const n = 10;
++    const y0 = p.cy - p.len / 2;
++    return Array.from({ length: n }, (_, i) => {
++      const hw = (p.w + ((p.wAft - p.w) * i) / n) / 2;
++      return { x0: p.cx - hw, x1: p.cx + hw, y0: y0 + (p.len * i) / n, y1: y0 + (p.len * (i + 1)) / n };
++    });
++  }
+   if (p.t !== 'gun') return [destroyerPartBounds(p)];
+   const body = { x0: p.cx - p.w / 2, x1: p.cx + p.w / 2, y0: p.cy - p.len / 2, y1: p.cy + p.len / 2 };
+   const y0 = p.dir === 1 ? body.y0 - p.barrel : body.y1;
+diff --git a/src/config/capital-art-config.ts b/src/config/capital-art-config.ts
+index bf0dc50..a83fcae 100644
+--- a/src/config/capital-art-config.ts
++++ b/src/config/capital-art-config.ts
+@@ -1,55 +1,10 @@
+ // v0.8.2 S2b（us_05「スリガオ海峡・最初の接触」。spec-v0820 §4.11 D-A1〜D-A4、lead の L30〜L32）: 戦艦（扶桑型＝山城・扶桑。tex-battleship-fuso）と重巡（最上。tex-cruiser-mogami）の絵の
+-// 細部と、弾薬庫の誘爆（轟沈）の見た目の定数。骨組み（船体の輪郭・船首楼の段・艦橋の足元・煙突・主砲塔・マスト）は ship-art-config の SHIP_ART_LAYOUTS（当たりの形 R22・tests/ship-art）、
++// 描き方の定数と、弾薬庫の誘爆（轟沈）の見た目の定数（v0.8.2 S2c: 細部の置き方 CAPITAL_DETAILS は config/capital-layout-config へ分けた）。骨組み（船体の輪郭・船首楼の段・艦橋の足元・煙突・主砲塔・マスト）は ship-art-config の SHIP_ART_LAYOUTS（当たりの形 R22・tests/ship-art）、
+ // 置き方は assets/capital-plan、描き方は assets/destroyer-paint（新しい部品の型 pagoda・casemate・deck）と destroyer-part-paint（砲は砲身の間隔と太さだけ任意の欄）。
+ // 色は駆逐艦と同じく陣営のパレットの地の色 1 つの明るさだけ（destroyer-art-config の DESTROYER_TONES）。乱数は使わない（ART_SEED_* は足さない＝今の絵の種を動かさない）。
+ // ゲームの強さの値ではないので data/*.json には置かない（沈む長さの 0.5 倍も見た目の長さ。沈む本数・誘爆の確率は data の記録）。何も import しない。
+ 
+-/**
+- * 1 隻の細部（位置は長さの割合: 艦首 0・艦尾 1。x は B の倍・大きさは単位か割合）:
+- * turret: 主砲塔 [長さ（L の割合）, 砲身の長さ（L の割合）, 砲身の太さ（単位）, 連装の砲身の間隔（中心から・単位）]。tiers: 塔の艦橋の段の数（0 は今の日本の艦橋の形 'ijn'）。
+- * casemates: 舷側の副砲の砲郭の列 [前, 後, 片舷の門数]（無ければ null）。ha・haSize: 連装の高角砲 [位置, x, 砲身の向き] と [幅（B 倍）, 長さ（L の割合）, 砲身（L の割合）, 砲身の太さ, 間隔]。
+- * tubs: 機銃の台 [位置, x]。catapults・catapultSize: カタパルト [位置, x] と [幅（単位）, 長さ（L の割合）]。deck: 後部の飛行甲板 [前, 後, 幅（B 倍）, レールの数]（無ければ null）。
+- * boats・boatSize: 短艇 [位置, x] と [幅, 長さ（単位）]。lockers: 甲板の小物 [位置, x]。yardHalfB: マストの桁の半分の長さ（B 倍）。panelUnits: 甲板の板の継ぎ目の間隔（単位）
+- */
+-export interface CapitalDetail {
+-  readonly turret: readonly [number, number, number, number];
+-  readonly tiers: number;
+-  readonly casemates: readonly [number, number, number] | null;
+-  readonly ha: readonly (readonly [number, number, 1 | -1])[];
+-  readonly haSize: readonly [number, number, number, number, number];
+-  readonly tubs: readonly (readonly [number, number])[];
+-  readonly catapults: readonly (readonly [number, number])[];
+-  readonly catapultSize: readonly [number, number];
+-  readonly deck: readonly [number, number, number, number] | null;
+-  readonly boats: readonly (readonly [number, number])[];
+-  readonly boatSize: readonly [number, number];
+-  readonly lockers: readonly (readonly [number, number])[];
+-  readonly yardHalfB: number;
+-  readonly panelUnits: number;
+-}
+-export const CAPITAL_DETAILS: Readonly<Record<'fuso' | 'mogami', CapitalDetail>> = {
+-  // 扶桑型（1944 年の姿の簡略）: 連装の主砲塔 6（前 2・中 2・後 2）・5 段の塔の艦橋・煙突 1・舷側の砲郭 片舷 7・連装の高角砲 4・機銃の台 8・艦尾のカタパルト 1（山城の形）・短艇 4
+-  fuso: {
+-    turret: [0.045, 0.028, 2, 3], tiers: 5, casemates: [0.2, 0.47, 7],
+-    ha: [[0.39, 0.3, 1], [0.39, -0.3, 1], [0.47, 0.3, -1], [0.47, -0.3, -1]], haSize: [0.12, 0.02, 0.012, 1, 1.5],
+-    tubs: [[0.2, 0.3], [0.2, -0.3], [0.58, 0.34], [0.58, -0.34], [0.7, 0.2], [0.7, -0.2], [0.89, 0.3], [0.89, -0.3]],
+-    catapults: [[0.915, 0]], catapultSize: [4.6, 0.06], deck: null,
+-    boats: [[0.55, 0.3], [0.55, -0.3], [0.68, 0.33], [0.68, -0.33]], boatSize: [5, 14],
+-    lockers: [[0.12, 0.3], [0.12, -0.3], [0.94, 0.15]], yardHalfB: 0.28, panelUnits: 6,
+-  },
+-  // 最上（1944 年の航空巡洋艦の形）: 前部の連装の主砲塔 3・日本の艦橋・傾いた煙突 1・連装の高角砲 4・後部の飛行甲板（平らな矩形にレール 3）・その前のカタパルト 2・機銃の台 6・短艇 2
+-  mogami: {
+-    turret: [0.036, 0.026, 1.3, 2.2], tiers: 0, casemates: null,
+-    ha: [[0.375, 0.3, 1], [0.375, -0.3, 1], [0.46, 0.3, -1], [0.46, -0.3, -1]], haSize: [0.17, 0.02, 0.011, 0.8, 1.3],
+-    tubs: [[0.15, 0.32], [0.15, -0.32], [0.52, 0.3], [0.52, -0.3], [0.95, 0.2], [0.95, -0.2]],
+-    catapults: [[0.56, 0.24], [0.56, -0.24]], catapultSize: [3.4, 0.05], deck: [0.6, 0.93, 0.78, 3],
+-    boats: [[0.5, 0.34], [0.5, -0.34]], boatSize: [4, 11],
+-    lockers: [[0.08, 0.2], [0.08, -0.2], [0.97, 0.1]], yardHalfB: 0.3, panelUnits: 6,
+-  },
+-};
+-
+-/** 機銃の台の大きさ（単位）・甲板の小物の大きさ（単位）・砲郭の列の幅（単位）と船体の縁からの余白（単位。甲板の輪郭の内に収める） */
+-export const CAPITAL_TUB_UNITS = 4;
++/** 甲板の小物の大きさ（単位）・砲郭の列の幅（単位）と船体の縁からの余白（単位。甲板の輪郭の内に収める） */
+ export const CAPITAL_LOCKER_UNITS: readonly [number, number] = [2.2, 2];
+ export const CASEMATE_W_UNITS = 5;
+ export const CASEMATE_EDGE_UNITS = 2;
+@@ -58,26 +13,43 @@ export const CASEMATE_SPONSON_SHARE = 0.62;
+ export const CASEMATE_BARREL_UNITS = 1;
+ 
+ /**
+- * 塔の艦橋（扶桑型の見分けの鍵。高さを段の重なりと影で出す）: 段ごとに幅・長さを縮める割合、前へずらす割合（長さに対して。≤ 縮みの半分＝段は足元の箱の内）、
+- * 塔の長い影（k 段目の影は (k + 1) × これ だけ艦尾へ・右舷へはその PAGODA_SHADOW_X_SHARE 倍。甲板に落ちる）と濃さ、段の影（上の段が下の段に落とす短い影。単位）と濃さ、
+- * 最上段の測距儀の腕の太さ（単位）と方位盤の半径（最上段の幅の割合）
++ * 塔（山城の塔の艦橋・後部の上部構造・最上の艦橋。段は capital-layout-config の CAPITAL_TOWER_ROWS）: 高さの長い影（k 段目の影は (k + 1) × これ だけ艦尾へ・右舷へはその PAGODA_SHADOW_X_SHARE 倍。甲板に落ちる）と濃さ、
++ * 段の影（上の段が下の段に落とす短い影。単位）と濃さ、窓の帯の太さ（単位）、探照灯の半径（単位）、測距儀の腕の太さ（単位）
+  */
+-export const PAGODA_SHRINK_W = 0.17;
+-export const PAGODA_SHRINK_LEN = 0.16;
+-export const PAGODA_SHIFT = 0.04;
+-export const PAGODA_SHADOW_PER_TIER_UNITS = 6.5;
+-export const PAGODA_SHADOW_X_SHARE = 0.6;
+-export const PAGODA_SHADOW_ALPHA = 0.32;
+-export const PAGODA_STEP_SHADOW_UNITS = 1.8;
+-export const PAGODA_STEP_SHADOW_ALPHA = 0.45;
++export const PAGODA_SHADOW_PER_TIER_UNITS = 6;
++export const PAGODA_SHADOW_X_SHARE = 0.4;
++export const PAGODA_SHADOW_ALPHA = 0.3;
++export const PAGODA_STEP_SHADOW_UNITS = 2;
++export const PAGODA_STEP_SHADOW_ALPHA = 0.5;
++export const PAGODA_WINDOW_UNITS = 0.8;
++export const PAGODA_LIGHT_UNITS = 1.5;
+ export const PAGODA_ARM_UNITS = 1.8;
+-export const PAGODA_DIRECTOR_SHARE = 0.22;
+ 
+-/** 飛行甲板（最上の見分けの鍵）: 横の板の継ぎ目の間隔（単位）・レールの太さ（単位）・縁の暗い線の太さ（単位）・前の端の回転台の半径（幅の割合） */
++/** 飛行甲板（最上の見分けの鍵）: 横の板の継ぎ目の間隔（単位）・レールの太さ（単位）・縁の暗い線の太さ（単位）・回転台の半径（単位） */
+ export const DECK_PLANK_UNITS = 5;
+ export const DECK_RAIL_UNITS = 1;
+ export const DECK_EDGE_UNITS = 0.6;
+-export const DECK_TURNTABLE_SHARE = 0.16;
++export const DECK_TURNTABLE_UNITS = 2.6;
++
++/**
++ * v0.8.2 S2c の細部: 木甲板の縦の板の幅（単位）と継ぎ目の濃さ、板の突き合わせの間隔（単位）、背負い式の砲塔が下へ落とす影（単位。右舷・艦尾へ）と濃さ、
++ * 煙突の高さの影（単位）、25 mm の台の半径（三連装・単装。単位）、ダビットの大きさ（単位）、水上機の影のずれ（単位）、クレーンの腕の太さ（単位）、防波堤（艦首からの割合・幅の割合）
++ */
++export const PLANK_UNITS = 1.5;
++export const PLANK_ALPHA = 0.07;
++export const PLANK_BUTT_UNITS = 17;
++export const LIFT_SHADOW_UNITS = 2.6;
++export const LIFT_SHADOW_ALPHA = 0.38;
++export const STACK_SHADOW_UNITS = 9;
++export const AA_R_UNITS: readonly [number, number] = [2.3, 1.3];
++export const DAVIT_UNITS = 2;
++export const PLANE_SHADOW_UNITS = 2.2;
++export const CRANE_UNITS = 1.1;
++/** 木甲板の範囲（長さの割合。外の艦首と艦尾は鋼の甲板＝少し暗く板なし）と、甲板を沈める濃さ（上部構造と砲塔を浮かせる）・鋼の甲板の濃さ */
++export const PLANK_ZONE: Readonly<Record<'fuso' | 'mogami', readonly [number, number]>> = { fuso: [0.155, 0.865], mogami: [0.075, 0.6] };
++export const DECK_DIM_ALPHA = 0.1;
++export const STEEL_DIM_ALPHA = 0.09;
++export const BREAKWATER: Readonly<Record<'fuso' | 'mogami', readonly [number, number, number]>> = { fuso: [0.155, 0.185, 0.78], mogami: [0.075, 0.1, 0.7] };
+ 
+ /**
+  * 弾薬庫の誘爆（轟沈。D-A4・L31）の見た目（systems/magazine-fx）: 艦の中央の大きい爆発の大きさ（今の大きい版に対する倍。閃光・火球・水柱・輪と 2 段目の閃光・火球・柱・衝撃波・煙の玉）、
+diff --git a/src/config/ship-art-config.ts b/src/config/ship-art-config.ts
+index 58641f7..c5e43c6 100644
+--- a/src/config/ship-art-config.ts
++++ b/src/config/ship-art-config.ts
+@@ -116,21 +116,22 @@ export const SHIP_ART_LAYOUTS: Readonly<Record<ShipArtKind, ShipArtLayout>> = {
+     mounts: [[0.15, 0.36, 1]], tubes: [], tubs: [[0.56, 0.22], [0.56, -0.22], [0.74, 0]],
+     hatches: [], masts: [0.355], derricks: [],
+   },
+-  // 戦艦 扶桑型（v0.8.2 S2b の D-A1。us_05 の山城・扶桑。212.75 × 33.1 m＝425.5 × 66.2 単位）: 細い艦首・船首楼の段 49%・連装の主砲塔 6（前 16.5%・24.5%、中 52.5%・61.5%、後 74.5%・82.5%）・
+-  // 塔の艦橋の足元 28.5〜37%（段・影・砲郭・高角砲・カタパルトは capital-art-config）・煙突 1（43%）・後檣 57.5%・丸い艦尾。砲身は次の砲塔に届かない（中心線の部品は重ならない）
++  // 戦艦 扶桑型（v0.8.2 S2b の D-A1。us_05 の山城・扶桑。212.75 × 33.1 m＝425.5 × 66.2 単位）: 細い艦首・船首楼の段 49%・丸い艦尾。v0.8.2 S2c（ユーザーの実機の感想「もう少しディティールに」）で
++  // 山城の 1944 年の並び（資料は scratchpad の facts-S2c）に直した: 連装の主砲塔 6＝1 番 21.5%・2 番 28.5%（前向き。2 は背負い式）・塔の艦橋の足元 32〜43%・3 番 46%（後ろ向き）・煙突 56.5%・
++  // 4 番 61.5%（後ろ向き）・後檣 71%・5 番 76.5%・6 番 83.5%（後ろ向き。5 は背負い式）。背負い式の砲身は下の砲塔の上を越える（capital-art-config の砲身・tests/capital-art）
+   fuso: {
+     hull: [[0, 0], [0.02, 0.22], [0.06, 0.5], [0.11, 0.75], [0.15, 0.9], [0.19, 1], [0.86, 1], [0.92, 0.88], [0.965, 0.66], [1, 0.36]],
+-    forecastle: [0.49, 'line'], bridge: [0.285, 0.37, 0.42], funnels: [[0.43, 0.3, 0.05]],
+-    mounts: [[0.165, 0.4, 1], [0.245, 0.4, 1], [0.525, 0.4, 1], [0.615, 0.4, -1], [0.745, 0.4, -1], [0.825, 0.4, -1]], tubes: [], tubs: [],
+-    hatches: [], masts: [0.575], derricks: [],
++    forecastle: [0.49, 'line'], bridge: [0.32, 0.43, 0.5], funnels: [[0.565, 0.3, 0.05]],
++    mounts: [[0.215, 0.4, 1], [0.285, 0.4, 1], [0.46, 0.4, -1], [0.615, 0.4, -1], [0.765, 0.4, -1], [0.835, 0.4, -1]], tubes: [], tubs: [],
++    hatches: [], masts: [0.71], derricks: [],
+   },
+-  // 重巡 最上（v0.8.2 S2b の D-A2。1944 年の航空巡洋艦。200.6 × 20.2 m＝401.2 × 40.4 単位）: 前部の連装の主砲塔 3（13%・20.5%・27.5%）・艦橋 30〜35.5%・傾いた太い煙突 1（43%）・
+-  // 船首楼の段 50%・主檣 51%（後部の飛行甲板 60〜93%・カタパルト・高角砲は capital-art-config）
++  // 重巡 最上（v0.8.2 S2b の D-A2。1944 年の航空巡洋艦。200.6 × 20.2 m＝401.2 × 40.4 単位）: 前部の連装の主砲塔 3（13%・20.5%・27.5%。S2c: 3 番が背負い式）・艦橋 30〜35.5%・
++  // 傾いた太い煙突 1（S2c: 39.5〜47.5%）・船首楼の段 50%・前檣 36.5%（S2c）と主檣 51%（後部の飛行甲板 60〜95.5%・カタパルト・高角砲は capital-layout-config）
+   mogami: {
+     hull: [[0, 0], [0.025, 0.24], [0.07, 0.52], [0.12, 0.76], [0.16, 0.92], [0.19, 1], [0.86, 1], [0.93, 0.86], [0.975, 0.66], [1, 0.42]],
+-    forecastle: [0.5, 'line'], bridge: [0.3, 0.355, 0.5], funnels: [[0.43, 0.36, 0.07]],
++    forecastle: [0.5, 'line'], bridge: [0.3, 0.355, 0.5], funnels: [[0.435, 0.36, 0.08]],
+     mounts: [[0.13, 0.42, 1], [0.205, 0.42, 1], [0.275, 0.42, 1]], tubes: [], tubs: [],
+-    hatches: [], masts: [0.51], derricks: [],
++    hatches: [], masts: [0.365, 0.51], derricks: [],
+   },
+   // 輸送船（敵は灰赤・味方は薄い青。味方の 1 枚は寸法を厳守＝名前と状態の行の y）: 丸い艦首と艦尾・船倉のハッチ 4（前 2・後ろ 2）・中央やや後ろの船橋 50〜62% と煙突 66%・マスト 2 と荷役の腕
+   transport: {
+diff --git a/tests/capital-art.test.ts b/tests/capital-art.test.ts
+index dbc9f5d..31e6a21 100644
+--- a/tests/capital-art.test.ts
++++ b/tests/capital-art.test.ts
+@@ -11,7 +11,7 @@ import { capitalPlan, isCapitalKind, pagodaTier } from '../src/assets/capital-pl
+ import { hullTexSize } from '../src/assets/art-dims';
+ import { hullHalfWidthAt } from '../src/assets/boat-shape';
+ import { destroyerPlan, type DestroyerPart } from '../src/assets/destroyer-plan';
+-import { CAPITAL_DETAILS, PAGODA_SHIFT, PAGODA_SHRINK_LEN } from '../src/config/capital-art-config';
++import { CAPITAL_DETAILS, CAPITAL_TOWER_ROWS } from '../src/config/capital-layout-config';
+ import { gameData, getEnemyRecord } from '../src/config/game-data';
+ import { ART_TEX_DENSITY, SHIP_ART_LAYOUTS, artTexDensity, shipArtKey, shipArtKind } from '../src/config/ship-art-config';
+ import { setupOf } from './column-world-kit';
+@@ -28,63 +28,115 @@ const one = <T extends DestroyerPart['t']>(parts: readonly DestroyerPart[], t: T
+   return f[0] as Extract<DestroyerPart, { t: T }>;
+ };
+ 
+-describe('見分けの鍵（L30・D-A1・D-A2）', () => {
+-  it('戦艦 扶桑型: 連装の主砲塔 6＝前 2（艦橋の前・前向き）・中 2（煙突と後檣の間・前向きと後ろ向き）・後 2（後ろ向き）、5 段の塔の艦橋・煙突 1・舷側の砲郭 片舷 7・艦尾のカタパルト・高角砲 4', () => {
++describe('見分けの鍵（L30・D-A1・D-A2）と 1944 年の並び（v0.8.2 S2c）', () => {
++  // S2c（ユーザーの実機の感想 2026-11-18「連装六基で山城、扶桑。航空巡洋艦で最上と軍オタはわかるのですが、デフォルメされすぎているというか、もう少しディティールにこだわれないでしょうか？
++  // 最上は後部甲板に水上機乗せててもいいと思います」）: 並びは資料（scratchpad の facts-S2c）に合わせて山城を描く（扶桑と 1 枚を共有）。S2b の pin（中の 2 基が煙突と後檣の間・前向きと後ろ向き、
++  // 5 段の塔、最上の日本の艦橋の形）は山城の 3 番砲塔が後ろ向きで塔と煙突の間にある並びと、段の表の塔に直した
++  it('山城: 連装の主砲塔 6＝1・2（塔の前・前向き。2 は背負い式）・3（塔と煙突の間・後ろ向き）・4（煙突と後部の上部構造の間・後ろ向き）・5・6（後部の上部構造の後ろ・後ろ向き。5 は背負い式）', () => {
+     const { L, B } = FUSO;
+     const plan = capitalPlan('fuso', L, B);
+-    const g = mains(plan.parts, B);
+-    const pagoda = one(plan.parts, 'pagoda');
+-    const funnel = one(plan.parts, 'funnel');
+-    const mast = one(plan.parts, 'mast');
+-    expect(g.map((p) => p.style)).toEqual(Array(6).fill('twin'));
+-    expect(g.every((p) => p.w >= 0.4 * B - 1e-9 && p.barrel > 0 && p.dx! > 0 && p.bw! > 0)).toBe(true);
+-    const fore = g.filter((p) => p.cy < pagoda.cy);
+-    const mid = g.filter((p) => p.cy > funnel.cy && p.cy < 0.7 * L);
+-    const aft = g.filter((p) => p.cy >= 0.7 * L);
+-    expect([fore.length, mid.length, aft.length]).toEqual([2, 2, 2]);
+-    expect([...fore, ...mid, ...aft].map((p) => p.dir)).toEqual([1, 1, 1, -1, -1, -1]);
+-    expect(mid[0]!.cy < mast.cy && mast.cy < mid[1]!.cy).toBe(true);
+-    expect(pagoda.tiers).toBe(5);
+-    expect(pagoda.cy).toBeLessThan(funnel.cy);
+-    const cas = plan.parts.filter((p) => p.t === 'casemate');
+-    expect(cas.map((p) => (p.t === 'casemate' ? [p.side, p.n] : null))).toEqual([[1, 7], [-1, 7]]);
+-    const cat = plan.parts.filter((p) => p.t === 'tubes');
+-    expect(cat.map((p) => (p.t === 'tubes' ? [p.n, p.cy > 0.85 * L, Math.abs(p.cx - B / 2) < 1e-9] : null))).toEqual([[1, true, true]]);
+-    expect(plan.parts.filter((p) => p.t === 'gun' && Math.abs(p.cx - B / 2) > 1e-9)).toHaveLength(4);
+-    expect(plan.parts.some((p) => p.t === 'deck' || p.t === 'bridge')).toBe(false);
++    const g = mains(plan.parts, B).sort((a, b) => a.cy - b.cy);
++    const towers = plan.parts.filter((p): p is Extract<DestroyerPart, { t: 'pagoda' }> => p.t === 'pagoda');
++    expect(towers.map((p) => p.style)).toEqual(['fusoAft', 'fuso']);
++    const [aft, tower] = [towers[0]!, towers[1]!];
++    const stack = one(plan.parts, 'stack');
++    expect(g.map((p) => [p.style, p.dir, p.lift])).toEqual([['twin', 1, 0], ['twin', 1, 1], ['twin', -1, 1], ['twin', -1, 1], ['twin', -1, 1], ['twin', -1, 0]]);
++    expect(g.every((p) => p.w >= 0.4 * B - 1e-9 && p.barrel >= 0.05 * L && p.dx! > 0 && p.bw! > 0 && p.ears! > 0)).toBe(true);
++    const front = (p: { cy: number; len: number }): number => p.cy - p.len / 2;
++    const back = (p: { cy: number; len: number }): number => p.cy + p.len / 2;
++    expect(back(g[1]!)).toBeLessThan(front(tower));
++    expect(front(g[2]!) > back(tower) && back(g[2]!) < front(stack)).toBe(true);
++    expect(front(g[3]!) > back(stack) && back(g[3]!) < front(aft)).toBe(true);
++    expect(front(g[4]!)).toBeGreaterThan(back(aft) - 1e-9);
++    expect(stack.trunk).toBe(false);
++    expect(plan.parts.filter((p) => p.t === 'mast').map((p) => p.cy > front(aft) && p.cy < back(aft))).toEqual([true]);
++    expect(plan.parts.filter((p) => p.t === 'casemate').map((p) => (p.t === 'casemate' ? [p.side, p.n] : null))).toEqual([[1, 7], [-1, 7]]);
++    expect(plan.parts.filter((p) => p.t === 'gun' && Math.abs(p.cx - B / 2) > 1e-9)).toHaveLength(4); // 連装の高角砲 4
++    expect([3, 1].map((n) => plan.parts.filter((p) => p.t === 'aa' && p.n === n).length)).toEqual([8, 8]);
++    expect([plan.parts.filter((p) => p.t === 'boat').length, plan.parts.filter((p) => p.t === 'davit').length, plan.parts.filter((p) => p.t === 'crane').length]).toEqual([4, 8, 2]);
++    // 艦尾のカタパルト 1 と水上機 2（1 機はカタパルトの上）
++    const cat = one(plan.parts, 'catapult');
++    expect(cat.cy).toBeGreaterThan(0.85 * L);
++    const planes = plan.parts.filter((p): p is Extract<DestroyerPart, { t: 'plane' }> => p.t === 'plane');
++    expect(planes.map((p) => p.bi)).toEqual([true, true]);
++    expect(planes.some((p) => Math.abs(p.cx - cat.cx) < cat.w / 2 && Math.abs(p.cy - cat.cy) < cat.len / 2)).toBe(true);
++    for (const p of planes) for (const t of g) expect(p.cy - p.len / 2 > back(t) || p.cy + p.len / 2 < front(t), '水上機は砲塔に重ならない').toBe(true);
++    expect(plan.parts.some((p) => p.t === 'deck' || p.t === 'bridge' || p.t === 'funnel')).toBe(false);
+   });
+-  it('塔の艦橋の段: 上ほど幅も長さも小さく、どの段も足元の箱の内（前へのずれ ≤ 縮みの半分）', () => {
+-    expect(PAGODA_SHIFT).toBeLessThanOrEqual(PAGODA_SHRINK_LEN / 2);
+-    const p = one(capitalPlan('fuso', FUSO.L, FUSO.B).parts, 'pagoda');
+-    let prev = [Infinity, Infinity];
+-    for (let k = 0; k < p.tiers; k++) {
+-      const [x, y, w, h] = pagodaTier(p, k);
+-      expect(x).toBeGreaterThanOrEqual(p.cx - p.w / 2 - 1e-9);
+-      expect(x + w).toBeLessThanOrEqual(p.cx + p.w / 2 + 1e-9);
+-      expect(y).toBeGreaterThanOrEqual(p.cy - p.len / 2 - 1e-9);
+-      expect(y + h).toBeLessThanOrEqual(p.cy + p.len / 2 + 1e-9);
+-      expect(w < prev[0]! && h < prev[1]!, `${k}`).toBe(true);
+-      expect(Math.min(w, h)).toBeGreaterThanOrEqual(2);
+-      prev = [w, h];
++  it('塔の段（山城の塔・後部の上部構造・最上の塔）: どの段も部品の箱の内・最上段がいちばん小さい・山城の塔は 8 段以上で上の段ほど前（前へ傾いた塔）', () => {
++    const towers = [...capitalPlan('fuso', FUSO.L, FUSO.B).parts, ...capitalPlan('mogami', MOGAMI.L, MOGAMI.B).parts].filter((p): p is Extract<DestroyerPart, { t: 'pagoda' }> => p.t === 'pagoda');
++    expect(towers.map((p) => p.style).sort()).toEqual(['fuso', 'fusoAft', 'mogami']);
++    for (const p of towers) {
++      expect(p.tiers).toBe(CAPITAL_TOWER_ROWS[p.style].length);
++      const areas: number[] = [];
++      for (let k = 0; k < p.tiers; k++) {
++        const [x, y, w, h] = pagodaTier(p, k);
++        expect(x, `${p.style} ${k}`).toBeGreaterThanOrEqual(p.cx - p.w / 2 - 1e-9);
++        expect(x + w, `${p.style} ${k}`).toBeLessThanOrEqual(p.cx + p.w / 2 + 1e-9);
++        expect(y, `${p.style} ${k}`).toBeGreaterThanOrEqual(p.cy - p.len / 2 - 1e-9);
++        expect(y + h, `${p.style} ${k}`).toBeLessThanOrEqual(p.cy + p.len / 2 + 1e-9);
++        expect(Math.min(w, h), `${p.style} ${k}`).toBeGreaterThanOrEqual(2);
++        areas.push(w * h);
++      }
++      expect(Math.min(...areas)).toBe(areas[areas.length - 1]);
+     }
++    const rows = CAPITAL_TOWER_ROWS.fuso;
++    expect(rows.length).toBeGreaterThanOrEqual(8);
++    expect(rows[rows.length - 1]![2]).toBeLessThan(rows[0]![2]);
+   });
+-  it('重巡 最上: 前部の連装の主砲塔 3（どれも艦橋の前・前向き）・艦橋より後ろに主砲なし、後部の平らな飛行甲板（長さ ≥ 0.3 L・幅 ≥ 0.7 B・レール ≥ 2）・その前のカタパルト 2・日本の艦橋・煙突 1・高角砲 4', () => {
++  it('最上: 前部の連装 3（艦橋の前・前向き。3 番だけ背負い式）・後ろに主砲なし、塔の艦橋・傾いた太い煙突・三連装の発射管 片舷 2・後部の飛行甲板（艦尾へ細る・レール ≥ 2）と前の両舷の斜めのカタパルト 2・甲板に水上機 5', () => {
+     const { L, B } = MOGAMI;
+     const plan = capitalPlan('mogami', L, B);
+-    const g = mains(plan.parts, B);
+-    const bridge = one(plan.parts, 'bridge');
++    const g = mains(plan.parts, B).sort((a, b) => a.cy - b.cy);
++    const tower = one(plan.parts, 'pagoda');
+     const deck = one(plan.parts, 'deck');
+-    one(plan.parts, 'funnel');
+-    expect(g.map((p) => [p.style, p.dir, p.cy < bridge.cy])).toEqual(Array(3).fill(['twin', 1, true]));
+-    expect(bridge.style).toBe('ijn');
++    expect(tower.style).toBe('mogami');
++    expect(one(plan.parts, 'stack').trunk).toBe(true);
++    expect(g.map((p) => [p.style, p.dir, p.lift, p.cy < tower.cy])).toEqual([['twin', 1, 0, true], ['twin', 1, 0, true], ['twin', 1, 1, true]]);
+     expect(deck.cy - deck.len / 2).toBeGreaterThan(0.55 * L);
+     expect(deck.len).toBeGreaterThanOrEqual(0.3 * L);
+     expect(deck.w).toBeGreaterThanOrEqual(0.7 * B);
++    expect(deck.wAft).toBeLessThan(deck.w);
+     expect(deck.rails).toBeGreaterThanOrEqual(2);
+-    const cats = plan.parts.filter((p) => p.t === 'tubes');
+-    expect(cats.map((p) => (p.t === 'tubes' ? [p.n, Math.sign(p.cx - B / 2), p.cy < deck.cy - deck.len / 2] : null))).toEqual([[1, 1, true], [1, -1, true]]);
++    const cats = plan.parts.filter((p): p is Extract<DestroyerPart, { t: 'catapult' }> => p.t === 'catapult');
++    expect(cats.map((p) => [Math.sign(p.cx - B / 2), Math.sign(p.ang), p.cy < deck.cy - deck.len / 2])).toEqual([[1, 1, true], [-1, -1, true]]); // 前の端が舷側へ
++    expect(plan.parts.filter((p) => p.t === 'tubes').map((p) => (p.t === 'tubes' ? [Math.sign(p.cx - B / 2), p.n] : null))).toEqual([[1, 3], [-1, 3], [1, 3], [-1, 3]]);
+     expect(plan.parts.filter((p) => p.t === 'gun' && Math.abs(p.cx - B / 2) > 1e-9)).toHaveLength(4);
+-    expect(plan.parts.some((p) => p.t === 'pagoda' || p.t === 'casemate')).toBe(false);
++    expect([3, 1].map((n) => plan.parts.filter((p) => p.t === 'aa' && p.n === n).length)).toEqual([10, 8]);
++    // 水上機は飛行甲板の内（艦尾へ細る台形の、機の前と後ろの幅の内）で互いに重ならず、カタパルトの後ろ
++    const planes = plan.parts.filter((p): p is Extract<DestroyerPart, { t: 'plane' }> => p.t === 'plane').sort((a, b) => a.cy - b.cy);
++    expect(planes.map((p) => p.bi)).toEqual([false, false, false, true, true]);
++    const [d0, d1] = [deck.cy - deck.len / 2, deck.cy + deck.len / 2];
++    const halfAt = (y: number): number => (deck.w + ((deck.wAft - deck.w) * (y - d0)) / deck.len) / 2;
++    for (const [i, p] of planes.entries()) {
++      const [y0, y1] = [p.cy - p.len / 2, p.cy + p.len / 2];
++      expect(y0 > d0 && y1 < d1, `${i}`).toBe(true);
++      expect(p.w / 2, `${i}`).toBeLessThanOrEqual(Math.min(halfAt(y0), halfAt(y1)));
++      expect(y0, `${i}`).toBeGreaterThan(Math.max(...cats.map((c) => c.cy + c.len / 2)));
++      if (i > 0) expect(y0, `${i}`).toBeGreaterThan(planes[i - 1]!.cy + planes[i - 1]!.len / 2);
++    }
++    expect(plan.parts.some((p) => p.t === 'casemate' || p.t === 'bridge' || p.t === 'funnel')).toBe(false);
++  });
++  it.each([['fuso', FUSO], ['mogami', MOGAMI]] as const)('%s: 背負い式（S2c で S2b の「中心線の部品は重ならない」を外した）: 砲塔どうしは重ならず、砲身が別の砲塔に掛かるのは高い砲塔が後で描かれる時だけ。塔・煙突・マスト・クレーンは砲塔の後', (kind, { L, B }) => {
++    const parts = capitalPlan(kind, L, B).parts;
++    const g = mains(parts, B).sort((a, b) => a.cy - b.cy);
++    const body = (p: Gun): [number, number] => [p.cy - p.len / 2, p.cy + p.len / 2];
++    const barrel = (p: Gun): [number, number] => (p.dir === 1 ? [p.cy - p.len / 2 - p.barrel, p.cy - p.len / 2] : [p.cy + p.len / 2, p.cy + p.len / 2 + p.barrel]);
++    const hit = (a: [number, number], b: [number, number]): boolean => a[0] < b[1] - 1e-9 && b[0] < a[1] - 1e-9;
++    const over: number[][] = [];
++    for (const a of g) {
++      for (const b of g) {
++        if (a === b) continue;
++        expect(hit(body(a), body(b))).toBe(false);
++        if (!hit(barrel(a), body(b))) continue;
++        expect(a.lift!).toBeGreaterThan(b.lift!);
++        expect(parts.indexOf(a)).toBeGreaterThan(parts.indexOf(b));
++        over.push([g.indexOf(a), g.indexOf(b)]);
++      }
++    }
++    expect(over).toEqual(kind === 'fuso' ? [[1, 0], [4, 5]] : [[2, 1]]); // 山城は 2 番が 1 番の上・5 番が 6 番の上、最上は 3 番が 2 番の上
++    const last = Math.max(...g.map((p) => parts.indexOf(p)));
++    for (const p of parts) if (p.t === 'pagoda' || p.t === 'stack' || p.t === 'mast' || p.t === 'crane') expect(parts.indexOf(p), p.t).toBeGreaterThan(last);
+   });
+   it('大きさでも見分く: 戦艦は陽炎型の 1.8 倍の長さ・3 倍の幅、重巡は 1.65 倍の長さ・1.8 倍の幅（記録の寸法）', () => {
+     const dd = dims('ijn_destroyer');
+@@ -94,10 +146,11 @@ describe('見分けの鍵（L30・D-A1・D-A2）', () => {
+     expect(MOGAMI.B / dd.B).toBeGreaterThan(1.8);
+   });
+   it('今の艦の置き方（駆逐艦 4 形）には新しい部品の型も砲身の任意の欄も無い（今の絵の描く呼び出しは同じ＝tex-ab）', () => {
++    const NEW = ['pagoda', 'casemate', 'deck', 'stack', 'aa', 'davit', 'catapult', 'plane', 'crane'];
+     for (const k of ['kagero', 'fletcher', 'mutsuki', 'subchaser'] as const) {
+       for (const p of destroyerPlan(k, 236, 21.6).parts) {
+-        expect(['pagoda', 'casemate', 'deck'], k).not.toContain(p.t);
+-        if (p.t === 'gun') expect([p.dx, p.bw], k).toEqual([undefined, undefined]);
++        expect(NEW, k).not.toContain(p.t);
++        if (p.t === 'gun') expect([p.dx, p.bw, p.lift, p.ears], k).toEqual([undefined, undefined, undefined, undefined]);
+       }
+     }
+     expect(['fuso', 'mogami'].map(isCapitalKind)).toEqual([true, true]);
+@@ -166,13 +219,17 @@ describe('寸法（L30: 絵＝記録 × sprite_scale＝当たり）と Boot', ()
+ 
+ describe('source の pin（§7・§8・L30）', () => {
+   const lines = (f: string): number => readFileSync(f, 'utf8').split('\n').length - 1;
+-  it('capital-art-config は何も import しない・乱数なし（ART_SEED を足さない）。行数: capital-plan ≤ 160・capital-art-config ≤ 120・destroyer-paint ≤ 160・ほか ≤ 300', () => {
+-    const cfg = readFileSync('src/config/capital-art-config.ts', 'utf8');
+-    expect(cfg).not.toMatch(/^import /m);
+-    expect(cfg).not.toMatch(/export const \w*SEED/);
+-    for (const f of ['src/assets/capital-plan.ts', 'src/assets/capital-paint.ts', 'src/config/capital-art-config.ts']) expect(readFileSync(f, 'utf8'), f).not.toMatch(/Math\.random|SeededRng/);
++  it('capital-art-config・capital-layout-config（S2c で分けた）は何も import しない・乱数なし（ART_SEED を足さない）。行数: capital-plan ≤ 160・2 つの config ≤ 120・destroyer-paint ≤ 160・S2c の描き方 ≤ 200・ほか ≤ 300', () => {
++    for (const f of ['src/config/capital-art-config.ts', 'src/config/capital-layout-config.ts']) {
++      const cfg = readFileSync(f, 'utf8');
++      expect(cfg, f).not.toMatch(/^import /m);
++      expect(cfg, f).not.toMatch(/export const \w*SEED/);
++      expect(lines(f), f).toBeLessThanOrEqual(120);
++    }
++    const S2C = ['src/assets/capital-paint.ts', 'src/assets/capital-detail-paint.ts', 'src/assets/capital-deck-paint.ts', 'src/assets/capital-turret-paint.ts', 'src/assets/capital-plane-paint.ts'];
++    for (const f of ['src/assets/capital-plan.ts', 'src/config/capital-art-config.ts', 'src/config/capital-layout-config.ts', ...S2C]) expect(readFileSync(f, 'utf8'), f).not.toMatch(/Math\.random|SeededRng/);
++    for (const f of S2C) expect(lines(f), f).toBeLessThanOrEqual(200);
+     expect(lines('src/assets/capital-plan.ts')).toBeLessThanOrEqual(160);
+-    expect(lines('src/config/capital-art-config.ts')).toBeLessThanOrEqual(120);
+     expect(lines('src/assets/destroyer-paint.ts')).toBeLessThanOrEqual(160);
+     for (const f of ['src/assets/capital-paint.ts', 'src/assets/destroyer-art.ts', 'src/assets/destroyer-plan.ts', 'src/assets/destroyer-part-paint.ts', 'src/config/ship-art-config.ts', 'src/systems/magazine-fx.ts', 'src/systems/explosion-fx.ts', 'src/systems/blast-fx.ts', 'src/systems/world-art.ts']) {
+       expect(lines(f), f).toBeLessThanOrEqual(300);
+diff --git a/tests/destroyer-art.test.ts b/tests/destroyer-art.test.ts
+index fe9374f..e667686 100644
+--- a/tests/destroyer-art.test.ts
++++ b/tests/destroyer-art.test.ts
+@@ -2,6 +2,7 @@
+ // 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。v0.8.1 S2b（D-A2）で同じ描き方の駆潜艇（第13号型）を足した。
+ // v0.8.2 S2b（spec-v0820 D-A1・D-A2・L33）: 同じ描き方の戦艦 扶桑型・重巡 最上（置き方は assets/capital-plan・新しい部品は assets/capital-paint）も同じ決まり（置き方・単系統の色・描く範囲）で見る。
+ //   砲身の箱の幅は部品の砲身の間隔と太さ（dx・bw。戦艦・重巡の砲塔だけ）。形の見分け・寸法・Boot は tests/capital-art。
++//   v0.8.2 S2c: 戦艦・重巡は「中心線の部品は重ならない」を外した（背負い式の砲身・飛行甲板の水上機。代わりの決まりは tests/capital-art）。船体の内・2 単位以上・単系統の色は今のまま見る。
+ // - 置き方: 部品は船体の縁から 1 単位以上内・艦首と艦尾から 1 単位以上内・大きさ ≥ 2 単位（R17）、中心線の部品（砲は砲身まで）は長さの向きに重ならない、形で見分ける（連装 3・単装 5・単装 4）。
+ // - 色: 記録する ctx で描いた全部の色（塗り・線・グラデーションの止め）が陣営のパレットの地の色と同じ色相（±2°）＝単系統、純白は使わない、toneRgb は色相を変えない。
+ // - 描く範囲: 点・矩形はテクスチャの矩形の内（陰のずれの分だけの余白）。source の pin: 鍵・寸法（hullTexSize）・paintCanvas・Math.random なし・300 行。
+@@ -80,6 +81,9 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
+       }
+       expect(Math.min(p.w, p.len), `${kind} ${p.t}`).toBeGreaterThanOrEqual(2 - 1e-9);
+     }
++    // 中心線の部品は重ならない（駆逐艦・駆潜艇）。戦艦・重巡は v0.8.2 S2c でこの決まりを外した（ユーザーの実機の感想「デフォルメされすぎている…もう少しディティールに」:
++    // 背負い式の主砲塔の砲身は下の砲塔の屋根を越え、水上機は飛行甲板の上に載る＝高い物を後で描く決まりは tests/capital-art が見る）
++    if (isCapitalKind(kind)) return;
+     const spans = plan.parts.filter((p) => Math.abs(p.cx - B / 2) < 1e-9 && p.t !== 'mast').map(destroyerPartBounds).sort((a, b) => a.y0 - b.y0);
+     for (let i = 1; i < spans.length; i++) expect(spans[i]!.y0, `${kind} 中心線の部品 ${i}`).toBeGreaterThanOrEqual(spans[i - 1]!.y1 - 1e-9);
+   });
