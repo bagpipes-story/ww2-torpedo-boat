@@ -1,0 +1,596 @@
+diff --git a/src/config/debug-setup.ts b/src/config/debug-setup.ts
+index a866b70..701ecd2 100644
+--- a/src/config/debug-setup.ts
++++ b/src/config/debug-setup.ts
+@@ -12,8 +12,11 @@ import {
+   DEBUG_FRIENDLY_FORCE,
+   DEBUG_FUEL_ALLOTMENT_GAL,
+   DEBUG_GUNBOAT_OFF,
++  DEBUG_MAGAZINE_BOOM,
+   DEBUG_PATROL_OFF,
+   DEBUG_RADAR_OFF,
++  DEBUG_RADIO_FAIL,
++  DEBUG_RADIO_OFF,
+   DEBUG_SEAPLANE,
+   DEBUG_SEAPLANE_OFF,
+   DEBUG_SHIP_HIT_SCALE,
+@@ -50,5 +53,8 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
+     allyOff: DEBUG_ALLY_OFF, // ?debug&noally（v0.6.10）
+     radarOff: DEBUG_RADAR_OFF, // ?debug&noradar（v0.8.0 S2。config/radar-mission-data の radarSetupPart）
+     backdropOff: DEBUG_BACKDROP_OFF, // ?debug&nobackdrop（v0.8.1 S2。config/backdrop-mission-data の backdropSetupPart）
++    radioOff: DEBUG_RADIO_OFF, // ?debug&noradio（v0.8.2 S2。config/recon-mission-data の reconSetupPart。報告の無い任務は何も変わらない）
++    radioFail: DEBUG_RADIO_FAIL, // ?debug&radiofail（v0.8.2 S2。同上）
++    magazineBoom: DEBUG_MAGAZINE_BOOM, // ?debug&boom（v0.8.2 S2。config/magazine-data の規則の確率を 1 に。規則の無い記録は変わらない）
+   };
+ }
+diff --git a/src/config/game-config.ts b/src/config/game-config.ts
+index d6ff507..1236ade 100644
+--- a/src/config/game-config.ts
++++ b/src/config/game-config.ts
+@@ -130,6 +130,10 @@ export const DEBUG_ALLY_OFF = DEBUG_ENABLED && new URLSearchParams(window.locati
+ export const DEBUG_RADAR_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noradar');
+ /** ?debug&nobackdrop: その任務の暗い岸を背にを切る（v0.8.1 S2。spec-v0810 D-B6・V-B3。us_06 を「背に岸の無い夜」で試す・比べる。背に岸の無い任務では何も変わらない） */
+ export const DEBUG_BACKDROP_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nobackdrop');
++/** ?debug&noradio・radiofail・boom（v0.8.2 S2。spec-v0820 V-N5・D-G3）: 無線が壊れない・必ず壊れる（報告の任務の radio_fail_chance を 0・1 に）・弾薬庫の確率を 1 に（演出を見る夜）。block の無い任務では何も変わらない */
++export const DEBUG_RADIO_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('noradio');
++export const DEBUG_RADIO_FAIL = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('radiofail');
++export const DEBUG_MAGAZINE_BOOM = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('boom');
+ /** ?debug&nogrid: 海の格子の線（100 m）なし（v0.7.0 S3a。R6。比べる道具。格子はユーザーの決め（実機 1 回目の U2「格子の線はあった方がいい」）で残す＝config/sea-art-config の SEA_GRID_ON） */
+ export const DEBUG_GRID_OFF = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('nogrid');
+ /** ?debug（&title なし）: Title・Briefing を飛ばして us_02 の Mission へ直行し、Result の「もう一度」も Mission へ（v0.3.5 までと同じ流れ。既存のヘッドレスと実機の数値比べの URL がそのまま動く）。?debug&title で Title から通す */
+diff --git a/src/config/strait-hud-config.ts b/src/config/strait-hud-config.ts
+index 953faf0..3df4c47 100644
+--- a/src/config/strait-hud-config.ts
++++ b/src/config/strait-hud-config.ts
+@@ -20,6 +20,8 @@ export const BOW_ON_RANGE_M = 500;
+ export const BOW_ON_HALF_ANGLE_DEG = 15;
+ /** 衝突の危険の文の距離の刻み m（切り上げ。表示が実際より近くならない＝端の印と同じ） */
+ export const BOW_ON_STEP_M = 100;
++/** 衝突の危険の名詞（v0.8.2 S2。片道の列＝us_05 の艦種 ship_class から。systems/strait-telemetry の bowOnNounJa。ほかの任務の文は駆逐艦・駆潜艇のまま） */
++export const BOW_ON_NOUN_BY_CLASS_JA: Readonly<Record<string, string>> = { destroyer: '駆逐艦', heavy_cruiser: '重巡', battleship: '戦艦' };
+ /** 緑の端の印（brief L27）: ラベルの頭・距離の刻み m（切り上げ・矢印の下）・色（輝点の RADAR_BLIP_COLOR 0x6dff8c と同じ字の色） */
+ export const RADAR_MARKER_LABEL_JA = 'レーダー';
+ export const RADAR_MARKER_STEP_M = 100;
+diff --git a/src/core/boat-telemetry.ts b/src/core/boat-telemetry.ts
+index 54ff381..fb1b01f 100644
+--- a/src/core/boat-telemetry.ts
++++ b/src/core/boat-telemetry.ts
+@@ -156,6 +156,26 @@ export interface BoatTelemetry {
+   transit: TransitTelemetry; // 列の通過（v0.8.0 S2。core/ship-transit の段階の数。us_04）: 段階ごとの隻数・残りの戻り・通算（systems/transit-telemetry。無い任務は enabled false）。文は S4
+   strait: StraitTelemetry; // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04）: 視程の 2 乗・艦首がこちらへ向く目で見えている艦（systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
+   anchor?: AnchorTelemetry; // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 気づいた・動き出した・背に岸の秒・止まった艦への魚雷（systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
++  recon?: ReconTelemetry; // 報告・無線・中継（v0.8.2 S2。us_05）: 段・追った秒・無線・中継の輪（systems/recon-telemetry。setup.recon の無い任務は鍵ごと無い）。文は S4
++  magazine?: MagazineTelemetry; // 戦艦の弾薬庫（v0.8.2 S2。us_05）: 誘爆の秒と何本目・引いた回数と確率の和（systems/recon-telemetry。規則のある艦のいない任務は鍵ごと無い）
++}
++
++/** 報告の HUD・Result の材料（v0.8.2 S2。読み手は S4 の ui/recon-lines・recon-result）。秒はみな固定ステップの時計（NaN は未だ） */
++export interface ReconTelemetry {
++  /** 段（core/recon-report の RECON_*）・無線が壊れた・追った秒・あと何秒（追う間の外は 0）・確かめた秒・報告の隻数（確かめる艦種の艦） */
++  stage: number; radioBroken: boolean; trackedS: number; trackLeftS: number; seenAtS: number; seenCount: number;
++  /** 送った・中継待ちになった・無線が壊れた・中継した秒・無線の故障を引いた回数・出来事のあったステップの通算と最後のステップのビット（RECON_EV_*） */
++  sentAtS: number; pendingAtS: number; radioBrokenAtS: number; relayedAtS: number; draws: number; eventCount: number; events: number;
++  /** 中継の輪（自艇からの相対位置 m・半径 m・名。S4 の端の印） */
++  relayDx: number; relayDy: number; relayRadiusM: number; relayJa: string;
++}
++
++/** 戦艦の弾薬庫の HUD・Result の材料（v0.8.2 S2。艦ごとの配列は世界の MagazineLog の参照＝写さない。隊の添字） */
++export interface MagazineTelemetry {
++  detonatedAtS: ArrayLike<number>;
++  onHit: ArrayLike<number>;
++  /** 誘爆した艦の数・引いた回数・引いた確率の和（隊の全艦。探りの期待値＝S3） */
++  detonations: number; draws: number; chanceSum: number;
+ }
+ 
+ /** 輝点の位置（core/radar の RadarBlip の読むだけの形。S4 の緑の端の印が読む） */
+@@ -229,6 +249,8 @@ export interface StraitTelemetry {
+   bowOnM: number;
+   /** その一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハードの隊の最後の 2 隻。2 行目の名詞。駆潜艇のいない任務はいつも偽） */
+   bowOnPicket: boolean;
++  /** その一番近い危険な艦の艦種の名詞（v0.8.2 S2。片道の列の任務＝us_05 だけ鍵が出る: 戦艦・重巡・駆逐艦。危険が無ければ ''。文は S4） */
++  bowOnNounJa?: string;
+ }
+ 
+ /** 止まった艦と暗い岸を背にの HUD・Result の材料（v0.8.1 S2。setup.anchors の任務＝us_06 だけ鍵が出る。読み手は S4 の ui/anchor-lines・anchor-result） */
+diff --git a/src/core/scoring.ts b/src/core/scoring.ts
+index 2934691..838d8a9 100644
+--- a/src/core/scoring.ts
++++ b/src/core/scoring.ts
+@@ -5,6 +5,7 @@
+ // 揚陸（v0.6.9。jp_04 の停泊する味方の輸送船）: 揚陸完了で landing.points_complete（帰投の有無・その後の沈没に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。
+ // 空襲下の退避（v0.6.11 S6。jp_03）: 残った艇 1 隻ごとに evac.points_per_survivor（座席＝操作中の隊長艇は帰投の 700 で数えるので除く＝core/evac-result の evacScoredBoats。
+ // 帰投の有無に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。最大 17 × 30 ＝ 510 < 帰投 700（spec-v0611-r2 §3.10。tests/evac-score）。
++// 魚雷で沈めた艦（v0.8.2 S2。us_05 の戦艦・重巡）: shipKills の 1 件ごとに count × kill.points_by_enemy[enemyId]（表に無い id＝駆逐艦は 0）を kills に足す。無い任務は省略＝今の式（tests/scoring-recon）。
+ 
+ export interface ScoringParams {
+   returnedPoints: number;
+@@ -58,6 +59,8 @@ export interface ScoreInput {
+   landed?: boolean;
+   /** 空襲下の退避の残った艇（v0.6.11 S6。jp_03。座席の艇を除く＝evacScoredBoats。退避の無い任務は省略＝0） */
+   evacBoats?: number;
++  /** 魚雷で沈めた艦の id と数（v0.8.2 S2。us_05。点は kill.points_by_enemy・表に無い id は 0）。無い任務は省略＝0 */
++  shipKills?: readonly { enemyId: string; count: number }[];
+ }
+ 
+ export interface ScoreBreakdown {
+@@ -95,6 +98,8 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
+   const per = inp.kills > 0 ? p.killPoints[inp.killEnemyId] : 0;
+   if (per === undefined) throw new Error(`scoring.json の kill.points_by_enemy に ${inp.killEnemyId} が無い`);
+   out.kills = inp.kills * per;
++  const sk = inp.shipKills;
++  if (sk) for (let i = 0; i < sk.length; i++) out.kills += sk[i]!.count * (p.killPoints[sk[i]!.enemyId] ?? 0);
+   const evade = p.evadeByType[inp.missionType];
+   // 回避は夜明け前の帰投だけ（夜明けに輪の外なら昼に敵機に見つかった扱い。v0.6.1）
+   out.evade = evade !== undefined && inp.returned && inp.objectiveDone && (inp.detections ?? 0) === 0 && !afterDawn ? evade : 0;
+diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
+index 25cb241..4cceefb 100644
+--- a/src/entities/destroyer.ts
++++ b/src/entities/destroyer.ts
+@@ -4,6 +4,7 @@
+ // 列の通過（v0.8.0 S2。us_04。systems/destroyer-transit が段階を当てる）: offMap（まだ来ない・揚陸の地＝海域の外）も out に入れる（ほかの任務の艦はいつも false）。
+ // 列の艦（transitShip）は退く動きのまま縁の外へ出ても withdrawn を自分で立てない（縁の外 118 m で止まると段階の goneX 150 m に届かない）。去ったかは段階が決める（goAway）。
+ // 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor が立てて下ろす）: anchored の間も見張り（updateShipAi＝発見・雷跡・seed+17 の引き方）は今のまま走り、舵・速さ・縁・当たりの円は作った時のまま。
++// 列の見張り（v0.8.2 S2。us_05 の時雨。systems/column-roles だけが setAiParams を呼ぶ）: AI の値の物を列の AI ⇄ 見張りの AI に替える（どちらも setup で 1 回作った物。ほかの任務は作った時の物のまま）。
+ import Phaser from 'phaser';
+ import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
+ import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
+@@ -44,7 +45,7 @@ export class Destroyer {
+     private readonly scene: Phaser.Scene,
+     start: { x: number; y: number; headingDeg: number },
+     readonly spec: DestroyerSpec,
+-    private readonly aiParams: ShipAiParams,
++    private aiParams: ShipAiParams,
+     private readonly bounds: SeaBounds,
+     /** 見張りが雷跡に気づく抽選（v0.5.0。seed+17。隊の艦が順に同じ系列を引く） */
+     private readonly lookoutRng: SeededRng,
+@@ -88,6 +89,11 @@ export class Destroyer {
+     return false;
+   }
+ 
++  /** AI の値の物を替える（v0.8.2 S2。列の見張りが離れる・戻るステップに systems/column-roles が。確保しない・乱数なし。次の step から効く） */
++  setAiParams(p: ShipAiParams): void {
++    this.aiParams = p;
++  }
++
+   private refreshHull(): void {
+     fillHullCircles(this.circles, this.state.x, this.state.y, this.state.headingDeg, this.spec.lengthM * this.spec.hitScale, this.spec.beamM * this.spec.hitScale);
+   }
+diff --git a/src/systems/destroyer-group.ts b/src/systems/destroyer-group.ts
+index cc1f3a3..da72ddd 100644
+--- a/src/systems/destroyer-group.ts
++++ b/src/systems/destroyer-group.ts
+@@ -5,12 +5,13 @@
+ // 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
+ // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。setup.anchors・setup.backdrop の任務だけ world-enemies が作った後に 1 回付ける＝anchors・backdrop。無い任務は null で式は今のまま）。
+ // 輸送船の添字は transportIndex（無ければ −1）。ハードの駆潜艇（v0.8.1 S2b。setup.pickets）はその後ろ＝並びは護衛 → 列 → 輸送船 → 駆潜艇。駆潜艇は駆逐艦にも輸送船にも数えない（達成・KPI・撃沈 n/m・輸送船の加点の外）が、海の上の艦として allOut・allSettled・最寄り・体当たり・夜明けに退くに入る。
++// 片道の列（v0.8.2 S2。us_05。setup.transit.column）: 列の艦は艦ごとの記録の寸法・列の AI・砲・絵の鍵（systems/column-kits）。艦ごとの砲・KPI の旗・レーダーの種類・絵の鍵・艦種は kits（今の任務は今の 3 つ組の値）。
++// 見張りの役（systems/column-roles）は見張りのいる列だけ constructor が作り、弾薬庫（systems/ship-magazine）は規則のある艦のいる隊だけ world-enemies が 1 回付ける（無い任務は null）。
+ import type Phaser from 'phaser';
+ import { TEXTURE_KEYS } from '../config/game-config';
+ import type { BoatState, SeaBounds } from '../core/boat-motion';
+ import { allShipsOut, allShipsSettled, sinkingCount, withdrawnCount } from '../core/dawn-withdraw';
+ import { litByOwnLight } from '../core/own-light';
+-import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';
+ import type { SeededRng } from '../core/rng';
+ import { startRetire } from '../core/ship-ai';
+ import type { LandLine } from '../core/strait-geometry';
+@@ -21,6 +22,9 @@ import { shipArtKey } from '../config/ship-art-config';
+ import type { TransitSetup } from '../config/transit-mission-data';
+ import { DestroyerAnchor } from './destroyer-anchor';
+ import { DestroyerTransit } from './destroyer-transit';
++import { ColumnRoles } from './column-roles';
++import { columnPassRadius2, columnShipKit, groupKits, type GroupKits } from './column-kits';
++import type { ShipMagazine } from './ship-magazine';
+ import { ShoreBackdrop } from './shore-backdrop';
+ import { EnemyFire } from './enemy-fire';
+ import type { SplashPool } from './splash-pool';
+@@ -41,7 +45,10 @@ export class DestroyerGroup {
+   readonly transportIndex: number;
+   readonly picketIndex: number; // ハードの駆潜艇（v0.8.1 S2b）の先頭の添字（無ければ −1）と隻数
+   readonly picketCount: number;
+-  private readonly guns: readonly [DestroyerSetup['gunnery'], DestroyerSetup['gunnery'] | null, DestroyerSetup['gunnery'] | null]; // 艦ごとの砲（gunneryAt）: 駆逐艦（列の艦も）・輸送船・駆潜艇
++  readonly kits: GroupKits; // 艦ごとの砲（gunneryAt）・KPI の旗（kpiAt）・レーダーの種類（radarKindAt）・絵の鍵・艦種（v0.8.2 S2。systems/column-kits。今の任務は今の 3 つ組の値）
++  /** 列の見張り（v0.8.2 S2。見張りのいる片道の列＝us_05 だけ。destroyer-step が列の段階の直後に進める）と戦艦の弾薬庫（world-enemies が 1 回付ける）。無い任務は null */
++  readonly roles: ColumnRoles | null;
++  magazine: ShipMagazine | null = null;
+   /** 止まった艦（v0.8.1 S2。setAnchors）と暗い岸を背に（setBackdrop）。付けるのは world-enemies の 1 回だけ。無い任務は null */
+   anchors: DestroyerAnchor | null = null;
+   backdrop: ShoreBackdrop | null = null;
+@@ -63,13 +70,14 @@ export class DestroyerGroup {
+     if (transit) {
+       const leg = transit.inbound;
+       for (let i = 0; i < transit.ships; i++) {
+-        this.ships.push(new Destroyer(scene, { x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, ds.spec, transit.shipAi, bounds, lookoutRng, destroyerTextureKey));
+-        this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, leg.headingDeg, splashes));
++        const k = columnShipKit(ds, transit.shipAi, transit.column, i, destroyerTextureKey); // 片道の列は艦ごとの記録（v0.8.2 S2）・往復の列は護衛と同じ物
++        this.ships.push(new Destroyer(scene, { x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, k.spec, k.ai, bounds, lookoutRng, k.artKey));
++        this.fires.push(new EnemyFire(scene, k.gunnery, gunRng, leg.headingDeg, splashes));
+       }
+     }
+     this.destroyerCount = this.ships.length;
+     this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
+-    this.passRadius2 = ds.passRadius2;
++    this.passRadius2 = columnPassRadius2(ds.passRadius2, transit?.column);
+     this.transportIndex = transport ? this.ships.length : -1;
+     if (transport) {
+       this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, lookoutRng, TEXTURE_KEYS.transport));
+@@ -85,8 +93,9 @@ export class DestroyerGroup {
+       }
+       if (pickets.passRadius2 > this.passRadius2) this.passRadius2 = pickets.passRadius2;
+     }
+-    this.guns = [ds.gunnery, transport ? transport.gunnery : null, pickets ? pickets.gunnery : null];
++    this.kits = groupKits({ total: this.ships.length, first: ds.starts.length, destroyerCount: this.destroyerCount, transportIndex: this.transportIndex, picketIndex: this.picketIndex }, ds, transport, pickets, transit?.column, destroyerTextureKey, TEXTURE_KEYS.transport);
+     this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null; // 列の艦はここで海域の外（まだ来ない）へ
++    this.roles = transit && this.transit ? ColumnRoles.of(this.ships.slice(ds.starts.length, ds.starts.length + transit.ships), transit, this.transit.state) : null; // 見張りのいる片道の列だけ（v0.8.2 S2）
+   }
+ 
+   /** 隊の隻数（輸送船・駆潜艇込み） */
+@@ -233,11 +242,14 @@ export class DestroyerGroup {
+     this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);
+   }
+ 
+-  /** 艦 i の砲（v0.8.1 S2b。world-enemies の命中の 2 つの手）。駆潜艇のいない任務は今の式（駆逐艦か輸送船）と同じ値 */
+-  gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }
++  /** 艦 i の砲（v0.8.1 S2b。world-enemies の命中の 2 つの手）。kits の配列（v0.8.2 S2。今の任務は駆逐艦・輸送船・駆潜艇の今の値の同じ物） */
++  gunneryAt(i: number): DestroyerSetup['gunnery'] { return this.kits.guns[i]!; }
+ 
+-  /** 艦 i のレーダーの種類（v0.8.1 S2b。world-radar）: 駆潜艇は小さい艇、ほかの艦はみな艦（駆潜艇のいない任務は今と同じ） */
+-  radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
++  /** 艦 i を狙った 1 本を命中率の KPI に数えるか（v0.8.2 S2。systems/torpedo-free。今の任務は 0 ≤ i < destroyerCount と同じ・片道の列は駆逐艦の記録の艦だけ。i < 0 は偽） */
++  kpiAt(i: number): boolean { return this.kits.kpi[i] === 1; }
++
++  /** 艦 i のレーダーの種類（v0.8.1 S2b。world-radar）: 駆潜艇は小さい艇、ほかの艦はみな艦（kits の配列＝今と同じ値） */
++  radarKindAt(i: number): number { return this.kits.radarKind[i]!; }
+ 
+   updateVisuals(realDt: number): void {
+     for (let i = 0; i < this.ships.length; i++) this.fires[i]!.updateVisuals(realDt, this.ships[i]!.state);
+diff --git a/src/systems/destroyer-step.ts b/src/systems/destroyer-step.ts
+index 440be46..f9057a7 100644
+--- a/src/systems/destroyer-step.ts
++++ b/src/systems/destroyer-step.ts
+@@ -8,6 +8,7 @@
+ // 走っている魚雷の外れの確定は戻りの残り（ビラの艦）が 0 の時だけ（R2）。列の無い任務は transit が null・戻りの残りは 0（v0.7.2 と同じ）。
+ // 暗い岸を背にと止まった艦（v0.8.1 S2。us_06）: 艦ごとの見つける距離は隊の backdrop（systems/shore-backdrop）があればその艦の値、無ければ世界の 1 つの値そのもの（今のまま）。
+ // 止まった艦の段（systems/destroyer-anchor）は艦を動かし列の段階を当てた直後（動き出した艦は次のステップから動く）。無い任務は anchors が null で何もしない。
++// 列の見張り（v0.8.2 S2。us_05）: 列の段階の直後・止まった艦の前に隊の roles（systems/column-roles）。見張りのいない任務は null で何もしない。
+ import type { BoatState } from '../core/boat-motion';
+ import { losBlocked } from '../core/smoke';
+ import { remainingTorpedoesSettled } from '../core/torpedo-targets';
+@@ -23,6 +24,7 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
+     if (d.step(dt, feelDt, boat, bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
+   }
+   if (g.transit?.step(w, feelDt)) left = true;
++  g.roles?.step(w, feelDt); // 列の見張り（v0.8.2 S2。us_05 の時雨）: 列の段階の直後に離れる・戻る（AI の物を替えるのは次のステップから効く。無い任務は null）
+   g.anchors?.step(w, feelDt);
+   if (left && g.allOut) w.launcher.clearQueue();
+   const settleS = w.returnPoint.torpedoEndSettleS;
+diff --git a/src/systems/mission-objective.ts b/src/systems/mission-objective.ts
+index 7b9dfde..4cbf2ae 100644
+--- a/src/systems/mission-objective.ts
++++ b/src/systems/mission-objective.ts
+@@ -4,9 +4,12 @@
+ import { LD_DONE } from '../core/landing';
+ import { evacSurvivors, type EvacSquadron } from '../core/evac-squadron';
+ import { convoyObjectiveDone, endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
++import { reconObjectiveDone, type ReconState } from '../core/recon-report';
+ 
+ /** 達成と見つかった回数が読む世界の部分 */
+ export interface ObjectiveWorld {
++  /** 報告・無線・中継（v0.8.2 S2。us_05。systems/world-recon の WorldRecon）。無い任務は null か無し */
++  readonly recon?: { readonly state: ReconState } | null;
+   /** 空襲下の退避（v0.6.11 S6。jp_03。systems/world-evac の WorldEvac）: 18 隻の隊と達成の隻数。無い任務は null か無し */
+   readonly evac?: { readonly sq: EvacSquadron; readonly plan: { readonly raid: { readonly survivorQuota: number } } } | null;
+   /** 停泊して揚陸する味方の輸送船（v0.6.9。jp_04。systems/world-landing。揚陸の段階 core/landing の LD_*）。無い任務は null */
+@@ -26,6 +29,7 @@ export interface ObjectiveWorld {
+  * 僚艇の任務（v0.4.4）は「帰投して僚艇が生きている」、米PT の任務（v0.6.3）と夜の哨戒機の任務（v0.6.7。jp_02。spec-v067 §C.5）は帰投。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
+  */
+ export function objectiveDoneOf(reason: MissionEndReason, w: ObjectiveWorld): boolean {
++  if (w.recon) return reconObjectiveDone(w.recon.state, reason); // 報告の任務（v0.8.2 S2。us_05。spec-v0820 D-N6）: 報告が届き（送ったか中継した）帰投と同じに数える終わり
+   if (w.evac) return endCountsAsReturn(reason) && evacSurvivors(w.evac.sq) >= w.evac.plan.raid.survivorQuota;
+   if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;
+   return w.convoy ? convoyObjectiveDone(reason, w.convoy.state.arrived, w.convoy.p.quota) : w.escort ? endCountsAsReturn(reason) && !w.escort.state.sunk : w.pts || w.patrol ? endCountsAsReturn(reason) : w.enemy.objectiveDone;
+diff --git a/src/systems/mission-telemetry.ts b/src/systems/mission-telemetry.ts
+index 782c348..b29e4ee 100644
+--- a/src/systems/mission-telemetry.ts
++++ b/src/systems/mission-telemetry.ts
+@@ -27,6 +27,7 @@ import { detectionsOf, objectiveDoneOf } from './mission-objective';
+ import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
+ import { ptResult, refreshPtTelemetry } from './pt-telemetry';
+ import { refreshRadarTelemetry } from './radar-telemetry';
++import { refreshMagazineTelemetry, refreshReconTelemetry } from './recon-telemetry';
+ import { refreshStraitTelemetry } from './strait-telemetry';
+ import { refreshTransitTelemetry } from './transit-telemetry';
+ import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
+@@ -136,6 +137,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
+   refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
+   refreshStraitTelemetry(t.strait, w); // 海峡の夜（v0.8.0 S4。us_04）: 視程の 2 乗と衝突の危険（上の setSighted と同じ規則。無い任務は何もしない）
+   refreshAnchorTelemetry(t.anchor, w); // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 数を写すだけ（鍵の無い任務は何もしない）
++  refreshReconTelemetry(t.recon, w); // 報告・無線・中継（v0.8.2 S2。us_05）と戦艦の弾薬庫: 数を写すだけ（鍵の無い任務は何もしない）
++  refreshMagazineTelemetry(t.magazine, w);
+   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
+   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
+   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
+diff --git a/src/systems/mission-world.ts b/src/systems/mission-world.ts
+index 84e0ae0..9729cb1 100644
+--- a/src/systems/mission-world.ts
++++ b/src/systems/mission-world.ts
+@@ -45,6 +45,7 @@ import { torpedoEventsFor } from './torpedo-hits';
+ import { WorldDawn } from './world-dawn';
+ import { stepPlayerBoat } from './world-boat';
+ import { buildEnemies } from './world-enemies';
++import type { WorldRecon } from './world-recon';
+ import { stepEnemySide } from './world-enemy-step';
+ import { buildHazards } from './world-hazards';
+ import { buildArms, type WorldArms } from './world-arms';
+@@ -79,6 +80,7 @@ export class MissionWorld {
+   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
+   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
+   readonly radar: WorldRadar | null; // 自艇のレーダー（v0.8.0 S2。us_04。world-radar.ts・radar-view.ts）: 掃引と輝点。読むだけ（目・発見・AI は変えない）。setup.radar の無い任務・?debug&noradar は null
++  readonly recon: WorldRecon | null; // 報告・無線・中継（v0.8.2 S2。us_05。world-recon.ts。world-enemies が作り、world-enemy-step がレーダーの後に進める）。setup.recon の無い任務は null
+   readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
+   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
+   readonly params: BoatParams;
+@@ -207,6 +209,7 @@ export class MissionWorld {
+     this.pts = en.pts;
+     this.gunboat = en.gunboat;
+     this.enemy = en.enemy;
++    this.recon = en.recon;
+     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
+     this.torpedoEvents = torpedoEventsFor(this, events);
+     this.smokeParams = s.smokeParams;
+@@ -254,9 +257,9 @@ export class MissionWorld {
+ 
+   /**
+    * 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 揚陸の任務（v0.6.9。jp_04）は決着（揚陸完了か沈没）、
+-   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標
++   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標（報告の任務＝v0.8.2 の us_05 は報告が届いても）
+    */
+-  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
++  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone || (this.recon !== null && this.recon.delivered); }
+ 
+   /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。揚陸の任務（v0.6.9）と輸送隊の任務（v0.6.4）では立てない（PT・大発は狩る相手ではない。決着は returnCallDone） */
+   get noTargetsLeft(): boolean { return this.landing ? false : this.convoy ? false : this.enemy.noTargetsLeft; }
+diff --git a/src/systems/strait-telemetry.ts b/src/systems/strait-telemetry.ts
+index 4bac7a0..469410a 100644
+--- a/src/systems/strait-telemetry.ts
++++ b/src/systems/strait-telemetry.ts
+@@ -4,7 +4,8 @@
+ //   2 乗の距離と内積だけ＝atan2 なし）。艦の添字のビットと一番近い艦までの m（平方根はビットがある時だけ 1 本）。1 回の接近で 1 回の文にするのは ui/strait-line-clock（ビットが立った時）。
+ // 列の通過もレーダーも無い任務は enabled false のまま何もしない（ほかの任務の毎フレームの仕事は増えない）。世界・艦・AI には何も書かない（読むだけ）。
+ // v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。S4: 一番近い危険な艦が駆潜艇か（2 行目の名詞）。
+-import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_RANGE_M } from '../config/strait-hud-config';
++// v0.8.2 S2（lead の L24）: 片道の列の任務（隊の kits に艦種がある＝us_05）だけ、一番近い危険な艦の艦種の名詞（戦艦・重巡・駆逐艦）を bowOnNounJa に（ほかの任務は鍵ごと無い＝us_04 は駆逐艦のまま）。
++import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_NOUN_BY_CLASS_JA, BOW_ON_RANGE_M } from '../config/strait-hud-config';
+ import type { StraitTelemetry } from '../core/boat-telemetry';
+ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
+ 
+@@ -12,7 +13,7 @@ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
+ export interface StraitTelemetryWorld {
+   readonly visRange2: number;
+   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
+-  readonly destroyers: { readonly transit: object | null; readonly picketIndex?: number; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
++  readonly destroyers: { readonly transit: object | null; readonly picketIndex?: number; readonly kits?: { readonly classes: readonly string[] | null }; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
+   readonly radar: object | null;
+ }
+ 
+@@ -24,7 +25,7 @@ const BOW_MAX_SHIPS = 30;
+ 
+ /** 出発時の strait（列の通過かレーダーのある任務だけ enabled） */
+ export function initStraitTelemetry(w: StraitTelemetryWorld): StraitTelemetry {
+-  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false };
++  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false, ...(w.destroyers?.kits?.classes ? { bowOnNounJa: '' } : {}) };
+   refreshStraitTelemetry(t, w);
+   return t;
+ }
+@@ -57,4 +58,6 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
+   t.bowOnMask = mask;
+   t.bowOnM = mask !== 0 ? Math.sqrt(best) : NaN;
+   t.bowOnPicket = bestI >= 0 && g !== null && g.picketIndex !== undefined && g.picketIndex >= 0 && bestI >= g.picketIndex; // 駆潜艇（v0.8.1 S4。隊の最後。名詞だけ）
++  const cls = g?.kits?.classes;
++  if (t.bowOnNounJa !== undefined && cls) t.bowOnNounJa = bestI >= 0 ? (BOW_ON_NOUN_BY_CLASS_JA[cls[bestI]!] ?? '') : ''; // 艦種の名詞（v0.8.2 S2。片道の列だけ）
+ }
+diff --git a/src/systems/telemetry-create.ts b/src/systems/telemetry-create.ts
+index 9c0bb76..0e62619 100644
+--- a/src/systems/telemetry-create.ts
++++ b/src/systems/telemetry-create.ts
+@@ -18,6 +18,7 @@ import { initEvacTelemetry } from './evac-telemetry';
+ import { initLandingTelemetry } from './landing-telemetry';
+ import { initPatrolTelemetry } from './patrol-telemetry';
+ import { initPtTelemetry } from './pt-telemetry';
++import { magazineTelemetryPart, reconTelemetryPart } from './recon-telemetry';
+ import { initRadarTelemetry } from './radar-telemetry';
+ import { initStraitTelemetry } from './strait-telemetry';
+ import { initTransitTelemetry } from './transit-telemetry';
+@@ -136,5 +137,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
+     transit: initTransitTelemetry(w), // 列の通過（v0.8.0 S2。us_04。systems/transit-telemetry。無い任務は enabled false）
+     strait: initStraitTelemetry(w), // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04。systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
+     ...anchorTelemetryPart(w), // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
++    ...reconTelemetryPart(w), // 報告・無線・中継（v0.8.2 S2。us_05。systems/recon-telemetry。setup.recon の無い任務は鍵ごと無い）
++    ...magazineTelemetryPart(w), // 戦艦の弾薬庫（v0.8.2 S2。us_05。規則のある艦のいない隊は鍵ごと無い）
+   };
+ }
+diff --git a/src/systems/torpedo-free.ts b/src/systems/torpedo-free.ts
+index 898abbe..5b32aaf 100644
+--- a/src/systems/torpedo-free.ts
++++ b/src/systems/torpedo-free.ts
+@@ -8,6 +8,7 @@
+ // 凍結の魚雷のファイル（core/torpedo・torpedo-targets・systems/torpedo-pool）は触らない。レーダーの無い任務は何もしない（発射・乱数・記録は同じ）。
+ // v0.8.1 S2（spec-v0810 §3.5 D-K1）: KPI の的は core/hit-rate の kpiTargetAtLaunch（今の条件かつ狙った艦の速さ ≥ 下限 5 kt。今のどの任務の駆逐艦も 8 kt 以上＝旗は変わらない）。
+ // 止まった艦の任務（us_06）だけ、狙った艦が止まっていた 1 本を隊の anchors（systems/destroyer-anchor）に渡す（Result の「止まった艦への魚雷」。無い任務は何もしない）。
++// v0.8.2 S2（spec-v0820 §4.7 D-K1・§9 の 11）: 狙った艦が KPI の艦かは隊の kpiAt（艦ごとの Uint8Array。今の任務は 0 ≤ ti < destroyerCount と同じ値・us_05 は駆逐艦の記録の艦だけ）。
+ import type { BoatState } from '../core/boat-motion';
+ import { kpiTargetAtLaunch } from '../core/hit-rate';
+ import { discardFireInput, type InputState } from '../core/input-state';
+@@ -21,6 +22,8 @@ export const NO_TORPEDO_TARGETS: readonly TorpedoTarget[] = Object.freeze([]);
+ export interface TorpedoAimGroup {
+   readonly allOut: boolean;
+   readonly destroyerCount: number;
++  /** 艦 i を狙った 1 本を命中率の KPI に数えるか（v0.8.2 S2。systems/destroyer-group の kits。i < 0 は偽） */
++  kpiAt(i: number): boolean;
+   readonly ships: readonly { readonly state: BoatState }[];
+   nearestAfloatIndex(x: number, y: number): number;
+   /** 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor）: 撃った 1 本と狙った艦の添字を渡す。無い任務は null・無い */
+@@ -104,7 +107,7 @@ export function stepLauncher(w: FreeTorpedoWorld, realDt: number): void {
+   if (g !== null && !g.allOut) {
+     const ti = g.nearestAfloatIndex(boat.x, boat.y);
+     const target = g.ships[ti < 0 ? 0 : ti]!.state;
+-    const s = w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(ti >= 0 && ti < g.destroyerCount, w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));
++    const s = w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(g.kpiAt(ti), w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));
+     if (s && w.radar) w.radar.noteLaunch(s, enemyInSight(w, boat)); // 目で見えない間に撃った魚雷（v0.8.0 S4。レーダーのある任務だけ）
+     if (s && g.anchors) g.anchors.noteLaunch(s, ti); // 止まった艦への魚雷（v0.8.1 S2。止まった艦の任務だけ）
+     return;
+diff --git a/src/systems/torpedo-hits.ts b/src/systems/torpedo-hits.ts
+index 2b7a154..2444f25 100644
+--- a/src/systems/torpedo-hits.ts
++++ b/src/systems/torpedo-hits.ts
+@@ -4,6 +4,8 @@
+ // v0.6.2: 艦が退く任務では夜明けのラッチの後に決着した魚雷を通算の命中率に入れない（core/dawn-withdraw の shotKpiTarget。退かない任務と夜明け前は v0.6.1 のまま）。
+ // v0.6.2 実機 1 回目: すべて出た後に沈む船体へ当たった魚雷（終わり際の当たり。core/torpedo-targets）は命中として記録だけする（onLateHit）。走っている魚雷を外れで
+ // 確定するのは、最後の艦の演出の終わりではなく、終わり際の当たりの窓が閉じた後（destroyer-step が毎ステップ見る）。
++// v0.8.2 S2（us_05 の戦艦）: 沈む本数に届かなかった命中だけ、隊の弾薬庫（systems/ship-magazine。規則のある艦のいる隊だけ）が誘爆を引き、誘爆なら同じ沈む道へ。takeHit が必ず先
++// （無い任務は g.magazine が null で今の式）。不発・終わり際の当たりは引かない。
+ import { shotKpiTarget } from '../core/dawn-withdraw';
+ import type { ShotRecord } from '../core/hit-rate';
+ import type { TorpedoState } from '../core/torpedo';
+@@ -12,11 +14,13 @@ import type { WorldEvents } from './world-events';
+ 
+ /** 当たった艦と隊の形（systems/destroyer-group・entities/destroyer がそのまま満たす。v0.6.2 実機 1 回目で構造の型に。tests から作れる） */
+ export interface TorpedoHitGroup {
+-  readonly ships: readonly { takeHit(): boolean; playSinking(nowS: number, onDone: () => void): void }[];
++  readonly ships: readonly { takeHit(): boolean; readonly hitsTaken?: number; playSinking(nowS: number, onDone: () => void): void }[];
+   readonly allOut: boolean;
+   readonly allSettled: boolean;
+   /** 止まった艦への魚雷の命中を数える（v0.8.1 S2。us_06。systems/destroyer-anchor。無い任務は null・無い） */
+   readonly anchors?: { noteHit(torpedo: object): void } | null;
++  /** 戦艦の弾薬庫（v0.8.2 S2。us_05。systems/ship-magazine。艦 i の hitsTaken 本目・nowS は記録の秒）。無い任務は null・無い */
++  readonly magazine?: { roll(i: number, hitsTaken: number, nowS: number): boolean } | null;
+ }
+ 
+ /** 記録と命中スローの書き先（MissionWorld がそのまま満たす） */
+@@ -52,7 +56,7 @@ export function torpedoEventsFor(w: TorpedoHitWorld, events: WorldEvents): Torpe
+       if (!dud && g && d) {
+         w.hits++;
+         w.slowMoLeftS = w.setup.slowMoSeconds;
+-        if (d.takeHit()) {
++        if (d.takeHit() || (g.magazine?.roll(target, d.hitsTaken ?? 0, w.stepTimeS) ?? false)) {
+           d.playSinking(w.stepTimeS, () => {
+             // 最後の艦の演出が終わった（走っている魚雷の外れの確定は終わり際の当たりの窓の後。destroyer-step。v0.6.2 実機 1 回目までは、ここで確定していた）
+             if (g.allSettled) events.onDestroyerSunk();
+diff --git a/src/systems/world-enemies.ts b/src/systems/world-enemies.ts
+index c61abe6..f2f3351 100644
+--- a/src/systems/world-enemies.ts
++++ b/src/systems/world-enemies.ts
+@@ -2,6 +2,8 @@
+ // 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）、米PT と T-14 の 13mm は PtSquadron の中（seed+18・+20）。夜の哨戒機の出撃の seed+23（v0.6.7）は敵の側ではなく危険の側（world-hazards）。
+ // 被害はすべて世界の hitBoat を通り、撃破・僚艇の沈没は世界の onSunk（命中スロー＋Scene の爆発）。
+ // v0.6.6: 隼艇（jp_01 のハードの WorldSetup.gunboat だけ。systems/gunboat）は米PT の隊が隊の後に作る（判断が隊を読む・標的スロットの末尾の船体・25mm は seed+22）。
++// v0.8.2 S2（us_05）: 弾薬庫（systems/ship-magazine。seed+44）は規則のある艦のいる隊だけ、報告（systems/world-recon。無線 seed+45・中継の輪の絵）は setup.recon の世界だけ作る。
++// recon の世界だけ艦の砲弾の命中の手を包んで無線の故障を引く（無い任務は世界の hitBoat そのもの＝今の手）。
+ import type Phaser from 'phaser';
+ import { boatTextureKey } from '../config/game-config';
+ import type { BoatState } from '../core/boat-motion';
+@@ -12,6 +14,9 @@ import { SeededRng } from '../core/rng';
+ import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
+ import { landLinesOf } from '../core/strait-geometry';
+ import { BargeHunt } from './barge-hunt';
++import { RelayRingView } from '../entities/relay-ring';
++import { ShipMagazine } from './ship-magazine';
++import { WorldRecon } from './world-recon';
+ import { shipArtKey } from '../config/ship-art-config';
+ import { DestroyerGroup } from './destroyer-group';
+ import { EnemySide } from './enemy-side';
+@@ -35,6 +40,8 @@ export interface Enemies {
+   pts: PtSquadron | null;
+   gunboat: Gunboat | null;
+   enemy: EnemySide;
++  /** 報告・無線・中継（v0.8.2 S2。setup.recon の世界＝us_05 だけ）。無い任務は null */
++  recon: WorldRecon | null;
+ }
+ 
+ export function buildEnemies(
+@@ -46,8 +53,8 @@ export function buildEnemies(
+   events: WorldEvents,
+   hitBoat: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason) => void,
+   onSunk: (x: number, y: number) => void,
+-  /** 僚艇の沈んだ実秒に使う時計（世界の stepTimeS を命中のときに読む） */
+-  clock: { readonly stepTimeS: number },
++  /** 僚艇の沈んだ実秒に使う時計（世界の stepTimeS を命中のときに読む）。boat は報告の世界の無線が沈み始めた自艇を引かない（v0.8.2 S2。MissionWorld がそのまま満たす） */
++  clock: { readonly stepTimeS: number; readonly boat?: { readonly sinking: boolean } },
+   /** 味方の大発の輸送隊（v0.6.4。systems/convoy。米PT の隊の標的スロットの的。無い任務は null） */
+   convoy: PtTargetConvoy | null = null,
+ ): Enemies {
+@@ -65,8 +72,13 @@ export function buildEnemies(
+   if (destroyers && land) destroyers.setBeamLand(land);
+   if (destroyers && land && s.backdrop) destroyers.setBackdrop(s.backdrop, land, s.seaplane ? s.seaplane.flareRevealM : 0);
+   if (destroyers && s.anchors) destroyers.setAnchors(s.anchors);
++  // 戦艦の弾薬庫と報告（v0.8.2 S2。us_05）: 規則のある艦のいる隊・setup.recon の世界だけ（無い任務は作らない＝乱数の系列も無い）
++  const magazine = ds && destroyers ? ShipMagazine.of(s.transit?.column, ds.starts.length, destroyers.total, seed) : null;
++  if (destroyers && magazine) destroyers.magazine = magazine;
++  const recon = s.recon && ds && destroyers ? new WorldRecon(s.recon, s.transit?.column ?? [], ds.starts.length, seed, clock, new RelayRingView(scene, s.recon.relay)) : null;
++  const shipHit = recon ? (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => { recon.onShellHit(spec.damage); hitBoat(spec, rng, x, y, reason); } : hitBoat; // 無線（recon の世界だけ包む）
+   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7。v0.8.1 S2b から駆潜艇の 76mm・13mm）＝隊の gunneryAt（駆逐艦は隊の先頭 destroyerCount 隻＝列の通過の艦も込み）
+-  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
++  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => shipHit(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
+   const escort = s.escort && ds ? new EscortBoat(scene, s.escort, boat, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
+   const escortHit = (damage: number, x: number, y: number): void => (escort!.hit(damage, clock.stepTimeS) ? onSunk(x, y) : events.onShellHit(x, y, true, false));
+@@ -81,5 +93,5 @@ export function buildEnemies(
+   const makeGunboat = gb && pt && convoy ? (q: PtSection, kit: GunboatGunKit): Gunboat => new Gunboat(scene, gb, { player: boat, convoy: convoy.state, convoyParams: convoy.p, pts: q, ring: mission.returnPoint, bounds: mission.bounds, visRange2: s.visRange2 }, s.vis, pt.baseDetectM, onSunk, kit) : null;
+   const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat) : null;
+   const enemy = new EnemySide(destroyers, hunt, pts);
+-  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy };
++  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon };
+ }
+diff --git a/src/systems/world-enemy-step.ts b/src/systems/world-enemy-step.ts
+index f341e57..d9e32a3 100644
+--- a/src/systems/world-enemy-step.ts
++++ b/src/systems/world-enemy-step.ts
+@@ -5,6 +5,7 @@
+ // 最後に対空（艦艇が先＝砲は 1 つ。撃墜の後は順番を飛ばす。夜明けの空襲の段の前）。押さなければ何も変わらない（乱数も閃光も無い）。
+ // v0.6.9 S5a（spec-v069 §4.1）: 米PT の隊の段の直後・機関の不調の前に揚陸の段（systems/world-landing の stepAfterPts。jp_04 だけ。ほかの任務は w.landing が null で何もしない）。
+ // v0.8.0 S2（spec-v0800 §6 の S2）: 最後にレーダー（systems/world-radar。us_04 だけ。掃引の時だけ艦の位置を読む＝世界には書かない。ほかの任務は w.radar が null で何もしない）。
++// v0.8.2 S2（spec-v0820 §4.5・lead の L22）: その後に報告（systems/world-recon。us_05 だけ。ほかの任務は w.recon が null で何もしない）。
+ import type { BoatState } from '../core/boat-motion';
+ import type { DestroyerGroup } from './destroyer-group';
+ import { stepDestroyerSide } from './destroyer-step';
+@@ -26,4 +27,5 @@ export function stepEnemySide(w: MissionWorld, g: DestroyerGroup | null, dt: num
+   w.engine?.step(w, feelDt); // 機関の熱と不調（v0.6.5）は米PT の段の直後（このステップに固めた赤い線も見る）・火災の前（模擬 core/pt-sim-engine と同じ順・同じ時計）
+   w.arms?.stepAir(w, dt, feelDt); // 対空（v0.6.8）は最後: 艦艇の標的が無いときだけ機へ。撃墜の後は毎ステップ順番を飛ばす（夜明けの空襲の段の前）
+   w.radar?.step(w); // レーダー（v0.8.0 S2）は敵の側の全部の後（艦を動かし列の段階を当てた後の位置を掃引の時だけ読む）
++  w.recon?.step(w); // 報告（v0.8.2 S2。us_05）はレーダーの後（この掃引の接触の数・目で見えている戦艦・中継の輪。無い任務は null で何もしない）
+ }
+diff --git a/src/systems/world-visuals.ts b/src/systems/world-visuals.ts
+index 0e2f431..293adb4 100644
+--- a/src/systems/world-visuals.ts
++++ b/src/systems/world-visuals.ts
+@@ -50,5 +50,6 @@ export function destroyWorldVisuals(w: MissionWorld): void {
+   w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
+   w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
+   w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）
++  w.recon?.destroy(); // v0.8.2 S2（us_05。中継の輪）
+   w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）
+ }
+diff --git a/tests/anchor-world-kit.ts b/tests/anchor-world-kit.ts
+index db9e009..8109cd3 100644
+--- a/tests/anchor-world-kit.ts
++++ b/tests/anchor-world-kit.ts
+@@ -105,6 +105,8 @@ export class KitGroup {
+   withdraw(headingDeg: number): void {
+     for (const s of this.ships) if (!s.out) startRetire(s.ai, headingDeg);
+   }
++  /** systems/destroyer-group の kpiAt と同じ値（v0.8.2 S2。今の任務は駆逐艦の添字だけ＝systems/column-kits の kits） */
++  kpiAt(i: number): boolean { return i >= 0 && i < this.destroyerCount; }
+   /** systems/destroyer-group の radarKindAt と同じ式（v0.8.1 S2b。tests/picket-world が文と値を突き合わせる） */
+   radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
+ }
+diff --git a/tests/torpedo-free-kit.ts b/tests/torpedo-free-kit.ts
+index bec9e0c..4eaceb3 100644
+--- a/tests/torpedo-free-kit.ts
++++ b/tests/torpedo-free-kit.ts
+@@ -62,6 +62,7 @@ export function fakeGroup(ships: FakeShip[]): TorpedoAimGroup & { ships: FakeShi
+   return {
+     ships,
+     destroyerCount: ships.length,
++    kpiAt: (i: number): boolean => i >= 0 && i < ships.length, // systems/destroyer-group の kits と同じ値（今の任務＝駆逐艦だけ。v0.8.2 S2）
+     get allOut() {
+       return ships.every((s) => s.out);
+     },
