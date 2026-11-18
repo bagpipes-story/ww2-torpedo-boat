@@ -2,6 +2,7 @@
 // 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。v0.8.1 S2b（D-A2）で同じ描き方の駆潜艇（第13号型）を足した。
 // v0.8.2 S2b（spec-v0820 D-A1・D-A2・L33）: 同じ描き方の戦艦 扶桑型・重巡 最上（置き方は assets/capital-plan・新しい部品は assets/capital-paint）も同じ決まり（置き方・単系統の色・描く範囲）で見る。
 //   砲身の箱の幅は部品の砲身の間隔と太さ（dx・bw。戦艦・重巡の砲塔だけ）。形の見分け・寸法・Boot は tests/capital-art。
+//   v0.8.2 S2c: 戦艦・重巡は「中心線の部品は重ならない」を外した（背負い式の砲身・飛行甲板の水上機。代わりの決まりは tests/capital-art）。船体の内・2 単位以上・単系統の色は今のまま見る。
 // - 置き方: 部品は船体の縁から 1 単位以上内・艦首と艦尾から 1 単位以上内・大きさ ≥ 2 単位（R17）、中心線の部品（砲は砲身まで）は長さの向きに重ならない、形で見分ける（連装 3・単装 5・単装 4）。
 // - 色: 記録する ctx で描いた全部の色（塗り・線・グラデーションの止め）が陣営のパレットの地の色と同じ色相（±2°）＝単系統、純白は使わない、toneRgb は色相を変えない。
 // - 描く範囲: 点・矩形はテクスチャの矩形の内（陰のずれの分だけの余白）。source の pin: 鍵・寸法（hullTexSize）・paintCanvas・Math.random なし・300 行。
@@ -80,6 +81,9 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
       }
       expect(Math.min(p.w, p.len), `${kind} ${p.t}`).toBeGreaterThanOrEqual(2 - 1e-9);
     }
+    // 中心線の部品は重ならない（駆逐艦・駆潜艇）。戦艦・重巡は v0.8.2 S2c でこの決まりを外した（ユーザーの実機の感想「デフォルメされすぎている…もう少しディティールに」:
+    // 背負い式の主砲塔の砲身は下の砲塔の屋根を越え、水上機は飛行甲板の上に載る＝高い物を後で描く決まりは tests/capital-art が見る）
+    if (isCapitalKind(kind)) return;
     const spans = plan.parts.filter((p) => Math.abs(p.cx - B / 2) < 1e-9 && p.t !== 'mast').map(destroyerPartBounds).sort((a, b) => a.y0 - b.y0);
     for (let i = 1; i < spans.length; i++) expect(spans[i]!.y0, `${kind} 中心線の部品 ${i}`).toBeGreaterThanOrEqual(spans[i - 1]!.y1 - 1e-9);
   });

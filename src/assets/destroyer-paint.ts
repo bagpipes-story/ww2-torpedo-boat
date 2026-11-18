@@ -4,9 +4,13 @@
 // 描く順: 喫水の暗い縁 → 舷の明るい帯 → 甲板（左が明るく右が暗い横の陰影・板の継ぎ目・船首楼の段の影・煙突の煤・錨鎖・爆雷の軌条）→ 高い物の陰（右舷・艦尾へずらす）→ 部品
 //   （小物・短艇・発射管・砲・機銃の台・艦橋・煙突・マスト。それぞれ明るい側と暗い側・屋根の光・縁の線）→ 艦首の舷の光。部品は甲板の輪郭で切る（船体の外へ漏らさない）。
 // v0.8.2 S2b（D-A1・D-A2）: 戦艦・重巡の部品の型 3 つ（塔の艦橋・舷側の砲郭・飛行甲板）は assets/capital-paint。駆逐艦の置き方にこの型は無い＝駆逐艦の絵の画素は今のまま（tex-ab）。
+// v0.8.2 S2c: 戦艦・重巡の新しい型（煙突の台・25 mm・ダビット・カタパルト・水上機・クレーン）の影と描き方は capital-detail-paint、甲板の模様は capital-deck-paint（駆逐艦では呼ばない・何もしない）。
 import { DESTROYER_BOW_FLARE_TO, DESTROYER_SHADOW_ALPHA, DESTROYER_SHEER_UNITS, DESTROYER_STEP_SHADOW_UNITS, DESTROYER_TONES as T, DESTROYER_WATERLINE_UNITS } from '../config/destroyer-art-config';
 import { hullOutline } from './boat-shape';
+import { paintCapitalDeck } from './capital-deck-paint';
+import { capitalShadow } from './capital-detail-paint';
 import { paintCapitalPart } from './capital-paint';
+import { isCapitalKind } from './capital-plan';
 import { planHalfAt, type DestroyerPlan } from './destroyer-plan';
 import { paintPart, shadowOf } from './destroyer-part-paint';
 import { ellipse, path, toneCss, xGrad, type C } from './destroyer-pen';
@@ -89,9 +93,10 @@ export function paintDestroyer(ctx: C, plan: DestroyerPlan, base: number): void 
   path(ctx, deck);
   ctx.clip();
   paintDeckMarks(ctx, base, plan);
+  if (isCapitalKind(plan.kind)) paintCapitalDeck(ctx, base, plan); // v0.8.2 S2c: 戦艦・重巡だけ（木甲板の板・防波堤・揚錨機）
   ctx.fillStyle = toneCss(base, T.shadow, DESTROYER_SHADOW_ALPHA);
   ctx.strokeStyle = toneCss(base, T.shadow, DESTROYER_SHADOW_ALPHA * 0.8);
-  for (const p of plan.parts) shadowOf(ctx, p);
+  for (const p of plan.parts) if (!capitalShadow(ctx, p)) shadowOf(ctx, p);
   for (const p of plan.parts) if (!paintCapitalPart(ctx, base, p)) paintPart(ctx, base, p);
   path(ctx, deck);
   ctx.strokeStyle = toneCss(base, T.shadow, 0.35);
