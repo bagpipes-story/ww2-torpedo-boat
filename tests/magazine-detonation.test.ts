@@ -1,7 +1,7 @@
 // v0.8.2 S1（spec-v0820 §4.4 D-G1〜D-G3・D-G5・§9 の 4、lead の L14・L15。ユーザーの決め U1）: core/magazine-detonation の戦艦の弾薬庫の規則を、enemies.json の扶桑型の記録の magazine
 // （3 本目 3%・4 本目 6%）と us_05 の setup の列の kits で見る。3・4 本目の命中だけ引く・規則の無い艦は引かない・確率 0 と 1（?debug&boom）でも引く回数は同じ・seed+44 の 10 万回で 3%・6% ±0.2 点
 // （3 つの夜の種）・4 本当たった艦の轟沈 1 − 0.97 × 0.94 ＝ 8.8% ±0.3 点（10 万隻）・艦ごとの記録（誘爆の秒・何本目か・引いた回数・引いた確率の和＝探りの期待値）・source（確保なし）・
-// S1 ではゲームの誰も import しない（lead の L10。S2 の systems/ship-magazine が置き換える）。core/magazine（v0.6.8 の機銃の弾倉）とは別のファイル（名が重なるので magazine-detonation）。
+// S2 から import するのは systems/ship-magazine だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。core/magazine（v0.6.8 の機銃の弾倉）とは別のファイル（名が重なるので magazine-detonation）。
 import { describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { magazineRuleOf } from '../src/config/magazine-data';
@@ -135,8 +135,8 @@ describe('source', () => {
     expect(s).toMatch(/import type \{ SeededRng \} from '\.\/rng'/);
     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|\.chance\(/);
   });
-  it('S1 ではゲームの誰も import しない（lead の L10＝束は S0 とバイトで同じ。S2 の systems/ship-magazine が置き換える）。機銃の弾倉の core/magazine は別のまま', () => {
-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/magazine-detonation')))).toEqual([]);
+  it('S2 から import するのは systems/ship-magazine だけ（lead の L26。S1 は誰も import しなかった）。機銃の弾倉の core/magazine は別のまま', () => {
+    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/magazine-detonation')))).toEqual(['src/systems/ship-magazine.ts']);
     expect(code('src/core/magazine.ts')).toContain('export function createMagazine(mag: MagazineParams): MagazineState');
   });
 });

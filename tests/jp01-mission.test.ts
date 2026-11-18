@@ -240,7 +240,8 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     // 世界の配線（systems/mission-world の getter）: 呼びかけは決着の生の真偽、撃ち尽くしは輸送隊では偽
     const world = readFileSync('src/systems/mission-world.ts', 'utf8');
     // 書き方の揺れ（空白・改行）では落ちない形で、配線（輸送隊なら決着／偽）だけを見る。v0.6.9 S5a: 揚陸の任務（jp_04。this.landing）の枝が先に付いた（揚陸の無い任務は null で輸送隊の枝へ）
-    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone;/);
+    // v0.8.2 S2（us_05 の報告の任務。lead の L22）: 敵の側の目標の後ろに「報告が届いた」の枝（recon の無い任務は null＝objectiveDone || false で同じ値）
+    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
     expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.landing \? false : this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
   });
   it('達成（Result の objectiveDone。systems/mission-telemetry）は終了理由から: 帰投して上陸がノルマ以上。2/3 で沈めば達成でない（帰投 700 > 沈没 580）、3/3 決着でも帰投前は呼びかけだけ', () => {

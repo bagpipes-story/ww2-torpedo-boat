@@ -5,6 +5,7 @@
 // 揚陸（v0.6.9。jp_04 の停泊する味方の輸送船）: 揚陸完了で landing.points_complete（帰投の有無・その後の沈没に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。
 // 空襲下の退避（v0.6.11 S6。jp_03）: 残った艇 1 隻ごとに evac.points_per_survivor（座席＝操作中の隊長艇は帰投の 700 で数えるので除く＝core/evac-result の evacScoredBoats。
 // 帰投の有無に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。最大 17 × 30 ＝ 510 < 帰投 700（spec-v0611-r2 §3.10。tests/evac-score）。
+// 魚雷で沈めた艦（v0.8.2 S2。us_05 の戦艦・重巡）: shipKills の 1 件ごとに count × kill.points_by_enemy[enemyId]（表に無い id＝駆逐艦は 0）を kills に足す。無い任務は省略＝今の式（tests/scoring-recon）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -58,6 +59,8 @@ export interface ScoreInput {
   landed?: boolean;
   /** 空襲下の退避の残った艇（v0.6.11 S6。jp_03。座席の艇を除く＝evacScoredBoats。退避の無い任務は省略＝0） */
   evacBoats?: number;
+  /** 魚雷で沈めた艦の id と数（v0.8.2 S2。us_05。点は kill.points_by_enemy・表に無い id は 0）。無い任務は省略＝0 */
+  shipKills?: readonly { enemyId: string; count: number }[];
 }
 
 export interface ScoreBreakdown {
@@ -95,6 +98,8 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   const per = inp.kills > 0 ? p.killPoints[inp.killEnemyId] : 0;
   if (per === undefined) throw new Error(`scoring.json の kill.points_by_enemy に ${inp.killEnemyId} が無い`);
   out.kills = inp.kills * per;
+  const sk = inp.shipKills;
+  if (sk) for (let i = 0; i < sk.length; i++) out.kills += sk[i]!.count * (p.killPoints[sk[i]!.enemyId] ?? 0);
   const evade = p.evadeByType[inp.missionType];
   // 回避は夜明け前の帰投だけ（夜明けに輪の外なら昼に敵機に見つかった扱い。v0.6.1）
   out.evade = evade !== undefined && inp.returned && inp.objectiveDone && (inp.detections ?? 0) === 0 && !afterDawn ? evade : 0;

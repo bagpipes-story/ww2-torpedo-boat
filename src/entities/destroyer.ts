@@ -4,6 +4,7 @@
 // 列の通過（v0.8.0 S2。us_04。systems/destroyer-transit が段階を当てる）: offMap（まだ来ない・揚陸の地＝海域の外）も out に入れる（ほかの任務の艦はいつも false）。
 // 列の艦（transitShip）は退く動きのまま縁の外へ出ても withdrawn を自分で立てない（縁の外 118 m で止まると段階の goneX 150 m に届かない）。去ったかは段階が決める（goAway）。
 // 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor が立てて下ろす）: anchored の間も見張り（updateShipAi＝発見・雷跡・seed+17 の引き方）は今のまま走り、舵・速さ・縁・当たりの円は作った時のまま。
+// 列の見張り（v0.8.2 S2。us_05 の時雨。systems/column-roles だけが setAiParams を呼ぶ）: AI の値の物を列の AI ⇄ 見張りの AI に替える（どちらも setup で 1 回作った物。ほかの任務は作った時の物のまま）。
 import Phaser from 'phaser';
 import { DEPTH, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { SINK_DURATION_MS, SINK_SCALE_TO, SINK_TILT_DEG } from '../config/ui-config';
@@ -44,7 +45,7 @@ export class Destroyer {
     private readonly scene: Phaser.Scene,
     start: { x: number; y: number; headingDeg: number },
     readonly spec: DestroyerSpec,
-    private readonly aiParams: ShipAiParams,
+    private aiParams: ShipAiParams,
     private readonly bounds: SeaBounds,
     /** 見張りが雷跡に気づく抽選（v0.5.0。seed+17。隊の艦が順に同じ系列を引く） */
     private readonly lookoutRng: SeededRng,
@@ -86,6 +87,11 @@ export class Destroyer {
     }
     this.refreshHull();
     return false;
+  }
+
+  /** AI の値の物を替える（v0.8.2 S2。列の見張りが離れる・戻るステップに systems/column-roles が。確保しない・乱数なし。次の step から効く） */
+  setAiParams(p: ShipAiParams): void {
+    this.aiParams = p;
   }
 
   private refreshHull(): void {

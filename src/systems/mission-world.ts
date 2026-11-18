@@ -45,6 +45,7 @@ import { torpedoEventsFor } from './torpedo-hits';
 import { WorldDawn } from './world-dawn';
 import { stepPlayerBoat } from './world-boat';
 import { buildEnemies } from './world-enemies';
+import type { WorldRecon } from './world-recon';
 import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
 import { buildArms, type WorldArms } from './world-arms';
@@ -79,6 +80,7 @@ export class MissionWorld {
   readonly landing: WorldLanding | null; // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04。world-landing.ts）。setup.landing の無い任務は null
   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
   readonly radar: WorldRadar | null; // 自艇のレーダー（v0.8.0 S2。us_04。world-radar.ts・radar-view.ts）: 掃引と輝点。読むだけ（目・発見・AI は変えない）。setup.radar の無い任務・?debug&noradar は null
+  readonly recon: WorldRecon | null; // 報告・無線・中継（v0.8.2 S2。us_05。world-recon.ts。world-enemies が作り、world-enemy-step がレーダーの後に進める）。setup.recon の無い任務は null
   readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
@@ -207,6 +209,7 @@ export class MissionWorld {
     this.pts = en.pts;
     this.gunboat = en.gunboat;
     this.enemy = en.enemy;
+    this.recon = en.recon;
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
     this.torpedoEvents = torpedoEventsFor(this, events);
     this.smokeParams = s.smokeParams;
@@ -254,9 +257,9 @@ export class MissionWorld {
 
   /**
    * 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 揚陸の任務（v0.6.9。jp_04）は決着（揚陸完了か沈没）、
-   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標
+   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標（報告の任務＝v0.8.2 の us_05 は報告が届いても）
    */
-  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone; }
+  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone || (this.recon !== null && this.recon.delivered); }
 
   /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。揚陸の任務（v0.6.9）と輸送隊の任務（v0.6.4）では立てない（PT・大発は狩る相手ではない。決着は returnCallDone） */
   get noTargetsLeft(): boolean { return this.landing ? false : this.convoy ? false : this.enemy.noTargetsLeft; }

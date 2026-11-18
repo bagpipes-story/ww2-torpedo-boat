@@ -122,7 +122,9 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
     // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）。v0.8.1 S2b（L42）: 命中の 2 つの手は隊の gunneryAt（同じ式を隊へ移した。駆潜艇は 3 つ目の枝）
     const we = code('systems/world-enemies.ts');
     expect(we.split('destroyers.gunneryAt(i).guns[').length - 1).toBe(2);
-    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }");
+    // v0.8.2 S2（L19）: 艦ごとの砲は隊の kits の配列（systems/column-kits が今の 3 つ組の値＝駆逐艦は ds.gunnery の同じ物を入れる。tests/column-world が値を確かめる）
+    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return this.kits.guns[i]!; }");
+    expect(code('systems/column-kits.ts')).toContain('guns.push(k ? k.gunnery : ds.gunnery);');
     expect(we).not.toContain('ds!.starts.length');
   });
 });

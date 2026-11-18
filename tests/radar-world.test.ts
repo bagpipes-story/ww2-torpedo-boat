@@ -34,7 +34,7 @@ describe('レーダーの段の順と作る所（ソース）', () => {
   it('world-enemy-step の最後の行が w.radar?.step(w)（対空の後）。mission-world は buildRadar を退避の後・世界の絵の前に 1 回、stepFn からは呼ばない', () => {
     const e = lines(code('systems/world-enemy-step.ts'));
     const end = e.lastIndexOf('}');
-    expect(e.slice(end - 2, end)).toEqual(['w.arms?.stepAir(w, dt, feelDt);', 'w.radar?.step(w);']);
+    expect(e.slice(end - 3, end)).toEqual(['w.arms?.stepAir(w, dt, feelDt);', 'w.radar?.step(w);', 'w.recon?.step(w);']); // v0.8.2 S2: レーダーの後に報告（us_05 だけ。ほかの任務は null）
     const m = code('systems/mission-world.ts');
     const i = m.indexOf('this.evac = buildEvac(');
     const j = m.indexOf('this.radar = buildRadar(scene, this);');

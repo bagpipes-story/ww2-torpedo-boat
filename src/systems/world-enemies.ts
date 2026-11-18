@@ -2,6 +2,8 @@
 // 乱数は別系列: 砲撃 seed+1（隊は艦の順に同じ系列を消費する）、見張り seed+17、大発と艇の砲・沿岸砲は BargeHunt の中（seed+6〜）、米PT と T-14 の 13mm は PtSquadron の中（seed+18・+20）。夜の哨戒機の出撃の seed+23（v0.6.7）は敵の側ではなく危険の側（world-hazards）。
 // 被害はすべて世界の hitBoat を通り、撃破・僚艇の沈没は世界の onSunk（命中スロー＋Scene の爆発）。
 // v0.6.6: 隼艇（jp_01 のハードの WorldSetup.gunboat だけ。systems/gunboat）は米PT の隊が隊の後に作る（判断が隊を読む・標的スロットの末尾の船体・25mm は seed+22）。
+// v0.8.2 S2（us_05）: 弾薬庫（systems/ship-magazine。seed+44）は規則のある艦のいる隊だけ、報告（systems/world-recon。無線 seed+45・中継の輪の絵）は setup.recon の世界だけ作る。
+// recon の世界だけ艦の砲弾の命中の手を包んで無線の故障を引く（無い任務は世界の hitBoat そのもの＝今の手）。
 import type Phaser from 'phaser';
 import { boatTextureKey } from '../config/game-config';
 import type { BoatState } from '../core/boat-motion';
@@ -12,6 +14,9 @@ import { SeededRng } from '../core/rng';
 import { LOOKOUT_SEED_OFFSET } from '../core/ship-ai';
 import { landLinesOf } from '../core/strait-geometry';
 import { BargeHunt } from './barge-hunt';
+import { RelayRingView } from '../entities/relay-ring';
+import { ShipMagazine } from './ship-magazine';
+import { WorldRecon } from './world-recon';
 import { shipArtKey } from '../config/ship-art-config';
 import { DestroyerGroup } from './destroyer-group';
 import { EnemySide } from './enemy-side';
@@ -35,6 +40,8 @@ export interface Enemies {
   pts: PtSquadron | null;
   gunboat: Gunboat | null;
   enemy: EnemySide;
+  /** 報告・無線・中継（v0.8.2 S2。setup.recon の世界＝us_05 だけ）。無い任務は null */
+  recon: WorldRecon | null;
 }
 
 export function buildEnemies(
@@ -46,8 +53,8 @@ export function buildEnemies(
   events: WorldEvents,
   hitBoat: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason) => void,
   onSunk: (x: number, y: number) => void,
-  /** 僚艇の沈んだ実秒に使う時計（世界の stepTimeS を命中のときに読む） */
-  clock: { readonly stepTimeS: number },
+  /** 僚艇の沈んだ実秒に使う時計（世界の stepTimeS を命中のときに読む）。boat は報告の世界の無線が沈み始めた自艇を引かない（v0.8.2 S2。MissionWorld がそのまま満たす） */
+  clock: { readonly stepTimeS: number; readonly boat?: { readonly sinking: boolean } },
   /** 味方の大発の輸送隊（v0.6.4。systems/convoy。米PT の隊の標的スロットの的。無い任務は null） */
   convoy: PtTargetConvoy | null = null,
 ): Enemies {
@@ -65,8 +72,13 @@ export function buildEnemies(
   if (destroyers && land) destroyers.setBeamLand(land);
   if (destroyers && land && s.backdrop) destroyers.setBackdrop(s.backdrop, land, s.seaplane ? s.seaplane.flareRevealM : 0);
   if (destroyers && s.anchors) destroyers.setAnchors(s.anchors);
+  // 戦艦の弾薬庫と報告（v0.8.2 S2。us_05）: 規則のある艦のいる隊・setup.recon の世界だけ（無い任務は作らない＝乱数の系列も無い）
+  const magazine = ds && destroyers ? ShipMagazine.of(s.transit?.column, ds.starts.length, destroyers.total, seed) : null;
+  if (destroyers && magazine) destroyers.magazine = magazine;
+  const recon = s.recon && ds && destroyers ? new WorldRecon(s.recon, s.transit?.column ?? [], ds.starts.length, seed, clock, new RelayRingView(scene, s.recon.relay)) : null;
+  const shipHit = recon ? (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => { recon.onShellHit(spec.damage); hitBoat(spec, rng, x, y, reason); } : hitBoat; // 無線（recon の世界だけ包む）
   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7。v0.8.1 S2b から駆潜艇の 76mm・13mm）＝隊の gunneryAt（駆逐艦は隊の先頭 destroyerCount 隻＝列の通過の艦も込み）
-  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => hitBoat(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+  destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => shipHit(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
   // 僚艇（v0.4.4）: 駆逐艦の任務だけ。被弾（砲弾・夜明けの空襲）は小さな爆発、沈没は大発の撃破と同じ演出（命中スロー＋爆発・揺れ）
   const escort = s.escort && ds ? new EscortBoat(scene, s.escort, boat, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
   const escortHit = (damage: number, x: number, y: number): void => (escort!.hit(damage, clock.stepTimeS) ? onSunk(x, y) : events.onShellHit(x, y, true, false));
@@ -81,5 +93,5 @@ export function buildEnemies(
   const makeGunboat = gb && pt && convoy ? (q: PtSection, kit: GunboatGunKit): Gunboat => new Gunboat(scene, gb, { player: boat, convoy: convoy.state, convoyParams: convoy.p, pts: q, ring: mission.returnPoint, bounds: mission.bounds, visRange2: s.visRange2 }, s.vis, pt.baseDetectM, onSunk, kit) : null;
   const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat) : null;
   const enemy = new EnemySide(destroyers, hunt, pts);
-  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy };
+  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon };
 }

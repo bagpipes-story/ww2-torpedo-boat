@@ -63,7 +63,13 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
         expect(s.destroyer.shipAi, `${id} ${hard} ${historical}`).toEqual(shipAiParamsFromData(rec, getEvasionMultiplier(gameData, historical)));
         const tag = `${id}${hard ? '&hard' : ''}${historical ? '&hist' : ''}`;
         rows.push([tag, s.mission.enemyId, 'escort', r2(mpsToKt(Math.min(...targetSpeeds(s.destroyer.shipAi))))]);
-        if (s.transit) rows.push([tag, s.mission.enemyId, 'column', r2(mpsToKt(Math.min(s.transit.speedMps, ...targetSpeeds(s.transit.shipAi))))]);
+        // v0.8.2 S2（L19・spec-v0820 D-K2）: 片道の列（us_05）の艦は艦ごとの記録の AI（kits の列の AI・見張りの AI）。KPI に数える艦（駆逐艦の記録）だけを表に（戦艦・重巡は旗が偽）
+        const col = s.transit?.column;
+        if (col) for (const k of col.filter((x) => x.kpi)) {
+          rows.push([tag, k.enemyId, 'column', r2(mpsToKt(Math.min(s.transit!.speedMps, ...targetSpeeds(k.lineAi))))]);
+          if (k.screenAi) rows.push([tag, k.enemyId, 'screen', r2(mpsToKt(Math.min(...targetSpeeds(k.screenAi))))]);
+        }
+        else if (s.transit) rows.push([tag, s.mission.enemyId, 'column', r2(mpsToKt(Math.min(s.transit.speedMps, ...targetSpeeds(s.transit.shipAi))))]);
       }
     }
   }
@@ -71,8 +77,9 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const uniq = [...new Set(rows.map(([t, r, part, kt]) => `${t.split('&')[0]} ${r} ${part} ${kt}`))];
     expect(uniq).toEqual([
       'us_01 ijn_destroyer escort 15', 'us_02 ijn_destroyer escort 15', 'us_04 ijn_destroyer escort 15', 'us_04 ijn_destroyer column 15',
-      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S0 の世界の列の艦はみな ijn_destroyer の形（最大 18 kt）。艦ごとの記録（重巡 12・戦艦 14 kt）は S2 の kits
-      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15',
+      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S2 から列の艦は kits の艦ごとの AI: KPI の駆逐艦は列の AI（巡航 25・最大は列の 18 kt）の
+      // 回避 25 − 10 ＝ 15 kt、見張り（時雨・ハードの 8 隻目）の AI も 15 kt（spec D-K2 の「18 − 10 ＝ 8」は巡航を列の速さと読んだ見込み＝実際は記録の巡航）。重巡 12・戦艦 14 kt は KPI の外
+      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15', 'us_05 ijn_destroyer screen 15',
       'us_06 ijn_destroyer_mutsuki_enemy escort 15', 'jp_06 us_destroyer escort 8',
     ]);
     for (const [t, , part, kt] of rows) expect(ktToMps(kt), `${t} ${part}`).toBeGreaterThanOrEqual(MIN);

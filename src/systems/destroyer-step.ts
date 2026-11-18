@@ -8,6 +8,7 @@
 // 走っている魚雷の外れの確定は戻りの残り（ビラの艦）が 0 の時だけ（R2）。列の無い任務は transit が null・戻りの残りは 0（v0.7.2 と同じ）。
 // 暗い岸を背にと止まった艦（v0.8.1 S2。us_06）: 艦ごとの見つける距離は隊の backdrop（systems/shore-backdrop）があればその艦の値、無ければ世界の 1 つの値そのもの（今のまま）。
 // 止まった艦の段（systems/destroyer-anchor）は艦を動かし列の段階を当てた直後（動き出した艦は次のステップから動く）。無い任務は anchors が null で何もしない。
+// 列の見張り（v0.8.2 S2。us_05）: 列の段階の直後・止まった艦の前に隊の roles（systems/column-roles）。見張りのいない任務は null で何もしない。
 import type { BoatState } from '../core/boat-motion';
 import { losBlocked } from '../core/smoke';
 import { remainingTorpedoesSettled } from '../core/torpedo-targets';
@@ -23,6 +24,7 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
     if (d.step(dt, feelDt, boat, bd ? bd.rangeFor(i, d.state, boat, w) : w.detectRangeM, w.vis.detectHoldS, w.torpedoes.states)) left = true;
   }
   if (g.transit?.step(w, feelDt)) left = true;
+  g.roles?.step(w, feelDt); // 列の見張り（v0.8.2 S2。us_05 の時雨）: 列の段階の直後に離れる・戻る（AI の物を替えるのは次のステップから効く。無い任務は null）
   g.anchors?.step(w, feelDt);
   if (left && g.allOut) w.launcher.clearQueue();
   const settleS = w.returnPoint.torpedoEndSettleS;

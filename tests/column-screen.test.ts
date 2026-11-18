@@ -2,7 +2,7 @@
 // rejoin_s＝ノーマルは時雨〔列の 5 隻目＝bit 4〕・ハードは見張りの駆逐艦〔8 隻目＝bit 7〕も・40 秒）と素の艦（AI の出力の playerDetected・沈み始めた）で固定ステップに回す。
 // 見つけて離れる・離れている間にまた見つければ見失った時計が戻る・見失って体感の時計で 40 秒で戻る（命中スローで延びる）・戻った艦はまた離れる（回数）・沈み始めた艦は離れも戻りもしない・
 // 夜明け（誰も離れない・離れていた艦はそのステップに戻った扱い）・海域の外の艦は読まない・決定性（2 回と夜ごとの戻し）・読み口が entities/destroyer と core/ship-ai の名前のまま・
-// step の本体に確保なし・S1 ではゲームの誰も import しない（lead の L10。S2 の systems/column-roles が置き換える）。
+// step の本体に確保なし・S2 から import するのは systems/column-roles だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { getColumnPlan } from '../src/config/column-mission-data';
@@ -211,7 +211,7 @@ describe('決定性・読み口・source', () => {
     expect(imports(s)).toEqual(['./transit-data']);
     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|SeededRng|\brng\b/);
   });
-  it('S1 ではゲームの誰も import しない（lead の L10＝束は S0 とバイトで同じ。S2 の systems/column-roles が置き換える）', () => {
-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/column-screen')))).toEqual([]);
+  it('S2 から import するのは systems/column-roles だけ（lead の L26。S1 は誰も import しなかった＝束は S0 とバイトで同じだった）', () => {
+    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/column-screen')))).toEqual(['src/systems/column-roles.ts']);
   });
 });

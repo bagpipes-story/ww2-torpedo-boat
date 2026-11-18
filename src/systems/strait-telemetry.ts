@@ -4,7 +4,8 @@
 //   2 乗の距離と内積だけ＝atan2 なし）。艦の添字のビットと一番近い艦までの m（平方根はビットがある時だけ 1 本）。1 回の接近で 1 回の文にするのは ui/strait-line-clock（ビットが立った時）。
 // 列の通過もレーダーも無い任務は enabled false のまま何もしない（ほかの任務の毎フレームの仕事は増えない）。世界・艦・AI には何も書かない（読むだけ）。
 // v0.8.1 S2: 止まった艦（Destroyer.anchored。us_06）は衝突の危険に数えない（動いていない艦は艦首が向いても寄ってこない）。S4: 一番近い危険な艦が駆潜艇か（2 行目の名詞）。
-import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_RANGE_M } from '../config/strait-hud-config';
+// v0.8.2 S2（lead の L24）: 片道の列の任務（隊の kits に艦種がある＝us_05）だけ、一番近い危険な艦の艦種の名詞（戦艦・重巡・駆逐艦）を bowOnNounJa に（ほかの任務は鍵ごと無い＝us_04 は駆逐艦のまま）。
+import { BOW_ON_HALF_ANGLE_DEG, BOW_ON_NOUN_BY_CLASS_JA, BOW_ON_RANGE_M } from '../config/strait-hud-config';
 import type { StraitTelemetry } from '../core/boat-telemetry';
 import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
 
@@ -12,7 +13,7 @@ import { bowOnCos2, bowOnRisk } from '../core/strait-geometry';
 export interface StraitTelemetryWorld {
   readonly visRange2: number;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
-  readonly destroyers: { readonly transit: object | null; readonly picketIndex?: number; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
+  readonly destroyers: { readonly transit: object | null; readonly picketIndex?: number; readonly kits?: { readonly classes: readonly string[] | null }; readonly ships: readonly { readonly out: boolean; readonly anchored?: boolean; readonly state: { readonly x: number; readonly y: number; readonly headingDeg: number } }[] } | null;
   readonly radar: object | null;
 }
 
@@ -24,7 +25,7 @@ const BOW_MAX_SHIPS = 30;
 
 /** 出発時の strait（列の通過かレーダーのある任務だけ enabled） */
 export function initStraitTelemetry(w: StraitTelemetryWorld): StraitTelemetry {
-  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false };
+  const t: StraitTelemetry = { enabled: (w.destroyers !== null && w.destroyers.transit !== null) || w.radar !== null, eyeRange2: w.visRange2, bowOnMask: 0, bowOnM: NaN, bowOnPicket: false, ...(w.destroyers?.kits?.classes ? { bowOnNounJa: '' } : {}) };
   refreshStraitTelemetry(t, w);
   return t;
 }
@@ -57,4 +58,6 @@ export function refreshStraitTelemetry(t: StraitTelemetry, w: StraitTelemetryWor
   t.bowOnMask = mask;
   t.bowOnM = mask !== 0 ? Math.sqrt(best) : NaN;
   t.bowOnPicket = bestI >= 0 && g !== null && g.picketIndex !== undefined && g.picketIndex >= 0 && bestI >= g.picketIndex; // 駆潜艇（v0.8.1 S4。隊の最後。名詞だけ）
+  const cls = g?.kits?.classes;
+  if (t.bowOnNounJa !== undefined && cls) t.bowOnNounJa = bestI >= 0 ? (BOW_ON_NOUN_BY_CLASS_JA[cls[bestI]!] ?? '') : ''; // 艦種の名詞（v0.8.2 S2。片道の列だけ）
 }

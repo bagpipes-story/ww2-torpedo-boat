@@ -27,6 +27,7 @@ import { detectionsOf, objectiveDoneOf } from './mission-objective';
 import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
 import { ptResult, refreshPtTelemetry } from './pt-telemetry';
 import { refreshRadarTelemetry } from './radar-telemetry';
+import { refreshMagazineTelemetry, refreshReconTelemetry } from './recon-telemetry';
 import { refreshStraitTelemetry } from './strait-telemetry';
 import { refreshTransitTelemetry } from './transit-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
@@ -136,6 +137,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
   refreshStraitTelemetry(t.strait, w); // 海峡の夜（v0.8.0 S4。us_04）: 視程の 2 乗と衝突の危険（上の setSighted と同じ規則。無い任務は何もしない）
   refreshAnchorTelemetry(t.anchor, w); // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 数を写すだけ（鍵の無い任務は何もしない）
+  refreshReconTelemetry(t.recon, w); // 報告・無線・中継（v0.8.2 S2。us_05）と戦艦の弾薬庫: 数を写すだけ（鍵の無い任務は何もしない）
+  refreshMagazineTelemetry(t.magazine, w);
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる

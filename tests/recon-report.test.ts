@@ -2,7 +2,7 @@
 // （WorldSetup.recon＝追う 20 秒・76 mm 以上〔damage 20〕で 35%・?debug&noradio は 0・radiofail は 1）と、世界が数えて渡す見る物（視程の内の戦艦の数・最後の掃引の列の接触の数・中継の輪）で
 // 固定ステップに回す。確かめる・20 秒は固定ステップの時計（命中スローで延びない）・接触の無いステップは数えない・無線の故障の前と後・引かない時（76 mm 未満・送った後・壊れた後）・
 // 0 と 1 でも引く回数は同じ・中継待ちから中継・夜明けの後の中継・追い終える前の輪は何もしない・沈んだら達成でないが「届いた」は残る・決定性・読み口・source（確保なし・平方根なし）・
-// S1 ではゲームの誰も import しない（lead の L10。S2 の systems/world-recon が置き換える）。
+// S2 から import するのは systems/world-recon・mission-objective・recon-telemetry だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。
 import { describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
@@ -210,7 +210,7 @@ describe('達成・決定性・source', () => {
     expect(s).toMatch(/import type \{ SeededRng \} from '\.\/rng'/);
     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|\.chance\(/);
   });
-  it('S1 ではゲームの誰も import しない（lead の L10＝束は S0 とバイトで同じ。S2 の systems/world-recon が置き換える）', () => {
-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/recon-report')))).toEqual([]);
+  it('S2 から import するのは systems/world-recon（世界の側）・mission-objective（達成）・recon-telemetry（あと何秒）だけ（lead の L26。S1 は誰も import しなかった）', () => {
+    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/recon-report')))).toEqual(['src/systems/mission-objective.ts', 'src/systems/recon-telemetry.ts', 'src/systems/world-recon.ts']);
   });
 });

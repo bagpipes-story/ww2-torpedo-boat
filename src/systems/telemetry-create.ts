@@ -18,6 +18,7 @@ import { initEvacTelemetry } from './evac-telemetry';
 import { initLandingTelemetry } from './landing-telemetry';
 import { initPatrolTelemetry } from './patrol-telemetry';
 import { initPtTelemetry } from './pt-telemetry';
+import { magazineTelemetryPart, reconTelemetryPart } from './recon-telemetry';
 import { initRadarTelemetry } from './radar-telemetry';
 import { initStraitTelemetry } from './strait-telemetry';
 import { initTransitTelemetry } from './transit-telemetry';
@@ -136,5 +137,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     transit: initTransitTelemetry(w), // 列の通過（v0.8.0 S2。us_04。systems/transit-telemetry。無い任務は enabled false）
     strait: initStraitTelemetry(w), // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04。systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
     ...anchorTelemetryPart(w), // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
+    ...reconTelemetryPart(w), // 報告・無線・中継（v0.8.2 S2。us_05。systems/recon-telemetry。setup.recon の無い任務は鍵ごと無い）
+    ...magazineTelemetryPart(w), // 戦艦の弾薬庫（v0.8.2 S2。us_05。規則のある艦のいない隊は鍵ごと無い）
   };
 }

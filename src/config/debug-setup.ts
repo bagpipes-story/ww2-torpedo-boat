@@ -12,8 +12,11 @@ import {
   DEBUG_FRIENDLY_FORCE,
   DEBUG_FUEL_ALLOTMENT_GAL,
   DEBUG_GUNBOAT_OFF,
+  DEBUG_MAGAZINE_BOOM,
   DEBUG_PATROL_OFF,
   DEBUG_RADAR_OFF,
+  DEBUG_RADIO_FAIL,
+  DEBUG_RADIO_OFF,
   DEBUG_SEAPLANE,
   DEBUG_SEAPLANE_OFF,
   DEBUG_SHIP_HIT_SCALE,
@@ -50,5 +53,8 @@ export function debugSetupOptions(sortie: Sortie, hard: boolean): SetupOptions {
     allyOff: DEBUG_ALLY_OFF, // ?debug&noally（v0.6.10）
     radarOff: DEBUG_RADAR_OFF, // ?debug&noradar（v0.8.0 S2。config/radar-mission-data の radarSetupPart）
     backdropOff: DEBUG_BACKDROP_OFF, // ?debug&nobackdrop（v0.8.1 S2。config/backdrop-mission-data の backdropSetupPart）
+    radioOff: DEBUG_RADIO_OFF, // ?debug&noradio（v0.8.2 S2。config/recon-mission-data の reconSetupPart。報告の無い任務は何も変わらない）
+    radioFail: DEBUG_RADIO_FAIL, // ?debug&radiofail（v0.8.2 S2。同上）
+    magazineBoom: DEBUG_MAGAZINE_BOOM, // ?debug&boom（v0.8.2 S2。config/magazine-data の規則の確率を 1 に。規則の無い記録は変わらない）
   };
 }

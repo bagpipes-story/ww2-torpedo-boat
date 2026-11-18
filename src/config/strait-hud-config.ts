@@ -20,6 +20,8 @@ export const BOW_ON_RANGE_M = 500;
 export const BOW_ON_HALF_ANGLE_DEG = 15;
 /** 衝突の危険の文の距離の刻み m（切り上げ。表示が実際より近くならない＝端の印と同じ） */
 export const BOW_ON_STEP_M = 100;
+/** 衝突の危険の名詞（v0.8.2 S2。片道の列＝us_05 の艦種 ship_class から。systems/strait-telemetry の bowOnNounJa。ほかの任務の文は駆逐艦・駆潜艇のまま） */
+export const BOW_ON_NOUN_BY_CLASS_JA: Readonly<Record<string, string>> = { destroyer: '駆逐艦', heavy_cruiser: '重巡', battleship: '戦艦' };
 /** 緑の端の印（brief L27）: ラベルの頭・距離の刻み m（切り上げ・矢印の下）・色（輝点の RADAR_BLIP_COLOR 0x6dff8c と同じ字の色） */
 export const RADAR_MARKER_LABEL_JA = 'レーダー';
 export const RADAR_MARKER_STEP_M = 100;

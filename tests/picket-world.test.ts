@@ -214,14 +214,15 @@ describe('砲とレーダー（L42・L44）', () => {
         if (!s.destroyer) continue;
         seen.push(`${id}${hard ? 'h' : ''}`);
         const g = groupOf(s);
+        const col = s.transit?.column; // v0.8.2 S2（L19）: 片道の列（us_05）の艦は艦ごとの記録の砲（systems/column-kits。tests/column-world）。ほかの任務は今の式のまま
         for (let i = 0; i < g.total; i++) {
-          const want = s.pickets && i >= g.picketIndex ? s.pickets.gunnery : i < g.destroyerCount ? s.destroyer.gunnery : s.transport!.gunnery;
+          const want = col ? col[i]!.gunnery : s.pickets && i >= g.picketIndex ? s.pickets.gunnery : i < g.destroyerCount ? s.destroyer.gunnery : s.transport!.gunnery;
           expect(g.gunneryAt(i), `${id} ${hard} ${i}`).toBe(want);
         }
         expect(!!s.pickets, id).toBe(id === 'us_06' && hard);
       }
     }
-    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_05', 'us_05h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']); // v0.8.2 S0: us_05 は列だけの隊（S0 の列の艦は今の式＝駆逐艦の砲。艦ごとの砲は S2 の column-kits）
+    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_05', 'us_05h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']); // v0.8.2 S0: us_05 は列だけの隊（S2 から艦ごとの砲＝column-kits）
     const g = groupOf(setupOf('us_06', true));
     expect([2, 3].map((i) => g.gunneryAt(i).guns.map((x) => [x.id, x.count]))).toEqual([[['aa_76mm', 1], ['aa_13mm', 2]], [['aa_76mm', 1], ['aa_13mm', 2]]]);
     expect(g.gunneryAt(2)).not.toBe(g.gunneryAt(1));
@@ -248,7 +249,9 @@ describe('砲とレーダー（L42・L44）', () => {
     expect(kinds(groupOf(setupOf('us_06', false)))).toEqual([RADAR_KIND_SHIP, RADAR_KIND_SHIP]);
     expect(new Set(kinds(groupOf(setupOf('us_04', true))))).toEqual(new Set([RADAR_KIND_SHIP]));
     const line = 'radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }';
-    expect(code('src/systems/destroyer-group.ts')).toContain(line);
+    // v0.8.2 S2（L19）: 隊は艦ごとの配列を読むだけ（kits）。式は systems/column-kits の組み立ての 1 行に移った（同じ式＝今の値）。kit（anchor-world-kit）は今の式のまま
+    expect(code('src/systems/destroyer-group.ts')).toContain('radarKindAt(i: number): number { return this.kits.radarKind[i]!; }');
+    expect(code('src/systems/column-kits.ts')).toContain('radarKind[i] = g.picketIndex >= 0 && i >= g.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP;');
     expect(code('tests/anchor-world-kit.ts')).toContain(line);
     expect(code('src/systems/world-radar.ts')).toContain('tg.kind[n] = g.radarKindAt ? g.radarKindAt(i) : RADAR_KIND_SHIP;');
   });

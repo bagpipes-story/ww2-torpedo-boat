@@ -62,6 +62,7 @@ export function fakeGroup(ships: FakeShip[]): TorpedoAimGroup & { ships: FakeShi
   return {
     ships,
     destroyerCount: ships.length,
+    kpiAt: (i: number): boolean => i >= 0 && i < ships.length, // systems/destroyer-group の kits と同じ値（今の任務＝駆逐艦だけ。v0.8.2 S2）
     get allOut() {
       return ships.every((s) => s.out);
     },

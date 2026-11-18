@@ -105,6 +105,8 @@ export class KitGroup {
   withdraw(headingDeg: number): void {
     for (const s of this.ships) if (!s.out) startRetire(s.ai, headingDeg);
   }
+  /** systems/destroyer-group の kpiAt と同じ値（v0.8.2 S2。今の任務は駆逐艦の添字だけ＝systems/column-kits の kits） */
+  kpiAt(i: number): boolean { return i >= 0 && i < this.destroyerCount; }
   /** systems/destroyer-group の radarKindAt と同じ式（v0.8.1 S2b。tests/picket-world が文と値を突き合わせる） */
   radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
 }
