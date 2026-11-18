@@ -1,3 +1,59 @@
+diff --git a/scripts/headless/ab-replay.mjs b/scripts/headless/ab-replay.mjs
+index 9e2a0ca..b9df98e 100644
+--- a/scripts/headless/ab-replay.mjs
++++ b/scripts/headless/ab-replay.mjs
+@@ -21,7 +21,10 @@
+ // v0.8.1 S2（spec-v0810 §6 の S2・brief の「新しい組」）: SET=us06 で us_06（オルモック湾の決着。止まった艦と暗い岸を背に）のノーマル・ハード × seed 1・2 を 200 秒（夜明けまで。all には入れない。
+ //   S2 は A＝B＝今の木で決定性を見る・S3 から A は S2 の commit のビルド＝以後の段の回帰）。写しに止まった艦の段（s.an: 段・anchored）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+ // v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文の濾し（scripts/headless/anchor-filter。B が出し側・世界の写しは全部比べる。FILTERTEST=1 は濾しの試し）。
+-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
++// v0.8.2 S2（spec-v0820 §8 の S2・brief L25）: SET=us05 で us_05（スリガオ海峡・最初の接触。片道の列・見張り・報告・弾薬庫）のノーマル・ハード × seed 1・2 を 270 秒（夜明けまで。all には入れない。
++//   S2 は A＝B＝今の木で決定性とページのエラー・S2b から A は S2 の commit のビルド）。写しに報告の段（s.rc: 段・無線・追った秒・引いた回数）・列の見張り（s.sc: 離れている艦）・
++//   弾薬庫（s.mg: 誘爆の数・引いた回数）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
++// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+ import { fileURLToPath } from 'node:url';
+ import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+ import { anchorPair } from './anchor-filter.mjs';
+@@ -77,6 +80,10 @@ export function abRun(o) {
+     if (w.radar && !o.noradar) s.rd = [w.radar.state.sweeps, w.radar.state.n, w.radar.state.blips.slice(0, w.radar.state.n).map((x) => [x.x, x.y])];
+     // 止まった艦（v0.8.1 S2。us_06）の段と止まっているか。無い任務は鍵ごと無い
+     if (w.destroyers && w.destroyers.anchors) s.an = [Array.from(w.destroyers.anchors.state.stage), w.destroyers.ships.map((x) => x.anchored)];
++    // 報告・列の見張り・弾薬庫（v0.8.2 S2。us_05）。無い任務は鍵ごと無い
++    if (w.recon) s.rc = [w.recon.state.stage, w.recon.state.radioBroken, r6(w.recon.state.trackedS), w.recon.state.draws];
++    if (w.destroyers && w.destroyers.roles) s.sc = Array.from(w.destroyers.roles.st.away);
++    if (w.destroyers && w.destroyers.magazine) s.mg = [w.destroyers.magazine.detonations, w.destroyers.magazine.draws];
+     s.hud = o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length).filter((x) => x.type === 'Text').map((x) => x.text) : hl.texts('Hud');
+     if (o.cam) {
+       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
+@@ -156,6 +163,8 @@ export function abCases(set, input) {
+     us04: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_04', hard, seed, secs: envNum('SECS', 260), set: 'us04' }))),
+     // us_06 のオルモック湾の決着（v0.8.1 S2。止まった艦と暗い岸を背に）: 夜明けの 200 秒まで。S2 は A＝B＝今の木（決定性）・S3 から A は S2 の commit のビルド
+     us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
++    // us_05 のスリガオ海峡・最初の接触（v0.8.2 S2。片道の列・見張り・報告・弾薬庫）: 夜明けの 270 秒まで。S2 は A＝B＝今の木（決定性）・S2b から A は S2 の commit のビルド
++    us05: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_05', hard, seed, secs: envNum('SECS', 270), set: 'us05' }))),
+   };
+   if (process.env.MISSION) {
+     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
+diff --git a/scripts/headless/hud-ab.mjs b/scripts/headless/hud-ab.mjs
+index c58e8a0..87f6829 100644
+--- a/scripts/headless/hud-ab.mjs
++++ b/scripts/headless/hud-ab.mjs
+@@ -8,12 +8,13 @@
+ // v0.8.0 S4（brief L33）: RADARUI=1・NORADAR=1 は ab-replay の S4 の濾し（S4_FILTER）で比べる（2 行目の S4 の行のスナップの数を masked に出す）。FILTERTEST=1 は濾しの試し（違いが出るはず）。
+ // v0.8.1 S2: SET=us06 で us_06（ab-replay の us06 の組。秒は 200＝夜明けまで。S2 は A＝B＝今の木・S3 から A は S2 の commit のビルド）。
+ // v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文だけを比べから外す濾し（scripts/headless/anchor-filter。A は S3 の commit のビルド・B は今の木。tests/anchor-ab-filter が固定）。
+-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
++// v0.8.2 S2: SET=us05 で us_05（ab-replay の us05 の組。秒は 270＝夜明けまで。S2 は A＝B＝今の木・S2b から A は S2 の commit のビルド）。
++// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06|us05] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+ import { abCases, oneCase } from './ab-replay.mjs';
+ import { chromium, envNum, pool, serve } from './lib.mjs';
+ 
+ if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
+-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
++const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us05' ? 270 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
+ const sa = await serve(process.env.A);
+ const sb = await serve(process.env.B);
+ const browser = await chromium.launch();
 diff --git a/src/config/debug-setup.ts b/src/config/debug-setup.ts
 index a866b70..701ecd2 100644
 --- a/src/config/debug-setup.ts

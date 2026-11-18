@@ -5,7 +5,7 @@
 #     npx vite build。今の木も同じビルド番号 main@0176202 で作って比べる）・出力は v0820/impl/<stage>/。
 #   - us_06 の組（SKIP の名前 us06）: us_06 は基準にある（main に入った）ので、ab-us06・hud-us06 は us_04 の組と同じく A＝基準・B＝今の木で濾しなし（SET=us06）。
 #     v0.8.1 の A06（S2 の commit のビルド）と ANCHORUI の濾しの枝は消した。
-#   - us_05 の組（SET=us05）は S2 から足す（S0・S1 ではまだ無い）。
+#   - us_05 の組（SET=us05。SKIP の名前 us05）: S2 は A＝B＝今の木（決定性とページのエラー＝lead の L25）。S2b から lead が A を S2 の commit のビルドのサイトに向ける（A05 で上書き）。
 #   - JOBS の既定は 2（v0.8.2 の lead の brief: 並列は 2 まで）。
 # 以下は v0.8.1 の写しの説明のまま:
 #   - us_04 の組（SKIP の名前 us04）: ab-us04・hud-us04 は A＝基準・B＝今の木で濾しなし（SET=us04）。
@@ -18,7 +18,8 @@
 # 環境変数:
 #   AUDIO_STATES（既定 "default audio noaudio"）: ab-replay all 58 と hud-ab base 16 を回す状態
 #   SMALL_AUDIO_STATES（既定 "default"）: 小さい組（ab-replay・hud-ab の jp04base 8・jp03 4）を回す状態
-#   SKIP（既定 "art-perf"。空白区切り）: 飛ばす門 build typecheck lint test g2 ab hud us04 us06 tex-ab art-perf snapshots（build を飛ばすと $D/site をそのまま使う）
+#   SKIP（既定 "art-perf"。空白区切り）: 飛ばす門 build typecheck lint test g2 ab hud us04 us06 us05 tex-ab art-perf snapshots（build を飛ばすと $D/site をそのまま使う）
+#   A05（既定 今の木の $D/site）: us_05 の組の A（S2b から S2 の commit のビルドのサイト）
 #   AB_ENV（既定 なし）: ab-replay・hud-ab だけに渡す環境変数（短い確かめ用。例 AB_ENV="MISSION=us_02 SECS=20"＝どの組も us_02 の 1 件 20 秒になる）
 #   JOBS（既定 2）
 # SUMMARY の名前: 既定の状態は ab-all・hud-base …、ほかの状態は @audio・@noaudio を付ける（log も同じ名前）。art-perf は参考（門ではない）。
@@ -87,6 +88,19 @@ abrun06(){ # name tool A B
 if ! skip us06; then
   abrun06 ab-us06 ab-replay $A $B
   abrun06 hud-us06 hud-ab $A $B
+fi
+# us_05 の組（v0.8.2 S2。SET=us05＝ノーマル・ハード × seed 1・2 を 270 秒。既定の音の状態だけ）: S2 は A＝B＝今の木（決定性とページのエラー）・S2b から A05＝S2 の commit のビルド
+abrun05(){ # name tool A B
+  local n=$1 t=$2 a=$3 b=$4
+  env $AB_ENV A=$a B=$b SET=us05 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
+  local line; line=$(grep -E '^cases' $D/$n.log | tail -1)
+  if echo "$line" | grep -q 'diff 0'; then ok "$n $line"; else ng "$n $line"; fi
+  grep -E 'same:(true|false)' $D/$n.log | sed -E 's/^/    /' | cut -c1-260 >> $SUM
+}
+if ! skip us05; then
+  A05=${A05:-$B}
+  abrun05 ab-us05 ab-replay $A05 $B
+  abrun05 hud-us05 hud-ab $A05 $B
 fi
 # 既知の揺れ（v0.7.0 から）: nodawn/result の us_02 seed 1 の最後のフレームの .t。ab-all（どの状態でも）が ✗ なら、違った件の組を同じ状態で 1 本ずつ回し直す（v0.8.0 S5 の L62）
 for st in $AUDIO_STATES; do
