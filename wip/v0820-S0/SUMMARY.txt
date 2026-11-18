@@ -1,0 +1,5 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 4071 passed (4071)
+✓ g2 OK 39 DIFF 0

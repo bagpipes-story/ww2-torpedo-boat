@@ -650,7 +650,7 @@ index 32a2c58..20ad446 100644
      if (hard && osc !== undefined) objectiveSinkCount = osc as number;
      const xs = hardRaw['extra_shore_battery_x_m'];
 diff --git a/src/config/transit-mission-data.ts b/src/config/transit-mission-data.ts
-index 4ee2c12..38e3617 100644
+index 4ee2c12..c94dc4a 100644
 --- a/src/config/transit-mission-data.ts
 +++ b/src/config/transit-mission-data.ts
 @@ -3,11 +3,14 @@
@@ -705,7 +705,7 @@ index 4ee2c12..38e3617 100644
  
 -/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」 */
 -export function getTransitParams(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean): TransitSetup | null {
-+/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」。o は片道の列の kits の上書き */
++/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」。opts は片道の列の kits の上書き */
 +export function getTransitParams(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean, opts: ColumnSetupOptions = {}): TransitSetup | null {
    const proto = protoOf(data, mission.id);
    if (!proto) return null;
