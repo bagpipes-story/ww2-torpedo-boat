@@ -272,7 +272,7 @@ index 1cb14d0..58641f7 100644
    transport: {
      hull: [[0, 0], [0.015, 0.4], [0.04, 0.7], [0.09, 0.9], [0.15, 0.98], [0.19, 1], [0.86, 1], [0.92, 0.92], [0.97, 0.7], [1, 0.4]],
 diff --git a/src/entities/destroyer.ts b/src/entities/destroyer.ts
-index 4cceefb..a916af1 100644
+index 4cceefb..bcf628b 100644
 --- a/src/entities/destroyer.ts
 +++ b/src/entities/destroyer.ts
 @@ -123,8 +123,8 @@ export class Destroyer {
@@ -281,7 +281,7 @@ index 4cceefb..a916af1 100644
  
 -  /** 沈没演出（図形: 縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る。nowS は沈み始めた時計（世界の stepTimeS） */
 -  playSinking(nowS: number, onDone: () => void): void {
-+  /** 沈没演出（縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る。nowS は沈み始めた時計（世界の stepTimeS）。durationScale は長さの倍（v0.8.2 S2b: 弾薬庫の誘爆だけ 0.5） */
++  /** 沈没演出（図形: 縮みながら傾いて消える）。終わったら onDone。発生時に 1 回だけ tween を作る。nowS は沈み始めた時計（世界の stepTimeS）。durationScale は長さの倍（v0.8.2 S2b: 弾薬庫の誘爆だけ 0.5） */
 +  playSinking(nowS: number, onDone: () => void, durationScale = 1): void {
      if (this.sinking) return;
      this.sinking = true;
