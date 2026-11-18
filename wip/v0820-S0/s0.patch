@@ -1,0 +1,1480 @@
+diff --git a/data/enemies.json b/data/enemies.json
+index 9db6843..152c861 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -527,6 +527,199 @@
+       },
+       "notes": "us_06 のハード（v0.8.1）で泊地の外に止まって見張る駆潜艇 2 隻。気づくと動き出して記録の AI（体当たりなし）になる。点は無く、撃沈の達成・命中率の KPI・撃沈 n/m に数えない。"
+     },
++    {
++      "id": "ijn_battleship_fuso",
++      "faction": "IJN",
++      "name_ja": "戦艦（扶桑型）",
++      "ship_class": "battleship",
++      "length_m": 212.75,
++      "beam_m": 33.1,
++      "speed_max_kt": 24.7,
++      "speed_typical_kt": 18,
++      "turn_rate_deg_s": 0.8,
++      "accel_mps2": 0.15,
++      "hull_hp": 2000,
++      "hull_circles": 9,
++      "torpedo_hits_to_sink": 6,
++      "magazine": {
++        "on_hits": [
++          3,
++          4
++        ],
++        "chance": [
++          0.03,
++          0.06
++        ],
++        "source": "design (v0.8.2 S0・ユーザーの決め U1（2026-11-17）「大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。（例としてバーラムやロイヤルオーク）」。spec-v0820 §4.4 D-G1〜D-G3: 魚雷の命中（不発でない）で沈む本数に届かなかったとき、3 本目は 3%・4 本目は 6% で弾薬庫が誘爆して轟沈（4 本全部当たった艦は 1 − 0.97 × 0.94 ＝ 8.8%）。止まった艇から正しく狙った 4 本の扇 1 回の轟沈は 600 m 8.4%・1,000 m 5.3%・1,500 m 1.2%・2,000 m 0.1%（計画の下調べ＝ゲームの core の模擬）＝近くから全部当てても 20 回に 1 回ほどで、当てにしない頻度。史実の手触り（WebSearch の抜粋のみ・本文未読）: 3 本以上の魚雷を受けた古い戦艦で誘爆したのはバーラム（1941-11-25。3 本の後、後部の弾薬庫が爆発）くらいで、ロイヤルオーク（1939-10-14・錨泊中）は数本の命中の後に装薬の火と浸水で十数分で転覆、山城・プリンス・オブ・ウェールズ・レパルスは誘爆の大爆発ではなかった。規則はこの記録ごと（大和型の記録には置かない＝ユーザーの例外。V-M3）。乱数は seed+33（戦艦のいる任務だけ・3・4 本目の命中ごとに 1 回。世界の配線は v0.8.2 S2）。実機の感想で 2%・4%〜5%・10% の間を動かす（spec §12 Q1）)"
++      },
++      "guns": [
++        {
++          "id": "sec_152mm",
++          "count": 4,
++          "range_m": 15000,
++          "effective_night_m": 4500,
++          "rof_per_min": 5,
++          "damage": 40,
++          "shell_speed_mps": 400,
++          "dispersion_m": 220,
++          "splash_radius_m": 8,
++          "fire_chance": 0.4,
++          "engine_damage_chance": 0.3
++        },
++        {
++          "id": "aa_127mm",
++          "count": 2,
++          "range_m": 10000,
++          "effective_night_m": 3000,
++          "rof_per_min": 8,
++          "damage": 35,
++          "shell_speed_mps": 400,
++          "dispersion_m": 180,
++          "splash_radius_m": 8,
++          "fire_chance": 0.3,
++          "engine_damage_chance": 0.2
++        },
++        {
++          "id": "aa_25mm",
++          "count": 8,
++          "range_m": 2000,
++          "effective_night_m": 1200,
++          "rof_per_min": 120,
++          "damage": 4,
++          "shell_speed_mps": 500,
++          "dispersion_m": 70,
++          "splash_radius_m": 3,
++          "fire_chance": 0.05,
++          "engine_damage_chance": 0.05
++        }
++      ],
++      "searchlight": {
++        "range_m": 4000,
++        "cone_deg": 12,
++        "sweep_deg_s": 15,
++        "on_delay_s": 3.0
++      },
++      "starshell": null,
++      "detection": {
++        "base_detect_m": 2600,
++        "reaction_delay_s": 1.0,
++        "torpedo_wake_detect_m": 2000,
++        "wake_spot_rate_per_s": 0.2
++      },
++      "evasion": {
++        "mode": "comb_tracks",
++        "turn_toward_wakes": true,
++        "evade_turn_rate_deg_s": 1.0,
++        "speed_boost_kt": -4
++      },
++      "ram": {
++        "enabled": false,
++        "trigger_m": 0,
++        "give_up_m": 0,
++        "stall_s": 0,
++        "cooldown_s": 0,
++        "turn_rate_bonus_deg_s": 0
++      },
++      "patrol": {
++        "edge_turn_margin_m": 900
++      },
++      "source": {
++        "length_m・beam_m・speed_max_kt": "historical (扶桑型戦艦（1930 年代の改装の後）: 全長 212.75 m（212.8 m とする抜粋もある）・幅 33.1 m・24.7 kt（Wikipedia の扶桑型・navypedia の山城の抜粋のみ・本文未読。medium＝spec-v0820 §2.2 C10）)",
++        "ship_class": "design (v0.8.2 S0・spec-v0820 §4.3。艦種の新しい任意の鍵。読むのは列の艦ごとの記録（config/column-mission-data の V-C2・命中率の KPI の旗）と弾薬庫の検査（config/magazine-data の V-M3）だけ。無い記録は destroyer＝今の記録には足さない)",
++        "torpedo_hits_to_sink": "design (v0.8.2 S0・spec-v0820 §4.3・§4.4。6 本: 艇 1 隻の 4 本では弾薬庫の誘爆（magazine）の時しか沈まない（ユーザーの U1 の「通常の戦艦が魚雷4本で沈むこともある」は誘爆の確率で出す）。v0.10 の殴り込みで複数の艇の魚雷なら届く。この夜の山城は駆逐艦の魚雷 2〜4 本（出典で違う）と砲撃で沈んだ)",
++        "guns": "historical (扶桑型の 1944 年の兵装: 35.6 cm 連装砲 6 基・15.2 cm 単装砲 14 門（片舷 7）・12.7 cm 連装高角砲 4 基・25 mm 機銃多数（抜粋のみ。medium）) / design (v0.8.2 S0・spec-v0820 §4.3。主砲は置かない（夜に PT へ向けた記録が無い・強すぎる）。sec_152mm 4 は片舷 7 門のうち夜に PT へ向く数、aa_127mm 2・aa_25mm 8（aa_25mm は ijn_destroyer の aa_25mm の値で count 8）。強さ（有効射程・毎分・ダメージ・散布）は初めの値で、v0.8.2 S3 の gunnery-sim で照らされて止まった艇への HP/秒を ijn_destroyer の 1.2〜1.6 倍（1,000・1,500・2,000 m）に合わせる。range_m はゲームが読まない記録の形（ijn_destroyer と同じく実射程を縮めた値）)",
++        "searchlight": "design (v0.8.2 S0・spec-v0820 §4.3。4,000 m・12°・掃引 15°/秒・点くまで 3.0 秒（大きく遅い艦）。星弾は持たない（照らすのは駆逐艦と重巡＝7〜8 隻の大きな半透明の円の重ね描きの予算。spec §7.2・§9 の 9）)",
++        "others": "design (v0.8.2 S0・spec-v0820 §4.3。巡航 18 kt＝列の速さ（この夜の第三部隊の進みの速さ）。旋回 0.8°/秒・加速 0.15（大きく鈍い。18 kt の旋回半径 約 660 m ＋ 縁の余白 213 m ＜ 端 900 m）。hull_hp 2,000 は未使用（沈む本数で沈む）。hull_circles 9（当たり 425.5 m）。detection の base_detect_m 2,600 は記録の検査のためだけ（隊は先頭の駆逐艦の 1 つの見つける距離を使う。艦ごとの距離は候補）・雷跡 2,000 m・毎秒 0.2・反応 1.0 秒。evasion は comb_tracks（雷跡へ向く・回避の転舵 1.0°/秒・−4 kt）。体当たりはしない。世界の配線は v0.8.2 S2・絵は S2b（それまでは駆逐艦の絵の代用）)"
++      },
++      "notes": "us_05（v0.8.2「スリガオ海峡・最初の接触」）の本隊の戦艦 山城・扶桑。艇 1 隻の 4 本では沈まず（沈む本数 6）、3・4 本目の命中にまれに弾薬庫が誘爆して轟沈する（magazine）。命中率の KPI に数えない（KPI の旗は駆逐艦の記録だけ）。主砲は撃たない（副砲・高角砲・機銃）。"
++    },
++    {
++      "id": "ijn_cruiser_mogami",
++      "faction": "IJN",
++      "name_ja": "重巡洋艦（最上型）",
++      "ship_class": "heavy_cruiser",
++      "length_m": 200.6,
++      "beam_m": 20.2,
++      "speed_max_kt": 35,
++      "speed_typical_kt": 18,
++      "turn_rate_deg_s": 1.2,
++      "accel_mps2": 0.2,
++      "hull_hp": 1000,
++      "hull_circles": 8,
++      "torpedo_hits_to_sink": 3,
++      "guns": [
++        {
++          "id": "sec_127mm",
++          "count": 4,
++          "range_m": 10000,
++          "effective_night_m": 3500,
++          "rof_per_min": 8,
++          "damage": 35,
++          "shell_speed_mps": 400,
++          "dispersion_m": 170,
++          "splash_radius_m": 8,
++          "fire_chance": 0.3,
++          "engine_damage_chance": 0.25
++        },
++        {
++          "id": "aa_25mm",
++          "count": 8,
++          "range_m": 2000,
++          "effective_night_m": 1200,
++          "rof_per_min": 120,
++          "damage": 4,
++          "shell_speed_mps": 500,
++          "dispersion_m": 70,
++          "splash_radius_m": 3,
++          "fire_chance": 0.05,
++          "engine_damage_chance": 0.05
++        }
++      ],
++      "searchlight": {
++        "range_m": 3500,
++        "cone_deg": 12,
++        "sweep_deg_s": 20,
++        "on_delay_s": 2.5
++      },
++      "starshell": {
++        "range_m": 7000,
++        "illum_radius_m": 1800,
++        "duration_s": 25,
++        "cooldown_s": 60
++      },
++      "detection": {
++        "base_detect_m": 2400,
++        "reaction_delay_s": 0.8,
++        "torpedo_wake_detect_m": 2000,
++        "wake_spot_rate_per_s": 0.2
++      },
++      "evasion": {
++        "mode": "comb_tracks",
++        "turn_toward_wakes": true,
++        "evade_turn_rate_deg_s": 1.5,
++        "speed_boost_kt": -6
++      },
++      "ram": {
++        "enabled": false,
++        "trigger_m": 0,
++        "give_up_m": 0,
++        "stall_s": 0,
++        "cooldown_s": 0,
++        "turn_rate_bonus_deg_s": 0
++      },
++      "patrol": {
++        "edge_turn_margin_m": 800
++      },
++      "source": {
++        "length_m・beam_m・speed_max_kt": "historical (最上の 1944 年の形（後部を飛行甲板にした航空巡洋艦）: 全長 200.6 m・幅 20.2 m・35 kt（navypedia の最上型・Wikipedia の最上の抜粋のみ・本文未読。medium）)",
++        "ship_class": "design (v0.8.2 S0・spec-v0820 §4.3。艦種の新しい任意の鍵。読むのは列の艦ごとの記録（config/column-mission-data の V-C2・命中率の KPI の旗）と弾薬庫の検査（config/magazine-data の V-M3）だけ。無い記録は destroyer＝今の記録には足さない)",
++        "torpedo_hits_to_sink": "design (v0.8.2 S0・spec-v0820 §4.3。3 本（重巡は 2〜4 本で沈んだ例が多い＝low）。弾薬庫の規則（magazine）は置かない（巡洋艦に広げるなら殴り込みの版でユーザーに聞く）)",
++        "guns": "historical (1944 年の最上: 20.3 cm 連装砲 3 基（前部。6 門が普通の説で、4 門とも読める抜粋がある＝spec-v0820 §2.2 C9）・12.7 cm 連装高角砲 4 基・25 mm 機銃多数（抜粋のみ。medium）) / design (v0.8.2 S0・spec-v0820 §4.3。主砲は置かない（夜に PT へ向けた記録が無い）。sec_127mm 4 は高角砲のうち夜に PT へ向く数、aa_25mm 8（ijn_destroyer の aa_25mm の値で count 8）。強さは初めの値で、v0.8.2 S3 の gunnery-sim で ijn_destroyer の 1.0〜1.3 倍に合わせる。range_m はゲームが読まない記録の形)",
++        "searchlight・starshell": "design (v0.8.2 S0・spec-v0820 §4.3。探照灯の射程 3,500 m と星弾（7,000・1,800 m・25 秒・冷却 60）は ijn_light_cruiser の値、角・掃引・点くまで 2.5 秒は ijn_destroyer と同じ)",
++        "others": "design (v0.8.2 S0・spec-v0820 §4.3。巡航 18 kt＝列の速さ。旋回 1.2°/秒・加速 0.2（18 kt の旋回半径 約 440 m ＋ 縁の余白 201 m ＜ 端 800 m）。hull_hp 1,000 は未使用。hull_circles 8（当たり 401 m）。detection の base_detect_m 2,400 は記録の検査のためだけ・雷跡 2,000 m・毎秒 0.2・反応 0.8 秒。evasion は comb_tracks（1.5°/秒・−6 kt）。体当たりはしない。世界の配線は v0.8.2 S2・絵は S2b)"
++      },
++      "notes": "us_05（v0.8.2）の前衛の重巡 最上（駆逐艦 3 隻と先に気づかれずに通った）。3 本で沈む。命中率の KPI に数えない。主砲は撃たない（高角砲・機銃）。"
++    },
+     {
+       "id": "daihatsu_barge",
+       "faction": "IJN",
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index 54c9a67..75c9eb8 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -723,24 +723,32 @@
+       "order": 5,
+       "title_ja": "スリガオ海峡・最初の接触",
+       "date": "1944-10-24",
+-      "place": "スリガオ海峡南口",
++      "place": "ミンダナオ海（ボホール島沖）",
++      "place_source": "historical (最初の接触はスリガオ海峡の約 100 km 西、ミンダナオ海の一番奥（ボホール島沖）の第 1 分隊の区画だった（PT の区画はアギオ岬・ボホール島・カミギン島沖・シパカ岬の間）。WebSearch の抜粋のみ・本文未読。spec-v0820 §2.1) / design (v0.8.2 S0・spec-v0820 §3。種の「スリガオ海峡南口」を直した。題「スリガオ海峡・最初の接触」は戦いの名として残す＝jp_04・us_06 と同じ扱い)",
+       "type": "recon_and_attack",
+       "player_boat": "us_elco80",
+       "torpedo_type": "us_mk13",
+-      "objective": "接近する艦隊を発見・報告し、可能なら雷撃。生還が最優先",
++      "objective": "戦艦2・重巡1・駆逐艦4の日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ",
+       "enemies": [
+-        "ijn_light_cruiser",
+         "ijn_destroyer",
+-        "ijn_destroyer"
++        "ijn_destroyer",
++        "ijn_destroyer",
++        "ijn_destroyer",
++        "ijn_cruiser_mogami",
++        "ijn_battleship_fuso",
++        "ijn_battleship_fuso"
+       ],
+       "hazards": [
+         "enemy_ship_gunfire_or_ram",
+         "friendly_fire"
+       ],
+-      "moon": "dark",
++      "moon": "half",
++      "moon_label_ja": "半月（西に低い）",
++      "moon_source": "historical (計算: astronomy-engine 2.1.19・9.6°N 124.5°E。1944-10-24 の夜の輝面 46%。最初の接触の 22:36（米の報告の時刻帯 Item＝UTC+9）に月は高さ 20°・方位 243°（西南西）、22:50 に 17°、月没は 00:11（Item）＝23:11（UTC+8）。v0.8.0 の計算（10.0°N 125.35°E）は 23:07（UTC+8）。high) / design (v0.8.2 S0・spec-v0820 §2.2 C5。種の dark を half に。月が夜の途中で沈む仕組みは無い（候補）＝半月のまま)",
+       "duration_min": 6,
+-      "success": "報告（一定時間追尾）して帰投。巡洋艦への命中は大ボーナス",
+-      "historical_note": "PT39隻・13セクション。35本発射で日本側確認は阿武隈への1本（PT-137）。PT-493喪失。",
++      "success": "報告して帰投（戦艦を見て、レーダーで20秒追う）",
++      "historical_note": "1944-10-24 22:36 ごろ、ボホール島沖の第1分隊（PT-152・130・131）が PT-131 のレーダーで戦艦の組（山城・扶桑・時雨）を捉え、24 kt で寄った。時雨が照らして撃ち、PT-152 が炎上・PT-130 が無線を壊され、隣の分隊の PT-127 が報告を中継した。最上と駆逐艦 3 隻は先に気づかれずに通った。PT 39 隻・13 分隊の夜、第三部隊への命中は 0（阿武隈への 1 本は別の部隊・PT-137）。PT-493 喪失。WebSearch の抜粋のみ・本文未読（spec-v0820 §2。docs/01 §8 は v0.8.2 S4）",
++      "briefing_note_ja": "1944年10月24日22時半ごろ、ボホール島沖で張っていたPTの分隊がレーダーで日本の艦隊を捉えた。寄った3隻は駆逐艦時雨の探照灯と砲に追われ、1隻は無線を壊されて隣の分隊の艇に報告を中継してもらった。この夜PT\u00a039隻は、戦艦の隊に1本も当てられなかった。",
+       "source_url": "https://en.wikipedia.org/wiki/Battle_of_Surigao_Strait",
+       "dawn_air": {
+         "control": "own",
+@@ -758,7 +766,198 @@
+             "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+           }
+         ],
+-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
++        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。v0.8.2 S0（lead の既定 L1）: 種のまま own＝夜明けの後も空襲なし（退く日本の艦は昼に米機に襲われた＝昼の空は味方）。遊べる世界は v0_1_prototype（夜明けに浮いている艦は東＝スリガオ海峡へ退く＝dawn_withdraw）)"
++      },
++      "v0_1_prototype": {
++        "enemies": [
++          "ijn_destroyer",
++          "ijn_destroyer",
++          "ijn_destroyer",
++          "ijn_destroyer",
++          "ijn_cruiser_mogami",
++          "ijn_battleship_fuso",
++          "ijn_battleship_fuso"
++        ],
++        "enemy_behavior": "transit と column（v0.8.2。第三部隊の 7 隻（ハード 8）は列の通過の片道（下の transit）: 西の縁から 18 kt で東へ進み、東の縁の外（スリガオ海峡）へ去って戻らない。先に前衛（満潮・朝雲・山雲・最上。南寄りの道）、約 30 秒あとに本隊（時雨・山城・扶桑。時雨は北＝ボホールの側 600 m の道）。列の艦は退く動き（針路を守る・端で向き直さない・わざとの体当たりはしない・雷跡を見れば櫛で梳く・見つければ照らして撃つ）。時雨（role screen）は自艇を見つけると列を離れて us_02 の AI で追い、見失って rejoin_s で列へ戻る（S2）。艦ごとの寸法・砲・探照灯・星弾・AI・沈む本数は column の enemy_id の記録（S2。S0 の世界は 7 隻とも ijn_destroyer の形で走る）)",
++        "duration_s": 270,
++        "duration_s_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M3。夜明けまでの実秒。揺らぎのない夜の本隊の最後の扶桑は 101 秒に現れ 241.4 秒に東の縁の外へ去る（画面上 46.3 m/秒で幅 6,500 m を 140.4 秒）。ハードの 8 隻目（109 秒）は 249.4 秒で、夜明けの 20 秒前まで（V-C5）。初めの値で v0.8.2 S3 の探りの帯 T で直す)",
++        "fuel_allotment_gal": 34,
++        "fuel_allotment_gal_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M6。戦闘に使える割当の初めの値（us_04 の 33 gal と同じ考え）。core/fuel の 1 km あたり（静音 4.0・巡航 4.7・全速 6.9 gal）で、出発 → 本隊の前方へ巡航 1.2 km → 止まって待つ → 撃って全速で北東へ 2 km → 輪へ巡航 1 km ≈ 26 gal（残り 24%）。中継の道は ＋約 3 km。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（足りなければ燃料でなく輪の位置を直す）。v0.8.2 S3 の探りの帯 F で直す)",
++        "bounds_m": {
++          "width": 6500,
++          "height": 4000,
++          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M1。ミンダナオ海を東西に置いた模式図（約 50 km を 6.5 km に）。北の縁（y 0）の外がボホール島、南の縁（y 4,000）の東の一部がカミギン島、ほかは切れ目＝ミンダナオ海（下の shores）。東の縁の外がスリガオ海峡)"
++        },
++        "player_start": {
++          "x_m": 4200,
++          "y_m": 700,
++          "heading_deg": 225,
++          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M4。第 1 分隊の張り番の位置（ボホール島の沖 700 m）から南西向き・停止。帰投の輪の中心まで 806 m・中継の輪まで 2,600 m。満潮が現れる (150, 2,800) まで 4,562 m（レーダー 6,000 m の内＝出撃してすぐ最初の接触）。どの艦の入りの点からも 1,500 m 以上で、出撃から 10 秒の内にどの艦の全速の見つかる距離（3,200 m）にも入らない（V-C6）)"
++        },
++        "return_point": {
++          "x_m": 5000,
++          "y_m": 800,
++          "radius_m": 250,
++          "call_margin": 1.5,
++          "torpedo_settle_max_s": 10,
++          "torpedo_end_settle_s": 5,
++          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。終わり際に走っている魚雷の決着を待つ最大実秒: 自艇の沈没は沈み始めてから数え、沈没の演出（2 秒）が終わるまでは終えない。敵艦隊なし（cleared）・漂流・座礁は理由が決まってから、夜明け後の輪の中は輪に入ってから数える。夜明け前の輪の中は torpedo_settle_max_s のまま。待つ間の命中は得点・命中率・Result に入り、待ち切って走っている魚雷は外れ)",
++          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M4。北東のボホール島の沖（第 1 分隊の帰り道）。出発点から 806 m（縁まで 556 m）。北の岸から 550 m（V-S2 の 400 m の外）。半径・call_margin・待ちは us_04・us_06 と同じ)"
++        },
++        "shallows": [],
++        "shallows_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M1。浅瀬なし（その夜の座礁の記録は無い）)",
++        "hazards": [
++          "enemy_ship_gunfire_or_ram",
++          "radio_failure"
++        ],
++        "hazards_source": "design (v0.8.2 S0・spec-v0820 §4.5 D-N4・§5.1。この世界で起きる危険を出会う順に: 敵艦艇の砲撃・衝突（列の艦・見張りの時雨）、無線の故障（報告の前に 76 mm 以上の砲弾を受けると。risk_events の radio_failure）。夜の水上機・友軍誤射・暴風はその夜の記録なし。夜明けの空襲は無い（dawn_air own）。上位の hazards（任務本体の設計）は変えない)",
++        "night": {
++          "hazard_scale": 1,
++          "optional_hazards": [],
++          "enemy_jitter": {
++            "x_m": 300,
++            "y_m": 150,
++            "heading_deg": 0
++          },
++          "mirror_chance": 0,
++          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M5。今夜の揺らぎ（seed+16）: 列ごと 1 件（config/transit-mission-data。x のずれ ÷ 画面上の列の速さ 46.3 m/秒 → 入りの秒 ±6.5 秒・y のずれ → 全部の道を同じだけ ±150 m・針路のずれは使わない）。乱数は 5 回（列 3・大発の先頭 1・反転 1）。列は東西に反転しない（mirror_chance 0。海峡は東）。夜ごとに出る危険は無い（optional_hazards なし）)"
++        },
++        "dawn_withdraw": {
++          "retire_edge": "east",
++          "force_ja": "日本の艦隊",
++          "source": "design (v0.8.2 S0・spec-v0820 §4.9 D-E1。夜明けに浮いている列の艦は東（スリガオ海峡）へ退く＝片道の列の向かう縁（V-T2 の片道版）。まだ来ない艦は入らない。force_ja は夜明けの帯の呼び名)"
++        },
++        "radar": {
++          "model": "so_late",
++          "fit": "own",
++          "source": "historical (第 1 分隊は PT-131 のレーダーで 22:36 に艦隊を捉えた（目で見えたのは約 14 分後）。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。WebSearch の抜粋のみ・本文未読。medium) / design (v0.8.2 S0・spec-v0820 §4.6 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ）。艦 6,000 m・小さい艇 1,800 m・掃引 2 秒・陸の反射 300 m（道は北の岸から 1,650 m 以上・南の岸から 1,050 m 以上＝映る）)"
++        },
++        "shores": {
++          "north": {
++            "land_m": 600,
++            "labels": [
++              {
++                "label_ja": "ボホール島",
++                "x_m": 3200
++              }
++            ]
++          },
++          "south": {
++            "land_m": 600,
++            "labels": [
++              {
++                "label_ja": "カミギン島",
++                "x_m": 5650
++              }
++            ],
++            "gaps_m": [
++              [
++                0,
++                4800
++              ]
++            ],
++            "gap_label_ja": "ミンダナオ海"
++          },
++          "source": "historical (PT の区画はアギオ岬・ボホール島・カミギン島沖・シパカ岬の間。第 1 分隊はボホール島沖。WebSearch の抜粋のみ・本文未読) / design (v0.8.2 S0・spec-v0820 §4.1 D-M1。v0.8.0 の両岸の仕組みで、北の縁の外に陸 600 m（ボホール島）、南の縁の外の東 x 4,800〜6,500 に陸 600 m（カミギン島）、x 0〜4,800 は切れ目＝ミンダナオ海（陸を描かず海が南へ続く）。艇は海域の縁で止まる)"
++        },
++        "transit": {
++          "ships": 7,
++          "speed_kt": 18,
++          "edge_inset_m": 150,
++          "inbound": {
++            "edge": "west",
++            "lane_y_m": 2400,
++            "heading_deg": 90,
++            "enter_s": 5
++          },
++          "column": [
++            {
++              "enemy_id": "ijn_destroyer",
++              "name_ja": "満潮",
++              "group": "van",
++              "gap_s": 0,
++              "lane_dy_m": 400,
++              "role": "line"
++            },
++            {
++              "enemy_id": "ijn_destroyer",
++              "name_ja": "朝雲",
++              "group": "van",
++              "gap_s": 15,
++              "lane_dy_m": 400,
++              "role": "line"
++            },
++            {
++              "enemy_id": "ijn_destroyer",
++              "name_ja": "山雲",
++              "group": "van",
++              "gap_s": 15,
++              "lane_dy_m": 400,
++              "role": "line"
++            },
++            {
++              "enemy_id": "ijn_cruiser_mogami",
++              "name_ja": "最上",
++              "group": "van",
++              "gap_s": 15,
++              "lane_dy_m": 400,
++              "role": "line"
++            },
++            {
++              "enemy_id": "ijn_destroyer",
++              "name_ja": "時雨",
++              "group": "main",
++              "gap_s": 30,
++              "lane_dy_m": -600,
++              "role": "screen"
++            },
++            {
++              "enemy_id": "ijn_battleship_fuso",
++              "name_ja": "山城",
++              "group": "main",
++              "gap_s": 5,
++              "lane_dy_m": 0,
++              "role": "line"
++            },
++            {
++              "enemy_id": "ijn_battleship_fuso",
++              "name_ja": "扶桑",
++              "group": "main",
++              "gap_s": 16,
++              "lane_dy_m": 0,
++              "role": "line"
++            }
++          ],
++          "rejoin_s": 40,
++          "vila_label_ja": "スリガオ海峡",
++          "source": "historical (列は第三部隊（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲）。最上と駆逐艦 3 隻は先に偵察に出され、第 1・第 2 分隊の前を気づかれずに通り、PT が最初に接したのは戦艦の組（時雨はそちら）。進みの速さは 18 kt（時雨の艦長の戦後の聞き取り）。時雨が探照灯と星弾で照らして撃ち、戦艦は後ろに控えた。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C1・C6) / design (v0.8.2 S0・spec-v0820 §4.1 D-M2・D-M3・§4.2 D-C1〜D-C7。列の通過の片道（outbound・unload_s・spacing_s・cover_leaves_with_outbound を置かない）: 各艦は西の縁の内 150 m に現れ、090°・18 kt（画面上 46.3 m/秒）で東の縁の外 150 m（スリガオ海峡）へ去って戻らない（撃沈に数えない）。column は 1 隻ずつ（enemy_id の記録・Result の艦名 name_ja・group 前衛 van／本隊 main・gap_s 前の艦からの入りの秒（先頭は inbound.enter_s から）・lane_dy_m 道 lane_y_m からのずれ・role 列のまま line／見張り screen）。時刻表（揺らぎなし）: 満潮 5・朝雲 20・山雲 35・最上 50 秒（前衛の間隔 15 秒＝約 690 m・道 y 2,800）→ 時雨 80（道 y 1,800）・山城 85・扶桑 101 秒（戦艦の間隔 16 秒＝約 740 m・道 y 2,400）。rejoin_s 40: 見張りの時雨が自艇を見失ってから列の針路へ戻るまでの体感の秒（S2）。駆逐艦 4 隻（朝潮型と白露型）は ijn_destroyer（陽炎型の値と絵）で代用（寸法がほぼ同じ。命中率の KPI を合わせた値を触らない）。vila_label_ja は列の去る先の名（レーダーの「東（スリガオ海峡）へ消えた」の文は S4）。S0 の世界は艦ごとの記録・役をまだ読まない（7 隻とも ijn_destroyer の形）)"
++        },
++        "recon": {
++          "track_s": 20,
++          "identify_class": "battleship",
++          "radio_fail_chance": 0.35,
++          "radio_min_damage": 20,
++          "relay": {
++            "x_m": 1600,
++            "y_m": 800,
++            "radius_m": 250,
++            "label_ja": "隣の分隊"
++          },
++          "source": "historical (第 1 分隊は報告を送る前に寄って攻撃し、PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 が報告を中継した（中継を頼んだのが PT-130 か PT-131 かは出典で違う）。報告は艦種と針路・速さを言った。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C3・C4) / design (v0.8.2 S0・spec-v0820 §4.5 D-N1〜D-N7。報告（type recon_and_attack）: 艦種 identify_class（戦艦）の艦が自艇の視程の内に 1 回でも入ったら「戦艦を確認」（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の艦が映っている固定ステップの実秒を track_s（20 秒）足すと報告を送る。送る前に敵の艦の砲弾（damage が radio_min_damage 20 以上＝76 mm 以上）を受けるたびに radio_fail_chance 35% で無線が壊れ（乱数 seed+34・recon のある任務だけ）、中継の輪 relay（西のボホール沖・隣の分隊・黄色）に入れば中継。達成は報告が届いて帰投と同じに数える終わり。世界の配線は v0.8.2 S2・画面の文は S4)"
++        },
++        "hard": {
++          "extra_column": [
++            {
++              "enemy_id": "ijn_destroyer",
++              "name_ja": "見張りの駆逐艦",
++              "group": "main",
++              "gap_s": 8,
++              "lane_dy_m": -600,
++              "role": "screen"
++            }
++          ],
++          "source": "design (v0.8.2 S0・spec-v0820 §4.10。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦の数が増えていけばよい」）: 本隊の最後（扶桑の 8 秒後＝109 秒）に後ろの北側の見張りの駆逐艦（ijn_destroyer・role screen・道 y 1,800）を 1 隻足して 8 隻（史実は 7 隻）。spec の「扶桑の 10 秒後」は最後の艦が夜明けの 20 秒前までに去る検査（V-C5。111 + 140.4 ＝ 251.4 秒 ＞ 250）に掛かるので 8 秒にした（249.4 秒）。達成は同じ（報告して帰投）)"
++        }
+       }
+     },
+     {
+diff --git a/data/risk_events.json b/data/risk_events.json
+index 62169fd..04aa68d 100644
+--- a/data/risk_events.json
++++ b/data/risk_events.json
+@@ -323,6 +323,19 @@
+         "source": "design (v0.6.11。jp_03「運天港・空襲下の退避」の 1 編隊の段と時間（夜明けの空襲の core の値の形。凍結の core は変えない。dawn_air_strike.params は 6 任務で共有なので触らず、jp_03 専用の記録を作った＝jp_02 の patrol_air.params.sortie の前例）。編隊は（波 × 枠）ごとに 1 回だけ飛ぶ（core/air-sortie の restartAirSortie で狙った隊の隊長艇から方位 70 ± 30°・2,500 m に現れる）。spawn_m 2,500: 現れる距離の上限（restartAirSortie は [run_radius_m, spawn_m] に収める）。run_radius_m 500: 旋回の半径（爆撃進路 1.62 秒）。first_run_s 6.5: 始まりから最初の爆撃進路まで（旋回に着く 6.48 秒以上。予告の 10 秒と合わせて予告から最初の投下まで約 18.1 秒）。run_gap_s 1.7: 投下の間隔（落下 1.28 秒より長い＝空中の爆弾は 1 編隊 1 発。2 機 × 1.7 ＝ 3.4 秒 ≥ 爆撃進路の 2 倍 3.24 秒。2 機 4 発で最後の投下は始まりから 13.2 秒、4 機 8 発で 20.0 秒）。wave_rest_s 16 と wave_rotate_deg 0 は次の波を出さないので効かない（凍結の検査と V-E6 の「済みを 1 ステップ前に見る余裕」のため。16 ≥ 1.62 + 2.5 + 2 ステップ）。leave_s 2.5: 去る秒。spawn_offsets_deg: 凍結の core が先頭 n 個を使う（2 機は −30・−10＝平均 −20° に偏る分を evac_raid.bearing_fix_deg で戻す）。aim_turn_min_deg_s 0.5 は夜明けと同じ。値は spec-v0611-r2 §4。合わせは S3・S7 の模擬で（spec §12.5 の 6 番目のつまみ）) / design (v0.6.11 S3b。U7（ユーザーの答え「編隊が戻ってくる」）と合わせた模擬の点 G1（spec-v0611-r2 §12.5 のつまみ。N 400 × 2 組でノーマルの帯 19・ハードの帯 5 がすべて ✓）: first_run_s 9 → 6.5・run_gap_s 2.2 → 1.7（夜明けの 2.2 から離れた。どちらも検査の下限 6.48・1.62 の近く）。1 回が短いほど、済んだ編隊のもう一度（evac_raid.passes_max）が第 2・3 波にも収まる（9・2.2 では第 1 波だけ。6.5・1.7 で 2 回目は第 1 波 ≈ 89%・第 2 波 ≈ 62%・第 3 波 ≈ 32% の編隊（seq）。同じ短さで passes_max 1 なら seq 91%・dodge_only 84%（N 100・回避 0・陰（東）を外した点）＝帯を動かすのは 2 回目）)"
+       },
+       "note": "design。史実の 1944-10-10 の運天港の損失（第27魚雷艇隊の 18 隻中 13 隻＝historical。docs/01 の史料 A2・A4。WebSearch の抜粋のみ・本文未読）は米PT の損失 69 隻の内訳（count・share）に入らないので count 0・share 0（total_losses などの合計は変えない）。"
++    },
++    {
++      "id": "radio_failure",
++      "label_ja": "無線の故障（被弾で報告が送れない。中継の輪へ）",
++      "count": 0,
++      "share": 0,
++      "enemy_direct": true,
++      "game_event": "radio_failure",
++      "trigger": "報告を送る前に敵の艦の砲弾（76 mm 以上＝v0_1_prototype.recon.radio_min_damage 以上の 1 発）を受けると、1 発ごとに recon.radio_fail_chance で無線が壊れる（v0.8.2。us_05。乱数は seed+34・recon のある任務だけ。機銃は引かない）",
++      "counterplay": "照らされる前に報告を送る（戦艦を目で確かめ、レーダーで追う）。壊れたら隣の分隊の黄色い輪（recon.relay）へ入って中継を頼む",
++      "penalty": "報告が届くまで任務は達成にならない（中継の輪まで走る燃料と時間）",
++      "version": "v0.8.2",
++      "note": "design。史実: 1944-10-24 夜、ボホール島沖の第 1 分隊の PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 に報告の中継を頼んだ（中継を頼んだのが PT-130 か PT-131 かは出典で違う。docs/01 §8 は v0.8.2 S4。WebSearch の抜粋のみ・本文未読。medium）。米PT の損失 69 隻の内訳（count・share）ではないので count 0・share 0（engine_failure の作法。total_losses などの合計は変えない）。Briefing の危険の行の名（label_ja）。世界の配線は v0.8.2 S2"
+     }
+   ],
+   "source": {
+diff --git a/data/scoring.json b/data/scoring.json
+index 1a8172f..a68e49e 100644
+--- a/data/scoring.json
++++ b/data/scoring.json
+@@ -12,11 +12,12 @@
+     "intercept_destroyer": 300,
+     "barge_hunt": 300,
+     "escort_vip": 300,
+-    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない。patrol_and_evade（v0.6.3。jp_05）は帰投（輪に入って終わる）で 300＝達成。撃つ相手のいない任務なので『沈めて死ぬ』は無く、帰投 700 ＞ 沈没 0 は崩れない。escort_convoy（v0.6.4。jp_01）は帰投地点の輪で任務が終わった時点で上陸した大発が convoy.arrive_quota（2）隻以上（帰投が要る。escort_vip と同じ）。evacuate_under_air_raid（v0.6.11。jp_03）は帰投（空襲が去る 240 秒に操作中の隊が隠れているか、その後に隠れ場所で止まる）と同じに数える終わりで、残存（座席の艇を含む 18 隻中）が evac_raid.survivor_quota（6）隻以上。帰投の 700 ＞ 残して沈む（残った艇の点 最大 510）は崩れない)",
++    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない。patrol_and_evade（v0.6.3。jp_05）は帰投（輪に入って終わる）で 300＝達成。撃つ相手のいない任務なので『沈めて死ぬ』は無く、帰投 700 ＞ 沈没 0 は崩れない。escort_convoy（v0.6.4。jp_01）は帰投地点の輪で任務が終わった時点で上陸した大発が convoy.arrive_quota（2）隻以上（帰投が要る。escort_vip と同じ）。evacuate_under_air_raid（v0.6.11。jp_03）は帰投（空襲が去る 240 秒に操作中の隊が隠れているか、その後に隠れ場所で止まる）と同じに数える終わりで、残存（座席の艇を含む 18 隻中）が evac_raid.survivor_quota（6）隻以上。帰投の 700 ＞ 残して沈む（残った艇の点 最大 510）は崩れない。recon_and_attack（v0.8.2。us_05 スリガオ海峡・最初の接触）は報告が届いて（戦艦を目で確かめ、レーダーで追って送るか、無線が壊れて隣の分隊の輪で中継して）帰投と同じに数える終わりで 300（帰投が要る。沈めば報告が届いていても 0）。回避の点（evade）は付けない（史実は見つかった夜で、見つからないことは報告の手柄でない）。報告して帰投 ≥ 700 ＋ 300 ＝ 1,000 は、戦艦を弾薬庫の誘爆で沈めて沈む（命中 4 本 × 最大 200（1,200〜2,000 yd）＋ 轟沈 200 ＝ 1,000 以下）・重巡を沈めて沈む（3 × 200 ＋ 200 ＝ 800）を下回らない（≥ 2,000 yd の 4 本だけ崩れうる＝扇 1 回 0.2% 未満。spec-v0820 §4.8 D-P3。v0.8.2 S4 の tests で固定))",
+     "attack_and_survive": 300,
+     "patrol_and_evade": 300,
+     "escort_convoy": 300,
+-    "evacuate_under_air_raid": 300
++    "evacuate_under_air_raid": 300,
++    "recon_and_attack": 300
+   },
+   "hit": {
+     "base": 100,
+@@ -43,9 +44,11 @@
+     "points_by_enemy": {
+       "daihatsu_barge": 75,
+       "ijn_transport": 400,
+-      "us_pt_enemy": 140
++      "us_pt_enemy": 140,
++      "ijn_battleship_fuso": 200,
++      "ijn_cruiser_mogami": 200
+     },
+-    "source": "design (v0.4.2。砲で撃破した敵 1 隻ごとの点（魚雷の命中点の代わり。距離の倍率は無い）。75: 4 隻撃破して沈んでも 300 + 4 × 75 = 600 で、撃たずに帰投 700 を下回る（100 だと 700 で並ぶ）。3 隻で帰投 700 + 300 + 225 + 燃料 + 乗員 ≈ 1,340、2 隻で帰投 850（ノルマ未達で達成点・燃料点・乗員点なし）、撃たずに帰投 700）。ijn_transport 400（v0.4.7。魚雷で沈めた輸送船。命中点（帯の倍率 100〜300）とは別に付く。駆逐艦の撃沈（達成 300）より少し上＝「輸送船を先に狙う」が割に合い、両方沈めれば 700 + 300 + 400 + 命中 2 本）。us_pt_enemy 140（v0.6.3 実機 1 回目。jp_05 で T-14 の 13mm が沈めた米PT 1 隻（炎上。ごくまれ）: 2 隻沈めて沈んでも 2 × 140 = 280 < 帰投 700（生還が先）、隊の 2 隻 × 140 = 280 < 回避 300（見つからずに帰るのがいちばん上。撃てば閃光で見つかる。初めの 200 は 1 隻だけを回避と比べていて、2 隻で 400 > 300 となり、模擬の 2 隻撃沈の帰投 1,528〜1,566 点が見つからずに帰投の最高 1,471 点を超えた。レビュー F1）。撃退（死傷・損傷で去る）は点なし＝ご褒美は航過が減って HP・乗員・燃料が残ること。模擬の中央値で 見つからずに帰投 約 1,460 > 見つかって転舵と撃ち返しで 1 隻沈めて帰投 約 1,270 > 見つかって転舵で帰投 約 1,130 > 2 隻沈めて沈没 280）)"
++    "source": "design (v0.4.2。砲で撃破した敵 1 隻ごとの点（魚雷の命中点の代わり。距離の倍率は無い）。75: 4 隻撃破して沈んでも 300 + 4 × 75 = 600 で、撃たずに帰投 700 を下回る（100 だと 700 で並ぶ）。3 隻で帰投 700 + 300 + 225 + 燃料 + 乗員 ≈ 1,340、2 隻で帰投 850（ノルマ未達で達成点・燃料点・乗員点なし）、撃たずに帰投 700）。ijn_transport 400（v0.4.7。魚雷で沈めた輸送船。命中点（帯の倍率 100〜300）とは別に付く。駆逐艦の撃沈（達成 300）より少し上＝「輸送船を先に狙う」が割に合い、両方沈めれば 700 + 300 + 400 + 命中 2 本）。us_pt_enemy 140（v0.6.3 実機 1 回目。jp_05 で T-14 の 13mm が沈めた米PT 1 隻（炎上。ごくまれ）: 2 隻沈めて沈んでも 2 × 140 = 280 < 帰投 700（生還が先）、隊の 2 隻 × 140 = 280 < 回避 300（見つからずに帰るのがいちばん上。撃てば閃光で見つかる。初めの 200 は 1 隻だけを回避と比べていて、2 隻で 400 > 300 となり、模擬の 2 隻撃沈の帰投 1,528〜1,566 点が見つからずに帰投の最高 1,471 点を超えた。レビュー F1）。撃退（死傷・損傷で去る）は点なし＝ご褒美は航過が減って HP・乗員・燃料が残ること。模擬の中央値で 見つからずに帰投 約 1,460 > 見つかって転舵と撃ち返しで 1 隻沈めて帰投 約 1,270 > 見つかって転舵で帰投 約 1,130 > 2 隻沈めて沈没 280）。ijn_battleship_fuso 200・ijn_cruiser_mogami 200（v0.8.2。us_05）: 魚雷で沈めた戦艦（艇の 4 本では弾薬庫の誘爆の時だけ）・重巡（3 本）1 隻ごと。命中点とは別に付く（輸送船の 400 と同じ扱い）。轟沈の点 200 × 扇 1 回 約 5% ＝ 10 点は同じ扇の命中点（約 3.2 本 × 150）の 2% で、戦艦を沈めるのが「いつもの目標」にならない（spec-v0820 §4.4 D-G3・§4.8 D-P2）。駆逐艦の撃沈は今のとおり点なし（ijn_destroyer を足すと us_01・us_02・us_04 の点が変わる）。読むのは v0.8.2 S1 の core/scoring の shipKills（無い任務は 0＝今の式）)"
+   },
+   "evade": {
+     "points_by_type": {
+diff --git a/src/config/dawn-data.ts b/src/config/dawn-data.ts
+index 9ef8406..6918f30 100644
+--- a/src/config/dawn-data.ts
++++ b/src/config/dawn-data.ts
+@@ -111,7 +111,9 @@ function checkWithdraw(proto: Rec, missionId: string, air: DawnAir): DawnWithdra
+   const at = `missions_seed ${missionId}`;
+   const mode = air.shipsAtDawn;
+   const raw = proto['dawn_withdraw'];
+-  if (mode === 'retire' && proto['enemy_start'] === undefined) throw new Error(`${at}: dawn_air.enemy_ships_at_dawn が retire なのに駆逐艦（v0_1_prototype.enemy_start）が無い（退くのは駆逐艦・輸送船）`);
++  // 列だけの隊（v0.8.2。us_05。transit.column の片道の列。enemy_start は無い）も退く駆逐艦の隊（spec-v0820 §14: 今の検査に「transit.column があれば駆逐艦の任務」の 1 枝）
++  const column = (proto['transit'] as Rec | undefined)?.['column'] !== undefined;
++  if (mode === 'retire' && proto['enemy_start'] === undefined && !column) throw new Error(`${at}: dawn_air.enemy_ships_at_dawn が retire なのに駆逐艦（v0_1_prototype.enemy_start）が無い（退くのは駆逐艦・輸送船）`);
+   if (mode === 'hide' && proto['barges'] === undefined) throw new Error(`${at}: dawn_air.enemy_ships_at_dawn が hide なのに大発の隊（v0_1_prototype.barges）が無い（岸へ隠れるのは大発）`);
+   if (mode !== 'retire') {
+     if (raw !== undefined) throw new Error(`${at}: v0_1_prototype.dawn_withdraw は dawn_air.enemy_ships_at_dawn が retire の任務だけ（${mode}）`);
+diff --git a/src/config/mission-data.ts b/src/config/mission-data.ts
+index 865df4d..bc314b6 100644
+--- a/src/config/mission-data.ts
++++ b/src/config/mission-data.ts
+@@ -153,7 +153,9 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
+   // 空襲下の退避（v0.6.11。jp_03）も艦艇のいない航空機だけの任務。block の中身と他の置き場の検査は config/evac-mission-data（V-E1〜V-E12）
+   const evac = proto['evac'] !== undefined;
+   if (evac && (proto['enemy_start'] !== undefined || barges || ptBoats || patrolAir)) throw new Error(`${missionId}.v0_1_prototype: evac（空襲下の退避）は enemy_start・barges・pt_boats・patrol_air と一緒に置けない（航空機だけの任務。v0.6.11）`);
+-  if (!ptBoats && !patrolAir && !evac && (proto['enemy_start'] === undefined) === (barges === null)) throw new Error(`${missionId}.v0_1_prototype は enemy_start（駆逐艦）か barges（大発の隊）のどちらか一方を持つ（米PT の隊（pt_boats）・夜の哨戒機（patrol_air）・空襲下の退避（evac）の任務はどちらも持たない）`);
++  // 列だけの隊（v0.8.2。us_05。spec-v0820 §4.2 D-C2）: enemy_start も barges も無く transit.column（片道の列）がある任務は駆逐艦の隊の任務（隊は列の艦だけ。検査は config/transit-mission-data・column-mission-data）
++  const columnOnly = proto['enemy_start'] === undefined && barges === null && (proto['transit'] as Record<string, unknown> | undefined)?.['column'] !== undefined;
++  if (!ptBoats && !patrolAir && !evac && !columnOnly && (proto['enemy_start'] === undefined) === (barges === null)) throw new Error(`${missionId}.v0_1_prototype は enemy_start（駆逐艦）か barges（大発の隊）のどちらか一方を持つ（米PT の隊（pt_boats）・夜の哨戒機（patrol_air）・空襲下の退避（evac）の任務はどちらも持たない）`);
+   const mainWeapon = proto['main_weapon'] ?? 'torpedo';
+   if (mainWeapon !== 'torpedo' && mainWeapon !== 'guns' && mainWeapon !== 'none') throw new Error(`${missionId}.v0_1_prototype.main_weapon は torpedo・guns・none のどれか`);
+   const ids = enemies as unknown[];
+@@ -183,7 +185,7 @@ export function getPrototypeMission(data: GameData, missionId: string, hard: boo
+   if (escort && (barges || ptBoats)) throw new Error(`${missionId}.v0_1_prototype: 僚艇（escort）は駆逐艦（enemy_start）の任務だけ`);
+   if (type === 'escort_vip' && !escort) throw new Error(`${missionId}: type が escort_vip なのに v0_1_prototype.escort が無い`);
+   if (escort && !(data.boats.boats as readonly Record<string, unknown>[]).some((x) => x['id'] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat（${escort.boat}）が boats.json に無い`);
+-  const enemyStart = barges || ptBoats || patrolAir || evac ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
++  const enemyStart = barges || ptBoats || patrolAir || evac || columnOnly ? null : readStart(proto['enemy_start'], `${missionId}.v0_1_prototype.enemy_start`);
+   // 難易度ハード（v0.4.5。config/mission-hard-data。v0.6.4 で切り出し）: 全隻の出発点・全門の沿岸砲・撃沈の達成の隻数、v0.6.6 から米PT の哨戒線・上陸のノルマ（ハードなら hard block の分を足す）
+   const { enemyStarts, shoreBatteryXs, objectiveSinkCount, ptLegs, convoyQuota } = readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b, { ptBoats: ptBoats !== null, convoy: proto['convoy'] !== undefined });
+   // 輸送船（v0.4.7）: 駆逐艦の任務だけ（隊の 1 隻として同じ AI で動く）
+diff --git a/src/config/mission-hard-data.ts b/src/config/mission-hard-data.ts
+index 32a2c58..20ad446 100644
+--- a/src/config/mission-hard-data.ts
++++ b/src/config/mission-hard-data.ts
+@@ -3,7 +3,7 @@
+ // v0.6.6（jp_01）: extra_pt_legs_m（米PT の哨戒線を足す。pt_boats の任務だけ）・convoy_arrive_quota（上陸のノルマ。convoy の任務だけ）・objective_ja／success_ja／note_ja（ハードの Briefing の文。3 つとも有るか無いか）。
+ // 鍵は hard が偽でも検査し、足す・置き換えるのは hard のときだけ（今までと同じ）。知らない鍵は見ない（他の任務の hard block は今のまま）。
+ // v0.8.0（us_04。spec-v0800 §4.6）: 撃沈の達成の隻数をノーマルにも読む（v0_1_prototype.objective_sink_count。ハードは hard.objective_sink_count、無ければノーマルの値。どちらも無い任務は今までどおり全隻＝null）。
+-// 隻数の上限には列の通過（v0_1_prototype.transit.ships と hard.extra_transit_ships。形の検査は config/transit-mission-data の V-T1）の艦も数える。
++// 隻数の上限には列の通過（v0_1_prototype.transit.ships と hard.extra_transit_ships。形の検査は config/transit-mission-data の V-T1）の艦も数える（v0.8.2 から片道の列の hard.extra_column も）。
+ // isNum・readStart もここ（mission-data が import し、isNum は今までの import のために再 export する。ここから mission-data を import すると循環になる）。
+ 
+ /** 出発点（x_m / y_m / heading_deg） */
+@@ -92,7 +92,8 @@ export function readHardBlock(proto: Record<string, unknown>, missionId: string,
+     }
+     // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）。v0.8.0: ハードの隻数に列の通過の艦（足す分も）を数える
+     const osc = hardRaw['objective_sink_count'];
+-    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw['extra_transit_ships']);
++    const ec = hardRaw['extra_column']; // 片道の列のハードの艦（v0.8.2。us_05。形の検査は config/column-mission-data の V-C1）
++    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw['extra_transit_ships']) + (Array.isArray(ec) ? ec.length : 0);
+     if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || (osc as number) > hardShips)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
+     if (hard && osc !== undefined) objectiveSinkCount = osc as number;
+     const xs = hardRaw['extra_shore_battery_x_m'];
+diff --git a/src/config/transit-mission-data.ts b/src/config/transit-mission-data.ts
+index 4ee2c12..38e3617 100644
+--- a/src/config/transit-mission-data.ts
++++ b/src/config/transit-mission-data.ts
+@@ -3,11 +3,14 @@
+ // 起動時の検査 V-T1〜V-T6 をする（例外は鍵を名指す日本語）。形は core/transit-data。PrototypeMission に鍵は足さない（block は生の proto から読む。evac-mission-data と同じ作法）。
+ // world-setup は今夜の揺らぎの回数（transitNightRolls。列ごと 1 件）と組み立てのたびに（transitSetupPart）、Boot は全任務（ハードも）を 1 回（validateTransitMissions）呼ぶ。
+ // 今夜の揺らぎ（spec §4.8）: x のずれ ÷ 画面上の列の速さ → 入りの秒（東へ進む列が東へずれれば早い）、y のずれ → 往路と復路の道の y。針路のずれは使わない（乱数の回数は列ごと 3 回のまま）。
++// 片道の列（v0.8.2。us_05。spec-v0820 §4.2 D-C2・D-C4）: transit.column のある列は enemy_start の無い列だけの隊でよく（V-T6）、復路が無い（outbound null）。艦ごとの記録・時刻・道の
++// 検査（V-C1〜V-C6）と kits は config/column-mission-data、ここは置き場（V-T6）と夜明けに退く縁（V-T2: 向かう縁）だけを見て世界の値に艦ごとの入りの秒・道のずれ・kits を足す。
+ import { getEnemyRecord, getEvasionMultiplier, type GameData, type PrototypeMission } from './game-data';
+ import { getPrototypeMission, hasHardVariant } from './mission-data';
++import { getColumnPlan, type ColumnKit, type ColumnPlan, type ColumnSetupOptions } from './column-mission-data';
+ import type { NightOffset } from '../core/night';
+ import { shipAiParamsFromData, type ShipAiParams } from '../core/ship-ai';
+-import { TRANSIT_MAX_SHIPS, readTransitBlock, transitAppearX, transitGoneX, transitLastGoneS, type TransitEdge } from '../core/transit-data';
++import { TRANSIT_MAX_SHIPS, readTransitBlock, transitAppearX, transitGoneX, transitLastGoneS, type TransitEdge, type TransitOneWayBlock } from '../core/transit-data';
+ import { ktToMps } from '../core/units';
+ 
+ /** V-T2: 道の y は縁から（列の艦の境界の余白＝表示上の船体半分 ＋ これ）以上内（今夜の y のずれ込み） */
+@@ -20,8 +23,8 @@ export const TRANSIT_CHECK_UNLOAD_MIN_S = 20;
+ export const TRANSIT_CHECK_START_CLEAR_M = 1500;
+ /** V-T6: 列の通過と同居しない v0_1_prototype の鍵（大発・米PT・輸送隊・輸送船・僚艇・航空機だけの任務・揚陸・味方の駆逐艦） */
+ export const TRANSIT_EXCLUSIVE_KEYS = ['barges', 'pt_boats', 'convoy', 'transport', 'escort', 'patrol_air', 'evac', 'landing', 'ally_destroyer'] as const;
+-/** 列の通過の任務だけが hard に持つ鍵（無い任務に置けば例外） */
+-export const TRANSIT_ONLY_HARD_KEYS = ['extra_transit_ships'] as const;
++/** 列の通過の任務だけが hard に持つ鍵（無い任務に置けば例外。extra_column は v0.8.2 の片道の列＝config/column-mission-data） */
++export const TRANSIT_ONLY_HARD_KEYS = ['extra_transit_ships', 'extra_column'] as const;
+ 
+ export interface TransitLeg {
+   edge: TransitEdge;
+@@ -48,11 +51,17 @@ export interface TransitSetup {
+   enterS: number;
+   unloadS: number;
+   inbound: TransitLeg;
+-  outbound: TransitLeg;
++  /** 復路（片道の列は null。v0.8.2） */
++  outbound: TransitLeg | null;
+   coverLeavesWithOutbound: boolean;
+   vilaLabelJa: string;
+   /** 列の艦の AI（enemies.json の値のまま最大速力だけ列の速さ＝往路と復路・体当たりの増速の上限。史実モードの倍率込み） */
+   shipAi: ShipAiParams;
++  /** 片道の列だけ（v0.8.2。無い任務では鍵ごと出ない）: 艦ごとの入りの秒（今夜の揺らぎ込み）・道のずれ・見張りが戻る秒・列の艦ごとの記録（S2 の systems/column-kits が読む） */
++  enterAtS?: number[];
++  laneDyM?: number[];
++  rejoinS?: number;
++  column?: ColumnKit[];
+ }
+ 
+ type Rec = Record<string, unknown>;
+@@ -68,8 +77,8 @@ export function transitNightRolls(data: GameData, mission: PrototypeMission): nu
+   return protoOf(data, mission.id)?.['transit'] === undefined ? 0 : 1;
+ }
+ 
+-/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」 */
+-export function getTransitParams(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean): TransitSetup | null {
++/** 任務の列の通過の値。v0_1_prototype.transit の無い任務は null。night は今夜の列の 1 件（null は揺らぎなし）。壊れていれば「<任務>.v0_1_prototype…: …（V-Tn）」。o は片道の列の kits の上書き */
++export function getTransitParams(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean, opts: ColumnSetupOptions = {}): TransitSetup | null {
+   const proto = protoOf(data, mission.id);
+   if (!proto) return null;
+   const at = `${mission.id}.v0_1_prototype`;
+@@ -82,10 +91,11 @@ export function getTransitParams(data: GameData, mission: PrototypeMission, nigh
+     return null;
+   }
+   const b = readTransitBlock(proto['transit'], `${at}.transit`);
+-  // V-T6 置き場: 護衛の駆逐艦（enemy_start）のいる任務・同居しない鍵・東西に反転しない（揚陸の地は一方の縁の外）
+-  if (!mission.enemyStart) bad('V-T6', 'transit は駆逐艦の任務（enemy_start＝護衛がある）だけ');
++  // V-T6 置き場: 護衛の駆逐艦（enemy_start）のいる任務か列だけの隊（片道の列＝transit.column。v0.8.2）・同居しない鍵・東西に反転しない（揚陸の地は一方の縁の外）
++  if (!mission.enemyStart && b.column === undefined) bad('V-T6', 'transit は駆逐艦の任務（enemy_start＝護衛がある）だけ');
+   for (const k of TRANSIT_EXCLUSIVE_KEYS) if (proto[k] !== undefined) bad('V-T6', `${k} と transit は同居しない`);
+   if (mission.night && mission.night.mirrorChance !== 0) bad('V-T6', `night.mirror_chance は 0（列は東西に反転しない。${mission.night.mirrorChance}）`);
++  if (b.column !== undefined) return oneWayParams(data, mission, b, getColumnPlan(data, mission, night, historical, opts)!, night, historical, (proto['dawn_withdraw'] as Rec | undefined)?.['retire_edge'], bad);
+   // V-T1 数: ハードの足す艦・上限・enemies（護衛 1 ＋ 列）・速さは艦の最大以下
+   const extraRaw = hardRaw?.['extra_transit_ships'];
+   if (extraRaw !== undefined && !(typeof extraRaw === 'number' && Number.isInteger(extraRaw) && extraRaw >= 1)) bad('V-T1', `hard.extra_transit_ships は 1 以上の整数（${String(extraRaw)}）`);
+@@ -140,9 +150,30 @@ export function getTransitParams(data: GameData, mission: PrototypeMission, nigh
+   };
+ }
+ 
+-/** WorldSetup に展開する部分: 列の通過の無い任務は {}（transit の鍵ごと出ない＝ほかの任務の setup の snapshot が変わらない） */
+-export function transitSetupPart(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean): { transit?: TransitSetup } {
+-  const p = getTransitParams(data, mission, night, historical);
++/**
++ * 片道の列の世界の値（v0.8.2。V-C1〜V-C6 は config/column-mission-data が済ませた plan）。夜明けに退く縁は列の向かう縁（V-T2 の片道版: 戻らない列は先へ退く）。
++ * 往復の鍵は使わない値（spacingS・unloadS 0・outbound null・護衛は退かない）、艦ごとの入りの秒・道のずれ・kits は鍵を足す（往復の列には出ない）
++ */
++function oneWayParams(data: GameData, mission: PrototypeMission, b: TransitOneWayBlock, plan: ColumnPlan, night: NightOffset | null, historical: boolean, retire: unknown, bad: (v: string, msg: string) => never): TransitSetup {
++  const { edge, lane_y_m: laneY, heading_deg: headingDeg } = b.inbound;
++  const forward: TransitEdge = edge === 'west' ? 'east' : 'west';
++  if (retire !== forward) bad('V-T2', `dawn_withdraw.retire_edge（${String(retire)}）は片道の列の向かう縁（${forward}。夜明けに先へ退く）`);
++  const { width } = mission.bounds;
++  const dy = night ? night.dy : 0;
++  const r = getEnemyRecord(data, mission.enemyId);
++  return {
++    enemyId: mission.enemyId, ships: plan.kits.length, spacingS: 0, speedKt: b.speed_kt, speedMps: ktToMps(b.speed_kt), crossS: width / (ktToMps(b.speed_kt) * data.hitRateModel.world.time_scale),
++    enterS: plan.enterAtS[0]!, unloadS: 0, // 1 隻目の入りの秒（今夜のずれ込み）。揚陸は無い
++    inbound: { edge, laneY: laneY + dy, headingDeg, appearX: transitAppearX(edge, width, b.edge_inset_m), goneX: transitGoneX(edge, width, b.edge_inset_m) },
++    outbound: null, coverLeavesWithOutbound: false, vilaLabelJa: b.vila_label_ja,
++    shipAi: { ...shipAiParamsFromData(r, getEvasionMultiplier(data, historical)), maxSpeedMps: ktToMps(b.speed_kt) },
++    enterAtS: plan.enterAtS, laneDyM: plan.laneDyM, ...(plan.rejoinS !== null ? { rejoinS: plan.rejoinS } : {}), column: plan.kits,
++  };
++}
++
++/** WorldSetup に展開する部分: 列の通過の無い任務は {}（transit の鍵ごと出ない＝ほかの任務の setup の snapshot が変わらない）。o は片道の列の kits の上書き（v0.8.2） */
++export function transitSetupPart(data: GameData, mission: PrototypeMission, night: NightOffset | null, historical: boolean, o: ColumnSetupOptions = {}): { transit?: TransitSetup } {
++  const p = getTransitParams(data, mission, night, historical, o);
+   return p ? { transit: p } : {};
+ }
+ 
+diff --git a/src/core/intercept-sim-world.ts b/src/core/intercept-sim-world.ts
+index cf73817..1b1a6f5 100644
+--- a/src/core/intercept-sim-world.ts
++++ b/src/core/intercept-sim-world.ts
+@@ -160,7 +160,7 @@ export class SimTransit {
+     if (st.coverLeaves) {
+       for (let i = 0; i < this.first; i++) {
+         const c = this.all[i]!;
+-        if (!c.out) startRetire(c.ai, p.outbound.headingDeg);
++        if (!c.out) startRetire(c.ai, p.outbound!.headingDeg); // 護衛が退くのは往復の列だけ（v0.8.2 の片道の列は outbound null・coverLeaves は立たない）
+       }
+     }
+     return left !== 0;
+diff --git a/src/core/ship-transit.ts b/src/core/ship-transit.ts
+index 61396bd..644c88e 100644
+--- a/src/core/ship-transit.ts
++++ b/src/core/ship-transit.ts
+@@ -9,6 +9,9 @@
+ // 縁の外へ出れば GONE。IN の艦が来た縁の外へ出ても、OUT の艦が来た縁の外へ戻っても GONE（海域を出た艦は戻らない）。今夜の揺らぎは plan（TransitSetup）に入っている。
+ // 世界（S2 の systems/destroyer-transit）との約束: entered・returned の印が立ったステップのうちに、その艦を道の現れる点（appearX・laneY・headingDeg）へ置く
+ // （次の stepShipTransit がその x を読む）。WAIT・AWAY の艦の x と sinking は読まない。Phaser 非依存・乱数なし。作る（createShipTransit）は起動時に 1 回、ほかは確保しない。
++// 片道の列（v0.8.2。us_05。spec-v0820 §4.2 D-C4・D-C5）: plan.outbound が null の列は揚陸の地も復路も無い＝IN の艦が向こうの縁の外へ出たら GONE（戻らない。撃沈に数えない）。
++// AWAY にならないので戻りの残り（transitPending）は WAIT の艦だけ。入りの秒は艦ごとの表 plan.enterAtS（無ければ enterS ＋ 間隔 × i）、現れる y は道 ＋ plan.laneDyM[i]（無ければ 0）。
++// 往復の列（us_04）は outbound・enterAtS・laneDyM の読みが今と同じ式（null の枝と表の枝に入らない）。
+ import { TRANSIT_MAX_SHIPS } from './transit-data';
+ 
+ /** 艦ごとの段階 */
+@@ -36,8 +39,12 @@ export interface TransitPlan {
+   readonly enterS: number;
+   readonly unloadS: number;
+   readonly inbound: TransitLegPlan;
+-  readonly outbound: TransitLegPlan;
++  /** 復路（片道の列は null＝v0.8.2） */
++  readonly outbound: TransitLegPlan | null;
+   readonly coverLeavesWithOutbound: boolean;
++  /** 艦ごとの入りの秒（v0.8.2 の片道の列。今夜の揺らぎ込み。無ければ enterS ＋ spacingS × i）と道からの y のずれ m（無ければ 0） */
++  readonly enterAtS?: readonly number[];
++  readonly laneDyM?: readonly number[];
+ }
+ 
+ /** 世界の列の艦（entities/destroyer の Destroyer が形で満たす。読むのは IN・OUT の艦の x と沈み始めたかだけ） */
+@@ -75,9 +82,14 @@ export function createShipTransit(p: TransitPlan): ShipTransitState {
+   };
+ }
+ 
+-/** 艦 i（0 始まり）が往路に現れる体感の時計の秒（入りの時刻） */
++/** 艦 i（0 始まり）が往路に現れる体感の時計の秒（入りの時刻）。艦ごとの表（片道の列）があればその値 */
+ export function transitEnterAtS(p: TransitPlan, i: number): number {
+-  return p.enterS + p.spacingS * i;
++  return p.enterAtS !== undefined ? p.enterAtS[i]! : p.enterS + p.spacingS * i;
++}
++
++/** 艦 i が現れる y の道からのずれ m（片道の列の艦ごとの道。無ければ 0） */
++export function transitLaneDyM(p: TransitPlan, i: number): number {
++  return p.laneDyM !== undefined ? p.laneDyM[i]! : 0;
+ }
+ 
+ /** その段階の艦が現れる道（IN は往路・OUT は復路・ほかは null）。現れる点は道の appearX・laneY・headingDeg */
+@@ -95,7 +107,8 @@ export function stepShipTransit(s: ShipTransitState, p: TransitPlan, feelDtS: nu
+   s.feelS += feelDtS;
+   if (dawn) s.dawn = true;
+   const inSign = p.inbound.goneX > p.inbound.appearX ? 1 : -1;
+-  const outSign = p.outbound.goneX > p.outbound.appearX ? 1 : -1;
++  const out = p.outbound; // 片道の列は null（揚陸の地も来た側の縁の外の読みも無い）
++  const outSign = out !== null && out.goneX > out.appearX ? 1 : -1;
+   for (let i = 0; i < s.ships; i++) {
+     const ph = s.phase[i]!;
+     const bit = 1 << i;
+@@ -107,9 +120,9 @@ export function stepShipTransit(s: ShipTransitState, p: TransitPlan, feelDtS: nu
+         s.sunkCount++;
+         continue;
+       }
+-      const pastLanding = (v.state.x - p.inbound.goneX) * inSign >= 0; // 揚陸の地の側の縁の外
+-      const pastOrigin = (v.state.x - p.outbound.goneX) * outSign >= 0; // 来た側の縁の外
+-      if (ph === TRANSIT_IN && pastLanding) {
++      const pastLanding = (v.state.x - p.inbound.goneX) * inSign >= 0; // 揚陸の地の側の縁の外（片道の列は向こうの縁の外）
++      const pastOrigin = out !== null && (v.state.x - out.goneX) * outSign >= 0; // 来た側の縁の外
++      if (ph === TRANSIT_IN && pastLanding && out !== null) {
+         s.phase[i] = TRANSIT_AWAY;
+         s.awayAtS[i] = nowS;
+         s.arrived |= bit;
+@@ -137,7 +150,7 @@ export function stepShipTransit(s: ShipTransitState, p: TransitPlan, feelDtS: nu
+   }
+ }
+ 
+-/** 残りの戻り: これから海域に現れる艦の数（WAIT と AWAY。夜明けの後は 0＝もう来ない・戻らない）。隊の「敵艦隊なし」はこれが 0 の時だけ（S2 の destroyer-group） */
++/** 残りの戻り: これから海域に現れる艦の数（WAIT と AWAY。片道の列は AWAY にならない＝WAIT だけ。夜明けの後は 0＝もう来ない・戻らない）。隊の「敵艦隊なし」はこれが 0 の時だけ（S2 の destroyer-group） */
+ export function transitPending(s: ShipTransitState): number {
+   if (s.dawn) return 0;
+   let k = 0;
+diff --git a/src/core/transit-data.ts b/src/core/transit-data.ts
+index 94742fc..134ee9a 100644
+--- a/src/core/transit-data.ts
++++ b/src/core/transit-data.ts
+@@ -2,18 +2,23 @@
+ // （列の艦の数・間隔・速さ・往路と復路の道・揚陸の秒）。形の検査（鍵の閉じた集合・型・縁と針路）はここ、他の記録・任務を跨ぐ検査（V-T1〜V-T6）は config/transit-mission-data。
+ // 縁は東西だけ（道は y が一定の線）: 往路の艦は inbound.edge の縁の内 edge_inset_m に現れ、向こうの縁の外 edge_inset_m で海域を出る（揚陸の地に着いた）。
+ // 着いてから unload_s で復路の艦が outbound.edge の縁の内に現れ、向こうの縁の外で去る。段階（WAIT → IN → AWAY → OUT → GONE）を回すのは S1 の core/ship-transit。
++// 片道の列（v0.8.2。us_05「スリガオ海峡・最初の接触」の第三部隊。spec-v0820 §4.2 D-C1・D-C4）: column（列の艦ごとの記録）のある block は片道で、outbound・unload_s・
++// spacing_s・cover_leaves_with_outbound を置かない（向こうの縁の外へ出た艦は去って戻らない＝GONE）。column の中身と任務を跨ぐ検査（V-C1〜V-C6）は config/column-mission-data。
+ // Phaser 非依存・乱数なし（今夜の揺らぎは core/night の敵の 1 件を config が当てる）。
+ 
+ export const TRANSIT_EDGES = ['west', 'east'] as const;
+ export type TransitEdge = (typeof TRANSIT_EDGES)[number];
+ /** 縁から海域の内へ向かう針路（V-T2: west → 90・east → 270） */
+ export const TRANSIT_EDGE_HEADING: Readonly<Record<TransitEdge, number>> = { west: 90, east: 270 };
+-/** transit の鍵（ちょうど 10 個）・inbound の鍵（ちょうど 4 個）・outbound の鍵（ちょうど 3 個） */
++/** transit の鍵（往復の列はちょうど 10 個）・inbound の鍵（ちょうど 4 個）・outbound の鍵（ちょうど 3 個） */
+ export const TRANSIT_KEYS = ['ships', 'spacing_s', 'speed_kt', 'edge_inset_m', 'inbound', 'unload_s', 'outbound', 'cover_leaves_with_outbound', 'vila_label_ja', 'source'] as const;
++/** 片道の列（column のある block。v0.8.2）の鍵: rejoin_s だけ任意（見張りの艦がいる時。V-C4 は config/column-mission-data）。往復の 4 つの鍵は置かない */
++export const TRANSIT_ONEWAY_KEYS = ['ships', 'speed_kt', 'edge_inset_m', 'inbound', 'column', 'rejoin_s', 'vila_label_ja', 'source'] as const;
++export const TRANSIT_TWOWAY_ONLY_KEYS = ['spacing_s', 'unload_s', 'outbound', 'cover_leaves_with_outbound'] as const;
+ export const TRANSIT_INBOUND_KEYS = ['edge', 'lane_y_m', 'heading_deg', 'enter_s'] as const;
+ export const TRANSIT_OUTBOUND_KEYS = ['edge', 'lane_y_m', 'heading_deg'] as const;
+-/** 列の艦の上限（ハード込み。V-T1。S1 の固定長の段階の配列と、レーダーの掃引の艦 ≤ 8 の内＝護衛 1 ＋ 列 6） */
+-export const TRANSIT_MAX_SHIPS = 6;
++/** 列の艦の上限（ハード込み。V-T1。S1 の固定長の段階の配列）。v0.8.2 で 6 → 8（us_05 の第三部隊 7 隻・ハード 8 隻。レーダーの輝点 16 の内＝護衛 ＋ 列） */
++export const TRANSIT_MAX_SHIPS = 8;
+ 
+ export interface TransitInboundRecord {
+   edge: TransitEdge;
+@@ -29,20 +34,34 @@ export interface TransitOutboundRecord {
+   heading_deg: number;
+ }
+ 
+-/** v0_1_prototype.transit */
+-export interface TransitBlock {
++interface TransitBlockBase {
+   ships: number;
+-  spacing_s: number;
+   speed_kt: number;
+   edge_inset_m: number;
+   inbound: TransitInboundRecord;
++  vila_label_ja: string;
++  source: string;
++}
++
++/** v0_1_prototype.transit の往復の列（v0.8.0。us_04） */
++export interface TransitTwoWayBlock extends TransitBlockBase {
++  spacing_s: number;
+   unload_s: number;
+   outbound: TransitOutboundRecord;
+   cover_leaves_with_outbound: boolean;
+-  vila_label_ja: string;
+-  source: string;
++  column?: undefined;
++}
++
++/** v0_1_prototype.transit の片道の列（v0.8.2。us_05）: column は艦ごとの記録の配列（中身の検査は config/column-mission-data の V-C1）・rejoin_s は見張りの艦がいる時の秒 */
++export interface TransitOneWayBlock extends TransitBlockBase {
++  column: unknown[];
++  rejoin_s?: number;
++  outbound?: undefined;
+ }
+ 
++/** v0_1_prototype.transit（column があれば片道） */
++export type TransitBlock = TransitTwoWayBlock | TransitOneWayBlock;
++
+ type Rec = Record<string, unknown>;
+ const isObj = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
+ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+@@ -66,26 +85,35 @@ function checkLeg(raw: unknown, name: 'inbound' | 'outbound', keys: readonly str
+ }
+ 
+ /**
+- * 形の検査（V-T1 の形・V-T2 の縁と針路・V-T4 の形）: 鍵はちょうど TRANSIT_KEYS・ships は 1〜TRANSIT_MAX_SHIPS の整数・spacing_s・speed_kt・edge_inset_m は正・
+- * enter_s・unload_s は 0 以上・outbound.edge は inbound.edge の反対（来た海峡を戻る）・cover_leaves_with_outbound は真偽・文字は空でない。label は「<任務>.v0_1_prototype.transit」
++ * 形の検査（V-T1 の形・V-T2 の縁と針路・V-T4 の形）: 往復の列の鍵はちょうど TRANSIT_KEYS・ships は 1〜TRANSIT_MAX_SHIPS の整数・spacing_s・speed_kt・edge_inset_m は正・
++ * enter_s・unload_s は 0 以上・outbound.edge は inbound.edge の反対（来た海峡を戻る）・cover_leaves_with_outbound は真偽・文字は空でない。label は「<任務>.v0_1_prototype.transit」。
++ * column のある片道の列（v0.8.2）は鍵が TRANSIT_ONEWAY_KEYS の内（rejoin_s だけ任意。往復の 4 つの鍵は置けない＝V-C4）・column は配列（中身は config/column-mission-data）
+  */
+ export function readTransitBlock(raw: unknown, label: string): TransitBlock {
+   const bad = (msg: string): never => {
+     throw new Error(`${label}: ${msg}（spec-v0800 §4.8）`);
+   };
+   if (!isObj(raw)) return bad('object でない');
+-  closedKeys(raw, TRANSIT_KEYS, bad, '');
++  const oneWay = raw['column'] !== undefined;
++  if (oneWay) {
++    const twoWay = TRANSIT_TWOWAY_ONLY_KEYS.filter((k) => k in raw);
++    if (twoWay.length > 0) bad(`片道の列（column）には ${TRANSIT_TWOWAY_ONLY_KEYS.join('・')} を置かない（${twoWay.join('・')}。向こうの縁の外へ出た艦は去って戻らない。V-C4・spec-v0820 §4.2）`);
++    const { rejoin_s: _rejoin, ...rest } = raw;
++    closedKeys(rest, TRANSIT_ONEWAY_KEYS.filter((k) => k !== 'rejoin_s'), bad, '片道の列の');
++    if (!Array.isArray(raw['column'])) bad('column は配列（列の艦ごとの記録）');
++  } else closedKeys(raw, TRANSIT_KEYS, bad, '');
+   const ships = raw['ships'];
+   if (!(isNum(ships) && Number.isInteger(ships) && ships >= 1 && ships <= TRANSIT_MAX_SHIPS)) bad(`ships は 1〜${TRANSIT_MAX_SHIPS} の整数（${String(ships)}。V-T1）`);
+-  for (const k of ['spacing_s', 'speed_kt', 'edge_inset_m'] as const) if (!(isNum(raw[k]) && (raw[k] as number) > 0)) bad(`${k} は正の数（${String(raw[k])}。V-T1）`);
+-  if (!(isNum(raw['unload_s']) && (raw['unload_s'] as number) >= 0)) bad(`unload_s は 0 以上の数（${String(raw['unload_s'])}。V-T4）`);
++  for (const k of oneWay ? (['speed_kt', 'edge_inset_m'] as const) : (['spacing_s', 'speed_kt', 'edge_inset_m'] as const)) if (!(isNum(raw[k]) && (raw[k] as number) > 0)) bad(`${k} は正の数（${String(raw[k])}。V-T1）`);
+   checkLeg(raw['inbound'], 'inbound', TRANSIT_INBOUND_KEYS, bad);
+-  checkLeg(raw['outbound'], 'outbound', TRANSIT_OUTBOUND_KEYS, bad);
+   const inb = raw['inbound'] as Rec;
+-  const outb = raw['outbound'] as Rec;
+   if (!((inb['enter_s'] as number) >= 0)) bad(`inbound.enter_s は 0 以上（${String(inb['enter_s'])}）`);
+-  if (outb['edge'] === inb['edge']) bad(`outbound.edge は inbound.edge（${String(inb['edge'])}）の反対（揚陸の地から来た海峡を戻る。V-T2）`);
+-  if (typeof raw['cover_leaves_with_outbound'] !== 'boolean') bad('cover_leaves_with_outbound は true か false');
++  if (!oneWay) {
++    if (!(isNum(raw['unload_s']) && (raw['unload_s'] as number) >= 0)) bad(`unload_s は 0 以上の数（${String(raw['unload_s'])}。V-T4）`);
++    checkLeg(raw['outbound'], 'outbound', TRANSIT_OUTBOUND_KEYS, bad);
++    if ((raw['outbound'] as Rec)['edge'] === inb['edge']) bad(`outbound.edge は inbound.edge（${String(inb['edge'])}）の反対（揚陸の地から来た海峡を戻る。V-T2）`);
++    if (typeof raw['cover_leaves_with_outbound'] !== 'boolean') bad('cover_leaves_with_outbound は true か false');
++  }
+   for (const k of ['vila_label_ja', 'source'] as const) if (!nonEmpty(raw[k])) bad(`${k} は空でない文字列`);
+   return raw as unknown as TransitBlock;
+ }
+@@ -104,3 +132,8 @@ export function transitGoneX(edge: TransitEdge, width: number, inset: number): n
+ export function transitLastGoneS(enterS: number, ships: number, spacingS: number, crossS: number, unloadS: number): number {
+   return enterS + spacingS * (ships - 1) + crossS + unloadS + crossS;
+ }
++
++/** 片道の列（v0.8.2）の最後の艦が向こうの縁の外へ去る実秒: その艦の入りの秒 ＋ 渡り（V-C5。crossS は道の端から端の実秒） */
++export function transitOneWayLastGoneS(lastEnterS: number, crossS: number): number {
++  return lastEnterS + crossS;
++}
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index 6981b0c..8ff13c9 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -63,6 +63,9 @@ import { validateShoresMissions } from '../config/shores-mission-data';
+ import { validateAnchorMissions } from '../config/anchor-mission-data';
+ import { validateBackdropMissions } from '../config/backdrop-mission-data';
+ import { validateSeaplaneMissions } from '../config/seaplane-mission-data';
++import { validateColumnMissions } from '../config/column-mission-data';
++import { validateReconMissions } from '../config/recon-mission-data';
++import { validateMagazineRecords } from '../config/magazine-data';
+ import { validateLoadouts } from '../config/loadout-data';
+ import { COAST_MARKER_COLOR } from '../config/hunt-config';
+ import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
+@@ -161,6 +164,10 @@ export class BootScene extends Phaser.Scene {
+     validateAnchorMissions(gameData); // オルモック湾の決着（v0.8.1。us_06）: 止まった艦（V-A1〜V-A6）と暗い岸を背に（V-B1〜V-B3）をハードも 1 回（壊れていれば Boot で止まる。世界の配線は S2）
+     validateBackdropMissions(gameData);
+     validateSeaplaneMissions(gameData); // 夜の水上機の任務ごとの値（v0.8.1 IP2。us_06 の attacks_per_night・V-P1〜V-P3）をハードも 1 回
++    // スリガオ海峡・最初の接触（v0.8.2。us_05）: 片道の列の艦ごとの記録（V-C1〜V-C6）・報告と中継（V-N1〜V-N5）・戦艦の弾薬庫の記録（V-M1〜V-M3）をハードも 1 回（世界の配線は S2）
++    validateColumnMissions(gameData);
++    validateReconMissions(gameData);
++    validateMagazineRecords(gameData);
+     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
+     if (DEBUG_ENABLED) generateDebugRingTexture(this);
+ 
+diff --git a/src/systems/destroyer-transit.ts b/src/systems/destroyer-transit.ts
+index ea3307e..9b01872 100644
+--- a/src/systems/destroyer-transit.ts
++++ b/src/systems/destroyer-transit.ts
+@@ -8,9 +8,10 @@
+ // 夜明けの後は戻りの残りが 0（core）＝まだ来ない・揚陸の地の艦は出たものとして数える（退いた・撃沈のどちらにも数えない）。
+ // 時計（S1 の作り・brief L11）: 入りは体感の時計（feelDt の和）、着く・去るは縁の x、戻りは固定ステップの時計（stepTimeS）。命中スローで列の順と道は変わらない（tests/transit-world）。
+ // Phaser 非依存（艦は構造の型 TransitShip＝entities/destroyer の Destroyer が満たす。tests/transit-world が素の艦で回す）・乱数なし。確保は constructor だけ。
++// 片道の列（v0.8.2 S0。us_05。plan.outbound が null）: 入った艦は道 ＋ 艦ごとの y のずれ（plan.laneDyM）に置き、向こうの縁の外へ出たら去る（withdrawn。戻らない）。護衛のいない列なので護衛を退かせる枝は来ない。
+ import type { TransitSetup } from '../config/transit-mission-data';
+ import { startRetire, type ShipAiState } from '../core/ship-ai';
+-import { createShipTransit, stepShipTransit, transitAppearLeg, transitPending, type ShipTransitState } from '../core/ship-transit';
++import { createShipTransit, stepShipTransit, transitAppearLeg, transitLaneDyM, transitPending, type ShipTransitState } from '../core/ship-transit';
+ 
+ /** 隊の艦（entities/destroyer の Destroyer がそのまま満たす。列の艦は goAway・reappear、護衛は ai だけ使う） */
+ export interface TransitShip {
+@@ -91,13 +92,13 @@ export class DestroyerTransit {
+       const s = this.column[i]!;
+       if ((placed & bit) !== 0) {
+         const leg = transitAppearLeg(p, st.phase[i]!)!;
+-        s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);
++        s.reappear(leg.appearX, leg.laneY + transitLaneDyM(p, i), leg.headingDeg, p.speedMps); // 道のずれは片道の列の艦ごと（往復の列は 0）
+         startRetire(s.ai, leg.headingDeg);
+       } else if ((left & bit) !== 0) {
+         s.goAway((st.gone & bit) !== 0);
+       }
+     }
+-    if (st.coverLeaves) {
++    if (st.coverLeaves && p.outbound) {
+       for (let i = 0; i < this.first; i++) {
+         const c = this.all[i]!;
+         if (!c.out) startRetire(c.ai, p.outbound.headingDeg);
+diff --git a/src/systems/radar-view.ts b/src/systems/radar-view.ts
+index b65d8c4..415d229 100644
+--- a/src/systems/radar-view.ts
++++ b/src/systems/radar-view.ts
+@@ -57,6 +57,6 @@ export class RadarView implements RadarBlipView {
+ export function buildRadar(scene: Phaser.Scene, w: { readonly setup: WorldSetup; readonly destroyers: { readonly total: number } | null }): WorldRadar | null {
+   const p = w.setup.radar;
+   const tr = w.setup.transit;
+-  const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''; // 東の縁の向こうの揚陸の地（v0.8.0 S4。2 行目の「東（ビラ）へ消えた」。列の無い任務は ''）
++  const eastJa = tr && tr.outbound !== null && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''; // 東の縁の向こうの揚陸の地（v0.8.0 S4。2 行目の「東（ビラ）へ消えた」。列の無い任務と片道の列＝v0.8.2 の文は S4 は ''）
+   return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null; // 陸の反射に今の岸も（v0.8.1 S2。us_06）
+ }
+diff --git a/src/systems/world-setup-types.ts b/src/systems/world-setup-types.ts
+index 4e597c7..1173b5e 100644
+--- a/src/systems/world-setup-types.ts
++++ b/src/systems/world-setup-types.ts
+@@ -14,6 +14,8 @@ import type { ShoresSetup } from '../config/shores-mission-data';
+ import type { AnchorSetup } from '../config/anchor-mission-data';
+ import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
+ import type { SeaplaneNightSetup } from '../config/seaplane-mission-data';
++import type { ReconSetup, ReconSetupOptions } from '../config/recon-mission-data';
++import type { MagazineSetupOptions } from '../config/magazine-data';
+ import type { BargeParams } from '../core/barge-data';
+ import type { BoatParams } from '../core/boat-motion';
+ import type { ConvoySetup } from '../core/convoy-data';
+@@ -123,16 +125,17 @@ export interface WorldSetup {
+   allyDestroyer?: AllyDestroyerParams; // 味方の駆逐艦 卯月（v0.6.10。v0_1_prototype.ally_destroyer のある任務＝jp_04 だけ。config/ally-destroyer-mission-data。無い任務と allyOff では鍵ごと出ない＝setup の snapshot を変えない）
+   evac?: EvacSetup; // 空襲下の退避（v0.6.11。v0_1_prototype.evac のある任務＝jp_03 だけ。config/evac-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
+   radar?: RadarSetup; // 自艇のレーダー（v0.8.0。v0_1_prototype.radar のある任務＝us_04 だけ。config/radar-mission-data。無い任務と radarOff では鍵ごと出ない＝setup の snapshot を変えない）
+-  transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 だけ。config/transit-mission-data。無い任務では鍵ごと出ない）
++  transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 と v0.8.2 の片道の列 us_05（transit.column?: ColumnKit[] を中に持つ）。config/transit-mission-data。無い任務では鍵ごと出ない）
+   shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
+   anchors?: AnchorSetup; // 止まった艦（v0.8.1。v0_1_prototype.anchored のある任務＝us_06 だけ。隊の艦ごとの動き出す秒・警報の秒。config/anchor-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
+   backdrop?: BackdropSetup; // 暗い岸を背に（v0.8.1。v0_1_prototype.shore_backdrop のある任務＝us_06 だけ。config/backdrop-mission-data。無い任務と backdropOff では鍵ごと出ない。S0 では世界は読まない）
+   seaplaneNight?: SeaplaneNightSetup; // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。config/seaplane-mission-data。無い任務と ?debug&noplane では鍵ごと出ない＝凍結の 1 任務 1 回のまま）
+   pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
++  recon?: ReconSetup; // 報告・無線・中継（v0.8.2。v0_1_prototype.recon のある任務＝us_05 だけ。config/recon-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
+ }
+ 
+ /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
+-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions, BackdropSetupOptions {
++export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions, BackdropSetupOptions, ReconSetupOptions, MagazineSetupOptions {
+   fuelGal?: number;
+   dawnS?: number;
+   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */
+diff --git a/src/systems/world-setup.ts b/src/systems/world-setup.ts
+index 91609c0..c53ad11 100644
+--- a/src/systems/world-setup.ts
++++ b/src/systems/world-setup.ts
+@@ -41,6 +41,7 @@ import { transitNightRolls, transitSetupPart } from '../config/transit-mission-d
+ import { shoresSetupPart } from '../config/shores-mission-data';
+ import { anchorSetupPart, getAnchorParams } from '../config/anchor-mission-data';
+ import { backdropSetupPart } from '../config/backdrop-mission-data';
++import { reconSetupPart } from '../config/recon-mission-data';
+ import { fixedNight, rollNight } from '../core/night';
+ import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
+ import { destroyerSetup, picketSetup, type TransportSetup } from './destroyer-setup';
+@@ -88,7 +89,10 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+   const absent = (id: string): boolean => absentHazards.includes(id);
+   // 敵: 駆逐艦（AI・反撃の値を持つ記録）か大発の隊（v0.4.2）。発見の基準距離はその記録から。今夜のずれと左右反転を当てる（systems/world-night）
+   const shipHitScale = o.shipHitScale !== undefined && o.shipHitScale > 0 ? o.shipHitScale : world.ship_hit_scale;
+-  const destroyer = mission.enemyStart ? { ...destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical), objectiveSinks: mission.objectiveSinkCount ?? mission.enemyStarts.length } : null;
++  // 列の通過（v0.8.0。us_04・v0.8.2 の片道の列 us_05）。今夜の揺らぎは駆逐艦の後の 1 件。片道の列（transit.column）は enemy_start の無い列だけの隊（D-C2）＝撃沈の達成は全隻（R3）
++  const transitPart = transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical, { shipHitScale, magazineBoom: o.magazineBoom });
++  const column = transitPart.transit?.column !== undefined;
++  const destroyer = mission.enemyStart || column ? { ...destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical), objectiveSinks: mission.objectiveSinkCount ?? (column ? transitPart.transit!.ships : mission.enemyStarts.length) } : null;
+   const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
+   if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
+   let transport: TransportSetup | null = null;
+@@ -170,7 +174,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+     night,
+     hazardsTonight: mission.hazards.filter((h) => !absent(h)),
+     absentHazards,
+-    enemyFrom: destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0]!, y: ptBoats.startY[0]! } : null,
++    enemyFrom: column ? { x: transitPart.transit!.inbound.appearX, y: transitPart.transit!.inbound.laneY + transitPart.transit!.laneDyM![0]! } : destroyer ? { x: destroyer.starts[0]!.x, y: destroyer.starts[0]!.y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0]!, y: ptBoats.startY[0]! } : null,
+     dawnAir: getDawnAir(data, missionId),
+     airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: (boatRecord.length_m * world.hit_scale) / 2, halfBeamM: (boatRecord.beam_m * world.hit_scale) / 2, boundsMarginM: (boatRecord.length_m * world.sprite_scale) / 2 }, escort),
+     ...engineSetupPart(data, missionId, o),
+@@ -180,12 +184,13 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+     ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o), // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
+     ...evacSetupPart(data, missionId, hard), // 空襲下の退避（v0.6.11。jp_03 だけ。6 つの隊・隠れ場所・波と編隊・燃料を数えない秒・昼。無い任務では鍵ごと出ない）
+     ...radarSetupPart(data, mission, o), // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
+-    ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical), // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
++    ...transitPart, // 列の通過（v0.8.0。us_04・v0.8.2 の us_05。上で組んだ。無い任務では鍵ごと出ない）
+     ...shoresSetupPart(data, mission), // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
+     ...(destroyer ? anchorSetupPart(anchor, mission.enemyStarts.length, tr !== null) : {}), // 止まった艦（v0.8.1。us_06 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
+     ...backdropSetupPart(data, mission, o), // 暗い岸を背に（v0.8.1。us_06 だけ。無い任務と backdropOff では鍵ごと出ない）
+     ...seaplaneNightSetupPart(data, mission, seaplane), // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。無い任務と水上機の無い夜は鍵ごと出ない）
+     ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
++    ...reconSetupPart(data, mission, o), // 報告・無線・中継（v0.8.2。us_05 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
+   };
+ }
+ 
+diff --git a/tests/boot-loop.test.ts b/tests/boot-loop.test.ts
+index 74d31d5..ac12f9a 100644
+--- a/tests/boot-loop.test.ts
++++ b/tests/boot-loop.test.ts
+@@ -32,8 +32,8 @@ function bootLoop(id: string): void {
+ }
+ 
+ describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
+-  it('遊べる世界のある任務は 11（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5。v0.8.1 の S0 で us_06。playable_from は S4）', () => {
+-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_06']);
++  it('遊べる世界のある任務は 12（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5。v0.8.1 の S0 で us_06。playable_from は S4。v0.8.2 の S0 で us_05。playable_from は S4）', () => {
++    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']);
+   });
+   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
+     expect(() => bootLoop(id)).not.toThrow();
+diff --git a/tests/dawn-air.test.ts b/tests/dawn-air.test.ts
+index a0023e6..c6c2784 100644
+--- a/tests/dawn-air.test.ts
++++ b/tests/dawn-air.test.ts
+@@ -304,7 +304,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+       expect(s.dawnAir.playAs, id).toBe(want[id]);
+       expect(new WorldDawn({ cameras: { main: {} } } as never, s, null).air, id).toBe(want[id] === 'enemy' ? DAWN_AIR_ENEMY : DAWN_AIR_OWN);
+     }
+-    expect(() => checkPlayableDawn(gameData, 'us_05')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ
++    expect(() => checkPlayableDawn(gameData, 'us_07')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ。v0.8.2 S0: us_05 も v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_07 へ
++    expect(() => checkPlayableDawn(gameData, 'us_05')).not.toThrow(); // v0.8.2 S0: 列だけの隊（enemy_start なし・transit.column）も退く駆逐艦の隊（夜明けの空は own のまま＝lead の L1）
+     expect(() => checkPlayableDawn(gameData, 'us_06')).not.toThrow();
+     expect(() => getDawnAir(gameData, 'nope')).toThrow(/nope/);
+   });
+diff --git a/tests/dawn-withdraw.test.ts b/tests/dawn-withdraw.test.ts
+index 5d03c63..755eb89 100644
+--- a/tests/dawn-withdraw.test.ts
++++ b/tests/dawn-withdraw.test.ts
+@@ -264,9 +264,10 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
+       if (id !== 'us_02') expect(protoOf(gameData, id)['dawn_withdraw'], id).toBeUndefined();
+       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
+     }
+-    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_05。v0.8.1 S0 までの例は us_06）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く。
+-    // us_06 は v0.8.1 S0 から v0_1_prototype（S4 から遊べる）で、日本の艦は東へ退く
+-    expect(getDawnAir(gameData, 'us_05').retireEdge).toBeNull();
++    // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_07。v0.8.1 S0 までの例は us_06・v0.8.2 S0 までは us_05）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く。
++    // us_06 は v0.8.1 S0 から v0_1_prototype（S4 から遊べる）で、日本の艦は東へ退く。us_05 は v0.8.2 S0 から v0_1_prototype（S4 から遊べる）で、片道の列の日本の艦隊は向かう東（スリガオ海峡）へ退く
++    expect(getDawnAir(gameData, 'us_07').retireEdge).toBeNull();
++    expect([getDawnAir(gameData, 'us_05').retireEdge, getDawnAir(gameData, 'us_05').retireForceJa]).toEqual(['east', '日本の艦隊']);
+     expect([getDawnAir(gameData, 'us_06').retireEdge, getDawnAir(gameData, 'us_06').retireForceJa]).toEqual(['east', '日本の艦']);
+     expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);
+   });
+diff --git a/tests/engine-data.test.ts b/tests/engine-data.test.ts
+index 998acc6..101d21a 100644
+--- a/tests/engine-data.test.ts
++++ b/tests/engine-data.test.ts
+@@ -154,7 +154,7 @@ describe('engineParamsFromData の検査（spec §C.2。壊れていれば「ris
+ 
+ describe('任務の不調（config/engine-mission-data。spec §B.2・§C.2 の同居の検査）', () => {
+   it('不調が入るのは v0_1_prototype.hazards に engine_failure がある jp_05 だけ（jp_01 の T-38 にも engine_reliability 0.85 があるが読まない）', () => {
+-    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_06']); // v0.6.7: jp_02（夜の哨戒機。不調なし）。v0.6.9 S1: jp_04（揚陸の輸送船。不調なし。playable_from は S7）。v0.6.11 S0: jp_03（空襲下の退避。不調なし。playable_from は S6）。v0.8.0 S0: us_04（列の通過とレーダー。不調なし。playable_from は S5）。v0.8.1 S0: us_06（止まった艦と暗い岸を背に。不調なし。playable_from は S4）
++    expect(PROTO_IDS.sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']); // v0.8.2 S0: us_05（片道の列と報告。不調なし。playable_from は S4）。v0.6.7: jp_02（夜の哨戒機。不調なし）。v0.6.9 S1: jp_04（揚陸の輸送船。不調なし。playable_from は S7）。v0.6.11 S0: jp_03（空襲下の退避。不調なし。playable_from は S6）。v0.8.0 S0: us_04（列の通過とレーダー。不調なし。playable_from は S5）。v0.8.1 S0: us_06（止まった艦と暗い岸を背に。不調なし。playable_from は S4）
+     for (const id of PROTO_IDS) expect(getEngineParams(gameData, id) !== null, id).toBe(id === 'jp_05');
+     expect(getEngineParams(gameData, 'jp_05')).toEqual({ fullToLimpS: 30, cruiseCoolS: 30, silentCoolS: 20, warnHeat: 0.6, finalWarnHeat: 0.85, recoverHeat: 0.6, warnRearmHeat: 0.5, startHeat: 0 });
+     expect(boatOf(gameData, 'jp_t38')['engine_reliability']).toBe(0.85);
+diff --git a/tests/kpi-target.test.ts b/tests/kpi-target.test.ts
+index 9124059..0bb9a43 100644
+--- a/tests/kpi-target.test.ts
++++ b/tests/kpi-target.test.ts
+@@ -71,6 +71,8 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も
+     const uniq = [...new Set(rows.map(([t, r, part, kt]) => `${t.split('&')[0]} ${r} ${part} ${kt}`))];
+     expect(uniq).toEqual([
+       'us_01 ijn_destroyer escort 15', 'us_02 ijn_destroyer escort 15', 'us_04 ijn_destroyer escort 15', 'us_04 ijn_destroyer column 15',
++      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S0 の世界の列の艦はみな ijn_destroyer の形（最大 18 kt）。艦ごとの記録（重巡 12・戦艦 14 kt）は S2 の kits
++      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15',
+       'us_06 ijn_destroyer_mutsuki_enemy escort 15', 'jp_06 us_destroyer escort 8',
+     ]);
+     for (const [t, , part, kt] of rows) expect(ktToMps(kt), `${t} ${part}`).toBeGreaterThanOrEqual(MIN);
+@@ -102,6 +104,6 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も
+     const d = code('src/entities/destroyer.ts');
+     expect(d.match(/speedMps\s*=(?!=)|speedMps:(?!\s*number)/g)!.length).toBe(3);
+     for (const s of ['speedMps: aiParams.cruiseSpeedMps }', 'this.state.speedMps = 0;', 's.speedMps = speedMps;']) expect(d).toContain(s);
+-    expect(code('src/systems/destroyer-transit.ts')).toContain('s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);');
++    expect(code('src/systems/destroyer-transit.ts')).toContain('s.reappear(leg.appearX, leg.laneY + transitLaneDyM(p, i), leg.headingDeg, p.speedMps);'); // v0.8.2 S0: 片道の列の艦ごとの道のずれ（速さは今のまま列の速さ）
+   });
+ });
+diff --git a/tests/landing-neutral.test.ts b/tests/landing-neutral.test.ts
+index c8490af..7bfb35e 100644
+--- a/tests/landing-neutral.test.ts
++++ b/tests/landing-neutral.test.ts
+@@ -17,10 +17,10 @@ import { missionMode } from '../src/ui/mission-mode';
+ import { tele } from './pt-ui-kit';
+ 
+ type Rec = Record<string, unknown>;
+-const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_06', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）。v0.8.1 S0: us_06（止まった艦。jp_04 と同じ泊地の空知丸は敵の輸送船＝揚陸の仕組みなし）
++const OTHERS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'jp_01', 'jp_02', 'jp_03', 'jp_05', 'jp_06'] as const; // v0.8.2 S0: us_05（片道の列と報告。揚陸なし）。v0.6.11 S0: jp_03（空襲下の退避。揚陸なし）。v0.8.0 S0: us_04（列の通過とレーダー。揚陸なし）。v0.8.1 S0: us_06（止まった艦。jp_04 と同じ泊地の空知丸は敵の輸送船＝揚陸の仕組みなし）
+ 
+ describe('landing-neutral（他の 9 任務）', () => {
+-  it('v0_1_prototype を持つのは 10 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04・v0.8.1 S0 の us_06 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
++  it('v0_1_prototype を持つのは 11 任務（v0.6.11 S0 の jp_03・v0.8.0 S0 の us_04・v0.8.1 S0 の us_06・v0.8.2 S0 の us_05 を含む）と jp_04 で、landing の block は jp_04 だけ', () => {
+     const withProto = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
+     expect([...withProto].sort()).toEqual([...OTHERS, 'jp_04'].sort());
+     const withLanding = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => (m['v0_1_prototype'] as Rec | undefined)?.['landing'] !== undefined).map((m) => m['id']);
+diff --git a/tests/patrol-air-data.test.ts b/tests/patrol-air-data.test.ts
+index ff84fef..13c9fe4 100644
+--- a/tests/patrol-air-data.test.ts
++++ b/tests/patrol-air-data.test.ts
+@@ -108,10 +108,10 @@ describe('組み立て（config/patrol-air-mission-data。spec §C.1・§C.7）'
+     expect([s.planes, s.bombsPerPlane, s.spawnM, s.runRadiusM, s.firstRunS, s.runGapS, s.spawnOffsetsDeg, s.fromJa, s.nameJa]).toEqual([2, 3, 1500, 600, 5, 2.2, [-10, 10], '北東', '米飛行艇（PB2Y 相当）']);
+     expect(s.firstRunS + s.runS).toBeCloseTo(6.944, 3);
+   });
+-  it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa は jp_02 と（v0.6.9 S0 から）jp_04 と（v0.6.11 S0 から）jp_03 と（v0.8.1 S0 から）us_06 だけ', () => {
++  it('WorldSetup.patrolAir は jp_02 だけ（他の任務はノーマル・ハードとも鍵ごと出ない）。patrolOff で消え、史実モードでも同じ。Briefing の moonLabelJa は jp_02 と（v0.6.9 S0 から）jp_04 と（v0.6.11 S0 から）jp_03 と（v0.8.1 S0 から）us_06 と（v0.8.2 S0 から）us_05 だけ', () => {
+     for (const id of PROTO_IDS) {
+       for (const hard of [false, true]) expect(Object.keys(buildWorldSetup(gameData, id, { hard })).includes('patrolAir'), `${id} ${hard}`).toBe(id === 'jp_02');
+-      expect(Object.keys(getBriefingRecord(gameData, id)).includes('moonLabelJa'), id).toBe(id === 'jp_02' || id === 'jp_04' || id === 'jp_03' || id === 'us_06');
++      expect(Object.keys(getBriefingRecord(gameData, id)).includes('moonLabelJa'), id).toBe(id === 'jp_02' || id === 'jp_04' || id === 'jp_03' || id === 'us_06' || id === 'us_05'); // v0.8.2 S0: us_05「半月（西に低い）」
+     }
+     const s = buildWorldSetup(gameData, 'jp_02');
+     expect(s.patrolAir).toEqual(getPatrolAirParams(gameData, 'jp_02'));
+diff --git a/tests/picket-world.test.ts b/tests/picket-world.test.ts
+index 657a661..0f0debc 100644
+--- a/tests/picket-world.test.ts
++++ b/tests/picket-world.test.ts
+@@ -221,7 +221,7 @@ describe('砲とレーダー（L42・L44）', () => {
+         expect(!!s.pickets, id).toBe(id === 'us_06' && hard);
+       }
+     }
+-    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']);
++    expect(seen).toEqual(['us_01', 'us_01h', 'us_02', 'us_02h', 'us_04', 'us_04h', 'us_05', 'us_05h', 'us_06', 'us_06h', 'jp_06', 'jp_06h']); // v0.8.2 S0: us_05 は列だけの隊（S0 の列の艦は今の式＝駆逐艦の砲。艦ごとの砲は S2 の column-kits）
+     const g = groupOf(setupOf('us_06', true));
+     expect([2, 3].map((i) => g.gunneryAt(i).guns.map((x) => [x.id, x.count]))).toEqual([[['aa_76mm', 1], ['aa_13mm', 2]], [['aa_76mm', 1], ['aa_13mm', 2]]]);
+     expect(g.gunneryAt(2)).not.toBe(g.gunneryAt(1));
+diff --git a/tests/radar-data.test.ts b/tests/radar-data.test.ts
+index 3ca6492..144fe8e 100644
+--- a/tests/radar-data.test.ts
++++ b/tests/radar-data.test.ts
+@@ -94,8 +94,8 @@ describe('任務の radar（config/radar-mission-data の V-R1〜V-R5）', () =>
+     expect(protoOf(gameData, 'us_04')['radar']).toEqual({ model: 'so_early', fit: 'leader', source: expect.stringContaining('分隊の先頭の艇だけ') as unknown as string });
+     expect(validateRadarMissions(gameData)?.model).toBe('so_early');
+   });
+-  it('ほかの 9 任務は null・radarSetupPart は {}（setup に radar の鍵が出ない）。radarOff なら us_04 も {}。v0.8.1 S0 から us_06 も so_late（自艇）', () => {
+-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_06')) {
++  it('ほかの 9 任務は null・radarSetupPart は {}（setup に radar の鍵が出ない）。radarOff なら us_04 も {}。v0.8.1 S0 から us_06 も・v0.8.2 S0 から us_05 も so_late（自艇）', () => {
++    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_06' && x !== 'us_05')) {
+       for (const hard of [false, true]) {
+         expect(getRadarParams(gameData, getPrototypeMission(gameData, id, hard)), id).toBeNull();
+         const s = buildWorldSetup(gameData, id, { sortie: directSortie(id, 3, 'none', hard, false), hard });
+@@ -107,6 +107,7 @@ describe('任務の radar（config/radar-mission-data の V-R1〜V-R5）', () =>
+     expect('radar' in buildWorldSetup(gameData, 'us_04', { radarOff: true })).toBe(false);
+     expect(buildWorldSetup(gameData, 'us_04').radar?.shipRangeM).toBe(4000);
+     expect([buildWorldSetup(gameData, 'us_06').radar?.model, buildWorldSetup(gameData, 'us_06').radar?.fit, buildWorldSetup(gameData, 'us_06').radar?.shipRangeM, buildWorldSetup(gameData, 'us_06').radar?.landClutterM]).toEqual(['so_late', 'own', 6000, 300]);
++    expect(buildWorldSetup(gameData, 'us_05').radar).toEqual(buildWorldSetup(gameData, 'us_06').radar); // v0.8.2 S0: us_05 も 1944 年の SO を自艇に（spec-v0820 §4.6 D-R1）
+   });
+   it('V-R1: model が hit_rate_model.json の radar.models に無い・fit が違う', () => {
+     expect(build((d) => ((protoOf(d, 'us_04')['radar'] as Rec)['model'] = 'so_mid'))).toThrow(/us_04\.v0_1_prototype\.radar: model（so_mid）が hit_rate_model\.json の radar\.models（so_early・so_late）に無い（V-R1/);
+diff --git a/tests/radar-lines.test.ts b/tests/radar-lines.test.ts
+index 181f723..cc52570 100644
+--- a/tests/radar-lines.test.ts
++++ b/tests/radar-lines.test.ts
+@@ -64,7 +64,7 @@ describe('文の幅（2 行目 ≤ 840 px＝22 px。L34）', () => {
+ describe('東の縁の帯（見せ方の値の理由。brief L26）', () => {
+   it('帯 500 m ≥ 掃引の間の列の道のり（速さ × time_scale × 掃引の秒）＋ 縁の内外 ＋ 丸めの半分（data から）', () => {
+     const drift = TR.speedMps * S.timeScale * R.sweepS;
+-    const inset = W - TR.outbound.appearX;
++    const inset = W - TR.outbound!.appearX;
+     expect(drift).toBeCloseTo(231.5, 0);
+     expect(RADAR_EAST_EDGE_MARGIN_M).toBeGreaterThanOrEqual(drift + inset + R.positionStepM / 2);
+     // 護衛の見回り（端から 700 m で向き直す）は帯の外＝護衛の出入りを「東へ消えた」と読まない
+diff --git a/tests/radar-night.test.ts b/tests/radar-night.test.ts
+index 14bd4a5..c06200c 100644
+--- a/tests/radar-night.test.ts
++++ b/tests/radar-night.test.ts
+@@ -34,7 +34,7 @@ function night(hard: boolean): { counts: [number, number][]; news: number[][]; l
+     for (let i = 0; i < p.ships; i++) {
+       const sh = ships[i]!;
+       if (tr.entered & (1 << i)) [sh.dir, sh.state.x] = [1, p.inbound.appearX];
+-      if (tr.returned & (1 << i)) [sh.dir, sh.state.x] = [-1, p.outbound.appearX];
++      if (tr.returned & (1 << i)) [sh.dir, sh.state.x] = [-1, p.outbound!.appearX];
+     }
+     if (!radarSweepDue(r, now)) continue;
+     tg.n = 1 + p.ships;
+@@ -44,7 +44,7 @@ function night(hard: boolean): { counts: [number, number][]; news: number[][]; l
+     tg.afloat[0] = 1;
+     for (let i = 0; i < p.ships; i++) {
+       tg.x[1 + i] = ships[i]!.state.x;
+-      tg.y[1 + i] = tr.phase[i] === TRANSIT_OUT ? p.outbound.laneY : p.inbound.laneY;
++      tg.y[1 + i] = tr.phase[i] === TRANSIT_OUT ? p.outbound!.laneY : p.inbound.laneY;
+       tg.kind[1 + i] = RADAR_KIND_SHIP;
+       tg.afloat[1 + i] = transitOnMap(tr, i) ? 1 : 0;
+     }
+diff --git a/tests/radar-world.test.ts b/tests/radar-world.test.ts
+index b66281e..1fb892d 100644
+--- a/tests/radar-world.test.ts
++++ b/tests/radar-world.test.ts
+@@ -52,7 +52,7 @@ describe('レーダーの段の順と作る所（ソース）', () => {
+     const rv = code('systems/radar-view.ts');
+     // v0.8.1 S2: 陸の反射に今の岸（coast の南）も渡す（us_06。両岸の us_04 は両岸の線のまま＝core/strait-geometry の landLinesOf）
+     expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null;');
+-    expect(rv).toContain("const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）
++    expect(rv).toContain("const eastJa = tr && tr.outbound !== null && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）。v0.8.2 S0: 片道の列（outbound null）は ''（片道の文は S4）
+     const wr = code('systems/world-radar.ts');
+     const step = wr.slice(wr.indexOf('  step(w: RadarWorldView): void {'));
+     expect(lines(step).slice(0, 3)).toEqual(['step(w: RadarWorldView): void {', 'const r = this.state;', 'if (!radarSweepDue(r, w.stepTimeS)) return;']);
+diff --git a/tests/setup-us04.test.ts b/tests/setup-us04.test.ts
+index 3a75ab8..53fd6d4 100644
+--- a/tests/setup-us04.test.ts
++++ b/tests/setup-us04.test.ts
+@@ -53,8 +53,8 @@ describe('us_04 の setup の snapshot（v0.8.0 S0 の木）', () => {
+       const { ships: s0, enterS: e0, inbound: i0, outbound: o0, shipAi: a0, ...rest0 } = plain.transit!;
+       expect(rest).toEqual(rest0);
+       expect(ships).toBe(hard ? 4 : 3);
+-      expect([inbound.edge, inbound.appearX, outbound.edge, outbound.appearX]).toEqual([i0.edge, i0.appearX, o0.edge, o0.appearX]);
+-      expect(outbound.laneY - inbound.laneY).toBeCloseTo(800, 9); // 2 本の道は同じずれ
++      expect([inbound.edge, inbound.appearX, outbound!.edge, outbound!.appearX]).toEqual([i0.edge, i0.appearX, o0!.edge, o0!.appearX]);
++      expect(outbound!.laneY - inbound.laneY).toBeCloseTo(800, 9); // 2 本の道は同じずれ
+       expect(shipAi.maxSpeedMps).toBe(a0.maxSpeedMps);
+       if (seed === 1) expect([enterS, inbound.laneY]).toEqual([e0, i0.laneY]); // 同じ夜は同じずれ（難易度・史実モードに依らない）
+       else expect(enterS).not.toBe(e0); // 違う夜は入りの秒がずれる
+diff --git a/tests/ship-transit.test.ts b/tests/ship-transit.test.ts
+index 2c4d117..42c5b64 100644
+--- a/tests/ship-transit.test.ts
++++ b/tests/ship-transit.test.ts
+@@ -35,7 +35,7 @@ function run(p: TransitSetup, o: Opts = {}): { s: ShipTransitState; log: Log; ga
+   const gapAtEnter: number[] = [];
+   const v = p.speedMps * TS;
+   const inDir = Math.sign(p.inbound.goneX - p.inbound.appearX);
+-  const outDir = Math.sign(p.outbound.goneX - p.outbound.appearX);
++  const outDir = Math.sign(p.outbound!.goneX - p.outbound!.appearX);
+   let now = 0;
+   while (now < (o.untilS ?? DURATION + 30)) {
+     const feel = STEP * ((o.slow ?? []).some(([a, b]) => now >= a - 1e-9 && now < b - 1e-9) ? SLOW_F : 1);
+@@ -60,7 +60,7 @@ function run(p: TransitSetup, o: Opts = {}): { s: ShipTransitState; log: Log; ga
+       }
+       if (s.returned & bit) {
+         sh.dir = outDir;
+-        sh.state.x = p.outbound.appearX;
++        sh.state.x = p.outbound!.appearX;
+         log.ret[i] = now;
+       }
+       if (s.arrived & bit) log.arrive[i] = now;
+@@ -94,12 +94,12 @@ describe('揺らぎのない夜の時刻表（us_04 の setup）と V-T3 の式'
+     expect(log.gone[p.ships - 1]!).toBeLessThanOrEqual(DURATION - TRANSIT_CHECK_DAWN_MARGIN_S);
+     expect([...counts(s), transitPending(s), transitCount(s, TRANSIT_GONE)]).toEqual([p.ships, p.ships, p.ships, p.ships, 0, 0, p.ships]);
+   });
+-  it('入りの時刻・現れる道・作る時の数の検査（1〜6 隻）', () => {
++  it('入りの時刻・現れる道・作る時の数の検査（1〜8 隻。v0.8.2 S0 で 6 → 8＝us_05 の第三部隊 7・ハード 8）', () => {
+     const p = plan();
+     expect([0, 1, 2].map((i) => transitEnterAtS(p, i))).toEqual([18, 26, 34]);
+     expect([TRANSIT_IN, TRANSIT_OUT, TRANSIT_WAIT, TRANSIT_AWAY].map((ph) => transitAppearLeg(p, ph))).toEqual([p.inbound, p.outbound, null, null]);
+-    expect([p.inbound.appearX, p.inbound.laneY, p.inbound.headingDeg, p.outbound.appearX, p.outbound.laneY, p.outbound.headingDeg]).toEqual([150, 1500, 90, 5850, 2300, 270]);
+-    for (const n of [0, 7, 2.5]) expect(() => createShipTransit({ ...p, ships: n }), String(n)).toThrow(/列の艦の数/);
++    expect([p.inbound.appearX, p.inbound.laneY, p.inbound.headingDeg, p.outbound!.appearX, p.outbound!.laneY, p.outbound!.headingDeg]).toEqual([150, 1500, 90, 5850, 2300, 270]);
++    for (const n of [0, 9, 2.5]) expect(() => createShipTransit({ ...p, ships: n }), String(n)).toThrow(/列の艦の数/);
+     expect(createShipTransit({ ...p, ships: TRANSIT_MAX_SHIPS }).phase.length).toBe(TRANSIT_MAX_SHIPS);
+   });
+   it('残りの戻り（WAIT と AWAY）は入りで減り、揚陸で増え、戻ると減る', () => {
+@@ -154,10 +154,10 @@ describe('沈んだ艦・護衛の退き・来た縁から出た艦', () => {
+     const p = plan();
+     const v = p.speedMps * TS;
+     const back = run(p, { turnAt: { 0: 19 } }); // 18 秒に入り、19 秒に向きを逆に（東へ約 77 m 進んだ所から西の縁の外 −150 m まで）
+-    near(back.log.gone[0], 19 + (v * (19 - back.log.enter[0]!) + p.inbound.appearX - p.outbound.goneX) / v, 2);
++    near(back.log.gone[0], 19 + (v * (19 - back.log.enter[0]!) + p.inbound.appearX - p.outbound!.goneX) / v, 2);
+     expect([back.log.arrive[0], back.log.ret[0], back.s.phase[0]]).toEqual([undefined, undefined, TRANSIT_GONE]);
+     const east = run(p, { turnAt: { 0: 137 } }); // 復路に戻って約 1.2 秒で東へ
+-    const xTurn = p.outbound.appearX - v * (137 - east.log.ret[0]!);
++    const xTurn = p.outbound!.appearX - v * (137 - east.log.ret[0]!);
+     near(east.log.gone[0], 137 + (p.inbound.goneX - xTurn) / v, 2);
+     expect([east.s.phase[0], east.s.goneCount, east.s.arrivedCount]).toEqual([TRANSIT_GONE, 3, 3]);
+   });
+@@ -223,7 +223,7 @@ describe('source（step と読み出しは確保しない・乱数なし）', ()
+   it('作る関数（createShipTransit）のほかは本体に確保の形が無い。import は core/transit-data だけ', () => {
+     const f = 'src/core/ship-transit.ts';
+     const { names, bad } = scanAllocations(f, ['createShipTransit']);
+-    expect(names).toEqual(['createShipTransit', 'stepShipTransit', 'transitAppearLeg', 'transitCount', 'transitEnterAtS', 'transitOnMap', 'transitPending']);
++    expect(names).toEqual(['createShipTransit', 'stepShipTransit', 'transitAppearLeg', 'transitCount', 'transitEnterAtS', 'transitLaneDyM', 'transitOnMap', 'transitPending']); // v0.8.2 S0: transitLaneDyM（片道の列の道のずれ）
+     expect(bad).toEqual([]);
+     expect(imports(code(f))).toEqual(['./transit-data']);
+     expect(code(f)).not.toMatch(/Math\.random|SeededRng|\brng\b/);
+diff --git a/tests/shores-data.test.ts b/tests/shores-data.test.ts
+index d8319d4..3026850 100644
+--- a/tests/shores-data.test.ts
++++ b/tests/shores-data.test.ts
+@@ -42,8 +42,10 @@ describe('既定の data（us_04）', () => {
+     expect([w.mission.coast, w.coastEdgeY]).toEqual([null, NaN]);
+     expect(w.shores).toEqual(s);
+   });
+-  it('両岸の無い任務は null・shoresSetupPart は {}（setup に shores の鍵が出ない）。今の岸（coast）の任務の岸の値は今のまま', () => {
+-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04')) {
++  it('両岸の無い任務は null・shoresSetupPart は {}（setup に shores の鍵が出ない）。今の岸（coast）の任務の岸の値は今のまま。v0.8.2 S0 から us_05 も両岸（ボホール島・カミギン島）', () => {
++    const us05 = buildWorldSetup(gameData, 'us_05').shores!;
++    expect([us05.north.landM, us05.north.labels, us05.north.gaps, us05.south.labels, us05.south.gaps, us05.south.gapLabelJa]).toEqual([600, [{ labelJa: 'ボホール島', x: 3200 }], [], [{ labelJa: 'カミギン島', x: 5650 }], [{ x0: 0, x1: 4800 }], 'ミンダナオ海']);
++    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_05')) {
+       for (const hard of [false, true]) {
+         expect(getShoresParams(gameData, getPrototypeMission(gameData, id, hard)), id).toBeNull();
+         expect(shoresSetupPart(gameData, getPrototypeMission(gameData, id, hard)), id).toEqual({});
+diff --git a/tests/strait-geometry.test.ts b/tests/strait-geometry.test.ts
+index d62407e..d53e059 100644
+--- a/tests/strait-geometry.test.ts
++++ b/tests/strait-geometry.test.ts
+@@ -53,7 +53,7 @@ describe('陸までの距離（2 乗。レーダーの陸の反射の帯）', ()
+     const t = us04.transit!;
+     const jy = us04.mission.night!.enemyJitterYM;
+     for (let x = 0; x <= W; x += 50) {
+-      for (const y of [t.inbound.laneY - jy, t.inbound.laneY + jy, t.outbound.laneY - jy, t.outbound.laneY + jy, 700, H - 700]) expect(landDist2(STRAIT, x, y), `${x},${y}`).toBeGreaterThan(CLUTTER * CLUTTER);
++      for (const y of [t.inbound.laneY - jy, t.inbound.laneY + jy, t.outbound!.laneY - jy, t.outbound!.laneY + jy, 700, H - 700]) expect(landDist2(STRAIT, x, y), `${x},${y}`).toBeGreaterThan(CLUTTER * CLUTTER);
+     }
+     expect(d(us04.mission.playerStart.x, us04.mission.playerStart.y)).toBeGreaterThan(CLUTTER);
+     expect(d(us04.mission.returnPoint.x, us04.mission.returnPoint.y - us04.mission.returnPoint.radiusM)).toBeGreaterThan(CLUTTER);
+@@ -83,7 +83,7 @@ describe('衝突の危険（艦首が自艇へ半角 15° の内・500 m の内
+     expect([bowOnRisk(0, 0, 359, 5, -300, R2, C2), bowOnRisk(0, 0, 1, -5, -300, R2, C2), bowOnRisk(0, 0, -10, 0, -300, R2, C2)]).toEqual([true, true, true]);
+   });
+   it('us_04 の復路の艦（270°）の進路の前にいる自艇は危険、進路の横 300 m（道から離れた）は危険でない', () => {
+-    const y = us04.transit!.outbound.laneY;
++    const y = us04.transit!.outbound!.laneY;
+     expect(bowOnRisk(3900, y, 270, 3500, y + 20, R2, C2)).toBe(true);
+     expect(bowOnRisk(3900, y, 270, 3500, y + 300, R2, C2)).toBe(false);
+   });
+diff --git a/tests/transit-data.test.ts b/tests/transit-data.test.ts
+index 82baf9c..fb60b08 100644
+--- a/tests/transit-data.test.ts
++++ b/tests/transit-data.test.ts
+@@ -73,20 +73,20 @@ describe('既定の data（us_04 の東京急行）', () => {
+     const t = getTransitParams(gameData, getPrototypeMission(gameData, 'us_04'), { dx: 154.32, dy: -50, dh: 17 }, false)!;
+     expect(t.enterS).toBeCloseTo(18 - 154.32 / SCREEN_MPS, 9);
+     expect(t.enterS).toBeCloseTo(16, 9);
+-    expect([t.inbound.laneY, t.outbound.laneY, t.inbound.headingDeg, t.outbound.headingDeg]).toEqual([1450, 2250, 90, 270]);
+-    expect([t.inbound.appearX, t.outbound.appearX]).toEqual([150, 5850]);
++    expect([t.inbound.laneY, t.outbound!.laneY, t.inbound.headingDeg, t.outbound!.headingDeg]).toEqual([1450, 2250, 90, 270]);
++    expect([t.inbound.appearX, t.outbound!.appearX]).toEqual([150, 5850]);
+     // 世界の組み立て: 列は駆逐艦（護衛）の後の 1 件（seed のある夜は護衛とは別のずれ）
+     const s = buildWorldSetup(gameData, 'us_04', { sortie: directSortie('us_04', 7, 'none', false, false) });
+     const o = s.night.enemyOffsets;
+     expect(o.length).toBe(2);
+     expect(s.transit!.enterS).toBeCloseTo(18 - o[1]!.dx / SCREEN_MPS, 9);
+     expect(s.transit!.inbound.laneY).toBeCloseTo(1500 + o[1]!.dy, 9);
+-    expect(s.transit!.outbound.laneY).toBeCloseTo(2300 + o[1]!.dy, 9);
++    expect(s.transit!.outbound!.laneY).toBeCloseTo(2300 + o[1]!.dy, 9);
+     expect(Math.abs(s.transit!.enterS - 18)).toBeLessThanOrEqual(400 / SCREEN_MPS);
+   });
+-  it('列の無い任務: 今夜の揺らぎの回数に足さない（0）・transitSetupPart は {}（setup に transit の鍵が出ない）', () => {
+-    for (const id of PROTO_IDS) expect(transitNightRolls(gameData, getPrototypeMission(gameData, id)), id).toBe(id === 'us_04' ? 1 : 0);
+-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04')) {
++  it('列の無い任務: 今夜の揺らぎの回数に足さない（0）・transitSetupPart は {}（setup に transit の鍵が出ない）。v0.8.2 S0 から us_05 も列（片道。tests/column-data）', () => {
++    for (const id of PROTO_IDS) expect(transitNightRolls(gameData, getPrototypeMission(gameData, id)), id).toBe(id === 'us_04' || id === 'us_05' ? 1 : 0);
++    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_05')) {
+       for (const hard of [false, true]) {
+         expect(getTransitParams(gameData, getPrototypeMission(gameData, id, hard), null, false), id).toBeNull();
+         expect(transitSetupPart(gameData, getPrototypeMission(gameData, id, hard), null, false), id).toEqual({});
+@@ -97,7 +97,7 @@ describe('既定の data（us_04 の東京急行）', () => {
+     }
+   });
+   it('検査の定数と同居しない鍵（V-T6）', () => {
+-    expect([TRANSIT_MAX_SHIPS, TRANSIT_CHECK_LANE_MARGIN_M, TRANSIT_CHECK_DAWN_MARGIN_S, TRANSIT_CHECK_UNLOAD_MIN_S, TRANSIT_CHECK_START_CLEAR_M]).toEqual([6, 200, 20, 20, 1500]);
++    expect([TRANSIT_MAX_SHIPS, TRANSIT_CHECK_LANE_MARGIN_M, TRANSIT_CHECK_DAWN_MARGIN_S, TRANSIT_CHECK_UNLOAD_MIN_S, TRANSIT_CHECK_START_CLEAR_M]).toEqual([8, 200, 20, 20, 1500]); // v0.8.2 S0: 列の上限 6 → 8（us_05 の第三部隊 7・ハード 8）
+     expect(TRANSIT_EXCLUSIVE_KEYS).toEqual(['barges', 'pt_boats', 'convoy', 'transport', 'escort', 'patrol_air', 'evac', 'landing', 'ally_destroyer']);
+     const src = readFileSync(join(__dirname, '..', 'src', 'scenes', 'boot-scene.ts'), 'utf8');
+     expect(src.indexOf('validateTransitMissions(gameData);')).toBeGreaterThan(src.indexOf('validateEvacMissions(gameData);'));
+@@ -110,9 +110,9 @@ describe('形（core/transit-data）', () => {
+     const cases: [(t: Rec) => void, RegExp][] = [
+       [(t) => (t['speed_mps'] = 1), /鍵はちょうど .*知らない鍵 speed_mps/],
+       [(t) => delete t['unload_s'], /欠け unload_s/],
+-      [(t) => (t['ships'] = 0), /ships は 1〜6 の整数（0。V-T1）/],
+-      [(t) => (t['ships'] = 7), /ships は 1〜6 の整数（7。V-T1）/],
+-      [(t) => (t['ships'] = 2.5), /ships は 1〜6 の整数/],
++      [(t) => (t['ships'] = 0), /ships は 1〜8 の整数（0。V-T1）/],
++      [(t) => (t['ships'] = 9), /ships は 1〜8 の整数（9。V-T1）/],
++      [(t) => (t['ships'] = 2.5), /ships は 1〜8 の整数/],
+       [(t) => (t['spacing_s'] = 0), /spacing_s は正の数（0。V-T1）/],
+       [(t) => (t['speed_kt'] = -30), /speed_kt は正の数/],
+       [(t) => (t['edge_inset_m'] = 0), /edge_inset_m は正の数/],
+@@ -136,10 +136,10 @@ describe('形（core/transit-data）', () => {
+ });
+ 
+ describe('起動時の検査（config/transit-mission-data の V-T1〜V-T6）', () => {
+-  it('V-T1: ハードの足す艦・6 隻まで・enemies は護衛 1 ＋ 列の同じ id・速さは艦の最大以下・列の無い任務の hard に置けない', () => {
++  it('V-T1: ハードの足す艦・8 隻まで（v0.8.2 S0 で 6 → 8）・enemies は護衛 1 ＋ 列の同じ id・速さは艦の最大以下・列の無い任務の hard に置けない', () => {
+     const hardOf = (d: GameData): Rec => protoOf(d, 'us_04')['hard'] as Rec;
+     expect(build((d) => (hardOf(d)['extra_transit_ships'] = 0))).toThrow(/us_04\.v0_1_prototype\.hard\.extra_transit_ships は 1 以上の整数（0）（V-T1/);
+-    expect(build((d) => (hardOf(d)['extra_transit_ships'] = 4))).toThrow(/transit\.ships ＋ hard\.extra_transit_ships（7）は 6 隻まで（V-T1/);
++    expect(build((d) => (hardOf(d)['extra_transit_ships'] = 6))).toThrow(/transit\.ships ＋ hard\.extra_transit_ships（9）は 8 隻まで（V-T1/);
+     expect(build((d) => (protoOf(d, 'us_04')['enemies'] as string[]).pop())).toThrow(/us_04\.v0_1_prototype\.enemies（ijn_destroyer・ijn_destroyer・ijn_destroyer）は護衛 1 ＋ 列 3 の同じ id（ijn_destroyer）（V-T1/);
+     expect(build((d) => (transitOf(d)['speed_kt'] = 36))).toThrow(/transit\.speed_kt（36）は ijn_destroyer の speed_max_kt（35）以下（V-T1/);
+     expect(build((d) => ((protoOf(d, 'us_02')['hard'] as Rec)['extra_transit_ships'] = 1), 'us_02', true)).toThrow(/us_02\.v0_1_prototype\.hard\.extra_transit_ships は列の通過（transit）の任務だけ（V-T1/);
+diff --git a/tests/transit-world-kit.ts b/tests/transit-world-kit.ts
+index bbbcf27..8bad0d6 100644
+--- a/tests/transit-world-kit.ts
++++ b/tests/transit-world-kit.ts
+@@ -82,16 +82,20 @@ export interface KitWorld {
+   readonly detectM: number;
+ }
+ 
+-/** us_04 の小さな世界。seed を渡せば今夜の揺らぎ込み（出撃の seed）、省けば揺らぎなし。radar は false で作らない。detect は自艇を見つける距離を出発時の値に */
+-export function kitWorld(o: { hard?: boolean; seed?: number; dawnS?: number; radar?: boolean; detect?: boolean } = {}): KitWorld {
++/**
++ * us_04 の小さな世界。seed を渡せば今夜の揺らぎ込み（出撃の seed）、省けば揺らぎなし。radar は false で作らない。detect は自艇を見つける距離を出発時の値に。
++ * mission（v0.8.2 S0）は列のある任務（既定 us_04。us_05 の片道の列＝列だけの隊は護衛 0 隻・艦はみな列の AI の形＝S0 の世界と同じ）
++ */
++export function kitWorld(o: { hard?: boolean; seed?: number; dawnS?: number; radar?: boolean; detect?: boolean; mission?: string } = {}): KitWorld {
+   const hard = o.hard ?? false;
+-  const setup = buildWorldSetup(gameData, 'us_04', o.seed === undefined ? { hard } : { sortie: directSortie('us_04', o.seed, 'none', hard, false), hard });
++  const id = o.mission ?? 'us_04';
++  const setup = buildWorldSetup(gameData, id, o.seed === undefined ? { hard } : { sortie: directSortie(id, o.seed, 'none', hard, false), hard });
+   const ds = setup.destroyer!;
+   const tr = setup.transit!;
+   const ships: KitShip[] = ds.starts.map((st) => new KitShip(st, ds.shipAi, ds.spec.boundsMarginM));
+   for (let i = 0; i < tr.ships; i++) ships.push(new KitShip({ x: tr.inbound.appearX, y: tr.inbound.laneY, headingDeg: tr.inbound.headingDeg }, tr.shipAi, ds.spec.boundsMarginM));
+   const transit = new DestroyerTransit(ships, ds.starts.length, tr);
+-  const radar = o.radar === false ? null : new WorldRadar(setup.radar!, setup.mission.bounds, setup.shores, ships.length, null, tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''); // 東の揚陸の地の名は systems/radar-view の buildRadar と同じ（v0.8.0 S4）
++  const radar = o.radar === false ? null : new WorldRadar(setup.radar!, setup.mission.bounds, setup.shores, ships.length, null, tr.outbound !== null && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''); // 東の揚陸の地の名は systems/radar-view の buildRadar と同じ（v0.8.0 S4）
+   const ps = setup.playerStart;
+   return {
+     setup, ships, transit, radar, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 } }, destroyers: { ships },
+diff --git a/tests/transit-world.test.ts b/tests/transit-world.test.ts
+index d1863d1..d7ec625 100644
+--- a/tests/transit-world.test.ts
++++ b/tests/transit-world.test.ts
+@@ -39,7 +39,7 @@ describe('列の通過の時刻と道（ノーマル・揺らぎなし）', () =
+   const ev = run(w, 250);
+   const at = (i: number, to: number): Ev => ev.find((e) => e.i === i && e.to === to)!;
+   it('入りは体感の時計で enter_s ＋ 8 秒 × i、現れる点は西の縁の内 150 m・往路の道・090°（作った時はまだ来ない＝海域の外）', () => {
+-    expect([tr.ships, tr.enterS, tr.spacingS, tr.inbound.appearX, tr.inbound.laneY, tr.outbound.appearX, tr.outbound.laneY]).toEqual([3, 18, 8, 150, 1500, 5850, 2300]);
++    expect([tr.ships, tr.enterS, tr.spacingS, tr.inbound.appearX, tr.inbound.laneY, tr.outbound!.appearX, tr.outbound!.laneY]).toEqual([3, 18, 8, 150, 1500, 5850, 2300]);
+     for (let i = 0; i < 3; i++) {
+       const e = at(i, TRANSIT_IN);
+       expect(e.t).toBeGreaterThanOrEqual(tr.enterS + tr.spacingS * i - 1e-6);
+@@ -57,7 +57,7 @@ describe('列の通過の時刻と道（ノーマル・揺らぎなし）', () =
+       expect(o.t - a.t).toBeGreaterThanOrEqual(tr.unloadS - 1e-6);
+       expect(o.t - a.t).toBeLessThan(tr.unloadS + 1 / 60 + 1e-6);
+       expect([o.x, o.y, o.h]).toEqual([5850, 2300, 270]);
+-      expect(g.x).toBeLessThanOrEqual(tr.outbound.goneX);
++      expect(g.x).toBeLessThanOrEqual(tr.outbound!.goneX);
+       // 渡りの秒（道の端から端＝海域の幅）は crossS（30 kt・time_scale 込み）に 1 ステップの内で合う（加速なし＝現れた時から列の速さ）
+       expect(Math.abs(a.t - at(i, TRANSIT_IN).t - tr.crossS)).toBeLessThan(2 / 60);
+       expect(Math.abs(g.t - o.t - tr.crossS)).toBeLessThan(2 / 60);
+@@ -163,7 +163,7 @@ describe('L11: 往路の間の命中スローで復路の現れる順・道は
+       expect(order(ea, TRANSIT_OUT)).toEqual(Array.from({ length: tr.ships }, (_, i) => i));
+       const outs = (e: Ev[]): number[][] => e.filter((x) => x.to === TRANSIT_OUT).map((x) => [x.x, x.y, x.h]);
+       expect(outs(eb)).toEqual(outs(ea));
+-      expect(outs(ea).every(([x, y, h]) => x === tr.outbound.appearX && y === tr.outbound.laneY && h === tr.outbound.headingDeg)).toBe(true);
++      expect(outs(ea).every(([x, y, h]) => x === tr.outbound!.appearX && y === tr.outbound!.laneY && h === tr.outbound!.headingDeg)).toBe(true);
+       // スローの分だけ遅れる（ビラに着くのは位置＝スローで遅れた分だけ後）
+       const firstAway = (e: Ev[]): number => e.find((x) => x.to === TRANSIT_AWAY)!.t;
+       expect(firstAway(eb)).toBeGreaterThan(firstAway(ea) + 1.5);
