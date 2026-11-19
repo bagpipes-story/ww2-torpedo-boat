@@ -24,6 +24,8 @@ export interface BoatTelemetry {
   torpedoesLeft: number;
   /** 有効弾の命中数（不発を除く） */
   hits: number;
+  /** 武装の前（100 m の内）に狙える艦の船体の下を通った自艇の魚雷の数（v0.8.2 IP1。systems/torpedo-under。2 行目の「近すぎて船体の下を通過」だけが読む） */
+  torpedoUnder: number;
   /** 夜明けまでの実時間秒（0 で夜明け。v0.6.1 から任務は終わらない。夜明けの後の時計・空襲は dawn） */
   timeLeftS: number;
   /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */

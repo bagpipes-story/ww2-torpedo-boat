@@ -1,5 +1,5 @@
 // v0.8.2 S0（spec-v0820 §4.4 D-G1〜D-G4・§5.3。ユーザーの決め U1）: 戦艦の弾薬庫の記録（enemies.json の magazine）の読み出しと起動時の検査 V-M1〜V-M3（config/magazine-data）。
-// 既定の data（扶桑型の 3 本目 3%・4 本目 6%）が通り、壊した記録は鍵を名指す日本語の文で止まる。規則は記録ごと（今の記録には無い＝今の任務は変わらない）。S0 では誰も確率を引かない。
+// 既定の data（扶桑型の 3 本目 3.5%・4 本目 7%＝v0.8.2 IP1 のユーザーの決め U-Q1。S0〜S4 は 3%・6%）が通り、壊した記録は鍵を名指す日本語の文で止まる。規則は記録ごと（今の記録には無い＝今の任務は変わらない）。S0 では誰も確率を引かない。
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -17,20 +17,21 @@ const read = (f: (d: GameData) => void, id = 'ijn_battleship_fuso'): (() => unkn
 };
 
 describe('既定の data（扶桑型。ユーザーの U1・spec §4.4 D-G3）', () => {
-  it('3 本目 3%・4 本目 6%（4 本全部当たった艦の轟沈 8.8%）。沈む本数 6 未満・持つのは戦艦の記録だけ', () => {
-    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')).toEqual({ onHits: [3, 4], chance: [0.03, 0.06] });
-    expect(1 - (1 - 0.03) * (1 - 0.06)).toBeCloseTo(0.0882, 4);
+  it('3 本目 3.5%・4 本目 7%（4 本全部当たった艦の轟沈 10.3%＝ユーザーの U-Q1「10回に一回くらい」）。沈む本数 6 未満・持つのは戦艦の記録だけ', () => {
+    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')).toEqual({ onHits: [3, 4], chance: [0.035, 0.07] });
+    expect(1 - (1 - 0.035) * (1 - 0.07)).toBeCloseTo(0.10255, 5);
     expect(validateMagazineRecords(gameData)).toEqual(['ijn_battleship_fuso']);
     for (const e of gameData.enemies.enemies as unknown as Rec[]) if (e['id'] !== 'ijn_battleship_fuso') expect(magazineRuleOf(gameData, String(e['id'])), String(e['id'])).toBeNull();
     expect([MAGAZINE_KEYS, MAGAZINE_SHIP_CLASS]).toEqual([['on_hits', 'chance', 'source'], 'battleship']);
     expect(String(magOf(gameData)['source'])).toContain('ユーザーの決め U1');
+    expect(String(magOf(gameData)['source'])).toContain('魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。');
   });
   it('?debug&boom（magazineBoom）は確率だけ 1（規則の無い記録は null のまま）。読むたびに写し（data の配列を渡さない）', () => {
     expect(magazineRuleOf(gameData, 'ijn_battleship_fuso', { magazineBoom: true })).toEqual({ onHits: [3, 4], chance: [1, 1] });
     expect(magazineRuleOf(gameData, 'ijn_destroyer', { magazineBoom: true })).toBeNull();
     const a = magazineRuleOf(gameData, 'ijn_battleship_fuso')!;
     a.chance[0] = 0.5;
-    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')!.chance[0]).toBe(0.03);
+    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')!.chance[0]).toBe(0.035);
   });
   it('S0 では Boot の検査と列の kits のほかに誰も読まない（確率の引きは S1 の core/magazine・配線は S2）', () => {
     const files: string[] = [];

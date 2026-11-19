@@ -55,6 +55,7 @@ import { consumeFrameInput } from './world-input';
 import { buildWorldSetup, type WorldSetup } from './world-setup';
 import { destroyWorldVisuals, updateWorldVisuals } from './world-visuals';
 import { WorldArt } from './world-art';
+import { TorpedoUnder } from './torpedo-under';
 export type { WorldEvents } from './world-events';
 
 export class MissionWorld {
@@ -68,6 +69,7 @@ export class MissionWorld {
   readonly engine: EngineTrouble | null; // 機関の不調（docs/02 §6.8、v0.6.5。jp_05）。WorldSetup.engine が無い任務・?debug&engoff では null（world-boat は w.input をそのまま渡す）
   readonly enemy: EnemySide;
   readonly torpedoes: TorpedoPool;
+  readonly torpedoUnder: TorpedoUnder; // 武装の前に狙える艦の船体の下を通った魚雷の数（v0.8.2 IP1。systems/destroyer-step が数え、2 行目の「近すぎて船体の下を通過」が読む）
   readonly launcher: TorpedoLauncher;
   readonly splashes: SplashPool; // 水柱（砲弾・掃射・爆弾・波。v0.4.2 で EnemyFire から出した）
   /** 味方機（友軍誤射）・暴風の帯・敵の水上機（docs/02 §6.8）。任務の block が無いか ?debug で切れば null */
@@ -197,6 +199,7 @@ export class MissionWorld {
     this.boatDamage = new BoatDamage(this.boat, this.damage, this.damageParams, this.params, events, SMALL_HIT_DAMAGE_RATIO);
     this.splashes = new SplashPool(scene, SPLASH_POOL_SIZE, SPLASH_SCALE_MISS, SPLASH_SCALE_HIT);
     this.torpedoes = new TorpedoPool(scene, s.torpedoParams, getBoatTorpedoCount(data, mission.playerBoatId), mission.bounds); // 艇が積む本数（v0.6.8。setup.torpedoCapacity は主兵装の本数のまま）
+    this.torpedoUnder = new TorpedoUnder(this.torpedoes.capacity, s.torpedoParams.armingM);
     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
     const onSunk = (x: number, y: number, look: ExplosionLook = 'blast'): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y, look); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発。jp_03（撃墜だけが届く）は爆発だけ（r2 M1）。look は見た目だけ（IP4: 魚雷で沈んだ輸送船は 'torpedo'）
     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）

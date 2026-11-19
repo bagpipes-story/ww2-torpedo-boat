@@ -46,7 +46,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
       const p = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05', hard), null, false)!;
       expect(p.kits.map((k) => k.nameJa)).toEqual(hard ? [...NAMES, '見張りの駆逐艦'] : NAMES);
       expect(p.enterAtS).toEqual(hard ? [5, 20, 35, 50, 80, 85, 101, 109] : [5, 20, 35, 50, 80, 85, 101]);
-      expect(p.laneDyM).toEqual(hard ? [400, 400, 400, 400, -560, 0, 0, -575] : [400, 400, 400, 400, -560, 0, 0]); // v0.8.2 S3 の探りの帯（N1・H1）で時雨 −600 → −560・ハードの 8 隻目 −600 → −575
+      expect(p.laneDyM).toEqual(hard ? [400, 400, 400, 400, -540, 0, 0, -575] : [400, 400, 400, 400, -540, 0, 0]); // v0.8.2 S3 の探りの帯（N1・H1）で時雨 −600 → −560・ハードの 8 隻目 −600 → −575、IP1（実機 1 回目のユーザー「時雨の進行位置を若干戦艦寄りに」）で時雨 −560 → −540
       expect(p.kits.map((k) => k.group).join('')).toBe(hard ? 'vanvanvanvanmainmainmainmain' : 'vanvanvanvanmainmainmain');
       expect(p.kits.map((k) => k.role)).toEqual(hard ? ['line', 'line', 'line', 'line', 'screen', 'line', 'line', 'screen'] : ['line', 'line', 'line', 'line', 'screen', 'line', 'line']);
       expect(p.rejoinS).toBe(40);
@@ -65,7 +65,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
       }
       expect(p.kits.map((k) => [k.shipClass, k.spec.hitsToSink, k.magazine])).toEqual([
         ...[0, 1, 2].map(() => ['destroyer', 2, null]), ['heavy_cruiser', 3, null], ['destroyer', 2, null],
-        ['battleship', 6, { onHits: [3, 4], chance: [0.03, 0.06] }], ['battleship', 6, { onHits: [3, 4], chance: [0.03, 0.06] }], ['destroyer', 2, null],
+        ['battleship', 6, { onHits: [3, 4], chance: [0.035, 0.07] }], ['battleship', 6, { onHits: [3, 4], chance: [0.035, 0.07] }], ['destroyer', 2, null],
       ]);
     }
     // 絵の鍵（v0.8.2 S2b で直した: S0〜S2 は既定の駆逐艦の絵＝戦艦・重巡は S2b の D-A1・D-A2 で ship-art-config の表に足した＝記録の id から）・弾薬庫の上書き（?debug&boom）は確率だけ 1・
@@ -79,7 +79,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
   it('今夜の揺らぎ（列の 1 件）: x のずれ ÷ 画面上の速さ 46.3 m/秒 → 全部の艦の入りの秒（東へずれれば早い）、道のずれは艦ごとのまま（y のずれは transit の道へ）', () => {
     const p = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05'), { dx: 92.6, dy: -80, dh: 0 }, false)!;
     expect(p.enterAtS.map((t) => Math.round(t * 1e9) / 1e9)).toEqual([5, 20, 35, 50, 80, 85, 101].map((t) => Math.round((t - 92.6 / SCREEN_MPS) * 1e9) / 1e9));
-    expect(p.laneDyM).toEqual([400, 400, 400, 400, -560, 0, 0]);
+    expect(p.laneDyM).toEqual([400, 400, 400, 400, -540, 0, 0]);
     const t = getTransitParams(gameData, getPrototypeMission(gameData, 'us_05'), { dx: 92.6, dy: -80, dh: 0 }, false)!;
     expect([t.inbound.laneY, t.enterS, t.enterAtS![0]]).toEqual([2320, p.enterAtS[0], p.enterAtS[0]]);
   });
@@ -158,8 +158,8 @@ describe('起動時の検査（config/column-mission-data の V-C1〜V-C6）', (
     expect(build((d) => (protoOf(d, 'us_05')['enemy_hits_to_sink'] = 1))).toThrow(/enemy_hits_to_sink は片道の列の任務に置かない（沈む本数は艦ごとの記録の値）（V-C2/);
   });
   it('V-C3: 道（＋ずれ＋今夜の ±150 m）は縁から艦の余白 ＋ 200 m 以上内・岸の線から陸の反射 300 m より沖', () => {
-    // 戦艦の余白は 212.75 ＋ 200 ＝ 412.75 m。本隊の道 y 2,400 を北へ寄せる（時雨の道 −560＝v0.8.2 S3 の帯 N1。道 1,010 で時雨は y 450）
-    expect(build((d) => ((transitOf(d)['inbound'] as Rec)['lane_y_m'] = 1010))).toThrow(/transit\.column\[4\] の道（y 450 ± 今夜の 150）は北と南の縁から 318\.0 m（艦の余白 ＋ 200）以上内（V-C3/);
+    // 戦艦の余白は 212.75 ＋ 200 ＝ 412.75 m。本隊の道 y 2,400 を北へ寄せる（時雨の道 −540＝v0.8.2 IP1。道 990 で時雨は y 450）
+    expect(build((d) => ((transitOf(d)['inbound'] as Rec)['lane_y_m'] = 990))).toThrow(/transit\.column\[4\] の道（y 450 ± 今夜の 150）は北と南の縁から 318\.0 m（艦の余白 ＋ 200）以上内（V-C3/);
     expect(build((d) => (colOf(d)[5]!['lane_dy_m'] = -1840))).toThrow(/transit\.column\[5\] の道（y 560 ± 今夜の 150）は北と南の縁から 412\.8 m（艦の余白 ＋ 200）以上内（V-C3/);
     expect(build((d) => (colOf(d)[5]!['lane_dy_m'] = -1837.25))).not.toThrow(); // 562.75 − 150 ＝ 412.75
     expect(build((d) => (colOf(d)[0]!['lane_dy_m'] = 1250))).toThrow(/transit\.column\[0\] の道（y 3650 ± 今夜の 150）は北と南の縁から 318\.0 m/);

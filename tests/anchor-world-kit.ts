@@ -116,6 +116,7 @@ export interface AnchorKitWorld {
   readonly destroyers: KitGroup;
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
   readonly torpedoes: { readonly states: KitTorpedo[]; step(): void };
+  readonly torpedoUnder: { step(): void }; // v0.8.2 IP1（systems/torpedo-under。偽の魚雷は走らないので何もしない）
   readonly launcher: { clearQueue(): void };
   readonly returnPoint: { readonly torpedoEndSettleS: number };
   readonly vis: { readonly detectHoldS: number };
@@ -164,7 +165,7 @@ export function anchorKit(o: { mission?: string; hard?: boolean; seed?: number; 
   const ps = setup.playerStart;
   return {
     setup, destroyers: g, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 }, sinking: false },
-    torpedoes: { states: [], step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis,
+    torpedoes: { states: [], step: () => undefined }, torpedoUnder: { step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis,
     detect: { count: 0, prev: false }, dawn: { reached: false }, enemy: { illuminated: false }, arms: null, escort: null, flareLit: false, hiddenBySmoke: false, smoke: null, smokeParams: null,
     torpedoEvents: {}, detectRangeM: setup.detectRangeAtStartM, visRange2: setup.visRange2, stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
   };

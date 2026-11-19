@@ -33,6 +33,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     headingDeg: w.boat.state.headingDeg,
     torpedoesLeft: w.torpedoes.capacity,
     hits: 0,
+    torpedoUnder: 0,
     timeLeftS,
     enemyDx: NaN,
     enemyDy: NaN,

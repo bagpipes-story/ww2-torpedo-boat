@@ -362,7 +362,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0
   ],
@@ -878,8 +878,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -978,8 +978,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    }
@@ -1392,7 +1392,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0
   ],
@@ -1908,8 +1908,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -2008,8 +2008,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    }
@@ -2422,7 +2422,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0
   ],
@@ -2938,8 +2938,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -3038,8 +3038,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    }
@@ -3452,7 +3452,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0
   ],
@@ -3968,8 +3968,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -4068,8 +4068,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    }
@@ -4483,7 +4483,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0,
    -575
@@ -5000,8 +5000,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -5100,8 +5100,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -5612,7 +5612,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0,
    -575
@@ -6129,8 +6129,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -6229,8 +6229,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -6741,7 +6741,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0,
    -575
@@ -7258,8 +7258,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -7358,8 +7358,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -7870,7 +7870,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -560,
+   -540,
    0,
    0,
    -575
@@ -8387,8 +8387,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },
@@ -8487,8 +8487,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
       4
      ],
      "chance": [
-      0.03,
-      0.06
+      0.035,
+      0.07
      ]
     }
    },

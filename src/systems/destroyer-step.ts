@@ -33,6 +33,7 @@ export function stepDestroyerSide(w: MissionWorld, g: DestroyerGroup, dt: number
   if (detectedNow && !w.detect.prev) w.detect.count++;
   w.detect.prev = detectedNow;
   w.torpedoes.step(dt, feelDt, g.ships, g.passRadius2, w.torpedoEvents, w.stepTimeS, settleS);
+  w.torpedoUnder.step(w.torpedoes.states, g.ships); // 武装の前に船体の下を通った魚雷を数える（v0.8.2 IP1。読むだけ＝世界は変えない）
   if (!w.boat.sinking && g.touchesBoat(boat, c.boatHalfLengthM)) w.sinkBoat('rammed');
   const e = w.escort;
   for (let i = 0; i < g.ships.length; i++) {

@@ -64,7 +64,7 @@ describe('us_05 の世界（小さな世界）が夜明けまで走る', () => {
       expect(seen.map((e) => e.i)).toEqual([...Array(n).keys()]);
       const want = hard ? [5, 20, 35, 50, 80, 85, 101, 109] : [5, 20, 35, 50, 80, 85, 101];
       seen.forEach((e, k) => expect(Math.abs(e.t - want[k]!), String(k)).toBeLessThanOrEqual(STEP + 1e-9));
-      expect(seen.map((e) => [e.x, e.y, e.h])).toEqual(want.map((_t, k) => [150, [2800, 2800, 2800, 2800, 1840, 2400, 2400, 1825][k], 90]));
+      expect(seen.map((e) => [e.x, e.y, e.h])).toEqual(want.map((_t, k) => [150, [2800, 2800, 2800, 2800, 1860, 2400, 2400, 1825][k], 90]));
       expect(goneAt).toBeGreaterThan(hard ? 249 : 241);
       expect(goneAt).toBeLessThan(270 - 20);
       const st = w.transit.state;

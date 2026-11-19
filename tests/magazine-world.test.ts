@@ -55,8 +55,8 @@ function hitsOf(seed = 1, o: { magazineBoom?: boolean; hard?: boolean } = {}): H
 }
 
 describe('引くのは戦艦の 3・4 本目だけ（D-G1）', () => {
-  it('山城に 6 本: 3 本目・4 本目にちょうど 1 回ずつ（確率の和 0.09）。誘爆しなければ 6 本目で沈む（沈む本数は記録の 6）', () => {
-    const replica = (seed: number): [boolean, boolean] => { const r = new SeededRng((seed + MAGAZINE_SEED_OFFSET) >>> 0); return [r.next() < 0.03, r.next() < 0.06]; };
+  it('山城に 6 本: 3 本目・4 本目にちょうど 1 回ずつ（確率の和 0.105）。誘爆しなければ 6 本目で沈む（沈む本数は記録の 6）', () => {
+    const replica = (seed: number): [boolean, boolean] => { const r = new SeededRng((seed + MAGAZINE_SEED_OFFSET) >>> 0); return [r.next() < 0.035, r.next() < 0.07]; };
     let quiet = 0;
     for (let seed = 1; seed <= 60; seed++) {
       const h = hitsOf(seed);
@@ -75,11 +75,11 @@ describe('引くのは戦艦の 3・4 本目だけ（D-G1）', () => {
       expect([log.onHit[YAMASHIRO], h.g.magazine!.detonations], `seed ${seed}`).toEqual(want < 6 ? [want, 1] : [0, 0]);
       if (want === 6) {
         quiet++;
-        expect(log.chanceSum[YAMASHIRO]).toBeCloseTo(0.09, 12);
+        expect(log.chanceSum[YAMASHIRO]).toBeCloseTo(0.105, 12);
         expect(log.detonatedAtS[YAMASHIRO]).toBeNaN();
       } else expect(log.detonatedAtS[YAMASHIRO]).toBe(12.5);
     }
-    expect(quiet).toBeGreaterThan(45); // 1 − 0.97 × 0.94 ＝ 8.8% しか誘爆しない
+    expect(quiet).toBeGreaterThan(45); // 1 − 0.965 × 0.93 ＝ 10.3% しか誘爆しない（v0.8.2 IP1 のユーザーの決め U-Q1「10回に一回くらい」）
   });
   it('駆逐艦（満潮）は 2 本・重巡（最上）は 3 本で今の沈む道。どちらも引かない。扶桑は山城と別の艦（記録も別の添字）', () => {
     const h = hitsOf(3);
@@ -116,10 +116,10 @@ describe('?debug&boom（確率 1）と誘爆の沈み方', () => {
       expect(h.g.magazine!.rules[FUSO]).toEqual({ onHits: [3, 4], chance: [1, 1] });
     }
   });
-  it('boom でも駆逐艦と重巡の記録には規則が無い（null のまま）。data の確率は 3%・6%', () => {
+  it('boom でも駆逐艦と重巡の記録には規則が無い（null のまま）。data の確率は 3.5%・7%（v0.8.2 IP1 のユーザーの決め U-Q1）', () => {
     const k = setupOf('us_05', false, undefined, { magazineBoom: true }).transit!.column!;
     expect(k.map((x) => (x.magazine ? x.magazine.chance : null))).toEqual([null, null, null, null, null, [1, 1], [1, 1]]);
-    expect(setupOf('us_05').transit!.column![YAMASHIRO]!.magazine).toEqual({ onHits: [3, 4], chance: [0.03, 0.06] });
+    expect(setupOf('us_05').transit!.column![YAMASHIRO]!.magazine).toEqual({ onHits: [3, 4], chance: [0.035, 0.07] });
   });
 });
 

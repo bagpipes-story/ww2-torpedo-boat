@@ -44,8 +44,9 @@ describe('kits（L19）: us_05 の列の艦ごとの記録', () => {
     expect(g.kits.artKeys).toEqual(want);
     expect(keys.filter((k) => SHIP_TEX.test(k))).toEqual(want);
     expect(g.kits.classes).toEqual(['destroyer', 'destroyer', 'destroyer', 'heavy_cruiser', 'destroyer', 'battleship', 'battleship']);
-    expect(g.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, ...kits.map((k) => k.passRadius2)));
-    expect(g.passRadius2).toBe(kits[5]!.passRadius2);
+    // v0.8.2 IP1: 片道の列は通り過ぎで外れに決めない（Infinity。systems/column-kits の columnPassRadius2）。S2〜S4 は艦の通過の半径の最大（戦艦の kits[5]）だった
+    expect(g.passRadius2).toBe(Infinity);
+    expect(kits[5]!.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, ...kits.map((k) => k.passRadius2)));
     // 列の AI は最大速力だけ列の速さ（18 kt）・見張りの AI は記録の値そのまま（時雨だけ）
     expect(kits.map((k) => k.screenAi !== null)).toEqual([false, false, false, false, true, false, false]);
     expect(kits[SHIGURE]!.screenAi!.ramEnabled && kits[SHIGURE]!.screenAi!.maxSpeedMps > kits[SHIGURE]!.lineAi.maxSpeedMps).toBe(true);

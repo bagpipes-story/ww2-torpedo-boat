@@ -55,6 +55,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   // 沈み始めたか退いた後（v0.6.2。狙う艦がいない）と帰投地点の輪の中では撃てないので残弾 0 を見せる（魚雷ボタンが暗くなる）
   t.torpedoesLeft = w.enemy.allOut || w.atHome ? 0 : w.torpedoes.remaining;
   t.hits = w.hits;
+  t.torpedoUnder = w.torpedoUnder.count; // 近すぎて船体の下を通過（v0.8.2 IP1。systems/torpedo-under）
   t.timeLeftS = timeLeftS;
   // 敵の矢印と敵影: 駆逐艦（沈み始めたら無し）か、最も近い浮いている大発（v0.4.2。大発のスプライトの出し入れは barge-hunt）
   const e = w.enemy.focus(s.x, s.y);

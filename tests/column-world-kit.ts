@@ -91,6 +91,7 @@ export interface ColWorld {
   readonly kits: readonly ColumnKit[];
   readonly boat: { readonly state: BoatState; sinking: boolean };
   readonly torpedoes: { readonly states: never[]; step(): void };
+  readonly torpedoUnder: { step(): void }; // v0.8.2 IP1（systems/torpedo-under。偽の魚雷は走らないので何もしない）
   readonly launcher: { clearQueue(): void };
   readonly returnPoint: { readonly torpedoEndSettleS: number };
   readonly vis: { readonly detectHoldS: number };
@@ -127,7 +128,7 @@ export function colWorld(o: { hard?: boolean; seed?: number; dawnS?: number; rad
   const radar = o.radar === false || !setup.radar ? null : new WorldRadar(setup.radar, setup.mission.bounds, setup.shores, g.total, null, '');
   return {
     setup, destroyers: g, kits: setup.transit?.column ?? [], boat: { state: { x: setup.playerStart.x, y: setup.playerStart.y, headingDeg: setup.playerStart.headingDeg, speedMps: 0 }, sinking: false },
-    torpedoes: { states: [], step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis, detect: { count: 0, prev: false },
+    torpedoes: { states: [], step: () => undefined }, torpedoUnder: { step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis, detect: { count: 0, prev: false },
     dawn: { reached: false }, escort: null, smoke: null, smokeParams: null, torpedoEvents: {}, radar, flareLit: false, hiddenBySmoke: false, detectRangeM: 0, visRange2: setup.visRange2,
     stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, gunRng, lookoutRng, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
   };

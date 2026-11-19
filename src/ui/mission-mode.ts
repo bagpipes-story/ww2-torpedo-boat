@@ -91,6 +91,7 @@ export const MISSION_BOW_ON = 40;
 export const MISSION_ANCHOR_EVENT = 41;
 export const MODE_FLAG_ANCHOR_EVENT = 1024;
 /** 42 報告の任務の出来事（v0.8.2 S4。us_05。時計 ui/recon-lines・文 ui/recon-texts。止まった艦の出来事のすぐ下）と旗、43 報告の常の文（呼びかけ・平常の代わり。reconStandingShown） */ export const MISSION_RECON_EVENT = 42, MISSION_RECON = 43, MODE_FLAG_RECON_EVENT = 2048;
+/** 44 近すぎて船体の下を通過（v0.8.2 IP1。全任務。時計と文は ui/under-lines。報告の出来事のすぐ下）と旗 */ export const MISSION_UNDER_EVENT = 44, MODE_FLAG_UNDER_EVENT = 4096;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -232,6 +233,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if ((flags & MODE_FLAG_RADAR_EVENT) !== 0 && !planeFirst) return MISSION_RADAR_EVENT; // レーダーの出来事（v0.8.0 S4。us_04・us_06 だけ旗が立つ）
   if ((flags & MODE_FLAG_ANCHOR_EVENT) !== 0 && !planeFirst) return MISSION_ANCHOR_EVENT; // 止まった艦の出来事（v0.8.1 S4。us_06 だけ旗が立つ）
   if ((flags & MODE_FLAG_RECON_EVENT) !== 0) return MISSION_RECON_EVENT; // 報告の任務の出来事（v0.8.2 S4。us_05 だけ旗が立つ）
+  if ((flags & MODE_FLAG_UNDER_EVENT) !== 0) return MISSION_UNDER_EVENT; // 近すぎて船体の下を通過（v0.8.2 IP1。武装の前の自艇の魚雷が狙える艦の船体に入った時だけ旗が立つ）
   if (t.shallowState !== 0) return MISSION_SHALLOWS;
   if (stormWarning(t)) return MISSION_STORM_WARN;
   if (planeApproaching(t)) return MISSION_PLANE;

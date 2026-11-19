@@ -1,6 +1,6 @@
 // v0.8.2 S1（spec-v0820 §4.4 D-G1〜D-G3・D-G5・§9 の 4、lead の L14・L15。ユーザーの決め U1）: core/magazine-detonation の戦艦の弾薬庫の規則を、enemies.json の扶桑型の記録の magazine
-// （3 本目 3%・4 本目 6%）と us_05 の setup の列の kits で見る。3・4 本目の命中だけ引く・規則の無い艦は引かない・確率 0 と 1（?debug&boom）でも引く回数は同じ・seed+44 の 10 万回で 3%・6% ±0.2 点
-// （3 つの夜の種）・4 本当たった艦の轟沈 1 − 0.97 × 0.94 ＝ 8.8% ±0.3 点（10 万隻）・艦ごとの記録（誘爆の秒・何本目か・引いた回数・引いた確率の和＝探りの期待値）・source（確保なし）・
+// （3 本目 3.5%・4 本目 7%＝v0.8.2 IP1 のユーザーの決め U-Q1。S1〜S4 は 3%・6%）と us_05 の setup の列の kits で見る。3・4 本目の命中だけ引く・規則の無い艦は引かない・確率 0 と 1（?debug&boom）でも引く回数は同じ・seed+44 の 10 万回で 3.5%・7% ±0.2 点
+// （3 つの夜の種）・4 本当たった艦の轟沈 1 − 0.965 × 0.93 ＝ 10.3% ±0.3 点（10 万隻）・艦ごとの記録（誘爆の秒・何本目か・引いた回数・引いた確率の和＝探りの期待値）・source（確保なし）・
 // S2 から import するのは systems/ship-magazine だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。core/magazine（v0.6.8 の機銃の弾倉）とは別のファイル（名が重なるので magazine-detonation）。
 import { describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -28,8 +28,8 @@ function hitShip(log: MagazineLog, i: number, rule: MagazinePlan | null, rng: Se
 }
 
 describe('規則（扶桑型の記録・us_05 の kits）と確率の読み', () => {
-  it('扶桑型は 3 本目 3%・4 本目 6%。us_05 の列で規則を持つのは山城・扶桑だけ（ノーマル・ハード）。系列は seed+44', () => {
-    expect(RULE).toEqual({ onHits: [3, 4], chance: [0.03, 0.06] });
+  it('扶桑型は 3 本目 3.5%・4 本目 7%。us_05 の列で規則を持つのは山城・扶桑だけ（ノーマル・ハード）。系列は seed+44', () => {
+    expect(RULE).toEqual({ onHits: [3, 4], chance: [0.035, 0.07] });
     for (const hard of [false, true]) {
       const kits = buildWorldSetup(gameData, 'us_05', { hard }).transit!.column!;
       expect(kits.map((k) => (k.magazine ? k.nameJa : null)).filter((x) => x !== null)).toEqual(['山城', '扶桑']);
@@ -37,8 +37,8 @@ describe('規則（扶桑型の記録・us_05 の kits）と確率の読み', ()
     }
     expect(MAGAZINE_SEED_OFFSET).toBe(44);
   });
-  it('magazineChanceAt: 規則が無ければ 0・onHits に無い本数は 0・3 本目 0.03・4 本目 0.06（boom は 1）', () => {
-    expect([0, 1, 2, 3, 4, 5, 6].map((h) => magazineChanceAt(RULE, h))).toEqual([0, 0, 0, 0.03, 0.06, 0, 0]);
+  it('magazineChanceAt: 規則が無ければ 0・onHits に無い本数は 0・3 本目 0.035・4 本目 0.07（boom は 1）', () => {
+    expect([0, 1, 2, 3, 4, 5, 6].map((h) => magazineChanceAt(RULE, h))).toEqual([0, 0, 0, 0.035, 0.07, 0, 0]);
     expect([1, 3, 4, 6].map((h) => magazineChanceAt(null, h))).toEqual([0, 0, 0, 0]);
     expect([3, 4].map((h) => magazineChanceAt(BOOM, h))).toEqual([1, 1]);
   });
@@ -88,18 +88,18 @@ describe('引く時・引かない時', () => {
     expect(rollMagazine(log, 0, ZERO, 3, 12, rng)).toBe(false);
     rollMagazine(log, 0, RULE, 4, 13, rng);
     expect([log.detonatedAtS[1], log.onHit[1], log.draws[1], log.chanceSum[1], log.draws[0]]).toEqual([41.5, 3, 1, 1, 2]);
-    expect(log.chanceSum[0]).toBeCloseTo(0.06, 12);
+    expect(log.chanceSum[0]).toBeCloseTo(0.07, 12);
     resetMagazineLog(log);
     expect([[...log.detonatedAtS], [...log.onHit], [...log.draws], [...log.chanceSum]]).toEqual([[NaN, NaN], [0, 0], [0, 0], [0, 0]]);
   });
 });
 
 describe('頻度（seed+44・ユーザーの決め U1 の「稀に」）', () => {
-  it('3 本目 3%・4 本目 6% は seed+44 の 10 万回ずつで ±0.2 点（3 つの夜の種）。引いた確率の和は期待値そのもの', () => {
+  it('3 本目 3.5%・4 本目 7% は seed+44 の 10 万回ずつで ±0.2 点（3 つの夜の種）。引いた確率の和は期待値そのもの', () => {
     for (const base of BASE_SEEDS) {
       const rng = new SeededRng(base + MAGAZINE_SEED_OFFSET);
       const log = createMagazineLog(2);
-      for (const [i, h, p] of [[0, 3, 0.03], [1, 4, 0.06]] as const) {
+      for (const [i, h, p] of [[0, 3, 0.035], [1, 4, 0.07]] as const) {
         let booms = 0;
         for (let k = 0; k < 100_000; k++) if (rollMagazine(log, i, RULE, h, 0, rng)) booms++;
         expect(Math.abs(booms / 100_000 - p), `seed ${base} の ${h} 本目 ${booms}`).toBeLessThanOrEqual(0.002);
@@ -107,8 +107,8 @@ describe('頻度（seed+44・ユーザーの決め U1 の「稀に」）', () =>
       }
     }
   });
-  it('4 本当たった艦（10 万隻・3 本目で誘爆すれば 4 本目は引かない）の轟沈は 1 − 0.97 × 0.94 ＝ 8.8% ±0.3 点。1 隻の引いた確率の和の平均も 8.82%', () => {
-    expect(1 - 0.97 * 0.94).toBeCloseTo(0.0882, 12);
+  it('4 本当たった艦（10 万隻・3 本目で誘爆すれば 4 本目は引かない）の轟沈は 1 − 0.965 × 0.93 ＝ 10.3% ±0.3 点。1 隻の引いた確率の和の平均も 10.255%', () => {
+    expect(1 - 0.965 * 0.93).toBeCloseTo(0.10255, 12);
     for (const base of BASE_SEEDS) {
       const rng = new SeededRng(base + MAGAZINE_SEED_OFFSET);
       const log = createMagazineLog(1);
@@ -119,8 +119,8 @@ describe('頻度（seed+44・ユーザーの決め U1 の「稀に」）', () =>
         if (hitShip(log, 0, RULE, rng) > 0) sunk++;
         expected += log.chanceSum[0]!;
       }
-      expect(Math.abs(sunk / 100_000 - 0.0882), `seed ${base} ${sunk}`).toBeLessThanOrEqual(0.003);
-      expect(Math.abs(expected / 100_000 - 0.0882), `seed ${base} ${expected}`).toBeLessThanOrEqual(0.0003);
+      expect(Math.abs(sunk / 100_000 - 0.10255), `seed ${base} ${sunk}`).toBeLessThanOrEqual(0.003);
+      expect(Math.abs(expected / 100_000 - 0.10255), `seed ${base} ${expected}`).toBeLessThanOrEqual(0.0003);
     }
   });
 });
