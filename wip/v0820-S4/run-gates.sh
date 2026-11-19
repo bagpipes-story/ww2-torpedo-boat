@@ -7,6 +7,7 @@
 #     v0.8.1 の A06（S2 の commit のビルド）と ANCHORUI の濾しの枝は消した。
 #   - us_05 の組（SET=us05。SKIP の名前 us05）: S2 は A＝B＝今の木（決定性とページのエラー＝lead の L25）。S2b から lead が A を S2 の commit のビルドのサイトに向ける（A05 で上書き）。
 #   - JOBS の既定は 2（v0.8.2 の lead の brief: 並列は 2 まで）。
+#   - S4（担当の L48）: us_05 の組は RECONUI=1（scripts/headless/recon-filter。S4 の新しい 2 行目の文と中継の端の印だけを両方の側で隠す・世界の写しは全部比べる）。RECONUI=0 で濾しなし。
 # 以下は v0.8.1 の写しの説明のまま:
 #   - us_04 の組（SKIP の名前 us04）: ab-us04・hud-us04 は A＝基準・B＝今の木で濾しなし（SET=us04）。
 #     ab-us04-noradar・hud-us04-noradar は A＝B＝今の木で NORADAR=1。
@@ -92,7 +93,7 @@ fi
 # us_05 の組（v0.8.2 S2。SET=us05＝ノーマル・ハード × seed 1・2 を 270 秒。既定の音の状態だけ）: S2 は A＝B＝今の木（決定性とページのエラー）・S2b から A05＝S2 の commit のビルド
 abrun05(){ # name tool A B
   local n=$1 t=$2 a=$3 b=$4
-  env $AB_ENV A=$a B=$b SET=us05 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
+  env $AB_ENV RECONUI=${RECONUI:-1} A=$a B=$b SET=us05 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
   local line; line=$(grep -E '^cases' $D/$n.log | tail -1)
   if echo "$line" | grep -q 'diff 0'; then ok "$n $line"; else ng "$n $line"; fi
   grep -E 'same:(true|false)' $D/$n.log | sed -E 's/^/    /' | cut -c1-260 >> $SUM
