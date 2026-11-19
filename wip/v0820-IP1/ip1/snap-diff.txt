@@ -1,0 +1,150 @@
+ RUN  v4.1.11 /home/user/ww2-torpedo-boat
+ ❯ tests/setup-us05.test.ts (11 tests | 8 failed) 151ms
+     × ハード false 史実 false seed 1: 世界の数値・今夜の乱数の回数 31ms
+     × ハード false 史実 false seed 12345: 世界の数値・今夜の乱数の回数 7ms
+     × ハード false 史実 true seed 1: 世界の数値・今夜の乱数の回数 8ms
+     × ハード false 史実 true seed 12345: 世界の数値・今夜の乱数の回数 8ms
+     × ハード true 史実 false seed 1: 世界の数値・今夜の乱数の回数 4ms
+     × ハード true 史実 false seed 12345: 世界の数値・今夜の乱数の回数 3ms
+     × ハード true 史実 true seed 1: 世界の数値・今夜の乱数の回数 3ms
+     × ハード true 史実 true seed 12345: 世界の数値・今夜の乱数の回数 4ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/setup-us05.test.ts > us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 false seed 1: 世界の数値・今夜の乱数の回数
+Error: Snapshot `us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 false seed 1: 世界の数値・今夜の乱数の回数 > us_05 normal seed 1 setup 1` mismatched
+- Expected
++ Received
+@@ -357,11 +357,11 @@
+    "laneDyM": [
+     400,
+     400,
+     400,
+     400,
+-    -560,
++    -530,
+     0,
+     0
+    ],
+    "rejoinS": 40,
+    "screenChaseS": 45,
+@@ -873,12 +873,12 @@
+       "onHits": [
+        3,
+        4
+       ],
+       "chance": [
+-       0.03,
+-       0.06
++       0.035,
++       0.07
+       ]
+      }
+     },
+     {
+      "enemyId": "ijn_battleship_fuso",
+@@ -973,12 +973,12 @@
+       "onHits": [
+        3,
+        4
+       ],
+       "chance": [
+-       0.03,
+-       0.06
++       0.035,
++       0.07
+       ]
+      }
+     }
+    ]
+   },
+ ❯ tests/setup-us05.test.ts:31:40
+     29|     const label = `us_05 ${hard ? 'hard' : 'normal'}${historical ? ' h…
+     30|     const { s, draws } = build(hard, historical, seed);
+     31|     expect(JSON.stringify(s, null, 1)).toMatchSnapshot(`${label} setup…
+       |                                        ^
+     32|     expect(draws).toBe(5);
+     33|     expect(s.night.enemyOffsets.length).toBe(1);
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+ FAIL  tests/setup-us05.test.ts > us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 false seed 12345: 世界の数値・今夜の乱数の回数
+Error: Snapshot `us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 false seed 12345: 世界の数値・今夜の乱数の回数 > us_05 normal seed 12345 setup 1` mismatched
+- Expected
++ Received
+@@ -357,11 +357,11 @@
+    "laneDyM": [
+     400,
+     400,
+     400,
+     400,
+-    -560,
++    -530,
+     0,
+     0
+    ],
+    "rejoinS": 40,
+    "screenChaseS": 45,
+@@ -873,12 +873,12 @@
+       "onHits": [
+        3,
+        4
+       ],
+       "chance": [
+-       0.03,
+-       0.06
++       0.035,
++       0.07
+       ]
+      }
+     },
+     {
+      "enemyId": "ijn_battleship_fuso",
+@@ -973,12 +973,12 @@
+       "onHits": [
+        3,
+        4
+       ],
+       "chance": [
+-       0.03,
+-       0.06
++       0.035,
++       0.07
+       ]
+      }
+     }
+    ]
+   },
+ ❯ tests/setup-us05.test.ts:31:40
+     29|     const label = `us_05 ${hard ? 'hard' : 'normal'}${historical ? ' h…
+     30|     const { s, draws } = build(hard, historical, seed);
+     31|     expect(JSON.stringify(s, null, 1)).toMatchSnapshot(`${label} setup…
+       |                                        ^
+     32|     expect(draws).toBe(5);
+     33|     expect(s.night.enemyOffsets.length).toBe(1);
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+ FAIL  tests/setup-us05.test.ts > us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 true seed 1: 世界の数値・今夜の乱数の回数
+Error: Snapshot `us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 true seed 1: 世界の数値・今夜の乱数の回数 > us_05 normal historical seed 1 setup 1` mismatched
+- Expected
++ Received
+@@ -357,11 +357,11 @@
+    "laneDyM": [
+     400,
+     400,
+     400,
+     400,
+-    -560,
++    -530,
+     0,
+     0
+    ],
+    "rejoinS": 40,
+    "screenChaseS": 45,
+@@ -873,12 +873,12 @@
+       "onHits": [
+        3,
+        4
+       ],
+       "chance": [
+-       0.03,
+-       0.06
++       0.035,
++       0.07
+       ]
+      }

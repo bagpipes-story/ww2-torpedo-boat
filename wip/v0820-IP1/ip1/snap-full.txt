@@ -1,0 +1,19 @@
+
+ RUN  v4.1.11 /home/user/ww2-torpedo-boat
+
+ ❯ tests/setup-us05.test.ts (11 tests | 8 failed) 147ms
+     × ハード false 史実 false seed 1: 世界の数値・今夜の乱数の回数 30ms
+     × ハード false 史実 false seed 12345: 世界の数値・今夜の乱数の回数 5ms
+     × ハード false 史実 true seed 1: 世界の数値・今夜の乱数の回数 5ms
+     × ハード false 史実 true seed 12345: 世界の数値・今夜の乱数の回数 7ms
+     × ハード true 史実 false seed 1: 世界の数値・今夜の乱数の回数 4ms
+     × ハード true 史実 false seed 12345: 世界の数値・今夜の乱数の回数 3ms
+     × ハード true 史実 true seed 1: 世界の数値・今夜の乱数の回数 3ms
+     × ハード true 史実 true seed 12345: 世界の数値・今夜の乱数の回数 3ms
+
+  Snapshots  8 failed
+ Test Files  1 failed (1)
+      Tests  8 failed | 3 passed (11)
+   Start at  11:09:12
+   Duration  1.40s (transform 849ms, setup 0ms, import 1.03s, tests 147ms, environment 0ms)
+

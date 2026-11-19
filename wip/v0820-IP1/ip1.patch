@@ -1,0 +1,388 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 18b0e5f..58fa7c8 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -19,7 +19,7 @@ Phaser 3 + TypeScript + Vite で作り、PWAとしてiPhone Safariで遊べる
+ | アート | v0.6まではプレースホルダー図形。v0.7 からは絵と音をコードで描く・合成する（外部の画像・音のファイルを使わない）。ユーザーの決め（v0.7.0 の U1。2026-11-07。問い「次は v0.7.0「アートと音」（艇・艦の絵、夜の海の演出、効果音・BGM）です。CLAUDE.md には「画像・音の制作にセッションを使わない」とあります。素材の出どころをどうしますか？」への答え「コードで描く・鳴らす（推奨）」＝「今回の屋我地の陰と同じやり方で艇・艦・海をコードで描き直し、効果音も音のファイルを使わず合成（機銃・爆発・エンジン・波など）。権利の心配なし・追加ダウンロードなし・オフラインでも軽い。BGM は単純な曲になる。CLAUDE.md の「制作にセッションを使わない」はこの形に限って解く。」）。手本は v0.6.11 の屋我地の陰（`assets/evac-terrain-art`＋`config/evac-art-config`）。絵の定数は `config/*-art-config`（ゲームの強さの値ではない。論理に効く値は `data/*.json` のまま）。v0.7.1 の効果音は起動時に `assets/sfx-*` が合成する（音のファイルなし）。音の見せ方の定数（音量・間引き・距離の帯・合図の冷却・ループの目標）は `config/sfx-config`（ゲームの強さの値ではない。論理に効く値は `data/*.json` のまま）。音は絵と HUD に従う（絵の層が出している出来事と HUD が文で出している状態だけを鳴らす）。v0.7.2 の BGM も音のファイルなしで作曲・合成する（作曲は音符、合成は効果音の後に 1 フレームに決まった量で 1 本の標本へ。`assets/sfx-music-*`）。ユーザーの決め U-M1（2026-11-14。問い「v0.7.2 で足す BGM…を、どの画面で鳴らしますか？」への答え「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result にタイトルの曲、任務の中は小さい曲で、見つかったら緊張・撃たれたら戦闘に変わる（段は HUD が出している状態だけから決める＝曲も絵と HUD に従う。`core/sfx-music-mood`）。警報の合図で曲を下げる（ducking）。「曲: オン／オフ」は「音」と別。U-M2（2026-11-14「タイトルはDでいきます。Dをさらに名曲となるようにリメイクしてください」）: タイトルの曲は D（126 BPM の行進。v0.7.2 IP2 で作り直し、2026-11-15 の実機 3 回目「OKです。進めてください」）。U-S1（同「命中スローはAでいいです」）: 命中スローの間はループと曲を低く遅く（案 A。単発は鋭いまま。スローの論理と data は U11 のまま）。設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 一時停止で曲も止める・Result は鐘の後にタイトルの曲・警報以外の下げ（鐘・魚雷の命中・近い大きい爆発・探照灯）。曲の見せ方の定数（鍵・速さ・音量・段の間・下げ・命中スローの案・作る予算・種）は `config/sfx-music-config`（ゲームの強さの値ではない）。画像・音のファイルの制作にセッションを使わない |
+ | 夜明け | 失敗ではなく状態。夜明けに帰投地点の輪の外なら、敵の制空下（`missions_seed` の `dawn_air.play_as` が enemy）は敵機 4 機の空襲が波で続き、味方の制空下は敵機は来ない。任務が終わるのは帰投・沈没・漂流・座礁だけ（v0.6.1。ユーザーの要望「制空権がない限り全シナリオ共通」）。味方の制空下で敵艦隊が全部沈むか去った任務（us_02。`fleet_gone_clears`）は帰投しなくても「敵艦隊なし」で完了（v0.6.2）。任務が終わる瞬間に走っている魚雷は最大 5 秒待って命中を数える（v0.6.2。実機 1 回目で 3 秒、2 回目で 5 秒）。空が争奪だった us_04（ブラケット海峡の夜。v0.8.0）は敵の制空下として遊ぶ＝夜明けに輪の外なら日本の水上機 4 機の空襲（今の規則のまま。ユーザーの決め U1、2026-11-15「Aのままでいいと思うよ」） |
+ | レーダー（us_04） | v0.8.0。史実どおりレーダーは分隊の先頭の艇だけで、プレイヤーはその先頭の艇（`fit: leader`）。掃引ごとに艦艇の位置だけを緑の輪で出す（種類・針路・速さは出さない・機は映さない・陸のそばは映らない・見越し点マーカーは目で見える艦だけ・敵はレーダーに気づかない）。ユーザーの決め U2（2026-11-16。問い「レーダーの無い艇の目だけの夜の方がその夜らしいと感じたら教えてください」への答え「レーダーがあっても難しいことには変わりないのでいいと思います」）。レーダーを任務の外の装備にするのは v0.9 のストア |
+-| スリガオ（us_05） | v0.8.2。ユーザーの決め U1（2026-11-17。問い「次の任務 us_05「スリガオ海峡・最初の接触」…の敵の列をどうしますか？」への答え「…あなたの推奨する史実の大艦隊にしましょう。ただ、大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。」）: 列は史実の 7 隻（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲。片道で海峡へ去る）。戦艦は艇の 4 本では沈まない（沈む本数 6）が、3 本目・4 本目の命中のときだけ data の確率（3 本目 3%・4 本目 6%）で弾薬庫が誘爆して轟沈。規則は敵の記録ごと（`enemies.json` の `magazine`。大和型の記録には置かない＝ユーザーの例外）。達成は報告（戦艦を目で確かめ、レーダーで 20 秒追う。送る前の被弾で無線が壊れれば隣の分隊の黄色い輪で中継）して帰投。以下は設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 確率の 3%・6%（実機で聞く）、見張りの時雨は自艇を見つけると列を離れて照らして撃ち、見失って 40 秒か、離れて 45 秒（見張りの鎖 `screen_chase_s`）で列へ戻る（戻って 60 秒は離れない）、夜明けの空は味方（空襲なし・残りは東へ退く）、ハードは見張りの駆逐艦を足して 8 隻 |
++| スリガオ（us_05） | v0.8.2。ユーザーの決め U1（2026-11-17。問い「次の任務 us_05「スリガオ海峡・最初の接触」…の敵の列をどうしますか？」への答え「…あなたの推奨する史実の大艦隊にしましょう。ただ、大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。」）: 列は史実の 7 隻（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲。片道で海峡へ去る）。戦艦は艇の 4 本では沈まない（沈む本数 6）が、3 本目・4 本目の命中のときだけ data の確率で弾薬庫が誘爆して轟沈。規則は敵の記録ごと（`enemies.json` の `magazine`。大和型の記録には置かない＝ユーザーの例外）。確率はユーザーの決め U-Q1（2026-11-19。実機 1 回目の後の問い「3 本目 3%・4 本目 6% は稀すぎる／ちょうど／多い」への答え「魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。」）: 3 本目 3.5%・4 本目 7%＝4 本全部当てて約 10%（1 − 0.965 × 0.93。3 本だけなら 3.5%）。達成は報告（戦艦を目で確かめ、レーダーで 20 秒追う。送る前の被弾で無線が壊れれば隣の分隊の黄色い輪で中継）して帰投。以下は設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 見張りの時雨は自艇を見つけると列を離れて照らして撃ち、見失って 40 秒か、離れて 45 秒（見張りの鎖 `screen_chase_s`）で列へ戻る（戻って 60 秒は離れない）、夜明けの空は味方（空襲なし・残りは東へ退く）、ハードは見張りの駆逐艦を足して 8 隻 |
+ | 兵装 | 艇が積む魚雷と機銃は全任務で両方表示・両方いつでも使える（v0.6.8。ユーザーの要望「意味がなくても駆逐艦に機銃撃ったり」「魚雷も意味が無くても魚雷艇に搭載しているならユーザーが自由に発射できるべき」）。右下の角が魚雷・その左が機銃で全任務で固定（v0.6.8 実機 1 回目「主兵装である魚雷が右側。機銃が魚雷の左側側に固定してください」。`missions_seed` の `main_weapon` は位置を決めない）、煙幕・消火・見張り・識別は右端に縦一列。魚雷は狙う艦がいなければ発射の時に決着（大発・PT の下を抜ける・待たない・点なし）。機銃は艦に効かず撃てば閃光で 1,200 m の敵に見つかる。機には 1 発 0.5%（止まって・静音。巡航 0.31%・全速 0.2%）で撃墜し、次の波はまた 4 機。撃墜に点は無い。機銃は弾倉を撃ち切ると 3.2 秒の交換（撃ち続けて Elco 80 約 11 秒・Elco 77 約 7 秒・日本 約 4 秒。v0.6.8 実機 1 回目「弾倉交換が発生するように」） |
+ | 輸送の護衛（jp_04） | 米PT は魚雷を撃っても去らず、そのまま自艇と戦って銃撃してくる（3 種類の斉射とも。1 隻 1 回）。v0.6.10 実機 1 回目（ユーザー「卯月が強すぎてPTが瞬殺される。卯月を弱めたところであまり意味がないので、当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→「A: 卯月は残し、PT を撃った後も去らない形に戻す」）。味方の駆逐艦 卯月は今の値のまま残り、照らして撃つだけ（照らされた PT も去らない。射点なら慌てて撃つ）。自艇と戦う PT も輸送船に艇首が向けば撃つ（離れて戦え）。ハードは米PT 3 隻（v0.6.9 実機 1 回目。ユーザー「ハードモードは敵PTが3隻に増えるようにしてください」）。v0.6.9 実機 1 回目〜v0.6.10 S8 の「撃ったら去る（引きつけて離す A）」はやめた |
+ | 空襲下の退避（jp_03） | v0.6.11。ユーザーの決め（2026-11-04）: 18 隻は 3 隻ずつ 6 つの隊。操作中の隊の隊長艇（先頭の 1 隻）をスティックで動かし、僚艇 2 隻は後ろに続く。［切替］で操る隊を替える（U1）。隊長艇が機銃を撃てば僚艇も撃つ（U2）。操作していない隊は自分では隠れず、ランダムに回避しながら爆撃から逃げる（U3）。隊長艇ごとに HP・乗員・火災・機関の状態を持つ（U4）。敵機は（1 編隊の機数）×（同時の編隊の数）でノーマル 4 波 2×2・3×2・3×2・4×2、ハードは同じ機数の編隊が 3 つ同時（第 4 波は 4 機の編隊が 3 つ）。各波で 1 編隊は操作中の隊を、ほかの編隊はほかの隠れていない隊を狙う（U5「プレイヤーは急いで退避しつつ、他の隊の面倒も見なければいけなくなる」）。18 隻中 6 隻以上残れば達成（史実 5。U6）。爆弾を落とし終えた編隊は、次の波の前に間に合えば赤い輪の予告つきでもう一度来る（U7「編隊が戻ってくる」）。以下は設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 1 編隊 2 回まで（第 4 波は 240 秒までに収まらないので 2 回目なし）。「夜明け」の読み替え: 240 秒（第 1 次の空襲が去る）が決着で、残存はそこで決まる（外の操作中の隊長艇が沈めば 1 減る）。ユーザーの U8（v0.6.11 実機 1 回目「残存する全ての艇が避難所に入って敵機が捕捉しなくなった場合…その時点で残り時間があってもゲームクリアに」）: 240 秒の前でも、浮いている艇がみな隠れ、予告した・飛んでいる・爆弾が空中の編隊が無ければ、その時に決着（残存はそこで決まる）。設計の既定（案 B）: 陰（予告ごとに見つかることがある）に隠れた隊がある間は、最後の波の予告が済むまで早い決着にしない（壕は安全）。6 隻未満のまま全部隠れても早く終わり未達。決着の時に操作中の隊が隠れていれば帰投で終わり、外なら敵機 4 機が追い、どの隠れ場所でも輪の中で止まれば帰投。画面の言葉は jp_03 だけ「夜明け」でなく「空襲」。「兵装」とのずれ: 魚雷 2 本と機銃の弾倉は座席の 1 つを全部の隊長艇で分け合う（狙う艦の無い魚雷も撃てる。切り替えると一斉発射の待ちは捨てる） |
+@@ -217,3 +217,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
+ - 2026-11-17 v0.8.1 IP2 §4 に夜の水上機の 1 夜に複数回の攻撃（core/seaplane-night・config/seaplane-mission-data）
+ - 2026-11-17 v0.8.1 IP1 §4 に岸の陰の絵の層（`core/backdrop-zone`・`assets/backdrop-art`・`systems/backdrop-fx`・`config/backdrop-art-config`）と `ui/anchor-texts`
+ - 2026-11-19 v0.8.2 S4 §2 に「スリガオ（us_05）」（ユーザーの決め U1: 史実の 7 隻・戦艦は 4 本で沈まず 3・4 本目にまれに弾薬庫が誘爆・規則は記録ごと・大和型には無し。確率・見張りの鎖は設計の既定）、§4 に列の艦ごとの記録・報告・弾薬庫・戦艦と重巡の絵の層
++- 2026-11-19 v0.8.2 IP1 §2「スリガオ（us_05）」の弾薬庫の確率を設計の既定からユーザーの決め U-Q1 へ（「魚雷4本当てたときの轟沈率が10回に一回くらい」＝3 本目 3.5%・4 本目 7%）
+diff --git a/data/enemies.json b/data/enemies.json
+index 2a7d7fe..bc45185 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -547,10 +547,10 @@
+           4
+         ],
+         "chance": [
+-          0.03,
+-          0.06
++          0.035,
++          0.07
+         ],
+-        "source": "design (v0.8.2 S0・ユーザーの決め U1（2026-11-17）「大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。（例としてバーラムやロイヤルオーク）」。spec-v0820 §4.4 D-G1〜D-G3: 魚雷の命中（不発でない）で沈む本数に届かなかったとき、3 本目は 3%・4 本目は 6% で弾薬庫が誘爆して轟沈（4 本全部当たった艦は 1 − 0.97 × 0.94 ＝ 8.8%）。止まった艇から正しく狙った 4 本の扇 1 回の轟沈は 600 m 8.4%・1,000 m 5.3%・1,500 m 1.2%・2,000 m 0.1%（計画の下調べ＝ゲームの core の模擬）＝近くから全部当てても 20 回に 1 回ほどで、当てにしない頻度。史実の手触り（WebSearch の抜粋のみ・本文未読）: 3 本以上の魚雷を受けた古い戦艦で誘爆したのはバーラム（1941-11-25。3 本の後、後部の弾薬庫が爆発）くらいで、ロイヤルオーク（1939-10-14・錨泊中）は数本の命中の後に装薬の火と浸水で十数分で転覆、山城・プリンス・オブ・ウェールズ・レパルスは誘爆の大爆発ではなかった。規則はこの記録ごと（大和型の記録には置かない＝ユーザーの例外。V-M3）。乱数は seed+44（戦艦のいる任務だけ・3・4 本目の命中ごとに 1 回。世界の配線は v0.8.2 S2）。実機の感想で 2%・4%〜5%・10% の間を動かす（spec §12 Q1）)"
++        "source": "design (v0.8.2 S0・ユーザーの決め U1（2026-11-17）「大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。（例としてバーラムやロイヤルオーク）」。spec-v0820 §4.4 D-G1〜D-G3: 魚雷の命中（不発でない）で沈む本数に届かなかったとき、3 本目と 4 本目の命中ごとに chance の確率で弾薬庫が誘爆して轟沈（4 本目は 3 本目で誘爆しなかった時だけ引く）。v0.8.2 IP1・ユーザーの決め U-Q1（2026-11-19。実機 1 回目の後の問い spec §12 Q1＝3 本目 3%・4 本目 6% は稀すぎる／ちょうど／多い、への答え「魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。」）: 3 本目 3% → 3.5%・4 本目 6% → 7%（1 : 2 の形のまま。4 本全部当たった艦は 1 − 0.965 × 0.93 ＝ 10.3%、3 本だけなら 3.5%。前は 1 − 0.97 × 0.94 ＝ 8.8%）。止まった艇から正しく狙った 4 本の扇 1 回の轟沈は 600 m 9.7%・800 m 8.5%・1,000 m 6.2%・1,200 m 3.6%・1,500 m 1.4%・2,000 m 0.2%（scripts/fan-sim。3%・6% の時は 8.4・7.3・5.3・3.1・1.2・0.1%）＝近くから全部当てて 10 回に 1 回ほどで、当てにしない頻度。史実の手触り（WebSearch の抜粋のみ・本文未読）: 3 本以上の魚雷を受けた古い戦艦で誘爆したのはバーラム（1941-11-25。3 本の後、後部の弾薬庫が爆発）くらいで、ロイヤルオーク（1939-10-14・錨泊中）は数本の命中の後に装薬の火と浸水で十数分で転覆、山城・プリンス・オブ・ウェールズ・レパルスは誘爆の大爆発ではなかった。規則はこの記録ごと（大和型の記録には置かない＝ユーザーの例外。V-M3）。乱数は seed+44（戦艦のいる任務だけ・3・4 本目の命中ごとに 1 回。世界の配線は v0.8.2 S2）)"
+       },
+       "guns": [
+         {
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index ab39444..603e2e2 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -779,7 +779,7 @@
+           "ijn_battleship_fuso",
+           "ijn_battleship_fuso"
+         ],
+-        "enemy_behavior": "transit と column（v0.8.2。第三部隊の 7 隻（ハード 8）は列の通過の片道（下の transit）: 西の縁から 18 kt で東へ進み、東の縁の外（スリガオ海峡）へ去って戻らない。先に前衛（満潮・朝雲・山雲・最上。南寄りの道）、約 30 秒あとに本隊（時雨・山城・扶桑。時雨は北＝ボホールの側 560 m の道）。列の艦は退く動き（針路を守る・端で向き直さない・わざとの体当たりはしない・雷跡を見れば櫛で梳く・見つければ照らして撃つ）。時雨（role screen）は自艇を見つけると列を離れて us_02 の AI で追い、見失って rejoin_s で列へ戻る（S2）。艦ごとの寸法・砲・探照灯・星弾・AI・沈む本数は column の enemy_id の記録（S2。S0 の世界は 7 隻とも ijn_destroyer の形で走る）)",
++        "enemy_behavior": "transit と column（v0.8.2。第三部隊の 7 隻（ハード 8）は列の通過の片道（下の transit）: 西の縁から 18 kt で東へ進み、東の縁の外（スリガオ海峡）へ去って戻らない。先に前衛（満潮・朝雲・山雲・最上。南寄りの道）、約 30 秒あとに本隊（時雨・山城・扶桑。時雨は北＝ボホールの側 530 m の道）。列の艦は退く動き（針路を守る・端で向き直さない・わざとの体当たりはしない・雷跡を見れば櫛で梳く・見つければ照らして撃つ）。時雨（role screen）は自艇を見つけると列を離れて us_02 の AI で追い、見失って rejoin_s で列へ戻る（S2）。艦ごとの寸法・砲・探照灯・星弾・AI・沈む本数は column の enemy_id の記録（S2。S0 の世界は 7 隻とも ijn_destroyer の形で走る）)",
+         "duration_s": 270,
+         "duration_s_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M3。夜明けまでの実秒。揺らぎのない夜の本隊の最後の扶桑は 101 秒に現れ 241.4 秒に東の縁の外へ去る（画面上 46.3 m/秒で幅 6,500 m を 140.4 秒）。ハードの 8 隻目（109 秒）は 249.4 秒で、夜明けの 20 秒前まで（V-C5）。初めの値で v0.8.2 S3 の探りの帯 T で直す)",
+         "fuel_allotment_gal": 24,
+@@ -909,7 +909,7 @@
+               "name_ja": "時雨",
+               "group": "main",
+               "gap_s": 30,
+-              "lane_dy_m": -560,
++              "lane_dy_m": -530,
+               "role": "screen"
+             },
+             {
+@@ -933,7 +933,7 @@
+           "screen_chase_s": 45,
+           "screen_cooldown_s": 60,
+           "vila_label_ja": "スリガオ海峡",
+-          "source": "historical (列は第三部隊（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲）。最上と駆逐艦 3 隻は先に偵察に出され、第 1・第 2 分隊の前を気づかれずに通り、PT が最初に接したのは戦艦の組（時雨はそちら）。進みの速さは 18 kt（時雨の艦長の戦後の聞き取り）。時雨が探照灯と星弾で照らして撃ち、戦艦は後ろに控えた。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C1・C6) / design (v0.8.2 S0・spec-v0820 §4.1 D-M2・D-M3・§4.2 D-C1〜D-C7。列の通過の片道（outbound・unload_s・spacing_s・cover_leaves_with_outbound を置かない）: 各艦は西の縁の内 150 m に現れ、090°・18 kt（画面上 46.3 m/秒）で東の縁の外 150 m（スリガオ海峡）へ去って戻らない（撃沈に数えない）。column は 1 隻ずつ（enemy_id の記録・Result の艦名 name_ja・group 前衛 van／本隊 main・gap_s 前の艦からの入りの秒（先頭は inbound.enter_s から）・lane_dy_m 道 lane_y_m からのずれ・role 列のまま line／見張り screen）。時刻表（揺らぎなし）: 満潮 5・朝雲 20・山雲 35・最上 50 秒（前衛の間隔 15 秒＝約 690 m・道 y 2,800）→ 時雨 80（道 y 1,840）・山城 85・扶桑 101 秒（戦艦の間隔 16 秒＝約 740 m・道 y 2,400）。rejoin_s 40: 見張りの時雨が自艇を見失ってから列の針路へ戻るまでの体感の秒（S2）。駆逐艦 4 隻（朝潮型と白露型）は ijn_destroyer（陽炎型の値と絵）で代用（寸法がほぼ同じ。命中率の KPI を合わせた値を触らない）。v0.8.2 S3（探りの帯 N1）: 時雨の道 lane_dy_m −600 → −560（本隊の道の北 600 m では止まって待つ偵察の艇（本隊の北 1,300〜1,500 m・時雨の道から 700 m 以上北）が半分の夜に停止の 800 m の内に入って見つかり、見つかった夜の 4 分の 3 は沈む＝達成 58%・沈没 38%。−500 では見つからず達成 98%。−560 で達成 85%・沈没 13%・帰投 88%）。v0.8.2 S3b（lead の L37・見張りの鎖）: screen_chase_s 45・screen_cooldown_s 60＝見張りは離れて体感 45 秒たてば自艇を見ていても列へ戻り（史実の時雨は短く離れて列は針路を守った）、戻ってから 60 秒は離れない（core/column-screen。無い列は S1 の規則）。探り（shadow_report・report_attack・ハード、各 40 夜）では見張りの道 −560・−600 と鎖 45/60・60/90・15/60・10/90 のどれも達成と沈没が鎖の効かない 45/60 と同じか ±5 点の内（見つかった艇は離れてから 13〜15 秒で沈み始める＝追い回すより先に列の砲で沈む）。vila_label_ja は列の去る先の名（レーダーの 2 行目「接触が東（スリガオ海峡）へ消えた」＝v0.8.2 S4。片道なので戻りの尾は付けない）。列の艦ごとの記録・役は v0.8.2 S2 から世界が読む)"
++          "source": "historical (列は第三部隊（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲）。最上と駆逐艦 3 隻は先に偵察に出され、第 1・第 2 分隊の前を気づかれずに通り、PT が最初に接したのは戦艦の組（時雨はそちら）。進みの速さは 18 kt（時雨の艦長の戦後の聞き取り）。時雨が探照灯と星弾で照らして撃ち、戦艦は後ろに控えた。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C1・C6) / design (v0.8.2 S0・spec-v0820 §4.1 D-M2・D-M3・§4.2 D-C1〜D-C7。列の通過の片道（outbound・unload_s・spacing_s・cover_leaves_with_outbound を置かない）: 各艦は西の縁の内 150 m に現れ、090°・18 kt（画面上 46.3 m/秒）で東の縁の外 150 m（スリガオ海峡）へ去って戻らない（撃沈に数えない）。column は 1 隻ずつ（enemy_id の記録・Result の艦名 name_ja・group 前衛 van／本隊 main・gap_s 前の艦からの入りの秒（先頭は inbound.enter_s から）・lane_dy_m 道 lane_y_m からのずれ・role 列のまま line／見張り screen）。時刻表（揺らぎなし）: 満潮 5・朝雲 20・山雲 35・最上 50 秒（前衛の間隔 15 秒＝約 690 m・道 y 2,800）→ 時雨 80（道 y 1,870）・山城 85・扶桑 101 秒（戦艦の間隔 16 秒＝約 740 m・道 y 2,400）。rejoin_s 40: 見張りの時雨が自艇を見失ってから列の針路へ戻るまでの体感の秒（S2）。駆逐艦 4 隻（朝潮型と白露型）は ijn_destroyer（陽炎型の値と絵）で代用（寸法がほぼ同じ。命中率の KPI を合わせた値を触らない）。v0.8.2 S3（探りの帯 N1）: 時雨の道 lane_dy_m −600 → −560（本隊の道の北 600 m では止まって待つ偵察の艇（本隊の北 1,300〜1,500 m・時雨の道から 700 m 以上北）が半分の夜に停止の 800 m の内に入って見つかり、見つかった夜の 4 分の 3 は沈む＝達成 58%・沈没 38%。−500 では見つからず達成 98%。−560 で達成 85%・沈没 13%・帰投 88%）。v0.8.2 IP1（実機 1 回目のユーザー「難易度的にはかなり難しいと思いますがこのままでいいと思います。強いて言うなら時雨の進行位置を若干戦艦寄りに下げてもらえるとクリアしやすいかもです。」）: 時雨の道 −560 → −530（本隊の道の北 530 m＝道 y 1,870。探り 40 夜ずつ: −560 は止まって待つ偵察の達成 85%・沈没 13%、−540 は 93%・5%、−530 と −520 は 98%・0%＝止まって待つ台本はもう見つからない。ハードは 8 隻目の見張り（−575）のままで −560〜−520 のどれも達成 73%・沈没 25%）。v0.8.2 S3b（lead の L37・見張りの鎖）: screen_chase_s 45・screen_cooldown_s 60＝見張りは離れて体感 45 秒たてば自艇を見ていても列へ戻り（史実の時雨は短く離れて列は針路を守った）、戻ってから 60 秒は離れない（core/column-screen。無い列は S1 の規則）。探り（shadow_report・report_attack・ハード、各 40 夜）では見張りの道 −560・−600 と鎖 45/60・60/90・15/60・10/90 のどれも達成と沈没が鎖の効かない 45/60 と同じか ±5 点の内（見つかった艇は離れてから 13〜15 秒で沈み始める＝追い回すより先に列の砲で沈む）。vila_label_ja は列の去る先の名（レーダーの 2 行目「接触が東（スリガオ海峡）へ消えた」＝v0.8.2 S4。片道なので戻りの尾は付けない）。列の艦ごとの記録・役は v0.8.2 S2 から世界が読む)"
+         },
+         "recon": {
+           "track_s": 20,
+diff --git "a/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md" "b/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+index 8b29872..c3e93b5 100644
+--- "a/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
++++ "b/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+@@ -776,9 +776,9 @@ PB2Y コロナドのウェーク空襲（1944-01-30〜02-09）:
+ | 自艇はレーダーを積む（1944 年の標準・PT-131 のレーダーが捉えた） | 上の表・§8 の v0.8.0 の R4 | historical（medium）／`fit: own` |
+ | 無線が壊れ、隣の分隊が中継した | C3・C4 | historical（medium）／壊れる確率 35%（76 mm 以上の 1 発ごと）・中継の輪の位置は design |
+ | 報告の条件（戦艦を目で確かめ、レーダーで 20 秒追う） | 史実の報告は艦種と針路・速さを言った | design |
+-| 地図（東西の模式図・縮尺は約 50 km を 4 km に）・道・間隔・時雨の道（本隊の道の北 560 m＝S3 で 600 → 560）・出発と輪・夜の長さ 270 秒・燃料 24 gal（S3 で 34 → 24） | — | design |
++| 地図（東西の模式図・縮尺は約 50 km を 4 km に）・道・間隔・時雨の道（本隊の道の北 530 m＝S3 で 600 → 560・IP1 で実機 1 回目のユーザーの言葉により 530）・出発と輪・夜の長さ 270 秒・燃料 24 gal（S3 で 34 → 24） | — | design |
+ | 満潮・朝雲・山雲（朝潮型）と時雨（白露型）を `ijn_destroyer`（陽炎型の値と絵）で代用 | 寸法がほぼ同じ（朝潮型 118 m） | design（代用。命中率の KPI を合わせた値を触らない） |
+-| 戦艦は 6 本で沈む・3・4 本目に 3%・6% の弾薬庫の誘爆 | ユーザーの決め U1・上の戦艦の例 | design（確率は設計の既定＝実機で聞く） |
++| 戦艦は 6 本で沈む・3・4 本目に 3.5%・7% の弾薬庫の誘爆（4 本全部当てて約 10%） | ユーザーの決め U1・上の戦艦の例・確率はユーザーの決め U-Q1（v0.8.2 IP1「魚雷4本当てたときの轟沈率が10回に一回くらい」。S0〜S4 は 3%・6%） | design（ユーザーの決め） |
+ | 戦艦・重巡の砲（副砲・高角砲・機銃）の夜の値・探照灯（主砲は PT を撃たない・戦艦は星弾なし） | 寸法と門数は historical、強さは design（S3 の gunnery-sim で `ijn_destroyer` の 1.2〜1.6 倍・1.0〜1.3 倍） | design |
+ | 見張りの時雨が離れて戻る（見失って 40 秒・離れて 45 秒の鎖） | — | design（設計の既定。ユーザー未確認） |
+ | ハードの 8 隻目（後ろの見張りの駆逐艦） | ユーザーの v0.4.4「難易度が上がれば敵艦の数が増える」 | design（史実は 7 隻） |
+diff --git "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md" "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+index c533efe..8b15851 100644
+--- "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
++++ "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+@@ -237,7 +237,7 @@
+ - 列だけの隊・片道: `enemy_start` の無い駆逐艦の隊（護衛なし）。列は西の縁から 090°・18 kt で入り、東の縁の外（スリガオ海峡）へ出たら去って戻らない（`core/ship-transit` の `outbound` null＝GONE。撃沈に数えない）。達成の撃沈は全隻（報告の任務の達成は §6.9 の報告）。
+ - 役 line（戦艦・重巡・前衛の駆逐艦）: 列の艦の動き（針路を守る・雷跡は櫛で梳く・見つければ照らして撃つ・体当たりしない）。被雷で動きは変えない。
+ - 役 screen（見張り。時雨・ハードの 8 隻目）: 自艇を見つけたステップに列を離れ、us_02 の AI（照らす・撃つ・星弾・400 m の体当たり）で追う。見失って体感 40 秒（`rejoin_s`）か、離れて体感 45 秒（見張りの鎖 `screen_chase_s`。v0.8.2 S3b）で列の AI に戻り東へ去る（戻って 60 秒＝`screen_cooldown_s` は離れない）。夜明けは隊の退き（東へ）が先。見張りの鎖は設計の既定（ユーザー未確認）。
+-- 戦艦の弾薬庫（ユーザーの決め U1。`enemies.json` の記録の `magazine`・`config/magazine-data` V-M1〜V-M3・`core/magazine-detonation`・`systems/ship-magazine`）: 魚雷の命中（不発でない）で沈む本数に届かなかった時、その艦の記録に `magazine` があり今の命中の数が `on_hits`（3・4）なら `chance`（3%・6%）で弾薬庫が誘爆＝その場で沈み始める（轟沈の見た目は `systems/magazine-fx`）。乱数は seed+44（規則のある艦のいる世界だけ・3・4 本目の命中ごとに 1 回）。規則は記録ごと（v0.10 の殴り込みが同じ記録を使える）・`ship_class` が battleship の記録だけ・大和型の記録には置かない（ユーザーの例外）。`?debug&boom` で確率 1。
++- 戦艦の弾薬庫（ユーザーの決め U1。`enemies.json` の記録の `magazine`・`config/magazine-data` V-M1〜V-M3・`core/magazine-detonation`・`systems/ship-magazine`）: 魚雷の命中（不発でない）で沈む本数に届かなかった時、その艦の記録に `magazine` があり今の命中の数が `on_hits`（3・4）なら `chance`（3.5%・7%＝4 本全部当てて 1 − 0.965 × 0.93 ≈ 10%。ユーザーの決め U-Q1〔v0.8.2 IP1。2026-11-19「魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。」〕。S0〜S4 は 3%・6%＝8.8%）で弾薬庫が誘爆＝その場で沈み始める（轟沈の見た目は `systems/magazine-fx`）。乱数は seed+44（規則のある艦のいる世界だけ・3・4 本目の命中ごとに 1 回）。規則は記録ごと（v0.10 の殴り込みが同じ記録を使える）・`ship_class` が battleship の記録だけ・大和型の記録には置かない（ユーザーの例外）。`?debug&boom` で確率 1。
+ 
+ ### 6.5 視界と発見（v0.2）
+ 
+@@ -474,7 +474,7 @@
+   - 夜の水上機（v0.8.1 IP2。ユーザーの決め U3「ノーマルとハードの両方」・実機 1 回目「敵の哨戒機がバンバン飛んできて常に速度を気にしないといけない緊張感」。§6.8 の us_02 の水上機の仕組みと数のまま・その夜の記録は無い＝作り）: 毎夜。巡航か全速の航跡を 3 秒見せると卯月の方角 6,000 m から寄り、2 行目「敵機 N m ・ 航跡を見られた ・ 18 kt 以下に減速！」。静音に落とせば 4 秒で見失って去り、1,500 m を切れば照明弾（40 秒照らされる＝岸の陰が切れ、泊地の近くなら卯月が気づく）と爆弾 2 発（転舵でかわす）。1 夜に攻撃は 2 回まで（`enemy_aircraft.attacks_per_night`。攻撃を終えて去ると 10 秒の冷却の後にまた哨戒。撃墜した機は戻らない）。この任務だけ、2 行目は水上機の接近の行がレーダーと止まった艦の出来事より先（出来事はその後に出る）。浜を回る道では巡航の脚（出発から浜へ下りるまでと帰り道）で来て、来るたびに減速を迫る。卯月の近くでは静音なので来ない＝HUD どおりに減速すれば浜からの寄り方の難しさは変わらない（探りで達成 100%。難しさは実機 2 回目で見る）。Result の「敵機:」の行は「攻撃 N 回 ・ 照明弾の下 X 秒 ・ … 爆弾 B 発 命中 H ・ 転舵 …」（1 夜の通し）。Briefing の危険は「敵艦艇の砲撃・衝突、敵航空機、夜明けの空襲 ・ 停泊艦の南の岸の陰から寄れ」（1 行に収めるため IP1 の尾を短くした）
+   - 探り（`scripts/headless/anchor-probe.mjs`。新しい模擬は作らず、本物の世界をヘッドレスで台本で回す。6 つの遊び方 × 40 夜）: 浜沿いの台本は 40 夜とも達成（理想化した台本の上へ外れた帯。人の手で下がるかは iPhone の実機で見る）、北から真っすぐ寄る台本は 73%、背に岸の規則を切った同じ浜の道は 3%、突っ込みは 30%（沈没 60%）、空知丸を先に撃つ道は 40 夜とも燃料切れで漂流。値と帯は CHANGELOG v0.8.1 S3。
+ - 任務 us_05「スリガオ海峡・最初の接触」（v0.8.2。1944-10-24 夜・ミンダナオ海のボホール島沖・半月が西に低い・type recon_and_attack。題は戦いの名・最初の接触は海峡の約 100 km 西。史実の根拠と何が作りかは docs/01 §8「スリガオ海峡・最初の接触（v0.8.2 の調べ）」。人物と PT の番号は画面に出さない＝CLAUDE.md §11。部隊は「日本の艦隊」「戦艦の隊」）:
+-  - 列（ユーザーの決め U1＝史実の大艦隊。§6.4 の片道の列の艦ごとの記録と役）: 第三部隊の 7 隻。前衛（満潮・朝雲・山雲＝駆逐艦・最上＝重巡。前衛の道は本隊の南 400 m）が 5 秒から 15 秒おき、約 30 秒あとに本隊（時雨＝見張り・本隊の道の北 560 m／山城・扶桑＝戦艦）が西の縁の内 150 m から 090°・18 kt で東へ。扶桑が東の縁の外へ去るのは約 245 秒。今夜の揺らぎは列ごと 1 件（入りの秒 ±6.5 秒・道を同じだけ ±150 m）。駆逐艦 4 隻は陽炎型の値と絵で代用。
++  - 列（ユーザーの決め U1＝史実の大艦隊。§6.4 の片道の列の艦ごとの記録と役）: 第三部隊の 7 隻。前衛（満潮・朝雲・山雲＝駆逐艦・最上＝重巡。前衛の道は本隊の南 400 m）が 5 秒から 15 秒おき、約 30 秒あとに本隊（時雨＝見張り・本隊の道の北 530 m〔v0.8.2 IP1。S3 は 560 m〕／山城・扶桑＝戦艦）が西の縁の内 150 m から 090°・18 kt で東へ。扶桑が東の縁の外へ去るのは約 245 秒。今夜の揺らぎは列ごと 1 件（入りの秒 ±6.5 秒・道を同じだけ ±150 m）。駆逐艦 4 隻は陽炎型の値と絵で代用。
+   - 地図（design。東西の模式図＝縮尺は約 50 km を 4 km に）: 海域 6,500 × 4,000 m。北の縁の外がボホール島、南の縁の東の一部（x 4,800〜）がカミギン島（両岸の作り。西の切れ目はミンダナオ海）。出発 (4200, 700)・225°・停止、帰投の輪は北東 (5000, 800)・半径 250、中継の輪（隣の分隊・黄）は西 (1600, 800)・半径 250。燃料 24 gal（v0.8.2 S3 で 34 → 24）。夜明け 270 秒。
+   - レーダー（§6.5）: 1944 年の SO（`so_late`・自艇）。出撃 5 秒ほどで満潮が西南西 4,600 m の輪になり、前衛 4 つ → 本隊 3 つの輪が東へ。艦種は出ない（戦艦は目で確かめる）。列が東の縁で消えると 2 行目「接触が東（スリガオ海峡）へ消えた」（片道なので v0.8.0 の「戻ってくる」の尾は付けない）。
+   - 典型の夜（spec-v0820 §4.12）: 本隊の前方（本隊の道の北 1,300〜1,500 m・見張りの道から 700 m 以上）に止まって待つと、見つかる距離は停止の 800 m で時雨に見つからず、山城が 1,500 m の内に入って「戦艦を確認！」→ 20 秒 →「報告を送った！」。撃つなら止まったまま戦艦へ 4 本。見つかると時雨が照らして撃ち、列の艦も照らされた艇を撃つ（見つかった艇は 13〜15 秒で沈み始めることが多い＝S3 の探り）。
+@@ -484,7 +484,7 @@
+   - Result（駆逐艦の任務の行のレーダーの行の後に 2 行・20 px）: 「報告: 出撃 170 秒に送った（無線） ・ 戦艦を確認 148 秒」（中継は「報告: 無線が壊れ、出撃 210 秒に隣の分隊で中継 …」、届かなければ「報告できなかった（無線が壊れ、中継できず／追尾 12 秒／戦艦を見ていない）」）と「艦隊 7 隻: 戦艦に命中 3（誘爆で轟沈 1） ・ 重巡 0 ・ 駆逐艦 1 → 海峡へ 6 ・ 戦艦・重巡への魚雷は通算に入れない」（長い形は尾を落とす）。列の往路・復路の行（us_04）は出さない。見出しの体当たりは「敵艦と衝突した」・頭は「艦隊: 撃沈 N/M」・得点の行は「報告 300 ・ 命中 N ・ 撃沈 N」・夜明けの行に「駆逐艦は東へ退いた」を付けない（海峡へ去った数は艦隊の行）。
+   - 夜明け（設計の既定 L1）: 昼の空は味方（種の `dawn_air` own）＝空襲なし。夜明けに浮いている列の艦は東（海峡）へ退く。`fleet_gone_clears` は置かない（報告して帰るのが芯）。
+   - 難易度: ハードは本隊の最後に後ろの北側の見張りの駆逐艦を 1 隻足して 8 隻（史実は 7）。達成は同じ。史実モードは今の仕組みのまま。
+-  - 探り（`scripts/headless/column-probe.mjs`。本物の世界をヘッドレスで台本で回す。7 つの遊び方 × 40〜80 夜）: 止まって待つ偵察（shadow_report）は達成 80%・沈没 18%、報告の後に撃つ（report_attack）85%、戦艦の南で待ち伏せ（bb_ambush）は戦艦に 1 本以上 75%・沈没 5%（燃料で漂流が多い）、突撃は沈没 95%、レーダーだけでは報告 0%。弾薬庫の期待値は 1,000 夜あたり 4.2（戦艦の待ち伏せで 24.7）。表と md5 は CHANGELOG の v0.8.2 S3・S3b。
++  - 探り（`scripts/headless/column-probe.mjs`。本物の世界をヘッドレスで台本で回す。7 つの遊び方 × 40〜80 夜）: 止まって待つ偵察（shadow_report）は達成 80%・沈没 18%、報告の後に撃つ（report_attack）85%、戦艦の南で待ち伏せ（bb_ambush）は戦艦に 1 本以上 75%・沈没 5%（燃料で漂流が多い）、突撃は沈没 95%、レーダーだけでは報告 0%。弾薬庫の期待値は 1,000 夜あたり 4.2（戦艦の待ち伏せで 24.7）。表と md5 は CHANGELOG の v0.8.2 S3・S3b。IP1（時雨の道 −530・弾薬庫 3.5%・7%）の後は 40 夜ずつで止まって待つ偵察の達成 98%・沈没 0%、報告の後に撃つ 98%・戦艦に 1 本以上 88%、戦艦の待ち伏せは戦艦に 1 本以上 75%・沈没 5%、ハードの止まって待つ偵察は達成 73%・沈没 25%。弾薬庫の期待値は 1,000 夜あたり 13.7（戦艦の待ち伏せで 28.9）。
+ - Title（§4 の Campaign）: 米PT のタブは 4 任務の 2 × 2（左上 コレヒドール脱出・右上 東京急行を迎え撃て・左下 大発を狩れ・右下 ブラケット海峡の夜）。日本のタブを開く条件は米PT の 3 任務のまま。 v0.8.1 から 5 任務（3 段目の左にオルモック湾の決着＝2・2・1。格子のコードは同じ）。us_06 を帰投で終えても日本のタブの条件には数えない。v0.8.2 から 6 任務で格子が満杯（3 段目の左にスリガオ海峡・最初の接触「1944年10月24日 ・ ミンダナオ海」・右にオルモック湾の決着。`order` 5 のまま＝年代の並べ直しは v0.8.3）。us_05 も日本のタブの条件に数えない。
+ - 次の版（docs/03）: v0.8.1 us_06（オルモック湾の決着。パロンポン沖）・v0.8.2 us_05（スリガオ海峡・最初の接触）・v0.8.3 us_07（D-Day・生存者救助。米PT のタブの 7 枚目の置き方も）。（v0.8.1 は上の us_06・v0.8.2 は上の us_05）
+ 
+diff --git a/src/systems/column-kits.ts b/src/systems/column-kits.ts
+index 203c6a4..777d73b 100644
+--- a/src/systems/column-kits.ts
++++ b/src/systems/column-kits.ts
+@@ -46,11 +46,14 @@ export function columnShipKit(ds: DestroyerSetup, lineAi: ShipAiParams, column:
+   return k ? { spec: k.spec, ai: k.lineAi, gunnery: k.gunnery, artKey: k.artKey } : { spec: ds.spec, ai: lineAi, gunnery: ds.gunnery, artKey: destroyerArt };
+ }
+ 
+-/** 隊の通過の半径の 2 乗の最大（列の kits の分。無ければ base のまま） */
++/**
++ * 隊の通過の半径の 2 乗（無ければ base のまま＝今の任務）。片道の列（kits のある列＝us_05）は Infinity（v0.8.2 IP1。実機 1 回目のユーザー「魚雷が船体の下を通ってしまうことが多くなった」）:
++ * 凍結の systems/torpedo-pool は走る魚雷を「最寄りの浮いている艦の中心から通過の半径の外へ遠ざかり始めた」ステップで外れに決め、以後は当たりを見ない。
++ * 道の違う 7 隻の列では最寄りが別の艦（前の時雨・前の戦艦）のうちに外れに決まり、その魚雷が後ろの艦の絵の下を抜けた（ヘッドレスの測り: 476 本のうち 100 本）。
++ * 片道の列では通り過ぎで決めず、射程の終わり・海の外・列のすべてが出た時に決める（走る魚雷は当たる艦があれば当たる）。
++ */
+ export function columnPassRadius2(base: number, column: readonly ColumnKit[] | undefined): number {
+-  let r2 = base;
+-  if (column) for (const k of column) if (k.passRadius2 > r2) r2 = k.passRadius2;
+-  return r2;
++  return column ? Infinity : base;
+ }
+ 
+ /** 隊の艦ごとの値を組む（constructor で 1 回）。destroyerArt は護衛と往復の列の絵の鍵・transportArt は輸送船の絵の鍵（呼ぶ側の TEXTURE_KEYS） */
+diff --git a/tests/column-data.test.ts b/tests/column-data.test.ts
+index 8a8efef..7f86aae 100644
+--- a/tests/column-data.test.ts
++++ b/tests/column-data.test.ts
+@@ -46,7 +46,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
+       const p = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05', hard), null, false)!;
+       expect(p.kits.map((k) => k.nameJa)).toEqual(hard ? [...NAMES, '見張りの駆逐艦'] : NAMES);
+       expect(p.enterAtS).toEqual(hard ? [5, 20, 35, 50, 80, 85, 101, 109] : [5, 20, 35, 50, 80, 85, 101]);
+-      expect(p.laneDyM).toEqual(hard ? [400, 400, 400, 400, -560, 0, 0, -575] : [400, 400, 400, 400, -560, 0, 0]); // v0.8.2 S3 の探りの帯（N1・H1）で時雨 −600 → −560・ハードの 8 隻目 −600 → −575
++      expect(p.laneDyM).toEqual(hard ? [400, 400, 400, 400, -530, 0, 0, -575] : [400, 400, 400, 400, -530, 0, 0]); // v0.8.2 S3 の探りの帯（N1・H1）で時雨 −600 → −560・ハードの 8 隻目 −600 → −575、IP1（実機 1 回目のユーザー「時雨の進行位置を若干戦艦寄りに」）で時雨 −560 → −530
+       expect(p.kits.map((k) => k.group).join('')).toBe(hard ? 'vanvanvanvanmainmainmainmain' : 'vanvanvanvanmainmainmain');
+       expect(p.kits.map((k) => k.role)).toEqual(hard ? ['line', 'line', 'line', 'line', 'screen', 'line', 'line', 'screen'] : ['line', 'line', 'line', 'line', 'screen', 'line', 'line']);
+       expect(p.rejoinS).toBe(40);
+@@ -65,7 +65,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
+       }
+       expect(p.kits.map((k) => [k.shipClass, k.spec.hitsToSink, k.magazine])).toEqual([
+         ...[0, 1, 2].map(() => ['destroyer', 2, null]), ['heavy_cruiser', 3, null], ['destroyer', 2, null],
+-        ['battleship', 6, { onHits: [3, 4], chance: [0.03, 0.06] }], ['battleship', 6, { onHits: [3, 4], chance: [0.03, 0.06] }], ['destroyer', 2, null],
++        ['battleship', 6, { onHits: [3, 4], chance: [0.035, 0.07] }], ['battleship', 6, { onHits: [3, 4], chance: [0.035, 0.07] }], ['destroyer', 2, null],
+       ]);
+     }
+     // 絵の鍵（v0.8.2 S2b で直した: S0〜S2 は既定の駆逐艦の絵＝戦艦・重巡は S2b の D-A1・D-A2 で ship-art-config の表に足した＝記録の id から）・弾薬庫の上書き（?debug&boom）は確率だけ 1・
+@@ -79,7 +79,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
+   it('今夜の揺らぎ（列の 1 件）: x のずれ ÷ 画面上の速さ 46.3 m/秒 → 全部の艦の入りの秒（東へずれれば早い）、道のずれは艦ごとのまま（y のずれは transit の道へ）', () => {
+     const p = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05'), { dx: 92.6, dy: -80, dh: 0 }, false)!;
+     expect(p.enterAtS.map((t) => Math.round(t * 1e9) / 1e9)).toEqual([5, 20, 35, 50, 80, 85, 101].map((t) => Math.round((t - 92.6 / SCREEN_MPS) * 1e9) / 1e9));
+-    expect(p.laneDyM).toEqual([400, 400, 400, 400, -560, 0, 0]);
++    expect(p.laneDyM).toEqual([400, 400, 400, 400, -530, 0, 0]);
+     const t = getTransitParams(gameData, getPrototypeMission(gameData, 'us_05'), { dx: 92.6, dy: -80, dh: 0 }, false)!;
+     expect([t.inbound.laneY, t.enterS, t.enterAtS![0]]).toEqual([2320, p.enterAtS[0], p.enterAtS[0]]);
+   });
+@@ -158,8 +158,8 @@ describe('起動時の検査（config/column-mission-data の V-C1〜V-C6）', (
+     expect(build((d) => (protoOf(d, 'us_05')['enemy_hits_to_sink'] = 1))).toThrow(/enemy_hits_to_sink は片道の列の任務に置かない（沈む本数は艦ごとの記録の値）（V-C2/);
+   });
+   it('V-C3: 道（＋ずれ＋今夜の ±150 m）は縁から艦の余白 ＋ 200 m 以上内・岸の線から陸の反射 300 m より沖', () => {
+-    // 戦艦の余白は 212.75 ＋ 200 ＝ 412.75 m。本隊の道 y 2,400 を北へ寄せる（時雨の道 −560＝v0.8.2 S3 の帯 N1。道 1,010 で時雨は y 450）
+-    expect(build((d) => ((transitOf(d)['inbound'] as Rec)['lane_y_m'] = 1010))).toThrow(/transit\.column\[4\] の道（y 450 ± 今夜の 150）は北と南の縁から 318\.0 m（艦の余白 ＋ 200）以上内（V-C3/);
++    // 戦艦の余白は 212.75 ＋ 200 ＝ 412.75 m。本隊の道 y 2,400 を北へ寄せる（時雨の道 −530＝v0.8.2 IP1。道 980 で時雨は y 450）
++    expect(build((d) => ((transitOf(d)['inbound'] as Rec)['lane_y_m'] = 980))).toThrow(/transit\.column\[4\] の道（y 450 ± 今夜の 150）は北と南の縁から 318\.0 m（艦の余白 ＋ 200）以上内（V-C3/);
+     expect(build((d) => (colOf(d)[5]!['lane_dy_m'] = -1840))).toThrow(/transit\.column\[5\] の道（y 560 ± 今夜の 150）は北と南の縁から 412\.8 m（艦の余白 ＋ 200）以上内（V-C3/);
+     expect(build((d) => (colOf(d)[5]!['lane_dy_m'] = -1837.25))).not.toThrow(); // 562.75 − 150 ＝ 412.75
+     expect(build((d) => (colOf(d)[0]!['lane_dy_m'] = 1250))).toThrow(/transit\.column\[0\] の道（y 3650 ± 今夜の 150）は北と南の縁から 318\.0 m/);
+diff --git a/tests/column-only-world.test.ts b/tests/column-only-world.test.ts
+index 6ab7d3e..79f0ecd 100644
+--- a/tests/column-only-world.test.ts
++++ b/tests/column-only-world.test.ts
+@@ -64,7 +64,7 @@ describe('us_05 の世界（小さな世界）が夜明けまで走る', () => {
+       expect(seen.map((e) => e.i)).toEqual([...Array(n).keys()]);
+       const want = hard ? [5, 20, 35, 50, 80, 85, 101, 109] : [5, 20, 35, 50, 80, 85, 101];
+       seen.forEach((e, k) => expect(Math.abs(e.t - want[k]!), String(k)).toBeLessThanOrEqual(STEP + 1e-9));
+-      expect(seen.map((e) => [e.x, e.y, e.h])).toEqual(want.map((_t, k) => [150, [2800, 2800, 2800, 2800, 1840, 2400, 2400, 1825][k], 90]));
++      expect(seen.map((e) => [e.x, e.y, e.h])).toEqual(want.map((_t, k) => [150, [2800, 2800, 2800, 2800, 1870, 2400, 2400, 1825][k], 90]));
+       expect(goneAt).toBeGreaterThan(hard ? 249 : 241);
+       expect(goneAt).toBeLessThan(270 - 20);
+       const st = w.transit.state;
+diff --git a/tests/column-world.test.ts b/tests/column-world.test.ts
+index f6abaa7..208aeec 100644
+--- a/tests/column-world.test.ts
++++ b/tests/column-world.test.ts
+@@ -44,8 +44,9 @@ describe('kits（L19）: us_05 の列の艦ごとの記録', () => {
+     expect(g.kits.artKeys).toEqual(want);
+     expect(keys.filter((k) => SHIP_TEX.test(k))).toEqual(want);
+     expect(g.kits.classes).toEqual(['destroyer', 'destroyer', 'destroyer', 'heavy_cruiser', 'destroyer', 'battleship', 'battleship']);
+-    expect(g.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, ...kits.map((k) => k.passRadius2)));
+-    expect(g.passRadius2).toBe(kits[5]!.passRadius2);
++    // v0.8.2 IP1: 片道の列は通り過ぎで外れに決めない（Infinity。systems/column-kits の columnPassRadius2）。S2〜S4 は艦の通過の半径の最大（戦艦の kits[5]）だった
++    expect(g.passRadius2).toBe(Infinity);
++    expect(kits[5]!.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, ...kits.map((k) => k.passRadius2)));
+     // 列の AI は最大速力だけ列の速さ（18 kt）・見張りの AI は記録の値そのまま（時雨だけ）
+     expect(kits.map((k) => k.screenAi !== null)).toEqual([false, false, false, false, true, false, false]);
+     expect(kits[SHIGURE]!.screenAi!.ramEnabled && kits[SHIGURE]!.screenAi!.maxSpeedMps > kits[SHIGURE]!.lineAi.maxSpeedMps).toBe(true);
+diff --git a/tests/magazine-data.test.ts b/tests/magazine-data.test.ts
+index 5f8d3cf..f88eb91 100644
+--- a/tests/magazine-data.test.ts
++++ b/tests/magazine-data.test.ts
+@@ -1,5 +1,5 @@
+ // v0.8.2 S0（spec-v0820 §4.4 D-G1〜D-G4・§5.3。ユーザーの決め U1）: 戦艦の弾薬庫の記録（enemies.json の magazine）の読み出しと起動時の検査 V-M1〜V-M3（config/magazine-data）。
+-// 既定の data（扶桑型の 3 本目 3%・4 本目 6%）が通り、壊した記録は鍵を名指す日本語の文で止まる。規則は記録ごと（今の記録には無い＝今の任務は変わらない）。S0 では誰も確率を引かない。
++// 既定の data（扶桑型の 3 本目 3.5%・4 本目 7%＝v0.8.2 IP1 のユーザーの決め U-Q1。S0〜S4 は 3%・6%）が通り、壊した記録は鍵を名指す日本語の文で止まる。規則は記録ごと（今の記録には無い＝今の任務は変わらない）。S0 では誰も確率を引かない。
+ import { readFileSync, readdirSync, statSync } from 'node:fs';
+ import { join } from 'node:path';
+ import { describe, expect, it } from 'vitest';
+@@ -17,20 +17,21 @@ const read = (f: (d: GameData) => void, id = 'ijn_battleship_fuso'): (() => unkn
+ };
+ 
+ describe('既定の data（扶桑型。ユーザーの U1・spec §4.4 D-G3）', () => {
+-  it('3 本目 3%・4 本目 6%（4 本全部当たった艦の轟沈 8.8%）。沈む本数 6 未満・持つのは戦艦の記録だけ', () => {
+-    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')).toEqual({ onHits: [3, 4], chance: [0.03, 0.06] });
+-    expect(1 - (1 - 0.03) * (1 - 0.06)).toBeCloseTo(0.0882, 4);
++  it('3 本目 3.5%・4 本目 7%（4 本全部当たった艦の轟沈 10.3%＝ユーザーの U-Q1「10回に一回くらい」）。沈む本数 6 未満・持つのは戦艦の記録だけ', () => {
++    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')).toEqual({ onHits: [3, 4], chance: [0.035, 0.07] });
++    expect(1 - (1 - 0.035) * (1 - 0.07)).toBeCloseTo(0.10255, 5);
+     expect(validateMagazineRecords(gameData)).toEqual(['ijn_battleship_fuso']);
+     for (const e of gameData.enemies.enemies as unknown as Rec[]) if (e['id'] !== 'ijn_battleship_fuso') expect(magazineRuleOf(gameData, String(e['id'])), String(e['id'])).toBeNull();
+     expect([MAGAZINE_KEYS, MAGAZINE_SHIP_CLASS]).toEqual([['on_hits', 'chance', 'source'], 'battleship']);
+     expect(String(magOf(gameData)['source'])).toContain('ユーザーの決め U1');
++    expect(String(magOf(gameData)['source'])).toContain('魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。');
+   });
+   it('?debug&boom（magazineBoom）は確率だけ 1（規則の無い記録は null のまま）。読むたびに写し（data の配列を渡さない）', () => {
+     expect(magazineRuleOf(gameData, 'ijn_battleship_fuso', { magazineBoom: true })).toEqual({ onHits: [3, 4], chance: [1, 1] });
+     expect(magazineRuleOf(gameData, 'ijn_destroyer', { magazineBoom: true })).toBeNull();
+     const a = magazineRuleOf(gameData, 'ijn_battleship_fuso')!;
+     a.chance[0] = 0.5;
+-    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')!.chance[0]).toBe(0.03);
++    expect(magazineRuleOf(gameData, 'ijn_battleship_fuso')!.chance[0]).toBe(0.035);
+   });
+   it('S0 では Boot の検査と列の kits のほかに誰も読まない（確率の引きは S1 の core/magazine・配線は S2）', () => {
+     const files: string[] = [];
+diff --git a/tests/magazine-detonation.test.ts b/tests/magazine-detonation.test.ts
+index 7082a8c..fab09ee 100644
+--- a/tests/magazine-detonation.test.ts
++++ b/tests/magazine-detonation.test.ts
+@@ -1,6 +1,6 @@
+ // v0.8.2 S1（spec-v0820 §4.4 D-G1〜D-G3・D-G5・§9 の 4、lead の L14・L15。ユーザーの決め U1）: core/magazine-detonation の戦艦の弾薬庫の規則を、enemies.json の扶桑型の記録の magazine
+-// （3 本目 3%・4 本目 6%）と us_05 の setup の列の kits で見る。3・4 本目の命中だけ引く・規則の無い艦は引かない・確率 0 と 1（?debug&boom）でも引く回数は同じ・seed+44 の 10 万回で 3%・6% ±0.2 点
+-// （3 つの夜の種）・4 本当たった艦の轟沈 1 − 0.97 × 0.94 ＝ 8.8% ±0.3 点（10 万隻）・艦ごとの記録（誘爆の秒・何本目か・引いた回数・引いた確率の和＝探りの期待値）・source（確保なし）・
++// （3 本目 3.5%・4 本目 7%＝v0.8.2 IP1 のユーザーの決め U-Q1。S1〜S4 は 3%・6%）と us_05 の setup の列の kits で見る。3・4 本目の命中だけ引く・規則の無い艦は引かない・確率 0 と 1（?debug&boom）でも引く回数は同じ・seed+44 の 10 万回で 3.5%・7% ±0.2 点
++// （3 つの夜の種）・4 本当たった艦の轟沈 1 − 0.965 × 0.93 ＝ 10.3% ±0.3 点（10 万隻）・艦ごとの記録（誘爆の秒・何本目か・引いた回数・引いた確率の和＝探りの期待値）・source（確保なし）・
+ // S2 から import するのは systems/ship-magazine だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。core/magazine（v0.6.8 の機銃の弾倉）とは別のファイル（名が重なるので magazine-detonation）。
+ import { describe, expect, it, vi } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+@@ -28,8 +28,8 @@ function hitShip(log: MagazineLog, i: number, rule: MagazinePlan | null, rng: Se
+ }
+ 
+ describe('規則（扶桑型の記録・us_05 の kits）と確率の読み', () => {
+-  it('扶桑型は 3 本目 3%・4 本目 6%。us_05 の列で規則を持つのは山城・扶桑だけ（ノーマル・ハード）。系列は seed+44', () => {
+-    expect(RULE).toEqual({ onHits: [3, 4], chance: [0.03, 0.06] });
++  it('扶桑型は 3 本目 3.5%・4 本目 7%。us_05 の列で規則を持つのは山城・扶桑だけ（ノーマル・ハード）。系列は seed+44', () => {
++    expect(RULE).toEqual({ onHits: [3, 4], chance: [0.035, 0.07] });
+     for (const hard of [false, true]) {
+       const kits = buildWorldSetup(gameData, 'us_05', { hard }).transit!.column!;
+       expect(kits.map((k) => (k.magazine ? k.nameJa : null)).filter((x) => x !== null)).toEqual(['山城', '扶桑']);
+@@ -37,8 +37,8 @@ describe('規則（扶桑型の記録・us_05 の kits）と確率の読み', ()
+     }
+     expect(MAGAZINE_SEED_OFFSET).toBe(44);
+   });
+-  it('magazineChanceAt: 規則が無ければ 0・onHits に無い本数は 0・3 本目 0.03・4 本目 0.06（boom は 1）', () => {
+-    expect([0, 1, 2, 3, 4, 5, 6].map((h) => magazineChanceAt(RULE, h))).toEqual([0, 0, 0, 0.03, 0.06, 0, 0]);
++  it('magazineChanceAt: 規則が無ければ 0・onHits に無い本数は 0・3 本目 0.035・4 本目 0.07（boom は 1）', () => {
++    expect([0, 1, 2, 3, 4, 5, 6].map((h) => magazineChanceAt(RULE, h))).toEqual([0, 0, 0, 0.035, 0.07, 0, 0]);
+     expect([1, 3, 4, 6].map((h) => magazineChanceAt(null, h))).toEqual([0, 0, 0, 0]);
+     expect([3, 4].map((h) => magazineChanceAt(BOOM, h))).toEqual([1, 1]);
+   });
+@@ -88,18 +88,18 @@ describe('引く時・引かない時', () => {
+     expect(rollMagazine(log, 0, ZERO, 3, 12, rng)).toBe(false);
+     rollMagazine(log, 0, RULE, 4, 13, rng);
+     expect([log.detonatedAtS[1], log.onHit[1], log.draws[1], log.chanceSum[1], log.draws[0]]).toEqual([41.5, 3, 1, 1, 2]);
+-    expect(log.chanceSum[0]).toBeCloseTo(0.06, 12);
++    expect(log.chanceSum[0]).toBeCloseTo(0.07, 12);
+     resetMagazineLog(log);
+     expect([[...log.detonatedAtS], [...log.onHit], [...log.draws], [...log.chanceSum]]).toEqual([[NaN, NaN], [0, 0], [0, 0], [0, 0]]);
+   });
+ });
+ 
+ describe('頻度（seed+44・ユーザーの決め U1 の「稀に」）', () => {
+-  it('3 本目 3%・4 本目 6% は seed+44 の 10 万回ずつで ±0.2 点（3 つの夜の種）。引いた確率の和は期待値そのもの', () => {
++  it('3 本目 3.5%・4 本目 7% は seed+44 の 10 万回ずつで ±0.2 点（3 つの夜の種）。引いた確率の和は期待値そのもの', () => {
+     for (const base of BASE_SEEDS) {
+       const rng = new SeededRng(base + MAGAZINE_SEED_OFFSET);
+       const log = createMagazineLog(2);
+-      for (const [i, h, p] of [[0, 3, 0.03], [1, 4, 0.06]] as const) {
++      for (const [i, h, p] of [[0, 3, 0.035], [1, 4, 0.07]] as const) {
+         let booms = 0;
+         for (let k = 0; k < 100_000; k++) if (rollMagazine(log, i, RULE, h, 0, rng)) booms++;
+         expect(Math.abs(booms / 100_000 - p), `seed ${base} の ${h} 本目 ${booms}`).toBeLessThanOrEqual(0.002);
+@@ -107,8 +107,8 @@ describe('頻度（seed+44・ユーザーの決め U1 の「稀に」）', () =>
+       }
+     }
+   });
+-  it('4 本当たった艦（10 万隻・3 本目で誘爆すれば 4 本目は引かない）の轟沈は 1 − 0.97 × 0.94 ＝ 8.8% ±0.3 点。1 隻の引いた確率の和の平均も 8.82%', () => {
+-    expect(1 - 0.97 * 0.94).toBeCloseTo(0.0882, 12);
++  it('4 本当たった艦（10 万隻・3 本目で誘爆すれば 4 本目は引かない）の轟沈は 1 − 0.965 × 0.93 ＝ 10.3% ±0.3 点。1 隻の引いた確率の和の平均も 10.255%', () => {
++    expect(1 - 0.965 * 0.93).toBeCloseTo(0.10255, 12);
+     for (const base of BASE_SEEDS) {
+       const rng = new SeededRng(base + MAGAZINE_SEED_OFFSET);
+       const log = createMagazineLog(1);
+@@ -119,8 +119,8 @@ describe('頻度（seed+44・ユーザーの決め U1 の「稀に」）', () =>
+         if (hitShip(log, 0, RULE, rng) > 0) sunk++;
+         expected += log.chanceSum[0]!;
+       }
+-      expect(Math.abs(sunk / 100_000 - 0.0882), `seed ${base} ${sunk}`).toBeLessThanOrEqual(0.003);
+-      expect(Math.abs(expected / 100_000 - 0.0882), `seed ${base} ${expected}`).toBeLessThanOrEqual(0.0003);
++      expect(Math.abs(sunk / 100_000 - 0.10255), `seed ${base} ${sunk}`).toBeLessThanOrEqual(0.003);
++      expect(Math.abs(expected / 100_000 - 0.10255), `seed ${base} ${expected}`).toBeLessThanOrEqual(0.0003);
+     }
+   });
+ });
+diff --git a/tests/magazine-world.test.ts b/tests/magazine-world.test.ts
+index 84568fd..d0e0a56 100644
+--- a/tests/magazine-world.test.ts
++++ b/tests/magazine-world.test.ts
+@@ -55,8 +55,8 @@ function hitsOf(seed = 1, o: { magazineBoom?: boolean; hard?: boolean } = {}): H
+ }
+ 
+ describe('引くのは戦艦の 3・4 本目だけ（D-G1）', () => {
+-  it('山城に 6 本: 3 本目・4 本目にちょうど 1 回ずつ（確率の和 0.09）。誘爆しなければ 6 本目で沈む（沈む本数は記録の 6）', () => {
+-    const replica = (seed: number): [boolean, boolean] => { const r = new SeededRng((seed + MAGAZINE_SEED_OFFSET) >>> 0); return [r.next() < 0.03, r.next() < 0.06]; };
++  it('山城に 6 本: 3 本目・4 本目にちょうど 1 回ずつ（確率の和 0.105）。誘爆しなければ 6 本目で沈む（沈む本数は記録の 6）', () => {
++    const replica = (seed: number): [boolean, boolean] => { const r = new SeededRng((seed + MAGAZINE_SEED_OFFSET) >>> 0); return [r.next() < 0.035, r.next() < 0.07]; };
+     let quiet = 0;
+     for (let seed = 1; seed <= 60; seed++) {
+       const h = hitsOf(seed);
+@@ -75,11 +75,11 @@ describe('引くのは戦艦の 3・4 本目だけ（D-G1）', () => {
+       expect([log.onHit[YAMASHIRO], h.g.magazine!.detonations], `seed ${seed}`).toEqual(want < 6 ? [want, 1] : [0, 0]);
+       if (want === 6) {
+         quiet++;
+-        expect(log.chanceSum[YAMASHIRO]).toBeCloseTo(0.09, 12);
++        expect(log.chanceSum[YAMASHIRO]).toBeCloseTo(0.105, 12);
+         expect(log.detonatedAtS[YAMASHIRO]).toBeNaN();
+       } else expect(log.detonatedAtS[YAMASHIRO]).toBe(12.5);
+     }
+-    expect(quiet).toBeGreaterThan(45); // 1 − 0.97 × 0.94 ＝ 8.8% しか誘爆しない
++    expect(quiet).toBeGreaterThan(45); // 1 − 0.965 × 0.93 ＝ 10.3% しか誘爆しない（v0.8.2 IP1 のユーザーの決め U-Q1「10回に一回くらい」）
+   });
+   it('駆逐艦（満潮）は 2 本・重巡（最上）は 3 本で今の沈む道。どちらも引かない。扶桑は山城と別の艦（記録も別の添字）', () => {
+     const h = hitsOf(3);
+@@ -116,10 +116,10 @@ describe('?debug&boom（確率 1）と誘爆の沈み方', () => {
+       expect(h.g.magazine!.rules[FUSO]).toEqual({ onHits: [3, 4], chance: [1, 1] });
+     }
+   });
+-  it('boom でも駆逐艦と重巡の記録には規則が無い（null のまま）。data の確率は 3%・6%', () => {
++  it('boom でも駆逐艦と重巡の記録には規則が無い（null のまま）。data の確率は 3.5%・7%（v0.8.2 IP1 のユーザーの決め U-Q1）', () => {
+     const k = setupOf('us_05', false, undefined, { magazineBoom: true }).transit!.column!;
+     expect(k.map((x) => (x.magazine ? x.magazine.chance : null))).toEqual([null, null, null, null, null, [1, 1], [1, 1]]);
+-    expect(setupOf('us_05').transit!.column![YAMASHIRO]!.magazine).toEqual({ onHits: [3, 4], chance: [0.03, 0.06] });
++    expect(setupOf('us_05').transit!.column![YAMASHIRO]!.magazine).toEqual({ onHits: [3, 4], chance: [0.035, 0.07] });
+   });
+ });
+ 
+diff --git a/tests/ship-transit-oneway.test.ts b/tests/ship-transit-oneway.test.ts
+index 303dd0b..ef7a4e4 100644
+--- a/tests/ship-transit-oneway.test.ts
++++ b/tests/ship-transit-oneway.test.ts
+@@ -59,7 +59,7 @@ describe('片道の列（us_05 の第三部隊。揺らぎなし）', () => {
+     const p = us05();
+     expect([p.ships, p.outbound, p.unloadS, p.spacingS, p.coverLeavesWithOutbound]).toEqual([7, null, 0, 0, false]);
+     expect([0, 1, 2, 3, 4, 5, 6].map((i) => transitEnterAtS(p, i))).toEqual([5, 20, 35, 50, 80, 85, 101]);
+-    expect([0, 1, 2, 3, 4, 5, 6].map((i) => transitLaneDyM(p, i))).toEqual([400, 400, 400, 400, -560, 0, 0]); // 時雨の道は v0.8.2 S3 の探りの帯 N1 で −600 → −560
++    expect([0, 1, 2, 3, 4, 5, 6].map((i) => transitLaneDyM(p, i))).toEqual([400, 400, 400, 400, -530, 0, 0]); // 時雨の道は v0.8.2 S3 の探りの帯 N1 で −600 → −560、IP1（実機 1 回目のユーザーの言葉）で −530
+     expect([TRANSIT_IN, TRANSIT_WAIT].map((ph) => transitAppearLeg(p, ph))).toEqual([p.inbound, null]);
+     expect(transitAppearLeg(p, 3)).toBeNull(); // OUT（復路）は無い
+     expect([p.inbound.appearX, p.inbound.goneX, p.inbound.laneY, p.inbound.headingDeg]).toEqual([150, 6650, 2400, 90]);
+@@ -67,7 +67,7 @@ describe('片道の列（us_05 の第三部隊。揺らぎなし）', () => {
+   it('入りは表の秒（体感の時計）・道は艦ごと・向こうの縁の外で GONE（AWAY にならない＝揚陸の地も復路も無い）。去るのは入りの 140.4 秒後', () => {
+     const { st, log } = run(us05(), 270);
+     expect(log.enter.map((t) => Math.round(t * 60) / 60)).toEqual([5, 20, 35, 50, 80, 85, 101].map((t) => Math.round(t * 60) / 60));
+-    expect(log.y).toEqual([2800, 2800, 2800, 2800, 1840, 2400, 2400]);
++    expect(log.y).toEqual([2800, 2800, 2800, 2800, 1870, 2400, 2400]);
+     const cross = 6500 / (us05().speedMps * gameData.hitRateModel.world.time_scale); // 140.40 秒
+     log.gone.forEach((g, i) => expect(Math.abs(g - log.enter[i]! - cross), String(i)).toBeLessThanOrEqual(2 * STEP));
+     expect([log.arrived, log.returned, log.cover, st.arrivedCount, st.outCount, st.goneCount, st.inCount]).toEqual([0, 0, 0, 0, 0, 7, 7]);
