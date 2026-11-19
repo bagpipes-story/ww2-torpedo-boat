@@ -15,6 +15,7 @@ const Q = process.env.Q ?? '';
 function nightRun(o) {
   const hl = window.__hl, w = hl.world(), g = w.destroyers, P = w.torpedoes.params, ST = w.torpedoes.states;
   const keep = () => { w.damage.hp = w.damageParams.maxHp; w.damage.fireLeftS = 0; };
+  if (o.inf) g.passRadius2 = Infinity; // 測るためだけ: us_05 の片道の列と同じ規則を仮に当てる（IP1 の lead の問い）
   const cls = g.kits && g.kits.classes ? g.kits.classes : g.ships.map(() => 'destroyer');
   // 描いた船体の α（テクスチャの鍵ごとに 1 回）
   const alpha = {};
@@ -48,13 +49,13 @@ function nightRun(o) {
   };
   // 結末の記録
   const idx = (s) => ST.indexOf(s);
-  const rec = ST.map(() => ({ fired: false, out: '', target: -1, dud: false, erratic: false, cross: {}, missNear: -1, missD: NaN, missRun: NaN, missAtS: NaN, passMiss: false }));
+  const rec = ST.map(() => ({ fired: false, out: '', target: -1, dud: false, erratic: false, cross: {}, launchS: NaN, resolveS: NaN, missNear: -1, missD: NaN, missRun: NaN, missAtS: NaN, passMiss: false }));
   const ev = w.torpedoEvents, oh = ev.onHit, om = ev.onMiss, ol = ev.onLateHit;
   const nearestAfloat = (x, y) => { let b = -1, bd = Infinity; for (let i = 0; i < g.ships.length; i++) { const d = g.ships[i]; if (d.out) continue; const q = (d.state.x - x) ** 2 + (d.state.y - y) ** 2; if (q < bd) { bd = q; b = i; } } return [b, Math.sqrt(bd)]; };
-  ev.onHit = (i, x, y, s) => { const r = rec[idx(s)]; r.out = s.dud ? 'dud' : 'hit'; r.target = i; oh.call(ev, i, x, y, s); };
-  ev.onLateHit = (i, x, y, s) => { const r = rec[idx(s)]; r.out = 'late'; r.target = i; ol.call(ev, i, x, y, s); };
+  ev.onHit = (i, x, y, s) => { const r = rec[idx(s)]; r.resolveS = w.stepTimeS; r.out = s.dud ? 'dud' : 'hit'; r.target = i; oh.call(ev, i, x, y, s); };
+  ev.onLateHit = (i, x, y, s) => { const r = rec[idx(s)]; r.resolveS = w.stepTimeS; r.out = 'late'; r.target = i; ol.call(ev, i, x, y, s); };
   ev.onMiss = (s) => {
-    const r = rec[idx(s)]; r.out = 'miss'; r.missRun = s.runM; r.missAtS = w.stepTimeS;
+    const r = rec[idx(s)]; r.resolveS = w.stepTimeS; r.out = 'miss'; r.missRun = s.runM; r.missAtS = w.stepTimeS;
     const [b, d] = nearestAfloat(s.x, s.y); r.missNear = b; r.missD = d;
     r.passMiss = s.active && s.runM < P.rangeM; // 走っている間に決着（通り過ぎの外れ）
     om.call(ev, s);
@@ -98,7 +99,7 @@ function nightRun(o) {
       const s = ST[k], r = rec[k];
       if (!s.active) continue;
       live++;
-      if (!r.fired) { r.fired = true; r.dud = s.dud; r.erratic = s.erratic; }
+      if (!r.fired) { r.fired = true; r.dud = s.dud; r.erratic = s.erratic; r.launchS = w.stepTimeS; }
       for (let j = 0; j < g.ships.length; j++) {
         const sh = g.ships[j];
         if (sh.offMap || sh.withdrawn) continue;
@@ -112,7 +113,7 @@ function nightRun(o) {
     }
     if (frames > 30 && live === 0 && rec.every((r) => !r.fired || r.out)) break;
   }
-  return { t0, fireH, range: o.range, side: o.side, target: ti, cls: cls[ti], armingM: P.armingM, u, classes: cls, dev, rec: rec.filter((r) => r.fired), names: g.kits && g.kits.names ? g.kits.names : null };
+  return { t0, fireH, range: o.range, side: o.side, target: ti, cls: cls[ti], armingM: P.armingM, u, classes: cls, dev, shots: w.shots.map((q) => [Math.round(q.rangeM), q.hit ? 1 : 0, q.dud ? 1 : 0, q.kpiTarget ? 1 : 0]), rec: rec.filter((r) => r.fired), names: g.kits && g.kits.names ? g.kits.names : null };
 }
 
 async function main() {
@@ -125,7 +126,7 @@ async function main() {
   const res = await pool(cases, Number(process.env.JOBS ?? 2), async (c) => {
     const { page, ctx, errors } = await openGame(browser, sv.base, `mission=${MISSION}&seed=${c.seed}${process.env.HARD ? '&hard' : ''}${Q}`, { width: 1560 });
     try {
-      const r = await page.evaluate(nightRun, { ...c, frameMs: FRAME_MS, spreadDeg, minS: MISSION === 'us_05' ? 0 : 15, maxWaitS: 400, x0: 900, x1: 1500, maxRunF: 60 * 120, countHidden: false });
+      const r = await page.evaluate(nightRun, { ...c, inf: process.env.INF === '1', frameMs: FRAME_MS, spreadDeg, minS: MISSION === 'us_05' ? 0 : 15, maxWaitS: 400, x0: 900, x1: 1500, maxRunF: 60 * 120, countHidden: false });
       return { c, r, errors };
     } catch (e) { return { c, r: { skipped: String(e && e.message ? e.message : e) }, errors }; } finally { await ctx.close(); }
   });
