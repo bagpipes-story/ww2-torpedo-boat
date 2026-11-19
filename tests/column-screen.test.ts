@@ -183,6 +183,48 @@ describe('沈み始めた艦・夜明け・海域の外', () => {
   });
 });
 
+describe('見張りの鎖（v0.8.2 S3b・lead の L37: 離れていられる chaseS・戻ってから離れない cooldownS。どちらも任意）', () => {
+  const LEASH: ScreenPlan = { ...NORMAL, chaseS: 45, cooldownS: 60 };
+  it('計画: 鎖の鍵は渡した時だけ出る（無ければ S1 の計画のまま）。us_05 の setup の transit は data の screen_chase_s・screen_cooldown_s を持つ・us_04 の列は持たない', () => {
+    const t = setupOf(false);
+    expect(screenPlanOf(t.column!, t.rejoinS)).toEqual(NORMAL);
+    expect(screenPlanOf(t.column!, t.rejoinS, undefined, null)).toEqual({ mask: 1 << SHIGURE, rejoinS: 40 });
+    expect(screenPlanOf(t.column!, t.rejoinS, 45, 60)).toEqual({ mask: 1 << SHIGURE, rejoinS: 40, chaseS: 45, cooldownS: 60 });
+    expect([typeof t.screenChaseS, typeof t.screenCooldownS]).toEqual(['number', 'number']);
+    const u = buildWorldSetup(gameData, 'us_04', {}).transit!;
+    expect(['screenChaseS' in u, 'screenCooldownS' in u]).toEqual([false, false]);
+  });
+  it('離れて chaseS（45 秒）たてば、まだ見ていても戻る（10 秒に離れ 55 秒に戻る）。戻ってから cooldownS（60 秒）は見ていても離れず、115 秒にまた離れる', () => {
+    const { st, log } = run(LEASH, 7, { events: [[10, SHIGURE, 'seen']], untilS: 130 });
+    near(log.left[SHIGURE]![0], 10);
+    near(log.rejoined[SHIGURE]![0], 55);
+    near(log.left[SHIGURE]![1], 115);
+    expect([log.left[SHIGURE]!.length, log.rejoined[SHIGURE]!.length, screenLeaves(st, SHIGURE), screenAway(st, SHIGURE)]).toEqual([2, 1, 2, true]);
+  });
+  it('chaseS だけ（cooldownS なし）: 55 秒に戻り、まだ見ていれば次のステップにまた離れる', () => {
+    const { log } = run({ ...NORMAL, chaseS: 45 }, 7, { events: [[10, SHIGURE, 'seen']], untilS: 60 });
+    near(log.rejoined[SHIGURE]![0], 55);
+    near(log.left[SHIGURE]![1], 55, 2);
+  });
+  it('cooldownS だけ: 見失って 40 秒で戻った（52 秒）後、60 秒に見つけても 112 秒までは離れない', () => {
+    const { log } = run({ ...NORMAL, cooldownS: 60 }, 7, { events: [[10, SHIGURE, 'seen'], [12, SHIGURE, 'unseen'], [60, SHIGURE, 'seen']], untilS: 130 });
+    near(log.rejoined[SHIGURE]![0], 52);
+    near(log.left[SHIGURE]![1], 112);
+    expect(log.left[SHIGURE]!.length).toBe(2);
+  });
+  it('鎖の秒も体感の時計（命中スローで延びる）。見失えば今の規則（40 秒）で先に戻る・夜明けは鎖より先に効く', () => {
+    near(run(LEASH, 7, { events: [[10, SHIGURE, 'seen']], slow: [[20, 20 + SLOW_S]], untilS: 70 }).log.rejoined[SHIGURE]![0], 55 + LOST_S);
+    near(run({ ...NORMAL, chaseS: 100 }, 7, { events: [[10, SHIGURE, 'seen'], [12, SHIGURE, 'unseen']], untilS: 70 }).log.rejoined[SHIGURE]![0], 52);
+    const d = run(LEASH, 7, { events: [[10, SHIGURE, 'seen']], dawnS: 30, untilS: 200 });
+    near(d.log.rejoined[SHIGURE]![0], 30);
+    expect([d.log.left[SHIGURE]!.length, d.log.rejoined[SHIGURE]!.length]).toEqual([1, 1]);
+  });
+  it('鍵の無い計画は S1 の規則のまま: 見続ければ 300 秒でも離れたまま（戻らない）', () => {
+    const { st, log } = run(NORMAL, 7, { events: [[10, SHIGURE, 'seen']], untilS: 300 });
+    expect([log.left[SHIGURE]!.length, log.rejoined[SHIGURE]!.length, screenAway(st, SHIGURE)]).toEqual([1, 0, true]);
+  });
+});
+
 describe('決定性・読み口・source', () => {
   const busy: Opts = {
     events: [[10, SHIGURE, 'seen'], [12, SHIGURE, 'unseen'], [15, PICKET, 'seen'], [16, PICKET, 'unseen'], [40, SHIGURE, 'seen'], [42, SHIGURE, 'unseen'], [70, PICKET, 'sink'], [100, SHIGURE, 'seen']],

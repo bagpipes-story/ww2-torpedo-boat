@@ -331,7 +331,7 @@
       "share": 0,
       "enemy_direct": true,
       "game_event": "radio_failure",
-      "trigger": "報告を送る前に敵の艦の砲弾（76 mm 以上＝v0_1_prototype.recon.radio_min_damage 以上の 1 発）を受けると、1 発ごとに recon.radio_fail_chance で無線が壊れる（v0.8.2。us_05。乱数は seed+34・recon のある任務だけ。機銃は引かない）",
+      "trigger": "報告を送る前に敵の艦の砲弾（76 mm 以上＝v0_1_prototype.recon.radio_min_damage 以上の 1 発）を受けると、1 発ごとに recon.radio_fail_chance で無線が壊れる（v0.8.2。us_05。乱数は seed+45・recon のある任務だけ。機銃は引かない）",
       "counterplay": "照らされる前に報告を送る（戦艦を目で確かめ、レーダーで追う）。壊れたら隣の分隊の黄色い輪（recon.relay）へ入って中継を頼む",
       "penalty": "報告が届くまで任務は達成にならない（中継の輪まで走る燃料と時間）",
       "version": "v0.8.2",

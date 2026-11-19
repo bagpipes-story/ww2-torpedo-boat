@@ -114,9 +114,12 @@ export interface ColWorld {
 }
 
 /** us_05 の小さな世界。seed を渡せば今夜の揺らぎ込み（出撃の seed。乱数の系列は seed+1・seed+17）、省けば揺らぎなし。radar は false で作らない */
-export function colWorld(o: { hard?: boolean; seed?: number; dawnS?: number; radar?: boolean; setup?: SetupOptions; mission?: string } = {}): ColWorld {
+export function colWorld(o: { hard?: boolean; seed?: number; dawnS?: number; radar?: boolean; setup?: SetupOptions; mission?: string; leash?: boolean } = {}): ColWorld {
   const id = o.mission ?? 'us_05';
-  const setup = setupOf(id, o.hard ?? false, o.seed, o.setup ?? {});
+  const setup0 = setupOf(id, o.hard ?? false, o.seed, o.setup ?? {});
+  // leash: false は見張りの鎖（v0.8.2 S3b の screen_chase_s・screen_cooldown_s）を setup から外す＝S2 の規則（見失うまで追う）を見る tests 用
+  const t0 = setup0.transit;
+  const setup = o.leash === false && t0 ? { ...setup0, transit: Object.fromEntries(Object.entries(t0).filter(([k]) => k !== 'screenChaseS' && k !== 'screenCooldownS')) as typeof t0 } : setup0;
   const seed = o.seed ?? 1;
   const gunRng = new CountingRng((seed + 1) >>> 0);
   const lookoutRng = new CountingRng((seed + 17) >>> 0);

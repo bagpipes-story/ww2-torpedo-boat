@@ -41,7 +41,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -125,8 +125,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -362,11 +362,13 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -646,10 +648,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -820,19 +822,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -920,19 +922,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -1069,7 +1071,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -1153,8 +1155,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -1390,11 +1392,13 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -1674,10 +1678,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -1848,19 +1852,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -1948,19 +1952,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -2097,7 +2101,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -2181,8 +2185,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -2418,11 +2422,13 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -2702,10 +2708,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -2876,19 +2882,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -2976,19 +2982,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -3125,7 +3131,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -3209,8 +3215,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -3446,11 +3452,13 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -3730,10 +3738,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -3904,19 +3912,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -4004,19 +4012,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -4153,7 +4161,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -4237,8 +4245,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -4475,12 +4483,14 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0,
-   -600
+   -575
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -4760,10 +4770,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -4934,19 +4944,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -5034,19 +5044,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -5280,7 +5290,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -5364,8 +5374,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -5602,12 +5612,14 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0,
-   -600
+   -575
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -5887,10 +5899,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -6061,19 +6073,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -6161,19 +6173,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -6407,7 +6419,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -6491,8 +6503,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -6729,12 +6741,14 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0,
-   -600
+   -575
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -7014,10 +7028,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -7188,19 +7202,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -7288,19 +7302,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -7534,7 +7548,7 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 34,
+  "fuelAllotmentGal": 24,
   "shallows": [],
   "friendlyAircraft": null,
   "storm": null,
@@ -7618,8 +7632,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 34,
- "fuelStartGal": 34,
+ "fuelAllotmentGal": 24,
+ "fuelStartGal": 24,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -7856,12 +7870,14 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
    400,
    400,
    400,
-   -600,
+   -560,
    0,
    0,
-   -600
+   -575
   ],
   "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
   "column": [
    {
     "enemyId": "ijn_destroyer",
@@ -8141,10 +8157,10 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
        "id": "sec_127mm",
        "count": 4,
        "effectiveM": 3500,
-       "roundsPerMinPerGun": 8,
+       "roundsPerMinPerGun": 7,
        "damage": 35,
        "shellSpeedMps": 400,
-       "dispersionM": 170,
+       "dispersionM": 125,
        "splashRadiusM": 8,
        "fireChance": 0.3,
        "engineDamageChance": 0.25
@@ -8315,19 +8331,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,
@@ -8415,19 +8431,19 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
      "guns": [
       {
        "id": "sec_152mm",
-       "count": 4,
+       "count": 7,
        "effectiveM": 4500,
        "roundsPerMinPerGun": 5,
        "damage": 40,
        "shellSpeedMps": 400,
-       "dispersionM": 220,
+       "dispersionM": 185,
        "splashRadiusM": 8,
        "fireChance": 0.4,
        "engineDamageChance": 0.3
       },
       {
        "id": "aa_127mm",
-       "count": 2,
+       "count": 4,
        "effectiveM": 3000,
        "roundsPerMinPerGun": 8,
        "damage": 35,

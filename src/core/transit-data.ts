@@ -12,8 +12,9 @@ export type TransitEdge = (typeof TRANSIT_EDGES)[number];
 export const TRANSIT_EDGE_HEADING: Readonly<Record<TransitEdge, number>> = { west: 90, east: 270 };
 /** transit の鍵（往復の列はちょうど 10 個）・inbound の鍵（ちょうど 4 個）・outbound の鍵（ちょうど 3 個） */
 export const TRANSIT_KEYS = ['ships', 'spacing_s', 'speed_kt', 'edge_inset_m', 'inbound', 'unload_s', 'outbound', 'cover_leaves_with_outbound', 'vila_label_ja', 'source'] as const;
-/** 片道の列（column のある block。v0.8.2）の鍵: rejoin_s だけ任意（見張りの艦がいる時。V-C4 は config/column-mission-data）。往復の 4 つの鍵は置かない */
-export const TRANSIT_ONEWAY_KEYS = ['ships', 'speed_kt', 'edge_inset_m', 'inbound', 'column', 'rejoin_s', 'vila_label_ja', 'source'] as const;
+/** 片道の列（column のある block。v0.8.2）の鍵: rejoin_s と見張りの鎖（screen_chase_s・screen_cooldown_s。S3b）は任意（見張りの艦がいる時。V-C4 は config/column-mission-data）。往復の 4 つの鍵は置かない */
+export const TRANSIT_ONEWAY_KEYS = ['ships', 'speed_kt', 'edge_inset_m', 'inbound', 'column', 'rejoin_s', 'screen_chase_s', 'screen_cooldown_s', 'vila_label_ja', 'source'] as const;
+const TRANSIT_ONEWAY_OPTIONAL = ['rejoin_s', 'screen_chase_s', 'screen_cooldown_s'] as const;
 export const TRANSIT_TWOWAY_ONLY_KEYS = ['spacing_s', 'unload_s', 'outbound', 'cover_leaves_with_outbound'] as const;
 export const TRANSIT_INBOUND_KEYS = ['edge', 'lane_y_m', 'heading_deg', 'enter_s'] as const;
 export const TRANSIT_OUTBOUND_KEYS = ['edge', 'lane_y_m', 'heading_deg'] as const;
@@ -56,6 +57,8 @@ export interface TransitTwoWayBlock extends TransitBlockBase {
 export interface TransitOneWayBlock extends TransitBlockBase {
   column: unknown[];
   rejoin_s?: number;
+  screen_chase_s?: number;
+  screen_cooldown_s?: number;
   outbound?: undefined;
 }
 
@@ -98,8 +101,8 @@ export function readTransitBlock(raw: unknown, label: string): TransitBlock {
   if (oneWay) {
     const twoWay = TRANSIT_TWOWAY_ONLY_KEYS.filter((k) => k in raw);
     if (twoWay.length > 0) bad(`片道の列（column）には ${TRANSIT_TWOWAY_ONLY_KEYS.join('・')} を置かない（${twoWay.join('・')}。向こうの縁の外へ出た艦は去って戻らない。V-C4・spec-v0820 §4.2）`);
-    const { rejoin_s: _rejoin, ...rest } = raw;
-    closedKeys(rest, TRANSIT_ONEWAY_KEYS.filter((k) => k !== 'rejoin_s'), bad, '片道の列の');
+    const rest = Object.fromEntries(Object.entries(raw).filter(([k]) => !(TRANSIT_ONEWAY_OPTIONAL as readonly string[]).includes(k)));
+    closedKeys(rest, TRANSIT_ONEWAY_KEYS.filter((k) => !(TRANSIT_ONEWAY_OPTIONAL as readonly string[]).includes(k)), bad, '片道の列の');
     if (!Array.isArray(raw['column'])) bad('column は配列（列の艦ごとの記録）');
   } else closedKeys(raw, TRANSIT_KEYS, bad, '');
   const ships = raw['ships'];

@@ -5,11 +5,14 @@
 // 計画は screenPlanOf（S0 の ColumnPlan の kits と rejoinS か setup の transit.column と rejoinS）・艦の読み口は Destroyer が形で満たす。状態は createScreenState(n) で 1 回・夜ごとに resetScreenState。
 // 列の段階（destroyer-transit）の直後に stepScreens を 1 回。離れた・戻った艦は st.left・st.rejoined のビット（core/ship-transit の作法。bit i＝列の i 隻目＝隊の i 隻目）。AI を替えるのは S2
 // （setAiParams・startRetire）。秒は体感の時計（世界の秒は S2 がビットの立ったステップの stepTimeS を刻む）。乱数なし・作る 2 つのほかは確保しない。
+// v0.8.2 S3b（lead の L37。見張りの鎖）: 計画に chaseS があれば、離れてから体感の chaseS 秒たった艦はまだ自艇を見ていても戻る（史実の時雨は短く離れて列は針路を守った）。
+// cooldownS があれば、戻った艦は戻ってから体感の cooldownS 秒は離れない。どちらも無い計画（transit の screen_chase_s・screen_cooldown_s の無い列）は S1 の規則のまま。夜明けは今のまま先に効く。
 import { TRANSIT_MAX_SHIPS } from './transit-data';
 const SCREEN_TIME_EPS_S = 1e-6; // 時計の比べの許し（固定ステップの 1/60 秒の和の丸め。core/ship-transit と同じ）
 
-/** 計画（見張りの艦のビット＝bit i は列の i 隻目の role が screen・見失ってから戻る体感の秒＝transit.rejoin_s）と艦の読み口（entities/destroyer の Destroyer がそのまま満たす。読むだけ） */
-export interface ScreenPlan { readonly mask: number; readonly rejoinS: number }
+/** 計画（見張りの艦のビット＝bit i は列の i 隻目の role が screen・見失ってから戻る体感の秒＝transit.rejoin_s・任意の鎖＝離れていられる体感の秒 screen_chase_s と
+ *  戻ってから離れない体感の秒 screen_cooldown_s。S3b）と艦の読み口（entities/destroyer の Destroyer がそのまま満たす。読むだけ） */
+export interface ScreenPlan { readonly mask: number; readonly rejoinS: number; readonly chaseS?: number; readonly cooldownS?: number }
 export interface ScreenShipView { readonly ai: { readonly playerDetected: boolean }; readonly sinking: boolean }
 
 export interface ScreenState {
@@ -20,13 +23,13 @@ export interface ScreenState {
   feelS: number; dawn: boolean; left: number; rejoined: number;
 }
 
-/** 起動時に 1 回: 役の配列（kits か transit.column）と rejoinS から。見張りのいない列は null。見張りがいて rejoinS が無ければ例外（V-C4 が先に止める） */
-export function screenPlanOf(kits: readonly { readonly role: string }[], rejoinS: number | null | undefined): ScreenPlan | null {
+/** 起動時に 1 回: 役の配列（kits か transit.column）と rejoinS（と任意の鎖 chaseS・cooldownS＝無ければ鍵ごと出ない）から。見張りのいない列は null。見張りがいて rejoinS が無ければ例外（V-C4 が先に止める） */
+export function screenPlanOf(kits: readonly { readonly role: string }[], rejoinS: number | null | undefined, chaseS?: number | null, cooldownS?: number | null): ScreenPlan | null {
   let mask = 0;
   kits.forEach((k, i) => { if (k.role === 'screen') mask |= 1 << i; });
   if (mask === 0) return null;
   if (typeof rejoinS !== 'number') throw new Error('見張り（role screen）のいる列は rejoinS が要る（core/column-screen・V-C4）');
-  return { mask, rejoinS };
+  return { mask, rejoinS, ...(typeof chaseS === 'number' ? { chaseS } : {}), ...(typeof cooldownS === 'number' ? { cooldownS } : {}) };
 }
 
 /** 起動時に 1 回（艦の数 n は 1〜TRANSIT_MAX_SHIPS の整数）。中身は resetScreenState の後と同じ（みな列にいる） */
@@ -57,15 +60,17 @@ export function stepScreens(st: ScreenState, plan: ScreenPlan, ships: readonly S
     const seen = ships[i]!.ai.playerDetected;
     if (st.away[i] === 0) {
       if (st.dawn || !seen) continue;
+      if (plan.cooldownS !== undefined && st.feelS < st.rejoinedAtS[i]! + plan.cooldownS - SCREEN_TIME_EPS_S) continue; // 戻ってから cooldownS の間は離れない（未だ戻っていなければ NaN＝離れる）
       st.away[i] = 1;
       st.leaves[i]!++;
       st.leftAtS[i] = st.feelS;
       st.lostAtS[i] = NaN;
       st.left |= bit;
-    } else if (seen && !st.dawn) st.lostAtS[i] = NaN; // また見つけた: 見失った時計を戻す
-    else {
+    } else {
+      const leash = plan.chaseS !== undefined && st.feelS >= st.leftAtS[i]! + plan.chaseS - SCREEN_TIME_EPS_S; // 鎖: 離れて chaseS たてば見ていても戻る
+      if (seen && !st.dawn && !leash) { st.lostAtS[i] = NaN; continue; } // また見つけた: 見失った時計を戻す
       if (Number.isNaN(st.lostAtS[i]!)) st.lostAtS[i] = st.feelS;
-      if (!st.dawn && st.feelS < st.lostAtS[i]! + plan.rejoinS - SCREEN_TIME_EPS_S) continue;
+      if (!st.dawn && !leash && st.feelS < st.lostAtS[i]! + plan.rejoinS - SCREEN_TIME_EPS_S) continue;
       st.away[i] = 0;
       st.rejoinedAtS[i] = st.feelS;
       st.rejoined |= bit;

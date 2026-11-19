@@ -49,7 +49,7 @@ describe('kits（L19）: us_05 の列の艦ごとの記録', () => {
     // 列の AI は最大速力だけ列の速さ（18 kt）・見張りの AI は記録の値そのまま（時雨だけ）
     expect(kits.map((k) => k.screenAi !== null)).toEqual([false, false, false, false, true, false, false]);
     expect(kits[SHIGURE]!.screenAi!.ramEnabled && kits[SHIGURE]!.screenAi!.maxSpeedMps > kits[SHIGURE]!.lineAi.maxSpeedMps).toBe(true);
-    expect(g.roles!.plan).toEqual({ mask: 1 << SHIGURE, rejoinS: 40 });
+    expect(g.roles!.plan).toEqual({ mask: 1 << SHIGURE, rejoinS: 40, chaseS: s.transit!.screenChaseS, cooldownS: s.transit!.screenCooldownS }); // 鎖は v0.8.2 S3b
   });
   it('ハード 8 隻: 8 隻目は見張りの駆逐艦（KPI に数える・見張りの役）。役は時雨と 8 隻目', () => {
     const s = setupOf('us_05', true);
@@ -131,8 +131,8 @@ function follow(w: ColWorld, farAtS: number): void {
   else if (sh.out) boatAt(w, 2000, tr.inbound.laneY + tr.laneDyM![SHIGURE]! - 450);
   else boatAt(w, sh.state.x, sh.state.y - 450);
 }
-function screenNight(o: { farAtS: number; untilS: number; dawnS?: number; slow?: (w: ColWorld) => boolean }): { w: ColWorld; leftT: number; rejoinT: number; lostT: number } {
-  const w = colWorld({ dawnS: o.dawnS });
+function screenNight(o: { farAtS: number; untilS: number; dawnS?: number; leash?: boolean; slow?: (w: ColWorld) => boolean }): { w: ColWorld; leftT: number; rejoinT: number; lostT: number } {
+  const w = colWorld({ dawnS: o.dawnS, leash: o.leash ?? false }); // S2 の規則（鎖なし）を見る。鎖のある世界は下の S3b の 1 件
   w.detectRangeM = 500;
   colRun(w, o.untilS, (ww) => follow(ww, o.farAtS), o.slow);
   const r = w.destroyers.roles!;
@@ -190,6 +190,28 @@ describe('見張り（時雨）: 離れる・戻る（L20）', () => {
     expect(w.destroyers.roles!.st.leaves[SHIGURE]).toBe(1);
     expect(w.destroyers.ships.every((d) => d.out)).toBe(true);
     expect(w.destroyers.ships.filter((d) => d.state.x < w.setup.transit!.inbound.appearX).length).toBe(0); // 西へは退かない（片道・戻らない）
+  });
+});
+
+describe('見張りの鎖（v0.8.2 S3b・lead の L37。us_05 の data の screen_chase_s・screen_cooldown_s）', () => {
+  it('ついて回る自艇を見続けても、離れて chaseS たてば列の AI に戻って東へ退き、戻ってから cooldownS は離れない。その後まだ見ていればまた離れる', () => {
+    const w = colWorld({ leash: true });
+    const tr = w.setup.transit!;
+    w.detectRangeM = 500;
+    const [chase, cool] = [tr.screenChaseS!, tr.screenCooldownS!];
+    const r = w.destroyers.roles!;
+    const sh = w.destroyers.ships[SHIGURE]!;
+    let back = NaN, again = NaN;
+    colRun(w, 268, (ww) => {
+      follow(ww, Infinity);
+      if (Number.isNaN(back) && r.st.rejoined !== 0) back = ww.stepTimeS;
+      if (!Number.isNaN(back) && Number.isNaN(again) && r.st.left !== 0) again = ww.stepTimeS;
+    });
+    const left0 = tr.enterAtS![SHIGURE]!;
+    expect(Math.abs(back - (left0 + chase))).toBeLessThanOrEqual(3 / 60);
+    if (back + cool < 268) expect(again - back).toBeGreaterThanOrEqual(cool - 2 / 60);
+    expect(r.st.leaves[SHIGURE]!).toBeGreaterThanOrEqual(1);
+    expect(sh.ai.retireHeadingDeg).toBe(90);
   });
 });
 

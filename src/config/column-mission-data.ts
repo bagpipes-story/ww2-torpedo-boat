@@ -28,6 +28,8 @@ export const COLUMN_CHECK_DAWN_MARGIN_S = 20;
 export const COLUMN_CHECK_START_CLEAR_M = 1500;
 export const COLUMN_CHECK_START_WINDOW_S = 10;
 export const COLUMN_REJOIN_RANGE_S = [10, 120] as const;
+/** 見張りの鎖（v0.8.2 S3b・lead の L37。任意）: 離れていられる体感の秒 screen_chase_s と、戻ってから離れない体感の秒 screen_cooldown_s の範囲（V-C4） */
+export const COLUMN_LEASH_RANGE_S = { screen_chase_s: [10, 180], screen_cooldown_s: [0, 300] } as const;
 export type ShipClass = (typeof SHIP_CLASSES)[number];
 export type ColumnRole = (typeof COLUMN_ROLES)[number];
 export type ColumnGroup = (typeof COLUMN_GROUPS)[number];
@@ -44,8 +46,8 @@ export interface ColumnKit {
   artKey: string; magazine: MagazineRule | null;
 }
 
-/** 片道の列の組み立ての結果（今夜の揺らぎ・ハードの艦込み）: kits と艦ごとの入りの秒・道のずれ・見張りが戻る秒（見張りのいない列は null） */
-export interface ColumnPlan { kits: ColumnKit[]; enterAtS: number[]; laneDyM: number[]; rejoinS: number | null }
+/** 片道の列の組み立ての結果（今夜の揺らぎ・ハードの艦込み）: kits と艦ごとの入りの秒・道のずれ・見張りが戻る秒と鎖（見張りのいない列・鎖の鍵の無い列は null） */
+export interface ColumnPlan { kits: ColumnKit[]; enterAtS: number[]; laneDyM: number[]; rejoinS: number | null; screenChaseS: number | null; screenCooldownS: number | null }
 
 /** 組み立ての上書き: 当たりの倍率（?debug&shiphit。world-setup の値）・弾薬庫の確率 1（?debug&boom） */
 export interface ColumnSetupOptions extends MagazineSetupOptions { shipHitScale?: number }
@@ -119,6 +121,7 @@ export function getColumnPlan(data: GameData, mission: PrototypeMission, night: 
   const [screens, rj] = [rows.some((r) => r['role'] === 'screen'), b.rejoin_s];
   const [rjMin, rjMax] = COLUMN_REJOIN_RANGE_S;
   if (screens ? !(isNum(rj) && rj >= rjMin && rj <= rjMax) : rj !== undefined) bad('V-C4', `transit.rejoin_s は見張り（role screen）がいる時だけ ${rjMin}〜${rjMax} 秒（${String(rj)}）`);
+  for (const [k, [lo, hi]] of Object.entries(COLUMN_LEASH_RANGE_S)) { const v = (b as unknown as Rec)[k]; if (v !== undefined && !(screens && isNum(v) && v >= lo && v <= hi)) bad('V-C4', `transit.${k} は見張り（role screen）がいる時だけ置ける ${lo}〜${hi} 秒（${String(v)}）`); }
   // 時刻と道（揺らぎなし）: 入りの秒は enter_s ＋ 間隔の和、道は lane_y_m ＋ lane_dy_m。今夜の揺らぎの端は入りの ± jxS 秒・道の ± jy m
   const { width, height } = mission.bounds;
   const world = data.hitRateModel.world;
@@ -161,7 +164,7 @@ export function getColumnPlan(data: GameData, mission: PrototypeMission, night: 
     const [ds, shipClass] = [destroyerSetup(data, [], id, null, hitScale, historical), shipClassOf(data, id)];
     return { enemyId: id, nameJa: r['name_ja'] as string, group: r['group'] as ColumnGroup, role, shipClass, kpi: shipClass === 'destroyer', spec: ds.spec, lineAi: { ...ds.shipAi, maxSpeedMps: ktToMps(b.speed_kt) }, screenAi: role === 'screen' ? ds.shipAi : null, gunnery: ds.gunnery, passRadius2: ds.passRadius2, artKey: shipArtKey(id), magazine: magazineRuleOf(data, id, o) };
   });
-  return { kits, enterAtS: enter.slice(0, use.length).map((t) => t + shift), laneDyM: use.map((r) => r['lane_dy_m'] as number), rejoinS: screens ? (rj as number) : null };
+  return { kits, enterAtS: enter.slice(0, use.length).map((t) => t + shift), laneDyM: use.map((r) => r['lane_dy_m'] as number), rejoinS: screens ? (rj as number) : null, screenChaseS: b.screen_chase_s ?? null, screenCooldownS: b.screen_cooldown_s ?? null };
 }
 
 /** Boot の検査: 記録の艦種（ship_class）をすべてと、v0_1_prototype を持つ全任務（ハードも）の片道の列を 1 回組む（揺らぎなし）。最初の列の任務の値（ノーマル）を返す（無ければ null） */

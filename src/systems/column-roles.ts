@@ -49,7 +49,7 @@ export class ColumnRoles {
   /** 見張りのいる片道の列だけ作る（transit.column の無い任務・見張りのいない列は null）。ships は列の艦・transit は隊の列の段階 */
   static of(ships: readonly RoleShip[], plan: TransitSetup, transit: ShipTransitState): ColumnRoles | null {
     const col = plan.column;
-    const sp = col ? screenPlanOf(col, plan.rejoinS) : null;
+    const sp = col ? screenPlanOf(col, plan.rejoinS, plan.screenChaseS, plan.screenCooldownS) : null; // 鎖（S3b）は鍵のある列だけ
     if (!col || !sp) return null;
     if (ships.length !== col.length) throw new Error(`列の艦の数（${ships.length}）が transit.column（${col.length}）と違う（systems/column-roles）`);
     return new ColumnRoles(ships, sp, transit, col.map((k) => k.lineAi), col.map((k) => k.screenAi), plan.inbound.headingDeg);

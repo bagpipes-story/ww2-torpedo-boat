@@ -59,7 +59,7 @@ describe('片道の列（us_05 の第三部隊。揺らぎなし）', () => {
     const p = us05();
     expect([p.ships, p.outbound, p.unloadS, p.spacingS, p.coverLeavesWithOutbound]).toEqual([7, null, 0, 0, false]);
     expect([0, 1, 2, 3, 4, 5, 6].map((i) => transitEnterAtS(p, i))).toEqual([5, 20, 35, 50, 80, 85, 101]);
-    expect([0, 1, 2, 3, 4, 5, 6].map((i) => transitLaneDyM(p, i))).toEqual([400, 400, 400, 400, -600, 0, 0]);
+    expect([0, 1, 2, 3, 4, 5, 6].map((i) => transitLaneDyM(p, i))).toEqual([400, 400, 400, 400, -560, 0, 0]); // 時雨の道は v0.8.2 S3 の探りの帯 N1 で −600 → −560
     expect([TRANSIT_IN, TRANSIT_WAIT].map((ph) => transitAppearLeg(p, ph))).toEqual([p.inbound, null]);
     expect(transitAppearLeg(p, 3)).toBeNull(); // OUT（復路）は無い
     expect([p.inbound.appearX, p.inbound.goneX, p.inbound.laneY, p.inbound.headingDeg]).toEqual([150, 6650, 2400, 90]);
@@ -67,7 +67,7 @@ describe('片道の列（us_05 の第三部隊。揺らぎなし）', () => {
   it('入りは表の秒（体感の時計）・道は艦ごと・向こうの縁の外で GONE（AWAY にならない＝揚陸の地も復路も無い）。去るのは入りの 140.4 秒後', () => {
     const { st, log } = run(us05(), 270);
     expect(log.enter.map((t) => Math.round(t * 60) / 60)).toEqual([5, 20, 35, 50, 80, 85, 101].map((t) => Math.round(t * 60) / 60));
-    expect(log.y).toEqual([2800, 2800, 2800, 2800, 1800, 2400, 2400]);
+    expect(log.y).toEqual([2800, 2800, 2800, 2800, 1840, 2400, 2400]);
     const cross = 6500 / (us05().speedMps * gameData.hitRateModel.world.time_scale); // 140.40 秒
     log.gone.forEach((g, i) => expect(Math.abs(g - log.enter[i]! - cross), String(i)).toBeLessThanOrEqual(2 * STEP));
     expect([log.arrived, log.returned, log.cover, st.arrivedCount, st.outCount, st.goneCount, st.inCount]).toEqual([0, 0, 0, 0, 0, 7, 7]);
@@ -92,9 +92,9 @@ describe('片道の列（us_05 の第三部隊。揺らぎなし）', () => {
     expect([st.inCount, transitCount(st, TRANSIT_WAIT), transitPending(st), st.goneCount]).toEqual([4, 3, 0, 4]);
     expect(log.enter.length).toBe(4);
   });
-  it('ハード: 8 隻目（見張りの駆逐艦）は 109 秒・北の道（y 1,800）', () => {
+  it('ハード: 8 隻目（見張りの駆逐艦）は 109 秒・北の道（y 1,825。v0.8.2 S3 の帯 H1 で −600 → −575）', () => {
     const p = us05(true);
-    expect([p.ships, transitEnterAtS(p, 7), p.inbound.laneY + transitLaneDyM(p, 7)]).toEqual([8, 109, 1800]);
+    expect([p.ships, transitEnterAtS(p, 7), p.inbound.laneY + transitLaneDyM(p, 7)]).toEqual([8, 109, 1825]);
     expect(run(p, 270).st.goneCount).toBe(8);
   });
 });

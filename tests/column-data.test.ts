@@ -46,7 +46,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
       const p = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05', hard), null, false)!;
       expect(p.kits.map((k) => k.nameJa)).toEqual(hard ? [...NAMES, '見張りの駆逐艦'] : NAMES);
       expect(p.enterAtS).toEqual(hard ? [5, 20, 35, 50, 80, 85, 101, 109] : [5, 20, 35, 50, 80, 85, 101]);
-      expect(p.laneDyM).toEqual(hard ? [400, 400, 400, 400, -600, 0, 0, -600] : [400, 400, 400, 400, -600, 0, 0]);
+      expect(p.laneDyM).toEqual(hard ? [400, 400, 400, 400, -560, 0, 0, -575] : [400, 400, 400, 400, -560, 0, 0]); // v0.8.2 S3 の探りの帯（N1・H1）で時雨 −600 → −560・ハードの 8 隻目 −600 → −575
       expect(p.kits.map((k) => k.group).join('')).toBe(hard ? 'vanvanvanvanmainmainmainmain' : 'vanvanvanvanmainmainmain');
       expect(p.kits.map((k) => k.role)).toEqual(hard ? ['line', 'line', 'line', 'line', 'screen', 'line', 'line', 'screen'] : ['line', 'line', 'line', 'line', 'screen', 'line', 'line']);
       expect(p.rejoinS).toBe(40);
@@ -79,7 +79,7 @@ describe('既定の data（us_05 の第三部隊。spec §4.1 D-M2・D-M3・§4.
   it('今夜の揺らぎ（列の 1 件）: x のずれ ÷ 画面上の速さ 46.3 m/秒 → 全部の艦の入りの秒（東へずれれば早い）、道のずれは艦ごとのまま（y のずれは transit の道へ）', () => {
     const p = getColumnPlan(gameData, getPrototypeMission(gameData, 'us_05'), { dx: 92.6, dy: -80, dh: 0 }, false)!;
     expect(p.enterAtS.map((t) => Math.round(t * 1e9) / 1e9)).toEqual([5, 20, 35, 50, 80, 85, 101].map((t) => Math.round((t - 92.6 / SCREEN_MPS) * 1e9) / 1e9));
-    expect(p.laneDyM).toEqual([400, 400, 400, 400, -600, 0, 0]);
+    expect(p.laneDyM).toEqual([400, 400, 400, 400, -560, 0, 0]);
     const t = getTransitParams(gameData, getPrototypeMission(gameData, 'us_05'), { dx: 92.6, dy: -80, dh: 0 }, false)!;
     expect([t.inbound.laneY, t.enterS, t.enterAtS![0]]).toEqual([2320, p.enterAtS[0], p.enterAtS[0]]);
   });
@@ -158,8 +158,8 @@ describe('起動時の検査（config/column-mission-data の V-C1〜V-C6）', (
     expect(build((d) => (protoOf(d, 'us_05')['enemy_hits_to_sink'] = 1))).toThrow(/enemy_hits_to_sink は片道の列の任務に置かない（沈む本数は艦ごとの記録の値）（V-C2/);
   });
   it('V-C3: 道（＋ずれ＋今夜の ±150 m）は縁から艦の余白 ＋ 200 m 以上内・岸の線から陸の反射 300 m より沖', () => {
-    // 戦艦の余白は 212.75 ＋ 200 ＝ 412.75 m。本隊の道 y 2,400 を北へ寄せる
-    expect(build((d) => ((transitOf(d)['inbound'] as Rec)['lane_y_m'] = 1050))).toThrow(/transit\.column\[4\] の道（y 450 ± 今夜の 150）は北と南の縁から 318\.0 m（艦の余白 ＋ 200）以上内（V-C3/);
+    // 戦艦の余白は 212.75 ＋ 200 ＝ 412.75 m。本隊の道 y 2,400 を北へ寄せる（時雨の道 −560＝v0.8.2 S3 の帯 N1。道 1,010 で時雨は y 450）
+    expect(build((d) => ((transitOf(d)['inbound'] as Rec)['lane_y_m'] = 1010))).toThrow(/transit\.column\[4\] の道（y 450 ± 今夜の 150）は北と南の縁から 318\.0 m（艦の余白 ＋ 200）以上内（V-C3/);
     expect(build((d) => (colOf(d)[5]!['lane_dy_m'] = -1840))).toThrow(/transit\.column\[5\] の道（y 560 ± 今夜の 150）は北と南の縁から 412\.8 m（艦の余白 ＋ 200）以上内（V-C3/);
     expect(build((d) => (colOf(d)[5]!['lane_dy_m'] = -1837.25))).not.toThrow(); // 562.75 − 150 ＝ 412.75
     expect(build((d) => (colOf(d)[0]!['lane_dy_m'] = 1250))).toThrow(/transit\.column\[0\] の道（y 3650 ± 今夜の 150）は北と南の縁から 318\.0 m/);
@@ -179,6 +179,16 @@ describe('起動時の検査（config/column-mission-data の V-C1〜V-C6）', (
       colOf(d)[4]!['role'] = 'line';
       (hardOf(d)['extra_column'] as Rec[])[0]!['role'] = 'line';
     })).toThrow(/transit\.rejoin_s は見張り（role screen）がいる時だけ 10〜120 秒（40）（V-C4/);
+    // 見張りの鎖（v0.8.2 S3b・lead の L37）: screen_chase_s 10〜180・screen_cooldown_s 0〜300 秒。任意（無い列は S1 の規則）・見張りのいない列には置けない
+    expect(build((d) => (transitOf(d)['screen_chase_s'] = 9))).toThrow(/transit\.screen_chase_s は見張り（role screen）がいる時だけ置ける 10〜180 秒（9）（V-C4/);
+    expect(build((d) => (transitOf(d)['screen_cooldown_s'] = 301))).toThrow(/transit\.screen_cooldown_s は見張り（role screen）がいる時だけ置ける 0〜300 秒（301）（V-C4/);
+    expect(build((d) => (transitOf(d)['screen_cooldown_s'] = 'x'))).toThrow(/transit\.screen_cooldown_s は.*（x）（V-C4/);
+    expect(build((d) => { delete transitOf(d)['screen_chase_s']; delete transitOf(d)['screen_cooldown_s']; })).not.toThrow();
+    expect(build((d) => {
+      colOf(d)[4]!['role'] = 'line';
+      (hardOf(d)['extra_column'] as Rec[])[0]!['role'] = 'line';
+      delete transitOf(d)['rejoin_s'];
+    })).toThrow(/transit\.screen_chase_s は見張り（role screen）がいる時だけ置ける 10〜180 秒（\d+）（V-C4/);
   });
   it('V-C5: 揺らぎのない夜のハード込みの最後の艦は夜明けの 20 秒前までに去り、今夜の揺らぎ（±6.48 秒）の端でも夜明けの前に去る', () => {
     const cross = 6500 / SCREEN_MPS; // 140.40 秒

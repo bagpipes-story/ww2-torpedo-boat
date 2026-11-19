@@ -61,6 +61,9 @@ export interface TransitSetup {
   enterAtS?: number[];
   laneDyM?: number[];
   rejoinS?: number;
+  /** 見張りの鎖（v0.8.2 S3b。transit の screen_chase_s・screen_cooldown_s。無い列は鍵ごと出ない） */
+  screenChaseS?: number;
+  screenCooldownS?: number;
   column?: ColumnKit[];
 }
 
@@ -167,7 +170,8 @@ function oneWayParams(data: GameData, mission: PrototypeMission, b: TransitOneWa
     inbound: { edge, laneY: laneY + dy, headingDeg, appearX: transitAppearX(edge, width, b.edge_inset_m), goneX: transitGoneX(edge, width, b.edge_inset_m) },
     outbound: null, coverLeavesWithOutbound: false, vilaLabelJa: b.vila_label_ja,
     shipAi: { ...shipAiParamsFromData(r, getEvasionMultiplier(data, historical)), maxSpeedMps: ktToMps(b.speed_kt) },
-    enterAtS: plan.enterAtS, laneDyM: plan.laneDyM, ...(plan.rejoinS !== null ? { rejoinS: plan.rejoinS } : {}), column: plan.kits,
+    enterAtS: plan.enterAtS, laneDyM: plan.laneDyM, ...(plan.rejoinS !== null ? { rejoinS: plan.rejoinS } : {}),
+    ...(plan.screenChaseS !== null ? { screenChaseS: plan.screenChaseS } : {}), ...(plan.screenCooldownS !== null ? { screenCooldownS: plan.screenCooldownS } : {}), column: plan.kits,
   };
 }
 

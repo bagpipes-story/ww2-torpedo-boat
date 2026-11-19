@@ -46,11 +46,12 @@ describe('戦艦（扶桑型）と重巡（最上型）の記録（spec §4.3）
     expect(pick('ijn_cruiser_mogami')).toEqual(['重巡洋艦（最上型）', 'heavy_cruiser', 200.6, 20.2, 35, 18, 1.2, 0.2, 1000, 8, 3]);
   });
   it('砲（主砲は置かない）・探照灯・星弾（戦艦は持たない）・見張り・回避・体当たりなし・端', () => {
+    // 砲は v0.8.2 S3 の gunnery-sim で spec §4.3 の的（ijn_destroyer の HP/秒の戦艦 1.2〜1.6 倍・重巡 1.0〜1.3 倍、1,000・1,500・2,000 m）に合わせた値（戦艦 副砲 4 → 7 門・散布 220 → 185・高角砲 2 → 4、重巡 毎分 8 → 7・散布 170 → 125）
     expect((rec('ijn_battleship_fuso')['guns'] as Rec[]).map((g) => [g['id'], g['count'], g['effective_night_m'], g['rof_per_min'], g['damage'], g['shell_speed_mps'], g['dispersion_m'], g['splash_radius_m'], g['fire_chance'], g['engine_damage_chance']])).toEqual([
-      ['sec_152mm', 4, 4500, 5, 40, 400, 220, 8, 0.4, 0.3], ['aa_127mm', 2, 3000, 8, 35, 400, 180, 8, 0.3, 0.2], ['aa_25mm', 8, 1200, 120, 4, 500, 70, 3, 0.05, 0.05],
+      ['sec_152mm', 7, 4500, 5, 40, 400, 185, 8, 0.4, 0.3], ['aa_127mm', 4, 3000, 8, 35, 400, 180, 8, 0.3, 0.2], ['aa_25mm', 8, 1200, 120, 4, 500, 70, 3, 0.05, 0.05],
     ]);
     expect((rec('ijn_cruiser_mogami')['guns'] as Rec[]).map((g) => [g['id'], g['count'], g['effective_night_m'], g['rof_per_min'], g['damage'], g['shell_speed_mps'], g['dispersion_m'], g['splash_radius_m'], g['fire_chance'], g['engine_damage_chance']])).toEqual([
-      ['sec_127mm', 4, 3500, 8, 35, 400, 170, 8, 0.3, 0.25], ['aa_25mm', 8, 1200, 120, 4, 500, 70, 3, 0.05, 0.05],
+      ['sec_127mm', 4, 3500, 7, 35, 400, 125, 8, 0.3, 0.25], ['aa_25mm', 8, 1200, 120, 4, 500, 70, 3, 0.05, 0.05],
     ]);
     // 25 mm は ijn_destroyer の aa_25mm の値で count だけ 8
     for (const id of ['ijn_battleship_fuso', 'ijn_cruiser_mogami']) expect({ ...gun(id, 'aa_25mm'), count: 4 }).toEqual(gun('ijn_destroyer', 'aa_25mm'));
