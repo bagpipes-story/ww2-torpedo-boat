@@ -168,6 +168,8 @@ export interface ReconTelemetry {
   sentAtS: number; pendingAtS: number; radioBrokenAtS: number; relayedAtS: number; draws: number; eventCount: number; events: number;
   /** 中継の輪（自艇からの相対位置 m・半径 m・名。S4 の端の印） */
   relayDx: number; relayDy: number; relayRadiusM: number; relayJa: string;
+  /** v0.8.2 S4（ui/recon-lines の材料）: 確かめる艦種の名詞・列の向きと速さの句（作る時に 1 回）、戦艦・重巡への命中で沈まなかった回数・その最後の何本目と艦種の名詞・艦ごとに見た命中（隊の添字） */
+  identifyJa: string; fleetJa: string; capHits: number; capHitN: number; capHitJa: string; capSeen: Uint8Array;
 }
 
 /** 戦艦の弾薬庫の HUD・Result の材料（v0.8.2 S2。艦ごとの配列は世界の MagazineLog の参照＝写さない。隊の添字） */
@@ -212,6 +214,8 @@ export interface RadarTelemetry {
    */
   widthM: number;
   eastJa: string;
+  /** 東の縁の向こうへ去って戻らない片道の列（v0.8.2 S4。us_05。eastJa は海峡の名＝「接触が東（スリガオ海峡）へ消えた」に戻りの尾を付けない） */
+  eastOneWay?: boolean;
   blips: readonly RadarBlipPos[];
   fromX: number;
   fromY: number;

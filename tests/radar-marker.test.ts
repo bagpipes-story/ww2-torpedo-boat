@@ -142,7 +142,7 @@ describe('置き方（hud-layout の箱。brief L27）', () => {
     const hm = code('src/ui/hud-markers.ts');
     expect(hm).toContain('if (telemetry.radar.enabled) {');
     expect(hm.indexOf('this.radarMarker?.refresh(telemetry, this.radarOthers, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP);')).toBeGreaterThan(hm.indexOf('pm?.refresh('));
-    expect(hm).toContain('this.radarOthers = [this.targetMarker, this.homeMarker, this.planeMarker];');
+    expect(hm).toContain('this.radarOthers = this.relayMarker ? [this.targetMarker, this.homeMarker, this.planeMarker, this.relayMarker] : [this.targetMarker, this.homeMarker, this.planeMarker];'); // v0.8.2 S4: 報告の任務（us_05）は中継の印からも離す（ほかの任務は今の 3 つ）
     expect(markerOnScreen(0, 0, 640, 360, TOP, MARGIN)).toBe(true);
   });
 });

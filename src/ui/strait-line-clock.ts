@@ -4,12 +4,13 @@
 // - レーダーの出来事（t.radar だけを読む。文は ui/radar-lines が出来事の時に 1 回組む）: 夜の最初の接触・接触が増えた（10 秒に 1 回まで）・東の縁で消えた（1 夜に 1 回）・
 //   東へ消えた後に東の縁に現れた（1 夜に 1 回）。出ている間に次が来たら後ろに 1 つ待たせる（待っているものに替わるのは同じかより重い出来事だけ）。
 // - 衝突の危険（t.strait の bowOnMask・bowOnM）: 艦のビットが新しく立った時（1 回の接近で 1 回。円錐か距離の外へ出れば次に備える）から 4 秒。距離は危険の間は毎フレームの一番近い艦まで。
-// レーダーも列の通過も無い任務は何も始めない（旗は 0 のまま＝ほかの任務は 1 ビットも変わらない）。Phaser・DOM を読まない。確保は出来事の文を組む時だけ。 v0.8.1 S4: 止まった艦の任務（us_06）の出来事の時計 anchor（ui/anchor-lines）と衝突の危険の名詞（駆潜艇）も持つ。
+// レーダーも列の通過も無い任務は何も始めない（旗は 0 のまま＝ほかの任務は 1 ビットも変わらない）。Phaser・DOM を読まない。確保は出来事の文を組む時だけ。 v0.8.1 S4: 止まった艦の任務（us_06）の出来事の時計 anchor（ui/anchor-lines）と衝突の危険の名詞（駆潜艇）も持つ。 v0.8.2 S4: 報告の任務（us_05）の出来事の時計 recon（ui/recon-lines）も。
 import { BOW_ON_STEP_M, RADAR_NEW_MIN_GAP_MS, STRAIT_EVENT_SHOW_MS } from '../config/strait-hud-config';
 import type { BoatTelemetry } from '../core/boat-telemetry';
 import { MISSION_BOW_ON, MISSION_RADAR_EVENT, MODE_FLAG_BOW_ON, MODE_FLAG_RADAR_EVENT } from './mission-mode';
 import { RADAR_EV_FIRST, RADAR_EV_NEW, RADAR_EV_NONE, RADAR_EV_RETURN, RADAR_EV_VILA, radarEventLineJa, radarLostAtEastEdge, radarNewAtEastEdge } from './radar-lines';
 import { AnchorLineClock } from './anchor-lines';
+import { ReconLineClock } from './recon-lines';
 
 export class StraitLineClock {
   /** 見たレーダーの出来事（最初の接触・新しい接触と消えた接触の回数）・1 夜に 1 回の 2 つ・最後に「新しい接触」を始めた ms */
@@ -38,6 +39,7 @@ export class StraitLineClock {
   bowPicket = false; // 一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハード。ui/strait-lines の名詞）
   private prevShownMs = 0;
   readonly anchor = new AnchorLineClock(); // 止まった艦の任務の出来事（v0.8.1 S4。us_06。ui/anchor-lines。止まった艦の無い任務は旗 0 のまま）
+  readonly recon = new ReconLineClock(); // 報告の任務の出来事（v0.8.2 S4。us_05。ui/recon-lines。報告の無い任務は旗 0 のまま）
 
   /** 2 行目のキー（ui/mission-line-keys の lKey）: レーダーの出来事は通し番号、衝突の危険は通し番号と距離の刻み */
   get radarKey(): number {
@@ -92,7 +94,7 @@ export class StraitLineClock {
         this.bowActive = false;
       }
     }
-    return (this.radarKind !== RADAR_EV_NONE ? MODE_FLAG_RADAR_EVENT : 0) | (this.bowActive ? MODE_FLAG_BOW_ON : 0) | this.anchor.flags(t, nowMs);
+    return (this.radarKind !== RADAR_EV_NONE ? MODE_FLAG_RADAR_EVENT : 0) | (this.bowActive ? MODE_FLAG_BOW_ON : 0) | this.recon.flags(t, nowMs) | this.anchor.flags(t, nowMs);
   }
 
   /** そのフレームのモードが決まった後（nowMs は flags と同じ時刻）: 前のフレームから今まで出ていた ms を足す */
@@ -104,6 +106,7 @@ export class StraitLineClock {
     this.bowOnPrev = mode === MISSION_BOW_ON;
     this.prevShownMs = nowMs;
     this.anchor.shown(mode, nowMs);
+    this.recon.shown(mode, nowMs);
   }
 
   /** 出来事を出す（今出していなければ今から、出している間は後ろに 1 つ。文は今のテレメトリから 1 回だけ組む） */

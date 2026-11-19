@@ -1,7 +1,7 @@
 // v0.8.2 S0（spec-v0820 §3・§5.1・§5.4）: us_05「スリガオ海峡・最初の接触」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
 // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.2 S0 の木で作った。us_05 の setup は S1〜S4 で鍵が増えうる（S2b の絵の鍵・S3 のつまみ）ので、
 // 書き換える時は CHANGELOG に段と理由を書く（ほかの 11 任務の setup の snapshot は -u しない）。Briefing の行は入れない（S4 で変わる）。
-// 今夜の揺らぎ（+16）は 5 回（列の 1 件 3・大発の先頭 1・反転 1。ノーマル・ハードとも）。遊べるのは S4 から（playable_from はまだ無い）。
+// 今夜の揺らぎ（+16）は 5 回（列の 1 件 3・大発の先頭 1・反転 1。ノーマル・ハードとも）。遊べるのは S4 から（v0.8.2 S4 で playable_from "v0.8.2"）。
 // あわせて: us_05 の種の直し（場所・月・敵・目的・成功・史実メモ）と、画面の文に人名・階級つきの呼び方・PT の番号が無い（CLAUDE.md §11・spec-v0820 §4.14）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -63,13 +63,13 @@ describe('us_05 の setup の snapshot（v0.8.2 S0 の木）', () => {
 });
 
 describe('us_05 の種の直し（spec-v0820 §3）と人名・PT の番号（CLAUDE.md §11・spec-v0820 §4.14）', () => {
-  it('場所はボホール島沖・半月・史実の大艦隊（ユーザーの U1）・目的と成功の文・夜明けは own のまま（L1）・題と日付と順と type はそのまま・S4 から遊べる（playable_from はまだ無い）', () => {
+  it('場所はボホール島沖・半月・史実の大艦隊（ユーザーの U1）・目的と成功の文・夜明けは own のまま（L1）・題と日付と順と type はそのまま・S4 から遊べる（v0.8.2 S4 で playable_from "v0.8.2"）', () => {
     const m = missionOf('us_05');
     expect([m['title_ja'], m['date'], m['order'], m['type'], m['place'], m['moon'], m['moon_label_ja'], m['torpedo_type'], m['player_boat']]).toEqual(['スリガオ海峡・最初の接触', '1944-10-24', 5, 'recon_and_attack', 'ミンダナオ海（ボホール島沖）', 'half', '半月（西に低い）', 'us_mk13', 'us_elco80']);
     expect(m['enemies']).toEqual(['ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_cruiser_mogami', 'ijn_battleship_fuso', 'ijn_battleship_fuso']);
     expect((m['v0_1_prototype'] as Rec)['enemies']).toEqual(m['enemies']);
-    expect([m['objective'], m['success']]).toEqual(['戦艦2・重巡1・駆逐艦4の日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ', '報告して帰投（戦艦を見て、レーダーで20秒追う）']);
-    expect('playable_from' in m).toBe(false);
+    expect([m['objective'], m['success']]).toEqual(['戦艦2・重巡1を含む日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ', '報告して帰投（戦艦を見て、レーダーで20秒追う）']);
+    expect(m['playable_from']).toBe('v0.8.2'); // v0.8.2 S4（spec §4.13 D-H6・lead の L44）: 米PT のタブの 6 枚目。目的は S4 で駆逐艦の隻数を外した（ハードの「駆逐艦 ×5」と食い違わない）
     const da = m['dawn_air'] as Rec;
     expect([da['control'], da['play_as'], da['enemy_ships_at_dawn'], da['label_ja']]).toEqual(['own', 'own', 'retire', '昼の空は味方（護衛空母）']);
     expect(String(da['source'])).toContain('lead の既定 L1');

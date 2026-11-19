@@ -55,7 +55,7 @@ describe('見出しの言い換え（L62）', () => {
       if (r !== 'rammed') expect(resultHeadingJa(r, NaN, true, false, false, true), r).toBe(resultHeadingJa(r, NaN, true, false));
     }
     expect(REASON_LABEL.rammed).toBe('駆逐艦に体当たりされた');
-    expect(code('src/scenes/result-scene.ts')).toContain('r.evac !== undefined, r.anchor !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);');
+    expect(code('src/scenes/result-scene.ts')).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);'); // v0.8.2 S4: 報告の任務（us_05）も（列の艦はどれも船体に当たれば同じ理由）
   });
 });
 

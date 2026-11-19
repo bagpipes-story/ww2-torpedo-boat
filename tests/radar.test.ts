@@ -196,7 +196,8 @@ describe('輝点の記録は位置だけ・隠れた状態を読まない・確�
     expect(importers('radar')).toEqual(['src/core/intercept-sim-policy.ts', 'src/core/intercept-sim-tracks.ts', 'src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/column-kits.ts', 'src/systems/radar-telemetry.ts', 'src/systems/radar-view.ts', 'src/systems/world-radar.ts']);
     expect(code('src/systems/column-kits.ts')).toContain("import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';");
     // v0.8.2 S2（L20）: 列の見張り（systems/column-roles）が海域の中の艦（transitOnMap）を読む
-    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/column-roles.ts', 'src/systems/destroyer-transit.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
+    // v0.8.2 S4: Result の艦隊の行の材料（systems/recon-result-part）が海峡へ去った隻数（TRANSIT_GONE の数え）を読む
+    expect(importers('ship-transit')).toEqual(['src/core/intercept-sim-world.ts', 'src/core/intercept-sim.ts', 'src/systems/column-roles.ts', 'src/systems/destroyer-transit.ts', 'src/systems/recon-result-part.ts', 'src/systems/strait-result-part.ts', 'src/systems/transit-telemetry.ts']);
     // v0.8.0 実機 1 回目: 探照灯を岸で切る（beamLengthToLand）ために destroyer-group・enemy-fire・world-enemies も（tests/strait-ip1）
     // v0.8.1 S2: 暗い岸を背に（systems/shore-backdrop の landBehind。us_06）も
     // v0.8.1 IP1: 岸の陰の海（core/backdrop-zone の格子と systems/backdrop-fx の境の升の割合。絵だけ＝世界は読まない＝tests/backdrop-zone）も

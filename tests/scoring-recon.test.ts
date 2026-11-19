@@ -78,8 +78,10 @@ describe('shipKills の無い任務は今の式（L18）', () => {
     }
     expect(n).toBe(types.length * 12);
   });
-  it('Result（scenes/result-scene）は S2 ではまだ shipKills を渡さない（S4 の Result）', async () => {
+  it('Result（scenes/result-scene）は報告の任務だけ shipKills を渡す（v0.8.2 S4。S2 では渡さなかった。材料は systems/recon-result-part＝tests/recon-result）', async () => {
     const { readFileSync } = await import('node:fs');
-    expect(readFileSync('src/scenes/result-scene.ts', 'utf8')).not.toContain('shipKills');
+    const rs = readFileSync('src/scenes/result-scene.ts', 'utf8');
+    expect(rs.split('shipKills').length - 1).toBe(2);
+    expect(rs).toContain('...(r.recon ? { shipKills: r.recon.shipKills } : {}) },');
   });
 });

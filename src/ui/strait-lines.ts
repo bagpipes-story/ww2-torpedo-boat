@@ -8,6 +8,7 @@ import type { HudLine } from './hud-lines';
 import { MISSION_BOW_ON, MISSION_RADAR_EVENT } from './mission-mode';
 import { RADAR_EV_RETURN } from './radar-lines';
 import type { AnchorLineView } from './anchor-lines';
+import type { ReconLineView } from './recon-texts';
 
 /** 衝突の危険の文（step は BOW_ON_STEP_M の刻みの数。1 以上。picket は一番近い危険な艦が駆潜艇＝v0.8.1 S4 の us_06 のハード。ほかの任務は駆逐艦のまま） */
 export function bowOnLineJa(step: number, picket = false): string {
@@ -21,6 +22,7 @@ export interface StraitLineView {
   readonly bowStep: number;
   readonly bowPicket?: boolean;
   readonly anchor?: AnchorLineView; // 止まった艦の任務の出来事（v0.8.1 S4。ui/anchor-lines。ui/special-line がモード 41 で読む）
+  readonly recon?: ReconLineView; // 報告の任務の出来事（v0.8.2 S4。ui/recon-lines。ui/special-line がモード 42 で読む）
 }
 
 /** 海峡の 2 つのモードの行（ほかのモードは null）。帰りの列（進路から離れよ）と衝突の危険は警告の色、ほかのレーダーの出来事は強い色 */

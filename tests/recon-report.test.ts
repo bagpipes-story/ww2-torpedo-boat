@@ -210,7 +210,8 @@ describe('達成・決定性・source', () => {
     expect(s).toMatch(/import type \{ SeededRng \} from '\.\/rng'/);
     expect(s).not.toMatch(/Math\.(sqrt|hypot|atan2|random)\b|\.chance\(/);
   });
-  it('S2 から import するのは systems/world-recon（世界の側）・mission-objective（達成）・recon-telemetry（あと何秒）だけ（lead の L26。S1 は誰も import しなかった）', () => {
-    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/recon-report')))).toEqual(['src/systems/mission-objective.ts', 'src/systems/recon-telemetry.ts', 'src/systems/world-recon.ts']);
+  it('S2 から import するのは systems/world-recon（世界の側）・mission-objective（達成）・recon-telemetry（あと何秒）だけ（lead の L26。S1 は誰も import しなかった）。S4 から HUD と Result の段の定数・状態の型も', () => {
+    // v0.8.2 S4: 2 行目の文（ui/recon-texts の段）・中継の端の印（ui/hud-markers の中継待ち）・Result の報告の行（ui/recon-result の段）と材料（systems/recon-result-part の状態の型）。どれも読むだけ
+    expect(SRC.filter((f) => imports(code(f)).some((p) => p.endsWith('/recon-report')))).toEqual(['src/systems/mission-objective.ts', 'src/systems/recon-result-part.ts', 'src/systems/recon-telemetry.ts', 'src/systems/world-recon.ts', 'src/ui/hud-markers.ts', 'src/ui/recon-result.ts', 'src/ui/recon-texts.ts']);
   });
 });

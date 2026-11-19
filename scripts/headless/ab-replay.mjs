@@ -24,10 +24,12 @@
 // v0.8.2 S2（spec-v0820 §8 の S2・brief L25）: SET=us05 で us_05（スリガオ海峡・最初の接触。片道の列・見張り・報告・弾薬庫）のノーマル・ハード × seed 1・2 を 270 秒（夜明けまで。all には入れない。
 //   S2 は A＝B＝今の木で決定性とページのエラー・S2b から A は S2 の commit のビルド）。写しに報告の段（s.rc: 段・無線・追った秒・引いた回数）・列の見張り（s.sc: 離れている艦）・
 //   弾薬庫（s.mg: 誘爆の数・引いた回数）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印の濾し（scripts/headless/recon-filter。B が出し側・世界の写しは全部比べる。A は S3 の commit のビルド）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { anchorPair } from './anchor-filter.mjs';
+import { reconPair } from './recon-filter.mjs';
 
 /** S4 の濾し（brief L33。ページへは文字列で渡す）: 2 行目の S4 の行・そのうちレーダーだけの行・緑の端の印の字の色と絵の鍵・隠した物の字 */
 export const S4_FILTER = {
@@ -146,7 +148,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1', ...(process.env.NOPLANE === '1' ? { noplane: true } : {}) };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', reconui: process.env.RECONUI === '1', filtertest: process.env.FILTERTEST === '1', ...(process.env.NOPLANE === '1' ? { noplane: true } : {}) };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -191,6 +193,7 @@ export async function oneCase(browser, A, B, c) {
     let ra;
     let rb;
     if (c.anchorui) [ra, rb] = await anchorPair(pa, pb, o, c, abRun); // us_06 の S4 の濾し（v0.8.1 S4。anchor-filter）
+    else if (c.reconui) [ra, rb] = await reconPair(pa, pb, o, c, abRun); // us_05 の S4 の濾し（v0.8.2 S4。recon-filter）
     else if (c.radarui || c.noradar) {
       // S4 の濾し: 出し側を先に回してフレームの印を集め、もう一方へ渡す
       for (const p of [pa, pb]) await p.page.evaluate(`window.__s4Hud = ${s4Hud.toString()}`);
@@ -227,7 +230,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }

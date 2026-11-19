@@ -159,7 +159,7 @@ export function dawnResult(w: DawnTelemetryWorld): DawnResult {
             vip: st.p.escortPlanes.includes(true),
           }
         : null,
-    shipsWithdrawn: w.enemy.shipsWithdrawn,
+    shipsWithdrawn: w.setup.recon ? 0 : w.enemy.shipsWithdrawn, // 報告の任務（v0.8.2 S4。us_05）の片道の列が海峡へ去った数は艦隊の行（ui/recon-result の「→ 海峡へ N」）が言う＝「駆逐艦は東へ退いた」と言わない（戦艦・重巡も去る）
     transportWithdrawn: w.enemy.transportWithdrawn,
     retireJa: w.dawn.retireJa,
     bargesHidden: w.enemy.bargesHidden,

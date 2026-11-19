@@ -54,6 +54,8 @@ export class WorldRadar {
     readonly eastJa = '',
     /** 今の岸（coast の南）がある（v0.8.1 S2。us_06。両岸の任務は両岸が先＝us_04 は今の線のまま） */
     coastSouth?: boolean,
+    /** 東の縁の向こうへ去って戻らない片道の列（v0.8.2 S4。us_05。HUD の文だけが読む） */
+    readonly eastOneWay = false,
   ) {
     const { width, height } = bounds;
     this.geo = { width, height, land: landLinesOf(shores ?? null, coastSouth === true, width, height) };

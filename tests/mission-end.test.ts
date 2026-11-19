@@ -369,6 +369,7 @@ describe('data: fleet_gone_clears（us_02）と torpedo_end_settle_s', () => {
     expect(String(protoOf(gameData, 'us_02')['fleet_gone_clears_source'])).toContain('帰投は必須ではない');
     expect(getDawnAir(gameData, 'us_04').fleetGoneClears).toBe(false); // v0.8.0 S5 から遊べる（「遊べない任務」は古い言葉＝v0.8.1 S4 で直した）。敵の空の任務で帰投が要る
     expect(getDawnAir(gameData, 'us_06').fleetGoneClears).toBe(false); // v0.8.1 S4 から遊べる・敵の空（lead の既定 L1）で帰投が要る
+    expect(getDawnAir(gameData, 'us_05').fleetGoneClears).toBe(false); // v0.8.2 S4 から遊べる・味方の空（L1）でも置かない（報告して帰るのが芯・中継の夜を早く終わらせない＝spec-v0820 §4.9 D-E2）
   });
   it('遊べる 5 任務の帰投地点に torpedo_end_settle_s 5 秒（design。実機 1 回目「3秒ほど待ってほしい」→ 2 回目「5秒にしましょう」）', () => {
     for (const id of PLAYABLE) {

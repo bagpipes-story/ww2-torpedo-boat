@@ -335,7 +335,7 @@
       "counterplay": "照らされる前に報告を送る（戦艦を目で確かめ、レーダーで追う）。壊れたら隣の分隊の黄色い輪（recon.relay）へ入って中継を頼む",
       "penalty": "報告が届くまで任務は達成にならない（中継の輪まで走る燃料と時間）",
       "version": "v0.8.2",
-      "note": "design。史実: 1944-10-24 夜、ボホール島沖の第 1 分隊の PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 に報告の中継を頼んだ（中継を頼んだのが PT-130 か PT-131 かは出典で違う。docs/01 §8 は v0.8.2 S4。WebSearch の抜粋のみ・本文未読。medium）。米PT の損失 69 隻の内訳（count・share）ではないので count 0・share 0（engine_failure の作法。total_losses などの合計は変えない）。Briefing の危険の行の名（label_ja）。世界の配線は v0.8.2 S2"
+      "note": "design。史実: 1944-10-24 夜、ボホール島沖の第 1 分隊の PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 に報告の中継を頼んだ（中継を頼んだのが PT-130 か PT-131 かは出典で違う。docs/01 §8 の終わり「スリガオ海峡・最初の接触（v0.8.2 の調べ）」。WebSearch の抜粋のみ・本文未読。medium）。米PT の損失 69 隻の内訳（count・share）ではないので count 0・share 0（engine_failure の作法。total_losses などの合計は変えない）。Briefing の危険の行の名（label_ja）。世界の配線は v0.8.2 S2"
     }
   ],
   "source": {

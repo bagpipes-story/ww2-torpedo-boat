@@ -94,12 +94,12 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const t = buildWorldSetup(gameData, 'us_04', {}).transit!;
     expect([t.speedKt, r2(mpsToKt(t.shipAi.maxSpeedMps))]).toEqual([30, 30]);
   });
-  it('遊べる任務（playable_from）の駆逐艦の任務はみな表にあり、us_06 も表にある（v0.8.1 S4 から遊べる）', () => {
+  it('遊べる任務（playable_from）の駆逐艦の任務はみな表にあり、us_06・us_05 も表にある（v0.8.1 S4・v0.8.2 S4 から遊べる）', () => {
     const covered = new Set(rows.map((r) => r[0].split('&')[0]));
     const campaigns = [...new Set((gameData.missionsSeed.missions as unknown as Record<string, unknown>[]).map((m) => m['campaign'] as string))];
     expect(campaigns.sort()).toEqual(['jp_hard', 'us_pt']);
     const playable = campaigns.flatMap((c) => playableMissionIds(gameData, c)).filter((id) => buildWorldSetup(gameData, id, {}).destroyer !== null);
-    expect(playable.sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_04', 'us_06']); // v0.8.1 S4: us_06 に playable_from
+    expect(playable.sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_04', 'us_05', 'us_06']); // v0.8.1 S4: us_06 に playable_from。v0.8.2 S4: us_05 にも
     for (const id of [...playable, 'us_06']) expect(covered.has(id), id).toBe(true);
   });
   it('前提の source: AI の目標の速さは巡航・回避・最大だけ、Destroyer が速さを書くのは作る時（巡航）・現れる時（列の速さ）・沈み始め（0）だけ、steerShip は目標を越えない', () => {
