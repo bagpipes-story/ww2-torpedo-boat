@@ -1,0 +1,110 @@
+us_01 t0 beam D 40 miss   entry   37U under 1 text False
+us_01 t0 beam D 70 miss   entry   62U under 1 text False
+us_01 t0 beam D100 hit    entry   86U under 0 text False
+us_01 t0 beam D130 hit    entry     - under 0 text False
+us_01 t0 beam D200 hit    entry     - under 0 text False
+us_01 t0 bow  D 40 hit    entry   22U under 0 text False
+us_01 t0 bow  D 70 hit    entry   37U under 0 text False
+us_01 t0 bow  D100 hit    entry   52U under 0 text False
+us_01 t0 bow  D130 hit    entry   67U under 0 text False
+us_01 t0 bow  D200 hit    entry     - under 0 text False
+us_02 t0 beam D 40 miss   entry   37U under 1 text True
+us_02 t0 beam D 70 miss   entry   62U under 1 text True
+us_02 t0 beam D100 hit    entry   86U under 0 text False
+us_02 t0 beam D130 hit    entry     - under 0 text False
+us_02 t0 beam D200 hit    entry     - under 0 text False
+us_02 t0 bow  D 40 hit    entry   22U under 0 text False
+us_02 t0 bow  D 70 hit    entry   37U under 0 text False
+us_02 t0 bow  D100 hit    entry   52U under 0 text False
+us_02 t0 bow  D130 hit    entry   67U under 0 text False
+us_02 t0 bow  D200 hit    entry     - under 0 text False
+us_02 t1 beam D 40 miss   entry   41U under 1 text True
+us_02 t1 beam D 70 hit    entry   71U under 0 text False
+us_02 t1 beam D100 hit    entry     - under 0 text False
+us_02 t1 beam D130 hit    entry     - under 0 text False
+us_02 t1 beam D200 hit    entry     - under 0 text False
+us_02 t1 bow  D 40 hit    entry   31U under 0 text False
+us_02 t1 bow  D 70 hit    entry   53U under 0 text False
+us_02 t1 bow  D100 hit    entry   76U under 0 text False
+us_02 t1 bow  D130 hit    entry  100U under 0 text False
+us_02 t1 bow  D200 hit    entry     - under 0 text False
+us_04 t0 beam D 40 miss   entry   37U under 1 text True
+us_04 t0 beam D 70 miss   entry   62U under 1 text True
+us_04 t0 beam D100 hit    entry   86U under 0 text False
+us_04 t0 beam D130 hit    entry     - under 0 text False
+us_04 t0 beam D200 hit    entry     - under 0 text False
+us_04 t0 bow  D 40 hit    entry   22U under 0 text False
+us_04 t0 bow  D 70 hit    entry   37U under 0 text False
+us_04 t0 bow  D100 hit    entry   52U under 0 text False
+us_04 t0 bow  D130 hit    entry   67U under 0 text False
+us_04 t0 bow  D200 hit    entry     - under 0 text False
+us_04 t1 beam D 40 miss   entry   41U under 1 text True
+us_04 t1 beam D 70 miss   entry   71U under 1 text True
+us_04 t1 beam D100 hit    entry     - under 0 text False
+us_04 t1 beam D130 hit    entry     - under 0 text False
+us_04 t1 beam D200 hit    entry     - under 0 text False
+us_04 t1 bow  D 40 hit    entry   20U under 0 text False
+us_04 t1 bow  D 70 hit    entry   34U under 0 text False
+us_04 t1 bow  D100 hit    entry   49U under 0 text False
+us_04 t1 bow  D130 hit    entry   62U under 0 text False
+us_04 t1 bow  D200 hit    entry   96U under 0 text False
+us_05 t4 beam D 40 passed entry   39U under 1 text True
+us_05 t4 beam D 70 passed entry   67U under 1 text True
+us_05 t4 beam D100 hit    entry   93U under 0 text False
+us_05 t4 beam D130 hit    entry     - under 0 text False
+us_05 t4 beam D200 hit    entry     - under 0 text False
+us_05 t4 bow  D 40 hit    entry   27U under 0 text False
+us_05 t4 bow  D 70 hit    entry   46U under 0 text False
+us_05 t4 bow  D100 hit    entry   65U under 0 text False
+us_05 t4 bow  D130 hit    entry   83U under 0 text False
+us_05 t4 bow  D200 hit    entry     - under 0 text False
+us_05 t5 beam D 40 hit    entry   40U under 0 text False
+us_05 t5 beam D 70 hit    entry   70U under 0 text False
+us_05 t5 beam D100 hit    entry     - under 0 text False
+us_05 t5 beam D130 hit    entry     - under 0 text False
+us_05 t5 beam D200 hit    entry     - under 0 text False
+us_05 t5 bow  D 40 hit    entry   27U under 0 text False
+us_05 t5 bow  D 70 hit    entry   46U under 0 text False
+us_05 t5 bow  D100 hit    entry   66U under 0 text False
+us_05 t5 bow  D130 hit    entry   86U under 0 text False
+us_05 t5 bow  D200 hit    entry     - under 0 text False
+us_05 t3 beam D 40 passed entry   40U under 1 text True
+us_05 t3 beam D 70 hit    entry   70U under 0 text False
+us_05 t3 beam D100 hit    entry     - under 0 text False
+us_05 t3 beam D130 hit    entry     - under 0 text False
+us_05 t3 beam D200 hit    entry     - under 0 text False
+us_05 t3 bow  D 40 hit    entry   27U under 0 text False
+us_05 t3 bow  D 70 hit    entry   46U under 0 text False
+us_05 t3 bow  D100 hit    entry   66U under 0 text False
+us_05 t3 bow  D130 hit    entry   86U under 0 text False
+us_05 t3 bow  D200 hit    entry     - under 0 text False
+us_06 t0 beam D 40 miss   entry   40U under 1 text False
+us_06 t0 beam D 70 miss   entry   67U under 1 text False
+us_06 t0 beam D100 hit    entry   96U under 0 text False
+us_06 t0 beam D130 hit    entry     - under 0 text False
+us_06 t0 beam D200 hit    entry     - under 0 text False
+us_06 t0 bow  D 40 hit    entry   32U under 1 text False
+us_06 t0 bow  D 70 hit    entry     - under 0 text False
+us_06 t0 bow  D100 hit    entry     - under 0 text False
+us_06 t0 bow  D130 hit    entry     - under 0 text False
+us_06 t0 bow  D200 hit    entry     - under 0 text False
+us_06! t2 beam D 40 miss   entry   40U under 1 text True
+us_06! t2 beam D 70 miss   entry   70U under 1 text True
+us_06! t2 beam D100 hit    entry     - under 0 text False
+us_06! t2 beam D130 hit    entry     - under 0 text False
+us_06! t2 beam D200 hit    entry     - under 0 text False
+us_06! t2 bow  D 40 hit    entry   42U under 0 text False
+us_06! t2 bow  D 70 hit    entry   72U under 0 text False
+us_06! t2 bow  D100 hit    entry     - under 0 text False
+us_06! t2 bow  D130 hit    entry     - under 0 text False
+us_06! t2 bow  D200 miss   entry     - under 0 text False
+jp_06 t0 beam D 40 miss   entry   39U under 1 text True
+jp_06 t0 beam D 70 miss   entry   68U under 1 text True
+jp_06 t0 beam D100 hit    entry   93U under 0 text False
+jp_06 t0 beam D130 hit    entry     - under 0 text False
+jp_06 t0 beam D200 hit    entry     - under 0 text False
+jp_06 t0 bow  D 40 hit    entry   27U under 0 text False
+jp_06 t0 bow  D 70 hit    entry   47U under 0 text False
+jp_06 t0 bow  D100 hit    entry   66U under 0 text False
+jp_06 t0 bow  D130 hit    entry   86U under 0 text False
+jp_06 t0 bow  D200 hit    entry     - under 0 text False

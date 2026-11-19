@@ -48,11 +48,12 @@ function armRun(o) {
         // 艦首の前でも自艇は動かさない（横へ動かすと艦が追って向きを変える＝試しの 1 夜で見た）
       }
     }
+    if (!o.underSeen && hl.texts('Hud').some((x) => x === '近すぎて船体の下を通過')) o.underSeen = w.stepTimeS;
     if (s && !entry && s.active && inCap(s.x, s.y)) entry = { run: s.runM, armed: s.runM >= P.armingM, shipH: d.state.headingDeg };
     if (s && !s.active && (rec.out || f > 600)) break;
     if (s && rec.out && !s.active) break;
   }
-  return { shipH0, target: ti, geom: o.geom, D: o.D, armingM: P.armingM, u, v, r, half, cls: g.kits && g.kits.classes ? g.kits.classes[ti] : null, spec: { L: d.spec.lengthM, B: d.spec.beamM, k: d.spec.hitScale }, launch, hud, entry, rec, dud: s ? s.dud : null, erratic: s ? s.erratic : null };
+  return { underSeen: o.underSeen ?? null, underCount: window.__game.registry.get('boatTelemetry').torpedoUnder, shipH0, target: ti, geom: o.geom, D: o.D, armingM: P.armingM, u, v, r, half, cls: g.kits && g.kits.classes ? g.kits.classes[ti] : null, spec: { L: d.spec.lengthM, B: d.spec.beamM, k: d.spec.hitScale }, launch, hud, entry, rec, dud: s ? s.dud : null, erratic: s ? s.erratic : null };
 }
 
 async function main() {
