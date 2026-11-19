@@ -1,0 +1,9007 @@
+// orun-base.ts
+import { createHash } from "node:crypto";
+
+// ../wt-0176202/data/boats.json
+var boats_default = {
+  $schema_note: "\u8247\u306E\u30D1\u30E9\u30E1\u30FC\u30BF\u3002units: \u9577\u3055m, \u901F\u529Bkt, \u52A0\u901Fm/s^2, \u65CB\u56DEdeg/s, \u71C3\u6599\u306F\u6642\u9593(h)\u3002\u5404\u30D5\u30A3\u30FC\u30EB\u30C9\u306E source \u306F historical\uFF08\u53F2\u5B9F\u5024\uFF09/ design\uFF08\u8A2D\u8A08\u4E0A\u306E\u63D0\u6848\u5024\u3001\u30D7\u30EC\u30A4\u30C6\u30B9\u30C8\u3067\u5909\u3048\u308B\uFF09/ unverified\uFF08\u672A\u78BA\u8A8D\uFF09\u3002",
+  version: "0.1.0",
+  boats: [
+    {
+      id: "us_elco80",
+      nation: "US",
+      name: "Elco 80ft PT boat",
+      name_ja: "\u7C73 Elco 80ft PT\u30DC\u30FC\u30C8",
+      role: "player_main",
+      length_m: 24.4,
+      beam_m: 6.3,
+      displacement_t: 56,
+      speed_max_kt: 39,
+      speed_cruise_kt: 23,
+      speed_silent_kt: 8,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 18,
+        cruise_max: 30,
+        hysteresis: 1
+      },
+      accel_mps2: 1.2,
+      decel_mps2: 1.6,
+      turn_rate_deg_s: 24,
+      fuel_hours_cruise: 15,
+      fuel_hours_full: 6,
+      fuel_capacity_gal: 3e3,
+      fuel_idle_ratio: 0.1,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 14,
+      torpedoes: {
+        count: 4,
+        reloads: 0,
+        type_early: "us_mk8",
+        type_late: "us_mk13",
+        launch_early: "tube",
+        launch_late: "rack"
+      },
+      guns: [
+        "twin_12.7mm_x2",
+        "20mm_oerlikon",
+        "37mm_m4",
+        "40mm_bofors_late"
+      ],
+      radar: {
+        available_from: "1943-07",
+        range_m: 31e3,
+        type: "SO",
+        source: "historical (v0.8.0 S0\u30FBspec-v0800 \xA73.1\u3002SO \u578B\u306F 1943 \u5E74\u534A\u3070\u304B\u3089\u4E00\u90E8\u306E\u8247\uFF08\u5206\u968A\u306E\u5148\u982D\uFF09\u306B\u8F09\u308A\u30011943-08 \u306E\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u3067\u306F 3\u301C4 \u96BB\u3060\u3051\u30021944 \u5E74\u5F8C\u534A\u306E\u30EC\u30A4\u30C6\u306E\u4F5C\u6226\u3067\u306F\u5404\u5206\u968A\u304C\u30EC\u30FC\u30C0\u30FC\u3067\u63A5\u89E6\u3092\u5831\u3058\u305F\u3002\u8266\u8239\u3078\u306E\u63A2\u77E5\u306F\u7D04 16\u301C20 nm\uFF08\u51FA\u5178\u3067\u98DF\u3044\u9055\u3046\u3002range_m 31,000 m\uFF1D\u7D04 17 nm \u306F\u305D\u306E\u9593\uFF09\u3002available_from \u306F 1943-01 \u2192 1943-07\uFF08\u534A\u3070\uFF09\u306B\u76F4\u3057\u305F\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u30B2\u30FC\u30E0\u306E\u5C04\u7A0B\u306F hit_rate_model.json \u306E radar.models\uFF08\u6D77\u57DF\u306E\u7E2E\u5C3A\uFF09)"
+      },
+      gun_battery: {
+        label_ja: "40mm\u30FB37mm\u30FB20mm\u30FB12.7mm",
+        range_m: 600,
+        effective_m: 300,
+        dead_cone_deg: 30,
+        muzzle_flash_reveal_m: 1200,
+        spread_factor: { stop: 1, silent: 1, cruise: 1.6, full: 2.5 },
+        groups: [
+          { id: "40mm_37mm", rounds_per_min: 150, damage: 8, shell_speed_mps: 400, dispersion_m: 30, splash_radius_m: 2.5 },
+          { id: "20mm_12.7mm", rounds_per_min: 480, damage: 2, shell_speed_mps: 500, dispersion_m: 36, splash_radius_m: 1 }
+        ],
+        magazine: { rounds: 120, reload_s: 3.2 }
+      },
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 100,
+      damage: {
+        engine_damage_speed_factor: 0.7,
+        fire_dps: 2,
+        fire_duration_s: 20,
+        extinguish_hold_s: 1,
+        casualties_per_hp: 0.1,
+        crew_effects: {
+          extinguish_exponent: 1,
+          turn_rate_per_loss: 0.04,
+          accel_per_loss: 0.04,
+          min_factor: 0.5
+        }
+      },
+      hull_circles: 3,
+      sea_state_limit: 5,
+      source: {
+        length_m: "historical",
+        speed_max_kt: "design (\u8A2D\u8A0840kt\u8D85\u30FB\u5B9F\u752830kt\u53F0\u5F8C\u534A\u306E\u4E2D\u9593)",
+        speed_cruise_kt: "historical (23kt\u5DE1\u822A\u3067200gal/h)",
+        "fuel_hours_*": "historical (3,000gal; \u5DE1\u822A15h\u30FB\u5168\u901F6h\u306E\u7B97\u51FA\u5024)",
+        fuel_capacity_gal: "historical (100 \u30AA\u30AF\u30BF\u30F3\u30FB\u30AC\u30BD\u30EA\u30F3 3,000 gal\u3002docs/01 \xA73\u3002fuel_hours_* \u306E\u7B97\u51FA\u5143)",
+        fuel_idle_ratio: "design (\u505C\u6B62\u4E2D\uFF08\u6A5F\u95A2\u30A2\u30A4\u30C9\u30EB\uFF09\u306E\u6D88\u8CBB\uFF1D\u5DE1\u822A\u306E 1 \u5272\uFF1D20 gal/h\u3001\u53F2\u6599\u306A\u3057\u3002\u6D88\u8CBB\u7387 gal/h = \u30A2\u30A4\u30C9\u30EB + (\u5DE1\u822A \u2212 \u30A2\u30A4\u30C9\u30EB) \xD7 (v / \u5DE1\u822A\u901F\u529B)^n\u3002n \u306F\u53F2\u5B9F\u306E 2 \u70B9\uFF0823 kt 200\u30FB39 kt 500 gal/h\uFF09\u3092\u901A\u308B\u3088\u3046\u8D77\u52D5\u6642\u306B\u8A08\u7B97\u3059\u308B\uFF081.857\uFF09\u30028 kt 45\u30FB18 kt 134\u30FB30 kt 315 gal/h\u3002\u8DDD\u96E2\u3042\u305F\u308A\u3067\u306F 7.7 kt \u304C\u6700\u5C11\uFF083.06 gal/km\u3001\u9759\u97F3\u901F\u529B 8 kt \u3068\u307B\u307C\u540C\u3058\uFF09\u3002\u5168\u901F\u306F\u5DE1\u822A\u306E 2.5 \u500D\uFF08\u6642\u9593\u3042\u305F\u308A\uFF09\u30011.47 \u500D\uFF08\u8DDD\u96E2\u3042\u305F\u308A\uFF09)",
+        turn_rate_deg_s: "design",
+        accel_mps2: "design",
+        hull_hp: "design",
+        "damage.*": "design (\u6A5F\u95A2\u640D\u50B7\u3067\u6700\u5927\u901F\u529B 0.7 \u500D\u3002\u706B\u707D\u306F\u5B9F\u6642\u9593 20 \u79D2\u3067\u8A08 40 HP\u3002\u6D88\u706B\u306F v0.3.1 \u306E\u6D88\u706B\u30DC\u30BF\u30F3\u3092 extinguish_hold_s\uFF081.0 \u5B9F\u79D2\u3002v0.6.0 \u3067 smoke \u304B\u3089\u79FB\u3057\u305F\uFF09\u62BC\u3057\u7D9A\u3051\u308B\u3002casualties_per_hp 0.1\uFF08v0.3.4\uFF09: HP \u304C 10 \u6E1B\u308B\u3054\u3068\u306B\u4E57\u54E1 1 \u540D\u304C\u6B7B\u50B7\u3059\u308B\uFF08\u7832\u5F3E\u30FB\u6383\u5C04\u30FB\u706B\u707D\u30FB\u66B4\u98A8\u306E\u6CE2\u306E\u53E9\u304D\u3064\u3051\u306E\u3069\u308C\u3067\u3082\u3002\u4E57\u54E1\u306F HP \u304B\u3089\u6C7A\u307E\u308A\u3001\u5225\u306E\u72B6\u614B\u306F\u6301\u305F\u306A\u3044\uFF09\u3002127mm 1 \u767A\uFF0840\uFF09\u3067 4 \u540D\u3001\u6383\u5C04 1 \u56DE\uFF0825\uFF09\u3067 2 \u540D\u3001\u5168\u901F\u3067\u66B4\u98A8\u306E\u5E2F\u3092\u629C\u3051\u3066\uFF0824\uFF092 \u540D\u3002hull_hp \xD7 \u7387 = 10 \u2264 14 \u306A\u306E\u3067\u3001\u6D6E\u3044\u3066\u3044\u308B\u9650\u308A 5 \u540D\u4EE5\u4E0A\u304C\u6B8B\u308B\uFF08HP 0 \u306E\u6C88\u6CA1\u3067 4 \u540D\uFF09\u3002\u4E57\u54E1\u304C\u6E1B\u308B\u3068\u6D88\u706B\u30FB\u65CB\u56DE\u30FB\u52A0\u901F\u306B\u52B9\u304F\uFF08v0.3.5\u3002damage.crew_effects\uFF09)",
+        "smoke.*": "design (docs/02 \xA75: \u30BF\u30C3\u30D7\u3067 duration_s \u5B9F\u79D2\u3001\u8247\u5C3E\u306B puff_interval_s \u3054\u3068\u306B\u534A\u5F84 puff_radius_m \u306E\u7159\u3092\u7F6E\u304D puff_lifetime_s \u5B9F\u79D2\u6B8B\u308B\u3002cooldown_s \u306F\u5C55\u958B\u958B\u59CB\u304B\u3089\u3002\u8266\u3068\u8247\u3092\u7D50\u3076\u7DDA\u304C\u7159\u306B\u906E\u3089\u308C\u308B\u3068\u767A\u898B\u8DDD\u96E2 \xD7 smoke_factor\u3001\u63A2\u7167\u706F\u30FB\u661F\u5F3E\u306F\u7167\u3089\u305B\u306A\u3044\u3002\u6D88\u706B\u306E\u9577\u62BC\u3057\u306F v0.6.0 \u304B\u3089 damage.extinguish_hold_s\uFF08\u7159\u5E55\u306E\u7121\u3044\u65E5\u672C\u8247\u3067\u3082\u6D88\u706B\u3067\u304D\u308B\u3088\u3046\u306B\u79FB\u3057\u305F\u3002\u5024\u306F 1.0 \u79D2\u306E\u307E\u307E\uFF09)",
+        speed_bands_kt: "design (\u901F\u529B\u5E2F\u3002\u8868\u793A\u7528\u306B\u4E38\u3081\u305F kt \u3067\u5224\u5B9A\u3057\u3001stop_max \u4EE5\u4E0B=\u505C\u6B62\u3001silent_max \u4EE5\u4E0B=\u9759\u97F3\uFF08\u898B\u3064\u304B\u308A\u306B\u304F\u3044\uFF09\u3001cruise_max \u4EE5\u4E0B=\u5DE1\u822A\u3001\u305D\u308C\u4EE5\u4E0A=\u5168\u901F\u3002\u4E0A\u306E\u5E2F\u3078\u79FB\u308B\u306B\u306F\u5883\u754C\uFF0Bhysteresis kt \u3092\u8D85\u3048\u308B\u5FC5\u8981\uFF08\u5883\u754C\u4ED8\u8FD1\u306E\u63FA\u308C\u3067\u5E2F\u304C\u70B9\u6EC5\u3057\u306A\u3044\uFF09\u3002v0.2.1 \u5B9F\u6A5F\u306E\u8981\u671B\u3067\u9759\u97F3\u5E2F\u3092 18 kt \u307E\u3067\u5E83\u3052\u305F\u3002\u540C\u3058\u901F\u529B\u6BB5\u306E Elco 77ft\u30FBHiggins \u3082\u540C\u3058\u5E2F\u3002\u4ED6\u8247\u306F\u66AB\u5B9A\u3067\u901F\u529B\u6BB5\u306E\u5024)",
+        crew: "historical (12\u301C17\u3002v0.3.4 \u304B\u3089 Result \u306E\u4E57\u54E1\u3068\u30B9\u30B3\u30A2\uFF08scoring.json \u306E crew\uFF09\u306E\u6BCD\u6570\u306B\u4F7F\u3046)",
+        gun_battery: "design (v0.4.2\u3002\u5927\u767A\u6383\u8A0E\u306E\u8247\u306E\u7832\u3002\u53F2\u5B9F: 1943 \u5E74\u5F8C\u534A\u306E Elco 80ft \u306F 40mm Bofors \xD71\uFF08\u7D04 120 \u767A/\u5206\uFF09\u30FB37mm M4 \xD71\uFF08\u7D04 150 \u767A/\u5206\u3001P-39 \u306E\u8EE2\u7528\uFF09\u30FB20mm Oerlikon \xD71\uFF08\u7D04 450 \u767A/\u5206\uFF09\u30FB12.7mm \u9023\u88C5 \xD72\uFF08\u7D04 450\u301C550 \u767A/\u5206/\u9580\uFF09\u3002\u5927\u767A\uFF08\u55AB\u6C34\u7D04 1.5 m\uFF09\u306F Mk 8\u30FBMk 13 \u306E\u4E0B\u3092\u629C\u3051\u308B\u306E\u3067\u7832\u3067\u6483\u3063\u305F\uFF08docs/01\uFF09\u3002\u30B2\u30FC\u30E0\u3067\u306F 2 \u7D44\uFF08\u91CD\u3044 40mm\u30FB37mm \u3068\u3001\u66F3\u5149\u5F3E\u306E 20mm\u30FB12.7mm\uFF09\u306B\u307E\u3068\u3081\u3001\u5C04\u6483\u30DC\u30BF\u30F3\u3092\u62BC\u3057\u3066\u3044\u308B\u9593\u3001\u5C04\u754C\u306B\u3044\u308B\u6700\u5BC4\u308A\u306E\u5927\u767A\u3078\u6483\u3064\uFF08\u72D9\u3044\u306F\u898B\u8D8A\u3057\u70B9\u3001\u6563\u5E03\u306F\u99C6\u9010\u8266\u306E\u7832\u3068\u540C\u3058\u4E00\u69D8\u5186\u76E4\uFF09\u3002rounds_per_min \u306F\u7D44\u306E\u5408\u8A08\u306E\u4F53\u611F\u306E\u767A/\u5206\uFF081 \u767A\uFF1D\u6570\u767A\u306E\u675F\u300220mm\u30FB12.7mm \u306E 480 \u306F\u66F3\u5149\u5F3E 1 \u672C\uFF1D\u7D04 5 \u767A\uFF09\u3002range_m 600: \u6483\u3066\u308B\u8DDD\u96E2\uFF08\u65B0\u6708\u306E\u8996\u7A0B 900 m \u3088\u308A\u5185\u3001\u5927\u767A\u306E 13mm \u306E\u591C\u9593\u6709\u52B9\u5C04\u7A0B\u3068\u540C\u3058\uFF09\u3002effective_m 300: \u3053\u308C\u3088\u308A\u9060\u3044\u3068 HUD \u306B\u300E\u9060\u3044\u300F\uFF08\u6483\u7834\u307E\u3067 300 m \u7D04 3 \u79D2\u3001400 m \u7D04 5 \u79D2\u3001500 m \u7D04 8 \u79D2\uFF09\u3002dead_cone_deg 30: \u8247\u9996\u30FB\u8247\u5C3E \xB130\xB0 \u306F\u6483\u305F\u306A\u3044\uFF08\u5168\u9580\u304C\u5411\u304F\u306E\u306F\u8237\u5074\u3068\u3044\u3046\u7C21\u7565\u5316\u3002\u5C04\u754C\u306F\u5DE6\u53F3 30\u301C150\xB0\u3002\u822A\u8DE1\u3068\u5E73\u884C\u306B L m \u96E2\u308C\u3066\u5F85\u3064\u3068\u8FD1\u3065\u304F\u5927\u767A\u306F 2L m \u3067\u5C04\u754C\u306B\u5165\u308B\uFF09\u3002muzzle_flash_reveal_m 1200: \u6483\u3063\u305F\u30B9\u30C6\u30C3\u30D7\u306B\u9583\u5149\u3068\u66F3\u5149\u5F3E\u3067 1,200 m \u4EE5\u5185\u306E\u5927\u767A\u304C\u6C17\u3065\u304F\uFF08\u5927\u767A\u306E 13mm \u306E range_m \u3068\u540C\u3058\u3002\u540C\u3058\u7D44\u306E 2 \u96BB\u306F\u5FC5\u305A\u6C17\u3065\u304D\u30011,500 m \u5F8C\u308D\u306E 2 \u7D44\u76EE\u306F\u6C17\u3065\u304B\u306A\u3044\u3002\u6A21\u64EC\u3067 1 \u7D44\u76EE\u3068\u6483\u3061\u5408\u3046\u9593\u306E 2 \u7D44\u76EE\u307E\u3067\u306F\u6700\u5C0F 1,325 m\u30021,500 m \u3060\u3068\u5F85\u3061\u4F0F\u305B\u3067 44% \u306E\u591C\u306B 2 \u7D44\u76EE\u304C\u5148\u306B\u9003\u3052\u305F\uFF09\u3002spread_factor: \u8247\u306E\u901F\u529B\u5E2F\u3067\u6563\u5E03\u306B\u639B\u3051\u308B\uFF08300 m \u306E\u6483\u7834\u306F\u505C\u6B62\u30FB\u9759\u97F3 \u7D04 3 \u79D2\u3001\u5DE1\u822A 1.6 \u3067\u7D04 7.7 \u79D2\u3001\u5168\u901F 2.5 \u3067\u7D04 18 \u79D2\uFF09\u3002damage 8 / 2\u30FBdispersion_m 30 / 36\uFF08600 m \u3067\u306E\u5186\u306E\u534A\u5F84\u3002\u8DDD\u96E2\u306B\u6BD4\u4F8B\uFF09\u30FBsplash_radius_m 2.5 / 1.0: \u5927\u767A\uFF08hull_hp 20\u300114.9 \xD7 3.4 m\uFF09\u3078\u306E 1 \u767A\u306E\u547D\u4E2D\u7387 200 m 52% / 23%\u3001300 m 25% / 10%\u3001400 m 14% / 6%\u3002shell_speed_mps 400 / 500 \u306F game \u6642\u9593\u306E\u901F\u3055\uFF08300 m \u3092\u4F53\u611F 0.15 / 0.12 \u79D2\u3002\u66F3\u5149\u5F3E\u304C\u898B\u3048\u308B\uFF09) / historical (v0.6.8 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E\u5F3E\u5009\u306E\u8ABF\u3079: 20mm Oerlikon \u306F 60 \u767A\u306E\u5F3E\u5009\uFF08\u30C9\u30E9\u30E0\uFF09\u30FB\u7406\u8AD6 \u7D04 450 \u767A/\u5206\u3067\u3001\u8CC7\u6599\u306F\u6483\u3061\u7D9A\u3051\u3066\u7D04 7.5 \u79D2\uFF087\xBD \u79D2\uFF09\u3067 1 \u5F3E\u5009\u3068\u66F8\u304F\uFF08450 \u767A/\u5206\u306E\u8A08\u7B97\u3067\u306F 8 \u79D2\u3002480 \u767A/\u5206\u3068\u3059\u308B\u8CC7\u6599\u3082\u3042\u308B\uFF09\uFF08USN\u300EMotor Torpedo Boat Manual\u300F\uFF08HyperWar\uFF09\u30FBWikipedia\u300COerlikon 20 mm cannon\u300D\u30FBUSNI Naval History 2016\u300CInstrumental Oerlikon\u300D\uFF09\u3002PT \u306E\u642D\u8F09\u306F 60 \u767A\u306E\u5F3E\u5009 8 \u500B\u3067 480 \u767A\u3002\u6559\u7BC4\u306F\u6A5F\u3078\u306F 2,000 yd \u3088\u308A\u305A\u3063\u3068\u5185\u304B\u3089\u6483\u3061\u59CB\u3081\u3088\u3068\u8A00\u3046\uFF08\u300C20mm \u306F\u5F3E\u5009\u304C\u7A7A\u306B\u306A\u3063\u3066\u3001.50 \u53E3\u5F84\u306F\u9283\u8EAB\u304C\u713C\u3051\u3066\u6483\u3061\u6B62\u3081\u306B\u306A\u3089\u306A\u3044\u3088\u3046\u306B\u300D\uFF09\u3002.50 \u53E3\u5F84 M2\uFF08Mk 17 \u9023\u88C5\uFF09\u306F 1 \u9580 1,000 \u767A\u3092 250 \u767A\u306E\u5F3E\u85AC\u7BB1 4 \u3064\u3067\uFF08pt103.com \u306E PT \u306E\u5175\u88C5\u3068\u642D\u8F09\u306E\u8868\u3002naval-encyclopedia \u306E Elco 1944 \u306E\u8868\u306F 250 \u767A\u306E\u7BB1 8 \u3064\uFF0B\u4E88\u5099 8 \u3064\uFF09\u300237mm M4 \u306F 30 \u767A\u306E\u74B0\u72B6\u306E\u5E2F\uFF08Wikipedia\u300CM4 autocannon\u300D\u30FBNavWeaps\uFF09\u300140mm Bofors \u306F 4 \u767A\u306E\u633F\u5F3E\u5B50\u3092\u624B\u3067\u8FBC\u3081\u308B\uFF08\u7D04 120 \u767A/\u5206\uFF09\u3002\u5F3E\u5009\u306E\u4EA4\u63DB\u306E\u79D2\u3092\u66F8\u3044\u305F\u8CC7\u6599\u306F\u7121\u3044) / design (v0.6.8 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300Cus_02\u3092\u8A66\u3057\u305F\u3068\u3053\u308D\u6A5F\u9283\u304C\u7121\u9650\u306B\u6483\u3066\u307E\u3057\u305F\u3002\u5F3E\u5009\u4EA4\u63DB\u304C\u767A\u751F\u3059\u308B\u3088\u3046\u306B\u300D\uFF09\u3002magazine 120 \u767A\u30FBreload_s 3.2: \u30B2\u30FC\u30E0\u306E\u767A\u306F\u5B9F\u5F3E\u3067\u306F\u306A\u3044\uFF081 \u767A\uFF1D\u6570\u767A\u306E\u675F\u3002630 \u767A/\u5206\u306F\u5B9F\u306E\u767A\u5C04\u901F\u5EA6\u306E\u548C\u306E\u7D04 1/4\u3002\u4E0A\u306E rounds_per_min \u3068\u540C\u3058\u7D04\u675F\uFF09\u3002\u7D44\u304C 2 \u3064\u306E\u7832\u3082\u5F3E\u5009\u306F 1 \u3064\uFF08core/gun-battery\u30022 \u7D44\u306E\u767A\u3092 1 \u3064\u306E\u5F3E\u5009\u3067\u6570\u3048\u3001\u4EA4\u63DB\u306E\u9593\u306F\u7832\u305C\u3093\u3076\u304C\u6B62\u307E\u308B\uFF1Djp \u306E pt-gun \u3068\u540C\u3058\uFF09\u30022 \u7D44 630 \u767A/\u5206\u3067 120 \u767A\u306F\u6483\u3061\u7D9A\u3051\u3066 11.25 \u79D2\uFF08\u6700\u521D\u306E\u30B9\u30C6\u30C3\u30D7\u306B 2 \u7D44\u3068\u3082\u6483\u3064\u306E\u3067 120 / 630 \xD7 60 \uFF1D 11.43 \u79D2\u3088\u308A\u5C11\u3057\u65E9\u3044\uFF09\u3002reload_s 3.2 \u306F jp_t14\u30FBjp_t38 \u3068\u540C\u3058\uFF08\u8CC7\u6599\u306A\u3057\uFF09\u3002\u4EA4\u63DB\u306F\u62BC\u3057\u3066\u3044\u306A\u304F\u3066\u3082\u9032\u307F\u3001\u6483\u305F\u306A\u3044\u9593\u306E\u88DC\u5145\u3068\u65E9\u3081\u306E\u4EA4\u63DB\u306F\u7121\u3044\uFF08jp \u3068\u540C\u3058\uFF09\u3002\u59CB\u3081\u306E\u6848\u306F 80 \u767A\uFF08630 \u767A/\u5206\u3067 7.62 \u79D2\uFF1D20mm \u306E\u30C9\u30E9\u30E0 1 \u3064\u306E\u7D04 7.5 \u79D2\uFF09\u3002us_03 \u306E\u5927\u767A 1 \u7D44\u3068\u306E\u6483\u3061\u5408\u3044\u306E\u6A21\u64EC\uFF08scratchpad \u306E\u8A66\u4F5C\u3002repo \u306B\u7121\u3044\u3002core \u306E barges\u30FBgun-battery\u30FBmagazine \u3092\u30B2\u30FC\u30E0\u306E BargeHunt \u3068\u540C\u3058\u9806\u3067\u56DE\u3059\u3002\u6B62\u307E\u3063\u3066\u5927\u767A\u306E\u822A\u8DEF\u304B\u3089 300 m\u3001\u5148\u982D\u304C 300 m \u4EE5\u5185\u304B\u771F\u6A2A\u306B\u6765\u3066\u304B\u3089\u62BC\u3057\u7D9A\u3051\u308B\u3002\u5C04\u7A0B 600 m \u306B\u5165\u3063\u305F\u77AC\u9593\u304B\u3089\u62BC\u3059\u3068\u9583\u5149\u3067 2 \u96BB\u76EE\u304C\u5C04\u7A0B\u306E\u5916\u3078\u9003\u3052\u3001\u3069\u306E\u5927\u304D\u3055\u3067\u3082 0.2\u301C0.4% \u3067\u6BD4\u3079\u3089\u308C\u306A\u3044\u3002seed 1\u301C1000\uFF09\u3067 2 \u96BB\u3068\u3082\u6C88\u3081\u308B\u591C\u306F\u3001\u5F3E\u5009\u306A\u3057 94.6% \u306B\u5BFE\u3057 80 \u767A 83.1%\uFF08\u221211.5 \u70B9\uFF09\u30FB90 \u767A 86.6%\u30FB100 \u767A 86.4%\u30FB120 \u767A 89.2%\uFF08\u22125.4\u3002N 4000 \u3067 1 \u7D44\u76EE \u22124.9\u30FB2 \u7D44\u76EE \u22124.4\uFF09\u300280 \u767A\u306F 250\u301C300 m \u3067 1 \u7D44\u306B\u8981\u308B 73\u301C79 \u767A\u3068\u307B\u307C\u540C\u3058\u3067\u3001\u5927\u767A\u304C\u5CB8\u3078\u9003\u3052\u308B\u9593\u306B\u4EA4\u63DB\u304C\u6765\u305F\u3002\u6C7A\u3081\u306E\u898F\u5247\uFF08\u5F3E\u5009\u304C\u6E80\u3061\u3066\u59CB\u3081\u3066 \u22125 \u70B9\u4EE5\u5185\u30011 \u7D44\u76EE\u306B\u7D04 6 \u79D2\u6483\u3063\u3066\u6B8B\u308A 17 \u767A\u3067\u59CB\u3081\u3066 \u221215 \u70B9\u4EE5\u5185\uFF09\u306E\u4E21\u65B9\u3092\u6E80\u305F\u3059\u5927\u304D\u3055\u306F\u7121\u304F\uFF08\u6B8B\u308A 17 \u767A\u306F\u3069\u306E\u5927\u304D\u3055\u3067\u3082\u7D04 \u221220 \u70B9\u300280 \u767A\u306F \u221229\uFF09\u3001\u524D\u306E\u65B9\u3092\u6E80\u305F\u3059\u6700\u5C0F\u306E 120 \u306B\u3057\u305F\u3002\u30CE\u30EB\u30DE 3 \u96BB\uFF082 \u7D44\u76EE\u3078\u6B8B\u308A\u3092\u6301\u3061\u8D8A\u3057\u3001\u6B62\u307E\u3063\u3066 300 m\uFF09\u306F\u5F3E\u5009\u306A\u3057 95% \u2192 80 \u767A 80%\u30FB120 \u767A 87%\u3002\u6D45\u702C\u306E\u7E01\u3067\u5F85\u3064\u5F85\u3061\u4F0F\u305B\uFF08\u7D04 100 m\uFF09\u306F\u3069\u306E\u5927\u304D\u3055\u3067\u3082 2 \u96BB\u3068\u3082 100%\u30FB\u30CE\u30EB\u30DE 100%\u3002\u591C\u660E\u3051\u306E\u5BFE\u7A7A\uFF08scripts/aa-sim\u3001N 1000\u30011 \u6CE2\u306E\u6483\u589C\u3002us_03 \u306E\u5BFE\u7A7A\u306F\u5927\u767A\u306E\u7832\u306E\u5F3E\u5009\u3092\u501F\u308A\u308B\uFF09\u306F\u6B62\u307E\u3063\u3066 1.06 \u2192 0.87 \u6A5F\u30FB\u5168\u901F\u306E\u76F4\u9032 0.45 \u2192 0.37 \u6A5F)",
+        sea_state_limit: "design (WMO \u306E\u6D77\u6CC1\u968E\u7D1A\u3002\u4EFB\u52D9\u306E\u6D77\u6CC1\uFF08missions_seed \u306E storm.sea_state\uFF09\u304C\u3053\u308C\u3092\u8D85\u3048\u308B\u3068\u3001\u66B4\u98A8\u306E\u5E2F\u306E\u4E2D\u3067\u5B89\u5168\u901F\u529B\uFF08risk_events \u306E storm.params.safe_speed_kt\uFF09\u3092\u8D85\u3048\u3066\u3044\u308B\u9593\u3001\u6CE2\u306B\u53E9\u304D\u3064\u3051\u3089\u308C\u3066\u50B7\u3080\u3002docs/01: Elco 70ft \u306F 2.4\u301C3 m \u306E\u6CE2\uFF08\u968E\u7D1A 4 \u3068 5 \u306E\u5883\uFF09\u3067\u8239\u5E95\u30D5\u30EC\u30FC\u30E0\u7834\u640D\u30FB\u5916\u677F\u4E80\u88C2\u306E\u8A66\u9A13\u8A18\u9332\u304C\u3042\u308B \u2192 \u4E00\u56DE\u308A\u5927\u304D\u3044 Elco 80ft \u306F 5\uFF082.5\u301C4 m\uFF09\u307E\u3067\u3002v0.3.4 \u304B\u3089\u4F7F\u3046\u3002\u4ED6\u8247\u306E\u5024\u306F\u8247\u306E\u5927\u304D\u3055\u304B\u3089\u306E\u66AB\u5B9A\u3067\u3001\u307E\u3060\u8AAD\u307E\u306A\u3044)",
+        "damage.crew_effects": "design (v0.3.5\u3002\u5B9F\u6A5F\u3067\u300E\u4E57\u54E1\u304C\u6E1B\u3063\u3066\u3082\u30B2\u30FC\u30E0\u4E0A\u306E\u5F71\u97FF\u304C\u7121\u3044\u300F\u3068\u8A00\u308F\u308C\u3001\u64CD\u4F5C\u306B\u52B9\u304B\u305B\u308B\u3002\u6D88\u706B\u306E\u9577\u62BC\u3057\u79D2 \xD7 (\u5B9A\u54E1/\u751F\u5B58)^extinguish_exponent\uFF081 \u306A\u3089 11/14 \u3067 1.3 \u79D2\u30017/14 \u3067 2.0 \u79D2\u30014/14 \u3067 3.5 \u79D2\u3002\u6D88\u3057\u624B\u304C\u6E1B\u308B\u3068\u9045\u3044\uFF09\u3002\u65CB\u56DE\u7387\u30FB\u52A0\u901F \xD7 max(min_factor, 1 \u2212 per_loss \xD7 \u6E1B\u308A)\uFF080.04: 3 \u540D\u6E1B\u3067 0.88\u30017 \u540D\u6E1B\u3067 0.72\u300110 \u540D\u6E1B\uFF08HP 0\uFF09\u3067 0.6\u3002\u64CD\u8235\u30FB\u6A5F\u95A2\u306E\u624B\u304C\u6E1B\u308B\uFF09\u3002min_factor 0.5 \u3067\u4E0B\u9650\u3002\u7832\u6483 1 \u767A\uFF0840 HP\u30014 \u540D\uFF09\u3067 \u221216% \u306A\u306E\u3067\u3001\u8235\u306E\u91CD\u3055\u304C\u4F53\u611F\u3067\u5206\u304B\u308B\u5927\u304D\u3055\u3002\u66B4\u98A8\u306E\u65CB\u56DE 0.5 \u3068\u306F\u639B\u3051\u7B97)"
+      },
+      notes: "\u6700\u3082\u8CC7\u6599\u304C\u591A\u3044\u4E3B\u8EF8\u8247\u3002Mk 8\u2192Mk 13\u3078\u306E\u63DB\u88C5\u306F1943\u5E74\u534A\u3070\u3002"
+    },
+    {
+      id: "us_elco77",
+      nation: "US",
+      name: "Elco 77ft PT boat",
+      name_ja: "\u7C73 Elco 77ft PT\u30DC\u30FC\u30C8\uFF08\u30D5\u30A3\u30EA\u30D4\u30F31941-42\uFF09",
+      role: "player_early",
+      length_m: 23.5,
+      beam_m: 6,
+      displacement_t: 46,
+      speed_max_kt: 39,
+      speed_cruise_kt: 23,
+      speed_silent_kt: 8,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 18,
+        cruise_max: 30,
+        hysteresis: 1
+      },
+      accel_mps2: 1.2,
+      decel_mps2: 1.6,
+      turn_rate_deg_s: 24,
+      fuel_hours_cruise: 14,
+      fuel_hours_full: 5.5,
+      fuel_capacity_gal: 3e3,
+      fuel_idle_ratio: 0.1,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 12,
+      torpedoes: {
+        count: 4,
+        reloads: 0,
+        type_early: "us_mk8",
+        type_late: "us_mk8",
+        launch_early: "tube",
+        launch_late: "tube"
+      },
+      guns: [
+        "twin_12.7mm_x2"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      gun_battery: {
+        label_ja: "12.7mm\u9023\u88C5\xD72",
+        range_m: 600,
+        effective_m: 300,
+        dead_cone_deg: 30,
+        muzzle_flash_reveal_m: 1200,
+        spread_factor: { stop: 1, silent: 1, cruise: 1.6, full: 2.5 },
+        groups: [
+          { id: "12.7mm_twin_x2", rounds_per_min: 400, damage: 2, shell_speed_mps: 500, dispersion_m: 36, splash_radius_m: 1 }
+        ],
+        magazine: { rounds: 50, reload_s: 3.2 }
+      },
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 90,
+      damage: {
+        engine_damage_speed_factor: 0.7,
+        fire_dps: 2,
+        fire_duration_s: 20,
+        extinguish_hold_s: 1,
+        casualties_per_hp: 0.1,
+        crew_effects: {
+          extinguish_exponent: 1,
+          turn_rate_per_loss: 0.04,
+          accel_per_loss: 0.04,
+          min_factor: 0.5
+        }
+      },
+      hull_circles: 3,
+      sea_state_limit: 4,
+      source: {
+        speed_max_kt: "historical (1941\u5E74\u6BD4\u8F03\u8A66\u9A13 39.7kt\u6301\u7D9A)",
+        fuel_capacity_gal: "historical (Elco 77ft \u3082 3,000 gal \u7D1A\u3002fuel_hours_cruise 14 h\u30FBfull 5.5 h \u304B\u3089\u5DE1\u822A 214\u30FB\u5168\u901F 545 gal/h\u3002v0.4.4 \u3067\u8981\u4EBA\u8131\u51FA\uFF08us_01\uFF09\u306E\u8247\u3068\u3057\u3066\u4F7F\u3046\u305F\u3081\u306B\u8FFD\u52A0)",
+        fuel_idle_ratio: "design (us_elco80 \u3068\u540C\u3058 0.1)",
+        hull_hp: "design (90\u3002Elco 80ft \u306E 100 \u3088\u308A\u4E00\u56DE\u308A\u5C0F\u3055\u3044\u3002v0.4.4: \u50DA\u8247\uFF08\u540C\u578B\uFF09\u306E HP \u306B\u3082\u4F7F\u3046)",
+        "damage.*": "design (v0.4.4\u3002us_elco80 \u3068\u540C\u3058\u5024\u3002crew 12 \u306A\u306E\u3067 casualties_per_hp 0.1 \xD7 90 = 9 \u540D\u307E\u3067\u6B7B\u50B7\u3057\u3001\u6D6E\u3044\u3066\u3044\u308B\u9650\u308A 3 \u540D\u4EE5\u4E0A\u304C\u6B8B\u308B)",
+        sea_state_limit: "design (4\u3002us_01 \u306E\u66B4\u98A8\u306F sea_state 5 \u306A\u306E\u3067\u3001\u5E2F\u306E\u4E2D\u3067\u5B89\u5168\u901F\u529B\u3092\u8D85\u3048\u308B\u3068\u53E9\u304D\u3064\u3051)",
+        gun_battery: "design (v0.6.8\u3002\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u30DC\u30BF\u30F3\u3068\u6A5F\u9283\u30DC\u30BF\u30F3\u306F\u5E38\u306B\u4E21\u65B9\u8868\u793A\u3055\u305B\u3001\u4E21\u65B9\u5E38\u306B\u4F7F\u7528\u3067\u304D\u308B\u4ED5\u69D8\u306B\u300D\u3067 us_01 \u306E Elco 77ft \u306B\u3082\u8247\u306E\u7832\u306E\u5024\u304C\u8981\u308B\u3002Elco 77ft \u306E\u7832\u306E\u884C\u306F docs/01 \u306B\u7121\u3044\uFF08\u7C73PT \u4E00\u822C\u306E\u884C\u306F\u300C.50 \u9023\u88C5 \xD7 2 \u3068 20mm\u2026\u300D\uFF09\u300277ft \u306F .50 \u53E3\u5F84\uFF0812.7mm\uFF09\u9023\u88C5 \xD72 \u3068\u3057\u305F\uFF08design\uFF09\u3002\u767A\u5C04\u901F\u5EA6\u306F us_elco80 \u306E 20mm\u30FB12.7mm \u306E\u7D44 480 \u767A/\u5206\uFF085 \u9580\uFF09\u306E 4/5\uFF1D384 \u3092\u4E38\u3081\u3066 400\uFF08design\u3002\u30B2\u30FC\u30E0\u306E 1 \u767A\u306F\u66F3\u5149\u5F3E 1 \u672C\u306E\u675F\uFF09\u3002damage\u30FBshell_speed_mps\u30FBdispersion_m\u30FBsplash_radius_m \u3068 range_m\u30FBeffective_m\u30FBdead_cone_deg\u30FBmuzzle_flash_reveal_m\u30FBspread_factor \u306F us_elco80 \u306E 20mm\u30FB12.7mm \u306E\u7D44\u3068\u540C\u3058\uFF08elco80 \u306E\u5024\u306F\u5909\u3048\u306A\u3044\uFF09\u3002\u8266\u306B\u306F\u52B9\u304B\u306A\u3044\uFF08\u547D\u4E2D\u306F\u6C34\u67F1\u3068\u300C\u8266\u306B\u52B9\u304B\u305A\u9583\u5149\u3067\u898B\u3064\u304B\u308B\u300D\u3060\u3051\uFF09\u3002\u6A5F\u3078\u306E\u6483\u589C\u306E\u78BA\u7387\u306F hit_rate_model.json \u306E anti_aircraft) / historical (v0.6.8 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E\u5F3E\u5009\u306E\u8ABF\u3079: .50 \u53E3\u5F84 M2 \u306E\u9023\u88C5\uFF08Mk 17\uFF09\u306F 1 \u9580 1,000 \u767A\u3092 250 \u767A\u306E\u5F3E\u85AC\u7BB1 4 \u3064\u3067\u6483\u3064\uFF08pt103.com \u306E PT \u306E\u5175\u88C5\u3068\u642D\u8F09\u306E\u8868\u3002naval-encyclopedia \u306E Elco 1944 \u306E\u8868\uFF09\uFF1D\u7BB1 1 \u3064\u3067\u7D04 27\u301C33 \u79D2\uFF081 \u9580 \u7D04 450\u301C550 \u767A/\u5206\u3002us_elco80 \u306E source \u306E\u5024\uFF09\u3002\u6483\u3061\u6B62\u3081\u306E\u5143\u306F 20mm \u306E\u30C9\u30E9\u30E0\u3067\u306F\u306A\u304F\u7BB1\u3068\u9283\u8EAB\u306E\u71B1\uFF08PT \u306E\u6559\u7BC4\u300C.50 \u53E3\u5F84\u306F\u9283\u8EAB\u304C\u713C\u3051\u3066\u6483\u3061\u6B62\u3081\u306B\u306A\u3089\u306A\u3044\u3088\u3046\u306B\u300D\uFF09\u3002\u5F3E\u5009\u306E\u4EA4\u63DB\u306E\u79D2\u3092\u66F8\u3044\u305F\u8CC7\u6599\u306F\u7121\u3044) / design (v0.6.8 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300Cus_02\u3092\u8A66\u3057\u305F\u3068\u3053\u308D\u6A5F\u9283\u304C\u7121\u9650\u306B\u6483\u3066\u307E\u3057\u305F\u3002\u5F3E\u5009\u4EA4\u63DB\u304C\u767A\u751F\u3059\u308B\u3088\u3046\u306B\u4ED6\u306E\u30A4\u30D9\u30F3\u30C8\u3082\u78BA\u8A8D\u306E\u4E0A\u300D\uFF09\u3002magazine 50 \u767A\u30FBreload_s 3.2: \u30B2\u30FC\u30E0\u306E\u767A\u306F\u5B9F\u5F3E\u3067\u306F\u306A\u3044\uFF081 \u767A\uFF1D\u66F3\u5149\u5F3E 1 \u672C\u306E\u675F\uFF09\u3002\u5024\u306F\u8A2D\u8A08\u306E\u7D04\u675F\uFF08\u7C73\u306E\u8247\u306F 1 \u5F3E\u5009\u3092\u65E5\u672C\u306E 13mm\u30FB25mm \u306E\u7D04 4 \u79D2\u3088\u308A\u9577\u304F\u6483\u3066\u308B\uFF1D\u7C73\u306E\u706B\u529B\u306E\u5DEE\u3002\u59CB\u3081\u306E\u6848\u306E\u7D04 7.5 \u79D2\uFF1D20mm \u306E\u30C9\u30E9\u30E0 1 \u3064\u306E\u307E\u307E\u3002us_elco80 \u306F us_03 \u306E\u3064\u308A\u5408\u3044\u3067 120 \u767A\uFF1D11.25 \u79D2\uFF09: 400 \u767A/\u5206\u3067 50 \u767A\u306F\u6483\u3061\u7D9A\u3051\u3066 7.35 \u79D2\uFF08\u6700\u521D\u306E 1 \u767A\u304C\u3059\u3050\u51FA\u308B\u306E\u3067 50 / 400 \xD7 60 \uFF1D 7.5 \u79D2\u3088\u308A 1 \u9593\u9694\u65E9\u3044\uFF09\u3002reload_s 3.2 \u306F jp_t14\u30FBjp_t38 \u3068\u540C\u3058\uFF08\u8CC7\u6599\u306A\u3057\uFF09\u3002us_01 \u306B\u5927\u767A\u306E\u30CE\u30EB\u30DE\u306F\u7121\u304F\u3001\u5909\u308F\u308B\u306E\u306F\u8266\u3078\u306E\u6A5F\u9283\u3068\u591C\u660E\u3051\u306E\u5BFE\u7A7A\u3060\u3051\uFF08\u8266\u3078\u306E\u6A5F\u9283\u3068\u5BFE\u7A7A\u306F 1 \u3064\u306E\u5F3E\u5009\u3092\u5206\u3051\u5408\u3046\uFF09\u3002\u591C\u660E\u3051\u306E\u5BFE\u7A7A\uFF08scripts/aa-sim\u3001N 1000\u30011 \u6CE2\u306E\u6483\u589C\uFF09\u306F\u6B62\u307E\u3063\u3066 0.68 \u2192 0.51 \u6A5F\u30FB\u5168\u901F\u306E\u76F4\u9032 0.29 \u2192 0.21 \u6A5F)",
+        others: "design"
+      },
+      notes: "MTB Sqn 3\uFF08\u30D5\u30A3\u30EA\u30D4\u30F3 1941-42\uFF09\u306E\u8247\u3002v0.4.4 \u306E\u8981\u4EBA\u8131\u51FA\uFF08us_01\uFF09\u3067\u81EA\u8247\u3068\u50DA\u8247\u306B\u4F7F\u3046\u3002"
+    },
+    {
+      id: "us_higgins78",
+      nation: "US",
+      name: "Higgins 78ft PT boat",
+      name_ja: "\u7C73 Higgins 78ft PT\u30DC\u30FC\u30C8",
+      role: "player_alt",
+      length_m: 23.8,
+      beam_m: 6.1,
+      displacement_t: 56,
+      speed_max_kt: 39,
+      speed_cruise_kt: 23,
+      speed_silent_kt: 8,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 18,
+        cruise_max: 30,
+        hysteresis: 1
+      },
+      accel_mps2: 1.2,
+      decel_mps2: 1.6,
+      turn_rate_deg_s: 28,
+      fuel_hours_cruise: 15,
+      fuel_hours_full: 6,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 14,
+      torpedoes: {
+        count: 4,
+        reloads: 0,
+        type_early: "us_mk8",
+        type_late: "us_mk13",
+        launch_early: "tube",
+        launch_late: "rack"
+      },
+      guns: [
+        "twin_12.7mm_x2",
+        "20mm_oerlikon",
+        "40mm_bofors_late"
+      ],
+      radar: {
+        available_from: "1943-07",
+        range_m: 31e3,
+        type: "SO",
+        source: "historical (v0.8.0 S0\u30FBspec-v0800 \xA73.1\u3002SO \u578B\u306F 1943 \u5E74\u534A\u3070\u304B\u3089\u4E00\u90E8\u306E\u8247\uFF08\u5206\u968A\u306E\u5148\u982D\uFF09\u306B\u8F09\u308A\u30011943-08 \u306E\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u3067\u306F 3\u301C4 \u96BB\u3060\u3051\u30021944 \u5E74\u5F8C\u534A\u306E\u30EC\u30A4\u30C6\u306E\u4F5C\u6226\u3067\u306F\u5404\u5206\u968A\u304C\u30EC\u30FC\u30C0\u30FC\u3067\u63A5\u89E6\u3092\u5831\u3058\u305F\u3002\u8266\u8239\u3078\u306E\u63A2\u77E5\u306F\u7D04 16\u301C20 nm\uFF08\u51FA\u5178\u3067\u98DF\u3044\u9055\u3046\u3002range_m 31,000 m\uFF1D\u7D04 17 nm \u306F\u305D\u306E\u9593\uFF09\u3002available_from \u306F 1943-01 \u2192 1943-07\uFF08\u534A\u3070\uFF09\u306B\u76F4\u3057\u305F\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u30B2\u30FC\u30E0\u306E\u5C04\u7A0B\u306F hit_rate_model.json \u306E radar.models\uFF08\u6D77\u57DF\u306E\u7E2E\u5C3A\uFF09)"
+      },
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 100,
+      hull_circles: 3,
+      sea_state_limit: 5,
+      source: {
+        turn_rate_deg_s: "design (Elco\u3088\u308A\u65CB\u56DE\u6027\u826F\u3068\u306E\u8A18\u8FF0\u3092\u53CD\u6620)",
+        others: "design/historical as elco80"
+      },
+      notes: "Elco\u3088\u308A\u65CB\u56DE\u6027\u304C\u826F\u3044\u304C\u6CE2\u306B\u7A81\u3063\u8FBC\u3093\u3067\u4E57\u54E1\u304C\u6FE1\u308C\u308B\u3002"
+    },
+    {
+      id: "uk_vosper73",
+      nation: "UK",
+      name: "Vosper 73ft MTB",
+      name_ja: "\u82F1 Vosper 73ft MTB",
+      role: "player_alt",
+      length_m: 22.3,
+      beam_m: 5.9,
+      displacement_t: 47,
+      speed_max_kt: 40,
+      speed_cruise_kt: 20,
+      speed_silent_kt: 8,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 8,
+        cruise_max: 20,
+        hysteresis: 1
+      },
+      accel_mps2: 1.2,
+      decel_mps2: 1.6,
+      turn_rate_deg_s: 24,
+      fuel_hours_cruise: 23.5,
+      fuel_hours_full: 8,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 13,
+      torpedoes: {
+        count: 4,
+        reloads: 0,
+        type_early: "uk_18in_mkxv",
+        type_late: "uk_18in_mkxv",
+        launch_early: "tube",
+        launch_late: "tube"
+      },
+      guns: [
+        "20mm_x2",
+        "6pdr"
+      ],
+      radar: {
+        available_from: "1943-01",
+        range_m: 0
+      },
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 95,
+      hull_circles: 3,
+      sea_state_limit: 4,
+      source: {
+        speed_max_kt: "historical",
+        fuel_hours_cruise: "historical (470nm@20kt)",
+        fuel_hours_full: "design",
+        "radar.range_m": "unverified (Type 291\u306E\u63A2\u77E5\u8DDD\u96E2\u672A\u78BA\u8A8D)"
+      },
+      notes: "18\u30A4\u30F3\u30C1\u9B5A\u96F7\u306F\u5C04\u7A0B\u304C\u77ED\u3044\uFF0840kt\u30672,500yd\uFF09\u3002"
+    },
+    {
+      id: "uk_fairmile_d",
+      nation: "UK",
+      name: "Fairmile D 'Dog Boat'",
+      name_ja: "\u82F1 Fairmile D\uFF08Dog Boat\uFF09",
+      role: "player_alt",
+      length_m: 35,
+      beam_m: 6.4,
+      displacement_t: 118,
+      speed_max_kt: 29,
+      speed_cruise_kt: 20,
+      speed_silent_kt: 8,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 8,
+        cruise_max: 20,
+        hysteresis: 1
+      },
+      accel_mps2: 0.8,
+      decel_mps2: 1.2,
+      turn_rate_deg_s: 16,
+      fuel_hours_cruise: 40,
+      fuel_hours_full: 17,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 21,
+      torpedoes: {
+        count: 4,
+        reloads: 0,
+        type_early: "uk_18in_mkxv",
+        type_late: "uk_21in_mkviii",
+        launch_early: "tube",
+        launch_late: "tube"
+      },
+      guns: [
+        "6pdr_x2",
+        "2pdr",
+        "20mm_x4"
+      ],
+      radar: {
+        available_from: "1943-01",
+        range_m: 0
+      },
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 180,
+      hull_circles: 5,
+      sea_state_limit: 5,
+      source: {
+        speed_max_kt: "historical",
+        fuel_hours_full: "historical (506nm\u5168\u901F)",
+        fuel_hours_cruise: "design (2,000nm@11kt\u306F\u5DE1\u822A\u3088\u308A\u9045\u3044)",
+        others: "design"
+      },
+      notes: "\u9045\u3044\u304C\u91CD\u6B66\u88C5\u30FB\u9577\u822A\u7D9A\u3002\u7832\u6226\u5411\u304D\u3002"
+    },
+    {
+      id: "de_s100",
+      nation: "DE",
+      name: "Schnellboot S-100 class",
+      name_ja: "\u72EC S\u30DC\u30FC\u30C8 S-100\u7D1A",
+      role: "player_alt_or_enemy",
+      length_m: 34.9,
+      beam_m: 5.3,
+      displacement_t: 117,
+      speed_max_kt: 41,
+      speed_cruise_kt: 30,
+      speed_silent_kt: 10,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 10,
+        cruise_max: 30,
+        hysteresis: 1
+      },
+      accel_mps2: 0.9,
+      decel_mps2: 1.3,
+      turn_rate_deg_s: 16,
+      fuel_hours_cruise: 24,
+      fuel_hours_full: 12,
+      fuel_type: "diesel",
+      fire_risk: "low",
+      crew: 23,
+      torpedoes: {
+        count: 2,
+        reloads: 2,
+        type_early: "de_g7a",
+        type_late: "de_g7e",
+        launch_early: "tube",
+        launch_late: "tube",
+        reload_time_s: 120
+      },
+      guns: [
+        "20mm_bow",
+        "20mm_twin_mid",
+        "37mm_or_40mm_aft"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      armored_bridge: true,
+      low_wake: true,
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 150,
+      hull_circles: 5,
+      sea_state_limit: 6,
+      source: {
+        speed_max_kt: "historical (39\u301C42kt)",
+        fuel_hours_cruise: "historical (700\u301C750nm@30kt)",
+        reload_time_s: "design",
+        others: "design"
+      },
+      notes: "\u30EC\u30FC\u30C0\u30FC\u7121\u3057\u3002\u30C7\u30A3\u30FC\u30BC\u30EB\u3067\u706B\u707D\u30EA\u30B9\u30AF\u304C\u4F4E\u3044\u3002\u8247\u5C3E\u6CE2\u304C\u5C0F\u3055\u304F\u591C\u9593\u306B\u898B\u3064\u304B\u308A\u306B\u304F\u3044\uFF08\u30EA\u30E5\u30FC\u30EB\u30BB\u30F3\u52B9\u679C\uFF09\u3002"
+    },
+    {
+      id: "jp_t38",
+      nation: "JP",
+      name: "T-38 class (Otsu type)",
+      name_ja: "\u65E5 T-38\u578B\u9B5A\u96F7\u8247\uFF08\u4E59\u578B\u30FB241\u53F7\u578B\uFF09",
+      role: "player_hard",
+      length_m: 18,
+      beam_m: 4.3,
+      displacement_t: 20,
+      speed_max_kt: 27.5,
+      speed_cruise_kt: 20,
+      speed_silent_kt: 7,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 13,
+        cruise_max: 20,
+        hysteresis: 1
+      },
+      accel_mps2: 1,
+      decel_mps2: 1.4,
+      turn_rate_deg_s: 26,
+      fuel_hours_cruise: 8.5,
+      fuel_hours_full: 4,
+      fuel_capacity_gal: 800,
+      fuel_idle_ratio: 0.1,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 7,
+      torpedoes: {
+        count: 2,
+        reloads: 0,
+        type_early: "jp_45cm",
+        type_late: "jp_45cm",
+        launch_early: "side_drop",
+        launch_late: "side_drop"
+      },
+      guns: [
+        "25mm_x1"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      gun_battery: {
+        label_ja: "25mm\u6A5F\u9283",
+        range_m: 600,
+        effective_m: 300,
+        dead_cone_deg: 30,
+        muzzle_flash_reveal_m: 1200,
+        spread_factor: {
+          stop: 1,
+          silent: 1,
+          cruise: 1.6,
+          full: 2.5
+        },
+        groups: [
+          {
+            id: "25mm_type96",
+            rounds_per_min: 220,
+            damage: 4,
+            shell_speed_mps: 500,
+            dispersion_m: 56,
+            splash_radius_m: 3
+          }
+        ],
+        magazine: {
+          rounds: 15,
+          reload_s: 3.2
+        },
+        min_spread_m: 22
+      },
+      smoke_generator: false,
+      engine_reliability: 0.85,
+      hull_hp: 60,
+      damage: {
+        engine_damage_speed_factor: 0.7,
+        fire_dps: 1.5,
+        fire_duration_s: 16,
+        extinguish_hold_s: 1,
+        casualties_per_hp: 0.1,
+        crew_effects: {
+          extinguish_exponent: 1,
+          turn_rate_per_loss: 0.04,
+          accel_per_loss: 0.04,
+          min_factor: 0.5
+        }
+      },
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical",
+        fuel_hours_cruise: "design (v0.6.0\u3002\u8CC7\u6599\u306E 220nm@26kt \u306E 8.5 \u6642\u9593\u3092\u300120 kt \u5DE1\u822A\u306E\u6642\u9593\u3068\u3057\u3066\u6D41\u7528\u3002fuel_hours_full 4\uFF0827.5 kt\uFF09\u3068\u7D44\u3080\u3068\u71C3\u6599\u66F2\u7DDA\u306E\u6307\u6570\u306F\u7D04 2.55\uFF08Elco \u306F 1.86\uFF09\uFF1D\u5168\u901F\u304C\u5272\u9AD8)",
+        fuel_hours_full: "design (v0.6.0\u3002\u53F2\u6599\u306A\u3057\u3002\u5168\u901F 27.5 kt \u3067 4 \u6642\u9593\uFF1D\u7D04 110 nm\u3002\u8CC7\u6599\u306E 220nm@26kt \u3068\u306F\u5408\u308F\u306A\u3044\uFF08\u3053\u306E\u66F2\u7DDA\u3067\u306F 26 kt \u3067\u7D04 4.6 \u6642\u9593\u30FB\u7D04 119 nm\uFF1D\u8CC7\u6599\u306E\u7D04\u534A\u5206\uFF09\u3002\u5168\u901F\u3092\u5272\u9AD8\u306B\u3057\u3066\u3001\u5168\u901F\u3060\u3051\u3067\u653B\u3081\u308B\u904A\u3073\u65B9\u3092\u71C3\u6599\u3067\u7E1B\u308B\u305F\u3081\u306E\u5024)",
+        fuel_capacity_gal: "design (v0.6.0\u3002\u53F2\u6599\u306A\u3057\u3002800 gal \u3067\u5DE1\u822A 94\u30FB\u5168\u901F 200 gal/h\uFF08fuel_hours_* \u304B\u3089\uFF09\u3002\u4EFB\u52D9\u3067\u7A4D\u3080\u91CF\u306F missions_seed \u306E fuel_allotment_gal \u3067\u6C7A\u3081\u308B\u306E\u3067\u3001\u6E80\u30BF\u30F3\u306E\u5024\u306F\u71C3\u6599\u66F2\u7DDA\u306E\u5F62\u306B\u3057\u304B\u52B9\u304B\u306A\u3044)",
+        fuel_idle_ratio: "design (v0.6.0\u3002us_elco80 \u3068\u540C\u3058 0.1)",
+        speed_bands_kt: "design (v0.6.0\u3002silent_max 7 \u2192 13: Elco \u306E 18/39 \u3068\u540C\u3058\u6BD4\uFF0827.5 \xD7 0.46 \u2248 12.7\uFF09\u30027 kt \u3067\u306F\u753B\u9762\u4E0A 18 m/\u79D2\u3067 3,000 m \u306B 167 \u79D2\u304B\u304B\u308A\u3001\u591C\u660E\u3051 160 \u79D2\u306E\u4EFB\u52D9\uFF08jp_06\uFF09\u3067\u9759\u304B\u306B\u5BC4\u308B\u904A\u3073\u65B9\u304C\u6210\u308A\u7ACB\u305F\u306A\u3044\u3002\u53F0\u5EA7\u306E\u5185\u5074\u306E\u8F2A\uFF08Boot \u304C us_02 \u306E\u8247\u306E\u6BD4 0.462 \u3067 1 \u679A\u3060\u3051\u4F5C\u308B\uFF09\u3068\u3082 0.473 \u3067\u5408\u3046\u3002speed_silent_kt 7 \u306F\u8CC7\u6599\u306E\u5024\u3068\u3057\u3066\u6B8B\u3059)",
+        damage: "design (v0.6.0\u3002HP 60 \u306F Elco 80ft \u306E 100 \u306E 6 \u5272\u3002\u6A5F\u95A2\u640D\u50B7 0.7 \u500D\u306F Elco \u3068\u540C\u3058\u3002\u706B\u707D\u306F 1.5 HP/\u79D2 \xD7 16 \u79D2 = 24\uFF08HP \u306E 4 \u5272\uFF1DElco \u306E 40/100 \u3068\u540C\u3058\u6BD4\uFF09\u3002\u6E2F\u5185\u7A7A\u8972\u306E\u691C\u67FB\uFF08HP \u2212 \u81F3\u8FD1\u5F3E 20 > \u706B\u707D\u306E\u7DCF\u91CF: 60 \u2212 20 = 40 > 24\uFF09\u3092\u901A\u308B\u3002\u6D88\u706B\u306E\u9577\u62BC\u3057 1.0 \u79D2\u306F Elco \u3068\u540C\u3058\u3002casualties_per_hp 0.1: HP 10 \u3067 1 \u540D\u3001HP 0 \u3067 6 \u540D\uFF08\u5B9A\u54E1 7 \u306A\u306E\u3067\u6D6E\u3044\u3066\u3044\u308B\u9650\u308A 2 \u540D\u4EE5\u4E0A\u304C\u6B8B\u308B\u3002crew.ts \u306E\u691C\u67FB 60 \xD7 0.1 \u2264 7\uFF09\u3002crew_effects \u306F Elco \u3068\u540C\u3058)",
+        engine_reliability: "design (\u91D1\u661F\u30A8\u30F3\u30B8\u30F3\u306F\u6BD4\u8F03\u7684\u5B89\u5B9A)",
+        gun_battery: "historical (T-38 \u578B\u306E\u6B66\u88C5\u306F 25mm \u5358\u88C5 1 \u633A\uFF08navypedia\u30FBja.wikipedia \u4E59\u578B\u9B5A\u96F7\u8247\u3002medium\uFF09\u3002\u4E5D\u516D\u5F0F\u4E8C\u5341\u4E94\u7C8D\u5358\u88C5\u306F 15 \u767A\u306E\u7BB1\u578B\u5F3E\u5009\u30FB\u5B9F\u7528 110\u301C120 \u767A/\u5206\uFF08docs/01 \xA78\u300C\u4E5D\u4E09\u5F0F\u5341\u4E09\u7C8D\u6A5F\u9283\u3068\u4E5D\u516D\u5F0F\u4E8C\u5341\u4E94\u7C8D\u6A5F\u9283\u300D\u306E\u8868\u3002high\uFF09\u3002T-38 \u578B\u306E\u5C31\u5F79\u306F 1943\u301C45 \u5E74\uFF08medium\uFF09\u3002\u3059\u3079\u3066 WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.4\u3002rounds_per_min 220 \u306F\u6483\u3063\u3066\u3044\u308B\u9593\u306E\u767A\u5C04\u901F\u5EA6\u3067 1 \u767A\uFF1D1 \u5F3E\u300115 \u767A\uFF1D4.1 \u79D2 \u2192 reload_s 3.2 \u79D2\uFF08jp_t14 \u3068\u540C\u3058\u4EA4\u63DB\u79D2\uFF09\u300215 \u767A / 7.3 \u79D2 \u2252 \u5B9F\u7528 123 \u767A/\u5206\uFF08\u53F2\u5B9F\u306E\u5B9F\u7528\u5024 110\u301C120 \u306E\u5C11\u3057\u4E0A\uFF09\u3002damage 4\uFF0813mm \u306E 2 \u500D\u3002PT \u306E retreat_hp 60 \u307E\u3067 10 \u767A\uFF09\u3001splash_radius_m 3.0\uFF08enemies.json \u306E\u6CE8\u300E25mm \u306F 3\u300F\uFF09\u3002range_m 600\u30FBeffective_m 300\u30FBdead_cone_deg 30\u30FBmuzzle_flash_reveal_m 1200\u30FBspread_factor\u30FBdispersion_m 56 \u306F jp_t14 \u3068\u540C\u3058\uFF08\u8996\u7A0B 900 \u306E\u5185\u30FB\u9583\u5149 \u2265 \u5C04\u7A0B\u306E\u691C\u67FB\uFF09\u3002\u6A21\u64EC\uFF08v0.6.4 \u306E convoy-sim\u3001N 400 \xD7 2 \u7D44\u3002\u4ECA\u306E data \u306E\u5024\u306F 5bfd669 \u306E\u8868\u3001\u307B\u304B\u306E\u5024\u3068\u306E\u6BD4\u3079\u306F\u7D71\u5408\u4ED5\u69D8\u306E\u6BB5\u306E\u76F4\u3057\u305F\u8A66\u4F5C\uFF09: HUD \u3069\u304A\u308A\uFF08shield_full\uFF09\u306B\u5BC4\u3063\u3066\u6483\u3063\u3066\u8EE2\u8235\u3059\u308B\u3068 1 \u591C 94\u301C98 \u767A\u30FB\u547D\u4E2D 11.2\u301C11.4\u30FB1 \u96BB\u4EE5\u4E0A\u6483\u9000\u3057\u305F\u591C 55\u301C60%\u30FB\u6483\u6C88\u3057\u305F\u591C 3.3\u301C3.5%\uFF08\u5F15\u706B 0.3%/\u767A\uFF09\u3001\u81EA\u8247\u306E\u6C88\u6CA1 9\u301C10%\u3002rpm 180 \u3060\u3068 shield_full \u306E\u6C88\u6CA1 16\u301C18%\u30FBfollow_full 16%\uFF08\u8A2D\u8A08\u306E\u76EE\u6A19 8\u301C15 \u306E\u4E0A\uFF09\u3001200 \u3060\u3068 11.5\u301C12%\u30FB16%\u3002damage 3 \u306F\u6483\u3064\u3060\u3051\uFF08\u8EE2\u8235\u306A\u3057\uFF09\u306E\u6C88\u6CA1\u304C\u7406\u4E0D\u5C3D\u3001magazine 12 \u306F 25mm \u306E\u6483\u9000\u304C\u6E1B\u3063\u3066\u81EA\u8247\u306E\u6C88\u6CA1\u304C +1\u301C4 \u30DD\u30A4\u30F3\u30C8\uFF08\u8A66\u4F5C\u306E\u6383\u5F15\uFF09\u3001dispersion 50 \u306F\u6483\u3064\u3060\u3051\u304C 23% \u307E\u3067\u4E0B\u304C\u308B\u304C\u9060\u8DDD\u96E2\u306E\u547D\u4E2D\u304C\u5897\u3048\u3066\u7C21\u5358\u5074 \u2192 56 \u306E\u307E\u307E\u3002min_spread_m 22\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u3053\u3061\u3089\u306E\u547D\u4E2D\u7387\u304C\u9AD8\u304F\u3066\u5272\u3068\u6483\u9000\u3067\u304D\u307E\u3059\u306D\u300D\u30021 \u591C 60 \u767A 27 \u547D\u4E2D\uFF1D45%\u30FB\u6483\u9000 2\uFF09: \u6563\u5E03\u306E\u5186\u306E\u534A\u5F84\u306E\u4E0B\u9650 m\u3002\u901F\u529B\u5E2F\u306E\u500D\u7387\u306E\u5F8C\u306B\u52B9\u304F\uFF1D\u6B62\u307E\u3063\u3066\u30FB\u9759\u97F3\u3067 236 m\uFF08\u5DE1\u822A 147 m\u30FB\u5168\u901F 94 m\uFF09\u3088\u308A\u8FD1\u304F\u304B\u3089\u6483\u3064\u3068\u304D\u3060\u3051\u5186\u304C\u5E83\u304C\u308B\u3002\u8DDD\u96E2\u306B\u6BD4\u4F8B\u3059\u308B\u6563\u5E03 56 m \u3060\u3051\u3060\u3068 120 m \u3067\u534A\u5F84 11 m \u3068\u306A\u308A\u3001PT \u306E\u8239\u4F53\uFF0824.4 \xD7 6.3 m\uFF0B\u6C34\u67F1 3 m\uFF09\u3092\u307B\u307C\u8986\u3044\u3001\u6A21\u64EC\u3067 100 m \u4EE5\u5185\u306E\u547D\u4E2D\u304C\u9593\u306B\u5165\u308B\u578B\u3067 88\u301C92%\uFF08\u5F8C\u308D\u306B\u4ED8\u304F\u578B 68\u301C80%\uFF09\uFF1D\u8FD1\u304F\u304B\u3089\u306F\u307B\u307C\u5FC5\u4E2D\u3060\u3063\u305F\u3002\u4E5D\u516D\u5F0F 25mm \u306E\u5358\u88C5\u306F\u80A9\u3067\u632F\u308A\u56DE\u3059\u67B6\u53F0\u306B\u7C21\u5358\u306A\u74B0\u5F62\u7167\u6E96\u3067\u3001\u6226\u5F8C\u306E\u65E5\u672C\u5074\u306E\u8A55\u4FA1\u306E\u8981\u7D04\u306F\u3001\u7167\u6E96\u5668\u306F\u9AD8\u901F\u306E\u76EE\u6A19\uFF08\u822A\u7A7A\u6A5F\uFF09\u306B\u4E0D\u5341\u5206\u3067\u3001\u632F\u52D5\u3067\u76EE\u6A19\u306B\u4FDD\u3061\u306B\u304F\u3044\uFF08navweaps\u30FBWikipedia \u306E\u8981\u7D04\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\u3002\u5BFE\u7A7A\u3067\u306E\u8A55\u4FA1\u3092 PT \u306B\u5F53\u3066\u306F\u3081\u305F\u306E\u306F design\uFF09\u3002\u8FD1\u304F\u3092\u6A2A\u5207\u308B 25\u301C39 kt \u306E PT \u306F\u5411\u304D\u304C\u6BCE\u79D2\u6570\u5EA6\u5909\u308F\u308B\uFF08100 m\u30FB25 kt \u3067\u7D04 7\xB0/\u79D2\u3002\u8A08\u7B97\uFF09\u3002\u591C\u306B\u76EE\u3067\u898B\u8D8A\u3057\u3092\u53D6\u308B\u5358\u88C5\u306E\u5F3E\u306E\u6D41\u308C\u306F\u3001\u8FD1\u3065\u3044\u3066\u3082\u8239\u4F53\u306E\u9577\u3055\u307B\u3069\u3088\u308A\u5C0F\u3055\u304F\u307E\u3068\u307E\u3089\u306A\u3044\u3001\u3068\u3057\u305F\u3002\u4E0B\u9650\u306E\u5024\u306B\u53F2\u6599\u306F\u7121\u3044\uFF08design\uFF09\u300222 m \u306F\u3001\u3088\u304F\u72D9\u3063\u305F 1 \u767A\u306E\u547D\u4E2D\u304C\u7D04 25\u301C30% \u3067\u982D\u6253\u3061\u306B\u306A\u308B\u5024\uFF08\u6A21\u64EC\u3067 100 m \u4EE5\u5185 26\u301C29%\uFF09\u3002\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\uFF09: \u63A8\u5968\u306E\u5730\u56F3\u3067\u6700\u5C0F\u6563\u5E03\u306E\u6709\u7121\u3092\u6BD4\u3079\u308B\u3068\u3001200 m \u4EE5\u5185\u3067\u6B62\u307E\u308A\u6C17\u5473\u306B\u6483\u3064\u4EBA\u306E\u578B\u306F\u547D\u4E2D 54\u301C55 \u2192 22%\u30FB\u6483\u9000 1.7 \u2192 0.65 \u56DE/\u591C\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 9 \u2192 30\u301C31.5%\u3001HUD \u3069\u304A\u308A\uFF08shield_full\uFF09\u306F\u547D\u4E2D 13 \u2192 10\u301C11%\u30FB\u6483\u9000 0.82\u301C0.84 \u2192 0.55\u301C0.62 \u56DE/\u591C\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 8\u301C9 \u2192 10.5\u301C12%\uFF08\u4EE3\u4FA1\uFF09\u3002v0.6.4\uFF0830a1297\u3002\u524D\u306E\u5730\u56F3\u30FB\u6700\u5C0F\u6563\u5E03\u306A\u3057\uFF09\u3068\u6BD4\u3079\u308B\u3068\u8FD1\u304F\u306E\u578B\u306F 45 \u2192 22%\u30FB1.2 \u2192 0.65\u3001shield_full \u306F 12 \u2192 11%\u30FB0.71\u301C0.74 \u2192 0.55\u301C0.61\u300221 m \u3060\u3068\u8FD1\u304F\u306E\u547D\u4E2D 23.5\u301C24.5%\u300120 m \u3060\u3068 26%\uFF08\u6D5C 3,600 \u306E\u8A66\u4F5C\uFF09\u3002\u6563\u5E03\u305D\u306E\u3082\u306E\u3092\u5E83\u3052\u308B\uFF0880\u301C120\uFF09\u3001\u901F\u529B\u5E2F\u306E\u500D\u7387\u3092\u4E0A\u3052\u308B\u3001\u6A2A\u5207\u308B\u901F\u3055\u306B\u6BD4\u4F8B\u3059\u308B\u8FFD\u5F93\u306E\u9045\u308C\u3001\u306E 3 \u3064\u306F\u3001\u8FD1\u304F\u3088\u308A\u5148\u306B\u9060\u304F\u306E\u547D\u4E2D\u3068 HUD \u3069\u304A\u308A\u306E\u6C88\u6CA1\u3092\u5D29\u3057\u305F\uFF08\u6563\u5E03 80 \u3067 shield_full \u306E\u6C88\u6CA1 21%\u30FBfollow_full 30%\u300225mm \u306E\u8A66\u4F5C\u3002\u30BB\u30C3\u30B7\u30E7\u30F3\u306E\u4F5C\u696D\u30E1\u30E2\u3067 repo \u306B\u306F\u7121\u3044\uFF09)",
+        others: "design"
+      },
+      notes: "\u6700\u591A\u751F\u7523\u306E\u4E59\u578B\u3002\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\u306E\u57FA\u6E96\u8247\u3002"
+    },
+    {
+      id: "jp_t14",
+      nation: "JP",
+      name: "T-14 class (Otsu type, 15m)",
+      name_ja: "\u65E5 T-14\u578B\u9B5A\u96F7\u8247\uFF08538\u53F7\u578B\u30FB15m\uFF09",
+      role: "player_hard",
+      length_m: 15,
+      beam_m: 3.65,
+      displacement_t: 14.5,
+      speed_max_kt: 31,
+      speed_cruise_kt: 20,
+      speed_silent_kt: 7,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 14,
+        cruise_max: 20,
+        hysteresis: 1
+      },
+      accel_mps2: 1.1,
+      decel_mps2: 1.5,
+      turn_rate_deg_s: 30,
+      fuel_hours_cruise: 7,
+      fuel_hours_full: 3.5,
+      fuel_capacity_gal: 800,
+      fuel_idle_ratio: 0.14,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 7,
+      torpedoes: {
+        count: 2,
+        reloads: 0,
+        type_early: "jp_45cm",
+        type_late: "jp_45cm",
+        launch_early: "side_drop",
+        launch_late: "side_drop"
+      },
+      guns: [
+        "13mm_or_25mm_x1"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      gun_battery: {
+        label_ja: "13mm\u6A5F\u9283",
+        range_m: 600,
+        effective_m: 300,
+        dead_cone_deg: 30,
+        muzzle_flash_reveal_m: 1200,
+        spread_factor: { stop: 1, silent: 1, cruise: 1.6, full: 2.5 },
+        groups: [
+          { id: "13mm_type93", rounds_per_min: 450, damage: 2, shell_speed_mps: 500, dispersion_m: 56, splash_radius_m: 1 }
+        ],
+        magazine: { rounds: 30, reload_s: 3.2 }
+      },
+      smoke_generator: false,
+      engine_reliability: 0.7,
+      hull_hp: 50,
+      damage: {
+        engine_damage_speed_factor: 0.7,
+        fire_dps: 1.25,
+        fire_duration_s: 16,
+        extinguish_hold_s: 1,
+        casualties_per_hp: 0.1,
+        crew_effects: {
+          extinguish_exponent: 1,
+          turn_rate_per_loss: 0.04,
+          accel_per_loss: 0.04,
+          min_factor: 0.5
+        }
+      },
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical (30\u301C33 kt\u3002ja.wikipedia \u306E\u8981\u76EE\u306F 33.3 kt\u3001WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (31 kt \u306F\u6574\u5099\u306E\u60AA\u3044\u8247\u3068\u3057\u3066\u6B8B\u3059)",
+        speed_bands_kt: "design (v0.6.3\u3002silent_max 7 \u2192 14: Elco \u306E 18/39\uFF1D0.462 \u3068\u540C\u3058\u6BD4\uFF0814/31\uFF1D0.452\u3002tests/jp-data \u306E \xB10.02\u30FBBoot \u306E\u53F0\u5EA7\u306E\u8F2A\uFF09\u3002T-38 \u306E 7 \u2192 13 \u3068\u540C\u3058\u8003\u3048\u3002speed_silent_kt 7 \u306F\u8CC7\u6599\u306E\u5024\u3068\u3057\u3066\u6B8B\u3059)",
+        fuel_capacity_gal: "design (v0.6.3\u3002T-38 \u3068\u540C\u3058 800\u3002\u5DE1\u822A 114\u30FB\u5168\u901F 229\u30FB\u30A2\u30A4\u30C9\u30EB 16.0 gal/h\uFF08fuel_hours_* \u3068 fuel_idle_ratio \u304B\u3089\u3002v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\u3067 0.1 \u2192 0.14 \u306B\u3057\u305F\u306E\u3067 11.4 \u2192 16.0\uFF09\u3002\u4EFB\u52D9\u3067\u7A4D\u3080\u91CF\u306F missions_seed \u306E fuel_allotment_gal)",
+        fuel_idle_ratio: "design (v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\u30020.1 \u2192 0.14: jp_05 \u306E\u71C3\u6599 32 gal\uFF08missions_seed \u306E fuel_allotment_gal\uFF09\u3067 tests/dawn-air \u306E\u300E\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 1,500 \u79D2\u672A\u6E80\u3067\u6F02\u6D41\u300F\u3092\u5B88\u308B\u5024\uFF1D32 / (114.29 \xD7 0.14) \xD7 720 = 1,440 \u79D2\uFF080.1 \u306E\u307E\u307E\u3060\u3068 2,016 \u79D2\uFF09\u3002T-14 \u306E 71\u53F76\u578B\u306E\u30A2\u30A4\u30C9\u30EB\u6D88\u8CBB\u306E\u8CC7\u6599\u306F\u7121\u3044\u3002us_elco80\u30FBjp_t38 \u306F 0.1\u3002\u904A\u3079\u308B\u4EFB\u52D9\u306F jp_05 \u3068 v0.6.7 \u306E jp_02\uFF08jp_02 \u3082 jp_t14 \u3067\u7B2C\u4E00\u53F7\u578B\u306E\u4EE3\u5F79\u3002\u71C3\u6599\u3068\u30A2\u30A4\u30C9\u30EB\u306E\u5024\u306F\u540C\u3058\uFF1D32 gal \u3067 1,440 \u79D2\u3002jp_02 \u306E 13mm \u306F\u6A5F\u3060\u3051\u3092\u6483\u3066\u308B\uFF08v0.6.8\uFF09\u3002\u30EC\u30D3\u30E5\u30FC F6\uFF09)",
+        damage: "design (v0.6.3\u3002T-38 \u306E\u5024\u3092 HP 50 \u306B\u5408\u308F\u305B\u305F: \u706B\u707D 1.25 HP/\u79D2 \xD7 16 \u79D2 = 20\uFF1DHP \u306E 4 \u5272\uFF08T-38\u30FBElco \u3068\u540C\u3058\u6BD4\uFF09\u3002casualties_per_hp 0.1: HP 0 \u3067 5 \u540D\uFF08\u5B9A\u54E1 7\u3002crew.ts \u306E\u691C\u67FB 50 \xD7 0.1 \u2264 7\uFF09\u3002\u6A5F\u95A2\u640D\u50B7 0.7 \u500D\u30FB\u6D88\u706B 1.0 \u79D2\u30FBcrew_effects \u306F T-38 \u3068\u540C\u3058)",
+        crew: "design (ja.wikipedia \u306F 6\uFF08WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3001\u5225\u8CC7\u6599\u306F 7\u30027 \u306E\u307E\u307E)",
+        engine_reliability: "design (v0.6.5 \u304B\u3089\u6A5F\u95A2\u306E\u4E0D\u8ABF\u306E\u71B1\u306E\u6E9C\u307E\u308B\u901F\u3055\u306B\u8AAD\u3080: risk_events.engine_failure.params \u306E reliability_ref 0.7 \u3068\u540C\u3058\u306A\u306E\u3067\u5168\u901F\u3092\u9023\u7D9A 30 \u79D2\u3067\u4E0D\u8ABF\u3002jp_05 \u306E T-14 \u306F\u9E75\u7372 TM \u8247\u306E\u4EE3\u5F79\u3067\u3001\u6839\u62E0\u306F TM \u8247\u306E\u53E4\u3044\u822A\u7A7A\u30A8\u30F3\u30B8\u30F3\u306E\u52A3\u5316\uFF08navypedia\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\uFF09\u3068 71\u53F76\u578B\u306E\u91CF\u7523\u306E\u9045\u308C\u30FB\u90E8\u54C1\u3068\u5DE5\u54E1\u306E\u4E0D\u8DB3\uFF08ja.wikipedia \u4E59\u578B\u9B5A\u96F7\u8247\u3002\u540C\u3002medium\uFF09\u3002\u300E\u7A7A\u51B7\u306E\u822A\u7A7A\u30A8\u30F3\u30B8\u30F3\u306F\u9577\u6642\u9593\u306E\u6700\u9AD8\u51FA\u529B\u3067\u904E\u71B1\u300F\uFF08\u540C\u3002medium\uFF09\u306F\u7A7A\u51B7\u306E\u4E59\u578B\u306E\u8A71\u3067\u3001\u6C34\u51B7\u306E 71\u53F76\u578B\u3078\u306E\u5F53\u3066\u306F\u3081\u306F design\u3002\u300E\u7D44\u7ACB\u4E0D\u826F\u300F\u306F\u4ECA\u56DE\u306E\u629C\u7C8B\u3067\u78BA\u304B\u3081\u3089\u308C\u306A\u304B\u3063\u305F\uFF08low\uFF09\u3002\u5024\u306F\u53F2\u6599\u306A\u3057)",
+        gun_battery: "historical (T-14 \u578B\u306E\u6A5F\u9283\u306F 13mm 1 \u633A\u3001\u306E\u3061\u306B 25mm \u306E\u8247\u3082\u3042\u308B: navypedia\u300E1 \xD7 13.2 mm\u3001\u306E\u3061 1 \xD7 25 mm \u4E5D\u516D\u5F0F\u300F\u30FBja.wikipedia\uFF08\u4ECA\u6751\u300E\u65E5\u672C\u9B5A\u96F7\u8247\u7269\u8A9E\u300F\uFF09\u300E13mm \u3082\u3057\u304F\u306F 25mm \u6A5F\u9283 1 \u633A\u300F\u30FBptboatworld\uFF08Fock\uFF09\u300E25mm\u300F\u3002\u4E5D\u4E09\u5F0F\u5341\u4E09\u7C8D\u6A5F\u9283\u306F 30 \u767A\u306E\u7BB1\u578B\u5F3E\u5009\u30FB\u767A\u5C04\u901F\u5EA6 \u7D04 450 \u767A/\u5206\uFF08\u5B9F\u7528 \u7D04 250 \u767A/\u5206\uFF09\u30FB\u521D\u901F 805 m/s\u3002\u4E5D\u516D\u5F0F\u5358\u88C5\u306F 1943 \u5E74\u304B\u3089\u3002\u3069\u308C\u3082 WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09 / design (v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300ET-14 \u306E\u6B66\u88C5\u3068\u3057\u3066 13mm \u307E\u305F\u306F 25mm \u6A5F\u9283 \xD71 \u633A\u2026\u5C04\u6483\u30DC\u30BF\u30F3\u3092\u62BC\u305B\u308B\u3088\u3046\u306B\u300F\uFF09\u3002\u57FA\u672C\u306E\u88C5\u5099\u306A\u306E\u3067 13mm\uFF08navypedia\u300E13.2 mm\u3001\u306E\u3061 25 mm\u300F\u3002\u3069\u306E\u8247\u304C\u3044\u3064 25mm \u306B\u306A\u3063\u305F\u304B\u306F\u629C\u7C8B\u306B\u7121\u3044\u3002T-14 \u306E\u5C31\u5F79\u306F 1944\u301C45 \u5E74\u3067\u3001jp_05 \u306E 1944-02 \u306E\u30E9\u30D0\u30A6\u30EB\u306E T-14 \u306F\u4EE3\u5F79\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u30EC\u30D3\u30E5\u30FC F7\u3002guns \u306E 13mm_or_25mm_x1 \u306F\u305D\u306E\u307E\u307E\uFF09\u3002rounds_per_min 450 \u3067 1 \u767A\uFF1D1 \u5F3E\u3001magazine 30 \u767A\uFF1D4 \u79D2\u3001reload_s 3.2 \u306F\u8CC7\u6599\u306A\u3057\uFF0830 \u767A / 7.2 \u79D2 \u2252 \u5B9F\u7528 250 \u767A/\u5206\uFF09\u3002range_m 600\u30FBeffective_m 300\u30FBmuzzle_flash_reveal_m 1200\u30FBspread_factor \u306F us_elco80 \u3068\u540C\u3058\uFF08\u591C\u306E\u898B\u3048\u308B\u8DDD\u96E2\u304C\u9650\u308A\u3002\u9583\u5149\u306E 1,200 m \u2265 \u5C04\u7A0B\uFF09\u3002dead_cone_deg 30\uFF08\u8247\u9996\u5C3E\u306F\u6483\u305F\u306A\u3044\uFF1D\u8EE2\u8235\u3067\u304B\u308F\u3059\u3068 PT \u304C\u8247\u5C3E\u306B\u56DE\u3063\u3066\u6483\u3066\u306A\u3044\uFF09\u3002dispersion_m 56\uFF08v0.6.3 \u5B9F\u6A5F 2 \u56DE\u76EE\u300264 \u2192 56\u3002600 m \u3067\u306E\u5186\u306E\u534A\u5F84\u3002\u8DDD\u96E2\u306B\u6BD4\u4F8B\u3002\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 56 \u3060\u3068\u6B62\u307E\u3063\u3066\u6483\u3061\u5408\u3046\u65B9\u304C\u8EE2\u8235\u3088\u308A\u5B89\u5168\u306B\u306A\u308A\u3059\u304E\u305F\u304C\u3001\u822A\u904E\u304C\u5371\u306A\u3044\u9593\u3060\u3051\u306B\u306A\u308A\uFF08\u6483\u3061\u5207\u308B\u304B\u96E2\u308C\u3066\u3044\u3051\u3070\u7DDA\u304C\u7D42\u308F\u308A\u3001\u6B21\u306E\u822A\u904E\u304C\u65E9\u304F\u6765\u308B\uFF09\u6709\u52B9\u5C04\u7A0B\u304C 450 m \u306B\u306A\u3063\u305F\u4ECA\u306F\u3001\u6B62\u307E\u3063\u3066\u6483\u3064\uFF08stop_shoot\uFF09\u306F\u6A21\u64EC\u3067 38% \u6C88\u307F\u3001\u8EE2\u8235\u3057\u306A\u304C\u3089\u6483\u3064\uFF08tc_shoot\u30FBhold_shoot 10\u301C12%\uFF09\u3088\u308A 3\u301C4 \u500D\u5371\u306A\u304F\u3001\u4F55\u3082\u3057\u306A\u3044\u5DE1\u822A\uFF0845%\uFF09\u3088\u308A\u306F\u5B89\u5168\u300264 \u306E\u307E\u307E\u3060\u3068 48% \u3067\u4F55\u3082\u3057\u306A\u3044\u3088\u308A\u5371\u306A\u304B\u3063\u305F\u3002\u6B62\u307E\u3063\u305F\u8247\u306F\u8FFD\u6483\u3055\u308C\u306A\u3044\uFF08\u6A21\u64EC\u3067\u8FFD\u6483\u3092\u5207\u3063\u3066\u3082 37.5% \u306E\u307E\u307E\u3001\u822A\u904E\u306E\u7D42\u308F\u308A\u3092\u5207\u308B\u3068 24%\u3001\u6709\u52B9\u5C04\u7A0B\u3092 400 m \u306B\u623B\u3059\u3068 24.5%\u3002\u5B9F\u6A5F 2 \u56DE\u76EE\u306E\u30EC\u30D3\u30E5\u30FC F1\u30FBF3: \u524D\u306E\u6587\u306F\u8FFD\u6483\u3092\u7406\u7531\u306B\u3057\u3001\u6570\u306F\u8A66\u4F5C\u306E\u5024\u3060\u3063\u305F\uFF09\uFF09\u30FBdamage 2\uFF08PT \u306E HP 100\u3001retreat_hp 60 \u307E\u3067 20 \u767A\uFF09\u30FBshell_speed_mps 500\u30FBsplash_radius_m 1.0 \u306F us_elco80 \u306E 20mm\u30FB12.7mm \u306E\u7D44\u3068\u540C\u3058\u898B\u3048\u308B\u66F3\u5149\u5F3E\u3002\u6A21\u64EC\uFF08scratchpad \u306E\u8A66\u4F5C\u3001400 \u591C \xD7 3 \u7D44\uFF09: \u8EE2\u8235\u3057\u306A\u304C\u3089\u6483\u3064\u3068 1 \u767A\u306E\u547D\u4E2D \u7D04 3.7%\u30FB1 \u591C \u547D\u4E2D \u7D04 9 \u767A\u3001\u6B62\u307E\u3063\u3066\u6483\u3064\u3068 1 \u767A \u7D04 17.6%)",
+        others: "design"
+      },
+      notes: "71\u53F76\u578B1\u57FA\u3002\u5C0F\u578B\u3067\u4E57\u54E17\u540D\u3002"
+    },
+    {
+      id: "jp_t35",
+      nation: "JP",
+      name: "T-35 class (Otsu type, twin 71-6)",
+      name_ja: "\u65E5 T-35\u578B\u9B5A\u96F7\u8247\uFF08468\u53F7\u578B\u30FB71\u53F76\u578B\xD72\uFF09",
+      role: "player_hard_reward",
+      length_m: 18,
+      beam_m: 4.3,
+      displacement_t: 20,
+      speed_max_kt: 38,
+      speed_cruise_kt: 24,
+      speed_silent_kt: 7,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 7,
+        cruise_max: 24,
+        hysteresis: 1
+      },
+      accel_mps2: 1.3,
+      decel_mps2: 1.6,
+      turn_rate_deg_s: 26,
+      fuel_hours_cruise: 7,
+      fuel_hours_full: 3,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 7,
+      torpedoes: {
+        count: 2,
+        reloads: 0,
+        type_early: "jp_45cm",
+        type_late: "jp_45cm",
+        launch_early: "side_drop",
+        launch_late: "side_drop"
+      },
+      guns: [
+        "25mm_x1"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      smoke_generator: false,
+      engine_reliability: 0.6,
+      hull_hp: 60,
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical (38kt\u3001\u8CC7\u6599\u5DEE\u3042\u308A)",
+        others: "design"
+      },
+      notes: "\u300C71\u53F76\u578B\u304C\u91CF\u7523\u3067\u304D\u3066\u3044\u305F\u3089\u300D\u306E\u30AF\u30EA\u30A2\u5831\u916C\u8247\u3002"
+    },
+    {
+      id: "jp_kou_t51",
+      nation: "JP",
+      name: "Kou type T-51 (No.10/11 class)",
+      name_ja: "\u65E5 \u7532\u578B\u9B5A\u96F7\u8247\uFF08T-51\u30FB10\u53F7/11\u53F7\u578B\uFF09",
+      role: "player_hard_alt",
+      length_m: 32.4,
+      beam_m: 5,
+      displacement_t: 90,
+      speed_max_kt: 27,
+      speed_cruise_kt: 20,
+      speed_silent_kt: 8,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 8,
+        cruise_max: 20,
+        hysteresis: 1
+      },
+      accel_mps2: 0.7,
+      decel_mps2: 1.1,
+      turn_rate_deg_s: 14,
+      fuel_hours_cruise: 12,
+      fuel_hours_full: 5,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 18,
+      torpedoes: {
+        count: 2,
+        reloads: 0,
+        type_early: "jp_45cm",
+        type_late: "jp_45cm",
+        launch_early: "side_drop",
+        launch_late: "side_drop"
+      },
+      guns: [
+        "25mm_x2"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      smoke_generator: false,
+      engine_reliability: 0.7,
+      hull_hp: 120,
+      hull_circles: 4,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical (\u5B9F\u969B24\u301C29kt)",
+        "fuel_hours_*": "unverified",
+        others: "design"
+      },
+      notes: "\u9244\u9AA8\u6728\u76AE\u3067\u91CD\u91CF\u8D85\u904E\u3001\u632F\u52D5\u3067\u901F\u529B\u4F4E\u4E0B\u3001\u30ED\u30FC\u30EA\u30F3\u30B0\u6FC0\u3057\u3044\u3002"
+    },
+    {
+      id: "jp_h2_hayabusa",
+      nation: "JP",
+      name: "H-2 Hayabusa gunboat",
+      name_ja: "\u65E5 H-2\u578B\u96BC\u8247\uFF08\u7832\u8247\uFF09",
+      role: "escort_ally",
+      length_m: 18,
+      beam_m: 4.3,
+      displacement_t: 24.7,
+      speed_max_kt: 33.5,
+      speed_cruise_kt: 22,
+      speed_silent_kt: 7,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 7,
+        cruise_max: 22,
+        hysteresis: 1
+      },
+      accel_mps2: 1.1,
+      decel_mps2: 1.5,
+      turn_rate_deg_s: 26,
+      fuel_hours_cruise: 8,
+      fuel_hours_full: 4,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 8,
+      torpedoes: {
+        count: 0,
+        reloads: 0,
+        type_early: null,
+        type_late: null,
+        launch_early: null,
+        launch_late: null
+      },
+      guns: [
+        "20mm_x2",
+        "7.7mm_x2"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      smoke_generator: false,
+      engine_reliability: 0.85,
+      hull_hp: 60,
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical",
+        others: "design"
+      },
+      notes: "\u7C73PT\u5BFE\u6297\u306E\u305F\u3081\u9B5A\u96F7\u3092\u5916\u3057\u3066\u6A5F\u9283\u3092\u5897\u5099\u3057\u305F\u8247\u3002\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\u3067\u306F\u8B77\u885B\u306E\u76F8\u68D2\u3002v0.6.6 \u304B\u3089\u306E\u50DA\u8247\u306F H-38\uFF08jp_h38_hayabusa\uFF09\u3002\u5BF8\u6CD5 18 \xD7 4.3 \u306F H-38 \u306E\u5024\u3067 H-2 \u306E\u5BF8\u6CD5\u306F\u629C\u7C8B\u306B\u7121\u3044\u3002H-2 \u306F 8 \u96BB\u3060\u3051\u3067\u3001\u591A\u304F\u304C\u524D\u7DDA\u306B\u7740\u304F\u524D\u306B\u8F38\u9001\u4E2D\u306B\u5931\u308F\u308C\u305F\uFF08medium \u306E\u63A8\u8AD6\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09"
+    },
+    {
+      id: "jp_h38_hayabusa",
+      nation: "JP",
+      name: "H-38 Hayabusa gunboat (No.10 class)",
+      name_ja: "\u65E5 H-38\u578B\u96BC\u8247\uFF0810\u53F7\u96BC\u578B\u30FB\u7832\u8247\uFF09",
+      role: "escort_ally",
+      length_m: 18,
+      beam_m: 4.3,
+      displacement_t: 24.8,
+      speed_max_kt: 27,
+      speed_cruise_kt: 20,
+      speed_silent_kt: 7,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 13,
+        cruise_max: 20,
+        hysteresis: 1
+      },
+      accel_mps2: 1,
+      decel_mps2: 1.4,
+      turn_rate_deg_s: 26,
+      fire_risk: "high",
+      crew: 7,
+      torpedoes: {
+        count: 0,
+        reloads: 0,
+        type_early: null,
+        type_late: null,
+        launch_early: null,
+        launch_late: null
+      },
+      guns: [
+        "25mm_x3"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      gun_battery: {
+        label_ja: "25mm\u6A5F\u9283",
+        range_m: 600,
+        effective_m: 300,
+        dead_cone_deg: 30,
+        muzzle_flash_reveal_m: 1200,
+        spread_factor: {
+          stop: 1,
+          silent: 1,
+          cruise: 1.6,
+          full: 2.5
+        },
+        groups: [
+          {
+            id: "25mm_type96",
+            rounds_per_min: 220,
+            damage: 4,
+            shell_speed_mps: 500,
+            dispersion_m: 56,
+            splash_radius_m: 3
+          }
+        ],
+        magazine: {
+          rounds: 15,
+          reload_s: 3.2
+        },
+        min_spread_m: 22
+      },
+      smoke_generator: false,
+      engine_reliability: 0.85,
+      hull_hp: 60,
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        name: "historical (H-38 \u578B\u96BC\u8247\uFF0810 \u53F7\u96BC\u578B\uFF09\u3002T-38 \u578B\u9B5A\u96F7\u8247\u306E\u8239\u4F53\u306E\u7832\u8247\u3002navypedia \u306E jap_aux_h38\u30FBweblio \u306E H38\uFF08Wikipedia \u7531\u6765\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        length_m: "historical (18.0 m\u3002navypedia\u30FBweblio\uFF08Wikipedia \u7531\u6765\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        beam_m: "historical (4.3 m\u3002\u8CC7\u6599\u3067 4.38\u301C4.30\u3002navypedia\u30FBweblio\uFF08Wikipedia \u7531\u6765\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        displacement_t: "historical (24.8 t\u3002navypedia\u30FBweblio\uFF08Wikipedia \u7531\u6765\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        speed_max_kt: "historical (\u91D1\u661F41\u578B \xD7 2\u30FB27 kt\u3002navypedia\u30FBweblio\uFF08Wikipedia \u7531\u6765\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        speed_cruise_kt: "design (T-38 \u3068\u540C\u3058\u8239\u4F53\u306E\u5024 20 kt)",
+        speed_silent_kt: "design (T-38 \u3068\u540C\u3058\u8239\u4F53\u306E\u5024 7 kt)",
+        speed_bands_kt: "design (v0.6.6\u3002T-38 \u3068\u540C\u3058\u5E2F\uFF08silent_max 13\uFF09\u3002H-2 \u306E silent_max 7 \u3060\u3068\u3001\u9759\u97F3\u306E\u4E0A\u9650 13 kt \u3067\u4ED8\u3044\u3066\u8D70\u308B\u96BC\u8247\u304C\u5DE1\u822A\u306E\u5E2F\u306B\u306A\u308A\u3001\u65B0\u6708\u3067 1,200 m \u304B\u3089\u898B\u3064\u304B\u308B)",
+        accel_mps2: "design (T-38 \u3068\u540C\u3058\u8239\u4F53: accel_mps2 1.0\u30FBdecel_mps2 1.4\u30FBturn_rate_deg_s 26)",
+        crew: "historical (T-38 \u3068\u540C\u3058\u4E57\u54E1 7\u3002navypedia\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        torpedoes: "historical (\u9B5A\u96F7\u3092\u5916\u3057\u305F\u8247\uFF1D\u9B5A\u96F7 2 \u672C\u306E\u4EE3\u308F\u308A\u306B 25mm \xD7 3\u3002jp_h2 \u3068\u540C\u3058\u5F62\u3002navypedia\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        guns: "historical (25mm \u4E5D\u516D\u5F0F \u5358\u88C5 \xD7 3 \u304B\u4E09\u9023\u88C5 \xD7 1\u30FB\u7206\u96F7\u6295\u4E0B\u53F0 4\u3002navypedia\uFF0Fja.wikipedia\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium)",
+        gun_battery: "design (v0.6.6\u3002jp_t38 \u306E gun_battery \u3068\u540C\u3058\u5024\uFF0825mm \u5358\u88C5 1 \u633A\u3076\u3093\u3002label_ja\u30FB\u5C04\u7A0B 600\u30FB\u6709\u52B9 300\u30FB\u6B7B\u89D2 30\xB0\u30FB\u9583\u5149 1,200\u30FB\u901F\u529B\u5E2F\u306E\u500D\u7387\u30FB220 \u767A/\u5206\u30FBdamage 4\u30FB\u6563\u5E03 56\u30FB\u6C34\u67F1 3.0\u30FB\u5F3E\u5009 15 \u767A\uFF0F3.2 \u79D2\u30FBmin_spread_m 22\uFF09\u30023 \u633A\u306E\u706B\u529B\u306F 1 \u633A\u3076\u3093\u306B\u4E38\u3081\u305F\uFF1D\u3064\u308A\u5408\u3044\u306E\u9078\u629E\uFF08\u62BD\u8C61\u30FB\u53F2\u6599\u306A\u3057\u3002\u4E09\u9023\u88C5 \xD7 1 \u306A\u3089 3 \u9580\u304C\u540C\u6642\u306B\u5411\u304F\u306E\u3067\u3001\u7269\u306E\u7406\u5C48\u3067 1 \u633A\u3068\u306F\u8A00\u3048\u306A\u3044\uFF09: 2 \u633A\u3076\u3093\uFF08440 \u767A/\u5206\u30FB\u5F3E\u5009 30\uFF09\u3060\u3068\u8A66\u4F5C\u3067 3 \u96BB\u3068\u3082\u4E0A\u9678\u3057\u3066\u5E30\u6295 +8 \u70B9\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 \u22123 \u70B9\u30013 \u633A\u3076\u3093\u306F\u5927\u767A 2.9\u301C3.0 \u96BB\u3067\u7C21\u5358\u3059\u304E\u305F\uFF08scratchpad \u306E\u8A66\u4F5C\u3002repo \u306B\u7121\u3044\uFF09\u3002\u7206\u96F7\u306F\u4F7F\u308F\u306A\u3044\u3002min_spread_m 22 \u3082 jp_t38 \u306E\u307E\u307E\uFF1D\u8A66\u4F5C\u306F\u3053\u306E\u5024\u3067\u6E2C\u3063\u305F)",
+        hull_hp: "design (T-38 \u3068\u540C\u3058\u6728\u306E\u8239\u4F53\u3067 HP \u3082\u540C\u3058 60\u3002\u50DA\u8247\u306F\u71C3\u6599\u3068\u706B\u707D\uFF08fuel\u30FBdamage \u306E\u9375\uFF09\u3092\u6301\u305F\u306A\u3044\uFF1DHP \u3060\u3051\uFF08us_01 \u306E\u50DA\u8247\u30FBjp_h2 \u3068\u540C\u3058\u4F5C\u6CD5\uFF09)",
+        engine_reliability: "design (T-38 \u3068\u540C\u3058 0.85\u3002\u8AAD\u307E\u306A\u3044\uFF1D\u6A5F\u95A2\u306E\u4E0D\u8ABF\u306F jp_05 \u306E\u81EA\u8247\u3060\u3051)",
+        others: "design (T-38 \u3068\u540C\u3058: smoke_generator false\u30FBhull_circles 2\u30FBsea_state_limit 3\u30FBfire_risk)"
+      },
+      notes: "\u7C73PT \u304C\u975E\u6B66\u88C5\u306E\u5927\u767A\u3092\u6B62\u3081\u305F\u306E\u3067\u3001\u4E59\u578B\u306E\u8239\u4F53\u304B\u3089\u9B5A\u96F7\u3092\u5916\u3057\u3066 25mm \u3092\u7A4D\u3093\u3060\u7832\u8247\u3002\u76EE\u7684\u306F\u5927\u767A\u306E\u8B77\u885B\u3068\u6575\u9B5A\u96F7\u8247\u306E\u99C6\u9010\uFF08ja.wikipedia \u96BC\u8247\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002high\uFF09\u3002\u7D04 50 \u96BB\u3067\u96BC\u8247\u306E\u4E3B\u529B\uFF08ja.wikipedia\u3002medium\u3002\u96BB\u6570\u306F\u8CC7\u6599\u3067\u98DF\u3044\u9055\u3046: docs/01 \xA73 \u306E navypedia \u306F\u7D04 24\u3001navypedia \u306E\u756A\u53F7\u306E\u5E45\u3092\u6570\u3048\u308B\u3068\u7D04 40\uFF1D\u63A8\u8AD6\u30FBlow\uFF09\u3002\u5927\u767A\u3092\u8B77\u885B\u3057\u3066\u7C73PT \u3068\u6226\u3063\u305F\u8A18\u9332\u306F\u629C\u7C8B\u306B\u898B\u3064\u304B\u3089\u306A\u3044\uFF08medium\u3002\u7121\u3044\u3053\u3068\u306E\u8A3C\u62E0\u3067\u306F\u306A\u3044\uFF09\u3002jp_01 \u306E\u30CF\u30FC\u30C9\u3067\u306F\u81EA\u8247\u306E\u5F8C\u308D\u306B\u4ED8\u304F\u50DA\u8247"
+    },
+    {
+      id: "it_mas500",
+      nation: "IT",
+      name: "MAS 500 series",
+      name_ja: "\u4F0A MAS 500\u7CFB",
+      role: "player_alt_future",
+      length_m: 18.7,
+      beam_m: 4.7,
+      displacement_t: 28,
+      speed_max_kt: 45,
+      speed_cruise_kt: 25,
+      speed_silent_kt: 6,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 6,
+        cruise_max: 25,
+        hysteresis: 1
+      },
+      accel_mps2: 1.4,
+      decel_mps2: 1.7,
+      turn_rate_deg_s: 28,
+      fuel_hours_cruise: 10,
+      fuel_hours_full: 4,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 10,
+      torpedoes: {
+        count: 2,
+        reloads: 0,
+        type_early: "it_w200",
+        type_late: "it_w200",
+        launch_early: "side_drop",
+        launch_late: "side_drop"
+      },
+      guns: [
+        "13.2mm_x1"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      smoke_generator: true,
+      smoke: {
+        duration_s: 5,
+        cooldown_s: 20,
+        puff_interval_s: 0.5,
+        puff_radius_m: 60,
+        puff_lifetime_s: 25
+      },
+      hull_hp: 50,
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical (\u6700\u592745kt)",
+        length_m: "unverified",
+        crew: "unverified",
+        others: "design"
+      },
+      notes: "\u9759\u97F3\u7528\u306E\u96FB\u52D5\u88DC\u52A9\u30E2\u30FC\u30BF\u30FC\u3092\u6301\u3064\u8247\u3082\u3042\u3063\u305F\uFF08\u672A\u78BA\u8A8D\uFF09\u3002"
+    },
+    {
+      id: "su_g5",
+      nation: "SU",
+      name: "G-5 class",
+      name_ja: "\u30BD G-5\u578B",
+      role: "player_alt_future",
+      length_m: 18.85,
+      beam_m: 3.5,
+      displacement_t: 16,
+      speed_max_kt: 50,
+      speed_cruise_kt: 30,
+      speed_silent_kt: 18,
+      speed_bands_kt: {
+        stop_max: 0.5,
+        silent_max: 18,
+        cruise_max: 30,
+        hysteresis: 1
+      },
+      accel_mps2: 1.6,
+      decel_mps2: 1.8,
+      turn_rate_deg_s: 30,
+      fuel_hours_cruise: 6,
+      fuel_hours_full: 3,
+      fuel_type: "gasoline",
+      fire_risk: "high",
+      crew: 7,
+      torpedoes: {
+        count: 2,
+        reloads: 0,
+        type_early: "su_53_38",
+        type_late: "su_53_38",
+        launch_early: "stern_drop",
+        launch_late: "stern_drop"
+      },
+      guns: [
+        "12.7mm_x1"
+      ],
+      radar: {
+        available_from: null,
+        range_m: 0
+      },
+      smoke_generator: false,
+      hull_hp: 40,
+      hull_circles: 2,
+      sea_state_limit: 3,
+      source: {
+        speed_max_kt: "historical (45\u301C56kt)",
+        speed_silent_kt: "historical (\u6700\u4F4E\u901F18kt)",
+        "fuel_hours_*": "unverified",
+        others: "design"
+      },
+      notes: "\u8247\u5C3E\u306E\u6E9D\u304B\u3089\u5F8C\u65B9\u6295\u4E0B\u3059\u308B\u305F\u3081\u3001\u767A\u5C04\u5F8C\u306B\u9B5A\u96F7\u306E\u9032\u8DEF\u304B\u3089\u6025\u8EE2\u8235\u3057\u3066\u9003\u3052\u308B\u5FC5\u8981\u304C\u3042\u308B\uFF08\u30B2\u30FC\u30E0\u7684\u306B\u7279\u6B8A\u64CD\u4F5C\uFF09\u3002"
+    }
+  ]
+};
+
+// ../wt-0176202/data/torpedoes.json
+var torpedoes_default = {
+  $schema_note: "\u9B5A\u96F7\u3002settings \u306F\u901F\u529B(kt)\u3068\u5C04\u7A0B(m)\u306E\u7D44\uFF08\u8907\u6570\u8A2D\u5B9A\u304C\u3042\u308B\u9B5A\u96F7\u306F\u914D\u5217\uFF09\u3002reliability \u306F\u30B2\u30FC\u30E0\u7528\u306E\u63D0\u6848\u5024\uFF08design\uFF09\u3002dud=\u547D\u4E2D\u3057\u3066\u3082\u4E0D\u767A\u3001erratic=\u9032\u8DEF\u304C\xB1jitter_deg \u3075\u3089\u3064\u304F\u3002",
+  version: "0.1.0",
+  torpedoes: [
+    {
+      id: "us_mk8",
+      nation: "US",
+      name: "Mark 8 Mod 3C/3D",
+      name_ja: "\u7C73 Mk 8\u9B5A\u96F7\uFF08PT\u521D\u671F\uFF09",
+      diameter_mm: 533,
+      length_m: 6.35,
+      weight_kg: 1383,
+      warhead_kg: 175,
+      warhead_note: "Mod 3C\u306F385lb(175kg) TNT\u3001Mod 8\u306F466lb(211kg)\u3002PT\u7528\u306F385\u301C466lb\u3067\u8CC7\u6599\u5DEE",
+      settings: [{ speed_kt: 27, range_m: 12344 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: true,
+      min_run_depth_m: 3,
+      hits_barges: false,
+      reliability: { dud: 0.07, erratic: 0.05, jitter_deg: 3 },
+      era: "1941-1943",
+      source: { speed_range: "historical (navweaps: 13,500yd/27kt\u3002Bulkley\u308227kt\u3002Wikipedia\u306E36kt/16,000yd\u306F\u4E0D\u4E00\u81F4)", reliability: "design" },
+      notes: "1911\u5E74\u8A2D\u8A08\u3002\u9ED2\u8272\u706B\u85AC\u5C04\u51FA\u306E\u4E0D\u767A\u2192\u7BA1\u5185\u30DB\u30C3\u30C8\u30E9\u30F3\u3001\u767A\u5C04\u9583\u5149\u3068\u30B0\u30EA\u30B9\u306E\u9ED2\u7159\u3067\u4F4D\u7F6E\u9732\u5448\u3002\u6D45\u6DF1\u5EA6\u3067\u86C7\u884C\u3002"
+    },
+    {
+      id: "us_mk13",
+      nation: "US",
+      name: "Mark 13",
+      name_ja: "\u7C73 Mk 13\u9B5A\u96F7\uFF08PT\u5F8C\u671F\u30FB\u822A\u7A7A\u9B5A\u96F7\u8EE2\u7528\uFF09",
+      diameter_mm: 569,
+      length_m: 4.19,
+      weight_kg: 1005,
+      warhead_kg: 272,
+      warhead_note: "600lb Torpex",
+      settings: [{ speed_kt: 33.5, range_m: 5760 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.03, erratic: 0.02, jitter_deg: 2 },
+      era: "1943-1945",
+      source: { speed_range: "historical (6,300yd/33.5kt\u30024,000yd\u8AAC\u3042\u308A)", reliability: "design" },
+      notes: "\u30E9\u30C3\u30AF\u5F0F\u3067\u9759\u304B\u306B\u8EE2\u843D\u3002\u8EFD\u91CF\u5316\u5206\u3092\u7832\u306B\u56DE\u3057\u305F\u3002"
+    },
+    {
+      id: "de_g7a",
+      nation: "DE",
+      name: "G7a (T1)",
+      name_ja: "\u72EC G7a\u9B5A\u96F7",
+      diameter_mm: 533,
+      length_m: 7.186,
+      weight_kg: 1528,
+      warhead_kg: 280,
+      warhead_note: "Hexanite",
+      settings: [{ speed_kt: 44, range_m: 6e3 }, { speed_kt: 40, range_m: 8e3 }, { speed_kt: 30, range_m: 14e3 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.04, erratic: 0.03, jitter_deg: 2 },
+      era: "1939-1945",
+      source: { speed_range: "historical (navweaps)", reliability: "design" },
+      notes: "\u96F7\u8DE1\uFF08\u6C17\u6CE1\uFF09\u304C\u898B\u3048\u308B\u3002"
+    },
+    {
+      id: "de_g7e",
+      nation: "DE",
+      name: "G7e (T3)",
+      name_ja: "\u72EC G7e\u96FB\u6C17\u9B5A\u96F7",
+      diameter_mm: 533,
+      length_m: 7.186,
+      weight_kg: 1603,
+      warhead_kg: 280,
+      warhead_note: "Hexanite",
+      settings: [{ speed_kt: 30, range_m: 7500 }],
+      default_setting: 0,
+      wake_visible: false,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.04, erratic: 0.02, jitter_deg: 2 },
+      era: "1942-1945",
+      source: { speed_range: "historical (\u958B\u6226\u66425,000m\u3001\u5F8C\u671F7,500m)", reliability: "design" },
+      notes: "\u7121\u822A\u8DE1\u30FB\u9759\u97F3\u3060\u304C\u4F4E\u901F\u3002\u4E88\u71B1\u304C\u5FC5\u8981\u3002"
+    },
+    {
+      id: "uk_18in_mkxv",
+      nation: "UK",
+      name: "18-inch Mark XV",
+      name_ja: "\u82F1 18\u30A4\u30F3\u30C1 Mk XV",
+      diameter_mm: 450,
+      length_m: 5.251,
+      weight_kg: 817,
+      warhead_kg: 247,
+      warhead_note: "Torpex",
+      settings: [{ speed_kt: 40, range_m: 2286 }, { speed_kt: 33, range_m: 3200 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.04, erratic: 0.03, jitter_deg: 2 },
+      era: "1943-1945",
+      source: { speed_range: "historical (navweaps)", reliability: "design" },
+      notes: "33kt\u8A2D\u5B9A\u306FMTB\u5C02\u7528\u3002\u5C04\u7A0B\u304C\u77ED\u3044\u3002"
+    },
+    {
+      id: "uk_21in_mkviii",
+      nation: "UK",
+      name: "21-inch Mark VIII**",
+      name_ja: "\u82F1 21\u30A4\u30F3\u30C1 Mk VIII**",
+      diameter_mm: 533,
+      length_m: 6.579,
+      weight_kg: 1566,
+      warhead_kg: 365,
+      warhead_note: "Torpex",
+      settings: [{ speed_kt: 45.5, range_m: 4572 }, { speed_kt: 40, range_m: 4572 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.04, erratic: 0.02, jitter_deg: 2 },
+      era: "1939-1945",
+      source: { speed_range: "historical (navweaps)", reliability: "design" },
+      notes: "Fairmile D\u7B49\u306B\u642D\u8F09\u3002"
+    },
+    {
+      id: "jp_45cm",
+      nation: "JP",
+      name: "45cm torpedo (Type 44 late / type unverified)",
+      name_ja: "\u65E5 45cm\u9B5A\u96F7\uFF08\u56DB\u56DB\u5F0F\u5F8C\u671F\u578B\u76F8\u5F53\u3002\u9B5A\u96F7\u8247\u642D\u8F09\u578B\u5F0F\u306F\u672A\u78BA\u8A8D\uFF09",
+      diameter_mm: 450,
+      length_m: 5.77,
+      weight_kg: 900,
+      warhead_kg: 208,
+      warhead_note: "\u4E0B\u702C/\u4E5D\u4E03\u5F0F",
+      settings: [{ speed_kt: 35, range_m: 3e3 }, { speed_kt: 26, range_m: 7e3 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.05, erratic: 0.05, jitter_deg: 3 },
+      era: "1941-1945",
+      source: { speed_range: "historical (\u56DB\u56DB\u5F0F\u5F8C\u671F\u578B\u306E\u5024\u3002\u9B5A\u96F7\u8247\u304C\u56DB\u56DB\u5F0F\u304B\u4E8C\u5F0F\u304B\u306F\u672A\u78BA\u8A8D)", reliability: "design" },
+      notes: "\u8237\u5074\u843D\u5C04\u3002\u767A\u5C04\u5F8C\u306B\u8247\u304C\u9B5A\u96F7\u306E\u9032\u8DEF\u304B\u3089\u9003\u3052\u308B\u64CD\u4F5C\u304C\u8981\u308B\u3002"
+    },
+    {
+      id: "it_w200",
+      nation: "IT",
+      name: "W 200/450\xD75.75",
+      name_ja: "\u4F0A W 200 450mm\u9B5A\u96F7",
+      diameter_mm: 450,
+      length_m: 5.75,
+      weight_kg: 900,
+      warhead_kg: 200,
+      warhead_note: "",
+      settings: [{ speed_kt: 44, range_m: 3e3 }, { speed_kt: 30, range_m: 8e3 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.04, erratic: 0.03, jitter_deg: 2 },
+      era: "1935-1945",
+      source: { speed_range: "historical (regiamarina.net)", weight_kg: "unverified", reliability: "design" },
+      notes: "MAS\u642D\u8F09\u30021942\u5E74\u304B\u3089SIC\u78C1\u6C17\u4FE1\u7BA1\u3002"
+    },
+    {
+      id: "su_53_38",
+      nation: "SU",
+      name: "53-38",
+      name_ja: "\u30BD 53-38\u9B5A\u96F7",
+      diameter_mm: 533,
+      length_m: 7.2,
+      weight_kg: 1615,
+      warhead_kg: 300,
+      warhead_note: "",
+      settings: [{ speed_kt: 44.5, range_m: 3900 }, { speed_kt: 34.5, range_m: 8e3 }, { speed_kt: 30.5, range_m: 1e4 }],
+      default_setting: 0,
+      wake_visible: true,
+      launch_flash: false,
+      min_run_depth_m: 2,
+      hits_barges: false,
+      reliability: { dud: 0.05, erratic: 0.03, jitter_deg: 2 },
+      era: "1938-1945",
+      source: { speed_range: "historical (navweaps)", length_m: "unverified", reliability: "design" },
+      notes: "G-5\u306F\u8247\u5C3E\u306E\u6E9D\u304B\u3089\u5F8C\u65B9\u6295\u4E0B\u3002"
+    }
+  ]
+};
+
+// ../wt-0176202/data/enemies.json
+var enemies_default = {
+  $schema_note: "\u6575\u30FB\u5473\u65B9NPC\u306E\u30D1\u30E9\u30E1\u30FC\u30BF\u3002AI\u7CFB\u306E\u5024\u306F\u3059\u3079\u3066 design\uFF08\u547D\u4E2D\u7387KPI\u3092\u5408\u308F\u305B\u308B\u305F\u3081\u306E\u8ABF\u6574\u30CE\u30D6\uFF09\u3002hull_circles \u306F\u8239\u4F53\u3092\u5186\u306E\u5217\u3067\u8FD1\u4F3C\u3059\u308B\u6570\u3002torpedo_hits_to_sink \u306F\u547D\u4E2D\u672C\u6570\u3002",
+  version: "0.4.2",
+  enemies: [
+    {
+      id: "ijn_destroyer",
+      faction: "IJN",
+      name_ja: "\u99C6\u9010\u8266\uFF08\u967D\u708E\u578B\u30FB\u79CB\u6708\u578B\u306E\u7C21\u7565\uFF09",
+      length_m: 118,
+      beam_m: 10.8,
+      speed_max_kt: 35,
+      speed_typical_kt: 25,
+      turn_rate_deg_s: 1.5,
+      accel_mps2: 0.3,
+      hull_hp: 300,
+      hull_circles: 5,
+      torpedo_hits_to_sink: 2,
+      guns: [
+        {
+          id: "main_127mm",
+          count: 3,
+          range_m: 1e4,
+          effective_night_m: 4e3,
+          rof_per_min: 10,
+          damage: 40,
+          shell_speed_mps: 400,
+          dispersion_m: 160,
+          splash_radius_m: 8,
+          fire_chance: 0.35,
+          engine_damage_chance: 0.3
+        },
+        {
+          id: "aa_25mm",
+          count: 4,
+          range_m: 2e3,
+          effective_night_m: 1200,
+          rof_per_min: 120,
+          damage: 4,
+          shell_speed_mps: 500,
+          dispersion_m: 70,
+          splash_radius_m: 3,
+          fire_chance: 0.05,
+          engine_damage_chance: 0.05
+        }
+      ],
+      searchlight: {
+        range_m: 3e3,
+        cone_deg: 12,
+        sweep_deg_s: 20,
+        on_delay_s: 2.5
+      },
+      starshell: {
+        range_m: 6e3,
+        illum_radius_m: 1500,
+        duration_s: 25,
+        cooldown_s: 60
+      },
+      detection: {
+        base_detect_m: 2e3,
+        wake_detect_m: 800,
+        reaction_delay_s: 0.5,
+        torpedo_wake_detect_m: 2e3,
+        wake_spot_rate_per_s: 0.2,
+        note: "torpedo_wake_detect_m \u306F\u96F7\u8DE1\u304C\u898B\u3048\u308B\u8DDD\u96E2 m\u3002\u3053\u306E\u4E2D\u306B\u5411\u304B\u3063\u3066\u304F\u308B\u9B5A\u96F7\u304C\u3042\u308B\u9593\u3001\u898B\u5F35\u308A\u304C\u5B9F\u6642\u9593 1 \u79D2\u3042\u305F\u308A wake_spot_rate_per_s \u306E\u5272\u5408\u3067\u6C17\u3065\u304F\uFF08v0.5.0\u3002\u4E71\u6570 seed+17\uFF09\u3002reaction_delay_s \u306F\u6C17\u3065\u3044\u3066\u304B\u3089\u8EE2\u8235\u3092\u59CB\u3081\u308B\u307E\u3067\u306E\u5B9F\u6642\u9593\u79D2\u3002base_detect_m \u306F\u534A\u6708\u30FB\u5DE1\u822A\u3067\u306E\u767A\u898B\u8DDD\u96E2\u3067\u3001hit_rate_model.visibility \u306E\u4FC2\u6570\u3092\u639B\u3051\u308B\u3002v0.2.0 \u5B9F\u6A5F: 2500 \u3060\u3068\u5DE1\u822A\u3067\u81EA\u8247\u306E\u8996\u7A0B 1,500m \u3088\u308A\u305A\u3063\u3068\u5148\u306B\u898B\u3064\u304B\u308A\u53B3\u3057\u3059\u304E\u305F\u306E\u3067 2000 \u306B\uFF08\u9759\u97F3 1,000m\u30FB\u505C\u6B62 800m\u30FB\u5168\u901F 3,200m\uFF09"
+      },
+      evasion: {
+        mode: "comb_tracks",
+        turn_toward_wakes: true,
+        evade_turn_rate_deg_s: 2,
+        speed_boost_kt: -10
+      },
+      ram: {
+        enabled: true,
+        trigger_m: 400,
+        give_up_m: 800,
+        stall_s: 6,
+        cooldown_s: 12,
+        turn_rate_bonus_deg_s: 0.5
+      },
+      patrol: {
+        edge_turn_margin_m: 700
+      },
+      source: {
+        length_m: "historical (\u967D\u708E\u578B118.5m)",
+        speed_max_kt: "historical",
+        turn_rate_deg_s: "design (v0.2.0 \u5B9F\u6A5F\u3067 3.0 \u306F\u300C\u8EE2\u8235\u304C\u901F\u3059\u304E\u308B\u300D\u3068\u611F\u3058\u305F\u306E\u3067 1.5 \u306B\u3002\u56DE\u907F\u6642\u306F\u9762\u8235\u3044\u3063\u3071\u3044\u3067 2.0\u3001\u4F53\u5F53\u305F\u308A\u6642\u306F +0.5)",
+        "guns.*": "design (\u5B9F\u5C04\u7A0B\u3092\u591C\u9593\u6709\u52B9\u5C04\u7A0B\u306B\u7E2E\u5C0F\u3002rof_per_min \u306F 1 \u9580\u3042\u305F\u308A\u30FB\u5B9F\u6642\u9593\u5206\u3067\u3001\u7832\u53F0\u306E\u767A\u5C04\u9593\u9694 = 60/(rof\xD7count) \u5B9F\u79D2\u3002shell_speed_mps \u306F\u898B\u3066\u304B\u308F\u305B\u308B\u3088\u3046\u5B9F\u5F3E\u3088\u308A\u9045\u3044 game \u6642\u9593\u306E\u901F\u3055\u3002dispersion_m \u306F\u6709\u52B9\u5C04\u7A0B\u3067\u306E\u7740\u5F3E\u5186\u306E\u534A\u5F84\uFF08\u4E00\u69D8\u306A\u5186\u76E4\u3002\u8DDD\u96E2\u306B\u6BD4\u4F8B\u3057\u3066\u7E2E\u3080\uFF09\u3002splash_radius_m \u4EE5\u5185\u306B\u8247\u306E\u8239\u4F53\u304C\u3042\u308C\u3070\u547D\u4E2D\u3002scripts/gunnery-sim.ts \u306E\u5B9F\u6E2C\uFF08\u9759\u6B62\u30FB\u7167\u5C04\u4E2D\uFF09: 127mm \u306F 600 m 10.8 / 1,000 m 3.7 / 1,500 m 1.5 / 2,000 m 0.7 HP/\u79D2\u300125mm \u306F 600 m 3.5 / 1,000 m 1.3 / 1,200 m 0.9 HP/\u79D2\u3002\u7167\u3089\u3055\u308C\u305F\u307E\u307E\u7559\u307E\u308B\u3068\u6C88\u6CA1\u307E\u3067 730 m \u7D04 10 \u79D2\u30FB1,000 m \u7D04 18 \u79D2\u30FB1,500 m \u7D04 53 \u79D2\u30FB2,000 m \u7D04 97 \u79D2\uFF08\u4E2D\u592E\u5024\u3001\u706B\u707D\u8FBC\u307F\uFF09\u3002\u9759\u97F3\u3067 1,000 m \u307E\u3067\u5BC4\u3063\u3066\u5168\u901F\u3067\u53CD\u8EE2\u96E2\u8131\u3059\u308C\u3070 200 \u56DE\u4E2D 197 \u56DE\u751F\u9084)",
+        "searchlight.*": "design (\u767A\u898B\u304B\u3089 on_delay_s \u5B9F\u79D2\u3067\u70B9\u706F\u3057\u8266\u9996\u65B9\u5411\u304B\u3089 sweep_deg_s\uFF08deg/\u5B9F\u79D2\uFF09\u3067\u8247\u3078\u632F\u308B\u3002cone_deg \u306E\u4E2D\u306B\u3044\u308C\u3070\u7167\u5C04\u3002on_delay_s \u306F v0.2.1 \u5B9F\u6A5F\u300C\u53CD\u8EE2\u3057\u3066\u9003\u3052\u308B\u306E\u304C\u56F0\u96E3\u300D\u3067 1.5 \u2192 2.5: \u300C\u767A\u898B\u3055\u308C\u305F\uFF01\u300D\u3092\u898B\u3066\u304B\u3089\u53CD\u8EE2\u3059\u308B\u7336\u4E88)",
+        "starshell.*": "design (\u767A\u898B\u4E2D\u3067\u63A2\u7167\u706F\u306E\u5C04\u7A0B\u5916\u3001\u304B\u3064\u8247\u304C\u8FD1\u3065\u3044\u3066\u304F\u308B\u3068\u304D\u3060\u3051\u8247\u306E\u4F4D\u7F6E\u3078\u6483\u3061 illum_radius_m \u3092 duration_s \u5B9F\u79D2\u7167\u3089\u3059\u3002cooldown_s \u5B9F\u79D2\u3002\u9060\u3056\u304B\u308B\u8247\u306B\u306F\u6483\u305F\u306A\u3044\uFF1D\u9003\u3052\u308B\u8247\u3078\u306E\u8FFD\u3044\u6253\u3061\u306B\u3057\u306A\u3044\u3002v0.2.1 \u5B9F\u6A5F\u300C\u63A2\u7167\u706F\u306E\u7BC4\u56F2\u5916\u3067\u3082\u7832\u6483\u304C\u7D9A\u304F\u300D\u3078\u306E\u5BFE\u5FDC)",
+        "detection.*": "design (v0.5.0 \u547D\u4E2D\u7387\u30C1\u30E5\u30FC\u30CB\u30F3\u30B0: \u5F53\u305F\u308A\u5224\u5B9A\u3092\u7D75\u3068\u540C\u3058 2 \u500D\uFF08v0.4.8 \u6848 A\uFF09\u306B\u3057\u3066\u547D\u4E2D\u7387\u304C\u76EE\u6A19\u5E2F\u3092\u5927\u304D\u304F\u8D85\u3048\u305F\uFF08\u6A21\u64EC\u3067\u6B63\u3057\u304F\u72D9\u3063\u305F 1 \u672C\u304C 800yd \u4EE5\u9060\u3067\u3082 66\u301C79%\uFF09\u3002\u96F7\u8DE1\u306B\u6C17\u3065\u304F\u8DDD\u96E2\u3092 700 \u2192 2,000 m\u3001\u6C17\u3065\u304D\u65B9\u3092\u300C\u5165\u3063\u305F\u77AC\u9593\u300D\u304B\u3089\u300C\u6BCE\u79D2 20%\uFF08wake_spot_rate_per_s 0.2\u3002\u5E73\u5747 5 \u79D2\uFF09\u300D\u306B\u3001\u6C17\u3065\u3044\u3066\u304B\u3089\u306E\u53CD\u5FDC\u3092 4 \u2192 0.5 \u79D2\u306B\u3057\u305F\u3002\u9060\u304F\u304B\u3089\u6483\u3064\u307B\u3069\u8D70\u3063\u3066\u3044\u308B\u9593\u306B\u6C17\u3065\u304B\u308C\u3084\u3059\u304F\u3001\u547D\u4E2D\u7387\u304C\u8DDD\u96E2\u3067\u4E0B\u304C\u308B\uFF08\u5F93\u6765\u306F 700 m \u3067\u5FC5\u305A\u6C17\u3065\u304F\u306E\u3067 700 m \u4EE5\u9060\u306E\u547D\u4E2D\u7387\u304C\u8DDD\u96E2\u306B\u3088\u3089\u305A\u4E00\u5B9A\u3060\u3063\u305F\uFF09\u3002src/core/hit-rate-sim.ts\uFF08scripts/hit-rate-sim.ts\uFF09\u306E\u6A21\u64EC\u3001\u6B63\u3057\u3044\u898B\u8D8A\u3057\u89D2\xB12\xB0\u306E 1 \u672C\u3001\u5DE6\u6B63\u6A2A\u301C\u8266\u9996\u301C\u53F3\u6B63\u6A2A 13 \u65B9\u4F4D: \u2264400yd 95%\u30FB400-800yd 63%\u30FB800-1200yd 26%\u30FB1200-2000yd 11%\u30FB\u22652000yd 5%\uFF08\u76EE\u6A19 60-70\u30FB45-55\u30FB30-35\u30FB10-15\u30FB0-5%\uFF09\u3001800yd\uFF08732 m\uFF09\u524D\u5F8C\u306F 41%\u3002\u2264400yd \u306F\u767A\u5C04\u304B\u3089\u7D04 3.6 \u79D2\u3067\u5C4A\u304F\u306E\u3067\u56DE\u907F\u3067\u306F\u4E0B\u304C\u3089\u306A\u3044\uFF08\u8FD1\u3065\u304F\u5371\u967A\u306E\u898B\u8FD4\u308A\uFF09\u3002\u65E7: reaction_delay_s \u306F\u8EE2\u8235\u7387\u3092 3.0\u21922.0 \u306B\u4E0B\u3052\u305F\u5206 6\u21924 \u79D2\u306B\u77ED\u7E2E\uFF08v0.2.0\uFF09)",
+        "evasion.*": "design (v0.5.0: speed_boost_kt \u306F\u56DE\u907F\u4E2D\u306E\u901F\u529B\u306E\u5897\u6E1B\uFF08\u8CA0\u306F\u6E1B\u901F\uFF09\u3002+5 \u2192 \u221210\uFF0825 \u2192 15 kt\uFF09: \u8EE2\u8235\u306E\u901F\u3055 2.0\xB0/s \u306F\u5909\u3048\u305A\uFF08v0.2.0 \u306E\u5B9F\u6A5F\u3067 3.0 \u306F\u300C\u8EE2\u8235\u304C\u901F\u3059\u304E\u308B\u300D\uFF09\u3001\u6E1B\u901F\u3067\u8266\u3092\u898B\u8D8A\u3057\u70B9\u304B\u3089\u5916\u3059\u3002\u6A21\u64EC\uFF08\u898B\u5F35\u308A 2,000 m\u30FB\u6BCE\u79D2 0.2\u30FB\u53CD\u5FDC 0.5 \u79D2\uFF09\u3067 +5 kt\u30FB2.0\xB0/s \u3060\u3068 400-800yd \u304C 84%\u3001\u8EE2\u8235 4.5\xB0/s\u30FB+5 kt \u3067\u3082 59%\uFF08800-1200yd 24%\uFF09\u3068\u6E1B\u901F\u306E\u6848\uFF0863%\u30FB26%\uFF09\u3068\u5927\u5DEE\u306A\u304F\u3001\u898B\u305F\u76EE\u304C\u901F\u3059\u304E\u308B\u306E\u3067\u6E1B\u901F\u3092\u9078\u3093\u3060)",
+        "ram.*": "design (trigger_m \u3067\u4F53\u5F53\u305F\u308A\u3092\u59CB\u3081 give_up_m \u307E\u3067\u7D9A\u3051\u308B\u3002\u6700\u63A5\u8FD1\u8DDD\u96E2\u304C stall_s\uFF08\u5B9F\u6642\u9593\u79D2\uFF09\u66F4\u65B0\u3055\u308C\u306A\u3051\u308C\u3070\u8AE6\u3081\u3001cooldown_s \u306F\u518D\u958B\u3057\u306A\u3044\u3002\u5411\u304B\u3063\u3066\u304F\u308B\u9B5A\u96F7\u3092\u898B\u3066\u3044\u308B\u9593\u306F\u56DE\u907F\u304C\u512A\u5148)",
+        "patrol.*": "design (\u6D77\u57DF\u306E\u7AEF\u304B\u3089\u3053\u306E\u8DDD\u96E2\u3067\u4E2D\u592E\u3078\u5411\u304D\u76F4\u3059\u3002\u7AEF\u306B\u5F35\u308A\u4ED8\u304B\u306A\u3044\u305F\u3081\u3002\u65CB\u56DE\u534A\u5F84\uFF0825kt\u30FB1.5\xB0/s \u3067\u7D04 490m\uFF09\uFF0B\u5883\u754C\u4F59\u767D 118m \u3088\u308A\u5927\u304D\u304F\u3059\u308B\u3002v0.2.0 \u3067\u8EE2\u8235\u3092 3.0\u21921.5 \u306B\u3057\u305F\u969B\u306B 500\u2192700)"
+      },
+      notes: "v0.1\u306F\u76F4\u9032\u306E\u307F\u3002v0.2.0\u3067\u767A\u898B\u30FB\u96F7\u8DE1\u56DE\u907F\uFF08\u6ADB\u3067\u68B3\u304F\uFF09\u30FB\u4F53\u5F53\u305F\u308A\u30FB\u7AEF\u3067\u306E\u5411\u304D\u76F4\u3057\u3092\u6709\u52B9\u5316\u3002\u63A2\u7167\u706F\u30FB\u661F\u5F3E\u30FB\u7832\u6483\u306F v0.2.1\u3002"
+    },
+    {
+      id: "us_destroyer",
+      faction: "USN",
+      name_ja: "\u7C73\u99C6\u9010\u8266\uFF08\u30D5\u30EC\u30C3\u30C1\u30E3\u30FC\u7D1A\u306E\u7C21\u7565\uFF09",
+      length_m: 114.8,
+      beam_m: 12,
+      speed_max_kt: 36.5,
+      speed_typical_kt: 18,
+      turn_rate_deg_s: 1.5,
+      accel_mps2: 0.3,
+      hull_hp: 300,
+      hull_circles: 5,
+      torpedo_hits_to_sink: 2,
+      guns: [
+        {
+          id: "main_127mm",
+          count: 3,
+          range_m: 1e4,
+          effective_night_m: 4e3,
+          rof_per_min: 10,
+          damage: 30,
+          shell_speed_mps: 400,
+          dispersion_m: 160,
+          splash_radius_m: 8,
+          fire_chance: 0.35,
+          engine_damage_chance: 0.3
+        },
+        {
+          id: "aa_40mm_20mm",
+          count: 4,
+          range_m: 2e3,
+          effective_night_m: 1200,
+          rof_per_min: 120,
+          damage: 4,
+          shell_speed_mps: 500,
+          dispersion_m: 70,
+          splash_radius_m: 3,
+          fire_chance: 0.05,
+          engine_damage_chance: 0.05
+        }
+      ],
+      searchlight: {
+        range_m: 3e3,
+        cone_deg: 12,
+        sweep_deg_s: 20,
+        on_delay_s: 2.5
+      },
+      starshell: {
+        range_m: 6e3,
+        illum_radius_m: 1500,
+        duration_s: 25,
+        cooldown_s: 60
+      },
+      detection: {
+        base_detect_m: 2e3,
+        wake_detect_m: 800,
+        reaction_delay_s: 0.5,
+        torpedo_wake_detect_m: 2e3,
+        wake_spot_rate_per_s: 0.3,
+        note: "torpedo_wake_detect_m \u306F\u96F7\u8DE1\u304C\u898B\u3048\u308B\u8DDD\u96E2 m\u3002\u3053\u306E\u4E2D\u306B\u5411\u304B\u3063\u3066\u304F\u308B\u9B5A\u96F7\u304C\u3042\u308B\u9593\u3001\u898B\u5F35\u308A\u304C\u5B9F\u6642\u9593 1 \u79D2\u3042\u305F\u308A wake_spot_rate_per_s \u306E\u5272\u5408\u3067\u6C17\u3065\u304F\uFF08v0.5.0\u3002\u4E71\u6570 seed+17\uFF09\u3002reaction_delay_s \u306F\u6C17\u3065\u3044\u3066\u304B\u3089\u8EE2\u8235\u3092\u59CB\u3081\u308B\u307E\u3067\u306E\u5B9F\u6642\u9593\u79D2\u3002base_detect_m \u306F\u534A\u6708\u30FB\u5DE1\u822A\u3067\u306E\u767A\u898B\u8DDD\u96E2\u3067\u3001hit_rate_model.visibility \u306E\u4FC2\u6570\u3092\u639B\u3051\u308B\u3002v0.2.0 \u5B9F\u6A5F: 2500 \u3060\u3068\u5DE1\u822A\u3067\u81EA\u8247\u306E\u8996\u7A0B 1,500m \u3088\u308A\u305A\u3063\u3068\u5148\u306B\u898B\u3064\u304B\u308A\u53B3\u3057\u3059\u304E\u305F\u306E\u3067 2000 \u306B\uFF08\u9759\u97F3 1,000m\u30FB\u505C\u6B62 800m\u30FB\u5168\u901F 3,200m\uFF09"
+      },
+      evasion: {
+        mode: "comb_tracks",
+        turn_toward_wakes: true,
+        evade_turn_rate_deg_s: 2,
+        speed_boost_kt: -10
+      },
+      ram: {
+        enabled: true,
+        trigger_m: 400,
+        give_up_m: 800,
+        stall_s: 6,
+        cooldown_s: 12,
+        turn_rate_bonus_deg_s: 0.5
+      },
+      patrol: {
+        edge_turn_margin_m: 700
+      },
+      source: {
+        "length_m\u30FBbeam_m\u30FBspeed_max_kt": "historical (\u30D5\u30EC\u30C3\u30C1\u30E3\u30FC\u7D1A \u5168\u9577 114.8 m\u30FB\u5E45 12.0 m\u30FB36.5 kt)",
+        speed_typical_kt: "design (v0.6.0\u3002\u6CCA\u5730\u306E\u8B66\u6212\u306E 18 kt\u3002ijn_destroyer \u306E 25 kt\uFF08\u6771\u4EAC\u6025\u884C\u306E\u7A81\u5165\uFF09\u3088\u308A\u9045\u3044\uFF1D\u8FFD\u3044\u3064\u304B\u308C\u306B\u304F\u3044\u304C\u3001\u898B\u5F35\u308A\u306E\u6642\u9593\u306F\u9577\u3044)",
+        guns: "design (v0.6.0\u3002ijn_destroyer \u306E 127mm\u30FB25mm \u306E\u6A21\u578B\u3092\u5199\u3057\u3001127mm \u306E damage \u3092 40 \u2192 30 \u306B\u3057\u305F\uFF08T-38 \u306E HP 60 \u306B 2 \u767A\u3067 HP 0\u3001Elco 100 \u306A\u3089 4 \u767A\uFF09\u3002\u53F2\u5B9F\u306E 5 \u30A4\u30F3\u30C1 38 \u53E3\u5F84 \xD75\u30FB40mm\u30FB20mm \u306E\u9580\u6570\u3068\u6027\u80FD\u306F\u6271\u308F\u306A\u3044\u3002gunnery-sim\uFF08BOAT=jp_t38 ENEMY=us_destroyer\uFF09\u306E\u5024\u306F CHANGELOG v0.6.0)",
+        others: "design (ijn_destroyer \u3068\u540C\u3058)",
+        detection: "design (v0.6.0\u3002wake_spot_rate_per_s 0.2 \u2192 0.3\uFF08\u5E73\u5747 3.3 \u79D2\u3067\u96F7\u8DE1\u306B\u6C17\u3065\u304F\uFF09\u3002\u65E5\u672C\u306E 45cm \u9B5A\u96F7\uFF0835 kt\uFF09\u306F Mk 8 \u3088\u308A\u901F\u304F\u3001\u6CCA\u5730\u306E\u8B66\u6212\u306E 18 kt \u306F\u6771\u4EAC\u6025\u884C\u306E 25 kt \u3088\u308A\u9045\u3044\u306E\u3067\u3001ijn_destroyer \u306E\u5024\u306E\u307E\u307E\u3060\u3068\u6B63\u3057\u304F\u72D9\u3063\u305F 1 \u672C\u304C\u5F53\u305F\u308A\u3059\u304E\u305F\uFF08hit-rate-sim ENEMY=us_destroyer TORP=jp_45cm: 0.2 \u3067 100\u30FB84\u30FB44\u30FB19\u30FB8%\uFF09\u30020.3 \u3067 100\u30FB77\u30FB32\u30FB10\u30FB4%\uFF08REPS 12\uFF09\uFF08\u76EE\u6A19 60-70\u30FB45-55\u30FB30-35\u30FB10-15\u30FB0-5%\uFF09\u3002400-800yd \u306F\u98DB\u3076\u6642\u9593\u304C\u77ED\u304F\u56DE\u907F\u3067\u306F\u4E0B\u304C\u3089\u306A\u3044\uFF08us_02 \u306E 63% \u3068\u540C\u3058\u4E8B\u60C5\uFF09\u3002\u307B\u304B\u306E\u898B\u5F35\u308A\u306E\u5024\uFF08\u898B\u3048\u308B\u8DDD\u96E2 2,000 m\u30FB\u53CD\u5FDC 0.5 \u79D2\u30FBbase_detect_m 2,000\uFF09\u306F ijn_destroyer \u3068\u540C\u3058)",
+        "searchlight\u30FBstarshell\u30FBevasion\u30FBram\u30FBpatrol": "design (v0.6.0\u3002ijn_destroyer \u306E\u5024\u3092\u5199\u3057\u305F\u3002SG \u30EC\u30FC\u30C0\u30FC\uFF081943 \u5E74\u4EE5\u964D\u306E\u7C73\u99C6\u9010\u8266\uFF09\u306F\u6271\u308F\u306A\u3044\uFF1D\u76EE\u3067\u898B\u3064\u3051\u308B)"
+      },
+      notes: "v0.6.0\u3002\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\uFF08jp_06 \u6176\u826F\u9593\u306E\u591C\uFF09\u306E\u6575\u3002AI\u30FB\u7832\u30FB\u63A2\u7167\u706F\u306F ijn_destroyer \u3068\u540C\u3058\u4ED5\u7D44\u307F\u3002\u7D75\u306F Boot \u304C us_02 \u306E\u99C6\u9010\u8266\u304B\u3089\u4F5C\u308B 1 \u679A\u3092\u4F7F\u3046\uFF08\u5F53\u305F\u308A\u5224\u5B9A\u306F\u3053\u306E\u5BF8\u6CD5\uFF09\u3002"
+    },
+    {
+      id: "ijn_light_cruiser",
+      faction: "IJN",
+      name_ja: "\u8EFD\u5DE1\u6D0B\u8266\uFF08\u963F\u6B66\u9688\u76F8\u5F53\uFF09",
+      length_m: 162,
+      beam_m: 14.2,
+      speed_max_kt: 36,
+      speed_typical_kt: 20,
+      turn_rate_deg_s: 2.2,
+      accel_mps2: 0.25,
+      hull_hp: 600,
+      hull_circles: 6,
+      torpedo_hits_to_sink: 3,
+      guns: [
+        {
+          id: "main_140mm",
+          count: 5,
+          range_m: 15e3,
+          effective_night_m: 5e3,
+          rof_per_min: 6,
+          damage: 60
+        },
+        {
+          id: "aa_25mm",
+          count: 6,
+          range_m: 2e3,
+          effective_night_m: 1200,
+          rof_per_min: 120,
+          damage: 4
+        }
+      ],
+      searchlight: {
+        range_m: 3500,
+        cone_deg: 12,
+        sweep_deg_s: 20
+      },
+      starshell: {
+        range_m: 7e3,
+        illum_radius_m: 1800,
+        duration_s: 25,
+        cooldown_s: 60
+      },
+      detection: {
+        base_detect_m: 2800,
+        wake_detect_m: 900,
+        reaction_delay_s: 8,
+        torpedo_wake_detect_m: 700
+      },
+      evasion: {
+        mode: "comb_tracks",
+        turn_toward_wakes: true,
+        evade_turn_rate_deg_s: 2.2,
+        speed_boost_kt: 4
+      },
+      ram: {
+        enabled: false,
+        trigger_m: 0,
+        turn_rate_bonus_deg_s: 0
+      },
+      source: {
+        length_m: "historical",
+        others: "design"
+      },
+      notes: "\u30B9\u30EA\u30AC\u30AA\u6D77\u5CE1\u30DF\u30C3\u30B7\u30E7\u30F3\u7528\u30021\u672C\u547D\u4E2D\u3067\u843D\u4F0D\uFF08\u901F\u529B\u534A\u6E1B\uFF09\u30013\u672C\u3067\u6C88\u6CA1\u3002"
+    },
+    {
+      id: "ijn_transport",
+      faction: "IJN",
+      name_ja: "\u8F38\u9001\u8239\uFF085,000t\u7D1A\uFF09",
+      length_m: 120,
+      beam_m: 16,
+      speed_max_kt: 12,
+      speed_typical_kt: 9,
+      turn_rate_deg_s: 1.5,
+      accel_mps2: 0.15,
+      hull_hp: 200,
+      hull_circles: 5,
+      torpedo_hits_to_sink: 1,
+      guns: [
+        {
+          id: "deck_gun_76mm",
+          count: 1,
+          range_m: 6e3,
+          effective_night_m: 2500,
+          rof_per_min: 8,
+          damage: 25,
+          shell_speed_mps: 400,
+          dispersion_m: 200,
+          splash_radius_m: 8,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      ],
+      searchlight: null,
+      starshell: null,
+      detection: {
+        base_detect_m: 1800,
+        wake_detect_m: 600,
+        reaction_delay_s: 12,
+        torpedo_wake_detect_m: 500
+      },
+      evasion: {
+        mode: "turn_away",
+        turn_toward_wakes: false,
+        evade_turn_rate_deg_s: 1.5,
+        speed_boost_kt: 1
+      },
+      ram: {
+        enabled: false,
+        trigger_m: 0,
+        give_up_m: 0,
+        stall_s: 0,
+        cooldown_s: 0,
+        turn_rate_bonus_deg_s: 0
+      },
+      source: {
+        length_m: "design (5,000t \u7D1A\u306E\u8CA8\u7269\u8239 120 m\u30FB16 m)",
+        "speed_*": "design (9 kt \u5DE1\u822A\u30FB12 kt \u6700\u5927\u3002\u99C6\u9010\u8266\uFF0825 kt\uFF09\u306B\u8B77\u885B\u3055\u308C\u308B\u304C\u3001\u7F6E\u3044\u3066\u3044\u304B\u308C\u308B)",
+        hull_hp: "design (\u672A\u4F7F\u7528\u3002\u9B5A\u96F7\u306F torpedo_hits_to_sink 1 \u672C\u3067\u6C88\u3080\uFF1D\u5927\u76EE\u6A19\u3067\u9045\u3044\u306E\u3067\u5F53\u3066\u3084\u3059\u3044\u4EE3\u308F\u308A\u306B 1 \u672C)",
+        guns: "design (v0.4.7\u300276mm \u5099\u7832 1 \u9580\u3002searchlight\u30FBstarshell \u304C null\uFF1D\u81EA\u5206\u3067\u306F\u7167\u3089\u305B\u306A\u3044\u306E\u3067\u3001\u540C\u3058\u968A\u306E\u99C6\u9010\u8266\u304C\u81EA\u8247\u3092\u7167\u3089\u3057\u3066\u3044\u308B\u9593\uFF08\u307E\u305F\u306F\u6C34\u4E0A\u6A5F\u306E\u7167\u660E\u5F3E\uFF09\u3060\u3051\u6483\u3064\u3002rof 8/\u5206\u30FBdamage 25\u30FBdispersion 200\uFF08\u6709\u52B9\u5C04\u7A0B 2,500 m \u3067\u306E\u6563\u308A\u3002\u99C6\u9010\u8266\u306E 127mm 160 \u3088\u308A\u7C97\u3044\uFF09)",
+        detection: "design (base_detect_m 1,800\u3002\u898B\u5F35\u308A\u306F\u99C6\u9010\u8266\u3088\u308A\u5C11\u306A\u3044\u3002wake_detect_m\u30FBreaction_delay_s 12 \u79D2\uFF1D\u96F7\u8DE1\u306B\u6C17\u3065\u3044\u3066\u3082\u9003\u3052\u59CB\u3081\u304C\u9045\u3044)",
+        evasion: "design (turn_away: \u96F7\u8DE1\u304B\u3089\u96E2\u308C\u308B\u5411\u304D\u306B\u8EE2\u8235 1.5\xB0/s\u3001\u5897\u901F 1 kt\u3002\u307B\u307C\u907F\u3051\u3089\u308C\u306A\u3044)",
+        "ram\u30FBpatrol": "design (v0.4.7\u3002\u4F53\u5F53\u305F\u308A\u306F\u3057\u306A\u3044\u3002\u7AEF 700 m \u3067\u4E2D\u592E\u3078\u5411\u304D\u76F4\u3059\uFF08\u99C6\u9010\u8266\u3068\u540C\u3058\uFF09)"
+      },
+      notes: "\u8B77\u885B\u4ED8\u304D\u8239\u56E3\u306E\u4E2D\u6838\u3002v0.4.7 \u304B\u3089\u6771\u4EAC\u6025\u884C\uFF08us_02\uFF09\u306B 1 \u96BB\u6DF7\u3058\u308B\uFF08missions_seed \u306E transport\uFF09\u3002\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\u3067\u306F\u8B77\u885B\u5BFE\u8C61\u306B\u306A\u308B\u3002",
+      patrol: {
+        edge_turn_margin_m: 700
+      }
+    },
+    {
+      id: "ijn_destroyer_mutsuki",
+      faction: "IJN",
+      name_ja: "\u99C6\u9010\u8266\uFF08\u7766\u6708\u578B\u30FB\u536F\u6708\uFF09",
+      length_m: 102.7,
+      beam_m: 9.16,
+      speed_max_kt: 34,
+      guns: [
+        {
+          id: "main_120mm",
+          count: 2,
+          range_m: 9e3,
+          effective_night_m: 3e3,
+          rof_per_min: 10,
+          damage: 40,
+          shell_speed_mps: 400,
+          dispersion_m: 160,
+          splash_radius_m: 8,
+          fire_chance: 0,
+          engine_damage_chance: 0,
+          pt_sink_chance: 0.1
+        },
+        {
+          id: "aa_25mm",
+          count: 1,
+          range_m: 2e3,
+          effective_night_m: 1200,
+          rof_per_min: 120,
+          damage: 4,
+          shell_speed_mps: 500,
+          dispersion_m: 70,
+          splash_radius_m: 3,
+          fire_chance: 0,
+          engine_damage_chance: 0
+        }
+      ],
+      searchlight: {
+        range_m: 1500,
+        cone_deg: 12,
+        sweep_deg_s: 20,
+        on_delay_s: 1.5
+      },
+      starshell: null,
+      source: {
+        "length_m\u30FBbeam_m": "historical (\u7766\u6708\u578B\u306E\u5168\u9577 102.72 m\uFF08\u5782\u7DDA\u9593 97.54 m\uFF09\u30FB\u5E45 9.16 m: en.wikipedia \u306E Mutsuki-class destroyer \u3068\u3001Destroyers of World War Two \u3092\u51FA\u5178\u306B\u3057\u305F\u6C34\u7121\u6708\u306E\u9801\uFF08franco.wiki \u306E Minazuki (destroyer, 1926)\uFF09\u304C\u4E00\u81F4\uFF08medium\u301Chigh\uFF09\u3002\u8266\u3054\u3068\u306E\u9801\u306B\u306F\u5168\u9577 102.4 m \u3082\u3042\u308B\u30022026-11-02 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.10 S1\u3002102.72 \u3092 102.7 \u306B\u3002\u8266\u306E\u7D75\u3068\u63A2\u7167\u706F\u306E\u4F4D\u7F6E\u3060\u3051\u306B\u4F7F\u3046\uFF1D\u536F\u6708\u306F\u6B62\u307E\u3063\u3066\u6C88\u307E\u306A\u3044\u306E\u3067\u5F53\u305F\u308A\u306E\u8239\u4F53\u3092\u6301\u305F\u306A\u3044)",
+        speed_max_kt: "historical (1941\u301C42 \u306E\u9AD8\u901F\u8F38\u9001\u8266\u3078\u306E\u6539\u88C5\u306E\u5F8C 34 kt\u300232.5 kt \u3068\u3059\u308B\u8CC7\u6599\u3082\u3042\u308B: low\u301Cmedium) / design (v0.6.10\u3002\u672A\u4F7F\u7528\uFF1D\u536F\u6708\u306F\u6CCA\u5730\u306E\u5317\u6771\u306B\u6B62\u307E\u3063\u305F\u307E\u307E\uFF08\u536F\u6708\u306F\u6B62\u307E\u3063\u3066\u3044\u305F \u304B \u9045\u304B\u3063\u305F: low\u301Cmedium\uFF09)",
+        guns: "historical (\u536F\u6708 1944-08-31 \u306E\u5175\u88C5\u306E\u8ABF\u3079: 12 cm \u5358\u88C5 2\u30FB25 mm \u8A08 16 \u633A\uFF08medium\u301Chigh\uFF09\u3002main_120mm \u306E count 2\u3002pt_sink_chance 0.10: \u30B9\u30EA\u30AC\u30AA\u6D77\u5CE1\u3067\u65E5\u672C\u306E\u7832\u706B\u3092\u53D7\u3051\u3066\u88AB\u5F3E\u3057\u305F PT 10 \u96BB\u306E\u3046\u3061\u5931\u308F\u308C\u305F\u306E\u306F 1 \u96BB\uFF08medium\uFF09) / design (v0.6.10\u3002main_120mm \u306E\u307B\u304B\u306E\u5024\u306F ijn_destroyer \u306E main_127mm \u306E\u5199\u3057\u3067\u300112 cm \u306F 12.7 cm \u3088\u308A\u5C0F\u3055\u3044\u7832\u306A\u306E\u3067 range_m 10,000 \u2192 9,000\u30FBeffective_night_m 4,000 \u2192 3,000\uFF08\u7167\u3089\u3057\u305F PT \u3060\u3051\u3092\u6483\u3064\u306E\u3067\u63A2\u7167\u706F\u306E 1,500 m \u306E\u5185\u3067\u8DB3\u308A\u308B\uFF09\u3002fire_chance\u30FBengine_damage_chance 0 \u306F\u81EA\u8247\u3092\u6483\u305F\u306A\u3044\u304B\u3089\uFF08PT \u3078\u306E 1 \u547D\u4E2D\u306E\u6C88\u307F\u306F pt_sink_chance\u3001\u53BB\u308B\u304B\u9000\u304F\u304B\u306F\u7C73PT \u306E under_fire\uFF09\u3002aa_25mm \u306F\u591C\u306B\u5411\u3051\u3089\u308C\u308B 25 mm \u3092 120 \u767A/\u5206\u306E\u66F3\u5149\u306E\u7D44 1 \u3064\u306B\u7E2E\u3081\u305F\uFF08count \u306F\u9283\u306E\u6570\u3067\u306F\u306A\u3044\u3002\u8A66\u4F5C\u3067\u5207\u3063\u3066\u3082\u8F38\u9001\u8239\u3092\u5B88\u308B\u6570\u306E\u5DEE\u306F 0.3 \u70B9\u4EE5\u4E0B\uFF1D\u898B\u3048\u308B\u66F3\u5149\u306E\u305F\u3081\uFF09)",
+        searchlight: "historical (\u6D77\u8ECD\u306E 90 cm \u63A2\u7167\u706F\u306E\u6709\u52B9\u7167\u5C04\u306F\u7D04 4,000 m \u304C\u4E0A\u9650\uFF08medium\uFF09\u3002\u7766\u6708\u578B\u306E\u4E3B\u63A2\u7167\u706F\u306E\u5927\u304D\u3055\u306F\u898B\u3064\u304B\u3089\u306A\u3044\u3002\u8D70\u308B PT \u3092\u65E5\u672C\u306E\u898B\u5F35\u308A\u304C\u898B\u3064\u3051\u305F\u8DDD\u96E2 2,000 m\uFF08\u6642\u96E8\u30FB\u30B9\u30EA\u30AC\u30AA\uFF09\u306F S1 \u306E\u5024\u3067\u3001S7 \u306E\u898B\u76F4\u3057\u3067\u306F\u51FA\u5178\u304C\u898B\u3064\u304B\u3089\u306A\u304B\u3063\u305F\uFF08low\u3002PT-134 \u306F\u7D04 3,000 yd\u30FBPT-490 \u306F\u7D04 400 yd \u3067\u63A2\u7167\u706F\u306B\u6349\u3048\u3089\u308C\u305F\u3002v0.6.10 F\u3002docs/01 \xA78\uFF09) / design (v0.6.10\u3002range_m 1,500 \u306F\u305D\u306E\u5185\u3002cone_deg 12 \u306F us_02 \u306E ijn_destroyer \u3068\u540C\u3058\uFF1D\u63A2\u7167\u706F\u306E\u7D75\u306F 1 \u679A\uFF08\u8D77\u52D5\u6642\u306E\u691C\u67FB V-A7\uFF09\u3002\u6C17\u3065\u3044\u3066 1.5 \u79D2\u3067\u70B9\u706F\u3057 20\xB0/\u79D2\u3067\u632F\u308B)",
+        starshell: "design (v0.6.10\u300212 cm \u306E\u661F\u5F3E\u306F\u3042\u3063\u305F\u304C\u7167\u660E\u306E\u8DDD\u96E2\u30FB\u79D2\u306E\u6570\u304C\u898B\u3064\u304B\u3089\u306A\u3044\u3002\u5149\u306F\u63A2\u7167\u706F 1 \u672C\u3060\u3051\uFF1D\u3069\u306E PT \u304C\u7167\u3089\u3055\u308C\u3066\u3044\u308B\u304B\u3092\u8AAD\u307F\u3084\u3059\u304F)"
+      },
+      notes: "jp_04\uFF08v0.6.10\uFF09\u306E\u5473\u65B9\u306E\u99C6\u9010\u8266\u3002\u6CCA\u5730\u306E\u5317\u6771\u306B\u6B62\u307E\u308A\u3001\u6D77\u306E\u4E0A\u306E\u6247\u306E\u5185\u3067\u8D70\u308B\u7C73PT \u3092\u76EE\u3067\u898B\u3064\u3051\u3066 1 \u96BB\u305A\u3064\u7167\u3089\u3057\u300112 cm \u3068 25 mm \u3067\u6483\u3064\u300213\u53F7\u96FB\u63A2\u306F\u5BFE\u7A7A\u306E\u898B\u5F35\u308A\uFF08medium\uFF09\u306A\u306E\u3067\u898B\u5F35\u308A\u306F\u76EE\u3002\u536F\u6708\u304C\u6483\u3061\u8FD4\u3057\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF09\u3002\u7C73PT \u306E\u9B5A\u96F7\u30FB\u7832\u5F3E\u3068\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u7684\u306B\u306A\u3089\u305A\u3001\u6C88\u307E\u306A\u3044\uFF08v0.6.10\uFF09\u3002\u6B62\u307E\u3063\u305F\u8266\u306A\u306E\u3067 AI\u30FB\u56DE\u907F\u30FB\u4F53\u5F53\u305F\u308A\u306E\u5024\u3092\u6301\u305F\u305A\u3001config/game-data \u306E getEnemyRecord \u3067\u306F\u8AAD\u3081\u306A\u3044\uFF08core/ally-destroyer-data \u304C\u8AAD\u3080\uFF09"
+    },
+    {
+      id: "ijn_destroyer_mutsuki_enemy",
+      faction: "IJN",
+      name_ja: "\u99C6\u9010\u8266\uFF08\u7766\u6708\u578B\u30FB\u536F\u6708\uFF09",
+      length_m: 102.7,
+      beam_m: 9.16,
+      speed_max_kt: 34,
+      speed_typical_kt: 25,
+      turn_rate_deg_s: 1.5,
+      accel_mps2: 0.3,
+      hull_hp: 300,
+      hull_circles: 5,
+      torpedo_hits_to_sink: 2,
+      guns: [
+        {
+          id: "main_120mm",
+          count: 2,
+          range_m: 1e4,
+          effective_night_m: 4e3,
+          rof_per_min: 10,
+          damage: 40,
+          shell_speed_mps: 400,
+          dispersion_m: 160,
+          splash_radius_m: 8,
+          fire_chance: 0.35,
+          engine_damage_chance: 0.3
+        },
+        {
+          id: "aa_25mm",
+          count: 4,
+          range_m: 2e3,
+          effective_night_m: 1200,
+          rof_per_min: 120,
+          damage: 4,
+          shell_speed_mps: 500,
+          dispersion_m: 70,
+          splash_radius_m: 3,
+          fire_chance: 0.05,
+          engine_damage_chance: 0.05
+        }
+      ],
+      searchlight: {
+        range_m: 3e3,
+        cone_deg: 12,
+        sweep_deg_s: 20,
+        on_delay_s: 2.5
+      },
+      starshell: {
+        range_m: 6e3,
+        illum_radius_m: 1500,
+        duration_s: 25,
+        cooldown_s: 60
+      },
+      detection: {
+        base_detect_m: 2e3,
+        wake_detect_m: 800,
+        reaction_delay_s: 0.5,
+        torpedo_wake_detect_m: 2e3,
+        wake_spot_rate_per_s: 0.2
+      },
+      evasion: {
+        mode: "comb_tracks",
+        turn_toward_wakes: true,
+        evade_turn_rate_deg_s: 2,
+        speed_boost_kt: -10
+      },
+      ram: {
+        enabled: true,
+        trigger_m: 400,
+        give_up_m: 800,
+        stall_s: 6,
+        cooldown_s: 12,
+        turn_rate_bonus_deg_s: 0.5
+      },
+      patrol: {
+        edge_turn_margin_m: 700
+      },
+      source: {
+        "length_m\u30FBbeam_m": "historical (\u7766\u6708\u578B\u306E\u5168\u9577 102.72 m\u30FB\u5E45 9.16 m\u3002ijn_destroyer_mutsuki\uFF08jp_04 \u306E\u5473\u65B9\u306E\u536F\u6708\uFF09\u306E source \u3068\u540C\u3058\u51FA\u5178\uFF1Ddocs/01 \xA78 \u306E\u300C\u536F\u6708\u306E\u6483\u3061\u8FD4\u3057\u300D\u306E\u8868\u3002medium\u301Chigh) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.2 D-S1\u3002us_06 \u306E\u6575\u3068\u3057\u3066\u306E\u536F\u6708\u3002102.7 m \u3067\u5F53\u305F\u308A\u306E\u8239\u4F53\uFF08world.ship_hit_scale \u500D\uFF09\u3068\u7D75\uFF08S2 \u304B\u3089\u6575\u306E\u8272\u306E\u7766\u6708\u578B\uFF09\u306B\u4F7F\u3046\u3002ijn_destroyer\uFF08\u967D\u708E\u578B 118 m\uFF09\u306E\u307E\u307E\u3067\u306F\u540C\u3058\u591C\u306E\u536F\u6708\u306E\u5927\u304D\u3055\u304C\u4E21\u5074\u3067\u98DF\u3044\u9055\u3046)",
+        speed_max_kt: "historical (1941\u301C42 \u306E\u9AD8\u901F\u8F38\u9001\u8266\u3078\u306E\u6539\u88C5\u306E\u5F8C 34 kt\uFF08ijn_destroyer_mutsuki \u3068\u540C\u3058\u300232.5 kt \u3068\u3059\u308B\u8CC7\u6599\u3082\u3042\u308B: low\u301Cmedium\uFF09)",
+        guns: "historical (\u536F\u6708 1944-08-31 \u306E\u5175\u88C5: 12 cm \u5358\u88C5 2\uFF08medium\u301Chigh\u3002ijn_destroyer_mutsuki \u3068\u540C\u3058\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.2 D-S1\u3002main_120mm \u306F count 2 \u306E\u307B\u304B\uFF08\u5C04\u7A0B\u30FB\u591C\u306E\u6709\u52B9\u5C04\u7A0B\u30FB\u767A\u5C04\u306E\u901F\u3055\u30FB\u5A01\u529B\u30FB\u5F3E\u306E\u901F\u3055\u30FB\u6563\u308A\u30FB\u5F53\u305F\u308A\u306E\u534A\u5F84\u30FB\u706B\u707D\u30FB\u6A5F\u95A2\uFF09\u3092 ijn_destroyer \u306E main_127mm \u306E 1 \u9580\u306E\u5024\u306E\u5199\u3057\u306B\u3001aa_25mm \u306F ijn_destroyer \u306E\u307E\u307E\uFF08\u547D\u4E2D\u7387\u306E KPI \u3068\u7832\u306E\u6A21\u64EC\u3092\u5408\u308F\u305B\u305F\u5024\u3002tests/enemy-mutsuki \u304C\u540C\u3058\u3053\u3068\u3092\u56FA\u5B9A\uFF09)",
+        "speed_typical_kt\u30FBturn_rate_deg_s\u30FBaccel_mps2\u30FBhull_hp\u30FBhull_circles\u30FBtorpedo_hits_to_sink\u30FBsearchlight\u30FBstarshell\u30FBdetection\u30FBevasion\u30FBram\u30FBpatrol": "design (v0.8.1 S0\u30FBspec-v0810 \xA73.2 D-S1\u3002ijn_destroyer \u306E\u5024\u3092\u305D\u306E\u307E\u307E\uFF08\u547D\u4E2D\u7387\u306E KPI\uFF1Dhit_rate_model.json \u306E kpi_by_range \u3092\u5408\u308F\u305B\u305F\u5024\u306A\u306E\u3067\u89E6\u3089\u306A\u3044\u3002detection \u306E note \u306F ijn_destroyer \u306B\u3042\u308B\u3002tests/enemy-mutsuki \u304C\u540C\u3058\u3053\u3068\u3092\u56FA\u5B9A\uFF09\u3002torpedo_hits_to_sink 2 \u306F\u53F2\u5B9F\u306E\u300C2 \u672C\u4EE5\u4E0A\u304C\u547D\u4E2D\u3057\u3066\u6C88\u3093\u3060\u300D\uFF08medium\uFF09\u3068\u3082\u5408\u3046\u3002jp_04 \u306E\u5473\u65B9\u306E\u8A18\u9332 ijn_destroyer_mutsuki \u306F AI \u306E\u9375\u304C\u7121\u3044\uFF08\u6B62\u307E\u3063\u3066\u6C88\u307E\u306A\u3044\u8266\uFF09\u306E\u3067\u4F7F\u308F\u305A\u3001jp_04 \u306F\u5909\u3048\u306A\u3044)"
+      },
+      notes: "us_06\uFF08v0.8.1\uFF09\u306E\u6575\u306E\u536F\u6708\u3002\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u3066\u3044\u3066\u3001\u6C17\u3065\u304F\u3068\u52D5\u304D\u51FA\u3057\u3066 ijn_destroyer \u3068\u540C\u3058 AI\u30FB\u7832\u30FB\u63A2\u7167\u706F\u30FB\u661F\u5F3E\u3067\u6226\u3046\uFF08\u6B62\u307E\u3063\u305F\u8266\u306E\u898F\u5247\u306F missions_seed \u306E v0_1_prototype.anchored\uFF09\u3002jp_04 \u306E\u5473\u65B9\u306E\u536F\u6708\u306F ijn_destroyer_mutsuki\uFF08\u5225\u306E\u8A18\u9332\uFF09\u3002"
+    },
+    {
+      id: "ijn_subchaser",
+      faction: "IJN",
+      name_ja: "\u99C6\u6F5C\u8247\uFF08\u7B2C13\u53F7\u578B\uFF09",
+      length_m: 51,
+      beam_m: 6.7,
+      speed_max_kt: 16,
+      speed_typical_kt: 12,
+      turn_rate_deg_s: 3,
+      accel_mps2: 0.4,
+      hull_hp: 100,
+      hull_circles: 3,
+      torpedo_hits_to_sink: 1,
+      guns: [
+        {
+          id: "aa_76mm",
+          count: 1,
+          range_m: 6e3,
+          effective_night_m: 2500,
+          rof_per_min: 8,
+          damage: 25,
+          shell_speed_mps: 400,
+          dispersion_m: 200,
+          splash_radius_m: 8,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        },
+        {
+          id: "aa_13mm",
+          count: 2,
+          range_m: 2e3,
+          effective_night_m: 1200,
+          rof_per_min: 120,
+          damage: 4,
+          shell_speed_mps: 500,
+          dispersion_m: 70,
+          splash_radius_m: 3,
+          fire_chance: 0.05,
+          engine_damage_chance: 0.05
+        }
+      ],
+      searchlight: {
+        range_m: 1500,
+        cone_deg: 12,
+        sweep_deg_s: 20,
+        on_delay_s: 2.5
+      },
+      starshell: null,
+      detection: {
+        base_detect_m: 1500,
+        reaction_delay_s: 1,
+        torpedo_wake_detect_m: 800,
+        wake_spot_rate_per_s: 0.2
+      },
+      evasion: {
+        mode: "turn_away",
+        turn_toward_wakes: false,
+        evade_turn_rate_deg_s: 3,
+        speed_boost_kt: 4
+      },
+      ram: {
+        enabled: false,
+        trigger_m: 0,
+        give_up_m: 0,
+        stall_s: 0,
+        cooldown_s: 0,
+        turn_rate_bonus_deg_s: 0
+      },
+      patrol: {
+        edge_turn_margin_m: 500
+      },
+      source: {
+        "length_m\u30FBbeam_m\u30FBspeed_max_kt": "historical (\u7B2C13\u53F7\u578B\u99C6\u6F5C\u8247: 438 t\u30FB51 \xD7 6.7 m\u30FB\u55AB\u6C34 2.75 m\u30FB16 kt\uFF08Wikipedia \u306E No.13-class submarine chaser \u3068\u305D\u306E\u5199\u3057\u306E\u629C\u7C8B 1 \u3064\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\u3002\u901F\u529B\u306F docs/01 \xA78 \u306E\u8239\u56E3\u306E\u8868\u3068\u3082\u5408\u3046\uFF09\u3002\u55AB\u6C34 2.75 m \uFF1E Mk 13 \u306E min_run_depth_m 2 \u306A\u306E\u3067\u9B5A\u96F7\u306F\u5F53\u305F\u308B\uFF08torpedo_immune \u3092\u6301\u305F\u306A\u3044\uFF09)",
+        guns: "historical (1940 \u306E\u5175\u88C5: 76.2 mm \u9AD8\u89D2\u7832 1\u30FB13.2 mm \u6A5F\u9283 2\uFF08\u540C\u3058\u629C\u7C8B 1 \u3064\u30021944 \u5E74\u306E\u5175\u88C5\u306E\u5909\u5316\u306F\u672A\u78BA\u8A8D\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA74.3\u3002aa_76mm \u306F ijn_transport \u306E deck_gun_76mm \u306E\u5024\u306E\u5199\u3057\u3001aa_13mm \u306F ijn_destroyer \u306E aa_25mm \u306E\u5024\u3067\u53E3\u5F84\u306E\u540D\u3060\u3051\u9055\u3046\uFF08count 2\uFF09)",
+        searchlight: "design (v0.8.1 S0\u3002range_m 1,500\uFF08\u5473\u65B9\u306E\u536F\u6708 ijn_destroyer_mutsuki \u3068\u540C\u3058\uFF09\u3002cone_deg\u30FBsweep_deg_s\u30FBon_delay_s \u306F ijn_destroyer \u3068\u540C\u3058\uFF08\u63A2\u7167\u706F\u306E\u7D75\u306F 1 \u679A\u30FB\u300C\u767A\u898B\u3055\u308C\u305F\uFF01\u300D\u304B\u3089\u53CD\u8EE2\u3059\u308B\u7336\u4E88 2.5 \u79D2\uFF09\u3002\u661F\u5F3E\u306F\u7121\u3044)",
+        others: "design (v0.8.1 S0\u30FBspec-v0810 \xA74.3\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9\u306E us_06 \u3060\u3051\uFF08missions_seed \u306E v0_1_prototype.hard.picket_enemy_id\uFF09\u3002\u5DE1\u822A 12 kt\u30FB\u65CB\u56DE 3.0\xB0/\u79D2\u30FB\u52A0\u901F 0.4\uFF08\u5C0F\u3055\u304F\u8EAB\u8EFD\u306A\u8266\uFF09\u3002hull_hp 100 \u306F\u672A\u4F7F\u7528\uFF081 \u672C\u3067\u6C88\u3080\uFF09\u3002detection \u306E base_detect_m 1,500 \u306F\u8A18\u9332\u306E\u691C\u67FB\u306E\u305F\u3081\u3060\u3051\uFF08\u968A\u306F\u99C6\u9010\u8266\u306E 1 \u3064\u306E\u898B\u3064\u3051\u308B\u8DDD\u96E2\u3092\u4F7F\u3046\uFF1D\u4ECA\u306E us_02 \u306E\u8F38\u9001\u8239\u3068\u540C\u3058\u4F5C\u308A\uFF09\u30FB\u96F7\u8DE1 800 m\u30FB\u6BCE\u79D2 0.2\u30FB\u53CD\u5FDC 1.0 \u79D2\u3002evasion \u306F turn_away\uFF08\u96F7\u8DE1\u304B\u3089\u96E2\u308C\u308B\u5411\u304D\u3078\u4ECA\u306E\u65CB\u56DE\u306E\u307E\u307E\u30FB\u6700\u5927\u901F\u529B\u307E\u3067\u5897\u3059\uFF09\u3002\u4F53\u5F53\u305F\u308A\u306F\u3057\u306A\u3044\u3002\u7AEF 500 m \u3067\u5411\u304D\u76F4\u3059\uFF0812 kt\u30FB3.0\xB0/\u79D2\u306E\u65CB\u56DE\u534A\u5F84 \u7D04 120 m \uFF0B \u7E01\u306E\u4F59\u767D 51 m \u3088\u308A\u5927\u304D\u3044\uFF09\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F v0.8.1 S2b)"
+      },
+      notes: "us_06 \u306E\u30CF\u30FC\u30C9\uFF08v0.8.1\uFF09\u3067\u6CCA\u5730\u306E\u5916\u306B\u6B62\u307E\u3063\u3066\u898B\u5F35\u308B\u99C6\u6F5C\u8247 2 \u96BB\u3002\u6C17\u3065\u304F\u3068\u52D5\u304D\u51FA\u3057\u3066\u8A18\u9332\u306E AI\uFF08\u4F53\u5F53\u305F\u308A\u306A\u3057\uFF09\u306B\u306A\u308B\u3002\u70B9\u306F\u7121\u304F\u3001\u6483\u6C88\u306E\u9054\u6210\u30FB\u547D\u4E2D\u7387\u306E KPI\u30FB\u6483\u6C88 n/m \u306B\u6570\u3048\u306A\u3044\u3002"
+    },
+    {
+      id: "daihatsu_barge",
+      faction: "IJN",
+      name_ja: "\u5927\u767A\u52D5\u8247\uFF08\u5927\u767A\uFF09",
+      length_m: 14.9,
+      beam_m: 3.4,
+      speed_max_kt: 8,
+      speed_typical_kt: 7,
+      turn_rate_deg_s: 8,
+      accel_mps2: 0.4,
+      hull_hp: 20,
+      hull_circles: 1,
+      torpedo_hits_to_sink: 0,
+      torpedo_immune: true,
+      guns: [
+        {
+          id: "mg_13mm",
+          count: 1,
+          range_m: 1200,
+          effective_night_m: 600,
+          rof_per_min: 200,
+          damage: 2,
+          shell_speed_mps: 500,
+          dispersion_m: 50,
+          splash_radius_m: 1.5,
+          fire_chance: 0.03,
+          engine_damage_chance: 0.02
+        }
+      ],
+      searchlight: null,
+      starshell: null,
+      detection: {
+        base_detect_m: 1200,
+        wake_detect_m: 500,
+        reaction_delay_s: 5,
+        torpedo_wake_detect_m: 0
+      },
+      evasion: {
+        mode: "hug_shore",
+        turn_toward_wakes: false,
+        evade_turn_rate_deg_s: 8,
+        speed_boost_kt: 1,
+        beach_fan_deg: 15
+      },
+      ram: {
+        enabled: false,
+        trigger_m: 0,
+        turn_rate_bonus_deg_s: 0
+      },
+      cargo: {
+        troops: 70,
+        tons: 10
+      },
+      source: {
+        length_m: "historical",
+        torpedo_immune: "historical (Mk 8\u306E\u6700\u5C0F\u6DF1\u5EA6\u7D043m\u3067\u4E0B\u3092\u629C\u3051\u308B)",
+        others: "design",
+        design_notes: "v0.4.2\uFF08\u5927\u767A\u6383\u8A0E\u3002docs/02 \xA76.4\uFF09\u3002\u968A\u306E\u4F4D\u7F6E\u306F missions_seed \u306E v0_1_prototype.barges\uFF08\u5148\u982D\u30FB\u5F8C\u308D\u3078\u306E\u8DDD\u96E2 offsets_m\u30FB\u5CB8\u306E\u4F59\u767D\u30FB\u6483\u7834\u306E\u30CE\u30EB\u30DE\uFF09\u3002\u767A\u898B: base_detect_m 1200 \xD7 \u65B0\u6708 0.6 \xD7 \u8247\u306E\u901F\u529B\u4FC2\u6570 = \u505C\u6B62 288\u30FB\u9759\u97F3 360\u30FB\u5DE1\u822A 720\u30FB\u5168\u901F 1,152 m\uFF08\u8247\u306E\u8996\u7A0B 900 m \u3088\u308A\u5148\u306B\u6C17\u3065\u304F\u306E\u306F\u5168\u901F\u3060\u3051\uFF09\u3002\u7159\u5E55\u3067\u8247\u3068\u306E\u7DDA\u304C\u906E\u3089\u308C\u305F\u5927\u767A\u306F \xD7 0.3\u3002\u8247\u304C\u6483\u3064\u3068 boats.json \u306E gun_battery.muzzle_flash_reveal_m\uFF081,200 m\uFF09\u4EE5\u5185\u306E\u5927\u767A\u304C\u6C17\u3065\u304F\uFF08\u7159\u5E55\u3082\u901A\u3059\uFF09\u3002\u6C17\u3065\u3044\u305F\u5927\u767A\u306F\u3059\u3050 13mm \u3067\u6483\u3061\u8FD4\u3057\u3001reaction_delay_s\uFF085 \u79D2\uFF09\u306F\u9032\u8DEF\u306E\u307E\u307E\u3001\u305D\u306E\u5F8C speed_typical_kt + speed_boost_kt\uFF088 kt \u2264 speed_max_kt\uFF09\u3067\u5CB8\u3078\u9003\u3052\u3001\u5CB8\u306E\u7DDA\uFF08\u6D77\u57DF\u306E\u5357\u306E\u7E01 \u2212 beach_margin_m\uFF09\u3092\u8D8A\u3048\u305F\u3089\u4E0A\u9678\uFF1D\u9003\u3052\u5207\u308A\uFF08\u6483\u3066\u306A\u3044\u30FB\u6483\u305F\u308C\u306A\u3044\u30FB\u6D5C\u306B\u7070\u8272\u3067\u6B8B\u308B\uFF09\u3002\u9003\u3052\u308B\u9032\u8DEF\u306F 180\xB0 \u3092\u4E2D\u5FC3\u306B beach_fan_deg\uFF0815\xB0\uFF09\u305A\u3064\u6247\uFF08157.5\u301C202.5\xB0\uFF09\u3002\u822A\u8DE1\u304B\u3089\u5CB8\u306E\u7DDA\u307E\u3067 160 m \u306F 8.65\u301C9.15 \u79D2\u3001\u6C17\u3065\u3044\u3066\u304B\u3089\u4E0A\u9678\u307E\u3067 13.7\u301C14.2 \u79D2\u3002\u898B\u5931\u3063\u3066\u304B\u3089 visibility.detect_hold_s\uFF088 \u79D2\uFF09\u3067\u6C17\u3065\u304D\u304C\u89E3\u3051\u308B\uFF08\u9003\u8D70\u306F\u7D9A\u304F\uFF09\u3002hull_hp 20: \u8247\u306E\u7832\u3067 250 m \u306A\u3089\u7D04 2 \u79D2\u3001300 m \u7D04 3 \u79D2\u3001400 m \u7D04 5 \u79D2\uFF08\u505C\u6B62\u30FB\u9759\u97F3\uFF09\u3002guns: 13mm \u306F\u99C6\u9010\u8266\u306E\u7832\u3068\u540C\u3058\u6A21\u578B\uFF08\u898B\u8D8A\u3057\uFF0B\u4E00\u69D8\u5186\u76E4\uFF09\u3002damage 3 \u2192 2\u30FBdispersion_m 50\uFF08v0.4.2\u30021 \u96BB\u306E\u88AB\u5BB3\u306F 100 m 4.5\u30FB150 m 3.1\u30FB200 m 2.3\u30FB300 m 1.0\u30FB400 m 0.6 HP/\u79D2\u3002\u6A21\u64EC\uFF08scratchpad v042judge\u3001200 \u591C\uFF09\u3067\u3001\u9759\u97F3\u3067\u5BC4\u308A 300 m \u304B\u3089\u6483\u3064\u3068 1 \u4EFB\u52D9 HP \u221216\uFF08p90 \u221230\u3001\u4E57\u54E1 1\u301C3 \u540D\uFF09\u3001\u8247\u9996\u304B\u3089\u7A81\u3063\u8FBC\u3080\u3068 \u221258\u301C\u221275\u3002damage 3\u30FBdispersion_m 30 \u3060\u3068\u4E01\u5BE7\u306B\u6483\u3063\u3066\u3082 \u221263\uFF08\u706B\u707D 41%\uFF09\u3001damage 2\u30FBdispersion_m 80 \u3060\u3068 \u22126 \u3067\u6483\u3061\u8FD4\u3057\u304C\u611F\u3058\u3089\u308C\u306A\u3044\uFF09\u3002shell_speed_mps 500 \u306F\u99C6\u9010\u8266\u306E 25mm \u3068\u540C\u3058\uFF08\u898B\u3048\u308B\u66F3\u5149\u5F3E\uFF09\u3002splash_radius_m 1.5\uFF08\u5C0F\u53E3\u5F84\u300225mm \u306F 3\uFF09\u3002fire_chance 0.03 / engine_damage_chance 0.02: 1 \u4EFB\u52D9\u306E\u706B\u707D\u306F 2 \u5272\u524D\u5F8C\u306E\u591C\uFF08\u6D88\u706B\u30DC\u30BF\u30F3\u3067\u6D88\u305B\u308B\uFF09\u3002wake_detect_m\u30FBtorpedo_wake_detect_m\u30FBcargo \u306F\u4F7F\u308F\u306A\u3044"
+      },
+      notes: "\u9B5A\u96F7\u306F\u5F53\u305F\u3089\u306A\u3044\uFF08\u6DF1\u5EA6\u4E0D\u8DB3\uFF09\u3002\u8247\u306E\u7832\uFF0840mm\u30FB37mm\u30FB20mm\u30FB12.7mm\uFF09\u3067\u6483\u7834\u3059\u308B\u3002\u5CB8\u6CBF\u3044\u3092\u9019\u3044\u3001\u6C17\u3065\u304F\u3068\u5CB8\u3078\u9003\u3052\u3066\u4E0A\u9678\u3059\u308B\u300213mm \u3067\u6483\u3061\u8FD4\u3059\u3002"
+    },
+    {
+      id: "ijn_seaplane_jake",
+      faction: "IJN",
+      name_ja: "\u6C34\u4E0A\u5075\u5BDF\u6A5F\uFF08\u96F6\u5F0F\u6C34\u5075\u76F8\u5F53\uFF09",
+      speed_kt: 120,
+      altitude_m: 600,
+      loiter_min: 20,
+      flare: {
+        illum_radius_m: 1200,
+        duration_s: 40,
+        cooldown_s: 90,
+        reveal_m: 6e3
+      },
+      bomb: {
+        count: 2,
+        damage: 35,
+        blast_radius_m: 25,
+        accuracy_cep_m: 40,
+        fire_chance: 0.3,
+        engine_damage_chance: 0.2
+      },
+      detection: {
+        base_detect_m: 1500,
+        wake_detect_m: 6e3
+      },
+      source: {
+        speed_kt: "historical (\u6982\u7565)",
+        others: "design",
+        design_notes: "v0.4.1\uFF08\u4EFB\u52D9\u4E2D\u306E\u6575\u306E\u6C34\u4E0A\u6A5F\u3002docs/02 \xA76.8\u3002\u6BB5\u968E\u3068\u6642\u9593\u306F risk_events \u306E enemy_aircraft.params\uFF09\u3002speed_kt 120: \u753B\u9762\u4E0A 308.64 m/\u79D2\uFF08time_scale 5\uFF09\uFF1D\u8247\u306E\u5168\u901F\u306E 3.1 \u500D\u3001\u753B\u9762\u5E45 1,707 m \u3092 5.5 \u79D2\u3067\u6A2A\u5207\u308B\u3002altitude_m 600: \u7206\u5F3E\u306E\u843D\u4E0B\u79D2 \u221A(2h/g) = 11.06 game \u79D2\uFF08\u4F53\u611F 2.21 \u79D2\uFF09\u306E\u5143\u3067\u3001\u9AD8\u3044\u307B\u3069\u8EE2\u8235\u306E\u7336\u4E88\u304C\u5897\u3048\u308B\u3002flare.illum_radius_m 1200\uFF082000 \u304B\u3089\uFF09: 2,000 \u3060\u3068\u65E2\u5B9A\u30BA\u30FC\u30E0\uFF08\u534A\u5E45 853 m\uFF09\u3067\u3082\u898B\u5F35\u308A\uFF081,280 m\uFF09\u3067\u3082\u5149\u306E\u7E01\u304C\u753B\u9762\u306B\u5165\u3089\u305A\u300E\u5149\u306E\u5916\u3078\u300F\u304C\u8AAD\u3081\u306A\u3044\u30021,200 \u306A\u3089\u7E01\u304C\u898B\u3048\u3001\u5168\u901F 12 \u79D2\u30FB\u5DE1\u822A 20 \u79D2\u30FB\u9759\u97F3 26 \u79D2\u3067\u51FA\u3089\u308C\u308B\u3002duration_s 40: \u7206\u6483\uFF08\u7167\u660E\u5F3E\u304B\u3089 18 \u79D2\uFF09\u304C\u7D42\u308F\u3063\u3066\u3082 22 \u79D2\u6B8B\u308B\uFF1D\u6652\u3055\u308C\u305F\u307E\u307E\u3002\u661F\u5F3E 25 \u79D2\u3088\u308A\u9577\u3044\u3002cooldown_s 90: v0.4.1 \u3067\u306F\u4F7F\u308F\u306A\u3044\uFF081 \u4EFB\u52D9 1 \u767A\uFF09\u3002flare.reveal_m 6000: \u5149\u306E\u4E2D\u306E\u8247\u3092\u99C6\u9010\u8266\u304C\u898B\u3064\u3051\u308B\u8DDD\u96E2\uFF08\u99C6\u9010\u8266\u306E\u661F\u5F3E\u306E range_m \u3068\u540C\u3058\u3002\u6D77\u57DF\u306E\u5BFE\u89D2 7,211 m \u306A\u306E\u3067\u4E8B\u5B9F\u4E0A\u3069\u3053\u3067\u3082\u3002\u7832\u6483\u306F\u6709\u52B9\u5C04\u7A0B 4,000 \u3067\u982D\u6253\u3061\uFF09\u3002bomb: CEP 40 m \u306F\u4E00\u69D8\u5186\u76E4 R = 40\u221A2 = 56.6 m\uFF08gunnery \u306E dispersion \u3068\u540C\u3058\u6A21\u578B\uFF09\u3002\u76F4\u9032\u30FB\u505C\u6B62\u306E\u8247\uFF08\u8239\u4F53\u306E\u534A\u5E45 3.15 + \u7206\u98A8 25 = 28.15 m\uFF09\u306B 1 \u767A 38%\u30012 \u767A\u3067\u5C11\u306A\u304F\u3068\u3082 1 \u767A 62%\u3002damage 35 \u306F 127mm 40 \u3068\u6383\u5C04 25 \u306E\u9593\uFF082 \u767A\u3068\u3082\u53D7\u3051\u308B\u3068 \u221270 \u3067\u7121\u50B7\u306A\u3089\u6C88\u307E\u306A\u3044\u304C 127mm 1 \u767A\u306E\u5F8C\u306A\u3089\u6C88\u3080\uFF09\u3002fire_chance 0.3 / engine_damage_chance 0.2: \u81F3\u8FD1\u5F3E\u306E\u885D\u6483\u3002127mm\uFF080.35 / 0.3\uFF09\u3088\u308A\u5C11\u3057\u8EFD\u304F\u6383\u5C04\uFF080.25 / 0\uFF09\u3088\u308A\u91CD\u3044\u3002\u6A5F\u95A2\u640D\u50B7\u3092\u5165\u308C\u308B\u306E\u306F\u63A5\u8FD1\u4E2D\u306E\u88AB\u5F3E\u304C\u5E30\u308A\u9053\u306B\u3082\u52B9\u304F\u305F\u3081\u3002detection.base_detect_m 1500\uFF083000 \u304B\u3089\uFF09: \u767A\u898B\u78BA\u5B9A\u306E\u7DDA\uFF1D\u822A\u8DE1\u306E\u306A\u3044\u8247\u3092\u9AD8\u5EA6 600 m \u304B\u3089\u898B\u3064\u3051\u308B\u8DDD\u96E2\uFF1D\u8247\u81EA\u8EAB\u306E\u8996\u7A0B\uFF08\u534A\u6708 1,500 m\uFF09\u3068\u540C\u3058\u3002\u898B\u5931\u3046\u307E\u3067\u306E 4 \u79D2\uFF08risk_events \u306E lose_s\uFF09\u8FBC\u307F\u3067\u30013,000 \u3060\u3068\u6E1B\u901F\u3092\u59CB\u3081\u308B\u7336\u4E88\u304C 4.4 \u79D2\uFF08\u521D\u898B\u306E\u53CD\u5FDC 2.3 \u79D2\uFF0B\u6E1B\u901F 1.35 \u79D2\u306E 1.2 \u500D\uFF09\u30011,500 \u306A\u3089 9.2 \u79D2\uFF082.5 \u500D\uFF09\u3002\u822A\u8DE1\u306E\u95BE\u5024\u306F\u81EA\u8247\u306E\u9759\u97F3\u306E\u4E0A\u9650\uFF08boats.json \u306E speed_bands_kt.silent_max\u3002Elco 18\u30FBT-14 14\u30FBT-38 13 kt\uFF09\u3002v0.6.7 \u304B\u3089 data \u306B\u6301\u305F\u306A\u3044\uFF08v0.6.6 \u307E\u3067\u306F wake_speed_threshold_kt 18 \u3092\u6301\u3061\u3001\u8D77\u52D5\u6642\u306B\u8247\u306E silent_max \u3068\u4E00\u81F4\u3092\u691C\u67FB\u3057\u3066\u3044\u305F\u3002\u8247\u3054\u3068\u306B\u5024\u304C\u9055\u3046\u4EFB\u52D9\u3067\u6B7B\u3093\u3060\u5024\u3068\u98DF\u3044\u9055\u3044\u3092\u6B8B\u3055\u306A\u3044\u305F\u3081\uFF09\u3002wake_detect_m 6000: \u6A5F\u304C\u73FE\u308C\u308B\u8DDD\u96E2\u3002\u767A\u898B\u7DDA\u307E\u3067 14.6 \u79D2\u3001\u4E0A\u7A7A\u307E\u3067 17.5 \u79D2"
+      },
+      notes: "\u5168\u901F\u3067\u8D70\u308B\u3068\u822A\u8DE1\u3067 6,000 m \u304B\u3089\u5BC4\u3063\u3066\u304F\u308B\u3002\u8B66\u544A\u304B\u3089\u7D04 9 \u79D2\u4EE5\u5185\u306B\u81EA\u8247\u306E\u9759\u97F3\u306E\u4E0A\u9650\uFF08Elco 18 kt\uFF09\u4EE5\u4E0B\u306B\u3059\u308C\u3070\u30014 \u79D2\u5F8C\u306B\u898B\u5931\u3063\u3066\u53BB\u308B\uFF08\u767A\u898B\u7DDA 1,500 m \u3092\u5207\u3063\u305F\u3089\u9003\u308C\u3089\u308C\u306A\u3044\uFF09\u3002\u5BC4\u3089\u308C\u305F\u3089\u7167\u660E\u5F3E\uFF08\u99C6\u9010\u8266\u306B\u898B\u3089\u308C\u308B\uFF09\u2192 \u7206\u5F3E 2 \u767A\u3002\u7206\u5F3E\u306F\u8EE2\u8235\u3067\u304B\u308F\u3059\u3002"
+    },
+    {
+      id: "ijn_f1m2_pete",
+      faction: "IJN",
+      name_ja: "\u96F6\u5F0F\u6C34\u4E0A\u89B3\u6E2C\u6A5F",
+      strike: {
+        run_speed_kt: 120,
+        release_altitude_m: 200,
+        bomb: {
+          count: 2,
+          damage: 35,
+          blast_radius_m: 25,
+          accuracy_cep_m: 32,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      },
+      source: {
+        type: "historical (F1M2\u30021942-04-09 \u306B\u8B83\u5C90\u4E38\u306E 4 \u6A5F\u304C PT-34 \u3092\u7206\u6483\u30FB\u6383\u5C04: Pacific Wrecks PT-34\u3002\u8B83\u5C90\u4E38\u306E\u642D\u8F09\u306F\u96F6\u89B3 6\u30FB\u4E5D\u4E94\u6C34\u5075 2: tokusetsukansen \u8B83\u5C90\u4E38\u3002\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+        "bomb.count": "historical (60 kg \xD7 2\u3002\u4E00\u822C\u77E5\u8B58\u30FB\u672A\u691C\u8A3C)",
+        run_speed_kt: "design (\u7206\u6483\u9032\u8DEF\u306F\u591C\u306E\u6C34\u5075 ijn_seaplane_jake \u3068\u540C\u3058 120 kt\uFF1D\u753B\u9762\u4E0A 308.6 m/\u79D2\u3002\u9032\u8DEF 600 m \u3092 1.94 \u79D2\u3067\u3001\u6295\u4E0B\u306E\u4E88\u544A\u3068\u3057\u3066\u8AAD\u3081\u308B)",
+        others: "design",
+        design_notes: "v0.6.1\uFF08\u591C\u660E\u3051\u306E\u7A7A\u8972\u3002\u6BB5\u968E\u3068\u6642\u9593\u306F risk_events \u306E dawn_air_strike.params\uFF09\u3002release_altitude_m 200: \u843D\u4E0B \u221A(2h/g) = 6.39 game \u79D2\uFF08\u4F53\u611F 1.28 \u79D2\uFF09\uFF1D\u6295\u4E0B\u3092\u898B\u3066\u304B\u3089\u306E\u56DE\u907F\u306E\u7A93\u3002\u9AD8\u3044\u307B\u3069\u843D\u4E0B\u304C\u9577\u304F\u3001\u304B\u308F\u3057\u3084\u3059\u3044\uFF08\u5B9F\u6A5F\u3067\u300E\u7406\u4E0D\u5C3D\u300F\u306A\u3089\u4E0A\u3052\u308B\u30FB\u300E\u306C\u308B\u3044\u300F\u306A\u3089\u4E0B\u3052\u308B\uFF09\u3002150 m\uFF08\u4F53\u611F 1.11 \u79D2\uFF09\u3067\u306F\u53CD\u5FDC 0.7 \u79D2\u306E\u8EE2\u8235\u3067\u3082 1 \u767A \u7D04 0.5 \u3068\u76F4\u9032\u4E26\u307F\u306B\u5F53\u305F\u308A\uFF08\u8F2A\u306E\u7E01\u307E\u3067\u5168\u901F 30 \u79D2\u3067 us_01 57%\u30FBjp_06 8%\uFF09\u3001250 m\uFF081.43 \u79D2\uFF09\u3067\u306F\u53CD\u5FDC 0.35 \u79D2\u3067\u307B\u307C\u5916\u308C\u308B\uFF081 \u767A 0.00\u301C0.01\u3001us_01 100%\u30FBjp_06 99%\uFF09\u3002200 m \u306F\u53CD\u5FDC 0.7 \u79D2\u3067 us_01 82%\u30FBjp_06 16%\uFF08scripts/dawn-strike-sim.ts ALT=150/200/250\u30FBSECS=30\u30FBN=300\u3002\u6295\u4E0B\u306E\u9593\u9694 3 \u79D2\u306E\u3068\u304D\u306E\u5024\u3002v0.6.1 \u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u9593\u9694 2 \u79D2\u306B\u3057\u305F\u5F8C\u306E\u8868\u306F risk_events \u306E dawn_air_strike.params.source\uFF09\u3002accuracy_cep_m 32: \u4E00\u69D8\u5186\u76E4 R = 32\u221A2 = 45.3 m\u3002\u76F4\u9032\u30FB\u505C\u6B62\u306E\u8247\u306B 1 \u767A \u7D04 0.6\uFF08\u591C\u306E\u6C34\u5075\u306E CEP 40\u30FB0.38 \u3088\u308A\u826F\u3044\uFF1D\u663C\u306E\u7167\u6E96\uFF09\u3002\u72D9\u3044\u306F\u6295\u4E0B\u306E\u77AC\u9593\u306E\u8247\u306E\u4F4D\u7F6E\u30FB\u901F\u5EA6\u30FB\u65CB\u56DE\u304B\u3089\u843D\u4E0B\u5F8C\u306E\u4F4D\u7F6E\u3092\u898B\u8D8A\u3059\uFF08\u65CB\u56DE\u3057\u7D9A\u3051\u3066\u3082\u5F53\u305F\u308B\u3002\u8235\u3092\u5207\u308A\u66FF\u3048\u308B\u3068\u5916\u308C\u308B\uFF09\u3002damage 35\u30FBfire 0.3\u30FBengine 0.2 \u306F\u591C\u306E\u6C34\u5075\u3068\u540C\u3058\uFF08Elco 77ft \u306F 3 \u767A\u3001T-38 \u306F 2 \u767A\u3067\u6C88\u3080\uFF09"
+      },
+      notes: "\u591C\u660E\u3051\u306E\u5F8C\u3001\u6575\u306E\u5236\u7A7A\u4E0B\u306E\u4EFB\u52D9\uFF08us_01\uFF09\u3067 4 \u6A5F\u304C\u6CE2\u3067\u6765\u308B\u3002\u6295\u4E0B\u3092\u898B\u305F\u3089\u8235\u3092\u5207\u308A\u66FF\u3048\u308B\uFF08\u76F4\u9032\u306A\u3089\u5207\u308B\u30FB\u65CB\u56DE\u4E2D\u306A\u3089\u9006\u3078\u5207\u308B\uFF09\u3002\u6B62\u307E\u308B\u30FB\u56DE\u308A\u7D9A\u3051\u308B\u306F\u5F53\u305F\u308B\u3002"
+    },
+    {
+      id: "ijn_a6m2n_rufe",
+      faction: "IJN",
+      name_ja: "\u4E8C\u5F0F\u6C34\u4E0A\u6226\u95D8\u6A5F",
+      strike: {
+        run_speed_kt: 120,
+        release_altitude_m: 200,
+        bomb: {
+          count: 2,
+          damage: 35,
+          blast_radius_m: 25,
+          accuracy_cep_m: 32,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      },
+      source: {
+        type: "historical (A6M2-N\u3002\u96F6\u6226\u4E00\u4E00\u578B\u3092\u5143\u306B\u3057\u305F\u6C34\u4E0A\u6226\u95D8\u6A5F\u3002\u6B66\u88C5 7.7mm \xD7 2\u30FB20mm \xD7 2\u3001\u7206\u5F3E 60 kg \xD7 2: Wikipedia\u300CNakajima A6M2-N\u300D\u30FBvalka.cz\u3002\u65E5\u672C\u8A9E\u306E\u8A18\u4E8B\uFF08trafficnews\uFF09\u306F\u6A5F\u9283\u30FB\u6A5F\u95A2\u7832\u306E\u6570\u307E\u3067\u3002\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (us_03 \u306E\u6A5F\u4F53\u306F v0.6.1 \u306E\u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u304C\u4E8C\u5F0F\u6C34\u6226\u306B\u6307\u5B9A\u30021943-07 \u306E\u30D5\u30AA\u30F3\u6E7E\u3067\u4E8C\u5F0F\u6C34\u6226\u304C\u663C\u306B PT \u3092\u8972\u3063\u305F\u8A18\u9332\u306F\u672A\u78BA\u8A8D)",
+        "bomb.count": "historical (60 kg \xD7 2\u3002\u540C\u4E0A\u306E 2 \u4EF6\u3067\u4E00\u81F4)",
+        run_speed_kt: "design (\u5B9F\u901F\u306F\u96F6\u89B3\u3088\u308A\u305A\u3063\u3068\u901F\u3044\uFF08historical\uFF09\u304C\u3001\u6295\u4E0B\u306E\u4E88\u544A\u3092\u8AAD\u3081\u308B\u3088\u3046\u96F6\u89B3\u3068\u540C\u3058 120 kt)",
+        others: "design",
+        design_notes: "v0.6.1 \u5B9F\u6A5F 2 \u56DE\u76EE\u3002\u5024\u306F ijn_f1m2_pete \u3068\u540C\u3058\uFF08\u7206\u5F3E 2 \u767A\u30FB\u9AD8\u3055 200 m\u30FBCEP 32\u30FBHP \u221235\u30FB\u706B\u707D 0.3\u30FB\u6A5F\u95A2 0.2\uFF09\u3002\u6A5F\u9283\u30FB\u6A5F\u95A2\u7832\u306E\u6383\u5C04\u306F\u672A\u5B9F\u88C5\uFF08\u591C\u660E\u3051\u306E\u7A7A\u8972\u306F\u7206\u5F3E\u3060\u3051\u3002v0.6.3 \u306E\u5019\u88DC\uFF09"
+      },
+      notes: "\u821F\u8247\u72E9\u308A\uFF08us_03\uFF09\u306E\u591C\u660E\u3051\u306E\u5F8C\u306B 4 \u6A5F\u304C\u897F\u304B\u3089\u6765\u308B\uFF08\u6B21\u306E\u6CE2\u306F 90\xB0 \u305A\u3064\u56DE\u3063\u305F\u65B9\u89D2\u304B\u3089\uFF09\u3002"
+    },
+    {
+      id: "us_carrier_aircraft",
+      faction: "USN",
+      name_ja: "\u7C73\u8266\u8F09\u6A5F\uFF08F6F \u76F8\u5F53\uFF09",
+      strike: {
+        run_speed_kt: 120,
+        release_altitude_m: 200,
+        bomb: {
+          count: 2,
+          damage: 35,
+          blast_radius_m: 25,
+          accuracy_cep_m: 32,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      },
+      source: {
+        type: "historical (1945-03 \u306E\u6C96\u7E04\u30FB\u6176\u826F\u9593\u306F TF 58 \u3068 TG 52.1 \u306E\u8266\u8F09\u6A5F\u306E\u5236\u7A7A\u4E0B\u30023/30\u301C31 \u306B\u8266\u8F09\u6A5F\u304C\u5357\u897F\u8AF8\u5CF6\u3067\u9B5A\u96F7\u8247 3 \u96BB\u3092\u6483\u6C88\uFF08\u5834\u6240\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF09\u30FB\u904B\u5929\u6E7E\u306E\u6F5C\u6C34\u8266\u306E\u63A9\u4F53 6 \u3064\u3092\u7834\u58CA: \u7C73\u6D77\u8ECD\u516C\u5831 1945-04\u3002\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+        "bomb.count": "design (\u7206\u5F3E 1 \u767A\u3068\u30ED\u30B1\u30C3\u30C8\u5F3E 1 \u6589\u5C04\u3092 2 \u56DE\u306E\u6295\u4E0B\u306B\u307E\u3068\u3081\u305F)",
+        run_speed_kt: "design (F6F \u306E\u5B9F\u901F\u306F\u3082\u3063\u3068\u901F\u3044\uFF08historical\uFF09\u304C\u3001\u6295\u4E0B\u306E\u4E88\u544A\u3092\u8AAD\u3081\u308B\u3088\u3046\u96F6\u89B3\u3068\u540C\u3058 120 kt\u3002v0.6.1 \u306E\u6A21\u64EC\u3082\u3053\u306E\u901F\u3055)",
+        others: "design",
+        design_notes: "v0.6.1\u3002\u6570\u5024\u306F ijn_f1m2_pete \u3068\u540C\u3058\uFF08\u5B9F\u6A5F\u306E\u611F\u60F3\u3067\u5206\u3051\u308B\u3002T-38 \u306F HP 60 \u3067 2 \u767A\u3067\u6C88\u3080\uFF1D\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\uFF09\u3002jp_03 \u306E todo \u3092\u89E3\u6D88"
+      },
+      notes: "jp_06 \u306E\u591C\u660E\u3051\u306E\u5F8C\u306B 4 \u6A5F\u304C\u6771\u304B\u3089\u6765\u308B\uFF08\u6B21\u306E\u6CE2\u306F 90\xB0 \u305A\u3064\u56DE\u3063\u305F\u65B9\u89D2\u304B\u3089\uFF09\u3002"
+    },
+    {
+      id: "us_henderson_aircraft",
+      faction: "USN",
+      name_ja: "\u7C73\u9678\u4E0A\u6A5F\uFF08F4F\uFF0FSBD \u76F8\u5F53\uFF09",
+      strike: {
+        run_speed_kt: 120,
+        release_altitude_m: 200,
+        bomb: {
+          count: 2,
+          damage: 35,
+          blast_radius_m: 25,
+          accuracy_cep_m: 32,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      },
+      source: {
+        type: "historical (1942-12 \u306E\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\u5468\u8FBA\u306E\u663C\u306F\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\u306E\u7C73\u6A5F\u306E\u5236\u7A7A\u4E0B\uFF08jp_01 \u306E dawn_air \u3068\u540C\u3058 medium\uFF09\u300212-24 \u306B\u306F\u30E0\u30F3\u30C0\u3078\u5411\u304B\u3046\u5927\u767A 13 \u96BB\u306E\u3046\u3061 9 \u96BB\u3092\u663C\u306B\u6C88\u3081\u305F: \u7C73\u6D77\u8ECD\u306E 1942 \u5E74\u306E\u5E74\u8868\uFF08ibiblio\u3002high\uFF09\u3002\u5927\u767A\u306E\u591C\u9593\u524D\u9001\u306F\u300E\u6708\u660E\u304B\u308A\u306E\u591C\u306F PT \u3068\u591C\u9593\u6A5F\u3067\u534A\u5206\u3082\u904B\u3079\u305A\u300F: \u9632\u885B\u7814\u7A76\u6240 NIDS \u306E 2023 \u5E74\u306E\u8AD6\u6587\uFF08medium\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+        "bomb.count": "design (\u6A5F\u7A2E\u306E F4F\u30FBSBD \u306F\u629C\u7C8B\u306B\u7121\u3044\u5F53\u3066\u306F\u3081\uFF08name_ja \u306E\u300CF4F\uFF0FSBD \u76F8\u5F53\u300D\u3082 design\uFF09\u3002F4F \u306E\u6A5F\u9283\u6383\u5C04\u3068 SBD \u306E\u7206\u5F3E\u3092 2 \u56DE\u306E\u6295\u4E0B\u306B\u307E\u3068\u3081\u305F\u62BD\u8C61)",
+        run_speed_kt: "design (\u6295\u4E0B\u306E\u4E88\u544A\u3092\u8AAD\u3081\u308B\u3088\u3046\u96F6\u89B3\u30FB\u8266\u8F09\u6A5F\u3068\u540C\u3058 120 kt)",
+        others: "design (v0.6.4\u3002\u5024\u306F us_carrier_aircraft\uFF08jp_06\uFF09\u306E\u5199\u3057\u3002\u8A18\u9332\u3092\u5206\u3051\u305F\u306E\u306F name_ja: \u591C\u660E\u3051\u306E\u5E2F\u30FBBriefing \u306E\u5371\u967A\u30FBResult \u306B name_ja \u304C\u51FA\u308B\u306E\u3067\u3001\u30AC\u5CF6\u306E\u9678\u4E0A\u6A5F\u3092\u300E\u7C73\u8266\u8F09\u6A5F\u300F\u3068\u66F8\u304B\u306A\u3044\u305F\u3081\u3002name_ja \u306F\u591C\u660E\u3051\u306E\u5E2F\u306E 2 \u884C\u76EE\uFF08ui/dawn-lines.ts \u306E\u300E${d.nameJa} ${d.count} \u6A5F\u304C\u2026\u300F\uFF09\u306B\u305D\u306E\u307E\u307E\u51FA\u308B\u306E\u3067\u77ED\u304F\uFF0822 px \u3067 819 px\u3002jp_06 \u306E 757 \u3068\u540C\u7A0B\u5EA6\u3002\u300E\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\u300F\u306F dawn_air.label_ja\u300E\u663C\u306E\u7A7A\u306F\u6575\uFF08\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\uFF09\u300F\u304C\u6301\u3064\uFF09)"
+      },
+      notes: "jp_01 \u306E\u591C\u660E\u3051\u306E\u5F8C\u306B 4 \u6A5F\u304C\u6771\uFF08\u30EB\u30F3\u30AC\uFF09\u304B\u3089\u6765\u308B\uFF08\u6B21\u306E\u6CE2\u306F 90\xB0 \u305A\u3064\uFF09\u3002\u72D9\u3046\u306E\u306F\u81EA\u8247\u3060\u3051\uFF08\u6D77\u4E0A\u306E\u5927\u767A\u306F\u7206\u6483\u3057\u306A\u3044\u3002v0.6.4 \u306E\u65E2\u77E5\u306E\u5236\u7D04\uFF09"
+    },
+    {
+      id: "us_patrol_bomber",
+      faction: "USN",
+      name_ja: "\u7C73\u98DB\u884C\u8247\uFF08PB2Y \u76F8\u5F53\uFF09",
+      strike: {
+        run_speed_kt: 120,
+        release_altitude_m: 200,
+        bomb: {
+          count: 3,
+          damage: 35,
+          blast_radius_m: 25,
+          accuracy_cep_m: 32,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      },
+      patrol: {
+        wake_detect_m: 4200,
+        lock_m: 1500
+      },
+      source: {
+        type: "historical (PB2Y-3 \u30B3\u30ED\u30CA\u30C9\u306F .50 \u53E3\u5F84 \xD78\uFF08high\uFF09\u3001\u5F8C\u671F\u306E\u4E00\u90E8\u306B\u6C34\u4E0A\u635C\u7D22\u30EC\u30FC\u30C0\u30FC AN/APS-2\uFF08medium\uFF09\u3060\u304C 1944-01 \u306E\u30A6\u30A7\u30FC\u30AF\u7A7A\u8972\u306E\u6A5F\u306B\u3042\u3063\u305F\u304B\u306F\u629C\u7C8B\u306B\u7121\u3044\u3001\u5DE1\u822A 170 mph\u30FB\u6700\u5927 194\u301C225 mph\uFF08medium\u3002\u51FA\u5178\u3067\u98DF\u3044\u9055\u3046\uFF09\u3002FAW-2 \u306E VP-13\u30FBVP-102 \u304C\u30DF\u30C3\u30C9\u30A6\u30A7\u30FC\u304B\u3089 1944-01-30\u301C02-09\uFF08\u7C73\u306E\u897F\u7D4C\u65E5\u4ED8\uFF09\u306B\u30A6\u30A7\u30FC\u30AF\u3092 4 \u56DE\u30FB50 \u51FA\u6483\u3067\u7206\u6483\u3057\u640D\u5931\u306A\u3057\uFF08high\uFF09\u3001\u305D\u308C\u304C\u591C\u3060\u3063\u305F\uFF08medium\u301Chigh\u3002\u516C\u5831\u3068 Pacific Wrecks \u306E 2 \u3064\u304C\u4E00\u81F4\uFF09\u3002\u76EE\u6A19\u306F\u98DB\u884C\u5834\u3068\u65BD\u8A2D\u3067\u3001\u8247\u3084\u8239\u3092\u6C88\u3081\u305F\u8A18\u8FF0\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF08high\uFF1D\u7121\u3044\u3053\u3068\u306E\u4E00\u81F4\u3002\u7121\u3044\u3053\u3068\u306E\u8A3C\u62E0\u3067\u306F\u306A\u3044\uFF09\u30022026-10-25 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+        run_speed_kt: "design (\u5B9F\u901F\u306F\u901F\u3044\u3002\u6295\u4E0B\u306E\u4E88\u544A\u3092\u8AAD\u3081\u308B\u3088\u3046\u96F6\u89B3\u30FB\u7C73\u8266\u8F09\u6A5F\u3068\u540C\u3058 120 kt\uFF1D\u753B\u9762\u4E0A 308.6 m/\u4F53\u611F\u79D2)",
+        release_altitude_m: "design (\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u6A5F\u3068\u540C\u3058\u3002\u843D\u4E0B 1.28 \u4F53\u611F\u79D2\u3067\u3001\u591C\u306E\u51FA\u6483\u3082\u591C\u660E\u3051\u3082\u300E\u6295\u4E0B\u3067\u8EE2\u8235\uFF08\u65CB\u56DE\u4E2D\u306F\u9006\u3078\uFF09\u300F\u306E 1 \u3064\u306E\u898F\u5247\u3002\u591C\u306E\u7C73\u306E\u54E8\u6212\u6A5F\u306F\u6D77\u9762 50\u301C100 ft \u307E\u3067\u964D\u308A\u305F\uFF08Black Cat \u306E PBY \u306E\u56DE\u60F3\u3002medium\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09)",
+        "bomb.count": "design (v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u306E\u300C\u7C21\u5358\u306A\u306E\u3067 1 \u6A5F\u3042\u305F\u308A\u306E\u7206\u5F3E\u3092 3 \u767A\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u300D\u306B\u3088\u308A 2 \u2192 3\uFF08\u591C\u306E\u51FA\u6483 1 \u56DE 2 \u6A5F\u3067 6 \u767A\u3001\u591C\u660E\u3051\u306E\u6CE2 4 \u6A5F\u3067 12 \u767A\uFF09\u3002\u540C\u6642\u306B patrol \u306E wake_detect_m 6,000 \u2192 4,200 m\u3002\u6A21\u64EC scripts/patrol-air-sim.ts\uFF08N 400 \xD7 2 \u7D44\uFF09: HUD \u3069\u304A\u308A\u306E\u6C88\u6CA1 9.5\uFF0F9.3 \u2192 19.0\uFF0F18.3%\uFF08\u307F\u306A\u6700\u521D\u306E\u30EC\u30FC\u30C0\u30FC\u306E 6 \u767A\uFF09\u30FB\u591C\u660E\u3051\u524D\u306E\u5E30\u6295 90.5\uFF0F90.8 \u2192 81.0\uFF0F81.8%\u30FB\u5E30\u6295\u306E\u4E2D\u592E\u5024 101.4 \u2192 116.4 \u79D2\uFF08\u635C\u7D22\u304C\u65E9\u304F\u6765\u3066\u6B62\u307E\u308B\u56DE\u304C\u5897\u3048\u305F\uFF09\u300114 kt \u3067\u6B62\u307E\u308A\u306A\u304C\u3089 13.5\uFF0F13.3 \u2192 22.5\uFF0F26.8%\uFF08\u3046\u3061\u591C\u660E\u3051\u306E\u7A7A\u8972 4.8\uFF0F8.0%\u3002\u4E2D\u592E\u5024 197.3 \u2192 208.5 \u79D2\uFF09\u3001\u9003\u3052\u308B\u3060\u3051 34.3\uFF0F35.0 \u2192 51.0\uFF0F54.8%\u3001\u79D2\u8AAD\u307F\u306B 2 \u79D2\u9045\u308C\u308B 30.8\uFF0F30.3 \u2192 44.5\uFF0F45.3%\u3002\u4EE5\u4E0B\u306F 2 \u767A\u306E\u3068\u304D\u306E\u6587\u30021 \u6A5F 2 \u767A\uFF1D\u591C\u306E\u51FA\u6483 1 \u56DE 2 \u6A5F\u3067 4 \u767A\u3001\u591C\u660E\u3051\u306E\u6CE2 4 \u6A5F\u3067 8 \u767A\uFF08\u4ED6\u306E\u4EFB\u52D9\u306E\u591C\u660E\u3051\u3068\u540C\u3058\uFF09\u3002\u6A21\u64EC scripts/patrol-air-sim.ts\uFF08N 400 \xD7 2 \u7D44\u3002\u8A66\u4F5C v2 \u3068\u540C\u3058\u5024\u3002\u8EE2\u8235\u306E\u53CD\u5FDC 0.35\u301C0.9 \u79D2\u30FB\u5E30\u6295\u306E\u5411\u304D\u3078\u623B\u3059 0.6\u301C1.4 \u79D2\u30FB\u4E57\u54E1\u306E\u6E1B\u308A\u306E\u52B9\u304D\u3042\u308A\uFF09\u3067\u3001HUD \u3069\u304A\u308A\u306E\u904A\u3073\u65B9\u306E\u6C88\u6CA1 9.5\uFF0F9.3%\uFF081 \u6A5F 1 \u767A\u306A\u3089 2.5%\uFF09\u3001\u9003\u3052\u308B\u3060\u3051 34.3\uFF0F35.0%\uFF08\u540C 16.3%\uFF09\u3002jp_01 \u306E\u30CF\u30FC\u30C9\u306E HUD \u3069\u304A\u308A 9.8\uFF0F9.0% \u3068\u540C\u3058\u7A0B\u5EA6\u306B\u3057\u305F\u3002\u6A5F\u9283\u306E\u6383\u5C04\u306F\u7206\u5F3E\u306E\u88AB\u5BB3\u306B\u307E\u3068\u3081\u305F\u62BD\u8C61)",
+        patrol: "design (wake_detect_m 4200: \u635C\u7D22\u306E\u6A5F\u304C\u63A5\u8FD1\u3092\u59CB\u3081\u308B\u8DDD\u96E2\u3067\u3001\u822A\u8DE1\uFF08\u8247\u306E\u901F\u529B\u5E2F\u304C\u5DE1\u822A\u304B\u5168\u901F\uFF1D\u9759\u97F3\u306E\u4E0A\u9650\u3092\u8D85\u3048\u305F\uFF09\u304C\u7A7A\u304B\u3089\u898B\u3048\u308B\u8DDD\u96E2\u3002v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u306E\u300C\u98DB\u884C\u6A5F\u304C\u304F\u308B\u307E\u3067\u306E\u6642\u9593\u304C\u9577\u3059\u304E\u307E\u3059\u3002\u8DDD\u96E2\u3092\u77ED\u304F\u3059\u308B\u304B\u3001\u753B\u9762\u306B\u6620\u308B\u307E\u3067\u306E\u901F\u5EA6\u3092\u65E9\u3081\u3066\u300D\u306B\u3088\u308A 6,000 \u2192 4,200 m\uFF08\u901F\u3055 run_speed_kt \u306F\u7206\u6483\u306E\u9032\u8DEF\u3068\u540C\u3058\u5024\u306A\u306E\u3067\u5909\u3048\u305A\u3001\u8DDD\u96E2\u3067\u7E2E\u3081\u305F\u30021,500 m \u306E\u7DDA\u307E\u3067\u306E\u4E88\u544A 14.58 \u2192 8.75 \u79D2\u30FB\u79D2\u8AAD\u307F\u306F\u300C\u3042\u3068 12 \u79D2\u300D\u2192\u300C\u3042\u3068 6 \u79D2\u300D\u304B\u3089\u30FBcore/patrol-air-data \u306E F1 \u306E\u6700\u77ED 10 \u2192 5 \u79D2\u30024,000 m \u3060\u3068\u300C\u7406\u4E0D\u5C3D\u300D\u306E\u3064\u307E\u307F hud_stop_margin_s 3.5 \u304C F1\uFF083.5 + 5 = 8.5 \u79D2\uFF09\u306B\u639B\u304B\u308B\u306E\u3067 4,200\u3002\u6B62\u307E\u308B\u9593\u306B\u5408\u3044\u306E F2 \u306F\u540C\u3058\uFF09\u3002\u524D\u306E 6000 \u306F v0.4.1 \u306E\u6C34\u4E0A\u6A5F ijn_seaplane_jake \u306E wake_detect_m \u3068\u540C\u3058\u3060\u3063\u305F\u3002\u591C\u5149\u866B\u306E\u822A\u8DE1\u306F\u7A7A\u304B\u3089\u3088\u304F\u898B\u3048\u305F\uFF08medium\u301Chigh\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002lock_m 1500: \u898B\u3048\u3066\u3044\u308C\u3070\u3053\u3053\u3067\u767A\u898B\uFF1D\u51FA\u6483\u3002\u6C34\u4E0A\u6A5F\u306E base_detect_m \u3068\u540C\u3058\u3002\u9759\u97F3\u3067\u52D5\u304F\u8239\u4F53\u306F\u81EA\u8247\u306E\u8996\u7A0B\uFF08\u6708\u6CA1\u5F8C 900 m\uFF09\u3067\u898B\u3048\u3001\u6B62\u307E\u3063\u305F\u8247\u306F\u898B\u3048\u306A\u3044\uFF08PT \u8247\u306F\u6C34\u4E0A\u6A5F\u306B\u822A\u8DE1\u3092\u898B\u3089\u308C\u306A\u3044\u3088\u3046\u6A5F\u95A2\u3092\u30A2\u30A4\u30C9\u30EB\u306B\u3057\u305F\uFF08medium\u301Chigh\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u306E\u5F53\u3066\u306F\u3081\uFF09)",
+        others: "design (v0.6.7\u3002jp_02 \u306E\u591C\u306E\u54E8\u6212\u306E 2 \u6A5F\u3068\u591C\u660E\u3051\u306E 4 \u6A5F\u3002\u88AB\u5BB3\u30FB\u7206\u98A8\u30FBCEP\u30FB\u706B\u707D\u30FB\u6A5F\u95A2\u306F us_carrier_aircraft \u306E\u5199\u3057\uFF08T-14 \u306F HP 50 \u3067 2 \u767A\u3067\u6C88\u3080\u3002\u6B62\u307E\u3063\u305F T-14 \u306B 1 \u767A 47.6%\uFF1D3,065 m\xB2 \xF7 \u03C0\xB745.25\xB2\u3002\u624B\u8A08\u7B97\uFF09\u3002name_ja \u306F\u591C\u660E\u3051\u306E\u5E2F\u306E 2 \u884C\u76EE\u306B\u305D\u306E\u307E\u307E\u51FA\u308B\u306E\u3067\u77ED\u304F\uFF0822 px \u3067 792 px\uFF09\u3001Briefing \u306E\u6575\u306E\u884C\u306F\u4ECA\u306E enemyNameJa \u304C\u6CE8\u8A18\u3092\u843D\u3068\u3057\u3066\u300C\u7C73\u98DB\u884C\u8247\u300D\uFF08us_carrier_aircraft \u306E\u300C\u7C73\u8266\u8F09\u6A5F\uFF08F6F \u76F8\u5F53\uFF09\u300D\u3068\u540C\u3058\u4F5C\u6CD5\uFF09\u3002PB2Y \u304C\u9B5A\u96F7\u8247\u3092\u635C\u3057\u3066\u7206\u6483\u3057\u305F\u306E\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\u3002\u30EC\u30FC\u30C0\u30FC\u3067\u6B62\u307E\u3063\u305F\u6728\u306E\u8247\u3092\u3069\u3053\u307E\u3067\u898B\u3064\u3051\u3089\u308C\u305F\u304B\u306E\u8CC7\u6599\u306F\u7121\u304F\u3001\u30EC\u30FC\u30C0\u30FC\u306F\u6700\u521D\u306E\u635C\u7D22\u3060\u3051\uFF08jp_02 \u306E radar_passes\uFF09)"
+      },
+      notes: "jp_02 \u306E\u591C: \u51FA\u6483 3 \u79D2\u306B\u30EC\u30FC\u30C0\u30FC\u3067\u6765\u3066 1 \u56DE\u306F\u5FC5\u305A\u7206\u6483\uFF082 \u6A5F \xD7 3 \u767A\uFF09\u3002\u4EE5\u5F8C\u306F\u822A\u8DE1\u3092 3 \u79D2\u898B\u308B\u304B 12 \u79D2\u3054\u3068\u306E\u635C\u7D22\u3067\u5317\u6771 \u2192 \u5357\u6771 \u2192 \u5357\u897F \u2192 \u5317\u897F\u304B\u3089\u6765\u308B\u3002\u6B62\u307E\u308C\u3070\u898B\u3048\u306A\u3044\u3002\u591C\u660E\u3051\u306E\u5F8C\u306F 4 \u6A5F\u306E\u7A7A\u8972\uFF0812 \u767A\u305A\u3064\u3002v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B 1 \u6A5F 3 \u767A\uFF09\u3002guns \u306F\u6301\u305F\u306A\u3044\uFF08\u6301\u3064\u3068\u5371\u967A\u306B\u6575\u8266\u8247\u306E\u7832\u6483\u304C\u8981\u308B\uFF09"
+    },
+    {
+      id: "us_tacloban_aircraft",
+      faction: "USN",
+      name_ja: "\u7C73\u9678\u4E0A\u6A5F\uFF08F4U \u76F8\u5F53\uFF09",
+      strike: {
+        run_speed_kt: 120,
+        release_altitude_m: 200,
+        bomb: {
+          count: 2,
+          damage: 35,
+          blast_radius_m: 25,
+          accuracy_cep_m: 32,
+          fire_chance: 0.3,
+          engine_damage_chance: 0.2
+        }
+      },
+      source: {
+        type: "historical (1944-12 \u306E\u30EC\u30A4\u30C6\u306E\u663C\u306F\u30BF\u30AF\u30ED\u30D0\u30F3\u306E MAG-12 \u306E\u30B3\u30EB\u30BB\u30A2\u304C\u512A\u52E2\uFF08high \u306F 1944-12-11 \u306E 2 \u5EA6\u306E\u653B\u6483\u3002Pacific Wrecks 1944-12-11\u3002\u5236\u7A7A\u306F\u65E5\u672C\u6A5F\u306E\u7A7A\u8972\u3082\u3042\u308A contested\uFF1Dmedium\u301Chigh\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+        others: "design (v0.6.9\u3002\u5024\u306F us_henderson_aircraft \u306E\u5199\u3057\u3002\u8A18\u9332\u3092\u5206\u3051\u305F\u306E\u306F name_ja\uFF08\u591C\u660E\u3051\u306E\u5E2F\u30FBBriefing\u30FBResult \u306B\u51FA\u308B\uFF09\u3002F4U \u306E\u5024\u306F\u672A\u8ABF\u67FB)"
+      },
+      notes: "jp_04 \u306E\u591C\u660E\u3051\u306E\u5F8C\u306B 4 \u6A5F\u304C\u6771\uFF08\u30BF\u30AF\u30ED\u30D0\u30F3\uFF09\u304B\u3089\u6765\u308B\u3002\u72D9\u3046\u306E\u306F\u81EA\u8247\u3060\u3051"
+    },
+    {
+      id: "us_pt_enemy",
+      faction: "USN",
+      name_ja: "\u7C73PT\u30DC\u30FC\u30C8\uFF08\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\u306E\u6575\uFF09",
+      boat_ref: "us_elco80",
+      torpedo_immune: true,
+      detection: {
+        base_detect_m: 2e3,
+        reaction_delay_s: 1.5,
+        detect_from_s: 5
+      },
+      patrol: {
+        speed_kt: 8,
+        arrive_m: 100
+      },
+      attack: {
+        run_in_speed_kt: 35,
+        pass_speed_kt: 25,
+        overtake_kt: 6,
+        commit_max_m: 900,
+        commit_tcpa_s: 5,
+        commit_heading_tol_deg: 30,
+        pass_offset_m: 120,
+        open_fire_s: 2.5,
+        pass_max_s: 8,
+        rounds_per_pass: 10,
+        dead_cone_deg: 30,
+        min_range_m: 60,
+        spread_min_m: 8,
+        break_off_m: 650,
+        break_max_s: 5,
+        run_in_max_s: 25,
+        pass_gap_s: 3,
+        wingman_delay_s: 3,
+        hold_off_m: 550,
+        max_passes: 4,
+        edge_margin_m: 200,
+        leave_speed_kt: 30
+      },
+      guns: [
+        {
+          id: "pt_50cal_20mm",
+          count: 1,
+          range_m: 1500,
+          effective_night_m: 450,
+          rof_per_min: 240,
+          damage: 4,
+          shell_speed_mps: 500,
+          dispersion_m: 32,
+          splash_radius_m: 1.5,
+          fire_chance: 0.03,
+          engine_damage_chance: 0.15
+        }
+      ],
+      torpedo_attack: {
+        torpedo_id: "us_mk13",
+        launch_range_m: 900,
+        launch_heading_tol_deg: 30,
+        salvo_count: 3,
+        salvo_spacing_deg: 8,
+        aim_error_deg: 10,
+        hurried_max_m: 1300,
+        hurried_error_factor: 2.5,
+        engaged_error_factor: 2,
+        reacquire_s: 10,
+        retreat_after_salvo: false
+      },
+      tactics: {
+        station_m: 600,
+        station_rel_deg: [
+          90,
+          45,
+          135
+        ],
+        station_tol_deg: 30,
+        station_close_m: 150,
+        station_lead_s: 1
+      },
+      under_fire: {
+        retreat_hp: 60,
+        casualty_chance: 0.03,
+        fire_chance: 3e-3
+      },
+      chase: {
+        speed_kt: 39,
+        min_target_kt: 10,
+        start_aft_deg: 75,
+        station_m: 170,
+        station_rel_deg: 135,
+        held_station_m: 350,
+        held_rel_deg: 150,
+        held_guard_m: 150,
+        commit_m: 350,
+        burst_rounds: 6,
+        burst_max_s: 3,
+        max_bursts: 6,
+        gap_s: 2,
+        self_gap_s: 3,
+        exit_fwd_deg: 45,
+        slow_exit_s: 2,
+        bow_rof_factor: 0.4,
+        cone_quit_s: 2,
+        suppress_hits: 3
+      },
+      source: {
+        boat_ref: "historical (\u5BF8\u6CD5 24.4\xD76.3 m\u30FB\u6700\u5927 39 kt \u306F boats.json \u306E us_elco80\u3002\u65CB\u56DE 24\xB0/\u79D2\u30FB\u52A0\u901F 1.2 \u306F\u305D\u306E design \u5024)",
+        torpedo_immune: "historical (Elco \u306E\u5403\u6C34 \u7D04 1.1\u301C1.5 m \u306F 45cm \u9B5A\u96F7\u306E\u6700\u5C0F\u6DF1\u5EA6 2 m \u3088\u308A\u6D45\u304F\u3001\u9B5A\u96F7\u306F\u4E0B\u3092\u629C\u3051\u308B\u3002\u5927\u767A\u3068\u540C\u3058\u7406\u7531\u3002PT \u3082\u5C0F\u8247\u306B\u306F\u7832\u3067\u6226\u3063\u305F: UNO \u8AD6\u6587\u30FBBulkley\u3001WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+        detection: "design (v0.6.3\u3002base_detect_m 2000 \u306F us_destroyer \u3068\u540C\u3058\u3002\u65B0\u6708 \xD7 \u901F\u529B\u4FC2\u6570\u3067 \u505C\u6B62 480\u30FB\u9759\u97F3 600\u30FB\u5DE1\u822A 1,200\u30FB\u5168\u901F 1,920 m\u3002\u8247\u306E\u8996\u7A0B 900 m \u3088\u308A\u9759\u97F3\u306A\u3089\u5148\u306B\u898B\u3064\u3051\u3001\u5DE1\u822A\u306A\u3089\u5148\u306B\u898B\u3064\u304B\u308B\u3002\u53F2\u5B9F\u306E\u6697\u591C\u306E\u76EE\u8996\uFF08Bulkley IV\u300C\u968A\u5217\u306E\u771F\u3093\u4E2D\u306B\u5165\u308B\u307E\u3067\u6C17\u3065\u304B\u306A\u304B\u3063\u305F\u300D\u3001\u629C\u7C8B\u306E\u307F\uFF09\u306F 300\u301C800 m \u3067\u3001\u505C\u6B62\u30FB\u9759\u97F3\u304C\u5165\u308B\uFF08\u5DE1\u822A 1,200 m \u306F\u305D\u308C\u3088\u308A\u9060\u3044\uFF1D\u30B2\u30FC\u30E0\u3068\u3057\u3066\u53B3\u3057\u3081\uFF09\u3002radar_m 8000 \u306F\u5916\u3057\u305F: SO \u30EC\u30FC\u30C0\u30FC\u306F 1943 \u5E74\u304B\u3089\u4E00\u90E8\u306E\u8247\u3060\u3051\u30FB\u5C0F\u3055\u306A\u6728\u9020\u8247\u3078\u306E\u8DDD\u96E2\u306F\u4E0D\u660E\uFF08low\uFF09\u30FB8,000 m \u3060\u3068\u6697\u3055\u304C\u52B9\u304B\u306A\u3044\u3002reaction_delay_s 1.5 \u306F\u767A\u898B\u304B\u3089\u7A81\u6483\u307E\u3067\u306E\u4E88\u544A\u3002detect_from_s 5: \u51FA\u6483\u304B\u3089 5 \u79D2\u306F\u898B\u3064\u3051\u306A\u3044\uFF08\u51FA\u767A\u3067\u5373\u767A\u898B\u3092\u9632\u3050\uFF09)",
+        patrol: "historical / design (1 \u8EF8\u306E\u30A2\u30A4\u30C9\u30EB\u7D04 6 kt\u30FB\u300C8\u301C9 kt \u306E\u30A2\u30A4\u30C9\u30EB\u300D: 1943-08 \u306E\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u306E\u3042\u308B\u8247\u306E DANFS\u30FBUNO \u8AD6\u6587\u3001\u629C\u7C8B\u306E\u307F\u30028 kt \u3068 arrive_m \u306F\u8A2D\u8A08\u5024)",
+        attack: "design (v0.6.3\u3002\u6A21\u64EC pt-pass-sim\uFF08400 \u591C\uFF09\u3067\u6C7A\u3081\u305F\u3002\u6383\u5C04\u306E\u822A\u904E\u306F 15\u301C20 kt\u30FB600 yd \u3067\u6483\u3061\u59CB\u3081 100\u301C300 yd \u3067\u52B9\u304F\uFF08\u7814\u7A76\u30E1\u30E2\u306E\u63D0\u6848\uFF1Ddesign\u3002\u629C\u7C8B\u306F 15\u30FB20 kt \u3067\u5BC4\u3063\u305F\u4F8B\u3068\u300E600 yd \u307E\u3067\u5BC4\u3063\u305F\u300F\u3060\u3051: UNO \u8AD6\u6587\u30FBBulkley\u3001\u629C\u7C8B\u306E\u307F\uFF09\u3002\u7A81\u6483 35 kt \u306F T-14 \u306E 31 kt \u3088\u308A\u901F\u3044\uFF1D\u632F\u308A\u5207\u308C\u306A\u3044\u3002\u6700\u63A5\u8FD1\u306E 5 \u79D2\u524D\u306B\u822A\u904E\u306E\u9032\u8DEF\u3092\u56FA\u3081\u3066\u8D64\u3044\u7DDA\u3067\u4E88\u544A\u3057\u30012.5 \u79D2\u306F\u6483\u305F\u306A\u3044\u3002\u822A\u904E\u3092\u56FA\u3081\u308B\u306E\u306F\u672C\u5F53\u306B\u5411\u304B\u3063\u3066\u304F\u308B\u3068\u304D\u3060\u3051\uFF08v0.6.3 \u306E\u76F4\u3057\uFF09: commit_heading_tol_deg 30\uFF1D\u56FA\u3081\u308B\u91DD\u8DEF\uFF08\u72D9\u3044\u306E\u70B9\u3078\u306E\u65B9\u4F4D\uFF09\u3068\u4ECA\u306E\u91DD\u8DEF\u306E\u5DEE\u304C 30\xB0 \u4EE5\u5185\u30FB\u8247\u304C\u56FA\u3081\u308B\u7DDA\u306E\u524D\u30FB\u822A\u904E\u306E\u901F\u3055\uFF08\u8247 + overtake 6 kt\u3001\u4E0B\u9650 25 kt\uFF09\u3067\u7DDA\u3092\u9032\u3080\u3068\u3057\u3066\u6700\u63A5\u8FD1\u307E\u3067 5 \u79D2\u30FB\u305D\u306E\u8DDD\u96E2\u304C\u6709\u52B9\u5C04\u7A0B 400 m \u306E\u5185\u3002\u76F4\u3059\u524D\u306F\u4ECA\u306E\u901F\u5EA6\uFF08\u7A81\u6483 35 kt\uFF09\u3067\u6700\u63A5\u8FD1\u3092\u898B\u305F\u306E\u3067\u3001\u96E2\u8131\u304B\u3089\u5411\u304D\u76F4\u308B\u524D\uFF08\u5DEE \u6700\u5927 \u7D04 110\xB0\uFF09\u3084\u8FFD\u3044\u8D8A\u3059\u901F\u3055\u3067\u306F\u7E2E\u307E\u3089\u306A\u3044\u5F8C\u308D \u7D04 785 m \u3067\u3082\u56FA\u3081\u3001\u8D64\u3044\u7DDA\u304C 1 \u30D5\u30EC\u30FC\u30E0\u3067\u6D88\u3048\u308B\u822A\u904E\u304C 1 \u591C\u306B \u5DE1\u822A 0.12\u30FB\u9759\u97F3 0.40\u30FBPT \u3078\u5411\u304B\u3046 0.79 \u56DE\u3001\u6483\u305F\u305A\u306B\u7D42\u308F\u308B\u822A\u904E\u304C \u5DE1\u822A 0.78\u30FB\u9759\u97F3 1.21 \u56DE\u3042\u3063\u305F \u2192 \u76F4\u3057\u305F\u5F8C\u306F 0 \u56DE\uFF0820\xB0 \u3067\u3082 45\xB0 \u3067\u3082\u7D50\u679C\u306F\u307B\u307C\u540C\u3058\uFF09\u3002hold_off_m 500: \u4ED6\u306E PT \u304C\u822A\u904E\u4E2D\u304B\u6B21\u306E\u822A\u904E\u307E\u3067\uFF08pass_gap_s\uFF09\u306E\u9593\u3001\u5F85\u3064 PT \u306F\u8247\u304B\u3089 500 m\uFF08\u6709\u52B9\u5C04\u7A0B\u306E\u5916\uFF09\u3088\u308A\u5185\u3078\u5BC4\u3089\u305A 500\u301C600 m \u3067\u5916\u3078\u66F2\u304C\u3063\u3066\u5F85\u3064\uFF08\u76F4\u3059\u524D\u306F 2 \u756A\u624B\u304C\u8247\u306E 16\u301C27 m \u307E\u3067\u5BC4\u3063\u3066\u7D75\u304C\u91CD\u306A\u308A\u300137 m \u3067\u822A\u904E\u3092\u56FA\u3081\u305F\u3002\u76F4\u3057\u305F\u5F8C\u3001\u5F85\u3061\u59CB\u3081\u306B 500 m \u306E\u5916\u306B\u3044\u305F PT \u306F 455 m \u3088\u308A\u5185\u3078\u5165\u3089\u305A\u3001\u5185\u306B\u3044\u305F PT \u3082 1.1 \u79D2\u4EE5\u5185\u306B\u96E2\u308C\u59CB\u3081\u6700\u77ED 136 m\u3002\u822A\u904E\u3092\u56FA\u3081\u308B\u8DDD\u96E2\u306F\u6700\u77ED \u5DE1\u822A 137 m\u30FB\u5168\u901F\u3067\u9003\u3052\u56DE\u308B 91 m\u3002\u5F85\u3064\u9593\u306F\u7A81\u6483\u306E 25 \u79D2\u306B\u6570\u3048\u306A\u3044\uFF09\u30021 \u56DE 10 \u767A\u307E\u3067\u30FB\u8247\u9996\u5C3E 30\xB0 \u3068 60 m \u4EE5\u5185\u306F\u6483\u305F\u306A\u3044\u30FB\u822A\u904E\u306F\u540C\u6642\u306B 1 \u96BB\u30FB\u6B21\u306E\u822A\u904E\u307E\u3067 2.5 \u79D2\u30FB1 \u96BB 2 \u56DE\u3067\u53BB\u308B\uFF082 \u56DE\u76EE\u306E\u822A\u904E\u306F PT-323/369 \u306E\u8A18\u9332\u3002\u56DE\u6570\u3067\u53BB\u308B\u898F\u5247\u306E\u53F2\u6599\u306F\u7121\u3044\uFF1D\u5F3E\u3068\u6642\u9593\u306E\u62BD\u8C61\uFF09\u3002\u76F4\u3057\u306E\u5F8C\u306E\u518D\u8ABF\u6574\uFF08spec \xA7F.4 \u306E\u9806\uFF09: \u6483\u3066\u308B\u822A\u904E\u3060\u3051\u306B\u306A\u308B\u3068\u3001\u9759\u97F3\u3067\u307E\u3063\u3059\u3050\u5E30\u308B\u8247\u306E\u6C88\u6CA1\u304C 9% \u2192 71%\uFF08\u5DE1\u822A 19% \u2192 16%\uFF09\u3002\u9045\u3044\u8247\u307B\u3069 PT \u306E\u7DDA\u306E\u8FD1\u304F\u306B\u9577\u304F\u3044\u3066\u822A\u904E\u3092\u591A\u304F\u53D7\u3051\u308B\u305F\u3081\u3002guns.damage 4 \u2192 3 \u306F \u5DE1\u822A 3\u301C6%\u30FB\u9759\u97F3 33\u301C52% \u3067\u5DE1\u822A\u306E\u5E2F\uFF0810\u301C32%\uFF09\u3092\u5272\u308B\u306E\u3067 4 \u306E\u307E\u307E\u3002rounds_per_pass 12 \u2192 10\u30FBpass_offset_m 120 \u2192 155\uFF08\u96E2\u308C\u3066\u6483\u3064\u306E\u3067\u6563\u5E03\u304C\u5E83\u304C\u308A\u3001\u9045\u3044\u8247\u307B\u3069\u52B9\u304F\uFF09\u30FBhold_off_m 500\uFF08550 \u3060\u3068\u5F85\u3064 PT \u304C\u9060\u304F\u5DE1\u822A 3\u301C6%\uFF09\u3067\u3001\u6C88\u6CA1 \u5DE1\u822A 11%\u30FB\u9759\u97F3 19%\u30FB\u8D64\u3044\u7DDA\u3067\u8EE2\u8235 0%\u30FB\u9045\u3044\u8EE2\u8235 1%\u30FBPT \u3078\u5411\u304B\u3046 2%\u3001HP \u306E\u5E73\u5747 31.5\u30FB36.4\u30FB14.3\u30FB23.3\u30FB27.7\uFF08\u76F4\u3059\u524D 19%\u30FB9%\u30FB0%\u30FB1%\u30FB0%\u300135.8\u30FB29.6\u30FB14.0\u30FB24.1\u30FB19.3\u3002400 \u591C\uFF09\u3002v0.6.3 \u30EC\u30D3\u30E5\u30FC\u306E\u76F4\u3057\uFF08\u822A\u904E\u3092\u7D42\u3048\u308B\u7E01\u306F\u7D75\u306E\u534A\u9577\u30FB\u56DE\u6570\u306B\u6570\u3048\u308B\u306E\u306F\u6483\u3063\u305F\u304B open_fire_s \u7D4C\u3063\u305F\u822A\u904E\u3060\u3051\u30FB\u51FA\u767A\u3067\u898B\u3064\u304B\u3089\u306A\u3044\u3088\u3046\u51FA\u767A\u70B9\u3092 150 m \u5317\u3068\u7DDA\u3092 200 m \u5357\uFF09\u306E\u5F8C\u306E\u518D\u8ABF\u6574: pass_offset_m 155 \u2192 140\u3002\u7DDA\u3092\u5357\u3078\u52D5\u304B\u3059\u3068\u4F55\u3082\u3057\u306A\u3044\u8247\u304C\u8EFD\u304F\u306A\u3063\u305F\uFF08seed 1\u301C1200 \u306E 200 \u591C\u305A\u3064 6 \u7D44\u306E\u5E73\u5747\u3067 \u6C88\u6CA1 \u5DE1\u822A 13% \u2192 5%\u30FB\u9759\u97F3 23% \u2192 15%\uFF09\u306E\u3067\u3001spec \xA7F.4 \u306E\u9806\u3067 guns.damage\uFF085 \u306F 10 \xD7 5 = 50 \u3067 1 \u56DE\u306E\u822A\u904E\u3067\u6C88\u3080\uFF09\u30FBrounds_per_pass\uFF0811 \u306F\u9759\u97F3 26\u301C30%\uFF09\u306E\u6B21\u306E pass_offset_m \u3067\u623B\u3057\u305F\uFF08145 \u306F\u5DE1\u822A 4\u301C10%\uFF09\u3002140 \u306E 6 \u7D44: \u6C88\u6CA1 \u5DE1\u822A 7\u301C11%\uFF08\u5E73\u5747 9%\uFF09\u30FB\u9759\u97F3 23\u301C29%\uFF08\u5E73\u5747 26%\uFF09\u3001HP \u306E\u5E73\u5747 \u5DE1\u822A 31\u30FB\u9759\u97F3 32\u30FB\u8D64\u3044\u7DDA\u3067\u8EE2\u8235 15\uFF08\u6C88\u6CA1 0%\uFF09\u30FB\u9045\u3044\u8EE2\u8235 25\uFF081%\uFF09\u30FBPT \u3078\u5411\u304B\u3046 27\uFF082%\uFF09\u3002200 \u591C 1 \u7D44\u306E\u5024\u306F\u3053\u306E\u5E45\u3067\u3076\u308C\u308B\uFF08\u4E0A\u306E 11%\u30FB19% \u3082 1 \u7D44\u306E\u5024\uFF09\u3002\u7E01\u3078\u9003\u3052\u3066\u6B62\u307E\u308B\uFF08edge_flee\uFF09\u306F HP 33\u30FB\u6C88\u6CA1 5%\uFF08\u76F4\u3059\u524D\u306F\u7E01\u3067\u822A\u904E\u304C\u6483\u305F\u305A\u306B\u7D42\u308F\u308A\u3001PT \u304C\u6483\u305F\u305A\u306B\u53BB\u3063\u305F\uFF09\u3002v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300E\u3061\u3087\u3063\u3068\u7C21\u5358\u3059\u304E\u308B\u30FBPT \u3082\u3042\u3093\u307E\u308A\u57F7\u62D7\u306B\u653B\u6483\u3057\u3066\u3053\u306A\u3044\u306E\u3067\u5358\u8ABF\u300F\uFF09: max_passes 2 \u2192 4\uFF08\u5F3E\u306E\u62BD\u8C61: .50 \u306F 1 \u9580 \u7D04 1,000 \u767A\u30FB1 \u56DE\u306E\u6226\u95D8\u3067 1 \u96BB \u7D04 2,000 \u767A\uFF1D\u77ED\u3044\u822A\u904E 5\u301C10 \u56DE\u5206\u3001\u300E\u5F3E\u3092\u6483\u3061\u5C3D\u304F\u3059\u307E\u3067\u7E70\u308A\u8FD4\u3057\u822A\u904E\u3057\u305F\u300FPT-133/132\uFF081944-04\uFF09\u3001PT-116 \u306F\u50DA\u8247\u304C\u9000\u3044\u305F\u5F8C\u306B 1 \u96BB\u3067 2 \u5EA6\u76EE\u306E\u822A\u904E\uFF081944-09-28\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u30025 \u56DE\u306F HUD \u3069\u304A\u308A\u306E\u8EE2\u8235\u3067 HP \u22121 \u307B\u3069\u3057\u304B\u5897\u3048\u305A\u3001\u305A\u3063\u3068\u5168\u901F\u3060\u3068\u6F02\u6D41 7%\uFF09\u3001pass_offset_m 140 \u2192 120\uFF08\u8EE2\u8235\u3059\u308B\u8247\u306B\u4E00\u756A\u52B9\u304F: HP \u22123\u3001\u9759\u97F3\u3067\u307E\u3063\u3059\u3050\u306F\u6C88\u6CA1 +20 \u70B9\u3002min_range_m 60 < 120 < effective_night_m 400\uFF09\u3001break_max_s 8 \u2192 5\u30FBbreak_off_m 800 \u2192 650\uFF08\u3059\u3050\u5411\u304D\u76F4\u308B\u3002650 > effective_night_m 400\uFF09\u3002rounds_per_pass 10\uFF0810 \xD7 4 = 40 < 50\u300212 \u3060\u3068\u5DE1\u822A\u3067\u307E\u3063\u3059\u3050\u304C 47%\uFF09\u30FBopen_fire_s\u30FBpass_gap_s\u30FBwingman_delay_s\uFF081.5\u301C2.0 \u3067\u3082\u5909\u308F\u3089\u306A\u3044\uFF09\u306F\u5909\u3048\u306A\u3044\u3002\u6A21\u64EC\uFF08scratchpad \u306E\u8A66\u4F5C\u3001400 \u591C \xD7 3 \u7D44\u3002\u5F85\u3064 PT \u306E\u4F4D\u7F6E\u53D6\u308A\uFF08tactics\uFF09\u8FBC\u307F\uFF09: \u6C88\u6CA1 \u5DE1\u822A\u3067\u307E\u3063\u3059\u3050 28%\uFF08\u524D 7.5%\uFF09\u30FB\u9759\u97F3\u3067\u307E\u3063\u3059\u3050 46%\uFF08\u524D 23%\uFF09\u30FBHUD \u3069\u304A\u308A\u306E\u8EE2\u8235 1%\uFF08HP \u221218\u3001\u524D \u22129\uFF09\u30FB2 \u79D2\u9045\u308C\u306E\u8EE2\u8235 11.5%\uFF08\u524D 1.5%\uFF09\u3001HUD \u3069\u304A\u308A\u306B\u8EE2\u8235\u3059\u308B\u3068 1 \u591C\u306E\u822A\u904E 5.5 \u56DE\uFF08\u524D 3\u301C4 \u56DE\uFF09\u3002\u7E01\u3078\u9003\u3052\u3066\u6B62\u307E\u308B\uFF08edge_flee\uFF09\u306F\u6C88\u6CA1 71%\u30FBHP \u221247\uFF08\u524D 5%\u30FB\u221233\u3002\u7E01\u306B\u9003\u3052\u5834\u306F\u7121\u3044\uFF1D\u5206\u304B\u3063\u3066\u3044\u308B\u7F60\u3067\u3001\u5E30\u6295\u306E\u5E8A\u306A\u3057\u3002\u6B62\u307E\u3063\u305F\u8247\u3078\u306E\u4F4D\u7F6E\u53D6\u308A\u3092\u8247\u9996\u306E\u5411\u304D\u304B\u3089\u306B\u3057\u305F\u5F8C\u306E pt-pass-sim 400 \u591C\u3002\u30EC\u30D3\u30E5\u30FC F5\u30FBR3\uFF09\u3002v0.6.3 \u5B9F\u6A5F 2 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300E\u307E\u3060\u7C21\u5358\u30FB\u9003\u3052\u308B\u3060\u3051\u306A\u3089\u7C21\u5358\u30FB\u3082\u3063\u3068\u57F7\u62D7\u306B\u8FFD\u3044\u304B\u3051\u56DE\u3057\u3066\u5C04\u6483\u3057\u3066\u300F\uFF09: \u822A\u904E\u306F\u6483\u3061\u5207\u3063\u305F\u304B\uFF08\u6483\u9000\u3067\u9ED9\u3063\u305F PT \u306F\u4ECA\u3069\u304A\u308A\u7DDA\u306E\u307E\u307E\u629C\u3051\u308B\uFF09\u3001\u4E88\u544A\u304B\u3089 open_fire_s \u7D4C\u3063\u3066\u6709\u52B9\u5C04\u7A0B\u306E\u5916\u3078\u96E2\u308C\u3066\u3044\u3051\u3070\u7D42\u3048\u308B\uFF08core/pt-fire\u3002\u8D64\u3044\u7DDA\u306F\u5371\u306A\u3044\u9593\u3060\u3051\uFF09\u3002\u9003\u3052\u308B\u8247\uFF08chase.min_target_kt \u4EE5\u4E0A\uFF09\u3078\u306E\u822A\u904E\u306E\u5F8C\u306F\u96E2\u8131\u305B\u305A\u8FFD\u6483\u3078\uFF08chase\uFF09\u3002hold_off_m 500 \u2192 550\uFF08\u6709\u52B9\u5C04\u7A0B 450 m \u306E\u5916\u3067\u5F85\u3064\uFF09\u3001pass_gap_s 2.5 \u2192 3.0\uFF08\u7DDA\u304C\u65E9\u304F\u6D88\u3048\u308B\u306E\u3067\u6B21\u306E\u7DDA\u307E\u3067 0.5 \u79D2\u8DB3\u3057\u305F\u3002\u305D\u308C\u3067\u3082\u8D64\u3044\u7DDA\u306E\u9593\u306F 1 \u591C\u306E\u5E73\u5747 7.0\u301C7.8 \u79D2\u3001\u524D 13.7\u301C15.1 \u79D2\uFF09\u3002\u6A21\u64EC\uFF08pt-pass-sim\u3001N 400 \xD7 2 \u7D44\uFF09\u306F chase \u306E source \u3068 CHANGELOG\uFF09",
+        guns: "historical (2 \u9023\u88C5 .50 \xD72 \u3068 20mm\u30011943 \u5F8C\u534A\u304B\u3089 37/40mm \u3092\u73FE\u5730\u3067\u8FFD\u52A0: navweaps\u30FBNHHC\u3001\u629C\u7C8B\u306E\u307F) / design (1 \u9580\u306B\u307E\u3068\u3081\u305F\u5024\u3002damage 4 \xD7 10 \u767A = 40 < T-14 \u306E HP 50\uFF1D1 \u56DE\u306E\u822A\u904E\u3067\u306F\u7832\u3060\u3051\u3067\u6C88\u307E\u306A\u3044\uFF08v0.6.3 \u306E\u76F4\u3057\u306E\u518D\u8ABF\u6574\u3067 12 \u2192 10 \u767A\uFF09\u3002rof 240/\u5206\uFF08\u4F53\u611F\uFF09\u30FBdispersion 32 m\uFF08400 m \u3067\uFF09\u30FBshell_speed 500 \u306F\u5927\u767A\u306E 13mm \u3068\u540C\u3058\u898B\u3048\u308B\u66F3\u5149\u5F3E\u3002fire 0.03\u30FBengine 0.02 \u306F\u5927\u767A\u3068\u540C\u3058\u3002v0.6.3 \u5B9F\u6A5F 2 \u56DE\u76EE: effective_night_m 400 \u2192 450\uFF08dispersion_m 32 \u306F\u6709\u52B9\u5C04\u7A0B\u3067\u306E\u534A\u5F84\u306E\u307E\u307E\uFF1D300 m \u306E\u6563\u5E03 24 \u2192 21 m\u3002\u304B\u308F\u3057\u305F\u8247\u306B\u52B9\u304F\u3002450 \u306F\u6A21\u64EC\u3067\u6C7A\u3081\u305F\uFF08\u7D04 490 yd\u3002\u7814\u7A76\u30E1\u30E2\u306E\u63D0\u6848\u300E500\u301C600 yd \u3067\u6483\u3061\u59CB\u3081 100\u301C300 yd \u3067\u52B9\u304F\u300F\u306F design \u3067\u3001\u629C\u7C8B\u306F\u300E600 yd \u307E\u3067\u5BC4\u3063\u305F\u300F\u3060\u3051: UNO \u8AD6\u6587\u30FBBulkley\u3001WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u5F53\u305F\u308A\u306E\u5E83\u304C\u308A\u306F dispersion_m \u304C\u6301\u3064\u3002450 \u2264 \u8996\u7A0B 900 \u3092\u691C\u67FB\uFF09\u3002engine_damage_chance 0.02 \u2192 0.15\uFF08\u9003\u3052\u8DB3\u3092\u596A\u3046\u3002PT-363 \u306F\u5CB8\u306B\u96A0\u308C\u305F\u6A5F\u9283\u306B\u6A5F\u95A2\u3092\u6483\u305F\u308C\u3066\u6B62\u307E\u308A\u5931\u308F\u308C\u305F\uFF081944-11-25\uFF09: WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002T-14 \u306F 1 \u6A5F 1 \u8EF8\u3067 engine_reliability 0.7\u3002\u6A5F\u95A2\u640D\u50B7\u3067\u5168\u901F 31 \u2192 21.7 kt\uFF08boats.json \u306E engine_damage_speed_factor 0.7\uFF09\u3002\u6A21\u64EC\uFF08N 400\uFF09: \u6A5F\u95A2\u640D\u50B7\u306E\u591C \u5DE1\u822A 79%\u30FB\u5168\u901F\u3067\u307E\u3063\u3059\u3050\u9003\u3052\u308B 59%\u30FB\u6483\u3061\u8FD4\u3059 47%\uFF08\u524D 12\u301C20%\uFF09\u3001\u5168\u901F\u3067\u307E\u3063\u3059\u3050\u9003\u3052\u308B\u6C88\u6CA1 4.8% \u2192 13\u301C16%\u30020.10 \u306A\u3089 11%\u30FB0.20 \u306A\u3089 16% \u3060\u304C\u6A5F\u95A2\u640D\u50B7\u306E\u591C\u304C 58\u301C89%\uFF09)",
+        torpedo_attack: "historical (launch_range_m 900\u22481,000 yd: 1944-12-12 \u306E\u536F\u6708\u3078\u306E PT-490\u30FB492 \u306E\u96F7\u6483\uFF08medium\u3002combinedfleet \u306E\u536F\u6708\u306E\u8A18\u9332\u30FBPacific Wrecks\uFF09\u30011943-08 \u306E\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053 1,000\u301C1,800 yd\uFF08high\u3002NHHC \u306E\u55AA\u5931\u5831\u544A\u3002v0.8.0 S0 \u3067\u8247\u306E\u540D\u3092\u5916\u3057\u305F\uFF1DCLAUDE.md \xA711\uFF09\u3002salvo_count 3: 2 \u96BB\u3067 6 \u672C\uFF08medium\uFF09\u3002torpedo_id: 1944 \u306E Elco 80 \u306F Mk 13\uFF08boats.json \u306E us_elco80.torpedoes.type_late\u300133.5 kt\u3002core/pt-torpedo-data \u304C\u540C\u3058\u304B\u3092\u691C\u67FB\uFF09\u3002\u614C\u3066\u305F\u6589\u5C04\u306E\u76EE\u5B89\u306F\u30B9\u30EA\u30AC\u30AA\u6D77\u5CE1\uFF08\u6C17\u3065\u3044\u3066\u6483\u3061\u8FD4\u3059\u8266\u3078 34 \u672C\u3067 1\u301C2 \u672C\uFF1D3\u301C6%\u30FB\u51FA\u5178 1 \u3064\uFF08medium-low\uFF09\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002URL \u306F docs/01 \xA78 \u306E jp_04 \u306E\u8868) / design (v0.6.9\u3002launch_heading_tol_deg\u30FBsalvo_spacing_deg\u30FBaim_error_deg\uFF08\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\u306E 1 \u672C\u304C 30\u301C50%\u3002\u8A66\u4F5C aspect-mc: \u6CCA\u5730\u3078\u306E\u89D2\u5EA6 45\xB0 \u3067 0.44\uFF09\u30FBhurried_max_m\u30FBhurried_error_factor\uFF08\u614C\u3066\u305F\u6589\u5C04\u306E 1 \u672C 0.08\u301C0.25\uFF09\u30FBengaged_error_factor\u30FBreacquire_s\u30FBretreat_after_salvo\u3002\u614C\u3066\u305F\u6589\u5C04: \u968A\u304C\u81EA\u8247\uFF08\u304B 25mm \u306E\u9583\u5149\uFF09\u3092\u6349\u3048\u305F\u30B9\u30C6\u30C3\u30D7\u306B\u3001\u54E8\u6212\u4E2D\u3067\u9B5A\u96F7\u304C\u6B8B\u308A\u3001\u8F38\u9001\u8239\u304B\u3089 hurried_max_m \u306E\u5185\u3067\u8247\u9996\u304C launch_heading_tol_deg \u4EE5\u5185\u306E PT \u306F\u307F\u306A\uFF08\u898B\u3064\u3051\u305F PT \u3060\u3051\u3067\u306A\u304F\uFF09\u72D9\u3044\u306E\u8AA4\u5DEE\u3092 hurried_error_factor \u500D\u306B\u3057\u3066\u6483\u3064\uFF08spec R2: \u65E9\u304F\u5F15\u304D\u3064\u3051\u308B\u304B\u9045\u308C\u308B\u304B\u3067\u5DEE\u304C\u51FA\u308B\uFF09\u3002hurried_max_m 0 \u3067\u614C\u3066\u305F\u6589\u5C04\u306A\u3057\uFF08jp_04 \u3067\u306F V13 \u304C\u8D77\u52D5\u6642\u306B\u6B62\u3081\u308B: 0 \u306B\u3059\u308B\u306A\u3089 player_start \u3082\u52D5\u304B\u3059\u3002tests/jp04-mission\uFF09\u3002\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\uFF08spec R12: \u65E9\u304F\u5F15\u304D\u3064\u3051\u3066\u3082\u8F38\u9001\u8239\u306E\u305D\u3070\u3067\u6226\u3048\u3070\u8F38\u9001\u8239\u306F\u5371\u306A\u3044\uFF1D\u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3048\uFF09: \u81EA\u8247\u3068\u6226\u3063\u3066\u3044\u308B PT\uFF08\u8B66\u6212\u30FB\u7A81\u6483\u30FB\u8FFD\u6483\u30FB\u96E2\u8131\u3002\u54E8\u6212\u30FB\u822A\u904E\u30FB\u53BB\u308B\u306F\u9664\u304F\uFF09\u3067\u9B5A\u96F7\u304C\u6B8B\u308A\u3001\u63DA\u9678\u4E2D\u306E\u8F38\u9001\u8239\u304B\u3089 launch_range_m \u306E\u5185\u3067\u8247\u9996\u304C launch_heading_tol_deg \u4EE5\u5185\u306A\u3089\u3001\u72D9\u3044\u306E\u8AA4\u5DEE\u3092 engaged_error_factor \u500D\u306B\u3057\u3066\u6483\u3064\uFF081 \u96BB 1 \u56DE\u30FB\u898B\u5931\u3044\u306E reacquire_s \u306F\u639B\u3051\u306A\u3044\u30FB\u63DA\u9678\u306E\u6C7A\u7740\u306E\u5F8C\u306F\u6483\u305F\u306A\u3044\u3002\u6483\u3063\u3066\u3082\u53BB\u3089\u306A\u3044\uFF1D\u4E0B\u306E retreat_after_salvo\uFF09\u3002engaged_error_factor 2.0 \u306F S4 \u306E\u6A21\u64EC\uFF08scripts/landing-sim\u3002N 400 \xD7 2 \u7D44\uFF1Dseed 1\u301C400 \u3068 401\u301C800\u3002\u6570\u306F \u7D44 1 / \u7D44 2\uFF09\u3067\u614C\u3066\u305F\u6589\u5C04\u3068\u540C\u3058 2.5 \u304B\u3089 1.5\u301C3.0 \u3092\u56DE\u3057\u3066\u6C7A\u3081\u305F\uFF08spec R12\u30FBR13\uFF09: HUD \u3069\u304A\u308A\u306B\u65E9\u304F\u5F15\u304D\u3064\u3051\u3066\u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3046 lure \u306E\u9054\u6210 84.5 / 82.3%\uFF08\u5E2F 70\u301C88 \u306E\u771F\u3093\u4E2D\u30021.5 \u306F 79.8 / 78.5%\u30FB2.5 \u306F 87.3 / 85.3% \u3067\u4E0A\u306E\u7AEF\u307E\u3067 0.7 \u70B9\u30FB3.0 \u306F 87.8 / 88.3% \u3067\u5E2F\u306E\u5916\uFF09\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 2.8 / 3.8%\uFF08\u2264 18\uFF09\u30FB1 \u591C\u306E\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04 0.54 / 0.55\u30FB\u305D\u306E\u5F53\u305F\u308A\u3046\u308B 1 \u672C 0.310 / 0.306\uFF08\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044 0.445 / 0.446 \u3068\u614C\u3066\u305F 0.169 / 0.172 \u306E\u9593\uFF09\u3002\u898B\u3064\u304B\u3063\u3066\u3044\u308B\u9593\u306B\u8F38\u9001\u8239\u306E\u305D\u3070\uFF08400 m \u306E\u5185\uFF09\u3067\u6226\u3046 lure_near \u306F 28.0 / 28.3%\uFF08lure \u2212 lure_near \uFF0B55.3 \u70B9\u3001\u5E2F \u2265 10\uFF1D\u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3048\uFF09\u3001\u8FD1\u3044\u5831\u544A\u307E\u3067\u5F85\u3063\u3066\u5BC4\u308B lure_late \u306F 52.0 / 50.0%\uFF08lure \u2212 32.4 \u70B9\u3001\u5E2F \u2264 \u221210\u3002v0.6.9 S8 \u306E\u30EC\u30D3\u30E5\u30FC\u306E\u76F4\u3057\u3067\u898B\u5931\u3063\u3066 10 \u79D2\u6483\u305F\u306A\u3044 PT \u3092\u300C\u8FD1\u3044\u300D\u3068\u5831\u544A\u3057\u306A\u304F\u306A\u3063\u305F\u5F8C\u306E\u5024\u3002\u524D\u306F 64.3 / 61.5%\uFF09\u3001\u30CF\u30FC\u30C9\u306E lure 67.0 / 63.8%\uFF08\u5E2F 45\u301C70\uFF09\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 19.0 / 20.8%\uFF08\u2264 30\uFF09\u30020 \u3067\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u306A\u3057\uFF08lure 97.8 / 96.3%\u3002\u65E9\u304F\u5F15\u304D\u3064\u3051\u308C\u3070\u8F38\u9001\u8239\u306F\u307E\u305A\u6C88\u307E\u306A\u3044\uFF1DR12 \u306E\u524D\uFF09\u3002retreat_after_salvo \u306F false\uFF08v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\u30023 \u7A2E\u985E\u306E\u6589\u5C04\u3068\u3082\u6483\u3063\u3066\u3082\u53BB\u3089\u305A\u3001\u305D\u306E\u307E\u307E\u81EA\u8247\u3068\u6226\u3063\u3066\u9283\u6483\u3057\u3066\u304F\u308B\uFF1Dv0.6.9 \u306E S1\u301CS8 \u306E\u898F\u5247\u306B\u623B\u3057\u305F\uFF09: \u30E6\u30FC\u30B6\u30FC\u300C\u536F\u6708\u304C\u5F37\u3059\u304E\u3066PT\u304C\u77AC\u6BBA\u3055\u308C\u308B\u3002\u536F\u6708\u3092\u5F31\u3081\u305F\u3068\u3053\u308D\u3067\u3042\u307E\u308A\u610F\u5473\u304C\u306A\u3044\u306E\u3067\u3001\u5F53\u521D\u306E\u8A2D\u8A08\u3069\u304A\u308A\u3001PT\u304C\u767A\u5C04\u5F8C\u3082\u53BB\u3089\u305A\u306B\u9283\u6483\u3057\u3066\u304F\u308B\u8A2D\u8A08\u306B\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u300D\u2192\u300CA: \u536F\u6708\u306F\u6B8B\u3057\u3001PT \u3092\u6483\u3063\u305F\u5F8C\u3082\u53BB\u3089\u306A\u3044\u5F62\u306B\u623B\u3059\u300D\uFF08\u536F\u6708\u306E\u5024\u306F\u5909\u3048\u306A\u3044\uFF09\u3002\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\u3002\u6570\u306F \u7D44 1 / \u7D44 2\uFF09: \u536F\u6708\u306E\u3044\u308B\u591C lure 94.3 / 93.0%\u30FBhuman 71.5 / 69.0%\u30FBhuman_face 58.8 / 59.8%\u30FBface 71.0 / 76.3%\u3001\u30CF\u30FC\u30C9 lure 87.8 / 81.0%\u30FBhuman 48.8 / 45.8%\u3001\u536F\u6708\u3092\u5207\u3063\u305F\u591C\uFF08ALLY_OFF\uFF09lure 84.5 / 82.3%\uFF08v0.6.9 S4 \u3068\u540C\u3058\uFF09\u30FBlure_late 64.3 / 61.3%\u30FBkite 3.3 / 3.5%\u30FB\u30CF\u30FC\u30C9\u306E lure 67.0 / 63.8%\uFF08\u5E2F\u306F systems/ally-sim-bands \u3068 CHANGELOG v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF09\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\u301Cv0.6.10 S8 \u306F true \u3060\u3063\u305F\uFF08\u4EE5\u4E0B\u306F\u305D\u306E\u3068\u304D\u306E\u6587\u3002\u4E0A\u306E S4 \u306E\u6570\u306F\u6226\u3044\u306A\u304C\u3089\u6483\u3063\u305F PT \u304C\u53BB\u3089\u305A\u306B\u6226\u3044\u7D9A\u3051\u305F\u898F\u5247\u306E\u3068\u304D\uFF09: 3 \u7A2E\u985E\u306E\u6589\u5C04\u3068\u3082\u6483\u3063\u305F\u3089\u53BB\u308B\u3002\u30E6\u30FC\u30B6\u30FC\u306E\u5831\u544A\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u3001\u5916\u308C\u3066\u3082\u6575\u304C\u5E30\u6295\u305B\u305A\u3001\u81EA\u6A5F\u306B\u3064\u304D\u307E\u3068\u3046\u305F\u3081\u3001\u30B2\u30FC\u30E0\u30AF\u30EA\u30A2\u304C\u304B\u306A\u308A\u304D\u3064\u3044\u300D\uFF08\u4F53\u611F\u3067\u8F38\u9001\u8239\u304C\u6B8B\u308B 20%\u30FB\u9B5A\u96F7\u304C\u5916\u308C\u305F\u5F8C\u306E\u30AF\u30EA\u30A2 0%\uFF09\u306B\u3001\u30E6\u30FC\u30B6\u30FC\u306E\u9078\u629E A\u300C\u5F15\u304D\u3064\u3051\u3066\u96E2\u3059\u300D\uFF1D\u6483\u3063\u305F PT \u306F\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u3067\u3082\u53BB\u308B\uFF08\u3082\u3046 1 \u96BB\u306F v0.6.10 \u306E\u5473\u65B9\u306E\u99C6\u9010\u8266\u304C\u53D7\u3051\u6301\u3064\u3002\u6570\u306E\u5408\u308F\u305B\u306F\u305D\u306E\u5F8C\u306B\u4EBA\u306B\u8FD1\u3044\u904A\u3073\u65B9\u306E\u884C\u3067\u3002\u5024\u306F\u5909\u3048\u306A\u3044\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE S1 \u306E\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\u3002\u6570\u306F \u7D44 1 / \u7D44 2\uFF09: lure \u306E\u9054\u6210 87.3 / 87.0%\uFF08\u5E2F 70\u301C88\uFF09\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 1.0 / 1.5%\u30FB1 \u591C\u306E\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04 0.51 / 0.52\u3001lure_near 35.8 / 36.3%\uFF08lure \u2212 lure_near \uFF0B51.1 \u70B9\uFF09\u30FBlure_late 52.0 / 50.0%\uFF08lure \u2212 36.1 \u70B9\uFF09\u30FBkite 43.8 / 42.5%\u30FBlure_noshoot 22.0 / 24.0%\u3001\u30CF\u30FC\u30C9\u306E lure 73.0 / 75.0%\uFF08\u5E2F\u3092 45\u301C70 \u304B\u3089 45\u301C75 \u3078\uFF09\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 12.3 / 10.5%\u3002\u6589\u5C04\u306E\u5F53\u305F\u308A\u3046\u308B 1 \u672C\uFF0812 \u306E\u904A\u3073\u65B9\u3092\u5408\u308F\u305B\u3066\uFF09\u306F\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044 0.446 / 0.448\u30FB\u614C\u3066\u305F 0.169 / 0.172 \u3067\u524D\u3068\u540C\u3058\u3001\u6226\u3044\u306A\u304C\u3089 0.304 / 0.300\u3002S4 \u3067\u52D5\u304B\u305B\u308B\u7BC4\u56F2\u306F missions_seed \u306E jp_04 \u306E landing.source\uFF08spec R7\uFF09\u3002\u307B\u304B\u306E\u5024\uFF08launch_heading_tol_deg 30\u30FBsalvo_spacing_deg 8\u30FBaim_error_deg 10\u30FBhurried_max_m 1,300\u30FBhurried_error_factor 2.5\u30FBreacquire_s 10\uFF09\u306F S1 \u306E\u307E\u307E S4 \u306E\u5E2F\u306B\u5165\u3063\u305F\u306E\u3067\u52D5\u304B\u3055\u306A\u3044: \u6589\u5C04\u306E\u5F53\u305F\u308A\u3046\u308B 1 \u672C\uFF0810 \u306E\u904A\u3073\u65B9\u3092\u5408\u308F\u305B\u3066\uFF09\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044 0.445 / 0.446\uFF08\u5E2F 0.30\u301C0.50\uFF09\u30FB\u614C\u3066\u305F 0.169 / 0.172\uFF08\u5E2F 0.08\u301C0.25\uFF09\u3002jp_04 \u3060\u3051\u304C\u8AAD\u3080\uFF08core/pt-torpedo-data\uFF09)",
+        tactics: "design (v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002\u631F\u307F\u6483\u3061: \u822A\u904E\u3092\u5F85\u3064 PT \u306F\u524D\u306E\u822A\u904E\u306E PT \u3068\u53CD\u5BFE\u306E\u8237\uFF08\u8247\u306E\u91DD\u8DEF\u304B\u3089 \u2212\u8237 \xD7 station_rel_deg \u306E\u65B9\u89D2\uFF09\u3001\u8247\u304B\u3089 station_m 550 m\uFF08hold_off_m 500 < 550 < 2 \xD7 hold_off_m \u2212 effective_night_m 600\uFF09\u306E\u70B9\uFF08station_lead_s 1 \u79D2\u5148\u306E\u8247\u306E\u4F4D\u7F6E\u304B\u3089\uFF09\u3078\u56DE\u308B\u3002\u89D2\u306F\u822A\u904E\u3054\u3068\u306B 90\xB0\u30FB45\xB0\u30FB135\xB0 \u3092\u9806\u306B\uFF08\u771F\u6A2A\u30FB\u524D\u5BC4\u308A\u30FB\u5F8C\u308D\u5BC4\u308A\u3092\u76EE\u6307\u3059\u89D2\u3067\u3001\u7740\u304F\u89D2\u3067\u306F\u306A\u3044: \u8D70\u308B\u8247\u306B\u306F\u9045\u308C\u3001\u5DE1\u822A\u3067\u307E\u3063\u3059\u3050\u5E30\u308B\u8247\uFF08300 \u591C\uFF09\u3067\u306F\u5F85\u3061\u304C\u89E3\u3051\u308B\u306E\u306F\u8247\u9996\u304B\u3089\u7D04 40\xB0 \u304B 150\u301C175\xB0 \u304C\u591A\u304F\u3001\u8D64\u3044\u7DDA 955 \u672C\u306E\u3046\u3061 \u8247\u9996\u5074 629\u30FB\u771F\u6A2A 318\u30FB\u8247\u5C3E\u5074 8\u3002\u30EC\u30D3\u30E5\u30FC R1\uFF09\u3002\u8247\u304C\u307B\u307C\u6B62\u307E\u3063\u3066\u3044\u308C\u3070\u6700\u5F8C\u306B\u898B\u305F\u8247\u9996\u306E\u5411\u304D\u304B\u3089\u53D6\u308B\uFF08\u30EC\u30D3\u30E5\u30FC R3: \u5F85\u3064 PT \u304B\u3089\u898B\u305F\u65B9\u4F4D\u3067\u53D6\u308B\u3068\u70B9\u304C\u3044\u3064\u3082 PT \u306E\u5148\u3078\u9003\u3052\u3001\u53CD\u5BFE\u306E\u8237\u3078\u56DE\u3089\u305A\u306B\u8247\u306E\u5468\u308A\u3092\u56DE\u308A\u7D9A\u3051\u305F\u3002\u898B\u3064\u304B\u3063\u3066\u6B62\u307E\u3063\u305F\u8247\u3067\u3001\u5F85\u3061\u304C\u89E3\u3051\u305F\u306E\u304C\u53CD\u5BFE\u306E\u8237 53% \u2192 98%\uFF09\u3002\u65B9\u4F4D\u306E\u5DEE\u304C station_tol_deg 30\xB0 \u3088\u308A\u5927\u304D\u3044\u9593\u306F hold_off \u306E\u5F62\u3067\u5916\u3092\u56DE\u308A\uFF08\u5185\u3078\u5BC4\u3089\u306A\u3044\uFF09\u3001\u70B9\u307E\u3067 station_close_m 150 m \u3088\u308A\u8FD1\u3051\u308C\u3070\u8247\u306E\u901F\u3055 + \u8FFD\u3044\u8D8A\u3057\u3067\u4E26\u3076\u3002\u822A\u904E\u306F\u540C\u6642\u306B 1 \u96BB\u306E\u307E\u307E\u30FB\u5F85\u3064 PT \u306F\u6483\u305F\u306A\u3044\u30023 \u96BB\u306E\u54E8\u6212\u30FB\u540C\u3058 PT \u306E 2 \u5EA6\u306E\u653B\u6483\u306E\u8A18\u9332\u306F\u3042\u308B\u304C\u30012 \u96BB\u306E\u631F\u307F\u6483\u3061\u306E\u53F2\u6599\u306F\u7121\u3044\uFF08WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002\u6A21\u64EC\uFF08pt-pass-sim\u3001seed 1\u301C200 \u306E 200 \u591C\u3002\u4F4D\u7F6E\u53D6\u308A\u306A\u3057 \u2192 \u3042\u308A\uFF09: \u8D64\u3044\u7DDA\u304C\u524D\u3068\u53CD\u5BFE\u306E\u8237\u304B\u3089\u6765\u308B\u5272\u5408 \u5DE1\u822A\u3067\u307E\u3063\u3059\u3050 0.49 \u2192 0.88\u30FB\u8D64\u3044\u7DDA\u3067\u5168\u901F\u306E\u8EE2\u8235 0.56 \u2192 0.74\u30FBHUD \u3069\u304A\u308A\u306E\u8EE2\u8235 0.53 \u2192 0.64\u30FB\u6697\u3055\u3067\u6B62\u307E\u308B 0.57 \u2192 0.57\u30FB\u7E01\u3078\u9003\u3052\u308B 0.64 \u2192 0.98\u30FB\u6B62\u307E\u3063\u3066\u6483\u3061\u5408\u3046 0.27 \u2192 0.47\uFF08v0.6.3 \u306F 0.35\u301C0.55\u3002HUD \u3069\u304A\u308A\u306E\u8EE2\u8235\u306E\u4F38\u3073\u306E\u591A\u304F\u306F max_passes\u30FBbreak_* \u304B\u3089\u3002\u30EC\u30D3\u30E5\u30FC F3\uFF09\u3001\u4F55\u3082\u3057\u306A\u3044\u3067\u5DE1\u822A\u3067\u307E\u3063\u3059\u3050\u5E30\u308B\u8247\u306E\u6C88\u6CA1 12% \u2192 26%\u3002\u5F85\u3061\u59CB\u3081\u306B 500 m \u306E\u5916\u306B\u3044\u305F PT \u306E\u6700\u63A5\u8FD1 380 m \u4EE5\u4E0A\uFF08400 \u591C\u30FB22 \u306E\u904A\u3073\u65B9\uFF09\u3002v0.6.3 \u5B9F\u6A5F 2 \u56DE\u76EE: station_m 550 \u2192 600\uFF08hold_off_m 550 < 600 < 2 \xD7 550 \u2212 450 = 650\uFF09\u3002\u8FFD\u6483\u306E\u5F85\u3064 PT \u306E\u4F4D\u7F6E\u53D6\u308A\u306F chase.held_*)",
+        under_fire: "historical / design (v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002T-14 \u306E 13mm \u3092\u53D7\u3051\u305F\u3068\u304D\u3002historical: Elco \u306E\u8239\u4F53\u306F\u30DE\u30DB\u30AC\u30CB\u30FC 2 \u5C64\u3067\u5C0F\u53E3\u5F84\u5F3E\u306F\u629C\u3051\u3001\u7A74\u306F\u6728\u6813\u3067\u585E\u3044\u3060\u3002PT \u3092\u6C88\u3081\u305F\u306E\u306F 100 \u30AA\u30AF\u30BF\u30F3\u306E\u30AC\u30BD\u30EA\u30F3 \u7D04 3,000 gal \u3078\u306E\u5F15\u706B\u304B\u6A5F\u95A2\u3002\u5927\u767A\u306E\u6A5F\u9283\u3060\u3051\u3067\u6C88\u3093\u3060 PT \u306F\u629C\u7C8B\u306B\u7121\u3044\uFF08Bulkley \u306E\u640D\u5931\u8868\u306E\u629C\u7C8B\u306F\u6CBF\u5CB8\u7832\u53F0\u306B 5 \u96BB\u3067\u3001\u5927\u767A\u306E\u6B04\u306F\u7121\u3044\u3002PT-363 \u306F\u6D5C\u306E\u5927\u767A\u3092\u6383\u5C04\u3057\u306B\u5165\u308A\u3001\u5CB8\u306B\u96A0\u308C\u305F\u6A5F\u9283\u306B\u6A5F\u95A2\u3092\u6483\u305F\u308C\u3066\u6B62\u307E\u308A\u5931\u308F\u308C\u305F\u3002Bulkley \u306F\u6CBF\u5CB8\u7832\u53F0\u306B\u6570\u3048\u308B\uFF09\u3002PT-167 \u306F\u4E57\u54E1 1 \u540D\u304C\u6483\u305F\u308C\u3066\u9000\u304D\u3001PT-116 \u306F 1 \u96BB\u3067 2 \u5EA6\u76EE\u306E\u822A\u904E\u3092\u3057\u305F\u3002\u3059\u3079\u3066 WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002design: \u547D\u4E2D 1 \u767A\u3054\u3068\u306B\u4E71\u6570\u3092 1 \u56DE\u5F15\u304F: fire_chance 0.3% \u3067\u708E\u4E0A\u3057\u3066\u6C88\u3080\uFF08PT \u3092\u6C88\u3081\u308B\u552F\u4E00\u306E\u9053\uFF09\u30FBcasualty_chance 3% \u3067\u6B7B\u50B7\u304C\u51FA\u3066\u53BB\u308B\u3001\u3069\u308C\u3067\u3082\u306A\u304F HP\uFF08boat_ref \u306E hull_hp 100\uFF09\u304C retreat_hp 60 \u4EE5\u4E0B\uFF0813mm \u306E 2 \xD7 20 \u767A\uFF09\u306A\u3089\u7A74\u3060\u3089\u3051\u3067\u53BB\u308B\uFF08HP \u3060\u3051\u3067\u306F\u6C88\u307E\u306A\u3044: retreat_hp < hull_hp\uFF09\u3002\u822A\u904E\u4E2D\u306B\u53BB\u308B PT \u306F\u6483\u3064\u306E\u3092\u3084\u3081\u3001\u56FA\u3081\u305F\u91DD\u8DEF\u306E\u307E\u307E\u629C\u3051\u3066\u304B\u3089\u53BB\u308B\uFF08\u8D64\u3044\u7DDA\u306F\u6D88\u3048\u306A\u3044\uFF09\u3002\u6A21\u64EC\uFF08pt-pass-sim 400 \u591C\uFF09: \u8EE2\u8235\u3057\u306A\u304C\u3089\u6483\u3064\u3068 1 \u591C \u547D\u4E2D \u7D04 9 \u767A\u30FB\u6483\u9000\u306E\u591C 22%\u30FB\u6483\u6C88\u306E\u591C 2%\u3001\u6B62\u307E\u3063\u3066\u6483\u3061\u5408\u3046\u3068\u6483\u6C88\u306E\u591C 9.5% \u3060\u304C\u81EA\u8247\u304C 28.5% \u6C88\u3080\u3002\u822A\u904E\u4E2D\u306E 1 \u547D\u4E2D\u3067\u5F3E\u3092\u6E1B\u3089\u3059\uFF08\u5236\u5727\uFF09\u306F\u6B62\u307E\u3063\u3066\u6483\u3064\u65B9\u304C\u8EE2\u8235\u3088\u308A\u5F97\u306B\u306A\u3063\u305F\u306E\u3067\u5165\u308C\u306A\u3044)",
+        chase: "design\uFF08v0.6.3 \u5B9F\u6A5F 2 \u56DE\u76EE\u3002\u611F\u60F3\u300E\u9003\u3052\u308B\u3060\u3051\u306A\u3089\u7C21\u5358\u3002\u3082\u3063\u3068\u57F7\u62D7\u306B\u8FFD\u3044\u304B\u3051\u56DE\u3057\u3066\u5C04\u6483\u3057\u3066\u300F\uFF09\u3002\u6A21\u64EC pt-pass-sim\uFF08N 400\u30FBseed 1\u301C400 \u3068 401\u301C800\u3001N 200\uFF09\u3067\u6C7A\u3081\u305F\u3002\u822A\u904E\u306E\u5F8C\u3001\u9003\u3052\u308B\u8247\uFF08min_target_kt 10 kt \u4EE5\u4E0A\uFF09\u306E\u8247\u5C3E\u5074\u306B\u3044\u308B PT \u306F\u96E2\u8131\u305B\u305A\u306B\u8FFD\u6483\u3078\u5165\u308B\uFF08\u7A81\u6483\u30FB\u5F85\u3064 PT \u3082\u3001\u8247\u306E\u8247\u5C3E\u304B\u3089 start_aft_deg 75\xB0 \u4EE5\u5185\u30FBcommit_max_m \u306E\u5185\u306A\u3089\u5165\u308B\uFF09\u3002\u8247\u306E\u5F8C\u308D\u5BC4\u308A\u306E\u8237\uFF08\u8247\u306E\u91DD\u8DEF\u304B\u3089 station_rel_deg 135\xB0\u30FBstation_m 170 m\uFF09\u3078 speed_kt 39 kt \u3067\u56DE\u308A\u8FBC\u3093\u3067\u4E26\u3073\u3001\u6483\u3064\u6A29\u5229\uFF08\u822A\u904E\u3068\u540C\u3058 1 \u3064\uFF09\u304C\u7A7A\u3051\u3070 PT \u304B\u3089\u8247\u3078\u306E\u8D64\u3044\u7DDA\u3067\u4E88\u544A\u3057\u3001open_fire_s 2.5 \u79D2\u5F8C\u304B\u3089 1 \u56DE burst_rounds 6 \u767A\u307E\u3067\u6483\u3064\uFF08burst_max_s 3 \u79D2\u307E\u3067\u30026 \xD7 4 = 24 < HP 50\uFF09\u3002\u5F85\u3064 PT \u306F\u53CD\u5BFE\u306E\u8237\u306E held_rel_deg 150\xB0\u30FBheld_station_m 350 m\uFF08\u6709\u52B9\u5C04\u7A0B 450 m \u306E\u5185\u30FBcommit_m \u306E\u7E01\u3002\u6483\u3064\u6A29\u5229\u306F 1 \u3064\u306A\u306E\u3067\u5F85\u3064\u9593\u306F\u6483\u305F\u306A\u3044\uFF09\u3067\u5F85\u3061\u3001held_guard_m 150 m \u3088\u308A\u5185\u3078\u306F\u81EA\u5206\u304B\u3089\u5BC4\u3089\u306A\u3044\u3002\u540C\u3058 PT \u304C\u7D9A\u3051\u3066\u6483\u3064\u306E\u306F\u3001\u76F8\u65B9\u304C\u6483\u3066\u308B\u8DDD\u96E2\u306B\u3044\u306A\u3044\u3068\u304D\u3060\u3051\uFF08gap_s 2 + self_gap_s 3 \u79D2\uFF09\u3002\u8247\u9996\u306E \xB130\xB0 \u306E\u5186\u9310\u306E\u4E2D\u3078\u3082 bow_rof_factor 0.4 \u500D\u306E\u901F\u3055\u3067\u6483\u3064\uFF08\u8247\u9996\u306E 37mm\uFF09\u3002\u8247\u304C cone_quit_s 2 \u79D2\u4EE5\u4E0A\u8247\u9996\u306E\u5186\u9310\u306B\u3044\u308C\u3070\u305D\u306E\u9023\u5C04\u3092\u3084\u3081\u308B\u300213mm \u3092 suppress_hits 3 \u767A\u53D7\u3051\u308B\u3068\u8FFD\u6483\u3092\u3084\u3081\u3066\u96E2\u308C\u308B\uFF08\u5236\u5727\u30021 \u56DE\u5206\u306E\u9023\u5C04\u3092\u4F7F\u3046\uFF09\u3002\u8247\u304C slow_exit_s 2 \u79D2\u9045\u3044\uFF0810 kt \u672A\u6E80\uFF09\u304B PT \u304C\u8247\u9996\u304B\u3089 exit_fwd_deg 45\xB0 \u4EE5\u5185\u3078\u51FA\u305F\u3089\u7A81\u6483\uFF08\u822A\u904E\uFF09\u3078\u623B\u308B\u30021 \u96BB \u822A\u904E 4 \u56DE\u30FB\u9023\u5C04 max_bursts 6 \u56DE\u304B\u591C\u660E\u3051\u30FB\u6483\u9000\u30FB\u6483\u6C88\u3067\u53BB\u308B\u3002\u7814\u7A76\u30E1\u30E2\u306E\u63D0\u6848\uFF08design\u3002\u629C\u7C8B\u306F 15\u30FB20 kt \u3067\u5BC4\u3063\u305F\u4F8B\u3068\u300E600 yd \u307E\u3067\u5BC4\u3063\u305F\u300F\u3060\u3051\uFF09: \u5168\u901F\uFF0835\u301C40 kt\uFF09\u306F\u4F4D\u7F6E\u53D6\u308A\u30FB\u96E2\u8131\u30FB\u8FFD\u6483\u306B\u3060\u3051\u4F7F\u3044\u3001\u6383\u5C04\u306E\u822A\u904E\u306F 15\u301C20 kt\u3002\u53F2\u5B9F: 1943 \u5E74\u534A\u3070\u304B\u3089\u73FE\u5730\u6539\u88C5\u3067\u8247\u9996\u306B 37mm M4\uFF08PT-103 \u306F 1943-08-01 \u306B\u4E57\u54E1\u304C\u642D\u8F09\uFF09\u3001\u8247\u5C3E\u306B 40mm\uFF081943 \u5F8C\u534A\u304B\u3089\uFF09\u30022 \u9023\u88C5 .50 \u306F\u8266\u6A4B\u306E\u8107\u306E\u65CB\u56DE\u9283\u5EA7\u3002PT-167 \u306F\u4E57\u54E1 1 \u540D\u306E\u6B7B\u3067\u9000\u304D\u3001PT-116 \u306F 1 \u96BB\u3067 2 \u5EA6\u76EE\u306E\u822A\u904E\u3092\u3057\u305F\u3002PT-133\u30FB132 \u306F\u5F3E\u3092\u6483\u3061\u5C3D\u304F\u3059\u307E\u3067\u822A\u904E\u3092\u7E70\u308A\u8FD4\u3057\u305F\uFF081944-04\uFF09\u3002\u9003\u3052\u308B\u5C0F\u8247\u3092\u5F8C\u308D\u304B\u3089\u8FFD\u3063\u3066\u6483\u3063\u305F\u8A18\u9332\u30FB2 \u96BB\u3067\u5DE6\u53F3\u304B\u3089\u8FFD\u3063\u305F\u8A18\u9332\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF08\u8FFD\u6483\u306E\u5F62\u306F\u30B2\u30FC\u30E0\u306E\u62BD\u8C61\uFF09\u3002\u3059\u3079\u3066 WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002speed_kt 39 \u306F boats.json \u306E us_elco80 \u306E\u6700\u5927\uFF08T-14 \u306E 31 kt \u3088\u308A 8 kt \u901F\u3044\uFF1D\u632F\u308A\u5207\u308C\u306A\u3044\uFF09\u3002\u6A21\u64EC\uFF08N 400\u30012 \u7D44\uFF09: \u6483\u305F\u305A\u306B\u304B\u308F\u3059\u3060\u3051 13\u301C36%\uFF08HP \u221230\u301C\u221241\u3002\u524D 1\u301C9%\uFF09\u3001\u5168\u901F\u3067\u307E\u3063\u3059\u3050\u9003\u3052\u308B 13\u301C16%\uFF08\u524D 1%\uFF09\u3001\u4F55\u3082\u3057\u306A\u3044 44\u301C51%\u3001\u6483\u3061\u8FD4\u3059 0\u301C13%\uFF082 \u79D2\u9045\u308C\u306E\u53CD\u5FDC\u306F 14\u301C26%\u30021 \u96BB\u4EE5\u4E0A\u3092\u8FFD\u3044\u6255\u3046\u591C 29\u301C88%\u3002\u6483\u3064\u884C\u306E\u6570\u306F\u672C\u756A\u306E\u6A21\u64EC\u3002\u5B9F\u6A5F 2 \u56DE\u76EE\u306E\u30EC\u30D3\u30E5\u30FC F3: \u524D\u306E\u6570\u306F\u8A66\u4F5C\u306E\u5024\u3060\u3063\u305F\uFF09\u3001\u6697\u3055\u306B\u96A0\u308C\u308B 11\u301C15%\uFF08HP \u221212\uFF09\u3002\u9023\u5C04\u306B\u5DE1\u822A\u3067\u96E2\u308C\u3066\u623B\u308B\u30FB\u30B8\u30B0\u30B6\u30B0\u306F 62\u301C78% \u6C88\u3080\uFF08\u91DD\u8DEF\u305D\u306E\u307E\u307E\u6483\u3061\u8FD4\u3059\u306E\u304C\u7B54\u3048\u3002HUD \u304C\u305D\u3046\u8A00\u3046\uFF09\u3002"
+      },
+      notes: "v0.6.3\u3002\u52D5\u304D\uFF08\u9577\u3055\u30FB\u5E45\u30FB\u65CB\u56DE\u30FB\u52A0\u901F\u30FB\u6700\u5927\u901F\u529B\uFF09\u306F boats.json \u306E us_elco80\u3002\u822A\u904E\u306E\u3068\u304D\u3068\u8FFD\u6483\u306E\u9023\u5C04\u306E\u3068\u304D\u3060\u3051\u6483\u3064\uFF08\u3069\u3061\u3089\u3082\u8D64\u3044\u7DDA\u306E\u4E88\u544A\u304B\u3089 2.5 \u79D2\u306F\u6483\u305F\u306A\u3044\uFF09\u30FB\u6483\u3064\u306E\u306F\u540C\u6642\u306B 1 \u96BB\u30FB\u5F85\u3064 PT \u306F\u53CD\u5BFE\u306E\u8237\u30FB1 \u96BB \u822A\u904E 4 \u56DE\u30FB\u9023\u5C04 6 \u56DE\u304B\u591C\u660E\u3051\u3067\u6771\u3078\u53BB\u308B\u3002T-14 \u306E 13mm \u3092 3 \u767A\u53D7\u3051\u305F\u8FFD\u6483\u306E PT \u306F\u8FFD\u6483\u3092\u3084\u3081\u3001\u6B7B\u50B7\u30FB\u640D\u50B7\u306A\u3089\u53BB\u308A\u3001\u3054\u304F\u307E\u308C\u306B\u708E\u4E0A\u3057\u3066\u6C88\u3080\u3002jp_04 \u3067\u306F\u8F38\u9001\u8239\u3078 1 \u96BB 1 \u56DE\u3060\u3051 3 \u672C\u3092\u6483\u3061\u3001\u6483\u3063\u3066\u3082\u53BB\u3089\u305A\u306B\u81EA\u8247\u3068\u6226\u3044\u7D9A\u3051\u308B\uFF08\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3051\u308C\u3070 900 m \u3067\u3001\u968A\u304C\u81EA\u8247\u3092\u6349\u3048\u305F\u77AC\u9593\u306B\u8FD1\u3051\u308C\u3070\u614C\u3066\u3066\u3001\u81EA\u8247\u3068\u6226\u3044\u306A\u304C\u3089\u3067\u3082 900 m \u306E\u5185\u3067\u8247\u9996\u304C\u5411\u3051\u3070\u6483\u3064\u3002v0.6.9\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\u301Cv0.6.10 S8 \u306F\u6483\u3063\u305F\u3089\u53BB\u3063\u305F\u3002v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B\u623B\u3057\u305F\u3002core/pt-torpedo\uFF09\u3002jp_01\u30FBjp_05 \u306B\u306F\u72D9\u3046\u6DF1\u3044\u8239\u4F53\u304C\u7121\u3044\u306E\u3067\u9B5A\u96F7\u306F\u4F7F\u308F\u306A\u3044"
+    },
+    {
+      id: "de_sboat_enemy",
+      faction: "KM",
+      name_ja: "\u72ECS\u30DC\u30FC\u30C8\uFF08\u82F1MTB\u8996\u70B9\u306E\u6575\u3001\u5C06\u6765\uFF09",
+      boat_ref: "de_s100",
+      ai: {
+        patrol_speed_kt: 12,
+        attack_speed_kt: 38,
+        detect_m: 2200,
+        radar_m: 0,
+        torpedo_launch_range_m: 1200,
+        gun_range_m: 1500,
+        retreat_after_salvo: true
+      },
+      source: {
+        all: "design"
+      },
+      notes: "v0.6\u4EE5\u964D\u3002"
+    }
+  ]
+};
+
+// ../wt-0176202/data/hit_rate_model.json
+var hit_rate_model_default = {
+  $schema_note: "\u547D\u4E2D\u7387\u3068\u6642\u9593\u5727\u7E2E\u306E\u30E2\u30C7\u30EB\u3002kpi \u306F\u300E\u6E2C\u3063\u3066\u5408\u308F\u305B\u308B\u76EE\u6A19\u5E2F\u300F\u3067\u3001\u30C0\u30A4\u30B9\u306B\u306F\u4F7F\u308F\u306A\u3044\uFF08\u547D\u4E2D\u306F\u5E7E\u4F55\u5224\u5B9A\uFF09\u3002\u6575\u306E\u56DE\u907F\u30D1\u30E9\u30E1\u30FC\u30BF\uFF08enemies.json \u306E detection/evasion\uFF09\u3092\u8ABF\u6574\u3057\u3066\u7D50\u679C\u3092\u3053\u306E\u5E2F\u306B\u5165\u308C\u308B\u3002",
+  version: "0.1.0",
+  world: {
+    unit: "m",
+    time_scale: 5,
+    sprite_scale: 2,
+    camera_zoom_default: 0.75,
+    camera_zoom_min: 0.5,
+    camera_zoom_max: 1,
+    hit_scale: 1,
+    ship_hit_scale: 2,
+    source: "design (hit_scale: \u5F53\u305F\u308A\u5224\u5B9A\u306B\u4F7F\u3046\u8239\u4F53\u5BF8\u6CD5\u306E\u500D\u7387\u30021=\u5B9F\u5BF8\uFF08docs/02 \xA76.10\uFF09\u3002\u8868\u793A\u306F sprite_scale \u500D\u306A\u306E\u3067\u3001\u898B\u305F\u76EE\u3069\u304A\u308A\u306B\u5F53\u3066\u305F\u3044\u306A\u3089 sprite_scale \u3068\u540C\u3058\u5024\u306B\u3059\u308B\u3002ship_hit_scale\uFF08v0.4.8\uFF09: \u9B5A\u96F7\u306E\u76EE\u6A19\uFF08\u99C6\u9010\u8266\u30FB\u8F38\u9001\u8239\uFF09\u306E\u8239\u4F53\u306E\u5F53\u305F\u308A\u5224\u5B9A\u306E\u500D\u7387\u3002sprite_scale \u3068\u540C\u3058 2\uFF1D\u898B\u305F\u3068\u304A\u308A\u306B\u5F53\u305F\u308B\u3002\u5B9F\u6A5F\u300C\u8F38\u9001\u8239\u306E\u5F8C\u90E8\u306B\u5F53\u305F\u3063\u305F\u306F\u305A\u304C\u5F53\u305F\u3089\u306A\u3044\u3002\u99C6\u9010\u8266\u3082\u5F8C\u90E8\u304C\u77ED\u3044\u300D\u2192 \u5B9F\u5BF8\uFF08hit_scale 1\uFF09\u3060\u3068\u7D75\u306E\u8266\u9996\u30FB\u8266\u5C3E\u306E 1/4 \u305A\u3064\u304C\u5F53\u305F\u3089\u306A\u304B\u3063\u305F\u3002\u4F53\u5F53\u305F\u308A\u306E\u5224\u5B9A\u3082\u540C\u3058\u8239\u4F53\uFF08\u898B\u305F\u76EE\u3067\u89E6\u308C\u305F\u3089\u4F53\u5F53\u305F\u308A\uFF09\u3002\u547D\u4E2D\u7387\u306F\u4E0A\u304C\u308B\uFF08\u56DE\u907F\u3059\u308B\u99C6\u9010\u8266\u3078\u306E 1 \u672C\u3001\u72D9\u3044\u306E\u305A\u308C \xB13\xB0 \u306E\u6A21\u64EC\u3067 730\u301C1,400 m 41\u301C49% \u2192 76\u301C84%\u3002\u7406\u60F3\u306E\u7167\u6E96\u306A\u306E\u3067\u5B9F\u969B\u306F\u4E0D\u767A\u30FB\u86C7\u884C\u3067\u4E0B\u304C\u308B\uFF09\u3002\u76EE\u6A19\u5E2F\uFF0835\u301C45%\uFF09\u3078\u306F v0.5.0 \u3067\u56DE\u907F\u306E\u5F37\u3055\u3067\u623B\u3059\u3002\u81EA\u8247\u30FB\u50DA\u8247\u30FB\u5927\u767A\u306E\u5F53\u305F\u308A\u306F hit_scale \u306E\u307E\u307E\uFF08\u5B9F\u5BF8\uFF09\u3002\u623B\u3057\u65B9: ship_hit_scale \u3092 1.0 \u306B\u3059\u308B\u3060\u3051\u3067 v0.4.7 \u306E\u5B9F\u5BF8\u306B\u623B\u308B\uFF08\u30C6\u30B9\u30C8\u306F\u4E21\u65B9\u306E\u5024\u3067\u901A\u308B\uFF09\u3002\u5B9F\u6A5F\u3067\u6BD4\u3079\u308B\u306B\u306F ?debug&title&shiphit=1\uFF08\u5B9F\u5BF8\uFF09\u304B &shiphit=2\uFF08SetupOptions.shipHitScale\u30021 \u884C\u76EE\u306B\u300C\u5F53\u305F\u308A x1\u300D\uFF09)"
+  },
+  torpedo_launch: {
+    arming_distance_m: 100,
+    salvo_spacing_deg: 4,
+    salvo_spacing_choices_deg: [3, 4, 5],
+    salvo_interval_s: 0.4,
+    erratic_period_s: 6,
+    salvo_hold_start_s: 0.5,
+    salvo_count_step_s: 1,
+    source: "design (erratic_period_s: \u86C7\u884C\u9B5A\u96F7\u306E\u9032\u8DEF\u304C \xB1jitter_deg \u3092\u5F80\u5FA9\u3059\u308B\u5468\u671F\u3002\u5B9F\u6642\u9593\u79D2\u3002salvo_hold_start_s\u30FBsalvo_count_step_s\uFF08v0.4.8\uFF09: \u9577\u62BC\u3057\u306E\u672C\u6570\u3002salvo_hold_start_s \u672A\u6E80\u306E\u62BC\u4E0B\u306F\u30BF\u30C3\u30D7\uFF081 \u672C\uFF09\u3001\u305D\u308C\u4EE5\u4E0A\u62BC\u3057\u3066\u96E2\u3059\u3068 2 \u672C\u3001\u305D\u3053\u304B\u3089 salvo_count_step_s \u3054\u3068\u306B 1 \u672C\u5897\u3048\u308B\uFF080.5 \u79D2\u30FB1.0 \u79D2: 0.5\u301C1.5 \u79D2\u3067 2 \u672C\u30011.5\u301C2.5 \u79D2\u3067 3 \u672C\u30012.5 \u79D2\u4EE5\u4E0A\u3067 4 \u672C\uFF1D\u6B8B\u5F3E\u3059\u3079\u3066\uFF09\u3002\u7D4C\u7DEF: v0.4.7 \u306E\u5B9F\u6A5F\u300C\u9577\u62BC\u3057\u306F\u5FC5\u305A 4 \u672C\u3067 1 \u56DE\u3067\u6B8B\u6570\u30BC\u30ED\u300D\u2192 \u672C\u6570\u3092\u9078\u3079\u308B\u3088\u3046\u306B\uFF08\u30BF\u30C3\u30D7\u306E\u95BE\u5024 0.3 \u79D2\uFF0B\u523B\u307F 0.5 \u79D2\uFF09\u3002v0.4.8 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u9577\u62BC\u3057\u3067\u672C\u6570\u3068\u89D2\u5EA6\u3092\u8ABF\u6574\u3059\u308B\u306E\u306F\u304D\u3064\u3044\u3002\u9577\u3055\u3092 2 \u500D\u306B\u300D\u2192 \u523B\u307F 1.0 \u79D2\u30022 \u56DE\u76EE\u300C\u9577\u62BC\u3057\u306F\u672C\u6570\u3060\u3051\u3001\u89D2\u5EA6\u306F\u56FA\u5B9A\u3067\u3044\u3044\u300D\u2192 \u958B\u304D\u89D2\u306E\u9577\u62BC\u3057\uFF082\xB0\u301C12\xB0\u3001spread_angle_deg_min / max\u30FBspread_hold_seconds_for_max\uFF09\u3092\u3084\u3081\u305F\u30023 \u56DE\u76EE\u300C2 \u672C\u306E\u9577\u62BC\u3057\u306F 1.0\u301C2.0 \u79D2\u3001\u4EE5\u964D 1 \u79D2\u3054\u3068\u306B\u5897\u3084\u3059\u300D\u2192 \u9577\u62BC\u3057\u306E\u59CB\u307E\u308A\u3092 0.3 \u79D2\uFF08ui-config \u306E TORPEDO_BUTTON_TAP_MAX_S\uFF09\u304B\u3089 data \u306E salvo_hold_start_s 1.0 \u79D2\u306B\u3002v0.5.0 \u306E\u5B9F\u6A5F\u300C0.5 \u79D2\u672A\u6E80\u3067 1 \u672C\u30010.5\u301C1.5 \u79D2\u3067 2 \u672C\u3001\u4EE5\u964D 1 \u79D2\u3054\u3068\u300D\u2192 salvo_hold_start_s 1.0 \u2192 0.5 \u79D2\uFF08\u523B\u307F\u306F 1.0 \u79D2\u306E\u307E\u307E\uFF09\u3002salvo_spacing_deg\uFF08v0.4.8\uFF09: \u4E00\u6589\u306E\u96A3\u3069\u3046\u3057\u306E\u9B5A\u96F7\u306E\u89D2\u5EA6\u306E\u9593\u9694\uFF08\u56FA\u5B9A\uFF09\u3002\u6247\u306E\u958B\u304D\u89D2 = \u9593\u9694 \xD7 (\u672C\u6570 \u2212 1)\uFF1D2 \u672C 4\xB0\u30FB3 \u672C 8\xB0\u30FB4 \u672C 12\xB0\u3002\u5408\u8A08\u306E\u89D2\u5EA6\u3092\u56FA\u5B9A\u3059\u308B\u3088\u308A\u3001\u672C\u6570\u3092\u5909\u3048\u3066\u3082\u9B5A\u96F7\u3069\u3046\u3057\u306E\u5BC6\u5EA6\u304C\u540C\u3058\u30023\xB0 \u2192 4\xB0\uFF08\u5B9F\u6A5F 3 \u56DE\u76EE\u300C\u9B5A\u96F7\u306E\u89D2\u5EA6\u304C\u72ED\u3044\u300D\uFF09: 1,000 m \u3067\u96A3\u306E\u9B5A\u96F7\u306E\u9593 \u7D04 52 \u2192 70 m\u30014 \u672C\u306E\u6247\u306E\u5E45 \u7D04 157 \u2192 210 m\uFF08\u5F93\u6765\u306E\u9577\u62BC\u3057\u306E\u6700\u5927 12\xB0 \u3068\u540C\u3058\uFF09\u3002\u6247\u304C\u8266\u306B\u639B\u304B\u3063\u3066 1 \u672C\u306F\u5F53\u305F\u308B\u306E\u306F\u3001\u8266\u306E\u91DD\u8DEF\u3068\u9B5A\u96F7\u306E\u9032\u8DEF\u306E\u89D2\u5EA6\u304C\u3001\u5F53\u305F\u308A\u5224\u5B9A 2 \u500D\uFF08\u9577\u3055 236 m\u30FB\u5E45 21.6 m\uFF09\u3067\u7D04 12\xB0 \u4EE5\u4E0A\uFF083\xB0 \u306A\u3089\u7D04 8\xB0 \u4EE5\u4E0A\uFF09\u3001\u5B9F\u5BF8\uFF08118 m\u30FB10.8 m\uFF09\u306A\u3089\u7D04 31\xB0 \u4EE5\u4E0A\uFF083\xB0 \u306A\u3089\u7D04 21\xB0 \u4EE5\u4E0A\uFF09\u3002\u771F\u6B63\u9762\u30FB\u771F\u5F8C\u308D\u304B\u3089\u306E\u6247\u306F\u9593\u3092\u3059\u308A\u629C\u3051\u3046\u308B\u3002salvo_spacing_choices_deg\uFF08v0.5.1 \u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u767A\u5C04\u30DC\u30BF\u30F3\u306E\u4E0B\u306B\u767A\u5C04\u89D2\u306E\u8ABF\u6574\u30DC\u30BF\u30F3\u3002\u72ED 3\xB0\u30FB\u4E2D 4\xB0\u30FB\u5E83 5\xB0\u300D\uFF09: \u9B5A\u96F7\u30DC\u30BF\u30F3\u306E\u4E0B\u306E\u5C0F\u3055\u306A\u30DC\u30BF\u30F3\u3067\u62BC\u3059\u305F\u3073\u306B\u5207\u308A\u66FF\u3048\u308B\u9593\u9694\u306E\u9078\u629E\u80A2\uFF08\u72ED\u30FB\u4E2D\u30FB\u5E83\u306E\u9806\uFF09\u3002salvo_spacing_deg \u306F\u6700\u521D\u306E\u9078\u629E\uFF08\u4E2D 4\xB0\uFF09\u3002\u9078\u3093\u3060\u9593\u9694\u306F\u899A\u3048\u308B\uFF08localStorage\uFF09\u30025\xB0 \u306E 4 \u672C\u306E\u6247\u306F 15\xB0\u30011,000 m \u3067\u5E45 \u7D04 263 m\u3001\u96A3\u306E\u9593 \u7D04 87 m\uFF08\u6247\u304C\u8266\u306B\u639B\u304B\u3063\u3066 1 \u672C\u306F\u5F53\u305F\u308B\u306E\u306F\u3001\u8266\u306E\u91DD\u8DEF\u3068\u9B5A\u96F7\u306E\u9032\u8DEF\u306E\u89D2\u5EA6\u304C\u5F53\u305F\u308A\u5224\u5B9A 2 \u500D\u3067\u7D04 16\xB0 \u4EE5\u4E0A\u3001\u5B9F\u5BF8\u306A\u3089\u7D04 42\xB0 \u4EE5\u4E0A\uFF09)"
+  },
+  kpi_by_range: [
+    {
+      band: "<=400yd",
+      range_m_min: 0,
+      range_m_max: 366,
+      target_hit_min: 0.6,
+      target_hit_max: 0.7,
+      sim_ranges_m: [150, 250, 350],
+      historical_note: "PT\u306E\u5178\u578B\u767A\u5C04\u8DDD\u96E2\u306E\u4E0B\u9650\u3002\u6700\u3082\u5371\u967A"
+    },
+    {
+      band: "400-800yd",
+      range_m_min: 366,
+      range_m_max: 732,
+      target_hit_min: 0.45,
+      target_hit_max: 0.55,
+      sim_ranges_m: [400, 500, 600, 700],
+      historical_note: "PT\u306E\u5178\u578B\u767A\u5C04\u8DDD\u96E2"
+    },
+    {
+      band: "800-1200yd",
+      range_m_min: 732,
+      range_m_max: 1097,
+      target_hit_min: 0.3,
+      target_hit_max: 0.35,
+      sim_ranges_m: [750, 850, 950, 1050],
+      historical_note: "2,000yd\u306E\u624B\u524D"
+    },
+    {
+      band: "1200-2000yd",
+      range_m_min: 1097,
+      range_m_max: 1829,
+      target_hit_min: 0.1,
+      target_hit_max: 0.15,
+      sim_ranges_m: [1150, 1350, 1550, 1750],
+      historical_note: "Bulkley\u304C\u300E\u6210\u679C\u304C\u4E4F\u3057\u3044\u300F\u3068\u3057\u305F\u8DDD\u96E2"
+    },
+    {
+      band: ">=2000yd",
+      range_m_min: 1829,
+      range_m_max: 99999,
+      target_hit_min: 0,
+      target_hit_max: 0.05,
+      sim_ranges_m: [1900, 2200, 2500],
+      historical_note: "Channel Dash\u306E4,000yd\u306F\u5168\u5F3E\u5916\u308C"
+    }
+  ],
+  kpi_measurement: {
+    min_shots_per_band_before_tuning: 20,
+    record_fields: [
+      "mission_id",
+      "range_m",
+      "lead_error_deg",
+      "target_speed_kt",
+      "hit",
+      "dud",
+      "erratic"
+    ],
+    aimed_lead_error_deg_max: 3,
+    min_target_speed_kt: 5,
+    record_version: "v0.5.0",
+    campaigns: ["us_pt"],
+    sim: {
+      enemy_id: "ijn_destroyer",
+      torpedo_id: "us_mk8",
+      bearing_step_deg: 15,
+      aim_errors_deg: [-2, 0, 2],
+      reps: 4,
+      seed: 1
+    },
+    source: "design (v0.5.0\u3002aimed_lead_error_deg_max: Result \u306E\u901A\u7B97\u306E\u547D\u4E2D\u7387\u306F\u300C\u6B63\u3057\u304F\u72D9\u3063\u305F 1 \u672C\u300D\uFF1D\u767A\u5C04\u6642\u306E\u898B\u8D8A\u3057\u89D2\u306E\u305A\u308C\uFF08\u76EE\u6A19\u306E\u4ECA\u306E\u901F\u3055\u3068\u91DD\u8DEF\u306E\u307E\u307E\u9032\u3080\u3068\u3057\u305F\u3068\u304D\u306E\u547D\u4E2D\u91DD\u8DEF\u3068\u306E\u5DEE\uFF09\u304C\u3053\u306E\u5EA6\u4EE5\u5185\u3067\u3001\u86C7\u884C\u3057\u3066\u3044\u306A\u3044\u9B5A\u96F7\u3060\u3051\u3092\u6570\u3048\u308B\uFF08KPI \u306E\u8868\u306F\u300E\u6B63\u3057\u3044\u898B\u8D8A\u3057\u89D2\u306E 1 \u672C\u300F\u306E\u547D\u4E2D\u7387\u306A\u306E\u3067\uFF09\u30023\xB0: 1,000 m \u3067\u8239\u4F53\u306E\u9577\u3055\u65B9\u5411\u306B\u7D04 50 m \u306E\u305A\u308C\u3002\u5F53\u305F\u308A\u5224\u5B9A 2 \u500D\u306E\u8266\uFF08236 m\uFF09\u306A\u3089\u907F\u3051\u306A\u3051\u308C\u3070\u5F53\u305F\u308B\u5E45\u3002\u6247\u306E\u5185\u5074\u306E 2 \u672C\uFF08\xB12\xB0\uFF09\u306F\u5165\u308A\u3001\u5916\u5074\uFF08\xB16\xB0\uFF09\u306F\u5165\u3089\u306A\u3044\u3002record_version: \u901A\u7B97\u306E\u8A18\u9332\u306E\u7248\uFF08localStorage \u306E\u9375\uFF09\u3002\u56DE\u907F\u3084\u5F53\u305F\u308A\u5224\u5B9A\u3092\u5909\u3048\u3066\u6E2C\u308A\u76F4\u3059\u3068\u304D\u306B\u4E0A\u3052\u308B\uFF08\u53E4\u3044\u8A18\u9332\u306F\u8AAD\u307E\u306A\u3044\uFF09\u3002sim: src/core/hit-rate-sim.ts \u306E\u6A21\u64EC\uFF08tests/hit-rate-sim.test.ts \u3068 scripts/hit-rate-sim.ts\uFF09\u3002\u6B62\u307E\u3063\u305F\u8247\u304B\u3089\u3001kpi_by_range \u306E sim_ranges_m \u306E\u5404\u8DDD\u96E2\u30FB\u8266\u306E\u5DE6\u6B63\u6A2A\u301C\u8266\u9996\u301C\u53F3\u6B63\u6A2A bearing_step_deg \u523B\u307F\u30FB\u898B\u8D8A\u3057\u89D2\u306E\u305A\u308C aim_errors_deg \u3092 reps \u56DE\u305A\u3064\u6483\u3064\uFF08\u898B\u5F35\u308A\u306E\u62BD\u9078\u306F seed \u306E 1 \u7CFB\u5217\uFF09\u3002\u305A\u308C \u22122/0/+2\xB0 \u306F aimed \u306E \xB13\xB0 \u306E\u4E2D\u306E\u3070\u3089\u3064\u304D\u306E\u4EE3\u308F\u308A\uFF08\u4E00\u69D8 \xB13\xB0 \u3068\u6A19\u6E96\u504F\u5DEE\u304C\u307B\u307C\u540C\u3058\uFF09\u3002campaigns\uFF08v0.6.0\uFF09: \u901A\u7B97\u306E\u547D\u4E2D\u7387\u306B\u6570\u3048\u308B\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\uFF08\u7C73PT\u3060\u3051\u3002\u65E5\u672C\u306E 45cm \u9B5A\u96F7\u30FB\u7C73\u99C6\u9010\u8266\u3078\u306E 1 \u672C\u3092\u6DF7\u305C\u308B\u3068\u3001\u30CE\u30FC\u30DE\u30EB\u306E\u8ABF\u6574\u306E\u552F\u4E00\u306E\u6839\u62E0\u304C\u5D29\u308C\u308B\u3002\u53F2\u5B9F\u30E2\u30FC\u30C9\u3082\u6570\u3048\u306A\u3044\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.5 D-K1\u30FBD-K2\u3002min_target_speed_kt: \u767A\u5C04\u306E\u6642\u306B\u72D9\u3063\u305F\u8266\uFF08\u4ECA\u306E\u898F\u5247\u306E\u6700\u5BC4\u308A\u306E\u6D6E\u3044\u3066\u3044\u308B\u8266\uFF09\u306E\u901F\u3055\u304C\u3053\u306E kt \u672A\u6E80\u306A\u3089\u3001\u305D\u306E 1 \u672C\u306F\u901A\u7B97\u306E\u547D\u4E2D\u7387\u306B\u6570\u3048\u306A\u3044\uFF08\u6B62\u307E\u3063\u305F\u8266\u3078\u306E 1 \u672C\u306F\u300C\u6B63\u3057\u304F\u72D9\u3063\u305F 1 \u672C\u300D\u306E\u547D\u4E2D\u7387\u306E\u6839\u62E0\u306B\u306A\u3089\u306A\u3044\uFF09\u30025 kt \u306F\u4ECA\u306E\u3069\u306E\u4EFB\u52D9\u306E\u99C6\u9010\u8266\u306E AI \u306E\u6700\u3082\u9045\u3044\u76EE\u6A19\u306E\u901F\u3055\uFF08us_destroyer \u306E\u56DE\u907F 18 \u2212 10 \uFF1D 8 kt\u30FBijn_destroyer \u306E\u56DE\u907F 25 \u2212 10 \uFF1D 15 kt\uFF09\u3088\u308A\u4E0B\u306A\u306E\u3067\u3001\u4ECA\u306E\u4EFB\u52D9\u306E\u3069\u306E 1 \u672C\u306E\u6570\u3048\u65B9\u3082\u5909\u308F\u3089\u306A\u3044\u3002\u5916\u308C\u308B\u306E\u306F\u6B62\u307E\u3063\u305F\u8266\uFF080 kt\uFF09\u3068\u52D5\u304D\u51FA\u3057\u3066\u7D04 1.7 \u79D2\u306E\u5185\u3060\u3051\u3002record_version \u306F\u5909\u3048\u306A\u3044\uFF08\u4ECA\u307E\u3067\u306E\u901A\u7B97\u3092\u6368\u3066\u306A\u3044\uFF09\u3002\u8AAD\u3080\u306E\u306F S2 \u304B\u3089\uFF08config/kpi-data\u3002\u9375\u304C\u7121\u3051\u308C\u3070 0\uFF1D\u4ECA\u306E\u898F\u5247\uFF09)"
+  },
+  reliability_by_era: {
+    early_1942: {
+      dud: 0.07,
+      erratic: 0.05
+    },
+    late_1943: {
+      dud: 0.03,
+      erratic: 0.02
+    },
+    source: "design (\u53F2\u5B9F\u306E\u822A\u7A7A\u6295\u4E0B\u7D71\u8A0836%\u30B3\u30FC\u30EB\u30C9\u30E9\u30F3\u7B49\u306F\u53C2\u8003\u5024\u306B\u7559\u3081\u308B)"
+  },
+  historical_mode: {
+    enabled_default: false,
+    reliability: {
+      dud: 0.1,
+      erratic: 0.08
+    },
+    reliability_campaigns: ["us_pt"],
+    enemy_detection_multiplier: 1.3,
+    enemy_evasion_multiplier: 1.5,
+    aim_assist: "none",
+    title_ja: "\u53F2\u5B9F\u30E2\u30FC\u30C9",
+    source: "design (v0.5.2 \u3067 Title \u306E\u5207\u308A\u66FF\u3048\u306B\u3002enabled_default \u306F\u5207\u308A\u66FF\u3048\u306E\u521D\u671F\u5024\uFF08false\uFF1D\u30CE\u30FC\u30DE\u30EB\uFF09\u3002\u30AA\u30F3\u306E\u3068\u304D: \u99C6\u9010\u8266\u306E\u898B\u5F35\u308A\u30FB\u56DE\u907F\u306B enemy_evasion_multiplier\uFF08\u96F7\u8DE1\u306B\u6C17\u3065\u304F\u5272\u5408\u3068\u8EE2\u8235\u7387\u306B\u639B\u3051\u3001\u53CD\u5FDC\u9045\u308C\u3092\u5272\u308B\uFF09\u3001\u6575\u304C\u8247\u3092\u898B\u3064\u3051\u308B\u8DDD\u96E2\u306B enemy_detection_multiplier\u3001\u9B5A\u96F7\u306E\u4E0D\u767A\u30FB\u86C7\u884C\u306E\u78BA\u7387\u3092 reliability \u3067\u4E0A\u66F8\u304D\uFF08torpedoes.json \u306E\u5024\u306E\u4EE3\u308F\u308A\u30021942 \u5E74\u524D\u534A\u306E Mk 8 \u306E\u4E0D\u826F\u7387\u306E\u76EE\u5B89\uFF09\u3001\u898B\u8D8A\u3057\u70B9\u30DE\u30FC\u30AB\u30FC\u306F aim_assist \u306E none\uFF08\u89E3\u653E\u3057\u3066\u3044\u3066\u3082\u51FA\u306A\u3044\uFF09\u3002\u53F2\u5B9F\u30E2\u30FC\u30C9\u306E\u9B5A\u96F7\u306F\u901A\u7B97\u306E\u547D\u4E2D\u7387\u306B\u6570\u3048\u306A\u3044\uFF08\u901A\u7B97\u306F\u30CE\u30FC\u30DE\u30EB\u306E\u8ABF\u6574\u306E\u6839\u62E0\uFF09\u3002\u6A21\u64EC\uFF08scripts/hit-rate-sim.ts HISTORICAL=1\uFF09\u306E\u5024\u306F CHANGELOG v0.5.2\u3002reliability_campaigns\uFF08v0.6.0\uFF09: \u4E0D\u767A\u30FB\u86C7\u884C\u306E\u4E0A\u66F8\u304D\uFF08\u7C73\u306E Mk 8 \u306E\u4E0D\u826F\u7387\uFF09\u3092\u639B\u3051\u308B\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u3002\u65E5\u672C\u5074\uFF08jp_hard\uFF09\u306E 45cm \u9B5A\u96F7\u306B\u306F\u639B\u3051\u305A torpedoes.json \u306E\u5024\u306E\u307E\u307E\uFF08\u898B\u5F35\u308A\u30FB\u56DE\u907F\u30FB\u898B\u3064\u304B\u308B\u8DDD\u96E2\u306E\u500D\u7387\u306F\u65E5\u672C\u5074\u306B\u3082\u639B\u304B\u308B\uFF09)"
+  },
+  aim_assist: {
+    levels: [
+      {
+        id: "none",
+        name_ja: "\u306A\u3057",
+        unlock: "default",
+        unlock_sorties: 0
+      },
+      {
+        id: "lead_marker",
+        name_ja: "\u898B\u8D8A\u3057\u70B9\u30DE\u30FC\u30AB\u30FC",
+        unlock: "radar_or_3_missions",
+        unlock_sorties: 3
+      },
+      {
+        id: "lead_marker_time",
+        name_ja: "\u898B\u8D8A\u3057\u70B9\uFF0B\u5230\u9054\u79D2\u6570",
+        unlock: "6_missions",
+        unlock_sorties: 6
+      }
+    ],
+    source: "design (v0.5.2: unlock_sorties \u306F\u89E3\u653E\u306B\u8981\u308B\u300C\u7D42\u3048\u305F\u4EFB\u52D9\u306E\u56DE\u6570\u300D\uFF08Result \u307E\u3067\u884C\u3063\u305F\u4EFB\u52D9\u3002\u4E00\u6642\u505C\u6B62\u3067\u3084\u3081\u305F\u4EFB\u52D9\u306F\u6570\u3048\u306A\u3044\u3002localStorage \u306E night-hunters.sorties\uFF09\u30020 \u2192 \u306A\u3057\u30013 \u2192 \u898B\u8D8A\u3057\u70B9\u30DE\u30FC\u30AB\u30FC\uFF08\u4ECA\u6483\u3066\u3070\u5F53\u305F\u308B\u70B9\u306B\u9EC4\u8272\u306E\u8F2A\uFF09\u30016 \u2192 \u30DE\u30FC\u30AB\u30FC\u306E\u6A2A\u306B\u9B5A\u96F7\u304C\u5C4A\u304F\u307E\u3067\u306E\u5B9F\u6642\u9593\u79D2\u3002unlock \u306E\u6587\u5B57\u5217\u306F\u8AAC\u660E\uFF08\u30EC\u30FC\u30C0\u30FC\u88C5\u5099\u306F\u672A\u5B9F\u88C5\uFF09\u3002\u53F2\u5B9F\u30E2\u30FC\u30C9\u3067\u306F historical_mode.aim_assist\uFF08none\uFF09\u304C\u512A\u5148\u3057\u3001\u56DE\u6570\u306B\u95A2\u308F\u3089\u305A\u51FA\u306A\u3044)"
+  },
+  reference_travel_time_s: {
+    note: "\u5B9F\u6642\u9593\uFF08\u5727\u7E2E\u524D\uFF09\u30021kt=0.5144m/s",
+    "27kt": {
+      "1000yd": 66,
+      "1500m": 108,
+      "2000m": 144
+    },
+    "33.5kt": {
+      "1000yd": 53,
+      "1500m": 87,
+      "2000m": 116
+    },
+    "40kt": {
+      "1000yd": 44,
+      "1500m": 73,
+      "2000m": 97
+    },
+    "44kt": {
+      "1000yd": 40,
+      "1500m": 66,
+      "2000m": 88
+    }
+  },
+  visibility: {
+    note: "\u8996\u754C\u3068\u767A\u898B\uFF08docs/02 \xA76.5\uFF09\u3002\u6575\u304C\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u767A\u898B\u3059\u308B\u8DDD\u96E2 = base_detect_m\uFF08enemies.json\uFF09\xD7 \u901F\u529B\u4FC2\u6570 \xD7 \u6708\u660E\u4FC2\u6570 \xD7 \u7159\u5E55\u4FC2\u6570 \xD7 \u96E8\u306E\u4FC2\u6570\uFF08\u66B4\u98A8\u306E\u5E2F\u304C\u8266\u3068\u8247\u306E\u9593\u306B\u3042\u308B\u3068\u304D risk_events \u306E storm.params.detect_factor\u3002v0.3.4\uFF09\u3002\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u6575\u3092\u898B\u308B\u8DDD\u96E2 = vis_player_base_m \xD7 \u6708\u660E\u4FC2\u6570\u3002\u901F\u529B\u4FC2\u6570\u306F\u8247\u306E\u901F\u529B\u5E2F\uFF08\u505C\u6B62/\u9759\u97F3/\u5DE1\u822A/\u5168\u901F\u3002\u5E2F\u306E\u5883\u754C\u306F boats.json \u306E speed_bands_kt\u3002HUD \u306B\u51FA\u308B\u5E2F\u3068\u540C\u3058\uFF09\u306E\u5024\u3092\u305D\u306E\u307E\u307E\u4F7F\u3046\uFF08\u5E2F\u306E\u9593\u306E\u88DC\u9593\u306F\u3057\u306A\u3044\uFF09",
+    vis_player_base_m: 1500,
+    moon_factor: {
+      dark: 0.6,
+      half: 1,
+      full: 1.3,
+      day: 1
+    },
+    speed_factor: {
+      stop: 0.4,
+      silent: 0.5,
+      cruise: 1,
+      full: 1.6
+    },
+    smoke_factor: 0.3,
+    detect_hold_s: 8,
+    source: "design (\u534A\u6708\u30FBbase_detect_m 2000 \u3067: \u505C\u6B62 800m\u3001\u9759\u97F3\uFF0818 kt \u307E\u3067\uFF091,000m\u3001\u5DE1\u822A 2,000m\u3001\u5168\u901F 3,200m \u304B\u3089\u898B\u3064\u304B\u308B\u3002vis_player \u306F\u534A\u6708\u3067 1,500m \u306A\u306E\u3067\u3001\u5DE1\u822A\u3060\u3068\u5148\u306B\u898B\u3064\u304B\u308A\u3001\u9759\u97F3\u4EE5\u4E0B\u306A\u3089\u5148\u306B\u898B\u3064\u3051\u308B\u3002detect_hold_s \u306F\u898B\u5931\u3063\u3066\u304B\u3089\u8B66\u6212\u3092\u89E3\u304F\u307E\u3067\u306E\u5B9F\u6642\u9593\u79D2\u3002smoke_factor \u306F\u3001\u8266\u3068\u8247\u3092\u7D50\u3076\u7DDA\u304C\u7159\u5E55\u306E\u7159\u306B\u906E\u3089\u308C\u3066\u3044\u308B\u9593\u3001\u767A\u898B\u8DDD\u96E2\u306B\u639B\u3051\u308B\uFF08v0.2.2\uFF09\u3002moon_factor.day 1.0\uFF08v0.6.11\uFF09: \u663C\u306E\u4EFB\u52D9\uFF08jp_03\u3002moon \u304C day\uFF09\u306E\u5024\u3002\u8266\u8247\u306E\u3044\u306A\u3044\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\u306A\u306E\u3067\u767A\u898B\u306E\u8DDD\u96E2\u306B\u306F\u52B9\u304B\u305A\uFF08\u9375\u304C\u3042\u308B\u3053\u3068\u3060\u3051\u304C\u8981\u308B\uFF09\u3001\u8996\u7A0B\u306F\u534A\u6708\u3068\u540C\u3058 1,500 m)"
+  },
+  feel: {
+    hit_slowmo_factor: 0.3,
+    hit_slowmo_seconds: 1.2,
+    near_miss_distance_m: 30,
+    near_miss_effect: "enemy_formation_breaks_for_s",
+    near_miss_effect_seconds: 20,
+    source: "design"
+  },
+  anti_aircraft: {
+    hit_chance_per_round: 5e-3,
+    range_m: 650,
+    source: "design (v0.6.8\u3002\u30E6\u30FC\u30B6\u30FC\u300C\u547D\u4E2D\u7387\u304C0.5%\u304F\u3089\u3044\u3067\u3082\u98DB\u884C\u6A5F\u306B\u5BFE\u3057\u3066\u6A5F\u9283\u3092\u3046\u3063\u3066\u3082\u3044\u3044\u306F\u305A\u300D\u3002\u6A5F\u3078\u6483\u3063\u305F 1 \u767A\uFF08boats.json gun_battery \u306E rounds_per_min \u306E 1 \u767A\uFF1D\u66F3\u5149\u5F3E 1 \u672C\u306E\u675F\uFF09\u3054\u3068\u306B\u3001\u72D9\u3063\u305F\u6A5F\u3092\u6483\u589C\u3059\u308B\u78BA\u7387\u3002\u505C\u6B62\u30FB\u9759\u97F3\u306E\u5024\uFF08\u30E6\u30FC\u30B6\u30FC\u306E 0.5% \u306E\u307E\u307E\uFF09\u3067\u3001\u8247\u306E\u901F\u529B\u5E2F\u306E gun_battery.spread_factor \u3067\u5272\u308B\uFF08\u5DE1\u822A 0.31%\u30FB\u5168\u901F 0.2%\uFF1D\u901F\u3044\u307B\u3069\u6563\u308B\u3001\u8266\u8247\u3078\u306E\u5C04\u6483\u3068\u540C\u3058\u898F\u5247\uFF09\u3002\u30B7\u30FC\u30C9 +24 \u306E\u7CFB\u5217\u304B\u3089 1 \u767A\u306B 1 \u56DE\u3060\u3051\u5F15\u304F\uFF08\u6483\u305F\u306A\u3051\u308C\u3070\u5F15\u304B\u306A\u3044\uFF09\u3002\u5F3E\u9053\u306F\u8A08\u7B97\u3057\u306A\u3044\u3002scripts/aa-sim\uFF08N 1000\u30FB3 \u6CE2\u30FB\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E 1 \u6CE2\u3092\u62BC\u3057\u7D9A\u3051\uFF09\u306E 1 \u6CE2\u306E\u6483\u589C: Elco 80 \u5168\u901F\u306E\u76F4\u9032 0.37\uFF081 \u6A5F\u4EE5\u4E0A\u306E\u6CE2 31%\uFF09\u30FB\u6B62\u307E\u3063\u3066 0.87\uFF0859%\uFF09\u3001Elco 77 0.21\uFF0F0.51\u3001T-14 0.26\uFF0F0.61\u3001T-38 0.11\uFF0F0.25\uFF08v0.6.8 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B\u7C73\u306E\u8247\u306B\u3082\u5F3E\u5009\uFF1Dboats.json \u306E gun_battery.magazine\u3002\u524D\u306F Elco 80 0.45\uFF0F1.06\u3001Elco 77 0.29\uFF0F0.68\uFF09\u3002\u6B62\u307E\u3063\u3066\u6483\u3066\u3070 1 \u6CE2\u306B 1 \u6A5F\u8FD1\u304F\u843D\u3061\u308B\u304C\u3001\u6B62\u307E\u308B\u3068\u6295\u4E0B\u306B\u5408\u308F\u305B\u3066\u8EE2\u8235\u3067\u304D\u306A\u3044\uFF08\u8EE2\u8235\u3057\u3066\u304B\u308F\u305B\u3070\u7206\u5F3E 1 \u767A\u3042\u305F\u308A\u7D04 0\u301C0.25 \u767A\u304C\u5F53\u305F\u308A\u3001\u6B62\u307E\u308B\u30FB\u76F4\u9032\u30FB\u56DE\u308A\u7D9A\u3051\u308B\u306F\u7D04 0.5\u301C0.6\uFF1Dscripts/dawn-strike-sim\uFF09\uFF1D\u4EE3\u4FA1\u306E\u3042\u308B\u9078\u629E\u3002\u8EE2\u8235\u3057\u306A\u3044\u904A\u3073\u65B9\u3069\u3046\u3057\u3067\u306F\u6B62\u307E\u3063\u3066\u6483\u3064\u306E\u304C\u4E00\u756A\u5F53\u305F\u3089\u306A\u3044\uFF08Elco 80 \u306E 1 \u6CE2 4.17 \u767A \u5BFE \u5168\u901F\u306E\u76F4\u9032 4.51 \u767A\u3001\u6483\u305F\u306A\u3051\u308C\u3070\u3069\u308C\u3082\u7D04 4.76 \u767A\u30028 \u767A\u306E\u3046\u3061\uFF09\u3002\u5168\u901F\u306E\u76F4\u9032\u3067\u306F\u81EA\u8247\u3078\u306E\u547D\u4E2D\u304C 4.76 \u2192 4.51 \u767A\uFF08\u22125%\uFF09\u3002\u6483\u589C\u3057\u3066\u3082\u6B21\u306E\u591C\u660E\u3051\u306E\u6CE2\u306F 4 \u6A5F\uFF08CLAUDE.md \xA72\uFF09\u3001jp_02 \u306E\u6B21\u306E\u51FA\u6483\u306F 2 \u6A5F\u3001us_02 \u306E\u6C34\u4E0A\u6A5F\u306F\u4ECA\u591C\u3082\u3046\u6765\u306A\u3044\u3002\u6483\u589C\u306E\u5F8C\u306E\u6CE2\u306F\u65E9\u304F\u6765\u308B\u3053\u3068\u304C\u3042\u308B\uFF08\u6CE2\u306E\u59CB\u307E\u308A\u306E\u9593\u9694 29.1\u301C42.3 \u79D2\u3002\u6483\u589C\u304C\u7121\u3051\u308C\u3070 42.3 \u79D2\uFF09\u3002\u6483\u589C\u306B\u70B9\u306F\u7121\u3044\u3002range_m 650: \u591C\u660E\u3051\u306E\u7A7A\u8972\u30FB\u591C\u306E\u51FA\u6483\u30FB\u6C34\u4E0A\u6A5F\u306E\u65CB\u56DE\u306E\u534A\u5F84 run_radius_m 600 \u306E\u6A5F\u3092\u6483\u3066\u308B\uFF08600 \u3061\u3087\u3046\u3069\u3060\u3068\u8F2A\u306E\u4E0A\u3067\u5C04\u7A0B\u306E\u5185\u5916\u304C\u63FA\u308C\u308B\uFF09\u3002\u591C\u306E\u54E8\u6212\u306E\u4ED8\u8FD1\u306E\u635C\u7D22 near_m 900 \u306F\u542B\u307E\u306A\u3044\uFF08\u635C\u7D22\u306E\u6A5F\u306F\u6483\u3066\u306A\u3044\uFF1D\u96A0\u308C\u308B\u306E\u304C\u672C\u7B4B\uFF09\u3002\u8DDD\u96E2\u306F 2 \u6B21\u5143\uFF08\u9AD8\u5EA6\u306F\u898B\u306A\u3044\uFF09\u3002\u5C04\u754C\u306F\u8266\u8247\u3068\u540C\u3058\uFF08gun_battery.dead_cone_deg\u3002\u8247\u9996\u30FB\u8247\u5C3E \xB130\xB0 \u306F\u6483\u305F\u306A\u3044\uFF09\u3002\u8266\u8247\u304C\u5C04\u754C\u306B\u3044\u308C\u3070\u8266\u8247\u304C\u5148\uFF08\u7832\u306F 1 \u3064\uFF09)"
+  },
+  gun_flash: {
+    hold_s: 1,
+    source: "design (v0.6.8\u3002v0.6.8 \u3067\u6483\u3066\u308B\u3088\u3046\u306B\u306A\u3063\u305F\u6A5F\u9283\uFF08\u99C6\u9010\u8266\u30FB\u8F38\u9001\u8239\u30FB\u6A5F\u3078\uFF09\u3092\u6483\u3063\u3066\u304B\u3089\u3053\u306E\u79D2\u306E\u9593\u3001\u6575\u306E\u898B\u3064\u3051\u308B\u8DDD\u96E2\u3092 gun_battery.muzzle_flash_reveal_m\uFF081,200 m\uFF09\u4EE5\u4E0A\u306B\u3059\u308B\uFF08\u99C6\u9010\u8266\u30FB\u5927\u767A\u30FB\u6CBF\u5CB8\u7832\u30FB\u7C73PT \u3068\u591C\u306E\u54E8\u6212\u6A5F\u306E\u9580\u756A\u3002\u5927\u767A\u30FB\u7C73PT \u3068\u540C\u3058\u300E\u6483\u3066\u3070\u9583\u5149\u3067\u898B\u3064\u304B\u308B\u300F\u3002\u99C6\u9010\u8266\u306B\u306F\u7159\u5E55\u306F\u52B9\u304B\u306A\u3044\u3002us_03 \u306E\u5927\u767A\u3068\u6CBF\u5CB8\u7832\u306F\u7159\u5E55\u3067\u7DDA\u304C\u906E\u3089\u308C\u3066\u3044\u308C\u3070 \xD7 0.3 \u304C\u6B8B\u308B\uFF1D\u65E2\u77E5\u306E\u5236\u7D04\uFF09\u30021 \u767A\u3054\u3068\u306B 3 \u884C\u76EE\u306E\u300E\u898B\u3064\u304B\u308B\u8DDD\u96E2\u300F\u304C\u70B9\u6EC5\u3057\u306A\u3044\u3088\u3046 1 \u79D2\u4FDD\u3064\uFF08jp_01 \u306E convoy.flash_hold_s 1.0 \u3068\u540C\u3058\u5024\uFF09\u3002\u4E3B\u5175\u88C5\u306E\u5927\u767A\u30FB\u7C73PT \u306E\u7832\u306E\u9583\u5149\u306F\u4ECA\u307E\u3067\u306E\u898F\u5247\u306E\u307E\u307E)"
+  },
+  radar: {
+    note: "\u30EC\u30FC\u30C0\u30FC\uFF08v0.8.0\u3002spec-v0800 \xA73\uFF09\u3002\u76EE\u3068\u306F\u5225\u306E\u611F\u899A\u3067\u3001HUD \u306E\u60C5\u5831\u3060\u3051\uFF08\u6575\u306E\u767A\u898B\u30FB\u81EA\u8247\u306E\u8996\u7A0B\u30FB\u898B\u8D8A\u3057\u70B9\u30DE\u30FC\u30AB\u30FC\u30FB\u6575\u306E AI\u30FB\u547D\u4E2D\u7387\u306F\u4F55\u3082\u5909\u3048\u306A\u3044\uFF1DD-R1\uFF09\u3002\u6383\u5F15\u3054\u3068\u306B\u5C04\u7A0B\u306E\u5185\u306E\u8266\u8247\u306E\u4F4D\u7F6E\u3060\u3051\u3092\u8F1D\u70B9\u3067\u51FA\u3059\uFF08\u7A2E\u985E\u30FB\u91DD\u8DEF\u30FB\u901F\u3055\u30FB\u3053\u3061\u3089\u306B\u6C17\u3065\u3044\u305F\u304B\u306F\u51FA\u3055\u306A\u3044\uFF1DD-R2\uFF09\u3002\u6A5F\u306F\u6620\u3055\u306A\u3044\uFF08aircraft false\uFF1DD-R3\uFF09\u3002\u9678\uFF08\u5CB8\u306E\u7DDA\uFF09\u304B\u3089 land_clutter_m \u306E\u5185\u306E\u8266\u8247\u306F\u6620\u3089\u306A\u3044\uFF08D-R4\uFF09\u3002\u5927\u767A\u30FBPT \u306A\u3069\u306E\u5C0F\u3055\u3044\u8247\u306F small_range_m \u306E\u5185\u3060\u3051\uFF08D-R5\uFF09\u3002\u4F4D\u7F6E\u306F position_step_m \u306E\u683C\u5B50\u306B\u4E38\u3081\u308B\uFF08\u4E71\u6570\u306A\u3057\uFF1DD-R7\uFF09\u3002\u4EFB\u52D9\u306E v0_1_prototype.radar \u304C\u578B\uFF08models \u306E\u9375\uFF09\u3068\u4ED8\u304D\u65B9\uFF08leader\uFF1D\u5206\u968A\u306E\u5148\u982D\u306E\u8247\u30FBown\uFF1D\u81EA\u8247\u306E\u6A19\u6E96\u88C5\u5099\uFF09\u3092\u9078\u3076\uFF08\u81EA\u8247\u306E boats.json \u306E radar.available_from \u304C\u4EFB\u52D9\u306E\u65E5\u4ED8\u4EE5\u524D\uFF1DV-R2\u3002\u691C\u67FB\u306F core/radar-data \u3068 config/radar-mission-data\uFF09",
+    aircraft: false,
+    models: {
+      so_early: {
+        ship_range_m: 4e3,
+        small_range_m: 1200,
+        sweep_s: 3,
+        land_clutter_m: 400,
+        position_step_m: 50,
+        source: "historical (1943 \u5E74\u534A\u3070\u304B\u3089 PT \u306B\u8F09\u308A\u59CB\u3081\u305F\u521D\u671F\u306E SO \u578B\uFF0810 cm \u306E\u6C34\u4E0A\u635C\u7D22\u3002\u8266\u8239\u3078\u306F\u7D04 16\u301C20 nm\uFF1D\u51FA\u5178\u3067\u98DF\u3044\u9055\u3046\u30025 \u30A4\u30F3\u30C1\u306E PPI\uFF09\u3002\u5CB8\u306E\u305D\u3070\u306E\u8239\u306E\u53CD\u5C04\u306F\u5CB8\u306E\u53CD\u5C04\u3068\u6DF7\u3058\u3063\u3066\u898B\u5206\u3051\u306B\u304F\u3044\uFF1Dspec-v0800 \xA73.1\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.8.0 S0\u3002\u53F2\u5B9F\u306E\u5C04\u7A0B\u306E\u307E\u307E\u3067\u306F 6 \xD7 4 km \u306E\u6D77\u57DF\u304C\u5E38\u306B\u5168\u90E8\u898B\u3048\u3001\u591C\u306E\u300C\u898B\u3048\u306A\u3044\u6575\u300D\u304C\u7121\u304F\u306A\u308B\u306E\u3067\u6D77\u57DF\u306E\u7E2E\u5C3A\u306B\u5408\u308F\u305B\u3066\u7E2E\u3081\u305F\uFF08D-R6\uFF09: \u8266 4,000 m\uFF08\u65B0\u6708\u306E\u76EE\u306E 900 m \u306E\u7D04 4.4 \u500D\uFF09\u30FB\u5C0F\u3055\u3044\u8247 1,200 m\u30FB\u6383\u5F15 3 \u79D2\u30FB\u9678\u306E\u53CD\u5C04 400 m\u30FB\u4E38\u3081 50 m\u3002S3 \u306E\u6A21\u64EC\uFF08B1\u30FBB2\uFF09\u3068 iPhone \u306E\u5B9F\u6A5F\u3067\u76F4\u3059)"
+      },
+      so_late: {
+        ship_range_m: 6e3,
+        small_range_m: 1800,
+        sweep_s: 2,
+        land_clutter_m: 300,
+        position_step_m: 25,
+        source: "historical (1944 \u5E74\u5F8C\u534A\u306E\u30EC\u30A4\u30C6\u306E\u4F5C\u6226\u3067\u306F\u5404\u5206\u968A\u304C\u30EC\u30FC\u30C0\u30FC\u3067\u63A5\u89E6\u3092\u5831\u3058\u305F\uFF08\u5168\u8247\u304C\u7A4D\u3093\u3067\u3044\u305F\u304B\u306F\u672A\u78BA\u8A8D\uFF09\u30021944 \u5E74\u672B\u304B\u3089\u306E\u65B0\u3057\u3044\u8247\u306F\u5DE5\u5834\u3067 SO-3 \u3092\u7A4D\u3093\u3067\u6765\u305F\uFF1Dspec-v0800 \xA73.1\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.8.0 S0\u30021944 \u5E74\u306E\u578B\uFF08us_05\u301Cus_07 \u3067\u4F7F\u3046\u3002v0.8.1 \u4EE5\u964D\uFF09: \u8266 6,000 m\u30FB\u5C0F\u3055\u3044\u8247 1,800 m\u30FB\u6383\u5F15 2 \u79D2\u30FB\u9678\u306E\u53CD\u5C04 300 m\u30FB\u4E38\u3081 25 m\u3002\u4F7F\u3046\u7248\u306E\u6A21\u64EC\u3068\u5B9F\u6A5F\u3067\u76F4\u3059)"
+      }
+    },
+    source: "historical (SO \u7CFB\u306E\u63A2\u77E5\u306E\u5024\u30FBPPI\u30FB\u5CB8\u306E\u53CD\u5C04\u30FB1943 \u5E74\u306F\u521D\u671F\u306E\u6A5F\u6750\uFF1Dspec-v0800 \xA73.1) / design (v0.8.0 S0\u3002\u6D77\u57DF\u306E\u7E2E\u5C3A\u306B\u5408\u308F\u305B\u305F\u5C04\u7A0B\uFF08D-R6\uFF09\u30FB\u6383\u5F15\u306E\u79D2\u30FB\u4E38\u3081\u30FB\u6A5F\u306F\u6620\u3055\u306A\u3044\uFF08D-R3\uFF09\u3002v0.9 \u306E\u30B9\u30C8\u30A2\u306F\u4EFB\u52D9\u306E radar \u306E block \u3092\u8DB3\u3059\u3060\u3051\u3067\u3069\u306E\u4EFB\u52D9\u306B\u3082\u4ED8\u3051\u3089\u308C\u308B\u5F62\uFF1Dspec-v0800 \xA72.3)"
+  }
+};
+
+// ../wt-0176202/data/risk_events.json
+var risk_events_default = {
+  $schema_note: "\u30EA\u30B9\u30AF\u30A4\u30D9\u30F3\u30C8\u306E\u91CD\u307F\u3002count \u3068 share \u306F Bulkley\u300EAt Close Quarters\u300F\u4ED8\u9332B\u306E\u7C73PT\u640D\u593169\u96BB\u3092\u672C\u8ABF\u67FB\u3067\u96C6\u8A08\u3057\u305F\u53F2\u5B9F\u5024\uFF08historical\uFF09\u3002game_event \u4EE5\u964D\u306F design\u3002weight \u306F\u30DF\u30C3\u30B7\u30E7\u30F3\u4E2D\u306E\u767A\u751F\u78BA\u7387\u306E\u76F8\u5BFE\u91CD\u307F\uFF08share \u3092\u305D\u306E\u307E\u307E\u4F7F\u3044\u3001\u30D7\u30EC\u30A4\u30C6\u30B9\u30C8\u3067\u8ABF\u6574\uFF09\u3002",
+  version: "0.4.2",
+  total_losses: 69,
+  enemy_direct_losses: 24,
+  enemy_direct_share: 0.35,
+  events: [
+    {
+      id: "grounding",
+      label_ja: "\u5EA7\u7901\uFF08\u6575\u5730\u3067\u306E\u51E6\u520618\u3092\u542B\u3080\uFF09",
+      count: 20,
+      share: 0.29,
+      enemy_direct: false,
+      game_event: "shallow_water",
+      trigger: "\u6D45\u702C\u5E2F\u306B\u9AD8\u901F\u3067\u9032\u5165",
+      counterplay: "\u6E1B\u901F\u3001\u898B\u5F35\u308A\u30BA\u30FC\u30E0\u3001\u822A\u8DEF\u9078\u629E",
+      penalty: "\u901F\u529B0\u30FB\u5EA7\u7901\u5224\u5B9A\u3002\u6575\u5730\u306A\u3089\u8247\u55AA\u5931",
+      version: "v0.3",
+      params: {
+        safe_speed_kt: 15,
+        warn_lookahead_s: 6,
+        source: "design (v0.3.2\u3002\u5B89\u5168\u901F\u529B 15 kt \u4EE5\u4E0B\u306A\u3089\u6D45\u702C\u3092\u901A\u308C\u308B\uFF08\u9759\u97F3\u5E2F 18 kt \u306E\u5C11\u3057\u4E0B\u3002\u30B9\u30C6\u30A3\u30C3\u30AF\u306E\u5012\u3057\u7D04 5 \u5272\u3002v0.3.2 \u306E 10 kt \u306F\u5B9F\u6A5F\u3067\u300E\u6642\u9593\u304C\u304B\u304B\u308A\u3059\u304E\u3066\u304D\u3064\u3044\u300F\u306E\u3067 15 \u306B\uFF09\u3002\u305D\u308C\u3088\u308A\u901F\u304F\u4E2D\u306B\u5165\u308B\u3068\u5EA7\u7901\uFF1D\u901F\u529B 0 \u3067\u52D5\u3051\u305A\u30011.5 \u79D2\u5F8C\u306B\u8247\u55AA\u5931\uFF08us_02 \u306F\u6575\u5730\u6271\u3044\uFF09\u3002warn_lookahead_s \u306F\u73FE\u5728\u306E\u901F\u529B\u3067\u6D45\u702C\u306E\u7E01\u306B\u5C4A\u304F\u307E\u3067\u306E\u5B9F\u79D2\u304C\u3053\u308C\u4EE5\u4E0B\u306A\u3089 HUD 2 \u884C\u76EE\u306B\u300E\u6D45\u702C\u307E\u3067 N m \u6E1B\u901F\u300F\u3002\u5168\u901F\uFF08\u753B\u9762\u4E0A 100 m/s\uFF09\u3067 600 m \u624B\u524D\u3001\u5DE1\u822A\u3067 350 m \u624B\u524D)"
+      }
+    },
+    {
+      id: "enemy_ship_gunfire_or_ram",
+      label_ja: "\u6575\u8266\u8247\u306E\u7832\u6483\u30FB\u885D\u7A81\uFF08\u5927\u767A\u306E\u6A5F\u9283\u3092\u542B\u3080\uFF09",
+      count: 8,
+      share: 0.12,
+      enemy_direct: true,
+      game_event: "destroyer_engagement",
+      trigger: "\u767A\u898B\u3055\u308C\u308B",
+      counterplay: "\u7159\u5E55\u3001\u6025\u8EE2\u8235\u3001\u8DDD\u96E2\u3092\u3068\u308B",
+      penalty: "HP\u6E1B\u3001\u885D\u7A81\u306F\u6483\u6C88",
+      version: "v0.2"
+    },
+    {
+      id: "enemy_aircraft",
+      label_ja: "\u6575\u822A\u7A7A\u6A5F\uFF08\u7279\u653B2\u3092\u542B\u3080\uFF09",
+      count: 7,
+      share: 0.1,
+      enemy_direct: true,
+      game_event: "seaplane_harassment",
+      trigger: "\u5168\u901F\u306E\u822A\u8DE1\u304C\u767A\u898B\u3055\u308C\u308B",
+      counterplay: "\u9759\u97F3\u4F4E\u901F\uFF08\u767A\u898B\u7DDA\u306E\u524D\u306B\u822A\u8DE1\u3092\u6D88\u3059\uFF09\u3001\u7206\u5F3E\u306F\u8EE2\u8235\u3001\u7167\u660E\u5F3E\u306E\u4E0B\u306E\u7832\u6483\u306F\u7159\u5E55\u304B\u5149\u306E\u5916\u3078",
+      penalty: "\u7167\u660E\u5F3E\uFF08\u99C6\u9010\u8266\u306B\u898B\u3064\u304B\u308A\u7832\u6483\uFF09\u3001\u7206\u5F3E\u30C0\u30E1\u30FC\u30B8",
+      version: "v0.4.1",
+      params: {
+        patrol_from_s: 20,
+        wake_trigger_s: 3,
+        lose_s: 4,
+        run_radius_m: 600,
+        orbit_s: 4,
+        leave_s: 2.5,
+        patrol_cooldown_s: 10,
+        source: "design (v0.4.1\u3002\u4EFB\u52D9\u4E2D\u306E\u6575\u306E\u6C34\u4E0A\u6A5F\u306E\u6BB5\u968E\u3068\u6642\u9593\u3002\u6A5F\u4F53\u306E\u5024\u306F enemies.json \u306E ijn_seaplane_jake\u3002v0.4.0 \u306E\u5B9F\u6A5F\u300E\u51FA\u6483\u524D\u306E\u7A7A\u8972\u306F\u30D4\u30F3\u3068\u6765\u306A\u3044\u3002\u64CD\u7E26\u4E2D\u306B\u6575\u6A5F\u304C\u6765\u308B\u65B9\u304C\u30EA\u30A2\u30EB\u300F\u306B\u5FDC\u3048\u3001\u53F2\u5B9F\u306E\u591C\u9593\u306E PT \u72E9\u308A\uFF08\u6C34\u4E0A\u6A5F\u304C\u591C\u5149\u866B\u306E\u822A\u8DE1\u3067 PT \u3092\u898B\u3064\u3051\u3001\u7167\u660E\u5F3E\u3068\u5C0F\u578B\u7206\u5F3E\u3002docs/01 \xA79\uFF09\u3092\u5358\u8247\u306E\u4EFB\u52D9\u4E2D\u306E\u51FA\u6765\u4E8B\u306B\u3057\u305F\u3002\u6D41\u308C: \u6D77\u57DF\u306E\u5916\u3092\u54E8\u6212\u3057\u3066\u3044\u308B\u6A5F\u304C\u3001\u8247\u306E\u822A\u8DE1\uFF08\u901F\u529B\u5E2F\u304C\u5DE1\u822A\u304B\u5168\u901F\uFF1D18 kt \u8D85\uFF09\u3092 wake_trigger_s \u7D9A\u3051\u3066\u898B\u308B\u3068\u6575\u8266\u306E\u65B9\u89D2 wake_detect_m\uFF086,000 m\uFF09\u304B\u3089\u76F4\u9032\u3067\u5BC4\u308B\u3002\u767A\u898B\u7DDA base_detect_m\uFF081,500 m\uFF09\u306B\u5165\u308B\u524D\u306B\u822A\u8DE1\u304C lose_s \u6D88\u3048\u3066\u3044\u308C\u3070\u898B\u5931\u3063\u3066\u53BB\u308A\uFF08LOST\uFF09\u3001patrol_cooldown_s \u306E\u5F8C\u306B\u307E\u305F\u6570\u3048\u76F4\u3059\uFF08\u56DE\u6570\u306E\u4E0A\u9650\u306F\u7121\u3044\u3002\u901F\u304F\u8D70\u308C\u3070\u307E\u305F\u6765\u308B\uFF09\u3002\u767A\u898B\u7DDA\u3092\u5207\u3063\u305F\u3089\u9003\u308C\u3089\u308C\u305A\u3001\u771F\u4E0A\u3067\u7167\u660E\u5F3E\uFF08flare\uFF09\u3001\u65CB\u56DE orbit_s\u3001\u76F4\u7DDA\u306E\u7206\u6483\u9032\u8DEF\uFF08run_radius_m \u5148\u304B\u3089\u771F\u4E0A\u3078\uFF09\u3067\u7206\u5F3E\u3092 1 \u767A\u305A\u3064\u3001\u5F3E\u5207\u308C\u3067\u53BB\u308B\uFF081 \u4EFB\u52D9 1 \u56DE\uFF09\u3002patrol_from_s 20: \u54E8\u6212\u70B9\u306B\u7740\u304F\u5B9F\u79D2\u3002\u66B4\u98A8\u306E\u5E2F\uFF08\u5168\u901F\u306A\u3089 7\u301C14 \u79D2\u3067\u51FA\u4F1A\u3044 13\u301C20 \u79D2\u3067\u629C\u3051\u308B\uFF09\u306E\u8B66\u544A\u3068\u300E\u6575\u6A5F\u300F\u306E\u6587\u3092\u91CD\u306D\u306A\u3044\u3002\u5E2F\u3092\u629C\u3051\u305F\u76F4\u5F8C\u306B\u5168\u901F\u306A\u3089 3 \u79D2\u5F8C\u306B\u63A5\u89E6\u3057\u3001\u6E1B\u901F\u3057\u306A\u3051\u308C\u3070\u7D04 19 \u79D2\u5F8C\uFF1D\u96F7\u6483\u306E\u3053\u308D\u306B\u7167\u660E\u5F3E\u304C\u6765\u308B\u3002\u9759\u97F3\u3067\u5BC4\u308B\u8247\u306B\u306F\u6765\u306A\u3044\u3002wake_trigger_s 3: \u5168\u901F\u3067 300 m\u30FB\u5DE1\u822A\u3067 180 m \u306E\u822A\u8DE1\u3002\u5E2F\u3092\u629C\u3051\u308B\u77ED\u3044\u52A0\u901F\u3084\u5E2F\u306E\u5883\u754C\u306E\u63FA\u308C\u3067\u6765\u306A\u3044\u300210 \u3060\u3068\u96E2\u8131\u306E 15 \u79D2\u3067\u9593\u306B\u5408\u308F\u305A\u6765\u306A\u3044\u3002lose_s 4\uFF08v0.4.1 \u306E\u5B9F\u6A5F\u3067 1.5 \u304B\u3089\u3002\u300E1\u301C2 \u79D2\u3067\u898B\u5931\u3046\u306E\u306F\u65E9\u3059\u304E\u308B\u30024\u301C5 \u79D2\u306F\u6355\u6349\u3055\u308C\u7D9A\u3051\u308B\u3088\u3046\u306B\u300F\uFF09: \u822A\u8DE1\u304C\u6D88\u3048\u3066\u304B\u3089\u898B\u5931\u3046\u307E\u3067\u306E\u79D2\u3002\u305D\u306E\u9593\u3082\u6A5F\u306F\u5BC4\u308A\u7D9A\u3051\u308B\uFF081,235 m\uFF09\u3002\u30B9\u30C6\u30A3\u30C3\u30AF\u3092\u623B\u3057\u3066\u304B\u3089\u300E\u898B\u5931\u3063\u305F\u300F\u307E\u3067\u3001\u5DE1\u822A\u304B\u3089\u306A\u3089\u7D04 4.3 \u79D2\u3001\u5168\u901F\u304B\u3089\u306A\u3089\u6E1B\u901F 1.35 \u79D2\u3092\u8DB3\u3057\u3066\u7D04 5.3 \u79D2\u3002\u5B9F\u52B9\u306E\u898B\u5931\u3044\u7DDA\u306F 1,500 + 308.64 \xD7 4 = 2,735 m\uFF1D\u63A5\u8FD1\u958B\u59CB\u304B\u3089 10.6 \u79D2\u306A\u306E\u3067\u3001\u5168\u901F\u306A\u3089\u8B66\u544A\u304B\u3089\u7D04 9.2 \u79D2\u4EE5\u5185\u306B\u6E1B\u901F\u3092\u59CB\u3081\u308C\u3070\u9593\u306B\u5408\u3046\uFF08\u521D\u898B\u306E\u53CD\u5FDC 2.3 \u79D2\uFF0B\u6E1B\u901F 1.35 \u79D2\u306E 2.5 \u500D\uFF09\u3002run_radius_m 600: \u822A\u904E\u306E\u59CB\u70B9\u3002\u30BA\u30FC\u30E0 0.75 \u3067 450 px\uFF08\u753B\u9762\u306E\u7AEF\u304B\u3089\u5165\u308B\uFF09\u3002\u771F\u4E0A\u307E\u3067 1.944 \u79D2\uFF1D\u300E\u7206\u6483\u9032\u8DEF\uFF01\u300F\u304B\u3089\u6295\u4E0B\u307E\u3067\u306E\u7336\u4E88\u3002250\uFF08\u5473\u65B9\u6A5F\uFF09\u3060\u3068 0.8 \u79D2\u3067\u77ED\u3059\u304E\u30011,000 \u3060\u3068\u65CB\u56DE\u304C\u9593\u5EF6\u3073\u3002orbit_s 4: \u822A\u904E\u306E\u9593\u306E\u65CB\u56DE\uFF08118\xB0\uFF09\u3002\u7206\u5F3E\u306E\u9593\u9694 7.9 \u79D2\uFF081 \u767A\u76EE\u3067\u5B66\u3093\u3067 2 \u767A\u76EE\u3067\u8A66\u3059\uFF09\u3002\u7206\u6483\u306E\u5168\u4F53\u3092 18 \u79D2\u306B\u53CE\u3081\u308B\u3002leave_s 2.5: \u5473\u65B9\u6A5F\u3068\u540C\u3058\uFF082 \u884C\u76EE\u306E\u7D50\u679C\u306E\u8868\u793A\u3082\u540C\u3058\u9577\u3055\uFF09\u3002patrol_cooldown_s 10: \u898B\u5931\u308F\u305B\u305F\u5F8C\u306B\u6570\u3048\u76F4\u3059\u307E\u3067\u3002\u5E2F\u3067\u898B\u5931\u3063\u305F\u6A5F\u304C\u5E2F\u3092\u629C\u3051\u305F\u76F4\u5F8C\u306B\u623B\u3089\u306A\u3044\u305F\u3081\u3002\u6642\u9593\u7DDA\uFF08\u63A5\u8FD1\u958B\u59CB = 0\u3001\u5168\u901F\u76F4\u9032\uFF09: \u767A\u898B\u78BA\u5B9A 14.58 \u2192 \u822A\u904E\u958B\u59CB 17.50 \u2192 \u7167\u660E\u5F3E 19.44 \u2192 \u65CB\u56DE \u2192 \u7206\u6483 1 \u9032\u5165 25.38\u30FB\u6295\u4E0B 27.33\u30FB\u7740\u5F3E 29.54 \u2192 \u7206\u6483 2 \u9032\u5165 33.27\u30FB\u6295\u4E0B 35.22\u30FB\u7740\u5F3E 37.43 \u2192 \u53BB\u308B 37.16\u301C39.66\u3002\u7167\u660E\u5F3E\u306F 59.44 \u307E\u3067)"
+      }
+    },
+    {
+      id: "friendly_fire",
+      label_ja: "\u53CB\u8ECD\u8AA4\u5C04",
+      count: 7,
+      share: 0.1,
+      enemy_direct: false,
+      game_event: "friendly_identification",
+      trigger: "\u5473\u65B9\u6A5F\u30FB\u5473\u65B9\u8266\u304C\u63A5\u8FD1\u4E2D\u306B\u8B58\u5225\u4FE1\u53F7\u3092\u51FA\u3055\u306A\u3044",
+      counterplay: "\u8B58\u5225\u30DC\u30BF\u30F3\u3092\u6642\u9593\u5185\u306B\u62BC\u3059",
+      penalty: "HP\u6E1B\u3001\u6700\u60AA\u6483\u6C88",
+      version: "v0.3",
+      params: {
+        window_s: 5,
+        rechallenge_s: 4,
+        passes_max: 2,
+        damage_per_pass: 25,
+        fire_chance: 0.25,
+        engine_damage_chance: 0,
+        aircraft_speed_kt: 150,
+        orbit_radius_m: 250,
+        approach_s: 1,
+        leave_s: 2.5,
+        quiet_s: 2,
+        source: "design (v0.3.3\u3002\u5E30\u308A\u9053\u306B\u5473\u65B9\u6A5F\uFF08\u6C4E\u7528\u3002\u53F2\u5B9F\u3067\u306F\u591C\u660E\u3051\u306B\u5E30\u6295\u3059\u308B PT \u304C\u5473\u65B9\u6A5F\u306B\u65E5\u672C\u306E\u5927\u767A\u3068\u8AA4\u8A8D\u3055\u308C\u3066\u6383\u5C04\u3055\u308C\u305F\u3002\u7C73 PT \u306E\u53CB\u8ECD\u8AA4\u5C04 7 \u96BB\u306E\u3046\u3061 5 \u96BB\u304C\u5473\u65B9\u6A5F\u3001docs/01\uFF09\u304C 1 \u4EFB\u52D9 1 \u56DE\u6765\u308B\u3002\u958B\u59CB\u6761\u4EF6\uFF08\u9B5A\u96F7\u3092 1 \u672C\u4EE5\u4E0A\u6483\u3063\u305F\u30FB\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u304B\u3089 missions_seed \u306E friendly_aircraft.trigger_edge_m \u4EE5\u5185\u30FB\u5E30\u308B\u5411\u304D\u306B\u9032\u3093\u3067\u3044\u308B\u30FB\u99C6\u9010\u8266\u306B\u767A\u898B\u3055\u308C\u3066\u304A\u3089\u305A\u63A2\u7167\u706F/\u661F\u5F3E\u306B\u7167\u3089\u3055\u308C\u3066\u3082\u3044\u306A\u3044\u30FB\u547D\u4E2D\u30B9\u30ED\u30FC\u3068\u6483\u6C88\u6F14\u51FA\u306E\u6700\u4E2D\u3067\u306A\u3044\u30FB\u6D45\u702C\u306E\u8B66\u544A\u304C\u51FA\u3066\u3044\u306A\u3044\u30FB\u6C88\u6CA1/\u5EA7\u7901/\u71C3\u6599\u5207\u308C/\u8F2A\u306E\u4E2D\u3067\u306A\u3044\uFF09\u304C quiet_s \u7D9A\u304F\u3068\u3001\u5E30\u6295\u5730\u70B9\u306E\u65B9\u89D2\u304B\u3089 approach_s \u3067\u98DB\u6765\u3057\u3001\u8247\u306E\u5468\u308A\u3092\u534A\u5F84 orbit_radius_m \u3067\u6642\u8A08\u56DE\u308A\u306B\u56DE\u3063\u3066\u8B58\u5225\u3092\u6C42\u3081\u308B\u3002window_s\uFF08\u98DB\u6765\u3092\u542B\u3080\uFF09\u4EE5\u5185\u306B\u300E\u8B58\u5225\u300F\u3092\u62BC\u305B\u3070\u4FE1\u53F7\u5F3E\u3092\u4E0A\u3052\u3066\u5473\u65B9\u6A5F\u306F\u53BB\u308B\uFF08leave_s\uFF09\u30020 \u306B\u306A\u308B\u3068\u8247\u306E\u771F\u4E0A\u3092\u822A\u904E\u3057\u3066\u6383\u5C04\u3057\u3001\u771F\u4E0A\u306B\u6765\u305F\u77AC\u9593\u306B damage_per_pass\u30FB\u706B\u707D fire_chance\u30FB\u6A5F\u95A2\u640D\u50B7 engine_damage_chance \u3092\u7832\u5F3E\u3068\u540C\u3058 applyShellHit \u3067\u9069\u7528\uFF08\u4E71\u6570\u306F\u5225\u7CFB\u5217 seed+2\uFF09\u3002\u822A\u904E\u306E\u9014\u4E2D\u3067\u3082\u771F\u4E0A\u306B\u6765\u308B\u524D\u306B\u62BC\u305B\u3070\u6483\u305F\u308C\u306A\u3044\u3002\u6483\u305F\u308C\u305F\u3089 rechallenge_s \u3082\u3046\u4E00\u5EA6\u8B58\u5225\u3092\u6C42\u3081\u3001passes_max \u56DE\u6483\u3063\u305F\u3089\u53BB\u308B\u3002\u6642\u8A08\u306F\u7159\u5E55\u30FB\u706B\u707D\u3068\u540C\u3058\u4F53\u611F\u306E\u5B9F\u79D2\uFF08\u547D\u4E2D\u30B9\u30ED\u30FC\u4E2D\u306F\u4F38\u3073\u308B\uFF09\u3002window_s 5: \u521D\u898B\u306E\u53CD\u5FDC \u7D04 2.3 \u79D2\uFF08\u6C17\u3065\u304F 0.7\u301C1.0 \u79D2\uFF0B\u89AA\u6307\u3092\u7D04 80 pt \u52D5\u304B\u3059 \u7D04 0.3 \u79D2\uFF0B\u6587\u3092\u8AAD\u3093\u3067\u5224\u65AD\u3059\u308B \u7D04 1 \u79D2\uFF09\u306E 2 \u500D\u5F37\u3067\u3001v0.2.1 \u5B9F\u6A5F\u3067\u63A2\u7167\u706F\u306E\u70B9\u706F\u9045\u308C\u3092 1.5\u21922.5 \u79D2\u306B\u3057\u305F\u5148\u4F8B\u306E 2 \u500D\u3002\u6B8B\u308A\u79D2\u306F\u30DC\u30BF\u30F3\u306B\u3082\u51FA\u3059\u3002rechallenge_s 4: \u4E00\u5EA6\u898B\u3066\u69CB\u3048\u3066\u3044\u308B\uFF08\u6C17\u3065\u3044\u3066\u62BC\u3059\u307E\u3067 \u7D04 1.3 \u79D2\uFF09\u306E 3 \u500D\u3002damage_per_pass 25: hull_hp 100 \u306E 1/4\uFF08127mm 40 \u3068 25mm 4 \u306E\u9593\uFF09\u30022 \u56DE\u3068\u3082\u53D7\u3051\u3066\u3082 50 \u3067\u7121\u50B7\u306E\u8247\u306F\u6C88\u307E\u306A\u3044\u304C\u3001127mm \u3092 1 \u767A\u53D7\u3051\u305F\u8247\uFF0860\uFF09\u306F 10 \u307E\u3067\u6E1B\u308A\u3001\u706B\u707D\uFF082 HP/\u79D2\xD720 \u79D2\uFF09\u3092\u6D88\u3055\u306A\u3051\u308C\u3070\u6C88\u3080\uFF1D\u300EHP\u6E1B\u3001\u6700\u60AA\u6483\u6C88\u300F\u3002fire_chance 0.25 \u306F 127mm 0.35 \u3068 25mm 0.05 \u306E\u9593\u3002engine_damage_chance 0 \u306F\u5E30\u308A\u9053\u306E\u7F70\u3092 HP \u3068\u706B\u707D\u306B\u7D5E\u308B\u305F\u3081\uFF08\u6E1B\u901F\u3067\u591C\u660E\u3051\u30FB\u71C3\u6599\u306E\u7F70\u304C\u91CD\u306A\u3089\u306A\u3044\u3088\u3046\u306B\uFF09\u3002aircraft_speed_kt 150 \u306F SBD\u30FBTBF \u7D1A\u306E\u5DE1\u822A\u3067\u3001time_scale 5 \u3067\u753B\u9762\u4E0A 386 m/s\u3002approach_s 1: 636 m \u5148\uFF08\u65E2\u5B9A\u30BA\u30FC\u30E0 0.75 \u306E\u753B\u9762\u5185\uFF09\u304B\u3089 1 \u79D2\u3067\u65CB\u56DE\u534A\u5F84\u3078\u3002orbit_radius_m 250\uFF08\u30BA\u30FC\u30E0 0.75 \u3067 188 px\uFF09\u3092 4.1 \u79D2\u3067 1 \u5468\u3001\u822A\u904E\u306F 500 m \u3092 1.3 \u79D2\uFF08\u771F\u4E0A\u306F 0.65 \u79D2\u5F8C\uFF09\u3002leave_s 2.5 \u306F\u53BB\u308B\u6642\u9593\uFF082 \u884C\u76EE\u306E\u7D50\u679C\u8868\u793A\u3082\u540C\u3058\u9577\u3055\uFF09\u3002quiet_s 2: \u7167\u3089\u3055\u308C\u306A\u304F\u306A\u3063\u305F\u76F4\u5F8C\u30FB\u6483\u6C88\u306E\u6F14\u51FA\u306E\u76F4\u5F8C\u306B\u91CD\u306D\u305A\u3001\u6761\u4EF6\u306E\u3061\u3089\u3064\u304D\u3067\u59CB\u307E\u3089\u306A\u3044\u305F\u3081\u306E\u79D2)"
+      }
+    },
+    {
+      id: "harbor_fire_explosion",
+      label_ja: "\u6E2F\u5185\u706B\u707D\u30FB\u7206\u767A",
+      count: 6,
+      share: 0.09,
+      enemy_direct: false,
+      game_event: "pre_sortie_harbor_incident",
+      trigger: "\u51FA\u6483\u524D\u30D5\u30A7\u30FC\u30BA",
+      counterplay: "\u6574\u5099\u30FB\u5206\u6563\u306E\u30DF\u30CB\u9078\u629E",
+      penalty: "\u640D\u50B7\u30FB\u706B\u707D\u30B9\u30BF\u30FC\u30C8\uFF08\u6B8B\u3063\u3066\u81F3\u8FD1\u5F3E\uFF09\u3001\u71C3\u6599\u6E1B\uFF08\u5206\u6563\u3057\u3066\u9000\u907F\uFF09\u3001\u51FA\u6483\u8247\u6570\u6E1B\uFF08\u50DA\u8247\u306E\u3044\u308B\u4EFB\u52D9\u3002v0.4.3 \u4EE5\u964D\uFF09",
+      version: "v0.4",
+      params: {
+        chance: 0.5,
+        disperse_fuel_factor: 0.9,
+        stay_hit_chance: 0.5,
+        stay_hit_damage: 20,
+        stay_hit_fire: true,
+        source: "design (v0.4.0\u3002\u51FA\u6483\u524D\uFF08Briefing\uFF09\u306E\u6E2F\u5185\u7A7A\u8972\u3002\u4EFB\u52D9\u306E v0_1_prototype.hazards \u306B\u3053\u306E id \u304C\u3042\u308B\u3068\u3001Briefing \u306E\u524D\u306B\u6C7A\u3081\u305F\u51FA\u6483\u306E seed \u306B +4 \u3057\u305F\u7CFB\u5217\u304B\u3089\u5FC5\u305A 2 \u56DE\u5F15\u304D\uFF08Mission \u306E seed\u301Cseed+3 \u3068\u306F\u5225\u7CFB\u5217\u3067\u3001\u3069\u3061\u3089\u3092\u9078\u3093\u3067\u3082\u4EFB\u52D9\u4E2D\u306E\u4E71\u6570\u306F\u5909\u308F\u3089\u306A\u3044\uFF09\u30011 \u56DE\u76EE < chance \u3067\u7A7A\u8972\u304C\u8D77\u304D\u308B\u3002\u30D7\u30EC\u30A4\u30E4\u30FC\u306F 2 \u629E\u3092 1 \u56DE\u3060\u3051\u9078\u3076\uFF08\u9078\u3076\u307E\u3067\u51FA\u6483\u3067\u304D\u305A\u3001\u9078\u3093\u3060\u3089\u623B\u308C\u306A\u3044\uFF09: \u300E\u5206\u6563\u3057\u3066\u9000\u907F\u300F\uFF1D\u7D66\u6CB9\u3092\u6253\u3061\u5207\u308A\u3001\u71C3\u6599\u3092\u5272\u5F53 \xD7 disperse_fuel_factor \u3060\u3051\u7A4D\u3093\u3067\u51FA\u6483\uFF08\u78BA\u5B9F\u3002\u71C3\u6599\u8A08\u30FB\u71C3\u6599\u70B9\u30FBResult \u306E % \u306E 100% \u306F\u5272\u5F53\u306E\u307E\u307E\uFF09\u3002\u300E\u6B8B\u3063\u3066\u7D66\u6CB9\u30FB\u6D88\u706B\u300F\uFF1D\u71C3\u6599\u306F\u6E80\u8F09\u30012 \u56DE\u76EE < stay_hit_chance \u306A\u3089\u81F3\u8FD1\u5F3E\u3067 HP \u2212stay_hit_damage\u3001stay_hit_fire \u306A\u3089\u706B\u707D\u306E\u307E\u307E\u51FA\u6483\uFF08boats.json \u306E fire_dps \xD7 fire_duration_s \u3068\u540C\u3058\u706B\u707D\u3067\u3001\u6D88\u706B\u306E\u9577\u62BC\u3057\u3067\u6B62\u307E\u308B\uFF09\u3002\u53F2\u5B9F\u306E\u6E2F\u5185\u706B\u707D\u30FB\u7206\u767A\uFF08\u7C73 PT 6 \u96BB\u3002docs/01 \xA77.1\uFF09\u3068\u6E2F\u6E7E\u5F85\u6A5F\u4E2D\u306E\u7A7A\u8972\uFF08docs/01 \xA79\uFF09\u3092\u3001\u5358\u8247\u306E\u51FA\u6483\u524D\u306E\u5224\u65AD\u306B\u7F6E\u304D\u63DB\u3048\u305F\uFF08\u51FA\u6483\u8247\u6570\u6E1B\u306F\u50DA\u8247\u306E\u3044\u308B\u4EFB\u52D9\u3067\u6271\u3046\u3002v0.4.3 \u4EE5\u964D\uFF09\u3002chance 0.5: count\u30FBshare \u306F\u640D\u5931\u306E\u5185\u8A33\u3067\u3001\u51FA\u6483\u3054\u3068\u306E\u78BA\u7387\u3067\u306F\u306A\u3044\u3002\u5B9F\u6A5F\u3067 2 \u629E\u3092\u8A66\u305B\u308B\u983B\u5EA6\u306B\u3057\u305F\uFF083 \u56DE\u7D9A\u3051\u3066\u51FA\u306A\u3044\u78BA\u7387 12.5%\uFF09\u3002v0.4.4 \u3067\u4EFB\u52D9\u751F\u6210\u306E\u91CD\u307F\u306B\u7F6E\u304D\u63DB\u3048\u308B\u3002disperse_fuel_factor 0.9: us_02 \u306E\u5272\u5F53 38 gal \u304C 34.2 gal\uFF08\u71C3\u6599\u8A08 90% \u304B\u3089\uFF09\u3002\u5E30\u6295\u6642\u306E\u6B8B\u308A\uFF08scripts/return-sim.ts\u3001\u88AB\u5F3E\u306A\u3057\u3001200 \u56DE\u306E\u4E2D\u592E\u5024\u300138 gal \u306B\u5BFE\u3059\u308B %\uFF09\u306F \u9759\u97F3\u4E2D\u5FC3 40 \u2192 30%\u3001\u6A19\u6E96 22 \u2192 12%\u3001\u5168\u901F\u3060\u3051\u306E 1 \u56DE\u653B\u6483 3% \u2192 \u5168\u901F\u306E\u307E\u307E\u3067\u306F 200 \u56DE\u3068\u3082\u6F02\u6D41\uFF08\u5E30\u308A\u9053\u3092\u5DE1\u822A\u306B\u843D\u3068\u305B\u3070\u5C4A\u304F\uFF09\u3001\u653B\u6483\u305B\u305A\u76F4\u5E30 65 \u2192 55%\u3002\u51FA\u767A\u70B9\u3067\u300E\u5DE1\u822A\u3067\u8F2A\u306E\u7E01\u307E\u3067\u5E30\u308B\u91CF \xD7 call_margin\u300F\uFF0823.2 gal\uFF09\u3068\u5168\u901F\u3067\u5E30\u308B\u91CF\uFF0822.8 gal\u3001\u9752\u3044\u76EE\u76DB\u308A\uFF09\u3088\u308A\u591A\u3044\u306E\u3067\u3001\u51FA\u6483\u76F4\u5F8C\u306B\u300E\u71C3\u6599\u5C11\u300F\u306F\u51FA\u306A\u3044\u30020.85\uFF0832.3 gal\uFF09\u306F v0.3.1 \u3067\u300E\u6A19\u6E96\u3067\u3082 7%\u300F\u3068\u3057\u3066\u9000\u3051\u305F 32 gal \u3068\u540C\u3058\u306A\u306E\u3067\u63A1\u3089\u306A\u3044\u3002stay_hit_chance 0.5\u30FBstay_hit_damage 20\u30FBstay_hit_fire true: \u81F3\u8FD1\u5F3E\u306A\u3089 HP 80\uFF08\u4E57\u54E1 12/14\u3001\u65CB\u56DE\u30FB\u52A0\u901F \u22128%\u3001\u6D88\u706B\u306E\u9577\u62BC\u3057 1.0 \xD7 14/12 = 1.17 \u79D2\uFF09\u3067\u71C3\u3048\u306A\u304C\u3089\u51FA\u6483\u3057\u3001\u3059\u3050\u6D88\u305B\u3070 HP \u7D04 74\uFF0812/14\uFF09\u3001\u6D88\u3055\u306A\u3051\u308C\u3070 20 \u79D2\u3067 HP 40\uFF088/14\u3001\u65CB\u56DE\u30FB\u52A0\u901F \u221224%\uFF09\u3002hull_hp \u2212 stay_hit_damage > fire_dps \xD7 fire_duration_s\uFF0880 > 40\uFF09\u306A\u306E\u3067\u7A7A\u8972\u3060\u3051\u3067\u306F\u6C88\u307E\u306A\u3044\uFF08\u8D77\u52D5\u6642\u306B\u691C\u67FB\uFF09\u3002HP \u221230\uFF08\u706B\u707D\u306A\u3057\uFF09\u306F\u53D6\u308A\u8FD4\u3059\u624B\u6BB5\u304C\u7121\u304F\u3001127mm 1 \u767A\u3067\u4E57\u54E1 7/14\uFF1D\u5E30\u6295\u70B9\u534A\u6E1B\u306B\u843D\u3061\u308B\u306E\u3067\u63A1\u3089\u306A\u3044\u3002\u70B9\u306E\u4F8B\uFF08800-1200yd \u3067\u6483\u6C88\u3057\u3066\u5E30\u6295\u3001\u6A21\u64EC\u306E\u71C3\u6599\uFF09: \u7A7A\u8972\u306A\u3057 1,272\u3001\u5206\u6563 1,262\u3001\u6B8B\u3063\u3066\u7121\u50B7 1,272\u3001\u6B8B\u3063\u3066\u81F3\u8FD1\u5F3E\uFF083 \u79D2\u3067\u6D88\u706B\uFF091,258\u3002\u300E\u6B8B\u308B\u300F\u306E\u671F\u5F85\u5024 1,265 \u3068\u5206\u6563\u306F\u307B\u307C\u540C\u3058\u3067\u3001\u9055\u3044\u306F\u904A\u3073\u65B9\u3078\u306E\u52B9\u304D\uFF08\u5206\u6563\u3067\u306F\u5168\u901F\u304C\u5E30\u308A\u307E\u3067\u7D9A\u304B\u306A\u3044\uFF0F\u81F3\u8FD1\u5F3E\u306E\u5F8C\u306F 127mm 2 \u767A\u3067\u6C88\u3080\uFF09)"
+      }
+    },
+    {
+      id: "shore_battery",
+      label_ja: "\u6575\u6CBF\u5CB8\u7832",
+      count: 5,
+      share: 0.07,
+      enemy_direct: true,
+      game_event: "coastal_battery",
+      trigger: "\u5CB8\u306B\u8FD1\u3065\u304F\uFF08\u5927\u767A\u6383\u8A0E\u3067\u767A\u751F\uFF09",
+      counterplay: "\u7832\u306E\u5C04\u754C\u3092\u907F\u3051\u308B",
+      penalty: "HP\u6E1B",
+      version: "v0.4.3",
+      params: {
+        gun: { id: "type41_75mm", count: 1, range_m: 7e3, effective_night_m: 900, rof_per_min: 20, damage: 20, shell_speed_mps: 400, dispersion_m: 45, splash_radius_m: 6, fire_chance: 0.2, engine_damage_chance: 0.15 },
+        base_detect_m: 1200,
+        inland_m: 60,
+        source: "design (v0.4.3\u3002\u5CB8\u306E\u4E0A\u306E\u56FA\u5B9A\u7832 1 \u9580\uFF08\u53F2\u5B9F: \u30CB\u30E5\u30FC\u30AE\u30CB\u30A2\u306E\u65E5\u672C\u8ECD\u306F\u5927\u767A\u306E\u6CCA\u5730\u3068\u4E0A\u9678\u70B9\u3092 75mm \u5C71\u7832\uFF08\u56DB\u4E00\u5F0F\uFF09\u3084 37mm\u30FB20mm \u3067\u5B88\u308A\u3001PT-337 \u306F 1944 \u5E74 3 \u6708\u306B\u30CF\u30F3\u30B5\u6E7E\u306E\u6CBF\u5CB8\u7832\u3067\u6C88\u3093\u3060\u30021943 \u5E74 12 \u6708\u306E\u30D5\u30A9\u30F3\u534A\u5CF6\u3067\u3082\u5927\u767A\u306E\u653B\u6483\u4E2D\u306B\u5CB8\u304B\u3089\u6483\u305F\u308C\u305F\uFF09\u3002\u5C04\u754C\uFF1Deffective_night_m 900 m \u306E\u534A\u5186\uFF08\u6D77\u5074\u3060\u3051\u3002\u6D77\u57DF\u306E\u6D45\u702C\u306E\u7E01\uFF08\u5CB8\u304B\u3089 300 m\uFF09\u306F x \xB1848 m \u306E\u7BC4\u56F2\u304C\u5C04\u754C\u306E\u4E2D\uFF09\u3002\u6483\u3064\u6761\u4EF6: \u8247\u304C\u5C04\u754C\u306E\u4E2D\u3067\u3001\u5927\u767A\u306E\u3069\u308C\u304B\u304C\u6C17\u3065\u3044\u3066\u3044\u308B\uFF0F\u81EA\u5206\u306E\u76EE\uFF08base_detect_m 1200 \xD7 \u6708 0.6 \xD7 \u901F\u529B\u4FC2\u6570\uFF1D\u5927\u767A\u3068\u540C\u3058 288\u301C1,152 m\uFF09\uFF0F\u8247\u306E\u5C04\u6483\u306E\u9583\u5149\uFF08boats.json \u306E muzzle_flash_reveal_m\uFF09\u3002\u7159\u5E55\u3067\u7DDA\u304C\u906E\u3089\u308C\u3066\u3044\u308C\u3070\u6483\u305F\u306A\u3044\u3002\u898B\u5931\u3063\u3066\u304B\u3089 visibility.detect_hold_s\uFF088 \u79D2\uFF09\u3067\u89E3\u3051\u308B\u3002rof 20/\u5206\uFF083 \u79D2\u306B 1 \u767A\uFF09\u3001damage 20\uFF08\u99C6\u9010\u8266\u306E 127mm 40 \u306E\u534A\u5206\uFF09\u3001dispersion_m 45\uFF08\u6709\u52B9\u5C04\u7A0B 900 m \u3067\u306E\u6563\u308A\u3002\u6B62\u307E\u3063\u305F\u8247\u306A\u3089\u6D45\u702C\u306E\u7E01\uFF08\u7832\u304B\u3089\u7D04 400 m\uFF09\u3067\u547D\u4E2D 5\u301C6 \u5272\u3001\u52D5\u3044\u3066\u3044\u308B\u8247\u306F\u898B\u8D8A\u3057\u306E\u8AA4\u5DEE\u3067\u4E0B\u304C\u308A\u6A21\u64EC\u3067 2\u301C3 \u5272\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u3055\u307B\u3069\u8105\u5A01\u3067\u306F\u306A\u3044\u300D\u2192 rof 12\u219220\u3001dispersion 60\u219245\uFF08\u6A21\u64EC 100 \u591C\u306E HP \u306E\u4E2D\u592E\u5024: \u898B\u3048\u305F\u3089 18 kt \u306B\u843D\u3068\u3057\u3066\u5C04\u754C\u306E\u4E2D\u3067\u6483\u3064 \u221222\u2192\u221238\uFF08p90 \u221267\u3001\u6210\u529F 100%\uFF09\u3001\u5DE1\u822A\u3067\u5BC4\u3063\u3066\u5168\u901F\u3067\u8FFD\u3046 \u221255\u2192\u221288\uFF0838% \u304C\u6C88\u6CA1\uFF09\u3001\u5C04\u754C\u306E\u5916\u3067\u5F85\u3064 \u221218\uFF08\u7832\u6483 0\uFF09\u300220/40/25 \u3084 30/40/20 \u306F\u4E01\u5BE7\u306A\u904A\u3073\u65B9\u3067\u3082 \u221246\u301C\u221253 \u3067\u91CD\u3059\u304E\uFF09\u3002\u6A21\u578B\u306F\u99C6\u9010\u8266\u306E\u7832\u3068\u540C\u3058\uFF08\u898B\u8D8A\u3057\uFF0B\u4E00\u69D8\u5186\u76E4\u3001shells.ts\uFF09\u3002\u5C04\u754C\u306E\u4E2D\u306B\u3044\u305F\u79D2\u30FB\u7832\u6483\u30FB\u547D\u4E2D\u3092 Result \u306B\u51FA\u3059\u3002inland_m 60: \u5CB8\u306E\u7DDA\u304B\u3089\u9678\u5074\u306B\u636E\u3048\u308B\u8DDD\u96E2\uFF08\u898B\u305F\u76EE\uFF09)"
+      }
+    },
+    {
+      id: "mine",
+      label_ja: "\u6A5F\u96F7",
+      count: 4,
+      share: 0.06,
+      enemy_direct: true,
+      game_event: "minefield",
+      trigger: "\u6A5F\u96F7\u539F\u5E2F\u306B\u9032\u5165",
+      counterplay: "\u822A\u8DEF\u9078\u629E",
+      penalty: "\u5927\u30C0\u30E1\u30FC\u30B8",
+      version: "v0.4"
+    },
+    {
+      id: "collision_accident",
+      label_ja: "\u885D\u7A81\u4E8B\u6545",
+      count: 3,
+      share: 0.04,
+      enemy_direct: false,
+      game_event: "ally_collision",
+      trigger: "\u5473\u65B9\u8247\u3068\u81F3\u8FD1\u3067\u9AD8\u901F",
+      counterplay: "\u9593\u9694\u3092\u3068\u308B",
+      penalty: "HP\u6E1B",
+      version: "v0.4"
+    },
+    {
+      id: "storm",
+      label_ja: "\u66B4\u98A8",
+      count: 3,
+      share: 0.04,
+      enemy_direct: false,
+      game_event: "storm_condition",
+      trigger: "\u30DF\u30C3\u30B7\u30E7\u30F3\u6761\u4EF6",
+      counterplay: "\u4F4E\u901F",
+      penalty: "\u65CB\u56DE\u7387\u4F4E\u4E0B\u3001\u8996\u754C\u60AA\u5316\u3001\u6D77\u6CC1\u5236\u9650\u8D85\u904E\u3067\u30C0\u30E1\u30FC\u30B8",
+      version: "v0.3",
+      params: {
+        safe_speed_kt: 18,
+        turn_rate_factor: 0.5,
+        vis_factor: 0.5,
+        detect_factor: 0.5,
+        slam_rate_full_hz: 1.5,
+        slam_damage: 3,
+        warn_lookahead_s: 6,
+        source: "design (v0.3.4\u3002\u4EFB\u52D9\u306B\u66B4\u98A8\uFF08missions_seed \u306E v0_1_prototype.storm\uFF09\u304C\u3042\u308B\u3068\u3001\u6D77\u57DF\u306E\u5E45\u3044\u3063\u3071\u3044\u306E\u66B4\u98A8\u306E\u5E2F\uFF08\u30B9\u30B3\u30FC\u30EB\u30E9\u30A4\u30F3\uFF09\u304C\u5317\u304B\u3089\u5357\u3078 1 \u672C\u901A\u308B\u3002\u5E2F\u306E\u4E2D\u3067\u306F\u8247\u306E\u65CB\u56DE\u7387 \xD7 turn_rate_factor\uFF08Elco 24 \u2192 12\xB0/game \u79D2\uFF1D\u5B9F\u79D2\u3067 120 \u2192 60\xB0\u300290\xB0 \u56DE\u3059\u306E\u306B 0.75 \u2192 1.5 \u79D2\uFF09\u3002\u8247\u3068\u99C6\u9010\u8266\u3092\u7D50\u3076\u7DDA\u304C\u5E2F\u306B\u304B\u304B\u308B\u9593\uFF08\u3069\u3061\u3089\u304B\u304C\u4E2D\u3001\u307E\u305F\u306F\u5E2F\u3092\u306F\u3055\u3080\u3002\u99C6\u9010\u8266\u304C\u6C88\u6CA1\u4E2D\u306F\u9664\u304F\uFF09\u3001\u81EA\u8247\u306E\u8996\u7A0B \xD7 vis_factor\uFF08\u534A\u6708 1,500 \u2192 750 m\uFF09\u3001\u99C6\u9010\u8266\u306E\u767A\u898B\u8DDD\u96E2 \xD7 detect_factor\uFF08\u534A\u6708\u3067\u505C\u6B62 800 \u2192 400\u3001\u9759\u97F3 1,000 \u2192 500\u3001\u5DE1\u822A 2,000 \u2192 1,000\u3001\u5168\u901F 3,200 \u2192 1,600 m\u3002\u7159\u5E55\u3068\u639B\u3051\u7B97\uFF09\u3002\u63A2\u7167\u706F\u30FB\u661F\u5F3E\u30FB\u7832\u6483\u30FB\u96F7\u8DE1\u56DE\u907F\u306B\u306F\u52B9\u304B\u306A\u3044\u3002\u4EFB\u52D9\u306E\u6D77\u6CC1\uFF08storm.sea_state\uFF09\u304C\u8247\u306E sea_state_limit \u3092\u8D85\u3048\u3066\u3044\u308B\u3068\u3001\u5E2F\u306E\u4E2D\u3067\u5B89\u5168\u901F\u529B safe_speed_kt\uFF08\u8868\u793A\u306E kt \u3067\u5224\u5B9A\uFF09\u3092\u8D85\u3048\u3066\u3044\u308B\u9593\u3001\u6CE2\u306B\u53E9\u304D\u3064\u3051\u3089\u308C\u3066 slam_damage \u305A\u3064 HP \u304C\u6E1B\u308B\uFF08\u983B\u5EA6\u306F\u5B89\u5168\u901F\u529B\u3067 0\u3001\u7121\u50B7\u306E\u5168\u901F\u3067 slam_rate_full_hz \u56DE/\u4F53\u611F\u79D2\u3001\u9593\u306F\u7DDA\u5F62\u3002\u706B\u707D\u30FB\u6A5F\u95A2\u640D\u50B7\u30FB\u4E71\u6570\u306A\u3057\uFF09\u3002safe_speed_kt 18 \u306F\u9759\u97F3\u5E2F\u306E\u4E0A\u9650\uFF1D\u30B9\u30C6\u30A3\u30C3\u30AF\u53F0\u5EA7\u306E\u5185\u5074\u306E\u8F2A\u3068\u540C\u3058\u3067\u3001\u65B0\u3057\u3044\u6570\u5B57\u3092\u899A\u3048\u306A\u304F\u3066\u3088\u3044\uFF08\u6D45\u702C\u306E 15 kt \u3068\u306F\u5225\uFF09\u30021.5 \u56DE/\u79D2 \xD7 3 HP: \u5168\u901F\u3067\u5E2F\uFF08800 m\uFF09\u3092\u6A2A\u5207\u308B\u3068\u7D04 5.8 \u79D2\u3067 8 \u56DE \u221224\uFF08\u4E57\u54E1 \u22122\uFF09\u300130 kt \u3067 5 \u56DE \u221215\u3001\u5DE1\u822A 23 kt \u3067 2 \u56DE \u22126\u300118 kt \u4EE5\u4E0B\u3067 0\u3002\u7121\u50B7\u306A\u3089 1 \u56DE\u629C\u3051\u3066\u3082\u6C88\u307E\u306A\u3044\u304C\u3001127mm \u3092\u53D7\u3051\u305F\u5F8C\uFF0860\uFF09\u306F\u91CD\u3044\u3002warn_lookahead_s 6: \u73FE\u5728\u306E\u63A5\u8FD1\u901F\u5EA6\uFF08\u8247\u306E\u5317\u5411\u304D\u306E\u901F\u3055\uFF0B\u5E2F\u306E 38.6 m/\u79D2\uFF09\u3067 6 \u79D2\u4EE5\u5185\u306B\u7E01\u306B\u5C4A\u304F\u306A\u3089 2 \u884C\u76EE\u306B\u300E\u66B4\u98A8\u307E\u3067 N m \u30FB 18 kt \u4EE5\u4E0B\u306B\u6E1B\u901F\uFF01\u300F\u3002\u5168\u901F\u306A\u3089 833 m \u624B\u524D\u3067\u51FA\u3066\u3001\u5168\u901F \u2192 18 kt \u306E\u6E1B\u901F\u306F 1.35 \u5B9F\u79D2\u30FB\u7D04 100 m \u306A\u306E\u3067\u9593\u306B\u5408\u3046)"
+      }
+    },
+    {
+      id: "scuttled_to_avoid_capture",
+      label_ja: "\u9E75\u7372\u9632\u6B62\u306E\u51E6\u5206",
+      count: 3,
+      share: 0.04,
+      enemy_direct: false,
+      game_event: "none",
+      trigger: "\u64A4\u9000\u30DF\u30C3\u30B7\u30E7\u30F3\u306E\u7D50\u672B\u3068\u3057\u3066\u6F14\u51FA",
+      counterplay: "-",
+      penalty: "-",
+      version: "v0.6"
+    },
+    {
+      id: "lost_in_transit",
+      label_ja: "\u8F38\u9001\u4E2D\uFF08\u30BF\u30F3\u30AB\u30FC\u88AB\u96F7\uFF09",
+      count: 2,
+      share: 0.03,
+      enemy_direct: false,
+      game_event: "none",
+      trigger: "\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u9593\u306E\u6F14\u51FA",
+      counterplay: "-",
+      penalty: "-",
+      version: "v0.6"
+    },
+    {
+      id: "unknown",
+      label_ja: "\u4E0D\u660E\uFF08\u6575\u7832\u304B\u8AA4\u5C04\u304B\uFF09",
+      count: 1,
+      share: 0.01,
+      enemy_direct: false,
+      game_event: "none",
+      trigger: "-",
+      counterplay: "-",
+      penalty: "-",
+      version: "-"
+    },
+    {
+      id: "engine_failure",
+      label_ja: "\u5168\u901F\u3092\u7D9A\u3051\u308B\u3068\u6A5F\u95A2\u304C\u4E0D\u8ABF\u306B\u306A\u308B\uFF08\u9759\u97F3\u306E\u901F\u3055\u307E\u3067\u843D\u3061\u308B\u3002\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\u5C02\u7528\u30FB\u53F2\u5B9F\u96C6\u8A08\u5916\uFF09",
+      count: 0,
+      share: 0,
+      enemy_direct: false,
+      game_event: "engine_failure",
+      trigger: "\u5168\u901F\uFF08\u901F\u529B\u5E2F full\uFF09\u3092\u7D9A\u3051\u308B\u3068\u6A5F\u95A2\u306E\u71B1\u304C\u6E9C\u307E\u308A\u3001\u71B1 1.0\uFF08full_to_limp_s\uFF09\u3067\u4E0D\u8ABF\u306B\u306A\u308B\uFF080.6 \u3067\u904E\u71B1\u30FB0.85 \u3067\u9650\u754C\u306E\u4E88\u544A\uFF09\uFF08v0.6.5\u3002\u51FA\u6483\u3054\u3068\u306E\u4E71\u6570\u306E\u5224\u5B9A\u306F\u3057\u306A\u3044\u3002\u8247\u306E engine_reliability \u306F\u71B1\u306E\u6E9C\u307E\u308B\u901F\u3055\uFF09",
+      counterplay: "\u5DE1\u822A\u4EE5\u4E0B\u306B\u843D\u3068\u3057\u3066\u51B7\u3084\u3059\uFF08\u9759\u97F3\u4EE5\u4E0B\u306F\u3082\u3063\u3068\u901F\u304F\u51B7\u3048\u308B\uFF09\u3002\u4E0D\u8ABF\u306E\u9593\u3082\u8235\u3068\u6A5F\u9283\u306F\u4F7F\u3048\u308B",
+      penalty: "\u4E0D\u8ABF\u306E\u9593\u306F\u8247\u306E\u9759\u97F3\u306E\u4E0A\u9650\uFF08T-14 \u306F 14 kt\uFF09\u307E\u3067\u3057\u304B\u51FA\u306A\u3044\u3002\u6B62\u307E\u3089\u306A\u3044\u3002\u71B1\u304C\u51B7\u3048\u308B 8 \u79D2\u3067\u64CD\u4F5C\u306A\u3057\u306B\u623B\u308B\u3002\u56DE\u6570\u306E\u4E0A\u9650\u306A\u3057",
+      version: "v0.6.5",
+      params: {
+        full_to_limp_s: 30,
+        reliability_ref: 0.7,
+        cruise_cool_s: 30,
+        silent_cool_s: 20,
+        warn_heat: 0.6,
+        final_warn_heat: 0.85,
+        recover_heat: 0.6,
+        warn_rearm_heat: 0.5,
+        source: "design (v0.6.5\u3002\u53F2\u5B9F\u306E\u82AF\u306F\u3001\u9E75\u7372\u3057\u305F\u862D TM \u8247\u306E\u6A5F\u95A2\u304C\u5EC3\u68C4\u3055\u308C\u305F\u98DB\u884C\u8247\u304B\u3089\u5916\u3057\u305F\u53E4\u3044\u822A\u7A7A\u30A8\u30F3\u30B8\u30F3\uFF08Lorraine-Dietrich 12E\u3002\u6C34\u51B7\uFF09\u3067\u3001\u52A3\u5316\u304C\u3072\u3069\u304F\u904B\u7528\u306B\u6DF1\u523B\u306A\u56F0\u96E3\u304C\u3042\u3063\u305F\u3053\u3068\uFF08navypedia\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\uFF09\u3002\u300E\u822A\u7A7A\u7528\u306E\u7A7A\u51B7\u30A8\u30F3\u30B8\u30F3\u306F\u9577\u6642\u9593\u306E\u6700\u9AD8\u51FA\u529B\u904B\u8EE2\u3067\u30AA\u30FC\u30D0\u30FC\u30D2\u30FC\u30C8\u3057\u305F\u300F\uFF08ja.wikipedia \u4E59\u578B\u9B5A\u96F7\u8247\u3002\u540C\u3002medium\uFF09\u306F\u7A7A\u51B7\u306E\u4E59\u578B\u306E\u8A71\u3067\u3001jp_05 \u306E T-14\uFF0871\u53F76\u578B\u3002\u6C34\u51B7\uFF09\u3068\u305D\u308C\u304C\u4EE3\u5F79\u3092\u3059\u308B TM \u8247\uFF08\u6C34\u51B7\uFF09\u3078\u306E\u5F53\u3066\u306F\u3081\u306F design\u3002\u300E\u904E\u71B1\u3057\u305F\u3089\u56DE\u8EE2\u3092\u843D\u3068\u3059\u3057\u304B\u306A\u304F\uFF08\u9759\u97F3\u306E\u901F\u3055\u307E\u3067\uFF09\u3001\u51B7\u3048\u308C\u3070\u623B\u308B\u300F\u3068\u3044\u3046\u5F62\u3082 design\uFF08\u4E57\u54E1\u304C\u51B7\u3084\u3059\u305F\u3081\u306B\u901F\u529B\u3092\u843D\u3068\u3057\u305F\u8A18\u9332\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF09\u3002\u5024\u306F\u3059\u3079\u3066 design: full_to_limp_s \u306F reliability_ref \u306E\u8247\u304C\u5168\u901F\u3092\u9023\u7D9A\u3067\u7D9A\u3051\u3066\u4E0D\u8ABF\u306B\u306A\u308B\u307E\u3067\u306E\u79D2\uFF08\u8247\u306E engine_reliability \u304C r \u306A\u3089 \xD7 (1 \u2212 0.7)/(1 \u2212 r)\u3002T-14 \u306E 0.7 \u3067\u3061\u3087\u3046\u3069 30 \u79D2\uFF09\u3002\u4E88\u544A\u306F\u71B1 0.6\uFF0818 \u79D2\u3002\u4E0D\u8ABF\u307E\u3067 12 \u79D2\uFF09\u3068 0.85\uFF0825.5 \u79D2\u3002\u4E0D\u8ABF\u307E\u3067 4.5 \u79D2\uFF09\u3002\u51B7\u3048\u65B9\u306F\u5DE1\u822A 30 \u79D2\u30FB\u9759\u97F3\u4EE5\u4E0B\u3068\u4E0D\u8ABF\u306E\u9593 20 \u79D2\u3067 1.0 \u2192 0\u3002\u4E0D\u8ABF\u306F\u71B1\u304C recover_heat 0.6 \u307E\u3067\u51B7\u3048\u308B\u307E\u3067\uFF08(1 \u2212 0.6) \xD7 20 = 8 \u79D2\uFF09\u3067\u3001\u305D\u306E\u9593\u306E\u901F\u3055\u306E\u4E0A\u9650\u306F\u8247\u306E\u9759\u97F3\u306E\u4E0A\u9650\uFF08boats.json \u306E speed_bands_kt.silent_max\uFF09\u3002warn_rearm_heat 0.5 \u306F\u56DE\u5FA9\u306E\u5F8C\u306E\u904E\u71B1\u306E\u6BB5\u306E\u4FDD\u3061\uFF08v0.6.5 \u306E\u30EC\u30D3\u30E5\u30FC\uFF09: \u56DE\u5FA9\u306F\u71B1\u3092 0.6 \u306B\u7F6E\u304D\u3001\u4E0D\u8ABF\u306E 14 kt \u304B\u3089\u52A0\u901F\u3057\u76F4\u3059\u9593\u306B\u71B1\u304C 0.6 \u3092\u5C11\u3057\u5272\u308B\u306E\u3067\u30010.5 \u3092\u5272\u308B\u307E\u3067\u306F\u6BB5\u3092\u904E\u71B1\u306E\u307E\u307E\u30FB\u904E\u71B1\u306E\u51FA\u6765\u4E8B\u3068\u6570\u3048\u3092\u51FA\u3057\u76F4\u3055\u306A\u3044\uFF08\u56DE\u5FA9\u306E\u76F4\u5F8C\u306B\u53F3\u4E0B\u306E\u5B57\u304C\u5E73\u5E38\u306B\u623B\u3089\u305A\u30012 \u884C\u76EE\u306E\u904E\u71B1\u306E\u6587\u304C\u4E0D\u8ABF\u306E\u305F\u3073\u306B\u51FA\u76F4\u3055\u306A\u3044\u30020 < warn_rearm_heat < recover_heat \u306A\u306E\u3067 recover_heat \u3092\u4E0B\u3052\u308B\u306A\u3089\u3053\u308C\u3082\u4E0B\u3052\u308B\uFF09\u3002\u6A21\u64EC\uFF08scripts/pt-pass-sim \u306E TABLE=3\u3001N 400 \xD7 2 \u7D44\uFF1Dseed 1\u301C400\uFF0F401\u301C800\u3002CHANGELOG v0.6.5\uFF09: HUD \u3069\u304A\u308A\u306E\u904A\u3073\u65B9\u3067\u306F 1 \u591C\u3082\u4E0D\u8ABF\u306B\u306A\u3089\u305A\u4E88\u544A\u3082 0%\uFF08\u7E01\u3078\u9003\u3052\u3066\u6B62\u307E\u308B\u904A\u3073\u65B9\u3060\u3051\u4E88\u544A 28\u301C29%\u30FB\u4E0D\u8ABF 0\uFF09\u3001\u898B\u3064\u304B\u3063\u305F\u3089\u5168\u901F\u3067\u9003\u3052\u7D9A\u3051\u308B\u591C\u306E 67\u301C68% \u3067\u4E0D\u8ABF\uFF08\u6C88\u6CA1 13.3\uFF0F15.8% \u2192 17.3\uFF0F21.8%\uFF09\u3001\u6700\u521D\u304B\u3089\u5168\u901F\u3067\u307E\u3063\u3059\u3050\u5E30\u308B\u3068 26.0\uFF0F29.5 \u2192 38.0\uFF0F40.5%\u3002\u4E88\u544A\u306B\u5F93\u3063\u3066\u5DE1\u822A\u4EE5\u4E0B\u3078\u843D\u3068\u3059\u4EBA\u306E\u6C88\u6CA1\u306F\u7121\u8996\u3059\u308B\u4EBA\u3088\u308A +1.5 \u70B9\u3092\u8D85\u3048\u3066\u60AA\u304F\u306A\u3089\u306A\u3044\u3002\u6B62\u307E\u3063\u3066\u9577\u62BC\u3057\u3067\u639B\u3051\u76F4\u3059\u5F62\uFF08docs/03 \u306E\u6700\u521D\u306E\u6848\uFF09\u306F scratchpad \u306E\u8A66\u4F5C\uFF08\u6B62\u307E\u308B\u5F62\u3002repo \u306B\u7121\u3044\uFF09\u3067\u3001\u6B62\u307E\u3063\u305F\u8247\u306E\u4E0A\u306B 1 \u505C\u6B62\u3042\u305F\u308A 0.68\u301C0.83 \u672C\u306E\u8D64\u3044\u7DDA\u304C\u6765\u3066\u6C17\u3065\u304F\u79D2\u3067\u6C88\u6CA1\u304C\u5927\u304D\u304F\u5909\u308F\u3063\u305F\uFF08\u53CD\u5FDC 1.5 \u2192 2.5 \u79D2\u3067 26 \u2192 42%\uFF09\u306E\u3067\u63A1\u3089\u306A\u3044)"
+      },
+      note: "design\u3002v0.6.5 \u304B\u3089 jp_05 \u3067\u4F7F\u3046\uFF08missions_seed \u306E v0_1_prototype.hazards \u306B engine_failure \u304C\u3042\u308B\u4EFB\u52D9\uFF09\u3002\u7C73PT \u96C6\u8A08\u306E 69 \u96BB\u306B\u306F\u542B\u307E\u308C\u306A\u3044\u3002\u65E7 note \u306E\u300E71\u53F76\u578B\u306E\u7D44\u7ACB\u4E0D\u826F\u300F\u306F\u4ECA\u56DE\u306E\u629C\u7C8B\u3067\u78BA\u304B\u3081\u3089\u308C\u306A\u304B\u3063\u305F\uFF08low\uFF09\u306E\u3067\u5916\u3057\u305F"
+    },
+    {
+      id: "dawn_air_strike",
+      label_ja: "\u591C\u660E\u3051\u306E\u7A7A\u8972\uFF08\u6575\u306E\u5236\u7A7A\u4E0B\u3002\u591C\u660E\u3051\u306E\u5F8C\u3001\u6575\u6A5F 4 \u6A5F\u304C\u7E70\u308A\u8FD4\u3057\u6765\u308B\uFF09",
+      count: 0,
+      share: 0,
+      enemy_direct: true,
+      game_event: "dawn_air_strike",
+      trigger: "\u591C\u660E\u3051\uFF08duration_s\uFF09\u306B\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u5916\u3002\u4EFB\u52D9\u306E dawn_air.play_as \u304C enemy",
+      counterplay: "\u591C\u660E\u3051\u524D\u306B\u5E30\u308B\u3002\u6765\u305F\u3089\u5168\u901F\u3067\u5E30\u308A\u306A\u304C\u3089\u3001\u6295\u4E0B\u3092\u898B\u3066\u8235\u3092\u5207\u308A\u66FF\u3048\u308B\uFF08\u76F4\u9032\u306A\u3089\u5207\u308B\u30FB\u65CB\u56DE\u4E2D\u306A\u3089\u9006\u3078\u5207\u308B\uFF09\u3002\u6B62\u307E\u308B\u30FB\u56DE\u308A\u7D9A\u3051\u308B\u306F\u5F53\u305F\u308B",
+      penalty: "\u7206\u5F3E\u30C0\u30E1\u30FC\u30B8\uFF08\u706B\u707D\u30FB\u6A5F\u95A2\u640D\u50B7\uFF09\u3002\u5E30\u6295\u70B9 \xD70.9",
+      version: "v0.6.1",
+      params: {
+        spawn_m: 3e3,
+        run_radius_m: 600,
+        first_run_s: 9,
+        run_gap_s: 2.2,
+        wave_rest_s: 16,
+        leave_s: 2.5,
+        spawn_offsets_deg: [
+          -30,
+          -10,
+          10,
+          30
+        ],
+        wave_rotate_deg: 90,
+        aim_turn_min_deg_s: 0.5,
+        source: "design (v0.6.1\u3002v0.6.0 \u306E\u5B9F\u6A5F\u300E\u591C\u660E\u3051\u306B\u306A\u3063\u305F\u77AC\u9593\u4EFB\u52D9\u5931\u6557\u306F\u7406\u4E0D\u5C3D\u3002\u6575\u6C34\u4E0A\u6A5F\u6226\u968A\u56DB\u6A5F\u304C\u731B\u7206\u6483\u3057\u3066\u304F\u308B\u306A\u3069\u3001\u7D76\u671B\u7684\u3067\u3082\u4EFB\u52D9\u306F\u7D9A\u3051\u3089\u308C\u308B\u3088\u3046\u306B\u3002\u5236\u7A7A\u6A29\u304C\u306A\u3044\u9650\u308A\u5168\u30B7\u30CA\u30EA\u30AA\u5171\u901A\u300F\u306B\u5FDC\u3048\u305F\u3002\u591C\u660E\u3051\u306E\u77AC\u9593\u306B 4 \u6A5F\u304C from_bearing_deg \xB1 spawn_offsets_deg\uFF08-30\u301C30\xB0\uFF09\u306E spawn_m\uFF083,000 m\uFF09\u306B\u73FE\u308C\u30017.8 \u79D2\u3067\u534A\u5F84 run_radius_m\uFF08600 m\u3001\u591C\u306E\u6C34\u5075\u3068\u540C\u3058\uFF09\u306E\u65CB\u56DE\u306B\u5165\u308B\u3002first_run_s 9 \u79D2\uFF08\u5168\u901F\u306E Elco \u3067\u7D04 900 m \u9032\u3081\u308B\u7336\u4E88\uFF09\u304B\u3089 run_gap_s 2.2 \u79D2\u3054\u3068\u306B 1 \u6A5F\u305A\u3064\u76F4\u7DDA\u306E\u7206\u6483\u9032\u8DEF\uFF081.94 \u79D2\uFF09\u2192 \u771F\u4E0A\u3067\u6295\u4E0B\uFF08\u6700\u521D\u306E\u6295\u4E0B\u306F\u591C\u660E\u3051\u306E 10.9 \u79D2\u5F8C\uFF09\u30022.2 \u79D2\u306F\u843D\u4E0B 1.28 \u79D2\u3088\u308A\u9577\u3044\uFF1D\u7A7A\u4E2D\u306E\u7206\u5F3E\u306F\u5E38\u306B 1 \u767A\u3067\u3001\u7740\u5F3E\u70B9\u306E\u8F2A\u3082 1 \u3064\u30028 \u767A\u3092\u843D\u3068\u3059\u3068 leave_s 2.5 \u79D2\u3067\u53BB\u308A\u3001\u6700\u5F8C\u306E\u6295\u4E0B\u304B\u3089 wave_rest_s 16 \u79D2\u3067\u6B21\u306E\u6CE2\uFF08wave_rotate_deg 90\xB0 \u56DE\u3063\u305F\u65B9\u89D2\u304B\u3089\u3002\u6B21\u306E\u6700\u521D\u306E\u6295\u4E0B\u306F 26.9 \u79D2\u5F8C\u3001\u5468\u671F 42.3 \u79D2\uFF09\u3002v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u4E00\u6A5F\u305A\u3064\u9806\u756A\u306B\u6765\u308B\u306E\u3067\u65CB\u56DE\u3057\u3066\u907F\u3051\u3084\u3059\u3044\u3002\u3082\u3046\u5C11\u3057\u30C6\u30F3\u30DD\u826F\u304F\u300D\u2192 \u73FE\u308C\u308B\u8DDD\u96E2 3,600 \u2192 3,000 m\u30FB\u6700\u521D\u306E\u9032\u8DEF 12 \u2192 9 \u79D2\u30FB\u9593\u9694 3.0 \u2192 2.0 \u79D2\u30FB\u6CE2\u306E\u4F11\u307F 28 \u2192 16 \u79D2\uFF08\u9593\u9694\u306F 1.4\u301C3.0 \u79D2\u3092\u6A21\u64EC\u3067\u6BD4\u3079\u3001\u6C7A\u307E\u3063\u305F\u53CD\u5FDC\u306E\u904A\u3073\u65B9\u306E\u632F\u308C\u304C\u5C0F\u3055\u3044 2.0 \u79D2\uFF09\u3002\u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u306E\u6307\u5B9A\u306B\u3088\u308A\u9593\u9694 2.0 \u2192 2.2 \u79D2\u3002\u6CE2\u306B\u4E0A\u9650\u306F\u7121\u3044\uFF08\u96A0\u308C\u3066\u5F85\u3064\u3068\u6C88\u3080\uFF09\u3002\u72D9\u3044\u306F\u6295\u4E0B\u306E\u77AC\u9593: \u8247\u306E\u65CB\u56DE\u304C aim_turn_min_deg_s\uFF080.5\xB0/game \u79D2\uFF09\u4EE5\u4E0A\u306A\u3089\u4ECA\u306E\u65CB\u56DE\u3092\u7D9A\u3051\u305F\u5186\u5F27\u3001\u672A\u6E80\u306A\u3089\u76F4\u9032\u306E\u898B\u8D8A\u3057\uFF08\u591C\u306E\u300E\u9032\u8DEF\u306E\u59CB\u70B9\u3067\u6C7A\u3081\u308B\u300F\u72D9\u3044\u3067\u306F\u65CB\u56DE\u3057\u7D9A\u3051\u308B\u8247\u306B\u5F53\u305F\u3089\u305A 4 \u6A5F\u3067\u3082\u8105\u5A01\u306B\u306A\u3089\u306A\u304B\u3063\u305F\uFF09\u3002\u6A21\u64EC\uFF08scripts/dawn-strike-sim.ts TABLE=1\u3001600 \u56DE\u3002\u8F03\u6B63\u306E\u5E2F\u306F tests/air-strike-sim.test.ts\u3002\u9593\u9694 2.2 \u79D2\uFF09: \u7740\u5F3E\u70B9\u306E\u8F2A\u3092\u898B\u3066\u96E2\u308C\u308B\u5074\u3078\u5207\u308B\uFF08ring\uFF09\u306F us_01 100%\uFF08\u50DA\u8247 77%\uFF09\u30FBjp_06 99%\u30FBus_03 100%\uFF08\u9593\u9694 1.4\u301C3.0 \u79D2\u306E\u3069\u308C\u3067\u3082\u307B\u307C 100%\uFF1D\u901F\u304F\u3057\u3066\u3082\u7406\u4E0D\u5C3D\u306B\u306A\u3089\u306A\u3044\uFF09\u3002\u6C7A\u307E\u3063\u305F\u53CD\u5FDC\u3067\u5207\u308B\u3060\u3051\u3060\u3068\u3001us_01\uFF08\u8F2A\u307E\u3067\u5168\u901F 30 \u79D2\uFF09\u306F 0.5 \u79D2 99%\uFF08\u50DA\u8247 99%\uFF09\u30FB0.7 \u79D2 100%\uFF08\u50DA\u8247 81%\uFF09\u30FB\u76F4\u9032 48%\u3001jp_06\uFF08T-38\u3001\u5168\u901F 40 \u79D2\uFF09\u306F 0.35 \u79D2 78%\u30FB0.5 \u79D2 43%\u30FB0.7 \u79D2 89%\u30FB\u76F4\u9032 3%\u3001\u5168\u901F 20 \u79D2\u3067 0.5 \u79D2 55%\u3001us_03 \u306F\u76F4\u9032 49%\uFF0820 \u79D2\uFF09\u30FB3%\uFF0840 \u79D2\uFF09\u3002\u6B62\u307E\u308B\u30FB\u56DE\u308A\u7D9A\u3051\u308B\u306F\u3069\u308C\u3082 0%\u3002\u6C7A\u307E\u3063\u305F\u53CD\u5FDC\u306F\u8EE2\u8235\u3092\u4FDD\u3064\u79D2\u3068\u9593\u9694\u306E\u565B\u307F\u5408\u308F\u305B\u3067\u5927\u304D\u304F\u632F\u308C\u308B\uFF08\u65CB\u56DE\u4E2D\u306B\u540C\u3058\u5411\u304D\u3078\u5207\u308A\u8DB3\u3059\u3068\u5F53\u305F\u308A\u3001\u9006\u3078\u5207\u308B\u3068\u5916\u308C\u308B\uFF1DHUD \u306E\u300C\u65CB\u56DE\u4E2D\u306F\u9006\u3078\u300D\uFF09)"
+      },
+      note: "design\u3002\u53F2\u5B9F\u306E\u822A\u7A7A\u6A5F\u306B\u3088\u308B\u640D\u5931\u306F enemy_aircraft\uFF087\uFF09\u306B\u6570\u3048\u3066\u3042\u308B\uFF08\u4E8C\u91CD\u306B\u6570\u3048\u306A\u3044\uFF09\u3002"
+    },
+    {
+      id: "patrol_air",
+      label_ja: "\u591C\u306E\u54E8\u6212\u6A5F\uFF08\u822A\u8DE1\u3068\u52D5\u304F\u8239\u4F53\u3092\u635C\u3059\uFF09",
+      count: 0,
+      share: 0,
+      enemy_direct: true,
+      game_event: "patrol_air",
+      trigger: "\u51FA\u6483\u76F4\u5F8C\u306E\u30EC\u30FC\u30C0\u30FC\u3068\u3001\u822A\u8DE1\u3092\u898B\u3089\u308C\u308B\u304B\u5B9A\u6642\u306E\u635C\u7D22",
+      counterplay: "\u6575\u6A5F\u304C\u6765\u305F\u3089\u6B62\u307E\u3063\u3066\u96A0\u308C\u308B\uFF08\u6B62\u307E\u308C\u3070\u898B\u3048\u306A\u3044\uFF09\u3002\u898B\u3064\u304B\u3063\u305F\u3089\u5168\u901F\u3067\u8D70\u308A\u3001\u6295\u4E0B\u3067\u8EE2\u8235",
+      penalty: "\u7206\u5F3E\uFF08\u706B\u707D\u30FB\u6A5F\u95A2\u640D\u50B7\uFF09",
+      version: "v0.6.7",
+      params: {
+        first_pass_s: 3,
+        wake_trigger_s: 3,
+        sweep_gap_s: 12,
+        orbit_s: 8,
+        leave_s: 2.5,
+        hud_stop_margin_s: 3,
+        sortie: {
+          spawn_m: 1500,
+          run_radius_m: 600,
+          first_run_s: 5,
+          run_gap_s: 2.2,
+          wave_rest_s: 16,
+          leave_s: 2.5,
+          spawn_offsets_deg: [
+            -10,
+            10
+          ],
+          wave_rotate_deg: 0,
+          aim_turn_min_deg_s: 0.5
+        },
+        source: "design (v0.6.7\u3002jp_02 \u306E\u591C\u306E\u54E8\u6212\u6A5F\u3002\u9580\u756A\u306F core/patrol-air\uFF08\u4E71\u6570\u306A\u3057\uFF09\u3002\u6BB5: HUNT\uFF08\u753B\u9762\u306E\u5916\uFF09\u2192 PASS\uFF082 \u6A5F\u306E\u968A\u5F62\u304C\u65B9\u4F4D \u03B8_k \u306E 4,200 m\uFF08v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B 6,000 m \u304B\u3089\u3002us_patrol_bomber.patrol.wake_detect_m\uFF09\u304B\u3089 308.6 m/\u4F53\u611F\u79D2\u3067\u5BC4\u308B\u3002\u03B8_k = from_bearing_deg + k \xD7 pass_rotate_deg\uFF09\u2192 ORBIT\uFF08\u81EA\u8247\u304B\u3089 900 m \u3092 orbit_s \u56DE\u308B\uFF09\u2192 LEAVE\uFF08leave_s \u3067\u5916\u3078\uFF09\u2192 HUNT\u3002\u898B\u3048\u65B9: \u822A\u8DE1\uFF08\u901F\u529B\u5E2F\u304C\u5DE1\u822A\u304B\u5168\u901F\uFF09\u306F 4,200 m\uFF08\u63A5\u8FD1\u306E\u59CB\u307E\u308A\u3002\u767A\u898B\u306F 1,500 m \u306E\u7DDA\u306E\u5185\u3060\u3051\uFF09\u3001\u9759\u97F3\u3067\u52D5\u304F\u8239\u4F53\u306F\u81EA\u8247\u306E\u8996\u7A0B\uFF08\u6708\u6CA1\u5F8C 900 m\uFF09\u3001\u505C\u6B62\u306F\u898B\u3048\u306A\u3044\u3002\u6700\u521D\u306E radar_passes \u56DE\u306E\u635C\u7D22\u306F\u30EC\u30FC\u30C0\u30FC\u3067\u3001\u6B62\u307E\u3063\u3066\u3044\u3066\u3082\u898B\u3048\u308B\u3002\u767A\u898B\uFF1D\u898B\u3048\u3066\u3044\u3066 600\u301C1,500 m \u2192 \u591C\u660E\u3051\u306E\u7A7A\u8972\u306E core\uFF08risk_events \u306E sortie\u3002core \u306F\u5909\u3048\u306A\u3044\uFF09\u3092 1 \u6CE2\u3060\u3051\u518D\u51FA\u6483\uFF082 \u6A5F \xD7 3 \u767A\u3002v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B 1 \u6A5F 2 \u2192 3 \u767A\uFF09\u3002HUNT \u306E\u822A\u8DE1\u306E\u6570\u3048\u306F\u6F0F\u308C\u308B\u5F62\uFF08\u3042\u308C\u3070 +\u79D2\u30FB\u7121\u3051\u308C\u3070 \u2212\u79D2\uFF09\u3002\u6642\u9593\u7DDA\uFF08\u5168\u901F\u3067\u5E30\u308B HUD \u3069\u304A\u308A\u30FB\u8A66\u4F5C\uFF09: \u30EC\u30FC\u30C0\u30FC\u306E\u635C\u7D22 3.0 \u79D2 \u2192 \u767A\u898B 17.6 \u79D2 \u2192 \u6295\u4E0B 24.5\u30FB26.7\u30FB28.9\u30FB31.1 \u79D2 \u2192 \u51FA\u6483\u306E\u7D42\u308F\u308A 35.6 \u79D2 \u2192 \u822A\u8DE1 3 \u79D2\u3067\u635C\u7D22 38.6 \u79D2 \u2192 \u6B62\u307E\u3063\u3066\u4ED8\u8FD1\u306E\u635C\u7D22 55.2\u301C63.2 \u79D2 \u2192 \u2026 \u2192 \u5E30\u6295 101.8 \u79D2\u3002first_pass_s 3: \u6700\u521D\u306E\u635C\u7D22\uFF08\u30EC\u30FC\u30C0\u30FC\uFF09\u304C\u5317\u6771 4,200 m \u306B\u73FE\u308C\u308B\u5B9F\u79D2\uFF080 \u3060\u3068\u6700\u521D\u306E\u30D5\u30EC\u30FC\u30E0\u3067\u79D2\u8AAD\u307F\u304C\u59CB\u307E\u308A\u8AAD\u3081\u306A\u3044\uFF09\u3002wake_trigger_s 3: \u822A\u8DE1\u306E\u6570\u3048\u304C\u3053\u306E\u79D2\u306B\u5C4A\u304F\u3068\u635C\u7D22\u304C\u6765\u308B\uFF08enemy_aircraft.params.wake_trigger_s \u3068\u540C\u3058\u3002\u30C6\u30B9\u30C8\u3067\u4E00\u81F4\u3092 pin\uFF09\u3002sweep_gap_s 12: \u822A\u8DE1\u304C\u7121\u304F\u3066\u3082\u3001\u524D\u306E\u635C\u7D22\u30FB\u51FA\u6483\u304C\u7D42\u308F\u3063\u3066\u304B\u3089\u3053\u306E\u79D2\u3067\u6B21\u306E\u635C\u7D22\uFF0814 kt \u3067\u6B62\u307E\u308A\u306A\u304C\u3089\u5E30\u308B\u3068 197.3 \u79D2\uFF1D\u591C\u660E\u3051 220 \u79D2\u306E 22.7 \u79D2\u524D\u3002\u614E\u91CD\u3059\u304E\u308B\u3068\u591C\u660E\u3051\u304C\u8FD1\u3044\uFF09\u3002orbit_s 8: 900 m \u306E\u4ED8\u8FD1\u306E\u635C\u7D22\u306E\u79D2\uFF08\u7D04 157\xB0 \u56DE\u308B\u3002\u6B62\u307E\u3063\u3066\u5F85\u3064\u79D2\u306E\u5927\u534A\uFF09\u3002leave_s 2.5: \u53BB\u308B\u79D2\uFF08\u5473\u65B9\u6A5F\u30FB\u6C34\u4E0A\u6A5F\u3068\u540C\u3058\uFF09\u3002hud_stop_margin_s 3: \u79D2\u8AAD\u307F\u300E\u3042\u3068 N \u79D2\u3067\u6B62\u307E\u308C\u300F\u304C 0 \u306B\u306A\u308B\u306E\u306F 1,500 m \u306E\u7DDA\u306E\u4F55\u79D2\u524D\u304B\u30020 \u3092\u898B\u3066 1.5 \u79D2\u9045\u308C\u3066\u3082\u898B\u3064\u304B\u3089\u306A\u3044 2 \u3064\u306E\u9650\u308A\uFF08\u8D77\u52D5\u6642\u306B\u691C\u67FB\uFF09: \u822A\u8DE1 3.0 \u2265 \u5168\u901F\u2192\u822A\u8DE1\u306A\u3057 1.17 + 1.5\uFF08\u4F59\u308A 0.33\uFF09\u30FB\u52D5\u304F\u8239\u4F53 3.0 + (1500 \u2212 900)/308.6 = 4.94 \u2265 \u5168\u901F\u2192\u505C\u6B62 2.09 + 1.5\uFF08\u4F59\u308A 1.35\uFF09\u3002sortie: \u591C\u306E\u51FA\u6483\u306E\u6BB5\u3068\u6642\u9593\uFF08\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E core \u306E\u5024\u306E\u5F62\u3002\u4ECA\u306E\u691C\u67FB\u3092\u901A\u308B\uFF09\u3002spawn_m 1,500 \u306F\u53D7\u3051\u6E21\u3057\u306E\u4F4D\u7F6E\u3092\u635C\u7D22\u306E\u6A5F\u306E\u4F4D\u7F6E\u306B\u66F8\u304D\u63DB\u3048\u308B\u4E0A\u9650\u3001first_run_s 5 \u306F 1,500 m \u304B\u3089\u65CB\u56DE\u306B\u7740\u304F 2.92 \u79D2\u4EE5\u4E0A\uFF08\u767A\u898B\u304B\u3089\u6700\u521D\u306E\u6295\u4E0B 6.94 \u79D2\uFF09\u3001run_gap_s 2.2 \u306F\u591C\u660E\u3051\u3068\u540C\u3058\u3001wave_rest_s 16 \u3068 wave_rotate_deg 0 \u306F\u6B21\u306E\u6CE2\u3092\u51FA\u3055\u306A\u3044\u306E\u3067\u52B9\u304B\u306A\u3044\uFF08\u691C\u67FB\u306E\u305F\u3081\uFF09\u3001spawn_offsets_deg \xB110\xB0 \u306F 2 \u6A5F\u3067\u5DE6\u53F3\u5BFE\u79F0\uFF08\u300E\u5317\u6771\u304B\u3089\u300F\u304C\u5618\u306B\u306A\u3089\u306A\u3044\uFF09\u3002\u5024\u306F\u8A66\u4F5C\u306E\u6A21\u64EC\uFF08scratchpad\u3002repo \u306B\u7121\u3044\uFF09\u3068 S4 \u306E\u672C\u7269\u306E\u6A21\u64EC scripts/patrol-air-sim.ts \u3067\u6C7A\u3081\u305F\uFF08CHANGELOG v0.6.7\uFF09)"
+      },
+      note: "design\u3002\u53F2\u5B9F\u306E\u822A\u7A7A\u6A5F\u306B\u3088\u308B\u640D\u5931\u306F enemy_aircraft\uFF087\uFF09\u306B\u6570\u3048\u3066\u3042\u308B\uFF08\u4E8C\u91CD\u306B\u6570\u3048\u306A\u3044\uFF09\u3002"
+    },
+    {
+      id: "unten_air_raid",
+      label_ja: "\u6E2F\u306E\u7A7A\u8972\uFF08\u4E88\u544A\u306E\u5F8C\u3001\u7DE8\u968A\u304C\u5225\u3005\u306E\u968A\u3092\u72D9\u3046\uFF09",
+      count: 0,
+      share: 0,
+      enemy_direct: true,
+      game_event: "evac_air_raid",
+      trigger: "\u51FA\u6483\u306E\u76F4\u5F8C\u304B\u3089\uFF08jp_03\u3002\u4E88\u544A\u306E 10 \u79D2\u5F8C\u306B 2\u301C4 \u6A5F\u306E\u7DE8\u968A\u304C 2 \u3064\uFF08\u30CF\u30FC\u30C9 3 \u3064\uFF09\u540C\u6642\u306B\u59CB\u307E\u308B\u30024 \u6CE2\uFF09",
+      counterplay: "\u64CD\u4F5C\u4E2D\u306E\u968A\u3092\u58D5\u304B\u9670\u3078\u904B\u3093\u3067\u96A0\u3057\u3001\uFF3B\u5207\u66FF\uFF3D\u3067\u72D9\u308F\u308C\u305F\u307B\u304B\u306E\u968A\u3078\u66FF\u3048\u3066\u9003\u304C\u3059\u30FB\u96A0\u3059\u3002\u96A0\u308C\u305F\u968A\u3092\u72D9\u3046\u7DE8\u968A\u306F\u898B\u5931\u3063\u3066\u5F15\u304D\u8FD4\u3059\u3002\u6295\u4E0B\u306F\u65CB\u56DE\u4E2D\u306A\u3089\u9006\u3078\u5207\u308B",
+      penalty: "\u7206\u5F3E\uFF08\u968A\u9577\u8247\u306F\u706B\u707D\u30FB\u6A5F\u95A2\u640D\u50B7\u3001\u50DA\u8247\u306F HP \u3060\u3051\uFF09\u3002\u4E26\u3093\u3060\u8247\u306F\u307E\u3068\u3081\u3066\u6C88\u3080\u3002\u6B8B\u5B58\u304C 6 \u96BB\u672A\u6E80\u306A\u3089\u672A\u9054",
+      version: "v0.6.11",
+      params: {
+        sortie: {
+          spawn_m: 2500,
+          run_radius_m: 500,
+          first_run_s: 6.5,
+          run_gap_s: 1.7,
+          wave_rest_s: 16,
+          leave_s: 2.5,
+          spawn_offsets_deg: [
+            -30,
+            -10,
+            10,
+            30
+          ],
+          wave_rotate_deg: 0,
+          aim_turn_min_deg_s: 0.5
+        },
+        source: "design (v0.6.11\u3002jp_03\u300C\u904B\u5929\u6E2F\u30FB\u7A7A\u8972\u4E0B\u306E\u9000\u907F\u300D\u306E 1 \u7DE8\u968A\u306E\u6BB5\u3068\u6642\u9593\uFF08\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E core \u306E\u5024\u306E\u5F62\u3002\u51CD\u7D50\u306E core \u306F\u5909\u3048\u306A\u3044\u3002dawn_air_strike.params \u306F 6 \u4EFB\u52D9\u3067\u5171\u6709\u306A\u306E\u3067\u89E6\u3089\u305A\u3001jp_03 \u5C02\u7528\u306E\u8A18\u9332\u3092\u4F5C\u3063\u305F\uFF1Djp_02 \u306E patrol_air.params.sortie \u306E\u524D\u4F8B\uFF09\u3002\u7DE8\u968A\u306F\uFF08\u6CE2 \xD7 \u67A0\uFF09\u3054\u3068\u306B 1 \u56DE\u3060\u3051\u98DB\u3076\uFF08core/air-sortie \u306E restartAirSortie \u3067\u72D9\u3063\u305F\u968A\u306E\u968A\u9577\u8247\u304B\u3089\u65B9\u4F4D 70 \xB1 30\xB0\u30FB2,500 m \u306B\u73FE\u308C\u308B\uFF09\u3002spawn_m 2,500: \u73FE\u308C\u308B\u8DDD\u96E2\u306E\u4E0A\u9650\uFF08restartAirSortie \u306F [run_radius_m, spawn_m] \u306B\u53CE\u3081\u308B\uFF09\u3002run_radius_m 500: \u65CB\u56DE\u306E\u534A\u5F84\uFF08\u7206\u6483\u9032\u8DEF 1.62 \u79D2\uFF09\u3002first_run_s 6.5: \u59CB\u307E\u308A\u304B\u3089\u6700\u521D\u306E\u7206\u6483\u9032\u8DEF\u307E\u3067\uFF08\u65CB\u56DE\u306B\u7740\u304F 6.48 \u79D2\u4EE5\u4E0A\u3002\u4E88\u544A\u306E 10 \u79D2\u3068\u5408\u308F\u305B\u3066\u4E88\u544A\u304B\u3089\u6700\u521D\u306E\u6295\u4E0B\u307E\u3067\u7D04 18.1 \u79D2\uFF09\u3002run_gap_s 1.7: \u6295\u4E0B\u306E\u9593\u9694\uFF08\u843D\u4E0B 1.28 \u79D2\u3088\u308A\u9577\u3044\uFF1D\u7A7A\u4E2D\u306E\u7206\u5F3E\u306F 1 \u7DE8\u968A 1 \u767A\u30022 \u6A5F \xD7 1.7 \uFF1D 3.4 \u79D2 \u2265 \u7206\u6483\u9032\u8DEF\u306E 2 \u500D 3.24 \u79D2\u30022 \u6A5F 4 \u767A\u3067\u6700\u5F8C\u306E\u6295\u4E0B\u306F\u59CB\u307E\u308A\u304B\u3089 13.2 \u79D2\u30014 \u6A5F 8 \u767A\u3067 20.0 \u79D2\uFF09\u3002wave_rest_s 16 \u3068 wave_rotate_deg 0 \u306F\u6B21\u306E\u6CE2\u3092\u51FA\u3055\u306A\u3044\u306E\u3067\u52B9\u304B\u306A\u3044\uFF08\u51CD\u7D50\u306E\u691C\u67FB\u3068 V-E6 \u306E\u300C\u6E08\u307F\u3092 1 \u30B9\u30C6\u30C3\u30D7\u524D\u306B\u898B\u308B\u4F59\u88D5\u300D\u306E\u305F\u3081\u300216 \u2265 1.62 + 2.5 + 2 \u30B9\u30C6\u30C3\u30D7\uFF09\u3002leave_s 2.5: \u53BB\u308B\u79D2\u3002spawn_offsets_deg: \u51CD\u7D50\u306E core \u304C\u5148\u982D n \u500B\u3092\u4F7F\u3046\uFF082 \u6A5F\u306F \u221230\u30FB\u221210\uFF1D\u5E73\u5747 \u221220\xB0 \u306B\u504F\u308B\u5206\u3092 evac_raid.bearing_fix_deg \u3067\u623B\u3059\uFF09\u3002aim_turn_min_deg_s 0.5 \u306F\u591C\u660E\u3051\u3068\u540C\u3058\u3002\u5024\u306F spec-v0611-r2 \xA74\u3002\u5408\u308F\u305B\u306F S3\u30FBS7 \u306E\u6A21\u64EC\u3067\uFF08spec \xA712.5 \u306E 6 \u756A\u76EE\u306E\u3064\u307E\u307F\uFF09) / design (v0.6.11 S3b\u3002U7\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u7B54\u3048\u300C\u7DE8\u968A\u304C\u623B\u3063\u3066\u304F\u308B\u300D\uFF09\u3068\u5408\u308F\u305B\u305F\u6A21\u64EC\u306E\u70B9 G1\uFF08spec-v0611-r2 \xA712.5 \u306E\u3064\u307E\u307F\u3002N 400 \xD7 2 \u7D44\u3067\u30CE\u30FC\u30DE\u30EB\u306E\u5E2F 19\u30FB\u30CF\u30FC\u30C9\u306E\u5E2F 5 \u304C\u3059\u3079\u3066 \u2713\uFF09: first_run_s 9 \u2192 6.5\u30FBrun_gap_s 2.2 \u2192 1.7\uFF08\u591C\u660E\u3051\u306E 2.2 \u304B\u3089\u96E2\u308C\u305F\u3002\u3069\u3061\u3089\u3082\u691C\u67FB\u306E\u4E0B\u9650 6.48\u30FB1.62 \u306E\u8FD1\u304F\uFF09\u30021 \u56DE\u304C\u77ED\u3044\u307B\u3069\u3001\u6E08\u3093\u3060\u7DE8\u968A\u306E\u3082\u3046\u4E00\u5EA6\uFF08evac_raid.passes_max\uFF09\u304C\u7B2C 2\u30FB3 \u6CE2\u306B\u3082\u53CE\u307E\u308B\uFF089\u30FB2.2 \u3067\u306F\u7B2C 1 \u6CE2\u3060\u3051\u30026.5\u30FB1.7 \u3067 2 \u56DE\u76EE\u306F\u7B2C 1 \u6CE2 \u2248 89%\u30FB\u7B2C 2 \u6CE2 \u2248 62%\u30FB\u7B2C 3 \u6CE2 \u2248 32% \u306E\u7DE8\u968A\uFF08seq\uFF09\u3002\u540C\u3058\u77ED\u3055\u3067 passes_max 1 \u306A\u3089 seq 91%\u30FBdodge_only 84%\uFF08N 100\u30FB\u56DE\u907F 0\u30FB\u9670\uFF08\u6771\uFF09\u3092\u5916\u3057\u305F\u70B9\uFF09\uFF1D\u5E2F\u3092\u52D5\u304B\u3059\u306E\u306F 2 \u56DE\u76EE\uFF09)"
+      },
+      note: "design\u3002\u53F2\u5B9F\u306E 1944-10-10 \u306E\u904B\u5929\u6E2F\u306E\u640D\u5931\uFF08\u7B2C27\u9B5A\u96F7\u8247\u968A\u306E 18 \u96BB\u4E2D 13 \u96BB\uFF1Dhistorical\u3002docs/01 \u306E\u53F2\u6599 A2\u30FBA4\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u306F\u7C73PT \u306E\u640D\u5931 69 \u96BB\u306E\u5185\u8A33\uFF08count\u30FBshare\uFF09\u306B\u5165\u3089\u306A\u3044\u306E\u3067 count 0\u30FBshare 0\uFF08total_losses \u306A\u3069\u306E\u5408\u8A08\u306F\u5909\u3048\u306A\u3044\uFF09\u3002"
+    }
+  ],
+  source: {
+    count: "historical (Bulkley Appendix B, \u672C\u8ABF\u67FB\u96C6\u8A08)",
+    share: "historical",
+    "game_event+": "design"
+  },
+  source_url: "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-B.html"
+};
+
+// ../wt-0176202/data/missions_seed.json
+var missions_seed_default = {
+  $schema_note: "\u30DF\u30C3\u30B7\u30E7\u30F3\u306E\u7A2E\u3002\u53F2\u5B9F\u30A2\u30F3\u30AB\u30FC\uFF08date/place/historical_note/source_url\uFF09\u306F historical\u3001\u69CB\u6210\uFF08objective/enemies/hazards/moon/duration\uFF09\u306F design\u3002v0.1 \u306F us_02 \u3092\u7C21\u7565\u5316\u3057\u305F1\u672C\u3060\u3051\u4F7F\u3046\u3002v0.4.0: playable_from\uFF08design\uFF09\u306F Title \u306E\u4EFB\u52D9\u4E00\u89A7\u306B\u51FA\u3059\u4EFB\u52D9\u3068\u3001\u51FA\u6483\u3067\u304D\u308B\u3088\u3046\u306B\u306A\u308B\u7248\uFF08docs/03 \u306E\u30ED\u30FC\u30C9\u30DE\u30C3\u30D7\u3002v0_1_prototype \u304C\u7121\u3044\u4EFB\u52D9\u306F\u300E\u6E96\u5099\u4E2D \u30FB \u7248\u300F\uFF09\u3002briefing_note_ja\uFF08historical\uFF09\u306F Briefing \u306B\u51FA\u3059\u53F2\u5B9F\u30E1\u30E2\u3067\u3001\u5B9F\u5728\u306E\u4EBA\u7269\u540D\u3092\u51FA\u3055\u306A\u3044\uFF08CLAUDE.md \xA711\u3002historical_note \u306F\u8ABF\u67FB\u306E\u8A18\u9332\u3068\u3057\u3066\u6B8B\u3057\u3001\u753B\u9762\u306B\u306F\u51FA\u3055\u306A\u3044\uFF09\u3002v0_1_prototype.hazards\uFF08design\uFF09\u306F\u904A\u3079\u308B\u4E16\u754C\u3067\u5B9F\u969B\u306B\u8D77\u304D\u308B\u5371\u967A\uFF08risk_events \u306E id\uFF09\u3067\u3001Briefing \u306E\u300E\u5371\u967A\u300F\u3068\u51FA\u6483\u524D\u306E\u6E2F\u5185\u7A7A\u8972\u306E\u6709\u7121\u3092\u6C7A\u3081\u308B\u3002 v0.6.1: dawn_air\uFF0813 \u4EFB\u52D9\u3059\u3079\u3066\uFF09\u306F\u591C\u660E\u3051\u306E\u7A7A\u3092\u63E1\u3063\u3066\u3044\u305F\u5074\u3002control\u30FBconfidence\u30FBrefs \u306F historical\u3001play_as\u30FBlabel_ja \u306F design\uFF08core/dawn-air \u304C\u691C\u67FB\u3002\u904A\u3079\u308B\u4EFB\u52D9\u306E play_as \u304C enemy \u306A\u3089 v0_1_prototype.dawn_strike \u3068 hazards \u306E dawn_air_strike \u304C\u8981\u308B\uFF09\u3002campaigns \u306E enemy_faction\uFF08design\uFF09\u306F\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u6A5F\u4F53\u306E faction\u3002",
+  version: "0.4.4",
+  campaigns: [
+    {
+      id: "us_pt",
+      name_ja: "\u7C73PT\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3",
+      short_ja: "\u7C73PT",
+      player_boat_default: "us_elco80",
+      unlock: "default",
+      enemy_faction: "IJN",
+      enemy_faction_source: "design (v0.6.1\u3002\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u6A5F\u4F53\u306E faction \u3092\u691C\u67FB\u3059\u308B\uFF08\u65E5\u672C\u306E\u8247\u3092\u96F6\u89B3\u304C\u8972\u3046\u5199\u3057\u9593\u9055\u3044\u3092\u8D77\u52D5\u6642\u306B\u6B62\u3081\u308B\uFF09)"
+    },
+    {
+      id: "jp_hard",
+      name_ja: "\u65E5\u672C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9",
+      short_ja: "\u65E5\u672C",
+      player_boat_default: "jp_t38",
+      unlock: "complete_us_pt",
+      unlock_mission_ids: [
+        "us_01",
+        "us_02",
+        "us_03"
+      ],
+      unlock_mission_ids_source: "design (v0.8.0 S0\u30FBspec-v0800 \xA72.4\u3002lead \u306E\u65E2\u5B9A L2\uFF08\u30E6\u30FC\u30B6\u30FC\u672A\u78BA\u8A8D\u30FBspec-v0800 \xA79 Q3\uFF09: \u65E5\u672C\u306E\u30BF\u30D6\u3092\u958B\u304F\u6761\u4EF6\u306F\u4ECA\u306E\u7C73PT \u306E 3 \u4EFB\u52D9\u306E\u307E\u307E\uFF08\u4E00\u89A7\u3067\u56FA\u5B9A\u3002core/campaign \u306E parseUnlockMissionIds\u30FBconfig/campaign-data \u306E unlockPrereqIds\uFF09\u3002\u7121\u3051\u308C\u3070 v0.6.0 \u306E\u3068\u304A\u308A\u76F8\u624B\u306E\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u306E\u904A\u3079\u308B\u4EFB\u52D9\u3092\u5168\u90E8\uFF1Dus_04\u301Cus_07 \u304C\u904A\u3079\u308B\u3088\u3046\u306B\u306A\u308B\u3068 7 \u4EFB\u52D9\u306B\u5897\u3048\u308B\u3002\u65E5\u672C\u306E\u30BF\u30D6\u306F 3 \u4EFB\u52D9\u306E\u5F8C\u306B\u958B\u304F\u524D\u63D0\u3067\u4F5C\u3063\u305F\u30FB\u65B0\u3057\u3044\u4EFB\u52D9\u306F 1944 \u5E74\u306E\u96E3\u3057\u3044\u591C\u304C\u591A\u3044\u30FB\u30B9\u30C8\u30A2\u3068\u6BB4\u308A\u8FBC\u307F\u306F\u5225\u306B\u300C\u5168\u30AF\u30EA\u30A2\u5F8C\u300D\u3002\u3059\u3067\u306B\u958B\u3044\u305F\u7AEF\u672B\u306F\u9589\u3058\u306A\u3044\uFF08\u958B\u3044\u305F\u5370\uFF09)",
+      enemy_faction: "USN",
+      enemy_faction_source: "design (v0.6.1\u3002\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u6A5F\u4F53\u306E faction \u3092\u691C\u67FB\u3059\u308B\uFF08\u65E5\u672C\u306E\u8247\u3092\u96F6\u89B3\u304C\u8972\u3046\u5199\u3057\u9593\u9055\u3044\u3092\u8D77\u52D5\u6642\u306B\u6B62\u3081\u308B\uFF09)",
+      source: "design (v0.6.0\u3002unlock complete_us_pt: \u7C73PT\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u306E\u904A\u3079\u308B\u4EFB\u52D9\uFF08playable_from \u3068 v0_1_prototype \u3092\u6301\u3064\u3002v0.6.0 \u3067\u306F us_01\u30FBus_02\u30FBus_03\uFF09\u3092\u3001\u305D\u308C\u305E\u308C 1 \u56DE\u3001\u5E30\u6295\u3067\u7D42\u3048\u308B\u3068\u958B\u304F\uFF08\u6483\u6C88\u3084\u30CE\u30EB\u30DE\u306E\u9054\u6210\u306F\u554F\u308F\u306A\u3044\uFF09\u3002\u4E00\u5EA6\u958B\u3044\u305F\u3089\u9589\u3058\u306A\u3044\uFF08localStorage night-hunters.unlocked\uFF09\u3002v0.5.2 \u307E\u3067\u306B\u4EFB\u52D9\u3092 3 \u56DE\u4EE5\u4E0A\u7D42\u3048\u305F\u7AEF\u672B\u306F\u958B\u3044\u305F\u3082\u306E\u3068\u307F\u306A\u3059\u3002?debug&title&unlock \u3067\u4FDD\u5B58\u3092\u5909\u3048\u305A\u306B\u958B\u3051\u308B\u3002CLAUDE.md \xA72\u300E\u7C73PT\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u306E\u5F8C\u306B\u30A2\u30F3\u30ED\u30C3\u30AF\u300F\u306E\u5177\u4F53\u5316)"
+    }
+  ],
+  missions: [
+    {
+      id: "us_01",
+      campaign: "us_pt",
+      order: 1,
+      playable_from: "v0.4.4",
+      title_ja: "\u30B3\u30EC\u30D2\u30C9\u30FC\u30EB\u8131\u51FA",
+      date: "1942-03-11",
+      place: "\u30B3\u30EC\u30D2\u30C9\u30FC\u30EB\u2192\u30DF\u30F3\u30C0\u30CA\u30AA\uFF08\u30D5\u30A3\u30EA\u30D4\u30F3\uFF09",
+      type: "escort_vip",
+      player_boat: "us_elco77",
+      torpedo_type: "us_mk8",
+      objective: "\u8981\u4EBA\u3092\u4E57\u305B\u305F\u50DA\u8247\u3092\u9023\u308C\u3066\u5C01\u9396\u7DDA\u306E\u99C6\u9010\u8266\u3092\u907F\u3051\u3001\u5317\u306E\u5E30\u6295\u5730\u70B9\u3078\u3002\u898B\u3064\u304B\u3089\u305A\u306B\u629C\u3051\u308B\u307B\u3069\u9AD8\u5F97\u70B9",
+      enemies: [
+        "ijn_destroyer"
+      ],
+      hazards: [
+        "grounding",
+        "storm"
+      ],
+      moon: "dark",
+      duration_min: 4,
+      success: "\u5E30\u6295\u5730\u70B9\u5230\u9054\u3001\u50DA\u8247\u751F\u5B58",
+      historical_note: "PT-41\u304C\u30DE\u30C3\u30AB\u30FC\u30B5\u30FC\u3092\u4E57\u305B\u3066\u30B3\u30EC\u30D2\u30C9\u30FC\u30EB\u304B\u3089\u8131\u51FA\uFF081942/3/11\u301C13\uFF09\u3002PT-32\u306F\u9014\u4E2D\u653E\u68C4\u3002",
+      briefing_note_ja: "PT-41\u304C\u8981\u4EBA\u3092\u4E57\u305B\u3066\u30B3\u30EC\u30D2\u30C9\u30FC\u30EB\u304B\u3089\u8131\u51FA\uFF081942/3/11\u301C13\uFF09\u3002PT-32\u306F\u9014\u4E2D\u653E\u68C4\u3002",
+      source_url: "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-1.html",
+      dawn_air: {
+        control: "enemy",
+        confidence: "medium",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "stay",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u6575\uFF08\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F\uFF09",
+        refs: [
+          {
+            url: "https://pacificwrecks.com/ship/ptboat/PT-34.html",
+            claim: "1942-04-09\u3001\u8B83\u5C90\u4E38\u306E\u96F6\u5F0F\u6C34\u4E0A\u89B3\u6E2C\u6A5F 4 \u6A5F\u304C\u663C\u306B PT-34 \u3092\u7206\u6483\u30FB\u6383\u5C04\u3057\u3066\u30AB\u30A6\u30A4\u30C3\u30C8\u5CF6\u306B\u64F1\u5EA7\u3055\u305B\u300112:30 \u3054\u308D\u518D\u6765\u3057\u3066\u713C\u3044\u305F"
+          },
+          {
+            url: "https://en.wikipedia.org/wiki/Bataan_Airfield",
+            claim: "1941 \u5E74 12 \u6708\u306E\u640D\u5BB3\u3067\u65E5\u672C\u304C\u30D5\u30A3\u30EA\u30D4\u30F3\u5168\u57DF\u306E\u5236\u7A7A\u30FB\u5236\u6D77\u6A29\u3092\u63E1\u3063\u305F"
+          },
+          {
+            url: "https://www.ozatwar.com/ptboat.htm",
+            claim: "\u8131\u51FA\u306E\u8247\u306F 1942-03-12 \u306E\u663C\u3092\u30AF\u30E8\u306E\u5CF6\u9670\u3067\u904E\u3054\u3057\u305F\uFF08PT-34 \u306F 09:30\u3001PT-41 \u306F 16:00 \u3054\u308D\u7740\uFF09"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u65E5\u672C\u306E\u8266\u306F\u663C\u3082\u54E8\u6212\u3057\u3001\u96A0\u308C\u305F\u306E\u306F PT \u306E\u5074\u3002\u8131\u51FA\u884C\u306E\u8247\u305D\u306E\u3082\u306E\u304C\u7A7A\u8972\u3055\u308C\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u305A\u3001\u540C\u3058\u968A\u306E 4 \u9031\u9593\u5F8C\u306E\u985E\u4F8B\uFF08PT-34\uFF09\u306B\u3088\u308B\u3002\u82F1\u8A9E\u306E\u8ABF\u67FB\u306F\u78BA\u5EA6 high\u3001\u65E5\u672C\u8A9E\u306E\u8ABF\u67FB\u306F medium \u2192 \u4F4E\u3044\u65B9) / design (v0.6.1\u3002play_as\u30FBlabel_ja)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "ijn_destroyer"
+        ],
+        enemy_behavior: "ai (us_02 \u3068\u540C\u3058: \u5DE1\u822A\u30FB\u96F7\u8DE1\u56DE\u907F\u30FB\u4F53\u5F53\u305F\u308A\u30FB\u7AEF\u3067\u5411\u304D\u76F4\u3057\u3002\u5C01\u9396\u7DDA\uFF1D\u6D77\u57DF\u306E\u4E2D\u592E\u3092\u6771\u897F\u306B\u5F80\u5FA9)",
+        duration_s: 180,
+        duration_s_source: "design (\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002v0.6.2 \u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u306E\u300C\u591C\u660E\u3051\u307E\u3067\u306E\u6642\u9593\u3092 40 \u79D2\u7E2E\u3081\u3066\u300D\u306B\u3088\u308A 220 \u2192 180 \u79D2\uFF08\u591C\u660E\u3051\u306E\u5F8C\u3082\u4EFB\u52D9\u306F\u7D9A\u304D\u7A7A\u8972\u306E\u4E0B\u3067\u5E30\u308B\u306E\u3067\u3001\u591C\u3092\u77ED\u304F\u3057\u3066\u7A7A\u8972\u306E\u5834\u9762\u306B\u65E9\u304F\u5165\u308B\u3002\u51FA\u767A\u6642\u306E\u300E\u5E30\u6295\u305B\u3088\u300F\u306F\u7ACB\u305F\u306A\u3044: \u7E01\u307E\u3067\u5DE1\u822A 81 \u79D2 \xD7 call_margin 1.5 = 122 \u79D2 < 180 \u79D2\uFF09\u3002\u591C\u660E\u3051\u306E\u5F8C\u306F\u6575\u6A5F\u306E\u7A7A\u8972\uFF08us_01\u30FBus_03\u30FBjp_06\u3002us_03 \u306F v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\uFF09\uFF0F\u6575\u6A5F\u306F\u6765\u306A\u3044\uFF08us_02\uFF09\u3002v0.6.1 \u304B\u3089\u591C\u660E\u3051\u3067\u4EFB\u52D9\u306F\u7D42\u308F\u3089\u306A\u3044\u3002\u4EE5\u524D\u306E 220 \u79D2\u306E\u6839\u62E0: \u51FA\u767A\u70B9\u304B\u3089\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u307E\u3067 4,750 m: \u5DE1\u822A\uFF0823 kt\u3001\u753B\u9762\u4E0A 59 m/\u79D2\uFF09\u3067 81 \u79D2\u3001\u9759\u97F3\u306E\u4E0A\u9650 18 kt \u3067 103 \u79D2\u3001\u5168\u901F\u3067 48 \u79D2\u3002\u5C01\u9396\u7DDA\u306E\u99C6\u9010\u8266\u304C\u901A\u308A\u904E\u304E\u308B\u306E\u3092 1 \u56DE\u5F85\u3064\uFF08\u6700\u9577 \u7D04 80 \u79D2\uFF09\uFF0B\u66B4\u98A8\u306E\u6E1B\u901F\uFF0B\u30B5\u30F3\u30B4\u7901\u306E\u8FC2\u56DE\u3067\u3082\u5DE1\u822A\u306A\u3089\u5C4A\u304F\u9577\u3055\u3002\u5F85\u3061\u3059\u304E\u308B\u3068\u300E\u591C\u660E\u3051\u8FD1\u3057\u300F\u3002180 \u79D2\u3067\u306F 1 \u56DE\u5F85\u3063\u3066\u5DE1\u822A\u3067\u629C\u3051\u308B\u3068\u66B4\u98A8\u30FB\u30B5\u30F3\u30B4\u7901\u306E\u5206\u3060\u3051\u591C\u660E\u3051\u306B\u304B\u304B\u308A\u3046\u308B)",
+        fuel_allotment_gal: 40,
+        fuel_allotment_gal_source: "design (\u6226\u95D8\u306B\u4F7F\u3048\u308B\u5272\u5F53\u3002Elco 77ft \u306F\u5DE1\u822A 214\u30FB\u5168\u901F 545 gal/h\uFF08boats.json\uFF09\u3002\u76F4\u7DDA 5,000 m \u3092\u5DE1\u822A\u3067 24 gal\u30FB\u9759\u97F3 18 kt \u3067 20 gal\u30FB\u5168\u901F\u3067 36 gal\u3002\u5168\u901F\u3067\u7A81\u3063\u5207\u308B\u3068\u8FC2\u56DE\u306E\u5206\u3067\u8DB3\u308A\u305A\u3001\u5DE1\u822A\u3067\u629C\u3051\u3066 4 \u5272\u6B8B\u3059\u8A2D\u8A08\u3002us_02 \u306E 38 gal \u3068\u540C\u3058\u8003\u3048\u65B9)",
+        bounds_m: {
+          width: 6e3,
+          height: 6e3,
+          source: "design (\u5357\u5317 6,000 m \u306E\u9577\u3044\u822A\u8DEF\u3002\u51FA\u767A\u70B9 (3000, 5500) \u304B\u3089\u5E30\u6295\u5730\u70B9 (3000, 500) \u307E\u3067 5,000 m\u3002\u5E45 6,000 m \u306F\u5C01\u9396\u7DDA\u306E\u99C6\u9010\u8266\u304C\u6771\u897F\u306B\u5F80\u5FA9\u3059\u308B\u9577\u3055\uFF0825 kt \u3067\u7D04 78 \u79D2\u3067\u7247\u9053\uFF09)"
+        },
+        player_start: {
+          x_m: 3e3,
+          y_m: 5500,
+          heading_deg: 0,
+          source: "design (\u5357\u306E\u4E2D\u592E\u304B\u3089\u5317\u5411\u304D\u30FB\u505C\u6B62\u3067\u51FA\u767A\u3002\u50DA\u8247\u306F 120 m \u5F8C\u308D\u306E\u5DE6\u8237\u5074\u306B\u4ED8\u304F)"
+        },
+        enemy_start: {
+          x_m: 600,
+          y_m: 3e3,
+          heading_deg: 90,
+          source: "design (\u5C01\u9396\u7DDA: \u6D77\u57DF\u306E\u4E2D\u592E y 3,000 \u3092\u897F\u304B\u3089\u6771\u3078 25 kt\u3002\u7AEF 700 m \u3067\u4E2D\u592E\u3078\u5411\u304D\u76F4\u3059\u306E\u3067\u6771\u897F\u306B\u5F80\u5FA9\u3059\u308B\uFF08v0.2.0 \u306E patrol\uFF09\u3002\u51FA\u767A\u304B\u3089\u7D04 37 \u79D2\u3067\u4E2D\u592E\u3001\u7D04 75 \u79D2\u3067\u6771\u7AEF\u306B\u7740\u3044\u3066\u6298\u308A\u8FD4\u3059\u3002\u65B0\u6708\u306A\u306E\u3067\u767A\u898B\u8DDD\u96E2\u306F \u5DE1\u822A 1,200\u30FB\u9759\u97F3 600\u30FB\u505C\u6B62 480\u30FB\u5168\u901F 1,920 m\u3001\u81EA\u8247\u306E\u8996\u7A0B 900 m\uFF1D\u5DE1\u822A\u3067\u5BC4\u308B\u3068\u898B\u3048\u308B\u3088\u308A\u5148\u306B\u898B\u3064\u304B\u308B\u3002\u898B\u5F35\u308A\uFF08\u30BA\u30FC\u30E0\uFF09\u3068\u6E1B\u901F\u3067\u99C6\u9010\u8266\u306E\u4F4D\u7F6E\u3092\u8AAD\u307F\u3001\u901A\u308A\u904E\u304E\u305F\u5F8C\u308D\u3092\u629C\u3051\u308B)"
+        },
+        escort: {
+          boat: "us_elco77",
+          station_astern_m: 120,
+          station_abeam_m: -50,
+          lag_warn_m: 500,
+          catch_up_gain_per_s: 0.08,
+          heading_deadband_m: 15,
+          lit_near_leader_m: 250,
+          source: "design (v0.4.4\u3002\u50DA\u8247\uFF1D\u8981\u4EBA\u3092\u4E57\u305B\u305F\u540C\u578B\u8247\uFF08PT-32\u30FB34\u30FB35 \u306B\u5F53\u305F\u308B\u3002boats.json \u306E us_elco77 \u306E\u901F\u529B\u30FB\u65CB\u56DE\u30FBHP 90 \u3092\u4F7F\u3046\uFF09\u3002\u81EA\u8247\u306E 120 m \u5F8C\u308D\u30FB\u5DE6\u8237 50 m \u306E\u5B9A\u4F4D\u7F6E\uFF08station\uFF09\u306B\u4ED8\u304D\u3001\u9045\u308C 1 m \u3042\u305F\u308A 0.08 m/s\uFF08\u753B\u9762\u4E0A\uFF09\u5897\u901F\u3057\u3066\u8FFD\u3044\u3064\u304F\uFF08100 m \u9045\u308C\u3067 +8 m/s \u2248 +16 kt\u3002\u5168\u901F\u304C\u4E0A\u9650\uFF09\u3002\u5B9A\u4F4D\u7F6E\u304B\u3089 15 m \u4EE5\u5185\u306A\u3089\u81EA\u8247\u3068\u540C\u3058\u91DD\u8DEF\u3002lag_warn_m 500: \u81EA\u8247\u304B\u3089\u3053\u308C\u4EE5\u4E0A\u96E2\u308C\u308B\u3068 2 \u884C\u76EE\u306B\u300E\u50DA\u8247\u304C\u9045\u308C\u3066\u3044\u308B\u300F\u3002\u99C6\u9010\u8266\u306F\u81EA\u8247\u3068\u50DA\u8247\u306E\u3046\u3061\u7167\u3089\u3055\u308C\u3066\u3044\u3066\u8FD1\u3044\u65B9\u3092\u6483\u3064\uFF08core/gunnery-pair\uFF09\u3002\u50DA\u8247\u304C\u7167\u3089\u3055\u308C\u308B\u6761\u4EF6: \u63A2\u7167\u706F\u306E\u6247\u304B\u661F\u5F3E\u306E\u4E2D\u306B\u3044\u308B\u3001\u307E\u305F\u306F\u81EA\u8247\u304C\u7167\u3089\u3055\u308C\u3066\u3044\u3066\u81EA\u8247\u304B\u3089 lit_near_leader_m\uFF08250 m\uFF09\u4EE5\u5185\uFF08\u63A2\u7167\u706F\u306E\u6247\u306F 900 m \u3067\u5E45 190 m \u306A\u306E\u3067\u3001\u5B9A\u4F4D\u7F6E 130 m \u306E\u50DA\u8247\u306F\u6247\u306E\u5916\u306B\u51FA\u3084\u3059\u3044\u3002\u7832\u624B\u306F\u7167\u3089\u3055\u308C\u305F\u8247\u306E\u96A3\u306E\u8247\u3082\u898B\u3048\u308B\u3001\u3068\u3044\u3046\u7C21\u7565\u5316\uFF09\u3002\u6C88\u3081\u3070\u4EFB\u52D9\u5931\u6557\uFF08\u4EFB\u52D9\u306F\u5E30\u6295\u307E\u3067\u7D9A\u304F\uFF09\u3002\u5EA7\u7901\u30FB\u66B4\u98A8\u306E\u6CE2\u30FB\u4F53\u5F53\u305F\u308A\u306F\u53D7\u3051\u306A\u3044\uFF08v0.4.5 \u306E\u5019\u88DC\uFF09)"
+        },
+        shallows: [
+          {
+            x_m: 2200,
+            y_m: 1300,
+            width_m: 1600,
+            height_m: 600,
+            label_ja: "\u30B5\u30F3\u30B4\u7901"
+          }
+        ],
+        shallows_source: "design (v0.4.4\u3002\u5E30\u6295\u5730\u70B9\u306E\u624B\u524D\u306E\u30B5\u30F3\u30B4\u7901\uFF08\u30DF\u30F3\u30C0\u30CA\u30AA\u6C96\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089\u5E30\u6295\u5730\u70B9\u3078\u306E\u76F4\u7DDA\uFF08x 3,000\uFF09\u3092 y 1,300\u301C1,900 \u3067\u6A2A\u5207\u308B\u3002\u5B89\u5168\u901F\u529B 15 kt \u3067\u901A\u308C\u3070\u7D04 16 \u79D2\u3001\u6771\u304B\u897F\u3078 800 m \u8FC2\u56DE\u3059\u308C\u3070\u5DE1\u822A\u3067\u7D04 14 \u79D2\u306E\u9060\u56DE\u308A\u3002\u50DA\u8247\u306F\u5EA7\u7901\u3057\u306A\u3044)",
+        storm: {
+          sea_state: 5,
+          depth_m: 800,
+          drift_kt: 15,
+          start_south_y_min_m: 3600,
+          start_south_y_max_m: 4600,
+          source: "design (v0.4.4\u3002\u53F2\u5B9F: 1942 \u5E74 3 \u6708\u306E\u8131\u51FA\u884C\u306F\u8352\u5929\u3067\u8247\u304C\u5206\u6563\u3057\u305F\u3002\u5E2F\u306F\u5E45\u3044\u3063\u3071\u3044 800 m\u300115 kt \u3067\u5357\u3078\u3002\u59CB\u307E\u308A\u306E\u5357\u306E\u7E01\u306F\u51FA\u767A\u70B9\uFF08y 5,500\uFF09\u306E 900\u301C1,900 m \u5317\uFF08y 3,600\u301C4,600\u3002\u51FA\u767A\u70B9 \u2212 \u5E2F\u306E\u5E45 800 m \u3088\u308A\u5317\u304C\u6761\u4EF6\uFF09\u3092 seed+3 \u3067\u6C7A\u3081\u308B: \u51FA\u6483\u76F4\u5F8C\u301C\u5C01\u9396\u7DDA\u306E\u624B\u524D\u3067\u51FA\u4F1A\u3046\uFF08\u6B62\u307E\u3063\u3066\u3044\u3066\u3082 23\u301C49 \u79D2\u3067\u63A5\u89E6\uFF09\u3002sea_state 5 \u306F Elco 77ft \u306E\u9650\u754C 4 \u3092\u8D85\u3048\u308B\u306E\u3067\u3001\u5E2F\u306E\u4E2D\u3067\u5B89\u5168\u901F\u529B\uFF08risk_events \u306E storm.params\uFF09\u3092\u8D85\u3048\u308B\u3068\u53E9\u304D\u3064\u3051\u3002\u50DA\u8247\u306F\u6CE2\u306E\u88AB\u5BB3\u3092\u53D7\u3051\u306A\u3044)"
+        },
+        return_point: {
+          x_m: 3e3,
+          y_m: 500,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)",
+          source: "design (\u5E30\u6295\u5730\u70B9\uFF1D\u5317\u306E\u4E2D\u592E\uFF08\u30DF\u30F3\u30C0\u30CA\u30AA\u5074\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089 5,000 m\u3001\u8F2A\u306E\u7E01\u307E\u3067 4,750 m\u3002\u99C6\u9010\u8266\u306E\u5C01\u9396\u7DDA\uFF08y 3,000\uFF09\u304B\u3089 2,250 m\u3002\u50DA\u8247\u304C\u751F\u304D\u3066\u8F2A\u306B\u5165\u308C\u3070\u4EFB\u52D9\u9054\u6210\uFF08\u50DA\u8247\u306F\u81EA\u8247\u306B\u4ED8\u3044\u3066\u6765\u308B\u306E\u3067\u3001\u81EA\u8247\u304C\u8F2A\u306B\u5165\u308C\u3070\u8FD1\u304F\u306B\u3044\u308B\uFF09)"
+        },
+        hazards: [
+          "storm",
+          "enemy_ship_gunfire_or_ram",
+          "grounding",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.4.4\u3002\u51FA\u4F1A\u3046\u9806: \u66B4\u98A8\uFF08\u51FA\u6483\u76F4\u5F8C\uFF09\u3001\u5C01\u9396\u7DDA\u306E\u99C6\u9010\u8266\u306E\u7832\u6483\u30FB\u885D\u7A81\u3001\u5E30\u6295\u5730\u70B9\u306E\u624B\u524D\u306E\u30B5\u30F3\u30B4\u7901\u3002\u6575\u822A\u7A7A\u6A5F\u30FB\u5473\u65B9\u6A5F\u30FB\u6CBF\u5CB8\u7832\u306E block \u306F\u7121\u3044\u3002tests/briefing.test.ts \u304C block \u3068\u306E\u4E00\u81F4\u3092\u691C\u67FB\u3002v0.6.1: \u591C\u660E\u3051\u306E\u5F8C\u306E\u6575\u6A5F 4 \u6A5F\u306E\u7A7A\u8972\uFF08dawn_strike block\uFF09)",
+        dawn_strike: {
+          aircraft_id: "ijn_f1m2_pete",
+          count: 4,
+          count_source: "design (\u30E6\u30FC\u30B6\u30FC\u306E\u4F8B\u300E\u6575\u6C34\u4E0A\u6A5F\u6226\u968A\u56DB\u6A5F\u300F\u3002\u53F2\u5B9F\u306E\u985E\u4F8B: 1942-04-09 \u306B\u540C\u3058\u7B2C3\u9B5A\u96F7\u8247\u968A\u306E PT-34 \u3092\u8972\u3063\u305F\u96F6\u5F0F\u6C34\u4E0A\u89B3\u6E2C\u6A5F\u306F 4 \u6A5F: Pacific Wrecks PT-34 / ja.wikipedia \u7403\u78E8\u3002\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u8131\u51FA\u884C\u305D\u306E\u3082\u306E\u3078\u306E\u7A7A\u8972\u306E\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044)",
+          from_bearing_deg: 90,
+          escort_target_planes: [
+            1,
+            3
+          ],
+          source: "design (v0.6.1\u3002\u6771\uFF1D\u671D\u65E5\u306E\u65B9\u89D2\u304B\u3089\u3002\u8B83\u5C90\u4E38\u306E\u96F6\u89B3\u304C\u52D5\u3044\u305F\u30BB\u30D6\u30FB\u30D3\u30B5\u30E4\u65B9\u9762\u3082\u8131\u51FA\u8DEF\u306E\u6771\u30022\u30FB4 \u756A\u6A5F\u306F\u50DA\u8247\uFF08\u8981\u4EBA\uFF09\u304C\u6D6E\u3044\u3066\u3044\u308C\u3070\u50DA\u8247\u3092\u72D9\u3046\uFF08\u72D9\u3044\u306F\u76F4\u9032\u306E\u898B\u8D8A\u3057\u3060\u3051\uFF09\u3002\u50DA\u8247\u306F\u81EA\u8247\u306E\u91DD\u8DEF\u306B\u4ED8\u3044\u3066\u6765\u308B\u306E\u3067\u3001\u81EA\u8247\u306E\u8EE2\u8235\u304C\u50DA\u8247\u306E\u56DE\u907F\u306B\u306A\u308B)"
+        },
+        hard: {
+          extra_enemy_starts: [
+            {
+              x_m: 5400,
+              y_m: 2e3,
+              heading_deg: 270
+            }
+          ],
+          source: "design (v0.4.5\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9: \u5C01\u9396\u7DDA\u304C 2 \u5217\u30022 \u96BB\u76EE\u306F y 2,000 \u3092\u6771\u304B\u3089\u897F\u3078\uFF081 \u96BB\u76EE\u306F y 3,000 \u3092\u897F\u304B\u3089\u6771\u3078\uFF09\u30021 \u5217\u76EE\u3092\u629C\u3051\u305F 1,000 m \u5148\u306B\u3082\u3046 1 \u96BB\u3001\u9006\u5411\u304D\u306B\u5F80\u5FA9\u3057\u3066\u3044\u308B\u306E\u3067\u3001\u4E21\u65B9\u306E\u4F4D\u7F6E\u3092\u8AAD\u3093\u3067\u9593\u3092\u629C\u3051\u308B\u3002\u30B5\u30F3\u30B4\u7901\uFF08y 1,300\u301C1,900\uFF09\u306F 2 \u5217\u76EE\u306E\u3059\u3050\u5317)"
+        },
+        night: {
+          hazard_scale: 15,
+          optional_hazards: [
+            "storm"
+          ],
+          enemy_jitter: {
+            x_m: 800,
+            y_m: 100,
+            heading_deg: 0
+          },
+          mirror_chance: 0.5,
+          source: "design (v0.4.6\u3002\u591C\u306E\u63FA\u3089\u304E\u3002\u66B4\u98A8 0.04 \xD7 15 = 60%\uFF08\u53F2\u5B9F\u306E 1942 \u5E74 3 \u6708\u306E\u8131\u51FA\u884C\u306F\u8352\u5929\u3067\u8247\u304C\u5206\u6563\u3057\u305F\u306E\u3067 us_02 \u3088\u308A\u9AD8\u3044\uFF09\u3002\u5C01\u9396\u7DDA\u306E\u99C6\u9010\u8266\u306F x \xB1800 m\uFF08\u5F80\u5FA9\u306E\u4F4D\u76F8\u304C\u6700\u5927\u7D04 30 \u79D2\u305A\u308C\u308B\u3002\u3069\u3053\u3067\u629C\u3051\u308B\u304B\u3092\u6BCE\u56DE\u8AAD\u307F\u76F4\u3059\uFF09\u30FBy \xB1100 m\uFF08\u30CF\u30FC\u30C9\u306E 2 \u5217\u76EE y 2,000 \u304C\u30B5\u30F3\u30B4\u7901 y 1,300\u301C1,900 \u306B\u5165\u3089\u306A\u3044\u5E45\uFF09\u30FB\u91DD\u8DEF\u306F\u305A\u3089\u3055\u306A\u3044\uFF08\u6771\u897F\u306E\u5F80\u5FA9\u3092\u4FDD\u3064\uFF09\u3002\u5DE6\u53F3\u53CD\u8EE2 mirror_chance 0.5\uFF08\u5C01\u9396\u7DDA\u3092\u6771\u304B\u3089\u897F\u3078\u3002\u30CF\u30FC\u30C9\u306E 2 \u5217\u76EE\u306F\u897F\u304B\u3089\u6771\u3078\u3002\u30B5\u30F3\u30B4\u7901 x 2,200\u301C3,800 \u306F x 3,000 \u3067\u5DE6\u53F3\u5BFE\u79F0\u306A\u306E\u3067\u5730\u5F62\u306E\u6709\u5229\u4E0D\u5229\u306F\u5909\u308F\u3089\u306A\u3044\uFF09)"
+        }
+      }
+    },
+    {
+      id: "us_02",
+      campaign: "us_pt",
+      order: 2,
+      playable_from: "v0.4.0",
+      title_ja: "\u6771\u4EAC\u6025\u884C\u3092\u8FCE\u3048\u6483\u3066",
+      date: "1942-12-11",
+      place: "\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\u6C96\uFF08\u30A2\u30A4\u30A2\u30F3\u30DC\u30C8\u30E0\u30FB\u30B5\u30A6\u30F3\u30C9\uFF09",
+      type: "intercept_destroyer",
+      player_boat: "us_elco80",
+      torpedo_type: "us_mk8",
+      objective: "\u591C\u9593\u306B\u88DC\u7D66\u306B\u6765\u308B\u99C6\u9010\u8266\u3092\u96F7\u6483\u3057\u3001\u751F\u9084\u3059\u308B",
+      enemies: [
+        "ijn_destroyer",
+        "ijn_destroyer"
+      ],
+      hazards: [
+        "enemy_ship_gunfire_or_ram"
+      ],
+      moon: "half",
+      duration_min: 4,
+      success: "\u5E30\u6295\uFF08\u6575\u8266\u968A\u304C\u3044\u306A\u304F\u306A\u308C\u3070\u4E0D\u8981\uFF09\u3002\u547D\u4E2D\u306F\u30DC\u30FC\u30CA\u30B9",
+      historical_note: "PT-37\u30FB40\uFF08\u8AF8\u8AAC\uFF09\u304C\u99C6\u9010\u8266\u7167\u6708\u306B\u547D\u4E2D\u3057\u7206\u6C88\u3002PT-44\u55AA\u5931\u3002\u7167\u6708\u306E\u6B8B\u9AB8\u306F2025\u5E747\u6708\u306B\u767A\u898B\u3002",
+      briefing_note_ja: "PT-37\u30FB40\uFF08\u8AF8\u8AAC\uFF09\u304C\u99C6\u9010\u8266\u7167\u6708\u306B\u547D\u4E2D\u3057\u7206\u6C88\u3002PT-44\u55AA\u5931\u3002\u7167\u6708\u306E\u6B8B\u9AB8\u306F2025\u5E747\u6708\u306B\u767A\u898B\u3002",
+      source_url: "https://en.wikipedia.org/wiki/Japanese_destroyer_Teruzuki_(1941)",
+      dawn_air: {
+        control: "own",
+        confidence: "high",
+        play_as: "own",
+        enemy_ships_at_dawn: "retire",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u5473\u65B9\uFF08\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\uFF09",
+        refs: [
+          {
+            url: "https://en.wikipedia.org/wiki/Tokyo_Express",
+            claim: "\u663C\u306F\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\u304B\u3089\u7D04 200 \u30DE\u30A4\u30EB\u4EE5\u5185\u306E\u65E5\u672C\u8266\u306F\u7A7A\u8972\u3092\u53D7\u3051\u308B\u306E\u3067\u3001\u6771\u4EAC\u6025\u884C\u306F\u4E00\u6669\u3067\u5F80\u5FA9\u3057\u305F"
+          },
+          {
+            url: "https://warfarehistorynetwork.com/article/navy-pilots-at-cactus/",
+            claim: "\u65E5\u672C\u306F\u663C\u306B\u5897\u63F4\u3092\u52D5\u304B\u305B\u305A\u3001\u99C6\u9010\u8266\u306F\u591C\u306B\u30B9\u30ED\u30C3\u30C8\u3092\u4E0B\u308A\u3001\u591C\u660E\u3051\u306B\u9023\u5408\u8ECD\u6A5F\u304C\u623B\u308B\u524D\u306B\u96E2\u308C\u305F"
+          },
+          {
+            url: "https://pacificwrecks.com/ship/ptboat/PT-123.html",
+            claim: "\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F\u306F\u591C\u306E\u8105\u5A01\uFF081943-02-01 \u591C\u3001\u96F6\u89B3\u306E\u7206\u5F3E\u3067 PT-123 \u6C88\u6CA1\uFF09\uFF1D\u3053\u306E\u4EFB\u52D9\u306E\u591C\u306E\u6575\u6A5F"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u82F1\u8A9E\u30FB\u65E5\u672C\u8A9E\u306E\u8ABF\u67FB\u3068\u3082 own\u30FBhigh) / design (v0.6.1\u3002\u65E5\u672C\u6A5F\u306E\u591C\u660E\u3051\u306E\u7A7A\u8972\u306F\u53F2\u5B9F\u306B\u53CD\u3059\u308B\u306E\u3067\u51FA\u3055\u306A\u3044\u3002\u6575\u8266\u304C\u5317\u3078\u9000\u304F\u306E\u306F v0.6.2)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "ijn_destroyer"
+        ],
+        enemy_behavior: "ai (v0.2.0: \u96F7\u8DE1\u56DE\u907F\u30FB\u4F53\u5F53\u305F\u308A\u30FB\u7AEF\u3067\u5411\u304D\u76F4\u3057\u3002enemies.json \u306E detection/evasion/ram/patrol)\u3002\u8F38\u9001\u8239\uFF08v0.4.7\uFF09\u306F\u540C\u3058 AI \u3067 9 kt\u3001\u4F53\u5F53\u305F\u308A\u306A\u3057",
+        duration_s: 150,
+        duration_s_source: "design (\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002v0.1.3 60 \u79D2 \u2192 v0.2.0 90 \u79D2 \u2192 v0.3.0 150 \u79D2\u3002\u7D4C\u904E\u3067\u591C\u660E\u3051\u306B\u306A\u308A\u3001\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u5916\u306A\u3089\u591C\u660E\u3051\u306E\u5F8C\u306F\u6575\u6A5F\u306E\u7A7A\u8972\uFF08us_01\u30FBus_03\u30FBjp_06\u3002us_03 \u306F v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\uFF09\uFF0F\u6575\u6A5F\u306F\u6765\u306A\u3044\uFF08us_02\uFF09\u3002v0.6.1 \u304B\u3089\u591C\u660E\u3051\u3067\u4EFB\u52D9\u306F\u7D42\u308F\u3089\u306A\u3044\u3002\u6A21\u64EC\uFF08scripts/return-sim.ts\u3001200 \u56DE\u3001\u7406\u60F3\u5316\u3057\u305F\u64CD\u4F5C\uFF09\u3067\u30011 \u56DE\u653B\u6483\u3057\u3066\u5E30\u6295\u306F 97\u301C102 \u79D2\u3001\u5916\u3057\u3066\u5DE1\u822A\u3067\u518D\u653B\u6483\u3057\u3066\u5E30\u6295\u306F 123 \u79D2\uFF08p90 127 \u79D2\uFF09\u3002\u5B9F\u969B\u306E\u64CD\u4F5C\u306F\u6A21\u64EC\u3088\u308A\u9045\u3044\u306E\u3067\u3001\u518D\u653B\u6483\u3057\u305F\u4EBA\u3060\u3051\u304C\u300E\u901F\u304F\u5E30\u308B\u304B\u300F\u3092\u8FEB\u3089\u308C\u308B\u9577\u3055\u3002duration_min 4 \u306F\u4EFB\u52D9\u672C\u4F53\u306E\u8A2D\u8A08\u5024\uFF08v0.4\uFF09\u3067\u3001\u3053\u308C\u3068\u306F\u5225\u306E\u30D7\u30ED\u30C8\u30BF\u30A4\u30D7\u5024)",
+        fuel_allotment_gal: 38,
+        fuel_allotment_gal_source: "design (\u6226\u95D8\u306B\u4F7F\u3048\u308B\u5272\u5F53\u3002\u6E80\u30BF\u30F3 3,000 gal \u306F 150 \u5B9F\u79D2\uFF08game 750 \u79D2\uFF09\u5168\u901F\u3067\u8D70\u3063\u3066\u3082 104 gal\uFF1D3.5% \u3057\u304B\u6E1B\u3089\u305A\u3001\u5224\u65AD\u6750\u6599\u306B\u306A\u3089\u306A\u3044\u3002\u305D\u3053\u3067\u3001\u5F80\u5FA9\u306E\u822A\u7A0B\u3068\u4E88\u5099\u3092\u753B\u9762\u5916\u3067\u6E08\u307E\u305B\u305F\u6271\u3044\u306B\u3057\u3001\u4EA4\u6226\u6D77\u57DF\u3067\u4F7F\u3063\u3066\u3088\u3044\u91CF\u3060\u3051\u3092\u7A4D\u3080\u3002v0.3.0 \u306F 50 gal \u3060\u3063\u305F\u304C\u5B9F\u6A5F\u3067\u300E\u610F\u8B58\u3057\u306A\u304F\u3066\u3044\u3044\u304F\u3089\u3044\u4F59\u88D5\u304C\u3042\u3063\u305F\u300F\u306E\u3067 v0.3.1 \u3067 36 gal \u306B\u3001\u305D\u306E\u5B9F\u6A5F\u3067\u300E\u672C\u5F53\u306B\u82E5\u5E72\u3060\u3051\u7DE9\u3081\u3066\u300F\u3068\u8981\u671B\u304C\u3042\u308A 38 gal \u306B\u300238 gal \u306E\u6A21\u64EC\uFF08\u88AB\u5F3E\u306A\u3057\u3001\u5E30\u6295\u6642\u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024\uFF09: \u9759\u97F3\u4E2D\u5FC3 40%\uFF0F\u6A19\u6E96 22%\uFF0F\u5168\u901F\u3060\u3051\u3067 1 \u56DE\u653B\u6483 3%\uFF08p10 1%\u3002200 \u56DE\u4E2D 200 \u56DE\u5E30\u308C\u308B\u304C\u3001\u71C3\u6599\u8A08\u306E\u300E\u6E1B\u901F\u3057\u306A\u3044\u3068\u5C4A\u304B\u306A\u3044\u300F\u304C\u51FA\u308B\uFF09\uFF0F\u5916\u3057\u3066\u518D\u653B\u6483\u306F\u5DE1\u822A\u3067\u3082\u5E30\u308C\u306A\u3044\uFF0F\u653B\u6483\u305B\u305A\u76F4\u5E30 65%\u3002\u53C2\u8003 36 gal \u306E\u6A21\u64EC\uFF08\u88AB\u5F3E\u306A\u3057\u3001\u5E30\u6295\u6642\u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024\uFF09: \u9759\u97F3\u4E2D\u5FC3 37%\uFF0F\u6A19\u6E96\uFF08\u5168\u901F 15 \u79D2\u96E2\u8131 \u2192 \u5DE1\u822A\u3067\u5E30\u6295\uFF0918%\uFF0F\u5168\u901F\u3060\u3051\u3067 1 \u56DE\u653B\u6483\u306F 200 \u56DE\u4E2D 85 \u56DE\u3057\u304B\u5E30\u308C\u306A\u3044\uFF08\u71C3\u6599\u8A08\u306E\u300E\u6E1B\u901F\u3057\u306A\u3044\u3068\u5C4A\u304B\u306A\u3044\u300F\u3092\u898B\u3066\u6E1B\u901F\u3059\u308C\u3070\u5C4A\u304F\uFF09\uFF0F\u5916\u3057\u3066\u518D\u653B\u6483\u306F\u5DE1\u822A\u3067\u3082\u5E30\u308C\u306A\u3044\uFF0F\u653B\u6483\u305B\u305A\u76F4\u5E30 63%\u300240 gal \u3060\u3068\u5168\u901F\u3060\u3051\u3067\u3082 8% \u6B8B\u3057\u3066\u5E30\u308C\u3066\u3057\u307E\u3044\u300132 gal \u3060\u3068\u6A19\u6E96\u3067\u3082 7%\u3002\u4EE5\u4E0B\u306F v0.3.0\uFF0850 gal\uFF09\u6642\u70B9\u306E\u8A18\u9332: \u6642\u9593\u5727\u7E2E\u306F time_scale \u3060\u3051\u3067\u3001\u71C3\u6599\u7528\u306E\u500D\u7387\u306F\u4F5C\u3089\u306A\u3044\u3002\u6D88\u8CBB\u7387\uFF08\u5DE1\u822A 200\u30FB\u5168\u901F 500 gal/h\uFF09\u306F\u53F2\u5B9F\u306E\u307E\u307E\u300250 gal \u306F\u5168\u901F\u3060\u3051\u306A\u3089 72 \u5B9F\u79D2\u3001\u5DE1\u822A 180 \u79D2\u3001\u9759\u97F3\u4E0A\u9650 18 kt \u3067 268 \u79D2\u3067\u5C3D\u304D\u308B\u3002\u6A21\u64EC\uFF08scripts/return-sim.ts\u3001200 \u56DE\u3001\u88AB\u5F3E\u306A\u3057\u3001\u5E30\u6295\u6642\u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024\uFF09: \u9759\u97F3\u4E2D\u5FC3 54%\uFF0F\u6A19\u6E96 41%\uFF0F\u5168\u901F\u3060\u3051\u3067 1 \u56DE\u653B\u6483 26%\uFF0F\u5916\u3057\u3066\u5DE1\u822A\u3067\u518D\u653B\u6483 14%\uFF0F\u5168\u901F\u3060\u3051\u3067\u518D\u653B\u6483 3%\uFF081 \u5272\u306F 0%\uFF09\uFF0F\u653B\u6483\u305B\u305A\u76F4\u5E30 74%\u300260 gal \u3060\u3068\u5168\u901F\u3067\u518D\u653B\u6483\u3057\u3066\u3082 19% \u6B8B\u3063\u3066\u554F\u3044\u304C\u52B9\u304B\u305A\u300145 gal \u3060\u3068\u5DE1\u822A\u3067\u306E\u518D\u653B\u6483\u304C 4% \u3067\u53B3\u3057\u3059\u304E\u305F)",
+        shallows: [
+          {
+            x_m: 4300,
+            y_m: 900,
+            width_m: 700,
+            height_m: 800,
+            label_ja: "\u6D45\u702C"
+          }
+        ],
+        shallows_source: "design (v0.3.2\u3002\u30C4\u30E9\u30AE\u65B9\u9762\uFF08\u5E30\u6295\u5730\u70B9\uFF09\u3068\u4EA4\u6226\u6D77\u57DF\u306E\u9593\u306E\u30B5\u30F3\u30B4\u7901\u3002\u5178\u578B\u7684\u306A\u4EA4\u6226\u70B9 (3000,2100) \u304B\u3089\u5E30\u6295\u5730\u70B9 (5400,600) \u3078\u76F4\u7DDA\u3067\u5E30\u308B\u3068 x 4300\u301C4920 \u306E\u7D04 730 m \u3092\u6A2A\u5207\u308A\u3001\u51FA\u767A\u70B9 (3000,3200) \u304B\u3089\u306E\u76F4\u7DDA\u3082\u6A2A\u5207\u308B\u3002\u5B89\u5168\u901F\u529B 15 kt\uFF08\u753B\u9762\u4E0A 39 m/s\uFF09\u3067\u901A\u308A\u629C\u3051\u308B\u3068\u7D04 19 \u5B9F\u79D2\uFF08v0.3.2 \u5F53\u521D\u306E 10 kt \u3067\u306F\u7D04 28 \u79D2\u3067\u3001\u5B9F\u6A5F\u3067\u300E\u304D\u3064\u3044\u300F\uFF09\u3001\u5317\u304B\u5357\u3078\u8FC2\u56DE\u3059\u308B\u3068\u5DE1\u822A\u3067\u7D04 7 \u79D2\u306E\u9060\u56DE\u308A\u3002\u898B\u5F35\u308A\u30BA\u30FC\u30E0\uFF080.5\uFF09\u306A\u3089 2 \u753B\u9762\u5206\u624B\u524D\u304B\u3089\u898B\u3048\u308B\u3002\u5B89\u5168\u901F\u529B\u3068\u8B66\u544A\u306F risk_events.json \u306E grounding.params)",
+        friendly_aircraft: {
+          trigger_edge_m: 2600,
+          source: "design (v0.3.3\u3002\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u304B\u3089\u3053\u306E\u8DDD\u96E2\u4EE5\u5185\u3067\u3001\u53CB\u8ECD\u8AA4\u5C04\uFF08risk_events.json \u306E friendly_fire.params\uFF09\u306E\u958B\u59CB\u6761\u4EF6\u3092\u6570\u3048\u59CB\u3081\u308B\u3002\u3053\u306E block \u304C\u7121\u3044\u4EFB\u52D9\u3067\u306F\u5473\u65B9\u6A5F\u306F\u6765\u306A\u3044\u3002\u51FA\u767A\u70B9\uFF08\u7E01\u307E\u3067 3,288 m\uFF09\u306F\u5916\uFF08\u5185\u5074\u306A\u3089\u8D77\u52D5\u6642\u306B\u4F8B\u5916\uFF09\u3002\u5178\u578B\u7684\u306A\u4EA4\u6226\u70B9 (3000,2100)\uFF082,580 m\uFF09\u306F\u5185\u5074\u306A\u306E\u3067\u3001\u6483\u3061\u7D42\u3048\u3066\u5E30\u308A\u59CB\u3081\u308B\u3068\u3059\u3050\u6570\u3048\u59CB\u3081\u308B\u3002\u5168\u901F\uFF08\u753B\u9762\u4E0A 100 m/s\uFF09\u306A\u3089 quiet_s 2 \u79D2\u3067 200 m \u9032\u3093\u3067\u7E01\u304B\u3089\u7D04 2,380 m \u3067\u59CB\u307E\u308A\u3001\u7336\u4E88 5 \u79D2\u3067 500 m \u9032\u3093\u3067\u7D04 1,880 m \u3067\u7D42\u308F\u308B\u3002\u4EA4\u6226\u70B9\u304B\u3089\u76F4\u7DDA\u3067\u5E30\u308B\u3068\u6D45\u702C\u306B\u5165\u308B\u306E\u306F\u7E01\u304B\u3089 1,047 m\u3001\u5168\u901F\u306E\u6D45\u702C\u306E\u8B66\u544A\uFF086 \u79D2\u5148\uFF1D602 m\uFF09\u306F 1,649 m \u304B\u3089\u306A\u306E\u3067\u3001\u6700\u521D\u306E\u7336\u4E88\u306F\u8B66\u544A\u306E\u7D04 2.3 \u79D2\u524D\u306B\u7D42\u308F\u308B\uFF08\u51FA\u767A\u70B9\u304B\u3089\u306E\u76F4\u7DDA\u3067\u306F\u8B66\u544A\u304C 1,849 m \u304B\u3089\u3067\u7D04 0.5 \u79D2\u524D\uFF09\u30022,400 \u3060\u3068\u4EA4\u6226\u70B9\u304B\u3089\u3067\u3082\u7D04 0.5 \u79D2\u524D\u307E\u3067\u7E2E\u3080\u3002\u6483\u305F\u308C\u3066 2 \u56DE\u76EE\u306E\u8B58\u5225\u306B\u306A\u3063\u305F\u3068\u304D\u3084\u5225\u306E\u5E30\u308A\u9053\u3067\u306F\u6D45\u702C\u306E\u8B66\u544A\u3068\u91CD\u306A\u308B\u3053\u3068\u304C\u3042\u308B\u306E\u3067\u3001HUD 2 \u884C\u76EE\u306F\u4E21\u65B9\u3092\u51FA\u3059)"
+        },
+        storm: {
+          sea_state: 6,
+          depth_m: 800,
+          drift_kt: 15,
+          start_south_y_min_m: 1200,
+          start_south_y_max_m: 2200,
+          source: "design (v0.3.4\u3002\u30D7\u30ED\u30C8\u30BF\u30A4\u30D7\u306E\u8A2D\u8A08\u5024\u3067\u3001\u53F2\u5B9F\u306E us_02\uFF081942-12-11\uFF09\u306B\u66B4\u98A8\u306E\u8A18\u9332\u306F\u7121\u3044\uFF08hazards \u306F\u5909\u3048\u306A\u3044\uFF09\u3002\u66B4\u98A8\u306E\u5E2F\u306E\u5F62\u3068\u52D5\u304D\u3092\u6C7A\u3081\u308B\uFF08\u5E2F\u306E\u4E2D\u306E\u52B9\u679C\u306F risk_events \u306E storm.params\uFF09\u3002sea_state 6 \u306F WMO \u306E very rough\uFF08\u6CE2\u9AD8 4\u301C6 m\uFF09\u3002docs/01 \u306E\u8A66\u9A13\u8A18\u9332\u3067\u306F Elco 70ft \u304C 2.4\u301C3 m \u306E\u6CE2\u3067\u8239\u5E95\u30D5\u30EC\u30FC\u30E0\u7834\u640D\u30FB\u5916\u677F\u4E80\u88C2\u3092\u8D77\u3053\u3057\u305F\u306E\u3067\u3001Elco 80ft \u306E sea_state_limit 5\uFF082.5\u301C4 m\uFF09\u3092\u8D85\u3048\u308B\uFF1D\u901F\u3059\u304E\u308B\u3068\u53E9\u304D\u3064\u3051\u3067\u50B7\u3080\u3002\u5E2F\u306F\u6D77\u57DF\u306E\u5E45\u3044\u3063\u3071\u3044\uFF08\u5FC5\u305A\u51FA\u4F1A\u3044\u3001\u6A2A\u306B\u9003\u3052\u3089\u308C\u306A\u3044\uFF09\u3067 800 m\uFF08\u5168\u901F\u3067 5.8 \u79D2\u300118 kt \u3067 9.4 \u79D2\u304B\u304B\u308B\uFF09\u300215 kt\uFF08\u753B\u9762\u4E0A 38.6 m/\u79D2\uFF09\u3067\u5357\u3078\u9032\u307F\u300167\u301C93 \u79D2\u3067\u6D77\u57DF\u306E\u5357\u306E\u7E01\u3092\u629C\u3051\u308B\uFF08\u591C\u660E\u3051 150 \u79D2\u3088\u308A\u524D\uFF09\u3002\u59CB\u307E\u308A\u306E\u5357\u306E\u7E01\u306F\u51FA\u767A\u70B9\uFF08y 3200\uFF09\u306E 1,000\u301C2,000 m \u5317\uFF08y 1200\u301C2200\uFF09\u3092 seed+3 \u3067\u6C7A\u3081\u308B: \u51FA\u6483\u76F4\u5F8C\u301C\u653B\u6483\u4E2D\u306B\u51FA\u4F1A\u3044\uFF08\u6B62\u307E\u3063\u3066\u3044\u3066\u3082\u63A5\u89E6\u307E\u3067 26\u301C52 \u79D2\u3001\u5168\u901F\u3067\u5317\u4E0A\u3059\u308B\u3068 8\u301C16 \u79D2\u3001\u5DE1\u822A\u3067 11\u301C21 \u79D2\uFF09\u3001\u5E30\u308A\u9053\u306E\u5473\u65B9\u6A5F\u30FB\u6D45\u702C\uFF08x 4300\u301C5000\uFF09\u3068\u306F\u3075\u3064\u3046\u91CD\u306A\u3089\u306A\u3044\u3002\u3053\u306E block \u304C\u7121\u3044\u4EFB\u52D9\u306B\u306F\u5E2F\u304C\u7121\u3044\u3002?debug&storm=Y \u3067\u5357\u306E\u7E01\u306E\u521D\u671F y \u3092\u56FA\u5B9A\u3001?debug&nostorm \u3067\u5E2F\u306A\u3057)"
+        },
+        return_point: {
+          x_m: 5400,
+          y_m: 600,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)",
+          source: "design (\u5E30\u6295\u5730\u70B9\uFF1D\u5473\u65B9\u306E\u96C6\u5408\u70B9\uFF08\u30C4\u30E9\u30AE\u65B9\u9762\u306E\u5317\u6771\u306E\u89D2\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089 3,538 m\u3001\u5178\u578B\u7684\u306A\u4EA4\u6226\u70B9 (3000,2100) \u304B\u3089 2,830 m\u3002\u90AA\u9B54\u3055\u308C\u306A\u3044\u3068\u304D\u306E\u99C6\u9010\u8266\u306E\u54E8\u6212\u822A\u8DEF\u304B\u3089\u306F\u6700\u3082\u8FD1\u304F\u3066 1,966 m\u3002\u6700\u521D\u304B\u3089\u6709\u52B9\u3067\u3001\u51FA\u767A\u70B9\u306F\u8F2A\u306E\u5916\u3002\u534A\u5F84 250 m \u306F\u30BA\u30FC\u30E0 0.75 \u3067\u76F4\u5F84 375 px\u3002\u5168\u901F\u3067\u3082 1 \u30B9\u30C6\u30C3\u30D7 1.7 m \u306A\u306E\u3067\u98DB\u3073\u8D8A\u3048\u306A\u3044\u3002call_margin: \u71C3\u6599\u306E\u6B8B\u308A\u304C\u300E\u5DE1\u822A\u3067\u8F2A\u306E\u7E01\u307E\u3067\u76F4\u7DDA\u3067\u5E30\u308B\u71C3\u6599 \xD7 1.5\u300F\u4EE5\u4E0B\u3001\u307E\u305F\u306F\u591C\u660E\u3051\u307E\u3067\u304C\u300E\u5DE1\u822A\u3067\u5E30\u308B\u5B9F\u79D2 \xD7 1.5\u300F\u4EE5\u4E0B\u306B\u306A\u3063\u305F\u3089\u300E\u5E30\u6295\u305B\u3088\u300F\u30021.5 \u306F\u5168\u901F/\u5DE1\u822A\u306E\u8DDD\u96E2\u3042\u305F\u308A\u6D88\u8CBB\u6BD4 1.47 \u3068\u5DE1\u822A/\u9759\u97F3\u4E0A\u9650\u306E\u901F\u529B\u6BD4 1.28 \u3092\u4E0A\u56DE\u308B\u306E\u3067\u3001\u547C\u3070\u308C\u305F\u6642\u70B9\u3067\u5168\u901F\u3067\u3082\u9759\u97F3\u3067\u3082\u5E30\u308C\u308B\u3002torpedo_settle_max_s: \u8F2A\u306E\u4E2D\u3067\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2)"
+        },
+        enemy_aircraft: {
+          enemy_id: "ijn_seaplane_jake",
+          source: "design (v0.4.1\u3002\u3053\u306E block \u304C\u3042\u308B\u4EFB\u52D9\u306B\u6C34\u4E0A\u6A5F\u304C\u6765\u308B\u3002\u6570\u5024\u306F enemies.json \u306E\u6A5F\u4F53\u3068 risk_events \u306E enemy_aircraft.params\u3002\u51FA\u767A\u304B\u3089 20 \u79D2\u306F\u6765\u306A\u3044\u3002\u5E2F\u3092\u629C\u3051\u3066\u5168\u901F\u3067 3 \u79D2\u8D70\u308B\u3068\u6575\u8266\u306E\u65B9\u89D2 6,000 m \u304B\u3089\u6765\u308B\u3002\u8B66\u544A\u304B\u3089\u7D04 9 \u79D2\u4EE5\u5185\u306B 18 kt \u4EE5\u4E0B\u306B\u3059\u308C\u3070\u30014 \u79D2\u5F8C\u306B\u898B\u5931\u308F\u305B\u3089\u308C\u308B\uFF08\u767A\u898B\u7DDA 1,500 m\uFF09\u3002\u96E2\u8131\u306E\u5168\u901F\u3067\u3082\u6765\u308B\u3002\u7167\u660E\u5F3E\u306E\u4E0B\u3067\u99C6\u9010\u8266\u304B\u3089 1,500\u301C2,000 m \u306B\u3044\u308B\u3068 40 \u79D2\u3067 HP \u221228\u301C\u221260\uFF08\u7159\u5E55\u3067\u7832\u6483\u306F\u6B62\u307E\u308B\u3001\u5149\u306E\u5916\u3078\u306F\u5168\u901F 12 \u79D2\uFF09\u3002?debug&noplane \u3067\u7121\u3057)"
+        },
+        hazards: [
+          "storm",
+          "enemy_ship_gunfire_or_ram",
+          "enemy_aircraft",
+          "grounding",
+          "friendly_fire"
+        ],
+        hazards_source: "design (v0.4.0\u3002\u3053\u306E\u904A\u3079\u308B\u4E16\u754C\u3067\u5B9F\u969B\u306B\u8D77\u304D\u308B\u5371\u967A\uFF08risk_events.json \u306E id\uFF09\u3092\u51FA\u4F1A\u3046\u9806\u306B\u4E26\u3079\u308B\u3002Briefing \u306E\u300E\u5371\u967A\u300F\u306F label_ja \u306E\u300E\uFF08\u300F\u3088\u308A\u524D\u3092\u4E26\u3079\u3066\u300E\u66B4\u98A8\u3001\u6575\u8266\u306E\u7832\u6483\u30FB\u885D\u7A81\u3001\u6575\u822A\u7A7A\u6A5F\u3001\u5EA7\u7901\u3001\u53CB\u8ECD\u8AA4\u5C04\u300F\u3002v0.4.1 \u3067 enemy_aircraft\uFF08\u4EFB\u52D9\u4E2D\u306E\u6C34\u4E0A\u6A5F\u3002\u6E2F\u5185\u7A7A\u8972\u306E\u4EE3\u308F\u308A\u3002block \u306F enemy_aircraft\uFF09\u3002harbor_fire_explosion\uFF08\u51FA\u6483\u524D\u306E\u6E2F\u5185\u7A7A\u8972\u306E 2 \u629E\uFF09\u306F v0.4.0 \u306E\u5B9F\u6A5F\u3067\u300E\u30E6\u30FC\u30B6\u30FC\u304B\u3089\u3059\u308B\u3068\u30D4\u30F3\u3068\u6765\u306A\u3044\u3002\u64CD\u7E26\u4E2D\u306B\u6575\u6A5F\u304C\u6765\u308B\u65B9\u304C\u30EA\u30A2\u30EB\u300F\u3060\u3063\u305F\u306E\u3067 us_02 \u304B\u3089\u5916\u3057\u305F\uFF08\u4ED5\u7D44\u307F\u3068 params \u306F\u6B8B\u308A\u3001\u3053\u306E id \u3092\u8DB3\u305B\u3070 Briefing \u306E 2 \u629E\u304C\u623B\u308B\u3002\u4EE3\u308F\u308A\u306B\u6575\u306E\u6C34\u4E0A\u6A5F\u3092\u4EFB\u52D9\u4E2D\u306B\u51FA\u3059: v0.4.1\uFF09\u3002storm\u30FBshallows\u30FBfriendly_aircraft\u30FB\u7832\u3092\u6301\u3064\u6575\u306E block \u3068\u4E00\u81F4\u3055\u305B\u308B\uFF08tests/briefing.test.ts \u304C\u691C\u67FB\uFF09\u3002\u4E0A\u4F4D\u306E hazards\uFF08\u4EFB\u52D9\u672C\u4F53\u306E\u8A2D\u8A08\uFF09\u306F\u5909\u3048\u306A\u3044)",
+        bounds_m: {
+          width: 6e3,
+          height: 4e3,
+          source: "design (zoom0.75\u3067\u753B\u9762\u5E45\u22481,700m\u3002\u5168\u901F39kt\xD7time_scale5\u2248100m/s\u306760\u79D2\u8D70\u3063\u3066\u7AEF\u306B\u5C4A\u304F\u5E83\u3055)"
+        },
+        player_start: {
+          x_m: 3e3,
+          y_m: 3200,
+          heading_deg: 0,
+          source: "design (\u6D77\u57DF\u306E\u4E0B\u5BC4\u308A\u4E2D\u592E\u304B\u3089\u5317\u5411\u304D\u306B\u51FA\u767A)"
+        },
+        enemy_start: {
+          x_m: 1500,
+          y_m: 300,
+          heading_deg: 135,
+          source: "design (\u5317\u897F\u304B\u3089\u5357\u6771\u3078\u5411\u304B\u3044\u3001\u81EA\u8247\u306E\u9032\u8DEF\u3078\u659C\u3081\u306B\u8FD1\u3065\u304F\u3002v0.2.0: \u5DE1\u822A\u306E\u307E\u307E\u5317\u4E0A\u3059\u308B\u3068\u7D0411\u79D2\u3067\u767A\u898B\u3055\u308C\uFF082,000m\uFF09\u3001\u7D0415\u79D2\u3067\u8996\u754C\u306B\u5165\u308B\uFF081,500m\uFF09\u3002\u9759\u97F3\u306A\u3089\u767A\u898B\u306F1,000m\u3001\u505C\u6B62\u306A\u3089800m\u3002\u898B\u8D8A\u3057\u89D2\u306F8\xB0\u524D\u5F8C\u306A\u306E\u3067\u6247\u72B6\u4E00\u6589\u3067\u5F53\u305F\u308B\u3002\u91DD\u8DEF\u3092\u5909\u3048\u305A\u8FD1\u3065\u304D\u7D9A\u3051\u308B\u3068\u7D04400m\u3067\u4F53\u5F53\u305F\u308A\u306B\u6765\u308B\u3002\u6D77\u57DF\u306E\u7AEF 700m \u3067\u4E2D\u592E\u3078\u5411\u304D\u76F4\u3059\uFF08patrol\uFF09\u306E\u3067 90 \u79D2\u3067\u3082\u6D77\u57DF\u5185\u3002y=300 \u306F\u7AEF 700m \u306E\u5185\u5074\u306A\u306E\u3067\u51FA\u767A\u76F4\u5F8C\u306B\u4E2D\u592E\u5BC4\u308A\uFF08\u7D04139\xB0\uFF09\u3078\u5411\u304F)"
+        },
+        enemy_hits_to_sink: 1,
+        enemy_hits_to_sink_source: "design (\u30D7\u30ED\u30C8\u30BF\u30A4\u30D7\u3067\u306F1\u672C\u3067\u6C88\u6CA1\u6F14\u51FA\u3092\u898B\u305B\u308B\u3002enemies.json \u306E torpedo_hits_to_sink=2 \u306F\u5F8C\u306E\u4EFB\u52D9\u7528)",
+        hard: {
+          extra_enemy_starts: [
+            {
+              x_m: 4500,
+              y_m: 300,
+              heading_deg: 225
+            }
+          ],
+          source: "design (v0.4.5\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9: \u99C6\u9010\u8266 2 \u96BB\u30022 \u96BB\u76EE\u306F\u5317\u6771 (4500, 300) \u304B\u3089\u5357\u897F\u3078\uFF081 \u96BB\u76EE\u306F\u5317\u897F\u304B\u3089\u5357\u6771\u3078\uFF09\uFF1D\u631F\u307F\u6483\u3061\u3002\u51FA\u767A\u70B9 (3000, 3200) \u304B\u3089\u5317\u4E0A\u3059\u308B\u3068\u4E21\u65B9\u304C\u659C\u3081\u306B\u8FD1\u3065\u304D\u3001\u7247\u65B9\u3092\u72D9\u3063\u3066\u3044\u308B\u9593\u306B\u3082\u3046\u7247\u65B9\u306B\u898B\u3064\u304B\u308B\u3002\u6483\u6C88\u306E\u9054\u6210\u306F 2 \u96BB\u3068\u3082\uFF08\u6C88\u6CA1 1 \u672C \xD7 2 = \u9B5A\u96F7 4 \u672C\u3067\u8DB3\u308A\u308B\uFF09\u3002\u5E30\u6295\u5730\u70B9\uFF08\u5317\u6771\u306E\u89D2\uFF09\u306F 2 \u96BB\u76EE\u306E\u51FA\u767A\u70B9\u306B\u8FD1\u3044\u306E\u3067\u3001\u6483\u3063\u305F\u5F8C\u306E\u5E30\u308A\u9053\u3067\u3082\u898B\u3064\u304B\u308A\u3084\u3059\u3044)"
+        },
+        night: {
+          hazard_scale: 8,
+          optional_hazards: [
+            "storm",
+            "enemy_aircraft",
+            "friendly_fire"
+          ],
+          enemy_jitter: {
+            x_m: 500,
+            y_m: 200,
+            heading_deg: 15
+          },
+          mirror_chance: 0.5,
+          source: "design (v0.4.6\u3002\u591C\u306E\u63FA\u3089\u304E\u3002\u4ECA\u591C\u51FA\u308B\u78BA\u7387 = risk_events \u306E share \xD7 hazard_scale 8\uFF08\u4E0A\u9650 1\uFF09: \u66B4\u98A8 0.04 \u2192 32%\u3001\u6575\u822A\u7A7A\u6A5F 0.10 \u2192 80%\u3001\u53CB\u8ECD\u8AA4\u5C04 0.10 \u2192 80%\uFF083 \u3064\u3068\u3082\u51FA\u308B\u591C 20%\u3001\u3069\u308C\u3082\u51FA\u306A\u3044\u591C 0.8%\uFF09\u3002\u53F2\u5B9F\u306E\u640D\u5931\u6BD4\u7387\u306E\u5927\u5C0F\uFF08\u66B4\u98A8\u306F\u5C11\u306A\u304F\u3001\u822A\u7A7A\u6A5F\u30FB\u8AA4\u5C04\u306F\u591A\u3044\uFF09\u3092\u305D\u306E\u307E\u307E\u591C\u306E\u51FA\u3084\u3059\u3055\u306B\u3057\u305F\u3002\u6D45\u702C\u30FB\u99C6\u9010\u8266\u306E\u7832\u6483\u306F\u5730\u5F62\u3068\u4EFB\u52D9\u306E\u4E2D\u8EAB\u306A\u306E\u3067\u6BCE\u6669\u3002\u99C6\u9010\u8266\u306E\u51FA\u767A\u70B9\u306F x \xB1500 m\u30FBy \xB1200 m\u30FB\u91DD\u8DEF \xB115\xB0\uFF08(1500, 300) \u306A\u3089 x 1,000\u301C2,000\u30FBy 100\u301C500\u30FB\u91DD\u8DEF 120\u301C150\xB0\u3002\u7AEF 700 m \u306E\u5411\u304D\u76F4\u3057\u3068\u767A\u898B\u306E\u6642\u523B\u304C\u6570\u79D2\u305A\u308C\u308B\uFF09\u3002\u30CF\u30FC\u30C9\u306E 2 \u96BB\u76EE\u3082\u540C\u3058\u5E45\u3067\u305A\u308C\u308B\u3002?debug&fixed \u3067\u63FA\u3089\u304E\u306A\u3057\uFF08v0.4.5 \u3068\u540C\u3058\u4E16\u754C\uFF09\u3002\u5DE6\u53F3\u53CD\u8EE2 mirror_chance 0.5\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u6575\u306E\u6765\u308B\u4F4D\u7F6E\u306E\u9055\u3044\u304C\u5206\u304B\u3089\u306A\u3044\u300D: \xB1500 m \u306E\u305A\u308C\u3060\u3051\u3067\u306F\u8996\u7A0B 1,500 m \u306E\u5916\u3067\u8D77\u304D\u308B\u306E\u3067\u6C17\u3065\u3051\u306A\u3044 \u2192 \u534A\u5206\u306E\u591C\u306F\u5317\u6771 (4500, 300) \u304B\u3089\u5357\u897F\u3078\u3002\u5E30\u6295\u5730\u70B9\uFF08\u5317\u6771\u306E\u89D2\uFF09\u306E\u5074\u304B\u3089\u6765\u308B\u306E\u3067\u5E30\u308A\u9053\u306E\u8105\u5A01\u3082\u5909\u308F\u308B\u3002\u30CF\u30FC\u30C9\u306E 2 \u96BB\u306F\u5165\u308C\u66FF\u308F\u308B\u3060\u3051\uFF09\u3002Briefing \u306E\u300C\u6575\u300D\u306B\u300C\uFF08\u5317\u897F\u304B\u3089\uFF09\uFF0F\uFF08\u5317\u6771\u304B\u3089\uFF09\u300D)"
+        },
+        transport: {
+          enemy_id: "ijn_transport",
+          start: {
+            x_m: 2100,
+            y_m: 900,
+            heading_deg: 135
+          },
+          source: "design (v0.4.7\u3002\u6771\u4EAC\u6025\u884C\u306B\u8F38\u9001\u8239\u304C 1 \u96BB\u6DF7\u3058\u308B\uFF08\u53F2\u5B9F: 1942 \u5E74 11 \u6708\u306E\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u8F38\u9001\u3067\u306F\u8F38\u9001\u8239\u56E3\u3082\u7A81\u5165\u3057\u3001PT \u306F\u99C6\u9010\u8266\u3068\u8F38\u9001\u8239\u306E\u3069\u3061\u3089\u3092\u72D9\u3046\u304B\u8FEB\u3089\u308C\u305F\uFF09\u3002\u99C6\u9010\u8266 (1500, 300) \u306E\u9032\u8DEF\u306E 850 m \u5148\u3092\u540C\u3058\u91DD\u8DEF 135\xB0 \u3067 9 kt\uFF08\u753B\u9762\u4E0A 23 m/\u79D2\uFF09\u3002\u99C6\u9010\u8266\uFF0825 kt\uFF09\u306F\u7D04 20 \u79D2\u3067\u8FFD\u3044\u629C\u304D\u3001\u305D\u306E\u5F8C\u306F\u99C6\u9010\u8266\u304C\u5148\u884C\u30FB\u8F38\u9001\u8239\u304C\u5F8C\u308D\u3002150 \u79D2\u3067\u7D04 3,500 m \u9032\u307F\u3001\u6D77\u57DF\u306E\u7AEF\u3067\u5411\u304D\u76F4\u3059\u3002\u9B5A\u96F7 1 \u672C\u3067\u6C88\u307F\uFF08\u5927\u76EE\u6A19\u30FB\u4F4E\u901F\u3067\u5F53\u3066\u3084\u3059\u3044\uFF09\u3001\u6C88\u3081\u308B\u3068\u6483\u7834 400 \u70B9\uFF08scoring \u306E kill\uFF09\u3002\u4EFB\u52D9\u306E\u9054\u6210\uFF08\u6483\u6C88\uFF01\u5E30\u6295\u305B\u3088\uFF09\u306F\u99C6\u9010\u8266\u306E\u307E\u307E\uFF1D\u8F38\u9001\u8239\u306F\u300E\u72D9\u3046\u76F8\u624B\u3092\u9078\u3076\u300F\u30DC\u30FC\u30CA\u30B9\u3002\u5099\u7832 76mm \u306F\u99C6\u9010\u8266\u304C\u81EA\u8247\u3092\u7167\u3089\u3057\u3066\u3044\u308B\u9593\u3060\u3051\u6483\u3064\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\uFF08\u4F4D\u7F6E\u306E\u305A\u308C\u30FB\u5DE6\u53F3\u53CD\u8EE2\uFF09\u306F\u99C6\u9010\u8266\u3068\u540C\u3058\u5E45\u3002?debug&notransport \u3067\u7121\u3057\uFF08v0.4.6 \u3068\u540C\u3058\u4E16\u754C\uFF09)"
+        },
+        dawn_withdraw: {
+          retire_edge: "north",
+          force_ja: "\u6771\u4EAC\u6025\u884C",
+          source: "design (v0.6.2\u3002\u6771\u4EAC\u6025\u884C\u306F\u591C\u660E\u3051\u307E\u3067\u306B\u30B9\u30ED\u30C3\u30C8\u3092\u5317\u3078\u9000\u3044\u305F\uFF08dawn_air \u306E refs\uFF09\u3002\u591C\u306E\u5DE6\u53F3\u53CD\u8EE2\u306F\u6771\u897F\u3060\u3051\u306A\u306E\u3067\u5317\u306F\u5909\u308F\u3089\u306A\u3044\u3002force_ja \u306F\u591C\u660E\u3051\u306E\u5E2F\u306E\u300C\u6771\u4EAC\u6025\u884C\u306F\u5317\u3078\u9000\u304F\u300D\u306E\u547C\u3073\u540D)"
+        },
+        fleet_gone_clears: true,
+        fleet_gone_clears_source: "design (v0.6.2 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002\u30E6\u30FC\u30B6\u30FC\u300C\u6771\u4EAC\u6025\u884C\u306E\u5236\u7A7A\u6A29\u304C\u3042\u308B\u5834\u5408\u3067\u6575\u8266\u968A\u304C\u6483\u6C88\u3082\u3057\u304F\u306F\u753B\u9762\u5916\u306B\u884C\u3063\u305F\u6BB5\u968E\u3067\u30B2\u30FC\u30E0\u30AF\u30EA\u30A2\uFF08\u5E30\u6295\u306F\u5FC5\u9808\u3067\u306F\u306A\u3044\uFF09\u300D\u3002\u99C6\u9010\u8266\u30FB\u8F38\u9001\u8239\u304C\u3059\u3079\u3066\u6C88\u307F\u59CB\u3081\u305F\u304B\u591C\u660E\u3051\u306B\u5317\u3078\u9000\u3044\u3066\u6D77\u57DF\u3092\u51FA\u305F\u3089\u3001\u6483\u6C88\u306E\u6F14\u51FA\u3068\u7D42\u308F\u308A\u969B\u306E\u9B5A\u96F7\u5F85\u3061\uFF08return_point.torpedo_end_settle_s\uFF09\u306E\u5F8C\u306B\u4EFB\u52D9\u7D42\u4E86\uFF08cleared\uFF09\u3002\u591C\u660E\u3051\u306E\u524D\u3067\u3082\u5F8C\u3067\u3082\u3002\u5F97\u70B9\u306F\u5E30\u6295\u3068\u540C\u3058\uFF08\u591C\u660E\u3051\u306B\u8F2A\u306E\u5916\u306A\u3089\u5E30\u6295\u70B9 \xD7 after_dawn_factor\uFF09\u3002dawn_air.play_as \u304C own \u3067\u99C6\u9010\u8266\u306E\u3044\u308B\u4EFB\u52D9\u3060\u3051\uFF08config/dawn-data \u304C\u691C\u67FB\uFF09)"
+      }
+    },
+    {
+      id: "us_03",
+      campaign: "us_pt",
+      order: 3,
+      playable_from: "v0.4.2",
+      title_ja: "\u5927\u767A\u3092\u72E9\u308C",
+      date: "1943-07-15",
+      place: "\u30CB\u30E5\u30FC\u30AE\u30CB\u30A2\u5317\u5CB8\uFF08\u30D5\u30A9\u30F3\u534A\u5CF6\uFF09",
+      type: "barge_hunt",
+      player_boat: "us_elco80",
+      torpedo_type: "us_mk13",
+      objective: "\u5357\u306E\u5CB8\u6CBF\u3044\u3092\u6771\u304B\u3089\u897F\u3078\u9019\u3046\u5927\u767A\u3092\u7832\u3067\u6483\u7834\u3059\u308B\u3002\u9B5A\u96F7\u306F\u5F53\u305F\u3089\u306A\u3044\uFF08\u6DF1\u5EA6\u4E0D\u8DB3\uFF09\u3002\u6CBF\u5CB8\u7832\u306E\u5C04\u754C\u306B\u6CE8\u610F",
+      enemies: [
+        "daihatsu_barge",
+        "daihatsu_barge",
+        "daihatsu_barge",
+        "daihatsu_barge"
+      ],
+      hazards: [
+        "shore_battery",
+        "grounding",
+        "enemy_aircraft"
+      ],
+      moon: "dark",
+      duration_min: 5,
+      success: "\u5927\u767A3\u96BB\u4EE5\u4E0A\u6483\u7834\u3057\u3066\u5E30\u6295",
+      historical_note: "1943\u5E747\u301C12\u6708\u3001PT\u306F\u6708\u959344\u301C55\u96BB\u306E\u5927\u767A\u3092\u6483\u7834\u3002\u53F2\u5B9F\u3067\u6700\u3082\u52B9\u679C\u306E\u3042\u3063\u305F\u4EFB\u52D9\u3002",
+      briefing_note_ja: "1943\u5E747\u301C12\u6708\u3001PT\u306F\u6708\u959344\u301C55\u96BB\u306E\u5927\u767A\u3092\u6483\u7834\u3002\u53F2\u5B9F\u3067\u6700\u3082\u52B9\u679C\u306E\u3042\u3063\u305F\u4EFB\u52D9\u3002",
+      source_url: "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-4.html",
+      dawn_air: {
+        control: "contested",
+        confidence: "medium",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "hide",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u4E89\u596A\uFF08\u65E5\u672C\u6A5F\u306E\u663C\u306E\u7A7A\u8972\uFF09",
+        refs: [
+          {
+            url: "https://www.lonesentry.com/articles/ttt09/barges.html",
+            claim: "\u9023\u5408\u8ECD\u306E\u822A\u7A7A\u304C\u6D3B\u767A\u306A\u6240\u3067\u306F\u5927\u767A\u306F\u591C\u3060\u3051\u52D5\u304D\u3001\u663C\u306F\u5165\u6C5F\u306B\u5165\u3063\u3066\u507D\u88C5\u3057\u305F"
+          },
+          {
+            url: "https://ibiblio.org/hyperwar/AAF/USSBS/PTO-Campaigns/USSBS-PTO-8.html",
+            claim: "\u7B2C5\u7A7A\u8ECD\u306F PT\u30FB\u54E8\u6212\u6A5F\u3068\u30E9\u30A8\u301C\u30B5\u30E9\u30E2\u30A2\u306E\u5927\u767A\u72E9\u308A\u3067\u5354\u540C\u3002\u65E5\u672C\u306E\u822A\u7A7A\u306F 1943 \u5E74 8 \u6708\u306E\u30A6\u30A8\u30EF\u30AF\u7A7A\u8972\u3067\u7121\u529B\u5316\u3055\u308C\u305F"
+          },
+          {
+            url: "https://www.ibiblio.org/hyperwar/AAF/IV/AAF-IV-6.html",
+            claim: "1943-07-02\u301C03\u3001\u65E5\u672C\u306E\u7206\u6483\u6A5F\u304C\u30CA\u30C3\u30BD\u30FC\u6E7E\u306E\u4E0A\u9678\u5730\u70B9\u3092\u7A7A\u8972\uFF08\u663C\u306E\u65E5\u672C\u6A5F\u306F\u307E\u3060\u6765\u305F\uFF09"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u82F1\u8A9E\u306E\u8ABF\u67FB\u306F contested\uFF08\u81EA\u8ECD\u5BC4\u308A\uFF09\u3001\u65E5\u672C\u8A9E\u306E\u8ABF\u67FB\u306F own\u30FBmedium \u3067\u5206\u304B\u308C\u305F \u2192 control \u306F contested \u306E\u307E\u307E\u30027 \u6708\u306E\u30D5\u30AA\u30F3\u6E7E\u3067 PT \u304C\u591C\u660E\u3051\u306B\u65E5\u672C\u6A5F\u306B\u8972\u308F\u308C\u305F\u8A18\u9332\u306F\u3069\u3061\u3089\u3082\u898B\u3064\u3051\u3066\u3044\u306A\u3044) / design (v0.6.1\u3002play_as: \u6700\u521D\u306F\u4E21\u65B9\u306E\u8ABF\u67FB\u304C\u5BC4\u308B own \u306B\u3057\u305F\u304C\u3001v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u304C\u300C\u821F\u8247\u72E9\u308A\u306B\u306F\u7A7A\u8972\u3042\u308A\u306B\u300D\u3068\u6C7A\u3081\u305F \u2192 enemy\uFF08control \u306F contested \u306E\u307E\u307E\u306A\u306E\u3067\u3001\u53F2\u5B9F\u306E\u8AAD\u307F\u3068\u77DB\u76FE\u306F\u3057\u306A\u3044\u30027 \u6708\u306E\u30D5\u30AA\u30F3\u6E7E\u306B\u306F\u307E\u3060\u65E5\u672C\u6A5F\u306E\u663C\u306E\u7A7A\u8972\u304C\u3042\u3063\u305F\uFF09\u3002label_ja \u3082\u4E89\u596A\u306B\u3002\u5927\u767A\u304C\u5CB8\u306B\u96A0\u308C\u308B\uFF08enemy_ships_at_dawn hide\uFF09\u306F v0.6.2\uFF08\u591C\u660E\u3051\u306E\u30E9\u30C3\u30C1\u3067\u5CB8\u6CBF\u3044\u306E\u5927\u767A\u304C\u53CD\u5FDC\u306E\u9045\u308C\u306E\u5F8C\u306B\u5CB8\u3078\u9003\u3052\u3066\u4E0A\u9678\u3002\u6483\u7834\u306B\u6570\u3048\u306A\u3044\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "daihatsu_barge",
+          "daihatsu_barge",
+          "daihatsu_barge",
+          "daihatsu_barge"
+        ],
+        enemy_behavior: "barges (v0.4.2: 2 \u96BB\u305A\u3064 2 \u7D44\u304C\u5CB8\u6CBF\u3044\u3092 7 kt \u3067\u897F\u3078\u3002\u8247\u306B\u6C17\u3065\u304F\u3068\u3059\u3050 13mm \u3067\u6483\u3061\u8FD4\u3057\u30015 \u79D2\u5F8C\u306B\u5CB8\u3078\u9003\u3052\u3066\u4E0A\u9678\u3002enemies.json \u306E daihatsu_barge \u3068\u4E0B\u306E barges)",
+        main_weapon: "guns",
+        main_weapon_source: "design (v0.4.2\u3002\u4E3B\u5175\u88C5\u3002guns \u306A\u3089\u7832\u306E\u30DC\u30BF\u30F3\u3092\u62BC\u3057\u3066\u3044\u308B\u9593\u6483\u3064\uFF08boats.json \u306E gun_battery\u3002v0.4.2\u301Cv0.6.7 \u306F\u53F3\u4E0B\u306E\u4E3B\u30DC\u30BF\u30F3\u300E\u5C04\u6483\u300F\u3001v0.6.8 \u306E\u521D\u3081\u306F\u53F3\u4E0B\u306E\u89D2\u306E\u300E\u6A5F\u9283\u300F\uFF09\u3002\u5927\u767A\u306F\u55AB\u6C34\u7D04 1.5 m \u3067 Mk 13 \u306E\u6700\u5C0F\u6DF1\u5EA6 2 m \u306E\u4E0B\u3092\u629C\u3051\u308B\uFF08enemies.json \u306E torpedo_immune\uFF09\u3002torpedo_immune \u306E\u6575\u304C\u3044\u308B\u4EFB\u52D9\u3067 guns \u3067\u306A\u3051\u308C\u3070\u8D77\u52D5\u6642\u306B\u4F8B\u5916\u3002\u7121\u3051\u308C\u3070 torpedo\uFF08us_02\uFF09\u3002v0.6.8 \u304B\u3089 main_weapon \u306F\u4E3B\u5175\u88C5\uFF082 \u884C\u76EE\u306E\u300E\u5927\u767A\u306A\u3057\u300F\u30FBBriefing \u306E\u9806\u3002\u53F3\u4E0B\u306E\u7F6E\u304D\u65B9\u306F\u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\u5168\u4EFB\u52D9\u3067\u540C\u3058\uFF1D\u89D2\u304C\u9B5A\u96F7\u30FB\u305D\u306E\u5DE6\u304C\u6A5F\u9283\uFF09\u3002\u8247\u306E\u9B5A\u96F7 4 \u672C\u3082\u6483\u3066\u308B\u304C\u5927\u767A\u306E\u4E0B\u3092\u629C\u3051\u308B\uFF08\u72D9\u3046\u8266\u306A\u3057\uFF1D\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\uFF09)",
+        barges: {
+          lead_start: {
+            x_m: 4250,
+            y_m: 2300,
+            heading_deg: 270
+          },
+          offsets_m: [
+            0,
+            100,
+            1500,
+            1600
+          ],
+          beach_margin_m: 40,
+          kill_quota: 3,
+          source: "design (v0.4.2\u3002\u5927\u767A 4 \u96BB\u306F 2 \u96BB\u305A\u3064 2 \u7D44: \u5148\u982D (4250, 2300) \u304B\u3089\u822A\u8DEF\u306E\u5F8C\u308D\uFF08\u6771\uFF09\u3078 offsets_m \u306E\u8DDD\u96E2\uFF08x 4250/4350 \u3068 5750/5850\uFF09\u3002\u897F\u3078 7 kt\uFF08\u753B\u9762\u4E0A 18.0 m/\u79D2\uFF09\u3001200 \u79D2\u3067 3,600 m \u9032\u3080\uFF08\u897F\u306E\u7AEF\u306B\u7740\u304B\u306A\u3044\uFF09\u3002\u822A\u8DE1\u306F\u6D45\u702C\u306E\u7E01\uFF08y 2200\uFF09\u304B\u3089 100 m \u5185\u5074\u30FB\u5CB8\uFF08y 2500\uFF09\u304B\u3089 200 m\uFF08\u53F2\u5B9F\u306E\u300E\u5CB8\u304B\u3089 200\u301C400 yd\u300F\uFF09\u3002\u7E01\u3067\u6B62\u307E\u3063\u3066\u5F85\u3066\u3070 100 m \u4F59\u308A\u6A2A\u3092\u901A\u308A\u3001\u5CB8\u3078\u9003\u3052\u3066\u3082\u4E0A\u9678\u306F\u7E01\u304B\u3089 260 m\uFF08\u6483\u3066\u308B\u8DDD\u96E2\u306E\u3046\u3061\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089\u771F\u5357\u3078\u5DE1\u822A\u3059\u308B\u3068\u7D04 17 \u79D2\u3067 1 \u7D44\u76EE\u304C\u898B\u3048\uFF08900 m\uFF09\u3001\u7E01\u306B\u7740\u3044\u305F\u3068\u304D\uFF08\u7D04 26 \u79D2\uFF09\u306F\u7D04 790 m \u3067\u5DE1\u822A\u3067\u3082\u6C17\u3065\u304B\u308C\u306A\u3044\uFF08720 m\uFF09\u3002\u7D44\u306E\u9593 1,500 m: 1 \u7D44\u76EE\u3092\u6483\u3063\u3066\u3044\u308B\u9593\u306B 2 \u7D44\u76EE\u306F\u9583\u5149\uFF081,200 m\uFF09\u306B\u6C17\u3065\u304B\u306A\u3044\uFF08\u6A21\u64EC\u3067 0%\uFF09\u30021 \u7D44\u76EE\u3067\u899A\u3048\u30012 \u7D44\u76EE\u3067\u8A66\u3059\u3002beach_margin_m 40: \u9003\u3052\u308B\u5927\u767A\u306E\u4E2D\u5FC3\u304C y 2460 \u3092\u8D8A\u3048\u305F\u3089\u4E0A\u9678\u3002kill_quota 3: 4 \u96BB\u4E2D 3 \u96BB\uFF081 \u96BB\u306F\u9003\u304C\u3057\u3066\u3088\u3044\uFF09\u3002\u6A21\u64EC\uFF08scratchpad v042tune\u3001200 \u591C\uFF09: \u7E01\u3067\u5F85\u3061\u4F0F\u305B\u30FB\u898B\u3048\u305F\u3089\u9759\u97F3\u3067\u5BC4\u308B \u6210\u529F 100%\uFF08HP \u221219\u301C\u221220\uFF09\u3001\u5DE1\u822A\u3067\u5BC4\u3063\u3066\u6C17\u3065\u304B\u308C\u5168\u901F\u3067\u8FFD\u3063\u3066\u6483\u3064 100%\uFF08\u547D\u4E2D 25%\u3001HP \u221230\uFF09\u3001\u5168\u901F\u3070\u304B\u308A\u306F\u71C3\u6599\u5207\u308C\u3067 0%\u3002\u5B9F\u6A5F 2 \u56DE\u76EE\uFF08\u300E\u6D45\u702C\u306E\u7E01\u304B\u3089\u3060\u3068\u9060\u304F\u3066\u5F53\u305F\u3089\u305A\u4E0A\u9678\u3055\u308C\u308B\u300F\u3002\u547D\u4E2D 9%\u30FB\u6C17\u3065\u304B\u308C\u305F\u8DDD\u96E2 719 m\uFF09\u3067\u822A\u8DE1\u3092\u7E01\u304B\u3089 200 \u2192 100 m\uFF08\u6D45\u702C 400 \u2192 300 m\uFF09\u306B\u3002\u5148\u982D\u306E\u4F4D\u7F6E\u306F\u7E01\u306B\u7740\u304F\u6642\u523B\u306B\u5408\u308F\u305B\u308B\uFF08\u6700\u521D\u306E\u7248 (4300, 2800)\u30FB2 \u56DE\u76EE (4100, 1800)\u30FB3 \u56DE\u76EE (4250, 2300)\uFF09)"
+        },
+        coast: {
+          side: "south",
+          land_m: 600,
+          label_ja: "\u30D5\u30A9\u30F3\u534A\u5CF6",
+          source: "design (\u898B\u305F\u76EE\u3068\u9003\u3052\u308B\u5411\u304D\u3060\u3051\u3002\u6D77\u57DF\u306E\u5357\u306E\u7E01\u304C\u5CB8\uFF08\u6D5C\uFF09\u3067\u3001\u305D\u306E\u5916\u306B\u9678\u3092 land_m \u306E\u5E45\u3067\u63CF\u304F\u3002\u8247\u306F\u6D77\u57DF\u306E\u5883\u754C\u3067\u6B62\u307E\u308B\u3002v0.4.2 \u306F south \u3060\u3051)"
+        },
+        duration_s: 160,
+        duration_s_source: "design (\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002v0.6.2 \u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u306E\u300C\u591C\u660E\u3051\u307E\u3067\u306E\u6642\u9593\u3092 40 \u79D2\u7E2E\u3081\u3066\u300D\u306B\u3088\u308A 200 \u2192 160 \u79D2\uFF08\u591C\u660E\u3051\u306B\u5927\u767A\u306F\u5CB8\u3078\u96A0\u308C\u308B\u306E\u3067\u3001\u30CE\u30EB\u30DE\u306F\u591C\u660E\u3051\u524D\u306B\u6E80\u305F\u3059\u30022 \u7D44\u76EE\u3068\u6483\u3061\u5408\u3046\u8FBA\u308A\u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067\u5DE1\u822A \u7D04 35 \u79D2 \xD7 call_margin 1.5 \u2252 53 \u79D2\uFF1D\u305D\u3053\u306B\u3044\u308C\u3070\u51FA\u6483\u304B\u3089\u7D04 107 \u79D2\u3067\u300E\u591C\u660E\u3051\u8FD1\u3057\u300F\uFF09\u3002\u591C\u660E\u3051\u306E\u5F8C\u306F\u6575\u6A5F\u306E\u7A7A\u8972\uFF08us_01\u30FBus_03\u30FBjp_06\u3002us_03 \u306F v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\uFF09\uFF0F\u6575\u6A5F\u306F\u6765\u306A\u3044\uFF08us_02\uFF09\u3002v0.6.1 \u304B\u3089\u591C\u660E\u3051\u3067\u4EFB\u52D9\u306F\u7D42\u308F\u3089\u306A\u3044\u3002\u4EE5\u524D\u306E 200 \u79D2\u306E\u6839\u62E0: us_02 \u306E 150 \u79D2\u3088\u308A\u9577\u3044\u306E\u306F\u5927\u767A\u304C 2 \u7D44\u3067\u30012 \u7D44\u76EE\u3078 1,500 m \u79FB\u308B\u304B\u3089\u3002\u6700\u521D\u306E\u7248\uFF08\u5CB8\u307E\u3067 1,900 m\uFF09\u306F 180 \u79D2\u3060\u3068\u8FF7\u3046\u904A\u3073\u65B9\u304C 2 \u7D44\u76EE\u306E\u524D\u306B\u300E\u591C\u660E\u3051\u8FD1\u3057\u300F\u306B\u306A\u308A\u30CE\u30EB\u30DE\u306B\u5C4A\u304B\u306A\u304B\u3063\u305F\uFF08\u6A21\u64EC\u3067\u6210\u529F 13%\uFF09\u306E\u3067 200 \u79D2\u306B\u3057\u305F\u3002\u6D45\u702C\u306E\u7E01\u307E\u3067 1,500 m\uFF08\u5B9F\u6A5F 3 \u56DE\u76EE\uFF09\u306E\u6A21\u64EC\uFF08scratchpad v042tune\u3001200 \u591C\uFF09\u306E\u5E30\u6295: \u7E01\u3067\u5F85\u3061\u4F0F\u305B 136 \u79D2\u3001\u898B\u3048\u305F\u3089\u9759\u97F3\u3067\u5BC4\u308B 123 \u79D2\u3001\u5DE1\u822A\u3067\u5BC4\u3063\u3066\u5168\u901F\u3067\u8FFD\u3046 89 \u79D2)",
+        fuel_allotment_gal: 36,
+        fuel_allotment_gal_source: "design (\u6226\u95D8\u306B\u4F7F\u3048\u308B\u5272\u5F53\u3002us_02 \u306E 38 gal \u3068\u540C\u3058\u8003\u3048\u65B9\uFF08\u6A19\u6E96\u3067 2\u301C4 \u5272\u6B8B\u308A\u3001\u5168\u901F\u3070\u304B\u308A\u3060\u3068\u5E30\u308C\u306A\u3044\uFF09\u3002\u6A21\u64EC\uFF08scratchpad v042tune\u3001200 \u591C\u3001\u5E30\u6295\u6642\u306E\u6B8B\u308A\u3002\u6D45\u702C\u306E\u7E01\u307E\u3067 1,500 m\uFF09: \u7E01\u3067\u5F85\u3061\u4F0F\u305B\u30FB\u898B\u3048\u305F\u3089\u9759\u97F3\u3067\u5BC4\u308B 37\u301C38%\u3001\u5DE1\u822A\u3067\u5BC4\u3063\u3066\u5168\u901F\u3067\u8FFD\u3046 17%\u3001\u5168\u901F\u3070\u304B\u308A\u306F\u71C3\u6599\u5207\u308C\uFF089 \u5272\u306E\u591C\u3067\u6F02\u6D41\uFF09\u3002\u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u300E\u71C3\u8CBB\u3092 10% \u826F\u304F\u300F\u2192 33 gal \u306B\u3057\u305F\u304C\u3001\u540C\u6642\u306B\u5CB8\u3092 1,000 m \u306B\u5BC4\u305B\u3066\u71C3\u6599\u304C\u5236\u7D04\u306B\u306A\u3089\u306A\u304F\u306A\u308A\uFF08\u5E30\u6295\u6642 24\u301C57%\uFF09\u30013 \u56DE\u76EE\u3067\u300E30 gal \u306B\u623B\u3059\u300F\u3002v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u300E\u821F\u8247\u72E9\u308A\u306E\u71C3\u6599\u304C\u53B3\u3057\u3044\u300F\u2192 36 gal\uFF08\u540C\u3058\u56DE\u306B\u591C\u660E\u3051\u306E\u5F8C\u306E\u7A7A\u8972\u304C\u5165\u308A\u3001\u7A7A\u8972\u306E\u4E2D\u3092\u5168\u901F\u3067\u5E30\u308B\u5206\u3082\u8981\u308B\uFF09)",
+        shallows: [
+          {
+            x_m: 0,
+            y_m: 2200,
+            width_m: 6e3,
+            height_m: 300,
+            label_ja: "\u6D45\u702C\uFF08\u5CB8\u6CBF\u3044\uFF09"
+          }
+        ],
+        shallows_source: "design (v0.4.2\u3002\u5CB8\u6CBF\u3044\u306E\u6D45\u702C\uFF08\u74B0\u7901\u30FB\u7802\u5DDE\u3002\u53F2\u5B9F\u306E PT \u3082\u5927\u767A\u3092\u8FFD\u3063\u3066\u5EA7\u7901\u3057\u305F\uFF09\u3002\u6D77\u57DF\u306E\u5E45\u3044\u3063\u3071\u3044\u3001\u5CB8\u304B\u3089 300 m\uFF08\u5B9F\u6A5F 2 \u56DE\u76EE\u3067 400 \u2192 300 m: \u7E01\u304B\u3089\u822A\u8DE1\u307E\u3067 200 m \u3060\u3068\u3001\u9003\u3052\u308B\u5927\u767A\u304C\u7E01\u304B\u3089 360 m \u5148\u306B\u4E0A\u9678\u3057\u300E\u7E01\u304B\u3089\u3060\u3068\u9060\u304F\u3066\u5F53\u305F\u3089\u306A\u3044\u300F\uFF09\u3002\u5B89\u5168\u901F\u529B 15 kt\uFF08risk_events \u306E grounding.params\uFF09\u3092\u8D85\u3048\u3066\u5165\u308B\u3068\u5EA7\u7901\u3002\u5927\u767A\u306E\u822A\u8DE1\u306F\u7E01\u304B\u3089 100 m \u5185\u5074\u306A\u306E\u3067\u3001\u7E01\u3067\u6B62\u307E\u3063\u3066\u5F85\u3066\u3070 100 m \u4F59\u308A\u6A2A\u3092\u901A\u308B\u3002\u5CB8\u3078\u9003\u3052\u308B\u5927\u767A\u3092\u8FFD\u3046\u306A\u3089 15 kt \u4EE5\u4E0B\u3067\u4E2D\u3078)",
+        return_point: {
+          x_m: 3e3,
+          y_m: 300,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C\u3002us_03 \u306E\u9B5A\u96F7\uFF08v0.6.8 \u304B\u3089 4 \u672C\uFF09\u306F\u72D9\u3046\u8266\u304C\u7121\u3044\u306E\u3067\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\u3057\u3001\u5F85\u305F\u306A\u3044)",
+          source: "design (\u5E30\u6295\u5730\u70B9\uFF1D\u6D77\u5074\u306E\u96C6\u5408\u70B9\uFF08\u5317\u306E\u4E2D\u592E\uFF09\u3002\u51FA\u767A\u70B9\u306E 400 m \u5317\uFF08\u51FA\u767A\u70B9\u306F\u8F2A\u306E\u5916\uFF09\u30022 \u7D44\u76EE\u3068\u6483\u3061\u5408\u3046\u8FBA\u308A (4400, 2170) \u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067\u7D04 2,100 m: \u5DE1\u822A \u7D04 35 \u79D2\u3002torpedo_settle_max_s \u306F\u9B5A\u96F7\u3092\u6483\u305F\u306A\u3044\u4EFB\u52D9\u3067\u306F\u4F7F\u308F\u306A\u3044)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "shore_battery",
+          "grounding",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.4.2\u3002\u51FA\u4F1A\u3046\u9806: \u5927\u767A\u306E 13mm\uFF08enemy_ship_gunfire_or_ram\u3002label_ja \u3092\u300E\u6575\u8266\u8247\u306E\u7832\u6483\u30FB\u885D\u7A81\u300F\u306B\uFF09\u3001\u6CBF\u5CB8\u7832\uFF08shore_battery\u3002v0.4.3 \u3067\u4E0B\u306E shore_battery block\uFF09\u3001\u5EA7\u7901\uFF08\u5CB8\u6CBF\u3044\u306E\u6D45\u702C\uFF09\u3002\u6575\u822A\u7A7A\u6A5F\uFF08enemy_aircraft\uFF09\u306F block \u304C\u7121\u3044\u306E\u3067\u6765\u306A\u3044\u3002\u4E0A\u4F4D\u306E hazards \u306F\u4EFB\u52D9\u672C\u4F53\u306E\u8A2D\u8A08\u306A\u306E\u3067\u5909\u3048\u306A\u3044\u3002tests/briefing.test.ts \u304C block \u3068\u306E\u4E00\u81F4\u3092\u691C\u67FB) v0.6.1 \u5B9F\u6A5F 1 \u56DE\u76EE: \u591C\u660E\u3051\u306E\u5F8C\u306E\u6575\u6A5F 4 \u6A5F\u306E\u7A7A\u8972\uFF08dawn_strike block\u3002\u30E6\u30FC\u30B6\u30FC\u306E\u5224\u65AD\u3067\u7A7A\u8972\u3042\u308A\u306B\uFF09\u3002",
+        shore_battery: {
+          x_m: 4600,
+          source: "design (v0.4.3\u3002\u5CB8\u6CBF\u3044\u306E\u4F4D\u7F6E m\uFF08\u5CB8\u306E\u7DDA\u304B\u3089\u9678\u5074 risk_events \u306E inland_m\uFF09\u3002\u5C04\u754C\u306F\u6709\u52B9\u5C04\u7A0B 900 m \u306E\u534A\u5186\uFF1D\u6D45\u702C\u306E\u7E01\uFF08\u7832\u304B\u3089 390 m \u5317\uFF09\u3067\u306F x 3,752\u301C5,448 m\u30021 \u7D44\u76EE\uFF08\u5148\u982D x 4,250 \u304B\u3089\u897F\u3078\uFF09\u3092\u7E01\u306E x 3,000\u301C3,850 \u3067\u5F85\u3064\u904A\u3073\u65B9\u306F\u5C04\u754C\u306E\u5916\uFF08\u7E01\u3067\u6771\u3078\u5BC4\u308A\u3059\u304E\u308B\u3068\u5165\u308B\uFF09\u30022 \u7D44\u76EE\uFF08\u5148\u982D x 5,750\uFF09\u306F\u51FA\u767A\u6642\u304B\u3089\u5C04\u754C\u306E\u4E2D\u3092\u897F\u3078\u9032\u307F\u3001\u7D04 111 \u79D2\u3067 x 3,750 \u3092\u904E\u304E\u3066\u5C04\u754C\u3092\u51FA\u308B\u30021 \u7D44\u76EE\u306E\u5F8C\u306B\u3059\u3050\u6771\u3078\u5BC4\u3063\u3066\u6483\u3064\u3068\u5C04\u754C\u306E\u4E2D\u3067\u7832\u6483\u3092\u53D7\u3051\u308B\u3002\u6A21\u64EC\uFF08scratchpad v042tune\u3001100 \u591C\u3001HP \u306E\u4E2D\u592E\u5024\uFF09: \u5C04\u754C\u3092\u51FA\u308B\u307E\u3067\u5F85\u3064 \u221218\uFF08\u7832\u6483 0\uFF09\u3001\u7E01\u3067 x 3,000 \u304B\u3089\u5F85\u3061\u4F0F\u305B \u221220\uFF08\u7832\u6483 1.3 \u767A\uFF09\u3001\u898B\u3048\u305F\u3089\u9759\u97F3\u3067\u5BC4\u3063\u3066\u5C04\u754C\u306E\u4E2D\u3067\u6483\u3064 \u221222\uFF083.1 \u767A\uFF09\u3001\u5DE1\u822A\u3067\u5BC4\u3063\u3066\u5168\u901F\u3067\u8FFD\u3046 \u221255\uFF086.8 \u767A\u30013% \u304C\u6C88\u6CA1\uFF09\u3001\u5168\u901F\u3070\u304B\u308A \u221240\u3002x 5,000 \u3060\u3068\u4E01\u5BE7\u306A\u904A\u3073\u65B9\u306B\u306F\u7832\u6483\u304C\u6765\u305A\u30014,300 \u3060\u3068\u9759\u97F3\u3067\u5BC4\u3063\u3066\u3082 \u221236 \u3067\u91CD\u3044)"
+        },
+        bounds_m: {
+          width: 6e3,
+          height: 2500,
+          source: "design (\u5E45 6,000 m\u30FB\u5357\u5317 2,500 m\u3002\u5357\u306E\u7E01\u304C\u5CB8\u3002\u51FA\u767A\u70B9\u304B\u3089\u6D45\u702C\u306E\u7E01\u307E\u3067 1,500 m\uFF08\u5DE1\u822A\u3067\u7D04 26 \u79D2\uFF09\u3002\u6700\u521D\u306E\u7248\u306F\u5357\u5317 3,000 m\u30FB\u7E01\u307E\u3067 1,900 m\uFF08\u5DE1\u822A 32 \u79D2\uFF09\u3067\u5B9F\u6A5F 2 \u56DE\u76EE\u306B\u300E\u5CB8\u307E\u3067\u9577\u3044\u300F\u2192 2,000 m\u30FB1,000 m\u30013 \u56DE\u76EE\u306B\u300E\u8FD1\u304F\u306A\u308A\u3059\u304E\u300F\u2192 2,500 m\u30FB1,500 m\uFF08\u51FA\u767A\u70B9\u30FB\u5E30\u6295\u5730\u70B9\u306F\u5909\u3048\u305A\u5CB8\u3092\u52D5\u304B\u3057\u305F\uFF09)"
+        },
+        player_start: {
+          x_m: 3e3,
+          y_m: 700,
+          heading_deg: 180,
+          source: "design (\u6D77\u5074\u306E\u5317\u4E2D\u592E\u304B\u3089\u5357\u5411\u304D\u30FB\u505C\u6B62\u3067\u51FA\u767A\u3002\u72E9\u308A\u5834\u306F\u5357\u306E\u5CB8\u6CBF\u3044\uFF08\u6D45\u702C\u306E\u7E01\u307E\u3067 1,500 m\uFF09\u3067\u3001\u5927\u767A\u306F\u6771\u304B\u3089\u6765\u308B\u3002Briefing \u306E\u76EE\u7684\u306B\u300E\u5357\u306E\u5CB8\u6CBF\u3044\u3092\u6771\u304B\u3089\u897F\u3078\u300F\u30012 \u884C\u76EE\u306E\u5E73\u5E38\u306B\u300E\u5927\u767A\u306F\u5357\u306E\u5CB8\u6CBF\u3044\u3092\u6771\u304B\u3089\u300F\u3001\u753B\u9762\u306B\u7802\u8272\u306E\u77E2\u5370\u300E\u5CB8 N m\u300F\uFF08\u6D45\u702C\u306E\u7E01\u304C\u753B\u9762\u5916\u306E\u9593\uFF09\u3002v0.4.2 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u3067\u300E\u5927\u767A\u3082\u6D45\u702C\u3082\u51FA\u3066\u3053\u306A\u3044\u300F\uFF1D\u5357\u3078\u884C\u304F\u3068\u5206\u304B\u3089\u306A\u304B\u3063\u305F\u306E\u3067\u8DB3\u3057\u305F)"
+        },
+        hard: {
+          extra_shore_battery_x_m: [
+            2600
+          ],
+          source: "design (v0.4.5\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9: \u6CBF\u5CB8\u7832 2 \u9580\u30022 \u9580\u76EE\u306F x 2,600\uFF08\u5C04\u754C\u306F\u6D45\u702C\u306E\u7E01\u3067 x 1,752\u301C3,448 m\uFF09\u30021 \u9580\u76EE\uFF08x 4,600\u3002\u7E01\u3067 3,752\u301C5,448\uFF09\u3068\u5408\u308F\u305B\u3066\u7E01\u306E x 1,752\u301C5,448 \u304C\u5C04\u754C\uFF1D1 \u7D44\u76EE\u3092\u7E01\u306E x 3,000\u301C3,850 \u3067\u5F85\u3064\u904A\u3073\u65B9\u3082\u5C04\u754C\u306E\u4E2D\u306B\u306A\u308B\u3002\u5C04\u754C\u306E\u5916\uFF08x 1,752 \u672A\u6E80\u30FB5,448 \u8D85\uFF09\u3067\u5F85\u3064\u304B\u3001\u7159\u5E55\u3068\u96E2\u8131\u3067\u51CC\u3050)"
+        },
+        night: {
+          hazard_scale: 1,
+          optional_hazards: [],
+          barge_lead_jitter_m: 250,
+          shore_battery_jitter_m: 200,
+          mirror_chance: 0.5,
+          source: "design (v0.4.6\u3002\u591C\u306E\u63FA\u3089\u304E\u3002\u5371\u967A\u306F\u3069\u308C\u3082\u4EFB\u52D9\u306E\u4E2D\u8EAB\uFF08\u5927\u767A\u306E 13mm\u30FB\u6CBF\u5CB8\u7832\u30FB\u5EA7\u7901\uFF09\u306A\u306E\u3067\u6BCE\u6669\u3002\u5927\u767A\u306E\u968A\u306E\u5148\u982D\u306E x \xB1250 m\uFF087 kt \u3067 \xB114 \u79D2\u3001\u6D45\u702C\u306E\u7E01\u306B\u7740\u3044\u305F\u3068\u304D\u306E\u8DDD\u96E2\u304C\u5909\u308F\u308B\u30022 \u7D44\u76EE\u306E\u5F8C\u308D\u306F\u6700\u5927 x 6,100 \u3067\u6D77\u57DF\u306E\u6771\u306E\u5916\u304B\u3089\u5165\u308B\uFF09\u3001\u6CBF\u5CB8\u7832\u306E x \xB1200 m\uFF08\u5C04\u754C\u304C\u7E01\u3067 \xB1200 m \u305A\u308C\u308B\u3002\u5F85\u3061\u4F0F\u305B\u306E\u4F4D\u7F6E\u3092\u6BCE\u56DE\u898B\u76F4\u3059\uFF09\u3002\u5DE6\u53F3\u53CD\u8EE2 mirror_chance 0.5\uFF08\u5927\u767A\u304C\u897F\u304B\u3089\u6771\u3078\u3001\u5148\u982D x 1,750\u30FB\u6CBF\u5CB8\u7832 x 1,400\uFF08\u30CF\u30FC\u30C9 2 \u9580\u76EE 3,400\uFF09\u3002\u51FA\u767A\u70B9 x 3,000 \u3067\u5DE6\u53F3\u5BFE\u79F0\u306A\u306E\u3067\u3001\u7E01\u306B\u7740\u304F\u6642\u523B\u3068\u5C04\u754C\u306E\u4F4D\u7F6E\u95A2\u4FC2\u306F\u540C\u3058\u3002HUD \u306E\u300C\u5927\u767A\u306F\u5357\u306E\u5CB8\u6CBF\u3044\u3092\u897F\u304B\u3089\u300D\u30FB\u77E2\u5370\u3082\u5165\u308C\u66FF\u308F\u308B\uFF09)"
+        },
+        dawn_strike: {
+          aircraft_id: "ijn_a6m2n_rufe",
+          count: 4,
+          count_source: "design (us_01 \u3068\u540C\u3058 4 \u6A5F\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u4F8B\u300E\u6575\u6C34\u4E0A\u6A5F\u6226\u968A\u56DB\u6A5F\u300F\uFF09\u30021943-07 \u306E\u30D5\u30AA\u30F3\u6E7E\u3067 PT \u3092\u8972\u3063\u305F\u65E5\u672C\u6A5F\u306E\u7DE8\u6210\u306E\u8A18\u9332\u306F\u898B\u3064\u3051\u3066\u3044\u306A\u3044)",
+          from_bearing_deg: 270,
+          escort_target_planes: [],
+          source: "design (v0.6.1 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002\u30E6\u30FC\u30B6\u30FC\u306E\u5224\u65AD\u3067\u7A7A\u8972\u3042\u308A\u306B\u3002\u6A5F\u4F53\u306F\u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u304C\u4E8C\u5F0F\u6C34\u4E0A\u6226\u95D8\u6A5F\u306B\u6307\u5B9A\uFF08\u6700\u521D\u306F\u96F6\u5F0F\u6C34\u4E0A\u89B3\u6E2C\u6A5F\u3067\u4EE3\u7528\u3002\u3053\u306E\u6642\u671F\u30FB\u5834\u6240\u3067\u663C\u306B\u6765\u305F\u65E5\u672C\u6A5F\u306E\u6A5F\u7A2E\u306F\u672A\u78BA\u8A8D\uFF09\u3002\u897F\uFF1D\u30A6\u30A8\u30EF\u30AF\u30FB\u30DE\u30C0\u30F3\u65B9\u9762\uFF08\u65E5\u672C\u306E\u822A\u7A7A\u57FA\u5730\uFF09\u306E\u65B9\u89D2\u304B\u3089\uFF08\u63A8\u5B9A\uFF09\u3002\u50DA\u8247\u306F\u3044\u306A\u3044)"
+        }
+      }
+    },
+    {
+      id: "us_04",
+      campaign: "us_pt",
+      order: 4,
+      playable_from: "v0.8.0",
+      title_ja: "\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u306E\u591C",
+      date: "1943-08-01",
+      place: "\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\uFF08\u30B3\u30ED\u30F3\u30D0\u30F3\u30AC\u30E9\u5CF6\u6C96\uFF09",
+      type: "intercept_destroyer",
+      player_boat: "us_elco80",
+      torpedo_type: "us_mk8",
+      torpedo_type_source: "historical (v0.8.0 S0 \u306E\u8ABF\u3079\u30FBspec-v0800 \xA72.0\u3002\u3053\u306E\u591C\u306E\u8247\u306F\u767A\u5C04\u7BA1\u304B\u3089\u6483\u3063\u305F: \u3042\u308B\u8247\u306F\u7BA1\u306E\u767A\u5C04\u306E\u706B\u304C\u9583\u5149\u3092\u51FA\u3057\u30011 \u672C\u306E\u7BA1\u304B\u3089\u706B\u304C\u51FA\u305F\uFF08NHHC \u306E\u5831\u544A\u306E\u629C\u7C8B\u3002URL \u306F\u66F8\u304B\u306A\u3044\uFF09\uFF1DMk 8 \u3068\u7BA1\u3002Mk 13 \u3068\u8EE2\u304C\u3057\u3066\u843D\u3068\u3059\u67B6\u53F0\u3078\u306E\u63DB\u88C5\u306F 1943 \u5E74\u534A\u3070\u304B\u3089\uFF08Wikipedia\u300CPT boat\u300D\u300CMark 8 torpedo\u300D\u306E\u629C\u7C8B\uFF09\u3002v0.4.0 \u306E\u7A2E\u306F us_mk13 \u3060\u3063\u305F\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD)",
+      objective: "\u6771\u4EAC\u6025\u884C\u306E\u99C6\u9010\u8266\u304C\u30D3\u30E9\u3078\u5411\u304B\u3044\u3001\u63DA\u3052\u7D42\u3048\u308B\u3068\u540C\u3058\u6D77\u5CE1\u3092\u5168\u901F\u3067\u623B\u308B\u3002\u5206\u968A\u306E\u5148\u982D\u306E\u8247\u3068\u3057\u3066\u30EC\u30FC\u30C0\u30FC\u3067\u6349\u3048\u3066\u96F7\u6483\u3057\u3001\u9032\u8DEF\u3092\u3088\u3051\u3066\u751F\u304D\u3066\u5E30\u308C",
+      enemies: [
+        "ijn_destroyer",
+        "ijn_destroyer",
+        "ijn_destroyer",
+        "ijn_destroyer"
+      ],
+      hazards: [
+        "enemy_ship_gunfire_or_ram",
+        "friendly_fire"
+      ],
+      moon: "dark",
+      duration_min: 5,
+      success: "\u5E30\u6295\u30021\u96BB\u6483\u6C88\u3067\u9054\u6210",
+      historical_note: "PT 15\u96BB\u30FB\u7D0430\u672C\u3067\u547D\u4E2D\u30BC\u30ED\u3002\u30EC\u30FC\u30C0\u30FC\u306F\u5206\u968A\u306E\u5148\u982D\u306E\u8247\u3060\u3051\u3002\u5E30\u308A\u306E\u99C6\u9010\u8266\u306B\u4F53\u5F53\u305F\u308A\u3055\u308C\u3066\u5931\u308F\u308C\u305F\u8247\u304C\u3042\u3063\u305F",
+      briefing_note_ja: "1943\u5E748\u67081\u65E5\u304B\u30892\u65E5\u306E\u591C\u3001PT\xA015\u96BB\u304C4\u3064\u306E\u5206\u968A\u3067\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u306B\u5F35\u3063\u305F\u304C\u3001\u7D0430\u672C\u306E\u9B5A\u96F7\u306F1\u672C\u3082\u5F53\u305F\u3089\u306A\u304B\u3063\u305F\u3002\u30EC\u30FC\u30C0\u30FC\u3092\u7A4D\u3080\u306E\u306F\u5206\u968A\u306E\u5148\u982D\u306E\u8247\u3060\u3051\u3067\u3001\u6483\u3061\u7D42\u3048\u305F\u5148\u982D\u306E\u8247\u304C\u5F15\u304D\u63DA\u3052\u308B\u3068\u3001\u6B8B\u3063\u305F\u8247\u306B\u306F\u307B\u3068\u3093\u3069\u4F55\u3082\u898B\u3048\u306A\u304B\u3063\u305F\u3002\u99C6\u9010\u8266\u306F\u30D3\u30E9\u3067\u5175\u3068\u7269\u8CC7\u3092\u63DA\u3052\u3001\u540C\u3058\u6D77\u5CE1\u3092\u623B\u3063\u3066\u3044\u3063\u305F\u3002",
+      source_url: "https://en.wikipedia.org/wiki/Blackett_Strait",
+      dawn_air: {
+        control: "contested",
+        confidence: "medium",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "retire",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u4E89\u596A\uFF08\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F\u306E\u7A7A\u8972\uFF09",
+        refs: [
+          {
+            url: "https://pacificwrecks.com/date/1943/08/01.html",
+            claim: "1943-08-01\uFF08\u4EFB\u52D9\u306E\u5F53\u65E5\uFF09\u306E\u663C\u3001\u65E5\u672C\u306E\u7206\u6483\u6A5F\u304C\u30EC\u30F3\u30C9\u30D0\u306E PT \u57FA\u5730\uFF08\u30EB\u30F3\u30D0\u30EA\u5CF6\uFF09\u3092\u7A7A\u8972\u3057\u3001PT-117\u30FBPT-164 \u306E 2 \u96BB\u304C\u5931\u308F\u308C\u305F\uFF08\u6D77\u4E0A\u306E\u8247\u3067\u306A\u304F\u57FA\u5730\uFF09\u3002\u305D\u306E\u591C\u3001PT 15 \u96BB\u304C\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u3067\u6771\u4EAC\u6025\u884C\u306E\u99C6\u9010\u8266\u3092\u8FCE\u3048\u6483\u3063\u305F"
+          },
+          {
+            url: "https://img.pacificwrecks.com/ship/ptboat/bases/lumbaria/index.html",
+            claim: "\u30EC\u30F3\u30C9\u30D0\u306E\u30EB\u30F3\u30D0\u30EA\u5CF6\u306E PT \u57FA\u5730\u306F 1943-08-01 \u306E\u663C\u306B\u65E5\u672C\u306E\u7206\u6483\u6A5F\u306E\u7A7A\u8972\u3092\u53D7\u3051\u305F"
+          },
+          {
+            url: "https://pacificwrecks.com/ship/ptboat/PT-166.html",
+            claim: "1943-07-20 \u306E\u671D\uFF0808:00 \u3054\u308D\uFF09\u3001\u30D1\u30C8\u30ED\u30FC\u30EB\u5E30\u308A\u306E PT-164\u30FB166\u30FB168 \u3092\u5473\u65B9\u306E B-25 4 \u6A5F\u304C\u6575\u3068\u8AA4\u8A8D\u3057\u3066\u653B\u6483\u3057\u3001PT-166 \u304C\u6C88\u6CA1"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF082026-10-18 \u306E\u8ABF\u3079\u3068 v0.8.0 \u306E\u8ABF\u3079\uFF1Dspec-v0800 \xA74.1\uFF09\u3002\u82F1\u8A9E\u30FB\u65E5\u672C\u8A9E\u306E\u8ABF\u67FB\u3068\u3082 contested\uFF08\u82F1\u8A9E\u306F\u81EA\u8ECD\u5BC4\u308A\uFF09\u3002\u65E5\u672C\u6A5F\u306E\u7A7A\u8972\u3082\u3042\u308B\uFF08\u4EFB\u52D9\u306E\u5F53\u65E5\u306E\u663C\u3001\u30EC\u30F3\u30C9\u30D0\u306E PT \u57FA\u5730\u3078\u65E5\u672C\u306E\u7206\u6483\u6A5F\u3002\u6D77\u4E0A\u306E\u8247\u3067\u306A\u304F\u57FA\u5730\uFF09\u3002\u591C\u660E\u3051\u306E\u5E30\u308A\u9053\u306B\u7A7A\u304B\u3089\u8972\u308F\u308C\u305F\u8A18\u9332\u3067\u898B\u3064\u3051\u305F\u306E\u306F\u5473\u65B9 B-25 \u306E\u8AA4\u5C04\uFF08PT-166\u300107-20\uFF09\u3060\u3051\u3002v0.8.0 S0 \u3067 refs \u306E\u5148\u982D\uFF08\u3042\u308B\u8247\u306E\u8266\u6B74\u306E\u9801\uFF09\u3092\u57FA\u5730\u306E\u7A7A\u8972\u306E\u9801 2 \u3064\u306B\u66FF\u3048\u305F\uFF1DCLAUDE.md \xA711\u30FBspec-v0800 \xA74.12) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002v0.8.0 S0: play_as \u3092 own \u2192 enemy\uFF08lead \u306E\u65E2\u5B9A L1\uFF1D\u30E6\u30FC\u30B6\u30FC\u306E\u898F\u5247\u300C\u5236\u7A7A\u6A29\u304C\u306A\u3044\u9650\u308A\u591C\u660E\u3051\u306E\u5F8C\u306F\u7A7A\u8972\u300D\u3002\u7A7A\u306F\u4E89\u596A\u3067\u3001\u65E5\u672C\u6A5F\u306F\u305D\u306E\u65E5\u306E\u663C\u306B PT \u57FA\u5730\u3092\u7A7A\u8972\u3057\u305F\uFF09\u3002\u591C\u660E\u3051\u306B\u5E30\u6295\u306E\u8F2A\u306E\u5916\u306A\u3089\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F 4 \u6A5F\u306E\u7A7A\u8972\uFF08v0_1_prototype.dawn_strike\uFF09\u3002v0.8.0 S5\uFF08\u904A\u3079\u308B\u3088\u3046\u306B\u3057\u305F\u6BB5\uFF09: \u30E6\u30FC\u30B6\u30FC\u306E\u6C7A\u3081 U1\uFF082026-11-15\u3002spec-v0800 \xA79 Q1\u3002\u554F\u3044\u300C\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u306E\u591C\uFF081943\u5E748\u6708\uFF09\u306E\u591C\u660E\u3051\u306E\u7A7A\u3092\u3069\u3046\u3057\u307E\u3059\u304B\uFF1F A\uFF08\u3044\u307E\u306E\u65E2\u5B9A\uFF09: \u591C\u660E\u3051\u306B\u5E30\u6295\u306E\u8F2A\u306E\u5916\u306A\u3089\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F 4 \u6A5F\u306E\u7A7A\u8972\uFF08us_03 \u3068\u540C\u3058\u5F62\uFF09\uFF0FB: \u591C\u660E\u3051\u306E\u5F8C\u3082\u6575\u6A5F\u306F\u6765\u306A\u3044\uFF08us_02 \u3068\u540C\u3058\u5F62\uFF09\u300D\u3078\u306E\u7B54\u3048\u300CA\u306E\u307E\u307E\u3067\u3044\u3044\u3068\u601D\u3046\u3088\u300D\uFF09\u3067 enemy \u306E\u307E\u307E)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "ijn_destroyer",
+          "ijn_destroyer",
+          "ijn_destroyer",
+          "ijn_destroyer"
+        ],
+        enemy_behavior: "transit \u3068 ai (v0.8.0\u3002\u6771\u4EAC\u6025\u884C\u306E\u99C6\u9010\u8266 3 \u96BB\uFF08\u30CF\u30FC\u30C9 4\uFF09\u306F\u5217\u306E\u901A\u904E\uFF08\u4E0B\u306E transit\uFF09: \u897F\u306E\u7E01\u304B\u3089 30 kt \u3067\u6771\u3078\u629C\u3051\u3066\u30D3\u30E9\u3067\u63DA\u9678\u3057\u3001\u540C\u3058\u6D77\u5CE1\u3092\u623B\u308B\u3002\u5F80\u8DEF\u3082\u5FA9\u8DEF\u3082\u9000\u304F\u52D5\u304D\uFF08\u7AEF\u3067\u5411\u304D\u76F4\u3055\u306A\u3044\u30FB\u308F\u3056\u3068\u306E\u4F53\u5F53\u305F\u308A\u306F\u3057\u306A\u3044\u30FB\u96F7\u8DE1\u3092\u898B\u308C\u3070\u6ADB\u3067\u68B3\u304F\u30FB\u898B\u3064\u3051\u308C\u3070\u7167\u3089\u3057\u3066\u6483\u3064\uFF09\u3002\u8B77\u885B\u306E\u99C6\u9010\u8266 1 \u96BB\u306F enemy_start \u304B\u3089 us_02 \u306E AI \u306E\u307E\u307E\u898B\u56DE\u308A\uFF08\u7AEF\u3067\u5411\u304D\u76F4\u3059\u30FB\u4F53\u5F53\u305F\u308A\u30FB\u7167\u3089\u3057\u3066\u6483\u3064\uFF09\u3001\u5FA9\u8DEF\u306E\u6700\u521D\u306E\u8266\u304C\u73FE\u308C\u308B\u3068\u897F\u3078\u9000\u304F\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F S2)",
+        duration_s: 260,
+        duration_s_source: "design (v0.8.0 S0\u30FBspec-v0800 \xA74.5\u3002\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002\u5217\u306E\u5F80\u8DEF\uFF08\u5165\u308A 18 \u79D2\u30FB8 \u79D2\u304A\u304D\uFF09\u2192 \u30D3\u30E9\u3067\u63DA\u9678 40 \u79D2 \u2192 \u5FA9\u8DEF\u304C\u897F\u306E\u7E01\u306E\u5916\u3078\u53BB\u308B\u307E\u3067\u304C\u3001\u63FA\u3089\u304E\u306E\u306A\u3044\u591C\u306E\u30CF\u30FC\u30C9 4 \u96BB\u3067 237.5 \u79D2\uFF1D\u591C\u660E\u3051\u306E 22.5 \u79D2\u524D\uFF08V-T3\uFF09\u3002\u6708\u306E\u7121\u3044\u591C\uFF08\u65B0\u6708\uFF09\u306E\u307E\u307E\u3002v0.8.0 S3 \u306E\u8FCE\u6483\u306E\u6A21\u64EC\u306E\u5E2F\uFF08\u30CE\u30FC\u30DE\u30EB\u30FB\u30CF\u30FC\u30C9\u3068\u3082\u3059\u3079\u3066 \u2713\uFF09\u3067\u3082 260 \u79D2\u306E\u307E\u307E\uFF08\u71C3\u6599\u3060\u3051 S3c \u3067 48 \u2192 33 gal\uFF09)",
+        fuel_allotment_gal: 33,
+        fuel_allotment_gal_source: "design (v0.8.0 S0\u30FBspec-v0800 \xA74.6\u3002\u6226\u95D8\u306B\u4F7F\u3048\u308B\u5272\u5F53\uFF08us_02 \u3068\u540C\u3058\u8003\u3048\uFF09\u3002260 \u79D2\u306E\u591C\u306B\u3001\u30EC\u30FC\u30C0\u30FC\u3067\u5217\u306E\u524D\u3078\u56DE\u308A\u3001\u6483\u3063\u3066\u3001\u5FA9\u8DEF\u3092\u3088\u3051\u3066\u5357\u897F\u306E\u8F2A\u3078\u5E30\u308B\u3002\u521D\u3081\u306F 48 gal\u3002v0.8.0 S3c\uFF08lead \u306E L46\uFF09: 48 \u2192 33 gal\u3002\u5E30\u6295\u306E\u6642\u306E\u6B8B\u308A\u306F\u3001\u4E00\u756A\u71C3\u6599\u3092\u4F7F\u3046\u30EC\u30FC\u30C0\u30FC\u306E\u884C radar_twice\uFF08\u5F80\u8DEF\u3068\u5FA9\u8DEF\u3067 2 \u672C\u305A\u3064\uFF09\u306E\u5E30\u6295\u306E\u591C\u306E\u4E2D\u592E\u5024\u3067 15\u301C35%\uFF08\u72D9\u3044 25%\uFF09\u306B\u5408\u308F\u305B\u308B\uFF08radar_ambush \u306F S3b \u3067\u9759\u97F3\u3067\u96E2\u308C\u308B\u3088\u3046\u306B\u306A\u308A\u4E00\u756A\u71C3\u6599\u3092\u4F7F\u308F\u306A\u3044\u884C\uFF1D48 gal \u3067\u4E2D\u592E\u5024 18.2 gal \u4F7F\u3046\u3002radar_ambush \u3067 25% \u306B\u3059\u308B\u3068 radar_twice \u304C\u591A\u304F\u306E\u591C\u306B\u5C3D\u304D\u308B\uFF09\u3002\u8FCE\u6483\u306E\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\uFF09\u306E 48 gal: radar_twice \u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024 48.6%\uFF1D24.7 gal \u4F7F\u3046 \u2192 24.7 \xF7 0.75 \uFF1D 32.9 \u2192 33 gal\u300233 gal: radar_twice \u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024 25.3%\uFF08p10 13%\u30FBp90 30%\uFF09\u30FBradar_ambush 44.5%\u3002\u6F02\u6D41\u306F radar_twice 0.5%\u30FBradar_ambush 0.3%\uFF08\u30CF\u30FC\u30C9\u306F 0.1%\u30FB0.1%\uFF09\u3067\u3001\u81EA\u8247\u304C\u6C88\u307E\u306A\u3044\u591C\u304C 20% \u4EE5\u4E0A\u306E\u884C\u306F\u3069\u308C\u3082 5% \u4EE5\u4E0B\u3002\u30CE\u30FC\u30DE\u30EB\u30FB\u30CF\u30FC\u30C9\u306E\u5E2F\u306F\u3059\u3079\u3066 \u2713)",
+        bounds_m: {
+          width: 6e3,
+          height: 4e3,
+          source: "design (v0.8.0\u3002us_02 \u3068\u540C\u3058\u5E83\u3055\u3002\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u3092\u6771\u897F\u306B\u7F6E\u3044\u305F\u6A21\u5F0F\u56F3\uFF08\u672C\u5F53\u306F\u5317\u897F\u301C\u5357\u6771\u3002spec-v0800 \xA74.3\uFF09\u3002\u5317\u306E\u7E01\uFF08y 0\uFF09\u306E\u5916\u304C\u30B3\u30ED\u30F3\u30D0\u30F3\u30AC\u30E9\u5CF6\u3001\u5357\u306E\u7E01\uFF08y 4,000\uFF09\u306E\u5916\u304C\u30A2\u30E9\u30F3\u30C7\u30EB\u5CF6\u30FB\u30AE\u30BE\u5CF6\uFF08\u4E0B\u306E shores\uFF09)"
+        },
+        player_start: {
+          x_m: 3600,
+          y_m: 2600,
+          heading_deg: 270,
+          source: "design (v0.8.0\u3002\u6D77\u5CE1\u306E\u4E2D\u307B\u3069\u30FB\u5FA9\u8DEF\u306E\u9053\u306E\u5357 300 m \u304B\u3089\u897F\u5411\u304D\u30FB\u505C\u6B62\u3002\u5F80\u8DEF\u306E\u5165\u308A\u306E\u70B9 (150, 1500) \u307E\u3067 3,620 m\uFF08V-T5 \u306E 1,500 m \u306E\u5916\uFF09\u3001\u8B77\u885B\u306E\u51FA\u767A\u70B9\u307E\u3067 2,280 m\uFF08\u30EC\u30FC\u30C0\u30FC\u306E 4,000 m \u306E\u5185\uFF1D\u51FA\u6483\u3057\u3066\u3059\u3050\u8F1D\u70B9\u304C 1 \u3064\uFF09\u3001\u5E30\u6295\u306E\u8F2A\u306E\u4E2D\u5FC3\u307E\u3067 2,550 m\uFF08\u5473\u65B9\u6A5F\u306E\u958B\u59CB 1,750 m \u306E\u5916\uFF09)"
+        },
+        enemy_start: {
+          x_m: 1800,
+          y_m: 1200,
+          heading_deg: 270,
+          source: "design (v0.8.0\u3002\u8B77\u885B\u306E\u99C6\u9010\u8266\uFF084 \u96BB\u306E\u3046\u3061\u8F38\u9001\u3092\u3057\u306A\u3044 1 \u96BB\uFF09\u3002\u5831\u544A\u306E\u300C\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053\u304B\u3089\u306E\u5165\u53E3\u3092\u898B\u5F35\u308B\u3088\u3046\u306A\u8266\u304C\u30B3\u30ED\u30F3\u30D0\u30F3\u30AC\u30E9\u306E\u7D04 1 \u30DE\u30A4\u30EB\u6C96\u306B\u3044\u305F\u300D\uFF08spec-v0800 \xA74.1\uFF09\u306E\u5F53\u3066\u306F\u3081\u3002us_02 \u306E AI \u306E\u307E\u307E\u898B\u56DE\u308B\uFF08\u7AEF\u304B\u3089 700 m \u3067\u5411\u304D\u76F4\u3059\u30FB\u898B\u3064\u3051\u308C\u3070 400 m \u3067\u4F53\u5F53\u305F\u308A\u30FB\u7167\u3089\u3057\u3066\u6483\u3064\uFF09\u3002\u5317\u306E\u5CB8\u304B\u3089 1,200 m\uFF1D\u30EC\u30FC\u30C0\u30FC\u306E\u9678\u306E\u53CD\u5C04\uFF08400 m\uFF09\u306E\u5916\u3002\u51FA\u767A\u70B9\u304B\u3089 2,280 m\u30FB\u65B9\u4F4D 308\xB0\uFF08\u30EC\u30FC\u30C0\u30FC\u306E 4,000 m \u306E\u5185\uFF1D\u51FA\u6483\u3057\u3066\u3059\u3050\u8F1D\u70B9\u304C 1 \u3064\uFF09\u3002v0.8.0 S3b\uFF08lead \u306E L38\uFF09: \u6700\u521D\u306E\u811A\u3092 120\xB0 \u2192 270\xB0\uFF08\u897F\u3078\u3002\u4F4D\u7F6E\u306F\u540C\u3058\uFF09\u3002120\xB0 \u306E\u811A\u306F\u51FA\u767A\u70B9\u306E 312 m \u8107\u3092\u901A\u308A\u3001\u6B62\u307E\u3063\u3066\u5F85\u3064\u8247\u306E\u6C88\u6CA1\u306F\u307F\u306A\u8B77\u885B\u304C\u5148\u306B\u898B\u3064\u3051\u3066\u3044\u305F\uFF08\u8FCE\u6483\u306E\u6A21\u64EC N 400 \xD7 2 \u7D44: radar_dodge \u306E\u6C88\u6CA1 33.4%\u30FBeye_only 38.1%\u3001\u3069\u3061\u3089\u3082 100% \u304C\u8B77\u885B\uFF09\u3002\u5019\u88DC C1 (1800,1200)@270\u30FBC2 (900,1100)@090\u30FBC3 (5000,1100)@270 \u3092\u6BD4\u3079\u3001\u6C88\u6CA1\u306E\u3046\u3061\u8B77\u885B\u304C\u5148\u306B\u898B\u3064\u3051\u305F\u5272\u5408\u304C\u4E00\u756A\u4E0B\u304C\u3063\u305F C1 \u306B\u3057\u305F\uFF08radar_dodge 100 \u2192 66.3%\u30FB\u6C88\u6CA1 33.4 \u2192 11.1%\u3001eye_only 100%\u3001charge \u306E\u6C88\u6CA1 98.1%\uFF1DB5 \u306E 40% \u4EE5\u4E0A\u306E\u307E\u307E\u3002C2 \u306F radar_dodge 100%\u30FBeye_only 98.6%\u3001C3 \u306F 100%\u30FB85.6%\uFF09)"
+        },
+        return_point: {
+          x_m: 1300,
+          y_m: 3700,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)",
+          source: "design (v0.8.0\u3002\u5E30\u6295\u5730\u70B9\uFF1D\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053\u306E\u4E2D\uFF08\u5357\u306E\u5CB8\u306E\u5207\u308C\u76EE x 700\u301C1,900 \u306E\u771F\u4E0A\uFF1DV-S2\u3002\u5357\u306E\u7E01\u304B\u3089 50 m\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089 2,550 m\uFF08\u7E01\u307E\u3067 2,300 m\uFF09\u3002\u6C34\u9053\u306E\u4E21\u8107\u306E\u7901\u306E\u9593\uFF08x 900\u301C1,700 \u306E 800 m\uFF09\u3092\u901A\u3063\u3066\u5E30\u308B\u3002\u534A\u5F84\u30FBcall_margin\u30FB\u5F85\u3061\u306F us_02 \u3068\u540C\u3058)"
+        },
+        shallows: [
+          {
+            x_m: 500,
+            y_m: 3500,
+            width_m: 400,
+            height_m: 500,
+            label_ja: "\u7901"
+          },
+          {
+            x_m: 1700,
+            y_m: 3500,
+            width_m: 400,
+            height_m: 500,
+            label_ja: "\u7901"
+          }
+        ],
+        shallows_source: "design (v0.8.0\u3002\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053\u306E\u4E21\u8107\u306E\u7901\uFF08PT \u306E\u55AA\u5931\u306E\u6700\u5927\u306E\u539F\u56E0\u306F\u5EA7\u7901\uFF1Ddocs/01 \xA77.1\uFF09\u3002\u5B89\u5168\u901F\u529B 15 kt\uFF08risk_events \u306E grounding.params\uFF09\u3002\u8F2A\u3078\u5168\u901F\u3067\u5E30\u308B\u6642\u3001\u771F\u3093\u4E2D\u306E 800 m\uFF08x 900\u301C1,700\uFF09\u3092\u5916\u308C\u308B\u3068\u7901\u306B\u4E57\u308B\u3002\u7901\u306F\u8F2A\u306B\u3082\u51FA\u767A\u70B9\u306B\u3082\u304B\u304B\u3089\u306A\u3044\uFF08V-S2\uFF09)",
+        friendly_aircraft: {
+          trigger_edge_m: 1500,
+          source: "design (v0.8.0\u3002v0.3.3 \u306E\u8B58\u5225\u30021943-07-20 \u306E\u671D\u306B\u5473\u65B9\u306E B-25 \u304C\u5E30\u308A\u306E PT \u3092\u6575\u3068\u8AA4\u308A 1 \u96BB\u3092\u6C88\u3081\u305F\uFF08dawn_air.refs\uFF09\u3002\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u304B\u3089 1,500 m \u306E\u5185\u3067\u6570\u3048\u59CB\u3081\u308B\u3002\u51FA\u767A\u70B9\uFF08\u7E01\u307E\u3067 2,300 m\uFF09\u306F\u5916)"
+        },
+        enemy_aircraft: {
+          enemy_id: "ijn_seaplane_jake",
+          source: "design (v0.8.0\u3002v0.4.1 \u306E\u591C\u306E\u6C34\u4E0A\u6A5F\u3002\u3053\u306E\u591C\u3001\u3042\u308B\u8247\u306F\u6C34\u4E0A\u6A5F\u306B\u822A\u8DE1\u3092\u898B\u3089\u308C\u306A\u3044\u3088\u3046\u6A5F\u95A2\u3092\u30A2\u30A4\u30C9\u30EB\u306B\u3057\u3066\u3044\u305F\uFF08spec-v0800 \xA74.1\uFF09\u3002\u4ECA\u591C\u51FA\u308B\u78BA\u7387\u306F\u4E0B\u306E night \u306E\u63FA\u3089\u304E\uFF0880%\uFF09)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "enemy_aircraft",
+          "grounding",
+          "friendly_fire",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.8.0\u3002\u3053\u306E\u4E16\u754C\u3067\u8D77\u304D\u308B\u5371\u967A\u3092\u51FA\u4F1A\u3046\u9806\u306B: \u99C6\u9010\u8266\u306E\u7832\u6483\u30FB\u885D\u7A81\uFF08\u8B77\u885B\u3068\u5217\uFF09\u3001\u6575\u822A\u7A7A\u6A5F\uFF08\u591C\u306E\u6C34\u4E0A\u6A5F\u3002night \u3067 80%\uFF09\u3001\u5EA7\u7901\uFF08\u6C34\u9053\u306E\u7901\uFF09\u3001\u53CB\u8ECD\u8AA4\u5C04\uFF08\u671D\u306E\u5E30\u308A\u9053\u3002night \u3067 80%\uFF09\u3001\u591C\u660E\u3051\u306E\u7A7A\u8972\uFF08dawn_air.play_as enemy \u306E 4 \u6A5F\uFF09\u3002\u4E0A\u4F4D\u306E hazards\uFF08\u4EFB\u52D9\u672C\u4F53\u306E\u8A2D\u8A08\uFF09\u306F\u5909\u3048\u306A\u3044)",
+        night: {
+          hazard_scale: 8,
+          optional_hazards: [
+            "enemy_aircraft",
+            "friendly_fire"
+          ],
+          enemy_jitter: {
+            x_m: 400,
+            y_m: 150,
+            heading_deg: 20
+          },
+          mirror_chance: 0,
+          source: "design (v0.8.0\u3002\u591C\u306E\u63FA\u3089\u304E\uFF08seed+16\uFF09\u3002\u4ECA\u591C\u51FA\u308B\u78BA\u7387\u306F share \xD7 8: \u6575\u822A\u7A7A\u6A5F 80%\u30FB\u53CB\u8ECD\u8AA4\u5C04 80%\uFF08us_02 \u3068\u540C\u3058\uFF09\u3002\u8B77\u885B\u306E\u99C6\u9010\u8266\u306F x \xB1400\u30FBy \xB1150\u30FB\u91DD\u8DEF \xB120\xB0\u3002\u5217\u306E\u901A\u904E\u3082\u6575\u306E 1 \u4EF6\u3068\u3057\u3066\u540C\u3058\u5E45\u3067\u63FA\u3089\u3059\uFF08x \u306E\u305A\u308C \xF7 \u5217\u306E\u753B\u9762\u4E0A\u306E\u901F\u3055 77 m/\u79D2\uFF1D\u5165\u308A\u306E\u79D2 \xB15.2 \u79D2\u30FBy \u306E\u305A\u308C\uFF1D\u5F80\u8DEF\u3068\u5FA9\u8DEF\u306E\u9053\u306E y \xB1150 m\u30FB\u91DD\u8DEF\u306E\u305A\u308C\u306F\u4F7F\u308F\u306A\u3044\uFF1Dconfig/transit-mission-data\uFF09\u3002\u5DE6\u53F3\u53CD\u8EE2\u306A\u3057\uFF08mirror_chance 0\u3002\u30D3\u30E9\u306F\u6771\u30FB\u6C34\u9053\u306F\u5357\u897F\uFF1DV-T6\uFF09)"
+        },
+        dawn_strike: {
+          aircraft_id: "ijn_f1m2_pete",
+          count: 4,
+          count_source: "design (us_01\u30FBus_03 \u3068\u540C\u3058 4 \u6A5F\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u4F8B\u300C\u6575\u6C34\u4E0A\u6A5F\u6226\u968A\u56DB\u6A5F\u300D\uFF09\u3002\u3053\u306E\u671D\u306B\u6D77\u4E0A\u306E PT \u3092\u8972\u3063\u305F\u65E5\u672C\u6A5F\u306E\u8A18\u9332\u306F\u898B\u3064\u3051\u3066\u3044\u306A\u3044\uFF1D\u305D\u306E\u65E5\u306E\u663C\u306E\u7A7A\u8972\u306F\u57FA\u5730\u3078)",
+          from_bearing_deg: 315,
+          escort_target_planes: [],
+          source: "design (v0.8.0 S0\u3002dawn_air.play_as enemy\uFF08S0\u301CS4 \u306F lead \u306E\u65E2\u5B9A L1\u3002S5 \u304B\u3089\u30E6\u30FC\u30B6\u30FC\u306E\u6C7A\u3081 U1\uFF1Dspec-v0800 \xA79 Q1 \u3078\u306E\u7B54\u3048\u300CA\u306E\u307E\u307E\u3067\u3044\u3044\u3068\u601D\u3046\u3088\u300D\u30012026-11-15\uFF09\u306E\u591C\u660E\u3051\u306E\u7A7A\u8972\u3002\u5317\u897F\uFF1D\u30B7\u30E7\u30FC\u30C8\u30E9\u30F3\u30C9\u65B9\u9762\uFF08\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F\u306E\u57FA\u5730\uFF09\u306E\u65B9\u89D2\u304B\u3089\uFF08\u63A8\u5B9A\uFF09\u3002\u50DA\u8247\u306F\u3044\u306A\u3044)"
+        },
+        dawn_withdraw: {
+          retire_edge: "west",
+          force_ja: "\u6771\u4EAC\u6025\u884C",
+          source: "design (v0.8.0\u3002\u591C\u660E\u3051\u306B\u6D6E\u3044\u3066\u3044\u308B\u8266\uFF08\u8B77\u885B\u3068\u3001\u6D77\u5CE1\u306B\u3044\u308B\u5217\uFF09\u306F\u897F\u3078\u9000\u304F\uFF08\u6765\u305F\u9053\uFF1D\u30D9\u30E9\u6E7E\u306E\u65B9\u3078\u3002V-T2 \u3067 transit.inbound.edge \u3068\u540C\u3058\uFF09\u3002\u30D3\u30E9\u3067\u63DA\u9678\u3057\u3066\u3044\u308B\u8266\u306F\u623B\u3089\u306A\u3044\uFF08\u63DA\u9678\u3067\u6B8B\u3063\u305F\u6271\u3044\u3002S1\uFF09\u3002force_ja \u306F\u591C\u660E\u3051\u306E\u5E2F\u306E\u547C\u3073\u540D)"
+        },
+        enemy_hits_to_sink: 1,
+        enemy_hits_to_sink_source: "design (v0.8.0\u3002us_02\u30FBjp_06 \u3068\u540C\u3058 1 \u672C\u3067\u6C88\u6CA1\u306E\u6F14\u51FA\u3002\u5217\u306E\u8266\u3082\u540C\u3058\uFF08S2\uFF09)",
+        objective_sink_count: 1,
+        objective_sink_count_source: "design (v0.8.0\u3002\u30CE\u30FC\u30DE\u30EB\u3082\u6483\u6C88\u306E\u9054\u6210\u306F 1 \u96BB\uFF08\u5217 3 \uFF0B \u8B77\u885B 1 \u306E\u3046\u3061\uFF09\u3002v0.6.0 \u306E hard.objective_sink_count \u3092\u30CE\u30FC\u30DE\u30EB\u306B\u3082\u8AAD\u3080\u9375\uFF08config/mission-hard-data\u3002\u3053\u306E\u9375\u306E\u7121\u3044\u4EFB\u52D9\u306F\u4ECA\u307E\u3067\u3069\u304A\u308A\u5168\u96BB\uFF09\u3002\u53F2\u5B9F\u306F\u7D04 30 \u672C\u3067\u547D\u4E2D 0)",
+        hard: {
+          extra_transit_ships: 1,
+          objective_sink_count: 1,
+          source: "design (v0.8.0\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9\uFF08\u30E6\u30FC\u30B6\u30FC\u306E v0.4.4\u300C\u96E3\u6613\u5EA6\u304C\u4E0A\u304C\u308C\u3070\u6575\u8266\u2026\u306E\u6570\u304C\u5897\u3048\u3066\u3044\u3051\u3070\u3088\u3044\u300D\uFF09: \u5217\u306E\u8266\u3092 1 \u96BB\u8DB3\u3057\u3066 4 \u96BB \uFF0B \u8B77\u885B 1\uFF1D\u6697\u53F7\u306E\u89E3\u8AAD\u3068\u6226\u679C\u306E\u5831\u544A\u306E\u300C\u99C6\u9010\u8266 5 \u96BB\u300D\uFF08\u53F2\u5B9F\u306F 4 \u96BB\uFF09\u3002\u9054\u6210\u306F 1 \u96BB\u306E\u6483\u6C88\u306E\u307E\u307E)"
+        },
+        transit: {
+          ships: 3,
+          spacing_s: 8,
+          speed_kt: 30,
+          edge_inset_m: 150,
+          inbound: {
+            edge: "west",
+            lane_y_m: 1500,
+            heading_deg: 90,
+            enter_s: 18
+          },
+          unload_s: 40,
+          outbound: {
+            edge: "east",
+            lane_y_m: 2300,
+            heading_deg: 270
+          },
+          cover_leaves_with_outbound: true,
+          vila_label_ja: "\u30D3\u30E9",
+          source: "historical (\u99C6\u9010\u8266 4 \u96BB\u306E\u3046\u3061 3 \u96BB\u304C\u8F38\u9001\u30FB1 \u96BB\u304C\u8B77\u885B\u3002\u30D9\u30E9\u6E7E\u304B\u3089\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u3078\u5165\u308A\u3001\u30D3\u30E9\uFF08\u30B3\u30ED\u30F3\u30D0\u30F3\u30AC\u30E9\u5CF6\uFF09\u3067\u5175\u7D04 900 \u3068\u7269\u8CC7\u3092\u63DA\u3052\u3066\u540C\u3058\u6D77\u5CE1\u3092\u623B\u3063\u305F\u3002\u5E30\u308A\u306E\u99C6\u9010\u8266\u306B\u4F53\u5F53\u305F\u308A\u3055\u308C\u3066\u5931\u308F\u308C\u305F\u8247\u304C\u3042\u3063\u305F\uFF1Dspec-v0800 \xA74.1\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.8.0 S0\u3002\u5217\u306E\u901A\u904E: 1 \u96BB\u76EE\u306F\u897F\u306E\u7E01\u306E\u5185 150 m\u30FBy 1,500 \u306B 18 \u79D2\u3067\u73FE\u308C\u3001090\xB0\u30FB30 kt\uFF08\u753B\u9762\u4E0A 77 m/\u79D2\uFF09\u3067 8 \u79D2\u304A\u304D\uFF08\u7D04 620 m \u306E\u9593\u9694\uFF09\u306B\u7D9A\u304D\u3001\u6771\u306E\u7E01\u306E\u5916 150 m \u3067\u30D3\u30E9\u306B\u7740\u304F\uFF08\u898B\u3048\u306A\u3044\u30FB\u6483\u3066\u306A\u3044\u30FB\u72D9\u3048\u306A\u3044\uFF09\u3002\u5404\u8266\u306F\u7740\u3044\u3066\u304B\u3089 40 \u79D2\u3067\u6771\u306E\u7E01\u306E\u5185 150 m\u30FBy 2,300 \u306B 270\xB0 \u3067\u73FE\u308C\u3001\u897F\u306E\u7E01\u306E\u5916 150 m \u3067\u53BB\u308B\uFF08\u6483\u6C88\u306B\u6570\u3048\u306A\u3044\uFF09\u3002\u5F80\u8DEF\u3082\u5FA9\u8DEF\u3082\u9000\u304F\u52D5\u304D\uFF08\u5217\u306E AI \u306F enemies.json \u306E\u5024\u306E\u307E\u307E\u6700\u5927\u901F\u529B\u3060\u3051 30 kt\uFF09\u3002\u5FA9\u8DEF\u306E\u6700\u521D\u306E\u8266\u304C\u73FE\u308C\u308B\u3068\u8B77\u885B\u3082\u897F\u3078\u9000\u304F\uFF08cover_leaves_with_outbound\uFF09\u3002\u63FA\u3089\u304E\u306E\u306A\u3044\u591C\u306E\u30CF\u30FC\u30C9 4 \u96BB\u3067\u6700\u5F8C\u306E\u8266\u304C\u53BB\u308B\u306E\u306F 237.5 \u79D2\uFF08\u591C\u660E\u3051 260 \u79D2\u306E 22.5 \u79D2\u524D\uFF1DV-T3\uFF09\u3002\u901F\u3055\u30FB\u9593\u9694\u30FB\u63DA\u9678\u306E\u79D2\u306F S3 \u306E\u8FCE\u6483\u306E\u6A21\u64EC\u3067\u3082\u52D5\u304B\u3057\u3066\u3044\u306A\u3044\uFF08\u5E2F\u306F\u8B77\u885B\u306E\u6700\u521D\u306E\u91DD\u8DEF\u3068\u71C3\u6599\u306E\u76F4\u3057\u3067\u6E80\u305F\u3057\u305F\u3002\u901F\u3055 25 kt\u30FB\u63DA\u9678 25\uFF0F60 \u79D2\u30FB\u5FA9\u8DEF\u306E\u9053\u306E y \u306F\u8A66\u3057\u3060\u3051\u3002B6 \u306E\u6B63\u3057\u304F\u72D9\u3063\u305F 1 \u672C\u306F 30 kt \u3067 38.1%\u3002KPI \u3092\u5408\u308F\u305B\u305F\u8266\u306E\u56DE\u907F\u30FB\u898B\u5F35\u308A\u30FB\u7832\u306E\u5024\u306B\u306F\u89E6\u308C\u306A\u3044\uFF09)"
+        },
+        shores: {
+          north: {
+            land_m: 600,
+            labels: [
+              {
+                label_ja: "\u30B3\u30ED\u30F3\u30D0\u30F3\u30AC\u30E9\u5CF6",
+                x_m: 3e3
+              }
+            ]
+          },
+          south: {
+            land_m: 600,
+            labels: [
+              {
+                label_ja: "\u30AE\u30BE\u5CF6",
+                x_m: 300
+              },
+              {
+                label_ja: "\u30A2\u30E9\u30F3\u30C7\u30EB\u5CF6",
+                x_m: 4200
+              }
+            ],
+            gaps_m: [
+              [
+                700,
+                1900
+              ]
+            ],
+            gap_label_ja: "\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053"
+          },
+          source: "historical (\u6D77\u5CE1\u306F\u30B3\u30ED\u30F3\u30D0\u30F3\u30AC\u30E9\u5CF6\uFF08\u5317\u6771\uFF09\u3068\u30A2\u30E9\u30F3\u30C7\u30EB\u5CF6\u30FB\u30AE\u30BE\u5CF6\uFF08\u5357\u897F\uFF09\u306E\u9593\u3002PT \u306F\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053\u3092\u901A\u3063\u3066\u51FA\u5165\u308A\u3057\u305F\uFF1Dspec-v0800 \xA74.1) / design (v0.8.0 S0\u3002\u6771\u897F\u306B\u7F6E\u3044\u305F\u6A21\u5F0F\u56F3\u306E\u4E21\u5CB8: \u5317\u306E\u7E01\uFF08y 0\uFF09\u306E\u5916\u306B\u9678 600 m\u3001\u5357\u306E\u7E01\uFF08y 4,000\uFF09\u306E\u5916\u306B\u9678 600 m\uFF08x 700\u301C1,900 \u306F\u5207\u308C\u76EE\uFF1D\u30D5\u30A1\u30FC\u30AC\u30BD\u30F3\u6C34\u9053\u3002\u9678\u3092\u63CF\u304B\u305A\u6D77\u304C\u5357\u3078\u7D9A\u304F\uFF09\u3002\u5B57\u306F\u9678\u306E\u4E0A\uFF08x \u306F\u5B57\u306E\u4E2D\u5FC3\uFF09\u3002\u8247\u306F\u4ECA\u306E\u5CB8\u3068\u540C\u3058\u304F\u6D77\u57DF\u306E\u7E01\u3067\u6B62\u307E\u308B\uFF08\u9678\u306E\u5F53\u305F\u308A\u306F\u8981\u3089\u306A\u3044\uFF09\u3002\u4ECA\u306E\u5CB8\uFF08coast\uFF09\u3068\u306F\u4E00\u7DD2\u306B\u7F6E\u3051\u306A\u3044\uFF08V-S3\uFF09\u3002\u7D75\u306F S2)"
+        },
+        radar: {
+          model: "so_early",
+          fit: "leader",
+          source: "historical (1943-08-01\u301C02 \u306E\u30D6\u30E9\u30B1\u30C3\u30C8\u6D77\u5CE1\u3067\u30EC\u30FC\u30C0\u30FC\u3092\u7A4D\u3093\u3067\u3044\u305F\u306E\u306F\u5206\u968A\u306E\u5148\u982D\u306E\u8247\u3060\u3051\uFF083 \u96BB\u3068\u3082 4 \u96BB\u3068\u3082\uFF09\u3002\u5148\u982D\u306E\u8247\u306F\u30EC\u30FC\u30C0\u30FC\u306E\u65B9\u4F4D\u3067\u6483\u3061\u3001\u6483\u3061\u7D42\u3048\u308B\u3068\u5E30\u308B\u547D\u4EE4\u3067\u3001\u6B8B\u308A\u306E\u8247\u306F\u307B\u3068\u3093\u3069\u4F55\u3082\u898B\u3048\u306A\u304B\u3063\u305F\uFF1Dspec-v0800 \xA73.1\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.8.0 S0\u3002\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u30EC\u30FC\u30C0\u30FC\u3092\u7A4D\u3080\u5148\u982D\u306E\u8247\u306B\u3057\u305F\uFF08spec-v0800 \xA79 Q2\u3002\u5B9F\u6A5F 1 \u56DE\u76EE\u306B\u805E\u304F\uFF09\u3002\u578B\u306F\u521D\u671F\u306E SO\uFF08hit_rate_model.json \u306E radar.models.so_early\uFF09)"
+        }
+      }
+    },
+    {
+      id: "us_05",
+      campaign: "us_pt",
+      order: 5,
+      title_ja: "\u30B9\u30EA\u30AC\u30AA\u6D77\u5CE1\u30FB\u6700\u521D\u306E\u63A5\u89E6",
+      date: "1944-10-24",
+      place: "\u30B9\u30EA\u30AC\u30AA\u6D77\u5CE1\u5357\u53E3",
+      type: "recon_and_attack",
+      player_boat: "us_elco80",
+      torpedo_type: "us_mk13",
+      objective: "\u63A5\u8FD1\u3059\u308B\u8266\u968A\u3092\u767A\u898B\u30FB\u5831\u544A\u3057\u3001\u53EF\u80FD\u306A\u3089\u96F7\u6483\u3002\u751F\u9084\u304C\u6700\u512A\u5148",
+      enemies: [
+        "ijn_light_cruiser",
+        "ijn_destroyer",
+        "ijn_destroyer"
+      ],
+      hazards: [
+        "enemy_ship_gunfire_or_ram",
+        "friendly_fire"
+      ],
+      moon: "dark",
+      duration_min: 6,
+      success: "\u5831\u544A\uFF08\u4E00\u5B9A\u6642\u9593\u8FFD\u5C3E\uFF09\u3057\u3066\u5E30\u6295\u3002\u5DE1\u6D0B\u8266\u3078\u306E\u547D\u4E2D\u306F\u5927\u30DC\u30FC\u30CA\u30B9",
+      historical_note: "PT39\u96BB\u30FB13\u30BB\u30AF\u30B7\u30E7\u30F3\u300235\u672C\u767A\u5C04\u3067\u65E5\u672C\u5074\u78BA\u8A8D\u306F\u963F\u6B66\u9688\u3078\u306E1\u672C\uFF08PT-137\uFF09\u3002PT-493\u55AA\u5931\u3002",
+      source_url: "https://en.wikipedia.org/wiki/Battle_of_Surigao_Strait",
+      dawn_air: {
+        control: "own",
+        confidence: "medium",
+        play_as: "own",
+        enemy_ships_at_dawn: "retire",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u5473\u65B9\uFF08\u8B77\u885B\u7A7A\u6BCD\uFF09",
+        refs: [
+          {
+            url: "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+            claim: "\u30EC\u30A4\u30C6\u6C96\u6D77\u6226\uFF081944-10\uFF09\u306E\u82F1\u56FD\u6D77\u8ECD\u306E\u6226\u53F2\uFF08Battle Summary No. 40\uFF09\u3002\u30B9\u30EA\u30AC\u30AA\u6D77\u5CE1\u306E\u591C\u6226\u306E\u5F8C\u3001\u9000\u304F\u65E5\u672C\u8266\u306F\u663C\u306B\u7C73\u6A5F\u306E\u7A7A\u8972\u3092\u53D7\u3051\u305F"
+          },
+          {
+            url: "https://pacificwrecks.com/ship/ijn/abukuma.html",
+            claim: "\u963F\u6B66\u9688\u306F 10/25 \u672A\u660E\u306B PT-137 \u306E\u9B5A\u96F7\u3067\u640D\u50B7\u3057\u3001\u7FCC 10/26 \u306E\u663C\u306B\u7C73\u9678\u8ECD\u6A5F\u306E\u7206\u6483\u3067\u6C88\u3093\u3060"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002\u904A\u3079\u308B\u4E16\u754C\u306F\u307E\u3060\u7121\u3044)"
+      }
+    },
+    {
+      id: "us_06",
+      campaign: "us_pt",
+      order: 6,
+      playable_from: "v0.8.1",
+      title_ja: "\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u306E\u6C7A\u7740",
+      date: "1944-12-11",
+      place: "\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\uFF08\u30EC\u30A4\u30C6\u5CF6\u897F\u5CB8\uFF09",
+      type: "intercept_destroyer",
+      player_boat: "us_elco80",
+      torpedo_type: "us_mk13",
+      objective: "\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u305F\u99C6\u9010\u8266 \u536F\u6708\u3068\u3001\u63DA\u9678\u4E2D\u306E\u8F38\u9001\u8239 \u7A7A\u77E5\u4E38\u3002\u30EC\u30FC\u30C0\u30FC\u3067\u6349\u3048\u3001\u6697\u3044\u5CB8\u3092\u80CC\u306B\u5FCD\u3073\u5BC4\u3063\u3066\u96F7\u6483\u3057\u3001\u52D5\u304D\u51FA\u3057\u305F\u8266\u304B\u3089\u9003\u308C\u3066\u5E30\u308C",
+      enemies: [
+        "ijn_destroyer_mutsuki_enemy",
+        "ijn_transport"
+      ],
+      hazards: [
+        "enemy_ship_gunfire_or_ram",
+        "enemy_aircraft"
+      ],
+      moon: "dark",
+      moon_label_ja: "\u6708\u6CA1\u5F8C",
+      duration_min: 5,
+      success: "\u5E30\u6295\u3002\u536F\u6708\u3092\u6483\u6C88\u3059\u308C\u3070\u9054\u6210",
+      historical_note: "1944-12-12 1\u6642\u3054\u308D\u3001\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u3066\u3044\u305F\u536F\u6708\u3092 PT-490\u30FBPT-492 \u304C\u30EC\u30FC\u30C0\u30FC\u3067\u6349\u3048\u3001\u6697\u3044\u5CB8\u3092\u80CC\u306B\u7D041,000 yd\u304B\u30896\u672C\u30012\u672C\u4EE5\u4E0A\u304C\u547D\u4E2D\u3057\u3066\u6483\u6C88\uFF08\u65E5\u672C\u5074\u8A18\u9332\u4E00\u81F4\uFF09\u3002\u7A7A\u77E5\u4E38\u306F\u99C6\u6F5C\u82472\u96BB\u306B\u5C0E\u304B\u308C\u30D1\u30ED\u30F3\u30DD\u30F3\u3067\u63DA\u9678\u3002\u6708\u306F\u6C88\u3093\u3067\u3044\u305F\u3002PT-323 \u306F 12-10 \u306B\u7279\u653B\u6A5F\u3067\u5931\u308F\u308C\u305F\uFF08\u5225\u306E\u591C\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF08docs/01 \xA78\uFF09",
+      source_url: "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
+      briefing_note_ja: "1944\u5E7412\u670812\u65E51\u6642\u3054\u308D\u3001\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u3066\u3044\u305F\u99C6\u9010\u8266\u536F\u6708\u3092\u3001\u30EC\u30FC\u30C0\u30FC\u3067\u6349\u3048\u305F\u7C73PT\xA02\u96BB\u304C\u6697\u3044\u5CB8\u3092\u80CC\u306B\u5FCD\u3073\u5BC4\u308A\u3001\u7D04900\xA0m\u304B\u3089\u9B5A\u96F76\u672C\u3092\u6483\u3063\u30662\u672C\u4EE5\u4E0A\u3092\u5F53\u3066\u3066\u6C88\u3081\u305F\u3002\u8F38\u9001\u8239\u7A7A\u77E5\u4E38\u306F\u99C6\u6F5C\u82472\u96BB\u306B\u5C0E\u304B\u308C\u3066\u63DA\u9678\u3057\u3066\u3044\u305F\u3002\u65E5\u672C\u306E\u30BF\u30D6\u306E\u300C\u591A\u53F7\u4F5C\u6226\u30FB\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u3078\u300D\u3068\u540C\u3058\u591C\u3002",
+      dawn_air: {
+        control: "contested",
+        confidence: "medium",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "retire",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u4E89\u596A\uFF08\u65E5\u672C\u6A5F\u306E\u7A7A\u8972\uFF09",
+        refs: [
+          {
+            url: "https://pacificwrecks.com/battle/battle-of-ormoc-bay.html",
+            claim: "\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u306E\u6226\u3044\uFF081944-11\u301C12\uFF09\u3002\u65E5\u672C\u306E\u8F38\u9001\u3068\u7279\u653B\u6A5F\u3001\u7C73\u306E PT\u30FB\u99C6\u9010\u8266\u30FB\u9678\u4E0A\u6A5F\u304C\u6E7E\u306E\u4E0A\u7A7A\u3068\u6D77\u3067\u4E89\u3063\u305F"
+          },
+          {
+            url: "https://www.navsource.org/archives/12/05323.htm",
+            claim: "PT-323 \u306F\u30EC\u30A4\u30C6\u65B9\u9762\u3067\u7279\u653B\u6A5F\u306E\u4F53\u5F53\u305F\u308A\u3092\u53D7\u3051\u3066\u5931\u308F\u308C\u305F\uFF081944-12\uFF09"
+          },
+          {
+            url: "https://en.wikipedia.org/wiki/VMF-541",
+            claim: "VMF(N)-541 \u306E\u591C\u9593\u6226\u95D8\u6A5F\u304C1944-12-03 \u304B\u3089\u30BF\u30AF\u30ED\u30D0\u30F3\u306B\u3044\u3066\u300112\u65E5\u671D\u306B\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u306E\u7C73\u8266\u3078\u5411\u304B\u3046\u65E5\u672C\u6A5F33\u6A5F\u3092\u8FCE\u3048\u6483\u3063\u305F\uFF08\u591C\u660E\u3051\u306E\u7A7A\u306F\u65E5\u672C\u6A5F\u3082\u6765\u308B\u4E89\u596A\uFF09"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u3068 v0.6.9 \u306E\u8ABF\u3079\uFF082026-10-28\u3002docs/01 \xA78\uFF09\u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u663C\u306E\u7A7A\u306F\u7C73\uFF08\u30BF\u30AF\u30ED\u30D0\u30F3\u306E\u6D77\u5175\u968A\u306E\u30B3\u30EB\u30BB\u30A2\uFF09\u304C\u512A\u52E2\u3067\u300112 \u65E5\u306E\u591C\u660E\u3051\u306B\u306F\u65E5\u672C\u6A5F 33 \u6A5F\u304C\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u306E\u7C73\u8266\u3078\u5411\u304B\u3063\u305F) / design (v0.6.1\u3002label_ja \u306E\u521D\u3081\u306E\u6587\u3068 play_as contested\uFF08\u904A\u3079\u308B\u4E16\u754C\u304C\u7121\u304B\u3063\u305F\uFF09\u3002v0.8.1 S0: play_as contested \u2192 enemy\u30FBlabel_ja\u300C\u663C\u306E\u7A7A\u306F\u4E89\u596A\uFF08\u65E5\u672C\u6A5F\u306E\u7A7A\u8972\uFF09\u300D\u30FBrefs \u306B VMF-541 \u306E\u9801\uFF08jp_04 \u306E refs \u3068\u540C\u3058\uFF09\u3002lead \u306E\u65E2\u5B9A L1\uFF08\u30E6\u30FC\u30B6\u30FC\u672A\u78BA\u8A8D\uFF09\uFF1D\u7A7A\u306F\u4E89\u596A\u3067\u3001\u30E6\u30FC\u30B6\u30FC\u306E\u898F\u5247\u300C\u5236\u7A7A\u6A29\u304C\u306A\u3044\u9650\u308A\u591C\u660E\u3051\u306E\u5F8C\u306F\u7A7A\u8972\u300D\uFF08v0.6.1\uFF09\u3068 v0.8.0 \u306E us_04 \u306E\u30E6\u30FC\u30B6\u30FC\u306E\u6C7A\u3081 U1\u300CA\u306E\u307E\u307E\u3067\u3044\u3044\u3068\u601D\u3046\u3088\u300D\u306E\u524D\u4F8B\u3002\u591C\u660E\u3051\u306B\u5E30\u6295\u306E\u8F2A\u306E\u5916\u306A\u3089\u65E5\u672C\u6A5F 4 \u6A5F\u306E\u7A7A\u8972\uFF08v0_1_prototype.dawn_strike\uFF09\u3002enemy_ships_at_dawn retire \u306F\u53F2\u5B9F\u306E\u5024\u306E\u307E\u307E\uFF1D\u591C\u660E\u3051\u306B\u6D6E\u3044\u3066\u3044\u308B\u8266\u306F\u6771\u3078\u9000\u304F\uFF08v0_1_prototype.dawn_withdraw\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "ijn_destroyer_mutsuki_enemy"
+        ],
+        enemy_behavior: "anchored \u3068 ai (v0.8.1\u3002\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u305F\u99C6\u9010\u8266 \u536F\u6708\uFF08enemies.json \u306E ijn_destroyer_mutsuki_enemy\uFF09\u3068\u3001\u6CCA\u5730\u3067\u63DA\u9678\u3059\u308B\u8F38\u9001\u8239 \u7A7A\u77E5\u4E38\uFF08\u4E0B\u306E transport\uFF09\u306F t = 0 \u304B\u3089\u6B62\u307E\u3063\u3066\u3044\u308B\uFF08\u4E0B\u306E anchored\uFF09\u3002\u898B\u5F35\u308A\u306F\u6B62\u307E\u3063\u3066\u3044\u3066\u3082 us_02 \u306E\u898F\u5247\u306E\u307E\u307E\u8D70\u308A\u3001\u81EA\u8247\u3092\u898B\u305F\u30FB\u96F7\u8DE1\u30FB\u88AB\u96F7\u30FB\u968A\u306E\u8B66\u5831\u30FB\u591C\u660E\u3051\u306E\u3069\u308C\u304B\u3067\u6C17\u3065\u304F\u3002\u6C17\u3065\u3044\u305F\u99C6\u9010\u8266\u306F destroyer_underway_s \u5F8C\u306B\u52D5\u304D\u51FA\u3057\u3066 us_02 \u306E AI\uFF08\u63A2\u7167\u706F\u30FB\u7832\u30FB\u661F\u5F3E\u30FB400 m \u306E\u4F53\u5F53\u305F\u308A\u30FB\u7AEF\u3067\u5411\u304D\u76F4\u3057\uFF09\u306B\u306A\u308B\u3002\u7A7A\u77E5\u4E38\u306F\u4E00\u6669\u3058\u3085\u3046\u52D5\u304B\u306A\u3044\uFF08\u6C17\u3065\u3051\u3070 76 mm \u3092\u4ED6\u306E\u8266\u306E\u5149\u306E\u4E0B\u3067\u6483\u3064\uFF09\u3002\u8266\u304B\u3089\u898B\u3066\u81EA\u8247\u306E\u80CC\u306B\u6697\u3044\u5CB8\u304C\u3042\u308C\u3070\u898B\u3064\u304B\u308B\u8DDD\u96E2\u304C\u7E2E\u3080\uFF08\u4E0B\u306E shore_backdrop\uFF09\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F v0.8.1 S2\u30FB\u30CF\u30FC\u30C9\u306E\u99C6\u6F5C\u8247\u306F S2b\u30FB\u51FA\u6483\u53EF\uFF08playable_from\uFF09\u306F S4)",
+        duration_s: 200,
+        duration_s_source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.1 D-M5\u3002\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u306E\u521D\u3081\u306E\u5024\u3002\u5CB8\u3092\u56DE\u308B\u9053\uFF08\u51FA\u767A \u2192 (5100, 1500) \u5DE1\u822A \u2192 (5100, 2870) \u9759\u97F3 \u2192 \u536F\u6708\u306E\u771F\u5357 (3620, 2900) \u9759\u97F3 \u2192 \u72D9\u3063\u3066 15 \u79D2 \u2192 \u5E30\u6295\u306E\u8F2A\u306E\u7E01\u307E\u3067\u5DE1\u822A\uFF09\u306F\u624B\u306E\u6982\u7B97\u3067 138 \u79D2\uFF1D\u591C\u660E\u3051\u306E 62 \u79D2\u524D\u3002duration_min 5 \u306F\u4EFB\u52D9\u672C\u4F53\u306E\u8A2D\u8A08\u5024\u3067\u3001\u3053\u308C\u3068\u306F\u5225\u306E\u30D7\u30ED\u30C8\u30BF\u30A4\u30D7\u5024) / design (v0.8.1 S3: \u63A2\u308A\u306E\u5E2F T\uFF08\u5E30\u6295\u306E\u591C\u306E 90% \u4EE5\u4E0A\u304C\u591C\u660E\u3051\u306E\u524D\uFF09\u306F\u6D5C\u6CBF\u3044\u306E\u591C\u306E 100% \u3067\u901A\u3063\u305F\uFF1D200 \u79D2\u306E\u307E\u307E\uFF08180\u301C240 \u79D2\u306E\u5185\u3067\u76F4\u3059\u5FC5\u8981\u306A\u3057\uFF09)",
+        fuel_allotment_gal: 40,
+        fuel_allotment_gal_source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.1 D-M5\u3002\u6226\u95D8\u306B\u4F7F\u3048\u308B\u5272\u5F53\uFF08us_02 \u3068\u540C\u3058\u8003\u3048\uFF09\u306E\u521D\u3081\u306E\u5024\u3002core/fuel \u306E\u66F2\u7DDA\u306E\u624B\u306E\u6982\u7B97\uFF08\u753B\u9762\u306E 1 km \u3042\u305F\u308A \u9759\u97F3 18 kt 4.0\u30FB\u5DE1\u822A 23 kt 4.7\u30FB\u5168\u901F 6.9 gal\uFF09\u3067\u5CB8\u3092\u56DE\u308B\u9053\u306F 28.9 gal\uFF1D\u6B8B\u308A 28%\u3002\u4E0A\u9650\u306F tests/dawn-air \u306E\u300C\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 1,500 \u79D2\u672A\u6E80\u3067\u6F02\u6D41\u300D\u3067 Elco 80 \u306F 41.6 gal \u307E\u3067\uFF0840 gal \u306F 1,440 \u79D2\uFF09\u3002\u8DB3\u308A\u306A\u3051\u308C\u3070\u71C3\u6599\u3067\u306A\u304F\u51FA\u767A\u70B9\u3068\u5E30\u6295\u306E\u8F2A\u3092\u76F4\u3059) / design (v0.8.1 S3: \u63A2\u308A\u306E\u5E2F F\uFF08\u5E30\u6295\u306E\u591C\u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024 15\u301C35%\uFF09\u306F\u6D5C\u6CBF\u3044\u306E\u591C\u306E\u4E2D\u592E\u5024 27% \u3067\u901A\u3063\u305F\uFF1D40 gal \u306E\u307E\u307E\u3002\u5317\u3092\u5927\u304D\u304F\u56DE\u3063\u3066\u7A7A\u77E5\u4E38\u3092\u5148\u306B\u6483\u3064\u9053\u306F 40 \u591C\u3068\u3082\u71C3\u6599\u5207\u308C\u3067\u6F02\u6D41\uFF08\u52A0\u70B9\u306E\u9053\u306F\u76EE\u7684\u306E\u4EE3\u308F\u308A\u306B\u306A\u3089\u306A\u3044\uFF09)",
+        shallows: [],
+        bounds_m: {
+          width: 6e3,
+          height: 3e3,
+          source: "design (v0.8.1\u3002jp_04 \u3068\u540C\u3058\u5730\u56F3\u3092\u7C73\u306E\u5074\u304B\u3089\uFF08\u540C\u3058\u591C\u306E\u4E21\u5074\uFF09\u3002\u5357\u306E\u7E01\u304C\u5CB8\uFF08\u30D1\u30ED\u30F3\u30DD\u30F3\u306E\u6D5C\u306F\u672C\u5F53\u306F\u897F\u5411\u304D\uFF1D\u6A21\u5F0F\u56F3\u3002\u5CB8\u306F south \u3060\u3051\uFF1Dv0.4.2 \u306E\u898F\u5247\uFF09)"
+        },
+        player_start: {
+          x_m: 5e3,
+          y_m: 250,
+          heading_deg: 225,
+          source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.1 D-M3\u3002\u5317\u6771\u306E\u30AB\u30E2\u30C6\u30B9\u6D77\u306E\u5074\u304B\u3089\u5357\u897F\u5411\u304D\u30FB\u505C\u6B62\uFF08jp_04 \u306E\u7C73PT \u306E\u300C\u6771\u304B\u3089\u5CB8\u6CBF\u3044\u300D\u306E\u7DDA\u306E\u5165\u53E3\u306E\u5074\uFF09\u3002\u536F\u6708\u307E\u3067 2,538 m\u30FB\u7A7A\u77E5\u4E38\u307E\u3067 3,209 m\uFF08\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u7AEF\u3067\u3082\u536F\u6708\u307E\u3067 2,416 m\uFF1D\u5168\u901F\u3067\u898B\u3064\u304B\u308B 1,920 m \u306E\u5916\u3002V-A4\uFF09\u30FB\u5E30\u6295\u306E\u8F2A\u306E\u4E2D\u5FC3\u307E\u3067 618 m\uFF08\u7E01\u307E\u3067 368 m\uFF09)"
+        },
+        enemy_start: {
+          x_m: 3620,
+          y_m: 2380,
+          heading_deg: 270,
+          source: "historical (\u536F\u6708\u306F 12 \u65E5 1 \u6642\u3054\u308D\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u3066\u3044\u305F\uFF08lying to\u3002medium\uFF09\u30022 \u672C\u306F\u8266\u6A4B\u306E\u4E0B\u306E\u5DE6\u8237\u3068\u4E2D\u592E\u90E8\u306B\u5F53\u305F\u308A\u3001\u5DE6\u8237\u304C\u6D5C\u306E\u5074\uFF1DPT \u306F\u5CB8\u306E\u5074\u304B\u3089\u6765\u305F\uFF08medium\u3002docs/01 \xA78\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.1 D-M2\u3002\u4F4D\u7F6E\u306F jp_04 \u306E\u536F\u6708\uFF08ally_destroyer.station\uFF09\u3068\u540C\u3058 (3620, 2380)\uFF1D\u6CCA\u5730\u306E\u5317\u6771 727 m\u30FB\u5CB8\u306E\u7DDA\u304B\u3089 620 m\uFF08\u30EC\u30FC\u30C0\u30FC\u306E\u9678\u306E\u53CD\u5C04 300 m \u306E\u5916\uFF1D\u6620\u308B\uFF09\u3002\u91DD\u8DEF\u3060\u3051 90\xB0 \u2192 270\xB0\uFF08\u897F\u5411\u304D\u306A\u3089\u5DE6\u8237\u304C\u5357\u306E\u6D5C\u3002jp_04 \u306F\u5909\u3048\u306A\u3044\uFF1D\u540C\u3058\u591C\u306E\u4E21\u5074\u3067\u5411\u304D\u304C\u9055\u3046\u306E\u306F\u65E2\u77E5\u306E\u5236\u7D04\uFF09)"
+        },
+        transport: {
+          enemy_id: "ijn_transport",
+          start: {
+            x_m: 3e3,
+            y_m: 2760,
+            heading_deg: 135
+          },
+          source: "historical (\u7A7A\u77E5\u4E38\uFF084,107 t\uFF09\u306F\u536F\u6708\u3068\u99C6\u6F5C\u8247 2 \u96BB\u306B\u5C0E\u304B\u308C\u300112 \u65E5\u306B\u30D1\u30ED\u30F3\u30DD\u30F3\u3067\u4EBA\u54E1\u3068\u7A4D\u8377\u3092\u63DA\u3052\u305F\uFF08medium\u3002docs/01 \xA78\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.2 D-S2\u3002jp_04 \u306E\u6CCA\u5730\uFF08landing.anchor\uFF09\u3068\u540C\u3058 (3000, 2760)\u30FB135\xB0\u3002ijn_transport\uFF085,000 t \u7D1A 120 \xD7 16 m\uFF09\u3067\u4EE3\u7528\uFF08jp_04 \u3068\u540C\u3058\uFF09\u3002\u968A\u306E\u6700\u5F8C\u306E 1 \u96BB\u3067\u30011 \u672C\u3067\u6C88\u3080\uFF08\u8A18\u9332\u306E\u5024\uFF09\u30FB\u6483\u6C88\u306E\u9054\u6210\u306B\u6570\u3048\u306A\u3044\uFF08\u6483\u6C88\u306F scoring.json \u306E\u8F38\u9001\u8239\u306E\u6483\u7834\u70B9\uFF09\u3002\u5CB8\u306E\u7DDA\u304B\u3089 240 m\uFF08\u30EC\u30FC\u30C0\u30FC\u306E\u9678\u306E\u53CD\u5C04 300 m \u306E\u5185\uFF1D\u6620\u3089\u306A\u3044\uFF09\u3002\u4E00\u6669\u3058\u3085\u3046\u6B62\u307E\u3063\u3066\u63DA\u9678\u3092\u7D9A\u3051\u3001\u591C\u660E\u3051\u306B\u3082\u9000\u304B\u306A\u3044\uFF08anchored.transport_underway false\uFF09)"
+        },
+        return_point: {
+          x_m: 4400,
+          y_m: 400,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)",
+          source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.1 D-M3\u3002\u5317\u6771\u306E\u6D77\uFF08\u6765\u305F\u9053\u306E\u30AB\u30E2\u30C6\u30B9\u6D77\u306E\u5074\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089 618 m\uFF08\u7E01\u307E\u3067 368 m\uFF09\u3001\u536F\u6708\u304B\u3089 2,128 m\u30FB\u7A7A\u77E5\u4E38\u304B\u3089 2,744 m\u3002\u534A\u5F84\u30FBcall_margin\u30FB\u5F85\u3061\u306F us_04 \u3068\u540C\u3058)"
+        },
+        coast: {
+          side: "south",
+          land_m: 600,
+          label_ja: "\u30EC\u30A4\u30C6\u5CF6\uFF08\u30D1\u30ED\u30F3\u30DD\u30F3\uFF09",
+          source: "design (v0.8.1\u3002jp_04 \u306E\u5CB8\u3068\u540C\u3058\uFF08\u898B\u305F\u76EE\u3060\u3051\u3002\u5357\u306E\u7E01\u304C\u6D5C\uFF09\u3002\u63DA\u9678\u5730\u70B9\u306E\u5E2F\u3068\u5B57\uFF08systems/world-landing \u306E\u5473\u65B9\u306E\u63DA\u9678\u306E\u7D75\uFF09\u306F\u63CF\u304B\u306A\u3044\u3002\u6697\u3044\u5CB8\u3092\u80CC\u306B\uFF08shore_backdrop\uFF09\u3068\u30EC\u30FC\u30C0\u30FC\u306E\u9678\u306E\u53CD\u5C04\u306E\u5CB8\u306E\u7DDA\u3082\u3053\u306E\u5357\u306E\u7E01)"
+        },
+        enemy_aircraft: {
+          enemy_id: "ijn_seaplane_jake",
+          attacks_per_night: 2,
+          source: "design (v0.8.1 IP2\u3002\u30E6\u30FC\u30B6\u30FC\u306E U3\uFF082026-11-17\u300CA: \u30CE\u30FC\u30DE\u30EB\u3068\u30CF\u30FC\u30C9\u306E\u4E21\u65B9\u3067\u304A\u9858\u3044\u3057\u307E\u3059\u300D\uFF09\u3068\u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u6575\u306E\u54E8\u6212\u6A5F\u304C\u30D0\u30F3\u30D0\u30F3\u98DB\u3093\u3067\u304D\u3066\u5E38\u306B\u901F\u5EA6\u3092\u6C17\u306B\u3057\u306A\u3044\u3068\u3044\u3051\u306A\u3044\u7DCA\u5F35\u611F\u3092\u8DB3\u305B\u3070\u3044\u3044\u304B\u3082\u3057\u308C\u307E\u305B\u3093\u300D\u3002\u4ED5\u7D44\u307F\u3068\u6570\u306F us_02 \u306E ijn_seaplane_jake \u306E\u307E\u307E\uFF08risk_events \u306E enemy_aircraft.params\u30FBenemies.json \u306E\u6A5F\u4F53\u3002\u822A\u8DE1\u3092 wake_trigger_s \u898B\u305B\u308B\u3068\u536F\u6708\u306E\u65B9\u89D2 6,000 m \u304B\u3089\u6765\u3066\u3001\u9759\u97F3\u306B\u843D\u3068\u305B\u3070 lose_s \u3067\u898B\u5931\u3044\u30011,500 m \u3092\u5207\u308C\u3070\u7167\u660E\u5F3E\u3068\u7206\u5F3E 2 \u767A\uFF09\u3002\u6BCE\u591C\uFF08night \u306E optional_hazards \u306B\u5165\u308C\u306A\u3044\uFF09\u3002attacks_per_night 2: 1 \u591C\u306B\u7167\u660E\u5F3E\u3068\u7206\u5F3E\u3067\u653B\u6483\u3059\u308B\u56DE\u6570\uFF08\u7121\u3044\u4EFB\u52D9\u306F 1\uFF1Dv0.4.1 \u306E 1 \u4EFB\u52D9 1 \u56DE\uFF09\u3002\u653B\u6483\u3092\u7D42\u3048\u3066\u53BB\u308B\u3068 patrol_cooldown_s \u306E\u5F8C\u306B\u54E8\u6212\u3078\u623B\u308B\uFF08core/seaplane-night\u3002\u51CD\u7D50\u306E core/seaplane \u306E\u5916\u306E\u5305\u307F\uFF09\u3002\u63A2\u308A\uFF08scripts/headless/anchor-probe\u30FB\u30CE\u30FC\u30DE\u30EB 6 \xD7 40 \u591C\u30FB\u30CF\u30FC\u30C9 2 \xD7 40 \u591C\uFF09\u3067\u306F 2 \u3068 3 \u3067\u591C\u304C\u540C\u3058\uFF083 \u56DE\u76EE\u306E\u653B\u6483\u306B\u5C4A\u304F\u591C\u304C\u7121\u3044\uFF09\uFF1D\u5C0F\u3055\u3044\u65B9\u3002\u53F2\u5B9F: \u7C73\u306E\u516C\u520A\u53F2\u306E\u7B2C III \u90E8\uFF08\u30BD\u30ED\u30E2\u30F3\uFF09\u306B\u591C\u306E\u6C34\u4E0A\u6A5F\u304C\u4E00\u6669\u4E2D PT \u3092\u60A9\u307E\u305B\u305F\u8A18\u8FF0\uFF08docs/01 \xA78\uFF09\u3001NHHC H-Gram 040 \u306B 1944 \u5E74 10\u301C11 \u6708\u306E\u30EC\u30A4\u30C6\u306E\u591C\u306F\u65E5\u672C\u6A5F\u304C\u512A\u52E2\u306A\u6642\u3082\u3042\u3063\u305F\u3002\u305D\u306E\u591C\u306E\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u3067\u65E5\u672C\u306E\u591C\u306E\u6A5F\u304C PT \u3092\u8972\u3063\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08WebSearch 2026-11-17: Wikipedia Battle of Ormoc Bay\u30FBPacific Wrecks 1944-12-11\uFF09\uFF1D\u4F5C\u308A\u3002?debug&noplane \u3067\u7121\u3057)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "enemy_aircraft",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.8.1 S0\u3002\u3053\u306E\u4E16\u754C\u3067\u8D77\u304D\u308B\u5371\u967A\u3092\u51FA\u4F1A\u3046\u9806\u306B: \u99C6\u9010\u8266\u306E\u7832\u6483\u30FB\u885D\u7A81\uFF08\u52D5\u304D\u51FA\u3057\u305F\u536F\u6708\u306E\u63A2\u7167\u706F\u30FB\u7832\u30FB\u661F\u5F3E\u30FB\u4F53\u5F53\u305F\u308A\u3068\u3001\u7A7A\u77E5\u4E38\u306E 76 mm\uFF09\u3001\u591C\u660E\u3051\u306E\u7A7A\u8972\uFF08dawn_air.play_as enemy \u306E 4 \u6A5F\uFF09\u3002\u53CB\u8ECD\u8AA4\u5C04\u30FB\u66B4\u98A8\u306F\u51FA\u3055\u306A\u3044\uFF08\u305D\u306E\u591C\u306E\u8A18\u9332\u306A\u3057\uFF1Ddocs/01 \xA78 \u306E\u300C\u591C\u306E PBY\u2026\u4E0D\u5728\u300D\u300C\u5473\u65B9\u6483\u3061\u2026\u4E0D\u5728\u300D\uFF09\u3002\u4E0A\u4F4D\u306E hazards\uFF08\u4EFB\u52D9\u672C\u4F53\u306E\u8A2D\u8A08\uFF09\u306F\u5909\u3048\u306A\u3044\uFF1Djp_04 \u306E\u4F5C\u6CD5\u3002v0.8.1 IP2: \u6575\u822A\u7A7A\u6A5F\uFF08enemy_aircraft\u3002\u65E5\u672C\u306E\u591C\u306E\u6C34\u4E0A\u6A5F\u3002block \u306F enemy_aircraft\u3002\u305D\u306E\u591C\u306E\u8A18\u9332\u306F\u7121\u3044\uFF1D\u4F5C\u308A\u3002\u30E6\u30FC\u30B6\u30FC\u306E U3\uFF09\u3092\u7832\u6483\u30FB\u885D\u7A81\u3068\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u9593\u306B\uFF1D\u51FA\u4F1A\u3046\u9806)",
+        night: {
+          hazard_scale: 1,
+          optional_hazards: [],
+          enemy_jitter: {
+            x_m: 150,
+            y_m: 50,
+            heading_deg: 0
+          },
+          mirror_chance: 0,
+          source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.1 D-M4\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\uFF08seed+16\uFF09: \u6B62\u307E\u3063\u305F\u8266\u3054\u3068\u306B x \xB1150\u30FBy \xB150 m\u30FB\u91DD\u8DEF\u306F\u63FA\u3089\u3055\u306A\u3044\uFF08\u30CE\u30FC\u30DE\u30EB\u306F\u536F\u6708\u3068\u7A7A\u77E5\u4E38\u306E 2 \u4EF6\u3001\u30CF\u30FC\u30C9\u306F\u99C6\u6F5C\u8247 2 \u96BB\u3092\u8DB3\u3057\u3066 4 \u4EF6\u3002\u4E71\u6570\u306F\u30CE\u30FC\u30DE\u30EB 8 \u56DE\u30FB\u30CF\u30FC\u30C9 14 \u56DE\uFF09\u3002y \xB150 \u3067\u3082\u7A7A\u77E5\u4E38\u306F\u5CB8\u306E\u7DDA\u304B\u3089 190\u301C290 m\uFF08\u30EC\u30FC\u30C0\u30FC\u306E\u9678\u306E\u53CD\u5C04 300 m \u306E\u5185\uFF09\u30FB\u536F\u6708\u306F 570\u301C670 m\uFF08\u5916\uFF09\u3002\u6CCA\u5730\u3068\u5CB8\u306F\u53CD\u8EE2\u3057\u306A\u3044\u306E\u3067 mirror_chance 0\u3002\u591C\u3054\u3068\u306B\u51FA\u308B\u5371\u967A\u306F\u7121\u3044\uFF08optional_hazards \u306A\u3057\uFF09)"
+        },
+        dawn_strike: {
+          aircraft_id: "ijn_a6m2n_rufe",
+          count: 4,
+          count_source: "design (\u307B\u304B\u306E\u4EFB\u52D9\u3068\u540C\u3058 4 \u6A5F\uFF08tests/dawn-air \u304C\u5168\u4EFB\u52D9 4 \u3092 pin\uFF09)",
+          from_bearing_deg: 270,
+          escort_target_planes: [],
+          source: "historical (12 \u65E5\u306E\u591C\u660E\u3051\u306B\u65E5\u672C\u6A5F 33 \u6A5F\u304C\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u306E\u7C73\u8266\u3078\u5411\u304B\u3063\u305F\uFF08VMF-541 \u306E\u9801\u306E\u629C\u7C8B\u3002high\u3002docs/01 \xA78\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.7 D-O3\u3002dawn_air.play_as enemy\uFF08lead \u306E\u65E2\u5B9A L1\u3002\u30E6\u30FC\u30B6\u30FC\u672A\u78BA\u8A8D\uFF09\u306E\u591C\u660E\u3051\u306E\u7A7A\u8972\u3002\u9678\u4E0A\u306E\u65E5\u672C\u6A5F\u3092\u4E8C\u5F0F\u6C34\u4E0A\u6226\u95D8\u6A5F\uFF08\u96F6\u6226\u306E\u5F62\u306E\u6A5F\uFF09\u306E\u8A18\u9332\u3067\u4EE3\u7528\u3002\u897F\uFF1D\u30BB\u30D6\u30FB\u30CD\u30B0\u30ED\u30B9\u306E\u5074\u306E\u65B9\u89D2\u304B\u3089\uFF08\u6A21\u5F0F\u56F3\uFF09\u3002\u50DA\u8247\u306F\u3044\u306A\u3044\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u6C7A\u3081 U1\uFF09)"
+        },
+        dawn_withdraw: {
+          retire_edge: "east",
+          force_ja: "\u65E5\u672C\u306E\u8266",
+          source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.7 D-O3\u3002\u591C\u660E\u3051\u306B\u6D6E\u3044\u3066\u3044\u308B\u99C6\u9010\u8266\uFF08\u30CF\u30FC\u30C9\u306F\u99C6\u6F5C\u8247\u3082\uFF09\u306F\u9045\u308C\u306A\u3057\u3067\u52D5\u304D\u51FA\u3057\u3066\u6771\u3078\u9000\u304F\uFF08\u30DE\u30CB\u30E9\u3078\u306E\u5E30\u308A\u9053\u3092\u6A21\u5F0F\u56F3\u3067\u3002\u5317\u6771\u306E\u5E30\u6295\u306E\u8F2A\u3078\u306E\u9053\u306F\u6A2A\u5207\u3089\u306A\u3044\uFF09\u3002\u6B62\u307E\u3063\u3066\u63DA\u9678\u3059\u308B\u7A7A\u77E5\u4E38\u306F\u9000\u304B\u306A\u3044\uFF08anchored.transport_underway false\uFF09\u3002force_ja \u306F\u591C\u660E\u3051\u306E\u5E2F\u306E\u547C\u3073\u540D)"
+        },
+        objective_sink_count: 1,
+        objective_sink_count_source: "design (v0.8.1 S0\u30FBspec-v0810 \xA73.7 D-O2\u3002\u6483\u6C88\u306E\u9054\u6210\u306F\u536F\u6708 1 \u96BB\uFF08\u968A\u306E\u99C6\u9010\u8266\u306F\u536F\u6708\u3060\u3051\uFF09\u3002\u7A7A\u77E5\u4E38\u306F\u8F38\u9001\u8239\u306E\u6483\u7834\u70B9\u3067\u3001\u9054\u6210\u306B\u6570\u3048\u306A\u3044\uFF1D\u5CB8\u304B\u3089 240 m \u306B\u6B62\u307E\u3063\u3066 1 \u672C\u3067\u6C88\u3080\u7A7A\u77E5\u4E38\u3092\u697D\u306A\u9053\u306B\u3057\u306A\u3044\u3002\u53F2\u5B9F\u3067\u6C88\u3093\u3060\u306E\u3082\u536F\u6708\u3002\u30CF\u30FC\u30C9\u306E\u99C6\u6F5C\u8247\u3082\u6570\u3048\u306A\u3044)",
+        radar: {
+          model: "so_late",
+          fit: "own",
+          source: "historical (1944 \u5E74\u5F8C\u534A\u306E\u30EC\u30A4\u30C6\u306E\u4F5C\u6226\u3067\u306F\u5404\u5206\u968A\u304C\u30EC\u30FC\u30C0\u30FC\u3067\u63A5\u89E6\u3092\u5831\u3058\u3001\u536F\u6708\u306F\u30EC\u30FC\u30C0\u30FC\u3067\u6349\u3048\u3089\u308C\u305F\uFF08docs/01 \xA78\u30FBspec-v0800 \xA73.1\u3002medium\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.4 D-R1\u30021944 \u5E74\u306E\u578B\uFF08hit_rate_model.json \u306E radar.models.so_late\uFF09\u3092\u81EA\u8247\u306B\uFF08fit own\u3002\u5730\u56F3\u306E\u4E0A\u306E\u5473\u65B9\u306F\u81EA\u8247\u3060\u3051\uFF1D\u30E6\u30FC\u30B6\u30FC\u306E\u6C7A\u3081 U1\uFF09\u3002\u9678\u306E\u53CD\u5C04 300 m \u306B\u5BFE\u3057\u7A7A\u77E5\u4E38\u306F\u5CB8\u306E\u7DDA\u304B\u3089 240 m\uFF08\u6620\u3089\u306A\u3044\uFF09\u30FB\u536F\u6708\u306F 620 m\uFF08\u6620\u308B\uFF09\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F v0.8.1 S2\uFF08coast \u306E\u5357\u306E\u5CB8\u306E\u7DDA\u3082\u9678\u306E\u53CD\u5C04\u306B\u6E21\u3059\uFF09)"
+        },
+        anchored: {
+          destroyer_underway_s: 3,
+          transport_underway: false,
+          picket_underway_s: 4,
+          alarm_s: 4,
+          source: "historical (\u536F\u6708\u306F\u6B62\u307E\u3063\u3066\u3044\u3066\uFF08lying to\uFF09\u3001\u6697\u3044\u5CB8\u3092\u80CC\u306B\u5FCD\u3073\u5BC4\u3063\u305F PT \u306B\u6C17\u3065\u304B\u305A\u306B 2 \u672C\u4EE5\u4E0A\u3092\u53D7\u3051\u3066\u6C88\u3093\u3060\uFF08medium\u3002docs/01 \xA78\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.2 D-S3\u301CD-S8\u3002\u968A\u306E\u8266\u306F t = 0 \u306B\u6B62\u307E\u3063\u3066\u3044\u3066\u3001\u6C17\u3065\u304F\u307E\u3067\u8235\u3082\u901F\u3055\u3082\u52D5\u304B\u3055\u306A\u3044\uFF08\u898B\u5F35\u308A\u306F\u6B62\u307E\u3063\u3066\u3044\u3066\u3082\u4ECA\u306E\u898F\u5247\u306E\u307E\u307E\uFF09\u3002\u6C17\u3065\u304F\u7406\u7531\u306F \u81EA\u8247\u3092\u898B\u305F\u30FB\u96F7\u8DE1\u30FB\u88AB\u96F7\u30FB\u8B66\u5831\uFF08\u968A\u306E\u5225\u306E\u8266\u304C\u6C17\u3065\u304F\u304B\u6C88\u307F\u59CB\u3081\u3066 alarm_s 4 \u79D2\uFF09\u30FB\u591C\u660E\u3051\u3002\u99C6\u9010\u8266\u306F\u6C17\u3065\u3044\u3066 destroyer_underway_s \u79D2\uFF08S0 \u306F 6 \u79D2\u30FBS3 \u3067 3 \u79D2\u3002\u4F53\u611F\u306E\u6642\u8A08\uFF1D\u547D\u4E2D\u30B9\u30ED\u30FC\u3067\u5EF6\u3073\u308B\u3002AI \u306E\u53CD\u5FDC\u9045\u308C\u3068\u540C\u3058\u8003\u3048\uFF09\u3067\u52D5\u304D\u51FA\u3057 us_02 \u306E AI \u306B\u306A\u308B\uFF0825 kt \u307E\u3067\u7D04 8.6 \u79D2\uFF09\u3002transport_underway false\uFF1D\u7A7A\u77E5\u4E38\u306F\u4E00\u6669\u3058\u3085\u3046\u6B62\u307E\u3063\u3066\u63DA\u9678\u3092\u7D9A\u3051\u308B\uFF08\u52D5\u304F\u7A7A\u77E5\u4E38\u306F\u5019\u88DC\uFF09\u3002picket_underway_s 4 \u79D2\u306F\u30CF\u30FC\u30C9\u306E\u99C6\u6F5C\u8247\u3002\u591C\u660E\u3051\u306F\u9045\u308C\u306A\u3057\u3067\u52D5\u304D\u51FA\u3057\u3066\u9000\u304F\u3002S3 \u306E\u63A2\u308A\u306E\u5E2F\uFF08A1\u30FBA4\uFF09\u3067 destroyer_underway_s 3\u301C10\u30FBalarm_s 2\u301C8 \u306E\u5185\u3067\u76F4\u3059\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F v0.8.1 S2\u30FB\u30CF\u30FC\u30C9\u306E\u99C6\u6F5C\u8247\u306F S2b) / design (v0.8.1 S3: destroyer_underway_s 6 \u2192 3\uFF1D\u63A2\u308A\u306E\u5E2F A1\uFF08shore_east \u306E\u9054\u6210 100% \uFF1E 80%\uFF09\u30FBA2\uFF08open_north \u306E\u9054\u6210 100% \uFF1E A1 \u2212 15\uFF09\u3002spec-v0810 \xA73.9 \u306E\u3064\u307E\u307F \u2462 \u306E\u4E0B\u306E\u7AEF\u3002\u6C17\u3065\u3044\u3066 3 \u79D2\u3067\u52D5\u304D\u51FA\u3059\uFF1D\u5317\u306E 900 m \u304B\u3089\u306E\u6247\uFF08\u8D70\u308B 10.5 \u79D2\uFF09\u306F\u96F7\u8DE1\u306B\u6C17\u3065\u3044\u3066\u52D5\u304D\u51FA\u3057\u305F\u8266\u3092\u5916\u3057\u3046\u308B\uFF08open_north \u306E\u9054\u6210 100 \u2192 73%\uFF09\u3002\u6D5C\u304B\u3089\u306E\u771F\u5357\u306E\u6247\uFF08\u8D70\u308B\u7D04 5.7 \u79D2\uFF09\u306F\u5916\u308C\u306A\u3044\uFF1DA1\u30FBA5 \u306F 100% \u306E\u307E\u307E\uFF08CHANGELOG v0.8.1 S3 \u306E\u958B\u3044\u305F\u5E2F\uFF09)"
+        },
+        shore_backdrop: {
+          detect_factor: 0.6,
+          behind_m: 2e3,
+          source: "historical (PT \u306F\u30EC\u30FC\u30C0\u30FC\u3067\u6349\u3048\u3001\u6D88\u97F3\u3057\u3066\u6697\u3044\u5CB8\u3092\u80CC\u306B\u4F4E\u901F\u3067\u5FCD\u3073\u5BC4\u3063\u305F\uFF08\u536F\u6708\u306E\u591C\u3068 PT \u306E\u5BC4\u308A\u65B9\u306E\u6559\u3048\u3002medium\u3002docs/01 \xA78\uFF09) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.3 D-B1\u301CD-B3\u3002\u8266\u304B\u3089\u81EA\u8247\u3078\u306E\u7DDA\u3092\u81EA\u8247\u306E\u5411\u3053\u3046\u3078\u4F38\u3070\u3057\u3001behind_m 2,000 m \u306E\u5185\u3067\u9678\u306E\u5CB8\u306E\u7DDA\u306B\u5F53\u305F\u308C\u3070\u3001\u305D\u306E\u8266\u306E\u898B\u3064\u3051\u308B\u8DDD\u96E2 \xD7 detect_factor 0.6\uFF08\u6708\u306E\u6BB5 1 \u3064\u5206\uFF1Ddark 0.6 \u3068 half 1.0 \u306E\u6BD4\u3068\u540C\u3058\u5927\u304D\u3055\uFF09\u3002\u7167\u3089\u3055\u308C\u3066\u3044\u308B\u9593\u306F\u52B9\u304B\u305A\u3001\u6A5F\u9283\u306E\u9583\u5149\u306E 1,200 m \u306F\u305D\u306E\u307E\u307E\u3002\u536F\u6708\u306E\u898B\u3064\u3051\u308B\u8DDD\u96E2\uFF08\u6708\u6CA1\u5F8C\uFF09\u306F \u505C\u6B62 480 \u2192 288\u30FB\u9759\u97F3 600 \u2192 360\u30FB\u5DE1\u822A 1,200 \u2192 720\u30FB\u5168\u901F 1,920 \u2192 1,152 m\u3002S3 \u306E\u63A2\u308A\u306E\u5E2F\uFF08A1\u301CA3\uFF09\u3067 detect_factor 0.5\u301C0.7\u30FBbehind_m 1,000\u301C3,000 \u306E\u5185\u3067\u76F4\u3059\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F v0.8.1 S2) / design (v0.8.1 S3: detect_factor 0.7 \u3092\u8A66\u3057\u3066\u5E2F\u304C\u5909\u308F\u3089\u305A\uFF08\u6D5C\u306E\u771F\u5357\u306E\u6B62\u307E\u308B\u70B9\uFF1D\u536F\u6708\u304B\u3089 440\u301C540 m \u306F 0.7 \u306E\u80CC\u306B\u5CB8\u306E\u9759\u97F3 420 m \u3088\u308A\u307E\u3060\u9060\u3044\uFF090.6 \u306B\u623B\u3057\u305F\u3002behind_m \u3082\u52D5\u304B\u3055\u306A\u3044\uFF08\u6D5C\u306E\u4E0A\u3067\u536F\u6708\u304B\u3089\u898B\u305F\u80CC\u306E\u9678\u306F 140 m \u524D\u5F8C\uFF1D1,000\u301C3,000 \u306E\u3069\u308C\u3067\u3082\u5F53\u305F\u308B\uFF09\u3002\u6D5C\u6CBF\u3044\u306E\u591C\u306E\u9054\u6210 100% \u306F\u5E2F A1 \u306E\u4E0A\u3078\u5916\u308C\u305F\u307E\u307E\uFF1D\u5B9F\u6A5F\u3067\u898B\u308B\uFF08CHANGELOG v0.8.1 S3 \u306E\u958B\u3044\u305F\u5E2F\uFF09)"
+        },
+        hard: {
+          extra_pickets: [
+            {
+              x_m: 2300,
+              y_m: 2050,
+              heading_deg: 90
+            },
+            {
+              x_m: 3200,
+              y_m: 1500,
+              heading_deg: 270
+            }
+          ],
+          picket_enemy_id: "ijn_subchaser",
+          source: "historical (\u536F\u6708\u3068\u99C6\u6F5C\u8247 2 \u96BB\uFF08\u7B2C13\u53F7\u578B\uFF09\u304C\u7A7A\u77E5\u4E38\u3092\u30D1\u30ED\u30F3\u30DD\u30F3\u3078\u5C0E\u3044\u305F\uFF08medium\u3002docs/01 \xA78\uFF09\u3002\u305D\u306E\u591C\u306E\u99C6\u6F5C\u8247\u306E\u4F4D\u7F6E\u306F\u898B\u3064\u304B\u3089\u306A\u3044) / design (v0.8.1 S0\u30FBspec-v0810 \xA73.2 D-S8\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9\uFF08\u30E6\u30FC\u30B6\u30FC\u306E v0.4.4\u300C\u96E3\u6613\u5EA6\u304C\u4E0A\u304C\u308C\u3070\u6575\u8266\u2026\u306E\u6570\u304C\u5897\u3048\u3066\u3044\u3051\u3070\u3088\u3044\u300D\uFF09: \u99C6\u6F5C\u8247 2 \u96BB\u3092\u6CCA\u5730\u306E\u5916\u306E\u54E8\u6212\u306E\u4F4D\u7F6E (2300, 2050)\u30FB090\xB0 \u3068 (3200, 1500)\u30FB270\xB0\uFF08S3 \u3067 (4300, 2200) \u304B\u3089\u79FB\u3057\u305F\uFF09\u306B\u6B62\u3081\u3066\u7F6E\u304F\uFF08\u6B62\u307E\u3063\u305F\u8266\u306E\u898F\u5247\u306E\u307E\u307E\u3002anchored.picket_underway_s \u3067\u52D5\u304D\u51FA\u3057\u3001\u4F53\u5F53\u305F\u308A\u306F\u3057\u306A\u3044\uFF09\u3002\u968A\u306E\u4E26\u3073\u306F\u99C6\u9010\u8266 \u2192 \u8F38\u9001\u8239 \u2192 \u99C6\u6F5C\u8247\u3002\u6483\u6C88\u306E\u9054\u6210\u30FB\u547D\u4E2D\u7387\u306E KPI\u30FB\u6483\u6C88 n/m\u30FB\u8F38\u9001\u8239\u306E\u52A0\u70B9\u306B\u6570\u3048\u305A\u3001\u70B9\u306F\u7121\u3044\u3002\u51FA\u767A\u70B9\u304B\u3089\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u7AEF\u3067 2,040 m \u4EE5\u4E0A\uFF08\u5168\u901F\u3067\u898B\u3064\u304B\u308B 1,920 m \u306E\u5916\uFF1DV-A4\u3002S2b \u306E (4300, 2200) \u306F 1,978 m\uFF09\u3002\u4E16\u754C\u306E\u914D\u7DDA\u306F v0.8.1 S2b\uFF08v0.8.1 \u306E\u5185\u306B\u5165\u3063\u305F\u3002Briefing \u306E\u6575\u306E\u884C\u306B\u30CF\u30FC\u30C9\u3060\u3051\u300C\u99C6\u6F5C\u8247 \xD72\u300D\uFF09) / design (v0.8.1 S3: 2 \u96BB\u76EE (4300, 2200) \u2192 (3200, 1500)\uFF1D\u63A2\u308A\u306E\u5E2F H1\uFF08\u30CF\u30FC\u30C9\u306E shore_east \u306E\u9054\u6210 5%\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 90%\uFF1D\u7406\u4E0D\u5C3D\uFF09\u30FBH2\u3002spec-v0810 \xA73.9 \u306E\u3064\u307E\u307F \u2466\u3002(4300, 2200) \u306F\u5CB8\u3092\u56DE\u308B\u9053\u306E\u5DE1\u822A\u306E\u811A\u306E\u7D42\u308F\u308A (5100, 1500) \u304B\u3089 1,063 m\uFF1D\u5DE1\u822A\u306E\u898B\u3064\u304B\u308B 1,200 m \u306E\u5185\u3067\u3001\u307B\u3068\u3093\u3069\u306E\u591C\u306B\u8B66\u5831\u3067\u536F\u6708\u304C\u52D5\u304D\u51FA\u3057\u305F\u3002\u6CCA\u5730\u306E\u5317\u897F\u306E\u54E8\u6212\u3078\u79FB\u3057\u3001\u5317\u304B\u3089\u771F\u3063\u3059\u3050\u5BC4\u308B\u9053\u3092\u898B\u5F35\u308B\uFF08\u536F\u6708\u306E\u5317 900 m \u306E\u70B9\u304B\u3089\u540D\u76EE\u3067 420 m\uFF09\uFF1D\u30CF\u30FC\u30C9\u3067\u3082\u5CB8\u306E\u9053\u304C\u6B63\u89E3\uFF08H2\uFF09\u3002\u5CB8\u3092\u56DE\u308B\u9053\uFF08\u5DE1\u822A\u306E\u811A\u30FB\u9759\u97F3\u3067\u4E0B\u308B\u811A\u30FB\u6D5C\uFF09\u304B\u3089\u306F\u63FA\u3089\u304E\u306E\u7AEF\u3067\u3082 1,300 m \u4EE5\u4E0A\u30FB\u51FA\u767A\u70B9\u304B\u3089 2,040 m \u4EE5\u4E0A\uFF08V-A4\uFF09)"
+        }
+      }
+    },
+    {
+      id: "us_07",
+      campaign: "us_pt",
+      order: 7,
+      title_ja: "D-Day\u30FB\u751F\u5B58\u8005\u6551\u52A9",
+      date: "1944-06-06",
+      place: "\u30CE\u30EB\u30DE\u30F3\u30C7\u30A3\u30FC\u6C96\uFF08\u30E6\u30BF\u30FB\u30D3\u30FC\u30C1\uFF09",
+      type: "rescue",
+      player_boat: "us_elco80",
+      torpedo_type: "us_mk13",
+      objective: "\u89E6\u96F7\u3057\u305F\u99C6\u9010\u8266\u306E\u751F\u5B58\u8005\u3092\u5236\u9650\u6642\u9593\u5185\u306B\u53CE\u5BB9\u3057\u3001S\u30DC\u30FC\u30C8\u306E\u8972\u6483\u3092\u907F\u3051\u308B",
+      enemies: [
+        "de_sboat_enemy"
+      ],
+      hazards: [
+        "mine",
+        "friendly_fire"
+      ],
+      moon: "dark",
+      duration_min: 5,
+      success: "\u751F\u5B58\u800540\u540D\u4EE5\u4E0A\u53CE\u5BB9\u3057\u3066\u5E30\u6295",
+      historical_note: "PT-199\u304C\u99C6\u9010\u8266Corry\u306E\u751F\u5B58\u800561\u540D\u3092\u6551\u52A9\u3002",
+      source_url: "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-7.html",
+      optional: true,
+      dawn_air: {
+        control: "own",
+        confidence: "high",
+        play_as: "own",
+        enemy_ships_at_dawn: "none",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u5473\u65B9\uFF08\u9023\u5408\u8ECD\uFF09",
+        refs: [
+          {
+            url: "https://www.historyhit.com/the-crippling-losses-of-the-luftwaffe-during-operation-overlord/",
+            claim: "\u30AA\u30FC\u30D0\u30FC\u30ED\u30FC\u30C9\u4F5C\u6226\u306E\u524D\u3068\u9593\u306B\u30C9\u30A4\u30C4\u7A7A\u8ECD\u306F\u5927\u304D\u306A\u640D\u5931\u3092\u51FA\u3057\u3001\u4E0A\u9678\u6D77\u57DF\u306E\u663C\u306E\u7A7A\u306B\u307B\u3068\u3093\u3069\u51FA\u3089\u308C\u306A\u304B\u3063\u305F"
+          },
+          {
+            url: "https://www.airuniversity.af.edu/News/Display/Article/1859844/key-to-success-allied-airpower-at-normandy/",
+            claim: "\u30CE\u30EB\u30DE\u30F3\u30C7\u30A3\u30FC\u4E0A\u9678\u306E\u6210\u529F\u306E\u9375\u306F\u9023\u5408\u8ECD\u306E\u822A\u7A7A\u512A\u52E2\u3060\u3063\u305F"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002\u904A\u3079\u308B\u4E16\u754C\u306F\u307E\u3060\u7121\u3044)"
+      }
+    },
+    {
+      id: "jp_01",
+      campaign: "jp_hard",
+      order: 1,
+      playable_from: "v0.6.4",
+      title_ja: "\u591C\u306E\u8F38\u9001\u8B77\u885B",
+      date: "1942-12-09",
+      place: "\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\u5317\u5CB8\uFF08\u30AB\u30DF\u30F3\u30DC\u6C96\uFF09",
+      type: "escort_convoy",
+      player_boat: "jp_t38",
+      torpedo_type: "jp_45cm",
+      objective: "\u5927\u767A3\u96BB\u3092\u6D5C\u307E\u3067\u8B77\u885B\u3059\u308B\u3002\u7C73PT\u306F\u898B\u3064\u3051\u3084\u3059\u304F\u3066\u8FD1\u3044\u65B9\u3092\u72D9\u3046\u3002\u901F\u304F\u8D70\u308B\u304B\u6483\u3066\u3070\u81EA\u8247\u304C\u5927\u767A\u3088\u308A\u5148\u306B\u72D9\u308F\u308C\u308B\u3002\u5927\u767A\u304C\u72D9\u308F\u308C\u305F\u3089\u5BC4\u3063\u3066\u6483\u3061\u8FD4\u3057\u3001\u8D64\u3044\u7DDA\u306F\u5168\u901F\u3067\u8EE2\u8235",
+      allies: [
+        "daihatsu_barge",
+        "daihatsu_barge",
+        "daihatsu_barge"
+      ],
+      enemies: [
+        "us_pt_enemy",
+        "us_pt_enemy"
+      ],
+      hazards: [
+        "grounding",
+        "enemy_aircraft"
+      ],
+      moon: "dark",
+      duration_min: 5,
+      success: "\u5927\u767A2\u96BB\u4EE5\u4E0A\u3092\u6D5C\u306B\u5C4A\u3051\u3066\u5E30\u6295\u30023\u96BB\u306A\u3089\u4E0A\u9678\u306E\u70B9\u304C\u5897\u3048\u308B",
+      historical_note: "\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\u306E\u5927\u767A\u306E\u591C\u9593\u524D\u9001\u306F\u6708\u660E\u304B\u308A\u306E\u591C\u306B\u7C73PT\u3068\u591C\u9593\u6A5F\u306B\u6B62\u3081\u3089\u308C\u3001\u8A08\u753B\u306E\u534A\u5206\u3082\u904B\u3079\u306A\u304B\u3063\u305F\uFF08\u9632\u885B\u7814\u7A76\u6240 NIDS \u306E 2023 \u5E74\u306E\u8AD6\u6587\u3001medium\u3002\u629C\u7C8B\u306B\u6642\u671F\u3068\u5834\u6240\u306F\u7121\u304F\u30011942\u5E7412\u6708\u30FB\u5317\u5CB8\u306F jp_01 \u3078\u306E\u5F53\u3066\u306F\u3081\uFF09\u300212\u67089\u65E5\u591C\u3001PT-44\u30FBPT-59\u304C\u30AB\u30DF\u30F3\u30DC\u6C96\u3067\u5927\u767A\u3092\u898B\u3064\u3051\u3066\u6483\u3063\u305F\uFF08\u7C73\u6D77\u8ECD\u516C\u520A\u53F2 At Close Quarters \u4ED8\u9332C\u3001high\uFF09\u3002T-38\u578B\u306F1943\u301C45\u5E74\u306E\u8247\u3067\u3001\u65E5\u672C\u306E\u9B5A\u96F7\u8247\u30FB\u96BC\u8247\u304C\u5927\u767A\u3092\u8B77\u885B\u3057\u3066\u7C73PT\u3068\u6226\u3063\u305F\u8A18\u9332\u306F\u7121\u3044\u3002\u906D\u9047\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF08\u8247\u306F T-38 \u3067\u4EE3\u7528\uFF09\u3002\u3059\u3079\u3066 WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD",
+      source_url: "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-C.html",
+      briefing_note_ja: "1942\u5E7412\u6708\u3001\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\u5317\u5CB8\u3067\u306F\u6708\u660E\u304B\u308A\u306E\u591C\u306E\u5927\u767A\u306E\u8F38\u9001\u304C\u7C73PT\u3068\u591C\u9593\u6A5F\u306B\u963B\u307E\u308C\u3001\u8A08\u753B\u306E\u534A\u5206\u3082\u904B\u3079\u306A\u304B\u3063\u305F\u300212\u67089\u65E5\u591C\u306B\u306FPT-44\u3068PT-59\u304C\u30AB\u30DF\u30F3\u30DC\u6C96\u3067\u5927\u767A\u3092\u8972\u3063\u305F\u3002\u9B5A\u96F7\u8247\u304C\u5927\u767A\u3092\u8B77\u885B\u3057\u3066PT\u3068\u6226\u3063\u305F\u8A18\u9332\u306F\u7121\u304F\u3001\u3053\u306E\u591C\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF08\u8247\u306F1944\u5E74\u306ET-38\u3067\u4EE3\u7528\uFF09\u3002",
+      dawn_air: {
+        control: "enemy",
+        confidence: "medium",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "none",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u6575\uFF08\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\uFF09",
+        refs: [
+          {
+            url: "https://en.wikipedia.org/wiki/Tokyo_Express",
+            claim: "\u663C\u306F\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\u304B\u3089\u7D04 200 \u30DE\u30A4\u30EB\u4EE5\u5185\u306E\u65E5\u672C\u8266\u306F\u7A7A\u8972\u3092\u53D7\u3051\u308B\u306E\u3067\u3001\u6771\u4EAC\u6025\u884C\u306F\u4E00\u6669\u3067\u5F80\u5FA9\u3057\u305F"
+          },
+          {
+            url: "https://pacificwrecks.com/unit/ijn/802.html",
+            claim: "\u7B2C802\u822A\u7A7A\u968A\uFF08\u6C34\u4E0A\u6226\u95D8\u6A5F\u30FB\u98DB\u884C\u8247\uFF09\u3002\u30B7\u30E7\u30FC\u30C8\u30E9\u30F3\u30C9\u65B9\u9762\u306E\u65E5\u672C\u306E\u6C34\u4E0A\u6A5F\u306E\u90E8\u968A\uFF08\u65E5\u672C\u5074\u306E\u63A9\u8B77\u306F\u30B7\u30E7\u30FC\u30C8\u30E9\u30F3\u30C9\u5BC4\u308A\uFF09"
+          }
+        ],
+        source: "historical (control\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u82F1\u8A9E\u306E\u8ABF\u67FB\u306F\u78BA\u5EA6 medium\u3001\u65E5\u672C\u8A9E\u306E\u8ABF\u67FB\u306F high \u2192 \u4F4E\u3044\u65B9\u3002\u30B7\u30E7\u30FC\u30C8\u30E9\u30F3\u30C9\u5BC4\u308A\u3067\u306F\u65E5\u672C\u306E\u6C34\u4E0A\u6226\u95D8\u6A5F\u30FB\u30D6\u30A4\u30F3\u306E\u96F6\u6226\u306E\u63A9\u8B77\u304C\u3042\u308A\u5834\u6240\u3057\u3060\u3044\uFF08zones \u306F\u5C06\u6765\uFF09) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002v0.6.4: enemy_ships_at_dawn retire \u2192 none\uFF08\u30B2\u30FC\u30E0\u306E\u898F\u5247\u306E\u90FD\u5408\u3067\u53F2\u5B9F\u306E\u5024\u3067\u306F\u306A\u3044: \u7C73PT \u306F core/pt-boats \u306E\u591C\u660E\u3051\u306E\u30E9\u30C3\u30C1\u3067\u5317\u6771\u3078\u53BB\u308B\uFF1Djp_05 \u3068\u540C\u3058\u898F\u5247\u3002retire \u306F\u99C6\u9010\u8266\uFF08enemy_start\uFF09\u306E\u898F\u5247\u3067\u3001\u7121\u3044\u4EFB\u52D9\u306B\u306F\u7F6E\u3051\u306A\u3044: config/dawn-data \u306E checkWithdraw\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "us_pt_enemy",
+          "us_pt_enemy"
+        ],
+        enemy_behavior: "ai (v0.6.4\u3002v0.6.3 \u306E\u7C73PT \u306E\u968A\uFF08\u54E8\u6212 \u2192 \u767A\u898B \u2192 \u7A81\u6483 \u2192 \u8D64\u3044\u7DDA \u2192 \u822A\u904E \u2192 \u96E2\u8131\u3002\u9003\u3052\u308B\u8247\u306B\u306F\u8FFD\u6483\u3068\u9023\u5C04\uFF09\u3002\u6A19\u7684\u306F\u968A\u3067 1 \u3064: \u81EA\u8247\u3068\u6D6E\u3044\u3066\u3044\u308B\u5927\u767A\u306E\u3046\u3061\u300E\u307E\u3060\u6226\u3046 PT \u307E\u3067\u306E\u8DDD\u96E2\xB2 \xF7 \u305D\u306E\u8239\u4F53\u304C\u898B\u3064\u304B\u308B\u8DDD\u96E2\xB2\u300F\u304C\u6700\u5C0F\u306E\u3082\u306E\uFF08core/pt-target\u3002\u81EA\u8247\u306F\u901F\u529B\u5E2F\u306E\u767A\u898B\u8DDD\u96E2\u3068 25mm \u306E\u9583\u5149 1,200 m \u306E\u5927\u304D\u3044\u65B9\u3001\u5927\u767A\u306F convoy.detect_band \u306E\u5E2F\uFF09\u3002\u66FF\u3048\u308B\u306E\u306F\u968A\u304C\u624B\u7A7A\u304D\u306E\u3068\u304D\u3060\u3051\u3002\u5927\u767A\uFF087 kt\uFF09\u306F\u8FFD\u6483\u3055\u308C\u305A\u822A\u904E\u3060\u3051\u3002core/pt-boats \u306E\u6BB5\u968E\u3068\u4E71\u6570\u306E\u5217\u306F jp_05 \u3068\u540C\u3058)",
+        main_weapon: "guns",
+        main_weapon_source: "design (v0.6.4\u3002T-38 \u306E 25mm \u5358\u88C5\uFF08boats.json \u306E jp_t38.gun_battery\uFF09\u300245cm \u9B5A\u96F7\u306F PT \u306E\u4E0B\u3092\u629C\u3051\u308B\uFF08us_pt_enemy.torpedo_immune\uFF09\uFF08\u4E3B\u5175\u88C5\u306F 25mm \u6A5F\u9283\u3002v0.6.8 \u304B\u3089 45cm \u9B5A\u96F7 2 \u672C\u3082\u3044\u3064\u3067\u3082\u6483\u3066\u308B\u304C PT \u306E\u4E0B\u3092\u629C\u3051\u308B\u3002jp_06 \u306E T-38 \u306F\u9B5A\u96F7\u304C\u4E3B\u5175\u88C5\u3067 25mm \u3082\u6483\u3066\u308B\uFF1D\u8247\u306E\u7832\u306F config/loadout-data \u304C\u5168\u4EFB\u52D9\u3067\u8AAD\u307F\u3001WorldSetup \u306E guns \u306F\u4E3B\u5175\u88C5\u304C\u7832\u306E\u4EFB\u52D9\u3060\u3051\uFF1Dconfig/game-data \u306E getGunBatteryParams\uFF09)",
+        duration_s: 180,
+        duration_s_source: "design (v0.6.4 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u306E\u300C\u591C\u660E\u3051\u307E\u3067\u306E\u6642\u9593\u3092 20 \u79D2\u77ED\u304F\u3057\u3066\u300D\u306B\u3088\u308A 200 \u2192 180 \u79D2\u3002\u6C7A\u7740\u306E\u6700\u5927 166 \u79D2\u306F\u591C\u660E\u3051\u306E\u524D\u306E\u307E\u307E\uFF08\u591C\u660E\u3051\u5F8C\u306E\u6C7A\u7740 0%\u30FB\u5230\u9054\u3068 3 \u96BB\u306E\u591C\u306F 200 \u79D2\u3068\u540C\u3058\uFF09\u3002\u5909\u308F\u308B\u306E\u306F\u5E30\u308A\u9053: \u7C73PT \u306F\u591C\u660E\u3051\u306B\u53BB\u308B\u306E\u3067\u3001HUD \u3069\u304A\u308A\u306E\u591C\u660E\u3051\u5F8C\u306E\u5E30\u6295\u306F shield_full 0 \u2192 6\u301C8%\u30FBfollow_full 1 \u2192 19\u301C21%\uFF08\u591C\u660E\u3051\u5F8C\u306F\u7A7A\u8972\u30FB\u5E30\u6295 \xD70.9\uFF09\u3001\u81EA\u8247\u306E\u6C88\u6CA1\u306F shield_full 9.8\u301C11.3%\u30FBfollow_full 7.3\u301C9.3%\u3001\u96A0\u308C\u308B\uFF08none\uFF09\u306F\u6C88\u6CA1 36\u301C38 \u2192 10\u301C11%\u30FB\u591C\u660E\u3051\u5F8C\u306E\u5E30\u6295 30\u301C31 \u2192 87%\uFF08\u6A21\u64EC N 400 \xD7 2 \u7D44\uFF09\u3002tests/dawn-clock: 84 < 180 \u2212 50 = 130\u3002\u4EE5\u4E0B\u306F 200 \u79D2\u306E\u3068\u304D\u306E\u6587\u3002v0.6.4\u3002\u5927\u767A\u306F 7 kt\uFF0818 m/\u79D2\uFF09\u3002\u5148\u982D\u306E\u5927\u767A\u306F\u822A\u8DEF 1,899 m \uFF0B \u6D5C\u3078\u306E\u9053 711 m\uFF1D2,610 m \u3092 145 \u79D2\uFF08\u63FA\u3089\u304E\u3067 131\u301C159 \u79D2\u3002v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002\u524D\u306F\u4E0A\u9678\u7DDA\u307E\u3067 2,800 m\uFF1D156 \u79D2\uFF09\u3002\u6C7A\u7740\uFF083 \u96BB\u304C\u4E0A\u9678\u304B\u6C88\u6CA1\uFF09\u306E\u4E2D\u592E\u5024 150\u301C152 \u79D2\u30FB\u6700\u5927 166 \u79D2\uFF08HUD \u3069\u304A\u308A\u3001\u6A21\u64EC N 400 \xD7 2 \u7D44\uFF09\u3002200 \u79D2\u306F\u6C7A\u7740\u306E\u6700\u5927 166 \u79D2\u306E\u5F8C\u306B\u81EA\u8247\u304C\u6CCA\u5730\u306E\u8F2A\u3078\u5165\u308B\u4F59\u88D5\u3002tests/dawn-clock\u300E\u5DE1\u822A\u3067\u5E30\u308B\u79D2 \xD7 call_margin < \u591C\u660E\u3051 \u2212 50\u300F: \u51FA\u767A\u70B9\u304B\u3089\u8F2A\u306E\u7E01 2,715 m \uFF1D 52.8 \u79D2 \xD7 1.6 = 84 < 150\u3002\u6A21\u64EC\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E convoy-sim\u3001N 400 \xD7 2 \u7D44\uFF09: \u7C73PT \u306B\u898B\u3064\u304B\u308B\u4E2D\u592E\u5024 100\u301C102 \u79D2\u3001HUD \u3069\u304A\u308A\uFF08shield_full\uFF09\u306E\u591C\u660E\u3051\u5F8C\u306E\u5E30\u6295 0%\u30FBfollow_full 0\u301C1%\u3001\u96A0\u308C\u308B\uFF08none\uFF09\u306F 30\u301C31%\u30FB\u6C88\u6CA1 36\u301C38%\uFF08\u6C7A\u7740\u304C 142\u301C143 \u79D2\u3068\u65E9\u304F\u3001\u591C\u660E\u3051\u306E\u524D\u306B\u5E30\u308A\u9053\u3078\u51FA\u3066\u7C73PT \u306B\u6355\u307E\u308B\u3002\u524D\u306E\u5730\u56F3\u306E\u300E\u96A0\u308C\u305F\u7F70\u306F\u591C\u660E\u3051\u306E\u7A7A\u8972\u300F\u304B\u3089\u300E\u5E30\u308A\u9053\u3067\u6C88\u3080\u300F\u306B\u5909\u308F\u3063\u305F: CHANGELOG v0.6.4 \u306E\u65E2\u77E5\u306E\u5236\u7D04\uFF09\u3002\u524D\u306E\u5730\u56F3\uFF08\u4E0A\u9678\u7DDA 4,000\u30FB\u8F2A (4500, 2250)\uFF09\u3067\u306F 210 \u79D2\u3067 none \u306E\u6C88\u6CA1\u304C 8 \u2192 20%\u30FB220 \u79D2\u3067 33% \u306B\u306A\u308A 200 \u306E\u307E\u307E\u306B\u3057\u305F\uFF08\u7D71\u5408\u4ED5\u69D8\u306E\u30EC\u30D3\u30E5\u30FC\u306E\u6307\u6458\u3078\u306E\u7B54\u3048\uFF09)",
+        fuel_allotment_gal: 19,
+        fuel_allotment_gal_source: "design (v0.6.4\u3002\u4E0A\u9650\u306F tests/dawn-air\u300E\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 1,500 \u79D2\u672A\u6E80\u3067\u6F02\u6D41\u300F: 19 / 9.4118\uFF08T-38 \u306E\u30A2\u30A4\u30C9\u30EB gal/h = 800/8.5 \xD7 0.1\uFF09\xD7 720 = 1,453.5 \u79D2\uFF0819.58 gal \u672A\u6E80\uFF09\u3002\u5DE1\u822A 94.1\u30FB\u5168\u901F 200 gal/h\uFF1D\u5B9F\u79D2\u3042\u305F\u308A 0.13\u30FB0.28 gal\u30017 kt \u306E\u4ED8\u304D\u6DFB\u3044\u306F\u7D04 0.021 gal/\u79D2\u3002\u6A21\u64EC\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E convoy-sim\u3001N 400 \xD7 2 \u7D44\uFF09: HUD \u3069\u304A\u308A\uFF08shield_full\u30FBfollow_full\uFF09\u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024 52\u301C56%\u30FBp10 37\u301C40%\u3001\u6F02\u6D41 0%\u3002\u56EE\u3057\u3066\u898B\u3064\u304B\u3063\u305F\u3089\u8F2A\u3078\u5DE1\u822A\u3059\u308B\uFF08lead\uFF09\u306F\u8F2A\u306B\u5165\u3063\u305F\u77AC\u9593\u306B\u7D42\u308F\u308B\u306E\u3067\u6F02\u6D41 \u2264 2%\uFF08lead 0\u301C0.3%\u30FBlead_shoot 0\u301C0.8%\uFF09\u30FB\u5230\u9054 0.09\u301C0.10\uFF1D\u300E\u5E30\u6295 700 \u70B9\u3060\u3051\u306E\u7F60\u300F\u3002\u71C3\u6599\u306F\u3069\u306E\u53F0\u672C\u3067\u3082\u4E3B\u56E0\u306B\u306A\u3089\u306A\u3044\uFF08\u6F02\u6D41 \u2264 2%\uFF09)",
+        shallows: [],
+        bounds_m: {
+          width: 6e3,
+          height: 3e3,
+          source: "design (v0.6.4\u3002\u5357\u306E\u7E01\u304C\u5CB8\uFF08\u6D5C\uFF09\u3002us_03 \u306E 2,500 \u3088\u308A 500 \u9AD8\u3044\u306E\u306F\u5927\u767A\u306E\u822A\u8DEF\u3092\u5CB8\u304B\u3089 450 m \u96E2\u3059\u305F\u3081\uFF08\u822A\u904E\u306E\u5F8C\u306E\u96E2\u8131 5 \u79D2\uFF1D320 m \u304C\u6D77\u306E\u5185\u306B\u53CE\u307E\u308B\uFF09\u3002\u6D5C\u3078\u306F\u6700\u5F8C\u306E 711 m \u3067\u659C\u3081\u306B\u5BC4\u308B\uFF08convoy.beach\u3002v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF09)"
+        },
+        player_start: {
+          x_m: 1200,
+          y_m: 2400,
+          heading_deg: 90,
+          source: "design (v0.6.4\u3002\u5148\u982D\u306E\u5927\u767A (1200, 2550) \u306E 150 m \u6C96\uFF08\u5317\uFF09\u30FB\u6771\u5411\u304D\u30FB\u505C\u6B62\u3067\u51FA\u767A\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u3067\u4E00\u756A\u8FD1\u3044 PT \u306E\u51FA\u767A\u70B9 (2900, 2350) \u307E\u3067 1,701 m \u2265 \u53F2\u5B9F\u30E2\u30FC\u30C9\u306E\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B 1,560 m\uFF08config/pt-mission-data \u306E\u691C\u67FB\uFF09\u3002Briefing \u306E\u6575\u306F\u300C\u6771\u304B\u3089\u300D)"
+        },
+        return_point: {
+          x_m: 4150,
+          y_m: 2700,
+          radius_m: 250,
+          call_margin: 1.6,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\uFF08jp_01 \u306E\u9B5A\u96F7\u306F\u72D9\u3046\u8266\u304C\u7121\u3044\u306E\u3067\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\u3057\u3001\u5F85\u305F\u306A\u3044\u3002v0.6.8\uFF09",
+          source: "design (v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002\u524D\u306F (4500, 2250)\u3002\u6D5C\uFF08\u4E0A\u9678\u5730\u70B9 3,540\u301C3,660\u30FBy 2,988\uFF09\u306E\u6771\u5317\u6771 \u7D04 620 m\uFF08\u6D5C\u306E\u7DDA\u306E 288 m \u6C96\uFF09\u306E\u6CCA\u5730: \u5148\u982D\u306E\u4E0A\u9678\u5730\u70B9\u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067 318 m\u3001\u3069\u306E\u5927\u767A\u306E\u822A\u8DEF\u3068\u6D5C\u3078\u306E\u9053\u304B\u3089\u3082\u7E01\u307E\u3067 300 m \u4EE5\u4E0A\uFF08core/convoy-data \u306E\u691C\u67FB\u3002\u305D\u3070\u3067\u6483\u3061\u5408\u3063\u3066\u3044\u3066\u8F2A\u306B\u5165\u3089\u306A\u3044\u3002\u6A21\u64EC\u3067\u6C7A\u7740\u306E\u524D\u306B\u8F2A\u306B\u5165\u3063\u305F\u591C 0%\uFF09\u3002HUD \u3069\u304A\u308A\u306E\u6C88\u6CA1\u306E\u5927\u534A\u306F\u3001\u6C7A\u7740\u306E\u5F8C\u306E\u5E30\u308A\u9053\u3067\u8D77\u304D\u308B\uFF08\u591C\u660E\u3051 200 \u79D2\u306E\u3068\u304D shield_full 10.5\u301C11.8% \u306E\u3046\u3061 9.5\u301C10.2\u3002\u5B9F\u6A5F 2 \u56DE\u76EE\u306E 180 \u79D2\u3067\u306F 9.8\u301C11.3%\uFF09\u3002\u305D\u306E\u305F\u3081\u8F2A\u306F\u4E0A\u9678\u5730\u70B9\u306B\u8FD1\u304F\u3001\u54E8\u6212\u7DDA\uFF08y 2,200\uFF09\u304B\u3089 500 m \u96E2\u3057\u305F\u3002\u540C\u3058\u6D5C 3,600\u30FBHP 12 \u306E\u8A66\u4F5C\u3067\u6BD4\u3079\u308B\u3068\u3001shield_full \u306E\u6C88\u6CA1\u306F (4450, 2550) \u3067 25%\u30FB(4350, 2600) \u3067 19%\u30FB(4250, 2650) \u3067 16%\u30FB(4150, 2700) \u3067 12.5%\u3002\u4EE3\u4FA1: \u51FA\u767A\u70B9\u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067 2,715 m \u3068\u8FD1\u304F\u306A\u308A\u3001\u898B\u6368\u3066\u3066\u5E30\u308B\u8247\u306E\u6C88\u6CA1\u304C 42\u301C44 \u2192 8\u301C9%\uFF08CHANGELOG v0.6.4 \u306E\u65E2\u77E5\u306E\u5236\u7D04\uFF09\u3002tests/dawn-clock: 2,715 m \uFF1D \u5DE1\u822A 52.8 \u79D2 \xD7 1.6 = 84 < 150\u3002call_margin 1.6 \u306F\u5909\u3048\u306A\u3044: T-38 \u306E\u5168\u901F/\u5DE1\u822A\u306E\u8DDD\u96E2\u3042\u305F\u308A\u6D88\u8CBB\u6BD4 1.545 \u3068\u5DE1\u822A/\u9759\u97F3\u4E0A\u9650\u306E\u901F\u529B\u6BD4 20/13 = 1.538 \u3092\u4E0A\u56DE\u308B\uFF08jp_06 \u3068\u540C\u3058\uFF09)"
+        },
+        pt_boats: {
+          legs_m: [
+            [
+              4100,
+              2e3,
+              2900,
+              2e3
+            ],
+            [
+              4100,
+              2200,
+              2900,
+              2200
+            ]
+          ],
+          start_along_m: 600,
+          leave_heading_deg: 45,
+          source: "design (v0.6.4\u30022 \u96BB\u304C 200 m \u96E2\u308C\u3066\u4E26\u3073\u3001\u5927\u767A\u306E\u822A\u8DEF\uFF08y 2,550\uFF09\u306E 350\u301C550 m \u6C96\u3067\u6771\u897F 1,200 m \u306E\u7DDA\u3092 8 kt \u3067\u5F80\u5FA9\u3059\u308B\u54E8\u6212\u7DDA\uFF08\u5CB8\u6CBF\u3044\u306E\u8F38\u9001\u8DEF\u306B\u5F35\u3063\u305F picket \u306E\u62BD\u8C61\uFF09\u3002\u7DDA\u306E\u59CB\u70B9\u306F\u6771\uFF08\u30C4\u30E9\u30AE\u306E\u5074\uFF09\u3067\u3001\u51FA\u767A\u6642\u306F\u897F\uFF1D\u8239\u56E3\u3078\u5411\u304B\u3063\u3066\u8D70\u308B\u3002\u5927\u767A\u306F\u898B\u3064\u304B\u308B\u8DDD\u96E2 600 m\uFF08\u9759\u97F3\u306E\u5E2F\u3002v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF09\u306A\u306E\u3067\u8239\u56E3\u304C\u7DDA\u306E\u4E0B\u3092\u901A\u308C\u3070\u8FD1\u3044\u65B9\u306E\u7DDA\u304C\u898B\u3064\u3051\u308B\u3002\u7247\u9053 \u7D04 50 \u79D2\u30FB1 \u5F80\u5FA9 \u7D04 100 \u79D2\uFF088 kt \xD7 time_scale 5 = 20.6 m/\u79D2\u3002\u7AEF\u306E 100 m \u624B\u524D\uFF08arrive_m\uFF09\u3067\u6298\u308A\u8FD4\u3059\uFF09\u30FB\u51FA\u767A\u4F4D\u7F6E\u306E\u63FA\u3089\u304E \xB1800 m \u3067\u898B\u3064\u304B\u308B\u6642\u523B\u304C 70\u301C130 \u79D2\uFF08\u4E2D\u592E\u5024 100\u301C102 \u79D2\uFF09\u306B\u3070\u3089\u3051\u308B\u3002\u53BB\u308B\u306E\u306F\u5317\u6771\uFF08\u30C4\u30E9\u30AE\u306E\u65B9\u89D2\uFF09\u3002\u7DDA\u3092\u8239\u56E3\u306E\u8FD1\u304F\uFF08x 2,700\u301C3,500\uFF09\u306B\u7F6E\u304F\u3068\u898B\u3064\u304B\u308B\u306E\u304C 75 \u79D2\u30FB\u96A0\u308C\u305F\u8239\u56E3\u306E\u5230\u9054 0.97/3 \u3067\u53B3\u3057\u3059\u304E\u3001\u7DDA\u3092 100 m \u5CB8\u5BC4\u308A\uFF08y 2,100/2,300\uFF09\u3060\u3068\u96A0\u308C\u305F\u8239\u56E3 0.78/3\uFF08\u30EC\u30D3\u30E5\u30FC\u524D\u306E\u8A66\u4F5C\u30FBhp 24 \u3067\u306E\u6BD4\u8F03\u3002\u76F8\u5BFE\u306E\u50BE\u5411\u3060\u3051\u4F7F\u3046\uFF09\u3002PT \u306E\u51FA\u767A\u306E\u9685\u304B\u3089\u8239\u56E3\u306E\u5148\u982D\u30FB\u6700\u5F8C\u5C3E\uFF08\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u307E\u3067\u6700\u77ED 1,464 m \u2265 \u5927\u767A\u306E\u767A\u898B 600 \xD7 1.3 = 780 m\uFF08\u51FA\u767A\u3067\u5927\u767A\u304C\u898B\u3064\u304B\u3089\u306A\u3044\u3002\u9685\u306F core/pt-night \u306E ptStartAt\uFF1D\u7DDA\u306B\u6CBF\u3063\u305F\u305A\u308C \xB1800 \u3092\u7DDA\u306E\u4E2D\u306B\u53CE\u3081\u308B clamp \u8FBC\u307F: \u897F\u7AEF\u306F x 2,900 \u306E\u307E\u307E\u3002clamp \u7121\u3057\u306E\u7D20\u306E\u5024 1,266 \u306F\u8A66\u4F5C\u306E\u8868\u306E\u982D\u306E\u6570\u3067\u3001\u672C\u756A\u306E\u691C\u67FB\u306B\u306F\u4F7F\u308F\u306A\u3044\uFF09\uFF09"
+        },
+        convoy: {
+          lead_start: {
+            x_m: 1200,
+            y_m: 2550,
+            heading_deg: 90
+          },
+          offsets_m: [
+            0,
+            120,
+            240
+          ],
+          landing_x_m: 3600,
+          arrive_quota: 2,
+          barge_hp: 12,
+          detect_band: "silent",
+          target_keep_ratio: 0.8,
+          target_switch_hold_s: 1,
+          flash_hold_s: 1,
+          beach: {
+            spacing_m: 60,
+            margin_m: 12,
+            run_in_deg: 38,
+            source: "design (v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u300C\u5927\u767A\u304C\u6D5C\u306B\u4E0A\u9678\u3063\u3066\u3044\u3046\u3051\u3069\u4F55\u3082\u306A\u3044\u6D77\u306E\u771F\u3093\u4E2D\u3067\u6D88\u3048\u3066\u3044\u304F\u306E\u3067\u610F\u5473\u4E0D\u660E\u3067\u3059\u300D: \u5927\u767A\u306F 450 m \u6C96\u306E\u4E0A\u9678\u7DDA\u3067\u6570\u3048\u3066\u6D88\u3048\u3066\u3044\u305F\u3002\u4ECA\u306F\u822A\u8DEF\u3092\u6771\u3078\u9032\u307F\u3001\u81EA\u5206\u306E\u4E0A\u9678\u5730\u70B9\u3078\u306E\u65B9\u4F4D\u304C\u91DD\u8DEF\u304B\u3089 run_in_deg 38\xB0 \u958B\u3044\u305F\u3089\uFF08\u8EE2\u8235\u306E x \u306F 3,099\uFF0F3,039\uFF0F2,979\uFF09\u305D\u306E\u70B9\u3078\u307E\u3063\u3059\u3050\u5411\u304B\u3044\u3001\u6D5C\u306E\u7DDA\uFF08\u5357\u306E\u7E01\u304B\u3089 margin_m 12 m\uFF1D\u8247\u9996\u304C\u6D5C\u306E\u7DDA\u306B\u5C4A\u304F y 2,988\uFF09\u306B\u7740\u3044\u305F\u3089\u4E0A\u9678\u3057\u3066\u6D5C\u306B\u6B8B\u308B\u3002\u4E0A\u9678\u5730\u70B9\u306F landing_x_m \u3092\u4E2D\u5FC3\u306B spacing_m 60 m \u304A\u304D\uFF08\u5148\u982D\u304C\u6771: 3,660\uFF0F3,600\uFF0F3,540\uFF09\u3002\u53F2\u5B9F: \u5927\u767A\u306F\u8247\u9996\u306E\u6B69\u677F\u3092\u4E0B\u308D\u3057\u3066\u63DA\u9678\u3059\u308B\u821F\u8247\uFF08Wikipedia \u306E Daihatsu-class landing craft \u306E\u8981\u7D04\u30FBPacific Wrecks \u306E\u5927\u767A\u306E\u9801\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\uFF09\u3002\u6D5C\u306B\u4E57\u308A\u4E0A\u3052\u308B\u5F62\u306F\u6D77\u8ECD\u306E\u7279\u5927\u767A\uFF08Toku Daihatsu-class\uFF09\u306E\u9801\u306E\u629C\u7C8B\u304B\u3089\u306E\u985E\u63A8\uFF08low\u3002\u5927\u767A\u306E\u9801\u306E\u6587\u3068\u306F\u78BA\u304B\u3081\u3066\u3044\u306A\u3044\u3002docs/01 \xA78\uFF09\u300238\xB0\u30FB40\xB0\u30FB42\xB0\u30FB45\xB0 \u3092\u8A66\u3057\u305F\uFF08\u6D5C 3,600\u30FBHP 12\uFF09\u300238\xB0 \u306F\u3001HUD \u3069\u304A\u308A\u306E 3 \u96BB\u306E\u591C\uFF08shield_full 53%\uFF1D\u4E0A\u306E\u7AEF 55\uFF09\u3068 follow_full \u306E 3 \u96BB\u306E\u591C\uFF0837\u301C38%\uFF1D\u4E0B\u306E\u7AEF 30\uFF09\u306E\u4E21\u65B9\u306B\u4F59\u88D5\u304C\u6B8B\u308A\u3001\u6483\u3064\u3060\u3051\u306E\u6C88\u6CA1\u3082 35% \u306E\u5185\u306B\u53CE\u307E\u308B\u89D2\u5EA6\uFF0845\xB0 \u3060\u3068 follow_full \u306E 3 \u96BB\u306E\u591C 25%\uFF09\u3002\u6D5C\u3078\u5411\u304B\u3046\u9053\u306E\u308A\u306F 711 m\uFF0839.5 \u79D2\uFF09\u3067\u3001\u51FA\u6483\u6642\u306E\u300C\u6D5C\u307E\u3067\u300D\u306F\u63FA\u3089\u304E\u306E\u7121\u3044\u591C\u3067 2,731 m\uFF08HUD \u306F 2800 m\u3002\u591C\u3054\u3068\u306B\u5148\u982D\u306E x \u304C \xB1250 m \u63FA\u3089\u3050\u306E\u3067 2500\u301C3000 m\uFF09\u3002\u90AA\u9B54\u304C\u7121\u3051\u308C\u3070 145.1\uFF0F148.4\uFF0F151.8 \u79D2\u306B\u4E0A\u9678\uFF08\u8EE2\u8235\u306F 105.5\uFF0F108.8\uFF0F112.2 \u79D2\uFF09\u3002\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\uFF09\u3067\u3001\u4E0A\u9678\u306E\u77AC\u9593\u306B\u5927\u767A\u3068\u6D5C\u306E\u7DDA\u304C\u753B\u9762\uFF08iPhone 15 \u6A2A\u30FB\u65E2\u5B9A\u30BA\u30FC\u30E0 0.75\u30FB\u5148\u8AAD\u307F 320 m\uFF09\u306B\u5165\u3063\u3066\u3044\u308B\u591C\u306F shield_full 93\u301C94%\u30FBfollow_full 89%\uFF08\u4E0A\u9678\u7DDA\u306E\u3068\u304D\u306F 0\u301C33%\uFF09)"
+          },
+          source: "design (v0.6.4\u3002\u5927\u767A 3 \u96BB\u306E\u5358\u7E26\u9663\u304C\u5CB8\uFF08\u5357\u306E\u7E01 y 3,000\uFF09\u304B\u3089 450 m \u6C96\u3092 7 kt \u3067\u6771\u3078\u9032\u307F\u3001beach \u306E\u8EE2\u8235\u306E\u70B9\u304B\u3089\u5357\u6771\u306E\u6D5C\u3078\u5411\u304B\u3063\u3066\u3001\u6D5C\u306E\u7DDA\u306B\u7740\u3044\u305F\u3089\u4E0A\u9678\uFF08\u5230\u9054\uFF09\u3002\u6D5C\u306B\u6B8B\u308B\u3002landing_x_m 3600 \u306F\u4E0A\u9678\u5730\u70B9 3 \u3064\u306E\u4E2D\u5FC3\u306E x\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002\u524D\u306F 4,000 \u306E\u4E0A\u9678\u7DDA\uFF09\u3002\u6D5C\u3092 400 m \u897F\u3078\u5BC4\u305B\u305F\u306E\u306F\u3001\u7C73PT \u306E\u54E8\u6212\u7DDA\uFF08x 2,900\u301C4,100\uFF09\u306E\u4E0B\u3067\u6226\u3046\u6642\u9593\u3092\u7D04 22 \u79D2\u77ED\u304F\u3059\u308B\u305F\u3081\uFF08\u540C\u3058\u6D5C\u3092 4,000 \u306B\u7F6E\u3044\u305F\u3068\u304D\u3088\u308A\u3002\u524D\u306E\u4E0A\u9678\u7DDA\u3068\u6BD4\u3079\u308B\u3068\u5148\u982D 11 \u79D2\u30FB\u6700\u5F8C\u5C3E 17 \u79D2\uFF09\u300225mm \u306B\u6700\u5C0F\u6563\u5E03\uFF08jp_t38.gun_battery.min_spread_m\uFF09\u3092\u8DB3\u3059\u3068\u8FD1\u304F\u304B\u3089\u306E\u6483\u9000\u304C\u6E1B\u308A\u3001\u6483\u3064\u3060\u3051\u3067\u8EE2\u8235\u3057\u306A\u3044\u904A\u3073\u65B9\u306E\u6C88\u6CA1\u304C 44\u301C57% \u306B\u4E0A\u304C\u3063\u305F\uFF08\u6700\u5C0F\u6563\u5E03 22 \u3060\u3051\u30FB\u524D\u306E\u5730\u56F3\u3001N 400 \xD7 2 \u7D44\u3002\u76EE\u6A19 20\u301C35\uFF09\u3002\u6D5C 3,600 \u3060\u3068 24.5\u301C33.3%\u3002\u53F2\u5B9F: \u5927\u767A\u306F\u5CB8\u3065\u305F\u3044\u306B\u591C\u3060\u3051\u52D5\u304D\uFF08\u7C73\u9678\u8ECD\u306E\u60C5\u5831\u8A8C Tactical and Technical Trends\u30FB\u7C73\u6D77\u8ECD\u516C\u520A\u53F2\u3002high\uFF09\u3001\u968A\u5217\u306E\u9593\u9694\u3092\u66F8\u3044\u305F\u8CC7\u6599\u306F\u7121\u3044\uFF08docs/01 \xA78\u300C\u5927\u767A\u306E\u591C\u9593\u8F38\u9001\u3068\u7C73PT\u30FBT-38 \u306E\u4EE3\u5F79\u300D\u306E\u8868\u306E\u968A\u5217\u306E\u9593\u9694\u306E\u884C\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002\u9593\u9694 120 m\uFF08\u5168\u9577 15 m \u306E 8 \u500D\uFF09\u306F PT \u306E\u822A\u904E\u306E\u6A2A\u305A\u3089\u3057 120 m\u30FB\u6563\u5E03 8\u301C9 m \u3067 1 \u56DE\u306E\u822A\u904E\u304C\u96A3\u306E\u5927\u767A\u306B\u5F53\u305F\u3089\u306A\u3044\u6700\u5C0F\u306E\u9593\u9694\uFF08150 m \u3060\u3068\u8239\u56E3\u304C\u9577\u304F\u306A\u308B\u3076\u3093\u5B88\u308A\u306B\u304F\u3044\uFF09\u3002arrive_quota 2 \u306F\u300E\u898B\u3064\u304B\u3063\u305F\u8239\u56E3\u306E 1\u301C3 \u5272\u304C\u6C88\u3080\u300F\u76EE\u5B89\uFF08docs/01 \xA78 \u306E\u640D\u8017\u306E\u76EE\u5B89\u306E\u884C\u306E\u79C1\u306E\u96C6\u8A08\u3002low\u3002\u4E8B\u4F8B\u306F 0\u301C75%: 8 \u96BB\u306E\u5358\u7E26\u9663 0%\u301C\u30D8\u30F3\u30EA\u30FC\u30FB\u30EA\u30FC\u30C9\u6E7E 75%\uFF09\u306B\u5408\u308F\u305B\u305F\u8A2D\u8A08\u5024\u3002barge_hp 12\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u300220 \u2192 12\uFF09: PT \u306E 1 \u767A HP 4 \u3067 3 \u767A\u3067\u6C88\u3080\uFF08PT \u306E\u7832\u306F 1 \u56DE\u306E\u822A\u904E 10 \u767A\u3002us_pt_enemy\u3002jp_05 \u3068\u5171\u6709\u3067\u5909\u3048\u306A\u3044\uFF09\u3002\u6D5C\u3092 400 m \u897F\u3078\u5BC4\u305B\u308B\u3068\u6226\u3046\u6642\u9593\u304C\u77ED\u304F\u306A\u308A\u300120 \u306E\u307E\u307E\u3060\u3068 shield_full \u306E 3 \u96BB\u306E\u591C\u304C 68%\uFF08\u6D5C 3,600\u30FBdetect_band silent\u30FB\u8F2A (4050, 2550)\u30FB40\xB0 \u306E\u8A66\u4F5C\u3001N 400\uFF09\u3067\u76EE\u6A19\uFF0830\u301C55\uFF09\u306E\u5916\u300216\uFF084 \u767A\uFF09\u3060\u3068 56\u301C62%\u300212 \u3067 53%\uFF08N 400 \xD7 2 \u7D44\uFF09\u30FB51.5\u301C53.5%\uFF08N 200 \xD7 4 \u7D44\uFF09\u3002\u4EE3\u4FA1: \u5065\u5168\u306A\u5927\u767A\u304C 1 \u56DE\u306E\u822A\u904E\u3067\u6C88\u3080\u3053\u3068\u304C\u3001shield_full \u3067 400 \u591C\u306B 191\u301C202 \u96BB\u30FBfollow_full \u3067 261\u301C274 \u96BB\uFF0820 \u306E\u3068\u304D\u306F 88\u301C117\uFF09\uFF1D\u307B\u307C 2 \u591C\u306B 1 \u56DE\u3002HP \u306F 4 \u306E\u500D\u6570\u3067\u3057\u304B\u52B9\u304B\u306A\u3044\uFF089\u301C12 \u306F\u540C\u3058 3 \u767A\uFF09\u3002\u5B9F\u6A5F\u3067\u7406\u4E0D\u5C3D\u306A\u3089 16\uFF08\u672C\u756A\u306E\u5E2F\u306E\u691C\u67FB N 200\u30FBseed 1\u301C200 \u3067\u306F shield_full \u306E\u5230\u9054\u3068 3 \u96BB\u306E\u591C\u304C\u5E2F\u306E\u4E0A\u306E\u7AEF\u3092\u8D85\u3048\u3066\u843D\u3061\u308B: tests/convoy-sim-g\uFF09\u3002HP \u306F\u300E\u6C88\u3080\u307E\u3067\u306E\u5C0F\u53E3\u5F84\u5F3E\u306E\u6570\u300F\u306E\u8AAD\u307F\u66FF\u3048\u3067\u3001\u88C5\u7532 3\u301C9 mm \u306E\u64CD\u8235\u624B\u306E\u76FE\uFF08\u7C73\u9678\u8ECD\u30CF\u30F3\u30C9\u30D6\u30C3\u30AF\u3002medium\uFF09\u3068\u6E80\u8F09\u306E\u5175\u54E1 70 \u540D\uFF08daihatsu_barge.cargo\uFF09\u304B\u3089\u7F6E\u3044\u305F\u8A2D\u8A08\u5024\uFF08us_03 \u306E\u6575\u306E\u5927\u767A\u306E hull_hp 20 \u3068\u306F\u5225\u306E\u9375: us_03 \u306F\u8247\u306E 40mm\u30FB37mm \u7528\u3067\u5909\u3048\u306A\u3044\uFF09\u3002\u5BC4\u3063\u3066\u6483\u3066\u3070\u6483\u9000\uFF08\u8239\u4F53\u306B 10 \u767A\uFF1DHP 100 \u2192 60\u3001\u307E\u305F\u306F 1 \u767A\u3054\u3068\u306B 3% \u306E\u6B7B\u50B7\u3002us_pt_enemy.under_fire\uFF09\u304B 0.3% \u306E\u5F15\u706B\u306E\u6483\u6C88\u3067\u822A\u904E\u3092\u9ED9\u3089\u305B\u3089\u308C\u308B\u306E\u3067\u300E\u8FD1\u3065\u3044\u3066\u6483\u3061\u8FD4\u305B\u300F\u306B\u624B\u304C\u6B8B\u308B\uFF083 \u767A\u306E\u5236\u5727\uFF1Dus_pt_enemy.chase.suppress_hits \u306F\u8FFD\u6483\u30FB\u9023\u5C04\u4E2D\u306E PT \u3060\u3051\u3067\u30017 kt \u306E\u5927\u767A\u3078\u306E\u822A\u904E\u306B\u306F\u52B9\u304B\u306A\u3044\uFF09\u3002\u6A21\u64EC\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E convoy-sim\u3001N 400 \xD7 2 \u7D44\u30FBseed 1\u301C400\uFF0F401\u301C800\uFF09: \u96A0\u308C\u305F\u8239\u56E3 0.88\u301C0.89/3\uFF08\u7D04 2.1 \u96BB\u6C88\u3080\uFF1D\u8A2D\u8A08\u306E\u76EE\u6A19\u300E\u5B88\u3089\u306A\u3051\u308C\u3070 1\u301C2 \u96BB\u300F\u306E\u4E0A\u306E\u7AEF\u3092\u5C11\u3057\u8D85\u3048\u308B\u3002\u76EE\u6A19\u306E\u691C\u67FB\u306F\u96A0\u308C\u305F\u8239\u56E3\u306E\u5230\u9054 1.5 \u96BB\u4EE5\u4E0B\uFF09\u3001HUD \u3069\u304A\u308A\uFF08\u5BC4\u3063\u3066\u6483\u3063\u3066\u8EE2\u8235 shield_full\uFF092.40\u301C2.41/3\u30FB3 \u96BB\u306E\u591C 53%\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 10.5\u301C11.8%\u3001\u5F8C\u308D\u306B\u4ED8\u3044\u3066\u6483\u3063\u3066\u8EE2\u8235\uFF08follow_full\uFF092.17\u301C2.21\u30FB37\u301C38%\u30FB9.5\u301C11.3%\u3002detect_band silent\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002stop \u2192 silent\uFF09: 3 \u96BB\u306E\u968A\u5217\u304C\u898B\u3064\u304B\u308B\u8DDD\u96E2 600 m\uFF08\u9759\u97F3\u306E\u5E2F\u306E\u4FC2\u6570 \xD7 \u65B0\u6708 0.6 \xD7 2,000\uFF09\u3002T-38 \u3092\u9759\u97F3\u3067\u8D70\u3089\u305B\u305F\u3068\u304D\u3068\u540C\u3058\u3067\u3001\u6483\u3063\u305F\u81EA\u8247\uFF08\u9583\u5149 1,200 m\uFF09\u3084\u5DE1\u822A\u306E\u81EA\u8247\uFF081,200 m\uFF09\u3088\u308A\u306F\u898B\u3064\u304B\u308A\u306B\u304F\u3044\u3002\u53F2\u5B9F\u306E\u300C\u6697\u3044\u96E8\u306E\u591C\u306F\u968A\u5217\u306E\u771F\u3093\u4E2D\u306B\u5165\u308B\u307E\u3067\u6C17\u3065\u304B\u306A\u304B\u3063\u305F\u300D\uFF08docs/01 \xA78\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\uFF09\u3088\u308A\u9060\u304F\u304B\u3089\u898B\u3064\u304B\u308B\u8A2D\u8A08\u5024\uFF08480 m \u3067\u3082\u53F2\u5B9F\u3088\u308A\u9060\u3044\u3002\u904A\u3073\u306E\u5E2F\u306E\u305F\u3081 600 m \u306B\u5BC4\u305B\u305F\uFF09\u3002silent \u306B\u3059\u308B\u3068\u7C73PT \u304C\u5927\u767A\u3092\u72D9\u3046\u591C\u304C\u5897\u3048\u3001\u81EA\u8247\u3078\u306E\u822A\u904E\u304C\u6E1B\u308B: HUD \u3069\u304A\u308A\u306E\u6C88\u6CA1\u306F follow_full \u3067 18 \u2192 10%\uFF08\u6D5C\u3060\u3051\uFF0B\u6700\u5C0F\u6563\u5E03\u306E\u8A66\u4F5C\u306E\u6BD4\u3079\uFF09\u3002stop \u306E\u307E\u307E\u6D5C 3,600\u30FBhp 12 \u3060\u3068 HUD \u3069\u304A\u308A\u306E\u6C88\u6CA1 15\u301C16% \u3068\u96A0\u308C\u305F\u8239\u56E3 1.51 \u96BB\u3067\u76EE\u6A19\u306E\u5916\u3002v0.6.4 \u3067 silent \u3092\u9000\u3051\u305F\u7406\u7531\uFF08\u96A0\u308C\u305F\u8239\u56E3 0.63 \u96BB\u30FB\u6483\u3064\u3060\u3051 39\u301C45%\uFF09\u306F\u3001\u6D5C 3,600 \u3067\u306F 0.88\u301C0.89 \u96BB\u30FB24.5\u301C33.3% \u3067\u5F53\u305F\u3089\u306A\u3044\u3002target_keep_ratio 0.8\u30FBtarget_switch_hold_s 1.0: \u6A19\u7684\u3092\u66FF\u3048\u308B\u306E\u306F\u4ECA\u306E\u6A19\u7684\u3088\u308A\u70B9\u6570\uFF08\u8DDD\u96E2\xB2 \xF7 \u898B\u3064\u304B\u308B\u8DDD\u96E2\xB2\uFF09\u304C 0.64 \u500D\u3088\u308A\u5C0F\u3055\u3044\u5019\u88DC\u304C\u3044\u3066\u3001\u524D\u306E\u5207\u308A\u66FF\u3048\u304B\u3089 1 \u79D2\u4EE5\u4E0A\u306E\u3068\u304D\u30021.0\uFF08\u5373\u6642\uFF09\u3060\u3068 1 \u591C 9\u301C20 \u56DE\u5207\u308A\u66FF\u308F\u308A HUD \u304C\u70B9\u6EC5\u30020.8\uFF0B1 \u79D2\u3067 1 \u591C 3\u301C5 \u56DE\u3002flash_hold_s 1.0: \u9583\u5149\u306E\u8A18\u61B6\uFF1D25mm \u3092\u6700\u5F8C\u306B\u6483\u3063\u3066\u304B\u3089 1 \u79D2\u306F\u300E\u6483\u3063\u305F\u8247\u300F\u3068\u3057\u3066 1,200 m \u3067\u9078\u3070\u308C\u308B\uFF08\u5F3E\u306E\u9593\u9694 0.27 \u79D2\u3092\u57CB\u3081\u3001\u5F3E\u5009\u4EA4\u63DB 3.2 \u79D2\u306E\u5F8C\u534A\u306F\u5E2F\u306E\u8DDD\u96E2\u306B\u623B\u308B\uFF1D\u4EA4\u63DB\u306E\u9593\u306B\u8FD1\u3044\u5927\u767A\u3078\u72D9\u3044\u304C\u623B\u308A\u3046\u308B\u3002\u300E\u6483\u3066\u3070\u72D9\u308F\u308C\u308B\u30FB\u6483\u3061\u3084\u3080\u3068\u623B\u308B\u300F\u304C\u8AAD\u3081\u308B\uFF09\u30021.6 \u79D2\u3060\u3068 shield_full \u306E\u6C88\u6CA1 11.8%\u30FB3.2 \u79D2\uFF08\u4EA4\u63DB\u306E\u9593\u305A\u3063\u3068\uFF09\u3060\u3068 20\u301C23%\uFF08\u81EA\u8247\u3078\u306E\u822A\u904E 5.4\u301C5.5 \u56DE\uFF09\u3067\u8A2D\u8A08\u306E\u76EE\u6A19 8\u301C15 \u3092\u8D85\u3048\u30010\uFF08\u6483\u3063\u305F\u30B9\u30C6\u30C3\u30D7\u3060\u3051\uFF09\u3060\u3068 20 \u30B9\u30C6\u30C3\u30D7\u306B 1 \u56DE\u3057\u304B\u52B9\u304B\u305A\u6A19\u7684\u304C\u5927\u767A\u3078\u623B\u3063\u3066\u3057\u307E\u3046\uFF08\u7D71\u5408\u4ED5\u69D8\u306E\u30EC\u30D3\u30E5\u30FC\u306E\u6307\u6458\uFF09\u3002\u5927\u767A\u306E 13mm \u306E\u6483\u3061\u8FD4\u3057\u30FB\u968A\u5217\u306E\u5D29\u3057\u30FB\u6D5C\u3078\u306E\u9003\u3052\u8FBC\u307F\u306F v0.6.4 \u3067\u306F\u7121\u3057\uFF08lead \u306E\u5224\u65AD 10\u300C\u3084\u3089\u306A\u3044\u3053\u3068\u300D\u3002docs/03 \u306E v0.6.4 \u306E\u5019\u88DC\uFF09)"
+        },
+        coast: {
+          side: "south",
+          land_m: 600,
+          label_ja: "\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\uFF08\u30AB\u30DF\u30F3\u30DC\uFF09",
+          source: "design (\u898B\u305F\u76EE\u3060\u3051\u3002\u6D77\u57DF\u306E\u5357\u306E\u7E01\u304C\u6D5C\u3067\u3001\u305D\u306E\u5916\u306B\u9678\u3092\u63CF\u304F\u3002\u5927\u767A\u306F\u6D5C\u306E\u7DDA\uFF08beach\u3002\u5357\u306E\u7E01\u304B\u3089 12 m\uFF09\u3067\u4E0A\u9678\u3057\u3001\u4E0A\u9678\u5730\u70B9\u306E\u5E2F\u3068\u300C\u4E0A\u9678\u5730\u70B9\u300D\u306E\u5B57\u3092 systems/convoy \u304C\u63CF\u304F\uFF08v0.6.4 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF09\u3002\u300E\u5CB8 N m\u300F\u306E\u77E2\u5370\u306F barges \u306E\u4EFB\u52D9\u3060\u3051\u3067\u3001jp_01 \u3067\u306F\u4F5C\u3089\u306A\u3044\uFF08\u6D5C\u306F\u4E0A\u9678\u5730\u70B9\u306E\u5370\u3068\u300C\u6D5C\u307E\u3067 N m\u300D\u3067\u793A\u3059\uFF09)"
+        },
+        night: {
+          hazard_scale: 1,
+          optional_hazards: [],
+          enemy_jitter: {
+            x_m: 800,
+            y_m: 150,
+            heading_deg: 0
+          },
+          barge_lead_jitter_m: 250,
+          mirror_chance: 0,
+          source: "design (v0.6.4\u3002\u7C73PT \u306E\u968A\u306F jp_05 \u3068\u540C\u3058\u304F\u7DDA\u306B\u6CBF\u3063\u3066 \xB1800 m\u30FB\u7DDA\u3054\u3068\u5357\u5317 \xB1150 m\u3002barge_lead_jitter_m \xB1250 \u306F\u8F38\u9001\u968A\u306E\u5148\u982D\u306E x\uFF08\u5230\u9054\u304C \xB114 \u79D2\u30FBPT \u3068\u51FA\u4F1A\u3046\u5834\u6240\u304C \xB1250 m\uFF09\u3002mirror_chance 0: \u6D5C\u3068\u6CCA\u5730\u306F\u6771\u306A\u306E\u3067\u6771\u897F\u53CD\u8EE2\u3057\u306A\u3044\u3002\u4E71\u6570\u306F seed+16 \u306E 5 \u56DE\uFF08\u968A 3\u30FB\u5927\u767A\u306E\u5148\u982D 1\u30FB\u53CD\u8EE2 1\uFF09\u3067 jp_05 \u3068\u540C\u3058\u56DE\u6570)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.6.4\u3002\u904A\u3079\u308B\u4E16\u754C\u3067\u8D77\u304D\u308B\u5371\u967A\u306F\u7C73PT \u306E\u6383\u5C04\uFF08\u5927\u767A\u306B\u3082\u81EA\u8247\u306B\u3082\uFF09\u3068\u591C\u660E\u3051\u306E\u7A7A\u8972\u3002\u6D45\u702C\u306A\u3057\u3002\u672C\u4F53\u306E hazards\uFF08grounding\u30FBenemy_aircraft\uFF09\u306F\u4EFB\u52D9\u306E\u8A2D\u8A08\u3068\u3057\u3066\u6B8B\u3059\uFF08us_03 \u306E\u4F5C\u6CD5\uFF09)",
+        dawn_strike: {
+          aircraft_id: "us_henderson_aircraft",
+          count: 4,
+          count_source: "design (us_01\u301C03\u30FBjp_06 \u3068\u540C\u3058 4 \u6A5F\uFF08tests/dawn-air \u304C\u5168\u4EFB\u52D9 4 \u3092 pin\uFF09\u30021942-12 \u306E\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\u306E\u671D\u306E\u54E8\u6212\u306E\u7DE8\u6210\u306F\u672A\u78BA\u8A8D)",
+          from_bearing_deg: 90,
+          escort_target_planes: [],
+          source: "design (v0.6.4\u3002\u6771\uFF1D\u30D8\u30F3\u30C0\u30FC\u30BD\u30F3\u57FA\u5730\uFF08\u30EB\u30F3\u30AC\u5CAC\uFF09\u306E\u65B9\u89D2\uFF08\u65B9\u89D2\u3060\u3051 design\u3002\u8DDD\u96E2\u306F docs/01 \xA78 \u306E\u8ABF\u67FB\u306B\u7121\u3044\u306E\u3067\u66F8\u304B\u306A\u3044\uFF09\u3002\u663C\u306E\u7A7A\u304C\u6575\uFF08dawn_air control enemy\u3002\u78BA\u5EA6\u306F dawn_air.confidence \u306E medium\uFF09\u3067 play_as enemy \u306A\u306E\u3067\u8981\u308B\u3002\u72D9\u3046\u306E\u306F\u81EA\u8247\u3060\u3051\uFF08core \u306E\u65E2\u5B58\u306E\u5F62\u3002\u6D77\u4E0A\u306B\u6B8B\u3063\u305F\u5927\u767A\u306F\u7206\u6483\u3057\u306A\u3044\uFF1D\u65E2\u77E5\u306E\u5236\u7D04\uFF09\u3002\u50DA\u8247\u306F\u3044\u306A\u3044)"
+        },
+        hard: {
+          extra_pt_legs_m: [
+            [
+              4100,
+              1800,
+              2900,
+              1800
+            ]
+          ],
+          convoy_arrive_quota: 3,
+          gunboat: {
+            boat: "jp_h38_hayabusa",
+            label_ja: "\u96BC\u8247",
+            station_astern_m: 150,
+            station_abeam_m: 120,
+            station_slow_m: 60,
+            heading_deadband_m: 5,
+            rejoin_m: 450,
+            fire_m: 300,
+            engage_speed_kt: 10.5,
+            beach_standoff_m: 60,
+            beach_arrive_m: 30,
+            target_range_factor: 0.5
+          },
+          objective_ja: "\u5927\u767A3\u96BB\u3092\u6D5C\u307E\u3067\u8B77\u885B\u3059\u308B\u3002\u96BC\u8247\u304C\u5F8C\u308D\u306B\u4ED8\u304D\u3001\u5927\u767A\u30FB\u96BC\u8247\u3092\u8972\u3046PT\u3068\u8FFD\u3063\u3066\u304F\u308BPT\u3092\u6483\u3064\u3002\u5927\u767A\u304C\u72D9\u308F\u308C\u305F\u3089\u81EA\u8247\u3082\u5BC4\u3063\u3066\u6483\u3061\u8FD4\u3057\u3001\u8D64\u3044\u7DDA\u306F\u5168\u901F\u3067\u8EE2\u8235",
+          success_ja: "\u5927\u767A3\u96BB\u3068\u3082\u6D5C\u306B\u5C4A\u3051\u3066\u5E30\u6295\u30021\u96BB\u3067\u3082\u5931\u3048\u3070\u9054\u6210\u306E\u70B9\u306F\u7121\u3044",
+          note_ja: "1942\u5E7412\u6708\u3001\u30AC\u30C0\u30EB\u30AB\u30CA\u30EB\u5CF6\u5317\u5CB8\u3067\u306F\u6708\u660E\u304B\u308A\u306E\u591C\u306E\u5927\u767A\u306E\u8F38\u9001\u304C\u7C73PT\u3068\u591C\u9593\u6A5F\u306B\u963B\u307E\u308C\u3001\u8A08\u753B\u306E\u534A\u5206\u3082\u904B\u3079\u306A\u304B\u3063\u305F\u300212\u67089\u65E5\u591C\u306B\u306FPT-44\u3068PT-59\u304C\u30AB\u30DF\u30F3\u30DC\u6C96\u3067\u5927\u767A\u3092\u8972\u3063\u305F\u3002\u9B5A\u96F7\u8247\u3084\u96BC\u8247\u304C\u5927\u767A\u3092\u8B77\u885B\u3057\u3066PT\u3068\u6226\u3063\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3063\u3066\u304A\u3089\u305A\u3001\u3053\u306E\u591C\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF08\u8247\u306F1944\u5E74\u306ET-38\u3001\u96BC\u8247\u306F1943\u301C44\u5E74\u306EH-38\u3067\u4EE3\u7528\uFF09\u3002",
+          source: "design (v0.6.6\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9\uFF1D\u7C73PT 3 \u96BB\uFF0B\u96BC\u8247\uFF08H-38\uFF09\u306E\u50DA\u8247\uFF0B3 \u96BB\u3068\u3082\u4E0A\u9678\u30023 \u96BB\u76EE\u306E PT \u306F\u96E3\u3057\u3055\u306E\u4E0A\u3052\u65B9\uFF08design\u3002\u53F2\u6599\u306E\u6839\u62E0\u306B\u306F\u4F7F\u308F\u306A\u3044\uFF09\u3067\u3001\u7DDA\u306F\u4ECA\u306E 2 \u672C\uFF08y 2,000\u30FB2,200\uFF09\u306E 200 m \u5317\u30FB\u540C\u3058\u6771\u897F 1,200 m\u30FB\u897F\u5411\u304D\u306B\u51FA\u767A\uFF08\u4ECA\u591C\u306E\u63FA\u3089\u304E\u8FBC\u307F\u3067\u51FA\u767A\u70B9\u304B\u3089\u81EA\u8247\u307E\u3067 1,758 m \u2265 \u53F2\u5B9F\u30E2\u30FC\u30C9\u306E\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B 1,560 m \u306E\u691C\u67FB\uFF09\u30023 \u96BB\u76EE\u306E\u8B66\u6212\u306E\u9045\u308C\u306F 1 \u96BB\u76EE\u306E 6 \u79D2\u5F8C\uFF082 \u96BB\u76EE\u306E 3 \u79D2\u5F8C\u30021.5 + 2 \xD7 3 = 7.5 \u79D2\uFF09\u3002\u96BC\u8247\u306F\u81EA\u8247\u306E\u91DD\u8DEF\u306E 150 m \u5F8C\u308D\u30FB\u53F3\u8237 120 m\uFF08\u6771\u822A\u3067\u5CB8\u306E\u5074\uFF1DPT \u306E\u7DDA\u306E\u53CD\u5BFE\uFF09\u306B\u4ED8\u304D\u3001\u6C7A\u7740\u306E\u524D\u306F\u9759\u97F3\u306E\u4E0A\u9650 13 kt \u307E\u3067\uFF08\u898B\u3064\u304B\u308B\u8DDD\u96E2 600 m\uFF09\u3002\u5B9A\u4F4D\u7F6E\u307E\u3067 60 m \u306E\u5185\u306F\u5927\u767A\u306E\u901F\u3055 7 kt\uFF085 m \u306E\u5185\u306F\u8F38\u9001\u968A\u306E\u91DD\u8DEF\uFF09\u3002\u6483\u3064\u306E\u306F\u5927\u767A\u304B\u96BC\u8247\u304C\u653B\u6483\u3055\u308C\u3066\u3044\u308B\u3068\u304D\u3068\u8FFD\u6483\u306E PT \u304C 300 m \u4EE5\u5185\u306E\u3068\u304D\u3060\u3051\uFF08\u5B88\u308A\u306E\u7832\uFF09\u3001\u305D\u306E\u3068\u304D\u6700\u5BC4\u308A\u306E PT \u306B\u8237\u5074\u3092\u5411\u3051\u3066 10.5 kt\uFF08\u5927\u767A 7 kt \u306E 1.5 \u500D\uFF09\u3002\u6483\u3063\u3066\u3044\u306A\u3044\u9593\u306B\u6700\u5BC4\u308A\u306E\u822A\u884C\u4E2D\u306E\u5927\u767A\u304B\u3089 450 m \u3088\u308A\u9060\u3051\u308C\u3070\u5B9A\u4F4D\u7F6E\u3078\u623B\u308B\uFF08\u5B9A\u4F4D\u7F6E\u306F\u81EA\u8247\u304C\u57FA\u6E96\u3002\u5927\u767A\u306B\u3064\u306A\u3050\u7D10\u3067\u306F\u306A\u3044\uFF09\u3002\u7C73PT \u306F\u96BC\u8247\u306E\u898B\u3064\u304B\u308B\u8DDD\u96E2\u3092 0.5 \u500D\u3067\u898B\u308B\uFF08\u6A19\u7684\u306B\u9078\u3076\u3068\u304D\u3082\u3001\u96BC\u8247\u3092\u72D9\u3063\u3066\u3044\u308B\u9593\u306B\u898B\u3064\u3051\u30FB\u6349\u3048\u7D9A\u3051\u308B\u3068\u304D\u3082\u3002\u6483\u3063\u305F\u77AC\u9593\u306E\u9583\u5149\u306F\u500D\u7387\u306A\u3057\u3002\u8F38\u9001\u3092\u6B62\u3081\u308B\u306E\u304C\u76EE\u7684\u3067\u3001\u6B66\u88C5\u3057\u305F\u8B77\u885B\u306F\u5F8C\u56DE\u3057\u306B\u3057\u3084\u3059\u3044\u3068\u3044\u3046\u62BD\u8C61\u3002\u53F2\u6599\u306A\u3057\u30021.0 \u500D\u3060\u3068\u96BC\u8247\u304C\u653B\u6483\u3092\u591A\u304F\u5F15\u304D\u53D7\u3051\u3001\u6226\u3046\u904A\u3073\u65B9\u306F\u307F\u306A\u30CF\u30FC\u30C9\u306E\u307B\u3046\u304C\u81EA\u8247\u304C\u6C88\u307F\u306B\u304F\u304B\u3063\u305F\uFF08\u6483\u3064\u3060\u3051\u3067\u8FFD\u3046 3.5% \u5BFE \u30CE\u30FC\u30DE\u30EB 24.5% \u306A\u3069\uFF1D\u6A21\u64EC\u306E\u5024\u306F CHANGELOG v0.6.6\uFF09\u3002\u5927\u767A\u304C\u6C7A\u7740\u3057\u305F\u3089\u3001\u4E0A\u9678\u3057\u305F\u5927\u767A\u304C\u3042\u308C\u3070\u6D5C\uFF08\u5148\u982D\u306E\u4E0A\u9678\u5730\u70B9\u306E 60 m \u6C96\u300230 m \u306E\u5185\u3067\u6B62\u307E\u308B\uFF09\u3078\u3001\u5168\u6EC5\u306A\u3089\u305D\u306E\u5834\u3067\u6B62\u307E\u308A\u3001\u3069\u3061\u3089\u3082\u7684\u3067\u306A\u304F\u306A\u308A\u6483\u305F\u306A\u3044\uFF08\u5E30\u308A\u9053\u306F\u81EA\u8247\u3060\u3051\uFF09\u3002\u96BC\u8247\u306F\u5927\u767A\u306E\u8B77\u885B\u3068\u6575\u9B5A\u96F7\u8247\u306E\u99C6\u9010\u306E\u305F\u3081\u306B\u4F5C\u3089\u308C\u305F\uFF08ja.wikipedia \u96BC\u8247\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002high\uFF09\u304C\u3001\u5927\u767A\u3092\u8B77\u885B\u3057\u3066\u7C73PT \u3068\u6226\u3063\u305F\u8A18\u9332\u306F\u629C\u7C8B\u306B\u898B\u3064\u304B\u3089\u306A\u3044\uFF08medium\u3002\u7121\u3044\u3053\u3068\u306E\u8A3C\u62E0\u3067\u306F\u306A\u3044\uFF09\u3002H-2\uFF081943\u301C44 \u5EFA\u9020\u3002high\uFF09\u30FBH-38\uFF081943\u301C44\u3002medium\uFF09\u306F 1942-12 \u306B\u306F\u7121\u304F\u3001H-1\uFF081941 \u5C31\u5F79\u306E 1 \u96BB\uFF09\u306E\u6240\u5728\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF08low\uFF09\uFF1D\u6642\u4EE3\u306E\u305A\u308C\u306E\u3042\u308B\u4EE3\u5F79\uFF08T-38 \u3068\u540C\u3058\uFF09)"
+        }
+      }
+    },
+    {
+      id: "jp_02",
+      campaign: "jp_hard",
+      order: 2,
+      playable_from: "v0.6.7",
+      title_ja: "\u5B64\u5CF6\u306E\u54E8\u6212",
+      date: "1944-01-30",
+      place: "\u30A6\u30A7\u30FC\u30AF\u5CF6",
+      type: "patrol_and_evade",
+      player_boat: "jp_t14",
+      torpedo_type: "jp_45cm",
+      objective: "\u54E8\u6212\u306E\u5E30\u308A\u306B\u7C73\u306E\u98DB\u884C\u82472\u6A5F\u306E\u30EC\u30FC\u30C0\u30FC\u306B\u6349\u3048\u3089\u308C\u305F\u3002\u6700\u521D\u306E\u7206\u6483\u306F\u5168\u901F\u3067\u8D70\u308A\u6295\u4E0B\u3067\u8EE2\u8235\u3002\u305D\u306E\u5F8C\u3082\u822A\u8DE1\u3068\u52D5\u304F\u8239\u4F53\u3092\u635C\u3057\u306B\u4F55\u5EA6\u3082\u6765\u308B\u3002\u6765\u305F\u3089\u6B62\u307E\u3063\u3066\u96A0\u308C\u3001\u5357\u897F\u306E\u7901\u6E56\u3078\u5E30\u308B",
+      enemies: [
+        "us_patrol_bomber"
+      ],
+      hazards: [
+        "enemy_aircraft",
+        "storm"
+      ],
+      moon: "dark",
+      moon_label_ja: "\u6708\u6CA1\u5F8C",
+      duration_min: 4,
+      success: "\u751F\u9084\u3002\u30EC\u30FC\u30C0\u30FC\u306E\u5F8C\u306B\u4E00\u5EA6\u3082\u898B\u3064\u304B\u3089\u305A\u591C\u660E\u3051\u524D\u306B\u5E30\u308C\u3070\u56DE\u907F\u306E\u70B9",
+      historical_note: "1944/1/30\u3001\u7B2C\u4E00\u53F7\u578B\u9B5A\u96F7\u8247\u306E\u7B2C5\u30FB6\u53F7\u8247\u304C\u5931\u308F\u308C\u305F\u3068\u4F1D\u308F\u308B\uFF08navypedia \u306E\u55AA\u5931\u65E5\u3002\u5834\u6240\u3068\u539F\u56E0\u306F\u629C\u7C8B\u306B\u7121\u304F\u3001\u30A6\u30A7\u30FC\u30AF\u306B\u3044\u305F\u304B\u3082\u672A\u78BA\u8A8D\uFF09\u3002\u540C\u3058\u9803\u3001\u30DF\u30C3\u30C9\u30A6\u30A7\u30FC\u306E PB2Y \u304C\u30A6\u30A7\u30FC\u30AF\u3092\u591C\u9593\u7206\u6483\u3057\u305F\uFF08\u7C73\u306E\u897F\u7D4C\u65E5\u4ED8\u3067 1/30\u301C31 \u306E\u591C\u3002navypedia \u306E\u65E5\u4ED8\u304C\u7C73\u306E\u65E5\u4ED8\u306A\u3089\u540C\u3058\u591C\u3001\u65E5\u672C\u6642\u9593\u306A\u3089\u524D\u65E5\u3067\u3001\u3069\u3061\u3089\u304B\u6C7A\u3081\u3089\u308C\u306A\u3044\uFF1Dlow\u3002\u76EE\u6A19\u306F\u98DB\u884C\u5834\u3002\u8247\u3092\u6C88\u3081\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD",
+      source_url: "https://www.ibiblio.org/hyperwar/USN/USN-Chron/USN-Chron-1944.html",
+      todo: "\u7B2C\u4E00\u53F7\u578B\uFF08T1\uFF09\u306E\u8247\u306E data\u30FB\u30B9\u30B3\u30FC\u30EB\uFF08storm\uFF09\u30FB13mm \u306E\u5BFE\u7A7A\u306F\u5019\u88DC\uFF08docs/03 \u306E v0.6.7 \u306E\u5019\u88DC\uFF09",
+      briefing_note_ja: "1944\u5E741\u670830\u65E5\u3001\u7B2C\u4E00\u53F7\u578B\u9B5A\u96F7\u8247\u306E\u7B2C5\u30FB6\u53F7\u8247\u304C\u5931\u308F\u308C\u305F\u3068\u4F1D\u308F\u308B\uFF08\u5834\u6240\u3068\u539F\u56E0\u306F\u672A\u78BA\u8A8D\u3067\u3001\u30A6\u30A7\u30FC\u30AF\u306B\u3044\u305F\u304B\u3082\u5206\u304B\u3089\u306A\u3044\uFF09\u3002\u540C\u3058\u9803\u3001\u7C73\u306E\u98DB\u884C\u8247PB2Y\u304C\u30DF\u30C3\u30C9\u30A6\u30A7\u30FC\u304B\u3089\u591C\u306B\u30A6\u30A7\u30FC\u30AF\u306E\u98DB\u884C\u5834\u3092\u7206\u6483\u3057\u305F\u3002\u98DB\u884C\u8247\u304C\u9B5A\u96F7\u8247\u3092\u635C\u3057\u3066\u6C88\u3081\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3063\u3066\u304A\u3089\u305A\u3001\u3053\u306E\u591C\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF08\u5931\u308F\u308C\u305F\u7B2C5\u30FB6\u53F7\u306F\u7B2C\u4E00\u53F7\u578B\u3002\u8247\u306FT-14\u3067\u4EE3\u7528\uFF09\u3002",
+      dawn_air: {
+        control: "enemy",
+        confidence: "low",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "none",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u6575\uFF08\u7C73\u306E\u98DB\u884C\u8247\uFF09",
+        refs: [
+          {
+            url: "https://en.wikipedia.org/wiki/VPB-4",
+            claim: "\u7C73\u6D77\u8ECD\u306E\u54E8\u6212\u7206\u6483\u98DB\u884C\u968A\uFF08VPB-4\uFF09\u306E\u8A18\u9332\u3002\u4E2D\u90E8\u592A\u5E73\u6D0B\u306E\u65E5\u672C\u306E\u5CF6\u3005\u3092\u54E8\u6212\u30FB\u7206\u6483\u3057\u305F\u7C73\u306E\u98DB\u884C\u8247\u30FB\u54E8\u6212\u6A5F\u306E\u90E8\u968A"
+          },
+          {
+            url: "https://community.timeghost.tv/t/america-at-war-1941-part-3/9636/2556",
+            claim: "1944-01-30\u301C31 \u306E\u591C\u3001PB2Y \u30B3\u30ED\u30CA\u30C9\u304C\u30A6\u30A7\u30FC\u30AF\u3092\u7A7A\u8972\u3057\u305F\uFF08\u78BA\u304B\u3081\u3089\u308C\u305F\u306E\u306F\u591C\u306E\u7A7A\u8972\u3060\u3051\uFF09"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u30B3\u30ED\u30CA\u30C9\u306E\u7A7A\u8972\u306F\u591C\u3002\u591C\u660E\u3051\u306B\u7C73\u6A5F\u304C\u3044\u305F\u304B\u306F\u672A\u78BA\u8A8D\u3002historical_note \u306E\u7B2C5\u30FB6\u53F7\u8247\u306E\u55AA\u5931\u3082\u672A\u78BA\u8A8D) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002v0.6.7 \u304B\u3089\u904A\u3079\u308B\u3002\u591C\u660E\u3051\u306E 4 \u6A5F\u306F CLAUDE.md \xA72 \u306E\u4F5C\u6CD5\u3067 design\u30FBlow: 1944-01 \u672B\u306E\u30A6\u30A7\u30FC\u30AF\u306E\u663C\u306B\u7C73\u6A5F\u304C\u3044\u305F\u629C\u7C8B\u306F\u7121\u3044\u30021944 \u5E74\u306E\u5927\u898F\u6A21\u7A7A\u8972\u306F 03-11 \u304B\u3089\uFF08\u663C\u591C\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF09\u30FB1943-10-06\u301C07 \u306B\u8266\u8F09\u6A5F\u306E\u5927\u7A7A\u8972\u304C\u3042\u3063\u305F\uFF082026-10-25 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002medium\u301Chigh\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "us_patrol_bomber",
+          "us_patrol_bomber"
+        ],
+        enemy_behavior: "ai (v0.6.7\u3002\u7C73\u306E\u98DB\u884C\u8247 2 \u6A5F\u306E\u591C\u306E\u54E8\u6212\u3002\u30EC\u30FC\u30C0\u30FC \u2192 \u635C\u7D22\uFF08\u822A\u8DE1\u30FB\u52D5\u304F\u8239\u4F53\u30FB\u5B9A\u6642\uFF09\u2192 \u767A\u898B\u3067 2 \u6A5F \xD7 3 \u767A\u306E\u51FA\u6483\uFF08v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B 1 \u6A5F 2 \u2192 3 \u767A\uFF09\u3002\u591C\u660E\u3051\u306E\u5F8C\u306F 4 \u6A5F\u306E\u7A7A\u8972)",
+        main_weapon: "none",
+        main_weapon_source: "design (v0.6.7\u3002\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\u3067\u8266\u8247\u306F\u3044\u306A\u3044\u3002main_weapon none\uFF08\u4E3B\u5175\u88C5\u306A\u3057\u3002v0.6.8 \u306E\u521D\u3081\u306F\u53F3\u4E0B\u306E\u89D2\u304C\u6A5F\u9283\u3001\u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\u89D2\u306F\u9B5A\u96F7\u30FB\u6A5F\u9283\u306F\u305D\u306E\u5DE6\uFF09\u3002v0.6.8 \u304B\u3089 T-14 \u306E 13mm \u3067\u6A5F\u3092\u6483\u3066\u308B\uFF081 \u767A 0.5%\u30FB\u901F\u3044\u307B\u3069\u4E0B\u304C\u308B\u3002hit_rate_model.anti_aircraft\uFF09\u30FB45cm \u9B5A\u96F7 2 \u672C\u3082\u6483\u3066\u308B\u304C\u72D9\u3046\u8266\u306F\u3044\u306A\u3044\u3002\u53F2\u5B9F\u306E\u7B2C\u4E00\u53F7\u578B\u306F 7.7mm \xD72\uFF08high\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09)",
+        duration_s: 220,
+        duration_s_source: "design (v0.6.7\u3002\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002\u8F2A\u306E\u7E01\u307E\u3067 5,602 m: \u5168\u901F 70.3\u30FB\u5DE1\u822A 108.9\u30FB14 kt 155.6 \u79D2\u3002\u51FA\u767A\u6642\u306B\u5E30\u6295\u305B\u3088\u304C\u7ACB\u305F\u306A\u3044\u691C\u67FB\uFF08\u5DE1\u822A \xD7 call_margin 1.5 = 163.4 < 220 \u2212 50\uFF09\u306E\u4E0B\u9650 213.4 \u79D2\u306E\u4E0A\u3002\u6A21\u64EC\uFF08scripts/patrol-air-sim.ts\u3002\u8A66\u4F5C v2 \u3068\u540C\u3058\uFF09\u3067 HUD \u3069\u304A\u308A\uFF08\u5168\u901F\uFF0B\u635C\u7D22\u3067\u6B62\u307E\u308B\uFF09\u306F\u5E30\u6295\u306E\u4E2D\u592E\u5024 101.4 \u79D2\u300114 kt\uFF0B\u6B62\u307E\u308B\u306F 197.3 \u79D2\uFF08\u591C\u660E\u3051\u524D 85%\uFF09)",
+        fuel_allotment_gal: 32,
+        fuel_allotment_gal_source: "design (v0.6.7\u3002jp_05 \u3068\u540C\u3058 T-14\u30FB\u540C\u3058\u91CF\u3002\u8F2A\u306E\u7E01\u307E\u3067\u5168\u901F 22.3\u30FB\u5DE1\u822A 17.3\u30FB14 kt 14.8 gal\u3002\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 1,440 \u5B9F\u79D2\u3067\u6F02\u6D41\uFF08< 1,500\u30FB> 220\uFF09\u3002\u6A21\u64EC\uFF08scripts/patrol-air-sim.ts\u3002\u8A66\u4F5C v2 \u3068\u540C\u3058\uFF09\u306E\u6B8B\u308A 10 \u30D1\u30FC\u30BB\u30F3\u30BF\u30A4\u30EB\u306F HUD \u3069\u304A\u308A 26%\u300114 kt \u3067 42%)",
+        shallows: [],
+        bounds_m: {
+          width: 6e3,
+          height: 4e3,
+          source: "design (us_02\u30FBjp_05\u30FBjp_06 \u3068\u540C\u3058\u5E83\u3055)"
+        },
+        player_start: {
+          x_m: 5700,
+          y_m: 400,
+          heading_deg: 225,
+          source: "design (v0.6.7\u3002\u5317\u6771\u306E\u54E8\u6212\u70B9\uFF08\u30DF\u30C3\u30C9\u30A6\u30A7\u30FC\u306E\u65B9\u89D2\uFF09\u304B\u3089\u5357\u897F\u306E\u7901\u6E56\u306E\u6C34\u8DEF\u3078\u5E30\u308B\u3002\u5317\u306E\u7E01\u3078 400 m)"
+        },
+        return_point: {
+          x_m: 800,
+          y_m: 3600,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)\uFF08jp_02 \u306E\u9B5A\u96F7\u306F\u72D9\u3046\u8266\u304C\u7121\u3044\u306E\u3067\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\u3057\u3001\u5F85\u305F\u306A\u3044\u3002v0.6.8\uFF09",
+          source: "design (v0.6.7\u3002\u5357\u897F\u306E\u7901\u6E56\u306E\u6C34\u8DEF\uFF08\u5916\u6D77\u3068\u306E\u6C34\u8DEF\u306F\u30A6\u30A3\u30EB\u30AF\u30B9\u3068\u30A6\u30A7\u30FC\u30AF\u306E\u9593\u306E 1 \u672C\u3060\u3051: medium\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002\u9678\u306E\u7E01\u304B\u3089 400 m\u3002\u4E2D\u5FC3\u307E\u3067 5,852 m\u30FB\u8F2A\u306E\u7E01\u307E\u3067 5,602 m\u3002call_margin 1.5 \u306F jp_05 \u3068\u540C\u3058\u7406\u7531)"
+        },
+        coast: {
+          side: "south",
+          land_m: 600,
+          label_ja: "\u30A6\u30A7\u30FC\u30AF\u5CF6",
+          source: "design (v0.6.7\u3002\u898B\u305F\u76EE\u3060\u3051\uFF08\u6D77\u57DF\u306E\u5916\u306E\u5357\u306B\u9678\u3092\u63CF\u304F\u3002\u300C\u5CB8 N m\u300D\u306E\u77E2\u5370\u306F\u5927\u767A\u306E\u4EFB\u52D9\u3060\u3051\uFF09\u3002\u5B64\u5CF6\u304C\u753B\u9762\u306B\u898B\u3048\u308B)"
+        },
+        patrol_air: {
+          aircraft_id: "us_patrol_bomber",
+          count: 2,
+          count_source: "design (\u591C\u306E 2 \u6A5F\u306E\u7D44\u3002\u624B\u304C\u304B\u308A\u306F FAW-2 \u306E\u635C\u7D22\u30EA\u30D9\u30EC\u30FC\u30BF\u30FC 2 \u6A5F\u304C\u30A6\u30A7\u30FC\u30AF\u306E\u5C0F\u578B\u8CA8\u7269\u8239\u3092\u6C88\u3081\u305F 1944-04 \u306E\u516C\u5831\uFF08medium\u3002\u6A5F\u7A2E\u306F PB4Y\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002\u30ED\u30FC\u30C9\u30DE\u30C3\u30D7\u306E\u300E\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E core \u3092 count 2 \u3067\u300F\u3002\u7A7A\u8972\u306E core \u306E\u691C\u67FB\uFF08\u6A5F\u6570 \xD7 \u9593\u9694 4.4 \u2265 \u9032\u8DEF\u306E 2 \u500D 3.888\uFF09\u3092\u901A\u308B)",
+          from_bearing_deg: 56,
+          pass_rotate_deg: 90,
+          radar_passes: 1,
+          source: "design (v0.6.7\u3002\u6BB5\u3068\u6642\u9593\u306F risk_events.json \u306E patrol_air.params\u3001\u898B\u3048\u308B\u8DDD\u96E2\u306F enemies.json \u306E us_patrol_bomber.patrol\u3002from_bearing_deg 56: \u30A6\u30A7\u30FC\u30AF\u304B\u3089\u898B\u305F\u30DF\u30C3\u30C9\u30A6\u30A7\u30FC\u306E\u5927\u570F\u306E\u521D\u65B9\u4F4D\uFF08\u8A08\u7B97 55.6\xB0\u3002\u51FA\u5178\u3067\u306F\u306A\u3044\uFF09\u3002pass_rotate_deg 90: \u635C\u7D22\u3054\u3068\u306B 90\xB0 \u56DE\u3059\uFF08\u5317\u6771 \u2192 \u5357\u6771 \u2192 \u5357\u897F \u2192 \u5317\u897F\u3002\u591C\u660E\u3051\u306E\u6CE2\u3068\u540C\u3058\u4F5C\u6CD5\uFF09\u3002radar_passes 1: \u6700\u521D\u306E 1 \u56DE\u306E\u635C\u7D22\u306F\u30EC\u30FC\u30C0\u30FC\u3067\u3001\u6B62\u307E\u3063\u3066\u3044\u3066\u3082\u898B\u3064\u304B\u308B\uFF08\u6BCE\u591C 1 \u56DE\u306F\u7206\u6483\u3092\u6295\u4E0B\u3067\u8EE2\u8235\u3057\u3066\u304B\u308F\u3059\u3002\u8A66\u4F5C\u3067 0 \u3060\u3068 HUD \u3069\u304A\u308A\u306F 1 \u5EA6\u3082\u7206\u6483\u3055\u308C\u306A\u3044\uFF09\u3002\u5F8C\u671F\u306E PB2Y-3 \u306E\u4E00\u90E8\u306B\u6C34\u4E0A\u635C\u7D22\u30EC\u30FC\u30C0\u30FC\uFF08medium\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u30021944-01 \u306E\u30A6\u30A7\u30FC\u30AF\u7A7A\u8972\u306E\u6A5F\u306B\u3042\u3063\u305F\u304B\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF08research 2-4\uFF09\u3002\u5C0F\u3055\u306A\u6728\u306E\u8247\u3092\u3069\u3053\u307E\u3067\u8FFD\u3048\u305F\u304B\u306F\u8CC7\u6599\u304C\u7121\u304F\u3001\u4EE5\u5F8C\u306F\u76EE\u3067\u635C\u3059\uFF1Ddesign)"
+        },
+        dawn_strike: {
+          aircraft_id: "us_patrol_bomber",
+          count: 4,
+          count_source: "design (CLAUDE.md \xA72 \u306E\u300E\u6575\u306E\u5236\u7A7A\u4E0B\u306F 4 \u6A5F\u300F\u3002\u663C\u306B\u7C73\u6A5F\u304C\u3044\u305F\u629C\u7C8B\u306F\u7121\u3044\uFF08low\uFF09)",
+          from_bearing_deg: 56,
+          escort_target_planes: [],
+          source: "design (v0.6.7\u3002\u6765\u308B\u65B9\u89D2\u306F\u30DF\u30C3\u30C9\u30A6\u30A7\u30FC\uFF08\u8A08\u7B97 55.6\xB0\uFF09\u30028 \u767A\u305A\u3064\u30FB\u6CE2\u3054\u3068\u306B 90\xB0\u3002v0.6.7 \u5B9F\u6A5F 1 \u56DE\u76EE\u306B us_patrol_bomber \u306E 1 \u6A5F 3 \u767A\u3067 12 \u767A\u305A\u3064)"
+        },
+        hazards: [
+          "patrol_air",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.6.7\u3002\u904A\u3079\u308B\u4E16\u754C\u306E\u5371\u967A\u306F\u591C\u306E\u54E8\u6212\u6A5F\u3068\u591C\u660E\u3051\u306E\u7A7A\u8972\u3060\u3051\u3002\u66B4\u98A8\uFF08\u7A2E\u306E storm\uFF09\u30FB\u6A5F\u95A2\u306E\u4E0D\u8ABF\u30FB\u7901\u306F\u5165\u308C\u306A\u3044\uFF08\u5019\u88DC\uFF09)"
+      }
+    },
+    {
+      id: "jp_03",
+      campaign: "jp_hard",
+      order: 3,
+      playable_from: "v0.6.11",
+      title_ja: "\u904B\u5929\u6E2F\u30FB\u7A7A\u8972\u4E0B\u306E\u9000\u907F",
+      date: "1944-10-10",
+      place: "\u6C96\u7E04\u672C\u5CF6\u30FB\u904B\u5929\u6E2F",
+      type: "evacuate_under_air_raid",
+      player_boat: "jp_t38",
+      torpedo_type: "jp_45cm",
+      objective: "\u7A7A\u8972\u306E\u4E0B\u30013\u96BB\u305A\u30646\u3064\u306E\u968A\u3092\u58D5\u3084\u9670\u3078\u96A0\u305B\uFF08\u30B9\u30C6\u30A3\u30C3\u30AF\u3067\u968A\u9577\u8247\u3001\uFF3B\u5207\u66FF\uFF3D\u3067\u968A\u3092\u66FF\u3048\u308B\uFF09",
+      enemies: [
+        "us_carrier_aircraft"
+      ],
+      hazards: [
+        "harbor_fire_explosion",
+        "grounding"
+      ],
+      moon: "day",
+      moon_label_ja: "\u663C\uFF0807:00 \u7A7A\u8972\u8B66\u5831\uFF09",
+      duration_min: 4,
+      success: "18\u96BB\u4E2D6\u96BB\u4EE5\u4E0A\u3092\u6B8B\u3059\uFF08\u53F2\u5B9F\u306F5\u96BB\uFF09",
+      historical_note: "\u7B2C27\u9B5A\u96F7\u8247\u968A\u306F10/10\u306E\u7A7A\u8972\u306718\u96BB\u4E2D13\u96BB\u55AA\u5931\u3002",
+      source_url: "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+      briefing_note_ja: "1944\u5E7410\u670810\u65E5\u3001\u7C73\u7A7A\u6BCD\u90E8\u968A\u306E\u8266\u8F09\u6A5F\u304C\u671D\u304B\u3089\u5915\u65B9\u307E\u3067\u6C96\u7E04\u30925\u56DE\u7A7A\u8972\u3057\u305F\uFF08\u5EF6\u3079\u7D041,400\u6A5F\uFF09\u3002\u904B\u5929\u6E2F\u306E\u7B2C27\u9B5A\u96F7\u8247\u968A\u306F18\u96BB\u306E\u3046\u306113\u96BB\u3092\u5931\u3063\u305F\u3002\u6E2F\u306B\u306F\u8247\u3092\u96A0\u3059\u58D5\u3068\u3001\u58D5\u304B\u3089\u6D77\u3078\u8247\u3092\u904B\u3076\u30EC\u30FC\u30EB\u304C\u3042\u3063\u305F\u3002\u5C4B\u6211\u5730\u306E\u9670\u3068\u968A\u306E\u5206\u3051\u65B9\u3068\u3001\u58D5\u306E\u6570\u3068\u67A0\u30681\u96BB\u305A\u3064\u4E0A\u3052\u308B\u3053\u3068\u3001\u6CE2\u3068\u7DE8\u968A\u306E\u6570\u30014\u5206\u306B\u7E2E\u3081\u305F\u7A7A\u8972\u306F\u4F5C\u308A\uFF08\u53F2\u6599\u306B\u7121\u3044\uFF09\u3002",
+      dawn_air: {
+        control: "enemy",
+        confidence: "high",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "none",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u6575\uFF08\u7B2C38\u4EFB\u52D9\u90E8\u968A\uFF09",
+        refs: [
+          {
+            url: "https://peace-museum.okinawa.jp/evidence/english/the-october-10-air-raid/",
+            claim: "1944-10-10\u3001\u7C73\u7A7A\u6BCD\u90E8\u968A\uFF08\u7B2C38\u4EFB\u52D9\u90E8\u968A\uFF09\u306E\u8266\u8F09\u6A5F\u304C\u671D\u304B\u3089\u5915\u65B9\u307E\u3067\u6C96\u7E04\u3092\u7E70\u308A\u8FD4\u3057\u7A7A\u8972\u3057\u305F\uFF08\u5341\u30FB\u5341\u7A7A\u8972\uFF09"
+          },
+          {
+            url: "https://www.soumu.go.jp/main_sosiki/daijinkanbou/sensai/situation/state/okinawa_34.html",
+            claim: "\u7DCF\u52D9\u7701\u306E\u6C96\u7E04\u770C\u306E\u6226\u707D\u306E\u8A18\u9332\uFF081944-10-10 \u306E\u7A7A\u8972\u306E\u88AB\u5BB3\uFF09"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002\u904A\u3079\u308B\u4E16\u754C\u306F v0.6.11 \u304B\u3089\uFF08\u6575\u306E\u5236\u7A7A\u4E0B\uFF1D4 \u5206\u306E\u5F8C\u306E\u6575\u6A5F 4 \u6A5F\u3082 dawn_strike\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "us_carrier_aircraft"
+        ],
+        enemy_behavior: "ai (v0.6.11\u3002\u663C\u306E\u904B\u5929\u6E2F\u306E\u7A7A\u8972\u3002\u4E88\u544A\u306E\u5F8C\u30012\u301C4 \u6A5F\u306E\u7DE8\u968A\u304C 2 \u3064\uFF08\u30CF\u30FC\u30C9 3 \u3064\uFF09\u540C\u6642\u306B\u5225\u3005\u306E\u968A\u3092\u72D9\u3044\u3001\u968A\u304C\u96A0\u308C\u308C\u3070\u898B\u5931\u3063\u3066\u5F15\u304D\u8FD4\u3059\u30024 \u5206\u306E\u5F8C\u306F CLAUDE.md \xA72 \u306E\u6575\u6A5F 4 \u6A5F\u304C\u64CD\u4F5C\u4E2D\u306E\u968A\u9577\u8247\u3092\u8FFD\u3046)",
+        main_weapon: "none",
+        main_weapon_source: "design (v0.6.11\u3002\u8266\u8247\u306E\u3044\u306A\u3044\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\uFF08jp_02 \u3068\u540C\u3058 none\uFF09\u3002v0.6.8 \u306E\u5175\u88C5\u306E\u3068\u304A\u308A T-38 \u306E 45cm \u9B5A\u96F7 2 \u672C\u3068 25mm \u306F\u6483\u3066\u308B\u304C\u3001\u72D9\u3046\u8266\u306F\u3044\u306A\u3044\u3002\u9B5A\u96F7\u306F\u5EA7\u5E2D\u306E 2 \u672C\u3092\u5168\u90E8\u306E\u968A\u9577\u8247\u3067\u5206\u3051\u5408\u3046\u3002\u6A5F\u9283\u306F\u50DA\u8247\u3082\u6483\u3064\uFF08\u30E6\u30FC\u30B6\u30FC\u306E U2\u30021 \u767A 0.5% \u306F v0.6.8 \u306E\u307E\u307E\uFF1D\u672C\u90E8\u306E\u8A3C\u8A00\u300C\u53CB\u8ECD\u304C\u5FDC\u6226\u3067\u304D\u306A\u304B\u3063\u305F\u300D\uFF08\u7409\u7403\u65B0\u5831\u3002docs/01 \u306E\u53F2\u6599 A10\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3068\u5408\u3046\uFF09)",
+        duration_s: 240,
+        duration_s_source: "design (v0.6.11\u30024 \u5206\uFF1D\u305D\u306E\u65E5\u306E\u7B2C 1 \u6B21\u306E\u6765\u8972\u306E\u5727\u7E2E\uFF08\u53F2\u5B9F\u306F\u671D\u304B\u3089\u5915\u65B9\u307E\u3067 5 \u56DE\u30FB\u5EF6\u3079\u7D04 1,400 \u6A5F\u3001\u904B\u5929\u306F 07:00 \u904E\u304E\u304B\u3089 15:30 \u3054\u308D\u307E\u3067\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002240 \u79D2\uFF08\u6C7A\u7740\uFF09\u3067\u6B8B\u5B58\u3092\u78BA\u5B9A\u3057\u3001\u64CD\u4F5C\u4E2D\u306E\u968A\u304C\u96A0\u308C\u3066\u3044\u308C\u3070\u5E30\u6295\u3067\u7D42\u308F\u308B\u3002\u5916\u306A\u3089 CLAUDE.md \xA72 \u306E\u6575\u6A5F 4 \u6A5F\uFF08dawn_strike\uFF09\u304C\u5EA7\u5E2D\u3092\u8FFD\u3044\u3001\u3069\u306E\u96A0\u308C\u5834\u6240\u3067\u3082\u8F2A\u306E\u4E2D\u3067\u6B62\u307E\u308C\u3070\u5E30\u6295\uFF08spec-v0611-r2 \xA73.8\u3002\u30E6\u30FC\u30B6\u30FC\u306E U6\uFF09\u3002\u7B2C 4 \u6CE2\u306F\u7D04 214 \u79D2\u3067\u53BB\u308A\u7D42\u308F\u308B\uFF08V-E6\u3002S0 \u306E 219.8 \u79D2\u306F S3b \u306E first_run_s 6.5\u30FBrun_gap_s 1.7 \u3067\u77ED\u304F\u306A\u3063\u305F\uFF09)",
+        fuel_allotment_gal: 16,
+        fuel_allotment_gal_source: "design (v0.6.11\u3002\u7A7A\u8972\u306E\u9593\u306F\u71C3\u6599\u3092\u6570\u3048\u306A\u3044\uFF08fuel_free_until_s\u3002\u30E6\u30FC\u30B6\u30FC\u306E U4 \u306E\u8AAD\u307F: T-38 \u306E\u5168\u901F\u306F 19 gal \u3092\u7D04 68 \u79D2\u3067\u4F7F\u3044\u5207\u308B\uFF09\u3002240 \u79D2\u306E\u5F8C\u306F 16 gal \u3067\u5168\u901F 57.6 \u79D2\u30FB\u5DE1\u822A 122.4 \u79D2\uFF1D\u6E2F\u306E\u7AEF\u304B\u3089\u7AEF\uFF08\u5168\u901F \u7D04 45 \u79D2\uFF09\u306E\u3069\u306E\u96A0\u308C\u5834\u6240\u306B\u3082\u5C4A\u304F\u3002\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 240 \uFF0B 1,224 \uFF1D 1,464 \u5B9F\u79D2\u3067\u6F02\u6D41\uFF08< 1,500\u3002T-38 \u306E\u30A2\u30A4\u30C9\u30EB 9.4118 gal/h\u3002V-E10\uFF09)",
+        fuel_free_until_s: 240,
+        fuel_free_until_s_source: "design (v0.6.11\u3002\u65B0\u3057\u3044 opt-in \u306E\u9375\uFF08evac \u306E\u4EFB\u52D9\u3060\u3051\u3002\u7121\u3044\u4EFB\u52D9\u306F 0\uFF1D\u4ECA\u3068\u540C\u3058\uFF09\u3002stepTimeS \u304C\u3053\u306E\u79D2\u306B\u5C4A\u304F\u307E\u3067\u71C3\u6599\u3092\u6E1B\u3089\u3055\u306A\u3044\uFF1D\u7A7A\u8972\u306E\u9593\u306F\u71C3\u6599\u3092\u6570\u3048\u306A\u3044\uFF08spec-v0611-r2 \xA73.9\u3002B2 \u306E\u76F4\u3057\uFF09\u3002duration_s \u3068\u540C\u3058\uFF08V-E10\uFF09)",
+        day_start: true,
+        day_start_source: "design (v0.6.11\u3002\u65B0\u3057\u3044 opt-in \u306E\u9375\uFF08evac \u306E\u4EFB\u52D9\u3060\u3051\uFF09\u3002\u6D77\u306E\u8272\u306F\u6700\u521D\u304B\u3089\u663C\u3001\u6642\u8A08\u30FB\u4E2D\u592E\u306E\u5E2F\u30FBResult\u30FB2 \u884C\u76EE\u306E\u8A00\u8449\u306F\u300C\u591C\u660E\u3051\u300D\u3067\u306A\u304F\u300C\u7A7A\u8972\u300D\uFF08spec-v0611-r2 \xA710.3\u3002H6\uFF09)",
+        shallows: [],
+        shallows_source: "design (v0.6.11\u3002\u6D45\u702C\u306F\u7F6E\u304B\u306A\u3044\uFF1Djp_03 \u3067\u306F\u5EA7\u7901\u3057\u306A\u3044\uFF08\u5317\u306E\u7E01 y 0 \u304C\u5C4B\u6211\u5730\u5CF6\u306E\u5CB8\u3067\u6D77\u57DF\u306E\u7E01\u3067\u6B62\u307E\u308B\u3002\u5CF6\u306E\u4E0A\u3092\u8D70\u3089\u306A\u3044\uFF09\u3002\u7A2E\u306E hazards \u306E grounding \u306F\u8A2D\u8A08\u306E\u8A18\u9332\u3068\u3057\u3066\u6B8B\u3057\u3001v0_1_prototype.hazards \u306B\u306F\u5165\u308C\u306A\u3044)",
+        bounds_m: {
+          width: 3200,
+          height: 1250,
+          source: "historical (\u904B\u5929\u6E2F\u306F\u5C4B\u6211\u5730\u5CF6\u3068\u306E\u72ED\u3044\u6D77\u5CE1\u306B\u3042\u308B\uFF1D\u4F4D\u7F6E\u95A2\u4FC2\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.11\u3002\u5E45 3,200 m\u30FB\u5357\u5317 1,250 m\u30FB\u5411\u304D\u306F\u4F5C\u308A\u3002\u5317\u306E\u7E01\uFF1D\u5C4B\u6211\u5730\u5CF6\u306E\u5CB8\u3001\u5357\u306E\u7E01\uFF1D\u672C\u90E8\u534A\u5CF6\uFF08\u904B\u5929\uFF09\u3002\u898B\u5F35\u308A\uFF08\u30BA\u30FC\u30E0 0.5\uFF09\u3067\u6E2F\u306E\u307B\u307C\u5168\u4F53\u304C 1 \u753B\u9762\u3002T-38 \u306E\u5168\u901F \u7D04 70.7 m/\u5B9F\u79D2\u3067\u7AEF\u304B\u3089\u7AEF\u307E\u3067\u7D04 45 \u79D2)"
+        },
+        player_start: {
+          x_m: 1450,
+          y_m: 1e3,
+          heading_deg: 90,
+          source: "design (v0.6.11\u3002\u7B2C1\u968A\u306E\u968A\u9577\u8247\u306E\u505C\u6CCA\u5730\uFF08\u5CB8\u58C1\u30FB\u4E2D\uFF09\u3068\u540C\u3058\u70B9\u30FB\u8247\u9996\u3002\u4E2D\u306E\u58D5\u306E\u8F2A\u306E\u7E01\u304B\u3089 142 m \u5916)"
+        },
+        return_point: {
+          x_m: 1600,
+          y_m: 1150,
+          radius_m: 70,
+          label_ja: "\u4E2D\u306E\u58D5",
+          call_margin: 1.6,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\uFF08jp_03 \u306E\u9B5A\u96F7\u306F\u72D9\u3046\u8266\u304C\u7121\u3044\u306E\u3067\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\u3057\u3001\u5F85\u305F\u306A\u3044\u3002v0.6.8\uFF09)",
+          source: "historical (\u58D5\u3068\u30EC\u30FC\u30EB\u306E\u5B58\u5728\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.11\u3002\u4F4D\u7F6E\u3068\u534A\u5F84\u306F evac.shelters \u306E\u4E2D\u306E\u58D5\uFF08home_cave\u3002v0.6.11 S8 \u3067\u300C\u968A\u9577\u8247\u306E\u58D5\u300D\u304B\u3089\u6539\u540D\uFF1D\u968A\u9577\u8247\u306F 6 \u3064\u306E\u968A\u305D\u308C\u305E\u308C\u306E\u5148\u982D\u306E\u8247\u306A\u306E\u3067\u3001\u540D\u304C\u968A\u9577\u8247\u3060\u3051\u306E\u58D5\u306B\u8AAD\u3081\u305F\uFF09\u3068\u540C\u3058\uFF08V-E8\uFF09\u3002\u6C7A\u7740\u306E\u524D\u306E\u5E30\u6295\u306F\u300C\u64CD\u4F5C\u4E2D\u306E\u968A\u304C\u96A0\u308C\u305F\u300D\u3067\u3001\u8F2A\u306E\u5224\u5B9A\u306F\u4F7F\u308F\u306A\u3044\uFF08spec-v0611-r2 \xA73.8\uFF09\u3002call_margin 1.6 \u306F\u540C\u3058 T-38 \u306E jp_01\u30FBjp_04\u30FBjp_06 \u3068\u540C\u3058\uFF08v0.6.11 S6\u3002S0\u301CS5 \u306E 1.5 \u306F T-38 \u306E\u5168\u901F/\u5DE1\u822A\u306E\u8DDD\u96E2\u3042\u305F\u308A\u306E\u71C3\u6599\u306E\u6BD4 1.545 \u3088\u308A\u5C0F\u3055\u304F\u3001\u547C\u3073\u304B\u3051\u306E\u6642\u306B\u5168\u901F\u3067\u5E30\u308B\u3068\u5E30\u308A\u9053\u306E\u71C3\u6599\u304C\u8DB3\u308A\u306A\u3044\uFF1D\u904A\u3079\u308B\u4EFB\u52D9\u3059\u3079\u3066\u306E\u4E0D\u5909\u6761\u4EF6\uFF08tests/game-data\uFF09\u304C\u7ACB\u305F\u306A\u304B\u3063\u305F\u3002\u547C\u3073\u304B\u3051\u306F 240 \u79D2\u306E\u5F8C\u306E\u71C3\u6599\u8A08\u306E\u5370\u3060\u3051\u306B\u52B9\u304F\uFF1D2 \u884C\u76EE\u306F jp_03 \u306E\u884C\u304C\u4E0A\uFF09)"
+        },
+        coast: {
+          side: "south",
+          land_m: 400,
+          label_ja: "\u672C\u90E8\u534A\u5CF6\uFF08\u904B\u5929\uFF09",
+          source: "historical (\u904B\u5929\u6E2F\u306F\u672C\u90E8\u534A\u5CF6\u306E\u5317\u6771\u306E\u7AEF\u30FB\u4ECA\u5E30\u4EC1\u6751\u3002\u4F4D\u7F6E\u95A2\u4FC2\u306E\u307F\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.11\u3002\u898B\u305F\u76EE\u3060\u3051\uFF08\u6D77\u57DF\u306E\u5916\u306E\u5357\u306B\u9678\u3092\u63CF\u304F\uFF09\u3002\u5BF8\u6CD5\u306F\u4F5C\u308A)"
+        },
+        hazards: [
+          "unten_air_raid",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.6.11\u3002\u904A\u3079\u308B\u4E16\u754C\u306E\u5371\u967A\u306F\u6E2F\u306E\u7A7A\u8972\uFF08unten_air_raid\uFF09\u3068 4 \u5206\u306E\u5F8C\u306E\u7A7A\u8972\uFF08dawn_air_strike\u3002CLAUDE.md \xA72\uFF09\u3060\u3051\u3002\u51FA\u6483\u524D\u306E\u6E2F\u5185\u7A7A\u8972\u306E 2 \u629E\uFF08harbor_fire_explosion\uFF09\u306F\u7A7A\u8972\u306E\u4EFB\u52D9\u306E\u524D\u306B\u7A7A\u8972\u3092\u91CD\u306D\u3066\u7D1B\u3089\u308F\u3057\u3044\u306E\u3067\u5165\u308C\u306A\u3044\u3002\u5EA7\u7901\uFF08grounding\uFF09\u306F\u6D45\u702C\u3092\u7F6E\u304B\u306A\u3044\u306E\u3067\u5165\u308C\u306A\u3044\uFF08\u7A2E\u306E hazards \u306B\u306F\u8A2D\u8A08\u306E\u8A18\u9332\u3068\u3057\u3066\u6B8B\u3059\uFF09)",
+        dawn_strike: {
+          aircraft_id: "us_carrier_aircraft",
+          count: 4,
+          count_source: "design (CLAUDE.md \xA72 \u306E\u300C\u6575\u306E\u5236\u7A7A\u4E0B\u306F 4 \u6A5F\u300D)",
+          from_bearing_deg: 70,
+          escort_target_planes: [],
+          source: "design (v0.6.11\u3002240 \u79D2\u306E\u5F8C\u3001\u64CD\u4F5C\u4E2D\u306E\u968A\u304C\u96A0\u308C\u3066\u3044\u306A\u3051\u308C\u3070\u6575\u6A5F 4 \u6A5F\u304C\u5EA7\u5E2D\u3060\u3051\u3092\u8FFD\u3046\uFF08seed+19\u3002\u65E2\u5B58\u306E\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E core\uFF09\u3002\u6765\u308B\u65B9\u89D2\u306F\u6E2F\u306E\u7A7A\u8972\u3068\u540C\u3058\u6771\uFF08\u7B2C38\u4EFB\u52D9\u90E8\u968A\u306F\u6C96\u7E04\u306E\u6771\uFF1Dhistorical\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09)"
+        },
+        evac: {
+          boat: "jp_t38",
+          boat_source: "design (v0.6.11\u3002\u7B2C27\u9B5A\u96F7\u8247\u968A\u306E\u8247\u7A2E\uFF08\u7532\u578B\u30FBT-38 \u7CFB\u30FB\u96BC\u8247\u306E\u3069\u308C\u304B\uFF09\u306F\u629C\u7C8B\u3067\u7279\u5B9A\u3067\u304D\u306A\u3044\uFF08WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002\u65E5\u672C\u5074\u306E\u5171\u901A\u8247 T-38 \u3067\u4EE3\u7528\u3057\u300118 \u96BB\u3068\u3082\u540C\u3058\u8247\u3002\u5EA7\u5E2D\uFF08\u64CD\u4F5C\u4E2D\u306E\u968A\u9577\u8247\uFF09\u306F player_boat \u3068\u540C\u3058 T-38)",
+          label_ja: "\u7B2C27\u9B5A\u96F7\u8247\u968A",
+          group_size: 3,
+          start_group: 1,
+          groups: [
+            {
+              id: "g1",
+              label_ja: "\u7B2C1\u968A",
+              place_ja: "\u5CB8\u58C1\u30FB\u4E2D",
+              x_m: 1450,
+              y_m: 1e3,
+              heading_deg: 90
+            },
+            {
+              id: "g2",
+              label_ja: "\u7B2C2\u968A",
+              place_ja: "\u5CB8\u58C1\u30FB\u897F",
+              x_m: 900,
+              y_m: 1e3,
+              heading_deg: 90
+            },
+            {
+              id: "g3",
+              label_ja: "\u7B2C3\u968A",
+              place_ja: "\u5CB8\u58C1\u30FB\u6771",
+              x_m: 2100,
+              y_m: 1e3,
+              heading_deg: 90
+            },
+            {
+              id: "g4",
+              label_ja: "\u7B2C4\u968A",
+              place_ja: "\u685F\u6A4B",
+              x_m: 2850,
+              y_m: 900,
+              heading_deg: 0
+            },
+            {
+              id: "g5",
+              label_ja: "\u7B2C5\u968A",
+              place_ja: "\u6D6E\u6A19\u30FB\u897F",
+              x_m: 500,
+              y_m: 550,
+              heading_deg: 90
+            },
+            {
+              id: "g6",
+              label_ja: "\u7B2C6\u968A",
+              place_ja: "\u6D6E\u6A19\u30FB\u6771",
+              x_m: 2e3,
+              y_m: 500,
+              heading_deg: 90
+            }
+          ],
+          groups_source: "historical (18 \u96BB: \u7B2C27\u9B5A\u96F7\u8247\u968A\u306E\u9B5A\u96F7\u8247 18 \u96BB\u306E\u3046\u3061 13 \u96BB\u304C 1944-10-10 \u306E\u7A7A\u7206\u3067\u5931\u308F\u308C\u305F\uFF08\u7DCF\u52D9\u7701\u30FB\u4ECA\u5E30\u4EC1\u6751\u306E\u6226\u707D\u306E\u8A18\u9332\u307B\u304B\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09) / design (v0.6.11\u3002\u30E6\u30FC\u30B6\u30FC\u306E U1\u300C3\u96BB\u3054\u3068\u306B\u968A\u3092\u7D44\u3093\u3067\u2026\u5148\u982D\u306E\u4E00\u53F0\u3092\u81EA\u6A5F\u3068\u3057\u3066\u6B8B\u308A2\u53F0\u306F\u5F8C\u308D\u3092\u3064\u3044\u3066\u6765\u3055\u305B\u308B\u300D\u3067 6 \u3064\u306E\u968A \xD7 3 \u96BB\u3002\u968A\u306E\u5206\u3051\u65B9\u30FB\u505C\u6CCA\u5730\u30FB\u8247\u9996\u306F\u53F2\u6599\u306B\u7121\u3044\uFF08Briefing \u3067\u53F2\u5B9F\u3068\u3057\u3066\u66F8\u304B\u306A\u3044\uFF09\u3002\u7B2C1\u968A\uFF08start_group 1\u3002\u6700\u521D\u306B\u64CD\u4F5C\uFF09\u306E\u968A\u9577\u8247\u306F\u4E2D\u306E\u58D5\u306E\u4E2D\u5FC3\u304B\u3089 212 m\uFF1D\u8F2A\u306E\u7E01\u304B\u3089 142 m \u5916\uFF08spec-v0611-r2 \xA73.1\u30FBH1\u3002\u8D77\u52D5\u6642\u306E\u691C\u67FB V-E2 \u3067\u505C\u6CCA\u5730\u306E\u3069\u306E\u8247\u3082\u8F2A\u306E\u7E01\u304B\u3089 20 m \u4EE5\u4E0A\u5916\uFF09\u3002\u7B2C4\u968A\u306F\u685F\u6A4B\u3067\u5317\u5411\u304D\u3001\u307B\u304B\u306F\u6771\u5411\u304D)",
+          moored_gap_m: 12,
+          moored_gap_m_source: "design (v0.6.11\u3002\u505C\u6CCA\u306E\u7E26\u5217\u306E\u96A3\u306E\u8247\u3068\u306E\u4E2D\u5FC3\u306E\u9593\u9694 m\uFF08\u968A\u9577\u8247\u306E\u8247\u5C3E\u306E\u65B9\u5411\u3002\u58D5\u304B\u3089\u51FA\u305F\u6642\u3082\u540C\u3058\u4E26\u3073\uFF09\u3002\u7206\u98A8 25 m \u306E\u5185\uFF08V-E7\uFF09\uFF1D1 \u767A\u3067 2\u301C3 \u96BB\uFF08\u4E26\u3093\u3060\u8247\u304C\u307E\u3068\u3081\u3066\u71C3\u3048\u308B\uFF1D\u6F5C\u6C34\u6BCD\u8266 \u8FC5\u9BE8\u304C 5 \u65E5\u71C3\u3048\u305F\u30FB\u904B\u5929\u6E2F\u306E\u505C\u6CCA\u8266\u306E\u708E\u4E0A\u306E\u5199\u771F\u8AAC\u660E\uFF08docs/01 \u306E\u53F2\u6599 A11\u30FBA12\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u304B\u3089\u306E\u63A8\u8AD6\uFF09)",
+          follow: {
+            gap_m: 40,
+            trail_step_m: 5,
+            catch_up_gain_per_s: 0.08,
+            heading_deadband_m: 15,
+            source: "design (v0.6.11\u3002\u50DA\u8247 2 \u96BB\u306F\u968A\u9577\u8247\u306E\u822A\u8DE1\u3092\u305F\u3069\u308B\u7E26\u5217\uFF08spec-v0611-r2 \xA73.4\u30FBr2 M4\uFF09\u3002gap_m 40: \u968A\u9577\u8247\u304B\u3089\u822A\u8DE1\u306E\u5F27\u9577\u3067 40 m\u30FB80 m \u306E\u70B9\u306B\u4ED8\u304F\uFF08\u7206\u98A8 25 \uFF0B \u534A\u9577 9 \uFF1D 34 m \u3088\u308A\u5E83\u3044\uFF1D\u968A\u9577\u8247\u306B\u771F\u4E0A\u304B\u3089\u5F53\u305F\u3063\u305F 1 \u767A\u306F\u50DA\u8247\u3092\u5DFB\u304D\u8FBC\u307E\u306A\u3044\u3002V-E7\uFF09\u3002trail_step_m 5: \u822A\u8DE1\u306E\u70B9\u3092\u7F6E\u304F\u9032\u3093\u3060\u8DDD\u96E2\uFF08\u6642\u9593\u3054\u3068\u3067\u306F\u6B62\u307E\u3063\u305F\u6642\u306B\u5F27\u3092\u8986\u3048\u306A\u3044\u3002gap_m \u306E 1/4 \u4EE5\u4E0B\uFF1DV-E7\uFF09\u3002catch_up_gain_per_s 0.08\u30FBheading_deadband_m 15 \u306F us_01 \u306E\u50DA\u8247\uFF08escort\uFF09\u3068\u540C\u3058\u5024)"
+          },
+          shelter_ring_m: 70,
+          hide_max_kt: 2,
+          haul_s: 12,
+          launch_stick: 0.3,
+          slot_abeam_m: 25,
+          slot_arrive_m: 5,
+          shelter_rules_source: "design (v0.6.11\u3002spec-v0611-r2 \xA73.4\u30FB\xA73.6\u3002\u79D2\u306F\u5B9F\u79D2\u3001\u901F\u3055\u306F kt\uFF08core/units \u304C\u5909\u63DB\uFF09\u3002shelter_ring_m 70: \u96A0\u308C\u5834\u6240\u306E\u8F2A\u306E\u534A\u5F84\uFF08\u5E30\u6295\u306E\u8F2A\u3068\u540C\u3058\uFF1DV-E8\uFF09\u3002hide_max_kt 2: \u64CD\u4F5C\u4E2D\u306E\u968A\u9577\u8247\u304C\u8F2A\u306E\u4E2D\u3067\u3053\u308C\u4EE5\u4E0B\u306B\u306A\u308B\u3068\u5165\u308A\u59CB\u3081\u308B\uFF08\u8D85\u3048\u308C\u3070\u53D6\u308A\u3084\u3081\uFF09\u3002haul_s 12: \u58D5\u306E\u30EC\u30FC\u30EB 1 \u672C\u3067 1 \u96BB\u3092\u4E0A\u3052\u308B\u79D2\uFF08\u50DA\u8247\u306E\u756A\u53F7\u306E\u5927\u304D\u3044\u9806\u30FB\u968A\u9577\u8247\u306F\u6700\u5F8C\u30023 \u96BB\u3067 36 \u79D2\uFF09\u3002launch_stick 0.3: \u96A0\u308C\u3066\u3044\u308B\u30FB\u4E0A\u3052\u3066\u3044\u308B\u968A\u304C\u30B9\u30C6\u30A3\u30C3\u30AF\u3092\u3053\u308C\u4EE5\u4E0A\u5012\u3059\u3068\u51FA\u308B\u30FB\u4E0B\u308D\u3059\u3002slot_abeam_m 25: \u5165\u308B\u6642\u306E\u50DA\u8247\u306E\u67A0\u306E\u70B9\uFF08\u968A\u9577\u8247\u306E\u70B9\u304B\u3089\u5DE6\u53F3\u3078\uFF09\u3002slot_arrive_m 5: \u67A0\u306E\u70B9\u3067\u6B62\u307E\u308B\u8DDD\u96E2\uFF08< slot_abeam_m\uFF1DV-E12\uFF09) / design (v0.6.11 S3b\u3002U7\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u7B54\u3048\u300C\u7DE8\u968A\u304C\u623B\u3063\u3066\u304F\u308B\u300D\uFF09\u3068\u5408\u308F\u305B\u305F\u6A21\u64EC\u306E\u70B9 G1\uFF08spec-v0611-r2 \xA712.5 \u306E\u3064\u307E\u307F\u3002N 400 \xD7 2 \u7D44\u3067\u30CE\u30FC\u30DE\u30EB\u306E\u5E2F 19\u30FB\u30CF\u30FC\u30C9\u306E\u5E2F 5 \u304C\u3059\u3079\u3066 \u2713\uFF09: haul_s 6 \u2192 12\u3002\u58D5\u306B\u4E0A\u3052\u5207\u308B\u307E\u3067\u72D9\u308F\u308C\u308B\u6642\u9593\u3092\u5EF6\u3070\u3057\u3066\u96A0\u3059\u904A\u3073\u65B9\uFF08seq\uFF09\u3092\u5E2F 50\u301C70% \u306B\u4E0B\u3052\u308B\uFF08S3 \u306E 6 \u79D2\u3067\u306F seq 99.6%\uFF1D\u96A0\u3059\u4EBA\u304C\u307B\u307C\u5FC5\u305A\u9054\u6210\u3057\u305F\uFF09)",
+          shelters: [
+            {
+              id: "home_cave",
+              label_ja: "\u4E2D\u306E\u58D5",
+              kind: "cave",
+              x_m: 1600,
+              y_m: 1150,
+              slots: 3,
+              exit_heading_deg: 0
+            },
+            {
+              id: "west_cave",
+              label_ja: "\u897F\u306E\u58D5",
+              kind: "cave",
+              x_m: 650,
+              y_m: 1150,
+              slots: 3,
+              exit_heading_deg: 0
+            },
+            {
+              id: "east_cave",
+              label_ja: "\u6771\u306E\u58D5",
+              kind: "cave",
+              x_m: 2550,
+              y_m: 1150,
+              slots: 3,
+              exit_heading_deg: 0
+            },
+            {
+              id: "east_cover",
+              label_ja: "\u5C4B\u6211\u5730\u306E\u9670\uFF08\u6771\uFF09",
+              kind: "cover",
+              x_m: 2250,
+              y_m: 100,
+              slots: 3,
+              exit_heading_deg: 180
+            }
+          ],
+          cave_source: "historical (\u9B5A\u96F7\u8247\u3092\u683C\u7D0D\u3059\u308B\u58D5\u3092\u6398\u308A\u3001\u58D5\u304B\u3089\u6D77\u3078\u8247\u3092\u904B\u3076\u30EC\u30FC\u30EB\u304C\u6577\u304B\u308C\u3066\u3044\u305F\uFF08\u7DCF\u52D9\u7701\u30FB\u4ECA\u5E30\u4EC1\u6751\u306E\u6226\u707D\u306E\u8A18\u9332\uFF09\u3002\u904B\u5929\u306E\u9B5A\u96F7\u8247\u968A\u306E\u58D5\u304C\u4ECA\u5E30\u4EC1\u6751\u5B57\u4E0A\u904B\u5929\u306B\u6B8B\u308B\uFF08WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09) / design (v0.6.11\u3002\u58D5\u306E\u6570 3\u30FB\u67A0 3 \u96BB\u30FB\u4F4D\u7F6E\uFF08\u5357\u306E\u5CB8\u306E\u969B\uFF09\u30FB\u30EC\u30FC\u30EB 1 \u672C\u30FB1 \u96BB\u305A\u3064\u4E0A\u3052\u308B\u30FB\u58D5\u306F\u898B\u3064\u304B\u3089\u306A\u3044\u306F\u4F5C\u308A\u3002exit_heading_deg 0\uFF1D\u51FA\u308B\u6642\u306E\u8247\u9996\u306F\u5317\uFF08\u5357\u306E\u5CB8\u304B\u3089\u6E2F\u3078\uFF09)",
+          cover_source: "design\uFF08\u53F2\u5B9F\u306E\u88CF\u4ED8\u3051\u7121\u3057\u3002v0.6.11\u3002\u5C4B\u6211\u5730\u5CF6\u306E\u5CB8\u306E\u969B\u306E\u9670 1 \u304B\u6240\uFF08\u6771\uFF09\u30FB\u67A0 3 \u96BB\u30FB\u6B62\u307E\u308C\u3070\u96A0\u308C\u308B\u30FB\u4E88\u544A\u306E\u305F\u3073\u306B cover_reveal_chance \u3067\u898B\u3064\u304B\u308B\u3053\u3068\u304C\u3042\u308B\u306F\u4F5C\u308A\uFF08\u5C4B\u6211\u5730\u5CF6\u3068\u306E\u72ED\u3044\u6D77\u5CE1\u305D\u306E\u3082\u306E\u306F historical\u3002docs/01 \u306E\u53F2\u6599 A15\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u3002exit_heading_deg 180 \u306F\u4F7F\u308F\u306A\u3044\uFF08\u9670\u306F\u305D\u306E\u307E\u307E\u8D70\u308A\u51FA\u3059\uFF09\u304C\u9375\u3092\u305D\u308D\u3048\u308B\uFF09 / design (v0.6.11 S3b\u3002U7\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u7B54\u3048\u300C\u7DE8\u968A\u304C\u623B\u3063\u3066\u304F\u308B\u300D\uFF09\u3068\u5408\u308F\u305B\u305F\u6A21\u64EC\u306E\u70B9 G1\uFF08spec-v0611-r2 \xA712.5 \u306E\u3064\u307E\u307F\u3002N 400 \xD7 2 \u7D44\u3067\u30CE\u30FC\u30DE\u30EB\u306E\u5E2F 19\u30FB\u30CF\u30FC\u30C9\u306E\u5E2F 5 \u304C\u3059\u3079\u3066 \u2713\uFF09: \u9670\uFF08\u897F\uFF09west_cover\u300C\u5C4B\u6211\u5730\u306E\u9670\uFF08\u897F\uFF09\u300D\uFF081,050, 100\u30FB\u67A0 3\uFF09\u3092\u5916\u3057\u305F\uFF08\u96A0\u308C\u5834\u6240 5 \u2192 4\uFF1D\u58D5 3\u30FB\u9670 1\u3001\u67A0\u306E\u5408\u8A08 15 \u2192 12 < 18\uFF09\u3002\u53F2\u5B9F\u306E\u88CF\u4ED8\u3051\u306E\u7121\u3044\u9670\u304C 2 \u304B\u6240\u3042\u308B\u3068\u96A0\u3059\u904A\u3073\u65B9\u304C\u5E2F\u3088\u308A\u6613\u3057\u3044\uFF08S3\uFF09\u3002\u58D5 3 \u304B\u6240\u306F historical \u306A\u306E\u3067\u5916\u3055\u306A\u3044\u3002\u9670\uFF08\u6771\uFF09\u3092\u5916\u3059\u70B9 G2 \u3082\u5E2F\u306B\u5165\u3063\u305F\u304C\u3001seq \u306E\u4E0A\u9650 70% \u3068\u30CF\u30FC\u30C9\u306E seq \u306E\u4E0A\u9650 45% \u3078\u306E\u4F59\u88D5\u304C\u8584\u3044\uFF082.4\u30FB0.7 \u70B9\u3002G1 \u306F 5.7\u30FB3.0 \u70B9\uFF09)",
+          ai: {
+            cast_off_s: [
+              5,
+              20
+            ],
+            pick_s: 5,
+            turn_max_deg: 120,
+            full_p: 0.5,
+            wall_m: 200,
+            wall_turn_deg: 45,
+            look_m: 400,
+            found_react_s: 3,
+            dodge: {
+              success: 0.2,
+              turn_deg: 90,
+              hold_s: 2
+            },
+            source: "design (v0.6.11\u3002\u30E6\u30FC\u30B6\u30FC\u306E U3\u300C\u81EA\u5206\u304C\u64CD\u4F5C\u3057\u3066\u3044\u306A\u3044\u968A\u306F\u30E9\u30F3\u30C0\u30E0\u306B\u56DE\u907F\u884C\u52D5\u3092\u3068\u308A\u3064\u3064\u7206\u6483\u304B\u3089\u9003\u3052\u308B\u300D\u3002spec-v0611-r2 \xA73.5\u3002\u79D2\u306F\u5B9F\u79D2\u30FB\u901F\u3055\u306F kt\u3002cast_off_s [5, 20]: \u751F\u6210\u306E\u6642\u306B 6 \u968A\u305D\u308C\u305E\u308C seed+30 \u304B\u3089 1 \u56DE\u5F15\u3044\u305F\u79D2\u3067\u5CB8\u3092\u96E2\u308C\u308B\uFF08\u64CD\u4F5C\u4E2D\u306E\u968A\u306F\u96E2\u5CB8\u3057\u306A\u3044\uFF09\u3002pick_s 5: \u6642\u8A08\u306E 5 \u79D2\u3054\u3068\u306B 6 \u968A\u3059\u3079\u3066\u304C\u968A\u756A\u53F7\u306E\u9806\u306B seed+30 \u304B\u3089 2 \u56DE\u305A\u3064\u5F15\u304F\uFF08\u5F15\u304F\u56DE\u6570\u306F\u6642\u8A08\u3060\u3051\u3067\u6C7A\u307E\u308B\uFF09\u3002\u91DD\u8DEF\u306F\u4ECA\u306E\u91DD\u8DEF \xB1 turn_max_deg 120\xB0\u3001look_m 400 m \u5148\u306E\u70B9\u304C\u7E01\u304B\u3089 wall_m 200 m \u306E\u5185\u5074\u306E\u7BB1\u306E\u5916\u306A\u3089\u6E2F\u306E\u4E2D\u5FC3\u3078\u306E\u65B9\u4F4D \xB1 wall_turn_deg 45\xB0\u3002\u901F\u3055\u306F\u72D9\u308F\u308C\u3066\u3044\u308B\u304B full_p 0.5 \u3067\u5168\u901F\u3001\u307B\u304B\u306F\u5DE1\u822A\u3002found_react_s 3: \u898B\u3064\u304B\u3063\u305F\u9670\u306E\u64CD\u4F5C\u3057\u3066\u3044\u306A\u3044\u968A\u304C\u9670\u3092\u51FA\u308B\u307E\u3067\u306E\u79D2\u3002dodge: \u6295\u4E0B\u3054\u3068\u306B seed+31 \u304B\u3089 1 \u56DE\u5F15\u304D\u3001success 0.2 \u3067\u4ECA\u306E\u65CB\u56DE\u306E\u9006\u3078 turn_deg 90\xB0 \u5207\u3063\u3066\u5168\u901F\u3092 hold_s 2 \u79D2\uFF08\u56DE\u907F\u306E\u52B9\u304D\u306F S1 \u3067\u6E2C\u3063\u305F: 1 \u767A\u306E\u547D\u4E2D\u7387 0.41\u301C0.45 \u2192 0.24\uFF080.5\uFF09\u2192 0.004\uFF08\u5FC5\u305A\uFF09\uFF09\u3002\u96A0\u308C\u5834\u6240\u306B\u306F\u81EA\u5206\u3067\u306F\u5165\u3089\u306A\u3044\u30FB\u6483\u305F\u306A\u3044\uFF08\u672C\u90E8\u306E\u8A3C\u8A00\u300C\u53CB\u8ECD\u304C\u5FDC\u6226\u3067\u304D\u306A\u304B\u3063\u305F\u300D\uFF1D\u7409\u7403\u65B0\u5831\u3002docs/01 \u306E\u53F2\u6599 A10\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09) / design (v0.6.11 S3b\u3002U7\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u7B54\u3048\u300C\u7DE8\u968A\u304C\u623B\u3063\u3066\u304F\u308B\u300D\uFF09\u3068\u5408\u308F\u305B\u305F\u6A21\u64EC\u306E\u70B9 G1\uFF08spec-v0611-r2 \xA712.5 \u306E\u3064\u307E\u307F\u3002N 400 \xD7 2 \u7D44\u3067\u30CE\u30FC\u30DE\u30EB\u306E\u5E2F 19\u30FB\u30CF\u30FC\u30C9\u306E\u5E2F 5 \u304C\u3059\u3079\u3066 \u2713\uFF09: dodge.success 0.5 \u2192 0.2\u30020.5 \u3067\u306F\u64CD\u4F5C\u3057\u3066\u3044\u306A\u3044\u968A\u306E\u30E9\u30F3\u30C0\u30E0\u56DE\u907F\u304C\u7DE8\u968A\u306E\u898B\u8D8A\u3057\u3092\u3088\u304F\u5916\u3057\u3001\u96A0\u3055\u305A\u8D70\u3063\u3066\u907F\u3051\u308B\u3060\u3051\u306E\u904A\u3073\u65B9\uFF08dodge_only\uFF09\u304C\u96A0\u3059\u904A\u3073\u65B9\u3088\u308A\u52DD\u3063\u305F\uFF08S3\uFF09\u30020 \u3067\u306F\u5916\u306E\u968A\u304C\u65E9\u304F\u6C88\u307F\u904E\u304E\u3066 own_only \u306E\u6B8B\u5B58\u306E\u4E2D\u592E\u5024 2\uFF08\u5E2F 3\u301C6\uFF09\u30010.3 \u3067\u306F own_only \u306E\u9054\u6210 26.8%\uFF08\u5E2F \u2264 25%\uFF09\u3002\u5E2F\u306E\u7A93\u306F\u72ED\u3044)"
+          },
+          flash_reveal: false,
+          flash_reveal_source: "design (v0.6.11\u3002r2 M5: \u9583\u5149\u306F v0.6.8 \u306E\u307E\u307E\uFF08\u6483\u3063\u305F\u8247\u306E\u898B\u3064\u304B\u308B\u8DDD\u96E2\u304C gun_battery.muzzle_flash_reveal_m \u306B\u306A\u308B\u3060\u3051\uFF09\u3002\u9583\u5149\u3067\u9670\u306E\u968A\u306F\u898B\u3064\u304B\u3089\u306A\u3044\u3002true\uFF08\u6483\u3063\u305F\u968A\u304B\u3089 1,200 m \u5185\u306E\u9670\u306E\u968A\u304C\u898B\u3064\u304B\u308B\uFF09\u306B\u3059\u308B\u306E\u306F\u30E6\u30FC\u30B6\u30FC\u304C\u6C7A\u3081\u305F\u6642\u3060\u3051\uFF08CLAUDE.md \xA76.7\uFF09)",
+          source: "design (v0.6.11\u3002jp_03\u300C\u904B\u5929\u6E2F\u30FB\u7A7A\u8972\u4E0B\u306E\u9000\u907F\u300D\u3002\u30E6\u30FC\u30B6\u30FC\u306E\u6C7A\u3081 U1\u301CU6\uFF086 \u3064\u306E\u968A\u3092\uFF3B\u5207\u66FF\uFF3D\u3067\u64CD\u308A\u3001\u968A\u9577\u8247\u306E\u5F8C\u308D\u306B\u50DA\u8247 2 \u96BB\u304C\u7D9A\u304F\u30FB\u64CD\u4F5C\u3057\u3066\u3044\u306A\u3044\u968A\u306F\u30E9\u30F3\u30C0\u30E0\u306B\u56DE\u907F\u30FB\u968A\u9577\u8247\u3054\u3068\u306B\u5168\u90E8\u306E\u72B6\u614B\u30FB6 \u96BB\u4EE5\u4E0A\u6B8B\u308C\u3070\u9054\u6210\uFF09\u3002spec-v0611-r2\u3002\u5F62\u3068\u5024\u306E\u691C\u67FB\u306F core/evac-data\u30FBconfig/evac-mission-data\uFF08V-E1\u301CV-E14\u3002V-E13\u30FBV-E14 \u306F S3b\uFF09)"
+        },
+        evac_raid: {
+          waves: [
+            {
+              announce_s: 15,
+              planes: 2
+            },
+            {
+              announce_s: 70,
+              planes: 3
+            },
+            {
+              announce_s: 125,
+              planes: 3
+            },
+            {
+              announce_s: 180,
+              planes: 4
+            }
+          ],
+          waves_source: "design (v0.6.11\u3002\u30E6\u30FC\u30B6\u30FC\u306E U5\u300C\u30CE\u30FC\u30DE\u30EB\u306F 4 \u6CE2\uFF082\xD72\u30FB3\xD72\u30FB3\xD72\u30FB4\xD72 \u7DE8\u968A\uFF09\u300D\uFF1D\uFF081 \u7DE8\u968A\u306E\u6A5F\u6570\uFF09\xD7\uFF08\u540C\u6642\u306E\u7DE8\u968A\u306E\u6570\uFF09\u3002\u4E88\u544A\u306E\u5B9F\u79D2 15\u30FB70\u30FB125\u30FB180 \u3068 1 \u7DE8\u968A\u306E\u6A5F\u6570 2\u30FB3\u30FB3\u30FB4\u30021 \u7DE8\u968A\uFF1D\u51CD\u7D50\u306E AirStrikeFlight 1 \u3064\uFF084 \u6A5F\u307E\u3067\uFF09\u30021 \u6A5F 2 \u767A\uFF08us_carrier_aircraft\uFF09\u3067\u30CE\u30FC\u30DE\u30EB\u5EF6\u3079 24 \u6A5F\u30FB48 \u767A\u3001\u30CF\u30FC\u30C9 36 \u6A5F\u30FB72 \u767A\uFF08v0.6.11 S3b \u304B\u3089\u3001\u6E08\u3093\u3060\u7DE8\u968A\u304C\u6B21\u306E\u6CE2\u306E\u524D\u306B\u53CE\u307E\u308C\u3070\u3082\u3046\u4E00\u5EA6\u6765\u308B\u5206\u306F\u5225\uFF1Dpasses_max\uFF09\u3002\u4E88\u544A\u306E\u9593\u9694 55 \u79D2 \u2265 \u4E88\u544A\u304B\u3089 4 \u6A5F\u306E\u7DE8\u968A\u304C\u53BB\u308B\u307E\u3067 33.8 \u79D2 \uFF0B \u4F59\u88D5 5 \u79D2\uFF08V-E6\u3002S3b \u306E first_run_s 6.5\u30FBrun_gap_s 1.7 \u3067\u3002S3 \u307E\u3067\u306F 39.8 \u79D2\uFF09\u3001\u7B2C 4 \u6CE2\u306F\u7D04 214 \u79D2\u3067\u53BB\u308A\u7D42\u308F\u308B\uFF08< duration_s 240\uFF09\u3002\u53F2\u5B9F\u306E\u6765\u8972\u306F\u671D\u304B\u3089\u5915\u65B9\u307E\u3067 5 \u56DE\u30FB\u5EF6\u3079\u7D04 1,400 \u6A5F\uFF08historical\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09\u30024 \u5206\u306E 4 \u6CE2\u306F\u305D\u306E\u65E5\u306E\u7B2C 1 \u6B21\u306E\u6765\u8972\u306E\u5727\u7E2E)",
+          flights: 2,
+          flights_source: "design (v0.6.11\u3002\u30E6\u30FC\u30B6\u30FC\u306E U5: \u540C\u6642\u306B\u6765\u308B\u7DE8\u968A\u306E\u6570\u3002\u30CE\u30FC\u30DE\u30EB 2\u30FB\u30CF\u30FC\u30C9 3\uFF08hard.evac_flights\uFF09\u3002\u5404\u6CE2\u3067 1 \u7DE8\u968A\u306F\u64CD\u4F5C\u4E2D\u306E\u968A\u3092\u3001\u307B\u304B\u306E\u7DE8\u968A\u306F\u307B\u304B\u306E\u96A0\u308C\u3066\u3044\u306A\u3044\u968A\u3092\u72D9\u3046\uFF08\u300C\u81EA\u8EAB\u304C\u64CD\u4F5C\u3057\u3066\u3044\u308B\u968A\u306F\u6575\u306E\uFF11\u7DE8\u968A\u306E\u653B\u6483\u3092\u304B\u308F\u3057\u3064\u3064\u9000\u907F\u3067\u304D\u307E\u3059\u304C\u3001\u4ED6\u306E\u968A\u306F\u30E9\u30F3\u30C0\u30E0\u6A5F\u52D5\u306A\u306E\u3067\u6B8B\u308A\u306E\u6575\u7DE8\u968A\u306E\u653B\u6483\u306B\u6652\u3055\u308C\u7D9A\u3051\u308B\u300D\uFF09)",
+          announce_lead_s: 10,
+          from_bearing_deg: 70,
+          flight_offsets_deg: [
+            -30,
+            0,
+            30
+          ],
+          spawn_m: 2500,
+          flights_per_group_max: 1,
+          bearing_fix_deg: [
+            30,
+            20,
+            10,
+            0
+          ],
+          cover_reveal_chance: 0.5,
+          raid_source: "design (v0.6.11\u3002spec-v0611-r2 \xA73.7\u3002announce_lead_s 10: \u4E88\u544A\uFF08\u8D64\u3044\u8F2A\uFF09\u304B\u3089\u7DE8\u968A\u304C\u59CB\u307E\u308B\u307E\u3067\u306E\u5B9F\u79D2\uFF08\u4E88\u544A\u304B\u3089\u6700\u521D\u306E\u6295\u4E0B\u307E\u3067\u7D04 18.1 \u79D2\u304C\u96A0\u3059\u30FB\u5207\u308A\u66FF\u3048\u3066\u9003\u304C\u3059\u6642\u9593\uFF09\u3002from_bearing_deg 70: \u6A5F\u306F\u6771\u304B\u3089\uFF08\u7B2C38\u4EFB\u52D9\u90E8\u968A\u306F\u6C96\u7E04\u306E\u6771\uFF1Dhistorical\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u300270\xB0 \u306F design\uFF09\u3002flight_offsets_deg: \u7DE8\u968A\u3054\u3068\u306E\u73FE\u308C\u308B\u65B9\u4F4D\u306E\u305A\u308C\uFF08\u6E2F\u306E\u4E2D\u5FC3\u304B\u3089 70 \xB1 30\xB0\u30FBspawn_m 2,500 m \u306E\u70B9\u3002\u72D9\u3044\u306E\u9806\u306F\u3053\u306E\u70B9\u306B\u8FD1\u3044\u9806\uFF09\u3002flights_per_group_max 1: 1 \u3064\u306E\u968A\u3092\u72D9\u3046\u7DE8\u968A\u306F 1 \u6CE2\u3067 1 \u3064\u307E\u3067\u3002bearing_fix_deg: \u51CD\u7D50\u306E spawn_offsets_deg \u306E\u5148\u982D n \u500B\u306E\u5E73\u5747\uFF08\u221230\u30FB\u221220\u30FB\u221210\u30FB0\uFF09\u3092\u623B\u3057\u3066\u7DE8\u968A\u306E\u4E2D\u5FC3\u306E\u65B9\u4F4D\u3092\u67A0\u306E\u65B9\u4F4D\u306B\u305D\u308D\u3048\u308B\uFF08\u6A5F\u6570 \u2212 1 \u3067\u5F15\u304F\u3002r2 L1\uFF09\u3002cover_reveal_chance 0.5: \u4E88\u544A\u306E\u305F\u3073\u306B\u9670 1 \u304B\u6240\u304C\u898B\u3064\u304B\u308B\u78BA\u7387\uFF08seed+29 \u304B\u3089\u9670\u3054\u3068\u306B 1 \u56DE\u3002\u30CF\u30FC\u30C9\u306F hard.evac_cover_reveal_chance\uFF09) / design (v0.6.11 S3b\u3002U7\uFF08\u30E6\u30FC\u30B6\u30FC\u306E\u7B54\u3048\u300C\u7DE8\u968A\u304C\u623B\u3063\u3066\u304F\u308B\u300D\uFF09\u3068\u5408\u308F\u305B\u305F\u6A21\u64EC\u306E\u70B9 G1\uFF08spec-v0611-r2 \xA712.5 \u306E\u3064\u307E\u307F\u3002N 400 \xD7 2 \u7D44\u3067\u30CE\u30FC\u30DE\u30EB\u306E\u5E2F 19\u30FB\u30CF\u30FC\u30C9\u306E\u5E2F 5 \u304C\u3059\u3079\u3066 \u2713\uFF09: cover_reveal_chance 0.25 \u2192 0.5\u3002\u9670\u306B\u96A0\u3059\u306E\u304C\u58D5\u306B\u4E0A\u3052\u308B\u3088\u308A\u5B89\u5168\u3059\u304E\u306A\u3044\u3088\u3046\u306B\uFF08\u4E88\u544A\u3057\u76F4\u3057\u306F\u9670\u306E\u767A\u898B\u3092\u5F15\u304B\u306A\u3044\uFF1D\u6CE2\u3054\u3068\u306B 1 \u56DE\uFF09\u30020.25 \u306E\u307E\u307E\u4E0A\u3052\u3092 15 \u79D2\u306B\u3057\u305F\u70B9 H1 \u306F bot \u306E\u6B8B\u5B58\u306E\u4E2D\u592E\u5024 9\uFF08\u5E2F \u2265 10\uFF09\u3067\u5916\u308C\u305F)",
+          passes_max: 2,
+          passes_max_source: "design (v0.6.11 S3b\u3002\u30E6\u30FC\u30B6\u30FC\u306E U7\uFF082026-11-04 \u306E\u554F\u3044\u300C\u7206\u5F3E\u3092\u843D\u3068\u3057\u7D42\u3048\u305F\u7DE8\u968A\u304C\u3001\u6B21\u306E\u6CE2\u306E\u524D\u306B\u9593\u306B\u5408\u3048\u3070\u8D64\u3044\u8F2A\u306E\u4E88\u544A\u3064\u304D\u3067\u3082\u3046\u4E00\u5EA6\u7206\u6483\u306B\u6765\u308B\u5F62\u306B\u3057\u3066\u3088\u3044\u3067\u3059\u304B\uFF1F\u300D\u3078\u306E\u7B54\u3048\u300C\u7DE8\u968A\u304C\u623B\u3063\u3066\u304F\u308B\uFF08\u63A8\u5968\uFF09\u300D\uFF09\u30021 \u7DE8\u968A\u304C\u98DB\u3076\u7206\u6483\u306E\u56DE\u6570\u306E\u4E0A\u9650\uFF08\u6700\u521D\u306E\u56DE\u3092\u542B\u3080\uFF09\u3002\u6E08\u307F\uFF08airSortieComplete\uFF09\u306B\u306A\u3063\u305F\u7DE8\u968A\u306F\u3001\u65B0\u3057\u3044\u56DE\u306E\u5168\u90E8\uFF08\u4E88\u544A\u306E\u5148 announce_lead_s \uFF0B 1 \u56DE\u306E\u9577\u3055\u306E\u898B\u7A4D\u3082\u308A\uFF1Dfirst_run_s \uFF0B \u7206\u6483\u9032\u8DEF \uFF0B (\u6A5F\u6570 \xD7 2 \u767A \u2212 1) \xD7 run_gap_s \uFF0B \u843D\u4E0B \uFF0B leave_s \uFF0B \u6FC3\u3055\u306E\u79D2\u3002\u5B9F\u969B\u306E 1 \u56DE\u3088\u308A\u77ED\u304F\u306A\u3044\u3053\u3068\u306F V-E14\uFF09\u304C\u6B21\u306E\u6CE2\u306E\u59CB\u307E\u308A\uFF08\u6B21\u306E\u6CE2\u306E announce_s \uFF0B announce_lead_s\u3002\u6700\u5F8C\u306E\u6CE2\u306F duration_s 240\uFF09\u307E\u3067\u306B\u53CE\u307E\u308B\u6642\u3060\u3051\u3001\u540C\u3058\u67A0\u3067\u3082\u3046\u4E00\u5EA6\u4E88\u544A\u3057\u3066\uFF08\u72D9\u3044\u306F\u6CE2\u306E\u6700\u521D\u306E\u4E88\u544A\u3068\u540C\u3058\u67A0\u306E\u6C7A\u3081\u30FB\u8D64\u3044\u8F2A\u3002\u9670\u306E\u767A\u898B seed+29 \u306F\u5F15\u304B\u306A\u3044\uFF1D\u6CE2\u3067\u306F\u306A\u3044\uFF09announce_lead_s \u306E\u5F8C\u306B\u3082\u3046\u4E00\u5EA6\u6765\u308B\u3002\u6700\u5F8C\u306E\u7206\u6483\u9032\u8DEF\u3092\u59CB\u3081\u305F\u5F8C\u306B\u72D9\u3063\u305F\u968A\u304C\u96A0\u308C\u305F\u30FB\u5168\u6EC5\u3057\u305F\u56DE\u3082\u6E08\u307F\u306B\u306A\u308C\u3070\u3082\u3046\u4E00\u5EA6\u6765\u308B\uFF08\u610F\u56F3\u3069\u304A\u308A\u3002\u81EA\u5206\u306E\u968A\u3092\u96A0\u3059\u3068\u3001\u305D\u306E\u7DE8\u968A\u306F\u307B\u304B\u306E\u96A0\u308C\u3066\u3044\u306A\u3044\u968A\u3078\u5411\u304B\u3046\uFF1DU5\uFF09\u3002\u6A5F\u6570\u30FB\u6CE2\u306E\u6570\u30FB\u540C\u6642\u306E\u7DE8\u968A\u306F\u5909\u3048\u306A\u3044\uFF08\u30E6\u30FC\u30B6\u30FC\u306E U5\uFF09\u3002\u6483\u589C\u3057\u305F\u6A5F\u306F\u623B\u3089\u306A\u3044\u3002S3 \u306E\u8868\u3067\u30CE\u30FC\u30DE\u30EB\u306E\u5E2F\u304C\u63C3\u308F\u306A\u304B\u3063\u305F\u7406\u7531\uFF081 \u7DE8\u968A\u306F 1 \u3064\u306E\u968A\u3092 1 \u56DE\u3060\u3051\u8972\u3046\uFF1D\u96A0\u3055\u305A\u72D9\u308F\u308C\u305F\u968A\u3078\u5207\u308A\u66FF\u3048\u3066\u907F\u3051\u308B\u3060\u3051\u304C\u7D04 8 \u5272\u52DD\u3061\u3001\u96A0\u3059\u904A\u3073\u65B9\u3088\u308A\u6709\u5229\uFF09\u3078\u306E\u7B54\u3048\u30021 \u2192 2\uFF083 \u306F\u6E2C\u3063\u305F\u3069\u306E\u70B9\u3067\u3082 2 \u3068\u540C\u3058\uFF1D2 \u56DE\u3068\u4E88\u544A\u306E\u5148\u3067\u6CE2\u306E\u9593 55 \u79D2\u3092\u4F7F\u3044\u5207\u308B\u3002\u7B2C 4 \u6CE2\u306F duration_s \u306B\u8FD1\u304F 2 \u56DE\u76EE\u306F\u6765\u306A\u3044\uFF09\u3002\u30CF\u30FC\u30C9\u306F hard.evac_passes_max\uFF08\u7121\u3051\u308C\u3070\u3053\u306E\u5024\uFF09\u3002\u8D77\u52D5\u6642\u306E\u691C\u67FB\u306F 1\u301C3 \u306E\u6574\u6570\uFF08V-E13\uFF09)",
+          survivor_quota: 6,
+          survivors_total: 18,
+          historical_survivors: 5,
+          survivors_source: "historical (18 \u96BB\u4E2D 13 \u96BB\u3092\u5931\u3063\u305F\uFF1D\u53F2\u5B9F\u306E\u6B8B\u5B58 5\uFF08\u7DCF\u52D9\u7701\u30FB\u4ECA\u5E30\u4EC1\u6751\u306E\u6226\u707D\u306E\u8A18\u9332\u30FBja.wikipedia\u300C\u5341\u30FB\u5341\u7A7A\u8972\u300D\u306E\u9B5A\u96F7\u8247 13 \u96BB\u3002\u7C73\u306E\u6226\u679C\u306E\u4E3B\u5F35\u306F\u9B5A\u96F7\u8247 12 \u96BB\u3067\u8FD1\u3044\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09) / design (survivor_quota 6: \u7A2E\u306E success\u300C18\u96BB\u4E2D6\u96BB\u4EE5\u4E0A\u3092\u6B8B\u3059\uFF08\u53F2\u5B9F\u306F5\u96BB\uFF09\u300D\u3002\u30E6\u30FC\u30B6\u30FC\u306E U6\u300C\u516D\u6A5F\u6B8B\u308C\u3070\u30AF\u30EA\u30A2\u300D)",
+          north_shore_label_ja: "\u5C4B\u6211\u5730\u5CF6",
+          source: "design (v0.6.11\u3002jp_03 \u306E\u6E2F\u306E\u7A7A\u8972\u306E\u6CE2\u3068\u72D9\u3044\u3002\u7DE8\u968A\u306E\u6BB5\u3068\u6642\u9593\u306F risk_events.json \u306E unten_air_raid.params.sortie\u3001\u6A5F\u4F53\u306E\u5024\u306F enemies.json \u306E us_carrier_aircraft\uFF086 \u4EFB\u52D9\u3067\u5171\u6709\u3002\u5909\u3048\u306A\u3044\uFF09\u3002north_shore_label_ja: \u5317\u306E\u7E01\u306E\u9678\u306E\u540D\uFF08\u72ED\u3044\u6D77\u5CE1\u306E\u5411\u3053\u3046\u306E\u5C4B\u6211\u5730\u5CF6\uFF1Dhistorical \u306E\u4F4D\u7F6E\u95A2\u4FC2\u3002docs/01 \u306E\u53F2\u6599 A15\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09)"
+        },
+        hard: {
+          evac_flights: 3,
+          evac_cover_reveal_chance: 0.5,
+          objective_ja: "\u7A7A\u8972\u306E\u4E0B\u30013\u96BB\u305A\u30646\u3064\u306E\u968A\u3092\u58D5\u3084\u9670\u3078\u96A0\u305B\uFF08\u30B9\u30C6\u30A3\u30C3\u30AF\u3067\u968A\u9577\u8247\u3001\uFF3B\u5207\u66FF\uFF3D\u3067\u968A\u3092\u66FF\u3048\u308B\uFF09",
+          success_ja: "18\u96BB\u4E2D6\u96BB\u4EE5\u4E0A\u3092\u6B8B\u3059\uFF08\u53F2\u5B9F\u306F5\u96BB\uFF09",
+          note_ja: "1944\u5E7410\u670810\u65E5\u3001\u7C73\u7A7A\u6BCD\u90E8\u968A\u306E\u8266\u8F09\u6A5F\u304C\u671D\u304B\u3089\u5915\u65B9\u307E\u3067\u6C96\u7E04\u30925\u56DE\u7A7A\u8972\u3057\u305F\uFF08\u5EF6\u3079\u7D041,400\u6A5F\uFF09\u3002\u904B\u5929\u6E2F\u306E\u7B2C27\u9B5A\u96F7\u8247\u968A\u306F18\u96BB\u306E\u3046\u306113\u96BB\u3092\u5931\u3063\u305F\u3002\u6E2F\u306B\u306F\u8247\u3092\u96A0\u3059\u58D5\u3068\u3001\u58D5\u304B\u3089\u6D77\u3078\u8247\u3092\u904B\u3076\u30EC\u30FC\u30EB\u304C\u3042\u3063\u305F\u3002\u5C4B\u6211\u5730\u306E\u9670\u3068\u968A\u306E\u5206\u3051\u65B9\u3068\u3001\u58D5\u306E\u6570\u3068\u67A0\u30681\u96BB\u305A\u3064\u4E0A\u3052\u308B\u3053\u3068\u3001\u6CE2\u3068\u7DE8\u968A\u306E\u6570\uFF08\u30CF\u30FC\u30C9\u306F\u540C\u6642\u306B3\u3064\uFF09\u3001\u7A7A\u8972\u30924\u5206\u306B\u7E2E\u3081\u305F\u3053\u3068\u306F\u4F5C\u308A\uFF08\u53F2\u6599\u306B\u7121\u3044\uFF09\u3002",
+          source: "design (v0.6.11\u3002\u30E6\u30FC\u30B6\u30FC\u306E U5\u300C\u30CF\u30FC\u30C9\u306F\xD73\u3068\u3059\u308B\u300D\u300C\u30CF\u30FC\u30C9\u306E\u7B2C\u56DB\u6CE2\u3067\u3042\u308C\u3070\u56DB\u6A5F\u7DE8\u968A\u304C\uFF13\u3064\u540C\u6642\u306B\u8972\u3063\u3066\u304F\u308B\u300D: \u540C\u6642\u306B\u6765\u308B\u7DE8\u968A\u306E\u6570 2 \u2192 3\uFF083\xD72\u30FB3\xD73\u30FB3\xD73\u30FB4\xD73\u3002\u540C\u6642\u306E\u6700\u5927 12 \u6A5F\uFF09\u3002\u9670\u304C\u898B\u3064\u304B\u308B\u78BA\u7387\u306F\u30CE\u30FC\u30DE\u30EB\u3068\u540C\u3058 0.5\uFF08v0.6.11 S3b\u3002S0\u301CS3 \u306F\u30CE\u30FC\u30DE\u30EB 0.25 \u2192 \u30CF\u30FC\u30C9 0.35\u3002S3b \u306E\u70B9 G1 \u3067\u30CE\u30FC\u30DE\u30EB\u3092 0.5 \u306B\u4E0A\u3052\u305F\u306E\u3067\u30010.35 \u306E\u307E\u307E\u3067\u306F\u30CF\u30FC\u30C9\u306E\u65B9\u304C\u898B\u3064\u304B\u308A\u306B\u304F\u304F\u300C\u30CF\u30FC\u30C9\u306F\u96E3\u3057\u3044\u300D\u3068\u98DF\u3044\u9055\u3046\u30020.5 \u3092 N 400 \xD7 2 \u7D44\uFF08seed 1\u301C400\u30FB1001\u301C1400\uFF09\u3067\u6E2C\u308A\u3001spec-v0611-r2 \xA712.4 \u306E\u30CF\u30FC\u30C9\u306E\u5E2F 5 \u3064\u304C\u3059\u3079\u3066 \u2713\uFF08seq 34.8%\u30FBseq_slow 17.3%\u30FBstay 0.0%\u30FBbot 89.1%\u30020.35 \u3067\u306F seq 42.0%\uFF09\u306A\u306E\u3067 0.5 \u306B\u3057\u305F\uFF09\u3002\u6CE2\u306E\u6570\u30FB\u6A5F\u6570\u30FB\u96A0\u308C\u5834\u6240\u306F\u30CE\u30FC\u30DE\u30EB\u3068\u540C\u3058\u3002\u30CF\u30FC\u30C9\u306E Briefing \u306E\u6587\uFF08v0.6.11 S6\uFF09: objective_ja\u30FBsuccess_ja \u306F\u30CE\u30FC\u30DE\u30EB\u3068\u540C\u3058\uFF083 \u3064\u540C\u6642\u306F\u6575\u306E\u884C\u306E\u300C2\u6A5F\u306E\u7DE8\u968A\u304C3\u3064\u540C\u6642\u300D\u304C data \u304B\u3089\u8A00\u3046\uFF09\u3001note_ja \u306F\u540C\u6642\u306B\u6765\u308B\u7DE8\u968A\u306E\u6570\u3082\u4F5C\u308A\u3068\u66F8\u304F\uFF08\u53F2\u6599\u306B\u7121\u3044\uFF09)"
+        }
+      }
+    },
+    {
+      id: "jp_04",
+      campaign: "jp_hard",
+      order: 4,
+      playable_from: "v0.6.9",
+      title_ja: "\u591A\u53F7\u4F5C\u6226\u30FB\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u3078",
+      date: "1944-12-11",
+      place: "\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\uFF08\u30EC\u30A4\u30C6\u5CF6\u897F\u5CB8\uFF09",
+      type: "escort_convoy",
+      player_boat: "jp_t38",
+      torpedo_type: "jp_45cm",
+      objective: "\u63DA\u9678\u4E2D\u306E\u8F38\u9001\u8239\u3092\u7C73PT\u306E\u96F7\u6483\u304B\u3089\u5B88\u308B\u3002\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044PT\u306F900\xA0m\u3067\u9B5A\u96F7\u3092\u6483\u3064\u3002\u901F\u304F\u8D70\u308B\u304B\u6483\u3066\u3070PT\u306F\u81EA\u8247\u3078\u6765\u308B\uFF08\u8FD1\u3044PT\u306F\u614C\u3066\u3066\u6483\u3064\uFF09\u3002\u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3048\u3002\u751F\u304D\u3066\u5E30\u308C",
+      allies: [
+        "ijn_transport",
+        "ijn_destroyer_mutsuki"
+      ],
+      enemies: [
+        "us_pt_enemy",
+        "us_pt_enemy",
+        "us_pt_enemy"
+      ],
+      hazards: [
+        "enemy_aircraft",
+        "friendly_fire"
+      ],
+      moon: "dark",
+      moon_label_ja: "\u6708\u6CA1\u5F8C",
+      duration_min: 6,
+      success: "\u8F38\u9001\u8239\u306E\u63DA\u9678\u5B8C\u4E86\u3092\u898B\u5C4A\u3051\u3066\u5E30\u6295",
+      historical_note: "\u7B2C\u4E5D\u6B21\u591A\u53F7\u4F5C\u6226\uFF081944-12-09 \u30DE\u30CB\u30E9\u767A\uFF09\u300211\u65E5\u306E\u663C\u306E\u7A7A\u8972\u3067\u8F38\u9001\u82392\u96BB\u3092\u5931\u3044\u300117:50\u306B\u5206\u96E2: \u5915\u6708\u30FB\u6850\u30FB\u7B2C140\u53F7\u30FB\u7B2C159\u53F7\u8F38\u9001\u8266\u306F\u30AA\u30EB\u30E2\u30C3\u30AF\u3078\uFF0822:00\u5165\u6CCA\u30FB\u7279\u4E8C\u5F0F\u5185\u706B\u824710\u4E21\u3092\u767A\u9032\u30578\u4E21\u304C\u6D5C\u306B\u7740\u3044\u305F\u3002\u7B2C159\u53F7\u306F\u9678\u306E\u7C73\u8ECD\u306E\u7832\u3068\u99C6\u9010\u8266Coghlan\u306B\u6483\u305F\u308C\u3066\u5931\u308F\u308C\u305F\uFF09\u3001\u536F\u6708\u3068\u99C6\u6F5C\u82472\u96BB\u306F\u7A7A\u77E5\u4E38\u3092\u30D1\u30ED\u30F3\u30DD\u30F3\u3078\u300212\u65E51\u6642\u3054\u308D\u3001\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\uFF0811\xB003'N 124\xB023'E\u3002\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u5185\u3067\u306F\u306A\u3044\uFF09\u3067\u6B62\u307E\u3063\u3066\u3044\u305F\u536F\u6708\u304CPT-490\u30FBPT-492\u306E\u9B5A\u96F76\u672C\uFF08\u7D041,000 yd\uFF09\u306E\u3046\u30612\u672C\u4EE5\u4E0A\u3092\u53D7\u3051\u3066\u6C88\u3093\u3060\uFF08medium\u301Chigh\uFF09\u3002\u5915\u6708\u306F12\u65E515:10\u306E\u7A7A\u8972\u3067\u6C88\u3093\u3060\uFF08\u591C\u3067\u306F\u306A\u3044\uFF09\u3002\u65E5\u672C\u306E\u9B5A\u96F7\u8247\u304C\u30EC\u30A4\u30C6\u3067\u6226\u3063\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08medium\u30FB\u4E0D\u5728\uFF09\u3002\u540C\u591C\u306E\u5473\u65B9\u6483\u3061\u30FB\u7C73\u306E\u591C\u9593\u6A5F\u306E\u653B\u6483\u3082\u898B\u3064\u304B\u3089\u306A\u3044\uFF08medium\u30FB\u4E0D\u5728\uFF09\u3002\u6708\u306F11\u65E514:11\uFF08\u73FE\u5730\uFF09\u306B\u6C88\u307F12\u65E502:45\u306B\u6607\u3063\u305F\uFF1D\u6226\u3044\u306E\u9593\u306F\u6708\u306A\u3057\uFF08\u8A08\u7B972\u901A\u308A\u30FBhigh\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD",
+      source_url: "https://en.wikipedia.org/wiki/Battle_of_Ormoc_Bay",
+      briefing_note_ja: "1944\u5E7412\u670812\u65E51\u6642\u3054\u308D\u3001\u8F38\u9001\u8239\u7A7A\u77E5\u4E38\u3092\u5C0E\u3044\u305F\u99C6\u9010\u8266\u536F\u6708\u306F\u3001\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u3066\u3044\u305F\u3068\u3053\u308D\u3092\u6697\u3044\u5CB8\u3092\u80CC\u306B\u5FCD\u3073\u5BC4\u3063\u305F\u7C73PT\xA02\u96BB\u306B\u7D04900\xA0m\u304B\u3089\u9B5A\u96F76\u672C\u3092\u6483\u305F\u308C\u30012\u672C\u4EE5\u4E0A\u3092\u53D7\u3051\u3066\u6C88\u3093\u3060\u3002\u536F\u6708\u304C\u6483\u3061\u8FD4\u3057\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF09\u3002\u65E5\u672C\u306E\u9B5A\u96F7\u8247\u304C\u30EC\u30A4\u30C6\u306B\u3044\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u305A\u3001\u8247\u306FT-38\u3067\u4EE3\u7528\u3002",
+      dawn_air: {
+        control: "contested",
+        confidence: "medium",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "none",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u6575\uFF08\u30BF\u30AF\u30ED\u30D0\u30F3\u306E\u30B3\u30EB\u30BB\u30A2\uFF09",
+        refs: [
+          {
+            url: "https://ja.wikipedia.org/wiki/%E5%8D%AF%E6%9C%88_(%E7%9D%A6%E6%9C%88%E5%9E%8B%E9%A7%86%E9%80%90%E8%89%A6)",
+            claim: "\u99C6\u9010\u8266\u536F\u6708\u306F\u591A\u53F7\u4F5C\u6226\u306E\u8F38\u9001\u306E\u8B77\u885B\u4E2D\u30011944-12 \u306B\u7C73 PT \u306B\u6483\u6C88\u3055\u308C\u305F\uFF082026-10-18 \u306E\u629C\u7C8B\u306F\u5834\u6240\u3092\u300C\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u300D\u3068\u3057\u305F\u3002\u6C88\u3093\u3060\u6240\u306F\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\uFF1D\u516C\u5F0F\u5E74\u8868\u306E 11\xB003'N 124\xB023'E\u3002historical_note\u30FBdocs/01 \xA78\uFF09"
+          },
+          {
+            url: "https://trafficnews.jp/post/117332",
+            claim: "\u591A\u53F7\u4F5C\u6226\uFF08\u30EC\u30A4\u30C6\u5CF6\u3078\u306E\u8F38\u9001\uFF09\u306E\u8239\u56E3\u306F\u7C73\u306E\u9678\u4E0A\u6A5F\u306E\u7A7A\u8972\u3092\u53D7\u3051\u3001\u663C\u306E\u8F38\u9001\u30FB\u63DA\u9678\u306F\u5371\u3046\u304B\u3063\u305F"
+          },
+          {
+            url: "https://pacificwrecks.com/date/1944/12/11.html",
+            claim: "1944-12-11 \u30BF\u30AF\u30ED\u30D0\u30F3\u306E\u6D77\u5175\u968A\u306E\u30B3\u30EB\u30BB\u30A2\u7D0440\u6A5F\u304C\u30EC\u30A4\u30C6\u897F\u65B9\u306E\u7B2C\u4E5D\u6B21\u591A\u53F7\u4F5C\u6226\u306E\u8239\u56E3\u30922\u5EA6\u653B\u6483\u3057\u3001\u8F38\u9001\u82392\u96BB\u3092\u6C88\u3081\u305F"
+          },
+          {
+            url: "https://en.wikipedia.org/wiki/VMF-541",
+            claim: "VMF(N)-541 \u306E\u591C\u9593\u6226\u95D8\u6A5F\u304C1944-12-03 \u304B\u3089\u30BF\u30AF\u30ED\u30D0\u30F3\u306B\u3044\u3066\u300112\u65E5\u671D\u306B\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u3078\u5411\u304B\u3046\u65E5\u672C\u6A5F33\u6A5F\u3092\u8FCE\u3048\u6483\u3063\u305F"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u82F1\u8A9E\u306E\u8ABF\u67FB\u306F contested\uFF08\u6575\u5BC4\u308A\uFF09\u3001\u65E5\u672C\u8A9E\u306E\u8ABF\u67FB\u306F enemy\u30FBhigh) / design (v0.6.1\u3002play_as\u30FBlabel_ja\u3002\u904A\u3079\u308B\u4E16\u754C\u306F\u307E\u3060\u7121\u3044) / design (v0.6.9\u3002enemy_ships_at_dawn retire \u2192 none\uFF08\u30B2\u30FC\u30E0\u306E\u898F\u5247\u306E\u90FD\u5408\u3067\u53F2\u5B9F\u306E\u5024\u3067\u306F\u306A\u3044: \u7C73PT \u306F core/pt-boats \u306E\u591C\u660E\u3051\u306E\u30E9\u30C3\u30C1\u3067\u5317\u3078\u53BB\u308B\uFF1Djp_01\u30FBjp_05 \u3068\u540C\u3058\u3002retire \u306F\u99C6\u9010\u8266\uFF08enemy_start\uFF09\u306E\u898F\u5247\u3067\u3001\u7121\u3044\u4EFB\u52D9\u306B\u306F\u7F6E\u3051\u306A\u3044: config/dawn-data \u306E checkWithdraw\u30FBconfig/pt-mission-data\uFF09\u3002\u663C\u306E\u7C73\u6A5F\u306E\u653B\u6483\u306F\u5B9F\u969B\u306F12\u65E515:10\uFF08\u591C\u660E\u3051\u3067\u306F\u306A\u3044\uFF09\u3002\u591C\u660E\u3051\u306E4\u6A5F\u306F\u5168\u4EFB\u52D9\u5171\u901A\u306E\u898F\u5247\uFF08CLAUDE.md \xA72\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "us_pt_enemy",
+          "us_pt_enemy"
+        ],
+        enemy_behavior: "ai (v0.6.9\u3002v0.6.3 \u306E\u7C73PT \u306E\u968A\u3092 jp_05 \u3068\u540C\u3058\u5F62\uFF08\u6A19\u7684\u30B9\u30ED\u30C3\u30C8\u306A\u3057\uFF1D\u6383\u5C04\u306F\u81EA\u8247\u3060\u3051\uFF09\u3067\u3002\u54E8\u6212\u306E\u7DDA\u306E\u7D42\u308F\u308A\u306F\u8F38\u9001\u8239\u3078\u5411\u304B\u3046\uFF08\u30EC\u30FC\u30C0\u30FC\u3067\u898B\u3064\u3051\u3066\u5BC4\u308B\u62BD\u8C61\uFF09\u3002\u968A\u304C\u81EA\u8247\u3092\u6349\u3048\u3066\u3044\u306A\u3044\u9593\u3001\u54E8\u6212\u4E2D\u306E PT \u306F\u8F38\u9001\u8239\u304B\u3089 us_pt_enemy.torpedo_attack.launch_range_m \u306E\u5185\u3067\u8247\u9996\u304C launch_heading_tol_deg \u4EE5\u5185\u306A\u3089 1 \u56DE\u3060\u3051\u9B5A\u96F7 3 \u672C\u3092\u6483\u3064\uFF08\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\uFF09\u3002\u968A\u304C\u81EA\u8247\uFF08\u304B 25mm \u306E\u9583\u5149\uFF09\u3092\u6349\u3048\u305F\u30B9\u30C6\u30C3\u30D7\u306B\u306F\u3001\u54E8\u6212\u4E2D\u3067\u9B5A\u96F7\u304C\u6B8B\u308A\u3001\u8F38\u9001\u8239\u304B\u3089 hurried_max_m \u306E\u5185\u3067\u8247\u9996\u304C launch_heading_tol_deg \u4EE5\u5185\u306E PT \u304C\u307F\u306A\uFF08\u898B\u3064\u3051\u305F PT \u3060\u3051\u3067\u306A\u304F\uFF09\u614C\u3066\u3066\u6483\u3064\uFF08\u614C\u3066\u305F\u6589\u5C04\u3002\u65E9\u304F\u5F15\u304D\u3064\u3051\u308C\u3070\u6483\u305F\u305B\u305A\u3001\u9045\u308C\u308B\u3068\u614C\u3066\u3066\u6483\u305F\u308C\u308B\uFF09\u3002\u968A\u304C\u81EA\u8247\u3092\u6349\u3048\u308C\u3070\u6B8B\u308A\u306E PT \u306F\u81EA\u8247\u3092\u6483\u3061\u306B\u6765\u308B\uFF08core/pt-boats \u306E\u307E\u307E\uFF09\u3002\u81EA\u8247\u3068\u6226\u3063\u3066\u3044\u308B PT\uFF08\u8B66\u6212\u30FB\u7A81\u6483\u30FB\u8FFD\u6483\u30FB\u96E2\u8131\uFF09\u3082\u3001\u63DA\u9678\u4E2D\u306E\u8F38\u9001\u8239\u304B\u3089 launch_range_m \u306E\u5185\u3067\u8247\u9996\u304C launch_heading_tol_deg \u4EE5\u5185\u306A\u3089\u72D9\u3044\u306E\u8AA4\u5DEE\u3092 engaged_error_factor \u500D\u306B\u3057\u3066\u6483\u3064\uFF08\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u3002spec R12: \u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3048\u3002\u898B\u5931\u3044\u306E reacquire_s \u306F\u639B\u3051\u306A\u3044\uFF09\u30023 \u7A2E\u985E\u3068\u3082\u6483\u3063\u3066\u3082\u53BB\u3089\u305A\u306B\u81EA\u8247\u3068\u6226\u3044\u7D9A\u3051\u308B\uFF08v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E\u30E6\u30FC\u30B6\u30FC\u300C\u5F53\u521D\u306E\u8A2D\u8A08\u3069\u304A\u308A\u3001PT\u304C\u767A\u5C04\u5F8C\u3082\u53BB\u3089\u305A\u306B\u9283\u6483\u3057\u3066\u304F\u308B\u8A2D\u8A08\u306B\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u300D\u2192\u300CA: \u536F\u6708\u306F\u6B8B\u3057\u3001PT \u3092\u6483\u3063\u305F\u5F8C\u3082\u53BB\u3089\u306A\u3044\u5F62\u306B\u623B\u3059\u300D\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\u301Cv0.6.10 S8 \u306F\u6483\u3063\u305F\u3089\u53BB\u3063\u305F\uFF1D\u30E6\u30FC\u30B6\u30FC\u306E\u9078\u629E A\u300C\u5F15\u304D\u3064\u3051\u3066\u96E2\u3059\u300D\uFF09\u3002\u898B\u5931\u3063\u3066\u54E8\u6212\u306B\u623B\u3063\u305F PT \u306F reacquire_s \u306E\u9593\u306F\u6483\u305F\u306A\u3044\u3002core/pt-torpedo\u30FBseed+26)",
+        main_weapon: "guns",
+        main_weapon_source: "design (v0.6.9\u3002jp_01 \u3068\u540C\u3058 T-38 \u306E 25mm \u5358\u88C5\uFF08boats.json \u306E jp_t38.gun_battery\uFF09\u300245cm \u9B5A\u96F7 2 \u672C\u3082\u3044\u3064\u3067\u3082\u6483\u3066\u308B\u304C PT \u306E\u4E0B\u3092\u629C\u3051\u308B\uFF08us_pt_enemy.torpedo_immune\u3002\u5473\u65B9\u306E\u8F38\u9001\u8239\u306B\u3082\u5F53\u305F\u3089\u306A\u3044\uFF1Dsystems/torpedo-free\uFF09)",
+        duration_s: 160,
+        duration_s_source: "design (v0.6.10 S0b: 200 \u2192 160 \u79D2\u3002v0.6.10 \u5B9F\u6A5F 2 \u56DE\u76EE\u306B\u63DA\u9678 140 \u2192 110 \u79D2\uFF08\u30E6\u30FC\u30B6\u30FC\u300C\u63DA\u9678\u5B8C\u4E86\u307E\u3067\u306E\u6642\u9593\u309230\u79D2\u77ED\u304F\u3057\u3066\u304A\u3044\u3066\u304F\u3060\u3055\u3044\u300D\uFF09\u3067\u3001\u63DA\u9678\u304C\u7D42\u308F\u3063\u3066 50 \u79D2\u3067\u591C\u660E\u3051\uFF08160 \u79D2\u306F\u305D\u306E\u307E\u307E\u3002V6 \u306F 110 + 20 \u2264 160\uFF09\u3002v0.6.9 \u5B9F\u6A5F 2 \u56DE\u76EE\u306E\u30E6\u30FC\u30B6\u30FC\u300C\u591C\u660E\u3051\u307E\u3067\u306E\u6642\u9593\u309240\u79D2\u77ED\u304F\u3057\u3066\u304F\u3060\u3055\u3044\u300D\u2192 \u5BFE\u8C61\u3092\u78BA\u304B\u3081\u3066\u300CA: jp_04 \u306E\u591C\u660E\u3051\u3060\u3051 160 \u79D2\u3067\u304A\u9858\u3044\u3057\u307E\u3059\u300D\uFF08\u63DA\u9678 140 \u79D2\u306F\u305D\u306E\u307E\u307E\u3002\u63DA\u9678\u304C\u7D42\u308F\u3063\u3066 20 \u79D2\u3067\u591C\u660E\u3051\u306B\u306A\u308A\u3001\u307B\u3068\u3093\u3069\u306E\u591C\u306F\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u4E2D\u3092\u5E30\u308B\uFF1D\u9078\u3076\u524D\u306B\u4F1D\u3048\u305F: \u6A21\u64EC N 400\u30FBseed 1\u301C400 \u3067\u63DA\u9678\u3092\u898B\u5C4A\u3051\u3066\u591C\u660E\u3051\u306E\u524D\u306B\u5E30\u308C\u308B\u591C\u306F\u624B\u672C 87.3 \u2192 15.8%\u30FB\u4EBA\u306B\u8FD1\u3044 61.3 \u2192 14.0%\u30FBPT \u3078\u5272\u3063\u3066\u5165\u308B 0%\u3001\u30CF\u30FC\u30C9\u306E\u624B\u672C 72.0 \u2192 14.2%\u3002\u6A21\u64EC\u306F\u7A7A\u8972\u3092\u6301\u305F\u306A\u3044\u306E\u3067\u3001\u591C\u660E\u3051\u306E\u5F8C\u306E\u5E30\u6295\u3082\u6570\u3048\u308B\u9054\u6210 % \u306F\u5909\u308F\u3089\u306A\u3044\uFF08\u30CF\u30FC\u30C9\u306E\u624B\u672C\u306F 73.8 / 75.3%\uFF1D\u5E2F 45\u301C78\uFF09\uFF09\u3002V6 \u306E\u4F59\u88D5\u306F 30 \u2192 20 \u79D2\uFF08config/landing-config \u306E LANDING_DAWN_MARGIN_S\u3002\u63DA\u9678\u4E2D\u306B\u6483\u305F\u308C\u305F\u9B5A\u96F7\u306F\u6700\u9577\u3067\u3082 16 \u79D2\u5F31\u3067\u6C7A\u7740\u3059\u308B\u306E\u3067\u591C\u660E\u3051\u306E\u524D\u306B\u6C7A\u7740\u3059\u308B\uFF09\u3002v0.6.10 S4\uFF08\u536F\u6708\u306E\u8F03\u6B63\uFF09: \u591C\u660E\u3051\u8FD1\u3057\u306E\u5E30\u6295\u306E\u8F2A\u306E\u547C\u3073\u304B\u3051\uFF08ally_destroyer.ring_call_before_dawn\uFF09\u3092\u805E\u3051\u3070\u63DA\u9678\u3092\u8F2A\u3067\u5F85\u3063\u3066\u591C\u660E\u3051\u306E\u524D\u306B\u7D42\u308F\u308C\u308B\uFF1Dlure \u306E\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 100 / 99.8%\uFF08S0b \u3067\u5916\u3057\u305F\u5E2F \u2265 85 \u3092\u623B\u3057\u305F\u3002\u536F\u6708\u3092\u5207\u3063\u305F\u591C\u306F 27.5 / 27.5%\uFF09\u30FBhuman 99.8 / 100%\u30FB\u30CF\u30FC\u30C9\u306E lure 89.3 / 89.5%\u30FBhuman 75.0 / 73.0%\u3002\u6A21\u64EC\u306F\u591C\u660E\u3051\u306E\u5F8C\u306E\u7A7A\u8972\u3092\u6301\u305F\u306A\u3044\u306E\u3067\u3001\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295\u3092\u6B63\u76F4\u306A\u7269\u5DEE\u3057\u306B\u3059\u308B\u3002160 \u79D2\u306F\u305D\u306E\u307E\u307E\uFF08200 \u79D2\u306E\u78BA\u304B\u3081\u3067\u3082\u536F\u6708\u306E\u5E2F\u306F\u5168\u90E8\u901A\u308B\uFF09\u3002\u4EE5\u4E0B\u306F v0.6.9 \u306E 200 \u79D2\u306E\u7406\u7531) / design (v0.6.9\u3002\u63DA\u9678 landing.unload_s 140 \u79D2\uFF0B\u6CCA\u5730\u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067\u5DE1\u822A 26 \u79D2\uFF0B\u4F59\u88D5\u3002tests/dawn-clock: \u51FA\u767A\u304B\u3089\u8F2A\u306E\u7E01 358 m\uFF1D\u5DE1\u822A 7.0 \u79D2 \xD7 call_margin 1.6 = 11 < 150\u3002S4 \u306E\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\uFF09\u3067\u52D5\u304B\u3055\u306A\u304B\u3063\u305F: \u3069\u306E\u904A\u3073\u65B9\u3082\u591C\u660E\u3051\u306E\u524D\u306B\u63DA\u9678\u304C\u6C7A\u7740\u3057\uFF08I6\uFF09\u3001lure \u306E\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 97.3 / 96.3%\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u6483\u3063\u305F PT \u306F\u53BB\u308B\uFF09\u306E\u5F8C\u3082\u8F03\u6B63\u306E 12 \u306E\u904A\u3073\u65B9\u3067 I6 \u306F\u901A\u308A\uFF08\u30CE\u30FC\u30DE\u30EB\u30FB\u30CF\u30FC\u30C9\uFF09\u3001lure \u306E\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 99.0 / 98.5%)",
+        fuel_allotment_gal: 19,
+        fuel_allotment_gal_source: "design (v0.6.9\u3002jp_01 \u3068\u540C\u3058\u3002\u4E0A\u9650\u306F tests/dawn-air\u300E\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 1,500 \u79D2\u672A\u6E80\u3067\u6F02\u6D41\u300F: 19 / 9.4118 \xD7 720 = 1,453 \u79D2\u3002\u5168\u901F 0.28\u30FB\u5DE1\u822A 0.13 gal/\u79D2\uFF1D\u5168\u901F \u7D04 68 \u79D2\u30FB\u5DE1\u822A \u7D04 146 \u79D2\uFF1D\u5F15\u304D\u3064\u3051\u7D9A\u3051\u308B\u3068\u8DB3\u308A\u306A\u3044\uFF08S4 \u306E kite \u306E\u5E2F\u3002N 400 \xD7 2 \u7D44: kite \u306E\u6F02\u6D41 87.5 / 83.0%\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 + \u6F02\u6D41\u306F lure \u3088\u308A \uFF0B92.1 \u70B9\uFF08\u5E2F \u2265 5\uFF09\u30FB\u9054\u6210 3.3 / 3.5%\uFF08lure + 5 \u4EE5\u4E0B\uFF09\u3001lure \u306E\u6C7A\u7740\u306E\u524D\u306E\u71C3\u6599\u5C11 0 / 0%\uFF09\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u6483\u3063\u305F PT \u306F\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u3067\u3082\u53BB\u308B\uFF09\u306E\u5F8C: kite \u306E\u6F02\u6D41 28.3 / 27.5%\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 + \u6F02\u6D41\u306F lure \u3088\u308A \uFF0B31.4 \u70B9\uFF08\u5E2F \u2265 5\uFF09\u30FB\u9054\u6210 43.8 / 42.5%\uFF08lure + 5 \u4EE5\u4E0B\uFF09\uFF1D\u5F15\u304D\u3064\u3051\u308B\u76F8\u624B\u304C\u53BB\u3063\u3066\u65E9\u304F\u5E30\u308C\u308B\u591C\u304C\u5897\u3048\u305F\u304C\u3001\u5F15\u304D\u3064\u3051\u7D9A\u3051\u308B\u3068\u307E\u3060\u8DB3\u308A\u306A\u3044)",
+        shallows: [],
+        bounds_m: {
+          width: 6e3,
+          height: 3e3,
+          source: "design (v0.6.9\u3002jp_01 \u3068\u540C\u3058\u5E83\u3055\u3002\u5357\u306E\u7E01\u304C\u5CB8\uFF08\u30D1\u30ED\u30F3\u30DD\u30F3\u306E\u6D5C\u306F\u672C\u5F53\u306F\u897F\u5411\u304D\uFF1D\u6A21\u5F0F\u56F3\u3002\u5CB8\u306F south \u3060\u3051\uFF1Dv0.4.2 \u306E\u898F\u5247\uFF09)"
+        },
+        player_start: {
+          x_m: 2e3,
+          y_m: 2800,
+          heading_deg: 90,
+          source: "design (v0.6.9\u3002spec R1\uFF08\u5F15\u304D\u3064\u3051\u306B\u306F\u822A\u8D70\u304C\u8981\u308B\uFF09: \u8F38\u9001\u8239\u306E\u897F 1,001 m\u30FB\u6D5C\u306E\u7DDA\uFF08y 2,988\uFF09\u306E 188 m \u6C96\u30FB\u6771\u5411\u304D\uFF08\u8F38\u9001\u8239\u306E\u65B9\uFF09\u30FB\u505C\u6B62\u3002\u5E30\u6295\u306E\u8F2A\u306E\u7E01\u307E\u3067 358 m\u3002\u7C73PT \u306E\u7DDA\u306E\u3046\u3061\u6CCA\u5730\u304B\u3089 hurried_max_m\uFF081,300 m\uFF09\u3088\u308A\u9060\u3044\u90E8\u5206\uFF08\u4ECA\u591C\u306E\u63FA\u3089\u304E\u30FB\u7AEF\u306E\u62BC\u3057\u623B\u3057\u30FB\u30CF\u30FC\u30C9\u306E\u7DDA\u8FBC\u307F\uFF09\u307E\u3067\u6700\u77ED 1,754 m \uFF1E \u53F2\u5B9F\u30E2\u30FC\u30C9\u306E\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B 1,560 m\uFF08\u30CE\u30FC\u30DE\u30EB 1,200 m\uFF09\uFF1D\u51FA\u767A\u70B9\u306E\u305D\u3070\u3092\u5DE1\u822A\u3057\u3066\u3082\u3001\u614C\u3066\u308B\u8DDD\u96E2\u306E\u5916\u306E PT \u306F\u5F15\u304D\u3064\u3051\u3089\u308C\u306A\u3044\uFF08config/landing-mission-data \u306E V13\uFF09\u3002hurried_max_m \u3092 1,100 m \u307E\u3067\u4E0B\u3052\u3066\u3082 1,590 m \u3067\u901A\u308B\u3002\u524D\u306E (2700, 2450)\uFF08\u8F38\u9001\u8239\u306E\u5317\u897F 431 m\uFF09\u3067\u306F\u3001\u51FA\u767A\u70B9\u306E\u305D\u3070\u3092\u5DE1\u822A\u3059\u308B\u3060\u3051\u3067\u5317\u306E PT \u3092\u6CCA\u5730\u304B\u3089 1,423\u301C1,429 m\uFF08\u614C\u3066\u308B\u8DDD\u96E2\u306E\u5916\uFF09\u3067\u5F15\u304D\u3064\u3051\u3089\u308C\u3001\u968A\u3054\u3068\u53BB\u3089\u305B\u308B\u300E\u305F\u3060\u306E\u56EE\u300F\u306B\u306A\u3063\u305F\uFF08spec \u306E\u5BE9\u67FB F1\uFF09\u3002\u7C73PT \u306E\u51FA\u767A\u70B9\uFF08\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u307E\u3067\u6700\u77ED 2,313 m \u2265 \u53F2\u5B9F\u30E2\u30FC\u30C9\u306E\u5DE1\u822A 1,560 m\uFF08config/pt-mission-data \u306E\u691C\u67FB\uFF09\u3002\u8F38\u9001\u8239\u306F\u51FA\u767A\u6642\u306B\u753B\u9762\u306E\u5916\u306B\u306A\u308A\u3046\u308B\uFF08\u300C\u8F38\u9001 N m\u300D\u306E\u77E2\u5370\u3067\u793A\u3059\uFF09)"
+        },
+        return_point: {
+          x_m: 1400,
+          y_m: 2700,
+          radius_m: 250,
+          call_margin: 1.6,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\uFF08jp_04 \u306E\u81EA\u8247\u306E\u9B5A\u96F7\u306F\u72D9\u3046\u8266\u304C\u7121\u3044\u306E\u3067\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\u3057\u3001\u5F85\u305F\u306A\u3044\u3002\u7C73PT \u306E\u9B5A\u96F7\u306F\u5F85\u305F\u306A\u3044\u3002v0.6.9\uFF09",
+          source: "design (v0.6.9\u3002\u897F\u306E\u6E7E\u53E3\u3002\u6CCA\u5730\u304B\u3089 1,601 m\uFF08landing \u306E\u691C\u67FB \u2265 800 m\uFF09\u3001\u7C73PT \u306E\u7DDA\uFF08\u5317\u30FB\u6771\uFF09\u306E\u53CD\u5BFE\u306E\u5074\u3002\u51FA\u767A\u70B9\u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067 358 m\uFF08\u5DE1\u822A 7.0 \u79D2\uFF09\u3002\u63DA\u9678\u306E\u6C7A\u7740\u306E\u524D\u306B\u8F2A\u306B\u5165\u3063\u3066\u3082\u4EFB\u52D9\u306F\u7D42\u308F\u3089\u305A\u3001\u8F2A\u306E\u4E2D\u3067\u63DA\u9678\u3092\u898B\u5C4A\u3051\u3089\u308C\u308B\uFF08R14 A5\u3002\u6C7A\u7740\u3057\u305F\u3089\u5E30\u6295\u3067\u7D42\u308F\u308B\u3002jp_01 \u3068\u306F\u9055\u3046\uFF09\u3002call_margin 1.6 \u306F jp_01\u30FBjp_06 \u3068\u540C\u3058\uFF08T-38 \u306E\u5168\u901F/\u5DE1\u822A\u306E\u8DDD\u96E2\u3042\u305F\u308A\u6D88\u8CBB\u6BD4 1.545 \u3092\u4E0A\u56DE\u308B\uFF09)"
+        },
+        pt_boats: {
+          legs_m: [
+            [
+              3300,
+              250,
+              3060,
+              2150
+            ],
+            [
+              5600,
+              2790,
+              3700,
+              2790
+            ]
+          ],
+          start_along_m: 250,
+          leave_heading_deg: 0,
+          source: "historical (2 \u96BB\uFF1DPT-490\u30FBPT-492\uFF08high\uFF09\u3002\u30EC\u30FC\u30C0\u30FC\u3067\u898B\u3064\u3051\u3001\u6697\u3044\u30EC\u30A4\u30C6\u306E\u5CB8\u3092\u80CC\u306B\u5FCD\u3073\u5BC4\u3063\u305F\uFF08medium\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.9\u3002\u5317\u306E\u6E7E\u53E3\u304B\u3089\u306E\u7DDA\u3068\u3001\u6D5C\u306E\u7DDA\u306E 190\u301C300 m \u6C96\u3092\u6771\u304B\u3089\u5CB8\u6CBF\u3044\u306B\u6765\u308B\u7DDA\uFF08\u53F2\u5B9F\u306E\u300C\u5CB8\u3092\u80CC\u306B\u300D\u306E\u30B2\u30FC\u30E0\u3067\u306E\u5F53\u3066\u306F\u3081\uFF09\u3002\u7DDA\u306E\u7D42\u308F\u308A\u306F\u6CCA\u5730\u304B\u3089 514\u301C703 m\uFF08launch_range_m \u2212 arrive_m \u2212 50 = 750 m \u306E\u5185\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u3001\u7DDA\u306E\u7D42\u308F\u308A\u3067\u306E\u8247\u9996\u3068\u6CCA\u5730\u3078\u306E\u65B9\u4F4D\u306E\u5DEE\u306F 2.0\xB0\u30FB5.7\xB0\uFF08900 m \u3092\u8D8A\u3048\u308B\u3068\u304D\u306F 1.5\xB0\u30FB4.5\xB0\u3002V9 \u306F launch_heading_tol_deg / 2 \u4EE5\u4E0B\uFF09\u3002\u6CCA\u5730\u306E\u8247\u9996 135\xB0 \u306B\u5BFE\u3057\u3066\u5317\u306E PT \u306F 49\xB0\u30FB\u6771\u306E PT \u306F 47\xB0 \u306E\u89D2\u5EA6\u304B\u3089\u5DE6\u8237\u3078\u6483\u3064\uFF08\u536F\u6708\u306E\u88AB\u96F7\u306F\u5DE6\u8237\u3002medium\uFF09\u30028 kt \u3067\u898B\u5F35\u308A\u306E\u5831\u544A\u307E\u3067 6\u301C39 \u79D2\u3001900 m \u307E\u3067 50\u301C83 \u79D2\uFF08scratchpad v069/spec/geom-final.out\uFF09\u3002\u53BB\u308B\u306E\u306F\u5317\uFF08\u30AB\u30E2\u30C6\u30B9\u6D77\uFF09)"
+        },
+        landing: {
+          ship_id: "ijn_transport",
+          label_ja: "\u8F38\u9001\u8239",
+          anchor: {
+            x_m: 3e3,
+            y_m: 2760,
+            heading_deg: 135
+          },
+          unload_s: 110,
+          torpedo_hits_to_sink: 2,
+          lookout_m: 1800,
+          mark_label_ja: "\u63DA\u9678\u5730\u70B9",
+          source: "historical (\u505C\u8239\u3057\u3066\u63DA\u9678: \u7A7A\u77E5\u4E38\u306F12\u65E5\u306B\u30D1\u30ED\u30F3\u30DD\u30F3\u3067\u63DA\u9678\uFF08medium\uFF09\u3001\u536F\u6708\u306F\u6B62\u307E\u3063\u3066\u3044\u3066\u88AB\u96F7\uFF08medium\uFF09\u3002\u63DA\u9678\u306B\u304B\u304B\u3063\u305F\u6642\u9593\u306E\u8A18\u9332\u306F\u7121\u3044\uFF08\u30AA\u30EB\u30E2\u30C3\u30AF\u306E\u8F38\u9001\u8266\u306F 22:00 \u306E\u5165\u6CCA\u304B\u3089 2 \u6642\u9593\u8DB3\u3089\u305A\u3067\u6E7E\u3092\u51FA\u305F\uFF1D\u63DA\u9678\u306F 1 \u6642\u9593\u8DB3\u3089\u305A\u3068\u63A8\u5B9A\u3002low\uFF09) / design (v0.6.9\u3002\u7A7A\u77E5\u4E38\uFF084,107 t\uFF09\u3092 ijn_transport\uFF085,000t\u7D1A\u30FB120 \xD7 16 m\uFF09\u3067\u4EE3\u7528\u3002\u8247\u9996 135\xB0\uFF08\u6D5C\u3078\u659C\u3081\uFF09\u306F\u5317\u3068\u6771\u306E PT \u304C\u540C\u3058\u304F\u3089\u3044\u306E\u89D2\u5EA6\u3067\u6483\u3064\u305F\u3081\u3002v0.6.10 \u5B9F\u6A5F 2 \u56DE\u76EE: unload_s 140 \u2192 110\uFF08\u30E6\u30FC\u30B6\u30FC\u300C\u5185\u5BB9\u81EA\u4F53\u306FOK\u3067\u3059\u3002\u63DA\u9678\u5B8C\u4E86\u307E\u3067\u306E\u6642\u9593\u309230\u79D2\u77ED\u304F\u3057\u3066\u304A\u3044\u3066\u304F\u3060\u3055\u3044\u300D\u3002\u591C\u660E\u3051 160 \u79D2\u30FB\u536F\u6708\u30FB\u7C73PT \u306E\u898F\u5247\u306F\u305D\u306E\u307E\u307E\u3002\u63DA\u9678\u304C\u7D42\u308F\u3063\u3066 50 \u79D2\u3067\u591C\u660E\u3051\uFF1D\u5E30\u6295\u306E\u8F2A\u306E\u547C\u3073\u304B\u3051\u306F\u307E\u308C\uFF08\u6A21\u64EC N 400 \xD7 2 \u7D44\u306E lure 94.5 / 93.3 \u2192 6.0 / 7.3% \u306E\u591C\uFF09\u3002\u6A21\u64EC\u306E\u9054\u6210\u306F\u30CE\u30FC\u30DE\u30EB lure 94.3 / 92.8%\u30FBhuman 71.0 / 69.0%\u30FB\u30CF\u30FC\u30C9 lure 86.0 / 80.0%\u30FBhuman 45.3 / 42.3%\u3001\u536F\u6708\u3092\u5207\u3063\u305F\u30CE\u30FC\u30DE\u30EB lure \u306E\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 34.3 / 37.8 \u2192 92.0 / 93.0%\uFF08CHANGELOG v0.6.10 \u5B9F\u6A5F 2 \u56DE\u76EE\uFF09\u3002\u4EE5\u4E0B\u306F 140 \u79D2\u306E\u3068\u304D\u306E\u7406\u7531\uFF09\u3002unload_s 140 \u306F\u6642\u9593\u5727\u7E2E\uFF08S4 \u306E\u6A21\u64EC N 400 \xD7 2 \u7D44\u3067\u52D5\u304B\u3055\u306A\u304B\u3063\u305F: 120\u301C160 \u306E\u3069\u308C\u3067\u3082 lure \u306E\u9054\u6210\u306F\u540C\u3058 87.3 / 85.3%\uFF08engaged_error_factor 2.5 \u306E\u6383\u304D\u3002\u96F7\u6483\u306F\u63DA\u9678\u306E\u7D42\u308F\u308A\u306E\u524D\u306B\u6C7A\u307E\u308B\uFF09\u30022.0 \u306E lure \u306F\u6C7A\u7740\u306E\u4E2D\u592E\u5024 140 \u79D2\u30FB\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 97.3 / 96.3%\u30FB\u6C7A\u7740\u306E\u524D\u306E\u71C3\u6599\u5C11\u3068\u8F2A 0 / 0%\uFF08R4 \u306E\u5E2F \u2264 10\uFF09\uFF09\u3002torpedo_hits_to_sink 2: \u536F\u6708\u306F2\u672C\u4EE5\u4E0A\u3067\u6C88\u3093\u3060\u30011 \u56DE\u306E\u614C\u3066\u305F\u6589\u5C04\u3067\u306F\u307E\u305A\u6C88\u307E\u306A\u3044\uFF08\u8A66\u4F5C aspect-mc\u3002S4: \u614C\u3066\u305F\u6589\u5C04 1 \u56DE\u306E\u5F8C\u306B\u8F38\u9001\u8239\u304C\u6B8B\u308B\u306E\u306F 97.1%\u30021 \u306B\u3059\u308B\u3068 lure 69.5 / 70.3%\u30FBlure_late 22.8 / 24.5%\uFF082.5 \u306E\u6383\u304D\uFF09\uFF1D\u6700\u5F8C\u306E\u624B\u6BB5\u3067\u4F7F\u308F\u306A\u3044\uFF09\u3002\u8A18\u9332\u306E 1\uFF08us_02 \u304C\u8AAD\u3080\uFF09\u306F\u5909\u3048\u306A\u3044\u3002lookout_m 1,800: \u898B\u5F35\u308A\u306E\u5831\u544A\uFF08\u30B2\u30FC\u30E0\u4E0A\u306E\u4E88\u544A\u3002\u53F2\u5B9F\u306E PT \u306F\u6C17\u3065\u304B\u308C\u305A\u306B\u5BC4\u3063\u305F\uFF09\u304B\u3089\u614C\u3066\u308B\u8DDD\u96E2\u307E\u3067 \u2265 24 \u79D2\u30FB900 m \u307E\u3067 \u2265 44 \u79D2\uFF08S4 \u3067\u52D5\u304B\u3055\u306A\u304B\u3063\u305F: 1,712 \u3067 lure 77.8 / 80.5%\u30FB1,928 \u3067 85.8 / 89.3%\uFF082.5 \u306E\u6383\u304D\uFF09\u3002S4 \u306E\u8F03\u6B63\u306F engaged_error_factor 2.5 \u2192 2.0 \u3060\u3051\uFF1Dspec R13\uFF09\u3002S4 \u3067\u52D5\u304B\u305B\u308B\u7BC4\u56F2\uFF08spec R7\u3002scripts \u306E\u4E0A\u66F8\u304D\u3082\u3053\u306E\u5916\u306F\u65AD\u308B\uFF09: lookout_m \u2265 max(hurried_max_m, launch_range_m) + 412\uFF08V10: \u5831\u544A\u304B\u3089 20 \u79D2 \xD7 8 kt \u306E 20.58 m/\u79D2\uFF09\u304B\u3064 < PT \u306E\u51FA\u767A\u70B9\uFF08\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u304B\u3089\u6CCA\u5730\u307E\u3067\u6700\u77ED\u306E 1,929 m\uFF08V8\uFF09\uFF1Dhurried_max_m 1,300 \u306A\u3089 lookout_m 1,712\u301C1,928\u3001lookout_m 1,800 \u306A\u3089 hurried_max_m \u2264 1,388\u3002hurried_max_m \u2265 1,062 m\uFF08V13: \u6CCA\u5730\u304B\u3089 hurried_max_m \u3088\u308A\u9060\u3044\u7DDA\u306E\u90E8\u5206\u3092\u3001player_start \u304B\u3089\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B 1,560 m \u306E\u5916\u306B\u4FDD\u3064\uFF09\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u6483\u3063\u305F PT \u306F\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u3067\u3082\u53BB\u308B\uFF09: \u4E0A\u306E S4 \u306E\u6570\u306F\u6226\u3044\u306A\u304C\u3089\u6483\u3063\u305F PT \u304C\u53BB\u3089\u306A\u304B\u3063\u305F\u898F\u5247\u306E\u3068\u304D\u3002\u5F8C\u306E lure\uFF08N 400 \xD7 2 \u7D44\uFF09\u306F\u6C7A\u7740\u306E\u4E2D\u592E\u5024 140 \u79D2\u30FB\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 99.0 / 98.5%\u30FB\u6C7A\u7740\u306E\u524D\u306E\u71C3\u6599\u5C11\u3068\u8F2A 0 / 0%\uFF08\u5024\u306F\u5909\u3048\u306A\u3044\uFF09)"
+        },
+        ally_destroyer: {
+          ship_id: "ijn_destroyer_mutsuki",
+          label_ja: "\u536F\u6708",
+          station: {
+            x_m: 3620,
+            y_m: 2380,
+            heading_deg: 90
+          },
+          watch_arc_deg: [
+            50,
+            180
+          ],
+          guard_legs: [
+            1
+          ],
+          lookout_slow_m: 350,
+          spot_rate_slow_per_s: 0.3,
+          lookout_fast_m: 800,
+          spot_rate_fast_per_s: 0.4,
+          fast_kt: 15,
+          light_react_s: 1,
+          chase_fire_s: 2.5,
+          ring_call_before_dawn: true,
+          source: "historical (\u536F\u6708\u306F\u6B62\u307E\u3063\u3066\u3044\u305F \u304B \u9045\u304B\u3063\u305F: low\u301Cmedium\u3002\u6B62\u307E\u3063\u305F\u8266\u306F\u5FCD\u3073\u5BC4\u308B PT \u306B\u6C17\u3065\u304B\u305A\u306B\u6C88\u3093\u3060: medium\u3002\u8D70\u308B PT \u3092\u898B\u5F35\u308A\u304C\u898B\u3064\u3051\u3001\u63A2\u7167\u706F\u30FB\u661F\u5F3E\u30FB\u7832\u3067\u5FDC\u3058\u305F\uFF08\u6642\u96E8\u30FB\u30B9\u30EA\u30AC\u30AA\uFF09: medium\u3002\u898B\u3064\u3051\u305F\u8DDD\u96E2 2,000 m \u306F S1 \u306E\u5024\u3067\u3001S7 \u306E\u898B\u76F4\u3057\u3067\u306F\u51FA\u5178\u304C\u898B\u3064\u304B\u3089\u306A\u304B\u3063\u305F\uFF08PT-134 \u306F\u7D04 3,000 yd\u30FBPT-490 \u306F\u7D04 400 yd \u3067\u63A2\u7167\u706F\u306B\u6349\u3048\u3089\u308C\u305F\uFF09: low\u3002\u7167\u3089\u3055\u308C\u305F PT \u306F\u5C04\u70B9\u306A\u3089\u65E9\u6483\u3061\u3057\u3001\u307B\u304B\u306F\u6483\u305F\u305A\u306B\u53BB\u3063\u305F: medium\uFF08\u53F2\u5B9F\u306E\u8A18\u9332\u3002\u30B2\u30FC\u30E0\u3067\u306F v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\u7167\u3089\u3055\u308C\u3066\u3082\u6483\u3063\u3066\u3082 PT \u306F\u53BB\u3089\u306A\u3044\uFF09\u3002PT-134 \u306F\u7167\u3089\u3055\u308C\u305F\u304C\u9B5A\u96F7\u304C\u7121\u304F\u653B\u6483\u3067\u304D\u306A\u304B\u3063\u305F\u3002\u661F\u5F3E\u3068\u6589\u5C04\u306B\u8FFD\u3044\u6255\u308F\u308C\u305F\u6587\u306F navsource \u306E PT-137 \u306E\u9801\u306E\u629C\u7C8B\u3067\u3001\u3069\u306E\u8247\u306E\u3053\u3068\u304B\u306F\u78BA\u304B\u3067\u306A\u3044: low\uFF08v0.6.10 F \u3067 S7 \u306E\u898B\u76F4\u3057\u306B\u5408\u308F\u305B\u305F\u3002docs/01 \xA78\uFF09\u300213\u53F7\u96FB\u63A2\u306F\u5BFE\u7A7A: medium\u3002\u536F\u6708\u304C\u6483\u3061\u8FD4\u3057\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF09\u3002WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.10 S1\u3002\u6483\u3061\u8FD4\u3059\u536F\u6708\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\u3002station (3620, 2380) \u306F\u6CCA\u5730\u306E\u5317\u6771 727 m\uFF08\u65B9\u4F4D 58\xB0\uFF09\u30FB\u8247\u9996 90\xB0\uFF08\u30EA\u30FC\u30C9\u306E\u6C7A\u5B9A LD16: \u524D\u306E\u6848 (3450, 2580) \u306F\u6589\u5C04\u306E\u5916\u306E\u9B5A\u96F7\u3092\u5165\u308C\u308B\u3068 V-A5 \u304C \u22126.08\xB0 \u3067\u901A\u3089\u306A\u3044\uFF09\u3002\u8D77\u52D5\u6642\u306E\u691C\u67FB\uFF08config/ally-destroyer-mission-data\u3002\u4ECA\u591C\u306E\u5357\u5317\u306E\u305A\u308C \xB1100 m \u8FBC\u307F\u30FB\u30CF\u30FC\u30C9\u306E\u7DDA\u3082\uFF09: \u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\u306E\u9053\uFF08\u6589\u5C04\u306E\u70B9 \u2192 \u6CCA\u5730\uFF09\u304B\u3089 123 m \u4EE5\u4E0A\uFF08V-A4 \u306F 120 m\uFF09\u3001\u6589\u5C04\u306E\u70B9\u304B\u3089\u898B\u305F\u6CCA\u5730\u3068\u536F\u6708\u306E\u89D2\u306F\u536F\u6708\u306E\u534A\u9577\u306E\u898B\u304B\u3051\u306E\u89D2\u30FB\u72D9\u3044\u306E\u8AA4\u5DEE 10\xB0\u30FB\u6589\u5C04\u306E\u5916\u306E\u9B5A\u96F7 8\xB0\uFF088\xB0 \xD7 (3 \u2212 1) / 2\uFF09\u306E\u548C\u3088\u308A 2.78\xB0 \u4EE5\u4E0A\u5927\u304D\u3044\uFF08V-A5\uFF09\u3001\u5FCD\u3073\u5BC4\u308B\u6771\u306E PT \u306E\u6589\u5C04\u306E\u70B9\uFF08\u3068\u305D\u306E\u524D\u306E\u7DDA\uFF09\u304B\u3089\u306F 415.9 m \u4EE5\u4E0A\u3067\u3001\u70B9\u706F\u3068\u53CD\u5FDC\u306E 2.5 \u79D2\u306B\u54E8\u6212\u306E\u901F\u3055\u3067\u9032\u3080 51 m \u3092\u5F15\u304F\u3068 364 m\uFF1Dlookout_slow_m 350 \u306F\u305D\u306E\u5185\uFF08V-A3: \u5FCD\u3073\u5BC4\u308B PT \u306F\u305D\u306E\u6589\u5C04\u306E\u524D\u306B\u7167\u3089\u3055\u308C\u306A\u3044\uFF09\u3002\u6247 watch_arc_deg 50\u301C180\xB0\uFF08\u6771\u306E\u7DDA\u3060\u3051\uFF1Dguard_legs [1]\u3002\u6771\u306E\u7DDA\u306E 800 m \u306E\u5185\u306F\u6247\u306E\u5185\u306B 10.8\xB0 \u4EE5\u4E0A\u30FB\u6589\u5C04\u306E\u70B9\u306E\u524D\u306B\u6247\u306E\u5185\u306E 405 m \u304C\u3042\u308B\u3001\u5317\u3068\u5317\u6771\u306E\u7DDA\u306E 800 m \u306E\u5185\u306F\u6247\u306E\u5916\u306B 13.6\xB0 \u4EE5\u4E0A\uFF1DV-A2\u3002\u5317\u6771\u306E PT \u306E\u6589\u5C04\u306E\u70B9\u306F\u536F\u6708\u306E\u5317 221\u301C314 m\uFF08\u65B9\u4F4D 352\u301C15\xB0\uFF09\u3001\u5317\u6771\u306E\u7DDA\u306E\u7D42\u308F\u308A\u306F\u897F 171\u301C248 m \u3067\u3001\u3069\u3061\u3089\u3082\u6247\u306E\u5916\uFF1D\u5FCD\u3073\u5BC4\u308B\u5317\u6771\u306E PT \u3092\u536F\u6708\u306F\u898B\u306A\u3044\u3002\u5317\u3068\u5317\u6771\u306F\u81EA\u8247\u306E\u4ED5\u4E8B\uFF09\u3002\u9045\u3044 PT\uFF0815 kt \u672A\u6E80\uFF09\u306F 350 m\u30FB\u6BCE\u79D2 0.3\u3001\u901F\u3044 PT \u306F 800 m\u30FB\u6BCE\u79D2 0.4 \u3067\u6C17\u3065\u304D\u3001\u7167\u3089\u3055\u308C\u3066 1.0 \u79D2\u3067\u53CD\u5FDC\u3057\u3001\u53BB\u308B PT \u3092 2.5 \u79D2\u8FFD\u3063\u3066\u6483\u3064\u3002\u591C\u660E\u3051\u8FD1\u3057\u306F\u5E30\u6295\u306E\u8F2A\u306E\u547C\u3073\u304B\u3051\uFF08ring_call_before_dawn\uFF09\u3002S4 \u306E\u8F03\u6B63\uFF08\u6A21\u64EC N 400 \xD7 2 \u7D44\u30FBseed 1\u301C800\u30FB\u591C\u660E\u3051 160 \u79D2\u3002\u3064\u307E\u307F\u306E\u7BC4\u56F2\u306E\u4E2D\u3060\u3051\u3092\u6383\u304D\u3001\u5E2F\u306F spec-v0610 \xA76.3 \u306E\u307E\u307E\uFF1DLD14\uFF09\u3067\u5024\u306F\u3053\u306E\u307E\u307E: \u4F4D\u7F6E 3 \u304B\u6240 \xD7 \u6247\u306E\u59CB\u3081 50\u30FB55\xB0 \xD7 \u901F\u3044 PT \u306E\u898B\u5F35\u308A (700 m, 0.6)\u30FB(800 m, 0.4)\u30FB(800 m, 0.6)\u30FB(900 m, 0.4) \u306E 24 \u901A\u308A\u3092\u30CE\u30FC\u30DE\u30EB\u306E\u7D44 1 \u3067\u7BE9\u3044\uFF08\u6247\u306E\u59CB\u3081\u306F\u3069\u306E\u7D44\u3067\u3082\u540C\u3058\u6570\uFF09\u3001\u5E2F\u306E\u4E2D\u592E\u306B\u8FD1\u3044 3 \u3064\u3092 15 \u306E\u904A\u3073\u65B9\u30FB2 \u7D44\u30FB\u30CE\u30FC\u30DE\u30EB\u3068\u30CF\u30FC\u30C9\u3067\u56DE\u3057\u305F\u3002\u3053\u306E\u5024\uFF08(3620, 2380)\u30FB800 m\u30FB\u6BCE\u79D2 0.4\uFF09\u306F\u5168\u90E8\u306E\u5E2F\u3092\u901A\u308B: \u30CE\u30FC\u30DE\u30EB lure 95.3 / 96.0%\uFF08\u5E2F 88\u301C99\uFF09\u30FB\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 100 / 99.8%\uFF08\u2265 85\uFF09\u30FBhuman 82.0 / 81.0%\uFF0872\u301C88\uFF09\u30FBhuman_face 64.0 / 64.8%\uFF0852\u301C70\uFF09\u30FBface 75.3 / 82.0%\uFF0860\u301C85\uFF09\u3001\u536F\u6708\u306E\u5F97\uFF08\u536F\u6708\u306E\u7121\u3044\u540C\u3058\u591C\u3068\u306E\u5DEE\uFF09lure +8.5\u30FBhuman +18.9\u30FBhuman_face +30.8 \u70B9\uFF08human \u306F lure + 5 \u4EE5\u4E0A\u30FBhuman_face \u306F + 10 \u4EE5\u4E0A\uFF09\u3001\u7167\u3089\u3057\u305F\u591C lure 97.0 / 93.5%\u30FBhuman 91.8 / 86.3%\u3001\u30CF\u30FC\u30C9 lure 90.8 / 88.5%\uFF0880\u301C97\uFF09\u30FBhuman 74.0 / 71.8%\uFF0855\u301C75\uFF09\u30FBhuman_face 33.5 / 30.8%\uFF0820\u301C40\uFF09\u30FBface 52.0 / 54.3%\uFF0838\u301C60\uFF09\u3001\u30CF\u30FC\u30C9\u306E\u6BB5\uFF08\u30CF\u30FC\u30C9 \u2212 \u30CE\u30FC\u30DE\u30EB\uFF09human \u22128.6\u30FBhuman_face \u221232.3 \u70B9\uFF08\u2264 \u22128\u30FB\u2264 \u221220\uFF09\u3002(3590, 2420)\u30FB700 m\u30FB0.6 \u306F\u4EBA\u306B\u8FD1\u3044\u884C\u304C\u5E2F\u306E\u4E2D\u592E\u306B\u8FD1\u3044\uFF08\u30CE\u30FC\u30DE\u30EB human 79.0 / 77.8%\uFF09\u304C\u30CF\u30FC\u30C9\u306E\u6BB5\u304C \u22128.25 \u70B9\u3067\u4F59\u88D5 0.25\u3001(3610, 2400)\u30FB700 m\u30FB0.6 \u306F\u6BB5\u304C \u22127.9 \u70B9\u3067\u5916\u308C\u308B\u3002A/B\uFF08\u5E2F\u306E\u3042\u308B\u884C\u306E\u9054\u6210\u306E\u5DEE\u304C 1 \u70B9\u4EE5\u4E0B\u306A\u3089\u65E2\u5B9A\u3092\u6B8B\u3059\uFF09: 25 mm \u306A\u3057\u306F\u5DEE 0.1 \u70B9\u4EE5\u4E0B\u30FB\u53BB\u308B PT \u3092\u8FFD\u308F\u306A\u3044\uFF08chase_fire_s 0\uFF09\u306F\u9054\u6210\u306E\u5DEE 0 \u3067\u7167\u3089\u3057\u305F\u591C\u304C human 59.8%\uFF08\u7D44 2\uFF09\u307E\u3067\u6E1B\u3063\u3066\u5E2F 60 \u3092\u5916\u308C\u308B\uFF1D\u898B\u3048\u308B\u536F\u6708\u306E\u305F\u3081\u306B 2.5 \u79D2\u3092\u6B8B\u3059\u30FB\u9045\u3044 PT \u306E\u898B\u5F35\u308A 300 m \u3068 360 m\uFF08V-A3 \u306E\u4E0A\u9650 364 m\uFF09\u30FB\u6BCE\u79D2 0.2 \u306F\u5DEE 0\uFF08\u5FCD\u3073\u5BC4\u308B PT \u306F\u305D\u306E\u6589\u5C04\u306E\u524D\u306B\u7167\u3089\u3055\u308C\u306A\u3044\uFF09\uFF1D\u3069\u308C\u3082\u65E2\u5B9A\u306E\u307E\u307E\u3002\u591C\u660E\u3051 200 \u79D2\u306E\u78BA\u304B\u3081\u3067\u3082\u30CE\u30FC\u30DE\u30EB\u30FB\u30CF\u30FC\u30C9\u3068\u3082\u5168\u90E8\u306E\u5E2F\u3092\u901A\u308B\uFF08\u30CF\u30FC\u30C9\u306E\u6BB5 human \u22129.1 \u70B9\uFF09\u3002\u4E0A\u306E S4 \u306E\u6570\u306F\u6483\u3063\u305F PT \u3068\u7167\u3089\u3055\u308C\u305F PT \u304C\u53BB\u3063\u305F\u898F\u5247\u306E\u3068\u304D\u3002v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300C\u536F\u6708\u304C\u5F37\u3059\u304E\u3066PT\u304C\u77AC\u6BBA\u3055\u308C\u308B\u3002\u536F\u6708\u3092\u5F31\u3081\u305F\u3068\u3053\u308D\u3067\u3042\u307E\u308A\u610F\u5473\u304C\u306A\u3044\u306E\u3067\u3001\u5F53\u521D\u306E\u8A2D\u8A08\u3069\u304A\u308A\u3001PT\u304C\u767A\u5C04\u5F8C\u3082\u53BB\u3089\u305A\u306B\u9283\u6483\u3057\u3066\u304F\u308B\u8A2D\u8A08\u306B\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u300D\u2192\u300CA: \u536F\u6708\u306F\u6B8B\u3057\u3001PT \u3092\u6483\u3063\u305F\u5F8C\u3082\u53BB\u3089\u306A\u3044\u5F62\u306B\u623B\u3059\u300D\uFF09: \u536F\u6708\u306E\u5024\u306F\u3053\u306E\u307E\u307E\u3001\u6483\u3063\u3066\u3082\u7167\u3089\u3055\u308C\u3066\u3082 PT \u306F\u53BB\u3089\u306A\u3044\u3002\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\uFF09: \u30CE\u30FC\u30DE\u30EB lure 94.3 / 93.0%\u30FB\u591C\u660E\u3051\u306E\u524D\u306E\u5E30\u6295 98.5 / 98.3%\u30FBhuman 71.5 / 69.0%\uFF08\u5E2F\u3092 72\u301C88 \u2192 62\u301C80\uFF09\u30FBhuman_face 58.8 / 59.8%\u30FBface 71.0 / 76.3%\u3001\u536F\u6708\u306E\u5F97 lure +10.3\u30FBhuman +19.8\u30FBhuman_face +52.4 \u70B9\u3001\u7167\u3089\u3057\u305F\u591C lure 98.8 / 96.0%\u30FBhuman 98.5 / 95.3%\u3001\u30CF\u30FC\u30C9 lure 87.8 / 81.0%\uFF0880\u301C97 \u306E\u307E\u307E\uFF09\u30FBhuman 48.8 / 45.8%\uFF0855\u301C75 \u2192 38\u301C58\uFF09\u30FBhuman_face 7.5 / 6.5%\uFF0820\u301C40 \u2192 0\u301C15\uFF09\u30FBface 29.8 / 25.8%\uFF0838\u301C60 \u2192 18\u301C40\uFF09\u3001\u30CF\u30FC\u30C9\u306E\u6BB5 human \u221223.0\u30FBhuman_face \u221252.3 \u70B9)"
+        },
+        coast: {
+          side: "south",
+          land_m: 600,
+          label_ja: "\u30EC\u30A4\u30C6\u5CF6\uFF08\u30D1\u30ED\u30F3\u30DD\u30F3\uFF09",
+          source: "design (\u898B\u305F\u76EE\u3060\u3051\u3002\u5357\u306E\u7E01\u304C\u6D5C\u3002\u63DA\u9678\u5730\u70B9\u306E\u5E2F\u3068\u5B57\u306F systems/world-landing \u304C\u63CF\u304F\uFF08jp_01 \u306E\u4E0A\u9678\u5730\u70B9\u306E\u5370\u3068\u540C\u3058\u5F62\uFF09)"
+        },
+        night: {
+          hazard_scale: 1,
+          optional_hazards: [],
+          enemy_jitter: {
+            x_m: 250,
+            y_m: 100,
+            heading_deg: 0
+          },
+          mirror_chance: 0,
+          source: "design (v0.6.9\u3002\u7C73PT \u306E\u968A\u3092 1 \u3064\u306E\u6575\u3068\u3057\u3066\u63FA\u3089\u3059\uFF08jp_05\u30FBjp_01 \u3068\u540C\u3058\uFF09: \u7DDA\u306B\u6CBF\u3063\u3066 \xB1250 m\uFF08\u7DDA\u306E\u4E2D\u306B\u53CE\u3081\u308B\uFF09\u30FB\u7DDA\u3054\u3068\u5357\u5317 \xB1100 m\uFF08\u7E01\u306E\u4F59\u767D\u3078\u7DDA\u3054\u3068\u623B\u3059\uFF09\u3002\u6CCA\u5730\u3068\u5E30\u6295\u306E\u8F2A\u306F\u53CD\u8EE2\u3057\u306A\u3044\u306E\u3067 mirror_chance 0\u3002\u4E71\u6570\u306F seed+16 \u306E 5 \u56DE\uFF08\u968A 3\u30FB\u5927\u767A\u306E\u5148\u982D 1\u30FB\u53CD\u8EE2 1\uFF09\u3067 jp_05\u30FBjp_01 \u3068\u540C\u3058\u56DE\u6570)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.6.9\u3002\u904A\u3079\u308B\u4E16\u754C\u3067\u8D77\u304D\u308B\u5371\u967A\u306F\u7C73PT \u306E\u6383\u5C04\uFF08\u81EA\u8247\uFF09\u30FB\u7C73PT \u306E\u9B5A\u96F7\uFF08\u8F38\u9001\u8239\u3002enemy_ship_gunfire_or_ram \u306E\u4E2D\uFF09\u3068\u591C\u660E\u3051\u306E\u7A7A\u8972\u3002\u672C\u4F53\u306E hazards\uFF08enemy_aircraft\u30FBfriendly_fire\uFF09\u306F\u4EFB\u52D9\u306E\u8A2D\u8A08\u3068\u3057\u3066\u6B8B\u3059\uFF08us_03\u30FBjp_01 \u306E\u4F5C\u6CD5\uFF09: \u305D\u306E\u591C\u306E\u7C73\u306E\u591C\u9593\u6A5F\u306E\u653B\u6483\u30FB\u5473\u65B9\u6483\u3061\u306E\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08medium\u30FB\u4E0D\u5728\uFF09\u3001\u5473\u65B9\u6A5F\u306E\u4ED5\u7D44\u307F\u306F\u81EA\u8247\u306E\u9B5A\u96F7\u306E\u767A\u5C04\u304C\u5F15\u304D\u91D1\uFF08systems/friendly-fire\uFF09\u3067 jp_04 \u3067\u306F\u51FA\u306A\u3044\u3002\u5019\u88DC\u306F docs/03)",
+        dawn_strike: {
+          aircraft_id: "us_tacloban_aircraft",
+          count: 4,
+          count_source: "design (us_01\u301C03\u30FBjp_01\u30FBjp_02\u30FBjp_06 \u3068\u540C\u3058 4 \u6A5F\uFF08tests/dawn-air \u304C\u5168\u4EFB\u52D9 4 \u3092 pin\uFF09)",
+          from_bearing_deg: 90,
+          escort_target_planes: [],
+          source: "historical (\u30EC\u30A4\u30C6\u306E\u663C\u306E\u7A7A\u306F\u30BF\u30AF\u30ED\u30D0\u30F3\u306E MAG-12 \u306E\u30B3\u30EB\u30BB\u30A2\u304C\u512A\u52E2\uFF08high \u306F 1944-12-11 \u306E 2 \u5EA6\u306E\u653B\u6483\u3002\u5236\u7A7A\u306F\u65E5\u672C\u6A5F\u306E\u7A7A\u8972\u3082\u3042\u308A contested\uFF1Dmedium\u301Chigh\uFF09) / design (v0.6.9\u3002\u6771\uFF1D\u30BF\u30AF\u30ED\u30D0\u30F3\u306E\u65B9\u89D2\u3002\u72D9\u3046\u306E\u306F\u81EA\u8247\u3060\u3051\uFF08\u6D77\u4E0A\u306E\u8F38\u9001\u8239\u306F\u7206\u6483\u3057\u306A\u3044\uFF1Djp_01 \u3068\u540C\u3058\u65E2\u77E5\u306E\u5236\u7D04\uFF09)"
+        },
+        hard: {
+          extra_pt_legs_m: [
+            [
+              5150,
+              550,
+              3450,
+              2300
+            ]
+          ],
+          objective_ja: "\u7C73PT\xA03\u96BB\u304C\u5317\u30FB\u6771\u30FB\u5317\u6771\u304B\u3089\u8F38\u9001\u8239\u3092\u72D9\u3046\u3002\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044PT\u306F900\xA0m\u3067\u9B5A\u96F7\u3092\u6483\u3064\u3002\u901F\u304F\u8D70\u308B\u304B\u6483\u3066\u3070PT\u306F\u81EA\u8247\u3078\u6765\u308B\uFF08\u8FD1\u3044PT\u306F\u614C\u3066\u3066\u6483\u3064\uFF09\u3002\u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3048\u3002\u751F\u304D\u3066\u5E30\u308C",
+          success_ja: "\u8F38\u9001\u8239\u306E\u63DA\u9678\u5B8C\u4E86\u3092\u898B\u5C4A\u3051\u3066\u5E30\u6295",
+          note_ja: "1944\u5E7412\u670812\u65E51\u6642\u3054\u308D\u3001\u30D1\u30ED\u30F3\u30DD\u30F3\u6C96\u306B\u6B62\u307E\u3063\u3066\u3044\u305F\u99C6\u9010\u8266\u536F\u6708\u306F\u6697\u3044\u5CB8\u3092\u80CC\u306B\u5FCD\u3073\u5BC4\u3063\u305F\u7C73PT\xA02\u96BB\u306B\u7D04900\xA0m\u304B\u3089\u9B5A\u96F76\u672C\u3092\u6483\u305F\u308C\u30012\u672C\u4EE5\u4E0A\u3092\u53D7\u3051\u3066\u6C88\u3093\u3060\u3002\u536F\u6708\u304C\u6483\u3061\u8FD4\u3057\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF09\u3002\u65E5\u672C\u306E\u9B5A\u96F7\u8247\u304C\u30EC\u30A4\u30C6\u306B\u3044\u305F\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u305A\u3001\u8247\u306FT-38\u3067\u4EE3\u7528\u30013\u96BB\u76EE\u306EPT\u3082\u60F3\u5B9A\u3002",
+          source: "design (v0.6.9\u30023 \u96BB\u76EE\uFF08\u5317\u6771\u306E\u6D77\u304B\u3089\uFF09\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF08\u53F2\u5B9F\u306E PT \u306F 2 \u96BB\uFF09\u3002\u6CCA\u5730\u306E\u5DE6\u8237\u306E\u771F\u6A2A 89\xB0 \u304B\u3089\u6483\u3064\u306E\u3067\u6700\u3082\u5371\u306A\u3044\u3002\u51FA\u767A\u70B9\uFF08\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u304B\u3089\u81EA\u8247\u306E\u51FA\u767A\u70B9\u307E\u3067 3,325 m\u30FB\u6CCA\u5730\u307E\u3067 2,513 m\u3001\u7DDA\u306E\u7D42\u308F\u308A\u306F\u6CCA\u5730\u304B\u3089 576\u301C718 m\u3002S4 \u306E\u6A21\u64EC\uFF08N 400 \xD7 2 \u7D44\u30FBengaged_error_factor 2.0\uFF09\u3067\u30CF\u30FC\u30C9\u306E\u5E2F\uFF08spec R12\uFF09\u3092\u6E80\u305F\u3057\u305F\u306E\u3067\u6B8B\u3059: lure 67.0 / 63.8%\uFF08\u5E2F 45\u301C70\uFF09\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 19.0 / 20.8%\uFF08\u2264 30\uFF09\u30FBhide 0 / 0%\uFF08\u2264 8\uFF09\u3001lure_late 47.8 / 45.0%\u30FBlure_near 4.8 / 3.8%\u3002v0.6.9 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u30E6\u30FC\u30B6\u30FC\u300C\u30CF\u30FC\u30C9\u30E2\u30FC\u30C9\u306F\u6575PT\u304C3\u96BB\u306B\u5897\u3048\u308B\u3088\u3046\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u300D\uFF09: \u3082\u3046 3 \u96BB\u306A\u306E\u3067\u305D\u306E\u307E\u307E\uFF08tests/setup-jp04\uFF09\u3002\u6483\u3063\u305F PT \u304C\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u3067\u3082\u53BB\u308B\u306E\u3067 lure 73.0 / 75.0%\uFF08\u5E2F\u3092 45\u301C75 \u306B\uFF09\u30FB\u81EA\u8247\u306E\u6C88\u6CA1 12.3 / 10.5%\u3002\u6570\u306E\u5408\u308F\u305B\u306F v0.6.10 \u306E\u5473\u65B9\u306E\u99C6\u9010\u8266\u306E\u5F8C\u3002v0.6.10 S4\uFF08\u536F\u6708\u3002PT \u306F 3 \u96BB\u306E\u307E\u307E\u30FB\u536F\u6708\u306F\u30CE\u30FC\u30DE\u30EB\u3068\u540C\u3058\uFF09: \u30CF\u30FC\u30C9\u306E\u5E2F\u306F spec-v0610 \xA76.3\uFF08hide \u2264 8\u30FBlure 80\u301C97 \u3067\u81EA\u8247\u306E\u6C88\u6CA1 \u2264 15\u30FBface 38\u301C60\u30FBhuman 55\u301C75\u30FBhuman_face 20\u301C40\uFF09\u3002N 400 \xD7 2 \u7D44\u3067 lure 90.8 / 88.5%\uFF08\u81EA\u8247\u306E\u6C88\u6CA1 1.5 / 2.5%\uFF09\u30FBhuman 74.0 / 71.8%\uFF08\u81EA\u8247\u306E\u6C88\u6CA1 8.3 / 8.3%\uFF09\u30FBhuman_face 33.5 / 30.8%\u30FBface 52.0 / 54.3%\u30FBhide 0 / 0%\u3001\u30CE\u30FC\u30DE\u30EB\u3068\u306E\u6BB5 human \u22128.6\u30FBhuman_face \u221232.3 \u70B9\uFF08\u5E2F \u2264 \u22128\u30FB\u2264 \u221220\uFF1D\u30CF\u30FC\u30C9\u306F\u306F\u3063\u304D\u308A\u96E3\u3057\u3044\uFF09\u3002\u536F\u6708\u3092\u5207\u3063\u305F\u591C\uFF08S0b \u306E\u5E2F 45\u301C78\uFF09\u306F lure 73.8 / 75.3%\u3002v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\uFF08\u6483\u3063\u3066\u3082\u7167\u3089\u3055\u308C\u3066\u3082 PT \u306F\u53BB\u3089\u306A\u3044\uFF1D\u30E6\u30FC\u30B6\u30FC\u306E\u9078\u629E A\u3002PT \u306F 3 \u96BB\u306E\u307E\u307E\uFF09: lure 87.8 / 81.0%\uFF08\u81EA\u8247\u306E\u6C88\u6CA1 4.3 / 8.0%\uFF09\u30FBhuman 48.8 / 45.8%\u30FBhuman_face 7.5 / 6.5%\u30FBface 29.8 / 25.8%\u30FBhide 0 / 0%\u3001\u30CE\u30FC\u30DE\u30EB\u3068\u306E\u6BB5 human \u221223.0\u30FBhuman_face \u221252.3 \u70B9\uFF08\u30CF\u30FC\u30C9\u306F\u306F\u3063\u304D\u308A\u96E3\u3057\u3044\uFF09\u3002\u536F\u6708\u3092\u5207\u3063\u305F\u591C\u306F lure 67.0 / 63.8%\uFF08\u5E2F 45\u301C78\uFF09)"
+        }
+      }
+    },
+    {
+      id: "jp_05",
+      campaign: "jp_hard",
+      order: 5,
+      playable_from: "v0.6.3",
+      title_ja: "\u9E75\u7372\u8247\u306E\u54E8\u6212",
+      date: "1944-02-18",
+      place: "\u30E9\u30D0\u30A6\u30EB\u6C96\uFF08\u30BB\u30F3\u30C8\u30FB\u30B8\u30E7\u30FC\u30B8\u6D77\u5CE1\uFF09",
+      type: "patrol_and_evade",
+      player_boat: "jp_t14",
+      torpedo_type: "jp_45cm",
+      objective: "\u54E8\u6212\u306E\u5E30\u308A\u9053\u306B\u7C73PT\u306E2\u96BB\u7D44\u3002\u632F\u308A\u5207\u308C\u305A\u3001\u822A\u904E\u306E\u3042\u3068\u3082\u5F8C\u308D\u304B\u3089\u8FFD\u3063\u3066\u6483\u3064\u3002\u822A\u904E\u306F\u5168\u901F\u3067\u8EE2\u8235\u3001\u8FFD\u6483\u306F\u91DD\u8DEF\u305D\u306E\u307E\u307E\u6A5F\u9283\u3067\u6483\u3061\u8FD4\u3057\u3066\u8FFD\u3044\u6255\u3044\u3001\u30E9\u30D0\u30A6\u30EB\u3078\u5E30\u308B",
+      enemies: [
+        "us_pt_enemy",
+        "us_pt_enemy"
+      ],
+      hazards: [
+        "enemy_ship_gunfire_or_ram",
+        "engine_failure"
+      ],
+      moon: "dark",
+      duration_min: 4,
+      success: "\u751F\u9084\u3002PT\u306B\u4E00\u5EA6\u3082\u898B\u3064\u304B\u3089\u305A\u306B\u5E30\u308C\u3070\u56DE\u907F\u306E\u70B9\u3002PT\u3092\u6C88\u3081\u308C\u3070\u6483\u6C88\u306E\u70B9\u3001\u305F\u3060\u3057\u6483\u3066\u3070\u9583\u5149\u3067\u898B\u3064\u304B\u308B",
+      historical_note: "\u9E75\u7372\u3057\u305F\u862D TM-4 \u578B\uFF08\u65E5\u672C\u306E\u7B2C102\u301C120\u53F7\u3002navypedia \u306F\u7B2C101\u53F7\uFF08\u65E7 TM 3\uFF09\u3092\u5225\u306E\u578B\u3068\u3057\u3001\u6B66\u88C5\u3055\u308C\u305A\u51FA\u6483\u3082\u307B\u307C\u7121\u304B\u3063\u305F\u3068\u3059\u308B\u3002ja.wikipedia \u306F TM-4 \u578B\u306E\u8247\u3092\u7B2C\u767E\u4E00\u53F7\u578B\u3068\u547C\u3076\uFF09\u306F\u30E9\u30D0\u30A6\u30EB\u30FB\u30E9\u30A8\u65B9\u9762\u3067\u4F7F\u308F\u308C\u305F\u3002\u7B2C115\u53F7\u306F1943-07-26 \u30E9\u30D0\u30A6\u30EB\u3067\u30AC\u30BD\u30EA\u30F3\u7206\u767A\u3001\u7B2C116\u30FB117\u53F7\u306F1944\u5E74\u30E9\u30D0\u30A6\u30EB\uFF08\u6C96\uFF09\u3067\u6C88\u6CA1\u3068\u4F1D\u308F\u308B\u3002\u7C73PT \u7B2C10\u6226\u968A\u306E\u30B0\u30EA\u30FC\u30F3\u5CF6\u9032\u51FA\u306F1944-02-16\u3001\u30E9\u30D0\u30A6\u30EB\u6C96\u3078\u306E\u6700\u521D\u306E\u51FA\u6483\u306E\u8A18\u9332\u306F02-29\u3002PT \u3068\u65E5\u672C\u306E\u9B5A\u96F7\u8247\u306E\u4EA4\u6226\u306E\u8A18\u9332\u306F\u898B\u3064\u304B\u3089\u306A\u3044\uFF08WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\uFF09",
+      source_url: "https://www.netherlandsnavy.nl/TM4class.htm",
+      todo: "\u9E75\u7372\u8247\u306E data\uFF08jp_tm4\u3002\u65E7 TM-4 \u578B 18.6 m\u30FB30 kt\u30023 \u57FA\u306A\u306E\u3067\u300E1 \u57FA\u6B62\u307E\u3063\u3066 2/3 \u306E\u901F\u3055\u300F\u304C\u69CB\u9020\u306B\u5408\u3046\uFF09\u306F\u5019\u88DC\uFF08\u4ECA\u306F T-14 \u3067\u4EE3\u7528\uFF09",
+      briefing_note_ja: "\u65E5\u672C\u6D77\u8ECD\u306F\u30B9\u30E9\u30D0\u30E4\u3067\u5F15\u304D\u63DA\u3052\u305F\u65E7\u30AA\u30E9\u30F3\u30C0\u306ETM\u578B\u9B5A\u96F7\u8247\u3092\u30E9\u30D0\u30A6\u30EB\u65B9\u9762\u3067\u4F7F\u3063\u305F\u30021944\u5E742\u6708\u3001\u7C73PT\u306F\u30B0\u30EA\u30FC\u30F3\u5CF6\u306B\u9032\u51FA\u3057\u3001\u30E9\u30D0\u30A6\u30EB\u306E\u6D77\u8ECD\u6A5F\u306F2\u670820\u65E5\u306B\u5F15\u304D\u63DA\u3052\u305F\u3002\u9B5A\u96F7\u8247\u3069\u3046\u3057\u306E\u591C\u6226\u306E\u8A18\u9332\u306F\u7121\u304F\u3001\u3053\u306E\u591C\u306F\u30B2\u30FC\u30E0\u4E0A\u306E\u60F3\u5B9A\uFF08\u8247\u306FT-14\u3067\u4EE3\u7528\uFF09\u3002T-14\u578B\u306E\u6A5F\u9283\u306F13mm\u304C1\u633A\uFF0825mm\u306E\u8247\u3082\u3042\u3063\u305F\uFF09\u3002\u6728\u9020\u306EPT\u306F\u5C0F\u3055\u306A\u5F3E\u3067\u306F\u307E\u305A\u6C88\u307E\u306A\u3044\u3002",
+      dawn_air: {
+        control: "contested",
+        confidence: "medium",
+        play_as: "own",
+        enemy_ships_at_dawn: "none",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u304A\u304A\u3080\u306D\u5473\u65B9\uFF08\u30E9\u30D0\u30A6\u30EB\u306E\u96F6\u6226\uFF09",
+        refs: [
+          {
+            url: "https://pacificwrecks.com/history/rabaul/index.html",
+            claim: "1944-02-20 \u306E\u591C\u660E\u3051\u306B\u30E9\u30D0\u30A6\u30EB\u306E\u6D77\u8ECD\u6A5F\u3078\u5F15\u304D\u63DA\u3052\u306E\u547D\u4EE4\u300125 \u65E5\u307E\u3067\u306B\u5B8C\u4E86\uFF08\u305D\u308C\u307E\u3067\u306F\u96F6\u6226\u304C\u6B8B\u308A\u3001\u663C\u306E\u7A7A\u8972\u3092\u8FCE\u3048\u6483\u3063\u3066\u3044\u305F\uFF09"
+          },
+          {
+            url: "https://nzetc.victoria.ac.nz/tm/scholarly/tei-WH2AirF-c16-1.html",
+            claim: "1944-02 \u306E\u30E9\u30D0\u30A6\u30EB\u306B\u306F\u9023\u5408\u8ECD\uFF08\u30A8\u30A2\u30BD\u30EB\u30B9\uFF09\u306E\u663C\u306E\u7A7A\u8972\u304C\u7D9A\u304D\u3001\u65E5\u672C\u306E\u822A\u7A7A\u306F 2 \u6708 20 \u65E5\u306B\u5F15\u304D\u63DA\u3052\u305F"
+          },
+          {
+            url: "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-3.html",
+            claim: "\u7C73PT \u7B2C10\u6226\u968A\u304C 1944-02-16 \u306B\u30B0\u30EA\u30FC\u30F3\u5CF6\u3078\u9032\u51FA\uFF08\u30E9\u30D0\u30A6\u30EB\u6C96\u3078\u306E\u51FA\u6483\u306E\u8A18\u9332\u306F 2 \u6708\u672B\u304B\u3089\uFF09"
+          }
+        ],
+        source: "historical (control: 1943-10-12 \u304B\u3089\u9023\u5408\u8ECD\u306E\u5927\u898F\u6A21\u306A\u663C\u306E\u7A7A\u8972\u304C\u30E9\u30D0\u30A6\u30EB\u306B\u3042\u308A\u30011944-02 \u3082\u663C\u306E\u7A7A\u8972\u304C\u7D9A\u3044\u3066\u7A7A\u306F\u4E89\u596A\u300102-19 \u306E\u591C\u660E\u3051\u306F\u307E\u3060\u96F6\u6226\u304C\u3044\u308B\u3002refs \u306F 2026-10-20 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD) / design (v0.6.3\u3002play_as own\uFF1D\u591C\u660E\u3051\u306B\u6575\u6A5F\u306F\u6765\u306A\u3044\u30FBlabel_ja\u30FBenemy_ships_at_dawn none\uFF1D\u7C73PT \u306F\u591C\u660E\u3051\u306B\u6771\u3078\u53BB\u308B\uFF08core/pt-boats \u304C\u591C\u660E\u3051\u306E\u30E9\u30C3\u30C1\u3067\u53BB\u308B\u3002retire \u306E\u4ED5\u7D44\u307F\u306F\u4F7F\u308F\u306A\u3044\uFF09)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "us_pt_enemy",
+          "us_pt_enemy"
+        ],
+        enemy_behavior: "ai (v0.6.3\u3002\u7C73PT 2 \u96BB\u306E\u968A\u3002\u54E8\u6212 \u2192 \u767A\u898B \u2192 \u7A81\u6483 \u2192 \u4E88\u544A\uFF08\u8D64\u3044\u7DDA\uFF09\u2192 \u6383\u5C04\u3057\u306A\u304C\u3089\u822A\u904E\uFF08\u6483\u3061\u5207\u3063\u305F\u304B\u96E2\u308C\u3066\u3044\u3051\u3070\u7DDA\u304C\u6D88\u3048\u308B\uFF09\u2192 \u9003\u3052\u308B\u8247\uFF0810 kt \u4EE5\u4E0A\uFF09\u306B\u306F\u96E2\u8131\u305B\u305A\u306B\u8FFD\u6483\uFF08\u8247\u306E\u5F8C\u308D\u5BC4\u308A\u306E\u8237\u3078 39 kt \u3067\u56DE\u308A\u3001PT \u304B\u3089\u8247\u3078\u306E\u8D64\u3044\u7DDA\u306E 2.5 \u79D2\u5F8C\u306B 1 \u56DE 6 \u767A\u306E\u9023\u5C04\u3002\u5F85\u3064 PT \u306F\u53CD\u5BFE\u306E\u8237\uFF09\u30021 \u96BB \u822A\u904E 4 \u56DE\u30FB\u9023\u5C04 6 \u56DE\u304B\u591C\u660E\u3051\u3067\u6771\u3078\u53BB\u308B\u300213mm \u3092 3 \u767A\u53D7\u3051\u305F\u8FFD\u6483\u306E PT \u306F\u8FFD\u6483\u3092\u3084\u3081\u3066\u96E2\u308C\u308B\uFF08\u5236\u5727\uFF09\u3002T-14 \u306E 13mm \u306E\u547D\u4E2D\u3067\u6B7B\u50B7\u30FB\u640D\u50B7\u306A\u3089\u53BB\u308A\u3001\u3054\u304F\u307E\u308C\u306B\u708E\u4E0A\u3057\u3066\u6C88\u3080\u3002core/pt-boats\u30FBpt-chase)",
+        main_weapon: "guns",
+        main_weapon_source: "design (v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300ET-14 \u306E\u6B66\u88C5\u3068\u3057\u3066 13mm \u307E\u305F\u306F 25mm \u6A5F\u9283 \xD71 \u633A\u304C\u3042\u308B\u3068\u601D\u3046\u306E\u3067\u6483\u6C88\u306F\u304B\u306A\u308A\u96E3\u3057\u304F\u3066\u3082\u30D7\u30EC\u30A4\u30E4\u30FC\u306B\u62B5\u6297\u611F\u3092\u611F\u3058\u3055\u305B\u308B\u305F\u3081\u306B\u5C04\u6483\u30DC\u30BF\u30F3\u3092\u62BC\u305B\u308B\u3088\u3046\u306B\u300F\u300245cm \u9B5A\u96F7\u306F PT \u306E\u5403\u6C34\u306E\u4E0B\u3092\u629C\u3051\u308B\uFF08\u6700\u5C0F\u6DF1\u5EA6 2 m\u3002us_pt_enemy.torpedo_immune\uFF09\u3002v0.6.8 \u304B\u3089\u9B5A\u96F7 2 \u672C\u3082\u7A4D\u307F\u3044\u3064\u3067\u3082\u6483\u3066\u308B\u304C PT \u306E\u4E0B\u3092\u629C\u3051\u308B\u3002\u4E3B\u5175\u88C5\u306F T-14 \u306E 13mm \u6A5F\u9283 1 \u633A\uFF08boats.json \u306E jp_t14.gun_battery\u3002\u53F3\u4E0B\u306E\u9B5A\u96F7\u306E\u5DE6\u306E\u300E\u6A5F\u9283\u300F\u3092\u62BC\u3057\u3066\u3044\u308B\u9593\u6483\u3064\u3002v0.6.8 \u306E\u521D\u3081\u306F\u53F3\u4E0B\u306E\u89D2\u3001v0.6.7 \u307E\u3067\u306F\u300E\u5C04\u6483\u300F\uFF09\u3002\u6483\u6C88\u306F\u304B\u306A\u308A\u96E3\u3057\u304F\u3001\u6483\u3061\u8FD4\u3057\u306F PT \u3092\u8FFD\u3044\u6255\u3046\u305F\u3081\u306E\u3082\u306E\uFF08us_pt_enemy.under_fire\uFF09\u3002v0.6.3 \u306E\u6700\u521D\u306F none\uFF08\u6483\u305F\u306A\u3044\uFF09)",
+        duration_s: 170,
+        duration_s_source: "design (v0.6.3\u3002\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u307E\u3067 3,535 m\uFF08v0.6.3 \u30EC\u30D3\u30E5\u30FC\u3067\u51FA\u767A\u70B9\u3092 150 m \u5317\u3078\u3002\u524D\u306F 3,427 m\uFF09: \u9759\u97F3 98 \u79D2\u30FB\u5DE1\u822A 69 \u79D2\u30FB\u5168\u901F 44 \u79D2\u3002\u6A21\u64EC\uFF08pt-pass-sim\u3001400 \u591C\u3002v0.6.3 \u30EC\u30D3\u30E5\u30FC\u306E\u76F4\u3057\u306E\u5F8C\uFF09\u306E\u5E30\u6295\u306E\u4E2D\u592E\u5024\u306F 48\u301C141 \u79D2\uFF08\u6B62\u307E\u3063\u3066\u3084\u308A\u904E\u3054\u3059\u3068 141 \u79D2\u30FB\u591C\u660E\u3051\u5F8C\u306E\u5E30\u6295 0%\uFF09\u3002tests/dawn-clock\u300E\u5DE1\u822A\u3067\u5E30\u308B\u79D2 \xD7 call_margin < \u591C\u660E\u3051 \u2212 50\u300F: 68.7 \xD7 1.5 = 103 < 120)",
+        fuel_allotment_gal: 32,
+        fuel_allotment_gal_source: "design (v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\u300223 \u2192 32 gal: \u822A\u904E\u304C 1 \u96BB 4 \u56DE\u306B\u306A\u308A\uFF08us_pt_enemy.attack.max_passes\uFF09\u8EE2\u8235\u3057\u3066\u9003\u3052\u308B\u6642\u9593\u304C\u5897\u3048\u305F\u306E\u3067\u3002T-14 \u306F\u5DE1\u822A 114\u30FB\u5168\u901F 229 gal/h\u3002\u76F4\u7DDA\u3067\u5E30\u308B\u3068\u5168\u901F 14.1 gal\uFF08\u6B8B\u308A 56%\uFF09\u30FB\u5DE1\u822A 10.9 gal\u3002\u6A21\u64EC\uFF08scratchpad \u306E\u8A66\u4F5C\u3001400 \u591C \xD7 3 \u7D44\uFF09: HUD \u3069\u304A\u308A\u306B\u8EE2\u8235\u3059\u308B\u3068\u6F02\u6D41 0%\uFF08\u6B8B\u308A\u306E 10 \u30D1\u30FC\u30BB\u30F3\u30BF\u30A4\u30EB 20\u301C31%\uFF09\u3001\u305A\u3063\u3068\u5168\u901F\u3067\u9003\u3052\u56DE\u308B\u3068 1.5\u301C4.5% \u304C\u6F02\u6D41\uFF08\u6B8B\u308A\u306E 10 \u30D1\u30FC\u30BB\u30F3\u30BF\u30A4\u30EB 15%\u300229 gal \u3060\u3068 9.5\u301C13.5%\uFF09\u3002\u4E0A\u9650\u306F tests/dawn-air\u300E\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068 1,500 \u79D2\u672A\u6E80\u3067\u6F02\u6D41\u300F: 32 / (114.29 \xD7 0.14) \xD7 720 = 1,440 \u79D2\uFF08boats.json \u306E jp_t14.fuel_idle_ratio \u3092 0.1 \u2192 0.14\u30020.1 \u306E\u307E\u307E\u3060\u3068 2,016 \u79D2\uFF09\u3002v0.6.3 \u306E\u6700\u521D\u306F 23 gal\u3002v0.6.3 \u5B9F\u6A5F 2 \u56DE\u76EE: \u5909\u3048\u306A\u3044\uFF08\u6A21\u64EC\u3067\u6F02\u6D41 \u2264 0.5%\uFF09)",
+        shallows: [],
+        bounds_m: {
+          width: 6e3,
+          height: 4e3,
+          source: "design (us_02\u30FBjp_06 \u3068\u540C\u3058\u5E83\u3055)"
+        },
+        player_start: {
+          x_m: 4300,
+          y_m: 450,
+          heading_deg: 225,
+          source: "design (v0.6.3\u3002\u54E8\u6212\u306E\u6771\u306E\u7AEF\u304B\u3089\u5357\u897F\u306E\u30E9\u30D0\u30A6\u30EB\u3078\u5E30\u308B\u3002y 600 \u2192 450\uFF08v0.6.3 \u30EC\u30D3\u30E5\u30FC\uFF09: \u7C73PT \u306E\u7DDA\u3092 200 m \u5357\u3078\u52D5\u304B\u3057\u305F\u306E\u3068\u5408\u308F\u305B\u3066\u3001\u4ECA\u591C\u306E\u63FA\u3089\u304E\u3067\u4E00\u756A\u8FD1\u3044 PT \u306E\u51FA\u767A\u70B9 (4300, 2050) \u307E\u3067 1,600 m\uFF1D\u53F2\u5B9F\u30E2\u30FC\u30C9\uFF08\u898B\u3064\u304B\u308B\u8DDD\u96E2 \xD7 1.3\uFF09\u306E\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B 1,560 m \u3088\u308A\u9060\u3044\uFF08\u524D\u306F 1,250 m \u3067\u3001\u53F2\u5B9F\u30E2\u30FC\u30C9\u306E 3 \u591C\u306B 1 \u591C\u306F\u51FA\u767A\u3067\u898B\u3064\u304B\u3063\u305F\uFF09\u3002\u5317\u306E\u7E01\u3078 450 m\uFF09"
+        },
+        return_point: {
+          x_m: 1700,
+          y_m: 3200,
+          radius_m: 250,
+          call_margin: 1.5,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)\uFF08jp_05 \u306E\u9B5A\u96F7\u306F\u72D9\u3046\u8266\u304C\u7121\u3044\u306E\u3067\u767A\u5C04\u306E\u6642\u306B\u6C7A\u7740\u3057\u3001\u5F85\u305F\u306A\u3044\u3002v0.6.8\uFF09",
+          source: "design (v0.6.3\u3002\u5357\u897F\u306E\u6E7E\u53E3\uFF08\u30E9\u30D0\u30A6\u30EB\uFF09\u3002\u51FA\u767A\u70B9\u304B\u3089\u8F2A\u306E\u7E01\u307E\u3067 3,535 m\uFF08v0.6.3 \u30EC\u30D3\u30E5\u30FC\u3067\u51FA\u767A\u70B9\u3092 150 m \u5317\u3078\u3002\u524D\u306F 3,427 m\uFF09\u3002call_margin 1.5: T-14 \u306E\u5168\u901F/\u5DE1\u822A\u306E\u8DDD\u96E2\u3042\u305F\u308A\u6D88\u8CBB\u6BD4 1.29 \u3068\u5DE1\u822A/\u9759\u97F3\u4E0A\u9650\u306E\u901F\u529B\u6BD4 20/14\uFF1D1.43 \u3092\u4E0A\u56DE\u308B)"
+        },
+        pt_boats: {
+          legs_m: [
+            [
+              1200,
+              2200,
+              4800,
+              2200
+            ],
+            [
+              1200,
+              2400,
+              4800,
+              2400
+            ]
+          ],
+          start_along_m: 800,
+          leave_heading_deg: 90,
+          source: "design (v0.6.3\u30022 \u96BB\u304C 200 m \u96E2\u308C\u3066\u4E26\u3073\u3001\u5E30\u308A\u9053\u3092\u6771\u897F\u306B\u6A2A\u5207\u308B\u7DDA\uFF08y 2,200\u30FB2,400\u3002v0.6.3 \u30EC\u30D3\u30E5\u30FC\u3067 2,000\u30FB2,200 \u304B\u3089 200 m \u5357\u3078\uFF1D\u51FA\u767A\u3067\u898B\u3064\u304B\u3089\u306A\u3044\u3001player_start\uFF09\u3092 8 kt \u3067\u5F80\u5FA9\u3059\u308B\u3002\u76F4\u7DDA\u306E\u5E30\u308A\u9053\u306F x \u7D04 2,650 \u3067\u7DDA\u3092\u6A2A\u5207\u308B\u3002\u51FA\u767A\u306F\u5404\u7DDA\u306E\u59CB\u70B9\u304B\u3089 800 m\uFF08x 2,000\uFF09\u3067\u7D42\u70B9\uFF08\u6771\uFF09\u3078\u3002\u591C\u306E\u63FA\u3089\u304E\uFF08night\uFF09\u3067\u7DDA\u306B\u6CBF\u3063\u3066 \xB1800 m\u30FB\u7DDA\u3054\u3068\u5357\u5317 \xB1150 m\u30FB\u6771\u897F\u53CD\u8EE2 0.5\u3002\u53BB\u308B\u306E\u306F\u6771\uFF08\u30B0\u30EA\u30FC\u30F3\u5CF6\u306E\u65B9\u89D2\uFF09)"
+        },
+        night: {
+          hazard_scale: 1,
+          optional_hazards: [],
+          enemy_jitter: {
+            x_m: 800,
+            y_m: 150,
+            heading_deg: 0
+          },
+          mirror_chance: 0.5,
+          source: "design (v0.6.3\u3002\u7C73PT \u306E\u968A\u3092 1 \u3064\u306E\u6575\u3068\u3057\u3066\u63FA\u3089\u3059: x \u306F\u7DDA\u306B\u6CBF\u3063\u305F\u51FA\u767A\u4F4D\u7F6E\uFF08\u7DDA\u306E\u4E2D\u306B\u53CE\u3081\u308B\uFF09\u3001y \u306F\u7DDA\u3054\u3068\u5357\u5317\u3001heading_deg \u306F\u4F7F\u308F\u306A\u3044\uFF080\uFF09\u3002\u5DE6\u53F3\u53CD\u8EE2\u306F\u7DDA\u3068\u51FA\u767A\u4F4D\u7F6E\u3092\u6771\u897F\u306B\u5165\u308C\u66FF\u3048\u308B\uFF1D\u9006\u5411\u304D\u306B\u54E8\u6212\u3002\u4E71\u6570\u306F seed+16 \u306E 5 \u56DE\uFF08\u968A 3\u30FB\u5927\u767A\u306E\u5148\u982D 1\u30FB\u53CD\u8EE2 1\uFF09)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "engine_failure"
+        ],
+        hazards_source: "design (v0.6.3\u3002\u904A\u3079\u308B\u4E16\u754C\u3067\u8D77\u304D\u308B\u5371\u967A\u306F\u7C73PT \u306E\u6383\u5C04\u3068\u3001v0.6.5 \u304B\u3089\u6A5F\u95A2\u306E\u4E0D\u8ABF\uFF08\u5168\u901F\u3092\u7D9A\u3051\u308B\u3068\u4E0D\u8ABF\u306B\u306A\u308A\u9759\u97F3\u306E\u901F\u3055\u307E\u3067\u843D\u3061\u308B\u3002\u5024\u306F risk_events.engine_failure.params\uFF09\u3002\u6D45\u702C\u306A\u3057\u3002\u7C73\u306E\u591C\u9593\u54E8\u6212\u6A5F\u306F\u5F8C\u306E\u7248)"
+      }
+    },
+    {
+      id: "jp_06",
+      campaign: "jp_hard",
+      order: 6,
+      playable_from: "v0.6.0",
+      title_ja: "\u6176\u826F\u9593\u306E\u591C\u30FB\u6700\u7D42\u51FA\u6483",
+      date: "1945-03-28",
+      place: "\u6C96\u7E04\u30FB\u6176\u826F\u9593\u5217\u5CF6\u6C96",
+      type: "attack_and_survive",
+      player_boat: "jp_t38",
+      torpedo_type: "jp_45cm",
+      objective: "\u3082\u3057\u3082\u6226\u95D8\u80FD\u529B\u304C\u6B8B\u3063\u3066\u3044\u305F\u3089\u3001\u6CCA\u5730\u306E\u7C73\u8266\u8247\u3078\u63A5\u8FD1\u3057\u3066\u96F7\u6483\u3057\u3001\u751F\u9084\u3059\u308B",
+      enemies: [
+        "us_destroyer",
+        "us_pt_enemy",
+        "us_pt_enemy"
+      ],
+      hazards: [
+        "enemy_ship_gunfire_or_ram",
+        "enemy_aircraft",
+        "grounding"
+      ],
+      moon: "dark",
+      duration_min: 6,
+      success: "\u5E30\u6295\u3002\u547D\u4E2D\u306F\u30DC\u30FC\u30CA\u30B9\uFF08\u7C73\u99C6\u9010\u8266\u306E\u6483\u6C88\u306F\u5927\u304D\u306A\u70B9\uFF09",
+      historical_note: "\u7B2C27\u9B5A\u96F7\u8247\u968A\u306F\u6176\u826F\u9593\u4E0A\u9678\u5F8C\u306B\u7C73\u8266\u8247\u653B\u6483\u3092\u8A66\u307F\u305F\u304C\u904B\u5929\u6E2F\u7A7A\u7206\u3067\u6226\u95D8\u80FD\u529B\u3092\u55AA\u5931\u3002",
+      source_url: "https://note.com/bouheitai1958/n/n83db84b58fc6",
+      todo: "PT \xD72 \u3068\u6575\u6A5F\u306F v0.6.x \u3067\u8DB3\u3059\uFF08v0.6.0 \u306E\u904A\u3079\u308B\u4E16\u754C\u306F\u7C73\u99C6\u9010\u8266 1 \u96BB\uFF09\u3002\u30AF\u30EA\u30A2\u3067 jp_t35 \u3092\u89E3\u653E\u306F\u672A\u5B9F\u88C5\u3002\u6708: 1945-03-28 \u306F\u6E80\u6708\uFF0817:44 UT\uFF1D3/29 02:44 JST\u3002\u6708\u9F62 \u7D04 14.5\u3002\u6708\u76F8\u306E\u66A6\u3068\u8A08\u7B97\u3067\u78BA\u8A8D\uFF09\u3002moon dark\uFF08\u65B0\u6708\uFF09\u306F design\uFF08\u6E80\u6708\u306B\u3059\u308B\u3068\u9759\u97F3\u3067\u3082 1,300 m \u3067\u898B\u3064\u304B\u308A\u3001T-38 \u306E\u5F31\u3055\u304C\u52DD\u8CA0\u306B\u306A\u3089\u306A\u3044\uFF09",
+      briefing_note_ja: "\u7B2C27\u9B5A\u96F7\u8247\u968A\u306F\u6176\u826F\u9593\u5217\u5CF6\u3078\u306E\u7C73\u8ECD\u4E0A\u9678\u306E\u5F8C\u3001\u6CCA\u5730\u306E\u7C73\u8266\u8247\u3078\u306E\u653B\u6483\u3092\u8A66\u307F\u305F\u304C\u3001\u904B\u5929\u6E2F\u3078\u306E\u7A7A\u8972\u3067\u6226\u95D8\u80FD\u529B\u3092\u5931\u3063\u305F\u3002",
+      dawn_air: {
+        control: "enemy",
+        confidence: "high",
+        play_as: "enemy",
+        enemy_ships_at_dawn: "stay",
+        label_ja: "\u663C\u306E\u7A7A\u306F\u6575\uFF08\u7C73\u8266\u8F09\u6A5F\uFF09",
+        refs: [
+          {
+            url: "https://www.history.navy.mil/about-us/leadership/director/directors-corner/h-grams/h-gram-044/h-044-2.html",
+            claim: "\u8B77\u885B\u7A7A\u6BCD 18 \u96BB\u306E TG 52.1 \u304C 3/25\u301C26 \u306B\u7740\u3044\u3066\u6C96\u7E04\u3078\u306E\u7A7A\u8972\u3092\u59CB\u3081\u305F\u3002\u6176\u826F\u9593\u306F\u5C0F\u8247\u306E\u57FA\u5730\u3092\u5C01\u3058\u308B\u305F\u3081\u306B\u3082\u5148\u306B\u53D6\u3063\u305F"
+          },
+          {
+            url: "https://www.ibiblio.org/pha/comms/1945-04.html",
+            claim: "3/30\u301C31\u3001\u8266\u8F09\u6A5F\uFF08\u30B3\u30EB\u30BB\u30A2\u30FB\u30D8\u30EB\u30AD\u30E3\u30C3\u30C8\u30FB\u30D8\u30EB\u30C0\u30A4\u30D0\u30FC\u30FB\u30A2\u30D9\u30F3\u30B8\u30E3\u30FC\uFF09\u306E\u5357\u897F\u8AF8\u5CF6\u3078\u306E\u7A7A\u8972\u3067\u9B5A\u96F7\u8247 3 \u96BB\u6483\u6C88\u30FB1 \u96BB\u640D\u50B7\uFF08\u5834\u6240\u306F\u629C\u7C8B\u306B\u7121\u3044\uFF09\u3001\u904B\u5929\u6E7E\u306E\u6F5C\u6C34\u8266\u306E\u63A9\u4F53 6 \u3064\u7834\u58CA"
+          },
+          {
+            url: "https://www.ibiblio.org/hyperwar/USA/USA-P-Okinawa/USA-P-Okinawa-2.html",
+            claim: "3/29\u3001\u8266\u8F09\u6A5F\u304C\u904B\u5929\u6E2F\u306E\u63A9\u4F53\u3092\u5C11\u306A\u304F\u3068\u3082 8 \u3064\u7834\u58CA"
+          }
+        ],
+        source: "historical (control\u30FBenemy_ships_at_dawn\u3002refs \u306F 2026-10-18 \u306E WebSearch \u306E\u629C\u7C8B\u306E\u307F\u30FB\u672C\u6587\u672A\u8AAD\u3002\u65E5\u672C\u306E\u822A\u7A7A\u306F\u7279\u653B\u3060\u3051\u3067\u9B5A\u96F7\u8247\u306E\u4E0A\u7A7A\u306E\u63A9\u8B77\u306F\u7121\u304F\u3001\u7C73\u8266\u306F\u4FB5\u653B\u306E\u6CCA\u5730\u306B\u6B8B\u3063\u305F\u30023/27\u301C28 \u306E\u7B2C27\u9B5A\u96F7\u8247\u968A\u306E\u51FA\u6483\u3068\u6226\u679C\u306F\u500B\u4EBA\u30D6\u30ED\u30B0 1 \u4EF6\u3060\u3051\u3067\u672A\u78BA\u8A8D\uFF1D\u4F7F\u308F\u306A\u3044) / design (v0.6.1\u3002play_as\u30FBlabel_ja)"
+      },
+      v0_1_prototype: {
+        enemies: [
+          "us_destroyer"
+        ],
+        enemy_behavior: "ai (ijn_destroyer \u3068\u540C\u3058 AI\u30FB\u7832\u30FB\u63A2\u7167\u706F\u3002enemies.json \u306E us_destroyer\u3002v0.6.0)",
+        duration_s: 160,
+        duration_s_source: "design (v0.6.0\u3002\u591C\u660E\u3051\u307E\u3067\u306E\u5B9F\u79D2\u3002\u591C\u660E\u3051\u306E\u5F8C\u306F\u6575\u6A5F\u306E\u7A7A\u8972\uFF08us_01\u30FBus_03\u30FBjp_06\u3002us_03 \u306F v0.6.1 \u306E\u5B9F\u6A5F 1 \u56DE\u76EE\u304B\u3089\uFF09\uFF0F\u6575\u6A5F\u306F\u6765\u306A\u3044\uFF08us_02\uFF09\u3002v0.6.1 \u304B\u3089\u591C\u660E\u3051\u3067\u4EFB\u52D9\u306F\u7D42\u308F\u3089\u306A\u3044\u3002return-sim\uFF08MISSION=jp_06\u3001\u88AB\u5F3E\u306A\u3057\u3001\u7406\u60F3\u5316\u3057\u305F\u64CD\u4F5C\uFF09\u3067\u3001\u9759\u97F3\u3067\u5BC4\u308A 1,000 m \u3067 2 \u672C\u6483\u3063\u3066\u9759\u97F3\u3067\u5E30\u308B\u3068 105 \u79D2\uFF08p90 109\uFF09\u3001\u5DE1\u822A\u3067\u5E30\u308B\u3068 87 \u79D2\u3001\u5168\u901F\u3060\u3051\u3067 1 \u56DE\u653B\u6483\u306F 62 \u79D2\u3001\u653B\u6483\u305B\u305A\u76F4\u5E30 56 \u79D2\u3002us_02\uFF08150 \u79D2\u3001\u9759\u97F3\u4E2D\u5FC3 100 \u79D2\uFF09\u3068\u540C\u3058\u304F\u7D04 50 \u79D2\u306E\u4F59\u308A\u3002\u5B9F\u969B\u306E\u64CD\u4F5C\u306F\u6A21\u64EC\u3088\u308A\u9045\u3044)",
+        fuel_allotment_gal: 16,
+        fuel_allotment_gal_source: "design (v0.6.0\u3002\u4EA4\u6226\u6D77\u57DF\u3067\u4F7F\u3048\u308B\u5272\u5F53\uFF08us_02 \u306E 38 gal \u3068\u540C\u3058\u8003\u3048\u65B9\uFF09\u3002T-38 \u306F\u5168\u901F 200\u30FB\u5DE1\u822A 94 gal/h\uFF08boats.json\u3002\u71C3\u6599\u66F2\u7DDA\u306E\u6307\u6570 2.55 \u3067\u5168\u901F\u304C\u5272\u9AD8\uFF09\u3002return-sim\uFF08MISSION=jp_06\u3001\u88AB\u5F3E\u306A\u3057\u3001100 \u56DE\u3001\u5E30\u6295\u6642\u306E\u6B8B\u308A\u306E\u4E2D\u592E\u5024\uFF09: \u9759\u97F3\u4E2D\u5FC3 54%\uFF0F\u6A19\u6E96\uFF08\u5168\u901F 15 \u79D2\u96E2\u8131 \u2192 \u5DE1\u822A\u3067\u5E30\u6295\uFF0934%\uFF0F\u5168\u901F\u3060\u3051\u3067 1 \u56DE\u653B\u6483 3%\uFF08100 \u56DE\u4E2D 99 \u56DE\u5E30\u308C\u308B\uFF09\uFF0F\u653B\u6483\u305B\u305A\u76F4\u5E30 82%\u3002\u5168\u901F\u3060\u3051\u306E 1 \u56DE\u653B\u6483\u304C\u304B\u308D\u3046\u3058\u3066\u5E30\u308C\u308B\uFF1Dus_02 \u3068\u540C\u3058\u53B3\u3057\u3055\u306B\u3057\u305F\u300215 gal \u3060\u3068\u5168\u901F\u3060\u3051\u3067\u306F 76% \u304C\u6F02\u6D41\u300117 gal \u3060\u3068 9% \u6B8B\u308B\u3002\u5916\u3057\u3066\u518D\u653B\u6483\u306F 92% \u304C\u6F02\u6D41\uFF081 \u672C\u76EE\u3092\u5916\u3059\u60F3\u5B9A\u3067\u306F\u5168\u90E8\u6F02\u6D41\uFF09\u3002\u7832\u6483\u3042\u308A\u3067\u306F\u9759\u97F3 97\u30FB\u6A19\u6E96 95 \u56DE\u5E30\u6295\u3001\u5168\u901F\u3060\u3051\u306F 13 \u56DE\u5E30\u6295\u30FB87 \u56DE\u6483\u6C88)",
+        shallows: [
+          {
+            x_m: 1400,
+            y_m: 2500,
+            width_m: 700,
+            height_m: 400,
+            label_ja: "\u7901"
+          }
+        ],
+        shallows_source: "design (v0.6.0\u3002\u6176\u826F\u9593\u306E\u5CF6\u3005\u306E\u9593\u306E\u7901\u3002\u5178\u578B\u7684\u306A\u4EA4\u6226\u70B9 (3000,1500) \u304B\u3089\u5357\u897F\u306E\u5CF6\u9670\u306E\u5E30\u6295\u5730\u70B9 (900,3500) \u3078\u76F4\u7DDA\u3067\u5E30\u308B\u3068 x 1,530\u301C1,950 \u3067\u6A2A\u5207\u308B\u3002\u5317\u304B\u5357\u3078\u8FC2\u56DE\u3067\u304D\u308B)",
+        return_point: {
+          x_m: 900,
+          y_m: 3500,
+          radius_m: 250,
+          call_margin: 1.6,
+          torpedo_settle_max_s: 10,
+          torpedo_end_settle_s: 5,
+          torpedo_end_settle_s_source: "design (v0.6.2 \u5B9F\u6A5F 2 \u56DE\u76EE\u3067\u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u306E\u5F85\u3061\u306F5\u79D2\u306B\u3057\u307E\u3057\u3087\u3046\u300D\u2192 5 \u79D2\uFF08\u5B9F\u6A5F 1 \u56DE\u76EE\u306F 3 \u79D2\uFF09\u3002\u5B9F\u6A5F 1 \u56DE\u76EE: \u30E6\u30FC\u30B6\u30FC\u300C\u9B5A\u96F7\u767A\u5C04\u3057\u3066\u4E00\u672C\u5F53\u305F\u3063\u3066\u5373\u30AF\u30EA\u30A2\u753B\u9762\u3067\u306F\u306A\u304F\u30013\u79D2\u307B\u3069\u5F85\u3063\u3066\u307B\u3057\u3044\u30022\u672C\u76EE\u304C\u5F53\u305F\u308A\u305D\u3046\u306A\u306E\u306B\u305D\u308C\u304C\u6210\u679C\u306B\u53CD\u6620\u3055\u308C\u306A\u3044\u3068\u6B8B\u5FF5\u3067\u3059\u300D\u300C\u9B5A\u96F7\u767A\u5C04\u5F8C\u306B\u81EA\u5206\u304C\u6483\u6C88\u3055\u308C\u305F\u5834\u5408\u30823\u79D2\u9593\u306F\u5F85\u3063\u3066\u9B5A\u96F7\u304C\u3042\u305F\u308C\u3070\u547D\u4E2D\u6271\u3044\u306B\u3057\u3066\u307B\u3057\u3044\u300D\u3002\u7D42\u308F\u308A\u969B\u306B\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306E\u6C7A\u7740\u3092\u5F85\u3064\u6700\u5927\u5B9F\u79D2: \u81EA\u8247\u306E\u6C88\u6CA1\u306F\u6C88\u307F\u59CB\u3081\u3066\u304B\u3089\u6570\u3048\u3001\u6C88\u6CA1\u306E\u6F14\u51FA\uFF082 \u79D2\uFF09\u304C\u7D42\u308F\u308B\u307E\u3067\u306F\u7D42\u3048\u306A\u3044\u3002\u6575\u8266\u968A\u306A\u3057\uFF08cleared\uFF09\u30FB\u6F02\u6D41\u30FB\u5EA7\u7901\u306F\u7406\u7531\u304C\u6C7A\u307E\u3063\u3066\u304B\u3089\u3001\u591C\u660E\u3051\u5F8C\u306E\u8F2A\u306E\u4E2D\u306F\u8F2A\u306B\u5165\u3063\u3066\u304B\u3089\u6570\u3048\u308B\u3002\u591C\u660E\u3051\u524D\u306E\u8F2A\u306E\u4E2D\u306F torpedo_settle_max_s \u306E\u307E\u307E\u3002\u5F85\u3064\u9593\u306E\u547D\u4E2D\u306F\u5F97\u70B9\u30FB\u547D\u4E2D\u7387\u30FBResult \u306B\u5165\u308A\u3001\u5F85\u3061\u5207\u3063\u3066\u8D70\u3063\u3066\u3044\u308B\u9B5A\u96F7\u306F\u5916\u308C)",
+          source: "design (v0.6.0\u3002\u5357\u897F\u306E\u5CF6\u9670\uFF08\u5473\u65B9\u306E\u96A0\u308C\u5834\u6240\uFF09\u3002\u51FA\u767A\u70B9 (3000,3400) \u304B\u3089 2,100 m\u3001\u5178\u578B\u7684\u306A\u4EA4\u6226\u70B9 (3000,1500) \u304B\u3089\u7D04 2,900 m\u3002call_margin 1.6: \u547C\u3070\u308C\u305F\u6642\u70B9\u3067\u5168\u901F\u3067\u3082\u9759\u97F3\u3067\u3082\u5E30\u308C\u308B\u3088\u3046\u3001T-38 \u306E\u5168\u901F/\u5DE1\u822A\u306E\u8DDD\u96E2\u3042\u305F\u308A\u6D88\u8CBB\u6BD4 1.545\uFF08200/27.5 \xF7 94.1/20\uFF09\u3068\u5DE1\u822A/\u9759\u97F3\u4E0A\u9650\u306E\u901F\u529B\u6BD4 1.538\uFF0820/13\uFF09\u3092\u4E0A\u56DE\u308B\u5024\uFF08us_02 \u306E Elco \u306F 1.47\u30FB1.28 \u3067 1.5\uFF09)"
+        },
+        hazards: [
+          "enemy_ship_gunfire_or_ram",
+          "grounding",
+          "dawn_air_strike"
+        ],
+        hazards_source: "design (v0.6.0\u3002\u3053\u306E\u904A\u3079\u308B\u4E16\u754C\u3067\u8D77\u304D\u308B\u5371\u967A\u3002\u4EFB\u52D9\u672C\u4F53\u306E hazards \u306B\u3042\u308B enemy_aircraft\uFF08\u7C73\u306E\u591C\u9593\u54E8\u6212\u6A5F\uFF09\u3068 PT \u306F v0.6.x \u3067\u8DB3\u3059\u3002v0.6.1: \u591C\u660E\u3051\u306E\u7A7A\u8972\uFF08\u7C73\u8266\u8F09\u6A5F 4 \u6A5F\uFF09\u3002\u591C\u9593\u54E8\u6212\u6A5F\u3068 PT \u306F v0.6.x)",
+        dawn_strike: {
+          aircraft_id: "us_carrier_aircraft",
+          count: 4,
+          count_source: "design (\u7C73\u6D77\u8ECD\u306E\u6226\u95D8\u6A5F\u306F 4 \u6A5F\u3067 1 \u500B\u5206\u968A\uFF1D\u4E00\u822C\u77E5\u8B58\u30FB\u672A\u691C\u8A3C\u3002\u3053\u306E\u65E5\u306E\u7DE8\u6210\u306F\u672A\u78BA\u8A8D)",
+          from_bearing_deg: 90,
+          escort_target_planes: [],
+          source: "design (v0.6.1\u3002\u6771\uFF1DTF 58 \u306E\u5074\u30FB\u671D\u65E5\u306E\u65B9\u89D2\u304B\u3089\u3002\u50DA\u8247\u306F\u3044\u306A\u3044)"
+        },
+        bounds_m: {
+          width: 6e3,
+          height: 4e3,
+          source: "design (us_02 \u3068\u540C\u3058\u5E83\u3055)"
+        },
+        player_start: {
+          x_m: 3e3,
+          y_m: 3400,
+          heading_deg: 0,
+          source: "design (v0.6.0\u3002\u6D77\u57DF\u306E\u5357\u5BC4\u308A\u4E2D\u592E\u304B\u3089\u5317\u5411\u304D)"
+        },
+        enemy_start: {
+          x_m: 1500,
+          y_m: 1500,
+          heading_deg: 90,
+          source: "design (v0.6.0\u3002\u6CCA\u5730\u306E\u8B66\u6212\u306E\u99C6\u9010\u8266\u304C\u51FA\u767A\u70B9\u306E\u7D04 1,900 m \u5317\u3092\u6771\u3078\u6A2A\u5207\u308B\uFF0818 kt\uFF1D\u753B\u9762\u4E0A 46 m/\u79D2\uFF09\u3002\u65B0\u6708\u306A\u3089\u3001\u9759\u97F3\uFF0813 kt \u4EE5\u4E0B\uFF09\u3067\u5BC4\u308B\u81EA\u8247\u306F 600 m \u307E\u3067\u3001\u5DE1\u822A\u306A\u3089 1,200 m \u3067\u898B\u3064\u304B\u308B\uFF08base_detect_m 2,000 \xD7 \u65B0\u6708 0.6 \xD7 \u901F\u529B\u4FC2\u6570\uFF09\u3002T-38 \u306E\u8996\u7A0B\u306F\u65B0\u6708 900 m\u3002\u53F2\u5B9F\u306E 1945-03-28 \u306F\u6E80\u6708\uFF08\u6708\u9F62 \u7D04 14.5\uFF09\u3067\u3001\u6E80\u6708\u306A\u3089\u9759\u97F3\u3067\u3082 1,300 m \u3067\u898B\u3064\u304B\u308B\u3002\u65B0\u6708\u306F\u904A\u3079\u308B\u52DD\u8CA0\u306B\u3059\u308B\u305F\u3081\u306E\u8A2D\u8A08\u5024)"
+        },
+        enemy_hits_to_sink: 1,
+        enemy_hits_to_sink_source: "design (us_02 \u3068\u540C\u3058\u300245cm \u9B5A\u96F7 1 \u672C\u3067\u6483\u6C88\u3002T-38 \u306F 2 \u672C\u3057\u304B\u7A4D\u307E\u306A\u3044)",
+        hard: {
+          extra_enemy_starts: [
+            {
+              x_m: 4500,
+              y_m: 900,
+              heading_deg: 270
+            }
+          ],
+          objective_sink_count: 1,
+          source: "design (v0.6.0\u3002\u96E3\u6613\u5EA6\u30CF\u30FC\u30C9: \u99C6\u9010\u8266 2 \u96BB\u30022 \u96BB\u76EE\u306F\u5317\u6771 (4500,900) \u304B\u3089\u897F\u3078\uFF1D1 \u96BB\u76EE\u3068\u3059\u308C\u9055\u3044\u3001\u3069\u3061\u3089\u3092\u72D9\u3063\u3066\u3082\u7247\u65B9\u306B\u898B\u3064\u304B\u308A\u3084\u3059\u3044\u3002objective_sink_count 1: T-38 \u306F\u9B5A\u96F7 2 \u672C\u3057\u304B\u7A4D\u307E\u306A\u3044\u306E\u3067\u30012 \u96BB\u306E\u6483\u6C88\u3092\u9054\u6210\u306B\u3059\u308B\u3068\u5168\u5F3E\u547D\u4E2D\u304C\u8981\u308B\uFF08\u6A21\u64EC\u306E 400-800yd 77% \u3067\u3082 2 \u672C\u3068\u3082\u5F53\u305F\u308B\u306E\u306F\u7D04 59%\uFF09\u3002\u9054\u6210\u306F 1 \u96BB\u306E\u6483\u6C88\uFF08\u6483\u6C88\u306E\u8868\u793A\u306F \u6483\u6C88 n/2\uFF09\u3002\u30CF\u30FC\u30C9\u306E\u91CD\u3055\u306F 2 \u96BB\u76EE\u306E\u898B\u5F35\u308A\u30FB\u7832\u3067\u51FA\u3059)"
+        },
+        night: {
+          hazard_scale: 1,
+          optional_hazards: [],
+          enemy_jitter: {
+            x_m: 500,
+            y_m: 200,
+            heading_deg: 15
+          },
+          mirror_chance: 0.5,
+          source: "design (v0.6.0\u3002\u591C\u306E\u63FA\u3089\u304E: \u99C6\u9010\u8266\u306E\u51FA\u767A\u70B9\u3092 x \xB1500\u30FBy \xB1200\u30FB\u91DD\u8DEF \xB115\xB0\u3001\u5DE6\u53F3\u53CD\u8EE2 0.5\u3002\u51FA\u3059\u30FB\u51FA\u3055\u306A\u3044\u3092\u591C\u3054\u3068\u306B\u6C7A\u3081\u308B\u5371\u967A\u306F\u307E\u3060\u7121\u3044\uFF08optional_hazards \u7A7A\uFF09)"
+        }
+      }
+    }
+  ]
+};
+
+// ../wt-0176202/data/scoring.json
+var scoring_default = {
+  $schema_note: "\u30B9\u30B3\u30A2\u306E\u914D\u70B9\uFF08docs/02 \xA76.9\uFF09\u3002\u5408\u8A08 = \u5E30\u6295 + \u4EFB\u52D9\u9054\u6210 + \u547D\u4E2D + \u71C3\u6599\u6B8B + \u4E57\u54E1\u751F\u5B58\uFF08v0.3.4\uFF09\u3002\u6570\u5024\u306F\u3059\u3079\u3066 design\u3002\u8DDD\u96E2\u5E2F\u306E\u540D\u524D\u306F hit_rate_model.kpi_by_range \u306E band \u3068\u4E00\u81F4\u3055\u305B\u308B\uFF08\u6B20\u3051\u3066\u3044\u308C\u3070\u8D77\u52D5\u6642\u306B\u4F8B\u5916\uFF09\u3002",
+  version: "0.4.7",
+  survival: {
+    returned: 700,
+    crew_half_ratio: 0.5,
+    crew_half_factor: 0.5,
+    after_dawn_factor: 0.9,
+    source: "design (\u751F\u9084\uFF1D\u5927\u3002\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306B\u5165\u3063\u3066\u7D42\u308F\u3063\u305F\u3068\u304D\u3060\u3051\u3002\u6483\u6C88 300 \uFF0B \u6700\u3082\u9060\u3044\u5E2F\u306E\u547D\u4E2D 1 \u672C 300 \uFF1D 600 \u3092\u4E0A\u56DE\u308B\u306E\u3067\u3001\u3069\u306E\u8DDD\u96E2\u3067\u5F53\u3066\u3066\u3082\u300E\u6C88\u3081\u3066\u6B7B\u306C\u3088\u308A\u3001\u5916\u3057\u3066\u5E30\u308B\u65B9\u304C\u4E0A\u300F\uFF08docs/02 \xA71\u3001us_02\u300E\u5E30\u6295\u3002\u547D\u4E2D\u306F\u30DC\u30FC\u30CA\u30B9\u300F\uFF09\u3002v0.3.0 \u306E\u78BA\u5B9A\u5024 500 \u3067\u306F \u22652000yd \u306E\u547D\u4E2D\u3067 600 \u306B\u306A\u308A\u9006\u8EE2\u3057\u305F\u306E\u3067\u30EC\u30D3\u30E5\u30FC\u3067 700 \u306B\u3002\u6C88\u6CA1\u672C\u6570\u304C 2 \u4EE5\u4E0A\u306E\u4EFB\u52D9\uFF08v0.4\uFF09\u3067\u306F\u547D\u4E2D\u304C 2 \u672C\u4E57\u308B\u306E\u3067\u898B\u76F4\u3059\u3002crew_half_ratio / crew_half_factor\uFF08v0.3.5\uFF09: \u4E57\u54E1\u304C\u5B9A\u54E1 \xD7 0.5 \u4EE5\u4E0B\uFF0814 \u540D\u4E2D 7 \u540D\u4EE5\u4E0B\uFF1DHP 30 \u4EE5\u4E0B\uFF09\u3067\u5E30\u6295\u3059\u308B\u3068\u5E30\u6295\u70B9 \xD7 0.5\uFF08350\uFF09\u3002\u8CA0\u50B7\u8005\u3092\u62B1\u3048\u3066\u4EFB\u52D9\u7D99\u7D9A\u4E0D\u80FD\u306E\u6271\u3044\u3067\u3001\u66B4\u98A8\u3092\u5168\u901F\u3067\u7A81\u3063\u5207\u308B\u30FB\u7832\u6483\u3092\u6D74\u3073\u7D9A\u3051\u308B\u4EE3\u511F\u3092\u30B9\u30B3\u30A2\u306B\u76F4\u63A5\u51FA\u3059\u3002\u3053\u306E\u3068\u304D\u300E\u5916\u3057\u3066\u5E30\u6295\u300F350 \u306F\u300E\u6C88\u3081\u3066\u6B7B\u306C\u300F\u6700\u5927 600 \u3092\u4E0B\u56DE\u308B\u304C\u3001HP 30 \u4EE5\u4E0B\u306E\u8247\u306F\u305D\u3082\u305D\u3082\u6C88\u6CA1\u306E\u702C\u6238\u969B\u3067\u3001\u308F\u3056\u3068\u6B7B\u306C\u52D5\u6A5F\u306B\u306F\u306A\u3089\u306A\u3044\u3068\u5224\u65AD\u3057\u305F\uFF08\u65E2\u77E5\u306E\u5236\u7D04\u306B\u8A18\u8F09\uFF09\u3002after_dawn_factor\uFF08v0.6.1\uFF09: \u591C\u660E\u3051\u306B\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u5916\u306B\u3044\u3066\u3001\u305D\u306E\u5F8C\u306B\u5E30\u6295\u3057\u305F\u3089\u5E30\u6295\u70B9 \xD7 0.9\uFF1D630\uFF08\u4E57\u54E1\u534A\u6570\u4EE5\u4E0B\u306A\u3089 315\uFF09\u3002630 \u306F\u300E\u6C88\u3081\u3066\u6B7B\u306C\u300F\u6700\u5927 600 \u3092\u4E0A\u56DE\u308B\u306E\u3067\u300E\u5916\u3057\u3066\u5E30\u308B\uFF1E\u6C88\u3081\u3066\u6B7B\u306C\u300F\u306F\u591C\u660E\u3051\u5F8C\u3082\u5D29\u308C\u306A\u3044\uFF080.857 \u672A\u6E80\u3060\u3068\u5D29\u308C\u308B\uFF09\u3002\u591C\u660E\u3051\u306E\u671F\u9650\u306B\u610F\u5473\u3092\u6B8B\u3059\u5C0F\u3055\u306A\u4EE3\u4FA1)"
+  },
+  objective_by_type: {
+    intercept_destroyer: 300,
+    barge_hunt: 300,
+    escort_vip: 300,
+    source: "design (\u4EFB\u52D9\u9054\u6210\uFF1D\u5927\u3002\u5E30\u6295\u306E\u6709\u7121\u306B\u95A2\u4FC2\u306A\u304F\u4ED8\u304F\u3002intercept_destroyer \u306F\u99C6\u9010\u8266\u306E\u6483\u6C88\u3001barge_hunt\uFF08v0.4.2\uFF09\u306F\u5927\u767A\u3092 missions_seed \u306E kill_quota\uFF083\uFF09\u96BB\u4EE5\u4E0A\u6483\u7834\u3002escort_vip\uFF08v0.4.4\uFF09\u306F\u5E30\u6295\u5730\u70B9\u306B\u50DA\u8247\uFF08\u8981\u4EBA\uFF09\u304C\u751F\u304D\u3066\u7740\u304F\uFF08\u5E30\u6295\u304C\u8981\u308B\u3002\u5E30\u6295\u305B\u305A\u306B\u9054\u6210\u306F\u7121\u3044\uFF09\u3002v0.4 \u3067\u4EFB\u52D9\u306E type \u3092\u5897\u3084\u3059\u3068\u304D\u306F\u3053\u3053\u306B\u8DB3\u3059\u3002attack_and_survive\uFF08v0.6.0\u3002jp_06 \u6176\u826F\u9593\u306E\u591C\uFF09\u306F\u6575\u8266\uFF08\u7C73\u99C6\u9010\u8266\uFF09\u306E\u6483\u6C88\uFF1Dintercept_destroyer \u3068\u540C\u3058 300\u3002\u751F\u9084 700 \u304C\u6C88\u3081\u3066\u6B7B\u306C\u6700\u5927 600 \u3092\u4E0A\u56DE\u308B\u95A2\u4FC2\u306F\u5909\u308F\u3089\u306A\u3044\u3002patrol_and_evade\uFF08v0.6.3\u3002jp_05\uFF09\u306F\u5E30\u6295\uFF08\u8F2A\u306B\u5165\u3063\u3066\u7D42\u308F\u308B\uFF09\u3067 300\uFF1D\u9054\u6210\u3002\u6483\u3064\u76F8\u624B\u306E\u3044\u306A\u3044\u4EFB\u52D9\u306A\u306E\u3067\u300E\u6C88\u3081\u3066\u6B7B\u306C\u300F\u306F\u7121\u304F\u3001\u5E30\u6295 700 \uFF1E \u6C88\u6CA1 0 \u306F\u5D29\u308C\u306A\u3044\u3002escort_convoy\uFF08v0.6.4\u3002jp_01\uFF09\u306F\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u3067\u4EFB\u52D9\u304C\u7D42\u308F\u3063\u305F\u6642\u70B9\u3067\u4E0A\u9678\u3057\u305F\u5927\u767A\u304C convoy.arrive_quota\uFF082\uFF09\u96BB\u4EE5\u4E0A\uFF08\u5E30\u6295\u304C\u8981\u308B\u3002escort_vip \u3068\u540C\u3058\uFF09\u3002evacuate_under_air_raid\uFF08v0.6.11\u3002jp_03\uFF09\u306F\u5E30\u6295\uFF08\u7A7A\u8972\u304C\u53BB\u308B 240 \u79D2\u306B\u64CD\u4F5C\u4E2D\u306E\u968A\u304C\u96A0\u308C\u3066\u3044\u308B\u304B\u3001\u305D\u306E\u5F8C\u306B\u96A0\u308C\u5834\u6240\u3067\u6B62\u307E\u308B\uFF09\u3068\u540C\u3058\u306B\u6570\u3048\u308B\u7D42\u308F\u308A\u3067\u3001\u6B8B\u5B58\uFF08\u5EA7\u5E2D\u306E\u8247\u3092\u542B\u3080 18 \u96BB\u4E2D\uFF09\u304C evac_raid.survivor_quota\uFF086\uFF09\u96BB\u4EE5\u4E0A\u3002\u5E30\u6295\u306E 700 \uFF1E \u6B8B\u3057\u3066\u6C88\u3080\uFF08\u6B8B\u3063\u305F\u8247\u306E\u70B9 \u6700\u5927 510\uFF09\u306F\u5D29\u308C\u306A\u3044)",
+    attack_and_survive: 300,
+    patrol_and_evade: 300,
+    escort_convoy: 300,
+    evacuate_under_air_raid: 300
+  },
+  hit: {
+    base: 100,
+    range_multiplier: {
+      "<=400yd": 1,
+      "400-800yd": 1.2,
+      "800-1200yd": 1.5,
+      "1200-2000yd": 2,
+      ">=2000yd": 3
+    },
+    source: "design (\u547D\u4E2D\uFF1D\u4E2D\u3002\u4E0D\u767A\u3092\u9664\u304D\u30011 \u672C\u3054\u3068\u306B base \xD7 \u767A\u5C04\u8DDD\u96E2\u306E\u5E2F\u306E\u500D\u7387\uFF08\u9060\u3044\u307B\u3069\u9AD8\u3044\u3002docs/02 \xA76.9\uFF09\u3002\u547D\u4E2D\u7387\u306E\u76EE\u6A19\u5E2F\uFF08kpi_by_range\uFF09\u3092\u639B\u3051\u305F 1 \u672C\u3042\u305F\u308A\u306E\u671F\u5F85\u5024\u306F 65/60/49/25/8 \u70B9\u3067\u3001\u81F3\u8FD1\u304C\u6700\u3082\u5F97\u3060\u304C\u5371\u967A\u304C\u4EE3\u511F)"
+  },
+  fuel: {
+    max: 100,
+    requires_returned_and_objective: true,
+    source: "design (\u71C3\u6599\u6B8B\uFF1D\u5C0F\u3002\u5E30\u6295\u3057\u3066\u4EFB\u52D9\u3092\u9054\u6210\u3057\u305F\u3068\u304D\u3060\u3051\u3001\u6B8B\u308A %\uFF08HUD \u3068\u540C\u3058 ceil\u30010\u301C100\uFF09\xD7 max/100 \u70B9\u3002\u300E\u6226\u308F\u305A\u306B\u76F4\u5E30\u300F\u304C\u300E\u653B\u6483\u3057\u3066\u5916\u3057\u3066\u5E30\u6295\u300F\u3088\u308A\u5F97\u306B\u306A\u308B\u306E\u3092\u9632\u3050\uFF08\u3069\u3061\u3089\u3082 700\uFF09\u3002\u4F8B\uFF08\u5272\u5F53 38 gal \u306E\u6A21\u64EC\u5024\uFF09: \u614E\u91CD\u306B\u6483\u6C88\u3057\u3066\u5E30\u6295\uFF08800-1200yd\u300140%\uFF091,190\uFF0F\u5168\u901F\u3067\u6483\u6C88\u3057\u3066\u5E30\u6295\uFF08400-800yd\u30013%\uFF091,123\uFF0F\u5916\u3057\u3066\u5E30\u6295\u30FB\u653B\u6483\u305B\u305A\u76F4\u5E30 700\uFF0F\u6483\u6C88\u3057\u3066\u6F02\u6D41 420\uFF0F\u6483\u6C88\u3057\u3066\u7832\u6483\u3067\u6C88\u6CA1\uFF08\u2264400yd\uFF09400\u3002\u3053\u306E\u4F8B\u306F\u4E57\u54E1\u70B9\u3092\u9664\u3044\u305F\u5024\uFF08\u4E57\u54E1\u70B9\u3092\u8DB3\u3057\u305F\u4F8B\u306F crew.source\uFF09)"
+  },
+  crew: {
+    max: 100,
+    requires_returned_and_objective: true,
+    source: "design (\u4E57\u54E1\u751F\u5B58\uFF1D\u5C0F\uFF08docs/02 \xA76.9\u3001v0.3.4\uFF09\u3002\u5E30\u6295\u3057\u3066\u4EFB\u52D9\u3092\u9054\u6210\u3057\u305F\u3068\u304D\u3060\u3051 round(max \xD7 \u751F\u5B58 / \u5B9A\u54E1)\uFF0814 \u540D\u4E2D 12 \u540D\u306A\u3089 86\u300110 \u540D\u306A\u3089 71\uFF09\u3002\u6B7B\u50B7\u306F boats.json \u306E damage.casualties_per_hp\uFF08HP 10 \u3067 1 \u540D\uFF09\u3002\u71C3\u6599\u70B9\u3068\u540C\u3058\u304F\u5E30\u6295\uFF0B\u9054\u6210\u306B\u9650\u308B\u306E\u306F\u3001\u300E\u653B\u6483\u3057\u3066\u5916\u3057\u3001\u6483\u305F\u308C\u3066\u4E57\u54E1\u3092\u5931\u3063\u3066\u5E30\u308B\u300F\u304C\u300E\u6226\u308F\u305A\u306B\u76F4\u5E30\uFF08\u7121\u50B7\uFF09\u300F\u3088\u308A\u4E0B\u306B\u306A\u3089\u306A\u3044\u305F\u3081\uFF08\u3069\u3061\u3089\u3082 700\uFF09\u3002max 100 \u306F\u71C3\u6599\u3068\u540C\u3058\u300E\u5C0F\u300F\u3002\u4F8B\uFF08\u5272\u5F53 38 gal \u306E\u6A21\u64EC\u5024\u306B\u4E57\u54E1\u3092\u8DB3\u3059\uFF09: \u614E\u91CD\u306B\u6483\u6C88\u3057\u3066\u5E30\u6295\uFF08800-1200yd\u300140%\u3001\u7121\u50B7 14/14\uFF091,290\uFF0F\u5168\u901F\u3067\u6483\u6C88\u3057\u3066\u5E30\u6295\uFF08400-800yd\u30013%\u300114/14\uFF091,223\uFF0F\u540C\u3058\u304F 127mm \u3092 1 \u767A\u53D7\u3051\u305F\uFF0810/14 \u2192 71\uFF091,194\uFF0F\u614E\u91CD\u306B\u6483\u6C88\u3057\u66B4\u98A8\u3092\u5168\u901F\u3067\u7A81\u7834\uFF0812/14 \u2192 86\uFF091,276\uFF0F\u5916\u3057\u3066\u5E30\u6295\u30FB\u653B\u6483\u305B\u305A\u76F4\u5E30 700\uFF0F\u6483\u6C88\u3057\u3066\u6F02\u6D41 420\uFF0F\u6483\u6C88\u3057\u3066\u7832\u6483\u3067\u6C88\u6CA1\uFF08\u2264400yd\uFF09400\u3001\uFF08\u22652000yd\uFF09600\u3002\u5E30\u6295\u3057\u3066\u6483\u6C88\u3059\u308C\u3070\u6700\u4F4E\u3067\u3082 350+300+100+0+36\uFF085/14\u3001v0.3.5 \u306E\u5E30\u6295\u70B9\u534A\u6E1B\u8FBC\u307F\uFF09= 786 > 700 > 600 \u306A\u306E\u3067\u300E\u614E\u91CD\u306A\u6483\u6C88 > \u6368\u3066\u8EAB\u306E\u6483\u6C88 > \u5916\u3057\u3066\u5E30\u6295 = \u76F4\u5E30 > \u6C88\u3081\u3066\u6B7B\u306C\u300F\u306F\u4E57\u54E1\u304C 8 \u540D\u4EE5\u4E0A\u306A\u3089\u3069\u306E\u8DDD\u96E2\u5E2F\u3067\u3082\u5D29\u308C\u306A\u3044\u3002\u4E57\u54E1 7 \u540D\u4EE5\u4E0B\u306E\u300E\u5916\u3057\u3066\u5E30\u6295\u300F\u306F 350 \u3067\u300E\u6C88\u3081\u3066\u6B7B\u306C\u300F\u3092\u4E0B\u56DE\u308B\uFF08survival.source \u306E\u6CE8\u8A18\uFF09)"
+  },
+  kill: {
+    points_by_enemy: {
+      daihatsu_barge: 75,
+      ijn_transport: 400,
+      us_pt_enemy: 140
+    },
+    source: "design (v0.4.2\u3002\u7832\u3067\u6483\u7834\u3057\u305F\u6575 1 \u96BB\u3054\u3068\u306E\u70B9\uFF08\u9B5A\u96F7\u306E\u547D\u4E2D\u70B9\u306E\u4EE3\u308F\u308A\u3002\u8DDD\u96E2\u306E\u500D\u7387\u306F\u7121\u3044\uFF09\u300275: 4 \u96BB\u6483\u7834\u3057\u3066\u6C88\u3093\u3067\u3082 300 + 4 \xD7 75 = 600 \u3067\u3001\u6483\u305F\u305A\u306B\u5E30\u6295 700 \u3092\u4E0B\u56DE\u308B\uFF08100 \u3060\u3068 700 \u3067\u4E26\u3076\uFF09\u30023 \u96BB\u3067\u5E30\u6295 700 + 300 + 225 + \u71C3\u6599 + \u4E57\u54E1 \u2248 1,340\u30012 \u96BB\u3067\u5E30\u6295 850\uFF08\u30CE\u30EB\u30DE\u672A\u9054\u3067\u9054\u6210\u70B9\u30FB\u71C3\u6599\u70B9\u30FB\u4E57\u54E1\u70B9\u306A\u3057\uFF09\u3001\u6483\u305F\u305A\u306B\u5E30\u6295 700\uFF09\u3002ijn_transport 400\uFF08v0.4.7\u3002\u9B5A\u96F7\u3067\u6C88\u3081\u305F\u8F38\u9001\u8239\u3002\u547D\u4E2D\u70B9\uFF08\u5E2F\u306E\u500D\u7387 100\u301C300\uFF09\u3068\u306F\u5225\u306B\u4ED8\u304F\u3002\u99C6\u9010\u8266\u306E\u6483\u6C88\uFF08\u9054\u6210 300\uFF09\u3088\u308A\u5C11\u3057\u4E0A\uFF1D\u300C\u8F38\u9001\u8239\u3092\u5148\u306B\u72D9\u3046\u300D\u304C\u5272\u306B\u5408\u3044\u3001\u4E21\u65B9\u6C88\u3081\u308C\u3070 700 + 300 + 400 + \u547D\u4E2D 2 \u672C\uFF09\u3002us_pt_enemy 140\uFF08v0.6.3 \u5B9F\u6A5F 1 \u56DE\u76EE\u3002jp_05 \u3067 T-14 \u306E 13mm \u304C\u6C88\u3081\u305F\u7C73PT 1 \u96BB\uFF08\u708E\u4E0A\u3002\u3054\u304F\u307E\u308C\uFF09: 2 \u96BB\u6C88\u3081\u3066\u6C88\u3093\u3067\u3082 2 \xD7 140 = 280 < \u5E30\u6295 700\uFF08\u751F\u9084\u304C\u5148\uFF09\u3001\u968A\u306E 2 \u96BB \xD7 140 = 280 < \u56DE\u907F 300\uFF08\u898B\u3064\u304B\u3089\u305A\u306B\u5E30\u308B\u306E\u304C\u3044\u3061\u3070\u3093\u4E0A\u3002\u6483\u3066\u3070\u9583\u5149\u3067\u898B\u3064\u304B\u308B\u3002\u521D\u3081\u306E 200 \u306F 1 \u96BB\u3060\u3051\u3092\u56DE\u907F\u3068\u6BD4\u3079\u3066\u3044\u3066\u30012 \u96BB\u3067 400 > 300 \u3068\u306A\u308A\u3001\u6A21\u64EC\u306E 2 \u96BB\u6483\u6C88\u306E\u5E30\u6295 1,528\u301C1,566 \u70B9\u304C\u898B\u3064\u304B\u3089\u305A\u306B\u5E30\u6295\u306E\u6700\u9AD8 1,471 \u70B9\u3092\u8D85\u3048\u305F\u3002\u30EC\u30D3\u30E5\u30FC F1\uFF09\u3002\u6483\u9000\uFF08\u6B7B\u50B7\u30FB\u640D\u50B7\u3067\u53BB\u308B\uFF09\u306F\u70B9\u306A\u3057\uFF1D\u3054\u8912\u7F8E\u306F\u822A\u904E\u304C\u6E1B\u3063\u3066 HP\u30FB\u4E57\u54E1\u30FB\u71C3\u6599\u304C\u6B8B\u308B\u3053\u3068\u3002\u6A21\u64EC\u306E\u4E2D\u592E\u5024\u3067 \u898B\u3064\u304B\u3089\u305A\u306B\u5E30\u6295 \u7D04 1,460 > \u898B\u3064\u304B\u3063\u3066\u8EE2\u8235\u3068\u6483\u3061\u8FD4\u3057\u3067 1 \u96BB\u6C88\u3081\u3066\u5E30\u6295 \u7D04 1,270 > \u898B\u3064\u304B\u3063\u3066\u8EE2\u8235\u3067\u5E30\u6295 \u7D04 1,130 > 2 \u96BB\u6C88\u3081\u3066\u6C88\u6CA1 280\uFF09)"
+  },
+  evade: {
+    points_by_type: {
+      escort_vip: 400,
+      patrol_and_evade: 300
+    },
+    source: "design (v0.4.4\u3002\u300C\u6226\u95D8\u3092\u907F\u3051\u308B\u307B\u3069\u9AD8\u5F97\u70B9\u300D: \u5E30\u6295\u3057\u3066\u4EFB\u52D9\u9054\u6210\u3057\u3001\u304B\u3064\u99C6\u9010\u8266\u306B\u4E00\u5EA6\u3082\u898B\u3064\u304B\u3089\u306A\u3051\u308C\u3070\u4ED8\u304F\uFF08\u898B\u3064\u304B\u3063\u305F\u56DE\u6570 0\u3002\u7159\u5E55\u3067\u96A0\u308C\u305F\u5F8C\u306B\u898B\u5931\u308F\u308C\u3066\u3082 1 \u56DE\u306F 1 \u56DE\uFF09\u3002400 \u306F\u3001\u65B0\u6708\u306E\u8996\u7A0B 900 m\uFF08\u22641,000 yd\uFF09\u3067\u99C6\u9010\u8266\u306B 2 \u672C\u5F53\u3066\u3066\u3082\u547D\u4E2D\u70B9\u306F\u6700\u5927 2 \xD7 150 = 300 \u306A\u306E\u3067\u3001\u9B5A\u96F7\u3067\u6C88\u3081\u306B\u884C\u304F\u3088\u308A\u907F\u3051\u308B\u65B9\u304C\u4E0A\u306B\u306A\u308B\u5024\u3002\u6B20\u3051\u3066\u3044\u308B type \u306F 0\u3002\u591C\u660E\u3051\u306B\u8F2A\u306E\u5916\u3060\u3063\u305F\u5E30\u6295\u306B\u306F\u4ED8\u304B\u306A\u3044\uFF08v0.6.1\u3002\u663C\u306B\u6575\u6A5F\u306B\u898B\u3064\u304B\u3063\u305F\u6271\u3044\uFF09\u3002patrol_and_evade\uFF08v0.6.3\uFF09300: \u7C73PT \u306B\u4E00\u5EA6\u3082\u898B\u3064\u304B\u3089\u305A\u591C\u660E\u3051\u524D\u306B\u5E30\u6295\u3002\u6A21\u64EC\u306E\u4E2D\u592E\u5024\u3067\u3001\u898B\u3064\u304B\u3089\u305A\u306B\u5E30\u6295 700+300+300+\u71C3\u6599 \u7D04 60+\u4E57\u54E1 100 \u2248 1,460\u3001\u898B\u3064\u304B\u3063\u3066\u8EE2\u8235\u3067\u304B\u308F\u3057\u3066\u5E30\u6295\uFF08HP \u221215\uFF09\u2248 1,130\u3001\u76F4\u9032\u3067\u8010\u3048\u3066\u5E30\u6295\uFF08HP \u221235\uFF09\u2248 1,110\u3001\u591C\u660E\u3051\u307E\u3067\u96A0\u308C\u3066\u5E30\u6295 630+300+43+100 \u2248 1,070\u3001\u6C88\u6CA1 0)"
+  },
+  convoy: {
+    points_per_arrival: 100,
+    source: "design (v0.6.4\u3002\u4E0A\u9678\u3057\u305F\u5927\u767A 1 \u96BB\u3054\u3068\uFF08\u5E30\u6295\u306E\u6709\u7121\u306B\u95A2\u308F\u3089\u305A\u3002\u7832\u306E\u6483\u7834\u70B9\u3068\u540C\u3058\u6271\u3044\uFF09\u3002100: 3 \u96BB\u5C4A\u3051\u3066\u6C88\u3093\u3067\u3082 300 \uFF0B PT 2 \u96BB\u6483\u6C88 280 = 580 < \u5E30\u6295 700\uFF08\u751F\u9084\u304C\u5148\u3002\u9054\u6210 300 \u306F\u5E30\u6295\u304C\u8981\u308B\u306E\u3067\u6C88\u3081\u3070 0\uFF09\u30022 \u96BB\u5C4A\u3051\u3066\u5E30\u6295 700+300+200+\u71C3\u6599+\u4E57\u54E1 \u2248 1,350 < 3 \u96BB\u5C4A\u3051\u3066\u5E30\u6295 \u2248 1,450\uFF083/3 > 2/3\uFF09\u30021 \u96BB\u3060\u3051\u5C4A\u3051\u3066\u5E30\u6295\u306F 800\uFF08\u9054\u6210\u306A\u3057\uFF1D\u71C3\u6599\u30FB\u4E57\u54E1\u70B9\u306A\u3057\uFF09\u3002\u898B\u6368\u3066\u3066\u5E30\u6295 700\u3002\u5927\u767A 1 \u96BB\uFF1D\u5175\u54E1 70 \u540D\u30FB\u7269\u8CC7 10 t \u3092\u3001\u5927\u767A\u306E\u6483\u7834 75\u30FB\u7C73PT \u306E\u6483\u6C88 140 \u306E\u9593\u306B\u7F6E\u3044\u305F\u3002\u56DE\u907F\u306E\u70B9\uFF08evade\uFF09\u306F\u4ED8\u3051\u306A\u3044: \u5927\u767A\u306F\u96A0\u305B\u306A\u3044\u306E\u3067\u300E\u898B\u3064\u304B\u3089\u305A\u306B\u300F\u306F\u81EA\u8247\u306E\u624B\u67C4\u306B\u306A\u3089\u306A\u3044)"
+  },
+  landing: {
+    points_complete: 300,
+    source: "design (v0.6.9\u3002jp_04\u300C\u591A\u53F7\u4F5C\u6226\u30FB\u30AA\u30EB\u30E2\u30C3\u30AF\u6E7E\u3078\u300D\u3002\u505C\u6CCA\u3059\u308B\u5473\u65B9\u306E\u8F38\u9001\u8239\u306E\u63DA\u9678\u5B8C\u4E86\u3067 300\uFF08\u5E30\u6295\u306E\u6709\u7121\u3068\u305D\u306E\u5F8C\u306E\u6C88\u6CA1\u306B\u95A2\u308F\u3089\u305A\uFF1D\u5927\u767A\u306E\u4E0A\u9678 convoy.points_per_arrival \u3068\u540C\u3058\u6271\u3044\u3002core/scoring \u306E deliveries \u306B\u8DB3\u3059\uFF09\u3002jp_01 \u306E\u5927\u767A 3 \u96BB\u306E\u4E0A\u9678 100 \xD7 3 \u3068\u540C\u3058\u5927\u304D\u3055\u3002\u63DA\u9678\u3092\u898B\u5C4A\u3051\u3066\u5E30\u6295 700 \uFF0B \u9054\u6210 300\uFF08escort_convoy\u3002\u63DA\u9678\u5B8C\u4E86\u3057\u3066\u5E30\u6295\uFF09\uFF0B \u63DA\u9678 300 \uFF0B \u71C3\u6599 \uFF0B \u4E57\u54E1 \u2248 1,450\u3001\u63DA\u9678\u3092\u898B\u5C4A\u3051\u3066\u6C88\u6CA1 300\uFF08\uFF0B PT 2 \u96BB\u6483\u6C88 280 = 580\uFF09\uFF1C \u5E30\u6295 700\u3001\u8F38\u9001\u8239\u304C\u6C88\u3093\u3067\u5E30\u6295 700\uFF08\u63DA\u9678\u306E\u6C7A\u7740\u306E\u524D\u306B\u5E30\u6295\u306E\u8F2A\u3078\u5165\u3063\u3066\u3082\u4EFB\u52D9\u306F\u7D42\u308F\u3089\u306A\u3044\uFF1DR14 A5\u3002\u8F2A\u3067\u5F85\u3063\u3066\u6C88\u3081\u3070\u5E30\u6295 700\u3002\u8F38\u9001\u8239\u3092\u898B\u6368\u3066\u3066\u5148\u306B\u5E30\u308B\u7D42\u308F\u308A\u65B9\u306F\u7121\u3044\uFF09\u3002\u5E30\u6295 700 \uFF1E 300 \u3067\u300E\u751F\u304D\u3066\u5E30\u308B\u65B9\u304C\u4E0A\u300F\u306F\u5D29\u308C\u306A\u3044\u3002\u56DE\u907F\u306E\u70B9\uFF08evade\uFF09\u306F\u4ED8\u3051\u306A\u3044\uFF08\u8F38\u9001\u8239\u3092\u5B88\u308B\u306E\u306B\u898B\u3064\u304B\u3089\u306A\u3044\u3053\u3068\u306F\u624B\u67C4\u306B\u306A\u3089\u306A\u3044\uFF09)"
+  },
+  evac: {
+    points_per_survivor: 30,
+    source: "design (v0.6.11\u3002jp_03\u300C\u904B\u5929\u6E2F\u30FB\u7A7A\u8972\u4E0B\u306E\u9000\u907F\u300D\u3002\u6B8B\u3063\u305F\u8247\uFF08\u6C7A\u7740\u306E 240 \u79D2\u3067\u6D6E\u3044\u3066\u3044\u308B\u8247\u3002\u5EA7\u5E2D\uFF1D\u64CD\u4F5C\u4E2D\u306E\u968A\u9577\u8247\u306F\u5E30\u6295\u306E 700 \u3067\u6570\u3048\u308B\u306E\u3067\u9664\u304F\uFF091 \u96BB\u3054\u3068\u306B 30 \u70B9\uFF08\u5E30\u6295\u306E\u6709\u7121\u306B\u95A2\u308F\u3089\u305A\uFF1D\u5927\u767A\u306E\u4E0A\u9678 convoy.points_per_arrival \u306E\u4F5C\u6CD5\uFF09\u3002\u6700\u5927 17 \xD7 30 \uFF1D 510 < \u5E30\u6295 700\uFF1D\u300E\u6B8B\u3057\u3066\u6B7B\u306C\u3088\u308A\u96A0\u308C\u3066\u5E30\u308B\u65B9\u304C\u4E0A\u300F\uFF08S6 \u306E tests \u3067\u56FA\u5B9A\uFF09\u3002\u898B\u5931\u308F\u305B\u305F\u7DE8\u968A\u30FB\u6483\u589C\u306B\u70B9\u306F\u4ED8\u3051\u306A\u3044\uFF08\u6587\u3060\u3051\uFF09\u3002\u71C3\u6599\u30FB\u4E57\u54E1\u306E\u70B9\u306F\u4ECA\u307E\u3067\u3069\u304A\u308A)"
+  }
+};
+
+// ../wt-0176202/src/core/units.ts
+var MPS_PER_KNOT = 0.5144;
+var SECONDS_PER_HOUR = 3600;
+var GRAVITY_MPS2 = 9.81;
+function ktToMps(kt) {
+  return kt * MPS_PER_KNOT;
+}
+function degToRad(deg) {
+  return deg * Math.PI / 180;
+}
+function radToDeg(rad) {
+  return rad * 180 / Math.PI;
+}
+function wrapDeg180(deg) {
+  if (deg > -180 && deg <= 180) return deg;
+  let d = ((deg + 180) % 360 + 360) % 360 - 180;
+  if (d === -180) d = 180;
+  return d;
+}
+function wrapDeg360(deg) {
+  const d = deg % 360;
+  const r = d < 0 ? d + 360 : d;
+  return r >= 360 ? 0 : r + 0;
+}
+function clamp(v, min, max) {
+  return v < min ? min : v > max ? max : v;
+}
+
+// ../wt-0176202/src/core/boat-motion.ts
+function isBoatDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  const bands = r["speed_bands_kt"];
+  return ["speed_max_kt", "speed_cruise_kt", "speed_silent_kt", "accel_mps2", "decel_mps2", "turn_rate_deg_s", "length_m", "beam_m"].every((k) => typeof r[k] === "number" && Number.isFinite(r[k])) && !!bands && ["stop_max", "silent_max", "cruise_max", "hysteresis"].every((k) => typeof bands[k] === "number" && Number.isFinite(bands[k]));
+}
+function boatParamsFromData(r) {
+  return {
+    speedMaxMps: ktToMps(r.speed_max_kt),
+    speedCruiseMps: ktToMps(r.speed_cruise_kt),
+    speedSilentMps: ktToMps(r.speed_silent_kt),
+    stopMaxMps: ktToMps(r.speed_bands_kt.stop_max),
+    silentMaxMps: ktToMps(r.speed_bands_kt.silent_max),
+    cruiseMaxMps: ktToMps(r.speed_bands_kt.cruise_max),
+    bandHysteresisMps: ktToMps(r.speed_bands_kt.hysteresis),
+    accelMps2: r.accel_mps2,
+    decelMps2: r.decel_mps2,
+    turnRateDegS: r.turn_rate_deg_s,
+    lengthM: r.length_m,
+    beamM: r.beam_m
+  };
+}
+
+// ../wt-0176202/src/core/fuel.ts
+function isBoatFuelDataRecord(v) {
+  if (!v || typeof v !== "object") return false;
+  const r = v;
+  return ["fuel_capacity_gal", "fuel_hours_cruise", "fuel_hours_full", "fuel_idle_ratio", "speed_cruise_kt", "speed_max_kt"].every(
+    (k) => typeof r[k] === "number" && Number.isFinite(r[k])
+  );
+}
+function fuelCurveFromData(r) {
+  if (!(r.fuel_capacity_gal > 0)) throw new Error("fuel_capacity_gal \u306F\u6B63\u306E\u6570");
+  if (!(r.fuel_hours_full > 0)) throw new Error("fuel_hours_full \u306F\u6B63\u306E\u6570");
+  if (!(r.fuel_hours_full < r.fuel_hours_cruise)) throw new Error("fuel_hours_full \u306F fuel_hours_cruise \u3088\u308A\u77ED\u3044\uFF08\u5168\u901F\u306F\u5DE1\u822A\u3088\u308A\u71C3\u6599\u3092\u98DF\u3046\uFF09");
+  if (!(r.fuel_idle_ratio >= 0 && r.fuel_idle_ratio < 1)) throw new Error("fuel_idle_ratio \u306F 0 \u4EE5\u4E0A 1 \u672A\u6E80");
+  if (!(r.speed_cruise_kt > 0)) throw new Error("speed_cruise_kt \u306F\u6B63\u306E\u6570");
+  if (!(r.speed_max_kt > r.speed_cruise_kt)) throw new Error("speed_max_kt \u306F speed_cruise_kt \u3088\u308A\u5927\u304D\u3044");
+  const cruiseGph = r.fuel_capacity_gal / r.fuel_hours_cruise;
+  const fullGph = r.fuel_capacity_gal / r.fuel_hours_full;
+  const idleGph = r.fuel_idle_ratio * cruiseGph;
+  const cruiseMps = ktToMps(r.speed_cruise_kt);
+  const fullMps = ktToMps(r.speed_max_kt);
+  const exponent = Math.log((fullGph - idleGph) / (cruiseGph - idleGph)) / Math.log(fullMps / cruiseMps);
+  if (!Number.isFinite(exponent) || !(exponent > 0)) throw new Error("\u71C3\u6599\u66F2\u7DDA\u306E\u6307\u6570\u304C\u6C42\u307E\u3089\u306A\u3044\uFF08fuel_hours_* \u3068 fuel_idle_ratio \u3092\u78BA\u8A8D\uFF09");
+  return {
+    capacityGal: r.fuel_capacity_gal,
+    idleGph,
+    cruiseGph,
+    fullGph,
+    cruiseMps,
+    fullMps,
+    exponent,
+    galPerMCruise: cruiseGph / SECONDS_PER_HOUR / cruiseMps,
+    galPerMFull: fullGph / SECONDS_PER_HOUR / fullMps
+  };
+}
+
+// ../wt-0176202/src/core/friendly.ts
+var PARAM_KEYS = [
+  "window_s",
+  "rechallenge_s",
+  "passes_max",
+  "damage_per_pass",
+  "fire_chance",
+  "engine_damage_chance",
+  "aircraft_speed_kt",
+  "orbit_radius_m",
+  "approach_s",
+  "leave_s",
+  "quiet_s"
+];
+function isFriendlyFireDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const p = v["params"];
+  if (typeof p !== "object" || p === null) return false;
+  const r = p;
+  return PARAM_KEYS.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function friendlyParamsFromData(r, triggerEdgeM, ringRadiusM, timeScale) {
+  const q = r.params;
+  const bad = (msg) => {
+    throw new Error(`risk_events.json \u306E friendly_fire.params: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!(q.approach_s >= 0) || !(q.approach_s < q.window_s)) bad("0 <= approach_s < window_s");
+  if (!(q.rechallenge_s > 0)) bad("rechallenge_s \u306F\u6B63");
+  if (!Number.isInteger(q.passes_max) || q.passes_max < 1) bad("passes_max \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570");
+  if (!(q.damage_per_pass >= 0)) bad("damage_per_pass \u306F 0 \u4EE5\u4E0A");
+  if (!(q.fire_chance >= 0 && q.fire_chance <= 1) || !(q.engine_damage_chance >= 0 && q.engine_damage_chance <= 1)) bad("fire_chance / engine_damage_chance \u306F 0\u301C1");
+  if (!(q.aircraft_speed_kt > 0)) bad("aircraft_speed_kt \u306F\u6B63");
+  if (!(q.orbit_radius_m > 0)) bad("orbit_radius_m \u306F\u6B63");
+  if (!(q.leave_s > 0)) bad("leave_s \u306F\u6B63");
+  if (!(q.quiet_s >= 0)) bad("quiet_s \u306F 0 \u4EE5\u4E0A");
+  if (!(triggerEdgeM > 0)) throw new Error("friendly_aircraft.trigger_edge_m \u306F\u6B63\uFF08docs/02 \xA76.8\uFF09");
+  if (!(ringRadiusM >= 0) || !(timeScale > 0)) throw new Error("friendly: \u8F2A\u306E\u534A\u5F84\u3068 time_scale \u304C\u4E0D\u6B63");
+  const flightMps = ktToMps(q.aircraft_speed_kt) * timeScale;
+  const overpassS = q.orbit_radius_m / flightMps;
+  const zone = triggerEdgeM + ringRadiusM;
+  return {
+    triggerEdgeM,
+    zoneRadius2: zone * zone,
+    quietS: q.quiet_s,
+    windowS: q.window_s,
+    rechallengeS: q.rechallenge_s,
+    approachS: q.approach_s,
+    leaveS: q.leave_s,
+    passesMax: q.passes_max,
+    hit: { damage: q.damage_per_pass, fireChance: q.fire_chance, engineDamageChance: q.engine_damage_chance },
+    orbitRadiusM: q.orbit_radius_m,
+    flightMps,
+    overpassS,
+    passS: overpassS * 2,
+    orbitDegPerS: radToDeg(flightMps / q.orbit_radius_m)
+  };
+}
+
+// ../wt-0176202/src/core/torpedo-solver.ts
+function createCircles(count) {
+  const out = [];
+  for (let i = 0; i < count; i++) out.push({ x: 0, y: 0, r: 0 });
+  return out;
+}
+function fillHullCircles(circles, cx, cy, headingDeg, lengthM, beamM) {
+  const n = circles.length;
+  const r = beamM / 2;
+  const h = degToRad(headingDeg);
+  const ux = Math.sin(h);
+  const uy = -Math.cos(h);
+  const span = Math.max(0, lengthM - 2 * r);
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : -span / 2 + span * i / (n - 1);
+    const c = circles[i];
+    c.x = cx + ux * t;
+    c.y = cy + uy * t;
+    c.r = r;
+  }
+}
+
+// ../wt-0176202/src/core/gunnery.ts
+function hasNums(o, keys) {
+  if (!o || typeof o !== "object") return false;
+  const r = o;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isEnemyGunneryDataRecord(v) {
+  if (!v || typeof v !== "object") return false;
+  const r = v;
+  const guns = r["guns"];
+  if (!Array.isArray(guns) || guns.length === 0) return false;
+  if (!guns.every(isGunDataRecord)) return false;
+  return (r["searchlight"] === null || hasNums(r["searchlight"], ["range_m", "cone_deg", "sweep_deg_s", "on_delay_s"])) && (r["starshell"] === null || hasNums(r["starshell"], ["range_m", "illum_radius_m", "duration_s", "cooldown_s"]));
+}
+function isGunDataRecord(g) {
+  if (!g || typeof g !== "object" || typeof g["id"] !== "string") return false;
+  return hasNums(g, ["count", "effective_night_m", "rof_per_min", "damage", "shell_speed_mps", "dispersion_m", "splash_radius_m", "fire_chance", "engine_damage_chance"]);
+}
+function gunParamsFromData(g) {
+  return {
+    id: g.id,
+    count: g.count,
+    effectiveM: g.effective_night_m,
+    roundsPerMinPerGun: g.rof_per_min,
+    damage: g.damage,
+    shellSpeedMps: g.shell_speed_mps,
+    dispersionM: g.dispersion_m,
+    splashRadiusM: g.splash_radius_m,
+    fireChance: g.fire_chance,
+    engineDamageChance: g.engine_damage_chance
+  };
+}
+function gunneryParamsFromData(r) {
+  return {
+    guns: r.guns.map(gunParamsFromData),
+    // 持たない艦（null）は射程 0＝決して照らさない・撃たない（点灯の遅れは十分大きく）
+    searchlight: r.searchlight ? { rangeM: r.searchlight.range_m, coneDeg: r.searchlight.cone_deg, sweepDegS: r.searchlight.sweep_deg_s, onDelayS: r.searchlight.on_delay_s } : { rangeM: 0, coneDeg: 0, sweepDegS: 0, onDelayS: Infinity },
+    starshell: r.starshell ? { rangeM: r.starshell.range_m, illumRadiusM: r.starshell.illum_radius_m, durationS: r.starshell.duration_s, cooldownS: r.starshell.cooldown_s } : { rangeM: 0, illumRadiusM: 0, durationS: 0, cooldownS: 0 }
+  };
+}
+function isBoatDamageDataRecord(v) {
+  const d = v?.["damage"];
+  return hasNums(v, ["hull_hp"]) && hasNums(d, ["engine_damage_speed_factor", "fire_dps", "fire_duration_s", "extinguish_hold_s"]) && d["extinguish_hold_s"] >= 0;
+}
+function damageParamsFromData(r) {
+  return { maxHp: r.hull_hp, engineSpeedFactor: r.damage.engine_damage_speed_factor, fireDps: r.damage.fire_dps, fireDurationS: r.damage.fire_duration_s, extinguishHoldS: r.damage.extinguish_hold_s };
+}
+
+// ../wt-0176202/src/core/seaplane-data.ts
+function hasNums2(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isSeaplaneDataRecord(v) {
+  if (!hasNums2(v, ["speed_kt", "altitude_m"]) || typeof v["id"] !== "string") return false;
+  const r = v;
+  return hasNums2(r["flare"], ["illum_radius_m", "duration_s", "cooldown_s", "reveal_m"]) && hasNums2(r["bomb"], ["count", "damage", "blast_radius_m", "accuracy_cep_m", "fire_chance", "engine_damage_chance"]) && hasNums2(r["detection"], ["base_detect_m", "wake_detect_m"]);
+}
+function isEnemyAircraftEventRecord(v) {
+  return typeof v === "object" && v !== null && hasNums2(v["params"], ["patrol_from_s", "wake_trigger_s", "lose_s", "run_radius_m", "orbit_s", "leave_s", "patrol_cooldown_s"]);
+}
+function seaplaneParamsFromData(plane, event, timeScale, boat) {
+  const q = event.params;
+  const bad = (msg) => {
+    throw new Error(`enemies.json \u306E ${plane.id} / risk_events.json \u306E enemy_aircraft.params: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!(plane.speed_kt > 0) || !(plane.altitude_m > 0)) bad("speed_kt / altitude_m \u306F\u6B63");
+  if (!(q.run_radius_m > 0 && q.run_radius_m < plane.detection.base_detect_m && plane.detection.base_detect_m < plane.detection.wake_detect_m)) bad("0 < run_radius_m < base_detect_m < wake_detect_m");
+  if (!Number.isInteger(plane.bomb.count) || plane.bomb.count < 1) bad("bomb.count \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570");
+  if (!(plane.bomb.damage >= 0) || !(plane.bomb.blast_radius_m >= 0) || !(plane.bomb.accuracy_cep_m > 0)) bad("bomb.damage / blast_radius_m \u306F 0 \u4EE5\u4E0A\u3001accuracy_cep_m \u306F\u6B63");
+  if (!(plane.bomb.fire_chance >= 0 && plane.bomb.fire_chance <= 1) || !(plane.bomb.engine_damage_chance >= 0 && plane.bomb.engine_damage_chance <= 1)) bad("bomb.fire_chance / engine_damage_chance \u306F 0\u301C1");
+  if (!(plane.flare.illum_radius_m > 0) || !(plane.flare.duration_s > 0) || !(plane.flare.reveal_m >= plane.flare.illum_radius_m)) bad("flare.illum_radius_m / duration_s \u306F\u6B63\u3001reveal_m \u306F illum_radius_m \u4EE5\u4E0A");
+  if (!(q.patrol_from_s >= 0) || !(q.wake_trigger_s >= 0) || !(q.lose_s >= 0) || !(q.orbit_s >= 0) || !(q.leave_s > 0) || !(q.patrol_cooldown_s >= 0)) bad("patrol_from_s / wake_trigger_s / lose_s / orbit_s / patrol_cooldown_s \u306F 0 \u4EE5\u4E0A\u3001leave_s \u306F\u6B63");
+  if (!(timeScale > 0) || !(boat.silentMaxKt > 0) || !(boat.halfLengthM > 0) || !(boat.halfBeamM >= 0)) throw new Error("seaplane: time_scale \u3068\u8247\u306E\u9759\u97F3\u306E\u4E0A\u9650\u30FB\u5BF8\u6CD5\u304C\u4E0D\u6B63");
+  const flightMps = ktToMps(plane.speed_kt) * timeScale;
+  const overpassS = q.run_radius_m / flightMps;
+  const bombFallGameS = Math.sqrt(2 * plane.altitude_m / GRAVITY_MPS2);
+  return {
+    flightMps,
+    spawnM: plane.detection.wake_detect_m,
+    wakeDetectM: plane.detection.wake_detect_m,
+    baseDetectM: plane.detection.base_detect_m,
+    wakeThresholdKt: boat.silentMaxKt,
+    patrolFromS: q.patrol_from_s,
+    wakeTriggerS: q.wake_trigger_s,
+    loseS: q.lose_s,
+    patrolCooldownS: q.patrol_cooldown_s,
+    runRadiusM: q.run_radius_m,
+    overpassS,
+    passS: overpassS * 2,
+    orbitDegPerS: radToDeg(flightMps / q.run_radius_m),
+    orbitS: q.orbit_s,
+    leaveS: q.leave_s,
+    flareRadius2: plane.flare.illum_radius_m * plane.flare.illum_radius_m,
+    flareDurationS: plane.flare.duration_s,
+    flareRevealM: plane.flare.reveal_m,
+    bombCount: plane.bomb.count,
+    bombHit: {
+      damage: plane.bomb.damage,
+      fireChance: plane.bomb.fire_chance,
+      engineDamageChance: plane.bomb.engine_damage_chance
+    },
+    bombFallFeelS: bombFallGameS / timeScale,
+    bombFallGameS,
+    bombLeadGameS: overpassS * timeScale + bombFallGameS,
+    bombScatterM: plane.bomb.accuracy_cep_m * Math.SQRT2,
+    boatHalfLengthM: boat.halfLengthM,
+    bombHitRadiusM: boat.halfBeamM + plane.bomb.blast_radius_m
+  };
+}
+
+// ../wt-0176202/src/core/smoke.ts
+function isBoatSmokeDataRecord(v) {
+  if (!v || typeof v !== "object") return false;
+  const r = v;
+  if (typeof r["smoke_generator"] !== "boolean") return false;
+  if (!r["smoke_generator"]) return true;
+  const s = r["smoke"];
+  if (!s) return false;
+  const finite = (k) => typeof s[k] === "number" && Number.isFinite(s[k]) ? s[k] : null;
+  const positive = (k) => (finite(k) ?? 0) > 0;
+  const nonNegative = (k) => (finite(k) ?? -1) >= 0;
+  return positive("duration_s") && positive("puff_interval_s") && positive("puff_radius_m") && positive("puff_lifetime_s") && nonNegative("cooldown_s");
+}
+function smokeParamsFromData(r) {
+  if (!r.smoke_generator || !r.smoke) return null;
+  return {
+    durationS: r.smoke.duration_s,
+    cooldownS: r.smoke.cooldown_s,
+    puffIntervalS: r.smoke.puff_interval_s,
+    puffRadiusM: r.smoke.puff_radius_m,
+    puffLifetimeS: r.smoke.puff_lifetime_s
+  };
+}
+
+// ../wt-0176202/src/core/shore-battery.ts
+function isShoreBatteryDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return isGunDataRecord(r["gun"]) && typeof r["base_detect_m"] === "number" && Number.isFinite(r["base_detect_m"]) && typeof r["inland_m"] === "number" && Number.isFinite(r["inland_m"]);
+}
+function shoreBatteryParamsFromData(r, xM, coastY, boundsWidth, detectHoldS) {
+  const bad = (msg) => {
+    throw new Error(`risk_events.json \u306E shore_battery.params / missions_seed \u306E shore_battery: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!(r.base_detect_m > 0) || !(r.inland_m >= 0)) bad("base_detect_m \u306F\u6B63\u3001inland_m \u306F 0 \u4EE5\u4E0A");
+  if (!(xM >= 0 && xM <= boundsWidth)) bad("x_m \u306F\u6D77\u57DF\u306E\u5E45\u306E\u4E2D");
+  const gun = gunParamsFromData(r.gun);
+  if (!(gun.effectiveM > 0) || !(gun.roundsPerMinPerGun > 0) || !(gun.count >= 1) || !(gun.damage > 0) || !(gun.shellSpeedMps > 0)) bad("gun \u306E effective_night_m / rof_per_min / count / damage / shell_speed_mps \u306F\u6B63");
+  return {
+    x: xM,
+    y: coastY + r.inland_m,
+    gun,
+    hit: { damage: gun.damage, fireChance: gun.fireChance, engineDamageChance: gun.engineDamageChance },
+    arc2: gun.effectiveM * gun.effectiveM,
+    baseDetectM: r.base_detect_m,
+    detectHoldS
+  };
+}
+
+// ../wt-0176202/src/core/ship-ai-data.ts
+function hasNums3(o, keys) {
+  if (!o || typeof o !== "object") return false;
+  const r = o;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isEnemyAiDataRecord(v) {
+  if (!hasNums3(v, ["speed_typical_kt", "speed_max_kt", "turn_rate_deg_s", "accel_mps2"])) return false;
+  const r = v;
+  const eva = r["evasion"];
+  const ram = r["ram"];
+  const det = r["detection"];
+  const spot = det?.["wake_spot_rate_per_s"];
+  return hasNums3(det, ["base_detect_m", "reaction_delay_s", "torpedo_wake_detect_m"]) && (spot === void 0 || typeof spot === "number" && spot > 0 && Number.isFinite(spot)) && hasNums3(eva, ["evade_turn_rate_deg_s", "speed_boost_kt"]) && typeof eva?.["turn_toward_wakes"] === "boolean" && hasNums3(ram, ["trigger_m", "give_up_m", "stall_s", "cooldown_s", "turn_rate_bonus_deg_s"]) && typeof ram?.["enabled"] === "boolean" && hasNums3(r["patrol"], ["edge_turn_margin_m"]);
+}
+function shipAiParamsFromData(r, evasionMultiplier = 1) {
+  return {
+    torpedoWakeDetectM: r.detection.torpedo_wake_detect_m,
+    wakeSpotRatePerS: (r.detection.wake_spot_rate_per_s ?? Infinity) * evasionMultiplier,
+    reactionDelayS: r.detection.reaction_delay_s / evasionMultiplier,
+    evadeTurnRateDegS: r.evasion.evade_turn_rate_deg_s * evasionMultiplier,
+    speedBoostMps: ktToMps(r.evasion.speed_boost_kt),
+    turnTowardWakes: r.evasion.turn_toward_wakes,
+    ramTriggerM: r.ram.trigger_m,
+    ramEnabled: r.ram.enabled,
+    ramGiveUpM: Math.max(r.ram.give_up_m, r.ram.trigger_m),
+    ramStallS: r.ram.stall_s,
+    ramCooldownS: r.ram.cooldown_s,
+    ramTurnRateBonusDegS: r.ram.turn_rate_bonus_deg_s,
+    edgeTurnMarginM: r.patrol.edge_turn_margin_m,
+    turnRateDegS: r.turn_rate_deg_s,
+    accelMps2: r.accel_mps2,
+    cruiseSpeedMps: ktToMps(r.speed_typical_kt),
+    maxSpeedMps: ktToMps(r.speed_max_kt)
+  };
+}
+
+// ../wt-0176202/src/core/ship-ai.ts
+function bearingDeg(x, y, tx, ty) {
+  return wrapDeg360(Math.atan2(tx - x, -(ty - y)) * 180 / Math.PI);
+}
+
+// ../wt-0176202/src/core/escort.ts
+function isEscortMissionBlock(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return typeof r["boat"] === "string" && ["station_astern_m", "station_abeam_m", "lag_warn_m", "catch_up_gain_per_s", "heading_deadband_m", "lit_near_leader_m"].every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function escortParamsFromData(b, boat, hitScale, spriteScale) {
+  const bad = (msg) => {
+    throw new Error(`missions_seed \u306E escort: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+  if (!(b.station_astern_m > 0)) bad("station_astern_m \u306F\u6B63\uFF08\u81EA\u8247\u306E\u5F8C\u308D\u306B\u4ED8\u304F\uFF09");
+  if (!(b.lag_warn_m > b.station_astern_m)) bad("lag_warn_m \u306F station_astern_m \u3088\u308A\u5927\u304D\u3044");
+  if (!(b.catch_up_gain_per_s > 0) || !(b.heading_deadband_m >= 0) || !(b.lit_near_leader_m >= 0)) bad("catch_up_gain_per_s \u306F\u6B63\u3001heading_deadband_m \u3068 lit_near_leader_m \u306F 0 \u4EE5\u4E0A");
+  if (!(boat.speedMaxMps > 0) || !(boat.accelMps2 > 0) || !(boat.turnRateDegS > 0) || !(boat.maxHp > 0)) bad("\u540C\u578B\u8247\u306E\u901F\u529B\u30FB\u52A0\u901F\u30FB\u65CB\u56DE\u7387\u30FBhull_hp \u306F\u6B63");
+  return {
+    stationAsternM: b.station_astern_m,
+    stationAbeamM: b.station_abeam_m,
+    lagWarnM: b.lag_warn_m,
+    catchUpGainPerS: b.catch_up_gain_per_s,
+    headingDeadbandM: b.heading_deadband_m,
+    litNearLeaderM: b.lit_near_leader_m,
+    speedMaxMps: boat.speedMaxMps,
+    accelMps2: boat.accelMps2,
+    turnRateDegS: boat.turnRateDegS,
+    maxHp: boat.maxHp,
+    halfLengthM: boat.lengthM * hitScale / 2,
+    halfBeamM: boat.beamM * hitScale / 2,
+    boundsMarginM: boat.lengthM * spriteScale / 2
+  };
+}
+
+// ../wt-0176202/src/core/barge-data.ts
+function nums(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isBargeDataRecord(v) {
+  if (!nums(v, ["length_m", "beam_m", "hull_hp", "speed_typical_kt", "speed_max_kt", "turn_rate_deg_s", "accel_mps2"])) return false;
+  const r = v;
+  return nums(r["detection"], ["base_detect_m", "reaction_delay_s"]) && nums(r["evasion"], ["speed_boost_kt", "beach_fan_deg"]) && Array.isArray(r["guns"]) && r["guns"].length === 1 && isGunDataRecord(r["guns"][0]);
+}
+function isBargeMissionBlock(v) {
+  if (!nums(v, ["beach_margin_m", "kill_quota"])) return false;
+  const r = v;
+  const offsets = r["offsets_m"];
+  return nums(r["lead_start"], ["x_m", "y_m", "heading_deg"]) && Array.isArray(offsets) && offsets.every((o) => typeof o === "number" && Number.isFinite(o));
+}
+function bargeParamsFromData(r, b, count, world, bounds, detectHoldS) {
+  const bad = (msg) => {
+    throw new Error(`enemies.json \u306E daihatsu_barge / missions_seed \u306E barges: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+  if (!Number.isInteger(count) || count < 1) bad("\u5927\u767A\u306F 1 \u96BB\u4EE5\u4E0A");
+  if (!Number.isInteger(b.kill_quota) || b.kill_quota < 1 || b.kill_quota > count) bad(`kill_quota \u306F 1\u301C${count} \u306E\u6574\u6570`);
+  if (!(r.hull_hp > 0) || !(r.speed_typical_kt > 0) || !(r.turn_rate_deg_s > 0) || !(r.accel_mps2 > 0)) bad("hull_hp / speed_typical_kt / turn_rate_deg_s / accel_mps2 \u306F\u6B63");
+  if (!(r.evasion.speed_boost_kt >= 0) || r.speed_typical_kt + r.evasion.speed_boost_kt > r.speed_max_kt) bad("speed_typical_kt + speed_boost_kt \u306F speed_max_kt \u4EE5\u4E0B");
+  if (!(r.detection.reaction_delay_s >= 0) || !(r.detection.base_detect_m > 0) || !(b.beach_margin_m > 0)) bad("reaction_delay_s \u306F 0 \u4EE5\u4E0A\u3001base_detect_m / beach_margin_m \u306F\u6B63");
+  const o = b.offsets_m;
+  if (o.length !== count || o.some((d, i) => d < 0 || i > 0 && d < o[i - 1])) bad(`offsets_m \u306F ${count} \u500B\uFF08enemies \u306E\u6570\uFF09\u3067\u30010 \u4EE5\u4E0A\u30FB\u524D\u304B\u3089\u9806\u306B\u6E1B\u3089\u306A\u3044`);
+  const beachY = bounds.height - b.beach_margin_m;
+  const h = b.lead_start.heading_deg * Math.PI / 180;
+  const tailX = b.lead_start.x_m - Math.sin(h) * o[count - 1];
+  const tailY = b.lead_start.y_m + Math.cos(h) * o[count - 1];
+  for (const [x, y] of [[b.lead_start.x_m, b.lead_start.y_m], [tailX, tailY]]) if (x < 0 || x > bounds.width || y < 0 || !(y < beachY)) bad("\u968A\uFF08\u5148\u982D\u304B\u3089\u6700\u5F8C\u5C3E\u307E\u3067\uFF09\u306F\u6D77\u57DF\u306E\u4E2D\u3067\u3001\u5CB8\u306E\u7DDA\uFF08\u9AD8\u3055 \u2212 beach_margin_m\uFF09\u3088\u308A\u6D77\u5074");
+  const gun = gunParamsFromData(r.guns[0]);
+  return {
+    count,
+    hp: r.hull_hp,
+    halfLengthM: r.length_m * world.hitScale / 2,
+    halfBeamM: r.beam_m * world.hitScale / 2,
+    boundsMarginM: r.length_m * world.spriteScale / 2,
+    cruiseSpeedMps: ktToMps(r.speed_typical_kt),
+    runSpeedMps: ktToMps(r.speed_typical_kt + r.evasion.speed_boost_kt),
+    turnRateDegS: r.turn_rate_deg_s,
+    accelMps2: r.accel_mps2,
+    baseDetectM: r.detection.base_detect_m,
+    reactionDelayS: r.detection.reaction_delay_s,
+    detectHoldS,
+    gun,
+    gunHit: { damage: gun.damage, fireChance: gun.fireChance, engineDamageChance: gun.engineDamageChance },
+    leadX: b.lead_start.x_m,
+    leadY: b.lead_start.y_m,
+    headingDeg: b.lead_start.heading_deg,
+    offsetsM: [...o],
+    beachY,
+    fanDeg: r.evasion.beach_fan_deg,
+    quota: b.kill_quota,
+    timeScale: world.timeScale
+  };
+}
+
+// ../wt-0176202/src/core/gun-battery.ts
+function nums2(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isGunBatteryDataRecord(v) {
+  if (!nums2(v, ["range_m", "effective_m", "dead_cone_deg", "muzzle_flash_reveal_m"])) return false;
+  const r = v;
+  const groups = r["groups"];
+  const mag = r["magazine"];
+  return typeof r["label_ja"] === "string" && nums2(r["spread_factor"], ["stop", "silent", "cruise", "full"]) && Array.isArray(groups) && groups.length > 0 && groups.every((g) => typeof g?.["id"] === "string" && nums2(g, ["rounds_per_min", "damage", "shell_speed_mps", "dispersion_m", "splash_radius_m"])) && (mag === void 0 || nums2(mag, ["rounds", "reload_s"])) && (r["min_spread_m"] === void 0 || nums2(r, ["min_spread_m"]));
+}
+function gunBatteryParamsFromData(r) {
+  const bad = (msg) => {
+    throw new Error(`boats.json \u306E gun_battery: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+  if (!(r.range_m > 0) || !(r.effective_m > 0 && r.effective_m <= r.range_m)) bad("range_m \u306F\u6B63\u3001effective_m \u306F 0\u301Crange_m");
+  if (!(r.dead_cone_deg >= 0 && r.dead_cone_deg < 90) || !(r.muzzle_flash_reveal_m >= 0)) bad("dead_cone_deg \u306F 0\u301C90 \u672A\u6E80\u3001muzzle_flash_reveal_m \u306F 0 \u4EE5\u4E0A");
+  const f = r.spread_factor;
+  if (![f.stop, f.silent, f.cruise, f.full].every((x) => x >= 1)) bad("spread_factor \u306F 1 \u4EE5\u4E0A\uFF08\u901F\u3044\u307B\u3069\u6563\u308B\uFF09");
+  for (const g of r.groups) if (!(g.rounds_per_min > 0 && g.damage > 0 && g.shell_speed_mps > 0 && g.dispersion_m >= 0 && g.splash_radius_m >= 0)) bad(`${g.id}: rounds_per_min / damage / shell_speed_mps \u306F\u6B63\u3001dispersion_m / splash_radius_m \u306F 0 \u4EE5\u4E0A`);
+  const mag = r.magazine;
+  if (mag && !(Number.isInteger(mag.rounds) && mag.rounds >= 1 && mag.reload_s > 0)) bad("magazine \u306F rounds\uFF081 \u4EE5\u4E0A\u306E\u6574\u6570\uFF09\u30FBreload_s\uFF08\u6B63\uFF09\u3002\u7D44\u304C 2 \u3064\u4EE5\u4E0A\u306E\u7832\u3082\u5F3E\u5009\u306F 1 \u3064\uFF08\u5168\u90E8\u306E\u7D44\u306E\u767A\u3092\u6570\u3048\u308B\uFF09");
+  if (r.min_spread_m !== void 0 && !(r.min_spread_m >= 0)) bad("min_spread_m \u306F 0 \u4EE5\u4E0A");
+  const c = Math.cos(r.dead_cone_deg * Math.PI / 180);
+  return {
+    label: r.label_ja,
+    groups: r.groups.map((g) => ({ id: g.id, roundsPerMin: g.rounds_per_min, damage: g.damage, shellSpeedMps: g.shell_speed_mps, dispersionM: g.dispersion_m, splashRadiusM: g.splash_radius_m })),
+    rangeM: r.range_m,
+    effectiveM: r.effective_m,
+    deadConeDeg: r.dead_cone_deg,
+    deadConeCos2: c * c,
+    flashRevealM: r.muzzle_flash_reveal_m,
+    spreadFactor: { stop: f.stop, silent: f.silent, cruise: f.cruise, full: f.full },
+    // 弾倉は最後に、あるときだけ鍵を足す（弾倉の無い砲の params の JSON は変わらない）
+    ...mag ? { magazine: { rounds: mag.rounds, reloadS: mag.reload_s } } : {},
+    // 最小散布も同じく、あるときだけ鍵を足す（jp_t38 だけ。jp_t14・us_elco80 の params は変わらない）
+    ...r.min_spread_m !== void 0 ? { minSpreadM: r.min_spread_m } : {}
+  };
+}
+
+// ../wt-0176202/src/core/shallows.ts
+function isGroundingDataRecord(v) {
+  if (!v || typeof v !== "object") return false;
+  const p = v["params"];
+  return !!p && typeof p["safe_speed_kt"] === "number" && p["safe_speed_kt"] > 0 && typeof p["warn_lookahead_s"] === "number" && p["warn_lookahead_s"] >= 0;
+}
+function groundingParamsFromData(r) {
+  return { safeSpeedMps: ktToMps(r.params.safe_speed_kt), warnLookaheadS: r.params.warn_lookahead_s };
+}
+function isShallowRectDataRecord(v) {
+  if (!v || typeof v !== "object") return false;
+  const r = v;
+  return ["x_m", "y_m", "width_m", "height_m"].every((k) => typeof r[k] === "number" && Number.isFinite(r[k])) && (r["label_ja"] === void 0 || typeof r["label_ja"] === "string");
+}
+function shallowsFromData(list, bounds) {
+  return list.map((r, i) => {
+    if (!(r.width_m > 0) || !(r.height_m > 0)) throw new Error(`shallows[${i}] \u306E width_m / height_m \u306F\u6B63\u306E\u6570`);
+    if (r.x_m < 0 || r.y_m < 0 || r.x_m + r.width_m > bounds.width || r.y_m + r.height_m > bounds.height) throw new Error(`shallows[${i}] \u304C\u6D77\u57DF\uFF08bounds_m\uFF09\u304B\u3089\u306F\u307F\u51FA\u3057\u3066\u3044\u308B`);
+    return { x: r.x_m, y: r.y_m, w: r.width_m, h: r.height_m, label: r.label_ja ?? "\u6D45\u702C" };
+  });
+}
+
+// ../wt-0176202/src/core/storm.ts
+function hasNums4(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isStormDataRecord(v) {
+  return typeof v === "object" && v !== null && hasNums4(v["params"], ["safe_speed_kt", "turn_rate_factor", "vis_factor", "detect_factor", "slam_rate_full_hz", "slam_damage", "warn_lookahead_s"]);
+}
+function isStormMissionBlock(v) {
+  return hasNums4(v, ["sea_state", "depth_m", "drift_kt", "start_south_y_min_m", "start_south_y_max_m"]);
+}
+function stormParamsFromData(r, b, boat, timeScale, bounds, playerStartY) {
+  const q = r.params;
+  const badP = (msg) => {
+    throw new Error(`risk_events.json \u306E storm.params: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  const badM = (msg) => {
+    throw new Error(`missions_seed \u306E storm: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!(q.safe_speed_kt > 0) || !(q.safe_speed_kt < boat.speedMaxKt)) badP("safe_speed_kt \u306F 0 \u3088\u308A\u5927\u304D\u304F\u8247\u306E speed_max_kt \u3088\u308A\u5C0F\u3055\u3044");
+  if (!(q.turn_rate_factor > 0 && q.turn_rate_factor <= 1)) badP("turn_rate_factor \u306F 0\u301C1\uFF080 \u306F\u9664\u304F\uFF09");
+  if (!(q.vis_factor > 0 && q.vis_factor <= 1) || !(q.detect_factor > 0 && q.detect_factor <= 1)) badP("vis_factor / detect_factor \u306F 0\u301C1\uFF080 \u306F\u9664\u304F\uFF09");
+  if (!(q.slam_rate_full_hz >= 0) || !(q.slam_damage >= 0) || !(q.warn_lookahead_s >= 0)) badP("slam_rate_full_hz / slam_damage / warn_lookahead_s \u306F 0 \u4EE5\u4E0A");
+  if (!Number.isInteger(b.sea_state) || b.sea_state < 0 || b.sea_state > 9) badM("sea_state \u306F 0\u301C9 \u306E\u6574\u6570");
+  if (!Number.isInteger(boat.seaStateLimit) || boat.seaStateLimit < 0 || boat.seaStateLimit > 9) throw new Error("boats.json \u306E sea_state_limit \u306F 0\u301C9 \u306E\u6574\u6570\uFF08docs/02 \xA76.8\uFF09");
+  if (!(b.depth_m > 0) || !(b.drift_kt > 0)) badM("depth_m / drift_kt \u306F\u6B63");
+  if (!(timeScale > 0)) badM("time_scale \u304C\u4E0D\u6B63");
+  if (!(b.start_south_y_min_m >= 0) || !(b.start_south_y_min_m <= b.start_south_y_max_m)) badM("0 <= start_south_y_min_m <= start_south_y_max_m");
+  if (!(playerStartY - b.start_south_y_max_m >= b.depth_m)) badM("\u51FA\u767A\u70B9\u304C\u66B4\u98A8\u306E\u5E2F\u306B\u8FD1\u3059\u304E\u308B\uFF08start_south_y_max_m \u306F player_start.y_m \u2212 depth_m \u4EE5\u4E0B\u3002\u6B62\u307E\u3063\u3066\u3044\u3066\u3082\u5E2F\u306E\u5E45\u3076\u3093\u306E\u7336\u4E88\u3092\u6B8B\u3059\uFF09");
+  return {
+    safeSpeedKt: q.safe_speed_kt,
+    safeSpeedMps: ktToMps(q.safe_speed_kt),
+    turnRateFactor: q.turn_rate_factor,
+    visFactor: q.vis_factor,
+    detectFactor: q.detect_factor,
+    slamRateFullHz: q.slam_rate_full_hz,
+    slamDamage: q.slam_damage,
+    warnLookaheadS: q.warn_lookahead_s,
+    seaState: b.sea_state,
+    seaStateLimit: boat.seaStateLimit,
+    slamEnabled: b.sea_state > boat.seaStateLimit,
+    speedFullMps: ktToMps(boat.speedMaxKt),
+    depthM: b.depth_m,
+    driftMps: ktToMps(b.drift_kt) * timeScale,
+    startSouthMinY: b.start_south_y_min_m,
+    startSouthMaxY: b.start_south_y_max_m,
+    timeScale,
+    boundsWidth: bounds.width,
+    boundsHeight: bounds.height
+  };
+}
+
+// ../wt-0176202/src/core/crew.ts
+function isBoatCrewDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  const d = r["damage"];
+  if (!(typeof r["crew"] === "number" && typeof r["hull_hp"] === "number" && !!d && typeof d["casualties_per_hp"] === "number" && Number.isFinite(d["casualties_per_hp"]))) return false;
+  const e = d["crew_effects"];
+  return !!e && ["extinguish_exponent", "turn_rate_per_loss", "accel_per_loss", "min_factor"].every((k) => typeof e[k] === "number" && Number.isFinite(e[k]));
+}
+function crewParamsFromData(r) {
+  if (!Number.isInteger(r.crew) || r.crew < 1) throw new Error("boats.json \u306E crew \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570\uFF08docs/02 \xA76.6\uFF09");
+  const rate = r.damage.casualties_per_hp;
+  if (!(rate >= 0)) throw new Error("boats.json \u306E damage.casualties_per_hp \u306F 0 \u4EE5\u4E0A\uFF08docs/02 \xA76.6\uFF09");
+  if (r.hull_hp * rate > r.crew + 1e-9) throw new Error("boats.json \u306E damage.casualties_per_hp \u304C\u5927\u304D\u3059\u304E\u308B\uFF08\u6D6E\u3044\u3066\u3044\u308B\u8247\u306E\u4E57\u54E1\u304C\u5168\u6EC5\u3057\u5F97\u308B\u3002hull_hp \xD7 \u7387 \u2264 crew\uFF09");
+  return { total: r.crew, casualtiesPerHp: rate };
+}
+function crewEffectsFromData(r) {
+  const e = r.damage.crew_effects;
+  if (!(e.extinguish_exponent >= 0) || !(e.turn_rate_per_loss >= 0) || !(e.accel_per_loss >= 0)) throw new Error("boats.json \u306E damage.crew_effects: extinguish_exponent / turn_rate_per_loss / accel_per_loss \u306F 0 \u4EE5\u4E0A\uFF08docs/02 \xA76.6\uFF09");
+  if (!(e.min_factor > 0 && e.min_factor <= 1)) throw new Error("boats.json \u306E damage.crew_effects.min_factor \u306F 0\u301C1\uFF080 \u306F\u9664\u304F\uFF09\uFF08docs/02 \xA76.6\uFF09");
+  return { extinguishExponent: e.extinguish_exponent, turnRatePerLoss: e.turn_rate_per_loss, accelPerLoss: e.accel_per_loss, minFactor: e.min_factor };
+}
+
+// ../wt-0176202/src/core/rng.ts
+var SeededRng = class {
+  constructor(seed) {
+    this.state = seed >>> 0;
+  }
+  /** [0, 1) の一様乱数 */
+  next() {
+    this.state = this.state + 1831565813 >>> 0;
+    let t = this.state;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  /** [min, max) の一様乱数 */
+  nextRange(min, max) {
+    return min + (max - min) * this.next();
+  }
+  /** 確率 p で true */
+  chance(p) {
+    if (p <= 0) return false;
+    if (p >= 1) return true;
+    return this.next() < p;
+  }
+};
+
+// ../wt-0176202/src/core/sortie.ts
+var RAID_EVENT_ID = "harbor_fire_explosion";
+var RAID_NONE = 0;
+var RAID_DISPERSE = 1;
+var RAID_STAY = 2;
+var NO_SORTIE_EFFECT = Object.freeze({ fuelFactor: 1, hpLoss: 0, fireAtStart: false });
+function directSortie(missionId, seed, o, hard = false, historical = false) {
+  const s = { missionId, seed: seed >>> 0, raid: false, choice: RAID_NONE, stayHit: false, hard, historical };
+  if (o === "disperse") {
+    s.raid = true;
+    s.choice = RAID_DISPERSE;
+  } else if (o === "stay" || o === "hit") {
+    s.raid = true;
+    s.choice = RAID_STAY;
+    s.stayHit = o === "hit";
+  }
+  return s;
+}
+function sortieConditions(s, p) {
+  if (p === null || !s.raid) return NO_SORTIE_EFFECT;
+  if (s.choice === RAID_DISPERSE) return { fuelFactor: p.disperseFuelFactor, hpLoss: 0, fireAtStart: false };
+  if (s.choice === RAID_STAY && s.stayHit) return { fuelFactor: 1, hpLoss: p.stayHitDamage, fireAtStart: p.stayHitFire };
+  return NO_SORTIE_EFFECT;
+}
+function isRaidDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const q = v["params"];
+  if (typeof q !== "object" || q === null) return false;
+  const r = q;
+  return ["chance", "disperse_fuel_factor", "stay_hit_chance", "stay_hit_damage"].every((k) => typeof r[k] === "number" && Number.isFinite(r[k])) && typeof r["stay_hit_fire"] === "boolean";
+}
+function raidParamsFromData(r, d) {
+  const q = r.params;
+  const bad = (msg) => {
+    throw new Error(`risk_events.json \u306E harbor_fire_explosion.params: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!(q.chance >= 0 && q.chance <= 1)) bad("chance \u306F 0\u301C1");
+  if (!(q.disperse_fuel_factor > 0 && q.disperse_fuel_factor <= 1)) bad("disperse_fuel_factor \u306F 0\u301C1\uFF080 \u306F\u9664\u304F\uFF09");
+  if (!(q.stay_hit_chance >= 0 && q.stay_hit_chance <= 1)) bad("stay_hit_chance \u306F 0\u301C1");
+  if (!(q.stay_hit_damage >= 0 && q.stay_hit_damage < d.maxHp)) bad("stay_hit_damage \u306F 0 \u4EE5\u4E0A\u3067 hull_hp \u3088\u308A\u5C0F\u3055\u3044");
+  if (q.stay_hit_fire && !(d.maxHp - q.stay_hit_damage > d.fireDps * d.fireDurationS)) bad("\u81F3\u8FD1\u5F3E\u3068\u706B\u707D\u3060\u3051\u3067\u6C88\u3080\uFF08hull_hp \u2212 stay_hit_damage \u306F\u706B\u707D\u306E\u7DCF\u88AB\u5BB3 fire_dps \xD7 fire_duration_s \u3088\u308A\u5927\u304D\u304F\u3059\u308B\uFF09");
+  return { chance: q.chance, disperseFuelFactor: q.disperse_fuel_factor, stayHitChance: q.stay_hit_chance, stayHitDamage: q.stay_hit_damage, stayHitFire: q.stay_hit_fire };
+}
+
+// ../wt-0176202/src/core/torpedo.ts
+function isTorpedoDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  const settings = r["settings"];
+  const rel = r["reliability"];
+  return Array.isArray(settings) && settings.length > 0 && settings.every((s) => typeof s === "object" && s !== null && Number.isFinite(s["speed_kt"]) && Number.isFinite(s["range_m"])) && Number.isFinite(r["default_setting"]) && Number.isFinite(r["length_m"]) && typeof rel === "object" && rel !== null && Number.isFinite(rel["dud"]) && Number.isFinite(rel["erratic"]) && Number.isFinite(rel["jitter_deg"]);
+}
+function torpedoParamsFromData(r, armingM, erraticPeriodS) {
+  const setting = r.settings[r.default_setting] ?? r.settings[0];
+  if (!setting) throw new Error("\u9B5A\u96F7\u306E settings \u304C\u7A7A");
+  return {
+    speedMps: ktToMps(setting.speed_kt),
+    rangeM: setting.range_m,
+    armingM,
+    jitterDeg: r.reliability.jitter_deg,
+    erraticPeriodS
+  };
+}
+function torpedoReliabilityFromData(r) {
+  return { dud: r.reliability.dud, erratic: r.reliability.erratic };
+}
+
+// ../wt-0176202/src/config/mission-hard-data.ts
+function isNum(v) {
+  return typeof v === "number" && Number.isFinite(v);
+}
+function positiveInt(v) {
+  return typeof v === "number" && Number.isInteger(v) && v >= 1 ? v : 0;
+}
+function objOf(v) {
+  return typeof v === "object" && v !== null && !Array.isArray(v) ? v : null;
+}
+function readStart(v, label) {
+  const r = v;
+  if (!r || !isNum(r["x_m"]) || !isNum(r["y_m"]) || !isNum(r["heading_deg"])) {
+    throw new Error(`${label} \u306B x_m / y_m / heading_deg \u304C\u7121\u3044`);
+  }
+  return { x: r["x_m"], y: r["y_m"], headingDeg: r["heading_deg"] };
+}
+var HARD_TEXT_KEYS = ["objective_ja", "success_ja", "note_ja"];
+function readHardText(hardRaw, missionId) {
+  if (typeof hardRaw !== "object" || hardRaw === null) return null;
+  const r = hardRaw;
+  if (HARD_TEXT_KEYS.every((k) => r[k] === void 0)) return null;
+  for (const k of HARD_TEXT_KEYS) {
+    const v = r[k];
+    if (typeof v !== "string" || v.length === 0) throw new Error(`${missionId}.v0_1_prototype.hard \u306E ${HARD_TEXT_KEYS.join("\u30FB")} \u306F 3 \u3064\u3068\u3082\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217\u304B\u30013 \u3064\u3068\u3082\u7121\u3044\uFF08${k} \u304C\u9055\u3046\uFF09`);
+  }
+  return { objective: r["objective_ja"], success: r["success_ja"], note: r["note_ja"] };
+}
+function readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b, hosts) {
+  const hardRaw = proto["hard"];
+  const enemyStarts = enemyStart ? [enemyStart] : [];
+  const shoreBatteryXs = shoreBattery ? [shoreBattery.xM] : [];
+  const normalShips = (enemyStart ? 1 : 0) + positiveInt(objOf(proto["transit"])?.["ships"]);
+  const nosc = proto["objective_sink_count"];
+  if (nosc !== void 0 && (!Number.isInteger(nosc) || nosc < 1 || nosc > normalShips)) throw new Error(`${missionId}.v0_1_prototype.objective_sink_count \u306F 1\u301C\u30CE\u30FC\u30DE\u30EB\u306E\u96BB\u6570\uFF08${normalShips}\uFF09\u306E\u6574\u6570`);
+  let objectiveSinkCount = nosc === void 0 ? null : nosc;
+  let ptLegs = null;
+  let convoyQuota = null;
+  let text = null;
+  if (hardRaw !== void 0) {
+    if (typeof hardRaw !== "object" || hardRaw === null) throw new Error(`${missionId}.v0_1_prototype.hard \u304C object \u3067\u306A\u3044\uFF08docs/02 \xA76.4\uFF09`);
+    const es = hardRaw["extra_enemy_starts"];
+    if (es !== void 0) {
+      if (!Array.isArray(es) || es.length === 0) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts \u306F\u7A7A\u3067\u306A\u3044\u914D\u5217`);
+      if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype.hard.extra_enemy_starts \u306F\u99C6\u9010\u8266\uFF08enemy_start\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+      if (hard) for (let i = 0; i < es.length; i++) enemyStarts.push(readStart(es[i], `${missionId}.v0_1_prototype.hard.extra_enemy_starts[${i}]`));
+    }
+    const osc = hardRaw["objective_sink_count"];
+    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw["extra_transit_ships"]);
+    if (osc !== void 0 && (!Number.isInteger(osc) || osc < 1 || osc > hardShips)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count \u306F 1\u301C\u30CF\u30FC\u30C9\u306E\u96BB\u6570\u306E\u6574\u6570`);
+    if (hard && osc !== void 0) objectiveSinkCount = osc;
+    const xs = hardRaw["extra_shore_battery_x_m"];
+    if (xs !== void 0) {
+      if (!Array.isArray(xs) || xs.length === 0 || !xs.every((x) => isNum(x) && x >= 0 && x <= b.width)) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m \u306F\u6D77\u57DF\u306E\u5E45\u306E\u4E2D\u306E\u6570\u306E\u914D\u5217`);
+      if (!shoreBattery) throw new Error(`${missionId}.v0_1_prototype.hard.extra_shore_battery_x_m \u306F\u6CBF\u5CB8\u7832\uFF08shore_battery\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+      if (hard) for (const x of xs) shoreBatteryXs.push(x);
+    }
+    const pl = hardRaw["extra_pt_legs_m"];
+    if (pl !== void 0) {
+      if (!Array.isArray(pl) || pl.length === 0 || !pl.every((l) => Array.isArray(l) && l.length === 4 && l.every(isNum))) throw new Error(`${missionId}.v0_1_prototype.hard.extra_pt_legs_m \u306F 4 \u3064\u306E\u6570\uFF08x0, y0, x1, y1\uFF09\u306E\u7DDA\u306E\u3001\u7A7A\u3067\u306A\u3044\u914D\u5217`);
+      if (!hosts.ptBoats) throw new Error(`${missionId}.v0_1_prototype.hard.extra_pt_legs_m \u306F\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+      if (hard) ptLegs = pl.map((l) => l.slice());
+    }
+    const q = hardRaw["convoy_arrive_quota"];
+    if (q !== void 0) {
+      if (!Number.isInteger(q) || q < 1) throw new Error(`${missionId}.v0_1_prototype.hard.convoy_arrive_quota \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570`);
+      if (!hosts.convoy) throw new Error(`${missionId}.v0_1_prototype.hard.convoy_arrive_quota \u306F\u8F38\u9001\u968A\uFF08convoy\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+      if (hard) convoyQuota = q;
+    }
+    const t = readHardText(hardRaw, missionId);
+    if (hard) text = t;
+  }
+  return { enemyStarts, shoreBatteryXs, objectiveSinkCount, ptLegs, convoyQuota, text };
+}
+
+// ../wt-0176202/src/core/mission-flow.ts
+var CALL_EXPENDED = 1;
+var CALL_SUNK = 2;
+var CALL_DAWN = 4;
+var CALL_FUEL = 8;
+function isReturnPointDataRecord(v) {
+  if (!v || typeof v !== "object") return false;
+  const r = v;
+  return ["x_m", "y_m", "radius_m", "call_margin", "torpedo_settle_max_s", "torpedo_end_settle_s"].every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function returnPointFromData(r, bounds) {
+  if (!(r.radius_m > 0)) throw new Error("return_point.radius_m \u306F\u6B63\u306E\u6570");
+  if (!(r.call_margin >= 1)) throw new Error("return_point.call_margin \u306F 1 \u4EE5\u4E0A\uFF081 \u672A\u6E80\u3060\u3068\u547C\u3073\u304B\u3051\u305F\u6642\u70B9\u3067\u5DE1\u822A\u3067\u3082\u5E30\u308C\u306A\u3044\uFF09");
+  if (!(r.torpedo_settle_max_s >= 0)) throw new Error("return_point.torpedo_settle_max_s \u306F 0 \u4EE5\u4E0A");
+  if (!(r.torpedo_end_settle_s >= 0)) throw new Error("return_point.torpedo_end_settle_s \u306F 0 \u4EE5\u4E0A");
+  if (r.x_m - r.radius_m < 0 || r.y_m - r.radius_m < 0 || r.x_m + r.radius_m > bounds.width || r.y_m + r.radius_m > bounds.height) {
+    throw new Error("return_point \u306E\u8F2A\u304C\u6D77\u57DF\uFF08bounds_m\uFF09\u304B\u3089\u306F\u307F\u51FA\u3057\u3066\u3044\u308B");
+  }
+  return { x: r.x_m, y: r.y_m, radiusM: r.radius_m, callMargin: r.call_margin, torpedoSettleMaxS: r.torpedo_settle_max_s, torpedoEndSettleS: r.torpedo_end_settle_s };
+}
+
+// ../wt-0176202/src/core/pt-chase-data.ts
+var PT_CHASE_KEYS = [
+  "speed_kt",
+  "min_target_kt",
+  "start_aft_deg",
+  "station_m",
+  "station_rel_deg",
+  "held_station_m",
+  "held_rel_deg",
+  "held_guard_m",
+  "commit_m",
+  "burst_rounds",
+  "burst_max_s",
+  "max_bursts",
+  "gap_s",
+  "self_gap_s",
+  "exit_fwd_deg",
+  "slow_exit_s",
+  "bow_rof_factor",
+  "cone_quit_s",
+  "suppress_hits"
+];
+function isChaseRecord(v) {
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return false;
+  const r = v;
+  return Object.keys(r).length === PT_CHASE_KEYS.length && PT_CHASE_KEYS.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function chaseParamsFromData(c, x, bad) {
+  const no = (msg) => bad(`chase: ${msg}`);
+  if (!(c.speed_kt > 0 && c.speed_kt <= x.boatMaxKt)) no(`0 < speed_kt \u2264 boat_ref \u306E\u6700\u5927\u901F\u529B\uFF08${x.boatMaxKt} kt\uFF09`);
+  if (!(c.min_target_kt > 0)) no("min_target_kt \u306F\u6B63");
+  if (!(c.start_aft_deg > 0 && c.start_aft_deg < 90)) no("0 < start_aft_deg < 90");
+  if (!(x.minRangeM < c.station_m && c.station_m < c.commit_m)) no(`attack.min_range_m < station_m < commit_m\uFF08${x.minRangeM} < ${c.station_m} < ${c.commit_m}\uFF09`);
+  if (!(c.commit_m < x.effectiveM)) no(`commit_m < guns.effective_night_m\uFF08${c.commit_m} < ${x.effectiveM}\u3002\u9023\u5C04\u306F\u6709\u52B9\u5C04\u7A0B\u306E\u5185\u3067\u56FA\u3081\u308B\uFF09`);
+  if (!(c.station_rel_deg > 90 && c.station_rel_deg <= c.held_rel_deg && c.held_rel_deg < 180)) no("90 < station_rel_deg \u2264 held_rel_deg < 180\uFF08\u5F8C\u308D\u5BC4\u308A\u306E\u8237\u3002\u5F85\u3064 PT \u306F\u3082\u3063\u3068\u5F8C\u308D\uFF09");
+  if (!(c.held_guard_m > 0 && c.held_guard_m < c.held_station_m && c.held_station_m < x.holdOffM)) no(`0 < held_guard_m < held_station_m < attack.hold_off_m\uFF08${c.held_guard_m} < ${c.held_station_m} < ${x.holdOffM}\u3002\u8FFD\u6483\u306E\u5F85\u3064 PT \u306F\u5F85\u3064\u7A81\u6483\u306E PT \u3088\u308A\u5185\uFF09`);
+  for (const k of ["burst_rounds", "max_bursts", "suppress_hits"]) if (!Number.isInteger(c[k]) || c[k] < 1) no(`${k} \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570`);
+  if (!(c.burst_max_s > 0 && c.slow_exit_s > 0)) no("burst_max_s\u30FBslow_exit_s \u306F\u6B63");
+  if (!(c.gap_s >= 0 && c.self_gap_s >= 0)) no("gap_s\u30FBself_gap_s \u306F 0 \u4EE5\u4E0A");
+  if (!(c.exit_fwd_deg > 0 && c.exit_fwd_deg < 90)) no("0 < exit_fwd_deg < 90");
+  if (!(c.bow_rof_factor > 0 && c.bow_rof_factor <= 1)) no("0 < bow_rof_factor \u2264 1\uFF08\u8247\u9996\u306E\u5186\u9310\u3078\u306F\u9045\u304F\u6483\u3064\uFF09");
+  if (!(c.cone_quit_s > 0 && c.cone_quit_s < c.burst_max_s)) no(`0 < cone_quit_s < burst_max_s\uFF08${c.burst_max_s}\u3002\u8247\u9996\u306E\u5186\u9310\u306E\u79D2\u306F open_fire_s \u306E\u5F8C\u3060\u3051\u6570\u3048\u308B\uFF09`);
+  const sq = (v) => v * v;
+  const cos2 = (deg) => sq(Math.cos(degToRad(deg)));
+  return {
+    chaseMps: ktToMps(c.speed_kt),
+    chaseMinMps: ktToMps(c.min_target_kt),
+    chaseCosAft2: cos2(c.start_aft_deg),
+    chaseStationM: c.station_m,
+    chaseRelDeg: c.station_rel_deg,
+    chaseHeldM: c.held_station_m,
+    chaseHeldRelDeg: c.held_rel_deg,
+    chaseHeldGuard2: sq(c.held_guard_m),
+    chaseCommit2: sq(c.commit_m),
+    burstRounds: c.burst_rounds,
+    burstMaxS: c.burst_max_s,
+    maxBursts: c.max_bursts,
+    burstBowRofFactor: c.bow_rof_factor,
+    burstConeQuitS: c.cone_quit_s,
+    chaseGapS: c.gap_s,
+    chaseSelfGapS: c.self_gap_s,
+    chaseCosExit2: cos2(c.exit_fwd_deg),
+    chaseSlowExitS: c.slow_exit_s,
+    chaseSuppressHits: c.suppress_hits
+  };
+}
+
+// ../wt-0176202/src/core/pt-night.ts
+function ptStartAt(p, i, dx, dy, mirrored, out) {
+  const x0 = p.legs[4 * i];
+  const y0 = p.legs[4 * i + 1];
+  const x1 = p.legs[4 * i + 2];
+  const y1 = p.legs[4 * i + 3];
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  const along = clamp(p.startAlongM + dx, 0, len);
+  const lo = p.edgeMarginM;
+  const hi = p.bounds.height - p.edgeMarginM;
+  let sy = dy;
+  const top = Math.min(y0, y1) + sy;
+  const bottom = Math.max(y0, y1) + sy;
+  if (top < lo) sy += lo - top;
+  else if (bottom > hi) sy -= bottom - hi;
+  const w = p.bounds.width;
+  const mx = (x) => mirrored ? w - x : x;
+  out.x0 = mx(x0);
+  out.y0 = y0 + sy;
+  out.x1 = mx(x1);
+  out.y1 = y1 + sy;
+  out.x = mx(x0 + (x1 - x0) * along / len);
+  out.y = y0 + (y1 - y0) * along / len + sy;
+  out.headingDeg = bearingDeg(out.x0, out.y0, out.x1, out.y1);
+}
+function ptParamsAtNight(p, dx, dy, mirrored) {
+  const legs = new Float64Array(4 * p.count);
+  const startX = new Float64Array(p.count);
+  const startY = new Float64Array(p.count);
+  const startHeadingDeg = new Float64Array(p.count);
+  const s = { x0: 0, y0: 0, x1: 0, y1: 0, x: 0, y: 0, headingDeg: 0 };
+  for (let i = 0; i < p.count; i++) {
+    ptStartAt(p, i, dx, dy, mirrored, s);
+    legs[4 * i] = s.x0;
+    legs[4 * i + 1] = s.y0;
+    legs[4 * i + 2] = s.x1;
+    legs[4 * i + 3] = s.y1;
+    startX[i] = s.x;
+    startY[i] = s.y;
+    startHeadingDeg[i] = s.headingDeg;
+  }
+  return { ...p, legs, startX, startY, startHeadingDeg };
+}
+
+// ../wt-0176202/src/core/pt-data.ts
+var PT_ATTACK_KEYS = [
+  "run_in_speed_kt",
+  "pass_speed_kt",
+  "overtake_kt",
+  "commit_max_m",
+  "commit_tcpa_s",
+  "commit_heading_tol_deg",
+  "pass_offset_m",
+  "open_fire_s",
+  "pass_max_s",
+  "rounds_per_pass",
+  "dead_cone_deg",
+  "min_range_m",
+  "spread_min_m",
+  "break_off_m",
+  "break_max_s",
+  "run_in_max_s",
+  "pass_gap_s",
+  "wingman_delay_s",
+  "hold_off_m",
+  "max_passes",
+  "edge_margin_m",
+  "leave_speed_kt"
+];
+var PT_OPEN_FIRE_MIN_S = 2;
+var PT_MAX_COUNT = 4;
+var PT_STATION_REL_MAX = 4;
+var PT_UNDER_FIRE_CHANCE_MAX = 0.2;
+function nums3(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isPtDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  if (typeof r["id"] !== "string" || typeof r["boat_ref"] !== "string" || typeof r["torpedo_immune"] !== "boolean") return false;
+  const a = r["attack"];
+  if (!nums3(a, PT_ATTACK_KEYS) || Object.keys(a).length !== PT_ATTACK_KEYS.length) return false;
+  const g = r["guns"];
+  const t = r["tactics"];
+  const rel = t?.["station_rel_deg"];
+  const tacticsOk = nums3(t, ["station_m", "station_tol_deg", "station_close_m", "station_lead_s"]) && Array.isArray(rel) && rel.length >= 1 && rel.length <= PT_STATION_REL_MAX && nums3(rel, rel.map((_, i) => String(i)));
+  return nums3(r["detection"], ["base_detect_m", "reaction_delay_s", "detect_from_s"]) && nums3(r["patrol"], ["speed_kt", "arrive_m"]) && Array.isArray(g) && g.length === 1 && isGunDataRecord(g[0]) && tacticsOk && nums3(r["under_fire"], ["retreat_hp", "casualty_chance", "fire_chance"]) && isChaseRecord(r["chase"]);
+}
+function isPtMissionBlock(v) {
+  if (!nums3(v, ["start_along_m", "leave_heading_deg"])) return false;
+  const r = v;
+  const legs = r["legs_m"];
+  return typeof r["source"] === "string" && Array.isArray(legs) && legs.every((l) => Array.isArray(l) && l.length === 4 && nums3(l, ["0", "1", "2", "3"]));
+}
+function ptParamsFromData(r, boat, b, ctx) {
+  const bad = (msg) => {
+    throw new Error(`${ctx.missionId}: \u7C73PT\uFF08enemies.json \u306E ${r.id}\u30FBv0_1_prototype.pt_boats\uFF09: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+  const a = r.attack;
+  const g = r.guns[0];
+  const eff = g.effective_night_m;
+  if (!(r.patrol.speed_kt > 0 && r.patrol.speed_kt < a.pass_speed_kt && a.pass_speed_kt <= a.run_in_speed_kt && a.run_in_speed_kt <= boat.speed_max_kt)) bad("0 < patrol.speed_kt < pass_speed_kt \u2264 run_in_speed_kt \u2264 \u8247\u306E\u6700\u5927\u901F\u529B");
+  if (!(a.leave_speed_kt > 0 && a.leave_speed_kt <= boat.speed_max_kt) || !(a.overtake_kt >= 0)) bad("0 < leave_speed_kt \u2264 \u8247\u306E\u6700\u5927\u901F\u529B\u3001overtake_kt \u306F 0 \u4EE5\u4E0A");
+  if (!(a.min_range_m > 0 && a.min_range_m < a.pass_offset_m && a.pass_offset_m < eff && eff < a.break_off_m)) bad("0 < min_range_m < pass_offset_m < effective_night_m < break_off_m");
+  if (!(eff < a.hold_off_m && a.hold_off_m < a.commit_max_m)) bad("effective_night_m < hold_off_m < commit_max_m\uFF08\u822A\u904E\u3092\u5F85\u3064 PT \u306F\u6709\u52B9\u5C04\u7A0B\u306E\u5916\u30FB\u822A\u904E\u3092\u56FA\u3081\u308B\u8DDD\u96E2\u306E\u5185\u3067\u5F85\u3064\uFF09");
+  if (!(a.commit_heading_tol_deg > 0 && a.commit_heading_tol_deg < 90)) bad("0 < commit_heading_tol_deg < 90\uFF08\u5411\u304B\u3063\u3066\u304F\u308B\u3068\u304D\u3060\u3051\u822A\u904E\u3092\u56FA\u3081\u308B\uFF09");
+  if (!(a.open_fire_s >= PT_OPEN_FIRE_MIN_S && a.open_fire_s < a.pass_max_s && a.open_fire_s < a.commit_tcpa_s)) bad(`\u4E88\u544A\u304B\u3089\u6483\u3064\u307E\u3067 ${PT_OPEN_FIRE_MIN_S} \u79D2\u4EE5\u4E0A\uFF08open_fire_s\uFF09\u3001open_fire_s < pass_max_s\u30FBcommit_tcpa_s`);
+  if (!(a.dead_cone_deg > 0 && a.dead_cone_deg < 90) || !(a.spread_min_m > 0)) bad("0 < dead_cone_deg < 90\u3001spread_min_m \u306F\u6B63");
+  for (const k of ["rounds_per_pass", "max_passes"]) if (!Number.isInteger(a[k]) || a[k] < 1) bad(`${k} \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570`);
+  if (!(r.detection.reaction_delay_s > 0 && a.commit_tcpa_s > 0 && a.pass_max_s > 0 && a.break_max_s > 0 && a.run_in_max_s > 0)) bad("reaction_delay_s\u30FBcommit_tcpa_s\u30FBpass_max_s\u30FBbreak_max_s\u30FBrun_in_max_s \u306F\u6B63");
+  if (!(a.wingman_delay_s >= 0 && a.pass_gap_s >= 0 && r.detection.detect_from_s >= 0 && a.edge_margin_m >= 0)) bad("wingman_delay_s\u30FBpass_gap_s\u30FBdetect_from_s\u30FBedge_margin_m \u306F 0 \u4EE5\u4E0A");
+  if (!(r.detection.base_detect_m > 0 && r.patrol.arrive_m > 0 && g.count >= 1 && g.rof_per_min > 0 && g.damage > 0 && g.shell_speed_mps > 0)) bad("base_detect_m\u30FBarrive_m\u30FB\u7832\u306E count\u30FBrof_per_min\u30FBdamage\u30FBshell_speed_mps \u306F\u6B63");
+  const n = ctx.count;
+  if (!Number.isInteger(n) || n < 1 || n > PT_MAX_COUNT || b.legs_m.length !== n) bad(`legs_m \u306F ${n} \u672C\uFF08enemies \u306E\u6570\u30021\u301C${PT_MAX_COUNT}\uFF09`);
+  const m = a.edge_margin_m;
+  const legs = new Float64Array(4 * n);
+  for (let i = 0; i < n; i++) {
+    const l = b.legs_m[i];
+    for (let k = 0; k < 4; k++) {
+      const size = k % 2 === 0 ? ctx.bounds.width : ctx.bounds.height;
+      if (!(l[k] >= m && l[k] <= size - m)) bad(`legs_m[${i}] \u306E\u70B9\u306F\u6D77\u57DF\u306E\u7E01\u304B\u3089 edge_margin_m\uFF08${m} m\uFF09\u306E\u5185`);
+      legs[4 * i + k] = l[k];
+    }
+    const len = Math.hypot(l[2] - l[0], l[3] - l[1]);
+    if (!(len > 2 * r.patrol.arrive_m)) bad(`legs_m[${i}] \u306E\u9577\u3055\u306F arrive_m \u306E 2 \u500D\u3088\u308A\u9577\u3044`);
+    if (!(b.start_along_m >= 0 && b.start_along_m <= len)) bad(`start_along_m \u306F 0\u301C\u7DDA\u306E\u9577\u3055\uFF08legs_m[${i}]\uFF09`);
+  }
+  if (!(b.leave_heading_deg >= 0 && b.leave_heading_deg < 360)) bad("leave_heading_deg \u306F 0 \u4EE5\u4E0A 360 \u672A\u6E80");
+  const t = r.tactics;
+  if (!(a.hold_off_m < t.station_m && t.station_m < 2 * a.hold_off_m - eff)) bad(`hold_off_m < tactics.station_m < 2 \xD7 hold_off_m \u2212 effective_night_m\uFF08${a.hold_off_m} < ${t.station_m} < ${2 * a.hold_off_m - eff}\uFF09`);
+  if (!t.station_rel_deg.every((x) => x > 0 && x < 180)) bad("tactics.station_rel_deg \u306F\u3069\u308C\u3082 0\u301C180 \u306E\u9593\uFF08\u8247\u306E\u91DD\u8DEF\u304B\u3089\u306E\u89D2\u30020 \u3068 180 \u306F\u8247\u9996\u30FB\u8247\u5C3E\uFF09");
+  if (!(t.station_tol_deg > 0 && t.station_tol_deg < 90) || !(t.station_close_m > 0) || !(t.station_lead_s >= 0)) bad("0 < tactics.station_tol_deg < 90\u3001station_close_m \u306F\u6B63\u3001station_lead_s \u306F 0 \u4EE5\u4E0A");
+  const u = r.under_fire;
+  if (!(u.retreat_hp > 0 && u.retreat_hp < ctx.hullHp)) bad(`0 < under_fire.retreat_hp < PT \u306E HP\uFF08${ctx.hullHp}\u3002HP \u3060\u3051\u3067\u306F\u6C88\u307E\u306A\u3044\uFF09`);
+  const chanceOk = (x) => x >= 0 && x <= PT_UNDER_FIRE_CHANCE_MAX;
+  if (!(chanceOk(u.casualty_chance) && chanceOk(u.fire_chance))) bad(`under_fire.casualty_chance\u30FBfire_chance \u306F 0\u301C${PT_UNDER_FIRE_CHANCE_MAX}`);
+  const chase = chaseParamsFromData(r.chase, { boatMaxKt: boat.speed_max_kt, minRangeM: a.min_range_m, holdOffM: a.hold_off_m, effectiveM: eff }, bad);
+  const gun = gunParamsFromData(g);
+  const sq = (x) => x * x;
+  const base = {
+    count: n,
+    baseDetectM: r.detection.base_detect_m,
+    reactionDelayS: r.detection.reaction_delay_s,
+    detectFromS: r.detection.detect_from_s,
+    detectHoldS: ctx.detectHoldS,
+    patrolMps: ktToMps(r.patrol.speed_kt),
+    runInMps: ktToMps(a.run_in_speed_kt),
+    passMinMps: ktToMps(a.pass_speed_kt),
+    overtakeMps: ktToMps(a.overtake_kt),
+    dashMps: ktToMps(boat.speed_max_kt),
+    leaveMps: ktToMps(a.leave_speed_kt),
+    arrive2: sq(r.patrol.arrive_m),
+    commitMax2: sq(a.commit_max_m),
+    commitTcpaS: a.commit_tcpa_s,
+    commitHeadingTolDeg: a.commit_heading_tol_deg,
+    offsetM: a.pass_offset_m,
+    openFireS: a.open_fire_s,
+    passMaxS: a.pass_max_s,
+    roundsPerPass: a.rounds_per_pass,
+    cosDead2: sq(Math.cos(degToRad(a.dead_cone_deg))),
+    minRange2: sq(a.min_range_m),
+    spreadMinM: a.spread_min_m,
+    breakOff2: sq(a.break_off_m),
+    breakMaxS: a.break_max_s,
+    runInMaxS: a.run_in_max_s,
+    passGapS: a.pass_gap_s,
+    wingmanDelayS: a.wingman_delay_s,
+    maxPasses: a.max_passes,
+    holdOff2: sq(a.hold_off_m),
+    holdOuter2: sq(2 * a.hold_off_m - eff),
+    edgeMarginM: m,
+    leaveHeadingDeg: b.leave_heading_deg,
+    turnRateDegS: boat.turn_rate_deg_s,
+    accelMps2: boat.accel_mps2,
+    boundsMarginM: boat.length_m * ctx.spriteScale / 2,
+    spriteLengthUnits: boat.length_m * ctx.spriteScale,
+    spriteBeamUnits: boat.beam_m * ctx.spriteScale,
+    gun,
+    hit: { damage: gun.damage, fireChance: gun.fireChance, engineDamageChance: gun.engineDamageChance },
+    hullHp: ctx.hullHp,
+    hitHalfLengthM: boat.length_m * ctx.hitScale / 2,
+    hitHalfBeamM: boat.beam_m * ctx.hitScale / 2,
+    retreatHp: u.retreat_hp,
+    casualtyChance: u.casualty_chance,
+    fireChance: u.fire_chance,
+    stationM: t.station_m,
+    stationRelDeg: Float64Array.from(t.station_rel_deg),
+    stationTolDeg: t.station_tol_deg,
+    stationCloseM: t.station_close_m,
+    stationClose2: sq(t.station_close_m),
+    stationLeadS: t.station_lead_s,
+    legs,
+    startX: new Float64Array(n),
+    startY: new Float64Array(n),
+    startHeadingDeg: new Float64Array(n),
+    startAlongM: b.start_along_m,
+    bounds: { width: ctx.bounds.width, height: ctx.bounds.height },
+    timeScale: ctx.timeScale,
+    passEndsWhenSafe: true,
+    chaseOn: true,
+    ...chase
+  };
+  return ptParamsAtNight(base, 0, 0, false);
+}
+
+// ../wt-0176202/src/core/convoy-data.ts
+var CONVOY_BARGE_ID = "daihatsu_barge";
+var CONVOY_RING_CLEAR_M = 300;
+var DETECT_BANDS = ["stop", "silent", "cruise", "full"];
+function nums4(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]));
+}
+function isConvoyMissionBlock(v) {
+  if (!nums4(v, ["landing_x_m", "arrive_quota", "barge_hp", "target_keep_ratio", "target_switch_hold_s", "flash_hold_s"])) return false;
+  const r = v;
+  const offsets = r["offsets_m"];
+  return nums4(r["lead_start"], ["x_m", "y_m", "heading_deg"]) && Array.isArray(offsets) && offsets.every((o) => typeof o === "number" && Number.isFinite(o)) && DETECT_BANDS.includes(r["detect_band"]) && typeof r["source"] === "string" && (r["beach"] === void 0 || nums4(r["beach"], ["spacing_m", "margin_m", "run_in_deg"]));
+}
+function convoyParamsFromData(r, b, count, world, bounds, ctx) {
+  const bad = (msg) => {
+    throw new Error(`${ctx.missionId}.v0_1_prototype.convoy: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+  if (!(r.length_m > 0) || !(r.beam_m > 0) || !(r.speed_typical_kt > 0) || !(r.turn_rate_deg_s > 0) || !(r.accel_mps2 > 0)) bad("enemies.json \u306E\u5927\u767A\u306E length_m / beam_m / speed_typical_kt / turn_rate_deg_s / accel_mps2 \u306F\u6B63");
+  if (!Number.isInteger(count) || count < 1) bad("\u5927\u767A\u306F 1 \u96BB\u4EE5\u4E0A\uFF08allies \u306E daihatsu_barge \u306E\u6570\uFF09");
+  const o = b.offsets_m;
+  if (o.length !== count || o[0] !== 0 || o.some((d, i) => i > 0 && !(d > o[i - 1]))) bad(`offsets_m \u306F ${count} \u500B\uFF08allies \u306E daihatsu_barge \u306E\u6570\uFF09\u3067\u3001[0] \u304C 0\u30FB\u524D\u304B\u3089\u9806\u306B\u5897\u3048\u308B`);
+  if (!Number.isInteger(b.arrive_quota) || b.arrive_quota < 1 || b.arrive_quota > count) bad(`arrive_quota \u306F 1\u301C${count} \u306E\u6574\u6570`);
+  if (!(b.barge_hp > 0)) bad("barge_hp \u306F\u6B63");
+  if (!DETECT_BANDS.includes(b.detect_band)) bad("detect_band \u306F stop / silent / cruise / full \u306E\u3069\u308C\u304B");
+  if (!(b.target_keep_ratio > 0 && b.target_keep_ratio <= 1)) bad("target_keep_ratio \u306F 0 \u3088\u308A\u5927\u304D\u304F 1 \u4EE5\u4E0B");
+  if (!(b.target_switch_hold_s >= 0) || !(b.flash_hold_s >= 0)) bad("target_switch_hold_s\u30FBflash_hold_s \u306F 0 \u4EE5\u4E0A");
+  if (!(ctx.leadJitterM >= 0)) bad("night.barge_lead_jitter_m \u306F 0 \u4EE5\u4E0A");
+  const h = b.lead_start.heading_deg;
+  if (h !== 90 && h !== 270) bad("lead_start.heading_deg \u306F 90\uFF08\u6771\u3078\uFF09\u304B 270\uFF08\u897F\u3078\uFF09");
+  const ux = h === 90 ? 1 : -1;
+  const margin = r.length_m * world.spriteScale / 2;
+  const leadX = b.lead_start.x_m;
+  const y = b.lead_start.y_m;
+  const maxOff = o[count - 1];
+  const tailX = leadX - ux * maxOff;
+  const jit = ctx.leadJitterM;
+  for (const x of [leadX - jit, leadX + jit, tailX - jit, tailX + jit]) if (x < margin || x > bounds.width - margin) bad("\u968A\uFF08\u5148\u982D\u304B\u3089\u6700\u5F8C\u5C3E\u307E\u3067\u3002\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u306F\u6D77\u57DF\u306E\u7E01\u304B\u3089\u7D75\u306E\u534A\u9577\u306E\u5185");
+  if (y < margin || !(y < bounds.height - 2 * margin)) bad("\u822A\u8DEF\u306E y \u306F\u6D77\u57DF\u306E\u7E01\u304B\u3089\u7D75\u306E\u534A\u9577\u306E\u5185\u3067\u3001\u5CB8\uFF08\u5357\u306E\u7E01\uFF09\u3088\u308A\u6D77\u5074");
+  const landing = b.landing_x_m;
+  if (landing < margin || landing > bounds.width - margin) bad("landing_x_m \u306F\u6D77\u57DF\u306E\u4E2D");
+  if (!((landing - leadX) * ux > maxOff + jit)) bad("landing_x_m \u306F\u91DD\u8DEF\u306E\u5148\uFF08\u5148\u982D\u304B\u3089\u6700\u5F8C\u5C3E\u306E\u8DDD\u96E2\u3068\u63FA\u3089\u304E\u3088\u308A\u9060\u304F\uFF09");
+  if ((ctx.ring.x - landing) * ux < 0) bad("\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u4E2D\u5FC3\u306F\u4E0A\u9678\u7DDA\u306E\u5074\uFF08\u91DD\u8DEF\u306E\u5148\uFF09");
+  const rdx = ctx.ring.x - landing;
+  const rdy = ctx.ring.y - y;
+  const clear = ctx.ring.radiusM + CONVOY_RING_CLEAR_M;
+  if (!b.beach && rdx * rdx + rdy * rdy < clear * clear) bad(`\u4E0A\u9678\u7DDA\u4E0A\u306E\u822A\u8DEF\u306E\u70B9\u304B\u3089\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u307E\u3067 ${CONVOY_RING_CLEAR_M} m \u4EE5\u4E0A\uFF08\u305D\u3070\u3067\u6483\u3061\u5408\u3063\u3066\u3044\u3066\u8F2A\u306B\u5165\u3089\u306A\u3044\uFF09`);
+  const beach = b.beach ? convoyBeachFromData(b.beach, count, ux, leadX, y, o, jit, landing, margin, bounds, ctx, bad) : void 0;
+  return {
+    count,
+    hp: b.barge_hp,
+    halfLengthM: r.length_m * world.hitScale / 2,
+    halfBeamM: r.beam_m * world.hitScale / 2,
+    boundsMarginM: margin,
+    speedMps: ktToMps(r.speed_typical_kt),
+    turnRateDegS: r.turn_rate_deg_s,
+    accelMps2: r.accel_mps2,
+    leadX,
+    leadY: y,
+    headingDeg: h,
+    offsetsM: [...o],
+    landingX: landing,
+    quota: b.arrive_quota,
+    ...beach ? { beach } : {}
+  };
+}
+function convoyBeachFromData(bb, count, ux, leadX, laneY, o, jit, landing, margin, bounds, ctx, bad) {
+  if (!(bb.spacing_m >= 0) || !(bb.margin_m > 0) || !(bb.run_in_deg > 0 && bb.run_in_deg <= 90)) bad("beach \u306E spacing_m \u2265 0\u30FBmargin_m > 0\u30FB0 < run_in_deg \u2264 90");
+  const by = bounds.height - bb.margin_m;
+  if (!(by > laneY + margin)) bad("beach \u306E\u6D5C\u306E\u7DDA\uFF08\u9AD8\u3055 \u2212 margin_m\uFF09\u306F\u822A\u8DEF\u3088\u308A\u5CB8\u5074");
+  const depth = by - laneY;
+  const run = depth / Math.tan(degToRad(bb.run_in_deg));
+  const xs = [];
+  const turns = [];
+  for (let i = 0; i < count; i++) {
+    const bx = landing + ux * ((count - 1) / 2 - i) * bb.spacing_m;
+    if (bx < margin || bx > bounds.width - margin) bad("beach \u306E\u4E0A\u9678\u5730\u70B9\u306F\u6D77\u57DF\u306E\u4E2D");
+    const tx = bx - ux * run;
+    if (!((tx - (leadX - ux * o[i])) * ux > jit)) bad("beach \u306E\u8EE2\u8235\u306E x \u306F\u5404\u96BB\u306E\u51FA\u767A\uFF08\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u3088\u308A\u91DD\u8DEF\u306E\u5148");
+    const clear = ctx.ring.radiusM + CONVOY_RING_CLEAR_M;
+    if (segDist2(ctx.ring.x, ctx.ring.y, tx, laneY, bx, by) < clear * clear || segDist2(ctx.ring.x, ctx.ring.y, leadX - ux * o[i], laneY, tx, laneY) < clear * clear) bad(`beach \u306E\u822A\u8DEF\u3068\u6D5C\u3078\u306E\u9053\u304B\u3089\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u7E01\u307E\u3067 ${CONVOY_RING_CLEAR_M} m \u4EE5\u4E0A`);
+    xs.push(bx);
+    turns.push(tx);
+  }
+  return { x: xs, y: by, shoreY: bounds.height, turnX: turns, runInM: depth / Math.sin(degToRad(bb.run_in_deg)) };
+}
+function convoyParamsAtNight(p, leadDx, mirrored, boundsWidth) {
+  if (leadDx === 0 && !mirrored) return p;
+  const mx = (x) => mirrored ? boundsWidth - x : x;
+  const beach = p.beach && mirrored ? { ...p.beach, x: p.beach.x.map(mx), turnX: p.beach.turnX.map(mx) } : p.beach;
+  return { ...p, leadX: mx(p.leadX + leadDx), headingDeg: mirrored ? (360 - p.headingDeg) % 360 : p.headingDeg, landingX: mx(p.landingX), ...beach ? { beach } : {} };
+}
+function ptTargetRuleFromData(b) {
+  return { keepRatio2: b.target_keep_ratio * b.target_keep_ratio, lockS: b.target_switch_hold_s, flashHoldS: b.flash_hold_s };
+}
+function segDist2(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const l2 = vx * vx + vy * vy;
+  const k = l2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l2)) : 0;
+  const dx = ax + k * vx - px;
+  const dy = ay + k * vy - py;
+  return dx * dx + dy * dy;
+}
+
+// ../wt-0176202/src/core/air-strike-state.ts
+var AIR_STRIKE_MAX_PLANES = 4;
+var AIR_STRIKE_FADE_S = 0.5;
+
+// ../wt-0176202/src/core/air-strike-data.ts
+var DAWN_STRIKE_EVENT_ID = "dawn_air_strike";
+var DAWN_STRIKE_KEYS = ["aircraft_id", "count", "count_source", "from_bearing_deg", "escort_target_planes", "source"];
+function isFiniteNum(v) {
+  return typeof v === "number" && Number.isFinite(v);
+}
+function hasNums5(v, keys) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  return keys.every((k) => isFiniteNum(r[k]));
+}
+function isObj(v) {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function isStrikeAircraftRecord(v) {
+  if (!isObj(v)) return false;
+  if (typeof v["id"] !== "string" || typeof v["faction"] !== "string" || typeof v["name_ja"] !== "string") return false;
+  const s = v["strike"];
+  if (!isObj(s) || !hasNums5(s, ["run_speed_kt", "release_altitude_m"])) return false;
+  return hasNums5(s["bomb"], ["count", "damage", "blast_radius_m", "accuracy_cep_m", "fire_chance", "engine_damage_chance"]);
+}
+function isDawnStrikeEventRecord(v) {
+  if (!isObj(v) || v["id"] !== DAWN_STRIKE_EVENT_ID) return false;
+  const p = v["params"];
+  if (!hasNums5(p, ["spawn_m", "run_radius_m", "first_run_s", "run_gap_s", "wave_rest_s", "leave_s", "wave_rotate_deg", "aim_turn_min_deg_s"])) return false;
+  const offs = p["spawn_offsets_deg"];
+  return Array.isArray(offs) && offs.every(isFiniteNum);
+}
+function isDawnStrikeBlock(v) {
+  if (!isObj(v)) return false;
+  if (typeof v["aircraft_id"] !== "string" || typeof v["count_source"] !== "string" || typeof v["source"] !== "string") return false;
+  if (!isFiniteNum(v["count"]) || !isFiniteNum(v["from_bearing_deg"])) return false;
+  const e = v["escort_target_planes"];
+  return Array.isArray(e) && e.every(isFiniteNum);
+}
+function dawnStrikeFromData(raw, missionId) {
+  const at2 = `missions_seed ${missionId} \u306E v0_1_prototype.dawn_strike`;
+  if (!isDawnStrikeBlock(raw)) throw new Error(`${at2}\uFF08aircraft_id / count / count_source / from_bearing_deg / escort_target_planes / source\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B`);
+  for (const k of Object.keys(raw)) if (!DAWN_STRIKE_KEYS.includes(k)) throw new Error(`${at2} \u306B\u77E5\u3089\u306A\u3044\u30AD\u30FC ${k}`);
+  if (raw.aircraft_id.trim() === "") throw new Error(`${at2}.aircraft_id \u304C\u7A7A`);
+  if (!Number.isInteger(raw.count) || raw.count < 1) throw new Error(`${at2}.count \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570\uFF08${raw.count}\uFF09`);
+  if (!raw.escort_target_planes.every((i) => Number.isInteger(i) && i >= 0)) throw new Error(`${at2}.escort_target_planes \u306F 0 \u59CB\u307E\u308A\u306E\u6A5F\u306E\u756A\u53F7\uFF08\u6574\u6570\uFF09\u306E\u914D\u5217`);
+  return {
+    aircraft_id: raw.aircraft_id,
+    count: raw.count,
+    count_source: raw.count_source,
+    from_bearing_deg: raw.from_bearing_deg,
+    escort_target_planes: raw.escort_target_planes.slice(),
+    source: raw.source
+  };
+}
+function airStrikeParamsFromData(aircraft, event, block, timeScale, player, escort, sea, fromJa) {
+  const q = event.params;
+  const st = aircraft.strike;
+  const bomb = st.bomb;
+  const n = block.count;
+  const bad = (msg) => {
+    throw new Error(`\u591C\u660E\u3051\u306E\u7A7A\u8972\uFF08enemies.json \u306E ${aircraft.id}.strike / risk_events.json \u306E ${DAWN_STRIKE_EVENT_ID}.params / dawn_strike\uFF09: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!Number.isInteger(n) || n < 1 || n > AIR_STRIKE_MAX_PLANES) bad(`count \u306F 1\u301C${AIR_STRIKE_MAX_PLANES} \u306E\u6574\u6570\uFF08${n}\uFF09`);
+  if (q.spawn_offsets_deg.length < n) bad(`spawn_offsets_deg\uFF08${q.spawn_offsets_deg.length} \u500B\uFF09\u306F count\uFF08${n}\uFF09\u4EE5\u4E0A`);
+  const esc = block.escort_target_planes;
+  for (let k = 0; k < esc.length; k++) {
+    const i = esc[k];
+    if (!Number.isInteger(i) || i < 0 || i >= n) bad(`escort_target_planes \u306E ${i} \u306F 0\u301C${n - 1} \u306E\u6A5F\u306E\u756A\u53F7`);
+    if (esc.indexOf(i) !== k) bad(`escort_target_planes \u306E ${i} \u304C\u91CD\u8907`);
+  }
+  if (esc.length > 0 && !escort) bad("escort_target_planes \u306F\u50DA\u8247\uFF08escort\uFF09\u306E\u3044\u308B\u4EFB\u52D9\u3060\u3051\uFF08\u50DA\u8247\u306E\u3044\u306A\u3044\u4EFB\u52D9\u306F []\uFF09");
+  if (!(st.run_speed_kt > 0) || !(st.release_altitude_m > 0)) bad("run_speed_kt / release_altitude_m \u306F\u6B63");
+  if (!Number.isInteger(bomb.count) || bomb.count < 1) bad("bomb.count \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570");
+  if (!(bomb.damage >= 0) || !(bomb.blast_radius_m >= 0) || !(bomb.accuracy_cep_m >= 0)) bad("bomb.damage / blast_radius_m / accuracy_cep_m \u306F 0 \u4EE5\u4E0A");
+  if (!(bomb.fire_chance >= 0 && bomb.fire_chance <= 1) || !(bomb.engine_damage_chance >= 0 && bomb.engine_damage_chance <= 1)) bad("bomb.fire_chance / engine_damage_chance \u306F 0\u301C1");
+  if (!(q.run_radius_m > 0) || !(q.spawn_m > q.run_radius_m)) bad("0 < run_radius_m < spawn_m");
+  if (!(q.first_run_s >= 0) || !(q.run_gap_s > 0) || !(q.wave_rest_s >= 0) || !(q.leave_s > 0) || !(q.aim_turn_min_deg_s >= 0)) bad("first_run_s / wave_rest_s / aim_turn_min_deg_s \u306F 0 \u4EE5\u4E0A\u3001run_gap_s / leave_s \u306F\u6B63");
+  const fits = (h) => h.halfLengthM > 0 && h.halfBeamM >= 0 && h.boundsMarginM >= 0 && sea.width > 2 * h.boundsMarginM && sea.height > 2 * h.boundsMarginM;
+  if (!(timeScale > 0) || !fits(player)) throw new Error("\u591C\u660E\u3051\u306E\u7A7A\u8972: time_scale \u3068\u8247\u306E\u5BF8\u6CD5\u30FB\u7AEF\u306E\u4F59\u767D\uFF08\u6D77\u57DF\u306E\u534A\u5206\u672A\u6E80\uFF09\u304C\u4E0D\u6B63");
+  if (escort && !fits(escort)) throw new Error("\u591C\u660E\u3051\u306E\u7A7A\u8972: \u50DA\u8247\u306E\u5BF8\u6CD5\u30FB\u7AEF\u306E\u4F59\u767D\uFF08\u6D77\u57DF\u306E\u534A\u5206\u672A\u6E80\uFF09\u304C\u4E0D\u6B63");
+  const v = ktToMps(st.run_speed_kt) * timeScale;
+  const runS = q.run_radius_m / v;
+  const fallGameS = Math.sqrt(2 * st.release_altitude_m / GRAVITY_MPS2);
+  const fallFeelS = fallGameS / timeScale;
+  const f3 = (x) => x.toFixed(3);
+  if (!(q.run_gap_s > fallFeelS)) bad(`run_gap_s\uFF08${q.run_gap_s}\uFF09\u306F\u843D\u4E0B\u306E\u4F53\u611F\u79D2\uFF08${f3(fallFeelS)}\uFF09\u3088\u308A\u9577\u304F\uFF08\u7A7A\u4E2D\u306E\u7206\u5F3E\u306F\u5E38\u306B 1 \u767A\uFF09`);
+  if (!((q.spawn_m - q.run_radius_m) / v <= q.first_run_s)) bad(`first_run_s\uFF08${q.first_run_s}\uFF09\u306F\u65CB\u56DE\u306B\u7740\u304F\u307E\u3067\u306E\u79D2\uFF08${f3((q.spawn_m - q.run_radius_m) / v)}\uFF09\u4EE5\u4E0A`);
+  if (!(n * q.run_gap_s >= 2 * runS)) bad(`count \xD7 run_gap_s\uFF08${f3(n * q.run_gap_s)}\uFF09\u306F\u7206\u6483\u9032\u8DEF\u306E 2 \u500D\uFF08${f3(2 * runS)}\uFF09\u4EE5\u4E0A\uFF08\u6A5F\u304C\u65CB\u56DE\u306B\u623B\u3063\u3066\u304B\u3089\u6B21\u306E\u9806\u756A\uFF09`);
+  if (!(q.wave_rest_s >= runS + q.leave_s)) bad(`wave_rest_s\uFF08${q.wave_rest_s}\uFF09\u306F\u7206\u6483\u9032\u8DEF + leave_s\uFF08${f3(runS + q.leave_s)}\uFF09\u4EE5\u4E0A\uFF08\u5168\u6A5F\u304C\u53BB\u3063\u3066\u304B\u3089\u6B21\u306E\u6CE2\uFF09`);
+  const escortPlanes = [];
+  for (let i = 0; i < n; i++) escortPlanes.push(esc.includes(i));
+  return {
+    planes: n,
+    bombsPerPlane: bomb.count,
+    flightMps: v,
+    runRadiusM: q.run_radius_m,
+    orbitDegPerS: radToDeg(v / q.run_radius_m),
+    runS,
+    spawnM: q.spawn_m,
+    fromBearingDeg: block.from_bearing_deg,
+    spawnOffsetsDeg: q.spawn_offsets_deg.slice(),
+    waveRotateDeg: q.wave_rotate_deg,
+    firstRunS: q.first_run_s,
+    runGapS: q.run_gap_s,
+    waveRestS: q.wave_rest_s,
+    leaveS: q.leave_s,
+    fallFeelS,
+    fallGameS,
+    scatterM: bomb.accuracy_cep_m * Math.SQRT2,
+    aimTurnMinDegS: q.aim_turn_min_deg_s,
+    timeScale,
+    bombHit: { damage: bomb.damage, fireChance: bomb.fire_chance, engineDamageChance: bomb.engine_damage_chance },
+    playerHalfLengthM: player.halfLengthM,
+    playerHitRadiusM: player.halfBeamM + bomb.blast_radius_m,
+    escortHalfLengthM: escort ? escort.halfLengthM : 0,
+    escortHitRadiusM: escort ? escort.halfBeamM + bomb.blast_radius_m : 0,
+    boundsW: sea.width,
+    boundsH: sea.height,
+    playerMarginM: player.boundsMarginM,
+    escortMarginM: escort ? escort.boundsMarginM : 0,
+    escortPlanes,
+    poolSize: Math.ceil(fallFeelS / q.run_gap_s) + 1,
+    nameJa: aircraft.name_ja,
+    fromJa
+  };
+}
+
+// ../wt-0176202/src/core/night.ts
+var NIGHT_SEED_OFFSET = 16;
+function fixedNight(enemyCount, batteryCount) {
+  const enemyOffsets = [];
+  for (let i = 0; i < enemyCount; i++) enemyOffsets.push({ dx: 0, dy: 0, dh: 0 });
+  return { absentHazards: [], enemyOffsets, bargeLeadDx: 0, batteryDx: new Array(batteryCount).fill(0), mirrored: false };
+}
+function rollNight(b, shareOf, seed, enemyCount, batteryCount) {
+  const rng = new SeededRng(seed + NIGHT_SEED_OFFSET >>> 0);
+  const sym = (a) => (rng.next() * 2 - 1) * a;
+  const absentHazards = [];
+  for (const id of b.optionalHazards) {
+    const p = Math.min(1, shareOf(id) * b.hazardScale);
+    if (!(rng.next() < p)) absentHazards.push(id);
+  }
+  const enemyOffsets = [];
+  for (let i = 0; i < enemyCount; i++) {
+    const dx = sym(b.enemyJitterXM);
+    const dy = sym(b.enemyJitterYM);
+    const dh = sym(b.enemyJitterHeadingDeg);
+    enemyOffsets.push({ dx, dy, dh });
+  }
+  const bargeLeadDx = sym(b.bargeLeadJitterM);
+  const batteryDx = [];
+  for (let i = 0; i < batteryCount; i++) batteryDx.push(sym(b.shoreBatteryJitterM));
+  const mirrored = rng.next() < b.mirrorChance;
+  return { absentHazards, enemyOffsets, bargeLeadDx, batteryDx, mirrored };
+}
+var isNum2 = (v) => typeof v === "number" && Number.isFinite(v);
+function isNightDataRecord(v) {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v;
+  if (!isNum2(r["hazard_scale"]) || !Array.isArray(r["optional_hazards"]) || !r["optional_hazards"].every((h) => typeof h === "string")) return false;
+  const j2 = r["enemy_jitter"];
+  if (j2 !== void 0 && (typeof j2 !== "object" || j2 === null || !isNum2(j2["x_m"]) || !isNum2(j2["y_m"]) || !isNum2(j2["heading_deg"]))) return false;
+  return (r["barge_lead_jitter_m"] === void 0 || isNum2(r["barge_lead_jitter_m"])) && (r["shore_battery_jitter_m"] === void 0 || isNum2(r["shore_battery_jitter_m"])) && (r["mirror_chance"] === void 0 || isNum2(r["mirror_chance"]));
+}
+function nightFromData(r, missionHazards, hasShare, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}.v0_1_prototype.night: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!(r.hazard_scale > 0)) bad("hazard_scale \u306F\u6B63");
+  for (const h of r.optional_hazards) {
+    if (!missionHazards.includes(h)) bad(`optional_hazards \u306E ${h} \u304C\u4EFB\u52D9\u306E hazards \u306B\u7121\u3044`);
+    if (!hasShare(h)) bad(`optional_hazards \u306E ${h} \u304C risk_events \u306B\u7121\u3044\u304B share \u304C\u7121\u3044`);
+  }
+  if (new Set(r.optional_hazards).size !== r.optional_hazards.length) bad("optional_hazards \u304C\u91CD\u8907\u3057\u3066\u3044\u308B");
+  const j2 = r.enemy_jitter ?? { x_m: 0, y_m: 0, heading_deg: 0 };
+  const lead = r.barge_lead_jitter_m ?? 0;
+  const sb = r.shore_battery_jitter_m ?? 0;
+  if (!(j2.x_m >= 0 && j2.y_m >= 0 && j2.heading_deg >= 0 && j2.heading_deg <= 180)) bad("enemy_jitter \u306F 0 \u4EE5\u4E0A\uFF08heading_deg \u306F 180 \u307E\u3067\uFF09");
+  if (!(lead >= 0) || !(sb >= 0)) bad("barge_lead_jitter_m\u30FBshore_battery_jitter_m \u306F 0 \u4EE5\u4E0A");
+  const mirror = r.mirror_chance ?? 0;
+  if (!(mirror >= 0 && mirror <= 1)) bad("mirror_chance \u306F 0\u301C1");
+  return { hazardScale: r.hazard_scale, optionalHazards: [...r.optional_hazards], enemyJitterXM: j2.x_m, enemyJitterYM: j2.y_m, enemyJitterHeadingDeg: j2.heading_deg, bargeLeadJitterM: lead, shoreBatteryJitterM: sb, mirrorChance: mirror };
+}
+
+// ../wt-0176202/src/core/visibility.ts
+function isMoonPhase(v) {
+  return v === "dark" || v === "half" || v === "full" || v === "day";
+}
+function speedFactorForBand(band, t) {
+  return t[band];
+}
+function enemyDetectRangeM(baseDetectM, speedFactor, vis, smokeActive, stormFactor = 1) {
+  return baseDetectM * speedFactor * vis.moonFactor * (smokeActive ? vis.smokeFactor : 1) * vis.detectionMultiplier * stormFactor;
+}
+function playerVisRangeM(vis) {
+  return vis.visPlayerBaseM * vis.moonFactor;
+}
+
+// ../wt-0176202/src/core/briefing.ts
+var NO_WEAPON_BRIEFING_JA = "\u9B5A\u96F7\u306FPT\u306E\u4E0B\u3092\u629C\u3051\u308B\uFF08\u6483\u305F\u306A\u3044\uFF09";
+var PATROL_WEAPON_BRIEFING_JA = "\u6A5F\u9283\u306F\u6A5F\u306B\u307E\u305A\u5F53\u305F\u3089\u306A\u3044\uFF08\u6B62\u307E\u3063\u3066\u96A0\u308C\u3001\u6295\u4E0B\u3067\u8EE2\u8235\uFF09";
+var patrolWeaponBriefingJa = (quietKt) => `${PATROL_WEAPON_BRIEFING_JA} \u30FB\xA0\u822A\u8DE1\u306F ${Math.round(quietKt)} kt \u8D85`;
+var patrolAirDetectJa = (wakeM, nearM) => `\u7A7A\u304B\u3089 \u822A\u8DE1 ${Math.round(wakeM)} m\uFF0F\u52D5\u304F\u8239\u4F53 ${Math.round(nearM)} m\uFF0F\u505C\u6B62\u306F\u898B\u3048\u306A\u3044`;
+function ptGunBriefingJa(label) {
+  return `${label}1\u633A\uFF08\u6483\u3064\u3068\u9583\u5149\u3067\u898B\u3064\u304B\u308B\u3002\u9B5A\u96F7\u306FPT\u306E\u4E0B\u3092\u629C\u3051\u308B\uFF09`;
+}
+var radarBriefingJa = (shipRangeM, landClutter) => `\u30EC\u30FC\u30C0\u30FC\xA0${Math.round(shipRangeM)}\xA0m${landClutter ? "\uFF08\u9678\u306E\u305D\u3070\u306F\u6620\u3089\u306A\u3044\uFF09" : ""}`;
+var LANDING_FIGHT_AWAY_JA = "\u8F38\u9001\u8239\u304B\u3089\u96E2\u308C\u3066\u6226\u3048";
+var LANDING_RING_WAIT_JA = "\u5E30\u6295\u306E\u8F2A\u3067\u5F85\u3066\u308B";
+function landingBriefingJa(unloadS, hitsToSink) {
+  return `${LANDING_RING_WAIT_JA} \u30FB\xA0\u63DA\u9678\xA0${Math.round(unloadS)}\xA0\u79D2\uFF08\u88AB\u96F7\xA0${hitsToSink}\xA0\u3067\u6C88\u3080\u3002${LANDING_FIGHT_AWAY_JA}\u3002\u7C73PT\u306E\u9B5A\u96F7\u3082\u81EA\u8247\u306E\u4E0B\u3092\u629C\u3051\u308B\uFF09`;
+}
+var ALLY_RUN_LIGHT_JA = "\u8D70\u308BPT\u3092\u7167\u3089\u3057\u3066\u6483\u3064";
+function allyBriefingJa(labelJa, fromShipJa) {
+  return `\u8F38\u9001\u8239\u306E${fromShipJa}\u306B\u5473\u65B9\u306E${labelJa}\u3002${ALLY_RUN_LIGHT_JA}`;
+}
+var DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+function formatDateJa(iso) {
+  const m = DATE_RE.exec(iso);
+  if (!m) throw new Error(`missions_seed.json \u306E date \u304C YYYY-MM-DD \u3067\u306A\u3044\uFF08${iso}\uFF09`);
+  return `${m[1]}\u5E74${Number(m[2])}\u6708${Number(m[3])}\u65E5`;
+}
+function shortLabelJa(label) {
+  const i = label.indexOf("\uFF08");
+  return i > 0 ? label.slice(0, i).trim() : label;
+}
+function moonLabelJa(m) {
+  return m === "dark" ? "\u65B0\u6708" : m === "half" ? "\u534A\u6708" : m === "day" ? "\u663C" : "\u6E80\u6708";
+}
+function enemyCountsJa(ids, nameOf) {
+  const order = [];
+  const count = /* @__PURE__ */ new Map();
+  for (const id of ids) {
+    if (!count.has(id)) order.push(id);
+    count.set(id, (count.get(id) ?? 0) + 1);
+  }
+  return order.length === 0 ? "\u306A\u3057" : order.map((id) => `${nameOf(id)} \xD7${count.get(id)}`).join("\u3001");
+}
+function hazardsJa(ids, labelOf, skip) {
+  const out = ids.filter((id) => !skip.includes(id)).map(labelOf);
+  return out.length === 0 ? "\u306A\u3057" : out.join("\u3001");
+}
+var COMPASS_CENTER_FRACTION = 0.1;
+var COMPASS_JA = ["\u5317", "\u5317\u6771", "\u6771", "\u5357\u6771", "\u5357", "\u5357\u897F", "\u897F", "\u5317\u897F"];
+function compassJa(x, y, w, h) {
+  const dx = x - w / 2;
+  const dy = h / 2 - y;
+  if (Math.abs(dx) <= w * COMPASS_CENTER_FRACTION && Math.abs(dy) <= h * COMPASS_CENTER_FRACTION) return "\u4E2D\u592E";
+  const deg = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+  return COMPASS_JA[Math.round(deg / 45) % 8];
+}
+function bearingJa(deg) {
+  return COMPASS_JA[Math.round(wrapDeg360(deg) / 45) % 8];
+}
+function absentJa(ids, labelOf) {
+  return ids.length === 0 ? "" : `\uFF08\u4ECA\u591C\u306F ${ids.map(labelOf).join("\u30FB")} \u306A\u3057\uFF09`;
+}
+function weaponPartJa(n) {
+  const sec = n.secondaryJa ? ` \u30FB\xA0${n.secondaryJa}` : "";
+  if (n.weaponJa !== void 0) return `\u30FB\xA0${n.weaponJa}${sec}`;
+  return `\u30FB ${n.gunsLabel ? `\u7832\xA0${n.gunsLabel}` : `\u9B5A\u96F7 ${n.torpedoes} \u672C`}${sec}`;
+}
+function briefingRows(t, n, nameOf, labelOf) {
+  const gal = Number.isInteger(n.fuelGal) ? String(n.fuelGal) : n.fuelGal.toFixed(1);
+  const hl = n.hazardLabelsJa;
+  const hazardOf = hl ? (id) => hl[id] ?? labelOf(id) : labelOf;
+  const enemy = n.enemyRowJa !== void 0 ? [...new Set(t.enemyIds)].map(nameOf).join("\u3001") : enemyCountsJa(t.enemyIds, nameOf);
+  return [
+    { label: "\u76EE\u7684", text: t.objective },
+    { label: "\u6210\u529F", text: `${t.success}${n.successTailJa ?? `\uFF08\u5E30\u6295\u5730\u70B9\u306F${n.homeFromJa ?? compassJa(n.homeX, n.homeY, n.boundsW, n.boundsH)}\u306E\u9752\u3044\u8F2A\uFF09`}` },
+    n.dayRowJa !== void 0 ? { label: "\u6642", text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} \u30FB ${n.dayRowJa}` } : { label: "\u6708", text: `${t.moonLabelJa ?? moonLabelJa(t.moon)} \u30FB \u898B\u3048\u308B ${Math.round(n.visM)} m \u30FB ${n.airDetectJa ?? `\u898B\u3064\u304B\u308B \u5DE1\u822A ${Math.round(n.detectCruiseM)} m\uFF0F\u9759\u97F3 ${Math.round(n.detectSilentM)} m`}${n.radarJa ? ` \u30FB\xA0${n.radarJa}` : ""}` },
+    { label: "\u6575", text: `${enemy}${n.enemyAtJa ? `\uFF08${n.enemyAtJa}\uFF09` : n.enemyFromJa ? `\uFF08${n.enemyFromJa}\u304B\u3089\uFF09` : ""}${n.enemyRowJa !== void 0 ? ` \u30FB ${n.enemyRowJa}` : ""}${n.allyJa ? ` \u30FB\xA0${n.allyJa}` : ""}` },
+    { label: "\u5371\u967A", text: `${hazardsJa(t.hazardIds, hazardOf, [RAID_EVENT_ID])}${absentJa(t.absentHazardIds ?? [], hazardOf)}${n.hazardTailJa ? ` \u30FB\xA0${n.hazardTailJa}` : ""}` },
+    {
+      label: "\u6761\u4EF6",
+      text: `${n.clockJa ?? `\u591C\u660E\u3051\u307E\u3067 ${Math.round(n.durationS)} \u79D2${n.dawnJa}`} \u30FB \u71C3\u6599 ${gal} gal${n.fuelNoteJa ?? ""} ${weaponPartJa(n)}${n.aimAssistJa ? ` \u30FB ${n.aimAssistJa}` : ""}${n.landingJa ? ` \u30FB\xA0${n.landingJa}` : ""}${n.repassJa ? ` \u30FB\xA0${n.repassJa}` : ""}`
+    }
+  ];
+}
+
+// ../wt-0176202/src/config/campaign-data.ts
+function missionCampaignId(data, missionId) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === missionId);
+  return m && typeof m["campaign"] === "string" ? m["campaign"] : "";
+}
+
+// ../wt-0176202/src/config/mission-data.ts
+function getPrototypeMission(data, missionId, hard = false) {
+  const m = data.missionsSeed.missions.find((x) => x.id === missionId);
+  if (!m) throw new Error(`missions_seed.json \u306B ${missionId} \u304C\u7121\u3044`);
+  const proto = m["v0_1_prototype"];
+  if (!proto) throw new Error(`${missionId}.v0_1_prototype \u304C\u7121\u3044`);
+  const bounds = proto["bounds_m"];
+  if (!bounds || !isNum(bounds["width"]) || !isNum(bounds["height"])) {
+    throw new Error(`${missionId}.v0_1_prototype.bounds_m \u304C\u7121\u3044\uFF08docs/02 \xA76.1\uFF09`);
+  }
+  if (!isNum(proto["duration_s"])) throw new Error(`${missionId}.v0_1_prototype.duration_s \u304C\u7121\u3044`);
+  const enemies = proto["enemies"];
+  const enemyId = Array.isArray(enemies) ? enemies[0] : void 0;
+  if (typeof enemyId !== "string") throw new Error(`${missionId}.v0_1_prototype.enemies \u304C\u7A7A`);
+  const playerBoatId = m["player_boat"];
+  if (typeof playerBoatId !== "string") throw new Error(`${missionId}.player_boat \u304C\u7121\u3044`);
+  const type = m["type"];
+  if (typeof type !== "string") throw new Error(`${missionId}.type \u304C\u7121\u3044`);
+  const torpedoId = m["torpedo_type"];
+  if (typeof torpedoId !== "string") throw new Error(`${missionId}.torpedo_type \u304C\u7121\u3044`);
+  const moon = m["moon"];
+  if (!isMoonPhase(moon)) throw new Error(`${missionId}.moon \u304C dark/half/full/day \u306E\u3069\u308C\u3067\u3082\u306A\u3044\uFF08${String(moon)}\u3002day \u306F v0.6.11 \u306E\u663C\u306E\u4EFB\u52D9\uFF09`);
+  const b = { width: bounds["width"], height: bounds["height"] };
+  const playerStart = readStart(proto["player_start"], `${missionId}.v0_1_prototype.player_start`);
+  const rp = proto["return_point"];
+  if (!isReturnPointDataRecord(rp)) throw new Error(`${missionId}.v0_1_prototype.return_point\uFF08x_m/y_m/radius_m/call_margin/torpedo_settle_max_s/torpedo_end_settle_s\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.7\uFF09`);
+  const returnPoint = returnPointFromData(rp, b);
+  const sdx = playerStart.x - returnPoint.x;
+  const sdy = playerStart.y - returnPoint.y;
+  if (sdx * sdx + sdy * sdy <= returnPoint.radiusM * returnPoint.radiusM) throw new Error(`${missionId}: \u51FA\u767A\u70B9\u304C\u5E30\u6295\u5730\u70B9\u306E\u8F2A\u306E\u4E2D\u306B\u3042\u308B`);
+  const fuelAllotmentGal = proto["fuel_allotment_gal"];
+  if (!isNum(fuelAllotmentGal) || !(fuelAllotmentGal > 0)) throw new Error(`${missionId}.v0_1_prototype.fuel_allotment_gal \u306F\u6B63\u306E\u6570\uFF08docs/02 \xA76.7\uFF09`);
+  const shallowsRaw = proto["shallows"];
+  if (!Array.isArray(shallowsRaw) || !shallowsRaw.every(isShallowRectDataRecord)) throw new Error(`${missionId}.v0_1_prototype.shallows\uFF08x_m/y_m/width_m/height_m \u306E\u914D\u5217\u3002\u7121\u3051\u308C\u3070 []\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09`);
+  const shallows = shallowsFromData(shallowsRaw, b);
+  const faRaw = proto["friendly_aircraft"];
+  let friendlyAircraft = null;
+  if (faRaw !== void 0) {
+    const t = faRaw?.["trigger_edge_m"];
+    if (!isNum(t) || !(t > 0)) throw new Error(`${missionId}.v0_1_prototype.friendly_aircraft.trigger_edge_m \u306F\u6B63\u306E\u6570\uFF08docs/02 \xA76.8\uFF09`);
+    const zone = t + returnPoint.radiusM;
+    if (sdx * sdx + sdy * sdy <= zone * zone) throw new Error(`${missionId}: \u51FA\u767A\u70B9\u304C\u5473\u65B9\u6A5F\u306E\u958B\u59CB\u8DDD\u96E2\uFF08friendly_aircraft.trigger_edge_m\uFF09\u306E\u5185\u5074\u306B\u3042\u308B`);
+    friendlyAircraft = { triggerEdgeM: t };
+  }
+  const stormRaw = proto["storm"];
+  let storm = null;
+  if (stormRaw !== void 0) {
+    if (!isStormMissionBlock(stormRaw)) throw new Error(`${missionId}.v0_1_prototype.storm\uFF08sea_state/depth_m/drift_kt/start_south_y_min_m/start_south_y_max_m\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.8\uFF09`);
+    storm = stormRaw;
+  }
+  const eaRaw = proto["enemy_aircraft"];
+  let enemyAircraft = null;
+  if (eaRaw !== void 0) {
+    const id = eaRaw?.["enemy_id"];
+    if (typeof id !== "string" || id.length === 0) throw new Error(`${missionId}.v0_1_prototype.enemy_aircraft.enemy_id\uFF08enemies.json \u306E\u6C34\u4E0A\u6A5F\u306E id\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09`);
+    enemyAircraft = { enemyId: id };
+  }
+  const bargesRaw = proto["barges"];
+  if (bargesRaw !== void 0 && !isBargeMissionBlock(bargesRaw)) throw new Error(`${missionId}.v0_1_prototype.barges\uFF08lead_start / offsets_m / beach_margin_m / kill_quota\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.4\uFF09`);
+  const barges = bargesRaw === void 0 ? null : bargesRaw;
+  const ptRaw = proto["pt_boats"];
+  if (ptRaw !== void 0 && !isPtMissionBlock(ptRaw)) throw new Error(`${missionId}.v0_1_prototype.pt_boats\uFF08legs_m / start_along_m / leave_heading_deg / source\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.4\uFF09`);
+  const ptBoats = ptRaw === void 0 ? null : ptRaw;
+  if (ptBoats && (proto["enemy_start"] !== void 0 || barges)) throw new Error(`${missionId}.v0_1_prototype: pt_boats\uFF08\u7C73PT\uFF09\u306F enemy_start\u30FBbarges \u3068\u4E00\u7DD2\u306B\u7F6E\u3051\u306A\u3044\uFF08v0.6.3\uFF09`);
+  const patrolAir = proto["patrol_air"] !== void 0;
+  if (patrolAir && (proto["enemy_start"] !== void 0 || barges || ptBoats)) throw new Error(`${missionId}.v0_1_prototype: patrol_air\uFF08\u591C\u306E\u54E8\u6212\u6A5F\uFF09\u306F enemy_start\u30FBbarges\u30FBpt_boats \u3068\u4E00\u7DD2\u306B\u7F6E\u3051\u306A\u3044\uFF08\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\u3002v0.6.7\uFF09`);
+  const evac = proto["evac"] !== void 0;
+  if (evac && (proto["enemy_start"] !== void 0 || barges || ptBoats || patrolAir)) throw new Error(`${missionId}.v0_1_prototype: evac\uFF08\u7A7A\u8972\u4E0B\u306E\u9000\u907F\uFF09\u306F enemy_start\u30FBbarges\u30FBpt_boats\u30FBpatrol_air \u3068\u4E00\u7DD2\u306B\u7F6E\u3051\u306A\u3044\uFF08\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\u3002v0.6.11\uFF09`);
+  if (!ptBoats && !patrolAir && !evac && proto["enemy_start"] === void 0 === (barges === null)) throw new Error(`${missionId}.v0_1_prototype \u306F enemy_start\uFF08\u99C6\u9010\u8266\uFF09\u304B barges\uFF08\u5927\u767A\u306E\u968A\uFF09\u306E\u3069\u3061\u3089\u304B\u4E00\u65B9\u3092\u6301\u3064\uFF08\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u30FB\u591C\u306E\u54E8\u6212\u6A5F\uFF08patrol_air\uFF09\u30FB\u7A7A\u8972\u4E0B\u306E\u9000\u907F\uFF08evac\uFF09\u306E\u4EFB\u52D9\u306F\u3069\u3061\u3089\u3082\u6301\u305F\u306A\u3044\uFF09`);
+  const mainWeapon = proto["main_weapon"] ?? "torpedo";
+  if (mainWeapon !== "torpedo" && mainWeapon !== "guns" && mainWeapon !== "none") throw new Error(`${missionId}.v0_1_prototype.main_weapon \u306F torpedo\u30FBguns\u30FBnone \u306E\u3069\u308C\u304B`);
+  const ids = enemies;
+  if ((barges || ptBoats) && !ids.every((e) => e === enemyId)) throw new Error(`${missionId}.v0_1_prototype.enemies: \u5927\u767A\u306E\u968A\u30FB\u7C73PT \u306E\u968A\u306F\u540C\u3058 id \u3060\u3051`);
+  const immune = ids.some((e) => data.enemies.enemies.find((x) => x["id"] === e)?.["torpedo_immune"] === true);
+  if (immune && mainWeapon === "torpedo") throw new Error(`${missionId}: \u9B5A\u96F7\u304C\u5F53\u305F\u3089\u306A\u3044\u6575\uFF08enemies.json \u306E torpedo_immune\uFF09\u304C\u3044\u308B\u306E\u3067 main_weapon \u306F guns \u304B none`);
+  if (barges && mainWeapon !== "guns") throw new Error(`${missionId}: \u5927\u767A\u306E\u968A\uFF08barges\uFF09\u306E\u4EFB\u52D9\u306E main_weapon \u306F guns`);
+  if (mainWeapon === "none" && ptBoats === null && !patrolAir && !evac) throw new Error(`${missionId}: main_weapon none \u306F\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u30FB\u591C\u306E\u54E8\u6212\u6A5F\uFF08patrol_air\uFF09\u30FB\u7A7A\u8972\u4E0B\u306E\u9000\u907F\uFF08evac\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+  const coastRaw = proto["coast"];
+  let coast = null;
+  if (coastRaw !== void 0) {
+    if (coastRaw?.["side"] !== "south" || !isNum(coastRaw["land_m"]) || !(coastRaw["land_m"] > 0) || typeof coastRaw["label_ja"] !== "string") throw new Error(`${missionId}.v0_1_prototype.coast\uFF08side: south / land_m / label_ja\uFF09\u304C\u58CA\u308C\u3066\u3044\u308B\uFF08v0.4.2 \u306F south \u3060\u3051\uFF09`);
+    coast = { side: "south", landM: coastRaw["land_m"], label: coastRaw["label_ja"] };
+  }
+  if (barges && !coast) throw new Error(`${missionId}.v0_1_prototype: \u5927\u767A\u306E\u968A\uFF08barges\uFF09\u306B\u306F\u5CB8\uFF08coast\uFF09\u304C\u8981\u308B\uFF08\u9003\u3052\u308B\u5411\u304D\uFF09`);
+  const sbRaw = proto["shore_battery"];
+  let shoreBattery = null;
+  if (sbRaw !== void 0) {
+    if (!isNum(sbRaw?.["x_m"])) throw new Error(`${missionId}.v0_1_prototype.shore_battery.x_m\uFF08\u5CB8\u6CBF\u3044\u306E\u4F4D\u7F6E m\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09`);
+    if (!coast) throw new Error(`${missionId}.v0_1_prototype: \u6CBF\u5CB8\u7832\uFF08shore_battery\uFF09\u306B\u306F\u5CB8\uFF08coast\uFF09\u304C\u8981\u308B`);
+    shoreBattery = { xM: sbRaw["x_m"] };
+  }
+  const escortRaw = proto["escort"];
+  if (escortRaw !== void 0 && !isEscortMissionBlock(escortRaw)) throw new Error(`${missionId}.v0_1_prototype.escort\uFF08boat / station_astern_m / station_abeam_m / lag_warn_m / catch_up_gain_per_s / heading_deadband_m / lit_near_leader_m\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.4\uFF09`);
+  const escort = escortRaw === void 0 ? null : escortRaw;
+  if (escort && (barges || ptBoats)) throw new Error(`${missionId}.v0_1_prototype: \u50DA\u8247\uFF08escort\uFF09\u306F\u99C6\u9010\u8266\uFF08enemy_start\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+  if (type === "escort_vip" && !escort) throw new Error(`${missionId}: type \u304C escort_vip \u306A\u306E\u306B v0_1_prototype.escort \u304C\u7121\u3044`);
+  if (escort && !data.boats.boats.some((x) => x["id"] === escort.boat)) throw new Error(`${missionId}.v0_1_prototype.escort.boat\uFF08${escort.boat}\uFF09\u304C boats.json \u306B\u7121\u3044`);
+  const enemyStart = barges || ptBoats || patrolAir || evac ? null : readStart(proto["enemy_start"], `${missionId}.v0_1_prototype.enemy_start`);
+  const { enemyStarts, shoreBatteryXs, objectiveSinkCount, ptLegs, convoyQuota } = readHardBlock(proto, missionId, hard, enemyStart, shoreBattery, b, { ptBoats: ptBoats !== null, convoy: proto["convoy"] !== void 0 });
+  const trRaw = proto["transport"];
+  let transport = null;
+  if (trRaw !== void 0) {
+    const tid = trRaw?.["enemy_id"];
+    if (typeof tid !== "string" || !data.enemies.enemies.some((x) => x["id"] === tid)) throw new Error(`${missionId}.v0_1_prototype.transport.enemy_id \u304C enemies.json \u306B\u7121\u3044\uFF08docs/02 \xA76.4\uFF09`);
+    if (!enemyStart) throw new Error(`${missionId}.v0_1_prototype: \u8F38\u9001\u8239\uFF08transport\uFF09\u306F\u99C6\u9010\u8266\uFF08enemy_start\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+    transport = { enemyId: tid, start: readStart(trRaw["start"], `${missionId}.v0_1_prototype.transport.start`) };
+  }
+  const hazardsRaw = proto["hazards"];
+  if (hazardsRaw !== void 0 && (!Array.isArray(hazardsRaw) || !hazardsRaw.every((h) => typeof h === "string"))) throw new Error(`${missionId}.v0_1_prototype.hazards\uFF08risk_events.json \u306E id \u306E\u914D\u5217\u3002\u7121\u3051\u308C\u3070 []\uFF09\u304C\u58CA\u308C\u3066\u3044\u308B\uFF08docs/02 \xA76.8\uFF09`);
+  const hazards = hazardsRaw === void 0 ? [] : hazardsRaw.slice();
+  const nightRaw = proto["night"];
+  let night = null;
+  if (nightRaw !== void 0) {
+    if (!isNightDataRecord(nightRaw)) throw new Error(`${missionId}.v0_1_prototype.night\uFF08hazard_scale / optional_hazards / enemy_jitter / barge_lead_jitter_m / shore_battery_jitter_m\uFF09\u304C\u58CA\u308C\u3066\u3044\u308B\uFF08docs/02 \xA76.8\uFF09`);
+    const events = data.riskEvents.events;
+    night = nightFromData(nightRaw, hazards, (id) => events.some((e) => e["id"] === id && isNum(e["share"])), missionId);
+  }
+  const convoyRaw = proto["convoy"];
+  if (convoyRaw !== void 0 && !isConvoyMissionBlock(convoyRaw)) throw new Error(`${missionId}.v0_1_prototype.convoy\uFF08lead_start / offsets_m / landing_x_m / arrive_quota / barge_hp / detect_band / target_keep_ratio / target_switch_hold_s / flash_hold_s / source\u3002\u4EFB\u610F\u306E beach \u306F spacing_m / margin_m / run_in_deg \u306E\u6570\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.4\uFF09`);
+  const convoy = convoyRaw === void 0 ? null : convoyRaw;
+  if (convoy && !ptBoats) throw new Error(`${missionId}.v0_1_prototype: \u8F38\u9001\u968A\uFF08convoy\uFF09\u306F\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+  if (convoy && !coast) throw new Error(`${missionId}.v0_1_prototype: \u8F38\u9001\u968A\uFF08convoy\uFF09\u306B\u306F\u5CB8\uFF08coast\uFF09\u304C\u8981\u308B\uFF08\u6D5C\u306E\u898B\u305F\u76EE\uFF09`);
+  if (convoy && mainWeapon !== "guns") throw new Error(`${missionId}: \u8F38\u9001\u968A\uFF08convoy\uFF09\u306E\u4EFB\u52D9\u306E main_weapon \u306F guns\uFF08\u5927\u767A\u3092\u5B88\u308B\u7832\uFF09`);
+  const allies = m["allies"];
+  if (convoy && (!Array.isArray(allies) || !allies.some((a) => a === CONVOY_BARGE_ID))) throw new Error(`${missionId}.allies \u306B\u8F38\u9001\u968A\u306E\u5927\u767A\uFF08${CONVOY_BARGE_ID}\uFF09\u304C\u7121\u3044\uFF08\u6570\u304C\u96BB\u6570\uFF09`);
+  if (convoy && night && night.mirrorChance > 0) throw new Error(`${missionId}.v0_1_prototype.night.mirror_chance \u306F\u8F38\u9001\u968A\u306E\u4EFB\u52D9\u3067\u306F 0\uFF08\u5E30\u6295\u306E\u8F2A\u3068\u4E0A\u9678\u7DDA\u306F\u53CD\u8EE2\u3057\u306A\u3044\uFF09`);
+  return {
+    id: missionId,
+    type,
+    playerBoatId,
+    torpedoId,
+    enemyId,
+    enemyCount: enemyStart ? enemyStarts.length : ids.length + (ptLegs ? ptLegs.length : 0),
+    bounds: b,
+    playerStart,
+    enemyStart,
+    enemyStarts,
+    hard,
+    objectiveSinkCount,
+    mainWeapon,
+    barges,
+    // ハード（v0.6.6。jp_01）: 足す哨戒線を legs_m の後ろに・上陸のノルマを置き換えた写し（data の配列は触らない。PrototypeMission の鍵は増やさない）
+    ptBoats: ptBoats && ptLegs ? { ...ptBoats, legs_m: [...ptBoats.legs_m, ...ptLegs] } : ptBoats,
+    convoy: convoy && convoyQuota !== null ? { ...convoy, arrive_quota: convoyQuota } : convoy,
+    coast,
+    shoreBattery,
+    shoreBatteryXs,
+    escort,
+    durationS: proto["duration_s"],
+    enemyHitsToSink: isNum(proto["enemy_hits_to_sink"]) ? proto["enemy_hits_to_sink"] : null,
+    moon,
+    returnPoint,
+    fuelAllotmentGal,
+    shallows,
+    friendlyAircraft,
+    storm,
+    hazards,
+    enemyAircraft,
+    night,
+    transport,
+    dawnStrike: proto["dawn_strike"] === void 0 ? null : dawnStrikeFromData(proto["dawn_strike"], missionId)
+  };
+}
+
+// ../wt-0176202/src/config/game-data.ts
+var gameData = {
+  boats: boats_default,
+  torpedoes: torpedoes_default,
+  enemies: enemies_default,
+  hitRateModel: hit_rate_model_default,
+  riskEvents: risk_events_default,
+  missionsSeed: missions_seed_default,
+  scoring: scoring_default
+};
+function getBoatRecord(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatDataRecord(b)) throw new Error(`boats.json \u306E ${boatId} \u304C\u7121\u3044\u304B\u3001\u904B\u52D5\u30D5\u30A3\u30FC\u30EB\u30C9\u304C\u6B20\u3051\u3066\u3044\u308B`);
+  return b;
+}
+function getBoatTorpedoCount(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  const t = b?.["torpedoes"];
+  if (!t || !isNum(t["count"])) throw new Error(`boats.json \u306E ${boatId}.torpedoes.count \u304C\u7121\u3044`);
+  return t["count"];
+}
+function getTorpedoRecord(data, torpedoId) {
+  const t = data.torpedoes.torpedoes.find((x) => x.id === torpedoId);
+  if (!t || !isTorpedoDataRecord(t)) throw new Error(`torpedoes.json \u306E ${torpedoId} \u304C\u7121\u3044\u304B\u3001settings/reliability \u304C\u6B20\u3051\u3066\u3044\u308B`);
+  return t;
+}
+function getEnemyRecord(data, enemyId) {
+  const e = data.enemies.enemies.find((x) => x.id === enemyId);
+  if (!e) throw new Error(`enemies.json \u306B ${enemyId} \u304C\u7121\u3044`);
+  const keys = ["length_m", "beam_m", "hull_circles", "torpedo_hits_to_sink"];
+  for (const k of keys) if (!isNum(e[k])) throw new Error(`enemies.json \u306E ${enemyId}.${k} \u304C\u7121\u3044`);
+  if (!isEnemyAiDataRecord(e)) {
+    throw new Error(`enemies.json \u306E ${enemyId} \u306B speed/turn_rate/accel/detection/evasion/ram/patrol \u306E\u3069\u308C\u304B\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.4\uFF09`);
+  }
+  if (!isEnemyGunneryDataRecord(e)) {
+    throw new Error(`enemies.json \u306E ${enemyId} \u306B guns/searchlight/starshell \u306E\u30D5\u30A3\u30FC\u30EB\u30C9\u304C\u6B20\u3051\u3066\u3044\u308B\uFF08docs/02 \xA76.5\uFF09`);
+  }
+  return {
+    length_m: e["length_m"],
+    beam_m: e["beam_m"],
+    hull_circles: e["hull_circles"],
+    torpedo_hits_to_sink: e["torpedo_hits_to_sink"],
+    speed_typical_kt: e.speed_typical_kt,
+    speed_max_kt: e.speed_max_kt,
+    turn_rate_deg_s: e.turn_rate_deg_s,
+    accel_mps2: e.accel_mps2,
+    detection: e.detection,
+    evasion: e.evasion,
+    ram: e.ram,
+    patrol: e.patrol,
+    guns: e.guns,
+    searchlight: e.searchlight,
+    starshell: e.starshell
+  };
+}
+function getBoatSmokeParams(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatSmokeDataRecord(b)) throw new Error(`boats.json \u306E ${boatId} \u306B smoke_generator / smoke.* \u304C\u7121\u3044\uFF08docs/02 \xA75\uFF09`);
+  return smokeParamsFromData(b);
+}
+function getGroundingParams(data) {
+  const g = data.riskEvents.events.find((e) => e.id === "grounding");
+  if (!g || !isGroundingDataRecord(g)) throw new Error("risk_events.json \u306E grounding \u306B params.safe_speed_kt / warn_lookahead_s \u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09");
+  return groundingParamsFromData(g);
+}
+function getFriendlyParams(data, mission, timeScale) {
+  if (!mission.friendlyAircraft) return null;
+  const f = data.riskEvents.events.find((e) => e.id === "friendly_fire");
+  if (!f || !isFriendlyFireDataRecord(f)) throw new Error("risk_events.json \u306E friendly_fire \u306B params\uFF08window_s \u307B\u304B\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09");
+  return friendlyParamsFromData(f, mission.friendlyAircraft.triggerEdgeM, mission.returnPoint.radiusM, timeScale);
+}
+function getSeaplaneParams(data, mission, timeScale, boat) {
+  if (!mission.enemyAircraft) return null;
+  const plane = data.enemies.enemies.find((e) => e.id === mission.enemyAircraft.enemyId);
+  if (!plane || !isSeaplaneDataRecord(plane)) throw new Error(`enemies.json \u306B ${mission.enemyAircraft.enemyId}\uFF08speed_kt / altitude_m / flare / bomb / detection\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09`);
+  const ev = data.riskEvents.events.find((e) => e.id === "enemy_aircraft");
+  if (!ev || !isEnemyAircraftEventRecord(ev)) throw new Error("risk_events.json \u306E enemy_aircraft \u306B params\uFF08patrol_from_s \u307B\u304B\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09");
+  return seaplaneParamsFromData(plane, ev, timeScale, boat);
+}
+function getBargeParams(data, mission) {
+  if (!mission.barges) return null;
+  const rec = data.enemies.enemies.find((e) => e.id === mission.enemyId);
+  if (!rec || !isBargeDataRecord(rec)) throw new Error(`enemies.json \u306E ${mission.enemyId} \u306B\u5927\u767A\u306E\u5024\uFF08length_m / speed_* / detection / evasion.beach_fan_deg / guns 1 \u7A2E\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.4\uFF09`);
+  const w = data.hitRateModel.world;
+  return bargeParamsFromData(rec, mission.barges, mission.enemyCount, { hitScale: w.hit_scale, spriteScale: w.sprite_scale, timeScale: w.time_scale }, mission.bounds, data.hitRateModel.visibility.detect_hold_s);
+}
+function getGunBatteryParams(data, mission) {
+  if (mission.mainWeapon !== "guns") return null;
+  const b = data.boats.boats.find((x) => x.id === mission.playerBoatId);
+  const g = b?.["gun_battery"];
+  if (!isGunBatteryDataRecord(g)) {
+    throw new Error(`boats.json \u306E ${mission.playerBoatId}.gun_battery\uFF08label_ja / range_m / effective_m / dead_cone_deg / muzzle_flash_reveal_m / spread_factor / groups\u30FB\u4EFB\u610F\u306E magazine\uFF08rounds / reload_s\uFF09\u30FBmin_spread_m \u306F\u6570\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.4\uFF09`);
+  }
+  try {
+    return gunBatteryParamsFromData(g);
+  } catch (e) {
+    throw new Error(`${mission.id} \u306E ${mission.playerBoatId}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+function getShoreBatteryParamsList(data, mission) {
+  if (!mission.shoreBattery) return [];
+  const rec = data.riskEvents.events.find((e) => e.id === "shore_battery");
+  const p = rec?.["params"];
+  if (!isShoreBatteryDataRecord(p)) throw new Error("risk_events.json \u306E shore_battery \u306B params\uFF08gun / base_detect_m / inland_m\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09");
+  return mission.shoreBatteryXs.map((x) => shoreBatteryParamsFromData(p, x, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s));
+}
+function getEscortParams(data, mission) {
+  if (!mission.escort) return null;
+  const b = getBoatRecord(data, mission.escort.boat);
+  const hp = b["hull_hp"];
+  if (!isNum(hp)) throw new Error(`boats.json \u306E ${mission.escort.boat}.hull_hp \u304C\u7121\u3044\uFF08\u50DA\u8247\u306E HP\u3002docs/02 \xA76.4\uFF09`);
+  const w = data.hitRateModel.world;
+  return escortParamsFromData(mission.escort, { speedMaxMps: ktToMps(b.speed_max_kt), accelMps2: b.accel_mps2, turnRateDegS: b.turn_rate_deg_s, lengthM: b.length_m, beamM: b.beam_m, maxHp: hp }, w.hit_scale, w.sprite_scale);
+}
+function getStormParams(data, mission, timeScale) {
+  if (!mission.storm) return null;
+  const rec = data.riskEvents.events.find((e) => e.id === "storm");
+  if (!rec || !isStormDataRecord(rec)) throw new Error("risk_events.json \u306E storm \u306B params\uFF08safe_speed_kt \u307B\u304B\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09");
+  const boat = getBoatRecord(data, mission.playerBoatId);
+  const limit = boat["sea_state_limit"];
+  if (!isNum(limit)) throw new Error(`boats.json \u306E ${mission.playerBoatId}.sea_state_limit \u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09`);
+  return stormParamsFromData(rec, mission.storm, { speedMaxKt: boat["speed_max_kt"], seaStateLimit: limit }, timeScale, mission.bounds, mission.playerStart.y);
+}
+function getRaidParams(data, mission) {
+  if (!mission.hazards.includes(RAID_EVENT_ID)) return null;
+  const r = data.riskEvents.events.find((e) => e.id === RAID_EVENT_ID);
+  if (!r || !isRaidDataRecord(r)) throw new Error("risk_events.json \u306E harbor_fire_explosion \u306B params\uFF08chance / disperse_fuel_factor / stay_hit_chance / stay_hit_damage / stay_hit_fire\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.8\uFF09");
+  return raidParamsFromData(r, getBoatDamageParams(data, mission.playerBoatId));
+}
+function getBoatCrewParams(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json \u306E ${boatId} \u306B crew / hull_hp / damage.casualties_per_hp / damage.crew_effects \u304C\u7121\u3044\uFF08docs/02 \xA76.6\u3002v0.3.5 \u304B\u3089 crew_effects \u3082\u5FC5\u9808\uFF09`);
+  return crewParamsFromData(b);
+}
+function getBoatCrewEffects(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatCrewDataRecord(b)) throw new Error(`boats.json \u306E ${boatId} \u306B damage.crew_effects\uFF08extinguish_exponent / turn_rate_per_loss / accel_per_loss / min_factor\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.6\uFF09`);
+  return crewEffectsFromData(b);
+}
+function effectiveFuelAllotmentGal(data, mission, debugOverrideGal) {
+  if (!Number.isFinite(debugOverrideGal)) return mission.fuelAllotmentGal;
+  return Math.min(debugOverrideGal, getBoatFuelCurve(data, mission.playerBoatId).capacityGal);
+}
+function getBoatFuelCurve(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatFuelDataRecord(b)) throw new Error(`boats.json \u306E ${boatId} \u306B fuel_capacity_gal / fuel_hours_* / fuel_idle_ratio \u304C\u7121\u3044\uFF08docs/02 \xA76.7\uFF09`);
+  return fuelCurveFromData(b);
+}
+function getBoatDamageParams(data, boatId) {
+  const b = data.boats.boats.find((x) => x.id === boatId);
+  if (!b || !isBoatDamageDataRecord(b)) throw new Error(`boats.json \u306E ${boatId} \u306B hull_hp / damage.* \u304C\u7121\u3044\uFF08docs/02 \xA76.6\uFF09`);
+  return damageParamsFromData(b);
+}
+function getVisibilityParams(data, moon, historical = data.hitRateModel.historical_mode.enabled_default) {
+  const v = data.hitRateModel.visibility;
+  const hm = data.hitRateModel.historical_mode;
+  return {
+    visPlayerBaseM: v.vis_player_base_m,
+    moonFactor: v.moon_factor[moon],
+    speedFactor: v.speed_factor,
+    smokeFactor: v.smoke_factor,
+    detectHoldS: v.detect_hold_s,
+    detectionMultiplier: historical ? hm.enemy_detection_multiplier : 1
+  };
+}
+function getEvasionMultiplier(data, historical = data.hitRateModel.historical_mode.enabled_default) {
+  const hm = data.hitRateModel.historical_mode;
+  return historical ? hm.enemy_evasion_multiplier : 1;
+}
+function getHistoricalReliability(data) {
+  const r = data.hitRateModel.historical_mode.reliability;
+  const ok = (x) => typeof x === "number" && x >= 0 && x <= 1;
+  if (!ok(r.dud) || !ok(r.erratic)) throw new Error("hit_rate_model.historical_mode.reliability \u306E dud / erratic \u306F 0\u301C1");
+  return { dud: r.dud, erratic: r.erratic };
+}
+
+// ../wt-0176202/src/config/briefing-data.ts
+function getBriefingRecord(data, missionId, hard = false) {
+  const m = data.missionsSeed.missions.find((x) => x.id === missionId);
+  if (!m) throw new Error(`missions_seed.json \u306B ${missionId} \u304C\u7121\u3044`);
+  const text = (key) => {
+    const v = m[key];
+    if (typeof v !== "string" || v.length === 0) throw new Error(`${missionId}.${key} \u304C\u7121\u3044\uFF08Briefing\u3001docs/02 \xA74\uFF09`);
+    return v;
+  };
+  const proto = m["v0_1_prototype"];
+  const enemies = proto?.["enemies"];
+  if (!Array.isArray(enemies) || !enemies.every((e) => typeof e === "string")) throw new Error(`${missionId}.v0_1_prototype.enemies \u304C\u6587\u5B57\u5217\u306E\u914D\u5217\u3067\u306A\u3044\uFF08Briefing\uFF09`);
+  const mission = getPrototypeMission(data, missionId, hard);
+  const ht = hard ? readHardText(proto?.["hard"], missionId) : null;
+  const moonLabel = m["moon_label_ja"];
+  if (moonLabel !== void 0 && (typeof moonLabel !== "string" || moonLabel.trim() === "")) throw new Error(`${missionId}.moon_label_ja \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217\uFF08Briefing \u306E\u6708\u306E\u884C\uFF09`);
+  const enemyIds = mission.enemyStarts.length > 1 ? mission.enemyStarts.map(() => mission.enemyId) : mission.ptBoats ? mission.ptBoats.legs_m.map(() => mission.enemyId) : [...enemies];
+  const extra = hard && proto?.["transit"] !== void 0 ? proto["hard"]?.["extra_transit_ships"] : void 0;
+  for (let i = 0; i < (typeof extra === "number" ? extra : 0); i++) enemyIds.push(mission.enemyId);
+  if (mission.transport) enemyIds.push(mission.transport.enemyId);
+  const pk = hard && proto?.["anchored"] !== void 0 ? proto["hard"] : void 0;
+  if (pk && Array.isArray(pk["extra_pickets"]) && typeof pk["picket_enemy_id"] === "string") for (const _ of pk["extra_pickets"]) enemyIds.push(pk["picket_enemy_id"]);
+  return {
+    id: missionId,
+    titleJa: text("title_ja"),
+    date: text("date"),
+    place: text("place"),
+    objective: ht ? ht.objective : text("objective"),
+    success: ht ? ht.success : text("success"),
+    noteJa: ht ? ht.note : text("briefing_note_ja"),
+    moon: mission.moon,
+    enemyIds,
+    hazardIds: mission.hazards,
+    ...typeof moonLabel === "string" ? { moonLabelJa: moonLabel } : {}
+  };
+}
+function enemyNameJa(data, id) {
+  const e = data.enemies.enemies.find((x) => x["id"] === id);
+  const name = e?.["name_ja"];
+  if (typeof name !== "string") throw new Error(`enemies.json \u306E ${id}.name_ja \u304C\u7121\u3044`);
+  return shortLabelJa(name);
+}
+function riskLabelJa(data, id) {
+  const e = data.riskEvents.events.find((x) => x["id"] === id);
+  const label = e?.["label_ja"];
+  if (typeof label !== "string") throw new Error(`risk_events.json \u306B ${id}\uFF08label_ja\uFF09\u304C\u7121\u3044`);
+  return shortLabelJa(label);
+}
+
+// ../wt-0176202/src/config/hunt-config.ts
+var DEBUG_BARGES_NEAR_OFFSET = { dxM: -450, dyM: -130, headingDeg: 90 };
+
+// ../wt-0176202/src/config/seaplane-mission-data.ts
+var SEAPLANE_BLOCK_KEYS = ["enemy_id", "source", "attacks_per_night", "params"];
+var SEAPLANE_ATTACKS_MAX = 4;
+var SEAPLANE_PARAM_KEYS = ["patrol_from_s", "wake_trigger_s", "lose_s", "orbit_s", "leave_s", "patrol_cooldown_s"];
+var isObj2 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+function readBlock(data, mission) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === mission.id);
+  const proto = isObj2(m?.["v0_1_prototype"]) ? m["v0_1_prototype"] : null;
+  const raw = proto?.["enemy_aircraft"];
+  if (!proto || raw === void 0) return null;
+  const at2 = `${mission.id}.v0_1_prototype.enemy_aircraft`;
+  const bad = (v, msg) => {
+    throw new Error(`${at2}${msg}\uFF08${v}\u30FBdocs/02 \xA76.8\uFF09`);
+  };
+  if (!isObj2(raw)) return bad("V-P1", " \u306F object");
+  const extra = Object.keys(raw).filter((k) => !SEAPLANE_BLOCK_KEYS.includes(k));
+  if (extra.length > 0) bad("V-P1", `: \u77E5\u3089\u306A\u3044\u9375 ${extra.join("\u30FB")}\uFF08\u9375\u306F ${SEAPLANE_BLOCK_KEYS.join("\u30FB")}\uFF09`);
+  const n = raw["attacks_per_night"];
+  if (n !== void 0 && !(typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= SEAPLANE_ATTACKS_MAX)) bad("V-P2", `.attacks_per_night \u306F 1\u301C${SEAPLANE_ATTACKS_MAX} \u306E\u6574\u6570\uFF08${String(n)}\uFF09`);
+  const q = raw["params"];
+  let params = null;
+  if (q !== void 0) {
+    if (!isObj2(q) || Object.keys(q).length === 0) return bad("V-P3", ".params \u306F\u7A7A\u3067\u306A\u3044 object");
+    params = {};
+    for (const [k, v] of Object.entries(q)) {
+      if (!SEAPLANE_PARAM_KEYS.includes(k)) bad("V-P3", `.params \u306B\u4E0A\u66F8\u304D\u3067\u304D\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F ${SEAPLANE_PARAM_KEYS.join("\u30FB")}\uFF09`);
+      if (!(typeof v === "number" && Number.isFinite(v) && v >= 0)) bad("V-P3", `.params.${k} \u306F 0 \u4EE5\u4E0A\u306E\u6570\uFF08${String(v)}\uFF09`);
+      params[k] = v;
+    }
+  }
+  return { attacksPerNight: n === void 0 ? null : n, params };
+}
+function seaplaneParamsFor(data, mission, timeScale, boat) {
+  const base = getSeaplaneParams(data, mission, timeScale, boat);
+  const b = base ? readBlock(data, mission) : null;
+  if (!base || !b || !b.params) return base;
+  const plane = data.enemies.enemies.find((e) => e.id === mission.enemyAircraft.enemyId);
+  const ev = data.riskEvents.events.find((e) => e.id === "enemy_aircraft");
+  if (!isSeaplaneDataRecord(plane) || !isEnemyAircraftEventRecord(ev)) return base;
+  const merged = { params: { ...ev.params, ...b.params } };
+  return seaplaneParamsFromData(plane, merged, timeScale, boat);
+}
+function seaplaneNightSetupPart(data, mission, seaplane) {
+  const b = seaplane ? readBlock(data, mission) : null;
+  return b && b.attacksPerNight !== null ? { seaplaneNight: { attacksPerNight: b.attacksPerNight } } : {};
+}
+
+// ../wt-0176202/src/core/dawn-withdraw.ts
+var RETIRE_EDGES = ["north", "south", "east", "west"];
+var DAWN_WITHDRAW_KEYS = ["retire_edge", "force_ja", "source"];
+function dawnWithdrawFromData(raw, missionId) {
+  const at2 = `missions_seed ${missionId} \u306E v0_1_prototype.dawn_withdraw`;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`${at2} \u306F object\uFF08retire_edge / source\uFF09`);
+  const r = raw;
+  for (const k of Object.keys(r)) if (!DAWN_WITHDRAW_KEYS.includes(k)) throw new Error(`${at2} \u306B\u77E5\u3089\u306A\u3044\u30AD\u30FC ${k}`);
+  const edge = r["retire_edge"];
+  if (typeof edge !== "string" || !RETIRE_EDGES.includes(edge)) throw new Error(`${at2}.retire_edge \u306F north\u30FBsouth\u30FBeast\u30FBwest \u306E\u3069\u308C\u304B\uFF08${String(edge)}\uFF09`);
+  const source = r["source"];
+  const force = r["force_ja"];
+  if (typeof force !== "string" || force.trim() === "") throw new Error(`${at2}.force_ja\uFF08\u9000\u304F\u6575\u306E\u547C\u3073\u540D\u3002\u591C\u660E\u3051\u306E\u5E2F\uFF09\u304C\u7121\u3044\u304B\u7A7A`);
+  if (typeof source !== "string" || !/historical|design/.test(source)) throw new Error(`${at2}.source \u304C\u7121\u3044\u304B\u3001historical / design \u306E\u3069\u3061\u3089\u3082\u66F8\u3044\u3066\u3044\u306A\u3044`);
+  return { retireEdge: edge, forceJa: force };
+}
+function retireHeadingDeg(edge, mirrored) {
+  switch (edge) {
+    case "north":
+      return 0;
+    case "south":
+      return 180;
+    case "east":
+      return mirrored ? 270 : 90;
+    case "west":
+      return mirrored ? 90 : 270;
+  }
+}
+function retireDirJa(edge, mirrored) {
+  const h = retireHeadingDeg(edge, mirrored);
+  return h === 0 ? "\u5317" : h === 90 ? "\u6771" : h === 180 ? "\u5357" : "\u897F";
+}
+
+// ../wt-0176202/src/core/dawn-air.ts
+function dawnConditionJa(air, mirrored = false) {
+  const own = air.control === "contested" ? "\u663C\u306E\u7A7A\u306F\u304A\u304A\u3080\u306D\u5473\u65B9" : "\u663C\u306E\u7A7A\u306F\u5473\u65B9";
+  const sky = air.playAs === "enemy" ? "\u4EE5\u5F8C\u306F\u7A7A\u8972" : air.playAs === "own" ? own : "";
+  const ships = air.shipsAtDawn === "retire" && air.retireEdge ? `\u6575\u306F${retireDirJa(air.retireEdge, mirrored)}\u3078\u9000\u304F` : air.shipsAtDawn === "hide" ? "\u5927\u767A\u306F\u5CB8\u3078\u96A0\u308C\u308B" : "";
+  return sky && ships ? `\uFF08${sky}\u30FB${ships}\uFF09` : sky || ships ? `\uFF08${sky}${ships}\uFF09` : "";
+}
+var DAWN_AIR_KEYS = ["control", "confidence", "play_as", "enemy_ships_at_dawn", "label_ja", "refs", "source"];
+var DAWN_AIR_REF_KEYS = ["url", "claim"];
+var AIR_SIDES = ["enemy", "own", "contested"];
+var CONFIDENCES = ["high", "medium", "low"];
+var SHIPS_AT_DAWN = ["stay", "retire", "hide", "none"];
+function isDawnAirRecord(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  const r = v;
+  for (const k of DAWN_AIR_KEYS) if (k !== "refs" && typeof r[k] !== "string") return false;
+  const refs = r["refs"];
+  if (!Array.isArray(refs)) return false;
+  return refs.every((x) => !!x && typeof x === "object" && typeof x["url"] === "string" && typeof x["claim"] === "string");
+}
+function dawnAirFromData(r, missionId, playable) {
+  const at2 = `missions_seed ${missionId} \u306E dawn_air`;
+  for (const k of Object.keys(r)) if (!DAWN_AIR_KEYS.includes(k)) throw new Error(`${at2} \u306B\u77E5\u3089\u306A\u3044\u30AD\u30FC ${k}`);
+  if (!AIR_SIDES.includes(r.control)) throw new Error(`${at2}.control \u306F enemy\u30FBown\u30FBcontested \u306E\u3069\u308C\u304B\uFF08${r.control}\uFF09`);
+  if (!CONFIDENCES.includes(r.confidence)) throw new Error(`${at2}.confidence \u306F high\u30FBmedium\u30FBlow \u306E\u3069\u308C\u304B\uFF08${r.confidence}\uFF09`);
+  if (!AIR_SIDES.includes(r.play_as)) throw new Error(`${at2}.play_as \u306F enemy\u30FBown\u30FBcontested \u306E\u3069\u308C\u304B\uFF08${r.play_as}\uFF09`);
+  if (!SHIPS_AT_DAWN.includes(r.enemy_ships_at_dawn)) throw new Error(`${at2}.enemy_ships_at_dawn \u306F stay\u30FBretire\u30FBhide\u30FBnone \u306E\u3069\u308C\u304B\uFF08${r.enemy_ships_at_dawn}\uFF09`);
+  if (r.label_ja.trim() === "") throw new Error(`${at2}.label_ja \u304C\u7A7A`);
+  if (r.refs.length === 0) throw new Error(`${at2}.refs \u304C 0 \u4EF6\uFF08\u51FA\u5178\u3092 1 \u3064\u4EE5\u4E0A\uFF09`);
+  for (const ref of r.refs) {
+    for (const k of Object.keys(ref)) if (!DAWN_AIR_REF_KEYS.includes(k)) throw new Error(`${at2}.refs \u306B\u77E5\u3089\u306A\u3044\u30AD\u30FC ${k}`);
+    if (!/^https:\/\/\S+$/.test(ref.url)) throw new Error(`${at2}.refs \u306E url \u306F https://\uFF08${ref.url}\uFF09`);
+    if (ref.claim.trim() === "") throw new Error(`${at2}.refs \u306E claim \u304C\u7A7A\uFF08${ref.url}\uFF09`);
+  }
+  if (!r.source.includes("historical")) throw new Error(`${at2}.source \u306B historical \u304C\u7121\u3044\uFF08control \u306F\u53F2\u5B9F\u306E\u8AAD\u307F\uFF09`);
+  const control = r.control;
+  const playAs = r.play_as;
+  if (control !== "contested" && playAs !== control) throw new Error(`${at2}.play_as\uFF08${playAs}\uFF09\u304C control\uFF08${control}\uFF09\u3068\u98DF\u3044\u9055\u3046\uFF08\u4E89\u596A\u306E\u3068\u304D\u3060\u3051\u9078\u3079\u308B\uFF09`);
+  if (playable && playAs === "contested") throw new Error(`${at2}.play_as \u304C contested\uFF08\u4E89\u596A\u306E\u904A\u3073\u65B9\u306F\u307E\u3060\u7121\u3044\u3002\u904A\u3079\u308B\u4EFB\u52D9\u306F enemy \u304B own \u306B\u6C7A\u3081\u308B\uFF09`);
+  return {
+    control,
+    confidence: r.confidence,
+    playAs,
+    shipsAtDawn: r.enemy_ships_at_dawn,
+    labelJa: r.label_ja,
+    refs: r.refs.map((x) => ({ url: x.url, claim: x.claim })),
+    retireEdge: null,
+    retireForceJa: "",
+    fleetGoneClears: false
+  };
+}
+
+// ../wt-0176202/src/config/dawn-data.ts
+function missionRec(data, missionId) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === missionId);
+  if (!m) throw new Error(`missions_seed.json \u306B ${missionId} \u304C\u7121\u3044`);
+  return m;
+}
+function protoOf(m) {
+  const p = m["v0_1_prototype"];
+  return typeof p === "object" && p !== null && !Array.isArray(p) ? p : null;
+}
+function readDawnAir(m, missionId) {
+  const raw = m["dawn_air"];
+  if (!isDawnAirRecord(raw)) throw new Error(`missions_seed ${missionId} \u306E dawn_air\uFF08control / confidence / play_as / enemy_ships_at_dawn / label_ja / refs / source\uFF09\u304C\u7121\u3044\u304B\u5D29\u308C\u3066\u3044\u308B\uFF0813 \u4EFB\u52D9\u3059\u3079\u3066\u306B\u8981\u308B\u3002docs/02 \xA76.7\uFF09`);
+  return dawnAirFromData(raw, missionId, protoOf(m) !== null);
+}
+function getDawnAir(data, missionId) {
+  const m = missionRec(data, missionId);
+  const air = readDawnAir(m, missionId);
+  const proto = protoOf(m);
+  if (!proto) return air;
+  const { withdraw, fleetGoneClears } = checkPlayable(data, m, proto, missionId, air);
+  return withdraw ? { ...air, retireEdge: withdraw.retireEdge, retireForceJa: withdraw.forceJa, fleetGoneClears } : { ...air, fleetGoneClears };
+}
+function checkPlayable(data, m, proto, missionId, air) {
+  const at2 = `missions_seed ${missionId}`;
+  const withdraw = checkWithdraw(proto, missionId, air);
+  const fleetGoneClears = checkFleetGoneClears(proto, missionId, air);
+  const raw = proto["dawn_strike"];
+  const block = raw === void 0 ? null : dawnStrikeFromData(raw, missionId);
+  const enemy = air.playAs === "enemy";
+  if (enemy !== (block !== null)) throw new Error(`${at2}: v0_1_prototype.dawn_strike \u306F dawn_air.play_as \u304C enemy \u306E\u4EFB\u52D9\u3060\u3051\uFF08\u5FC5\u305A\u8981\u308B\uFF09\u3002play_as \u306F ${air.playAs}`);
+  const hazards = proto["hazards"];
+  const listed = Array.isArray(hazards) && hazards.includes(DAWN_STRIKE_EVENT_ID);
+  if (enemy !== listed) throw new Error(`${at2}: v0_1_prototype.hazards \u306E ${DAWN_STRIKE_EVENT_ID} \u306F dawn_air.play_as \u304C enemy \u306E\u4EFB\u52D9\u3060\u3051\uFF08\u5FC5\u305A\u8981\u308B\uFF09\u3002play_as \u306F ${air.playAs}`);
+  const night = proto["night"];
+  const optional = typeof night === "object" && night !== null ? night["optional_hazards"] : void 0;
+  if (Array.isArray(optional) && optional.includes(DAWN_STRIKE_EVENT_ID)) throw new Error(`${at2}: ${DAWN_STRIKE_EVENT_ID} \u3092 night.optional_hazards \u306B\u5165\u308C\u306A\u3044\uFF08\u591C\u306E\u63FA\u3089\u304E\u306E\u4E71\u6570\u304C\u305A\u308C\u308B\u3002\u591C\u660E\u3051\u306E\u7A7A\u8972\u306F\u591C\u3054\u3068\u306B\u6C7A\u3081\u306A\u3044\uFF09`);
+  if (!block) return { withdraw, fleetGoneClears };
+  const plane = getStrikeAircraftRecord(data, block.aircraft_id, missionId);
+  const faction = campaignEnemyFaction(data, m, missionId);
+  if (plane.faction !== faction) throw new Error(`${at2}: \u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u6A5F\u4F53 ${plane.id} \u306E faction\uFF08${plane.faction}\uFF09\u304C\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u306E enemy_faction\uFF08${faction}\uFF09\u3068\u9055\u3046`);
+  getDawnStrikeEventRecord(data);
+  return { withdraw, fleetGoneClears };
+}
+function checkFleetGoneClears(proto, missionId, air) {
+  const at2 = `missions_seed ${missionId}`;
+  const v = proto["fleet_gone_clears"];
+  const src = proto["fleet_gone_clears_source"];
+  if (v === void 0) {
+    if (src !== void 0) throw new Error(`${at2}: v0_1_prototype.fleet_gone_clears_source \u3060\u3051\u304C\u3042\u308B\uFF08fleet_gone_clears \u304C\u7121\u3044\uFF09`);
+    return false;
+  }
+  if (typeof v !== "boolean") throw new Error(`${at2}: v0_1_prototype.fleet_gone_clears \u306F true \u304B false\uFF08${String(v)}\uFF09`);
+  if (typeof src !== "string" || !src.includes("design")) throw new Error(`${at2}: v0_1_prototype.fleet_gone_clears_source\uFF08design \u306E\u7406\u7531\uFF09\u304C\u7121\u3044`);
+  if (air.playAs !== "own") throw new Error(`${at2}: v0_1_prototype.fleet_gone_clears \u306F dawn_air.play_as \u304C own\uFF08\u5236\u7A7A\u6A29\u4E0B\uFF09\u306E\u4EFB\u52D9\u3060\u3051\uFF08${air.playAs}\uFF09`);
+  if (proto["enemy_start"] === void 0) throw new Error(`${at2}: v0_1_prototype.fleet_gone_clears \u306F\u99C6\u9010\u8266\uFF08enemy_start\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+  return v;
+}
+function checkWithdraw(proto, missionId, air) {
+  const at2 = `missions_seed ${missionId}`;
+  const mode = air.shipsAtDawn;
+  const raw = proto["dawn_withdraw"];
+  if (mode === "retire" && proto["enemy_start"] === void 0) throw new Error(`${at2}: dawn_air.enemy_ships_at_dawn \u304C retire \u306A\u306E\u306B\u99C6\u9010\u8266\uFF08v0_1_prototype.enemy_start\uFF09\u304C\u7121\u3044\uFF08\u9000\u304F\u306E\u306F\u99C6\u9010\u8266\u30FB\u8F38\u9001\u8239\uFF09`);
+  if (mode === "hide" && proto["barges"] === void 0) throw new Error(`${at2}: dawn_air.enemy_ships_at_dawn \u304C hide \u306A\u306E\u306B\u5927\u767A\u306E\u968A\uFF08v0_1_prototype.barges\uFF09\u304C\u7121\u3044\uFF08\u5CB8\u3078\u96A0\u308C\u308B\u306E\u306F\u5927\u767A\uFF09`);
+  if (mode !== "retire") {
+    if (raw !== void 0) throw new Error(`${at2}: v0_1_prototype.dawn_withdraw \u306F dawn_air.enemy_ships_at_dawn \u304C retire \u306E\u4EFB\u52D9\u3060\u3051\uFF08${mode}\uFF09`);
+    return null;
+  }
+  if (raw === void 0) throw new Error(`${at2}: dawn_air.enemy_ships_at_dawn \u304C retire \u306A\u306E\u306B v0_1_prototype.dawn_withdraw\uFF08retire_edge\uFF09\u304C\u7121\u3044`);
+  return dawnWithdrawFromData(raw, missionId);
+}
+function campaignEnemyFaction(data, m, missionId) {
+  const cid = m["campaign"];
+  const c = data.missionsSeed.campaigns.find((x) => x["id"] === cid);
+  const f = c?.["enemy_faction"];
+  if (typeof f !== "string" || f === "") throw new Error(`missions_seed \u306E campaigns.${String(cid)}.enemy_faction \u304C\u7121\u3044\uFF08${missionId} \u306E\u591C\u660E\u3051\u306E\u7A7A\u8972\u306E\u6A5F\u4F53\u306E\u691C\u67FB\uFF09`);
+  return f;
+}
+function getStrikeAircraftRecord(data, aircraftId, missionId) {
+  const e = data.enemies.enemies.find((x) => x["id"] === aircraftId);
+  if (!isStrikeAircraftRecord(e)) throw new Error(`missions_seed ${missionId} \u306E dawn_strike.aircraft_id\uFF08${aircraftId}\uFF09\u304C enemies.json \u306B\u7121\u3044\u304B\u3001strike\uFF08run_speed_kt / release_altitude_m / bomb\uFF09\u304C\u6B20\u3051\u3066\u3044\u308B`);
+  return e;
+}
+function getDawnStrikeEventRecord(data) {
+  const e = data.riskEvents.events.find((x) => x["id"] === DAWN_STRIKE_EVENT_ID);
+  if (!isDawnStrikeEventRecord(e)) throw new Error(`risk_events.json \u306E ${DAWN_STRIKE_EVENT_ID} \u306B params\uFF08spawn_m / run_radius_m / first_run_s / run_gap_s / wave_rest_s / leave_s / spawn_offsets_deg / wave_rotate_deg / aim_turn_min_deg_s\uFF09\u304C\u7121\u3044`);
+  return e;
+}
+function getAirStrikeParams(data, mission, timeScale, player, escort) {
+  const b = mission.dawnStrike;
+  if (!b) return null;
+  const plane = getStrikeAircraftRecord(data, b.aircraft_id, mission.id);
+  const ev = getDawnStrikeEventRecord(data);
+  try {
+    const hull = { halfLengthM: player.halfLengthM, halfBeamM: player.halfBeamM, boundsMarginM: player.boundsMarginM ?? NaN };
+    return airStrikeParamsFromData(plane, ev, b, timeScale, hull, escort, mission.bounds, bearingJa(b.from_bearing_deg));
+  } catch (e) {
+    throw new Error(`missions_seed ${mission.id}: ${e.message}`);
+  }
+}
+
+// ../wt-0176202/src/config/pt-mission-data.ts
+function getPtParams(data, mission, timeScale) {
+  const block = mission.ptBoats;
+  if (!block) return null;
+  const id = mission.id;
+  const rec = data.enemies.enemies.find((e) => e["id"] === mission.enemyId);
+  if (!isPtDataRecord(rec)) throw new Error(`${id}: enemies.json \u306E ${mission.enemyId} \u306B\u7C73PT \u306E\u5024\uFF08boat_ref / torpedo_immune / detection / patrol / attack \u306E ${PT_ATTACK_KEYS.length} \u500B / guns 1 \u7A2E / tactics / under_fire / chase \u306E 19 \u500B\uFF09\u304C\u7121\u3044\u304B\u3001attack\u30FBchase \u306B\u77E5\u3089\u306A\u3044\u30AD\u30FC\u304C\u3042\u308B\uFF08docs/02 \xA76.4\uFF09`);
+  const w = data.hitRateModel.world;
+  const ptHp = getBoatDamageParams(data, rec.boat_ref).maxHp;
+  const p = ptParamsFromData(rec, getBoatRecord(data, rec.boat_ref), block, { missionId: id, count: mission.enemyCount, bounds: mission.bounds, timeScale, detectHoldS: data.hitRateModel.visibility.detect_hold_s, spriteScale: w.sprite_scale, hitScale: w.hit_scale, hullHp: ptHp });
+  const bad = (msg) => {
+    throw new Error(`${id}: \u7C73PT\uFF08enemies.json \u306E ${rec.id}\uFF09: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+  const a = rec.attack;
+  const gun = rec.guns[0];
+  const player = getBoatRecord(data, mission.playerBoatId);
+  if (!(a.run_in_speed_kt > player.speed_max_kt)) bad(`\u7A81\u6483 run_in_speed_kt\uFF08${a.run_in_speed_kt} kt\uFF09\u306F\u81EA\u8247\u306E\u6700\u5927\u901F\u529B\uFF08${player.speed_max_kt} kt\uFF09\u3088\u308A\u901F\u3044\uFF08PT \u306F\u632F\u308A\u5207\u308C\u306A\u3044\uFF09`);
+  if (!(rec.chase.speed_kt > player.speed_max_kt)) bad(`\u8FFD\u6483 chase.speed_kt\uFF08${rec.chase.speed_kt} kt\uFF09\u306F\u81EA\u8247\u306E\u6700\u5927\u901F\u529B\uFF08${player.speed_max_kt} kt\uFF09\u3088\u308A\u901F\u3044\uFF08PT \u306F\u632F\u308A\u5207\u308C\u306A\u3044\uFF09`);
+  const hp = getBoatDamageParams(data, mission.playerBoatId).maxHp;
+  if (!(a.rounds_per_pass * gun.damage < hp)) bad(`rounds_per_pass \xD7 damage\uFF08${a.rounds_per_pass * gun.damage}\uFF09\u306F\u81EA\u8247\u306E HP\uFF08${hp}\uFF09\u672A\u6E80\uFF081 \u56DE\u306E\u822A\u904E\u3067\u306F\u7832\u3060\u3051\u3067\u6C88\u307E\u306A\u3044\uFF09`);
+  if (!(rec.chase.burst_rounds * gun.damage < hp)) bad(`chase.burst_rounds \xD7 damage\uFF08${rec.chase.burst_rounds * gun.damage}\uFF09\u306F\u81EA\u8247\u306E HP\uFF08${hp}\uFF09\u672A\u6E80\uFF081 \u56DE\u306E\u9023\u5C04\u3067\u306F\u7832\u3060\u3051\u3067\u6C88\u307E\u306A\u3044\uFF09`);
+  const vis = getVisibilityParams(data, mission.moon, false);
+  const visM = playerVisRangeM(vis);
+  if (!(gun.effective_night_m <= visM)) bad(`effective_night_m\uFF08${gun.effective_night_m} m\uFF09\u306F\u81EA\u8247\u306E\u8996\u7A0B\uFF08${visM} m\uFF09\u4EE5\u4E0B\uFF08\u898B\u3048\u306A\u3044 PT \u304B\u3089\u6483\u305F\u306A\u3044\uFF09`);
+  const own = getGunBatteryParams(data, mission);
+  if (own) {
+    const mine = (msg) => bad(`\u81EA\u8247\uFF08${mission.playerBoatId}\uFF09\u306E gun_battery: ${msg}`);
+    const mag = own.magazine;
+    if (!mag) mine("\u7C73PT \u306E\u4EFB\u52D9\u306E\u7832\u306F magazine\uFF08\u5F3E\u5009\u306E\u767A\u6570\u30FB\u4EA4\u63DB\u79D2\uFF09\u3092\u6301\u3064");
+    if (!(own.rangeM <= visM)) mine(`range_m\uFF08${own.rangeM} m\uFF09\u306F\u81EA\u8247\u306E\u8996\u7A0B\uFF08${visM} m\uFF09\u4EE5\u4E0B\uFF08\u898B\u3048\u306A\u3044 PT \u3078\u6483\u305F\u306A\u3044\uFF09`);
+    if (!(own.flashRevealM >= own.rangeM)) mine(`muzzle_flash_reveal_m\uFF08${own.flashRevealM} m\uFF09\u306F range_m\uFF08${own.rangeM} m\uFF09\u4EE5\u4E0A\uFF08\u6483\u3066\u3070\u6483\u3063\u305F PT \u306B\u898B\u3048\u308B\uFF09`);
+  }
+  const histVis = getVisibilityParams(data, mission.moon, true);
+  const detectM = Math.max(enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false), enemyDetectRangeM(p.baseDetectM, histVis.speedFactor.cruise, histVis, false));
+  const nearM = nearestStartM(p, mission.night, mission.playerStart.x, mission.playerStart.y);
+  if (!(nearM >= detectM)) bad(`\u4ECA\u591C\u306E\u63FA\u3089\u304E\u3067\u51FA\u767A\u70B9\u304C\u81EA\u8247\u306E\u51FA\u767A\u70B9\u304B\u3089 ${Math.round(nearM)} m\uFF08\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B ${Math.round(detectM)} m\uFF08\u53F2\u5B9F\u30E2\u30FC\u30C9\u8FBC\u307F\uFF09\u3088\u308A\u8FD1\u3044\u3002\u51FA\u767A\u3067\u898B\u3064\u304B\u308B\uFF09`);
+  if (mission.convoy) {
+    const band = mission.convoy.detect_band;
+    const bargeM = Math.max(enemyDetectRangeM(p.baseDetectM, speedFactorForBand(band, vis.speedFactor), vis, false), enemyDetectRangeM(p.baseDetectM, speedFactorForBand(band, histVis.speedFactor), histVis, false));
+    const clearM = convoyStartClearM(p, mission);
+    if (!(clearM >= bargeM)) bad(`\u4ECA\u591C\u306E\u63FA\u3089\u304E\u3067\u51FA\u767A\u70B9\u304C\u8239\u56E3\uFF08\u5148\u982D\u301C\u6700\u5F8C\u5C3E\uFF09\u304B\u3089 ${Math.round(clearM)} m\uFF08\u5927\u767A\u304C\u898B\u3064\u304B\u308B ${Math.round(bargeM)} m\uFF08\u53F2\u5B9F\u30E2\u30FC\u30C9\u8FBC\u307F\uFF09\u3088\u308A\u8FD1\u3044\u3002\u51FA\u767A\u3067\u5927\u767A\u304C\u898B\u3064\u304B\u308B\uFF09`);
+  }
+  if (getDawnAir(data, id).shipsAtDawn !== "none") bad("dawn_air.enemy_ships_at_dawn \u306F none\uFF08v0.6.3 \u306E\u7C73PT \u306F\u591C\u660E\u3051\u306B\u6771\u3078\u53BB\u308B\u3002retire\u30FBhide\u30FBstay \u306F\u4ED6\u306E\u6575\u306E\u898F\u5247\uFF09");
+  return p;
+}
+function convoyStartClearM(p, mission) {
+  const c = mission.convoy;
+  if (!c) return Infinity;
+  const jl = mission.night ? mission.night.bargeLeadJitterM : 0;
+  const tailOff = Math.sin(degToRad(c.lead_start.heading_deg)) * (c.offsets_m[c.offsets_m.length - 1] ?? 0);
+  let best = Infinity;
+  for (const x of [c.lead_start.x_m - jl, c.lead_start.x_m + jl, c.lead_start.x_m - jl - tailOff, c.lead_start.x_m + jl - tailOff]) best = Math.min(best, nearestStartM(p, mission.night, x, c.lead_start.y_m));
+  return best;
+}
+function nearestStartM(p, night, px, py) {
+  const jx = night ? night.enemyJitterXM : 0;
+  const jy = night ? night.enemyJitterYM : 0;
+  const mirrors = night && night.mirrorChance > 0 ? [false, true] : [false];
+  const s = { x0: 0, y0: 0, x1: 0, y1: 0, x: 0, y: 0, headingDeg: 0 };
+  const cx = [0, 0, 0, 0];
+  const cy = [0, 0, 0, 0];
+  let best2 = Infinity;
+  for (let i = 0; i < p.count; i++) {
+    for (const mirrored of mirrors) {
+      for (let k = 0; k < 4; k++) {
+        ptStartAt(p, i, k === 1 || k === 2 ? jx : -jx, k >= 2 ? jy : -jy, mirrored, s);
+        cx[k] = s.x;
+        cy[k] = s.y;
+      }
+      let pos = 0;
+      let neg = 0;
+      for (let k = 0; k < 4; k++) {
+        const n = (k + 1) % 4;
+        const c = (cx[n] - cx[k]) * (py - cy[k]) - (cy[n] - cy[k]) * (px - cx[k]);
+        if (c > 0) pos++;
+        else if (c < 0) neg++;
+        best2 = Math.min(best2, segDist22(px, py, cx[k], cy[k], cx[n], cy[n]));
+      }
+      if (pos === 4 || neg === 4) return 0;
+    }
+  }
+  return Math.sqrt(best2);
+}
+function segDist22(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const l2 = vx * vx + vy * vy;
+  const t = l2 > 0 ? clamp(((px - ax) * vx + (py - ay) * vy) / l2, 0, 1) : 0;
+  const dx = ax + vx * t - px;
+  const dy = ay + vy * t - py;
+  return dx * dx + dy * dy;
+}
+
+// ../wt-0176202/src/config/convoy-mission-data.ts
+function getConvoyParams(data, mission) {
+  const b = mission.convoy;
+  if (!b) return null;
+  const rec = data.enemies.enemies.find((e) => e.id === CONVOY_BARGE_ID);
+  if (!rec || !isBargeDataRecord(rec)) throw new Error(`${mission.id}: enemies.json \u306E ${CONVOY_BARGE_ID} \u306B\u5927\u767A\u306E\u5024\uFF08length_m / beam_m / speed_* / turn_rate_deg_s / accel_mps2\uFF09\u304C\u7121\u3044\uFF08docs/02 \xA76.4\uFF09`);
+  const allies = data.missionsSeed.missions.find((x) => x.id === mission.id)?.["allies"];
+  const count = Array.isArray(allies) ? allies.filter((a) => a === CONVOY_BARGE_ID).length : 0;
+  const w = data.hitRateModel.world;
+  const ctx = { missionId: mission.id, leadJitterM: mission.night ? mission.night.bargeLeadJitterM : 0, ring: mission.returnPoint };
+  return { params: convoyParamsFromData(rec, b, count, { hitScale: w.hit_scale, spriteScale: w.sprite_scale }, mission.bounds, ctx), detectBand: b.detect_band, rule: ptTargetRuleFromData(b) };
+}
+
+// ../wt-0176202/src/config/engine-config.ts
+var DEBUG_ENGINE_HOT_HEAT = 0.75;
+
+// ../wt-0176202/src/core/engine-trouble-data.ts
+var ENGINE_FAILURE_EVENT_ID = "engine_failure";
+var ENGINE_PARAM_KEYS = ["full_to_limp_s", "reliability_ref", "cruise_cool_s", "silent_cool_s", "warn_heat", "final_warn_heat", "recover_heat", "warn_rearm_heat"];
+var ENGINE_MIN_WARN_LEAD_S = 8;
+var ENGINE_MIN_FINAL_LEAD_S = 3;
+var ENGINE_MIN_FULL_TO_LIMP_S = 20;
+var LEAD_EPS_S = 1e-9;
+var isFiniteNum2 = (v) => typeof v === "number" && Number.isFinite(v);
+function engineParamsFromData(raw, reliability, label) {
+  const bad = (msg) => {
+    throw new Error(`risk_events.engine_failure.params: ${msg}\uFF08${label}\u3002docs/02 \xA76.8\uFF09`);
+  };
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return bad("params\uFF08full_to_limp_s \u307B\u304B 8 \u500B\u3068 source\uFF09\u304C\u7121\u3044");
+  const r = raw;
+  for (const k of Object.keys(r)) if (k !== "source" && !ENGINE_PARAM_KEYS.includes(k)) bad(`\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F ${ENGINE_PARAM_KEYS.join(" / ")} \u3068 source\uFF09`);
+  for (const k of ENGINE_PARAM_KEYS) if (!isFiniteNum2(r[k])) bad(`${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  if (typeof r["source"] !== "string" || r["source"].length === 0) bad("source\uFF08design\uFF0Fhistorical \u306E\u6839\u62E0\u306E\u6587\uFF09\u304C\u7121\u3044");
+  const q = r;
+  for (const k of ["full_to_limp_s", "cruise_cool_s", "silent_cool_s"]) if (!(q[k] > 0)) bad(`${k} \u306F\u6B63\u306E\u79D2`);
+  if (!(q.reliability_ref > 0 && q.reliability_ref < 1)) bad(`0 < reliability_ref < 1\uFF08${q.reliability_ref}\uFF09`);
+  const rel = isFiniteNum2(reliability) ? reliability : bad("boats.json \u306E\u8247\u306B engine_reliability \u304C\u7121\u3044\uFF08\u71B1\u306E\u6E9C\u307E\u308B\u901F\u3055\u306B\u8AAD\u3080\uFF09");
+  if (!(rel > 0 && rel < 1)) bad(`\u8247\u306E engine_reliability \u306F 0 < r < 1\uFF08${rel}\uFF09`);
+  const t = q.full_to_limp_s * (1 - q.reliability_ref) / (1 - rel);
+  if (!(t >= ENGINE_MIN_FULL_TO_LIMP_S - LEAD_EPS_S)) bad(`full_to_limp_s \u306E\u5B9F\u52B9\u306E\u79D2\uFF08${t} \u79D2 = full_to_limp_s \xD7 (1 \u2212 reliability_ref) / (1 \u2212 \u81EA\u8247\u306E engine_reliability)\uFF09\u306F ${ENGINE_MIN_FULL_TO_LIMP_S} \u79D2\u4EE5\u4E0A`);
+  if (!(q.warn_heat > 0 && q.warn_heat < q.final_warn_heat && q.final_warn_heat < 1)) bad(`0 < warn_heat < final_warn_heat < 1\uFF08${q.warn_heat}\u30FB${q.final_warn_heat}\uFF09`);
+  if (!(q.recover_heat > 0)) bad(`recover_heat \u306F\u6B63\uFF08${q.recover_heat}\uFF09`);
+  if (!(q.warn_rearm_heat > 0 && q.warn_rearm_heat < q.recover_heat)) bad(`0 < warn_rearm_heat < recover_heat\uFF08${q.warn_rearm_heat}\u30FB${q.recover_heat}\u3002\u56DE\u5FA9\u306E\u5F8C\u306E\u904E\u71B1\u306E\u6BB5\u306F\u71B1\u304C\u3053\u3053\u3092\u5272\u308B\u307E\u3067\u4FDD\u3064\uFF09`);
+  if (!((1 - q.warn_heat) * t >= ENGINE_MIN_WARN_LEAD_S - LEAD_EPS_S)) bad(`warn_heat \u306E\u4E88\u544A\uFF08(1 \u2212 warn_heat) \xD7 \u5B9F\u52B9\u306E\u79D2 = ${(1 - q.warn_heat) * t} \u79D2\uFF09\u306F ${ENGINE_MIN_WARN_LEAD_S} \u79D2\u4EE5\u4E0A\uFF08\u904E\u71B1\u304B\u3089\u4E0D\u8ABF\u307E\u3067\uFF09`);
+  if (!((1 - q.final_warn_heat) * t >= ENGINE_MIN_FINAL_LEAD_S - LEAD_EPS_S)) bad(`final_warn_heat \u306E\u4E88\u544A\uFF08(1 \u2212 final_warn_heat) \xD7 \u5B9F\u52B9\u306E\u79D2 = ${(1 - q.final_warn_heat) * t} \u79D2\uFF09\u306F ${ENGINE_MIN_FINAL_LEAD_S} \u79D2\u4EE5\u4E0A\uFF08\u9650\u754C\u304B\u3089\u4E0D\u8ABF\u307E\u3067\uFF09`);
+  if (!((1 - q.recover_heat) * t >= ENGINE_MIN_WARN_LEAD_S - LEAD_EPS_S)) bad(`recover_heat \u306E\u5F8C\uFF08(1 \u2212 recover_heat) \xD7 \u5B9F\u52B9\u306E\u79D2 = ${(1 - q.recover_heat) * t} \u79D2\uFF09\u306F ${ENGINE_MIN_WARN_LEAD_S} \u79D2\u4EE5\u4E0A\uFF08\u56DE\u5FA9\u304B\u3089\u6B21\u306E\u4E0D\u8ABF\u307E\u3067\uFF09`);
+  if (!(q.recover_heat <= q.warn_heat)) bad(`recover_heat \u2264 warn_heat\uFF08${q.recover_heat}\u30FB${q.warn_heat}\u3002\u623B\u3063\u305F\u71B1\u306F\u904E\u71B1\u306E\u6BB5\u306E\u307E\u307E\uFF1D\u56DE\u5FA9\u3067\u4E88\u544A\u304C\u6D88\u3048\u306A\u3044\uFF09`);
+  if (!(q.silent_cool_s <= q.cruise_cool_s)) bad(`silent_cool_s \u2264 cruise_cool_s\uFF08${q.silent_cool_s}\u30FB${q.cruise_cool_s}\u3002\u9759\u97F3\u4EE5\u4E0B\u306E\u307B\u3046\u304C\u901F\u304F\u51B7\u3048\u308B\uFF09`);
+  return {
+    fullToLimpS: t,
+    cruiseCoolS: q.cruise_cool_s,
+    silentCoolS: q.silent_cool_s,
+    warnHeat: q.warn_heat,
+    finalWarnHeat: q.final_warn_heat,
+    recoverHeat: q.recover_heat,
+    warnRearmHeat: q.warn_rearm_heat,
+    startHeat: 0
+  };
+}
+
+// ../wt-0176202/src/config/engine-mission-data.ts
+function getEngineParams(data, missionId) {
+  const mission = getPrototypeMission(data, missionId);
+  if (!mission.hazards.includes(ENGINE_FAILURE_EVENT_ID)) return null;
+  const bad = (msg) => {
+    throw new Error(`${missionId}: \u6A5F\u95A2\u306E\u4E0D\u8ABF\uFF08v0_1_prototype.hazards \u306E ${ENGINE_FAILURE_EVENT_ID}\uFF09: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  if (!mission.ptBoats) bad("\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u306E\u4EFB\u52D9\u3060\u3051\uFF08\u8D64\u3044\u7DDA\uFF1D\u7C73PT \u306E\u653B\u6483\u306E\u6700\u4E2D\u306B\u306F\u4E0D\u8ABF\u306B\u3057\u306A\u3044\uFF09");
+  if (mission.convoy) bad("\u8F38\u9001\u968A\uFF08convoy\uFF09\u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u6A19\u7684\u304C\u81EA\u8247\u3060\u3051\u306E\u4EFB\u52D9\u306B\u9650\u308B\uFF09");
+  if (mission.dawnStrike) bad("\u591C\u660E\u3051\u306E\u7A7A\u8972\uFF08dawn_strike\uFF09\u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u7A7A\u8972\u306E\u653B\u6483\u306E\u6700\u4E2D\u306F\u8D64\u3044\u7DDA\u306B\u5165\u3089\u306A\u3044\uFF09");
+  if (mission.enemyAircraft) bad("\u6575\u306E\u6C34\u4E0A\u6A5F\uFF08enemy_aircraft\uFF09\u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u6C34\u4E0A\u6A5F\u306E\u653B\u6483\u306E\u6700\u4E2D\u306F\u8D64\u3044\u7DDA\u306B\u5165\u3089\u306A\u3044\uFF09");
+  if (mission.night?.optionalHazards.includes(ENGINE_FAILURE_EVENT_ID)) bad("night.optional_hazards \u306B\u5165\u308C\u306A\u3044\uFF08\u4E0D\u8ABF\u306F\u591C\u3054\u3068\u306B\u6C7A\u3081\u306A\u3044\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u4E71\u6570\u306E\u56DE\u6570\u304C\u5909\u308F\u308B\uFF09");
+  const ev = data.riskEvents.events.find((e) => e["id"] === ENGINE_FAILURE_EVENT_ID) ?? bad(`risk_events.json \u306B ${ENGINE_FAILURE_EVENT_ID} \u304C\u7121\u3044`);
+  const boat = data.boats.boats.find((b) => b["id"] === mission.playerBoatId);
+  return engineParamsFromData(ev["params"], boat?.["engine_reliability"], `${missionId} \u306E\u81EA\u8247 ${mission.playerBoatId}`);
+}
+function engineSetupPart(data, missionId, o) {
+  const p = o.engineOff ? null : getEngineParams(data, missionId);
+  if (!p) return {};
+  return { engine: o.engineHot ? { ...p, startHeat: DEBUG_ENGINE_HOT_HEAT } : p };
+}
+
+// ../wt-0176202/src/core/gunboat-data.ts
+var GUNBOAT_KEYS = [
+  "boat",
+  "label_ja",
+  "station_astern_m",
+  "station_abeam_m",
+  "station_slow_m",
+  "heading_deadband_m",
+  "rejoin_m",
+  "fire_m",
+  "engage_speed_kt",
+  "beach_standoff_m",
+  "beach_arrive_m",
+  "target_range_factor"
+];
+var TEXT_KEYS = ["boat", "label_ja"];
+function readGunboatBlock(raw, label) {
+  const bad = gunboatBad(label);
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return bad(`object \u3067\u306A\u3044\uFF08\u9375\u306F ${GUNBOAT_KEYS.join(" / ")}\uFF09`);
+  const r = raw;
+  for (const k of Object.keys(r)) if (!GUNBOAT_KEYS.includes(k)) bad(`\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F\u3061\u3087\u3046\u3069 ${GUNBOAT_KEYS.length} \u500B: ${GUNBOAT_KEYS.join(" / ")}\uFF09`);
+  for (const k of GUNBOAT_KEYS) {
+    const v = r[k];
+    if (TEXT_KEYS.includes(k)) {
+      if (typeof v !== "string" || v.length === 0) bad(`${k} \u304C\u7121\u3044\u304B\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217\u3067\u306A\u3044`);
+    } else if (typeof v !== "number" || !Number.isFinite(v)) bad(`${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  }
+  return { ...r };
+}
+function gunboatParamsFromData(b, ref, label) {
+  const bad = gunboatBad(label);
+  if (!(b.station_astern_m > 0)) bad(`station_astern_m \u306F\u6B63\uFF08${b.station_astern_m}\u3002\u5B9A\u4F4D\u7F6E\u306F\u81EA\u8247\u306E\u5F8C\u308D\uFF09`);
+  if (!(b.station_slow_m > 0)) bad(`station_slow_m \u306F\u6B63\uFF08${b.station_slow_m}\uFF09`);
+  if (!(b.heading_deadband_m > 0 && b.heading_deadband_m < b.station_slow_m)) bad(`0 < heading_deadband_m < station_slow_m\uFF08${b.heading_deadband_m}\u30FB${b.station_slow_m}\uFF09`);
+  if (!(b.rejoin_m > 0)) bad(`rejoin_m \u306F\u6B63\uFF08${b.rejoin_m}\uFF09`);
+  if (!(b.fire_m > 0 && b.fire_m <= ref.gun.rangeM)) bad(`0 < fire_m \u2264 \u8247\u306E gun_battery.range_m\uFF08${b.fire_m}\u30FB${ref.gun.rangeM} m\u3002\u5C04\u7A0B\u306E\u5916\u3078\u6483\u305F\u306A\u3044\uFF09`);
+  const silentKt = ref.record.speed_bands_kt.silent_max;
+  if (!(b.engage_speed_kt > 0 && b.engage_speed_kt <= silentKt)) bad(`0 < engage_speed_kt \u2264 \u8247\u306E speed_bands_kt.silent_max\uFF08${b.engage_speed_kt}\u30FB${silentKt} kt\u3002\u6C7A\u7740\u306E\u524D\u306F\u9759\u97F3\u306E\u4E0A\u9650\u3092\u8D85\u3048\u306A\u3044\uFF09`);
+  if (!(b.beach_standoff_m > 0)) bad(`beach_standoff_m \u306F\u6B63\uFF08${b.beach_standoff_m}\uFF09`);
+  if (!(b.beach_arrive_m > 0)) bad(`beach_arrive_m \u306F\u6B63\uFF08${b.beach_arrive_m}\uFF09`);
+  if (!(b.target_range_factor > 0 && b.target_range_factor <= 1)) bad(`0 < target_range_factor \u2264 1\uFF08${b.target_range_factor}\u3002\u7C73PT \u304C\u96BC\u8247\u306E\u898B\u3064\u304B\u308B\u8DDD\u96E2\u306B\u639B\u3051\u308B\u500D\u7387\uFF09`);
+  const r = ref.record;
+  return {
+    boatId: b.boat,
+    labelJa: b.label_ja,
+    boat: boatParamsFromData(r),
+    hullHp: ref.hullHp,
+    gun: ref.gun,
+    halfLengthM: r.length_m * ref.hitScale / 2,
+    halfBeamM: r.beam_m * ref.hitScale / 2,
+    boundsMarginM: r.length_m * ref.spriteScale / 2,
+    stationAsternM: b.station_astern_m,
+    stationAbeamM: b.station_abeam_m,
+    stationSlowM: b.station_slow_m,
+    headingDeadbandM: b.heading_deadband_m,
+    rejoinM: b.rejoin_m,
+    fireM: b.fire_m,
+    engageMps: ktToMps(b.engage_speed_kt),
+    beachStandoffM: b.beach_standoff_m,
+    beachArriveM: b.beach_arrive_m,
+    targetRangeFactor: b.target_range_factor
+  };
+}
+function gunboatBad(label) {
+  return (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.4\uFF09`);
+  };
+}
+
+// ../wt-0176202/src/config/gunboat-mission-data.ts
+function getGunboatParams(data, mission) {
+  if (!mission.hard) return null;
+  const m = data.missionsSeed.missions.find((x) => x["id"] === mission.id);
+  const raw = (m?.["v0_1_prototype"]?.["hard"] ?? {})["gunboat"];
+  if (raw === void 0) return null;
+  const label = `${mission.id}.v0_1_prototype.hard.gunboat`;
+  const bad = gunboatBad(label);
+  const block = readGunboatBlock(raw, label);
+  if (!mission.convoy || !mission.ptBoats) return bad("\u8F38\u9001\u968A\uFF08convoy\uFF09\u3068\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u306E\u4EFB\u52D9\u3060\u3051\uFF08\u5927\u767A\u3092\u5B88\u308B\u50DA\u8247\uFF09");
+  if (mission.escort) bad("\u50DA\u8247\uFF08escort\uFF09\u3068\u540C\u5C45\u3057\u306A\u3044");
+  if (!mission.convoy.beach) bad("\u8F38\u9001\u968A\u306B\u6D5C\uFF08convoy.beach\uFF09\u304C\u8981\u308B\uFF08\u6C7A\u7740\u306E\u5F8C\u306E\u6D5C\u306E\u70B9\u3092\u5148\u982D\u306E\u4E0A\u9678\u5730\u70B9\u304B\u3089\u4F5C\u308B\uFF09");
+  const rec = data.boats.boats.find((b) => b["id"] === block.boat) ?? bad(`boat\uFF08${block.boat}\uFF09\u304C boats.json \u306B\u7121\u3044`);
+  if (!isBoatDataRecord(rec)) return bad(`boats.json \u306E ${block.boat} \u306B\u904B\u52D5\u306E\u5024\uFF08speed_* / speed_bands_kt / accel\u30FBdecel\u30FBturn / length\u30FBbeam\uFF09\u304C\u7121\u3044`);
+  const hp = rec["hull_hp"];
+  if (typeof hp !== "number" || !(hp > 0)) return bad(`boats.json \u306E ${block.boat}.hull_hp\uFF08\u6B63\u306E\u6570\uFF09\u304C\u7121\u3044\uFF08\u96BC\u8247\u306E HP\uFF09`);
+  const g = rec["gun_battery"];
+  if (!isGunBatteryDataRecord(g)) return bad(`boats.json \u306E ${block.boat}.gun_battery\uFF08label_ja / range_m / effective_m / dead_cone_deg / muzzle_flash_reveal_m / spread_factor / groups\uFF09\u304C\u7121\u3044`);
+  let gun;
+  try {
+    gun = gunBatteryParamsFromData(g);
+  } catch (e) {
+    return bad(`${block.boat}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!gun.magazine) bad(`boats.json \u306E ${block.boat}.gun_battery \u306F magazine\uFF08\u5F3E\u5009\u306E\u767A\u6570\u30FB\u4EA4\u63DB\u79D2\uFF09\u3092\u6301\u3064\uFF08\u7C73PT \u306E\u4EFB\u52D9\u306E\u7832\uFF09`);
+  const w = data.hitRateModel.world;
+  const p = gunboatParamsFromData(block, { record: rec, hullHp: hp, gun, hitScale: w.hit_scale, spriteScale: w.sprite_scale }, label);
+  const pt = data.enemies.enemies.find((e) => e["id"] === mission.enemyId);
+  if (!isPtDataRecord(pt)) return bad(`enemies.json \u306E ${mission.enemyId} \u306B\u7C73PT \u306E\u5024\u304C\u7121\u3044`);
+  const dmg = pt.guns[0].damage;
+  if (!(pt.attack.rounds_per_pass * dmg < hp)) bad(`\u7C73PT \u306E rounds_per_pass \xD7 damage\uFF08${pt.attack.rounds_per_pass * dmg}\uFF09\u306F\u96BC\u8247\u306E HP\uFF08${hp}\uFF09\u672A\u6E80\uFF081 \u56DE\u306E\u822A\u904E\u3067\u306F\u7832\u3060\u3051\u3067\u6C88\u307E\u306A\u3044\uFF09`);
+  if (!(pt.chase.burst_rounds * dmg < hp)) bad(`\u7C73PT \u306E chase.burst_rounds \xD7 damage\uFF08${pt.chase.burst_rounds * dmg}\uFF09\u306F\u96BC\u8247\u306E HP\uFF08${hp}\uFF09\u672A\u6E80\uFF081 \u56DE\u306E\u9023\u5C04\u3067\u306F\u7832\u3060\u3051\u3067\u6C88\u307E\u306A\u3044\uFF09`);
+  const visM = playerVisRangeM(getVisibilityParams(data, mission.moon, false));
+  if (!(gun.rangeM <= visM)) bad(`\u96BC\u8247\u306E gun_battery \u306E range_m\uFF08${gun.rangeM} m\uFF09\u306F\u81EA\u8247\u306E\u8996\u7A0B\uFF08${visM} m\uFF09\u4EE5\u4E0B\uFF08\u898B\u3048\u306A\u3044 PT \u3078\u6483\u305F\u306A\u3044\uFF09`);
+  if (!(gun.flashRevealM >= gun.rangeM)) bad(`\u96BC\u8247\u306E gun_battery \u306E muzzle_flash_reveal_m\uFF08${gun.flashRevealM} m\uFF09\u306F range_m\uFF08${gun.rangeM} m\uFF09\u4EE5\u4E0A\uFF08\u6483\u3066\u3070\u6483\u3063\u305F PT \u306B\u898B\u3048\u308B\uFF09`);
+  return p;
+}
+function gunboatSetupPart(data, mission, o) {
+  const p = o.gunboatOff ? null : getGunboatParams(data, mission);
+  return p ? { gunboat: p } : {};
+}
+
+// ../wt-0176202/src/core/patrol-air-state.ts
+var PA_KEY_SEC_MAX = 31;
+var PA_KEY_DIST_HM_MAX = 63;
+var PA_KEY_NEAR_HM_MAX = 31;
+var PA_KEY_BOMBS_MAX = 7;
+var PA_KEY_WAKE_S_MAX = 7;
+var PA_KEY_HP5_MAX = 31;
+
+// ../wt-0176202/src/core/patrol-air-data.ts
+var PATROL_AIR_EVENT_ID = "patrol_air";
+var PATROL_AIR_BLOCK_KEYS = ["aircraft_id", "count", "count_source", "from_bearing_deg", "pass_rotate_deg", "radar_passes", "source"];
+var PATROL_AIR_PARAM_KEYS = ["first_pass_s", "wake_trigger_s", "sweep_gap_s", "orbit_s", "leave_s", "hud_stop_margin_s"];
+var PATROL_SORTIE_KEYS = ["spawn_m", "run_radius_m", "first_run_s", "run_gap_s", "wave_rest_s", "leave_s", "spawn_offsets_deg", "wave_rotate_deg", "aim_turn_min_deg_s"];
+var PATROL_LATE_STOP_S = 1.5;
+var PATROL_MIN_COUNTDOWN_S = 5;
+var PATROL_MIN_FIND_TO_DROP_S = 6.9;
+var EPS_S = 1e-9;
+var isObj3 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isNum3 = (v) => typeof v === "number" && Number.isFinite(v);
+var badAt = (label) => (msg) => {
+  throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+};
+function isPatrolAircraftRecord(v) {
+  if (!isStrikeAircraftRecord(v)) return false;
+  const p = v["patrol"];
+  return isObj3(p) && isNum3(p["wake_detect_m"]) && isNum3(p["lock_m"]);
+}
+function patrolAirEventFromData(raw, label) {
+  const bad = badAt(`${label}\uFF08risk_events.json \u306E ${PATROL_AIR_EVENT_ID}\uFF09`);
+  if (!isObj3(raw) || raw["id"] !== PATROL_AIR_EVENT_ID || !isObj3(raw["params"])) return bad("\u8A18\u9332\u304B params \u304C\u7121\u3044");
+  const p = raw["params"];
+  for (const k of Object.keys(p)) if (k !== "sortie" && k !== "source" && !PATROL_AIR_PARAM_KEYS.includes(k)) bad(`params \u306B\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F ${PATROL_AIR_PARAM_KEYS.join(" / ")} \u3068 sortie\u30FBsource\uFF09`);
+  for (const k of PATROL_AIR_PARAM_KEYS) if (!isNum3(p[k])) bad(`params.${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  if (typeof p["source"] !== "string" || p["source"].length === 0) bad("params.source\uFF08design \u306E\u6839\u62E0\u306E\u6587\uFF09\u304C\u7121\u3044");
+  const s = p["sortie"];
+  if (!isObj3(s)) return bad("params.sortie\uFF08\u591C\u306E\u51FA\u6483\u306E\u6BB5\u3068\u6642\u9593\uFF09\u304C\u7121\u3044");
+  for (const k of Object.keys(s)) if (!PATROL_SORTIE_KEYS.includes(k)) bad(`params.sortie \u306B\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F ${PATROL_SORTIE_KEYS.join(" / ")}\uFF09`);
+  for (const k of PATROL_SORTIE_KEYS) if (k !== "spawn_offsets_deg" && !isNum3(s[k])) bad(`params.sortie.${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  const offs = s["spawn_offsets_deg"];
+  if (!Array.isArray(offs) || !offs.every(isNum3)) bad("params.sortie.spawn_offsets_deg \u306F\u6570\u306E\u914D\u5217");
+  return raw;
+}
+function patrolAirBlockFromData(raw, label) {
+  const bad = badAt(label);
+  if (!isObj3(raw)) return bad(`\u9375 ${PATROL_AIR_BLOCK_KEYS.join(" / ")} \u306E object \u3067\u306A\u3044`);
+  for (const k of Object.keys(raw)) if (!PATROL_AIR_BLOCK_KEYS.includes(k)) bad(`\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F\u3061\u3087\u3046\u3069 ${PATROL_AIR_BLOCK_KEYS.join(" / ")}\uFF09`);
+  for (const k of ["aircraft_id", "count_source", "source"]) if (typeof raw[k] !== "string" || raw[k].trim() === "") bad(`${k} \u304C\u7121\u3044\u304B\u7A7A`);
+  for (const k of ["count", "from_bearing_deg", "pass_rotate_deg", "radar_passes"]) if (!isNum3(raw[k])) bad(`${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  const rp = raw["radar_passes"];
+  if (!Number.isInteger(rp) || rp < 0) bad(`radar_passes \u306F 0 \u4EE5\u4E0A\u306E\u6574\u6570\uFF08${rp}\uFF09`);
+  return raw;
+}
+function patrolAirParamsFromData(aircraft, event, block, boat, vis, timeScale, label) {
+  const bad = badAt(label);
+  const q = event.params;
+  const s = q.sortie;
+  const st = aircraft.strike;
+  const n = block.count;
+  const f2 = (x) => x.toFixed(2);
+  if (!Number.isInteger(n) || n < 1 || n > AIR_STRIKE_MAX_PLANES) bad(`count \u306F 1\u301C${AIR_STRIKE_MAX_PLANES} \u306E\u6574\u6570\uFF08${n}\uFF09`);
+  if (s.spawn_offsets_deg.length !== n) bad(`risk_events.json \u306E patrol_air.params.sortie.spawn_offsets_deg\uFF08${s.spawn_offsets_deg.length} \u500B\uFF09\u306F count\uFF08${n}\uFF09\u3068\u540C\u3058\u6570\uFF08\u635C\u7D22\u306E\u968A\u5F62\u306E\u6A5F\u3054\u3068\u306E\u305A\u308C\uFF09`);
+  if (!(q.first_pass_s >= 0)) bad(`patrol_air.params.first_pass_s \u306F 0 \u4EE5\u4E0A\uFF08${q.first_pass_s}\uFF09`);
+  for (const k of ["wake_trigger_s", "sweep_gap_s", "orbit_s", "leave_s", "hud_stop_margin_s"]) if (!(q[k] > 0)) bad(`patrol_air.params.${k} \u306F\u6B63\u306E\u79D2\uFF08${q[k]}\uFF09`);
+  if (!(timeScale > 0) || !(st.run_speed_kt > 0)) bad("time_scale \u3068\u6A5F\u4F53\u306E strike.run_speed_kt \u306F\u6B63");
+  const near = playerVisRangeM(vis);
+  const wake = aircraft.patrol.wake_detect_m;
+  const lock = aircraft.patrol.lock_m;
+  if (!(s.run_radius_m > 0 && s.run_radius_m < near && near < lock && lock <= s.spawn_m && s.spawn_m < wake)) {
+    bad(`0 < sortie.run_radius_m\uFF08${s.run_radius_m}\uFF09< \u81EA\u8247\u306E\u8996\u7A0B\uFF08${near} m\u3002\u4ED8\u8FD1\u306E\u635C\u7D22\u306E\u534A\u5F84\uFF09< ${aircraft.id}.patrol.lock_m\uFF08${lock}\uFF09\u2264 sortie.spawn_m\uFF08${s.spawn_m}\uFF09< patrol.wake_detect_m\uFF08${wake}\uFF09\uFF08\u6E80\u6708\u30FB\u534A\u6708\u306E\u8996\u7A0B\u306F lock_m \u306B\u5C4A\u304F\uFF1D\u6708\u3092\u5909\u3048\u308B\u306A\u3089\u5024\u3082\u898B\u76F4\u3059\uFF09`);
+  }
+  const v = ktToMps(st.run_speed_kt) * timeScale;
+  const passS = (wake - lock) / v;
+  if (!(passS >= q.hud_stop_margin_s + PATROL_MIN_COUNTDOWN_S - EPS_S)) bad(`\u635C\u7D22\u306E\u4E88\u544A\u304B\u3089 1,500 m \u306E\u7DDA\u307E\u3067\u306E\u79D2\uFF08${f2(passS)}\uFF09\u306F hud_stop_margin_s + ${PATROL_MIN_COUNTDOWN_S}\uFF08${f2(q.hud_stop_margin_s + PATROL_MIN_COUNTDOWN_S)}\uFF09\u4EE5\u4E0A\uFF08F1\uFF09`);
+  const runS = s.run_radius_m / v;
+  if (!(s.first_run_s + runS >= PATROL_MIN_FIND_TO_DROP_S - EPS_S)) bad(`\u767A\u898B\u304B\u3089\u6700\u521D\u306E\u6295\u4E0B\u307E\u3067\u306E\u79D2\uFF08sortie.first_run_s + \u7206\u6483\u9032\u8DEF = ${f2(s.first_run_s + runS)}\uFF09\u306F ${PATROL_MIN_FIND_TO_DROP_S} \u4EE5\u4E0A\uFF08F1\uFF09`);
+  if (!(boat.decelMps2 > 0 && boat.speedMaxKt > boat.silentMaxKt && boat.silentMaxKt > boat.stopMaxKt && boat.stopMaxKt >= 0)) bad("\u81EA\u8247\u306E decel_mps2 \u306F\u6B63\u3001speed_max_kt > speed_bands_kt.silent_max > stop_max \u2265 0");
+  const tWake = ktToMps(boat.speedMaxKt - boat.silentMaxKt) / boat.decelMps2 / timeScale;
+  const tStop = ktToMps(boat.speedMaxKt - boat.stopMaxKt) / boat.decelMps2 / timeScale;
+  if (!(q.hud_stop_margin_s >= tWake + PATROL_LATE_STOP_S - EPS_S)) {
+    bad(`hud_stop_margin_s\uFF08${q.hud_stop_margin_s}\uFF09\u306F \u6700\u9AD8\u901F \u2192 \u822A\u8DE1\u304C\u6D88\u3048\u308B\uFF08\u9759\u97F3\u306E\u4E0A\u9650\uFF09\u306E\u79D2\uFF08${f2(tWake)}\uFF09+ ${PATROL_LATE_STOP_S} \u4EE5\u4E0A\uFF08\u79D2\u8AAD\u307F 0 \u306E ${PATROL_LATE_STOP_S} \u79D2\u5F8C\u306B\u6B62\u3081\u59CB\u3081\u3066\u3082 1,500 m \u306E\u7DDA\u307E\u3067\u306B\u822A\u8DE1\u304C\u6D88\u3048\u308B\u3002F2\uFF09`);
+  }
+  if (!(q.hud_stop_margin_s + (lock - near) / v >= tStop + PATROL_LATE_STOP_S - EPS_S)) {
+    bad(`hud_stop_margin_s + (lock_m \u2212 \u8996\u7A0B)/v\uFF08${f2(q.hud_stop_margin_s + (lock - near) / v)}\uFF09\u306F \u6700\u9AD8\u901F \u2192 \u505C\u6B62\u306E\u79D2\uFF08${f2(tStop)}\uFF09+ ${PATROL_LATE_STOP_S} \u4EE5\u4E0A\uFF08\u79D2\u8AAD\u307F 0 \u306E ${PATROL_LATE_STOP_S} \u79D2\u5F8C\u306B\u6B62\u3081\u59CB\u3081\u3066\u3082\u8996\u7A0B\u306E\u7DDA\u307E\u3067\u306B\u6B62\u307E\u308B\u3002F2\uFF09`);
+  }
+  if (!(st.bomb.damage < boat.hullHp)) bad(`${aircraft.id}.strike.bomb.damage\uFF08${st.bomb.damage}\uFF09\u306F\u81EA\u8247\u306E hull_hp\uFF08${boat.hullHp}\uFF09\u672A\u6E80\uFF081 \u767A\u3067\u306F\u6C88\u307E\u306A\u3044\u3002F9\uFF09`);
+  const fit = (what, x, max) => {
+    if (!(x <= max)) bad(`${what}\uFF08${x}\uFF09\u304C 2 \u884C\u76EE\u306E\u30AD\u30FC\u306E\u6B04\u306E\u4E0A\u9650 ${max} \u3092\u8D85\u3048\u308B\uFF08C9\uFF09`);
+  };
+  for (const k of ["first_pass_s", "sweep_gap_s", "orbit_s"]) fit(`patrol_air.params.${k} \u306E\u5207\u308A\u4E0A\u3052`, Math.ceil(q[k]), PA_KEY_SEC_MAX);
+  fit("\u79D2\u8AAD\u307F\u306E\u6700\u5927\uFF08(wake_detect_m \u2212 lock_m)/v \u2212 hud_stop_margin_s \u306E\u5207\u308A\u4E0A\u3052\uFF09", Math.ceil(passS - q.hud_stop_margin_s), PA_KEY_SEC_MAX);
+  fit("patrol.wake_detect_m / 100 \u306E\u5207\u308A\u4E0A\u3052", Math.ceil(wake / 100), PA_KEY_DIST_HM_MAX);
+  fit("patrol.lock_m / 100 \u306E\u5207\u308A\u4E0A\u3052", Math.ceil(lock / 100), PA_KEY_NEAR_HM_MAX);
+  fit("patrol_air.params.wake_trigger_s \u306E\u5207\u308A\u4E0A\u3052", Math.ceil(q.wake_trigger_s), PA_KEY_WAKE_S_MAX);
+  fit("1 \u56DE\u306E\u51FA\u6483\u306E\u7206\u5F3E\uFF08count \xD7 strike.bomb.count\uFF09", n * st.bomb.count, PA_KEY_BOMBS_MAX);
+  fit("\u81EA\u8247\u306E hull_hp / 5 \u306E\u5207\u308A\u4E0A\u3052\uFF08\u5931\u3063\u305F HP \u306E\u6B04\uFF09", Math.ceil(boat.hullHp / 5), PA_KEY_HP5_MAX);
+  return {
+    planes: n,
+    flightMps: v,
+    wakeDetectM: wake,
+    lockM: lock,
+    nearM: near,
+    runRadiusM: s.run_radius_m,
+    firstPassS: q.first_pass_s,
+    wakeTriggerS: q.wake_trigger_s,
+    sweepGapS: q.sweep_gap_s,
+    orbitS: q.orbit_s,
+    leaveS: q.leave_s,
+    hudStopMarginS: q.hud_stop_margin_s,
+    fromBearingDeg: block.from_bearing_deg,
+    passRotateDeg: block.pass_rotate_deg,
+    radarPasses: block.radar_passes,
+    orbitDegPerS: radToDeg(v / near),
+    quietKt: boat.silentMaxKt
+  };
+}
+
+// ../wt-0176202/src/config/patrol-air-mission-data.ts
+var PATROL_AIR_EXCLUSIVE_KEYS = ["enemy_start", "barges", "pt_boats", "convoy", "escort", "transport", "shore_battery", "enemy_aircraft", "friendly_aircraft", "storm"];
+function getPatrolAirParams(data, missionId) {
+  const mission = getPrototypeMission(data, missionId);
+  const m = data.missionsSeed.missions.find((x) => x["id"] === missionId);
+  const proto = m["v0_1_prototype"];
+  const raw = proto["patrol_air"];
+  if (raw === void 0) return null;
+  const label = `${missionId}.v0_1_prototype.patrol_air`;
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.8\uFF09`);
+  };
+  const block = patrolAirBlockFromData(raw, label);
+  for (const k of PATROL_AIR_EXCLUSIVE_KEYS) if (proto[k] !== void 0) bad(`v0_1_prototype.${k} \u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\uFF09`);
+  if (mission.mainWeapon !== "none") bad(`main_weapon \u306F none\uFF08\u6483\u3064\u76F8\u624B\u304C\u3044\u306A\u3044\u3002${mission.mainWeapon}\uFF09`);
+  if (!mission.hazards.includes(PATROL_AIR_EVENT_ID)) bad(`v0_1_prototype.hazards \u306B ${PATROL_AIR_EVENT_ID} \u304C\u8981\u308B\uFF08Briefing \u306E\u300C\u5371\u967A\u300D\uFF09`);
+  if (mission.night?.optionalHazards.includes(PATROL_AIR_EVENT_ID)) bad(`${PATROL_AIR_EVENT_ID} \u3092 night.optional_hazards \u306B\u5165\u308C\u306A\u3044\uFF08\u591C\u3054\u3068\u306B\u6C7A\u3081\u306A\u3044\uFF09`);
+  if (m["dawn_air"]?.["play_as"] !== "enemy" || !mission.dawnStrike) bad("dawn_air.play_as \u304C enemy \u3067 v0_1_prototype.dawn_strike\uFF08\u591C\u660E\u3051\u306E\u7A7A\u8972\uFF09\u306E\u3042\u308B\u4EFB\u52D9\u3060\u3051\uFF08\u6575\u306E\u5236\u7A7A\u4E0B\uFF09");
+  const plane = data.enemies.enemies.find((e) => e["id"] === block.aircraft_id);
+  if (!isPatrolAircraftRecord(plane)) return bad(`aircraft_id\uFF08${block.aircraft_id}\uFF09\u304C enemies.json \u306B strike\uFF08run_speed_kt / release_altitude_m / bomb\uFF09\u3068 patrol\uFF08wake_detect_m / lock_m\uFF09\u4ED8\u304D\u3067\u7121\u3044`);
+  const camp = data.missionsSeed.campaigns.find((c) => c["id"] === m["campaign"]);
+  if (plane.faction !== camp?.["enemy_faction"]) bad(`\u6A5F\u4F53 ${plane.id} \u306E faction\uFF08${plane.faction}\uFF09\u304C\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3 ${String(m["campaign"])} \u306E enemy_faction\uFF08${String(camp?.["enemy_faction"])}\uFF09\u3068\u9055\u3046`);
+  if (block.aircraft_id !== mission.dawnStrike.aircraft_id) bad(`aircraft_id\uFF08${block.aircraft_id}\uFF09\u306F dawn_strike.aircraft_id\uFF08${mission.dawnStrike.aircraft_id}\uFF09\u3068\u540C\u3058\uFF08\u591C\u306E\u6A5F\u3068\u591C\u660E\u3051\u306E\u6A5F\u306F\u540C\u3058\u6A5F\u4F53\uFF09`);
+  const ids = proto["enemies"];
+  if (ids.length !== block.count || !ids.every((e) => e === block.aircraft_id)) bad(`v0_1_prototype.enemies\uFF08${ids.join("\u30FB")}\uFF09\u306F aircraft_id\uFF08${block.aircraft_id}\uFF09\u3092 count\uFF08${block.count}\uFF09\u500B`);
+  const ev = patrolAirEventFromData(data.riskEvents.events.find((e) => e["id"] === PATROL_AIR_EVENT_ID), label);
+  const rec = data.boats.boats.find((b) => b["id"] === mission.playerBoatId);
+  if (!isBoatDataRecord(rec)) return bad(`boats.json \u306E\u81EA\u8247 ${mission.playerBoatId} \u306B\u904B\u52D5\u306E\u5024\uFF08speed_* / speed_bands_kt / accel\u30FBdecel\u30FBturn / length\u30FBbeam\uFF09\u304C\u7121\u3044`);
+  const hp = rec["hull_hp"];
+  if (typeof hp !== "number" || !(hp > 0)) return bad(`boats.json \u306E\u81EA\u8247 ${mission.playerBoatId}.hull_hp\uFF08\u6B63\u306E\u6570\uFF09\u304C\u7121\u3044`);
+  const w = data.hitRateModel.world;
+  const boat = { speedMaxKt: rec.speed_max_kt, silentMaxKt: rec.speed_bands_kt.silent_max, stopMaxKt: rec.speed_bands_kt.stop_max, decelMps2: rec.decel_mps2, hullHp: hp };
+  const gate = patrolAirParamsFromData(plane, ev, block, boat, getVisibilityParams(data, mission.moon, false), w.time_scale, label);
+  const hull = { halfLengthM: rec.length_m * w.hit_scale / 2, halfBeamM: rec.beam_m * w.hit_scale / 2, boundsMarginM: rec.length_m * w.sprite_scale / 2 };
+  const sortieBlock = { aircraft_id: block.aircraft_id, count: block.count, count_source: block.count_source, from_bearing_deg: block.from_bearing_deg, escort_target_planes: [], source: block.source };
+  try {
+    return { gate, sortie: airStrikeParamsFromData(plane, { id: PATROL_AIR_EVENT_ID, params: ev.params.sortie }, sortieBlock, w.time_scale, hull, null, mission.bounds, bearingJa(block.from_bearing_deg)) };
+  } catch (e) {
+    throw new Error(`${missionId} \u306E\u591C\u306E\u54E8\u6212\uFF08risk_events.json \u306E ${PATROL_AIR_EVENT_ID}.params.sortie\uFF09: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+function patrolAirSetupPart(data, missionId, o) {
+  const p = o.patrolOff ? null : getPatrolAirParams(data, missionId);
+  return p ? { patrolAir: p } : {};
+}
+
+// ../wt-0176202/src/config/landing-config.ts
+var LANDING_LAUNCH_INSIDE_M = 50;
+var LANDING_RING_CLEAR_M = 800;
+var LANDING_DAWN_MARGIN_S = 20;
+var LANDING_WARN_MIN_S = 20;
+var LANDING_BEACH_MARGIN_M = 12;
+var LANDING_BEACH_CLEAR_M = 50;
+
+// ../wt-0176202/src/core/landing-data.ts
+var LANDING_KEYS = ["ship_id", "label_ja", "anchor", "unload_s", "torpedo_hits_to_sink", "lookout_m", "mark_label_ja", "source"];
+var LANDING_ANCHOR_KEYS = ["x_m", "y_m", "heading_deg"];
+var LANDING_UNLOAD_MAX_S = 255;
+var LANDING_HITS_MAX = 3;
+var isObj4 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isFiniteNum3 = (v) => typeof v === "number" && Number.isFinite(v);
+var nonEmpty = (v) => typeof v === "string" && v.length > 0;
+function readLandingBlock(raw, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.11\uFF09`);
+  };
+  if (!isObj4(raw)) return bad("object \u3067\u306A\u3044");
+  const keys = Object.keys(raw);
+  const unknown = keys.filter((k) => !LANDING_KEYS.includes(k));
+  const missing = LANDING_KEYS.filter((k) => !(k in raw));
+  if (unknown.length > 0 || missing.length > 0) bad(`\u9375\u306F\u3061\u3087\u3046\u3069 ${LANDING_KEYS.join("\u30FB")}\uFF08\u77E5\u3089\u306A\u3044\u9375 ${unknown.join("\u30FB") || "\u306A\u3057"}\u30FB\u6B20\u3051 ${missing.join("\u30FB") || "\u306A\u3057"}\uFF09`);
+  const a = raw["anchor"];
+  if (!isObj4(a) || Object.keys(a).length !== LANDING_ANCHOR_KEYS.length || !LANDING_ANCHOR_KEYS.every((k) => isFiniteNum3(a[k]))) bad(`anchor \u306F\u3061\u3087\u3046\u3069 ${LANDING_ANCHOR_KEYS.join("\u30FB")} \u306E\u6570`);
+  const hd = a["heading_deg"];
+  if (!(hd >= 0 && hd < 360)) bad("anchor.heading_deg \u306F 0 \u4EE5\u4E0A 360 \u672A\u6E80");
+  for (const k of ["ship_id", "label_ja", "mark_label_ja", "source"]) if (!nonEmpty(raw[k])) bad(`${k} \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217`);
+  const unload = raw["unload_s"];
+  if (!(isFiniteNum3(unload) && Number.isInteger(unload) && unload >= 1 && unload <= LANDING_UNLOAD_MAX_S)) bad(`unload_s \u306F 1\u301C${LANDING_UNLOAD_MAX_S} \u306E\u6574\u6570`);
+  const hits = raw["torpedo_hits_to_sink"];
+  if (!(isFiniteNum3(hits) && Number.isInteger(hits) && hits >= 1 && hits <= LANDING_HITS_MAX)) bad(`torpedo_hits_to_sink \u306F 1\u301C${LANDING_HITS_MAX} \u306E\u6574\u6570`);
+  const look = raw["lookout_m"];
+  if (!(isFiniteNum3(look) && look > 0)) bad("lookout_m \u306F\u6B63\u306E\u6570");
+  return raw;
+}
+function isLandingShipRecord(v) {
+  if (!isObj4(v)) return false;
+  const c = v["hull_circles"];
+  return isFiniteNum3(v["length_m"]) && v["length_m"] > 0 && isFiniteNum3(v["beam_m"]) && v["beam_m"] > 0 && isFiniteNum3(c) && Number.isInteger(c) && c >= 2;
+}
+function joinDirsJa(dirs) {
+  const uniq = [];
+  for (const d of dirs) if (!uniq.includes(d)) uniq.push(d);
+  return uniq.join(uniq.length === 2 ? "\u3068" : "\u30FB");
+}
+function landingParamsFromData(b, ship, ctx) {
+  const hitLenM = ship.length_m * ctx.hitScale;
+  const hitBeamM = ship.beam_m * ctx.hitScale;
+  const pass = hitLenM / 2 + hitBeamM;
+  return {
+    shipId: b.ship_id,
+    x: b.anchor.x_m,
+    y: b.anchor.y_m,
+    headingDeg: b.anchor.heading_deg,
+    lengthM: ship.length_m,
+    beamM: ship.beam_m,
+    hitLenM,
+    hitBeamM,
+    circles: ship.hull_circles,
+    passRadius2: pass * pass,
+    hitsToSink: b.torpedo_hits_to_sink,
+    unloadS: b.unload_s,
+    lookoutM: b.lookout_m,
+    lookout2: b.lookout_m * b.lookout_m,
+    hurried2: ctx.hurriedM * ctx.hurriedM,
+    launchM: ctx.launchM,
+    labelJa: b.label_ja,
+    markLabelJa: b.mark_label_ja,
+    fromDirsJa: joinDirsJa(ctx.runDirJa),
+    runDirJa: ctx.runDirJa.slice()
+  };
+}
+
+// ../wt-0176202/src/core/landing-geometry.ts
+var LANDING_JITTER_STEPS = 20;
+var LEG = { x0: 0, y0: 0, x1: 0, y1: 0, x: 0, y: 0, headingDeg: 0 };
+function legAt(p, i, dy) {
+  ptStartAt(p, i, 0, dy, false, LEG);
+  return LEG;
+}
+function legEndRangeM(p, i, jy, ax, ay) {
+  let lo = Infinity;
+  let hi = 0;
+  for (const dy of [-jy, jy]) {
+    const l = legAt(p, i, dy);
+    const d = Math.hypot(l.x1 - ax, l.y1 - ay);
+    lo = Math.min(lo, d);
+    hi = Math.max(hi, d);
+  }
+  return [lo, hi];
+}
+function legEndBowErrDeg(p, i, jy, ax, ay) {
+  let m = 0;
+  for (const dy of [-jy, jy]) {
+    const l = legAt(p, i, dy);
+    m = Math.max(m, Math.abs(wrapDeg180(bearingDeg(l.x0, l.y0, l.x1, l.y1) - bearingDeg(l.x1, l.y1, ax, ay))));
+  }
+  return m;
+}
+function farLegClearM(p, i, jy, ax, ay, farM, px, py, steps = LANDING_JITTER_STEPS) {
+  let best2 = Infinity;
+  for (let k = 0; k <= steps; k++) {
+    const dy = steps === 0 ? 0 : -jy + 2 * jy * k / steps;
+    const l = legAt(p, i, dy);
+    best2 = Math.min(best2, outsideDiskDist2(l.x0, l.y0, l.x1, l.y1, ax, ay, farM, px, py));
+  }
+  return Math.sqrt(best2);
+}
+function outsideDiskDist2(x0, y0, x1, y1, ax, ay, r, px, py) {
+  const vx = x1 - x0;
+  const vy = y1 - y0;
+  const fx2 = x0 - ax;
+  const fy = y0 - ay;
+  const a = vx * vx + vy * vy;
+  const c = fx2 * fx2 + fy * fy - r * r;
+  if (a === 0) return c > 0 ? (x0 - px) * (x0 - px) + (y0 - py) * (y0 - py) : Infinity;
+  const b = 2 * (vx * fx2 + vy * fy);
+  const disc = b * b - 4 * a * c;
+  if (disc <= 0) return segDist23(px, py, x0, y0, x1, y1);
+  const s = Math.sqrt(disc);
+  const t1 = (-b - s) / (2 * a);
+  const t2 = (-b + s) / (2 * a);
+  let best = Infinity;
+  if (t1 > 0) {
+    const t = Math.min(t1, 1);
+    best = Math.min(best, segDist23(px, py, x0, y0, x0 + vx * t, y0 + vy * t));
+  }
+  if (t2 < 1) {
+    const t = Math.max(t2, 0);
+    best = Math.min(best, segDist23(px, py, x0 + vx * t, y0 + vy * t, x1, y1));
+  }
+  return best;
+}
+function segDist23(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const l2 = vx * vx + vy * vy;
+  const t = l2 > 0 ? clamp(((px - ax) * vx + (py - ay) * vy) / l2, 0, 1) : 0;
+  const dx = ax + vx * t - px;
+  const dy = ay + vy * t - py;
+  return dx * dx + dy * dy;
+}
+
+// ../wt-0176202/src/core/pt-torpedo-data.ts
+var PT_TORPEDO_KEYS = [
+  "torpedo_id",
+  "launch_range_m",
+  "launch_heading_tol_deg",
+  "salvo_count",
+  "salvo_spacing_deg",
+  "aim_error_deg",
+  "hurried_max_m",
+  "hurried_error_factor",
+  "engaged_error_factor",
+  "reacquire_s",
+  "retreat_after_salvo"
+];
+function isPtTorpedoRecord(v) {
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return false;
+  const r = v;
+  if (Object.keys(r).length !== PT_TORPEDO_KEYS.length) return false;
+  for (const k of PT_TORPEDO_KEYS) {
+    const x = r[k];
+    if (k === "torpedo_id" ? typeof x !== "string" : k === "retreat_after_salvo" ? typeof x !== "boolean" : typeof x !== "number" || !Number.isFinite(x)) return false;
+  }
+  return true;
+}
+function ptTorpedoParamsFromData(raw, ctx, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.11\uFF09`);
+  };
+  if (!isPtTorpedoRecord(raw)) return bad(`\u3061\u3087\u3046\u3069 ${PT_TORPEDO_KEYS.length} \u9375\uFF08${PT_TORPEDO_KEYS.join("\u30FB")}\uFF09\u3067\u3001torpedo_id \u306F\u6587\u5B57\u5217\u30FBretreat_after_salvo \u306F\u771F\u507D\u30FB\u307B\u304B\u306F\u6709\u9650\u306E\u6570`);
+  const a = raw;
+  const rec = ctx.torpedoRecord;
+  if (!isTorpedoDataRecord(rec)) return bad(`torpedo_id\uFF08${a.torpedo_id}\uFF09\u304C torpedoes.json \u306B\u9B5A\u96F7\u306E\u5024\uFF08settings / default_setting / length_m / reliability\uFF09\u4ED8\u304D\u3067\u7121\u3044`);
+  const bt = ctx.boatTorpedoes;
+  const count = bt?.count;
+  if (typeof count !== "number" || !Number.isInteger(count) || count < 1) return bad(`boats.json \u306E ${ctx.boatRef}.torpedoes.count\uFF081 \u4EE5\u4E0A\u306E\u6574\u6570\uFF09\u304C\u7121\u3044`);
+  if (a.torpedo_id !== bt.type_late) bad(`torpedo_id\uFF08${a.torpedo_id}\uFF09\u306F boats.json \u306E ${ctx.boatRef}.torpedoes.type_late\uFF08${String(bt.type_late)}\uFF09\u3068\u540C\u3058\uFF081944 \u306E\u8247\u306E\u9B5A\u96F7\uFF09`);
+  if (!(Number.isInteger(a.salvo_count) && a.salvo_count >= 1 && a.salvo_count <= count)) bad(`salvo_count\uFF08${a.salvo_count}\uFF09\u306F 1\u301C${count}\uFF08${ctx.boatRef} \u306E\u9B5A\u96F7\u306E\u672C\u6570\uFF09\u306E\u6574\u6570`);
+  if (!(a.launch_range_m > 0)) bad("launch_range_m \u306F\u6B63");
+  if (!(a.launch_heading_tol_deg > 0 && a.launch_heading_tol_deg < 90)) bad("0 < launch_heading_tol_deg < 90\uFF08\u8F38\u9001\u8239\u3078\u5411\u304B\u3063\u3066\u3044\u308B\u3068\u304D\u3060\u3051\u6483\u3064\uFF09");
+  if (!(a.salvo_spacing_deg > 0)) bad("salvo_spacing_deg \u306F\u6B63");
+  if (!(a.aim_error_deg >= 0)) bad("aim_error_deg \u306F 0 \u4EE5\u4E0A");
+  if (!(a.hurried_max_m === 0 || a.hurried_max_m > a.launch_range_m)) bad(`hurried_max_m\uFF08${a.hurried_max_m}\uFF09\u306F 0\uFF08\u614C\u3066\u305F\u6589\u5C04\u306A\u3057\uFF09\u304B launch_range_m\uFF08${a.launch_range_m} m\uFF09\u3088\u308A\u9060\u3044`);
+  if (!(a.hurried_error_factor >= 1)) bad("hurried_error_factor \u306F 1 \u4EE5\u4E0A\uFF08\u614C\u3066\u305F\u6589\u5C04\u306E\u72D9\u3044\u306F\u7C97\u3044\uFF09");
+  if (!(a.engaged_error_factor === 0 || a.engaged_error_factor >= 1)) bad(`engaged_error_factor\uFF08${a.engaged_error_factor}\uFF09\u306F 0\uFF08\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u306A\u3057\uFF09\u304B 1 \u4EE5\u4E0A\uFF08\u6226\u3044\u306A\u304C\u3089\u306E\u6589\u5C04\u306E\u72D9\u3044\u306F\u7C97\u3044\uFF09`);
+  if (!(a.reacquire_s >= 0)) bad("reacquire_s \u306F 0 \u4EE5\u4E0A");
+  if (a.retreat_after_salvo !== false) bad("retreat_after_salvo \u306F false\uFF083 \u7A2E\u985E\u306E\u6589\u5C04\uFF08\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u30FB\u614C\u3066\u305F\u30FB\u6226\u3044\u306A\u304C\u3089\uFF09\u3068\u3082\u6483\u3063\u3066\u3082\u53BB\u3089\u305A\u306B\u6226\u3044\u7D9A\u3051\u308B\u3002v0.6.10 \u5B9F\u6A5F 1 \u56DE\u76EE\u306E\u30E6\u30FC\u30B6\u30FC\u300CPT\u304C\u767A\u5C04\u5F8C\u3082\u53BB\u3089\u305A\u306B\u9283\u6483\u3057\u3066\u304F\u308B\u8A2D\u8A08\u306B\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u300D\uFF09");
+  const torpedo = torpedoParamsFromData(rec, ctx.armingM, ctx.erraticPeriodS);
+  const far = Math.max(a.launch_range_m, a.hurried_max_m);
+  if (!(far < torpedo.rangeM)) bad(`\u6483\u3064\u8DDD\u96E2\uFF08launch_range_m\u30FBhurried_max_m \u306E\u9060\u3044\u65B9 ${far} m\uFF09\u306F\u9B5A\u96F7\u306E\u5C04\u7A0B\uFF08${torpedo.rangeM} m\uFF09\u3088\u308A\u8FD1\u3044`);
+  const sq = (x) => x * x;
+  return {
+    torpedoId: a.torpedo_id,
+    launchM: a.launch_range_m,
+    launch2: sq(a.launch_range_m),
+    tolDeg: a.launch_heading_tol_deg,
+    n: a.salvo_count,
+    spacingDeg: a.salvo_spacing_deg,
+    aimDeg: a.aim_error_deg,
+    hurriedM: a.hurried_max_m,
+    hurried2: sq(a.hurried_max_m),
+    hurriedFactor: a.hurried_error_factor,
+    engagedFactor: a.engaged_error_factor,
+    reacquireS: a.reacquire_s,
+    torpedo,
+    reliability: torpedoReliabilityFromData(rec),
+    jitterDeg: rec.reliability.jitter_deg
+  };
+}
+
+// ../wt-0176202/src/config/landing-mission-data.ts
+var LANDING_EXCLUSIVE_KEYS = ["convoy", "barges", "enemy_start", "patrol_air", "transport", "escort"];
+function getLandingSetup(data, mission, ptBase, ptNight, hitScale) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === mission.id);
+  const proto = m?.["v0_1_prototype"];
+  const raw = proto?.["landing"];
+  if (!m || !proto || raw === void 0) return null;
+  const id = mission.id;
+  const label = `${id}.v0_1_prototype.landing`;
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.11\uFF09`);
+  };
+  for (const k of LANDING_EXCLUSIVE_KEYS) if (proto[k] !== void 0) bad(`v0_1_prototype.${k} \u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u505C\u6CCA\u3059\u308B\u5473\u65B9\u306E\u8F38\u9001\u8239\u3068\u7C73PT \u306E\u968A\u306E\u4EFB\u52D9\uFF09`);
+  if (!mission.ptBoats || !ptBase || !ptNight) return bad("\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u306E\u4EFB\u52D9\u3060\u3051");
+  if (mission.coast?.side !== "south") bad("\u5CB8\uFF08coast.side south\uFF09\u304C\u8981\u308B\uFF08\u6D5C\u306E\u7DDA\u3068\u63DA\u9678\u5730\u70B9\uFF09");
+  if (mission.mainWeapon !== "guns") bad(`main_weapon \u306F guns\uFF08${mission.mainWeapon}\u300225mm \u3067 PT \u3092\u8FFD\u3044\u6255\u3046\uFF09`);
+  if (mission.night && mission.night.mirrorChance !== 0) bad(`night.mirror_chance \u306F 0\uFF08${mission.night.mirrorChance}\u3002\u6CCA\u5730\u3068\u5E30\u6295\u306E\u8F2A\u306F\u53CD\u8EE2\u3057\u306A\u3044\uFF09`);
+  const b = readLandingBlock(raw, label);
+  const allies = m["allies"];
+  if (!Array.isArray(allies) || !allies.includes(b.ship_id)) bad(`ship_id\uFF08${b.ship_id}\uFF09\u304C ${id}.allies \u306B\u7121\u3044`);
+  const enemies = data.enemies.enemies;
+  const ship = enemies.find((e) => e["id"] === b.ship_id);
+  if (!isLandingShipRecord(ship)) return bad(`ship_id\uFF08${b.ship_id}\uFF09\u304C enemies.json \u306B length_m\u30FBbeam_m\u30FBhull_circles\uFF082 \u4EE5\u4E0A\u306E\u6574\u6570\uFF09\u4ED8\u304D\u3067\u7121\u3044`);
+  const pt = enemies.find((e) => e["id"] === mission.enemyId);
+  const boatRef = String(pt["boat_ref"]);
+  const tRaw = pt["torpedo_attack"];
+  const tid = tRaw?.["torpedo_id"];
+  const launch = data.hitRateModel.torpedo_launch;
+  const torpedo = ptTorpedoParamsFromData(tRaw, {
+    boatRef,
+    boatTorpedoes: data.boats.boats.find((x) => x["id"] === boatRef)?.["torpedoes"],
+    torpedoRecord: data.torpedoes.torpedoes.find((x) => x["id"] === tid),
+    armingM: launch.arming_distance_m,
+    erraticPeriodS: launch.erratic_period_s
+  }, `${id}: enemies.json \u306E ${mission.enemyId}.torpedo_attack`);
+  const ax = b.anchor.x_m;
+  const ay = b.anchor.y_m;
+  const scale = data.hitRateModel.world.ship_hit_scale;
+  const circles = createCircles(ship.hull_circles);
+  fillHullCircles(circles, ax, ay, b.anchor.heading_deg, ship.length_m * scale, ship.beam_m * scale);
+  const beachY = mission.bounds.height - LANDING_BEACH_MARGIN_M;
+  for (const c of circles) {
+    if (!(c.x - c.r >= 0 && c.x + c.r <= mission.bounds.width && c.y - c.r >= 0 && c.y + c.r <= mission.bounds.height)) bad(`\u8F38\u9001\u8239\u306E\u8239\u4F53\uFF08ship_hit_scale ${scale} \u500D\uFF09\u306F\u6D77\u57DF\u306E\u4E2D`);
+    if (!(c.y + c.r <= beachY - LANDING_BEACH_CLEAR_M)) bad(`\u8F38\u9001\u8239\u306E\u8239\u4F53\uFF08ship_hit_scale ${scale} \u500D\uFF09\u306F\u6D5C\u306E\u7DDA\uFF08y ${beachY}\uFF09\u304B\u3089 ${LANDING_BEACH_CLEAR_M} m \u4EE5\u4E0A\u6C96\uFF08${Math.round(beachY - c.y - c.r)} m\uFF09`);
+  }
+  const rp = mission.returnPoint;
+  const ringM = Math.hypot(ax - rp.x, ay - rp.y);
+  if (!(ringM >= LANDING_RING_CLEAR_M)) bad(`\u6CCA\u5730\u3068\u5E30\u6295\u306E\u8F2A\u306E\u4E2D\u5FC3\u306F ${LANDING_RING_CLEAR_M} m \u4EE5\u4E0A\uFF08${Math.round(ringM)} m\uFF09`);
+  if (!(b.unload_s + LANDING_DAWN_MARGIN_S <= mission.durationS)) bad(`unload_s + ${LANDING_DAWN_MARGIN_S}\uFF08${b.unload_s + LANDING_DAWN_MARGIN_S} \u79D2\uFF09\u2264 duration_s\uFF08${mission.durationS} \u79D2\u3002\u63DA\u9678\u306F\u591C\u660E\u3051\u306E\u524D\u306B\u6C7A\u7740\u3059\u308B\uFF09`);
+  const jy = mission.night ? mission.night.enemyJitterYM : 0;
+  const endMax = torpedo.launchM - Math.sqrt(ptBase.arrive2) - LANDING_LAUNCH_INSIDE_M;
+  for (let i = 0; i < ptBase.count; i++) {
+    const far = legEndRangeM(ptBase, i, jy, ax, ay)[1];
+    if (!(far <= endMax)) bad(`pt_boats \u306E\u7DDA ${i} \u306E\u7D42\u308F\u308A\u306F\u6CCA\u5730\u304B\u3089 ${Math.round(endMax)} m\uFF08launch_range_m \u2212 arrive_m \u2212 ${LANDING_LAUNCH_INSIDE_M}\uFF09\u306E\u5185\uFF08\u4ECA\u591C\u306E\u63FA\u3089\u304E\u3067 ${Math.round(far)} m\uFF09`);
+    const err = legEndBowErrDeg(ptBase, i, jy, ax, ay);
+    if (!(err <= torpedo.tolDeg / 2)) bad(`pt_boats \u306E\u7DDA ${i} \u306E\u5411\u304D\u3068\u3001\u7DDA\u306E\u7D42\u308F\u308A\u304B\u3089\u6CCA\u5730\u3078\u306E\u65B9\u4F4D\u306E\u5DEE\u306F launch_heading_tol_deg / 2\uFF08${torpedo.tolDeg / 2}\xB0\uFF09\u4EE5\u4E0B\uFF08\u4ECA\u591C\u306E\u63FA\u3089\u304E\u3067 ${err.toFixed(1)}\xB0\uFF09`);
+  }
+  const startM = nearestStartM(ptBase, mission.night, ax, ay);
+  if (!(startM > b.lookout_m)) bad(`\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E PT \u306E\u51FA\u767A\u70B9\u306F\u6CCA\u5730\u304B\u3089 lookout_m\uFF08${b.lookout_m} m\uFF09\u3088\u308A\u9060\u3044\uFF08${Math.round(startM)} m\u3002\u51FA\u767A\u3067\u898B\u5F35\u308A\u304C\u5831\u544A\u3057\u306A\u3044\uFF09`);
+  const nearM = Math.max(torpedo.hurriedM, torpedo.launchM);
+  const warnS = (b.lookout_m - nearM) / (ptBase.patrolMps * ptBase.timeScale);
+  if (!(warnS >= LANDING_WARN_MIN_S)) bad(`\u898B\u5F35\u308A\u306E\u5831\u544A\u304B\u3089 ${nearM} m\uFF08max(hurried_max_m, launch_range_m)\uFF09\u307E\u3067\u54E8\u6212\u306E\u901F\u3055\u3067 ${warnS.toFixed(2)} \u79D2\uFF08${LANDING_WARN_MIN_S} \u79D2\u4EE5\u4E0A\uFF09`);
+  const detectM = cruiseDetectM(data, mission, ptBase);
+  const ps = mission.playerStart;
+  for (let i = 0; i < ptBase.count; i++) {
+    const clear = farLegClearM(ptBase, i, jy, ax, ay, nearM, ps.x, ps.y);
+    if (!(clear > detectM)) bad(`pt_boats \u306E\u7DDA ${i} \u306E\u6CCA\u5730\u304B\u3089 ${nearM} m \u3088\u308A\u9060\u3044\u90E8\u5206\uFF08\u4ECA\u591C\u306E\u63FA\u3089\u304E\u8FBC\u307F\uFF09\u306F\u3001\u81EA\u8247\u306E\u51FA\u767A\u70B9\u304B\u3089\u5DE1\u822A\u3067\u898B\u3064\u304B\u308B ${Math.round(detectM)} m\uFF08\u53F2\u5B9F\u30E2\u30FC\u30C9\u8FBC\u307F\uFF09\u3088\u308A\u9060\u3044\uFF08${Math.round(clear)} m\u3002\u51FA\u767A\u70B9\u306E\u305D\u3070\u3067\u5F15\u304D\u3064\u3051\u3089\u308C\u306A\u3044\uFF09`);
+  }
+  const runDirJa = [];
+  for (let i = 0; i < ptNight.count; i++) runDirJa.push(bearingJa(bearingDeg(ax, ay, ptNight.startX[i], ptNight.startY[i])));
+  return { params: landingParamsFromData(b, ship, { hitScale, hurriedM: torpedo.hurriedM, launchM: torpedo.launchM, runDirJa }), torpedo };
+}
+function cruiseDetectM(data, mission, p) {
+  const vis = getVisibilityParams(data, mission.moon, false);
+  const hist = getVisibilityParams(data, mission.moon, true);
+  return Math.max(enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false), enemyDetectRangeM(p.baseDetectM, hist.speedFactor.cruise, hist, false));
+}
+function landingSetupPart(data, mission, ptBase, ptNight, o) {
+  const hitScale = o.shipHitScale !== void 0 && o.shipHitScale > 0 ? o.shipHitScale : data.hitRateModel.world.ship_hit_scale;
+  const p = getLandingSetup(data, mission, ptBase, ptNight, hitScale);
+  return p ? { landing: p } : {};
+}
+
+// ../wt-0176202/src/config/ally-config.ts
+var ALLY_ANCHOR_CLEAR_M = 300;
+var ALLY_BEACH_CLEAR_M = 200;
+var ALLY_RING_CLEAR_M = 300;
+var ALLY_START_CLEAR_M = 300;
+var ALLY_FAN_CLEAR_DEG = 10;
+var ALLY_LANE_CLEAR_M = 120;
+var ALLY_CHECK_STEP_M = 5;
+var ALLY_SHELL_POOL_SIZE = 16;
+
+// ../wt-0176202/src/core/ally-destroyer-data.ts
+var ALLY_DESTROYER_KEYS = [
+  "ship_id",
+  "label_ja",
+  "station",
+  "watch_arc_deg",
+  "guard_legs",
+  "lookout_slow_m",
+  "spot_rate_slow_per_s",
+  "lookout_fast_m",
+  "spot_rate_fast_per_s",
+  "fast_kt",
+  "light_react_s",
+  "chase_fire_s",
+  "ring_call_before_dawn",
+  "source"
+];
+var ALLY_STATION_KEYS = ["x_m", "y_m", "heading_deg"];
+var ALLY_RATE_MAX_PER_S = 5;
+var ALLY_TIMER_MAX_S = 5;
+var isObj5 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isFiniteNum4 = (v) => typeof v === "number" && Number.isFinite(v);
+var nonEmpty2 = (v) => typeof v === "string" && v.length > 0;
+function allyBad(label) {
+  return (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08docs/02 \xA76.11\uFF09`);
+  };
+}
+function readAllyDestroyerBlock(raw, label) {
+  const bad = allyBad(label);
+  if (!isObj5(raw)) return bad("object \u3067\u306A\u3044");
+  const unknown = Object.keys(raw).filter((k) => !ALLY_DESTROYER_KEYS.includes(k));
+  const missing = ALLY_DESTROYER_KEYS.filter((k) => !(k in raw));
+  if (unknown.length > 0 || missing.length > 0) bad(`\u9375\u306F\u3061\u3087\u3046\u3069 ${ALLY_DESTROYER_KEYS.join("\u30FB")}\uFF08\u77E5\u3089\u306A\u3044\u9375 ${unknown.join("\u30FB") || "\u306A\u3057"}\u30FB\u6B20\u3051 ${missing.join("\u30FB") || "\u306A\u3057"}\uFF09`);
+  const s = raw["station"];
+  if (!isObj5(s) || Object.keys(s).length !== ALLY_STATION_KEYS.length || !ALLY_STATION_KEYS.every((k) => isFiniteNum4(s[k]))) bad(`station \u306F\u3061\u3087\u3046\u3069 ${ALLY_STATION_KEYS.join("\u30FB")} \u306E\u6570`);
+  for (const k of ["ship_id", "label_ja", "source"]) if (!nonEmpty2(raw[k])) bad(`${k} \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217`);
+  const arc = raw["watch_arc_deg"];
+  if (!Array.isArray(arc) || arc.length !== 2 || !arc.every(isFiniteNum4)) bad("watch_arc_deg \u306F\u6570 2 \u3064 [\u59CB\u3081, \u7D42\u308F\u308A]");
+  const g = raw["guard_legs"];
+  if (!Array.isArray(g) || g.length === 0 || !g.every((v) => isFiniteNum4(v) && Number.isInteger(v) && v >= 0) || new Set(g).size !== g.length) bad("guard_legs \u306F 0 \u4EE5\u4E0A\u306E\u6574\u6570\u306E\u91CD\u306A\u308A\u306E\u7121\u3044\u4E26\u3073\uFF081 \u3064\u4EE5\u4E0A\u3002\u7C73PT \u306E\u7DDA\u306E\u6DFB\u5B57\uFF09");
+  if (typeof raw["ring_call_before_dawn"] !== "boolean") bad("ring_call_before_dawn \u306F\u771F\u507D");
+  for (const k of ["lookout_slow_m", "spot_rate_slow_per_s", "lookout_fast_m", "spot_rate_fast_per_s", "fast_kt", "light_react_s", "chase_fire_s"]) if (!isFiniteNum4(raw[k])) bad(`${k} \u306F\u6709\u9650\u306E\u6570`);
+  return raw;
+}
+function isAllyShipRecord(v) {
+  if (!isObj5(v) || !isEnemyGunneryDataRecord(v) || v.searchlight === null || !("starshell" in v)) return false;
+  const sinkGuns = v.guns.filter((g) => isFiniteNum4(g["pt_sink_chance"])).length;
+  return isFiniteNum4(v["length_m"]) && v["length_m"] > 0 && isFiniteNum4(v["beam_m"]) && v["beam_m"] > 0 && sinkGuns === 1;
+}
+function allyDestroyerParamsFromData(b, ship, ctx, label) {
+  const bad = allyBad(label);
+  const st = b.station;
+  if (!(st.heading_deg >= 0 && st.heading_deg < 360)) bad(`station.heading_deg \u306F 0 \u4EE5\u4E0A 360 \u672A\u6E80\uFF08${st.heading_deg}\uFF09`);
+  const [a0, a1] = b.watch_arc_deg;
+  if (!(a0 >= 0 && a0 < a1 && a1 <= 360)) bad(`watch_arc_deg \u306F 0 \u2264 \u59CB\u3081 < \u7D42\u308F\u308A \u2264 360\uFF08${a0}\u30FB${a1}\u30020 = \u5317\u30FB\u6642\u8A08\u56DE\u308A\uFF09`);
+  const lightM = ship.searchlight.range_m;
+  if (!(b.lookout_slow_m > 0 && b.lookout_slow_m <= b.lookout_fast_m && b.lookout_fast_m <= lightM)) bad(`0 < lookout_slow_m \u2264 lookout_fast_m \u2264 \u63A2\u7167\u706F\u306E range_m\uFF08${b.lookout_slow_m}\u30FB${b.lookout_fast_m}\u30FB${lightM} m\uFF09`);
+  for (const k of ["spot_rate_slow_per_s", "spot_rate_fast_per_s"]) if (!(b[k] > 0 && b[k] <= ALLY_RATE_MAX_PER_S)) bad(`${k} \u306F 0 \u3088\u308A\u5927\u304D\u304F ${ALLY_RATE_MAX_PER_S} \u4EE5\u4E0B\uFF08${b[k]}\uFF09`);
+  for (const k of ["light_react_s", "chase_fire_s"]) if (!(b[k] >= 0 && b[k] <= ALLY_TIMER_MAX_S)) bad(`${k} \u306F 0\u301C${ALLY_TIMER_MAX_S} \u79D2\uFF08${b[k]}\uFF09`);
+  if (!(ctx.patrolKt < b.fast_kt && b.fast_kt <= ctx.passKt)) bad(`\u7C73PT \u306E\u54E8\u6212\u306E\u901F\u3055 < fast_kt \u2264 \u822A\u904E\u306E\u901F\u3055\uFF08${ctx.patrolKt}\u30FB${b.fast_kt}\u30FB${ctx.passKt} kt\u3002\u5FCD\u3073\u5BC4\u308B PT \u306F\u9045\u3044\u898B\u5F35\u308A\u3001\u8D70\u308B PT \u306F\u901F\u3044\u898B\u5F35\u308A\uFF09`);
+  const sinkGunIndex = ship.guns.findIndex((g) => isFiniteNum4(g["pt_sink_chance"]));
+  const sink = ship.guns[sinkGunIndex]["pt_sink_chance"];
+  if (!(sink >= 0 && sink <= 1)) bad(`${b.ship_id} \u306E ${ship.guns[sinkGunIndex].id}.pt_sink_chance \u306F 0\u301C1\uFF08${sink}\uFF09`);
+  return {
+    shipId: b.ship_id,
+    labelJa: b.label_ja,
+    x: st.x_m,
+    y: st.y_m,
+    headingDeg: st.heading_deg,
+    arc0Deg: a0,
+    arc1Deg: a1,
+    guardLegs: b.guard_legs.slice(),
+    lookSlowM: b.lookout_slow_m,
+    lookSlow2: b.lookout_slow_m * b.lookout_slow_m,
+    rateSlow: b.spot_rate_slow_per_s,
+    lookFastM: b.lookout_fast_m,
+    lookFast2: b.lookout_fast_m * b.lookout_fast_m,
+    rateFast: b.spot_rate_fast_per_s,
+    fastMps: ktToMps(b.fast_kt),
+    lightReactS: b.light_react_s,
+    chaseFireS: b.chase_fire_s,
+    ringCallBeforeDawn: b.ring_call_before_dawn,
+    gunnery: gunneryParamsFromData(ship),
+    sinkGunIndex,
+    ptSinkChance: sink,
+    lengthM: ship.length_m,
+    beamM: ship.beam_m,
+    shellPoolSize: ctx.shellPoolSize
+  };
+}
+
+// ../wt-0176202/src/core/ally-geometry.ts
+var LEG2 = { x0: 0, y0: 0, x1: 0, y1: 0, x: 0, y: 0, headingDeg: 0 };
+var RAD = 180 / Math.PI;
+function allyArcMarginDeg(b, a0, a1) {
+  if (b >= a0 && b <= a1) return Math.min(b - a0, a1 - b);
+  return -Math.min(Math.abs(wrapDeg180(b - a0)), Math.abs(wrapDeg180(b - a1)));
+}
+function firstInsideT(x0, y0, x1, y1, ax, ay, r) {
+  const vx = x1 - x0;
+  const vy = y1 - y0;
+  const fx2 = x0 - ax;
+  const fy = y0 - ay;
+  const c = fx2 * fx2 + fy * fy - r * r;
+  if (c <= 0) return 0;
+  const a = vx * vx + vy * vy;
+  const b = 2 * (vx * fx2 + vy * fy);
+  const disc = b * b - 4 * a * c;
+  if (a === 0 || disc < 0) return NaN;
+  const t = (-b - Math.sqrt(disc)) / (2 * a);
+  return t >= 0 && t <= 1 ? t : NaN;
+}
+function segDistM(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const l2 = vx * vx + vy * vy;
+  const t = l2 > 0 ? clamp(((px - ax) * vx + (py - ay) * vy) / l2, 0, 1) : 0;
+  return Math.hypot(ax + vx * t - px, ay + vy * t - py);
+}
+var worst = () => ({ value: Infinity, leg: -1, dy: 0 });
+function low(w, v, leg, dy) {
+  if (v < w.value) {
+    w.value = v;
+    w.leg = leg;
+    w.dy = dy;
+  }
+}
+function allyStationMargins(p, g) {
+  const m = { guardIn: worst(), nonGuardOut: worst(), window: worst(), cap: worst(), lane: worst(), slack: worst() };
+  const steps = g.jitterYM > 0 ? Math.ceil(2 * g.jitterYM / g.stepM) : 0;
+  for (let i = 0; i < p.count; i++) {
+    const guard = g.guardLegs.includes(i);
+    for (let k = 0; k <= steps; k++) {
+      const dy = steps === 0 ? 0 : -g.jitterYM + 2 * g.jitterYM * k / steps;
+      ptStartAt(p, i, 0, dy, false, LEG2);
+      const { x0, y0, x1, y1 } = LEG2;
+      const t = firstInsideT(x0, y0, x1, y1, g.ax, g.ay, g.launchM);
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      const n = Math.max(1, Math.ceil(len / g.stepM));
+      let win = 0;
+      for (let q = 0; q <= n; q++) {
+        const u = q / n;
+        const px = x0 + (x1 - x0) * u;
+        const py = y0 + (y1 - y0) * u;
+        if (Math.hypot(px - g.x, py - g.y) > g.fastM) continue;
+        const mg = allyArcMarginDeg(bearingDeg(g.x, g.y, px, py), g.arc0Deg, g.arc1Deg);
+        if (!guard) {
+          low(m.nonGuardOut, -mg, i, dy);
+          continue;
+        }
+        low(m.guardIn, mg, i, dy);
+        if (!Number.isNaN(t) && u <= t && mg >= g.clearDeg) win += len / n;
+      }
+      if (guard) low(m.window, win, i, dy);
+      if (Number.isNaN(t)) continue;
+      const cx = x0 + (x1 - x0) * t;
+      const cy = y0 + (y1 - y0) * t;
+      if (guard) low(m.cap, segDistM(g.x, g.y, x0, y0, cx, cy) - g.padM, i, dy);
+      low(m.lane, segDistM(g.x, g.y, cx, cy, g.ax, g.ay), i, dy);
+      const ang = Math.abs(wrapDeg180(bearingDeg(cx, cy, g.ax, g.ay) - bearingDeg(cx, cy, g.x, g.y)));
+      low(m.slack, ang - Math.atan(g.halfLenM / Math.hypot(g.x - cx, g.y - cy)) * RAD - g.aimDeg - g.spreadDeg, i, dy);
+    }
+  }
+  return m;
+}
+
+// ../wt-0176202/src/config/ally-destroyer-mission-data.ts
+var ALLY_DESTROYER_BLOCK_KEY = "ally_destroyer";
+var at = (w) => `\u7DDA ${w.leg}\u30FB\u5357\u5317 ${w.dy >= 0 ? "+" : "\u2212"}${Math.abs(Math.round(w.dy))} m \u3067`;
+var fx = (v, d) => v.toFixed(d).replace(/^-/, "\u2212");
+function getAllyDestroyerParams(data, mission, ptBase, landing) {
+  const m = data.missionsSeed.missions.find((x2) => x2["id"] === mission.id);
+  const proto = m?.["v0_1_prototype"];
+  const raw = proto?.[ALLY_DESTROYER_BLOCK_KEY];
+  if (!m || !proto || raw === void 0) return null;
+  const id = mission.id;
+  const label = `${id}.v0_1_prototype.${ALLY_DESTROYER_BLOCK_KEY}`;
+  const bad = allyBad(label);
+  if (proto["landing"] === void 0 || !landing || !ptBase) return bad("\u505C\u6CCA\u3057\u3066\u63DA\u9678\u3059\u308B\u8F38\u9001\u8239\uFF08v0_1_prototype.landing\uFF09\u3068\u7C73PT \u306E\u968A\uFF08pt_boats\uFF09\u306E\u4EFB\u52D9\u3060\u3051");
+  const b = readAllyDestroyerBlock(raw, label);
+  const allies = m["allies"];
+  if (!Array.isArray(allies) || !allies.includes(b.ship_id)) bad(`ship_id\uFF08${b.ship_id}\uFF09\u304C ${id}.allies \u306B\u7121\u3044`);
+  const enemies = data.enemies.enemies;
+  const ship = enemies.find((e) => e["id"] === b.ship_id);
+  if (!isAllyShipRecord(ship)) return bad(`ship_id\uFF08${b.ship_id}\uFF09\u304C enemies.json \u306B guns\uFF08pt_sink_chance \u3092\u6301\u3064\u7832\u304C\u3061\u3087\u3046\u3069 1 \u3064\uFF09\u30FBsearchlight\uFF08null \u3067\u306A\u3044\uFF09\u30FBstarshell\u30FBlength_m\u30FBbeam_m \u4ED8\u304D\u3067\u7121\u3044`);
+  for (const g of b.guard_legs) if (!(g < ptBase.count)) bad(`guard_legs \u306E ${g} \u306F\u7C73PT \u306E\u7DDA\u306E\u6DFB\u5B57\uFF080\u301C${ptBase.count - 1}\u3002\u30CF\u30FC\u30C9\u306F\u8DB3\u3057\u305F\u7DDA\u3082\uFF09`);
+  const pt = enemies.find((e) => e["id"] === mission.enemyId);
+  const ctx = { patrolKt: pt["patrol"]["speed_kt"], passKt: pt["attack"]["pass_speed_kt"], shellPoolSize: ALLY_SHELL_POOL_SIZE };
+  const p = allyDestroyerParamsFromData(b, ship, ctx, label);
+  const { x, y } = p;
+  const edge = ptBase.edgeMarginM;
+  const W = mission.bounds.width;
+  const H = mission.bounds.height;
+  if (!(x >= edge && x <= W - edge && y >= edge && y <= H - edge)) bad(`station\uFF08${x}, ${y}\uFF09\u306F\u6D77\u57DF\u306E\u7E01\u304B\u3089 ${edge} m\uFF08\u7C73PT \u306E edge_margin_m\uFF09\u4EE5\u4E0A\u5185`);
+  const L = landing.params;
+  const anchorM = Math.hypot(x - L.x, y - L.y);
+  if (!(anchorM >= ALLY_ANCHOR_CLEAR_M)) bad(`station \u306F\u6CCA\u5730\u304B\u3089 ${ALLY_ANCHOR_CLEAR_M} m \u4EE5\u4E0A\uFF08${Math.round(anchorM)} m\uFF09`);
+  const beachY = H - LANDING_BEACH_MARGIN_M;
+  if (!(beachY - y >= ALLY_BEACH_CLEAR_M)) bad(`station \u306F\u6D5C\u306E\u7DDA\uFF08y ${beachY}\uFF09\u304B\u3089 ${ALLY_BEACH_CLEAR_M} m \u4EE5\u4E0A\u6C96\uFF08${Math.round(beachY - y)} m\uFF09`);
+  const rp = mission.returnPoint;
+  const ringM = Math.hypot(x - rp.x, y - rp.y) - rp.radiusM;
+  if (!(ringM >= ALLY_RING_CLEAR_M)) bad(`station \u306F\u5E30\u6295\u306E\u8F2A\u306E\u7E01\u304B\u3089 ${ALLY_RING_CLEAR_M} m \u4EE5\u4E0A\u5916\uFF08${Math.round(ringM)} m\uFF09`);
+  const ps = mission.playerStart;
+  const startM = Math.hypot(x - ps.x, y - ps.y);
+  if (!(startM >= ALLY_START_CLEAR_M)) bad(`station \u306F\u81EA\u8247\u306E\u51FA\u767A\u70B9\u304B\u3089 ${ALLY_START_CLEAR_M} m \u4EE5\u4E0A\uFF08${Math.round(startM)} m\uFF09`);
+  const tp = landing.torpedo;
+  const padM = (p.gunnery.searchlight.onDelayS + p.lightReactS) * ptBase.patrolMps * ptBase.timeScale;
+  const spreadDeg = tp.spacingDeg * (tp.n - 1) / 2;
+  const mg = allyStationMargins(ptBase, {
+    x,
+    y,
+    arc0Deg: p.arc0Deg,
+    arc1Deg: p.arc1Deg,
+    guardLegs: p.guardLegs,
+    ax: L.x,
+    ay: L.y,
+    launchM: tp.launchM,
+    fastM: p.lookFastM,
+    padM,
+    halfLenM: p.lengthM / 2,
+    aimDeg: tp.aimDeg,
+    spreadDeg,
+    jitterYM: mission.night ? mission.night.enemyJitterYM : 0,
+    stepM: ALLY_CHECK_STEP_M,
+    clearDeg: ALLY_FAN_CLEAR_DEG
+  });
+  const arcJa = `watch_arc_deg\uFF08${p.arc0Deg}\u301C${p.arc1Deg}\xB0\uFF09`;
+  if (!(mg.guardIn.value >= ALLY_FAN_CLEAR_DEG)) bad(`${arcJa}: \u898B\u5F35\u308B\u7DDA\uFF08guard_legs\uFF09\u306E lookout_fast_m\uFF08${p.lookFastM} m\uFF09\u306E\u5185\u306E\u70B9\u306F\u6247\u306E\u5185\u306B ${ALLY_FAN_CLEAR_DEG}\xB0 \u4EE5\u4E0A\uFF08${at(mg.guardIn)} ${fx(mg.guardIn.value, 1)}\xB0\u3002V-A2\uFF09`);
+  if (!(mg.window.value > 0)) bad(`${arcJa}: \u898B\u5F35\u308B\u7DDA\u306E\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\u306E\u70B9\u3088\u308A\u524D\u306B lookout_fast_m\uFF08${p.lookFastM} m\uFF09\u306E\u5185\u3067\u6247\u306E\u5185\u306B ${ALLY_FAN_CLEAR_DEG}\xB0 \u4EE5\u4E0A\u306E\u90E8\u5206\u304C\u8981\u308B\uFF08${at(mg.window)} 0 m\uFF1D\u8D70\u308B PT \u304C\u6247\u306B\u5165\u3089\u306A\u3044\u3002V-A2\uFF09`);
+  if (!(mg.nonGuardOut.value >= ALLY_FAN_CLEAR_DEG)) bad(`${arcJa}: \u898B\u5F35\u3089\u306A\u3044\u7DDA\u306E lookout_fast_m\uFF08${p.lookFastM} m\uFF09\u306E\u5185\u306E\u70B9\u306F\u6247\u306E\u5916\u306B ${ALLY_FAN_CLEAR_DEG}\xB0 \u4EE5\u4E0A\uFF08${at(mg.nonGuardOut)} ${fx(mg.nonGuardOut.value, 1)}\xB0\uFF1D\u81EA\u8247\u306E\u4ED5\u4E8B\u306E PT \u3092\u536F\u6708\u304C\u898B\u3064\u3051\u308B\u3002V-A2\uFF09`);
+  if (!(mg.cap.value >= p.lookSlowM)) bad(`lookout_slow_m\uFF08${p.lookSlowM} m\uFF09\u306F\u3001\u898B\u5F35\u308B\u7DDA\u306E\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\u306E\u70B9\uFF08\u3068\u305D\u306E\u524D\uFF09\u304B\u3089 station \u307E\u3067 \u2212 \u70B9\u706F\u3068\u53CD\u5FDC\u306E ${Math.round(padM)} m\uFF08on_delay_s + light_react_s \u306E\u9593\u306B\u54E8\u6212\u306E\u901F\u3055\u3067\u9032\u3080 m\uFF09\u306E ${Math.round(mg.cap.value)} m \u4EE5\u4E0B\uFF08${at(mg.cap)}\uFF1D\u5FCD\u3073\u5BC4\u308B PT \u306F\u305D\u306E\u6589\u5C04\u306E\u524D\u306B\u7167\u3089\u3055\u308C\u306A\u3044\u3002V-A3\uFF09`);
+  if (!(mg.lane.value >= ALLY_LANE_CLEAR_M)) bad(`station \u306F\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\u306E\u9053\uFF08\u6589\u5C04\u306E\u70B9 \u2192 \u6CCA\u5730\uFF09\u304B\u3089 ${ALLY_LANE_CLEAR_M} m \u4EE5\u4E0A\uFF08${at(mg.lane)} ${Math.round(mg.lane.value)} m\u3002V-A4\uFF09`);
+  if (!(mg.slack.value >= 0)) bad(`\u6C17\u3065\u304B\u308C\u3066\u3044\u306A\u3044\u6589\u5C04\u306E\u70B9\u304B\u3089\u898B\u305F\u6CCA\u5730\u3068 station \u306E\u89D2\u306F\u3001\u536F\u6708\u306E\u534A\u9577\u306E\u898B\u304B\u3051\u306E\u89D2\u30FB\u72D9\u3044\u306E\u8AA4\u5DEE aim_error_deg\uFF08${tp.aimDeg}\xB0\uFF09\u30FB\u6589\u5C04\u306E\u5916\u306E\u9B5A\u96F7\uFF08salvo_spacing_deg \xD7 (salvo_count \u2212 1) / 2 = ${spreadDeg}\xB0\uFF09\u306E\u548C\u4EE5\u4E0A\uFF08${at(mg.slack)} \u4F59\u88D5 ${fx(mg.slack.value, 2)}\xB0\u3002V-A5\uFF09`);
+  return p;
+}
+function allyDestroyerSetupPart(data, mission, ptBase, landing, o) {
+  const p = o.allyOff ? null : getAllyDestroyerParams(data, mission, ptBase, landing);
+  return p ? { allyDestroyer: p } : {};
+}
+
+// ../wt-0176202/src/config/step-config.ts
+var FIXED_STEP_S = 1 / 60;
+
+// ../wt-0176202/src/core/evac-data.ts
+var EVAC_EVENT_ID = "unten_air_raid";
+var EVAC_MAX_FLIGHTS = 3;
+var EVAC_MAX_WAVES = 4;
+var SHELTER_CAVE = 0;
+var SHELTER_COVER = 1;
+var EVAC_KEYS = ["boat", "label_ja", "group_size", "start_group", "groups", "moored_gap_m", "follow", "shelter_ring_m", "hide_max_kt", "haul_s", "launch_stick", "slot_abeam_m", "slot_arrive_m", "shelters", "ai", "flash_reveal", "source"];
+var EVAC_NUM_KEYS = ["group_size", "start_group", "moored_gap_m", "shelter_ring_m", "hide_max_kt", "haul_s", "launch_stick", "slot_abeam_m", "slot_arrive_m"];
+var GROUP_KEYS = ["id", "label_ja", "place_ja", "x_m", "y_m", "heading_deg"];
+var SHELTER_KEYS = ["id", "label_ja", "kind", "x_m", "y_m", "slots", "exit_heading_deg"];
+var FOLLOW_KEYS = ["gap_m", "trail_step_m", "catch_up_gain_per_s", "heading_deadband_m", "source"];
+var AI_KEYS = ["cast_off_s", "pick_s", "turn_max_deg", "full_p", "wall_m", "wall_turn_deg", "look_m", "found_react_s", "dodge", "source"];
+var AI_NUM_KEYS = ["pick_s", "turn_max_deg", "full_p", "wall_m", "wall_turn_deg", "look_m", "found_react_s"];
+var DODGE_KEYS = ["success", "turn_deg", "hold_s"];
+var RAID_KEYS = ["waves", "flights", "announce_lead_s", "from_bearing_deg", "flight_offsets_deg", "spawn_m", "flights_per_group_max", "bearing_fix_deg", "cover_reveal_chance", "passes_max", "survivor_quota", "survivors_total", "historical_survivors", "north_shore_label_ja", "source"];
+var RAID_NUM_KEYS = ["flights", "announce_lead_s", "from_bearing_deg", "spawn_m", "flights_per_group_max", "cover_reveal_chance", "passes_max", "survivor_quota", "survivors_total", "historical_survivors"];
+var EVAC_SORTIE_KEYS = ["spawn_m", "run_radius_m", "first_run_s", "run_gap_s", "wave_rest_s", "leave_s", "spawn_offsets_deg", "wave_rotate_deg", "aim_turn_min_deg_s"];
+var isObj6 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isNum4 = (v) => typeof v === "number" && Number.isFinite(v);
+var isStr = (v) => typeof v === "string" && v.trim() !== "";
+var badAt2 = (label) => (msg) => {
+  throw new Error(`${label}: ${msg}`);
+};
+function checkRecord(r, keys, nums5, strs, bad, extraSource) {
+  for (const k of Object.keys(r)) {
+    if (keys.includes(k)) continue;
+    if (extraSource && k.endsWith("_source") && isStr(r[k])) continue;
+    bad(`\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F ${keys.join(" / ")}${extraSource ? " \u3068 *_source \u306E\u6587" : ""}\uFF09`);
+  }
+  for (const k of nums5) if (!isNum4(r[k])) bad(`${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  for (const k of strs) if (!isStr(r[k])) bad(`${k} \u304C\u7121\u3044\u304B\u7A7A`);
+}
+function evacBlockFromData(raw, label) {
+  const bad = badAt2(label);
+  if (!isObj6(raw)) return bad("object \u3067\u306A\u3044");
+  checkRecord(raw, EVAC_KEYS, EVAC_NUM_KEYS, ["boat", "label_ja", "source"], bad, true);
+  if (typeof raw["flash_reveal"] !== "boolean") bad("flash_reveal \u306F true \u304B false");
+  const groups = raw["groups"];
+  if (!Array.isArray(groups) || groups.length === 0) bad("groups \u306F\u7A7A\u3067\u306A\u3044\u914D\u5217");
+  groups.forEach((g, i) => {
+    const b = badAt2(`${label}.groups[${i}]`);
+    if (!isObj6(g)) return b("object \u3067\u306A\u3044");
+    checkRecord(g, GROUP_KEYS, ["x_m", "y_m", "heading_deg"], ["id", "label_ja", "place_ja"], b, false);
+  });
+  const shelters = raw["shelters"];
+  if (!Array.isArray(shelters) || shelters.length === 0) bad("shelters \u306F\u7A7A\u3067\u306A\u3044\u914D\u5217");
+  shelters.forEach((s, i) => {
+    const b = badAt2(`${label}.shelters[${i}]`);
+    if (!isObj6(s)) return b("object \u3067\u306A\u3044");
+    checkRecord(s, SHELTER_KEYS, ["x_m", "y_m", "slots", "exit_heading_deg"], ["id", "label_ja"], b, false);
+    if (s["kind"] !== "cave" && s["kind"] !== "cover") b(`kind \u306F cave \u304B cover\uFF08${String(s["kind"])}\uFF09`);
+  });
+  const follow = raw["follow"];
+  if (!isObj6(follow)) return bad("follow \u304C object \u3067\u306A\u3044");
+  checkRecord(follow, FOLLOW_KEYS, ["gap_m", "trail_step_m", "catch_up_gain_per_s", "heading_deadband_m"], ["source"], badAt2(`${label}.follow`), false);
+  const ai = raw["ai"];
+  if (!isObj6(ai)) return bad("ai \u304C object \u3067\u306A\u3044");
+  const ba = badAt2(`${label}.ai`);
+  checkRecord(ai, AI_KEYS, AI_NUM_KEYS, ["source"], ba, false);
+  const co = ai["cast_off_s"];
+  if (!Array.isArray(co) || co.length !== 2 || !co.every(isNum4)) ba("cast_off_s \u306F 2 \u3064\u306E\u6570 [\u5C0F, \u5927]");
+  const dodge = ai["dodge"];
+  if (!isObj6(dodge)) return ba("dodge \u304C object \u3067\u306A\u3044");
+  checkRecord(dodge, DODGE_KEYS, DODGE_KEYS, [], badAt2(`${label}.ai.dodge`), false);
+  return raw;
+}
+function evacRaidBlockFromData(raw, label) {
+  const bad = badAt2(label);
+  if (!isObj6(raw)) return bad("object \u3067\u306A\u3044");
+  checkRecord(raw, RAID_KEYS, RAID_NUM_KEYS, ["north_shore_label_ja", "source"], bad, true);
+  const waves = raw["waves"];
+  if (!Array.isArray(waves) || waves.length === 0) bad("waves \u306F\u7A7A\u3067\u306A\u3044\u914D\u5217");
+  waves.forEach((w, i) => {
+    const b = badAt2(`${label}.waves[${i}]`);
+    if (!isObj6(w)) return b("object \u3067\u306A\u3044");
+    checkRecord(w, ["announce_s", "planes"], ["announce_s", "planes"], [], b, false);
+  });
+  for (const k of ["flight_offsets_deg", "bearing_fix_deg"]) {
+    const a = raw[k];
+    if (!Array.isArray(a) || a.length === 0 || !a.every(isNum4)) bad(`${k} \u306F\u7A7A\u3067\u306A\u3044\u6570\u306E\u914D\u5217`);
+  }
+  return raw;
+}
+function evacEventFromData(raw, label) {
+  const bad = badAt2(`${label}\uFF08risk_events.json \u306E ${EVAC_EVENT_ID}\uFF09`);
+  if (!isObj6(raw) || raw["id"] !== EVAC_EVENT_ID || !isObj6(raw["params"])) return bad("\u8A18\u9332\u304B params \u304C\u7121\u3044");
+  const p = raw["params"];
+  for (const k of Object.keys(p)) if (k !== "sortie" && k !== "source") bad(`params \u306B\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F sortie\u30FBsource\uFF09`);
+  if (!isStr(p["source"])) bad("params.source\uFF08design \u306E\u6839\u62E0\u306E\u6587\uFF09\u304C\u7121\u3044");
+  const s = p["sortie"];
+  if (!isObj6(s)) return bad("params.sortie\uFF081 \u7DE8\u968A\u306E\u6BB5\u3068\u6642\u9593\uFF09\u304C\u7121\u3044");
+  for (const k of Object.keys(s)) if (!EVAC_SORTIE_KEYS.includes(k)) bad(`params.sortie \u306B\u77E5\u3089\u306A\u3044\u9375 ${k}\uFF08\u9375\u306F ${EVAC_SORTIE_KEYS.join(" / ")}\uFF09`);
+  for (const k of EVAC_SORTIE_KEYS) if (k !== "spawn_offsets_deg" && !isNum4(s[k])) bad(`params.sortie.${k} \u304C\u7121\u3044\u304B\u6709\u9650\u306E\u6570\u3067\u306A\u3044`);
+  const offs = s["spawn_offsets_deg"];
+  if (!Array.isArray(offs) || !offs.every(isNum4)) bad("params.sortie.spawn_offsets_deg \u306F\u6570\u306E\u914D\u5217");
+  return raw;
+}
+
+// ../wt-0176202/src/core/evac-params.ts
+function evacTrailLen(groupSize, gapM, trailStepM) {
+  return Math.ceil((groupSize - 1) * gapM / trailStepM) + 2;
+}
+function evacParamsFromData(b, homeShelter) {
+  return {
+    boatId: b.boat,
+    labelJa: b.label_ja,
+    groupSize: b.group_size,
+    startGroup: b.start_group - 1,
+    groups: b.groups.map((g) => ({ id: g.id, labelJa: g.label_ja, placeJa: g.place_ja, x: g.x_m, y: g.y_m, headingDeg: g.heading_deg })),
+    mooredGapM: b.moored_gap_m,
+    followGapM: b.follow.gap_m,
+    trailStepM: b.follow.trail_step_m,
+    catchUpGainPerS: b.follow.catch_up_gain_per_s,
+    headingDeadbandM: b.follow.heading_deadband_m,
+    trailLen: evacTrailLen(b.group_size, b.follow.gap_m, b.follow.trail_step_m),
+    shelterRingM: b.shelter_ring_m,
+    hideMaxMps: ktToMps(b.hide_max_kt),
+    haulS: b.haul_s,
+    launchStick: b.launch_stick,
+    slotAbeamM: b.slot_abeam_m,
+    slotArriveM: b.slot_arrive_m,
+    shelters: b.shelters.map((s) => ({ id: s.id, labelJa: s.label_ja, kind: s.kind === "cave" ? SHELTER_CAVE : SHELTER_COVER, x: s.x_m, y: s.y_m, slots: s.slots, exitHeadingDeg: s.exit_heading_deg })),
+    homeShelter,
+    castOffMinS: b.ai.cast_off_s[0],
+    castOffMaxS: b.ai.cast_off_s[1],
+    pickS: b.ai.pick_s,
+    turnMaxDeg: b.ai.turn_max_deg,
+    fullP: b.ai.full_p,
+    wallM: b.ai.wall_m,
+    wallTurnDeg: b.ai.wall_turn_deg,
+    lookM: b.ai.look_m,
+    foundReactS: b.ai.found_react_s,
+    dodgeSuccess: b.ai.dodge.success,
+    dodgeTurnDeg: b.ai.dodge.turn_deg,
+    dodgeHoldS: b.ai.dodge.hold_s,
+    flashReveal: b.flash_reveal
+  };
+}
+function evacRaidParamsFromData(r, flights, coverRevealChance, passesMax, bounds) {
+  return {
+    waves: r.waves.map((w) => ({ announceS: w.announce_s, planes: w.planes })),
+    flights,
+    announceLeadS: r.announce_lead_s,
+    fromBearingDeg: r.from_bearing_deg,
+    flightOffsetsDeg: r.flight_offsets_deg.slice(),
+    spawnM: r.spawn_m,
+    flightsPerGroupMax: r.flights_per_group_max,
+    bearingFixDeg: r.bearing_fix_deg.slice(),
+    coverRevealChance,
+    passesMax,
+    survivorQuota: r.survivor_quota,
+    survivorsTotal: r.survivors_total,
+    historicalSurvivors: r.historical_survivors,
+    northShoreLabelJa: r.north_shore_label_ja,
+    centerX: bounds.width / 2,
+    centerY: bounds.height / 2
+  };
+}
+
+// ../wt-0176202/src/config/evac-mission-data.ts
+var EVAC_CHECK_MOORED_CLEAR_M = 20;
+var EVAC_CHECK_SHELTER_GAP_M = 100;
+var EVAC_CHECK_WAVE_MARGIN_S = 5;
+var EVAC_CHECK_DRIFT_BY_S = 1500;
+var EVAC_CHECK_DRIFT_WAIT_S = 1.5;
+var EVAC_CHECK_BEARING_FIX_TOL_DEG = 1;
+var EVAC_CHECK_PASSES_MAX = 3;
+var EVAC_EXCLUSIVE_KEYS = ["enemy_start", "barges", "pt_boats", "convoy", "escort", "transport", "shore_battery", "enemy_aircraft", "friendly_aircraft", "storm", "patrol_air", "landing", "ally_destroyer"];
+var EVAC_ONLY_KEYS = ["evac_raid", "fuel_free_until_s", "day_start"];
+var isNum5 = (v) => typeof v === "number" && Number.isFinite(v);
+var isInt = (v, min, max = Infinity) => Number.isInteger(v) && v >= min && v <= max;
+var isProb = (v) => v >= 0 && v <= 1;
+function columnPoint(x, y, headingDeg, k, gap) {
+  const h = headingDeg * Math.PI / 180;
+  return { x: x - Math.sin(h) * k * gap, y: y + Math.cos(h) * k * gap };
+}
+function getEvacParams(data, missionId, hard = false) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === missionId);
+  const proto = m?.["v0_1_prototype"];
+  if (!m || !proto) return null;
+  const at2 = `${missionId}.v0_1_prototype`;
+  if (proto["evac"] === void 0) {
+    for (const k of EVAC_ONLY_KEYS) if (proto[k] !== void 0) throw new Error(`${at2}.${k} \u306F\u7A7A\u8972\u4E0B\u306E\u9000\u907F\uFF08evac\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+    return null;
+  }
+  const bad = (v, msg) => {
+    throw new Error(`${at2}.${msg}\uFF08${v}\uFF09`);
+  };
+  const mission = getPrototypeMission(data, missionId, hard);
+  const b = evacBlockFromData(proto["evac"], `${at2}.evac`);
+  if (proto["evac_raid"] === void 0) bad("V-E5", "evac_raid\uFF08\u6CE2\u3068\u7DE8\u968A\uFF09\u304C\u7121\u3044");
+  const r = evacRaidBlockFromData(proto["evac_raid"], `${at2}.evac_raid`);
+  const ev = evacEventFromData(data.riskEvents.events.find((e) => e["id"] === EVAC_EVENT_ID), `${missionId} \u306E\u6E2F\u306E\u7A7A\u8972`);
+  for (const k of EVAC_EXCLUSIVE_KEYS) if (proto[k] !== void 0) bad("V-E11", `${k} \u3068 evac \u306F\u540C\u5C45\u3057\u306A\u3044\uFF08\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\u3002\u53F3\u7AEF\u306E\u6BB5 3 \u306F\uFF3B\u5207\u66FF\uFF3D\uFF09`);
+  if (mission.mainWeapon !== "none") bad("V-E11", `main_weapon \u306F none\uFF08\u72D9\u3046\u8266\u304C\u3044\u306A\u3044\u3002${mission.mainWeapon}\uFF09`);
+  if (!mission.hazards.includes(EVAC_EVENT_ID)) bad("V-E11", `hazards \u306B ${EVAC_EVENT_ID} \u304C\u8981\u308B\uFF08Briefing \u306E\u300C\u5371\u967A\u300D\uFF09`);
+  if (m["dawn_air"]?.["play_as"] !== "enemy" || !mission.dawnStrike) bad("V-E11", "dawn_strike: evac \u306F dawn_air.play_as \u304C enemy \u3067 dawn_strike\uFF08\u6C7A\u7740\u306E\u5F8C\u306E\u6575\u6A5F 4 \u6A5F\uFF09\u306E\u3042\u308B\u4EFB\u52D9\u3060\u3051");
+  if (b.boat !== mission.playerBoatId) bad("V-E11", `evac.boat\uFF08${b.boat}\uFF09\u306F player_boat\uFF08${mission.playerBoatId}\uFF09\u3068\u540C\u3058\uFF08\u5EA7\u5E2D\uFF1D\u64CD\u4F5C\u4E2D\u306E\u968A\u9577\u8247\uFF09`);
+  const boat = getBoatRecord(data, b.boat);
+  if (boat["smoke_generator"] !== false) bad("V-E11", `evac.boat\uFF08${b.boat}\uFF09\u306F smoke_generator false\uFF08\u53F3\u7AEF\u306E\u6BB5 3 \u306F\uFF3B\u5207\u66FF\uFF3D\uFF09`);
+  const plane = data.enemies.enemies.find((e) => e["id"] === mission.enemyId);
+  if (!isStrikeAircraftRecord(plane)) return bad("V-E11", `enemies\uFF08${mission.enemyId}\uFF09\u304C enemies.json \u306B strike\uFF08run_speed_kt / release_altitude_m / bomb\uFF09\u4ED8\u304D\u3067\u7121\u3044`);
+  const ids = proto["enemies"];
+  if (ids.length !== 1 || mission.dawnStrike.aircraft_id !== plane.id) bad("V-E11", `enemies \u306F\u7A7A\u8972\u306E\u6A5F\u4F53 1 \u3064\uFF08${ids.join("\u30FB")}\uFF09\u3067 dawn_strike.aircraft_id\uFF08${mission.dawnStrike.aircraft_id}\uFF09\u3068\u540C\u3058`);
+  const dayStart = proto["day_start"] ?? false;
+  if (typeof dayStart !== "boolean") bad("V-E11", "day_start \u306F true \u304B false");
+  const w = data.hitRateModel.world;
+  const halfLen = boat["length_m"] * w.hit_scale / 2;
+  const hull = { halfLengthM: halfLen, halfBeamM: boat["beam_m"] * w.hit_scale / 2, boundsMarginM: boat["length_m"] * w.sprite_scale / 2 };
+  const flights = readHardNum(proto, "evac_flights", hard, r.flights, at2);
+  const coverChance = readHardNum(proto, "evac_cover_reveal_chance", hard, r.cover_reveal_chance, at2);
+  const passesMax = readHardNum(proto, "evac_passes_max", hard, r.passes_max, at2);
+  for (const [k, v] of [["evac_raid.passes_max", r.passes_max], ["hard.evac_passes_max", passesMax]]) {
+    if (!isInt(v, 1, EVAC_CHECK_PASSES_MAX)) bad("V-E13", `${k} \u306F 1\u301C${EVAC_CHECK_PASSES_MAX} \u306E\u6574\u6570\uFF081 \u7DE8\u968A\u304C\u98DB\u3076\u7206\u6483\u306E\u56DE\u6570\u30021 \u306F\u6E08\u307F\u306E\u5F8C\u306B\u6765\u306A\u3044\u3002${v}\uFF09`);
+  }
+  const home = checkPlaces(b, mission, hull.boundsMarginM, bad);
+  checkRaid(b, r, flights, coverChance, ev.params.sortie.run_radius_m, ev.params.sortie.spawn_m, plane.strike.bomb.blast_radius_m, halfLen, bad);
+  const counts = [...new Set(r.waves.map((x) => x.planes))].sort((p, q) => p - q);
+  const sorties = counts.map((n) => {
+    try {
+      const block = { aircraft_id: plane.id, count: n, count_source: "evac_raid.waves", from_bearing_deg: r.from_bearing_deg, escort_target_planes: [], source: "evac_raid" };
+      return airStrikeParamsFromData(plane, { id: EVAC_EVENT_ID, params: ev.params.sortie }, block, w.time_scale, hull, null, mission.bounds, bearingJa(r.from_bearing_deg));
+    } catch (e) {
+      const msg = (e instanceof Error ? e.message : String(e)).replace(/^夜明けの空襲（[^）]*）: /, "").replace(/^夜明けの空襲: /, "");
+      throw new Error(`${missionId} \u306E\u6E2F\u306E\u7A7A\u8972\uFF08risk_events.json \u306E ${EVAC_EVENT_ID}.params.sortie \u306E ${n} \u6A5F\u306E\u7DE8\u968A\uFF09: ${msg}`);
+    }
+  });
+  checkTiming(r, sorties, mission.durationS, bad);
+  const fuelFree = proto["fuel_free_until_s"];
+  if (!isNum5(fuelFree) || fuelFree !== mission.durationS) bad("V-E10", `fuel_free_until_s\uFF08${String(fuelFree)}\uFF09\u306F duration_s\uFF08${mission.durationS}\uFF09\u3068\u540C\u3058`);
+  const idleS = mission.fuelAllotmentGal / getBoatFuelCurve(data, b.boat).idleGph * 3600 / w.time_scale;
+  if (!(fuelFree + idleS + EVAC_CHECK_DRIFT_WAIT_S < EVAC_CHECK_DRIFT_BY_S)) bad("V-E10", `fuel_allotment_gal\uFF08${mission.fuelAllotmentGal}\uFF09: fuel_free_until_s \uFF0B \u30A2\u30A4\u30C9\u30EB\u3067\u5C3D\u304D\u308B ${idleS.toFixed(1)} \u79D2 \uFF0B ${EVAC_CHECK_DRIFT_WAIT_S} \u306F ${EVAC_CHECK_DRIFT_BY_S} \u672A\u6E80\uFF08\u6B62\u307E\u3063\u3066\u5F85\u3064\u3068\u6F02\u6D41\u3059\u308B\uFF09`);
+  return { params: evacParamsFromData(b, home), raid: evacRaidParamsFromData(r, flights, coverChance, passesMax, mission.bounds), sorties, fuelFreeUntilS: fuelFree, dayStart };
+}
+function readHardNum(proto, key, hard, normal, at2) {
+  const h = proto["hard"];
+  const v = h?.[key];
+  if (v === void 0) return normal;
+  if (!isNum5(v)) throw new Error(`${at2}.hard.${key} \u306F\u6709\u9650\u306E\u6570\uFF08V-E12\uFF09`);
+  return hard ? v : normal;
+}
+function checkPlaces(b, mission, marginM, bad) {
+  const W = mission.bounds.width;
+  const H = mission.bounds.height;
+  const inside = (x, y) => x >= marginM && x <= W - marginM && y >= marginM && y <= H - marginM;
+  const ring = b.shelter_ring_m;
+  if (!(ring > 0)) bad("V-E12", `evac.shelter_ring_m \u306F\u6B63\uFF08${ring}\uFF09`);
+  if (!isInt(b.group_size, 1)) bad("V-E9", `evac.group_size \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570\uFF08${b.group_size}\uFF09`);
+  const ids = /* @__PURE__ */ new Set();
+  b.shelters.forEach((s, i) => {
+    const at2 = `evac.shelters[${i}]\uFF08${s.label_ja}\uFF09`;
+    if (ids.has(s.id)) bad("V-E8", `${at2}.id \u304C\u91CD\u8907\uFF08${s.id}\uFF09`);
+    ids.add(s.id);
+    if (!inside(s.x_m, s.y_m)) bad("V-E1", `${at2} \u306F\u6D77\u57DF\u306E\u7E01\u304B\u3089 ${marginM} m \u4EE5\u4E0A\u5185`);
+    if (!isInt(s.slots, b.group_size)) bad("V-E4", `${at2}.slots \u306F group_size\uFF08${b.group_size}\uFF09\u4EE5\u4E0A\u306E\u6574\u6570\uFF08\u6E80\u54E1\u306E\u968A\u304C 1 \u3064\u5165\u308B\u3002${s.slots}\uFF09`);
+    if (s.kind === "cave") for (let k = 1; k < b.group_size; k++) {
+      const p = columnPoint(s.x_m, s.y_m, s.exit_heading_deg, k, b.moored_gap_m);
+      if (!inside(p.x, p.y)) bad("V-E1", `${at2} \u304B\u3089\u51FA\u305F\u7E26\u5217\uFF08exit_heading_deg ${s.exit_heading_deg}\u30FBmoored_gap_m\uFF09\u306E ${k + 1} \u96BB\u76EE\u304C\u6D77\u57DF\u306E\u7E01\u304B\u3089 ${marginM} m \u4EE5\u4E0A\u5185\u306B\u7121\u3044`);
+    }
+    for (let j2 = 0; j2 < i; j2++) {
+      const o = b.shelters[j2];
+      const dx = s.x_m - o.x_m;
+      const dy = s.y_m - o.y_m;
+      const gap = 2 * ring + EVAC_CHECK_SHELTER_GAP_M;
+      if (dx * dx + dy * dy < gap * gap) bad("V-E3", `${at2} \u3068 ${o.label_ja} \u306E\u4E2D\u5FC3\u306F 2 \xD7 shelter_ring_m \uFF0B ${EVAC_CHECK_SHELTER_GAP_M}\uFF08${gap} m\uFF09\u4EE5\u4E0A\u96E2\u308C\u308B`);
+    }
+  });
+  const total = b.group_size * b.groups.length;
+  const slots = b.shelters.reduce((a, s) => a + s.slots, 0);
+  if (!(slots < total)) bad("V-E4", `evac.shelters \u306E\u67A0\u306E\u5408\u8A08\uFF08${slots}\uFF09\u306F\u5168\u96BB\uFF08${total}\uFF09\u3088\u308A\u5C11\u306A\u3044\uFF08\u6700\u4F4E 1 \u968A\u306F\u96A0\u305B\u306A\u3044\uFF09`);
+  const gids = /* @__PURE__ */ new Set();
+  b.groups.forEach((g, i) => {
+    const at2 = `evac.groups[${i}]\uFF08${g.label_ja}\uFF09`;
+    if (gids.has(g.id)) bad("V-E9", `${at2}.id \u304C\u91CD\u8907\uFF08${g.id}\uFF09`);
+    gids.add(g.id);
+    for (let k = 0; k < b.group_size; k++) {
+      const p = columnPoint(g.x_m, g.y_m, g.heading_deg, k, b.moored_gap_m);
+      if (!inside(p.x, p.y)) bad("V-E1", `${at2} \u306E\u505C\u6CCA\u306E\u7E26\u5217\u306E ${k + 1} \u96BB\u76EE\u304C\u6D77\u57DF\u306E\u7E01\u304B\u3089 ${marginM} m \u4EE5\u4E0A\u5185\u306B\u7121\u3044`);
+      for (const s of b.shelters) {
+        const dx = p.x - s.x_m;
+        const dy = p.y - s.y_m;
+        const clear = ring + EVAC_CHECK_MOORED_CLEAR_M;
+        if (dx * dx + dy * dy < clear * clear) bad("V-E2", `${at2} \u306E ${k + 1} \u96BB\u76EE\u306F ${s.label_ja} \u306E\u8F2A\u306E\u7E01\u304B\u3089 ${EVAC_CHECK_MOORED_CLEAR_M} m \u4EE5\u4E0A\u5916\uFF08\u4E2D\u5FC3\u304B\u3089 ${clear} m \u4EE5\u4E0A\uFF09`);
+      }
+    }
+  });
+  if (!isInt(b.start_group, 1, b.groups.length)) bad("V-E9", `evac.start_group \u306F 1\u301C${b.groups.length} \u306E\u6574\u6570\uFF08${b.start_group}\uFF09`);
+  const g0 = b.groups[b.start_group - 1];
+  const ps = mission.playerStart;
+  if (ps.x !== g0.x_m || ps.y !== g0.y_m || ps.headingDeg !== g0.heading_deg) bad("V-E9", `player_start \u306F\u6700\u521D\u306B\u64CD\u4F5C\u3059\u308B\u968A\uFF08${g0.label_ja}\uFF09\u306E\u968A\u9577\u8247\u306E\u505C\u6CCA\u5730\u30FB\u8247\u9996\u3068\u540C\u3058`);
+  const rp = mission.returnPoint;
+  const home = b.shelters.findIndex((s) => s.x_m === rp.x && s.y_m === rp.y);
+  if (home < 0 || b.shelters[home].kind !== "cave") bad("V-E8", `return_point\uFF08${rp.x}, ${rp.y}\uFF09\u306F evac.shelters \u306E\u58D5\uFF08kind cave\uFF09\u306E 1 \u3064\u3068\u540C\u3058\u70B9`);
+  if (rp.radiusM !== ring) bad("V-E8", `return_point.radius_m\uFF08${rp.radiusM}\uFF09\u306F evac.shelter_ring_m\uFF08${ring}\uFF09\u3068\u540C\u3058`);
+  return home;
+}
+function checkRaid(b, r, flights, coverChance, runRadiusM, sortieSpawnM, blastM, halfLenM, bad) {
+  if (!isInt(r.waves.length, 1, EVAC_MAX_WAVES)) bad("V-E5", `evac_raid.waves \u306F 1\u301C${EVAC_MAX_WAVES} \u6CE2\uFF08\u4E71\u6570\u306E\u7CFB\u5217 +32\u301C+43\u3002${r.waves.length}\uFF09`);
+  r.waves.forEach((x, i) => {
+    if (!isInt(x.planes, 1, AIR_STRIKE_MAX_PLANES)) bad("V-E5", `evac_raid.waves[${i}].planes \u306F 1\u301C${AIR_STRIKE_MAX_PLANES} \u306E\u6574\u6570\uFF08\u51CD\u7D50\u306E\u7A7A\u8972\u306E core \u306E\u4E0A\u9650\u3002${x.planes}\uFF09`);
+  });
+  for (const [k, v] of [["evac_raid.flights", r.flights], ["hard.evac_flights", flights]]) {
+    if (!isInt(v, 1, EVAC_MAX_FLIGHTS) || v > r.flight_offsets_deg.length) bad("V-E5", `${k} \u306F 1\u301C${EVAC_MAX_FLIGHTS} \u306E\u6574\u6570\u3067 flight_offsets_deg \u306E\u9577\u3055\uFF08${r.flight_offsets_deg.length}\uFF09\u4EE5\u4E0B\uFF08${v}\uFF09`);
+  }
+  if (!isInt(r.flights_per_group_max, 1)) bad("V-E5", `evac_raid.flights_per_group_max \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570\uFF08${r.flights_per_group_max}\uFF09`);
+  if (!(r.spawn_m > runRadiusM && r.spawn_m <= sortieSpawnM)) bad("V-E5", `evac_raid.spawn_m\uFF08${r.spawn_m}\uFF09\u306F unten_air_raid.params.sortie \u306E run_radius_m\uFF08${runRadiusM}\uFF09\u3088\u308A\u5927\u304D\u304F spawn_m\uFF08${sortieSpawnM}\uFF09\u4EE5\u4E0B\uFF08restartAirSortie \u304C\u53CE\u3081\u308B\u7BC4\u56F2\uFF09`);
+  const f = b.follow;
+  if (!(f.gap_m > blastM + halfLenM)) bad("V-E7", `evac.follow.gap_m\uFF08${f.gap_m}\uFF09\u306F\u7206\u98A8\uFF08${blastM}\uFF09\uFF0B \u534A\u9577\uFF08${halfLenM}\uFF09\u3088\u308A\u5E83\u3044\uFF08\u968A\u9577\u8247\u306B\u771F\u4E0A\u304B\u3089\u5F53\u305F\u3063\u305F 1 \u767A\u306F\u50DA\u8247\u3092\u5DFB\u304D\u8FBC\u307E\u306A\u3044\uFF09`);
+  if (!(b.moored_gap_m > 0 && b.moored_gap_m < blastM)) bad("V-E7", `evac.moored_gap_m\uFF08${b.moored_gap_m}\uFF09\u306F 0 \u3088\u308A\u5927\u304D\u304F\u7206\u98A8\uFF08${blastM}\uFF09\u3088\u308A\u72ED\u3044`);
+  if (!(f.trail_step_m > 0 && f.trail_step_m <= f.gap_m / 4)) bad("V-E7", `evac.follow.trail_step_m\uFF08${f.trail_step_m}\uFF09\u306F 0 \u3088\u308A\u5927\u304D\u304F gap_m / 4\uFF08${f.gap_m / 4}\uFF09\u4EE5\u4E0B`);
+  const total = b.group_size * b.groups.length;
+  if (r.survivors_total !== total) bad("V-E9", `evac_raid.survivors_total\uFF08${r.survivors_total}\uFF09\u306F group_size \xD7 groups \u306E\u6570\uFF08${total}\uFF09`);
+  if (!isInt(r.survivor_quota, 1, total)) bad("V-E9", `evac_raid.survivor_quota \u306F 1\u301C${total} \u306E\u6574\u6570\uFF08${r.survivor_quota}\uFF09`);
+  if (!isInt(r.historical_survivors, 0, total)) bad("V-E9", `evac_raid.historical_survivors \u306F 0\u301C${total} \u306E\u6574\u6570\uFF08${r.historical_survivors}\uFF09`);
+  const a = b.ai;
+  for (const [k, v] of [["evac.ai.full_p", a.full_p], ["evac.ai.dodge.success", a.dodge.success], ["evac_raid.cover_reveal_chance", r.cover_reveal_chance], ["hard.evac_cover_reveal_chance", coverChance]]) {
+    if (!isProb(v)) bad("V-E12", `${k} \u306F 0\u301C1\uFF08${v}\uFF09`);
+  }
+  if (!(a.pick_s > 0) || !(b.haul_s > 0)) bad("V-E12", `evac.ai.pick_s\uFF08${a.pick_s}\uFF09\u3068 evac.haul_s\uFF08${b.haul_s}\uFF09\u306F\u6B63\u306E\u79D2`);
+  if (!(a.cast_off_s[0] >= 0 && a.cast_off_s[0] <= a.cast_off_s[1])) bad("V-E12", `evac.ai.cast_off_s \u306F 0 \u2264 \u5C0F \u2264 \u5927\uFF08${a.cast_off_s.join(", ")}\uFF09`);
+  if (!(a.found_react_s >= 0 && a.dodge.hold_s >= 0 && a.wall_m > 0 && a.look_m > 0)) bad("V-E12", "evac.ai.found_react_s\u30FBdodge.hold_s \u306F 0 \u4EE5\u4E0A\u3001wall_m\u30FBlook_m \u306F\u6B63");
+  if (!(b.hide_max_kt > 0) || !(b.launch_stick > 0 && b.launch_stick <= 1)) bad("V-E12", `evac.hide_max_kt \u306F\u6B63\u3001launch_stick \u306F 0 \u3088\u308A\u5927\u304D\u304F 1 \u4EE5\u4E0B\uFF08${b.hide_max_kt}\u30FB${b.launch_stick}\uFF09`);
+  if (!(b.slot_arrive_m > 0 && b.slot_arrive_m < b.slot_abeam_m)) bad("V-E12", `evac.slot_arrive_m\uFF08${b.slot_arrive_m}\uFF09\u306F 0 \u3088\u308A\u5927\u304D\u304F slot_abeam_m\uFF08${b.slot_abeam_m}\uFF09\u3088\u308A\u5C0F\u3055\u3044`);
+}
+function checkTiming(r, sorties, durationS, bad) {
+  const lenS = (p) => p.firstRunS + p.runS + (p.planes * p.bombsPerPlane - 1) * p.runGapS + p.fallFeelS + p.leaveS;
+  const longest = sorties[sorties.length - 1];
+  const need = r.announce_lead_s + lenS(longest) + EVAC_CHECK_WAVE_MARGIN_S;
+  if (!(r.announce_lead_s > 0)) bad("V-E6", `evac_raid.announce_lead_s \u306F\u6B63\uFF08${r.announce_lead_s}\uFF09`);
+  r.waves.forEach((x, i) => {
+    if (i === 0 && !(x.announce_s >= 0)) bad("V-E6", `evac_raid.waves[0].announce_s \u306F 0 \u4EE5\u4E0A\uFF08${x.announce_s}\uFF09`);
+    if (i > 0 && !(x.announce_s - r.waves[i - 1].announce_s >= need)) bad("V-E6", `evac_raid.waves[${i}] \u306E\u4E88\u544A\u306E\u9593\u9694\uFF08${x.announce_s - r.waves[i - 1].announce_s} \u79D2\uFF09\u306F announce_lead_s \uFF0B ${longest.planes} \u6A5F\u306E\u7DE8\u968A\u306E\u9577\u3055 \uFF0B ${EVAC_CHECK_WAVE_MARGIN_S}\uFF08${need.toFixed(2)} \u79D2\uFF09\u4EE5\u4E0A`);
+  });
+  const last = r.waves[r.waves.length - 1];
+  const end = last.announce_s + r.announce_lead_s + lenS(sorties.find((p) => p.planes === last.planes));
+  if (!(end < durationS)) bad("V-E6", `evac_raid.waves[${r.waves.length - 1}]: \u6700\u5F8C\u306E\u6CE2\u306E\u7D42\u308F\u308A\uFF08${end.toFixed(2)} \u79D2\uFF09\u306F duration_s\uFF08${durationS}\uFF09\u3088\u308A\u524D\uFF08\u6C7A\u7740\u306E\u6642\u306B\u6E2F\u306E\u7A7A\u8972\u306E\u7206\u5F3E\u304C\u7A7A\u4E2D\u306B\u7121\u3044\uFF09`);
+  for (const p of sorties) {
+    if (!(p.fallFeelS + AIR_STRIKE_FADE_S >= p.runS)) bad("V-E14", `evac_raid.passes_max \u306E 1 \u56DE\u306E\u898B\u7A4D\u3082\u308A: enemies.json \u306E\u7A7A\u8972\u306E\u6A5F\u4F53\u306E strike.release_altitude_m \u306E\u843D\u4E0B\uFF08${p.fallFeelS.toFixed(3)} \u79D2\uFF09\uFF0B \u6FC3\u3055 ${AIR_STRIKE_FADE_S} \u79D2\u306F risk_events.json \u306E ${EVAC_EVENT_ID}.params.sortie.run_radius_m \xF7 strike.run_speed_kt \u306E\u7206\u6483\u9032\u8DEF\uFF08${p.runS.toFixed(3)} \u79D2\uFF09\u4EE5\u4E0A\uFF08\u898B\u7A4D\u3082\u308A\u304C\u5B9F\u969B\u306E 1 \u56DE\u3088\u308A\u77ED\u304F\u306A\u3089\u306A\u3044\uFF09`);
+    if (!(p.waveRestS >= p.runS + p.leaveS + 2 * FIXED_STEP_S)) bad("V-E6", `evac_raid: risk_events.json \u306E unten_air_raid.params.sortie.wave_rest_s\uFF08${p.waveRestS}\uFF09\u306F\u7206\u6483\u9032\u8DEF \uFF0B leave_s \uFF0B 2 \u30B9\u30C6\u30C3\u30D7\uFF08${(p.runS + p.leaveS + 2 * FIXED_STEP_S).toFixed(3)}\uFF09\u4EE5\u4E0A\uFF08\u6E08\u307F\u3092\u898B\u3066\u304B\u3089 2 \u6CE2\u76EE\u304C\u51FA\u306A\u3044\uFF09`);
+    const fix = r.bearing_fix_deg[p.planes - 1];
+    if (fix === void 0) return bad("V-E12", `evac_raid.bearing_fix_deg \u306E\u9577\u3055\uFF08${r.bearing_fix_deg.length}\uFF09\u306F\u6700\u5927\u6A5F\u6570\uFF08${longest.planes}\uFF09\u4EE5\u4E0A`);
+    let mean = 0;
+    for (let i = 0; i < p.planes; i++) mean += p.spawnOffsetsDeg[i] / p.planes;
+    if (Math.abs(mean + fix) > EVAC_CHECK_BEARING_FIX_TOL_DEG) bad("V-E12", `evac_raid.bearing_fix_deg[${p.planes - 1}]\uFF08${fix}\uFF09\u306F sortie.spawn_offsets_deg \u306E\u5148\u982D ${p.planes} \u500B\u306E\u5E73\u5747\uFF08${mean}\uFF09\u3092\u623B\u3059\u5024\uFF08\xB1${EVAC_CHECK_BEARING_FIX_TOL_DEG}\xB0\uFF09`);
+  }
+}
+function evacSetupPart(data, missionId, hard) {
+  const p = getEvacParams(data, missionId, hard);
+  return p ? { evac: p } : {};
+}
+
+// ../wt-0176202/src/core/radar-data.ts
+var RADAR_FITS = ["leader", "own"];
+var RADAR_DATA_KEYS = ["note", "aircraft", "models", "source"];
+var RADAR_MODEL_KEYS = ["ship_range_m", "small_range_m", "sweep_s", "land_clutter_m", "position_step_m", "source"];
+var RADAR_BLOCK_KEYS = ["model", "fit", "source"];
+var RADAR_SWEEP_MIN_S = 1;
+var RADAR_SWEEP_MAX_S = 5;
+var RADAR_STEP_MIN_M = 1;
+var isObj7 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isNum6 = (v) => typeof v === "number" && Number.isFinite(v);
+var nonEmpty3 = (v) => typeof v === "string" && v.trim().length > 0;
+function closedKeys(raw, keys, bad) {
+  const unknown = Object.keys(raw).filter((k) => !keys.includes(k));
+  const missing = keys.filter((k) => !(k in raw));
+  if (unknown.length > 0 || missing.length > 0) bad(`\u9375\u306F\u3061\u3087\u3046\u3069 ${keys.join("\u30FB")}\uFF08\u77E5\u3089\u306A\u3044\u9375 ${unknown.join("\u30FB") || "\u306A\u3057"}\u30FB\u6B20\u3051 ${missing.join("\u30FB") || "\u306A\u3057"}\uFF09`);
+}
+function readRadarModel(raw, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08V-R4\u30FBspec-v0800 \xA73.3\uFF09`);
+  };
+  if (!isObj7(raw)) return bad("object \u3067\u306A\u3044");
+  closedKeys(raw, RADAR_MODEL_KEYS, bad);
+  for (const k of RADAR_MODEL_KEYS) if (k !== "source" && !isNum6(raw[k])) bad(`${k} \u306F\u6570\uFF08${String(raw[k])}\uFF09`);
+  if (!nonEmpty3(raw["source"])) bad("source \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217");
+  const m = raw;
+  if (!(m.ship_range_m > 0)) bad(`ship_range_m \u306F\u6B63\uFF08${m.ship_range_m}\uFF09`);
+  if (!(m.small_range_m >= 0 && m.small_range_m <= m.ship_range_m)) bad(`small_range_m \u306F 0 \u4EE5\u4E0A\u3067 ship_range_m\uFF08${m.ship_range_m}\uFF09\u4EE5\u4E0B\uFF08${m.small_range_m}\uFF09`);
+  if (!(m.sweep_s >= RADAR_SWEEP_MIN_S && m.sweep_s <= RADAR_SWEEP_MAX_S)) bad(`sweep_s \u306F ${RADAR_SWEEP_MIN_S}\u301C${RADAR_SWEEP_MAX_S} \u79D2\uFF08${m.sweep_s}\uFF09`);
+  if (!(m.land_clutter_m >= 0)) bad(`land_clutter_m \u306F 0 \u4EE5\u4E0A\uFF08${m.land_clutter_m}\uFF09`);
+  if (!(m.position_step_m >= RADAR_STEP_MIN_M)) bad(`position_step_m \u306F ${RADAR_STEP_MIN_M} m \u4EE5\u4E0A\uFF08${m.position_step_m}\uFF09`);
+  return m;
+}
+function readRadarData(raw, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08spec-v0800 \xA73.3\uFF09`);
+  };
+  if (!isObj7(raw)) return bad("object \u3067\u306A\u3044");
+  closedKeys(raw, RADAR_DATA_KEYS, bad);
+  if (raw["aircraft"] !== false) bad(`aircraft \u306F false\uFF08\u6A5F\u306F\u6620\u3055\u306A\u3044\uFF1DD-R3\u3002\u6620\u3059\u4ED5\u7D44\u307F\u306F\u307E\u3060\u7121\u3044\u3002${String(raw["aircraft"])}\uFF09`);
+  for (const k of ["note", "source"]) if (!nonEmpty3(raw[k])) bad(`${k} \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217`);
+  const models = raw["models"];
+  if (!isObj7(models) || Object.keys(models).length === 0) return bad("models \u306F\u7A7A\u3067\u306A\u3044 object\uFF08\u578B\u306E id \u2192 \u5024\uFF09");
+  for (const id of Object.keys(models)) readRadarModel(models[id], `${label}.models.${id}`);
+  return raw;
+}
+function readRadarBlock(raw, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08V-R1\u30FBspec-v0800 \xA73.3\uFF09`);
+  };
+  if (!isObj7(raw)) return bad("object \u3067\u306A\u3044");
+  closedKeys(raw, RADAR_BLOCK_KEYS, bad);
+  if (!nonEmpty3(raw["model"])) bad("model \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217\uFF08hit_rate_model.json \u306E radar.models \u306E\u9375\uFF09");
+  if (!RADAR_FITS.includes(raw["fit"])) bad(`fit \u306F ${RADAR_FITS.join("\u30FB")} \u306E\u3069\u308C\u304B\uFF08${String(raw["fit"])}\uFF09`);
+  if (!nonEmpty3(raw["source"])) bad("source \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217");
+  return raw;
+}
+function radarParamsFromData(m, b, aircraft) {
+  return {
+    model: b.model,
+    fit: b.fit,
+    shipRangeM: m.ship_range_m,
+    shipRange2: m.ship_range_m * m.ship_range_m,
+    smallRangeM: m.small_range_m,
+    smallRange2: m.small_range_m * m.small_range_m,
+    sweepS: m.sweep_s,
+    landClutterM: m.land_clutter_m,
+    positionStepM: m.position_step_m,
+    aircraft
+  };
+}
+
+// ../wt-0176202/src/config/radar-mission-data.ts
+var RADAR_EXCLUDED_KEYS = ["patrol_air", "evac"];
+var YEAR_MONTH_RE = /^\d{4}-\d{2}$/;
+var DATE_RE2 = /^\d{4}-\d{2}-\d{2}$/;
+function getRadarData(data) {
+  return readRadarData(data.hitRateModel["radar"], "hit_rate_model.json \u306E radar");
+}
+function getRadarParams(data, mission) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === mission.id);
+  const proto = m?.["v0_1_prototype"];
+  const raw = proto?.["radar"];
+  if (!m || !proto || raw === void 0) return null;
+  const at2 = `${mission.id}.v0_1_prototype.radar`;
+  const bad = (v, msg) => {
+    throw new Error(`${at2}: ${msg}\uFF08${v}\u30FBspec-v0800 \xA73.3\uFF09`);
+  };
+  const models = getRadarData(data);
+  const b = readRadarBlock(raw, at2);
+  for (const k of RADAR_EXCLUDED_KEYS) if (proto[k] !== void 0) bad("V-R5", `v0_1_prototype.${k} \u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u8266\u8247\u306E\u3044\u306A\u3044\u822A\u7A7A\u6A5F\u3060\u3051\u306E\u4EFB\u52D9\u306B\u306F\u7F6E\u3051\u306A\u3044\uFF09`);
+  const model = Object.prototype.hasOwnProperty.call(models.models, b.model) ? models.models[b.model] : void 0;
+  if (!model) return bad("V-R1", `model\uFF08${b.model}\uFF09\u304C hit_rate_model.json \u306E radar.models\uFF08${Object.keys(models.models).join("\u30FB")}\uFF09\u306B\u7121\u3044`);
+  const boat = data.boats.boats.find((x) => x["id"] === mission.playerBoatId);
+  const r = boat?.["radar"];
+  const range = r?.["range_m"];
+  if (!(typeof range === "number" && range > 0)) bad("V-R2", `boats.json \u306E ${mission.playerBoatId}.radar.range_m \u306F\u6B63\uFF08${String(range)}\u3002\u30EC\u30FC\u30C0\u30FC\u3092\u7A4D\u307E\u306A\u3044\u8247\uFF09`);
+  if (!(typeof r?.["type"] === "string" && r["type"] !== "")) bad("V-R2", `boats.json \u306E ${mission.playerBoatId}.radar.type\uFF08\u578B\u306E\u540D\uFF09\u304C\u7121\u3044`);
+  const from = r?.["available_from"];
+  const date = m["date"];
+  if (typeof from !== "string" || !YEAR_MONTH_RE.test(from)) bad("V-R2", `boats.json \u306E ${mission.playerBoatId}.radar.available_from \u306F YYYY-MM\uFF08${String(from)}\uFF09`);
+  if (typeof date !== "string" || !DATE_RE2.test(date)) bad("V-R2", `${mission.id}.date \u306F YYYY-MM-DD\uFF08${String(date)}\uFF09`);
+  if (from > date.slice(0, 7)) bad("V-R2", `boats.json \u306E ${mission.playerBoatId}.radar.available_from\uFF08${String(from)}\uFF09\u306F\u4EFB\u52D9\u306E date\uFF08${String(date)}\uFF09\u4EE5\u524D\uFF08\u53F2\u5B9F\u306E\u5E83\u304C\u308A\uFF09`);
+  const vis = playerVisRangeM(getVisibilityParams(data, mission.moon, false));
+  const diag = Math.hypot(mission.bounds.width, mission.bounds.height);
+  if (!(model.ship_range_m > vis)) bad("V-R3", `radar.models.${b.model}.ship_range_m\uFF08${model.ship_range_m}\uFF09\u306F\u4EFB\u52D9\u306E\u6708\uFF08${mission.moon}\uFF09\u306E\u81EA\u8247\u306E\u8996\u7A0B\uFF08${vis} m\uFF09\u3088\u308A\u9060\u3044`);
+  if (!(model.ship_range_m <= diag)) bad("V-R3", `radar.models.${b.model}.ship_range_m\uFF08${model.ship_range_m}\uFF09\u306F\u6D77\u57DF\u306E\u5BFE\u89D2\uFF08${diag.toFixed(1)} m\uFF09\u4EE5\u4E0B`);
+  return radarParamsFromData(model, b, models.aircraft);
+}
+function radarSetupPart(data, mission, o) {
+  const p = o.radarOff ? null : getRadarParams(data, mission);
+  return p ? { radar: p } : {};
+}
+
+// ../wt-0176202/src/core/transit-data.ts
+var TRANSIT_EDGES = ["west", "east"];
+var TRANSIT_EDGE_HEADING = { west: 90, east: 270 };
+var TRANSIT_KEYS = ["ships", "spacing_s", "speed_kt", "edge_inset_m", "inbound", "unload_s", "outbound", "cover_leaves_with_outbound", "vila_label_ja", "source"];
+var TRANSIT_INBOUND_KEYS = ["edge", "lane_y_m", "heading_deg", "enter_s"];
+var TRANSIT_OUTBOUND_KEYS = ["edge", "lane_y_m", "heading_deg"];
+var TRANSIT_MAX_SHIPS = 6;
+var isObj8 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isNum7 = (v) => typeof v === "number" && Number.isFinite(v);
+var nonEmpty4 = (v) => typeof v === "string" && v.trim().length > 0;
+function closedKeys2(raw, keys, bad, at2) {
+  const unknown = Object.keys(raw).filter((k) => !keys.includes(k));
+  const missing = keys.filter((k) => !(k in raw));
+  if (unknown.length > 0 || missing.length > 0) bad(`${at2}\u9375\u306F\u3061\u3087\u3046\u3069 ${keys.join("\u30FB")}\uFF08\u77E5\u3089\u306A\u3044\u9375 ${unknown.join("\u30FB") || "\u306A\u3057"}\u30FB\u6B20\u3051 ${missing.join("\u30FB") || "\u306A\u3057"}\uFF09`);
+}
+function checkLeg(raw, name, keys, bad) {
+  if (!isObj8(raw)) return bad(`${name} \u306F object`);
+  closedKeys2(raw, keys, bad, `${name} \u306E`);
+  const edge = raw["edge"];
+  if (!TRANSIT_EDGES.includes(edge)) return bad(`${name}.edge \u306F ${TRANSIT_EDGES.join("\u30FB")} \u306E\u3069\u308C\u304B\uFF08${String(edge)}\uFF09`);
+  for (const k of keys) if (k !== "edge" && !isNum7(raw[k])) bad(`${name}.${k} \u306F\u6570\uFF08${String(raw[k])}\uFF09`);
+  const want = TRANSIT_EDGE_HEADING[edge];
+  if (raw["heading_deg"] !== want) bad(`${name}.heading_deg \u306F ${name}.edge\uFF08${String(edge)}\uFF09\u304B\u3089\u6D77\u57DF\u306E\u5185\u3078\u5411\u304F ${want}\uFF08${String(raw["heading_deg"])}\u3002V-T2\uFF09`);
+}
+function readTransitBlock(raw, label) {
+  const bad = (msg) => {
+    throw new Error(`${label}: ${msg}\uFF08spec-v0800 \xA74.8\uFF09`);
+  };
+  if (!isObj8(raw)) return bad("object \u3067\u306A\u3044");
+  closedKeys2(raw, TRANSIT_KEYS, bad, "");
+  const ships = raw["ships"];
+  if (!(isNum7(ships) && Number.isInteger(ships) && ships >= 1 && ships <= TRANSIT_MAX_SHIPS)) bad(`ships \u306F 1\u301C${TRANSIT_MAX_SHIPS} \u306E\u6574\u6570\uFF08${String(ships)}\u3002V-T1\uFF09`);
+  for (const k of ["spacing_s", "speed_kt", "edge_inset_m"]) if (!(isNum7(raw[k]) && raw[k] > 0)) bad(`${k} \u306F\u6B63\u306E\u6570\uFF08${String(raw[k])}\u3002V-T1\uFF09`);
+  if (!(isNum7(raw["unload_s"]) && raw["unload_s"] >= 0)) bad(`unload_s \u306F 0 \u4EE5\u4E0A\u306E\u6570\uFF08${String(raw["unload_s"])}\u3002V-T4\uFF09`);
+  checkLeg(raw["inbound"], "inbound", TRANSIT_INBOUND_KEYS, bad);
+  checkLeg(raw["outbound"], "outbound", TRANSIT_OUTBOUND_KEYS, bad);
+  const inb = raw["inbound"];
+  const outb = raw["outbound"];
+  if (!(inb["enter_s"] >= 0)) bad(`inbound.enter_s \u306F 0 \u4EE5\u4E0A\uFF08${String(inb["enter_s"])}\uFF09`);
+  if (outb["edge"] === inb["edge"]) bad(`outbound.edge \u306F inbound.edge\uFF08${String(inb["edge"])}\uFF09\u306E\u53CD\u5BFE\uFF08\u63DA\u9678\u306E\u5730\u304B\u3089\u6765\u305F\u6D77\u5CE1\u3092\u623B\u308B\u3002V-T2\uFF09`);
+  if (typeof raw["cover_leaves_with_outbound"] !== "boolean") bad("cover_leaves_with_outbound \u306F true \u304B false");
+  for (const k of ["vila_label_ja", "source"]) if (!nonEmpty4(raw[k])) bad(`${k} \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217`);
+  return raw;
+}
+function transitAppearX(edge, width, inset) {
+  return edge === "west" ? inset : width - inset;
+}
+function transitGoneX(edge, width, inset) {
+  return edge === "west" ? width + inset : -inset;
+}
+function transitLastGoneS(enterS, ships, spacingS, crossS, unloadS) {
+  return enterS + spacingS * (ships - 1) + crossS + unloadS + crossS;
+}
+
+// ../wt-0176202/src/config/transit-mission-data.ts
+var TRANSIT_CHECK_LANE_MARGIN_M = 200;
+var TRANSIT_CHECK_DAWN_MARGIN_S = 20;
+var TRANSIT_CHECK_UNLOAD_MIN_S = 20;
+var TRANSIT_CHECK_START_CLEAR_M = 1500;
+var TRANSIT_EXCLUSIVE_KEYS = ["barges", "pt_boats", "convoy", "transport", "escort", "patrol_air", "evac", "landing", "ally_destroyer"];
+var TRANSIT_ONLY_HARD_KEYS = ["extra_transit_ships"];
+function protoOf2(data, missionId) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === missionId);
+  const p = m?.["v0_1_prototype"];
+  return typeof p === "object" && p !== null && !Array.isArray(p) ? p : null;
+}
+function transitNightRolls(data, mission) {
+  return protoOf2(data, mission.id)?.["transit"] === void 0 ? 0 : 1;
+}
+function getTransitParams(data, mission, night, historical) {
+  const proto = protoOf2(data, mission.id);
+  if (!proto) return null;
+  const at2 = `${mission.id}.v0_1_prototype`;
+  const bad = (v, msg) => {
+    throw new Error(`${at2}.${msg}\uFF08${v}\u30FBspec-v0800 \xA74.8\uFF09`);
+  };
+  const hardRaw = proto["hard"];
+  if (proto["transit"] === void 0) {
+    for (const k of TRANSIT_ONLY_HARD_KEYS) if (hardRaw?.[k] !== void 0) bad("V-T1", `hard.${k} \u306F\u5217\u306E\u901A\u904E\uFF08transit\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+    return null;
+  }
+  const b = readTransitBlock(proto["transit"], `${at2}.transit`);
+  if (!mission.enemyStart) bad("V-T6", "transit \u306F\u99C6\u9010\u8266\u306E\u4EFB\u52D9\uFF08enemy_start\uFF1D\u8B77\u885B\u304C\u3042\u308B\uFF09\u3060\u3051");
+  for (const k of TRANSIT_EXCLUSIVE_KEYS) if (proto[k] !== void 0) bad("V-T6", `${k} \u3068 transit \u306F\u540C\u5C45\u3057\u306A\u3044`);
+  if (mission.night && mission.night.mirrorChance !== 0) bad("V-T6", `night.mirror_chance \u306F 0\uFF08\u5217\u306F\u6771\u897F\u306B\u53CD\u8EE2\u3057\u306A\u3044\u3002${mission.night.mirrorChance}\uFF09`);
+  const extraRaw = hardRaw?.["extra_transit_ships"];
+  if (extraRaw !== void 0 && !(typeof extraRaw === "number" && Number.isInteger(extraRaw) && extraRaw >= 1)) bad("V-T1", `hard.extra_transit_ships \u306F 1 \u4EE5\u4E0A\u306E\u6574\u6570\uFF08${String(extraRaw)}\uFF09`);
+  const extra = extraRaw ?? 0;
+  const shipsMax = b.ships + extra;
+  if (shipsMax > TRANSIT_MAX_SHIPS) bad("V-T1", `transit.ships \uFF0B hard.extra_transit_ships\uFF08${shipsMax}\uFF09\u306F ${TRANSIT_MAX_SHIPS} \u96BB\u307E\u3067`);
+  const ids = proto["enemies"];
+  if (ids.length !== 1 + b.ships || !ids.every((e) => e === mission.enemyId)) bad("V-T1", `enemies\uFF08${ids.join("\u30FB")}\uFF09\u306F\u8B77\u885B 1 \uFF0B \u5217 ${b.ships} \u306E\u540C\u3058 id\uFF08${mission.enemyId}\uFF09`);
+  const r = getEnemyRecord(data, mission.enemyId);
+  if (!(b.speed_kt <= r.speed_max_kt)) bad("V-T1", `transit.speed_kt\uFF08${b.speed_kt}\uFF09\u306F ${mission.enemyId} \u306E speed_max_kt\uFF08${r.speed_max_kt}\uFF09\u4EE5\u4E0B`);
+  const { width, height } = mission.bounds;
+  const jy = mission.night ? mission.night.enemyJitterYM : 0;
+  const margin = r.length_m * data.hitRateModel.world.sprite_scale / 2 + TRANSIT_CHECK_LANE_MARGIN_M;
+  for (const [k, y] of [["inbound", b.inbound.lane_y_m], ["outbound", b.outbound.lane_y_m]]) {
+    if (!(y - jy >= margin && y + jy <= height - margin)) bad("V-T2", `transit.${k}.lane_y_m\uFF08${y} \xB1 \u4ECA\u591C\u306E ${jy}\uFF09\u306F\u5317\u3068\u5357\u306E\u7E01\u304B\u3089 ${margin.toFixed(1)} m\uFF08\u8266\u306E\u4F59\u767D \uFF0B ${TRANSIT_CHECK_LANE_MARGIN_M}\uFF09\u4EE5\u4E0A\u5185`);
+  }
+  const retire = proto["dawn_withdraw"]?.["retire_edge"];
+  if (retire !== b.inbound.edge) bad("V-T2", `dawn_withdraw.retire_edge\uFF08${String(retire)}\uFF09\u306F\u5217\u306E\u6765\u305F\u7E01 transit.inbound.edge\uFF08${b.inbound.edge}\u3002\u591C\u660E\u3051\u306B\u6765\u305F\u9053\u3092\u9000\u304F\uFF09`);
+  const screenMps = ktToMps(b.speed_kt) * data.hitRateModel.world.time_scale;
+  const crossS = width / screenMps;
+  const jx = mission.night ? mission.night.enemyJitterXM / screenMps : 0;
+  const last = transitLastGoneS(b.inbound.enter_s, shipsMax, b.spacing_s, crossS, b.unload_s);
+  if (!(last <= mission.durationS - TRANSIT_CHECK_DAWN_MARGIN_S)) bad("V-T3", `transit: \u6700\u5F8C\u306E\u8266\uFF08${shipsMax} \u96BB\u76EE\uFF09\u304C\u5FA9\u8DEF\u3067\u53BB\u308B ${last.toFixed(2)} \u79D2\u306F duration_s\uFF08${mission.durationS}\uFF09\u306E ${TRANSIT_CHECK_DAWN_MARGIN_S} \u79D2\u524D\u307E\u3067\uFF08\u5165\u308A \uFF0B \u9593\u9694 \uFF0B \u6E21\u308A ${crossS.toFixed(2)} \uFF0B \u63DA\u9678 \uFF0B \u6E21\u308A\uFF09`);
+  if (!(last + jx < mission.durationS)) bad("V-T3", `transit: \u4ECA\u591C\u306E\u63FA\u3089\u304E\uFF08\u5165\u308A \uFF0B${jx.toFixed(2)} \u79D2\uFF09\u3067\u3082\u6700\u5F8C\u306E\u8266\u306F duration_s\uFF08${mission.durationS}\uFF09\u306E\u524D\u306B\u53BB\u308B\uFF08${(last + jx).toFixed(2)} \u79D2\uFF09`);
+  if (!(b.inbound.enter_s - jx >= 0)) bad("V-T3", `transit.inbound.enter_s\uFF08${b.inbound.enter_s}\uFF09\u306F\u4ECA\u591C\u306E\u63FA\u3089\u304E\uFF08\u2212${jx.toFixed(2)} \u79D2\uFF09\u3067\u3082 0 \u79D2\u4EE5\u4E0A`);
+  if (!(b.unload_s >= TRANSIT_CHECK_UNLOAD_MIN_S)) bad("V-T4", `transit.unload_s\uFF08${b.unload_s}\uFF09\u306F ${TRANSIT_CHECK_UNLOAD_MIN_S} \u79D2\u4EE5\u4E0A`);
+  const ax = transitAppearX(b.inbound.edge, width, b.edge_inset_m);
+  const near = Math.min(Math.max(mission.playerStart.y, b.inbound.lane_y_m - jy), b.inbound.lane_y_m + jy);
+  const d = Math.hypot(mission.playerStart.x - ax, mission.playerStart.y - near);
+  if (!(d >= TRANSIT_CHECK_START_CLEAR_M)) bad("V-T5", `player_start \u306F\u5F80\u8DEF\u306E\u5165\u308A\u306E\u70B9\uFF08${ax}, ${b.inbound.lane_y_m} \xB1 ${jy}\uFF09\u304B\u3089 ${TRANSIT_CHECK_START_CLEAR_M} m \u4EE5\u4E0A\uFF08${d.toFixed(1)} m\uFF09`);
+  const o = night ?? { dx: 0, dy: 0, dh: 0 };
+  const leg = (edge, laneY, headingDeg) => ({ edge, laneY: laneY + o.dy, headingDeg, appearX: transitAppearX(edge, width, b.edge_inset_m), goneX: transitGoneX(edge, width, b.edge_inset_m) });
+  return {
+    enemyId: mission.enemyId,
+    ships: b.ships + (mission.hard ? extra : 0),
+    spacingS: b.spacing_s,
+    speedKt: b.speed_kt,
+    speedMps: ktToMps(b.speed_kt),
+    crossS,
+    enterS: b.inbound.enter_s + (b.inbound.edge === "west" ? -1 : 1) * o.dx / screenMps,
+    unloadS: b.unload_s,
+    inbound: leg(b.inbound.edge, b.inbound.lane_y_m, b.inbound.heading_deg),
+    outbound: leg(b.outbound.edge, b.outbound.lane_y_m, b.outbound.heading_deg),
+    coverLeavesWithOutbound: b.cover_leaves_with_outbound,
+    vilaLabelJa: b.vila_label_ja,
+    shipAi: { ...shipAiParamsFromData(r, getEvasionMultiplier(data, historical)), maxSpeedMps: ktToMps(b.speed_kt) }
+  };
+}
+function transitSetupPart(data, mission, night, historical) {
+  const p = getTransitParams(data, mission, night, historical);
+  return p ? { transit: p } : {};
+}
+
+// ../wt-0176202/src/config/shores-mission-data.ts
+var SHORES_CHECK_RING_NEAR_M = 400;
+var SHORES_EXCLUSIVE_KEYS = ["coast", "evac"];
+var SHORES_KEYS = ["north", "south", "source"];
+var SIDE_KEYS = ["land_m", "labels", "gaps_m", "gap_label_ja"];
+var isObj9 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isNum8 = (v) => typeof v === "number" && Number.isFinite(v);
+var nonEmpty5 = (v) => typeof v === "string" && v.trim().length > 0;
+function readSide(raw, side, width, bad) {
+  if (!isObj9(raw)) return bad("V-S1", `${side} \u306F object`);
+  const unknown = Object.keys(raw).filter((k) => !SIDE_KEYS.includes(k));
+  if (unknown.length > 0 || raw["land_m"] === void 0 || raw["labels"] === void 0) bad("V-S1", `${side} \u306E\u9375\u306F land_m\u30FBlabels \u3068\u4EFB\u610F\u306E gaps_m\u30FBgap_label_ja\uFF08\u77E5\u3089\u306A\u3044\u9375 ${unknown.join("\u30FB") || "\u306A\u3057"}\uFF09`);
+  const landM = raw["land_m"];
+  if (!(isNum8(landM) && landM > 0)) bad("V-S1", `${side}.land_m \u306F\u6B63\uFF08${String(landM)}\uFF09`);
+  const gapsRaw = raw["gaps_m"] ?? [];
+  if (!Array.isArray(gapsRaw) || !gapsRaw.every((g) => Array.isArray(g) && g.length === 2 && g.every(isNum8))) return bad("V-S1", `${side}.gaps_m \u306F [x0, x1] \u306E\u6570\u306E\u7D44\u306E\u914D\u5217`);
+  const gaps = gapsRaw.map((g) => ({ x0: g[0], x1: g[1] }));
+  let open = 0;
+  gaps.forEach((g, i) => {
+    if (!(g.x0 >= 0 && g.x0 < g.x1 && g.x1 <= width)) bad("V-S1", `${side}.gaps_m[${i}]\uFF08${g.x0}, ${g.x1}\uFF09\u306F 0 \u2264 x0 < x1 \u2264 \u6D77\u57DF\u306E\u5E45\uFF08${width}\uFF09`);
+    if (i > 0 && !(g.x0 > gaps[i - 1].x1)) bad("V-S1", `${side}.gaps_m[${i}] \u306F\u524D\u306E\u5207\u308C\u76EE\u3088\u308A\u6771\u3067\u91CD\u306A\u3089\u306A\u3044\uFF08\u6607\u9806\uFF09`);
+    open += g.x1 - g.x0;
+  });
+  if (!(open < width)) bad("V-S1", `${side}.gaps_m \u306F\u9678\u3092\u6B8B\u3059\uFF08\u5207\u308C\u76EE\u306E\u5408\u8A08 ${open} m < \u5E45 ${width} m\uFF09`);
+  const gapLabel = raw["gap_label_ja"];
+  if (gaps.length > 0 ? !nonEmpty5(gapLabel) : gapLabel !== void 0) bad("V-S1", `${side}.gap_label_ja \u306F\u5207\u308C\u76EE\uFF08gaps_m\uFF09\u304C\u3042\u308B\u3068\u304D\u3060\u3051\u30FB\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217`);
+  const labelsRaw = raw["labels"];
+  if (!Array.isArray(labelsRaw)) return bad("V-S1", `${side}.labels \u306F\u914D\u5217`);
+  const labels = labelsRaw.map((l, i) => {
+    if (!isObj9(l) || Object.keys(l).length !== 2 || !nonEmpty5(l["label_ja"]) || !isNum8(l["x_m"])) return bad("V-S1", `${side}.labels[${i}] \u306F\u3061\u3087\u3046\u3069 label_ja\uFF08\u7A7A\u3067\u306A\u3044\uFF09\u30FBx_m\uFF08\u6570\uFF09`);
+    const x = l["x_m"];
+    if (!(x >= 0 && x <= width) || gaps.some((g) => x > g.x0 && x < g.x1)) bad("V-S1", `${side}.labels[${i}].x_m\uFF08${x}\uFF09\u306F 0\u301C\u6D77\u57DF\u306E\u5E45\u306E\u9678\u306E\u4E0A\uFF08\u5207\u308C\u76EE\u306E\u5916\uFF09`);
+    return { labelJa: l["label_ja"], x };
+  });
+  return { landM, labels, gaps, gapLabelJa: gaps.length > 0 ? gapLabel : "" };
+}
+function getShoresParams(data, mission) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === mission.id);
+  const proto = m?.["v0_1_prototype"];
+  const raw = proto?.["shores"];
+  if (!proto || raw === void 0) return null;
+  const at2 = `${mission.id}.v0_1_prototype.shores`;
+  const bad = (v, msg) => {
+    throw new Error(`${at2}: ${msg}\uFF08${v}\u30FBspec-v0800 \xA74.8\uFF09`);
+  };
+  for (const k of SHORES_EXCLUSIVE_KEYS) if (proto[k] !== void 0) bad("V-S3", `v0_1_prototype.${k} \u3068\u540C\u5C45\u3057\u306A\u3044\uFF08\u4ECA\u306E\u5CB8\u30FB\u5730\u5F62\u306E\u7D75\u3092\u5909\u3048\u306A\u3044\uFF09`);
+  if (!isObj9(raw)) return bad("V-S1", "object \u3067\u306A\u3044");
+  const keys = Object.keys(raw);
+  if (keys.length !== SHORES_KEYS.length || !SHORES_KEYS.every((k) => k in raw)) bad("V-S1", `\u9375\u306F\u3061\u3087\u3046\u3069 ${SHORES_KEYS.join("\u30FB")}`);
+  if (!nonEmpty5(raw["source"])) bad("V-S1", "source \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217");
+  const { width, height } = mission.bounds;
+  const north = readSide(raw["north"], "north", width, bad);
+  const south = readSide(raw["south"], "south", width, bad);
+  const rp = mission.returnPoint;
+  const inGap = (s) => s.gaps.some((g) => rp.x - rp.radiusM >= g.x0 && rp.x + rp.radiusM <= g.x1);
+  if (rp.y - rp.radiusM < SHORES_CHECK_RING_NEAR_M && !inGap(north)) bad("V-S2", `\u5E30\u6295\u306E\u8F2A\uFF08${rp.x}, ${rp.y}\u30FB\u534A\u5F84 ${rp.radiusM}\uFF09\u306F\u5317\u306E\u5CB8\u304B\u3089 ${SHORES_CHECK_RING_NEAR_M} m \u306E\u5185\u306B\u304B\u304B\u308B\u306E\u3067\u3001\u5317\u306E\u5207\u308C\u76EE\uFF08gaps_m\uFF09\u306E\u771F\u4E0A\u306B\u7F6E\u304F`);
+  if (rp.y + rp.radiusM > height - SHORES_CHECK_RING_NEAR_M && !inGap(south)) bad("V-S2", `\u5E30\u6295\u306E\u8F2A\uFF08${rp.x}, ${rp.y}\u30FB\u534A\u5F84 ${rp.radiusM}\uFF09\u306F\u5357\u306E\u5CB8\u304B\u3089 ${SHORES_CHECK_RING_NEAR_M} m \u306E\u5185\u306B\u304B\u304B\u308B\u306E\u3067\u3001\u5357\u306E\u5207\u308C\u76EE\uFF08gaps_m\uFF09\u306E\u771F\u4E0A\u306B\u7F6E\u304F`);
+  const ps = mission.playerStart;
+  mission.shallows.forEach((r, i) => {
+    const cx = Math.min(Math.max(rp.x, r.x), r.x + r.w);
+    const cy = Math.min(Math.max(rp.y, r.y), r.y + r.h);
+    if ((rp.x - cx) ** 2 + (rp.y - cy) ** 2 < rp.radiusM * rp.radiusM) bad("V-S2", `shallows[${i}]\uFF08\u7901\uFF09\u304C\u5E30\u6295\u306E\u8F2A\u306B\u304B\u304B\u308B`);
+    if (ps.x >= r.x && ps.x <= r.x + r.w && ps.y >= r.y && ps.y <= r.y + r.h) bad("V-S2", `shallows[${i}]\uFF08\u7901\uFF09\u304C\u51FA\u767A\u70B9\uFF08${ps.x}, ${ps.y}\uFF09\u306B\u304B\u304B\u308B`);
+  });
+  return { north, south };
+}
+function shoresSetupPart(data, mission) {
+  const p = getShoresParams(data, mission);
+  return p ? { shores: p } : {};
+}
+
+// ../wt-0176202/src/config/anchor-mission-data.ts
+var ANCHOR_KEYS = ["destroyer_underway_s", "transport_underway", "picket_underway_s", "alarm_s", "source"];
+var ANCHOR_MAX_S = 30;
+var ANCHOR_EXCLUSIVE_KEYS = ["transit", "barges", "pt_boats", "landing", "ally_destroyer", "evac", "patrol_air", "escort", "fleet_gone_clears"];
+var ANCHOR_ONLY_HARD_KEYS = ["extra_pickets", "picket_enemy_id"];
+var ANCHOR_PICKETS_MAX = 4;
+var ANCHOR_CHECK_SHORE_CLEAR_M = 50;
+var isObj10 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isSec = (v) => typeof v === "number" && Number.isFinite(v) && v > 0 && v <= ANCHOR_MAX_S;
+function shoreYsOf(proto, mission) {
+  return proto["shores"] !== void 0 ? [0, mission.bounds.height] : mission.coast ? [mission.bounds.height] : [];
+}
+function rectDist2(px, py, x, y, jx, jy) {
+  const dx = px < x - jx ? x - jx - px : px > x + jx ? px - x - jx : 0;
+  const dy = py < y - jy ? y - jy - py : py > y + jy ? py - y - jy : 0;
+  return dx * dx + dy * dy;
+}
+function getAnchorParams(data, mission) {
+  const m = data.missionsSeed.missions.find((x) => x["id"] === mission.id);
+  const proto = isObj10(m?.["v0_1_prototype"]) ? m["v0_1_prototype"] : null;
+  if (!proto) return null;
+  const at2 = `${mission.id}.v0_1_prototype`;
+  const bad = (v, msg) => {
+    throw new Error(`${at2}.${msg}\uFF08${v}\u30FBspec-v0810 \xA74.4\uFF09`);
+  };
+  const hardRaw = isObj10(proto["hard"]) ? proto["hard"] : null;
+  const raw = proto["anchored"];
+  if (raw === void 0) {
+    for (const k of ANCHOR_ONLY_HARD_KEYS) if (hardRaw?.[k] !== void 0) bad("V-A5", `hard.${k} \u306F\u6B62\u307E\u3063\u305F\u8266\uFF08anchored\uFF09\u306E\u4EFB\u52D9\u3060\u3051`);
+    return null;
+  }
+  if (!isObj10(raw)) return bad("V-A1", "anchored \u306F object");
+  const unknown = Object.keys(raw).filter((k) => !ANCHOR_KEYS.includes(k));
+  if (unknown.length > 0) bad("V-A1", `anchored \u306E\u9375\u306F ${ANCHOR_KEYS.join("\u30FB")} \u3060\u3051\uFF08\u77E5\u3089\u306A\u3044\u9375 ${unknown.join("\u30FB")}\uFF09`);
+  for (const k of ["destroyer_underway_s", "alarm_s"]) if (!isSec(raw[k])) bad("V-A1", `anchored.${k} \u306F 0 \uFF1C \u79D2 \u2264 ${ANCHOR_MAX_S}\uFF08${String(raw[k])}\uFF09`);
+  const pus = raw["picket_underway_s"];
+  if (pus !== void 0 && !isSec(pus)) bad("V-A1", `anchored.picket_underway_s \u306F 0 \uFF1C \u79D2 \u2264 ${ANCHOR_MAX_S}\uFF08${String(pus)}\uFF09`);
+  if (raw["transport_underway"] !== false) bad("V-A1", `anchored.transport_underway \u306F false \u3060\u3051\uFF08\u8F38\u9001\u8239\u306F\u4E00\u6669\u3058\u3085\u3046\u6B62\u307E\u3063\u3066\u63DA\u9678\u3059\u308B\u3002\u52D5\u304F\u8F38\u9001\u8239\u306F\u5019\u88DC\u3002${String(raw["transport_underway"])}\uFF09`);
+  if (!(typeof raw["source"] === "string" && raw["source"].trim() !== "")) bad("V-A1", "anchored.source \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217");
+  if (!mission.enemyStart) bad("V-A2", "anchored \u306F\u99C6\u9010\u8266\u306E\u4EFB\u52D9\uFF08enemy_start\uFF09\u3060\u3051");
+  for (const k of ANCHOR_EXCLUSIVE_KEYS) if (proto[k] !== void 0) bad("V-A2", `${k} \u3068 anchored \u306F\u540C\u5C45\u3057\u306A\u3044`);
+  const es = hardRaw?.["extra_pickets"];
+  const pid = hardRaw?.["picket_enemy_id"];
+  if (es === void 0 !== (pid === void 0)) bad("V-A5", "hard.extra_pickets \u3068 hard.picket_enemy_id \u306F\u4E21\u65B9\u3042\u308B\u304B\u4E21\u65B9\u306A\u3044\u304B");
+  let pickets = null;
+  if (es !== void 0) {
+    if (!Array.isArray(es) || es.length < 1 || es.length > ANCHOR_PICKETS_MAX) return bad("V-A5", `hard.extra_pickets \u306F 1\u301C${ANCHOR_PICKETS_MAX} \u96BB\u306E\u914D\u5217`);
+    if (proto["transport"] === void 0) bad("V-A5", "hard.extra_pickets \u306F\u8F38\u9001\u8239\uFF08transport\uFF09\u306E\u3042\u308B\u4EFB\u52D9\u3060\u3051\uFF08\u968A\u306E\u4E26\u3073\u306F\u99C6\u9010\u8266 \u2192 \u8F38\u9001\u8239 \u2192 \u99C6\u6F5C\u8247\uFF09");
+    if (typeof pid !== "string" || pid === "") return bad("V-A5", "hard.picket_enemy_id \u306F enemies.json \u306E id");
+    try {
+      getEnemyRecord(data, pid);
+    } catch (e) {
+      bad("V-A5", `hard.picket_enemy_id\uFF08${pid}\uFF09\u306F AI \u3068\u7832\u3092\u6301\u3064\u8A18\u9332: ${e.message}`);
+    }
+    if (pus === void 0) bad("V-A5", "anchored.picket_underway_s \u306F\u30CF\u30FC\u30C9\u306E\u99C6\u6F5C\u8247\uFF08hard.extra_pickets\uFF09\u306E\u3042\u308B\u4EFB\u52D9\u306B\u8981\u308B");
+    const starts = es.map((s, i) => readStart(s, `${at2}.hard.extra_pickets[${i}]`));
+    if (mission.hard) pickets = { enemyId: pid, starts };
+  }
+  const ships = mission.enemyStarts.map((s) => ({ id: mission.enemyId, s }));
+  if (mission.transport) ships.push({ id: mission.transport.enemyId, s: mission.transport.start });
+  if (pickets) for (const s of pickets.starts) ships.push({ id: pickets.enemyId, s });
+  const { width, height } = mission.bounds;
+  const n = mission.night;
+  const [jx, jy, mirror] = n ? [n.enemyJitterXM, n.enemyJitterYM, n.mirrorChance > 0] : [0, 0, false];
+  const world = data.hitRateModel.world;
+  const shoreYs = shoreYsOf(proto, mission);
+  const vis = getVisibilityParams(data, mission.moon, false);
+  const clearM = enemyDetectRangeM(getEnemyRecord(data, mission.enemyId).detection.base_detect_m, speedFactorForBand("full", vis.speedFactor), vis, false);
+  const { playerStart: p, returnPoint: rp } = mission;
+  for (let i = 0; i < ships.length; i++) {
+    const { id, s } = ships[i];
+    const r = getEnemyRecord(data, id);
+    const margin = r.length_m * world.sprite_scale / 2;
+    const hull = r.length_m * world.ship_hit_scale / 2 + ANCHOR_CHECK_SHORE_CLEAR_M;
+    for (const x0 of mirror ? [s.x, width - s.x] : [s.x]) {
+      for (const [x, y] of [[x0 - jx, s.y - jy], [x0 + jx, s.y - jy], [x0 - jx, s.y + jy], [x0 + jx, s.y + jy]]) {
+        if (!(x >= margin && x <= width - margin && y >= margin && y <= height - margin)) bad("V-A3", `\u968A\u306E ${i + 1} \u96BB\u76EE\uFF08${id}\uFF09\u306E\u4F4D\u7F6E\uFF08${x}, ${y}\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u7AEF\uFF09\u306F\u6D77\u57DF\u306E\u7E01\u304B\u3089 ${margin} m\uFF08\u8868\u793A\u4E0A\u306E\u8239\u4F53\u534A\u5206\uFF09\u4EE5\u4E0A\u5185`);
+        if (!shoreYs.every((ly) => Math.abs(ly - y) >= hull)) bad("V-A3", `\u968A\u306E ${i + 1} \u96BB\u76EE\uFF08${id}\uFF09\u306E\u8239\u4F53\uFF08\u4E2D\u5FC3 ${x}, ${y}\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u7AEF\uFF09\u306F\u5CB8\u306E\u7DDA\u304B\u3089 ${ANCHOR_CHECK_SHORE_CLEAR_M} m \u4EE5\u4E0A\u6C96\uFF08\u4E2D\u5FC3\u304B\u3089\u5CB8\u306E\u7DDA\u307E\u3067 ${hull} m \u4EE5\u4E0A\uFF09`);
+      }
+      const d2 = rectDist2(p.x, p.y, x0, s.y, jx, jy);
+      if (!(d2 > clearM * clearM)) bad("V-A4", `player_start \u306F\u968A\u306E ${i + 1} \u96BB\u76EE\uFF08${id}\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u7AEF\uFF09\u304B\u3089\u5168\u901F\u3067\u898B\u3064\u304B\u308B\u8DDD\u96E2\uFF08${clearM} m\u3002\u30CE\u30FC\u30DE\u30EB\u30FB\u53F2\u5B9F\u30E2\u30FC\u30C9\u306A\u3057\uFF09\u3088\u308A\u9060\u3044\uFF08${Math.sqrt(d2).toFixed(1)} m\uFF09`);
+      if (!(rectDist2(rp.x, rp.y, x0, s.y, jx, jy) > rp.radiusM * rp.radiusM)) bad("V-A4", `\u968A\u306E ${i + 1} \u96BB\u76EE\uFF08${id}\u3002\u4ECA\u591C\u306E\u63FA\u3089\u304E\u306E\u7AEF\uFF09\u306F\u5E30\u6295\u306E\u8F2A\u306E\u5916`);
+    }
+  }
+  const air = getDawnAir(data, mission.id);
+  if (air.shipsAtDawn !== "retire" || air.retireEdge === null) bad("V-A6", `anchored \u306E\u4EFB\u52D9\u306E dawn_air.enemy_ships_at_dawn \u306F retire \u3067 dawn_withdraw \u304C\u3042\u308B\uFF08\u591C\u660E\u3051\u306B\u6B62\u307E\u3063\u305F\u8266\u306F\u52D5\u304D\u51FA\u3057\u3066\u9000\u304F\u3002${air.shipsAtDawn}\uFF09`);
+  return { destroyerUnderwayS: raw["destroyer_underway_s"], transportUnderway: false, picketUnderwayS: pus === void 0 ? null : pus, alarmS: raw["alarm_s"], pickets };
+}
+function anchorSetupPart(p, destroyers, transport) {
+  if (!p) return {};
+  const underwayS = [];
+  for (let i = 0; i < destroyers; i++) underwayS.push(p.destroyerUnderwayS);
+  if (transport) underwayS.push(null);
+  if (p.pickets) for (let i = 0; i < p.pickets.starts.length; i++) underwayS.push(p.picketUnderwayS);
+  return { anchors: { underwayS, alarmS: p.alarmS } };
+}
+
+// ../wt-0176202/src/config/backdrop-mission-data.ts
+var BACKDROP_KEYS = ["detect_factor", "behind_m", "source"];
+var isObj11 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var isNum9 = (v) => typeof v === "number" && Number.isFinite(v);
+function getBackdropParams(data, mission) {
+  const m = data.missionsSeed.missions.find((x2) => x2["id"] === mission.id);
+  const proto = isObj11(m?.["v0_1_prototype"]) ? m["v0_1_prototype"] : null;
+  const raw = proto?.["shore_backdrop"];
+  if (!proto || raw === void 0) return null;
+  const at2 = `${mission.id}.v0_1_prototype.shore_backdrop`;
+  const bad = (v, msg) => {
+    throw new Error(`${at2}${msg}\uFF08${v}\u30FBspec-v0810 \xA74.4\uFF09`);
+  };
+  if (!isObj11(raw)) return bad("V-B1", " \u306F object");
+  const keys = Object.keys(raw);
+  if (keys.length !== BACKDROP_KEYS.length || !BACKDROP_KEYS.every((k) => keys.includes(k))) bad("V-B1", `: \u9375\u306F\u3061\u3087\u3046\u3069 ${BACKDROP_KEYS.join("\u30FB")}\uFF08${keys.join("\u30FB") || "\u306A\u3057"}\uFF09`);
+  const f = raw["detect_factor"];
+  if (!(isNum9(f) && f > 0 && f < 1)) bad("V-B1", `.detect_factor \u306F 0 \uFF1C \u4FC2\u6570 \uFF1C 1\uFF08${String(f)}\uFF09`);
+  const diag = Math.hypot(mission.bounds.width, mission.bounds.height);
+  const x = raw["behind_m"];
+  if (!(isNum9(x) && x > 0 && x <= diag)) bad("V-B1", `.behind_m \u306F 0 \uFF1C \u8DDD\u96E2 \u2264 \u6D77\u57DF\u306E\u5BFE\u89D2\uFF08${diag.toFixed(1)} m\u3002${String(x)}\uFF09`);
+  if (!(typeof raw["source"] === "string" && raw["source"].trim() !== "")) bad("V-B1", ".source \u306F\u7A7A\u3067\u306A\u3044\u6587\u5B57\u5217");
+  if (!mission.coast && proto["shores"] === void 0) bad("V-B2", " \u306F\u5CB8\u306E\u7DDA\u306E\u3042\u308B\u4EFB\u52D9\uFF08coast \u306E south \u304B shores\uFF09\u3060\u3051");
+  if (!mission.enemyStart || mission.barges || mission.ptBoats) bad("V-B2", " \u306F\u99C6\u9010\u8266\u306E\u4EFB\u52D9\uFF08enemy_start\uFF09\u3060\u3051\uFF08\u5927\u767A\u30FB\u7C73PT \u306E\u4EFB\u52D9\u306F\u767A\u898B\u306E\u4ED5\u7D44\u307F\u304C\u5225\uFF09");
+  const behindM = x;
+  return { detectFactor: f, behindM, behindM2: behindM * behindM };
+}
+function backdropSetupPart(data, mission, o) {
+  const p = o.backdropOff ? null : getBackdropParams(data, mission);
+  return p ? { backdrop: p } : {};
+}
+
+// ../wt-0176202/src/systems/world-night.ts
+function applyNight(night, bounds, starts, margin, barges, batteries) {
+  const w = bounds.width;
+  const mx = (x) => night.mirrored ? w - x : x;
+  const mh = (h) => night.mirrored ? wrapDeg360(360 - h) : wrapDeg360(h);
+  const outStarts = starts.map((s, i) => {
+    const d = night.enemyOffsets[i];
+    return { x: clamp(mx(s.x + d.dx), margin, w - margin), y: clamp(s.y + d.dy, margin, bounds.height - margin), headingDeg: mh(s.headingDeg + d.dh) };
+  });
+  let outBarges = barges;
+  if (barges && (night.bargeLeadDx !== 0 || night.mirrored)) {
+    const headingDeg = mh(barges.headingDeg);
+    let leadX = mx(barges.leadX + night.bargeLeadDx);
+    const sin = Math.sin(headingDeg * Math.PI / 180);
+    const maxOff = barges.offsetsM.length > 0 ? barges.offsetsM[barges.offsetsM.length - 1] : 0;
+    if (sin > 0) leadX = Math.max(leadX, barges.boundsMarginM + maxOff * sin);
+    outBarges = { ...barges, leadX, headingDeg };
+  }
+  const outBatteries = batteries.map((p, i) => night.batteryDx[i] || night.mirrored ? { ...p, x: clamp(mx(p.x + night.batteryDx[i]), 0, w) } : p);
+  return { starts: outStarts, barges: outBarges, batteries: outBatteries };
+}
+function applyConvoyNight(night, c, boundsWidth) {
+  return { ...c, params: convoyParamsAtNight(c.params, night.bargeLeadDx, night.mirrored, boundsWidth) };
+}
+function applyPtNight(night, p) {
+  const o = night.enemyOffsets[0];
+  return ptParamsAtNight(p, o.dx, o.dy, night.mirrored);
+}
+
+// ../wt-0176202/src/systems/destroyer-setup.ts
+function picketSetup(data, starts, enemyId, hitScale, historical) {
+  return { ...destroyerSetup(data, starts, enemyId, null, hitScale, historical), enemyId };
+}
+function destroyerSetup(data, starts, enemyId, hitsOverride, hitScale, historical = false) {
+  const world = data.hitRateModel.world;
+  const r = getEnemyRecord(data, enemyId);
+  const hitLen = r.length_m * hitScale;
+  const hitBeam = r.beam_m * hitScale;
+  return {
+    starts,
+    spec: { lengthM: r.length_m, beamM: r.beam_m, hullCircles: r.hull_circles, hitsToSink: hitsOverride ?? r.torpedo_hits_to_sink, hitScale, boundsMarginM: r.length_m * world.sprite_scale / 2 },
+    shipAi: shipAiParamsFromData(r, getEvasionMultiplier(data, historical)),
+    gunnery: gunneryParamsFromData(r),
+    passRadius2: (hitLen / 2 + hitBeam) * (hitLen / 2 + hitBeam),
+    baseDetectM: r.detection.base_detect_m
+  };
+}
+
+// ../wt-0176202/src/core/evac-briefing.ts
+var EVAC_SUCCESS_TAIL_JA = "\uFF08\u7A7A\u8972\u304C\u53BB\u308B\u6642\u306B\u64CD\u4F5C\u4E2D\u306E\u968A\u3092\u58D5\u304B\u9670\u3078\uFF09";
+var EVAC_FUEL_NOTE_JA = "\uFF08\u7A7A\u8972\u306E\u9593\u306F\u6E1B\u3089\u306A\u3044\uFF09";
+var EVAC_WEAPON_JA = "\u6A5F\u9283\u306F\u50DA\u8247\u3082\u6483\u3064\uFF08\u6A5F\u306B\u307E\u305A\u5F53\u305F\u3089\u306A\u3044\uFF09";
+var EVAC_REPASS_JA = "\u7DE8\u968A\u306F\u6B21\u306E\u6CE2\u307E\u3067\u306B\u9593\u304C\u3042\u308C\u3070\u3082\u3046\u4E00\u5EA6\u6765\u308B";
+var EVAC_RAID_HAZARD_JA = "\u6E2F\u306E\u7A7A\u8972\uFF08\u4E88\u544A\u306E\u5F8C\u3001\u7DE8\u968A\u304C\u5225\u3005\u306E\u968A\u3092\u72D9\u3046\uFF09";
+function evacClockJa(durationS) {
+  return `\u7A7A\u8972\u304C\u53BB\u308B\u307E\u3067 ${Math.round(durationS)} \u79D2`;
+}
+function evacAfterRaidHazardJa(planes) {
+  return `\u7A7A\u8972\u304C\u53BB\u3063\u305F\u5F8C\u306E\u8FFD\u6483\uFF08\u6575\u6A5F ${planes} \u6A5F\uFF09`;
+}
+function evacDayRowJa(p) {
+  let caves = 0;
+  for (const s of p.shelters) if (s.kind === SHELTER_CAVE) caves++;
+  const covers = p.shelters.length - caves;
+  return covers > 0 ? `\u58D5 ${caves} \u304B\u6240\u30FB\u9670 ${covers} \u304B\u6240\u306E\u5916\u306F\u4E38\u898B\u3048 \u30FB \u9670\u306F\u898B\u3064\u304B\u308B\u3053\u3068\u304C\u3042\u308B` : `\u58D5 ${caves} \u304B\u6240\u306E\u5916\u306F\u4E38\u898B\u3048`;
+}
+function evacEnemyRowJa(r) {
+  const w = r.waves;
+  let rest = "";
+  for (let i = 1; i < w.length; i++) rest += ` \u2192 ${w[i].planes}\u6A5F\xD7${r.flights}`;
+  return `${w.length}\u6CE2\uFF08${w[0].planes}\u6A5F\u306E\u7DE8\u968A\u304C${r.flights}\u3064\u540C\u6642${rest}\uFF09`;
+}
+
+// ../wt-0176202/src/ui/hud-lines.ts
+var STATUS_BASE = ["\u6575\u5F71\u306A\u3057 \u30FB \u672A\u767A\u898B", "\u6575\u5F71\u3042\u308A \u30FB \u672A\u767A\u898B", "\u6575\u5F71\u306A\u3057 \u30FB \u767A\u898B\u3055\u308C\u305F\uFF01", "\u6575\u5F71\u3042\u308A \u30FB \u767A\u898B\u3055\u308C\u305F\uFF01"];
+var STATUS_LIT = [
+  ...STATUS_BASE,
+  ...STATUS_BASE.map((s) => `${s} \u30FB \u63A2\u7167\u706F\u306B\u7167\u5C04\u4E2D\uFF01`),
+  ...STATUS_BASE.map((s) => `${s} \u30FB \u7167\u660E\u5F3E\uFF01`),
+  ...STATUS_BASE.map((s) => `${s} \u30FB \u7167\u660E\u5F3E\uFF01`)
+];
+var STATUS_LABEL = [...STATUS_LIT, ...STATUS_LIT.map((_, i) => `${STATUS_BASE[i & 3]} \u30FB \u7159\u5E55\u306B\u96A0\u308C\u3066\u3044\u308B`)];
+var CALL_LABEL = {
+  [CALL_FUEL]: "\u71C3\u6599\u5C11 ",
+  [CALL_DAWN]: "\u591C\u660E\u3051\u8FD1\u3057 ",
+  [CALL_SUNK]: "\u6483\u6C88\uFF01",
+  [CALL_EXPENDED]: "\u9B5A\u96F7\u306A\u3057 "
+};
+
+// ../wt-0176202/src/ui/anchor-texts.ts
+var ANCHOR_BRIEF_HINT_JA = "\u505C\u6CCA\u8266\u306E\u5357\u306E\u5CB8\u306E\u9670\u304B\u3089\u5BC4\u308C";
+
+// ../wt-0176202/src/ui/arms-lines.ts
+var ARMS_BRIEFING_SHIP_JA = "\u6A5F\u9283\u306F\u8266\u306B\u52B9\u304B\u306A\u3044";
+var ARMS_BRIEFING_BARGE_JA = "\u9B5A\u96F7\u306F\u5927\u767A\u306E\u4E0B\u3092\u629C\u3051\u308B";
+function armsBriefingJa(s) {
+  if (s.mainWeapon === "torpedo" && !s.ptBoats && !s.patrolAir) return ARMS_BRIEFING_SHIP_JA;
+  if (s.barges) return ARMS_BRIEFING_BARGE_JA;
+  return "";
+}
+
+// ../wt-0176202/src/systems/briefing-numbers.ts
+function briefingNumbers(s, aimAssistJa = "") {
+  const f = s.vis.speedFactor;
+  return {
+    // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。米PT の任務（v0.6.3。魚雷を撃たない）はマーカーが無いので出さない
+    ...aimAssistJa && !s.ptBoats && !s.patrolAir && !s.evac ? { aimAssistJa } : {},
+    // 米PT の任務（v0.6.3）は条件の武器の句: 砲の名から（実機 1 回目から jp_05 は T-14 の 13mm、v0.6.4 の jp_01 は T-38 の 25mm）か撃たない（none）。他の任務は鍵ごと省く
+    ...s.ptBoats ? { weaponJa: s.guns ? ptGunBriefingJa(s.guns.label) : NO_WEAPON_BRIEFING_JA } : {},
+    // 夜の哨戒機の任務（v0.6.7。jp_02）: 機銃の句（v0.6.8。v0.6.7 は武器なし）と航跡の出る速さ（静音の上限）、月の行の空からの見え方（航跡・動く船体・停止）。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
+    ...s.patrolAir ? { weaponJa: patrolWeaponBriefingJa(s.patrolAir.gate.quietKt), airDetectJa: patrolAirDetectJa(s.patrolAir.gate.wakeDetectM, s.patrolAir.gate.nearM) } : {},
+    // もう一つの兵装の一言（v0.6.8。魚雷と機銃は全任務で両方使える）: 艦の任務は「機銃は艦に効かない」、大発の任務は「魚雷は大発の下を抜ける」。WorldSetup だけから（ui/arms-lines）。無い任務は鍵ごと省く
+    ...secondaryPart(s),
+    // 輸送隊の任務（v0.6.4 レビュー ux-6。jp_01）と揚陸の任務（v0.6.9。jp_04。spec R8/F10）は帰投地点の方角を自艇の出発点から（中心からの「南東」は出発点からは東・上陸の先頭からは北東だった）。他の任務は鍵ごと省く
+    ...s.convoy || s.landing ? { homeFromJa: bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.mission.returnPoint.x, s.mission.returnPoint.y)) } : {},
+    // 停泊して揚陸する輸送船の任務（v0.6.9。jp_04）: 条件の最後の句（帰投の輪で待てる・揚陸の秒・沈むまでの本数・教え「輸送船から離れて戦え」・米PT の魚雷は自艇の下を抜ける）。他の任務は鍵ごと省く
+    ...s.landing ? { landingJa: landingBriefingJa(s.landing.params.unloadS, s.landing.params.hitsToSink) } : {},
+    // 味方の駆逐艦 卯月（v0.6.10 S7。jp_04。LD4・LD16）: 敵の行の後ろに「輸送船の北東に味方の卯月。走るPTを照らして撃つ」（方角は泊地から卯月へ。今夜の泊地の南北のずれでも北東）。無い任務・&noally は鍵ごと省く
+    ...s.landing && s.allyDestroyer ? { allyJa: allyBriefingJa(s.allyDestroyer.labelJa, bearingJa(bearingDeg(s.landing.params.x, s.landing.params.y, s.allyDestroyer.x, s.allyDestroyer.y))) } : {},
+    // 空襲下の退避（v0.6.11 S6。jp_03。spec-v0611-r2 §10.5）: 成功の尾・時の行・敵の波・危険の名前（昼の言い方）・条件の時計と燃料と機銃ともう一度来る編隊。見越し点マーカーは出さない（狙う艦が無い）。他の任務は鍵ごと省く
+    ...evacPart(s),
+    // 止まった艦の任務（v0.8.1 S4。us_06。spec-v0810 §3.7 D-O6）: 敵の行の括弧「（南西に停泊）」＝自艇の出発点から見た隊の先頭の艦（今夜の揺らぎ込み）。無い任務は鍵ごと省く
+    ...s.anchors && s.destroyer ? { enemyAtJa: `${bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, s.destroyer.starts[0].x, s.destroyer.starts[0].y))}\u306B\u505C\u6CCA` } : {},
+    // 岸の陰（v0.8.1 IP1。us_06。実機 1 回目「浜の方へ向かえばいいという指示やヒントも無い」）: 危険の行の尾に寄り方の手がかり（HUD の 2 行目の手がかりと同じ言葉）。無い任務・&nobackdrop は鍵ごと省く
+    ...s.backdrop && s.anchors ? { hazardTailJa: ANCHOR_BRIEF_HINT_JA } : {},
+    // レーダー（v0.8.0 S4。us_04。spec-v0800 §4.9）: 月の行の尾（射程と、陸の反射のある海域なら「陸のそばは映らない」）。無い任務・?debug&noradar は鍵ごと省く
+    ...s.radar ? { radarJa: radarBriefingJa(s.radar.shipRangeM, s.radar.landClutterM > 0 && (s.shores !== void 0 || s.mission.coast !== null)) } : {},
+    visM: playerVisRangeM(s.vis),
+    detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
+    detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
+    durationS: s.durationS,
+    dawnJa: dawnConditionJa(s.dawnAir, s.night.mirrored),
+    fuelGal: s.fuelAllotmentGal,
+    torpedoes: s.torpedoCapacity,
+    gunsLabel: s.guns ? s.guns.label : "",
+    enemyFromJa: enemyFromJa(s),
+    homeX: s.mission.returnPoint.x,
+    homeY: s.mission.returnPoint.y,
+    boundsW: s.mission.bounds.width,
+    boundsH: s.mission.bounds.height
+  };
+}
+function evacPart(s) {
+  const ev = s.evac;
+  if (!ev) return {};
+  const planes = s.mission.dawnStrike ? s.mission.dawnStrike.count : 0;
+  return {
+    successTailJa: EVAC_SUCCESS_TAIL_JA,
+    dayRowJa: evacDayRowJa(ev.params),
+    enemyRowJa: evacEnemyRowJa(ev.raid),
+    clockJa: evacClockJa(s.durationS),
+    fuelNoteJa: EVAC_FUEL_NOTE_JA,
+    weaponJa: EVAC_WEAPON_JA,
+    ...ev.raid.passesMax > 1 ? { repassJa: EVAC_REPASS_JA } : {},
+    hazardLabelsJa: { [EVAC_EVENT_ID]: EVAC_RAID_HAZARD_JA, [DAWN_STRIKE_EVENT_ID]: evacAfterRaidHazardJa(planes) }
+  };
+}
+function secondaryPart(s) {
+  const j2 = armsBriefingJa(s);
+  return j2 ? { secondaryJa: j2 } : {};
+}
+function enemyFromJa(s) {
+  if (s.patrolAir) return bearingJa(s.patrolAir.gate.fromBearingDeg);
+  if (s.evac) return bearingJa(s.evac.raid.fromBearingDeg);
+  if (s.landing) return s.landing.params.fromDirsJa;
+  const e = s.enemyFrom;
+  if (s.transit) {
+    const col = bearingJa(s.transit.inbound.edge === "west" ? 270 : 90);
+    const cover = e ? compassJa(e.x, e.y, s.mission.bounds.width, s.mission.bounds.height) : col;
+    return cover === col ? col : `${col}\u3068${cover}`;
+  }
+  if (!e) return "";
+  if (s.ptBoats) return bearingJa(bearingDeg(s.playerStart.x, s.playerStart.y, e.x, e.y));
+  return compassJa(e.x, e.y, s.mission.bounds.width, s.mission.bounds.height);
+}
+
+// ../wt-0176202/src/systems/world-setup.ts
+function buildWorldSetup(data, missionId, o = {}) {
+  const sortie = o.sortie ?? null;
+  const hard = o.hard ?? false;
+  const historical = o.historical ?? sortie?.historical ?? false;
+  const debugFuelAllotmentGal = o.fuelGal ?? NaN;
+  const debugDawnS = o.dawnS ?? NaN;
+  if (sortie && sortie.missionId !== missionId) throw new Error(`\u51FA\u6483\uFF08${sortie.missionId}\uFF09\u3068\u4EFB\u52D9\uFF08${missionId}\uFF09\u304C\u9055\u3046`);
+  if (sortie && sortie.hard !== hard) throw new Error(`\u51FA\u6483\u306E\u96E3\u6613\u5EA6\uFF08${sortie.hard ? "\u30CF\u30FC\u30C9" : "\u30CE\u30FC\u30DE\u30EB"}\uFF09\u3068\u5F15\u6570\u304C\u9055\u3046`);
+  if (sortie && sortie.historical !== historical) throw new Error(`\u51FA\u6483\u306E\u53F2\u5B9F\u30E2\u30FC\u30C9\uFF08${sortie.historical ? "\u30AA\u30F3" : "\u30AA\u30D5"}\uFF09\u3068\u5F15\u6570\u304C\u9055\u3046`);
+  const world = data.hitRateModel.world;
+  const launch = data.hitRateModel.torpedo_launch;
+  const feel = data.hitRateModel.feel;
+  const mission = getPrototypeMission(data, missionId, hard);
+  const boatRecord = getBoatRecord(data, mission.playerBoatId);
+  const torpedoRecord = getTorpedoRecord(data, mission.torpedoId);
+  const batteries = o.batteryOff ? [] : getShoreBatteryParamsList(data, mission);
+  const events = data.riskEvents.events;
+  const tr = mission.transport && !o.transportOff ? mission.transport : null;
+  const anchor = getAnchorParams(data, mission);
+  const shipStarts = [...mission.enemyStarts, ...tr ? [tr.start] : [], ...anchor?.pickets?.starts ?? []];
+  const ptBase = getPtParams(data, mission, world.time_scale);
+  const enemyRolls = shipStarts.length + (ptBase ? 1 : 0) + transitNightRolls(data, mission);
+  const night = sortie && mission.night && !o.fixedNight ? rollNight(mission.night, (id) => events.find((e) => e["id"] === id)?.["share"], sortie.seed, enemyRolls, batteries.length) : fixedNight(enemyRolls, batteries.length);
+  const forced = (id) => id === "storm" && !!o.forceStorm || id === "enemy_aircraft" && !!o.forcePlane || id === "friendly_fire" && !!o.forceFriendly;
+  const absentHazards = night.absentHazards.filter((id) => !forced(id));
+  const absent = (id) => absentHazards.includes(id);
+  const shipHitScale = o.shipHitScale !== void 0 && o.shipHitScale > 0 ? o.shipHitScale : world.ship_hit_scale;
+  const destroyer = mission.enemyStart ? { ...destroyerSetup(data, mission.enemyStarts, mission.enemyId, mission.enemyHitsToSink, shipHitScale, historical), objectiveSinks: mission.objectiveSinkCount ?? mission.enemyStarts.length } : null;
+  const applied = applyNight(night, mission.bounds, destroyer ? shipStarts : [], destroyer ? destroyer.spec.boundsMarginM : 0, getBargeParams(data, mission), batteries);
+  if (destroyer) destroyer.starts = applied.starts.slice(0, mission.enemyStarts.length);
+  let transport = null;
+  if (destroyer && tr) {
+    const { starts: _unused, ...rest } = destroyerSetup(data, [tr.start], tr.enemyId, null, shipHitScale, historical);
+    transport = { ...rest, enemyId: tr.enemyId, start: applied.starts[mission.enemyStarts.length] };
+  }
+  const pk = anchor?.pickets ?? null;
+  const pickets = destroyer && pk ? picketSetup(data, applied.starts.slice(mission.enemyStarts.length + (tr ? 1 : 0)), pk.enemyId, shipHitScale, historical) : null;
+  const barges = applied.barges;
+  const ptBoats = ptBase ? applyPtNight(night, ptBase) : null;
+  const convoyBase = getConvoyParams(data, mission);
+  const shoreBatteries = applied.batteries;
+  const guns = getGunBatteryParams(data, mission);
+  const escort = getEscortParams(data, mission);
+  const boatParams = boatParamsFromData(boatRecord);
+  const fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
+  const fuelAllotmentGal = effectiveFuelAllotmentGal(data, mission, debugFuelAllotmentGal);
+  if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal \u304C\u8247\u306E fuel_capacity_gal \u3092\u8D85\u3048\u3066\u3044\u308B`);
+  const vis = getVisibilityParams(data, mission.moon, historical);
+  const visRange = playerVisRangeM(vis);
+  const baseDetectM = destroyer ? destroyer.baseDetectM : barges ? barges.baseDetectM : ptBoats ? ptBoats.baseDetectM : visRange;
+  const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
+  const raid = getRaidParams(data, mission);
+  const start = sortie ? sortieConditions(sortie, raid) : NO_SORTIE_EFFECT;
+  const landingPart = landingSetupPart(data, mission, ptBase, ptBoats, o);
+  const seaplane = o.planeOff || absent("enemy_aircraft") ? null : seaplaneParamsFor(data, mission, world.time_scale, { silentMaxKt: boatRecord.speed_bands_kt.silent_max, halfLengthM: boatRecord.length_m * world.hit_scale / 2, halfBeamM: boatRecord.beam_m * world.hit_scale / 2 });
+  return {
+    mission,
+    playerStart: o.bargesNear && lead ? lead : mission.playerStart,
+    coastEdgeY: coastEdgeYOf(mission),
+    mainWeapon: mission.mainWeapon,
+    boatParams,
+    boundsMarginM: boatRecord.length_m * world.sprite_scale / 2,
+    boatHalfLengthM: boatRecord.length_m * world.hit_scale / 2,
+    boatHalfBeamM: boatRecord.beam_m * world.hit_scale / 2,
+    damageParams: getBoatDamageParams(data, mission.playerBoatId),
+    timeScale: world.time_scale,
+    slowMoFactor: feel.hit_slowmo_factor,
+    slowMoSeconds: feel.hit_slowmo_seconds,
+    vis,
+    baseDetectM,
+    visRange2: visRange * visRange,
+    detectRangeAtStartM: enemyDetectRangeM(baseDetectM, speedFactorForBand("stop", vis.speedFactor), vis, false),
+    durationS: Number.isFinite(debugDawnS) ? debugDawnS : mission.durationS,
+    fuelCurve,
+    fuelAllotmentGal,
+    fuelStartGal: fuelAllotmentGal * start.fuelFactor,
+    raid,
+    start,
+    grounding: getGroundingParams(data),
+    friendly: absent("friendly_fire") ? null : getFriendlyParams(data, mission, world.time_scale),
+    storm: o.stormOff || absent("storm") ? null : getStormParams(data, mission, world.time_scale),
+    seaplane,
+    crew: getBoatCrewParams(data, mission.playerBoatId),
+    crewEffects: getBoatCrewEffects(data, mission.playerBoatId),
+    destroyer,
+    barges,
+    guns,
+    ptBoats,
+    convoy: convoyBase ? applyConvoyNight(night, convoyBase, mission.bounds.width) : null,
+    shoreBattery: shoreBatteries[0] ?? null,
+    shoreBatteries,
+    hard,
+    historical,
+    transport,
+    escort,
+    torpedoCapacity: mission.mainWeapon === "torpedo" ? getBoatTorpedoCount(data, mission.playerBoatId) : 0,
+    torpedoParams: torpedoParamsFromData(torpedoRecord, launch.arming_distance_m, launch.erratic_period_s),
+    // 史実モード（v0.5.2）は不発・蛇行の確率を historical_mode.reliability で上書き（torpedoes.json の値の代わり）。v0.6.0 から reliability_campaigns（米PT）の任務だけ（日本の 45cm 魚雷には米の Mk 8 の値を掛けない）
+    torpedoReliability: historical && data.hitRateModel.historical_mode.reliability_campaigns.includes(missionCampaignId(data, missionId)) ? getHistoricalReliability(data) : torpedoReliabilityFromData(torpedoRecord),
+    torpedoJitterDeg: torpedoRecord.reliability.jitter_deg,
+    launchOffsetM: boatRecord.beam_m / 2,
+    salvoIntervalS: launch.salvo_interval_s,
+    smokeParams: getBoatSmokeParams(data, mission.playerBoatId),
+    night,
+    hazardsTonight: mission.hazards.filter((h) => !absent(h)),
+    absentHazards,
+    enemyFrom: destroyer ? { x: destroyer.starts[0].x, y: destroyer.starts[0].y } : barges ? { x: barges.leadX, y: barges.leadY } : ptBoats ? { x: ptBoats.startX[0], y: ptBoats.startY[0] } : null,
+    dawnAir: getDawnAir(data, missionId),
+    airStrike: o.strikeOff ? null : getAirStrikeParams(data, mission, world.time_scale, { halfLengthM: boatRecord.length_m * world.hit_scale / 2, halfBeamM: boatRecord.beam_m * world.hit_scale / 2, boundsMarginM: boatRecord.length_m * world.sprite_scale / 2 }, escort),
+    ...engineSetupPart(data, missionId, o),
+    ...gunboatSetupPart(data, mission, o),
+    ...patrolAirSetupPart(data, missionId, o),
+    ...landingPart,
+    // 停泊して揚陸する味方の輸送船と米PT の雷撃（v0.6.9。jp_04 だけ。無い任務では鍵ごと出ない）
+    ...allyDestroyerSetupPart(data, mission, ptBase, landingPart.landing ?? null, o),
+    // 味方の駆逐艦 卯月（v0.6.10。jp_04 だけ。無い任務と allyOff では鍵ごと出ない）
+    ...evacSetupPart(data, missionId, hard),
+    // 空襲下の退避（v0.6.11。jp_03 だけ。6 つの隊・隠れ場所・波と編隊・燃料を数えない秒・昼。無い任務では鍵ごと出ない）
+    ...radarSetupPart(data, mission, o),
+    // 自艇のレーダー（v0.8.0。v0_1_prototype.radar の任務＝us_04 だけ。無い任務と radarOff では鍵ごと出ない）
+    ...transitSetupPart(data, mission, night.enemyOffsets[shipStarts.length] ?? null, historical),
+    // 列の通過（v0.8.0。us_04 だけ。今夜の揺らぎは駆逐艦の後の 1 件。無い任務では鍵ごと出ない）
+    ...shoresSetupPart(data, mission),
+    // 海峡の両岸（v0.8.0。us_04 だけ。無い任務では鍵ごと出ない）
+    ...destroyer ? anchorSetupPart(anchor, mission.enemyStarts.length, tr !== null) : {},
+    // 止まった艦（v0.8.1。us_06 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
+    ...backdropSetupPart(data, mission, o),
+    // 暗い岸を背に（v0.8.1。us_06 だけ。無い任務と backdropOff では鍵ごと出ない）
+    ...seaplaneNightSetupPart(data, mission, seaplane),
+    // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。無い任務と水上機の無い夜は鍵ごと出ない）
+    ...pickets ? { pickets } : {}
+    // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
+  };
+}
+function coastEdgeYOf(m) {
+  if (!m.coast) return NaN;
+  let y = m.bounds.height;
+  for (const r of m.shallows) if (r.y + r.h >= m.bounds.height && r.y < y) y = r.y;
+  return y;
+}
+
+// okit-base.ts
+var OTHER_BRIEFING_IDS = ["us_01", "us_02", "us_03", "us_04", "us_06", "jp_01", "jp_02", "jp_03", "jp_04", "jp_05", "jp_06"];
+var AIM = "\u898B\u8D8A\u3057\u70B9\u30DE\u30FC\u30AB\u30FC \u4F7F\u7528\u53EF";
+function otherBriefingsJson() {
+  const out = [];
+  const nameOf = (e) => enemyNameJa(gameData, e);
+  const labelOf = (h) => riskLabelJa(gameData, h);
+  for (const id of OTHER_BRIEFING_IDS)
+    for (const hard of [false, true])
+      for (const historical of [false, true])
+        for (const seed of [1, 2, 3, 12345]) {
+          const setup = buildWorldSetup(gameData, id, { sortie: directSortie(id, seed, "none", hard, historical), hard });
+          const r = getBriefingRecord(gameData, id, hard);
+          const rec = { ...r, hazardIds: setup.hazardsTonight, absentHazardIds: setup.absentHazards };
+          out.push([id, hard, historical, seed, r.titleJa, formatDateJa(r.date), r.place, r.noteJa, briefingRows(rec, briefingNumbers(setup, AIM), nameOf, labelOf)]);
+        }
+  return JSON.stringify(out);
+}
+
+// orun-base.ts
+var j = otherBriefingsJson();
+console.log("base", OTHER_BRIEFING_IDS.length, j.length, createHash("sha256").update(j).digest("hex"));
