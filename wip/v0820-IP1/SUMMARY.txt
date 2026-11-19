@@ -3,7 +3,7 @@
 ✓ lint
 ✗ npm test (see test.log)
 ✓ g2 OK 39 DIFF 0
-✗ ab-all cases 58 same 56 diff 2
+✗ ab-all cases 58 same 57 diff 1
 ✗ ab-all@audio cases 58 same 57 diff 1
 ✓ ab-all@noaudio cases 58 same 58 diff 0
 ✓ ab-jp04base cases 8 same 8 diff 0
@@ -53,11 +53,9 @@
     hud us_05 seed 2 RECONUI masked 37 same:false snapshots 270 最初の違い 85 秒 {"path":".hud.25.y","a":419.46470158835484,"b":426.5980623467539}
     hud us_05&hard seed 1 RECONUI masked 34 same:false snapshots 270 最初の違い 51 秒 {"path":".hud.25.y","a":511.6463883278004,"b":521.8362137351746}
     hud us_05&hard seed 2 RECONUI masked 37 same:false snapshots 270 最初の違い 85 秒 {"path":".hud.25.y","a":419.46470158835484,"b":426.5980623467539}
-    differs (ab-all): nodawn us_02 seed 1 nostrike same:false frames 10978 最初の違い frame 10977 {"path":".t","a":182.966667,"b":182.95}
-    differs (ab-all): result us_02 seed 1 result same:false frames 10979 最初の違い frame 10977 {"path":".t","a":182.966667,"b":182.95}
-✓ ab-all rerun of nodawn (JOBS=1, same audio state; the ✗ above stays): cases 16 same 16 diff 0
+    differs (ab-all): result us_02 seed 1 result same:false frames 11331 最初の違い frame 11329 {"path":".t","a":188.816667,"b":188.833333}
 ✓ ab-all rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
-    differs (ab-all@audio): result us_02 seed 1 result same:false frames 10979 最初の違い frame 10977 {"path":".t","a":182.966667,"b":182.95}
+    differs (ab-all@audio): result us_02 seed 1 result same:false frames 10979 最初の違い frame 10977 {"path":".t","a":182.95,"b":182.966667}
 ✓ ab-all@audio rerun of result (JOBS=1, same audio state; the ✗ above stays): cases 8 same 8 diff 0
 ✓ tex-ab CHECK=1 0 ✗ lines
 - art-perf (SKIP)
