@@ -1,0 +1,4 @@
+✓ build
+✓ typecheck
+✓ lint
+✗ npm test (see test.log)
