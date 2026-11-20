@@ -46,16 +46,6 @@ export function columnShipKit(ds: DestroyerSetup, lineAi: ShipAiParams, column: 
   return k ? { spec: k.spec, ai: k.lineAi, gunnery: k.gunnery, artKey: k.artKey } : { spec: ds.spec, ai: lineAi, gunnery: ds.gunnery, artKey: destroyerArt };
 }
 
-/**
- * 隊の通過の半径の 2 乗（無ければ base のまま＝今の任務）。片道の列（kits のある列＝us_05）は Infinity（v0.8.2 IP1。実機 1 回目のユーザー「魚雷が船体の下を通ってしまうことが多くなった」）:
- * 凍結の systems/torpedo-pool は走る魚雷を「最寄りの浮いている艦の中心から通過の半径の外へ遠ざかり始めた」ステップで外れに決め、以後は当たりを見ない。
- * 道の違う 7 隻の列では最寄りが別の艦（前の時雨・前の戦艦）のうちに外れに決まり、その魚雷が後ろの艦の絵の下を抜けた（ヘッドレスの測り: 476 本のうち 100 本）。
- * 片道の列では通り過ぎで決めず、射程の終わり・海の外・列のすべてが出た時に決める（走る魚雷は当たる艦があれば当たる）。
- */
-export function columnPassRadius2(base: number, column: readonly ColumnKit[] | undefined): number {
-  return column ? Infinity : base;
-}
-
 /** 隊の艦ごとの値を組む（constructor で 1 回）。destroyerArt は護衛と往復の列の絵の鍵・transportArt は輸送船の絵の鍵（呼ぶ側の TEXTURE_KEYS） */
 export function groupKits(g: GroupShape, ds: DestroyerSetup, transport: TransportSetup | null, pickets: PicketSetup | null, column: readonly ColumnKit[] | undefined, destroyerArt: string, transportArt: string): GroupKits {
   const guns: GunneryParams[] = [];

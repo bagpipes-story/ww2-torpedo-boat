@@ -44,7 +44,7 @@ describe('kits（L19）: us_05 の列の艦ごとの記録', () => {
     expect(g.kits.artKeys).toEqual(want);
     expect(keys.filter((k) => SHIP_TEX.test(k))).toEqual(want);
     expect(g.kits.classes).toEqual(['destroyer', 'destroyer', 'destroyer', 'heavy_cruiser', 'destroyer', 'battleship', 'battleship']);
-    // v0.8.2 IP1: 片道の列は通り過ぎで外れに決めない（Infinity。systems/column-kits の columnPassRadius2）。S2〜S4 は艦の通過の半径の最大（戦艦の kits[5]）だった
+    // v0.8.2 IP1: 片道の列は通り過ぎで外れに決めない（Infinity）。IP2 から全任務（systems/destroyer-group の TORPEDO_PASS_RADIUS2）。S2〜S4 は艦の通過の半径の最大（戦艦の kits[5]）だった
     expect(g.passRadius2).toBe(Infinity);
     expect(kits[5]!.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, ...kits.map((k) => k.passRadius2)));
     // 列の AI は最大速力だけ列の速さ（18 kt）・見張りの AI は記録の値そのまま（時雨だけ）
@@ -88,7 +88,7 @@ describe('kits（L19）: ほかの任務の隊は今の値の同じ物', () => {
       expect(g.kits.artKeys, tag).toEqual(keys.filter((k) => SHIP_TEX.test(k)));
       expect([g.kits.classes, g.roles, g.magazine], tag).toEqual([null, null, null]);
       expect(ShipMagazine.of(s.transit?.column, first, g.total, 1), tag).toBeNull();
-      expect(g.passRadius2, tag).toBe(Math.max(ds.passRadius2, s.transport ? s.transport.passRadius2 : 0, s.pickets ? s.pickets.passRadius2 : 0));
+      expect(g.passRadius2, tag).toBe(Infinity); // v0.8.2 IP2: 全任務で通り過ぎで外れに決めない（IP1 までは艦の通過の半径の隊の最大＝ds・transport・pickets の max）
     }
     expect(groups).toBeGreaterThanOrEqual(8); // us_01・us_02・us_04・us_06・jp_06 とそのハード
   });

@@ -82,7 +82,7 @@ describe('隊の並び（L41）', () => {
       expect(keys.filter((k) => SHIP_TEX.test(k))).toEqual(['tex-destroyer-mutsuki', 'tex-transport', 'tex-subchaser', 'tex-subchaser']);
       expect([g.ships[2]!.spec, g.ships[3]!.spec]).toEqual([s.pickets!.spec, s.pickets!.spec]);
       expect(g.ships.slice(2).map((d) => [d.state.x, d.state.y, d.state.headingDeg])).toEqual(s.pickets!.starts.map((p) => [p.x, p.y, p.headingDeg]));
-      expect(g.passRadius2).toBe(Math.max(s.destroyer!.passRadius2, s.transport!.passRadius2, s.pickets!.passRadius2));
+      expect(g.passRadius2).toBe(Infinity); // v0.8.2 IP2: 全任務で通り過ぎで外れに決めない（systems/destroyer-group の TORPEDO_PASS_RADIUS2。IP1 までは ds・transport・pickets の通過の半径の max）
       expect(s.pickets!.shipAi.ramEnabled).toBe(false);
       // 小さな世界（kit）も同じ並び・同じ出発点
       const w = anchorKit({ hard: true, seed });
