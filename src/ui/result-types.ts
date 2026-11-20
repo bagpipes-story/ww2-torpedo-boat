@@ -4,6 +4,7 @@
 // v0.6.6: 隼艇の僚艇の記録（GunboatResult。jp_01 のハード）。v0.6.8: 兵装の新しい道の記録（ArmsResult。使った夜だけ）。v0.6.11 S6: 空襲下の退避の記録（EvacResult の再 export）。
 // v0.8.1 S4: 止まった艦の任務（us_06）の記録 AnchorResult（ui/anchor-result）を海峡の夜の鍵の入れ物 StraitNightResult に足した（result-scene の MissionResult が継ぐ＝scene は変えない）。
 import type { AnchorResult } from './anchor-result';
+import type { ReconResult } from './recon-result';
 import type { RadarResult } from './radar-result';
 import type { StraitResult } from './strait-result';
 import type { BlindKind } from '../core/arms-cue';
@@ -179,4 +180,5 @@ export interface StraitNightResult {
   radar?: RadarResult; // レーダー（ui/radar-result。systems/strait-result-part の radarResultPart）
   strait?: StraitResult; // 列の通過（ui/strait-result。straitResultPart）
   anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06。ui/anchor-result。systems/anchor-result-part の anchorResultPart）
+  recon?: ReconResult; // 報告の任務（v0.8.2 S4。us_05。ui/recon-result。systems/recon-result-part の reconResultPart）
 }

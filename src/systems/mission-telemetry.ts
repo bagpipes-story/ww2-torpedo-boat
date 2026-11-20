@@ -14,6 +14,7 @@ import { raidResultLine } from '../core/sortie';
 import type { MissionResult } from '../scenes/result-scene';
 import { bargeResult, engineResult, escortResult, gunboatResult, seaplaneResultFields, stormResultFields } from './mission-result-extras';
 import { anchorResultPart } from './anchor-result-part';
+import { reconResultPart } from './recon-result-part';
 import { radarResultPart, straitResultPart } from './strait-result-part';
 import { evacResultPart } from '../core/evac-result';
 import { armsResultPart, refreshArmsTelemetry } from './arms-telemetry';
@@ -27,6 +28,7 @@ import { detectionsOf, objectiveDoneOf } from './mission-objective';
 import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
 import { ptResult, refreshPtTelemetry } from './pt-telemetry';
 import { refreshRadarTelemetry } from './radar-telemetry';
+import { refreshMagazineTelemetry, refreshReconTelemetry } from './recon-telemetry';
 import { refreshStraitTelemetry } from './strait-telemetry';
 import { refreshTransitTelemetry } from './transit-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
@@ -53,6 +55,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   // 沈み始めたか退いた後（v0.6.2。狙う艦がいない）と帰投地点の輪の中では撃てないので残弾 0 を見せる（魚雷ボタンが暗くなる）
   t.torpedoesLeft = w.enemy.allOut || w.atHome ? 0 : w.torpedoes.remaining;
   t.hits = w.hits;
+  t.torpedoUnder = w.torpedoUnder.count; // 近すぎて船体の下を通過（v0.8.2 IP1。systems/torpedo-under）
   t.timeLeftS = timeLeftS;
   // 敵の矢印と敵影: 駆逐艦（沈み始めたら無し）か、最も近い浮いている大発（v0.4.2。大発のスプライトの出し入れは barge-hunt）
   const e = w.enemy.focus(s.x, s.y);
@@ -136,6 +139,8 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshTransitTelemetry(t.transit, w); // 列の通過（v0.8.0 S2。us_04）: 段階ごとの隻数・残りの戻り（無い任務は何もしない）
   refreshStraitTelemetry(t.strait, w); // 海峡の夜（v0.8.0 S4。us_04）: 視程の 2 乗と衝突の危険（上の setSighted と同じ規則。無い任務は何もしない）
   refreshAnchorTelemetry(t.anchor, w); // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 数を写すだけ（鍵の無い任務は何もしない）
+  refreshReconTelemetry(t.recon, w); // 報告・無線・中継（v0.8.2 S2。us_05）と戦艦の弾薬庫: 数を写すだけ（鍵の無い任務は何もしない）
+  refreshMagazineTelemetry(t.magazine, w);
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
@@ -211,5 +216,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     ...radarResultPart(w), // レーダー（v0.8.0 S4。us_04）: レーダーの任務だけ radar の鍵（最初の接触・目で見えない間に撃った魚雷。本文の駆逐艦の行の後）
     ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
     ...anchorResultPart(w, data), // 止まった艦の任務（v0.8.1 S4。us_06）: anchor の鍵（卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒。本文の駆逐艦の行の後）
+    ...reconResultPart(w), // 報告の任務（v0.8.2 S4。us_05）: recon の鍵（報告・艦隊の命中と誘爆・魚雷で沈めた艦＝得点の shipKills。本文のレーダーの行の後に 2 行）
   };
 }

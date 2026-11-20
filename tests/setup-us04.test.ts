@@ -53,8 +53,8 @@ describe('us_04 の setup の snapshot（v0.8.0 S0 の木）', () => {
       const { ships: s0, enterS: e0, inbound: i0, outbound: o0, shipAi: a0, ...rest0 } = plain.transit!;
       expect(rest).toEqual(rest0);
       expect(ships).toBe(hard ? 4 : 3);
-      expect([inbound.edge, inbound.appearX, outbound.edge, outbound.appearX]).toEqual([i0.edge, i0.appearX, o0.edge, o0.appearX]);
-      expect(outbound.laneY - inbound.laneY).toBeCloseTo(800, 9); // 2 本の道は同じずれ
+      expect([inbound.edge, inbound.appearX, outbound!.edge, outbound!.appearX]).toEqual([i0.edge, i0.appearX, o0!.edge, o0!.appearX]);
+      expect(outbound!.laneY - inbound.laneY).toBeCloseTo(800, 9); // 2 本の道は同じずれ
       expect(shipAi.maxSpeedMps).toBe(a0.maxSpeedMps);
       if (seed === 1) expect([enterS, inbound.laneY]).toEqual([e0, i0.laneY]); // 同じ夜は同じずれ（難易度・史実モードに依らない）
       else expect(enterS).not.toBe(e0); // 違う夜は入りの秒がずれる

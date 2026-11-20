@@ -82,16 +82,20 @@ export interface KitWorld {
   readonly detectM: number;
 }
 
-/** us_04 の小さな世界。seed を渡せば今夜の揺らぎ込み（出撃の seed）、省けば揺らぎなし。radar は false で作らない。detect は自艇を見つける距離を出発時の値に */
-export function kitWorld(o: { hard?: boolean; seed?: number; dawnS?: number; radar?: boolean; detect?: boolean } = {}): KitWorld {
+/**
+ * us_04 の小さな世界。seed を渡せば今夜の揺らぎ込み（出撃の seed）、省けば揺らぎなし。radar は false で作らない。detect は自艇を見つける距離を出発時の値に。
+ * mission（v0.8.2 S0）は列のある任務（既定 us_04。us_05 の片道の列＝列だけの隊は護衛 0 隻・艦はみな列の AI の形＝S0 の世界と同じ）
+ */
+export function kitWorld(o: { hard?: boolean; seed?: number; dawnS?: number; radar?: boolean; detect?: boolean; mission?: string } = {}): KitWorld {
   const hard = o.hard ?? false;
-  const setup = buildWorldSetup(gameData, 'us_04', o.seed === undefined ? { hard } : { sortie: directSortie('us_04', o.seed, 'none', hard, false), hard });
+  const id = o.mission ?? 'us_04';
+  const setup = buildWorldSetup(gameData, id, o.seed === undefined ? { hard } : { sortie: directSortie(id, o.seed, 'none', hard, false), hard });
   const ds = setup.destroyer!;
   const tr = setup.transit!;
   const ships: KitShip[] = ds.starts.map((st) => new KitShip(st, ds.shipAi, ds.spec.boundsMarginM));
   for (let i = 0; i < tr.ships; i++) ships.push(new KitShip({ x: tr.inbound.appearX, y: tr.inbound.laneY, headingDeg: tr.inbound.headingDeg }, tr.shipAi, ds.spec.boundsMarginM));
   const transit = new DestroyerTransit(ships, ds.starts.length, tr);
-  const radar = o.radar === false ? null : new WorldRadar(setup.radar!, setup.mission.bounds, setup.shores, ships.length, null, tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''); // 東の揚陸の地の名は systems/radar-view の buildRadar と同じ（v0.8.0 S4）
+  const radar = o.radar === false ? null : new WorldRadar(setup.radar!, setup.mission.bounds, setup.shores, ships.length, null, tr.outbound !== null && tr.outbound.edge === 'east' ? tr.vilaLabelJa : ''); // 東の揚陸の地の名は systems/radar-view の buildRadar と同じ（v0.8.0 S4）
   const ps = setup.playerStart;
   return {
     setup, ships, transit, radar, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 } }, destroyers: { ships },

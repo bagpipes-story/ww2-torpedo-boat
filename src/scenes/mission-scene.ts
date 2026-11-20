@@ -231,7 +231,7 @@ export class MissionScene extends Phaser.Scene {
     const needGal = this.ringEdgeM * w.fuelCurve.galPerMCruise;
     const needS = dawnCallNeedS(this.ringEdgeM, w.fuelCurve.cruiseMps, this.timeScale);
     // 撃ち尽くし: 魚雷の任務は残弾 0、砲の任務は狩る大発が残っていない（撃破か上陸。v0.4.2）。撃沈は任務の目標（駆逐艦の撃沈／大発のノルマ）
-    const expended = w.setup.mainWeapon === 'torpedo' ? w.torpedoes.remaining === 0 && !w.torpedoesRunning : w.noTargetsLeft;
+    const expended = w.setup.mainWeapon === 'torpedo' ? w.torpedoCall.expended(w) : w.noTargetsLeft; // 魚雷は決着か最後の発射から 8 秒（v0.8.2 IP2。systems/torpedo-call）
     const before = this.callFlags;
     this.callFlags = updateReturnCalls(before, w.returnCallDone, expended, w.fuel.gal, needGal, this.timeLeftS, needS, rp.callMargin);
     if (before === 0 && this.callFlags !== 0) this.returnView?.pulse();

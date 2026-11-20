@@ -8,12 +8,14 @@
 // v0.8.0 S4（brief L33）: RADARUI=1・NORADAR=1 は ab-replay の S4 の濾し（S4_FILTER）で比べる（2 行目の S4 の行のスナップの数を masked に出す）。FILTERTEST=1 は濾しの試し（違いが出るはず）。
 // v0.8.1 S2: SET=us06 で us_06（ab-replay の us06 の組。秒は 200＝夜明けまで。S2 は A＝B＝今の木・S3 から A は S2 の commit のビルド）。
 // v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文だけを比べから外す濾し（scripts/headless/anchor-filter。A は S3 の commit のビルド・B は今の木。tests/anchor-ab-filter が固定）。
-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+// v0.8.2 S2: SET=us05 で us_05（ab-replay の us05 の組。秒は 270＝夜明けまで。S2 は A＝B＝今の木・S2b から A は S2 の commit のビルド）。
+// v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印だけを比べから外す濾し（scripts/headless/recon-filter。A は S3 の commit のビルド）。
+// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06|us05] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
 import { abCases, oneCase } from './ab-replay.mjs';
 import { chromium, envNum, pool, serve } from './lib.mjs';
 
 if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
+const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us05' ? 270 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
 const sa = await serve(process.env.A);
 const sb = await serve(process.env.B);
 const browser = await chromium.launch();
@@ -24,7 +26,7 @@ await sb.close();
 let bad = 0;
 for (const r of res) {
   if (!r.same) bad++;
-  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
 }
 console.log(`cases ${res.length} same ${res.length - bad} diff ${bad}`);
 process.exitCode = bad === 0 ? 0 : 1;

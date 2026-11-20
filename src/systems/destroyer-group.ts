@@ -5,12 +5,13 @@
 // 海域の外の列の艦は out（狙えない・見えない・撃たない）。allOut・allSettled は戻りの残りがある間は偽（R2）。列の無い任務は transit が null で、式は v0.7.2 のまま。
 // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。setup.anchors・setup.backdrop の任務だけ world-enemies が作った後に 1 回付ける＝anchors・backdrop。無い任務は null で式は今のまま）。
 // 輸送船の添字は transportIndex（無ければ −1）。ハードの駆潜艇（v0.8.1 S2b。setup.pickets）はその後ろ＝並びは護衛 → 列 → 輸送船 → 駆潜艇。駆潜艇は駆逐艦にも輸送船にも数えない（達成・KPI・撃沈 n/m・輸送船の加点の外）が、海の上の艦として allOut・allSettled・最寄り・体当たり・夜明けに退くに入る。
+// 片道の列（v0.8.2 S2。us_05。setup.transit.column）: 列の艦は艦ごとの記録の寸法・列の AI・砲・絵の鍵（systems/column-kits）。艦ごとの砲・KPI の旗・レーダーの種類・絵の鍵・艦種は kits（今の任務は今の 3 つ組の値）。
+// 見張りの役（systems/column-roles）は見張りのいる列だけ constructor が作り、弾薬庫（systems/ship-magazine）は規則のある艦のいる隊だけ world-enemies が 1 回付ける（無い任務は null）。
 import type Phaser from 'phaser';
 import { TEXTURE_KEYS } from '../config/game-config';
 import type { BoatState, SeaBounds } from '../core/boat-motion';
 import { allShipsOut, allShipsSettled, sinkingCount, withdrawnCount } from '../core/dawn-withdraw';
 import { litByOwnLight } from '../core/own-light';
-import { RADAR_KIND_SHIP, RADAR_KIND_SMALL } from '../core/radar';
 import type { SeededRng } from '../core/rng';
 import { startRetire } from '../core/ship-ai';
 import type { LandLine } from '../core/strait-geometry';
@@ -21,17 +22,28 @@ import { shipArtKey } from '../config/ship-art-config';
 import type { TransitSetup } from '../config/transit-mission-data';
 import { DestroyerAnchor } from './destroyer-anchor';
 import { DestroyerTransit } from './destroyer-transit';
+import { ColumnRoles } from './column-roles';
+import { columnShipKit, groupKits, type GroupKits } from './column-kits';
+import type { ShipMagazine } from './ship-magazine';
 import { ShoreBackdrop } from './shore-backdrop';
 import { EnemyFire } from './enemy-fire';
 import type { SplashPool } from './splash-pool';
 import type { DestroyerSetup, PicketSetup, TransportSetup } from './world-setup';
+
+/**
+ * 自艇の魚雷の通過の半径の 2 乗（v0.8.2 IP2。全任務の 1 つの規則。ユーザーの決め 2026-11-19「推奨の全任務で直す」）: Infinity＝走る魚雷を「最寄りの浮いている艦の中心から
+ * 遠ざかり始めた」で外れに決めない（凍結の systems/torpedo-pool の markMissIfPassed が働かない）。外れに決まるのは射程の終わり・海の外・隊のすべてが出た時で、それまでは
+ * 後ろの艦にも当たる（v0.8.2 IP1 では片道の列＝us_05 だけ。前は艦の通過の半径の隊の最大で、前の艦を過ぎて外れに決まった魚雷が後ろの艦の絵の下を抜けた）。
+ * 艦ごとの passRadius2（destroyer-setup・transport・pickets・列の kits）は setup の値のまま残る（模擬 core/intercept-sim などが読む）
+ */
+export const TORPEDO_PASS_RADIUS2 = Infinity;
 
 export class DestroyerGroup {
   readonly ships: Destroyer[] = [];
   readonly fires: EnemyFire[] = [];
   /** 駆逐艦の隻数（先頭から。これより後ろは輸送船・駆潜艇） */
   readonly destroyerCount: number;
-  /** 魚雷の通過判定の半径二乗（隊の最大） */
+  /** 魚雷の通過判定の半径二乗（v0.8.2 IP2 から全任務で TORPEDO_PASS_RADIUS2＝通り過ぎで外れに決めない） */
   readonly passRadius2: number;
   /** 撃沈の達成に要る駆逐艦の隻数（v0.6.0。既定は全隻。jp_06 のハードは 2 隻中 1 隻） */
   readonly objectiveSinks: number;
@@ -41,7 +53,10 @@ export class DestroyerGroup {
   readonly transportIndex: number;
   readonly picketIndex: number; // ハードの駆潜艇（v0.8.1 S2b）の先頭の添字（無ければ −1）と隻数
   readonly picketCount: number;
-  private readonly guns: readonly [DestroyerSetup['gunnery'], DestroyerSetup['gunnery'] | null, DestroyerSetup['gunnery'] | null]; // 艦ごとの砲（gunneryAt）: 駆逐艦（列の艦も）・輸送船・駆潜艇
+  readonly kits: GroupKits; // 艦ごとの砲（gunneryAt）・KPI の旗（kpiAt）・レーダーの種類（radarKindAt）・絵の鍵・艦種（v0.8.2 S2。systems/column-kits。今の任務は今の 3 つ組の値）
+  /** 列の見張り（v0.8.2 S2。見張りのいる片道の列＝us_05 だけ。destroyer-step が列の段階の直後に進める）と戦艦の弾薬庫（world-enemies が 1 回付ける）。無い任務は null */
+  readonly roles: ColumnRoles | null;
+  magazine: ShipMagazine | null = null;
   /** 止まった艦（v0.8.1 S2。setAnchors）と暗い岸を背に（setBackdrop）。付けるのは world-enemies の 1 回だけ。無い任務は null */
   anchors: DestroyerAnchor | null = null;
   backdrop: ShoreBackdrop | null = null;
@@ -63,18 +78,18 @@ export class DestroyerGroup {
     if (transit) {
       const leg = transit.inbound;
       for (let i = 0; i < transit.ships; i++) {
-        this.ships.push(new Destroyer(scene, { x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, ds.spec, transit.shipAi, bounds, lookoutRng, destroyerTextureKey));
-        this.fires.push(new EnemyFire(scene, ds.gunnery, gunRng, leg.headingDeg, splashes));
+        const k = columnShipKit(ds, transit.shipAi, transit.column, i, destroyerTextureKey); // 片道の列は艦ごとの記録（v0.8.2 S2）・往復の列は護衛と同じ物
+        this.ships.push(new Destroyer(scene, { x: leg.appearX, y: leg.laneY, headingDeg: leg.headingDeg }, k.spec, k.ai, bounds, lookoutRng, k.artKey));
+        this.fires.push(new EnemyFire(scene, k.gunnery, gunRng, leg.headingDeg, splashes));
       }
     }
     this.destroyerCount = this.ships.length;
     this.objectiveSinks = Math.min(ds.objectiveSinks ?? this.destroyerCount, this.destroyerCount);
-    this.passRadius2 = ds.passRadius2;
+    this.passRadius2 = TORPEDO_PASS_RADIUS2; // 全任務で 1 つの規則（v0.8.2 IP2。下の定数の注）
     this.transportIndex = transport ? this.ships.length : -1;
     if (transport) {
       this.ships.push(new Destroyer(scene, transport.start, transport.spec, transport.shipAi, bounds, lookoutRng, TEXTURE_KEYS.transport));
       this.fires.push(new EnemyFire(scene, transport.gunnery, gunRng, transport.start.headingDeg, splashes));
-      if (transport.passRadius2 > this.passRadius2) this.passRadius2 = transport.passRadius2;
     }
     this.picketIndex = pickets ? this.ships.length : -1;
     this.picketCount = pickets ? pickets.starts.length : 0;
@@ -83,10 +98,10 @@ export class DestroyerGroup {
         this.ships.push(new Destroyer(scene, start, pickets.spec, pickets.shipAi, bounds, lookoutRng, shipArtKey(pickets.enemyId)));
         this.fires.push(new EnemyFire(scene, pickets.gunnery, gunRng, start.headingDeg, splashes));
       }
-      if (pickets.passRadius2 > this.passRadius2) this.passRadius2 = pickets.passRadius2;
     }
-    this.guns = [ds.gunnery, transport ? transport.gunnery : null, pickets ? pickets.gunnery : null];
+    this.kits = groupKits({ total: this.ships.length, first: ds.starts.length, destroyerCount: this.destroyerCount, transportIndex: this.transportIndex, picketIndex: this.picketIndex }, ds, transport, pickets, transit?.column, destroyerTextureKey, TEXTURE_KEYS.transport);
     this.transit = transit ? new DestroyerTransit(this.ships, ds.starts.length, transit) : null; // 列の艦はここで海域の外（まだ来ない）へ
+    this.roles = transit && this.transit ? ColumnRoles.of(this.ships.slice(ds.starts.length, ds.starts.length + transit.ships), transit, this.transit.state) : null; // 見張りのいる片道の列だけ（v0.8.2 S2）
   }
 
   /** 隊の隻数（輸送船・駆潜艇込み） */
@@ -233,11 +248,14 @@ export class DestroyerGroup {
     this.backdrop = new ShoreBackdrop(b, lines, this.ships.length, flareRevealM);
   }
 
-  /** 艦 i の砲（v0.8.1 S2b。world-enemies の命中の 2 つの手）。駆潜艇のいない任務は今の式（駆逐艦か輸送船）と同じ値 */
-  gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }
+  /** 艦 i の砲（v0.8.1 S2b。world-enemies の命中の 2 つの手）。kits の配列（v0.8.2 S2。今の任務は駆逐艦・輸送船・駆潜艇の今の値の同じ物） */
+  gunneryAt(i: number): DestroyerSetup['gunnery'] { return this.kits.guns[i]!; }
 
-  /** 艦 i のレーダーの種類（v0.8.1 S2b。world-radar）: 駆潜艇は小さい艇、ほかの艦はみな艦（駆潜艇のいない任務は今と同じ） */
-  radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
+  /** 艦 i を狙った 1 本を命中率の KPI に数えるか（v0.8.2 S2。systems/torpedo-free。今の任務は 0 ≤ i < destroyerCount と同じ・片道の列は駆逐艦の記録の艦だけ。i < 0 は偽） */
+  kpiAt(i: number): boolean { return this.kits.kpi[i] === 1; }
+
+  /** 艦 i のレーダーの種類（v0.8.1 S2b。world-radar）: 駆潜艇は小さい艇、ほかの艦はみな艦（kits の配列＝今と同じ値） */
+  radarKindAt(i: number): number { return this.kits.radarKind[i]!; }
 
   updateVisuals(realDt: number): void {
     for (let i = 0; i < this.ships.length; i++) this.fires[i]!.updateVisuals(realDt, this.ships[i]!.state);

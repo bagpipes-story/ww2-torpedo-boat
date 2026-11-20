@@ -21,10 +21,15 @@
 // v0.8.1 S2（spec-v0810 §6 の S2・brief の「新しい組」）: SET=us06 で us_06（オルモック湾の決着。止まった艦と暗い岸を背に）のノーマル・ハード × seed 1・2 を 200 秒（夜明けまで。all には入れない。
 //   S2 は A＝B＝今の木で決定性を見る・S3 から A は S2 の commit のビルド＝以後の段の回帰）。写しに止まった艦の段（s.an: 段・anchored）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
 // v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文の濾し（scripts/headless/anchor-filter。B が出し側・世界の写しは全部比べる。FILTERTEST=1 は濾しの試し）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.2 S2（spec-v0820 §8 の S2・brief L25）: SET=us05 で us_05（スリガオ海峡・最初の接触。片道の列・見張り・報告・弾薬庫）のノーマル・ハード × seed 1・2 を 270 秒（夜明けまで。all には入れない。
+//   S2 は A＝B＝今の木で決定性とページのエラー・S2b から A は S2 の commit のビルド）。写しに報告の段（s.rc: 段・無線・追った秒・引いた回数）・列の見張り（s.sc: 離れている艦）・
+//   弾薬庫（s.mg: 誘爆の数・引いた回数）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+// v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印の濾し（scripts/headless/recon-filter。B が出し側・世界の写しは全部比べる。A は S3 の commit のビルド）。
+// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { anchorPair } from './anchor-filter.mjs';
+import { reconPair } from './recon-filter.mjs';
 
 /** S4 の濾し（brief L33。ページへは文字列で渡す）: 2 行目の S4 の行・そのうちレーダーだけの行・緑の端の印の字の色と絵の鍵・隠した物の字 */
 export const S4_FILTER = {
@@ -77,6 +82,10 @@ export function abRun(o) {
     if (w.radar && !o.noradar) s.rd = [w.radar.state.sweeps, w.radar.state.n, w.radar.state.blips.slice(0, w.radar.state.n).map((x) => [x.x, x.y])];
     // 止まった艦（v0.8.1 S2。us_06）の段と止まっているか。無い任務は鍵ごと無い
     if (w.destroyers && w.destroyers.anchors) s.an = [Array.from(w.destroyers.anchors.state.stage), w.destroyers.ships.map((x) => x.anchored)];
+    // 報告・列の見張り・弾薬庫（v0.8.2 S2。us_05）。無い任務は鍵ごと無い
+    if (w.recon) s.rc = [w.recon.state.stage, w.recon.state.radioBroken, r6(w.recon.state.trackedS), w.recon.state.draws];
+    if (w.destroyers && w.destroyers.roles) s.sc = Array.from(w.destroyers.roles.st.away);
+    if (w.destroyers && w.destroyers.magazine) s.mg = [w.destroyers.magazine.detonations, w.destroyers.magazine.draws];
     s.hud = o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length).filter((x) => x.type === 'Text').map((x) => x.text) : hl.texts('Hud');
     if (o.cam) {
       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
@@ -139,7 +148,7 @@ export function firstField(a, b) {
 export function abCases(set, input) {
   const V = [['us_01', 0], ['us_01', 1], ['us_02', 0], ['us_02', 1], ['us_03', 0], ['us_03', 1], ['jp_01', 0], ['jp_01', 1], ['jp_02', 0], ['jp_05', 0], ['jp_06', 0], ['jp_06', 1]].map(([m, h]) => ({ mission: m, hard: h === 1, seed: 1 }));
   for (const m of ['us_03', 'jp_01', 'jp_02', 'jp_05']) V.push({ mission: m, hard: false, seed: 2 });
-  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', filtertest: process.env.FILTERTEST === '1', ...(process.env.NOPLANE === '1' ? { noplane: true } : {}) };
+  const base = { input, secs: envNum('SECS', 90), dawn: 0, nodawn: false, ptrun: false, result: false, noally: false, cam: process.env.CAM === '1', noradar: process.env.NORADAR === '1', radarui: process.env.RADARUI === '1', anchorui: process.env.ANCHORUI === '1', reconui: process.env.RECONUI === '1', filtertest: process.env.FILTERTEST === '1', ...(process.env.NOPLANE === '1' ? { noplane: true } : {}) };
   const sets = {
     base: () => V.map((v) => ({ ...base, ...v, set: 'base' })),
     dawn20: () => V.map((v) => ({ ...base, ...v, dawn: 20, set: 'dawn20' })),
@@ -156,6 +165,8 @@ export function abCases(set, input) {
     us04: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_04', hard, seed, secs: envNum('SECS', 260), set: 'us04' }))),
     // us_06 のオルモック湾の決着（v0.8.1 S2。止まった艦と暗い岸を背に）: 夜明けの 200 秒まで。S2 は A＝B＝今の木（決定性）・S3 から A は S2 の commit のビルド
     us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
+    // us_05 のスリガオ海峡・最初の接触（v0.8.2 S2。片道の列・見張り・報告・弾薬庫）: 夜明けの 270 秒まで。S2 は A＝B＝今の木（決定性）・S2b から A は S2 の commit のビルド
+    us05: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_05', hard, seed, secs: envNum('SECS', 270), set: 'us05' }))),
   };
   if (process.env.MISSION) {
     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
@@ -182,6 +193,7 @@ export async function oneCase(browser, A, B, c) {
     let ra;
     let rb;
     if (c.anchorui) [ra, rb] = await anchorPair(pa, pb, o, c, abRun); // us_06 の S4 の濾し（v0.8.1 S4。anchor-filter）
+    else if (c.reconui) [ra, rb] = await reconPair(pa, pb, o, c, abRun); // us_05 の S4 の濾し（v0.8.2 S4。recon-filter）
     else if (c.radarui || c.noradar) {
       // S4 の濾し: 出し側を先に回してフレームの印を集め、もう一方へ渡す
       for (const p of [pa, pb]) await p.page.evaluate(`window.__s4Hud = ${s4Hud.toString()}`);
@@ -218,7 +230,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }

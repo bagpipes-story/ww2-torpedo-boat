@@ -721,26 +721,35 @@
       "id": "us_05",
       "campaign": "us_pt",
       "order": 5,
+      "playable_from": "v0.8.2",
       "title_ja": "スリガオ海峡・最初の接触",
       "date": "1944-10-24",
-      "place": "スリガオ海峡南口",
+      "place": "ミンダナオ海（ボホール島沖）",
+      "place_source": "historical (最初の接触はスリガオ海峡の約 100 km 西、ミンダナオ海の一番奥（ボホール島沖）の第 1 分隊の区画だった（PT の区画はアギオ岬・ボホール島・カミギン島沖・シパカ岬の間）。WebSearch の抜粋のみ・本文未読。spec-v0820 §2.1) / design (v0.8.2 S0・spec-v0820 §3。種の「スリガオ海峡南口」を直した。題「スリガオ海峡・最初の接触」は戦いの名として残す＝jp_04・us_06 と同じ扱い)",
       "type": "recon_and_attack",
       "player_boat": "us_elco80",
       "torpedo_type": "us_mk13",
-      "objective": "接近する艦隊を発見・報告し、可能なら雷撃。生還が最優先",
+      "objective": "戦艦2・重巡1を含む日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ",
       "enemies": [
-        "ijn_light_cruiser",
         "ijn_destroyer",
-        "ijn_destroyer"
+        "ijn_destroyer",
+        "ijn_destroyer",
+        "ijn_destroyer",
+        "ijn_cruiser_mogami",
+        "ijn_battleship_fuso",
+        "ijn_battleship_fuso"
       ],
       "hazards": [
         "enemy_ship_gunfire_or_ram",
         "friendly_fire"
       ],
-      "moon": "dark",
+      "moon": "half",
+      "moon_label_ja": "半月（西に低い）",
+      "moon_source": "historical (計算: astronomy-engine 2.1.19・9.6°N 124.5°E。1944-10-24 の夜の輝面 46%。最初の接触の 22:36（米の報告の時刻帯 Item＝UTC+9）に月は高さ 20°・方位 243°（西南西）、22:50 に 17°、月没は 00:11（Item）＝23:11（UTC+8）。v0.8.0 の計算（10.0°N 125.35°E）は 23:07（UTC+8）。high) / design (v0.8.2 S0・spec-v0820 §2.2 C5。種の dark を half に。月が夜の途中で沈む仕組みは無い（候補）＝半月のまま)",
       "duration_min": 6,
-      "success": "報告（一定時間追尾）して帰投。巡洋艦への命中は大ボーナス",
-      "historical_note": "PT39隻・13セクション。35本発射で日本側確認は阿武隈への1本（PT-137）。PT-493喪失。",
+      "success": "報告して帰投（戦艦を見て、レーダーで20秒追う）",
+      "historical_note": "1944-10-24 22:36 ごろ、ボホール島沖の第1分隊（PT-152・130・131）が PT-131 のレーダーで戦艦の組（山城・扶桑・時雨）を捉え、24 kt で寄った。時雨が照らして撃ち、PT-152 が炎上・PT-130 が無線を壊され、隣の分隊の PT-127 が報告を中継した。最上と駆逐艦 3 隻は先に気づかれずに通った。PT 39 隻・13 分隊の夜、第三部隊への命中は 0（阿武隈への 1 本は別の部隊・PT-137）。PT-493 喪失。WebSearch の抜粋のみ・本文未読（spec-v0820 §2。docs/01 §8 の終わり「スリガオ海峡・最初の接触（v0.8.2 の調べ）」）",
+      "briefing_note_ja": "1944年10月24日22時半ごろ、ボホール島沖で張っていたPTの分隊がレーダーで日本の艦隊を捉えた。寄った3隻は駆逐艦時雨の探照灯と砲に追われ、1隻は無線を壊されて隣の分隊の艇に報告を中継してもらった。この夜PT\u00a039隻は、戦艦の隊に1本も当てられなかった。",
       "source_url": "https://en.wikipedia.org/wiki/Battle_of_Surigao_Strait",
       "dawn_air": {
         "control": "own",
@@ -758,7 +767,200 @@
             "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
           }
         ],
-        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
+        "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。v0.8.2 S0（lead の既定 L1）: 種のまま own＝夜明けの後も空襲なし（退く日本の艦は昼に米機に襲われた＝昼の空は味方）。遊べる世界は v0_1_prototype（夜明けに浮いている艦は東＝スリガオ海峡へ退く＝dawn_withdraw）)"
+      },
+      "v0_1_prototype": {
+        "enemies": [
+          "ijn_destroyer",
+          "ijn_destroyer",
+          "ijn_destroyer",
+          "ijn_destroyer",
+          "ijn_cruiser_mogami",
+          "ijn_battleship_fuso",
+          "ijn_battleship_fuso"
+        ],
+        "enemy_behavior": "transit と column（v0.8.2。第三部隊の 7 隻（ハード 8）は列の通過の片道（下の transit）: 西の縁から 18 kt で東へ進み、東の縁の外（スリガオ海峡）へ去って戻らない。先に前衛（満潮・朝雲・山雲・最上。南寄りの道）、約 30 秒あとに本隊（時雨・山城・扶桑。時雨は北＝ボホールの側 540 m の道）。列の艦は退く動き（針路を守る・端で向き直さない・わざとの体当たりはしない・雷跡を見れば櫛で梳く・見つければ照らして撃つ）。時雨（role screen）は自艇を見つけると列を離れて us_02 の AI で追い、見失って rejoin_s で列へ戻る（S2）。艦ごとの寸法・砲・探照灯・星弾・AI・沈む本数は column の enemy_id の記録（S2。S0 の世界は 7 隻とも ijn_destroyer の形で走る）)",
+        "duration_s": 270,
+        "duration_s_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M3。夜明けまでの実秒。揺らぎのない夜の本隊の最後の扶桑は 101 秒に現れ 241.4 秒に東の縁の外へ去る（画面上 46.3 m/秒で幅 6,500 m を 140.4 秒）。ハードの 8 隻目（109 秒）は 249.4 秒で、夜明けの 20 秒前まで（V-C5）。初めの値で v0.8.2 S3 の探りの帯 T で直す)",
+        "fuel_allotment_gal": 24,
+        "fuel_allotment_gal_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M6。戦闘に使える割当の初めの値（us_04 の 33 gal と同じ考え）。core/fuel の 1 km あたり（静音 4.0・巡航 4.7・全速 6.9 gal）で、出発 → 本隊の前方へ巡航 1.2 km → 止まって待つ → 撃って全速で北東へ 2 km → 輪へ巡航 1 km ≈ 26 gal（残り 24%）。中継の道は ＋約 3 km。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（足りなければ燃料でなく輪の位置を直す）。v0.8.2 S3 の探りの帯 F で直す。v0.8.2 S3: 34 → 24 gal（scripts/headless/column-probe の shadow_report＝止まって待つ偵察で、帰投の夜の燃料の残りの中央値が 51% → 30%＝帯 F の 15〜35%。使うのは約 17 gal。出発点で止まったままの夜は 1,225 → 865 秒で漂流＝夜明けの後・1,500 秒未満の帯 D のまま。中継の道を通った夜は探りに無かった＝中継の輪の位置は変えていない）)",
+        "bounds_m": {
+          "width": 6500,
+          "height": 4000,
+          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M1。ミンダナオ海を東西に置いた模式図（約 50 km を 6.5 km に）。北の縁（y 0）の外がボホール島、南の縁（y 4,000）の東の一部がカミギン島、ほかは切れ目＝ミンダナオ海（下の shores）。東の縁の外がスリガオ海峡)"
+        },
+        "player_start": {
+          "x_m": 4200,
+          "y_m": 700,
+          "heading_deg": 225,
+          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M4。第 1 分隊の張り番の位置（ボホール島の沖 700 m）から南西向き・停止。帰投の輪の中心まで 806 m・中継の輪まで 2,600 m。満潮が現れる (150, 2,800) まで 4,562 m（レーダー 6,000 m の内＝出撃してすぐ最初の接触）。どの艦の入りの点からも 1,500 m 以上で、出撃から 10 秒の内にどの艦の全速の見つかる距離（3,200 m）にも入らない（V-C6）)"
+        },
+        "return_point": {
+          "x_m": 5000,
+          "y_m": 800,
+          "radius_m": 250,
+          "call_margin": 1.5,
+          "torpedo_settle_max_s": 10,
+          "torpedo_end_settle_s": 5,
+          "torpedo_end_settle_s_source": "design (v0.6.2 実機 2 回目でユーザー「魚雷の待ちは5秒にしましょう」→ 5 秒（実機 1 回目は 3 秒）。実機 1 回目: ユーザー「魚雷発射して一本当たって即クリア画面ではなく、3秒ほど待ってほしい。2本目が当たりそうなのにそれが成果に反映されないと残念です」「魚雷発射後に自分が撃沈された場合も3秒間は待って魚雷があたれば命中扱いにしてほしい」。終わり際に走っている魚雷の決着を待つ最大実秒: 自艇の沈没は沈み始めてから数え、沈没の演出（2 秒）が終わるまでは終えない。敵艦隊なし（cleared）・漂流・座礁は理由が決まってから、夜明け後の輪の中は輪に入ってから数える。夜明け前の輪の中は torpedo_settle_max_s のまま。待つ間の命中は得点・命中率・Result に入り、待ち切って走っている魚雷は外れ)",
+          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M4。北東のボホール島の沖（第 1 分隊の帰り道）。出発点から 806 m（縁まで 556 m）。北の岸から 550 m（V-S2 の 400 m の外）。半径・call_margin・待ちは us_04・us_06 と同じ)"
+        },
+        "shallows": [],
+        "shallows_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M1。浅瀬なし（その夜の座礁の記録は無い）)",
+        "hazards": [
+          "enemy_ship_gunfire_or_ram",
+          "radio_failure"
+        ],
+        "hazards_source": "design (v0.8.2 S0・spec-v0820 §4.5 D-N4・§5.1。この世界で起きる危険を出会う順に: 敵艦艇の砲撃・衝突（列の艦・見張りの時雨）、無線の故障（報告の前に 76 mm 以上の砲弾を受けると。risk_events の radio_failure）。夜の水上機・友軍誤射・暴風はその夜の記録なし。夜明けの空襲は無い（dawn_air own）。上位の hazards（任務本体の設計）は変えない)",
+        "night": {
+          "hazard_scale": 1,
+          "optional_hazards": [],
+          "enemy_jitter": {
+            "x_m": 300,
+            "y_m": 150,
+            "heading_deg": 0
+          },
+          "mirror_chance": 0,
+          "source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M5。今夜の揺らぎ（seed+16）: 列ごと 1 件（config/transit-mission-data。x のずれ ÷ 画面上の列の速さ 46.3 m/秒 → 入りの秒 ±6.5 秒・y のずれ → 全部の道を同じだけ ±150 m・針路のずれは使わない）。乱数は 5 回（列 3・大発の先頭 1・反転 1）。列は東西に反転しない（mirror_chance 0。海峡は東）。夜ごとに出る危険は無い（optional_hazards なし）)"
+        },
+        "dawn_withdraw": {
+          "retire_edge": "east",
+          "force_ja": "日本の艦隊",
+          "source": "design (v0.8.2 S0・spec-v0820 §4.9 D-E1。夜明けに浮いている列の艦は東（スリガオ海峡）へ退く＝片道の列の向かう縁（V-T2 の片道版）。まだ来ない艦は入らない。force_ja は夜明けの帯の呼び名)"
+        },
+        "radar": {
+          "model": "so_late",
+          "fit": "own",
+          "source": "historical (第 1 分隊は PT-131 のレーダーで 22:36 に艦隊を捉えた（目で見えたのは約 14 分後）。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。WebSearch の抜粋のみ・本文未読。medium) / design (v0.8.2 S0・spec-v0820 §4.6 D-R1。1944 年の型（hit_rate_model.json の radar.models.so_late）を自艇に（fit own。地図の上の味方は自艇だけ）。艦 6,000 m・小さい艇 1,800 m・掃引 2 秒・陸の反射 300 m（道は北の岸から 1,650 m 以上・南の岸から 1,050 m 以上＝映る）)"
+        },
+        "shores": {
+          "north": {
+            "land_m": 600,
+            "labels": [
+              {
+                "label_ja": "ボホール島",
+                "x_m": 3200
+              }
+            ]
+          },
+          "south": {
+            "land_m": 600,
+            "labels": [
+              {
+                "label_ja": "カミギン島",
+                "x_m": 5650
+              }
+            ],
+            "gaps_m": [
+              [
+                0,
+                4800
+              ]
+            ],
+            "gap_label_ja": "ミンダナオ海"
+          },
+          "source": "historical (PT の区画はアギオ岬・ボホール島・カミギン島沖・シパカ岬の間。第 1 分隊はボホール島沖。WebSearch の抜粋のみ・本文未読) / design (v0.8.2 S0・spec-v0820 §4.1 D-M1。v0.8.0 の両岸の仕組みで、北の縁の外に陸 600 m（ボホール島）、南の縁の外の東 x 4,800〜6,500 に陸 600 m（カミギン島）、x 0〜4,800 は切れ目＝ミンダナオ海（陸を描かず海が南へ続く）。艇は海域の縁で止まる)"
+        },
+        "transit": {
+          "ships": 7,
+          "speed_kt": 18,
+          "edge_inset_m": 150,
+          "inbound": {
+            "edge": "west",
+            "lane_y_m": 2400,
+            "heading_deg": 90,
+            "enter_s": 5
+          },
+          "column": [
+            {
+              "enemy_id": "ijn_destroyer",
+              "name_ja": "満潮",
+              "group": "van",
+              "gap_s": 0,
+              "lane_dy_m": 400,
+              "role": "line"
+            },
+            {
+              "enemy_id": "ijn_destroyer",
+              "name_ja": "朝雲",
+              "group": "van",
+              "gap_s": 15,
+              "lane_dy_m": 400,
+              "role": "line"
+            },
+            {
+              "enemy_id": "ijn_destroyer",
+              "name_ja": "山雲",
+              "group": "van",
+              "gap_s": 15,
+              "lane_dy_m": 400,
+              "role": "line"
+            },
+            {
+              "enemy_id": "ijn_cruiser_mogami",
+              "name_ja": "最上",
+              "group": "van",
+              "gap_s": 15,
+              "lane_dy_m": 400,
+              "role": "line"
+            },
+            {
+              "enemy_id": "ijn_destroyer",
+              "name_ja": "時雨",
+              "group": "main",
+              "gap_s": 30,
+              "lane_dy_m": -540,
+              "role": "screen"
+            },
+            {
+              "enemy_id": "ijn_battleship_fuso",
+              "name_ja": "山城",
+              "group": "main",
+              "gap_s": 5,
+              "lane_dy_m": 0,
+              "role": "line"
+            },
+            {
+              "enemy_id": "ijn_battleship_fuso",
+              "name_ja": "扶桑",
+              "group": "main",
+              "gap_s": 16,
+              "lane_dy_m": 0,
+              "role": "line"
+            }
+          ],
+          "rejoin_s": 40,
+          "screen_chase_s": 45,
+          "screen_cooldown_s": 60,
+          "vila_label_ja": "スリガオ海峡",
+          "source": "historical (列は第三部隊（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲）。最上と駆逐艦 3 隻は先に偵察に出され、第 1・第 2 分隊の前を気づかれずに通り、PT が最初に接したのは戦艦の組（時雨はそちら）。進みの速さは 18 kt（時雨の艦長の戦後の聞き取り）。時雨が探照灯と星弾で照らして撃ち、戦艦は後ろに控えた。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C1・C6) / design (v0.8.2 S0・spec-v0820 §4.1 D-M2・D-M3・§4.2 D-C1〜D-C7。列の通過の片道（outbound・unload_s・spacing_s・cover_leaves_with_outbound を置かない）: 各艦は西の縁の内 150 m に現れ、090°・18 kt（画面上 46.3 m/秒）で東の縁の外 150 m（スリガオ海峡）へ去って戻らない（撃沈に数えない）。column は 1 隻ずつ（enemy_id の記録・Result の艦名 name_ja・group 前衛 van／本隊 main・gap_s 前の艦からの入りの秒（先頭は inbound.enter_s から）・lane_dy_m 道 lane_y_m からのずれ・role 列のまま line／見張り screen）。時刻表（揺らぎなし）: 満潮 5・朝雲 20・山雲 35・最上 50 秒（前衛の間隔 15 秒＝約 690 m・道 y 2,800）→ 時雨 80（道 y 1,860）・山城 85・扶桑 101 秒（戦艦の間隔 16 秒＝約 740 m・道 y 2,400）。rejoin_s 40: 見張りの時雨が自艇を見失ってから列の針路へ戻るまでの体感の秒（S2）。駆逐艦 4 隻（朝潮型と白露型）は ijn_destroyer（陽炎型の値と絵）で代用（寸法がほぼ同じ。命中率の KPI を合わせた値を触らない）。v0.8.2 S3（探りの帯 N1）: 時雨の道 lane_dy_m −600 → −560（本隊の道の北 600 m では止まって待つ偵察の艇（本隊の北 1,300〜1,500 m・時雨の道から 700 m 以上北）が半分の夜に停止の 800 m の内に入って見つかり、見つかった夜の 4 分の 3 は沈む＝達成 58%・沈没 38%。−500 では見つからず達成 98%。−560 で達成 85%・沈没 13%・帰投 88%）。v0.8.2 IP1（実機 1 回目のユーザー「難易度的にはかなり難しいと思いますがこのままでいいと思います。強いて言うなら時雨の進行位置を若干戦艦寄りに下げてもらえるとクリアしやすいかもです。」）: 時雨の道 −560 → −540（本隊の道の北 540 m＝道 y 1,860。探り 40 夜ずつ: −560 は止まって待つ偵察の達成 85%・沈没 13%、−540 は 93%・5%、−530 と −520 は 98%・0%＝止まって待つ台本がもう見つからない段差の上なので「若干」より大きい＝lead の決めで −540。ハードは 8 隻目の見張り（−575）のままで −560〜−520 のどれも達成 73%・沈没 25%）。v0.8.2 S3b（lead の L37・見張りの鎖）: screen_chase_s 45・screen_cooldown_s 60＝見張りは離れて体感 45 秒たてば自艇を見ていても列へ戻り（史実の時雨は短く離れて列は針路を守った）、戻ってから 60 秒は離れない（core/column-screen。無い列は S1 の規則）。探り（shadow_report・report_attack・ハード、各 40 夜）では見張りの道 −560・−600 と鎖 45/60・60/90・15/60・10/90 のどれも達成と沈没が鎖の効かない 45/60 と同じか ±5 点の内（見つかった艇は離れてから 13〜15 秒で沈み始める＝追い回すより先に列の砲で沈む）。vila_label_ja は列の去る先の名（レーダーの 2 行目「接触が東（スリガオ海峡）へ消えた」＝v0.8.2 S4。片道なので戻りの尾は付けない）。列の艦ごとの記録・役は v0.8.2 S2 から世界が読む)"
+        },
+        "recon": {
+          "track_s": 20,
+          "identify_class": "battleship",
+          "radio_fail_chance": 0.35,
+          "radio_min_damage": 20,
+          "relay": {
+            "x_m": 1600,
+            "y_m": 800,
+            "radius_m": 250,
+            "label_ja": "隣の分隊"
+          },
+          "source": "historical (第 1 分隊は報告を送る前に寄って攻撃し、PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 が報告を中継した（中継を頼んだのが PT-130 か PT-131 かは出典で違う）。報告は艦種と針路・速さを言った。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C3・C4) / design (v0.8.2 S0・spec-v0820 §4.5 D-N1〜D-N7。報告（type recon_and_attack）: 艦種 identify_class（戦艦）の艦が自艇の視程の内に 1 回でも入ったら「戦艦を確認」（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の艦が映っている固定ステップの実秒を track_s（20 秒）足すと報告を送る。送る前に敵の艦の砲弾（damage が radio_min_damage 20 以上＝76 mm 以上）を受けるたびに radio_fail_chance 35% で無線が壊れ（乱数 seed+45・recon のある任務だけ）、中継の輪 relay（西のボホール沖・隣の分隊・黄色）に入れば中継。達成は報告が届いて帰投と同じに数える終わり。世界の配線は v0.8.2 S2・画面の文（2 行目の出来事と常の文・中継の端の印・Result の 2 行）は v0.8.2 S4)"
+        },
+        "hard": {
+          "extra_column": [
+            {
+              "enemy_id": "ijn_destroyer",
+              "name_ja": "見張りの駆逐艦",
+              "group": "main",
+              "gap_s": 8,
+              "lane_dy_m": -575,
+              "role": "screen"
+            }
+          ],
+          "source": "design (v0.8.2 S0・spec-v0820 §4.10。難易度ハード（ユーザーの v0.4.4「難易度が上がれば敵艦の数が増えていけばよい」）: 本隊の最後（扶桑の 8 秒後＝109 秒）に後ろの北側の見張りの駆逐艦（ijn_destroyer・role screen・道 y 1,825）を 1 隻足して 8 隻（史実は 7 隻）。v0.8.2 S3（探りの帯 H1）: 道 lane_dy_m −600 → −575（−600 では止まって待つ偵察の達成 58%・沈没 40%＝沈没の上限 25% の外。−575 で達成 73%・沈没 25%）。spec の「扶桑の 10 秒後」は最後の艦が夜明けの 20 秒前までに去る検査（V-C5。111 + 140.4 ＝ 251.4 秒 ＞ 250）に掛かるので 8 秒にした（249.4 秒）。達成は同じ（報告して帰投）)"
+        }
       }
     },
     {

@@ -160,7 +160,7 @@ export class SimTransit {
     if (st.coverLeaves) {
       for (let i = 0; i < this.first; i++) {
         const c = this.all[i]!;
-        if (!c.out) startRetire(c.ai, p.outbound.headingDeg);
+        if (!c.out) startRetire(c.ai, p.outbound!.headingDeg); // 護衛が退くのは往復の列だけ（v0.8.2 の片道の列は outbound null・coverLeaves は立たない）
       }
     }
     return left !== 0;

@@ -1,5 +1,8 @@
 // v0.7.0 IP2（実機 2 回目。ユーザーの U8「駆逐艦のグラフィックを見直してクオリティを上げてください。でも、色は現在と同じ単系統のままで表現してください。」）:
 // 駆逐艦 3 種の描き直し（assets/destroyer-plan・destroyer-paint・destroyer-part-paint・destroyer-pen。Phaser に依らない）。v0.8.1 S2b（D-A2）で同じ描き方の駆潜艇（第13号型）を足した。
+// v0.8.2 S2b（spec-v0820 D-A1・D-A2・L33）: 同じ描き方の戦艦 扶桑型・重巡 最上（置き方は assets/capital-plan・新しい部品は assets/capital-paint）も同じ決まり（置き方・単系統の色・描く範囲）で見る。
+//   砲身の箱の幅は部品の砲身の間隔と太さ（dx・bw。戦艦・重巡の砲塔だけ）。形の見分け・寸法・Boot は tests/capital-art。
+//   v0.8.2 S2c: 戦艦・重巡は「中心線の部品は重ならない」を外した（背負い式の砲身・飛行甲板の水上機。代わりの決まりは tests/capital-art）。船体の内・2 単位以上・単系統の色は今のまま見る。
 // - 置き方: 部品は船体の縁から 1 単位以上内・艦首と艦尾から 1 単位以上内・大きさ ≥ 2 単位（R17）、中心線の部品（砲は砲身まで）は長さの向きに重ならない、形で見分ける（連装 3・単装 5・単装 4）。
 // - 色: 記録する ctx で描いた全部の色（塗り・線・グラデーションの止め）が陣営のパレットの地の色と同じ色相（±2°）＝単系統、純白は使わない、toneRgb は色相を変えない。
 // - 描く範囲: 点・矩形はテクスチャの矩形の内（陰のずれの分だけの余白）。source の pin: 鍵・寸法（hullTexSize）・paintCanvas・Math.random なし・300 行。
@@ -9,18 +12,24 @@ import { PALETTE_ALLY, PALETTE_ENEMY } from '../src/config/boat-art-config';
 import { DESTROYER_BARREL_UNITS, DESTROYER_TONES, DESTROYER_TWIN_DX } from '../src/config/destroyer-art-config';
 import { gameData, getEnemyRecord } from '../src/config/game-data';
 import { validateAllyDestroyerMissions } from '../src/config/ally-destroyer-mission-data';
-import { destroyerPartBounds, destroyerPartBoxes, destroyerPlan, planHalfAt, type DestroyerKind } from '../src/assets/destroyer-plan';
+import { destroyerPartBounds, destroyerPartBoxes, destroyerPlan, planHalfAt, type CapitalKind, type DestroyerKind, type DestroyerPart, type DestroyerPlan } from '../src/assets/destroyer-plan';
+import { capitalPlan, isCapitalKind } from '../src/assets/capital-plan';
 import { paintDestroyer, toneRgb, type PaintCtx } from '../src/assets/destroyer-paint';
 
 const SS = gameData.hitRateModel.world.sprite_scale as number;
 const TS = gameData.hitRateModel.world.time_scale as number;
 const dims = (id: string): { L: number; B: number } => { const r = getEnemyRecord(gameData, id); return { L: r.length_m * SS, B: r.beam_m * SS }; };
 const ally = validateAllyDestroyerMissions(gameData, TS, getEnemyRecord(gameData, 'ijn_destroyer').searchlight!.cone_deg)!;
-const SHIPS: { kind: DestroyerKind; L: number; B: number; base: number }[] = [
+const planOf = (kind: DestroyerKind | CapitalKind, L: number, B: number): DestroyerPlan => (isCapitalKind(kind) ? capitalPlan(kind, L, B) : destroyerPlan(kind, L, B));
+/** 砲身の箱の半幅（戦艦・重巡の砲塔は部品の dx・bw。ほかは今の値） */
+const spreadOf = (p: DestroyerPart): number => (p.t === 'gun' && p.dx !== undefined ? p.dx + p.bw! / 2 : DESTROYER_TWIN_DX + DESTROYER_BARREL_UNITS / 2);
+const SHIPS: { kind: DestroyerKind | CapitalKind; L: number; B: number; base: number }[] = [
   { kind: 'kagero', ...dims('ijn_destroyer'), base: PALETTE_ENEMY.deck },
   { kind: 'fletcher', ...dims('us_destroyer'), base: PALETTE_ENEMY.deck },
   { kind: 'mutsuki', L: ally.lengthM * SS, B: ally.beamM * SS, base: PALETTE_ALLY.deck },
   { kind: 'subchaser', ...dims('ijn_subchaser'), base: PALETTE_ENEMY.deck }, // v0.8.1 S2b（D-A2。102 × 13.4 単位）
+  { kind: 'fuso', ...dims('ijn_battleship_fuso'), base: PALETTE_ENEMY.deck }, // v0.8.2 S2b（D-A1。425.5 × 66.2 単位）
+  { kind: 'mogami', ...dims('ijn_cruiser_mogami'), base: PALETTE_ENEMY.deck }, // v0.8.2 S2b（D-A2。401.2 × 40.4 単位）
 ];
 
 function hsv(r: number, g: number, b: number): { h: number; s: number } {
@@ -59,10 +68,10 @@ function rgbaOf(c: string): [number, number, number, number] {
 
 describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
   it.each(SHIPS)('$kind: 部品は船体の内（縁・艦首・艦尾から 1 単位）・大きさ ≥ 2 単位・中心線の部品は重ならない', ({ kind, L, B }) => {
-    const plan = destroyerPlan(kind, L, B);
+    const plan = planOf(kind, L, B);
     expect(plan.parts.length).toBeGreaterThan(kind === 'subchaser' ? 10 : 15); // 駆潜艇は小艦（砲 1・煙突 1・発射管なし）
     for (const p of plan.parts) {
-      for (const b of destroyerPartBoxes(p, DESTROYER_TWIN_DX + DESTROYER_BARREL_UNITS / 2)) {
+      for (const b of destroyerPartBoxes(p, spreadOf(p))) {
         expect(b.y0, `${kind} ${p.t} 艦首`).toBeGreaterThanOrEqual(1);
         expect(b.y1, `${kind} ${p.t} 艦尾`).toBeLessThanOrEqual(L - 1);
         for (const y of [b.y0, (b.y0 + b.y1) / 2, b.y1]) {
@@ -72,6 +81,9 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
       }
       expect(Math.min(p.w, p.len), `${kind} ${p.t}`).toBeGreaterThanOrEqual(2 - 1e-9);
     }
+    // 中心線の部品は重ならない（駆逐艦・駆潜艇）。戦艦・重巡は v0.8.2 S2c でこの決まりを外した（ユーザーの実機の感想「デフォルメされすぎている…もう少しディティールに」:
+    // 背負い式の主砲塔の砲身は下の砲塔の屋根を越え、水上機は飛行甲板の上に載る＝高い物を後で描く決まりは tests/capital-art が見る）
+    if (isCapitalKind(kind)) return;
     const spans = plan.parts.filter((p) => Math.abs(p.cx - B / 2) < 1e-9 && p.t !== 'mast').map(destroyerPartBounds).sort((a, b) => a.y0 - b.y0);
     for (let i = 1; i < spans.length; i++) expect(spans[i]!.y0, `${kind} 中心線の部品 ${i}`).toBeGreaterThanOrEqual(spans[i - 1]!.y1 - 1e-9);
   });
@@ -105,7 +117,7 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
   });
   it.each(SHIPS)('$kind: 描いた全部の色は地の色と同じ色相（単系統）・純白なし、点はテクスチャの内（陰のずれの余白 3 単位）', ({ kind, L, B, base }) => {
     const r = recorder();
-    paintDestroyer(r.ctx, destroyerPlan(kind, L, B), base);
+    paintDestroyer(r.ctx, planOf(kind, L, B), base);
     expect(r.colors.length).toBeGreaterThan(kind === 'subchaser' ? 60 : 100); // 駆潜艇は部品が少ない
     const h0 = hueOf(base);
     for (const c of new Set(r.colors)) {
@@ -131,7 +143,7 @@ describe('駆逐艦の描き直し（v0.7.0 IP2・U8）', () => {
     expect(art).toContain('const size = hullTexSize(spec.lengthUnits, spec.beamUnits, k);');
     expect(art).toContain('paintCanvas(scene, key, size.w * S, size.h * S, (ctx) => {'); // IP2b: 画素は論理の寸法の S 倍（S＝artTexDensity。tests/art-inventory）
     expect(art).toContain("paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);");
-    for (const f of ['destroyer-art', 'destroyer-plan', 'destroyer-paint', 'destroyer-part-paint', 'destroyer-pen']) {
+    for (const f of ['destroyer-art', 'destroyer-plan', 'destroyer-paint', 'destroyer-part-paint', 'destroyer-pen', 'capital-plan', 'capital-paint']) {
       const s = readFileSync(`src/assets/${f}.ts`, 'utf8');
       expect(s, f).not.toMatch(/Math\.random/);
       if (f !== 'destroyer-art') expect(s, f).not.toContain("from 'phaser'"); // 形と描き方は Phaser に依らない

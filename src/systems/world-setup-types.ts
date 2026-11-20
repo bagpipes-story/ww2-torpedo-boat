@@ -14,6 +14,8 @@ import type { ShoresSetup } from '../config/shores-mission-data';
 import type { AnchorSetup } from '../config/anchor-mission-data';
 import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
 import type { SeaplaneNightSetup } from '../config/seaplane-mission-data';
+import type { ReconSetup, ReconSetupOptions } from '../config/recon-mission-data';
+import type { MagazineSetupOptions } from '../config/magazine-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
 import type { ConvoySetup } from '../core/convoy-data';
@@ -123,16 +125,17 @@ export interface WorldSetup {
   allyDestroyer?: AllyDestroyerParams; // 味方の駆逐艦 卯月（v0.6.10。v0_1_prototype.ally_destroyer のある任務＝jp_04 だけ。config/ally-destroyer-mission-data。無い任務と allyOff では鍵ごと出ない＝setup の snapshot を変えない）
   evac?: EvacSetup; // 空襲下の退避（v0.6.11。v0_1_prototype.evac のある任務＝jp_03 だけ。config/evac-mission-data。無い任務では鍵ごと出ない＝setup の snapshot を変えない）
   radar?: RadarSetup; // 自艇のレーダー（v0.8.0。v0_1_prototype.radar のある任務＝us_04 だけ。config/radar-mission-data。無い任務と radarOff では鍵ごと出ない＝setup の snapshot を変えない）
-  transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 だけ。config/transit-mission-data。無い任務では鍵ごと出ない）
+  transit?: TransitSetup; // 列の通過（v0.8.0。v0_1_prototype.transit のある任務＝us_04 と v0.8.2 の片道の列 us_05（transit.column?: ColumnKit[] を中に持つ）。config/transit-mission-data。無い任務では鍵ごと出ない）
   shores?: ShoresSetup; // 海峡の両岸（v0.8.0。v0_1_prototype.shores のある任務＝us_04 だけ。config/shores-mission-data。無い任務では鍵ごと出ない）
   anchors?: AnchorSetup; // 止まった艦（v0.8.1。v0_1_prototype.anchored のある任務＝us_06 だけ。隊の艦ごとの動き出す秒・警報の秒。config/anchor-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
   backdrop?: BackdropSetup; // 暗い岸を背に（v0.8.1。v0_1_prototype.shore_backdrop のある任務＝us_06 だけ。config/backdrop-mission-data。無い任務と backdropOff では鍵ごと出ない。S0 では世界は読まない）
   seaplaneNight?: SeaplaneNightSetup; // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。config/seaplane-mission-data。無い任務と ?debug&noplane では鍵ごと出ない＝凍結の 1 任務 1 回のまま）
   pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
+  recon?: ReconSetup; // 報告・無線・中継（v0.8.2。v0_1_prototype.recon のある任務＝us_05 だけ。config/recon-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
-export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions, BackdropSetupOptions {
+export interface SetupOptions extends EngineSetupOptions, GunboatSetupOptions, PatrolAirSetupOptions, AllyDestroyerSetupOptions, RadarSetupOptions, BackdropSetupOptions, ReconSetupOptions, MagazineSetupOptions {
   fuelGal?: number;
   dawnS?: number;
   /** 出撃（空襲の結果・難易度・夜の seed）。null なら空襲の効果なし・揺らぎなし */

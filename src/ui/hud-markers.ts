@@ -9,6 +9,7 @@
 // 「輸送 N m」（味方の青。輸送船が画面の外で揚陸の決着の前）。決まりは ui/landing-markers。どちらも右下の速力と兵装の HUD の角を避け、近い印から縁に沿ってずらす（雷撃は「PT」から、輸送は雷撃と帰投から）。
 // v0.6.11 S5（空襲下の退避の任務 jp_03 だけ）: 帰投の印は作らず（中の壕＝帰投地点だけを指す印は紛らわしい＝r2 L8）、画面の外の狙われた隊と近い空いた隠れ場所の矢印（ui/evac-markers の EvacEdgeMarkers）。
 // v0.8.0 S4（レーダーのある任務 us_04 だけ）: 緑の「レーダー N m」（ui/radar-marker。画面の外・目の外の一番近い輝点。敵・帰投・敵機の印の後に refresh し、それらから離す）。
+// v0.8.2 S4（報告の任務 us_05 だけ。ほかの任務は作らない）: 中継待ちの間の黄色い「中継 N m」（中継の輪の縁まで。帰投の印から離し、緑の印はこれからも離す）。
 import Phaser from 'phaser';
 import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
@@ -49,6 +50,8 @@ import { snappedDistM } from './edge-marker-screen';
 import { avoidPauseButton, landingRunnerMarkerShown, landingShipMarkerShown, separateLandingMarker } from './landing-markers';
 import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
 import { RadarEdgeMarker } from './radar-marker';
+import { RELAY_MARKER_LABEL_JA, RELAY_MARKER_STEP_M, RELAY_RING_TEXT } from '../config/recon-hud-config';
+import { RECON_PENDING } from '../core/recon-report';
 
 /** 味方の大発の矢印「大発 N m」（v0.6.4）の上端の余白: 敵機の矢印の下（帰投の矢印と同じく上にラベル。ui-config は 300 行を超えているのでここに置く） */
 const CONVOY_MARKER_TOP_MARGIN = PLANE_MARKER_TOP_MARGIN + HUD_FONT_MARKER_PX + 20;
@@ -96,6 +99,8 @@ export class HudMarkers {
   /** レーダー（v0.8.0 S4。us_04 だけ）: 緑の「レーダー N m」と、離す相手の印（作る時に 1 回組む） */
   private radarMarker?: RadarEdgeMarker;
   private radarOthers: readonly (EdgeMarker | undefined)[] = [];
+  /** 中継（v0.8.2 S4。報告の任務 us_05 だけ）: 中継待ちの間の黄色い「中継 N m」 */
+  private relayMarker?: EdgeMarker;
 
   constructor(scene: Phaser.Scene, mission: PrototypeMission, telemetry: BoatTelemetry) {
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
@@ -108,9 +113,12 @@ export class HudMarkers {
     if (mission.convoy) this.convoyMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: CONVOY_MARKER_LABEL, stepM: CONVOY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: HOME_COLOR_TEXT });
     if (telemetry.gunboat.enabled) this.gunboatMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.homeMarker, labelPrefix: telemetry.gunboat.labelJa, stepM: CONVOY_MARKER_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 });
     if (telemetry.seaplaneEnabled || telemetry.dawn.strikeEnabled || telemetry.patrol.enabled) this.planeMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: '敵機', stepM: PLANE_DISTANCE_STEP_M, labelAbove: false, roundUp: true, topMargin: PLANE_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN });
+    // 中継（v0.8.2 S4。報告の任務 us_05 だけ）: 中継待ちの間、黄色い「中継 N m」（輪の縁まで・100 m 刻みの切り上げ・ラベルは矢印の上＝帰投の印と同じ置き方・字は輪と同じ黄）。
+    // 矢印は Boot の「岸」の砂色の絵（大発の任務だけが使う）をそのまま（青い帰投の絵に黄を掛けると暗い緑になる。新しい絵の鍵は作らない＝tex-ab は変わらない）
+    if (telemetry.recon) this.relayMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: RELAY_MARKER_LABEL_JA, stepM: RELAY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: RELAY_RING_TEXT });
     if (telemetry.radar.enabled) {
       this.radarMarker = new RadarEdgeMarker(scene);
-      this.radarOthers = [this.targetMarker, this.homeMarker, this.planeMarker];
+      this.radarOthers = this.relayMarker ? [this.targetMarker, this.homeMarker, this.planeMarker, this.relayMarker] : [this.targetMarker, this.homeMarker, this.planeMarker];
     }
     if (!telemetry.landing.enabled) return;
     this.runnerMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.targetMarker, labelPrefix: LANDING_RUNNER_MARKER_LABEL, stepM: LANDING_DIST_STEP_M, labelAbove: false, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN, hideMargin: TARGET_MARKER_MARGIN });
@@ -130,6 +138,7 @@ export class HudMarkers {
     this.evacMarkers?.refresh(telemetry);
     this.convoyMarker?.refresh(telemetry.convoy.nearestDx, telemetry.convoy.nearestDy, !Number.isNaN(telemetry.convoy.nearestDx), telemetry, telemetry.convoy.nearestM); // 平方根は convoy-telemetry の 1 回（レビュー neutral:N2）
     if (this.shipMarker) this.refreshLanding(telemetry); // 揚陸の任務だけ（v0.6.9 S6b）
+    if (this.relayMarker) this.refreshRelay(telemetry); // 報告の任務だけ（v0.8.2 S4。緑の印はこれからも離す）
     this.radarMarker?.refresh(telemetry, this.radarOthers, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP); // レーダーの任務だけ（v0.8.0 S4）
     const gb = telemetry.gunboat;
     const gm = this.gunboatMarker;
@@ -162,7 +171,21 @@ export class HudMarkers {
     if (hm && hm.isShown) sm.nudge(separateLandingMarker(hm.shownX, hm.shownY, sm.shownX, sm.shownY, SHIP_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
   }
 
+  /** 中継の印（v0.8.2 S4）: 中継待ちの間だけ。距離は輪の縁まで（平方根は出ている間のフレームに 1 回）。右下の角を避け、帰投の印から離す */
+  private refreshRelay(t: BoatTelemetry): void {
+    const r = t.recon!;
+    const rm = this.relayMarker!;
+    const show = r.stage === RECON_PENDING;
+    rm.refresh(r.relayDx, r.relayDy, show, t, show ? Math.max(0, Math.hypot(r.relayDx, r.relayDy) - r.relayRadiusM) : undefined);
+    if (!rm.isShown) return;
+    rm.nudge(avoidCorner(rm.shownX, rm.shownY, HOME_MARKER_RECT, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, shift).dx, shift.dy);
+    const hm = this.homeMarker;
+    if (hm && hm.isShown) rm.nudge(separateMarker(hm.shownX, hm.shownY, rm.shownX, rm.shownY, HOME_MARKER_RECT, GUNBOAT_MARKER_SEP_PX, shift).dx, shift.dy);
+  }
+
   destroy(): void {
+    this.relayMarker?.destroy();
+    this.relayMarker = undefined;
     this.targetMarker?.destroy();
     this.homeMarker?.destroy();
     this.planeMarker?.destroy();

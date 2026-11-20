@@ -64,7 +64,7 @@ describe('文の幅（2 行目 ≤ 840 px＝22 px。L34）', () => {
 describe('東の縁の帯（見せ方の値の理由。brief L26）', () => {
   it('帯 500 m ≥ 掃引の間の列の道のり（速さ × time_scale × 掃引の秒）＋ 縁の内外 ＋ 丸めの半分（data から）', () => {
     const drift = TR.speedMps * S.timeScale * R.sweepS;
-    const inset = W - TR.outbound.appearX;
+    const inset = W - TR.outbound!.appearX;
     expect(drift).toBeCloseTo(231.5, 0);
     expect(RADAR_EAST_EDGE_MARGIN_M).toBeGreaterThanOrEqual(drift + inset + R.positionStepM / 2);
     // 護衛の見回り（端から 700 m で向き直す）は帯の外＝護衛の出入りを「東へ消えた」と読まない
@@ -77,7 +77,7 @@ describe('読む欄（brief L26: レーダーの文はレーダーのテレメ�
   it('ui/radar-lines は RadarTelemetry の欄（数・最初／新しい／消えた接触・掃引の時の自艇・海域の幅・揚陸の地の名）だけを読み、import は見せ方の定数・型・方位の字だけ', () => {
     const src = code('src/ui/radar-lines.ts');
     const fields = [...new Set([...src.matchAll(/\br\.(\w+)/g)].map((m) => m[1]!))].sort();
-    expect(fields).toEqual(['contacts', 'eastJa', 'firstFromX', 'firstFromY', 'firstX', 'firstY', 'fromX', 'fromY', 'lostX', 'newX', 'newY', 'widthM']);
+    expect(fields).toEqual(['contacts', 'eastJa', 'eastOneWay', 'firstFromX', 'firstFromY', 'firstX', 'firstY', 'fromX', 'fromY', 'lostX', 'newX', 'newY', 'widthM']); // v0.8.2 S4: 片道の列（us_05）の旗 eastOneWay（戻りの尾を付けない）
     expect(src).not.toMatch(/\bt\.|\bw\.|transit|phase|enemy|sighted|visRange|ai\b|destroyer/);
     expect([...src.matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['../config/strait-hud-config', '../core/boat-telemetry', '../core/briefing']);
   });

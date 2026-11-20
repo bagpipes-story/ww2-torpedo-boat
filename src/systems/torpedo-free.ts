@@ -8,6 +8,7 @@
 // 凍結の魚雷のファイル（core/torpedo・torpedo-targets・systems/torpedo-pool）は触らない。レーダーの無い任務は何もしない（発射・乱数・記録は同じ）。
 // v0.8.1 S2（spec-v0810 §3.5 D-K1）: KPI の的は core/hit-rate の kpiTargetAtLaunch（今の条件かつ狙った艦の速さ ≥ 下限 5 kt。今のどの任務の駆逐艦も 8 kt 以上＝旗は変わらない）。
 // 止まった艦の任務（us_06）だけ、狙った艦が止まっていた 1 本を隊の anchors（systems/destroyer-anchor）に渡す（Result の「止まった艦への魚雷」。無い任務は何もしない）。
+// v0.8.2 S2（spec-v0820 §4.7 D-K1・§9 の 11）: 狙った艦が KPI の艦かは隊の kpiAt（艦ごとの Uint8Array。今の任務は 0 ≤ ti < destroyerCount と同じ値・us_05 は駆逐艦の記録の艦だけ）。
 import type { BoatState } from '../core/boat-motion';
 import { kpiTargetAtLaunch } from '../core/hit-rate';
 import { discardFireInput, type InputState } from '../core/input-state';
@@ -21,6 +22,8 @@ export const NO_TORPEDO_TARGETS: readonly TorpedoTarget[] = Object.freeze([]);
 export interface TorpedoAimGroup {
   readonly allOut: boolean;
   readonly destroyerCount: number;
+  /** 艦 i を狙った 1 本を命中率の KPI に数えるか（v0.8.2 S2。systems/destroyer-group の kits。i < 0 は偽） */
+  kpiAt(i: number): boolean;
   readonly ships: readonly { readonly state: BoatState }[];
   nearestAfloatIndex(x: number, y: number): number;
   /** 止まった艦（v0.8.1 S2。us_06。systems/destroyer-anchor）: 撃った 1 本と狙った艦の添字を渡す。無い任務は null・無い */
@@ -104,7 +107,7 @@ export function stepLauncher(w: FreeTorpedoWorld, realDt: number): void {
   if (g !== null && !g.allOut) {
     const ti = g.nearestAfloatIndex(boat.x, boat.y);
     const target = g.ships[ti < 0 ? 0 : ti]!.state;
-    const s = w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(ti >= 0 && ti < g.destroyerCount, w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));
+    const s = w.launcher.update(realDt, boat, target, kpiTargetAtLaunch(g.kpiAt(ti), w.dawn.reached, target.speedMps, w.kpiMinTargetSpeedMps));
     if (s && w.radar) w.radar.noteLaunch(s, enemyInSight(w, boat)); // 目で見えない間に撃った魚雷（v0.8.0 S4。レーダーのある任務だけ）
     if (s && g.anchors) g.anchors.noteLaunch(s, ti); // 止まった艦への魚雷（v0.8.1 S2。止まった艦の任務だけ）
     return;

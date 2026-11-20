@@ -130,7 +130,8 @@ function oldRows(t: BriefingText, n: BriefingNumbers, nameOf: (id: string) => st
 describe('ほかの 8 任務の Briefing はバイト同一', () => {
   // v0.8.0 S5: us_04 は遊べるが、月の行にレーダーの尾を持つ v0.8.0 の文（tests/briefing の us_04 の段が固定）なので v0.6.10 の式の比べから外す
   // v0.8.1 S4: us_06 も同じ（月の行にレーダーの尾・敵の行の「（南西に停泊）」＝tests/briefing の us_06 の段が固定）
-  const others = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'jp_03' && id !== 'us_04' && id !== 'us_06');
+  // v0.8.2 S4: us_05 も同じ（月の行にレーダーの尾・ハードの敵の行に列の 8 隻目＝tests/briefing の us_05 の段が固定）
+  const others = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'jp_03' && id !== 'us_04' && id !== 'us_06' && id !== 'us_05');
   it('8 任務 × ノーマル・ハード × seed 1〜4（今夜の揺らぎ・見越し点の句あり）で v0.6.10 の式と同じ文。evac の鍵は 1 つも出ない', () => {
     expect(others).toEqual(['us_01', 'us_02', 'us_03', 'jp_01', 'jp_02', 'jp_04', 'jp_05', 'jp_06']);
     const keys = ['successTailJa', 'dayRowJa', 'enemyRowJa', 'clockJa', 'fuelNoteJa', 'repassJa', 'hazardLabelsJa'];

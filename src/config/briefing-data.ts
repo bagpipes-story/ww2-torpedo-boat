@@ -38,6 +38,9 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   // 列の通過のハードの足す艦（v0.8.0 S4。us_04 の「駆逐艦 ×5」。hard.extra_transit_ships は Boot の V-T1 で 1 以上の整数。無い任務は 0＝今のまま）
   const extra = hard && proto?.['transit'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined)?.['extra_transit_ships'] : undefined;
   for (let i = 0; i < (typeof extra === 'number' ? extra : 0); i++) enemyIds.push(mission.enemyId);
+  // 片道の列のハードの足す艦（v0.8.2 S4。us_05 の 8 隻目の見張りの駆逐艦＝「駆逐艦 ×5」。hard.extra_column は Boot の V-C1 で列の記録の形。無い任務は鍵が無い＝今のまま）
+  const xc = hard && (proto?.['transit'] as Record<string, unknown> | undefined)?.['column'] !== undefined ? (proto!['hard'] as Record<string, unknown> | undefined)?.['extra_column'] : undefined;
+  if (Array.isArray(xc)) for (const x of xc as Record<string, unknown>[]) if (typeof x['enemy_id'] === 'string') enemyIds.push(x['enemy_id']);
   if (mission.transport) enemyIds.push(mission.transport.enemyId); // 輸送船（v0.4.7）は隊の後ろに
   const pk = hard && proto?.['anchored'] !== undefined ? (proto['hard'] as Record<string, unknown> | undefined) : undefined; // ハードの駆潜艇（v0.8.1 S4。us_06。V-A5 で 1〜4 隻）は輸送船の後ろに
   if (pk && Array.isArray(pk['extra_pickets']) && typeof pk['picket_enemy_id'] === 'string') for (const _ of pk['extra_pickets']) enemyIds.push(pk['picket_enemy_id']);

@@ -9,20 +9,39 @@ import {
 import { hullHalfWidthAt, hullOutline, type Pt } from './boat-shape';
 
 export type DestroyerKind = 'kagero' | 'fletcher' | 'mutsuki' | 'subchaser'; // 駆潜艇は v0.8.1 S2b（us_06 のハード）
+/** 戦艦 扶桑型・重巡 最上（v0.8.2 S2b。us_05。置き方は assets/capital-plan。同じ DestroyerPlan の形で destroyer-paint が描く） */
+export type CapitalKind = 'fuso' | 'mogami';
+/** 塔の段の表の名（v0.8.2 S2c。config/capital-layout-config の CAPITAL_TOWER_ROWS: 山城の塔の艦橋・山城の後部の上部構造・最上の塔の艦橋） */
+export type CapitalTower = 'fuso' | 'fusoAft' | 'mogami';
 
-/** 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ） */
+/**
+ * 置いた部品（世界単位。cx・cy は中心、w は横・len は縦の大きさ）。砲の dx・bw は連装の砲身の間隔（中心から）と太さ（v0.8.2 S2b の戦艦・重巡の砲塔だけ。無ければ destroyer-art-config の値）。
+ * v0.8.2 S2b の 3 つ: pagoda 塔の艦橋（tiers 段）・casemate 舷側の砲郭の列（n 門・side は右舷 1・左舷 −1）・deck 後部の飛行甲板（rails 本のレール）
+ * v0.8.2 S2c（ユーザーの実機の感想「もう少しディティールに」）: 砲の lift（背負い式・高い台の段。高いほど後で描き甲板と下の砲塔へ影を落とす）と ears（主砲塔の後ろの測距儀の耳。幅の割合）・pagoda の style（段の表）・deck の wAft（艦尾側の幅）と
+ * stack 煙突と探照灯の台（trunk は最上の傾いた太い煙突）・aa 25 mm 機銃（n 連装・side は銃身の向く舷）・davit ボートダビット・catapult 斜めのカタパルト（cl × cw・ang 度。艦首へ向く軸を右舷へ回す）・
+ * plane 水上機（span × plen・ang 度・bi は複葉）・crane クレーンの腕（x0, y0 の柱から x1, y1 の先へ）。斜めの物の w・len は外の箱（tests が船体の内に収まるかを見る）
+ */
 export type DestroyerPart =
-  | { readonly t: 'gun'; readonly style: DestroyerGunStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly dir: 1 | -1; readonly barrel: number }
+  | { readonly t: 'gun'; readonly style: DestroyerGunStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly dir: 1 | -1; readonly barrel: number; readonly dx?: number; readonly bw?: number; readonly lift?: number; readonly ears?: number }
   | { readonly t: 'tubes'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: number; readonly shield: boolean }
   | { readonly t: 'funnel'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'bridge'; readonly style: DestroyerBridgeStyle; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'tub'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'mast'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
   | { readonly t: 'boat'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
-  | { readonly t: 'locker'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number };
+  | { readonly t: 'locker'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number }
+  | { readonly t: 'pagoda'; readonly style: CapitalTower; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly tiers: number }
+  | { readonly t: 'casemate'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: number; readonly side: 1 | -1 }
+  | { readonly t: 'deck'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly rails: number; readonly wAft: number }
+  | { readonly t: 'stack'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly fw: number; readonly flen: number; readonly trunk: boolean }
+  | { readonly t: 'aa'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly n: 1 | 3; readonly side: 1 | -1 }
+  | { readonly t: 'davit'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly side: 1 | -1 }
+  | { readonly t: 'catapult'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly cl: number; readonly cw: number; readonly ang: number }
+  | { readonly t: 'plane'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly span: number; readonly plen: number; readonly ang: number; readonly bi: boolean }
+  | { readonly t: 'crane'; readonly cx: number; readonly cy: number; readonly w: number; readonly len: number; readonly x0: number; readonly y0: number; readonly x1: number; readonly y1: number };
 
 export interface DestroyerPlan {
-  readonly kind: DestroyerKind;
+  readonly kind: DestroyerKind | CapitalKind;
   readonly L: number;
   readonly B: number;
   readonly detail: DestroyerDetail;
@@ -76,6 +95,15 @@ export function destroyerPartBounds(p: DestroyerPart): { x0: number; x1: number;
 
 /** 部品の箱（砲は砲塔と砲身の 2 つ。ほかは destroyerPartBounds の 1 つ）。tests が船体の内に収まるかを見る */
 export function destroyerPartBoxes(p: DestroyerPart, barrelSpread: number): { x0: number; x1: number; y0: number; y1: number }[] {
+  if (p.t === 'deck') {
+    // v0.8.2 S2c: 艦尾へ細る飛行甲板（最上だけ）は長さを 10 に切った箱（それぞれ前の端の幅）
+    const n = 10;
+    const y0 = p.cy - p.len / 2;
+    return Array.from({ length: n }, (_, i) => {
+      const hw = (p.w + ((p.wAft - p.w) * i) / n) / 2;
+      return { x0: p.cx - hw, x1: p.cx + hw, y0: y0 + (p.len * i) / n, y1: y0 + (p.len * (i + 1)) / n };
+    });
+  }
   if (p.t !== 'gun') return [destroyerPartBounds(p)];
   const body = { x0: p.cx - p.w / 2, x1: p.cx + p.w / 2, y0: p.cy - p.len / 2, y1: p.cy + p.len / 2 };
   const y0 = p.dir === 1 ? body.y0 - p.barrel : body.y1;

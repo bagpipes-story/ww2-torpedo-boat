@@ -24,6 +24,8 @@ export interface BoatTelemetry {
   torpedoesLeft: number;
   /** 有効弾の命中数（不発を除く） */
   hits: number;
+  /** 武装の前（100 m の内）に狙える艦の船体の下を通った自艇の魚雷の数（v0.8.2 IP1。systems/torpedo-under。2 行目の「近すぎて船体の下を通過」だけが読む） */
+  torpedoUnder: number;
   /** 夜明けまでの実時間秒（0 で夜明け。v0.6.1 から任務は終わらない。夜明けの後の時計・空襲は dawn） */
   timeLeftS: number;
   /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */
@@ -156,6 +158,28 @@ export interface BoatTelemetry {
   transit: TransitTelemetry; // 列の通過（v0.8.0 S2。core/ship-transit の段階の数。us_04）: 段階ごとの隻数・残りの戻り・通算（systems/transit-telemetry。無い任務は enabled false）。文は S4
   strait: StraitTelemetry; // 海峡の夜の目と衝突の危険（v0.8.0 S4。us_04）: 視程の 2 乗・艦首がこちらへ向く目で見えている艦（systems/strait-telemetry。列の通過もレーダーも無い任務は enabled false）
   anchor?: AnchorTelemetry; // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 気づいた・動き出した・背に岸の秒・止まった艦への魚雷（systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
+  recon?: ReconTelemetry; // 報告・無線・中継（v0.8.2 S2。us_05）: 段・追った秒・無線・中継の輪（systems/recon-telemetry。setup.recon の無い任務は鍵ごと無い）。文は S4
+  magazine?: MagazineTelemetry; // 戦艦の弾薬庫（v0.8.2 S2。us_05）: 誘爆の秒と何本目・引いた回数と確率の和（systems/recon-telemetry。規則のある艦のいない任務は鍵ごと無い）
+}
+
+/** 報告の HUD・Result の材料（v0.8.2 S2。読み手は S4 の ui/recon-lines・recon-result）。秒はみな固定ステップの時計（NaN は未だ） */
+export interface ReconTelemetry {
+  /** 段（core/recon-report の RECON_*）・無線が壊れた・追った秒・あと何秒（追う間の外は 0）・確かめた秒・報告の隻数（確かめる艦種の艦） */
+  stage: number; radioBroken: boolean; trackedS: number; trackLeftS: number; seenAtS: number; seenCount: number;
+  /** 送った・中継待ちになった・無線が壊れた・中継した秒・無線の故障を引いた回数・出来事のあったステップの通算と最後のステップのビット（RECON_EV_*） */
+  sentAtS: number; pendingAtS: number; radioBrokenAtS: number; relayedAtS: number; draws: number; eventCount: number; events: number;
+  /** 中継の輪（自艇からの相対位置 m・半径 m・名。S4 の端の印） */
+  relayDx: number; relayDy: number; relayRadiusM: number; relayJa: string;
+  /** v0.8.2 S4（ui/recon-lines の材料）: 確かめる艦種の名詞・列の向きと速さの句（作る時に 1 回）、戦艦・重巡への命中で沈まなかった回数・その最後の何本目と艦種の名詞・艦ごとに見た命中（隊の添字） */
+  identifyJa: string; fleetJa: string; capHits: number; capHitN: number; capHitJa: string; capSeen: Uint8Array;
+}
+
+/** 戦艦の弾薬庫の HUD・Result の材料（v0.8.2 S2。艦ごとの配列は世界の MagazineLog の参照＝写さない。隊の添字） */
+export interface MagazineTelemetry {
+  detonatedAtS: ArrayLike<number>;
+  onHit: ArrayLike<number>;
+  /** 誘爆した艦の数・引いた回数・引いた確率の和（隊の全艦。探りの期待値＝S3） */
+  detonations: number; draws: number; chanceSum: number;
 }
 
 /** 輝点の位置（core/radar の RadarBlip の読むだけの形。S4 の緑の端の印が読む） */
@@ -192,6 +216,8 @@ export interface RadarTelemetry {
    */
   widthM: number;
   eastJa: string;
+  /** 東の縁の向こうへ去って戻らない片道の列（v0.8.2 S4。us_05。eastJa は海峡の名＝「接触が東（スリガオ海峡）へ消えた」に戻りの尾を付けない） */
+  eastOneWay?: boolean;
   blips: readonly RadarBlipPos[];
   fromX: number;
   fromY: number;
@@ -229,6 +255,8 @@ export interface StraitTelemetry {
   bowOnM: number;
   /** その一番近い危険な艦が駆潜艇（v0.8.1 S4。us_06 のハードの隊の最後の 2 隻。2 行目の名詞。駆潜艇のいない任務はいつも偽） */
   bowOnPicket: boolean;
+  /** その一番近い危険な艦の艦種の名詞（v0.8.2 S2。片道の列の任務＝us_05 だけ鍵が出る: 戦艦・重巡・駆逐艦。危険が無ければ ''。文は S4） */
+  bowOnNounJa?: string;
 }
 
 /** 止まった艦と暗い岸を背にの HUD・Result の材料（v0.8.1 S2。setup.anchors の任務＝us_06 だけ鍵が出る。読み手は S4 の ui/anchor-lines・anchor-result） */

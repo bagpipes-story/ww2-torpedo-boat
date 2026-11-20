@@ -34,7 +34,7 @@ describe('レーダーの段の順と作る所（ソース）', () => {
   it('world-enemy-step の最後の行が w.radar?.step(w)（対空の後）。mission-world は buildRadar を退避の後・世界の絵の前に 1 回、stepFn からは呼ばない', () => {
     const e = lines(code('systems/world-enemy-step.ts'));
     const end = e.lastIndexOf('}');
-    expect(e.slice(end - 2, end)).toEqual(['w.arms?.stepAir(w, dt, feelDt);', 'w.radar?.step(w);']);
+    expect(e.slice(end - 3, end)).toEqual(['w.arms?.stepAir(w, dt, feelDt);', 'w.radar?.step(w);', 'w.recon?.step(w);']); // v0.8.2 S2: レーダーの後に報告（us_05 だけ。ほかの任務は null）
     const m = code('systems/mission-world.ts');
     const i = m.indexOf('this.evac = buildEvac(');
     const j = m.indexOf('this.radar = buildRadar(scene, this);');
@@ -51,8 +51,11 @@ describe('レーダーの段の順と作る所（ソース）', () => {
   it('buildRadar は setup.radar の任務だけ作る（無ければ null＝絵も絵の鍵も作らない）。WorldRadar は掃引の時でなければ何もしない', () => {
     const rv = code('systems/radar-view.ts');
     // v0.8.1 S2: 陸の反射に今の岸（coast の南）も渡す（us_06。両岸の us_04 は両岸の線のまま＝core/strait-geometry の landLinesOf）
-    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null) : null;');
-    expect(rv).toContain("const eastJa = tr && tr.outbound.edge === 'east' ? tr.vilaLabelJa : '';"); // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）
+    // v0.8.2 S4: 片道の列（us_05）の旗 oneWay を最後の引数に（世界は読まない＝HUD の文だけ。ほかの任務は false）
+    expect(rv).toContain('return p ? new WorldRadar(p, w.setup.mission.bounds, w.setup.shores, w.destroyers ? w.destroyers.total : 0, new RadarView(scene), eastJa, w.setup.mission.coast !== null, oneWay) : null;');
+    // v0.8.0 S4: 東の縁の向こうの揚陸の地の名（2 行目の「東（ビラ）へ消えた」）。v0.8.2 S4: 片道の列（outbound null・西から入る）は海峡の名（「東（スリガオ海峡）へ消えた」・戻りの尾なし）
+    expect(rv).toContain("const eastJa = tr && (oneWay || (tr.outbound !== null && tr.outbound.edge === 'east')) ? tr.vilaLabelJa : '';");
+    expect(rv).toContain("const oneWay = tr !== undefined && tr.outbound === null && tr.inbound.edge === 'west';");
     const wr = code('systems/world-radar.ts');
     const step = wr.slice(wr.indexOf('  step(w: RadarWorldView): void {'));
     expect(lines(step).slice(0, 3)).toEqual(['step(w: RadarWorldView): void {', 'const r = this.state;', 'if (!radarSweepDue(r, w.stepTimeS)) return;']);

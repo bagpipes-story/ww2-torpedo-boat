@@ -94,8 +94,8 @@ describe('任務の radar（config/radar-mission-data の V-R1〜V-R5）', () =>
     expect(protoOf(gameData, 'us_04')['radar']).toEqual({ model: 'so_early', fit: 'leader', source: expect.stringContaining('分隊の先頭の艇だけ') as unknown as string });
     expect(validateRadarMissions(gameData)?.model).toBe('so_early');
   });
-  it('ほかの 9 任務は null・radarSetupPart は {}（setup に radar の鍵が出ない）。radarOff なら us_04 も {}。v0.8.1 S0 から us_06 も so_late（自艇）', () => {
-    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_06')) {
+  it('ほかの 9 任務は null・radarSetupPart は {}（setup に radar の鍵が出ない）。radarOff なら us_04 も {}。v0.8.1 S0 から us_06 も・v0.8.2 S0 から us_05 も so_late（自艇）', () => {
+    for (const id of PROTO_IDS.filter((x) => x !== 'us_04' && x !== 'us_06' && x !== 'us_05')) {
       for (const hard of [false, true]) {
         expect(getRadarParams(gameData, getPrototypeMission(gameData, id, hard)), id).toBeNull();
         const s = buildWorldSetup(gameData, id, { sortie: directSortie(id, 3, 'none', hard, false), hard });
@@ -107,6 +107,7 @@ describe('任務の radar（config/radar-mission-data の V-R1〜V-R5）', () =>
     expect('radar' in buildWorldSetup(gameData, 'us_04', { radarOff: true })).toBe(false);
     expect(buildWorldSetup(gameData, 'us_04').radar?.shipRangeM).toBe(4000);
     expect([buildWorldSetup(gameData, 'us_06').radar?.model, buildWorldSetup(gameData, 'us_06').radar?.fit, buildWorldSetup(gameData, 'us_06').radar?.shipRangeM, buildWorldSetup(gameData, 'us_06').radar?.landClutterM]).toEqual(['so_late', 'own', 6000, 300]);
+    expect(buildWorldSetup(gameData, 'us_05').radar).toEqual(buildWorldSetup(gameData, 'us_06').radar); // v0.8.2 S0: us_05 も 1944 年の SO を自艇に（spec-v0820 §4.6 D-R1）
   });
   it('V-R1: model が hit_rate_model.json の radar.models に無い・fit が違う', () => {
     expect(build((d) => ((protoOf(d, 'us_04')['radar'] as Rec)['model'] = 'so_mid'))).toThrow(/us_04\.v0_1_prototype\.radar: model（so_mid）が hit_rate_model\.json の radar\.models（so_early・so_late）に無い（V-R1/);

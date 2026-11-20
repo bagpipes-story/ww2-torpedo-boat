@@ -307,3 +307,17 @@ describe('音の層は止まった艦と暗い岸を背にを読まない（v0.8
     for (const f of ['src/core/sfx-cues.ts', 'src/core/sfx-music-mood.ts', 'src/core/sfx-loops.ts']) expect(code(f), f).not.toMatch(/\banchor\b|underway|backdrop/);
   });
 });
+
+// v0.8.2 S4（spec-v0820 §8 の S4「sfx-rules」・§4.11 D-A4・D5、lead の L42）: 音の層（sfx-* の全部）は報告・無線・中継・弾薬庫の HUD と Result のファイルを import しない
+// （確認・報告・無線・中継・「戦艦に命中！」では鳴らさない・曲を下げない。「弾薬庫が誘爆！」は警報の合図にしない＝誘爆の音は絵が出している爆発・2 次の爆発の今の音だけ）
+describe('音の層は報告の任務の HUD と Result を読まない（v0.8.2 S4）', () => {
+  const NOT_FOR_SFX = /^src\/(?:ui\/recon-lines|ui\/recon-texts|ui\/recon-result|systems\/recon-result-part|systems\/recon-telemetry|config\/recon-hud-config|config\/recon-mission-data|core\/recon-report|core\/magazine-detonation|systems\/ship-magazine|systems\/world-recon)$/;
+  it('どの sfx-* の import の先にも ui/recon-lines・recon-texts・recon-result・systems/recon-result-part・recon-telemetry・config/recon-hud-config（と S1〜S2 の報告と弾薬庫の規則）が無い。合図・段・ループの観測器は t.recon・t.magazine を読まない', () => {
+    expect(SFX.length).toBeGreaterThan(30);
+    const resolved = (f: string, p: string): string => (p.startsWith('.') ? posix.join(posix.dirname(f), p) : p);
+    for (const f of SFX) expect(imports(code(f)).map((p) => resolved(f, p)).filter((p) => NOT_FOR_SFX.test(p)), f).toEqual([]);
+    expect(['src/ui/recon-lines', 'src/ui/recon-texts', 'src/ui/recon-result', 'src/systems/recon-result-part', 'src/config/recon-hud-config'].every((p) => NOT_FOR_SFX.test(p))).toBe(true);
+    for (const f of ['src/core/sfx-cues.ts', 'src/core/sfx-music-mood.ts', 'src/core/sfx-loops.ts']) expect(code(f), f).not.toMatch(/\brecon\b|\bmagazine\b|capHit|radioBroken|relay/);
+    expect(code('src/ui/recon-texts.ts')).toContain("export const RECON_BOOM_JA = '弾薬庫が誘爆！ 戦艦が轟沈した';");
+  });
+});

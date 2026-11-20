@@ -1,6 +1,7 @@
 // レーダーの 2 行目の出来事の文（v0.8.0 S4。spec-v0800 §4.9・§3.2 D-R2・D-R10、brief L26）: 夜の最初の接触・接触が増えた・東の縁で消えた（ビラ）・東の縁に現れた（帰りの列か）。
 // 読むのはレーダーのテレメトリ（t.radar: 丸めた輝点・数・最初／新しい／消えた接触と、掃引の時の自艇の位置）だけ。艦の正体・列の段階・AI・本当の位置は読まない（tests/radar-lines が
 // ソースの走査で読む欄を固定）。方位と距離は掃引の時の自艇から（atan2 は出来事の 1 回だけ＝§7）。東の縁の帯は config/strait-hud-config（見せ方の値・理由はそこ）。Phaser・DOM を読まない。
+// v0.8.2 S4: 片道の列（us_05。r.eastOneWay）は「接触が東（スリガオ海峡）へ消えた」で戻りの尾を付けず、帰りの列の判定はいつも偽（us_04 の文は同じ）。
 import { RADAR_EAST_EDGE_MARGIN_M, RADAR_LINE_STEP_M } from '../config/strait-hud-config';
 import type { RadarTelemetry } from '../core/boat-telemetry';
 import { bearingJa } from '../core/briefing';
@@ -32,9 +33,9 @@ export function radarLostAtEastEdge(r: RadarTelemetry): boolean {
   return nearEastEdge(r, r.lostX);
 }
 
-/** 最後の新しい接触の輝点が東の縁の帯の内（ビラへ消えた後なら「帰りの列か」） */
+/** 最後の新しい接触の輝点が東の縁の帯の内（ビラへ消えた後なら「帰りの列か」。片道の列＝v0.8.2 は戻りが無いのでいつも偽） */
 export function radarNewAtEastEdge(r: RadarTelemetry): boolean {
-  return nearEastEdge(r, r.newX);
+  return !r.eastOneWay && nearEastEdge(r, r.newX);
 }
 
 /** 夜の最初の接触: 「レーダー探知！ 北西 2300 m ・ 接触 1 ・ 目では見えない」（us_04 の最初の掃引は出発点から 2 km 余りの護衛＝目の外。tests/radar-lines が今夜の揺らぎで確かめる） */
@@ -47,9 +48,9 @@ export function radarNewLineJa(r: RadarTelemetry): string {
   return `レーダー: ${dirJa(r.fromX, r.fromY, r.newX, r.newY)}に新しい接触 ${distStepM(r.fromX, r.fromY, r.newX, r.newY)} m ・ 接触 ${r.contacts}`;
 }
 
-/** 接触が東の縁で消えた（1 夜に 1 回）: 「接触が東（ビラ）へ消えた ・ 揚陸を終えると同じ海峡を戻ってくる」 */
+/** 接触が東の縁で消えた（1 夜に 1 回）: 「接触が東（ビラ）へ消えた ・ 揚陸を終えると同じ海峡を戻ってくる」。片道の列（v0.8.2 S4。us_05）は戻らないので尾なし「接触が東（スリガオ海峡）へ消えた」 */
 export function radarVilaLineJa(r: RadarTelemetry): string {
-  return `接触が東（${r.eastJa}）へ消えた ・ 揚陸を終えると同じ海峡を戻ってくる`;
+  return `接触が東（${r.eastJa}）へ消えた${r.eastOneWay ? '' : ' ・ 揚陸を終えると同じ海峡を戻ってくる'}`;
 }
 
 /** ビラへ消えた後に東の縁に現れた接触（1 夜に 1 回）: 「レーダー: 東に新しい接触 2300 m ・ 帰りの列か ・ 進路から離れよ」 */

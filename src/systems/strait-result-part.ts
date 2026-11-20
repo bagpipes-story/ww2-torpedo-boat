@@ -16,7 +16,7 @@ export interface RadarResultWorld {
 
 /** 列の通過の記録（MissionWorld が満たす: 隊の列の通過と、夜明けに退く列の呼び名） */
 export interface StraitResultWorld {
-  readonly destroyers: { readonly transit: { readonly state: ShipTransitState; readonly plan: { readonly vilaLabelJa: string } } | null } | null;
+  readonly destroyers: { readonly transit: { readonly state: ShipTransitState; readonly plan: { readonly vilaLabelJa: string; readonly outbound?: unknown } } | null } | null;
   readonly setup: { readonly dawnAir: { readonly retireForceJa: string } };
 }
 
@@ -28,10 +28,10 @@ export function radarResultPart(w: RadarResultWorld): { radar?: RadarResult } {
   return { radar: { firstS: s.firstS, firstDx: s.firstX - s.firstFromX, firstDy: s.firstY - s.firstFromY, unseenShots: r.unseenShots, unseenHits: r.unseenHits } };
 }
 
-/** 列の通過の Result の材料: 列の通過のある任務だけ strait の鍵（列の呼び名は dawn_withdraw.force_ja。無ければ「列」。往路の途中は終わった時に IN の艦） */
+/** 列の通過の Result の材料: 列の通過のある任務だけ strait の鍵（列の呼び名は dawn_withdraw.force_ja。無ければ「列」。往路の途中は終わった時に IN の艦）。片道の列（v0.8.2 S4。us_05＝復路が無い）は出さない＝報告の任務の艦隊の行（ui/recon-result） */
 export function straitResultPart(w: StraitResultWorld): { strait?: StraitResult } {
   const tr = w.destroyers ? w.destroyers.transit : null;
-  if (!tr) return {};
+  if (!tr || tr.plan.outbound === null) return {};
   const s = tr.state;
   return { strait: { forceJa: w.setup.dawnAir.retireForceJa || '列', vilaJa: tr.plan.vilaLabelJa, inCount: s.inCount, outCount: s.outCount, sunk: transitCount(s, TRANSIT_SUNK), away: transitCount(s, TRANSIT_AWAY), inbound: transitCount(s, TRANSIT_IN) } };
 }
