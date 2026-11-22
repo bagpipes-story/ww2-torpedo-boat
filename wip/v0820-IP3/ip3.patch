@@ -1,0 +1,270 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index a742150..c4cf113 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -14,7 +14,7 @@
+ - 設計の既定（ユーザー未確認。報告で知らせ、変えたいと言われたら変える）:
+   - L1: 夜明けの空は味方（種の `dawn_air` own のまま＝夜明けの後も空襲なし。退く日本の艦は昼に米機に襲われた）。夜明けに浮いている列の艦は東（スリガオ海峡）へ退く（片道の列の向かう縁）。CLAUDE.md §2「夜明け」は今の一般の規則のとおりなので変えない。
+   - ハードは 8 隻目（本隊の最後に後ろの北側の見張りの駆逐艦。ユーザーの v0.4.4「難易度が上がれば敵艦の数が増えていけばよい」。史実は 7 隻）。spec §12 Q3 は S4 の報告で知らせる。
+-  - そのほかは spec-v0820 §14 の既定（弾薬庫の確率 3 本目 3%・4 本目 6%＝spec §12 Q1 は実機 1 回目の前に添える〔IP1 でユーザーの決め U-Q1 の 3.5%・7% に〕・報告は戦艦を目で確かめてレーダーで 20 秒・無線の故障 35%（76 mm 以上の 1 発ごと）・中継の輪は西のボホール沖・時雨の 600 m〔S3 で 560・IP1 でユーザーの言葉により 540〕・`rejoin_s` 40・戦艦の沈む本数 6・重巡 3・点は報告して帰投 300 と戦艦・重巡の撃沈 200・Title の 6 枚目・日本のタブの解放は米PT の 3 任務のまま）。
++  - そのほかは spec-v0820 §14 の既定（弾薬庫の確率 3 本目 3%・4 本目 6%＝spec §12 Q1 は実機 1 回目の前に添える〔IP1 でユーザーの決め U-Q1 の 3.5%・7% に〕・報告は戦艦を目で確かめてレーダーで 20 秒・無線の故障 35%（76 mm 以上の 1 発ごと）・中継の輪は西のボホール沖〔IP3 で北の岸寄りの (1,600, 500)〕・時雨の 600 m〔S3 で 560・IP1 でユーザーの言葉により 540〕・`rejoin_s` 40・戦艦の沈む本数 6・重巡 3・点は報告して帰投 300 と戦艦・重巡の撃沈 200・Title の 6 枚目・日本のタブの解放は米PT の 3 任務のまま）。
+ - 変更点:
+   - S0（data と検査・片道の列。まだ遊べない＝us_05 に `playable_from` は無く Title に出ない。世界は列の艦ごとの記録（kits）・役・報告・弾薬庫をまだ読まず、`?debug&mission=us_05` の列の 7 隻（ハード 8）は今の 1 種類の形＝`ijn_destroyer` で片道の列を走る＝lead の L4。ほかの 11 任務は 1 ビットも変えない＝setup の snapshot は `-u` なし・新しい `setup-us05` だけ＝L5）:
+     - 版 0.8.2（package.json・package-lock.json）。docs/03 の v0.8.2 の行に U1・L1・計画・Done・段 S0〜S4・実機 3 項目の下書き・目安を書いた（行の司令官の名の付いた部隊の呼び名は「第三部隊」「第二遊撃部隊」に直した）。CLAUDE.md は S4 で直す（§2 の「スリガオ（us_05）」の行・§4 の木と変更履歴）。
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 2dae27f..b88c207 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -19,7 +19,7 @@ Phaser 3 + TypeScript + Vite で作り、PWAとしてiPhone Safariで遊べる
+ | アート | v0.6まではプレースホルダー図形。v0.7 からは絵と音をコードで描く・合成する（外部の画像・音のファイルを使わない）。ユーザーの決め（v0.7.0 の U1。2026-11-07。問い「次は v0.7.0「アートと音」（艇・艦の絵、夜の海の演出、効果音・BGM）です。CLAUDE.md には「画像・音の制作にセッションを使わない」とあります。素材の出どころをどうしますか？」への答え「コードで描く・鳴らす（推奨）」＝「今回の屋我地の陰と同じやり方で艇・艦・海をコードで描き直し、効果音も音のファイルを使わず合成（機銃・爆発・エンジン・波など）。権利の心配なし・追加ダウンロードなし・オフラインでも軽い。BGM は単純な曲になる。CLAUDE.md の「制作にセッションを使わない」はこの形に限って解く。」）。手本は v0.6.11 の屋我地の陰（`assets/evac-terrain-art`＋`config/evac-art-config`）。絵の定数は `config/*-art-config`（ゲームの強さの値ではない。論理に効く値は `data/*.json` のまま）。v0.7.1 の効果音は起動時に `assets/sfx-*` が合成する（音のファイルなし）。音の見せ方の定数（音量・間引き・距離の帯・合図の冷却・ループの目標）は `config/sfx-config`（ゲームの強さの値ではない。論理に効く値は `data/*.json` のまま）。音は絵と HUD に従う（絵の層が出している出来事と HUD が文で出している状態だけを鳴らす）。v0.7.2 の BGM も音のファイルなしで作曲・合成する（作曲は音符、合成は効果音の後に 1 フレームに決まった量で 1 本の標本へ。`assets/sfx-music-*`）。ユーザーの決め U-M1（2026-11-14。問い「v0.7.2 で足す BGM…を、どの画面で鳴らしますか？」への答え「メニュー＋任務中も静かに（推奨）」）: Title・Briefing・Result にタイトルの曲、任務の中は小さい曲で、見つかったら緊張・撃たれたら戦闘に変わる（段は HUD が出している状態だけから決める＝曲も絵と HUD に従う。`core/sfx-music-mood`）。警報の合図で曲を下げる（ducking）。「曲: オン／オフ」は「音」と別。U-M2（2026-11-14「タイトルはDでいきます。Dをさらに名曲となるようにリメイクしてください」）: タイトルの曲は D（126 BPM の行進。v0.7.2 IP2 で作り直し、2026-11-15 の実機 3 回目「OKです。進めてください」）。U-S1（同「命中スローはAでいいです」）: 命中スローの間はループと曲を低く遅く（案 A。単発は鋭いまま。スローの論理と data は U11 のまま）。設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 一時停止で曲も止める・Result は鐘の後にタイトルの曲・警報以外の下げ（鐘・魚雷の命中・近い大きい爆発・探照灯）。曲の見せ方の定数（鍵・速さ・音量・段の間・下げ・命中スローの案・作る予算・種）は `config/sfx-music-config`（ゲームの強さの値ではない）。画像・音のファイルの制作にセッションを使わない |
+ | 夜明け | 失敗ではなく状態。夜明けに帰投地点の輪の外なら、敵の制空下（`missions_seed` の `dawn_air.play_as` が enemy）は敵機 4 機の空襲が波で続き、味方の制空下は敵機は来ない。任務が終わるのは帰投・沈没・漂流・座礁だけ（v0.6.1。ユーザーの要望「制空権がない限り全シナリオ共通」）。味方の制空下で敵艦隊が全部沈むか去った任務（us_02。`fleet_gone_clears`）は帰投しなくても「敵艦隊なし」で完了（v0.6.2）。任務が終わる瞬間に走っている魚雷は最大 5 秒待って命中を数える（v0.6.2。実機 1 回目で 3 秒、2 回目で 5 秒）。空が争奪だった us_04（ブラケット海峡の夜。v0.8.0）は敵の制空下として遊ぶ＝夜明けに輪の外なら日本の水上機 4 機の空襲（今の規則のまま。ユーザーの決め U1、2026-11-15「Aのままでいいと思うよ」） |
+ | レーダー（us_04） | v0.8.0。史実どおりレーダーは分隊の先頭の艇だけで、プレイヤーはその先頭の艇（`fit: leader`）。掃引ごとに艦艇の位置だけを緑の輪で出す（種類・針路・速さは出さない・機は映さない・陸のそばは映らない・見越し点マーカーは目で見える艦だけ・敵はレーダーに気づかない）。ユーザーの決め U2（2026-11-16。問い「レーダーの無い艇の目だけの夜の方がその夜らしいと感じたら教えてください」への答え「レーダーがあっても難しいことには変わりないのでいいと思います」）。レーダーを任務の外の装備にするのは v0.9 のストア |
+-| スリガオ（us_05） | v0.8.2。ユーザーの決め U1（2026-11-17。問い「次の任務 us_05「スリガオ海峡・最初の接触」…の敵の列をどうしますか？」への答え「…あなたの推奨する史実の大艦隊にしましょう。ただ、大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。」）: 列は史実の 7 隻（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲。片道で海峡へ去る）。戦艦は艇の 4 本では沈まない（沈む本数 6）が、3 本目・4 本目の命中のときだけ data の確率で弾薬庫が誘爆して轟沈。規則は敵の記録ごと（`enemies.json` の `magazine`。大和型の記録には置かない＝ユーザーの例外）。確率はユーザーの決め U-Q1（2026-11-19。実機 1 回目の後の問い「3 本目 3%・4 本目 6% は稀すぎる／ちょうど／多い」への答え「魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。」）: 3 本目 3.5%・4 本目 7%＝4 本全部当てて約 10%（1 − 0.965 × 0.93。3 本だけなら 3.5%）。達成は報告（戦艦を目で確かめ、レーダーで 20 秒追う。送る前の被弾で無線が壊れれば隣の分隊の黄色い輪で中継）して帰投。以下は設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 見張りの時雨は自艇を見つけると列を離れて照らして撃ち、見失って 40 秒か、離れて 45 秒（見張りの鎖 `screen_chase_s`）で列へ戻る（戻って 60 秒は離れない）、夜明けの空は味方（空襲なし・残りは東へ退く）、ハードは見張りの駆逐艦を足して 8 隻 |
++| スリガオ（us_05） | v0.8.2。ユーザーの決め U1（2026-11-17。問い「次の任務 us_05「スリガオ海峡・最初の接触」…の敵の列をどうしますか？」への答え「…あなたの推奨する史実の大艦隊にしましょう。ただ、大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。」）: 列は史実の 7 隻（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲。片道で海峡へ去る）。戦艦は艇の 4 本では沈まない（沈む本数 6）が、3 本目・4 本目の命中のときだけ data の確率で弾薬庫が誘爆して轟沈。規則は敵の記録ごと（`enemies.json` の `magazine`。大和型の記録には置かない＝ユーザーの例外）。確率はユーザーの決め U-Q1（2026-11-19。実機 1 回目の後の問い「3 本目 3%・4 本目 6% は稀すぎる／ちょうど／多い」への答え「魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。」）: 3 本目 3.5%・4 本目 7%＝4 本全部当てて約 10%（1 − 0.965 × 0.93。3 本だけなら 3.5%）。達成は報告（戦艦を目で確かめ、レーダーで 20 秒追う。送る前の被弾で無線が壊れれば隣の分隊が止まっている所（黄色い輪）で中継。v0.8.2 IP3 で北の岸寄りへ・艇を描いた）して帰投。以下は設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 見張りの時雨は自艇を見つけると列を離れて照らして撃ち、見失って 40 秒か、離れて 45 秒（見張りの鎖 `screen_chase_s`）で列へ戻る（戻って 60 秒は離れない）、夜明けの空は味方（空襲なし・残りは東へ退く）、ハードは見張りの駆逐艦を足して 8 隻 |
+ | 兵装 | 艇が積む魚雷と機銃は全任務で両方表示・両方いつでも使える（v0.6.8。ユーザーの要望「意味がなくても駆逐艦に機銃撃ったり」「魚雷も意味が無くても魚雷艇に搭載しているならユーザーが自由に発射できるべき」）。右下の角が魚雷・その左が機銃で全任務で固定（v0.6.8 実機 1 回目「主兵装である魚雷が右側。機銃が魚雷の左側側に固定してください」。`missions_seed` の `main_weapon` は位置を決めない）、煙幕・消火・見張り・識別は右端に縦一列。魚雷は狙う艦がいなければ発射の時に決着（大発・PT の下を抜ける・待たない・点なし）。機銃は艦に効かず撃てば閃光で 1,200 m の敵に見つかる。機には 1 発 0.5%（止まって・静音。巡航 0.31%・全速 0.2%）で撃墜し、次の波はまた 4 機。撃墜に点は無い。機銃は弾倉を撃ち切ると 3.2 秒の交換（撃ち続けて Elco 80 約 11 秒・Elco 77 約 7 秒・日本 約 4 秒。v0.6.8 実機 1 回目「弾倉交換が発生するように」）。魚雷は走り始めて 100 m（`hit_rate_model` の `arming_distance_m`＝世界の m。全任務で同じ規則）までは武装の前で当たらず、狙える艦の船体の下を抜けた時は 2 行目に「近すぎて船体の下を通過」を 1 本に 1 回出す（全任務・音なし。v0.8.2 IP1。ユーザーの決め 2026-11-19「推奨通り知らせを出してください。でもメッセージは「近すぎて船体の下を通過」にしてください」）。外れた魚雷は最寄りの艦を通り過ぎても外れに決めず、海の外か射程の終わりまで走って後ろの艦にも当たる（全任務。v0.8.2 IP2。ユーザーの決め 2026-11-19「推奨の全任務で直す」）。撃ち尽くしの呼びかけ「魚雷なし 帰投せよ」は走る魚雷がみな決着するか最後の発射から 8 秒の早い方（同「うち尽くしたあとの呼びかけは海の外に出るまでまたなくても8秒経過くらいで出せばいいんじゃないかな」。任務の終わりの魚雷の待ちは「夜明け」の最大 5 秒のまま） |
+ | 輸送の護衛（jp_04） | 米PT は魚雷を撃っても去らず、そのまま自艇と戦って銃撃してくる（3 種類の斉射とも。1 隻 1 回）。v0.6.10 実機 1 回目（ユーザー「卯月が強すぎてPTが瞬殺される。卯月を弱めたところであまり意味がないので、当初の設計どおり、PTが発射後も去らずに銃撃してくる設計に戻してください」→「A: 卯月は残し、PT を撃った後も去らない形に戻す」）。味方の駆逐艦 卯月は今の値のまま残り、照らして撃つだけ（照らされた PT も去らない。射点なら慌てて撃つ）。自艇と戦う PT も輸送船に艇首が向けば撃つ（離れて戦え）。ハードは米PT 3 隻（v0.6.9 実機 1 回目。ユーザー「ハードモードは敵PTが3隻に増えるようにしてください」）。v0.6.9 実機 1 回目〜v0.6.10 S8 の「撃ったら去る（引きつけて離す A）」はやめた |
+ | 空襲下の退避（jp_03） | v0.6.11。ユーザーの決め（2026-11-04）: 18 隻は 3 隻ずつ 6 つの隊。操作中の隊の隊長艇（先頭の 1 隻）をスティックで動かし、僚艇 2 隻は後ろに続く。［切替］で操る隊を替える（U1）。隊長艇が機銃を撃てば僚艇も撃つ（U2）。操作していない隊は自分では隠れず、ランダムに回避しながら爆撃から逃げる（U3）。隊長艇ごとに HP・乗員・火災・機関の状態を持つ（U4）。敵機は（1 編隊の機数）×（同時の編隊の数）でノーマル 4 波 2×2・3×2・3×2・4×2、ハードは同じ機数の編隊が 3 つ同時（第 4 波は 4 機の編隊が 3 つ）。各波で 1 編隊は操作中の隊を、ほかの編隊はほかの隠れていない隊を狙う（U5「プレイヤーは急いで退避しつつ、他の隊の面倒も見なければいけなくなる」）。18 隻中 6 隻以上残れば達成（史実 5。U6）。爆弾を落とし終えた編隊は、次の波の前に間に合えば赤い輪の予告つきでもう一度来る（U7「編隊が戻ってくる」）。以下は設計の既定（ユーザー未確認。変えるときはユーザーに聞く）: 1 編隊 2 回まで（第 4 波は 240 秒までに収まらないので 2 回目なし）。「夜明け」の読み替え: 240 秒（第 1 次の空襲が去る）が決着で、残存はそこで決まる（外の操作中の隊長艇が沈めば 1 減る）。ユーザーの U8（v0.6.11 実機 1 回目「残存する全ての艇が避難所に入って敵機が捕捉しなくなった場合…その時点で残り時間があってもゲームクリアに」）: 240 秒の前でも、浮いている艇がみな隠れ、予告した・飛んでいる・爆弾が空中の編隊が無ければ、その時に決着（残存はそこで決まる）。設計の既定（案 B）: 陰（予告ごとに見つかることがある）に隠れた隊がある間は、最後の波の予告が済むまで早い決着にしない（壕は安全）。6 隻未満のまま全部隠れても早く終わり未達。決着の時に操作中の隊が隠れていれば帰投で終わり、外なら敵機 4 機が追い、どの隠れ場所でも輪の中で止まれば帰投。画面の言葉は jp_03 だけ「夜明け」でなく「空襲」。「兵装」とのずれ: 魚雷 2 本と機銃の弾倉は座席の 1 つを全部の隊長艇で分け合う（狙う艦の無い魚雷も撃てる。切り替えると一斉発射の待ちは捨てる） |
+@@ -220,3 +220,4 @@ optional/claude.yml                  任意: GitHubの@claude連携
+ - 2026-11-19 v0.8.2 IP1 §2「スリガオ（us_05）」の弾薬庫の確率を設計の既定からユーザーの決め U-Q1 へ（「魚雷4本当てたときの轟沈率が10回に一回くらい」＝3 本目 3.5%・4 本目 7%）
+ - 2026-11-19 v0.8.2 IP1 §2「兵装」に魚雷の武装の距離（100 m）と 2 行目の「近すぎて船体の下を通過」（ユーザーの決め）
+ - 2026-11-19 v0.8.2 IP2 §2「兵装」に外れた魚雷は全任務で海の外まで走って後ろの艦にも当たる・撃ち尽くしの呼びかけは最後の発射から 8 秒（ユーザーの決め）
++- 2026-11-22 v0.8.2 IP3 §2「スリガオ（us_05）」の中継を「隣の分隊が止まっている所（黄色い輪）」に（実機 3 回目の要望で輪を北の岸寄りへ・止まっている艇を描いた）
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index c931a60..c40c5cf 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -782,8 +782,8 @@
+         "enemy_behavior": "transit と column（v0.8.2。第三部隊の 7 隻（ハード 8）は列の通過の片道（下の transit）: 西の縁から 18 kt で東へ進み、東の縁の外（スリガオ海峡）へ去って戻らない。先に前衛（満潮・朝雲・山雲・最上。南寄りの道）、約 30 秒あとに本隊（時雨・山城・扶桑。時雨は北＝ボホールの側 540 m の道）。列の艦は退く動き（針路を守る・端で向き直さない・わざとの体当たりはしない・雷跡を見れば櫛で梳く・見つければ照らして撃つ）。時雨（role screen）は自艇を見つけると列を離れて us_02 の AI で追い、見失って rejoin_s で列へ戻る（S2）。艦ごとの寸法・砲・探照灯・星弾・AI・沈む本数は column の enemy_id の記録（S2。S0 の世界は 7 隻とも ijn_destroyer の形で走る）)",
+         "duration_s": 270,
+         "duration_s_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M3。夜明けまでの実秒。揺らぎのない夜の本隊の最後の扶桑は 101 秒に現れ 241.4 秒に東の縁の外へ去る（画面上 46.3 m/秒で幅 6,500 m を 140.4 秒）。ハードの 8 隻目（109 秒）は 249.4 秒で、夜明けの 20 秒前まで（V-C5）。初めの値で v0.8.2 S3 の探りの帯 T で直す)",
+-        "fuel_allotment_gal": 24,
+-        "fuel_allotment_gal_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M6。戦闘に使える割当の初めの値（us_04 の 33 gal と同じ考え）。core/fuel の 1 km あたり（静音 4.0・巡航 4.7・全速 6.9 gal）で、出発 → 本隊の前方へ巡航 1.2 km → 止まって待つ → 撃って全速で北東へ 2 km → 輪へ巡航 1 km ≈ 26 gal（残り 24%）。中継の道は ＋約 3 km。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（足りなければ燃料でなく輪の位置を直す）。v0.8.2 S3 の探りの帯 F で直す。v0.8.2 S3: 34 → 24 gal（scripts/headless/column-probe の shadow_report＝止まって待つ偵察で、帰投の夜の燃料の残りの中央値が 51% → 30%＝帯 F の 15〜35%。使うのは約 17 gal。出発点で止まったままの夜は 1,225 → 865 秒で漂流＝夜明けの後・1,500 秒未満の帯 D のまま。中継の道を通った夜は探りに無かった＝中継の輪の位置は変えていない）)",
++        "fuel_allotment_gal": 34,
++        "fuel_allotment_gal_source": "design (v0.8.2 S0・spec-v0820 §4.1 D-M6。戦闘に使える割当の初めの値（us_04 の 33 gal と同じ考え）。core/fuel の 1 km あたり（静音 4.0・巡航 4.7・全速 6.9 gal）で、出発 → 本隊の前方へ巡航 1.2 km → 止まって待つ → 撃って全速で北東へ 2 km → 輪へ巡航 1 km ≈ 26 gal（残り 24%）。中継の道は ＋約 3 km。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Elco 80 は 41.6 gal まで（足りなければ燃料でなく輪の位置を直す）。v0.8.2 S3 の探りの帯 F で直す。v0.8.2 S3: 34 → 24 gal（scripts/headless/column-probe の shadow_report＝止まって待つ偵察で、帰投の夜の燃料の残りの中央値が 51% → 30%＝帯 F の 15〜35%。使うのは約 17 gal。出発点で止まったままの夜は 1,225 → 865 秒で漂流＝夜明けの後・1,500 秒未満の帯 D のまま。中継の道を通った夜は探りに無かった＝中継の輪の位置は変えていない）。v0.8.2 IP3（実機 3 回目のユーザー「燃料は24galから34galに増やしてください。特に減らす意味が感じられませんでした。」）: 24 → 34 gal（S3 のつまみ ① を戻した。止まって待つと 1,225 秒で漂流＝夜明けの後・1,500 秒未満の帯 D のまま）)",
+         "bounds_m": {
+           "width": 6500,
+           "height": 4000,
+@@ -942,11 +942,11 @@
+           "radio_min_damage": 20,
+           "relay": {
+             "x_m": 1600,
+-            "y_m": 800,
++            "y_m": 500,
+             "radius_m": 250,
+             "label_ja": "隣の分隊"
+           },
+-          "source": "historical (第 1 分隊は報告を送る前に寄って攻撃し、PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 が報告を中継した（中継を頼んだのが PT-130 か PT-131 かは出典で違う）。報告は艦種と針路・速さを言った。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C3・C4) / design (v0.8.2 S0・spec-v0820 §4.5 D-N1〜D-N7。報告（type recon_and_attack）: 艦種 identify_class（戦艦）の艦が自艇の視程の内に 1 回でも入ったら「戦艦を確認」（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の艦が映っている固定ステップの実秒を track_s（20 秒）足すと報告を送る。送る前に敵の艦の砲弾（damage が radio_min_damage 20 以上＝76 mm 以上）を受けるたびに radio_fail_chance 35% で無線が壊れ（乱数 seed+45・recon のある任務だけ）、中継の輪 relay（西のボホール沖・隣の分隊・黄色）に入れば中継。達成は報告が届いて帰投と同じに数える終わり。世界の配線は v0.8.2 S2・画面の文（2 行目の出来事と常の文・中継の端の印・Result の 2 行）は v0.8.2 S4)"
++          "source": "historical (第 1 分隊は報告を送る前に寄って攻撃し、PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 が報告を中継した（中継を頼んだのが PT-130 か PT-131 かは出典で違う）。報告は艦種と針路・速さを言った。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C3・C4) / design (v0.8.2 S0・spec-v0820 §4.5 D-N1〜D-N7。報告（type recon_and_attack）: 艦種 identify_class（戦艦）の艦が自艇の視程の内に 1 回でも入ったら「戦艦を確認」（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の艦が映っている固定ステップの実秒を track_s（20 秒）足すと報告を送る。送る前に敵の艦の砲弾（damage が radio_min_damage 20 以上＝76 mm 以上）を受けるたびに radio_fail_chance 35% で無線が壊れ（乱数 seed+45・recon のある任務だけ）、中継の輪 relay（隣の分隊が止まっている所・黄色）に入れば中継。達成は報告が届いて帰投と同じに数える終わり。世界の配線は v0.8.2 S2・画面の文（2 行目の出来事と常の文・中継の端の印・Result の 2 行）は v0.8.2 S4。v0.8.2 IP3（実機 3 回目のユーザー「隣の分隊の表示が黄色い丸い円だけでなんのこっちゃ分かりません。もう少しマップ上端寄りに配置し、実際に停まっている分隊を配置してはどうでしょうか」）: 中継の輪 (1,600, 800) → (1,600, 500)（北の岸の線＝ボホール島から輪の縁まで 250 m。V-N3 の岸の沖 400 → 200 m）と、輪の中に止まっている隣の分隊の艇 3 隻の絵（entities/relay-ring。絵だけ＝世界・当たり・発見には入らない）)"
+         },
+         "hard": {
+           "extra_column": [
+diff --git "a/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md" "b/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+index 8b2d658..44fda41 100644
+--- "a/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
++++ "b/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+@@ -776,7 +776,7 @@ PB2Y コロナドのウェーク空襲（1944-01-30〜02-09）:
+ | 自艇はレーダーを積む（1944 年の標準・PT-131 のレーダーが捉えた） | 上の表・§8 の v0.8.0 の R4 | historical（medium）／`fit: own` |
+ | 無線が壊れ、隣の分隊が中継した | C3・C4 | historical（medium）／壊れる確率 35%（76 mm 以上の 1 発ごと）・中継の輪の位置は design |
+ | 報告の条件（戦艦を目で確かめ、レーダーで 20 秒追う） | 史実の報告は艦種と針路・速さを言った | design |
+-| 地図（東西の模式図・縮尺は約 50 km を 4 km に）・道・間隔・時雨の道（本隊の道の北 540 m＝S3 で 600 → 560・IP1 で実機 1 回目のユーザーの言葉により 540）・出発と輪・夜の長さ 270 秒・燃料 24 gal（S3 で 34 → 24） | — | design |
++| 地図（東西の模式図・縮尺は約 50 km を 4 km に）・道・間隔・時雨の道（本隊の道の北 540 m＝S3 で 600 → 560・IP1 で実機 1 回目のユーザーの言葉により 540）・出発と輪・夜の長さ 270 秒・燃料 34 gal（S3 で 34 → 24、IP3 で実機 3 回目のユーザーの言葉により 34 に戻した）・中継の輪（隣の分隊が止まっている所。IP3 で北の岸寄りへ） | — | design |
+ | 満潮・朝雲・山雲（朝潮型）と時雨（白露型）を `ijn_destroyer`（陽炎型の値と絵）で代用 | 寸法がほぼ同じ（朝潮型 118 m） | design（代用。命中率の KPI を合わせた値を触らない） |
+ | 戦艦は 6 本で沈む・3・4 本目に 3.5%・7% の弾薬庫の誘爆（4 本全部当てて約 10%） | ユーザーの決め U1・上の戦艦の例・確率はユーザーの決め U-Q1（v0.8.2 IP1「魚雷4本当てたときの轟沈率が10回に一回くらい」。S0〜S4 は 3%・6%） | design（ユーザーの決め） |
+ | 戦艦・重巡の砲（副砲・高角砲・機銃）の夜の値・探照灯（主砲は PT を撃たない・戦艦は星弾なし） | 寸法と門数は historical、強さは design（S3 の gunnery-sim で `ijn_destroyer` の 1.2〜1.6 倍・1.0〜1.3 倍） | design |
+diff --git "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md" "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+index 420beaa..56e9720 100644
+--- "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
++++ "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+@@ -478,10 +478,10 @@
+   - 探り（`scripts/headless/anchor-probe.mjs`。新しい模擬は作らず、本物の世界をヘッドレスで台本で回す。6 つの遊び方 × 40 夜）: 浜沿いの台本は 40 夜とも達成（理想化した台本の上へ外れた帯。人の手で下がるかは iPhone の実機で見る）、北から真っすぐ寄る台本は 73%、背に岸の規則を切った同じ浜の道は 3%、突っ込みは 30%（沈没 60%）、空知丸を先に撃つ道は 40 夜とも燃料切れで漂流。値と帯は CHANGELOG v0.8.1 S3。
+ - 任務 us_05「スリガオ海峡・最初の接触」（v0.8.2。1944-10-24 夜・ミンダナオ海のボホール島沖・半月が西に低い・type recon_and_attack。題は戦いの名・最初の接触は海峡の約 100 km 西。史実の根拠と何が作りかは docs/01 §8「スリガオ海峡・最初の接触（v0.8.2 の調べ）」。人物と PT の番号は画面に出さない＝CLAUDE.md §11。部隊は「日本の艦隊」「戦艦の隊」）:
+   - 列（ユーザーの決め U1＝史実の大艦隊。§6.4 の片道の列の艦ごとの記録と役）: 第三部隊の 7 隻。前衛（満潮・朝雲・山雲＝駆逐艦・最上＝重巡。前衛の道は本隊の南 400 m）が 5 秒から 15 秒おき、約 30 秒あとに本隊（時雨＝見張り・本隊の道の北 540 m〔v0.8.2 IP1。S3 は 560 m〕／山城・扶桑＝戦艦）が西の縁の内 150 m から 090°・18 kt で東へ。扶桑が東の縁の外へ去るのは約 245 秒。今夜の揺らぎは列ごと 1 件（入りの秒 ±6.5 秒・道を同じだけ ±150 m）。駆逐艦 4 隻は陽炎型の値と絵で代用。
+-  - 地図（design。東西の模式図＝縮尺は約 50 km を 4 km に）: 海域 6,500 × 4,000 m。北の縁の外がボホール島、南の縁の東の一部（x 4,800〜）がカミギン島（両岸の作り。西の切れ目はミンダナオ海）。出発 (4200, 700)・225°・停止、帰投の輪は北東 (5000, 800)・半径 250、中継の輪（隣の分隊・黄）は西 (1600, 800)・半径 250。燃料 24 gal（v0.8.2 S3 で 34 → 24）。夜明け 270 秒。
++  - 地図（design。東西の模式図＝縮尺は約 50 km を 4 km に）: 海域 6,500 × 4,000 m。北の縁の外がボホール島、南の縁の東の一部（x 4,800〜）がカミギン島（両岸の作り。西の切れ目はミンダナオ海）。出発 (4200, 700)・225°・停止、帰投の輪は北東 (5000, 800)・半径 250、中継の輪（隣の分隊・黄）は北西のボホール島寄り (1600, 500)・半径 250（v0.8.2 IP3 で (1600, 800) から。実機 3 回目「もう少しマップ上端寄りに配置し、実際に停まっている分隊を配置してはどうでしょうか」）で、輪の中に止まっている隣の分隊の艇 3 隻を描く（`entities/relay-ring`。自艇と同じ Elco の絵・少しずつ違う向き・輪の下・輪の名「隣の分隊」は艇の上。絵だけ＝当たり・発見・テレメトリには入らない）。燃料 34 gal（v0.8.2 S3 で 34 → 24、IP3 で実機 3 回目「燃料は24galから34galに増やしてください。特に減らす意味が感じられませんでした。」により 34 に戻した）。夜明け 270 秒。
+   - レーダー（§6.5）: 1944 年の SO（`so_late`・自艇）。出撃 5 秒ほどで満潮が西南西 4,600 m の輪になり、前衛 4 つ → 本隊 3 つの輪が東へ。艦種は出ない（戦艦は目で確かめる）。列が東の縁で消えると 2 行目「接触が東（スリガオ海峡）へ消えた」（片道なので v0.8.0 の「戻ってくる」の尾は付けない）。
+   - 典型の夜（spec-v0820 §4.12）: 本隊の前方（本隊の道の北 1,300〜1,500 m・見張りの道から 700 m 以上）に止まって待つと、見つかる距離は停止の 800 m で時雨に見つからず、山城が 1,500 m の内に入って「戦艦を確認！」→ 20 秒 →「報告を送った！」。撃つなら止まったまま戦艦へ 4 本。見つかると時雨が照らして撃ち、列の艦も照らされた艇を撃つ（見つかった艇は 13〜15 秒で沈み始めることが多い＝S3 の探り）。
+-  - 2 行目（`ui/recon-lines`・`recon-texts`。1 回・4 秒の出来事は止まった艦の出来事のすぐ下＝モード 42。22 px で 840 px の内。数と名は data から）: 「戦艦を確認！ ・ レーダーで追って報告せよ（20 秒）」／「報告を送った！ 戦艦 2 を含む艦隊 ・ 東へ 18 ノット」／「無線が壊れた！ 報告は西の黄色い輪（隣の分隊）へ」（方位は自艇から輪へ・警告の色）／「報告を中継した！ ・ 生きて帰れ」／「戦艦に命中！ 3 本目 ・ まだ沈まない」（戦艦・重巡の沈まなかった命中ごと）／「弾薬庫が誘爆！ 戦艦が轟沈した」（警告の色。音の警報の合図にしない）。常の文（モード 43。ほかの行が無い時と、届く前の「魚雷なし」「撃沈！」の呼びかけの代わり）: 「報告: 戦艦を目で確かめよ（レーダーでは艦種が分からない）」→「報告: 追尾 12 秒 ・ あと 8 秒」→「無線故障 ・ 隣の分隊（黄色い輪）で中継」。届いた後の呼びかけは「報告済み ・ 帰投せよ  800 m」。3 行目は足さない。見張りの鎖で時雨が戻っても「発見された！」の今の振る舞いのまま（新しい行は無い）。
++  - 2 行目（`ui/recon-lines`・`recon-texts`。1 回・4 秒の出来事は止まった艦の出来事のすぐ下＝モード 42。22 px で 840 px の内。数と名は data から）: 「戦艦を確認！ ・ レーダーで追って報告せよ（20 秒）」／「報告を送った！ 戦艦 2 を含む艦隊 ・ 東へ 18 ノット」／「無線が壊れた！ 報告は西の黄色い輪（隣の分隊）へ」（方位は自艇から輪への 8 方位・警告の色。本隊の北で待つ所からは西か北西）／「報告を中継した！ ・ 生きて帰れ」／「戦艦に命中！ 3 本目 ・ まだ沈まない」（戦艦・重巡の沈まなかった命中ごと）／「弾薬庫が誘爆！ 戦艦が轟沈した」（警告の色。音の警報の合図にしない）。常の文（モード 43。ほかの行が無い時と、届く前の「魚雷なし」「撃沈！」の呼びかけの代わり）: 「報告: 戦艦を目で確かめよ（レーダーでは艦種が分からない）」→「報告: 追尾 12 秒 ・ あと 8 秒」→「無線故障 ・ 隣の分隊（黄色い輪）で中継」。届いた後の呼びかけは「報告済み ・ 帰投せよ  800 m」。3 行目は足さない。見張りの鎖で時雨が戻っても「発見された！」の今の振る舞いのまま（新しい行は無い）。
+   - 中継の端の印: 中継待ちの間だけ黄色い「中継 2100 m」（輪の縁まで・100 m の切り上げ・矢印は Boot の砂色の絵・帰投の印から離す・緑の印はこれからも離す）。
+   - Briefing（6 行のまま）: 日付「1944年10月24日 ・ ミンダナオ海（ボホール島沖）」、目的「戦艦2・重巡1を含む日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ」（駆逐艦の隻数を書かない＝ハードの ×5 と食い違わない。us_04 の v0.8.0 S5 と同じ）、成功「報告して帰投（戦艦を見て、レーダーで20秒追う）（帰投地点は北東の青い輪）」、月「半月（西に低い） ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m ・ レーダー 6000 m（陸のそばは映らない）」、敵「駆逐艦 ×4、重巡洋艦 ×1、戦艦 ×2（西から）」（ハード ×5）、危険「敵艦艇の砲撃・衝突、無線の故障」、条件「夜明けまで 270 秒（昼の空は味方・敵は東へ退く） ・ 燃料 24 gal ・ 魚雷 4 本 …」、史実メモ（3 行。PT の番号なし）。
+   - Result（駆逐艦の任務の行のレーダーの行の後に 2 行・20 px）: 「報告: 出撃 170 秒に送った（無線） ・ 戦艦を確認 148 秒」（中継は「報告: 無線が壊れ、出撃 210 秒に隣の分隊で中継 …」、届かなければ「報告できなかった（無線が壊れ、中継できず／追尾 12 秒／戦艦を見ていない）」）と「艦隊 7 隻: 戦艦に命中 3（誘爆で轟沈 1） ・ 重巡 0 ・ 駆逐艦 1 → 海峡へ 6 ・ 戦艦・重巡への魚雷は通算に入れない」（長い形は尾を落とす）。列の往路・復路の行（us_04）は出さない。見出しの体当たりは「敵艦と衝突した」・頭は「艦隊: 撃沈 N/M」・得点の行は「報告 300 ・ 命中 N ・ 撃沈 N」・夜明けの行に「駆逐艦は東へ退いた」を付けない（海峡へ去った数は艦隊の行）。
+diff --git a/src/config/recon-hud-config.ts b/src/config/recon-hud-config.ts
+index 7494b67..2afe5dd 100644
+--- a/src/config/recon-hud-config.ts
++++ b/src/config/recon-hud-config.ts
+@@ -11,3 +11,16 @@ export const RECON_EVENT_SHOW_MS = 4000;
+ /** 中継の端の印「中継 2100 m」（中継待ちの間だけ。矢印の上にラベル＝帰投の印と同じ置き方・字の色は中継の輪の黄・切り上げ） */
+ export const RELAY_MARKER_LABEL_JA = '中継';
+ export const RELAY_MARKER_STEP_M = 100;
++// IP3（実機 3 回目のユーザー「隣の分隊の表示が黄色い丸い円だけでなんのこっちゃ分かりません。…実際に停まっている分隊を配置してはどうでしょうか」）: 中継の輪の中に止まっている隣の分隊の艇
++// （entities/relay-ring が任務の開始に 1 回だけ作る静的な絵。自艇と同じ Elco の絵＝新しい絵の鍵なし。世界・当たり・発見・テレメトリには入らない）と輪の名の置き場所。
++
++/** 隣の分隊の艇: 輪の中心からのずれ（東 m・南 m）と針路（度）。少しずつ違う向きで止まっている 3 隻（艇の絵は長さ約 49 m） */
++export const RELAY_SECTION_BOATS: readonly (readonly [number, number, number])[] = [
++  [-85, 35, 78],
++  [5, 75, 93],
++  [92, 25, 106],
++];
++/** 艇を描く深さ（海の上・中継の輪と輪の名〔DEPTH.returnRing 1〕の下） */
++export const RELAY_SECTION_DEPTH = 0.9;
++/** 輪の名（「隣の分隊」）の置き場所: 輪の中心から北へ m（艇の上に出す。輪の内） */
++export const RELAY_LABEL_UP_M = 90;
+diff --git a/src/config/recon-mission-data.ts b/src/config/recon-mission-data.ts
+index dd20990..15b7104 100644
+--- a/src/config/recon-mission-data.ts
++++ b/src/config/recon-mission-data.ts
+@@ -13,7 +13,7 @@ export const RECON_RELAY_KEYS = ['x_m', 'y_m', 'radius_m', 'label_ja'] as const;
+ export const RECON_TRACK_RANGE_S = [5, 60] as const;
+ /** V-N2: recon を置ける任務の type（scoring.json の objective_by_type の鍵）。V-N3: 中継の輪は岸の線からこの m より沖 */
+ export const RECON_MISSION_TYPE = 'recon_and_attack';
+-export const RECON_CHECK_SHORE_CLEAR_M = 400;
++export const RECON_CHECK_SHORE_CLEAR_M = 200; // v0.8.2 IP3: 400 → 200（中継の輪をボホール島の岸寄りへ＝実機 3 回目「もう少しマップ上端寄りに」。陸の上でも陸の縁でもない＝輪の縁が岸の線から 200 m より沖）
+ 
+ /** 報告の世界の値（WorldSetup.recon。S2 の systems/world-recon が読む） */
+ export interface ReconSetup {
+diff --git a/src/entities/relay-ring.ts b/src/entities/relay-ring.ts
+index c28bf06..60a9730 100644
+--- a/src/entities/relay-ring.ts
++++ b/src/entities/relay-ring.ts
+@@ -1,27 +1,33 @@
+ // 中継の輪（v0.8.2 S2。us_05 の隣の分隊。spec-v0820 §4.5 D-N5・§4.11 D-A5、lead の L22）: 帰投の輪（entities/return-point）と同じ置き方の静的な Image と中心の名。
+ // 絵は帰投の輪のテクスチャ（Boot で 1 回作った tex-return-ring）に黄を掛けるだけ（新しい絵の鍵は作らない＝tex-ab は変わらない）。§7: 作った後は毎フレーム触らない。
+ // 作るのは recon のある世界だけ（systems/world-enemies が systems/world-recon と一緒に 1 回）。2 行目の文・端の印は S4。
++// v0.8.2 IP3（実機 3 回目「黄色い丸い円だけでなんのこっちゃ分かりません」「実際に停まっている分隊を配置してはどうでしょうか」）: 輪の中に止まっている隣の分隊の艇 3 隻（自艇と同じ Elco の絵の鍵＝新しい鍵なし。
++// 少しずつ違う向き・輪の下に描く・作った後は触らない）。絵だけ（世界・当たり・発見・テレメトリには入らない）。輪の名は艇の上（輪の内）へ。
+ import type Phaser from 'phaser';
+-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+-import { RELAY_RING_TEXT, RELAY_RING_TINT } from '../config/recon-hud-config';
++import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
++import { RELAY_LABEL_UP_M, RELAY_RING_TEXT, RELAY_RING_TINT, RELAY_SECTION_BOATS, RELAY_SECTION_DEPTH } from '../config/recon-hud-config';
+ import { HOME_LABEL_FONT_PX, RETURN_RING_ALPHA, RETURN_RING_TEX_RADIUS_UNITS, hudTextStyle } from '../config/ui-config';
+ 
+ export class RelayRingView {
+   private readonly ring: Phaser.GameObjects.Image;
+   private readonly label: Phaser.GameObjects.Text;
++  private readonly boats: Phaser.GameObjects.Image[] = [];
+ 
+-  constructor(scene: Phaser.Scene, relay: { readonly x: number; readonly y: number; readonly radiusM: number; readonly labelJa: string }) {
++  /** boatTextureKey は隣の分隊の艇の絵（自艇と同じ Elco の鍵。world-enemies が任務の艇から渡す） */
++  constructor(scene: Phaser.Scene, relay: { readonly x: number; readonly y: number; readonly radiusM: number; readonly labelJa: string }, boatTextureKey: string) {
++    for (const [dx, dy, h] of RELAY_SECTION_BOATS) this.boats.push(scene.add.image(relay.x + dx, relay.y + dy, boatTextureKey).setScale(artImageScale(boatTextureKey)).setAngle(h).setDepth(RELAY_SECTION_DEPTH));
+     this.ring = scene.add
+       .image(relay.x, relay.y, TEXTURE_KEYS.returnRing)
+       .setScale(relay.radiusM / RETURN_RING_TEX_RADIUS_UNITS / RENDER_SCALE)
+       .setTint(RELAY_RING_TINT)
+       .setAlpha(RETURN_RING_ALPHA)
+       .setDepth(DEPTH.returnRing);
+-    this.label = scene.add.text(relay.x, relay.y, relay.labelJa, hudTextStyle(HOME_LABEL_FONT_PX, RELAY_RING_TEXT)).setOrigin(0.5).setAlpha(RETURN_RING_ALPHA).setDepth(DEPTH.returnRing);
++    this.label = scene.add.text(relay.x, relay.y - RELAY_LABEL_UP_M, relay.labelJa, hudTextStyle(HOME_LABEL_FONT_PX, RELAY_RING_TEXT)).setOrigin(0.5).setAlpha(RETURN_RING_ALPHA).setDepth(DEPTH.returnRing);
+   }
+ 
+   destroy(): void {
+     this.ring.destroy();
+     this.label.destroy();
++    for (const b of this.boats) b.destroy();
+   }
+ }
+diff --git a/src/systems/world-enemies.ts b/src/systems/world-enemies.ts
+index f2f3351..1a1878d 100644
+--- a/src/systems/world-enemies.ts
++++ b/src/systems/world-enemies.ts
+@@ -75,7 +75,7 @@ export function buildEnemies(
+   // 戦艦の弾薬庫と報告（v0.8.2 S2。us_05）: 規則のある艦のいる隊・setup.recon の世界だけ（無い任務は作らない＝乱数の系列も無い）
+   const magazine = ds && destroyers ? ShipMagazine.of(s.transit?.column, ds.starts.length, destroyers.total, seed) : null;
+   if (destroyers && magazine) destroyers.magazine = magazine;
+-  const recon = s.recon && ds && destroyers ? new WorldRecon(s.recon, s.transit?.column ?? [], ds.starts.length, seed, clock, new RelayRingView(scene, s.recon.relay)) : null;
++  const recon = s.recon && ds && destroyers ? new WorldRecon(s.recon, s.transit?.column ?? [], ds.starts.length, seed, clock, new RelayRingView(scene, s.recon.relay, boatTextureKey(s.mission.playerBoatId))) : null;
+   const shipHit = recon ? (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => { recon.onShellHit(spec.damage); hitBoat(spec, rng, x, y, reason); } : hitBoat; // 無線（recon の世界だけ包む）
+   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7。v0.8.1 S2b から駆潜艇の 76mm・13mm）＝隊の gunneryAt（駆逐艦は隊の先頭 destroyerCount 隻＝列の通過の艦も込み）
+   destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => shipHit(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));
+diff --git a/tests/briefing.test.ts b/tests/briefing.test.ts
+index 8377a9a..be69fa4 100644
+--- a/tests/briefing.test.ts
++++ b/tests/briefing.test.ts
+@@ -373,8 +373,8 @@ describe('us_05 の Briefing（v0.8.2 S4）と画面の文の人名・PT の番
+         `条件: 夜明けまで ${p.durationS} 秒（昼の空は味方・敵は東へ退く） ・ 燃料 ${String(proto()['fuel_allotment_gal'])} gal ・ 魚雷 ${torps} 本 ・\u00a0機銃は艦に効かない ・ 見越し点マーカー 使用可`,
+       ]);
+     }
+-    // L41: 数は S3 の data（燃料 24 gal＝spec の 34 から S3 のつまみ）・7 隻（駆逐艦 4・重巡 1・戦艦 2）・ハード ＋1・270 秒・4 本・6000 m
+-    expect([proto()['fuel_allotment_gal'], count('destroyer'), count('heavy_cruiser'), count('battleship'), extra, p.durationS, torps, radar]).toEqual([24, 4, 1, 2, 1, 270, 4, 6000]);
++    // L41: 数は S3 の data（燃料は S3 のつまみで 34 → 24 gal、IP3 でユーザーの言葉により 34 gal に戻した）・7 隻（駆逐艦 4・重巡 1・戦艦 2）・ハード ＋1・270 秒・4 本・6000 m
++    expect([proto()['fuel_allotment_gal'], count('destroyer'), count('heavy_cruiser'), count('battleship'), extra, p.durationS, torps, radar]).toEqual([34, 4, 1, 2, 1, 270, 4, 6000]);
+     const rec = getBriefingRecord(gameData, 'us_05');
+     expect([formatDateJa(rec.date), rec.place, rec.titleJa]).toEqual(['1944年10月24日', 'ミンダナオ海（ボホール島沖）', 'スリガオ海峡・最初の接触']);
+     expect(rec.objective).toBe('戦艦2・重巡1を含む日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ'); // v0.8.2 S4: 駆逐艦の隻数を書かない（ハードの敵の行の ×5 と食い違わない＝v0.8.0 S5 の us_04 の L57 と同じ）
+diff --git a/tests/dawn-air.test.ts b/tests/dawn-air.test.ts
+index 293a990..2eb8906 100644
+--- a/tests/dawn-air.test.ts
++++ b/tests/dawn-air.test.ts
+@@ -409,8 +409,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
+     // v0.6.4 の jp_01 は 19 gal で 1,453（T-38 のアイドル 800/8.5 × 0.1 = 9.4118 gal/h: 19 / 9.4118 × 720 = 1453.4999… → 1453。上限いっぱい）。v0.6.7 の jp_02 は jp_05 と同じ T-14・32 gal で 1,440。
+     // v0.6.9 の jp_04 は jp_01 と同じ T-38・19 gal で 1,453。v0.6.11 S6 の jp_03 は T-38・16 gal で 1,224 ＋ 空襲の間の 240 ＝ 1,464（V-E10 の 240 ＋ 1,224 ＋ 1.5 < 1,500）。
+     // v0.8.0 S5 の us_04 は Elco 80・33 gal で 1,188（アイドル 200 × 0.1 = 20 gal/h: 33 / 20 × 720。夜明けの 260 秒より後）。v0.8.1 S4 の us_06 は Elco 80・40 gal で 1,440（40 / 20 × 720。spec-v0810 §3.1 D-M5 の上限 41.6 gal の内）。
+-    // v0.8.2 S4 の us_05 は Elco 80・24 gal で 864（24 / 20 × 720。S3 の燃料のつまみ 34 → 24 gal。夜明けの 270 秒より後・spec-v0820 §4.1 D-M6 の上限 41.6 gal の内）
+-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 864, 1440, 1453, 1440, 1464, 1453, 1440, 1224]);
++    // v0.8.2 S4 の us_05 は Elco 80・24 gal で 864（24 / 20 × 720。S3 の燃料のつまみ 34 → 24 gal）。IP3（実機 3 回目のユーザー「燃料は24galから34galに増やしてください」）で 34 gal＝1,224（夜明けの 270 秒より後・spec-v0820 §4.1 D-M6 の上限 41.6 gal の内）
++    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1224, 1440, 1453, 1440, 1464, 1453, 1440, 1224]);
+   });
+   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲と夜の哨戒の機体・dawn_air_strike と patrol_air の文', () => {
+     const texts: string[] = [];
+diff --git a/tests/recon-data.test.ts b/tests/recon-data.test.ts
+index 38b62f7..6a2340e 100644
+--- a/tests/recon-data.test.ts
++++ b/tests/recon-data.test.ts
+@@ -19,14 +19,14 @@ const build = (f: (d: GameData) => void, id = 'us_05'): (() => unknown) => {
+   return () => getReconParams(d, getPrototypeMission(d, id));
+ };
+ const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
+-const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 800, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
++const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
+ 
+ describe('既定の data（us_05。spec §4.5・§4.1 D-M4）', () => {
+-  it('戦艦を目で確かめ、レーダーで 20 秒追うと報告。76 mm 以上（damage 20 以上）の 1 発ごとに 35% で無線が壊れ、西のボホール沖の中継の輪（隣の分隊）で中継', () => {
++  it('戦艦を目で確かめ、レーダーで 20 秒追うと報告。76 mm 以上（damage 20 以上）の 1 発ごとに 35% で無線が壊れ、ボホール島寄りの中継の輪（隣の分隊が止まっている所。v0.8.2 IP3 で (1600, 800) → (1600, 500)）で中継', () => {
+     for (const hard of [false, true]) expect(getReconParams(gameData, getPrototypeMission(gameData, 'us_05', hard))).toEqual(EXPECTED);
+     expect(validateReconMissions(gameData)).toEqual(EXPECTED);
+     expect([RECON_KEYS, RECON_RELAY_KEYS, RECON_TRACK_RANGE_S, RECON_MISSION_TYPE, RECON_CHECK_SHORE_CLEAR_M]).toEqual([
+-      ['track_s', 'identify_class', 'radio_fail_chance', 'radio_min_damage', 'relay', 'source'], ['x_m', 'y_m', 'radius_m', 'label_ja'], [5, 60], 'recon_and_attack', 400,
++      ['track_s', 'identify_class', 'radio_fail_chance', 'radio_min_damage', 'relay', 'source'], ['x_m', 'y_m', 'radius_m', 'label_ja'], [5, 60], 'recon_and_attack', 200,
+     ]);
+     // 76 mm（駆潜艇の aa_76mm・輸送船の甲板砲 25）は引き、25 mm と 13 mm（4）は引かない（damage 20 の境）。戦艦・重巡の副砲と高角砲（35〜40）も引く
+     const dmg = (id: string): number[] => ((gameData.enemies.enemies as unknown as Rec[]).find((e) => e['id'] === id)!['guns'] as Rec[]).map((g) => g['damage'] as number);
+@@ -73,12 +73,12 @@ describe('起動時の検査（V-N1〜V-N4）', () => {
+       protoOf(d, 'us_05')['enemies'] = ['ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_cruiser_mogami', 'ijn_cruiser_mogami', 'ijn_cruiser_mogami'];
+     })).toThrow(/recon\.identify_class（battleship）の艦が片道の列（transit\.column）にいない（V-N2/);
+   });
+-  it('V-N3: 中継の輪は海域の内・帰投の輪と出発点に重ならない・岸の線から 400 m より沖', () => {
+-    expect(build((d) => (relayOf(d)['x_m'] = 200))).toThrow(/recon\.relay（200, 800・半径 250）は海域の内（V-N3/);
++  it('V-N3: 中継の輪は海域の内・帰投の輪と出発点に重ならない・岸の線から 200 m より沖（v0.8.2 IP3 で 400 → 200）', () => {
++    expect(build((d) => (relayOf(d)['x_m'] = 200))).toThrow(/recon\.relay（200, 500・半径 250）は海域の内（V-N3/);
+     expect(build((d) => Object.assign(relayOf(d), { x_m: 4800, y_m: 1100 }))).toThrow(/recon\.relay は帰投の輪に重ならない（V-N3/);
+     expect(build((d) => Object.assign(relayOf(d), { x_m: 4100, y_m: 800 }))).toThrow(/recon\.relay は出発点にかからない（V-N3/);
+-    expect(build((d) => (relayOf(d)['y_m'] = 649))).toThrow(/recon\.relay の縁は岸の線から 400 m 以上沖（V-N3/);
+-    expect(build((d) => (relayOf(d)['y_m'] = 650))).not.toThrow(); // 650 − 250 ＝ 400
++    expect(build((d) => (relayOf(d)['y_m'] = 449))).toThrow(/recon\.relay の縁は岸の線から 200 m 以上沖（V-N3/);
++    expect(build((d) => (relayOf(d)['y_m'] = 450))).not.toThrow(); // 450 − 250 ＝ 200
+   });
+   it('V-N4: scoring.json に type の達成の点がある', () => {
+     expect(build((d) => delete (d.scoring.objective_by_type as Record<string, unknown>)['recon_and_attack'])).toThrow(/scoring\.json の objective_by_type に recon_and_attack が無い（V-N4/);
+diff --git a/tests/recon-world.test.ts b/tests/recon-world.test.ts
+index e964b05..0dcc862 100644
+--- a/tests/recon-world.test.ts
++++ b/tests/recon-world.test.ts
+@@ -173,7 +173,7 @@ describe('無線（D-N4）と中継（D-N5）', () => {
+     expect(bits & (RECON_EV_SEEN | RECON_EV_RADIO | RECON_EV_PENDING)).toBe(RECON_EV_SEEN | RECON_EV_RADIO | RECON_EV_PENDING);
+     expect(m.r.delivered).toBe(false);
+     const relay = m.r.plan.relay;
+-    expect([relay.x, relay.y, relay.radiusM, relay.labelJa]).toEqual([1600, 800, 250, '隣の分隊']);
++    expect([relay.x, relay.y, relay.radiusM, relay.labelJa]).toEqual([1600, 500, 250, '隣の分隊']); // v0.8.2 IP3 で (1600, 800) → (1600, 500)
+     m.w.boat.state.x = relay.x + relay.radiusM + 1;
+     m.w.boat.state.y = relay.y;
+     m.step(60);
+@@ -259,7 +259,7 @@ describe('テレメトリ（L17: 無い任務は鍵ごと無い）', () => {
+     expect([reconTelemetryPart(none), magazineTelemetryPart(none), magazineTelemetryPart({ ...none, destroyers: null })]).toEqual([{}, {}, {}]);
+     const m = mini();
+     const t = reconTelemetryPart({ recon: m.r, destroyers: null, boat: { state: { x: 100, y: 200 } } }).recon!;
+-    expect([t.stage, t.relayDx, t.relayDy, t.relayRadiusM, t.relayJa]).toEqual([RECON_NONE, 1500, 600, 250, '隣の分隊']);
++    expect([t.stage, t.relayDx, t.relayDy, t.relayRadiusM, t.relayJa]).toEqual([RECON_NONE, 1500, 300, 250, '隣の分隊']); // 中継の輪 (1600, 500)（v0.8.2 IP3。前は 800）− 自艇 (100, 200)
+     for (const f of ['src/systems/telemetry-create.ts']) expect(code(f)).toMatch(/\.\.\.reconTelemetryPart\(w\),[\s\S]*\.\.\.magazineTelemetryPart\(w\),/);
+   });
+ });
