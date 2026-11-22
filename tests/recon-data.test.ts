@@ -19,14 +19,14 @@ const build = (f: (d: GameData) => void, id = 'us_05'): (() => unknown) => {
   return () => getReconParams(d, getPrototypeMission(d, id));
 };
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
-const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 800, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
+const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
 
 describe('既定の data（us_05。spec §4.5・§4.1 D-M4）', () => {
-  it('戦艦を目で確かめ、レーダーで 20 秒追うと報告。76 mm 以上（damage 20 以上）の 1 発ごとに 35% で無線が壊れ、西のボホール沖の中継の輪（隣の分隊）で中継', () => {
+  it('戦艦を目で確かめ、レーダーで 20 秒追うと報告。76 mm 以上（damage 20 以上）の 1 発ごとに 35% で無線が壊れ、ボホール島寄りの中継の輪（隣の分隊が止まっている所。v0.8.2 IP3 で (1600, 800) → (1600, 500)）で中継', () => {
     for (const hard of [false, true]) expect(getReconParams(gameData, getPrototypeMission(gameData, 'us_05', hard))).toEqual(EXPECTED);
     expect(validateReconMissions(gameData)).toEqual(EXPECTED);
     expect([RECON_KEYS, RECON_RELAY_KEYS, RECON_TRACK_RANGE_S, RECON_MISSION_TYPE, RECON_CHECK_SHORE_CLEAR_M]).toEqual([
-      ['track_s', 'identify_class', 'radio_fail_chance', 'radio_min_damage', 'relay', 'source'], ['x_m', 'y_m', 'radius_m', 'label_ja'], [5, 60], 'recon_and_attack', 400,
+      ['track_s', 'identify_class', 'radio_fail_chance', 'radio_min_damage', 'relay', 'source'], ['x_m', 'y_m', 'radius_m', 'label_ja'], [5, 60], 'recon_and_attack', 200,
     ]);
     // 76 mm（駆潜艇の aa_76mm・輸送船の甲板砲 25）は引き、25 mm と 13 mm（4）は引かない（damage 20 の境）。戦艦・重巡の副砲と高角砲（35〜40）も引く
     const dmg = (id: string): number[] => ((gameData.enemies.enemies as unknown as Rec[]).find((e) => e['id'] === id)!['guns'] as Rec[]).map((g) => g['damage'] as number);
@@ -73,12 +73,12 @@ describe('起動時の検査（V-N1〜V-N4）', () => {
       protoOf(d, 'us_05')['enemies'] = ['ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_cruiser_mogami', 'ijn_cruiser_mogami', 'ijn_cruiser_mogami'];
     })).toThrow(/recon\.identify_class（battleship）の艦が片道の列（transit\.column）にいない（V-N2/);
   });
-  it('V-N3: 中継の輪は海域の内・帰投の輪と出発点に重ならない・岸の線から 400 m より沖', () => {
-    expect(build((d) => (relayOf(d)['x_m'] = 200))).toThrow(/recon\.relay（200, 800・半径 250）は海域の内（V-N3/);
+  it('V-N3: 中継の輪は海域の内・帰投の輪と出発点に重ならない・岸の線から 200 m より沖（v0.8.2 IP3 で 400 → 200）', () => {
+    expect(build((d) => (relayOf(d)['x_m'] = 200))).toThrow(/recon\.relay（200, 500・半径 250）は海域の内（V-N3/);
     expect(build((d) => Object.assign(relayOf(d), { x_m: 4800, y_m: 1100 }))).toThrow(/recon\.relay は帰投の輪に重ならない（V-N3/);
     expect(build((d) => Object.assign(relayOf(d), { x_m: 4100, y_m: 800 }))).toThrow(/recon\.relay は出発点にかからない（V-N3/);
-    expect(build((d) => (relayOf(d)['y_m'] = 649))).toThrow(/recon\.relay の縁は岸の線から 400 m 以上沖（V-N3/);
-    expect(build((d) => (relayOf(d)['y_m'] = 650))).not.toThrow(); // 650 − 250 ＝ 400
+    expect(build((d) => (relayOf(d)['y_m'] = 449))).toThrow(/recon\.relay の縁は岸の線から 200 m 以上沖（V-N3/);
+    expect(build((d) => (relayOf(d)['y_m'] = 450))).not.toThrow(); // 450 − 250 ＝ 200
   });
   it('V-N4: scoring.json に type の達成の点がある', () => {
     expect(build((d) => delete (d.scoring.objective_by_type as Record<string, unknown>)['recon_and_attack'])).toThrow(/scoring\.json の objective_by_type に recon_and_attack が無い（V-N4/);

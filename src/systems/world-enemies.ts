@@ -75,7 +75,7 @@ export function buildEnemies(
   // 戦艦の弾薬庫と報告（v0.8.2 S2。us_05）: 規則のある艦のいる隊・setup.recon の世界だけ（無い任務は作らない＝乱数の系列も無い）
   const magazine = ds && destroyers ? ShipMagazine.of(s.transit?.column, ds.starts.length, destroyers.total, seed) : null;
   if (destroyers && magazine) destroyers.magazine = magazine;
-  const recon = s.recon && ds && destroyers ? new WorldRecon(s.recon, s.transit?.column ?? [], ds.starts.length, seed, clock, new RelayRingView(scene, s.recon.relay)) : null;
+  const recon = s.recon && ds && destroyers ? new WorldRecon(s.recon, s.transit?.column ?? [], ds.starts.length, seed, clock, new RelayRingView(scene, s.recon.relay, boatTextureKey(s.mission.playerBoatId))) : null;
   const shipHit = recon ? (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => { recon.onShellHit(spec.damage); hitBoat(spec, rng, x, y, reason); } : hitBoat; // 無線（recon の世界だけ包む）
   // 砲の命中: 艦ごとの砲（駆逐艦の 127mm・25mm、輸送船の 76mm。v0.4.7。v0.8.1 S2b から駆潜艇の 76mm・13mm）＝隊の gunneryAt（駆逐艦は隊の先頭 destroyerCount 隻＝列の通過の艦も込み）
   destroyers?.fires.forEach((f, i) => f.setHitHandler((gunIndex, x, y) => shipHit(destroyers.gunneryAt(i).guns[gunIndex]!, gunRng, x, y, 'destroyed')));

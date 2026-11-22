@@ -11,3 +11,16 @@ export const RECON_EVENT_SHOW_MS = 4000;
 /** 中継の端の印「中継 2100 m」（中継待ちの間だけ。矢印の上にラベル＝帰投の印と同じ置き方・字の色は中継の輪の黄・切り上げ） */
 export const RELAY_MARKER_LABEL_JA = '中継';
 export const RELAY_MARKER_STEP_M = 100;
+// IP3（実機 3 回目のユーザー「隣の分隊の表示が黄色い丸い円だけでなんのこっちゃ分かりません。…実際に停まっている分隊を配置してはどうでしょうか」）: 中継の輪の中に止まっている隣の分隊の艇
+// （entities/relay-ring が任務の開始に 1 回だけ作る静的な絵。自艇と同じ Elco の絵＝新しい絵の鍵なし。世界・当たり・発見・テレメトリには入らない）と輪の名の置き場所。
+
+/** 隣の分隊の艇: 輪の中心からのずれ（東 m・南 m）と針路（度）。少しずつ違う向きで止まっている 3 隻（艇の絵は長さ約 49 m） */
+export const RELAY_SECTION_BOATS: readonly (readonly [number, number, number])[] = [
+  [-85, 35, 78],
+  [5, 75, 93],
+  [92, 25, 106],
+];
+/** 艇を描く深さ（海の上・中継の輪と輪の名〔DEPTH.returnRing 1〕の下） */
+export const RELAY_SECTION_DEPTH = 0.9;
+/** 輪の名（「隣の分隊」）の置き場所: 輪の中心から北へ m（艇の上に出す。輪の内） */
+export const RELAY_LABEL_UP_M = 90;

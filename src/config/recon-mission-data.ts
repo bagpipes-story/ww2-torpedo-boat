@@ -13,7 +13,7 @@ export const RECON_RELAY_KEYS = ['x_m', 'y_m', 'radius_m', 'label_ja'] as const;
 export const RECON_TRACK_RANGE_S = [5, 60] as const;
 /** V-N2: recon を置ける任務の type（scoring.json の objective_by_type の鍵）。V-N3: 中継の輪は岸の線からこの m より沖 */
 export const RECON_MISSION_TYPE = 'recon_and_attack';
-export const RECON_CHECK_SHORE_CLEAR_M = 400;
+export const RECON_CHECK_SHORE_CLEAR_M = 200; // v0.8.2 IP3: 400 → 200（中継の輪をボホール島の岸寄りへ＝実機 3 回目「もう少しマップ上端寄りに」。陸の上でも陸の縁でもない＝輪の縁が岸の線から 200 m より沖）
 
 /** 報告の世界の値（WorldSetup.recon。S2 の systems/world-recon が読む） */
 export interface ReconSetup {

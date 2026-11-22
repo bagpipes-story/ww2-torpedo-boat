@@ -173,7 +173,7 @@ describe('無線（D-N4）と中継（D-N5）', () => {
     expect(bits & (RECON_EV_SEEN | RECON_EV_RADIO | RECON_EV_PENDING)).toBe(RECON_EV_SEEN | RECON_EV_RADIO | RECON_EV_PENDING);
     expect(m.r.delivered).toBe(false);
     const relay = m.r.plan.relay;
-    expect([relay.x, relay.y, relay.radiusM, relay.labelJa]).toEqual([1600, 800, 250, '隣の分隊']);
+    expect([relay.x, relay.y, relay.radiusM, relay.labelJa]).toEqual([1600, 500, 250, '隣の分隊']); // v0.8.2 IP3 で (1600, 800) → (1600, 500)
     m.w.boat.state.x = relay.x + relay.radiusM + 1;
     m.w.boat.state.y = relay.y;
     m.step(60);
@@ -259,7 +259,7 @@ describe('テレメトリ（L17: 無い任務は鍵ごと無い）', () => {
     expect([reconTelemetryPart(none), magazineTelemetryPart(none), magazineTelemetryPart({ ...none, destroyers: null })]).toEqual([{}, {}, {}]);
     const m = mini();
     const t = reconTelemetryPart({ recon: m.r, destroyers: null, boat: { state: { x: 100, y: 200 } } }).recon!;
-    expect([t.stage, t.relayDx, t.relayDy, t.relayRadiusM, t.relayJa]).toEqual([RECON_NONE, 1500, 600, 250, '隣の分隊']);
+    expect([t.stage, t.relayDx, t.relayDy, t.relayRadiusM, t.relayJa]).toEqual([RECON_NONE, 1500, 300, 250, '隣の分隊']); // 中継の輪 (1600, 500)（v0.8.2 IP3。前は 800）− 自艇 (100, 200)
     for (const f of ['src/systems/telemetry-create.ts']) expect(code(f)).toMatch(/\.\.\.reconTelemetryPart\(w\),[\s\S]*\.\.\.magazineTelemetryPart\(w\),/);
   });
 });

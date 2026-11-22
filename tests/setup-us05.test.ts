@@ -33,8 +33,8 @@ describe('us_05 の setup の snapshot（v0.8.2 S0 の木）', () => {
     expect(s.night.enemyOffsets.length).toBe(1);
     // 列だけの隊（enemy_start なし・D-C2）: 隊の出発点は無く、撃沈の達成は全隻（R3）。S0 の世界は 7 隻（ハード 8）とも ijn_destroyer の形
     expect([s.mission.enemyId, s.mission.enemyStart, s.mission.enemyStarts.length, s.mission.objectiveSinkCount, s.destroyer!.starts.length, s.destroyer!.objectiveSinks, s.destroyer!.spec.lengthM, s.destroyer!.baseDetectM]).toEqual(['ijn_destroyer', null, 0, null, 0, hard ? 8 : 7, 118, 2000]);
-    // 燃料は S3 のつまみ ①（34 → 24 gal。帯 F＝帰投の夜の燃料の残りの中央値 15〜35%）
-    expect([s.mission.torpedoId, s.mission.moon, s.mission.type, s.mission.durationS, s.fuelAllotmentGal, s.mainWeapon]).toEqual(['us_mk13', 'half', 'recon_and_attack', 270, 24, 'torpedo']);
+    // 燃料は S3 のつまみ ①（34 → 24 gal）を v0.8.2 IP3 で戻した（実機 3 回目のユーザー「燃料は24galから34galに増やしてください」）
+    expect([s.mission.torpedoId, s.mission.moon, s.mission.type, s.mission.durationS, s.fuelAllotmentGal, s.mainWeapon]).toEqual(['us_mk13', 'half', 'recon_and_attack', 270, 34, 'torpedo']);
     expect([s.barges, s.ptBoats, s.convoy, s.escort, s.raid, s.storm, s.friendly, s.seaplane, s.transport, s.airStrike]).toEqual([null, null, null, null, null, null, null, null, null, null]);
     const t = s.transit!;
     expect([t.ships, t.outbound, t.unloadS, t.spacingS, t.coverLeavesWithOutbound, t.vilaLabelJa, t.rejoinS, t.column!.length]).toEqual([hard ? 8 : 7, null, 0, 0, false, 'スリガオ海峡', 40, hard ? 8 : 7]);
@@ -46,7 +46,7 @@ describe('us_05 の setup の snapshot（v0.8.2 S0 の木）', () => {
     expect(s.enemyFrom).toEqual({ x: 150, y: 2800 + o.dy });
     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears]).toEqual(['own', 'east', '日本の艦隊', false]);
     expect([s.radar!.model, s.radar!.fit, s.shores!.north.labels[0]!.labelJa, s.shores!.south.gapLabelJa]).toEqual(['so_late', 'own', 'ボホール島', 'ミンダナオ海']);
-    expect(s.recon).toEqual({ trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 800, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } });
+    expect(s.recon).toEqual({ trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } });
     expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'radio_failure']);
     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'anchors', 'backdrop', 'seaplaneNight', 'pickets'] as const) expect(k in s, k).toBe(false);
     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));

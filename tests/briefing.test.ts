@@ -373,8 +373,8 @@ describe('us_05 の Briefing（v0.8.2 S4）と画面の文の人名・PT の番�
         `条件: 夜明けまで ${p.durationS} 秒（昼の空は味方・敵は東へ退く） ・ 燃料 ${String(proto()['fuel_allotment_gal'])} gal ・ 魚雷 ${torps} 本 ・\u00a0機銃は艦に効かない ・ 見越し点マーカー 使用可`,
       ]);
     }
-    // L41: 数は S3 の data（燃料 24 gal＝spec の 34 から S3 のつまみ）・7 隻（駆逐艦 4・重巡 1・戦艦 2）・ハード ＋1・270 秒・4 本・6000 m
-    expect([proto()['fuel_allotment_gal'], count('destroyer'), count('heavy_cruiser'), count('battleship'), extra, p.durationS, torps, radar]).toEqual([24, 4, 1, 2, 1, 270, 4, 6000]);
+    // L41: 数は S3 の data（燃料は S3 のつまみで 34 → 24 gal、IP3 でユーザーの言葉により 34 gal に戻した）・7 隻（駆逐艦 4・重巡 1・戦艦 2）・ハード ＋1・270 秒・4 本・6000 m
+    expect([proto()['fuel_allotment_gal'], count('destroyer'), count('heavy_cruiser'), count('battleship'), extra, p.durationS, torps, radar]).toEqual([34, 4, 1, 2, 1, 270, 4, 6000]);
     const rec = getBriefingRecord(gameData, 'us_05');
     expect([formatDateJa(rec.date), rec.place, rec.titleJa]).toEqual(['1944年10月24日', 'ミンダナオ海（ボホール島沖）', 'スリガオ海峡・最初の接触']);
     expect(rec.objective).toBe('戦艦2・重巡1を含む日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ'); // v0.8.2 S4: 駆逐艦の隻数を書かない（ハードの敵の行の ×5 と食い違わない＝v0.8.0 S5 の us_04 の L57 と同じ）
