@@ -1,5 +1,6 @@
 // 自艇の運動の固定ステップ（v0.6.5 の準備で systems/mission-world.ts の stepFn から移した。順と式は 1 字も変えていない）: 座礁・stepBoat・海域の縁・浅瀬・燃料・帰投の輪。
 // v0.6.5: stepBoat の入力だけ、機関の不調（systems/engine-trouble）の上限を通す（燃料切れの漂流が優先）。
+// v0.8.3: 速度の指令の元は静音（core/control-toggles の SilentThrottle。入れている間は speed01 × 静音の上限 / 全速）を通した物。機関の不調・退避の座席はそれを読む（切れていれば w.input そのもの＝今のまま）。
 // 沈み始めたら何もしない（乗員と setPerformance は沈み始めても回るので mission-world に残す）。§7: 確保しない。
 // v0.6.11 S4（jp_03。spec-v0611-r2 §3.3・§3.9）: 座席への入力は systems/world-evac の command（スティックの latch。core/evac-seat の evacSeatCommand）、燃料は stepTimeS が
 // fuel_free_until_s に届いてから（空襲の間は数えない。模擬 core/evac-sim と同じ式）。evac の無い任務は今のまま（stepTimeS ≥ 0 − ε はいつも真）。
@@ -7,8 +8,9 @@ import { clampToBounds, stepBoat, type BoatInput, type BoatParams, type BoatStat
 import { stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
 import { insideRing, type ReturnPoint } from '../core/mission-flow';
 import { EVAC_TIME_EPS_S } from '../core/evac-data';
-import { shallowIndexAt } from '../core/shallows';
+import { shallowIndexAt, updateShallowStatus, type ShallowStatus } from '../core/shallows';
 import type { EngineTrouble } from './engine-trouble';
+import type { SilentAwareInput, SilentThrottle } from '../core/control-toggles';
 import { DRIFT_INPUT, type WorldEvents } from './world-events';
 import type { WorldSetup } from './world-setup';
 
@@ -16,8 +18,10 @@ import type { WorldSetup } from './world-setup';
 export interface PlayerBoatWorld {
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
   readonly setup: Pick<WorldSetup, 'mission' | 'boundsMarginM' | 'grounding'>;
-  readonly input: BoatInput;
+  readonly input: SilentAwareInput;
   readonly params: BoatParams;
+  /** 静音（v0.8.3。無い世界＝tests/engine-trouble-world の素の値は今のまま） */
+  readonly silent?: SilentThrottle;
   readonly fuel: FuelState;
   readonly fuelCurve: FuelCurve;
   readonly returnPoint: ReturnPoint;
@@ -40,7 +44,8 @@ export function stepPlayerBoat(w: PlayerBoatWorld, dt: number): void {
       boat.speedMps = 0;
     } else {
       // 燃料切れなら漂流（舵も速度指令も効かない）。機関の不調（v0.6.5）の間は速さの上限が艇の静音の上限（舵は残る。不調の無い任務は w.input そのもの）。燃料は運動と同じ game dt で積分する
-      stepBoat(boat, w.fuel.empty ? DRIFT_INPUT : w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input, w.params, dt);
+      const cmd = w.silent ? w.silent.command(w.input, w.params) : w.input; // 静音（v0.8.3）を通した指令（切れていれば w.input そのもの）
+      stepBoat(boat, w.fuel.empty ? DRIFT_INPUT : w.engine ? w.engine.input(w, cmd) : w.evac ? w.evac.command(cmd) : cmd, w.params, dt);
       clampToBounds(boat, c.mission.bounds, c.boundsMarginM);
       // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
       if (boat.speedMps > c.grounding.safeSpeedMps && shallowIndexAt(c.mission.shallows, boat.x, boat.y) >= 0) {
@@ -52,4 +57,11 @@ export function stepPlayerBoat(w: PlayerBoatWorld, dt: number): void {
     if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);
     w.atHome = insideRing(w.returnPoint, boat.x, boat.y);
   }
+}
+
+/** 浅瀬の警告（接近中は縁までの距離）。平方根は使わない（v0.8.3 で mission-world の private から移した。式と呼ぶ所は同じ: 生成の最後と毎回の世界の 1 回分の最後） */
+export function refreshShallowStatus(w: { readonly shallowStatus: ShallowStatus; readonly boat: { readonly state: BoatState }; readonly setup: Pick<WorldSetup, 'mission' | 'grounding' | 'timeScale'>; readonly grounded: boolean }): void {
+  const b = w.boat.state;
+  const c = w.setup;
+  updateShallowStatus(w.shallowStatus, c.mission.shallows, b.x, b.y, b.headingDeg, b.speedMps, c.grounding, c.timeScale, w.grounded);
 }

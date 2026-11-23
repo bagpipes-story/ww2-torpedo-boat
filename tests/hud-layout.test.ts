@@ -5,6 +5,7 @@
 // y ≥ 682（ホームバーの帯）に入るのはどの任務も扇だけ。
 // v0.6.9 S6a: jp_04（煙幕なし・味方機なし）を足し、右上 2 段目の揚陸の時計（ui/landing-clock。左上の夜明けの時計の鏡）の箱が、jp_04 にあるどのボタンの当たり・2 行目・ビルド番号にも
 // 触れないこと（煙幕の段は空いている。煙幕があれば重なる＝Boot の V12）を確かめる。
+// v0.8.3: 左の一時停止の右の「静音」「倍速」（どの任務も同じ置き方）が、一時停止・計器・スティック・ビルド番号・2・3 行目・右のパネルに触れないこと。
 import { createEvacTelemetry } from '../src/core/evac-telemetry';
 import { evacStatusLine } from '../src/ui/evac-lines';
 import { readFileSync } from 'node:fs';
@@ -35,6 +36,7 @@ import {
   type PanelRect,
 } from '../src/config/hud-layout-config';
 import { GUN_BUTTON_FONT_PX, GUN_BUTTON_SCALE } from '../src/config/arms-config';
+import { CONTROL_TOGGLE_LABELS, CONTROL_TOGGLE_PAUSE_X, CONTROL_TOGGLE_R, CONTROL_TOGGLE_SCALE, CONTROL_TOGGLE_Y, controlToggleLayout } from '../src/config/control-toggle-config';
 import { gameData } from '../src/config/game-data';
 import { HUD_CLOCK_MAX_W_PX, HUD_FONT_CLOCK_PX } from '../src/config/hud-text-config';
 import { getPrototypeMission } from '../src/config/mission-data';
@@ -268,5 +270,27 @@ describe('3 行目の箱と空襲下の退避の隊の行（v0.6.11 S5。spec-v0
       for (const s of panelLayout(W, { smoke: false, identify: false, switch: true }).skills) expect(inter(box, skillHit(s)), s.kind).toBe(false);
     }
     expect(textW(longest, 20)).toBeLessThanOrEqual(2 * (640 - 342));
+  });
+});
+
+describe('左の「静音」「倍速」（v0.8.3。config/control-toggle-config）', () => {
+  it('一時停止と同じ大きさ（丸ボタン R48 × 0.75 = R36）・同じ y 270 で、一時停止の右に 96 ずつ（中心 x 156・252）。どの幅でも同じ', () => {
+    const ui = readFileSync('src/config/ui-config.ts', 'utf8');
+    const num = (re: RegExp): number => Number(re.exec(ui)?.[1]);
+    expect([num(/PAUSE_BUTTON_SIZE_SCALE = ([\d.]+);/), num(/PAUSE_BUTTON_Y = (\d+);/), num(/ROUND_BUTTON_RADIUS = (\d+);/) * CONTROL_TOGGLE_SCALE, M + CONTROL_TOGGLE_R]).toEqual([CONTROL_TOGGLE_SCALE, CONTROL_TOGGLE_Y, CONTROL_TOGGLE_R, CONTROL_TOGGLE_PAUSE_X]);
+    expect(controlToggleLayout()).toEqual([{ kind: 'silent', x: 156, y: 270, r: 36 }, { kind: 'fast', x: 252, y: 270, r: 36 }]);
+    expect(CONTROL_TOGGLE_LABELS).toEqual({ silent: { off: '静音', on: '静音' }, fast: { off: '倍速', on: '倍速\n2×' } });
+  });
+
+  it.each(WIDTHS)('W %i: 当たり（R36 ± 1.8）は一時停止の当たりと互いに 12 px 以上離れ、計器・スティック・ビルド番号・2 行目・3 行目・時計・速力の表示・右のパネルに触れず、左半分に収まる', (W) => {
+    const hits = controlToggleLayout().map((t) => circleHit(t));
+    expect([gap(circleHit({ x: CONTROL_TOGGLE_PAUSE_X, y: CONTROL_TOGGLE_Y, r: CONTROL_TOGGLE_R }), hits[0]!), gap(hits[0]!, hits[1]!)].every((g) => g >= 12)).toBe(true);
+    const fb = fixedBoxes(W, true);
+    for (const [i, h] of hits.entries()) {
+      for (const [k, b] of Object.entries(fb)) expect(inter(h, b), `${i} × ${k}`).toBe(false);
+      for (const has of Object.values(MISSIONS)) for (const [n, r] of check(panelLayout(W, has[0]), false).hits) expect(inter(h, r), `${i} × ${n}`).toBe(false);
+      expect(h.x0 > 0 && h.x1 < W / 2).toBe(true); // スティックの左半分の中（ボタンの上で始まった指はスティックにしない）
+      expect([h.y0 - fb['fuel']!.y1, fb['stickGrab']!.y0 - h.y1].every((g) => g >= 12)).toBe(true);
+    }
   });
 });

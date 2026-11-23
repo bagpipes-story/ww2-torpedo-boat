@@ -64,7 +64,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
   });
   it('mission-world: 揚陸の世界は兵装の後（最後）に作る。stepFn は敵の側の段 → 火災（揚陸の段は敵の側の段の中）', () => {
     const s = code('systems/mission-world.ts');
-    expectOrder(s, ['this.engine = s.engine ?', 'this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk);', 'this.refreshShallowStatus();']);
+    expectOrder(s, ['this.engine = s.engine ?', 'this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk);', 'refreshShallowStatus(this);']); // v0.8.3: 浅瀬の警告は world-boat へ移した
     expect(s.split('buildLanding(').length).toBe(2);
     const fn = s.slice(s.indexOf('private readonly stepFn'), s.indexOf('constructor('));
     expect(fn).not.toContain('landing');
@@ -85,7 +85,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
     expectOrder(o, ['if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;', 'return w.convoy ? convoyObjectiveDone(']);
   });
   it('テレメトリ（S5b）: 出発時に 1 回（createTelemetry の landing）、毎フレームは Scene の updateFrame（固定ステップと雷跡の数え）の後の refreshTelemetry の中で米PT・輸送隊の後に 1 回', () => {
-    expectOrder(code('scenes/mission-scene.ts'), ['w.updateFrame(realDt);', 'this.refreshTelemetry();']);
+    expectOrder(code('scenes/mission-scene.ts'), ['w.updateFrame(delta / 1000);', 'this.refreshTelemetry();']); // v0.8.3: updateFrame は進めたゲームの秒を返す（倍速）
     const v = code('systems/world-visuals.ts');
     expectOrder(v, ['w.landing?.updateVisuals(realDt, w);']);
     const m = code('systems/mission-telemetry.ts');

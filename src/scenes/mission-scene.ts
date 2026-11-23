@@ -28,7 +28,7 @@ import {
   ZOOM_LERP,
 } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
-import { resetInput, type InputState } from '../core/input-state';
+import { startMissionInput, type InputState } from '../core/input-state';
 import { AIM_ASSIST_LEAD_MARKER_TIME, AIM_ASSIST_NONE, aimAssistLevelFor } from '../core/progress';
 import { dawnCallNeedS, updateReturnCalls, type MissionEndReason } from '../core/mission-flow';
 import { directSortie, isSortie, type Sortie } from '../core/sortie';
@@ -130,7 +130,7 @@ export class MissionScene extends Phaser.Scene {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     const world = data.hitRateModel.world;
     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
-    resetInput(this.inputState);
+    startMissionInput(this.inputState); // 静音と倍速（v0.8.3）も切る
 
     // 乱数: seed は出撃ごとに Title・Result（?debug 直行では Boot）が決めたもの。Result に出す（?debug&title&seed=N で再現）
     this.world = new MissionWorld(this, data, this.sortie, this.inputState, this.worldEvents);
@@ -189,11 +189,10 @@ export class MissionScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     if (this.ended) return;
-    const realDt = delta / 1000;
     const w = this.world;
 
     this.end.holdFire(w); // 終わり際の窓の間は撃たない（入力の消費の前に）
-    w.updateFrame(realDt);
+    const gameDt = w.updateFrame(delta / 1000); // 世界が進めたゲームの秒（倍速 v0.8.3 は実秒の 2 倍。命中スローの間と切っている間は実秒）。下の任務の時計・帰投の待ちはこれで数える
     if (this.startFireS < 0 && w.damage.fireLeftS <= 0) this.startFireS = w.stepTimeS; // NaN < 0 は false
     this.updateZoom();
     this.updateLookAhead();
@@ -205,18 +204,18 @@ export class MissionScene extends Phaser.Scene {
     }
     this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, Math.sqrt(w.visRange2));
 
-    this.elapsedS += realDt;
+    this.elapsedS += gameDt;
     // 夜明けの時計は固定ステップで実際に進んだ時間（低フレームレートで捨てた時間は数えない。移動と燃料に揃える）
     this.timeLeftS = Math.max(0, w.setup.durationS - w.stepTimeS);
-    this.refreshReturnState(realDt);
+    this.refreshReturnState(gameDt);
     this.refreshTelemetry();
 
     const reason = this.end.step(w, this.waitS, this.timeLeftS);
     if (reason) this.endMission(reason);
   }
 
-  /** 帰投地点までの距離、「帰投せよ」のビット（ラッチ）、待ち時間。平方根はここの 1 回だけ */
-  private refreshReturnState(realDt: number): void {
+  /** 帰投地点までの距離、「帰投せよ」のビット（ラッチ）、待ち時間（gameDt＝世界が進めたゲームの秒。v0.8.3）。平方根はここの 1 回だけ */
+  private refreshReturnState(gameDt: number): void {
     const w = this.world;
     const s = w.boat.state;
     const rp = w.returnPoint;
@@ -238,7 +237,7 @@ export class MissionScene extends Phaser.Scene {
     // 燃料計の青い目盛り: 全速で輪の縁まで戻るのに要る燃料（全速は巡航の 1.47 倍食うので、巡航基準だと全速で走る人には甘すぎた。v0.3.3 実機）
     t.fuelNeed01 = w.fuelAllotmentGal > 0 ? (this.ringEdgeM * w.fuelCurve.galPerMFull) / w.fuelAllotmentGal : 0;
     // 待ち: 輪の中にいる間、または燃料 0 で止まっている間だけ数える
-    if (w.atHome || w.grounded || (w.fuel.empty && w.band === 'stop')) this.waitS += realDt;
+    if (w.atHome || w.grounded || (w.fuel.empty && w.band === 'stop')) this.waitS += gameDt;
     else this.waitS = 0;
   }
 

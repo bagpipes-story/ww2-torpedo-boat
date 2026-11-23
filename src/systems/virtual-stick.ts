@@ -7,6 +7,7 @@
 import Phaser from 'phaser';
 import { DEPTH, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { STICK_BASE_ALPHA, STICK_DEAD_ZONE, STICK_FIXED_CENTER_X, STICK_FIXED_CENTER_Y, STICK_GRAB_RATIO, STICK_KNOB_ALPHA, STICK_RADIUS } from '../config/ui-config';
+import { STICK_SILENT_TINT } from '../config/control-toggle-config';
 import { stickToCommand, type InputState } from '../core/input-state';
 
 export class VirtualStick {
@@ -17,6 +18,7 @@ export class VirtualStick {
   private readonly knob: Phaser.GameObjects.Image;
   private readonly tmp = new Phaser.Math.Vector2();
   private readonly cmd = { speed01: 0, headingDeg: NaN };
+  private silent = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -90,6 +92,14 @@ export class VirtualStick {
   private onUp(p: Phaser.Input.Pointer): void {
     if (p.id !== this.pointerId) return;
     this.cancel();
+  }
+
+  /** 静音（v0.8.3。systems/control-toggle-buttons）の間は台座に色（台座の輪＝静音の上限がいっぱいの倒し量の印に替わる。テクスチャは同じ）。変わったときだけ */
+  setSilent(on: boolean): void {
+    if (on === this.silent) return;
+    this.silent = on;
+    if (on) this.base.setTint(STICK_SILENT_TINT);
+    else this.base.clearTint();
   }
 
   /** 離したことにする（一時停止でも。v0.5.1）。中立＝停止 */
