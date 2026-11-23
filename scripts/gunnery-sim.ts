@@ -24,9 +24,13 @@ import { SeededRng } from '../src/core/rng';
 import { ktToMps } from '../src/core/units';
 
 // v0.6.0: BOAT（艇の id、既定 us_elco80）・ENEMY（敵の id、既定 ijn_destroyer）・DMG127（127mm の damage の上書き）
-const rawEnemy: unknown = enemies.enemies.find((e) => e.id === (process.env['ENEMY'] ?? 'ijn_destroyer'));
-if (!isEnemyGunneryDataRecord(rawEnemy)) throw new Error('enemy');
-const GP = gunneryParamsFromData(rawEnemy);
+// v0.8.2 S3: 全砲の合計の HP/秒（1,000・1,500・2,000 m）と ijn_destroyer に対する比の行（spec-v0820 §4.3 の砲の強さの的: 戦艦 1.2〜1.6 倍・重巡 1.0〜1.3 倍）
+const gunneryOf = (id: string): ReturnType<typeof gunneryParamsFromData> => {
+  const raw: unknown = enemies.enemies.find((e) => e.id === id);
+  if (!isEnemyGunneryDataRecord(raw)) throw new Error(`enemy ${id}`);
+  return gunneryParamsFromData(raw);
+};
+const GP = gunneryOf(process.env['ENEMY'] ?? 'ijn_destroyer');
 if (process.env['DMG127']) GP.guns[0]!.damage = Number(process.env['DMG127']);
 /** 月の係数（v0.6.0。既定 1＝半月。新月 0.6） */
 const MOON = Number(process.env['MOON'] ?? 1);
@@ -41,8 +45,8 @@ const HALF_LEN = rawBoat.length_m / 2;
 const HALF_BEAM = rawBoat.beam_m / 2;
 const ship: BoatState = { x: 0, y: 0, headingDeg: 90, speedMps: ktToMps(25) };
 
-function hpPerSecond(gunIndex: number, rangeM: number, seconds: number): number {
-  const p = { ...GP, guns: [GP.guns[gunIndex]!] };
+function hpPerSecond(gunIndex: number, rangeM: number, seconds: number, gp = GP): number {
+  const p = { ...gp, guns: [gp.guns[gunIndex]!] };
   const g = createGunneryState(p, 48, 0);
   const player: BoatState = { x: rangeM, y: 0, headingDeg: 0, speedMps: 0 };
   const rng = new SeededRng(7);
@@ -114,6 +118,10 @@ for (let gi = 0; gi < GP.guns.length; gi++) {
   const cells = [600, 1000, 1200, 1500, 2000, 3000].filter((r) => r <= gun.effectiveM).map((r) => `${r}m ${hpPerSecond(gi, r, 600).toFixed(1)}`);
   lines.push(`${gun.id} HP/秒（静止・照射中）: ${cells.join(' | ')}`);
 }
+/** 全砲の合計の HP/秒（静止・照射中。射程の外の砲は 0） */
+const totalHpS = (gp: typeof GP, r: number): number => gp.guns.reduce((a, g, i) => a + (r <= g.effectiveM ? hpPerSecond(i, r, 600, gp) : 0), 0);
+const DD = gunneryOf('ijn_destroyer');
+lines.push(`合計 HP/秒（全砲・静止・照射中。括弧は ijn_destroyer に対する比）: ${[1000, 1500, 2000].map((r) => { const a = totalHpS(GP, r); return `${r}m ${a.toFixed(1)}（${(a / totalHpS(DD, r)).toFixed(2)}）`; }).join(' | ')}`);
 for (const r of [730, 1000, 1500, 2000]) {
   const ts = Array.from({ length: 200 }, (_, k) => timeToSinkS(r, 100 + k)).sort((a, b) => a - b);
   const med = ts[100]!;

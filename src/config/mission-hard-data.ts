@@ -3,7 +3,7 @@
 // v0.6.6（jp_01）: extra_pt_legs_m（米PT の哨戒線を足す。pt_boats の任務だけ）・convoy_arrive_quota（上陸のノルマ。convoy の任務だけ）・objective_ja／success_ja／note_ja（ハードの Briefing の文。3 つとも有るか無いか）。
 // 鍵は hard が偽でも検査し、足す・置き換えるのは hard のときだけ（今までと同じ）。知らない鍵は見ない（他の任務の hard block は今のまま）。
 // v0.8.0（us_04。spec-v0800 §4.6）: 撃沈の達成の隻数をノーマルにも読む（v0_1_prototype.objective_sink_count。ハードは hard.objective_sink_count、無ければノーマルの値。どちらも無い任務は今までどおり全隻＝null）。
-// 隻数の上限には列の通過（v0_1_prototype.transit.ships と hard.extra_transit_ships。形の検査は config/transit-mission-data の V-T1）の艦も数える。
+// 隻数の上限には列の通過（v0_1_prototype.transit.ships と hard.extra_transit_ships。形の検査は config/transit-mission-data の V-T1）の艦も数える（v0.8.2 から片道の列の hard.extra_column も）。
 // isNum・readStart もここ（mission-data が import し、isNum は今までの import のために再 export する。ここから mission-data を import すると循環になる）。
 
 /** 出発点（x_m / y_m / heading_deg） */
@@ -92,7 +92,8 @@ export function readHardBlock(proto: Record<string, unknown>, missionId: string,
     }
     // 撃沈の達成の隻数（v0.6.0。jp_06: T-38 は魚雷 2 本なので、ハードで 2 隻にしても達成は 1 隻）。v0.8.0: ハードの隻数に列の通過の艦（足す分も）を数える
     const osc = hardRaw['objective_sink_count'];
-    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw['extra_transit_ships']);
+    const ec = hardRaw['extra_column']; // 片道の列のハードの艦（v0.8.2。us_05。形の検査は config/column-mission-data の V-C1）
+    const hardShips = normalShips + (Array.isArray(es) ? es.length : 0) + positiveInt(hardRaw['extra_transit_ships']) + (Array.isArray(ec) ? ec.length : 0);
     if (osc !== undefined && (!Number.isInteger(osc) || (osc as number) < 1 || (osc as number) > hardShips)) throw new Error(`${missionId}.v0_1_prototype.hard.objective_sink_count は 1〜ハードの隻数の整数`);
     if (hard && osc !== undefined) objectiveSinkCount = osc as number;
     const xs = hardRaw['extra_shore_battery_x_m'];

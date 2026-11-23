@@ -39,7 +39,7 @@ describe('列の通過の時刻と道（ノーマル・揺らぎなし）', () =
   const ev = run(w, 250);
   const at = (i: number, to: number): Ev => ev.find((e) => e.i === i && e.to === to)!;
   it('入りは体感の時計で enter_s ＋ 8 秒 × i、現れる点は西の縁の内 150 m・往路の道・090°（作った時はまだ来ない＝海域の外）', () => {
-    expect([tr.ships, tr.enterS, tr.spacingS, tr.inbound.appearX, tr.inbound.laneY, tr.outbound.appearX, tr.outbound.laneY]).toEqual([3, 18, 8, 150, 1500, 5850, 2300]);
+    expect([tr.ships, tr.enterS, tr.spacingS, tr.inbound.appearX, tr.inbound.laneY, tr.outbound!.appearX, tr.outbound!.laneY]).toEqual([3, 18, 8, 150, 1500, 5850, 2300]);
     for (let i = 0; i < 3; i++) {
       const e = at(i, TRANSIT_IN);
       expect(e.t).toBeGreaterThanOrEqual(tr.enterS + tr.spacingS * i - 1e-6);
@@ -57,7 +57,7 @@ describe('列の通過の時刻と道（ノーマル・揺らぎなし）', () =
       expect(o.t - a.t).toBeGreaterThanOrEqual(tr.unloadS - 1e-6);
       expect(o.t - a.t).toBeLessThan(tr.unloadS + 1 / 60 + 1e-6);
       expect([o.x, o.y, o.h]).toEqual([5850, 2300, 270]);
-      expect(g.x).toBeLessThanOrEqual(tr.outbound.goneX);
+      expect(g.x).toBeLessThanOrEqual(tr.outbound!.goneX);
       // 渡りの秒（道の端から端＝海域の幅）は crossS（30 kt・time_scale 込み）に 1 ステップの内で合う（加速なし＝現れた時から列の速さ）
       expect(Math.abs(a.t - at(i, TRANSIT_IN).t - tr.crossS)).toBeLessThan(2 / 60);
       expect(Math.abs(g.t - o.t - tr.crossS)).toBeLessThan(2 / 60);
@@ -122,7 +122,9 @@ describe('R2: 列がビラにいる間は「すべて出た」にしない（tes
     // 列の艦の砲は護衛と同じ（駆逐艦の添字は隊の destroyerCount。列の無い任務は ds.starts の隻数と同じ）。v0.8.1 S2b（L42）: 命中の 2 つの手は隊の gunneryAt（同じ式を隊へ移した。駆潜艇は 3 つ目の枝）
     const we = code('systems/world-enemies.ts');
     expect(we.split('destroyers.gunneryAt(i).guns[').length - 1).toBe(2);
-    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return i < this.destroyerCount ? this.guns[0] : i === this.transportIndex ? this.guns[1]! : this.guns[2]!; }");
+    // v0.8.2 S2（L19）: 艦ごとの砲は隊の kits の配列（systems/column-kits が今の 3 つ組の値＝駆逐艦は ds.gunnery の同じ物を入れる。tests/column-world が値を確かめる）
+    expect(g).toContain("gunneryAt(i: number): DestroyerSetup['gunnery'] { return this.kits.guns[i]!; }");
+    expect(code('systems/column-kits.ts')).toContain('guns.push(k ? k.gunnery : ds.gunnery);');
     expect(we).not.toContain('ds!.starts.length');
   });
 });
@@ -163,7 +165,7 @@ describe('L11: 往路の間の命中スローで復路の現れる順・道は�
       expect(order(ea, TRANSIT_OUT)).toEqual(Array.from({ length: tr.ships }, (_, i) => i));
       const outs = (e: Ev[]): number[][] => e.filter((x) => x.to === TRANSIT_OUT).map((x) => [x.x, x.y, x.h]);
       expect(outs(eb)).toEqual(outs(ea));
-      expect(outs(ea).every(([x, y, h]) => x === tr.outbound.appearX && y === tr.outbound.laneY && h === tr.outbound.headingDeg)).toBe(true);
+      expect(outs(ea).every(([x, y, h]) => x === tr.outbound!.appearX && y === tr.outbound!.laneY && h === tr.outbound!.headingDeg)).toBe(true);
       // スローの分だけ遅れる（ビラに着くのは位置＝スローで遅れた分だけ後）
       const firstAway = (e: Ev[]): number => e.find((x) => x.to === TRANSIT_AWAY)!.t;
       expect(firstAway(eb)).toBeGreaterThan(firstAway(ea) + 1.5);

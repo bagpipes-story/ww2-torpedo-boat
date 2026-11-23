@@ -178,7 +178,7 @@ export class ResultScene extends Phaser.Scene {
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
     const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
-    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {
@@ -192,7 +192,7 @@ export class ResultScene extends Phaser.Scene {
       // 撃破: 大発（砲）・13mm で沈めた米PT（v0.6.3 実機 1 回目。撃退は点なし）か輸送船（魚雷。v0.4.7）。米PT は隊の数（隼艇 v0.6.6・卯月 v0.6.10 S5b が沈めた PT も入る）
       // 上陸（v0.6.4。味方の大発の輸送隊。scoring.json の convoy.points_per_arrival）は帰投の有無に関わらず上陸した隻数ぶん
       // 揚陸（v0.6.9。jp_04。scoring.json の landing.points_complete）は帰投の有無・その後の沈没に関わらず揚陸完了なら。揚陸の無い任務は鍵ごと無い
-      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside, arrivals: r.convoy ? r.convoy.arrived : 0, ...(r.landing ? { landed: r.landing.phase === LD_DONE } : {}), ...(r.evac ? { evacBoats: evacScoredBoats(r.evac) } : {}) },
+      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside, arrivals: r.convoy ? r.convoy.arrived : 0, ...(r.landing ? { landed: r.landing.phase === LD_DONE } : {}), ...(r.evac ? { evacBoats: evacScoredBoats(r.evac) } : {}), ...(r.recon ? { shipKills: r.recon.shipKills } : {}) },
       scoringParams,
     );
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
@@ -202,7 +202,7 @@ export class ResultScene extends Phaser.Scene {
     const ptKillPart = r.pt && r.pt.gunEnabled ? ` ・ 撃沈 ${score.kills}` : ''; // 13mm で沈めた米PT の点（v0.6.3 実機 1 回目。砲のある米PT の任務だけ）
     const convoyPart = r.convoy ? ` ・ 上陸 ${score.deliveries}` : r.landing ? ` ・ 揚陸 ${score.deliveries}` : ''; // 上陸した大発の点（v0.6.4。輸送隊の任務だけ）・揚陸の点（v0.6.9。jp_04）。達成の次
     // 夜の哨戒機の任務（v0.6.7。jp_02）は撃沈・命中の項を出さない（撃つ相手がいない）: 「帰投 · 達成 · 回避 · 燃料 · 乗員」
-    const objPart = r.evac ? evacScorePartJa(r.evac, score.objective, score.deliveries, scoringParams.evacBoatPoints) : h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${convoyPart}${ptKillPart}${evadePart}` : r.patrol ? `達成 ${score.objective}${evadePart}` : `${r.escort ? '達成' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${evadePart}`;
+    const objPart = r.evac ? evacScorePartJa(r.evac, score.objective, score.deliveries, scoringParams.evacBoatPoints) : h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${convoyPart}${ptKillPart}${evadePart}` : r.patrol ? `達成 ${score.objective}${evadePart}` : `${r.escort ? '達成' : r.recon ? '報告' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${r.recon ? ` ・ 撃沈 ${score.kills}` : ''}${evadePart}`;
     const homeJa = r.evac ? '退避' : '帰投'; // jp_03 は「帰投」と言わない（v0.6.11 S8。Briefing・HUD は「壕か陰へ」「隠れた」）。点は同じ帰投の 700
     line(`${homeJa} ${score.survival}${r.returned && r.dawn.caughtOutside ? `（${r.evac ? '空襲後' : '夜明け後'} ×${scoringParams.afterDawnFactor}）` : ''} ・ ${objPart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
     y += RESULT_SECTION_GAP;

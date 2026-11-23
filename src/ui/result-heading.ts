@@ -81,8 +81,9 @@ export function resultShipsJa(r: {
   readonly transportEnabled: boolean;
   readonly transportSunk: boolean;
   readonly dawn: { readonly shipsWithdrawn: number; readonly transportWithdrawn: boolean };
+  readonly recon?: unknown;
 }): string {
-  const ds = r.shipsTotal > 1 ? `駆逐艦: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.shipsSunk > 0 ? '撃沈' : r.dawn.shipsWithdrawn > 0 ? '退いた' : '健在'}`;
+  const ds = r.shipsTotal > 1 ? `${r.recon !== undefined ? '艦隊' : '駆逐艦'}: 撃沈 ${r.shipsSunk}/${r.shipsTotal}` : `駆逐艦: ${r.shipsSunk > 0 ? '撃沈' : r.dawn.shipsWithdrawn > 0 ? '退いた' : '健在'}`;
   return ds + (r.transportEnabled ? ` ・ 輸送船: ${r.transportSunk ? '撃沈' : r.dawn.transportWithdrawn ? '退いた' : '健在'}` : '');
 }
 

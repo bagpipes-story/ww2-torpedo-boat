@@ -5,6 +5,8 @@
 // IP2（U6「眩しい」）: 2 つ目の閃光は通常の重ね（ADD をやめた）・橙・α 0.5、水柱の柱は薄い灰青・α 0.7、衝撃波 α 0.5。昼の海は ADD の火球の α を下げる（setAddMul）。
 //   魚雷の命中（torpedo）は水柱の柱と爆発の水滴を出さない（torpedo-column-fx の大きな水柱が代わり＝U7）。
 // §7: 確保は constructor だけ。play・update は書くだけ。乱数は絵だけ（ART_SEED_BLAST）。
+// v0.8.2 S2b（us_05 の弾薬庫の誘爆。D-A4）: play の任意の size（枠の 2 つ目の閃光・火球・柱・衝撃波と煙の玉の大きさの倍。既定 1＝今の値）と skipBusySecondary（2 次の爆発の番を大きい版の
+//   途中の枠の後まで進める。secondary そのものは今のまま）。どちらも systems/magazine-fx から explosion-fx を通して使うだけ。
 import type Phaser from 'phaser';
 import { columnPoseInto, shockPoseInto } from '../assets/blast-shape';
 import { partFade, partGrow } from '../assets/fx-shape';
@@ -39,6 +41,8 @@ export class BlastFx {
   private readonly sy = new Float32Array(EXPLOSION_SLOTS);
   private readonly cx = new Float32Array(EXPLOSION_SLOTS);
   private readonly cy = new Float32Array(EXPLOSION_SLOTS);
+  /** 枠ごとの大きさの倍（v0.8.2 S2b。誘爆の大きい版だけ 1 でない） */
+  private readonly size = new Float64Array(EXPLOSION_SLOTS).fill(1);
   private readonly smokeAge = new Float32Array(BLAST_SMOKE_POOL).fill(Infinity);
   private readonly smokeX = new Float32Array(BLAST_SMOKE_POOL);
   private readonly smokeY = new Float32Array(BLAST_SMOKE_POOL);
@@ -70,15 +74,16 @@ export class BlastFx {
     for (let i = 0; i < BLAST_SMOKE_POOL; i++) this.smoke.push(scene.add.image(0, 0, TEXTURE_KEYS.smokePuff).setTint(BLAST_SMOKE_TINT).setDepth(FIRE_SMOKE_DEPTH).setVisible(false));
   }
 
-  /** explosion-fx の play から（同じ枠の番号 i）。dud は小さい版、torpedo は魚雷の命中（柱と水滴は水柱の演出が出す＝IP2） */
-  play(i: number, x: number, y: number, dud: boolean, torpedo: boolean): void {
+  /** explosion-fx の play から（同じ枠の番号 i）。dud は小さい版、torpedo は魚雷の命中（柱と水滴は水柱の演出が出す＝IP2）。size は大きさの倍（v0.8.2 S2b の誘爆だけ。既定 1） */
+  play(i: number, x: number, y: number, dud: boolean, torpedo: boolean, size = 1): void {
     this.open(i, x, y, dud ? KIND_SMALL : torpedo ? KIND_TORPEDO : KIND_BIG);
+    this.size[i] = size;
     if (dud) {
       this.puffs(x, y, BLAST_SMOKE_SMALL, 0.5);
       this.sparks.debris(x, y, SPARK_DEBRIS_SMALL);
       return;
     }
-    this.puffs(x, y, BLAST_SMOKE_BIG, 1);
+    this.puffs(x, y, BLAST_SMOKE_BIG, size);
     this.sparks.debris(x, y, SPARK_DEBRIS_BIG);
     if (!torpedo) this.sparks.drops(x, y, SPARK_DROPS_BIG);
   }
@@ -88,15 +93,25 @@ export class BlastFx {
     this.addMul = m;
   }
 
+  /** 2 次の爆発の番を、大きい版の途中の枠の後まで進める（v0.8.2 S2b の誘爆の 2 次だけ。全部が途中なら 1 周して戻る＝次の secondary は出さない） */
+  skipBusySecondary(): void {
+    for (let n = 0; n < EXPLOSION_SLOTS && this.bigPlaying(this.nextSecondary); n++) this.nextSecondary = (this.nextSecondary + 1) % EXPLOSION_SLOTS;
+  }
+
   /** 沈没の段の 2 次の爆発（sink-fx から。輪・柱・衝撃波なし＝結果の印ではない）。枠は 2 次の爆発の番の枠（大きい版の枠と別の番を回す） */
   secondary(x: number, y: number): void {
     const i = this.nextSecondary;
     this.nextSecondary = (i + 1) % EXPLOSION_SLOTS;
     if (this.age[i] !== Infinity && (this.kind[i] === KIND_BIG || this.kind[i] === KIND_TORPEDO)) return; // 大きい版の途中は上書きしない
     this.open(i, x, y, KIND_SECONDARY);
+    this.size[i] = 1;
     this.age[i] = BLAST_FLASH2_DELAY_S; // 閃光と火球を遅れなしで（2 段目の遅れの分だけ年を進めて始める）
     this.puffs(x, y, BLAST_SMOKE_SECONDARY, 0.8);
     this.sparks.debris(x, y, SPARK_DEBRIS_SECONDARY);
+  }
+
+  private bigPlaying(i: number): boolean {
+    return this.age[i] !== Infinity && (this.kind[i] === KIND_BIG || this.kind[i] === KIND_TORPEDO);
   }
 
   private open(i: number, x: number, y: number, kind: number): void {
@@ -132,25 +147,26 @@ export class BlastFx {
       const a = this.age[i]! + realDt;
       this.age[i] = a;
       const k = this.kind[i]!;
+      const sz = this.size[i]!;
       const fa = a - BLAST_FLASH2_DELAY_S;
       const fl = this.flash2[i]!;
-      if (fa >= 0 && fa < BLAST_FLASH2_S && k !== KIND_SMALL) fl.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FLASH2_RADIUS_M * this.perM).setAlpha(BLAST_FLASH2_ALPHA * (1 - fa / BLAST_FLASH2_S)).setVisible(true);
+      if (fa >= 0 && fa < BLAST_FLASH2_S && k !== KIND_SMALL) fl.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FLASH2_RADIUS_M * this.perM * sz).setAlpha(BLAST_FLASH2_ALPHA * (1 - fa / BLAST_FLASH2_S)).setVisible(true);
       else if (fl.visible) fl.setVisible(false);
       const ga = a - BLAST_FIRE2_DELAY_S;
       const fi = this.fire2[i]!;
       if (ga >= 0 && ga < BLAST_FIRE2_S && k !== KIND_SMALL) {
-        fi.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FIRE2_RADIUS_M * this.perM * partGrow(ga, BLAST_FIRE2_S, BLAST_FIRE2_FROM)).setAlpha(partFade(ga, BLAST_FIRE2_S, this.addMul)).setVisible(true);
+        fi.setPosition(this.sx[i]!, this.sy[i]!).setScale(BLAST_FIRE2_RADIUS_M * this.perM * partGrow(ga, BLAST_FIRE2_S, BLAST_FIRE2_FROM) * sz).setAlpha(partFade(ga, BLAST_FIRE2_S, this.addMul)).setVisible(true);
       } else if (fi.visible) fi.setVisible(false);
       const col = this.column[i]!;
       const sh = this.shock[i]!;
       if (k === KIND_BIG && a < BLAST_COLUMN_S) {
         columnPoseInto(o, a);
-        const s = BLAST_COLUMN_RADIUS_M * this.perM;
-        col.setPosition(this.cx[i]!, this.cy[i]! - o[2]!).setScale(s * o[0]!, s * o[1]!).setAlpha(o[3]!).setVisible(true);
+        const s = BLAST_COLUMN_RADIUS_M * this.perM * sz;
+        col.setPosition(this.cx[i]!, this.cy[i]! - o[2]! * sz).setScale(s * o[0]!, s * o[1]!).setAlpha(o[3]!).setVisible(true);
       } else if (col.visible) col.setVisible(false);
       if ((k === KIND_BIG || k === KIND_TORPEDO) && a < BLAST_SHOCK_S) {
         shockPoseInto(o, a);
-        sh.setScale(BLAST_SHOCK_RADIUS_M * this.shockPerM * o[0]!).setAlpha(o[1]!).setVisible(true);
+        sh.setScale(BLAST_SHOCK_RADIUS_M * this.shockPerM * o[0]! * sz).setAlpha(o[1]!).setVisible(true);
       } else if (sh.visible) sh.setVisible(false);
       if (a >= BLAST_COLUMN_S && a >= BLAST_FIRE2_DELAY_S + BLAST_FIRE2_S && a >= BLAST_FLASH2_DELAY_S + BLAST_FLASH2_S) this.age[i] = Infinity;
     }

@@ -4,9 +4,12 @@
 import { LD_DONE } from '../core/landing';
 import { evacSurvivors, type EvacSquadron } from '../core/evac-squadron';
 import { convoyObjectiveDone, endCountsAsReturn, type MissionEndReason } from '../core/mission-flow';
+import { reconObjectiveDone, type ReconState } from '../core/recon-report';
 
 /** 達成と見つかった回数が読む世界の部分 */
 export interface ObjectiveWorld {
+  /** 報告・無線・中継（v0.8.2 S2。us_05。systems/world-recon の WorldRecon）。無い任務は null か無し */
+  readonly recon?: { readonly state: ReconState } | null;
   /** 空襲下の退避（v0.6.11 S6。jp_03。systems/world-evac の WorldEvac）: 18 隻の隊と達成の隻数。無い任務は null か無し */
   readonly evac?: { readonly sq: EvacSquadron; readonly plan: { readonly raid: { readonly survivorQuota: number } } } | null;
   /** 停泊して揚陸する味方の輸送船（v0.6.9。jp_04。systems/world-landing。揚陸の段階 core/landing の LD_*）。無い任務は null */
@@ -26,6 +29,7 @@ export interface ObjectiveWorld {
  * 僚艇の任務（v0.4.4）は「帰投して僚艇が生きている」、米PT の任務（v0.6.3）と夜の哨戒機の任務（v0.6.7。jp_02。spec-v067 §C.5）は帰投。ほかは敵の側（駆逐艦の撃沈／大発のノルマ）
  */
 export function objectiveDoneOf(reason: MissionEndReason, w: ObjectiveWorld): boolean {
+  if (w.recon) return reconObjectiveDone(w.recon.state, reason); // 報告の任務（v0.8.2 S2。us_05。spec-v0820 D-N6）: 報告が届き（送ったか中継した）帰投と同じに数える終わり
   if (w.evac) return endCountsAsReturn(reason) && evacSurvivors(w.evac.sq) >= w.evac.plan.raid.survivorQuota;
   if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;
   return w.convoy ? convoyObjectiveDone(reason, w.convoy.state.arrived, w.convoy.p.quota) : w.escort ? endCountsAsReturn(reason) && !w.escort.state.sunk : w.pts || w.patrol ? endCountsAsReturn(reason) : w.enemy.objectiveDone;

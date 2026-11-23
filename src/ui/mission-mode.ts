@@ -14,6 +14,7 @@ import { PT_GUN_RELOAD } from '../core/pt-gun';
 import { SHALLOW_GROUNDED } from '../core/shallows';
 import { STORM_INSIDE, STORM_NEAR } from '../core/storm';
 import { planeApproaching, planeAttacking, planeLeaving } from './hud-lines';
+import { reconStandingShown } from './recon-texts';
 
 /** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 export const MISSION_NORMAL = 0;
@@ -89,6 +90,8 @@ export const MISSION_BOW_ON = 40;
 /** 41 止まった艦の任務の出来事（v0.8.1 S4。us_06。文と時計は ui/anchor-lines: 暗い岸を背にした・停泊していた艦が動き出した。1 回・4 秒。レーダーの出来事のすぐ下＝それを遅らせない）と旗 */
 export const MISSION_ANCHOR_EVENT = 41;
 export const MODE_FLAG_ANCHOR_EVENT = 1024;
+/** 42 報告の任務の出来事（v0.8.2 S4。us_05。時計 ui/recon-lines・文 ui/recon-texts。止まった艦の出来事のすぐ下）と旗、43 報告の常の文（呼びかけ・平常の代わり。reconStandingShown） */ export const MISSION_RECON_EVENT = 42, MISSION_RECON = 43, MODE_FLAG_RECON_EVENT = 2048;
+/** 44 近すぎて船体の下を通過（v0.8.2 IP1。全任務。時計と文は ui/under-lines。報告の出来事のすぐ下）と旗 */ export const MISSION_UNDER_EVENT = 44, MODE_FLAG_UNDER_EVENT = 4096;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -229,6 +232,8 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   const planeFirst = t.anchor !== undefined && planeApproaching(t);
   if ((flags & MODE_FLAG_RADAR_EVENT) !== 0 && !planeFirst) return MISSION_RADAR_EVENT; // レーダーの出来事（v0.8.0 S4。us_04・us_06 だけ旗が立つ）
   if ((flags & MODE_FLAG_ANCHOR_EVENT) !== 0 && !planeFirst) return MISSION_ANCHOR_EVENT; // 止まった艦の出来事（v0.8.1 S4。us_06 だけ旗が立つ）
+  if ((flags & MODE_FLAG_RECON_EVENT) !== 0) return MISSION_RECON_EVENT; // 報告の任務の出来事（v0.8.2 S4。us_05 だけ旗が立つ）
+  if ((flags & MODE_FLAG_UNDER_EVENT) !== 0) return MISSION_UNDER_EVENT; // 近すぎて船体の下を通過（v0.8.2 IP1。武装の前の自艇の魚雷が狙える艦の船体に入った時だけ旗が立つ）
   if (t.shallowState !== 0) return MISSION_SHALLOWS;
   if (stormWarning(t)) return MISSION_STORM_WARN;
   if (planeApproaching(t)) return MISSION_PLANE;
@@ -238,6 +243,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if ((t.stormState === STORM_NEAR || t.stormState === STORM_INSIDE) && !t.stormFast) return MISSION_STORM;
   if (t.dawn.threat === AS_T_REST) return MISSION_STRIKE_REST;
   if (t.pt.enabled && t.pt.alive === 0 && t.dawn.reached && call === CALL_DAWN) return MISSION_PT;
+  if (reconStandingShown(t, call)) return MISSION_RECON; // 報告の常の文（v0.8.2 S4。t.recon のある us_05 だけ。燃料少・夜明け近し・届いた後の呼びかけは下の行）
   if (call !== 0) return MISSION_CALL;
   if (t.pt.enabled) return MISSION_PT;
   if (pa.enabled) return MISSION_PATROL;

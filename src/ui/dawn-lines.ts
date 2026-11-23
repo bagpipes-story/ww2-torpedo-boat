@@ -18,6 +18,7 @@ import { evacSettleBannerLines, mssJa } from './evac-lines';
 import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landingWaitTailJa } from './landing-lines';
 import { stormWarning } from './mission-mode';
 import { anchorWithdrawJa } from './anchor-lines';
+import { reconCallJa } from './recon-texts';
 
 /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
 const RESULT_DODGE_SHOWN = 8;
@@ -98,7 +99,7 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number, co
  * 卯月のいる夜（v0.6.10 S6・LD3。data の ring_call_before_dawn）の夜明け近しは「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（夜明けの後は頭が「空襲下 」。「卯月に任せて」とは言わない）
  */
 export function callLineText(t: BoatTelemetry, call: number, homeStep: number): string {
-  const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : t.landing.enabled ? landingCallJa(t.landing) : '');
+  const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : t.landing.enabled ? landingCallJa(t.landing) : reconCallJa(t)); // 報告の任務（v0.8.2 S4。us_05）は届いた後の「撃沈！」を「報告済み ・ 」に
   if (call === CALL_DAWN && convoyWaiting(t.convoy)) return `${head}${convoyWaitShoreJa(convoyLeftStep(t.convoy))}`;
   if (call === CALL_DAWN && landingCallWaits(t.landing, call)) return `${head}・ ${allyRingWaitJa(t.ally, landingWaitTailJa(landingLeftS(t.landing)))}`;
   if (landingCallWaits(t.landing, call)) return `${head}${landingWaitCallJa(call, landingLeftS(t.landing))}`;

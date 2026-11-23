@@ -111,7 +111,9 @@ function checkWithdraw(proto: Rec, missionId: string, air: DawnAir): DawnWithdra
   const at = `missions_seed ${missionId}`;
   const mode = air.shipsAtDawn;
   const raw = proto['dawn_withdraw'];
-  if (mode === 'retire' && proto['enemy_start'] === undefined) throw new Error(`${at}: dawn_air.enemy_ships_at_dawn が retire なのに駆逐艦（v0_1_prototype.enemy_start）が無い（退くのは駆逐艦・輸送船）`);
+  // 列だけの隊（v0.8.2。us_05。transit.column の片道の列。enemy_start は無い）も退く駆逐艦の隊（spec-v0820 §14: 今の検査に「transit.column があれば駆逐艦の任務」の 1 枝）
+  const column = (proto['transit'] as Rec | undefined)?.['column'] !== undefined;
+  if (mode === 'retire' && proto['enemy_start'] === undefined && !column) throw new Error(`${at}: dawn_air.enemy_ships_at_dawn が retire なのに駆逐艦（v0_1_prototype.enemy_start）が無い（退くのは駆逐艦・輸送船）`);
   if (mode === 'hide' && proto['barges'] === undefined) throw new Error(`${at}: dawn_air.enemy_ships_at_dawn が hide なのに大発の隊（v0_1_prototype.barges）が無い（岸へ隠れるのは大発）`);
   if (mode !== 'retire') {
     if (raw !== undefined) throw new Error(`${at}: v0_1_prototype.dawn_withdraw は dawn_air.enemy_ships_at_dawn が retire の任務だけ（${mode}）`);

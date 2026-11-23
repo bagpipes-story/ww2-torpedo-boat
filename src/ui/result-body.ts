@@ -5,6 +5,7 @@
 // v0.6.10 S7: 卯月のいる夜（LandingResult.ally）はその 3 行の下に卯月の 1 行（ui/ally-result）、米PT の 4 行目（自艇の砲）から卯月の分を引く。卯月の無い夜は前の行のまま。
 // v0.6.11 S6: 空襲下の退避（jp_03）は本文の頭に 4 行（ui/evac-result。残存と達成・隠れ場所と隊ごと・編隊・記録）。魚雷の行は出さない。退避の無い任務は今までの行のまま。
 // v0.8.0 S4: 海峡の夜（us_04）は魚雷の枝の後ろにレーダーと列の通過の 1 行ずつ（ui/radar-result・strait-result。20 px・KPI の色）。鍵の無い任務は今までの行のまま。v0.8.1 S4: 止まった艦の任務（us_06）の 1 行（ui/anchor-result）。
+// v0.8.2 S4: 報告の任務（us_05）の 2 行（ui/recon-result。レーダーの行の後）。
 // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
 import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
@@ -21,6 +22,7 @@ import { bargeResultLines } from './hud-lines';
 import { patrolBombResultJa, patrolSearchResultJa } from './patrol-result-lines';
 import { ptResultLines } from './pt-lines';
 import { radarResultLineJa, type RadarResult } from './radar-result';
+import { reconFleetLineJa, reconReportLineJa, type ReconResult } from './recon-result';
 import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EvacResult, GunboatResult, LandingResult, PatrolResult, PtResult } from './result-types';
 import { straitResultLineJa, type StraitResult } from './strait-result';
 
@@ -42,6 +44,7 @@ export interface ResultBodySource {
   radar?: RadarResult;
   strait?: StraitResult;
   anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06）
+  recon?: ReconResult; // 報告の任務（v0.8.2 S4。us_05）
   detections: number; returned: boolean; objectiveDone: boolean;
   shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
@@ -116,6 +119,7 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
     if (r.radar) line(radarResultLineJa(r.radar), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // レーダー（v0.8.0 S4。us_04）: 最初の接触・目で見えない間に撃った魚雷
     if (r.strait) line(straitResultLineJa(r.strait), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 列の通過（v0.8.0 S4。us_04）: 往路・復路・撃沈・揚陸の地
     if (r.anchor) line(anchorResultLineJa(r.anchor), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 止まった艦の任務（v0.8.1 S4。us_06）: 卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒
+    if (r.recon) for (const l of [reconReportLineJa(r.recon), reconFleetLineJa(r.recon)]) line(l, HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 報告の任務（v0.8.2 S4。us_05）: 報告と艦隊の 2 行
   }
   if (r.arms) line(armsResultLineJa(r.arms), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 兵装の新しい道（v0.6.8）: どの枝の後ろにも。使わなかった夜は無い
   return out;

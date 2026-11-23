@@ -9,6 +9,9 @@
 // 縁の外へ出れば GONE。IN の艦が来た縁の外へ出ても、OUT の艦が来た縁の外へ戻っても GONE（海域を出た艦は戻らない）。今夜の揺らぎは plan（TransitSetup）に入っている。
 // 世界（S2 の systems/destroyer-transit）との約束: entered・returned の印が立ったステップのうちに、その艦を道の現れる点（appearX・laneY・headingDeg）へ置く
 // （次の stepShipTransit がその x を読む）。WAIT・AWAY の艦の x と sinking は読まない。Phaser 非依存・乱数なし。作る（createShipTransit）は起動時に 1 回、ほかは確保しない。
+// 片道の列（v0.8.2。us_05。spec-v0820 §4.2 D-C4・D-C5）: plan.outbound が null の列は揚陸の地も復路も無い＝IN の艦が向こうの縁の外へ出たら GONE（戻らない。撃沈に数えない）。
+// AWAY にならないので戻りの残り（transitPending）は WAIT の艦だけ。入りの秒は艦ごとの表 plan.enterAtS（無ければ enterS ＋ 間隔 × i）、現れる y は道 ＋ plan.laneDyM[i]（無ければ 0）。
+// 往復の列（us_04）は outbound・enterAtS・laneDyM の読みが今と同じ式（null の枝と表の枝に入らない）。
 import { TRANSIT_MAX_SHIPS } from './transit-data';
 
 /** 艦ごとの段階 */
@@ -36,8 +39,12 @@ export interface TransitPlan {
   readonly enterS: number;
   readonly unloadS: number;
   readonly inbound: TransitLegPlan;
-  readonly outbound: TransitLegPlan;
+  /** 復路（片道の列は null＝v0.8.2） */
+  readonly outbound: TransitLegPlan | null;
   readonly coverLeavesWithOutbound: boolean;
+  /** 艦ごとの入りの秒（v0.8.2 の片道の列。今夜の揺らぎ込み。無ければ enterS ＋ spacingS × i）と道からの y のずれ m（無ければ 0） */
+  readonly enterAtS?: readonly number[];
+  readonly laneDyM?: readonly number[];
 }
 
 /** 世界の列の艦（entities/destroyer の Destroyer が形で満たす。読むのは IN・OUT の艦の x と沈み始めたかだけ） */
@@ -75,9 +82,14 @@ export function createShipTransit(p: TransitPlan): ShipTransitState {
   };
 }
 
-/** 艦 i（0 始まり）が往路に現れる体感の時計の秒（入りの時刻） */
+/** 艦 i（0 始まり）が往路に現れる体感の時計の秒（入りの時刻）。艦ごとの表（片道の列）があればその値 */
 export function transitEnterAtS(p: TransitPlan, i: number): number {
-  return p.enterS + p.spacingS * i;
+  return p.enterAtS !== undefined ? p.enterAtS[i]! : p.enterS + p.spacingS * i;
+}
+
+/** 艦 i が現れる y の道からのずれ m（片道の列の艦ごとの道。無ければ 0） */
+export function transitLaneDyM(p: TransitPlan, i: number): number {
+  return p.laneDyM !== undefined ? p.laneDyM[i]! : 0;
 }
 
 /** その段階の艦が現れる道（IN は往路・OUT は復路・ほかは null）。現れる点は道の appearX・laneY・headingDeg */
@@ -95,7 +107,8 @@ export function stepShipTransit(s: ShipTransitState, p: TransitPlan, feelDtS: nu
   s.feelS += feelDtS;
   if (dawn) s.dawn = true;
   const inSign = p.inbound.goneX > p.inbound.appearX ? 1 : -1;
-  const outSign = p.outbound.goneX > p.outbound.appearX ? 1 : -1;
+  const out = p.outbound; // 片道の列は null（揚陸の地も来た側の縁の外の読みも無い）
+  const outSign = out !== null && out.goneX > out.appearX ? 1 : -1;
   for (let i = 0; i < s.ships; i++) {
     const ph = s.phase[i]!;
     const bit = 1 << i;
@@ -107,9 +120,9 @@ export function stepShipTransit(s: ShipTransitState, p: TransitPlan, feelDtS: nu
         s.sunkCount++;
         continue;
       }
-      const pastLanding = (v.state.x - p.inbound.goneX) * inSign >= 0; // 揚陸の地の側の縁の外
-      const pastOrigin = (v.state.x - p.outbound.goneX) * outSign >= 0; // 来た側の縁の外
-      if (ph === TRANSIT_IN && pastLanding) {
+      const pastLanding = (v.state.x - p.inbound.goneX) * inSign >= 0; // 揚陸の地の側の縁の外（片道の列は向こうの縁の外）
+      const pastOrigin = out !== null && (v.state.x - out.goneX) * outSign >= 0; // 来た側の縁の外
+      if (ph === TRANSIT_IN && pastLanding && out !== null) {
         s.phase[i] = TRANSIT_AWAY;
         s.awayAtS[i] = nowS;
         s.arrived |= bit;
@@ -137,7 +150,7 @@ export function stepShipTransit(s: ShipTransitState, p: TransitPlan, feelDtS: nu
   }
 }
 
-/** 残りの戻り: これから海域に現れる艦の数（WAIT と AWAY。夜明けの後は 0＝もう来ない・戻らない）。隊の「敵艦隊なし」はこれが 0 の時だけ（S2 の destroyer-group） */
+/** 残りの戻り: これから海域に現れる艦の数（WAIT と AWAY。片道の列は AWAY にならない＝WAIT だけ。夜明けの後は 0＝もう来ない・戻らない）。隊の「敵艦隊なし」はこれが 0 の時だけ（S2 の destroyer-group） */
 export function transitPending(s: ShipTransitState): number {
   if (s.dawn) return 0;
   let k = 0;

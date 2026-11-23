@@ -53,7 +53,7 @@ describe('陸までの距離（2 乗。レーダーの陸の反射の帯）', ()
     const t = us04.transit!;
     const jy = us04.mission.night!.enemyJitterYM;
     for (let x = 0; x <= W; x += 50) {
-      for (const y of [t.inbound.laneY - jy, t.inbound.laneY + jy, t.outbound.laneY - jy, t.outbound.laneY + jy, 700, H - 700]) expect(landDist2(STRAIT, x, y), `${x},${y}`).toBeGreaterThan(CLUTTER * CLUTTER);
+      for (const y of [t.inbound.laneY - jy, t.inbound.laneY + jy, t.outbound!.laneY - jy, t.outbound!.laneY + jy, 700, H - 700]) expect(landDist2(STRAIT, x, y), `${x},${y}`).toBeGreaterThan(CLUTTER * CLUTTER);
     }
     expect(d(us04.mission.playerStart.x, us04.mission.playerStart.y)).toBeGreaterThan(CLUTTER);
     expect(d(us04.mission.returnPoint.x, us04.mission.returnPoint.y - us04.mission.returnPoint.radiusM)).toBeGreaterThan(CLUTTER);
@@ -83,7 +83,7 @@ describe('衝突の危険（艦首が自艇へ半角 15° の内・500 m の内�
     expect([bowOnRisk(0, 0, 359, 5, -300, R2, C2), bowOnRisk(0, 0, 1, -5, -300, R2, C2), bowOnRisk(0, 0, -10, 0, -300, R2, C2)]).toEqual([true, true, true]);
   });
   it('us_04 の復路の艦（270°）の進路の前にいる自艇は危険、進路の横 300 m（道から離れた）は危険でない', () => {
-    const y = us04.transit!.outbound.laneY;
+    const y = us04.transit!.outbound!.laneY;
     expect(bowOnRisk(3900, y, 270, 3500, y + 20, R2, C2)).toBe(true);
     expect(bowOnRisk(3900, y, 270, 3500, y + 300, R2, C2)).toBe(false);
   });

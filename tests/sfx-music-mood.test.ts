@@ -265,6 +265,18 @@ describe('止まった艦・動き出し・暗い岸を背にでは段を変え�
   });
 });
 
+describe('報告・無線・中継・戦艦の命中と弾薬庫の誘爆では段を変えない（v0.8.2 S4。spec-v0820 §8 の S4「sfx-music-mood」・D5）', () => {
+  it('報告の段（確認・追尾・送った・中継待ち・中継した）・無線・沈まなかった命中・誘爆の数が何であっても段は同じ（今の HUD の状態だけ）。source はその欄の名を持たない', () => {
+    for (const k of [0, 1, 2, 3, 4]) {
+      const recon = Object.freeze({ stage: k, radioBroken: k >= 3, trackedS: 4 * k, trackLeftS: 20 - 4 * k, seenAtS: k ? 140 : NaN, seenCount: k ? 2 : 0, sentAtS: k === 2 ? 160 : NaN, pendingAtS: k >= 3 ? 160 : NaN, radioBrokenAtS: k >= 3 ? 150 : NaN, relayedAtS: k === 4 ? 200 : NaN, draws: k, eventCount: k, events: k ? 1 << (k - 1) : 0, relayDx: -2600, relayDy: 100, relayRadiusM: 250, relayJa: '隣の分隊', identifyJa: '戦艦', fleetJa: '東へ 18 ノット', capHits: k, capHitN: k, capHitJa: '戦艦', capSeen: new Uint8Array(7) });
+      const extra = { recon, magazine: Object.freeze({ detonatedAtS: [NaN], onHit: [0], detonations: k > 2 ? 1 : 0, draws: k, chanceSum: 0.03 * k }) };
+      for (const [over, want] of [[{}, Q], [{ illuminated: true }, B], [{ playerDetected: true }, T]] as const) expect(run(createSfxMoodState(), Object.freeze({ ...(tel(over) as unknown as Record<string, unknown>), ...extra }) as unknown as BoatTelemetry), `${k} ${JSON.stringify(over)}`).toBe(want);
+    }
+    const src = readFileSync('src/core/sfx-music-mood.ts', 'utf8').replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+    for (const f of ['recon', 'magazine', 'radio', 'relay', 'capHit', 'detonat']) expect(src, f).not.toContain(f);
+  });
+});
+
 describe('観測器の作法（読むだけ・確保しない）', () => {
   it('凍らせたテレメトリで全部の出どころを通しても投げない（どの欄にも書かない）。戻りは段の数だけ', () => {
     const st = createSfxMoodState();

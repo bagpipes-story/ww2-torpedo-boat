@@ -8,6 +8,8 @@
 //   爆発の煙）と破片の火花・水滴（systems/spark-fx）を出す。沈没の段の 2 次の爆発（sink-fx から secondary）は 2 段目だけ（輪なし＝結果の印にしない）。
 // IP2（実機 2 回目。U6「フラッシュのような白色や輝度は落ち着かせてください」・U7「魚雷の爆発は…派手に水柱を立たせてください」）: 閃光は琥珀・α 0.55、火球は α 0.8、水柱は薄い灰青・α 0.7
 //   （大きさと長さは IP1b のまま）。昼の海（夜明けの段）は ADD の閃光と火球の α を下げる（setDaylight）。魚雷の命中（play の torpedo）は白い水柱の代わりに大きな水柱（torpedo-column-fx）。
+// v0.8.2 S2b（us_05 の弾薬庫の誘爆。spec-v0820 D-A4・L31）: play の任意の size（枠ごとの大きさの倍。既定 1＝今の式に 1 を掛けるだけ＝同じ値）と magazineSecondary（2 段目の大きい版の途中の枠を
+//   飛ばしてから今の secondary）。呼ぶのは systems/magazine-fx だけ（艦の中央の大きい版 size 2.2・2 次の爆発 2 つ）。音は今の呼び方のまま（大きい版 blast_l・2 次 blast_s）。
 import type Phaser from 'phaser';
 import { FIRE_GROW, PUFF_GROW, SPLASH_GROW, easeOutCubic, flashLifeS, partFade, partGrow, slotLifeS } from '../assets/fx-shape';
 import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
@@ -35,6 +37,8 @@ export class ExplosionFx {
   private readonly age = new Float32Array(EXPLOSION_SLOTS).fill(Infinity);
   private readonly life = new Float32Array(EXPLOSION_SLOTS);
   private readonly small = new Uint8Array(EXPLOSION_SLOTS);
+  /** 枠ごとの大きさの倍（v0.8.2 S2b。誘爆の大きい版だけ 1 でない） */
+  private readonly size = new Float64Array(EXPLOSION_SLOTS).fill(1);
   private next = 0;
   /** テクスチャの半径（爆発の輪と同じ 40 単位）→ 世界の半径 m の scale */
   private readonly perM = 1 / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE;
@@ -65,22 +69,23 @@ export class ExplosionFx {
     }
   }
 
-  /** 爆発を置く（mission-effects の playExplosion から。dud は小さい版、torpedo は魚雷の命中＝見た目だけの印（IP2）） */
-  play(x: number, y: number, dud: boolean, torpedo = false): void {
+  /** 爆発を置く（mission-effects の playExplosion から。dud は小さい版、torpedo は魚雷の命中＝見た目だけの印（IP2）。size は大きさの倍＝v0.8.2 S2b の誘爆だけ。既定 1） */
+  play(x: number, y: number, dud: boolean, torpedo = false, size = 1): void {
     const i = this.next;
     this.next = (this.next + 1) % EXPLOSION_SLOTS;
     this.age[i] = 0;
     this.small[i] = dud ? 1 : 0;
     this.life[i] = slotLifeS(dud, RING_S);
+    this.size[i] = size;
     const pm = this.perM;
-    this.flash[i]!.setPosition(x, y).setScale((dud ? EXPLOSION_SMALL_FLASH_RADIUS_M : EXPLOSION_FLASH_RADIUS_M) * pm).setAlpha(EXPLOSION_FLASH_ALPHA * this.addMul).setVisible(true);
-    this.fire[i]!.setPosition(x, y).setScale(EXPLOSION_FIRE_RADIUS_M * pm * FIRE_GROW.from).setAlpha(FIRE_GROW.alpha0 * this.addMul).setVisible(!dud);
+    this.flash[i]!.setPosition(x, y).setScale((dud ? EXPLOSION_SMALL_FLASH_RADIUS_M : EXPLOSION_FLASH_RADIUS_M) * pm * size).setAlpha(EXPLOSION_FLASH_ALPHA * this.addMul).setVisible(true);
+    this.fire[i]!.setPosition(x, y).setScale(EXPLOSION_FIRE_RADIUS_M * pm * FIRE_GROW.from * size).setAlpha(FIRE_GROW.alpha0 * this.addMul).setVisible(!dud);
     const wet = this.wet[i]!.setPosition(x, y);
-    if (dud) wet.setTexture(TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT).setScale(EXPLOSION_PUFF_RADIUS_M * this.puffPerM * PUFF_GROW.from).setAlpha(PUFF_GROW.alpha0);
-    else wet.setTexture(TEXTURE_KEYS.splash).setTint(EXPLOSION_SPLASH_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from).setAlpha(SPLASH_GROW.alpha0);
+    if (dud) wet.setTexture(TEXTURE_KEYS.smokePuff).setTint(FIRE_SMOKE_TINT).setScale(EXPLOSION_PUFF_RADIUS_M * this.puffPerM * PUFF_GROW.from * size).setAlpha(PUFF_GROW.alpha0);
+    else wet.setTexture(TEXTURE_KEYS.splash).setTint(EXPLOSION_SPLASH_TINT).setScale(EXPLOSION_SPLASH_RADIUS_M * pm * SPLASH_GROW.from * size).setAlpha(SPLASH_GROW.alpha0);
     wet.setVisible(!(torpedo && !dud)); // 魚雷の命中は水柱の根元の飛沫が代わり
-    this.ring[i]!.setPosition(x, y).setScale(EXPLOSION_SCALE_FROM / RENDER_SCALE).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
-    this.blast.play(i, x, y, dud, torpedo);
+    this.ring[i]!.setPosition(x, y).setScale((EXPLOSION_SCALE_FROM / RENDER_SCALE) * size).setTint(dud ? EXPLOSION_TINT_DUD : EXPLOSION_TINT_HIT).setAlpha(1).setVisible(true);
+    this.blast.play(i, x, y, dud, torpedo, size);
     if (torpedo && !dud) this.column.play(x, y);
     sfxAt(dud ? 'blast_s' : torpedo ? 'torp_hit' : 'blast_l', x, y); // 爆発音（v0.7.1 S2。小さい版＝不発・被弾・座礁は blast_s、魚雷の命中は torp_hit、ほかの大きい版は blast_l）
   }
@@ -91,6 +96,12 @@ export class ExplosionFx {
     if (m === this.addMul) return;
     this.addMul = m;
     this.blast.setAddMul(m);
+  }
+
+  /** 誘爆の 2 次の爆発（v0.8.2 S2b。magazine-fx から）: 2 段目の番を大きい版の途中の枠の後まで進めてから今の secondary（絵と音は同じ） */
+  magazineSecondary(x: number, y: number): void {
+    this.blast.skipBusySecondary();
+    this.secondary(x, y);
   }
 
   /** 沈没の段の 2 次の爆発（sink-fx から。2 段目の閃光と火球・煙・破片だけ＝輪は出さない） */
@@ -127,13 +138,13 @@ export class ExplosionFx {
         const fi = this.fire[i]!;
         if (a >= FIRE_GROW.life) {
           if (fi.visible) fi.setVisible(false);
-        } else fi.setScale(EXPLOSION_FIRE_RADIUS_M * pm * partGrow(a, FIRE_GROW.life, FIRE_GROW.from)).setAlpha(partFade(a, FIRE_GROW.life, FIRE_GROW.alpha0 * this.addMul));
+        } else fi.setScale(EXPLOSION_FIRE_RADIUS_M * pm * partGrow(a, FIRE_GROW.life, FIRE_GROW.from) * this.size[i]!).setAlpha(partFade(a, FIRE_GROW.life, FIRE_GROW.alpha0 * this.addMul));
       }
       const wet = this.wet[i]!;
       const g = dud ? PUFF_GROW : SPLASH_GROW;
       if (wet.visible) { // 魚雷の命中は play で隠した（水柱が代わり）
         if (a >= g.life) wet.setVisible(false);
-        else wet.setScale((dud ? EXPLOSION_PUFF_RADIUS_M * this.puffPerM : EXPLOSION_SPLASH_RADIUS_M * pm) * partGrow(a, g.life, g.from)).setAlpha(partFade(a, g.life, g.alpha0));
+        else wet.setScale((dud ? EXPLOSION_PUFF_RADIUS_M * this.puffPerM : EXPLOSION_SPLASH_RADIUS_M * pm) * partGrow(a, g.life, g.from) * this.size[i]!).setAlpha(partFade(a, g.life, g.alpha0));
       }
       const ring = this.ring[i]!;
       if (a >= RING_S) {
@@ -141,7 +152,7 @@ export class ExplosionFx {
       } else {
         const e = easeOutCubic(a / RING_S);
         const to = dud ? EXPLOSION_SCALE_DUD : EXPLOSION_SCALE_HIT;
-        ring.setScale((EXPLOSION_SCALE_FROM + (to - EXPLOSION_SCALE_FROM) * e) / RENDER_SCALE).setAlpha(1 - e);
+        ring.setScale(((EXPLOSION_SCALE_FROM + (to - EXPLOSION_SCALE_FROM) * e) / RENDER_SCALE) * this.size[i]!).setAlpha(1 - e);
       }
     }
   }

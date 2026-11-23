@@ -528,6 +528,199 @@
       "notes": "us_06 のハード（v0.8.1）で泊地の外に止まって見張る駆潜艇 2 隻。気づくと動き出して記録の AI（体当たりなし）になる。点は無く、撃沈の達成・命中率の KPI・撃沈 n/m に数えない。"
     },
     {
+      "id": "ijn_battleship_fuso",
+      "faction": "IJN",
+      "name_ja": "戦艦（扶桑型）",
+      "ship_class": "battleship",
+      "length_m": 212.75,
+      "beam_m": 33.1,
+      "speed_max_kt": 24.7,
+      "speed_typical_kt": 18,
+      "turn_rate_deg_s": 0.8,
+      "accel_mps2": 0.15,
+      "hull_hp": 2000,
+      "hull_circles": 9,
+      "torpedo_hits_to_sink": 6,
+      "magazine": {
+        "on_hits": [
+          3,
+          4
+        ],
+        "chance": [
+          0.035,
+          0.07
+        ],
+        "source": "design (v0.8.2 S0・ユーザーの決め U1（2026-11-17）「大和型などの弩級戦艦を除く通常の戦艦が魚雷4本で沈むこともあるので、3〜4本目の命中時には弾薬庫引火大爆発など確率持たせて稀に轟沈することもあるようにしてください。（例としてバーラムやロイヤルオーク）」。spec-v0820 §4.4 D-G1〜D-G3: 魚雷の命中（不発でない）で沈む本数に届かなかったとき、3 本目と 4 本目の命中ごとに chance の確率で弾薬庫が誘爆して轟沈（4 本目は 3 本目で誘爆しなかった時だけ引く）。v0.8.2 IP1・ユーザーの決め U-Q1（2026-11-19。実機 1 回目の後の問い spec §12 Q1＝3 本目 3%・4 本目 6% は稀すぎる／ちょうど／多い、への答え「魚雷4本当てたときの轟沈率が10回に一回くらいになるように調整してください。」）: 3 本目 3% → 3.5%・4 本目 6% → 7%（1 : 2 の形のまま。4 本全部当たった艦は 1 − 0.965 × 0.93 ＝ 10.3%、3 本だけなら 3.5%。前は 1 − 0.97 × 0.94 ＝ 8.8%）。止まった艇から正しく狙った 4 本の扇 1 回の轟沈は 600 m 9.7%・800 m 8.5%・1,000 m 6.2%・1,200 m 3.6%・1,500 m 1.4%・2,000 m 0.2%（scripts/fan-sim。3%・6% の時は 8.4・7.3・5.3・3.1・1.2・0.1%）＝近くから全部当てて 10 回に 1 回ほどで、当てにしない頻度。史実の手触り（WebSearch の抜粋のみ・本文未読）: 3 本以上の魚雷を受けた古い戦艦で誘爆したのはバーラム（1941-11-25。3 本の後、後部の弾薬庫が爆発）くらいで、ロイヤルオーク（1939-10-14・錨泊中）は数本の命中の後に装薬の火と浸水で十数分で転覆、山城・プリンス・オブ・ウェールズ・レパルスは誘爆の大爆発ではなかった。規則はこの記録ごと（大和型の記録には置かない＝ユーザーの例外。V-M3）。乱数は seed+44（戦艦のいる任務だけ・3・4 本目の命中ごとに 1 回。世界の配線は v0.8.2 S2）)"
+      },
+      "guns": [
+        {
+          "id": "sec_152mm",
+          "count": 7,
+          "range_m": 15000,
+          "effective_night_m": 4500,
+          "rof_per_min": 5,
+          "damage": 40,
+          "shell_speed_mps": 400,
+          "dispersion_m": 185,
+          "splash_radius_m": 8,
+          "fire_chance": 0.4,
+          "engine_damage_chance": 0.3
+        },
+        {
+          "id": "aa_127mm",
+          "count": 4,
+          "range_m": 10000,
+          "effective_night_m": 3000,
+          "rof_per_min": 8,
+          "damage": 35,
+          "shell_speed_mps": 400,
+          "dispersion_m": 180,
+          "splash_radius_m": 8,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.2
+        },
+        {
+          "id": "aa_25mm",
+          "count": 8,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 70,
+          "splash_radius_m": 3,
+          "fire_chance": 0.05,
+          "engine_damage_chance": 0.05
+        }
+      ],
+      "searchlight": {
+        "range_m": 4000,
+        "cone_deg": 12,
+        "sweep_deg_s": 15,
+        "on_delay_s": 3.0
+      },
+      "starshell": null,
+      "detection": {
+        "base_detect_m": 2600,
+        "reaction_delay_s": 1.0,
+        "torpedo_wake_detect_m": 2000,
+        "wake_spot_rate_per_s": 0.2
+      },
+      "evasion": {
+        "mode": "comb_tracks",
+        "turn_toward_wakes": true,
+        "evade_turn_rate_deg_s": 1.0,
+        "speed_boost_kt": -4
+      },
+      "ram": {
+        "enabled": false,
+        "trigger_m": 0,
+        "give_up_m": 0,
+        "stall_s": 0,
+        "cooldown_s": 0,
+        "turn_rate_bonus_deg_s": 0
+      },
+      "patrol": {
+        "edge_turn_margin_m": 900
+      },
+      "source": {
+        "length_m・beam_m・speed_max_kt": "historical (扶桑型戦艦（1930 年代の改装の後）: 全長 212.75 m（212.8 m とする抜粋もある）・幅 33.1 m・24.7 kt（Wikipedia の扶桑型・navypedia の山城の抜粋のみ・本文未読。medium＝spec-v0820 §2.2 C10）)",
+        "ship_class": "design (v0.8.2 S0・spec-v0820 §4.3。艦種の新しい任意の鍵。読むのは列の艦ごとの記録（config/column-mission-data の V-C2・命中率の KPI の旗）と弾薬庫の検査（config/magazine-data の V-M3）だけ。無い記録は destroyer＝今の記録には足さない)",
+        "torpedo_hits_to_sink": "design (v0.8.2 S0・spec-v0820 §4.3・§4.4。6 本: 艇 1 隻の 4 本では弾薬庫の誘爆（magazine）の時しか沈まない（ユーザーの U1 の「通常の戦艦が魚雷4本で沈むこともある」は誘爆の確率で出す）。v0.10 の殴り込みで複数の艇の魚雷なら届く。この夜の山城は駆逐艦の魚雷 2〜4 本（出典で違う）と砲撃で沈んだ)",
+        "guns": "historical (扶桑型の 1944 年の兵装: 35.6 cm 連装砲 6 基・15.2 cm 単装砲 14 門（片舷 7）・12.7 cm 連装高角砲 4 基・25 mm 機銃多数（抜粋のみ。medium）) / design (v0.8.2 S0・spec-v0820 §4.3。主砲は置かない（夜に PT へ向けた記録が無い・強すぎる）。aa_25mm 8（ijn_destroyer の aa_25mm の値で count 8）。v0.8.2 S3（spec-v0820 §4.3 の的・scripts/gunnery-sim の ENEMY）: 照らされて止まった艇への全砲の HP/秒を ijn_destroyer の 1.2〜1.6 倍（1,000・1,500・2,000 m）に合わせた。S0 の初めの値（sec_152mm 4 門・散布 220・aa_127mm 2）は 0.90・0.38・0.40 倍（25 mm の届かない 1,500 m の外が弱すぎた）→ sec_152mm 7 門（片舷 7 門の全部）・散布 220 → 185 m・aa_127mm 4（連装 2 基＝片舷）で 1.58・1.21・1.45 倍（7.8・1.9・1.0 HP/秒）。range_m はゲームが読まない記録の形（ijn_destroyer と同じく実射程を縮めた値）)",
+        "searchlight": "design (v0.8.2 S0・spec-v0820 §4.3。4,000 m・12°・掃引 15°/秒・点くまで 3.0 秒（大きく遅い艦）。星弾は持たない（照らすのは駆逐艦と重巡＝7〜8 隻の大きな半透明の円の重ね描きの予算。spec §7.2・§9 の 9）)",
+        "others": "design (v0.8.2 S0・spec-v0820 §4.3。巡航 18 kt＝列の速さ（この夜の第三部隊の進みの速さ）。旋回 0.8°/秒・加速 0.15（大きく鈍い。18 kt の旋回半径 約 660 m ＋ 縁の余白 213 m ＜ 端 900 m）。hull_hp 2,000 は未使用（沈む本数で沈む）。hull_circles 9（当たり 425.5 m）。detection の base_detect_m 2,600 は記録の検査のためだけ（隊は先頭の駆逐艦の 1 つの見つける距離を使う。艦ごとの距離は候補）・雷跡 2,000 m・毎秒 0.2・反応 1.0 秒。evasion は comb_tracks（雷跡へ向く・回避の転舵 1.0°/秒・−4 kt）。体当たりはしない。世界の配線は v0.8.2 S2・絵は S2b（それまでは駆逐艦の絵の代用）)"
+      },
+      "notes": "us_05（v0.8.2「スリガオ海峡・最初の接触」）の本隊の戦艦 山城・扶桑。艇 1 隻の 4 本では沈まず（沈む本数 6）、3・4 本目の命中にまれに弾薬庫が誘爆して轟沈する（magazine）。命中率の KPI に数えない（KPI の旗は駆逐艦の記録だけ）。主砲は撃たない（副砲・高角砲・機銃）。"
+    },
+    {
+      "id": "ijn_cruiser_mogami",
+      "faction": "IJN",
+      "name_ja": "重巡洋艦（最上型）",
+      "ship_class": "heavy_cruiser",
+      "length_m": 200.6,
+      "beam_m": 20.2,
+      "speed_max_kt": 35,
+      "speed_typical_kt": 18,
+      "turn_rate_deg_s": 1.2,
+      "accel_mps2": 0.2,
+      "hull_hp": 1000,
+      "hull_circles": 8,
+      "torpedo_hits_to_sink": 3,
+      "guns": [
+        {
+          "id": "sec_127mm",
+          "count": 4,
+          "range_m": 10000,
+          "effective_night_m": 3500,
+          "rof_per_min": 7,
+          "damage": 35,
+          "shell_speed_mps": 400,
+          "dispersion_m": 125,
+          "splash_radius_m": 8,
+          "fire_chance": 0.3,
+          "engine_damage_chance": 0.25
+        },
+        {
+          "id": "aa_25mm",
+          "count": 8,
+          "range_m": 2000,
+          "effective_night_m": 1200,
+          "rof_per_min": 120,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 70,
+          "splash_radius_m": 3,
+          "fire_chance": 0.05,
+          "engine_damage_chance": 0.05
+        }
+      ],
+      "searchlight": {
+        "range_m": 3500,
+        "cone_deg": 12,
+        "sweep_deg_s": 20,
+        "on_delay_s": 2.5
+      },
+      "starshell": {
+        "range_m": 7000,
+        "illum_radius_m": 1800,
+        "duration_s": 25,
+        "cooldown_s": 60
+      },
+      "detection": {
+        "base_detect_m": 2400,
+        "reaction_delay_s": 0.8,
+        "torpedo_wake_detect_m": 2000,
+        "wake_spot_rate_per_s": 0.2
+      },
+      "evasion": {
+        "mode": "comb_tracks",
+        "turn_toward_wakes": true,
+        "evade_turn_rate_deg_s": 1.5,
+        "speed_boost_kt": -6
+      },
+      "ram": {
+        "enabled": false,
+        "trigger_m": 0,
+        "give_up_m": 0,
+        "stall_s": 0,
+        "cooldown_s": 0,
+        "turn_rate_bonus_deg_s": 0
+      },
+      "patrol": {
+        "edge_turn_margin_m": 800
+      },
+      "source": {
+        "length_m・beam_m・speed_max_kt": "historical (最上の 1944 年の形（後部を飛行甲板にした航空巡洋艦）: 全長 200.6 m・幅 20.2 m・35 kt（navypedia の最上型・Wikipedia の最上の抜粋のみ・本文未読。medium）)",
+        "ship_class": "design (v0.8.2 S0・spec-v0820 §4.3。艦種の新しい任意の鍵。読むのは列の艦ごとの記録（config/column-mission-data の V-C2・命中率の KPI の旗）と弾薬庫の検査（config/magazine-data の V-M3）だけ。無い記録は destroyer＝今の記録には足さない)",
+        "torpedo_hits_to_sink": "design (v0.8.2 S0・spec-v0820 §4.3。3 本（重巡は 2〜4 本で沈んだ例が多い＝low）。弾薬庫の規則（magazine）は置かない（巡洋艦に広げるなら殴り込みの版でユーザーに聞く）)",
+        "guns": "historical (1944 年の最上: 20.3 cm 連装砲 3 基（前部。6 門が普通の説で、4 門とも読める抜粋がある＝spec-v0820 §2.2 C9）・12.7 cm 連装高角砲 4 基・25 mm 機銃多数（抜粋のみ。medium）) / design (v0.8.2 S0・spec-v0820 §4.3。主砲は置かない（夜に PT へ向けた記録が無い）。sec_127mm 4 は高角砲のうち夜に PT へ向く数、aa_25mm 8（ijn_destroyer の aa_25mm の値で count 8）。v0.8.2 S3（spec-v0820 §4.3 の的・scripts/gunnery-sim の ENEMY）: 全砲の HP/秒を ijn_destroyer の 1.0〜1.3 倍に合わせた。S0 の初めの値（毎分 8・散布 170）は 0.99・0.53・0.79 倍 → 毎分 8 → 7・散布 170 → 125 m で 1.26・1.03・1.05 倍（6.2・1.6・0.7 HP/秒）。range_m はゲームが読まない記録の形)",
+        "searchlight・starshell": "design (v0.8.2 S0・spec-v0820 §4.3。探照灯の射程 3,500 m と星弾（7,000・1,800 m・25 秒・冷却 60）は ijn_light_cruiser の値、角・掃引・点くまで 2.5 秒は ijn_destroyer と同じ)",
+        "others": "design (v0.8.2 S0・spec-v0820 §4.3。巡航 18 kt＝列の速さ。旋回 1.2°/秒・加速 0.2（18 kt の旋回半径 約 440 m ＋ 縁の余白 201 m ＜ 端 800 m）。hull_hp 1,000 は未使用。hull_circles 8（当たり 401 m）。detection の base_detect_m 2,400 は記録の検査のためだけ・雷跡 2,000 m・毎秒 0.2・反応 0.8 秒。evasion は comb_tracks（1.5°/秒・−6 kt）。体当たりはしない。世界の配線は v0.8.2 S2・絵は S2b)"
+      },
+      "notes": "us_05（v0.8.2）の前衛の重巡 最上（駆逐艦 3 隻と先に気づかれずに通った）。3 本で沈む。命中率の KPI に数えない。主砲は撃たない（高角砲・機銃）。"
+    },
+    {
       "id": "daihatsu_barge",
       "faction": "IJN",
       "name_ja": "大発動艇（大発）",

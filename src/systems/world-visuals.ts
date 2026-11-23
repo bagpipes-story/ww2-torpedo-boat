@@ -50,5 +50,6 @@ export function destroyWorldVisuals(w: MissionWorld): void {
   w.landing?.ally?.destroy(); // v0.6.10 S5a（卯月。揚陸の後）
   w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
   w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）
+  w.recon?.destroy(); // v0.8.2 S2（us_05。中継の輪）
   w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）
 }

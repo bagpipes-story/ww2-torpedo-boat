@@ -1,0 +1,8637 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 false seed 1: 世界の数値・今夜の乱数の回数 > us_05 normal seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 800,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 7
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.03,
+  "erratic": 0.02
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 106.29017762839794,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2707.797076366842
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 7,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 2.7041174695784096,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2307.797076366842,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   2.7041174695784096,
+   17.70411746957841,
+   32.70411746957841,
+   47.70411746957841,
+   77.7041174695784,
+   82.7041174695784,
+   98.7041174695784
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.8,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 false seed 12345: 世界の数値・今夜の乱数の回数 > us_05 normal seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 800,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 7
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.03,
+  "erratic": 0.02
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 218.34432086907327,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2693.168157734908
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 7,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 0.2837324851159222,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2293.168157734908,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   0.2837324851159222,
+   15.283732485115923,
+   30.283732485115923,
+   45.28373248511592,
+   75.28373248511592,
+   80.28373248511592,
+   96.28373248511592
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.8,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 true seed 1: 世界の数値・今夜の乱数の回数 > us_05 normal historical seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 1040,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 7
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.1,
+  "erratic": 0.08
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 106.29017762839794,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2707.797076366842
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 7,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 2.7041174695784096,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2307.797076366842,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   2.7041174695784096,
+   17.70411746957841,
+   32.70411746957841,
+   47.70411746957841,
+   77.7041174695784,
+   82.7041174695784,
+   98.7041174695784
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.5333333333333333,
+     "evadeTurnRateDegS": 2.25,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 史実 true seed 12345: 世界の数値・今夜の乱数の回数 > us_05 normal historical seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": false,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 1040,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 7
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": false,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.1,
+  "erratic": 0.08
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 218.34432086907327,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2693.168157734908
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 7,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 0.2837324851159222,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2293.168157734908,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   0.2837324851159222,
+   15.283732485115923,
+   30.283732485115923,
+   45.28373248511592,
+   75.28373248511592,
+   80.28373248511592,
+   96.28373248511592
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.5333333333333333,
+     "evadeTurnRateDegS": 2.25,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史実 false seed 1: 世界の数値・今夜の乱数の回数 > us_05 hard seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 800,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 8
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.03,
+  "erratic": 0.02
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 106.29017762839794,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2707.797076366842
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 8,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 2.7041174695784096,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2307.797076366842,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   2.7041174695784096,
+   17.70411746957841,
+   32.70411746957841,
+   47.70411746957841,
+   77.7041174695784,
+   82.7041174695784,
+   98.7041174695784,
+   106.7041174695784
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0,
+   -575
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.8,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "見張りの駆逐艦",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史実 false seed 12345: 世界の数値・今夜の乱数の回数 > us_05 hard seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 800,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 8
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": false,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.03,
+  "erratic": 0.02
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 218.34432086907327,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2693.168157734908
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 8,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 0.2837324851159222,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2293.168157734908,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.2,
+   "reactionDelayS": 0.5,
+   "evadeTurnRateDegS": 2,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   0.2837324851159222,
+   15.283732485115923,
+   30.283732485115923,
+   45.28373248511592,
+   75.28373248511592,
+   80.28373248511592,
+   96.28373248511592,
+   104.28373248511592
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0,
+   -575
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.8,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 1,
+     "evadeTurnRateDegS": 1,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "見張りの駆逐艦",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.2,
+     "reactionDelayS": 0.5,
+     "evadeTurnRateDegS": 2,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史実 true seed 1: 世界の数値・今夜の乱数の回数 > us_05 hard historical seed 1 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 1040,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 8
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.1,
+  "erratic": 0.08
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 106.29017762839794,
+    "dy": -92.2029236331582,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2707.797076366842
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 8,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 2.7041174695784096,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2307.797076366842,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   2.7041174695784096,
+   17.70411746957841,
+   32.70411746957841,
+   47.70411746957841,
+   77.7041174695784,
+   82.7041174695784,
+   98.7041174695784,
+   106.7041174695784
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0,
+   -575
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.5333333333333333,
+     "evadeTurnRateDegS": 2.25,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "見張りの駆逐艦",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;
+
+exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史実 true seed 12345: 世界の数値・今夜の乱数の回数 > us_05 hard historical seed 12345 setup 1`] = `
+"{
+ "mission": {
+  "id": "us_05",
+  "type": "recon_and_attack",
+  "playerBoatId": "us_elco80",
+  "torpedoId": "us_mk13",
+  "enemyId": "ijn_destroyer",
+  "enemyCount": 7,
+  "bounds": {
+   "width": 6500,
+   "height": 4000
+  },
+  "playerStart": {
+   "x": 4200,
+   "y": 700,
+   "headingDeg": 225
+  },
+  "enemyStart": null,
+  "enemyStarts": [],
+  "hard": true,
+  "objectiveSinkCount": null,
+  "mainWeapon": "torpedo",
+  "barges": null,
+  "ptBoats": null,
+  "convoy": null,
+  "coast": null,
+  "shoreBattery": null,
+  "shoreBatteryXs": [],
+  "escort": null,
+  "durationS": 270,
+  "enemyHitsToSink": null,
+  "moon": "half",
+  "returnPoint": {
+   "x": 5000,
+   "y": 800,
+   "radiusM": 250,
+   "callMargin": 1.5,
+   "torpedoSettleMaxS": 10,
+   "torpedoEndSettleS": 5
+  },
+  "fuelAllotmentGal": 34,
+  "shallows": [],
+  "friendlyAircraft": null,
+  "storm": null,
+  "hazards": [
+   "enemy_ship_gunfire_or_ram",
+   "radio_failure"
+  ],
+  "enemyAircraft": null,
+  "night": {
+   "hazardScale": 1,
+   "optionalHazards": [],
+   "enemyJitterXM": 300,
+   "enemyJitterYM": 150,
+   "enemyJitterHeadingDeg": 0,
+   "bargeLeadJitterM": 0,
+   "shoreBatteryJitterM": 0,
+   "mirrorChance": 0
+  },
+  "transport": null,
+  "dawnStrike": null
+ },
+ "playerStart": {
+  "x": 4200,
+  "y": 700,
+  "headingDeg": 225
+ },
+ "coastEdgeY": null,
+ "mainWeapon": "torpedo",
+ "boatParams": {
+  "speedMaxMps": 20.0616,
+  "speedCruiseMps": 11.831199999999999,
+  "speedSilentMps": 4.1152,
+  "stopMaxMps": 0.2572,
+  "silentMaxMps": 9.2592,
+  "cruiseMaxMps": 15.431999999999999,
+  "bandHysteresisMps": 0.5144,
+  "accelMps2": 1.2,
+  "decelMps2": 1.6,
+  "turnRateDegS": 24,
+  "lengthM": 24.4,
+  "beamM": 6.3
+ },
+ "boundsMarginM": 24.4,
+ "boatHalfLengthM": 12.2,
+ "boatHalfBeamM": 3.15,
+ "damageParams": {
+  "maxHp": 100,
+  "engineSpeedFactor": 0.7,
+  "fireDps": 2,
+  "fireDurationS": 20,
+  "extinguishHoldS": 1
+ },
+ "timeScale": 5,
+ "slowMoFactor": 0.3,
+ "slowMoSeconds": 1.2,
+ "vis": {
+  "visPlayerBaseM": 1500,
+  "moonFactor": 1,
+  "speedFactor": {
+   "stop": 0.4,
+   "silent": 0.5,
+   "cruise": 1,
+   "full": 1.6
+  },
+  "smokeFactor": 0.3,
+  "detectHoldS": 8,
+  "detectionMultiplier": 1.3
+ },
+ "baseDetectM": 2000,
+ "visRange2": 2250000,
+ "detectRangeAtStartM": 1040,
+ "durationS": 270,
+ "fuelCurve": {
+  "capacityGal": 3000,
+  "idleGph": 20,
+  "cruiseGph": 200,
+  "fullGph": 500,
+  "cruiseMps": 11.831199999999999,
+  "fullMps": 20.0616,
+  "exponent": 1.8573939556153365,
+  "galPerMCruise": 0.004695682226279292,
+  "galPerMFull": 0.006923121231052803
+ },
+ "fuelAllotmentGal": 34,
+ "fuelStartGal": 34,
+ "raid": null,
+ "start": {
+  "fuelFactor": 1,
+  "hpLoss": 0,
+  "fireAtStart": false
+ },
+ "grounding": {
+  "safeSpeedMps": 7.715999999999999,
+  "warnLookaheadS": 6
+ },
+ "friendly": null,
+ "storm": null,
+ "seaplane": null,
+ "crew": {
+  "total": 14,
+  "casualtiesPerHp": 0.1
+ },
+ "crewEffects": {
+  "extinguishExponent": 1,
+  "turnRatePerLoss": 0.04,
+  "accelPerLoss": 0.04,
+  "minFactor": 0.5
+ },
+ "destroyer": {
+  "starts": [],
+  "spec": {
+   "lengthM": 118,
+   "beamM": 10.8,
+   "hullCircles": 5,
+   "hitsToSink": 2,
+   "hitScale": 2,
+   "boundsMarginM": 118
+  },
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 18.003999999999998
+  },
+  "gunnery": {
+   "guns": [
+    {
+     "id": "main_127mm",
+     "count": 3,
+     "effectiveM": 4000,
+     "roundsPerMinPerGun": 10,
+     "damage": 40,
+     "shellSpeedMps": 400,
+     "dispersionM": 160,
+     "splashRadiusM": 8,
+     "fireChance": 0.35,
+     "engineDamageChance": 0.3
+    },
+    {
+     "id": "aa_25mm",
+     "count": 4,
+     "effectiveM": 1200,
+     "roundsPerMinPerGun": 120,
+     "damage": 4,
+     "shellSpeedMps": 500,
+     "dispersionM": 70,
+     "splashRadiusM": 3,
+     "fireChance": 0.05,
+     "engineDamageChance": 0.05
+    }
+   ],
+   "searchlight": {
+    "rangeM": 3000,
+    "coneDeg": 12,
+    "sweepDegS": 20,
+    "onDelayS": 2.5
+   },
+   "starshell": {
+    "rangeM": 6000,
+    "illumRadiusM": 1500,
+    "durationS": 25,
+    "cooldownS": 60
+   }
+  },
+  "passRadius2": 19488.16,
+  "baseDetectM": 2000,
+  "objectiveSinks": 8
+ },
+ "barges": null,
+ "guns": null,
+ "ptBoats": null,
+ "convoy": null,
+ "shoreBattery": null,
+ "shoreBatteries": [],
+ "hard": true,
+ "historical": true,
+ "transport": null,
+ "escort": null,
+ "torpedoCapacity": 4,
+ "torpedoParams": {
+  "speedMps": 17.2324,
+  "rangeM": 5760,
+  "armingM": 100,
+  "jitterDeg": 2,
+  "erraticPeriodS": 6
+ },
+ "torpedoReliability": {
+  "dud": 0.1,
+  "erratic": 0.08
+ },
+ "torpedoJitterDeg": 2,
+ "launchOffsetM": 3.15,
+ "salvoIntervalS": 0.4,
+ "smokeParams": {
+  "durationS": 5,
+  "cooldownS": 20,
+  "puffIntervalS": 0.5,
+  "puffRadiusM": 60,
+  "puffLifetimeS": 25
+ },
+ "night": {
+  "absentHazards": [],
+  "enemyOffsets": [
+   {
+    "dx": 218.34432086907327,
+    "dy": -106.83184226509184,
+    "dh": 0
+   }
+  ],
+  "bargeLeadDx": 0,
+  "batteryDx": [],
+  "mirrored": false
+ },
+ "hazardsTonight": [
+  "enemy_ship_gunfire_or_ram",
+  "radio_failure"
+ ],
+ "absentHazards": [],
+ "enemyFrom": {
+  "x": 150,
+  "y": 2693.168157734908
+ },
+ "dawnAir": {
+  "control": "own",
+  "confidence": "medium",
+  "playAs": "own",
+  "shipsAtDawn": "retire",
+  "labelJa": "昼の空は味方（護衛空母）",
+  "refs": [
+   {
+    "url": "https://seapower.navy.gov.au//sites/default/files/documents/Battle_Summary_No_40.pdf",
+    "claim": "レイテ沖海戦（1944-10）の英国海軍の戦史（Battle Summary No. 40）。スリガオ海峡の夜戦の後、退く日本艦は昼に米機の空襲を受けた"
+   },
+   {
+    "url": "https://pacificwrecks.com/ship/ijn/abukuma.html",
+    "claim": "阿武隈は 10/25 未明に PT-137 の魚雷で損傷し、翌 10/26 の昼に米陸軍機の爆撃で沈んだ"
+   }
+  ],
+  "retireEdge": "east",
+  "retireForceJa": "日本の艦隊",
+  "fleetGoneClears": false
+ },
+ "airStrike": null,
+ "radar": {
+  "model": "so_late",
+  "fit": "own",
+  "shipRangeM": 6000,
+  "shipRange2": 36000000,
+  "smallRangeM": 1800,
+  "smallRange2": 3240000,
+  "sweepS": 2,
+  "landClutterM": 300,
+  "positionStepM": 25,
+  "aircraft": false
+ },
+ "transit": {
+  "enemyId": "ijn_destroyer",
+  "ships": 8,
+  "spacingS": 0,
+  "speedKt": 18,
+  "speedMps": 9.2592,
+  "crossS": 140.40089856575082,
+  "enterS": 0.2837324851159222,
+  "unloadS": 0,
+  "inbound": {
+   "edge": "west",
+   "laneY": 2293.168157734908,
+   "headingDeg": 90,
+   "appearX": 150,
+   "goneX": 6650
+  },
+  "outbound": null,
+  "coverLeavesWithOutbound": false,
+  "vilaLabelJa": "スリガオ海峡",
+  "shipAi": {
+   "torpedoWakeDetectM": 2000,
+   "wakeSpotRatePerS": 0.30000000000000004,
+   "reactionDelayS": 0.3333333333333333,
+   "evadeTurnRateDegS": 3,
+   "speedBoostMps": -5.144,
+   "turnTowardWakes": true,
+   "ramTriggerM": 400,
+   "ramEnabled": true,
+   "ramGiveUpM": 800,
+   "ramStallS": 6,
+   "ramCooldownS": 12,
+   "ramTurnRateBonusDegS": 0.5,
+   "edgeTurnMarginM": 700,
+   "turnRateDegS": 1.5,
+   "accelMps2": 0.3,
+   "cruiseSpeedMps": 12.86,
+   "maxSpeedMps": 9.2592
+  },
+  "enterAtS": [
+   0.2837324851159222,
+   15.283732485115923,
+   30.283732485115923,
+   45.28373248511592,
+   75.28373248511592,
+   80.28373248511592,
+   96.28373248511592,
+   104.28373248511592
+  ],
+  "laneDyM": [
+   400,
+   400,
+   400,
+   400,
+   -540,
+   0,
+   0,
+   -575
+  ],
+  "rejoinS": 40,
+  "screenChaseS": 45,
+  "screenCooldownS": 60,
+  "column": [
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "満潮",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "朝雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "山雲",
+    "group": "van",
+    "role": "line",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_cruiser_mogami",
+    "nameJa": "最上",
+    "group": "van",
+    "role": "line",
+    "shipClass": "heavy_cruiser",
+    "kpi": false,
+    "spec": {
+     "lengthM": 200.6,
+     "beamM": 20.2,
+     "hullCircles": 8,
+     "hitsToSink": 3,
+     "hitScale": 2,
+     "boundsMarginM": 200.6
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.5333333333333333,
+     "evadeTurnRateDegS": 2.25,
+     "speedBoostMps": -3.0864,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 800,
+     "turnRateDegS": 1.2,
+     "accelMps2": 0.2,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_127mm",
+       "count": 4,
+       "effectiveM": 3500,
+       "roundsPerMinPerGun": 7,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 125,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.25
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3500,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 7000,
+      "illumRadiusM": 1800,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 58081,
+    "artKey": "tex-cruiser-mogami",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "時雨",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "山城",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_battleship_fuso",
+    "nameJa": "扶桑",
+    "group": "main",
+    "role": "line",
+    "shipClass": "battleship",
+    "kpi": false,
+    "spec": {
+     "lengthM": 212.75,
+     "beamM": 33.1,
+     "hullCircles": 9,
+     "hitsToSink": 6,
+     "hitScale": 2,
+     "boundsMarginM": 212.75
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.6666666666666666,
+     "evadeTurnRateDegS": 1.5,
+     "speedBoostMps": -2.0576,
+     "turnTowardWakes": true,
+     "ramTriggerM": 0,
+     "ramEnabled": false,
+     "ramGiveUpM": 0,
+     "ramStallS": 0,
+     "ramCooldownS": 0,
+     "ramTurnRateBonusDegS": 0,
+     "edgeTurnMarginM": 900,
+     "turnRateDegS": 0.8,
+     "accelMps2": 0.15,
+     "cruiseSpeedMps": 9.2592,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": null,
+    "gunnery": {
+     "guns": [
+      {
+       "id": "sec_152mm",
+       "count": 7,
+       "effectiveM": 4500,
+       "roundsPerMinPerGun": 5,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 185,
+       "splashRadiusM": 8,
+       "fireChance": 0.4,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_127mm",
+       "count": 4,
+       "effectiveM": 3000,
+       "roundsPerMinPerGun": 8,
+       "damage": 35,
+       "shellSpeedMps": 400,
+       "dispersionM": 180,
+       "splashRadiusM": 8,
+       "fireChance": 0.3,
+       "engineDamageChance": 0.2
+      },
+      {
+       "id": "aa_25mm",
+       "count": 8,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 4000,
+      "coneDeg": 12,
+      "sweepDegS": 15,
+      "onDelayS": 3
+     },
+     "starshell": {
+      "rangeM": 0,
+      "illumRadiusM": 0,
+      "durationS": 0,
+      "cooldownS": 0
+     }
+    },
+    "passRadius2": 77813.1025,
+    "artKey": "tex-battleship-fuso",
+    "magazine": {
+     "onHits": [
+      3,
+      4
+     ],
+     "chance": [
+      0.035,
+      0.07
+     ]
+    }
+   },
+   {
+    "enemyId": "ijn_destroyer",
+    "nameJa": "見張りの駆逐艦",
+    "group": "main",
+    "role": "screen",
+    "shipClass": "destroyer",
+    "kpi": true,
+    "spec": {
+     "lengthM": 118,
+     "beamM": 10.8,
+     "hullCircles": 5,
+     "hitsToSink": 2,
+     "hitScale": 2,
+     "boundsMarginM": 118
+    },
+    "lineAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 9.2592
+    },
+    "screenAi": {
+     "torpedoWakeDetectM": 2000,
+     "wakeSpotRatePerS": 0.30000000000000004,
+     "reactionDelayS": 0.3333333333333333,
+     "evadeTurnRateDegS": 3,
+     "speedBoostMps": -5.144,
+     "turnTowardWakes": true,
+     "ramTriggerM": 400,
+     "ramEnabled": true,
+     "ramGiveUpM": 800,
+     "ramStallS": 6,
+     "ramCooldownS": 12,
+     "ramTurnRateBonusDegS": 0.5,
+     "edgeTurnMarginM": 700,
+     "turnRateDegS": 1.5,
+     "accelMps2": 0.3,
+     "cruiseSpeedMps": 12.86,
+     "maxSpeedMps": 18.003999999999998
+    },
+    "gunnery": {
+     "guns": [
+      {
+       "id": "main_127mm",
+       "count": 3,
+       "effectiveM": 4000,
+       "roundsPerMinPerGun": 10,
+       "damage": 40,
+       "shellSpeedMps": 400,
+       "dispersionM": 160,
+       "splashRadiusM": 8,
+       "fireChance": 0.35,
+       "engineDamageChance": 0.3
+      },
+      {
+       "id": "aa_25mm",
+       "count": 4,
+       "effectiveM": 1200,
+       "roundsPerMinPerGun": 120,
+       "damage": 4,
+       "shellSpeedMps": 500,
+       "dispersionM": 70,
+       "splashRadiusM": 3,
+       "fireChance": 0.05,
+       "engineDamageChance": 0.05
+      }
+     ],
+     "searchlight": {
+      "rangeM": 3000,
+      "coneDeg": 12,
+      "sweepDegS": 20,
+      "onDelayS": 2.5
+     },
+     "starshell": {
+      "rangeM": 6000,
+      "illumRadiusM": 1500,
+      "durationS": 25,
+      "cooldownS": 60
+     }
+    },
+    "passRadius2": 19488.16,
+    "artKey": "tex-destroyer",
+    "magazine": null
+   }
+  ]
+ },
+ "shores": {
+  "north": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "ボホール島",
+     "x": 3200
+    }
+   ],
+   "gaps": [],
+   "gapLabelJa": ""
+  },
+  "south": {
+   "landM": 600,
+   "labels": [
+    {
+     "labelJa": "カミギン島",
+     "x": 5650
+    }
+   ],
+   "gaps": [
+    {
+     "x0": 0,
+     "x1": 4800
+    }
+   ],
+   "gapLabelJa": "ミンダナオ海"
+  }
+ },
+ "recon": {
+  "trackS": 20,
+  "identifyClass": "battleship",
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
+  "relay": {
+   "x": 1600,
+   "y": 500,
+   "radiusM": 250,
+   "radius2": 62500,
+   "labelJa": "隣の分隊"
+  }
+ }
+}"
+`;

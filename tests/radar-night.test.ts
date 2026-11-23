@@ -34,7 +34,7 @@ function night(hard: boolean): { counts: [number, number][]; news: number[][]; l
     for (let i = 0; i < p.ships; i++) {
       const sh = ships[i]!;
       if (tr.entered & (1 << i)) [sh.dir, sh.state.x] = [1, p.inbound.appearX];
-      if (tr.returned & (1 << i)) [sh.dir, sh.state.x] = [-1, p.outbound.appearX];
+      if (tr.returned & (1 << i)) [sh.dir, sh.state.x] = [-1, p.outbound!.appearX];
     }
     if (!radarSweepDue(r, now)) continue;
     tg.n = 1 + p.ships;
@@ -44,7 +44,7 @@ function night(hard: boolean): { counts: [number, number][]; news: number[][]; l
     tg.afloat[0] = 1;
     for (let i = 0; i < p.ships; i++) {
       tg.x[1 + i] = ships[i]!.state.x;
-      tg.y[1 + i] = tr.phase[i] === TRANSIT_OUT ? p.outbound.laneY : p.inbound.laneY;
+      tg.y[1 + i] = tr.phase[i] === TRANSIT_OUT ? p.outbound!.laneY : p.inbound.laneY;
       tg.kind[1 + i] = RADAR_KIND_SHIP;
       tg.afloat[1 + i] = transitOnMap(tr, i) ? 1 : 0;
     }

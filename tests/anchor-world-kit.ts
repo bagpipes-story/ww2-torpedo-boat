@@ -105,6 +105,8 @@ export class KitGroup {
   withdraw(headingDeg: number): void {
     for (const s of this.ships) if (!s.out) startRetire(s.ai, headingDeg);
   }
+  /** systems/destroyer-group の kpiAt と同じ値（v0.8.2 S2。今の任務は駆逐艦の添字だけ＝systems/column-kits の kits） */
+  kpiAt(i: number): boolean { return i >= 0 && i < this.destroyerCount; }
   /** systems/destroyer-group の radarKindAt と同じ式（v0.8.1 S2b。tests/picket-world が文と値を突き合わせる） */
   radarKindAt(i: number): number { return this.picketIndex >= 0 && i >= this.picketIndex ? RADAR_KIND_SMALL : RADAR_KIND_SHIP; }
 }
@@ -114,6 +116,7 @@ export interface AnchorKitWorld {
   readonly destroyers: KitGroup;
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
   readonly torpedoes: { readonly states: KitTorpedo[]; step(): void };
+  readonly torpedoUnder: { step(): void }; // v0.8.2 IP1（systems/torpedo-under。偽の魚雷は走らないので何もしない）
   readonly launcher: { clearQueue(): void };
   readonly returnPoint: { readonly torpedoEndSettleS: number };
   readonly vis: { readonly detectHoldS: number };
@@ -162,7 +165,7 @@ export function anchorKit(o: { mission?: string; hard?: boolean; seed?: number; 
   const ps = setup.playerStart;
   return {
     setup, destroyers: g, boat: { state: { x: ps.x, y: ps.y, headingDeg: ps.headingDeg, speedMps: 0 }, sinking: false },
-    torpedoes: { states: [], step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis,
+    torpedoes: { states: [], step: () => undefined }, torpedoUnder: { step: () => undefined }, launcher: { clearQueue: () => undefined }, returnPoint: setup.mission.returnPoint, vis: setup.vis,
     detect: { count: 0, prev: false }, dawn: { reached: false }, enemy: { illuminated: false }, arms: null, escort: null, flareLit: false, hiddenBySmoke: false, smoke: null, smokeParams: null,
     torpedoEvents: {}, detectRangeM: setup.detectRangeAtStartM, visRange2: setup.visRange2, stepTimeS: 0, dawnS: o.dawnS ?? setup.durationS, resolveRemainingAsMisses: () => undefined, sinkBoat: () => undefined,
   };

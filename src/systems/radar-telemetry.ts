@@ -7,7 +7,7 @@ import type { RadarState } from '../core/radar';
 
 /** 読む世界の部分（MissionWorld がそのまま満たす） */
 export interface RadarTelemetryWorld {
-  readonly radar: { readonly state: RadarState; readonly p: { readonly shipRangeM: number }; readonly geo: { readonly width: number }; readonly eastJa: string } | null;
+  readonly radar: { readonly state: RadarState; readonly p: { readonly shipRangeM: number }; readonly geo: { readonly width: number }; readonly eastJa: string; readonly eastOneWay?: boolean } | null;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
 }
 
@@ -35,6 +35,7 @@ export function initRadarTelemetry(w: RadarTelemetryWorld): RadarTelemetry {
     lostY: NaN,
     widthM: w.radar ? w.radar.geo.width : 0,
     eastJa: w.radar ? w.radar.eastJa : '',
+    eastOneWay: w.radar ? w.radar.eastOneWay === true : false,
     blips: w.radar ? w.radar.state.blips : NO_BLIPS,
     fromX: NaN,
     fromY: NaN,

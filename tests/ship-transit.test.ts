@@ -35,7 +35,7 @@ function run(p: TransitSetup, o: Opts = {}): { s: ShipTransitState; log: Log; ga
   const gapAtEnter: number[] = [];
   const v = p.speedMps * TS;
   const inDir = Math.sign(p.inbound.goneX - p.inbound.appearX);
-  const outDir = Math.sign(p.outbound.goneX - p.outbound.appearX);
+  const outDir = Math.sign(p.outbound!.goneX - p.outbound!.appearX);
   let now = 0;
   while (now < (o.untilS ?? DURATION + 30)) {
     const feel = STEP * ((o.slow ?? []).some(([a, b]) => now >= a - 1e-9 && now < b - 1e-9) ? SLOW_F : 1);
@@ -60,7 +60,7 @@ function run(p: TransitSetup, o: Opts = {}): { s: ShipTransitState; log: Log; ga
       }
       if (s.returned & bit) {
         sh.dir = outDir;
-        sh.state.x = p.outbound.appearX;
+        sh.state.x = p.outbound!.appearX;
         log.ret[i] = now;
       }
       if (s.arrived & bit) log.arrive[i] = now;
@@ -94,12 +94,12 @@ describe('揺らぎのない夜の時刻表（us_04 の setup）と V-T3 の式'
     expect(log.gone[p.ships - 1]!).toBeLessThanOrEqual(DURATION - TRANSIT_CHECK_DAWN_MARGIN_S);
     expect([...counts(s), transitPending(s), transitCount(s, TRANSIT_GONE)]).toEqual([p.ships, p.ships, p.ships, p.ships, 0, 0, p.ships]);
   });
-  it('入りの時刻・現れる道・作る時の数の検査（1〜6 隻）', () => {
+  it('入りの時刻・現れる道・作る時の数の検査（1〜8 隻。v0.8.2 S0 で 6 → 8＝us_05 の第三部隊 7・ハード 8）', () => {
     const p = plan();
     expect([0, 1, 2].map((i) => transitEnterAtS(p, i))).toEqual([18, 26, 34]);
     expect([TRANSIT_IN, TRANSIT_OUT, TRANSIT_WAIT, TRANSIT_AWAY].map((ph) => transitAppearLeg(p, ph))).toEqual([p.inbound, p.outbound, null, null]);
-    expect([p.inbound.appearX, p.inbound.laneY, p.inbound.headingDeg, p.outbound.appearX, p.outbound.laneY, p.outbound.headingDeg]).toEqual([150, 1500, 90, 5850, 2300, 270]);
-    for (const n of [0, 7, 2.5]) expect(() => createShipTransit({ ...p, ships: n }), String(n)).toThrow(/列の艦の数/);
+    expect([p.inbound.appearX, p.inbound.laneY, p.inbound.headingDeg, p.outbound!.appearX, p.outbound!.laneY, p.outbound!.headingDeg]).toEqual([150, 1500, 90, 5850, 2300, 270]);
+    for (const n of [0, 9, 2.5]) expect(() => createShipTransit({ ...p, ships: n }), String(n)).toThrow(/列の艦の数/);
     expect(createShipTransit({ ...p, ships: TRANSIT_MAX_SHIPS }).phase.length).toBe(TRANSIT_MAX_SHIPS);
   });
   it('残りの戻り（WAIT と AWAY）は入りで減り、揚陸で増え、戻ると減る', () => {
@@ -154,10 +154,10 @@ describe('沈んだ艦・護衛の退き・来た縁から出た艦', () => {
     const p = plan();
     const v = p.speedMps * TS;
     const back = run(p, { turnAt: { 0: 19 } }); // 18 秒に入り、19 秒に向きを逆に（東へ約 77 m 進んだ所から西の縁の外 −150 m まで）
-    near(back.log.gone[0], 19 + (v * (19 - back.log.enter[0]!) + p.inbound.appearX - p.outbound.goneX) / v, 2);
+    near(back.log.gone[0], 19 + (v * (19 - back.log.enter[0]!) + p.inbound.appearX - p.outbound!.goneX) / v, 2);
     expect([back.log.arrive[0], back.log.ret[0], back.s.phase[0]]).toEqual([undefined, undefined, TRANSIT_GONE]);
     const east = run(p, { turnAt: { 0: 137 } }); // 復路に戻って約 1.2 秒で東へ
-    const xTurn = p.outbound.appearX - v * (137 - east.log.ret[0]!);
+    const xTurn = p.outbound!.appearX - v * (137 - east.log.ret[0]!);
     near(east.log.gone[0], 137 + (p.inbound.goneX - xTurn) / v, 2);
     expect([east.s.phase[0], east.s.goneCount, east.s.arrivedCount]).toEqual([TRANSIT_GONE, 3, 3]);
   });
@@ -223,7 +223,7 @@ describe('source（step と読み出しは確保しない・乱数なし）', ()
   it('作る関数（createShipTransit）のほかは本体に確保の形が無い。import は core/transit-data だけ', () => {
     const f = 'src/core/ship-transit.ts';
     const { names, bad } = scanAllocations(f, ['createShipTransit']);
-    expect(names).toEqual(['createShipTransit', 'stepShipTransit', 'transitAppearLeg', 'transitCount', 'transitEnterAtS', 'transitOnMap', 'transitPending']);
+    expect(names).toEqual(['createShipTransit', 'stepShipTransit', 'transitAppearLeg', 'transitCount', 'transitEnterAtS', 'transitLaneDyM', 'transitOnMap', 'transitPending']); // v0.8.2 S0: transitLaneDyM（片道の列の道のずれ）
     expect(bad).toEqual([]);
     expect(imports(code(f))).toEqual(['./transit-data']);
     expect(code(f)).not.toMatch(/Math\.random|SeededRng|\brng\b/);

@@ -254,7 +254,7 @@ describe('配線（ソース）', () => {
     ]);
     expect(h).toContain("labelPrefix: LANDING_RUNNER_MARKER_LABEL, stepM: LANDING_DIST_STEP_M, labelAbove: false, roundUp: true, topMargin: TARGET_MARKER_TOP_MARGIN, color: HUD_COLOR_WARN, hideMargin: TARGET_MARKER_MARGIN })");
     expect(h).toContain('labelPrefix: LANDING_SHIP_MARKER_LABEL, stepM: LANDING_DIST_STEP_M, labelAbove: false, roundUp: true, topMargin: CONVOY_MARKER_TOP_MARGIN, color: ESCORT_TEXT_COLOR, tint: ESCORT_TINT, hideMargin: 0 })');
-    expect(h.split('new EdgeMarker(').length - 1).toBe(8);
+    expect(h.split('new EdgeMarker(').length - 1).toBe(9); // v0.8.2 S4: 9 本目＝中継の印（報告の任務 us_05 だけ。揚陸の 2 本の前・緑の印の前に作る＝ほかの任務の矢印の数と順は今のまま）
   });
   it('ui/hud-markers の refresh: 揚陸の 2 本は輸送隊の後・隼艇の前に 1 回（揚陸の任務だけ）。雷撃 → 角 → 「PT」から、輸送 → 角 → 雷撃から → 帰投から', () => {
     const h = code('ui/hud-markers.ts');

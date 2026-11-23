@@ -63,7 +63,13 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
         expect(s.destroyer.shipAi, `${id} ${hard} ${historical}`).toEqual(shipAiParamsFromData(rec, getEvasionMultiplier(gameData, historical)));
         const tag = `${id}${hard ? '&hard' : ''}${historical ? '&hist' : ''}`;
         rows.push([tag, s.mission.enemyId, 'escort', r2(mpsToKt(Math.min(...targetSpeeds(s.destroyer.shipAi))))]);
-        if (s.transit) rows.push([tag, s.mission.enemyId, 'column', r2(mpsToKt(Math.min(s.transit.speedMps, ...targetSpeeds(s.transit.shipAi))))]);
+        // v0.8.2 S2（L19・spec-v0820 D-K2）: 片道の列（us_05）の艦は艦ごとの記録の AI（kits の列の AI・見張りの AI）。KPI に数える艦（駆逐艦の記録）だけを表に（戦艦・重巡は旗が偽）
+        const col = s.transit?.column;
+        if (col) for (const k of col.filter((x) => x.kpi)) {
+          rows.push([tag, k.enemyId, 'column', r2(mpsToKt(Math.min(s.transit!.speedMps, ...targetSpeeds(k.lineAi))))]);
+          if (k.screenAi) rows.push([tag, k.enemyId, 'screen', r2(mpsToKt(Math.min(...targetSpeeds(k.screenAi))))]);
+        }
+        else if (s.transit) rows.push([tag, s.mission.enemyId, 'column', r2(mpsToKt(Math.min(s.transit.speedMps, ...targetSpeeds(s.transit.shipAi))))]);
       }
     }
   }
@@ -71,6 +77,9 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const uniq = [...new Set(rows.map(([t, r, part, kt]) => `${t.split('&')[0]} ${r} ${part} ${kt}`))];
     expect(uniq).toEqual([
       'us_01 ijn_destroyer escort 15', 'us_02 ijn_destroyer escort 15', 'us_04 ijn_destroyer escort 15', 'us_04 ijn_destroyer column 15',
+      // v0.8.2 S0: us_05 は列だけの隊（escort の行は隊の既定の AI＝出発点の艦はいない）。S2 から列の艦は kits の艦ごとの AI: KPI の駆逐艦は列の AI（巡航 25・最大は列の 18 kt）の
+      // 回避 25 − 10 ＝ 15 kt、見張り（時雨・ハードの 8 隻目）の AI も 15 kt（spec D-K2 の「18 − 10 ＝ 8」は巡航を列の速さと読んだ見込み＝実際は記録の巡航）。重巡 12・戦艦 14 kt は KPI の外
+      'us_05 ijn_destroyer escort 15', 'us_05 ijn_destroyer column 15', 'us_05 ijn_destroyer screen 15',
       'us_06 ijn_destroyer_mutsuki_enemy escort 15', 'jp_06 us_destroyer escort 8',
     ]);
     for (const [t, , part, kt] of rows) expect(ktToMps(kt), `${t} ${part}`).toBeGreaterThanOrEqual(MIN);
@@ -85,12 +94,12 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const t = buildWorldSetup(gameData, 'us_04', {}).transit!;
     expect([t.speedKt, r2(mpsToKt(t.shipAi.maxSpeedMps))]).toEqual([30, 30]);
   });
-  it('遊べる任務（playable_from）の駆逐艦の任務はみな表にあり、us_06 も表にある（v0.8.1 S4 から遊べる）', () => {
+  it('遊べる任務（playable_from）の駆逐艦の任務はみな表にあり、us_06・us_05 も表にある（v0.8.1 S4・v0.8.2 S4 から遊べる）', () => {
     const covered = new Set(rows.map((r) => r[0].split('&')[0]));
     const campaigns = [...new Set((gameData.missionsSeed.missions as unknown as Record<string, unknown>[]).map((m) => m['campaign'] as string))];
     expect(campaigns.sort()).toEqual(['jp_hard', 'us_pt']);
     const playable = campaigns.flatMap((c) => playableMissionIds(gameData, c)).filter((id) => buildWorldSetup(gameData, id, {}).destroyer !== null);
-    expect(playable.sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_04', 'us_06']); // v0.8.1 S4: us_06 に playable_from
+    expect(playable.sort()).toEqual(['jp_06', 'us_01', 'us_02', 'us_04', 'us_05', 'us_06']); // v0.8.1 S4: us_06 に playable_from。v0.8.2 S4: us_05 にも
     for (const id of [...playable, 'us_06']) expect(covered.has(id), id).toBe(true);
   });
   it('前提の source: AI の目標の速さは巡航・回避・最大だけ、Destroyer が速さを書くのは作る時（巡航）・現れる時（列の速さ）・沈み始め（0）だけ、steerShip は目標を越えない', () => {
@@ -102,6 +111,6 @@ describe('D-K3 (a): 遊べる世界のある任務の駆逐艦の AI の最も�
     const d = code('src/entities/destroyer.ts');
     expect(d.match(/speedMps\s*=(?!=)|speedMps:(?!\s*number)/g)!.length).toBe(3);
     for (const s of ['speedMps: aiParams.cruiseSpeedMps }', 'this.state.speedMps = 0;', 's.speedMps = speedMps;']) expect(d).toContain(s);
-    expect(code('src/systems/destroyer-transit.ts')).toContain('s.reappear(leg.appearX, leg.laneY, leg.headingDeg, p.speedMps);');
+    expect(code('src/systems/destroyer-transit.ts')).toContain('s.reappear(leg.appearX, leg.laneY + transitLaneDyM(p, i), leg.headingDeg, p.speedMps);'); // v0.8.2 S0: 片道の列の艦ごとの道のずれ（速さは今のまま列の速さ）
   });
 });

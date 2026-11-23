@@ -6,6 +6,7 @@
 // v0.7.2 S3（音。brief L28）: 命中スローの残り秒を読むだけの口として世界を音に登録し（registerSfxSlowMo）、破棄で外す（聞き手と同じ形。音は slowMoLeftS を読むだけ）。
 // v0.8.0 S2（spec-v0800 §4.10）: 海峡の両岸の陸と字（systems/strait-terrain。us_04 の setup.shores だけ。動かない絵）を岸の帯の後に作る。
 // v0.8.1 IP1: 岸の陰の絵（systems/backdrop-fx＝暗い陸と岸の陰の海。背に岸のある任務＝us_06 だけ。無い任務は null＝物も絵の鍵も増えない）を海峡の陸の後に作る。
+// v0.8.2 S2b（D-A4・L31）: 弾薬庫の誘爆の見た目（systems/magazine-fx。隊に弾薬庫のある世界＝us_05 だけ。無い任務は null＝毎フレームの仕事も物も増えない）。爆発のプールの後・沈没の段の前に進める。
 import type Phaser from 'phaser';
 import { SEA_LIGHT_STEPS } from '../config/dawn-config';
 import { BackdropFx, type BackdropFxWorldView } from './backdrop-fx';
@@ -13,6 +14,7 @@ import { CoastFx } from './coast-fx';
 import { ExplosionFx } from './explosion-fx';
 import { FireFx, type FireWorldView } from './fire-fx';
 import { registerSparkFx } from './fx-bus';
+import { MagazineFx, type MagazineFxWorldView } from './magazine-fx';
 import { registerExplosionFx } from './mission-effects';
 import { SeaFx } from './sea-fx';
 import { registerSfxListener, registerSfxSlowMo } from './sfx-bus';
@@ -25,7 +27,8 @@ import type { WorldSetup } from './world-setup';
 /** 世界から読む物（MissionWorld がそのまま満たす） */
 export type ArtWorldView = WakeWorldView &
   FireWorldView &
-  BackdropFxWorldView & {
+  BackdropFxWorldView &
+  MagazineFxWorldView & {
     readonly setup: WorldSetup;
     readonly dawn: { readonly lightStep: number };
     /** 命中スローの残り秒（v0.7.2 S3。音が読むだけ） */
@@ -42,6 +45,7 @@ export class WorldArt {
   private readonly coast: CoastFx;
   private readonly strait: StraitTerrain | null;
   private readonly backdrop: BackdropFx | null;
+  private readonly magazine: MagazineFx | null;
 
   constructor(scene: Phaser.Scene, w: ArtWorldView) {
     this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
@@ -55,6 +59,7 @@ export class WorldArt {
     this.coast = new CoastFx(scene, w.setup);
     this.strait = w.setup.shores ? new StraitTerrain(scene, w.setup) : null;
     this.backdrop = w.setup.backdrop && w.destroyers?.backdrop ? new BackdropFx(scene, w) : null;
+    this.magazine = MagazineFx.of(this.explosions, w); // 弾薬庫の誘爆の見た目（v0.8.2 S2b。隊に弾薬庫のある世界だけ）
     registerSfxListener(w.boat.state); // 音の聞き手は自艇（v0.7.1 S1。位置を読むだけ。世界の作成前・破棄後の位置つきの音は鳴らさない＝R12 と同じ）
     registerSfxSlowMo(w); // 命中スローの音（v0.7.2 S3。slowMoLeftS を読むだけ。世界の作成前・破棄後はスローなし）
   }
@@ -65,6 +70,7 @@ export class WorldArt {
     this.wake.update(realDt, w);
     this.explosions.setDaylight(w.dawn.lightStep / SEA_LIGHT_STEPS);
     this.explosions.update(realDt);
+    this.magazine?.update(realDt);
     this.fire.update(realDt);
     this.sink.update(realDt);
     this.sparks.update(realDt);
