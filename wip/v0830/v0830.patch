@@ -1,8 +1,8 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 25fa2e4..044d1c1 100644
+index 25fa2e4..b7a07cc 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -3,6 +3,28 @@
+@@ -3,6 +3,29 @@
  書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
  3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
  
@@ -24,6 +24,7 @@ index 25fa2e4..044d1c1 100644
 +  - 版 0.8.3（package.json・package-lock.json）。docs/02 §5 に「静音」「倍速」の 2 行。docs/03 に v0.8.3「操作の改修：静音ボタン・倍速」（実機 3 項目）と v0.8.4「史実モード：至近の煙幕へ乱射」（ユーザーの要望④・計画はその版）を挿し、us_07 の行を v0.8.3 → v0.8.5 に。CLAUDE.md §2 に「操作（静音・倍速）」・§4 に 3 ファイル。
 +  - ヘッドレス: `scripts/headless/lib.mjs`（141 → 149。`isCtrl`・`ctrlDrop`＝静音と倍速の丸と字を objects()・texts() から除く）・`ab-replay.mjs`（241 → 246）・`hud-ab.mjs`（32 → 33）: `CTRLUI`（既定 1。`CTRLUI=0` で除かない）で両方の側から除き、行に除いた数（`ctrl A 0 B n`。基準は 0・今の木は写すたびに 4）。新 `scripts/headless/fast2-ab.mjs`（102）: 同じビルドで 1 倍と倍速（`MIX=1` は 300 フレームごとに入り切り）を同じステップの数まで回し、固定ステップごと（世界の `stepFn` を包む）の写しを比べる（入力はステップの数とその後の世界だけから＝フレームに依らない・静音も 20 秒ずつ・jp_03 は［切替］も。`FAULT=1` は倍速の側の 1 ステップの入力を変える試し＝違いが出る）。
 +- tests（＋1 ファイル・＋件）: 新 `tests/control-toggles`（静音の写しと縮め方・us_02 で静音いっぱい 30 秒が上限で止まる・切っていれば静音の無い世界とビット同一・jp_05 の不調と一緒・`boostedFrames` の回数と命中スロー・小さな世界〔固定ステップ・乱数・命中スロー・自艇〕で倍速 N フレーム＝1 倍 2N フレームが 60 fps・30 fps・途中の入り切りでもステップごとに同じ・30 fps の倍速は 1 フレーム 4 ステップ・mission-world と mission-scene の源の形・入り切りの持ち方）。`tests/hud-layout`（＋2 件の組: 置き方の値と一時停止の値の照らし合わせ・W 1280〜1584 で触れない／12 px 以上離れる）。`tests/input-state`（初期値に 2 つの鍵）。
++- 直した固定（ソースの pin。理由はテストの注に）: `tests/evac-step-order`・`landing-step-order`（浅瀬の警告は world-boat の `refreshShallowStatus(this)`・world-boat の指令の行は静音を通した `cmd`・Mission は `w.updateFrame(delta / 1000)`）・`tests/world-visuals`（入力 → 固定ステップ → 命中スローの残り → 浅瀬は `subFrame` の中・見た目は `boostedFrames` の後）。`tests/sfx-rules`・`sfx-engine-loops` の pin（Hud の `panel.update` の直後が `sfx.update`）を崩さないよう、`toggles.refresh` は `panel.update` の前に置いた。スナップショットは変わらない。
 +- 確かめ（実装者。lead の門は別）: `fast2-ab` 16 件（12 任務・us_02 と jp_03 と us_05 のハード・us_02 seed 2）× 7,200 ステップ（120 秒）を倍速と MIX で 32 件とも same（命中スローのある件は 72〜216 ステップ・倍速のフレームは 3,600 → 3,636〜3,706）。ab-replay の base 16 件 20 秒（基準 b7e9f44 と）same・ctrl A 0 B 4,800。画面写し（W 1280・1560・dpr 2・本物のタップ）: 両方切／両方入（us_02 で静音いっぱい 18 kt・台座青緑・12 秒で 24 秒進む）／倍速で魚雷の命中スローの最中（us_06。命中スローの間は 1 倍）／jp_03 で両方入（13 kt＝静音の上限）。
 +- 既知の制約: 倍速の間はフレームの仕事が約 2 倍（ユーザー「カクツキは一切考慮不要」。1 フレームの固定ステップは最大 8）。絵の動き・音・曲・HUD の文の秒は実時間のまま（艦や魚雷は 2 倍で動くのに爆発や水柱の広がりは同じ速さ）。倍速と静音はキーボード（PC デバッグ）に割り当てていない。jp_03 の僚艇は隊長艇に続くだけ（静音は座席の隊長艇の指令にだけ掛かる）。静音の上限は艇ごとの `silent_max`（スティックの台座の輪は Boot の 1 隻の比のまま）。
 +    - 門: （lead が別に回した run-gates の結果をここに足す）
@@ -269,7 +270,7 @@ index a1e3cb3..13b59fd 100644
  export function discardFireInput(input: InputState): void {
    input.fireTap = false;
 diff --git a/src/scenes/hud-scene.ts b/src/scenes/hud-scene.ts
-index ad9cc65..0d57422 100644
+index ad9cc65..65c6e44 100644
 --- a/src/scenes/hud-scene.ts
 +++ b/src/scenes/hud-scene.ts
 @@ -21,6 +21,7 @@ import type { InputState } from '../core/input-state';
@@ -308,14 +309,14 @@ index ad9cc65..0d57422 100644
        this.sfx = undefined;
      });
    }
-@@ -149,6 +155,7 @@ export class HudScene extends Phaser.Scene {
+@@ -148,6 +154,7 @@ export class HudScene extends Phaser.Scene {
+     this.engineHud?.refresh(this.telemetry, this.time.now);
      this.markers?.refresh(this.telemetry);
      this.dawnBanner?.refresh(this.telemetry, this.time.now);
++    this.toggles?.refresh(); // 静音・倍速の見た目（v0.8.3。変わった時だけ）
      this.panel?.update(this.telemetry, this.time.now);
-+    this.toggles?.refresh();
      this.sfx?.update(this.telemetry, delta); // 音は最後（HUD の描き換えの後。HUD には触らない）
    }
- }
 diff --git a/src/scenes/mission-scene.ts b/src/scenes/mission-scene.ts
 index 17bdbaa..1b9c0fa 100644
 --- a/src/scenes/mission-scene.ts
@@ -575,6 +576,31 @@ index c205daa..1e8aab6 100644
 +  const c = w.setup;
 +  updateShallowStatus(w.shallowStatus, c.mission.shallows, b.x, b.y, b.headingDeg, b.speedMps, c.grounding, c.timeScale, w.grounded);
 +}
+diff --git a/tests/evac-step-order.test.ts b/tests/evac-step-order.test.ts
+index b9c61c3..58f5810 100644
+--- a/tests/evac-step-order.test.ts
++++ b/tests/evac-step-order.test.ts
+@@ -25,7 +25,8 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）',
+   });
+   it('mission-world の生成: 空襲下の退避は揚陸の後＝最後（+29〜+43 はここだけ）、座席の振り替えは自艇の BoatDamage へ', () => {
+     const s = code('systems/mission-world.ts');
+-    expectOrder(s, ['this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(', 'this.evac = buildEvac(scene, this, seed, hit, this.boatDamage);', 'this.refreshShallowStatus();']);
++    // v0.8.3: 浅瀬の警告は world-boat の refreshShallowStatus(this)（mission-world の private から移した。式と呼ぶ所は同じ）
++    expectOrder(s, ['this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(', 'this.evac = buildEvac(scene, this, seed, hit, this.boatDamage);', 'refreshShallowStatus(this);']);
+     expect(s.split('buildEvac(').length).toBe(2);
+     const fl = code('systems/evac-flights.ts');
+     expect(fl).toContain('if (!ev) return null;');
+@@ -55,7 +56,9 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）',
+     const sa = we.slice(we.indexOf('  stepAir(feelDt: number)'), we.indexOf('  updateVisuals('));
+     expectOrder(sa, ['stepEvacAir(a,', 'f.lost |= p.evLost;', 'f.found |= p.evFound;', 'f.repass |= a.repass.ev;', 'if (p.evWave >= 0) f.wave = p.evWave;', 'if (p.evSettle) {', 'f.settle = true;', 'this.settleSnap.survivors = evacSurvivors(this.sq);']);
+     const wb = code('systems/world-boat.ts');
+-    expect(wb).toContain('w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input');
++    // v0.8.3: 指令の元は静音（SilentThrottle）を通した cmd（切れていれば w.input そのもの）。座席はそれを読む
++    expect(wb).toContain('const cmd = w.silent ? w.silent.command(w.input, w.params) : w.input;');
++    expect(wb).toContain('w.engine ? w.engine.input(w, cmd) : w.evac ? w.evac.command(cmd) : cmd');
+     expect(wb).toContain('if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);');
+   });
+   it('模擬（core/evac-sim）も同じ順: 台本 → ［切替］と latch → 消火 → 時計とラッチ → 乗員 → 座席の運動 → 燃料 → 隊 → 帰投 → 帯 → 対空 → 座席の火災 → 港の空襲 → §2 の 4 機', () => {
 diff --git a/tests/hud-layout.test.ts b/tests/hud-layout.test.ts
 index b459d9b..62f52e4 100644
 --- a/tests/hud-layout.test.ts
@@ -634,3 +660,39 @@ index e04fb69..2dec1f2 100644
      expect(s).toEqual(initial);
      s.headingDeg = 90;
      s.speed01 = 1;
+diff --git a/tests/landing-step-order.test.ts b/tests/landing-step-order.test.ts
+index 22721ba..2f8abcd 100644
+--- a/tests/landing-step-order.test.ts
++++ b/tests/landing-step-order.test.ts
+@@ -64,7 +64,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', ()
+   });
+   it('mission-world: 揚陸の世界は兵装の後（最後）に作る。stepFn は敵の側の段 → 火災（揚陸の段は敵の側の段の中）', () => {
+     const s = code('systems/mission-world.ts');
+-    expectOrder(s, ['this.engine = s.engine ?', 'this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk);', 'this.refreshShallowStatus();']);
++    expectOrder(s, ['this.engine = s.engine ?', 'this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(scene, s, this.pts, seed, events, onSunk);', 'refreshShallowStatus(this);']); // v0.8.3: 浅瀬の警告は world-boat へ移した
+     expect(s.split('buildLanding(').length).toBe(2);
+     const fn = s.slice(s.indexOf('private readonly stepFn'), s.indexOf('constructor('));
+     expect(fn).not.toContain('landing');
+@@ -85,7 +85,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', ()
+     expectOrder(o, ['if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;', 'return w.convoy ? convoyObjectiveDone(']);
+   });
+   it('テレメトリ（S5b）: 出発時に 1 回（createTelemetry の landing）、毎フレームは Scene の updateFrame（固定ステップと雷跡の数え）の後の refreshTelemetry の中で米PT・輸送隊の後に 1 回', () => {
+-    expectOrder(code('scenes/mission-scene.ts'), ['w.updateFrame(realDt);', 'this.refreshTelemetry();']);
++    expectOrder(code('scenes/mission-scene.ts'), ['w.updateFrame(delta / 1000);', 'this.refreshTelemetry();']); // v0.8.3: updateFrame は進めたゲームの秒を返す（倍速）
+     const v = code('systems/world-visuals.ts');
+     expectOrder(v, ['w.landing?.updateVisuals(realDt, w);']);
+     const m = code('systems/mission-telemetry.ts');
+diff --git a/tests/world-visuals.test.ts b/tests/world-visuals.test.ts
+index d4f6ed4..1c5f811 100644
+--- a/tests/world-visuals.test.ts
++++ b/tests/world-visuals.test.ts
+@@ -62,7 +62,8 @@ describe('systems/world-visuals（v0.6.9 S0: mission-world の見た目の同期
+       expect(i, s).toBeGreaterThan(0);
+       return i;
+     };
+-    const order = ['consumeFrameInput(this, realDt);', 'this.stepper.advance(realDt, this.stepFn);', 'if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;', 'this.refreshShallowStatus();\n    updateWorldVisuals(this, realDt);'].map(at);
++    // v0.8.3: 入力 → 固定ステップ → 命中スローの残り → 浅瀬 は世界の 1 回分（subFrame。倍速で 2 回）に入り、updateFrame は boostedFrames の後に見た目（tests/control-toggles）
++    const order = ['boostedFrames(this.input.fastOn, TIME_BOOST_FACTOR, this, this.subFrame, realDt);\n    updateWorldVisuals(this, realDt);', 'consumeFrameInput(this, realDt);', 'this.stepper.advance(realDt, this.stepFn);', 'if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;', 'refreshShallowStatus(this);\n  };'].map(at);
+     expect([...order].sort((a, b) => a - b)).toEqual(order);
+     expect(src).toMatch(/destroy\(\): void \{\n {4}destroyWorldVisuals\(this\);[^\n]*\n {2}\}/);
+     expect(src.includes('.updateVisuals(')).toBe(false);
