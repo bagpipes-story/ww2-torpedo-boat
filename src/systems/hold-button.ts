@@ -16,6 +16,10 @@ export interface HoldButtonOptions {
   armMs?: number;
   /** 文字 px（無ければ HUD_FONT_BUTTON_PX。v0.6.8: 機銃と技能は小さく） */
   fontPx?: number;
+  /** 当たりの円の半径（論理 px。v0.8.3 IP1: 一時停止と静音・倍速は丸より大きい円にできる。無ければテクスチャの枠の四角＝今まで） */
+  hitR?: number;
+  /** 丸と字の名前（v0.8.3 IP1。ヘッドレスの道具が静音・倍速の物を見分ける。無ければ付けない） */
+  name?: string;
 }
 
 export class HoldButton {
@@ -45,8 +49,18 @@ export class HoldButton {
     private readonly sizeScale: number = 1,
     opts: HoldButtonOptions = {},
   ) {
-    this.button = scene.add.image(cx, cy, textureKey).setScale(sizeScale / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud).setInteractive();
+    this.button = scene.add.image(cx, cy, textureKey).setScale(sizeScale / RENDER_SCALE).setAlpha(ROUND_BUTTON_ALPHA).setDepth(DEPTH.hud);
+    if (opts.hitR === undefined) this.button.setInteractive();
+    else {
+      // 当たりは絵の局所の座標（枠の左上が原点・1 単位＝テクスチャの px）の円。押した時の縮みも絵といっしょ
+      const f = this.button.frame;
+      this.button.setInteractive(new Phaser.Geom.Circle(f.width / 2, f.height / 2, (opts.hitR * RENDER_SCALE) / sizeScale), Phaser.Geom.Circle.Contains);
+    }
     this.label = scene.add.text(cx, cy, '', hudTextStyle(opts.fontPx ?? HUD_FONT_BUTTON_PX, HUD_COLOR_STRONG)).setOrigin(0.5).setAlign('center').setDepth(DEPTH.hud + 1);
+    if (opts.name !== undefined) {
+      this.button.setName(opts.name);
+      this.label.setName(opts.name);
+    }
     this.armed = opts.armMs === undefined;
     this.armTimer = opts.armMs === undefined ? null : scene.time.delayedCall(opts.armMs, () => (this.armed = true));
     this.setLabel(label);
