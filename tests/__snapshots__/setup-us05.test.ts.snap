@@ -1017,8 +1017,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -2047,8 +2047,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -3077,8 +3077,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -4107,8 +4107,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false �
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -5236,8 +5236,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -6365,8 +6365,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -7494,8 +7494,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,
@@ -8623,8 +8623,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
  "recon": {
   "trackS": 20,
   "identifyClass": "battleship",
-  "radioFailChance": 0.35,
-  "radioMinDamage": 20,
+  "radioFailChance": 0.3,
+  "radioMinDamage": 1,
   "relay": {
    "x": 1600,
    "y": 500,

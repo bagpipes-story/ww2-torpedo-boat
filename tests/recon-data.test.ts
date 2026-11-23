@@ -19,7 +19,7 @@ const build = (f: (d: GameData) => void, id = 'us_05'): (() => unknown) => {
   return () => getReconParams(d, getPrototypeMission(d, id));
 };
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
-const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
+const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.3, radioMinDamage: 1, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
 
 describe('既定の data（us_05。spec §4.5・§4.1 D-M4）', () => {
   it('戦艦を目で確かめ、レーダーで 20 秒追うと報告。76 mm 以上（damage 20 以上）の 1 発ごとに 35% で無線が壊れ、ボホール島寄りの中継の輪（隣の分隊が止まっている所。v0.8.2 IP3 で (1600, 800) → (1600, 500)）で中継', () => {

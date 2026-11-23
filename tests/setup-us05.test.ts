@@ -46,7 +46,7 @@ describe('us_05 の setup の snapshot（v0.8.2 S0 の木）', () => {
     expect(s.enemyFrom).toEqual({ x: 150, y: 2800 + o.dy });
     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears]).toEqual(['own', 'east', '日本の艦隊', false]);
     expect([s.radar!.model, s.radar!.fit, s.shores!.north.labels[0]!.labelJa, s.shores!.south.gapLabelJa]).toEqual(['so_late', 'own', 'ボホール島', 'ミンダナオ海']);
-    expect(s.recon).toEqual({ trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } });
+    expect(s.recon).toEqual({ trackS: 20, identifyClass: 'battleship', radioFailChance: 0.3, radioMinDamage: 1, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } });
     expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'radio_failure']);
     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'anchors', 'backdrop', 'seaplaneNight', 'pickets'] as const) expect(k in s, k).toBe(false);
     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));

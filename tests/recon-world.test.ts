@@ -2,7 +2,7 @@
 // mission-world の returnCallDone・world-enemy-step の順）を、Phaser なしの小さな世界（艦は位置と out だけの素の物・レーダーは接触の数だけ）と、本物の world-enemies（絵は偽の場面）で確かめる:
 // - 確かめる: 戦艦（山城・扶桑）が視程の 2 乗の内に入ったステップに TRACKING（駆逐艦・重巡は数えない・沈み始めた／海域の外の艦は数えない）。報告の隻数は送るまでの最大。
 // - 追う: レーダーの最後の掃引に接触があるステップの固定ステップの実秒だけを足し、20 秒で送る（命中スローで延びない＝世界の stepTimeS の差）。レーダーの無い夜は目で見えている列の艦。
-// - 無線: 送る前の 76 mm 以上（damage 20 以上）の砲弾 1 発ごとに seed+45 を 1 回引き 35%。機銃（25 mm）は引かない・送った後は引かない・沈み始めた自艇は引かない。壊れていれば中継待ち→黄色い輪で中継。
+// - 無線: 送る前の敵の艦の砲弾 1 発ごと（damage 1 以上＝機銃も。v0.8.2 IP4。前は 76 mm 以上）に seed+45 を 1 回引き 30%。damage 0 は引かない・送った後は引かない・沈み始めた自艇は引かない。壊れていれば中継待ち→黄色い輪で中継。
 // - 達成は届いて帰投と同じに数える終わり（沈めば届いていても達成でない）。呼びかけ（returnCallDone）は届いた時から。ほかの任務の世界は recon が null（命中の手は世界の hitBoat そのもの）。
 import { describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -125,15 +125,15 @@ describe('追う・送る（D-N2・D-N3）', () => {
 });
 
 describe('無線（D-N4）と中継（D-N5）', () => {
-  it('送る前の damage ≥ 20 の 1 発ごとに seed+45 をちょうど 1 回引く（写しと同じ結果）。25 mm（4）は引かない。壊れたら次の stepRecon に印', () => {
+  it('送る前の damage ≥ 1 の 1 発ごと（機銃 25 mm の 4 も）に seed+45 をちょうど 1 回引く（写しと同じ結果）。damage 0 は引かない。壊れたら次の stepRecon に印', () => {
     for (let seed = 1; seed <= 40; seed++) {
       const m = mini({ seed });
       const rep = new SeededRng((seed + RECON_RADIO_SEED_OFFSET) >>> 0);
-      expect(m.r.onShellHit(4)).toBe(false);
+      expect(m.r.onShellHit(0)).toBe(false);
       let broke = -1;
       for (let k = 0; k < 6 && broke < 0; k++) {
-        const want = rep.next() < 0.35;
-        expect(m.r.onShellHit(40), `seed ${seed} ${k}`).toBe(want);
+        const want = rep.next() < 0.3;
+        expect(m.r.onShellHit(k % 2 ? 4 : 40), `seed ${seed} ${k}`).toBe(want);
         if (want) broke = k;
       }
       expect(m.r.state.draws, `seed ${seed}`).toBe(broke < 0 ? 6 : broke + 1);
@@ -144,10 +144,10 @@ describe('無線（D-N4）と中継（D-N5）', () => {
       }
     }
   });
-  it('35%: seed 1〜3000 の 1 発目で壊れる割合は 0.35 ± 0.03', () => {
+  it('30%: seed 1〜3000 の 1 発目で壊れる割合は 0.30 ± 0.03（機銃の 4 でも引く）', () => {
     let k = 0;
-    for (let seed = 1; seed <= 3000; seed++) if (mini({ seed }).r.onShellHit(35)) k++;
-    expect(Math.abs(k / 3000 - 0.35)).toBeLessThanOrEqual(0.03);
+    for (let seed = 1; seed <= 3000; seed++) if (mini({ seed }).r.onShellHit(4)) k++;
+    expect(Math.abs(k / 3000 - 0.3)).toBeLessThanOrEqual(0.03);
   });
   it('送った後・自艇が沈み始めた後は引かない。?debug&noradio（0）でも引く回数は同じで壊れない', () => {
     const m = mini();
@@ -214,7 +214,7 @@ describe('達成と呼びかけ（D-N6）', () => {
 
 describe('無線の手（world-enemies。L22）', () => {
   const boat: BoatState = { x: 0, y: 0, headingDeg: 0, speedMps: 0 };
-  it('us_05: 艦の砲弾の命中の手が 76 mm 以上でだけ無線を引き、どの弾も世界の hitBoat へ（同じ spec・seed+1 の系列）。機銃は引かない', () => {
+  it('us_05: 艦の砲弾の命中の手がどの砲でも無線を引き（v0.8.2 IP4＝機銃も）、どの弾も世界の hitBoat へ（同じ spec・seed+1 の系列）', () => {
     const s = setupOf('us_05', false, 5);
     const got: HitSpec[] = [];
     const sinking = { boat: { sinking: false } };
@@ -233,9 +233,9 @@ describe('無線の手（world-enemies。L22）', () => {
         expect(r.state.draws, `${i} ${gi}`).toBe(draws);
       }
     }
-    // 76 mm 以上が引く: 記録の砲は 127 mm・152 mm（40・35）と 25 mm（4）
+    // v0.8.2 IP4（ユーザーの選び「機銃弾でも抽選」）: 記録の砲はみな引く（127 mm・152 mm〔40・35〕も 25 mm〔4〕も。damage 1 以上）
     const dmg = s.transit!.column!.flatMap((k) => k.gunnery.guns.map((x) => [x.id, x.damage >= s.recon!.radioMinDamage] as const));
-    for (const [id, draw] of dmg) expect(draw, id).toBe(Number(/(\d+)mm/.exec(id)![1]) >= 76);
+    for (const [id, draw] of dmg) expect(draw, id).toBe(true);
   });
   it('ほかの駆逐艦の隊の任務（ハードも）は recon が null。命中の手を包むのは recon の世界だけ（無い任務は世界の hitBoat そのもの）', () => {
     for (const id of PROTO_IDS) {

@@ -1,6 +1,6 @@
 // v0.8.2 S1（spec-v0820 §4.5 D-N1〜D-N6・§9 の 6、lead の L13・L15）: core/recon-report の報告の規則（NONE → TRACKING → SENT／PENDING → RELAYED）と無線の故障を、us_05 の setup の計画
-// （WorldSetup.recon＝追う 20 秒・76 mm 以上〔damage 20〕で 35%・?debug&noradio は 0・radiofail は 1）と、世界が数えて渡す見る物（視程の内の戦艦の数・最後の掃引の列の接触の数・中継の輪）で
-// 固定ステップに回す。確かめる・20 秒は固定ステップの時計（命中スローで延びない）・接触の無いステップは数えない・無線の故障の前と後・引かない時（76 mm 未満・送った後・壊れた後）・
+// （WorldSetup.recon＝追う 20 秒・敵の艦の砲弾すべて〔damage 1 以上＝機銃も。v0.8.2 IP4。前は 76 mm 以上＝damage 20〕で 30%・?debug&noradio は 0・radiofail は 1）と、世界が数えて渡す見る物（視程の内の戦艦の数・最後の掃引の列の接触の数・中継の輪）で
+// 固定ステップに回す。確かめる・20 秒は固定ステップの時計（命中スローで延びない）・接触の無いステップは数えない・無線の故障の前と後・引かない時（damage 1 未満・送った後・壊れた後）・
 // 0 と 1 でも引く回数は同じ・中継待ちから中継・夜明けの後の中継・追い終える前の輪は何もしない・沈んだら達成でないが「届いた」は残る・決定性・読み口・source（確保なし・平方根なし）・
 // S2 から import するのは systems/world-recon・mission-objective・recon-telemetry だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。
 import { describe, expect, it, vi } from 'vitest';
@@ -61,8 +61,8 @@ const when = (log: Log, bit: number): number | undefined => log.bits.find(([, b]
 const BB_FROM_10: Spans = [[10, 15, 1], [15, 60, 2], [60, 1e9, 0]];
 
 describe('計画（us_05 の setup）と作る・戻す', () => {
-  it('追う 20 秒・76 mm 以上（damage 20）で 35%・noradio は 0・radiofail は 1。段と印の数・系列 seed+45', () => {
-    expect([PLAN.trackS, PLAN.radioFailChance, PLAN.radioMinDamage, NEVER.radioFailChance, ALWAYS.radioFailChance]).toEqual([20, 0.35, 20, 0, 1]);
+  it('追う 20 秒・敵の艦の砲弾すべて（damage 1 以上＝機銃も。v0.8.2 IP4）で 30%・noradio は 0・radiofail は 1。段と印の数・系列 seed+45', () => {
+    expect([PLAN.trackS, PLAN.radioFailChance, PLAN.radioMinDamage, NEVER.radioFailChance, ALWAYS.radioFailChance]).toEqual([20, 0.3, 1, 0, 1]);
     expect([RECON_NONE, RECON_TRACKING, RECON_SENT, RECON_PENDING, RECON_RELAYED]).toEqual([0, 1, 2, 3, 4]);
     expect([RECON_EV_SEEN, RECON_EV_SENT, RECON_EV_PENDING, RECON_EV_RELAYED, RECON_EV_RADIO]).toEqual([1, 2, 4, 8, 16]);
     expect(RECON_RADIO_SEED_OFFSET).toBe(45);
@@ -127,9 +127,9 @@ describe('無線の故障と中継', () => {
     near(when(log, RECON_EV_PENDING), 30, 0);
     expect([st.draws, st.stage]).toEqual([1, RECON_RELAYED]);
   });
-  it('引かない: 76 mm 未満（damage 19 以下）・送った後・壊れた後。同じ夜の系列の位置で確かめる', () => {
+  it('引かない: damage 1 未満（0）・送った後・壊れた後。同じ夜の系列の位置で確かめる', () => {
     const base = run(ALWAYS, { sight: BB_FROM_10 }).log.nextAfter;
-    const under = run(ALWAYS, { sight: BB_FROM_10, hits: [[12, 19], [13, 4], [14, 0]] });
+    const under = run(ALWAYS, { sight: BB_FROM_10, hits: [[14, 0]] });
     expect([under.st.draws, under.st.radioBroken, under.log.nextAfter]).toEqual([0, false, base]);
     const after = run(ALWAYS, { sight: BB_FROM_10, hits: [[31, 50], [40, 80]] });
     expect([after.st.draws, after.st.radioBroken, after.st.stage, after.log.nextAfter]).toEqual([0, false, RECON_SENT, base]);
@@ -137,7 +137,7 @@ describe('無線の故障と中継', () => {
     expect([twice.st.draws, twice.log.radioAt.length]).toEqual([1, 1]);
     expect(twice.log.nextAfter).toBe(run(ALWAYS, { sight: BB_FROM_10, hits: [[12, 20]] }).log.nextAfter);
   });
-  it('確率 0（noradio）・35%・1（radiofail）でも引く回数は同じ（1 発に 1 回）。0 は壊れない', () => {
+  it('確率 0（noradio）・30%・1（radiofail）でも引く回数は同じ（1 発に 1 回）。0 は壊れない', () => {
     const hits: Opts['hits'] = [[12, 20], [13, 30], [14, 40]];
     const n = run(NEVER, { sight: BB_FROM_10, hits });
     expect([n.st.draws, n.st.radioBroken, n.st.stage]).toEqual([3, false, RECON_SENT]);
@@ -152,7 +152,7 @@ describe('無線の故障と中継', () => {
     }
     spy.mockRestore();
   });
-  it('35% は seed+45 の系列の 10 万発で ±0.5 点（3 つの夜の種）', () => {
+  it('30%（data の radio_fail_chance）は seed+45 の系列の 10 万発で ±0.5 点（3 つの夜の種）', () => {
     for (const seed of [1, 2, 12345]) {
       const rng = new SeededRng(seed + RECON_RADIO_SEED_OFFSET);
       const st = createReconState();
@@ -161,7 +161,7 @@ describe('無線の故障と中継', () => {
         resetReconState(st);
         if (reconOnShellHit(st, PLAN, PLAN.radioMinDamage, rng)) broke++;
       }
-      expect(Math.abs(broke / 100_000 - 0.35), String(seed)).toBeLessThan(0.005);
+      expect(Math.abs(broke / 100_000 - PLAN.radioFailChance), String(seed)).toBeLessThan(0.005);
     }
   });
   it('追い終える前の輪は何もしない（輪の中で追い終えて中継待ちになれば、そのステップに中継）。送った夜の輪も何もしない', () => {
