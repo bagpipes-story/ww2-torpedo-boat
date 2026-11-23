@@ -33,9 +33,9 @@ export class EngineTrouble {
     this.state = createEngineState(p);
   }
 
-  /** 自艇の運動に渡す入力（world-boat。燃料切れでないとき）: 不調でなければ w.input そのもの、不調なら速さを静音の上限 / 今の全速までにした写し */
-  input(w: Pick<EngineWorldView, 'input' | 'params'>): BoatInput {
-    return engineInput(this.state, w.input, this.capInput, engineCap01(w.params));
+  /** 自艇の運動に渡す入力（world-boat。燃料切れでないとき）: 不調でなければ cmd（既定 w.input。v0.8.3 から静音を通した指令）そのもの、不調なら速さを静音の上限 / 今の全速までにした写し */
+  input(w: Pick<EngineWorldView, 'input' | 'params'>, cmd: BoatInput = w.input): BoatInput {
+    return engineInput(this.state, cmd, this.capInput, engineCap01(w.params));
   }
 
   /**

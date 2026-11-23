@@ -21,6 +21,7 @@ import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { isSortie } from '../core/sortie';
 import { HUD_COLOR_KPI, HUD_FONT_DEBUG_PX, HUD_HIST_BADGE_JA, HUD_HIST_BADGE_X, hudTextStyle } from '../config/ui-config';
+import { ControlToggleButtons } from '../systems/control-toggle-buttons';
 import { KeyboardInput } from '../systems/keyboard-input';
 import { PauseControl } from '../systems/pause-control';
 import { PinchZoom } from '../systems/pinch-zoom';
@@ -52,6 +53,8 @@ export class HudScene extends Phaser.Scene {
   private pinch?: PinchZoom;
   /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
   private pause?: PauseControl;
+  /** 「静音」「倍速」（v0.8.3）。一時停止の右に小さく 2 つ。どの任務にも */
+  private toggles?: ControlToggleButtons;
   private sfx?: MissionSfx; // 任務の間の音（v0.7.1 S3。ループ 5 本。テレメトリを読むだけ。一時停止・終わりは自分で Hud の出来事を聞く）
   private telemetry!: BoatTelemetry;
   /** Mission が launch で渡す Sortie の任務（v0.4.0） */
@@ -109,7 +112,8 @@ export class HudScene extends Phaser.Scene {
     this.keyboard = new KeyboardInput(this, input, this.telemetry.evac.enabled); // Tab の［切替］は空襲下の退避の任務だけ（v0.6.11 S8）
     // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
-    this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);
+    this.toggles = new ControlToggleButtons(this, input, this.stick); // 一時停止の前に作る（一時停止の取り消しの的に入れる）
+    this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch, this.toggles]);
     this.sfx = new MissionSfx(this.events, getBoatRecord(data, mission.playerBoatId).speed_max_kt);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -136,6 +140,8 @@ export class HudScene extends Phaser.Scene {
       this.pinch = undefined;
       this.pause?.destroy();
       this.pause = undefined;
+      this.toggles?.destroy();
+      this.toggles = undefined;
       this.sfx = undefined;
     });
   }
@@ -148,6 +154,7 @@ export class HudScene extends Phaser.Scene {
     this.engineHud?.refresh(this.telemetry, this.time.now);
     this.markers?.refresh(this.telemetry);
     this.dawnBanner?.refresh(this.telemetry, this.time.now);
+    this.toggles?.refresh(); // 静音・倍速の見た目（v0.8.3。変わった時だけ）
     this.panel?.update(this.telemetry, this.time.now);
     this.sfx?.update(this.telemetry, delta); // 音は最後（HUD の描き換えの後。HUD には触らない）
   }

@@ -5,6 +5,7 @@
 // y ≥ 682（ホームバーの帯）に入るのはどの任務も扇だけ。
 // v0.6.9 S6a: jp_04（煙幕なし・味方機なし）を足し、右上 2 段目の揚陸の時計（ui/landing-clock。左上の夜明けの時計の鏡）の箱が、jp_04 にあるどのボタンの当たり・2 行目・ビルド番号にも
 // 触れないこと（煙幕の段は空いている。煙幕があれば重なる＝Boot の V12）を確かめる。
+// v0.8.3: 一時停止の周りの「静音」「倍速」の置き方は tests/control-toggle-layout（IP1 で弧の衛星にして、ここから移した。箱の値はここの fixedBoxes の写し）。
 import { createEvacTelemetry } from '../src/core/evac-telemetry';
 import { evacStatusLine } from '../src/ui/evac-lines';
 import { readFileSync } from 'node:fs';

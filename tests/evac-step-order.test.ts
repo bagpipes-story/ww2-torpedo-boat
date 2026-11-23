@@ -25,7 +25,8 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）', 
   });
   it('mission-world の生成: 空襲下の退避は揚陸の後＝最後（+29〜+43 はここだけ）、座席の振り替えは自艇の BoatDamage へ', () => {
     const s = code('systems/mission-world.ts');
-    expectOrder(s, ['this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(', 'this.evac = buildEvac(scene, this, seed, hit, this.boatDamage);', 'this.refreshShallowStatus();']);
+    // v0.8.3: 浅瀬の警告は world-boat の refreshShallowStatus(this)（mission-world の private から移した。式と呼ぶ所は同じ）
+    expectOrder(s, ['this.arms = buildArms(scene, this, data, seed, onSunk);', 'this.landing = buildLanding(', 'this.evac = buildEvac(scene, this, seed, hit, this.boatDamage);', 'refreshShallowStatus(this);']);
     expect(s.split('buildEvac(').length).toBe(2);
     const fl = code('systems/evac-flights.ts');
     expect(fl).toContain('if (!ev) return null;');
@@ -55,7 +56,9 @@ describe('空襲下の退避の固定ステップの順（ソースの pin）', 
     const sa = we.slice(we.indexOf('  stepAir(feelDt: number)'), we.indexOf('  updateVisuals('));
     expectOrder(sa, ['stepEvacAir(a,', 'f.lost |= p.evLost;', 'f.found |= p.evFound;', 'f.repass |= a.repass.ev;', 'if (p.evWave >= 0) f.wave = p.evWave;', 'if (p.evSettle) {', 'f.settle = true;', 'this.settleSnap.survivors = evacSurvivors(this.sq);']);
     const wb = code('systems/world-boat.ts');
-    expect(wb).toContain('w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input');
+    // v0.8.3: 指令の元は静音（SilentThrottle）を通した cmd（切れていれば w.input そのもの）。座席はそれを読む
+    expect(wb).toContain('const cmd = w.silent ? w.silent.command(w.input, w.params) : w.input;');
+    expect(wb).toContain('w.engine ? w.engine.input(w, cmd) : w.evac ? w.evac.command(cmd) : cmd');
     expect(wb).toContain('if (!w.evac || w.stepTimeS >= w.evac.fuelFreeUntilS - EVAC_TIME_EPS_S) stepFuel(w.fuel, w.fuelCurve, boat.speedMps, dt);');
   });
   it('模擬（core/evac-sim）も同じ順: 台本 → ［切替］と latch → 消火 → 時計とラッチ → 乗員 → 座席の運動 → 燃料 → 隊 → 帰投 → 帯 → 対空 → 座席の火災 → 港の空襲 → §2 の 4 機', () => {

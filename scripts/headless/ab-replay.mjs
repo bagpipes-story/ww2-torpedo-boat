@@ -25,7 +25,9 @@
 //   S2 は A＝B＝今の木で決定性とページのエラー・S2b から A は S2 の commit のビルド）。写しに報告の段（s.rc: 段・無線・追った秒・引いた回数）・列の見張り（s.sc: 離れている艦）・
 //   弾薬庫（s.mg: 誘爆の数・引いた回数）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
 // v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印の濾し（scripts/headless/recon-filter。B が出し側・世界の写しは全部比べる。A は S3 の commit のビルド）。
-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.3: CTRLUI（既定 1）で両方の側の HUD の写しから「静音」「倍速」の丸と字（B にだけある 4 つの物＝lib.mjs の isCtrl）を除いて比べる（世界の写しは全部比べる）。
+//   結果の行に両方の側で除いた数（ctrl A n B m。A＝基準 b7e9f44 は 0、B＝今の木は写すたびに 4）。CTRLUI=0 で除かない（違いが出るはず）。
+// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { anchorPair } from './anchor-filter.mjs';
@@ -189,6 +191,8 @@ export async function oneCase(browser, A, B, c) {
   const pa = await openGame(browser, A, query(c, 'A'), { width: envNum('W', 1560) });
   const pb = await openGame(browser, B, query(c, 'B'), { width: envNum('W', 1560) });
   try {
+    const ctrl = process.env.CTRLUI !== '0';
+    for (const p of [pa, pb]) await p.page.evaluate((on) => { window.__hl.ctrlDrop = on; window.__hl.ctrlDropped = 0; }, ctrl);
     const o = { ...c, frameMs: FRAME_MS, hudEvery: c.hudEvery ?? 0 };
     let ra;
     let rb;
@@ -209,6 +213,7 @@ export async function oneCase(browser, A, B, c) {
     for (let i = 0; i < n; i++) if (ra.hashes[i] !== rb.hashes[i]) { at = i; break; }
     if (at < 0 && ra.hashes.length !== rb.hashes.length) at = n;
     const errors = [...pa.errors.map((e) => `A: ${e}`), ...pb.errors.map((e) => `B: ${e}`)];
+    if (ctrl) c.ctrl = await Promise.all([pa, pb].map((p) => p.page.evaluate(() => window.__hl.ctrlDropped)));
     if (at < 0) return { ...c, same: errors.length === 0, frames: n, errors };
     const [sa, sb] = await Promise.all([pa.page.evaluate((i) => window.__ab[i] ?? null, at), pb.page.evaluate((i) => window.__ab[i] ?? null, at)]);
     return { ...c, same: false, frames: n, at, field: sa && sb ? firstField(sa, sb) : { path: '(長さ)', a: ra.hashes.length, b: rb.hashes.length }, errors };
@@ -230,7 +235,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}${r.ctrl ? ` ctrl A ${r.ctrl[0]} B ${r.ctrl[1]}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }

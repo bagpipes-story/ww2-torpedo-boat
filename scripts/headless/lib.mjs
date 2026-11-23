@@ -77,6 +77,7 @@ function pageInit() {
       if (!s || !g.scene.isActive(key)) return [];
       const out = [];
       for (const o of s.children.list) {
+        if (hl.ctrlDrop && hl.isCtrl(o)) { hl.ctrlDropped++; continue; }
         const r = { type: o.type, x: o.x, y: o.y, ox: o.originX, oy: o.originY, a: o.alpha, v: o.visible, sx: o.scaleX, sy: o.scaleY, d: o.depth };
         if (o.type === 'Text') { r.text = o.text; r.size = o.style.fontSize; r.color = o.style.color; r.w = o.width; r.h = o.height; }
         else if (o.type === 'Image' || o.type === 'Sprite') { r.tex = o.texture ? o.texture.key : ''; r.tint = o.tintTopLeft; r.ang = o.angle; }
@@ -85,6 +86,13 @@ function pageInit() {
       return out;
     },
     texts(key) { return hl.objects(key).filter((o) => o.type === 'Text').map((o) => o.text); },
+    /**
+     * v0.8.3: 「静音」「倍速」の丸と字（v0.8.2 までのビルドには無い）。IP1 からは一時停止の周りの弧で、名前 'ctrl-toggle'（systems/control-toggle-buttons）で見分ける（59a0e71 の x 156・252・y 270 も）。
+     * ctrlDrop が真なら objects()（と texts()）が除き、除いた数を ctrlDropped に足す（ab-replay・hud-ab の CTRLUI。既定は除かない＝今までどおり）
+     */
+    ctrlDrop: false,
+    ctrlDropped: 0,
+    isCtrl(o) { return o.name === 'ctrl-toggle' || (o.y === 270 && (o.x === 156 || o.x === 252) && ((o.type === 'Image' && o.texture && o.texture.key === 'tex-round-button') || (o.type === 'Text' && /^(静音|倍速)/.test(o.text)))); },
     fnv(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0; return h; },
   };
   window.__hl = hl;

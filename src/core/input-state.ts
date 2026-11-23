@@ -28,12 +28,18 @@ export interface InputState {
   gunHeld: boolean;
   /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。S5 から右端の識別の段のボタン ui/weapon-panel と Tab キー）。ほかの任務では誰も読まない */
   switchTap: boolean;
+  /** 「静音」（v0.8.3。左の一時停止の右）: 入れている間はスティックいっぱいで艇の静音の上限（世界の core/control-toggles の SilentThrottle が速度の指令を縮める。InputState の speed01 は倒した量のまま）。
+   * 押すたびに入り切り。一時停止（resetInput）では切れず、任務の始まり（startMissionInput）で切れる */
+  silentOn: boolean;
+  /** 「倍速」（v0.8.3）: 入れている間は 1 フレームに世界を 2 回進める（命中スローの間は 1 回。systems/mission-world の updateFrame）。切れ方は静音と同じ */
+  fastOn: boolean;
 }
 
 export function createInputState(): InputState {
-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false };
+  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false, silentOn: false, fastOn: false };
 }
 
+/** 押しかけの操作を戻す（一時停止・再開。v0.5.1）。静音と倍速（v0.8.3）は切り替えなので残す */
 export function resetInput(s: InputState): void {
   s.headingDeg = NaN;
   s.speed01 = 0;
@@ -48,6 +54,13 @@ export function resetInput(s: InputState): void {
   s.identifyTap = false;
   s.gunHeld = false;
   s.switchTap = false;
+}
+
+/** 任務の始まり（Mission の create。v0.8.3）: 入力を戻し、静音と倍速も切る（どの出撃も切れた状態で始まる） */
+export function startMissionInput(s: InputState): void {
+  resetInput(s);
+  s.silentOn = false;
+  s.fastOn = false;
 }
 
 /** 発射要求を捨てる（駆逐艦がすべて沈み始めたか退いた後・帰投地点の輪の中・終わり際の窓の間。v0.6.2 実機 1 回目で systems/world-input から移した） */

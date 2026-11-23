@@ -62,7 +62,8 @@ describe('systems/world-visuals（v0.6.9 S0: mission-world の見た目の同期
       expect(i, s).toBeGreaterThan(0);
       return i;
     };
-    const order = ['consumeFrameInput(this, realDt);', 'this.stepper.advance(realDt, this.stepFn);', 'if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;', 'this.refreshShallowStatus();\n    updateWorldVisuals(this, realDt);'].map(at);
+    // v0.8.3: 入力 → 固定ステップ → 命中スローの残り → 浅瀬 は世界の 1 回分（subFrame。倍速で 2 回）に入り、updateFrame は boostedFrames の後に見た目（tests/control-toggles）
+    const order = ['boostedFrames(this.input.fastOn, TIME_BOOST_FACTOR, this, this.subFrame, realDt);\n    updateWorldVisuals(this, realDt);', 'consumeFrameInput(this, realDt);', 'this.stepper.advance(realDt, this.stepFn);', 'if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;', 'refreshShallowStatus(this);\n  };'].map(at);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(src).toMatch(/destroy\(\): void \{\n {4}destroyWorldVisuals\(this\);[^\n]*\n {2}\}/);
     expect(src.includes('.updateVisuals(')).toBe(false);

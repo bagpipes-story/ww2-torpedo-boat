@@ -9,6 +9,8 @@ import { getBoatTorpedoCount, type GameData } from '../config/game-data';
 import { getKpiMinTargetSpeedMps } from '../config/kpi-data';
 import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
 import { nextSpeedBand, setPerformance, type BoatParams, type SpeedStep } from '../core/boat-motion';
+import { TIME_BOOST_FACTOR } from '../config/control-toggle-config';
+import { SilentThrottle, boostedFrames } from '../core/control-toggles';
 import { FixedStepper } from '../core/fixed-stepper';
 import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor } from '../core/crew';
 import { createFuelState, type FuelCurve, type FuelState } from '../core/fuel';
@@ -17,7 +19,7 @@ import type { ShotRecord } from '../core/hit-rate';
 import type { InputState } from '../core/input-state';
 import type { MissionEndReason, ReturnPoint } from '../core/mission-flow';
 import { SeededRng } from '../core/rng';
-import { SHALLOW_NONE, updateShallowStatus, type ShallowStatus } from '../core/shallows';
+import { SHALLOW_NONE, type ShallowStatus } from '../core/shallows';
 import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
 import { startDamageState, type Sortie } from '../core/sortie';
 import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
@@ -43,7 +45,7 @@ import { TorpedoLauncher } from './torpedo-launcher';
 import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
 import { torpedoEventsFor } from './torpedo-hits';
 import { WorldDawn } from './world-dawn';
-import { stepPlayerBoat } from './world-boat';
+import { refreshShallowStatus, stepPlayerBoat } from './world-boat';
 import { buildEnemies } from './world-enemies';
 import type { WorldRecon } from './world-recon';
 import { stepEnemySide } from './world-enemy-step';
@@ -125,6 +127,7 @@ export class MissionWorld {
   crewLostNow = 0; // 失った乗員（HP から。毎ステップ更新し、生成時は出撃時の HP から決める）
   extinguishHeldS = 0; // 消火ボタンを押し続けている実秒（world-input だけが書く）
   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
+  readonly silent = new SilentThrottle(); // 静音（v0.8.3。world-boat が速度の指令に通す。入り切りは input.silentOn）
 
   readonly torpedoEvents: TorpedoEvents; // 魚雷の命中・外れの記録と撃沈の開始（torpedo-hits.ts。v0.4.2 で切り出し。destroyer-step が読む）
 
@@ -234,17 +237,23 @@ export class MissionWorld {
     this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
     this.radar = buildRadar(scene, this); // レーダー（v0.8.0 S2。us_04 だけ。乱数なし・世界には書かない）は論理の後・絵の前。進めるのは敵の側の段の最後（world-enemy-step）
     this.art = new WorldArt(scene, this); // 世界の絵（v0.7.0 S3a。絵だけ＝ゲームの乱数の系列も生成の順も触らない）は論理の全部の後
-    this.refreshShallowStatus();
+    refreshShallowStatus(this);
   }
 
-  /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
-  updateFrame(realDt: number): void {
-    consumeFrameInput(this, realDt); // 入力の消費（world-input.ts。v0.6.1 で切り出し）
+  /** 毎フレーム: 世界の 1 回分を回し（倍速 v0.8.3 は 2 回。命中スローの間は 1 回。core/control-toggles）、見た目を同期する（見た目の時計は実秒のまま）。戻りは進めたゲームの秒 */
+  updateFrame(realDt: number): number {
+    const n = boostedFrames(this.input.fastOn, TIME_BOOST_FACTOR, this, this.subFrame, realDt);
+    updateWorldVisuals(this, realDt); // 見た目の同期（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
+    return n * realDt;
+  }
+
+  /** 世界の 1 回分（v0.8.2 までの updateFrame の中身。順は同じ）: 入力の消費（world-input.ts）→ 固定ステップ → 命中スローの時計 → 浅瀬の警告（world-boat） */
+  private readonly subFrame = (realDt: number): void => {
+    consumeFrameInput(this, realDt);
     this.stepper.advance(realDt, this.stepFn);
     if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
-    this.refreshShallowStatus();
-    updateWorldVisuals(this, realDt); // 見た目の同期（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
-  }
+    refreshShallowStatus(this);
+  };
 
   /** 水上機か夜明けの空襲の機体が来ている（味方機の開始条件が読む）。夜の哨戒機（v0.6.7）も（無い任務は false＝同じ値） */
   get seaplaneActive(): boolean {
@@ -277,13 +286,6 @@ export class MissionWorld {
 
   destroy(): void {
     destroyWorldVisuals(this); // 破棄（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
-  }
-
-  /** 浅瀬の警告（接近中は縁までの距離）。平方根は使わない */
-  private refreshShallowStatus(): void {
-    const b = this.boat.state;
-    const c = this.setup;
-    updateShallowStatus(this.shallowStatus, c.mission.shallows, b.x, b.y, b.headingDeg, b.speedMps, c.grounding, c.timeScale, this.grounded);
   }
 
   /** 砲弾・機銃・掃射・爆弾の命中（中身は boat-damage）。沈み始めたら命中スローを掛ける */

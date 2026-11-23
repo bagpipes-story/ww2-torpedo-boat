@@ -4,6 +4,7 @@
 // 再開してから PAUSE_RESUME_GUARD_MS は Hud の押下を受けない（右下の「再開」の 2 度押しが、下にある魚雷・扇のボタンに入らないように）。
 import Phaser from 'phaser';
 import { SCENE_KEYS, TEXTURE_KEYS } from '../config/game-config';
+import { PAUSE_HIT_R } from '../config/control-toggle-config';
 import { PAUSE_RESUME_GUARD_MS } from '../config/menu-config';
 import { PAUSE_BUTTON_LABEL, PAUSE_BUTTON_SIZE_SCALE, PAUSE_BUTTON_X, PAUSE_BUTTON_Y } from '../config/ui-config';
 import { resetInput, type InputState } from '../core/input-state';
@@ -25,7 +26,7 @@ export class PauseControl {
     /** 止めるときに取り消す操作（作り直されることがあるので呼ぶたびに集める） */
     private readonly controls: () => readonly (Cancelable | undefined)[],
   ) {
-    this.button = new HoldButton(scene, PAUSE_BUTTON_X, PAUSE_BUTTON_Y, PAUSE_BUTTON_LABEL, { onUp: () => this.open() }, TEXTURE_KEYS.roundButton, PAUSE_BUTTON_SIZE_SCALE);
+    this.button = new HoldButton(scene, PAUSE_BUTTON_X, PAUSE_BUTTON_Y, PAUSE_BUTTON_LABEL, { onUp: () => this.open() }, TEXTURE_KEYS.roundButton, PAUSE_BUTTON_SIZE_SCALE, { hitR: PAUSE_HIT_R }); // 当たりは円 R37.8（v0.8.3 IP1。右の衛星の当たりと重ならない）
     scene.game.events.on(Phaser.Core.Events.HIDDEN, this.open, this);
     scene.events.on(Phaser.Scenes.Events.RESUME, this.onResume, this);
   }
