@@ -1,0 +1,505 @@
+diff --git a/scripts/headless/ab-replay.mjs b/scripts/headless/ab-replay.mjs
+index d204fe3..2dc23ff 100644
+--- a/scripts/headless/ab-replay.mjs
++++ b/scripts/headless/ab-replay.mjs
+@@ -25,7 +25,9 @@
+ //   S2 は A＝B＝今の木で決定性とページのエラー・S2b から A は S2 の commit のビルド）。写しに報告の段（s.rc: 段・無線・追った秒・引いた回数）・列の見張り（s.sc: 離れている艦）・
+ //   弾薬庫（s.mg: 誘爆の数・引いた回数）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+ // v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印の濾し（scripts/headless/recon-filter。B が出し側・世界の写しは全部比べる。A は S3 の commit のビルド）。
+-// 実行: A=<site A> B=<site B> [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
++// v0.8.3: CTRLUI（既定 1）で両方の側の HUD の写しから「静音」「倍速」の丸と字（B にだけある 4 つの物＝lib.mjs の isCtrl）を除いて比べる（世界の写しは全部比べる）。
++//   結果の行に両方の側で除いた数（ctrl A n B m。A＝基準 b7e9f44 は 0、B＝今の木は写すたびに 4）。CTRLUI=0 で除かない（違いが出るはず）。
++// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+ import { fileURLToPath } from 'node:url';
+ import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
+ import { anchorPair } from './anchor-filter.mjs';
+@@ -189,6 +191,8 @@ export async function oneCase(browser, A, B, c) {
+   const pa = await openGame(browser, A, query(c, 'A'), { width: envNum('W', 1560) });
+   const pb = await openGame(browser, B, query(c, 'B'), { width: envNum('W', 1560) });
+   try {
++    const ctrl = process.env.CTRLUI !== '0';
++    for (const p of [pa, pb]) await p.page.evaluate((on) => { window.__hl.ctrlDrop = on; window.__hl.ctrlDropped = 0; }, ctrl);
+     const o = { ...c, frameMs: FRAME_MS, hudEvery: c.hudEvery ?? 0 };
+     let ra;
+     let rb;
+@@ -209,6 +213,7 @@ export async function oneCase(browser, A, B, c) {
+     for (let i = 0; i < n; i++) if (ra.hashes[i] !== rb.hashes[i]) { at = i; break; }
+     if (at < 0 && ra.hashes.length !== rb.hashes.length) at = n;
+     const errors = [...pa.errors.map((e) => `A: ${e}`), ...pb.errors.map((e) => `B: ${e}`)];
++    if (ctrl) c.ctrl = await Promise.all([pa, pb].map((p) => p.page.evaluate(() => window.__hl.ctrlDropped)));
+     if (at < 0) return { ...c, same: errors.length === 0, frames: n, errors };
+     const [sa, sb] = await Promise.all([pa.page.evaluate((i) => window.__ab[i] ?? null, at), pb.page.evaluate((i) => window.__ab[i] ?? null, at)]);
+     return { ...c, same: false, frames: n, at, field: sa && sb ? firstField(sa, sb) : { path: '(長さ)', a: ra.hashes.length, b: rb.hashes.length }, errors };
+@@ -230,7 +235,7 @@ async function main() {
+   await sb.close();
+   let bad = 0;
+   for (const r of res) {
+-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}`;
++    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}${r.ctrl ? ` ctrl A ${r.ctrl[0]} B ${r.ctrl[1]}` : ''}`;
+     if (!r.same) bad++;
+     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+   }
+diff --git a/scripts/headless/hud-ab.mjs b/scripts/headless/hud-ab.mjs
+index 1ff8885..e286a52 100644
+--- a/scripts/headless/hud-ab.mjs
++++ b/scripts/headless/hud-ab.mjs
+@@ -10,7 +10,8 @@
+ // v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文だけを比べから外す濾し（scripts/headless/anchor-filter。A は S3 の commit のビルド・B は今の木。tests/anchor-ab-filter が固定）。
+ // v0.8.2 S2: SET=us05 で us_05（ab-replay の us05 の組。秒は 270＝夜明けまで。S2 は A＝B＝今の木・S2b から A は S2 の commit のビルド）。
+ // v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印だけを比べから外す濾し（scripts/headless/recon-filter。A は S3 の commit のビルド）。
+-// 実行: A=<site A> B=<site B> [SET=base|jp04|jp04base|jp03|us04|us06|us05] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
++// v0.8.3: CTRLUI（既定 1）は ab-replay と同じ（「静音」「倍速」の丸と字を両方の側で除く。行に除いた数 ctrl A n B m）。
++// 実行: A=<site A> B=<site B> [CTRLUI=0] [SET=base|jp04|jp04base|jp03|us04|us06|us05] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+ import { abCases, oneCase } from './ab-replay.mjs';
+ import { chromium, envNum, pool, serve } from './lib.mjs';
+ 
+@@ -26,7 +27,7 @@ await sb.close();
+ let bad = 0;
+ for (const r of res) {
+   if (!r.same) bad++;
+-  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
++  console.log(`hud ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}${r.ctrl ? ` ctrl A ${r.ctrl[0]} B ${r.ctrl[1]}` : ''} same:${r.same} snapshots ${r.frames}${r.same ? '' : ` 最初の違い ${r.at + 1} 秒 ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
+ }
+ console.log(`cases ${res.length} same ${res.length - bad} diff ${bad}`);
+ process.exitCode = bad === 0 ? 0 : 1;
+diff --git a/scripts/headless/lib.mjs b/scripts/headless/lib.mjs
+index d3f72f9..dbfe518 100644
+--- a/scripts/headless/lib.mjs
++++ b/scripts/headless/lib.mjs
+@@ -77,6 +77,7 @@ function pageInit() {
+       if (!s || !g.scene.isActive(key)) return [];
+       const out = [];
+       for (const o of s.children.list) {
++        if (hl.ctrlDrop && hl.isCtrl(o)) { hl.ctrlDropped++; continue; }
+         const r = { type: o.type, x: o.x, y: o.y, ox: o.originX, oy: o.originY, a: o.alpha, v: o.visible, sx: o.scaleX, sy: o.scaleY, d: o.depth };
+         if (o.type === 'Text') { r.text = o.text; r.size = o.style.fontSize; r.color = o.style.color; r.w = o.width; r.h = o.height; }
+         else if (o.type === 'Image' || o.type === 'Sprite') { r.tex = o.texture ? o.texture.key : ''; r.tint = o.tintTopLeft; r.ang = o.angle; }
+@@ -85,6 +86,13 @@ function pageInit() {
+       return out;
+     },
+     texts(key) { return hl.objects(key).filter((o) => o.type === 'Text').map((o) => o.text); },
++    /**
++     * v0.8.3: 「静音」「倍速」の丸と字（左の一時停止の右・中心 x 156 と 252・y 270＝config/control-toggle-config の controlToggleLayout。v0.8.2 までのビルドには無い）。
++     * ctrlDrop が真なら objects()（と texts()）が除き、除いた数を ctrlDropped に足す（ab-replay・hud-ab の CTRLUI。既定は除かない＝今までどおり）
++     */
++    ctrlDrop: false,
++    ctrlDropped: 0,
++    isCtrl(o) { return o.y === 270 && (o.x === 156 || o.x === 252) && ((o.type === 'Image' && o.texture && o.texture.key === 'tex-round-button') || (o.type === 'Text' && /^(静音|倍速)/.test(o.text))); },
+     fnv(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0; return h; },
+   };
+   window.__hl = hl;
+diff --git a/src/core/input-state.ts b/src/core/input-state.ts
+index a1e3cb3..13b59fd 100644
+--- a/src/core/input-state.ts
++++ b/src/core/input-state.ts
+@@ -28,12 +28,18 @@ export interface InputState {
+   gunHeld: boolean;
+   /** ［切替］ボタンのタップ（v0.6.11 S4。jp_03 の操る隊を替える。世界の入力の消費 systems/world-evac が消費して false に戻す。S5 から右端の識別の段のボタン ui/weapon-panel と Tab キー）。ほかの任務では誰も読まない */
+   switchTap: boolean;
++  /** 「静音」（v0.8.3。左の一時停止の右）: 入れている間はスティックいっぱいで艇の静音の上限（世界の core/control-toggles の SilentThrottle が速度の指令を縮める。InputState の speed01 は倒した量のまま）。
++   * 押すたびに入り切り。一時停止（resetInput）では切れず、任務の始まり（startMissionInput）で切れる */
++  silentOn: boolean;
++  /** 「倍速」（v0.8.3）: 入れている間は 1 フレームに世界を 2 回進める（命中スローの間は 1 回。systems/mission-world の updateFrame）。切れ方は静音と同じ */
++  fastOn: boolean;
+ }
+ 
+ export function createInputState(): InputState {
+-  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false };
++  return { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false, silentOn: false, fastOn: false };
+ }
+ 
++/** 押しかけの操作を戻す（一時停止・再開。v0.5.1）。静音と倍速（v0.8.3）は切り替えなので残す */
+ export function resetInput(s: InputState): void {
+   s.headingDeg = NaN;
+   s.speed01 = 0;
+@@ -50,6 +56,13 @@ export function resetInput(s: InputState): void {
+   s.switchTap = false;
+ }
+ 
++/** 任務の始まり（Mission の create。v0.8.3）: 入力を戻し、静音と倍速も切る（どの出撃も切れた状態で始まる） */
++export function startMissionInput(s: InputState): void {
++  resetInput(s);
++  s.silentOn = false;
++  s.fastOn = false;
++}
++
+ /** 発射要求を捨てる（駆逐艦がすべて沈み始めたか退いた後・帰投地点の輪の中・終わり際の窓の間。v0.6.2 実機 1 回目で systems/world-input から移した） */
+ export function discardFireInput(input: InputState): void {
+   input.fireTap = false;
+diff --git a/src/scenes/hud-scene.ts b/src/scenes/hud-scene.ts
+index ad9cc65..0d57422 100644
+--- a/src/scenes/hud-scene.ts
++++ b/src/scenes/hud-scene.ts
+@@ -21,6 +21,7 @@ import type { InputState } from '../core/input-state';
+ import type { SpreadConfig } from '../core/salvo';
+ import { isSortie } from '../core/sortie';
+ import { HUD_COLOR_KPI, HUD_FONT_DEBUG_PX, HUD_HIST_BADGE_JA, HUD_HIST_BADGE_X, hudTextStyle } from '../config/ui-config';
++import { ControlToggleButtons } from '../systems/control-toggle-buttons';
+ import { KeyboardInput } from '../systems/keyboard-input';
+ import { PauseControl } from '../systems/pause-control';
+ import { PinchZoom } from '../systems/pinch-zoom';
+@@ -52,6 +53,8 @@ export class HudScene extends Phaser.Scene {
+   private pinch?: PinchZoom;
+   /** 「一時停止」（v0.5.1 実機 1 回目）。左端。押すと Mission と Hud を止めて一時停止の画面 */
+   private pause?: PauseControl;
++  /** 「静音」「倍速」（v0.8.3）。一時停止の右に小さく 2 つ。どの任務にも */
++  private toggles?: ControlToggleButtons;
+   private sfx?: MissionSfx; // 任務の間の音（v0.7.1 S3。ループ 5 本。テレメトリを読むだけ。一時停止・終わりは自分で Hud の出来事を聞く）
+   private telemetry!: BoatTelemetry;
+   /** Mission が launch で渡す Sortie の任務（v0.4.0） */
+@@ -109,7 +112,8 @@ export class HudScene extends Phaser.Scene {
+     this.keyboard = new KeyboardInput(this, input, this.telemetry.evac.enabled); // Tab の［切替］は空襲下の退避の任務だけ（v0.6.11 S8）
+     // ピンチズーム（右半分、右下の兵装の左端 − 16 より右とボタンの上を除く）。見張りを離した後もその倍率を保つ
+     this.pinch = new PinchZoom(this, input, this.telemetry, data.hitRateModel.world.camera_zoom_min, data.hitRateModel.world.camera_zoom_max);
+-    this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch]);
++    this.toggles = new ControlToggleButtons(this, input, this.stick); // 一時停止の前に作る（一時停止の取り消しの的に入れる）
++    this.pause = new PauseControl(this, input, () => [this.stick, ...(this.panel ? this.panel.controls() : []), this.pinch, this.toggles]);
+     this.sfx = new MissionSfx(this.events, getBoatRecord(data, mission.playerBoatId).speed_max_kt);
+ 
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+@@ -136,6 +140,8 @@ export class HudScene extends Phaser.Scene {
+       this.pinch = undefined;
+       this.pause?.destroy();
+       this.pause = undefined;
++      this.toggles?.destroy();
++      this.toggles = undefined;
+       this.sfx = undefined;
+     });
+   }
+@@ -149,6 +155,7 @@ export class HudScene extends Phaser.Scene {
+     this.markers?.refresh(this.telemetry);
+     this.dawnBanner?.refresh(this.telemetry, this.time.now);
+     this.panel?.update(this.telemetry, this.time.now);
++    this.toggles?.refresh();
+     this.sfx?.update(this.telemetry, delta); // 音は最後（HUD の描き換えの後。HUD には触らない）
+   }
+ }
+diff --git a/src/scenes/mission-scene.ts b/src/scenes/mission-scene.ts
+index 17bdbaa..1b9c0fa 100644
+--- a/src/scenes/mission-scene.ts
++++ b/src/scenes/mission-scene.ts
+@@ -28,7 +28,7 @@ import {
+   ZOOM_LERP,
+ } from '../config/ui-config';
+ import type { BoatTelemetry } from '../core/boat-motion';
+-import { resetInput, type InputState } from '../core/input-state';
++import { startMissionInput, type InputState } from '../core/input-state';
+ import { AIM_ASSIST_LEAD_MARKER_TIME, AIM_ASSIST_NONE, aimAssistLevelFor } from '../core/progress';
+ import { dawnCallNeedS, updateReturnCalls, type MissionEndReason } from '../core/mission-flow';
+ import { directSortie, isSortie, type Sortie } from '../core/sortie';
+@@ -130,7 +130,7 @@ export class MissionScene extends Phaser.Scene {
+     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
+     const world = data.hitRateModel.world;
+     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
+-    resetInput(this.inputState);
++    startMissionInput(this.inputState); // 静音と倍速（v0.8.3）も切る
+ 
+     // 乱数: seed は出撃ごとに Title・Result（?debug 直行では Boot）が決めたもの。Result に出す（?debug&title&seed=N で再現）
+     this.world = new MissionWorld(this, data, this.sortie, this.inputState, this.worldEvents);
+@@ -189,11 +189,10 @@ export class MissionScene extends Phaser.Scene {
+ 
+   override update(_time: number, delta: number): void {
+     if (this.ended) return;
+-    const realDt = delta / 1000;
+     const w = this.world;
+ 
+     this.end.holdFire(w); // 終わり際の窓の間は撃たない（入力の消費の前に）
+-    w.updateFrame(realDt);
++    const gameDt = w.updateFrame(delta / 1000); // 世界が進めたゲームの秒（倍速 v0.8.3 は実秒の 2 倍。命中スローの間と切っている間は実秒）。下の任務の時計・帰投の待ちはこれで数える
+     if (this.startFireS < 0 && w.damage.fireLeftS <= 0) this.startFireS = w.stepTimeS; // NaN < 0 は false
+     this.updateZoom();
+     this.updateLookAhead();
+@@ -205,18 +204,18 @@ export class MissionScene extends Phaser.Scene {
+     }
+     this.debugRanges?.refresh(enemyAlive, w.detectRangeM, w.boat.state, Math.sqrt(w.visRange2));
+ 
+-    this.elapsedS += realDt;
++    this.elapsedS += gameDt;
+     // 夜明けの時計は固定ステップで実際に進んだ時間（低フレームレートで捨てた時間は数えない。移動と燃料に揃える）
+     this.timeLeftS = Math.max(0, w.setup.durationS - w.stepTimeS);
+-    this.refreshReturnState(realDt);
++    this.refreshReturnState(gameDt);
+     this.refreshTelemetry();
+ 
+     const reason = this.end.step(w, this.waitS, this.timeLeftS);
+     if (reason) this.endMission(reason);
+   }
+ 
+-  /** 帰投地点までの距離、「帰投せよ」のビット（ラッチ）、待ち時間。平方根はここの 1 回だけ */
+-  private refreshReturnState(realDt: number): void {
++  /** 帰投地点までの距離、「帰投せよ」のビット（ラッチ）、待ち時間（gameDt＝世界が進めたゲームの秒。v0.8.3）。平方根はここの 1 回だけ */
++  private refreshReturnState(gameDt: number): void {
+     const w = this.world;
+     const s = w.boat.state;
+     const rp = w.returnPoint;
+@@ -238,7 +237,7 @@ export class MissionScene extends Phaser.Scene {
+     // 燃料計の青い目盛り: 全速で輪の縁まで戻るのに要る燃料（全速は巡航の 1.47 倍食うので、巡航基準だと全速で走る人には甘すぎた。v0.3.3 実機）
+     t.fuelNeed01 = w.fuelAllotmentGal > 0 ? (this.ringEdgeM * w.fuelCurve.galPerMFull) / w.fuelAllotmentGal : 0;
+     // 待ち: 輪の中にいる間、または燃料 0 で止まっている間だけ数える
+-    if (w.atHome || w.grounded || (w.fuel.empty && w.band === 'stop')) this.waitS += realDt;
++    if (w.atHome || w.grounded || (w.fuel.empty && w.band === 'stop')) this.waitS += gameDt;
+     else this.waitS = 0;
+   }
+ 
+diff --git a/src/systems/engine-trouble.ts b/src/systems/engine-trouble.ts
+index a7e9333..627e904 100644
+--- a/src/systems/engine-trouble.ts
++++ b/src/systems/engine-trouble.ts
+@@ -33,9 +33,9 @@ export class EngineTrouble {
+     this.state = createEngineState(p);
+   }
+ 
+-  /** 自艇の運動に渡す入力（world-boat。燃料切れでないとき）: 不調でなければ w.input そのもの、不調なら速さを静音の上限 / 今の全速までにした写し */
+-  input(w: Pick<EngineWorldView, 'input' | 'params'>): BoatInput {
+-    return engineInput(this.state, w.input, this.capInput, engineCap01(w.params));
++  /** 自艇の運動に渡す入力（world-boat。燃料切れでないとき）: 不調でなければ cmd（既定 w.input。v0.8.3 から静音を通した指令）そのもの、不調なら速さを静音の上限 / 今の全速までにした写し */
++  input(w: Pick<EngineWorldView, 'input' | 'params'>, cmd: BoatInput = w.input): BoatInput {
++    return engineInput(this.state, cmd, this.capInput, engineCap01(w.params));
+   }
+ 
+   /**
+diff --git a/src/systems/mission-world.ts b/src/systems/mission-world.ts
+index ea7544e..c3aea1e 100644
+--- a/src/systems/mission-world.ts
++++ b/src/systems/mission-world.ts
+@@ -9,6 +9,8 @@ import { getBoatTorpedoCount, type GameData } from '../config/game-data';
+ import { getKpiMinTargetSpeedMps } from '../config/kpi-data';
+ import { SMALL_HIT_DAMAGE_RATIO, SMOKE_POOL_SIZE, SPLASH_POOL_SIZE, SPLASH_SCALE_HIT, SPLASH_SCALE_MISS } from '../config/ui-config';
+ import { nextSpeedBand, setPerformance, type BoatParams, type SpeedStep } from '../core/boat-motion';
++import { TIME_BOOST_FACTOR } from '../config/control-toggle-config';
++import { SilentThrottle, boostedFrames } from '../core/control-toggles';
+ import { FixedStepper } from '../core/fixed-stepper';
+ import { crewAccelFactor, crewExtinguishFactor, crewLost, crewTurnFactor } from '../core/crew';
+ import { createFuelState, type FuelCurve, type FuelState } from '../core/fuel';
+@@ -17,7 +19,7 @@ import type { ShotRecord } from '../core/hit-rate';
+ import type { InputState } from '../core/input-state';
+ import type { MissionEndReason, ReturnPoint } from '../core/mission-flow';
+ import { SeededRng } from '../core/rng';
+-import { SHALLOW_NONE, updateShallowStatus, type ShallowStatus } from '../core/shallows';
++import { SHALLOW_NONE, type ShallowStatus } from '../core/shallows';
+ import { createSmokeState, losBlocked, updateSmoke, type SmokeParams, type SmokeState } from '../core/smoke';
+ import { startDamageState, type Sortie } from '../core/sortie';
+ import { enemyDetectRangeM, speedFactorForBand, type VisibilityParams } from '../core/visibility';
+@@ -43,7 +45,7 @@ import { TorpedoLauncher } from './torpedo-launcher';
+ import { TorpedoPool, type TorpedoEvents } from './torpedo-pool';
+ import { torpedoEventsFor } from './torpedo-hits';
+ import { WorldDawn } from './world-dawn';
+-import { stepPlayerBoat } from './world-boat';
++import { refreshShallowStatus, stepPlayerBoat } from './world-boat';
+ import { buildEnemies } from './world-enemies';
+ import type { WorldRecon } from './world-recon';
+ import { stepEnemySide } from './world-enemy-step';
+@@ -125,6 +127,7 @@ export class MissionWorld {
+   crewLostNow = 0; // 失った乗員（HP から。毎ステップ更新し、生成時は出撃時の HP から決める）
+   extinguishHeldS = 0; // 消火ボタンを押し続けている実秒（world-input だけが書く）
+   private readonly stepper = new FixedStepper(FIXED_STEP_S, MAX_STEPS_PER_FRAME);
++  readonly silent = new SilentThrottle(); // 静音（v0.8.3。world-boat が速度の指令に通す。入り切りは input.silentOn）
+ 
+   readonly torpedoEvents: TorpedoEvents; // 魚雷の命中・外れの記録と撃沈の開始（torpedo-hits.ts。v0.4.2 で切り出し。destroyer-step が読む）
+ 
+@@ -234,18 +237,24 @@ export class MissionWorld {
+     this.evac = buildEvac(scene, this, seed, hit, this.boatDamage); // 空襲下の退避（v0.6.11 S4。jp_03 だけ。+29〜+43 はここだけ）は揚陸の後＝最後
+     this.radar = buildRadar(scene, this); // レーダー（v0.8.0 S2。us_04 だけ。乱数なし・世界には書かない）は論理の後・絵の前。進めるのは敵の側の段の最後（world-enemy-step）
+     this.art = new WorldArt(scene, this); // 世界の絵（v0.7.0 S3a。絵だけ＝ゲームの乱数の系列も生成の順も触らない）は論理の全部の後
+-    this.refreshShallowStatus();
++    refreshShallowStatus(this);
+   }
+ 
+-  /** 毎フレーム: 入力を消費し、固定ステップを回し、見た目を同期する */
+-  updateFrame(realDt: number): void {
+-    consumeFrameInput(this, realDt); // 入力の消費（world-input.ts。v0.6.1 で切り出し）
+-    this.stepper.advance(realDt, this.stepFn);
+-    if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
+-    this.refreshShallowStatus();
++  /** 毎フレーム: 世界の 1 回分を回し（倍速 v0.8.3 は 2 回。命中スローの間は 1 回。core/control-toggles）、見た目を同期する（見た目の時計は実秒のまま）。戻りは進めたゲームの秒 */
++  updateFrame(realDt: number): number {
++    const n = boostedFrames(this.input.fastOn, TIME_BOOST_FACTOR, this, this.subFrame, realDt);
+     updateWorldVisuals(this, realDt); // 見た目の同期（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
++    return n * realDt;
+   }
+ 
++  /** 世界の 1 回分（v0.8.2 までの updateFrame の中身。順は同じ）: 入力の消費（world-input.ts）→ 固定ステップ → 命中スローの時計 → 浅瀬の警告（world-boat） */
++  private readonly subFrame = (realDt: number): void => {
++    consumeFrameInput(this, realDt);
++    this.stepper.advance(realDt, this.stepFn);
++    if (this.slowMoLeftS > 0) this.slowMoLeftS -= realDt;
++    refreshShallowStatus(this);
++  };
++
+   /** 水上機か夜明けの空襲の機体が来ている（味方機の開始条件が読む）。夜の哨戒機（v0.6.7）も（無い任務は false＝同じ値） */
+   get seaplaneActive(): boolean {
+     return (this.seaplane ? this.seaplane.active : false) || this.dawn.strikeActive || (this.patrol ? this.patrol.active : false);
+@@ -279,13 +288,6 @@ export class MissionWorld {
+     destroyWorldVisuals(this); // 破棄（world-visuals.ts。v0.6.9 S0 で切り出し。順は同じ）
+   }
+ 
+-  /** 浅瀬の警告（接近中は縁までの距離）。平方根は使わない */
+-  private refreshShallowStatus(): void {
+-    const b = this.boat.state;
+-    const c = this.setup;
+-    updateShallowStatus(this.shallowStatus, c.mission.shallows, b.x, b.y, b.headingDeg, b.speedMps, c.grounding, c.timeScale, this.grounded);
+-  }
+-
+   /** 砲弾・機銃・掃射・爆弾の命中（中身は boat-damage）。沈み始めたら命中スローを掛ける */
+   private hitBoat(spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void {
+     if (this.boatDamage.applyHit(spec, rng, x, y, reason)) this.slowMoLeftS = this.setup.slowMoSeconds;
+diff --git a/src/systems/virtual-stick.ts b/src/systems/virtual-stick.ts
+index b69c688..234cb93 100644
+--- a/src/systems/virtual-stick.ts
++++ b/src/systems/virtual-stick.ts
+@@ -7,6 +7,7 @@
+ import Phaser from 'phaser';
+ import { DEPTH, GAME_WIDTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
+ import { STICK_BASE_ALPHA, STICK_DEAD_ZONE, STICK_FIXED_CENTER_X, STICK_FIXED_CENTER_Y, STICK_GRAB_RATIO, STICK_KNOB_ALPHA, STICK_RADIUS } from '../config/ui-config';
++import { STICK_SILENT_TINT } from '../config/control-toggle-config';
+ import { stickToCommand, type InputState } from '../core/input-state';
+ 
+ export class VirtualStick {
+@@ -17,6 +18,7 @@ export class VirtualStick {
+   private readonly knob: Phaser.GameObjects.Image;
+   private readonly tmp = new Phaser.Math.Vector2();
+   private readonly cmd = { speed01: 0, headingDeg: NaN };
++  private silent = false;
+ 
+   constructor(
+     private readonly scene: Phaser.Scene,
+@@ -92,6 +94,14 @@ export class VirtualStick {
+     this.cancel();
+   }
+ 
++  /** 静音（v0.8.3。systems/control-toggle-buttons）の間は台座に色（台座の輪＝静音の上限がいっぱいの倒し量の印に替わる。テクスチャは同じ）。変わったときだけ */
++  setSilent(on: boolean): void {
++    if (on === this.silent) return;
++    this.silent = on;
++    if (on) this.base.setTint(STICK_SILENT_TINT);
++    else this.base.clearTint();
++  }
++
+   /** 離したことにする（一時停止でも。v0.5.1）。中立＝停止 */
+   cancel(): void {
+     this.pointerId = -1;
+diff --git a/src/systems/world-boat.ts b/src/systems/world-boat.ts
+index c205daa..1e8aab6 100644
+--- a/src/systems/world-boat.ts
++++ b/src/systems/world-boat.ts
+@@ -1,5 +1,6 @@
+ // 自艇の運動の固定ステップ（v0.6.5 の準備で systems/mission-world.ts の stepFn から移した。順と式は 1 字も変えていない）: 座礁・stepBoat・海域の縁・浅瀬・燃料・帰投の輪。
+ // v0.6.5: stepBoat の入力だけ、機関の不調（systems/engine-trouble）の上限を通す（燃料切れの漂流が優先）。
++// v0.8.3: 速度の指令の元は静音（core/control-toggles の SilentThrottle。入れている間は speed01 × 静音の上限 / 全速）を通した物。機関の不調・退避の座席はそれを読む（切れていれば w.input そのもの＝今のまま）。
+ // 沈み始めたら何もしない（乗員と setPerformance は沈み始めても回るので mission-world に残す）。§7: 確保しない。
+ // v0.6.11 S4（jp_03。spec-v0611-r2 §3.3・§3.9）: 座席への入力は systems/world-evac の command（スティックの latch。core/evac-seat の evacSeatCommand）、燃料は stepTimeS が
+ // fuel_free_until_s に届いてから（空襲の間は数えない。模擬 core/evac-sim と同じ式）。evac の無い任務は今のまま（stepTimeS ≥ 0 − ε はいつも真）。
+@@ -7,8 +8,9 @@ import { clampToBounds, stepBoat, type BoatInput, type BoatParams, type BoatStat
+ import { stepFuel, type FuelCurve, type FuelState } from '../core/fuel';
+ import { insideRing, type ReturnPoint } from '../core/mission-flow';
+ import { EVAC_TIME_EPS_S } from '../core/evac-data';
+-import { shallowIndexAt } from '../core/shallows';
++import { shallowIndexAt, updateShallowStatus, type ShallowStatus } from '../core/shallows';
+ import type { EngineTrouble } from './engine-trouble';
++import type { SilentAwareInput, SilentThrottle } from '../core/control-toggles';
+ import { DRIFT_INPUT, type WorldEvents } from './world-events';
+ import type { WorldSetup } from './world-setup';
+ 
+@@ -16,8 +18,10 @@ import type { WorldSetup } from './world-setup';
+ export interface PlayerBoatWorld {
+   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
+   readonly setup: Pick<WorldSetup, 'mission' | 'boundsMarginM' | 'grounding'>;
+-  readonly input: BoatInput;
++  readonly input: SilentAwareInput;
+   readonly params: BoatParams;
++  /** 静音（v0.8.3。無い世界＝tests/engine-trouble-world の素の値は今のまま） */
++  readonly silent?: SilentThrottle;
+   readonly fuel: FuelState;
+   readonly fuelCurve: FuelCurve;
+   readonly returnPoint: ReturnPoint;
+@@ -40,7 +44,8 @@ export function stepPlayerBoat(w: PlayerBoatWorld, dt: number): void {
+       boat.speedMps = 0;
+     } else {
+       // 燃料切れなら漂流（舵も速度指令も効かない）。機関の不調（v0.6.5）の間は速さの上限が艇の静音の上限（舵は残る。不調の無い任務は w.input そのもの）。燃料は運動と同じ game dt で積分する
+-      stepBoat(boat, w.fuel.empty ? DRIFT_INPUT : w.engine ? w.engine.input(w) : w.evac ? w.evac.command(w.input) : w.input, w.params, dt);
++      const cmd = w.silent ? w.silent.command(w.input, w.params) : w.input; // 静音（v0.8.3）を通した指令（切れていれば w.input そのもの）
++      stepBoat(boat, w.fuel.empty ? DRIFT_INPUT : w.engine ? w.engine.input(w, cmd) : w.evac ? w.evac.command(cmd) : cmd, w.params, dt);
+       clampToBounds(boat, c.mission.bounds, c.boundsMarginM);
+       // 浅瀬: 安全速力を超えて中に入ると座礁（docs/02 §6.8）。安全速力以下なら通れる
+       if (boat.speedMps > c.grounding.safeSpeedMps && shallowIndexAt(c.mission.shallows, boat.x, boat.y) >= 0) {
+@@ -53,3 +58,10 @@ export function stepPlayerBoat(w: PlayerBoatWorld, dt: number): void {
+     w.atHome = insideRing(w.returnPoint, boat.x, boat.y);
+   }
+ }
++
++/** 浅瀬の警告（接近中は縁までの距離）。平方根は使わない（v0.8.3 で mission-world の private から移した。式と呼ぶ所は同じ: 生成の最後と毎回の世界の 1 回分の最後） */
++export function refreshShallowStatus(w: { readonly shallowStatus: ShallowStatus; readonly boat: { readonly state: BoatState }; readonly setup: Pick<WorldSetup, 'mission' | 'grounding' | 'timeScale'>; readonly grounded: boolean }): void {
++  const b = w.boat.state;
++  const c = w.setup;
++  updateShallowStatus(w.shallowStatus, c.mission.shallows, b.x, b.y, b.headingDeg, b.speedMps, c.grounding, c.timeScale, w.grounded);
++}
+diff --git a/tests/hud-layout.test.ts b/tests/hud-layout.test.ts
+index b459d9b..09b4e0a 100644
+--- a/tests/hud-layout.test.ts
++++ b/tests/hud-layout.test.ts
+@@ -5,6 +5,7 @@
+ // y ≥ 682（ホームバーの帯）に入るのはどの任務も扇だけ。
+ // v0.6.9 S6a: jp_04（煙幕なし・味方機なし）を足し、右上 2 段目の揚陸の時計（ui/landing-clock。左上の夜明けの時計の鏡）の箱が、jp_04 にあるどのボタンの当たり・2 行目・ビルド番号にも
+ // 触れないこと（煙幕の段は空いている。煙幕があれば重なる＝Boot の V12）を確かめる。
++// v0.8.3: 左の一時停止の右の「静音」「倍速」（どの任務も同じ置き方）が、一時停止・計器・スティック・ビルド番号・2・3 行目・右のパネルに触れないこと。
+ import { createEvacTelemetry } from '../src/core/evac-telemetry';
+ import { evacStatusLine } from '../src/ui/evac-lines';
+ import { readFileSync } from 'node:fs';
+@@ -35,6 +36,7 @@ import {
+   type PanelRect,
+ } from '../src/config/hud-layout-config';
+ import { GUN_BUTTON_FONT_PX, GUN_BUTTON_SCALE } from '../src/config/arms-config';
++import { CONTROL_TOGGLE_LABELS, CONTROL_TOGGLE_PAUSE_X, CONTROL_TOGGLE_R, CONTROL_TOGGLE_SCALE, CONTROL_TOGGLE_Y, controlToggleLayout } from '../src/config/control-toggle-config';
+ import { gameData } from '../src/config/game-data';
+ import { HUD_CLOCK_MAX_W_PX, HUD_FONT_CLOCK_PX } from '../src/config/hud-text-config';
+ import { getPrototypeMission } from '../src/config/mission-data';
+@@ -270,3 +272,36 @@ describe('3 行目の箱と空襲下の退避の隊の行（v0.6.11 S5。spec-v0
+     expect(textW(longest, 20)).toBeLessThanOrEqual(2 * (640 - 342));
+   });
+ });
++
++describe('左の「静音」「倍速」（v0.8.3。config/control-toggle-config）', () => {
++  const ui = readFileSync('src/config/ui-config.ts', 'utf8');
++  const num = (re: RegExp): number => Number(re.exec(ui)?.[1]);
++
++  it('一時停止と同じ大きさ（丸ボタン R48 × 0.75 = R36）・同じ y 270 で、一時停止の右に 96 ずつ（中心 x 156・252）。どの幅でも同じ', () => {
++    expect(num(/export const PAUSE_BUTTON_SIZE_SCALE = ([\d.]+);/)).toBe(CONTROL_TOGGLE_SCALE);
++    expect(num(/export const PAUSE_BUTTON_Y = (\d+);/)).toBe(CONTROL_TOGGLE_Y);
++    expect(num(/export const ROUND_BUTTON_RADIUS = (\d+);/) * CONTROL_TOGGLE_SCALE).toBe(CONTROL_TOGGLE_R);
++    expect(M + CONTROL_TOGGLE_R).toBe(CONTROL_TOGGLE_PAUSE_X); // PAUSE_BUTTON_X = HUD_MARGIN + R48 × 0.75
++    expect(controlToggleLayout()).toEqual([
++      { kind: 'silent', x: 156, y: 270, r: 36 },
++      { kind: 'fast', x: 252, y: 270, r: 36 },
++    ]);
++    expect(CONTROL_TOGGLE_LABELS).toEqual({ silent: { off: '静音', on: '静音' }, fast: { off: '倍速', on: '倍速\n2×' } });
++  });
++
++  it.each(WIDTHS)('W %i: 当たり（R36 ± 1.8）は一時停止の当たりと互いに 12 px 以上離れ、計器・スティック・ビルド番号・2 行目・3 行目・時計・速力の表示・右のパネルに触れず、左半分に収まる', (W) => {
++    const pause = circleHit({ x: CONTROL_TOGGLE_PAUSE_X, y: CONTROL_TOGGLE_Y, r: CONTROL_TOGGLE_R });
++    const hits = controlToggleLayout().map((t) => circleHit(t));
++    expect(gap(pause, hits[0]!)).toBeGreaterThanOrEqual(12);
++    expect(gap(hits[0]!, hits[1]!)).toBeGreaterThanOrEqual(12);
++    const fb = fixedBoxes(W, true);
++    for (const [i, h] of hits.entries()) {
++      for (const [k, b] of Object.entries(fb)) expect(inter(h, b), `${i} × ${k}`).toBe(false);
++      for (const has of Object.values(MISSIONS)) for (const [n, r] of check(panelLayout(W, has[0]), false).hits) expect(inter(h, r), `${i} × ${n}`).toBe(false);
++      expect(h.x0).toBeGreaterThan(0);
++      expect(h.x1).toBeLessThan(W / 2); // スティックの左半分の中（ボタンの上で始まった指はスティックにしない）
++      expect(h.y0 - fb['fuel']!.y1).toBeGreaterThanOrEqual(12);
++      expect(fb['stickGrab']!.y0 - h.y1).toBeGreaterThanOrEqual(12);
++    }
++  });
++});
+diff --git a/tests/input-state.test.ts b/tests/input-state.test.ts
+index e04fb69..2dec1f2 100644
+--- a/tests/input-state.test.ts
++++ b/tests/input-state.test.ts
+@@ -48,7 +48,7 @@ describe('stickToCommand（スティック → 目標方位・速度）', () =>
+ describe('InputState', () => {
+   it('初期値とリセット', () => {
+     const s = createInputState();
+-    const initial = { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false };
++    const initial = { headingDeg: NaN, speed01: 0, stickActive: false, fireTap: false, fireSalvoSpreadDeg: NaN, fireSalvoCount: 0, smokeTap: false, extinguishHeld: false, lookout: false, zoomRequest: NaN, identifyTap: false, gunHeld: false, switchTap: false, silentOn: false, fastOn: false };
+     expect(s).toEqual(initial);
+     s.headingDeg = 90;
+     s.speed01 = 1;
