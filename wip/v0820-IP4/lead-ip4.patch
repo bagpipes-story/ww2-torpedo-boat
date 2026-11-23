@@ -1,0 +1,320 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index df1c807..6de28a1 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -14,7 +14,7 @@
+ - 設計の既定（ユーザー未確認。報告で知らせ、変えたいと言われたら変える）:
+   - L1: 夜明けの空は味方（種の `dawn_air` own のまま＝夜明けの後も空襲なし。退く日本の艦は昼に米機に襲われた）。夜明けに浮いている列の艦は東（スリガオ海峡）へ退く（片道の列の向かう縁）。CLAUDE.md §2「夜明け」は今の一般の規則のとおりなので変えない。
+   - ハードは 8 隻目（本隊の最後に後ろの北側の見張りの駆逐艦。ユーザーの v0.4.4「難易度が上がれば敵艦の数が増えていけばよい」。史実は 7 隻）。spec §12 Q3 は S4 の報告で知らせる。
+-  - そのほかは spec-v0820 §14 の既定（弾薬庫の確率 3 本目 3%・4 本目 6%＝spec §12 Q1 は実機 1 回目の前に添える〔IP1 でユーザーの決め U-Q1 の 3.5%・7% に〕・報告は戦艦を目で確かめてレーダーで 20 秒・無線の故障 35%（76 mm 以上の 1 発ごと）・中継の輪は西のボホール沖〔IP3 で北の岸寄りの (1,600, 500)〕・時雨の 600 m〔S3 で 560・IP1 でユーザーの言葉により 540〕・`rejoin_s` 40・戦艦の沈む本数 6・重巡 3・点は報告して帰投 300 と戦艦・重巡の撃沈 200・Title の 6 枚目・日本のタブの解放は米PT の 3 任務のまま）。
++  - そのほかは spec-v0820 §14 の既定（弾薬庫の確率 3 本目 3%・4 本目 6%＝spec §12 Q1 は実機 1 回目の前に添える〔IP1 でユーザーの決め U-Q1 の 3.5%・7% に〕・報告は戦艦を目で確かめてレーダーで 20 秒・無線の故障 35%（76 mm 以上の 1 発ごと）〔IP4 でユーザーの選び「機銃弾でも抽選」の 30%・機銃も〕・中継の輪は西のボホール沖〔IP3 で北の岸寄りの (1,600, 500)〕・時雨の 600 m〔S3 で 560・IP1 でユーザーの言葉により 540〕・`rejoin_s` 40・戦艦の沈む本数 6・重巡 3・点は報告して帰投 300 と戦艦・重巡の撃沈 200・Title の 6 枚目・日本のタブの解放は米PT の 3 任務のまま）。
+ - 変更点:
+   - S0（data と検査・片道の列。まだ遊べない＝us_05 に `playable_from` は無く Title に出ない。世界は列の艦ごとの記録（kits）・役・報告・弾薬庫をまだ読まず、`?debug&mission=us_05` の列の 7 隻（ハード 8）は今の 1 種類の形＝`ijn_destroyer` で片道の列を走る＝lead の L4。ほかの 11 任務は 1 ビットも変えない＝setup の snapshot は `-u` なし・新しい `setup-us05` だけ＝L5）:
+     - 版 0.8.2（package.json・package-lock.json）。docs/03 の v0.8.2 の行に U1・L1・計画・Done・段 S0〜S4・実機 3 項目の下書き・目安を書いた（行の司令官の名の付いた部隊の呼び名は「第三部隊」「第二遊撃部隊」に直した）。CLAUDE.md は S4 で直す（§2 の「スリガオ（us_05）」の行・§4 の木と変更履歴）。
+@@ -242,7 +242,7 @@
+   - 戦艦は艇 1 隻の 4 本では誘爆の時しか沈まない（沈む本数 6）。誘爆は 3・4 本目の命中のときだけ（data。確率 3.5%・7%＝ユーザーの決め U-Q1〔IP1。4 本全部当てて約 10%〕。S0〜S4 は 3%・6%）。大和型の記録はまだ無い（v0.10 で足す時は `magazine` を置かない）。誘爆の 2 次の爆発の音は間引き（blast_s の 0.5 秒）で 1 つ鳴らないことがある（S2b）。
+   - 戦艦・重巡への 1 本は通算の命中率に数えない。≥ 2,000 yd で 4 本当てて轟沈させて沈む夜だけ「沈めて死ぬ ＜ 報告して帰る」が崩れうる（扇 1 回 0.2% 未満）。
+   - 列は片道（海峡へ去って戻らない）。列の艦は互いにぶつからない。わざとの体当たりは時雨（離れた間）だけ。見張りは離れて 45 秒で戻る（見つかっていても＝鎖。設計の既定）。
+-  - 無線の故障は敵の艦の 76 mm 以上の砲弾だけ（機銃・事故・電波の届かなさは無い）。中継は輪に入るだけ（止まらなくてよい）。
++  - 無線の故障は敵の艦の砲弾だけ（IP4 から機銃も。事故・電波の届かなさは無い）。中継は輪に入るだけ（止まらなくてよい）。
+   - 地図の上の味方は自艇だけ（同じ分隊の 2 隻・隣の分隊は輪と文だけ）。
+   - HUD（S4）: 常の文（報告の段）は平常の行「命中 N ・ 撃沈 N/M」の代わり＝報告の任務では 2 行目に命中の数が出ない（Result と 3 行目の「敵影」は今のまま）。届く前は「魚雷なし 帰投せよ」の代わりに常の文（燃料少・夜明け近しは呼びかけ）。中継の端の印のラベルは `?debug` の時だけの左上の解像度の行に重なる時がある。緑の「レーダー N m」と赤い「敵 N m」のラベルが右下で重なる時がある（S3 のビルドでも同じ＝v0.8.0 の印の置き方。docs/03 の候補）。
+   - Result（S4）: 艦隊の行は spec §14 の短い語（「誘爆で轟沈 N」「通算に入れない」）。沈めた艦が 2 つ以上の形は尾（通算の注）を落とす。夜明けの行に「駆逐艦は東へ退いた」を付けない（海峡へ去った数は艦隊の行）。`scenes/result-scene` は 3 行を書き換えた（見出し・shipKills・得点の行）。
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index c40c5cf..f2911a4 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -938,15 +938,15 @@
+         "recon": {
+           "track_s": 20,
+           "identify_class": "battleship",
+-          "radio_fail_chance": 0.35,
+-          "radio_min_damage": 20,
++          "radio_fail_chance": 0.3,
++          "radio_min_damage": 1,
+           "relay": {
+             "x_m": 1600,
+             "y_m": 500,
+             "radius_m": 250,
+             "label_ja": "隣の分隊"
+           },
+-          "source": "historical (第 1 分隊は報告を送る前に寄って攻撃し、PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 が報告を中継した（中継を頼んだのが PT-130 か PT-131 かは出典で違う）。報告は艦種と針路・速さを言った。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C3・C4) / design (v0.8.2 S0・spec-v0820 §4.5 D-N1〜D-N7。報告（type recon_and_attack）: 艦種 identify_class（戦艦）の艦が自艇の視程の内に 1 回でも入ったら「戦艦を確認」（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の艦が映っている固定ステップの実秒を track_s（20 秒）足すと報告を送る。送る前に敵の艦の砲弾（damage が radio_min_damage 20 以上＝76 mm 以上）を受けるたびに radio_fail_chance 35% で無線が壊れ（乱数 seed+45・recon のある任務だけ）、中継の輪 relay（隣の分隊が止まっている所・黄色）に入れば中継。達成は報告が届いて帰投と同じに数える終わり。世界の配線は v0.8.2 S2・画面の文（2 行目の出来事と常の文・中継の端の印・Result の 2 行）は v0.8.2 S4。v0.8.2 IP3（実機 3 回目のユーザー「隣の分隊の表示が黄色い丸い円だけでなんのこっちゃ分かりません。もう少しマップ上端寄りに配置し、実際に停まっている分隊を配置してはどうでしょうか」）: 中継の輪 (1,600, 800) → (1,600, 500)（北の岸の線＝ボホール島から輪の縁まで 250 m。V-N3 の岸の沖 400 → 200 m）と、輪の中に止まっている隣の分隊の艇 3 隻の絵（entities/relay-ring。絵だけ＝世界・当たり・発見には入らない）)"
++          "source": "historical (第 1 分隊は報告を送る前に寄って攻撃し、PT-130 が爆発しなかった 1 発で無線を壊され、隣の区画の分隊の PT-127 が報告を中継した（中継を頼んだのが PT-130 か PT-131 かは出典で違う）。報告は艦種と針路・速さを言った。WebSearch の抜粋のみ・本文未読。medium＝spec-v0820 §2.1・§2.2 C3・C4) / design (v0.8.2 S0・spec-v0820 §4.5 D-N1〜D-N7。報告（type recon_and_attack）: 艦種 identify_class（戦艦）の艦が自艇の視程の内に 1 回でも入ったら「戦艦を確認」（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の艦が映っている固定ステップの実秒を track_s（20 秒）足すと報告を送る。送る前に敵の艦の砲弾（damage が radio_min_damage 20 以上＝76 mm 以上）を受けるたびに radio_fail_chance 35% で無線が壊れ（乱数 seed+45・recon のある任務だけ）、中継の輪 relay（隣の分隊が止まっている所・黄色）に入れば中継。達成は報告が届いて帰投と同じに数える終わり。世界の配線は v0.8.2 S2・画面の文（2 行目の出来事と常の文・中継の端の印・Result の 2 行）は v0.8.2 S4。v0.8.2 IP3（実機 3 回目のユーザー「隣の分隊の表示が黄色い丸い円だけでなんのこっちゃ分かりません。もう少しマップ上端寄りに配置し、実際に停まっている分隊を配置してはどうでしょうか」）: 中継の輪 (1,600, 800) → (1,600, 500)（北の岸の線＝ボホール島から輪の縁まで 250 m。V-N3 の岸の沖 400 → 200 m）と、輪の中に止まっている隣の分隊の艇 3 隻の絵（entities/relay-ring。絵だけ＝世界・当たり・発見には入らない）。v0.8.2 IP4（実機 4 回目のユーザーの選び「機銃弾でも抽選」。無線が壊れる夜をほとんど見なかった＝探りで報告の前に 76 mm 以上を受ける夜は 40 夜に 1〜2）: radio_min_damage 20 → 1（機銃 25 mm・13 mm を含む敵の艦の砲弾すべて）・radio_fail_chance 35% → 30%)"
+         },
+         "hard": {
+           "extra_column": [
+diff --git "a/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md" "b/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+index 44fda41..e0e566af 100644
+--- "a/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
++++ "b/docs/01_\345\217\262\345\256\237\343\203\252\343\202\265\343\203\274\343\203\201\357\274\206\350\250\255\350\250\210\350\263\207\346\226\231.md"
+@@ -774,7 +774,7 @@ PB2Y コロナドのウェーク空襲（1944-01-30〜02-09）:
+ | 7 隻の顔ぶれ（戦艦 山城・扶桑、重巡 最上、駆逐艦 時雨・満潮・朝雲・山雲）・前衛と本隊・本隊が最初の接触・18 kt・時雨が照らして撃った | 上の表・C1・C6 | historical（medium） |
+ | 半月が西に低い | 計算 | historical |
+ | 自艇はレーダーを積む（1944 年の標準・PT-131 のレーダーが捉えた） | 上の表・§8 の v0.8.0 の R4 | historical（medium）／`fit: own` |
+-| 無線が壊れ、隣の分隊が中継した | C3・C4 | historical（medium）／壊れる確率 35%（76 mm 以上の 1 発ごと）・中継の輪の位置は design |
++| 無線が壊れ、隣の分隊が中継した | C3・C4 | historical（medium）／壊れる確率 30%（機銃も含む敵の艦の砲弾 1 発ごと。v0.8.2 IP4。前は 76 mm 以上で 35%）・中継の輪の位置は design |
+ | 報告の条件（戦艦を目で確かめ、レーダーで 20 秒追う） | 史実の報告は艦種と針路・速さを言った | design |
+ | 地図（東西の模式図・縮尺は約 50 km を 4 km に）・道・間隔・時雨の道（本隊の道の北 540 m＝S3 で 600 → 560・IP1 で実機 1 回目のユーザーの言葉により 540）・出発と輪・夜の長さ 270 秒・燃料 34 gal（S3 で 34 → 24、IP3 で実機 3 回目のユーザーの言葉により 34 に戻した）・中継の輪（隣の分隊が止まっている所。IP3 で北の岸寄りへ） | — | design |
+ | 満潮・朝雲・山雲（朝潮型）と時雨（白露型）を `ijn_destroyer`（陽炎型の値と絵）で代用 | 寸法がほぼ同じ（朝潮型 118 m） | design（代用。命中率の KPI を合わせた値を触らない） |
+diff --git "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md" "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+index 56e9720..96ad410 100644
+--- "a/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
++++ "b/docs/02_\343\202\262\343\203\274\343\203\240\350\250\255\350\250\210\346\233\270_v0.1.md"
+@@ -333,7 +333,7 @@
+ 
+ 孤島の哨戒（v0.6.7、jp_02、type patrol_and_evade。`scoring.json` は変えない）: 任務達成＝帰投（輪に入って終わる）で 300（jp_05 の `endCountsAsReturn` の枝に「夜の哨戒機の任務」を足した）。回避＝帰投して夜明け前、かつ検出 0 で 300。検出＝艦艇の発見（jp_02 は 0）＋夜の哨戒機の**目の発見**（レーダーの発見は筋書きなので数えない。`systems/mission-objective.ts` の `detectionsOf`）。撃沈・命中の点は無く、得点の行は「帰投 700 ・ 達成 300 ・ 回避 300 ・ 燃料 N ・ 乗員 N」（撃沈・命中の項を出さない）。順（手計算とヘッドレス）: レーダーの後に見つからず夜明け前に帰投 約 1,435（ヘッドレスで全速 1,427・14 kt 1,443）＞ 見つかって帰投 約 1,100（同 1,081〜1,124）＞ 夜明けの後に帰投（帰投点 630）約 1,000（同 1,015）＞ 沈没 0。
+ 
+-スリガオ海峡・最初の接触（v0.8.2、us_05、type `recon_and_attack`。`scoring.json` の `objective_by_type.recon_and_attack` 300・`kill.points_by_enemy` の `ijn_battleship_fuso` 200・`ijn_cruiser_mogami` 200）: 任務達成＝報告が届いて（送ったか中継した）帰投と同じに数える終わりで 300（`systems/mission-objective` の先頭の枝。沈めば届いていても達成でない）。報告は戦艦を自艇の視程の内に一度入れ（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の接触がある固定ステップを 20 秒（`track_s`）足すと送れる。送る前に敵の艦の 76 mm 以上の砲弾（damage ≥ 20）を受けるたびに 35% で無線が壊れ（seed+45）、壊れていれば中継待ち＝隣の分隊の黄色い輪に入れば中継（止まらなくてよい・夜明けの後も）。魚雷で沈めた戦艦・重巡は 1 隻 200（`core/scoring` の `shipKills`。Result が `systems/recon-result-part` の材料から渡す。駆逐艦は 0＝今の任務の点は同じ）。戦艦・重巡への 1 本は通算の命中率に数えない（命中の点は今のまま）。釣り合い（`tests/scoring-recon`）: 報告して帰投 ≥ 1,000 ＞ 戦艦を轟沈させて沈む（2,000 yd の内の 4 本で 1,000 以下）・重巡を沈めて沈む 800。≥ 2,000 yd の 4 本だけ崩れうる（扇 1 回 0.2% 未満＝既知の制約）。回避の点は付けない。
++スリガオ海峡・最初の接触（v0.8.2、us_05、type `recon_and_attack`。`scoring.json` の `objective_by_type.recon_and_attack` 300・`kill.points_by_enemy` の `ijn_battleship_fuso` 200・`ijn_cruiser_mogami` 200）: 任務達成＝報告が届いて（送ったか中継した）帰投と同じに数える終わりで 300（`systems/mission-objective` の先頭の枝。沈めば届いていても達成でない）。報告は戦艦を自艇の視程の内に一度入れ（レーダーは艦種を出さない）、その後レーダーの最後の掃引に列の接触がある固定ステップを 20 秒（`track_s`）足すと送れる。送る前に敵の艦の砲弾（機銃も。damage ≥ 1。v0.8.2 IP4 のユーザーの選び「機銃弾でも抽選」。前は 76 mm 以上・35%）を受けるたびに 30% で無線が壊れ（seed+45）、壊れていれば中継待ち＝隣の分隊の黄色い輪に入れば中継（止まらなくてよい・夜明けの後も）。魚雷で沈めた戦艦・重巡は 1 隻 200（`core/scoring` の `shipKills`。Result が `systems/recon-result-part` の材料から渡す。駆逐艦は 0＝今の任務の点は同じ）。戦艦・重巡への 1 本は通算の命中率に数えない（命中の点は今のまま）。釣り合い（`tests/scoring-recon`）: 報告して帰投 ≥ 1,000 ＞ 戦艦を轟沈させて沈む（2,000 yd の内の 4 本で 1,000 以下）・重巡を沈めて沈む 800。≥ 2,000 yd の 4 本だけ崩れうる（扇 1 回 0.2% 未満＝既知の制約）。回避の点は付けない。
+ 
+ 輸送船（v0.4.7、`scoring.json` の `kill.points_by_enemy.ijn_transport`）: 魚雷で沈めた輸送船は撃破 400（命中点とは別。駆逐艦の達成 300 より少し上）。駆逐艦と輸送船を 1 本ずつ（800〜1,200 yd）沈めて帰投すると 700 + 300 + 300 + 400 + 燃料 + 乗員。輸送船だけ沈めて帰投は 700 + 150 + 400。
+ 
+diff --git a/tests/__snapshots__/setup-us05.test.ts.snap b/tests/__snapshots__/setup-us05.test.ts.snap
+index d654fa5..284c5c2 100644
+--- a/tests/__snapshots__/setup-us05.test.ts.snap
++++ b/tests/__snapshots__/setup-us05.test.ts.snap
+@@ -1017,8 +1017,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -2047,8 +2047,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -3077,8 +3077,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -4107,8 +4107,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード false 
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -5236,8 +5236,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -6365,8 +6365,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -7494,8 +7494,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+@@ -8623,8 +8623,8 @@ exports[`us_05 の setup の snapshot（v0.8.2 S0 の木） > ハード true 史
+  "recon": {
+   "trackS": 20,
+   "identifyClass": "battleship",
+-  "radioFailChance": 0.35,
+-  "radioMinDamage": 20,
++  "radioFailChance": 0.3,
++  "radioMinDamage": 1,
+   "relay": {
+    "x": 1600,
+    "y": 500,
+diff --git a/tests/recon-data.test.ts b/tests/recon-data.test.ts
+index 6a2340e..b1b3ea5 100644
+--- a/tests/recon-data.test.ts
++++ b/tests/recon-data.test.ts
+@@ -19,7 +19,7 @@ const build = (f: (d: GameData) => void, id = 'us_05'): (() => unknown) => {
+   return () => getReconParams(d, getPrototypeMission(d, id));
+ };
+ const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
+-const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
++const EXPECTED = { trackS: 20, identifyClass: 'battleship', radioFailChance: 0.3, radioMinDamage: 1, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } };
+ 
+ describe('既定の data（us_05。spec §4.5・§4.1 D-M4）', () => {
+   it('戦艦を目で確かめ、レーダーで 20 秒追うと報告。76 mm 以上（damage 20 以上）の 1 発ごとに 35% で無線が壊れ、ボホール島寄りの中継の輪（隣の分隊が止まっている所。v0.8.2 IP3 で (1600, 800) → (1600, 500)）で中継', () => {
+diff --git a/tests/recon-report.test.ts b/tests/recon-report.test.ts
+index 383b397..fa5b19b 100644
+--- a/tests/recon-report.test.ts
++++ b/tests/recon-report.test.ts
+@@ -1,6 +1,6 @@
+ // v0.8.2 S1（spec-v0820 §4.5 D-N1〜D-N6・§9 の 6、lead の L13・L15）: core/recon-report の報告の規則（NONE → TRACKING → SENT／PENDING → RELAYED）と無線の故障を、us_05 の setup の計画
+-// （WorldSetup.recon＝追う 20 秒・76 mm 以上〔damage 20〕で 35%・?debug&noradio は 0・radiofail は 1）と、世界が数えて渡す見る物（視程の内の戦艦の数・最後の掃引の列の接触の数・中継の輪）で
+-// 固定ステップに回す。確かめる・20 秒は固定ステップの時計（命中スローで延びない）・接触の無いステップは数えない・無線の故障の前と後・引かない時（76 mm 未満・送った後・壊れた後）・
++// （WorldSetup.recon＝追う 20 秒・敵の艦の砲弾すべて〔damage 1 以上＝機銃も。v0.8.2 IP4。前は 76 mm 以上＝damage 20〕で 30%・?debug&noradio は 0・radiofail は 1）と、世界が数えて渡す見る物（視程の内の戦艦の数・最後の掃引の列の接触の数・中継の輪）で
++// 固定ステップに回す。確かめる・20 秒は固定ステップの時計（命中スローで延びない）・接触の無いステップは数えない・無線の故障の前と後・引かない時（damage 1 未満・送った後・壊れた後）・
+ // 0 と 1 でも引く回数は同じ・中継待ちから中継・夜明けの後の中継・追い終える前の輪は何もしない・沈んだら達成でないが「届いた」は残る・決定性・読み口・source（確保なし・平方根なし）・
+ // S2 から import するのは systems/world-recon・mission-objective・recon-telemetry だけ（S1 の「誰も import しない」は S2 の lead の L26 で直した）。
+ import { describe, expect, it, vi } from 'vitest';
+@@ -61,8 +61,8 @@ const when = (log: Log, bit: number): number | undefined => log.bits.find(([, b]
+ const BB_FROM_10: Spans = [[10, 15, 1], [15, 60, 2], [60, 1e9, 0]];
+ 
+ describe('計画（us_05 の setup）と作る・戻す', () => {
+-  it('追う 20 秒・76 mm 以上（damage 20）で 35%・noradio は 0・radiofail は 1。段と印の数・系列 seed+45', () => {
+-    expect([PLAN.trackS, PLAN.radioFailChance, PLAN.radioMinDamage, NEVER.radioFailChance, ALWAYS.radioFailChance]).toEqual([20, 0.35, 20, 0, 1]);
++  it('追う 20 秒・敵の艦の砲弾すべて（damage 1 以上＝機銃も。v0.8.2 IP4）で 30%・noradio は 0・radiofail は 1。段と印の数・系列 seed+45', () => {
++    expect([PLAN.trackS, PLAN.radioFailChance, PLAN.radioMinDamage, NEVER.radioFailChance, ALWAYS.radioFailChance]).toEqual([20, 0.3, 1, 0, 1]);
+     expect([RECON_NONE, RECON_TRACKING, RECON_SENT, RECON_PENDING, RECON_RELAYED]).toEqual([0, 1, 2, 3, 4]);
+     expect([RECON_EV_SEEN, RECON_EV_SENT, RECON_EV_PENDING, RECON_EV_RELAYED, RECON_EV_RADIO]).toEqual([1, 2, 4, 8, 16]);
+     expect(RECON_RADIO_SEED_OFFSET).toBe(45);
+@@ -127,9 +127,9 @@ describe('無線の故障と中継', () => {
+     near(when(log, RECON_EV_PENDING), 30, 0);
+     expect([st.draws, st.stage]).toEqual([1, RECON_RELAYED]);
+   });
+-  it('引かない: 76 mm 未満（damage 19 以下）・送った後・壊れた後。同じ夜の系列の位置で確かめる', () => {
++  it('引かない: damage 1 未満（0）・送った後・壊れた後。同じ夜の系列の位置で確かめる', () => {
+     const base = run(ALWAYS, { sight: BB_FROM_10 }).log.nextAfter;
+-    const under = run(ALWAYS, { sight: BB_FROM_10, hits: [[12, 19], [13, 4], [14, 0]] });
++    const under = run(ALWAYS, { sight: BB_FROM_10, hits: [[14, 0]] });
+     expect([under.st.draws, under.st.radioBroken, under.log.nextAfter]).toEqual([0, false, base]);
+     const after = run(ALWAYS, { sight: BB_FROM_10, hits: [[31, 50], [40, 80]] });
+     expect([after.st.draws, after.st.radioBroken, after.st.stage, after.log.nextAfter]).toEqual([0, false, RECON_SENT, base]);
+@@ -137,7 +137,7 @@ describe('無線の故障と中継', () => {
+     expect([twice.st.draws, twice.log.radioAt.length]).toEqual([1, 1]);
+     expect(twice.log.nextAfter).toBe(run(ALWAYS, { sight: BB_FROM_10, hits: [[12, 20]] }).log.nextAfter);
+   });
+-  it('確率 0（noradio）・35%・1（radiofail）でも引く回数は同じ（1 発に 1 回）。0 は壊れない', () => {
++  it('確率 0（noradio）・30%・1（radiofail）でも引く回数は同じ（1 発に 1 回）。0 は壊れない', () => {
+     const hits: Opts['hits'] = [[12, 20], [13, 30], [14, 40]];
+     const n = run(NEVER, { sight: BB_FROM_10, hits });
+     expect([n.st.draws, n.st.radioBroken, n.st.stage]).toEqual([3, false, RECON_SENT]);
+@@ -152,7 +152,7 @@ describe('無線の故障と中継', () => {
+     }
+     spy.mockRestore();
+   });
+-  it('35% は seed+45 の系列の 10 万発で ±0.5 点（3 つの夜の種）', () => {
++  it('30%（data の radio_fail_chance）は seed+45 の系列の 10 万発で ±0.5 点（3 つの夜の種）', () => {
+     for (const seed of [1, 2, 12345]) {
+       const rng = new SeededRng(seed + RECON_RADIO_SEED_OFFSET);
+       const st = createReconState();
+@@ -161,7 +161,7 @@ describe('無線の故障と中継', () => {
+         resetReconState(st);
+         if (reconOnShellHit(st, PLAN, PLAN.radioMinDamage, rng)) broke++;
+       }
+-      expect(Math.abs(broke / 100_000 - 0.35), String(seed)).toBeLessThan(0.005);
++      expect(Math.abs(broke / 100_000 - PLAN.radioFailChance), String(seed)).toBeLessThan(0.005);
+     }
+   });
+   it('追い終える前の輪は何もしない（輪の中で追い終えて中継待ちになれば、そのステップに中継）。送った夜の輪も何もしない', () => {
+diff --git a/tests/recon-world.test.ts b/tests/recon-world.test.ts
+index 0dcc862..20ad110 100644
+--- a/tests/recon-world.test.ts
++++ b/tests/recon-world.test.ts
+@@ -2,7 +2,7 @@
+ // mission-world の returnCallDone・world-enemy-step の順）を、Phaser なしの小さな世界（艦は位置と out だけの素の物・レーダーは接触の数だけ）と、本物の world-enemies（絵は偽の場面）で確かめる:
+ // - 確かめる: 戦艦（山城・扶桑）が視程の 2 乗の内に入ったステップに TRACKING（駆逐艦・重巡は数えない・沈み始めた／海域の外の艦は数えない）。報告の隻数は送るまでの最大。
+ // - 追う: レーダーの最後の掃引に接触があるステップの固定ステップの実秒だけを足し、20 秒で送る（命中スローで延びない＝世界の stepTimeS の差）。レーダーの無い夜は目で見えている列の艦。
+-// - 無線: 送る前の 76 mm 以上（damage 20 以上）の砲弾 1 発ごとに seed+45 を 1 回引き 35%。機銃（25 mm）は引かない・送った後は引かない・沈み始めた自艇は引かない。壊れていれば中継待ち→黄色い輪で中継。
++// - 無線: 送る前の敵の艦の砲弾 1 発ごと（damage 1 以上＝機銃も。v0.8.2 IP4。前は 76 mm 以上）に seed+45 を 1 回引き 30%。damage 0 は引かない・送った後は引かない・沈み始めた自艇は引かない。壊れていれば中継待ち→黄色い輪で中継。
+ // - 達成は届いて帰投と同じに数える終わり（沈めば届いていても達成でない）。呼びかけ（returnCallDone）は届いた時から。ほかの任務の世界は recon が null（命中の手は世界の hitBoat そのもの）。
+ import { describe, expect, it } from 'vitest';
+ import { gameData } from '../src/config/game-data';
+@@ -125,15 +125,15 @@ describe('追う・送る（D-N2・D-N3）', () => {
+ });
+ 
+ describe('無線（D-N4）と中継（D-N5）', () => {
+-  it('送る前の damage ≥ 20 の 1 発ごとに seed+45 をちょうど 1 回引く（写しと同じ結果）。25 mm（4）は引かない。壊れたら次の stepRecon に印', () => {
++  it('送る前の damage ≥ 1 の 1 発ごと（機銃 25 mm の 4 も）に seed+45 をちょうど 1 回引く（写しと同じ結果）。damage 0 は引かない。壊れたら次の stepRecon に印', () => {
+     for (let seed = 1; seed <= 40; seed++) {
+       const m = mini({ seed });
+       const rep = new SeededRng((seed + RECON_RADIO_SEED_OFFSET) >>> 0);
+-      expect(m.r.onShellHit(4)).toBe(false);
++      expect(m.r.onShellHit(0)).toBe(false);
+       let broke = -1;
+       for (let k = 0; k < 6 && broke < 0; k++) {
+-        const want = rep.next() < 0.35;
+-        expect(m.r.onShellHit(40), `seed ${seed} ${k}`).toBe(want);
++        const want = rep.next() < 0.3;
++        expect(m.r.onShellHit(k % 2 ? 4 : 40), `seed ${seed} ${k}`).toBe(want);
+         if (want) broke = k;
+       }
+       expect(m.r.state.draws, `seed ${seed}`).toBe(broke < 0 ? 6 : broke + 1);
+@@ -144,10 +144,10 @@ describe('無線（D-N4）と中継（D-N5）', () => {
+       }
+     }
+   });
+-  it('35%: seed 1〜3000 の 1 発目で壊れる割合は 0.35 ± 0.03', () => {
++  it('30%: seed 1〜3000 の 1 発目で壊れる割合は 0.30 ± 0.03（機銃の 4 でも引く）', () => {
+     let k = 0;
+-    for (let seed = 1; seed <= 3000; seed++) if (mini({ seed }).r.onShellHit(35)) k++;
+-    expect(Math.abs(k / 3000 - 0.35)).toBeLessThanOrEqual(0.03);
++    for (let seed = 1; seed <= 3000; seed++) if (mini({ seed }).r.onShellHit(4)) k++;
++    expect(Math.abs(k / 3000 - 0.3)).toBeLessThanOrEqual(0.03);
+   });
+   it('送った後・自艇が沈み始めた後は引かない。?debug&noradio（0）でも引く回数は同じで壊れない', () => {
+     const m = mini();
+@@ -214,7 +214,7 @@ describe('達成と呼びかけ（D-N6）', () => {
+ 
+ describe('無線の手（world-enemies。L22）', () => {
+   const boat: BoatState = { x: 0, y: 0, headingDeg: 0, speedMps: 0 };
+-  it('us_05: 艦の砲弾の命中の手が 76 mm 以上でだけ無線を引き、どの弾も世界の hitBoat へ（同じ spec・seed+1 の系列）。機銃は引かない', () => {
++  it('us_05: 艦の砲弾の命中の手がどの砲でも無線を引き（v0.8.2 IP4＝機銃も）、どの弾も世界の hitBoat へ（同じ spec・seed+1 の系列）', () => {
+     const s = setupOf('us_05', false, 5);
+     const got: HitSpec[] = [];
+     const sinking = { boat: { sinking: false } };
+@@ -233,9 +233,9 @@ describe('無線の手（world-enemies。L22）', () => {
+         expect(r.state.draws, `${i} ${gi}`).toBe(draws);
+       }
+     }
+-    // 76 mm 以上が引く: 記録の砲は 127 mm・152 mm（40・35）と 25 mm（4）
++    // v0.8.2 IP4（ユーザーの選び「機銃弾でも抽選」）: 記録の砲はみな引く（127 mm・152 mm〔40・35〕も 25 mm〔4〕も。damage 1 以上）
+     const dmg = s.transit!.column!.flatMap((k) => k.gunnery.guns.map((x) => [x.id, x.damage >= s.recon!.radioMinDamage] as const));
+-    for (const [id, draw] of dmg) expect(draw, id).toBe(Number(/(\d+)mm/.exec(id)![1]) >= 76);
++    for (const [id, draw] of dmg) expect(draw, id).toBe(true);
+   });
+   it('ほかの駆逐艦の隊の任務（ハードも）は recon が null。命中の手を包むのは recon の世界だけ（無い任務は世界の hitBoat そのもの）', () => {
+     for (const id of PROTO_IDS) {
+diff --git a/tests/setup-us05.test.ts b/tests/setup-us05.test.ts
+index c6cbc9c..0c10c9e 100644
+--- a/tests/setup-us05.test.ts
++++ b/tests/setup-us05.test.ts
+@@ -46,7 +46,7 @@ describe('us_05 の setup の snapshot（v0.8.2 S0 の木）', () => {
+     expect(s.enemyFrom).toEqual({ x: 150, y: 2800 + o.dy });
+     expect([s.dawnAir.playAs, s.dawnAir.retireEdge, s.dawnAir.retireForceJa, s.dawnAir.fleetGoneClears]).toEqual(['own', 'east', '日本の艦隊', false]);
+     expect([s.radar!.model, s.radar!.fit, s.shores!.north.labels[0]!.labelJa, s.shores!.south.gapLabelJa]).toEqual(['so_late', 'own', 'ボホール島', 'ミンダナオ海']);
+-    expect(s.recon).toEqual({ trackS: 20, identifyClass: 'battleship', radioFailChance: 0.35, radioMinDamage: 20, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } });
++    expect(s.recon).toEqual({ trackS: 20, identifyClass: 'battleship', radioFailChance: 0.3, radioMinDamage: 1, relay: { x: 1600, y: 500, radiusM: 250, radius2: 62500, labelJa: '隣の分隊' } });
+     expect(s.hazardsTonight).toEqual(['enemy_ship_gunfire_or_ram', 'radio_failure']);
+     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'anchors', 'backdrop', 'seaplaneNight', 'pickets'] as const) expect(k in s, k).toBe(false);
+     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));
